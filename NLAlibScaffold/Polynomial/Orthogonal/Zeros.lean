@@ -184,6 +184,38 @@ theorem IsMomentPosDef.card_gaussNodes {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (gaussNodes μ k).card = k := by
   sorry
 
+/-- Shared step for `IsMomentPosDef.gaussNodes_subset_Icc`: if $\pi_k = (X - x)g$ with $\deg g < k$
+and $(t - x)c > 0$ on $[a, b]$, then $\mu$ (supported in $[a, b]$) is positive definite up to
+degree $k$ only if false: $\pi_k \cdot (c g) = (t-x)c\,g^2 \ge 0$ on $[a, b]$, and its zeros
+there are roots of $g$, fewer than $k$ of them. -/
+private theorem IsMomentPosDef.false_of_root_mul {k : ℕ} (h : IsMomentPosDef μ k)
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x c : ℝ} {g : ℝ[X]}
+    (hπ : orthogonalPolynomial μ k = (X - C x) * g) (hgk : g.natDegree < k) (hg : g ≠ 0)
+    (hc : c ≠ 0) (hsgn : ∀ t ∈ Set.Icc a b, 0 < (t - x) * c) : False := by
+  have hr : (C c * g).degree < k :=
+    (degree_C_mul hc).trans_lt ((degree_le_natDegree).trans_lt (by exact_mod_cast hgk))
+  have hnn : ∀ᵐ t ∂μ, 0 ≤ (orthogonalPolynomial μ k * (C c * g)).eval t := by
+    filter_upwards [hμ] with t ht
+    rw [hπ]
+    have := (hsgn t ht).le
+    simp only [eval_mul, eval_sub, eval_X, eval_C]
+    nlinarith [mul_nonneg this (sq_nonneg (g.eval t))]
+  have hs : (g.roots.toFinset).card < k :=
+    (Multiset.toFinset_card_le _).trans_lt ((card_roots' g).trans_lt hgk)
+  refine h.false_of_ae_nonneg_mul hμ (isOrthogonalPolynomial_orthogonalPolynomial hμ k)
+    hr hnn hs ?_
+  · intro t ht hzero
+    rw [hπ] at hzero
+    simp only [eval_mul, eval_sub, eval_X, eval_C] at hzero
+    have hne := (hsgn t ht).ne'
+    have hg0 : g.eval t = 0 := by
+      have h1 : ((t - x) * c) * (g.eval t) ^ 2 = 0 := by linarith [hzero]
+      rcases mul_eq_zero.mp h1 with h2 | h2
+      · exact absurd h2 hne
+      · exact pow_eq_zero_iff (two_ne_zero) |>.mp h2
+    rw [Multiset.mem_toFinset]
+    exact (mem_roots hg).mpr hg0
+
 /-- The Gauss nodes lie in every interval carrying the measure: if $\mu$, finite and supported in
 $[a, b]$, is positive definite up to degree $k$, then every real zero of $\pi_k$ lies in
 $[a, b]$, hence in the convex hull of the support of $\mu$.
@@ -193,7 +225,32 @@ Proof: M, about 35 lines. A root $x < a$ gives $\pi_k = (X - x)h$
 with $r = -h$. -/
 theorem IsMomentPosDef.gaussNodes_subset_Icc {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (gaussNodes μ k : Set ℝ) ⊆ Set.Icc a b := by
-  sorry
+  intro y hy
+  have hy' : y ∈ (orthogonalPolynomial μ k).roots := by
+    unfold gaussNodes at hy
+    rw [Finset.mem_coe, Multiset.mem_toFinset] at hy
+    exact hy
+  have hm := monic_orthogonalPolynomial μ k
+  have hroot : (orthogonalPolynomial μ k).IsRoot y := (mem_roots hm.ne_zero).mp hy'
+  -- Split off the factor `X - C y` and bound the degree of the cofactor.
+  have key : ∀ {c x : ℝ}, c ≠ 0 → (∀ t ∈ Set.Icc a b, 0 < (t - x) * c) →
+      (orthogonalPolynomial μ k).IsRoot x → False := by
+    intro c x hc hsgn hx
+    set g := orthogonalPolynomial μ k /ₘ (X - C x) with hgdef
+    have hπ : orthogonalPolynomial μ k = (X - C x) * g :=
+      (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
+    have hg : g ≠ 0 := by
+      intro hg0
+      rw [hg0, mul_zero] at hπ
+      exact hm.ne_zero hπ
+    have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
+    rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
+    exact h.false_of_root_mul hμ hπ (by omega) hg hc hsgn
+  rcases lt_or_ge y a with hya | hya
+  · exact (key (c := 1) (x := y) one_ne_zero (fun t ht => by linarith [ht.1]) hroot).elim
+  rcases le_or_gt y b with hyb | hyb
+  · exact ⟨hya, hyb⟩
+  · exact (key (c := -1) (x := y) (by norm_num) (fun t ht => by linarith [ht.2]) hroot).elim
 
 /-- The degenerate case: if $\mu$, finite and supported in $[a, b]$, is not positive definite up
 to degree $k$, then $\mu$ is carried by the Gauss nodes of order $k$, the zeros of $\pi_k$.
