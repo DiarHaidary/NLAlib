@@ -483,7 +483,22 @@ theorem alternatesOn_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : 
       (minimaxError f (Set.Icc a b) n)) :
     AlternatesOn (fun x => f x - p.eval x) (Set.Icc a b) (n + 2)
       (minimaxError f (Set.Icc a b) n) := by
-  sorry
+  rcases (minimaxError_nonneg f _ n).eq_or_lt with hE | hE
+  · have hz : ∀ x ∈ Set.Icc a b, f x - p.eval x = 0 := fun x hx => by
+      have h0 : dist (p.eval x) (f x) ≤ 0 := (hbest x hx).trans_eq hE.symm
+      exact sub_eq_zero.mpr (dist_le_zero.mp h0).symm
+    rw [← hE]
+    exact alternatesOn_Icc_zero_of_eq_zero hab (n + 2) hz
+  · obtain ⟨c, hc⟩ := exists_isLeast_abs_sub_eval_eq_minimaxError hf hp hbest hE
+    rcases exists_degree_le_or_alternatesOn n
+        (e := fun x => f x - p.eval x) (a := c) (b := b)
+        ((hf.sub p.continuousOn).mono (Set.Icc_subset_Icc_left hc.1.1.1)) hE hc.1.1.2 hc.1.2
+      with ⟨q, hq, hqs, -⟩ | halt
+    · exfalso
+      exact not_forall_mul_pos_of_isUniformApproxOn_minimaxError hf hp hbest hE hq
+        (fun x hx hxe => hqs x ⟨hc.2 ⟨hx, hxe⟩, hx.2⟩ hxe)
+    · refine halt.mono (fun x hx => ?_) le_rfl
+      exact ⟨hc.1.1.1.trans hx.1.1, hx.1.2⟩
 
 /-- **Chebyshev's equioscillation theorem.** Let $a < b$, $f$ continuous on $[a, b]$ and $p$ a
 real polynomial of degree at most $n$. Then $p$ is a best approximation,
