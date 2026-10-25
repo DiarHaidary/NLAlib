@@ -282,7 +282,21 @@ Result: gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.matchesMoments_probeSpectralMeasure_slqMeasure
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) (q : ℕ) :
     MatchesMoments (probeSpectralMeasure A Ω) (slqMeasure A Ω q) (2 * q) := by
-  sorry
+  have hfin : (spectrum ℝ A).Finite := Matrix.finite_real_spectrum
+  obtain ⟨a, ha⟩ := hfin.bddBelow
+  obtain ⟨a', ha'⟩ := hfin.bddAbove
+  have hs : spectrum ℝ A ⊆ Set.Icc a a' := fun x hx => ⟨ha hx, ha' hx⟩
+  have hprobe : ∀ j, ∀ᵐ x ∂spectralMeasure A (fun i => Ω i j), x ∈ Set.Icc a a' :=
+    fun j => ae_mem_Icc_spectralMeasure A hs _
+  have hper : ∀ j, MatchesMoments (spectralMeasure A (fun i => Ω i j))
+      (gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) (2 * q) :=
+    fun j => matchesMoments_gaussQuadrature (hprobe j) q
+  have hsum : MatchesMoments (∑ j, spectralMeasure A (fun i => Ω i j))
+      (∑ j, gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) (2 * q) :=
+    MatchesMoments.finsetSum (fun j _ => hprobe j)
+      (fun j _ => ae_mem_Icc_gaussQuadrature (hprobe j) q) (fun j _ => hper j)
+  unfold probeSpectralMeasure slqMeasure
+  exact MatchesMoments.smul hsum _
 
 /-- With at least $\lvert n\rvert$ nodes SLQ is exact: for Hermitian $\mathbf{A}$, every test
 matrix $\mathbf{\Omega}$ and $q \ge \lvert n\rvert$,
