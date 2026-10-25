@@ -62,6 +62,40 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {l : Type*} [
 
 /-! ### The case $k = 1$: the $2 \times 2$ instance -/
 
+/-- Pointwise form of the Frobenius identity of `frobNorm_sq_diagonal_mul_sub_eq`. -/
+private lemma sum_sq_pointwise_aux (M : Matrix (Fin 2) (Fin 2) ℝ) (s x y : ℝ)
+    (hsym : M 0 1 = M 1 0)
+    (e00 : M 0 0 = M 0 0 * M 0 0 + M 0 1 * M 1 0)
+    (e01 : M 0 1 = M 0 0 * M 0 1 + M 0 1 * M 1 1)
+    (e11 : M 1 1 = M 1 0 * M 0 1 + M 1 1 * M 1 1) :
+    (x - (M 0 0 * x + M 0 1 * (s * y))) ^ 2 + (s * y - (M 1 0 * x + M 1 1 * (s * y))) ^ 2 =
+      x ^ 2 + (s * y) ^ 2 - (M 0 0 * x ^ 2 + 2 * M 0 1 * (x * (s * y)) + M 1 1 * (s * y) ^ 2) := by
+  rw [← hsym] at e00 e11 ⊢
+  linear_combination (-x ^ 2) * e00 + (-2 * s * x * y) * e01 + (-(s * y) ^ 2) * e11
+
+/-- For a symmetric idempotent `M`, the residual `Y - M * Y` of `Y = diag(1, s) * Ω'` has squared
+Frobenius norm `a + s² b - (M₀₀ a + 2 M₀₁ s c + M₁₁ s² b)`. -/
+private lemma frobNorm_sq_diagonal_mul_sub_eq (s : ℝ) (Ω' : Matrix (Fin 2) l ℝ)
+    (M : Matrix (Fin 2) (Fin 2) ℝ) (hsym : M 0 1 = M 1 0) (hidem : M * M = M) :
+    frobNorm (diagonal ![1, s] * Ω' - M * (diagonal ![1, s] * Ω')) ^ 2 =
+      ∑ j, Ω' 0 j ^ 2 + s ^ 2 * ∑ j, Ω' 1 j ^ 2 -
+        (M 0 0 * ∑ j, Ω' 0 j ^ 2 + 2 * M 0 1 * (s * ∑ j, Ω' 0 j * Ω' 1 j) +
+          M 1 1 * (s ^ 2 * ∑ j, Ω' 1 j ^ 2)) := by
+  have e00 := congrFun (congrFun hidem 0) 0
+  have e01 := congrFun (congrFun hidem 0) 1
+  have e11 := congrFun (congrFun hidem 1) 1
+  simp only [Matrix.mul_apply, Fin.sum_univ_two] at e00 e01 e11
+  have hpt : ∀ j, ∑ i, (diagonal ![1, s] * Ω' - M * (diagonal ![1, s] * Ω')) i j ^ 2 =
+      Ω' 0 j ^ 2 + (s * Ω' 1 j) ^ 2 -
+        (M 0 0 * Ω' 0 j ^ 2 + 2 * M 0 1 * (Ω' 0 j * (s * Ω' 1 j)) +
+          M 1 1 * (s * Ω' 1 j) ^ 2) := by
+    intro j
+    simp [Fin.sum_univ_two, Matrix.sub_apply, Matrix.mul_apply, Matrix.diagonal_apply]
+    linear_combination sum_sq_pointwise_aux M s (Ω' 0 j) (Ω' 1 j) hsym e00.symm e01.symm e11.symm
+  rw [frobNorm_sq_eq_sum_sq, Finset.sum_comm, Finset.sum_congr rfl fun j _ => hpt j]
+  simp only [Finset.mul_sum, ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl fun j _ => by ring
+
 /-- **A swapped ranking costs half the gap**: for $\mathbf{A} = \operatorname{diag}(1, s)$ with
 $0 \le s \le 1$ and a test matrix $\mathbf{\Omega} \in \mathbb{R}^{2 \times \ell}$ with rows
 $\mathbf{\omega}_1, \mathbf{\omega}_2$, if the sketch ranks the head row below the tail row,
@@ -89,7 +123,79 @@ theorem add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq {s : ℝ} (hs
     s ^ 2 + (1 - s ^ 2) / 2 ≤
       frobNorm (Matrix.diagonal ![1, s] - earlyTruncatedRSVD (Matrix.diagonal ![1, s]) Ω' 1) ^ 2
       := by
-  sorry
+  classical
+  rw [sub_earlyTruncatedRSVD]
+  have hP := isStarProjection_rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1)
+  have hPY := rangeProjector_truncatedSVD_mul (diagonal ![1, s] * Ω') 1
+  have hrank : (rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1)).rank ≤ 1 :=
+    (rank_rangeProjector _).trans_le (rank_truncatedSVD_le _ 1)
+  generalize rangeProjector (truncatedSVD (diagonal ![1, s] * Ω') 1) = P at hP hPY hrank ⊢
+  have hsym : P 0 1 = P 1 0 := by
+    have := congrFun (congrFun hP.isSelfAdjoint 0) 1
+    simpa [Matrix.star_apply] using this.symm
+  have hidem : P * P = P := hP.isIdempotentElem
+  have e00 := congrFun (congrFun hidem 0) 0
+  have e01 := congrFun (congrFun hidem 0) 1
+  have e11 := congrFun (congrFun hidem 1) 1
+  simp only [Matrix.mul_apply, Fin.sum_univ_two] at e00 e01 e11
+  have hdet : P 0 0 * P 1 1 - P 0 1 * P 1 0 = 0 := by
+    by_contra hne
+    have hu : IsUnit P := by
+      refine (Matrix.isUnit_iff_isUnit_det P).mpr (isUnit_iff_ne_zero.mpr ?_)
+      rwa [Matrix.det_fin_two]
+    have := Matrix.rank_of_isUnit P hu
+    rw [Fintype.card_fin] at this
+    omega
+  have hsum : P 0 0 + P 1 1 ≤ 1 := by
+    by_cases hx : P 0 1 = 0
+    · rw [hx] at e00 e11 hdet
+      have hp : P 0 0 * (P 0 0 - 1) = 0 := by linear_combination e00
+      have hq : P 1 1 * (P 1 1 - 1) = 0 := by linear_combination e11
+      rcases mul_eq_zero.mp hp with hp | hp <;> rcases mul_eq_zero.mp hq with hq | hq <;>
+        nlinarith
+    · have h1 : P 0 1 * (P 0 0 + P 1 1 - 1) = 0 := by linear_combination e01
+      have := (mul_eq_zero.mp h1).resolve_left hx
+      linarith
+  obtain ⟨S, hS⟩ : ∃ S : Matrix (Fin 2) (Fin 2) ℝ, S = !![0, 1; 1, 0] := ⟨_, rfl⟩
+  have hSS : S * S = 1 := by
+    subst hS
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_two]
+  have hmax : P 0 0 ≤ P 1 1 := by
+    have hidem' : S * P * S * (S * P * S) = S * P * S := by
+      calc S * P * S * (S * P * S) = S * P * (S * S) * (P * S) := by simp only [Matrix.mul_assoc]
+        _ = S * (P * P) * S := by rw [hSS, Matrix.mul_one]; simp only [Matrix.mul_assoc]
+        _ = S * P * S := by rw [hidem]
+    have hsymS : (S * P * S) 0 1 = (S * P * S) 1 0 := by
+      subst hS
+      simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Fin.sum_univ_two, hsym]
+    have hP00 : (S * P * S) 0 0 = P 1 1 := by
+      subst hS
+      simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+    have hP11 : (S * P * S) 1 1 = P 0 0 := by
+      subst hS
+      simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+    have hP01 : (S * P * S) 0 1 = P 0 1 := by
+      subst hS
+      simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Fin.sum_univ_two, hsym]
+    have hB : ((S * P * S) * (diagonal ![1, s] * Ω')).rank ≤ 1 :=
+      (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_left _ _).trans
+        ((Matrix.rank_mul_le_right _ _).trans hrank))
+    have hEY := frobNorm_sub_truncatedSVD_le_of_rank_le (diagonal ![1, s] * Ω') hB
+    rw [← hPY] at hEY
+    have hsq := pow_le_pow_left₀ (frobNorm_nonneg _) hEY 2
+    rw [frobNorm_sq_diagonal_mul_sub_eq s Ω' P hsym hidem,
+      frobNorm_sq_diagonal_mul_sub_eq s Ω' (S * P * S) hsymS hidem', hP00, hP11, hP01] at hsq
+    by_contra h
+    push_neg at h
+    nlinarith [mul_pos (sub_pos.2 h) (sub_pos.2 hab)]
+  have h1s : 0 ≤ 1 - s ^ 2 := by nlinarith
+  have h12 : 0 ≤ 1 / 2 - P 0 0 := by linarith
+  rw [frobNorm_sq_eq_sum_sq]
+  simp [Fin.sum_univ_two, Matrix.mul_apply, Matrix.diagonal_apply, Matrix.one_apply]
+  rw [← hsym] at e00 e11 ⊢
+  have hq : (0:ℝ) ≤ 1 - P 0 0 - P 1 1 := by linarith
+  nlinarith [mul_nonneg h1s h12, mul_nonneg (sq_nonneg s) hq]
 
 /-- **The sketch misranks the two rows with constant probability**: for a standard Gaussian
 $2 \times \ell$ test matrix with rows $\mathbf{\omega}_1, \mathbf{\omega}_2$, $\ell \ge 100$ and
