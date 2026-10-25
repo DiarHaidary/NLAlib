@@ -311,7 +311,59 @@ theorem integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_
       ∫ ω, frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 ∂μ +
         k / ((Fintype.card p : ℝ) - Fintype.card l - 1) *
           ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
-  sorry
+  classical
+  have := hΨ.isProbabilityMeasure
+  have hpt (ω : Ω) : frobNorm (A - truncatedSVD (rsvd A (X ω)) k -
+      rangeProjector (truncatedSVD (rsvd A (X ω)) k) *
+        (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))) ^ 2 =
+      frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2 +
+        frobNorm (rangeProjector (truncatedSVD (rsvd A (X ω)) k) *
+          (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))) ^ 2 := by
+    refine frobNorm_sub_sq_of_frobInner_eq_zero ?_
+    -- the cross term vanishes pointwise: `P (A - T) = P A - T = 0` with `T = P A`
+    rw [frobInner_comm, frobInner_mul_left, conjTranspose_rangeProjector,
+      Matrix.mul_sub (rangeProjector _), rangeProjector_mul_self,
+      ← truncatedSVD_rsvd_eq_rangeProjector_mul, sub_self, frobInner_zero_right]
+  have hT := (measurable_truncatedSVD k).comp (measurable_rsvd (l := l) A)
+  have hf : Integrable (fun ω => frobNorm (A - truncatedSVD (rsvd A (X ω)) k) ^ 2) μ := by
+    refine (integrable_const (frobNorm A ^ 2)).mono'
+      (((continuous_frobNorm.measurable.comp (measurable_const.sub hT)).pow_const 2
+        ).comp_aemeasurable hX.aemeasurable).aestronglyMeasurable (ae_of_all _ fun ω => ?_)
+    rw [Real.norm_of_nonneg (sq_nonneg _)]
+    have h : A - truncatedSVD (rsvd A (X ω)) k =
+        (1 - rangeProjector (truncatedSVD (rsvd A (X ω)) k)) * A := by
+      rw [Matrix.sub_mul, Matrix.one_mul, ← truncatedSVD_rsvd_eq_rangeProjector_mul]
+    rw [h]
+    gcongr
+    exact frobNorm_one_sub_rangeProjector_mul_le _ A
+  have hN : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
+      obliqueProjector (A * q.1) q.2ᴴ * (A - rsvd A q.1) := by
+    have hΨ' : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ => q.2ᴴ :=
+      (continuous_id.matrix_conjTranspose.measurable).comp measurable_snd
+    have hAX : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ => A * q.1 :=
+      measurable_const.matrix_mul measurable_fst
+    simp only [obliqueProjector]
+    exact ((hAX.matrix_mul (measurable_pinv.comp (hΨ'.matrix_mul hAX))).matrix_mul hΨ').matrix_mul
+      (measurable_const.sub ((measurable_rsvd A).comp measurable_fst))
+  have hgn := integrable_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix A
+    hX.aemeasurable hΨ hXΨ
+    (ae_of_all _ fun ω => by have := Matrix.rank_le_card_width (A * X ω); omega)
+  have hg : Integrable (fun ω => frobNorm (rangeProjector (truncatedSVD (rsvd A (X ω)) k) *
+      (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))) ^ 2) μ := by
+    refine hgn.mono' (((continuous_frobNorm.measurable.comp
+      ((measurable_rangeProjector.comp (hT.comp measurable_fst)).matrix_mul hN)).pow_const
+        2).comp_aemeasurable (hX.aemeasurable.prodMk hΨ.aemeasurable)).aestronglyMeasurable ?_
+    filter_upwards [ae_rank_conjTranspose_mul_mul_eq A hX.aemeasurable hΨ hXΨ
+      (fun x => by have := Matrix.rank_le_card_width (A * x); omega)] with ω hω
+    rw [Real.norm_of_nonneg (sq_nonneg _), frobNorm_sub_generalizedNystrom_sq hω]
+    have h := (isStarProjection_rangeProjector (truncatedSVD (rsvd A (X ω)) k)).frobNorm_mul_le
+      (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))
+    nlinarith [frobNorm_nonneg (rangeProjector (truncatedSVD (rsvd A (X ω)) k) *
+      (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))),
+      sq_nonneg (frobNorm (A - rsvd A (X ω)))]
+  rw [← integral_frobNorm_rangeProjector_mul_obliqueProjector_sq_of_hasLaw_gaussianMatrix A hX hΨ
+    hXΨ hkl hlp, ← integral_add hf hg]
+  exact integral_congr_ae (ae_of_all _ hpt)
 
 /-- **The expected error of the oracle truncation**: for
 independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
