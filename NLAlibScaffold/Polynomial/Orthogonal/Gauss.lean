@@ -52,38 +52,6 @@ theorem ae_mem_interpolatoryQuadrature (μ : Measure ℝ) (s : Finset ℝ) :
   rw [ae_finsetSum_measure_iff]
   exact fun x hx => Measure.ae_smul_measure (by simpa using hx) _
 
-/-- **The Gauss rule as a sum of point masses**: for every measure $\mu$ on $\mathbb{R}$, every
-$k$ and every $f : \mathbb{R} \to \mathbb{R}$,
-$$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
-with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
-hypothesis: the rule is a finite sum of Dirac masses.
-Proof: S, about 15 lines. `ae_mem_interpolatoryQuadrature` and `Measure.ae_mem_finset_iff` (any
-finite measure carried by a finset), then `integral_finsetSum_measure`, `integral_smul_measure`,
-`integral_dirac`; or `setIntegral_finset` with `Measure.restrict_eq_self_of_ae_mem`. -/
-theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
-    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
-  have hq : gaussQuadrature μ k = ∑ y ∈ gaussNodes μ k,
-      ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id y).eval t ∂μ) • Measure.dirac y :=
-    rfl
-  have hmass : ∀ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} =
-      (ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ)).toReal := by
-    intro x hx
-    rw [hq, measureReal_def, Measure.finsetSum_apply]
-    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply]
-    rw [Finset.sum_eq_single_of_mem x hx]
-    · simp
-    · intro y _ hy
-      simp [Set.indicator_of_notMem, hy]
-  have hint : ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k,
-      (ENNReal.ofReal (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ)).toReal * f x := by
-    rw [hq, integral_finsetSum_measure]
-    · refine Finset.sum_congr rfl fun y _ => ?_
-      rw [integral_smul_measure, integral_dirac, smul_eq_mul]
-    · intro y _
-      exact (integrable_dirac (by simp)).smul_measure ENNReal.ofReal_ne_top
-  rw [hint]
-  exact Finset.sum_congr rfl fun x hx => by rw [hmass x hx]
-
 /-- Every real function is integrable against the Gauss rule: for every measure $\mu$ on
 $\mathbb{R}$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$, $f$ is integrable against
 `gaussQuadrature μ k`, a finite sum of Dirac masses.
@@ -96,6 +64,21 @@ theorem integrable_gaussQuadrature (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ
   unfold gaussQuadrature interpolatoryQuadrature
   exact integrable_finsetSum_measure.mpr fun x _ =>
     (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top
+
+/-- **The Gauss rule as a sum of point masses**: for every measure $\mu$ on $\mathbb{R}$, every
+$k$ and every $f : \mathbb{R} \to \mathbb{R}$,
+$$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
+with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
+hypothesis: the rule is a finite sum of Dirac masses.
+Proof: S, about 15 lines. `ae_mem_interpolatoryQuadrature` and `Measure.ae_mem_finset_iff` (any
+finite measure carried by a finset), then `integral_finsetSum_measure`, `integral_smul_measure`,
+`integral_dirac`; or `setIntegral_finset` with `Measure.restrict_eq_self_of_ae_mem`. -/
+theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
+    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
+  conv_lhs => rw [← Measure.restrict_eq_self_of_ae_mem (μ := gaussQuadrature μ k)
+    (s := gaussNodes μ k) (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k))]
+  rw [setIntegral_finset _ (integrable_gaussQuadrature μ k f).integrableOn]
+  simp only [smul_eq_mul]
 
 /-! ### Finite measures with compact support -/
 
@@ -198,29 +181,16 @@ Proof: M, about 30 lines. The mass at $x$ of the Dirac sum (`Measure.coe_finsetS
 theorem IsMomentPosDef.gaussQuadrature_real_singleton_pos {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x : ℝ} (hx : x ∈ gaussNodes μ k) :
     0 < (gaussQuadrature μ k).real {x} := by
+  -- the mass at $x$ is the weight $\int\ell_x\,d\mu$: integrate the indicator of $\{x\}$
+  have hmass := (integral_gaussQuadrature_eq_sum μ k fun t => if t = x then (1 : ℝ) else 0).symm
+    |>.trans (integral_gaussQuadrature hμ k _)
+  simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', hx, if_true] at hmass
   have hG : (gaussNodes μ k).card = k := h.card_gaussNodes hμ
-  have hs := isOrthogonalPolynomial_nodal_gaussNodes hμ k
-  have hpos : 0 < ∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ := by
-    rw [hs.integral_eval_basis_eq_integral_sq hμ hx]
-    refine h _ (Lagrange.basis_ne_zero (Set.injOn_id _) hx) ?_
-    have hk : 0 < k := by
-      rw [← hG]
-      exact Finset.card_pos.mpr ⟨x, hx⟩
-    rw [Lagrange.degree_basis (Set.injOn_id _) hx, hG]
-    exact_mod_cast Nat.sub_lt hk one_pos
-  have hmass : (gaussQuadrature μ k).real {x} =
-      ∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ := by
-    unfold gaussQuadrature interpolatoryQuadrature
-    simp only [measureReal_def, Measure.coe_finsetSum, Finset.sum_apply]
-    rw [Finset.sum_eq_single x]
-    · rw [Measure.smul_apply, Measure.dirac_apply_of_mem (Set.mem_singleton x), smul_eq_mul,
-        mul_one, ENNReal.toReal_ofReal hpos.le]
-    · intro i _ hi
-      simp [Measure.smul_apply, Measure.dirac_apply', Ne.symm hi]
-    · intro hx'
-      exact absurd hx hx'
-  rw [hmass]
-  exact hpos
+  rw [hmass,
+    (isOrthogonalPolynomial_nodal_gaussNodes hμ k).integral_eval_basis_eq_integral_sq hμ hx]
+  refine h _ (Lagrange.basis_ne_zero (Set.injOn_id _) hx) ?_
+  rw [Lagrange.degree_basis (Set.injOn_id _) hx, hG]
+  exact_mod_cast Nat.sub_lt (hG ▸ Finset.card_pos.mpr ⟨x, hx⟩) one_pos
 
 /-- **Uniqueness of the Gauss rule**: if a finite measure $\nu$ carried by a set of at most $k$
 points matches the first $2k$ moments of a finite measure $\mu$ supported in $[a, b]$, then $\nu$
@@ -267,25 +237,13 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn
     (matchesMoments_gaussQuadrature hμ k) hμ (ae_mem_Icc_gaussQuadrature hμ k) hf
     (integrable_gaussQuadrature μ k f) hp hε
   rcases Nat.eq_zero_or_pos k with rfl | hk
-  · have hnu : gaussQuadrature μ 0 = 0 := by
-      simp [gaussQuadrature, gaussNodes, orthogonalPolynomial_zero, interpolatoryQuadrature]
-    rw [hnu] at h ⊢
-    simp only [integral_zero_measure, Measure.real, Measure.coe_zero, Pi.zero_apply,
-      ENNReal.toReal_zero, add_zero, sub_zero] at h ⊢
-    rcases le_or_gt 0 ε with hε0 | hε0
-    · have : 0 ≤ ε * (μ Set.univ).toReal := mul_nonneg hε0 ENNReal.toReal_nonneg
-      linarith
-    · have hempty : Set.Icc a b = ∅ := by
-        by_contra hne
-        obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.mpr hne
-        have h1 : dist (eval x p) (f x) ≤ ε := hε x hx
-        have h0 := dist_nonneg (x := eval x p) (y := f x)
-        linarith
-      have hμ0 : μ Set.univ = 0 := by
-        have := ae_iff.mp hμ
-        simpa [hempty] using this
-      simp only [hμ0, ENNReal.toReal_zero, mul_zero, zero_mul] at h ⊢
-      linarith
+  · -- at $k = 0$ the rule is $0$, and the bound $\mu(\mathbb{R})\varepsilon$ is nonnegative
+    have hnu : (gaussQuadrature μ 0).real Set.univ = 0 := by
+      simp only [gaussQuadrature, interpolatoryQuadrature, gaussNodes, orthogonalPolynomial_zero,
+        roots_one, Multiset.empty_eq_zero, Multiset.toFinset_zero, Finset.sum_empty,
+        measureReal_zero, Pi.zero_apply]
+    rw [hnu, add_zero] at h
+    linarith [abs_nonneg (∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ 0)]
   · rw [gaussQuadrature_real_univ hμ hk] at h
     linarith
 
