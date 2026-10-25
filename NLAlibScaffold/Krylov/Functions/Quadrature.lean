@@ -107,26 +107,20 @@ theorem spectralMeasure_radauJacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ
       (lt_of_lt_of_le hp (by exact_mod_cast (by omega : 2 * k + 1 ≤ 2 * (k + 1))))
   have hfin := (radauJacobiMatrix μ c k).finite_real_spectrum
   have hspec : c ∈ spectrum ℝ (radauJacobiMatrix μ c k) := h.mem_spectrum_radauJacobiMatrix hμ hc
-  have hsub : hfin.toFinset ⊆ Finset.univ.image hJh.eigenvalues := by
-    intro x hx
-    rw [Set.Finite.mem_toFinset, hJh.spectrum_real_eq_range_eigenvalues] at hx
-    obtain ⟨i, rfl⟩ := hx
-    simp
-  have htot : hfin.toFinset.card ≤ k + 1 :=
-    ((Finset.card_le_card hsub).trans Finset.card_image_le).trans (by simp)
+  have hcmem : c ∈ hfin.toFinset := hfin.mem_toFinset.2 hspec
   have hcard : (hfin.toFinset.erase c).card ≤ k := by
-    rw [Finset.card_erase_of_mem ((Set.Finite.mem_toFinset hfin).2 hspec)]
+    have htot : hfin.toFinset.card ≤ k + 1 := by
+      refine (Finset.card_le_card (t := Finset.univ.image hJh.eigenvalues) fun x hx => ?_).trans
+        (Finset.card_image_le.trans (by simp))
+      obtain ⟨i, rfl⟩ := hJh.spectrum_real_eq_range_eigenvalues ▸ hfin.mem_toFinset.1 hx
+      simp
+    rw [Finset.card_erase_of_mem hcmem]
     omega
   have hsupp : ∀ᵐ x ∂spectralMeasure (radauJacobiMatrix μ c k)
       ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1), x ∈ insert c (hfin.toFinset.erase c) := by
-    refine ae_iff.2 (measure_mono_null (fun x hx => ?_)
+    rw [Finset.insert_erase hcmem]
+    exact ae_iff.2 (measure_mono_null (fun x hx hxs => hx (hfin.mem_toFinset.2 hxs))
       (spectralMeasure_compl_spectrum_eq_zero _ _))
-    intro hxs
-    apply hx
-    by_cases hxc : x = c
-    · exact Finset.mem_insert.2 (Or.inl hxc)
-    · exact Finset.mem_insert_of_mem
-        (Finset.mem_erase.2 ⟨hxc, (Set.Finite.mem_toFinset hfin).2 hxs⟩)
   exact MatchesMoments.eq_radauQuadrature hmom hμ hc hsupp hcard
 
 /-- **The Radau quadrature of a quadratic form from the modified tridiagonal**: for Hermitian
