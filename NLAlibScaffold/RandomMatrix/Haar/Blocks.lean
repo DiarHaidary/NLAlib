@@ -21,6 +21,8 @@ $\mathbf{R} = \mathbf{I}$, an equality) becomes a lower bound. It joins
 ## Main results
 
 * `NLAlib.mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame`
+* `NLAlib.integrable_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame`: its integrand is
+  integrable.
 -/
 
 @[expose] public section
@@ -190,6 +192,26 @@ private theorem integrable_conj_weightedFactor_gram_of_hasLaw_haarFrame [Decidab
         exact mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _)
     _ ≤ 1 * (C * frobNorm (pinv (V₁ᴴ * Q ω)) ^ 2) * 1 := by gcongr
     _ = _ := by ring
+
+/-- The weighted Haar block of the weighted sketching inequality is square integrable: for an
+$m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$, orthonormal $\mathbf{V}_1$,
+$\mathbf{V}_2$, $r + 2 \le p$ and invertible $\mathbf{R}$, the function
+$\|(\mathbf{R}^{\mathsf{H}}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}
+\mathbf{R}^{\mathsf{H}}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}\|_{\mathsf{F}}^2$ is
+integrable. -/
+theorem integrable_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame [DecidableEq p]
+    [DecidableEq r] [DecidableEq s] (hQ : HasLaw Q (haarFrame m p) μ)
+    (hpm : Fintype.card p ≤ Fintype.card m) {V₁ : Matrix m r ℝ} {V₂ : Matrix m s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (hrp : Fintype.card r + 2 ≤ Fintype.card p) (B : Matrix s a ℝ) {R : Matrix p p ℝ}
+    (hR : IsUnit R) :
+    Integrable (fun ω => frobNorm (pinv (Rᴴ * ((Q ω)ᴴ * V₁)) * (Rᴴ * ((Q ω)ᴴ * V₂)) * B) ^ 2)
+      μ := by
+  open scoped Matrix.Norms.L2Operator in
+  have hZ := (integrable_conj_weightedFactor_gram_of_hasLaw_haarFrame hQ hpm hV₁ hV₂ hrp
+    hR).mul_const (B * Bᴴ)
+  simp only [frobNorm_pinv_conjTranspose_mul_mul_sq_eq_trace, Matrix.trace, Matrix.diag]
+  exact integrable_finsetSum _ fun i _ => Matrix.integrable_iff.mp hZ i i
 
 /-- **A weight does not help a random orthonormal sketch** (Epperly and Webber's
 Proposition 5.7): for an $m \times p$ Haar frame $\mathbf{Q}$ with $p \le m$, orthonormal
