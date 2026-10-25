@@ -870,6 +870,14 @@ Proof: S, about 8 lines. `HasSubgaussianMGF.id_map_iff` on both sides, `Measure.
 theorem hasSubgaussianMGF_sub_div_of_hasLaw_betaMeasure {X : Ω → ℝ} {α β : ℝ}
     (hα : 0 < α) (hβ : 0 < β) (hX : HasLaw X (betaMeasure α β) μ) :
     HasSubgaussianMGF (fun ω => X ω - α / (α + β)) ‖1 / (4 * (α + β + 1))‖₊ μ := by
-  sorry
+  have hmeas : Measurable (fun x : ℝ => x - α / (α + β)) := measurable_id.sub_const _
+  have h := hasSubgaussianMGF_sub_div_betaMeasure hα hβ
+  rw [← HasSubgaussianMGF.id_map_iff hmeas.aemeasurable] at h
+  rw [← HasSubgaussianMGF.id_map_iff (hX.aemeasurable.sub_const _)]
+  have hmap : μ.map (fun ω => X ω - α / (α + β)) =
+      (μ.map X).map (fun x : ℝ => x - α / (α + β)) :=
+    (AEMeasurable.map_map_of_aemeasurable (hmeas.aemeasurable (μ := μ.map X)) hX.aemeasurable).symm
+  rw [hmap, hX.map_eq]
+  exact h
 
 end ProbabilityTheory
