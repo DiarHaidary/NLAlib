@@ -115,7 +115,68 @@ $k - 1 < k$. At $k = 0$ there are no Gauss nodes. -/
 theorem IsMomentPosDef.notMem_gaussNodes_radauMeasure {k : ℕ}
     (h : IsMomentPosDef (radauMeasure μ c) k) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hc : c = a ∨ c = b) : c ∉ gaussNodes (radauMeasure μ c) k := by
-  sorry
+  have := isFiniteMeasure_radauMeasure hμ c
+  have hμc := ae_mem_Icc_radauMeasure hμ c
+  intro hmem
+  have hroot : (orthogonalPolynomial (radauMeasure μ c) k).IsRoot c := by
+    unfold gaussNodes at hmem
+    rwa [Multiset.mem_toFinset,
+      mem_roots (monic_orthogonalPolynomial _ k).ne_zero] at hmem
+  have hπg := (mul_divByMonic_eq_iff_isRoot.mpr hroot).symm
+  set π := orthogonalPolynomial (radauMeasure μ c) k with hπdef
+  set g := π /ₘ (X - C c) with hgdef
+  have hg0 : g ≠ 0 := fun h0 =>
+    (monic_orthogonalPolynomial (radauMeasure μ c) k).ne_zero (by rw [← hπdef, hπg, h0, mul_zero])
+  have hgk : g.natDegree < k := by
+    have hdeg := natDegree_mul (X_sub_C_ne_zero c) hg0
+    rw [← hπg, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
+    omega
+  have hgdeg : g.degree < k := degree_le_natDegree.trans_lt (by exact_mod_cast hgk)
+  have hev : ∀ x, π.eval x = (x - c) * g.eval x := fun x => by rw [hπg]; simp
+  have h1 : ∫ x, |x - c| * (π.eval x * g.eval x) ∂μ = 0 :=
+    (integral_radauMeasure μ c (fun x => π.eval x * g.eval x)).symm.trans
+      (isOrthogonalPolynomial_orthogonalPolynomial hμc k g hgdeg)
+  simp only [hev, mul_assoc] at h1
+  have hG_int : Integrable (fun x => |x - c| * ((x - c) * (g.eval x * g.eval x))) μ := by
+    have hcont : Continuous fun x => |x - c| * ((x - c) * (g.eval x * g.eval x)) := by fun_prop
+    obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hcont.continuousOn
+    exact Integrable.of_bound hcont.aestronglyMeasurable C
+      (by filter_upwards [hμ] with x hx using hC x hx)
+  have hzero : ∀ᵐ x ∂μ, |x - c| * ((x - c) * (g.eval x * g.eval x)) = 0 := by
+    rcases hc with hc | hc
+    · refine (integral_eq_zero_iff_of_nonneg_ae ?_ hG_int).mp h1
+      filter_upwards [hμ] with x hx
+      have hx' : 0 ≤ x - c := by linarith [hx.1]
+      exact mul_nonneg (abs_nonneg _) (mul_nonneg hx' (mul_self_nonneg _))
+    · have hneg : ∫ x, -(|x - c| * ((x - c) * (g.eval x * g.eval x))) ∂μ = 0 := by
+        rw [integral_neg, h1, neg_zero]
+      have hnn := (integral_eq_zero_iff_of_nonneg_ae (f := fun x => -(|x - c| * ((x - c) * (g.eval x * g.eval x)))) ?_ hG_int.neg).mp hneg
+      · filter_upwards [hnn] with x hx
+        exact neg_eq_zero.mp hx
+      · filter_upwards [hμ] with x hx
+        have hx' : x - c ≤ 0 := by linarith [hx.2]
+        show (0 : ℝ) ≤ -(|x - c| * ((x - c) * (g.eval x * g.eval x)))
+        have : 0 ≤ |x - c| * ((c - x) * (g.eval x * g.eval x)) :=
+          mul_nonneg (abs_nonneg _) (mul_nonneg (by linarith) (mul_self_nonneg _))
+        have e : -(|x - c| * ((x - c) * (g.eval x * g.eval x))) =
+            |x - c| * ((c - x) * (g.eval x * g.eval x)) := by ring
+        rw [e]
+        exact this
+  have hsq : ∫ x, g.eval x ^ 2 ∂radauMeasure μ c = 0 := by
+    calc ∫ x, g.eval x ^ 2 ∂radauMeasure μ c
+        = ∫ x, |x - c| * g.eval x ^ 2 ∂μ := integral_radauMeasure μ c (fun x => g.eval x ^ 2)
+      _ = ∫ _x, (0 : ℝ) ∂μ := by
+          refine integral_congr_ae ?_
+          filter_upwards [hzero] with x hx
+          rcases mul_eq_zero.mp hx with h2 | h2
+          · rw [h2, zero_mul]
+          · rcases mul_eq_zero.mp h2 with h3 | h3
+            · rw [h3, abs_zero, zero_mul]
+            · rw [sq, h3, mul_zero]
+      _ = 0 := integral_zero _ _
+  have hpos := h g hg0 hgdeg
+  rw [hsq] at hpos
+  exact lt_irrefl _ hpos
 
 /-- The number of Radau nodes: if $\mu$, finite and supported in $[a, b]$, has a Radau modified
 measure at $c \in \{a, b\}$ positive definite up to degree $k$, then the Radau rule has
