@@ -52,7 +52,32 @@ theorem _root_.Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_continuousOn
     ‖(cfc f A).trace - slq A f Ω (q + 1)‖ ≤
       ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
         2 * minimaxError f (Set.Icc a a') (2 * q + 1) * frobNorm Ω ^ 2 / Fintype.card m := by
-  sorry
+  have hdeg : ∀ p : ℝ[X], p.degree ≤ ↑(2 * q + 1) → p.degree < ↑(2 * (q + 1)) := fun p hp =>
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * q + 1 < 2 * (q + 1)))
+  set E := minimaxError f (Set.Icc a a') (2 * q + 1)
+  rcases (Set.Icc a a').eq_empty_or_nonempty with he | hne
+  · exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (f := f) (p := 0)
+      (hdeg 0 (by simp)) (ε := E) (by rw [he]; intro x hx; exact hx.elim) Ω
+  -- `f` is bounded on the compact interval, so the set defining `E` is nonempty
+  obtain ⟨C, hC⟩ := (isCompact_Icc.image_of_continuousOn hf).isBounded.subset_closedBall 0
+  have hSne : C ∈ {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ ↑(2 * q + 1) ∧
+      Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a a') ε} := by
+    refine ⟨0, by simp, fun x hx => ?_⟩
+    have := hC (Set.mem_image_of_mem f hx)
+    rw [Metric.mem_closedBall] at this
+    simpa [dist_comm] using this
+  -- the bound with `E + δ` for every `δ > 0`
+  have key : ∀ δ > 0, ‖(cfc f A).trace - slq A f Ω (q + 1)‖ ≤
+      ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
+        2 * (E + δ) * frobNorm Ω ^ 2 / Fintype.card m := by
+    intro δ hδ
+    obtain ⟨ε, ⟨p, hp, hpε⟩, hlt⟩ := exists_lt_of_csInf_lt ⟨C, hSne⟩ (lt_add_of_pos_right E hδ)
+    exact_mod_cast hA.norm_trace_cfc_sub_slq_le_of_isUniformApproxOn hs (hdeg p hp)
+      (hpε.mono_error hlt.le) Ω
+  have hc : Continuous fun δ : ℝ => ‖(cfc f A).trace - girardHutchinson (cfc f A) Ω‖ +
+      2 * (E + δ) * frobNorm Ω ^ 2 / Fintype.card m := by fun_prop
+  refine ge_of_tendsto (x := nhdsWithin 0 (Set.Ioi 0)) ?_ (eventually_nhdsWithin_of_forall key)
+  simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
 
 /-- **The tail of stochastic Lanczos quadrature and the minimax error.** Let the entries of the
 real $n \times m$ test matrix $\mathbf{\Omega}$ be independent, each satisfying the sub-Gaussian
