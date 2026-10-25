@@ -20,8 +20,8 @@ the truncated SVD against a rotated competitor frame) bounds $T$ from below by t
 $\mathbf{\Omega}$. Deterministic.
 
 This is the linear-algebra step of the general-$k$ lower bound; the Gaussian concentration and the
-expectation bound are in `NLAlibScaffold.LowRank.Optimality.EarlyTruncationBlockGaussian`, the
-$k = 1$ instance in `NLAlibScaffold.LowRank.Optimality.EarlyTruncation`. New (research note
+expectation bound are in `NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian`, the
+$k = 1$ instance in `NLAlib.LowerBounds.LowRank.EarlyTruncation`. New (research note
 `reports/OP1-EarlyTruncatedRSVD.md` of the NLAlib workflow, 2026-10-25). Design:
 `docs/design/LowRank-EstimatorLowerBounds.md` §3.1. Real throughout.
 
@@ -342,7 +342,7 @@ private theorem sin_mul_cos_mul_nuclearNorm_sub_le_of_frobNorm_sq_le {k : ℕ} {
     linear_combination frobNorm Ω.toRows₁ ^ 2 * Real.cos_sq_add_sin_sq θ
   linarith [hKF, hup, hca]
 
-/-- **The tail content of the sketch's dominant frame controls the error**, deterministic: for
+/-- The tail content of the sketch's dominant frame controls the error, deterministic: for
 $\mathbf{A} = \operatorname{diag}(\mathbf{I}_k, s\mathbf{I}_k)$ with $0 \le s \le 1$, any
 $\mathbf{\Omega} = [\mathbf{\Omega}_1; \mathbf{\Omega}_2] \in \mathbb{R}^{2k \times \ell}$ with
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \ge k$, $\mathbf{P}$ the range projector of
@@ -355,28 +355,7 @@ $$\begin{aligned}
 \sin^2\theta\,\bigl(\|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 -
 s^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2\bigr)\,.
 \end{aligned}$$
-No printed source. New (research note OP1, §4 steps 1–3).
-Proof: M, about 90 lines (split the two conjuncts). Write
-$\mathbf{P} = \mathbf{U}\mathbf{U}^{\mathsf{T}}$
-with $\mathbf{U} = [\mathbf{U}_h; \mathbf{U}_t]$ an orthonormal $k$-frame
-(`rangeProjector_truncatedSVD_mul`, rank exactly $k$), so $T = \|\mathbf{U}_t\|_{\mathsf{F}}^2$ and
-$\|\mathbf{U}_h\|_{\mathsf{F}}^2 = k - T$. (1) Error:
-$\|\mathbf{A}\|_{\mathsf{F}}^2 - \operatorname{tr}(\mathbf{P}\mathbf{A}^2) =
-k + ks^2 - (k - T) - s^2T$.
-(2) Upper bound on $f(\mathbf{U}) = \|\mathbf{U}^{\mathsf{T}}\mathbf{Y}\|_{\mathsf{F}}^2$,
-$\mathbf{Y} = \mathbf{A}\mathbf{\Omega}$, with
-$\mathbf{W}_{ij} = \mathbf{\Omega}_i\mathbf{\Omega}_j^{\mathsf{T}}$:
-$f(\mathbf{U}) \le \operatorname{tr}\mathbf{W}_{11} - \lambda_{\min}(\mathbf{W}_{11})T +
-2s\|\mathbf{W}_{12}\|_2\sqrt{kT} + s^2\lambda_{\max}(\mathbf{W}_{22})T$ (Loewner
-$\mathbf{I} - \mathbf{U}_h\mathbf{U}_h^{\mathsf{T}} \succeq \mathbf{0}$, Cauchy–Schwarz
-`frobInner_le`-type bound, `specNorm` of a product). (3) Competitor
-$\mathbf{V} = [\cos\theta\,\mathbf{I}; \sin\theta\,\mathbf{R}]$, $\mathbf{R}$ the orthogonal polar
-factor with $\operatorname{tr}(\mathbf{W}_{12}\mathbf{R}) = \|\mathbf{W}_{12}\|_*$
-(`exists_rank_le_specNorm_le_one_frobInner_eq_kyFanNorm` at full rank, or the polar factor);
-$f(\mathbf{U}) \ge f(\mathbf{V})$ is Ky Fan maximality of the truncated SVD (Eckart–Young on
-$\mathbf{Y}$ via `rangeProjector_truncatedSVD_mul`). Subtract. $\lambda_{\max}(\mathbf{W}_{22}) =
-\|\mathbf{\Omega}_2\|_2^2$,
-$\lambda_{\min}(\mathbf{W}_{11}) = \sigma_{k-1}(\mathbf{\Omega}_1)^2$. -/
+No printed source. New (research note OP1, §4 steps 1–3). -/
 theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : ℕ} {s : ℝ}
     (hs0 : 0 ≤ s) (hs1 : s ≤ 1) {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ}
     (hA : A = Matrix.fromBlocks 1 0 0 (s • 1)) {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}

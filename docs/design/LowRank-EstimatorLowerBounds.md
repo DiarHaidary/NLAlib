@@ -342,6 +342,15 @@ $O(k/\varepsilon)$ upper bound for it or for any sketch-only estimator.
 
 ## 6. Files and placement
 
+**At the move (clean-up, 2026-10-25; maintainer decision LOWERBOUNDS-FOLDER (a)).** Lower bounds
+live in the top layer `NLAlib/LowerBounds/` with topic subfolders. So the three new
+`LowRank/Optimality` files below became `NLAlib/LowerBounds/LowRank/{EarlyTruncation*,
+TruncatedGeneralizedNystrom, RotationInvariant}.lean` (EarlyTruncation split into the $k = 1$
+file and the general-$k$ file(s)), W6 joined `LowerBounds/LowRank/RotationInvariant.lean` (its only
+consumers are W7–W10), and W3–W5 became `NLAlib/LowerBounds/Regression/SketchAndSolve.lean`. The
+tools stay in their topic files as planned: X1, X2, T1–T3, G1–G3, W1, W2, and PZ1 in ForMathlib.
+The table below is the plan as approved.
+
 New files (topic: optimality of a named estimator):
 
 * `NLAlib/LowRank/Optimality/EarlyTruncation.lean`: E1–E8.

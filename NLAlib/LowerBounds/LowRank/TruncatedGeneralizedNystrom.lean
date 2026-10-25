@@ -5,8 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.LowRank.Gaussian.TruncatedGeneralizedNystrom
-public import NLAlibScaffold.LowRank.Structural.Truncation
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
 
 /-!
 # Truncated generalized Nyström: a lower bound on Epperly and Webber's instance
@@ -31,7 +30,7 @@ Nyström lives. Whether $p = O(k/\varepsilon)$ suffices for every $\mathbf{A}$ i
 New (research note `reports/OP2-TruncatedGN.md` of the NLAlib workflow, §3, L1; the
 finite-gap argument through
 `NLAlib.le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq` is this design's). Design:
-`docs/design/LowRank-EstimatorLowerBounds.md` §3.2. Real. Proofs deferred.
+`docs/design/LowRank-EstimatorLowerBounds.md` §3.2. Real.
 
 ## Main results
 
@@ -242,38 +241,6 @@ private theorem le_frobNorm_sub_truncatedSVD_generalizedNystrom_blk_sq {a : ℝ}
     rw [← pow_mul] at hdiv
     linarith
 
-/-- Complementary orthonormal frames of $\operatorname{range}\mathbf{X}$ and of its orthogonal
-complement; the second reproduces every residual
-$(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
-private theorem exists_compl_frames' {m c d : Type*} [Fintype m] [DecidableEq m] [Fintype c]
-    (Y : Matrix m c ℝ) (B : Matrix m d ℝ) :
-    ∃ (Q₁ : Matrix m (Fin Y.rank) ℝ) (Q₂ : Matrix m (Fin (Fintype.card m - Y.rank)) ℝ),
-      HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
-        LinearMap.range Q₁.mulVecLin = LinearMap.range Y.mulVecLin ∧
-          Q₂ * (Q₂ᴴ * ((1 - rangeProjector Y) * B)) = (1 - rangeProjector Y) * B := by
-  obtain ⟨Q₁, Q₂, hQ, h₁, h₂⟩ :=
-    (isStarProjection_rangeProjector Y).exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
-      (p := Fin Y.rank) (q := Fin (Fintype.card m - Y.rank))
-      (by rw [rank_rangeProjector, Fintype.card_fin])
-      (by have := Matrix.rank_le_card_height Y; simp only [Fintype.card_fin]; omega)
-  obtain ⟨hQ₁, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
-  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, rangeProjector_inj.mp (hQ₁.rangeProjector_eq.trans h₁), ?_⟩
-  rw [← Matrix.mul_assoc, h₂, ← Matrix.mul_assoc,
-    (isStarProjection_one_sub_rangeProjector Y).mul_self]
-
-/-- On the rank event the core noise is a Gaussian block in the two frames. -/
-private theorem obliqueProjector_mul_eq_frames' {m c d e : Type*} [Fintype m] [DecidableEq m]
-    [Fintype c] [Fintype e] {Y : Matrix m c ℝ} {B : Matrix m d ℝ} {k : ℕ}
-    {Q₁ : Matrix m (Fin Y.rank) ℝ} {Q₂ : Matrix m (Fin k) ℝ}
-    (hR₁ : LinearMap.range Q₁.mulVecLin = LinearMap.range Y.mulVecLin)
-    (hE : Q₂ * (Q₂ᴴ * ((1 - rangeProjector Y) * B)) = (1 - rangeProjector Y) * B)
-    {S₀ : Matrix e m ℝ} (h : (S₀ * Y).rank = Y.rank) :
-    obliqueProjector Y S₀ * ((1 - rangeProjector Y) * B) =
-      Q₁ * (pinv (S₀ * Q₁) * (S₀ * Q₂) * (Q₂ᴴ * ((1 - rangeProjector Y) * B))) := by
-  rw [obliqueProjector_eq_of_range_eq h hR₁.symm, obliqueProjector]
-  conv_lhs => rw [← hE]
-  simp only [Matrix.mul_assoc]
-
 /-- The two frame blocks of a standard Gaussian matrix are independent standard Gaussian. -/
 private theorem map_conjTranspose_mul_prod {m r r' : Type*} [Fintype m] [Fintype r]
     [Fintype r'] [DecidableEq r] [DecidableEq r'] {Q₁ : Matrix m r ℝ} {Q₂ : Matrix m r' ℝ}
@@ -376,19 +343,6 @@ private theorem tendsto_hfun {d r : ℕ} (hr : r + 2 ≤ Fintype.card p) (u : �
     (f := fun _ => (0 : ℝ))
   simpa only [hfun, integral_zero] using h
 
-/-- The core noise is measurable in the pair of test matrices. -/
-private theorem measurable_obliqueProjector_mul_sub_rsvd {m : Type*} [Fintype m]
-    (A : Matrix m m ℝ) :
-    Measurable fun q : Matrix m l ℝ × Matrix m p ℝ =>
-      obliqueProjector (A * q.1) q.2ᴴ * (A - rsvd A q.1) := by
-  have hΨ : Measurable fun q : Matrix m l ℝ × Matrix m p ℝ => q.2ᴴ :=
-    (continuous_id.matrix_conjTranspose.measurable).comp measurable_snd
-  have hAX : Measurable fun q : Matrix m l ℝ × Matrix m p ℝ => A * q.1 :=
-    measurable_const.matrix_mul measurable_fst
-  simp only [obliqueProjector]
-  exact ((hAX.matrix_mul (measurable_pinv.comp (hΨ.matrix_mul hAX))).matrix_mul hΨ).matrix_mul
-    (measurable_const.sub ((measurable_rsvd A).comp measurable_fst))
-
 /-- The full-row-rank event of the head block of a Gaussian range test matrix. -/
 private theorem ae_rank_head_eq (hX : HasLaw X (gaussianMatrix (s ⊕ t) l) μ)
     (hsl : Fintype.card s ≤ Fintype.card l) :
@@ -470,7 +424,8 @@ private theorem integral_min_noise_le (a : ℝ) {c : ℝ} (hc : 0 ≤ c) {x : Ma
     ∫ ψ, min (noise a x ψ) (c * noise a x ψ ^ 2) ∂(gaussianMatrix (s ⊕ t) p) ≤
       hfun p (Fintype.card (s ⊕ t)) (blk a * x).rank c (env x) := by
   obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ :=
-    exists_compl_frames' (blk (s := s) (t := t) a * x) (blk (s := s) (t := t) a)
+    exists_hasOrthonormalCols_frames_range_compl (blk (s := s) (t := t) a * x)
+      (blk (s := s) (t := t) a)
   have hr : (blk (s := s) (t := t) a * x).rank + 2 ≤ Fintype.card p := by
     have := Matrix.rank_le_card_width (blk (s := s) (t := t) a * x)
     omega
@@ -491,8 +446,8 @@ private theorem integral_min_noise_le (a : ℝ) {c : ℝ} (hc : 0 ≤ c) {x : Ma
       (pinv (ψᴴ * Q₁) * (ψᴴ * Q₂))
       (Q₂ᴴ * (((1 : Matrix (s ⊕ t) (s ⊕ t) ℝ) - rangeProjector (blk a * x)) * blk a))) 2
     rw [h3, mul_pow] at h2
-    rw [noise, sub_rsvd, obliqueProjector_mul_eq_frames' hR₁ hE hψ, hQ₁.frobNorm_mul_left,
-      blockSq_conjTranspose_mul]
+    rw [noise, sub_rsvd, obliqueProjector_mul_one_sub_rangeProjector_mul_eq hR₁ hE hψ,
+      hQ₁.frobNorm_mul_left, blockSq_conjTranspose_mul]
     exact h2.trans (mul_le_mul_of_nonneg_left (hEnv.trans (le_max_left _ _)) (sq_nonneg _))
   have hg : Integrable (fun ψ => min (blockSq (Q₁ᴴ * ψ, Q₂ᴴ * ψ) * max (env x) 0)
       (c * (blockSq (Q₁ᴴ * ψ, Q₂ᴴ * ψ) * max (env x) 0) ^ 2)) (gaussianMatrix (s ⊕ t) p) := by
@@ -750,44 +705,6 @@ $a \ge 1$. For $n \le \ell$ the bound is below the optimum and trivially true. F
 `truncatedSVD` makes.
 No printed source. New (research note OP2, §3, L1, there as a limit inferior; the instance is
 [EpperlyWebber2026, §6.5]).
-Proof: H, about 200 lines. Write $\mathbf{R}_a = \mathsf{rsvd}(\mathbf{A}_a, \mathbf{\Omega})$,
-$\mathbf{N}_a$ the core noise and $g_a = \sigma_{k-1}(\mathbf{R}_a)^2 - \sigma_k(\mathbf{R}_a)^2$.
-(1) Pointwise, under the rank event
-(`ae_rank_conjTranspose_mul_mul_eq`), the error is at least
-$\|\mathbf{A}_a - \llbracket\mathbf{R}_a\rrbracket_k\|_{\mathsf{F}}^2 +
-\|\mathbf{P}\mathbf{N}_a\|_{\mathsf{F}}^2 - \min(\|\mathbf{P}\mathbf{N}_a\|_{\mathsf{F}}^2,
-\|\mathbf{N}_a\|_{\mathsf{F}}^4/g_a)$ (`le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq` when
-$g_a > 0$, and
-`frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq` always).
-(2) Integrate: $\mathbb{E}\|\mathbf{A}_a - \llbracket\mathbf{R}_a\rrbracket_k\|_{\mathsf{F}}^2 \ge
-\lvert t\rvert$ (Eckart–Young); $\mathbb{E}\|\mathbf{P}\mathbf{N}_a\|_{\mathsf{F}}^2 =
-\tfrac{k}{p-\ell-1}\mathbb{E}\|\mathbf{A}_a - \mathbf{R}_a\|_{\mathsf{F}}^2$
-(`integral_frobNorm_rangeProjector_mul_obliqueProjector_sq_of_hasLaw_gaussianMatrix`)
-and $\|\mathbf{A}_a - \mathbf{R}_a\|_{\mathsf{F}}^2 \ge n - \ell$ (rank of $\mathbf{R}_a$ at most
-$\ell$, `frobNorm_sub_truncatedSVD_sq`). (3) The defect tends to $0$: with
-$\mathbf{\Omega} = [\mathbf{\Omega}_1; \mathbf{\Omega}_2]$, HMT's deterministic bound
-(`HasOrthonormalCols.frobNorm_sub_rsvd_sq_le` with the head frame) gives
-$\|\mathbf{A}_a - \mathbf{R}_a\|_{\mathsf{F}}^2 \le D^2 := \lvert t\rvert +
-\|\mathbf{\Omega}_2\mathbf{\Omega}_1^{+}\|_{\mathsf{F}}^2$, independent of $a$, with
-$\mathbb{E}D^2 < \infty$ for $k + 2 \le \ell$
-(`integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix`-type
-inverse moments, independence of the row blocks); Weyl gives $\sigma_{k-1}(\mathbf{R}_a) \ge a - D$
-and $\sigma_k(\mathbf{R}_a) \le 1$, so $g_a \ge a^2/8$ on $\{D \le a/2\}$, $a \ge 4$. Bound the
-defect by $\|\mathbf{N}_a\|_{\mathsf{F}}^2\mathbf{1}_{D > a/2} +
-\min(\|\mathbf{N}_a\|_{\mathsf{F}}^2, 8\|\mathbf{N}_a\|_{\mathsf{F}}^4/a^2)$. Conditionally on
-$\mathbf{\Omega}$, $\mathbb{E}\|\mathbf{N}_a\|_{\mathsf{F}}^2 = \tfrac{\ell}{p-\ell-1}\|\mathbf{A}_a
--
-\mathbf{R}_a\|_{\mathsf{F}}^2 \le \tfrac{\ell}{p-\ell-1}D^2$ (the fixed-$\mathbf{\Omega}$ form of
-`integral_frobNorm_sub_generalizedNystrom_sq_of_hasLaw_gaussianMatrix` and Pythagoras), so the first
-part is at most $\tfrac{\ell}{p-\ell-1}\mathbb{E}[D^2\mathbf{1}_{D > a/2}] \to 0$ (dominated
-convergence in $\mathbf{\Omega}$ alone). For the second, conditionally on $\mathbf{\Omega}$,
-$\|\mathbf{N}_a\|_{\mathsf{F}} \le \|\mathbf{G}_1^{+}\|_2\,\|\mathbf{G}_2\|_2\,D$ with
-$(\mathbf{G}_1, \mathbf{G}_2) = (\mathbf{\Psi}^{\mathsf{T}}\mathbf{Q}_a,
-\mathbf{\Psi}^{\mathsf{T}}\mathbf{Q}_{a,\perp})$
-of a fixed product Gaussian law (rotation invariance), so its conditional mean is at most
-$h_a(D)$ with $h_a(d) = \mathbb{E}\min(Z d^2, 8Z^2d^4/a^2)$,
-$Z = \|\mathbf{G}_1^{+}\|_2^2\|\mathbf{G}_2\|_2^2$ integrable for $\ell + 2 \le p$; $h_a(d) \to 0$
-and $h_a(D) \le D^2\,\mathbb{E}Z$, dominated convergence twice.
 Result: truncated-gn-lower-bound -/
 theorem eventually_le_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq
     (hX : HasLaw X (gaussianMatrix (s ⊕ t) l) μ) (hΨ : HasLaw Ψ (gaussianMatrix (s ⊕ t) p) μ)
@@ -806,7 +723,7 @@ theorem eventually_le_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_from
   simp only [blk] at h
   linarith
 
-/-- **Relative error $1 + \varepsilon$ forces $p - \ell - 1 \ge k(n - \ell)/((n-k)\varepsilon)$**:
+/-- Relative error $1 + \varepsilon$ forces $p - \ell - 1 \ge k(n - \ell)/((n-k)\varepsilon)$:
 for independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
 $\mathbf{\Psi}$ ($n \times p$), $k + 2 \le \ell$, $\ell + 2 \le p$, if truncated generalized
 Nyström has expected error at most $(1 + \varepsilon)\|\mathbf{A}_a -
@@ -815,12 +732,7 @@ $\mathbf{A}_a = \operatorname{diag}(a\mathbf{I}_k, \mathbf{I}_{n-k})$ with $a \g
 ($k = \lvert s\rvert$, $n = \lvert s\rvert + \lvert t\rvert$), then
 $$k(n - \ell) \le \varepsilon\,(p - \ell - 1)\,\lvert t\rvert\,.$$
 For $n \gg \ell$: $p \ge \ell + 1 + k/\varepsilon$ up to the factor $(n-\ell)/(n-k)$.
-No printed source. New (research note OP2, §3, L1).
-Proof: S, about 20 lines. For every $\eta > 0$ pick $a \ge 1$ in the eventually-set of
-`eventually_le_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq`
-(`Filter.Eventually.exists_forall_of_atTop`, `eventually_ge_atTop`); so
-$k(n - \ell)/(p - \ell - 1) \le \varepsilon\lvert t\rvert + \eta$; let $\eta \to 0$
-(`le_of_forall_pos_le_add`) and clear the positive denominator. -/
+No printed source. New (research note OP2, §3, L1). -/
 theorem mul_le_of_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq_le
     (hX : HasLaw X (gaussianMatrix (s ⊕ t) l) μ) (hΨ : HasLaw Ψ (gaussianMatrix (s ⊕ t) p) μ)
     (hXΨ : IndepFun X Ψ μ) (hsl : Fintype.card s + 2 ≤ Fintype.card l)

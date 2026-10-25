@@ -7,8 +7,8 @@ module
 
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.RandomMatrix.Gaussian.FourthMoment
-public import NLAlibScaffold.ForMathlib.Probability.Moments.PaleyZygmund
-public import NLAlibScaffold.LowRank.Optimality.EarlyTruncationBlock
+public import NLAlib.ForMathlib.Probability.Moments.PaleyZygmund
+public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
 
 /-!
 # The early-truncated randomized SVD needs $\Omega(k/\varepsilon^2)$ samples for large $k$
@@ -20,10 +20,10 @@ $\mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega}, k)$ (`NLAlib.earlyTrun
 exceeds the optimum by a factor $1 + c\sqrt{k/\ell}$ for $k \ge K_0$ and $\ell \ge Ck$, so relative
 error $1 + \varepsilon$ needs $\ell \ge c^2k/\varepsilon^2$. The proof puts the deterministic step
 `NLAlib.frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational`
-(`NLAlibScaffold.LowRank.Optimality.EarlyTruncationBlock`) on a good event of probability at least
+(`NLAlib.LowerBounds.LowRank.EarlyTruncationBlock`) on a good event of probability at least
 $1/24$: extreme singular value tails of the two row blocks and a Paley–Zygmund bound for the cross
 product $\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}$, conditionally on $\mathbf{\Omega}_2$.
-The $k = 1$ instance is in `NLAlibScaffold.LowRank.Optimality.EarlyTruncation`.
+The $k = 1$ instance is in `NLAlib.LowerBounds.LowRank.EarlyTruncation`.
 
 New (research note `reports/OP1-EarlyTruncatedRSVD.md` of the NLAlib workflow, 2026-10-25).
 Design: `docs/design/LowRank-EstimatorLowerBounds.md` §3.1. Real throughout.
@@ -583,37 +583,6 @@ $c \approx 0.2$ for every $k \ge 1$ (research note OP1, §2(b)). $k \ge K_0$ is 
 concentration events have probability at least $1/24$; for $2 \le k < K_0$ the statement is
 expected but not proved (design note, OQ3).
 No printed source. New (research note OP1, §4).
-Proof: H, about 300 lines. On the event $G$ where (i)
-$\|\mathbf{\Omega}_2\|_2 \le \sqrt{\ell} + \tfrac54\sqrt{k}$,
-$\sigma_{k-1}(\mathbf{\Omega}_1) \ge \sqrt{\ell} - \tfrac54\sqrt{k}$
-(`measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix`,
-`measureReal_singularValues_le_le_of_hasLaw_gaussianMatrix`), (ii)
-$\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_2 \le 2.2\sqrt{k\ell}$
-(`measureReal_specNorm_mul_mul_ge_le_of_hasLaw_gaussianMatrix`), (iii)
-$\|\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2 \ge 0.9k^2\ell$ (Chebyshev
-conditionally on $\mathbf{\Omega}_2$, `ProbabilityTheory.IndepFun.measureReal_mem_le_add`: for fixed
-$\mathbf{\Omega}_2$ satisfying (i) and (iv), the conditional
-mean is $k\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$
-(`integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix`) and the conditional variance
-$2k\|\mathbf{\Omega}_2\mathbf{\Omega}_2^{\mathsf{T}}\|_{\mathsf{F}}^2 \le
-2k\|\mathbf{\Omega}_2\|_2^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$, from the exact
-`integral_frobNorm_mul_mul_pow_four_of_hasLaw_gaussianMatrix` with $\mathbf{A} = \mathbf{I}$,
-$\mathbf{B} = \mathbf{\Omega}_2^{\mathsf{T}}$; failure $O(1/k^2)$; the bound
-`integral_frobNorm_mul_mul_pow_four_le_of_hasLaw_gaussianMatrix` is too weak for Chebyshev), so
-$\|\cdot\|_* \ge \|\cdot\|_{\mathsf{F}}^2/\|\cdot\|_2 \ge 0.4k\sqrt{k\ell}$, (iv)
-$\lvert\|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 - \|\mathbf{\Omega}_2\|_{\mathsf{F}}^2\rvert \le
-0.01k\sqrt{k\ell}$ and
-$\lvert\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2 - k\ell\rvert \le 0.01k\ell$ (Chebyshev on chi-square
-sums, variance $2k\ell$ of $\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$, so $2k^3\ell$ of
-$k\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2$;
-`integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector`), each failing with probability
-$O(1/k)$ or $O(e^{-ck})$ for $\ell \ge Ck$, so $\mathbb{P}[G] \ge 1/2$ for $k \ge K_0$.
-On $G$, `frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational` at $\theta = 1/4$ gives
-$5T + 4.5\sqrt{kT} \ge 0.09k$, hence $T \ge 10^{-4}k$ (if $T < 10^{-4}k$ the left side is below
-$0.046k$). The error is $\ge ks^2$ everywhere (first conjunct, $T \ge 0$) and
-$\ge ks^2 + (1 - s^2)10^{-4}k$ on $G$; integrate, $1 - s^2 \ge \delta$, the optimum is $ks^2$
-(`frobNorm_sub_truncatedSVD_sq`; singular values $1$ ($k$ times) and $s$). Take
-$c = 10^{-4}/8$.
 Result: early-truncated-rsvd-lower-bound -/
 theorem
     exists_forall_le_integral_frobNorm_sub_earlyTruncatedRSVD_sq_of_hasLaw_gaussianMatrix :

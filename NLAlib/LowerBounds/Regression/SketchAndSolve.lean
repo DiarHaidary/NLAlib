@@ -5,27 +5,33 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.RandomMatrix.Haar.Blocks
 public import NLAlib.Regression.SketchAndSolve
-public import NLAlibScaffold.RandomMatrix.Haar.Blocks
 
 /-!
-# No sketch beats a random orthonormal one for sketch-and-solve (stage S10)
+# No sketch beats a random orthonormal one for sketch-and-solve
 
-Epperly and Webber's Theorem 2.2: for every sketch with full column rank, some rotation of
-any least-squares problem with $\operatorname{rank}\mathbf{A} = r$ has expected sketch-and-solve
-residual at least the random orthonormal factor <!-- value haarProjectionFactor m \ell r -->
-$1 + (m - \ell)/(m - r) \cdot (r/(\ell - r - 1))$ times the optimum, the exact value for a Haar
-sketch (`NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`). Three forms:
-averaged over a Haar rotation for a fixed sketch, a single rotation for a fixed sketch, and a
+Epperly and Webber's minimax lower bound for sketch-and-solve (their Theorem 2.2): for every sketch
+with full column rank, some rotation of any least-squares problem with
+$\operatorname{rank}\mathbf{A} = r$ has expected sketch-and-solve residual at least the random
+orthonormal factor <!-- value haarProjectionFactor m \ell r -->
+$1 + (m - \ell)/(m - r) \cdot (r/(\ell - r - 1))$ times the optimum, which is the exact value
+for a Haar sketch (`NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`). Three
+forms: averaged over a Haar rotation for a fixed sketch, a single rotation for a fixed sketch, and a
 single rotation for a random sketch of any law (in `lintegral`, since the expectation may be
-infinite). They join `NLAlib/Regression/SketchAndSolve.lean`; proofs deferred. Design:
+infinite). The deterministic step is
+`NLAlib.frobNorm_pinv_le_frobNorm_pinv_conjTranspose_mul_mul_conjTranspose` (a weight does not
+shrink the pseudoinverse) through
+`NLAlib.mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame`. Design:
 `docs/design/LowRank-EstimatorLowerBounds.md` §3.3.
 
 ## Main results
 
-* `NLAlib.le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`
-* `NLAlib.exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq`
-* `NLAlib.exists_hasOrthonormalCols_le_lintegral_frobNorm_mul_sub_mul_sketchAndSolve_sq`
+* `NLAlib.le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`: a fixed sketch
+  against a Haar rotation of the problem.
+* `NLAlib.exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq`: one rotation.
+* `NLAlib.exists_hasOrthonormalCols_le_lintegral_frobNorm_mul_sub_mul_sketchAndSolve_sq`: a random
+  sketch of any law.
 -/
 
 @[expose] public section
@@ -37,26 +43,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l r : Type*} [Fintype m]
   [Fintype n] [Fintype l] [Fintype r] [DecidableEq m]
-
-omit [Fintype r] in
-/-- Complementary orthonormal frames $\mathbf{Q}_1$ of $\operatorname{range}\mathbf{X}$ and
-$\mathbf{Q}_2$ of its orthogonal complement; the second reproduces every residual
-$(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$. -/
-private theorem exists_compl_frames {s : Type*} [Fintype s] (X : Matrix m s ℝ)
-    (B : Matrix m r ℝ) :
-    ∃ (Q₁ : Matrix m (Fin X.rank) ℝ) (Q₂ : Matrix m (Fin (Fintype.card m - X.rank)) ℝ),
-      HasOrthonormalCols Q₁ ∧ HasOrthonormalCols Q₂ ∧ Q₁ᴴ * Q₂ = 0 ∧
-        LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin ∧
-          Q₂ * (Q₂ᴴ * ((1 - rangeProjector X) * B)) = (1 - rangeProjector X) * B := by
-  obtain ⟨Q₁, Q₂, hQ, h₁, h₂⟩ :=
-    (isStarProjection_rangeProjector X).exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
-      (p := Fin X.rank) (q := Fin (Fintype.card m - X.rank))
-      (by rw [rank_rangeProjector, Fintype.card_fin])
-      (by have := Matrix.rank_le_card_height X; simp only [Fintype.card_fin]; omega)
-  obtain ⟨hQ₁, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hQ
-  refine ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, rangeProjector_inj.mp (hQ₁.rangeProjector_eq.trans h₁), ?_⟩
-  rw [← Matrix.mul_assoc, h₂, ← Matrix.mul_assoc,
-    (isStarProjection_one_sub_rangeProjector X).mul_self]
 
 /-- **A Haar rotation of the problem defeats every fixed sketch**: for a fixed sketch
 $\mathbf{\Omega}_0 \in \mathbb{R}^{m \times \ell}$ of full column rank, $\mathbf{A} \in
@@ -72,22 +58,7 @@ $$\Bigl(1 + \frac{m - \ell}{m - r}\cdot\frac{r}{\ell - r - 1}\Bigr)
 the factor being `haarProjectionFactor m ℓ r` and the left side's minimum the optimum of every
 rotated problem.
 [EpperlyWebber2026, Theorem 2.2 (§5.5)]; there as a supremum over problems for a random sketch,
-here averaged over the rotation for a fixed one (the core of their proof).
-Proof: L, about 100 lines. Polar/QR factor $\mathbf{\Omega}_0 = \mathbf{W}\mathbf{R}$ with
-$\mathbf{W}$ orthonormal, $\mathbf{R}$ invertible (`polarFactor`, full column rank). The estimator
-on
-$(\mathbf{U}\mathbf{A}, \mathbf{U}\mathbf{B})$ with sketch $\mathbf{\Omega}_0^{\mathsf{H}}$ is the
-estimator on $(\mathbf{A}, \mathbf{B})$ with sketch
-$(\mathbf{U}^{\mathsf{H}}\mathbf{\Omega}_0)^{\mathsf{H}}$,
-and $\mathbf{U}^{\mathsf{H}}\mathbf{W}$ is an $m \times \ell$ Haar frame
-(`isRightUnitarilyInvariant_haarFrame`, `haarFrame_eq_map_haarMeasure`). Split
-$\mathbf{B}$ along $\operatorname{range}\mathbf{A}$ with an orthonormal basis $\mathbf{V}_1$ and its
-complement $\mathbf{V}_2$ (`exists_hasOrthonormalCols_range_eq`): the residual is
-$\|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{B}\|_{\mathsf{F}}^2$ plus the weighted block term
-(EW Lemma 5.1, the rank-$r$ decomposition used in
-`integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame`), whose mean is bounded below by
-`mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame` with weight
-$\mathbf{R}$. -/
+here averaged over the rotation for a fixed one (the core of their proof). -/
 theorem le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame {r' : Type*}
     [Fintype r'] {U : Ω → Matrix m m ℝ} (hU : HasLaw U (haarFrame m m) μ) {Ω₀ : Matrix m l ℝ}
     (hΩ₀ : Ω₀.rank = Fintype.card l) {A : Matrix m n ℝ} (hA : A.rank + 2 ≤ Fintype.card l)
@@ -106,7 +77,7 @@ theorem le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame {
     exact ⟨_, (posDef_conjTranspose_mul_self_iff.mpr hinj).isUnit_sqrt, polarFactor_mul_sqrt Ω₀⟩
   have hQ : HasLaw (fun ω => (U ω)ᴴ * W) (haarFrame m l) μ :=
     hasLaw_mul_const_of_hasLaw_haarFrame (hasLaw_conjTranspose_of_hasLaw_haarFrame hU) le_rfl hW
-  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_compl_frames A B
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_hasOrthonormalCols_frames_range_compl A B
   set E := (1 - rangeProjector A) * B
   have hrp : Fintype.card (Fin A.rank) + 2 ≤ Fintype.card l := by rwa [Fintype.card_fin]
   have hrs : Fintype.card (Fin A.rank) + Fintype.card (Fin (Fintype.card m - A.rank)) =
@@ -161,13 +132,7 @@ $$\Bigl(1 + \frac{m - \ell}{m - r}\cdot\frac{r}{\ell - r - 1}\Bigr)
 \|(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{B}\|_{\mathsf{F}}^2 \le
 \|\mathbf{U}\mathbf{B} - \mathbf{U}\mathbf{A}\,\mathsf{sketchAndSolve}(\mathbf{U}\mathbf{A},
 \mathbf{\Omega}_0^{\mathsf{H}}, \mathbf{U}\mathbf{B})\|_{\mathsf{F}}^2\,.$$
-[EpperlyWebber2026, Theorem 2.2]; there for a random sketch.
-Proof: S, about 20 lines. Apply
-`le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame` on the probability space
-`haarFrame m m` with `U = id`; an integrable function exceeds its mean somewhere on a set of
-positive measure (`MeasureTheory.exists_notMem_null_integral_le`, with $N$ the null set of
-non-orthogonal samples), and almost every sample is orthogonal
-(`ae_hasOrthonormalCols_of_hasLaw_haarFrame`). -/
+[EpperlyWebber2026, Theorem 2.2]; there for a random sketch. -/
 theorem exists_hasOrthonormalCols_le_frobNorm_mul_sub_mul_sketchAndSolve_sq {r' : Type*}
     [Fintype r'] {Ω₀ : Matrix m l ℝ} (hΩ₀ : Ω₀.rank = Fintype.card l) {A : Matrix m n ℝ}
     (hA : A.rank + 2 ≤ Fintype.card l) (B : Matrix m r' ℝ) :
@@ -200,14 +165,6 @@ in extended reals (the expectation may be infinite). With
 `NLAlib.integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame` (equality for a Haar
 sketch): the random orthonormal sketch is minimax optimal.
 [EpperlyWebber2026, Theorem 2.2]; there as a supremum over problems of rank $r$.
-Proof: M, about 50 lines. Tonelli on $\mu \otimes$ `haarFrame m m` (`lintegral_lintegral_swap`,
-measurability of the integrand from `measurable_pinv`-type lemmas): for almost every $\omega$
-the inner Haar average is at least the factor
-(`le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame` with
-`ofReal_integral_eq_lintegral_ofReal`), so the double integral is; then some $\mathbf{U}$ in the
-support has $\int^-$ at least the factor (`exists_le_lintegral`-type argument on the Haar
-probability space, by contradiction if every $\mathbf{U}$ is below; the value $\infty$ is
-harmless), and a.e. $\mathbf{U}$ is orthogonal.
 Result: sketch-and-solve-lower-bound -/
 theorem exists_hasOrthonormalCols_le_lintegral_frobNorm_mul_sub_mul_sketchAndSolve_sq
     {r' : Type*} [Fintype r'] [IsProbabilityMeasure μ] {X : Ω → Matrix m l ℝ}

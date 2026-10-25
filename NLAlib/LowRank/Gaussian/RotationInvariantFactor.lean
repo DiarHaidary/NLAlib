@@ -26,8 +26,9 @@ Lemma 6.2 takes the limit $a \to \infty$, where it is attained). The proof: the 
 test matrix is a Haar frame with the same Nyström approximation, the pointwise bound
 `NLAlib.HasOrthonormalCols.nuclearNorm_fromBlocks_sub_nystrom_le`, and the Beta trace
 `NLAlib.integral_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame`. The sharp bounds themselves are in
-`NLAlib.LowRank.Gaussian.RotationInvariant`; the matching lower bounds on this instance can join
-this file. Real field. Design: `docs/design/LowRank-S4.md` §3.4, §8 items 1, 5.
+`NLAlib.LowRank.Gaussian.RotationInvariant`; the matching lower bounds on this instance are in
+`NLAlib.LowerBounds.LowRank.RotationInvariant`. Real field. Design: `docs/design/LowRank-S4.md`
+§3.4, §8 items 1, 5.
 
 ## Main definitions
 
