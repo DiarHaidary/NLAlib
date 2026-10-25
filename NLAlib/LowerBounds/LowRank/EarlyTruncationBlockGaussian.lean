@@ -67,6 +67,7 @@ private theorem le_variational_arith_lhs {u v s py b a F fx fy : ℝ} (hu : 0 < 
     have e1 := mul_le_mul_of_nonneg_left hfy (sq_nonneg v)
     have e2 := mul_le_mul_of_nonneg_left hd2 (by positivity : 0 ≤ v ^ 2 * v ^ 2)
     linarith
+  -- `3.0375 = 3 (1 + 5/4 · 1/100)`, from `py < u + 5v/4` and `v ≤ u/100`
   have hbup : b < 3.0375 * (u * v) := by
     have := mul_lt_mul_of_pos_left hpy (by positivity : 0 < 3 * v)
     have hvv : v * v ≤ v * (u / 100) := mul_le_mul_of_nonneg_left (by linarith) hv.le
@@ -75,9 +76,11 @@ private theorem le_variational_arith_lhs {u v s py b a F fx fy : ℝ} (hu : 0 < 
     by_contra h
     push Not at h
     linarith [mul_nonpos_of_nonpos_of_nonneg h hb0]
+  -- `3.0375 = 3 (1 + 5/4 · 1/100)`: the bound `b < 3 v py ≤ 3 v (u + 5v/4)` with `v ≤ u/100`
   have halow : 39 / 80 * (v ^ 4 * u ^ 2) < a * (3.0375 * (u * v)) := by
     have := mul_le_mul_of_nonneg_left hbup.le ha0.le
     linarith
+  -- `0.16 < (39/80) / 3.0375 ≈ 0.1605`
   have halow' : 0.16 * (v ^ 3 * u) ≤ a := by
     refine le_of_mul_le_mul_right ?_ (by positivity : 0 < 3.0375 * (u * v))
     have : 0.16 * (v ^ 3 * u) * (3.0375 * (u * v)) = 0.486 * (v ^ 4 * u ^ 2) := by ring
@@ -85,6 +88,7 @@ private theorem le_variational_arith_lhs {u v s py b a F fx fy : ℝ} (hu : 0 < 
   have hss : 1 - 2 * q ≤ s ^ 2 := by
     have : s ^ 2 = 1 - 2 * q + q ^ 2 := by rw [hs]; ring
     linarith [sq_nonneg q]
+  -- `5.5 = 5 + 1/2`: `(u + 5v/4)² - (u - 5v/4)² = 5uv`, and `s² ≥ 1 - 2q` costs `2q u² = uv/2`
   have hD : fx - s ^ 2 * fy ≤ 5.5 * (v ^ 3 * u) := by
     have h1 : s ^ 2 * (v ^ 2 * (u - 5 / 4 * v) ^ 2) ≤ s ^ 2 * fy :=
       mul_le_mul_of_nonneg_left hfy (sq_nonneg s)
@@ -145,12 +149,15 @@ private theorem le_of_variational_arith {u v s T sx py b a F fx fy : ℝ} (hu : 
   have hL2 : 2 * s * b * w ≤ 2 * (3.0375 * (u * v)) * w := by
     have h1 : s * b ≤ b := mul_le_of_le_one_left hb0 hs1
     exact mul_le_mul_of_nonneg_right (by linarith) hw0
+  -- divide the two sides by `u v`; `6.075 = 2 · 3.0375`
   have hkey : 0.0045 * v ^ 2 ≤ 5 * T + 6.075 * w := by
     refine le_of_mul_le_mul_left ?_ huv
     have : (u * v) * (0.0045 * v ^ 2) = 0.0045 * (v ^ 3 * u) := by ring
     linarith
   by_contra hcon
   push Not at hcon
+  -- with `T < 10⁻⁷ v²`: `5 T < 5·10⁻⁷ v²`, so `6.075 w > 0.0045 v² - 5·10⁻⁷ v²` would force
+  -- `w ≥ 0.00074 v²`, while `w = √(v² T) < √(10⁻⁷) v² ≈ 0.000316 v²`
   have hw' : w < 0.000317 * v ^ 2 := by
     by_contra h
     push Not at h
@@ -502,8 +509,8 @@ private theorem le_frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_of_isGoodBlock 
   set T := ∑ i : Fin k, rangeProjector (truncatedSVD (A * Ω') k) (Sum.inr i) (Sum.inr i) with hT
   have hT0 : 0 ≤ T := Finset.sum_nonneg fun i _ =>
     ((isStarProjection_rangeProjector (truncatedSVD (A * Ω') k)).posSemidef.diag_nonneg)
-  obtain ⟨hE1, hE2⟩ := frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational hs0 hs1
-    hA (le_rank_fromBlocks_mul hA (hd.trans h2)) (Real.arctan (1 / 40)) hT
+  obtain ⟨hE1, hE2⟩ := frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational hs0 hA
+    (le_rank_fromBlocks_mul hA (hd.trans h2)) (Real.arctan (1 / 40)) hT
   obtain ⟨hsc, hs2⟩ := sin_arctan_mul_cos_arctan_and_sin_arctan_sq
   set W := Ω'.toRows₁ * Ω'.toRows₂ᵀ with hW
   have hsx : u - 5 / 4 * v < singularValues Ω'.toRows₁ (k - 1) := by simpa using h2
