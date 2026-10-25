@@ -66,6 +66,8 @@ so it is a lower bound when $f^{(2k)} \ge 0$ and an upper bound when $f^{(2k)} \
   `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith`: error bounds.
 * `NLAlib.gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`: the terminating
   case.
+* `NLAlib.exists_integral_sub_integral_eval_eq`: the mean-value step shared by the Gauss, Radau
+  and Lobatto remainders.
 * `NLAlib.exists_integral_sub_integral_gaussQuadrature_eq`: the Gauss remainder.
 * `NLAlib.integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg`,
   `NLAlib.integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos`: one-sided bounds.
@@ -469,14 +471,10 @@ the $k$-point Gauss rule of $\mu$ is $\mu$ itself. -/
 theorem gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ}
     (h : ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = 0) : gaussQuadrature μ k = μ := by
-  have hzero := ae_eval_eq_zero_of_integral_sq_eq_zero hμ h
-  have hne : orthogonalPolynomial μ k ≠ 0 := (monic_orthogonalPolynomial μ k).ne_zero
   unfold gaussQuadrature
   refine interpolatoryQuadrature_eq_self_of_ae_mem ?_
-  filter_upwards [hzero] with x hx
-  unfold gaussNodes
-  rw [Multiset.mem_toFinset, mem_roots hne]
-  exact hx
+  filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero hμ h] with x hx
+  exact mem_gaussNodes.mpr hx
 
 /-- The pointwise Hermite remainder at doubled nodes: for a nonempty finite set $G \subseteq (a, b)$
 and $H$ of degree less than $2\lvert G\rvert$ matching the values and first derivatives of $f$ on
@@ -502,6 +500,34 @@ private theorem exists_sub_eval_eq_iteratedDeriv_mul_nodal_sq {a b : ℝ} (hab :
   rw [hcard, Multiset.map_add, Multiset.prod_add, Lagrange.nodal, Finset.prod_eq_multiset_prod]
   rw [sq, eval_mul]; rfl
 
+/-- The mean-value step of the Gauss, Radau and Lobatto remainders: for a finite measure
+$\mu$ supported in $[a, b]$, $a < b$, $f$ continuous on $[a, b]$ and $C^n$ on $(a, b)$, and a
+polynomial $H$, if for every $x \in [a, b]$ there is $\xi_x \in (a, b)$ with
+$f(x) - H(x) = f^{(n)}(\xi_x)\,W(x)/n!$, $W$ integrable and of one sign $\mu$-almost
+everywhere, then one $\xi \in (a, b)$ serves the integral:
+$$\int f\,d\mu - \int H\,d\mu = \frac{f^{(n)}(\xi)}{n!}\int W\,d\mu\,.$$ -/
+theorem exists_integral_sub_integral_eval_eq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
+    (hab : a < b) {n : ℕ} {f W : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b))
+    (hf' : ContDiffOn ℝ n f (Set.Ioo a b)) (hW : Integrable W μ)
+    (hWs : (∀ᵐ x ∂μ, 0 ≤ W x) ∨ ∀ᵐ x ∂μ, W x ≤ 0) {H : ℝ[X]}
+    (hpt : ∀ x ∈ Set.Icc a b, ∃ ξ ∈ Set.Ioo a b,
+      f x - H.eval x = iteratedDeriv n f ξ / n.factorial * W x) :
+    ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, H.eval x ∂μ =
+      iteratedDeriv n f ξ / n.factorial * ∫ x, W x ∂μ := by
+  have hfint : Integrable f μ := by
+    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
+    exact hf.integrableOn_Icc
+  have hD : ContinuousOn (fun ξ => iteratedDeriv n f ξ / n.factorial) (Set.Ioo a b) :=
+    ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
+      fun x hx => (iteratedDerivWithin_of_isOpen isOpen_Ioo hx).symm).div_const _
+  have hint := hfint.sub (integrable_eval_of_ae_mem_Icc hμ H)
+  rw [← integral_sub hfint (integrable_eval_of_ae_mem_Icc hμ H)]
+  rcases hWs with hWs | hWs
+  · exact exists_integral_eq_mul_integral_of_ae_nonneg hint hW hWs (isConnected_Ioo hab) hD
+      (hμ.mono hpt)
+  · exact exists_integral_eq_mul_integral_of_ae_nonpos hint hW hWs (isConnected_Ioo hab) hD
+      (hμ.mono hpt)
+
 /-- **The Gauss quadrature remainder**: for a finite measure $\mu$ supported in $[a, b]$,
 $a < b$, $k > 0$, and $f$ continuous on $[a, b]$ and $C^{2k}$ on $(a, b)$, there is
 $\xi \in (a, b)$ with
@@ -517,9 +543,6 @@ theorem exists_integral_sub_integral_gaussQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
     ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k =
       iteratedDeriv (2 * k) f ξ / (2 * k).factorial *
         ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
-  have hfi : Integrable f μ := by
-    have h := hf.integrableOn_Icc (μ := μ)
-    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
   set π := orthogonalPolynomial μ k
   rcases (integral_nonneg fun x => sq_nonneg (π.eval x) : 0 ≤ ∫ x, π.eval x ^ 2 ∂μ).eq_or_lt
     with h0 | hpos
@@ -546,16 +569,10 @@ theorem exists_integral_sub_integral_gaussQuadrature_eq (hμ : ∀ᵐ x ∂μ, x
     have := hHjet y hy' 0 (Multiset.count_pos.mpr hy')
     simp only [Function.iterate_zero, id_eq, iteratedDeriv_zero] at this
     rw [this]
-  rw [hquad, ← integral_sub hfi (integrable_eval_of_ae_mem_Icc hμ H)]
-  have hD : ContinuousOn (fun t => iteratedDeriv (2 * k) f t / (2 * k).factorial)
-      (Set.Ioo a b) :=
-    (hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
-      (fun t ht => (iteratedDerivWithin_of_isOpen isOpen_Ioo ht).symm) |>.div_const _
-  refine exists_integral_eq_mul_integral_of_ae_nonneg
-    (hfi.sub (integrable_eval_of_ae_mem_Icc hμ H))
+  rw [hquad]
+  refine exists_integral_sub_integral_eval_eq hμ hab hf hf'
     ((integrable_eval_of_ae_mem_Icc hμ (π ^ 2)).congr (ae_of_all _ fun x => by simp))
-    (ae_of_all _ fun x => sq_nonneg _) (isConnected_Ioo hab) hD ?_
-  filter_upwards [hμ] with x hx
+    (.inl (ae_of_all _ fun x => sq_nonneg _)) fun x hx => ?_
   obtain ⟨ξ, hξ, h⟩ := exists_sub_eval_eq_iteratedDeriv_mul_nodal_sq hab hG hGab hf
     (hcard ▸ hf') hHdeg hHjet hx
   rw [hcard, hnodal] at h

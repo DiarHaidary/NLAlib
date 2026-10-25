@@ -25,6 +25,8 @@ degree, the hypothesis of Gauss quadrature (`NLAlib.Polynomial.Orthogonal.Gauss`
 
 ## Main results
 
+* `NLAlib.mem_gaussNodes`: the Gauss nodes are the zeros of $\pi_k$, and
+  `NLAlib.exists_orthogonalPolynomial_eq_X_sub_C_mul` splits off the linear factor of a zero.
 * `NLAlib.card_gaussNodes_le`: at most $k$ Gauss nodes.
 * `NLAlib.IsMomentPosDef.card_roots_orthogonalPolynomial`,
   `NLAlib.IsMomentPosDef.nodup_roots_orthogonalPolynomial`: real simple zeros.
@@ -49,6 +51,24 @@ $\pi_k$ is their nodal polynomial. Junk: past the number of support points, the 
 possibly $0$. -/
 noncomputable def gaussNodes (μ : Measure ℝ) (k : ℕ) : Finset ℝ :=
   (orthogonalPolynomial μ k).roots.toFinset
+
+/-- Membership in the Gauss nodes: for every measure $\mu$ on $\mathbb{R}$, $x$ is a Gauss node
+of order $k$ iff it is a zero of $\pi_k$. -/
+theorem mem_gaussNodes {μ : Measure ℝ} {k : ℕ} {x : ℝ} :
+    x ∈ gaussNodes μ k ↔ (orthogonalPolynomial μ k).IsRoot x := by
+  rw [gaussNodes, Multiset.mem_toFinset, mem_roots (monic_orthogonalPolynomial μ k).ne_zero]
+
+/-- A zero of $\pi_k$ splits off a linear factor: for every measure $\mu$ on $\mathbb{R}$, if
+$\pi_k(x) = 0$ then $\pi_k = (X - x)g$ with $g \ne 0$ of degree less than $k$. -/
+theorem exists_orthogonalPolynomial_eq_X_sub_C_mul {μ : Measure ℝ} {k : ℕ} {x : ℝ}
+    (hx : (orthogonalPolynomial μ k).IsRoot x) :
+    ∃ g : ℝ[X], g ≠ 0 ∧ g.degree < k ∧ orthogonalPolynomial μ k = (X - C x) * g := by
+  have hπ := (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
+  set g := orthogonalPolynomial μ k /ₘ (X - C x)
+  have hg : g ≠ 0 := fun h0 => (monic_orthogonalPolynomial μ k).ne_zero (by rw [hπ, h0, mul_zero])
+  have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
+  rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
+  exact ⟨g, hg, degree_le_natDegree.trans_lt (by exact_mod_cast (by omega : g.natDegree < k)), hπ⟩
 
 /-- There are at most $k$ Gauss nodes of order $k$, for every measure $\mu$ on $\mathbb{R}$. -/
 theorem card_gaussNodes_le (μ : Measure ℝ) (k : ℕ) : (gaussNodes μ k).card ≤ k := by
@@ -165,14 +185,8 @@ $[a, b]$, and its zeros there are roots of $g$, fewer than $k$ of them. -/
 private theorem IsMomentPosDef.false_of_isRoot {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x c : ℝ} (hx : (orthogonalPolynomial μ k).IsRoot x)
     (hc : c ≠ 0) (hsgn : ∀ t ∈ Set.Icc a b, 0 < (t - x) * c) : False := by
-  set g := orthogonalPolynomial μ k /ₘ (X - C x)
-  have hπ : orthogonalPolynomial μ k = (X - C x) * g := (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
-  have hg : g ≠ 0 := fun hg0 =>
-    (monic_orthogonalPolynomial μ k).ne_zero (by rw [hπ, hg0, mul_zero])
-  have hgk : g.natDegree < k := by
-    have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
-    rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
-    omega
+  obtain ⟨g, hg, hgd, hπ⟩ := exists_orthogonalPolynomial_eq_X_sub_C_mul hx
+  have hgk : g.natDegree < k := (natDegree_lt_iff_degree_lt hg).mpr hgd
   have he : ∀ t, (orthogonalPolynomial μ k * (C c * g)).eval t = (t - x) * c * g.eval t ^ 2 := by
     intro t
     rw [hπ]
@@ -193,9 +207,7 @@ $[a, b]$, hence in the convex hull of the support of $\mu$. -/
 theorem IsMomentPosDef.gaussNodes_subset_Icc {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) : (gaussNodes μ k : Set ℝ) ⊆ Set.Icc a b := by
   intro y hy
-  have hroot : (orthogonalPolynomial μ k).IsRoot y := by
-    rwa [Finset.mem_coe, gaussNodes, Multiset.mem_toFinset,
-      mem_roots (monic_orthogonalPolynomial μ k).ne_zero] at hy
+  have hroot : (orthogonalPolynomial μ k).IsRoot y := mem_gaussNodes.mp hy
   exact ⟨le_of_not_gt fun hya =>
       h.false_of_isRoot hμ hroot one_ne_zero fun t ht => by linarith [ht.1],
     le_of_not_gt fun hyb =>
@@ -208,14 +220,8 @@ $\int \pi_k\,cg\,d\mu = 0$, so $\pi_k^2 = 0$ a.e. -/
 private theorem IsMomentPosDef.false_of_isRoot_endpoint {k : ℕ} (h : IsMomentPosDef μ (k + 1))
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x c : ℝ} (hx : (orthogonalPolynomial μ k).IsRoot x)
     (hc : c ≠ 0) (hsgn : ∀ t ∈ Set.Icc a b, 0 ≤ (t - x) * c) : False := by
-  set g := orthogonalPolynomial μ k /ₘ (X - C x)
-  have hπ : orthogonalPolynomial μ k = (X - C x) * g := (mul_divByMonic_eq_iff_isRoot.mpr hx).symm
-  have hg : g ≠ 0 := fun hg0 =>
-    (monic_orthogonalPolynomial μ k).ne_zero (by rw [hπ, hg0, mul_zero])
-  have hgk : g.natDegree < k := by
-    have hdeg := natDegree_mul (X_sub_C_ne_zero x) hg
-    rw [← hπ, natDegree_orthogonalPolynomial, natDegree_X_sub_C] at hdeg
-    omega
+  obtain ⟨g, hg, hgd, hπ⟩ := exists_orthogonalPolynomial_eq_X_sub_C_mul hx
+  have hgk : g.natDegree < k := (natDegree_lt_iff_degree_lt hg).mpr hgd
   have hint : ∫ t, (orthogonalPolynomial μ k * (C c * g)).eval t ∂μ = 0 := by
     simpa only [eval_mul] using
       isOrthogonalPolynomial_orthogonalPolynomial hμ k (C c * g)
@@ -251,9 +257,7 @@ theorem IsMomentPosDef.gaussNodes_subset_Ioo {k : ℕ} (h : IsMomentPosDef μ (k
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     (gaussNodes μ k : Set ℝ) ⊆ Set.Ioo a b := by
   intro y hy
-  have hroot : (orthogonalPolynomial μ k).IsRoot y := by
-    rwa [Finset.mem_coe, gaussNodes, Multiset.mem_toFinset,
-      mem_roots (monic_orthogonalPolynomial μ k).ne_zero] at hy
+  have hroot : (orthogonalPolynomial μ k).IsRoot y := mem_gaussNodes.mp hy
   have hIcc : y ∈ Set.Icc a b :=
     (h.mono (by omega)).gaussNodes_subset_Icc hμ hy
   exact ⟨lt_of_le_of_ne hIcc.1 fun e => h.false_of_isRoot_endpoint hμ hroot one_ne_zero
@@ -275,8 +279,7 @@ theorem ae_mem_gaussNodes_of_not_isMomentPosDef (hμ : ∀ᵐ x ∂μ, x ∈ Set
       rw [integral_orthogonalPolynomial_succ_sq hμ j,
         le_antisymm h (integral_nonneg fun x => sq_nonneg _), mul_zero]
     filter_upwards [ae_eval_eq_zero_of_integral_sq_eq_zero hμ hsq] with x hx
-    rwa [gaussNodes, Multiset.mem_toFinset,
-      mem_roots (monic_orthogonalPolynomial μ (j + 1)).ne_zero]
+    exact mem_gaussNodes.mpr hx
 
 /-- The Gauss hypothesis holds for every order: for a finite measure $\mu$ supported in $[a, b]$
 and every $k$, the nodal polynomial of the Gauss nodes $G$ of order $k$ is orthogonal in
