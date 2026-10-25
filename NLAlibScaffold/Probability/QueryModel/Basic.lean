@@ -350,6 +350,54 @@ section Gram
 
 variable {𝕜 d k : Type*} [RCLike 𝕜]
 
+/-- Each response of a history is the oracle at the query made for it. -/
+private theorem history_apply_of {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
+    (f : Q → R) (i : ℕ) (j : Fin i) : alg.history f i j = f (alg.queryAt f j) := by
+  induction i with
+  | zero => exact j.elim0
+  | succ i ih =>
+    refine Fin.lastCases ?_ (fun j => ?_) j
+    · rw [QueryAlgorithm.history, Fin.snoc_last]
+      rfl
+    · rw [QueryAlgorithm.history, Fin.snoc_castSucc, ih j]
+      rfl
+
+/-- Entries of a history do not depend on the length of the history. -/
+private theorem history_eq_of_lt' {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
+    (f : Q → R) {n m j : ℕ} (hn : j < n) (hm : j < m) :
+    alg.history f n ⟨j, hn⟩ = alg.history f m ⟨j, hm⟩ := by
+  rw [history_apply_of, history_apply_of]
+
+/-- Queries of an algorithm at equal indices, with the responses reindexed along the equality. -/
+private theorem query_eq_of_index {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
+    {a b : ℕ} (hab : a = b) (F : Fin a → R) (G : Fin b → R)
+    (hFG : ∀ m : Fin b, F (Fin.cast hab.symm m) = G m) : alg.query a F = alg.query b G := by
+  subst hab
+  congr 1
+  funext m
+  exact hFG m
+
+/-- Even rounds of the Gram simulation are `(0, x)`. -/
+private theorem gramSimulation_query_even {𝕜 d k : Type*} [Zero 𝕜]
+    (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (l : ℕ)
+    (h : Fin (2 * l) → (d → 𝕜) × (k → 𝕜)) :
+    (alg.gramSimulation k).query (2 * l) h = (0, alg.query l fun m =>
+      (h ⟨2 * m + 1, by have := m.isLt; omega⟩).1) := by
+  simp only [QueryAlgorithm.gramSimulation]
+  rw [dif_pos (Nat.mul_mod_right 2 l)]
+  congr 1
+  exact query_eq_of_index alg (Nat.mul_div_cancel_left l two_pos) _ _ fun m => rfl
+
+/-- Odd rounds of the Gram simulation are `(x, 0)`, with `x` the left response of the round before.
+-/
+private theorem gramSimulation_query_odd {𝕜 d k : Type*} [Zero 𝕜]
+    (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (l : ℕ)
+    (h : Fin (2 * l + 1) → (d → 𝕜) × (k → 𝕜)) :
+    (alg.gramSimulation k).query (2 * l + 1) h = ((h ⟨2 * l, by omega⟩).2, 0) := by
+  simp only [QueryAlgorithm.gramSimulation]
+  rw [dif_neg (by omega)]
+  rfl
+
 /-- **The Gram simulation reproduces the history**: after `2 * i` rounds of `alg.gramSimulation k`
 against `twoSidedMulVec X`, the first components of the odd responses are the first `i`
 responses of `alg` against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Holds for every `i`.
@@ -370,7 +418,35 @@ theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d 
     (X : Matrix d k 𝕜) (i : ℕ) :
     (fun l : Fin i => ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)
         ⟨2 * l + 1, by have := l.isLt; omega⟩).1) = alg.history (X * Xᴴ).mulVec i := by
-  sorry
+  -- Odd round `2l + 1` returns `X * (Xᴴ * x_l)`, where `x_l` is the query `l` of the history.
+  have key : ∀ l : ℕ, ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 2)
+      ⟨2 * l + 1, by omega⟩).1 = (X * Xᴴ).mulVec (alg.queryAt (X * Xᴴ).mulVec l) := by
+    intro l
+    induction l using Nat.strong_induction_on with
+    | _ l ih =>
+    have e1 : ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 2)
+        ⟨2 * l + 1, by omega⟩).1
+        = X *ᵥ ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 1)
+          ⟨2 * l, by omega⟩).2 := by
+      rw [history_apply_of]
+      simp only [queryAt, gramSimulation_query_odd, twoSidedMulVec, Matrix.mulVec_zero]
+    have e2 : ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 1)
+        ⟨2 * l, by omega⟩).2
+        = Xᴴ *ᵥ alg.query l (fun m => ((alg.gramSimulation k).history (twoSidedMulVec X)
+          (2 * l) ⟨2 * m + 1, by have := m.isLt; omega⟩).1) := by
+      rw [history_apply_of]
+      simp only [queryAt, gramSimulation_query_even, twoSidedMulVec, Matrix.mulVec_zero]
+    have e3 : (fun m : Fin l => ((alg.gramSimulation k).history (twoSidedMulVec X)
+        (2 * l) ⟨2 * m + 1, by have := m.isLt; omega⟩).1) = alg.history (X * Xᴴ).mulVec l := by
+      funext m
+      rw [history_eq_of_lt' _ _ (n := 2 * l) (m := 2 * m + 2) (j := 2 * m + 1) (by omega)
+        (by omega)]
+      rw [ih m m.isLt, history_apply_of]
+    rw [e1, e2, e3, Matrix.mulVec_mulVec]
+    rfl
+  funext l
+  rw [history_eq_of_lt' _ _ (n := 2 * i) (m := 2 * l + 2) (by have := l.isLt; omega) (by omega),
+    key l, history_apply_of]
 
 /-- **The Gram simulation runs the original algorithm**: the `2q`-round algorithm
 `alg.gramSimulation k` against `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, outputs
