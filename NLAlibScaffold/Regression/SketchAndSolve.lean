@@ -325,6 +325,41 @@ theorem exists_hasOrthonormalCols_le_lintegral_frobNorm_mul_sub_mul_sketchAndSol
           frobNorm ((1 - rangeProjector A) * B) ^ 2) ≤
         ∫⁻ ω, ENNReal.ofReal
           (frobNorm (U * B - U * A * sketchAndSolve (U * A) (X ω)ᴴ (U * B)) ^ 2) ∂μ := by
-  sorry
+  set c := haarProjectionFactor (Fintype.card m) (Fintype.card l) A.rank *
+    frobNorm ((1 - rangeProjector A) * B) ^ 2
+  set g : Matrix m m ℝ × Matrix m l ℝ → ℝ := fun p =>
+    frobNorm (p.1 * B - p.1 * A * sketchAndSolve (p.1 * A) p.2ᴴ (p.1 * B)) ^ 2 with hg_def
+  have hg : Measurable g := by
+    have hS : Measurable fun p : Matrix m m ℝ × Matrix m l ℝ => p.2ᴴ :=
+      Measurable.matrix_conjTranspose continuous_star.measurable measurable_snd
+    have hU : Measurable fun p : Matrix m m ℝ × Matrix m l ℝ => p.1 := measurable_fst
+    have hUA := hU.matrix_mul (measurable_const (a := A))
+    have hUB := hU.matrix_mul (measurable_const (a := B))
+    exact (continuous_frobNorm.measurable.comp (hUB.sub (hUA.matrix_mul
+      ((measurable_pinv.comp (hS.matrix_mul hUA)).matrix_mul (hS.matrix_mul hUB))))).pow_const 2
+  have h1 : ∀ᵐ ω ∂μ, ENNReal.ofReal c ≤
+      ∫⁻ u, ENNReal.ofReal (g (u, X ω)) ∂(haarFrame m m) := by
+    filter_upwards [hXr] with ω hω
+    refine ENNReal.ofReal_le_of_le_toReal ?_
+    rw [← integral_eq_lintegral_of_nonneg_ae (f := fun u => g (u, X ω))
+      (ae_of_all _ fun u => sq_nonneg _)
+      (hg.comp (measurable_id.prodMk measurable_const)).aestronglyMeasurable]
+    exact le_integral_frobNorm_mul_sub_mul_sketchAndSolve_sq_of_hasLaw_haarFrame HasLaw.id hω hA B
+  have h2 : ENNReal.ofReal c ≤ ∫⁻ u, ∫⁻ ω, ENNReal.ofReal (g (u, X ω)) ∂μ ∂(haarFrame m m) := by
+    rw [← lintegral_lintegral_swap]
+    · calc ENNReal.ofReal c = ∫⁻ _, ENNReal.ofReal c ∂μ := by simp
+        _ ≤ _ := lintegral_mono_ae h1
+    · exact (ENNReal.measurable_ofReal.comp hg).comp_aemeasurable
+        (measurable_snd.aemeasurable.prodMk hX.comp_fst)
+  by_contra hcon
+  push Not at hcon
+  have h3 : ∀ᵐ u ∂(haarFrame m m), ∫⁻ ω, ENNReal.ofReal (g (u, X ω)) ∂μ < ENNReal.ofReal c := by
+    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame HasLaw.id le_rfl] with u hu
+    exact hcon u hu
+  refine (lt_irrefl _ (h2.trans_lt ?_))
+  calc _ < ∫⁻ _, ENNReal.ofReal c ∂(haarFrame m m) :=
+        lintegral_strict_mono (IsProbabilityMeasure.ne_zero _) aemeasurable_const
+          ((lintegral_mono_ae (h3.mono fun _ h => h.le)).trans_lt (by simp)).ne h3
+    _ = ENNReal.ofReal c := by simp
 
 end NLAlib
