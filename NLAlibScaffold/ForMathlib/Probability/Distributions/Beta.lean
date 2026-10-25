@@ -52,7 +52,19 @@ Proof: S, about 10 lines. `Set.ext`; the inverse is $x \mapsto x/(x+y)$; `field_
 `div_lt_one`. -/
 private theorem image_mul_div_one_sub_Ioo {y : ℝ} (hy : 0 < y) :
     (fun s => y * s / (1 - s)) '' Ioo (0 : ℝ) 1 = Ioi 0 := by
-  sorry
+  ext x
+  constructor
+  · rintro ⟨s, ⟨hs0, hs1⟩, rfl⟩
+    exact div_pos (mul_pos hy hs0) (sub_pos.2 hs1)
+  · intro hx
+    have hxy : 0 < x + y := add_pos hx hy
+    refine ⟨x / (x + y), ⟨div_pos hx hxy, (div_lt_one hxy).2 (by linarith)⟩, ?_⟩
+    have h1 : 1 - x / (x + y) = y / (x + y) := by
+      field_simp
+      ring
+    simp only
+    rw [h1]
+    field_simp
 
 /-- For $y > 0$ the substitution $s \mapsto ys/(1-s)$ is injective on $(0, 1)$.
 Proof: S, about 8 lines. Cross-multiply ($1 - s \ne 0$): `div_eq_div_iff`, then
