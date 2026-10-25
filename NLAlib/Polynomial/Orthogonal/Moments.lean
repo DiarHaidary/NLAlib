@@ -13,6 +13,7 @@ public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import Mathlib.MeasureTheory.Integral.IntegrableOn
 public import Mathlib.Topology.Algebra.Polynomial
 import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss
+public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Moment matching
@@ -43,12 +44,18 @@ discrete measures (spectral measures, quadrature rules).
 * `NLAlib.MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn`: the transfer of
   uniform approximation.
 * `NLAlib.matchesMoments_measureT`: Mathlib's Chebyshev–Gauss quadrature in this vocabulary.
+* `NLAlib.ae_eval_eq_zero_of_integral_sq_eq_zero`: a polynomial of norm zero vanishes a.e.
+* `NLAlib.integral_eval_mul_eq_zero_of_integral_sq_eq_zero`: and is orthogonal to everything.
+* `NLAlib.integral_eval_basis_of_ae_mem`: on a finite set, $\int\ell_x\,d\mu = \mu\{x\}$.
+* `NLAlib.MatchesMoments.eq_of_ae_mem`: moment determinacy on a finite set.
+* `NLAlib.MatchesMoments.smul`, `NLAlib.MatchesMoments.nnreal_smul`,
+  `NLAlib.MatchesMoments.finsetSum`: linearity in the pair.
 -/
 
 @[expose] public section
 
 open MeasureTheory Polynomial
-open scoped ENNReal
+open scoped ENNReal NNReal
 
 namespace NLAlib
 
@@ -180,5 +187,82 @@ theorem matchesMoments_measureT {k : ℕ} (hk : k ≠ 0) :
     integral_finsetSum_measure fun i _ => integrable_dirac enorm_lt_top,
     ENNReal.toReal_ofReal (by positivity)]
   simp only [integral_dirac, smul_eq_mul, Chebyshev.sumZeroes_def]
+
+/-- A polynomial of norm zero vanishes almost everywhere: for a finite measure $\mu$ supported
+in $[a, b]$ and a real polynomial $p$ with $\int p^2\,d\mu = 0$, $p = 0$ $\mu$-almost
+everywhere. -/
+theorem ae_eval_eq_zero_of_integral_sq_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : ∫ x, p.eval x ^ 2 ∂μ = 0) :
+    ∀ᵐ x ∂μ, p.eval x = 0 := by
+  have hint : Integrable (fun x => p.eval x ^ 2) μ :=
+    (integrable_eval_of_ae_mem_Icc hμ (p ^ 2)).congr (ae_of_all μ fun x => eval_pow 2)
+  refine Filter.Eventually.mono
+    ((integral_eq_zero_iff_of_nonneg_ae (ae_of_all μ fun x => sq_nonneg _) hint).mp hp) ?_
+  intro x hx
+  exact pow_eq_zero_iff two_ne_zero |>.mp hx
+
+/-- A polynomial of norm zero is orthogonal to everything: for a finite measure $\mu$ supported
+in $[a, b]$, a real polynomial $p$ with $\int p^2\,d\mu = 0$ and every real polynomial $r$,
+$\int p\,r\,d\mu = 0$. The degenerate branch of every recurrence proof. -/
+theorem integral_eval_mul_eq_zero_of_integral_sq_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : ∫ x, p.eval x ^ 2 ∂μ = 0) (r : ℝ[X]) :
+    ∫ x, p.eval x * r.eval x ∂μ = 0 := by
+  have hae : ∀ᵐ x ∂μ, p.eval x = 0 :=
+    ae_eval_eq_zero_of_integral_sq_eq_zero hμ hp
+  exact integral_eq_zero_of_ae (hae.mono fun x hx => by simp [hx])
+
+/-- The Lagrange basis polynomial integrates to the point mass: for a finite measure $\mu$ carried
+by a finite set $s \subseteq \mathbb{R}$ and $x \in s$, $\int\ell_x\,d\mu = \mu\{x\}$, $\ell_x$ the
+Lagrange basis polynomial of $x$ at $s$ (Mathlib's `Lagrange.basis s id x`). -/
+theorem integral_eval_basis_of_ae_mem [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ t ∂μ, t ∈ s)
+    {x : ℝ} (hx : x ∈ s) : ∫ t, (Lagrange.basis s id x).eval t ∂μ = μ.real {x} := by
+  have := setIntegral_finset s ((Lagrange.basis s id x).continuous.continuousOn
+    |>.integrableOn_compact (μ := μ) s.finite_toSet.isCompact)
+  rw [Measure.restrict_eq_self_of_ae_mem hμ] at this
+  rw [this, Finset.sum_eq_single_of_mem x hx,
+    show (Lagrange.basis s id x).eval x = 1 from Lagrange.eval_basis_self (Set.injOn_id _) hx,
+    smul_eq_mul, mul_one]
+  exact fun y hy hyx => smul_eq_zero_of_right _ (Lagrange.eval_basis_of_ne (v := id) hyx.symm hy)
+
+/-- Moment determinacy on a finite set: two finite measures $\mu$, $\nu$ carried by a finite
+set $s \subseteq \mathbb{R}$ that match their first $\lvert s\rvert$ moments are equal. No printed
+source. -/
+theorem MatchesMoments.eq_of_ae_mem [IsFiniteMeasure μ] [IsFiniteMeasure ν] {s : Finset ℝ}
+    (h : MatchesMoments μ ν s.card) (hμ : ∀ᵐ x ∂μ, x ∈ s) (hν : ∀ᵐ x ∂ν, x ∈ s) : μ = ν := by
+  rw [Measure.ae_mem_finset_iff.mp hμ, Measure.ae_mem_finset_iff.mp hν]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  have hdeg : (Lagrange.basis s id x).degree < s.card := by
+    rw [Lagrange.degree_basis (Set.injOn_id _) hx]
+    exact_mod_cast Nat.sub_lt (Finset.card_pos.mpr ⟨x, hx⟩) one_pos
+  rw [← ofReal_measureReal, ← ofReal_measureReal, ← integral_eval_basis_of_ae_mem hμ hx,
+    ← integral_eval_basis_of_ae_mem hν hx, h _ hdeg]
+
+/-- Moment matching is preserved by scaling: if $\mu$ and $\nu$ match their first $N$ moments,
+then so do $c\mu$ and $c\nu$ for every $c \in [0, \infty]$. -/
+theorem MatchesMoments.smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0∞) :
+    MatchesMoments (c • μ) (c • ν) N := by
+  intro p hp
+  rw [integral_smul_measure, integral_smul_measure]
+  exact congrArg _ (h p hp)
+
+/-- Moment matching is preserved by scaling by a finite $c \in [0, \infty)$: the form of
+`MatchesMoments.smul` for a nonnegative real scalar. -/
+theorem MatchesMoments.nnreal_smul {N : ℕ} (h : MatchesMoments μ ν N) (c : ℝ≥0) :
+    MatchesMoments (c • μ) (c • ν) N := by
+  simpa only [ENNReal.smul_def] using h.smul (c : ℝ≥0∞)
+
+/-- Moment matching is preserved by finite sums: if finite measures $\mu_i$ and $\nu_i$, all
+supported in $[a, b]$, match their first $N$ moments for each $i \in s$, then
+$\sum_{i\in s}\mu_i$ and $\sum_{i\in s}\nu_i$ match their first $N$ moments. The average of
+per-probe Gauss rules matches $2q$ moments of the average of the probe spectral measures. -/
+theorem MatchesMoments.finsetSum {ι : Type*} {s : Finset ι} {μs νs : ι → Measure ℝ}
+    [∀ i, IsFiniteMeasure (μs i)] [∀ i, IsFiniteMeasure (νs i)] {N : ℕ} {a b : ℝ}
+    (hμs : ∀ i ∈ s, ∀ᵐ x ∂μs i, x ∈ Set.Icc a b) (hνs : ∀ i ∈ s, ∀ᵐ x ∂νs i, x ∈ Set.Icc a b)
+    (h : ∀ i ∈ s, MatchesMoments (μs i) (νs i) N) :
+    MatchesMoments (∑ i ∈ s, μs i) (∑ i ∈ s, νs i) N := by
+  intro p hp
+  rw [integral_finsetSum_measure fun i hi => integrable_eval_of_ae_mem_Icc (hμs i hi) p,
+    integral_finsetSum_measure fun i hi => integrable_eval_of_ae_mem_Icc (hνs i hi) p]
+  exact Finset.sum_congr rfl fun i hi => h i hi p hp
 
 end NLAlib

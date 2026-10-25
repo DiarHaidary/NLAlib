@@ -8,6 +8,7 @@ module
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.Probability.Distributions.ChiSquareMoments
 public import NLAlib.Probability.SubGaussian.Square
+public import NLAlib.ForMathlib.Probability.Distributions.ChiSquared
 
 /-!
 # The squared norm of a standard Gaussian vector
@@ -49,6 +50,7 @@ sub-Gaussian vector (`NLAlib/Probability/SubGaussianVector/Norm.lean`).
   $\mathbb{P}[\|\mathbf{g}\|^2 \le u] \le (e u / d)^{d/2}$.
 * `NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`: the relative
   deviation.
+* `NLAlib.hasLaw_norm_sq_of_hasLaw_gaussianVector`: the chi-square law of $\|\mathbf{g}\|^2$.
 -/
 
 @[expose] public section
@@ -374,5 +376,17 @@ theorem measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector
     (fun i => by rw [integral_sq_of_hasLaw_gaussianReal (hY i), NNReal.coe_one])
     (fun i => by rw [integral_pow_four_of_hasLaw_gaussianReal (hY i)]; norm_num) hε
   simpa only [EuclideanSpace.real_norm_sq_eq, PiLp.toLp_apply] using h
+
+/-! ### The chi-square law -/
+
+/-- The squared norm of a standard Gaussian vector is chi-square: for $\mathbf{g}$ with law
+`gaussianVector n` (independent standard normal coordinates) and $n$ nonempty,
+$\|\mathbf{g}\|^2$ has law $\mathrm{Gamma}(d/2, 1/2)$ with $d = \lvert n \rvert$ (shape $d/2$,
+rate $1/2$), the chi-square law with $d$ degrees of freedom. -/
+theorem hasLaw_norm_sq_of_hasLaw_gaussianVector {g : Ω → n → ℝ} [Nonempty n]
+    (hg : HasLaw g (gaussianVector n) μ) :
+    HasLaw (fun ω => ‖WithLp.toLp 2 (g ω)‖ ^ 2) (gammaMeasure (Fintype.card n / 2) (1 / 2)) μ :=
+  (hasLaw_sum_sq_of_hasLaw_pi_gaussianReal hg).congr
+    (ae_of_all _ fun ω => by simp [EuclideanSpace.real_norm_sq_eq])
 
 end NLAlib

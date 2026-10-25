@@ -1,9 +1,13 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Estimation.Spectral.RandomStart
+public import NLAlib.Estimation.Spectral.SpectralDensity
+public import NLAlib.Estimation.Spectral.SpectralDensitySphere
+public import NLAlib.Estimation.Spectral.SpectralDensitySubgaussian
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.HutchPlusPlus
 public import NLAlib.Estimation.Trace.HutchPlusPlusTail
+public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
@@ -14,6 +18,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Basic
 public import NLAlib.ForMathlib.Analysis.Calculus.BumpFunction.Convolution
 public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
+public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
@@ -54,10 +59,13 @@ public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
+public import NLAlib.ForMathlib.Probability.Distributions.Beta
+public import NLAlib.ForMathlib.Probability.Distributions.ChiSquared
 public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
@@ -67,6 +75,7 @@ public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
+public import NLAlib.ForMathlib.Topology.MetricSpace.Lipschitz
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression
@@ -94,6 +103,7 @@ public import NLAlib.Krylov.LinearSystems.Richardson
 public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
+public import NLAlib.Krylov.Processes.LanczosPolynomials
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov
@@ -287,6 +297,8 @@ public import NLAlib.Polynomial.Interpolation.Stieltjes
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Gauss
 public import NLAlib.Polynomial.Orthogonal.Moments
+public import NLAlib.Polynomial.Orthogonal.Recurrence
+public import NLAlib.Polynomial.Orthogonal.Zeros
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare

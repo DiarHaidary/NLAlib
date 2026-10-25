@@ -27,6 +27,8 @@ layer: Lanczos and conjugate gradients break down, or terminate, exactly at the 
 * `NLAlib.exists_hasOrthonormalCols_range_eq_krylovSpace`: an orthonormal basis of
   $\mathcal{K}_q$.
 * `NLAlib.krylovMatrix_mulVec_injective_iff`: the Krylov vectors are independent iff $q \le \nu$.
+* `NLAlib.aeval_mulVec_ne_zero_of_degree_lt_krylovGrade`: no nonzero real polynomial of degree
+  below the grade annihilates $\mathbf{b}$.
 * `NLAlib.krylovGrade_le_iff`: $\nu \le q$ iff $\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$.
 * `NLAlib.mulVec_mem_krylovSpace_of_krylovGrade_le`: invariance from the grade on.
 * `NLAlib.mem_krylovSpace_of_krylovGrade_le`: the solution of $\mathbf{A}\mathbf{x} = \mathbf{b}$
@@ -265,5 +267,30 @@ theorem krylovGrade_mul_mulVec {C : Matrix n n 𝕜} (hC : IsUnit C) (B : Matrix
     (v : n → 𝕜) : krylovGrade (C * B) (C *ᵥ v) = krylovGrade (B * C) v := by
   rw [krylovGrade, krylovGrade, krylovMatrix_mul_mulVec,
     Matrix.rank_mul_eq_right_of_isUnit_det _ _ ((Matrix.isUnit_iff_isUnit_det C).mp hC)]
+
+open Polynomial in
+/-- A nonzero real polynomial of degree below the grade does not annihilate $\mathbf{b}$: for
+every square $\mathbf{A}$ and every nonzero real polynomial $p$ with $\deg p < \nu$, $\nu$ the
+grade of $\mathbf{b}$, $p(\mathbf{A})\mathbf{b} \ne \mathbf{0}$, since the Krylov vectors
+$\mathbf{b}, \dots, \mathbf{A}^{\nu - 1}\mathbf{b}$ are linearly independent. -/
+theorem aeval_mulVec_ne_zero_of_degree_lt_krylovGrade {A : Matrix n n 𝕜} {b : n → 𝕜}
+    {p : ℝ[X]} (hp0 : p ≠ 0) (hp : p.degree < krylovGrade A b) : aeval A p *ᵥ b ≠ 0 := by
+  have hm : p.natDegree + 1 ≤ krylovGrade A b := by
+    have := (natDegree_lt_iff_degree_lt hp0).2 hp
+    omega
+  have hli : LinearIndependent 𝕜 (fun i : Fin (p.natDegree + 1) => A ^ (i : ℕ) *ᵥ b) := by
+    have h := krylovMatrix_mulVec_injective_iff.mpr hm
+    rw [Matrix.mulVec_injective_iff] at h
+    exact h
+  intro h0
+  have hsum : ∑ i : Fin (p.natDegree + 1),
+      (algebraMap ℝ 𝕜 (p.coeff i)) • (A ^ (i : ℕ) *ᵥ b) = 0 := by
+    rw [← h0, aeval_eq_sum_range, Matrix.sum_mulVec,
+      ← Fin.sum_univ_eq_sum_range (fun i => (p.coeff i • A ^ i) *ᵥ b)]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [algebraMap_smul, Matrix.smul_mulVec]
+  have h := Fintype.linearIndependent_iff.mp hli _ hsum ⟨p.natDegree, by omega⟩
+  rw [map_eq_zero_iff _ (algebraMap ℝ 𝕜).injective, coeff_natDegree, leadingCoeff_eq_zero] at h
+  exact hp0 h
 
 end NLAlib

@@ -42,6 +42,7 @@ of a Haar frame, which are not independent, the variance is computed exactly her
   mean-square error with Gaussian and with sign probes, for any real matrix.
 * `NLAlib.measureReal_abs_trace_sub_girardHutchinson_ge_le`: the tail with independent
   sub-Gaussian entries, from Hanson–Wright.
+* `NLAlib.girardHutchinson_smul`: homogeneity in the matrix.
 -/
 
 @[expose] public section
@@ -377,5 +378,15 @@ theorem measureReal_abs_trace_sub_girardHutchinson_ge_le {X : Ω → Matrix n m 
   convert h using 6
   rw [mul_pow, sq (Fintype.card m : ℝ), mul_assoc, mul_left_comm ((c : ℝ) ^ 2),
     mul_div_mul_left _ _ hL.ne']
+
+/-- The Girard–Hutchinson estimate is homogeneous in the matrix: for every scalar $c$, square
+$\mathbf{B}$ and test matrix $\mathbf{\Omega}$,
+$\mathsf{girardHutchinson}(c\mathbf{B}, \mathbf{\Omega}) =
+c\,\mathsf{girardHutchinson}(\mathbf{B}, \mathbf{\Omega})$. -/
+theorem girardHutchinson_smul (c : 𝕜) (B : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) :
+    girardHutchinson (c • B) Ω = c * girardHutchinson B Ω := by
+  unfold girardHutchinson
+  simp only [Matrix.mul_smul, Matrix.smul_mul, Matrix.trace_smul, smul_eq_mul,
+    mul_div_assoc]
 
 end NLAlib

@@ -54,7 +54,9 @@ hypothesis, are trivial off Hermitian matrices: the spectral measure is then $0$
 
 * `NLAlib.integral_spectralMeasure`: the characterising integral identity.
 * `NLAlib.ae_mem_Icc_spectralMeasure`: the support hypothesis of the Polynomial layer.
-* `NLAlib.spectralMeasure_apply`: the measure of every set.
+* `NLAlib.spectralMeasure_apply`, `NLAlib.spectralMeasure_real`: the measure of every set.
+* `NLAlib.isStarProjection_cfc_indicator`: spectral projectors are orthogonal
+  projectors.
 * `NLAlib.HasOrthonormalCols.spectralMeasure_eq_sum`: the eigenbasis form.
 * `NLAlib.spectralMeasure_cfc_mulVec`: filtering multiplies the measure by $g^2$.
 * `Matrix.IsHermitian.rayleighQuotient_eq_integral_div`: the Rayleigh quotient as a ratio of
@@ -63,6 +65,12 @@ hypothesis, are trivial off Hermitian matrices: the spectral measure is then $0$
 * `Matrix.IsHermitian.abs_sub_rayleighQuotient_cfc_mulVec_le`: the filter theorem.
 * `Matrix.IsHermitian.integral_empiricalSpectralMeasure`: the normalised trace of
   $f(\mathbf{A})$.
+* `Matrix.IsHermitian.empiricalSpectralMeasure_real`: the empirical measure of every set.
+* `Matrix.IsHermitian.star_aeval_mulVec_dotProduct_aeval_mulVec`,
+  `Matrix.IsHermitian.norm_aeval_mulVec_sq`: polynomial inner products.
+* `NLAlib.spectralMeasure_diagonal`: the spectral measure of a diagonal matrix.
+* `NLAlib.spectralMeasure_diagonal_sqrt_of_ae_mem`: every finite atomic measure is a spectral
+  measure.
 -/
 
 @[expose] public section
@@ -285,12 +293,29 @@ theorem mul_spectralMeasure_real_le_integral_sq (A : Matrix n n 𝕜) (b : n →
   mul_spectralMeasure_real_le_integral A b (f := fun x => g x ^ 2)
     (Filter.Eventually.of_forall fun x => sq_nonneg (g x)) c
 
-/-- The spectral measure of a set as a real number. -/
-private theorem spectralMeasure_real_eq (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
+/-- The spectral measure of every set as a real number: for every square $\mathbf{A}$, every
+$\mathbf{b}$ and every $S \subseteq \mathbb{R}$,
+$\mu_{\mathbf{A},\mathbf{b}}(S) =
+\operatorname{Re}\,\mathbf{b}^{\mathsf{H}}\mathbf{1}_S(\mathbf{A})\mathbf{b}$, the quadratic form of
+the spectral projector $\mathbf{1}_S(\mathbf{A})$; no measurability of $S$ is needed. -/
+theorem spectralMeasure_real (A : Matrix n n 𝕜) (b : n → 𝕜) (S : Set ℝ) :
     (spectralMeasure A b).real S =
       RCLike.re (quadForm (cfc (S.indicator fun _ => (1 : ℝ)) A) b) := by
   rw [measureReal_def, spectralMeasure_apply, ENNReal.toReal_ofReal
     (re_quadForm_cfc_indicator_nonneg A b S)]
+
+/-- The spectral projector is an orthogonal projector: for every square $\mathbf{A}$ and every
+$S \subseteq \mathbb{R}$, $\mathbf{1}_S(\mathbf{A})$ is self-adjoint and idempotent (off
+Hermitian it is $\mathbf{0}$, Mathlib's junk value of `cfc`). -/
+theorem isStarProjection_cfc_indicator (A : Matrix n n 𝕜) (S : Set ℝ) :
+    IsStarProjection (cfc (S.indicator fun _ => (1 : ℝ)) A) := by
+  have hc : ContinuousOn (S.indicator fun _ => (1 : ℝ)) (spectrum ℝ A) :=
+    A.finite_real_spectrum.continuousOn _
+  refine ⟨?_, cfc_predicate _ A⟩
+  rw [IsIdempotentElem, ← cfc_mul _ _ A hc hc]
+  congr 1
+  funext x
+  by_cases hx : x ∈ S <;> simp [hx]
 
 /-- Off Hermitian the spectral measure is $0$. -/
 private theorem spectralMeasure_of_not_isHermitian {A : Matrix n n 𝕜} (hA : ¬ A.IsHermitian)
@@ -419,7 +444,7 @@ theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_sq_le_spectralMeasure_rea
     conv_lhs => rw [← hPu]
     rw [star_mulVec_dotProduct, hH.eq]
   have hnorm := hA.norm_toLp_cfc_mulVec_sq ψ b
-  rw [hψ, ← spectralMeasure_real_eq] at hnorm
+  rw [hψ, ← spectralMeasure_real] at hnorm
   rw [← hnorm, hub]
   have hin : star u ⬝ᵥ (cfc ψ A *ᵥ b) =
       inner 𝕜 (WithLp.toLp 2 u) (WithLp.toLp 2 (cfc ψ A *ᵥ b)) := by
@@ -565,6 +590,17 @@ instance isProbabilityMeasure_empiricalSpectralMeasure [Nonempty n] (A : Matrix 
   exact ENNReal.inv_mul_cancel (by exact_mod_cast Fintype.card_ne_zero) (ENNReal.natCast_ne_top _)
 
 omit [DecidableEq n] in
+/-- The empirical spectral measure of every square matrix is a finite measure (the zero measure
+for the empty matrix). -/
+instance isFiniteMeasure_empiricalSpectralMeasure (A : Matrix n n 𝕜) :
+    IsFiniteMeasure (empiricalSpectralMeasure A) := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · unfold empiricalSpectralMeasure
+    simp only [Fintype.card_eq_zero, Finset.range_zero, Finset.sum_empty, smul_zero]
+    infer_instance
+  · infer_instance
+
+omit [DecidableEq n] in
 /-- The integral against the empirical spectral measure, for every square $\mathbf{A}$ and
 every $f : \mathbb{R} \to \mathbb{R}$, is the average of $f$ over the eigenvalues counted with
 multiplicity: $\lvert n\rvert^{-1}\sum_{k<\lvert n\rvert} f(\lambda_k(\mathbf{A}))$. -/
@@ -618,6 +654,24 @@ theorem _root_.Matrix.IsHermitian.sum_spectralMeasure_single {A : Matrix n n �
   · rw [← mul_assoc, ENNReal.mul_inv_cancel (by exact_mod_cast h0.ne') (ENNReal.natCast_ne_top _),
       one_mul]
 
+/-- The empirical spectral measure of every set: for Hermitian $\mathbf{A}$ and every
+$S \subseteq \mathbb{R}$, $\nu_{\mathbf{A}}(S) =
+\operatorname{Re}\operatorname{tr}\mathbf{1}_S(\mathbf{A}) / \lvert n\rvert$, the fraction of the
+eigenvalues, counted with multiplicity, that lie in $S$; $\nu_{\mathbf{A}}$ is the empirical
+spectral measure. No measurability of $S$ is needed (the measure is atomic). -/
+theorem _root_.Matrix.IsHermitian.empiricalSpectralMeasure_real {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (S : Set ℝ) :
+    (empiricalSpectralMeasure A).real S =
+      RCLike.re (cfc (S.indicator fun _ => (1 : ℝ)) A).trace / Fintype.card n := by
+  rw [measureReal_def, empiricalSpectralMeasure, Measure.smul_apply, Measure.coe_finsetSum,
+    Finset.sum_apply, smul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv,
+    ENNReal.toReal_natCast, ENNReal.toReal_sum fun k _ => measure_ne_top _ _, hA.re_trace_cfc,
+    div_eq_inv_mul]
+  congr 1
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [Measure.dirac_apply]
+  by_cases hx : eigenvalue A k ∈ S <;> simp [hx]
+
 /-- The empirical spectral measure of a Hermitian $\mathbf{A}$ lives on the spectrum. -/
 theorem _root_.Matrix.IsHermitian.ae_mem_spectrum_empiricalSpectralMeasure {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : ∀ᵐ x ∂empiricalSpectralMeasure A, x ∈ spectrum ℝ A := by
@@ -627,5 +681,73 @@ theorem _root_.Matrix.IsHermitian.ae_mem_spectrum_empiricalSpectralMeasure {A : 
   rw [Measure.dirac_apply' _ A.finite_real_spectrum.measurableSet.compl,
     Set.indicator_of_notMem
       (Set.notMem_compl_iff.2 (hA.eigenvalue_mem_spectrum (Finset.mem_range.1 hk)))]
+
+/-- Polynomial inner products are spectral integrals: for Hermitian $\mathbf{A}$, every
+$\mathbf{b}$ and real polynomials $p$, $r$,
+$$\langle p(\mathbf{A})\mathbf{b}, r(\mathbf{A})\mathbf{b}\rangle =
+\int p\,r\,d\mu_{\mathbf{A},\mathbf{b}}\,,$$
+the inner product of $p$ and $r$ in $L^2(\mu_{\mathbf{A},\mathbf{b}})$. -/
+theorem _root_.Matrix.IsHermitian.star_aeval_mulVec_dotProduct_aeval_mulVec {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (b : n → 𝕜) (p r : ℝ[X]) :
+    star (aeval A p *ᵥ b) ⬝ᵥ (aeval A r *ᵥ b) =
+      ((∫ x, p.eval x * r.eval x ∂spectralMeasure A b : ℝ) : 𝕜) := by
+  have hp : (aeval A p)ᴴ = aeval A p := (hA.aeval p).eq
+  rw [star_mulVec_dotProduct, hp, Matrix.mulVec_mulVec, ← map_mul, ← quadForm_def]
+  simp only [← eval_mul]
+  rw [hA.integral_eval_spectralMeasure, (hA.aeval (p * r)).coe_re_quadForm]
+
+/-- Polynomial norms are spectral integrals: for Hermitian $\mathbf{A}$, every $\mathbf{b}$ and
+every real polynomial $p$, $\|p(\mathbf{A})\mathbf{b}\|^2 = \int
+p^2\,d\mu_{\mathbf{A},\mathbf{b}}$. -/
+theorem _root_.Matrix.IsHermitian.norm_aeval_mulVec_sq {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (b : n → 𝕜) (p : ℝ[X]) :
+    ‖WithLp.toLp 2 (aeval A p *ᵥ b)‖ ^ 2 = ∫ x, p.eval x ^ 2 ∂spectralMeasure A b := by
+  have h := hA.star_aeval_mulVec_dotProduct_aeval_mulVec b p p
+  rw [EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, RCLike.ofReal_inj] at h
+  rw [h]
+  simp only [sq]
+
+/-- The spectral measure of a diagonal matrix: for real $\mathbf{d}$ and every $\mathbf{w}$,
+$$\mu_{\operatorname{diag}(\mathbf{d}),\,\mathbf{w}} = \sum_i\lvert\mathbf{w}_i\rvert^2\,
+\delta_{\mathbf{d}_i}\,.$$ -/
+theorem spectralMeasure_diagonal {r : Type*} [Fintype r] [DecidableEq r] (d : r → ℝ)
+    (w : r → 𝕜) :
+    spectralMeasure (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) w =
+      ∑ i, ENNReal.ofReal (‖w i‖ ^ 2) • Measure.dirac (d i) := by
+  have h1 : HasOrthonormalCols (1 : Matrix r r 𝕜) :=
+    hasOrthonormalCols_iff.2 (by rw [Matrix.conjTranspose_one, Matrix.one_mul])
+  have hA : (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜) : Matrix r r 𝕜) =
+      (1 : Matrix r r 𝕜) * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * (1 : Matrix r r 𝕜)ᴴ := by
+    rw [Matrix.one_mul, Matrix.conjTranspose_one, Matrix.mul_one]
+  rw [h1.spectralMeasure_eq_sum rfl hA]
+  simp only [Matrix.conjTranspose_one, Matrix.one_mulVec]
+
+/-- Every finite measure carried by a finite set is a spectral measure: if a finite measure
+$\nu$ is carried by a finite set $s \subseteq \mathbb{R}$, then $\nu$ is the spectral measure of
+the real diagonal matrix of the points of $s$ and the vector of the square roots of their masses,
+$\nu = \mu_{\operatorname{diag}(x)_{x\in s},\,(\sqrt{\nu\{x\}})_{x\in s}}$. -/
+theorem spectralMeasure_diagonal_sqrt_of_ae_mem {ν : Measure ℝ} [IsFiniteMeasure ν]
+    {s : Finset ℝ} (hν : ∀ᵐ x ∂ν, x ∈ s) :
+    spectralMeasure (Matrix.diagonal fun x : s => (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) = ν := by
+  have hsum : ν = ∑ a ∈ s, ν {a} • Measure.dirac a := Measure.ae_mem_finset_iff.mp hν
+  calc spectralMeasure (Matrix.diagonal fun x : s => (x : ℝ)) (fun x => √(ν.real {(x : ℝ)}))
+      = ∑ i : s, ENNReal.ofReal (‖√(ν.real {↑i})‖ ^ 2) • Measure.dirac (i : ℝ) :=
+        spectralMeasure_diagonal _ _
+    _ = ν := by
+        rw [Finset.sum_coe_sort s (fun a : ℝ => ENNReal.ofReal (‖√(ν.real {a})‖ ^ 2) •
+          Measure.dirac a)]
+        refine Eq.trans (Finset.sum_congr rfl fun a _ => ?_) hsum.symm
+        rw [Real.norm_eq_abs, abs_of_nonneg (Real.sqrt_nonneg _),
+          Real.sq_sqrt (measureReal_nonneg), ofReal_measureReal]
+
+/-- Every spectral measure is carried by a compact interval: for every square $\mathbf{A}$ and
+every $\mathbf{b}$, $\mu_{\mathbf{A},\mathbf{b}}$-almost every $x$ lies in some $[a, a']$, the
+support hypothesis of the Polynomial layer (`ae_mem_Icc_spectralMeasure` with bounds of the
+finite spectrum). -/
+theorem exists_ae_mem_Icc_spectralMeasure (A : Matrix n n 𝕜) (b : n → 𝕜) :
+    ∃ a a' : ℝ, ∀ᵐ x ∂spectralMeasure A b, x ∈ Set.Icc a a' := by
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  exact ⟨a, a', ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b⟩
 
 end NLAlib
