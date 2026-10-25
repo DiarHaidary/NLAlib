@@ -179,7 +179,15 @@ theorem _root_.Matrix.IsHermitian.probeSpectralMeasure_real_univ {A : Matrix n n
     (hA : A.IsHermitian) (Ω : Matrix n m 𝕜) :
     (probeSpectralMeasure A Ω).real Set.univ =
       frobNorm Ω ^ 2 / (Fintype.card n * Fintype.card m) := by
-  sorry
+  unfold probeSpectralMeasure
+  simp only [Measure.real, Measure.smul_apply, Measure.coe_finsetSum, Finset.sum_apply,
+    ENNReal.toReal_smul, ENNReal.toReal_sum (fun j _ => measure_ne_top _ _)]
+  have h : ∑ j, ((spectralMeasure A fun i => Ω i j) Set.univ).toReal = frobNorm Ω ^ 2 := by
+    rw [frobNorm_sq_eq_sum_col]
+    exact Finset.sum_congr rfl fun j _ => hA.spectralMeasure_real_univ (fun i => Ω i j)
+  rw [h, NNReal.smul_def, NNReal.coe_inv, NNReal.coe_mul, smul_eq_mul, div_eq_inv_mul]
+  push_cast
+  rfl
 
 /-- The mass of the SLQ spectral-density estimate: for Hermitian $\mathbf{A}$, every test matrix
 $\mathbf{\Omega}$ and $q > 0$,
