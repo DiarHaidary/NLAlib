@@ -1385,7 +1385,66 @@ measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure
         |∫ x, f x ∂empiricalSpectralMeasure A -
           ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤
       2 * Fintype.card n * Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · refine le_trans (le_of_eq ?_) (by positivity)
+    convert measureReal_empty (μ := μ)
+    refine Set.eq_empty_of_forall_notMem fun ω ⟨f, _, hlt⟩ => ?_
+    rw [integral_empiricalSpectralMeasure, integral_slqMeasure] at hlt
+    simp only [Fintype.card_eq_zero, CharP.cast_eq_zero, div_zero, sub_zero, abs_zero] at hlt
+    have hba : 0 ≤ b - a := by linarith
+    have := jacksonApproximationConstant_pos
+    have : 0 ≤ jacksonApproximationConstant * L * (b - a) / (2 * q + 3) := by positivity
+    have : 0 ≤ L * (b - a) * τ := by positivity
+    linarith
+  have := hind.isProbabilityMeasure
+  rcases isEmpty_or_nonempty m with hm | hm
+  · refine measureReal_le_one.trans ?_
+    have : (1 : ℝ) ≤ Fintype.card n := Nat.one_le_cast.mpr Fintype.card_pos
+    simp only [Fintype.card_eq_zero, CharP.cast_eq_zero, zero_mul, neg_zero, Real.exp_zero]
+    linarith
+  -- Almost surely every probe has squared norm `card n`, so the probe measure has mass `1`.
+  have hmass : ∀ᵐ ω ∂μ,
+      (probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω)).real Set.univ = 1 := by
+    have hcol : ∀ᵐ ω ∂μ, ∀ j, ‖WithLp.toLp 2 (fun i => U ω i j)‖ = 1 :=
+      ae_all_iff.mpr fun j => ae_of_ae_map (hU j).aemeasurable
+        ((hU j).map_eq ▸ ae_norm_eq_one_uniformSphereVector)
+    filter_upwards [hcol] with ω hω
+    have hn0 : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr Fintype.card_pos
+    have h (j : m) : ‖WithLp.toLp 2 ((√(Fintype.card n : ℝ) • U ω).col j)‖ ^ 2 =
+        Fintype.card n := by
+      rw [show (√(Fintype.card n : ℝ) • U ω).col j = √(Fintype.card n : ℝ) • fun i => U ω i j
+        from rfl, WithLp.toLp_smul, norm_smul, hω j, mul_one,
+        Real.norm_of_nonneg (Real.sqrt_nonneg _), Real.sq_sqrt hn0.le]
+    rw [hA.probeSpectralMeasure_real_univ, frobNorm_sq_eq_sum_col]
+    simp only [h, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    field_simp
+  refine (measureReal_mono_ae ?_).trans
+    (measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le_of_hasLaw_uniformSphereVector
+      hind hU hA hτ)
+  filter_upwards [hmass] with ω hω ⟨f, hf, hlt⟩
+  by_contra hK
+  change ¬∃ x ∈ spectrum ℝ A, _ at hK
+  push Not at hK
+  -- The Kolmogorov bound for `f - f b`; equal masses remove the shift.
+  have h1 := hA.abs_integral_empiricalSpectralMeasure_sub_integral_probeSpectralMeasure_le hab.le
+    hs hτ hK (f := fun x => f x - f b)
+    (fun x hx y hy => by simpa only [edist_sub_right] using hf hx hy)
+  have h2 :=
+    hA.abs_integral_probeSpectralMeasure_sub_integral_slqMeasure_le_of_lipschitzOnWith hab hs
+      (√(Fintype.card n : ℝ) • U ω) q hf
+  rw [← hA.probeSpectralMeasure_real_univ, hω, mul_one] at h2
+  have hE : ∫ x, f x - f b ∂empiricalSpectralMeasure A =
+      ∫ x, f x ∂empiricalSpectralMeasure A - f b := by
+    have : (Fintype.card n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
+    rw [integral_empiricalSpectralMeasure, integral_empiricalSpectralMeasure,
+      Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    field_simp
+  rw [hE, integral_sub (integrable_probeSpectralMeasure _ _ _) (integrable_const _),
+    integral_const, smul_eq_mul, hω, one_mul, sub_sub_sub_cancel_right, sub_self, abs_zero,
+    zero_add] at h1
+  linarith [abs_sub_le (∫ x, f x ∂empiricalSpectralMeasure A)
+    (∫ x, f x ∂probeSpectralMeasure A (√(Fintype.card n : ℝ) • U ω))
+    (∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1))]
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
