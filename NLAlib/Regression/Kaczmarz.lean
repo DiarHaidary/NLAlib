@@ -9,7 +9,7 @@ public import NLAlib.Krylov.LinearSystems.Richardson
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Probability.Distributions.Sampling
-public import NLAlib.Solvers.SketchAndProject
+public import NLAlib.Regression.SketchAndProject
 
 /-!
 # Randomized Kaczmarz

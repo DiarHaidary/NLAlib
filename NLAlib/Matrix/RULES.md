@@ -32,7 +32,7 @@ and `docs/rules/DIGEST.md`.
 
 ### Placement and layers
 
-- **P1** A module imports only its own layer and lower; Sketching never imports Regression. [§2]
+- **P1** A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation. [§2]
 - **P2** No file with imports only (no per-directory aggregator). [§2]
 - **P3** An `NLAlib` file never imports `NLAlibScaffold`. [§7]
 - **P8** Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure. [§3]
