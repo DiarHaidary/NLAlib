@@ -208,7 +208,40 @@ polynomial). For $c \ne 0$ the set for $cf$ is $\lvert c \rvert$ times the set f
 unbounded (empty $s$) cases give $0$ on both sides. -/
 theorem minimaxError_const_mul (c : ℝ) (f : ℝ → ℝ) (s : Set ℝ) (n : ℕ) :
     minimaxError (fun x => c * f x) s n = |c| * minimaxError f s n := by
-  sorry
+  rcases eq_or_ne c 0 with rfl | hc
+  · have h0 : minimaxError (fun x => (0 : ℝ) * f x) s n = 0 :=
+      le_antisymm
+        (minimaxError_le_of_isUniformApproxOn (p := 0) (by simp) le_rfl
+          (fun x _ => by simp))
+        (minimaxError_nonneg _ _ _)
+    rw [h0, abs_zero, zero_mul]
+  · open scoped Pointwise in
+    have hS : {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
+        Metric.IsUniformApproxOn (fun x => p.eval x) (fun x => c * f x) s ε} =
+        |c| • {ε : ℝ | ∃ p : ℝ[X], p.degree ≤ n ∧
+        Metric.IsUniformApproxOn (fun x => p.eval x) f s ε} := by
+      ext ε
+      simp only [Set.mem_smul_set, Set.mem_ofPred_eq, smul_eq_mul, Metric.IsUniformApproxOn,
+        Real.dist_eq]
+      constructor
+      · rintro ⟨p, hp, hε⟩
+        refine ⟨|c|⁻¹ * ε, ⟨C c⁻¹ * p, by rw [degree_C_mul (inv_ne_zero hc)]; exact hp, ?_⟩,
+          mul_inv_cancel_left₀ (abs_ne_zero.mpr hc) ε⟩
+        intro x hx
+        have key : c⁻¹ * p.eval x - f x = c⁻¹ * (p.eval x - c * f x) := by
+          rw [mul_sub, ← mul_assoc, inv_mul_cancel₀ hc, one_mul]
+        simp only [eval_mul, eval_C]
+        rw [key, abs_mul, abs_inv]
+        exact mul_le_mul_of_nonneg_left (hε x hx) (inv_nonneg.mpr (abs_nonneg c))
+      · rintro ⟨η, ⟨p, hp, hη⟩, rfl⟩
+        refine ⟨C c * p, by rw [degree_C_mul hc]; exact hp, ?_⟩
+        intro x hx
+        have key : c * p.eval x - c * f x = c * (p.eval x - f x) := by ring
+        simp only [eval_mul, eval_C]
+        rw [key, abs_mul]
+        exact mul_le_mul_of_nonneg_left (hη x hx) (abs_nonneg c)
+    unfold minimaxError
+    rw [hS, Real.sInf_smul_of_nonneg (abs_nonneg c), smul_eq_mul]
 
 /-- The minimax error is subadditive: for $s$ compact and $f, g$ continuous on $s$,
 $E_n(f + g; s) \le E_n(f; s) + E_n(g; s)$. [Rivlin1981, Ch. 1] (locator to check).
