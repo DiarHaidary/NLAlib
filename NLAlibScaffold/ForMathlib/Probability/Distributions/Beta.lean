@@ -147,6 +147,47 @@ private theorem lintegral_Ioi_comp_div_add {F : ℝ → ℝ≥0∞} (hF : Measur
             mul_comm _ (F s), mul_assoc, ← ENNReal.ofReal_mul (div_pos hy (pow_pos hs1 2)).le,
             hreal]
 
+private lemma gammaPDF_eq_mul_ofReal_of_pos {a r x : ℝ} (ha : 0 < a) (hr : 0 < r) (hx : 0 < x) :
+    gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) *
+        ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x))) := by
+  have hK : 0 ≤ r ^ a / Real.Gamma a :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos ha).le
+  unfold gammaPDF gammaPDFReal
+  rw [if_pos hx.le, mul_assoc, ENNReal.ofReal_mul hK]
+
+private lemma lintegral_eq_lintegral_Ioi_of_eq_zero {g : ℝ → ℝ≥0∞} (hg : ∀ y, y < 0 → g y = 0) :
+    ∫⁻ y, g y = ∫⁻ y in Ioi 0, g y := by
+  rw [Measure.restrict_congr_set Ioi_ae_eq_Ici, setLIntegral_eq_of_support_subset]
+  intro y hy
+  by_contra h
+  exact hy (hg y (lt_of_not_ge h))
+
+private lemma lintegral_gamma_comp_div_add {F : ℝ → ℝ≥0∞} (hF : Measurable F) {a r y : ℝ}
+    (ha : 0 < a) (hr : 0 < r) (hy : 0 < y) :
+    ∫⁻ x, F (x / (x + y)) * gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) * ∫⁻ s in Ioo (0 : ℝ) 1,
+        F s * ENNReal.ofReal
+          (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s)))) := by
+  have hz : ∀ x : ℝ, x < 0 → F (x / (x + y)) * gammaPDF a r x = 0 := fun x hx => by
+    rw [gammaPDF_of_neg hx, mul_zero]
+  have key : ∀ x ∈ Ioi (0 : ℝ), F (x / (x + y)) * gammaPDF a r x =
+      ENNReal.ofReal (r ^ a / Real.Gamma a) *
+        (F (x / (x + y)) * ENNReal.ofReal (x ^ (a - 1) * Real.exp (-(r * x)))) := by
+    intro x hx
+    rw [gammaPDF_eq_mul_ofReal_of_pos ha hr hx]
+    ring
+  rw [lintegral_eq_lintegral_Ioi_of_eq_zero hz, setLIntegral_congr_fun measurableSet_Ioi key,
+    lintegral_const_mul' _ _ ENNReal.ofReal_ne_top, lintegral_Ioi_comp_div_add hF hy]
+
+private lemma integrableOn_rpow_mul_exp_div {a b r s : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r)
+    (hs : s ∈ Ioo (0 : ℝ) 1) :
+    IntegrableOn (fun y : ℝ => y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) (Ioi 0) := by
+  have h1s : 0 < 1 - s := by linarith [hs.2]
+  have := integrableOn_rpow_mul_exp_neg_mul_rpow (p := 1) (s := a + b - 1) (b := r / (1 - s))
+    (by linarith) one_pos (div_pos hr h1s)
+  simpa only [Real.rpow_one, neg_mul] using this
+
 /-- The Gamma-ratio integral after Tonelli: for measurable $F \ge 0$ and $a, b, r > 0$,
 $$\iint F\Bigl(\frac{x}{x+y}\Bigr)\gamma_{a,r}(x)\gamma_{b,r}(y)\,dx\,dy = \int_0^1 F(s)
 \frac{r^{a+b}}{\Gamma(a)\Gamma(b)}s^{a-1}(1-s)^{-a-1}\int_0^\infty y^{a+b-1}e^{-ry/(1-s)}\,dy\,
@@ -162,7 +203,70 @@ private theorem lintegral_lintegral_comp_div_add_gammaPDF {F : ℝ → ℝ≥0�
       ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal
         (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
           ∫ y in Ioi (0 : ℝ), y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) := by
-  sorry
+  have hKc : 0 ≤ r ^ a / Real.Gamma a :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos ha).le
+  have hKd : 0 ≤ r ^ b / Real.Gamma b :=
+    div_nonneg (Real.rpow_nonneg hr.le _) (Real.Gamma_pos_of_pos hb).le
+  have hz : ∀ y : ℝ, y < 0 →
+      (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y = 0 := fun y hy => by
+    rw [gammaPDF_of_neg hy, mul_zero]
+  have key1 : ∀ y ∈ Ioi (0 : ℝ), (∫⁻ x, F (x / (x + y)) * gammaPDF a r x) * gammaPDF b r y =
+      ∫⁻ s in Ioo (0 : ℝ) 1, F s * ENNReal.ofReal (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) *
+        s ^ (a - 1) * (1 - s) ^ (-a - 1) * (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) := by
+    intro y hy
+    have hy0 : 0 < y := hy
+    rw [gammaPDF_eq_mul_ofReal_of_pos hb hr hy0, lintegral_gamma_comp_div_add hF ha hr hy0,
+      ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top,
+      ← lintegral_mul_const' _ _ (ENNReal.mul_ne_top ENNReal.ofReal_ne_top ENNReal.ofReal_ne_top)]
+    refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+    obtain ⟨hs0, hs1⟩ := hs
+    have h1s : 0 < 1 - s := by linarith
+    have h1s': 1 - s ≠ 0 := h1s.ne'
+    have hA : 0 ≤ y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) * Real.exp (-(r * y * s / (1 - s))) :=
+      mul_nonneg (mul_nonneg (mul_nonneg (Real.rpow_nonneg hy0.le _) (Real.rpow_nonneg hs0.le _))
+        (Real.rpow_nonneg h1s.le _)) (Real.exp_nonneg _)
+    have h2 : y ^ a * y ^ (b - 1) = y ^ (a + b - 1) := by
+      rw [← Real.rpow_add hy0]; congr 1; ring
+    have h3 : Real.exp (-(r * y * s / (1 - s))) * Real.exp (-(r * y)) =
+        Real.exp (-(r / (1 - s) * y)) := by
+      rw [← Real.exp_add]; congr 1; field_simp; ring
+    have h4 : r ^ a * r ^ b = r ^ (a + b) := (Real.rpow_add hr a b).symm
+    have e : r ^ a / Real.Gamma a * (y ^ a * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        Real.exp (-(r * y * s / (1 - s)))) *
+        (r ^ b / Real.Gamma b * (y ^ (b - 1) * Real.exp (-(r * y)))) =
+        r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+          (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y))) := by
+      rw [← h2, ← h3, ← h4]
+      ring
+    have hB : 0 ≤ y ^ (b - 1) * Real.exp (-(r * y)) :=
+      mul_nonneg (Real.rpow_nonneg hy0.le _) (Real.exp_nonneg _)
+    rw [← e, ENNReal.ofReal_mul (mul_nonneg hKc hA), ENNReal.ofReal_mul hKc,
+      ENNReal.ofReal_mul hKd]
+    ring
+  have hmeas : AEMeasurable (Function.uncurry fun (y s : ℝ) => F s * ENNReal.ofReal
+      (r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+        (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))))
+      ((volume.restrict (Ioi (0 : ℝ))).prod (volume.restrict (Ioo (0 : ℝ) 1))) :=
+    (Measurable.mul (hF.comp measurable_snd) (Measurable.ennreal_ofReal (by fun_prop))).aemeasurable
+  rw [lintegral_eq_lintegral_Ioi_of_eq_zero hz, setLIntegral_congr_fun measurableSet_Ioi key1,
+    lintegral_lintegral_swap hmeas]
+  refine setLIntegral_congr_fun measurableSet_Ioo fun s hs => ?_
+  obtain ⟨hs0, hs1⟩ := hs
+  have h1s : 0 < 1 - s := by linarith
+  have hC : 0 ≤ r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) :=
+    mul_nonneg (mul_nonneg (div_nonneg (Real.rpow_nonneg hr.le _)
+      (mul_pos (Real.Gamma_pos_of_pos ha) (Real.Gamma_pos_of_pos hb)).le)
+      (Real.rpow_nonneg hs0.le _)) (Real.rpow_nonneg h1s.le _)
+  have hint : IntegrableOn (fun y : ℝ => r ^ (a + b) / (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) *
+      (1 - s) ^ (-a - 1) * (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) (Ioi 0) :=
+    (integrableOn_rpow_mul_exp_div ha hb hr ⟨hs0, hs1⟩).const_mul _
+  have hnn : 0 ≤ᵐ[volume.restrict (Ioi (0 : ℝ))] (fun y : ℝ => r ^ (a + b) /
+      (Real.Gamma a * Real.Gamma b) * s ^ (a - 1) * (1 - s) ^ (-a - 1) *
+      (y ^ (a + b - 1) * Real.exp (-(r / (1 - s) * y)))) :=
+    ae_restrict_of_forall_mem measurableSet_Ioi fun y hy =>
+      mul_nonneg hC (mul_nonneg (Real.rpow_nonneg (Set.mem_Ioi.mp hy).le _) (Real.exp_nonneg _))
+  rw [lintegral_const_mul, ← ofReal_integral_eq_lintegral_ofReal hint hnn, integral_const_mul]
+  fun_prop
 
 /-- The constant of the Gamma-ratio integral on $(0, 1)$ is the Beta density. -/
 private theorem const_mul_integral_eq_beta_density {a b r s : ℝ} (ha : 0 < a) (hb : 0 < b)
