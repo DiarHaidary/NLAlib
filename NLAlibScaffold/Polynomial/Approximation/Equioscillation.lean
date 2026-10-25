@@ -162,7 +162,13 @@ Result: de-la-vallee-poussin -/
 theorem AlternatesOn.le_minimaxError {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {p : ℝ[X]} {ε : ℝ}
     (h : AlternatesOn (fun x => f x - p.eval x) s (n + 2) ε) (hp : p.degree ≤ n) {η : ℝ}
     (hη : Metric.IsUniformApproxOn (fun x => p.eval x) f s η) : ε ≤ minimaxError f s n := by
-  sorry
+  unfold minimaxError
+  refine le_csInf ⟨η, p, hp, hη⟩ ?_
+  rintro ε' ⟨q, hq, hq'⟩
+  obtain ⟨x, hxs, hx⟩ := h.exists_le_abs_sub_eval hp hq
+  have hdist := hq' x hxs
+  rw [Real.dist_eq, abs_sub_comm] at hdist
+  exact hx.trans hdist
 
 /-- **An equioscillating error is the minimax error**: if $\deg p \le n$,
 $\lvert f - p \rvert \le \varepsilon$ on $s$ and $f - p$ alternates on $s$ at $n + 2$ points
