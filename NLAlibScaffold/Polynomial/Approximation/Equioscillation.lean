@@ -171,7 +171,27 @@ in $[a, b]$: `div_lt_div_of_pos_right`, `div_le_iff₀`; prototype
 $0 \le 1 \cdot (-1)^i \cdot 0$ by `hg`. -/
 private theorem alternatesOn_Icc_zero_of_eq_zero {g : ℝ → ℝ} {a b : ℝ} (hab : a < b) (k : ℕ)
     (hg : ∀ x ∈ Set.Icc a b, g x = 0) : AlternatesOn g (Set.Icc a b) k 0 := by
-  sorry
+  have hba : 0 < b - a := sub_pos.mpr hab
+  have hk : (0 : ℝ) < k + 1 := by positivity
+  have hmem : ∀ i : Fin k, a + (b - a) * ((i : ℕ) : ℝ) / (k + 1) ∈ Set.Icc a b := by
+    intro i
+    have hi : ((i : ℕ) : ℝ) ≤ k := Nat.cast_le.mpr (le_of_lt i.isLt)
+    have h0 : 0 ≤ (b - a) * ((i : ℕ) : ℝ) / (k + 1) :=
+      div_nonneg (mul_nonneg hba.le (Nat.cast_nonneg _)) hk.le
+    have h1 : (b - a) * ((i : ℕ) : ℝ) / (k + 1) ≤ b - a := by
+      rw [div_le_iff₀ hk]
+      nlinarith
+    exact ⟨by linarith, by linarith⟩
+  refine ⟨fun i => a + (b - a) * ((i : ℕ) : ℝ) / (k + 1), ?_, fun i => hmem i, 1, Or.inl rfl,
+    fun i => ?_⟩
+  · intro i j hij
+    have h1 : ((i : ℕ) : ℝ) < ((j : ℕ) : ℝ) := Nat.cast_lt.mpr hij
+    have h3 : (b - a) * ((i : ℕ) : ℝ) < (b - a) * ((j : ℕ) : ℝ) :=
+      mul_lt_mul_of_pos_left h1 hba
+    have := div_lt_div_of_pos_right h3 hk
+    change a + (b - a) * ((i : ℕ) : ℝ) / (k + 1) < a + (b - a) * ((j : ℕ) : ℝ) / (k + 1)
+    linarith
+  · rw [hg _ (hmem i), mul_zero]
 
 /-- A best approximation with positive error attains it: if $\deg p \le n$,
 $\lvert f - p \rvert \le E_n(f; [a, b])$ on $[a, b]$ and $E_n(f; [a, b]) > 0$, the extremal set
