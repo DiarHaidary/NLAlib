@@ -305,7 +305,44 @@ private theorem not_forall_mul_pos_of_isUniformApproxOn_minimaxError {f : ℝ �
     (hE : 0 < minimaxError f (Set.Icc a b) n) {q : ℝ[X]} (hq : q.degree ≤ n) :
     ¬ ∀ x ∈ Set.Icc a b, |f x - p.eval x| = minimaxError f (Set.Icc a b) n →
       0 < (f x - p.eval x) * q.eval x := by
-  sorry
+  intro hsign
+  have : CompactSpace (Set.Icc a b) := isCompact_iff_compactSpace.mp isCompact_Icc
+  set E := minimaxError f (Set.Icc a b) n with hEdef
+  let g : C(Set.Icc a b, ℝ) :=
+    ⟨fun x : Set.Icc a b => f x - p.eval (x : ℝ),
+      (hf.sub (Polynomial.continuous p).continuousOn).domRestrict⟩
+  let h : C(Set.Icc a b, ℝ) := q.toContinuousMapOn (Set.Icc a b)
+  have hgx : ∀ x : Set.Icc a b, |g x| ≤ E := fun x => by
+    have := hbest x x.2
+    rw [Real.dist_eq, abs_sub_comm] at this
+    exact this
+  have hgE : ‖g‖ = E := by
+    refine le_antisymm ((ContinuousMap.norm_le g hE.le).mpr fun x => ?_) ?_
+    · rw [Real.norm_eq_abs]; exact hgx x
+    · refine minimaxError_le_of_isUniformApproxOn hp (norm_nonneg g) fun x hx => ?_
+      have := g.norm_coe_le_norm ⟨x, hx⟩
+      rw [Real.norm_eq_abs] at this
+      rw [Real.dist_eq, abs_sub_comm]
+      exact this
+  obtain ⟨t, ht, htlt⟩ := ContinuousMap.exists_pos_norm_sub_smul_lt g h (by rwa [hgE])
+    (fun x hx => hsign x x.2 (by rw [← hgE]; exact hx))
+  have hdeg : (p + t • q).degree ≤ n := by
+    have hmem : p + t • q ∈ degreeLE ℝ n :=
+      (degreeLE ℝ n).add_mem (mem_degreeLE.mpr hp) ((degreeLE ℝ n).smul_mem t (mem_degreeLE.mpr hq))
+    exact mem_degreeLE.mp hmem
+  have herr : Metric.IsUniformApproxOn (fun x => (p + t • q).eval x) f (Set.Icc a b)
+      ‖g - t • h‖ := fun x hx => by
+    have h1 := (g - t • h).norm_coe_le_norm ⟨x, hx⟩
+    have e : (g - t • h) ⟨x, hx⟩ = f x - (p.eval x + t * q.eval x) := by
+      change f x - p.eval x - t * q.eval x = f x - (p.eval x + t * q.eval x)
+      ring
+    rw [e, Real.norm_eq_abs] at h1
+    rw [Real.dist_eq, abs_sub_comm]
+    dsimp only
+    rw [Polynomial.eval_add, Polynomial.eval_smul, smul_eq_mul]
+    exact h1
+  have := minimaxError_le_of_isUniformApproxOn hdeg (norm_nonneg _) herr
+  linarith
 
 /-- **Chebyshev's equioscillation theorem, necessity.** Let $a < b$, $f$ continuous on
 $[a, b]$, and $p$ a real polynomial of degree at most $n$ with
