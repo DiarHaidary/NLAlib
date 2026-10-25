@@ -387,6 +387,16 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_differentiableOn
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
-  sorry
+  have hsub' : {ω | τ + 4 * M / (ρ ^ (2 * q + 1) * (ρ - 1)) * (frobNorm (X ω) ^ 2 / Fintype.card m) ≤
+        |(cfc f A).trace - slq A f (X ω) (q + 1)|} ⊆
+      {ω | τ ≤ |(cfc f A).trace - girardHutchinson (cfc f A) (X ω)|} := by
+    intro ω hω
+    have hb := Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_differentiableOn hA haa hs hρ hFd
+      hM hExt (X ω) q
+    simp only [Real.norm_eq_abs, Set.mem_ofPred_eq] at hb hω ⊢
+    linarith
+  have := hind.isProbabilityMeasure
+  exact (measureReal_mono hsub' (measure_ne_top _ _)).trans
+    (measureReal_abs_trace_sub_girardHutchinson_ge_le hind hsub hvar (cfc f A) hτ)
 
 end NLAlib
