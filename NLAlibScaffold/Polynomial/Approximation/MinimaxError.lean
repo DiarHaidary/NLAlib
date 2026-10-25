@@ -304,7 +304,19 @@ $[a, b]$ as $[-1, 1]$ (`Set.ext`, `le_div_iff₀`, `div_le_iff₀`). -/
 theorem minimaxError_comp_Icc_neg_one_one (f : ℝ → ℝ) {a b : ℝ} (hab : a < b) (n : ℕ) :
     minimaxError (fun t => f (((b - a) * t + b + a) / 2)) (Set.Icc (-1) 1) n =
       minimaxError f (Set.Icc a b) n := by
-  sorry
+  have hpos : 0 < (b - a) / 2 := by linarith
+  have h := minimaxError_comp_mul_add f (Set.Icc a b) n hpos.ne' ((b + a) / 2)
+  have hf : (fun t => f (((b - a) * t + b + a) / 2)) =
+      fun t => f ((b - a) / 2 * t + (b + a) / 2) := by
+    funext t
+    congr 1
+    ring
+  have hs : (fun t : ℝ => (b - a) / 2 * t + (b + a) / 2) ⁻¹' Set.Icc a b = Set.Icc (-1) 1 := by
+    ext t
+    simp only [Set.mem_preimage, Set.mem_Icc]
+    constructor <;> intro <;> constructor <;> nlinarith
+  rw [hf, ← hs]
+  exact h
 
 /-- **The minimax error tends to zero** on an interval: for $f$ continuous on $[a, b]$,
 $E_n(f; [a, b]) \to 0$ as $n \to \infty$ (Weierstrass). [Trefethen2019, Ch. 6].
