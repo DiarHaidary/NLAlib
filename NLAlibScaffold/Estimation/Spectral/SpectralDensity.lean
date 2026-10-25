@@ -467,7 +467,46 @@ _root_.Matrix.IsHermitian.abs_integral_probeSpectralMeasure_sub_integral_slqMeas
     |∫ x, f x ∂probeSpectralMeasure A Ω - ∫ x, f x ∂slqMeasure A Ω (q + 1)| ≤
       jacksonApproximationConstant * L * (b - a) / (2 * q + 3) *
         (frobNorm Ω ^ 2 / (Fintype.card n * Fintype.card m)) := by
-  sorry
+  have hper : ∀ j ∈ Finset.univ,
+      |∫ x, f x ∂spectralMeasure A (fun i => Ω i j) -
+        ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) (q + 1)| ≤
+      jacksonApproximationConstant * L * (b - a) / (2 * q + 3) *
+        (spectralMeasure A (fun i => Ω i j)).real Set.univ := fun j _ =>
+    abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
+      (ae_mem_Icc_spectralMeasure A hs _) hab hf q
+  have hP : ∫ x, f x ∂probeSpectralMeasure A Ω =
+      ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹ : ℝ) *
+        ∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j) := by
+    unfold probeSpectralMeasure
+    rw [integral_smul_nnreal_measure, integral_finsetSum_measure fun j _ =>
+      integrable_spectralMeasure _ _ _]
+    simp [NNReal.smul_def]
+  have hQ : ∫ x, f x ∂slqMeasure A Ω (q + 1) =
+      ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹ : ℝ) *
+        ∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) (q + 1) := by
+    unfold slqMeasure
+    rw [integral_smul_nnreal_measure, integral_finsetSum_measure fun j _ =>
+      integrable_gaussQuadrature _ _ _]
+    simp [NNReal.smul_def]
+  have hmass : ∑ j, (spectralMeasure A (fun i => Ω i j)).real Set.univ = frobNorm Ω ^ 2 := by
+    rw [frobNorm_sq_eq_sum_col]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    exact hA.spectralMeasure_real_univ _
+  rw [hP, hQ, ← mul_sub, ← Finset.sum_sub_distrib, abs_mul,
+    abs_of_nonneg (by positivity : (0 : ℝ) ≤ ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹ : ℝ))]
+  calc ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹ : ℝ) *
+        |∑ j, (∫ x, f x ∂spectralMeasure A (fun i => Ω i j) -
+          ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) (q + 1))|
+      ≤ ((Fintype.card n * Fintype.card m : ℝ≥0)⁻¹ : ℝ) *
+          ∑ j, jacksonApproximationConstant * L * (b - a) / (2 * q + 3) *
+            (spectralMeasure A (fun i => Ω i j)).real Set.univ := by
+        gcongr
+        refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum hper)
+    _ = jacksonApproximationConstant * L * (b - a) / (2 * q + 3) *
+          (frobNorm Ω ^ 2 / (Fintype.card n * Fintype.card m)) := by
+        rw [← Finset.mul_sum, hmass]
+        push_cast
+        ring
 
 /-! ### Tails with independent sub-Gaussian entries -/
 
