@@ -105,7 +105,50 @@ theorem exists_degree_le_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {s : S
     (hs : IsCompact s) (hf : ContinuousOn f s) (n : ℕ) :
     ∃ p : ℝ[X], p.degree ≤ n ∧
       Metric.IsUniformApproxOn (fun x => p.eval x) f s (minimaxError f s n) := by
-  sorry
+  rcases s.eq_empty_or_nonempty with rfl | hne
+  · exact ⟨0, by simp, fun x hx => absurd hx (Set.notMem_empty x)⟩
+  have := isCompact_iff_compactSpace.mp hs
+  let g : C(s, ℝ) := ⟨s.domRestrict f, continuousOn_iff_continuous_domRestrict.mp hf⟩
+  let P : Submodule ℝ C(s, ℝ) := (degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap
+  have : FiniteDimensional ℝ (degreeLE ℝ n) := by
+    rw [← degreeLT_succ_eq_degreeLE]
+    exact LinearEquiv.finiteDimensional (degreeLTEquiv ℝ (n + 1)).symm
+  have : FiniteDimensional ℝ P := inferInstance
+  have hpt : ∀ (q : ℝ[X]) (z : s),
+      dist (g z) (toContinuousMapOnAlgHom s q z) = dist (f z) (q.eval z) := by
+    intro q z
+    simp [g, Real.dist_eq]
+  obtain ⟨y, hyP, hy⟩ := Submodule.exists_infDist_eq_dist P g
+  obtain ⟨p, hpn, rfl⟩ := Submodule.mem_map.mp hyP
+  have hleast : IsLeast {ε : ℝ | ∃ q : ℝ[X], q.degree ≤ n ∧
+      Metric.IsUniformApproxOn (fun x => q.eval x) f s ε}
+      (dist g (toContinuousMapOnAlgHom s p)) := by
+    refine ⟨⟨p, mem_degreeLE.mp hpn, fun x hx => ?_⟩, ?_⟩
+    · have h := ContinuousMap.dist_apply_le_dist (f := g)
+        (g := toContinuousMapOnAlgHom s p) ⟨x, hx⟩
+      have h2 : dist (f x) (p.eval x) = dist (g ⟨x, hx⟩) (toContinuousMapOnAlgHom s p ⟨x, hx⟩) :=
+        (hpt p ⟨x, hx⟩).symm
+      rw [dist_comm, h2]
+      exact h
+    · rintro ε ⟨q, hqn, hq⟩
+      have hε : 0 ≤ ε := hq.nonneg hne
+      calc dist g (toContinuousMapOnAlgHom s p) = Metric.infDist g (P : Set C(s, ℝ)) := hy.symm
+        _ ≤ dist g (toContinuousMapOnAlgHom s q) :=
+          Metric.infDist_le_dist_of_mem (Submodule.mem_map_of_mem (mem_degreeLE.mpr hqn))
+        _ ≤ ε := (ContinuousMap.dist_le hε).mpr fun z => by
+          rw [hpt q z, dist_comm]; exact hq z z.2
+  have hmin : minimaxError f s n = dist g (toContinuousMapOnAlgHom s p) := by
+    unfold minimaxError
+    exact hleast.csInf_eq
+  refine ⟨p, mem_degreeLE.mp hpn, ?_⟩
+  rw [hmin]
+  intro x hx
+  have h := ContinuousMap.dist_apply_le_dist (f := g)
+    (g := toContinuousMapOnAlgHom s p) ⟨x, hx⟩
+  have h2 : dist (f x) (p.eval x) = dist (g ⟨x, hx⟩) (toContinuousMapOnAlgHom s p ⟨x, hx⟩) :=
+    (hpt p ⟨x, hx⟩).symm
+  rw [dist_comm, h2]
+  exact h
 
 /-- The minimax error is a minimum: for $s$ compact and nonempty and $f$ continuous on $s$,
 $E_n(f; s)$ is the least $\varepsilon$ such that some real polynomial of degree at most $n$ is
