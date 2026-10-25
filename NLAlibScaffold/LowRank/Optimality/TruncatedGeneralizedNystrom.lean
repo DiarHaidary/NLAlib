@@ -144,6 +144,17 @@ theorem mul_le_of_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_f
             (Fintype.card s)) ^ 2 ∂μ ≤ (1 + ε) * Fintype.card t) :
     Fintype.card s * ((Fintype.card s : ℝ) + Fintype.card t - Fintype.card l) ≤
       ε * ((Fintype.card p : ℝ) - Fintype.card l - 1) * Fintype.card t := by
-  sorry
+  have hp : (0 : ℝ) < (Fintype.card p : ℝ) - Fintype.card l - 1 := by
+    have : (Fintype.card l : ℝ) + 2 ≤ Fintype.card p := by exact_mod_cast hlp
+    linarith
+  have hK : (Fintype.card s : ℝ) * ((Fintype.card s : ℝ) + Fintype.card t - Fintype.card l) /
+      ((Fintype.card p : ℝ) - Fintype.card l - 1) ≤ ε * Fintype.card t := by
+    refine le_of_forall_pos_le_add fun η hη => ?_
+    have hev := eventually_le_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq
+      hX hΨ hXΨ hsl hlp hη
+    obtain ⟨a, ha, ha1⟩ := (hev.and (eventually_ge_atTop 1)).exists
+    linarith [h a ha1]
+  rw [div_le_iff₀ hp] at hK
+  linarith [hK]
 
 end NLAlib
