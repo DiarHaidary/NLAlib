@@ -1373,7 +1373,27 @@ measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure
         L * (b - a) * τ + jacksonApproximationConstant * L * (b - a) / (2 * q + 3) <
         |∫ x, f x ∂empiricalSpectralMeasure A -
           ∫ x, f x ∂slqMeasure A (√(Fintype.card n : ℝ) • U ω) (q + 1)|} ≤ δ := by
-  sorry
+  refine (measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le_of_hasLaw_uniformSphereVector
+    hind hU hA hab hs L q hτ.le).trans ?_
+  rcases Nat.eq_zero_or_pos (Fintype.card n) with hn | hn
+  · simp [hn, hδ.le]
+  · have hnR : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr hn
+    have hτ2 : 0 < ((Fintype.card n : ℝ) + 2) * τ ^ 2 := by positivity
+    have hlog : Real.log (2 * Fintype.card n / δ) ≤
+        Fintype.card m * ((Fintype.card n + 2) * τ ^ 2) := (div_le_iff₀ hτ2).mp hm
+    have hpos : 0 < 2 * (Fintype.card n : ℝ) / δ := by positivity
+    have hexp : Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2)) ≤
+        δ / (2 * Fintype.card n) := by
+      calc Real.exp (-(Fintype.card m * (Fintype.card n + 2) * τ ^ 2))
+          ≤ Real.exp (-Real.log (2 * Fintype.card n / δ)) :=
+            Real.exp_le_exp.mpr (by
+              have e : (Fintype.card m : ℝ) * (Fintype.card n + 2) * τ ^ 2 =
+                  Fintype.card m * ((Fintype.card n + 2) * τ ^ 2) := by ring
+              linarith)
+        _ = δ / (2 * Fintype.card n) := by
+            rw [Real.exp_neg, Real.exp_log hpos]; field_simp
+    calc _ ≤ 2 * (Fintype.card n : ℝ) * (δ / (2 * Fintype.card n)) := by gcongr
+      _ = δ := by field_simp
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
