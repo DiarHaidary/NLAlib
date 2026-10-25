@@ -29,6 +29,26 @@ New public helpers (decision SHARE-HELPERS): `mem_gaussNodes`,
 (Gauss), `ae_eq_zero_of_integral_mul_sub_eq_zero`, `integral_eval_basis_nonneg_of_exact` (Radau). Report:
 `reports/Review-KS8-Cleanup.md` and `reports/Stage-KS8.md` in the harness repository.
 
+## Poly-Best best polynomial approximation: proofs (2026-10-25)
+
+Branch `cleanup/polybest` (worktree `nlalib-cleanup-polybest`), over `integrate/polybest` with
+`origin/main` merged. All 43 Poly-Best targets are proved (workflow harness, mostly haiku),
+cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with their `Proof:`
+lines removed (D8): `Polynomial/Approximation/{MinimaxError, Equioscillation, Inverse, Jackson,
+AnalyticApproximation}.lean`, `Polynomial/Orthogonal/Gauss.lean`,
+`Krylov/Functions/{LanczosFA, Quadrature}.lean`,
+`Estimation/Trace/StochasticLanczosQuadrature.lean`, and the new
+`ForMathlib/{Analysis/Normed/Module/FiniteDimension, Topology/ContinuousMap/Compact,
+Topology/Order/IntermediateValue}.lean`. The scaffold is empty again. No statement changed. New
+imports: `NLAlib.Polynomial.Approximation.MinimaxError` (Inverse, Jackson, AnalyticApproximation,
+Gauss, LanczosFA, Quadrature, StochasticLanczosQuadrature), Mathlib's `Topology.ContinuousMap.
+{Polynomial, Weierstrass}`, `Topology.MetricSpace.HausdorffDistance`, `RingTheory.Polynomial.Basic`,
+`Topology.Algebra.Polynomial` and `NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension`
+(MinimaxError), Mathlib's `Analysis.SpecialFunctions.Trigonometric.Chebyshev.{Extremal,
+RootsExtrema}`, `LinearAlgebra.Lagrange`, `NLAlib.Polynomial.Approximation.MinimaxError` and the two
+new `ForMathlib/Topology` files (Equioscillation). Reports: `reports/Review-PolyBest-Cleanup.md`
+and `reports/Stage-PolyBest.md` in the harness repository.
+
 ## SLQ and Probability-Beta: proofs (2026-10-25)
 
 Branch `cleanup/slq-beta` (worktree `nlalib-cleanup2`), over `fix/ks7-fable` with `integrate/slq`

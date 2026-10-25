@@ -213,7 +213,8 @@ theorem integrable_conjTranspose_mul_mul_of_hasLaw_samplingSketch [DecidableEq r
 
 /-- **Row sampling is unbiased for matrix products**:
 $\mathbb{E}[\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B}]
-= \mathbf{A}^{\mathsf{H}} \mathbf{B}$ when every zero weight sits on a row where $\mathbf{A}$ or
+= \mathbf{A}^{\mathsf{H}} \mathbf{B}$ for $k$ nonempty when every zero weight sits on a row
+where $\mathbf{A}$ or
 $\mathbf{B}$ vanishes (in particular when every weight is positive).
 [MartinssonTropp2020, §7.1] (the sampled estimator, positive weights). -/
 theorem integral_conjTranspose_mul_mul_of_hasLaw_samplingSketch [Nonempty k] [DecidableEq r]
@@ -246,7 +247,8 @@ $$\mathbb{E} \|\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathb
 \mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2
 = \frac{1}{\lvert k \rvert} \Bigl( \sum_i \frac{\|\mathbf{A}_i\|^2 \|\mathbf{B}_i\|^2}{p_i} -
 \|\mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2 \Bigr)$$
-when every zero weight sits on a row where $\mathbf{A}$ or $\mathbf{B}$ vanishes (there the term is
+for $k$ nonempty, when every zero weight sits on a row where $\mathbf{A}$ or $\mathbf{B}$ vanishes
+(there the term is
 $0/0 = 0$). [MartinssonTropp2020, §7.1]
 (the estimator); Drineas, Kannan and Mahoney 2006, Lemma 4 (the identity, citation to confirm).
 Result: amm-sampling -/
@@ -295,7 +297,7 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_of_hasLaw_samplingSketch [Non
   ring
 
 /-- **Approximate matrix multiplication by sampling, domination form**: if
-$\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$ for every row,
+$\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$ for every row, with $k$ nonempty,
 $$\mathbb{E} \|\mathbf{A}^{\mathsf{H}} \mathbf{S}^{\mathsf{H}} \mathbf{S} \mathbf{B} -
 \mathbf{A}^{\mathsf{H}} \mathbf{B}\|_{\mathsf{F}}^2
 \le \frac{L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}{\lvert k \rvert} \,.$$
@@ -351,7 +353,8 @@ theorem integral_frobNorm_conjTranspose_mul_sub_sq_le_of_hasLaw_samplingSketch [
     _ ≤ L * (frobNorm A * frobNorm B) := mul_le_mul_of_nonneg_left hcs hL
     _ = L * frobNorm A * frobNorm B := by ring
 
-/-- **The tail of approximate matrix multiplication by sampling**: under the domination
+/-- **The tail of approximate matrix multiplication by sampling**: for $k$ nonempty,
+under the domination
 $\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$, the Frobenius error exceeds $t > 0$ with
 probability at most
 $$\frac{L \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}}{\lvert k \rvert \, t^2}$$
@@ -376,7 +379,8 @@ theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_samplingSketc
           (by positivity)
     _ = _ := by rw [div_div]
 
-/-- **The relative tail of approximate matrix multiplication by sampling**: under the domination
+/-- **The relative tail of approximate matrix multiplication by sampling**: for $k$ nonempty,
+under the domination
 $\|\mathbf{A}_i\| \, \|\mathbf{B}_i\| \le L p_i$, the Frobenius error exceeds
 $\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$ with probability at most
 $$\frac{L}{\lvert k \rvert \, \varepsilon^2

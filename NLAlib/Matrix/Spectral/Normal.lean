@@ -84,7 +84,7 @@ theorem HasOrthonormalCols.isStarNormal_mul_diagonal_mul_conjTranspose {U : Matr
     Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
   simp only [mul_comm]
 
-/-- **Normality is invariant under unitary similarity**: for normal $\mathbf{A}$ and unitary
+/-- Normality is invariant under unitary similarity: for normal $\mathbf{A}$ and unitary
 $\mathbf{U}$, the matrix $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$ is normal. -/
 theorem _root_.IsStarNormal.conjTranspose_mul_mul {A : Matrix n n 𝕜} (hA : IsStarNormal A)
     {U : Matrix n n 𝕜} (hU : HasOrthonormalCols U) : IsStarNormal (Uᴴ * A * U) := by
@@ -276,8 +276,8 @@ theorem _root_.IsStarNormal.mul_eq_mul_iff_conjTranspose_mul_eq_mul_conjTranspos
   · rw [mul_comm (a i), mul_comm (star a i), mul_right_inj' hY, mul_right_inj' hY,
       Pi.star_apply, Pi.star_apply, star_inj]
 
-/-- **Normal matrices are unitarily similar exactly when they have the same characteristic
-polynomial**: for normal complex $\mathbf{A}$, $\mathbf{B}$, there is a unitary $\mathbf{U}$ with
+/-- Normal matrices are unitarily similar exactly when they have the same characteristic
+polynomial: for normal complex $\mathbf{A}$, $\mathbf{B}$, there is a unitary $\mathbf{U}$ with
 $\mathbf{B} = \mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$ if and only if
 $\det(X\mathbf{I} - \mathbf{A}) = \det(X\mathbf{I} - \mathbf{B})$.
 Port of `NLAlib.exists_unitary_similarity_iff_charpoly_eq_of_normal`. -/

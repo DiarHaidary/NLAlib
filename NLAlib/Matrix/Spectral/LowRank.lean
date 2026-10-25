@@ -280,7 +280,7 @@ theorem frobNorm_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
   exact Finset.sum_congr rfl fun i hi => by
     rw [singularValues_truncatedSVD, if_pos (Finset.mem_range.mp hi)]
 
-/-- **Truncation does not increase the Frobenius norm**, for every $k$:
+/-- Truncation does not increase the Frobenius norm, for every $k$:
 $\|\llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem frobNorm_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) :
     frobNorm (truncatedSVD A k) ≤ frobNorm A := by
@@ -323,7 +323,7 @@ theorem specNorm_sub_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     specNorm (A - truncatedSVD A k) = singularValues A k := by
   rw [← singularValues_zero_eq_specNorm, singularValues_sub_truncatedSVD, add_zero]
 
-/-- **Tail flattening**:
+/-- Tail flattening:
 $$d\,\sigma_{k+d}(\mathbf{A})^2 \le
 \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2\,,$$
 since the $d$ singular values
@@ -517,7 +517,7 @@ theorem _root_.Matrix.PosSemidef.one_sub_mul_mul_one_sub_eq_sub_truncatedSVD [De
   abel
 
 open scoped ComplexOrder in
-/-- **A frame of a dominant right singular subspace.** For an index type $p$ with
+/-- A frame of a dominant right singular subspace: for an index type $p$ with
 $\lvert p \rvert = k \le \lvert n \rvert$ there is $\mathbf{Z}$ with orthonormal columns indexed by
 $p$ and $\mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}} = \llbracket \mathbf{A} \rrbracket_k$; for
 $k \ge \operatorname{rank}\mathbf{A}$ it is any frame whose range contains the row space. Rewriting
@@ -561,7 +561,7 @@ theorem exists_hasOrthonormalCols_range_eq_range_conjTranspose_truncatedSVD {p :
     rw [← hZ.rangeProjector_eq, rangeProjector_inj, hR]
   exact ⟨Z, hZ, hR, hP, by rw [Matrix.mul_assoc, hP, mul_rangeProjector_conjTranspose_truncatedSVD]⟩
 
-/-- **A top-$k$ frame and its orthonormal completion**: for $\lvert p \rvert = k$ and
+/-- A top-$k$ frame and its orthonormal completion: for $\lvert p \rvert = k$ and
 $\lvert p \rvert + \lvert q \rvert = \lvert n \rvert$ there are $\mathbf{Z}$ and $\mathbf{V}$
 with orthonormal columns indexed by $p$ and $q$, $\mathbf{Z}^{\mathsf{H}}\mathbf{V} = \mathbf{0}$
 (so $\begin{bmatrix} \mathbf{Z} & \mathbf{V} \end{bmatrix}$ is unitary up to relabelling),
@@ -754,7 +754,7 @@ private theorem mul_submatrix_castLE_mul_conjTranspose_eq_truncatedSVD {A : Matr
 -- SKELETON-NOTE: true as stated, but the last clause (every prefix gives the chosen truncation)
 -- forces Z to be built from the chosen `svdV A` (then completed by null vectors of A when
 -- k > rank A); a frame of right singular vectors chosen otherwise fails it under ties.
-/-- **Nested invariant frames of the Gram matrix**: for $k \le \lvert n \rvert$ there are
+/-- Nested invariant frames of the Gram matrix: for $k \le \lvert n \rvert$ there are
 $\mathbf{Z} \in \Bbbk^{n \times k}$ and $\mathbf{V} \in \Bbbk^{n \times (\lvert n \rvert - k)}$ with
 orthonormal columns, $\mathbf{Z}^{\mathsf{H}}\mathbf{V} = \mathbf{0}$ and
 $\mathbf{Z}\mathbf{Z}^{\mathsf{H}} + \mathbf{V}\mathbf{V}^{\mathsf{H}} = \mathbf{I}$, made of right

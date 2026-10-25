@@ -160,7 +160,7 @@ theorem singularValues_sub_rbki_le_sub_rsvd_pow (A : Matrix m n 𝕜) (Ω : Matr
     (by rw [degree_X_pow]; exact_mod_cast p.lt_succ_self) i
   rwa [aeval_X_pow] at h
 
-/-- **More blocks, smaller error**: for $q \le q'$ and every $i$,
+/-- More blocks, smaller error: for $q \le q'$ and every $i$,
 $$\sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q')) \le
 \sigma_i(\mathbf{A} - \mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q))\,.$$ -/
 theorem singularValues_sub_rbki_le_of_le (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) {q q' : ℕ}

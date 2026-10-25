@@ -12,7 +12,7 @@ public import NLAlib.Matrix.Norms.Nuclear
 # Schatten norms
 
 The Schatten $q$-norm `NLAlib.schattenNorm q A` of a matrix, written $\|\mathbf{A}\|_{S_q}$, is
-the $\ell^q$ norm of its singular values, for $q$ in `ℝ≥0∞`. The cases $q = 1$, $q = 2$ and
+the $\ell^q$ norm of its singular values, for $q \in [0,\infty]$. The cases $q = 1$, $q = 2$ and
 $q = \infty$ are the nuclear, Frobenius and spectral norms. It is defined as Mathlib's `PiLp` norm
 of the vector of the first $\min(\lvert m \rvert, \lvert n \rvert)$ singular values, so
 $q = \infty$ needs no separate definition, and the degenerate $q = 0$ gives the rank.
@@ -49,7 +49,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] [Fintype n] [Fintype p]
 
 /-- The **Schatten $q$-norm** $\|\mathbf{A}\|_{S_q}$: the $\ell^q$ norm of the singular values
-$\sigma_i(\mathbf{A})$, $i < \min(\lvert m \rvert, \lvert n \rvert)$, for $q$ in `ℝ≥0∞`.
+$\sigma_i(\mathbf{A})$, $i < \min(\lvert m \rvert, \lvert n \rvert)$, for $q \in [0,\infty]$.
 For $q = 1, 2, \infty$ it is the nuclear, Frobenius and spectral norm; it is a norm for $1 \le q$.
 For $q = 0$ it is the rank, following Mathlib's convention for $\ell^0$.
 [HornJohnson2013, §7.4.7]; [Bhatia1997, §IV.2]. Port of `NLAlib.schattenNorm`, with the arguments
@@ -95,7 +95,7 @@ private theorem sum_range_singularValues_rpow (A : Matrix m n 𝕜) {t : ℝ} (h
     rw [(singularValues_eq_zero_iff A).mpr (not_lt.mp fun h => hi (Finset.mem_range.mpr h)),
       Real.zero_rpow ht]).symm
 
-/-- **The Schatten norm as a power sum.** For $0 < q < \infty$ and any $N$ at least the rank,
+/-- The Schatten norm as a power sum: for $0 < q < \infty$ and any $N$ at least the rank,
 $$\|\mathbf{A}\|_{S_q} = \Bigl(\sum_{i < N} \sigma_i(\mathbf{A})^q\Bigr)^{1/q}\,.$$
 Port of `NLAlib.schattenNormReal_eq_sum_range_rpow_of_min_le` and
 `NLAlib.schattenNormReal_eq_sum_rank_rpow`. -/
@@ -246,7 +246,7 @@ theorem schattenNorm_conjTranspose (q : ℝ≥0∞) (A : Matrix m n 𝕜) :
     schattenNorm q Aᴴ = schattenNorm q A := by
   exact schattenNorm_congr (singularValues_conjTranspose A) q
 
-/-- **The Schatten norm of a Gram matrix**:
+/-- The Schatten norm of a Gram matrix:
 $\|\mathbf{B}^{\mathsf{H}}\mathbf{B}\|_{S_q} = \|\mathbf{B}\|_{S_{2q}}^2$ for $q \ne 0$, since
 $\sigma_i(\mathbf{B}^{\mathsf{H}}\mathbf{B}) = \sigma_i(\mathbf{B})^2$. The case $q = 0$ is
 excluded: `schattenNorm 0` is the rank. -/

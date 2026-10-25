@@ -222,7 +222,7 @@ theorem integral_dotProduct_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (hg : HasLaw g (gaussianVector n) μ) (w : n → ℝ) : ∫ ω, w ⬝ᵥ g ω ∂μ = 0 :=
   integral_of_hasLaw_gaussianReal (hasLaw_dotProduct_of_hasLaw_gaussianVector hg w)
 
-/-- **Increments of the canonical Gaussian process**: for a standard Gaussian vector $\mathbf{g}$,
+/-- Increments of the canonical Gaussian process: for a standard Gaussian vector $\mathbf{g}$,
 $\mathbb{E}[(\langle \mathbf{w}, \mathbf{g} \rangle - \langle \mathbf{w}', \mathbf{g} \rangle)^2]
 = \|\mathbf{w} - \mathbf{w}'\|^2$, written as
 $\langle \mathbf{w} - \mathbf{w}', \mathbf{w} - \mathbf{w}' \rangle$. -/

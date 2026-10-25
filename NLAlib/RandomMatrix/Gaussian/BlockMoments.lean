@@ -72,7 +72,7 @@ $1 + \mathbb{E}\|\mathbf{G}^{+}\|_{\mathsf{F}}^2$, the factor in front of the op
 error in the expected error of the randomized SVD [HalkoMartinssonTropp2011, Theorem 10.5], and
 in Gaussian sketch-and-solve it is the completion factor $1 + q/(p - q - 1)$. Junk for
 $l \le k + 1$, where the denominator is at most $0$ (and Lean's $x/0 = 0$ at $l = k + 1$);
-theorems carry `k + 2 ≤ l`. A plain definition, because its body is the source's formula. -/
+theorems carry $k + 2 \le l$. A plain definition, because its body is the source's formula. -/
 noncomputable def gaussianProjectionFactor (k l : ℕ) : ℝ := 1 + (k : ℝ) / ((l : ℝ) - k - 1)
 
 /-- The body of `gaussianProjectionFactor`, <!-- value gaussianProjectionFactor k l -->
@@ -107,7 +107,7 @@ theorem gaussianProjectionFactor_le_gaussianProjectionFactor {k k' l : ℕ} (hk 
   exact div_le_div₀ (Nat.cast_nonneg _) hk' (by linarith) (by linarith)
 
 
-/-- **The Gaussian projection factor at $\ell \ge 3k/\varepsilon$**: for $k \ge 1$,
+/-- The Gaussian projection factor at $\ell \ge 3k/\varepsilon$: for $k \ge 1$,
 $0 < \varepsilon \le 1$ and $3k/\varepsilon \le \ell$, the size condition $k + 2 \le \ell$ holds
 and <!-- value gaussianProjectionFactor k \ell --> $1 + k/(\ell - k - 1) \le 1 + \varepsilon$. The
 arithmetic of the asymptotic forms of the
@@ -153,7 +153,7 @@ theorem integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableE
     (S := fun _ => S) measurable_const measurable_pinv).2 ?_
   exact (integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk).const_mul _
 
-/-- **The range finder's block bound** (Halko, Martinsson and Tropp 2011, proof of
+/-- The range finder's block bound (Halko, Martinsson and Tropp 2011, proof of
 Theorem 10.5): for a standard Gaussian $n \times k$ matrix $\mathbf{G}$, frames $\mathbf{V}_1$
 ($n \times r$) and $\mathbf{V}_2$ ($n \times s$) with
 $\mathbf{V}_1^{\mathsf{H}}\mathbf{V}_2 = \mathbf{0}$, and $\lvert r \rvert + 2 \le \lvert k \rvert$,
@@ -190,7 +190,7 @@ theorem integrable_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix [DecidableE
   simp only [frobNorm_pinv_mul_mul_eq]
   exact integrable_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂ hrk Sᴴ
 
-/-- **The transposed block bound** (Halko, Martinsson and Tropp 2011, proof of Theorem 10.5,
+/-- The transposed block bound (Halko, Martinsson and Tropp 2011, proof of Theorem 10.5,
 conjugate-transposed): for a random
 $\mathbf{G} \in \mathbb{R}^{n \times k}$ with independent standard Gaussian entries
 (`HasLaw X (gaussianMatrix n k) μ`), $\mathbf{V}_1 \in \mathbb{R}^{n \times r}$ and

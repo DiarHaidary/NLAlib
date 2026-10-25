@@ -103,7 +103,7 @@ private theorem pow_mulVec_col_mem_blockKrylovSpace (A : Matrix n n 𝕜) (B : M
 
 /-! ### Bridges to the vector Krylov API -/
 
-/-- **One column is the vector case**: the block Krylov matrix of the one-column block
+/-- One column is the vector case: the block Krylov matrix of the one-column block
 $\mathbf{b}$ is the vector Krylov matrix, with its columns reindexed by `Fin q × Unit`. -/
 theorem blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     blockKrylovMatrix A (Matrix.replicateCol Unit b) q =
@@ -117,7 +117,7 @@ theorem blockKrylovSpace_replicateCol (A : Matrix n n 𝕜) (b : n → 𝕜) (q 
   rw [blockKrylovSpace_eq_span, krylovSpace_eq_span]
   exact congrArg _ (Prod.fst_surjective.range_comp fun j : Fin q => A ^ (j : ℕ) *ᵥ b)
 
-/-- **A block Krylov space is the sum of the Krylov spaces of its columns**:
+/-- A block Krylov space is the sum of the Krylov spaces of its columns:
 $\mathcal{K}_q(\mathbf{A}, \mathbf{B}) = \sum_c \mathcal{K}_q(\mathbf{A}, \mathbf{b}_c)$, with
 $\mathbf{b}_c$ the columns of $\mathbf{B}$. Every vector Krylov bound transfers to block methods
 through it. -/
@@ -207,7 +207,7 @@ theorem mulVec_mem_blockKrylovSpace_succ {A : Matrix n n 𝕜} {B : Matrix n p �
     exact pow_mulVec_col_mem_blockKrylovSpace A B (Nat.succ_lt_succ j.isLt) c
   exact hle hx
 
-/-- **Shift invariance**: $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{B}) =
+/-- Shift invariance: $\mathcal{K}_q(\mathbf{A} + s\mathbf{I}, \mathbf{B}) =
 \mathcal{K}_q(\mathbf{A}, \mathbf{B})$ for every real shift $s$. -/
 theorem blockKrylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (B : Matrix n p 𝕜) (q : ℕ) :
     blockKrylovSpace (A + s • (1 : Matrix n n 𝕜)) B q = blockKrylovSpace A B q := by

@@ -103,10 +103,10 @@ theorem integrable_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [De
     _ = specNorm B := by ring
 
 /-- **The second moment of a Haar frame**:
-$\mathbb{E}[\mathbf{Q}\mathbf{B}\mathbf{Q}^{\mathsf{H}}]
-= (\operatorname{tr} \mathbf{B} / \lvert n \rvert) \, \mathbf{I}$ for an $n \times k$ Haar frame
-$\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 2], there entrywise for the
-orthogonal group; here for frames, in matrix form.
+$$\mathbb{E}[\mathbf{Q}\mathbf{B}\mathbf{Q}^{\mathsf{H}}]
+= \frac{\operatorname{tr} \mathbf{B}}{\lvert n \rvert}\,\mathbf{I}\,,$$
+for an $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$.
+[Meckes2019, Ch. 2], there entrywise for the orthogonal group; here for frames, in matrix form.
 Result: haar-frame-second-moment -/
 theorem integral_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (B : Matrix k k ℝ) :
@@ -119,8 +119,8 @@ theorem integral_mul_mul_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [Deci
     rw [Matrix.trace_mul_comm, ← Matrix.mul_assoc, hasOrthonormalCols_iff.1 hω, Matrix.one_mul]
   rw [integral_congr_ae htr, integral_const, probReal_univ, one_smul]
 
-/-- **$\mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = (\lvert k \rvert / \lvert n \rvert) \,
-\mathbf{I}$**: the range projector of an $n \times k$ Haar frame,
+/-- $\mathbb{E}[\mathbf{Q}\mathbf{Q}^{\mathsf{H}}] = (\lvert k \rvert / \lvert n \rvert) \,
+\mathbf{I}$: the range projector of an $n \times k$ Haar frame,
 $\lvert k \rvert \le \lvert n \rvert$, is $\lvert k \rvert / \lvert n \rvert$ times the identity in
 mean (the case $\mathbf{B} = \mathbf{I}$ of `integral_mul_mul_conjTranspose_of_hasLaw_haarFrame`,
 stated because consumers rewrite with it). -/
@@ -154,10 +154,10 @@ theorem integrable_conjTranspose_mul_mul_of_hasLaw_haarFrame [DecidableEq k]
     _ = specNorm A := by ring
 
 /-- **The compression of a fixed matrix by a Haar frame**:
-$\mathbb{E}[\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}]
-= (\operatorname{tr} \mathbf{A} / \lvert n \rvert) \, \mathbf{I}$ for an $n \times k$ Haar frame
-$\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 2], there entrywise; here in
-matrix form.
+$$\mathbb{E}[\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}]
+= \frac{\operatorname{tr} \mathbf{A}}{\lvert n \rvert}\,\mathbf{I}\,,$$
+for an $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$.
+[Meckes2019, Ch. 2], there entrywise; here in matrix form.
 Result: haar-frame-second-moment -/
 theorem integral_conjTranspose_mul_mul_of_hasLaw_haarFrame [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) (A : Matrix n n ℝ) :
@@ -222,7 +222,7 @@ theorem integral_apply_sq_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (ha
   classical
   simpa only [sq, if_true] using integral_apply_mul_apply_of_hasLaw_haarFrame hX hk i i j
 
-/-- **A rescaled column of a Haar frame is isotropic**:
+/-- A rescaled column of a Haar frame is isotropic:
 $\sqrt{\lvert n \rvert} \, \mathbf{Q}\mathbf{e}_j$ has second-moment matrix the identity, for an
 $n \times k$ Haar frame $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$. It is what Hutchinson's
 estimator with sphere probes takes (`IsIsotropic`). -/
@@ -479,7 +479,7 @@ private theorem frobNorm_sq_and_trace_of_eq_mul_diagonal [DecidableEq n] {U : Ma
     RCLike.re_to_real]
   simp only [sq]
 
-/-- **The mean of a Haar compression**:
+/-- The mean of a Haar compression:
 $\mathbb{E}\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
 = (\lvert k \rvert / \lvert n \rvert) \operatorname{tr} \mathbf{A}$ for an $n \times k$ Haar frame
 $\mathbf{Q}$, $\lvert k \rvert \le \lvert n \rvert$, and any square $\mathbf{A}$: the trace of

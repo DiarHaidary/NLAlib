@@ -276,7 +276,7 @@ theorem IsSubspaceEmbedding.norm_mulVec_sub_sketchAndPrecondition_sq_le_four_mul
     RCLike.ofReal_re, inv_div_inv] at hc
   exact hc
 
-/-- **Sketch-and-precondition, $\varepsilon$ form**: if $\mathbf{S}$ is a subspace embedding of
+/-- Sketch-and-precondition, $\varepsilon$ form: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}\mathbf{A}$ with constants $1 \mp \varepsilon$ in squared norms
 ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le
 (1 + \varepsilon)\|\mathbf{v}\|^2$ for $\mathbf{v} \in \operatorname{range}\mathbf{A}$),
@@ -342,7 +342,7 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le [Fintype
   rw [hpq]
   nlinarith [mul_le_mul_of_nonneg_left hE0 (mul_nonneg (by norm_num : (0 : ℝ) ≤ 4) hρ)]
 
-/-- **Sketch-and-precondition from the sketch-and-solve start, $\varepsilon$ form**: if
+/-- Sketch-and-precondition from the sketch-and-solve start, $\varepsilon$ form: if
 $\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
 constants $1 \mp \varepsilon$ in squared norms
 ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le
@@ -377,7 +377,7 @@ theorem IsSubspaceEmbedding.norm_sub_mulVec_sketchAndPrecondition_sq_le_of_one_s
   rw [e1]
   nlinarith [mul_le_mul_of_nonneg_left hp h2]
 
-/-- **Sketch-and-precondition, iteration count**: if $\mathbf{S}$ is a subspace embedding of
+/-- Sketch-and-precondition, iteration count: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with constants $1 \mp \varepsilon$ in squared norms
 ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le
 (1 + \varepsilon)\|\mathbf{v}\|^2$ on that range), $0 < \varepsilon \le 1/2$, $\mathbf{A}$ has full
@@ -449,7 +449,7 @@ section Random
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {δ : ℝ}
 
-/-- **Sketch-and-precondition with a random embedding, any start**: if the random sketch
+/-- Sketch-and-precondition with a random embedding, any start: if the random sketch
 $\mathbf{S}$ is a subspace embedding of $\operatorname{range}\mathbf{A}$ with constants $a > 0$,
 $b$ in squared norms ($a\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le b\|\mathbf{v}\|^2$
 for $\mathbf{v} \in \operatorname{range}\mathbf{A}$) except with probability $\delta$,
@@ -506,7 +506,7 @@ theorem HasSubspaceEmbedding.measureReal_norm_sub_mulVec_sketchAndPrecondition_s
 
 -- The declaration name with its indentation exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **Sketch-and-precondition with a random embedding, iteration count**: if the random sketch
+/-- Sketch-and-precondition with a random embedding, iteration count: if the random sketch
 $\mathbf{S}$ is a subspace embedding of $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with
 constants $1 \mp \varepsilon$ in squared norms ($(1 - \varepsilon)\|\mathbf{v}\|^2 \le
 \|\mathbf{S}\mathbf{v}\|^2 \le (1 + \varepsilon)\|\mathbf{v}\|^2$ on that range) except with

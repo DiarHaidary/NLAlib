@@ -268,7 +268,7 @@ theorem _root_.Matrix.IsHermitian.preconditionedLanczosTridiagonal_eq (hA : A.Is
   simp only [preconditionedLanczosTridiagonal, lanczosTridiagonal, Matrix.of_apply,
     preconditionedLanczosAlpha_eq hM, preconditionedLanczosState_beta_eq hM]
 
-/-- **The computed vectors span the preconditioned Krylov space**
+/-- The computed vectors span the preconditioned Krylov space
 $\mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{b})$, for Hermitian $\mathbf{A}$ and
 positive definite $\mathbf{M}$. -/
 theorem _root_.Matrix.IsHermitian.range_preconditionedLanczosMatrix (hA : A.IsHermitian)
@@ -280,7 +280,7 @@ theorem _root_.Matrix.IsHermitian.range_preconditionedLanczosMatrix (hA : A.IsHe
     range_arnoldiMatrix, hMC, show C * Cᴴ * A = C * (Cᴴ * A) from Matrix.mul_assoc _ _ _,
     ← Matrix.mulVec_mulVec b C Cᴴ, krylovSpace_mul_mulVec]
 
-/-- **Breakdown of the preconditioned recurrence, vectors**: for Hermitian $\mathbf{A}$ and any
+/-- Breakdown of the preconditioned recurrence, vectors: for Hermitian $\mathbf{A}$ and any
 $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$, from the grade $\nu$ of
 $\mathbf{C}^{\mathsf{H}}\mathbf{b}$ for the split matrix
 $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ on, $\mathbf{z}_l = \mathbf{0}$. -/
@@ -295,7 +295,7 @@ theorem _root_.Matrix.IsHermitian.preconditionedLanczosState_z_eq_zero_of_le (hA
   rw [preconditionedLanczosState_z_eq_mulVec hM,
     show (lanczosState (Cᴴ * A * C) (Cᴴ *ᵥ b) l).cur = 0 from h, Matrix.mulVec_zero]
 
-/-- **Breakdown of the preconditioned recurrence, coefficients**: for Hermitian $\mathbf{A}$ and
+/-- Breakdown of the preconditioned recurrence, coefficients: for Hermitian $\mathbf{A}$ and
 any $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$, from the grade $\nu$ of
 $\mathbf{C}^{\mathsf{H}}\mathbf{b}$ for $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ on,
 $\beta_l = 0$. -/

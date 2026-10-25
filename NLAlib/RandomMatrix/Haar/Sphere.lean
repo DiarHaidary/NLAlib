@@ -261,7 +261,7 @@ private theorem exponent_two_weights_le {K N β : ℝ} (hKN : K ≤ N) (hβ : 0 
     · simp only [sub_self, zero_mul, add_zero]
       nlinarith [mul_nonneg hKN' (sub_nonneg.2 hc)]
 
-/-- **A Haar frame applied to a fixed unit vector**: for an $n \times k$ Haar frame $\mathbf{Q}$
+/-- A Haar frame applied to a fixed unit vector: for an $n \times k$ Haar frame $\mathbf{Q}$
 and a unit $\mathbf{x}$, $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ has the law of
 $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ for $\mathbf{u}$ uniform on the sphere and any $\mathbf{V}$ with
 orthonormal columns (`hV` gives $\lvert k \rvert \le \lvert n \rvert$). By left invariance
@@ -574,9 +574,10 @@ theorem ae_norm_eq_one_uniformSphereVector [Nonempty n] :
   simp only [WithLp.toLp_ofLp]
   exact norm_eq_of_mem_sphere x
 
-/-- **Sphere invariance: the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the
-frame's column type.** For $\mathbf{u}$ uniform on the unit sphere of $\mathbb{R}^n$ and two
-$\mathbf{V}_1, \mathbf{V}_2$ with orthonormal columns indexed by the same $r$,
+/-- Sphere invariance: the law of $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the
+frame's column type: for $n$ nonempty and $\mathbf{u}$ uniform on the unit sphere of
+$\mathbb{R}^n$ and two $\mathbf{V}_1, \mathbf{V}_2$ with orthonormal columns indexed by the same
+$r$,
 $\mathbf{V}_1^{\mathsf{H}}\mathbf{u}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{u}$ have the same
 law: both are the law of $\mathbf{Q}^{\mathsf{H}}\mathbf{x}$ for an $n \times r$ Haar frame
 $\mathbf{Q}$ and a fixed unit $\mathbf{x}$
@@ -716,7 +717,7 @@ theorem integrable_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVec
   have hF : Continuous fun w : n → ℝ => ‖WithLp.toLp 2 (Vᴴ *ᵥ w)‖ ^ 4 := by fun_prop
   exact (hu.integrable_comp_iff hF.aestronglyMeasurable).2 (integrable_of_continuous hF)
 
-/-- **The fourth moment of a projected uniform unit vector**: for $\mathbf{u}$ uniform on the
+/-- The fourth moment of a projected uniform unit vector: for $\mathbf{u}$ uniform on the
 unit sphere of $\mathbb{R}^n$, $n$ nonempty, and $\mathbf{V}$ with orthonormal columns,
 $$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
 = \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,,$$
@@ -814,7 +815,8 @@ private theorem hasLaw_sum_sq_inr_of_hasLaw_gaussianVector {p : Type*} [Fintype 
 /-- **The projection of a uniform unit vector is Beta**: for $\mathbf{u}$ uniform on the unit
 sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`) and $\mathbf{V}$ with $k$ orthonormal
 columns, $0 < k < n$,
-$\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \sim \mathrm{Beta}(k/2, (n-k)/2)$.
+$$\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \sim
+\mathrm{Beta}\Big(\frac{k}{2}, \frac{n-k}{2}\Big)\,.$$
 No printed source.
 Result: sphere-projection-beta -/
 theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
@@ -850,11 +852,6 @@ theorem hasLaw_norm_conjTranspose_mulVec_sq_of_hasLaw_uniformSphereVector
 
 /-! ### The sharp sub-Gaussian tail -/
 
-/-- A variable that is almost surely $0$ is sub-Gaussian with any proxy. -/
-private lemma hasSubgaussianMGF_of_ae_eq_zero [IsProbabilityMeasure μ] {Y : Ω → ℝ} (c : ℝ≥0)
-    (hY : Y =ᵐ[μ] 0) : HasSubgaussianMGF Y c μ :=
-  (HasSubgaussianMGF.zero.congr hY.symm).mono zero_le
-
 /-- **Projections of a uniform unit vector are sub-Gaussian**: for $\mathbf{u}$ uniform on the
 unit sphere of $\mathbb{R}^n$ (law `uniformSphereVector n`) and $\mathbf{V}$ with $k$
 orthonormal columns, any $0 \le k \le n$,
@@ -876,7 +873,8 @@ theorem hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphe
   have hk : Fintype.card k ≤ Fintype.card n := hV.card_le
   rcases Nat.eq_zero_or_pos (Fintype.card k) with h0 | hpos
   · have he : IsEmpty k := Fintype.card_eq_zero_iff.mp h0
-    refine hasSubgaussianMGF_of_ae_eq_zero _ (Filter.Eventually.of_forall fun ω => ?_)
+    refine (HasSubgaussianMGF.zero.congr ?_).mono zero_le
+    filter_upwards with ω
     simp [Subsingleton.elim (Vᵀ *ᵥ u ω) 0]
   rcases hk.eq_or_lt with heq | hlt
   · have hn : 0 < Fintype.card n := heq ▸ hpos
@@ -884,7 +882,7 @@ theorem hasSubgaussianMGF_norm_conjTranspose_mulVec_sq_sub_of_hasLaw_uniformSphe
     have hVc : HasOrthonormalCols Vᴴ := hV.conjTranspose_of_card_eq heq.symm
     have hae : ∀ᵐ ω ∂μ, ‖WithLp.toLp 2 (u ω)‖ = 1 :=
       ae_of_ae_map hu.aemeasurable (by rw [hu.map_eq]; exact ae_norm_eq_one_uniformSphereVector)
-    refine hasSubgaussianMGF_of_ae_eq_zero _ ?_
+    refine (HasSubgaussianMGF.zero.congr ?_).mono zero_le
     filter_upwards [hae] with ω hω
     have hn' : (Fintype.card n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn.ne'
     rw [Pi.zero_apply, hVc.norm_toLp_mulVec, hω, heq]

@@ -37,7 +37,7 @@ Nothing is assumed about $x \in s$; the consumers take $x \in s$ from elsewhere.
 def HasSupportingLineOn (f : ℝ → ℝ) (s : Set ℝ) (x : ℝ) : Prop :=
   ∃ c : ℝ, ∀ y ∈ s, f x + c * (y - x) ≤ f y
 
-/-- **A convex function has a supporting line at each point of differentiability**: if $f$ is
+/-- A convex function has a supporting line at each point of differentiability: if $f$ is
 convex on $s$, $x \in s$ and $f$ is differentiable at $x$, its tangent
 $y \mapsto f(x) + f'(x)(y - x)$ supports it on $s$. -/
 theorem ConvexOn.hasSupportingLineOn {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ s f) {x : ℝ}

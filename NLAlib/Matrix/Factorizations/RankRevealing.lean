@@ -292,7 +292,7 @@ theorem IsLocalMaxVolume.singularValues_one_sub_rangeProjector_mul_le [Fintype n
   exact singularValues_le_sqrt_mul_singularValues_fromCols h.injective_mulVec
     (conjTranspose_mul_one_sub_rangeProjector_mul_submatrix A e _) (h.frobNorm_sq_add_le _) j
 
-/-- **The column selection error against the best low-rank error**, in every unitarily invariant
+/-- The column selection error against the best low-rank error, in every unitarily invariant
 norm: for a locally maximal selection $\mathbf{C}$ of $k = \lvert p \rvert$ columns of $\mathbf{A}$,
 $$\|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{A}\|_{\Phi}
   \le \sqrt{1 + f^2 k (\lvert n \rvert - k)}\,
@@ -321,7 +321,7 @@ end Certificate
 
 /-! ### Existence -/
 
-/-- **A selection of maximum volume exists**: for $k \le \operatorname{rank} \mathbf{A}$ there
+/-- A selection of maximum volume exists: for $k \le \operatorname{rank} \mathbf{A}$ there
 are $k$ distinct, linearly independent columns of $\mathbf{A}$ whose Gram determinant is the
 largest among all choices of $k$ columns.
 Port of `NLAlib.exists_maximum_volume_column_embedding`, there over $\mathbb{R}$. -/
@@ -370,7 +370,7 @@ theorem exists_embedding_isLocalMaxVolume [Fintype n] (A : Matrix m n 𝕜) {k :
   obtain ⟨e, he, hmax⟩ := exists_embedding_forall_re_det_le A hk
   exact ⟨e, isLocalMaxVolume_one_of_forall_re_det_le he hmax⟩
 
-/-- **At the rank, a selection of maximum volume reproduces the matrix**: for
+/-- At the rank, a selection of maximum volume reproduces the matrix: for
 $k = \operatorname{rank} \mathbf{A}$ there is a selection $\mathbf{C}$ of $k$ columns with
 `IsLocalMaxVolume A e 1` whose residual vanishes,
 $\mathbf{A} = \mathbf{C}(\mathbf{C}^{+}\mathbf{A})$, an interpolative decomposition with

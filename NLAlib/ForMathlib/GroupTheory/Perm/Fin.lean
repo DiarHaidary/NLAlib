@@ -25,7 +25,7 @@ of pivots in partial pivoting and in diagonally pivoted Cholesky. Upstream candi
 
 namespace Fin
 
-/-- **Greedy pivoting.** Let $s_\sigma(j, i)$ score the candidate $i$ for the pivot position $j$
+/-- Greedy pivoting: let $s_\sigma(j, i)$ score the candidate $i$ for the pivot position $j$
 after the permutation $\sigma$, and suppose that composing $\sigma$ with a permutation $\tau$
 fixing the positions before $j$ permutes the scores at step $j$ by $\tau$:
 $s_{\sigma \circ \tau}(j, i) = s_\sigma(j, \tau(i))$. Then some permutation $\sigma$ makes every

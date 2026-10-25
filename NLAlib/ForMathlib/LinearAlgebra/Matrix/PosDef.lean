@@ -107,7 +107,7 @@ theorem PosSemidef.two_mul_norm_apply_le {A : Matrix n n 𝕜} (hA : A.PosSemide
 
 /-! ### Congruence -/
 
-/-- **Congruence preserves positive semidefiniteness**, for a factor `B : Matrix n p 𝕜` with any
+/-- Congruence preserves positive semidefiniteness, for a factor `B : Matrix n p 𝕜` with any
 column index type `p`, finite or not: if $\mathbf{A}$ is positive semidefinite then so is
 $\mathbf{B}^{\mathsf{H}}\mathbf{A}\mathbf{B}$.
 Mathlib's `Matrix.PosSemidef.conjTranspose_mul_mul_same` is the same statement with `[Finite p]`;

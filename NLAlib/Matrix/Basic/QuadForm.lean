@@ -242,7 +242,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_add {A : Matrix n n 𝕜} (hA : A.
   simp only [map_add, RCLike.star_def, RCLike.conj_re]
   ring
 
-/-- **Polarisation.** Two Hermitian matrices with the same quadratic form are equal. -/
+/-- Polarisation: two Hermitian matrices with the same quadratic form are equal. -/
 theorem _root_.Matrix.IsHermitian.ext_quadForm {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) (h : ∀ z, quadForm A z = quadForm B z) : A = B := by
   classical

@@ -117,7 +117,8 @@ theorem _root_.IsStarProjection.eq_of_range_eq [Fintype m] {P P' : Matrix m m �
   exact h3.symm
 
 /-- **Pythagoras** for a star projection:
-$\|\mathbf{x}\|^2 = \|\mathbf{P}\mathbf{x}\|^2 + \|(\mathbf{I} - \mathbf{P})\mathbf{x}\|^2$. -/
+$\|\mathbf{x}\|^2 = \|\mathbf{P}\mathbf{x}\|^2 + \|(\mathbf{I} - \mathbf{P})\mathbf{x}\|^2$.
+[TrefethenBau1997, Lecture 6] (locator to check). -/
 theorem _root_.IsStarProjection.norm_toLp_sq_eq_add [Fintype m] [DecidableEq m]
     {P : Matrix m m 𝕜} (hP : IsStarProjection P) (x : m → 𝕜) :
     ‖WithLp.toLp 2 x‖ ^ 2 =
@@ -313,7 +314,7 @@ theorem rangeProjector_mulVec_eq_zero_iff [Fintype m] [Fintype n] {B : Matrix m 
     rw [← conjTranspose_rangeProjector, hC, Matrix.conjTranspose_mul, ← Matrix.mulVec_mulVec, h,
       Matrix.mulVec_zero]
 
-/-- **Orthogonality to a column space**: a vector $\mathbf{w}$ is orthogonal to every vector of
+/-- Orthogonality to a column space: a vector $\mathbf{w}$ is orthogonal to every vector of
 the column space of $\mathbf{X}$ exactly when $\mathbf{X}^{\mathsf{H}}\mathbf{w} = \mathbf{0}$.
 Statements take the right-hand side; this bridge turns it into the quantified form and back. -/
 theorem forall_mem_range_star_dotProduct_eq_zero_iff [Fintype m] [Fintype n] {X : Matrix m n 𝕜}
@@ -444,7 +445,7 @@ theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableE
   rw [← rangeProjector_mul_conjTranspose_self,
     hQ.isStarProjection_mul_conjTranspose.rangeProjector_eq]
 
-/-- **The projector of a partial isometry**: for $\mathbf{Q}$ with
+/-- The projector of a partial isometry: for $\mathbf{Q}$ with
 $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$ (orthonormal columns, possibly with
 some zero columns), $\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
 Generalises `NLAlib.HasOrthonormalCols.rangeProjector_eq`. -/

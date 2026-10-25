@@ -41,8 +41,8 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-! ### Gelfand's formula and growth of the powers -/
 
-/-- **Gelfand's formula**: $\|\mathbf{A}^k\|_2^{1/k}$ tends to the spectral radius
-$\rho(\mathbf{A})$ as $k \to \infty$.
+/-- **Gelfand's formula**: as $k \to \infty$,
+$$\|\mathbf{A}^k\|_2^{1/k} \to \rho(\mathbf{A})\,.$$
 [HornJohnson2013, Corollary 5.6.14].
 Port of `NLAlib.tendsto_norm_matrix_pow_rpow_spectralRadius`, there over $\mathbb{C}$.
 Result: gelfand-formula -/

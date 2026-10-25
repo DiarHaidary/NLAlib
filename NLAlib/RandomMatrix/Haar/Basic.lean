@@ -69,7 +69,7 @@ noncomputable def haarFrame (n k : Type*) [Fintype n] [Fintype k] [DecidableEq k
 instance isProbabilityMeasure_haarFrame [DecidableEq k] : IsProbabilityMeasure (haarFrame n k) :=
   Measure.isProbabilityMeasure_map measurable_polarFactor.aemeasurable
 
-/-- **The polar factor of a Gaussian matrix is a Haar frame**: the definition of `haarFrame` in
+/-- The polar factor of a Gaussian matrix is a Haar frame: the definition of `haarFrame` in
 `HasLaw` form. -/
 theorem hasLaw_polarFactor_of_hasLaw_gaussianMatrix [DecidableEq k] {G : Ω → Matrix n k ℝ}
     (hG : HasLaw G (gaussianMatrix n k) μ) :
@@ -95,7 +95,7 @@ private theorem ae_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFrame
 
 /-! ### Frames -/
 
-/-- **A Haar frame has orthonormal columns** almost surely, when it is no wider than tall
+/-- A Haar frame has orthonormal columns almost surely, when it is no wider than tall
 ($\lvert k \rvert \le \lvert n \rvert$). -/
 theorem ae_hasOrthonormalCols_of_hasLaw_haarFrame [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n) :
@@ -107,7 +107,7 @@ theorem ae_hasOrthonormalCols_of_hasLaw_haarFrame [DecidableEq k]
   rw [show (id G).rank = G.rank from rfl] at hG
   rw [hG, min_eq_right hk]
 
-/-- **The conjugate transpose of a Haar frame** is a Haar frame of the transposed shape. Every
+/-- The conjugate transpose of a Haar frame is a Haar frame of the transposed shape. Every
 shape; for $\lvert n \rvert \le \lvert k \rvert$ it says that $\mathbf{X}$ has orthonormal rows
 almost surely. -/
 theorem hasLaw_conjTranspose_of_hasLaw_haarFrame [DecidableEq n] [DecidableEq k]
@@ -180,7 +180,7 @@ instance isProbabilityMeasure_uniformSphereVector :
     IsProbabilityMeasure (uniformSphereVector n) :=
   Measure.isProbabilityMeasure_map measurable_inv_norm_smul.aemeasurable
 
-/-- **A normalised Gaussian vector is uniform on the sphere**: the definition of
+/-- A normalised Gaussian vector is uniform on the sphere: the definition of
 `uniformSphereVector` in `HasLaw` form. -/
 theorem hasLaw_inv_norm_smul_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (hg : HasLaw g (gaussianVector n) μ) :
@@ -188,7 +188,7 @@ theorem hasLaw_inv_norm_smul_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
   HasLaw.fun_comp (Y := fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g)
     ⟨measurable_inv_norm_smul.aemeasurable, rfl⟩ hg
 
-/-- **A one-column Haar frame is uniform on the sphere**: the column of a Haar frame $n \times 1$
+/-- A one-column Haar frame is uniform on the sphere: the column of a Haar frame $n \times 1$
 has law `uniformSphereVector n`. No hypothesis on $n$. The general column is
 `hasLaw_col_of_hasLaw_haarFrame`. -/
 theorem hasLaw_col_unit_of_hasLaw_haarFrame {X : Ω → Matrix n Unit ℝ}
@@ -206,7 +206,7 @@ theorem hasLaw_col_unit_of_hasLaw_haarFrame {X : Ω → Matrix n Unit ℝ}
   rw [h G, polarFactor_replicateCol]
   rfl
 
-/-- **A uniform unit vector is a one-column Haar frame**: for $\mathbf{u}$ uniform on the sphere,
+/-- A uniform unit vector is a one-column Haar frame: for $\mathbf{u}$ uniform on the sphere,
 the $n \times 1$ matrix with column $\mathbf{u}$ has law `haarFrame n Unit`. The converse of
 `hasLaw_col_unit_of_hasLaw_haarFrame`; it lets results about Haar frames specialise to sphere
 probes. -/

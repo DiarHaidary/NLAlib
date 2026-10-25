@@ -263,13 +263,17 @@ noncomputable def pminresIterate (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (
   x₀ + galerkinInverse (Aᴴ * M * A) (krylovMatrix (M * A) (M *ᵥ (b - A *ᵥ x₀)) q) *ᵥ
     (Aᴴ *ᵥ (M *ᵥ (b - A *ᵥ x₀)))
 
-/-- The correction lies in the preconditioned Krylov space. -/
+/-- The correction
+$\mathsf{pminresIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) - \mathbf{x}_0$
+lies in the preconditioned Krylov space. -/
 theorem pminresIterate_sub_mem_krylovSpace (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     pminresIterate A M b x₀ q - x₀ ∈ krylovSpace (M * A) (M *ᵥ (b - A *ᵥ x₀)) q := by
   rw [pminresIterate, add_sub_cancel_left]
   exact galerkinInverse_mulVec_mem _ _ _
 
-/-- **No preconditioner is GMRES**, for every $\mathbf{A}$: by
+/-- No preconditioner is GMRES, for every $\mathbf{A}$:
+$\mathsf{pminresIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b}, \mathbf{x}_0, q) =
+\mathsf{gmresIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$, by
 `minResidualInverse_eq_galerkinInverse`. -/
 @[simp]
 theorem pminresIterate_one (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :

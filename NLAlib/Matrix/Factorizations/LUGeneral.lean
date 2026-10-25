@@ -34,7 +34,7 @@ namespace NLAlib
 
 variable {K : Type*} [Field K] {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
-/-- **Elimination computes the LU factorization when every zero pivot has zeros below it.**
+/-- Elimination computes the LU factorization when every zero pivot has zeros below it.
 This covers singular matrices; `NLAlib.isLU_luLower_luUpper` is the case of nonzero pivots. -/
 theorem isLU_luLower_luUpper_of_forall_eq_zero {A : Matrix (Fin n) (Fin n) K}
     (h : ∀ j i : Fin n, j < i → gaussState A j j j = 0 → gaussState A j i j = 0) :

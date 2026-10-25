@@ -125,7 +125,7 @@ theorem _root_.Matrix.PosDef.eq_of_le_of_det_eq {A B : Matrix n n 𝕜} (hA : A.
 
 /-! ### Congruence and inverses -/
 
-/-- **Congruence by an invertible matrix preserves and reflects the Loewner order**: for
+/-- Congruence by an invertible matrix preserves and reflects the Loewner order: for
 invertible $\mathbf{S}$,
 $\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S} \preceq \mathbf{S}^{\mathsf{H}}\mathbf{B}\mathbf{S}$
 iff $\mathbf{A} \preceq \mathbf{B}$.
@@ -274,7 +274,7 @@ theorem _root_.Matrix.PosSemidef.posDef_one_sub_iff_specNorm_lt_one {A : Matrix 
     nlinarith
 
 omit [Fintype n] in
-/-- **A positive definite matrix dominates a positive multiple of the identity**:
+/-- A positive definite matrix dominates a positive multiple of the identity:
 $a\mathbf{I} \preceq \mathbf{A}$ for some $a > 0$. The largest such $a$ is the smallest eigenvalue
 of $\mathbf{A}$; the one produced here is $(\|\mathbf{A}^{-1}\|_2 + 1)^{-1}$. -/
 theorem _root_.Matrix.PosDef.exists_pos_smul_one_le [Finite n] {A : Matrix n n 𝕜}
@@ -317,7 +317,7 @@ theorem pseudoConditionNumber_le_div_of_smul_one_le_of_le_smul_one {A : Matrix n
     exact div_nonneg hb ha.le
   · exact pseudoConditionNumber_le_div_aux ha h₁ h₂
 
-/-- **Spectral equivalence, lower half, after a change of variables.** If
+/-- Spectral equivalence, lower half, after a change of variables: if
 $\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$ (for instance
 $\mathbf{C} = \mathbf{M}^{-1/2}$, or the inverse of a Cholesky factor), then
 $a\mathbf{M} \preceq \mathbf{A}$ exactly when $a\mathbf{I} \preceq
@@ -341,7 +341,8 @@ theorem le_smul_iff_conjTranspose_mul_mul_le_smul_one {A M C : Matrix n n 𝕜}
 $a\mathbf{M} \preceq \mathbf{A} \preceq b\mathbf{M}$ with $0 < a$, $0 \le b$, and
 $\mathbf{C}^{\mathsf{H}}\mathbf{M}\mathbf{C} = \mathbf{I}$, the symmetrically preconditioned matrix
 $\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ has condition number
-$\kappa(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}) \le b / a$. This is the statement that
+$$\kappa(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}) \le \frac{b}{a}\,.$$
+This is the statement that
 conjugate gradient rates consume.
 Result: preconditioned-condition-number -/
 theorem pseudoConditionNumber_conjTranspose_mul_mul_le_div {A M C : Matrix n n 𝕜}
@@ -442,7 +443,7 @@ theorem _root_.Matrix.PosDef.spectrum_inv_mul_subset_range_ofReal {A B : Matrix 
   rintro _ ⟨r, -, rfl⟩
   exact ⟨r, rfl⟩
 
-/-- **The preconditioned spectrum is the split spectrum**: for invertible $\mathbf{C}$,
+/-- The preconditioned spectrum is the split spectrum: for invertible $\mathbf{C}$,
 $\mathbf{C}\mathbf{C}^{\mathsf{H}}\mathbf{A} =
 \mathbf{C}(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C})\mathbf{C}^{-1}$, so the two have the same
 real spectrum. With $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ it moves a hypothesis on the
@@ -455,7 +456,7 @@ theorem spectrum_mul_conjTranspose_mul {C : Matrix n n 𝕜} (hC : IsUnit C) (A 
     simp only [Matrix.mul_assoc, IsUnit.mul_val_inv, Matrix.mul_one, IsUnit.unit_spec]
   rw [h, spectrum.units_conjugate]
 
-/-- **Spectral equivalence in the preconditioner's orientation**: for positive definite
+/-- Spectral equivalence in the preconditioner's orientation: for positive definite
 $\mathbf{M}$ and $a\mathbf{M}^{-1} \preceq \mathbf{A} \preceq a'\mathbf{M}^{-1}$, the real spectrum
 of $\mathbf{M}\mathbf{A}$ lies in $[a, a']$. The hypothesis form of the preconditioned conjugate
 gradient and minimal residual bounds, whose $\mathbf{M}$ approximates $\mathbf{A}^{-1}$. -/

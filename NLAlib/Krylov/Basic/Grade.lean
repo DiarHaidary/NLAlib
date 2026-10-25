@@ -176,7 +176,7 @@ theorem rank_krylovMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     (krylovMatrix A b q).rank = min q (krylovGrade A b) :=
   finrank_krylovSpace A b q
 
-/-- **An orthonormal basis of the Krylov space**: there are $k$ and a $\mathbf{Q}$ with $k$
+/-- An orthonormal basis of the Krylov space: there are $k$ and a $\mathbf{Q}$ with $k$
 orthonormal columns whose column space is $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$; necessarily
 $k = \min(q, \nu)$, $\nu$ the grade (`finrank_krylovSpace`). It supplies the frame that the
 statements about any orthonormal basis of a Krylov space (Lanczos-FA, compressions) are applied
@@ -239,7 +239,7 @@ theorem mem_krylovSpace_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) 
   rw [← hinjA hy']
   exact y.2
 
-/-- **The grade of a vector in $\mathbf{A}\mathcal{K}_k$**: if $\mathbf{c} = \mathbf{A}\mathbf{y}$
+/-- The grade of a vector in $\mathbf{A}\mathcal{K}_k$: if $\mathbf{c} = \mathbf{A}\mathbf{y}$
 with $\mathbf{y} \in \mathcal{K}_k(\mathbf{A}, \mathbf{c})$, then the grade $\nu$ of
 $\mathbf{c}$ is at most $k$, for every $\mathbf{A}$: then
 $\mathcal{K}_{k+1} \subseteq \mathbf{A}\mathcal{K}_k$ has dimension at most that of
@@ -259,7 +259,7 @@ theorem krylovGrade_le_of_mem_of_mulVec_eq {A : Matrix n n 𝕜} {c y : n → �
   rw [finrank_krylovSpace, finrank_krylovSpace] at h
   omega
 
-/-- **The grade under a change of variables**: for invertible $\mathbf{C}$, the grade of
+/-- The grade under a change of variables: for invertible $\mathbf{C}$, the grade of
 $\mathbf{C}\mathbf{v}$ for $\mathbf{C}\mathbf{B}$ is that of $\mathbf{v}$ for
 $\mathbf{B}\mathbf{C}$. The preconditioned recurrences break down at the grade of the split
 system. -/

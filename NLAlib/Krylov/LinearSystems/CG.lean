@@ -84,19 +84,21 @@ onto the Krylov space, which is this definition. -/
 noncomputable def cgIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + galerkinInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
 
-/-- The correction lies in the Krylov space of the initial residual, for every $\mathbf{A}$. -/
+/-- The correction $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) - \mathbf{x}_0$ lies
+in the Krylov space of the initial residual, for every $\mathbf{A}$. -/
 theorem cgIterate_sub_mem_krylovSpace (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     cgIterate A b x₀ q - x₀ ∈ krylovSpace A (b - A *ᵥ x₀) q := by
   rw [cgIterate, add_sub_cancel_left]
   exact galerkinInverse_mulVec_mem A _ _
 
-/-- The zeroth iterate is the start. -/
+/-- The zeroth iterate $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 0)$ is the
+start. -/
 @[simp]
 theorem cgIterate_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : cgIterate A b x₀ 0 = x₀ := by
   have h := cgIterate_sub_mem_krylovSpace A b x₀ 0
   rwa [krylovSpace_zero, Submodule.mem_bot, sub_eq_zero] at h
 
-/-- **CG in any orthonormal basis of the Krylov space**, for every $\mathbf{A}$:
+/-- CG in any orthonormal basis of the Krylov space, for every $\mathbf{A}$:
 $\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q) = \mathbf{x}_0 +
 \mathbf{Q}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})^{+}\mathbf{Q}^{\mathsf{H}}\mathbf{r}_0$. -/
 theorem HasOrthonormalCols.cgIterate_eq {Q : Matrix n r 𝕜} (hQ : HasOrthonormalCols Q)
@@ -508,8 +510,9 @@ theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜
 -- Stage B0
 
 omit [Fintype r] [DecidableEq r] in
-/-- The Galerkin inverse on the one-column block Krylov space is the Galerkin inverse on the
-vector Krylov space: both depend only on the column space, and the two column spaces agree
+/-- The Galerkin inverse $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$ is the same for
+$\mathbf{X}$ the one-column block Krylov matrix of $\mathbf{b}$ and for the Krylov matrix of
+$\mathbf{b}$: both depend only on the column space, and the two column spaces agree
 (`NLAlib.blockKrylovSpace_replicateCol`). -/
 theorem galerkinInverse_blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     galerkinInverse A (blockKrylovMatrix A (Matrix.replicateCol Unit b) q) =
@@ -517,7 +520,7 @@ theorem galerkinInverse_blockKrylovMatrix_replicateCol (A : Matrix n n 𝕜) (b 
   galerkinInverse_eq_of_range_eq A (blockKrylovSpace_replicateCol A b q)
 
 omit [Fintype r] [DecidableEq r] in
-/-- **Block CG with one column is CG**: the block Galerkin approximation
+/-- Block CG with one column is CG: the block Galerkin approximation
 $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{K}_q(\mathbf{A}, \mathbf{B}))\,\mathbf{B}$ at the
 one-column block $\mathbf{B} = [\mathbf{b}]$ is the column of the CG iterate from the zero start,
 $[\mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{0}, q)]$. -/

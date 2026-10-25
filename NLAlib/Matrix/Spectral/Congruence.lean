@@ -116,7 +116,7 @@ theorem _root_.Matrix.PosDef.exists_isUnit_eq_mul_conjTranspose {A : Matrix n n 
     hA.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose hA.isHermitian
   exact ⟨S, (Matrix.isUnit_iff_isUnit_det S).mpr hSu, hAS⟩
 
-/-- **The generalized eigenvalues of a definite pair** are the eigenvalues of
+/-- The generalized eigenvalues of a definite pair are the eigenvalues of
 $\mathbf{A}^{-1}\mathbf{B}$: if $\mathbf{S}$ is invertible,
 $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
 $\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$, then the

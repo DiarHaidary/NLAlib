@@ -105,7 +105,7 @@ theorem HasStieltjesMeasure.congr (hf : HasStieltjesMeasure f μ)
     (h : ∀ z, 0 < z → f z = g z) : HasStieltjesMeasure g μ :=
   ⟨hf.measure_Iio, hf.integrable, fun z hz => (h z hz).symm.trans (hf.eq_integral z hz)⟩
 
-/-- **Bridge to Mathlib's Stieltjes transform**: $f(z)$ is the resolvent transform of $\mu$ at
+/-- Bridge to Mathlib's Stieltjes transform: $f(z)$ is the resolvent transform of $\mu$ at
 $-z$. -/
 theorem HasStieltjesMeasure.apply_eq_resolventTransform (hf : HasStieltjesMeasure f μ) {z : ℝ}
     (hz : 0 < z) : f z = resolventTransform μ (-z) := by
@@ -168,7 +168,7 @@ theorem HasStieltjesMeasure.monotoneOn_id_mul (hf : HasStieltjesMeasure f μ) :
   rw [← div_eq_mul_inv, ← div_eq_mul_inv, div_le_div_iff₀ (by linarith) (by linarith)]
   nlinarith
 
-/-- **Ratio bounds pass from the kernel to the function**: if
+/-- Ratio bounds pass from the kernel to the function: if
 $w(x)(y + t) \le R\,w(y)(x + t)$ for $\mu$-almost every $t \ge 0$, that is
 $w(x)/(x + t) \le R\,w(y)/(y + t)$ on the support of $\mu$, then
 $w(x) f(x) \le R\,w(y) f(y)$. -/

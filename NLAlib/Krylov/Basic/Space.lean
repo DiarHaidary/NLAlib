@@ -197,7 +197,7 @@ theorem krylovSpace_add_smul_one (A : Matrix n n 𝕜) (s : ℝ) (b : n → 𝕜
   have h := krylovSpace_add_smul_one_le (A + s • (1 : Matrix n n 𝕜)) (-s) b q
   rwa [add_assoc, ← add_smul, add_neg_cancel, zero_smul, add_zero] at h
 
-/-- **Krylov matrices under a change of variables**:
+/-- Krylov matrices under a change of variables:
 $\mathbf{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
 \mathbf{C}\,\mathbf{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$, since
 $(\mathbf{C}\mathbf{B})^j\mathbf{C} = \mathbf{C}(\mathbf{B}\mathbf{C})^j$. With
@@ -213,7 +213,7 @@ theorem krylovMatrix_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : �
   rw [krylovMatrix_apply, Matrix.mulVec_mulVec, h, ← Matrix.mulVec_mulVec]
   rfl
 
-/-- **Krylov spaces under a change of variables**:
+/-- Krylov spaces under a change of variables:
 $\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
 \mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$.
 Port of `NLAlib.krylovSpace_mul_mulVec_eq_map` (prototype). -/

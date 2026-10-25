@@ -59,7 +59,7 @@ structure IsBoundedOrthonormal (F : Matrix n n 𝕜) (β : ℝ) : Prop where
   /-- Every entry satisfies $\lvert n \rvert \, \lvert \mathbf{F}_{i,j} \rvert^2 \le \beta$. -/
   card_mul_norm_sq_le : ∀ i j, (Fintype.card n : ℝ) * ‖F i j‖ ^ 2 ≤ β
 
-/-- **A normalised Hadamard matrix is a bounded orthonormal transform**: for a Hadamard matrix
+/-- A normalised Hadamard matrix is a bounded orthonormal transform: for a Hadamard matrix
 $\mathbf{H}$ in the sense of Mathlib's `Matrix.IsHadamard`, $\lvert n \rvert^{-1/2} \mathbf{H}$ is
 bounded orthonormal with $\beta = 1$. For empty `n` both fields hold vacuously. -/
 theorem _root_.Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul {H : Matrix n n 𝕜}
@@ -80,7 +80,7 @@ theorem _root_.Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul {H : Matrix 
 
 namespace IsBoundedOrthonormal
 
-/-- **A bounded orthonormal transform has $\beta \ge 1$** on a nonempty index type: a column of a
+/-- A bounded orthonormal transform has $\beta \ge 1$ on a nonempty index type: a column of a
 unitary has norm $1$, so $\lvert n \rvert = \sum_i \lvert n \rvert \, \lvert \mathbf{F}_{i,j}
 \rvert^2 \le \lvert n \rvert \beta$. The normalised Hadamard matrices attain $\beta = 1$. -/
 theorem one_le [Nonempty n] (hF : IsBoundedOrthonormal F β) : 1 ≤ β := by

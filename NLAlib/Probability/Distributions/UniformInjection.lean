@@ -95,7 +95,7 @@ private theorem uniformOn_injective_singleton_eq [Finite k] [Finite n] {f g : k 
   · rw [Set.inter_singleton_eq_empty.2 hf, Set.inter_singleton_eq_empty.2 (mt h.2 hf)]
 
 omit [Fintype k] [Fintype n] in
-/-- **Invariance under relabelling the population**: for a permutation $\sigma$ of $n$, the
+/-- Invariance under relabelling the population: for a permutation $\sigma$ of $n$, the
 uniform law on injections $\iota : k \to n$ is invariant under
 $\iota \mapsto \sigma \circ \iota$. -/
 theorem map_perm_comp_uniformOn_injective [Finite k] [Finite n] (σ : Equiv.Perm n) :
@@ -117,7 +117,7 @@ theorem map_perm_comp_uniformOn_injective [Finite k] [Finite n] (σ : Equiv.Perm
   exact uniformOn_injective_singleton_eq (σ.symm.injective.of_comp_iff f)
 
 omit [Fintype k] [Fintype n] in
-/-- **Invariance under reordering the sample**: for a permutation $\tau$ of $k$, the uniform law
+/-- Invariance under reordering the sample: for a permutation $\tau$ of $k$, the uniform law
 on injections $\iota : k \to n$ is invariant under $\iota \mapsto \iota \circ \tau$. -/
 theorem map_comp_perm_uniformOn_injective [Finite k] [Finite n] (τ : Equiv.Perm k) :
     (uniformOn {f : k → n | Function.Injective f}).map (fun f => f ∘ ⇑τ) =
@@ -138,7 +138,7 @@ theorem map_comp_perm_uniformOn_injective [Finite k] [Finite n] (τ : Equiv.Perm
   exact uniformOn_injective_singleton_eq
     (Function.Injective.of_comp_iff' f τ.symm.bijective)
 
-/-- **One draw without replacement is uniform**: for $\lvert k \rvert \le \lvert n \rvert$ and
+/-- One draw without replacement is uniform: for $\lvert k \rvert \le \lvert n \rvert$ and
 every position $j$, the law of $\iota(j)$ under the uniform law on injections $\iota : k \to n$ is
 the uniform law on $n$. -/
 theorem map_eval_uniformOn_injective (hk : Fintype.card k ≤ Fintype.card n) (j : k) :

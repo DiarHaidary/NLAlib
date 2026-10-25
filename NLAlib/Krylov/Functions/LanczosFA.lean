@@ -10,6 +10,7 @@ public import NLAlib.Krylov.Basic.Compression
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Polynomial.Approximation.AnalyticApproximation
 public import NLAlib.Polynomial.Approximation.Jackson
+public import NLAlib.Polynomial.Approximation.MinimaxError
 
 /-!
 # The Lanczos method for matrix functions
@@ -57,6 +58,8 @@ returns $\mathbf{0}$ (Mathlib's `cfc` of a non-self-adjoint element); Arnoldi-FA
   `Matrix.IsHermitian.lanczosFA_inv_add_eq_cgIterate`: CG and shifted CG.
 * `Matrix.IsHermitian.lanczosFA_eq_cfc_mulVec_of_krylovGrade_le`: exact past the grade.
 * `Matrix.IsHermitian.lanczosFA_eq_lanczosMatrix`: the Lanczos recurrence computes it.
+* `Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_continuousOn`: the bound
+  $2E_q(f)\|\mathbf{b}\|$ after $q + 1$ steps.
 -/
 
 @[expose] public section
@@ -86,13 +89,14 @@ noncomputable def compressedCfc (A : Matrix n n 𝕜) (f : ℝ → ℝ) (X : Mat
   rangeProjector X * cfc f (rangeProjector X * A * rangeProjector X) * rangeProjector X
 
 omit [DecidableEq r] in
-/-- The compressed function depends only on the column space. -/
+/-- The compressed function $\mathsf{compressedCfc}(\mathbf{A}, f, \mathbf{X})$ depends only on
+the column space. -/
 theorem compressedCfc_eq_of_range_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) {X : Matrix n p 𝕜}
     {Y : Matrix n r 𝕜} (h : LinearMap.range X.mulVecLin = LinearMap.range Y.mulVecLin) :
     compressedCfc A f X = compressedCfc A f Y := by
   rw [compressedCfc, compressedCfc, rangeProjector_inj.mpr h]
 
-/-- **The compressed function in a partial isometry**, for every $\mathbf{A}$: for $\mathbf{Q}$
+/-- The compressed function in a partial isometry, for every $\mathbf{A}$: for $\mathbf{Q}$
 with $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{Q}$ (orthonormal columns, possibly
 with some zero columns, as `arnoldiMatrix` past the grade) spanning the column space of
 $\mathbf{X}$,
@@ -178,7 +182,8 @@ gives $\mathbf{0}$; non-Hermitian $\mathbf{A}$ gives $\mathbf{0}$ (see `compress
 noncomputable def lanczosFA (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   compressedCfc A f (krylovMatrix A b q) *ᵥ b
 
-/-- The approximation lies in the Krylov space. -/
+/-- The approximation $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$ lies in the Krylov
+space. -/
 theorem lanczosFA_mem_krylovSpace (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     lanczosFA A f b q ∈ krylovSpace A b q := by
   rw [krylovSpace, ← range_rangeProjector]
@@ -187,7 +192,7 @@ theorem lanczosFA_mem_krylovSpace (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n
   rw [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, ← Matrix.mul_assoc]
   rfl
 
-/-- No steps, no approximation. -/
+/-- No steps, no approximation: $\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, 0) = \mathbf{0}$. -/
 @[simp]
 theorem lanczosFA_zero (A : Matrix n n 𝕜) (f : ℝ → ℝ) (b : n → 𝕜) : lanczosFA A f b 0 = 0 := by
   have h := lanczosFA_mem_krylovSpace A f b 0
@@ -232,8 +237,9 @@ theorem _root_.Matrix.IsHermitian.lanczosFA_eval {A : Matrix n n 𝕜} (hA : A.I
   exact hQ.lanczosFA_eq_aeval_mulVec hA hK hp fun _ _ => rfl
 
 /-- Lanczos-FA sees $f$ only on an interval containing the spectrum: if $f = g$ on $[a, a']$
-and the spectrum of Hermitian $\mathbf{A}$ lies in $[a, a']$, the approximations agree, since
-the Ritz values lie in $[a, a']$
+and the spectrum of Hermitian $\mathbf{A}$ lies in $[a, a']$, the approximations
+$\mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q)$ and
+$\mathsf{lanczosFA}(\mathbf{A}, g, \mathbf{b}, q)$ agree, since the Ritz values lie in $[a, a']$
 (`Matrix.IsHermitian.spectrum_conjTranspose_mul_mul_subset_Icc`). -/
 theorem _root_.Matrix.IsHermitian.lanczosFA_congr {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') {f g : ℝ → ℝ}
@@ -465,5 +471,21 @@ theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_lipschitzO
   have h := hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs hp' hε b
   refine h.trans_eq ?_
   field_simp
+
+/-- **Lanczos-FA and the minimax error**: for Hermitian $\mathbf{A}$ with spectrum in $[a, a']$
+and $f$ continuous on $[a, a']$, $q + 1$ steps of Lanczos-FA satisfy
+$$\|f(\mathbf{A})\mathbf{b} - \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\| \le
+2E_q(f; [a, a'])\|\mathbf{b}\|\,,$$
+$E_q$ the error of the best uniform approximation of $f$ on $[a, a']$ by polynomials of degree
+at most $q$ (`minimaxError`). [ChenPersson2026, (2)]; [Saad1992, §3]; there with $E_q$.
+Result: lanczos-fa-uniform-bound -/
+theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_continuousOn
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a')
+    {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a a')) (b : n → 𝕜) (q : ℕ) :
+    ‖WithLp.toLp 2 (cfc f A *ᵥ b - lanczosFA A f b (q + 1))‖ ≤
+      2 * minimaxError f (Set.Icc a a') q * ‖WithLp.toLp 2 b‖ := by
+  obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf q
+  exact hA.norm_cfc_mulVec_sub_lanczosFA_le_of_isUniformApproxOn hs
+    (hp.trans_lt (by exact_mod_cast Nat.lt_succ_self q)) hε b
 
 end NLAlib

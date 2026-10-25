@@ -134,8 +134,8 @@ theorem supermartingale_re_trace_exp (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
   exact Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le (h4.add (cfc_predicate Real.log _))
     (add_le_add le_rfl hlog)
 
-/-- **The martingale master tail**: for increments with conditional matrix MGF bounds,
-$\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace potential,
+/-- **The martingale master tail**: for $n$ nonempty, increments with conditional matrix MGF
+bounds, $\theta \in s$, $\theta > 0$ and $g(\theta) \ge 0$, with an integrable trace potential,
 $$\mathbb{P}\bigl[\exists k,\ \lambda_0(\mathbf{Y}_k) \ge t \text{ and }
 \mathbf{W}_k \preceq w\mathbf{I}\bigr] \le \lvert n\rvert\, e^{-\theta t + g(\theta) w}\,.$$
 [Tropp2011, §2]; the martingale form of
@@ -225,7 +225,7 @@ private theorem integrable_potential (hX : ∀ j, StronglyMeasurable[ℱ (j + 1)
 
 end HasCondMatrixMGFBound
 
-/-- **Freedman's inequality for matrix martingales.** For increments $\mathbf{X}_j$,
+/-- **Freedman's inequality for matrix martingales.** For $n$ nonempty, increments $\mathbf{X}_j$,
 $\mathcal{F}_{j+1}$-measurable, square-integrable, conditionally centred
 ($\mathbb{E}[\mathbf{X}_j \mid \mathcal{F}_j] = \mathbf{0}$) and with
 $\mathbf{X}_j \preceq L\mathbf{I}$ almost surely, $L > 0$ and $t \ge 0$,
@@ -277,9 +277,9 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman [Nonempty n]
   refine (measureReal_mono_ae hsub).trans (hM.trans ?_)
   exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr hθb) (Nat.cast_nonneg _)
 
-/-- **The martingale matrix Bernstein inequality**: Freedman's inequality with an almost sure
-bound $\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\|_2 \le v$ on the predictable
-quadratic variation at every time $k$, so that the event is only
+/-- **The martingale matrix Bernstein inequality**: for $n$ nonempty, Freedman's inequality
+with an almost sure bound $\|\sum_{j<k} \mathbb{E}[\mathbf{X}_j^2 \mid \mathcal{F}_j]\|_2 \le v$
+on the predictable quadratic variation at every time $k$, so that the event is only
 $\lambda_0(\sum_{j<k} \mathbf{X}_j) \ge t$ for some $k$:
 $$\mathbb{P}\Bigl[\exists k,\ \lambda_0\Bigl(\sum_{j<k} \mathbf{X}_j\Bigr) \ge t\Bigr]
 \le \lvert n\rvert \exp\Bigl(\frac{-t^2/2}{v + L t / 3}\Bigr)\,.$$
@@ -302,8 +302,8 @@ theorem measureReal_exists_eigenvalue_zero_sum_ge_le_freedman_of_ae_le [Nonempty
   exact (measureReal_mono_ae hsub).trans
     (measureReal_exists_eigenvalue_zero_sum_ge_le_freedman hX hX2 hmean hL hle ht)
 
-/-- **Freedman's inequality for rectangular matrix martingales.** For rectangular increments
-$\mathbf{S}_j$ with row index $r$, $\mathcal{F}_{j+1}$-measurable, square-integrable,
+/-- **Freedman's inequality for rectangular matrix martingales.** For $n$ nonempty, rectangular
+increments $\mathbf{S}_j$ with row index $r$, $\mathcal{F}_{j+1}$-measurable, square-integrable,
 conditionally centred and with $\|\mathbf{S}_j\|_2 \le L$ almost surely, $L > 0$ and $t \ge 0$,
 the probability that for some $k$ both $\|\sum_{j<k} \mathbf{S}_j\|_2 \ge t$ and the larger of the
 two predictable quadratic variations

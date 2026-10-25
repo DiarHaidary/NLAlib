@@ -380,8 +380,8 @@ private lemma hasSubexponentialMGF_of_lintegral_le {Y : Ω → ℝ} {v b : ℝ�
 with proxy $c$, is sub-exponential with variance proxy $18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and
 scale $12 c \|\mathbf{A}\|_2$. The off-diagonal part
 $\sum_{i \ne j} \mathbf{A}_{i,j} \mathbf{x}_i \mathbf{x}_j$ is written
-`quadForm (A - diagonal (diag A)) x`; the norms are those of $\mathbf{A}$ itself, in `ℝ≥0` as
-`‖frobNorm A‖₊` and `‖specNorm A‖₊`.
+`quadForm (A - diagonal (diag A)) x`; the norms are those of $\mathbf{A}$ itself, in
+$\mathbb{R}_{\ge 0}$ as `‖frobNorm A‖₊` and `‖specNorm A‖₊`.
 [Vershynin2018, proof of Theorem 6.2.1]; the off-diagonal step of the Hanson–Wright inequality,
 with the decoupling constant $4$ of the random cuts and explicit constants in place of the
 source's unspecified ones. -/

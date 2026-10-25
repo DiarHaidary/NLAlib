@@ -59,7 +59,7 @@ private theorem posSemidef_fromBlocks_submatrix {p : Type*} {A : Matrix n n 𝕜
   rw [hblock]
   exact hA.submatrix _
 
-/-- **The Nyström residual is positive semidefinite**: for positive semidefinite $\mathbf{A}$ and
+/-- The Nyström residual is positive semidefinite: for positive semidefinite $\mathbf{A}$ and
 a selection $e$, so is $\mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}$.
 It is a generalized Schur complement. -/
 theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul {p : Type*} [Fintype p]
@@ -92,7 +92,7 @@ theorem _root_.Matrix.PosSemidef.sub_submatrix_mul_pinv_mul_apply {p : Type*} [F
   rw [Matrix.sub_apply, sub_eq_zero]
   exact (congrFun (congrFun h i) k).symm
 
-/-- **The Nyström residual is the largest** positive semidefinite matrix below $\mathbf{A}$ whose
+/-- The Nyström residual is the largest positive semidefinite matrix below $\mathbf{A}$ whose
 columns at the selected indices vanish: if $\mathbf{M}$ is positive semidefinite,
 $\mathbf{M} \preceq \mathbf{A}$ and $\mathbf{M}_{i,e(k)} = 0$ for all $i$, $k$, then
 $\mathbf{M} \preceq \mathbf{A} - \mathbf{A}_{:,e} (\mathbf{A}_{e,e})^{+} \mathbf{A}_{e,:}$. -/

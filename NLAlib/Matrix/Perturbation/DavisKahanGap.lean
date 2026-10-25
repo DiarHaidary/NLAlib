@@ -164,7 +164,7 @@ private theorem re_trace_conjTranspose_mul_mul_le_mul_frobNorm_sq {N R : Matrix 
     Matrix.mul_assoc Qᴴ R, ← Matrix.mul_assoc R R, hR.mul_self, Matrix.mul_smul, Matrix.smul_mul,
     Matrix.trace_smul, RCLike.smul_re, ← Matrix.mul_assoc]
 
-/-- **Distance to the leading eigenspace from the loss of trace.** Let the columns of $\mathbf{U}$
+/-- Distance to the leading eigenspace from the loss of trace: let the columns of $\mathbf{U}$
 be orthonormal eigenvectors of the Hermitian matrix $\mathbf{A}$ for its $j + 1$ largest
 eigenvalues. For any frame $\mathbf{Q}$ with $j + 1$ columns,
 $$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
@@ -213,7 +213,7 @@ private theorem frobInner_mul_conjTranspose_self (X : Matrix n p 𝕜) (E : Matr
   rw [frobInner_eq_re_trace, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     Matrix.mul_assoc, Matrix.trace_mul_comm]
 
-/-- **The variational form for a perturbation.** Let $\mathbf{A}$ be Hermitian and $\mathbf{U}$ its
+/-- The variational form for a perturbation: let $\mathbf{A}$ be Hermitian and $\mathbf{U}$ its
 leading eigenframe with $j + 1$ columns. If the Rayleigh trace of $\mathbf{A} + \mathbf{E}$ on a
 frame $\mathbf{Q}$ with $j + 1$ columns is at least its Rayleigh trace on $\mathbf{U}$, that is
 $\operatorname{Re} \operatorname{tr}(\mathbf{U}^{\mathsf{H}}(\mathbf{A} + \mathbf{E})\mathbf{U})

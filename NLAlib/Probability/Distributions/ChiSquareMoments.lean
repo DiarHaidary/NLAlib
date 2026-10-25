@@ -43,23 +43,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   {g : Ω → n → ℝ}
 
-/-- $\int_0^\infty y^q e^{-y^2/2} \, dy = 2^{(q+1)/2} \Gamma((q+1)/2) / 2$ for $q > -1$. -/
-private theorem integral_rpow_mul_exp_neg_sq_div_two {q : ℝ} (hq : -1 < q) :
-    ∫ y in Ioi (0 : ℝ), y ^ q * rexp (-y ^ 2 / 2) =
-      2 ^ ((q + 1) / 2) * (1 / 2) * Real.Gamma ((q + 1) / 2) := by
-  have h := integral_rpow_mul_exp_neg_mul_rpow (p := 2) (q := q) (b := 1 / 2)
-    (by norm_num) hq (by norm_num)
-  have hhalf : (1 / 2 : ℝ) ^ (-(q + 1) / 2) = 2 ^ ((q + 1) / 2) := by
-    rw [one_div, Real.inv_rpow (by norm_num), ← Real.rpow_neg (by norm_num)]
-    congr 1
-    ring
-  rw [hhalf] at h
-  rw [← h]
-  refine setIntegral_congr_fun measurableSet_Ioi fun y _ => ?_
-  rw [Real.rpow_two]
-  congr 2
-  ring
-
 /-- The radial integral
 $\int_0^\infty y^{d-1} e^{-y^2/2} (y^2)^s \, dy = 2^{d/2 + s} \Gamma(d/2 + s) / 2$ for $d \ge 1$
 and $s > -d/2$. -/
@@ -97,7 +80,7 @@ private theorem integral_norm_sq_rpow_gaussianVector {s : ℝ}
   have hG : 0 < Real.Gamma ((d : ℝ) / 2) := Real.Gamma_pos_of_pos (by positivity)
   field_simp
 
-/-- **Polar coordinates for a standard Gaussian vector**, the $\chi_d$ density: for a standard
+/-- Polar coordinates for a standard Gaussian vector, the $\chi_d$ density: for a standard
 Gaussian vector $\mathbf{g}$ of dimension $d = \lvert n \rvert \ge 1$ and measurable $\varphi$,
 $$\mathbb{E}\,\varphi(\|\mathbf{g}\|) = \frac{1}{2^{d/2 - 1}\,\Gamma(d/2)}
 \int_0^\infty y^{d-1} e^{-y^2/2} \varphi(y)\,dy\,.$$
@@ -139,7 +122,7 @@ theorem integrable_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussia
     Real.Gamma_pos_of_pos (by have : 0 < Fintype.card n := Fintype.card_pos; positivity)
   positivity
 
-/-- **The real moments of $\chi^2_d$**: for a standard Gaussian vector $\mathbf{g}$ of dimension
+/-- The real moments of $\chi^2_d$: for a standard Gaussian vector $\mathbf{g}$ of dimension
 $d = \lvert n \rvert$ and real $s > -d/2$,
 $$\mathbb{E}(\|\mathbf{g}\|^2)^s = \frac{2^s \Gamma(d/2 + s)}{\Gamma(d/2)}\,.$$ -/
 theorem integral_norm_sq_rpow_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVector n) μ)

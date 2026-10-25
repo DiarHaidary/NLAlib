@@ -25,6 +25,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
+public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ExpDeriv
@@ -63,6 +64,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Co
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
@@ -77,9 +79,11 @@ public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
 public import NLAlib.ForMathlib.Probability.Moments.Variance
 public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
+public import NLAlib.ForMathlib.Topology.ContinuousMap.Compact
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.ForMathlib.Topology.MetricSpace.Lipschitz
+public import NLAlib.ForMathlib.Topology.Order.IntermediateValue
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.Krylov.Basic.BlockSpace
 public import NLAlib.Krylov.Basic.Compression
@@ -291,9 +295,11 @@ public import NLAlib.Polynomial.Approximation.BernsteinEllipse
 public import NLAlib.Polynomial.Approximation.ChebyshevCoefficients
 public import NLAlib.Polynomial.Approximation.ChebyshevSeries
 public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
+public import NLAlib.Polynomial.Approximation.Equioscillation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
+public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual

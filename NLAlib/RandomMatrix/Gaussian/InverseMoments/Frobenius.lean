@@ -62,8 +62,8 @@ theorem integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gau
   filter_upwards [ae_frobNorm_pinv_sq_eq_sum hX (by omega)] with ω hω
   rw [hω]
 
-/-- **$\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
-= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$** for a standard Gaussian $r \times k$
+/-- $\mathbb{E} \|\mathbf{G}^{+}\|_{\mathsf{F}}^2
+= \lvert r \rvert / (\lvert k \rvert - \lvert r \rvert - 1)$ for a standard Gaussian $r \times k$
 matrix $\mathbf{G}$ with $\lvert r \rvert + 2 \le \lvert k \rvert$ (Halko, Martinsson and Tropp,
 Proposition 10.2). -/
 theorem integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix (hX : HasLaw X (gaussianMatrix r k) μ)

@@ -461,7 +461,7 @@ theorem smul_le_smul_of_nonneg {G H : Matrix n n 𝕜} (h : G ≤ H) {c : ℝ} (
   exact (Matrix.le_iff.mp h).smul hc
 
 open scoped NNReal in
-/-- **A Loewner bound on a weighted rank-one matrix** (the row-sampling atom bound). For
+/-- A Loewner bound on a weighted rank-one matrix (the row-sampling atom bound). For
 $c \ge 0$ samples and a weight $w \ge 0$, the importance-weighted rank-one atom
 $(c w)^{-1} \mathbf{b}^{\mathsf{H}} \mathbf{b}$ of a row $\mathbf{b}$ (`vecMulVec (star b) b`)
 satisfies

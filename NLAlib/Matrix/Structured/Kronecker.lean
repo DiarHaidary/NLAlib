@@ -392,7 +392,7 @@ theorem IsPinv.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] {A : Ma
   · rw [← Matrix.mul_kronecker_mul]
     exact hA.isHermitian_right.kronecker hB.isHermitian_right
 
-/-- **The pseudoinverse of a Kronecker product** is the Kronecker product of the pseudoinverses:
+/-- The pseudoinverse of a Kronecker product is the Kronecker product of the pseudoinverses:
 $(\mathbf{A} \otimes \mathbf{B})^{+} = \mathbf{A}^{+} \otimes \mathbf{B}^{+}$.
 Port of `NLAlib.moorePenroseInverse_kronecker`, there over $\mathbb{R}$. -/
 theorem pinv_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)

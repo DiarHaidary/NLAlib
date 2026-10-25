@@ -118,9 +118,8 @@ theorem ae_eq_zero_of_integral_mul_sub_eq_zero (hμ : ∀ᵐ x ∂μ, x ∈ Set.
     {t : ℝ} (ht : t = a ∨ t = b) {F : ℝ → ℝ} (hF : Continuous F) (hF0 : ∀ x, 0 ≤ F x)
     (hFt : F t = 0) (h : ∫ x, F x * (x - t) ∂μ = 0) :
     ∀ᵐ x ∂μ, F x = 0 := by
-  have hint : Integrable (fun x => F x * (x - t)) μ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
-    exact (by fun_prop : Continuous fun x => F x * (x - t)).continuousOn.integrableOn_Icc
+  have hint : Integrable (fun x => F x * (x - t)) μ :=
+    (by fun_prop : Continuous fun x => F x * (x - t)).continuousOn.integrable_of_ae_mem_Icc hμ
   have hz : ∀ᵐ x ∂μ, F x * (x - t) = 0 := by
     rcases ht with rfl | rfl
     · refine (integral_eq_zero_iff_of_nonneg_ae ?_ hint).mp h

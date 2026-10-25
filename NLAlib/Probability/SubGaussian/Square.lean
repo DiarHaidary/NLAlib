@@ -359,7 +359,7 @@ private lemma mgf_sq_sub_integral_le [IsProbabilityMeasure μ] (h : HasSubgaussi
           gcongr
           nlinarith [sq_nonneg l, mul_le_mul_of_nonneg_left hv16 (sq_nonneg l)]
 
-/-- **The centred square of a sub-Gaussian variable is sub-exponential, every window**: if $X$
+/-- The centred square of a sub-Gaussian variable is sub-exponential, every window: if $X$
 has proxy $c$ under a probability measure, $2c \le b$ and $16 c^2 b \le (b - 2c) v$, then
 $X^2 - \mathbb{E}[X^2]$ is sub-exponential with variance proxy $v$ and scale $b$: on the window
 $b\lvert\theta\rvert < 1$ the series of $e^{\theta X^2}$ against
@@ -564,7 +564,7 @@ private theorem measureReal_sum_sq_le_mul_card_le (hind : iIndepFun Y μ)
       have : θ * (1 - ε) + Real.log (1 + u) ≤ -(ε ^ 2 / 4 - ε ^ 3 / 6) := by linarith
       nlinarith
 
-/-- **Dasgupta–Gupta tail for sums of squares**: for independent real $Y_i$, $i \in \iota$, each
+/-- Dasgupta–Gupta tail for sums of squares: for independent real $Y_i$, $i \in \iota$, each
 sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and $\mathbb{E}[Y_i^4] \le 3$, and
 $\varepsilon \ge 0$,
 $$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr]

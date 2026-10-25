@@ -251,7 +251,7 @@ theorem frobNorm_sq_eq_sum_row (A : Matrix m n 𝕜) :
   simp only [frobNorm_sq_eq_sum, EuclideanSpace.norm_sq_eq, Matrix.row_apply]
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Bridge to Mathlib.** The Frobenius norm $\|\mathbf{A}\|_{\mathsf{F}}$ (`frobNorm`) is the
+/-- Bridge to Mathlib: the Frobenius norm $\|\mathbf{A}\|_{\mathsf{F}}$ (`frobNorm`) is the
 norm of $\mathbf{A}$ in the `Matrix.Norms.Frobenius` scope. Port of `NLAlib.frobNorm_eq_norm`. -/
 theorem frobNorm_eq_norm (A : Matrix m n 𝕜) : frobNorm A = ‖A‖ := by
   rw [Matrix.frobenius_norm_def, frobNorm, Real.sqrt_eq_rpow]
@@ -293,7 +293,8 @@ theorem frobNorm_real_smul (a : ℝ) (A : Matrix m n 𝕜) : frobNorm (a • A) 
 /-- **Cauchy–Schwarz** for the Frobenius inner product:
 $\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
 \le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$.
-Port of `NLAlib.abs_frobInner_le_frobNorm_mul_frobNorm`. -/
+Port of `NLAlib.abs_frobInner_le_frobNorm_mul_frobNorm`.
+[HornJohnson2013, Theorem 5.1.4] (locator to check). -/
 theorem abs_frobInner_le (A B : Matrix m n 𝕜) : |frobInner A B| ≤ frobNorm A * frobNorm B := by
   have hA : frobNorm A = √(∑ x : m × n, ‖A x.1 x.2‖ ^ 2) :=
     congrArg Real.sqrt (Fintype.sum_prod_type' fun i j => ‖A i j‖ ^ 2).symm
@@ -367,7 +368,7 @@ theorem frobNorm_sub_sq (A B : Matrix m n 𝕜) :
 $\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = 0$ then
 $\|\mathbf{A} + \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
 \|\mathbf{B}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_add_of_frobInner_eq_zero`. -/
+Port of `NLAlib.frobSq_add_of_frobInner_eq_zero`. [HornJohnson2013, §5.1] (locator to check). -/
 theorem frobNorm_add_sq_of_frobInner_eq_zero {A B : Matrix m n 𝕜} (h : frobInner A B = 0) :
     frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   rw [frobNorm_add_sq, h, mul_zero, add_zero]

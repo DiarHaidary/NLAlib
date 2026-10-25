@@ -186,7 +186,7 @@ theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_rsvd [DecidableEq q] {A : M
 
 /-- **Gu's projected form**: with $\mathbf{T} = \llbracket\mathbf{A}\rrbracket_k$ and
 $\mathbf{P} = \mathbf{P}_{\mathbf{A}\mathbf{\Omega}}$,
-$$\|\mathbf{A} - \llbracket\mathbf{P}\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2
+$$\|\mathbf{A} - \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2
 \le \|\mathbf{A} - \mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{T} - \mathbf{P}\mathbf{T}\|_{\mathsf{F}}^2\,,$$
 for every test matrix (no rank hypothesis). Since
@@ -301,7 +301,7 @@ theorem _root_.Matrix.PosSemidef.nuclearNorm_sub_truncatedSVD_nystrom {H : Matri
   have h := nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD_nystrom (CFC.sqrt H) Ω k
   rwa [hHF] at h
 
-/-- **The trace error of truncated Nyström under any choice of the truncation**: for positive
+/-- The trace error of truncated Nyström under any choice of the truncation: for positive
 semidefinite $\mathbf{H}$ and any best rank-$k$ approximation $\mathbf{Y}$ of
 $\mathsf{nystrom}(\mathbf{H}, \mathbf{\Omega})$,
 $$\|\mathbf{H} - \mathbf{Y}\|_* \le

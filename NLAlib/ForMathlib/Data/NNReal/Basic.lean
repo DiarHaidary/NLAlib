@@ -9,7 +9,7 @@ public import Mathlib.Data.NNReal.Basic
 public import Mathlib.Data.Fintype.BigOperators
 
 /-!
-# Uniform weights in `ℝ≥0`
+# Uniform weights in $\mathbb{R}_{\ge 0}$
 
 The uniform weights $1/\lvert \iota \rvert$ on a nonempty finite type sum to one. Upstream
 candidate for `Mathlib.Data.NNReal.Basic`.
@@ -26,7 +26,7 @@ open scoped NNReal
 namespace NNReal
 
 /-- The uniform weights $1/\lvert \iota \rvert$ sum to one on a nonempty finite type: the
-normalisation hypothesis `∑ i, p i = 1` of a sampling law at uniform weights. -/
+normalisation hypothesis $\sum_i p_i = 1$ of a sampling law at uniform weights. -/
 theorem sum_const_inv_card {ι : Type*} [Fintype ι] [Nonempty ι] :
     ∑ _ : ι, (Fintype.card ι : ℝ≥0)⁻¹ = 1 := by
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul,

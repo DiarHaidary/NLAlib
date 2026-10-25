@@ -58,7 +58,7 @@ theorem lipschitzWith_normed_convolution {c : G} (Ï† : ContDiffBump c) {g : G â†
 
 end ContDiffBump
 
-/-- **Smoothing a Lipschitz function**: on a finite-dimensional space, a $K$-Lipschitz function
+/-- Smoothing a Lipschitz function: on a finite-dimensional space, a $K$-Lipschitz function
 $f$ is uniformly within $\varepsilon > 0$ of a $C^\infty$ function $g$ that is again
 $K$-Lipschitz: $\operatorname{dist}(g(x), f(x)) \le \varepsilon$ for all $x$ (convolve with a
 normed bump function supported in a ball of radius $\varepsilon / (K + 1)$). -/

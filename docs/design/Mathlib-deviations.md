@@ -490,6 +490,11 @@ None of these was approved by the maintainer when it was made. Status is given p
 - `quadForm A x` for `star x ⬝ᵥ A *ᵥ x`; `hermitianPart A`
   (`hermitianPart_eq_selfAdjointPart`).
 - `complexify A` for `A.map RCLike.toComplex`.
+- `gaussianVector n` for `Measure.pi fun _ : n => gaussianReal 0 1`, an `abbrev` (so Mathlib's
+  `Measure.pi` and `gaussianReal` lemmas apply by `rfl`), where Mathlib names the standard
+  Gaussian `stdGaussian (EuclideanSpace ℝ n)`: the law lives on the library's vectors `n → ℝ`
+  (entry 5). Bridge: Mathlib's `map_pi_eq_stdGaussian` (the image under `WithLp.toLp 2` is
+  `stdGaussian`), through which `gaussianVector n` gets its `IsGaussian` instance.
 
 ## Additions where Mathlib has nothing
 
@@ -537,6 +542,15 @@ degree of the minimal polynomial) is planned with the stage that needs it. `gale
 optimality), `IsGradedKrylovBasis` and `arnoldiMatrix` (on Mathlib's `gramSchmidtNormed` through
 `gramSchmidtQ`), and the recurrences `lanczosState` and `cgState` are additions with no Mathlib
 counterpart. No numbered deviation is introduced.
+
+Poly-Best (2026-10-25, `docs/design/Polynomial-BestApproximation.md`): `minimaxError f s n`,
+the best uniform error on a raw `f : ℝ → ℝ` and `s : Set ℝ`, defined as the infimum of the
+errors of `Metric.IsUniformApproxOn` for degree-`n` polynomials (junk `0` where the true value
+is $+\infty$ and for `s = ∅`), the chosen best approximation `minimaxPoly f s n` (junk `0` when
+none exists; canonical on an interval), and the predicate `AlternatesOn`. Mathlib's nearest notion is
+`Metric.infDist` in `C(s, ℝ)` to the image of `Polynomial.degreeLE ℝ n` under
+`Polynomial.toContinuousMapOnAlgHom s`; the bridge is `minimaxError_eq_infDist`. The pointwise
+form is what the Krylov and SLQ consumers hold. No numbered deviation is introduced.
 
 ## Used as Mathlib has them
 

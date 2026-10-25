@@ -93,7 +93,7 @@ theorem frobNorm_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
 /-- **Pythagoras for summands with orthogonal ranges**: if
 $\mathbf{A}^{\mathsf{H}}\mathbf{B} = \mathbf{0}$ then
 $\|\mathbf{A} + \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
-\|\mathbf{B}\|_{\mathsf{F}}^2$. -/
+\|\mathbf{B}\|_{\mathsf{F}}^2$. [HornJohnson2013, §5.1] (locator to check). -/
 theorem frobNorm_add_sq_of_conjTranspose_mul_eq_zero {A B : Matrix m n 𝕜} (h : Aᴴ * B = 0) :
     frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   refine frobNorm_add_sq_of_frobInner_eq_zero ?_

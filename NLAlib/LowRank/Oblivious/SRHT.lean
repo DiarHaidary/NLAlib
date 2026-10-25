@@ -69,7 +69,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 
 /-- **The randomized SVD with an SRHT test matrix**: if the sketch $\mathbf{\Omega}^{\mathsf{H}}$
 is the SRHT without replacement of a bounded orthonormal $\mathbf{F}$ with bound $\beta$,
-$\ell \le n$, $\delta, t > 0$ and $\ell$ is at
+$\ell$ nonempty, $\ell \le n$, $\delta, t > 0$ and $\ell$ is at
 least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->
@@ -103,7 +103,8 @@ theorem measureReal_frobNorm_sub_rsvd_sq_gt_le_of_hasLaw_srht [Nonempty l] {F : 
 
 /-- **The randomized SVD with an SRHT test matrix, with replacement**: if the sketch
 $\mathbf{\Omega}^{\mathsf{H}}$ is the SRHT with i.i.d. uniform row indices of a bounded
-orthonormal $\mathbf{F}$ with bound $\beta$, $\delta, t > 0$ and $\ell$ is at
+orthonormal $\mathbf{F}$ with bound $\beta$, $\ell$ and $n$ nonempty, $\delta, t > 0$ and
+$\ell$ is at
 least <!-- value samplingInjectionDim k L (1/2) (\delta/2) -->
 $$\frac{2 L \log(k/(\delta/2))}{(1/2)^2}\,,$$
 where the flattened coherence <!-- value srhtRowBound {\lvert n \rvert} k (\delta/2) -->

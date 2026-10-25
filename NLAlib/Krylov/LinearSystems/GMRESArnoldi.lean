@@ -109,7 +109,7 @@ theorem gmresIterate_eq_mgsArnoldiMatrix (A : Matrix n n 𝕜) (b x₀ : n → �
 
 /-! ### Pivots and the computed basis past the grade -/
 
-/-- **When the pivots are nonzero**: for invertible $\mathbf{A}$, the computed Givens pivots of
+/-- When the pivots are nonzero: for invertible $\mathbf{A}$, the computed Givens pivots of
 $\underline{\mathbf{H}}_q$ are all nonzero exactly for $q \le \nu$, the grade of $\mathbf{r}_0$. A
 lemma used inside the realisation, never its hypothesis. -/
 theorem forall_givensHessenbergR_mgsArnoldiHessenberg_ne_zero_iff {A : Matrix n n 𝕜}

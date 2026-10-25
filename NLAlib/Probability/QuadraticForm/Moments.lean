@@ -267,7 +267,7 @@ theorem memLp_quadForm (hL4 : ∀ i, MemLp (fun ω => x ω i) 4 μ) (A : Matrix 
   exact memLp_finsetSum _ fun i _ => memLp_finsetSum _ fun j _ =>
     (memLp_star_mul (hL4 i) (hL4 j)).const_mul (A i j)
 
-/-- **The second moment of a quadratic form** about its mean $\operatorname{tr} \mathbf{A}$: for
+/-- The second moment of a quadratic form about its mean $\operatorname{tr} \mathbf{A}$: for
 independent coordinates, each in $L^4$, with mean zero,
 $\mathbb{E}\lvert \mathbf{x}_i\rvert^2 = 1$, $\mathbb{E}[\mathbf{x}_i^2] = s$ and
 $\mathbb{E}\lvert \mathbf{x}_i\rvert^4 = m_4$,

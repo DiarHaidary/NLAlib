@@ -176,7 +176,7 @@ theorem measurable_rank [Finite m] : Measurable fun A : Matrix m n 𝕜 => A.ran
   rw [h]
   exact (isClosed_setOf_rank_le r).measurableSet.inter (isOpen_setOf_le_rank r).measurableSet
 
-/-- **The pseudoinverse is measurable**: $\mathbf{A} \mapsto \mathbf{A}^{+}$.
+/-- The pseudoinverse is measurable: $\mathbf{A} \mapsto \mathbf{A}^{+}$.
 Port of `NLAlib.measurable_pinvL_entry_of` and
 `NLAlib.measurable_pinvR_entry`. -/
 theorem measurable_pinv :
@@ -294,7 +294,7 @@ measurable. -/
 theorem measurable_svdV : Measurable (svdV : Matrix m n 𝕜 → _) :=
   measurable_snd.comp measurable_svdU_svdV
 
-/-- **The truncated SVD is Borel measurable**: $\mathbf{A} \mapsto \llbracket\mathbf{A}
+/-- The truncated SVD is Borel measurable: $\mathbf{A} \mapsto \llbracket\mathbf{A}
 \rrbracket_k$ is measurable for every $k$, though not continuous (it jumps at ties
 $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$). So the expectation of any error of a truncated
 random output is defined, and every theorem stated for a measurable choice of best

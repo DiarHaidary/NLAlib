@@ -212,7 +212,7 @@ theorem pcgState_x_sub_mem_krylovSpace (A M : Matrix n n 𝕜) (b x₀ : n → �
   exact (pcgState_mem A M b x₀ k).1
 
 omit [DecidableEq n] in
-/-- **The preconditioned recurrence is Hestenes–Stiefel on the split system**: for any
+/-- The preconditioned recurrence is Hestenes–Stiefel on the split system: for any
 $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$ and
 $\mathbf{C}\mathbf{y}_0 = \mathbf{x}_0$, the computed iterate is $\mathbf{C}$ times the
 Hestenes–Stiefel iterate for $(\mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C},
@@ -275,7 +275,7 @@ theorem _root_.Matrix.PosDef.star_pcgState_p_dotProduct_mulVec_eq_zero (hA : A.P
   have hA' : (Sᴴ * A * S).PosDef := (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mpr hA
   exact hA'.star_cgState_p_dotProduct_mulVec_eq_zero hjk
 
-/-- **PCG stops exactly at the grade**: for positive definite $\mathbf{A}$ and $\mathbf{M}$ the
+/-- PCG stops exactly at the grade: for positive definite $\mathbf{A}$ and $\mathbf{M}$ the
 computed residual vanishes iff $k$ is at least the grade of $\mathbf{M}\mathbf{r}_0$ for
 $\mathbf{M}\mathbf{A}$, which is the grade of the split system. -/
 theorem _root_.Matrix.PosDef.pcgState_r_eq_zero_iff (hA : A.PosDef) (hM : M.PosDef)

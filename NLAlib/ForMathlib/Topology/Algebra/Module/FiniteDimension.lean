@@ -63,7 +63,7 @@ private theorem IsCompact.exists_forall_toLex_le {Y : Type*} [TopologicalSpace Y
     · have hlt : c y 0 < c z 0 := hy0 ▸ lt_of_le_of_ne (isMinOn_iff.mp hmin z hz) (Ne.symm h)
       exact le_of_lt ⟨0, fun j hj => absurd hj (Fin.not_lt_zero j), hlt⟩
 
-/-- **A compact set has a lexicographically least point**: for a nonempty compact $K$ in a
+/-- A compact set has a lexicographically least point: for a nonempty compact $K$ in a
 finite-dimensional real Hausdorff topological vector space with a basis $(\mathbf{b}_i)_{i<N}$,
 some $y \in K$ has coordinates lexicographically below those of every point of $K$. Its
 coordinates are $c_i(y) = \min\{c_i(z) : z \in K,\ c_j(z) = c_j(y) \text{ for } j < i\}$, each a

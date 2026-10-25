@@ -201,7 +201,7 @@ private theorem exists_perm_sum_mul_le_aux {x y : ι → ℝ} (h : WeaklyMajoriz
     · exact Or.inl ((Equiv.sum_comp e₁ x).trans (hc.trans (Equiv.sum_comp e₂ y).symm))
     · exact Or.inr fun j => hc _
 
-/-- **Rearrangement through majorization.** If $\mathbf{x}$ is majorized by $\mathbf{y}$ then for
+/-- Rearrangement through majorization: if $\mathbf{x}$ is majorized by $\mathbf{y}$ then for
 every real weight vector $\mathbf{a}$ there is a permutation $\pi$ with
 $\sum_i \mathbf{a}_i \mathbf{x}_i \le \sum_i \mathbf{a}_i \mathbf{y}_{\pi(i)}$.
 Port of `NLAlib.Majorized.exists_perm_sum_mul_le`. -/
@@ -209,7 +209,7 @@ theorem Majorized.exists_perm_sum_mul_le {x y : ι → ℝ} (h : Majorized x y) 
     ∃ σ : Equiv.Perm ι, ∑ i, a i * x i ≤ ∑ i, a i * y (σ i) := by
   exact exists_perm_sum_mul_le_aux h.weaklyMajorized a (Or.inl h.sum_eq)
 
-/-- **Rearrangement through weak majorization.** If $\mathbf{x}$ is weakly majorized by
+/-- Rearrangement through weak majorization: if $\mathbf{x}$ is weakly majorized by
 $\mathbf{y}$ then for every nonnegative weight vector $\mathbf{a}$ there is a permutation $\pi$
 with $\sum_i \mathbf{a}_i \mathbf{x}_i \le \sum_i \mathbf{a}_i \mathbf{y}_{\pi(i)}$. The majorized
 case, with no sign condition on $\mathbf{a}$, is `NLAlib.Majorized.exists_perm_sum_mul_le`. -/
@@ -365,7 +365,7 @@ theorem majorized_iff_forall_sum_convex_le {x y : ι → ℝ} :
   simp only [id_eq, Finset.sum_neg_distrib, neg_le_neg_iff] at hpos hneg
   exact le_antisymm hpos hneg
 
-/-- **Majorization is decided on the entries that differ.** Two vectors that agree outside an
+/-- Majorization is decided on the entries that differ: two vectors that agree outside an
 index set $s$ are majorized exactly when their restrictions to $s$ are. -/
 theorem majorized_subtype_iff {x y : ι → ℝ} {s : Finset ι} (h : ∀ k ∉ s, x k = y k) :
     Majorized (fun k : s => x k) (fun k : s => y k) ↔ Majorized x y := by

@@ -39,7 +39,7 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*}
 
-/-- **Orthonormal basis of a column space.** For any column index type $p$ with
+/-- Orthonormal basis of a column space: for any column index type $p$ with
 $\lvert p \rvert = \operatorname{rank} \mathbf{A}$, there is a $\mathbf{Q}$ with orthonormal
 columns indexed by $p$ and the same column space as $\mathbf{A}$. Port of
 `NLAlib.hasOrthonormalCols_orthonormalBasisMatrix` and `NLAlib.range_orthonormalBasisMatrix`, there
@@ -69,7 +69,7 @@ theorem exists_hasOrthonormalCols_range_eq [Fintype m] [Fintype n] [Fintype p] [
       Module.Basis.span_eq, Submodule.map_comp, Submodule.map_subtype_top, ← Submodule.map_comp,
       LinearEquiv.comp_symm, Submodule.map_id]
 
-/-- **Orthonormal completion** by any number of columns that fits. A matrix $\mathbf{Q}$ with
+/-- Orthonormal completion by any number of columns that fits. A matrix $\mathbf{Q}$ with
 orthonormal columns indexed by $n$ extends, by columns $\mathbf{Q}'$ indexed by any type $p$ with
 $\lvert n \rvert + \lvert p \rvert \le \lvert m \rvert$, to a matrix
 $\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ (`Matrix.fromCols`) with orthonormal
@@ -133,7 +133,7 @@ theorem _root_.IsStarProjection.exists_hasOrthonormalCols_mul_conjTranspose_eq [
   exact ⟨Q, hQ, by rw [← hQ.rangeProjector_eq, rangeProjector_inj.mpr hrange,
     hP.rangeProjector_eq]⟩
 
-/-- **Orthonormal completion.** A matrix $\mathbf{Q}$ with orthonormal columns indexed by $n$
+/-- Orthonormal completion: a matrix $\mathbf{Q}$ with orthonormal columns indexed by $n$
 extends, by columns $\mathbf{Q}'$ indexed by any type $p$ with
 $\lvert n \rvert + \lvert p \rvert = \lvert m \rvert$, to a matrix
 $\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ with orthonormal columns. That matrix has

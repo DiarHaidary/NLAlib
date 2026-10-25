@@ -9,6 +9,7 @@ public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Zeros
 public import NLAlib.Polynomial.Approximation.Jackson
+public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Interpolation.Hermite
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 
@@ -64,6 +65,8 @@ so it is a lower bound when $f^{(2k)} \ge 0$ and an upper bound when $f^{(2k)} \
 * `NLAlib.MatchesMoments.eq_gaussQuadrature`: uniqueness of the Gauss rule.
 * `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn`,
   `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith`: error bounds.
+* `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_continuousOn`: the bound
+  $2E_{2k + 1}(f)\mu(\mathbb{R})$.
 * `NLAlib.gaussQuadrature_eq_self_of_integral_orthogonalPolynomial_sq_eq_zero`: the terminating
   case.
 * `NLAlib.exists_integral_sub_integral_eval_eq`: the mean-value step shared by the Gauss, Radau
@@ -218,8 +221,12 @@ theorem IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq {μ : Measure 
   · intro hx'
     exact absurd hx hx'
 
-/-- The integral against the Gauss rule (stated as `integral_interpolatoryQuadrature` below). -/
-private theorem integral_interpolatoryQuadrature_of_isOrthogonalPolynomial {μ : Measure ℝ}
+/-- The integral against the Gauss rule: if the nodal polynomial of $s$ is orthogonal in
+$L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
+supported in $[a, b]$, then for every $f : \mathbb{R} \to \mathbb{R}$ the integral of $f$ against
+the interpolatory rule at $s$ is $\sum_{x\in s}\bigl(\int\ell_x\,d\mu\bigr)f(x)$, $\ell_x$ the
+Lagrange basis polynomial of $x$; the truncation of the weights at $0$ does not act. -/
+theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure ℝ}
     {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
     ∫ x, f x ∂interpolatoryQuadrature μ s =
@@ -243,20 +250,8 @@ theorem IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature {μ : Meas
     [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) :
     MatchesMoments μ (interpolatoryQuadrature μ s) (2 * s.card) := by
   intro p hp
-  rw [integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ,
+  rw [hs.integral_interpolatoryQuadrature hμ,
     hs.integral_eval_eq_sum hμ (by exact_mod_cast hp)]
-
-/-- The integral against the Gauss rule: if the nodal polynomial of $s$ is orthogonal in
-$L^2(\mu)$ to the polynomials of degree less than $\lvert s\rvert$, for a finite measure $\mu$
-supported in $[a, b]$, then for every $f : \mathbb{R} \to \mathbb{R}$ the integral of $f$ against
-the interpolatory rule at $s$ is $\sum_{x\in s}\bigl(\int\ell_x\,d\mu\bigr)f(x)$, $\ell_x$ the
-Lagrange basis polynomial of $x$; the truncation of the weights at $0$ does not act. -/
-theorem IsOrthogonalPolynomial.integral_interpolatoryQuadrature {μ : Measure ℝ}
-    {s : Finset ℝ} (hs : IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id))
-    [IsFiniteMeasure μ] {a b : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (f : ℝ → ℝ) :
-    ∫ x, f x ∂interpolatoryQuadrature μ s =
-      ∑ x ∈ s, (∫ t, (Lagrange.basis s id x).eval t ∂μ) * f x :=
-  integral_interpolatoryQuadrature_of_isOrthogonalPolynomial hs hμ f
 
 /-! ### The canonical Gauss rule -/
 
@@ -298,11 +293,9 @@ $$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
 with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
 hypothesis: the rule is a finite sum of Dirac masses. -/
 theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
-    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
-  conv_lhs => rw [← Measure.restrict_eq_self_of_ae_mem (μ := gaussQuadrature μ k)
-    (s := gaussNodes μ k) (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k))]
-  rw [setIntegral_finset _ (integrable_gaussQuadrature μ k f).integrableOn]
-  simp only [smul_eq_mul]
+    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x :=
+  integral_eq_sum_measureReal_singleton_mul (μ := gaussQuadrature μ k)
+    (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)) f
 
 /-! ### Finite measures with compact support -/
 
@@ -450,9 +443,7 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
     (hf : LipschitzOnWith L f (Set.Icc a b)) (k : ℕ) :
     |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
       jacksonApproximationConstant * L * (b - a) / (2 * k + 3) * μ.real Set.univ := by
-  have hint : Integrable f μ := by
-    have h := hf.continuousOn.integrableOn_Icc (μ := μ)
-    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  have hint : Integrable f μ := hf.continuousOn.integrable_of_ae_mem_Icc hμ
   obtain ⟨p, hp, hε⟩ :=
     exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * k + 1)
   have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
@@ -462,6 +453,24 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
   push_cast
   field_simp
   ring
+
+/-- **The Gauss-rule error and the minimax error**: for a finite measure $\mu$ supported in
+$[a, b]$ and $f$ continuous on $[a, b]$, the $(k + 1)$-point Gauss rule satisfies
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k + 1)\Bigr\rvert \le
+2E_{2k + 1}(f; [a, b])\,\mu(\mathbb{R})\,,$$
+$E_{2k + 1}$ the error of the best uniform approximation of $f$ on $[a, b]$ by polynomials of
+degree at most $2k + 1$ (`minimaxError`). [GolubMeurant2010, Ch. 6]; [Trefethen2019, Ch. 19]
+(locator to check). -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_continuousOn
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {f : ℝ → ℝ} (hf : ContinuousOn f (Set.Icc a b)) (k : ℕ) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
+      2 * minimaxError f (Set.Icc a b) (2 * k + 1) * μ.real Set.univ := by
+  have hint : Integrable f μ := hf.integrable_of_ae_mem_Icc hμ
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_minimaxError isCompact_Icc hf (2 * k + 1)
+  have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
+  exact abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
 
 /-! ### The Gauss remainder -/
 
@@ -514,9 +523,7 @@ theorem exists_integral_sub_integral_eval_eq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Ic
       f x - H.eval x = iteratedDeriv n f ξ / n.factorial * W x) :
     ∃ ξ ∈ Set.Ioo a b, ∫ x, f x ∂μ - ∫ x, H.eval x ∂μ =
       iteratedDeriv n f ξ / n.factorial * ∫ x, W x ∂μ := by
-  have hfint : Integrable f μ := by
-    rw [← Measure.restrict_eq_self_of_ae_mem hμ]
-    exact hf.integrableOn_Icc
+  have hfint : Integrable f μ := hf.integrable_of_ae_mem_Icc hμ
   have hD : ContinuousOn (fun ξ => iteratedDeriv n f ξ / n.factorial) (Set.Ioo a b) :=
     ((hf'.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ioo a b)).congr
       fun x hx => (iteratedDerivWithin_of_isOpen isOpen_Ioo hx).symm).div_const _

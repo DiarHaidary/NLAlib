@@ -80,7 +80,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n l : Type*}
 
 /-! ### Exact recovery -/
 
-/-- **A Gaussian sketch at least as wide as the rank makes Nyström exact**: for positive
+/-- A Gaussian sketch at least as wide as the rank makes Nyström exact: for positive
 semidefinite $\mathbf{H}$ with $\operatorname{rank}\mathbf{H} \le \ell$ and a standard Gaussian
 $n \times \ell$ test matrix $\mathbf{X}$, $\mathsf{nystrom}(\mathbf{H}, \mathbf{X}) = \mathbf{H}$
 almost surely. -/

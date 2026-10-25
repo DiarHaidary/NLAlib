@@ -61,7 +61,7 @@ contain $0^{-1} = 0$. [Higham2008, (1.10)]; locator to verify. -/
 noncomputable def dividedDifference (s : Finset ι) (v : ι → F) (r : ι → F) : F :=
   ∑ i ∈ s, Lagrange.nodalWeight s v i * r i
 
-/-- **The divided difference is a coefficient of the interpolant**: on $q + 1$ distinct nodes,
+/-- The divided difference is a coefficient of the interpolant: on $q + 1$ distinct nodes,
 $r[s]$ is the coefficient of $X^q$ of `Lagrange.interpolate s v r`; this is Mathlib's
 `Lagrange.coeff_eq_sum`, whose count is `#s - 1`, for the interpolant. -/
 theorem dividedDifference_eq_coeff_interpolate {s : Finset ι} {v : ι → F}
@@ -82,7 +82,7 @@ theorem dividedDifference_eval_eq_coeff {s : Finset ι} {v : ι → F} (hvs : Se
   conv_rhs => rw [Lagrange.eq_interpolate hvs hp']
   exact dividedDifference_eq_coeff_interpolate hvs hs _
 
-/-- **The divided difference annihilates lower degrees**: on $q + 1$ distinct nodes, a
+/-- The divided difference annihilates lower degrees: on $q + 1$ distinct nodes, a
 polynomial of degree less than $q$ has divided difference $0$. -/
 theorem dividedDifference_eval_eq_zero {s : Finset ι} {v : ι → F} (hvs : Set.InjOn v s)
     {q : ℕ} (hs : #s = q + 1) {p : F[X]} (hp : p.degree < q) :

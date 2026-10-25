@@ -25,7 +25,7 @@ candidate for `Mathlib.Data.Fin.Tuple.Sort`.
 
 namespace Fintype
 
-/-- **Sorting.** Every real vector on a finite index type $\iota$ is non-increasing after
+/-- Sorting: every real vector on a finite index type $\iota$ is non-increasing after
 relabelling its indices by `Fin` $\lvert \iota \rvert$. -/
 theorem exists_equiv_antitone_comp {ι : Type*} [Fintype ι] (a : ι → ℝ) :
     ∃ e : Fin (Fintype.card ι) ≃ ι, Antitone (a ∘ e) := by

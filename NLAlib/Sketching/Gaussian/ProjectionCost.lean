@@ -271,10 +271,11 @@ theorem hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
     (hG.aemeasurable.const_smul ((√(Fintype.card k : ℝ))⁻¹)) hε (le_max_left _ _) (by positivity)
     (by linarith) A
 
-/-- **$O((d+1)\log(1/\delta)/\varepsilon^2)$ Gaussian rows suffice for a rank-$d$
-projection-cost-preserving sketch** with constants $1 \mp \varepsilon$ and failure probability
-$\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come before every
-dimension. Proved from
+/-- **Gaussian rows suffice for a rank-$d$ projection-cost-preserving sketch**:
+$$O((d+1)\log(1/\delta)/\varepsilon^2)$$
+rows give one, with constants $1 \mp \varepsilon$ and failure probability $\delta$, for
+$\varepsilon$ and $\delta$ below absolute constants; the constants come before every dimension.
+Proved from
 `NLAlib.hasProjectionCostPreserving_of_hasLaw_gaussianMatrix_of_jlMomentDim_le` with
 $\varepsilon_0 = 1$ and $\delta \le 1/2$; the OSE size $O((d + \log(1/\delta))/\varepsilon^2)$ is
 dominated by the tail size there. The literature's additive $(d + \log(1/\delta))/\varepsilon^2$
@@ -311,7 +312,7 @@ section SubGaussian
 variable [DecidableEq n] {X : Ω → Matrix k n ℝ} {c : ℝ≥0}
 
 /-- **A sub-Gaussian sketch is a projection-cost-preserving sketch**, size form: for a sketch
-$\mathbf{X}$ with independent isotropic rows, sub-Gaussian with proxy $c$, for
+$\mathbf{X}$ with independent isotropic rows, sub-Gaussian with proxy $c$, for $k$ nonempty,
 $0 < \varepsilon \le 5c/2$, $\delta > 0$, at
 least <!-- value subgaussianEmbeddingDim c d (\varepsilon/2) (\delta/2) -->
 $25 c^2 (d \log 21 + \log(2/(\delta/2)))/(16 C (\varepsilon/2)^2)$ rows
@@ -429,11 +430,12 @@ theorem hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomen
     (hX.const_smul ((√(Fintype.card k : ℝ))⁻¹)) hε (le_max_left _ _) (by positivity)
     (by linarith) A
 
-/-- **$O(c^2 (d+1)\log(1/\delta)/\varepsilon^2)$ rows suffice for a sub-Gaussian sketch** with
-independent isotropic rows, sub-Gaussian with proxy $c$, to be a rank-$d$ projection-cost-preserving
-sketch with constants $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and
-$\delta$ below absolute constants; the constants come before every dimension and the proxy. At
-$c = 1$ this covers Rademacher sketches. Proved from
+/-- **Sub-Gaussian rows suffice for a rank-$d$ projection-cost-preserving sketch**:
+$$O(c^2 (d+1)\log(1/\delta)/\varepsilon^2)$$
+independent isotropic rows, sub-Gaussian with proxy $c$, give one, with constants
+$1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
+constants; the constants come before every dimension and the proxy. At $c = 1$ this
+covers Rademacher sketches. Proved from
 `NLAlib.hasProjectionCostPreserving_of_isSubgaussianVector_of_subgaussianJLMomentDim_le` with
 $\varepsilon_0 = 1$ and $\delta \le 1/2$; isotropy forces $c \ge 1$ once there is a column.
 [CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
@@ -495,8 +497,9 @@ $\log(2/(\delta/2/21^d))/((2\varepsilon/5)^2/4 - (2\varepsilon/5)^3/6)$ rows
 (`jlDim (2 * ε / 5) (δ / 2 / 21 ^ d)`) and at
 least <!-- value projectionCostTailDim 2 d \varepsilon \delta -->
 $384 \cdot 2 (d + 1)/(\varepsilon^2 \delta)$ rows (`projectionCostTailDim 2 d ε δ`), the Haar
-sketch $\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$, $\mathbf{Q}$
-an $n \times k$ Haar frame, makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
+sketch
+$$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}\,,$$
+$\mathbf{Q}$ an $n \times k$ Haar frame, makes $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$
 projection-cost-preserving sketch of $\mathbf{A}$ with constants $1 \mp \varepsilon$, for every
 $\mathbf{A}$, except with probability $\delta$. The head is the OSE by JL and a net
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_haarFrame_of_jlDim_le`) at
@@ -548,7 +551,8 @@ $\log(2/(\delta/2/21^d))/((2\varepsilon/5)^2/4 - (2\varepsilon/5)^3/6)$ rows
 least <!-- value jlMomentDim (\varepsilon/(8\sqrt{d+1})) (\delta/6) -->
 $128\max(2, \log(1/(\delta/6)))/(\varepsilon/(8\sqrt{d+1}))^2$ rows
 (`jlMomentDim (ε / (8 * √(d + 1))) (δ / 6)`), the Haar sketch
-$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ makes
+$$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$$
+makes
 $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$ projection-cost-preserving sketch of $\mathbf{A}$
 with constants $1 \mp \varepsilon$, for every $\mathbf{A}$, except with probability $\delta$. The
 tail is the JL moment `NLAlib.hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le` at
@@ -575,9 +579,11 @@ theorem hasProjectionCostPreserving_of_hasLaw_haarFrame_of_jlMomentDim_le
     (hasJLMoment_of_hasLaw_haarFrame_of_jlMomentDim_le hQ hk (by positivity) (by linarith)
       (by positivity) hk₂) hS hε (le_max_left _ _) (by positivity) (by linarith) A
 
-/-- **$O((d+1)\log(1/\delta)/\varepsilon^2)$ Haar rows suffice for a rank-$d$
-projection-cost-preserving sketch**: for $\lvert k\rvert \le \lvert n\rvert$, the Haar sketch
-$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$ makes
+/-- **Haar rows suffice for a rank-$d$ projection-cost-preserving sketch**:
+$$O((d+1)\log(1/\delta)/\varepsilon^2)$$
+rows give one: for $\lvert k\rvert \le \lvert n\rvert$, the Haar sketch
+$$\mathbf{S} = \sqrt{\lvert n\rvert/\lvert k\rvert}\,\mathbf{Q}^{\mathsf{H}}$$
+makes
 $\mathbf{A}\mathbf{S}^{\mathsf{H}}$ a rank-$d$ projection-cost-preserving sketch with constants
 $1 \mp \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension. Proved from

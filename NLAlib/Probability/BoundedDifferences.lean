@@ -133,7 +133,8 @@ private theorem hasSubgaussianMGF_pi_sub_integral_of_abs_update_sub_le
 /-- **The bounded differences inequality**: a measurable function $f$ of independent coordinates
 $X_i$ whose value changes by at most $c_i$ when the $i$-th coordinate alone changes,
 $\lvert f(x') - f(x)\rvert \le c_i$ whenever $x'$ differs from $x$ only in coordinate $i$, is
-sub-Gaussian about its mean, $f(X) - \mathbb{E} f(X)$, with proxy $\sum_i c_i^2 / 4$.
+sub-Gaussian about its mean, $f(X) - \mathbb{E} f(X)$, with proxy
+$$\frac{\sum_i c_i^2}{4}\,.$$
 [BoucheronLugosiMassart2013, Theorem 6.2]; [McDiarmid1989]. Coordinates in arbitrary measurable
 spaces; no integrability or probability hypothesis ($f$ is bounded; `iIndepFun` gives a
 probability measure).

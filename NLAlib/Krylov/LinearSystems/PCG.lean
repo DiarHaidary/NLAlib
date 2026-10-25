@@ -80,19 +80,22 @@ Hestenes–Stiefel recurrence computes it (`Matrix.PosDef.pcgState_x_eq`). Junk 
 noncomputable def pcgIterate (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + galerkinInverse A (krylovMatrix (M * A) (M *ᵥ (b - A *ᵥ x₀)) q) *ᵥ (b - A *ᵥ x₀)
 
-/-- The correction lies in the preconditioned Krylov space, for every $\mathbf{A}$, $\mathbf{M}$. -/
+/-- The correction
+$\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) - \mathbf{x}_0$
+lies in the preconditioned Krylov space, for every $\mathbf{A}$, $\mathbf{M}$. -/
 theorem pcgIterate_sub_mem_krylovSpace (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
     pcgIterate A M b x₀ q - x₀ ∈ krylovSpace (M * A) (M *ᵥ (b - A *ᵥ x₀)) q := by
   rw [pcgIterate, add_sub_cancel_left]
   exact galerkinInverse_mulVec_mem A _ _
 
-/-- The zeroth iterate is the start. -/
+/-- The zeroth iterate $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, 0)$
+is the start. -/
 @[simp]
 theorem pcgIterate_zero (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) : pcgIterate A M b x₀ 0 = x₀ := by
   have h := pcgIterate_sub_mem_krylovSpace A M b x₀ 0
   rwa [krylovSpace_zero, Submodule.mem_bot, sub_eq_zero] at h
 
-/-- **No preconditioner is CG**: $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b},
+/-- No preconditioner is CG: $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{I}, \mathbf{b},
 \mathbf{x}_0, q) = \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)$. -/
 @[simp]
 theorem pcgIterate_one (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) :
@@ -111,9 +114,10 @@ theorem _root_.Matrix.PosDef.pcgIterate_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
     Matrix.mul_assoc]
 
 omit [Fintype r] [DecidableEq r] in
-/-- **The Galerkin condition characterises PCG**: for positive definite $\mathbf{A}$, a vector
+/-- The Galerkin condition characterises PCG: for positive definite $\mathbf{A}$, a vector
 of $\mathbf{x}_0 + \mathcal{K}_q(\mathbf{M}\mathbf{A}, \mathbf{M}\mathbf{r}_0)$ whose residual is
-orthogonal to that space is the PCG iterate. -/
+orthogonal to that space is the PCG iterate
+$\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q)$. -/
 theorem _root_.Matrix.PosDef.eq_pcgIterate_of_conjTranspose_krylovMatrix_mulVec_sub_eq_zero
     {A : Matrix n n 𝕜} (hA : A.PosDef) {M : Matrix n n 𝕜} {b x₀ y : n → 𝕜} {q : ℕ}
     (hy : y - x₀ ∈ krylovSpace (M * A) (M *ᵥ (b - A *ᵥ x₀)) q)

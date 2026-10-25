@@ -119,15 +119,15 @@ Port of `NLAlib.moorePenroseInverse_mul_moorePenroseInverse`. -/
 theorem pinv_mul_mul_pinv (A : Matrix m n 𝕜) : pinv A * A * pinv A = pinv A := by
   exact (isPinv_pinv A).mul_mul_right
 
-/-- **$\mathbf{A}\mathbf{A}^{+}$ is the orthogonal projector onto the column space of
-$\mathbf{A}$:** $\mathbf{A}\mathbf{A}^{+} = \mathbf{P}_{\mathbf{A}}$.
+/-- $\mathbf{A}\mathbf{A}^{+}$ is the orthogonal projector onto the column space of
+$\mathbf{A}$: $\mathbf{A}\mathbf{A}^{+} = \mathbf{P}_{\mathbf{A}}$.
 Port of `NLAlib.rangeProjector_eq_mul_moorePenroseInverse`, there the definition of
 `rangeProjector`. -/
 theorem mul_pinv (A : Matrix m n 𝕜) : A * pinv A = rangeProjector A := by
   exact (isPinv_pinv A).mul_eq_rangeProjector
 
-/-- **$\mathbf{A}^{+}\mathbf{A}$ is the orthogonal projector onto the row space of
-$\mathbf{A}$:** $\mathbf{A}^{+}\mathbf{A} = \mathbf{P}_{\mathbf{A}^{\mathsf{H}}}$. -/
+/-- $\mathbf{A}^{+}\mathbf{A}$ is the orthogonal projector onto the row space of
+$\mathbf{A}$: $\mathbf{A}^{+}\mathbf{A} = \mathbf{P}_{\mathbf{A}^{\mathsf{H}}}$. -/
 theorem pinv_mul (A : Matrix m n 𝕜) : pinv A * A = rangeProjector Aᴴ := by
   exact (isPinv_pinv A).mul_eq_rangeProjector_conjTranspose
 
@@ -311,7 +311,7 @@ theorem pinv_mul_conjTranspose_self (A : Matrix m n 𝕜) :
   rwa [Matrix.conjTranspose_conjTranspose, pinv_conjTranspose,
     Matrix.conjTranspose_conjTranspose] at h
 
-/-- **The projector through the Gram pseudoinverse**:
+/-- The projector through the Gram pseudoinverse:
 $\mathbf{A}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+}\mathbf{A}^{\mathsf{H}} =
 \mathbf{P}_{\mathbf{A}}$, the orthogonal projector onto the column space of $\mathbf{A}$, with no
 rank assumption. With $\mathbf{A} = \mathbf{M}^{1/2}\mathbf{\Omega}$ this is the identity behind the
@@ -362,7 +362,7 @@ theorem HasOrthonormalCols.pinv_conjTranspose_mul_self_eq_mul_conjTranspose [Dec
     (Matrix.isUnit_iff_isUnit_det _).mpr (Matrix.isUnit_det_of_right_inverse h3)
   rw [pinv_of_isUnit hu, Matrix.inv_eq_right_inv h3]
 
-/-- **The pseudoinverse of a row**:
+/-- The pseudoinverse of a row:
 $(\mathbf{a}^{\mathsf{T}})^{+} = \|\mathbf{a}\|^{-2}\,\overline{\mathbf{a}}$ for the one-row matrix
 $\mathbf{a}^{\mathsf{T}}$ of a vector $\mathbf{a}$, and $\mathbf{0}$ when
 $\mathbf{a} = \mathbf{0}$ (where $\|\mathbf{a}\|^{-2} = 0$). A Kaczmarz step projects through
@@ -413,7 +413,7 @@ theorem pinv_eq_inv_mul_conjTranspose [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) : pinv A = (Aᴴ * A)⁻¹ * Aᴴ := by
   exact (isPinv_inv_mul_conjTranspose hA).pinv_eq
 
-/-- **Full row rank.** If $\mathbf{x} \mapsto \mathbf{A}^{\mathsf{H}}\mathbf{x}$ is injective
+/-- Full row rank: if $\mathbf{x} \mapsto \mathbf{A}^{\mathsf{H}}\mathbf{x}$ is injective
 then $\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$.
 Port of `NLAlib.moorePenroseInverse_eq_pinvR`. -/
 theorem pinv_eq_conjTranspose_mul_inv [DecidableEq m] {A : Matrix m n 𝕜}

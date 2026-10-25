@@ -143,7 +143,7 @@ theorem hasOrthonormalCols_replicateCol {v : m → 𝕜} (hv : ‖WithLp.toLp 2 
   exact_mod_cast h.symm
 
 omit [DecidableEq n] in
-/-- **Reduction of the distortion to unit vectors**: a nonzero $\mathbf{x}$ is $\|\mathbf{x}\|$
+/-- Reduction of the distortion to unit vectors: a nonzero $\mathbf{x}$ is $\|\mathbf{x}\|$
 times the unit vector $\mathbf{u} = \mathbf{x}/\|\mathbf{x}\|$, and for every matrix
 $\mathbf{A}$,
 $\|\mathbf{A}\mathbf{x}\|^2 - \|\mathbf{x}\|^2

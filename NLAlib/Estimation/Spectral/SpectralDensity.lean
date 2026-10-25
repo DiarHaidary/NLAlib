@@ -118,16 +118,10 @@ instance isFiniteMeasure_slqMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜)
 private lemma re_div_natCast (z : 𝕜) (k : ℕ) : RCLike.re (z / (k : 𝕜)) = RCLike.re z / k := by
   rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal]
 
-/-- The real spectrum lies in a compact interval. -/
-private lemma exists_spectrum_subset_Icc (A : Matrix n n 𝕜) :
-    ∃ a a' : ℝ, spectrum ℝ A ⊆ Set.Icc a a' := by
-  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
-  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
-  exact ⟨a, a', fun x hx => ⟨ha hx, ha' hx⟩⟩
-
 /-- Every function is integrable against the probe spectral measure: for every square
 $\mathbf{A}$, every test matrix $\mathbf{\Omega}$ and every $f : \mathbb{R} \to \mathbb{R}$, $f$
-is integrable against `probeSpectralMeasure A Ω`, a finite atomic measure. -/
+is integrable against $\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})$, a finite atomic
+measure. -/
 theorem integrable_probeSpectralMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (f : ℝ → ℝ) :
     Integrable f (probeSpectralMeasure A Ω) := by
   unfold probeSpectralMeasure
@@ -136,8 +130,8 @@ theorem integrable_probeSpectralMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m �
 
 /-- Every function is integrable against the SLQ spectral-density estimate: for every square
 $\mathbf{A}$, every test matrix $\mathbf{\Omega}$, every $q$ and every
-$f : \mathbb{R} \to \mathbb{R}$, $f$ is integrable against `slqMeasure A Ω q`, a finite sum of
-Dirac masses. -/
+$f : \mathbb{R} \to \mathbb{R}$, $f$ is integrable against
+$\mathsf{slqMeasure}(\mathbf{A}, \mathbf{\Omega}, q)$, a finite sum of Dirac masses. -/
 theorem integrable_slqMeasure (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) (q : ℕ) (f : ℝ → ℝ) :
     Integrable f (slqMeasure A Ω q) := by
   unfold slqMeasure
@@ -297,16 +291,6 @@ theorem ae_mem_Icc_slqMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
   rw [Measure.smul_apply, hsum, smul_zero]
 
 /-! ### Moments and exactness -/
-
-/-- A Hermitian matrix has at most $\lvert n\rvert$ distinct eigenvalues. -/
-theorem _root_.Matrix.IsHermitian.ncard_spectrum_le {A : Matrix n n 𝕜}
-    (hA : A.IsHermitian) : (spectrum ℝ A).ncard ≤ Fintype.card n := by
-  rw [Set.ncard_eq_toFinset_card _ A.finite_real_spectrum]
-  have hfin : A.finite_real_spectrum.toFinset = Finset.univ.image hA.eigenvalues := by
-    ext x
-    simp [hA.spectrum_real_eq_range_eigenvalues]
-  rw [hfin]
-  exact Finset.card_image_le.trans_eq Finset.card_univ
 
 /-- **SLQ matches $2q$ moments of the probe spectral measure**: for every $\mathbf{A}$, every
 test matrix $\mathbf{\Omega}$ and every $q$,

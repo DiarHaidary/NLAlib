@@ -52,7 +52,7 @@ noncomputable def specNorm (A : Matrix m n 𝕜) : ℝ :=
       (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap)‖
 
 open scoped Matrix.Norms.L2Operator in
-/-- **Bridge to Mathlib.** The spectral norm $\|\mathbf{A}\|_2$ (`specNorm`) is the norm of
+/-- Bridge to Mathlib: the spectral norm $\|\mathbf{A}\|_2$ (`specNorm`) is the norm of
 $\mathbf{A}$ in the `Matrix.Norms.L2Operator` scope. Port of `NLAlib.specNorm_eq_norm`. -/
 theorem specNorm_eq_norm [DecidableEq n] (A : Matrix m n 𝕜) : specNorm A = ‖A‖ :=
   rfl

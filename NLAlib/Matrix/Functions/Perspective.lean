@@ -78,7 +78,7 @@ private theorem posDef_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r] [D
   have h := hD.conjTranspose_mul_mul_same (hU.conjTranspose_of_card_eq hr.symm).mulVec_injective
   rwa [Matrix.conjTranspose_conjTranspose] at h
 
-/-- **The perspective of two simultaneously diagonalised matrices** is the scalar perspective
+/-- The perspective of two simultaneously diagonalised matrices is the scalar perspective
 $a f(h/a)$ of the eigenvalues: for a frame $\mathbf{U}$ with orthonormal columns and
 $\lvert r \rvert = \lvert n \rvert$, and real vectors $\mathbf{a}$, $\mathbf{h}$ with the
 $\mathbf{a}_i$ positive,

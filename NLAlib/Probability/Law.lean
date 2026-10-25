@@ -87,7 +87,7 @@ section InfinitePi
 variable {ι : Type*} [Countable ι] {E : ι → Type*} [∀ i, MeasurableSpace (E i)]
   {ν : ∀ i, Measure (E i)} {X : Ω → ∀ i, E i}
 
-/-- **An infinite product law is independence plus marginals**: a random sequence or family
+/-- An infinite product law is independence plus marginals: a random sequence or family
 $X = (X_i)_i$ with a countable index set has the product law `Measure.infinitePi ν` of the
 probability measures $\nu_i$ exactly when its coordinates are independent and the $i$-th
 coordinate $X_i$ has law $\nu_i$. For $\iota = \mathbb{N}$ and $\nu_i = \nu$ it reads the

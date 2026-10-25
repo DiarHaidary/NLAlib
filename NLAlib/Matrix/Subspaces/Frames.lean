@@ -207,7 +207,7 @@ theorem isClosed_setOf_hasOrthonormalCols [DecidableEq p] :
   isClosed_eq (continuous_id.matrix_conjTranspose.matrix_mul continuous_id) continuous_const
 
 omit [Fintype p] in
-/-- **The set of matrices with orthonormal columns (the Stiefel manifold) is compact.**
+/-- The set of matrices with orthonormal columns (the Stiefel manifold) is compact.
 Port of `NLAlib.stiefelCompactSpace`, there for `Fin` indices over $\mathbb{R}$. -/
 theorem isCompact_setOf_hasOrthonormalCols [DecidableEq p] :
     IsCompact {Q : Matrix n p 𝕜 | HasOrthonormalCols Q} := by

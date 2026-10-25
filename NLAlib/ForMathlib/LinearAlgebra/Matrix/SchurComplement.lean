@@ -32,8 +32,8 @@ variable {K : Type*} [Field K] {n p q : Type*} [Fintype n] [Fintype p] [Fintype 
 $\mathbf{M}$ indexed by $p \oplus q$, the determinant of the lower right block of
 $\mathbf{M}^{-1}$ is the determinant of the upper left block of $\mathbf{M}$ divided by
 $\det \mathbf{M}$:
-$\det\bigl((\mathbf{M}^{-1})_{22}\bigr) = \det(\mathbf{M}_{11}) / \det \mathbf{M}$. The upper left
-block may be singular and either block may be empty.
+$$\det\bigl((\mathbf{M}^{-1})_{22}\bigr) = \frac{\det(\mathbf{M}_{11})}{\det \mathbf{M}}\,.$$
+The upper left block may be singular and either block may be empty.
 [HornJohnson2013, §0.8.4]; here over any field.
 Port of `NLAlib.det_inverse_bottomRight_eq_topLeft_div_det`, there over $\mathbb{R}$.
 Result: jacobi-complementary-minors -/

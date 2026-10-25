@@ -336,7 +336,7 @@ theorem jlDim_le (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
         div_le_div_of_nonneg_left hL (by positivity) hf
     _ = 12 * Real.log (2 / δ) / ε ^ 2 := by field_simp
 
-/-- **Inverting the JL tail at `jlDim`**: for $0 < \varepsilon < 3/2$, $\delta > 0$
+/-- Inverting the JL tail at `jlDim`: for $0 < \varepsilon < 3/2$, $\delta > 0$
 and <!-- value jlDim \varepsilon \delta -->
 $K \ge \log(2/\delta)/(\varepsilon^2/4 - \varepsilon^3/6)$ (`jlDim ε δ`),
 $2 e^{-K (\varepsilon^2/4 - \varepsilon^3/6)} \le \delta$. The step from the tail of every sketch
@@ -353,7 +353,7 @@ theorem two_mul_exp_le_of_jlDim_le {K : ℝ} (hε : 0 < ε) (hε1 : ε < 3 / 2) 
       rw [Real.exp_neg, Real.exp_log (by positivity)]
       field_simp
 
-/-- **Inverting the JL-plus-a-net tail at `jlDim`**: for $0 < \varepsilon < 15/8$, $\delta > 0$
+/-- Inverting the JL-plus-a-net tail at `jlDim`: for $0 < \varepsilon < 15/8$, $\delta > 0$
 and <!-- value jlDim (4\varepsilon/5) (\delta/21^d) -->
 $K \ge \log(2/(\delta/21^d))/((4\varepsilon/5)^2/4 - (4\varepsilon/5)^3/6)$ (the left side is
 `jlDim (4ε/5) (δ/21^d)`), $2 \cdot 21^d e^{-K(4\varepsilon^2/25 - 32\varepsilon^3/375)} \le \delta$:
@@ -420,7 +420,7 @@ theorem jlMomentDim_le (hδ : 0 < δ) (hδ2 : δ ≤ 1 / 2) :
 
 /-! ### Isotropy -/
 
-/-- **A Gaussian sketch is isotropic**: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$
+/-- A Gaussian sketch is isotropic: $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] = \mathbf{I}$
 for $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$, $k$ nonempty. Its rows are isotropic
 (`NLAlib.hasLaw_col_of_hasLaw_gaussianMatrix` on $\mathbf{G}^{\mathsf{H}}$) and
 `NLAlib.isIsotropicSketch_smul_of_isIsotropic` scales them. -/
@@ -504,8 +504,9 @@ theorem HasOrthonormalCols.hasSubspaceInjection_of_hasLaw_gaussianMatrix
 /-- **Gaussian subspace embedding**: for $\mathbf{U}$ with orthonormal columns,
 $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is a subspace embedding for
 $\operatorname{range} \mathbf{U}$ with constants
-$(1 \mp (\sqrt{\lvert p \rvert} + t)/\sqrt{\lvert k \rvert})^2$ outside probability
-$2 e^{-t^2/2}$, for $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$; Gordon's Gram
+$$\Bigl(1 \mp \frac{\sqrt{\lvert p \rvert} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2$$
+outside probability $2 e^{-t^2/2}$, for
+$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$; Gordon's Gram
 sandwich for the $k \times p$ Gaussian $\mathbf{G}\mathbf{U}$.
 [Woodruff2014, Theorem 6]
 ($\lvert k \rvert = \Theta((\lvert p \rvert + \log(1/\delta))/\varepsilon^2)$, no constant);
@@ -528,7 +529,7 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_of_hasLaw_gaussianMatrix
   simp only [Set.mem_ofPred_eq] at hω ⊢
   exact fun h' => hω h'.upper
 
-/-- **The upper half alone**: for a standard Gaussian $k \times n$ matrix $\mathbf{G}$, the
+/-- The upper half alone: for a standard Gaussian $k \times n$ matrix $\mathbf{G}$, the
 sketch $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ and $\mathbf{U}$ with orthonormal
 columns,
 $$(\mathbf{S}\mathbf{U})^{\mathsf{H}} (\mathbf{S}\mathbf{U})
@@ -546,7 +547,8 @@ theorem HasOrthonormalCols.hasSubspaceEmbedding_zero_of_hasLaw_gaussianMatrix
 
 /-- **The Gaussian OSI**: $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is an oblivious
 subspace injection for dimension $d$ with constant
-$(1 - (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2$ and failure probability $e^{-t^2/2}$, for
+$$\Bigl(1 - \frac{\sqrt{d} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2$$
+and failure probability $e^{-t^2/2}$, for $k$ nonempty and
 $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$; for $d > \lvert n \rvert$ the proof works at
 $\min(d, \lvert n \rvert)$ and weakens.
 [CamanoEpperlyMeyerTropp2025, Definition 1.6, §1.5.0], who cite [MartinssonTropp2020, §8.7.2]
@@ -580,8 +582,9 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix [DecidableEq n] [N
 
 /-- **The Gaussian OSE**: $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ is an oblivious
 subspace embedding for dimension $d$ with constants
-$(1 \mp (\sqrt{d} + t)/\sqrt{\lvert k \rvert})^2$ and failure probability $2 e^{-t^2/2}$, for
-$0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$. [Woodruff2014, Theorem 6];
+$$\Bigl(1 \mp \frac{\sqrt{d} + t}{\sqrt{\lvert k \rvert}}\Bigr)^2$$
+and failure probability $2 e^{-t^2/2}$, for $0 \le t \le \sqrt{\lvert k \rvert} - \sqrt{d}$.
+[Woodruff2014, Theorem 6];
 [MartinssonTropp2020, §8.7.2].
 Result: gaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix
@@ -652,9 +655,9 @@ theorem integrable_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix
   simp only [sq_sketch_distortion_eq hxu]
   exact ((h2.const_mul _).sub (h1.const_mul _)).add (integrable_const _)
 
-/-- **The JL variance of a Gaussian sketch**:
+/-- The JL variance of a Gaussian sketch:
 $\mathbb{E}(\|\mathbf{S}\mathbf{x}\|^2 - \|\mathbf{x}\|^2)^2 = 2 \|\mathbf{x}\|^4 / \lvert k \rvert$
-exactly, from $\operatorname{Var} \chi^2_{\lvert k \rvert} = 2 \lvert k \rvert$
+exactly for $k$ nonempty, from $\operatorname{Var} \chi^2_{\lvert k \rvert} = 2 \lvert k \rvert$
 (`NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector` at $s = 1, 2$). -/
 theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix [Nonempty k]
     (hG : HasLaw G (gaussianMatrix k n) μ) (x : n → ℝ) :
@@ -683,7 +686,7 @@ theorem integral_norm_mulVec_sq_sub_norm_sq_sq_of_hasLaw_gaussianMatrix [Nonempt
   field_simp
   ring
 
-/-- **The JL moment property of a Gaussian sketch** at $p = 2$, with
+/-- **The JL moment property of a Gaussian sketch** at $p = 2$, for $k$ nonempty, with
 $\delta = 2 / (\lvert k \rvert \varepsilon^2)$, from the exact variance.
 [Woodruff2014, Definition 12], the property there; the input of approximate matrix multiplication
 at $p = 2$. -/
@@ -832,7 +835,7 @@ theorem isObliviousSubspaceInjection_of_hasLaw_gaussianMatrix_of_gaussianInjecti
     hδeq.le
   nlinarith
 
-/-- **Gaussian OSI, asymptotic form**: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
+/-- Gaussian OSI, asymptotic form: $O((d + \log(1/\delta))/\varepsilon^2)$ rows suffice for
 the Gaussian sketch to be an oblivious subspace injection for dimension $d$ with constant
 $1 - \varepsilon$ and failure probability $\delta$, for $\varepsilon$ and $\delta$ below absolute
 constants; the constants come before every dimension. Proved from
@@ -870,7 +873,7 @@ theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gauss
   exact (hasJLProperty_of_hasLaw_gaussianMatrix hG hε.le).mono le_rfl
     (two_mul_exp_le_of_jlDim_le hε hε1 hδ hk)
 
-/-- **Gaussian distributional JL, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows
+/-- Gaussian distributional JL, asymptotic form: $O(\log(1/\delta)/\varepsilon^2)$ rows
 suffice for the Gaussian sketch to have the JL property with distortion $\varepsilon$ and failure
 probability $\delta$, for $\varepsilon$ and $\delta$ below absolute constants; the constants come
 before every dimension. Proved from `NLAlib.hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le`
@@ -893,7 +896,9 @@ theorem exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix :
 least <!-- value jlMomentDim \varepsilon \delta -->$128\max(2, \log(1/\delta))/\varepsilon^2$ rows
 (`jlMomentDim ε δ`), $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ with $\mathbf{G}$ standard
 Gaussian has the JL moment property with distortion $\varepsilon$, failure probability $\delta$
-and exponent $\max(2, \log(1/\delta))$: the moment bound
+and exponent
+$$\max(2, \log(1/\delta)) \,:$$
+the moment bound
 `NLAlib.hasJLMoment_subexponentialMomentBound_of_hasLaw_gaussianMatrix` is at most
 $\varepsilon^p e^{-p} \le \varepsilon^p \delta$ there. Approximate matrix multiplication with
 failure probability $\delta$ follows
@@ -933,8 +938,10 @@ theorem hasJLMoment_of_hasLaw_gaussianMatrix_of_jlMomentDim_le
         Real.exp_le_exp.2 (neg_le_neg (le_max_right _ _))
     _ = δ := by rw [Real.exp_neg, Real.exp_log (by positivity), one_div, inv_inv]
 
-/-- **Gaussian JL moments, asymptotic form**: $O(\log(1/\delta)/\varepsilon^2)$ rows suffice for
-the Gaussian sketch $\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ to have the JL moment property
+/-- **Gaussian JL moments, asymptotic form**:
+$$O(\log(1/\delta)/\varepsilon^2)$$
+rows suffice for the Gaussian sketch
+$\mathbf{S} = \lvert k\rvert^{-1/2}\mathbf{G}$ to have the JL moment property
 with distortion $\varepsilon$, failure probability $\delta$ and exponent
 $\max(2, \log(1/\delta))$, for $\varepsilon$ and $\delta$ below absolute constants; the constants
 come before every dimension. Proved from

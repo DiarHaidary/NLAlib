@@ -167,7 +167,7 @@ private theorem exists_finset_isCover_image_toLp (𝕜 : Type*) [RCLike 𝕜] (n
 $0 < \varepsilon < 1$ there is a set $N$ of at most $(1 + 2/\varepsilon)^d$ unit vectors of
 `n → 𝕜`, $d$ the real dimension, such that every matrix $\mathbf{A}$ with column index type $n$
 and $\|\mathbf{A}\mathbf{x}\| \le M$ on $N$, $M \ge 0$, has
-$\|\mathbf{A}\|_2 \le M / (1 - \varepsilon)$.
+$$\|\mathbf{A}\|_2 \le \frac{M}{1 - \varepsilon}\,.$$
 [Vershynin2018, Lemma 4.4.1 with Corollary 4.2.13].
 Port of `NLAlib.exists_finset_net_specNorm_le`, there over $\mathbb{R}$.
 Result: spectral-norm-net -/
@@ -187,7 +187,7 @@ theorem exists_finset_specNorm_le_div (𝕜 : Type*) [RCLike 𝕜] (n : Type*) [
 $0 < \varepsilon < 1/2$ there is a set $N$ of at most $(1 + 2/\varepsilon)^d$ unit vectors of
 `n → 𝕜`, $d$ the real dimension, such that every Hermitian $\mathbf{A}$ with
 $\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x} \rvert \le M$ on $N$, $M \ge 0$, has
-$\|\mathbf{A}\|_2 \le M / (1 - 2\varepsilon)$.
+$$\|\mathbf{A}\|_2 \le \frac{M}{1 - 2\varepsilon}\,.$$
 [Vershynin2018, Exercise 4.4.3 with Corollary 4.2.13].
 Result: spectral-norm-net -/
 theorem exists_finset_specNorm_le_div_of_isHermitian (𝕜 : Type*) [RCLike 𝕜] (n : Type*)

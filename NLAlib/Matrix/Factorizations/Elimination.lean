@@ -110,7 +110,7 @@ theorem eliminationStep_submatrix (A : Matrix n n K) (e : m → n) (t : m) :
   ext i j
   simp only [eliminationStep_apply, Matrix.submatrix_apply]
 
-/-- **The step as a rank-one update**:
+/-- The step as a rank-one update:
 $\mathbf{A} - \mathbf{A}_{t,t}^{-1} \mathbf{A}_{:,t} \mathbf{A}_{t,:}$, in matrix form. -/
 theorem eliminationStep_eq_sub_smul_vecMulVec (A : Matrix n n K) (t : n) :
     eliminationStep A t = A - (A t t)⁻¹ • Matrix.vecMulVec (fun i => A i t) (A t) := by
@@ -162,7 +162,7 @@ private theorem ker_eliminationStep_eq_sup_span_singleton {A : Matrix n n K} {t 
       exact eliminationStep_apply_pivot_right ht j
 
 omit [DecidableEq n] in
-/-- **A step at a nonzero pivot lowers the rank by one** (Wedderburn's rank reduction): if
+/-- A step at a nonzero pivot lowers the rank by one (Wedderburn's rank reduction): if
 $\mathbf{A}_{t,t} \ne 0$, the eliminated matrix has rank $\operatorname{rank} \mathbf{A} - 1$.
 Port of `NLAlib.rank_eliminationStep_add_one_eq`. -/
 theorem rank_eliminationStep_add_one {A : Matrix n n K} {t : n} (ht : A t t ≠ 0) :
@@ -179,7 +179,7 @@ theorem rank_eliminationStep_add_one {A : Matrix n n K} {t : n} (ht : A t t ≠ 
   have hS := (eliminationStep A t).finrank_ker_add_rank
   omega
 
-/-- **The determinant through an elimination step**: for $\mathbf{A}_{t,t} \ne 0$,
+/-- The determinant through an elimination step: for $\mathbf{A}_{t,t} \ne 0$,
 $\det \mathbf{A}$ is the pivot $\mathbf{A}_{t,t}$ times the determinant of the Schur complement,
 which is the eliminated matrix on the complement of the pivot.
 Port of `NLAlib.det_eq_mul_det_pivotSchur`, there for the first pivot of a matrix on `Fin`. -/
@@ -248,7 +248,7 @@ section Finite
 
 variable [Finite n]
 
-/-- **Elimination preserves positive semidefinite matrices.**
+/-- Elimination preserves positive semidefinite matrices.
 Port of `NLAlib.posSemidef_eliminationStep`. -/
 theorem _root_.Matrix.PosSemidef.eliminationStep {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (t : n) : (eliminationStep A t).PosSemidef := by
@@ -293,7 +293,7 @@ theorem _root_.Matrix.PosSemidef.eliminationStep_le {A : Matrix n n 𝕜} (hA : 
   rw [he]
   exact (Matrix.posSemidef_vecMulVec_self_star _).smul hinv
 
-/-- **Positive definiteness through an elimination step**: a Hermitian $\mathbf{A}$ is positive
+/-- Positive definiteness through an elimination step: a Hermitian $\mathbf{A}$ is positive
 definite exactly when the pivot $\mathbf{A}_{t,t}$ is positive and the Schur complement (the
 eliminated matrix on the complement of $t$) is positive definite.
 Port of `NLAlib.posDef_iff_pivotSchur`, there for the first pivot of a matrix on `Fin`. -/
