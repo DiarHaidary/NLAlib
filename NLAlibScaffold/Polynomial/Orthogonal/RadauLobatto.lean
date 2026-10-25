@@ -204,7 +204,37 @@ measure). -/
 theorem isOrthogonalPolynomial_nodal_radauNodes (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b)
     (hc : c = a ∨ c = b) {k : ℕ} (h : IsMomentPosDef (radauMeasure μ c) k) :
     IsOrthogonalPolynomial μ k (Lagrange.nodal (radauNodes μ c k) id) := by
-  sorry
+  have hν := ae_mem_Icc_radauMeasure hμ c
+  have := isFiniteMeasure_radauMeasure hμ c
+  have hnodal : Lagrange.nodal (radauNodes μ c k) id =
+      (X - C c) * orthogonalPolynomial (radauMeasure μ c) k := by
+    rw [radauNodes, Lagrange.nodal_insert_eq_nodal (h.notMem_gaussNodes_radauMeasure hμ hc),
+      h.nodal_gaussNodes hν]
+    rfl
+  have hs : ∃ s : ℝ, ∀ᵐ x ∂μ, ∀ t : ℝ, (x - c) * t = s * (|x - c| * t) := by
+    rcases hc with rfl | rfl
+    · refine ⟨1, ?_⟩
+      filter_upwards [hμ] with x hx
+      intro t
+      rw [abs_of_nonneg (by linarith [hx.1])]
+      ring
+    · refine ⟨-1, ?_⟩
+      filter_upwards [hμ] with x hx
+      intro t
+      rw [abs_of_nonpos (by linarith [hx.2])]
+      ring
+  obtain ⟨s, hs⟩ := hs
+  intro r hr
+  rw [hnodal]
+  simp only [eval_mul, eval_sub, eval_X, eval_C]
+  set π := orthogonalPolynomial (radauMeasure μ c) k with hπ
+  calc _ = ∫ x, s * (|x - c| * (π.eval x * r.eval x)) ∂μ := by
+        refine integral_congr_ae ?_
+        filter_upwards [hs] with x hx
+        linear_combination hx (π.eval x * r.eval x)
+    _ = s * ∫ x, π.eval x * r.eval x ∂radauMeasure μ c := by
+        rw [integral_const_mul, integral_radauMeasure]
+    _ = 0 := by rw [hπ, isOrthogonalPolynomial_orthogonalPolynomial hν k r hr, mul_zero]
 
 /-- The terminating case of the Radau rule: if the orthogonal polynomial $\tilde\pi_k$ of the
 Radau modified measure of $\mu$ at $c$ has norm $0$ there, for $\mu$ finite and supported in
