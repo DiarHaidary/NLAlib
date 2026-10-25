@@ -159,7 +159,15 @@ false, so `isMomentPosDef_succ_iff` gives $\|\pi_j\|^2 \le 0$;
 theorem _root_.Matrix.IsHermitian.aeval_orthogonalPolynomial_mulVec_eq_zero_of_krylovGrade_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {j : ℕ} (hj : krylovGrade A b ≤ j) :
     aeval A (orthogonalPolynomial (spectralMeasure A b) j) *ᵥ b = 0 := by
-  sorry
+  obtain ⟨a', ha'⟩ := A.finite_real_spectrum.bddAbove
+  obtain ⟨a, ha⟩ := A.finite_real_spectrum.bddBelow
+  have hmem := ae_mem_Icc_spectralMeasure A (fun x hx => ⟨ha hx, ha' hx⟩) b
+  have hnot : ¬ IsMomentPosDef (spectralMeasure A b) (j + 1) := by
+    rw [hA.isMomentPosDef_spectralMeasure_iff]
+    omega
+  rw [isMomentPosDef_succ_iff hmem j, not_lt, ← hA.norm_aeval_mulVec_sq b] at hnot
+  have h0 := norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp (le_antisymm hnot (sq_nonneg _)))
+  simpa using congrArg WithLp.ofLp h0
 
 /-- The last Lanczos vector below the grade: for Hermitian $\mathbf{A}$ and $j < \nu$, the last
 column of the canonical Lanczos basis with $j + 1$ columns is
