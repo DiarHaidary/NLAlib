@@ -42,7 +42,8 @@ $\mathbf{F}_2 \preceq \mathbf{F}_1$). Then
 $\mathbf{E}_1\mathbf{X}\mathbf{F}_1$ has the law of
 $$\mathbf{E}_1\mathbf{X}\mathbf{F}_1 - \mathbf{E}_2\mathbf{X}\mathbf{F}_2 +
 \mathbf{E}_2\mathbf{X}'\mathbf{F}_2\,.$$
-[ZhangEtAl2026, proof of Lemma 4.1]; there one query at a time with orthonormal frames.
+[ZhangEtAl2026, proof of Lemma 4.1]; there one query at a time with orthonormal frames and
+entries $\mathcal{N}(0, 1/d)$; here unit variance and any nested projectors.
 Proof: L, about 50 lines. Write $\mathbf{D} = \mathbf{E}_1\mathbf{X}\mathbf{F}_1 -
 \mathbf{E}_2\mathbf{X}\mathbf{F}_2$ and $\mathbf{B} = \mathbf{E}_2\mathbf{X}\mathbf{F}_2$, both
 linear in $\mathbf{X}$. (1) $\mathbf{D}$ and $\mathbf{B}$ are independent: the pair is a linear
