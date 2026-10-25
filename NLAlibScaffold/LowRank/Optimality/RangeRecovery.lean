@@ -674,7 +674,38 @@ theorem IsMeasurableFamily.measure_range_le_range_run_eq_zero_of_hasLaw_gaussian
     μ {ω | LinearMap.range (X ω * (X ω)ᴴ).mulVecLin ≤
         LinearMap.range ((alg (s ω)).run (X ω * (X ω)ᴴ).mulVec).mulVecLin ∧
       ((alg (s ω)).run (X ω * (X ω)ᴴ).mulVec).rank < Fintype.card d} = 0 := by
-  sorry
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  set B : Set (Matrix d k ℝ × Matrix d p ℝ) :=
+    {x | rangeProjector x.2 * (x.1 * x.1ᴴ) = x.1 * x.1ᴴ ∧ x.2.rank < Fintype.card d} with hBdef
+  have hAm : Measurable fun x : Matrix d k ℝ × Matrix d p ℝ => x.1 * x.1ᴴ :=
+    measurable_fst.matrix_mul ((continuous_id.matrix_conjTranspose).measurable.comp measurable_fst)
+  have hB : MeasurableSet B := by
+    refine MeasurableSet.inter ?_ ?_
+    · exact measurableSet_eq_fun
+        ((measurable_rangeProjector.comp measurable_snd).matrix_mul hAm) hAm
+    · exact measurableSet_lt (measurable_rank.comp measurable_snd) measurable_const
+  have hO : Measurable (Function.uncurry fun (Y : Matrix d k ℝ) (v : d → ℝ) =>
+      (Y * Yᴴ).mulVec v) :=
+    (measurable_fst.matrix_mul
+      ((continuous_id.matrix_conjTranspose).measurable.comp measurable_fst)).matrix_mulVec
+      measurable_snd
+  have hfam := IsMeasurableFamily.measureReal_run_mem_le_of_indepFun halg hO hs hX.aemeasurable
+    hsX hB (δ := 0) fun a ha => by
+      have h0 := IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix ha hX hq
+      have hset : {ω | (X ω, a.run ((fun (Y : Matrix d k ℝ) (v : d → ℝ) =>
+          (Y * Yᴴ).mulVec v) (X ω))) ∈ B} = {ω | LinearMap.range (X ω * (X ω)ᴴ).mulVecLin ≤
+          LinearMap.range (a.run (X ω * (X ω)ᴴ).mulVec).mulVecLin ∧
+          (a.run (X ω * (X ω)ᴴ).mulVec).rank < Fintype.card d} := by
+        ext ω
+        simp only [hBdef, Set.mem_setOf_eq, rangeProjector_mul_eq_self_iff]
+      rw [hset, measureReal_def, h0]
+      simp
+  rw [← measureReal_eq_zero_iff (measure_ne_top _ _)]
+  refine le_antisymm ?_ measureReal_nonneg
+  convert hfam using 2
+  · rfl
+  · ext ω
+    simp only [hBdef, Set.mem_setOf_eq, rangeProjector_mul_eq_self_iff]
 
 end QueryAlgorithm
 
