@@ -424,7 +424,24 @@ Proof: S, about 10 lines. As `QueryAlgorithm.rightCount_gramSimulation_le`, with
 (the odd query is `(_, 0)`). -/
 theorem leftCount_gramSimulation_le (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (τ : Fin (2 * q) → (d → 𝕜) × (k → 𝕜)) : (alg.gramSimulation k).leftCount τ ≤ q := by
-  sorry
+  unfold QueryAlgorithm.leftCount
+  have heven : ∀ j : Fin (2 * q), ((alg.gramSimulation k).queries τ j).2 ≠ 0 → j.val % 2 = 0 := by
+    intro j hj
+    by_contra h
+    apply hj
+    simp [QueryAlgorithm.queries, QueryAlgorithm.gramSimulation, h]
+  have key : {j : Fin (2 * q) | ((alg.gramSimulation k).queries τ j).2 ≠ 0}.ncard
+      ≤ (Set.univ : Set (Fin q)).ncard := by
+    refine Set.ncard_le_ncard_of_injOn
+      (fun j : Fin (2 * q) => (⟨j.val / 2, by omega⟩ : Fin q))
+      (fun _ _ => Set.mem_univ _) ?_ (Set.toFinite _)
+    intro a ha b hb hab
+    have ha2 := heven a ha
+    have hb2 := heven b hb
+    simp only [Fin.mk.injEq] at hab
+    apply Fin.ext
+    omega
+  simpa using key
 
 /-- **The right queries of the Gram simulation span at most `q` dimensions**: for every
 transcript, the right query matrix has rank at most `q`.
