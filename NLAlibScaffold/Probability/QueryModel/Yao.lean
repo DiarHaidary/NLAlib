@@ -91,7 +91,32 @@ theorem IsMeasurableFamily.exists_le_measureReal_run_mem {alg : S → QueryAlgor
     {B : Set (M × β)} (hB : MeasurableSet B) {δ : ℝ}
     (h : ∀ a : QueryAlgorithm Q R q β, a.IsMeasurable → δ ≤ ν.real {x | (x, a.run (O x)) ∈ B}) :
     ∃ x, δ ≤ ρ.real {s | (x, (alg s).run (O x)) ∈ B} := by
-  sorry
+  by_contra hcon
+  simp only [not_exists, not_le] at hcon
+  set E : Set (S × M) := {p | (p.2, (alg p.1).run (O p.2)) ∈ B} with hEdef
+  have hE : MeasurableSet E :=
+    hB.preimage (measurable_snd.prodMk (halg.measurable_run hO))
+  have hlow : ∀ s, ENNReal.ofReal δ ≤ ν (Prod.mk s ⁻¹' E) := fun s => by
+    have := h (alg s) (halg.isMeasurable s)
+    rw [measureReal_def] at this
+    exact (ENNReal.ofReal_le_iff_le_toReal (measure_ne_top _ _)).2 this
+  have hup : ∀ x, ρ ((fun s => (s, x)) ⁻¹' E) < ENNReal.ofReal δ := fun x => by
+    have := hcon x
+    rw [measureReal_def] at this
+    exact (ENNReal.lt_ofReal_iff_toReal_lt (measure_ne_top _ _)).2 this
+  have h1 : ENNReal.ofReal δ ≤ (ρ.prod ν) E := by
+    rw [Measure.prod_apply hE]
+    calc ENNReal.ofReal δ = ∫⁻ _ : S, ENNReal.ofReal δ ∂ρ := by simp
+      _ ≤ _ := lintegral_mono hlow
+  have h2 : (ρ.prod ν) E < ENNReal.ofReal δ := by
+    rw [Measure.prod_apply_symm hE]
+    calc _ < ∫⁻ _ : M, ENNReal.ofReal δ ∂ν := by
+          refine lintegral_strict_mono (IsProbabilityMeasure.ne_zero ν) aemeasurable_const ?_
+            (ae_of_all _ hup)
+          refine ne_top_of_le_ne_top (b := ∫⁻ _ : M, ENNReal.ofReal δ ∂ν) (by simp)
+            (lintegral_mono fun x => (hup x).le)
+      _ = ENNReal.ofReal δ := by simp
+  exact absurd h1 (not_le.2 h2)
 
 end QueryAlgorithm
 
