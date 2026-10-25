@@ -435,7 +435,25 @@ theorem _root_.Matrix.IsHermitian.abs_one_sub_probeSpectralMeasure_real_univ_le 
     (hK : ∀ x ∈ spectrum ℝ A, |(empiricalSpectralMeasure A).real (Set.Iic x) -
       (probeSpectralMeasure A Ω).real (Set.Iic x)| ≤ τ) :
     |1 - (probeSpectralMeasure A Ω).real Set.univ| ≤ τ := by
-  sorry
+  classical
+  have hpos : 0 < Fintype.card n := Fintype.card_pos
+  have hx : eigenvalue A 0 ∈ spectrum ℝ A := hA.eigenvalue_mem_spectrum hpos
+  have hle : ∀ y ∈ spectrum ℝ A, y ≤ eigenvalue A 0 := by
+    rw [hA.spectrum_eq_image_eigenvalue]
+    rintro _ ⟨k, hk, rfl⟩
+    exact hA.eigenvalue_le_eigenvalue (Nat.zero_le k) (Set.mem_Iio.mp hk)
+  have h1 : (empiricalSpectralMeasure A).real (Set.Iic (eigenvalue A 0)) = 1 := by
+    exact (measureReal_congr (Filter.eventuallyEq_set.2
+      ((hA.ae_mem_spectrum_empiricalSpectralMeasure).mono fun y hy =>
+        ⟨fun _ => Set.mem_univ _, fun _ => hle y hy⟩))).trans probReal_univ
+  have h2 : (probeSpectralMeasure A Ω).real (Set.Iic (eigenvalue A 0)) =
+      (probeSpectralMeasure A Ω).real Set.univ := by
+    refine measureReal_congr (Filter.eventuallyEq_set.2
+      ((ae_mem_spectrum_probeSpectralMeasure A Ω).mono fun y hy =>
+        ⟨fun _ => Set.mem_univ _, fun _ => hle y hy⟩))
+  have := hK _ hx
+  rw [h1, h2] at this
+  exact this
 
 /-- From the eigenvalues to every threshold: for Hermitian $\mathbf{A}$, a test matrix
 $\mathbf{\Omega}$ and $\tau \ge 0$, if at every eigenvalue the distribution functions of
