@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Polynomial.Approximation.AnalyticApproximation
-public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
 
 /-!
 # Analytic functions and the minimax error: the theorems of stage Poly-Best
@@ -44,9 +44,6 @@ theorem minimaxError_le_of_differentiableOn {f : ℝ → ℝ} {F : ℂ → ℂ} 
   obtain ⟨p, hdeg, hp⟩ := exists_degree_le_isUniformApproxOn_Icc_of_differentiableOn (𝕜 := ℝ)
     (f := f) hab hρ hFd hM
     (fun t ht => by rw [← hExt ht]; exact RCLike.toComplex_ofReal (𝕜 := ℝ) _) N
-  have hne : (Set.Icc a b).Nonempty := Set.nonempty_Icc.mpr hab.le
-  refine csInf_le ⟨0, ?_⟩ ⟨p, hdeg, hp⟩
-  rintro ε ⟨q, -, hq⟩
-  exact hq.nonneg hne
+  exact minimaxError_le_of_isUniformApproxOn hdeg (hp.nonneg (Set.nonempty_Icc.mpr hab.le)) hp
 
 end NLAlib
