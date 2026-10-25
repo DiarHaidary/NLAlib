@@ -242,7 +242,8 @@ Proof: S, about 3 lines. `filter_upwards [ae_mem_spectrum_probeSpectralMeasure A
 theorem ae_mem_Icc_probeSpectralMeasure (A : Matrix n n 𝕜) {a a' : ℝ}
     (hs : spectrum ℝ A ⊆ Set.Icc a a') (Ω : Matrix n m 𝕜) :
     ∀ᵐ x ∂probeSpectralMeasure A Ω, x ∈ Set.Icc a a' := by
-  sorry
+  filter_upwards [ae_mem_spectrum_probeSpectralMeasure A Ω] with x hx
+  exact hs hx
 
 /-- The SLQ spectral-density estimate lives in every interval containing the spectrum: for
 Hermitian $\mathbf{A}$ with spectrum in $[a, a']$, every test matrix $\mathbf{\Omega}$ and every
