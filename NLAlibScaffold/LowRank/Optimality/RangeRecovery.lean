@@ -426,6 +426,130 @@ theorem IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero {β
         (one_sub_rangeProjector_rightQueryMatrix_gramSimulation_ne_zero (alg.truncate i) hik t)
         (E t *ᵥ x t))).le
 
+/-- Matrices whose columns lie in each other's column spans have the same rank. -/
+private lemma rank_eq_of_col_mem_span {m n p : Type*} [Fintype n] [Fintype p]
+    {M : Matrix m n ℝ} {N : Matrix m p ℝ}
+    (h₁ : ∀ j, M.col j ∈ Submodule.span ℝ (Set.range N.col))
+    (h₂ : ∀ l, N.col l ∈ Submodule.span ℝ (Set.range M.col)) : M.rank = N.rank := by
+  have hspan : Submodule.span ℝ (Set.range M.col) = Submodule.span ℝ (Set.range N.col) :=
+    le_antisymm (Submodule.span_le.2 (by rintro _ ⟨j, rfl⟩; exact h₁ j))
+      (Submodule.span_le.2 (by rintro _ ⟨l, rfl⟩; exact h₂ l))
+  rw [Matrix.rank_eq_finrank_span_cols, Matrix.rank_eq_finrank_span_cols, hspan]
+
+/-- Columns of a product are the products of the columns. -/
+private lemma col_mul_eq_mulVec_col {k d n : Type*} [Fintype d] (B : Matrix k d ℝ)
+    (N : Matrix d n ℝ) (j : n) : (B * N).col j = B *ᵥ N.col j := by
+  funext r
+  simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.col]
+
+/-- A product by a fixed matrix maps the column span into the column span of the product. -/
+private lemma mulVec_mem_span_col_mul {k d n : Type*} [Fintype d] (B : Matrix k d ℝ)
+    {U : Matrix d n ℝ} {v : d → ℝ} (hv : v ∈ Submodule.span ℝ (Set.range U.col)) :
+    B *ᵥ v ∈ Submodule.span ℝ (Set.range (B * U).col) := by
+  have hle : Submodule.span ℝ (Set.range U.col) ≤
+      (Submodule.span ℝ (Set.range (B * U).col)).comap B.mulVecLin := by
+    refine Submodule.span_le.2 ?_
+    rintro _ ⟨j, rfl⟩
+    exact Submodule.mem_comap.2 (Submodule.subset_span ⟨j, (col_mul_eq_mulVec_col B U j).symm⟩)
+  exact Submodule.mem_comap.1 (hle hv)
+
+/-- Congruence of `query` in its index, along an equality of indices. -/
+private lemma query_congr_index {Q R β : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β) {m n : ℕ}
+    (hmn : m = n) (F : Fin m → R) (G : Fin n → R)
+    (hFG : ∀ l : Fin m, F l = G (Fin.cast hmn l)) : alg.query m F = alg.query n G := by
+  subst hmn
+  exact congrArg (alg.query _) (funext fun l => hFG l)
+
+/-- Algebraic core of `IsMeasurable.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation`:
+if each query $\mathbf{x}_i$ ($i < q$) lies in the span of the earlier ones or has
+$\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ outside the span of theirs, the left query matrix of the
+Gram simulation is in general position. -/
+private lemma rank_conjTranspose_mul_leftQueryMatrix_gramSimulation_of_good {β : Type*}
+    {alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β} (Y : Matrix d k ℝ)
+    (hgood : ∀ i < q,
+      alg.queryAt (Y * Yᴴ).mulVec i ∈
+          Submodule.span ℝ (Set.range fun l : Fin i => alg.queryAt (Y * Yᴴ).mulVec l) ∨
+        Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec i ∉
+          Submodule.span ℝ (Set.range fun l : Fin i => Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l)) :
+    (Yᴴ * (alg.gramSimulation k).leftQueryMatrix
+        ((alg.gramSimulation k).transcript (twoSidedMulVec Y))).rank =
+      ((alg.gramSimulation k).leftQueryMatrix
+        ((alg.gramSimulation k).transcript (twoSidedMulVec Y))).rank := by
+  set L := (alg.gramSimulation k).leftQueryMatrix
+    ((alg.gramSimulation k).transcript (twoSidedMulVec Y)) with hL
+  set U := (Matrix.of fun (r : d) (j : Fin q) => alg.queryAt (Y * Yᴴ).mulVec j r) with hU
+  -- induction: the rank of `Yᴴ * U_i` is that of `U_i`, for the first `i ≤ q` queries
+  have hind : ∀ i : ℕ, i ≤ q →
+      (Yᴴ * Matrix.of fun (r : d) (j : Fin i) => alg.queryAt (Y * Yᴴ).mulVec j r).rank =
+        (Matrix.of fun (r : d) (j : Fin i) => alg.queryAt (Y * Yᴴ).mulVec j r).rank := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      have h1 := Matrix.rank_le_card_width
+        (Yᴴ * Matrix.of fun (r : d) (j : Fin 0) => alg.queryAt (Y * Yᴴ).mulVec j r)
+      have h2 := Matrix.rank_le_card_width
+        (Matrix.of fun (r : d) (j : Fin 0) => alg.queryAt (Y * Yᴴ).mulVec j r)
+      simp only [Fintype.card_fin] at h1 h2
+      omega
+    | succ i ih =>
+      intro hi
+      have hsnoc : (Matrix.of fun (r : d) (j : Fin (i + 1)) => alg.queryAt (Y * Yᴴ).mulVec j r) =
+          Matrix.of fun r => Fin.snoc (α := fun _ => ℝ)
+            ((Matrix.of fun (r : d) (j : Fin i) => alg.queryAt (Y * Yᴴ).mulVec j r) r)
+            (alg.queryAt (Y * Yᴴ).mulVec i r) := by
+        ext r j
+        refine Fin.lastCases ?_ (fun j => ?_) j <;> simp
+      rw [hsnoc]
+      exact rank_mul_of_snoc_eq_rank_of_snoc Yᴴ _ (fun r => alg.queryAt (Y * Yᴴ).mulVec i r)
+        (ih (by omega)) (hgood i (by omega))
+  -- the even columns of `L` are the queries, the odd ones are zero
+  have hEven : ∀ (j : Fin (2 * q)) (i : ℕ) (hi : i < q), (j : ℕ) = 2 * i →
+      L.col j = alg.queryAt (Y * Yᴴ).mulVec i := by
+    rintro ⟨j, hj⟩ i hi hji
+    simp only at hji
+    subst hji
+    funext r
+    have hsnd : ∀ h : Fin (2 * i) → (d → ℝ) × (k → ℝ),
+        ((alg.gramSimulation k).query (2 * i) h).2 =
+          alg.query i (fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1) := by
+      intro h
+      have hdec : 2 * i % 2 = 0 := Nat.mul_mod_right 2 i
+      dsimp only [QueryAlgorithm.gramSimulation]
+      rw [dif_pos hdec]
+      exact query_congr_index alg (by omega) _ _ (fun l => rfl)
+    change ((alg.gramSimulation k).queries _ ⟨2 * i, hj⟩).2 r = _
+    rw [← QueryAlgorithm.queryAt_eq_queries_transcript]
+    change ((alg.gramSimulation k).query (2 * i) _).2 r = _
+    rw [hsnd, QueryAlgorithm.history_gramSimulation]
+    rfl
+  have hOdd : ∀ (j : Fin (2 * q)), (j : ℕ) % 2 = 1 → L.col j = 0 := by
+    rintro ⟨j, hj⟩ hodd
+    funext r
+    simp [hL, Matrix.col, QueryAlgorithm.leftQueryMatrix, QueryAlgorithm.queries,
+      QueryAlgorithm.gramSimulation, hodd]
+  have hLmem : ∀ j : Fin (2 * q), L.col j ∈ Submodule.span ℝ (Set.range U.col) := by
+    intro j
+    have := j.isLt
+    by_cases hj : (j : ℕ) % 2 = 0
+    · have hi : (j : ℕ) / 2 < q := by omega
+      rw [hEven j _ hi (by omega)]
+      exact Submodule.subset_span ⟨⟨(j : ℕ) / 2, hi⟩, rfl⟩
+    · rw [hOdd j (by omega)]
+      exact Submodule.zero_mem _
+  have hULmem : ∀ l : Fin q, U.col l ∈ Submodule.span ℝ (Set.range L.col) := by
+    intro l
+    have h2l : 2 * (l : ℕ) < 2 * q := by have := l.isLt; omega
+    have hc : U.col l = L.col ⟨2 * l, h2l⟩ := (hEven ⟨2 * l, h2l⟩ l l.isLt rfl).symm
+    rw [hc]
+    exact Submodule.subset_span ⟨_, rfl⟩
+  have hA : (Yᴴ * L).rank = (Yᴴ * U).rank :=
+    rank_eq_of_col_mem_span
+      (fun j => by rw [col_mul_eq_mulVec_col]; exact mulVec_mem_span_col_mul Yᴴ (hLmem j))
+      (fun l => by rw [col_mul_eq_mulVec_col]; exact mulVec_mem_span_col_mul Yᴴ (hULmem l))
+  have hB : L.rank = U.rank := rank_eq_of_col_mem_span hLmem hULmem
+  exact hA.trans ((hind q le_rfl).trans hB.symm)
+
 /-- **The left queries of the Gram simulation are in general position**: for a measurable
 algorithm making $q \le k$ queries to $\mathbf{X}\mathbf{X}^{\mathsf{H}}$, with $\mathbf{X}$ a
 standard Gaussian $d \times k$ matrix, let $\mathbf{U}$ be the $d \times 2q$ left query matrix of
@@ -457,7 +581,22 @@ theorem IsMeasurable.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation
         ((alg.gramSimulation k).transcript (twoSidedMulVec (X ω)))).rank =
       ((alg.gramSimulation k).leftQueryMatrix
         ((alg.gramSimulation k).transcript (twoSidedMulVec (X ω)))).rank := by
-  sorry
+  have hbad : ∀ᵐ ω ∂μ, ∀ i < q,
+      alg.queryAt (X ω * (X ω)ᴴ).mulVec i ∈
+          Submodule.span ℝ (Set.range fun l : Fin i => alg.queryAt (X ω * (X ω)ᴴ).mulVec l) ∨
+        (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec i ∉
+          Submodule.span ℝ
+            (Set.range fun l : Fin i => (X ω)ᴴ *ᵥ alg.queryAt (X ω * (X ω)ᴴ).mulVec l) := by
+    refine ae_all_iff.2 fun i => ?_
+    by_cases hi : i < q
+    · filter_upwards [measure_eq_zero_iff_ae_notMem.1
+        (IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero halg hX hi
+          (lt_of_lt_of_le hi hq))] with ω hω
+      intro _
+      simpa only [Set.mem_ofPred_eq, not_and_or, not_not] using hω
+    · exact ae_of_all _ fun ω h => absurd h hi
+  filter_upwards [hbad] with ω hω
+  exact rank_conjTranspose_mul_leftQueryMatrix_gramSimulation_of_good (X ω) hω
 
 /-- **Exact range recovery needs $k$ queries, deterministic algorithms**: let $\mathbf{X}$ be a
 standard Gaussian $d \times k$ matrix and $\mathbf{A} = \mathbf{X}\mathbf{X}^{\mathsf{H}}$. A
