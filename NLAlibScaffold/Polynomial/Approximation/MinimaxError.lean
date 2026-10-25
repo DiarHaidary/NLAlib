@@ -175,7 +175,43 @@ theorem minimaxError_eq_infDist {s : Set ℝ} [CompactSpace s] {f : ℝ → ℝ}
     (hg : ∀ x : s, g x = f x) (n : ℕ) :
     minimaxError f s n = Metric.infDist g
       ((degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap : Set C(s, ℝ)) := by
-  sorry
+  have hmem : ∀ p : ℝ[X], p.degree ≤ n →
+      p.toContinuousMapOn s ∈ ((degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap :
+        Set C(s, ℝ)) := by
+    intro p hp
+    exact Submodule.mem_map_of_mem (mem_degreeLE.mpr hp)
+  have hPne : (((degreeLE ℝ n).map (toContinuousMapOnAlgHom s).toLinearMap :
+      Submodule ℝ C(s, ℝ)) : Set C(s, ℝ)).Nonempty :=
+    ⟨_, hmem 0 (by simp)⟩
+  have hf : ContinuousOn f s := by
+    refine continuousOn_iff_continuous_domRestrict.mpr ?_
+    have : s.domRestrict f = g := funext fun x => (hg x).symm
+    rw [this]
+    exact g.continuous
+  apply le_antisymm
+  · refine (Metric.le_infDist hPne).mpr ?_
+    intro y hy
+    obtain ⟨q, hq, rfl⟩ := Submodule.mem_map.mp hy
+    refine minimaxError_le_of_isUniformApproxOn (mem_degreeLE.mp hq) dist_nonneg ?_
+    intro x hx
+    have h1 := ContinuousMap.norm_coe_le_norm (g - toContinuousMapOnAlgHom s q) ⟨x, hx⟩
+    rw [← dist_eq_norm] at h1
+    have h2 : ‖(g - toContinuousMapOnAlgHom s q) ⟨x, hx⟩‖ = |q.eval x - f x| := by
+      simp [hg ⟨x, hx⟩, toContinuousMapOnAlgHom_apply, Real.norm_eq_abs, abs_sub_comm]
+    rw [h2] at h1
+    rw [Real.dist_eq]
+    exact h1
+  · obtain ⟨p, hp, hpε⟩ :=
+      exists_degree_le_isUniformApproxOn_minimaxError (isCompact_iff_compactSpace.mpr inferInstance)
+        hf n
+    refine (Metric.infDist_le_dist_of_mem (hmem p hp)).trans ?_
+    rw [dist_eq_norm, ← toContinuousMapOnAlgHom_apply]
+    refine (ContinuousMap.norm_le _ (minimaxError_nonneg f s n)).mpr fun x => ?_
+    have := hpε x x.2
+    rw [Real.dist_eq] at this
+    simp only [ContinuousMap.sub_apply, hg x, Real.norm_eq_abs]
+    rw [abs_sub_comm]
+    exact this
 
 /-! ### The chosen best approximation -/
 
