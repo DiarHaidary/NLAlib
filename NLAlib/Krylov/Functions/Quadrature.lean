@@ -9,7 +9,8 @@ public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Matrix.Spectral.SpectralMeasure
 public import NLAlib.Polynomial.Orthogonal.Gauss
-public import NLAlib.Polynomial.Orthogonal.RadauLobatto
+public import NLAlib.Polynomial.Orthogonal.Radau
+public import NLAlib.Polynomial.Orthogonal.RadauJacobi
 public import NLAlib.Krylov.Processes.LanczosPolynomials
 
 /-!

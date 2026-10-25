@@ -25,7 +25,7 @@ $$f(x) - H(x) = \frac{f^{(\lvert m\rvert)}(\xi)}{\lvert m\rvert!}\,\omega_m(x)\,
 for some $\xi$ in the interval. Simple nodes give the Lagrange interpolation remainder for
 Mathlib's `Lagrange.interpolate`; doubled Gauss nodes and simple endpoints give the Gauss, Radau
 and Lobatto remainders (`NLAlib.Polynomial.Orthogonal.Gauss`,
-`NLAlib.Polynomial.Orthogonal.RadauLobatto`).
+`NLAlib.Polynomial.Orthogonal.Radau`, `NLAlib.Polynomial.Orthogonal.Lobatto`).
 
 There is no Hermite interpolant definition: the remainder is stated for any polynomial matching
 the jets, and the existence theorem supplies one (`docs/design/Polynomial-QuadratureRemainder.md`,

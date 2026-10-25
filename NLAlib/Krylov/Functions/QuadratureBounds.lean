@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.Functions.Quadrature
-public import NLAlib.Polynomial.Orthogonal.RadauLobatto
+public import NLAlib.Polynomial.Orthogonal.Lobatto
 
 /-!
 # Two-sided bounds on quadratic forms of matrix functions

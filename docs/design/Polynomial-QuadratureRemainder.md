@@ -120,7 +120,9 @@ Gauss–Kronrod rules.
 ## 2. Objects
 
 New definitions, all in `NLAlib/Polynomial/Orthogonal/RadauLobatto.lean` (proved in the
-skeleton; the file imports only `NLAlib.Polynomial.Orthogonal.Gauss`, so P11 holds):
+skeleton; the file imports only `NLAlib.Polynomial.Orthogonal.Gauss`, so P11 holds). After the
+proofs the file was split, names unchanged, into `Polynomial/Orthogonal/Radau.lean`,
+`Lobatto.lean` (imports Radau) and `RadauJacobi.lean` (decision SPLIT-RADAULOBATTO):
 
 ```lean
 noncomputable def radauMeasure (μ : Measure ℝ) (c : ℝ) : Measure ℝ :=
