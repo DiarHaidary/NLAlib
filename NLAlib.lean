@@ -97,6 +97,7 @@ public import NLAlib.Krylov.LinearSystems.Richardson
 public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
+public import NLAlib.Krylov.Processes.LanczosPolynomials
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov

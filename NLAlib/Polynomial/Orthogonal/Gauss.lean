@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Polynomial.Orthogonal.Basic
 public import NLAlib.Polynomial.Orthogonal.Zeros
+public import NLAlib.Polynomial.Approximation.Jackson
 
 /-!
 # Gauss quadrature
@@ -42,11 +43,20 @@ spectral measures the Ritz values of the Lanczos method are Gauss nodes
   nonnegative.
 * `NLAlib.IsOrthogonalPolynomial.matchesMoments_interpolatoryQuadrature`: the rule matches
   $2\lvert s\rvert$ moments.
+* `NLAlib.integral_gaussQuadrature_eq_sum`, `NLAlib.integral_gaussQuadrature`: the rule as a
+  finite sum, in both weight forms.
+* `NLAlib.matchesMoments_gaussQuadrature`: Gauss quadrature, for every $k$.
+* `NLAlib.ae_mem_Icc_gaussQuadrature`, `NLAlib.gaussQuadrature_real_univ`: support and mass.
+* `NLAlib.IsMomentPosDef.gaussQuadrature_real_singleton_pos`: positive weights.
+* `NLAlib.MatchesMoments.eq_gaussQuadrature`: uniqueness of the Gauss rule.
+* `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn`,
+  `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith`: error bounds.
 -/
 
 @[expose] public section
 
 open MeasureTheory Polynomial
+open scoped NNReal
 
 namespace NLAlib
 
@@ -219,5 +229,200 @@ instance isFiniteMeasure_gaussQuadrature (μ : Measure ℝ) (k : ℕ) :
     IsFiniteMeasure (gaussQuadrature μ k) := by
   unfold gaussQuadrature
   infer_instance
+
+/-! ### Every measure -/
+
+/-- An interpolatory rule lives on its nodes: for every measure $\mu$ on $\mathbb{R}$ and every
+finite set $s$, almost every point of the interpolatory rule of $\mu$ at $s$ lies in $s$. -/
+theorem ae_mem_interpolatoryQuadrature (μ : Measure ℝ) (s : Finset ℝ) :
+    ∀ᵐ x ∂interpolatoryQuadrature μ s, x ∈ s := by
+  unfold interpolatoryQuadrature
+  rw [ae_finsetSum_measure_iff]
+  exact fun x hx => Measure.ae_smul_measure (by simpa using hx) _
+
+/-- Every real function is integrable against the Gauss rule: for every measure $\mu$ on
+$\mathbb{R}$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$, $f$ is integrable against
+`gaussQuadrature μ k`, a finite sum of Dirac masses. -/
+theorem integrable_gaussQuadrature (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
+    Integrable f (gaussQuadrature μ k) := by
+  unfold gaussQuadrature interpolatoryQuadrature
+  exact integrable_finsetSum_measure.mpr fun x _ =>
+    (integrable_dirac enorm_lt_top).smul_measure ENNReal.ofReal_ne_top
+
+/-- **The Gauss rule as a sum of point masses**: for every measure $\mu$ on $\mathbb{R}$, every
+$k$ and every $f : \mathbb{R} \to \mathbb{R}$,
+$$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}w_x f(x)\,,$$
+with $G$ the Gauss nodes of order $k$ and $w_x$ the mass of the rule at $x$. No support
+hypothesis: the rule is a finite sum of Dirac masses. -/
+theorem integral_gaussQuadrature_eq_sum (μ : Measure ℝ) (k : ℕ) (f : ℝ → ℝ) :
+    ∫ x, f x ∂gaussQuadrature μ k = ∑ x ∈ gaussNodes μ k, (gaussQuadrature μ k).real {x} * f x := by
+  conv_lhs => rw [← Measure.restrict_eq_self_of_ae_mem (μ := gaussQuadrature μ k)
+    (s := gaussNodes μ k) (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k))]
+  rw [setIntegral_finset _ (integrable_gaussQuadrature μ k f).integrableOn]
+  simp only [smul_eq_mul]
+
+/-! ### Finite measures with compact support -/
+
+section Finite
+
+variable {μ ν : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
+
+/-- A measure carried by the nodes is its own interpolatory rule: if a finite measure $\mu$ is
+carried by a finite set $s$, then the interpolatory rule of $\mu$ at $s$ is $\mu$ (its weights
+$\int\ell_x\,d\mu$ are the masses $\mu\{x\}$). -/
+theorem interpolatoryQuadrature_eq_self_of_ae_mem {s : Finset ℝ} (hs : ∀ᵐ x ∂μ, x ∈ s) :
+    interpolatoryQuadrature μ s = μ := by
+  have key : ∀ x ∈ s, ∫ t, (Lagrange.basis s id x).eval t ∂μ = μ.real {x} := by
+    intro x hx
+    have h : ∀ᵐ t ∂μ, (Lagrange.basis s id x).eval t = Set.indicator {x} 1 t := by
+      filter_upwards [hs] with t ht
+      by_cases htx : t = x
+      · have h1 : (Lagrange.basis s id x).eval x = 1 :=
+          Lagrange.eval_basis_self (Set.injOn_id _) hx
+        rw [htx, h1, Set.indicator_of_mem (Set.mem_singleton x)]
+        rfl
+      · have h2 : (Lagrange.basis s id x).eval t = 0 :=
+          Lagrange.eval_basis_of_ne (v := id) (fun h => htx h.symm) ht
+        rw [h2, Set.indicator_of_notMem (Set.notMem_singleton_iff.mpr htx)]
+    rw [integral_congr_ae h, integral_indicator_one (measurableSet_singleton x)]
+  rw [Measure.ae_mem_finset_iff] at hs
+  refine Eq.trans ?_ hs.symm
+  simp only [interpolatoryQuadrature]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  rw [key x hx, ofReal_measureReal]
+
+/-- **Gauss quadrature**: for a finite measure $\mu$ supported in $[a, b]$ and every $k$, the
+$k$-point Gauss rule matches the first $2k$ moments of $\mu$: it integrates every real polynomial
+of degree less than $2k$ exactly. [Gautschi2004, Theorem 1.45]; [GolubMeurant2010, Ch. 6];
+there for $k$ at most the number of support points; past it the rule is $\mu$ itself.
+Result: gauss-quadrature -/
+theorem matchesMoments_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
+    MatchesMoments μ (gaussQuadrature μ k) (2 * k) := by
+  by_cases h : IsMomentPosDef μ k
+  · have := (isOrthogonalPolynomial_nodal_gaussNodes hμ k).matchesMoments_interpolatoryQuadrature hμ
+    rwa [h.card_gaussNodes hμ] at this
+  · unfold gaussQuadrature
+    rw [interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_gaussNodes_of_not_isMomentPosDef hμ h)]
+    exact MatchesMoments.refl _ _
+
+/-- The integral against the Gauss rule with the interpolatory weights: for a finite measure
+$\mu$ supported in $[a, b]$, every $k$ and every $f : \mathbb{R} \to \mathbb{R}$,
+$$\int f\,d\,\mathsf{gaussQuadrature}(\mu, k) = \sum_{x\in G}\Bigl(\int\ell_x\,d\mu\Bigr)f(x)\,,$$
+$G$ the Gauss nodes of order $k$ and $\ell_x$ the Lagrange basis polynomial of $x$. -/
+theorem integral_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) (f : ℝ → ℝ) :
+    ∫ x, f x ∂gaussQuadrature μ k =
+      ∑ x ∈ gaussNodes μ k, (∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ) * f x :=
+  IsOrthogonalPolynomial.integral_interpolatoryQuadrature
+    (isOrthogonalPolynomial_nodal_gaussNodes hμ k) hμ f
+
+/-- The Gauss rule lives in every interval carrying the measure: for a finite measure $\mu$
+supported in $[a, b]$ and every $k$, almost every point of the $k$-point Gauss rule lies in
+$[a, b]$. With `matchesMoments_gaussQuadrature`, the two hypotheses moment-matching error bounds
+need. -/
+theorem ae_mem_Icc_gaussQuadrature (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
+    ∀ᵐ x ∂gaussQuadrature μ k, x ∈ Set.Icc a b := by
+  by_cases h : IsMomentPosDef μ k
+  · unfold gaussQuadrature
+    filter_upwards [ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)] with x hx
+    exact h.gaussNodes_subset_Icc hμ (Finset.mem_coe.mpr hx)
+  · unfold gaussQuadrature
+    rw [interpolatoryQuadrature_eq_self_of_ae_mem (ae_mem_gaussNodes_of_not_isMomentPosDef hμ h)]
+    exact hμ
+
+/-- The mass of the Gauss rule: for a finite measure $\mu$ supported in $[a, b]$ and $k > 0$,
+the $k$-point Gauss rule has mass $\mu(\mathbb{R})$. -/
+theorem gaussQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ} (hk : 0 < k) :
+    (gaussQuadrature μ k).real Set.univ = μ.real Set.univ :=
+  ((matchesMoments_gaussQuadrature hμ k).measureReal_univ_eq (by omega)).symm
+
+/-- The Gauss weights are positive: if a finite measure $\mu$ supported in $[a, b]$ is positive
+definite up to degree $k$, then the $k$-point Gauss rule gives every Gauss node positive mass.
+[Gautschi2004, Theorem 1.46] (locator to check). -/
+theorem IsMomentPosDef.gaussQuadrature_real_singleton_pos {k : ℕ} (h : IsMomentPosDef μ k)
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x : ℝ} (hx : x ∈ gaussNodes μ k) :
+    0 < (gaussQuadrature μ k).real {x} := by
+  -- the mass at $x$ is the weight $\int\ell_x\,d\mu$: integrate the indicator of $\{x\}$
+  have hmass := (integral_gaussQuadrature_eq_sum μ k fun t => if t = x then (1 : ℝ) else 0).symm
+    |>.trans (integral_gaussQuadrature hμ k _)
+  simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', hx, if_true] at hmass
+  have hG : (gaussNodes μ k).card = k := h.card_gaussNodes hμ
+  rw [hmass,
+    (isOrthogonalPolynomial_nodal_gaussNodes hμ k).integral_eval_basis_eq_integral_sq hμ hx]
+  refine h _ (Lagrange.basis_ne_zero (Set.injOn_id _) hx) ?_
+  rw [Lagrange.degree_basis (Set.injOn_id _) hx, hG]
+  exact_mod_cast Nat.sub_lt (hG ▸ Finset.card_pos.mpr ⟨x, hx⟩) one_pos
+
+/-- **Uniqueness of the Gauss rule**: if a finite measure $\nu$ carried by a set of at most $k$
+points matches the first $2k$ moments of a finite measure $\mu$ supported in $[a, b]$, then $\nu$
+is the $k$-point Gauss rule of $\mu$. [Gautschi2004, §1.4] (locator to check); there among
+interpolatory rules with $k$ distinct nodes and positive weights; here any measure on at most $k$
+points.
+Result: gauss-quadrature-uniqueness -/
+theorem MatchesMoments.eq_gaussQuadrature [IsFiniteMeasure ν] {k : ℕ}
+    (h : MatchesMoments μ ν (2 * k)) (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {s : Finset ℝ}
+    (hν : ∀ᵐ x ∂ν, x ∈ s) (hs : s.card ≤ k) : ν = gaussQuadrature μ k := by
+  have hM : MatchesMoments ν (gaussQuadrature μ k) (2 * k) :=
+    h.symm.trans (matchesMoments_gaussQuadrature hμ k)
+  have hνT : ∀ᵐ x ∂ν, x ∈ s ∪ gaussNodes μ k :=
+    hν.mono fun x hx => Finset.mem_union_left _ hx
+  have hGT : ∀ᵐ x ∂gaussQuadrature μ k, x ∈ s ∪ gaussNodes μ k := by
+    exact (ae_mem_interpolatoryQuadrature μ (gaussNodes μ k)).mono fun x hx =>
+      Finset.mem_union_right _ hx
+  have hcard : (s ∪ gaussNodes μ k).card ≤ 2 * k :=
+    (Finset.card_union_le _ _).trans (by have := card_gaussNodes_le μ k; omega)
+  exact MatchesMoments.eq_of_ae_mem (hM.mono hcard) hνT hGT
+
+/-- **The Gauss-rule error from uniform approximation**: for a finite measure $\mu$ supported in
+$[a, b]$, $f$ integrable against $\mu$, and a real polynomial $p$ of degree less than $2k$ within
+$\varepsilon$ of $f$ on $[a, b]$,
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k)\Bigr\rvert \le
+2\varepsilon\,\mu(\mathbb{R})\,.$$
+[GolubMeurant2010, Ch. 6]; the composition of exactness with the moment-matching transfer. -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {f : ℝ → ℝ} (hf : Integrable f μ) {k : ℕ} {p : ℝ[X]}
+    (hp : p.degree < 2 * k) {ε : ℝ}
+    (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k| ≤ 2 * ε * μ.real Set.univ := by
+  have h := MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn
+    (matchesMoments_gaussQuadrature hμ k) hμ (ae_mem_Icc_gaussQuadrature hμ k) hf
+    (integrable_gaussQuadrature μ k f) hp hε
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · -- at $k = 0$ the rule is $0$, and the bound $\mu(\mathbb{R})\varepsilon$ is nonnegative
+    have hnu : (gaussQuadrature μ 0).real Set.univ = 0 := by
+      simp only [gaussQuadrature, interpolatoryQuadrature, gaussNodes, orthogonalPolynomial_zero,
+        roots_one, Multiset.empty_eq_zero, Multiset.toFinset_zero, Finset.sum_empty,
+        measureReal_zero, Pi.zero_apply]
+    rw [hnu, add_zero] at h
+    linarith [abs_nonneg (∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ 0)]
+  · rw [gaussQuadrature_real_univ hμ hk] at h
+    linarith
+
+/-- **The Gauss-rule error for Lipschitz functions**: for a finite measure $\mu$ supported in
+$[a, b]$, $a < b$, and $f$ $L$-Lipschitz on $[a, b]$, the $(k + 1)$-point Gauss rule
+satisfies <!-- value jacksonApproximationConstant -->
+$$\Bigl\lvert\int f\,d\mu - \int f\,d\,\mathsf{gaussQuadrature}(\mu, k + 1)\Bigr\rvert \le
+\frac{\pi L(b - a)}{2k + 3}\mu(\mathbb{R})\,,$$
+from Jackson's theorem on $[a, b]$ in degree $2k + 1$ (the constant is
+`jacksonApproximationConstant`). [GolubMeurant2010, Ch. 6]; the approximation step is
+[ChenTrogdonUbaru2022, Appendix C, Theorem 38]; constants composed here. -/
+theorem abs_integral_sub_integral_gaussQuadrature_le_of_lipschitzOnWith
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (hab : a < b) {f : ℝ → ℝ} {L : ℝ≥0}
+    (hf : LipschitzOnWith L f (Set.Icc a b)) (k : ℕ) :
+    |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ (k + 1)| ≤
+      jacksonApproximationConstant * L * (b - a) / (2 * k + 3) * μ.real Set.univ := by
+  have hint : Integrable f μ := by
+    have h := hf.continuousOn.integrableOn_Icc (μ := μ)
+    rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem hμ] at h
+  obtain ⟨p, hp, hε⟩ :=
+    exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf (2 * k + 1)
+  have hp' : p.degree < 2 * ((k + 1 : ℕ) : WithBot ℕ) :=
+    hp.trans_lt (by exact_mod_cast (by omega : 2 * k + 1 < 2 * (k + 1)))
+  have h := abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn hμ hint hp' hε
+  refine h.trans_eq ?_
+  push_cast
+  field_simp
+  ring
+
+end Finite
 
 end NLAlib

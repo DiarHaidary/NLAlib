@@ -9,6 +9,7 @@ public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Matrix.Spectral.SpectralMeasure
 public import NLAlib.Polynomial.Orthogonal.Gauss
+public import NLAlib.Krylov.Processes.LanczosPolynomials
 
 /-!
 # Lanczos quadrature
@@ -55,6 +56,11 @@ tridiagonal theory: the compression lemmas of `NLAlib.Krylov.Basic.Compression` 
   the Gauss rule of the spectral measure.
 * `NLAlib.HasOrthonormalCols.lanczosQuadrature_real_singleton_pos`: positive weights at the
   Ritz values.
+* `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`: Lanczos quadrature is the Gauss rule.
+* `NLAlib.HasOrthonormalCols.nodal_eq_orthogonalPolynomial`,
+  `NLAlib.HasOrthonormalCols.gaussNodes_spectralMeasure_eq`: the Ritz values are the Gauss nodes.
+* `NLAlib.spectralMeasure_jacobiMatrix`, `NLAlib.spectralMeasure_map_jacobiMatrix`,
+  `NLAlib.HasOrthonormalCols.gaussQuadrature_succ_eq_sum`: Golub–Welsch.
 -/
 
 @[expose] public section
@@ -597,5 +603,173 @@ theorem HasOrthonormalCols.lanczosQuadrature_real_singleton_pos {Q : Matrix n r 
         one_pow]
     · have h0 : ℓ.eval t = 0 := Lagrange.eval_basis_of_ne (v := id) (Ne.symm htx) ht
       simp [Set.indicator_of_notMem (show t ∉ ({x} : Set ℝ) by simpa using htx), h0]
+
+/-- **Lanczos quadrature is the Gauss rule of the spectral measure**: for Hermitian
+$\mathbf{A}$ and every $q$,
+$\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q)$ is the $q$-point Gauss rule of
+$\mu_{\mathbf{A},\mathbf{b}}$, for every `RCLike` field (complex Hermitian included).
+[GolubMeurant2010, Ch. 6].
+Result: lanczos-gauss-quadrature -/
+theorem _root_.Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) :
+    lanczosQuadrature A b q = gaussQuadrature (spectralMeasure A b) q := by
+  classical
+  obtain ⟨k, Q, hQ, hK⟩ := exists_hasOrthonormalCols_range_eq_krylovSpace A b q
+  have hT : (Qᴴ * A * Q).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul Q hA
+  have hfinT : (spectrum ℝ (Qᴴ * A * Q)).Finite := Matrix.finite_real_spectrum
+  have hcard : hfinT.toFinset.card ≤ q := by
+    rw [← Set.ncard_eq_toFinset_card _ hfinT, ← Nat.card_coe_set_eq]
+    exact (card_spectrum_le_of_range_eq hQ hA hK).trans (min_le_left _ _)
+  have hν : ∀ᵐ x ∂lanczosQuadrature A b q, x ∈ hfinT.toFinset := by
+    rw [hQ.lanczosQuadrature_eq hK]
+    have hae : ∀ᵐ x ∂spectralMeasure (Qᴴ * A * Q) (Qᴴ *ᵥ b), x ∈ spectrum ℝ (Qᴴ * A * Q) :=
+      ae_iff.2 (spectralMeasure_compl_spectrum_eq_zero _ _)
+    filter_upwards [hae] with x hx
+    exact hfinT.mem_toFinset.2 hx
+  obtain ⟨a, c, hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
+  exact (hA.matchesMoments_lanczosQuadrature b q).eq_gaussQuadrature hμ hν hcard
+
+/-- **The Ritz values are the Gauss nodes** (nodal form): for Hermitian $\mathbf{A}$,
+$\mathbf{Q}$ with orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at
+most the grade and $s$ the set of Ritz values, the nodal polynomial of $s$ is the monic
+orthogonal polynomial of degree $q$ of $\mu_{\mathbf{A},\mathbf{b}}$. [GolubMeurant2010, Ch. 4]
+(locator to check). -/
+theorem HasOrthonormalCols.nodal_eq_orthogonalPolynomial {Q : Matrix n r 𝕜}
+    (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
+    {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
+    Lagrange.nodal s id = orthogonalPolynomial (spectralMeasure A b) q := by
+  have hpos : IsMomentPosDef (spectralMeasure A b) q :=
+    (hA.isMomentPosDef_spectralMeasure_iff b q).mpr hq
+  have hcard : s.card = q :=
+    (card_eq_natCard_spectrum hs).trans (hQ.card_spectrum_conjTranspose_mul_mul_eq hA hK hq)
+  obtain ⟨a, c, hμ⟩ := exists_ae_mem_Icc_spectralMeasure A b
+  exact hpos.eq_orthogonalPolynomial hμ Lagrange.nodal_monic
+    (by rw [Lagrange.natDegree_nodal, hcard]) (hQ.isOrthogonalPolynomial_nodal hA hK hs)
+
+/-- **The Ritz values are the Gauss nodes**: for Hermitian $\mathbf{A}$, $\mathbf{Q}$ with
+orthonormal columns spanning $\mathcal{K}_q(\mathbf{A}, \mathbf{b})$, $q$ at most the grade and
+$s$ the set of Ritz values, the Gauss nodes of order $q$ of $\mu_{\mathbf{A},\mathbf{b}}$ are $s$.
+The grade hypothesis is needed: past the grade the Gauss nodes can contain a spurious $0$ of
+weight $0$. [GolubMeurant2010, Ch. 4] (locator to check). -/
+theorem HasOrthonormalCols.gaussNodes_spectralMeasure_eq {Q : Matrix n r 𝕜}
+    (hQ : HasOrthonormalCols Q) {A : Matrix n n 𝕜} (hA : A.IsHermitian) {b : n → 𝕜} {q : ℕ}
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b q) (hq : q ≤ krylovGrade A b)
+    {s : Finset ℝ} (hs : (s : Set ℝ) = spectrum ℝ (Qᴴ * A * Q)) :
+    gaussNodes (spectralMeasure A b) q = s := by
+  rw [gaussNodes, ← hQ.nodal_eq_orthogonalPolynomial hA hK hq hs, Lagrange.nodal]
+  simp [roots_prod_X_sub_C]
+
+/-- **Golub–Welsch**: for a finite measure $\mu$ supported in $[a, c]$ and every $k$, the
+$(k+1)$-point Gauss rule of $\mu$ is the spectral measure of its Jacobi matrix and
+$\sqrt{\mu(\mathbb{R})}\,\mathbf{e}_0$: its nodes are the eigenvalues of
+$\mathbf{J}_{k+1}(\mu)$ and its weights $\mu(\mathbb{R})$ times the squared first components of
+the eigenvectors. Past the support size of $\mu$ the matrix has zero rows, and the extra
+eigenvalues carry no weight. [Gautschi2004, Theorem 3.1]; [GolubWelsch1969, §2] (labels to
+check).
+Result: golub-welsch -/
+theorem spectralMeasure_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ] {a c : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) (k : ℕ) :
+    spectralMeasure (jacobiMatrix μ (k + 1)) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) =
+      gaussQuadrature μ (k + 1) := by
+  set ν := gaussQuadrature μ (k + 1) with hνdef
+  have hν_mem : ∀ᵐ x ∂ν, x ∈ gaussNodes μ (k + 1) := ae_mem_interpolatoryQuadrature μ _
+  have hD : spectralMeasure (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) = ν :=
+    spectralMeasure_diagonal_sqrt_of_ae_mem hν_mem
+  have hDh : (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ)).IsHermitian :=
+    Matrix.isHermitian_diagonal_of_self_adjoint _ (by funext x; rfl)
+  have hgauss : lanczosQuadrature (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) (k + 1) = ν := by
+    rw [hDh.lanczosQuadrature_eq_gaussQuadrature, hD]
+    exact (MatchesMoments.eq_gaussQuadrature (MatchesMoments.refl ν _)
+      (ae_mem_Icc_gaussQuadrature hμ (k + 1)) hν_mem (card_gaussNodes_le μ (k + 1))).symm
+  have hT : lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+      (fun x => √(ν.real {(x : ℝ)})) (k + 1) = jacobiMatrix ν (k + 1) := by
+    rw [hDh.lanczosTridiagonal_eq_jacobiMatrix, hD]
+    simp
+  have hnorm : ‖WithLp.toLp 2 (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))‖ =
+      √(μ.real Set.univ) := by
+    have h1 := hDh.spectralMeasure_real_univ
+      (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))
+    have hmass : ν.real Set.univ = μ.real Set.univ := by
+      rw [hνdef]; exact gaussQuadrature_real_univ hμ (Nat.succ_pos k)
+    rw [hD, hmass] at h1
+    rw [h1, Real.sqrt_sq (norm_nonneg _)]
+  have hJ : jacobiMatrix μ (k + 1) = jacobiMatrix ν (k + 1) :=
+    MatchesMoments.jacobiMatrix_eq (matchesMoments_gaussQuadrature hμ (k + 1))
+  calc spectralMeasure (jacobiMatrix μ (k + 1)) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1)
+      = spectralMeasure (lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) =>
+            (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) (k + 1))
+          ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1) := by
+        rw [hJ, hT]
+    _ = spectralMeasure (lanczosTridiagonal (Matrix.diagonal fun x : gaussNodes μ (k + 1) =>
+            (x : ℝ)) (fun x => √(ν.real {(x : ℝ)})) (k + 1))
+          ((‖WithLp.toLp 2 (fun x : gaussNodes μ (k + 1) => √(ν.real {(x : ℝ)}))‖ : ℝ) •
+            Pi.single 0 1) := by
+        rw [hnorm]
+    _ = lanczosQuadrature (Matrix.diagonal fun x : gaussNodes μ (k + 1) => (x : ℝ))
+          (fun x => √(ν.real {(x : ℝ)})) (k + 1) :=
+        (hDh.lanczosQuadrature_succ_eq _ _).symm
+    _ = ν := hgauss
+
+/-- **Golub–Welsch, explicit form**: for a finite measure $\mu$ supported in $[a, c]$, every
+$k$, and an orthogonal diagonalisation
+$\mathbf{J}_{k+1}(\mu) = \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}$ of its
+Jacobi matrix,
+$$\mathsf{gaussQuadrature}(\mu, k + 1) = \sum_i\mu(\mathbb{R})\,\mathbf{U}_{0,i}^2\,
+\delta_{\mathbf{d}_i}\,.$$
+[Gautschi2004, Theorem 3.1]; [GolubWelsch1969, §2] (labels to check). -/
+theorem HasOrthonormalCols.gaussQuadrature_succ_eq_sum {k : ℕ}
+    {U : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ} (hU : HasOrthonormalCols U) {μ : Measure ℝ}
+    [IsFiniteMeasure μ] {a c : ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) {d : Fin (k + 1) → ℝ}
+    (hJ : jacobiMatrix μ (k + 1) = U * Matrix.diagonal d * Uᴴ) :
+    gaussQuadrature μ (k + 1) =
+      ∑ i, ENNReal.ofReal (μ.real Set.univ * U 0 i ^ 2) • Measure.dirac (d i) := by
+  rw [← spectralMeasure_jacobiMatrix μ hμ k,
+    hU.spectralMeasure_eq_sum rfl (by simpa using hJ) ((√(μ.real Set.univ) : ℝ) • Pi.single 0 1)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 3
+  rw [Matrix.mulVec_smul, Pi.smul_apply, smul_eq_mul, Matrix.mulVec_single_one]
+  simp only [Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.col_apply, Matrix.transpose_apply,
+    norm_mul, Real.norm_eq_abs]
+  rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
+
+/-- **Golub–Welsch over any `RCLike` field**: for a finite measure $\mu$ supported in $[a, c]$
+and every $k$, the $(k+1)$-point Gauss rule of $\mu$ is the spectral measure of the Jacobi matrix
+$\mathbf{J}_{k+1}(\mu)$, with its real entries read in $\Bbbk$, and
+$\sqrt{\mu(\mathbb{R})}\,\mathbf{e}_0$. The form for implementation statements over a complex
+Hermitian matrix. [Gautschi2004, Theorem 3.1]; [GolubWelsch1969, §2] (labels to check). -/
+theorem spectralMeasure_map_jacobiMatrix (μ : Measure ℝ) [IsFiniteMeasure μ] {a c : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a c) (k : ℕ) :
+    spectralMeasure ((jacobiMatrix μ (k + 1)).map (algebraMap ℝ 𝕜))
+        ((√(μ.real Set.univ) : 𝕜) • Pi.single 0 1) = gaussQuadrature μ (k + 1) := by
+  have hJh : (jacobiMatrix μ (k + 1)).IsHermitian := isHermitian_jacobiMatrix μ (k + 1)
+  have hJ : jacobiMatrix μ (k + 1) =
+      (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) *
+        Matrix.diagonal hJh.eigenvalues *
+        (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)ᴴ :=
+    hJh.spectral_theorem
+  have hU := hasOrthonormalCols_iff_mem_unitaryGroup.2 hJh.eigenvectorUnitary.2
+  have hVU : HasOrthonormalCols
+      ((hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).map (algebraMap ℝ 𝕜)) := by
+    rw [hasOrthonormalCols_iff, ← Matrix.conjTranspose_map _ fun r => by simp, ← Matrix.map_mul,
+      hasOrthonormalCols_iff.mp hU, Matrix.map_one _ (map_zero _) (map_one _)]
+  have hA : (jacobiMatrix μ (k + 1)).map (algebraMap ℝ 𝕜) =
+      (hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).map (algebraMap ℝ 𝕜) *
+        Matrix.diagonal (fun i => ((hJh.eigenvalues i : ℝ) : 𝕜)) *
+        (((hJh.eigenvectorUnitary : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)).map
+          (algebraMap ℝ 𝕜))ᴴ := by
+    conv_lhs => rw [hJ]
+    rw [← Matrix.conjTranspose_map _ fun r => by simp, Matrix.map_mul, Matrix.map_mul,
+      Matrix.diagonal_map (map_zero _)]
+  rw [hVU.spectralMeasure_eq_sum rfl hA, HasOrthonormalCols.gaussQuadrature_succ_eq_sum hU hμ hJ]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 3
+  simp only [algebraMap_smul, Matrix.mulVec_smul, Matrix.mulVec_single, MulOpposite.op_one,
+    one_smul, Pi.smul_apply, Matrix.col_apply, Matrix.conjTranspose_apply, Matrix.map_apply,
+    Matrix.IsHermitian.eigenvectorUnitary_apply, RCLike.star_def, RCLike.conj_ofReal,
+    RCLike.real_smul_ofReal, norm_mul, norm_algebraMap', Real.norm_eq_abs]
+  rw [mul_pow, sq_abs, sq_abs, Real.sq_sqrt measureReal_nonneg]
 
 end NLAlib

@@ -8,7 +8,7 @@ module
 public import NLAlib.Estimation.Trace.GirardHutchinson
 public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.Polynomial.Approximation.AnalyticApproximation
-public import NLAlibScaffold.Krylov.Functions.Quadrature
+public import NLAlib.Krylov.Functions.Quadrature
 
 /-!
 # Stochastic Lanczos quadrature: the theorems of stage SLQ, phase A

@@ -2,6 +2,19 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## KS7 orthogonal-polynomial structure: proofs (2026-10-25)
+
+Branch `cleanup/ks7` (worktree `nlalib-cleanup`), over `integrate/ks7`. All 67 KS7 statements are
+proved (workflow harness: haiku, sonnet and GLM workers), cleaned up and tier-1 reviewed, and moved
+from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
+`Polynomial/Orthogonal/{Moments, Basic, Recurrence, Zeros, Gauss}.lean`,
+`Matrix/Spectral/SpectralMeasure.lean`, `Krylov/Functions/Quadrature.lean` and the new
+`Krylov/Processes/LanczosPolynomials.lean`. New imports: `Mathlib.LinearAlgebra.Lagrange`
+(Moments, maintainer 2026-10-25), `Mathlib.Analysis.Polynomial.Order` (Zeros),
+`NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
+(Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
+`reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+
 ## Sketching moments round: proofs (2026-10-22)
 
 Branch `sketching/moments` (worktree `nlalib-block`), from `46f78ab`. Every statement of the

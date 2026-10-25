@@ -31,6 +31,8 @@ weights.
 
 * `NLAlib.IsOrthogonalPolynomial.mono`: orthogonality to fewer degrees.
 * `NLAlib.MatchesMoments.isOrthogonalPolynomial_iff`: orthogonality depends only on the moments.
+* `NLAlib.IsMomentPosDef.mono`: definiteness up to a lower degree.
+* `NLAlib.isMomentPosDef_iff_forall_finset`: definiteness counts support points.
 -/
 
 @[expose] public section
@@ -81,5 +83,37 @@ theorem MatchesMoments.isOrthogonalPolynomial_iff {μ ν : Measure ℝ} {N k : �
     have h2 := natDegree_mul_le (p := p) (q := r)
     omega
   exact forall₂_congr fun r hr => by rw [key r hr]
+
+/-- Positive definiteness on the polynomials of degree less than $k$ gives it on those of degree
+less than $j \le k$. -/
+theorem IsMomentPosDef.mono {μ : Measure ℝ} {j k : ℕ} (h : IsMomentPosDef μ k) (hjk : j ≤ k) :
+    IsMomentPosDef μ j :=
+  fun p hp hpdeg => h p hp (hpdeg.trans_le (by exact_mod_cast hjk))
+
+/-- **Positive definiteness counts support points**: a finite measure $\mu$ supported in
+$[a, b]$ is positive definite on the polynomials of degree less than $k$ exactly when no finite
+set of fewer than $k$ points carries it: every finite $s$ with $x \in s$ for $\mu$-almost every
+$x$ has $k \le \lvert s\rvert$. [Gautschi2004, §1.1] (locator to check). -/
+theorem isMomentPosDef_iff_forall_finset {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
+    (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
+    IsMomentPosDef μ k ↔ ∀ s : Finset ℝ, (∀ᵐ x ∂μ, x ∈ s) → k ≤ s.card := by
+  constructor
+  · -- the nodal polynomial of a carrying set of fewer than `k` points has norm zero
+    intro h s hs
+    by_contra! hlt
+    have hdeg : (Lagrange.nodal s id).degree < k := by
+      rw [Lagrange.degree_nodal]
+      exact_mod_cast hlt
+    refine (h _ Lagrange.nodal_ne_zero hdeg).ne' ?_
+    exact integral_eq_zero_of_ae <| hs.mono fun x hx =>
+      (pow_eq_zero_iff two_ne_zero).mpr (Lagrange.eval_nodal_at_node (v := id) hx)
+  · -- a polynomial of norm zero vanishes off its roots, which are fewer than `k`
+    intro h p hp0 hpdeg
+    refine (integral_nonneg fun x => sq_nonneg _).lt_of_ne' fun h0 => ?_
+    have h1 := h _ <| (ae_eval_eq_zero_of_integral_sq_eq_zero hμ h0).mono fun x hx =>
+      Multiset.mem_toFinset.mpr ((mem_roots hp0).mpr hx)
+    have h2 := (Multiset.toFinset_card_le p.roots).trans (card_roots' p)
+    have h3 := (natDegree_lt_iff_degree_lt hp0).mpr hpdeg
+    omega
 
 end NLAlib
