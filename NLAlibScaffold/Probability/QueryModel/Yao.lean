@@ -68,7 +68,22 @@ theorem IsMeasurableFamily.measureReal_run_mem_le_of_indepFun [IsProbabilityMeas
     (h : ∀ a : QueryAlgorithm Q R q β, a.IsMeasurable →
       μ.real {ω | (X ω, a.run (O (X ω))) ∈ B} ≤ δ) :
     μ.real {ω | (X ω, (alg (s ω)).run (O (X ω))) ∈ B} ≤ δ := by
-  sorry
+  have hmeas : Measurable fun p : M × S => (p.1, (alg p.2).run (O p.1)) :=
+    measurable_fst.prodMk ((halg.measurable_run hO).comp measurable_swap)
+  have hE : MeasurableSet {p : M × S | (p.1, (alg p.2).run (O p.1)) ∈ B} :=
+    hmeas hB
+  have hsec : ∀ y ∈ (Set.univ : Set S), μ.real {ω | (X ω, y) ∈
+      {p : M × S | (p.1, (alg p.2).run (O p.1)) ∈ B}} ≤ δ := fun y _ =>
+    h (alg y) (halg.isMeasurable y)
+  have hGc : μ.real {ω | s ω ∉ (Set.univ : Set S)} ≤ 0 := by
+    simp
+  have hδ : 0 ≤ δ := by
+    obtain ⟨ω⟩ : (Set.univ : Set Ω).Nonempty :=
+      nonempty_of_measure_ne_zero (μ := μ) (by simp)
+    exact measureReal_nonneg.trans (h (alg (s ω)) (halg.isMeasurable _))
+  have key := hsX.symm.measureReal_mem_le_add hX hs hE MeasurableSet.univ (δ₁ := δ) (δ₂ := 0)
+    hδ hsec hGc
+  simpa using key
 
 /-- **Yao's principle, worst-case form**: let $\rho$ be a seed law and $\nu$ an input law, both
 probability measures, and $B$ a measurable set of (input, output) pairs. If every measurable
