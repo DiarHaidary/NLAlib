@@ -263,7 +263,31 @@ theorem abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn
     (hp : p.degree < 2 * k) {ε : ℝ}
     (hε : Metric.IsUniformApproxOn (fun x => p.eval x) f (Set.Icc a b) ε) :
     |∫ x, f x ∂μ - ∫ x, f x ∂gaussQuadrature μ k| ≤ 2 * ε * μ.real Set.univ := by
-  sorry
+  have h := MatchesMoments.abs_integral_sub_integral_le_of_isUniformApproxOn
+    (matchesMoments_gaussQuadrature hμ k) hμ (ae_mem_Icc_gaussQuadrature hμ k) hf
+    (integrable_gaussQuadrature μ k f) hp hε
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have hnu : gaussQuadrature μ 0 = 0 := by
+      simp [gaussQuadrature, gaussNodes, orthogonalPolynomial_zero, interpolatoryQuadrature]
+    rw [hnu] at h ⊢
+    simp only [integral_zero_measure, Measure.real, Measure.coe_zero, Pi.zero_apply,
+      ENNReal.toReal_zero, add_zero, sub_zero] at h ⊢
+    rcases le_or_gt 0 ε with hε0 | hε0
+    · have : 0 ≤ ε * (μ Set.univ).toReal := mul_nonneg hε0 ENNReal.toReal_nonneg
+      linarith
+    · have hempty : Set.Icc a b = ∅ := by
+        by_contra hne
+        obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.mpr hne
+        have h1 : dist (eval x p) (f x) ≤ ε := hε x hx
+        have h0 := dist_nonneg (x := eval x p) (y := f x)
+        linarith
+      have hμ0 : μ Set.univ = 0 := by
+        have := ae_iff.mp hμ
+        simpa [hempty] using this
+      simp only [hμ0, ENNReal.toReal_zero, mul_zero, zero_mul] at h ⊢
+      linarith
+  · rw [gaussQuadrature_real_univ hμ hk] at h
+    linarith
 
 /-- **The Gauss-rule error for Lipschitz functions**: for a finite measure $\mu$ supported in
 $[a, b]$, $a < b$, and $f$ $L$-Lipschitz on $[a, b]$, the $(k + 1)$-point Gauss rule
