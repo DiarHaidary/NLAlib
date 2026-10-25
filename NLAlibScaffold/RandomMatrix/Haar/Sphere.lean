@@ -52,7 +52,21 @@ Proof: M, about 20 lines (with the two laws below, 30 to 50 in all).
 private theorem indepFun_sum_sq_inl_sum_sq_inr_of_hasLaw_gaussianVector {p : Type*} [Fintype p]
     {h : Ω → k ⊕ p → ℝ} (hh : HasLaw h (gaussianVector (k ⊕ p)) μ) :
     IndepFun (fun ω => ∑ i, h ω (Sum.inl i) ^ 2) (fun ω => ∑ j, h ω (Sum.inr j) ^ 2) μ := by
-  sorry
+  have hpair : HasLaw (fun ω => (fun i => h ω (Sum.inl i), fun j => h ω (Sum.inr j)))
+      ((gaussianVector k).prod (gaussianVector p)) μ :=
+    (measurePreserving_sumPiEquivProdPi (fun _ : k ⊕ p => gaussianReal 0 1)).fun_comp_hasLaw hh
+  have := hh.isProbabilityMeasure
+  have hX : HasLaw (fun ω => fun i => h ω (Sum.inl i)) (gaussianVector k) μ :=
+    (measurePreserving_fst).fun_comp_hasLaw hpair
+  have hY : HasLaw (fun ω => fun j => h ω (Sum.inr j)) (gaussianVector p) μ :=
+    (measurePreserving_snd).fun_comp_hasLaw hpair
+  have hind : IndepFun (fun ω => fun i => h ω (Sum.inl i))
+      (fun ω => fun j => h ω (Sum.inr j)) μ := by
+    rw [indepFun_iff_map_prod_eq_prod_map_map hX.aemeasurable hY.aemeasurable, hX.map_eq,
+      hY.map_eq]
+    exact hpair.map_eq
+  exact hind.comp (φ := fun x : k → ℝ => ∑ i, x i ^ 2) (ψ := fun y : p → ℝ => ∑ j, y j ^ 2)
+    (by fun_prop) (by fun_prop)
 
 omit [DecidableEq k] in
 /-- The first block of a standard Gaussian vector indexed by $k \oplus p$, $k$ nonempty, has a
