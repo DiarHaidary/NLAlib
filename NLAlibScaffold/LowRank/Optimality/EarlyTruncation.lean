@@ -223,7 +223,164 @@ theorem le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix {X : Ω → Matrix (Fi
     (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (hl : 100 ≤ Fintype.card l) :
     1 / 12 ≤ μ.real {ω | ∑ j, X ω 0 j ^ 2 <
       (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2} := by
-  sorry
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure_iff.2 inferInstance
+  have hℓ : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
+  have hrow0 : HasLaw (fun ω => X ω 0) (gaussianVector l) μ := hX.eval 0
+  have hrow1 : HasLaw (fun ω => X ω 1) (gaussianVector l) μ := hX.eval 1
+  have hind : IndepFun (fun ω => X ω 0) (fun ω => X ω 1) μ :=
+    hX.iIndepFun_eval.indepFun (show (0 : Fin 2) ≠ 1 by decide)
+  have hconvD : ∀ ω, ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 =
+      ‖WithLp.toLp 2 (X ω 0)‖ ^ 2 - ‖WithLp.toLp 2 (X ω 1)‖ ^ 2 := by
+    intro ω
+    simp only [EuclideanSpace.norm_sq_eq, Real.norm_eq_abs, sq_abs]
+  have hI2 : ∫ ω, (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2 ∂μ = 4 * Fintype.card l := by
+    simp_rw [hconvD]
+    exact integral_norm_sq_sub_norm_sq_sq_of_hasLaw_gaussianVector hrow0 hrow1 hind
+  have hI4 : ∫ ω, (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 4 ∂μ =
+      48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by
+    simp_rw [hconvD]
+    exact integral_norm_sq_sub_norm_sq_pow_four_of_hasLaw_gaussianVector hrow0 hrow1 hind
+  have hint4 : Integrable (fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 4) μ := by
+    by_contra h
+    rw [integral_undef h] at hI4
+    nlinarith
+  have hPZ : μ.real {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} *
+      (48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l) ≥ 9 * (Fintype.card l : ℝ) ^ 2 := by
+    have hD : Continuous fun A : Matrix (Fin 2) l ℝ =>
+        (∑ j, A 0 j ^ 2 - ∑ j, A 1 j ^ 2) ^ 2 := by fun_prop
+    have hZ2 : MemLp (fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) 2 μ := by
+      refine (memLp_two_iff_integrable_sq
+        (hD.measurable.comp_aemeasurable hX.aemeasurable).aestronglyMeasurable).2 ?_
+      refine hint4.congr (Filter.Eventually.of_forall fun ω => ?_)
+      simp only [Function.comp_apply]
+      ring
+    have hPZ0 := sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt (μ := μ)
+      (Z := fun ω => (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2)
+      (Filter.Eventually.of_forall fun ω => sq_nonneg _) hZ2 (θ := 1 / 4) (by norm_num)
+      (by norm_num)
+    have hZ4 : ∫ ω, ((∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2) ^ 2 ∂μ =
+        48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by
+      simp only [← pow_mul]
+      exact hI4
+    have hset : {ω | 1 / 4 * ∫ ω', (∑ j, X ω' 0 j ^ 2 - ∑ j, X ω' 1 j ^ 2) ^ 2 ∂μ <
+        (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} =
+        {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} := by
+      have hI : ∫ ω', (∑ j, X ω' 0 j ^ 2 - ∑ j, X ω' 1 j ^ 2) ^ 2 ∂μ = 4 * Fintype.card l := hI2
+      rw [hI]
+      congr 1
+      ext ω
+      constructor <;> intro h <;> linarith
+    rw [hset, hZ4, hI2] at hPZ0
+    nlinarith [hPZ0]
+  have hsymm : μ.real {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} =
+      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
+    have hG : AEMeasurable (fun ω => X ω 0) μ := hrow0.aemeasurable
+    have hH : AEMeasurable (fun ω => X ω 1) μ := hrow1.aemeasurable
+    have hpair : AEMeasurable (fun ω => (X ω 0, X ω 1)) μ := hG.prodMk hH
+    have hlaw : μ.map (fun ω => (X ω 0, X ω 1)) = (gaussianVector l).prod (gaussianVector l) := by
+      rw [(indepFun_iff_map_prod_eq_prod_map_map hG hH).1 hind, hrow0.map_eq, hrow1.map_eq]
+    have hlaw' : μ.map (fun ω => (X ω 1, X ω 0)) = (gaussianVector l).prod (gaussianVector l) := by
+      have e : (fun ω => (X ω 1, X ω 0)) = Prod.swap ∘ (fun ω => (X ω 0, X ω 1)) := rfl
+      rw [e, ← AEMeasurable.map_map_of_aemeasurable measurable_swap.aemeasurable hpair, hlaw,
+        Measure.prod_swap]
+    have hS : MeasurableSet {p : (l → ℝ) × (l → ℝ) |
+        √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} :=
+      measurableSet_lt measurable_const (by fun_prop)
+    have e1 : {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} =
+        (fun ω => (X ω 0, X ω 1)) ⁻¹' {p : (l → ℝ) × (l → ℝ) |
+          √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} := rfl
+    have e2 : {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} =
+        (fun ω => (X ω 1, X ω 0)) ⁻¹' {p : (l → ℝ) × (l → ℝ) |
+          √(Fintype.card l : ℝ) < ∑ j, p.1 j ^ 2 - ∑ j, p.2 j ^ 2} := by
+      ext ω
+      simp only [Set.mem_setOf_eq, Set.mem_preimage]
+      constructor <;> intro h <;> linarith
+    rw [e1, e2, measureReal_def, measureReal_def,
+      ← Measure.map_apply_of_aemeasurable hpair hS,
+      ← Measure.map_apply_of_aemeasurable (hH.prodMk hG) hS, hlaw, hlaw']
+  have hsub : {ω | (Fintype.card l : ℝ) < (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) ^ 2} ⊆
+      {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2} ∪
+        {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
+    intro ω hω
+    simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢
+    have ht : √(Fintype.card l : ℝ) ^ 2 = Fintype.card l := Real.sq_sqrt (by positivity)
+    have htpos : 0 ≤ √(Fintype.card l : ℝ) := Real.sqrt_nonneg _
+    rcases le_or_gt 0 (∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2) with h | h
+    · left; nlinarith
+    · right; nlinarith
+  have hneg : 1 / 11 ≤
+      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} := by
+    have hmono := measureReal_mono (μ := μ) hsub (measure_ne_top μ _)
+    have hun := measureReal_union_le (μ := μ)
+      {ω | √(Fintype.card l : ℝ) < ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2}
+      {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)}
+    rw [hsymm] at hun
+    have hA : 0 < 48 * (Fintype.card l : ℝ) ^ 2 + 96 * Fintype.card l := by positivity
+    by_contra hlt
+    push_neg at hlt
+    have h1 := mul_le_mul_of_nonneg_right (show μ.real _ ≤ 2 *
+      μ.real {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} by linarith) hA.le
+    have h2 := mul_lt_mul_of_pos_right hlt hA
+    nlinarith
+  have htail : μ.real {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2} ≤ 1 / 132 := by
+    have hconv : ∀ ω, ‖WithLp.toLp 2 (X ω 1)‖ ^ 2 = ∑ j, X ω 1 j ^ 2 := by
+      intro ω
+      rw [EuclideanSpace.norm_sq_eq]
+      simp [Real.norm_eq_abs, sq_abs]
+    have hT := measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector hrow1 (β := 2)
+      (by norm_num)
+    simp only [hconv] at hT
+    have hlog := Real.log_two_lt_d9
+    have h5 : (6 : ℝ) ≤ Real.exp 5 := by linarith [Real.add_one_le_exp (5 : ℝ)]
+    have h15 : Real.exp 15 = Real.exp 5 ^ 3 := by rw [← Real.exp_nat_mul]; norm_num
+    have hx : (Fintype.card l : ℝ) / 2 * (1 - 2 + Real.log 2) ≤ -15 := by
+      have : (1 - 2 + Real.log 2) ≤ -(3 / 10) := by norm_num at hlog ⊢; linarith
+      nlinarith
+    have hexp := Real.exp_le_exp.2 hx
+    have h132 : (132 : ℝ) ≤ Real.exp 15 := by
+      rw [h15]; exact (by norm_num : (132 : ℝ) ≤ 6 ^ 3).trans (pow_le_pow_left₀ (by norm_num) h5 3)
+    have hneg15 : Real.exp (-15) ≤ 1 / 132 := by
+      calc Real.exp (-15) = (Real.exp 15)⁻¹ := Real.exp_neg 15
+        _ ≤ (132 : ℝ)⁻¹ := inv_anti₀ (by norm_num) h132
+        _ = 1 / 132 := by norm_num
+    linarith
+  have hincl : {ω | ∑ j, X ω 0 j ^ 2 - ∑ j, X ω 1 j ^ 2 < -√(Fintype.card l : ℝ)} ⊆
+      {ω | ∑ j, X ω 0 j ^ 2 < (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2} ∪
+        {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2} := by
+    intro ω hω
+    simp only [Set.mem_setOf_eq, Set.mem_union] at hω ⊢
+    have hU : 0 ≤ ∑ j, X ω 0 j ^ 2 := Finset.sum_nonneg fun j _ => sq_nonneg _
+    have hV : 0 ≤ ∑ j, X ω 1 j ^ 2 := Finset.sum_nonneg fun j _ => sq_nonneg _
+    have ht : √(Fintype.card l : ℝ) ^ 2 = Fintype.card l := Real.sq_sqrt (by positivity)
+    have htpos : 0 < √(Fintype.card l : ℝ) := Real.sqrt_pos.2 (by linarith)
+    by_cases hc : 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2
+    · exact Or.inr hc
+    · left
+      push_neg at hc
+      have hqt : 1 / (4 * √(Fintype.card l : ℝ)) * √(Fintype.card l : ℝ) = 1 / 4 := by
+        field_simp
+      have hqpos : 0 < 1 / (4 * √(Fintype.card l : ℝ)) := by positivity
+      have h1 : 1 / (4 * √(Fintype.card l : ℝ)) * ∑ j, X ω 1 j ^ 2 ≤
+          1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) :=
+        mul_le_mul_of_nonneg_left (by rw [ht]; linarith) hqpos.le
+      have h2 : 1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) =
+          √(Fintype.card l : ℝ) / 2 := by
+        have : 1 / (4 * √(Fintype.card l : ℝ)) * (2 * √(Fintype.card l : ℝ) ^ 2) =
+            2 * √(Fintype.card l : ℝ) *
+              (1 / (4 * √(Fintype.card l : ℝ)) * √(Fintype.card l : ℝ)) := by
+          ring
+        rw [this, hqt]; ring
+      have h3 := mul_nonneg (sq_nonneg (1 / (4 * √(Fintype.card l : ℝ)))) hV
+      have key : (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2 =
+          ∑ j, X ω 1 j ^ 2 - (2 * (1 / (4 * √(Fintype.card l : ℝ))) -
+            (1 / (4 * √(Fintype.card l : ℝ))) ^ 2) * ∑ j, X ω 1 j ^ 2 := by ring
+      rw [key]
+      nlinarith [h1, h2, h3]
+  have h1 := measureReal_mono (μ := μ) hincl (measure_ne_top μ _)
+  have h2 := measureReal_union_le (μ := μ) {ω | ∑ j, X ω 0 j ^ 2 <
+    (1 - 1 / (4 * √(Fintype.card l : ℝ))) ^ 2 * ∑ j, X ω 1 j ^ 2}
+    {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2}
+  linarith
 
 /-- **The early-truncated randomized SVD has excess $\Omega(1/\sqrt{\ell})$ at $k = 1$**: for
 $\mathbf{A} = \operatorname{diag}(1, 1 - \delta)$ with $\delta = 1/(4\sqrt{\ell})$, a standard
