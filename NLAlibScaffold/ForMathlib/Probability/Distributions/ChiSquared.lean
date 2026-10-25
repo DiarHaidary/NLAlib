@@ -146,7 +146,15 @@ Result: chi-square-law -/
 theorem map_sum_sq_pi_gaussianReal {ι : Type*} [Fintype ι] [Nonempty ι] :
     (Measure.pi fun _ : ι => gaussianReal 0 1).map (fun x => ∑ i, x i ^ 2) =
       gammaMeasure (Fintype.card ι / 2) (1 / 2) := by
-  sorry
+  have hm : Measurable fun x : ι → ℝ => ∑ i, x i ^ 2 := by fun_prop
+  have ha : (0 : ℝ) < Fintype.card ι / 2 := by
+    have := Fintype.card_pos (α := ι)
+    positivity
+  have := isProbabilityMeasure_gammaMeasure ha (by norm_num : (0 : ℝ) < 1 / 2)
+  refine Measure.ext fun S hS => ?_
+  rw [Measure.map_apply hm hS]
+  refine (ENNReal.toReal_eq_toReal_iff' (measure_ne_top _ _) (measure_ne_top _ _)).1 ?_
+  exact measureReal_sum_sq_mem_pi_gaussianReal hS
 
 /-- The chi-square law, `HasLaw` form: if $\mathbf{g} = (\mathbf{g}_i)_{i \in \iota}$ has
 independent standard normal coordinates (law the product of `gaussianReal 0 1`) and $\iota$ is
