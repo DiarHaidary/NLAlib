@@ -334,7 +334,32 @@ Result: gamma-ratio-beta -/
 theorem map_div_add_prod_gammaMeasure {a b r : ℝ} (ha : 0 < a) (hb : 0 < b) (hr : 0 < r) :
     ((gammaMeasure a r).prod (gammaMeasure b r)).map (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) =
       betaMeasure a b := by
-  sorry
+  ext S hS
+  have hf : Measurable (fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) :=
+    measurable_fst.div (measurable_fst.add measurable_snd)
+  have hT : MeasurableSet ((fun p : ℝ × ℝ => p.1 / (p.1 + p.2)) ⁻¹' S) := hS.preimage hf
+  have hF : Measurable (S.indicator (fun _ : ℝ => (1 : ℝ≥0∞))) := measurable_const.indicator hS
+  have key := lintegral_lintegral_comp_div_add_gammaPDF_eq_betaPDF hF ha hb hr
+  have hga : Measurable (gammaPDF a r) :=
+    (measurable_gammaPDFReal a r).ennreal_ofReal
+  have hgb : Measurable (gammaPDF b r) :=
+    (measurable_gammaPDFReal b r).ennreal_ofReal
+  rw [Measure.map_apply hf hS, gammaMeasure, gammaMeasure, prod_withDensity hga hgb,
+    betaMeasure, withDensity_apply _ hS, withDensity_apply _ hT, ← lintegral_indicator hT,
+    lintegral_prod_symm]
+  swap
+  · exact (((hga.comp measurable_fst).mul (hgb.comp measurable_snd)).indicator hT).aemeasurable
+  calc _ = ∫⁻ y, (∫⁻ x, S.indicator (fun _ => (1 : ℝ≥0∞)) (x / (x + y)) * gammaPDF a r x) *
+        gammaPDF b r y := by
+        refine lintegral_congr fun y => ?_
+        rw [← lintegral_mul_const' (gammaPDF b r y) _ (by simp [gammaPDF])]
+        refine lintegral_congr fun x => ?_
+        by_cases hx : x / (x + y) ∈ S <;> simp [Set.indicator, hx]
+    _ = ∫⁻ s, S.indicator (fun _ => (1 : ℝ≥0∞)) s * betaPDF a b s := key
+    _ = _ := by
+        rw [← lintegral_indicator hS]
+        refine lintegral_congr fun s => ?_
+        by_cases hs : s ∈ S <;> simp [Set.indicator, hs]
 
 /-- Beta as a ratio of Gammas, `HasLaw` form: for $a, b, r > 0$ and independent
 $X \sim \mathrm{Gamma}(a, r)$ and $Y \sim \mathrm{Gamma}(b, r)$ (shapes $a$, $b$, common rate
