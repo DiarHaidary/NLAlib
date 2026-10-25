@@ -30,6 +30,12 @@ python3 scripts/check_refs.py | tail -1
 python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py > "$tmp/constants.log" || { cat "$tmp/constants.log"; exit 1; }
 tail -1 "$tmp/constants.log"
+if node --input-type=module -e "await import('katex')" 2>/dev/null; then
+  node scripts/check_latex.mjs > "$tmp/latex.log" 2>&1 || { cat "$tmp/latex.log"; exit 1; }
+  tail -1 "$tmp/latex.log"
+else
+  echo "check_latex: skipped, KaTeX not found (npm install --no-save --no-package-lock katex@0.16.22)"
+fi
 { cat "$tmp/imports.txt"; sed '1d' scripts/Explore.lean; } > "$tmp/Explore.lean"
 EXPLORE_OUT="$tmp/explore-data.json" LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/Explore.lean" \
   > "$tmp/explore.log" 2>&1 || { tail -20 "$tmp/explore.log"; exit 1; }

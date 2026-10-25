@@ -41,7 +41,7 @@ $\mathbf{F}\mathbf{D}\mathbf{A}$ for a general $\mathbf{A}$: outside probability
 $\lvert n\rvert e^{-t}$ every squared row norm is at most $\beta$ times the flattened row-norm
 bound <!-- value srhtRowNormBound \mathbf{A} t -->
 $$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
-+ 2\|\mathbf{A}\|_2^2 t$$
+{}+ 2\|\mathbf{A}\|_2^2 t$$
 over $\lvert n\rvert$ (`NLAlib.srhtRowNormBound`), the input of the SRHT's spectral approximate
 multiplication.
 
@@ -67,7 +67,7 @@ $0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
 * `NLAlib.srhtRowNormBound`: the flattened row-norm bound of a general matrix,
   the value <!-- value srhtRowNormBound \mathbf{A} t -->
   $$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
-  + 2\|\mathbf{A}\|_2^2 t\,.$$
+  {}+ 2\|\mathbf{A}\|_2^2 t\,.$$
 
 ## Main results
 
@@ -367,7 +367,7 @@ theorem measureReal_exists_leverageScore_mul_diagonal_gt_srhtRowBound_le_of_hasL
 
 /-- The **flattened row-norm bound** <!-- value srhtRowNormBound \mathbf{A} t -->
 $$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
-+ 2\|\mathbf{A}\|_2^2 t:$$
+{}+ 2\|\mathbf{A}\|_2^2 t:$$
 flattening makes every squared row norm of $\mathbf{F}\mathbf{D}\mathbf{A}$ at most $\beta$ times
 this over $\lvert n\rvert$, outside probability $\lvert n\rvert e^{-t}$
 (`NLAlib.measureReal_exists_norm_mul_diagonal_mul_apply_sq_gt_le_of_hasLaw_rademacherVector`).
@@ -381,7 +381,7 @@ noncomputable irreducible_def srhtRowNormBound (A : Matrix n r 𝕜) (t : ℝ) :
 omit [DecidableEq n] in
 /-- The flattened row-norm bound <!-- value srhtRowNormBound \mathbf{A} t -->
 $$\|\mathbf{A}\|_{\mathsf{F}}^2 + 2\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}\|_2\sqrt{t}
-+ 2\|\mathbf{A}\|_2^2 t$$
+{}+ 2\|\mathbf{A}\|_2^2 t$$
 is nonnegative for $t \ge 0$. -/
 theorem srhtRowNormBound_nonneg (A : Matrix n r 𝕜) (ht : 0 ≤ t) : 0 ≤ srhtRowNormBound A t := by
   rw [srhtRowNormBound_def]
