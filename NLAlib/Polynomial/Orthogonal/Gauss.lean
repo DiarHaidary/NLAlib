@@ -47,6 +47,7 @@ spectral measures the Ritz values of the Lanczos method are Gauss nodes
   finite sum, in both weight forms.
 * `NLAlib.matchesMoments_gaussQuadrature`: Gauss quadrature, for every $k$.
 * `NLAlib.ae_mem_Icc_gaussQuadrature`, `NLAlib.gaussQuadrature_real_univ`: support and mass.
+* `NLAlib.gaussQuadrature_real_singleton`: the mass at a node is $\int\ell_x\,d\mu$.
 * `NLAlib.IsMomentPosDef.gaussQuadrature_real_singleton_pos`: positive weights.
 * `NLAlib.MatchesMoments.eq_gaussQuadrature`: uniqueness of the Gauss rule.
 * `NLAlib.abs_integral_sub_integral_gaussQuadrature_le_of_isUniformApproxOn`,
@@ -321,18 +322,29 @@ theorem gaussQuadrature_real_univ (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k :
     (gaussQuadrature μ k).real Set.univ = μ.real Set.univ :=
   ((matchesMoments_gaussQuadrature hμ k).measureReal_univ_eq (by omega)).symm
 
+/-- The mass of the Gauss rule at a node is the interpolatory weight: for a finite measure $\mu$
+supported in $[a, b]$, every $k$ and every Gauss node $x$ of order $k$,
+$$\mathsf{gaussQuadrature}(\mu, k)(\{x\}) = \int\ell_x\,d\mu\,,$$
+$\ell_x$ the Lagrange basis polynomial of $x$ at the Gauss nodes; by
+`IsOrthogonalPolynomial.integral_eval_basis_eq_integral_sq` this is also $\int\ell_x^2\,d\mu$.
+The link between the two weight forms of `integral_gaussQuadrature_eq_sum` and
+`integral_gaussQuadrature`. -/
+theorem gaussQuadrature_real_singleton (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {k : ℕ} {x : ℝ}
+    (hx : x ∈ gaussNodes μ k) :
+    (gaussQuadrature μ k).real {x} = ∫ t, (Lagrange.basis (gaussNodes μ k) id x).eval t ∂μ := by
+  -- integrate the indicator of $\{x\}$ in both weight forms
+  have h := (integral_gaussQuadrature_eq_sum μ k fun t => if t = x then (1 : ℝ) else 0).symm
+    |>.trans (integral_gaussQuadrature hμ k _)
+  simpa only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', hx, if_true] using h
+
 /-- The Gauss weights are positive: if a finite measure $\mu$ supported in $[a, b]$ is positive
 definite up to degree $k$, then the $k$-point Gauss rule gives every Gauss node positive mass.
 [Gautschi2004, Theorem 1.46] (locator to check). -/
 theorem IsMomentPosDef.gaussQuadrature_real_singleton_pos {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {x : ℝ} (hx : x ∈ gaussNodes μ k) :
     0 < (gaussQuadrature μ k).real {x} := by
-  -- the mass at $x$ is the weight $\int\ell_x\,d\mu$: integrate the indicator of $\{x\}$
-  have hmass := (integral_gaussQuadrature_eq_sum μ k fun t => if t = x then (1 : ℝ) else 0).symm
-    |>.trans (integral_gaussQuadrature hμ k _)
-  simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', hx, if_true] at hmass
   have hG : (gaussNodes μ k).card = k := h.card_gaussNodes hμ
-  rw [hmass,
+  rw [gaussQuadrature_real_singleton hμ hx,
     (isOrthogonalPolynomial_nodal_gaussNodes hμ k).integral_eval_basis_eq_integral_sq hμ hx]
   refine h _ (Lagrange.basis_ne_zero (Set.injOn_id _) hx) ?_
   rw [Lagrange.degree_basis (Set.injOn_id _) hx, hG]
