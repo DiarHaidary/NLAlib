@@ -784,7 +784,15 @@ measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_probeSpect
         |∫ x, f x ∂empiricalSpectralMeasure A - ∫ x, f x ∂probeSpectralMeasure A (X ω)|} ≤
       2 * Fintype.card n * Real.exp (-(hansonWrightConstant * (Fintype.card m *
         Fintype.card n * min (τ ^ 2 / (c : ℝ) ^ 2) (τ / c)))) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  refine (measureReal_mono fun ω hω => ?_).trans
+    (measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
+      hind hsub hvar hA hτ)
+  obtain ⟨f, hf, hlt⟩ := hω
+  by_contra hK
+  simp only [Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hK
+  exact hlt.not_ge
+    (hA.abs_integral_empiricalSpectralMeasure_sub_integral_probeSpectralMeasure_le hab hs hτ hK hf)
 
 -- The declaration name, or a name in its docstring, exceeds 100 characters.
 set_option linter.style.longLine false in
