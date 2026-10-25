@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.Polynomial.Approximation.Equioscillation
 public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
@@ -72,19 +73,27 @@ theorem AlternatesOn.exists_eq_of_abs_le {g : ℝ → ℝ} {s : Set ℝ} {k : �
       ∃ σ : ℝ, (σ = 1 ∨ σ = -1) ∧ ∀ i : Fin k, g (x i) = σ * (-1) ^ (i : ℕ) * ε := by
   obtain ⟨x, hmono, hx, σ, hσ, hle⟩ := h
   refine ⟨x, hmono, hx, σ, hσ, fun i => ?_⟩
-  have h2 : (-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ) = 1 := by
-    rw [← pow_add, ← two_mul, pow_mul]; norm_num
-  have hsq : (σ * (-1) ^ (i : ℕ)) * (σ * (-1) ^ (i : ℕ)) = 1 := by
-    rcases hσ with rfl | rfl <;> linear_combination h2
-  have habs : |σ * (-1) ^ (i : ℕ) * g (x i)| = |g (x i)| := by
-    rcases hσ with rfl | rfl <;> simp [abs_mul, abs_pow]
-  have hgi : |g (x i)| ≤ ε := hg _ (hx i)
-  have heq : σ * (-1) ^ (i : ℕ) * g (x i) = ε :=
-    le_antisymm ((le_abs_self _).trans (habs.le.trans hgi)) (hle i)
-  calc g (x i) = (σ * (-1) ^ (i : ℕ)) * (σ * (-1) ^ (i : ℕ)) * g (x i) := by rw [hsq, one_mul]
-    _ = σ * (-1) ^ (i : ℕ) * ε := by rw [mul_assoc, heq]
+  have hgi := abs_le.mp (hg _ (hx i))
+  have hi := hle i
+  rcases hσ with rfl | rfl <;> rcases neg_one_pow_eq_or ℝ (i : ℕ) with h | h <;>
+    rw [h] at hi ⊢ <;> linarith [hgi.1, hgi.2]
 
 /-! ### De la Vallée Poussin -/
+
+/-- The sign $\sigma(-1)^i$ of an alternation has modulus $1$. -/
+private theorem abs_mul_neg_one_pow {σ : ℝ} (hσ : σ = 1 ∨ σ = -1) (i : ℕ) :
+    |σ * (-1) ^ i| = 1 := by
+  rcases hσ with rfl | rfl <;> simp
+
+/-- Values with the alternating signs $\sigma(-1)^i$ change sign between consecutive points. -/
+private theorem mul_neg_of_pos_mul_neg_one_pow {σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {k : ℕ}
+    {u : Fin (k + 1) → ℝ} (hu : ∀ i : Fin (k + 1), 0 < σ * (-1) ^ (i : ℕ) * u i) (i : Fin k) :
+    u i.castSucc * u i.succ < 0 := by
+  have h1 := hu i.castSucc
+  have h2 := hu i.succ
+  simp only [Fin.val_castSucc, Fin.val_succ, pow_succ] at h1 h2
+  rcases hσ with rfl | rfl <;> rcases neg_one_pow_eq_or ℝ (i : ℕ) with h | h <;>
+    rw [h] at h1 h2 <;> nlinarith
 
 /-- **De la Vallée Poussin's theorem, pointwise.** If $\deg p \le n$ and $f - p$ alternates on
 $s$ at $n + 2$ points with level $\varepsilon$, then every real polynomial $q$ of degree at most
@@ -103,51 +112,25 @@ theorem AlternatesOn.exists_le_abs_sub_eval {f : ℝ → ℝ} {s : Set ℝ} {n :
     (hq : q.degree ≤ n) : ∃ x ∈ s, ε ≤ |f x - q.eval x| := by
   obtain ⟨x, hx, hxs, σ, hσ, h⟩ := h
   by_contra! H
-  have hσsq : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
+  -- `q - p` has the signs of the alternation at every point
   have key : ∀ i : Fin (n + 2), 0 < σ * (-1) ^ (i : ℕ) * (q - p).eval (x i) := by
     intro i
-    have h1 : ε ≤ σ * (-1) ^ (i : ℕ) * (f (x i) - p.eval (x i)) := h i
-    have h2 := H (x i) (hxs i)
-    have ha : |σ * (-1) ^ (i : ℕ)| = 1 := by
-      rcases hσ with rfl | rfl <;> simp [abs_pow]
-    have h3 : σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i)) ≤ |f (x i) - q.eval (x i)| := by
-      calc _ ≤ |σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i))| := le_abs_self _
-        _ = |f (x i) - q.eval (x i)| := by rw [abs_mul, ha, one_mul]
-    have h4 : σ * (-1) ^ (i : ℕ) * (q - p).eval (x i)
-        = σ * (-1) ^ (i : ℕ) * (f (x i) - p.eval (x i))
-          - σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i)) := by
-      simp only [eval_sub]; ring
-    linarith
-  have hpair : ∀ i : Fin (n + 1), (q - p).eval (x i.castSucc) * (q - p).eval (x i.succ) < 0 := by
-    intro i
-    have hA := key i.castSucc
-    have hB := key i.succ
-    have hs : ((-1 : ℝ) ^ (i : ℕ)) * (-1) ^ (i : ℕ) = 1 := by
-      rw [← mul_pow]; norm_num
-    have hpow : (-1 : ℝ) ^ ((i.succ : Fin (n + 2)) : ℕ) = -(-1) ^ (i : ℕ) := by
-      rw [Fin.val_succ, pow_succ]; ring
-    have hpow' : (-1 : ℝ) ^ ((i.castSucc : Fin (n + 2)) : ℕ) = (-1) ^ (i : ℕ) := by
-      rw [Fin.val_castSucc]
-    rw [hpow] at hB
-    rw [hpow'] at hA
-    have hprod : (σ * (-1) ^ (i : ℕ) * (q - p).eval (x i.castSucc))
-        * (σ * -(-1) ^ (i : ℕ) * (q - p).eval (x i.succ))
-        = -((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ)) := by
-      linear_combination (-((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ))
-        * ((-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ))) * hσsq
-        + (-((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ))) * hs
-    linarith [mul_pos hA hB, hprod]
+    have h3 := (le_abs_self (σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i)))).trans_eq
+      (by rw [abs_mul, abs_mul_neg_one_pow hσ, one_mul])
+    rw [eval_sub, show q.eval (x i) - p.eval (x i) =
+      (f (x i) - p.eval (x i)) - (f (x i) - q.eval (x i)) by ring, mul_sub]
+    linarith [h i, H (x i) (hxs i)]
+  -- so it has `n + 1` zeros, and degree at most `n`
   obtain ⟨c, hc, hzero⟩ := exists_strictMono_eq_zero_of_mul_neg (k := n + 1)
-    (f := fun t => (q - p).eval t) (v := x) hx (q - p).continuous.continuousOn hpair
+    (f := fun t => (q - p).eval t) (v := x) hx (q - p).continuous.continuousOn
+    (mul_neg_of_pos_mul_neg_one_pow hσ key)
   have hd : q - p = 0 := by
     refine Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero (s := Finset.univ)
       (v := c) hc.injective.injOn ?_ (fun i _ => (hzero i).2)
-    have hdeg : (q - p).degree ≤ n := (degree_sub_le q p).trans (max_le hq hp)
     rw [Finset.card_univ, Fintype.card_fin]
-    exact lt_of_le_of_lt hdeg (by exact_mod_cast Nat.lt_succ_self n)
-  have k0 := key 0
-  rw [hd, eval_zero, mul_zero] at k0
-  exact lt_irrefl _ k0
+    exact ((degree_sub_le q p).trans (max_le hq hp)).trans_lt
+      (by exact_mod_cast Nat.lt_succ_self n)
+  simpa [hd] using key 0
 
 /-- **De la Vallée Poussin's lower bound.** If $\deg p \le n$, $p$ is within some finite
 $\eta$ of $f$ on $s$, and $f - p$ alternates on $s$ at $n + 2$ points with level
@@ -324,6 +307,22 @@ theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : �
               (lt_of_le_of_ne hv0y fun h' => by rw [← h'] at h0; linarith) (by linarith)
     · exact Or.inl (exists_degree_le_const _ hE hea hT)
 
+/-- Equispaced interior points: $x_i = a + (b - a)(i + 1)/(k + 1)$, $i < k$, are strictly
+increasing and lie in $(a, b)$. -/
+private theorem exists_strictMono_mem_Ioo {a b : ℝ} (hab : a < b) (k : ℕ) :
+    ∃ x : Fin k → ℝ, StrictMono x ∧ ∀ i, x i ∈ Set.Ioo a b := by
+  have hba : 0 < b - a := sub_pos.mpr hab
+  refine ⟨fun i => a + (b - a) * ((i : ℝ) + 1) / (k + 1), fun i j hij => ?_, fun i => ?_⟩
+  · have : ((i : ℕ) : ℝ) < j := by exact_mod_cast hij
+    dsimp only
+    gcongr
+  · have hi : ((i : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast i.isLt
+    have h0 : 0 < (b - a) * ((i : ℝ) + 1) / (k + 1) := by positivity
+    have h1 : (b - a) * ((i : ℝ) + 1) / (k + 1) < b - a := by
+      rw [div_lt_iff₀ (by positivity)]
+      nlinarith
+    constructor <;> linarith
+
 /-- An error that vanishes on $[a, b]$, $a < b$, alternates there at any number $k$ of points
 with level $0$: the zero-error case of the equioscillation theorem.
 Proof: S, about 20 lines. The equispaced points $x_i = a + (b - a)i/(k + 1)$ (strictly increasing,
@@ -332,27 +331,9 @@ in $[a, b]$: `div_lt_div_of_pos_right`, `div_le_iff₀`; prototype
 $0 \le 1 \cdot (-1)^i \cdot 0$ by `hg`. -/
 private theorem alternatesOn_Icc_zero_of_eq_zero {g : ℝ → ℝ} {a b : ℝ} (hab : a < b) (k : ℕ)
     (hg : ∀ x ∈ Set.Icc a b, g x = 0) : AlternatesOn g (Set.Icc a b) k 0 := by
-  have hba : 0 < b - a := sub_pos.mpr hab
-  have hk : (0 : ℝ) < k + 1 := by positivity
-  have hmem : ∀ i : Fin k, a + (b - a) * ((i : ℕ) : ℝ) / (k + 1) ∈ Set.Icc a b := by
-    intro i
-    have hi : ((i : ℕ) : ℝ) ≤ k := Nat.cast_le.mpr (le_of_lt i.isLt)
-    have h0 : 0 ≤ (b - a) * ((i : ℕ) : ℝ) / (k + 1) :=
-      div_nonneg (mul_nonneg hba.le (Nat.cast_nonneg _)) hk.le
-    have h1 : (b - a) * ((i : ℕ) : ℝ) / (k + 1) ≤ b - a := by
-      rw [div_le_iff₀ hk]
-      nlinarith
-    exact ⟨by linarith, by linarith⟩
-  refine ⟨fun i => a + (b - a) * ((i : ℕ) : ℝ) / (k + 1), ?_, fun i => hmem i, 1, Or.inl rfl,
-    fun i => ?_⟩
-  · intro i j hij
-    have h1 : ((i : ℕ) : ℝ) < ((j : ℕ) : ℝ) := Nat.cast_lt.mpr hij
-    have h3 : (b - a) * ((i : ℕ) : ℝ) < (b - a) * ((j : ℕ) : ℝ) :=
-      mul_lt_mul_of_pos_left h1 hba
-    have := div_lt_div_of_pos_right h3 hk
-    change a + (b - a) * ((i : ℕ) : ℝ) / (k + 1) < a + (b - a) * ((j : ℕ) : ℝ) / (k + 1)
-    linarith
-  · rw [hg _ (hmem i), mul_zero]
+  obtain ⟨x, hx, hxs⟩ := exists_strictMono_mem_Ioo hab k
+  exact ⟨x, hx, fun i => Set.Ioo_subset_Icc_self (hxs i), 1, Or.inl rfl, fun i => by
+    rw [hg _ (Set.Ioo_subset_Icc_self (hxs i)), mul_zero]⟩
 
 /-- A best approximation with positive error attains it: if $\deg p \le n$,
 $\lvert f - p \rvert \le E_n(f; [a, b])$ on $[a, b]$ and $E_n(f; [a, b]) > 0$, the extremal set
@@ -378,26 +359,17 @@ private theorem exists_isLeast_abs_sub_eval_eq_minimaxError {f : ℝ → ℝ} {a
   have hKc := isCompact_Icc.of_isClosed_subset hK Set.inter_subset_left
   have hKne : (Set.Icc a b ∩ (fun x => |f x - p.eval x|) ⁻¹'
       {minimaxError f (Set.Icc a b) n}).Nonempty := by
+    -- otherwise the maximum of `|f - p|` on `[a, b]` is an admissible error below `E_n`
     by_contra hne
-    have hIcc : (Set.Icc a b).Nonempty := by
-      by_contra h0
-      rw [Set.not_nonempty_iff_eq_empty] at h0
-      have h1 := minimaxError_le_of_isUniformApproxOn (f := f) (s := Set.Icc a b) hp
-        (le_refl (0:ℝ)) (fun x hx => by simp [h0] at hx)
-      linarith
-    have hle : ∀ x ∈ Set.Icc a b, |f x - p.eval x| ≤ minimaxError f (Set.Icc a b) n := by
-      intro x hx
-      have := hbest x hx
-      rwa [Real.dist_eq, abs_sub_comm] at this
-    have hlt : ∀ x ∈ Set.Icc a b, |f x - p.eval x| < minimaxError f (Set.Icc a b) n :=
-      fun x hx => lt_of_le_of_ne (hle x hx) (fun h => hne ⟨x, hx, h⟩)
+    have hIcc : (Set.Icc a b).Nonempty := Set.nonempty_iff_ne_empty.2 fun h0 =>
+      hE.not_ge (minimaxError_le_of_isUniformApproxOn hp le_rfl fun x hx => by simp [h0] at hx)
     obtain ⟨x₀, hx₀, hmax⟩ := isCompact_Icc.exists_isMaxOn hIcc he
-    have hmax' := isMaxOn_iff.mp hmax
-    have h2 := minimaxError_le_of_isUniformApproxOn (s := Set.Icc a b) hp
-      (abs_nonneg (f x₀ - p.eval x₀)) (fun x hx => by
-        rw [Real.dist_eq, abs_sub_comm]
-        exact hmax' x hx)
-    linarith [hlt x₀ hx₀]
+    have hlt : |f x₀ - p.eval x₀| < minimaxError f (Set.Icc a b) n :=
+      lt_of_le_of_ne (by rw [abs_sub_comm, ← Real.dist_eq]; exact hbest x₀ hx₀)
+        fun h => hne ⟨x₀, hx₀, h⟩
+    have h2 := minimaxError_le_of_isUniformApproxOn hp (abs_nonneg (f x₀ - p.eval x₀))
+      fun x hx => by rw [Real.dist_eq, abs_sub_comm]; exact hmax hx
+    linarith
   exact hKc.exists_isLeast hKne
 
 /-- The descent step: a best approximation $p$ with positive error admits no correction $q$ of
@@ -427,24 +399,18 @@ private theorem not_forall_mul_pos_of_isUniformApproxOn_minimaxError {f : ℝ �
     ⟨fun x : Set.Icc a b => f x - p.eval (x : ℝ),
       (hf.sub (Polynomial.continuous p).continuousOn).domRestrict⟩
   let h : C(Set.Icc a b, ℝ) := q.toContinuousMapOn (Set.Icc a b)
-  have hgx : ∀ x : Set.Icc a b, |g x| ≤ E := fun x => by
-    have := hbest x x.2
-    rw [Real.dist_eq, abs_sub_comm] at this
-    exact this
   have hgE : ‖g‖ = E := by
-    refine le_antisymm ((ContinuousMap.norm_le g hE.le).mpr fun x => ?_) ?_
-    · rw [Real.norm_eq_abs]; exact hgx x
-    · refine minimaxError_le_of_isUniformApproxOn hp (norm_nonneg g) fun x hx => ?_
-      have := g.norm_coe_le_norm ⟨x, hx⟩
-      rw [Real.norm_eq_abs] at this
-      rw [Real.dist_eq, abs_sub_comm]
-      exact this
+    refine le_antisymm ((ContinuousMap.norm_le g hE.le).mpr fun x => ?_)
+      (minimaxError_le_of_isUniformApproxOn hp (norm_nonneg g) fun x hx => ?_)
+    · change |f x - p.eval (x : ℝ)| ≤ E
+      rw [abs_sub_comm]
+      exact hbest x x.2
+    · rw [Real.dist_eq, abs_sub_comm]
+      exact g.norm_coe_le_norm ⟨x, hx⟩
   obtain ⟨t, ht, htlt⟩ := ContinuousMap.exists_pos_norm_sub_smul_lt g h (by rwa [hgE])
     (fun x hx => hsign x x.2 (by rw [← hgE]; exact hx))
-  have hdeg : (p + t • q).degree ≤ n := by
-    have hmem : p + t • q ∈ degreeLE ℝ n :=
-      (degreeLE ℝ n).add_mem (mem_degreeLE.mpr hp) ((degreeLE ℝ n).smul_mem t (mem_degreeLE.mpr hq))
-    exact mem_degreeLE.mp hmem
+  have hdeg : (p + t • q).degree ≤ n :=
+    (degree_add_le _ _).trans (max_le hp ((degree_smul_le _ _).trans hq))
   have herr : Metric.IsUniformApproxOn (fun x => (p + t • q).eval x) f (Set.Icc a b)
       ‖g - t • h‖ := fun x hx => by
     have h1 := (g - t • h).norm_coe_le_norm ⟨x, hx⟩
@@ -456,8 +422,7 @@ private theorem not_forall_mul_pos_of_isUniformApproxOn_minimaxError {f : ℝ �
     dsimp only
     rw [Polynomial.eval_add, Polynomial.eval_smul, smul_eq_mul]
     exact h1
-  have := minimaxError_le_of_isUniformApproxOn hdeg (norm_nonneg _) herr
-  linarith
+  linarith [minimaxError_le_of_isUniformApproxOn hdeg (norm_nonneg _) herr]
 
 /-- **Chebyshev's equioscillation theorem, necessity.** Let $a < b$, $f$ continuous on
 $[a, b]$, and $p$ a real polynomial of degree at most $n$ with
@@ -549,11 +514,9 @@ theorem eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ} (hab 
   have hrb : Metric.IsUniformApproxOn (fun x => ((1 / 2 : ℝ) • (p + q)).eval x) f (Set.Icc a b)
       (minimaxError f (Set.Icc a b) n) := by
     intro x hx
-    change dist (((1 / 2 : ℝ) • (p + q)).eval x) (f x) ≤ _
-    have h1 : dist (p.eval x) (f x) ≤ minimaxError f (Set.Icc a b) n := hpb x hx
-    have h2 : dist (q.eval x) (f x) ≤ minimaxError f (Set.Icc a b) n := hqb x hx
-    rw [Real.dist_eq, abs_le] at h1 h2 ⊢
-    rw [hev x]
+    have h1 := hpb x hx
+    have h2 := hqb x hx
+    simp only [Real.dist_eq, abs_le, hev] at h1 h2 ⊢
     constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
   have halt := alternatesOn_of_isUniformApproxOn_minimaxError hab hf hdeg hrb
   have hb : ∀ x ∈ Set.Icc a b,
@@ -563,13 +526,11 @@ theorem eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b : ℝ} (hab 
     exact hrb x hx
   obtain ⟨x, hxm, hxmem, σ, hσ, hxeq⟩ := halt.exists_eq_of_abs_le hb
   have hpq : ∀ i : Fin (n + 2), p.eval (x i) = q.eval (x i) := by
+    -- at the extremal points of the midpoint both errors are extremal with the same sign
     intro i
-    have hi : f (x i) - ((1 / 2 : ℝ) • (p + q)).eval (x i)
-        = σ * (-1) ^ (i : ℕ) * minimaxError f (Set.Icc a b) n := hxeq i
-    have h1 : dist (p.eval (x i)) (f (x i)) ≤ minimaxError f (Set.Icc a b) n :=
-      hpb (x i) (hxmem i)
-    have h2 : dist (q.eval (x i)) (f (x i)) ≤ minimaxError f (Set.Icc a b) n :=
-      hqb (x i) (hxmem i)
+    have hi := hxeq i
+    have h1 := hpb (x i) (hxmem i)
+    have h2 := hqb (x i) (hxmem i)
     rw [Real.dist_eq, abs_le] at h1 h2
     rw [hev] at hi
     rcases hσ with rfl | rfl <;> rcases neg_one_pow_eq_or ℝ (i : ℕ) with h | h <;>
@@ -600,71 +561,26 @@ theorem exists_eval_eq_of_isUniformApproxOn_minimaxError {f : ℝ → ℝ} {a b 
   have key : ∃ c : Fin (n + 1) → ℝ, StrictMono c ∧ (∀ i, c i ∈ Set.Ioo a b) ∧
       ∀ i, p.eval (c i) = f (c i) := by
     rcases (minimaxError_nonneg f (Set.Icc a b) n).eq_or_lt with hE | hE
-    · have hba : 0 < b - a := sub_pos.mpr hab
-      have hmem : ∀ i : Fin (n + 1), a + (b - a) * ((i : ℝ) + 1) / (n + 2) ∈ Set.Ioo a b := by
-        intro i
-        have hi : ((i : ℕ) : ℝ) ≤ n := by
-          have := Nat.lt_succ_iff.mp i.isLt
-          exact_mod_cast this
-        have hq0 : 0 < (b - a) * ((i : ℝ) + 1) / (n + 2) :=
-          div_pos (mul_pos hba (by positivity)) (by positivity)
-        have hq1 : (b - a) * ((i : ℝ) + 1) / (n + 2) < b - a := by
-          rw [div_lt_iff₀ (by positivity)]
-          nlinarith
-        constructor <;> linarith
-      refine ⟨fun i => a + (b - a) * ((i : ℝ) + 1) / (n + 2), ?_, hmem, ?_⟩
-      · intro i j hij
-        have h1 : ((i : ℕ) : ℝ) < ((j : ℕ) : ℝ) := by exact_mod_cast Fin.lt_def.mp hij
-        have h2 : (b - a) * ((i : ℝ) + 1) < (b - a) * ((j : ℝ) + 1) :=
-          mul_lt_mul_of_pos_left (by linarith) hba
-        have h3 : (b - a) * ((i : ℝ) + 1) / (n + 2) < (b - a) * ((j : ℝ) + 1) / (n + 2) :=
-          div_lt_div_of_pos_right h2 (by positivity)
-        change a + _ < a + _
-        linarith
-      · intro i
-        have h := hbest _ (Set.Ioo_subset_Icc_self (hmem i))
-        rw [← hE] at h
-        exact dist_le_zero.mp h
+    · -- `f = p` on `[a, b]`: any `n + 1` interior points
+      obtain ⟨c, hc, hcs⟩ := exists_strictMono_mem_Ioo hab (n + 1)
+      exact ⟨c, hc, hcs, fun i =>
+        dist_le_zero.mp ((hbest _ (Set.Ioo_subset_Icc_self (hcs i))).trans_eq hE.symm)⟩
     · obtain ⟨x, hxmono, hxmem, σ, hσ, hx⟩ := alternatesOn_iff.mp
         (alternatesOn_of_isUniformApproxOn_minimaxError hab hf hp hbest)
-      have hsign : ∀ i : Fin (n + 1),
-          (f (x i.castSucc) - p.eval (x i.castSucc)) * (f (x i.succ) - p.eval (x i.succ)) < 0 := by
-        intro i
-        have hs := hx i.castSucc
-        have ht := hx i.succ
-        simp only [Fin.val_castSucc, Fin.val_succ, pow_succ] at hs ht
-        have hσ2 : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
-        have hs2 : (-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ) = 1 := by
-          rw [← mul_pow]; norm_num
-        have hprod := mul_pos (lt_of_lt_of_le hE hs) (lt_of_lt_of_le hE ht)
-        have hid : (σ * (-1) ^ (i : ℕ) * (f (x i.castSucc) - p.eval (x i.castSucc))) *
-            (σ * ((-1) ^ (i : ℕ) * -1) * (f (x i.succ) - p.eval (x i.succ))) =
-            -((f (x i.castSucc) - p.eval (x i.castSucc)) * (f (x i.succ) - p.eval (x i.succ))) := by
-          linear_combination (-((f (x i.castSucc) - p.eval (x i.castSucc)) *
-            (f (x i.succ) - p.eval (x i.succ)) * ((-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ)))) * hσ2 +
-            (-((f (x i.castSucc) - p.eval (x i.castSucc)) *
-            (f (x i.succ) - p.eval (x i.succ)))) * hs2
-        linarith
+      -- `f - p` changes sign between consecutive points of the equioscillation
+      have hsign := mul_neg_of_pos_mul_neg_one_pow (u := fun i => f (x i) - p.eval (x i)) hσ
+        fun i => hE.trans_le (hx i)
       have hf' : ContinuousOn (fun x => f x - p.eval x) (Set.Icc (x 0) (x (Fin.last (n + 1)))) :=
         (hf.sub p.continuousOn).mono (Set.Icc_subset_Icc (hxmem 0).1 (hxmem _).2)
       obtain ⟨c, hcmono, hcspec⟩ := exists_strictMono_eq_zero_of_mul_neg hxmono hf' hsign
       refine ⟨c, hcmono, fun i => ?_, fun i => ?_⟩
       · obtain ⟨h1, h2⟩ := hcspec i
         exact ⟨lt_of_le_of_lt (hxmem _).1 h1.1, lt_of_lt_of_le h1.2 (hxmem _).2⟩
-      · have h : f (c i) - p.eval (c i) = 0 := (hcspec i).2
-        linarith
+      · linarith [(hcspec i).2]
   obtain ⟨c, hcm, hcin, hceq⟩ := key
-  refine ⟨Finset.univ.image c, ?_, ?_, ?_⟩
-  · rw [Finset.card_image_of_injective _ hcm.injective]
-    simp
-  · intro y hy
-    rw [Finset.mem_coe, Finset.mem_image] at hy
-    obtain ⟨i, -, rfl⟩ := hy
-    exact hcin i
-  · intro y hy
-    rw [Finset.mem_image] at hy
-    obtain ⟨i, -, rfl⟩ := hy
-    exact hceq i
+  refine ⟨Finset.univ.image c, by simp [Finset.card_image_of_injective _ hcm.injective], ?_,
+    by simpa using hceq⟩
+  simpa [Set.range_subset_iff] using hcin
 
 /-! ### The chosen best approximation on an interval -/
 
@@ -713,11 +629,9 @@ theorem alternatesOn_eval_T_real (n : ℕ) :
       (by have := Fin.lt_def.mp hij; have := j.isLt; omega)
   · intro i
     exact Polynomial.Chebyshev.node_mem_Icc
-  · rcases neg_one_pow_eq_or ℝ n with h | h
-    · exact Or.inl h
-    · exact Or.inr h
+  · exact neg_one_pow_eq_or ℝ n
   · intro i
-    have hi : (i : ℕ) ≤ n := by have := i.isLt; omega
+    have hi : (i : ℕ) ≤ n := Nat.lt_succ_iff.mp i.isLt
     change 1 ≤ (-1) ^ n * (-1) ^ (i : ℕ) * eval (Polynomial.Chebyshev.node n (n - (i : ℕ)))
       (Polynomial.Chebyshev.T ℝ (n : ℤ))
     rw [Polynomial.Chebyshev.eval_T_real_node (Finset.mem_Iic.mpr (Nat.sub_le n _))]
@@ -746,14 +660,13 @@ theorem minimaxError_pow_Icc_neg_one_one (n : ℕ) :
   have hTdeg : (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).natDegree = n + 1 := by
     rw [Chebyshev.natDegree_T]
     rfl
-  have hT0 : Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ) ≠ 0 := by
-    intro h
-    rw [h, Polynomial.leadingCoeff_zero] at hTlead
-    exact (by positivity : (2 : ℝ) ^ n ≠ 0) hTlead.symm
-  have hfun : (fun x : ℝ => x ^ (n + 1) - (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
-      Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) =
-      fun x => ((2 : ℝ) ^ n)⁻¹ * (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x := by
-    funext x
+  have hT0 : Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ) ≠ 0 := fun h => by
+    rw [h, leadingCoeff_zero] at hTlead
+    exact pow_ne_zero n two_ne_zero hTlead.symm
+  -- the error of `p = X^(n+1) - 2^(-n) T_(n+1)` is `2^(-n) T_(n+1)`
+  have hfun (x : ℝ) : x ^ (n + 1) - (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
+      Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x =
+      ((2 : ℝ) ^ n)⁻¹ * (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x := by
     simp only [eval_sub, eval_pow, eval_X, eval_mul, eval_C]
     ring
   have hdeg : (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
@@ -770,7 +683,7 @@ theorem minimaxError_pow_Icc_neg_one_one (n : ℕ) :
     exact Order.le_of_lt_succ hlt
   have halt : AlternatesOn (fun x : ℝ => x ^ (n + 1) - (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ *
       Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) (Set.Icc (-1) 1) (n + 2) ((2 : ℝ) ^ n)⁻¹ := by
-    rw [hfun]
+    simp only [hfun]
     obtain ⟨x, hx, hxs, σ, hσ, h⟩ := alternatesOn_eval_T_real (n + 1)
     refine ⟨x, hx, hxs, σ, hσ, fun i => ?_⟩
     have := mul_le_mul_of_nonneg_left (h i) hc0.le
@@ -779,22 +692,8 @@ theorem minimaxError_pow_Icc_neg_one_one (n : ℕ) :
       (fun x => (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x)
       (fun x => x ^ (n + 1)) (Set.Icc (-1) 1) ((2 : ℝ) ^ n)⁻¹ := by
     intro x hx
-    have hsub : (X ^ (n + 1) - C ((2 : ℝ) ^ n)⁻¹ * Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x
-        - x ^ (n + 1) = -(((2 : ℝ) ^ n)⁻¹ * (Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x) := by
-      simp only [eval_sub, eval_pow, eval_X, eval_mul, eval_C]
-      ring
-    rw [Real.dist_eq, hsub, abs_neg, abs_mul, abs_of_pos hc0]
-    have hsub : x ∈ Set.Icc (Real.cos Real.pi) (Real.cos 0) := by
-      rw [Real.cos_pi, Real.cos_zero]
-      exact hx
-    obtain ⟨θ, -, hθ⟩ :=
-      intermediate_value_Icc' Real.pi_pos.le Real.continuous_cos.continuousOn hsub
-    have hcos := Chebyshev.T_real_cos θ ((n + 1 : ℕ) : ℤ)
-    rw [hθ] at hcos
-    have hT1 : |(Chebyshev.T ℝ ((n + 1 : ℕ) : ℤ)).eval x| ≤ 1 := by
-      rw [hcos]
-      exact Real.abs_cos_le_one _
-    exact mul_le_of_le_one_right hc0.le hT1
+    rw [Real.dist_eq, abs_sub_comm, hfun, abs_mul, abs_of_pos hc0]
+    exact mul_le_of_le_one_right hc0.le (abs_le.mpr (Chebyshev.eval_T_real_mem_Icc _ hx))
   exact halt.minimaxError_eq hdeg hbound
 
 end NLAlib
