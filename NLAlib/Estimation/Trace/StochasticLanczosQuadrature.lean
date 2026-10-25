@@ -34,6 +34,11 @@ Lipschitz (Jackson) and analytic (Bernstein ellipse) rates; composing with the H
 of Girard–Hutchinson gives the tails with independent sub-Gaussian entries, the quadrature term
 random inside the event. [CortinovisKressner2022]. Design: `docs/design/Estimation-SLQ.md` §3.2.
 
+For every test matrix, SLQ with $q$ Lanczos steps is below the Girard–Hutchinson estimate when
+$f^{(2q)} \ge 0$ on an interval containing the spectrum, and above it when $f^{(2q)} \le 0$: the
+Gauss error has a sign probe by probe, so the SLQ bias is one-signed. Design:
+`docs/design/Polynomial-QuadratureRemainder.md` (S1, S2).
+
 ## Main definitions
 
 * `NLAlib.slq`: the stochastic Lanczos quadrature estimate.
@@ -42,6 +47,8 @@ random inside the event. [CortinovisKressner2022]. Design: `docs/design/Estimati
 
 * `Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_continuousOn`: the deterministic split.
 * `NLAlib.measureReal_abs_trace_cfc_sub_slq_ge_le_of_continuousOn`: the tail.
+* `NLAlib.re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg`,
+  `NLAlib.re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos`: the sign of the SLQ bias.
 -/
 
 @[expose] public section
@@ -397,5 +404,60 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_continuousOn
   have hp' : p.degree < (2 * (q + 1) : ℕ) := hp.trans_lt (Nat.cast_lt.mpr (by omega))
   exact measureReal_abs_trace_cfc_sub_slq_ge_le_of_isUniformApproxOn hind hsub hvar hA hs
     (by exact_mod_cast hp') hε hτ
+
+/-! ### The sign of the bias -/
+
+/-- The real part of SLQ is the average over the probes of the Gauss-rule integrals of $f$. -/
+private lemma re_slq_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) (q : ℕ) :
+    RCLike.re (slq A f Ω q) =
+      (∑ j, ∫ x, f x ∂gaussQuadrature (spectralMeasure A (fun i => Ω i j)) q) / Fintype.card m := by
+  unfold slq
+  rw [← RCLike.ofReal_natCast, RCLike.div_re_ofReal, RCLike.ofReal_re]
+
+/-- The real part of the Girard–Hutchinson estimate of $\operatorname{tr}f(\mathbf{A})$ is the
+average over the probes of the integrals of $f$ against their spectral measures. -/
+private lemma re_girardHutchinson_cfc_eq (A : Matrix n n 𝕜) (f : ℝ → ℝ) (Ω : Matrix n m 𝕜) :
+    RCLike.re (girardHutchinson (cfc f A) Ω) =
+      (∑ j, ∫ x, f x ∂spectralMeasure A (fun i => Ω i j)) / Fintype.card m := by
+  rw [girardHutchinson_eq_sum, ← RCLike.ofReal_natCast, RCLike.div_re_ofReal, map_sum]
+  simp only [integral_spectralMeasure]
+
+/-- **SLQ underestimates for $f$ with nonnegative derivative of order $2q$**: for
+$\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
+$q > 0$, $f$ continuous on $[a, a']$,
+$C^{2q}$ on $(a, a')$ with $f^{(2q)} \ge 0$ there, and every test matrix $\mathbf{\Omega}$,
+$$\operatorname{Re}\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q) \le
+\operatorname{Re}\mathsf{girardHutchinson}(f(\mathbf{A}), \mathbf{\Omega})\,.$$
+[UbaruChenSaad2017, §3]; [GolubMeurant2010, Ch. 7] (locators to check); the per-probe Gauss
+bound summed. -/
+theorem re_slq_le_re_girardHutchinson_cfc_of_iteratedDeriv_nonneg {A : Matrix n n 𝕜}
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (haa' : a < a') {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a a')) {q : ℕ} (hq : 0 < q)
+    (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
+    (hD : ∀ x ∈ Set.Ioo a a', 0 ≤ iteratedDeriv (2 * q) f x) (Ω : Matrix n m 𝕜) :
+    RCLike.re (slq A f Ω q) ≤ RCLike.re (girardHutchinson (cfc f A) Ω) := by
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  exact integral_gaussQuadrature_le_integral_of_iteratedDeriv_nonneg
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
+
+/-- **SLQ overestimates for $f$ with nonpositive derivative of order $2q$**: for
+$\mathbf{A}$ with spectrum in $[a, a']$ (Hermitian; otherwise both sides are $0$), $a < a'$,
+$q > 0$, $f$ continuous on $[a, a']$,
+$C^{2q}$ on $(a, a')$ with $f^{(2q)} \le 0$ there (such as $\log$ on $[a, a']$, $a > 0$), and
+every test matrix $\mathbf{\Omega}$,
+$$\operatorname{Re}\mathsf{girardHutchinson}(f(\mathbf{A}), \mathbf{\Omega}) \le
+\operatorname{Re}\mathsf{slq}(\mathbf{A}, f, \mathbf{\Omega}, q)\,.$$
+[UbaruChenSaad2017, §3]; [GolubMeurant2010, Ch. 7] (locators to check). -/
+theorem re_girardHutchinson_cfc_le_re_slq_of_iteratedDeriv_nonpos {A : Matrix n n 𝕜}
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (haa' : a < a') {f : ℝ → ℝ}
+    (hf : ContinuousOn f (Set.Icc a a')) {q : ℕ} (hq : 0 < q)
+    (hf' : ContDiffOn ℝ (2 * q : ℕ) f (Set.Ioo a a'))
+    (hD : ∀ x ∈ Set.Ioo a a', iteratedDeriv (2 * q) f x ≤ 0) (Ω : Matrix n m 𝕜) :
+    RCLike.re (girardHutchinson (cfc f A) Ω) ≤ RCLike.re (slq A f Ω q) := by
+  rw [re_slq_eq, re_girardHutchinson_cfc_eq]
+  refine div_le_div_of_nonneg_right (Finset.sum_le_sum fun j _ => ?_) (Nat.cast_nonneg _)
+  exact integral_le_integral_gaussQuadrature_of_iteratedDeriv_nonpos
+    (ae_mem_Icc_spectralMeasure A hs _) haa' hq hf hf' hD
 
 end NLAlib
