@@ -43,7 +43,11 @@ Proof: S, about 15 lines. `Measure.restrict_eq_self_of_ae_mem` turns the integra
 theorem integral_eq_sum_measureReal_singleton_mul {μ : Measure ℝ}
     [IsFiniteMeasure μ] {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (f : ℝ → ℝ) :
     ∫ x, f x ∂μ = ∑ x ∈ s, μ.real {x} * f x := by
-  sorry
+  have hr : μ.restrict (s : Set ℝ) = μ :=
+    Measure.restrict_eq_self_of_ae_mem (by simpa using hμ)
+  conv_lhs => rw [← hr]
+  rw [setIntegral_finset s IntegrableOn.finset]
+  simp only [smul_eq_mul]
 
 /-- The distribution function of a finite measure carried by a finite set: if the finite measure
 $\mu$ on $\mathbb{R}$ is carried by the finite set $s$, then for every $x \in \mathbb{R}$,
