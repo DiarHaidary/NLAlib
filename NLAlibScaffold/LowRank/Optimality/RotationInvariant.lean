@@ -195,6 +195,21 @@ theorem exists_lt_integral_nuclearNorm_sub_nystrom_of_isLeftUnitarilyInvariant
     rw [hE a (by linarith)]
     exact (mul_le_mul_of_nonneg_left (hNle a (by linarith)) hc0).trans_lt ha
 
+/-- An isometry from `Fin r` into `m` when `r ≤ card m`: a selection matrix. -/
+private theorem exists_hasOrthonormalCols_fin_of_le {m : Type*} [Fintype m] {r : ℕ}
+    (h : r ≤ Fintype.card m) : ∃ J : Matrix m (Fin r) ℝ, HasOrthonormalCols J := by
+  refine ⟨Matrix.of fun i j => if (Fintype.equivFin m i : ℕ) = j then 1 else 0, ?_⟩
+  ext j k
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.of_apply,
+    Matrix.one_apply, star_trivial, mul_ite, mul_one, mul_zero]
+  refine (Equiv.sum_comp (Fintype.equivFin m)
+    (fun x : Fin (Fintype.card m) => if (x : ℕ) = k then if (x : ℕ) = j then (1 : ℝ) else 0
+      else 0)).trans ?_
+  rw [Finset.sum_eq_single_of_mem (⟨k, lt_of_lt_of_le k.isLt h⟩ : Fin (Fintype.card m))
+    (Finset.mem_univ _)
+    (fun x _ hx => by have : (x : ℕ) ≠ k := fun e => hx (Fin.ext e); simp [this])]
+  by_cases hjk : j = k <;> simp [hjk, Fin.val_inj, eq_comm]
+
 /-- **Epperly and Webber's randomized SVD factor is sharp**: for a test matrix $\mathbf{X}$ with a
 left unitarily invariant law and full column rank almost surely, $q + 2 \le \ell \le r$,
 $r \le \min(m, n)$ and every $c$ below the factor, <!-- value rotationInvariantFactor r \ell q -->
@@ -221,7 +236,28 @@ theorem exists_lt_integral_frobNorm_sub_rsvd_sq_of_isLeftUnitarilyInvariant
     (hrn : r ≤ Fintype.card n) {c : ℝ} (hc : c < rotationInvariantFactor r (Fintype.card l) q) :
     ∃ A : Matrix m n ℝ, A.rank = r ∧
       c * frobNorm (A - truncatedSVD A q) ^ 2 < ∫ ω, frobNorm (A - rsvd A (X ω)) ^ 2 ∂μ := by
-  sorry
+  obtain ⟨H, hH, hrank, hineq⟩ :=
+    exists_lt_integral_nuclearNorm_sub_nystrom_of_isLeftUnitarilyInvariant hX hXr hq hlr hrn hc
+  have hSH : (CFC.sqrt H)ᴴ * CFC.sqrt H = H := hH.conjTranspose_sqrt_mul_sqrt
+  have hrS : (CFC.sqrt H).rank = r := by
+    rw [← Matrix.rank_conjTranspose_mul_self, hSH, hrank]
+  obtain ⟨Z, hZ, hZP⟩ :=
+    (isStarProjection_rangeProjector (CFC.sqrt H)).exists_hasOrthonormalCols_mul_conjTranspose_eq
+      (p := Fin r) (by rw [rank_rangeProjector, hrS, Fintype.card_fin])
+  obtain ⟨J, hJ⟩ := exists_hasOrthonormalCols_fin_of_le hrm
+  have hAH : (J * (Zᴴ * CFC.sqrt H))ᴴ * (J * (Zᴴ * CFC.sqrt H)) = H := by
+    have hZZ : Z * Zᴴ * CFC.sqrt H = CFC.sqrt H := by
+      rw [hZP, rangeProjector_mul_self]
+    have hJJ : Jᴴ * J = 1 := hJ
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc Jᴴ J, hJJ, Matrix.one_mul, ← Matrix.mul_assoc Z, hZZ]
+    exact hSH
+  refine ⟨J * (Zᴴ * CFC.sqrt H), ?_, ?_⟩
+  · rw [← Matrix.rank_conjTranspose_mul_self, hAH, hrank]
+  · rw [← nuclearNorm_conjTranspose_mul_self_sub_truncatedSVD]
+    simp only [← nuclearNorm_conjTranspose_mul_self_sub_nystrom]
+    rw [hAH]
+    exact hineq
 
 -- A docstring line and the declaration name exceed 100 characters.
 set_option linter.style.longLine false in
