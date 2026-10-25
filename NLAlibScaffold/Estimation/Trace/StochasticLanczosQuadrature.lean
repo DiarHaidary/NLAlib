@@ -344,7 +344,13 @@ theorem measureReal_abs_trace_cfc_sub_slq_ge_le_of_lipschitzOnWith
       2 * Real.exp (-(hansonWrightConstant *
         min (Fintype.card m * τ ^ 2 / ((c : ℝ) ^ 2 * frobNorm (cfc f A) ^ 2))
           (Fintype.card m * τ / ((c : ℝ) * specNorm (cfc f A))))) := by
-  sorry
+  have := hind.isProbabilityMeasure
+  refine le_trans (measureReal_mono ?_)
+    (measureReal_abs_trace_sub_girardHutchinson_ge_le hind hsub hvar (cfc f A) hτ)
+  intro ω hω
+  have h1 := Matrix.IsHermitian.norm_trace_cfc_sub_slq_le_of_lipschitzOnWith hA haa hs hf (X ω) q
+  simp only [Set.mem_ofPred_eq, Real.norm_eq_abs] at hω h1 ⊢
+  linarith
 
 /-- **The tail of stochastic Lanczos quadrature for analytic functions**, the setting of Ubaru,
 Chen and Saad for any real symmetric matrix, in absolute error. Let the entries of the real
