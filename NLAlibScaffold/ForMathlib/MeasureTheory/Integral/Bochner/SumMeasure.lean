@@ -59,7 +59,19 @@ Proof: S, about 20 lines. `measureReal_congr` with the ae-equality
 theorem measureReal_Iic_eq_sum {μ : Measure ℝ} [IsFiniteMeasure μ]
     {s : Finset ℝ} (hμ : ∀ᵐ x ∂μ, x ∈ s) (x : ℝ) :
     μ.real (Set.Iic x) = ∑ y ∈ s with y ≤ x, μ.real {y} := by
-  sorry
+  have hae : Set.Iic x =ᵐ[μ] ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ) := by
+    filter_upwards [hμ] with ω hω
+    apply propext
+    change ω ∈ Set.Iic x ↔ ω ∈ ⋃ y ∈ s.filter (· ≤ x), ({y} : Set ℝ)
+    simp only [Set.mem_Iic, Set.mem_iUnion, Finset.mem_filter, Set.mem_singleton_iff, exists_prop]
+    constructor
+    · intro h
+      exact ⟨ω, ⟨hω, h⟩, rfl⟩
+    · rintro ⟨y, ⟨_, hy⟩, rfl⟩
+      exact hy
+  rw [measureReal_congr hae,
+    measureReal_biUnion_finset (fun a _ b _ hab => Set.disjoint_singleton.2 hab)
+      (fun _ _ => measurableSet_singleton _) (fun _ _ => measure_ne_top _ _)]
 
 /-- **Lipschitz test functions against finitely supported measures.** If the finite measures
 $\mu$, $\nu$ on $\mathbb{R}$ are carried by a finite set $s \subseteq [a, b]$, $a \le b$, their
