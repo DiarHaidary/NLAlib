@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Polynomial.Approximation.Jackson
-public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlibScaffold.Polynomial.Approximation.MinimaxError
 
 /-!
 # Jackson's theorem for the minimax error: the theorems of stage Poly-Best
@@ -43,10 +43,6 @@ theorem minimaxError_le_of_lipschitzOnWith {f : ℝ → ℝ} {L : ℝ≥0} {a b 
       jacksonApproximationConstant * L * (b - a) / (2 * (N + 2)) := by
   obtain ⟨p, hp, hε⟩ := exists_degree_le_isUniformApproxOn_Icc_of_lipschitzOnWith (𝕜 := ℝ) hab hf N
   simp only [RCLike.ofReal_real_eq_id, id] at hε
-  unfold minimaxError
-  refine csInf_le ⟨0, ?_⟩ ⟨p, hp, hε⟩
-  rintro ε' ⟨q, -, hq⟩
-  obtain ⟨x, hx⟩ : (Set.Icc a b).Nonempty := Set.nonempty_Icc.mpr hab.le
-  exact (abs_nonneg _).trans (hq x hx)
+  exact minimaxError_le_of_isUniformApproxOn hp (hε.nonneg (Set.nonempty_Icc.mpr hab.le)) hε
 
 end NLAlib
