@@ -187,6 +187,52 @@ theorem AlternatesOn.minimaxError_eq {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {
 
 /-! ### Chebyshev's equioscillation theorem -/
 
+/-- Prepending a point of opposite sign to an alternation lengthens it by one. -/
+private theorem alternatesOn_vecCons {e : ℝ → ℝ} {s : Set ℝ} {k : ℕ} {E r σ : ℝ}
+    {v : Fin (k + 1) → ℝ} (hv : StrictMono v) (hvs : ∀ i, v i ∈ s) (hσ : σ = 1 ∨ σ = -1)
+    (hvE : ∀ i : Fin (k + 1), E ≤ σ * (-1) ^ (i : ℕ) * e (v i)) (hr : r ∈ s) (hrv : r < v 0)
+    (her : E ≤ -σ * e r) : AlternatesOn e s (k + 2) E := by
+  refine ⟨Matrix.vecCons r v, hv.vecCons hrv, Fin.cases hr hvs, -σ,
+    by rcases hσ with rfl | rfl <;> norm_num, Fin.cases (by simpa using her) fun i => ?_⟩
+  simp only [Matrix.cons_val_succ, Fin.val_succ, pow_succ]
+  linarith [hvE i]
+
+/-- The constant $e(a)$ has the sign of $e$ at the extremal points when $e$ never takes the
+value $-e(a)$ on $[a, b]$. -/
+private theorem exists_degree_le_const {e : ℝ → ℝ} {a b E : ℝ} (n : ℕ) (hE : 0 < E)
+    (hea : |e a| = E) (hT : ¬ ∃ y ∈ Set.Icc a b, e y = -e a) :
+    ∃ q : ℝ[X], q.degree ≤ n ∧ (∀ x ∈ Set.Icc a b, |e x| = E → 0 < e x * q.eval x) ∧
+      ∀ x ≤ a, 0 < e a * q.eval x := by
+  have ha : e a ≠ 0 := fun h => by simp [h] at hea; linarith
+  refine ⟨C (e a), degree_C_le.trans (WithBot.coe_le_coe.2 (Nat.zero_le n)), fun x hx hxE => ?_,
+    fun x _ => by simpa using mul_self_pos.2 ha⟩
+  rcases abs_eq_abs.1 (hxE.trans hea.symm) with h | h
+  · simpa [h] using mul_self_pos.2 ha
+  · exact absurd ⟨x, hx, h⟩ hT
+
+/-- The pivot of the sign-block lemma: the least point $y$ of $[a, b]$ with $e(y) = -e(a)$, and
+a point $z \in (a, y)$ above every extremal point below $y$. -/
+private theorem exists_pivot {e : ℝ → ℝ} {a b E : ℝ} (he : ContinuousOn e (Set.Icc a b))
+    (hE : 0 < E) (hea : |e a| = E) (hT : ∃ y ∈ Set.Icc a b, e y = -e a) :
+    ∃ y z, a < z ∧ z < y ∧ y ≤ b ∧ e y = -e a ∧
+      ∀ x ∈ Set.Icc a b, |e x| = E → x < y → e x = e a ∧ x < z := by
+  have ha : e a ≠ 0 := fun h => by simp [h] at hea; linarith
+  have hcl := he.preimage_isClosed_of_isClosed isClosed_Icc (isClosed_singleton (x := -e a))
+  obtain ⟨y, ⟨hyI, hy⟩, hyl⟩ :=
+    (isCompact_Icc.of_isClosed_subset hcl Set.inter_subset_left).exists_isLeast hT
+  have hy' : e y = -e a := hy
+  have hay : a < y := lt_of_le_of_ne hyI.1 fun h => ha (by subst h; linarith)
+  have hcl' := (he.mono (Set.Icc_subset_Icc_right hyI.2)).preimage_isClosed_of_isClosed
+    isClosed_Icc (isClosed_singleton (x := e a))
+  obtain ⟨u, ⟨huI, hu⟩, hug⟩ := (isCompact_Icc.of_isClosed_subset hcl'
+    Set.inter_subset_left).exists_isGreatest ⟨a, ⟨le_rfl, hay.le⟩, rfl⟩
+  have hu' : e u = e a := hu
+  have huy : u < y := lt_of_le_of_ne huI.2 fun h => ha (by subst h; linarith)
+  refine ⟨y, (u + y) / 2, by linarith [huI.1], by linarith, hyI.2, hy', fun x hx hxE hxy => ?_⟩
+  rcases abs_eq_abs.1 (hxE.trans hea.symm) with h | h
+  · exact ⟨h, by linarith [hug ⟨⟨hx.1, hxy.le⟩, h⟩]⟩
+  · exact absurd (hyl ⟨hx, h⟩) (not_le.2 hxy)
+
 /-- **The sign-block lemma** behind the equioscillation theorem. Let $e$ be continuous on
 $[a, b]$, $E > 0$ and $\lvert e(a) \rvert = E$. Either some real $q$ of degree at most $n$ has the
 sign of $e$ at its extremal points, $e(x)q(x) > 0$ at every $x \in [a, b]$ with
@@ -213,7 +259,66 @@ theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : �
     (∃ q : ℝ[X], q.degree ≤ n ∧ (∀ x ∈ Set.Icc a b, |e x| = E → 0 < e x * q.eval x) ∧
       ∀ x ≤ a, 0 < e a * q.eval x) ∨
     AlternatesOn e {x | x ∈ Set.Icc a b ∧ |e x| = E} (n + 2) E := by
-  sorry
+  induction n generalizing a with
+  | zero =>
+    by_cases hT : ∃ y ∈ Set.Icc a b, e y = -e a
+    · right
+      obtain ⟨y, z, haz, hzy, hyb, hy, -⟩ := exists_pivot he hE hea hT
+      have hyE : |e y| = E := by rw [hy, abs_neg, hea]
+      have hys : y ∈ {x | x ∈ Set.Icc a b ∧ |e x| = E} := ⟨⟨by linarith, hyb⟩, hyE⟩
+      have has : a ∈ {x | x ∈ Set.Icc a b ∧ |e x| = E} := ⟨⟨le_rfl, hab⟩, hea⟩
+      rcases (abs_eq hE.le).1 hea with h | h
+      · exact alternatesOn_vecCons (v := ![y]) (σ := -1) strictMono_vecEmpty
+          (Fin.forall_fin_one.2 hys) (Or.inr rfl) (Fin.forall_fin_one.2 (by simp; linarith))
+          has (by simp; linarith) (by linarith)
+      · exact alternatesOn_vecCons (v := ![y]) (σ := 1) strictMono_vecEmpty
+          (Fin.forall_fin_one.2 hys) (Or.inl rfl) (Fin.forall_fin_one.2 (by simp; linarith))
+          has (by simp; linarith) (by linarith)
+    · exact Or.inl (exists_degree_le_const 0 hE hea hT)
+  | succ n ih =>
+    by_cases hT : ∃ y ∈ Set.Icc a b, e y = -e a
+    · obtain ⟨y, z, haz, hzy, hyb, hy, hlow⟩ := exists_pivot he hE hea hT
+      have hyE : |e y| = E := by rw [hy, abs_neg, hea]
+      rcases ih (he.mono (Set.Icc_subset_Icc_left (by linarith))) hyb hyE with
+        ⟨q, hq, hqs, hql⟩ | ⟨v, hv, hvs, σ, hσ, hvE⟩
+      · left
+        refine ⟨(X - C z) * q, ?_, fun x hx hxE => ?_, fun x hx => ?_⟩
+        · refine (degree_mul_le _ _).trans ?_
+          rw [degree_X_sub_C, Nat.cast_succ, add_comm]
+          exact add_le_add_left hq 1
+        · simp only [eval_mul, eval_sub, eval_X, eval_C]
+          rcases lt_or_ge x y with hxy | hxy
+          · obtain ⟨h1, h2⟩ := hlow x hx hxE hxy
+            have := hql x hxy.le
+            rw [hy] at this
+            rw [h1]
+            nlinarith
+          · have := hqs x ⟨hxy, hx.2⟩ hxE
+            nlinarith
+        · simp only [eval_mul, eval_sub, eval_X, eval_C]
+          have := hql x (by linarith)
+          rw [hy] at this
+          nlinarith
+      · right
+        have h0 := hvE 0
+        obtain ⟨⟨hv0y, -⟩, -⟩ := hvs 0
+        have hvs' : ∀ i, v i ∈ {x | x ∈ Set.Icc a b ∧ |e x| = E} := fun i =>
+          ⟨⟨by linarith [(hvs i).1.1], (hvs i).1.2⟩, (hvs i).2⟩
+        have hys : y ∈ {x | x ∈ Set.Icc a b ∧ |e x| = E} := ⟨⟨by linarith, hyb⟩, hyE⟩
+        have has : a ∈ {x | x ∈ Set.Icc a b ∧ |e x| = E} := ⟨⟨le_rfl, hab⟩, hea⟩
+        simp only [Fin.val_zero, pow_zero, mul_one] at h0
+        rcases (abs_eq hE.le).1 hea with h | h
+        · rcases hσ with rfl | rfl
+          · exact alternatesOn_vecCons hv hvs' (Or.inl rfl) hvE hys
+              (lt_of_le_of_ne hv0y fun h' => by rw [← h'] at h0; linarith) (by linarith)
+          · exact alternatesOn_vecCons hv hvs' (Or.inr rfl) hvE has (by linarith)
+              (by linarith)
+        · rcases hσ with rfl | rfl
+          · exact alternatesOn_vecCons hv hvs' (Or.inl rfl) hvE has (by linarith)
+              (by linarith)
+          · exact alternatesOn_vecCons hv hvs' (Or.inr rfl) hvE hys
+              (lt_of_le_of_ne hv0y fun h' => by rw [← h'] at h0; linarith) (by linarith)
+    · exact Or.inl (exists_degree_le_const _ hE hea hT)
 
 /-- An error that vanishes on $[a, b]$, $a < b$, alternates there at any number $k$ of points
 with level $0$: the zero-error case of the equioscillation theorem.
