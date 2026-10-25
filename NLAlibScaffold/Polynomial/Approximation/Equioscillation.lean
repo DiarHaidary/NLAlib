@@ -101,7 +101,53 @@ Prototype: `NLAlib.exists_abs_sub_eval_ge_of_alternation`
 theorem AlternatesOn.exists_le_abs_sub_eval {f : ℝ → ℝ} {s : Set ℝ} {n : ℕ} {p : ℝ[X]} {ε : ℝ}
     (h : AlternatesOn (fun x => f x - p.eval x) s (n + 2) ε) (hp : p.degree ≤ n) {q : ℝ[X]}
     (hq : q.degree ≤ n) : ∃ x ∈ s, ε ≤ |f x - q.eval x| := by
-  sorry
+  obtain ⟨x, hx, hxs, σ, hσ, h⟩ := h
+  by_contra! H
+  have hσsq : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
+  have key : ∀ i : Fin (n + 2), 0 < σ * (-1) ^ (i : ℕ) * (q - p).eval (x i) := by
+    intro i
+    have h1 : ε ≤ σ * (-1) ^ (i : ℕ) * (f (x i) - p.eval (x i)) := h i
+    have h2 := H (x i) (hxs i)
+    have ha : |σ * (-1) ^ (i : ℕ)| = 1 := by
+      rcases hσ with rfl | rfl <;> simp [abs_pow]
+    have h3 : σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i)) ≤ |f (x i) - q.eval (x i)| := by
+      calc _ ≤ |σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i))| := le_abs_self _
+        _ = |f (x i) - q.eval (x i)| := by rw [abs_mul, ha, one_mul]
+    have h4 : σ * (-1) ^ (i : ℕ) * (q - p).eval (x i)
+        = σ * (-1) ^ (i : ℕ) * (f (x i) - p.eval (x i))
+          - σ * (-1) ^ (i : ℕ) * (f (x i) - q.eval (x i)) := by
+      simp only [eval_sub]; ring
+    linarith
+  have hpair : ∀ i : Fin (n + 1), (q - p).eval (x i.castSucc) * (q - p).eval (x i.succ) < 0 := by
+    intro i
+    have hA := key i.castSucc
+    have hB := key i.succ
+    have hs : ((-1 : ℝ) ^ (i : ℕ)) * (-1) ^ (i : ℕ) = 1 := by
+      rw [← mul_pow]; norm_num
+    have hpow : (-1 : ℝ) ^ ((i.succ : Fin (n + 2)) : ℕ) = -(-1) ^ (i : ℕ) := by
+      rw [Fin.val_succ, pow_succ]; ring
+    have hpow' : (-1 : ℝ) ^ ((i.castSucc : Fin (n + 2)) : ℕ) = (-1) ^ (i : ℕ) := by
+      rw [Fin.val_castSucc]
+    rw [hpow] at hB
+    rw [hpow'] at hA
+    have hprod : (σ * (-1) ^ (i : ℕ) * (q - p).eval (x i.castSucc))
+        * (σ * -(-1) ^ (i : ℕ) * (q - p).eval (x i.succ))
+        = -((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ)) := by
+      linear_combination (-((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ))
+        * ((-1 : ℝ) ^ (i : ℕ) * (-1) ^ (i : ℕ))) * hσsq
+        + (-((q - p).eval (x i.castSucc) * (q - p).eval (x i.succ))) * hs
+    linarith [mul_pos hA hB, hprod]
+  obtain ⟨c, hc, hzero⟩ := exists_strictMono_eq_zero_of_mul_neg (k := n + 1)
+    (f := fun t => (q - p).eval t) (v := x) hx (q - p).continuous.continuousOn hpair
+  have hd : q - p = 0 := by
+    refine Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero (s := Finset.univ)
+      (v := c) hc.injective.injOn ?_ (fun i _ => (hzero i).2)
+    have hdeg : (q - p).degree ≤ n := (degree_sub_le q p).trans (max_le hq hp)
+    rw [Finset.card_univ, Fintype.card_fin]
+    exact lt_of_le_of_lt hdeg (by exact_mod_cast Nat.lt_succ_self n)
+  have k0 := key 0
+  rw [hd, eval_zero, mul_zero] at k0
+  exact lt_irrefl _ k0
 
 /-- **De la Vallée Poussin's lower bound.** If $\deg p \le n$, $p$ is within some finite
 $\eta$ of $f$ on $s$, and $f - p$ alternates on $s$ at $n + 2$ points with level
