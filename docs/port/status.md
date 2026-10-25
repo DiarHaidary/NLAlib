@@ -23,8 +23,10 @@ KS7's `IsOrthogonalPolynomial.integral_eval_eq_sum` is now the case $m = \lvert 
 `NLAlib.Polynomial.Orthogonal.Lobatto` (Krylov/Functions/QuadratureBounds),
 `Mathlib.Analysis.Calculus.{ContDiff.Polynomial, IteratedDeriv.Lemmas}`,
 `Mathlib.LinearAlgebra.FiniteDimensional.Lemmas` (Hermite). `ae_mem_Icc_radauMeasure` and
-`ae_mem_Icc_lobattoMeasure` keep an unused `[IsFiniteMeasure μ]` under a scoped
-`set_option linter.unusedSectionVars false in` (decision UNUSED-FINITE). Report:
+`ae_mem_Icc_lobattoMeasure` dropped their unused `[IsFiniteMeasure μ]` (decision UNUSED-FINITE).
+New public helpers (decision SHARE-HELPERS): `mem_gaussNodes`,
+`exists_orthogonalPolynomial_eq_X_sub_C_mul` (Zeros), `exists_integral_sub_integral_eval_eq`
+(Gauss), `ae_eq_zero_of_integral_mul_sub_eq_zero`, `integral_eval_basis_nonneg_of_exact` (Radau). Report:
 `reports/Review-KS8-Cleanup.md` and `reports/Stage-KS8.md` in the harness repository.
 
 ## SLQ and Probability-Beta: proofs (2026-10-25)
