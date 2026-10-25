@@ -63,7 +63,14 @@ Proof: S, about 8 lines. Induction on `i`; `Fin.lastCases j`; `history` unfolds 
 the new entry). -/
 theorem history_apply (alg : QueryAlgorithm Q R q β) (f : Q → R) (i : ℕ) (j : Fin i) :
     alg.history f i j = f (alg.queryAt f j) := by
-  sorry
+  induction i with
+  | zero => exact j.elim0
+  | succ i ih =>
+    refine Fin.lastCases ?_ (fun k => ?_) j
+    · rw [history, Fin.snoc_last]
+      rfl
+    · rw [history, Fin.snoc_castSucc, ih]
+      rfl
 
 /-- **The queries made are the queries of the transcript**: the `j`-th query of an algorithm run
 against $f$ is `queries` evaluated at its transcript.
