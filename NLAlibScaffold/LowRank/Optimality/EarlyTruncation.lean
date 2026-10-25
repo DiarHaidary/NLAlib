@@ -382,6 +382,44 @@ theorem le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix {X : Ω → Matrix (Fi
     {ω | 2 * (Fintype.card l : ℝ) ≤ ∑ j, X ω 1 j ^ 2}
   linarith
 
+/-- The optimum of the $2 \times 2$ diagonal instance is $s^2$. -/
+private lemma frobNorm_sub_truncatedSVD_diagonal_one_sq {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s ≤ 1) :
+    frobNorm (Matrix.diagonal ![1, s] - truncatedSVD (Matrix.diagonal ![1, s]) 1) ^ 2 = s ^ 2 := by
+  have h0 := frobNorm_sub_truncatedSVD_sq (Matrix.diagonal ![1, s]) 0
+  have h1 := frobNorm_sub_truncatedSVD_sq (Matrix.diagonal ![1, s]) 1
+  have hσ0 := singularValues_zero_eq_specNorm (Matrix.diagonal ![1, s])
+  have hn : ‖(![1, s] : Fin 2 → ℝ)‖ = 1 := by
+    apply le_antisymm
+    · exact (pi_norm_le_iff_of_nonneg zero_le_one).mpr fun i => by
+        fin_cases i <;> simp [abs_of_nonneg hs0, hs1]
+    · simpa using norm_le_pi_norm (![1, s] : Fin 2 → ℝ) 0
+  rw [specNorm_diagonal, hn] at hσ0
+  have hF : frobNorm (Matrix.diagonal ![1, s]) ^ 2 = 1 + s ^ 2 := by
+    rw [frobNorm_sq_eq_sum]
+    simp [Fin.sum_univ_two, Matrix.diagonal_apply]
+  rw [truncatedSVD_zero, sub_zero, hF] at h0
+  rw [h1]
+  simp [Finset.sum_range_succ, hσ0] at h0 ⊢
+  linarith
+
+/-- Eckart–Young at the diagonal instance: a rank-one matrix errs at least $s^2$. -/
+private lemma sq_le_frobNorm_diagonal_sub_sq_of_rank_le {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s ≤ 1)
+    {B : Matrix (Fin 2) (Fin 2) ℝ} (hB : B.rank ≤ 1) :
+    s ^ 2 ≤ frobNorm (Matrix.diagonal ![1, s] - B) ^ 2 :=
+  calc s ^ 2 = frobNorm (Matrix.diagonal ![1, s] - truncatedSVD (Matrix.diagonal ![1, s]) 1) ^ 2 :=
+        (frobNorm_sub_truncatedSVD_diagonal_one_sq hs0 hs1).symm
+    _ ≤ frobNorm (Matrix.diagonal ![1, s] - B) ^ 2 :=
+        pow_le_pow_left₀ (frobNorm_nonneg _)
+          (frobNorm_sub_truncatedSVD_le_of_rank_le _ hB) 2
+
+/-- The arithmetic of the excess: $\delta/25 \cdot s^2 \le (1 - s^2)/24$ for $s = 1 - \delta$. -/
+private lemma div_twentyfive_mul_sq_le {δ s : ℝ} (hs : s = 1 - δ) (h0 : 0 < δ) (h1 : δ ≤ 1 / 40) :
+    δ / 25 * s ^ 2 ≤ (1 - s ^ 2) / 24 := by
+  subst hs
+  have hb : 0 ≤ (2 - δ) / 24 - (1 - δ) ^ 2 / 25 := by
+    nlinarith [mul_nonneg h0.le (sub_nonneg.2 h1)]
+  nlinarith [mul_nonneg h0.le hb]
+
 /-- **The early-truncated randomized SVD has excess $\Omega(1/\sqrt{\ell})$ at $k = 1$**: for
 $\mathbf{A} = \operatorname{diag}(1, 1 - \delta)$ with $\delta = 1/(4\sqrt{\ell})$, a standard
 Gaussian $2 \times \ell$ test matrix $\mathbf{\Omega}$ and $\ell \ge 100$,
@@ -417,7 +455,61 @@ theorem le_integral_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq_of_hasLaw_gaussi
         earlyTruncatedRSVD (Matrix.diagonal ![1, 1 - 1 / (4 * √(Fintype.card l : ℝ))]) (X ω)
           1) ^ 2
         ∂μ := by
-  sorry
+  classical
+  have hL : (100 : ℝ) ≤ Fintype.card l := by exact_mod_cast hl
+  have hr2 : √(Fintype.card l : ℝ) ^ 2 = Fintype.card l := Real.sq_sqrt (by positivity)
+  have hr0 := Real.sqrt_nonneg (Fintype.card l : ℝ)
+  have hr10 : 10 ≤ √(Fintype.card l : ℝ) := by nlinarith
+  obtain ⟨s, hs⟩ : ∃ s : ℝ, s = 1 - 1 / (4 * √(Fintype.card l : ℝ)) := ⟨_, rfl⟩
+  rw [← hs]
+  have hδ : 1 / (4 * √(Fintype.card l : ℝ)) ≤ 1 / 40 :=
+    one_div_le_one_div_of_le (by norm_num) (by linarith)
+  have hδpos : 0 < 1 / (4 * √(Fintype.card l : ℝ)) := by positivity
+  have hs0 : 0 ≤ s := by linarith
+  have hs1 : s ≤ 1 := by linarith
+  have hc : 1 / (100 * √(Fintype.card l : ℝ)) = 1 / (4 * √(Fintype.card l : ℝ)) / 25 := by
+    field_simp
+    ring
+  have hkey : 1 / (100 * √(Fintype.card l : ℝ)) * s ^ 2 ≤ (1 - s ^ 2) / 24 := by
+    rw [hc]
+    exact div_twentyfive_mul_sq_le hs hδpos hδ
+  have : IsProbabilityMeasure μ := hX.isProbabilityMeasure
+  have hE := le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix hX hl
+  rw [← hs] at hE
+  have hS : MeasurableSet {M : Matrix (Fin 2) l ℝ |
+      ∑ j, M 0 j ^ 2 < s ^ 2 * ∑ j, M 1 j ^ 2} :=
+    (isOpen_lt (by fun_prop) (by fun_prop)).measurableSet
+  have hEm : NullMeasurableSet {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} μ :=
+    hX.aemeasurable.nullMeasurableSet_preimage hS
+  have hg :=
+    integrable_frobNorm_sub_earlyTruncatedRSVD_sq (Matrix.diagonal ![1, s]) hX.aemeasurable 1
+  have hfg : ∀ ω, s ^ 2 + (1 - s ^ 2) / 2 *
+      Set.indicator {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} (fun _ => (1 : ℝ)) ω ≤
+      frobNorm (Matrix.diagonal ![1, s] -
+        earlyTruncatedRSVD (Matrix.diagonal ![1, s]) (X ω) 1) ^ 2 := by
+    intro ω
+    by_cases hω : ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2
+    · rw [Set.indicator_of_mem (show ω ∈ {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} from hω)]
+      simp only [mul_one]
+      exact add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq hs0 hs1 hω
+    · rw [Set.indicator_of_notMem
+        (show ω ∉ {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} from hω)]
+      simp only [mul_zero, add_zero]
+      exact sq_le_frobNorm_diagonal_sub_sq_of_rank_le hs0 hs1 (rank_earlyTruncatedRSVD_le _ (X ω) 1)
+  have hf : Integrable (fun ω => s ^ 2 + (1 - s ^ 2) / 2 *
+      Set.indicator {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} (fun _ => (1 : ℝ)) ω) μ :=
+    (integrable_const _).add (((integrable_const (1 : ℝ)).indicator₀ hEm).const_mul _)
+  have hf_eq : ∫ ω, (s ^ 2 + (1 - s ^ 2) / 2 *
+      Set.indicator {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} (fun _ => (1 : ℝ)) ω) ∂μ =
+      s ^ 2 + (1 - s ^ 2) / 2 * μ.real {ω | ∑ j, X ω 0 j ^ 2 < s ^ 2 * ∑ j, X ω 1 j ^ 2} := by
+    rw [integral_add (integrable_const _) (((integrable_const (1 : ℝ)).indicator₀ hEm).const_mul _),
+      MeasureTheory.integral_const_mul, integral_const, integral_indicator₀ hEm]
+    simp
+  have hmono := integral_mono hf hg hfg
+  rw [hf_eq] at hmono
+  have hE' := mul_le_mul_of_nonneg_left hE (by nlinarith : (0 : ℝ) ≤ (1 - s ^ 2) / 2)
+  rw [frobNorm_sub_truncatedSVD_diagonal_one_sq hs0 hs1, add_mul, one_mul]
+  linarith
 
 /-- **Constant-probability $(1+\varepsilon)$ also needs $\varepsilon^{-2}$ samples at $k = 1$**: for
 $\mathbf{A} = \operatorname{diag}(1, 1 - \delta)$ with $\delta = 1/(4\sqrt{\ell})$, a standard
