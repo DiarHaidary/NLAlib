@@ -40,7 +40,7 @@ Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
 - PUBLIC-HELPERS (a): new public declarations
   `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` (ForMathlib Independence),
   `Measurable.finSnoc` (new ForMathlib `MeasureTheory/MeasurableSpace/Pi`),
-  `Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
+  `NLAlib.Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
   `QueryAlgorithm.queryAt_gramSimulation_two_mul`, `…_two_mul_add_one` (QueryModel/Basic),
   `QueryAlgorithm.IsMeasurable.measurable_resample` (DeferredDecision), and the H2 corollary
   `QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant_of_indepFun`

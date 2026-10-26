@@ -67,7 +67,7 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
 
 ## Main results
 
-* `Measurable.twoSidedMulVec`: the two-sided oracle is measurable.
+* `NLAlib.Measurable.twoSidedMulVec`: the two-sided oracle is measurable.
 * `NLAlib.QueryAlgorithm.history_apply`, `NLAlib.QueryAlgorithm.queryAt_eq_queries_transcript`.
 * `NLAlib.QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`,
   `NLAlib.QueryAlgorithm.run_eq_of_forall_apply_queries_eq`: indistinguishability.
@@ -275,7 +275,7 @@ namespace NLAlib
 
 /-- The two-sided oracle is jointly measurable in the matrix and the query. -/
 @[fun_prop]
-theorem _root_.Measurable.twoSidedMulVec {α m n : Type*} [MeasurableSpace α] [Fintype m]
+theorem Measurable.twoSidedMulVec {α m n : Type*} [MeasurableSpace α] [Fintype m]
     [Fintype n] {f : α → Matrix m n ℝ} {v : α → (n → ℝ) × (m → ℝ)} (hf : Measurable f)
     (hv : Measurable v) : Measurable fun a => twoSidedMulVec (f a) (v a) :=
   (hf.matrix_mulVec hv.fst).prodMk

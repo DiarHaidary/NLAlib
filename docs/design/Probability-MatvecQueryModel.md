@@ -752,7 +752,7 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
     `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` (freezing for a product measure; F1 now
     uses it, the private copies in ForMathlib Independence and HiddenHaar are gone),
     `Measurable.finSnoc` (new `ForMathlib/MeasureTheory/MeasurableSpace/Pi.lean`),
-    `Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
+    `NLAlib.Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
     `QueryAlgorithm.queryAt_gramSimulation_two_mul(_add_one)` (over 𝕜, in `QueryModel/Basic`),
     `QueryAlgorithm.IsMeasurable.measurable_resample` (`DeferredDecision`); `@[fun_prop]` on
     `Measurable.matrix_mul`, `Measurable.matrix_mulVec`. The copies in DeferredDecision,
