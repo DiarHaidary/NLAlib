@@ -79,7 +79,15 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add (A : Matrix m n �
     frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 =
       frobNorm (A - rsvd A Ω) ^ 2 +
         frobNorm (rsvd A Ω - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 := by
-  sorry
+  classical
+  have hPY : rangeProjector (A * Ω) * truncatedSVD (generalizedNystrom A Ω Ψ) k =
+      truncatedSVD (generalizedNystrom A Ω Ψ) k :=
+    rangeProjector_mul_eq_self_iff.mpr
+      ((range_truncatedSVD_le _ k).trans (range_generalizedNystrom_le A Ω Ψ))
+  have h := frobNorm_sub_mul_sq (rangeProjector (A * Ω)) A
+    (truncatedSVD (generalizedNystrom A Ω Ψ) k)
+  rw [(isStarProjection_rangeProjector _).rangeProjector_eq, hPY, ← sub_rsvd] at h
+  exact h
 
 /-- **The localized truncated generalized Nyström error, deterministic form**: for
 $\mathbf{A} \in \mathbb{R}^{m \times n}$, $\mathbf{\Omega} \in \mathbb{R}^{n \times \ell}$ and
