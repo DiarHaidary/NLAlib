@@ -190,7 +190,27 @@ theorem indepFun_polarFactor_mul_of_isStarProjection_of_hasLaw_gaussianMatrix [D
     {P : Matrix n n ℝ} (hP : IsStarProjection P) {G : Ω → Matrix n k ℝ}
     (hG : HasLaw G (gaussianMatrix n k) μ) (hk : Fintype.card k ≤ P.rank) :
     IndepFun (fun ω => polarFactor (P * G ω)) (fun ω => (P * G ω)ᴴ * (P * G ω)) μ := by
-  sorry
+  obtain ⟨E₀, hE₀, hP₀⟩ :=
+    hP.exists_hasOrthonormalCols_mul_conjTranspose_eq (p := Fin P.rank) (Fintype.card_fin _)
+  have hY := hasLaw_const_mul_of_hasLaw_gaussianMatrix hG
+    (U := E₀ᴴ) (by rwa [Matrix.conjTranspose_conjTranspose])
+  have hk' : Fintype.card k ≤ Fintype.card (Fin P.rank) := by simpa using hk
+  have h := indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix hY hk'
+  have horth : E₀ᴴ * E₀ = 1 := hE₀.conjTranspose_mul_self
+  have hPG : ∀ ω, P * G ω = E₀ * (E₀ᴴ * G ω) := fun ω => by
+    rw [← Matrix.mul_assoc, hP₀]
+  have f1 : (fun ω => polarFactor (P * G ω)) =
+      (fun A => E₀ * A) ∘ (fun ω => polarFactor (E₀ᴴ * G ω)) := by
+    funext ω
+    simp only [Function.comp_apply, hPG]
+    exact hE₀.polarFactor_mul_left _
+  have f2 : (fun ω => (P * G ω)ᴴ * (P * G ω)) = id ∘ (fun ω => (E₀ᴴ * G ω)ᴴ * (E₀ᴴ * G ω)) := by
+    funext ω
+    simp only [Function.comp_apply, id]
+    rw [hPG, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc E₀ᴴ E₀, horth,
+      Matrix.one_mul]
+  rw [f1, f2]
+  exact h.comp (by fun_prop) measurable_id
 
 /-- **The Haar frame law in a subspace is unique**: let $\mathbf{E}$ be an orthogonal projector
 and $\nu$ a probability law on $n \times k$ frames (orthonormal columns) inside the range of
