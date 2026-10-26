@@ -115,6 +115,15 @@ theorem sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two {𝕜 : Type*} [RCLike
     {L V : Submodule 𝕜 (n → 𝕜)} (hL : L ≤ blockKrylovSpace A B (s + 1))
     (hV : V ≤ L ⊔ LinearMap.range B.mulVecLin) :
     L ⊔ V ⊔ V.map A.mulVecLin ≤ blockKrylovSpace A B (s + 2) := by
-  sorry
+  have h1 : blockKrylovSpace A B (s + 1) ≤ blockKrylovSpace A B (s + 2) :=
+    blockKrylovSpace_mono A B (by omega)
+  have hB : LinearMap.range B.mulVecLin ≤ blockKrylovSpace A B (s + 1) := by
+    rw [← blockKrylovSpace_one A B]
+    exact blockKrylovSpace_mono A B (by omega)
+  have hV' : V ≤ blockKrylovSpace A B (s + 1) := hV.trans (sup_le hL hB)
+  refine sup_le (sup_le (hL.trans h1) (hV'.trans h1)) ?_
+  rw [Submodule.map_le_iff_le_comap]
+  intro x hx
+  exact mulVec_mem_blockKrylovSpace_succ (hV' hx)
 
 end NLAlib
