@@ -218,6 +218,44 @@ theorem IsBestRankApprox.frobNorm_sub_sq_eq_add {B N Y : Matrix m n ℝ} {k : �
   rw [hsub]
   exact frobNorm_sub_sq_of_frobInner_eq_zero horth
 
+omit [DecidableEq m] in
+/-- A best approximation is the projection of the target onto its own column space. -/
+private theorem rangeProjector_self_mul' {M Y : Matrix m n ℝ} {k : ℕ}
+    (hY : IsBestRankApprox M k Y) : rangeProjector Y * M = Y := by
+  classical
+  have hsplit := (isStarProjection_rangeProjector Y).frobNorm_sq_eq_add (M - Y)
+  have e1 : rangeProjector Y * (M - Y) = rangeProjector Y * M - Y := by
+    rw [Matrix.mul_sub, rangeProjector_mul_self]
+  have e2 : (1 - rangeProjector Y) * (M - Y) = M - rangeProjector Y * M := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul,
+      rangeProjector_mul_self, sub_self, sub_zero]
+  rw [e1, e2] at hsplit
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _) (hY.frobNorm_sub_le _
+    ((Matrix.rank_mul_le_left (rangeProjector Y) M).trans
+      (by rw [rank_rangeProjector]; exact hY.rank_le))) 2
+  have hsq : frobNorm (rangeProjector Y * M - Y) ^ 2 = 0 :=
+    le_antisymm (by linarith) (sq_nonneg _)
+  exact sub_eq_zero.mp (frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq))
+
+/-- Pythagoras for the complement of a star projection, in the form `(1 - Q) * A`. -/
+private theorem frobNorm_one_sub_mul_sq' {Q : Matrix m m ℝ} (hQ : IsStarProjection Q)
+    (A : Matrix m n ℝ) :
+    frobNorm ((1 - Q) * A) ^ 2 = frobNorm A ^ 2 - frobNorm (Q * A) ^ 2 := by
+  have h := hQ.frobNorm_sq_eq_add A
+  linarith
+
+omit [DecidableEq m] in
+/-- Expansion of `‖Q (B + N)‖²` for a star projection `Q`. -/
+private theorem frobNorm_mul_add_sq' {Q : Matrix m m ℝ} (hQ : IsStarProjection Q)
+    (B N : Matrix m n ℝ) :
+    frobNorm (Q * (B + N)) ^ 2 =
+      frobNorm (Q * B) ^ 2 + 2 * frobInner (Q * B) N + frobNorm (Q * N) ^ 2 := by
+  classical
+  have hcross : frobInner (Q * B) (Q * N) = frobInner (Q * B) N := by
+    rw [frobInner_mul_left, hQ.conjTranspose_eq, ← Matrix.mul_assoc, hQ.mul_self,
+      frobInner_mul_left, hQ.conjTranspose_eq]
+  rw [Matrix.mul_add, frobNorm_add_sq, hcross]
+
 /-- **The optimality of the perturbed truncation**: for $\mathbf{B}, \mathbf{N} \in
 \mathbb{R}^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
 $\mathbf{B} + \mathbf{N}$, with $\widehat{\mathbf{P}} = \mathbf{P}_{\mathbf{Y}}$ and
@@ -246,7 +284,23 @@ theorem IsBestRankApprox.frobNorm_one_sub_rangeProjector_mul_sq_sub_le {B N Y : 
       2 * frobInner ((rangeProjector Y - rangeProjector (truncatedSVD B k)) * B) N +
         frobNorm (rangeProjector Y * N) ^ 2 -
         frobNorm (rangeProjector (truncatedSVD B k) * N) ^ 2 := by
-  sorry
+  have hZ := isStarProjection_rangeProjector Y
+  have hP := isStarProjection_rangeProjector (truncatedSVD B k)
+  have hYM : (B + N) - Y = (1 - rangeProjector Y) * (B + N) := by
+    rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_self_mul' hY]
+  have hrank : (rangeProjector (truncatedSVD B k) * (B + N)).rank ≤ k :=
+    (Matrix.rank_mul_le_left _ _).trans (by
+      rw [rank_rangeProjector]; exact rank_truncatedSVD_le B k)
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _)
+    (hY.frobNorm_sub_le _ hrank) 2
+  have hPM : (B + N) - rangeProjector (truncatedSVD B k) * (B + N) =
+      (1 - rangeProjector (truncatedSVD B k)) * (B + N) := by
+    rw [Matrix.sub_mul, Matrix.one_mul]
+  rw [hYM, hPM, frobNorm_one_sub_mul_sq' hZ, frobNorm_one_sub_mul_sq' hP] at hopt
+  rw [frobNorm_one_sub_mul_sq' hZ, frobNorm_one_sub_mul_sq' hP, Matrix.sub_mul,
+    frobInner_sub_left]
+  rw [frobNorm_mul_add_sq' hZ, frobNorm_mul_add_sq' hP] at hopt
+  linarith
 
 /-! ### The weighted identity and its two weights -/
 
