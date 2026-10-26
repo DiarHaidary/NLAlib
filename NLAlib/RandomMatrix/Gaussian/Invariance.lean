@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
+public import Mathlib.Probability.IdentDistrib
 public import NLAlib.Matrix.Basic.Orthonormal
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Structured.Kronecker
@@ -23,6 +24,12 @@ index maps, and $\mathbf{G}\mathbf{x}$ for a unit vector $\mathbf{x}$. Blocks
 $\mathbf{V}_1^{\mathsf{H}}\mathbf{G}$ and $\mathbf{V}_2^{\mathsf{H}}\mathbf{G}$ along orthogonal
 frames are independent, which is how the randomized range finder splits a Gaussian test matrix.
 
+For fixed nested orthogonal projectors $\mathbf{E}_2 \preceq \mathbf{E}_1$ and
+$\mathbf{F}_2 \preceq \mathbf{F}_1$, the block $\mathbf{E}_2\mathbf{X}\mathbf{F}_2$ of a standard
+Gaussian matrix is independent of the rest of $\mathbf{E}_1\mathbf{X}\mathbf{F}_1$ and may be
+replaced by the same block of an independent copy. This is one step of the adaptive
+deferred-decision induction (`NLAlib/LowerBounds/QueryModel/DeferredDecision.lean`).
+
 ## Main results
 
 * `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`: $\mathbf{A}\mathbf{g}$ is a standard Gaussian
@@ -36,6 +43,7 @@ frames are independent, which is how the randomized range finder splits a Gaussi
 * `NLAlib.hasLaw_mulVec_of_hasLaw_gaussianMatrix`: $\mathbf{G}\mathbf{x}$ for a unit vector
   $\mathbf{x}$.
 * `NLAlib.indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix`: independence of orthogonal blocks.
+* `NLAlib.identDistrib_mul_mul_of_hasLaw_gaussianMatrix`: resampling a nested block.
 -/
 
 @[expose] public section
@@ -209,5 +217,82 @@ theorem indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix [Finite p] [Finite q
   · rwa [Matrix.conjTranspose_conjTranspose]
   · simp only [hfun] at hP
     exact hP
+
+end NLAlib
+
+
+open MeasureTheory ProbabilityTheory
+open scoped Matrix
+
+namespace NLAlib
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
+  [Fintype n]
+
+/-- **Resampling a block of a Gaussian matrix**: let $\mathbf{X}$, $\mathbf{X}'$ be independent
+standard Gaussian $m \times n$ matrices, $\mathbf{E}_2$, $\mathbf{F}_1$, $\mathbf{F}_2$ orthogonal
+projectors and $\mathbf{E}_1$ a matrix with $\mathbf{E}_1\mathbf{E}_2 = \mathbf{E}_2$ and
+$\mathbf{F}_1\mathbf{F}_2 = \mathbf{F}_2$ (for an orthogonal projector $\mathbf{E}_1$ this is
+$\mathbf{E}_2 \preceq \mathbf{E}_1$; likewise $\mathbf{F}_2 \preceq \mathbf{F}_1$). Then
+$\mathbf{E}_1\mathbf{X}\mathbf{F}_1$ has the law of
+$$\mathbf{E}_1\mathbf{X}\mathbf{F}_1 - \mathbf{E}_2\mathbf{X}\mathbf{F}_2 +
+\mathbf{E}_2\mathbf{X}'\mathbf{F}_2\,.$$
+[ZhangEtAl2026, proof of Lemma 4.1]; there one query at a time with orthonormal frames and
+entries $\mathcal{N}(0, 1/d)$; here unit variance and any nested projectors. -/
+theorem identDistrib_mul_mul_of_hasLaw_gaussianMatrix {X X' : Ω → Matrix m n ℝ}
+    (hX : HasLaw X (gaussianMatrix m n) μ) (hX' : HasLaw X' (gaussianMatrix m n) μ)
+    (hXX' : IndepFun X X' μ) {E₁ E₂ : Matrix m m ℝ} {F₁ F₂ : Matrix n n ℝ}
+    (hE₂ : IsStarProjection E₂) (hF₁ : IsStarProjection F₁) (hF₂ : IsStarProjection F₂)
+    (hE : E₁ * E₂ = E₂) (hF : F₁ * F₂ = F₂) :
+    IdentDistrib (fun ω => E₁ * X ω * F₁)
+      (fun ω => E₁ * X ω * F₁ - E₂ * X ω * F₂ + E₂ * X' ω * F₂) μ μ := by
+  classical
+  have := hX.isProbabilityMeasure
+  set P : Matrix (m × n) (m × n) ℝ := Matrix.kronecker E₂ F₂ᵀ with hPdef
+  have hPH : Pᴴ = P := by
+    have hF₂T : F₂ᵀ = F₂ := by
+      rw [← Matrix.conjTranspose_eq_transpose_of_trivial, ← Matrix.star_eq_conjTranspose,
+        hF₂.isSelfAdjoint.star_eq]
+    rw [hPdef, hF₂T, Matrix.kronecker, Matrix.conjTranspose_kronecker,
+      ← Matrix.star_eq_conjTranspose, ← Matrix.star_eq_conjTranspose, hE₂.isSelfAdjoint.star_eq,
+      hF₂.isSelfAdjoint.star_eq]
+  have hPP : P * P = P := by
+    rw [hPdef, Matrix.kronecker, ← Matrix.mul_kronecker_mul, ← Matrix.transpose_mul,
+      hE₂.isIdempotentElem.eq, hF₂.isIdempotentElem.eq]
+  have hA : HasOrthonormalCols (Matrix.fromCols (1 - P) P)ᴴ := by
+    rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose,
+      Matrix.conjTranspose_fromCols_eq_fromRows_conjTranspose, Matrix.fromCols_mul_fromRows,
+      Matrix.conjTranspose_sub, Matrix.conjTranspose_one, hPH]
+    simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_one, Matrix.one_mul, hPP]
+    abel
+  -- the stacked pair `(X, X')`, flattened, is a standard Gaussian vector; swapping its
+  -- `E₂ ⬝ F₂` blocks is the coisometry `[1 - P, P]`, so `Y = X - E₂XF₂ + E₂X'F₂` is Gaussian
+  have hz : HasLaw (fun ω => (MeasurableEquiv.sumPiEquivProdPi fun _ : (m × n) ⊕ (m × n) => ℝ).symm
+      (Function.uncurry (X ω), Function.uncurry (X' ω))) (gaussianVector ((m × n) ⊕ (m × n))) μ :=
+    (measurePreserving_sumPiEquivProdPi fun _ : (m × n) ⊕ (m × n) => gaussianReal 0 1).symm
+      |>.fun_comp_hasLaw <| (indepFun_iff_hasLaw_prodMk_prod
+        (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX)
+        (hasLaw_uncurry_of_hasLaw_gaussianMatrix hX')).1 (hXX'.comp
+        (MeasurableEquiv.curry m n ℝ).symm.measurable
+        (MeasurableEquiv.curry m n ℝ).symm.measurable)
+  have hY : HasLaw (fun ω => X ω - E₂ * X ω * F₂ + E₂ * X' ω * F₂) (gaussianMatrix m n) μ := by
+    refine hasLaw_gaussianMatrix_of_hasLaw_uncurry ?_
+    convert hasLaw_mulVec_of_hasLaw_gaussianVector hz hA using 2 with ω
+    change _ = (1 - P).fromCols P *ᵥ Sum.elim (Function.uncurry (X ω)) (Function.uncurry (X' ω))
+    rw [Matrix.fromCols_mulVec_sumElim, Matrix.sub_mulVec, Matrix.one_mulVec, hPdef,
+      Matrix.kronecker, ← uncurry_mul_mul, ← uncurry_mul_mul]
+    rfl
+  have hF' : F₂ * F₁ = F₂ := by
+    have h := congrArg star hF
+    rwa [star_mul, hF₁.isSelfAdjoint.star_eq, hF₂.isSelfAdjoint.star_eq] at h
+  have hfun : (fun ω => E₁ * X ω * F₁ - E₂ * X ω * F₂ + E₂ * X' ω * F₂) =
+      (fun M => E₁ * M * F₁) ∘ fun ω => X ω - E₂ * X ω * F₂ + E₂ * X' ω * F₂ := by
+    funext ω
+    simp only [Function.comp_apply, Matrix.add_mul, Matrix.sub_mul, Matrix.mul_add,
+      Matrix.mul_sub, ← Matrix.mul_assoc, hE]
+    simp only [Matrix.mul_assoc, hF']
+  rw [hfun]
+  exact (hX.identDistrib hY).comp
+    ((continuous_const.matrix_mul continuous_id).matrix_mul continuous_const).measurable
 
 end NLAlib

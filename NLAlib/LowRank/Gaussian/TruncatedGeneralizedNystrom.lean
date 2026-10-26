@@ -52,6 +52,9 @@ for every best rank-$k$ approximation of the output. Real throughout. Design:
   [asymptotic form](https://nla-lib.org/explore/#d/NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix).
 * the Frobenius core-noise form:
   `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_sqrt_of_hasLaw_gaussianMatrix`.
+
+The exact identities for the noise in the dominant subspace and the oracle truncation are in
+`NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle`.
 -/
 
 @[expose] public section
@@ -187,8 +190,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Ty
 /-- The joint rank event of the two test matrices: almost surely
 $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =
 \operatorname{rank}(\mathbf{A}\mathbf{\Omega})$, for any law of $\mathbf{\Omega}$ independent of a
-standard Gaussian $\mathbf{\Psi}$, when every $\operatorname{rank}(\mathbf{A}\mathbf{x}) \le p$. -/
-private theorem ae_rank_conjTranspose_mul_mul_eq (A : Matrix m n ℝ)
+standard Gaussian $\mathbf{\Psi}$, when every $\operatorname{rank}(\mathbf{A}\mathbf{x}) \le p$.
+Proved without a literature source. -/
+theorem ae_rank_conjTranspose_mul_mul_eq (A : Matrix m n ℝ)
     (hX : AEMeasurable X μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ)
     (hr : ∀ x : Matrix n l ℝ, (A * x).rank ≤ Fintype.card p) :
     ∀ᵐ ω ∂μ, ((Ψ ω)ᴴ * (A * X ω)).rank = (A * X ω).rank := by
@@ -217,7 +221,7 @@ private theorem ae_rank_conjTranspose_mul_mul_eq (A : Matrix m n ℝ)
 
 /-- The core noise $\mathbf{\Pi}_{\mathbf{A}\mathbf{x},\mathbf{\psi}^{\mathsf{H}}}
 (\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{x}))$ is measurable in the pair. -/
-private theorem measurable_obliqueProjector_sub_rsvd (A : Matrix m n ℝ) :
+theorem measurable_obliqueProjector_mul_sub_rsvd (A : Matrix m n ℝ) :
     Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
       obliqueProjector (A * q.1) q.2ᴴ * (A - rsvd A q.1) := by
   have hΨ : Measurable fun q : Matrix n l ℝ × Matrix m p ℝ => q.2ᴴ :=
@@ -232,7 +236,7 @@ private theorem measurable_obliqueProjector_sub_rsvd (A : Matrix m n ℝ) :
 private theorem measurable_specNorm_obliqueProjector_sub_rsvd_sq (A : Matrix m n ℝ) :
     Measurable fun q : Matrix n l ℝ × Matrix m p ℝ =>
       specNorm (obliqueProjector (A * q.1) q.2ᴴ * (A - rsvd A q.1)) ^ 2 :=
-  (continuous_specNorm.measurable.comp (measurable_obliqueProjector_sub_rsvd A)).pow_const 2
+  (continuous_specNorm.measurable.comp (measurable_obliqueProjector_mul_sub_rsvd A)).pow_const 2
 
 /-- The arithmetic of the spectral residual: from $\ell\sigma^2 \le 4\,\mathrm{OPT}^2$,
 $w \le \mathrm{OPT}$, $h \le 3$ and $\ell\beta^2 \le 32.4$ with $\ell \ge 4$, the second-moment
@@ -477,7 +481,7 @@ private theorem integral_frobNorm_obliqueProjector_sub_rsvd_sq_le (A : Matrix m 
     rw [gaussianProjectionFactor_def]
     nlinarith [sq_nonneg (frobNorm (A - rsvd A x))]
   have hF := (continuous_frobNorm.measurable.comp
-    (measurable_obliqueProjector_sub_rsvd (l := l) (p := p) A)).pow_const 2
+    (measurable_obliqueProjector_mul_sub_rsvd (l := l) (p := p) A)).pow_const 2
   have hHi := (integrable_frobNorm_sub_rsvd_sq A hX).const_mul h
   exact ⟨hXΨ.integrable_comp_of_integral_le hX hΨ hF (fun _ => sq_nonneg _)
       (ae_of_all _ fun ω => hint (X ω)) (ae_of_all _ fun ω => hle (X ω)) hHi,
@@ -562,7 +566,7 @@ theorem integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_ga
   have hem : AEStronglyMeasurable
       (fun ω => specNorm (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))) μ :=
     ((continuous_specNorm.measurable.comp
-      (measurable_obliqueProjector_sub_rsvd A)).comp_aemeasurable
+      (measurable_obliqueProjector_mul_sub_rsvd A)).comp_aemeasurable
         (hX.aemeasurable.prodMk hΨ.aemeasurable)).aestronglyMeasurable
   have heL := (memLp_two_iff_integrable_sq hem).2 he2i
   have hei := heL.integrable one_le_two
@@ -728,7 +732,7 @@ theorem
   have hNm : AEStronglyMeasurable
       (fun ω => frobNorm (obliqueProjector (A * X ω) (Ψ ω)ᴴ * (A - rsvd A (X ω)))) μ :=
     ((continuous_frobNorm.measurable.comp
-      (measurable_obliqueProjector_sub_rsvd A)).comp_aemeasurable
+      (measurable_obliqueProjector_mul_sub_rsvd A)).comp_aemeasurable
         (hX.aemeasurable.prodMk hΨ.aemeasurable)).aestronglyMeasurable
   have hNL := (memLp_two_iff_integrable_sq hNm).2 hN2i
   have hNi := hNL.integrable one_le_two

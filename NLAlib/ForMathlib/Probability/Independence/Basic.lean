@@ -5,12 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Logic.Function.DependsOn
 public import Mathlib.MeasureTheory.Integral.Prod
 public import Mathlib.MeasureTheory.Measure.Prod
 public import Mathlib.MeasureTheory.Measure.Real
 public import Mathlib.Probability.HasLaw
+public import Mathlib.Probability.IdentDistrib
 public import Mathlib.Probability.Independence.Basic
-public import Mathlib.Logic.Function.DependsOn
 
 /-!
 # Integrals and events of two independent random variables
@@ -45,6 +46,12 @@ Design: Sketching stage S6 (`docs/design/Sketching-S6.md` §3.1, §8 item 15); L
 (`docs/design/LowRank-S6.md` §4, L1); Hutch++ (`docs/design/Estimation-HutchPP.md` §2.2, P1);
 randomized Kaczmarz (`docs/design/Regression-Kaczmarz.md` §4).
 
+The freezing lemma: if $Z$ is independent of $T$, then in a function $F(T, Z)$ the variable $T$
+may be frozen, so the joint law of $(T, F(T, Z))$ is determined by the laws of $F(t, Z)$ for fixed
+$t$. This is the step of every deferred-decision argument where a transcript-dependent rotation or
+projection acts on an independent Gaussian or Haar matrix (design: query model, LB-A,
+`docs/design/Probability-MatvecQueryModel.md` §3.3).
+
 ## Main results
 
 * `ProbabilityTheory.IndepFun.lintegral_comp_eq_lintegral_lintegral`: Tonelli for an independent
@@ -61,7 +68,13 @@ randomized Kaczmarz (`docs/design/Regression-Kaczmarz.md` §4).
   against the product of the two laws.
 * `ProbabilityTheory.iIndepFun.indepFun_comp_of_dependsOn`: a function of some coordinates of an
   independent family is independent of another coordinate.
+* `ProbabilityTheory.IndepFun.identDistrib_prodMk_of_forall_map_eq`: equal laws for every frozen
+  $t$ give equal joint laws; `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` is the same
+  statement for a product measure.
+* `ProbabilityTheory.IndepFun.hasLaw_prodMk_prod_of_forall_map_eq`: a law $\nu$ not depending on
+  $t$ makes $F(T, Z)$ independent of $T$ with law $\nu$.
 -/
+
 @[expose] public section
 
 open MeasureTheory
@@ -263,5 +276,82 @@ theorem iIndepFun.indepFun_comp_of_dependsOn {ι γ : Type*} {β : ι → Type*}
     simp [Finset.mem_coe.mp hi]
   rw [hFG]
   exact h.comp hG (measurable_pi_apply ⟨t, Finset.mem_singleton_self t⟩)
+
+end ProbabilityTheory
+
+
+open MeasureTheory
+
+namespace MeasureTheory.Measure
+
+/-- The freezing lemma at the level of measures: if $F(t, \cdot)$ and $G(t, \cdot)$ push
+$\sigma$ to the same law for every $t$, then $F$ and $G$ push $\rho \otimes \sigma$ to the same
+law. -/
+theorem map_prod_eq_of_forall_map_eq {α γ δ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
+    [MeasurableSpace δ] {ρ : Measure α} {σ : Measure γ} [SFinite σ] {F G : α → γ → δ}
+    (hF : Measurable fun p : α × γ => F p.1 p.2) (hG : Measurable fun p : α × γ => G p.1 p.2)
+    (h : ∀ t, σ.map (F t) = σ.map (G t)) :
+    (ρ.prod σ).map (fun p => F p.1 p.2) = (ρ.prod σ).map (fun p => G p.1 p.2) := by
+  ext E hE
+  rw [map_apply hF hE, map_apply hG hE, prod_apply (hF hE), prod_apply (hG hE)]
+  refine lintegral_congr fun t => ?_
+  have hFt : Measurable (F t) := hF.comp measurable_prodMk_left
+  have hGt : Measurable (G t) := hG.comp measurable_prodMk_left
+  have := congrArg (· E) (h t)
+  rwa [map_apply hFt hE, map_apply hGt hE] at this
+
+end MeasureTheory.Measure
+
+namespace ProbabilityTheory
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {α γ δ : Type*}
+  [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace δ]
+
+/-- The freezing lemma: let $Z$ be independent of $T$ and $F$, $G$ jointly measurable. If for
+every fixed $t$ the variables $F(t, Z)$ and $G(t, Z)$ have the same law, then $(T, F(T, Z))$ and
+$(T, G(T, Z))$ have the same joint law. -/
+theorem IndepFun.identDistrib_prodMk_of_forall_map_eq [IsFiniteMeasure μ] {T : Ω → α}
+    {Z : Ω → γ} (hTZ : IndepFun T Z μ) (hT : AEMeasurable T μ) (hZ : AEMeasurable Z μ)
+    {F G : α → γ → δ} (hF : Measurable (Function.uncurry F))
+    (hG : Measurable (Function.uncurry G))
+    (h : ∀ t, (μ.map Z).map (F t) = (μ.map Z).map (G t)) :
+    IdentDistrib (fun ω => (T ω, F (T ω) (Z ω))) (fun ω => (T ω, G (T ω) (Z ω))) μ μ := by
+  have hpair := (indepFun_iff_map_prod_eq_prod_map_map hT hZ).1 hTZ
+  have hp := hT.prodMk hZ
+  have hF' : Measurable (fun p : α × γ => (p.1, F p.1 p.2)) := measurable_fst.prodMk hF
+  have hG' : Measurable (fun p : α × γ => (p.1, G p.1 p.2)) := measurable_fst.prodMk hG
+  refine ⟨hF'.comp_aemeasurable hp, hG'.comp_aemeasurable hp, ?_⟩
+  change μ.map ((fun p : α × γ => (p.1, F p.1 p.2)) ∘ (fun ω => (T ω, Z ω))) =
+    μ.map ((fun p : α × γ => (p.1, G p.1 p.2)) ∘ (fun ω => (T ω, Z ω)))
+  rw [← AEMeasurable.map_map_of_aemeasurable hF'.aemeasurable hp,
+    ← AEMeasurable.map_map_of_aemeasurable hG'.aemeasurable hp, hpair]
+  refine Measure.map_prod_eq_of_forall_map_eq (F := fun t z => (t, F t z))
+    (G := fun t z => (t, G t z)) hF' hG' fun t => ?_
+  have e : ∀ H : α → γ → δ, Measurable (Function.uncurry H) →
+      (μ.map Z).map (fun z => (t, H t z)) = ((μ.map Z).map (H t)).map (Prod.mk t) := fun H hH =>
+    (Measure.map_map measurable_prodMk_left (hH.comp measurable_prodMk_left)).symm
+  rw [e F hF, e G hG, h t]
+
+/-- Freezing with a fixed law: let $Z$ be independent of $T$ and $F$ jointly measurable. If
+$F(t, Z)$ has the same law $\nu$ for every fixed $t$, then $(T, F(T, Z))$ has law
+$\mu_T \otimes \nu$: $F(T, Z)$ has law $\nu$ and is independent of $T$ (by
+`ProbabilityTheory.indepFun_iff_hasLaw_prodMk_prod`). A Gaussian matrix multiplied by an
+independent random orthogonal matrix is the typical use. -/
+theorem IndepFun.hasLaw_prodMk_prod_of_forall_map_eq [IsFiniteMeasure μ] {T : Ω → α}
+    {Z : Ω → γ} (hTZ : IndepFun T Z μ) (hT : AEMeasurable T μ) (hZ : AEMeasurable Z μ)
+    {F : α → γ → δ} (hF : Measurable (Function.uncurry F)) {ν : Measure δ}
+    (h : ∀ t, (μ.map Z).map (F t) = ν) :
+    HasLaw (fun ω => (T ω, F (T ω) (Z ω))) ((μ.map T).prod ν) μ := by
+  have hp := (measurable_fst.prodMk hF).comp_aemeasurable (hT.prodMk hZ)
+  rcases isEmpty_or_nonempty α with hα | ⟨⟨t₀⟩⟩
+  · exact ⟨hp, (Measure.eq_zero_of_isEmpty _).trans (Measure.eq_zero_of_isEmpty _).symm⟩
+  -- Freeze `T` at `t₀`: `(T, F T Z)` has the law of `(T, F t₀ Z)`, an independent pair.
+  have hF₀ : Measurable (F t₀) := hF.comp measurable_prodMk_left
+  have h₀ := hTZ.identDistrib_prodMk_of_forall_map_eq hT hZ hF (G := fun _ => F t₀)
+    (hF₀.comp measurable_snd) fun t => (h t).trans (h t₀).symm
+  refine ⟨hp, h₀.map_eq.trans ?_⟩
+  rw [← h t₀, AEMeasurable.map_map_of_aemeasurable hF₀.aemeasurable hZ]
+  exact (indepFun_iff_map_prod_eq_prod_map_map hT (hF₀.comp_aemeasurable hZ)).1
+    (hTZ.comp measurable_id hF₀)
 
 end ProbabilityTheory

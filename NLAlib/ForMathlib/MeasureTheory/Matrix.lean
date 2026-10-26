@@ -121,6 +121,7 @@ theorem Measurable.matrix_const_smul {γ : Type*} [MeasurableSpace α] [SMul γ 
 /-- The product of measurable matrix-valued functions is measurable, for any shapes. It needs no
 topology on the entries; for square matrices over a second countable Borel space Mathlib's
 `Measurable.mul` applies directly. -/
+@[fun_prop]
 theorem Measurable.matrix_mul [MeasurableSpace α] [Fintype m] [NonUnitalNonAssocSemiring α]
     [MeasurableAdd₂ α] [MeasurableMul₂ α] {f : β → Matrix l m α} {g : β → Matrix m n α}
     (hf : Measurable f) (hg : Measurable g) : Measurable fun x => f x * g x := by
@@ -130,6 +131,7 @@ theorem Measurable.matrix_mul [MeasurableSpace α] [Fintype m] [NonUnitalNonAsso
     ((Matrix.measurable_apply i j).comp hf).mul ((Matrix.measurable_apply j k).comp hg)
 
 /-- The action of a measurable matrix-valued function on a measurable vector is measurable. -/
+@[fun_prop]
 theorem Measurable.matrix_mulVec [MeasurableSpace α] [Fintype n] [NonUnitalNonAssocSemiring α]
     [MeasurableAdd₂ α] [MeasurableMul₂ α] {f : β → Matrix m n α} {v : β → n → α}
     (hf : Measurable f) (hv : Measurable v) : Measurable fun x => f x *ᵥ v x := by

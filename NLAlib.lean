@@ -46,6 +46,7 @@ public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
+public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
@@ -68,6 +69,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
+public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Distributions.Beta
@@ -76,6 +78,7 @@ public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.ForMathlib.Probability.Independence.InfinitePi
 public import NLAlib.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import NLAlib.ForMathlib.Probability.Martingale.OptionalStopping
+public import NLAlib.ForMathlib.Probability.Moments.PaleyZygmund
 public import NLAlib.ForMathlib.Probability.Moments.Variance
 public import NLAlib.ForMathlib.RingTheory.Polynomial.Chebyshev
 public import NLAlib.ForMathlib.Topology.Algebra.Module.FiniteDimension
@@ -131,6 +134,7 @@ public import NLAlib.LowRank.Gaussian.RangeFinderTailHaar
 public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle
 public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian
@@ -148,6 +152,17 @@ public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.Filter
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
+public import NLAlib.LowerBounds.LowRank.EarlyTruncation
+public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
+public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
+public import NLAlib.LowerBounds.LowRank.RangeRecovery
+public import NLAlib.LowerBounds.LowRank.RotationInvariant
+public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
+public import NLAlib.LowerBounds.QueryModel.Basic
+public import NLAlib.LowerBounds.QueryModel.DeferredDecision
+public import NLAlib.LowerBounds.QueryModel.HiddenHaar
+public import NLAlib.LowerBounds.QueryModel.Yao
+public import NLAlib.LowerBounds.Regression.SketchAndSolve
 public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation
 public import NLAlib.Matrix.Basic.FromCols
@@ -384,6 +399,7 @@ public import NLAlib.RandomMatrix.Haar.Basic
 public import NLAlib.RandomMatrix.Haar.Blocks
 public import NLAlib.RandomMatrix.Haar.Moments
 public import NLAlib.RandomMatrix.Haar.Sphere
+public import NLAlib.RandomMatrix.Haar.Stabilizer
 public import NLAlib.RandomMatrix.Haar.Transfer
 public import NLAlib.RandomMatrix.Haar.Uniqueness
 public import NLAlib.RandomMatrix.Rademacher.Basic

@@ -2,6 +2,88 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## LB-A matvec query model: proofs (2026-10-25)
+
+Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`
+(40c9704, reorg/layers) and `cleanup/s10` (9ba7a44, the `LowerBounds/` layer) merged. All 41
+LB-A statements are proved (workflow harness: haiku; opus on the six L targets and H2, three
+haiku escalations to opus), cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into
+`NLAlib` with their `Proof:` lines removed (D8). Placement (decision LOWERBOUNDS-FOLDER (a); the
+design note's `Probability/QueryModel/` (layer 1) is superseded):
+`LowerBounds/QueryModel/{Basic, Yao, DeferredDecision, HiddenHaar}.lean` (the model and
+`gramSimulation`, formerly `NLAlib/Probability/QueryModel/Basic.lean`; Yao's principle; the
+Gaussian deferred decision with `resample`, formerly `NLAlib/RandomMatrix/DeferredDecision.lean`;
+the adaptive stabilizer form H2) and `LowerBounds/LowRank/RangeRecovery.lean` (R4a, R4b, R4–R6).
+Tools that are not lower bounds joined their topic files: the non-adaptive stabilizer form H1 in
+the new `RandomMatrix/Haar/Stabilizer.lean`, G1 in `RandomMatrix/Gaussian/Invariance`, Z1 in
+`RandomMatrix/Gaussian/Rank`, the freezing lemma F1–F2 in
+`ForMathlib/Probability/Independence/Basic`, T1–T4 in `ForMathlib/InformationTheory/TotalVariation`.
+The scaffold's `RandomMatrix/DeferredDecision` (1738 lines) was split by topic before the move.
+The scaffold is empty again. No statement changed. One private helper became public (rule S5):
+`HasOrthonormalCols.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose`
+(`RandomMatrix/UnitaryInvariance`, formerly private there and copied in the H1 file). Ratchet: T9
+for `history_gramSimulation` (proof term in its statement; decision T9-GRAM); allowlist: N9 for
+R4b (decision NAME-R4B). Reports:
+`reports/Review-LBA-Cleanup.md` and `reports/Stage-LBA.md` in the harness repository.
+
+Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
+- UNUSED-HE1 (a): G1 `identDistrib_mul_mul_of_hasLaw_gaussianMatrix` drops its unused
+  `hE₁ : IsStarProjection E₁` (statement change: a weakening of the hypotheses); its two linter
+  suppressions are gone, and D2's step passes one argument fewer.
+- T9-GRAM (a): new definition `QueryAlgorithm.gramDecode`, used by `gramSimulation`; R1a
+  `history_gramSimulation` is restated through it (statement change, definitionally equal; the
+  proof term in its `Fin` literal is gone) and, by N2, renamed `gramDecode_history_gramSimulation`.
+  The T9 ratchet entry is removed.
+- RANK-STEP-HOME (a): R4a is now `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` in
+  `ForMathlib/LinearAlgebra/Matrix/Rank` (was `NLAlib.rank_mul_of_snoc_eq_rank_of_snoc` in
+  `LowerBounds/LowRank/RangeRecovery`); statement unchanged.
+- PUBLIC-HELPERS (a): new public declarations
+  `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` (ForMathlib Independence),
+  `Measurable.finSnoc` (new ForMathlib `MeasureTheory/MeasurableSpace/Pi`),
+  `NLAlib.Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
+  `QueryAlgorithm.queryAt_gramSimulation_two_mul`, `…_two_mul_add_one` (QueryModel/Basic),
+  `QueryAlgorithm.IsMeasurable.measurable_resample` (DeferredDecision), and the H2 corollary
+  `QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant_of_indepFun`
+  (randomized stabilizer, for Shamir Lemma 4); `@[fun_prop]` on `Measurable.matrix_mul`,
+  `Measurable.matrix_mulVec`. Private copies deleted; no statement changed.
+- CONTRIBUTING §5.3 (Fable review item 1): rows for the query algorithm, the matrix–vector oracle
+  (`twoSidedMulVec`, per-side query matrices and counts, `IsOneSided`, `IsNonAdaptive`) and the
+  Gram simulation / truncation / resampling; the stage's V7 warnings are gone.
+
+## S10 lower bounds for specific estimators: proofs (2026-10-25)
+
+Branch `cleanup/s10` (worktree `nlalib-cleanup-s10`), over `integrate/s10` with `origin/main`
+(40c9704, reorg/layers) merged. All 29 S10 statements are proved (workflow harness: haiku; opus on
+five L/H targets, E8 and L1 finished by Opus continuations; seven haiku escalations to opus),
+cleaned up and tier-1 reviewed, and moved from `NLAlibScaffold` into `NLAlib` with their `Proof:`
+lines removed (D8). New top layer `LowerBounds/` (decision LOWERBOUNDS-FOLDER (a); CONTRIBUTING §2,
+`check_rules.LAYER` 5, `NLAlib/LowerBounds/RULES.md`): `LowerBounds/LowRank/{EarlyTruncation,
+EarlyTruncationBlock, EarlyTruncationBlockGaussian, TruncatedGeneralizedNystrom,
+RotationInvariant}.lean` (EarlyTruncation, 1731 lines, split into $k = 1$, the deterministic block
+step and the Gaussian block bound) and
+`LowerBounds/Regression/SketchAndSolve.lean`. The tools joined their topic files:
+`Probability/Distributions/ChiSquareMoments`, `LowRank/Structural/Truncation`,
+`LowRank/Gaussian/TruncatedGeneralizedNystrom`, `Matrix/Pseudoinverse/NormBounds`,
+`RandomMatrix/Haar/Blocks`, and the new `ForMathlib/Probability/Moments/PaleyZygmund.lean`. W6
+(Epperly–Webber Lemma 6.2) went to `LowerBounds/LowRank/RotationInvariant` rather than
+`LowRank/Gaussian/RotationInvariantFactor`, and W3–W5 to `LowerBounds/Regression` rather than
+`Regression/SketchAndSolve` (lower bounds live in `LowerBounds/`). The scaffold is empty again. One
+statement changed: E7 (`frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational`) drops
+its unused hypothesis `s ≤ 1` (a pure weakening; Fable review). New public helpers: `exists_hasOrthonormalCols_frames_range_compl` and
+`obliqueProjector_mul_one_sub_rangeProjector_mul_eq` (`Matrix/Subspaces/ObliqueProjector`; they
+replace the private `exists_compl_frames`/`obliqueProjector_mul_eq_frames` of
+`Regression/SketchAndSolve` and three S10 copies), `measurable_obliqueProjector_mul_sub_rsvd`
+(formerly private in `LowRank/Gaussian/TruncatedGeneralizedNystrom`) and
+`integrable_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame` (Blocks). New import:
+`NLAlib.Matrix.Norms.Projector` (NormBounds). Reports: `reports/Review-S10-Cleanup.md` and
+`reports/Stage-S10.md` in the harness repository.
+
+Maintainer decisions (`Review-S10.json`, 2026-10-26): LB-PLACE-ADDITIONS (a) and PZ-LOCATOR (a)
+keep things as they are; SPLIT-GAUSSIAN-TGN (a): the oracle section of
+`LowRank/Gaussian/TruncatedGeneralizedNystrom` (1089 lines; G1–G3 and their private helpers)
+moved to the new `LowRank/Gaussian/TruncatedGeneralizedNystromOracle` (779 + 347 lines), names
+unchanged; `LowerBounds/LowRank/TruncatedGeneralizedNystrom` imports the new file.
+
 ## Library layers follow the imports (2026-10-25)
 
 Branch `reorg/layers` (worktree `nlalib-reorg`), from `origin/main`. Maintainer decision on library

@@ -186,8 +186,8 @@ theorem integral_mul_mul_conjTranspose_of_isLeftUnitarilyInvariant [DecidableEq 
 
 /-- The block-diagonal rotation $\mathbf{I} + \mathbf{V}_2(\mathbf{U} - \mathbf{I})
 \mathbf{V}_2^{\mathsf{H}}$ of a frame $\mathbf{V}_2$ by a unitary $\mathbf{U}$ is unitary. -/
-private theorem hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose [DecidableEq n] {t : Type*}
-    [Fintype t] [DecidableEq t] {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂)
+theorem HasOrthonormalCols.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose [DecidableEq n]
+    {t : Type*} [Fintype t] [DecidableEq t] {V₂ : Matrix n t 𝕜} (hV₂ : HasOrthonormalCols V₂)
     {U : Matrix t t 𝕜} (hU : HasOrthonormalCols U) :
     HasOrthonormalCols (1 + V₂ * (U - 1) * V₂ᴴ) := by
   rw [hasOrthonormalCols_iff]
@@ -223,7 +223,7 @@ theorem hasLaw_prodMk_conjTranspose_mul_of_isLeftUnitarilyInvariant [DecidableEq
     HasLaw (fun ω => (V₁ᴴ * X ω, U * (V₂ᴴ * X ω))) (ν.map fun x => (V₁ᴴ * x, V₂ᴴ * x)) μ := by
   set R := 1 + V₂ * (U - 1) * V₂ᴴ
   have hR : HasOrthonormalCols R :=
-    hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hV₂ hU
+    hV₂.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hU
   have h1 : V₁ᴴ * R = V₁ᴴ := by
     simp only [R, Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, h₁₂, Matrix.zero_mul,
       add_zero]

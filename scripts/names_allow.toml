@@ -32,3 +32,18 @@ reason = "the derived name drops the right-side `mul_add` and collides with the 
 name = "Matrix.IsHermitian.integral_pow_spectralMeasure"
 rule = "N6"
 reason = "Mathlib's `integral_pow` idiom (the integrand `x ^ k` is the argument of `integral_`, the measure follows); `pow` comes after its argument `x`, the checker reads `spectralMeasure` as its argument"
+
+[[allow]]
+name = "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix"
+rule = "N10"
+reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part"
+
+[[allow]]
+name = "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasLaw_gaussianMatrix"
+rule = "N10"
+reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part"
+
+[[allow]]
+name = "NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero"
+rule = "N9"
+reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
