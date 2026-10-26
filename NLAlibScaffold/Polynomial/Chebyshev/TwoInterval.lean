@@ -1,0 +1,181 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
+public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
+public import NLAlib.Polynomial.Chebyshev.TwoInterval
+
+/-!
+# Residual polynomials on two symmetric intervals (scaffold)
+
+Statements for `NLAlib/Polynomial/Chebyshev/TwoInterval.lean` (stage LB-C1, design note
+`docs/design/LowerBounds-HiddenRotationLowerBounds.md` §3.3): the two-interval dual certificate,
+the residual minimax value of $[-a', -a] \cup [a, a']$, its exponential lower bound
+([Shamir2026, Lemma 1]), the weighted form with at most $q + 2$ points ([Shamir2026, Lemma 2]),
+and the weighted bound on a Chebyshev two-interval spectrum.
+
+## Main results
+
+* `NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq`: the dual certificate.
+* `NLAlib.residualMinimax_Icc_union_Icc`: the value $T_{\lfloor q/2 \rfloor}(\cdot)^{-1}$.
+* `NLAlib.exp_neg_le_inv_eval_T_real`, `NLAlib.exp_neg_le_residualMinimax_Icc_union_Icc`: at
+  least $e^{-2q/\kappa}$ on $[-\kappa, -1] \cup [1, \kappa]$.
+* `NLAlib.exists_residualMinimax_Icc_union_Icc_sq_le_sum_mul_norm_sq`: the weighted form.
+* `NLAlib.IsChebyshevTwoIntervalSpectrum.mem_Icc_union_Icc`,
+  `NLAlib.IsChebyshevTwoIntervalSpectrum.inv_sq_le_sum_card_sub_mul_eval_sq`,
+  `NLAlib.exists_isChebyshevTwoIntervalSpectrum`.
+-/
+
+@[expose] public section
+
+open Polynomial Polynomial.Chebyshev
+
+namespace NLAlib
+
+/-- **Dual certificate on two symmetric intervals**: for $0 < a < a'$ and $k = \lfloor q/2
+\rfloor$, every $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
+$$T_k\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \le \sum_{j=0}^{k} \frac{\omega_j}{2}
+\Bigl(\lvert p(\sqrt{\xi_j}) \rvert^2 + \lvert p(-\sqrt{\xi_j}) \rvert^2\Bigr) \,,$$
+with $\xi_j$ the Chebyshev extrema of $[a^2, a'^2]$ and $\omega_j$ their dual weights
+(`chebyshevExtremum`, `chebyshevWeight`).
+[Greenbaum1997, §3.1]; locator to verify; the bound behind the two-interval MINRES worst case.
+Proof: $\lvert u \rvert^2 + \lvert v \rvert^2 \ge 2\lvert (u + v)/2 \rvert^2$ with
+$(u + v)/2$ the even part $P(\xi_j)$, $P$ = `Polynomial.contract 2` of $p$
+(`Polynomial.degree_contract_le_of_degree_le`, `Polynomial.eval_zero_contract`); then
+`NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq` on $[a^2, a'^2]$. The even-part
+inequality is the private lemma of `NLAlib/Krylov/LinearSystems/WorstCase.lean` (the step
+`hterm` of the two-interval MINRES theorem there); move it here as a public lemma, and let that
+proof use this theorem. M, about 40 lines. -/
+theorem inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq {𝕜 : Type*} [RCLike 𝕜]
+    {a a' : ℝ} (ha : 0 < a) (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q)
+    (hp₀ : p.eval 0 = 1) :
+    ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)))⁻¹ ≤
+      ∑ j : Fin (q / 2 + 1), chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j / 2 *
+        (‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜)‖ ^ 2 +
+          ‖p.eval (-((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜))‖ ^ 2) :=
+    by
+  sorry
+
+/-- **Residual minimax value of two symmetric intervals**: for $0 < a < a'$,
+$$\min_{\deg p \le q,\ p(0) = 1}\ \max_{x \in [-a', -a] \cup [a, a']} \lvert p(x) \rvert =
+T_{\lfloor q/2 \rfloor}\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \,,$$
+attained by the even Chebyshev residual $r_{\lfloor q/2 \rfloor}(x^2)$ of $[a^2, a'^2]$.
+[Greenbaum1997, §3.1]; locator to verify; [Shamir2026, Lemma 1] uses the lower half.
+Proof: upper bound: `NLAlib.residualMinimax_le` with the even residual
+(`NLAlib.degree_chebyshevResidual_comp_X_sq_le`, `NLAlib.eval_chebyshevResidual_comp_X_sq_zero`,
+`NLAlib.abs_eval_chebyshevResidual_comp_X_sq_le`). Lower bound: `le_ciInf`; for a residual $p$
+with $\sup_S \lvert p \rvert = \eta$, the points $\pm\sqrt{\xi_j}$ lie in $S$
+(`NLAlib.chebyshevExtremum_mem_Icc`, `Real.sqrt_le_sqrt`), so the right side of
+`NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq` is at most
+$\eta^2 \sum_j \omega_j = \eta^2\,T_k(\cdot)$ (`NLAlib.sum_chebyshevWeight`), hence
+$T_k(\cdot)^{-1} \le \eta$. M, about 50 lines. -/
+theorem residualMinimax_Icc_union_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
+    residualMinimax (Set.Icc (-a') (-a) ∪ Set.Icc a a') q =
+      ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)))⁻¹ := by
+  sorry
+
+/-- The Chebyshev value on $[1, \kappa^2]$ decays at most like $e^{-4k/\kappa}$: for
+$\kappa \ge 2$ and every $k$,
+$$e^{-4k/\kappa} \le T_k\Bigl(\frac{\kappa^2 + 1}{\kappa^2 - 1}\Bigr)^{-1} \,.$$
+[Shamir2026, Lemma 1]; there through $T_k(\cosh\theta) = \cosh(k\theta) \le e^{k\theta}$ with
+$\theta = \log((\kappa + 1)/(\kappa - 1)) \le 4/\kappa$.
+Proof: `NLAlib.inv_eval_T_real_eq_two_mul_pow_div` with $a = 1$, $a' = \kappa^2$ gives
+$2\rho^k/(1 + \rho^{2k}) \ge \rho^k$ for $\rho = (\kappa - 1)/(\kappa + 1) \in [0, 1)$
+(`Real.sqrt_sq`); and $\rho \ge e^{-4/\kappa}$ because
+$\log(1 + 2/(\kappa - 1)) \le 2/(\kappa - 1) \le 4/\kappa$ for $\kappa \ge 2$
+(`Real.add_one_le_exp`, `Real.exp_le_exp`, `pow_le_pow_left₀`). S, about 25 lines. -/
+theorem exp_neg_le_inv_eval_T_real {κ : ℝ} (hκ : 2 ≤ κ) (k : ℕ) :
+    Real.exp (-(4 * k / κ)) ≤ ((T ℝ (k : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)))⁻¹ := by
+  sorry
+
+/-- **Polynomial inapproximability on two intervals**: for $\kappa \ge 2$ and every $q$, every
+real polynomial $p$ of degree at most $q$ with $p(0) = 0$ has
+$\max_{\lambda \in [-\kappa, -1] \cup [1, \kappa]} \lvert 1 - p(\lambda) \rvert \ge e^{-2q/\kappa}$:
+$$e^{-2q/\kappa} \le \mathsf{residualMinimax}\bigl([-\kappa, -1] \cup [1, \kappa], q\bigr) \,.$$
+[Shamir2026, Lemma 1]; there $\rho_d(\kappa)$, the infimum over $p(0) = 0$ of the maximum of
+$\lvert 1 - p \rvert$, which is `NLAlib.residualMinimax` of the residual $1 - p$.
+Proof: `NLAlib.residualMinimax_Icc_union_Icc` with $a = 1$, $a' = \kappa$, then
+`NLAlib.exp_neg_le_inv_eval_T_real` with $k = \lfloor q/2 \rfloor$ and $4k \le 2q$
+(`Nat.mul_div_le`, `Real.exp_le_exp`). S, 10 lines.
+Result: polynomial-two-interval-inapproximability -/
+theorem exp_neg_le_residualMinimax_Icc_union_Icc {κ : ℝ} (hκ : 2 ≤ κ) (q : ℕ) :
+    Real.exp (-(2 * q / κ)) ≤ residualMinimax (Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ) q := by
+  sorry
+
+/-- **Weighted inapproximability on two intervals**: for $0 < a < a'$ there are at most $q + 2$
+points of $S = [-a', -a] \cup [a, a']$ and positive weights summing to $1$ on them such that every
+$p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
+$$\mathsf{residualMinimax}(S, q)^2 \le \sum_x w_x \lvert p(x) \rvert^2 \,.$$
+The points are $\pm\sqrt{\xi_j}$ for the Chebyshev extrema $\xi_j$ of $[a^2, a'^2]$, with weights
+$\omega_j/(2\tau)$, $\tau = \sum_j \omega_j$. The reverse inequality holds for every probability
+vector, so the infimum over residuals of the weighted sum is the squared minimax value.
+[Shamir2026, Lemma 2]; there with at most $q + 1$ points, from the Kroó–Pinkus
+characterization (Kroó and Pinkus 2010, Theorem 2.3), here with the explicit Chebyshev points
+($2\lfloor q/2 \rfloor + 2$ of them) and no characterization theorem.
+Proof: the image of $(j, \pm) \mapsto \pm\sqrt{\xi_j}$ (`Finset.image`, injective by
+`NLAlib.strictMono_chebyshevExtremum` and positivity), weights from `NLAlib.chebyshevWeight_pos`
+and `NLAlib.sum_chebyshevWeight`; the bound is
+`NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq` divided by $\tau$, with
+`NLAlib.residualMinimax_Icc_union_Icc` for the left side. M, about 45 lines. -/
+theorem exists_residualMinimax_Icc_union_Icc_sq_le_sum_mul_norm_sq (𝕜 : Type*) [RCLike 𝕜]
+    {a a' : ℝ} (ha : 0 < a) (haa : a < a') (q : ℕ) :
+    ∃ s : Finset ℝ, (↑s : Set ℝ) ⊆ Set.Icc (-a') (-a) ∪ Set.Icc a a' ∧ s.card ≤ q + 2 ∧
+      ∃ w : ℝ → ℝ, (∀ x ∈ s, 0 < w x) ∧ ∑ x ∈ s, w x = 1 ∧
+        ∀ p : 𝕜[X], p.degree ≤ q → p.eval 0 = 1 →
+          residualMinimax (Set.Icc (-a') (-a) ∪ Set.Icc a a') q ^ 2 ≤
+            ∑ x ∈ s, w x * ‖p.eval (x : 𝕜)‖ ^ 2 := by
+  sorry
+
+variable {n : Type*} [Fintype n]
+
+/-- The values of a Chebyshev two-interval spectrum lie in $[-\kappa, -1] \cup [1, \kappa]$ for
+$\kappa > 1$.
+Proof: each value is $\pm\sqrt{\xi_j}$ (`NLAlib.IsChebyshevTwoIntervalSpectrum.exists_eq`) with
+$\xi_j \in [1, \kappa^2]$ (`NLAlib.chebyshevExtremum_mem_Icc`); `Real.sqrt_le_sqrt`,
+`Real.sqrt_sq`, `Real.one_le_sqrt`. S, 10 lines. -/
+theorem IsChebyshevTwoIntervalSpectrum.mem_Icc_union_Icc {κ : ℝ} {s M : ℕ} {d : n → ℝ}
+    (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 1 < κ) (i : n) :
+    d i ∈ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ := by
+  sorry
+
+/-- **Weighted residual bound on a Chebyshev two-interval spectrum**: for $\kappa > 1$, a
+Chebyshev two-interval spectrum $d$ with depth $s$ and margin $M$, and every real $p$ with
+$\deg p \le s$ and $p(0) = 1$,
+$$\frac{\lvert n \rvert}{4}\,T_k\Bigl(\frac{\kappa^2 + 1}{\kappa^2 - 1}\Bigr)^{-2} \le
+\sum_{t} \bigl(m_t - M\bigr)\,p(t)^2 \,,$$
+the sum over the distinct values $t$ of $d$, $m_t$ the number of $i$ with $d_i = t$, and
+$k = \lfloor s/2 \rfloor$.
+Proof: each of the $2(k + 1)$ points has $m_t - M \ge \lvert n \rvert\omega_j/(8\tau)$
+(`NLAlib.IsChebyshevTwoIntervalSpectrum.le_card_pos`, `le_card_neg`); every value of $d$ is a
+point (`NLAlib.IsChebyshevTwoIntervalSpectrum.exists_eq`), so the sum over values is the sum over
+the points (`Finset.sum_image`, `Finset.sum_le_sum`); then
+`NLAlib.inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq` with $a = 1$, $a' =
+\kappa$ times $\lvert n \rvert/(4\tau)$. M, about 40 lines. -/
+theorem IsChebyshevTwoIntervalSpectrum.inv_sq_le_sum_card_sub_mul_eval_sq {κ : ℝ} {s M : ℕ}
+    {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 1 < κ) {p : ℝ[X]}
+    (hp : p.degree ≤ s) (hp₀ : p.eval 0 = 1) :
+    (Fintype.card n : ℝ) / 4 * ((T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)))⁻¹ ^ 2 ≤
+      ∑ t ∈ Finset.univ.image d,
+        (((Finset.univ.filter fun i => d i = t).card : ℝ) - M) * p.eval t ^ 2 := by
+  sorry
+
+/-- **Chebyshev two-interval spectra exist** in every dimension
+$\lvert n \rvert \ge \tfrac43 (s + 2)(M + 1)$: for $\kappa > 1$ and
+$4(s + 2)(M + 1) \le 3\lvert n \rvert$ there is a Chebyshev two-interval spectrum on $n$ with
+depth $s$ and margin $M$.
+Proof: list the $L = 2(\lfloor s/2 \rfloor + 1) \le s + 2$ points; give point $j$ multiplicity
+$\lceil \lvert n \rvert w_j/4 \rceil + M$ ($w_j = \omega_j/(2\tau)$, `Nat.ceil`), the last point
+the rest; the total is at most $\lvert n \rvert/4 + L(M + 1) \le \lvert n \rvert$
+(`NLAlib.sum_chebyshevWeight`, `Nat.ceil_lt_add_one`). Realize the multiplicities by a function
+on `Fin (Fintype.card n)` through `Fintype.equivFin`, constant on consecutive blocks. M, about 60
+lines. -/
+theorem exists_isChebyshevTwoIntervalSpectrum {κ : ℝ} (hκ : 1 < κ) {s M : ℕ}
+    (hn : 4 * ((s + 2) * (M + 1)) ≤ 3 * Fintype.card n) :
+    ∃ d : n → ℝ, IsChebyshevTwoIntervalSpectrum κ s M d := by
+  sorry
+
+end NLAlib

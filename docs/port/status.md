@@ -2,6 +2,17 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## LB-C hidden-rotation lower bounds: design (2026-10-26)
+
+Branch `design/lbc` (worktree `nlalib-design-lbc`, from `origin/main` 79f8cc2). Design note
+`docs/design/LowerBounds-HiddenRotationLowerBounds.md`, awaiting approval: the pass model
+`QueryAlgorithm.IsPassStructured`, the hidden-rotation oracle and its Krylov coupling
+(`IsKrylovCoupling`, OP5 Lemma C / Shamir Lemma 4 for $p$ passes), Shamir's
+$\Omega(\kappa\log(1/\varepsilon))$ with explicit constants, and the two-pass (and one-pass)
+$\Omega(k/\varepsilon)$ for low-rank approximation from the OP5 research note. Eight definitions
+written in `NLAlib` (build `--wfail`); 52 sorried statements in `NLAlibScaffold` (S 29, M 20, L 2,
+H 1); targets `~/nlalib-harness/pilot/lbc-targets.json`. No proof dispatched.
+
 ## LB-A matvec query model: proofs (2026-10-25)
 
 Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`

@@ -155,12 +155,14 @@ public import NLAlib.LowRank.Structural.Truncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
+public import NLAlib.LowerBounds.LowRank.FewPasses
 public import NLAlib.LowerBounds.LowRank.RangeRecovery
 public import NLAlib.LowerBounds.LowRank.RotationInvariant
 public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
 public import NLAlib.LowerBounds.QueryModel.Basic
 public import NLAlib.LowerBounds.QueryModel.DeferredDecision
 public import NLAlib.LowerBounds.QueryModel.HiddenHaar
+public import NLAlib.LowerBounds.QueryModel.HiddenRotation
 public import NLAlib.LowerBounds.QueryModel.Yao
 public import NLAlib.LowerBounds.Regression.SketchAndSolve
 public import NLAlib.Matrix.Basic.ComplementaryProjector
@@ -319,6 +321,7 @@ public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
+public import NLAlib.Polynomial.Chebyshev.TwoInterval
 public import NLAlib.Polynomial.Interpolation.DividedDifference
 public import NLAlib.Polynomial.Interpolation.Hermite
 public import NLAlib.Polynomial.Interpolation.Stieltjes

@@ -59,6 +59,10 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
   `NLAlib.QueryAlgorithm.rightCount`, `NLAlib.QueryAlgorithm.leftCount`,
   `NLAlib.QueryAlgorithm.IsOneSided`: the two sides of pair queries and their costs.
 * `NLAlib.QueryAlgorithm.IsNonAdaptive`: the queries do not depend on the responses.
+* `NLAlib.QueryAlgorithm.IsPassStructured`: the queries come in passes, each a block chosen
+  from the responses of the earlier passes.
+* `NLAlib.QueryAlgorithm.comapResponse`, `NLAlib.QueryAlgorithm.mapOutput`: reading the responses
+  through a map (a weaker oracle) and post-processing the output.
 * `NLAlib.QueryAlgorithm.IsMeasurable`, `NLAlib.QueryAlgorithm.IsMeasurableFamily`: measurability
   of an algorithm and joint measurability of a seeded family.
 * `NLAlib.QueryAlgorithm.gramSimulation`: a `2q`-round algorithm against the two-sided oracle of
@@ -217,6 +221,38 @@ fixed in advance: a one-pass algorithm with $\ell$ products with $\mathbf{A}$ an
 $\mathbf{A}^{\mathsf{H}}$ is `IsNonAdaptive` with `rightCount ≤ ℓ` and `leftCount ≤ p`. -/
 def IsNonAdaptive (alg : QueryAlgorithm Q R q β) : Prop :=
   ∀ i < q, ∀ h h' : Fin i → R, alg.query i h = alg.query i h'
+
+/-- A query algorithm is **pass-structured** with pass map `pass : ℕ → ℕ` when its rounds are
+grouped into passes, round `i` in pass `pass i`, the passes in order (`pass` is monotone), and
+each query depends only on the responses of earlier passes: two histories that agree on every
+round of a pass before `pass i` give the same query `i`. The queries of one pass form a block
+chosen before any of its responses is seen. A `p`-pass algorithm is one with the further
+hypothesis `∀ i < q, pass i < p`. Every algorithm is pass-structured with `pass = id`, one query
+per pass (`QueryAlgorithm.isPassStructured_id`); with `pass = 0` it is non-adaptive
+(`QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive`). -/
+structure IsPassStructured (alg : QueryAlgorithm Q R q β) (pass : ℕ → ℕ) : Prop where
+  /-- The passes come in order. -/
+  monotone : Monotone pass
+  /-- Query `i` depends only on the responses of the passes before `pass i`. -/
+  query_eq : ∀ i < q, ∀ h h' : Fin i → R,
+    (∀ j : Fin i, pass j < pass i → h j = h' j) → alg.query i h = alg.query i h'
+
+/-- The algorithm reading its responses through `f : R' → R`: it makes the queries `alg` makes
+on the responses `f r`, so against an oracle `O'` it runs `alg` against `f ∘ O'`
+(`QueryAlgorithm.run_comapResponse`). A stronger oracle simulates a weaker one this way: the
+matrix–vector oracle $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is the first component of
+`hiddenRotationOracle`. -/
+def comapResponse {R' : Type*} (f : R' → R) (alg : QueryAlgorithm Q R q β) :
+    QueryAlgorithm Q R' q β where
+  query i h := alg.query i (f ∘ h)
+  output h := alg.output (f ∘ h)
+
+/-- The algorithm with its output post-processed by `g : β → β'`; the queries are those of
+`alg` (`QueryAlgorithm.run_mapOutput`). -/
+def mapOutput {β' : Type*} (g : β → β') (alg : QueryAlgorithm Q R q β) :
+    QueryAlgorithm Q R q β' where
+  query := alg.query
+  output h := g (alg.output h)
 
 /-- A query algorithm is **measurable** when each of its `q` query maps and the output map are
 measurable (for the product σ-algebras on histories); the unused maps `query i`, $i \ge q$, are
