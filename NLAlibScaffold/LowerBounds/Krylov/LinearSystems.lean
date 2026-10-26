@@ -557,7 +557,57 @@ theorem IsChebyshevTwoIntervalSpectrum.exists_le_measureReal_norm_sub_mulVec_ge 
       3 / 4 ≤ ρ.real {s | Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖ ≤
         ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
           (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖} := by
-  sorry
+  set c : ℝ := Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖
+  have hO : Measurable (Function.uncurry fun U : Matrix n n ℝ =>
+      hiddenRotationOracle U (Matrix.diagonal d)) := by
+    change Measurable fun p : Matrix n n ℝ × (n → ℝ) =>
+      hiddenRotationOracle p.1 (Matrix.diagonal d) p.2
+    unfold hiddenRotationOracle
+    fun_prop
+  have hg : Continuous fun p : Matrix n n ℝ × (n → ℝ) =>
+      ‖WithLp.toLp 2 (b - (p.1 * Matrix.diagonal d * p.1ᴴ) *ᵥ p.2)‖ := by
+    fun_prop
+  have hBm : MeasurableSet {p : Matrix n n ℝ × (n → ℝ) |
+      HasOrthonormalCols p.1 ∧
+        c ≤ ‖WithLp.toLp 2 (b - (p.1 * Matrix.diagonal d * p.1ᴴ) *ᵥ p.2)‖} :=
+    (isClosed_setOf_hasOrthonormalCols.measurableSet.preimage measurable_fst).inter
+      (measurableSet_le measurable_const hg.measurable)
+  have hkey : ∀ a : QueryAlgorithm (n → ℝ) ((n → ℝ) × (n → ℝ)) q (n → ℝ), a.IsMeasurable →
+      3 / 4 ≤ (haarFrame n n).real {U : Matrix n n ℝ | HasOrthonormalCols U ∧
+        c ≤ ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+          a.run (hiddenRotationOracle U (Matrix.diagonal d)))‖} := by
+    intro a ha
+    have hsub : (haarFrame n n).real {U : Matrix n n ℝ |
+        ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+          a.run (hiddenRotationOracle U (Matrix.diagonal d)))‖ < c} ≤ 1 / 4 :=
+      IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame
+        hd hκ ha hb (HasLaw.id (μ := haarFrame n n))
+    have hOrth := ae_hasOrthonormalCols_of_hasLaw_haarFrame (HasLaw.id (μ := haarFrame n n))
+      le_rfl
+    have hr : Measurable fun U : Matrix n n ℝ =>
+        a.run (hiddenRotationOracle U (Matrix.diagonal d)) := ha.measurable_run hO
+    have hf : Measurable ((fun p : Matrix n n ℝ × (n → ℝ) =>
+        ‖WithLp.toLp 2 (b - (p.1 * Matrix.diagonal d * p.1ᴴ) *ᵥ p.2)‖) ∘
+          fun U : Matrix n n ℝ => (U, a.run (hiddenRotationOracle U (Matrix.diagonal d)))) :=
+      hg.measurable.comp (measurable_id.prodMk hr)
+    have hEm : MeasurableSet {U : Matrix n n ℝ |
+        ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+          a.run (hiddenRotationOracle U (Matrix.diagonal d)))‖ < c} :=
+      measurableSet_lt hf measurable_const
+    have hcompl := probReal_compl_eq_one_sub (μ := haarFrame n n) hEm
+    have hmono : (haarFrame n n).real {U : Matrix n n ℝ |
+        ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+          a.run (hiddenRotationOracle U (Matrix.diagonal d)))‖ < c}ᶜ ≤
+        (haarFrame n n).real {U : Matrix n n ℝ | HasOrthonormalCols U ∧
+          c ≤ ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+            a.run (hiddenRotationOracle U (Matrix.diagonal d)))‖} :=
+      measureReal_mono_ae (hOrth.mono fun U hU hE => ⟨hU, not_lt.1 hE⟩)
+    linarith
+  obtain ⟨U, hU⟩ := halg.exists_le_measureReal_run_mem hO ρ (haarFrame n n) hBm hkey
+  by_cases hUo : HasOrthonormalCols U
+  · exact ⟨U, hUo, le_trans hU (measureReal_mono fun s hs => hs.2)⟩
+  · simp [hUo] at hU
+    linarith
 
 /-- **Shamir's query lower bound, hidden-rotation oracle, spectrum known**: let $\mathbf{d}$ be a
 Chebyshev two-interval spectrum for $\kappa \ge 2$ with depth $q + 1$ and margin $13(q + 3)$, and
