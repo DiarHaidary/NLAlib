@@ -39,6 +39,25 @@ the wide-pass case), five new sorried tools (KB2, KB3 in `Krylov/Basic/BlockSpac
 law lemmas made public, SH6 sharpened to $\kappa\log(1/\varepsilon) \le 4(q + 1)$. Now 57 sorried
 statements (S 31, M 23, L 2, H 1).
 
+## Research: truncated generalized Nyström with $O(k/\varepsilon)$ sketches (2026-10-26)
+
+Branch `research/tgn-upper` (worktree `nlalib-research-tgn`), from `origin/main` (79f8cc2). All
+22 statements of `docs/design/research/TruncatedGN-Upper.md` are proved (workflow harness: haiku
+and opus; L33, L34b, P36, C45 and M1 integrated by hand), cleaned up and tier-1 reviewed, and
+moved from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8; placement in the
+note's §7): the new `Matrix/Perturbation/{TruncationWindow, BestRankApprox}.lean` and
+`LowRank/Gaussian/TruncatedGeneralizedNystromRate.lean`, and T1–T3, G1, G2, R51 in
+`LowRank/Structural/Truncation`, `RandomMatrix/Gaussian/BlockMoments`,
+`Regression/SketchAndSolve`, `LowRank/Gaussian/RangeFinder`. The scaffold is empty again. No
+statement changed except the scalar generalization of the 13 deterministic statements to
+`RCLike` (Fable review); C45, M1, M2 gained explicit theorems. Private helpers made public (rule S5), copies deleted:
+`IsBestRankApprox.rangeProjector_self_mul`, `IsStarProjection.frobNorm_sq_eq_add_mul_right`,
+`IsBestRankApprox.frobNorm_sub_sq_sub_le_two_mul_frobInner`,
+`IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm` (formerly private in
+`LowRank/Structural/Truncation`) and R51 (formerly private in
+`LowRank/Gaussian/TruncatedGeneralizedNystrom`). Reports: `reports/Stage-TGN-Upper.md` in the
+harness repository.
+
 ## LB-A matvec query model: proofs (2026-10-25)
 
 Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`
