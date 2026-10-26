@@ -59,7 +59,9 @@ Proof: `QueryAlgorithm.run` unfolds to `output` of the transcript; rewrite with
 `QueryAlgorithm.history_comapResponse` at `i = q`. S, 2 lines. -/
 theorem run_comapResponse (f : R' → R) (alg : QueryAlgorithm Q R q β) (O : Q → R') :
     (alg.comapResponse f).run O = alg.run (f ∘ O) := by
-  sorry
+  unfold QueryAlgorithm.run QueryAlgorithm.transcript
+  rw [← history_comapResponse f alg O]
+  rfl
 
 /-- Post-processing the output does not change the history.
 Proof: induction on `i`; `QueryAlgorithm.mapOutput` has the same `query` field, so each step is
