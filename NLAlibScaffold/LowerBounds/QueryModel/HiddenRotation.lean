@@ -114,8 +114,9 @@ over; `IsKrylovCoupling.ae_range_le` composes with `NLAlib.blockKrylovSpace_mono
 (`Filter.Eventually.mono`, `le_trans`). S, 4 lines. -/
 theorem IsKrylovCoupling.mono {D : Matrix n n ℝ} {s s' : ℕ} {G₀ : Ω → Matrix n c ℝ}
     {V : Ω → Matrix n k ℝ} {G : Ω → Matrix n c' ℝ} (h : IsKrylovCoupling μ D s G₀ V G)
-    (hs : s ≤ s') : IsKrylovCoupling μ D s' G₀ V G := by
-  sorry
+    (hs : s ≤ s') : IsKrylovCoupling μ D s' G₀ V G :=
+  ⟨h.hasLaw_gaussianMatrix, h.indepFun,
+    h.ae_range_le.mono fun _ hω => hω.trans (blockKrylovSpace_mono _ _ hs)⟩
 
 /-- With no initial block the Krylov space is that of the Gaussian block alone: almost surely
 $\operatorname{range}(\mathbf{V}) \subseteq \mathcal{K}_s(\mathbf{D}, \mathbf{G})$.
