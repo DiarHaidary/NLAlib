@@ -85,37 +85,71 @@ CODE = re.compile(r"(`+)(.+?)\1", re.S)
 GAP = re.compile(r"[ \t]*\n?[ \t]*")
 SHORT = 5   # a shorter previous value is replaced only once per marker of it on the span
 LINE_START = re.compile(r"[ \t]*(?:(?:[*+-]|\d+[.)])[ \t]+)?")
+RAW_STRING = re.compile(r"(?<![\w'!?.»\u2070-\u209f\u2100-\u214f])r(#*)\"")
+CHAR_LITERAL = re.compile(
+    r"(?<![\w'!?.»\u2070-\u209f\u2100-\u214f])"
+    r"'(?:[^'\\\n]|\\(?:[nrt\\\"']|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}))'")
 
 
 def short(name):
     return name[len("NLAlib."):] if name.startswith("NLAlib.") else name
 
 
-def docstrings(src):
+def docstrings(src, *, regions=None):
     """(start, end) offsets of every docstring body, as in scripts/check_latex.mjs: after `/--` or
-    `/-!`, before `-/`; ordinary nested block comments and line comments are skipped."""
+    `/-!`, before its matching `-/`. Both kinds of block comment nest, even inside Markdown
+    code spans. Outside comments, skip quoted identifiers and regular/raw strings so their
+    comment markers are not mistaken for Lean comments. Optionally collect opaque regions as
+    (start, end, kind), for definition-boundary detection. This bounded lexer does not parse
+    arbitrary syntax extensions or interpolated terms."""
     out, i, n = [], 0, len(src)
     while i < n:
+        region_start, kind = i, None
         if src.startswith("/-", i):
-            if i + 2 < n and src[i + 2] in "-!":
-                end = src.find("-/", i + 3)
-                stop = n if end < 0 else end
-                out.append((i + 3, stop))
-                i = stop + 2
-            else:
-                depth, i = 1, i + 2
-                while i < n and depth:
-                    if src.startswith("/-", i):
-                        depth, i = depth + 1, i + 2
-                    elif src.startswith("-/", i):
-                        depth, i = depth - 1, i + 2
-                    else:
-                        i += 1
+            kind = "comment"
+            doc = i + 2 < n and src[i + 2] in "-!"
+            start = i + 3
+            depth, i = 1, i + (3 if doc else 2)
+            while i < n and depth:
+                if src.startswith("/-", i):
+                    depth, i = depth + 1, i + 2
+                elif src.startswith("-/", i):
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+            if doc:
+                out.append((start, i - 2 if depth == 0 else n))
         elif src.startswith("--", i):
+            kind = "comment"
             nl = src.find("\n", i)
             i = n if nl < 0 else nl
+        elif src[i] == "«":
+            kind = "literal"
+            end = src.find("»", i + 1)
+            i = n if end < 0 else end + 1
+        elif src[i] == "r" and (raw := RAW_STRING.match(src, i)):
+            kind = "literal"
+            close = '"' + raw.group(1)
+            end = src.find(close, raw.end())
+            i = n if end < 0 else end + len(close)
+        elif src[i] == '"':
+            kind = "literal"
+            i += 1
+            while i < n:
+                if src[i] == "\\":
+                    i += 2
+                elif src[i] == '"':
+                    i += 1
+                    break
+                else:
+                    i += 1
+        elif src[i] == "'" and (char := CHAR_LITERAL.match(src, i)):
+            kind = "literal"
+            i = char.end()
         else:
             i += 1
+        if regions is not None and kind:
+            regions.append((region_start, min(i, n), kind))
     return out
 
 
@@ -260,18 +294,44 @@ def annotated(doc):
 
 def find_definition(src, name):
     """(offset, normalised text from the name to the end) of `def`/`irreducible_def NAME`: its first
-    line and the indented lines that follow it."""
+    line and its indented body, including blank lines and declaration continuations. Comments
+    and literal contents cannot end the body or supply a fake definition. Like the library's
+    source format, other commands begin at no greater indentation; this is not a Lean parser."""
+    regions = []
+    docstrings(src, regions=regions)
+    masked = list(src)
+    for start, end, kind in regions:
+        for i in range(start, end):
+            if src[i] not in "\r\n":
+                masked[i] = " "
+        if kind == "literal":
+            masked[start] = "_"  # a literal is code; a comment is whitespace
+    code = "".join(masked)
     m = re.search(rf"^(?:[\w@\[\] ]*?)(?:irreducible_def|def|abbrev) ({re.escape(name)})(?![\w'])",
-                  src, re.M)
+                  code, re.M)
     if not m:
         return None, None
-    lines = src[m.start(1):].split("\n")
-    body = [lines[0]]
-    for line in lines[1:]:
-        if not line.strip() or not line[0].isspace():
+    indent = len(m.group()) - len(m.group().lstrip())
+    first_end = src.find("\n", m.end())
+    if first_end < 0:
+        first_end = len(src)
+    end, offset = first_end, first_end + 1
+    continuations = re.compile(r"(?:where\b|termination_by\b|decreasing_by\b|\|)")
+    for line in code[offset:].splitlines(keepends=True):
+        line_end = offset + len(line)
+        # A multiline string or quoted identifier may contain outdented lines.
+        in_literal = any(kind == "literal" and a < offset < b for a, b, kind in regions)
+        offset = line_end
+        if in_literal:
+            end = line_end
+            continue
+        if not line.strip():
+            continue
+        if (len(line) - len(line.lstrip()) <= indent and
+                not continuations.match(line.lstrip())):
             break
-        body.append(line)
-    return m.start(), " ".join(" ".join(body).split())
+        end = line_end
+    return m.start(), " ".join(src[m.start(1):end].split())
 
 
 def explicit_args(lean_body):

@@ -46,3 +46,24 @@ jobs:
           node-version: 20
       - name: Docstring LaTeX renders
         run: npm install --no-save --no-package-lock katex@0.16.22 && node scripts/check_latex.mjs
+      - name: LaTeX checker regressions
+        run: node --test scripts/test_check_latex.mjs
+  documentation-windows:
+    name: Documentation regressions (Windows)
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Documentation metadata regressions
+        run: python -m unittest discover -s scripts -p 'test_*.py'
+      - name: Install the documentation renderer
+        run: npm install --no-save --no-package-lock katex@0.16.22
+      - name: LaTeX checker regressions
+        run: node --test scripts/test_check_latex.mjs
