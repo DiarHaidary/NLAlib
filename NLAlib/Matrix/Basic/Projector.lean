@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Algebra.Order.Chebyshev
 public import Mathlib.Algebra.Star.StarProjection
 public import Mathlib.Analysis.InnerProductSpace.Adjoint
 public import Mathlib.Analysis.Matrix.Order
@@ -530,5 +531,64 @@ theorem toEuclideanLin_rangeProjector [Fintype m] [Fintype n] [DecidableEq m] [D
       exact ⟨WithLp.toLp 2 z, rfl⟩
   rw [← Matrix.coe_toEuclideanCLM_eq_toEuclideanLin, toEuclideanCLM_rangeProjector]
   simp only [hS]
+
+/-- The squared norm of the `j`-th column of a real star projection is its `(j, j)` entry. -/
+theorem _root_.IsStarProjection.norm_toLp_mulVec_single_sq {n : Type*} [Fintype n] [DecidableEq n]
+    {P : Matrix n n ℝ} (hP : IsStarProjection P) (j : n) :
+    ‖WithLp.toLp 2 (P *ᵥ Pi.single j 1)‖ ^ 2 = P j j := by
+  have h := congrFun (congrFun hP.mul_self j) j
+  rw [Matrix.mul_apply] at h
+  rw [EuclideanSpace.norm_sq_eq, ← h]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [Matrix.mulVec_single_one, Matrix.col_apply, Real.norm_eq_abs, sq_abs]
+  have hsymm : P j i = P i j := by
+    simpa only [star_trivial] using hP.isHermitian.apply i j
+  rw [hsymm]
+  ring
+
+
+/-- Head mass of a projector: if every column $\mathbf{P}\mathbf{e}_a$ ($a$ in the head)
+has head mass at most $c$ times its norm, then
+$\sum_a \|\mathbf{P}\mathbf{e}_a\|^2 \le c\,\lvert\kappa\rvert$. -/
+theorem _root_.IsStarProjection.sum_head_mass_sq_le {κ r : Type*} [Fintype κ] [Fintype r]
+    {P : Matrix (κ ⊕ r) (κ ⊕ r) ℝ} (hP : IsStarProjection P) {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 ≤ c * ∑ i, P i (Sum.inl a) ^ 2) :
+    ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 ≤ c * Fintype.card κ := by
+  have hsymm : ∀ i j, P j i = P i j := fun i j => by
+    have h := congrFun (congrFun hP.conjTranspose_eq j) i
+    have h' : P i j = P j i := by simpa [Matrix.conjTranspose_apply] using h
+    exact h'.symm
+  have hdiag : ∀ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = P (Sum.inl a) (Sum.inl a) := by
+    intro a
+    have key : ∀ i, P (Sum.inl a) i = P i (Sum.inl a) := fun i => (hsymm (Sum.inl a) i).symm
+    have h := congrFun (congrFun hP.mul_self (Sum.inl a)) (Sum.inl a)
+    rw [Matrix.mul_apply] at h
+    rw [← h]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [key i, sq]
+  have hT : ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = ∑ a : κ, P (Sum.inl a) (Sum.inl a) :=
+    Finset.sum_congr rfl fun a _ => hdiag a
+  have hS2 : ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2
+      ≤ c * ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum fun a _ => h a
+  have hsq : ∑ a : κ, P (Sum.inl a) (Sum.inl a) ^ 2
+      ≤ ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 :=
+    Finset.sum_le_sum fun a _ => Finset.single_le_sum (f := fun b : κ =>
+      P (Sum.inl b) (Sum.inl a) ^ 2) (fun b _ => sq_nonneg _) (Finset.mem_univ a)
+  have hCS : (∑ a : κ, P (Sum.inl a) (Sum.inl a)) ^ 2
+      ≤ Fintype.card κ * ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 := by
+    have := sq_sum_le_card_mul_sum_sq (s := Finset.univ)
+      (f := fun a : κ => P (Sum.inl a) (Sum.inl a))
+    simp only [Finset.card_univ] at this
+    exact this.trans (mul_le_mul_of_nonneg_left hsq (Nat.cast_nonneg _))
+  rw [← hT] at hCS
+  have hT0 : 0 ≤ ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 :=
+    Finset.sum_nonneg fun a _ => Finset.sum_nonneg fun i _ => sq_nonneg _
+  have hk : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
+  rcases hT0.eq_or_lt with h0 | h0
+  · rw [← h0]; exact mul_nonneg hc hk
+  · nlinarith [mul_le_mul_of_nonneg_left hS2 hk]
+
 
 end NLAlib

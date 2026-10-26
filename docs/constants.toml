@@ -362,3 +362,48 @@ args = ["A", "t"]
 latex = '\|#1\|_{\mathsf{F}}^2 + 2\|#1\|_{\mathsf{F}}\|#1\|_2\sqrt{#2} + 2\|#1\|_2^2 #2'
 lean_body = 'srhtRowNormBound (A : Matrix n r 𝕜) (t : ℝ) : ℝ := frobNorm A ^ 2 + 2 * frobNorm A * specNorm A * √t + 2 * specNorm A ^ 2 * t'
 body_hash = "35113f410f1beb32"
+
+[[constant]]
+name = "NLAlib.equispacedInterpolationFactor"
+kind = "factor"
+file = "NLAlib/Polynomial/Interpolation/DividedDifference.lean"
+args = ["r"]
+latex = '4^{#1+1}'
+lean_body = 'equispacedInterpolationFactor (r : ℕ) : ℝ := 4 ^ (r + 1)'
+body_hash = "086b64d49740acea"
+
+[[constant]]
+name = "NLAlib.equispacedGaussianFactor"
+kind = "factor"
+file = "NLAlib/LowerBounds/LowRank/FiniteSpectrum.lean"
+args = ["r"]
+latex = '64\cdot4^{#1+1}'
+lean_body = 'equispacedGaussianFactor (r : ℕ) : ℝ := 64 * 4 ^ (r + 1)'
+body_hash = "bc39db25fe08f6dc"
+
+[[constant]]
+name = "NLAlib.equispacedTailFactor"
+kind = "factor"
+file = "NLAlib/LowerBounds/LowRank/FiniteSpectrum.lean"
+args = ["r"]
+latex = '(#1+1)(#1+2)(2#1+3)/6'
+lean_body = 'equispacedTailFactor (r : ℕ) : ℝ := ((r : ℝ) + 1) * (r + 2) * (2 * r + 3) / 6'
+body_hash = "6427653cdff416cd"
+
+[[constant]]
+name = "NLAlib.equispacedQueryFactor"
+kind = "factor"
+file = "NLAlib/LowerBounds/LowRank/Minimax.lean"
+args = ["r"]
+latex = '256\cdot4^{#1+1}(#1+1)(#1+2)'
+lean_body = 'equispacedQueryFactor (r : ℕ) : ℝ := 256 * 4 ^ (r + 1) * ((r : ℝ) + 1) * (r + 2)'
+body_hash = "f5e481a1e40f41f4"
+
+[[constant]]
+name = "NLAlib.equispacedAccuracyBound"
+kind = "factor"
+file = "NLAlib/LowerBounds/LowRank/Minimax.lean"
+args = ["r"]
+latex = '1/(512\cdot4^{#1+1}(#1+1)(#1+2)^2)'
+lean_body = 'equispacedAccuracyBound (r : ℕ) : ℝ := 1 / (512 * 4 ^ (r + 1) * ((r : ℝ) + 1) * (r + 2) ^ 2)'
+body_hash = "ceeecb275e4de9e7"

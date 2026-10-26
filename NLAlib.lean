@@ -70,6 +70,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Prod
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Distributions.Beta
@@ -158,6 +159,8 @@ public import NLAlib.LowerBounds.LowRank.EarlyTruncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
 public import NLAlib.LowerBounds.LowRank.FewPasses
+public import NLAlib.LowerBounds.LowRank.FiniteSpectrum
+public import NLAlib.LowerBounds.LowRank.Minimax
 public import NLAlib.LowerBounds.LowRank.RangeRecovery
 public import NLAlib.LowerBounds.LowRank.RotationInvariant
 public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
