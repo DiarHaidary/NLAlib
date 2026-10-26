@@ -611,3 +611,25 @@ verify); [LaurentMassart2000, Lemma 1] (new bib entry); [Meckes2019, Ch. 1]; [Ve
 Cor. 7.3.3] (Gordon tails, via the library); Kroó–Pinkus 2010 (named in P5's docstring, not
 cited: not used). The OP5 research note is the source for L*; its results are **[derived]**, not
 refereed, and the docstrings say "No printed source" where a `Result:` id is attached (L7, L8).
+
+
+## Implementation completion (2026-10-26)
+
+All 57 targets are proved on `stage/lbc`, including K7, with the approved public statements
+unchanged. The implementation exposes the left queries sequentially within each pass and delays
+all right products until its left queries are exposed. Each nonzero residual is normalized as a
+singleton frame; zero residuals use the original independent Gaussian column. The exposed
+response itself makes each earlier coupled column reconstructible from a later transcript and
+its original seed. Successive replacement of seed columns proves the full joint product law,
+including independence of the initially revealed `Uᴴ * B`.
+
+The fixed auxiliary schedule uses `|c| + 3 * p * q + |k|` slots, with unused slots and the
+former frame slots equal to zero. These are proof-only two-sided queries to `U`; the original
+algorithm still makes exactly its `q` matrix-vector queries. Each batch's right products add at
+most one power of `D`, and the output block adds none, giving depth `p + 1`. No additional
+dimension, rank or nonempty hypotheses were added.
+
+The reusable probabilistic argument lives in
+`NLAlib/LowerBounds/QueryModel/GaussianCoupling.lean`. The pass simulation, depth argument,
+canonical coupling and arbitrary-probability-space transport live in `HiddenRotation.lean`.
+The finished K7/K8 and all dependent lower bounds were moved out of the scaffold by D8.

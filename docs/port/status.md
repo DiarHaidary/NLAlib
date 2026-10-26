@@ -4,17 +4,22 @@ Updated at every stopping point. Newest entry first within each section.
 
 ## LB-C hidden-rotation lower bounds: proofs (2026-10-26)
 
-Branch `stage/lbc` (from the integration of the LB-C run over `origin/main` 79f8cc2). 56 of the 57
-targets are proved; K7, the Krylov coupling
-(`QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame`, difficulty H), is
-still `sorry`. D8 move of everything that does not depend on K7: the pass model
-(`LowerBounds/QueryModel/Basic`), Y3 (`Yao`), K1–K6 (`HiddenRotation`), KB1–KB3
-(`Krylov/Basic/BlockSpace`), P1–P9 (`Polynomial/Chebyshev/TwoInterval`,
-`Polynomial/Interpolation/DividedDifference`), C1–C2 (`RandomMatrix/Gaussian/Invariance`), GZ1–GZ4
-(`RandomMatrix/Haar/Uniqueness`), SH1 (new `LowerBounds/Krylov/LinearSystems`) and the
-deterministic and Gaussian steps L0a–L3 of the low-rank bounds (`LowerBounds/LowRank/FewPasses`).
-In the scaffold, proved except for their use of K7: K8, Shamir's lower bound (SH2–SH6) and the
-two-pass and one-pass low-rank lower bounds (L4–L9).
+Branch `stage/lbc`. **All 57 targets are proved**, statements unchanged against the approved
+skeleton (checked textually, every target). K7, the Krylov coupling
+(`QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame`), was proved last
+(by Codex); with it K8, Shamir's bound (SH2–SH6) and the low-rank bounds (L4–L9) moved into
+`NLAlib/LowerBounds/` by D8, and `NLAlibScaffold` is empty.
+
+The K7 proof exposes, in each pass, the hidden query directions one at a time before the pass's
+products, and couples each new direction with one Gaussian column through its normalized
+component outside the span already revealed (a zero component keeps its independent seed
+column). `LowerBounds/QueryModel/GaussianCoupling.lean` holds the probabilistic part: the
+one-step stabilizer law, almost-sure capture, and the joint Gaussian law of the coupled block
+with every measurable summary of an initial transcript prefix
+(`exists_measurable_gaussianBlock_of_ordered_queries`). The pass simulation and depth count are
+private in `HiddenRotation.lean`. No hypotheses were added.
+
+Validation: VALIDATION_PLACEHOLDER
 
 ## LB-C hidden-rotation lower bounds: design (2026-10-26)
 

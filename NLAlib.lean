@@ -162,6 +162,7 @@ public import NLAlib.LowerBounds.LowRank.RotationInvariant
 public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
 public import NLAlib.LowerBounds.QueryModel.Basic
 public import NLAlib.LowerBounds.QueryModel.DeferredDecision
+public import NLAlib.LowerBounds.QueryModel.GaussianCoupling
 public import NLAlib.LowerBounds.QueryModel.HiddenHaar
 public import NLAlib.LowerBounds.QueryModel.HiddenRotation
 public import NLAlib.LowerBounds.QueryModel.Yao
