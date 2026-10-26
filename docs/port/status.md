@@ -30,6 +30,9 @@ Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
 - UNUSED-HE1 (a): G1 `identDistrib_mul_mul_of_hasLaw_gaussianMatrix` drops its unused
   `hE₁ : IsStarProjection E₁` (statement change: a weakening of the hypotheses); its two linter
   suppressions are gone, and D2's step passes one argument fewer.
+- T9-GRAM (a): new definition `QueryAlgorithm.gramDecode`, used by `gramSimulation`; R1a
+  `history_gramSimulation` is restated through it (statement change, definitionally equal; the
+  proof term in its `Fin` literal is gone). The T9 ratchet entry is removed.
 
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
 

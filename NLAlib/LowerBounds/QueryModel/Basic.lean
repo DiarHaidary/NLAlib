@@ -61,7 +61,8 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
 * `NLAlib.QueryAlgorithm.IsMeasurable`, `NLAlib.QueryAlgorithm.IsMeasurableFamily`: measurability
   of an algorithm and joint measurability of a seeded family.
 * `NLAlib.QueryAlgorithm.gramSimulation`: a `2q`-round algorithm against the two-sided oracle of
-  $\mathbf{X}$ that runs a `q`-query algorithm against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$.
+  $\mathbf{X}$ that runs a `q`-query algorithm against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$;
+  `NLAlib.QueryAlgorithm.gramDecode` reads the simulated responses off its history.
 
 ## Main results
 
@@ -230,6 +231,12 @@ structure IsMeasurableFamily {S : Type*} [MeasurableSpace S] [MeasurableSpace Q]
   /-- The output map is jointly measurable in the seed and the transcript. -/
   measurable_output : Measurable fun p : S × (Fin q → R) => (alg p.1).output p.2
 
+/-- The decoding of the Gram simulation: from a history of `2 * i` two-sided rounds, the first
+components of the odd responses, the `i` responses of the simulated algorithm
+(`QueryAlgorithm.history_gramSimulation`). -/
+def gramDecode {𝕜 d k : Type*} {i : ℕ} (h : Fin (2 * i) → (d → 𝕜) × (k → 𝕜)) : Fin i → d → 𝕜 :=
+  fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1
+
 /-- The **Gram simulation**: from an algorithm with `q` queries to
 $\mathbf{A} = \mathbf{X}\mathbf{X}^{\mathsf{H}}$ (`X : Matrix d k 𝕜`), an algorithm with `2q`
 rounds against `twoSidedMulVec X` with the same output. Round `2i` is the left query
@@ -237,17 +244,18 @@ $(\mathbf{0}, \mathbf{x}_i)$, which returns $\mathbf{X}^{\mathsf{H}}\mathbf{x}_i
 component; round `2i + 1` is the right query $(\mathbf{X}^{\mathsf{H}}\mathbf{x}_i, \mathbf{0})$,
 which returns $\mathbf{X}\mathbf{X}^{\mathsf{H}}\mathbf{x}_i$ in the first. So it makes at most
 `q` products with each of $\mathbf{X}$ and $\mathbf{X}^{\mathsf{H}}$. The original responses are the
-first components of the odd responses (`QueryAlgorithm.run_gramSimulation`). It makes explicit
+first components of the odd responses (`QueryAlgorithm.gramDecode`,
+`QueryAlgorithm.run_gramSimulation`). It makes explicit
 what [ZhangEtAl2026, Section 4.1] uses implicitly: the analysis works with the factor
 $\mathbf{X}$ while the queries are to $\mathbf{X}\mathbf{X}^{\mathsf{T}}$. -/
 def gramSimulation {𝕜 d : Type*} [Zero 𝕜] (k : Type*) (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) :
     QueryAlgorithm ((k → 𝕜) × (d → 𝕜)) ((d → 𝕜) × (k → 𝕜)) (2 * q) β where
   query j h :=
     if hj : j % 2 = 0 then
-      (0, alg.query (j / 2) fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1)
+      (0, alg.query (j / 2) (gramDecode (h ∘ Fin.castLE (by omega))))
     else
       ((h ⟨j - 1, by omega⟩).2, 0)
-  output h := alg.output fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1
+  output h := alg.output (gramDecode h)
 
 end QueryAlgorithm
 
@@ -527,8 +535,8 @@ against `twoSidedMulVec X`, the first components of the odd responses are the fi
 responses of `alg` against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Holds for every `i`. -/
 theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
     (X : Matrix d k 𝕜) (i : ℕ) :
-    (fun l : Fin i => ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)
-        ⟨2 * l + 1, by have := l.isLt; omega⟩).1) = alg.history (X * Xᴴ).mulVec i := by
+    gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)) =
+      alg.history (X * Xᴴ).mulVec i := by
   -- Odd round `2l + 1` returns `X * (Xᴴ * x_l)`, where `x_l` is the query `l` of the history.
   have key : ∀ l : ℕ, ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * l + 2)
       ⟨2 * l + 1, by omega⟩).1 = (X * Xᴴ).mulVec (alg.queryAt (X * Xᴴ).mulVec l) := by
@@ -556,8 +564,8 @@ theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d 
     rw [e1, e2, e3, Matrix.mulVec_mulVec]
     rfl
   funext l
-  rw [history_eq_history _ _ (n := 2 * i) (m := 2 * l + 2) (by have := l.isLt; omega) (by omega),
-    key l, history_apply]
+  rw [gramDecode, history_eq_history _ _ (n := 2 * i) (m := 2 * l + 2)
+    (by have := l.isLt; omega) (by omega), key l, history_apply]
 
 /-- **The Gram simulation runs the original algorithm**: the `2q`-round algorithm
 `alg.gramSimulation k` against `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, outputs

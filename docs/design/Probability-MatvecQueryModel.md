@@ -228,7 +228,7 @@ IDs are the `note_id`s of `~/nlalib-harness/pilot/lbA-targets.json`. Full docstr
 | Q10 | `IsMeasurableFamily.isMeasurable` | `(alg s).IsMeasurable` | S |
 | C1 | `rank_rightQueryMatrix_le_rightCount` | `(alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ` | S |
 | C2 | `rank_leftQueryMatrix_le_leftCount` | `(alg.leftQueryMatrix τ).rank ≤ alg.leftCount τ` | S |
-| R1a | `history_gramSimulation` | odd first components of `(alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)` `= alg.history (X * Xᴴ).mulVec i`, every `i` | M |
+| R1a | `history_gramSimulation` | `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i))` `= alg.history (X * Xᴴ).mulVec i` (the odd first components; decision T9-GRAM), every `i` | M |
 | R1 | `run_gramSimulation` | `(alg.gramSimulation k).run (twoSidedMulVec X) = alg.run (X * Xᴴ).mulVec` | S |
 | R2 | `IsMeasurable.gramSimulation` | `alg.IsMeasurable → (alg.gramSimulation k).IsMeasurable` | S |
 | R3a | `rightCount_gramSimulation_le` | `(alg.gramSimulation k).rightCount τ ≤ q`, every `τ` | S |
@@ -739,3 +739,8 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
 * **Review-LBA decisions (2026-10-26, `state/decisions/Review-LBA.json`).**
   * UNUSED-HE1 (a): G1 no longer takes `hE₁ : IsStarProjection E₁`; only `E₁ * E₂ = E₂` is used
     on the left. The statement is weaker in its hypotheses, hence stronger.
+  * T9-GRAM (a): new definition `QueryAlgorithm.gramDecode` (the first components of the odd
+    responses of a `2 * i`-round history), used by `gramSimulation`'s query and output. R1a is
+    restated as `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)) =
+    alg.history (X * Xᴴ).mulVec i`, definitionally the old statement without the `Fin` literal's
+    proof term; the T9 ratchet entry is removed.
