@@ -1234,8 +1234,9 @@ theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_lt_one [Nonemp
     (hsucc : ∀ A : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ, A.IsHermitian →
       1 / 2 ≤ ρ.real {s | frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
         (1 + ε) * frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2}) :
-    Fintype.card k / (6400 * ε) < q := by
-  sorry
+    Fintype.card k / (6400 * ε) < q :=
+  div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le hε hε₁ hεk hm halg hpass
+    (fun s i hi => (hp s i hi).trans one_lt_two) ρ hsucc
 
 omit [DecidableEq k] [DecidableEq m] in
 /-- **Two-pass spectral low-rank approximation needs products proportional to the dimension**:
