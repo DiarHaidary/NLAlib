@@ -47,3 +47,23 @@ reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact 
 name = "NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero"
 rule = "N9"
 reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
+
+[[allow]]
+name = "NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le"
+rule = "N2"
+reason = "TGN-Upper L34h (head weight): the conclusion is `3 / 8 * ‖W B_a‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`"
+
+[[allow]]
+name = "NLAlib.mul_frobNorm_mul_one_sub_sq_add_le"
+rule = "N2"
+reason = "TGN-Upper L34t (tail weight): the conclusion is `3 / 8 * θ² * ‖W (1 - P_b)‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`"
+
+[[allow]]
+name = "NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix"
+rule = "N17"
+reason = "TGN-Upper M1: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem (decision card TGN-DOMINATED)"
+
+[[allow]]
+name = "NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix"
+rule = "N17"
+reason = "TGN-Upper M2: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem, which M2 dominates (decision card TGN-DOMINATED)"

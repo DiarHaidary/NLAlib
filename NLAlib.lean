@@ -135,6 +135,7 @@ public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRate
 public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian
@@ -239,6 +240,7 @@ public import NLAlib.Matrix.Norms.SchattenPowers
 public import NLAlib.Matrix.Norms.Spectral
 public import NLAlib.Matrix.Norms.SymmetricGauge
 public import NLAlib.Matrix.Norms.UnitarilyInvariant
+public import NLAlib.Matrix.Perturbation.BestRankApprox
 public import NLAlib.Matrix.Perturbation.Continuity
 public import NLAlib.Matrix.Perturbation.DavisKahan
 public import NLAlib.Matrix.Perturbation.DavisKahanGap
@@ -249,6 +251,7 @@ public import NLAlib.Matrix.Perturbation.Relative
 public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Perturbation.SimpleEigenvalue
 public import NLAlib.Matrix.Perturbation.Sylvester
+public import NLAlib.Matrix.Perturbation.TruncationWindow
 public import NLAlib.Matrix.Perturbation.Wedin
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Pseudoinverse.GeneralizedSchur
