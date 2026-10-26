@@ -710,6 +710,67 @@ theorem rank_sub_mul_mul_le (B : Matrix m n ℝ) (k : ℕ) {Z : Matrix m m ℝ} 
     (L * (Z - rangeProjector (truncatedSVD B k)) * B * L')
   omega
 
+omit [DecidableEq m] in
+/-- The compression of a star projection by a star projection is a Gram matrix:
+$\|\mathbf{R}\mathbf{Q}\mathbf{R}\|_* = \|\mathbf{Q}\mathbf{R}\|_{\mathsf{F}}^2$. -/
+private theorem nuclearNorm_mul_mul_eq_frobNorm_sq {Q R : Matrix m m ℝ}
+    (hQ : IsStarProjection Q) (hR : IsStarProjection R) :
+    nuclearNorm (R * Q * R) = frobNorm (Q * R) ^ 2 := by
+  rw [← nuclearNorm_conjTranspose_mul_self, Matrix.conjTranspose_mul, hQ.conjTranspose_eq,
+    hR.conjTranspose_eq, ← Matrix.mul_assoc, Matrix.mul_assoc R Q Q, hQ.mul_self]
+
+/-- **Pythagoras on the right** for an orthogonal projector $\mathbf{Q}$:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \|\mathbf{A}\mathbf{Q}\|_{\mathsf{F}}^2 +
+\|\mathbf{A}(\mathbf{I} - \mathbf{Q})\|_{\mathsf{F}}^2$. -/
+private theorem frobNorm_sq_eq_add_mul_right {p : Type*} [Fintype p] {Q : Matrix m m ℝ}
+    (hQ : IsStarProjection Q) (A : Matrix p m ℝ) :
+    frobNorm A ^ 2 = frobNorm (A * Q) ^ 2 + frobNorm (A * (1 - Q)) ^ 2 := by
+  rw [← frobNorm_conjTranspose (A * Q), ← frobNorm_conjTranspose (A * (1 - Q)),
+    ← frobNorm_conjTranspose A, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+    hQ.conjTranspose_eq, hQ.one_sub.conjTranspose_eq]
+  exact hQ.frobNorm_sq_eq_add Aᴴ
+
+/-- The window compression for nested orthogonal projectors
+$\mathbf{P}_a \le \mathbf{P} \le \mathbf{P}_b$ and an orthogonal projector $\mathbf{Z}$, with
+$\mathbf{L} = \mathbf{P}_b - \mathbf{P}_a$:
+$$\|\mathbf{L}(\mathbf{Z} - \mathbf{P})\mathbf{L}\|_* \le
+(\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{P}\|_{\mathsf{F}}^2) +
+(\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{Z}\|_{\mathsf{F}}^2) +
+\|\mathbf{Z}(\mathbf{I} - \mathbf{P}_b)\|_{\mathsf{F}}^2\,.$$ -/
+private theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m ℝ}
+    (hPa : IsStarProjection Pa) (hP : IsStarProjection P) (hPb : IsStarProjection Pb)
+    (hZ : IsStarProjection Z) (h1 : Pa * P = Pa) (h2 : P * Pa = Pa) (h3 : P * Pb = P)
+    (h4 : Pb * P = P) (h5 : Pa * Pb = Pa) (h6 : Pb * Pa = Pa) :
+    nuclearNorm ((Pb - Pa) * (Z - P) * (Pb - Pa)) ≤
+      (frobNorm Pb ^ 2 - frobNorm P ^ 2) + (frobNorm Pb ^ 2 - frobNorm Z ^ 2) +
+        frobNorm (Z * (1 - Pb)) ^ 2 := by
+  have hL : IsStarProjection (Pb - Pa) := hPa.sub_of_mul_eq_left hPb h5
+  have hLb : IsStarProjection (Pb - P) := hP.sub_of_mul_eq_left hPb h3
+  have hLP : (Pb - Pa) * P * (Pb - Pa) = P - Pa := by
+    rw [Matrix.sub_mul Pb Pa P, h4, h1, Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, h3, h2,
+      h5, hPa.mul_self]
+    abel
+  have e : (Pb - Pa) * (Z - P) * (Pb - Pa) =
+      (Pb - P) + -((Pb - Pa) * (1 - Z) * (Pb - Pa)) := by
+    rw [Matrix.mul_sub (Pb - Pa) Z P, Matrix.sub_mul _ _ (Pb - Pa), hLP,
+      Matrix.mul_sub (Pb - Pa) 1 Z, Matrix.mul_one, Matrix.sub_mul _ _ (Pb - Pa), hL.mul_self]
+    abel
+  rw [e]
+  refine (nuclearNorm_add_le _ _).trans ?_
+  rw [nuclearNorm_neg, nuclearNorm_mul_mul_eq_frobNorm_sq hZ.one_sub hL]
+  have hLb₁ := nuclearNorm_conjTranspose_mul_self (Pb - P)
+  rw [hLb.conjTranspose_eq, hLb.mul_self] at hLb₁
+  have hLb₂ := hP.frobNorm_sq_eq_add Pb
+  rw [h3, Matrix.sub_mul, Matrix.one_mul, h3] at hLb₂
+  have e' : (1 - Z) * (Pb - Pa) = (1 - Z) * Pb * (1 - Pa) := by
+    rw [Matrix.mul_assoc, Matrix.mul_sub Pb, Matrix.mul_one, h6]
+  have := pow_le_pow_left₀ (frobNorm_nonneg _)
+    (hPa.one_sub.frobNorm_mul_right_le ((1 - Z) * Pb)) 2
+  rw [← e'] at this
+  have := hZ.frobNorm_sq_eq_add Pb
+  have := frobNorm_sq_eq_add_mul_right hPb Z
+  linarith
+
 /-- **The trace balance on the window**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B}) > 0$, $a \le k \le b$ with $\sigma_b(\mathbf{B}) \le
 \theta/2$, and an orthogonal projector $\mathbf{Z}$ of rank at most $k$, with $\mathbf{P}_i$ the
@@ -755,7 +816,67 @@ theorem nuclearNorm_mul_sub_mul_le (B : Matrix m n ℝ) {k a b : ℕ} (hk : 1 �
         6 * ((frobNorm ((1 - Z) * B) ^ 2 -
           frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2) /
             singularValues B (k - 1) ^ 2) := by
-  sorry
+  set θ := singularValues B (k - 1) with hθdef
+  set Pa := rangeProjector (truncatedSVD B a) with hPadef
+  set P := rangeProjector (truncatedSVD B k) with hPdef
+  set Pb := rangeProjector (truncatedSVD B b) with hPbdef
+  have hPa : IsStarProjection Pa := isStarProjection_rangeProjector _
+  have hP : IsStarProjection P := isStarProjection_rangeProjector _
+  have hPb : IsStarProjection Pb := isStarProjection_rangeProjector _
+  have hak' := range_truncatedSVD_mono B hak
+  have hkb' := range_truncatedSVD_mono B hkb
+  have hab' := range_truncatedSVD_mono B (hak.trans hkb)
+  have h1 : Pa * P = Pa := rangeProjector_mul_rangeProjector_of_range_le' hak'
+  have h2 : P * Pa = Pa := rangeProjector_mul_rangeProjector_of_range_le hak'
+  have h3 : P * Pb = P := rangeProjector_mul_rangeProjector_of_range_le' hkb'
+  have h4 : Pb * P = P := rangeProjector_mul_rangeProjector_of_range_le hkb'
+  have h5 : Pa * Pb = Pa := rangeProjector_mul_rangeProjector_of_range_le' hab'
+  have h6 : Pb * Pa = Pa := rangeProjector_mul_rangeProjector_of_range_le hab'
+  have hL : IsStarProjection (Pb - Pa) := hPa.sub_of_mul_eq_left hPb h5
+  -- the norms of the projectors
+  have hPk : frobNorm P ^ 2 = k := by
+    have := (singularValues_pos_iff B).1 hθ
+    rw [frobNorm_rangeProjector_sq, rank_truncatedSVD, min_eq_left (by omega)]
+  have hPbb : frobNorm Pb ^ 2 ≤ b := by
+    rw [frobNorm_rangeProjector_sq]; exact_mod_cast rank_truncatedSVD_le B b
+  have hZ2 : frobNorm Z ^ 2 ≤ k := by
+    rw [hZ.frobNorm_sq_eq_rank]; exact_mod_cast hZk
+  -- the weights
+  have hD := frobNorm_one_sub_mul_sq_sub_eq_add B k hZ θ
+  have hhead := mul_frobNorm_mul_truncatedSVD_sq_add_le B hk (Nat.zero_le k)
+    (fun i hi => absurd hi (Nat.not_lt_zero i)) (1 - Z)
+  have htail := mul_frobNorm_mul_one_sub_sq_add_le B hk hkb hb Z
+  rw [← hPdef] at hD hhead htail
+  rw [← hPbdef] at htail
+  rw [← hθdef] at hhead htail
+  set E := (frobNorm ((1 - Z) * B) ^ 2 - frobNorm ((1 - P) * B) ^ 2) / θ ^ 2 with hEdef
+  have hE : frobNorm P ^ 2 - frobNorm Z ^ 2 + 3 / 8 * frobNorm (Z * (1 - Pb)) ^ 2 ≤ E := by
+    rw [hEdef, le_div_iff₀ (by positivity), hD]
+    have h0 : 0 ≤ 3 / 8 * frobNorm ((1 - Z) * truncatedSVD B 0) ^ 2 +
+        3 / 2 * θ ^ 2 * frobNorm ((1 - Z) * rangeProjector (truncatedSVD B 0)) ^ 2 := by
+      positivity
+    nlinarith [frobNorm_nonneg (Z * (B - truncatedSVD B b))]
+  -- bound A
+  have hA : nuclearNorm ((Pb - Pa) * (Z - P) * (Pb - Pa)) ≤ 2 * k := by
+    have e : (Pb - Pa) * (Z - P) * (Pb - Pa) =
+        (Pb - Pa) * Z * (Pb - Pa) + -((Pb - Pa) * P * (Pb - Pa)) := by
+      simp only [Matrix.mul_sub, Matrix.sub_mul]; abel
+    rw [e]
+    refine (nuclearNorm_add_le _ _).trans ?_
+    rw [nuclearNorm_neg, nuclearNorm_mul_mul_eq_frobNorm_sq hZ hL,
+      nuclearNorm_mul_mul_eq_frobNorm_sq hP hL]
+    have := pow_le_pow_left₀ (frobNorm_nonneg _) (hL.frobNorm_mul_right_le Z) 2
+    have := pow_le_pow_left₀ (frobNorm_nonneg _) (hL.frobNorm_mul_right_le P) 2
+    linarith
+  have hB := nuclearNorm_mul_sub_mul_le_of_mul_eq hPa hP hPb hZ h1 h2 h3 h4 h5 h6
+  have hs := frobNorm_nonneg (Z * (1 - Pb))
+  rcases le_total k (b - k) with h | h
+  · rw [min_eq_left h]
+    have : (k : ℝ) ≤ ((b - k : ℕ) : ℝ) := by exact_mod_cast h
+    nlinarith
+  · rw [min_eq_right h, Nat.cast_sub hkb]
+    have : (k : ℝ) ≤ b := by exact_mod_cast hkb
+    nlinarith
 
 /-! ### The localized perturbed truncation -/
 
