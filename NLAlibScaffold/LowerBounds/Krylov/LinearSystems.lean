@@ -42,8 +42,8 @@ weights turn this into the bound.
 * `NLAlib.IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal`: the query count,
   hidden-rotation oracle, spectrum known.
 * `NLAlib.mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le`,
-  `NLAlib.mul_log_le_eight_mul_of_forall_le_measureReal_norm_sub_mulVec_le`: the query count for
-  the matrix–vector oracle.
+  `NLAlib.mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le`: the query
+  count for the matrix–vector oracle.
 -/
 
 @[expose] public section
@@ -73,7 +73,8 @@ bounded by a measurable scale-invariant one, $\min_t \|\mathbf{h}_t\|^2/\|\mathb
 `NLAlib.exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq` the squared residual is at least
 $\sum_t r(t)^2\|\mathbf{h}_t\|^2$, $\mathbf{h}_t = (\mathbf{I} - \mathbf{P}_{\mathbf{G}_t})
 \mathbf{g}_t$. Outside an event of probability at most
-$(s + 2)e^{-1.159(s+2)} + e^{-0.153\lvert n \rvert} \le \tfrac14$:
+$(s + 2)e^{-1.1589(s+2)} + e^{-0.153\lvert n \rvert} \le \tfrac14$ (the level exponent is
+$0.09657 \cdot 12$):
 $\|\mathbf{h}_t\|^2 > \tfrac12(m_t - \lvert c \rvert)$ for every level
 (`NLAlib.measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun` with
 $\beta = \tfrac12$, rank at least $m_t - \lvert c \rvert$ by `NLAlib.rank_rangeProjector`; the
@@ -230,22 +231,23 @@ $0 < \varepsilon \le e^{-4}$ and $\lvert n \rvert \ge 20(q + 3)^2$, a randomized
 $q$ adaptive matrix–vector products that solves every symmetric system with spectrum in
 $[-\kappa, -1] \cup [1, \kappa]$ to relative residual $\varepsilon$ with probability at least
 $\tfrac23$ (as in `NLAlib.mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le`) has
-$$\kappa\log\frac{1}{\varepsilon} \le 8q \,.$$
-[Shamir2026, Theorem 1]; there $T \ge c\kappa\log(1/\varepsilon)$ with unspecified $c$; here
-$c = \tfrac18$.
+$$\kappa\log\frac{1}{\varepsilon} \le 4(q + 1) \,.$$
+[Shamir2026, Theorem 1]; there $T \ge c\kappa\log(1/\varepsilon)$ with unspecified $c$ and $C$;
+here an explicit constant.
 Proof: from `NLAlib.mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le`:
-$\kappa(\log(1/\varepsilon) - \log 4) \le 2q + 2$, and with $\log(1/\varepsilon) \ge 4$,
-$\kappa \ge 2$, $\log 4 < 1.39$ (`Real.log_le_sub_one_of_pos`, `Real.add_one_le_exp`) this gives
-$\kappa\log(1/\varepsilon) \le 8q$ (`nlinarith`). S, about 15 lines. -/
-theorem mul_log_le_eight_mul_of_forall_le_measureReal_norm_sub_mulVec_le {κ ε : ℝ} {q : ℕ}
-    (hκ : 2 ≤ κ) (hε : 0 < ε) (hε₀ : ε ≤ Real.exp (-4)) (hn : 20 * (q + 3) ^ 2 ≤ Fintype.card n)
+$\kappa(L - \log 4) \le 2(q + 1)$ with $L = \log(1/\varepsilon) \ge 4$; as $\log 4 < 1.39$
+(`Real.log_two_lt_d9`), $L - \log 4 \ge (1 - 1.39/4)L$, so
+$\kappa L \le 2(q + 1)/(1 - 0.3475) < 3.07(q + 1)$ (`nlinarith`). S, about 15 lines. -/
+theorem mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le
+    {κ ε : ℝ} {q : ℕ} (hκ : 2 ≤ κ) (hε : 0 < ε) (hε₀ : ε ≤ Real.exp (-4))
+    (hn : 20 * (q + 3) ^ 2 ≤ Fintype.card n)
     {S : Type*} [MeasurableSpace S] {alg : S → QueryAlgorithm (n → ℝ) (n → ℝ) q (n → ℝ)}
     (halg : QueryAlgorithm.IsMeasurableFamily alg) (ρ : Measure S) [IsProbabilityMeasure ρ]
     (hsucc : ∀ A : Matrix n n ℝ, A.IsHermitian →
       spectrum ℝ A ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ → ∀ b : n → ℝ,
         2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - A *ᵥ (alg s).run A.mulVec)‖ ≤
           ε * ‖WithLp.toLp 2 b‖}) :
-    κ * Real.log (1 / ε) ≤ 8 * q := by
+    κ * Real.log (1 / ε) ≤ 4 * (q + 1) := by
   sorry
 
 end NLAlib

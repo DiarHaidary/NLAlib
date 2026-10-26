@@ -23,6 +23,9 @@ $\mathbf{G}_t$.
 ## Main results
 
 * `NLAlib.exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq`.
+* `NLAlib.blockKrylovSpace_le_of_range_le`,
+  `NLAlib.sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two`: the depth count of the Krylov
+  coupling (design note §3.2).
 -/
 
 @[expose] public section
@@ -60,6 +63,41 @@ theorem exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq {n c : Type*} [Fint
           ‖WithLp.toLp 2 ((1 - rangeProjector (G.submatrix (Subtype.val : {i // d i = t} → n) id))
             *ᵥ fun i => g i.1)‖ ^ 2 ≤
         ‖WithLp.toLp 2 (g - Matrix.diagonal d *ᵥ x)‖ ^ 2 := by
+  sorry
+
+/-- A block Krylov space depends on its starting block only through the range: if the range of
+$\mathbf{B}$ lies in that of $\mathbf{B}'$, then $\mathcal{K}_q(\mathbf{A}, \mathbf{B}) \subseteq
+\mathcal{K}_q(\mathbf{A}, \mathbf{B}')$ for every $q$.
+Proof: by `NLAlib.blockKrylovSpace_eq_iSup_krylovSpace` and `iSup_le` it suffices that
+$\mathcal{K}_q(\mathbf{A}, \mathbf{b}_c) \subseteq \mathcal{K}_q(\mathbf{A}, \mathbf{B}')$ for each
+column; write $\mathbf{b}_c = \mathbf{B}'\mathbf{y}$ (`LinearMap.mem_range`) and a vector of
+the left side as $f(\mathbf{A})\mathbf{B}'\mathbf{y}$ (`NLAlib.mem_krylovSpace_iff`); it is
+$\sum_{c'} (y_{c'} f)(\mathbf{A})\mathbf{b}'_{c'}$ (`Matrix.mulVec_sum`-type expansion,
+`Polynomial.aeval_smul`), in the right side by `NLAlib.mem_blockKrylovSpace_iff`
+(`Polynomial.degree_smul_le`). S, about 15 lines. -/
+theorem blockKrylovSpace_le_of_range_le {𝕜 : Type*} [RCLike 𝕜] {n p p' : Type*} [Fintype n]
+    [DecidableEq n] [Fintype p] [Fintype p'] {A : Matrix n n 𝕜} {B : Matrix n p 𝕜}
+    {B' : Matrix n p' 𝕜} (h : LinearMap.range B.mulVecLin ≤ LinearMap.range B'.mulVecLin)
+    (q : ℕ) : blockKrylovSpace A B q ≤ blockKrylovSpace A B' q := by
+  sorry
+
+/-- **One pass raises the Krylov depth by one**: if a subspace $\mathcal{L}$ lies in
+$\mathcal{K}_{s+1}(\mathbf{A}, \mathbf{B})$ and $\mathcal{V} \subseteq \mathcal{L} +
+\operatorname{range}\mathbf{B}$, then
+$$\mathcal{L} + \mathcal{V} + \mathbf{A}\mathcal{V} \subseteq \mathcal{K}_{s+2}(\mathbf{A},
+\mathbf{B}) \,.$$
+The depth count of the Krylov coupling: $\mathcal{L}$ is what the earlier passes revealed,
+$\mathcal{V}$ the rotated queries of the next pass and $\mathbf{A}\mathcal{V}$ their products.
+Proof: $\mathcal{L} \le \mathcal{K}_{s+2}$ by `NLAlib.blockKrylovSpace_mono`;
+$\operatorname{range}\mathbf{B} = \mathcal{K}_1 \le \mathcal{K}_{s+2}$
+(`NLAlib.blockKrylovSpace_one`); for $\mathbf{A}\mathcal{V}$, `Submodule.map_le_iff_le_comap` and
+`NLAlib.mulVec_mem_blockKrylovSpace_succ` on $\mathcal{K}_{s+1}$, which contains both
+$\mathcal{L}$ and $\operatorname{range}\mathbf{B}$ (`sup_le`). S, about 12 lines. -/
+theorem sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two {𝕜 : Type*} [RCLike 𝕜] {n p : Type*}
+    [Fintype n] [DecidableEq n] [Fintype p] {A : Matrix n n 𝕜} {B : Matrix n p 𝕜} {s : ℕ}
+    {L V : Submodule 𝕜 (n → 𝕜)} (hL : L ≤ blockKrylovSpace A B (s + 1))
+    (hV : V ≤ L ⊔ LinearMap.range B.mulVecLin) :
+    L ⊔ V ⊔ V.map A.mulVecLin ≤ blockKrylovSpace A B (s + 2) := by
   sorry
 
 end NLAlib

@@ -1,8 +1,12 @@
 # Design note: hidden-rotation lower bounds — the batched Krylov coupling, Shamir's $\Omega(\kappa\log(1/\varepsilon))$ and the two-pass $\Omega(k/\varepsilon)$ (stage LB-C)
 
-Status: draft for review, 2026-10-26, branch `design/lbc` (worktree `~/nlalib-design-lbc`, from
-`origin/main` 79f8cc2). Decision sheet: `~/nlalib-harness/state/decisions/LB-C.json`. Targets:
-`~/nlalib-harness/pilot/lbc-targets.json` (52 statements).
+Status: approved (APPROVE = a, OQ1–OQ10 all decided (a), 2026-10-26) and revised after the Fable
+review `~/nlalib-harness/reports/Review-Fable-LBC-Design.md` (items 1–5: K7's proof plan and three
+sub-lemma families, GZ2–GZ4 and KB2–KB3, the public stabilizer randomizer of `HiddenHaar.lean`,
+SH6's constant, SH1's exponent; no approved statement changed except SH6, strengthened as item 4
+asks). Branch `design/lbc` (worktree `~/nlalib-design-lbc`, from `origin/main` 79f8cc2). Decision
+sheet: `~/nlalib-harness/state/decisions/LB-C.json`. Targets:
+`~/nlalib-harness/pilot/lbc-targets.json` (57 statements).
 Sources read in full: Shamir, *A Simple Complexity Lower Bound for Solving Ax=b*, arXiv:2609.10874v1
 (LaTeX source; Theorem 1, Lemmas 1–4, §3.2–3.3); the research note
 `~/nlalib-harness/reports/OP5-TwoPassMinimax.md` (harness commit 6398a6b: Theorems A, C,
@@ -12,12 +16,12 @@ Corollary B, Proposition E, Lemma C, gaps G1–G3, missing pieces M1–M5); the 
 `docs/design/Probability-MatvecQueryModel.md`, with Fable's LB-A review items 3 and 6.
 
 Checks on the skeleton (all run on this branch): `lake build --wfail NLAlib` succeeds (four new or
-extended `NLAlib` modules, definitions only); `lake build NLAlibScaffold` gives exactly 52
+extended `NLAlib` modules, definitions only); `lake build NLAlibScaffold` gives exactly 57
 `declaration uses sorry` warnings and nothing else; `scripts/check_rules.py --files` (0 errors;
 the one warning, D7 on `IsMeasurable.truncate`, predates this stage), `check_refs.py`,
 `check_constants.py`, `check_latex.mjs` (KaTeX) and both `mk_all --check` are clean;
-`bin/check-skeleton --strict` (rule G3): 52 targets, 0 names missing an import, 0 unresolved; the
-dispatcher's `locate` finds all 52 targets, which are exactly the sorried declarations. The
+`bin/check-skeleton --strict` (rule G3): 57 targets, 0 names missing an import, 0 unresolved; the
+dispatcher's `locate` finds all 57 targets, which are exactly the sorried declarations. The
 extraction-based name check (N1–N18) was not run; names for review are in §9.
 
 ## 0. Summary
@@ -25,13 +29,13 @@ extraction-based name check (N1–N18) was not run; names for review are in §9.
 | | |
 |---|---|
 | Framework (new) | the pass model `QueryAlgorithm.IsPassStructured` (+ `comapResponse`, `mapOutput`); the hidden-rotation oracle $\mathbf{x} \mapsto (\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}\mathbf{x}, \mathbf{U}^{\mathsf{H}}\mathbf{x})$ and its simulation on `twoSidedMulVec U`; the conclusion interface `IsKrylovCoupling`; the **Krylov coupling theorem** K7: a $p$-pass algorithm's rotated output lies a.s. in $\mathcal{K}_{p+1}(\mathbf{D}, [\mathbf{U}^{\mathsf{H}}\mathbf{B}, \mathbf{G}])$, $\mathbf{G}$ standard Gaussian with one column per query and output column, independent of $\mathbf{U}^{\mathsf{H}}\mathbf{B}$ |
-| First application | Shamir's Theorem 1 with explicit constants: $\kappa\log\frac{1}{4\varepsilon} \le 2(q + 1)$ for every randomized adaptive algorithm with $q$ products that solves every symmetric system with spectrum in $[-\kappa,-1]\cup[1,\kappa]$ to relative residual $\varepsilon$ w.p. $\ge 2/3$, in every dimension $n \ge 20(q+3)^2$ (SH5); Shamir's form $\kappa\log(1/\varepsilon) \le 8q$ for $\varepsilon \le e^{-4}$ (SH6); the strong-oracle, spectrum-known form (SH4); Lemmas 1, 2 (P4, P5), Lemma 3 (H1/H2 of LB-A), Lemma 4 (K7) |
+| First application | Shamir's Theorem 1 with explicit constants: $\kappa\log\frac{1}{4\varepsilon} \le 2(q + 1)$ for every randomized adaptive algorithm with $q$ products that solves every symmetric system with spectrum in $[-\kappa,-1]\cup[1,\kappa]$ to relative residual $\varepsilon$ w.p. $\ge 2/3$, in every dimension $n \ge 20(q+3)^2$ (SH5); Shamir's form $\kappa\log(1/\varepsilon) \le 4(q+1)$ for $\varepsilon \le e^{-4}$ (SH6); the strong-oracle, spectrum-known form (SH4); Lemmas 1, 2 (P4, P5), Lemma 3 (H1/H2 of LB-A), Lemma 4 (K7) |
 | Second application | OP5 (complete, [derived]): two-pass $(1+\varepsilon)$ Frobenius rank-$k$ approximation needs $q > k/(6400\varepsilon)$ products (L7), one pass too (L8), and two-pass $(1+\varepsilon)\sigma_{k+1}$ spectral approximation needs $q > m/676 - k$, proportional to the dimension, for every $\varepsilon \le 0.1$ (L9); with the distributional Theorems A, C (L4, L5) and the Yao form B(i) (L6) |
 | New definitions (in `NLAlib`, written, build `--wfail`) | `QueryAlgorithm.IsPassStructured`, `QueryAlgorithm.comapResponse`, `QueryAlgorithm.mapOutput` (in `LowerBounds/QueryModel/Basic.lean`); `hiddenRotationOracle`, `QueryAlgorithm.hiddenRotationDecode`, `QueryAlgorithm.hiddenRotationSimulation`, `IsKrylovCoupling` (new `LowerBounds/QueryModel/HiddenRotation.lean`); `IsChebyshevTwoIntervalSpectrum` (new `Polynomial/Chebyshev/TwoInterval.lean`); `equispacedLevelSpectrum` (new `LowerBounds/LowRank/FewPasses.lean`) |
-| Statements | 52 sorried: S 29, M 20, L 2, H 1, in 10 scaffold files (§3) |
-| What is new over LB-A | LB-A has the *invariance* (H2: given the transcript, $\mathbf{U}$ is Haar on the complement of what was revealed). New here: the pass predicate (OP5 M1); the reordering inside a pass is part of K7's proof (M2); the simulation with $\mathbf{D}$ (M3, Fable LB-A item 6); Gaussianization (M4: GZ1, polar factor independent of the Gram matrix); the degree bookkeeping (M5) — together the coupling K7 —, the two-interval Chebyshev certificate, the projected-$\chi^2$ tail, the level decomposition of Krylov residuals, and both applications |
+| Statements | 57 sorried: S 31, M 23, L 2, H 1, in 10 scaffold files (§3) |
+| What is new over LB-A | LB-A has the *invariance* (H2: given the transcript, $\mathbf{U}$ is Haar on the complement of what was revealed). New here: the pass predicate (OP5 M1); the reordering inside a pass is part of K7's proof (M2); the simulation with $\mathbf{D}$ (M3, Fable LB-A item 6); Gaussianization (M4: GZ1–GZ3, polar factor independent of the Gram matrix, also in a subspace; GZ4, the Haar frame law of a subspace); the degree bookkeeping (M5) — together the coupling K7 —, the two-interval Chebyshev certificate, the projected-$\chi^2$ tail, the level decomposition of Krylov residuals, and both applications |
 | Kroó–Pinkus | not needed: Lemma 2 is proved with the explicit Chebyshev two-interval certificate (P1, P5), at most $q + 2$ points instead of $q + 1$ |
-| Staging | one design, one skeleton; dispatch as two sub-stages by `--only`: **LB-C1** framework + Shamir (39 targets: Q*, Y3, K*, GZ1, P1–P8, KB1, C1–C2, SH*), **LB-C2** LRA (13 targets: P9, L*), which needs only K7, K6, Q*, Y3 from C1 |
+| Staging | one design, one skeleton; dispatch as two sub-stages by `--only`: **LB-C1** framework + Shamir (44 targets: Q*, Y3, K*, GZ1–GZ4, P1–P8, KB1–KB3, C1–C2, SH*), **LB-C2** LRA (13 targets: P9, L*), which needs only K7, K6, Q*, Y3 from C1 |
 | Open questions | 10 (§10), each with a recommendation |
 
 ## 1. Scope
@@ -145,7 +149,7 @@ hypothesis only for the members `alg s` of the family. LB-A's Y2 quantifies over
 measurable deterministic algorithms, which is useless for a class bound (a two-pass lower bound
 does not hold for adaptive algorithms); Y3 is the general form and Y2 its corollary.
 
-### 3.2 The Krylov coupling (K1–K8, GZ1)
+### 3.2 The Krylov coupling (K1–K8, KB2–KB3, GZ1–GZ4)
 
 **K7** `QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame`:
 hypotheses `hpass : alg.IsPassStructured pass`, `hp : ∀ i < q, pass i < p`, `alg.IsMeasurable`,
@@ -174,18 +178,72 @@ any `D : Matrix n n ℝ`, `B : Matrix n c ℝ`, `HasLaw U (haarFrame n n) μ`, a
 * Truth in degenerate cases: $q = 0$ (no passes needed, depth 1: the output is fixed, and lies in
   $\operatorname{range}[\mathbf{U}^{\mathsf{H}}\mathbf{B}, \mathbf{G}_{\mathrm{out}}]$ by the
   output step); $k$, $c$ empty; $\mathbf{D}$ arbitrary (no symmetry used: Shamir's induction never
-  uses it); a pass wider than $\dim\mathcal{L}^{\perp}$ (the frame $\mathbf{E}$ is then a basis of
-  the complement, the Gaussian is rebuilt from it; the inclusion is only easier). Adaptivity inside
+  uses it); a pass wider than $\dim\mathcal{L}^{\perp}$ (the coupled block is then the fresh
+  Gaussian block itself, whose compression spans $\mathcal{L}^{\perp}$ a.s.). Adaptivity inside
   a pass is excluded by `query_eq`; without it the degree grows per query (OP5 §3.2 "Where it
   would fail"), which is the $p = q$ case.
-* Proof: OP5 Lemma C; the outline in the targets file splits it into the deterministic depth
-  count (M), the one-pass Gaussianization (L, via H2's randomized form on the truncated
-  simulation and GZ1) and the induction (L). It is the one H target; escalate to opus.
+* Proof (revised after Fable's review, item 1; OP5 Lemma C with three repairs). It runs on an
+  **augmented simulation** $\mathcal{A}^+$ against `twoSidedMulVec U` (a private definition in the
+  proof), not on `hiddenRotationSimulation`'s interleaved order: (i) $\lvert c \rvert$ left rounds
+  $(\mathbf{0}, \mathbf{B}\mathbf{e}_a)$ first — $\mathbf{U}^{\mathsf{H}}\mathbf{B}$ is not in H2's
+  revealed set otherwise, and the stabilizer would not fix it; (ii) per pass, the left rounds of
+  all its queries (the reordering M2, licensed by `query_eq`), then $b_j$ **dummy left rounds**
+  for a frame $\mathbf{Q}_j$ of width $b_j$ in $(\mathbf{U}\mathcal{L}_j)^{\perp}$ that contains the
+  new directions of the pass, then its right rounds; (iii) the output as a last pass with dummy
+  rounds and no right rounds. The padding columns of $\mathbf{Q}_j$ must be revealed: a frame
+  padded by unrevealed vectors makes $\mathbf{G}_{j+1}$ depend on $\mathbf{U}$ off
+  $\mathcal{L}_{j+1}$ and breaks the Haar invariant (OP5's alternative, fresh Gaussian columns
+  for the padding, needs a random frame width). Coupled block: tall pass ($b_j \le d_j =
+  \dim\mathcal{L}_j^{\perp}$) $\mathbf{G}_j = (\mathbf{I} - \mathbf{E}_j)\mathbf{Z}_j +
+  \mathbf{U}^{\mathsf{H}}\mathbf{Q}_j((\mathbf{E}_j\mathbf{Z}_j)^{\mathsf{H}}
+  \mathbf{E}_j\mathbf{Z}_j)^{1/2}$ with $\mathbf{E}_j$ the projector onto $\mathcal{L}_j^{\perp}$;
+  wide pass ($b_j > d_j$) $\mathbf{G}_j = \mathbf{Z}_j$ (Fable's $\mathbf{P}\mathbf{Z} +
+  (\mathbf{U}^{\mathsf{H}}\mathbf{E})(\mathbf{E}_0^{\mathsf{H}}(\mathbf{I} - \mathbf{P})\mathbf{Z})$
+  also works; any orthogonal map of $\mathcal{L}_j^{\perp}$ does, the identity included, since
+  only $\operatorname{range}(\mathbf{E}_j\mathbf{G}_j) = \mathcal{L}_j^{\perp}$ is used). Law: H2's
+  randomized form for $\mathcal{A}^+$ truncated before pass $j$, with the now public stabilizer
+  randomizer `stabRand` (item 3), makes $\mathbf{U}^{\mathsf{H}}\mathbf{Q}_j$ conditionally a Haar
+  frame of $\mathcal{L}_j^{\perp}$ (GZ4), and GZ3 turns it into a Gaussian block independent of
+  the past; the depth count is KB2–KB3. Split: the stand-alone lemmas below are targets; K7
+  keeps the query-model part (augmented algorithm and decoding, frame choice, law of one pass,
+  depth induction, assembly) as private lemmas, H, about 600 lines; it starts on the escalation
+  model (`--hard L,H`). The full plan is K7's docstring and its outline in the targets file.
+
+**KB2** `blockKrylovSpace_le_of_range_le` (S): $\mathcal{K}_q(\mathbf{A}, \mathbf{B})$ depends on
+$\mathbf{B}$ through its range only. **KB3** `sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two`
+(S): $\mathcal{L} \le \mathcal{K}_{s+1}$ and $\mathcal{V} \le \mathcal{L} + \operatorname{range}
+\mathbf{B}$ give $\mathcal{L} + \mathcal{V} + \mathbf{A}\mathcal{V} \le \mathcal{K}_{s+2}$, one
+pass of the depth count. Both in `Krylov/Basic/BlockSpace.lean`.
 
 **GZ1** `indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix` (OP5's M4, in
 `RandomMatrix/Haar/Uniqueness.lean`): for tall Gaussian $\mathbf{G}$ the polar factor and
 $\mathbf{G}^{\mathsf{H}}\mathbf{G}$ are independent. False for wide $\mathbf{G}$ (the Gram matrix
 fixes the row space), hence `card k ≤ card n`.
+
+Fable's item 2 (K7 applies GZ1 to the compressed Gaussian on $\mathcal{L}_j^{\perp}$, of random
+dimension) is met by both options: **GZ2**
+`indepFun_polarFactor_mul_of_isStarProjection_of_hasLaw_gaussianMatrix` (M) is GZ1 for
+$\mathbf{P}\mathbf{G}$ with an orthogonal projector of rank $\ge \lvert k \rvert$, proved from GZ1
+in coordinates with the existing `HasOrthonormalCols.polarFactor_mul_left`
+($\operatorname{polar}(\mathbf{Q}\mathbf{A}) = \mathbf{Q}\operatorname{polar}(\mathbf{A})$, already
+in `Matrix/Factorizations/Polar.lean`, so no new lemma). **GZ4**
+`eq_map_polarFactor_mul_of_forall_map_mul_left_eq` (M): a law on frames in
+$\operatorname{range}\mathbf{E}$ invariant under the orthogonal maps fixing
+$\operatorname{range}(\mathbf{I} - \mathbf{E})$ is the law of
+$\operatorname{polar}(\mathbf{E}\mathbf{Z})$ — the coordinate-free Haar frame law of a subspace,
+which is how K7 states "conditionally Haar on $\mathcal{L}_j^{\perp}$" without random coordinates.
+**GZ3** `hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix` (M): for $\mathbf{F}$ with that
+law independent of a Gaussian $\mathbf{Y}$, $(\mathbf{I} - \mathbf{E})\mathbf{Y} +
+\mathbf{F}((\mathbf{E}\mathbf{Y})^{\mathsf{H}}\mathbf{E}\mathbf{Y})^{1/2}$ is standard Gaussian:
+the one-pass Gaussianization, with $\mathbf{E}$ fixed (K7 freezes the transcript). All three in
+`RandomMatrix/Haar/Uniqueness.lean`, true for every projector (GZ4 is vacuous when no frame of
+width $\lvert k \rvert$ fits).
+
+**Amendment to `NLAlib/LowerBounds/QueryModel/HiddenHaar.lean`** (Fable item 3, done on this
+branch): `stabRaw`, `stabRand`, `Measurable.stabRand` (was the private `Measurable.stabRand_comp`,
+now `@[fun_prop]`), `stabRand_spec`, `ae_hasOrthonormalCols_stabRaw`, `measurable_stabRand_right`,
+`map_mul_left_stabRand`, `map_mul_right_stabRand` are public with LaTeX docstrings; nothing else
+changes and no statement changes.
 
 K1 measurability of the oracle; K2–K4 the simulation runs the algorithm and is measurable; K5
 monotone in depth; K6 no initial block; K8 the matrix–vector corollary (`comapResponse Prod.fst`).
@@ -225,7 +283,7 @@ orthogonal projector of rank $\ge r$, fixed or independent of $\mathbf{g}$ — S
 | SH3 | randomized, every $\mathbf{b} \ne 0$: $\exists$ orthogonal $\mathbf{U}$ with failure probability $\ge \frac34$ | Yao Y2 |
 | SH4 | strong oracle, spectrum known: success $\ge \frac23$ on all $\mathbf{U}$, $\mathbf{b}$ ⇒ $\kappa\log\frac1{4\varepsilon} \le 2(q+1)$ | |
 | SH5 | **matrix–vector oracle**: success $\ge\frac23$ on every symmetric $\mathbf{A}$ with spectrum in $S_\kappa$ and every $\mathbf{b}$, $\lvert n\rvert \ge 20(q+3)^2$ ⇒ $\kappa\log\frac1{4\varepsilon} \le 2(q+1)$ | Result `linear-system-matvec-lower-bound` |
-| SH6 | $\varepsilon \le e^{-4}$: $\kappa\log\frac1\varepsilon \le 8q$ | Shamir's $c = 1/8$, $C = 2$ |
+| SH6 | $\varepsilon \le e^{-4}$: $\kappa\log\frac1\varepsilon \le 4(q+1)$ | from SH5: $\le 2(q+1)/(1 - \log 4/4) < 3.07(q+1)$; Shamir leaves $c$, $C$ unspecified |
 
 Deviations from the paper, all recorded in the docstrings: (a) every fixed $\mathbf{b} \ne 0$
 instead of a Gaussian $\mathbf{b}$ (stronger; the event is scale invariant, so the uniform
@@ -233,7 +291,7 @@ direction $\mathbf{U}^{\mathsf{H}}\mathbf{b}/\|\mathbf{b}\|$ replaces the Gaussi
 \mathbf{0}$ is excluded because $\hat{\mathbf{x}} = 0$ solves it; (b) a separate output (degree
 $q + 1$); (c) explicit constants $\frac14$, success $\le\frac14$, $n \ge 20(q+3)^2$ in place of
 Shamir's $\frac34$, $0.9$, $C^2T^2$ (we take $\beta = \frac12$, $2$ in the $\chi^2$ tails, $N =
-n/4$, margin $12(s+2)$; arithmetic in SH1's docstring: tail $\le (s+2)e^{-1.159(s+2)} +
+n/4$, margin $12(s+2)$; arithmetic in SH1's docstring: tail $\le (s+2)e^{-1.1589(s+2)} +
 e^{-0.153 n} \le 0.2$); (d) the "D revealed" clause is SH4's quantifier order (the predicate is a
 hypothesis, the algorithm may depend on $\mathbf{d}$); (e) $\kappa \ge 2$ (Lemma 1's range) in
 place of $\kappa \ge C$. The two-sided oracle $(\mathbf{A}\mathbf{x}, \mathbf{A}^{\mathsf{T}}\mathbf{x})$
@@ -275,6 +333,7 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 
 ### 3.7 Full list
 
+
 **LowerBounds/QueryModel/Yao.lean**
 
 | id | declaration | diff | wave | depends on |
@@ -308,14 +367,17 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 | K4 | `QueryAlgorithm.IsMeasurable.hiddenRotationSimulation` | S | 0 | — |
 | K5 | `IsKrylovCoupling.mono` | S | 0 | — |
 | K6 | `IsKrylovCoupling.ae_range_le_of_isEmpty` | S | 0 | — |
-| K7 | `QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame` | H | 2 | hiddenRotationDecode_history_hiddenRotationSimulation, run_hiddenRotationSimulation, hiddenRotationSimulation, indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix |
-| K8 | `QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_mulVec_of_hasLaw_haarFrame` | S | 3 | exists_isKrylovCoupling_of_hasLaw_haarFrame, run_comapResponse, comapResponse, comapResponse |
+| K7 | `QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame` | H | 3 | hiddenRotationDecode_history_hiddenRotationSimulation, run_hiddenRotationSimulation, hiddenRotationSimulation, blockKrylovSpace_le_of_range_le, sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two, eq_map_polarFactor_mul_of_forall_map_mul_left_eq, hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix |
+| K8 | `QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_mulVec_of_hasLaw_haarFrame` | S | 4 | exists_isKrylovCoupling_of_hasLaw_haarFrame, run_comapResponse, comapResponse, comapResponse |
 
 **RandomMatrix/Haar/Uniqueness.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | GZ1 | `indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix` | L | 0 | — |
+| GZ2 | `indepFun_polarFactor_mul_of_isStarProjection_of_hasLaw_gaussianMatrix` | M | 1 | indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix |
+| GZ4 | `eq_map_polarFactor_mul_of_forall_map_mul_left_eq` | M | 0 | — |
+| GZ3 | `hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix` | M | 2 | indepFun_polarFactor_mul_of_isStarProjection_of_hasLaw_gaussianMatrix |
 
 **Polynomial/Chebyshev/TwoInterval.lean**
 
@@ -341,6 +403,8 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | KB1 | `exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq` | M | 0 | — |
+| KB2 | `blockKrylovSpace_le_of_range_le` | S | 0 | — |
+| KB3 | `sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two` | S | 0 | — |
 
 **RandomMatrix/Gaussian/Invariance.lean**
 
@@ -354,11 +418,11 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | SH1 | `IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le` | L | 2 | exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq, measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun, inv_sq_le_sum_card_sub_mul_eval_sq, exp_neg_le_inv_eval_T_real |
-| SH2 | `IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame` | M | 3 | exists_isKrylovCoupling_of_hasLaw_haarFrame, measureReal_exists_norm_sub_mulVec_lt_le, run_mapOutput, isPassStructured_id, hiddenRotationOracle |
-| SH3 | `IsChebyshevTwoIntervalSpectrum.exists_le_measureReal_norm_sub_mulVec_ge` | S | 4 | measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame, hiddenRotationOracle |
-| SH4 | `IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal` | S | 5 | exists_le_measureReal_norm_sub_mulVec_ge |
-| SH5 | `mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le` | M | 6 | mul_log_le_of_forall_le_measureReal, exists_isChebyshevTwoIntervalSpectrum, mem_Icc_union_Icc, comapResponse, run_comapResponse |
-| SH6 | `mul_log_le_eight_mul_of_forall_le_measureReal_norm_sub_mulVec_le` | S | 7 | mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le |
+| SH2 | `IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame` | M | 4 | exists_isKrylovCoupling_of_hasLaw_haarFrame, measureReal_exists_norm_sub_mulVec_lt_le, run_mapOutput, isPassStructured_id, hiddenRotationOracle |
+| SH3 | `IsChebyshevTwoIntervalSpectrum.exists_le_measureReal_norm_sub_mulVec_ge` | S | 5 | measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame, hiddenRotationOracle |
+| SH4 | `IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal` | S | 6 | exists_le_measureReal_norm_sub_mulVec_ge |
+| SH5 | `mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le` | M | 7 | mul_log_le_of_forall_le_measureReal, exists_isChebyshevTwoIntervalSpectrum, mem_Icc_union_Icc, comapResponse, run_comapResponse |
+| SH6 | `mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le` | S | 8 | mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le |
 
 **LowerBounds/LowRank/FewPasses.lean**
 
@@ -370,25 +434,25 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 | L1s | `le_specNorm_diagonal_sub_mul_sq` | M | 0 | — |
 | L2 | `mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace` | M | 1 | sum_neg_one_pow_mul_choose_mul_eval_eq_zero |
 | L3 | `measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix` | M | 2 | mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace |
-| L4 | `QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame` | M | 3 | exists_isKrylovCoupling_of_hasLaw_haarFrame, ae_range_le_of_isEmpty, le_frobNorm_diagonal_sub_mul_sq, measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix, run_mapOutput, mapOutput, mapOutput, hiddenRotationOracle |
-| L5 | `QueryAlgorithm.IsPassStructured.measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame` | M | 3 | exists_isKrylovCoupling_of_hasLaw_haarFrame, ae_range_le_of_isEmpty, le_specNorm_diagonal_sub_mul_sq, measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix, run_mapOutput, mapOutput, mapOutput, hiddenRotationOracle |
-| L6 | `exists_le_measureReal_frobNorm_sub_mul_sq_ge` | M | 4 | measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame, exists_le_measureReal_run_mem_of_forall, run_comapResponse, comapResponse, comapResponse, hiddenRotationOracle |
-| L7 | `div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le` | S | 5 | exists_le_measureReal_frobNorm_sub_mul_sq_ge, frobNorm_mul_diagonal_mul_sub_truncatedSVD_sq |
-| L8 | `div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_lt_one` | S | 6 | div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le |
-| L9 | `lt_of_forall_le_measureReal_specNorm_sub_mul_le` | M | 4 | measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame, singularValues_mul_diagonal_mul_card, exists_le_measureReal_run_mem_of_forall, run_comapResponse, comapResponse, comapResponse, hiddenRotationOracle |
+| L4 | `QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame` | M | 4 | exists_isKrylovCoupling_of_hasLaw_haarFrame, ae_range_le_of_isEmpty, le_frobNorm_diagonal_sub_mul_sq, measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix, run_mapOutput, mapOutput, mapOutput, hiddenRotationOracle |
+| L5 | `QueryAlgorithm.IsPassStructured.measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame` | M | 4 | exists_isKrylovCoupling_of_hasLaw_haarFrame, ae_range_le_of_isEmpty, le_specNorm_diagonal_sub_mul_sq, measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix, run_mapOutput, mapOutput, mapOutput, hiddenRotationOracle |
+| L6 | `exists_le_measureReal_frobNorm_sub_mul_sq_ge` | M | 5 | measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame, exists_le_measureReal_run_mem_of_forall, run_comapResponse, comapResponse, comapResponse, hiddenRotationOracle |
+| L7 | `div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le` | S | 6 | exists_le_measureReal_frobNorm_sub_mul_sq_ge, frobNorm_mul_diagonal_mul_sub_truncatedSVD_sq |
+| L8 | `div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_lt_one` | S | 7 | div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le |
+| L9 | `lt_of_forall_le_measureReal_specNorm_sub_mul_le` | M | 5 | measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame, singularValues_mul_diagonal_mul_card, exists_le_measureReal_run_mem_of_forall, run_comapResponse, comapResponse, comapResponse, hiddenRotationOracle |
 
 ## 4. Map to the sources
 
 | source | here |
 |---|---|
-| Shamir Thm 1 | SH5 (matrix–vector), SH4 (strong oracle, $\mathbf{D}$ known), SH6 (his form, $c = 1/8$), SH2/SH3 (distributional / worst case) |
+| Shamir Thm 1 | SH5 (matrix–vector), SH4 (strong oracle, $\mathbf{D}$ known), SH6 (his form, explicit constant), SH2/SH3 (distributional / worst case) |
 | Shamir Lemma 1 | P4 (via P2, P3) |
 | Shamir Lemma 2 | P5 (explicit certificate P1; no Kroó–Pinkus) |
 | Shamir Lemma 3 | LB-A H1 (`RandomMatrix/Haar/Stabilizer.lean`) |
 | Shamir Lemma 4 | K7 with one query per pass; its proof uses H2 (randomized form, already cited to Lemma 4 in `HiddenHaar.lean`) |
 | Shamir §3.3 (hard $\mathbf{D}$, eqs. (8)–(12)) | P6–P8, KB1, C1–C2, SH1 |
 | Shamir §2, reduction to quadratics | deferred (§11) |
-| OP5 Lemma C (+ M1–M5) | K7 (M1 = `IsPassStructured`, M2 inside K7, M3 = `hiddenRotationSimulation` K2–K4, M4 = GZ1, M5 inside K7) |
+| OP5 Lemma C (+ M1–M5) | K7 (M1 = `IsPassStructured`, M2 inside K7, M3 = `hiddenRotationSimulation` K2–K4, M4 = GZ1–GZ4, M5 = KB2–KB3 and inside K7) |
 | OP5 Step 1, Step 3, Lagrange | L1, L1s; L3; L2 + P9 |
 | OP5 Thm A, Cor B(i), B(iii), Thm C | L4, L6–L7, L8, L5 + L9 |
 | OP5 Cor B(ii), expectation forms, Prop E, §4.4 EW 7.1(b) | deferred |
@@ -407,7 +471,8 @@ A, C, Corollary B(i), (iii)); conjectures and **[open]** items are §11.
 * P1–P5: the two-interval MINRES worst case in `Krylov/LinearSystems/WorstCase.lean` should be
   re-proved from P1 (cleanup, not in this stage's targets).
 * KB1, C1–C2: any Gaussian-Krylov residual bound (DEM, BN23).
-* GZ1: Gaussianization in any coupling; Haar frames from Gaussian data.
+* GZ1–GZ4: Gaussianization in any coupling; Haar frames of a subspace from Gaussian data.
+* `stabRand` (now public): any further stabilizer-form argument on a revealed subspace.
 
 ## 6. Files and placement
 
@@ -424,11 +489,11 @@ cites elaborates in the file's import closure, checked by `bin/check-skeleton --
 |---|---|---|
 | `LowerBounds/QueryModel/Basic.lean` | Q14–Q25 | `NLAlib.LowerBounds.QueryModel.Basic` |
 | `LowerBounds/QueryModel/Yao.lean` | Y3 | `NLAlib.LowerBounds.QueryModel.Yao` |
-| `LowerBounds/QueryModel/HiddenRotation.lean` | K1–K8 | its NLAlib file, `…QueryModel.HiddenHaar`, `RandomMatrix.Gaussian.Invariance`, scaffold `…QueryModel.Basic`, scaffold `RandomMatrix.Haar.Uniqueness` |
-| `RandomMatrix/Haar/Uniqueness.lean` | GZ1 | `NLAlib.RandomMatrix.Haar.Uniqueness` |
+| `LowerBounds/QueryModel/HiddenRotation.lean` | K1–K8 | its NLAlib file, `…QueryModel.HiddenHaar`, `RandomMatrix.Gaussian.Invariance`, scaffold `Krylov.Basic.BlockSpace`, scaffold `…QueryModel.Basic`, scaffold `RandomMatrix.Haar.Uniqueness` |
+| `RandomMatrix/Haar/Uniqueness.lean` | GZ1–GZ4 | `NLAlib.RandomMatrix.Haar.Uniqueness`, `Matrix.Basic.OrthonormalBasis`, `RandomMatrix.Gaussian.Invariance`, `RandomMatrix.Gaussian.Rank` |
 | `Polynomial/Chebyshev/TwoInterval.lean` | P1–P8 | its NLAlib file, `Polynomial.Chebyshev.ResidualMinimax`, `ForMathlib.Algebra.Polynomial.Expand` |
 | `Polynomial/Interpolation/DividedDifference.lean` | P9 | its NLAlib file, `Mathlib.Algebra.Group.ForwardDiff` |
-| `Krylov/Basic/BlockSpace.lean` | KB1 | its NLAlib file, `Matrix.Basic.Projector` |
+| `Krylov/Basic/BlockSpace.lean` | KB1–KB3 | its NLAlib file, `Matrix.Basic.Projector` |
 | `RandomMatrix/Gaussian/Invariance.lean` | C1, C2 | `Matrix.Basic.Projector`, `Probability.Distributions.ChiSquare`, its NLAlib file, `ForMathlib.Probability.Independence.Basic` |
 | `LowerBounds/Krylov/LinearSystems.lean` | SH1–SH6 | `…QueryModel.Yao`, `RandomMatrix.Haar.Sphere`, scaffold BlockSpace, HiddenRotation, TwoInterval, Gaussian.Invariance |
 | `LowerBounds/LowRank/FewPasses.lean` | L0a–L9 | its NLAlib file, scaffold Yao, `Matrix.Spectral.LowRank`, `RandomMatrix.Gaussian.ExtremeSingularValues`, scaffold HiddenRotation, scaffold DividedDifference |
@@ -439,7 +504,7 @@ theorem is a lower bound about linear systems, whose upper bounds (CG, MINRES, w
 spectrum's *Gaussian* analysis (SH1, L2, L3) stays with its lower bound because it is about that
 instance only; the generic tools go to their topics (KB1 Krylov, C1–C2 Gaussian invariance — not
 `Probability/Distributions/ChiSquare.lean`, which may not import the Gaussian invariance lemma of
-layer 2 —, GZ1 Haar uniqueness — not `Haar/Basic.lean`, which `Uniqueness` imports). Expected sizes:
+layer 2 —, GZ1–GZ4 Haar uniqueness — not `Haar/Basic.lean`, which `Uniqueness` imports). Expected sizes:
 HiddenRotation ≈ 900 lines with K7's proof (split off `HiddenRotationCoupling.lean` if it exceeds
 1000; amendment then), LinearSystems ≈ 450, FewPasses ≈ 700.
 
@@ -471,6 +536,9 @@ The extraction check (N1–N18) runs at clean-up.
 
 ## 10. Open questions (recommendations in bold; the decision sheet has them one line each)
 
+All ten decided by the maintainer on 2026-10-26: **(a)** for each, as recommended (Fable: (a)
+for each).
+
 1. **Folder for Shamir** — (a) **`LowerBounds/Krylov/LinearSystems.lean`**, mirroring the upper
    bounds' `Krylov/LinearSystems/`; (b) `LowerBounds/LinearSystems/`; (c) `LowerBounds/Regression/`
    (where the sketch-and-solve bound is). (a): CONTRIBUTING's LowerBounds subfolders are named after
@@ -501,7 +569,7 @@ The extraction check (N1–N18) runs at clean-up.
 9. **Two-sided pair queries / per-side budgets in the coupling** — (a) **defer** (symmetric hard
    instances make them equal to one-sided products; a split of pair rounds costs a factor 2 and is
    a reduction when a consumer needs it); (b) add a pair-splitting reduction now.
-10. **Staging and dispatch** — (a) **one approval, dispatch LB-C1 (39 targets) then LB-C2 (13)**;
+10. **Staging and dispatch** — (a) **one approval, dispatch LB-C1 (44 targets after the revision) then LB-C2 (13)**;
     (b) two separate approvals. The LRA part is complete per OP5 ([derived], no open step), so the
     maintainer's main-branch rule is met; it depends only on K6, K7, Q*, Y3.
 
@@ -526,12 +594,14 @@ The extraction check (N1–N18) runs at clean-up.
 
 ## 12. Proof plan for dispatch
 
-Waves (from `lbc-targets.json`): wave 0, 27 independent targets (Q14, Q16, Q18–Q25, Y3, K1, K2,
-K4–K6, GZ1, P1, P3, P6, P8, P9, KB1, C1, L1, L1s, L0b); then the chains P1→P2→{P4, P5},
-P1→P7, C1→C2, K2→K3, {K2–K4, GZ1}→K7→{K8, SH2, L4, L5}, {KB1, C2, P7, P3}→SH1→SH2→SH3→SH4→SH5→SH6,
-P9→L2→L3→{L4, L5}→{L6, L9}, L6→L7→L8. Difficulties: S 29, M 20, L 2 (GZ1, SH1), H 1 (K7). Route
-K7, SH1, GZ1 with `--hard L,H` to the escalation model; Fable review of their outlines before
-dispatch (orchestrator rule). Everything else is open-weight first.
+Waves (from `lbc-targets.json`, the longest dependency chain): wave 0, 30 independent targets
+(Y3, Q14, Q16, Q18, Q19, Q20, Q21, Q22, Q23, Q24, Q25, K1, K2, K4, K5, K6, GZ1, GZ4, P1, P3, P6, P8, P9, KB1, KB2, KB3, C1, L0b, L1, L1s); then the chains P1→P2→{P4, P5},
+P1→P7, C1→C2, K2→K3, GZ1→GZ2→GZ3, {K2–K4, KB2, KB3, GZ3, GZ4}→K7→{K8, SH2, L4, L5},
+{KB1, C2, P7, P3}→SH1→SH2→SH3→SH4→SH5→SH6, P9→L2→L3→{L4, L5}→{L6, L9}, L6→L7→L8. Difficulties:
+S 31, M 23, L 2 (GZ1, SH1), H 1 (K7). One dispatch for LB-C1 and LB-C2 together (the dependency
+order serialises them; dependents may start on sorried dependencies), tag `lbc`, haiku first with
+opus escalation, L and H on opus from the start (`--hard L,H`); failed L/H targets get Opus
+continuation sessions, as S10's E8 and L1.
 
 ## 13. Literature
 

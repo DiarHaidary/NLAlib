@@ -13,6 +13,13 @@ $\Omega(k/\varepsilon)$ for low-rank approximation from the OP5 research note. E
 written in `NLAlib` (build `--wfail`); 52 sorried statements in `NLAlibScaffold` (S 29, M 20, L 2,
 H 1); targets `~/nlalib-harness/pilot/lbc-targets.json`. No proof dispatched.
 
+Approved 2026-10-26 (APPROVE and OQ1–OQ10 all (a)) and revised after the Fable review: K7's proof
+plan (augmented simulation revealing $\mathbf{U}^{\mathsf{H}}\mathbf{B}$ and the frame padding;
+the wide-pass case), five new sorried tools (KB2, KB3 in `Krylov/Basic/BlockSpace`; GZ2–GZ4 in
+`RandomMatrix/Haar/Uniqueness`), the stabilizer randomizer `stabRand` of `HiddenHaar.lean` and its
+law lemmas made public, SH6 sharpened to $\kappa\log(1/\varepsilon) \le 4(q + 1)$. Now 57 sorried
+statements (S 31, M 23, L 2, H 1).
+
 ## LB-A matvec query model: proofs (2026-10-25)
 
 Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`
