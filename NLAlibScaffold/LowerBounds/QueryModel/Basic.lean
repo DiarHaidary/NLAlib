@@ -119,8 +119,8 @@ Proof: the query maps are unchanged; the output is `g` after the joint output ma
 (`Measurable.comp`). S, 3 lines. -/
 theorem IsMeasurableFamily.mapOutput {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {g : β → β'}
-    (hg : Measurable g) : IsMeasurableFamily fun s => (alg s).mapOutput g := by
-  sorry
+    (hg : Measurable g) : IsMeasurableFamily fun s => (alg s).mapOutput g :=
+  ⟨halg.measurable_query, hg.comp halg.measurable_output⟩
 
 end Measurable
 
