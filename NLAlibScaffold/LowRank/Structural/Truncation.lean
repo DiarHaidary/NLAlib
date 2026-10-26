@@ -126,6 +126,13 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matri
             (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) *
             (rangeProjector (truncatedSVD (rsvd A Ω) b)ᴴ -
               rangeProjector (truncatedSVD (rsvd A Ω) a)ᴴ)) := by
-  sorry
+  have hY : IsBestRankApprox (rsvd A Ω + obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) k
+      (truncatedSVD (generalizedNystrom A Ω Ψ) k) := by
+    rw [← generalizedNystrom_eq_rsvd_add h]
+    exact isBestRankApprox_truncatedSVD _ k
+  have P := IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window hY hk hak hkb ha ha₂ hb
+  rw [frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add A Ω Ψ k,
+    frobNorm_sub_truncatedSVD_rsvd_sq A Ω k]
+  linarith
 
 end NLAlib
