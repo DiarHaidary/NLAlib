@@ -87,7 +87,44 @@ theorem integral_specNorm_mul_obliqueProjector_mul_sub_rsvd_mul_le_of_hasLaw_gau
       4 / √(Fintype.card p : ℝ) *
         (specNorm ((A - rsvd A x) * T) * frobNorm F +
           frobNorm ((A - rsvd A x) * T) * specNorm F) := by
-  sorry
+  classical
+  have hΨ' : HasLaw (fun ω => (Ψ ω)ᴴ) (gaussianMatrix p m) μ :=
+    hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hΨ
+  rcases Nat.eq_zero_or_pos (Fintype.card l) with hl | hl
+  · have hx : A * x = 0 := by
+      have : IsEmpty l := Fintype.card_eq_zero_iff.mp hl
+      ext i j
+      exact (IsEmpty.false j).elim
+    simp only [hx, obliqueProjector, Matrix.zero_mul, Matrix.mul_zero, specNorm_zero,
+      integral_zero]
+    positivity
+  · have hq : (A * x).rank ≤ Fintype.card l := Matrix.rank_le_card_width _
+    have hq2 : (A * x).rank + 2 ≤ Fintype.card p := by omega
+    have hβ : gaussianPinvSpecNormBound (A * x).rank (Fintype.card p) ≤
+        4 / √(Fintype.card p : ℝ) := by
+      have hlt : (A * x).rank < Fintype.card p := by omega
+      refine (gaussianPinvSpecNormBound_le hlt).trans ?_
+      have hP : (4 : ℝ) ≤ Fintype.card p := by exact_mod_cast (by omega : 4 ≤ Fintype.card p)
+      have hq4 : ((A * x).rank : ℝ) * 4 ≤ Fintype.card p := by
+        exact_mod_cast (by omega : (A * x).rank * 4 ≤ Fintype.card p)
+      have hsq : 0 < √(Fintype.card p : ℝ) := Real.sqrt_pos.mpr (by linarith)
+      have hsq2 := Real.mul_self_sqrt (by linarith : (0 : ℝ) ≤ Fintype.card p)
+      have he := Real.exp_one_lt_d9
+      have hpos : (0 : ℝ) < (Fintype.card p : ℝ) - (A * x).rank := by
+        have : (0 : ℝ) ≤ (A * x).rank := by positivity
+        linarith
+      rw [div_le_div_iff₀ hpos hsq]
+      have e1 : Real.exp 1 * √(Fintype.card p : ℝ) * √(Fintype.card p : ℝ) =
+          Real.exp 1 * Fintype.card p := by
+        rw [mul_assoc, hsq2]
+      rw [e1]
+      nlinarith [mul_le_mul_of_nonneg_right he.le (by linarith : (0 : ℝ) ≤ Fintype.card p)]
+    have hmain :=
+      integral_specNorm_mul_obliqueProjector_mul_one_sub_rangeProjector_mul_le_of_hasLaw_gaussianMatrix
+        (S := fun ω => (Ψ ω)ᴴ) hΨ' (A * x) hq2 (A * T) F
+    simp only [sub_rsvd, Matrix.mul_assoc]
+    refine hmain.trans ?_
+    exact mul_le_mul_of_nonneg_right hβ (by positivity)
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
