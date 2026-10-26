@@ -49,9 +49,9 @@ $X$, and let $B$ be a measurable set of (input, output) pairs. If every measurab
 algorithm puts $(X, \text{output})$ in $B$ with probability at most $\delta$, then so does the
 randomized algorithm with seed $s$:
 $\mathbb{P}[(X, \mathcal{A}_s(X)) \in B] \le \delta$.
-[Yao1977, Section 3]; there as the minimax principle for finite problems, here the averaging
-half on a probability space, any seed and input spaces, any oracle depending measurably on the
-input. -/
+[Yao1977, Section 3] (locator to check); there as the minimax principle for finite problems,
+here the averaging half on a probability space, any seed and input spaces, any oracle depending
+measurably on the input. -/
 theorem IsMeasurableFamily.measureReal_run_mem_le_of_indepFun [IsProbabilityMeasure μ]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {O : M → Q → R}
     (hO : Measurable (Function.uncurry O)) {s : Ω → S} {X : Ω → M} (hs : AEMeasurable s μ)
@@ -81,7 +81,8 @@ then for the randomized algorithm some input $x$ has
 $\rho$-probability at least $\delta$ of $(x, \mathcal{A}_s(x)) \in B$. Read with $B$ the failure
 set: a lower bound against one input distribution is a lower bound for randomized algorithms in
 the worst case.
-[Yao1977, Section 3]; [ZhangEtAl2026, Section 8]; there for finite or implicit input spaces. -/
+[Yao1977, Section 3] (locator to check); [ZhangEtAl2026, Section 8]; there for finite or
+implicit input spaces. -/
 theorem IsMeasurableFamily.exists_le_measureReal_run_mem {alg : S → QueryAlgorithm Q R q β}
     (halg : IsMeasurableFamily alg) {O : M → Q → R} (hO : Measurable (Function.uncurry O))
     (ρ : Measure S) [IsProbabilityMeasure ρ] (ν : Measure M) [IsProbabilityMeasure ν]
