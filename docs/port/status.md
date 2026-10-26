@@ -19,7 +19,11 @@ with every measurable summary of an initial transcript prefix
 (`exists_measurable_gaussianBlock_of_ordered_queries`). The pass simulation and depth count are
 private in `HiddenRotation.lean`. No hypotheses were added.
 
-Validation: VALIDATION_PLACEHOLDER
+Validation (after merging `origin/main` a82169e): `lake build --wfail NLAlib NLAlibScaffold`, 0
+warnings; `stage_check.sh`: 448 proved modules, 0 axiom violations in 11705 declarations, 14
+linters, references, constants and LaTeX clean, `check_rules` 0 errors. `#print axioms` for K7,
+K8, SH2–SH6 and L4–L9: `propext`, `Classical.choice`, `Quot.sound`. Advisory: GaussianCoupling,
+HiddenRotation and FewPasses are over 1000 lines (F10, below the 1500 ceiling).
 
 ## LB-C hidden-rotation lower bounds: design (2026-10-26)
 

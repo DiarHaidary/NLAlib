@@ -1155,8 +1155,9 @@ products are all chosen in advance (one pass): with $k$ nonempty,
 $0 < \varepsilon \le \min\{1/6500, \lvert k \rvert/14000\}$ and
 $\lvert m \rvert = \lfloor \lvert k \rvert/(8\varepsilon) \rfloor$, an algorithm that is within
 $(1 + \varepsilon)$ of the best rank-$k$ Frobenius error with probability at least $\tfrac12$ on
-every symmetric input makes $q > \lvert k \rvert/(6400\varepsilon)$ products. The best one-pass
-upper bound is $O(k/\varepsilon^2)$ (generalized Nyström); the gap is open.
+every symmetric input makes $q > \lvert k \rvert/(6400\varepsilon)$ products. Truncated generalized
+Nyström attains the error in expectation with $O(k/\varepsilon)$ one-pass products
+(`LowRank/Gaussian/TruncatedGeneralizedNystromRate`), so the bound is tight up to constants.
 No printed source; research note OP5, Corollary B(iii).
 Result: one-pass-low-rank-lower-bound -/
 theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_lt_one [Nonempty k] {ε : ℝ}
