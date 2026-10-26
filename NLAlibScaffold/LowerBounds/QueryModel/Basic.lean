@@ -146,8 +146,8 @@ condition is that query $i$ depends only on the $i$ responses before it, which i
 of an adaptive algorithm. The fully adaptive model is the $q$-pass case.
 Proof: `monotone_id`; for `query_eq`, the hypothesis gives `h = h'` by `funext` (every `j : Fin i`
 has `j < i`). S, 3 lines. -/
-theorem isPassStructured_id (alg : QueryAlgorithm Q R q β) : alg.IsPassStructured id := by
-  sorry
+theorem isPassStructured_id (alg : QueryAlgorithm Q R q β) : alg.IsPassStructured id :=
+  ⟨monotone_id, fun i _ _ _ hh => congrArg (alg.query i) (funext fun j => hh j j.isLt)⟩
 
 /-- **One pass is non-adaptivity**: an algorithm is pass-structured with every round in pass
 $0$ if and only if it is non-adaptive.
