@@ -36,6 +36,22 @@ open Polynomial Polynomial.Chebyshev
 
 namespace NLAlib
 
+/-- **The even part does at least as well**: with $u = p(x)$, $v = p(-x)$ and $\omega \ge 0$,
+$\omega\lvert(\operatorname{contract}_2 p)(x^2)\rvert^2 \le
+\tfrac{\omega}{2}(\lvert u \rvert^2 + \lvert v \rvert^2)$. -/
+private lemma mul_norm_eval_contract_two_sq_le {𝕜 : Type*} [RCLike 𝕜] (p : 𝕜[X]) (x : 𝕜)
+    {ω : ℝ} (hω : 0 ≤ ω) :
+    ω * ‖(contract 2 p).eval (x ^ 2)‖ ^ 2 ≤ ω / 2 * (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) := by
+  have hle : ‖(contract 2 p).eval (x ^ 2)‖ ≤ (‖p.eval x‖ + ‖p.eval (-x)‖) / 2 := by
+    have h := congrArg norm (two_mul_eval_contract_two_sq p x)
+    rw [norm_mul, RCLike.norm_two] at h
+    have := norm_add_le (p.eval x) (p.eval (-x))
+    linarith
+  have h3 := pow_le_pow_left₀ (norm_nonneg _) hle 2
+  have h4 : ((‖p.eval x‖ + ‖p.eval (-x)‖) / 2) ^ 2 ≤ (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) / 2 := by
+    nlinarith [sq_nonneg (‖p.eval x‖ - ‖p.eval (-x)‖)]
+  nlinarith
+
 /-- **Dual certificate on two symmetric intervals**: for $0 < a < a'$ and $k = \lfloor q/2
 \rfloor$, every $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
 $$T_k\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \le \sum_{j=0}^{k} \frac{\omega_j}{2}
@@ -58,7 +74,28 @@ theorem inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq {𝕜 : T
         (‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜)‖ ^ 2 +
           ‖p.eval (-((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜))‖ ^ 2) :=
     by
-  sorry
+  have ha2 : 0 < a ^ 2 := pow_pos ha 2
+  have haa2 : a ^ 2 < a' ^ 2 := pow_lt_pow_left₀ haa ha.le two_ne_zero
+  have hPd := degree_contract_le_of_degree_le two_ne_zero hp
+  have hP₀ : (contract 2 p).eval 0 = 1 := by rw [eval_zero_contract two_ne_zero, hp₀]
+  have hterm : ∀ j : Fin (q / 2 + 1),
+      chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j *
+        ‖(contract 2 p).eval (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j : 𝕜)‖ ^ 2 ≤
+      chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j / 2 *
+        (‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜)‖ ^ 2 +
+          ‖p.eval (-((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜))‖ ^ 2) :=
+    fun j => by
+      have hξ0 : 0 ≤ chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j :=
+        ha2.le.trans (chebyshevExtremum_mem_Icc haa2.le (q / 2) j).1
+      have hx2 : ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜) ^ 2 =
+          (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j : 𝕜) := by
+        rw [← RCLike.ofReal_pow, Real.sq_sqrt hξ0]
+      have h := mul_norm_eval_contract_two_sq_le p
+        ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜)
+        (chebyshevWeight_pos ha2 haa2 (q / 2) j).le
+      rwa [hx2] at h
+  exact (inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq ha2 haa2 hPd hP₀).trans
+    (Finset.sum_le_sum fun j _ => hterm j)
 
 /-- **Residual minimax value of two symmetric intervals**: for $0 < a < a'$,
 $$\min_{\deg p \le q,\ p(0) = 1}\ \max_{x \in [-a', -a] \cup [a, a']} \lvert p(x) \rvert =
