@@ -32,7 +32,8 @@ Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
   suppressions are gone, and D2's step passes one argument fewer.
 - T9-GRAM (a): new definition `QueryAlgorithm.gramDecode`, used by `gramSimulation`; R1a
   `history_gramSimulation` is restated through it (statement change, definitionally equal; the
-  proof term in its `Fin` literal is gone). The T9 ratchet entry is removed.
+  proof term in its `Fin` literal is gone) and, by N2, renamed `gramDecode_history_gramSimulation`.
+  The T9 ratchet entry is removed.
 - RANK-STEP-HOME (a): R4a is now `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` in
   `ForMathlib/LinearAlgebra/Matrix/Rank` (was `NLAlib.rank_mul_of_snoc_eq_rank_of_snoc` in
   `LowerBounds/LowRank/RangeRecovery`); statement unchanged.

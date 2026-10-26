@@ -228,7 +228,7 @@ IDs are the `note_id`s of `~/nlalib-harness/pilot/lbA-targets.json`. Full docstr
 | Q10 | `IsMeasurableFamily.isMeasurable` | `(alg s).IsMeasurable` | S |
 | C1 | `rank_rightQueryMatrix_le_rightCount` | `(alg.rightQueryMatrix τ).rank ≤ alg.rightCount τ` | S |
 | C2 | `rank_leftQueryMatrix_le_leftCount` | `(alg.leftQueryMatrix τ).rank ≤ alg.leftCount τ` | S |
-| R1a | `history_gramSimulation` | `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i))` `= alg.history (X * Xᴴ).mulVec i` (the odd first components; decision T9-GRAM), every `i` | M |
+| R1a | `gramDecode_history_gramSimulation` | `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i))` `= alg.history (X * Xᴴ).mulVec i` (the odd first components; decision T9-GRAM), every `i` | M |
 | R1 | `run_gramSimulation` | `(alg.gramSimulation k).run (twoSidedMulVec X) = alg.run (X * Xᴴ).mulVec` | S |
 | R2 | `IsMeasurable.gramSimulation` | `alg.IsMeasurable → (alg.gramSimulation k).IsMeasurable` | S |
 | R3a | `rightCount_gramSimulation_le` | `(alg.gramSimulation k).rightCount τ ≤ q`, every `τ` | S |
@@ -694,7 +694,7 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
   `i < q` (was every `i`), matching `IsNonAdaptive`. This weakens the predicates (more algorithms
   are measurable), so every lower bound becomes stronger; no statement relied on junk queries.
   R4b, which uses `alg.queryAt … i`, carries `i < q`.
-* **R1 split.** New R1a `history_gramSimulation` (M, the history-level identity); R1 becomes S.
+* **R1 split.** New R1a `history_gramSimulation` (now `gramDecode_history_gramSimulation`, T9-GRAM) (M, the history-level identity); R1 becomes S.
 * **R4 split (review item 3).** New R4a `rank_mul_of_snoc_eq_rank_of_snoc` (M) and R4b
   `IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero` (L); R4 is the M
   assembly, its statement changed only by the oracle (above).
@@ -743,7 +743,8 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
     responses of a `2 * i`-round history), used by `gramSimulation`'s query and output. R1a is
     restated as `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)) =
     alg.history (X * Xᴴ).mulVec i`, definitionally the old statement without the `Fin` literal's
-    proof term; the T9 ratchet entry is removed.
+    proof term; the T9 ratchet entry is removed. By N2 (the conclusion starts with `gramDecode`) R1a
+    is renamed `gramDecode_history_gramSimulation` (was `history_gramSimulation`).
   * RANK-STEP-HOME (a): R4a moves to `ForMathlib/LinearAlgebra/Matrix/Rank.lean`, next to
     `Matrix.rank_mul_eq_iff_injOn`, renamed `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` (statement
     unchanged), with its private finrank helper. R4's call site uses the new name.

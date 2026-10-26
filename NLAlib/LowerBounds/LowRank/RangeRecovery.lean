@@ -113,7 +113,7 @@ private theorem queryAt_eq_query_transcript_gramSimulation {β : Type*}
     (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) :
     alg.queryAt (Y * Yᴴ).mulVec q = alg.query q fun l : Fin q =>
       ((alg.gramSimulation k).transcript (twoSidedMulVec Y) ⟨2 * l + 1, by omega⟩).1 := by
-  rw [queryAt, ← history_gramSimulation]
+  rw [queryAt, ← gramDecode_history_gramSimulation]
   rfl
 
 /-- The bad event of one step, in terms of the complement projectors of the query spans. -/

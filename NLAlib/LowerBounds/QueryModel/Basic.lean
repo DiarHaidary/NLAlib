@@ -82,7 +82,8 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
   `NLAlib.QueryAlgorithm.IsMeasurableFamily.isMeasurable`.
 * `NLAlib.QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`,
   `NLAlib.QueryAlgorithm.rank_leftQueryMatrix_le_leftCount`: query spans and costs.
-* `NLAlib.QueryAlgorithm.history_gramSimulation`, `NLAlib.QueryAlgorithm.run_gramSimulation`,
+* `NLAlib.QueryAlgorithm.gramDecode_history_gramSimulation`,
+  `NLAlib.QueryAlgorithm.run_gramSimulation`,
   `NLAlib.QueryAlgorithm.queryAt_gramSimulation_two_mul`,
   `NLAlib.QueryAlgorithm.queryAt_gramSimulation_two_mul_add_one`,
   `NLAlib.QueryAlgorithm.IsMeasurable.gramSimulation`,
@@ -238,7 +239,7 @@ structure IsMeasurableFamily {S : Type*} [MeasurableSpace S] [MeasurableSpace Q]
 
 /-- The decoding of the Gram simulation: from a history of `2 * i` two-sided rounds, the first
 components of the odd responses, the `i` responses of the simulated algorithm
-(`QueryAlgorithm.history_gramSimulation`). -/
+(`QueryAlgorithm.gramDecode_history_gramSimulation`). -/
 def gramDecode {𝕜 d k : Type*} {i : ℕ} (h : Fin (2 * i) → (d → 𝕜) × (k → 𝕜)) : Fin i → d → 𝕜 :=
   fun l => (h ⟨2 * l + 1, by have := l.isLt; omega⟩).1
 
@@ -550,8 +551,8 @@ private theorem gramSimulation_query_odd {𝕜 d k : Type*} [Zero 𝕜]
 /-- The Gram simulation reproduces the history: after `2 * i` rounds of `alg.gramSimulation k`
 against `twoSidedMulVec X`, the first components of the odd responses are the first `i`
 responses of `alg` against $\mathbf{X}\mathbf{X}^{\mathsf{H}}$. Holds for every `i`. -/
-theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β)
-    (X : Matrix d k 𝕜) (i : ℕ) :
+theorem gramDecode_history_gramSimulation [Fintype d] [Fintype k]
+    (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (X : Matrix d k 𝕜) (i : ℕ) :
     gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)) =
       alg.history (X * Xᴴ).mulVec i := by
   -- Odd round `2l + 1` returns `X * (Xᴴ * x_l)`, where `x_l` is the query `l` of the history.
@@ -589,7 +590,7 @@ theorem queryAt_gramSimulation_two_mul [Fintype d] [Fintype k]
     (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (Y : Matrix d k 𝕜) (l : ℕ) :
     (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l) =
       (0, alg.queryAt (Y * Yᴴ).mulVec l) := by
-  have h := history_gramSimulation alg Y l
+  have h := gramDecode_history_gramSimulation alg Y l
   rw [queryAt]
   generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l) = H at h ⊢
   dsimp only [gramSimulation]
@@ -629,7 +630,7 @@ theorem run_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d → 
     (X : Matrix d k 𝕜) :
     (alg.gramSimulation k).run (twoSidedMulVec X) = alg.run (X * Xᴴ).mulVec := by
   unfold QueryAlgorithm.run QueryAlgorithm.transcript
-  exact congrArg alg.output (history_gramSimulation alg X q)
+  exact congrArg alg.output (gramDecode_history_gramSimulation alg X q)
 
 /-- The Gram simulation of a measurable algorithm is measurable. -/
 theorem IsMeasurable.gramSimulation [MeasurableSpace 𝕜] [MeasurableSpace β]
