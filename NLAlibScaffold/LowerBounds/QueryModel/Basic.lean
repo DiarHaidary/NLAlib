@@ -139,7 +139,7 @@ is. S, 1 line. -/
 theorem IsPassStructured.mapOutput {alg : QueryAlgorithm Q R q β} {pass : ℕ → ℕ}
     (h : alg.IsPassStructured pass) (g : β → β') :
     (alg.mapOutput g).IsPassStructured pass := by
-  sorry
+  exact ⟨h.monotone, h.query_eq⟩
 
 /-- **Every algorithm is pass-structured with one query per pass**: with `pass = id` the
 condition is that query $i$ depends only on the $i$ responses before it, which is the definition
