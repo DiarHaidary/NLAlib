@@ -1267,6 +1267,82 @@ theorem lt_of_forall_le_measureReal_specNorm_sub_mul_le [Nonempty k] {ε : ℝ} 
       1 / 2 ≤ ρ.real {s | specNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ≤
         (1 + ε) * singularValues A (Fintype.card k)}) :
     Fintype.card m < 676 * (q + Fintype.card k) := by
-  sorry
+  classical
+  by_contra hcon
+  replace hcon := not_lt.mp hcon
+  set D := Matrix.diagonal (equispacedLevelSpectrum k m 2)
+  set δ : ℝ := 1 - 4 * Real.exp (-(Fintype.card m / 1352))
+  have hO : Measurable (Function.uncurry fun (U : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ)
+      (x : k ⊕ (Fin 3 × m) → ℝ) => (U * D * Uᴴ) *ᵥ x) :=
+    (Measurable.hiddenRotationOracle measurable_fst measurable_snd D).fst
+  set B : Set (Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ ×
+      (Matrix (k ⊕ (Fin 3 × m)) k ℝ × Matrix k (k ⊕ (Fin 3 × m)) ℝ)) :=
+    {p | HasOrthonormalCols p.1 ∧ 45 / 4 ≤ specNorm (p.1 * D * p.1ᴴ - p.2.1 * p.2.2) ^ 2}
+  have hB : MeasurableSet B :=
+    (isClosed_setOf_hasOrthonormalCols.measurableSet.preimage measurable_fst).inter
+      (measurableSet_le measurable_const ((measurable_specNorm.comp
+        (((measurable_fst.matrix_mul measurable_const).matrix_mul
+          (continuous_star.measurable.matrix_conjTranspose measurable_fst)).matrix_sub
+          (measurable_snd.fst.matrix_mul measurable_snd.snd))).pow_const 2))
+  have hfail : ∀ s, δ ≤ (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))).real
+      {U | (U, (alg s).run ((U * D * Uᴴ) *ᵥ ·)) ∈ B} := by
+    intro s
+    set ν := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))
+    have hL :=
+      QueryAlgorithm.IsPassStructured.measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame
+      ((hpass s).comapResponse Prod.fst) (hp s) ((halg.isMeasurable s).comapResponse measurable_fst)
+      hcon (U := id) HasLaw.id
+    simp only [QueryAlgorithm.run_comapResponse] at hL
+    have hNO : ν.real {U | ¬HasOrthonormalCols U} = 0 := by
+      have h := ae_iff.mp (ae_hasOrthonormalCols_of_hasLaw_haarFrame (HasLaw.id (μ := ν)) le_rfl)
+      exact (congrArg ENNReal.toReal h).trans ENNReal.toReal_zero
+    have hT : MeasurableSet {U | (U, (alg s).run ((U * D * Uᴴ) *ᵥ ·)) ∈ B} :=
+      hB.preimage (measurable_id.prodMk ((halg.measurable_run hO).comp measurable_prodMk_left))
+    have hsub : {U | (U, (alg s).run ((U * D * Uᴴ) *ᵥ ·)) ∈ B}ᶜ ⊆
+        {ω | specNorm (id ω * D * (id ω)ᴴ -
+          ((alg s).run (Prod.fst ∘ hiddenRotationOracle (id ω) D)).1 *
+          ((alg s).run (Prod.fst ∘ hiddenRotationOracle (id ω) D)).2) ^ 2 < 45 / 4} ∪
+        {U | ¬HasOrthonormalCols U} := by
+      intro U hU
+      by_cases hUo : HasOrthonormalCols U
+      · exact Or.inl (lt_of_not_ge fun h => hU ⟨hUo, h⟩)
+      · exact Or.inr hUo
+    have := (measureReal_mono (μ := ν) hsub).trans (measureReal_union_le _ _)
+    rw [probReal_compl_eq_one_sub hT] at this
+    linarith
+  obtain ⟨U, hU⟩ := halg.exists_le_measureReal_run_mem_of_forall hO ρ _ hB hfail
+  have hA : (U * D * Uᴴ).IsHermitian :=
+    Matrix.isHermitian_mul_mul_conjTranspose U (Matrix.isHermitian_diagonal _)
+  set succ := {s | specNorm (U * D * Uᴴ - ((alg s).run (U * D * Uᴴ).mulVec).1 *
+      ((alg s).run (U * D * Uᴴ).mulVec).2) ≤
+      (1 + ε) * singularValues (U * D * Uᴴ) (Fintype.card k)}
+  have hsucc' : 1 / 2 ≤ ρ.real succ := hsucc _ hA
+  have hmeas : MeasurableSet succ := by
+    have hf : Measurable fun s => (alg s).run (U * D * Uᴴ).mulVec :=
+      (halg.measurable_run (O := fun (_ : Unit) => (U * D * Uᴴ).mulVec)
+        (measurable_const.matrix_mulVec measurable_snd)).comp
+        (measurable_id.prodMk (measurable_const (a := ())))
+    exact measurableSet_le (measurable_specNorm.comp
+      (measurable_const.matrix_sub (hf.fst.matrix_mul hf.snd))) measurable_const
+  have hsub : {s | (U, (alg s).run ((U * D * Uᴴ) *ᵥ ·)) ∈ B} ⊆ succᶜ := by
+    rintro s ⟨hUo, hs⟩ h
+    have : Nonempty m := Fintype.card_pos_iff.mp (by omega)
+    have h3 : singularValues (U * D * Uᴴ) (Fintype.card k) = 3 :=
+      HasOrthonormalCols.singularValues_mul_diagonal_mul_card hUo
+    set E := U * D * Uᴴ - ((alg s).run (U * D * Uᴴ).mulVec).1 *
+      ((alg s).run (U * D * Uᴴ).mulVec).2
+    replace h : specNorm E ≤ (1 + ε) * 3 := h3 ▸ h
+    replace hs : 45 / 4 ≤ specNorm E ^ 2 := hs
+    nlinarith [specNorm_nonneg E]
+  have hexp : Real.exp (-(Fintype.card m / 1352)) < 1 / 8 := by
+    have hm' : (2812 : ℝ) ≤ Fintype.card m := by exact_mod_cast hm
+    calc Real.exp (-(Fintype.card m / 1352)) ≤ Real.exp (-(2812 / 1352)) :=
+          Real.exp_le_exp.mpr (by linarith)
+      _ < 1 / 8 := by
+          rw [← Real.exp_log (by norm_num : (0:ℝ) < 1 / 8), one_div, Real.log_inv,
+            show (8:ℝ) = 2 ^ 3 by norm_num, Real.log_pow]
+          exact Real.exp_lt_exp.mpr (by push_cast; linarith [Real.log_two_lt_d9])
+  have := (hU.trans (measureReal_mono hsub)).trans_eq (probReal_compl_eq_one_sub hmeas)
+  linarith
 
 end NLAlib
