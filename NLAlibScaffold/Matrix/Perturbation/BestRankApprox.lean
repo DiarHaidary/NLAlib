@@ -117,6 +117,23 @@ theorem exists_singularValues_window (B : Matrix m n ℝ) {k : ℕ} (hk : 1 ≤ 
 
 /-! ### The excess and the optimality of the perturbed truncation -/
 
+/-- A best approximation is the projection of the target onto its own column space. -/
+private theorem rangeProjector_mul_eq_of_isBestRankApprox {M Y : Matrix m n ℝ} {k : ℕ}
+    (hY : IsBestRankApprox M k Y) : rangeProjector Y * M = Y := by
+  have hsplit := (isStarProjection_rangeProjector Y).frobNorm_sq_eq_add (M - Y)
+  have e1 : rangeProjector Y * (M - Y) = rangeProjector Y * M - Y := by
+    rw [Matrix.mul_sub, rangeProjector_mul_self]
+  have e2 : (1 - rangeProjector Y) * (M - Y) = M - rangeProjector Y * M := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul,
+      rangeProjector_mul_self, sub_self, sub_zero]
+  rw [e1, e2] at hsplit
+  have hopt := pow_le_pow_left₀ (frobNorm_nonneg _) (hY.frobNorm_sub_le _
+    ((Matrix.rank_mul_le_left (rangeProjector Y) M).trans
+      (by rw [rank_rangeProjector]; exact hY.rank_le))) 2
+  have hsq : frobNorm (rangeProjector Y * M - Y) ^ 2 = 0 :=
+    le_antisymm (by linarith) (sq_nonneg _)
+  exact sub_eq_zero.mp (frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq))
+
 /-- **The excess identity**: for $\mathbf{B}, \mathbf{N} \in \mathbb{R}^{m \times n}$ and a best
 rank-$k$ approximation $\mathbf{Y}$ of $\mathbf{B} + \mathbf{N}$, with
 $\widehat{\mathbf{P}} = \mathbf{P}_{\mathbf{Y}}$,
@@ -137,7 +154,22 @@ theorem IsBestRankApprox.frobNorm_sub_sq_eq_add {B N Y : Matrix m n ℝ} {k : �
     (hY : IsBestRankApprox (B + N) k Y) :
     frobNorm (B - Y) ^ 2 =
       frobNorm ((1 - rangeProjector Y) * B) ^ 2 + frobNorm (rangeProjector Y * N) ^ 2 := by
-  sorry
+  classical
+  have hZ := isStarProjection_rangeProjector Y
+  have hZY : rangeProjector Y * (B + N) = Y := rangeProjector_mul_eq_of_isBestRankApprox hY
+  have hY1 : Y = rangeProjector Y * B + rangeProjector Y * N := by
+    rw [← Matrix.mul_add, hZY]
+  have hsub : B - Y = (1 - rangeProjector Y) * B - rangeProjector Y * N := by
+    conv_lhs => rw [hY1]
+    rw [Matrix.sub_mul, Matrix.one_mul]
+    abel
+  have horth : frobInner ((1 - rangeProjector Y) * B) (rangeProjector Y * N) = 0 := by
+    rw [frobInner_mul_left, Matrix.conjTranspose_sub, Matrix.conjTranspose_one,
+      hZ.conjTranspose_eq, ← Matrix.mul_assoc, Matrix.sub_mul, Matrix.one_mul, hZ.mul_self,
+      sub_self]
+    simp
+  rw [hsub]
+  exact frobNorm_sub_sq_of_frobInner_eq_zero horth
 
 /-- **The optimality of the perturbed truncation**: for $\mathbf{B}, \mathbf{N} \in
 \mathbb{R}^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
