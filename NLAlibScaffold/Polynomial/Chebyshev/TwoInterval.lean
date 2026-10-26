@@ -127,7 +127,35 @@ $\log(1 + 2/(\kappa - 1)) \le 2/(\kappa - 1) \le 4/\kappa$ for $\kappa \ge 2$
 (`Real.add_one_le_exp`, `Real.exp_le_exp`, `pow_le_pow_left₀`). S, about 25 lines. -/
 theorem exp_neg_le_inv_eval_T_real {κ : ℝ} (hκ : 2 ≤ κ) (k : ℕ) :
     Real.exp (-(4 * k / κ)) ≤ ((T ℝ (k : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)))⁻¹ := by
-  sorry
+  have hk := inv_eval_T_real_eq_two_mul_pow_div (a := 1) (a' := κ ^ 2) k one_pos (by nlinarith)
+  rw [hk, div_one, Real.sqrt_sq (by linarith)]
+  have hκ1 : 0 < κ - 1 := by linarith
+  have hκ2 : 0 < κ + 1 := by linarith
+  have hρ0 : 0 ≤ (κ - 1) / (κ + 1) := (div_pos hκ1 hκ2).le
+  have hρ1 : (κ - 1) / (κ + 1) ≤ 1 := (div_le_one hκ2).mpr (by linarith)
+  have hexp : Real.exp (-(4 / κ)) ≤ (κ - 1) / (κ + 1) := by
+    have h2 : (κ + 1) / (κ - 1) = 1 + 2 / (κ - 1) := by
+      field_simp
+      ring
+    have h3 : 2 / (κ - 1) ≤ 4 / κ := by
+      rw [div_le_div_iff₀ hκ1 (by linarith)]
+      linarith
+    have h4 : (κ + 1) / (κ - 1) ≤ Real.exp (4 / κ) := by
+      have := Real.add_one_le_exp (2 / (κ - 1))
+      have := Real.exp_le_exp.mpr h3
+      rw [h2]
+      linarith
+    rw [Real.exp_neg, show (κ - 1) / (κ + 1) = ((κ + 1) / (κ - 1))⁻¹ by rw [inv_div]]
+    exact inv_anti₀ (div_pos hκ2 hκ1) h4
+  have hexpk : Real.exp (-(4 * k / κ)) = (Real.exp (-(4 / κ))) ^ k := by
+    rw [← Real.exp_nat_mul]
+    congr 1
+    ring
+  rw [hexpk]
+  refine (pow_le_pow_left₀ (Real.exp_nonneg _) hexp k).trans ?_
+  have hpow : ((κ - 1) / (κ + 1)) ^ (2 * k) ≤ 1 := pow_le_one₀ hρ0 hρ1
+  rw [le_div_iff₀ (by positivity)]
+  nlinarith [mul_le_of_le_one_right (pow_nonneg hρ0 k) hpow, pow_nonneg hρ0 k]
 
 /-- **Polynomial inapproximability on two intervals**: for $\kappa \ge 2$ and every $q$, every
 real polynomial $p$ of degree at most $q$ with $p(0) = 0$ has
