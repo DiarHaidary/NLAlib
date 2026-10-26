@@ -63,6 +63,41 @@ namespace QueryAlgorithm
 
 variable {𝕜 n β : Type*} [RCLike 𝕜] [Fintype n] {q : ℕ}
 
+/-- Queries of an algorithm at equal indices, with the responses reindexed along the equality. -/
+private theorem query_eq_of_index_hr {Q R : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
+    {a b : ℕ} (hab : a = b) (F : Fin a → R) (G : Fin b → R)
+    (hFG : ∀ m : Fin b, F (Fin.cast hab.symm m) = G m) : alg.query a F = alg.query b G := by
+  subst hab
+  congr 1
+  funext m
+  exact hFG m
+
+/-- Entries of a history do not depend on the length of the history. -/
+private theorem history_eq_history_hr {Q R : Type*} {q : ℕ} (alg : QueryAlgorithm Q R q β)
+    (f : Q → R) {n m j : ℕ} (hn : j < n) (hm : j < m) :
+    alg.history f n ⟨j, hn⟩ = alg.history f m ⟨j, hm⟩ := by
+  rw [history_apply, history_apply]
+
+/-- Even rounds of the hidden-rotation simulation are `(0, x)`. -/
+private theorem hiddenRotationSimulation_query_even (alg : QueryAlgorithm (n → 𝕜)
+    ((n → 𝕜) × (n → 𝕜)) q β) (D : Matrix n n 𝕜) (l : ℕ) (h : Fin (2 * l) → (n → 𝕜) × (n → 𝕜)) :
+    (alg.hiddenRotationSimulation D).query (2 * l) h =
+      (0, alg.query l (hiddenRotationDecode h)) := by
+  simp only [hiddenRotationSimulation]
+  rw [dif_pos (Nat.mul_mod_right 2 l)]
+  congr 1
+  exact query_eq_of_index_hr alg (Nat.mul_div_cancel_left l two_pos) _ _ fun m => rfl
+
+/-- Odd rounds of the hidden-rotation simulation are `(D v, 0)`, with `v` the left response of the
+round before. -/
+private theorem hiddenRotationSimulation_query_odd (alg : QueryAlgorithm (n → 𝕜)
+    ((n → 𝕜) × (n → 𝕜)) q β) (D : Matrix n n 𝕜) (l : ℕ)
+    (h : Fin (2 * l + 1) → (n → 𝕜) × (n → 𝕜)) :
+    (alg.hiddenRotationSimulation D).query (2 * l + 1) h = (D *ᵥ (h ⟨2 * l, by omega⟩).2, 0) := by
+  simp only [hiddenRotationSimulation]
+  rw [dif_neg (by omega)]
+  rfl
+
 /-- The hidden-rotation simulation reproduces the history: after `2 * i` rounds of
 `alg.hiddenRotationSimulation D` against `twoSidedMulVec U`, the decoded responses are the first
 `i` responses of `alg` against `hiddenRotationOracle U D`. Holds for every `i`.
@@ -75,7 +110,55 @@ theorem hiddenRotationDecode_history_hiddenRotationSimulation
     (alg : QueryAlgorithm (n → 𝕜) ((n → 𝕜) × (n → 𝕜)) q β) (U D : Matrix n n 𝕜) (i : ℕ) :
     hiddenRotationDecode ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * i)) =
       alg.history (hiddenRotationOracle U D) i := by
-  sorry
+  -- Round `2l + 1` returns `U * (D * (Uᴴ * x_l))`, and round `2l` returns `Uᴴ * x_l` second.
+  have key : ∀ l : ℕ,
+      ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l + 2)
+        ⟨2 * l + 1, by omega⟩).1 = (U * D * Uᴴ) *ᵥ alg.queryAt (hiddenRotationOracle U D) l ∧
+      ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l + 2)
+        ⟨2 * l, by omega⟩).2 = Uᴴ *ᵥ alg.queryAt (hiddenRotationOracle U D) l := by
+    intro l
+    induction l using Nat.strong_induction_on with
+    | _ l ih =>
+    have e1 : ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l + 2)
+        ⟨2 * l + 1, by omega⟩).1
+        = U *ᵥ (D *ᵥ ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l + 1)
+          ⟨2 * l, by omega⟩).2) := by
+      rw [history_apply]
+      simp only [queryAt, hiddenRotationSimulation_query_odd, twoSidedMulVec, Matrix.mulVec_zero]
+    have e2 : ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l + 1)
+        ⟨2 * l, by omega⟩).2
+        = Uᴴ *ᵥ alg.query l (hiddenRotationDecode
+          ((alg.hiddenRotationSimulation D).history (twoSidedMulVec U) (2 * l))) := by
+      rw [history_apply]
+      simp only [queryAt, hiddenRotationSimulation_query_even, twoSidedMulVec, Matrix.mulVec_zero]
+    have e3 : hiddenRotationDecode ((alg.hiddenRotationSimulation D).history
+        (twoSidedMulVec U) (2 * l)) = alg.history (hiddenRotationOracle U D) l := by
+      funext m
+      unfold hiddenRotationDecode
+      refine Prod.ext ?_ ?_
+      · rw [history_eq_history_hr _ _ (n := 2 * l) (m := 2 * m.val + 2) (j := 2 * m.val + 1)
+          (by omega) (by omega), (ih m m.isLt).1, history_apply]
+        rfl
+      · rw [history_eq_history_hr _ _ (n := 2 * l) (m := 2 * m.val + 2) (j := 2 * m.val)
+          (by omega) (by omega), (ih m m.isLt).2, history_apply]
+        rfl
+    refine ⟨?_, ?_⟩
+    · rw [e1, e2, e3, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec]
+      rfl
+    · rw [history_eq_history_hr _ _ (n := 2 * l + 2) (m := 2 * l + 1) (j := 2 * l)
+        (by omega) (by omega), e2, e3]
+      rfl
+  funext l
+  obtain ⟨k1, k2⟩ := key l.val
+  rw [history_apply]
+  unfold hiddenRotationDecode
+  refine Prod.ext ?_ ?_
+  · rw [history_eq_history_hr _ _ (n := 2 * i) (m := 2 * l.val + 2) (j := 2 * l.val + 1)
+      (by have := l.isLt; omega) (by omega), k1]
+    rfl
+  · rw [history_eq_history_hr _ _ (n := 2 * i) (m := 2 * l.val + 2) (j := 2 * l.val)
+      (by have := l.isLt; omega) (by omega), k2]
+    rfl
 
 /-- **The hidden-rotation simulation runs the original algorithm**: the `2q`-round algorithm
 `alg.hiddenRotationSimulation D` against `twoSidedMulVec U` outputs what `alg` outputs against
