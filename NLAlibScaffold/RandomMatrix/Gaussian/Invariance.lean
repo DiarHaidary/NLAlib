@@ -109,6 +109,46 @@ theorem measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFu
     (hr : ∀ ω, r ≤ (P ω).rank) {β : ℝ} (hβ0 : 0 < β) (hβ : β ≤ 1) :
     μ.real {ω | ‖WithLp.toLp 2 (P ω *ᵥ g ω)‖ ^ 2 ≤ β * r} ≤
       Real.exp (r / 2 * (1 - β + Real.log β)) := by
-  sorry
+  have := hg.isProbabilityMeasure
+  -- the good projectors: a star projection whose trace (= rank) is at least `r`
+  set G : Set (Matrix n n ℝ) := {Q | IsStarProjection Q ∧ (r : ℝ) ≤ Q.trace} with hGdef
+  have hG : MeasurableSet G := by
+    have h1 : MeasurableSet {Q : Matrix n n ℝ | Q * Q = Q} :=
+      measurableSet_eq_fun (by fun_prop) (by fun_prop)
+    have h2 : MeasurableSet {Q : Matrix n n ℝ | star Q = Q} :=
+      measurableSet_eq_fun (by fun_prop) (by fun_prop)
+    have h3 : G = ({Q : Matrix n n ℝ | Q * Q = Q} ∩ {Q : Matrix n n ℝ | star Q = Q}) ∩
+        {Q : Matrix n n ℝ | (r : ℝ) ≤ Q.trace} := by
+      ext Q
+      simp only [hGdef, Set.mem_ofPred_eq, Set.mem_inter_iff, isStarProjection_iff,
+        IsIdempotentElem, IsSelfAdjoint]
+    rw [h3]
+    exact (h1.inter h2).inter
+      (measurableSet_le measurable_const (by fun_prop : Measurable fun Q : Matrix n n ℝ => Q.trace))
+  have hE : MeasurableSet {p : (n → ℝ) × Matrix n n ℝ |
+      ‖WithLp.toLp 2 (p.2 *ᵥ p.1)‖ ^ 2 ≤ β * r} :=
+    measurableSet_le (by fun_prop) measurable_const
+  have htr : ∀ Q : Matrix n n ℝ, IsStarProjection Q → Q.trace = Q.rank := fun Q hQ => by
+    have h := trace_rangeProjector Q
+    rwa [hQ.rangeProjector_eq] at h
+  have hP' : ∀ ω, P ω ∈ G := fun ω => by
+    refine ⟨hP ω, ?_⟩
+    rw [htr _ (hP ω)]
+    exact_mod_cast hr ω
+  have hGc : μ.real {ω | P ω ∉ G} ≤ 0 := by
+    have : {ω | P ω ∉ G} = ∅ := by
+      ext ω
+      simp [hP' ω]
+    simp [this]
+  have hsec : ∀ Q ∈ G, μ.real {ω | (g ω, Q) ∈ {p : (n → ℝ) × Matrix n n ℝ |
+      ‖WithLp.toLp 2 (p.2 *ᵥ p.1)‖ ^ 2 ≤ β * r}} ≤ Real.exp (r / 2 * (1 - β + Real.log β)) := by
+    rintro Q ⟨hQ, hQr⟩
+    have hrank : r ≤ Q.rank := by
+      rw [htr _ hQ] at hQr
+      exact_mod_cast hQr
+    exact measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector hg hQ hrank hβ0 hβ
+  have key := hgP.measureReal_mem_le_add hg.aemeasurable hPm hE hG
+    (Real.exp_pos _).le hsec hGc
+  simpa using key
 
 end NLAlib
