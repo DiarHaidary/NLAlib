@@ -79,7 +79,24 @@ theorem blockKrylovSpace_le_of_range_le {𝕜 : Type*} [RCLike 𝕜] {n p p' : T
     [DecidableEq n] [Fintype p] [Fintype p'] {A : Matrix n n 𝕜} {B : Matrix n p 𝕜}
     {B' : Matrix n p' 𝕜} (h : LinearMap.range B.mulVecLin ≤ LinearMap.range B'.mulVecLin)
     (q : ℕ) : blockKrylovSpace A B q ≤ blockKrylovSpace A B' q := by
-  sorry
+  classical
+  rw [blockKrylovSpace_eq_iSup_krylovSpace]
+  refine iSup_le fun c => ?_
+  intro x hx
+  obtain ⟨f, hf, rfl⟩ := mem_krylovSpace_iff.1 hx
+  have hc : B.col c ∈ LinearMap.range B'.mulVecLin := h (by
+    refine ⟨Pi.single c 1, ?_⟩
+    rw [Matrix.mulVecLin_apply, ← Matrix.mulVec_single_one B c])
+  obtain ⟨y, hy⟩ := hc
+  rw [Matrix.mulVecLin_apply] at hy
+  have hsum : B' *ᵥ y = ∑ c', y c' • B'.col c' := by
+    funext i
+    simp [Matrix.mulVec, dotProduct, Finset.sum_apply, mul_comm]
+  refine mem_blockKrylovSpace_iff.2 ⟨fun c' => y c' • f, fun c' => ?_, ?_⟩
+  · exact (Polynomial.degree_smul_le _ _).trans_lt hf
+  · rw [← hy, hsum, Matrix.mulVec_sum]
+    refine Finset.sum_congr rfl fun c' _ => ?_
+    rw [map_smul, Matrix.smul_mulVec, Matrix.mulVec_smul]
 
 /-- **One pass raises the Krylov depth by one**: if a subspace $\mathcal{L}$ lies in
 $\mathcal{K}_{s+1}(\mathbf{A}, \mathbf{B})$ and $\mathcal{V} \subseteq \mathcal{L} +
