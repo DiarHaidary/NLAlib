@@ -1025,7 +1025,81 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge {q : ℕ}
             ((alg s).run (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ).mulVec).1 *
             ((alg s).run (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ).mulVec).2) ^ 2}
     := by
-  sorry
+  -- the good set of (input, output) pairs
+  let B : Set (Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ ×
+      (Matrix (k ⊕ (Fin 3 × m)) k ℝ × Matrix k (k ⊕ (Fin 3 × m)) ℝ)) :=
+    {p | HasOrthonormalCols p.1 ∧ 14 * (Fintype.card m : ℝ) + 33 / 10 * Fintype.card k ≤
+      frobNorm (p.1 * Matrix.diagonal (equispacedLevelSpectrum k m 2) * p.1ᴴ -
+        p.2.1 * p.2.2) ^ 2}
+  have hC : MeasurableSet {Q : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ |
+      HasOrthonormalCols Q} :=
+    isClosed_setOf_hasOrthonormalCols.measurableSet
+  have hF : Measurable fun p : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ ×
+      (Matrix (k ⊕ (Fin 3 × m)) k ℝ × Matrix k (k ⊕ (Fin 3 × m)) ℝ) =>
+      frobNorm (p.1 * Matrix.diagonal (equispacedLevelSpectrum k m 2) * p.1ᴴ -
+        p.2.1 * p.2.2) ^ 2 := by
+    refine ((measurable_frobNorm).comp ?_).pow_const 2
+    fun_prop
+  have hB : MeasurableSet B := (measurable_fst hC).inter (measurableSet_le measurable_const hF)
+  have hO : Measurable (Function.uncurry fun (U : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ)
+      (x : k ⊕ (Fin 3 × m) → ℝ) => hiddenRotationOracle U
+        (Matrix.diagonal (equispacedLevelSpectrum k m 2)) x) :=
+    Measurable.hiddenRotationOracle measurable_fst measurable_snd _
+  have hA : QueryAlgorithm.IsMeasurableFamily fun s => (alg s).comapResponse
+      (R' := (k ⊕ (Fin 3 × m) → ℝ) × (k ⊕ (Fin 3 × m) → ℝ)) Prod.fst :=
+    halg.comapResponse measurable_fst
+  have hsucc : ∀ s, 1 - 4 * Real.exp (-(Fintype.card m / 800 : ℝ)) ≤
+      (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))).real
+        {x | (x, ((alg s).comapResponse Prod.fst).run
+          (hiddenRotationOracle x (Matrix.diagonal (equispacedLevelSpectrum k m 2)))) ∈ B} := by
+    intro s
+    set A' := (alg s).comapResponse (R' := (k ⊕ (Fin 3 × m) → ℝ) × (k ⊕ (Fin 3 × m) → ℝ))
+      Prod.fst with hA'
+    set D := Matrix.diagonal (equispacedLevelSpectrum k m 2) with hD
+    set G := {x : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ |
+      (x, A'.run (hiddenRotationOracle x D)) ∈ B} with hG
+    set B1 := {x : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ |
+      frobNorm (x * D * xᴴ - (A'.run (hiddenRotationOracle x D)).1 *
+        (A'.run (hiddenRotationOracle x D)).2) ^ 2 <
+        14 * Fintype.card m + 33 / 10 * Fintype.card k} with hB1
+    set B2 := {x : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ | ¬HasOrthonormalCols x}
+      with hB2
+    have h203 : (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))).real B1 ≤
+        4 * Real.exp (-(Fintype.card m / 800)) :=
+      QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame
+        ((hpass s).comapResponse Prod.fst) (hp s)
+        ((halg.isMeasurable s).comapResponse measurable_fst) hm
+        (HasLaw.id (μ := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))))
+    have hortho : ∀ᵐ x ∂haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)),
+        HasOrthonormalCols x :=
+      ae_hasOrthonormalCols_of_hasLaw_haarFrame HasLaw.id le_rfl
+    have hB20 : (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))).real B2 = 0 := by
+      rw [measureReal_def, hB2, ae_iff.1 hortho]
+      simp
+    have hcover : (Set.univ : Set (Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ)) ⊆
+        G ∪ (B1 ∪ B2) := by
+      intro x _
+      by_cases h1 : HasOrthonormalCols x
+      · by_cases h2 : 14 * (Fintype.card m : ℝ) + 33 / 10 * Fintype.card k ≤
+            frobNorm (x * D * xᴴ - (A'.run (hiddenRotationOracle x D)).1 *
+              (A'.run (hiddenRotationOracle x D)).2) ^ 2
+        · exact Or.inl ⟨h1, h2⟩
+        · exact Or.inr (Or.inl (not_le.1 h2))
+      · exact Or.inr (Or.inr h1)
+    have h1 := measureReal_mono (μ := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) hcover
+    have h2 := measureReal_union_le (μ := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) G
+      (B1 ∪ B2)
+    have h3 := measureReal_union_le (μ := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) B1 B2
+    rw [probReal_univ] at h1
+    linarith
+  obtain ⟨U, hU⟩ := hA.exists_le_measureReal_run_mem_of_forall (ρ := ρ)
+    (ν := haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) hO hB hsucc
+  by_cases hUo : HasOrthonormalCols U
+  · refine ⟨U, hUo, hU.trans (measureReal_mono fun s hs => ?_)⟩
+    have h := hs.2
+    rw [QueryAlgorithm.run_comapResponse] at h
+    exact h
+  · exact ⟨1, hasOrthonormalCols_one, hU.trans (measureReal_mono fun s hs => absurd hs.1 hUo)⟩
 
 omit [DecidableEq k] [DecidableEq m] in
 /-- **Two-pass low-rank approximation needs $\Omega(k/\varepsilon)$ matrix–vector products**: let
