@@ -84,6 +84,47 @@ theorem
       gaussianPinvSpecNormBound X.rank (Fintype.card p) *
         (specNorm ((1 - rangeProjector X) * B) * frobNorm F +
           frobNorm ((1 - rangeProjector X) * B) * specNorm F) := by
-  sorry
+  have := hS.isProbabilityMeasure
+  have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_hasOrthonormalCols_frames_range_compl X B
+  have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
+  have hint := integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
+    (((1 - rangeProjector X) * B)ᴴ * Q₂) (Q₁ᴴ * Fᴴ)
+  simp only [Fintype.card_fin] at hint
+  have hpt : ∀ᵐ ω ∂μ, specNorm (F * (obliqueProjector X (S ω) * ((1 - rangeProjector X) * B))) =
+      specNorm (((1 - rangeProjector X) * B)ᴴ * Q₂ * (Q₂ᴴ * (S ω)ᴴ) *
+        pinv (Q₁ᴴ * (S ω)ᴴ) * (Q₁ᴴ * Fᴴ)) := by
+    have hrank : ∀ᵐ ω ∂μ, (S ω * X).rank = X.rank := by
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix X
+        (hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS) (by omega)] with ω hω
+      rwa [Matrix.conjTranspose_conjTranspose] at hω
+    filter_upwards [hrank] with ω hω
+    rw [obliqueProjector_mul_one_sub_rangeProjector_mul_eq hR₁ hE hω, ← specNorm_conjTranspose]
+    congr 1
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      ← pinv_conjTranspose, Matrix.mul_assoc]
+  have hC : (Q₂ᴴ * ((1 - rangeProjector X) * B))ᴴ = ((1 - rangeProjector X) * B)ᴴ * Q₂ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+  have hS1 : specNorm (((1 - rangeProjector X) * B)ᴴ * Q₂) =
+      specNorm ((1 - rangeProjector X) * B) := by
+    rw [← hC, specNorm_conjTranspose, ← hQ₂.specNorm_mul_left, hE]
+  have hS2 : frobNorm (((1 - rangeProjector X) * B)ᴴ * Q₂) =
+      frobNorm ((1 - rangeProjector X) * B) := by
+    rw [← hC, frobNorm_conjTranspose, ← hQ₂.frobNorm_mul_left, hE]
+  have hT1 : specNorm (Q₁ᴴ * Fᴴ) ≤ specNorm F := by
+    refine (specNorm_mul_le _ _).trans ?_
+    rw [specNorm_conjTranspose, specNorm_conjTranspose]
+    exact mul_le_of_le_one_left (specNorm_nonneg _) hQ₁.specNorm_le_one
+  have hT2 : frobNorm (Q₁ᴴ * Fᴴ) ≤ frobNorm F := by
+    refine (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans ?_
+    rw [specNorm_conjTranspose, frobNorm_conjTranspose]
+    exact mul_le_of_le_one_left (frobNorm_nonneg _) hQ₁.specNorm_le_one
+  rw [integral_congr_ae hpt]
+  refine hint.trans ?_
+  rw [hS1, hS2]
+  exact mul_le_mul_of_nonneg_left
+    (add_le_add (mul_le_mul_of_nonneg_left hT2 (specNorm_nonneg _))
+      (mul_le_mul_of_nonneg_left hT1 (frobNorm_nonneg _)))
+    (gaussianPinvSpecNormBound_nonneg (by omega))
 
 end NLAlib
