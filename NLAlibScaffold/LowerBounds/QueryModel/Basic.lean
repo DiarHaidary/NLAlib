@@ -82,13 +82,18 @@ section Measurable
 variable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace R'] [MeasurableSpace β]
   [MeasurableSpace β']
 
+private theorem measurable_comp_left {n : ℕ} {f : R' → R} (hf : Measurable f) :
+    Measurable fun h : Fin n → R' => f ∘ h :=
+  measurable_pi_iff.2 fun j => hf.comp (measurable_pi_apply j)
+
 /-- Reading the responses through a measurable map keeps an algorithm measurable.
 Proof: each query map is `alg.query i ∘ (f ∘ ·)`; post-composition with a measurable map is
 measurable on the product σ-algebra (`measurable_pi_iff`, `Measurable.comp`), the same for the
 output. S, 5 lines. -/
 theorem IsMeasurable.comapResponse {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
-    {f : R' → R} (hf : Measurable f) : (alg.comapResponse f).IsMeasurable := by
-  sorry
+    {f : R' → R} (hf : Measurable f) : (alg.comapResponse f).IsMeasurable :=
+  { measurable_query := fun i hi => (halg.measurable_query i hi).comp (measurable_comp_left hf)
+    measurable_output := halg.measurable_output.comp (measurable_comp_left hf) }
 
 /-- Post-processing the output by a measurable map keeps an algorithm measurable.
 Proof: the queries are those of `alg`; the output is `g ∘ alg.output` (`Measurable.comp`).
