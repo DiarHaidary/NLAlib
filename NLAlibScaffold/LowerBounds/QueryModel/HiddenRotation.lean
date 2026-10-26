@@ -223,7 +223,9 @@ theorem IsKrylovCoupling.ae_range_le_of_isEmpty [IsEmpty c] {D : Matrix n n ℝ}
     {G₀ : Ω → Matrix n c ℝ} {V : Ω → Matrix n k ℝ} {G : Ω → Matrix n c' ℝ}
     (h : IsKrylovCoupling μ D s G₀ V G) :
     ∀ᵐ ω ∂μ, LinearMap.range (V ω).mulVecLin ≤ blockKrylovSpace D (G ω) s := by
-  sorry
+  refine h.ae_range_le.mono fun ω hω => hω.trans (le_of_eq ?_)
+  simp only [blockKrylovSpace_eq_iSup_krylovSpace, iSup_sum, iSup_of_empty, bot_sup_eq]
+  rfl
 
 /-- **Krylov coupling of a pass-structured algorithm against a hidden rotation**: let
 $\mathbf{U}$ be Haar on the orthogonal $n \times n$ matrices, $\mathbf{D} \in \mathbb{R}^{n \times
