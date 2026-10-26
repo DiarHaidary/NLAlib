@@ -89,7 +89,77 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
     c ^ 2 * frobNorm (W * (rangeProjector (truncatedSVD B j) -
         rangeProjector (truncatedSVD B a))) ^ 2 ≤
       frobNorm (W * (truncatedSVD B j - truncatedSVD B a)) ^ 2 := by
-  sorry
+  have h := isSVD_svdU_svdV B
+  have hU := h.hasOrthonormalCols_left
+  have hV := h.hasOrthonormalCols_right
+  set U := svdU B
+  set V := svdV B
+  have hdiag : ∀ d : Fin (min (Fintype.card m) (Fintype.card n)) → ℝ,
+      rangeProjector (Matrix.diagonal d * Vᴴ) =
+        Matrix.diagonal (fun i => if d i = 0 then 0 else 1) := by
+    intro d
+    set e : Fin (min (Fintype.card m) (Fintype.card n)) → ℝ := fun i => if d i = 0 then 0 else 1
+    have hed : Matrix.diagonal e * Matrix.diagonal d = Matrix.diagonal d := by
+      rw [Matrix.diagonal_mul_diagonal]
+      congr 1
+      funext i
+      by_cases hi : d i = 0 <;> simp [e, hi]
+    have hdd : Matrix.diagonal d * Matrix.diagonal d⁻¹ = Matrix.diagonal e := by
+      rw [Matrix.diagonal_mul_diagonal]
+      congr 1
+      funext i
+      by_cases hi : d i = 0 <;> simp [e, hi]
+    have hP : IsStarProjection (Matrix.diagonal e) := by
+      rw [Matrix.isStarProjection_iff]
+      refine ⟨?_, ?_⟩
+      · rw [Matrix.diagonal_mul_diagonal]
+        congr 1
+        funext i
+        by_cases hi : d i = 0 <;> simp [e, hi]
+      · exact Matrix.isHermitian_diagonal_of_self_adjoint _ (by
+          ext i; simp [e])
+    rw [← hP.rangeProjector_eq, rangeProjector_inj]
+    refine le_antisymm (range_le_iff_exists_mul.mpr ⟨Matrix.diagonal d * Vᴴ, ?_⟩)
+      (range_le_iff_exists_mul.mpr ⟨V * Matrix.diagonal d⁻¹, ?_⟩)
+    · rw [← Matrix.mul_assoc, hed]
+    · rw [Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ, hV.conjTranspose_mul_self, Matrix.one_mul, hdd]
+  -- the truncated singular values and their supports
+  set s : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → ℝ :=
+    fun k i => if (i : ℕ) < k then singularValues B i else 0
+  set e : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → ℝ :=
+    fun k i => if s k i = 0 then 0 else 1
+  have hT : ∀ k, truncatedSVD B k = U * (Matrix.diagonal (s k) * Vᴴ) := fun k => by
+    rw [truncatedSVD_def, Matrix.mul_assoc]
+    rfl
+  have hP : ∀ k, rangeProjector (truncatedSVD B k) = U * Matrix.diagonal (e k) * Uᴴ := fun k => by
+    rw [hT, hU.rangeProjector_mul, hdiag]
+  have hL : W * (rangeProjector (truncatedSVD B j) - rangeProjector (truncatedSVD B a)) =
+      W * U * Matrix.diagonal (e j - e a) * Uᴴ := by
+    rw [hP, hP, ← Matrix.sub_mul, ← Matrix.mul_sub, Matrix.diagonal_sub]
+    simp only [Matrix.mul_assoc]
+    rfl
+  have hR : W * (truncatedSVD B j - truncatedSVD B a) =
+      W * U * Matrix.diagonal (s j - s a) * Vᴴ := by
+    rw [hT, hT, ← Matrix.mul_sub, ← Matrix.sub_mul, Matrix.diagonal_sub]
+    simp only [Matrix.mul_assoc]
+    rfl
+  rw [hL, hR, hU.frobNorm_mul_conjTranspose_right, hV.frobNorm_mul_conjTranspose_right,
+    frobNorm_sq_eq_sum_sq, frobNorm_sq_eq_sum_sq, Finset.mul_sum]
+  refine Finset.sum_le_sum fun p _ => ?_
+  rw [Finset.mul_sum]
+  refine Finset.sum_le_sum fun i _ => ?_
+  simp only [Matrix.mul_diagonal, Pi.sub_apply]
+  have key : (c * (e j i - e a i)) ^ 2 ≤ (s j i - s a i) ^ 2 := by
+    by_cases hia : (i : ℕ) < a
+    · simp [s, e, hia, hia.trans_le haj]
+    by_cases hij : (i : ℕ) < j
+    · by_cases h0 : singularValues B i = 0
+      · simp [s, e, hia, hij, h0]
+      · have := hσ i (not_lt.mp hia) hij
+        simp [s, e, hia, hij, h0]
+        nlinarith
+    · simp [s, e, hia, hij]
+  nlinarith [mul_le_mul_of_nonneg_left key (sq_nonneg ((W * U) p i))]
 
 omit [DecidableEq m] in
 /-- **The window of the truncation level**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$ and
