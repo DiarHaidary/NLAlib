@@ -90,7 +90,7 @@ outlines.
   \theta/2$), reduced to the single SVD fact S1.
 * **L34b**: three row-orthogonal pieces $\mathbf{\Delta}\mathbf{B}_a$,
   $\mathbf{\Delta}(\mathbf{B} - \mathbf{B}_b)$, $(\mathbf{I}-\mathbf{L})\mathbf{Z}\mathbf{L}
-  (\mathbf{B}_b - \mathbf{B}_a)$; gives $6D$ (stated $15D$ as in OP6).
+  (\mathbf{B}_b - \mathbf{B}_a)$; gives $(32/3)D$ (Fable pre-dispatch review) (stated $15D$ as in OP6).
 * **L35**: block expansion of $\mathbf{L}\mathbf{Z}\mathbf{L} - (\mathbf{P}_k - \mathbf{P}_a)$
   and the trace balance $\|\mathbf{Z}\|_{\mathsf{F}}^2 \le k$ (OP6 proves the sharper
   $2\min(k,q) + \frac43 D/\theta^2$ by Weyl; the block route avoids eigenvalue interlacing in Lean).
