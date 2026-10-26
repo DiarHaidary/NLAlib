@@ -95,7 +95,7 @@ Proof: the queries are those of `alg`; the output is `g ∘ alg.output` (`Measur
 S, 3 lines. -/
 theorem IsMeasurable.mapOutput {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
     {g : β → β'} (hg : Measurable g) : (alg.mapOutput g).IsMeasurable := by
-  sorry
+  exact ⟨halg.measurable_query, hg.comp halg.measurable_output⟩
 
 /-- A measurable seeded family reading its responses through a measurable map is measurable.
 Proof: as `QueryAlgorithm.IsMeasurable.comapResponse`, with the seed carried along
