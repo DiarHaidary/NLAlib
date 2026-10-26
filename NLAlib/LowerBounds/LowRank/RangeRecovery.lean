@@ -24,7 +24,6 @@ $\mathbf{A}^{\mathsf{H}}$ are products with $\mathbf{A}$, so the bound counts al
 
 ## Main results
 
-* `NLAlib.rank_mul_of_snoc_eq_rank_of_snoc`: the rank step of general position.
 * `NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero`:
   one query at a time, a new direction is almost surely not collapsed by $\mathbf{X}^{\mathsf{H}}$.
 * `NLAlib.QueryAlgorithm.IsMeasurable.ae_rank_conjTranspose_mul_leftQueryMatrix_gramSimulation`:
@@ -41,64 +40,6 @@ open MeasureTheory ProbabilityTheory
 open scoped Matrix
 
 namespace NLAlib
-
-/-- Adding a vector outside a finite-dimensional subspace raises its finrank by one. -/
-private lemma finrank_sup_span_singleton_of_notMem {K V : Type*} [DivisionRing K]
-    [AddCommGroup V] [Module K V] {p : Submodule K V} [FiniteDimensional K p] {v : V}
-    (hv : v ∉ p) : Module.finrank K ↥(p ⊔ K ∙ v) = Module.finrank K p + 1 := by
-  have hv0 : v ≠ 0 := fun h => hv (h ▸ p.zero_mem)
-  have hinf : p ⊓ K ∙ v = ⊥ :=
-    (Submodule.disjoint_span_singleton' hv0).mpr hv |>.eq_bot
-  have := Submodule.finrank_sup_add_finrank_inf_eq p (K ∙ v)
-  rw [hinf, finrank_bot, finrank_span_singleton hv0] at this
-  omega
-
-/-- Rank step of general position: let $\mathbf{B} \in \Bbbk^{k \times d}$ preserve the rank
-of $\mathbf{U} \in \Bbbk^{d \times i}$, $\operatorname{rank}(\mathbf{B}\mathbf{U}) =
-\operatorname{rank}\mathbf{U}$, and append a column $\mathbf{x}$. If $\mathbf{x}$ lies in the
-column span of $\mathbf{U}$, or $\mathbf{B}\mathbf{x}$ does not lie in the column span of
-$\mathbf{B}\mathbf{U}$, then $\mathbf{B}$ preserves the rank of $[\mathbf{U}\;\mathbf{x}]$. -/
-theorem rank_mul_of_snoc_eq_rank_of_snoc {𝕜 : Type*} [Field 𝕜] {d k : Type*} [Fintype d] {i : ℕ}
-    (B : Matrix k d 𝕜) (U : Matrix d (Fin i) 𝕜) (x : d → 𝕜)
-    (hU : (B * U).rank = U.rank)
-    (hx : x ∈ Submodule.span 𝕜 (Set.range Uᵀ) ∨ B *ᵥ x ∉ Submodule.span 𝕜 (Set.range (B * U)ᵀ)) :
-    (B * Matrix.of fun r => Fin.snoc (α := fun _ => 𝕜) (U r) (x r)).rank =
-      (Matrix.of fun r => Fin.snoc (α := fun _ => 𝕜) (U r) (x r)).rank := by
-  set M : Matrix d (Fin (i + 1)) 𝕜 := Matrix.of fun r => Fin.snoc (α := fun _ => 𝕜) (U r) (x r)
-  have hcolBU : Set.range (B * U).col = Matrix.mulVecLin B '' Set.range U.col := by
-    rw [← Set.range_comp]
-    congr 1
-  have hMcol : M.col = Fin.snoc U.col x := by
-    funext j
-    refine Fin.lastCases ?_ (fun j => ?_) j
-    · rw [Fin.snoc_last]; funext r; simp [M]
-    · rw [Fin.snoc_castSucc]; funext r; simp [M]
-  have hcolM : Set.range M.col = insert x (Set.range U.col) := by
-    rw [hMcol, Fin.range_snoc]
-  have hcolBM : Set.range (B * M).col = insert (B *ᵥ x) (Set.range (B * U).col) := by
-    have : (B * M).col = Fin.snoc (B * U).col (B *ᵥ x) := by
-      funext j
-      refine Fin.lastCases ?_ (fun j => ?_) j
-      · rw [Fin.snoc_last]; funext r; simp [M, Matrix.mul_apply, Matrix.mulVec, dotProduct]
-      · rw [Fin.snoc_castSucc]; funext r; simp [M, Matrix.mul_apply]
-    rw [this, Fin.range_snoc]
-  rw [Matrix.rank_eq_finrank_span_cols, Matrix.rank_eq_finrank_span_cols] at hU ⊢
-  rw [hcolBM, hcolM, Submodule.span_insert, Submodule.span_insert]
-  change x ∈ Submodule.span 𝕜 (Set.range U.col) ∨
-    B *ᵥ x ∉ Submodule.span 𝕜 (Set.range (B * U).col) at hx
-  rw [hcolBU, Submodule.span_image] at hU hx ⊢
-  have hW : FiniteDimensional 𝕜 (Submodule.span 𝕜 (Set.range U.col)) :=
-    FiniteDimensional.span_of_finite 𝕜 (Set.finite_range _)
-  generalize Submodule.span 𝕜 (Set.range U.col) = W at hU hx hW ⊢
-  have hBx : B *ᵥ x = B.mulVecLin x := rfl
-  rw [hBx] at hx ⊢
-  rcases em (x ∈ W) with h | h
-  · rw [sup_eq_right.mpr ((Submodule.span_singleton_le_iff_mem _ _).mpr h),
-      sup_eq_right.mpr ((Submodule.span_singleton_le_iff_mem _ _).mpr
-        (Submodule.mem_map_of_mem h)), hU]
-  · have h' : B.mulVecLin x ∉ W.map B.mulVecLin := hx.resolve_left h
-    rw [sup_comm, finrank_sup_span_singleton_of_notMem h',
-      sup_comm, finrank_sup_span_singleton_of_notMem h, hU]
 
 namespace QueryAlgorithm
 
@@ -463,7 +404,7 @@ private lemma rank_conjTranspose_mul_leftQueryMatrix_gramSimulation_of_good {β 
         ext r j
         refine Fin.lastCases ?_ (fun j => ?_) j <;> simp
       rw [hsnoc]
-      exact rank_mul_of_snoc_eq_rank_of_snoc Yᴴ _ (fun r => alg.queryAt (Y * Yᴴ).mulVec i r)
+      exact Matrix.rank_mul_of_snoc_eq_rank_of_snoc Yᴴ _ (fun r => alg.queryAt (Y * Yᴴ).mulVec i r)
         (ih (by omega)) (hgood i (by omega))
   -- the even columns of `L` are the queries, the odd ones are zero
   have hEven : ∀ (j : Fin (2 * q)) (i : ℕ) (hi : i < q), (j : ℕ) = 2 * i →

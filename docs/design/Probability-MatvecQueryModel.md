@@ -729,7 +729,7 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
   | `LowerBounds/QueryModel/Yao.lean` | Y1, Y2 |
   | `LowerBounds/QueryModel/DeferredDecision.lean` | `resample`, D1–D3 |
   | `LowerBounds/QueryModel/HiddenHaar.lean` | H2 |
-  | `LowerBounds/LowRank/RangeRecovery.lean` | R4a, R4b, R4–R6 |
+  | `LowerBounds/LowRank/RangeRecovery.lean` | R4b, R4–R6 (R4a until RANK-STEP-HOME, below) |
   | `RandomMatrix/Haar/Stabilizer.lean` (new) | H1: a fact about invariant laws, used outside query models |
   | `RandomMatrix/Gaussian/{Invariance,Rank}.lean`, `ForMathlib/…` | G1, Z1, F1–F2, T1–T4, as in §6 |
 
@@ -744,3 +744,6 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
     restated as `gramDecode ((alg.gramSimulation k).history (twoSidedMulVec X) (2 * i)) =
     alg.history (X * Xᴴ).mulVec i`, definitionally the old statement without the `Fin` literal's
     proof term; the T9 ratchet entry is removed.
+  * RANK-STEP-HOME (a): R4a moves to `ForMathlib/LinearAlgebra/Matrix/Rank.lean`, next to
+    `Matrix.rank_mul_eq_iff_injOn`, renamed `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` (statement
+    unchanged), with its private finrank helper. R4's call site uses the new name.
