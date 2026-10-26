@@ -518,7 +518,70 @@ theorem mul_frobNorm_mul_one_sub_sq_add_le (B : Matrix m n ℝ) {k b : ℕ} (hk 
         3 / 2 * frobNorm (W * (B - truncatedSVD B b)) ^ 2 ≤
       singularValues B (k - 1) ^ 2 * frobNorm (W * (1 - rangeProjector (truncatedSVD B k))) ^ 2 -
         frobNorm (W * (B - truncatedSVD B k)) ^ 2 := by
-  sorry
+  set θ := singularValues B (k - 1)
+  set P := rangeProjector (truncatedSVD B k)
+  set Q := rangeProjector (truncatedSVD B b)
+  have hP := isStarProjection_rangeProjector (truncatedSVD B k)
+  have hQ := isStarProjection_rangeProjector (truncatedSVD B b)
+  have hR := isStarProjection_rangeProjector (truncatedSVD B b)ᴴ
+  have hQP : Q * P = P :=
+    rangeProjector_mul_rangeProjector_of_range_le (range_truncatedSVD_mono B hkb)
+  have hBk : Q * truncatedSVD B k = truncatedSVD B k := by
+    rw [← rangeProjector_truncatedSVD_mul B k, ← Matrix.mul_assoc, hQP]
+  -- the two orthogonal splittings
+  have h1 : frobNorm (W * (1 - P)) ^ 2 =
+      frobNorm (W * (Q - P)) ^ 2 + frobNorm (W * (1 - Q)) ^ 2 := by
+    have h0 : (1 - Q) * (Q - P)ᴴ = 0 := by
+      rw [Matrix.conjTranspose_sub, hQ.conjTranspose_eq, hP.conjTranspose_eq, Matrix.mul_sub,
+        Matrix.sub_mul, Matrix.sub_mul, Matrix.one_mul, Matrix.one_mul, hQ.mul_self, hQP,
+        sub_self, sub_self, sub_zero]
+    rw [← sub_add_sub_cancel' Q P 1, Matrix.mul_add]
+    refine frobNorm_add_sq_of_frobInner_eq_zero ?_
+    rw [frobInner_mul_right, Matrix.mul_assoc, h0, Matrix.mul_zero, frobInner_zero_right]
+  have h2 : frobNorm (W * (B - truncatedSVD B k)) ^ 2 =
+      frobNorm (W * (truncatedSVD B b - truncatedSVD B k)) ^ 2 +
+        frobNorm (W * (B - truncatedSVD B b)) ^ 2 := by
+    classical
+    set R := rangeProjector (truncatedSVD B b)ᴴ
+    have hPQ : P * Q = P :=
+      rangeProjector_mul_rangeProjector_of_range_le' (range_truncatedSVD_mono B hkb)
+    have e1 : truncatedSVD B b - truncatedSVD B k = (1 - P) * B * R := by
+      rw [Matrix.mul_assoc, mul_rangeProjector_conjTranspose_truncatedSVD, Matrix.sub_mul,
+        Matrix.one_mul, ← rangeProjector_truncatedSVD_mul B b, ← Matrix.mul_assoc, hPQ,
+        rangeProjector_truncatedSVD_mul, rangeProjector_truncatedSVD_mul]
+    have e2 : B - truncatedSVD B b = B * (1 - R) := by
+      rw [Matrix.mul_sub, Matrix.mul_one, mul_rangeProjector_conjTranspose_truncatedSVD]
+    rw [← sub_add_sub_cancel' (truncatedSVD B b) (truncatedSVD B k) B, Matrix.mul_add]
+    refine frobNorm_add_sq_of_frobInner_eq_zero ?_
+    have h00 : B * (1 - R) * R = 0 := by
+      rw [Matrix.mul_assoc, Matrix.sub_mul, Matrix.one_mul, hR.mul_self, sub_self, Matrix.mul_zero]
+    rw [e1, e2, ← Matrix.mul_assoc, frobInner_mul_right, hR.conjTranspose_eq, Matrix.mul_assoc W,
+      h00, Matrix.mul_zero, frobInner_zero_right]
+  -- the two upper bounds: both pieces factor through a projector difference
+  have hQB : Q * B = truncatedSVD B b := rangeProjector_truncatedSVD_mul B b
+  have h3 : frobNorm (W * (truncatedSVD B b - truncatedSVD B k)) ^ 2 ≤
+      θ ^ 2 * frobNorm (W * (Q - P)) ^ 2 := by
+    have e : (Q - P) * (B - truncatedSVD B k) = truncatedSVD B b - truncatedSVD B k := by
+      rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub, hQB, hBk,
+        rangeProjector_truncatedSVD_mul, rangeProjector_mul_self, sub_self, sub_zero]
+    have hσ : specNorm (B - truncatedSVD B k) ≤ θ :=
+      (specNorm_sub_truncatedSVD B k).trans_le (singularValues_antitone B (by omega))
+    rw [← e, ← Matrix.mul_assoc, mul_comm (θ ^ 2), ← mul_pow]
+    gcongr
+    exact (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+      (mul_le_mul_of_nonneg_left hσ (frobNorm_nonneg _))
+  have h4 : frobNorm (W * (B - truncatedSVD B b)) ^ 2 ≤
+      θ ^ 2 / 4 * frobNorm (W * (1 - Q)) ^ 2 := by
+    have e : (1 - Q) * (B - truncatedSVD B b) = B - truncatedSVD B b := by
+      rw [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_sub, hQB, rangeProjector_mul_self, sub_self,
+        sub_zero]
+    rw [← e, ← Matrix.mul_assoc,
+      show θ ^ 2 / 4 * frobNorm (W * (1 - Q)) ^ 2 = (frobNorm (W * (1 - Q)) * (θ / 2)) ^ 2 by ring]
+    gcongr
+    exact (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans (mul_le_mul_of_nonneg_left
+      ((specNorm_sub_truncatedSVD B b).trans_le hb) (frobNorm_nonneg _))
+  rw [h1, h2]
+  linarith
 
 /-! ### The off-window part and the trace balance -/
 
