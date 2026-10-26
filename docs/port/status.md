@@ -46,6 +46,9 @@ Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
   `QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant_of_indepFun`
   (randomized stabilizer, for Shamir Lemma 4); `@[fun_prop]` on `Measurable.matrix_mul`,
   `Measurable.matrix_mulVec`. Private copies deleted; no statement changed.
+- CONTRIBUTING §5.3 (Fable review item 1): rows for the query algorithm, the matrix–vector oracle
+  (`twoSidedMulVec`, per-side query matrices and counts, `IsOneSided`, `IsNonAdaptive`) and the
+  Gram simulation / truncation / resampling; the stage's V7 warnings are gone.
 
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
 
