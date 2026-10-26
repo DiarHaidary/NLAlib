@@ -278,6 +278,13 @@ theorem IsChebyshevTwoIntervalSpectrum.mem_Icc_union_Icc {κ : ℝ} {s M : ℕ} 
     rw [h]
     exact Set.mem_union_left _ ⟨by linarith, by linarith⟩
 
+/-- A value taken at least once by `d` lies in the image of `d`. -/
+private lemma mem_image_of_card_pos {d : n → ℝ} {t : ℝ}
+    (h : 0 < (Finset.univ.filter fun i => d i = t).card) : t ∈ Finset.univ.image d := by
+  obtain ⟨i, hi⟩ := Finset.card_pos.mp h
+  simp only [Finset.mem_filter] at hi
+  exact Finset.mem_image.mpr ⟨i, Finset.mem_univ _, hi.2⟩
+
 /-- **Weighted residual bound on a Chebyshev two-interval spectrum**: for $\kappa > 1$, a
 Chebyshev two-interval spectrum $d$ with depth $s$ and margin $M$, and every real $p$ with
 $\deg p \le s$ and $p(0) = 1$,
@@ -297,7 +304,82 @@ theorem IsChebyshevTwoIntervalSpectrum.inv_sq_le_sum_card_sub_mul_eval_sq {κ : 
     (Fintype.card n : ℝ) / 4 * ((T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)))⁻¹ ^ 2 ≤
       ∑ t ∈ Finset.univ.image d,
         (((Finset.univ.filter fun i => d i = t).card : ℝ) - M) * p.eval t ^ 2 := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · simp
+  have hκ2 : (1 : ℝ) < κ ^ 2 := by nlinarith
+  set τ := (T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)) with hτdef
+  set ω := chebyshevWeight 1 (κ ^ 2) (s / 2) with hωdef
+  have hτ : ∑ j, ω j = τ := sum_chebyshevWeight one_pos hκ2 (s / 2)
+  have hωpos : ∀ j, 0 < ω j := fun j => chebyshevWeight_pos one_pos hκ2 (s / 2) j
+  have hτpos : 0 < τ := by
+    rw [← hτ]; exact Finset.sum_pos (fun j _ => hωpos j) Finset.univ_nonempty
+  have hξpos : ∀ j : Fin (s / 2 + 1), 0 < chebyshevExtremum 1 (κ ^ 2) (s / 2) j := fun j =>
+    lt_of_lt_of_le one_pos (chebyshevExtremum_mem_Icc (a := 1) (a' := κ ^ 2) hκ2.le (s / 2) j).1
+  have hsq : StrictMono fun j : Fin (s / 2 + 1) =>
+      Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) := fun i j hij =>
+    Real.sqrt_lt_sqrt (hξpos i).le (strictMono_chebyshevExtremum hκ2 (s / 2) hij)
+  have hpos : ∀ j : Fin (s / 2 + 1), (0 : ℝ) < (Fintype.card n : ℝ) / 4 * (ω j / (2 * τ)) + M :=
+    fun j => by have := hωpos j; positivity
+  have hmemA : ∀ j : Fin (s / 2 + 1),
+      Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) ∈ Finset.univ.image d := fun j =>
+    mem_image_of_card_pos (by exact_mod_cast (hpos j).trans_le (hd.le_card_pos j))
+  have hmemB : ∀ j : Fin (s / 2 + 1),
+      -Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) ∈ Finset.univ.image d := fun j =>
+    mem_image_of_card_pos (by exact_mod_cast (hpos j).trans_le (hd.le_card_neg j))
+  have himg : Finset.univ.image d =
+      (Finset.univ.image fun j : Fin (s / 2 + 1) =>
+        Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ∪
+      (Finset.univ.image fun j : Fin (s / 2 + 1) =>
+        -Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) := by
+    ext t
+    constructor
+    · intro ht
+      obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp ht
+      obtain ⟨j, hj | hj⟩ := hd.exists_eq i
+      · exact Finset.mem_union_left _ (Finset.mem_image.mpr ⟨j, Finset.mem_univ _, hj.symm⟩)
+      · exact Finset.mem_union_right _ (Finset.mem_image.mpr ⟨j, Finset.mem_univ _, hj.symm⟩)
+    · intro ht
+      rcases Finset.mem_union.mp ht with ht | ht
+      · obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp ht
+        exact hmemA j
+      · obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp ht
+        exact hmemB j
+  have hdisj : Disjoint (Finset.univ.image fun j : Fin (s / 2 + 1) =>
+      Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j))
+      (Finset.univ.image fun j : Fin (s / 2 + 1) =>
+        -Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) := by
+    rw [Finset.disjoint_left]
+    intro t ht ht'
+    obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp ht
+    obtain ⟨l, -, hl⟩ := Finset.mem_image.mp ht'
+    linarith [Real.sqrt_pos.mpr (hξpos j), Real.sqrt_nonneg (chebyshevExtremum 1 (κ ^ 2) (s / 2) l)]
+  rw [himg, Finset.sum_union hdisj, Finset.sum_image (fun i _ j _ h => hsq.injective h),
+    Finset.sum_image (fun i _ j _ h => hsq.injective (neg_injective h))]
+  have hmain : τ⁻¹ ≤ ∑ j : Fin (s / 2 + 1), ω j / 2 *
+      (p.eval (Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2 +
+        p.eval (-Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2) := by
+    have := inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq (𝕜 := ℝ)
+      (a := 1) (a' := κ) one_pos hκ hp hp₀
+    simpa only [one_pow, RCLike.ofReal_real_eq_id, id, Real.norm_eq_abs, sq_abs] using this
+  have hK : 0 ≤ (Fintype.card n : ℝ) / (4 * τ) := by positivity
+  have h1 := mul_le_mul_of_nonneg_left hmain hK
+  rw [Finset.mul_sum] at h1
+  have h0 : (Fintype.card n : ℝ) / 4 * τ⁻¹ ^ 2 = (Fintype.card n : ℝ) / (4 * τ) * τ⁻¹ := by
+    ring
+  rw [h0]
+  refine h1.trans ?_
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_le_sum fun j _ => ?_
+  have e : (Fintype.card n : ℝ) / (4 * τ) * (ω j / 2 *
+      (p.eval (Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2 +
+        p.eval (-Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2)) =
+      (Fintype.card n : ℝ) / 4 * (ω j / (2 * τ)) *
+        p.eval (Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2 +
+      (Fintype.card n : ℝ) / 4 * (ω j / (2 * τ)) *
+        p.eval (-Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j)) ^ 2 := by
+    ring
+  rw [e]
+  gcongr <;> linarith [hd.le_card_pos j, hd.le_card_neg j]
 
 /-- Realize prescribed multiplicities: an injective list of values `v` on `ι` and counts `c`
 summing to `|n|` give `d : n → ℝ` with values in `range v` and fibre cardinalities `c`. -/
