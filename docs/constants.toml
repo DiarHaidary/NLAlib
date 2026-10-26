@@ -407,3 +407,12 @@ args = ["r"]
 latex = '1/(512\cdot4^{#1+1}(#1+1)(#1+2)^2)'
 lean_body = 'equispacedAccuracyBound (r : ℕ) : ℝ := 1 / (512 * 4 ^ (r + 1) * ((r : ℝ) + 1) * (r + 2) ^ 2)'
 body_hash = "ceeecb275e4de9e7"
+
+[[constant]]
+name = "NLAlib.equispacedNuclearTailFactor"
+kind = "factor"
+file = "NLAlib/LowerBounds/LowRank/FiniteSpectrum.lean"
+args = ["r"]
+latex = '(#1+1)(#1+2)/2'
+lean_body = 'equispacedNuclearTailFactor (r : ℕ) : ℝ := ((r : ℝ) + 1) * (r + 2) / 2'
+body_hash = "334b7055e9b00885"

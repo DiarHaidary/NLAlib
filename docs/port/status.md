@@ -2,6 +2,23 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Fixed-batch nuclear-norm extension: proofs (2026-10-26)
+
+Branch `stage/lbc-nuclear`, based on fixed-batch Frobenius commit `7cbaf1f`. The maintainer
+authorized the proposed trace-based Schatten-one extension. Design
+`docs/design/LowerBounds-Nuclear.md` and actual source passed independent mathematical/API
+review. Structural proofs compile; the minimax consumer and complete checks are in progress.
+
+Read-back: under the same positive-rank, fixed-batch, accuracy, floor and PSD dimension
+hypotheses as the Frobenius extension, a measurable randomized algorithm attaining relative
+nuclear error `1+ε` with probability at least one half on every PSD input must use
+`q > |k|/(256*4^(r+1)*(r+1)*(r+2)*ε)` products. No claim for other Schatten exponents.
+
+The new nuclear optimum and missed-head-mass estimate live in `FiniteSpectrum`;
+`NuclearMinimax` reuses the original Gaussian capture and K7/Yao arguments. The general
+projected-residual trace bound is in `Matrix/Norms/Nuclear`; the shared Haar joint-event
+helper moved to `RandomMatrix/Haar/Basic`. Existing Frobenius headline signatures are unchanged.
+
 ## Fixed-batch Frobenius extension: proofs (2026-10-26)
 
 Branch `stage/lbc-fixed-batches` (started as `design/lbc-fixed-batches`), based on completed

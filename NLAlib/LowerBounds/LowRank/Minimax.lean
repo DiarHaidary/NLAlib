@@ -210,7 +210,7 @@ private theorem equispaced_deviation (r : ℕ) :
 
 /-- Under the selected width condition, a Gaussian Krylov space rarely captures a quarter of
 its norm in the head eigenspace. -/
-private theorem measureReal_exists_mem_blockKrylovSpace_gt_quarter_le
+theorem measureReal_exists_mem_blockKrylovSpace_gt_quarter_le_of_hasLaw_gaussianMatrix
     (r : ℕ) {b : Type*} [Fintype b]
     {G : Ω → Matrix (k ⊕ (Fin (r + 1) × m)) b ℝ}
     (hG : HasLaw G (gaussianMatrix (k ⊕ (Fin (r + 1) × m)) b) μ)
@@ -309,7 +309,9 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
     hp (halg.mapOutput measurable_fst) D
     (0 : Matrix (k ⊕ (Fin (r + 1) × m)) (Fin 0) ℝ) hU₁
     measurePreserving_snd.hasLaw (indepFun_prod₀ hU.aemeasurable aemeasurable_id)
-  have hbad := measureReal_exists_mem_blockKrylovSpace_gt_quarter_le r hG.hasLaw_gaussianMatrix
+  have hbad :=
+    measureReal_exists_mem_blockKrylovSpace_gt_quarter_le_of_hasLaw_gaussianMatrix
+      r hG.hasLaw_gaussianMatrix
     (by simp) (by simpa only [Fintype.card_sum, Fintype.card_fin, Nat.cast_add] using hwidth)
   calc _ = μ'.real (Prod.fst ⁻¹' {ω | frobNorm (U ω * D * (U ω)ᴴ -
         (alg.run (hiddenRotationOracle (U ω) D)).1 * (alg.run (hiddenRotationOracle (U ω) D)).2)
@@ -329,22 +331,6 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
   exact absurd hlt (not_lt.2 (le_frobNorm_of_orthonormal_range_of_pass_lt r hUω hω
     (fun z hz => not_lt.mpr (hne z hz))))
 
-
-/-- A scalar lower-tail bound and almost-sure orthogonality give a joint lower bound. -/
-private theorem le_measureReal_orthogonal_and_ge {n : Type*} [Fintype n] [DecidableEq n]
-    (F : Matrix n n ℝ → ℝ) (hF : Measurable F) (a δ : ℝ)
-    (hbad : (haarFrame n n).real {U | F U < a} ≤ δ) :
-    1 - δ ≤ (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
-  have hBm : MeasurableSet {U | F U < a} := measurableSet_lt hF measurable_const
-  have hcomp := probReal_compl_eq_one_sub (μ := haarFrame n n) hBm
-  have hmono : (haarFrame n n).real {U | F U < a}ᶜ ≤
-      (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
-    refine measureReal_mono_ae ?_ (measure_ne_top _ _)
-    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame
-      (HasLaw.id (μ := haarFrame n n)) le_rfl] with U hU hnot
-    exact ⟨hU, not_lt.mp hnot⟩
-  rw [hcomp] at hmono
-  linarith
 
 -- Indexed query families require extra elaboration work when transferred through Yao.
 set_option maxHeartbeats 800000 in
@@ -423,7 +409,7 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
       dsimp only [threshold]
       push_cast
       ring
-    apply le_measureReal_orthogonal_and_ge _ hErr threshold δ
+    apply le_measureReal_hasOrthonormalCols_and_ge _ hErr threshold δ
     change _ ≤ δ at hbad
     rw [← hthreshold] at hbad
     exact hbad
@@ -438,7 +424,7 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
 
 
 /-- Numerical floor conditions forced by the selected accuracy cutoff. -/
-private theorem equispaced_floor_width {r : ℕ} {ε K : ℝ} {q m : ℕ}
+theorem equispacedGaussianFactor_mul_add_le_and_mul_le_of_floor {r : ℕ} {ε K : ℝ} {q m : ℕ}
     (hK : 1 ≤ K) (hε : 0 < ε) (hεr : ε ≤ equispacedAccuracyBound r)
     (hm : m = ⌊K / (ε * ((r : ℝ) + 1) * (r + 2))⌋₊)
     (hq : (q : ℝ) ≤ K / (equispacedQueryFactor r * ε)) :
@@ -510,7 +496,7 @@ private theorem mul_equispacedTailFactor_lt {r : ℕ} {ε K : ℝ} {m : ℕ}
     _ < (2 * (r : ℝ) + 3) * K / 2 := by nlinarith
 
 /-- A sufficiently large tail makes the Gaussian exceptional probability less than one half. -/
-private theorem equispaced_exceptional_lt_half {r m : ℕ}
+theorem mul_exp_neg_div_lt_half {r m : ℕ}
     (hm : 4 * equispacedGaussianFactor r * (r + 2) ≤ m) :
     ((r : ℝ) + 2) * Real.exp (-(m / (2 * equispacedGaussianFactor r))) < 1 / 2 := by
   have hR : (0 : ℝ) ≤ r := Nat.cast_nonneg _
@@ -559,10 +545,11 @@ theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
   have hk1 : (1 : ℝ) ≤ Fintype.card k := Nat.one_le_cast.mpr Fintype.card_pos
   have hkpos : (0 : ℝ) < Fintype.card k := Nat.cast_pos.mpr Fintype.card_pos
   by_contra hcon
-  obtain ⟨hwidth, hmLarge⟩ := equispaced_floor_width hk1 hε hεr hm (not_lt.mp hcon)
+  obtain ⟨hwidth, hmLarge⟩ := equispacedGaussianFactor_mul_add_le_and_mul_le_of_floor
+    hk1 hε hεr hm (not_lt.mp hcon)
   obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
     hwidth halg hpass hp ρ
-  have hsmall := equispaced_exceptional_lt_half hmLarge
+  have hsmall := mul_exp_neg_div_lt_half hmLarge
   set A := U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ
   have hApsd : A.PosSemidef := posSemidef_mul_diagonal_equispacedLevelSpectrum_mul_conjTranspose r U
   have hopt : frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2 =

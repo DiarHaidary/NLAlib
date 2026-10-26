@@ -225,4 +225,20 @@ theorem hasLaw_replicateCol_of_hasLaw_uniformSphereVector {u : Ω → n → ℝ}
   funext x i j
   rfl
 
+/-- A scalar lower-tail bound and almost-sure orthogonality give a joint lower bound. -/
+theorem le_measureReal_hasOrthonormalCols_and_ge {n : Type*} [Fintype n] [DecidableEq n]
+    (F : Matrix n n ℝ → ℝ) (hF : Measurable F) (a δ : ℝ)
+    (hbad : (haarFrame n n).real {U | F U < a} ≤ δ) :
+    1 - δ ≤ (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
+  have hBm : MeasurableSet {U | F U < a} := measurableSet_lt hF measurable_const
+  have hcomp := probReal_compl_eq_one_sub (μ := haarFrame n n) hBm
+  have hmono : (haarFrame n n).real {U | F U < a}ᶜ ≤
+      (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
+    refine measureReal_mono_ae ?_ (measure_ne_top _ _)
+    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame
+      (HasLaw.id (μ := haarFrame n n)) le_rfl] with U hU hnot
+    exact ⟨hU, not_lt.mp hnot⟩
+  rw [hcomp] at hmono
+  linarith
+
 end NLAlib
