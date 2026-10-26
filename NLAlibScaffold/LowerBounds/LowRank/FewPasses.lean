@@ -1136,7 +1136,79 @@ theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le [Nonempty k] {ε 
       1 / 2 ≤ ρ.real {s | frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
         (1 + ε) * frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2}) :
     Fintype.card k / (6400 * ε) < q := by
-  sorry
+  classical
+  have hk1 : (1 : ℝ) ≤ Fintype.card k := Nat.one_le_cast.mpr Fintype.card_pos
+  have hk0 : (0 : ℝ) ≤ Fintype.card k := by positivity
+  have hxpos : (0 : ℝ) < (Fintype.card k : ℝ) / (8 * ε) := by positivity
+  have hx1750 : (1750 : ℝ) ≤ (Fintype.card k : ℝ) / (8 * ε) := by
+    rw [le_div_iff₀ (by positivity)]; linarith
+  have hmx : (Fintype.card k : ℝ) / (8 * ε) - 1 < (Fintype.card m : ℝ) := by
+    rw [hm]; exact Nat.sub_one_lt_floor _
+  have hm1750 : (1750 : ℝ) ≤ Fintype.card m := by
+    rw [hm]
+    exact_mod_cast Nat.le_floor (show ((1750 : ℕ) : ℝ) ≤ (Fintype.card k : ℝ) / (8 * ε) by
+      exact_mod_cast hx1750)
+  by_contra hcon
+  replace hcon := not_lt.mp hcon
+  have hq : (400 : ℝ) * (q + Fintype.card k) ≤ Fintype.card m := by
+    have h1 : (q : ℝ) * (6400 * ε) ≤ Fintype.card k := by
+      rwa [le_div_iff₀ (by positivity)] at hcon
+    have h2 : (400 : ℝ) * (q + Fintype.card k) * (8 * ε) + 8 * ε ≤ Fintype.card k := by
+      nlinarith [mul_le_mul_of_nonneg_left hε₁ hk0]
+    have h3 : (400 : ℝ) * (q + Fintype.card k) + 1 ≤ (Fintype.card k : ℝ) / (8 * ε) := by
+      rw [le_div_iff₀ (by positivity)]; linarith
+    linarith
+  have hq' : 400 * (q + Fintype.card k) ≤ Fintype.card m := by exact_mod_cast hq
+  obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_frobNorm_sub_mul_sq_ge hq' halg hpass hp ρ
+  have hexp : (8 : ℝ) < Real.exp (Fintype.card m / 800) := by
+    have hy : (2.1875 : ℝ) ≤ Fintype.card m / 800 := by linarith
+    have e1 := Real.exp_one_gt_d9
+    have e2 := Real.add_one_le_exp (0.1875 : ℝ)
+    have e3 : Real.exp 2.1875 = Real.exp 1 * Real.exp 1 * Real.exp 0.1875 := by
+      rw [← Real.exp_add, ← Real.exp_add]; norm_num
+    have e4 := Real.exp_le_exp.mpr hy
+    nlinarith [mul_lt_mul'' e1 e1 (by norm_num) (by norm_num)]
+  have hinv : Real.exp (-(Fintype.card m / 800)) * Real.exp (Fintype.card m / 800) = 1 := by
+    rw [← Real.exp_add]; simp
+  have hsmall : 4 * Real.exp (-(Fintype.card m / 800)) < 1 / 2 := by
+    nlinarith [mul_pos (Real.exp_pos (-(Fintype.card m / 800 : ℝ))) (sub_pos.mpr hexp)]
+  set A := U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ with hA
+  have hAherm : A.IsHermitian :=
+    Matrix.isHermitian_mul_mul_conjTranspose _ (Matrix.isHermitian_diagonal _)
+  have hopt : frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2 = 14 * Fintype.card m :=
+    HasOrthonormalCols.frobNorm_mul_diagonal_mul_sub_truncatedSVD_sq hU
+  have hsub := hsucc A hAherm
+  rw [hopt] at hsub
+  have hmle : (Fintype.card m : ℝ) ≤ (Fintype.card k : ℝ) / (8 * ε) := by
+    rw [hm]; exact Nat.floor_le hxpos.le
+  have hεm : ε * Fintype.card m ≤ (Fintype.card k : ℝ) / 8 := by
+    calc ε * Fintype.card m ≤ ε * ((Fintype.card k : ℝ) / (8 * ε)) :=
+          mul_le_mul_of_nonneg_left hmle hε.le
+      _ = (Fintype.card k : ℝ) / 8 := by field_simp
+  have hrun : Measurable fun s => (alg s).run A.mulVec := by
+    have hO : Measurable fun p : Matrix (k ⊕ Fin 3 × m) (k ⊕ Fin 3 × m) ℝ ×
+        (k ⊕ Fin 3 × m → ℝ) => p.1.mulVec p.2 :=
+      (by fun_prop : Continuous fun p : Matrix (k ⊕ Fin 3 × m) (k ⊕ Fin 3 × m) ℝ ×
+        (k ⊕ Fin 3 × m → ℝ) => p.1.mulVec p.2).measurable
+    exact (halg.measurable_run
+      (O := fun B : Matrix (k ⊕ Fin 3 × m) (k ⊕ Fin 3 × m) ℝ => B.mulVec) hO).comp
+      (measurable_id.prodMk measurable_const)
+  have hmeas : MeasurableSet {s : S | 14 * (Fintype.card m : ℝ) + 33 / 10 * Fintype.card k ≤
+      frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2} := by
+    refine measurableSet_le measurable_const ?_
+    refine Measurable.pow_const ?_ 2
+    refine measurable_frobNorm.comp (Measurable.sub measurable_const ?_)
+    exact (measurable_fst.comp hrun).matrix_mul (measurable_snd.comp hrun)
+  have hsubset : {s : S | frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
+      (1 + ε) * (14 * (Fintype.card m : ℝ))} ⊆
+      {s : S | 14 * (Fintype.card m : ℝ) + 33 / 10 * Fintype.card k ≤
+        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2}ᶜ := by
+    intro s hs hc
+    simp only [Set.mem_setOf_eq] at hs hc
+    nlinarith
+  have hcompl := MeasureTheory.probReal_compl_eq_one_sub (μ := ρ) hmeas
+  have hmono := MeasureTheory.measureReal_mono (μ := ρ) hsubset
+  linarith
 
 omit [DecidableEq k] [DecidableEq m] in
 /-- **One-pass low-rank approximation needs $\Omega(k/\varepsilon)$ matrix–vector products**: the
