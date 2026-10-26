@@ -41,6 +41,100 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n k : Type*} [Fintype n]
   [Fintype k]
 
+/-- Rotating a standard Gaussian matrix on the left by an independent random orthogonal matrix
+keeps the joint law of the polar factor and the Gram matrix of the rotated matrix. -/
+private theorem map_mul_polarFactor_prodMk_conjTranspose_mul_self [DecidableEq n] [DecidableEq k]
+    (ρ : Measure (Matrix n n ℝ)) [SFinite ρ] {R : Matrix n n ℝ → Matrix n n ℝ}
+    (hRm : Measurable R) (hRo : ∀ U, HasOrthonormalCols (R U)) :
+    (ρ.prod (gaussianMatrix n k)).map (fun p => (R p.1 * polarFactor p.2, p.2ᴴ * p.2)) =
+      (ρ.prod (gaussianMatrix n k)).map (fun p => (polarFactor p.2, p.2ᴴ * p.2)) := by
+  have hΦ : Measurable fun x : Matrix n k ℝ => (polarFactor x, xᴴ * x) :=
+    measurable_polarFactor.prodMk (by fun_prop)
+  have hF1 : Measurable fun p : Matrix n n ℝ × Matrix n k ℝ => (polarFactor p.2, p.2ᴴ * p.2) :=
+    hΦ.comp measurable_snd
+  have hF2 : Measurable fun p : Matrix n n ℝ × Matrix n k ℝ =>
+      (R p.1 * polarFactor p.2, p.2ᴴ * p.2) :=
+    ((hRm.comp measurable_fst).matrix_mul (measurable_polarFactor.comp measurable_snd)).prodMk
+      ((by fun_prop : Measurable fun x : Matrix n k ℝ => xᴴ * x).comp measurable_snd)
+  ext s hs
+  rw [Measure.map_apply hF1 hs, Measure.map_apply hF2 hs, Measure.prod_apply (hF1 hs),
+    Measure.prod_apply (hF2 hs)]
+  refine lintegral_congr fun U => ?_
+  have hm : Measurable (R U * · : Matrix n k ℝ → Matrix n k ℝ) :=
+    measurable_const.matrix_mul measurable_id
+  have heq : Prod.mk U ⁻¹' ((fun p : Matrix n n ℝ × Matrix n k ℝ =>
+      (R p.1 * polarFactor p.2, p.2ᴴ * p.2)) ⁻¹' s) =
+      (R U * ·) ⁻¹' ((fun x : Matrix n k ℝ => (polarFactor x, xᴴ * x)) ⁻¹' s) := by
+    ext x
+    simp only [Set.mem_preimage, (hRo U).polarFactor_mul_left, (hRo U).conjTranspose_mul_mul]
+  rw [heq, ← Measure.map_apply hm (hΦ hs),
+    IsLeftUnitarilyInvariant.map_mul_left_eq_self _ (hRo U)]
+  rfl
+
+/-- The joint law of the polar factor and the Gram matrix of a tall standard Gaussian matrix is
+the product of the Haar frame law and the law of the Gram matrix. -/
+private theorem map_polarFactor_prodMk_conjTranspose_mul_self [DecidableEq k]
+    (hk : Fintype.card k ≤ Fintype.card n) :
+    (gaussianMatrix n k).map (fun x => (polarFactor x, xᴴ * x)) =
+      (haarFrame n k).prod ((gaussianMatrix n k).map fun x => xᴴ * x) := by
+  classical
+  set ν := gaussianMatrix n k
+  set ρ := haarFrame n n
+  set P := ρ.prod ν
+  obtain ⟨x₀, hx₀⟩ := (ae_hasOrthonormalCols_of_hasLaw_haarFrame
+    (HasLaw.id (μ := haarFrame n k)) hk).exists
+  set R : Matrix n n ℝ → Matrix n n ℝ := fun U => if HasOrthonormalCols U then U else 1
+  have hRm : Measurable R := Measurable.ite isClosed_setOf_hasOrthonormalCols.measurableSet
+    measurable_id measurable_const
+  have hRo (U : Matrix n n ℝ) : HasOrthonormalCols (R U) := by
+    simp only [R]; split_ifs with h
+    exacts [h, hasOrthonormalCols_one]
+  set pol : Matrix n k ℝ → Matrix n k ℝ :=
+    fun x => if HasOrthonormalCols (polarFactor x) then polarFactor x else x₀
+  have hpolm : Measurable pol := Measurable.ite
+    (measurable_polarFactor isClosed_setOf_hasOrthonormalCols.measurableSet)
+    measurable_polarFactor measurable_const
+  have hpolo (x : Matrix n k ℝ) : HasOrthonormalCols (pol x) := by
+    simp only [pol]; split_ifs with h
+    exacts [h, hx₀]
+  have hgm : Measurable fun x : Matrix n k ℝ => xᴴ * x := by fun_prop
+  have hPν : P.map Prod.snd = ν := by simp [P, Measure.map_snd_prod]
+  have hR0 : ∀ᵐ U ∂ρ, R U = U := by
+    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame (HasLaw.id (μ := ρ)) le_rfl]
+      with U hU
+    exact if_pos hU
+  -- (1) rotating the Gaussian by an independent Haar matrix keeps its law
+  have h1 := (map_mul_polarFactor_prodMk_conjTranspose_mul_self ρ (k := k) hRm hRo).symm
+  -- (2) the polar factor is a frame almost surely
+  have h2 : P.map (fun p => (R p.1 * polarFactor p.2, p.2ᴴ * p.2)) =
+      P.map (fun p => (R p.1 * pol p.2, p.2ᴴ * p.2)) := by
+    have hν : ∀ᵐ x ∂ν, HasOrthonormalCols (polarFactor x) :=
+      ae_hasOrthonormalCols_of_hasLaw_haarFrame
+        (hasLaw_polarFactor_of_hasLaw_gaussianMatrix HasLaw.id) hk
+    refine Measure.map_congr ?_
+    filter_upwards [ae_of_ae_map measurable_snd.aemeasurable (hPν ▸ hν)] with p hp
+    simp only [pol, if_pos hp]
+  -- (3) a Haar matrix times any fixed frame is a Haar frame
+  have hρ (y : Matrix n k ℝ) (hy : HasOrthonormalCols y) :
+      ρ.map (fun U => R U * y) = haarFrame n k := by
+    rw [Measure.map_congr (g := (· * y)) (hR0.mono fun U hU => by simp only [hU])]
+    exact (hasLaw_mul_const_of_hasLaw_haarFrame (HasLaw.id (μ := ρ)) le_rfl hy).map_eq
+  have h3 : P.map (fun p => (R p.1 * pol p.2, p.2ᴴ * p.2)) =
+      (haarFrame n k).prod (ν.map fun x => xᴴ * x) := by
+    have hF3 : Measurable fun p : Matrix n n ℝ × Matrix n k ℝ => (R p.1 * pol p.2, p.2ᴴ * p.2) :=
+      ((hRm.comp measurable_fst).matrix_mul (hpolm.comp measurable_snd)).prodMk
+        (hgm.comp measurable_snd)
+    ext s hs
+    rw [Measure.map_apply hF3 hs, Measure.prod_apply_symm (hF3 hs), Measure.prod_apply_symm hs,
+      lintegral_map (measurable_measure_prodMk_right hs) hgm]
+    refine lintegral_congr fun x => ?_
+    rw [← hρ (pol x) (hpolo x),
+      Measure.map_apply (hRm.matrix_mul measurable_const) (measurable_prodMk_right hs)]
+    rfl
+  refine Eq.trans ?_ (h1.trans (h2.trans h3))
+  rw [← hPν, Measure.map_map (measurable_polarFactor.prodMk hgm) measurable_snd]
+  rfl
+
 /-- **Polar factor and Gram matrix of a Gaussian matrix are independent**: for a standard Gaussian
 $\mathbf{G} \in \mathbb{R}^{n \times k}$, the polar factor
 $\mathbf{G}(\mathbf{G}^{\mathsf{H}}\mathbf{G})^{-1/2}$, a Haar frame, is independent of
@@ -63,7 +157,17 @@ theorem indepFun_polarFactor_conjTranspose_mul_self_of_hasLaw_gaussianMatrix
     [DecidableEq k] {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
     (hk : Fintype.card k ≤ Fintype.card n) :
     IndepFun (fun ω => polarFactor (G ω)) (fun ω => (G ω)ᴴ * G ω) μ := by
-  sorry
+  have := hG.isProbabilityMeasure
+  have hgm : Measurable fun x : Matrix n k ℝ => xᴴ * x := by fun_prop
+  refine (indepFun_iff_map_prod_eq_prod_map_map
+    (measurable_polarFactor.comp_aemeasurable hG.aemeasurable)
+    (hgm.comp_aemeasurable hG.aemeasurable)).2 ?_
+  have h := map_polarFactor_prodMk_conjTranspose_mul_self (n := n) (k := k) hk
+  rw [← (hasLaw_polarFactor_of_hasLaw_gaussianMatrix hG).map_eq, ← hG.map_eq,
+    AEMeasurable.map_map_of_aemeasurable (measurable_polarFactor.prodMk hgm).aemeasurable
+      hG.aemeasurable,
+    AEMeasurable.map_map_of_aemeasurable hgm.aemeasurable hG.aemeasurable] at h
+  exact h
 
 /-- **Compressed form**: for a standard Gaussian $\mathbf{G} \in \mathbb{R}^{n \times k}$ and an
 orthogonal projector $\mathbf{P}$ of rank at least $\lvert k \rvert$, the polar factor of
