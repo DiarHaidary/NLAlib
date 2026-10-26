@@ -113,7 +113,54 @@ theorem exists_singularValues_window (B : Matrix m n ℝ) {k : ℕ} (hk : 1 ≤ 
       singularValues B b ≤ singularValues B (k - 1) / 2 ∧
       ((b - k : ℕ) : ℝ) * singularValues B (k - 1) ^ 2 ≤
         4 * frobNorm (B - truncatedSVD B k) ^ 2 := by
-  sorry
+  rcases eq_or_lt_of_le (singularValues_nonneg B (k - 1)) with hθ | hθ
+  · refine ⟨k, k, le_rfl, le_rfl, ?_, ?_, ?_, ?_⟩
+    · intro i _
+      rw [← hθ]
+      linarith [singularValues_nonneg B i]
+    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
+      linarith
+    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
+      linarith
+    · simp only [Nat.sub_self, Nat.cast_zero, zero_mul]
+      positivity
+  · have hex1 : ∃ i, singularValues B i ≤ 2 * singularValues B (k - 1) :=
+      ⟨k - 1, by linarith⟩
+    have hr0 : singularValues B (min (Fintype.card m) (Fintype.card n)) = 0 :=
+      (singularValues_eq_zero_iff B).mpr
+        (le_min (Matrix.rank_le_card_height B) (Matrix.rank_le_card_width B))
+    have hr_lt : singularValues B (min (Fintype.card m) (Fintype.card n)) <
+        singularValues B (k - 1) / 2 := by
+      rw [hr0]; linarith
+    have hex2 : ∃ i, singularValues B i < singularValues B (k - 1) / 2 := ⟨_, hr_lt⟩
+    have ha_min : ∀ i < Nat.find hex1, 2 * singularValues B (k - 1) ≤ singularValues B i :=
+      fun i hi => (not_le.mp (Nat.find_min hex1 hi)).le
+    have hb_min : ∀ i < Nat.find hex2, singularValues B (k - 1) / 2 ≤ singularValues B i :=
+      fun i hi => not_lt.mp (Nat.find_min hex2 hi)
+    have ha_k : Nat.find hex1 ≤ k - 1 :=
+      Nat.find_min' hex1 (show singularValues B (k - 1) ≤ 2 * singularValues B (k - 1) by linarith)
+    have hbr : Nat.find hex2 ≤ min (Fintype.card m) (Fintype.card n) := Nat.find_min' hex2 hr_lt
+    have hkb : k ≤ Nat.find hex2 := by
+      by_contra h
+      have h1 := singularValues_antitone B (show Nat.find hex2 ≤ k - 1 by omega)
+      linarith [Nat.find_spec hex2]
+    have hsum : ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / 2) ^ 2 ≤
+        ∑ i ∈ Finset.Ico k (min (Fintype.card m) (Fintype.card n)), singularValues B i ^ 2 := by
+      have hsub : Finset.Ico k (Nat.find hex2) ⊆
+          Finset.Ico k (min (Fintype.card m) (Fintype.card n)) :=
+        Finset.Ico_subset_Ico_right hbr
+      calc ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / 2) ^ 2
+          = ∑ i ∈ Finset.Ico k (Nat.find hex2), (singularValues B (k - 1) / 2) ^ 2 := by
+            simp [Finset.sum_const, Nat.card_Ico]
+        _ ≤ ∑ i ∈ Finset.Ico k (Nat.find hex2), singularValues B i ^ 2 :=
+            Finset.sum_le_sum fun i hi =>
+              pow_le_pow_left₀ (by positivity)
+                (hb_min i (Finset.mem_Ico.mp hi).2) 2
+        _ ≤ _ := Finset.sum_le_sum_of_subset_of_nonneg hsub fun i _ _ => sq_nonneg _
+    refine ⟨Nat.find hex1, Nat.find hex2, by omega, hkb, fun i hi => ha_min i hi,
+      (Nat.find_spec hex1), (Nat.find_spec hex2).le, ?_⟩
+    rw [frobNorm_sub_truncatedSVD_sq]
+    nlinarith [hsum]
 
 /-! ### The excess and the optimality of the perturbed truncation -/
 
