@@ -53,7 +53,45 @@ theorem measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector
     (hr : r ≤ P.rank) {β : ℝ} (hβ0 : 0 < β) (hβ : β ≤ 1) :
     μ.real {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ^ 2 ≤ β * r} ≤
       Real.exp (r / 2 * (1 - β + Real.log β)) := by
-  sorry
+  have := hg.isProbabilityMeasure
+  rcases Nat.eq_zero_or_pos r with rfl | hr0
+  · simp only [Nat.cast_zero, zero_div, zero_mul, Real.exp_zero]
+    exact measureReal_le_one
+  obtain ⟨Q, hQ, hQP⟩ :=
+    hP.exists_hasOrthonormalCols_mul_conjTranspose_eq (p := Fin P.rank) (Fintype.card_fin _)
+  have hA : HasOrthonormalCols Qᴴᴴ := by rw [Matrix.conjTranspose_conjTranspose]; exact hQ
+  have hy := hasLaw_mulVec_of_hasLaw_gaussianVector hg hA
+  have hρ : (0 : ℝ) < P.rank := by exact_mod_cast hr0.trans_le hr
+  have hρr : (r : ℝ) ≤ P.rank := by exact_mod_cast hr
+  have hr0' : (0 : ℝ) < r := by exact_mod_cast hr0
+  have hβ'0 : 0 < β * r / P.rank := by positivity
+  have hβ'1 : β * r / P.rank ≤ 1 := by
+    rw [div_le_one hρ]; nlinarith
+  have hcard := measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector hy hβ'0 hβ'1
+  rw [Fintype.card_fin] at hcard
+  have hsub : {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ^ 2 ≤ β * r} ⊆
+      {ω | ‖WithLp.toLp 2 (Qᴴ *ᵥ g ω)‖ ^ 2 ≤ β * r / P.rank * P.rank} := by
+    intro ω hω
+    simp only [Set.mem_ofPred_eq] at hω ⊢
+    rw [div_mul_cancel₀ _ hρ.ne']
+    rw [← hQP, ← Matrix.mulVec_mulVec, hQ.norm_toLp_mulVec] at hω
+    exact hω
+  have hL : Real.log β ≤ 0 := Real.log_nonpos hβ0.le hβ
+  have hlog : Real.log (β * r / P.rank) = Real.log β + Real.log (r / P.rank) := by
+    rw [← Real.log_mul hβ0.ne' (div_pos hr0' hρ).ne', mul_div_assoc]
+  have hlogr : (P.rank : ℝ) * Real.log (r / P.rank) ≤ r - P.rank := by
+    have h := Real.log_le_sub_one_of_pos (div_pos hr0' hρ)
+    have h2 : (P.rank : ℝ) * (r / P.rank - 1) = r - P.rank := by
+      field_simp
+    nlinarith [mul_le_mul_of_nonneg_left h hρ.le]
+  have hexp : (P.rank : ℝ) / 2 * (1 - β * r / P.rank + Real.log (β * r / P.rank)) ≤
+      r / 2 * (1 - β + Real.log β) := by
+    rw [hlog]
+    have h2 : β * r / P.rank * P.rank = β * r := div_mul_cancel₀ _ hρ.ne'
+    nlinarith [mul_nonneg (sub_nonneg.2 hρr) (neg_nonneg.2 hL)]
+  calc _ ≤ _ := measureReal_mono hsub
+    _ ≤ _ := hcard
+    _ ≤ _ := Real.exp_le_exp.mpr hexp
 
 /-- **Lower tail of a Gaussian vector projected by an independent projector**: let $\mathbf{g}$ be
 a standard Gaussian vector and $\mathbf{P}$ a random orthogonal projector independent of
