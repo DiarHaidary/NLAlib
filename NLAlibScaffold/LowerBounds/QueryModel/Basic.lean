@@ -156,7 +156,8 @@ both sides say every query is independent of the history (`QueryAlgorithm.IsNonA
 `monotone_const`. S, 5 lines. -/
 theorem isPassStructured_zero_iff_isNonAdaptive (alg : QueryAlgorithm Q R q β) :
     alg.IsPassStructured (fun _ => 0) ↔ alg.IsNonAdaptive := by
-  sorry
+  refine ⟨fun h i hi u u' => h.query_eq i hi u u' fun j hj => absurd hj (lt_irrefl _),
+    fun h => ⟨monotone_const, fun i hi u u' _ => h i hi u u'⟩⟩
 
 end QueryAlgorithm
 
