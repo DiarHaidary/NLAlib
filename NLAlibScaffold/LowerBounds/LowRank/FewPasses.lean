@@ -286,7 +286,58 @@ theorem le_specNorm_diagonal_sub_mul_sq [Nonempty k] (W : Matrix (k ⊕ (Fin 3 �
         ∑ a : k, ‖WithLp.toLp 2 (rangeProjector W *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2) /
         Fintype.card k ≤
       specNorm (Matrix.diagonal (equispacedLevelSpectrum k m 2) - W * M) ^ 2 := by
-  sorry
+  classical
+  set P := rangeProjector W with hPdef
+  have hP : IsStarProjection P := isStarProjection_rangeProjector W
+  set X := Matrix.diagonal (equispacedLevelSpectrum k m 2) - W * M with hXdef
+  set e : k → (k ⊕ (Fin 3 × m) → ℝ) := fun a => Pi.single (Sum.inl a) 1 with he
+  have hnorm1 : ∀ a : k, ‖WithLp.toLp 2 (e a)‖ = 1 := by
+    intro a
+    simp [he]
+  have hpy : ∀ a : k,
+      ‖WithLp.toLp 2 ((1 - P) *ᵥ e a)‖ ^ 2 = 1 - ‖WithLp.toLp 2 (P *ᵥ e a)‖ ^ 2 := by
+    intro a
+    have h := hP.norm_toLp_sq_eq_add (e a)
+    rw [hnorm1 a] at h
+    linarith
+  have hDe : ∀ a : k, Matrix.diagonal (equispacedLevelSpectrum k m 2) *ᵥ e a = (4 : ℝ) • e a := by
+    intro a
+    ext i
+    rcases i with i | ⟨j, i⟩
+    · by_cases h : i = a
+      · subst h
+        simp [he, equispacedLevelSpectrum, Matrix.mulVec_diagonal]
+        norm_num
+      · simp [he, equispacedLevelSpectrum, Matrix.mulVec_diagonal, h]
+    · simp [he, equispacedLevelSpectrum, Matrix.mulVec_diagonal]
+  have hPW : (1 - P) * W = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, hPdef, rangeProjector_mul_self, sub_self]
+  have hWM : (1 - P) * (W * M) = 0 := by rw [← Matrix.mul_assoc, hPW, Matrix.zero_mul]
+  have hsq : ∀ a : k, 16 * ‖WithLp.toLp 2 ((1 - P) *ᵥ e a)‖ ^ 2 ≤ specNorm X ^ 2 := by
+    intro a
+    have hXe : X *ᵥ e a = Matrix.diagonal (equispacedLevelSpectrum k m 2) *ᵥ e a -
+        (W * M) *ᵥ e a := by
+      rw [hXdef, Matrix.sub_mulVec]
+    have hw : (1 - P) *ᵥ (X *ᵥ e a) = (4 : ℝ) • ((1 - P) *ᵥ e a) := by
+      have hWMv : (1 - P) *ᵥ ((W * M) *ᵥ e a) = 0 := by
+        rw [Matrix.mulVec_mulVec, hWM, Matrix.zero_mulVec]
+      rw [hXe, Matrix.mulVec_sub, hWMv, sub_zero, hDe, Matrix.mulVec_smul]
+    have hA := hP.norm_toLp_sq_eq_add (X *ᵥ e a)
+    have hB := norm_toLp_mulVec_le X (e a)
+    rw [hnorm1 a, mul_one] at hB
+    have hC : ‖WithLp.toLp 2 ((1 - P) *ᵥ (X *ᵥ e a))‖ = 4 * ‖WithLp.toLp 2 ((1 - P) *ᵥ e a)‖ := by
+      rw [hw, WithLp.toLp_smul, norm_smul]
+      norm_num
+    rw [hC, mul_pow] at hA
+    nlinarith [sq_nonneg ‖WithLp.toLp 2 (P *ᵥ (X *ᵥ e a))‖, pow_le_pow_left₀ (norm_nonneg _) hB 2]
+  have hsum : ∑ a : k, 16 * ‖WithLp.toLp 2 ((1 - P) *ᵥ e a)‖ ^ 2 ≤
+      ∑ a : k, specNorm X ^ 2 := Finset.sum_le_sum fun a _ => hsq a
+  rw [← Finset.mul_sum] at hsum
+  simp only [hpy, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+    mul_one] at hsum
+  have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.mpr Fintype.card_pos
+  rw [div_le_iff₀ hk]
+  nlinarith [hsum]
 
 /-- **Interpolation bound for depth-3 Krylov vectors**: let
 $\mathbf{G} \in \mathbb{R}^{n \times b}$ with tail blocks $\mathbf{G}_j$ (rows of level $j + 1$)
