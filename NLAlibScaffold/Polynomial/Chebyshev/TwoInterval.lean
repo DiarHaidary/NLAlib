@@ -242,6 +242,45 @@ theorem IsChebyshevTwoIntervalSpectrum.inv_sq_le_sum_card_sub_mul_eval_sq {κ : 
         (((Finset.univ.filter fun i => d i = t).card : ℝ) - M) * p.eval t ^ 2 := by
   sorry
 
+/-- Realize prescribed multiplicities: an injective list of values `v` on `ι` and counts `c`
+summing to `|n|` give `d : n → ℝ` with values in `range v` and fibre cardinalities `c`. -/
+private lemma exists_fun_card_fiber {ι : Type*} [Fintype ι] (v : ι → ℝ)
+    (hv : Function.Injective v) (c : ι → ℕ) (hc : ∑ t, c t = Fintype.card n) :
+    ∃ d : n → ℝ, (∀ i, ∃ t, d i = v t) ∧
+      ∀ t, (Finset.univ.filter fun i => d i = v t).card = c t := by
+  classical
+  have hcard : Fintype.card n = Fintype.card (Σ t, Fin (c t)) := by
+    rw [Fintype.card_sigma]; simp only [Fintype.card_fin]; exact hc.symm
+  let e : n ≃ Σ t, Fin (c t) := Fintype.equivOfCardEq hcard
+  refine ⟨fun i => v (e i).1, fun i => ⟨(e i).1, rfl⟩, fun t => ?_⟩
+  have hfilt : (Finset.univ.filter fun i => v (e i).1 = v t) =
+      Finset.univ.filter fun i => (e i).1 = t :=
+    Finset.filter_congr fun i _ => hv.eq_iff
+  rw [hfilt, Finset.card_filter]
+  refine (e.sum_comp (fun x => if x.1 = t then (1 : ℕ) else 0)).trans ?_
+  rw [Fintype.sum_sigma,Finset.sum_eq_single t (fun b _ hb => by simp [hb]) (by simp)]
+  simp
+
+/-- The signed Chebyshev points `(j, true) ↦ √ξ_j`, `(j, false) ↦ -√ξ_j` are injective. -/
+private lemma chebyshevPoint_injective {κ : ℝ} (hκ : 1 < κ) (s : ℕ) :
+    Function.Injective fun t : Fin (s / 2 + 1) × Bool =>
+      if t.2 then √(chebyshevExtremum 1 (κ ^ 2) (s / 2) t.1)
+      else -√(chebyshevExtremum 1 (κ ^ 2) (s / 2) t.1) := by
+  have hlt : (1 : ℝ) < κ ^ 2 := by nlinarith
+  have hpos : ∀ j : Fin (s / 2 + 1), 0 < √(chebyshevExtremum 1 (κ ^ 2) (s / 2) j) :=
+    fun j => Real.sqrt_pos.2 (by linarith [(chebyshevExtremum_mem_Icc hlt.le (s / 2) j).1])
+  have hnn : ∀ j : Fin (s / 2 + 1), 0 ≤ chebyshevExtremum 1 (κ ^ 2) (s / 2) j :=
+    fun j => by linarith [(chebyshevExtremum_mem_Icc hlt.le (s / 2) j).1]
+  have hinj : ∀ j j' : Fin (s / 2 + 1), chebyshevExtremum 1 (κ ^ 2) (s / 2) j =
+      chebyshevExtremum 1 (κ ^ 2) (s / 2) j' → j = j' := fun j j' h =>
+    (strictMono_chebyshevExtremum hlt (s / 2)).injective h
+  rintro ⟨j, b⟩ ⟨j', b'⟩ h
+  cases b <;> cases b' <;> simp only [if_true, if_false, Bool.false_eq_true] at h
+  all_goals first
+    | (exfalso; linarith [hpos j, hpos j'])
+    | rw [hinj j j' ((Real.sqrt_inj (hnn j) (hnn j')).1 h)]
+    | rw [hinj j j' ((Real.sqrt_inj (hnn j) (hnn j')).1 (neg_inj.1 h))]
+
 /-- **Chebyshev two-interval spectra exist** in every dimension
 $\lvert n \rvert \ge \tfrac43 (s + 2)(M + 1)$: for $\kappa > 1$ and
 $4(s + 2)(M + 1) \le 3\lvert n \rvert$ there is a Chebyshev two-interval spectrum on $n$ with
@@ -255,6 +294,77 @@ lines. -/
 theorem exists_isChebyshevTwoIntervalSpectrum {κ : ℝ} (hκ : 1 < κ) {s M : ℕ}
     (hn : 4 * ((s + 2) * (M + 1)) ≤ 3 * Fintype.card n) :
     ∃ d : n → ℝ, IsChebyshevTwoIntervalSpectrum κ s M d := by
-  sorry
+  classical
+  -- points: `(j, true) ↦ √ξ_j`, `(j, false) ↦ -√ξ_j`
+  set ξ : Fin (s / 2 + 1) → ℝ := fun j => chebyshevExtremum 1 (κ ^ 2) (s / 2) j with hξ
+  set ω : Fin (s / 2 + 1) → ℝ := fun j => chebyshevWeight 1 (κ ^ 2) (s / 2) j with hω
+  set τ : ℝ := (T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)) with hτ
+  have hτ1 : 1 ≤ τ := one_le_eval_T_real _ (by rw [le_div_iff₀ (by nlinarith)]; nlinarith)
+  have hsum : ∑ j, ω j = τ := sum_chebyshevWeight zero_lt_one (by nlinarith) (s / 2)
+  let v : Fin (s / 2 + 1) × Bool → ℝ := fun t => if t.2 then √(ξ t.1) else -√(ξ t.1)
+  have hv : Function.Injective v := chebyshevPoint_injective hκ s
+  -- real multiplicity bounds
+  let B : Fin (s / 2 + 1) → ℝ := fun j => (Fintype.card n : ℝ) / 4 * (ω j / (2 * τ)) + M
+  have hB0 : ∀ j, 0 ≤ B j := fun j => by
+    have h1 : 0 ≤ ω j / (2 * τ) := div_nonneg (abs_nonneg _) (by linarith)
+    have h2 : (0 : ℝ) ≤ (Fintype.card n : ℝ) / 4 := by positivity
+    have h3 : (0 : ℝ) ≤ M := by positivity
+    exact add_nonneg (mul_nonneg h2 h1) h3
+  have hsumU : ∀ f : Fin (s / 2 + 1) → ℝ,
+      ∑ u : Fin (s / 2 + 1) × Bool, f u.1 = 2 * ∑ j, f j := by
+    intro f
+    rw [Fintype.sum_prod_type]
+    simp only [Fintype.sum_bool, two_mul, Finset.sum_add_distrib]
+  have hsumB8 : ∑ j, B j = (Fintype.card n : ℝ) / 8 + ((s / 2 + 1 : ℕ) : ℝ) * M := by
+    simp only [B, div_eq_mul_inv]
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.sum_mul, hsum,
+      Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+    have hτne : τ ≠ 0 := by linarith
+    field_simp
+    ring
+  have hPR : 2 * ((s / 2 + 1 : ℕ) : ℝ) ≤ (s : ℝ) + 2 := by
+    have : 2 * (s / 2 + 1) ≤ s + 2 := by omega
+    exact_mod_cast this
+  have hnR : 4 * (((s : ℝ) + 2) * ((M : ℝ) + 1)) ≤ 3 * (Fintype.card n : ℝ) := by
+    exact_mod_cast hn
+  have hsumB : ∑ u : Fin (s / 2 + 1) × Bool, ⌈B u.1⌉₊ ≤ Fintype.card n := by
+    have h3 : ((∑ u : Fin (s / 2 + 1) × Bool, ⌈B u.1⌉₊ : ℕ) : ℝ) ≤ (Fintype.card n : ℝ) := by
+      push_cast
+      calc ∑ u : Fin (s / 2 + 1) × Bool, (⌈B u.1⌉₊ : ℝ)
+          ≤ ∑ u : Fin (s / 2 + 1) × Bool, (B u.1 + 1) :=
+            Finset.sum_le_sum fun u _ => (Nat.ceil_lt_add_one (hB0 u.1)).le
+        _ = (Fintype.card n : ℝ) / 4 + 2 * ((s / 2 + 1 : ℕ) : ℝ) * (M + 1) := by
+            rw [Finset.sum_add_distrib, hsumU B]
+            simp only [Finset.sum_const, Finset.card_univ, Fintype.card_prod, Fintype.card_fin,
+              Fintype.card_bool, nsmul_eq_mul, hsumB8]
+            push_cast
+            ring
+        _ ≤ Fintype.card n := by
+            nlinarith [mul_le_mul_of_nonneg_right hPR (by positivity : (0 : ℝ) ≤ (M : ℝ) + 1)]
+    exact_mod_cast h3
+  let c : Fin (s / 2 + 1) × Bool → ℕ := fun t =>
+    ⌈B t.1⌉₊ + if t = (0, true) then Fintype.card n - ∑ u : Fin (s / 2 + 1) × Bool, ⌈B u.1⌉₊
+      else 0
+  have hc : ∑ t, c t = Fintype.card n := by
+    simp only [c, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, if_true]
+    omega
+  obtain ⟨d, hd1, hd2⟩ := exists_fun_card_fiber v hv c hc
+  refine ⟨d, ⟨fun i => ?_, fun j => ?_, fun j => ?_⟩⟩
+  · obtain ⟨⟨j, b⟩, hi⟩ := hd1 i
+    cases b
+    · exact ⟨j, Or.inr hi⟩
+    · exact ⟨j, Or.inl hi⟩
+  · have key : (Finset.univ.filter fun i => d i = √(ξ j)).card = c (j, true) := hd2 (j, true)
+    have hc1 : ((⌈B j⌉₊ : ℕ) : ℝ) ≤ (c (j, true) : ℝ) := by
+      exact_mod_cast Nat.le_add_right _ _
+    change B j ≤ ((Finset.univ.filter fun i => d i =√(ξ j)).card : ℝ)
+    rw [key]
+    linarith [Nat.le_ceil (B j)]
+  · have key : (Finset.univ.filter fun i => d i = -√(ξ j)).card = c (j, false) := hd2 (j, false)
+    have hc1 : ((⌈B j⌉₊ : ℕ) : ℝ) ≤ (c (j, false) : ℝ) := by
+      exact_mod_cast Nat.le_add_right _ _
+    change B j ≤ ((Finset.univ.filter fun i => d i =-√(ξ j)).card : ℝ)
+    rw [key]
+    linarith [Nat.le_ceil (B j)]
 
 end NLAlib
