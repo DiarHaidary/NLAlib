@@ -113,7 +113,64 @@ $T_k(\cdot)^{-1} \le \eta$. M, about 50 lines. -/
 theorem residualMinimax_Icc_union_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
     residualMinimax (Set.Icc (-a') (-a) ∪ Set.Icc a a') q =
       ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)))⁻¹ := by
-  sorry
+  have ha2 : 0 < a ^ 2 := by positivity
+  have haa2 : a ^ 2 < a' ^ 2 := pow_lt_pow_left₀ haa ha.le two_ne_zero
+  have hT : 0 < (T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)) :=
+    zero_lt_one.trans_le (one_le_eval_T_real _ (by
+      rw [le_div_iff₀ (by linarith)]
+      linarith))
+  refine le_antisymm ?_ ?_
+  · refine residualMinimax_le (p := (chebyshevResidual (a ^ 2) (a' ^ 2) (q / 2)).comp (X ^ 2))
+      ?_ (eval_chebyshevResidual_comp_X_sq_zero (q / 2) (pow_pos ha 2) haa2)
+      (inv_nonneg.mpr hT.le)
+      (fun x hx => abs_eval_chebyshevResidual_comp_X_sq_le (q / 2) ha haa x hx)
+    exact (degree_chebyshevResidual_comp_X_sq_le _ _ _).trans (by
+      exact_mod_cast (by omega : 2 * (q / 2) ≤ q))
+  · have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} :=
+      ⟨⟨1, degree_one_le.trans (by exact_mod_cast Nat.zero_le q), eval_one⟩⟩
+    refine le_ciInf fun ⟨p, hp, hp₀⟩ => ?_
+    have hS : IsCompact (Set.Icc (-a') (-a) ∪ Set.Icc a a') :=
+      isCompact_Icc.union isCompact_Icc
+    obtain ⟨M, hM⟩ := (hS.image (Polynomial.continuous p).abs).bddAbove
+    have hbdd : BddAbove (Set.range fun y : ℝ =>
+        ⨆ (_ : y ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a'), |p.eval y|) := by
+      refine ⟨max M 0, ?_⟩
+      rintro _ ⟨y, rfl⟩
+      exact Real.iSup_le (fun hy => (hM ⟨y, hy, rfl⟩).trans (le_max_left _ _)) (le_max_right _ _)
+    have hle : ∀ x ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a',
+        |p.eval x| ≤ ⨆ y ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a', |p.eval y| := fun x hx => by
+      simpa only [ciSup_pos hx] using le_ciSup hbdd x
+    generalize hη : (⨆ y ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a', |p.eval y|) = η at hle ⊢
+    have hη0 : 0 ≤ η := hη ▸ Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
+    -- the points ±√ξ_j lie in S
+    have hsq : ∀ j : Fin (q / 2 + 1),
+        Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) ∈ Set.Icc a a' := fun j => by
+      have h := chebyshevExtremum_mem_Icc (pow_le_pow_left₀ ha.le haa.le 2) (q / 2) j
+      constructor
+      · simpa only [Real.sqrt_sq ha.le] using Real.sqrt_le_sqrt h.1
+      · simpa only [Real.sqrt_sq (by linarith : (0 : ℝ) ≤ a')] using Real.sqrt_le_sqrt h.2
+    have hj : ∀ j : Fin (q / 2 + 1),
+        ‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : ℝ)‖ ≤ η ∧
+        ‖p.eval (-(Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ))‖ ≤ η :=
+      fun j => ⟨by rw [Real.norm_eq_abs]; exact hle _ (Or.inr (hsq j)),
+        by
+          rw [Real.norm_eq_abs]
+          exact hle _ (Or.inl ⟨by linarith [(hsq j).2], by linarith [(hsq j).1]⟩)⟩
+    have hsum :=
+      inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq (𝕜 := ℝ) ha haa hp hp₀
+    have hsum2 : ∑ j : Fin (q / 2 + 1), chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j / 2 *
+        (‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : ℝ)‖ ^ 2 +
+          ‖p.eval (-(Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ))‖ ^ 2) ≤
+        η ^ 2 * ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2))) := by
+      rw [← sum_chebyshevWeight ha2 haa2, Finset.mul_sum]
+      refine Finset.sum_le_sum fun j _ => ?_
+      have h0 := chebyshevWeight_pos ha2 haa2 (q / 2) j
+      have h1 := pow_le_pow_left₀ (norm_nonneg _) (hj j).1 2
+      have h2 := pow_le_pow_left₀ (norm_nonneg _) (hj j).2 2
+      nlinarith
+    have hx : 0 < ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)))⁻¹ :=
+      inv_pos.mpr hT
+    nlinarith [hsum.trans hsum2, mul_inv_cancel₀ hT.ne']
 
 /-- The Chebyshev value on $[1, \kappa^2]$ decays at most like $e^{-4k/\kappa}$: for
 $\kappa \ge 2$ and every $k$,
