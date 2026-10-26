@@ -175,4 +175,20 @@ theorem conjTranspose_mul_self_sqrt_card_div_smul_conjTranspose_mul {k p : Type*
     Matrix.conjTranspose_conjTranspose]
   simp only [Matrix.mul_assoc]
 
+open scoped MatrixOrder in
+/-- The Loewner lower bound $s^2\mathbf{I} \preceq \mathbf{M}^{\mathsf{H}}\mathbf{M}$ gives
+$s^2\|\mathbf{v}\|^2 \le \|\mathbf{M}\mathbf{v}\|^2$. -/
+theorem sq_mul_sum_sq_le_sum_sq_mulVec {m' b : Type*} [Fintype m'] [Fintype b]
+    [DecidableEq b] (M : Matrix m' b ℝ) {s : ℝ} (hM : s ^ 2 • (1 : Matrix b b ℝ) ≤ Mᴴ * M)
+    (v : b → ℝ) : s ^ 2 * ∑ c, v c ^ 2 ≤ ∑ i, (M *ᵥ v) i ^ 2 := by
+  have h := (Matrix.le_iff.1 hM).dotProduct_mulVec_nonneg v
+  have e : star v ⬝ᵥ ((Mᴴ * M - s ^ 2 • (1 : Matrix b b ℝ)) *ᵥ v) =
+      ∑ i, (M *ᵥ v) i ^ 2 - s ^ 2 * ∑ c, v c ^ 2 := by
+    rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec,
+      dotProduct_sub, Matrix.dotProduct_mulVec, ← Matrix.star_mulVec, dotProduct_smul,
+      star_trivial, smul_eq_mul]
+    simp only [dotProduct, star_trivial, pow_two, Finset.mul_sum]
+  linarith
+
+
 end NLAlib

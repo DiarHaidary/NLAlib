@@ -2,6 +2,38 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Fixed-batch Frobenius extension: proofs (2026-10-26)
+
+Branch `stage/lbc-fixed-batches` (started as `design/lbc-fixed-batches`), based on completed
+`stage/lbc` at `668dcd5`. The maintainer approved `docs/design/LowerBounds-FixedBatches.md` on
+2026-10-26. All proposed structural and headline statements are proved and moved into `NLAlib`;
+the scaffold is empty again. The three headline signatures were compared with the approved
+note, ignoring whitespace only, and are unchanged. Commit and PR publication were authorized by the maintainer after implementation.
+
+Read-back: for every natural batch budget `r`, nonempty rank index `k`, and
+`0 < ε ≤ 1/(512*4^(r+1)*(r+1)*(r+2)^2)`, choose
+`|m| = floor(|k|/(ε*(r+1)*(r+2)))`. Every measurable randomized algorithm that uses at most `r`
+batches and attains squared relative Frobenius error `1+ε` with probability at least `1/2`
+on every PSD input of dimension `|k|+(r+1)|m|` must use
+`q > |k|/(256*4^(r+1)*(r+1)*(r+2)*ε)` products. This is the fixed-`r` Frobenius lower rate in
+chosen dimensions, not an all-dimension or optimized-round-dependence theorem. It includes
+`r=0` without additional hypotheses and preserves the existing stronger two-pass constants.
+
+`Polynomial/Interpolation/DividedDifference` supplies scalar extrapolation. New
+`LowerBounds/LowRank/FiniteSpectrum` proves tail energy, PSD, exact optimum, loss and Krylov
+interpolation for arbitrary `r`; `LowerBounds/LowRank/Minimax` proves Gaussian capture, the
+K7 reduction, Yao's worst-case bound and the explicit query count. K7 is reused unchanged.
+The five numerical factors are registered. Four shared helpers now live in `Matrix/Basic/Gram`,
+`Matrix/Basic/Projector` and `ForMathlib/MeasureTheory/Measure/Prod`; temporary aliases are removed.
+Root imports are regenerated.
+
+Validation: full `lake build --wfail NLAlib NLAlibScaffold` passes with zero warnings. All 14
+environment linters pass, and the axiom audit checks 11,776 declarations with zero violations.
+Extraction-backed checks run 102 rules with zero errors (advisories concern the existing file
+size/doc conventions and real-only helper statements). Constants, references, ledger and both
+generated import lists pass; the duplicate report finds no new duplicates. Independent final
+review accepts the constants, PSD premise, floor arithmetic and degenerate cases.
+
 ## LB-C hidden-rotation lower bounds: proofs (2026-10-26)
 
 Branch `stage/lbc`. **All 57 targets are proved**, statements unchanged against the approved

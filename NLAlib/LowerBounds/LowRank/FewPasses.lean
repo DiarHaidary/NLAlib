@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Data.Fin.Basic
 public import Mathlib.Data.Real.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Measure.Prod
+public import NLAlib.Matrix.Basic.Gram
 public import NLAlib.LowerBounds.QueryModel.HiddenRotation
 public import NLAlib.LowerBounds.QueryModel.Yao
 public import NLAlib.Matrix.Spectral.LowRank
@@ -214,18 +216,6 @@ private lemma isStarProjection_entry_symm {n : Type*} [Fintype n]
   have h := congrFun (congrFun hP.isSelfAdjoint j) i
   simpa [Matrix.star_apply] using h
 
-/-- The squared norm of the `j`-th column of a real star projection is its `(j, j)` entry. -/
-private lemma norm_sq_mulVec_single_eq {n : Type*} [Fintype n] [DecidableEq n]
-    {P : Matrix n n ℝ} (hP : IsStarProjection P) (j : n) :
-    ‖WithLp.toLp 2 (P *ᵥ Pi.single j 1)‖ ^ 2 = P j j := by
-  have h := congrFun (congrFun hP.mul_self j) j
-  rw [Matrix.mul_apply] at h
-  rw [EuclideanSpace.norm_sq_eq, ← h]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  simp only [Matrix.mulVec_single_one, Matrix.col_apply, Real.norm_eq_abs, sq_abs]
-  rw [isStarProjection_entry_symm hP j i]
-  ring
-
 /-- Frobenius error from head capture: for every $\mathbf{W} \in \mathbb{R}^{n \times k}$ and
 $\mathbf{M} \in \mathbb{R}^{k \times n}$, $n = k \oplus (\{0, 1, 2\} \times m)$ and
 $\mathbf{D} = \operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m, 3\mathbf{I}_m)$,
@@ -269,10 +259,11 @@ theorem le_frobNorm_diagonal_sub_mul_sq (W : Matrix (k ⊕ (Fin 3 × m)) k ℝ)
     ring
   have hQjj : ∀ j, Q j j = 1 - P j j := fun j => by rw [hQdef]; simp
   -- Step 3: `P_jj = ‖P e_j‖²` is nonnegative, and `∑ P_jj = rank P ≤ k`.
-  have hPnn : ∀ j, 0 ≤ P j j := fun j => by rw [← norm_sq_mulVec_single_eq hP j]; positivity
+  have hPnn : ∀ j, 0 ≤ P j j := fun j => by
+    rw [← hP.norm_toLp_mulVec_single_sq j]; positivity
   have ht : ∑ a : k, ‖WithLp.toLp 2 (P *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2 =
       ∑ a : k, P (Sum.inl a) (Sum.inl a) :=
-    Finset.sum_congr rfl fun a _ => norm_sq_mulVec_single_eq hP _
+    Finset.sum_congr rfl fun a _ => hP.norm_toLp_mulVec_single_sq _
   have htr : ∑ j, P j j ≤ Fintype.card k := by
     have h1 : ∑ j, P j j = P.trace := rfl
     have h2 : P.trace = (W.rank : ℝ) := trace_rangeProjector W
@@ -407,19 +398,6 @@ private lemma sum_eval_four_sq_le_of_natDegree_lt {b : Type*} [Fintype b] {f : b
   have := Finset.sum_le_sum fun c (_ : c ∈ Finset.univ) => hN1 c
   simpa only [← Finset.mul_sum, Finset.sum_add_distrib] using this
 
-/-- The Loewner lower bound $s^2\mathbf{I} \preceq \mathbf{M}^{\mathsf{H}}\mathbf{M}$ gives
-$s^2\|\mathbf{v}\|^2 \le \|\mathbf{M}\mathbf{v}\|^2$. -/
-private lemma sq_mul_sum_sq_le_sum_sq_mulVec {m' b : Type*} [Fintype m'] [Fintype b]
-    [DecidableEq b] (M : Matrix m' b ℝ) {s : ℝ} (hM : s ^ 2 • (1 : Matrix b b ℝ) ≤ Mᴴ * M)
-    (v : b → ℝ) : s ^ 2 * ∑ c, v c ^ 2 ≤ ∑ i, (M *ᵥ v) i ^ 2 := by
-  have h := (Matrix.le_iff.1 hM).dotProduct_mulVec_nonneg v
-  have e : star v ⬝ᵥ ((Mᴴ * M - s ^ 2 • (1 : Matrix b b ℝ)) *ᵥ v) =
-      ∑ i, (M *ᵥ v) i ^ 2 - s ^ 2 * ∑ c, v c ^ 2 := by
-    rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec,
-      dotProduct_sub, Matrix.dotProduct_mulVec, ← Matrix.star_mulVec, dotProduct_smul,
-      star_trivial, smul_eq_mul]
-    simp only [dotProduct, star_trivial, pow_two, Finset.mul_sum]
-  linarith
 
 /-- Interpolation bound for depth-3 Krylov vectors: let
 $\mathbf{G} \in \mathbb{R}^{n \times b}$ with tail blocks $\mathbf{G}_j$ (rows of level $j + 1$)
@@ -618,78 +596,6 @@ theorem measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianM
   · rw [← hexp]
     linarith [hA, hB]
 
-/-- Head mass of a projector: if every column $\mathbf{P}\mathbf{e}_a$ ($a$ in the head)
-has head mass at most $c$ times its norm, then
-$\sum_a \|\mathbf{P}\mathbf{e}_a\|^2 \le c\,\lvert\kappa\rvert$. -/
-private lemma sum_head_mass_sq_le {κ r : Type*} [Fintype κ] [Fintype r]
-    (P : Matrix (κ ⊕ r) (κ ⊕ r) ℝ) (hP : IsStarProjection P) {c : ℝ} (hc : 0 ≤ c)
-    (h : ∀ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 ≤ c * ∑ i, P i (Sum.inl a) ^ 2) :
-    ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 ≤ c * Fintype.card κ := by
-  have hsymm : ∀ i j, P j i = P i j := fun i j => by
-    have h := congrFun (congrFun hP.conjTranspose_eq j) i
-    have h' : P i j = P j i := by simpa [Matrix.conjTranspose_apply] using h
-    exact h'.symm
-  have hdiag : ∀ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = P (Sum.inl a) (Sum.inl a) := by
-    intro a
-    have key : ∀ i, P (Sum.inl a) i = P i (Sum.inl a) := fun i => (hsymm (Sum.inl a) i).symm
-    have h := congrFun (congrFun hP.mul_self (Sum.inl a)) (Sum.inl a)
-    rw [Matrix.mul_apply] at h
-    rw [← h]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [key i, sq]
-  have hT : ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = ∑ a : κ, P (Sum.inl a) (Sum.inl a) :=
-    Finset.sum_congr rfl fun a _ => hdiag a
-  have hS2 : ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2
-      ≤ c * ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 := by
-    rw [Finset.mul_sum]
-    exact Finset.sum_le_sum fun a _ => h a
-  have hsq : ∑ a : κ, P (Sum.inl a) (Sum.inl a) ^ 2
-      ≤ ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 :=
-    Finset.sum_le_sum fun a _ => Finset.single_le_sum (f := fun b : κ =>
-      P (Sum.inl b) (Sum.inl a) ^ 2) (fun b _ => sq_nonneg _) (Finset.mem_univ a)
-  have hCS : (∑ a : κ, P (Sum.inl a) (Sum.inl a)) ^ 2
-      ≤ Fintype.card κ * ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 := by
-    have := sq_sum_le_card_mul_sum_sq (s := Finset.univ)
-      (f := fun a : κ => P (Sum.inl a) (Sum.inl a))
-    simp only [Finset.card_univ] at this
-    exact this.trans (mul_le_mul_of_nonneg_left hsq (Nat.cast_nonneg _))
-  rw [← hT] at hCS
-  have hT0 : 0 ≤ ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 :=
-    Finset.sum_nonneg fun a _ => Finset.sum_nonneg fun i _ => sq_nonneg _
-  have hk : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
-  rcases hT0.eq_or_lt with h0 | h0
-  · rw [← h0]; exact mul_nonneg hc hk
-  · nlinarith [mul_le_mul_of_nonneg_left hS2 hk]
-
-/-- Measure of a set pulled back along the first factor of a product with a probability law:
-$\mu(S) \le (\mu\otimes\nu)(\mathrm{fst}^{-1}S)$. -/
-private lemma measureReal_le_prod_fst {Ω₂ : Type*} [MeasurableSpace Ω₂] (ν : Measure Ω₂)
-    [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (S : Set Ω) :
-    μ.real S ≤ (μ.prod ν).real (Prod.fst ⁻¹' S) := by
-  set H := toMeasurable (μ.prod ν) (Prod.fst ⁻¹' S) with hH
-  have hHm : MeasurableSet H := measurableSet_toMeasurable _ _
-  have hsub : Prod.fst ⁻¹' S ⊆ H := subset_toMeasurable _ _
-  have hfH : (μ.prod ν) H = (μ.prod ν) (Prod.fst ⁻¹' S) := measure_toMeasurable _
-  have hsec : ∀ x ∈ S, (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H) := by
-    intro x hx
-    have huniv : Prod.mk x ⁻¹' H = Set.univ := by
-      ext y
-      exact ⟨fun _ => trivial, fun _ => hsub (show (x, y) ∈ Prod.fst ⁻¹' S from hx)⟩
-    rw [huniv, measure_univ]
-  have hAm : MeasurableSet {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} :=
-    measurableSet_le measurable_const (measurable_measure_prodMk_left hHm)
-  have hmarkov := mul_meas_ge_le_lintegral₀
-    (μ := μ) (f := fun x => ν (Prod.mk x ⁻¹' H))
-    (measurable_measure_prodMk_left hHm).aemeasurable 1
-  have hle : μ S ≤ (μ.prod ν) (Prod.fst ⁻¹' S) := by
-    rw [← hfH, Measure.prod_apply hHm]
-    calc μ S ≤ μ {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} :=
-          measure_mono fun x hx => hsec x hx
-      _ = 1 * μ {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} := (one_mul _).symm
-      _ ≤ _ := hmarkov
-  rw [measureReal_def, measureReal_def]
-  exact ENNReal.toReal_mono (measure_ne_top _ _) hle
-
 /-- Deterministic error bound: for orthogonal $\mathbf{U}$, if the range of $\mathbf{U}^{\mathsf{H}}
 \mathbf{W}$ lies in $\mathcal{K}_3(\mathbf{D}, \mathbf{G})$ and no vector of that space has head
 mass above $19/36$ of its squared norm, then $\|\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}} -
@@ -729,7 +635,7 @@ private lemma le_frobNorm_of_orthonormal_range {b : Type*} [Fintype b]
       intro z
       rw [EuclideanSpace.norm_sq_eq]
       simp [Real.norm_eq_abs, sq_abs]
-    have hsum := sum_head_mass_sq_le P hP (c := 19 / 36) (by norm_num) (fun a => by
+    have hsum := hP.sum_head_mass_sq_le (c := 19 / 36) (by norm_num) (fun a => by
       have hz : P *ᵥ Pi.single (Sum.inl a) 1 ∈ LinearMap.range (Uᴴ * W).mulVecLin := by
         rw [← range_rangeProjector]
         exact ⟨_, rfl⟩
@@ -813,7 +719,7 @@ theorem QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of
       ae_iff.mp (hae.and hrange)
     rw [measureReal_def, h0]
     simp
-  refine (measureReal_le_prod_fst ν _).trans ?_
+  refine (MeasureTheory.measureReal_le_prod_fst ν _).trans ?_
   calc (μ.prod ν).real _ ≤ (μ.prod ν).real
         ({p | ∃ z ∈ blockKrylovSpace D (G p) 3,
           171 / (20 - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} ∪
