@@ -275,6 +275,13 @@ private theorem IsBestRankApprox.conjTranspose_mul_sub {C Y : Matrix m n 𝕜} {
   exact rangeProjector_mul_eq_zero_iff.mp
     (frobNorm_eq_zero_iff.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq))
 
+/-- A best rank-$k$ approximation $\mathbf{Y}$ of $\mathbf{C}$ is the projection of
+$\mathbf{C}$ onto its own column space: $\mathbf{P}_{\mathbf{Y}}\mathbf{C} = \mathbf{Y}$. -/
+theorem IsBestRankApprox.rangeProjector_self_mul {C Y : Matrix m n 𝕜} {k : ℕ}
+    (h : IsBestRankApprox C k Y) : rangeProjector Y * C = Y := by
+  have h0 := rangeProjector_mul_eq_zero_iff.mpr h.conjTranspose_mul_sub
+  rwa [Matrix.mul_sub, rangeProjector_mul_self, sub_eq_zero] at h0
+
 /-- Best approximations are preserved by the conjugate transpose. -/
 private theorem IsBestRankApprox.conjTranspose {C Y : Matrix m n 𝕜} {k : ℕ}
     (h : IsBestRankApprox C k Y) : IsBestRankApprox Cᴴ k Yᴴ := by
@@ -290,9 +297,7 @@ private theorem IsBestRankApprox.singularValues_eq_of_lt {C Y : Matrix m n 𝕜}
     singularValues Y i = singularValues C i := by
   classical
   have hYE := h.conjTranspose_mul_sub
-  have hPC : rangeProjector Y * C = Y := by
-    have h0 := rangeProjector_mul_eq_zero_iff.mpr hYE
-    rwa [Matrix.mul_sub, rangeProjector_mul_self, sub_eq_zero] at h0
+  have hPC : rangeProjector Y * C = Y := h.rangeProjector_self_mul
   have hle : ∀ j, singularValues Y j ≤ singularValues C j := fun j => by
     have h1 := singularValues_mul_le_specNorm_mul (rangeProjector Y) C j
     rw [hPC] at h1

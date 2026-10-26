@@ -47,3 +47,13 @@ reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact 
 name = "NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero"
 rule = "N9"
 reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
+
+[[allow]]
+name = "NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le"
+rule = "N2"
+reason = "TGN-Upper L34h (head weight), named by its two sides `c·‖W B_a‖² + c·θ²‖W P_a‖² ≤ …` as in the design note; the conclusion's leading `3/8 *` reads as `mul` (target name kept)"
+
+[[allow]]
+name = "NLAlib.mul_frobNorm_mul_one_sub_sq_add_le"
+rule = "N2"
+reason = "TGN-Upper L34t (tail weight), named like L34h; the conclusion's leading `3/8 * θ² *` reads as `mul` (target name kept)"

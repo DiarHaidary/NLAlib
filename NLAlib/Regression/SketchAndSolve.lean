@@ -59,6 +59,8 @@ throughout. Design: `docs/design/LowRank-S6.md` §3.2, §8.
 * the spectral norm of the excess,
   `integral_specNorm_obliqueProjector_mul_one_sub_rangeProjector_mul_sq_le_of_hasLaw_gaussianMatrix`
   and its numerical form for $4q \le p$ (the same name with `_le_div_card` in place of `_le`).
+* the first spectral moment of the excess through a left factor $\mathbf{F}$, in namespace `NLAlib`:
+`integral_specNorm_mul_obliqueProjector_mul_one_sub_rangeProjector_mul_le_of_hasLaw_gaussianMatrix`
 * `NLAlib.haarProjectionFactor_le_gaussianProjectionFactor`.
 * Haar sketches: the completion identity
   `NLAlib.integral_frobNorm_one_sub_obliqueProjector_mul_sq_of_hasLaw_haarFrame`, the exact mean
@@ -78,8 +80,9 @@ open scoped Matrix
 
 namespace NLAlib
 
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n p r s : Type*} [Fintype m]
-  [Fintype n] [Fintype p] [Fintype r] [Fintype s] [DecidableEq m] {S : Ω → Matrix p m ℝ}
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n p r s a : Type*} [Fintype m]
+  [Fintype n] [Fintype p] [Fintype r] [Fintype s] [Fintype a] [DecidableEq m]
+  {S : Ω → Matrix p m ℝ}
 
 /-! ### The basis step -/
 
@@ -338,6 +341,69 @@ theorem
     have e3 : 3 * β ^ 2 * b ^ 2 ≤ 25 / (Fintype.card p : ℝ) * b ^ 2 :=
       mul_le_mul_of_nonneg_right hβ (sq_nonneg _)
     linarith
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- The Gaussian sketch-and-solve excess through a left factor: for a standard Gaussian
+sketch $\mathbf{S} \in \mathbb{R}^{p \times m}$, $\mathbf{X} \in \mathbb{R}^{m \times s}$ with
+$\operatorname{rank}\mathbf{X} + 2 \le p$, any $\mathbf{B} \in \mathbb{R}^{m \times r}$ and
+$\mathbf{F} \in \mathbb{R}^{a \times m}$, with $\mathbf{E} = (\mathbf{I} -
+\mathbf{P}_{\mathbf{X}})\mathbf{B}$, $q = \operatorname{rank}\mathbf{X}$ and the constant
+`gaussianPinvSpecNormBound` written out, <!-- value gaussianPinvSpecNormBound q p -->
+$$\mathbb{E}\|\mathbf{F}\mathbf{\Pi}_{\mathbf{X},\mathbf{S}}\mathbf{E}\|_2 \le
+\frac{e}{p - q}\sqrt{(p + q - 1)/2}\,\bigl(\|\mathbf{E}\|_2\|\mathbf{F}\|_{\mathsf{F}} +
+\|\mathbf{E}\|_{\mathsf{F}}\|\mathbf{F}\|_2\bigr)\,.$$
+No printed source. -/
+theorem
+    integral_specNorm_mul_obliqueProjector_mul_one_sub_rangeProjector_mul_le_of_hasLaw_gaussianMatrix
+    (hS : HasLaw S (gaussianMatrix p m) μ) (X : Matrix m s ℝ)
+    (hX : X.rank + 2 ≤ Fintype.card p) (B : Matrix m r ℝ) (F : Matrix a m ℝ) :
+    ∫ ω, specNorm (F * (obliqueProjector X (S ω) * ((1 - rangeProjector X) * B))) ∂μ ≤
+      gaussianPinvSpecNormBound X.rank (Fintype.card p) *
+        (specNorm ((1 - rangeProjector X) * B) * frobNorm F +
+          frobNorm ((1 - rangeProjector X) * B) * specNorm F) := by
+  have := hS.isProbabilityMeasure
+  have hG := hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS
+  obtain ⟨Q₁, Q₂, hQ₁, hQ₂, h₁₂, hR₁, hE⟩ := exists_hasOrthonormalCols_frames_range_compl X B
+  have hrk : Fintype.card (Fin X.rank) + 2 ≤ Fintype.card p := by rwa [Fintype.card_fin]
+  have hint := integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
+    (((1 - rangeProjector X) * B)ᴴ * Q₂) (Q₁ᴴ * Fᴴ)
+  simp only [Fintype.card_fin] at hint
+  have hpt : ∀ᵐ ω ∂μ, specNorm (F * (obliqueProjector X (S ω) * ((1 - rangeProjector X) * B))) =
+      specNorm (((1 - rangeProjector X) * B)ᴴ * Q₂ * (Q₂ᴴ * (S ω)ᴴ) *
+        pinv (Q₁ᴴ * (S ω)ᴴ) * (Q₁ᴴ * Fᴴ)) := by
+    have hrank : ∀ᵐ ω ∂μ, (S ω * X).rank = X.rank := by
+      filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix X
+        (hasLaw_conjTranspose_of_hasLaw_gaussianMatrix hS) (by omega)] with ω hω
+      rwa [Matrix.conjTranspose_conjTranspose] at hω
+    filter_upwards [hrank] with ω hω
+    rw [obliqueProjector_mul_one_sub_rangeProjector_mul_eq hR₁ hE hω, ← specNorm_conjTranspose]
+    congr 1
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      ← pinv_conjTranspose, Matrix.mul_assoc]
+  have hC : (Q₂ᴴ * ((1 - rangeProjector X) * B))ᴴ = ((1 - rangeProjector X) * B)ᴴ * Q₂ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+  have hS1 : specNorm (((1 - rangeProjector X) * B)ᴴ * Q₂) =
+      specNorm ((1 - rangeProjector X) * B) := by
+    rw [← hC, specNorm_conjTranspose, ← hQ₂.specNorm_mul_left, hE]
+  have hS2 : frobNorm (((1 - rangeProjector X) * B)ᴴ * Q₂) =
+      frobNorm ((1 - rangeProjector X) * B) := by
+    rw [← hC, frobNorm_conjTranspose, ← hQ₂.frobNorm_mul_left, hE]
+  have hT1 : specNorm (Q₁ᴴ * Fᴴ) ≤ specNorm F := by
+    refine (specNorm_mul_le _ _).trans ?_
+    rw [specNorm_conjTranspose, specNorm_conjTranspose]
+    exact mul_le_of_le_one_left (specNorm_nonneg _) hQ₁.specNorm_le_one
+  have hT2 : frobNorm (Q₁ᴴ * Fᴴ) ≤ frobNorm F := by
+    refine (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans ?_
+    rw [specNorm_conjTranspose, frobNorm_conjTranspose]
+    exact mul_le_of_le_one_left (frobNorm_nonneg _) hQ₁.specNorm_le_one
+  rw [integral_congr_ae hpt]
+  refine hint.trans ?_
+  rw [hS1, hS2]
+  exact mul_le_mul_of_nonneg_left
+    (add_le_add (mul_le_mul_of_nonneg_left hT2 (specNorm_nonneg _))
+      (mul_le_mul_of_nonneg_left hT1 (frobNorm_nonneg _)))
+    (gaussianPinvSpecNormBound_nonneg (by omega))
 
 /-! ### Unbiasedness -/
 

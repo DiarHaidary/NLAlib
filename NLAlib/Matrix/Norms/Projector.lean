@@ -122,6 +122,18 @@ theorem _root_.IsStarProjection.frobNorm_sq_eq_add [DecidableEq m] {P : Matrix m
   have h := frobNorm_add_sq_of_frobInner_eq_zero (hP.frobInner_mul_one_sub_mul A A)
   rwa [← Matrix.add_mul, add_sub_cancel, Matrix.one_mul] at h
 
+/-- Pythagoras on the right for an orthogonal projector $\mathbf{P}$:
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \|\mathbf{A}\mathbf{P}\|_{\mathsf{F}}^2 +
+\|\mathbf{A}(\mathbf{I} - \mathbf{P})\|_{\mathsf{F}}^2$, the conjugate transpose of
+`IsStarProjection.frobNorm_sq_eq_add`. -/
+theorem _root_.IsStarProjection.frobNorm_sq_eq_add_mul_right [DecidableEq n] {P : Matrix n n 𝕜}
+    (hP : IsStarProjection P) (A : Matrix m n 𝕜) :
+    frobNorm A ^ 2 = frobNorm (A * P) ^ 2 + frobNorm (A * (1 - P)) ^ 2 := by
+  have h := hP.frobNorm_sq_eq_add Aᴴ
+  rwa [frobNorm_conjTranspose, ← hP.conjTranspose_eq, ← Matrix.conjTranspose_mul,
+    frobNorm_conjTranspose, hP.conjTranspose_eq, ← hP.one_sub.conjTranspose_eq,
+    ← Matrix.conjTranspose_mul, frobNorm_conjTranspose] at h
+
 /-- The residual of an orthogonal projector is orthogonal to its range part:
 $$\langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} - \mathbf{P}\mathbf{X} \rangle_{\mathsf{F}}
 = \langle \mathbf{B} - \mathbf{P}\mathbf{B}, \mathbf{X} \rangle_{\mathsf{F}}\,,$$

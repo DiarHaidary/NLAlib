@@ -1,6 +1,6 @@
 # Research design note: truncated generalized Nyström with $O(k/\varepsilon)$ sketches
 
-**Status: RESEARCH, not for `main`.** Branch `research/tgn-upper` (from `origin/main` `79f8cc2`).
+**Status: RESEARCH; proved and moved into `NLAlib` (§7).** Branch `research/tgn-upper` (from `origin/main` `79f8cc2`).
 Formalization plan for the maintainer's derivation (2026-10-26) that late-truncated generalized
 Nyström reaches $(1+\varepsilon)$ with $\ell, p = O(k/\varepsilon)$, as verified and repaired in
 `~/nlalib-harness/reports/OP6-TruncatedGN-Upper.md` (OP6, the authoritative proof; its lemma
@@ -150,3 +150,29 @@ $\mathbf{G}_1$).
 3. File placement if promoted: `Matrix/Perturbation/BestRankApprox.lean` is a new topic file;
    G1/G2/R51 join existing files; the private-lemma copies (L33, R51) should then become the
    library lemmas made public instead.
+
+## 7. Placement after the proofs (D8, 2026-10-26)
+
+All 22 targets are proved and moved into `NLAlib` with their `Proof:` lines removed; the scaffold
+files are deleted. Statements unchanged.
+
+| ids | home | reason |
+|---|---|---|
+| S1, W1, L31b, L34h, L34t, L34a, L34b, L35 | `Matrix/Perturbation/TruncationWindow.lean` (new) | the window of singular values and the subspace-error weights; deterministic, layer 0 |
+| L31a, L32, L33, P36 | `Matrix/Perturbation/BestRankApprox.lean` (new) | perturbed best rank-$k$ approximation |
+| T1, T2, T3 | `LowRank/Structural/Truncation.lean` | late truncation of generalized Nyström |
+| G1 | `RandomMatrix/Gaussian/BlockMoments.lean` | Gaussian block moments |
+| G2 | `Regression/SketchAndSolve.lean` | the sketch-and-solve excess |
+| R51 | `LowRank/Gaussian/RangeFinder.lean` | the range-finder moments |
+| G43, C45, M1, M2 | `LowRank/Gaussian/TruncatedGeneralizedNystromUpper.lean` (new) | the existing `TruncatedGeneralizedNystrom.lean` would exceed F10 |
+
+Duplicates removed (§5, open question 3): the private next-$k$ perturbed truncation of
+`LowRank/Structural/Truncation.lean` and its two private steps are public in
+`Matrix/Perturbation/BestRankApprox.lean` (`IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm`,
+`IsBestRankApprox.frobNorm_sub_sq_sub_le_two_mul_frobInner`), and L33 uses them; R51 is the
+former private spectral residual of `LowRank/Gaussian/TruncatedGeneralizedNystrom.lean`, moved
+with its three private helpers. Also public now: `IsBestRankApprox.rangeProjector_self_mul`
+(`Matrix/Spectral/BestRankApprox.lean`; five copies existed) and
+`IsStarProjection.frobNorm_sq_eq_add_mul_right` (`Matrix/Norms/Projector.lean`; three copies).
+Open questions 1 (`RCLike`) and 2 (explicit constants) remain open.
+

@@ -411,15 +411,6 @@ theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n �
     exact h3.trans (mul_le_mul_of_nonneg_left
       ((isStarProjection_one_sub_rangeProjector Aᴴ).specNorm_mul_right_le (B - A)) hab)
 
-/-- Pythagoras for multiplication by an orthogonal projector on the right. -/
-private theorem frobNorm_sq_eq_add_mul_right [DecidableEq n] {P : Matrix n n 𝕜}
-    (hP : IsStarProjection P) (X : Matrix m n 𝕜) :
-    frobNorm X ^ 2 = frobNorm (X * P) ^ 2 + frobNorm (X * (1 - P)) ^ 2 := by
-  have h := hP.frobNorm_sq_eq_add Xᴴ
-  rwa [frobNorm_conjTranspose, ← hP.conjTranspose_eq, ← Matrix.conjTranspose_mul,
-    frobNorm_conjTranspose, hP.conjTranspose_eq, ← hP.one_sub.conjTranspose_eq,
-    ← Matrix.conjTranspose_mul, frobNorm_conjTranspose] at h
-
 /-- The three compressions of a matrix by two orthogonal projectors that appear in the blocks of
 $\mathbf{B}^{+} - \mathbf{A}^{+}$ have squared Frobenius norms summing to at most twice that of the
 matrix. -/
@@ -465,8 +456,8 @@ theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜
       frobNorm (pinv B * (1 - rangeProjector A)) ^ 2 +
         frobNorm ((1 - rangeProjector Bᴴ) * pinv A) ^ 2 := by
     rw [hQ.frobNorm_sq_eq_add (pinv B - pinv A),
-      frobNorm_sq_eq_add_mul_right hP (rangeProjector Bᴴ * (pinv B - pinv A)),
-      frobNorm_sq_eq_add_mul_right hP ((1 - rangeProjector Bᴴ) * (pinv B - pinv A)),
+      hP.frobNorm_sq_eq_add_mul_right (rangeProjector Bᴴ * (pinv B - pinv A)),
+      hP.frobNorm_sq_eq_add_mul_right ((1 - rangeProjector Bᴴ) * (pinv B - pinv A)),
       rangeProjector_mul_pinv_sub_pinv_mul_rangeProjector,
       rangeProjector_mul_pinv_sub_pinv_mul_one_sub, one_sub_mul_pinv_sub_pinv_mul_rangeProjector,
       one_sub_mul_pinv_sub_pinv_mul_one_sub, frobNorm_neg, frobNorm_neg, frobNorm_zero]

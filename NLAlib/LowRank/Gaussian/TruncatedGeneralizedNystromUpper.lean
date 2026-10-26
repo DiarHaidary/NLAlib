@@ -6,12 +6,9 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
-public import NLAlibScaffold.LowRank.Gaussian.RangeFinder
-public import NLAlibScaffold.LowRank.Structural.Truncation
-public import NLAlibScaffold.Regression.SketchAndSolve
 
 /-!
-# Truncated generalized Nyström with $O(k/\varepsilon)$ sketches (research)
+# Truncated generalized Nyström with $O(k/\varepsilon)$ sketches
 
 For independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
 $\mathbf{\Psi}$ ($m \times p$) with $4k \le \ell$ and $4\ell \le p$, the late truncation of
@@ -29,9 +26,9 @@ noise (the library's sketch-and-solve bound) and its compression to the window o
 of $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ within a factor $2$ of the truncation level,
 whose mean is $O(\sqrt{w/p})$ for a window of dimension $w$; then the range-finder moments.
 
-Research statements for `docs/design/research/TruncatedGN-Upper.md` (G43, C45, M1, M2), after the
-maintainer's derivation and its verification (research note OP6 of the NLAlib workflow,
-`reports/OP6-TruncatedGN-Upper.md`, Theorem (1)). Not for `main`. Real. Proofs deferred.
+Real throughout; the constants are existential. Design:
+`docs/design/research/TruncatedGN-Upper.md` (research note OP6 of the NLAlib workflow,
+Theorem (1)).
 
 ## Main results
 
@@ -57,7 +54,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Ty
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The compressed core noise of generalized Nyström**: for $\mathbf{A} \in
+/-- The compressed core noise of generalized Nyström: for $\mathbf{A} \in
 \mathbb{R}^{m \times n}$, a fixed $\mathbf{x} \in \mathbb{R}^{n \times \ell}$, a standard
 Gaussian $\mathbf{\Psi} \in \mathbb{R}^{m \times p}$ with $4\ell \le p$, $\mathbf{R} =
 \mathsf{rsvd}(\mathbf{A}, \mathbf{x})$, $\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{x},
@@ -68,17 +65,7 @@ $$\mathbb{E}\|\mathbf{F}\mathbf{N}\mathbf{T}\|_2 \le \frac{4}{\sqrt p}\bigl(
 \|(\mathbf{A} - \mathbf{R})\mathbf{T}\|_{\mathsf{F}}\|\mathbf{F}\|_2\bigr)\,.$$
 With $\mathbf{F}$, $\mathbf{T}$ projectors of rank $w$ the right side is at most
 $8\sqrt{w/p}\,\|\mathbf{A} - \mathbf{R}\|_2$ (research note OP6, §4.3).
-No printed source.
-Proof: S, about 35 lines. If $\ell = 0$ then $\mathbf{A}\mathbf{x} = \mathbf{0}$ and the
-integrand vanishes (`obliqueProjector`, `Matrix.mul_zero`-type simp). Otherwise $p \ge 4$.
-$\mathbf{N}\mathbf{T} = \mathbf{\Pi}((\mathbf{I} - \mathbf{P}_{\mathbf{A}\mathbf{x}})
-(\mathbf{A}\mathbf{T}))$ (`sub_rsvd`, `Matrix.mul_assoc`), and
-`NLAlib.integral_specNorm_mul_obliqueProjector_mul_one_sub_rangeProjector_mul_le_of_hasLaw_gaussianMatrix`
-with the sketch $\mathbf{\Psi}^{\mathsf{T}}$ (`hasLaw_conjTranspose_of_hasLaw_gaussianMatrix`),
-$\mathbf{X} = \mathbf{A}\mathbf{x}$ (rank $q \le \ell$, `Matrix.rank_le_card_width`, so
-$q + 2 \le p$) and $\mathbf{B} = \mathbf{A}\mathbf{T}$. The constant:
-`gaussianPinvSpecNormBound_le` gives $\beta \le e\sqrt p/(p - q) \le \tfrac{4e}{3}/\sqrt p \le
-4/\sqrt p$ ($4q \le p$, `Real.exp_one_lt_d9`). -/
+No printed source. -/
 theorem integral_specNorm_mul_obliqueProjector_mul_sub_rsvd_mul_le_of_hasLaw_gaussianMatrix
     {a b : Type*} [Fintype a] [Fintype b] (A : Matrix m n ℝ) (x : Matrix n l ℝ)
     (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hlp : 4 * Fintype.card l ≤ Fintype.card p)
@@ -191,7 +178,7 @@ private theorem integral_specNorm_mul_obliqueProjector_mul_sub_rsvd_mul_le_div {
       mul_le_mul_of_nonneg_right h2 (specNorm_nonneg F)]
 
 /-- The arithmetic of the spectral term: from
-$I \le \frac{25}{P}F + \frac{4L}{P}S^2$, $500kI \le 12500k\frac{F + LS^2}{P}$. -/
+$I \le (25/P)F + (4L/P)S^2$, $500kI \le 12500k(F + LS^2)/P$. -/
 private theorem mul_le_mul_div_add_of_le {k F L P S I : ℝ} (hk : 0 ≤ k) (hF : 0 ≤ F)
     (hL : 0 ≤ L) (hP : 0 ≤ P) (hI : I ≤ 25 / P * F + 4 * L / P * S ^ 2) :
     500 * k * I ≤ 12500 * k * ((F + L * S ^ 2) / P) := by
@@ -245,7 +232,7 @@ private theorem mul_le_mul_div_sqrt_of_le {θ m I e s k γ P : ℝ} (hθ : 0 ≤
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The expected error of truncated generalized Nyström at a fixed range test matrix**: there is
+/-- The expected error of truncated generalized Nyström at a fixed range test matrix: there is
 an absolute constant $C > 0$ such that for $\mathbf{A} \in \mathbb{R}^{m \times n}$, every fixed
 $\mathbf{x} \in \mathbb{R}^{n \times \ell}$, a standard Gaussian $\mathbf{\Psi} \in
 \mathbb{R}^{m \times p}$ with $4\ell \le p$, any $k$, $\mathbf{R} = \mathsf{rsvd}(\mathbf{A},
@@ -257,31 +244,7 @@ $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \ma
 \frac{\|\mathbf{E}\|_2\,\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}}{\sqrt p}
 \Bigr)\,.$$
 $O(1)$ suffices for $C$: the proof gives $C = 12500$. For the choice `truncatedSVD` makes.
-No printed source. New (maintainer's derivation (2); research note OP6, Corollary 4.5).
-Proof: L, about 100 lines. Take $C = 12500$; $k = 0$ is trivial (`truncatedSVD_zero`); for
-$\ell = 0$ both sides are $\|\mathbf{A}\|_{\mathsf{F}}^2$-type and the noise vanishes. Fix the
-window $a \le k \le b$ of $\mathbf{R}$ (`NLAlib.exists_singularValues_window`; it depends on
-$\mathbf{x}$ only). Almost surely $\operatorname{rank}(\mathbf{\Psi}^{\mathsf{T}}\mathbf{A}
-\mathbf{x}) = \operatorname{rank}(\mathbf{A}\mathbf{x})$
-(`ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix` with `HasLaw.id`), and there
-`NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window` bounds the integrand by
-$\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|^2 + 500k\eta^2 + 40\theta\min(k, b - k)\mu$.
-Integrate (`integral_mono_ae`; integrability of the left side:
-`integrable_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_of_hasLaw_gaussianMatrix` with the
-constant range test matrix, `aemeasurable_const`, `indepFun_const_left`; of $\eta^2$:
-`integrable_specNorm_obliqueProjector_mul_one_sub_rangeProjector_mul_sq_of_hasLaw_gaussianMatrix`;
-$\mu \le \eta \le 1 + \eta^2$ dominates $\mu$, measurable by
-`measurable_obliqueProjector_mul_sub_rsvd`). Then
-$\mathbb{E}\eta^2 \le \frac{25}{p}\|\mathbf{E}\|_{\mathsf{F}}^2 + \frac{4\ell}{p}\|\mathbf{E}\|_2^2$
-(`integral_specNorm_obliqueProjector_mul_one_sub_rangeProjector_mul_sq_le_div_card_of_hasLaw_gaussianMatrix`,
-`sub_rsvd`, `Matrix.rank_le_card_width`), and
-`NLAlib.integral_specNorm_mul_obliqueProjector_mul_sub_rsvd_mul_le_of_hasLaw_gaussianMatrix` with
-$\mathbf{F} = \mathbf{P}_b - \mathbf{P}_a$, $\mathbf{T} = \mathbf{P}'_b - \mathbf{P}'_a$
-(orthogonal projectors of rank $w \le b - a$, `IsStarProjection.frobNorm_sq_eq_rank`,
-`IsStarProjection.specNorm_le_one`) gives $\mathbb{E}\mu \le 8\sqrt{w/p}\,\|\mathbf{E}\|_2$.
-Finally $\theta\min(k, b - k)\sqrt{w} \le \theta\min(k, q)\sqrt{k + q} \le \sqrt2\,k\,\theta\sqrt q
-\le 2\sqrt2\,k\,\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}$ with $q = b - k$
-(window lemma; research note OP6, §4.4); collect constants. -/
+No printed source; research note OP6, Corollary 4.5. -/
 theorem
     exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix :
     ∃ C : ℝ, 0 < C ∧ ∀ {m n l p : Type} [Fintype m] [Fintype n] [Fintype l] [Fintype p]
@@ -366,6 +329,8 @@ theorem
     (Nat.cast_nonneg (α := ℝ) k) (frobNorm_nonneg _) hEμ hwin
   linarith
 
+/-- The linear majorant of the conditional bound: with $\gamma^2 \le a$, AM–GM on the product
+term $e\gamma/\sqrt P$ gives a bound linear in $a$, $b$ and $e^2$. -/
 private theorem add_mul_div_sqrt_le {C a b e γ L P : ℝ} (hC : 0 ≤ C) (hL : 0 < L) (hP : 0 < P)
     (hγa : γ ^ 2 ≤ a) :
     a + C * ((b + L * e ^ 2) / P + e * γ / √P) ≤
@@ -386,6 +351,8 @@ private theorem add_mul_div_sqrt_le {C a b e γ L P : ℝ} (hC : 0 ≤ C) (hL : 
   rw [hH]
   nlinarith
 
+/-- The arithmetic of the moments: with the three expectations at most $gT$, $gT$ and $121T/L$
+and $g \le 3/2$, the linear majorant is at most $(g + 140C_1(K/P + K/\sqrt{LP}))T$. -/
 private theorem moments_le_add_mul {C₁ K L P T g u v w : ℝ} (hC₁ : 0 ≤ C₁) (hK : 0 ≤ K)
     (hL : 0 < L) (hP : 0 < P) (hT : 0 ≤ T) (hg : g ≤ 3 / 2) (hu : u ≤ g * T) (hv : v ≤ g * T)
     (hw : w ≤ 121 / L * T) :
@@ -419,37 +386,18 @@ private theorem moments_le_add_mul {C₁ K L P T g u v w : ℝ} (hC₁ : 0 ≤ C
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **The expected error of truncated generalized Nyström, sketch sizes $O(k/\varepsilon)$**: there
-is an absolute constant $C > 0$ such that for independent standard Gaussian test matrices
-$\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$) with $4k \le \ell$ and
-$4\ell \le p$,
+is an absolute constant $C > 0$ such that for every $\mathbf{A} \in \mathbb{R}^{m \times n}$ and
+independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
+$\mathbf{\Psi}$ ($m \times p$) with $4k \le \ell$ and $4\ell \le p$,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +
 C\Bigl(\frac{k}{p} + \frac{k}{\sqrt{\ell p}}\Bigr)\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 $O(1)$ suffices for $C$. For the choice `truncatedSVD` makes. Every rank of $\mathbf{A}$.
-No printed source. New (maintainer's derivation (1); research note OP6, Theorem (1), there with
-$\ell \ge 6k$, $p \ge 2\ell + 2$ and explicit constants).
-Proof: M, about 80 lines. $k = 0$: `truncatedSVD_zero`, `one_le_gaussianProjectionFactor`-type
-bound ($\ge 1$). Otherwise take $C_1$ from
-`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix`
-and integrate it over $\mathbf{\Omega}$ with `IndepFun.integral_comp_le_of_integral_le` (the
-pattern of the library's
-`integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`;
-measurability from `measurable_truncatedSVD`, `measurable_generalizedNystrom`, `measurable_rsvd`,
-`continuous_frobNorm`, `continuous_specNorm`; the per-$\mathbf{x}$ integrability from
-`integrable_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_of_hasLaw_gaussianMatrix`). Moments:
-`integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix` (the joint baseline
-$\mathbb{E}\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|^2 \le gT$),
-`integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix` ($\le gT$),
-`NLAlib.integral_specNorm_sub_rsvd_sq_le_div_of_hasLaw_gaussianMatrix` ($\le 121T/\ell$), and for
-the product Cauchy–Schwarz (`integral_mul_le_Lp_mul_Lq_of_nonneg` at $p = q = 2$, or AM–GM
-pointwise $xy \le (\lambda x^2 + y^2/\lambda)/2$ with $\lambda = \sqrt{\ell/(121g)}$-type
-choice) with $\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|^2 \le
-\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|^2$ (`frobNorm_sub_truncatedSVD_rsvd_sq`);
-integrability of the conditional bound: `integrable_frobNorm_sub_rsvd_sq`,
-`integrable_specNorm_sub_rsvd_sq`, `integrable_frobNorm_sub_truncatedSVD_rsvd_sq`, and the product
-dominated by the sum of squares. With $g = $ `gaussianProjectionFactor` $\le 3/2$ for $4k \le
-\ell$ the result holds with $C = 140\,C_1$. -/
+The leading factor $1 + k/(\ell - k - 1)$ is that of the truncated randomized SVD.
+No printed source; research note OP6, Theorem (1), with $\ell \ge 6k$,
+$p \ge 2\ell + 2$ and explicit constants.
+Result: tgn-expected-error -/
 theorem
     exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix :
     ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
@@ -524,22 +472,17 @@ theorem
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **Truncated generalized Nyström reaches relative error $1 + \varepsilon$ with
-$O(k/\varepsilon)$ samples**: there is an absolute constant $C > 0$ such that for independent
-standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$
-($m \times p$), $0 < \varepsilon \le 1$, $\ell \ge Ck/\varepsilon$ and $p \ge 4\ell$,
+$O(k/\varepsilon)$ samples**: there is an absolute constant $C > 0$ such that for every
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, every $k$, independent standard Gaussian test matrices
+$\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$), $0 < \varepsilon \le 1$,
+$\ell \ge Ck/\varepsilon$ and $p \ge 4\ell$,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \rrbracket_k\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 $O(k/\varepsilon)$ suffices for both sketch sizes, against $p = O(k/\varepsilon^2)$ in
 `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
-For the choice `truncatedSVD` makes. No printed source. New (research note OP6, §6).
-Proof: S, about 40 lines. Take $C_1$ from
-`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`
-and $C = 4 + 2C_1$. $k = 0$ is trivial. Otherwise $4k \le \ell$ ($C \ge 4$, $\varepsilon \le 1$),
-$k/(\ell - k - 1) \le 2k/\ell \le 2\varepsilon/C$ (`gaussianProjectionFactor_def`, $\ell \ge 4$),
-$k/p \le k/(4\ell)$, $k/\sqrt{\ell p} \le k/(2\ell)$ (`Real.sqrt_le_sqrt`, `Real.sqrt_mul_self`),
-so the factor is at most $1 + \varepsilon(2 + \tfrac34 C_1)/C \le 1 + \varepsilon$;
-`mul_le_mul_of_nonneg_right`. -/
+For the choice `truncatedSVD` makes. No printed source; research note OP6, §6.
+Result: tgn-expected-error -/
 theorem
     exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix :
     ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
