@@ -77,7 +77,7 @@ Proof: unfold `QueryAlgorithm.run`, `QueryAlgorithm.transcript`; rewrite with
 `QueryAlgorithm.history_mapOutput`. S, 2 lines. -/
 theorem run_mapOutput (g : β → β') (alg : QueryAlgorithm Q R q β) (O : Q → R) :
     (alg.mapOutput g).run O = g (alg.run O) := by
-  sorry
+  simp only [QueryAlgorithm.run, QueryAlgorithm.transcript, history_mapOutput]; rfl
 
 section Measurable
 
