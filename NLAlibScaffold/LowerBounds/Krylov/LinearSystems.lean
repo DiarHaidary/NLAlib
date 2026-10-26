@@ -727,7 +727,31 @@ theorem mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le {κ ε : ℝ} {q 
         2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - A *ᵥ (alg s).run A.mulVec)‖ ≤
           ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / (4 * ε)) ≤ 2 * (q + 1) := by
-  sorry
+  have hκ1 : (1 : ℝ) < κ := by linarith
+  have hn' : 4 * ((q + 1 + 2) * (13 * (q + 3) + 1)) ≤ 3 * Fintype.card n := by
+    nlinarith
+  obtain ⟨d, hd⟩ :=
+    exists_isChebyshevTwoIntervalSpectrum hκ1 (s := q + 1) (M := 13 * (q + 3)) hn'
+  have hrun : ∀ (U : Matrix n n ℝ) (s : S),
+      ((alg s).comapResponse Prod.fst).run (hiddenRotationOracle U (Matrix.diagonal d)) =
+        (alg s).run (U * Matrix.diagonal d * Uᴴ).mulVec := fun U s => by
+    rw [QueryAlgorithm.run_comapResponse]; rfl
+  refine IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal hd hκ hε
+    (QueryAlgorithm.IsMeasurableFamily.comapResponse halg measurable_fst) ρ ?_
+  intro U hU b
+  have hU' : Uᴴ * U = 1 := hU
+  have hUU : U * Uᴴ = 1 := HasOrthonormalCols.mul_conjTranspose_self_of_card_eq hU rfl
+  have hA : (U * Matrix.diagonal d * Uᴴ).IsHermitian :=
+    Matrix.isHermitian_mul_mul_conjTranspose U (Matrix.isHermitian_diagonal d)
+  have hsp : spectrum ℝ (U * Matrix.diagonal d * Uᴴ) ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ := by
+    let u : (Matrix n n ℝ)ˣ := ⟨U, Uᴴ, hUU, hU'⟩
+    have hconj : spectrum ℝ (U * Matrix.diagonal d * Uᴴ) = spectrum ℝ (Matrix.diagonal d) :=
+      spectrum.units_conjugate (a := Matrix.diagonal d) (u := u)
+    rw [hconj, spectrum_diagonal]
+    rintro _ ⟨i, rfl⟩
+    exact hd.mem_Icc_union_Icc hκ1 i
+  have h := hsucc _ hA hsp b
+  simpa only [hrun] using h
 
 /-- **The matrix–vector complexity of linear systems, Shamir's form**: for $\kappa \ge 2$,
 $0 < \varepsilon \le e^{-4}$ and $\lvert n \rvert \ge 20(q + 3)^2$, a randomized algorithm making
