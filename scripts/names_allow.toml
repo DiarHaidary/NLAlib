@@ -49,6 +49,11 @@ rule = "N9"
 reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
 
 [[allow]]
+name = "NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le"
+rule = "N9"
+reason = "LB-C SH1 (design note §3.5); with `_of_hasLaw_gaussianMatrix` the declaration line is 105 characters, past the line limit (as NAME-R4B)"
+
+[[allow]]
 name = "NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le"
 rule = "N2"
 reason = "TGN-Upper L34h (head weight): the conclusion is `3 / 8 * ‖W B_a‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`"

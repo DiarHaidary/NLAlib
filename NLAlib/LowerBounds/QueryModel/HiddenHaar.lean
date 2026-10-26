@@ -19,6 +19,13 @@ responses. The joint law of transcript and matrix does not change (design note
 `docs/design/Probability-MatvecQueryModel.md` §3.4). The proof randomizes with the polar factor of a
 Gaussian matrix compressed to the complement of the revealed vectors and inducts over the rounds.
 
+## Main definitions
+
+* `NLAlib.stabRand`: the stabilizer randomizer, a Haar element of the orthogonal matrices fixing a
+  given range, built from a Gaussian matrix (with `NLAlib.map_mul_left_stabRand`,
+  `NLAlib.map_mul_right_stabRand`); the Krylov coupling of
+  `docs/design/LowerBounds-HiddenRotationLowerBounds.md` uses it.
+
 ## Main results
 
 * `NLAlib.QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant`: the
@@ -37,21 +44,28 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
 
 variable {m n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The raw stabilizer randomizer of `V`: `P + polar(E G E)` with `P` the projector onto the range
-of `V` and `E = 1 - P`. -/
-private noncomputable def stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ)
+/-- The raw stabilizer randomizer of $\mathbf{V}$:
+$\mathbf{P} + \operatorname{polar}(\mathbf{E}\mathbf{G}\mathbf{E})$ with $\mathbf{P}$ the
+projector onto the range of $\mathbf{V}$ and $\mathbf{E} = \mathbf{I} - \mathbf{P}$. For a
+Gaussian $\mathbf{G}$ it is almost surely orthogonal (`NLAlib.ae_hasOrthonormalCols_stabRaw`). -/
+noncomputable def stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     (G : Matrix n n ℝ) : Matrix n n ℝ :=
   rangeProjector V + polarFactor ((1 - rangeProjector V) * G * (1 - rangeProjector V))
 
 open scoped Classical in
-/-- The stabilizer randomizer of `V`: `stabRaw V G`, replaced by `1` when it is not
-orthogonal. -/
-private noncomputable def stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
+/-- The **stabilizer randomizer** of $\mathbf{V}$: `stabRaw V G`, replaced by $\mathbf{I}$ when
+it is not orthogonal. It is always orthogonal and fixes $\mathbf{V}$ (`NLAlib.stabRand_spec`), and
+for a standard Gaussian $\mathbf{G}$ its law is invariant under left and right multiplication by
+every orthogonal matrix fixing $\mathbf{V}$ (`NLAlib.map_mul_left_stabRand`,
+`NLAlib.map_mul_right_stabRand`): it is a Haar element of the stabilizer of the range of
+$\mathbf{V}$, the randomizer of the stabilizer form of deferred decision. -/
+noncomputable def stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     (G : Matrix n n ℝ) : Matrix n n ℝ :=
   if HasOrthonormalCols (stabRaw V G) then stabRaw V G else 1
 
-/-- The stabilizer randomizer is jointly measurable in `V` and `G`. -/
-private theorem Measurable.stabRand_comp {α : Type*} [MeasurableSpace α] {c : Type*} [Fintype c]
+/-- The stabilizer randomizer is jointly measurable in $\mathbf{V}$ and $\mathbf{G}$. -/
+@[fun_prop]
+theorem Measurable.stabRand {α : Type*} [MeasurableSpace α] {c : Type*} [Fintype c]
     {f : α → Matrix n c ℝ} {g : α → Matrix n n ℝ} (hf : Measurable f) (hg : Measurable g) :
     Measurable fun a => stabRand (f a) (g a) := by
   have hP : Measurable fun a => rangeProjector (f a) := measurable_rangeProjector.comp hf
@@ -60,10 +74,8 @@ private theorem Measurable.stabRand_comp {α : Type*} [MeasurableSpace α] {c : 
     hP.matrix_add (measurable_polarFactor.comp ((hE.matrix_mul hg).matrix_mul hE))
   exact Measurable.ite (hF isClosed_setOf_hasOrthonormalCols.measurableSet) hF measurable_const
 
-attribute [local fun_prop] Measurable.stabRand_comp
-
-/-- The stabilizer randomizer of `V` is orthogonal and fixes `V`. -/
-private theorem stabRand_spec {c : Type*} [Fintype c] (V : Matrix n c ℝ) (G : Matrix n n ℝ) :
+/-- The stabilizer randomizer of $\mathbf{V}$ is orthogonal and fixes $\mathbf{V}$. -/
+theorem stabRand_spec {c : Type*} [Fintype c] (V : Matrix n c ℝ) (G : Matrix n n ℝ) :
     HasOrthonormalCols (stabRand V G) ∧ stabRand V G * V = V := by
   unfold stabRand
   split_ifs with h
@@ -154,9 +166,10 @@ private theorem hasOrthonormalCols_stabRaw_of_isUnit {c : Type*} [Fintype c] (V 
     conjTranspose_polarFactor_mul_self, ← hQdef, hQ, hEdef]
   abel
 
-/-- For a Gaussian `G`, the raw randomizer is almost surely orthogonal: `P + E G E` is almost
-surely invertible, its determinant being a nonzero polynomial in the entries of `G`. -/
-private theorem ae_hasOrthonormalCols_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
+/-- For a standard Gaussian $\mathbf{G}$, the raw randomizer is almost surely orthogonal:
+$\mathbf{P} + \mathbf{E}\mathbf{G}\mathbf{E}$ is almost surely invertible, its determinant being
+a nonzero polynomial in the entries of $\mathbf{G}$. -/
+theorem ae_hasOrthonormalCols_stabRaw {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
     ∀ᵐ G ∂gaussianMatrix n n, HasOrthonormalCols (stabRaw V G) := by
   set P := rangeProjector V with hPdef
   set E : Matrix n n ℝ := 1 - P with hEdef
@@ -191,13 +204,14 @@ private theorem ae_hasOrthonormalCols_stabRaw {c : Type*} [Fintype c] (V : Matri
   exact hasOrthonormalCols_stabRaw_of_isUnit V G
     ((Matrix.isUnit_iff_isUnit_det _).2 (isUnit_iff_ne_zero.2 hG))
 
-/-- The stabilizer randomizer of a fixed `V` is measurable in `G`. -/
-private theorem measurable_stabRand_right {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
+/-- The stabilizer randomizer of a fixed $\mathbf{V}$ is measurable in $\mathbf{G}$. -/
+theorem measurable_stabRand_right {c : Type*} [Fintype c] (V : Matrix n c ℝ) :
     Measurable (stabRand V) :=
-  Measurable.stabRand_comp measurable_const measurable_id
+  Measurable.stabRand measurable_const measurable_id
 
-/-- Left multiplication by an orthogonal `s` fixing `V` keeps the law of the randomizer. -/
-private theorem map_mul_left_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
+/-- Left multiplication by an orthogonal $\mathbf{s}$ fixing $\mathbf{V}$ keeps the law of the
+stabilizer randomizer of a standard Gaussian matrix. -/
+theorem map_mul_left_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) :
     ((gaussianMatrix n n).map (stabRand V)).map (s * ·) =
       (gaussianMatrix n n).map (stabRand V) := by
@@ -211,8 +225,9 @@ private theorem map_mul_left_stabRand {c : Type*} [Fintype c] (V : Matrix n c �
   have hsG : HasOrthonormalCols (stabRaw V (s * G)) := mul_stabRaw hs hsV G ▸ hs.mul hG'
   simp only [Function.comp_apply, stabRand, if_pos hG', if_pos hsG, mul_stabRaw hs hsV]
 
-/-- Right multiplication by an orthogonal `s` fixing `V` keeps the law of the randomizer. -/
-private theorem map_mul_right_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
+/-- Right multiplication by an orthogonal $\mathbf{s}$ fixing $\mathbf{V}$ keeps the law of the
+stabilizer randomizer of a standard Gaussian matrix. -/
+theorem map_mul_right_stabRand {c : Type*} [Fintype c] (V : Matrix n c ℝ)
     {s : Matrix n n ℝ} (hs : HasOrthonormalCols s) (hsV : s * V = V) :
     ((gaussianMatrix n n).map (stabRand V)).map (· * s) =
       (gaussianMatrix n n).map (stabRand V) := by

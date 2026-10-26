@@ -2,6 +2,47 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## LB-C hidden-rotation lower bounds: proofs (2026-10-26)
+
+Branch `stage/lbc`. **All 57 targets are proved**, statements unchanged against the approved
+skeleton (checked textually, every target). K7, the Krylov coupling
+(`QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame`), was proved last
+(by Codex); with it K8, Shamir's bound (SH2–SH6) and the low-rank bounds (L4–L9) moved into
+`NLAlib/LowerBounds/` by D8, and `NLAlibScaffold` is empty.
+
+The K7 proof exposes, in each pass, the hidden query directions one at a time before the pass's
+products, and couples each new direction with one Gaussian column through its normalized
+component outside the span already revealed (a zero component keeps its independent seed
+column). `LowerBounds/QueryModel/GaussianCoupling.lean` holds the probabilistic part: the
+one-step stabilizer law, almost-sure capture, and the joint Gaussian law of the coupled block
+with every measurable summary of an initial transcript prefix
+(`exists_measurable_gaussianBlock_of_ordered_queries`). The pass simulation and depth count are
+private in `HiddenRotation.lean`. No hypotheses were added.
+
+Validation (after merging `origin/main` a82169e): `lake build --wfail NLAlib NLAlibScaffold`, 0
+warnings; `stage_check.sh`: 448 proved modules, 0 axiom violations in 11705 declarations, 14
+linters, references, constants and LaTeX clean, `check_rules` 0 errors. `#print axioms` for K7,
+K8, SH2–SH6 and L4–L9: `propext`, `Classical.choice`, `Quot.sound`. Advisory: GaussianCoupling,
+HiddenRotation and FewPasses are over 1000 lines (F10, below the 1500 ceiling).
+
+## LB-C hidden-rotation lower bounds: design (2026-10-26)
+
+Branch `design/lbc` (worktree `nlalib-design-lbc`, from `origin/main` 79f8cc2). Design note
+`docs/design/LowerBounds-HiddenRotationLowerBounds.md`, awaiting approval: the pass model
+`QueryAlgorithm.IsPassStructured`, the hidden-rotation oracle and its Krylov coupling
+(`IsKrylovCoupling`, OP5 Lemma C / Shamir Lemma 4 for $p$ passes), Shamir's
+$\Omega(\kappa\log(1/\varepsilon))$ with explicit constants, and the two-pass (and one-pass)
+$\Omega(k/\varepsilon)$ for low-rank approximation from the OP5 research note. Eight definitions
+written in `NLAlib` (build `--wfail`); 52 sorried statements in `NLAlibScaffold` (S 29, M 20, L 2,
+H 1); targets `~/nlalib-harness/pilot/lbc-targets.json`. No proof dispatched.
+
+Approved 2026-10-26 (APPROVE and OQ1–OQ10 all (a)) and revised after the Fable review: K7's proof
+plan (augmented simulation revealing $\mathbf{U}^{\mathsf{H}}\mathbf{B}$ and the frame padding;
+the wide-pass case), five new sorried tools (KB2, KB3 in `Krylov/Basic/BlockSpace`; GZ2–GZ4 in
+`RandomMatrix/Haar/Uniqueness`), the stabilizer randomizer `stabRand` of `HiddenHaar.lean` and its
+law lemmas made public, SH6 sharpened to $\kappa\log(1/\varepsilon) \le 4(q + 1)$. Now 57 sorried
+statements (S 31, M 23, L 2, H 1).
+
 ## Documentation and validation audit fixes (2026-10-26)
 
 Branch `codex/fix-audit-validation`, based on `79f8cc2`. The weighted Haar-block docstring now
