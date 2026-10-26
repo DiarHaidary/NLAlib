@@ -54,8 +54,10 @@ Proof: both components are matrix–vector products of measurable maps; as
 @[fun_prop]
 theorem Measurable.hiddenRotationOracle {α n : Type*} [MeasurableSpace α] [Fintype n]
     {f : α → Matrix n n ℝ} {v : α → n → ℝ} (hf : Measurable f) (hv : Measurable v)
-    (D : Matrix n n ℝ) : Measurable fun a => hiddenRotationOracle (f a) D (v a) := by
-  sorry
+    (D : Matrix n n ℝ) : Measurable fun a => hiddenRotationOracle (f a) D (v a) :=
+  ((((hf.matrix_mul measurable_const).matrix_mul
+    (Measurable.matrix_conjTranspose continuous_star.measurable hf)).matrix_mulVec hv).prodMk
+    ((Measurable.matrix_conjTranspose continuous_star.measurable hf).matrix_mulVec hv))
 
 namespace QueryAlgorithm
 
