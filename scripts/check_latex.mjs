@@ -32,31 +32,52 @@ function* leanFiles(dir) {
 }
 
 // Docstrings of a Lean source: [{start, end}] offsets of the body (after `/--` or `/-!`, before `-/`).
-// Ordinary (possibly nested) block comments `/- ... -/` are skipped as a whole.
+// All block comments nest, including docstrings. Outside comments, strings and quoted
+// identifiers are opaque. Keep this bounded lexer in sync with check_constants.py and the
+// shared fixtures; it does not parse arbitrary syntax extensions or interpolated terms.
 function docstrings(src) {
   const out = [];
+  const rawString = /(?<![\p{L}\p{N}_'!?.»\u2070-\u209f\u2100-\u214f])r(#*)"/uy;
+  const charLiteral = /(?<![\p{L}\p{N}_'!?.»\u2070-\u209f\u2100-\u214f])'(?:[^'\\\n]|\\(?:[nrt\\"']|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}))'/uy;
   let i = 0;
   while (i < src.length) {
     if (src.startsWith('/-', i)) {
       const doc = src[i + 2] === '-' || src[i + 2] === '!';
-      if (doc) {
-        const end = src.indexOf('-/', i + 3);
-        const stop = end < 0 ? src.length : end;
-        out.push({ start: i + 3, end: stop });
-        i = stop + 2;
-      } else {
-        let depth = 1;
-        i += 2;
-        while (i < src.length && depth > 0) {
-          if (src.startsWith('/-', i)) { depth++; i += 2; }
-          else if (src.startsWith('-/', i)) { depth--; i += 2; }
-          else i++;
-        }
+      const start = i + 3;
+      let depth = 1;
+      i += doc ? 3 : 2;
+      while (i < src.length && depth > 0) {
+        if (src.startsWith('/-', i)) { depth++; i += 2; }
+        else if (src.startsWith('-/', i)) { depth--; i += 2; }
+        else i++;
       }
+      if (doc) out.push({ start, end: depth === 0 ? i - 2 : src.length });
     } else if (src.startsWith('--', i)) {
       const nl = src.indexOf('\n', i);
       i = nl < 0 ? src.length : nl;
-    } else i++;
+    } else if (src[i] === '«') {
+      const end = src.indexOf('»', i + 1);
+      i = end < 0 ? src.length : end + 1;
+    } else {
+      rawString.lastIndex = i;
+      charLiteral.lastIndex = i;
+      const raw = src[i] === 'r' ? rawString.exec(src) : null;
+      const char = src[i] === "'" ? charLiteral.exec(src) : null;
+      if (raw) {
+        const close = '"' + raw[1];
+        const end = src.indexOf(close, rawString.lastIndex);
+        i = end < 0 ? src.length : end + close.length;
+      } else if (char) {
+        i = charLiteral.lastIndex;
+      } else if (src[i] === '"') {
+        i++;
+        while (i < src.length) {
+          if (src[i] === '\\') i += 2;
+          else if (src[i] === '"') { i++; break; }
+          else i++;
+        }
+      } else i++;
+    }
   }
   return out;
 }

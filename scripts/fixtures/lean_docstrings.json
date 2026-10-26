@@ -1,0 +1,80 @@
+[
+  {
+    "name": "nested doc comments retain their text",
+    "source": "/-- Before `/- outer /- inner -/ end -/`, visible $x$. -/\ndef x := 1\n",
+    "docs": [" Before `/- outer /- inner -/ end -/`, visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "nested module doc and adjacent declaration doc",
+    "source": "/-! Module `/- nested -/`, visible $x$. -/\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Module `/- nested -/`, visible $x$. ", " Visible $x$. "],
+    "math_spans": 2
+  },
+  {
+    "name": "ordinary comments and line comments hide fake docs",
+    "source": "/- Ordinary /-- Fake $\\notARealMacro$. -/ -/\n-- /-- Fake $\\notARealMacro$. -/\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "ordinary string contains comment markers",
+    "source": "def opener : String := \"/- /-- Fake $\\\\notARealMacro$. -/\"\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "escaped quote keeps comment marker inside string",
+    "source": "def opener : String := \"\\\" /-- Fake $\\\\notARealMacro$. -/ /-\"\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "escaped backslash does not hide closing quote",
+    "source": "def slash : String := \"\\\\\"\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "zero hash raw string does not escape its closing quote",
+    "source": "def opener : String := r\"/- /-- Fake $\\notARealMacro$. -/ \\\"\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "one hash raw string permits ordinary quotes",
+    "source": "def opener : String := r#\"a quote \" /-- Fake $\\notARealMacro$. -/ /-\"#\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "multiple hash raw string requires all closing hashes",
+    "source": "def opener : String := r##\"a quote \"# /-- Fake $\\notARealMacro$. -/ /-\"##\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "identifier ending r is not a raw string prefix",
+    "source": "def idr (s : String) := s\ndef opener := idr\"\\\" /-- Fake $\\\\notARealMacro$. -/\"\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "character quote and identifier primes do not start strings",
+    "source": "def quote : Char := '\"'\ndef escaped : Char := '\\\"'\ndef hex : Char := '\\x22'\ndef unicode : Char := '\\u0022'\ndef x' := 1\n/-- Visible $x$. -/\ndef y := x'\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "prime named function applied to a quote character",
+    "source": "def f' (c : Char) := c\ndef q := f' '\"'\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  },
+  {
+    "name": "quoted identifier contains fake docs and quote",
+    "source": "def «a \" /-- Fake $\\notARealMacro$. -/ /-» := 1\n/-- Visible $x$. -/\ndef x := 1\n",
+    "docs": [" Visible $x$. "],
+    "math_spans": 1
+  }
+]
