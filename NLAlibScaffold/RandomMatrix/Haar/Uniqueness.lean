@@ -320,6 +320,38 @@ theorem eq_map_polarFactor_mul_of_forall_map_mul_left_eq [DecidableEq n] [Decida
     _ = (haarFrame d k).map fun y => E₀ * y := by rw [hν'eq]
     _ = _ := hR.symm
 
+/-- If $a$ is independent of $b$ and $(a, b)$ of $c$, then $a$ is independent of $(b, c)$. -/
+private theorem indepFun_prodMk_of_indepFun_of_indepFun_prodMk {α β γ : Type*}
+    [MeasurableSpace α] [MeasurableSpace β] [MeasurableSpace γ] [IsProbabilityMeasure μ]
+    {a : Ω → α} {b : Ω → β} {c : Ω → γ} (ha : AEMeasurable a μ) (hb : AEMeasurable b μ)
+    (hc : AEMeasurable c μ) (hab : IndepFun a b μ)
+    (habc : IndepFun (fun ω => (a ω, b ω)) c μ) :
+    IndepFun a (fun ω => (b ω, c ω)) μ := by
+  have hbc : IndepFun b c μ := habc.comp measurable_snd measurable_id
+  rw [indepFun_iff_map_prod_eq_prod_map_map ha (hb.prodMk hc)]
+  rw [indepFun_iff_map_prod_eq_prod_map_map (ha.prodMk hb) hc] at habc
+  rw [indepFun_iff_map_prod_eq_prod_map_map ha hb] at hab
+  rw [indepFun_iff_map_prod_eq_prod_map_map hb hc] at hbc
+  rw [hbc, ← Measure.prodAssoc_prod, ← hab, ← habc,
+    AEMeasurable.map_map_of_aemeasurable MeasurableEquiv.prodAssoc.measurable.aemeasurable
+      ((ha.prodMk hb).prodMk hc)]
+  rfl
+
+/-- The compressions of a standard Gaussian matrix to the range of an orthogonal projector and
+to its complement are independent. -/
+private theorem indepFun_mul_one_sub_mul_of_hasLaw_gaussianMatrix [DecidableEq n]
+    {E : Matrix n n ℝ} (hE : IsStarProjection E) {Y : Ω → Matrix n k ℝ}
+    (hY : HasLaw Y (gaussianMatrix n k) μ) :
+    IndepFun (fun ω => E * Y ω) (fun ω => (1 - E) * Y ω) μ := by
+  obtain ⟨Q₁, Q₂, hQ, h₁, h₂⟩ := hE.exists_hasOrthonormalCols_fromCols_mul_conjTranspose_eq
+    (p := Fin E.rank) (q := Fin (Fintype.card n - E.rank)) (Fintype.card_fin _)
+    (by simp only [Fintype.card_fin]; have := E.rank_le_card_width; omega)
+  obtain ⟨hQ₁, hQ₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.1 hQ
+  have h := (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hY hQ₁ hQ₂ h₁₂).comp
+    (measurable_const.matrix_mul measurable_id : Measurable (Q₁ * · : _ → Matrix n k ℝ))
+    (measurable_const.matrix_mul measurable_id : Measurable (Q₂ * · : _ → Matrix n k ℝ))
+  simpa only [Function.comp_def, ← Matrix.mul_assoc, h₁, h₂] using h
+
 /-- **Gaussianization in a subspace**: let $\mathbf{E}$ be an orthogonal projector of rank at
 least $\lvert k \rvert$, $\mathbf{Y}$ a standard Gaussian $n \times k$ matrix and $\mathbf{F}$ a
 Haar frame of $\operatorname{range}\mathbf{E}$ (the law of
@@ -354,6 +386,58 @@ theorem hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix [DecidableEq n]
     (hY : HasLaw Y (gaussianMatrix n k) μ) (hFY : IndepFun F Y μ) :
     HasLaw (fun ω => (1 - E) * Y ω + F ω * CFC.sqrt ((E * Y ω)ᴴ * (E * Y ω)))
       (gaussianMatrix n k) μ := by
-  sorry
+  have := hY.isProbabilityMeasure
+  have hYm := hY.aemeasurable
+  let a : Ω → Matrix n k ℝ := fun ω => polarFactor (E * Y ω)
+  let b : Ω → Matrix k k ℝ := fun ω => (E * Y ω)ᴴ * (E * Y ω)
+  let c : Ω → Matrix n k ℝ := fun ω => (1 - E) * Y ω
+  have hgm : Measurable fun x : Matrix n k ℝ => xᴴ * x := by fun_prop
+  have hEm : Measurable fun y : Matrix n k ℝ => E * y := measurable_const.matrix_mul measurable_id
+  have hEm' : Measurable fun y : Matrix n k ℝ => (1 - E) * y :=
+    measurable_const.matrix_mul measurable_id
+  have ham : AEMeasurable a μ := (measurable_polarFactor.comp hEm).comp_aemeasurable hYm
+  have hbcm : AEMeasurable (fun ω => (b ω, c ω)) μ :=
+    ((hgm.comp hEm).prodMk hEm').comp_aemeasurable hYm
+  have hab : IndepFun a b μ :=
+    indepFun_polarFactor_mul_of_isStarProjection_of_hasLaw_gaussianMatrix hE hY hk
+  have habc : IndepFun (fun ω => (a ω, b ω)) c μ :=
+    (indepFun_mul_one_sub_mul_of_hasLaw_gaussianMatrix hE hY).comp
+      (measurable_polarFactor.prodMk hgm) measurable_id
+  have habc' : IndepFun a (fun ω => (b ω, c ω)) μ :=
+    indepFun_prodMk_of_indepFun_of_indepFun_prodMk ham hbcm.fst hbcm.snd hab habc
+  have hFbc : IndepFun F (fun ω => (b ω, c ω)) μ :=
+    hFY.comp measurable_id ((hgm.comp hEm).prodMk hEm')
+  have hlawF : μ.map F = μ.map a := by
+    rw [hF.map_eq, ← hY.map_eq, AEMeasurable.map_map_of_aemeasurable
+      (g := fun Z => polarFactor (E * Z)) (measurable_polarFactor.comp hEm).aemeasurable hYm]
+    rfl
+  have hjoint : μ.map (fun ω => (F ω, (b ω, c ω))) = μ.map (fun ω => (a ω, (b ω, c ω))) := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map hF.aemeasurable hbcm).1 hFbc,
+      (indepFun_iff_map_prod_eq_prod_map_map ham hbcm).1 habc', hlawF]
+  -- the matrix square root is continuous on the positive semidefinite cone and zero off it
+  have hsqrt : Measurable (CFC.sqrt : Matrix k k ℝ → Matrix k k ℝ) := by
+    classical
+    have h : Measurable ({a : Matrix k k ℝ | 0 ≤ a}.piecewise CFC.sqrt 0) := by
+      open scoped Matrix.Norms.L2Operator in
+      exact CFC.continuousOn_sqrt.measurable_piecewise continuousOn_const
+        isClosed_Ici.measurableSet
+    convert h using 1
+    funext a
+    by_cases ha : 0 ≤ a
+    · exact (Set.piecewise_eq_of_mem (s := {a : Matrix k k ℝ | 0 ≤ a}) _ _ ha).symm
+    · rw [Set.piecewise_eq_of_notMem (s := {a : Matrix k k ℝ | 0 ≤ a}) _ _ ha,
+        CFC.sqrt_of_not_nonneg ha, Pi.zero_apply]
+  let G : Matrix n k ℝ × (Matrix k k ℝ × Matrix n k ℝ) → Matrix n k ℝ :=
+    fun x => x.2.2 + x.1 * CFC.sqrt x.2.1
+  have hG : Measurable G := (measurable_snd.comp measurable_snd).add (measurable_fst.matrix_mul
+    (hsqrt.comp (measurable_fst.comp measurable_snd)))
+  have hGa : G ∘ (fun ω => (a ω, (b ω, c ω))) = Y := funext fun ω => by
+    simp only [Function.comp_apply, G, a, b, c]
+    rw [polarFactor_mul_sqrt, ← Matrix.add_mul, sub_add_cancel, Matrix.one_mul]
+  refine ⟨hG.comp_aemeasurable (hF.aemeasurable.prodMk hbcm), ?_⟩
+  change μ.map (G ∘ fun ω => (F ω, (b ω, c ω))) = _
+  rw [← AEMeasurable.map_map_of_aemeasurable hG.aemeasurable (hF.aemeasurable.prodMk hbcm),
+    hjoint, AEMeasurable.map_map_of_aemeasurable hG.aemeasurable (ham.prodMk hbcm), hGa,
+    hY.map_eq]
 
 end NLAlib
