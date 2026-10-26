@@ -129,8 +129,9 @@ Proof: `QueryAlgorithm.IsPassStructured.monotone` is unchanged; for `query_eq`, 
 agree on the earlier passes still agree after composing with `f`. S, 4 lines. -/
 theorem IsPassStructured.comapResponse {alg : QueryAlgorithm Q R q β} {pass : ℕ → ℕ}
     (h : alg.IsPassStructured pass) (f : R' → R) :
-    (alg.comapResponse f).IsPassStructured pass := by
-  sorry
+    (alg.comapResponse f).IsPassStructured pass :=
+  ⟨h.monotone, fun i hi u u' huu' =>
+    h.query_eq i hi _ _ fun j hj => by simp only [Function.comp_apply]; rw [huu' j hj]⟩
 
 /-- Post-processing the output keeps the pass structure.
 Proof: the `query` field is that of `alg`; `QueryAlgorithm.IsPassStructured.query_eq` applies as
