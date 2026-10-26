@@ -71,6 +71,47 @@ theorem integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix [Decidabl
     ∫ ω, specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω) * T) ∂μ ≤
       gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) *
         (specNorm S * frobNorm T + frobNorm S * specNorm T) := by
-  sorry
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hrk' : Fintype.card r < Fintype.card k := by omega
+  have hspec := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hY one_pos
+    (q := 1) (by linarith [show (Fintype.card r : ℝ) + 1 ≤ Fintype.card k by exact_mod_cast hrk'])
+  simp only [Real.rpow_one] at hspec
+  have hc : 0 ≤ specNorm S * frobNorm T + frobNorm S * specNorm T := by positivity
+  have hpt : ∀ ω, specNorm S * frobNorm (pinv (V₁ᴴ * X ω) * T) +
+      frobNorm S * specNorm (pinv (V₁ᴴ * X ω) * T) ≤
+      (specNorm S * frobNorm T + frobNorm S * specNorm T) * specNorm (pinv (V₁ᴴ * X ω)) := by
+    intro ω
+    have h1 := frobNorm_mul_le_specNorm_mul_frobNorm (pinv (V₁ᴴ * X ω)) T
+    have h2 := specNorm_mul_le (pinv (V₁ᴴ * X ω)) T
+    nlinarith [mul_le_mul_of_nonneg_left h1 (specNorm_nonneg S),
+      mul_le_mul_of_nonneg_left h2 (frobNorm_nonneg S)]
+  have hint : Integrable (fun ω => specNorm S * frobNorm (pinv (V₁ᴴ * X ω) * T) +
+      frobNorm S * specNorm (pinv (V₁ᴴ * X ω) * T)) μ := by
+    refine Integrable.mono' (hspec.const_mul (specNorm S * frobNorm T + frobNorm S * specNorm T))
+      ?_ (ae_of_all _ fun ω => ?_)
+    · have hG : Measurable (fun M : Matrix r k ℝ =>pinv M * T) :=
+        measurable_pinv.matrix_mul measurable_const
+      have hm : Measurable (fun M : Matrix r k ℝ =>specNorm S * frobNorm (pinv M * T) +
+          frobNorm S * specNorm (pinv M * T)) :=
+        ((continuous_frobNorm.measurable.comp hG).const_mul _).add
+          ((continuous_specNorm.measurable.comp hG).const_mul _)
+      exact (hm.comp_aemeasurable hY.aemeasurable).aestronglyMeasurable
+    · rw [Real.norm_of_nonneg (by positivity)]
+      exact hpt ω
+  have hmain := integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun hY.aemeasurable
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
+    (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
+    (S := fun _ => S) (T := fun G => pinv G * T) measurable_const
+    (measurable_pinv.matrix_mul measurable_const) hint
+  simp only [Matrix.mul_assoc] at hmain ⊢
+  refine hmain.trans ?_
+  have hβ := integral_specNorm_pinv_le_of_hasLaw_gaussianMatrix hY hrk'
+  rw [gaussianPinvSpecNormBound_def]
+  calc _ ≤ ∫ ω, (specNorm S * frobNorm T + frobNorm S * specNorm T) *
+        specNorm (pinv (V₁ᴴ * X ω)) ∂μ := integral_mono hint (hspec.const_mul _) hpt
+    _ = (specNorm S * frobNorm T + frobNorm S * specNorm T) *
+        ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ∂μ := integral_const_mul _ _
+    _ ≤ _ := mul_le_mul_of_nonneg_left hβ hc
+    _ = _ := mul_comm _ _
 
 end NLAlib
