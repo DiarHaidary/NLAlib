@@ -108,7 +108,11 @@ Proof: as `QueryAlgorithm.IsMeasurable.comapResponse`, with the seed carried alo
 theorem IsMeasurableFamily.comapResponse {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {f : R' → R}
     (hf : Measurable f) : IsMeasurableFamily fun s => (alg s).comapResponse f := by
-  sorry
+  refine ⟨fun i hi => ?_, ?_⟩
+  · exact (halg.measurable_query i hi).comp (measurable_fst.prodMk
+      (measurable_pi_iff.2 fun j => hf.comp ((measurable_pi_apply j).comp measurable_snd)))
+  · exact (halg.measurable_output).comp (measurable_fst.prodMk
+      (measurable_pi_iff.2 fun j => hf.comp ((measurable_pi_apply j).comp measurable_snd)))
 
 /-- A measurable seeded family with its output post-processed by a measurable map is measurable.
 Proof: the query maps are unchanged; the output is `g` after the joint output map
