@@ -520,7 +520,20 @@ theorem rank_sub_mul_mul_le (B : Matrix m n ℝ) (k : ℕ) {Z : Matrix m m ℝ} 
     (L : Matrix m m ℝ) (L' : Matrix n n ℝ) :
     ((Z - rangeProjector (truncatedSVD B k)) * B -
         L * (Z - rangeProjector (truncatedSVD B k)) * B * L').rank ≤ 4 * k := by
-  sorry
+  have hP : (rangeProjector (truncatedSVD B k)).rank ≤ k := by
+    rw [rank_rangeProjector]
+    exact rank_truncatedSVD_le B k
+  have hD : (Z - rangeProjector (truncatedSVD B k)).rank ≤ 2 * k :=
+    (Matrix.rank_sub_le _ _).trans (by omega)
+  have hX : ((Z - rangeProjector (truncatedSVD B k)) * B).rank ≤ 2 * k :=
+    (Matrix.rank_mul_le_left _ _).trans hD
+  have hY : (L * (Z - rangeProjector (truncatedSVD B k)) * B * L').rank ≤ 2 * k := by
+    rw [show L * (Z - rangeProjector (truncatedSVD B k)) * B * L' =
+      L * ((Z - rangeProjector (truncatedSVD B k)) * B) * L' by simp only [Matrix.mul_assoc]]
+    exact (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_right _ _).trans hX)
+  have := Matrix.rank_sub_le ((Z - rangeProjector (truncatedSVD B k)) * B)
+    (L * (Z - rangeProjector (truncatedSVD B k)) * B * L')
+  omega
 
 /-- **The trace balance on the window**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B}) > 0$, $a \le k \le b$ with $\sigma_b(\mathbf{B}) \le
