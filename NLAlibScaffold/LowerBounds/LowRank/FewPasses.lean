@@ -883,6 +883,57 @@ theorem QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of
     _ ≤ 4 * Real.exp (-(Fintype.card m / (2 * 20 ^ 2))) := hL3
     _ = _ := by norm_num
 
+/-- Head mass of a range inside a subspace with small head mass: if every $\mathbf{z} \in S$ has
+$\sum_{a \in k} z_a^2 \le c\|\mathbf{z}\|^2$ and the range of $\mathbf{W}$ lies in $S$, then
+$\sum_{a \in k}\|\mathbf{P}_{\mathbf{W}}\mathbf{e}_a\|^2 \le c\lvert k \rvert$. -/
+private theorem sum_norm_rangeProjector_mulVec_single_sq_le {W : Matrix (k ⊕ (Fin 3 × m)) k ℝ}
+    {S : Submodule ℝ (k ⊕ (Fin 3 × m) → ℝ)} {c : ℝ} (hc : 0 ≤ c)
+    (hW : LinearMap.range W.mulVecLin ≤ S)
+    (hS : ∀ z ∈ S, ∑ a : k, z (Sum.inl a) ^ 2 ≤ c * ‖WithLp.toLp 2 z‖ ^ 2) :
+    ∑ a : k, ‖WithLp.toLp 2 (rangeProjector W *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2 ≤
+      c * Fintype.card k := by
+  set P := rangeProjector W
+  have hsymm : ∀ i j, P i j = P j i := fun i j => by
+    simpa using congrFun (congrFun (conjTranspose_rangeProjector W) j) i
+  have hcol : ∀ j, P.col j ∈ S := fun j => hW <| (range_rangeProjector W) ▸
+    ⟨Pi.single j 1, by simp [P]⟩
+  calc ∑ a : k, ‖WithLp.toLp 2 (P *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2
+      = ∑ i, ∑ a : k, P.col i (Sum.inl a) ^ 2 := by
+        simp only [Matrix.mulVec_single_one, EuclideanSpace.norm_toLp_sq_eq_sum_sq,
+          Matrix.col_apply]
+        rw [Finset.sum_comm]
+        simp only [hsymm]
+    _ ≤ ∑ i, c * ‖WithLp.toLp 2 (P.col i)‖ ^ 2 := Finset.sum_le_sum fun i _ => hS _ (hcol i)
+    _ = c * frobNorm P ^ 2 := by rw [frobNorm_sq_eq_sum_col, Finset.mul_sum]
+    _ ≤ c * (P.rank * specNorm P ^ 2) := by gcongr; exact frobNorm_sq_le_rank_mul_specNorm_sq P
+    _ ≤ c * (Fintype.card k * 1 ^ 2) := by
+        gcongr
+        · rw [rank_rangeProjector]; exact_mod_cast W.rank_le_card_width
+        · exact (isStarProjection_rangeProjector W).specNorm_le_one
+    _ = c * Fintype.card k := by ring
+
+/-- The deterministic step of the spectral two-pass bound: for orthogonal $\mathbf{U}$, if the
+range of $\mathbf{U}^{\mathsf{H}}\mathbf{W}$ lies in a subspace whose vectors have head mass at
+most $\tfrac{19}{64}\|\mathbf{z}\|^2$, then
+$\|\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}} - \mathbf{W}\mathbf{M}\|_2^2 \ge \tfrac{45}{4}$. -/
+private theorem le_specNorm_mul_diagonal_mul_sub_mul_sq [Nonempty k]
+    {U : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ} (hU : HasOrthonormalCols U)
+    {W : Matrix (k ⊕ (Fin 3 × m)) k ℝ} {M : Matrix k (k ⊕ (Fin 3 × m)) ℝ}
+    {S : Submodule ℝ (k ⊕ (Fin 3 × m) → ℝ)} (hW : LinearMap.range (Uᴴ * W).mulVecLin ≤ S)
+    (hS : ∀ z ∈ S, ∑ a : k, z (Sum.inl a) ^ 2 ≤ 19 / 64 * ‖WithLp.toLp 2 z‖ ^ 2) :
+    45 / 4 ≤ specNorm (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ - W * M) ^ 2 := by
+  have heq : U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ - W * M =
+      U * (Matrix.diagonal (equispacedLevelSpectrum k m 2) - (Uᴴ * W) * (M * U)) * Uᴴ := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, ← Matrix.mul_assoc U (Uᴴ * W), ← Matrix.mul_assoc U Uᴴ,
+      hU.mul_conjTranspose_self, Matrix.one_mul, Matrix.mul_assoc W, Matrix.mul_assoc M,
+      hU.mul_conjTranspose_self, Matrix.mul_one, Matrix.mul_assoc]
+  rw [heq, hU.conjTranspose.specNorm_mul_right, hU.specNorm_mul_left]
+  refine le_trans ?_ (le_specNorm_diagonal_sub_mul_sq _ _)
+  have ht := sum_norm_rangeProjector_mulVec_single_sq_le (by norm_num) hW hS
+  have hk : (0 : ℝ) < Fintype.card k := Nat.cast_pos.mpr Fintype.card_pos
+  rw [le_div_iff₀ hk]
+  nlinarith
+
 /-- **Two-pass spectral lower bound for one deterministic algorithm**: in the setting of
 `NLAlib.QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame`
 ($\mathbf{U}$ Haar, $\mathbf{A} = \mathbf{U}\operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m,
@@ -910,7 +961,37 @@ theorem QueryAlgorithm.IsPassStructured.measureReal_specNorm_sub_mul_sq_lt_le_of
         (alg.run (hiddenRotationOracle (U ω)
           (Matrix.diagonal (equispacedLevelSpectrum k m 2)))).2) ^ 2 < 45 / 4} ≤
       4 * Real.exp (-(Fintype.card m / 1352)) := by
-  sorry
+  have := hU.isProbabilityMeasure
+  set D := Matrix.diagonal (equispacedLevelSpectrum k m 2)
+  -- extend by an independent Gaussian matrix
+  set μ' := μ.prod (gaussianMatrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k))
+  have hU₁ : HasLaw (fun p : Ω × Matrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k) ℝ => U p.1)
+      (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) μ' :=
+    hU.comp measurePreserving_fst.hasLaw
+  obtain ⟨G, hG⟩ := (hpass.mapOutput Prod.fst).exists_isKrylovCoupling_of_hasLaw_haarFrame
+    (p := 2) hp (halg.mapOutput measurable_fst) D (0 : Matrix (k ⊕ (Fin 3 × m)) (Fin 0) ℝ) hU₁
+    measurePreserving_snd.hasLaw (indepFun_prod₀ hU.aemeasurable aemeasurable_id)
+  have hbad := measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix
+    hG.hasLaw_gaussianMatrix (γ := 26) (by norm_num) (by simp) (by
+      simp only [Fintype.card_sum, Fintype.card_fin]; push_cast; norm_num; exact_mod_cast hm)
+  calc _ = μ'.real (Prod.fst ⁻¹' {ω | specNorm (U ω * D * (U ω)ᴴ -
+        (alg.run (hiddenRotationOracle (U ω) D)).1 * (alg.run (hiddenRotationOracle (U ω) D)).2)
+          ^ 2 < 45 / 4}) := by
+        rw [← Set.prod_univ, measureReal_def, measureReal_def, Measure.prod_prod, measure_univ,
+          mul_one]
+    _ ≤ _ := measureReal_mono_ae ?_
+    _ ≤ _ := hbad.trans_eq (by norm_num)
+  filter_upwards [hG.ae_range_le_of_isEmpty, ae_hasOrthonormalCols_of_hasLaw_haarFrame hU₁ le_rfl]
+    with ω hω hUω hlt
+  change specNorm _ ^ 2 < 45 / 4 at hlt
+  change ∃ z ∈ _, _ < _
+  by_contra hne
+  push Not at hne
+  rw [QueryAlgorithm.run_mapOutput] at hω
+  refine absurd hlt (not_lt.2 (le_specNorm_mul_diagonal_mul_sub_mul_sq hUω hω fun z hz => ?_))
+  have := hne z hz
+  norm_num at this ⊢
+  linarith
 
 /-- **Two-pass Frobenius lower bound, randomized worst case**: for every randomized algorithm (a
 measurable seeded family, seed law $\rho$) making $q$ matrix–vector products in at most two passes
