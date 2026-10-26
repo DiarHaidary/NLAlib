@@ -330,7 +330,12 @@ theorem QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_mulVec_of_hasLaw
     (hZ : HasLaw Z (gaussianMatrix n (Fin q ⊕ k)) μ) (hUZ : IndepFun U Z μ) :
     ∃ G : Ω → Matrix n (Fin q ⊕ k) ℝ, IsKrylovCoupling μ D (p + 1) (fun ω => (U ω)ᴴ * B)
       (fun ω => (U ω)ᴴ * alg.run (U ω * D * (U ω)ᴴ).mulVec) G := by
-  sorry
+  obtain ⟨G, hG⟩ := (hpass.comapResponse Prod.fst).exists_isKrylovCoupling_of_hasLaw_haarFrame hp
+    (halg.comapResponse measurable_fst) D B hU hZ hUZ
+  refine ⟨G, ?_⟩
+  have hfst : ∀ ω, (Prod.fst ∘ hiddenRotationOracle (U ω) D) = (U ω * D * (U ω)ᴴ).mulVec :=
+    fun ω => rfl
+  simpa only [QueryAlgorithm.run_comapResponse, hfst] using hG
 
 end Coupling
 
