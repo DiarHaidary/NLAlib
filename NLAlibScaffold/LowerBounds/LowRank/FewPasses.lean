@@ -642,6 +642,139 @@ theorem measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianM
   · rw [← hexp]
     linarith [hA, hB]
 
+/-- Head mass of a projector: if every column $\mathbf{P}\mathbf{e}_a$ ($a$ in the head)
+has head mass at most $c$ times its norm, then
+$\sum_a \|\mathbf{P}\mathbf{e}_a\|^2 \le c\,\lvert\kappa\rvert$.
+Proof: $\|\mathbf{P}\mathbf{e}_a\|^2 = \mathbf{P}_{aa}$; the head block satisfies
+$\sum_{a,b} \mathbf{P}_{ba}^2 \ge (\operatorname{tr})^2/\lvert\kappa\rvert$ (Cauchy–Schwarz) and
+$\le c\operatorname{tr}$. -/
+private lemma sum_head_mass_sq_le {κ r : Type*} [Fintype κ] [Fintype r]
+    (P : Matrix (κ ⊕ r) (κ ⊕ r) ℝ) (hP : IsStarProjection P) {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 ≤ c * ∑ i, P i (Sum.inl a) ^ 2) :
+    ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 ≤ c * Fintype.card κ := by
+  have hsymm : ∀ i j, P j i = P i j := fun i j => by
+    have h := congrFun (congrFun hP.conjTranspose_eq j) i
+    have h' : P i j = P j i := by simpa [Matrix.conjTranspose_apply] using h
+    exact h'.symm
+  have hdiag : ∀ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = P (Sum.inl a) (Sum.inl a) := by
+    intro a
+    have key : ∀ i, P (Sum.inl a) i = P i (Sum.inl a) := fun i => (hsymm (Sum.inl a) i).symm
+    have h := congrFun (congrFun hP.mul_self (Sum.inl a)) (Sum.inl a)
+    rw [Matrix.mul_apply] at h
+    rw [← h]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [key i, sq]
+  have hT : ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = ∑ a : κ, P (Sum.inl a) (Sum.inl a) :=
+    Finset.sum_congr rfl fun a _ => hdiag a
+  have hS2 : ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2
+      ≤ c * ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum fun a _ => h a
+  have hsq : ∑ a : κ, P (Sum.inl a) (Sum.inl a) ^ 2
+      ≤ ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 :=
+    Finset.sum_le_sum fun a _ => Finset.single_le_sum (f := fun b : κ =>
+      P (Sum.inl b) (Sum.inl a) ^ 2) (fun b _ => sq_nonneg _) (Finset.mem_univ a)
+  have hCS : (∑ a : κ, P (Sum.inl a) (Sum.inl a)) ^ 2
+      ≤ Fintype.card κ * ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 := by
+    have := sq_sum_le_card_mul_sum_sq (s := Finset.univ)
+      (f := fun a : κ => P (Sum.inl a) (Sum.inl a))
+    simp only [Finset.card_univ] at this
+    exact this.trans (mul_le_mul_of_nonneg_left hsq (Nat.cast_nonneg _))
+  rw [← hT] at hCS
+  have hT0 : 0 ≤ ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 :=
+    Finset.sum_nonneg fun a _ => Finset.sum_nonneg fun i _ => sq_nonneg _
+  have hk : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
+  rcases hT0.eq_or_lt with h0 | h0
+  · rw [← h0]; exact mul_nonneg hc hk
+  · nlinarith [mul_le_mul_of_nonneg_left hS2 hk]
+
+/-- Measure of a set pulled back along the first factor of a product with a probability law:
+$\mu(S) \le (\mu\otimes\nu)(\mathrm{fst}^{-1}S)$. -/
+private lemma measureReal_le_prod_fst {Ω₂ : Type*} [MeasurableSpace Ω₂] (ν : Measure Ω₂)
+    [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (S : Set Ω) :
+    μ.real S ≤ (μ.prod ν).real (Prod.fst ⁻¹' S) := by
+  set H := toMeasurable (μ.prod ν) (Prod.fst ⁻¹' S) with hH
+  have hHm : MeasurableSet H := measurableSet_toMeasurable _ _
+  have hsub : Prod.fst ⁻¹' S ⊆ H := subset_toMeasurable _ _
+  have hfH : (μ.prod ν) H = (μ.prod ν) (Prod.fst ⁻¹' S) := measure_toMeasurable _
+  have hsec : ∀ x ∈ S, (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H) := by
+    intro x hx
+    have huniv : Prod.mk x ⁻¹' H = Set.univ := by
+      ext y
+      exact ⟨fun _ => trivial, fun _ => hsub (show (x, y) ∈ Prod.fst ⁻¹' S from hx)⟩
+    rw [huniv, measure_univ]
+  have hAm : MeasurableSet {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} :=
+    measurableSet_le measurable_const (measurable_measure_prodMk_left hHm)
+  have hmarkov := mul_meas_ge_le_lintegral₀
+    (μ := μ) (f := fun x => ν (Prod.mk x ⁻¹' H))
+    (measurable_measure_prodMk_left hHm).aemeasurable 1
+  have hle : μ S ≤ (μ.prod ν) (Prod.fst ⁻¹' S) := by
+    rw [← hfH, Measure.prod_apply hHm]
+    calc μ S ≤ μ {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} :=
+          measure_mono fun x hx => hsec x hx
+      _ = 1 * μ {x | (1 : ENNReal) ≤ ν (Prod.mk x ⁻¹' H)} := (one_mul _).symm
+      _ ≤ _ := hmarkov
+  rw [measureReal_def, measureReal_def]
+  exact ENNReal.toReal_mono (measure_ne_top _ _) hle
+
+/-- Deterministic error bound: for orthogonal $\mathbf{U}$, if the range of $\mathbf{U}^{\mathsf{H}}
+\mathbf{W}$ lies in $\mathcal{K}_3(\mathbf{D}, \mathbf{G})$ and no vector of that space has head
+mass above $19/36$ of its squared norm, then $\|\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}} -
+\mathbf{W}\mathbf{M}\|_{\mathsf{F}}^2 \ge 14\lvert m \rvert + \tfrac{33}{10}\lvert k \rvert$.
+Proof: unitary invariance (`NLAlib.HasOrthonormalCols.frobNorm_mul_left`, `frobNorm_mul_right`)
+turns the error into $\|\mathbf{D} - (\mathbf{U}^{\mathsf{H}}\mathbf{W})(\mathbf{M}\mathbf{U})\|$;
+`NLAlib.le_frobNorm_diagonal_sub_mul_sq` gives $14\lvert m\rvert + 7(\lvert k\rvert - t)$ and
+`sum_head_mass_sq_le` (with $\mathbf{P}$ the range projector of $\mathbf{U}^{\mathsf{H}}\mathbf{W}$,
+whose columns lie in the range) gives $t \le \tfrac{19}{36}\lvert k\rvert$. -/
+private lemma le_frobNorm_of_orthonormal_range {b : Type*} [Fintype b]
+    {U : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ}
+    {W : Matrix (k ⊕ (Fin 3 × m)) k ℝ} {M : Matrix k (k ⊕ (Fin 3 × m)) ℝ}
+    {G : Matrix (k ⊕ (Fin 3 × m)) b ℝ} (hU : HasOrthonormalCols U)
+    (hr : LinearMap.range (Uᴴ * W).mulVecLin ≤
+      blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m 2)) G 3)
+    (hgood : ∀ z ∈ blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m 2)) G 3,
+      ¬ (171 / (20 - 2 : ℝ) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2)) :
+    14 * (Fintype.card m : ℝ) + 33 / 10 * Fintype.card k ≤
+      frobNorm (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ - W * M) ^ 2 := by
+  classical
+  set D := Matrix.diagonal (equispacedLevelSpectrum k m 2) with hD
+  have hfrob : frobNorm (U * D * Uᴴ - W * M) = frobNorm (D - (Uᴴ * W) * (M * U)) := by
+    have hU1 : Uᴴ * U = 1 := hU
+    have hUU : U * Uᴴ = 1 := mul_eq_one_comm.mp hU1
+    have hUh : HasOrthonormalCols Uᴴ := by
+      unfold HasOrthonormalCols
+      rw [Matrix.conjTranspose_conjTranspose]
+      exact hUU
+    have hkey : U * (D - (Uᴴ * W) * (M * U)) * Uᴴ = U * D * Uᴴ - W * M := by
+      have h2 : U * (D - (Uᴴ * W) * (M * U)) * Uᴴ
+          = U * D * Uᴴ - (U * Uᴴ) * W * (M * (U * Uᴴ)) := by
+        simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_assoc]
+      rw [h2, hUU]
+      simp only [Matrix.one_mul, Matrix.mul_one]
+    rw [← hkey, hUh.frobNorm_mul_right, hU.frobNorm_mul_left]
+  have hle := le_frobNorm_diagonal_sub_mul_sq (Uᴴ * W) (M * U)
+  have ht : ∑ a : k, ‖WithLp.toLp 2 (rangeProjector (Uᴴ * W) *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2
+      ≤ 19 / 36 * Fintype.card k := by
+    set P := rangeProjector (Uᴴ * W) with hPdef
+    have hP : IsStarProjection P := isStarProjection_rangeProjector _
+    have hnorm : ∀ z : k ⊕ (Fin 3 × m) → ℝ, ‖WithLp.toLp 2 z‖ ^ 2 = ∑ i, z i ^ 2 := by
+      intro z
+      rw [EuclideanSpace.norm_sq_eq]
+      simp [Real.norm_eq_abs, sq_abs]
+    have hsum := sum_head_mass_sq_le P hP (c := 19 / 36) (by norm_num) (fun a => by
+      have hz : P *ᵥ Pi.single (Sum.inl a) 1 ∈ LinearMap.range (Uᴴ * W).mulVecLin := by
+        rw [← range_rangeProjector]
+        exact ⟨_, rfl⟩
+      have h1 := hgood _ (hr hz)
+      rw [hnorm, not_lt] at h1
+      simp only [Matrix.mulVec_single_one] at h1
+      rw [show (171 : ℝ) / (20 - 2) ^ 2 = 19 / 36 by norm_num] at h1
+      exact h1)
+    simp only [hnorm, Matrix.mulVec_single_one]
+    exact hsum
+  rw [hfrob]
+  linarith [hle, ht, (Nat.cast_nonneg (Fintype.card k) : (0 : ℝ) ≤ Fintype.card k)]
+
 /-- **Two-pass Frobenius lower bound for one deterministic algorithm**: let $\mathbf{U}$ be Haar,
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m,
 3\mathbf{I}_m)\mathbf{U}^{\mathsf{H}}$, and let a measurable algorithm make $q$ queries in at most
@@ -677,7 +810,78 @@ theorem QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of
           (Matrix.diagonal (equispacedLevelSpectrum k m 2)))).2) ^ 2 <
         14 * Fintype.card m + 33 / 10 * Fintype.card k} ≤
       4 * Real.exp (-(Fintype.card m / 800)) := by
-  sorry
+  classical
+  have := hU.isProbabilityMeasure
+  set D := Matrix.diagonal (equispacedLevelSpectrum k m 2) with hD
+  set ν := gaussianMatrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k) with hν
+  have : IsProbabilityMeasure ν := isProbabilityMeasure_gaussianMatrix
+  -- extend the space by an independent Gaussian block Z
+  have hZ : HasLaw (fun p : Ω × Matrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k) ℝ => p.2) ν (μ.prod ν) :=
+    measurePreserving_snd.hasLaw
+  have hUp : HasLaw (fun p : Ω × Matrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k) ℝ => U p.1)
+      (haarFrame (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m))) (μ.prod ν) :=
+    hU.comp (measurePreserving_fst.hasLaw)
+  have hUZ : IndepFun (fun p : Ω × Matrix (k ⊕ (Fin 3 × m)) (Fin q ⊕ k) ℝ => U p.1)
+      (fun p => p.2) (μ.prod ν) :=
+    ProbabilityTheory.indepFun_prod₀ hU.aemeasurable aemeasurable_id
+  -- Krylov coupling for the output, with no initial block
+  obtain ⟨G, hG⟩ :=
+    QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame
+      (alg := alg.mapOutput Prod.fst) (hpass.mapOutput Prod.fst) hp
+      (halg.mapOutput measurable_fst) D
+      (0 : Matrix (k ⊕ (Fin 3 × m)) (Fin 0) ℝ) hUp hZ hUZ
+  have hae : ∀ᵐ p ∂(μ.prod ν), HasOrthonormalCols (U p.1) :=
+    (Measure.quasiMeasurePreserving_fst).ae
+      (ae_hasOrthonormalCols_of_hasLaw_haarFrame hU (by
+        simp only [Fintype.card_sum, Fintype.card_prod, Fintype.card_fin]; omega))
+  have hrange := hG.ae_range_le_of_isEmpty
+  simp only [QueryAlgorithm.run_mapOutput] at hrange
+  -- Gaussian head capture
+  have hkb : Fintype.card k ≤ Fintype.card (Fin q ⊕ k) := by
+    rw [Fintype.card_sum, Fintype.card_fin]; omega
+  have hbm : (20 : ℝ) ^ 2 * Fintype.card (Fin q ⊕ k) ≤ Fintype.card m := by
+    rw [Fintype.card_sum, Fintype.card_fin]
+    have h400 : (400 : ℝ) * ((q : ℝ) + Fintype.card k) ≤ Fintype.card m := by
+      exact_mod_cast hm
+    push_cast
+    linarith
+  have hL3 := measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix
+    hG.hasLaw_gaussianMatrix (γ := 20) (by norm_num) hkb hbm
+  have hN : (μ.prod ν).real {p | ¬ (HasOrthonormalCols (U p.1) ∧
+      LinearMap.range ((U p.1)ᴴ * (alg.run (hiddenRotationOracle (U p.1) D)).1).mulVecLin ≤
+        blockKrylovSpace D (G p) 3)} = 0 := by
+    have h0 : (μ.prod ν) {p | ¬ (HasOrthonormalCols (U p.1) ∧
+        LinearMap.range ((U p.1)ᴴ * (alg.run (hiddenRotationOracle (U p.1) D)).1).mulVecLin ≤
+          blockKrylovSpace D (G p) 3)} = 0 :=
+      ae_iff.mp (hae.and hrange)
+    rw [measureReal_def, h0]
+    simp
+  refine (measureReal_le_prod_fst ν _).trans ?_
+  calc (μ.prod ν).real _ ≤ (μ.prod ν).real
+        ({p | ∃ z ∈ blockKrylovSpace D (G p) 3,
+          171 / (20 - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} ∪
+          {p | ¬ (HasOrthonormalCols (U p.1) ∧
+            LinearMap.range ((U p.1)ᴴ * (alg.run (hiddenRotationOracle (U p.1) D)).1).mulVecLin ≤
+              blockKrylovSpace D (G p) 3)}) := by
+        refine measureReal_mono fun p hpS => ?_
+        by_cases hgo : HasOrthonormalCols (U p.1) ∧
+            LinearMap.range ((U p.1)ᴴ * (alg.run (hiddenRotationOracle (U p.1) D)).1).mulVecLin ≤
+              blockKrylovSpace D (G p) 3
+        · left
+          by_contra hE
+          have hb := le_frobNorm_of_orthonormal_range
+            (M := (alg.run (hiddenRotationOracle (U p.1) D)).2) hgo.1 hgo.2
+            (fun z hz hlt => hE ⟨z, hz, hlt⟩)
+          exact (not_lt.mpr hb) hpS
+        · exact Or.inr hgo
+    _ ≤ (μ.prod ν).real {p | ∃ z ∈ blockKrylovSpace D (G p) 3,
+          171 / (20 - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} +
+        (μ.prod ν).real {p | ¬ (HasOrthonormalCols (U p.1) ∧
+            LinearMap.range ((U p.1)ᴴ * (alg.run (hiddenRotationOracle (U p.1) D)).1).mulVecLin ≤
+              blockKrylovSpace D (G p) 3)} := measureReal_union_le _ _
+    _ = _ := by rw [hN, add_zero]
+    _ ≤ 4 * Real.exp (-(Fintype.card m / (2 * 20 ^ 2))) := hL3
+    _ = _ := by norm_num
 
 /-- **Two-pass spectral lower bound for one deterministic algorithm**: in the setting of
 `NLAlib.QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame`
