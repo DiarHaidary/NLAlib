@@ -69,7 +69,8 @@ projection acts on an independent Gaussian or Haar matrix (design: query model, 
 * `ProbabilityTheory.iIndepFun.indepFun_comp_of_dependsOn`: a function of some coordinates of an
   independent family is independent of another coordinate.
 * `ProbabilityTheory.IndepFun.identDistrib_prodMk_of_forall_map_eq`: equal laws for every frozen
-  $t$ give equal joint laws.
+  $t$ give equal joint laws; `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` is the same
+  statement for a product measure.
 * `ProbabilityTheory.IndepFun.hasLaw_prodMk_prod_of_forall_map_eq`: a law $\nu$ not depending on
   $t$ makes $F(T, Z)$ independent of $T$ with law $\nu$.
 -/
@@ -281,31 +282,30 @@ end ProbabilityTheory
 
 open MeasureTheory
 
+namespace MeasureTheory.Measure
+
+/-- The freezing lemma at the level of measures: if $F(t, \cdot)$ and $G(t, \cdot)$ push
+$\sigma$ to the same law for every $t$, then $F$ and $G$ push $\rho \otimes \sigma$ to the same
+law. -/
+theorem map_prod_eq_of_forall_map_eq {α γ δ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
+    [MeasurableSpace δ] {ρ : Measure α} {σ : Measure γ} [SFinite σ] {F G : α → γ → δ}
+    (hF : Measurable fun p : α × γ => F p.1 p.2) (hG : Measurable fun p : α × γ => G p.1 p.2)
+    (h : ∀ t, σ.map (F t) = σ.map (G t)) :
+    (ρ.prod σ).map (fun p => F p.1 p.2) = (ρ.prod σ).map (fun p => G p.1 p.2) := by
+  ext E hE
+  rw [map_apply hF hE, map_apply hG hE, prod_apply (hF hE), prod_apply (hG hE)]
+  refine lintegral_congr fun t => ?_
+  have hFt : Measurable (F t) := hF.comp measurable_prodMk_left
+  have hGt : Measurable (G t) := hG.comp measurable_prodMk_left
+  have := congrArg (· E) (h t)
+  rwa [map_apply hFt hE, map_apply hGt hE] at this
+
+end MeasureTheory.Measure
+
 namespace ProbabilityTheory
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {α γ δ : Type*}
   [MeasurableSpace α] [MeasurableSpace γ] [MeasurableSpace δ]
-
-/-- Auxiliary: pushing a product measure forward along `(t, z) ↦ (t, H t z)` depends only on the
-laws `σ.map (H t)`. -/
-private lemma map_prod_prodMk_eq_of_forall_map_eq (ρ : Measure α) (σ : Measure γ)
-    [SFinite σ] {F G : α → γ → δ} (hF : Measurable (Function.uncurry F))
-    (hG : Measurable (Function.uncurry G)) (h : ∀ t, σ.map (F t) = σ.map (G t)) :
-    (ρ.prod σ).map (fun p : α × γ => (p.1, F p.1 p.2)) =
-      (ρ.prod σ).map (fun p : α × γ => (p.1, G p.1 p.2)) := by
-  have hF' : Measurable (fun p : α × γ => (p.1, F p.1 p.2)) := measurable_fst.prodMk hF
-  have hG' : Measurable (fun p : α × γ => (p.1, G p.1 p.2)) := measurable_fst.prodMk hG
-  ext E hE
-  rw [Measure.map_apply hF' hE, Measure.map_apply hG' hE, Measure.prod_apply (hF' hE),
-    Measure.prod_apply (hG' hE)]
-  refine lintegral_congr fun t => ?_
-  have key : ∀ (H : α → γ → δ), Measurable (Function.uncurry H) →
-      σ (Prod.mk t ⁻¹' ((fun p : α × γ => (p.1, H p.1 p.2)) ⁻¹' E)) =
-        (σ.map (H t)) (Prod.mk t ⁻¹' E) := by
-    intro H hH
-    rw [Measure.map_apply hH.of_uncurry_left (measurable_prodMk_left hE)]
-    rfl
-  rw [key F hF, key G hG, h t]
 
 /-- The freezing lemma: let $Z$ be independent of $T$ and $F$, $G$ jointly measurable. If for
 every fixed $t$ the variables $F(t, Z)$ and $G(t, Z)$ have the same law, then $(T, F(T, Z))$ and
@@ -325,7 +325,12 @@ theorem IndepFun.identDistrib_prodMk_of_forall_map_eq [IsFiniteMeasure μ] {T : 
     μ.map ((fun p : α × γ => (p.1, G p.1 p.2)) ∘ (fun ω => (T ω, Z ω)))
   rw [← AEMeasurable.map_map_of_aemeasurable hF'.aemeasurable hp,
     ← AEMeasurable.map_map_of_aemeasurable hG'.aemeasurable hp, hpair]
-  exact map_prod_prodMk_eq_of_forall_map_eq _ _ hF hG h
+  refine Measure.map_prod_eq_of_forall_map_eq (F := fun t z => (t, F t z))
+    (G := fun t z => (t, G t z)) hF' hG' fun t => ?_
+  have e : ∀ H : α → γ → δ, Measurable (Function.uncurry H) →
+      (μ.map Z).map (fun z => (t, H t z)) = ((μ.map Z).map (H t)).map (Prod.mk t) := fun H hH =>
+    (Measure.map_map measurable_prodMk_left (hH.comp measurable_prodMk_left)).symm
+  rw [e F hF, e G hG, h t]
 
 /-- Freezing with a fixed law: let $Z$ be independent of $T$ and $F$ jointly measurable. If
 $F(t, Z)$ has the same law $\nu$ for every fixed $t$, then $(T, F(T, Z))$ has law

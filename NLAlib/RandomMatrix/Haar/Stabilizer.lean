@@ -32,8 +32,6 @@ The adaptive form is
 open MeasureTheory ProbabilityTheory
 open scoped Matrix
 
-attribute [local fun_prop] Measurable.matrix_mul
-
 namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}

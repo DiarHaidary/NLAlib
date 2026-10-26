@@ -46,39 +46,6 @@ namespace QueryAlgorithm
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {d k : Type*} [Fintype d]
   [Fintype k] {q : ℕ}
 
-/-- Round `2l` of the Gram simulation is the left query $(\mathbf{0}, \mathbf{x}_l)$. -/
-private theorem queryAt_gramSimulation_two_mul {β : Type*}
-    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
-    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l) =
-      (0, alg.queryAt (Y * Yᴴ).mulVec l) := by
-  have h := history_gramSimulation alg Y l
-  rw [queryAt]
-  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l) = H at h ⊢
-  dsimp only [gramSimulation]
-  rw [dif_pos (by omega)]
-  have key : ∀ (n : ℕ) (hn : n = l) (f : Fin n → d → ℝ),
-      alg.query n f = alg.query l fun m => f (Fin.cast hn.symm m) := by
-    rintro n rfl f; rfl
-  refine Prod.ext rfl ((key _ (by omega) _).trans ?_)
-  exact congrArg (alg.query l) h
-
-/-- Round `2l + 1` of the Gram simulation is the right query
-$(\mathbf{Y}^{\mathsf{H}}\mathbf{x}_l, \mathbf{0})$. -/
-private theorem queryAt_gramSimulation_two_mul_add_one {β : Type*}
-    (alg : QueryAlgorithm (d → ℝ) (d → ℝ) q β) (Y : Matrix d k ℝ) (l : ℕ) :
-    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l + 1) =
-      (Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l, 0) := by
-  have h := history_apply (alg.gramSimulation k) (twoSidedMulVec Y) (2 * l + 1) ⟨2 * l, by omega⟩
-  rw [queryAt_gramSimulation_two_mul] at h
-  rw [queryAt]
-  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l + 1) = H at h ⊢
-  dsimp only [gramSimulation]
-  rw [dif_neg (by omega)]
-  refine Prod.ext ?_ rfl
-  change (H ⟨2 * l, by omega⟩).2 = _
-  rw [h]
-  rfl
-
 /-- Two families span the same space when each member of one is zero or a member of the
 other, and each member of the other is a member of the first. -/
 private theorem span_range_eq_of_forall {V ι ι' : Type*} [AddCommGroup V] [Module ℝ V]
@@ -272,7 +239,7 @@ theorem IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero {β
   set E := fun t : Fin (2 * i) → (d → ℝ) × (k → ℝ) => 1 - rangeProjector (T.leftQueryMatrix t)
   set F := fun t : Fin (2 * i) → (d → ℝ) × (k → ℝ) => 1 - rangeProjector (T.rightQueryMatrix t)
   have hτ : Measurable τ := hT.measurable_transcript
-    (Continuous.measurable (by unfold Function.uncurry twoSidedMulVec; fun_prop))
+    (Measurable.twoSidedMulVec measurable_fst measurable_snd)
   have hx : Measurable x := (halg.measurable_query i hi).comp
     (measurable_pi_lambda _ fun l => measurable_fst.comp (measurable_pi_apply _))
   have hE : Measurable E :=
@@ -568,7 +535,7 @@ theorem IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix
   set γ := gaussianMatrix d k
   have hG : G.IsMeasurable := halg.gramSimulation
   have hτ : Measurable fun Y : Matrix d k ℝ => G.transcript (twoSidedMulVec Y) :=
-    hG.measurable_transcript (by unfold twoSidedMulVec; fun_prop)
+    hG.measurable_transcript (Measurable.twoSidedMulVec measurable_fst measurable_snd)
   set B : Set ((Fin (2 * q) → (d → ℝ) × (k → ℝ)) × Matrix d k ℝ) :=
     {t | rangeProjector (G.output t.1) * (t.2 * t.2ᴴ) = t.2 * t.2ᴴ ∧
       (G.output t.1).rank < Fintype.card d} with hB_def
@@ -599,17 +566,8 @@ theorem IsMeasurable.measure_range_le_range_run_eq_zero_of_hasLaw_gaussianMatrix
   simp only [Set.preimage, Set.mem_ofPred_eq] at this ⊢
   have hτ1 : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
       G.transcript (twoSidedMulVec x.1) := hτ.comp measurable_fst
-  have hres : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ => G.resample x.1 x.2 := by
-    have hE : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
-        1 - rangeProjector (G.leftQueryMatrix (G.transcript (twoSidedMulVec x.1))) :=
-      measurable_const.matrix_sub
-        (measurable_rangeProjector.comp (hG.measurable_leftQueryMatrix.comp hτ1))
-    have hF : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ =>
-        1 - rangeProjector (G.rightQueryMatrix (G.transcript (twoSidedMulVec x.1))) :=
-      measurable_const.matrix_sub
-        (measurable_rangeProjector.comp (hG.measurable_rightQueryMatrix.comp hτ1))
-    exact (measurable_fst.matrix_sub ((hE.matrix_mul measurable_fst).matrix_mul hF)).matrix_add
-      ((hE.matrix_mul measurable_snd).matrix_mul hF)
+  have hres : Measurable fun x : Matrix d k ℝ × Matrix d k ℝ => G.resample x.1 x.2 :=
+    hG.measurable_resample
   rw [this, Measure.prod_apply (show MeasurableSet {x : Matrix d k ℝ × Matrix d k ℝ |
     (G.transcript (twoSidedMulVec x.1), G.resample x.1 x.2) ∈ B} from hτ1.prodMk hres hB)]
   refine (lintegral_congr_ae ?_).trans lintegral_zero

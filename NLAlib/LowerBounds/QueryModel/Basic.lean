@@ -12,6 +12,7 @@ public import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.MeasureTheory.MeasurableSpace.Pi
 public import Mathlib.MeasureTheory.MeasurableSpace.Prod
+public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 
 /-!
@@ -66,11 +67,13 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
 
 ## Main results
 
+* `Measurable.twoSidedMulVec`: the two-sided oracle is measurable.
 * `NLAlib.QueryAlgorithm.history_apply`, `NLAlib.QueryAlgorithm.queryAt_eq_queries_transcript`.
 * `NLAlib.QueryAlgorithm.transcript_eq_of_forall_apply_queries_eq`,
   `NLAlib.QueryAlgorithm.run_eq_of_forall_apply_queries_eq`: indistinguishability.
 * `NLAlib.QueryAlgorithm.IsNonAdaptive.queries_eq`.
-* `NLAlib.QueryAlgorithm.IsMeasurable.measurable_transcript`,
+* `NLAlib.QueryAlgorithm.IsMeasurable.measurable_history`,
+  `NLAlib.QueryAlgorithm.IsMeasurable.measurable_transcript`,
   `NLAlib.QueryAlgorithm.IsMeasurable.measurable_run`,
   `NLAlib.QueryAlgorithm.IsMeasurable.measurable_queryMatrix`,
   `NLAlib.QueryAlgorithm.IsMeasurable.measurable_rightQueryMatrix`,
@@ -80,6 +83,8 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
 * `NLAlib.QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`,
   `NLAlib.QueryAlgorithm.rank_leftQueryMatrix_le_leftCount`: query spans and costs.
 * `NLAlib.QueryAlgorithm.history_gramSimulation`, `NLAlib.QueryAlgorithm.run_gramSimulation`,
+  `NLAlib.QueryAlgorithm.queryAt_gramSimulation_two_mul`,
+  `NLAlib.QueryAlgorithm.queryAt_gramSimulation_two_mul_add_one`,
   `NLAlib.QueryAlgorithm.IsMeasurable.gramSimulation`,
   `NLAlib.QueryAlgorithm.rightCount_gramSimulation_le`,
   `NLAlib.QueryAlgorithm.leftCount_gramSimulation_le`,
@@ -267,6 +272,14 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- The two-sided oracle is jointly measurable in the matrix and the query. -/
+@[fun_prop]
+theorem _root_.Measurable.twoSidedMulVec {α m n : Type*} [MeasurableSpace α] [Fintype m]
+    [Fintype n] {f : α → Matrix m n ℝ} {v : α → (n → ℝ) × (m → ℝ)} (hf : Measurable f)
+    (hv : Measurable v) : Measurable fun a => twoSidedMulVec (f a) (v a) :=
+  (hf.matrix_mulVec hv.fst).prodMk
+    ((Measurable.matrix_conjTranspose continuous_star.measurable hf).matrix_mulVec hv.snd)
+
 namespace QueryAlgorithm
 
 variable {Q R β : Type*} {q : ℕ}
@@ -341,28 +354,32 @@ section Measurable
 variable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace β] {M : Type*}
   [MeasurableSpace M]
 
+/-- The history of length `i ≤ q` is measurable in the input: for a measurable algorithm and an
+oracle $O_x$ depending jointly measurably on an input $x$ and the query, $x \mapsto$ history is
+measurable. -/
+theorem IsMeasurable.measurable_history {alg : QueryAlgorithm Q R q β}
+    (halg : alg.IsMeasurable) {O : M → Q → R} (hO : Measurable (Function.uncurry O)) {i : ℕ}
+    (hi : i ≤ q) : Measurable fun x => alg.history (O x) i := by
+  induction i with
+  | zero => exact measurable_pi_iff.2 fun j => j.elim0
+  | succ i ih =>
+    refine measurable_pi_iff.2 fun j => ?_
+    induction j using Fin.lastCases with
+    | last =>
+      simp only [QueryAlgorithm.history, Fin.snoc_last]
+      exact hO.comp (measurable_id.prodMk
+        ((halg.measurable_query i (by omega)).comp (ih (by omega))))
+    | cast j =>
+      simp only [QueryAlgorithm.history, Fin.snoc_castSucc]
+      exact (measurable_pi_apply j).comp (ih (by omega))
+
 /-- The transcript is measurable in the input: for a measurable algorithm and an oracle
 $O_x$ depending jointly measurably on an input $x$ and the query, $x \mapsto$ transcript is
 measurable. -/
 theorem IsMeasurable.measurable_transcript {alg : QueryAlgorithm Q R q β}
     (halg : alg.IsMeasurable) {O : M → Q → R} (hO : Measurable (Function.uncurry O)) :
-    Measurable fun x => alg.transcript (O x) := by
-  have key : ∀ i ≤ q, Measurable fun x => alg.history (O x) i := by
-    intro i
-    induction i with
-    | zero => intro _; exact measurable_pi_iff.2 fun j => j.elim0
-    | succ i ih =>
-      intro hi
-      refine measurable_pi_iff.2 fun j => ?_
-      induction j using Fin.lastCases with
-      | last =>
-        simp only [QueryAlgorithm.history, Fin.snoc_last]
-        exact hO.comp (measurable_id.prodMk
-          ((halg.measurable_query i (by omega)).comp (ih (by omega))))
-      | cast j =>
-        simp only [QueryAlgorithm.history, Fin.snoc_castSucc]
-        exact (measurable_pi_apply j).comp (ih (by omega))
-  exact key q le_rfl
+    Measurable fun x => alg.transcript (O x) :=
+  halg.measurable_history hO le_rfl
 
 /-- The output is measurable in the input, for a measurable algorithm and a jointly
 measurable oracle. -/
@@ -566,6 +583,39 @@ theorem history_gramSimulation [Fintype d] [Fintype k] (alg : QueryAlgorithm (d 
   funext l
   rw [gramDecode, history_eq_history _ _ (n := 2 * i) (m := 2 * l + 2)
     (by have := l.isLt; omega) (by omega), key l, history_apply]
+
+/-- Round `2l` of the Gram simulation is the left query $(\mathbf{0}, \mathbf{x}_l)$. -/
+theorem queryAt_gramSimulation_two_mul [Fintype d] [Fintype k]
+    (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (Y : Matrix d k 𝕜) (l : ℕ) :
+    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l) =
+      (0, alg.queryAt (Y * Yᴴ).mulVec l) := by
+  have h := history_gramSimulation alg Y l
+  rw [queryAt]
+  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l) = H at h ⊢
+  dsimp only [gramSimulation]
+  rw [dif_pos (by omega)]
+  have key : ∀ (n : ℕ) (hn : n = l) (f : Fin n → d → 𝕜),
+      alg.query n f = alg.query l fun m => f (Fin.cast hn.symm m) := by
+    rintro n rfl f; rfl
+  refine Prod.ext rfl ((key _ (by omega) _).trans ?_)
+  exact congrArg (alg.query l) h
+
+/-- Round `2l + 1` of the Gram simulation is the right query
+$(\mathbf{Y}^{\mathsf{H}}\mathbf{x}_l, \mathbf{0})$. -/
+theorem queryAt_gramSimulation_two_mul_add_one [Fintype d] [Fintype k]
+    (alg : QueryAlgorithm (d → 𝕜) (d → 𝕜) q β) (Y : Matrix d k 𝕜) (l : ℕ) :
+    (alg.gramSimulation k).queryAt (twoSidedMulVec Y) (2 * l + 1) =
+      (Yᴴ *ᵥ alg.queryAt (Y * Yᴴ).mulVec l, 0) := by
+  have h := history_apply (alg.gramSimulation k) (twoSidedMulVec Y) (2 * l + 1) ⟨2 * l, by omega⟩
+  rw [queryAt_gramSimulation_two_mul] at h
+  rw [queryAt]
+  generalize (alg.gramSimulation k).history (twoSidedMulVec Y) (2 * l + 1) = H at h ⊢
+  dsimp only [gramSimulation]
+  rw [dif_neg (by omega)]
+  refine Prod.ext ?_ rfl
+  change (H ⟨2 * l, by omega⟩).2 = _
+  rw [h]
+  rfl
 
 /-- **The Gram simulation runs the original algorithm**: the `2q`-round algorithm
 `alg.gramSimulation k` against `twoSidedMulVec X`, $\mathbf{X} \in \Bbbk^{d \times k}$, outputs

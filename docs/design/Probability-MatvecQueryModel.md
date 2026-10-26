@@ -747,3 +747,15 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
   * RANK-STEP-HOME (a): R4a moves to `ForMathlib/LinearAlgebra/Matrix/Rank.lean`, next to
     `Matrix.rank_mul_eq_iff_injOn`, renamed `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` (statement
     unchanged), with its private finrank helper. R4's call site uses the new name.
+  * PUBLIC-HELPERS (a), with Fable's H2 randomizer item: public now are
+    `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` (freezing for a product measure; F1 now
+    uses it, the private copies in ForMathlib Independence and HiddenHaar are gone),
+    `Measurable.finSnoc` (new `ForMathlib/MeasureTheory/MeasurableSpace/Pi.lean`),
+    `Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
+    `QueryAlgorithm.queryAt_gramSimulation_two_mul(_add_one)` (over 𝕜, in `QueryModel/Basic`),
+    `QueryAlgorithm.IsMeasurable.measurable_resample` (`DeferredDecision`); `@[fun_prop]` on
+    `Measurable.matrix_mul`, `Measurable.matrix_mulVec`. The copies in DeferredDecision,
+    HiddenHaar, Stabilizer and RangeRecovery are deleted. For Shamir Lemma 4 the smaller option was
+    taken: a public corollary of H2,
+    `QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant_of_indepFun`,
+    with a stabilizer `S τ z` depending on an independent `Z` (F1 + H2); `stabRand` stays private.

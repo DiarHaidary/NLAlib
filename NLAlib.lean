@@ -69,6 +69,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
+public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
 public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 public import NLAlib.ForMathlib.MeasureTheory.SpecificCodomains.Matrix
 public import NLAlib.ForMathlib.Probability.Distributions.Beta

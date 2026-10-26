@@ -38,7 +38,8 @@ form for right unitarily invariant laws is in `NLAlib/RandomMatrix/Haar/Stabiliz
 
 ## Main results
 
-* `NLAlib.QueryAlgorithm.transcript_resample`.
+* `NLAlib.QueryAlgorithm.transcript_resample`;
+  `NLAlib.QueryAlgorithm.IsMeasurable.measurable_resample`: the resampled matrix is measurable.
 * `NLAlib.QueryAlgorithm.IsMeasurable.identDistrib_resample_of_hasLaw_gaussianMatrix`: adaptive
   deferred decision, resampling form.
 * `NLAlib.QueryAlgorithm.IsMeasurable.hasLaw_prodMk_conjTranspose_mul_mul_of_hasLaw_gaussianMatrix`:
@@ -227,13 +228,6 @@ private theorem queryMatrices_truncate_succ_snoc {R : Type*}
   exact ⟨by rw [leftQueryMatrix, hq, ← leftQueryMatrix], by
     rw [rightQueryMatrix, hq, ← rightQueryMatrix]⟩
 
-/-- The two-sided oracle is jointly measurable in the matrix and the query. -/
-private theorem measurable_twoSidedMulVec {α : Type*} [MeasurableSpace α]
-    {f : α → Matrix d k ℝ} {v : α → (k → ℝ) × (d → ℝ)} (hf : Measurable f) (hv : Measurable v) :
-    Measurable fun a => twoSidedMulVec (f a) (v a) :=
-  (hf.matrix_mulVec hv.fst).prodMk
-    ((Measurable.matrix_conjTranspose continuous_star.measurable hf).matrix_mulVec hv.snd)
-
 /-- The coordinates of a product of probability measures are independent. -/
 private theorem indepFun_fst_snd' {α γ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
     (μ : Measure α) (ν : Measure γ) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] :
@@ -255,7 +249,7 @@ private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k 
             E' * z.2 * F')) := by
   have hk : Measurable fun V : Matrix d k ℝ =>
       (c (twoSidedMulVec (t - E * t * F + V) (w, u)), t - E * t * F + V) := by
-    exact (hc.comp (measurable_twoSidedMulVec (measurable_const.matrix_add measurable_id)
+    exact (hc.comp (Measurable.twoSidedMulVec (measurable_const.matrix_add measurable_id)
       measurable_const)).prodMk (measurable_const.matrix_add measurable_id)
   have h := (identDistrib_mul_mul_of_hasLaw_gaussianMatrix measurePreserving_fst.hasLaw
     measurePreserving_snd.hasLaw (indepFun_fst_snd' _ _) hE' hF hF' hEE hFF).comp hk
@@ -272,16 +266,6 @@ private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k 
   simp only [Function.comp_apply, hY, twoSidedMulVec_add_mul_mul (v := (w, u)) hE' hw hu, hY']
   congr 1
   simp only [Matrix.mul_sub, Matrix.sub_mul]; abel
-
-/-- Appending an entry to a tuple is measurable. -/
-private theorem measurable_snoc {R : Type*} [MeasurableSpace R] {i : ℕ} :
-    Measurable fun p : (Fin i → R) × R => Fin.snoc (α := fun _ => R) p.1 p.2 := by
-  refine measurable_pi_iff.2 fun j => ?_
-  induction j using Fin.lastCases with
-  | last => simpa only [Fin.snoc_last] using measurable_snd
-  | cast j =>
-    simp only [Fin.snoc_castSucc]
-    exact (measurable_pi_apply j).comp measurable_fst
 
 /-- `IdentDistrib` transfers along a map that pushes one measure to the other. -/
 private theorem identDistrib_comp_iff {α γ δ : Type*} [MeasurableSpace α] [MeasurableSpace γ]
@@ -303,10 +287,10 @@ private theorem IsMeasurable.measurable_transcript_twoSidedMulVec {α : Type*}
     {f : α → Matrix d k ℝ} (hf : Measurable f) :
     Measurable fun a => alg.transcript (twoSidedMulVec (f a)) :=
   halg.measurable_transcript (O := fun a => twoSidedMulVec (f a))
-    (measurable_twoSidedMulVec (hf.comp measurable_fst) measurable_snd)
+    (Measurable.twoSidedMulVec (hf.comp measurable_fst) measurable_snd)
 
 /-- The resampled matrix is jointly measurable in the two matrices. -/
-private theorem IsMeasurable.measurable_resample [DecidableEq d] [DecidableEq k]
+theorem IsMeasurable.measurable_resample [DecidableEq d] [DecidableEq k]
     [MeasurableSpace β]
     {alg : QueryAlgorithm ((k → ℝ) × (d → ℝ)) ((d → ℝ) × (k → ℝ)) q β} (halg : alg.IsMeasurable) :
     Measurable fun p : Matrix d k ℝ × Matrix d k ℝ => alg.resample p.1 p.2 := by
@@ -475,8 +459,7 @@ private theorem identDistrib_truncate_resample_succ [DecidableEq d] [DecidableEq
   obtain ⟨R, hR⟩ : ∃ R : Matrix d k ℝ → Matrix d k ℝ → Matrix d k ℝ,
       R = fun x z => x - E (H x) * x * F (H x) + E (H x) * z * F (H x) := ⟨_, rfl⟩
   have hsnoc : Measurable fun h : Fin i → (d → ℝ) × (k → ℝ) => Fin.snoc
-      (α := fun _ => (d → ℝ) × (k → ℝ)) h 0 := measurable_snoc.comp (measurable_id.prodMk
-    measurable_const)
+      (α := fun _ => (d → ℝ) × (k → ℝ)) h 0 := measurable_id.finSnoc measurable_const
   have hEm : Measurable E := hE ▸ (measurable_const (a := (1 : Matrix d d ℝ))).matrix_sub
     (measurable_rangeProjector.comp halgi.measurable_leftQueryMatrix)
   have hFm : Measurable F := hF ▸ (measurable_const (a := (1 : Matrix k k ℝ))).matrix_sub
@@ -485,9 +468,8 @@ private theorem identDistrib_truncate_resample_succ [DecidableEq d] [DecidableEq
     (measurable_rangeProjector.comp ((halg.truncate hi).measurable_leftQueryMatrix.comp hsnoc))
   have hF'm : Measurable F' := hF' ▸ (measurable_const (a := (1 : Matrix k k ℝ))).matrix_sub
     (measurable_rangeProjector.comp ((halg.truncate hi).measurable_rightQueryMatrix.comp hsnoc))
-  have hNxm : Measurable (Function.uncurry Nx) := hNx ▸ measurable_snoc.comp
-    (measurable_fst.prodMk (measurable_twoSidedMulVec measurable_snd
-      ((halg.measurable_query i hi).comp measurable_fst)))
+  have hNxm : Measurable (Function.uncurry Nx) := hNx ▸ measurable_fst.finSnoc
+    (Measurable.twoSidedMulVec measurable_snd ((halg.measurable_query i hi).comp measurable_fst))
   have hRm : Measurable (Function.uncurry R) := by
     have hE1 : Measurable fun p : Matrix d k ℝ × Matrix d k ℝ => E (H p.1) :=
       hEm.comp (hHm.comp measurable_fst)
@@ -518,7 +500,7 @@ private theorem identDistrib_truncate_resample_succ [DecidableEq d] [DecidableEq
     subst hH hR hE hF; exact ih
   simp only [hT1, hR1]
   exact identDistrib_step_chain hHm hE'm hF'm (c := fun h r => Fin.snoc h r) (Q := alg.query i)
-    (fun h => measurable_snoc.comp (measurable_const.prodMk measurable_id))
+    (fun h => measurable_const.finSnoc measurable_id)
     (fun h y => by rw [hNx]) hNxm hproj (fun x z => by rw [hR]) hRm hih
 
 /-- The deferred decision invariant for the first `i` queries, on the canonical space. -/

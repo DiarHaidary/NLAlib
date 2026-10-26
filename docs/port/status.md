@@ -36,6 +36,15 @@ Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
 - RANK-STEP-HOME (a): R4a is now `Matrix.rank_mul_of_snoc_eq_rank_of_snoc` in
   `ForMathlib/LinearAlgebra/Matrix/Rank` (was `NLAlib.rank_mul_of_snoc_eq_rank_of_snoc` in
   `LowerBounds/LowRank/RangeRecovery`); statement unchanged.
+- PUBLIC-HELPERS (a): new public declarations
+  `MeasureTheory.Measure.map_prod_eq_of_forall_map_eq` (ForMathlib Independence),
+  `Measurable.finSnoc` (new ForMathlib `MeasureTheory/MeasurableSpace/Pi`),
+  `Measurable.twoSidedMulVec`, `QueryAlgorithm.IsMeasurable.measurable_history`,
+  `QueryAlgorithm.queryAt_gramSimulation_two_mul`, `…_two_mul_add_one` (QueryModel/Basic),
+  `QueryAlgorithm.IsMeasurable.measurable_resample` (DeferredDecision), and the H2 corollary
+  `QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant_of_indepFun`
+  (randomized stabilizer, for Shamir Lemma 4); `@[fun_prop]` on `Measurable.matrix_mul`,
+  `Measurable.matrix_mulVec`. Private copies deleted; no statement changed.
 
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
 
