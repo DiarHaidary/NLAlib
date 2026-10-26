@@ -55,7 +55,9 @@ $\mathbf{\Pi}\mathbf{R} = \mathbf{R}$ by `obliqueProjector_mul_eq_self_of_range_
 theorem generalizedNystrom_eq_rsvd_add {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜}
     (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) :
     generalizedNystrom A Ω Ψ = rsvd A Ω + obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω) := by
-  sorry
+  rw [generalizedNystrom, Matrix.mul_sub,
+    obliqueProjector_mul_eq_self_of_range_le h (range_rsvd_le A Ω)]
+  abel
 
 /-- **The truncated generalized Nyström error splits**: for $\mathbf{A} \in \Bbbk^{m \times n}$,
 $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$, $\mathbf{\Psi} \in \Bbbk^{m \times p}$ and any $k$,
