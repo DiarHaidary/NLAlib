@@ -515,6 +515,37 @@ theorem mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace {b : Type*} [Fintype b
   have h4 := mul_nonneg (by positivity : (0 : ℝ) ≤ 19 * S ^ 2) hHnn
   nlinarith [h1, h2, h3, h4]
 
+/-- Algebra of the final step: a Krylov vector with head mass `Σ` above `171/(γ-2)^2 * N` is
+impossible when `s ≥ (γ-2) t > 0` and `s² Σ ≤ 19 (3t)² N`. -/
+private theorem private_contra_sum_sq {γ t s N sumH : ℝ} (hγ : 2 < γ) (ht : 0 < t)
+    (hs : (γ - 2) * t ≤ s) (hN : 0 ≤ N) (key : s ^ 2 * sumH ≤ 19 * (3 * t) ^ 2 * N)
+    (hlt : 171 / (γ - 2) ^ 2 * N < sumH) : False := by
+  have hγ2 : 0 < γ - 2 := by linarith
+  have hsp : 0 < s := lt_of_lt_of_le (mul_pos hγ2 ht) hs
+  have h1 := mul_lt_mul_of_pos_left hlt (pow_pos hsp 2)
+  have hs2 := pow_le_pow_left₀ (mul_nonneg hγ2.le ht.le) hs 2
+  have h3 : t ^ 2 ≤ s ^ 2 / (γ - 2) ^ 2 := by
+    rw [le_div_iff₀ (pow_pos hγ2 2)]; rw [mul_pow] at hs2; linarith [hs2]
+  have h2 : 171 * t ^ 2 * N ≤ s ^ 2 * (171 / (γ - 2) ^ 2 * N) := by
+    calc 171 * t ^ 2 * N = 171 * N * t ^ 2 := by ring
+      _ ≤ 171 * N * (s ^ 2 / (γ - 2) ^ 2) := by gcongr
+      _ = s ^ 2 * (171 / (γ - 2) ^ 2 * N) := by ring
+  have key' : 19 * (3 * t) ^ 2 * N = 171 * t ^ 2 * N := by ring
+  linarith [h1, key, h2, key']
+
+omit [DecidableEq k] [DecidableEq m] in
+/-- Lower Gram bound for one tail block of a Gaussian matrix (rows of level `j + 1`). -/
+private theorem measureReal_not_gram_tail_le {b : Type*} [Fintype b] [DecidableEq b]
+    {G : Ω → Matrix (k ⊕ (Fin 3 × m)) b ℝ} (hG : HasLaw G (gaussianMatrix (k ⊕ (Fin 3 × m)) b) μ)
+    (j : Fin 3) {t : ℝ} (ht : 0 ≤ t)
+    (htn : t ≤ √(Fintype.card m : ℝ) - √(Fintype.card b : ℝ)) :
+    μ.real {ω | ¬ (√(Fintype.card m : ℝ) - √(Fintype.card b : ℝ) - t) ^ 2 • (1 : Matrix b b ℝ) ≤
+      ((G ω).submatrix (fun i : m => Sum.inr (j, i)) id)ᴴ *
+        (G ω).submatrix (fun i : m => Sum.inr (j, i)) id} ≤ Real.exp (-t ^ 2 / 2) :=
+  measureReal_not_smul_one_le_conjTranspose_mul_self_le_of_hasLaw_gaussianMatrix
+    (hasLaw_submatrix_of_hasLaw_gaussianMatrix hG (fun i i' h => by simpa using h)
+      Function.injective_id) ht htn
+
 /-- **Gaussian head capture of a depth-3 Krylov space**: let $\mathbf{G}$ be a standard Gaussian
 $n \times b$ matrix, $n = k \oplus (\{0, 1, 2\} \times m)$, $\gamma > 2$, $\lvert k \rvert \le
 \lvert b \rvert$ and $\gamma^2\lvert b \rvert \le \lvert m \rvert$. Then
@@ -539,7 +570,77 @@ theorem measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianM
     μ.real {ω | ∃ z ∈ blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m 2)) (G ω) 3,
         171 / (γ - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} ≤
       4 * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) := by
-  sorry
+  classical
+  have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  have hγ0 : 0 < γ := by linarith
+  set a : ℝ := √(Fintype.card m : ℝ) with ha_def
+  set c : ℝ := √(Fintype.card b : ℝ) with hc_def
+  set d : ℝ := √(Fintype.card k : ℝ) with hd_def
+  set t : ℝ := a / γ with ht_def
+  have ha0 : 0 ≤ a := Real.sqrt_nonneg _
+  have hc0 : 0 ≤ c := Real.sqrt_nonneg _
+  have ha2 : a ^ 2 = Fintype.card m := Real.sq_sqrt (Nat.cast_nonneg _)
+  have hc2 : c ^ 2 = Fintype.card b := Real.sq_sqrt (Nat.cast_nonneg _)
+  have ht0 : 0 ≤ t := div_nonneg ha0 hγ0.le
+  have hat : a = γ * t := by rw [ht_def]; field_simp
+  have hct : c ≤ t := by
+    have h1 : (c * γ) ^ 2 ≤ a ^ 2 := by
+      rw [mul_pow, ha2, hc2]; linarith [hbm]
+    rw [ht_def, le_div_iff₀ hγ0]
+    nlinarith [mul_nonneg hc0 hγ0.le]
+  have htn : t ≤ a - c := by
+    nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ γ - 2) ht0]
+  have hdc : d ≤ c := Real.sqrt_le_sqrt (Nat.cast_le.mpr hkb)
+  have hexp : Real.exp (-t ^ 2 / 2) = Real.exp (-(Fintype.card m / (2 * γ ^ 2))) := by
+    congr 1
+    rw [ht_def, div_pow, ha2]
+    ring
+  -- tail blocks: the lower Gram bound fails with probability at most `exp (-t^2/2)` each
+  have hA : μ.real (⋃ j : Fin 3, {ω | ¬ (a - c - t) ^ 2 • (1 : Matrix b b ℝ) ≤
+      ((G ω).submatrix (fun i : m => Sum.inr (j, i)) id)ᴴ *
+        (G ω).submatrix (fun i : m => Sum.inr (j, i)) id}) ≤ 3 * Real.exp (-t ^ 2 / 2) := by
+    refine (measureReal_iUnion_fintype_le _).trans ((Finset.sum_le_sum fun j _ =>
+      measureReal_not_gram_tail_le hG j ht0 htn).trans ?_)
+    simp
+  -- head block: the spectral norm is large with probability at most `exp (-t^2/2)`
+  have hB : μ.real {ω | d + c + t ≤ specNorm ((G ω).submatrix Sum.inl id)} ≤
+      Real.exp (-t ^ 2 / 2) :=
+    measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix
+      (hasLaw_submatrix_of_hasLaw_gaussianMatrix hG Sum.inl_injective Function.injective_id) ht0
+  refine le_trans (measureReal_mono (s₂ := (⋃ j : Fin 3, {ω | ¬ (a - c - t) ^ 2 •
+      (1 : Matrix b b ℝ) ≤ ((G ω).submatrix (fun i : m => Sum.inr (j, i)) id)ᴴ *
+        (G ω).submatrix (fun i : m => Sum.inr (j, i)) id}) ∪
+      {ω | d + c + t ≤ specNorm ((G ω).submatrix Sum.inl id)}) (fun ω hω => ?_))
+    ((measureReal_union_le _ _).trans ?_)
+  · obtain ⟨z, hz, hlt⟩ := hω
+    by_contra hnot
+    have hs : ∀ j : Fin 3, (a - c - t) ^ 2 • (1 : Matrix b b ℝ) ≤
+        ((G ω).submatrix (fun i : m => Sum.inr (j, i)) id)ᴴ *
+          (G ω).submatrix (fun i : m => Sum.inr (j, i)) id := by
+      intro j
+      by_contra h
+      exact hnot (Or.inl (Set.mem_iUnion.2 ⟨j, h⟩))
+    have hS : specNorm ((G ω).submatrix Sum.inl id) ≤ 3 * t := by
+      by_contra h
+      have hB' : d + c + t ≤ specNorm ((G ω).submatrix Sum.inl id) := by
+        linarith [not_le.1 h]
+      exact hnot (Or.inr hB')
+    have key := mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace hs hS hz
+    have hsum : 0 < ∑ a : k, z (Sum.inl a) ^ 2 := lt_of_le_of_lt (by positivity) hlt
+    have hne : Nonempty k := by
+      by_contra h
+      rw [not_nonempty_iff] at h
+      simp at hsum
+    have hb1 : 1 ≤ Fintype.card b := le_trans (Fintype.card_pos (α := k)) hkb
+    have hb1' : (1 : ℝ) ≤ Fintype.card b := by exact_mod_cast hb1
+    have hm : (0 : ℝ) < Fintype.card m :=
+      lt_of_lt_of_le (pow_pos hγ0 2) ((le_mul_of_one_le_right (sq_nonneg γ) hb1').trans hbm)
+    have ha_pos : 0 < a := Real.sqrt_pos.2 hm
+    have ht_pos : 0 < t := div_pos ha_pos hγ0
+    have hs_lb : (γ - 2) * t ≤ a - c - t := by linarith [hat, hct]
+    exact private_contra_sum_sq hγ ht_pos hs_lb (sq_nonneg _) key hlt
+  · rw [← hexp]
+    linarith [hA, hB]
 
 /-- **Two-pass Frobenius lower bound for one deterministic algorithm**: let $\mathbf{U}$ be Haar,
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m,
