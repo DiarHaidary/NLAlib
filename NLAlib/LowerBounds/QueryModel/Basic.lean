@@ -355,7 +355,7 @@ section Measurable
 variable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace β] {M : Type*}
   [MeasurableSpace M]
 
-/-- The history of length `i ≤ q` is measurable in the input: for a measurable algorithm and an
+/-- The history of length $i \le q$ is measurable in the input: for a measurable algorithm and an
 oracle $O_x$ depending jointly measurably on an input $x$ and the query, $x \mapsto$ history is
 measurable. -/
 theorem IsMeasurable.measurable_history {alg : QueryAlgorithm Q R q β}
