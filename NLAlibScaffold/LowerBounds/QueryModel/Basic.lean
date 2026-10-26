@@ -46,7 +46,11 @@ Proof: induction on `i`; both sides are `Fin.snoc` of the previous history and t
 the same query (`QueryAlgorithm.history`, `Fin.comp_snoc`). S, about 8 lines. -/
 theorem history_comapResponse (f : R' → R) (alg : QueryAlgorithm Q R q β) (O : Q → R')
     (i : ℕ) : f ∘ (alg.comapResponse f).history O i = alg.history (f ∘ O) i := by
-  sorry
+  induction i with
+  | zero => funext x; exact x.elim0
+  | succ i ih =>
+    rw [history, history, Fin.comp_snoc, ← ih]
+    rfl
 
 /-- An algorithm reading its responses through $f$ against the oracle $O'$ outputs what `alg`
 outputs against $f \circ O'$. So a lower bound for an oracle $O$ holds for every weaker oracle
