@@ -87,6 +87,24 @@ theorem HasOrthonormalCols.singularValues_mul_diagonal_mul_card [Nonempty m]
       3 := by
   sorry
 
+/-- A real star projection is symmetric. -/
+private lemma isStarProjection_entry_symm {n : Type*} [Fintype n]
+    {P : Matrix n n ℝ} (hP : IsStarProjection P) (i j : n) : P i j = P j i := by
+  have h := congrFun (congrFun hP.isSelfAdjoint j) i
+  simpa [Matrix.star_apply] using h
+
+/-- The squared norm of the `j`-th column of a real star projection is its `(j, j)` entry. -/
+private lemma norm_sq_mulVec_single_eq {n : Type*} [Fintype n] [DecidableEq n]
+    {P : Matrix n n ℝ} (hP : IsStarProjection P) (j : n) :
+    ‖WithLp.toLp 2 (P *ᵥ Pi.single j 1)‖ ^ 2 = P j j := by
+  have h := congrFun (congrFun hP.mul_self j) j
+  rw [Matrix.mul_apply] at h
+  rw [EuclideanSpace.norm_sq_eq, ← h]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [Matrix.mulVec_single_one, Matrix.col_apply, Real.norm_eq_abs, sq_abs]
+  rw [isStarProjection_entry_symm hP j i]
+  ring
+
 /-- **Frobenius error from head capture**: for every $\mathbf{W} \in \mathbb{R}^{n \times k}$ and
 $\mathbf{M} \in \mathbb{R}^{k \times n}$, $n = k \oplus (\{0, 1, 2\} \times m)$ and
 $\mathbf{D} = \operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m, 3\mathbf{I}_m)$,
@@ -106,7 +124,85 @@ theorem le_frobNorm_diagonal_sub_mul_sq (W : Matrix (k ⊕ (Fin 3 × m)) k ℝ)
     14 * Fintype.card m + 7 * (Fintype.card k -
         ∑ a : k, ‖WithLp.toLp 2 (rangeProjector W *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2) ≤
       frobNorm (Matrix.diagonal (equispacedLevelSpectrum k m 2) - W * M) ^ 2 := by
-  sorry
+  set P := rangeProjector W with hPdef
+  set Q : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ := 1 - P with hQdef
+  set d := equispacedLevelSpectrum k m 2 with hd
+  have hP : IsStarProjection P := isStarProjection_rangeProjector W
+  have hQ : IsStarProjection Q := isStarProjection_one_sub_rangeProjector W
+  -- Step 1: `Q (D - W M) = Q D` since `Q W = 0`, and `Q` contracts.
+  have hcontr : frobNorm (Q * Matrix.diagonal d) ^ 2 ≤
+      frobNorm (Matrix.diagonal d - W * M) ^ 2 := by
+    have h : Q * Matrix.diagonal d = Q * (Matrix.diagonal d - W * M) := by
+      have hQW : Q * W = 0 := by
+        rw [hQdef, Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
+      rw [Matrix.mul_sub, ← Matrix.mul_assoc, hQW, Matrix.zero_mul, sub_zero]
+    rw [h]
+    exact pow_le_pow_left₀ (frobNorm_nonneg _) (hQ.frobNorm_mul_le _) 2
+  -- Step 2: `‖Q D‖_F² = ∑ d_j² Q_jj`, as `∑ᵢ Q_ij² = Q_jj`.
+  have hcol : ∀ j, ∑ i, Q i j ^ 2 = Q j j := by
+    intro j
+    refine Eq.trans ?_ (congrFun (congrFun hQ.mul_self j) j)
+    rw [Matrix.mul_apply]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [isStarProjection_entry_symm hQ j i]
+    ring
+  have hfrob : frobNorm (Q * Matrix.diagonal d) ^ 2 = ∑ j, d j ^ 2 * Q j j := by
+    rw [frobNorm_sq_eq_sum_sq, Finset.sum_comm]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [← hcol j, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Matrix.mul_diagonal]
+    ring
+  have hQjj : ∀ j, Q j j = 1 - P j j := fun j => by rw [hQdef]; simp
+  -- Step 3: `P_jj = ‖P e_j‖²` is nonnegative, and `∑ P_jj = rank P ≤ k`.
+  have hPnn : ∀ j, 0 ≤ P j j := fun j => by rw [← norm_sq_mulVec_single_eq hP j]; positivity
+  have ht : ∑ a : k, ‖WithLp.toLp 2 (P *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2 =
+      ∑ a : k, P (Sum.inl a) (Sum.inl a) :=
+    Finset.sum_congr rfl fun a _ => norm_sq_mulVec_single_eq hP _
+  have htr : ∑ j, P j j ≤ Fintype.card k := by
+    have h1 : ∑ j, P j j = P.trace := rfl
+    have h2 : P.trace = (W.rank : ℝ) := trace_rangeProjector W
+    have h3 : (W.rank : ℝ) ≤ Fintype.card k := by exact_mod_cast Matrix.rank_le_card_width W
+    linarith
+  rw [Fintype.sum_sum_type] at htr
+  -- Step 4: split the head (`d = 4`) from the tail (`d = 1, 2, 3`, where `d² ≤ 9`).
+  have hd_inl : ∀ a : k, d (Sum.inl a) = 4 := fun a => by
+    simp [hd, equispacedLevelSpectrum]; norm_num
+  have hd_inr : ∀ x : Fin 3 × m, d (Sum.inr x) = ((x.1 : ℕ) : ℝ) + 1 := fun x => by
+    simp [hd, equispacedLevelSpectrum]
+  have hB : ∑ x : Fin 3 × m, (((x.1 : ℕ) : ℝ) + 1) ^ 2 * P (Sum.inr x) (Sum.inr x) ≤
+      9 * ∑ x : Fin 3 × m, P (Sum.inr x) (Sum.inr x) := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun x _ => ?_
+    have h3 : ((x.1 : ℕ) : ℝ) ≤ 2 := by exact_mod_cast Fin.is_le x.1
+    have h0 : (0 : ℝ) ≤ ((x.1 : ℕ) : ℝ) := Nat.cast_nonneg _
+    have h9 : (0 : ℝ) ≤ 9 - (((x.1 : ℕ) : ℝ) + 1) ^ 2 := by nlinarith
+    nlinarith [mul_nonneg h9 (hPnn (Sum.inr x))]
+  have hA : ∑ a : k, d (Sum.inl a) ^ 2 * Q (Sum.inl a) (Sum.inl a) =
+      16 * Fintype.card k - 16 * ∑ a : k, P (Sum.inl a) (Sum.inl a) := by
+    have h16 : ∀ a : k, d (Sum.inl a) ^ 2 * Q (Sum.inl a) (Sum.inl a) =
+        16 - 16 * P (Sum.inl a) (Sum.inl a) := fun a => by
+      rw [hd_inl, hQjj]; ring
+    rw [Finset.sum_congr rfl fun a _ => h16 a, Finset.sum_sub_distrib, ← Finset.mul_sum]
+    simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    ring
+  have hX : ∑ x : Fin 3 × m, (((x.1 : ℕ) : ℝ) + 1) ^ 2 = 14 * (Fintype.card m : ℝ) := by
+    rw [Fintype.sum_prod_type]
+    simp [Fin.sum_univ_three, Finset.sum_const, Finset.card_univ]
+    ring
+  have hBt : ∑ x : Fin 3 × m, d (Sum.inr x) ^ 2 * Q (Sum.inr x) (Sum.inr x) =
+      14 * (Fintype.card m : ℝ) -
+        ∑ x : Fin 3 × m, (((x.1 : ℕ) : ℝ) + 1) ^ 2 * P (Sum.inr x) (Sum.inr x) := by
+    rw [← hX, ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [hd_inr, hQjj]
+    ring
+  have hmain : 14 * (Fintype.card m : ℝ) + 7 * (Fintype.card k -
+      ∑ a : k, P (Sum.inl a) (Sum.inl a)) ≤ ∑ j, d j ^ 2 * Q j j := by
+    rw [Fintype.sum_sum_type, hA, hBt]
+    linarith
+  rw [ht]
+  linarith [hcontr, hfrob, hmain]
 
 /-- **Spectral error from head capture**: with the notation of
 `NLAlib.le_frobNorm_diagonal_sub_mul_sq` and $k$ nonempty,
