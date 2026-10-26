@@ -304,6 +304,21 @@ theorem IsBestRankApprox.frobNorm_one_sub_rangeProjector_mul_sq_sub_le {B N Y : 
 
 /-! ### The weighted identity and its two weights -/
 
+/-- Right Pythagoras for a star projection `Q`: `‖X‖² = ‖X Q‖² + ‖X (1 - Q)‖²`. -/
+private lemma frobNorm_sq_eq_add_mul_right_proj {p q : Type*} [Fintype p] [Fintype q]
+    [DecidableEq q] {Q : Matrix q q ℝ} (hQ : IsStarProjection Q) (X : Matrix p q ℝ) :
+    frobNorm X ^ 2 = frobNorm (X * Q) ^ 2 + frobNorm (X * (1 - Q)) ^ 2 := by
+  have h := IsStarProjection.frobNorm_sq_eq_add hQ Xᴴ
+  have e1 : frobNorm (Q * Xᴴ) = frobNorm (X * Q) := by
+    rw [← frobNorm_conjTranspose (Q * Xᴴ), Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose, hQ.conjTranspose_eq]
+  have e2 : frobNorm ((1 - Q) * Xᴴ) = frobNorm (X * (1 - Q)) := by
+    rw [← frobNorm_conjTranspose ((1 - Q) * Xᴴ), Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_sub, Matrix.conjTranspose_one,
+      hQ.conjTranspose_eq]
+  rw [frobNorm_conjTranspose, e1, e2] at h
+  exact h
+
 /-- **The weighted identity**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, an orthogonal
 projector $\mathbf{Z}$, any $k$ and any real $\theta$, with $\mathbf{P}$ the range projector of
 $\llbracket\mathbf{B}\rrbracket_k$ and $\mathbf{B}_k = \llbracket\mathbf{B}\rrbracket_k$,
@@ -339,7 +354,39 @@ theorem frobNorm_one_sub_mul_sq_sub_eq_add (B : Matrix m n ℝ) (k : ℕ) {Z : M
         (θ ^ 2 * frobNorm (Z * (1 - rangeProjector (truncatedSVD B k))) ^ 2 -
           frobNorm (Z * (B - truncatedSVD B k)) ^ 2) +
         θ ^ 2 * (frobNorm (rangeProjector (truncatedSVD B k)) ^ 2 - frobNorm Z ^ 2) := by
-  sorry
+  classical
+  have hPB : rangeProjector (truncatedSVD B k) * B = truncatedSVD B k :=
+    rangeProjector_truncatedSVD_mul B k
+  have hBP : B * rangeProjector (truncatedSVD B k)ᴴ = truncatedSVD B k :=
+    mul_rangeProjector_conjTranspose_truncatedSVD B k
+  have hL : frobNorm ((1 - Z) * B) ^ 2 -
+      frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2 =
+      frobNorm (rangeProjector (truncatedSVD B k) * B) ^ 2 - frobNorm (Z * B) ^ 2 := by
+    linarith [IsStarProjection.frobNorm_sq_eq_add hZ B,
+      IsStarProjection.frobNorm_sq_eq_add (isStarProjection_rangeProjector (truncatedSVD B k)) B]
+  have hR1 : frobNorm ((1 - Z) * truncatedSVD B k) ^ 2 =
+      frobNorm (truncatedSVD B k) ^ 2 - frobNorm (Z * truncatedSVD B k) ^ 2 := by
+    linarith [IsStarProjection.frobNorm_sq_eq_add hZ (truncatedSVD B k)]
+  have hR2 : frobNorm ((1 - Z) * rangeProjector (truncatedSVD B k)) ^ 2 =
+      frobNorm (rangeProjector (truncatedSVD B k)) ^ 2 -
+        frobNorm (Z * rangeProjector (truncatedSVD B k)) ^ 2 := by
+    linarith [IsStarProjection.frobNorm_sq_eq_add hZ (rangeProjector (truncatedSVD B k))]
+  have hR3 : frobNorm (Z * (1 - rangeProjector (truncatedSVD B k))) ^ 2 =
+      frobNorm Z ^ 2 - frobNorm (Z * rangeProjector (truncatedSVD B k)) ^ 2 := by
+    linarith [frobNorm_sq_eq_add_mul_right_proj
+      (isStarProjection_rangeProjector (truncatedSVD B k)) Z]
+  have hk1 : Z * B * (1 - rangeProjector (truncatedSVD B k)ᴴ) = Z * (B - truncatedSVD B k) := by
+    rw [Matrix.mul_sub, Matrix.mul_one, Matrix.mul_assoc, hBP, Matrix.mul_sub]
+  have hk2 : Z * B * rangeProjector (truncatedSVD B k)ᴴ = Z * truncatedSVD B k := by
+    rw [Matrix.mul_assoc, hBP]
+  have hR4 : frobNorm (Z * (B - truncatedSVD B k)) ^ 2 =
+      frobNorm (Z * B) ^ 2 - frobNorm (Z * truncatedSVD B k) ^ 2 := by
+    have e := frobNorm_sq_eq_add_mul_right_proj (isStarProjection_rangeProjector
+      (truncatedSVD B k)ᴴ) (Z * B)
+    rw [hk1, hk2] at e
+    linarith
+  rw [hL, hPB, hR1, hR2, hR3, hR4]
+  ring
 
 omit [DecidableEq m] in
 /-- **The head weight**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
