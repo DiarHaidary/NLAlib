@@ -409,6 +409,79 @@ theorem IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le
     _ ≤ ν.real Sᶜ := measureReal_mono hpre
     _ ≤ 1 / 4 := hν1
 
+/-- The lower bound of
+`NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame` on a
+space carrying a standard Gaussian $n \times (q + 1)$ matrix independent of $\mathbf{U}$. -/
+private theorem IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_indepFun
+    {κ : ℝ} {q : ℕ} {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ (q + 1) (13 * (q + 3)) d)
+    (hκ : 2 ≤ κ) {alg : QueryAlgorithm (n → ℝ) ((n → ℝ) × (n → ℝ)) q (n → ℝ)}
+    (halg : alg.IsMeasurable) {b : n → ℝ} (hb : b ≠ 0) {U : Ω → Matrix n n ℝ}
+    (hU : HasLaw U (haarFrame n n) μ) {Z : Ω → Matrix n (Fin q ⊕ Unit) ℝ}
+    (hZ : HasLaw Z (gaussianMatrix n (Fin q ⊕ Unit)) μ) (hUZ : IndepFun U Z μ) :
+    μ.real {ω | ‖WithLp.toLp 2 (b - (U ω * Matrix.diagonal d * (U ω)ᴴ) *ᵥ
+        alg.run (hiddenRotationOracle (U ω) (Matrix.diagonal d)))‖ <
+        Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖} ≤ 1 / 4 := by
+  have hIP := hU.isProbabilityMeasure
+  have hb0 : 0 < ‖WithLp.toLp 2 b‖ := norm_pos_iff.2 (by simpa using hb)
+  obtain ⟨G, hG⟩ := (QueryAlgorithm.isPassStructured_id alg).mapOutput (Matrix.replicateCol Unit)
+    |>.exists_isKrylovCoupling_of_hasLaw_haarFrame (p := q) (fun i hi => hi)
+    (halg.mapOutput (by fun_prop)) (Matrix.diagonal d) (Matrix.replicateCol Unit b) hU hZ hUZ
+  set ξ : Ω → n → ℝ := fun ω => ‖WithLp.toLp 2 b‖⁻¹ • ((U ω)ᴴ *ᵥ b) with hξdef
+  have hξ : HasLaw ξ (uniformSphereVector n) μ := by
+    have h := hasLaw_conjTranspose_mulVec_of_hasLaw_haarFrame hU hasOrthonormalCols_one
+      (x := ‖WithLp.toLp 2 b‖⁻¹ • b) (by
+        rw [WithLp.toLp_smul, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hb0.ne'])
+    simp only [Matrix.conjTranspose_one, Matrix.one_mulVec, Measure.map_id',
+      Matrix.mulVec_smul] at h
+    exact h
+  have hξG : IndepFun ξ G μ := by
+    have h : ξ = (fun M : Matrix n Unit ℝ => ‖WithLp.toLp 2 b‖⁻¹ • fun i => M i ()) ∘
+        fun ω => (U ω)ᴴ * Matrix.replicateCol Unit b := by
+      funext ω i
+      simp [ξ, Matrix.mul_apply, Matrix.mulVec, dotProduct]
+    rw [h]
+    exact hG.indepFun.comp (by fun_prop) measurable_id
+  refine (measureReal_mono_ae ?_).trans
+    (hd.measureReal_exists_norm_sub_mulVec_lt_le hκ (c := Fin q ⊕ Unit) (by simp; omega) hξ
+      hG.hasLaw_gaussianMatrix hξG)
+  filter_upwards [hG.ae_range_le, ae_hasOrthonormalCols_of_hasLaw_haarFrame hU le_rfl]
+    with ω hr hO hω
+  simp only [QueryAlgorithm.run_mapOutput] at hr
+  change _ < _ at hω
+  change ∃ _, _
+  set x := alg.run (hiddenRotationOracle (U ω) (Matrix.diagonal d))
+  set c := ‖WithLp.toLp 2 b‖
+  refine ⟨c⁻¹ • ((U ω)ᴴ *ᵥ x), Submodule.smul_mem _ _ ?_, ?_⟩
+  · -- `Uᴴ x` is in the Krylov space of `[Uᴴ b, G]`, which is that of `[ξ, G]`
+    have hmem : (U ω)ᴴ *ᵥ x ∈ LinearMap.range ((U ω)ᴴ * Matrix.replicateCol Unit x).mulVecLin :=
+      ⟨fun _ => 1, by
+        rw [Matrix.mulVecLin_apply, ← Matrix.mulVec_mulVec]
+        congr 1
+        ext i
+        simp [Matrix.mulVec, dotProduct]⟩
+    refine blockKrylovSpace_le_of_range_le ?_ (q + 1) (hr hmem)
+    rw [show Matrix.fromCols ((U ω)ᴴ * Matrix.replicateCol Unit b) (G ω) =
+        Matrix.fromCols (Matrix.replicateCol Unit (ξ ω)) (G ω) *
+          Matrix.diagonal (Sum.elim (fun _ => c) fun _ => 1) from ?_, Matrix.mulVecLin_mul]
+    · exact LinearMap.range_comp_le_range _ _
+    · ext i (j | j)
+      · simp [hξdef, Matrix.mul_apply, Matrix.mulVec, dotProduct]
+        field_simp
+      · simp [Matrix.mul_diagonal]
+  · -- the residual is `c⁻¹ • Uᴴ (b - A x)`, and `Uᴴ` is a contraction
+    have heq : ξ ω - Matrix.diagonal d *ᵥ (c⁻¹ • ((U ω)ᴴ *ᵥ x)) =
+        c⁻¹ • ((U ω)ᴴ *ᵥ (b - (U ω * Matrix.diagonal d * (U ω)ᴴ) *ᵥ x)) := by
+      rw [Matrix.mulVec_sub, Matrix.mulVec_mulVec, show (U ω)ᴴ * (U ω * Matrix.diagonal d *
+          (U ω)ᴴ) = Matrix.diagonal d * (U ω)ᴴ by
+          rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, hO.conjTranspose_mul_self, Matrix.one_mul],
+        ← Matrix.mulVec_mulVec, Matrix.mulVec_smul, smul_sub]
+    rw [heq, WithLp.toLp_smul, norm_smul, norm_inv, norm_norm, inv_mul_lt_iff₀ hb0]
+    refine ((norm_toLp_mulVec_le _ _).trans (mul_le_of_le_one_left (norm_nonneg _) ?_)).trans_lt ?_
+    · rw [specNorm_conjTranspose]
+      exact hO.specNorm_le_one
+    · push_cast
+      linarith
+
 /-- **Shamir's lower bound for one deterministic algorithm**: let $\mathbf{d}$ be a Chebyshev
 two-interval spectrum for $\kappa \ge 2$ with depth $q + 1$ and margin $13(q + 3)$,
 $\mathbf{U}$ Haar on the orthogonal $n \times n$ matrices and
@@ -443,7 +516,20 @@ theorem IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasL
     μ.real {ω | ‖WithLp.toLp 2 (b - (U ω * Matrix.diagonal d * (U ω)ᴴ) *ᵥ
         alg.run (hiddenRotationOracle (U ω) (Matrix.diagonal d)))‖ <
         Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖} ≤ 1 / 4 := by
-  sorry
+  have hmeas : MeasurableSet {V : Matrix n n ℝ | ‖WithLp.toLp 2 (b - (V * Matrix.diagonal d * Vᴴ) *ᵥ
+      alg.run (hiddenRotationOracle V (Matrix.diagonal d)))‖ <
+      Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖} := by
+    have hrun := halg.measurable_run (O := fun V => hiddenRotationOracle V (Matrix.diagonal d))
+      (Measurable.hiddenRotationOracle measurable_fst measurable_snd (Matrix.diagonal d))
+    refine measurableSet_lt ?_ measurable_const
+    exact (continuous_norm.comp (PiLp.continuous_toLp 2 _)).measurable.comp
+      (measurable_const.sub
+        (Measurable.hiddenRotationOracle measurable_id hrun (Matrix.diagonal d)).fst)
+  have hfst := (measurePreserving_fst (μ := haarFrame n n)
+    (ν := gaussianMatrix n (Fin q ⊕ Unit))).hasLaw
+  rw [hU.measureReal_eq hmeas, ← hfst.measureReal_eq hmeas]
+  exact hd.measureReal_norm_sub_mulVec_lt_le_of_indepFun hκ halg hb hfst
+    measurePreserving_snd.hasLaw (indepFun_prod measurable_id measurable_id)
 
 /-- **Shamir's lower bound, randomized worst case**: let $\mathbf{d}$ be a Chebyshev two-interval
 spectrum for $\kappa \ge 2$ with depth $q + 1$ and margin $13(q + 3)$. For every randomized
