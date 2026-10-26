@@ -173,7 +173,8 @@ theorem run_hiddenRotationSimulation (alg : QueryAlgorithm (n → 𝕜) ((n → 
     (U D : Matrix n n 𝕜) :
     (alg.hiddenRotationSimulation D).run (twoSidedMulVec U) =
       alg.run (hiddenRotationOracle U D) := by
-  sorry
+  unfold QueryAlgorithm.run QueryAlgorithm.transcript
+  exact congrArg alg.output (hiddenRotationDecode_history_hiddenRotationSimulation alg U D q)
 
 /-- The hidden-rotation simulation of a measurable algorithm is measurable.
 Proof: as `NLAlib.QueryAlgorithm.IsMeasurable.gramSimulation`, split on the parity of the round;
