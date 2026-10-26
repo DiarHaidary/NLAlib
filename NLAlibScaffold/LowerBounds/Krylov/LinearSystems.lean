@@ -635,7 +635,63 @@ theorem IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal {κ �
       2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
         (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖ ≤ ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / (4 * ε)) ≤ 2 * (q + 1) := by
-  sorry
+  by_contra h
+  replace h := not_le.mp h
+  have hκpos : 0 < κ := by linarith
+  have hlog : 2 * (q + 1) / κ < Real.log (1 / (4 * ε)) := by
+    rw [div_lt_iff₀ hκpos]; linarith
+  rw [Real.lt_log_iff_exp_lt (by positivity)] at hlog
+  have hε' : ε < Real.exp (-(2 * (q + 1) / κ)) / 4 := by
+    rw [Real.exp_neg, lt_div_iff₀ (by norm_num : (0:ℝ) < 4), inv_eq_one_div,
+      lt_div_iff₀ (Real.exp_pos _)]
+    rw [lt_div_iff₀ (by positivity)] at hlog
+    nlinarith
+  have hn : Nonempty n := by
+    rcases isEmpty_or_nonempty n with h0 | h0
+    · have h1 := hd.le_card_pos 0
+      simp at h1
+      exfalso
+      linarith [(Nat.cast_nonneg q : (0:ℝ) ≤ q)]
+    · exact h0
+  obtain ⟨i⟩ := hn
+  set b : n → ℝ := Pi.single i 1 with hb_def
+  have hb : b ≠ 0 := by
+    intro h0
+    have := congrFun h0 i
+    simp [hb_def] at this
+  have hbpos : 0 < ‖WithLp.toLp 2 b‖ := norm_pos_iff.mpr (by simpa using hb)
+  obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_norm_sub_mulVec_ge hd hκ halg ρ hb
+  have hsub := hsucc U hU b
+  have hRm : Measurable fun s => ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+      (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖ := by
+    have hO : Measurable (Function.uncurry fun _ : Unit =>
+        hiddenRotationOracle U (Matrix.diagonal d)) := by
+      have hc : Continuous (hiddenRotationOracle U (Matrix.diagonal d)) := by
+        unfold hiddenRotationOracle; fun_prop
+      exact hc.measurable.comp measurable_snd
+    have hpair : Measurable fun s : S => (s, ()) := measurable_id.prodMk measurable_const
+    have hrun : Measurable fun s => (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)) :=
+      (halg.measurable_run hO).comp hpair
+    have hcont : Continuous fun v : n → ℝ =>
+        ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ v)‖ := by
+      fun_prop
+    exact hcont.measurable.comp hrun
+  have hF : MeasurableSet {s | Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖ ≤
+      ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+        (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖} :=
+    measurableSet_le measurable_const hRm
+  have hsubset : {s | ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+      (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖ ≤ ε * ‖WithLp.toLp 2 b‖}
+      ⊆ {s | Real.exp (-(2 * (q + 1) / κ)) / 4 * ‖WithLp.toLp 2 b‖ ≤
+        ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
+          (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖}ᶜ := by
+    intro s hs
+    have := mul_lt_mul_of_pos_right hε' hbpos
+    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, not_le] at hs ⊢
+    linarith
+  have hmono := measureReal_mono (μ := ρ) hsubset
+  rw [probReal_compl_eq_one_sub hF] at hmono
+  linarith
 
 /-- **The matrix–vector complexity of linear systems** (Shamir's theorem): let $\kappa \ge 2$,
 $\varepsilon > 0$ and $\lvert n \rvert \ge 20(q + 3)^2$. If a randomized algorithm (a measurable
