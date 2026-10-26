@@ -182,7 +182,19 @@ the odd rounds apply the continuous map $\mathbf{y} \mapsto \mathbf{D}\mathbf{y}
 theorem IsMeasurable.hiddenRotationSimulation {β : Type*} [MeasurableSpace β]
     {alg : QueryAlgorithm (n → ℝ) ((n → ℝ) × (n → ℝ)) q β} (halg : alg.IsMeasurable)
     (D : Matrix n n ℝ) : (alg.hiddenRotationSimulation D).IsMeasurable := by
-  sorry
+  refine ⟨fun j hj => ?_, ?_⟩
+  · unfold QueryAlgorithm.hiddenRotationSimulation
+    by_cases hjm : j % 2 = 0
+    · simp only [hjm, dite_true]
+      refine measurable_const.prodMk ((halg.measurable_query (j / 2) (by omega)).comp ?_)
+      exact measurable_pi_iff.2 fun l => (measurable_fst.comp (measurable_pi_apply _)).prodMk
+        (measurable_snd.comp (measurable_pi_apply _))
+    · simp only [hjm, dite_false]
+      exact ((continuous_const.matrix_mulVec continuous_id).measurable.comp
+        (measurable_snd.comp (measurable_pi_apply _))).prodMk measurable_const
+  · refine halg.measurable_output.comp ?_
+    exact measurable_pi_iff.2 fun l => (measurable_fst.comp (measurable_pi_apply _)).prodMk
+      (measurable_snd.comp (measurable_pi_apply _))
 
 end QueryAlgorithm
 
