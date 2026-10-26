@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle
 
 /-!
 # Truncated generalized Nyström: a lower bound on Epperly and Webber's instance

@@ -367,7 +367,7 @@ Additions to existing files (scaffold mirrors at the same path):
 |---|---|---|
 | X1, X2 | `Probability/Distributions/ChiSquareMoments.lean` | $\chi^2$ moments |
 | T1, T2, T3 | `LowRank/Structural/Truncation.lean` | next to the perturbed-truncation lemmas they sharpen or reverse |
-| G1, G2, G3 | `LowRank/Gaussian/TruncatedGeneralizedNystrom.lean` | Gaussian expectations of truncated GN |
+| G1, G2, G3 | `LowRank/Gaussian/TruncatedGeneralizedNystromOracle.lean` (split from `TruncatedGeneralizedNystrom.lean`, decision SPLIT-GAUSSIAN-TGN) | Gaussian expectations of truncated GN |
 | W1 | `Matrix/Pseudoinverse/NormBounds.lean` | a pseudoinverse norm inequality |
 | W2 | `RandomMatrix/Haar/Blocks.lean` | next to its $\mathbf{R} = \mathbf{I}$ equality |
 | W3, W4, W5 | `Regression/SketchAndSolve.lean` | next to the exact Haar sketch-and-solve identity |

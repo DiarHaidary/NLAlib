@@ -78,6 +78,12 @@ replace the private `exists_compl_frames`/`obliqueProjector_mul_eq_frames` of
 `NLAlib.Matrix.Norms.Projector` (NormBounds). Reports: `reports/Review-S10-Cleanup.md` and
 `reports/Stage-S10.md` in the harness repository.
 
+Maintainer decisions (`Review-S10.json`, 2026-10-26): LB-PLACE-ADDITIONS (a) and PZ-LOCATOR (a)
+keep things as they are; SPLIT-GAUSSIAN-TGN (a): the oracle section of
+`LowRank/Gaussian/TruncatedGeneralizedNystrom` (1089 lines; G1–G3 and their private helpers)
+moved to the new `LowRank/Gaussian/TruncatedGeneralizedNystromOracle` (778 + 347 lines), names
+unchanged; `LowerBounds/LowRank/TruncatedGeneralizedNystrom` imports the new file.
+
 ## Library layers follow the imports (2026-10-25)
 
 Branch `reorg/layers` (worktree `nlalib-reorg`), from `origin/main`. Maintainer decision on library
