@@ -122,7 +122,79 @@ theorem eq_map_polarFactor_mul_of_forall_map_mul_left_eq [DecidableEq n] [Decida
     (hinv : ∀ s : Matrix n n ℝ, HasOrthonormalCols s → s * (1 - E) = 1 - E →
       ν.map (s * ·) = ν) :
     ν = (gaussianMatrix n k).map fun Z => polarFactor (E * Z) := by
-  sorry
+  obtain ⟨d, _, _, E₀, hE₀, hEE⟩ : ∃ (d : Type) (_ : Fintype d) (_ : DecidableEq d)
+      (E₀ : Matrix n d ℝ), HasOrthonormalCols E₀ ∧ E₀ * E₀ᴴ = E :=
+    ⟨Fin E.rank, inferInstance, inferInstance,
+      hE.exists_hasOrthonormalCols_mul_conjTranspose_eq (Fintype.card_fin _)⟩
+  have hm : Measurable (fun x : Matrix n k ℝ => E₀ᴴ * x) :=
+    measurable_const.matrix_mul measurable_id
+  have hm' : Measurable (fun y : Matrix d k ℝ => E₀ * y) :=
+    measurable_const.matrix_mul measurable_id
+  have hE0 : E₀ᴴ * (1 - E) = 0 := by
+    rw [Matrix.mul_sub, Matrix.mul_one, ← hEE, ← Matrix.mul_assoc, hE₀.conjTranspose_mul_self,
+      Matrix.one_mul, sub_self]
+  have hpt : ∀ᵐ x ∂ν, E₀ * (E₀ᴴ * x) = x := hν.mono fun x hx => by
+    rw [← Matrix.mul_assoc, hEE, hx.2]
+  -- the pushforward of `ν` is a.s. orthonormal
+  have hν'orth : ∀ᵐ x ∂(ν.map fun x => E₀ᴴ * x), HasOrthonormalCols x := by
+    refine (ae_map_iff hm.aemeasurable isClosed_setOf_hasOrthonormalCols.measurableSet).2 ?_
+    filter_upwards [hν] with x hx
+    rw [hasOrthonormalCols_iff]
+    calc (E₀ᴴ * x)ᴴ * (E₀ᴴ * x) = xᴴ * (E₀ * E₀ᴴ) * x := by
+          simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc]
+      _ = xᴴ * x := by rw [hEE, Matrix.mul_assoc, hx.2]
+      _ = 1 := hasOrthonormalCols_iff.1 hx.1
+  have : IsProbabilityMeasure (ν.map fun x => E₀ᴴ * x) :=
+    Measure.isProbabilityMeasure_map hm.aemeasurable
+  -- the pushforward is left unitarily invariant
+  have : IsLeftUnitarilyInvariant (ν.map fun x => E₀ᴴ * x) := by
+    refine ⟨fun U hU => ?_⟩
+    have hs := hE₀.hasOrthonormalCols_one_add_mul_sub_one_mul_conjTranspose hU
+    have hsE : (1 + E₀ * (U - 1) * E₀ᴴ) * (1 - E) = 1 - E := by
+      rw [Matrix.add_mul, Matrix.one_mul, Matrix.mul_assoc, hE0, Matrix.mul_zero, add_zero]
+    have hEs : E₀ᴴ * (1 + E₀ * (U - 1) * E₀ᴴ) = U * E₀ᴴ := by
+      simp only [Matrix.mul_add, Matrix.mul_one, Matrix.mul_assoc,
+        hE₀.conjTranspose_mul_cancel_left, Matrix.mul_sub, Matrix.sub_mul]
+      abel
+    have hpt2 : ((fun x : Matrix d k ℝ => U * x) ∘ fun x : Matrix n k ℝ => E₀ᴴ * x) =
+        fun x : Matrix n k ℝ => E₀ᴴ * ((1 + E₀ * (U - 1) * E₀ᴴ) * x) := funext fun x => by
+      simp only [Function.comp_apply]
+      rw [← Matrix.mul_assoc U, ← hEs, Matrix.mul_assoc]
+    have hsm : Measurable (fun x : Matrix n k ℝ => (1 + E₀ * (U - 1) * E₀ᴴ) * x) :=
+      measurable_const.matrix_mul measurable_id
+    have key : ν.map (fun x => E₀ᴴ * ((1 + E₀ * (U - 1) * E₀ᴴ) * x)) = ν.map (fun x => E₀ᴴ * x) :=
+      calc ν.map (fun x => E₀ᴴ * ((1 + E₀ * (U - 1) * E₀ᴴ) * x))
+          = (ν.map fun x => (1 + E₀ * (U - 1) * E₀ᴴ) * x).map fun x => E₀ᴴ * x :=
+            (Measure.map_map hm hsm).symm
+        _ = ν.map fun x => E₀ᴴ * x := by rw [hinv _ hs hsE]
+    have hUm : Measurable (fun x : Matrix d k ℝ => U * x) :=
+      measurable_const.matrix_mul measurable_id
+    rw [Measure.map_map hUm hm, hpt2, key]
+  -- so it is the Haar frame law
+  have hν'eq : ν.map (fun x => E₀ᴴ * x) = haarFrame d k := by
+    have h := (hasLaw_haarFrame_of_isLeftUnitarilyInvariant (μ := ν.map fun x => E₀ᴴ * x)
+      HasLaw.id hν'orth).map_eq
+    rwa [Measure.map_id] at h
+  have hνrec : ν = (ν.map fun x => E₀ᴴ * x).map fun y => E₀ * y := by
+    rw [Measure.map_map hm' hm]
+    exact Measure.map_id.symm.trans (Measure.map_congr (hpt.mono fun x hx => hx.symm))
+  -- the right-hand side
+  have hgauss : (gaussianMatrix n k).map (fun Z => E₀ᴴ * Z) = gaussianMatrix d k :=
+    (hasLaw_const_mul_of_hasLaw_gaussianMatrix HasLaw.id (U := E₀ᴴ)
+      (by rwa [Matrix.conjTranspose_conjTranspose])).map_eq
+  have hEZ : ∀ Z : Matrix n k ℝ, polarFactor (E * Z) = E₀ * polarFactor (E₀ᴴ * Z) := fun Z => by
+    rw [← hEE, Matrix.mul_assoc, hE₀.polarFactor_mul_left]
+  have hR : (gaussianMatrix n k).map (fun Z : Matrix n k ℝ => polarFactor (E * Z)) =
+      (haarFrame d k).map fun y => E₀ * y := by
+    have hm'' : Measurable (fun y : Matrix d k ℝ => E₀ * polarFactor y) :=
+      measurable_const.matrix_mul measurable_polarFactor
+    rw [show (fun Z : Matrix n k ℝ => polarFactor (E * Z)) =
+        (fun y => E₀ * polarFactor y) ∘ fun Z => E₀ᴴ * Z from funext hEZ,
+      ← Measure.map_map hm'' hm, hgauss, haarFrame, Measure.map_map hm' measurable_polarFactor]
+    rfl
+  calc ν = (ν.map fun x => E₀ᴴ * x).map fun y => E₀ * y := hνrec
+    _ = (haarFrame d k).map fun y => E₀ * y := by rw [hν'eq]
+    _ = _ := hR.symm
 
 /-- **Gaussianization in a subspace**: let $\mathbf{E}$ be an orthogonal projector of rank at
 least $\lvert k \rvert$, $\mathbf{Y}$ a standard Gaussian $n \times k$ matrix and $\mathbf{F}$ a
