@@ -2,6 +2,27 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Documentation and validation audit fixes (2026-10-26)
+
+Branch `codex/fix-audit-validation`, based on `79f8cc2`. The weighted Haar-block docstring now
+uses the almost-sure pseudoinverse envelope from the integrability proof, replacing the false
+comparison with the unweighted integrand. No Lean declaration or proof changed; the port ledger
+has no new or renamed targets.
+
+The constant-body check retains indented continuations after blank lines. The documentation
+scanners handle nested comments and skip Lean string literals. Regression tests cover stale
+constant values and invalid mathematics that the previous scanners missed. Metadata test fixtures
+use explicit LF bytes, and `.gitattributes` keeps Lean sources and generated root modules at LF.
+CI runs documentation regression tests on Windows as well as Ubuntu.
+
+Validation on Windows: the full warning-fatal library build, both root-module checks, axiom audit
+(11,197 declarations, zero violations), environment linters, extraction, references, ledger,
+constants, generated rules and LaTeX checks pass. All 61 Python and 14 Node regression tests pass.
+The 102-rule check, including names, reports zero errors with the existing 73 baseline violations
+and 221 warnings unchanged. Independent review also checked the identifier-prime/character-literal
+boundary and outdented-comment regressions. The scanners remain bounded lexical tools, not parsers
+for arbitrary Lean syntax extensions or interpolated terms.
+
 ## LB-A matvec query model: proofs (2026-10-25)
 
 Branch `cleanup/lba` (worktree `nlalib-cleanup-lba`), over `integrate/lba` with `origin/main`
