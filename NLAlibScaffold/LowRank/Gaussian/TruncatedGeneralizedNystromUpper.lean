@@ -253,6 +253,60 @@ theorem
       0 < ε → ε ≤ 1 → C * k ≤ ε * Fintype.card l → 4 * Fintype.card l ≤ Fintype.card p →
       ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
         (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  sorry
+  obtain ⟨C₁, hC₁, hM⟩ :=
+    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+  refine ⟨4 + 2 * C₁, by positivity, ?_⟩
+  intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hε hε1 hkl hlp
+  have hF : 0 ≤ frobNorm (A - truncatedSVD A k) ^ 2 := by positivity
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · have h1 : gaussianProjectionFactor 0 (Fintype.card l) = 1 := by
+      simp [gaussianProjectionFactor_def]
+    have hM0 := hM μ A X Ψ 0 hX hΨ hXΨ (by simp) hlp
+    refine hM0.trans (mul_le_mul_of_nonneg_right (by rw [h1]; simp; linarith) hF)
+  · have hk0 : (0:ℝ) ≤ k := Nat.cast_nonneg k
+    have hk1' : 1 ≤ k := hk
+    have hk1 : (1:ℝ) ≤ k := by exact_mod_cast hk1'
+    have hL0 : (0:ℝ) ≤ Fintype.card l := Nat.cast_nonneg _
+    have hkl' : (4 + 2 * C₁) * (k:ℝ) ≤ ε * (Fintype.card l : ℝ) := hkl
+    have h4k : 4 * (k:ℝ) ≤ Fintype.card l := by
+      nlinarith [mul_nonneg hC₁.le hk0, mul_nonneg (sub_nonneg.2 hε1) hL0]
+    have h4k' : 4 * k ≤ Fintype.card l := by exact_mod_cast h4k
+    have hlp' : 4 * (Fintype.card l : ℝ) ≤ Fintype.card p := by exact_mod_cast hlp
+    have hL : (4:ℝ) ≤ Fintype.card l := by linarith
+    have hLpos : (0:ℝ) < Fintype.card l := by linarith
+    have hM' := hM μ A X Ψ k hX hΨ hXΨ h4k' hlp
+    have hfac : gaussianProjectionFactor k (Fintype.card l) ≤
+        1 + 2 * ((k:ℝ) / Fintype.card l) := by
+      rw [gaussianProjectionFactor_def]
+      have hden : (Fintype.card l : ℝ) / 2 ≤ (Fintype.card l : ℝ) - k - 1 := by linarith
+      have h2 : (k:ℝ) / ((Fintype.card l : ℝ) - k - 1) ≤ (k:ℝ) / ((Fintype.card l : ℝ) / 2) :=
+        div_le_div_of_nonneg_left hk0 (by linarith) hden
+      have h3 : (k:ℝ) / ((Fintype.card l : ℝ) / 2) = 2 * ((k:ℝ) / Fintype.card l) := by
+        ring
+      linarith
+    have hr0 : (0:ℝ) ≤ (k:ℝ) / Fintype.card l := div_nonneg hk0 hL0
+    have hkr : (4 + 2 * C₁) * ((k:ℝ) / Fintype.card l) ≤ ε := by
+      rw [mul_div_assoc', div_le_iff₀ hLpos]
+      linarith
+    have hsq : 2 * (Fintype.card l : ℝ) ≤ √((Fintype.card l : ℝ) * Fintype.card p) := by
+      calc 2 * (Fintype.card l : ℝ) = √((2 * Fintype.card l : ℝ) ^ 2) :=
+            (Real.sqrt_sq (by linarith)).symm
+        _ ≤ _ := Real.sqrt_le_sqrt (by nlinarith [mul_le_mul_of_nonneg_left hlp' hL0])
+    have e1 : (k:ℝ) / Fintype.card p ≤ (k:ℝ) / Fintype.card l / 4 := by
+      calc (k:ℝ) / Fintype.card p ≤ (k:ℝ) / (Fintype.card l * 4) :=
+            div_le_div_of_nonneg_left hk0 (by linarith) (by linarith)
+        _ = _ := by ring
+    have e2 : (k:ℝ) / √((Fintype.card l : ℝ) * Fintype.card p) ≤
+        (k:ℝ) / Fintype.card l / 2 := by
+      calc (k:ℝ) / √((Fintype.card l : ℝ) * Fintype.card p) ≤
+            (k:ℝ) / (2 * Fintype.card l) :=
+            div_le_div_of_nonneg_left hk0 (by linarith) hsq
+        _ = _ := by ring
+    have hfin : gaussianProjectionFactor k (Fintype.card l) +
+        C₁ * ((k:ℝ) / Fintype.card p + (k:ℝ) / √((Fintype.card l : ℝ) * Fintype.card p)) ≤
+        1 + ε := by
+      have := mul_le_mul_of_nonneg_left (add_le_add e1 e2) hC₁.le
+      nlinarith [mul_nonneg hC₁.le hr0]
+    exact hM'.trans (mul_le_mul_of_nonneg_right hfin hF)
 
 end NLAlib
