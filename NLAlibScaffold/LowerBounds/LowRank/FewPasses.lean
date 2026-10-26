@@ -339,6 +339,42 @@ theorem le_specNorm_diagonal_sub_mul_sq [Nonempty k] (W : Matrix (k ⊕ (Fin 3 �
   rw [div_le_iff₀ hk]
   nlinarith [hsum]
 
+/-- A real polynomial of degree below $3$ satisfies $P(4) = P(1) - 3P(2) + 3P(3)$. -/
+private lemma eval_four_eq_of_natDegree_lt {P : Polynomial ℝ} (hP : P.natDegree < 3) :
+    P.eval 4 = P.eval 1 - 3 * P.eval 2 + 3 * P.eval 3 := by
+  have h := sum_neg_one_pow_mul_choose_mul_eval_eq_zero hP 1 1
+  norm_num [Finset.sum_range_succ] at h
+  linarith
+
+/-- Summed over the columns, `P(4)² ≤ 19 (P(1)² + P(2)² + P(3)²)` for polynomials of degree below
+$3$ (Cauchy–Schwarz on the coefficients $(1, -3, 3)$). -/
+private lemma sum_eval_four_sq_le_of_natDegree_lt {b : Type*} [Fintype b] {f : b → Polynomial ℝ}
+    (hdeg : ∀ c, (f c).natDegree < 3) :
+    ∑ c, (f c).eval 4 ^ 2 ≤
+      19 * (∑ c, (f c).eval 1 ^ 2 + ∑ c, (f c).eval 2 ^ 2 + ∑ c, (f c).eval 3 ^ 2) := by
+  have hN1 : ∀ c, (f c).eval 4 ^ 2 ≤
+      19 * ((f c).eval 1 ^ 2 + (f c).eval 2 ^ 2 + (f c).eval 3 ^ 2) := by
+    intro c
+    rw [eval_four_eq_of_natDegree_lt (hdeg c)]
+    nlinarith [sq_nonneg (3 * (f c).eval 1 + (f c).eval 2),
+      sq_nonneg (3 * (f c).eval 1 - (f c).eval 3),
+      sq_nonneg (3 * (f c).eval 2 + 3 * (f c).eval 3)]
+  have := Finset.sum_le_sum fun c (_ : c ∈ Finset.univ) => hN1 c
+  simpa only [← Finset.mul_sum, Finset.sum_add_distrib] using this
+
+/-- The Loewner lower bound `s² I ≤ Mᴴ M` gives `s² ‖v‖² ≤ ‖M v‖²`. -/
+private lemma sq_mul_sum_sq_le_sum_sq_mulVec {m' b : Type*} [Fintype m'] [Fintype b]
+    [DecidableEq b] (M : Matrix m' b ℝ) {s : ℝ} (hM : s ^ 2 • (1 : Matrix b b ℝ) ≤ Mᴴ * M)
+    (v : b → ℝ) : s ^ 2 * ∑ c, v c ^ 2 ≤ ∑ i, (M *ᵥ v) i ^ 2 := by
+  have h := (Matrix.le_iff.1 hM).dotProduct_mulVec_nonneg v
+  have e : star v ⬝ᵥ ((Mᴴ * M - s ^ 2 • (1 : Matrix b b ℝ)) *ᵥ v) =
+      ∑ i, (M *ᵥ v) i ^ 2 - s ^ 2 * ∑ c, v c ^ 2 := by
+    rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec,
+      dotProduct_sub, Matrix.dotProduct_mulVec, ← Matrix.star_mulVec, dotProduct_smul,
+      star_trivial, smul_eq_mul]
+    simp only [dotProduct, star_trivial, pow_two, Finset.mul_sum]
+  linarith
+
 /-- **Interpolation bound for depth-3 Krylov vectors**: let
 $\mathbf{G} \in \mathbb{R}^{n \times b}$ with tail blocks $\mathbf{G}_j$ (rows of level $j + 1$)
 and head block $\mathbf{G}_h$, $s^2\mathbf{I} \preceq \mathbf{G}_j^{\mathsf{H}}\mathbf{G}_j$ for
@@ -363,7 +399,70 @@ theorem mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace {b : Type*} [Fintype b
     (hS : specNorm (G.submatrix Sum.inl id) ≤ S) {z : k ⊕ (Fin 3 × m) → ℝ}
     (hz : z ∈ blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m 2)) G 3) :
     s ^ 2 * ∑ a : k, z (Sum.inl a) ^ 2 ≤ 19 * S ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 := by
-  sorry
+  obtain ⟨f, hf, hz'⟩ := mem_blockKrylovSpace_iff.1 hz
+  have hzi : ∀ x, z x = ∑ c, (f c).eval (equispacedLevelSpectrum k m 2 x) * G x c := by
+    intro x
+    rw [← hz']
+    simp [Finset.sum_apply, aeval_diagonal_self, Matrix.mulVec_diagonal]
+  have hdeg : ∀ c, (f c).natDegree < 3 := by
+    intro c
+    by_cases h0 : f c = 0
+    · simp [h0]
+    · exact (Polynomial.natDegree_lt_iff_degree_lt h0).2 (by exact_mod_cast hf c)
+  -- head block: `‖G_h v‖ ≤ S ‖v‖` with `v = P(4)`
+  have hH : ∑ a : k, z (Sum.inl a) ^ 2 ≤ S ^ 2 * ∑ c, (f c).eval 4 ^ 2 := by
+    have hw : ∀ a : k, z (Sum.inl a) =
+        (G.submatrix (fun a : k => Sum.inl a) id *ᵥ fun c => (f c).eval 4) a := by
+      intro a
+      rw [hzi]
+      norm_num [equispacedLevelSpectrum, Matrix.mulVec, dotProduct, mul_comm]
+    have h1 : ‖WithLp.toLp 2 (G.submatrix (fun a : k => Sum.inl a) id *ᵥ fun c => (f c).eval 4)‖ ≤
+        S * ‖WithLp.toLp 2 (fun c => (f c).eval 4)‖ :=
+      (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right hS (norm_nonneg _))
+    have h2 := pow_le_pow_left₀ (norm_nonneg _) h1 2
+    rw [mul_pow, EuclideanSpace.norm_toLp_sq_eq_sum_sq, EuclideanSpace.norm_toLp_sq_eq_sum_sq] at h2
+    simp only [hw]
+    exact h2
+  -- the three tail levels
+  have hL0 : s ^ 2 * ∑ c, (f c).eval 1 ^ 2 ≤ ∑ i, z (Sum.inr ((0 : Fin 3), i)) ^ 2 := by
+    have hw : ∀ i : m, z (Sum.inr ((0 : Fin 3), i)) =
+        (G.submatrix (fun i : m => Sum.inr ((0 : Fin 3), i)) id *ᵥ fun c => (f c).eval 1) i := by
+      intro i
+      rw [hzi]
+      norm_num [equispacedLevelSpectrum, Matrix.mulVec, dotProduct, mul_comm]
+    simp only [hw]
+    exact sq_mul_sum_sq_le_sum_sq_mulVec _ (hs 0) _
+  have hL1 : s ^ 2 * ∑ c, (f c).eval 2 ^ 2 ≤ ∑ i, z (Sum.inr ((1 : Fin 3), i)) ^ 2 := by
+    have hw : ∀ i : m, z (Sum.inr ((1 : Fin 3), i)) =
+        (G.submatrix (fun i : m => Sum.inr ((1 : Fin 3), i)) id *ᵥ fun c => (f c).eval 2) i := by
+      intro i
+      rw [hzi]
+      norm_num [equispacedLevelSpectrum, Matrix.mulVec, dotProduct, mul_comm]
+    simp only [hw]
+    exact sq_mul_sum_sq_le_sum_sq_mulVec _ (hs 1) _
+  have hL2 : s ^ 2 * ∑ c, (f c).eval 3 ^ 2 ≤ ∑ i, z (Sum.inr ((2 : Fin 3), i)) ^ 2 := by
+    have hw : ∀ i : m, z (Sum.inr ((2 : Fin 3), i)) =
+        (G.submatrix (fun i : m => Sum.inr ((2 : Fin 3), i)) id *ᵥ fun c => (f c).eval 3) i := by
+      intro i
+      rw [hzi]
+      norm_num [equispacedLevelSpectrum, Matrix.mulVec, dotProduct, mul_comm]
+    simp only [hw]
+    exact sq_mul_sum_sq_le_sum_sq_mulVec _ (hs 2) _
+  have hN := sum_eval_four_sq_le_of_natDegree_lt hdeg
+  -- the norm of `z` splits into head and tails
+  have hnorm : ‖WithLp.toLp 2 z‖ ^ 2 = ∑ a : k, z (Sum.inl a) ^ 2 +
+      (∑ i, z (Sum.inr ((0 : Fin 3), i)) ^ 2 + ∑ i, z (Sum.inr ((1 : Fin 3), i)) ^ 2 +
+        ∑ i, z (Sum.inr ((2 : Fin 3), i)) ^ 2) := by
+    rw [EuclideanSpace.norm_toLp_sq_eq_sum_sq, Fintype.sum_sum_type, Fintype.sum_prod_type,
+      Fin.sum_univ_three]
+  have hHnn : 0 ≤ ∑ a : k, z (Sum.inl a) ^ 2 := Finset.sum_nonneg fun a _ => sq_nonneg _
+  rw [hnorm]
+  have h1 := mul_le_mul_of_nonneg_left hH (sq_nonneg s)
+  have h2 := mul_le_mul_of_nonneg_left hN (by positivity : (0 : ℝ) ≤ s ^ 2 * S ^ 2)
+  have h3 := mul_le_mul_of_nonneg_left (add_le_add (add_le_add hL0 hL1) hL2)
+    (by positivity : (0 : ℝ) ≤ 19 * S ^ 2)
+  have h4 := mul_nonneg (by positivity : (0 : ℝ) ≤ 19 * S ^ 2) hHnn
+  nlinarith [h1, h2, h3, h4]
 
 /-- **Gaussian head capture of a depth-3 Krylov space**: let $\mathbf{G}$ be a standard Gaussian
 $n \times b$ matrix, $n = k \oplus (\{0, 1, 2\} \times m)$, $\gamma > 2$, $\lvert k \rvert \le
