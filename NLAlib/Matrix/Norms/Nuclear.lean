@@ -30,6 +30,7 @@ inner product.
 * `NLAlib.norm_trace_conjTranspose_mul_le_nuclearNorm_mul_specNorm`,
   `NLAlib.isGreatest_frobInner_nuclearNorm`: duality with the spectral norm.
 * `NLAlib.nuclearNorm_mul_le_frobNorm_mul_frobNorm`: the factorisation bound.
+* `NLAlib.re_trace_sub_rangeProjector_mul_le_nuclearNorm_sub_mul`: a projected trace lower bound.
 * `Matrix.PosSemidef.nuclearNorm_eq_re_trace`,
   `Matrix.IsHermitian.nuclearNorm_eq_sum_abs_eigenvalue`.
 * `NLAlib.nuclearNorm_conjTranspose_mul_self`:
@@ -242,6 +243,24 @@ theorem norm_trace_le_nuclearNorm (A : Matrix n n 𝕜) : ‖A.trace‖ ≤ nucl
   have h := norm_trace_conjTranspose_mul_le_nuclearNorm_mul_specNorm A (1 : Matrix n n 𝕜)
   rw [Matrix.mul_one, Matrix.trace_conjTranspose, norm_star] at h
   exact h.trans (mul_le_of_le_one_right (nuclearNorm_nonneg A) specNorm_one_le)
+
+/-- The real trace of the projection residual bounds from below the nuclear error of every
+approximation with columns in the prescribed output range. No positivity assumption on the
+input or full-rank assumption on the output factor is required. -/
+theorem re_trace_sub_rangeProjector_mul_le_nuclearNorm_sub_mul
+    (A : Matrix m m 𝕜) (W : Matrix m p 𝕜) (M : Matrix p m 𝕜) :
+    RCLike.re (A - rangeProjector W * A).trace ≤ nuclearNorm (A - W * M) := by
+  classical
+  have hkill : (1 - rangeProjector W) * W = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
+  have heq : A - rangeProjector W * A = (1 - rangeProjector W) * (A - W * M) := by
+    rw [Matrix.mul_sub, ← Matrix.mul_assoc _ W, hkill, Matrix.zero_mul, sub_zero,
+      Matrix.sub_mul, Matrix.one_mul]
+  rw [heq]
+  refine (RCLike.re_le_norm _).trans ((norm_trace_le_nuclearNorm _).trans ?_)
+  exact (nuclearNorm_mul_le_specNorm_mul _ _).trans
+    (mul_le_of_le_one_left (nuclearNorm_nonneg _)
+      (isStarProjection_one_sub_rangeProjector W).specNorm_le_one)
 
 /-- The nuclear norm is attained as a Frobenius inner product with a matrix of spectral norm at
 most one: there is $\mathbf{B}$ with $\|\mathbf{B}\|_2 \le 1$ and

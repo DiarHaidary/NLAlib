@@ -18,10 +18,13 @@ at $1,\ldots,r+1$. Design: `docs/design/LowerBounds-FixedBatches.md`; the design
 
 * `NLAlib.equispacedGaussianFactor`: sufficient width separation for Gaussian head capture.
 * `NLAlib.equispacedTailFactor`: optimal squared Frobenius loss per tail multiplicity.
+* `NLAlib.equispacedNuclearTailFactor`: optimal nuclear loss per tail multiplicity.
 
 For natural $r$, the width factor is <!-- value equispacedGaussianFactor r -->
 $64\cdot4^{r+1}$, and the tail factor is <!-- value equispacedTailFactor r -->
 $(r+1)(r+2)(2r+3)/6$.
+The nuclear tail factor is <!-- value equispacedNuclearTailFactor r -->
+$(r+1)(r+2)/2$.
 
 ## Main results
 
@@ -48,6 +51,32 @@ $$(r+1)(r+2)(2r+3)/6 \,.$$
 This is the sum of the squared levels $1,\ldots,r+1$. -/
 noncomputable irreducible_def equispacedTailFactor (r : ℕ) : ℝ :=
   ((r : ℝ) + 1) * (r + 2) * (2 * r + 3) / 6
+
+/-- Tail mass per multiplicity. Its value is <!-- value equispacedNuclearTailFactor r -->
+$$(r+1)(r+2)/2 \,.$$
+This is the sum of the levels $1,\ldots,r+1$. -/
+noncomputable irreducible_def equispacedNuclearTailFactor (r : ℕ) : ℝ :=
+  ((r : ℝ) + 1) * (r + 2) / 2
+
+/-- The positive tail levels sum to the nuclear tail mass. -/
+theorem sum_eq_equispacedNuclearTailFactor (r : ℕ) :
+    (∑ j : Fin (r + 1), ((j : ℝ) + 1)) = equispacedNuclearTailFactor r := by
+  induction r with
+  | zero => norm_num [equispacedNuclearTailFactor_def]
+  | succ r ih =>
+    rw [Fin.sum_univ_castSucc]
+    simp only [Fin.val_castSucc, Fin.val_last]
+    rw [ih, equispacedNuclearTailFactor_def, equispacedNuclearTailFactor_def]
+    push_cast
+    ring
+
+/-- Multiplicity scales the nuclear tail mass. -/
+theorem sum_prod_eq_mul_equispacedNuclearTailFactor {m : Type*} [Fintype m] (r : ℕ) :
+    (∑ x : Fin (r + 1) × m, ((x.1 : ℝ) + 1)) =
+      Fintype.card m * equispacedNuclearTailFactor r := by
+  rw [Fintype.sum_prod_type]
+  simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  rw [← Finset.mul_sum, sum_eq_equispacedNuclearTailFactor]
 
 /-- The squared tail levels sum to the equispaced tail energy. -/
 theorem sum_sq_eq_equispacedTailFactor (r : ℕ) :
@@ -169,6 +198,128 @@ theorem HasOrthonormalCols.frobNorm_sub_truncatedSVD_sq_eq_mul_equispacedTailFac
     rw [frobNorm_sq_eq_sum_singularValues_sq, ← Finset.sum_range_add_sum_Ico _ hcard] at hA
     linarith
 
+
+omit [DecidableEq k] [DecidableEq m] in
+/-- The linear mass of the equispaced spectrum splits into head and nuclear tail mass. -/
+private theorem sum_equispacedLevelSpectrum (r : ℕ) :
+    (∑ i, equispacedLevelSpectrum k m r i) =
+      ((r : ℝ) + 2) * Fintype.card k +
+        Fintype.card m * equispacedNuclearTailFactor r := by
+  rw [Fintype.sum_sum_type]
+  simp only [equispacedLevelSpectrum, Sum.elim_inl, Sum.elim_inr,
+    Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  rw [sum_prod_eq_mul_equispacedNuclearTailFactor]
+  ring
+
+/-- The nuclear optimum of an orthogonal conjugate of the equispaced spectrum equals the
+multiplicity times the sum of its tail levels, including empty head and tail index types. -/
+theorem HasOrthonormalCols.nuclearNorm_sub_truncatedSVD_eq_mul_equispacedNuclearTailFactor
+    (r : ℕ) {U : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ}
+    (hU : HasOrthonormalCols U) :
+    nuclearNorm (U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ -
+      truncatedSVD (U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ)
+        (Fintype.card k)) = Fintype.card m * equispacedNuclearTailFactor r := by
+  let d := equispacedLevelSpectrum k m r
+  let A := U * Matrix.diagonal d * Uᴴ
+  let h : k ⊕ (Fin (r + 1) × m) → ℝ := Sum.elim (fun _ => (r : ℝ) + 2) 0
+  have hd : (Matrix.diagonal d).PosSemidef := by
+    apply Matrix.posSemidef_diagonal_iff.mpr
+    rintro (a | ⟨j, i⟩) <;> simp only [d, equispacedLevelSpectrum,
+      Sum.elim_inl, Sum.elim_inr] <;> positivity
+  have htail : (Matrix.diagonal (d - h)).PosSemidef := by
+    apply Matrix.posSemidef_diagonal_iff.mpr
+    rintro (a | ⟨j, i⟩) <;> simp only [d, h, Pi.sub_apply,
+      equispacedLevelSpectrum, Sum.elim_inl, Sum.elim_inr, Pi.zero_apply,
+      sub_self, sub_zero] <;> positivity
+  have hT : nuclearNorm (Matrix.diagonal (d - h)) =
+      Fintype.card m * equispacedNuclearTailFactor r := by
+    rw [htail.nuclearNorm_eq_re_trace, Matrix.trace_diagonal]
+    change (∑ i, (d - h) i) = _
+    rw [Fintype.sum_sum_type]
+    simp only [d, h, Pi.sub_apply, Pi.zero_apply, equispacedLevelSpectrum,
+      Sum.elim_inl, Sum.elim_inr, sub_self, Finset.sum_const_zero, zero_add, sub_zero]
+    exact sum_prod_eq_mul_equispacedNuclearTailFactor r
+  refine le_antisymm ?_ ?_
+  · have hbest := (lpGauge 1).matrixNorm_sub_truncatedSVD_le_of_rank_le A
+      (rank_mul_diagonal_head_mul_conjTranspose_le r U)
+    rw [lpGauge_one_matrixNorm, lpGauge_one_matrixNorm] at hbest
+    refine hbest.trans_eq ?_
+    change nuclearNorm (A - U * Matrix.diagonal h * Uᴴ) = _
+    rw [show A - U * Matrix.diagonal h * Uᴴ = U * Matrix.diagonal (d - h) * Uᴴ by
+      dsimp only [A]
+      rw [show d - h = fun i => d i - h i from rfl,
+        ← Matrix.diagonal_sub, Matrix.mul_sub, Matrix.sub_mul],
+      hU.nuclearNorm_mul_conjTranspose_right, hU.nuclearNorm_mul_left, hT]
+  · have hA : nuclearNorm A = ((r : ℝ) + 2) * Fintype.card k +
+        Fintype.card m * equispacedNuclearTailFactor r := by
+      rw [hU.nuclearNorm_mul_conjTranspose_right, hU.nuclearNorm_mul_left,
+        hd.nuclearNorm_eq_re_trace, Matrix.trace_diagonal]
+      exact sum_equispacedLevelSpectrum r
+    have hhead : nuclearNorm (truncatedSVD A (Fintype.card k)) ≤
+        ((r : ℝ) + 2) * Fintype.card k := by
+      rw [nuclearNorm_eq_sum_range _ (rank_truncatedSVD_le A (Fintype.card k))]
+      calc _ ≤ ∑ i ∈ Finset.range (Fintype.card k), ((r : ℝ) + 2) := by
+            refine Finset.sum_le_sum fun i hi => ?_
+            rw [singularValues_truncatedSVD, if_pos (Finset.mem_range.mp hi)]
+            exact singularValues_mul_diagonal_equispaced_le r hU i
+        _ = _ := by simp only [Finset.sum_const, Finset.card_range, nsmul_eq_mul]; ring
+    have htriangle := nuclearNorm_add_le (A - truncatedSVD A (Fintype.card k))
+      (truncatedSVD A (Fintype.card k))
+    rw [sub_add_cancel, hA] at htriangle
+    change _ ≤ nuclearNorm (A - truncatedSVD A (Fintype.card k))
+    linarith
+
+/-- Missed head mass forces nuclear excess on the equispaced spectrum. The output factor may
+be rank deficient, and the approximation residual need not be positive semidefinite. -/
+theorem le_nuclearNorm_diagonal_sub_mul_of_equispacedLevelSpectrum (r : ℕ)
+    (W : Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ)
+    (M : Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ) :
+    Fintype.card m * equispacedNuclearTailFactor r +
+      (Fintype.card k - ∑ i : k, rangeProjector W (Sum.inl i) (Sum.inl i)) ≤
+      nuclearNorm (Matrix.diagonal (equispacedLevelSpectrum k m r) - W * M) := by
+  let P := rangeProjector W
+  let H := ∑ a : k, P (Sum.inl a) (Sum.inl a)
+  let T := ∑ x : Fin (r + 1) × m, P (Sum.inr x) (Sum.inr x)
+  let d := equispacedLevelSpectrum k m r
+  have hP : IsStarProjection P := isStarProjection_rangeProjector W
+  have hPnn (i) : 0 ≤ P i i := by
+    rw [← hP.norm_toLp_mulVec_single_sq i]
+    positivity
+  have htr : H + T ≤ Fintype.card k := by
+    have h1 : ∑ i, P i i = (W.rank : ℝ) := trace_rangeProjector W
+    have h2 : (W.rank : ℝ) ≤ Fintype.card k := by
+      exact_mod_cast Matrix.rank_le_card_width W
+    rw [Fintype.sum_sum_type] at h1
+    linarith
+  have htail : ∑ x : Fin (r + 1) × m,
+      ((x.1 : ℝ) + 1) * P (Sum.inr x) (Sum.inr x) ≤ ((r : ℝ) + 1) * T := by
+    dsimp only [T]
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun x _ => ?_
+    have hx : (x.1 : ℝ) ≤ r := by exact_mod_cast Fin.is_le x.1
+    exact mul_le_mul_of_nonneg_right (by linarith) (hPnn _)
+  have hcap : ∑ i, d i * P i i ≤ ((r : ℝ) + 1) * Fintype.card k + H := by
+    rw [Fintype.sum_sum_type]
+    have hhead : ∑ a : k, d (Sum.inl a) * P (Sum.inl a) (Sum.inl a) =
+        ((r : ℝ) + 2) * H := by
+      simp only [d, equispacedLevelSpectrum, Sum.elim_inl, H, Finset.mul_sum]
+    rw [hhead]
+    change ((r : ℝ) + 2) * H +
+      ∑ x : Fin (r + 1) × m, ((x.1 : ℝ) + 1) * P (Sum.inr x) (Sum.inr x) ≤ _
+    have htr' := mul_le_mul_of_nonneg_left htr (by positivity : 0 ≤ (r : ℝ) + 1)
+    nlinarith
+  have herr := re_trace_sub_rangeProjector_mul_le_nuclearNorm_sub_mul
+    (Matrix.diagonal d) W M
+  have heq : (Matrix.diagonal d - P * Matrix.diagonal d).trace =
+      (∑ i, d i) - ∑ i, d i * P i i := by
+    rw [Matrix.trace_sub, Matrix.trace_diagonal]
+    congr 1
+    simp only [Matrix.trace, Matrix.mul_diagonal, Matrix.diag_apply]
+    exact Finset.sum_congr rfl fun i _ => mul_comm _ _
+  change (Matrix.diagonal d - P * Matrix.diagonal d).trace ≤ _ at herr
+  rw [heq, sum_equispacedLevelSpectrum] at herr
+  change Fintype.card m * equispacedNuclearTailFactor r + (Fintype.card k - H) ≤ _
+  linarith
 
 /-- Projection onto the output range bounds the captured diagonal energy of any approximation. -/
 private theorem sum_sq_sub_sum_sq_mul_le_frobNorm_diagonal_sub_mul_sq

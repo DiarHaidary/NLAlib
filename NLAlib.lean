@@ -161,6 +161,7 @@ public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian
 public import NLAlib.LowerBounds.LowRank.FewPasses
 public import NLAlib.LowerBounds.LowRank.FiniteSpectrum
 public import NLAlib.LowerBounds.LowRank.Minimax
+public import NLAlib.LowerBounds.LowRank.NuclearMinimax
 public import NLAlib.LowerBounds.LowRank.RangeRecovery
 public import NLAlib.LowerBounds.LowRank.RotationInvariant
 public import NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom
