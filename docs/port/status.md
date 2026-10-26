@@ -2,6 +2,20 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## LB-C hidden-rotation lower bounds: proofs (2026-10-26)
+
+Branch `stage/lbc` (from the integration of the LB-C run over `origin/main` 79f8cc2). 56 of the 57
+targets are proved; K7, the Krylov coupling
+(`QueryAlgorithm.IsPassStructured.exists_isKrylovCoupling_of_hasLaw_haarFrame`, difficulty H), is
+still `sorry`. D8 move of everything that does not depend on K7: the pass model
+(`LowerBounds/QueryModel/Basic`), Y3 (`Yao`), K1–K6 (`HiddenRotation`), KB1–KB3
+(`Krylov/Basic/BlockSpace`), P1–P9 (`Polynomial/Chebyshev/TwoInterval`,
+`Polynomial/Interpolation/DividedDifference`), C1–C2 (`RandomMatrix/Gaussian/Invariance`), GZ1–GZ4
+(`RandomMatrix/Haar/Uniqueness`), SH1 (new `LowerBounds/Krylov/LinearSystems`) and the
+deterministic and Gaussian steps L0a–L3 of the low-rank bounds (`LowerBounds/LowRank/FewPasses`).
+In the scaffold, proved except for their use of K7: K8, Shamir's lower bound (SH2–SH6) and the
+two-pass and one-pass low-rank lower bounds (L4–L9).
+
 ## LB-C hidden-rotation lower bounds: design (2026-10-26)
 
 Branch `design/lbc` (worktree `nlalib-design-lbc`, from `origin/main` 79f8cc2). Design note

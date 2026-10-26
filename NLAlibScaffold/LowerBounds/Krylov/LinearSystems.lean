@@ -5,12 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Krylov.Basic.BlockSpace
+public import NLAlib.LowerBounds.Krylov.LinearSystems
 public import NLAlib.LowerBounds.QueryModel.Yao
+public import NLAlib.Polynomial.Chebyshev.TwoInterval
+public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Haar.Sphere
-public import NLAlibScaffold.Krylov.Basic.BlockSpace
 public import NLAlibScaffold.LowerBounds.QueryModel.HiddenRotation
-public import NLAlibScaffold.Polynomial.Chebyshev.TwoInterval
-public import NLAlibScaffold.RandomMatrix.Gaussian.Invariance
 
 /-!
 # The matrix–vector complexity of linear systems: $\Omega(\kappa\log(1/\varepsilon))$ (scaffold)
@@ -33,8 +34,6 @@ weights turn this into the bound.
 
 ## Main results
 
-* `NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le`: Gaussian
-  block Krylov spaces do not contain good residuals.
 * `NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame`:
   every deterministic algorithm, every $\mathbf{b} \ne \mathbf{0}$.
 * `NLAlib.IsChebyshevTwoIntervalSpectrum.exists_le_measureReal_norm_sub_mulVec_ge`: randomized,
@@ -55,359 +54,6 @@ namespace NLAlib
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
   [DecidableEq n]
-
-omit [DecidableEq n] in
-/-- The number of distinct values of a Chebyshev two-interval spectrum of depth $s$ is at most
-$s + 2$. -/
-private theorem IsChebyshevTwoIntervalSpectrum.card_image_le {κ : ℝ} {s M : ℕ} {d : n → ℝ}
-    (hd : IsChebyshevTwoIntervalSpectrum κ s M d) : (Finset.univ.image d).card ≤ s + 2 := by
-  classical
-  have hsub : Finset.univ.image d ⊆ (Finset.univ : Finset (Fin (s / 2 + 1) × Bool)).image
-      fun p => if p.2 then Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) p.1)
-        else -Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) p.1) := by
-    intro t ht
-    obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp ht
-    obtain ⟨j, hj | hj⟩ := hd.exists_eq i
-    · exact Finset.mem_image.mpr ⟨(j, true), Finset.mem_univ _, by simp [hj]⟩
-    · exact Finset.mem_image.mpr ⟨(j, false), Finset.mem_univ _, by simp [hj]⟩
-  refine (Finset.card_le_card hsub).trans (Finset.card_image_le.trans ?_)
-  simp only [Finset.card_univ, Fintype.card_prod, Fintype.card_fin, Fintype.card_bool]
-  omega
-
-omit [DecidableEq n] in
-/-- Every value of a Chebyshev two-interval spectrum with margin $M$ is taken at least $M$
-times. -/
-private theorem IsChebyshevTwoIntervalSpectrum.le_card_filter {κ : ℝ} {s M : ℕ} {d : n → ℝ}
-    (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 2 ≤ κ) {t : ℝ}
-    (ht : t ∈ Finset.univ.image d) : M ≤ (Finset.univ.filter fun i => d i = t).card := by
-  have hκ2 : 1 < κ ^ 2 := by nlinarith
-  have hτ := Polynomial.Chebyshev.one_le_eval_T_real ((s / 2 : ℕ) : ℤ)
-    (show 1 ≤ (κ ^ 2 + 1) / (κ ^ 2 - 1) by rw [le_div_iff₀ (by linarith)]; linarith)
-  obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp ht
-  obtain ⟨j, hj | hj⟩ := hd.exists_eq i
-  all_goals
-    have hw := chebyshevWeight_pos one_pos hκ2 (s / 2) j
-    have h0 : 0 ≤ (Fintype.card n : ℝ) / 4 * (chebyshevWeight 1 (κ ^ 2) (s / 2) j /
-        (2 * (Polynomial.Chebyshev.T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1)))) := by
-      positivity
-  · have := hd.le_card_pos j
-    rw [hj]
-    exact_mod_cast (le_add_of_nonneg_left h0).trans this
-  · have := hd.le_card_neg j
-    rw [hj]
-    exact_mod_cast (le_add_of_nonneg_left h0).trans this
-
-/-- Deterministic step: on the good event no Krylov vector has a small residual. -/
-private theorem IsChebyshevTwoIntervalSpectrum.le_norm_sub_mulVec_of_forall {κ : ℝ} {s M : ℕ}
-    {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 2 ≤ κ) {c : Type*}
-    [Fintype c] (hc : Fintype.card c ≤ M) {v : n → ℝ} {G : Matrix n c ℝ}
-    (hgood : ∀ t ∈ Finset.univ.image d,
-      (((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c) *
-          ‖WithLp.toLp 2 v‖ ^ 2 <
-        4 * Fintype.card n * ‖WithLp.toLp 2
-          ((1 - rangeProjector (G.submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => v i.1)‖ ^ 2)
-    {x : n → ℝ} (hx : x ∈ blockKrylovSpace (Matrix.diagonal d)
-      (Matrix.fromCols (Matrix.replicateCol Unit v) G) s) :
-    Real.exp (-(2 * s / κ)) / 4 * ‖WithLp.toLp 2 v‖ ≤
-      ‖WithLp.toLp 2 (v - Matrix.diagonal d *ᵥ x)‖ := by
-  rcases (norm_nonneg (WithLp.toLp 2 v)).eq_or_lt with h0 | hpos
-  · rw [← h0, mul_zero]
-    exact norm_nonneg _
-  obtain ⟨i, -⟩ := Function.ne_iff.mp (fun h : v = 0 => by simp [h] at hpos)
-  have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr (Fintype.card_pos_iff.mpr ⟨i⟩)
-  obtain ⟨r, hr, hr0, hsum⟩ := exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq d v G hx
-  have hP7 := hd.inv_sq_le_sum_card_sub_mul_eval_sq (by linarith) hr hr0
-  set τ := (Polynomial.Chebyshev.T ℝ ((s / 2 : ℕ) : ℤ)).eval ((κ ^ 2 + 1) / (κ ^ 2 - 1))
-  have hτ : Real.exp (-(2 * s / κ)) ≤ τ⁻¹ := by
-    refine (Real.exp_le_exp.mpr ?_).trans (exp_neg_le_inv_eval_T_real hκ (s / 2))
-    have : (4 * ((s / 2 : ℕ) : ℝ)) ≤ 2 * s := by
-      have := Nat.mul_div_le s 2
-      exact_mod_cast (by omega : 4 * (s / 2) ≤ 2 * s)
-    rw [neg_le_neg_iff]
-    exact div_le_div_of_nonneg_right this (by linarith)
-  have hkey : ‖WithLp.toLp 2 v‖ ^ 2 * ((Fintype.card n : ℝ) / 4 * τ⁻¹ ^ 2) ≤
-      4 * Fintype.card n * ‖WithLp.toLp 2 (v - Matrix.diagonal d *ᵥ x)‖ ^ 2 := by
-    refine (mul_le_mul_of_nonneg_left hP7 (by positivity)).trans ?_
-    rw [Finset.mul_sum]
-    refine (Finset.sum_le_sum fun t ht => ?_).trans
-      ((Finset.mul_sum _ _ _).symm.trans_le (mul_le_mul_of_nonneg_left hsum (by positivity)))
-    have h := hgood t ht
-    have hcM : (Fintype.card c : ℝ) ≤ M := by exact_mod_cast hc
-    nlinarith [sq_nonneg (r.eval t), mul_le_mul_of_nonneg_left h.le (sq_nonneg (r.eval t)),
-      mul_nonneg (sq_nonneg (r.eval t)) (sq_nonneg ‖WithLp.toLp 2 v‖)]
-  have hsq : (Real.exp (-(2 * s / κ)) / 4 * ‖WithLp.toLp 2 v‖) ^ 2 ≤
-      ‖WithLp.toLp 2 (v - Matrix.diagonal d *ᵥ x)‖ ^ 2 := by
-    have h1 : (Real.exp (-(2 * s / κ))) ^ 2 ≤ τ⁻¹ ^ 2 := pow_le_pow_left₀ (by positivity) hτ 2
-    nlinarith [mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤
-      Fintype.card n * ‖WithLp.toLp 2 v‖ ^ 2)]
-  exact (pow_le_pow_iff_left₀ (by positivity) (norm_nonneg _) two_ne_zero).mp hsq
-
-/-- The numerical bound of the union bound. -/
-private theorem add_one_mul_exp_add_exp_le (s : ℕ) :
-    ((s : ℝ) + 2) * Real.exp (-(1158 / 1000 * ((s : ℝ) + 2))) +
-      Real.exp (-(1836 / 1000 * ((s : ℝ) + 2))) ≤ 1 / 4 := by
-  have e1 := Real.exp_one_gt_d9
-  have hA : 972 / 100 ≤ Real.exp (2316 / 1000) := by
-    rw [show (2316 / 1000 : ℝ) = 1 + 1 + 316 / 1000 by norm_num, Real.exp_add, Real.exp_add]
-    nlinarith [Real.add_one_le_exp (316 / 1000 : ℝ), Real.exp_pos 1]
-  have hB : 334 / 10 ≤ Real.exp (3672 / 1000) := by
-    rw [show (3672 / 1000 : ℝ) = 1 + 1 + 1 + 672 / 1000 by norm_num, Real.exp_add,
-      Real.exp_add, Real.exp_add]
-    have h2 : 2718 / 1000 * (2718 / 1000) ≤ Real.exp 1 * Real.exp 1 := by nlinarith
-    have h3 : 2008 / 100 ≤ Real.exp 1 * Real.exp 1 * Real.exp 1 := by nlinarith
-    nlinarith [Real.add_one_le_exp (672 / 1000 : ℝ)]
-  have hu := Real.add_one_le_exp (1158 / 1000 * (s : ℝ))
-  have hv := Real.exp_nonneg (1836 / 1000 * (s : ℝ))
-  have hs : (0 : ℝ) ≤ s := Nat.cast_nonneg s
-  rw [show -(1158 / 1000 * ((s : ℝ) + 2)) = -(1158 / 1000 * (s : ℝ) + 2316 / 1000) by ring,
-    show -(1836 / 1000 * ((s : ℝ) + 2)) = -(1836 / 1000 * (s : ℝ) + 3672 / 1000) by ring,
-    Real.exp_neg, Real.exp_neg, Real.exp_add, Real.exp_add]
-  have hX : ((s : ℝ) + 2) * (Real.exp (1158 / 1000 * s) * Real.exp (2316 / 1000))⁻¹ ≤
-      2 / (972 / 100) := by
-    rw [← div_eq_mul_inv, div_le_div_iff₀ (by positivity) (by norm_num)]
-    nlinarith [mul_le_mul hu hA (by norm_num) (Real.exp_nonneg _)]
-  have hY : (Real.exp (1836 / 1000 * s) * Real.exp (3672 / 1000))⁻¹ ≤ 1 / (334 / 10) := by
-    rw [← one_div, div_le_div_iff₀ (by positivity) (by norm_num)]
-    nlinarith [Real.one_le_exp (by positivity : (0 : ℝ) ≤ 1836 / 1000 * s)]
-  linarith
-
-omit [DecidableEq n] in
-/-- The coordinates of a standard Gaussian vector in a subset form a standard Gaussian vector. -/
-private theorem hasLaw_subtype_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
-    (hg : HasLaw g (gaussianVector n) μ) (p : n → Prop) [DecidablePred p] :
-    HasLaw (fun ω (i : {i // p i}) => g ω i.1) (gaussianVector {i // p i}) μ := by
-  classical
-  have h := hasLaw_mulVec_of_hasLaw_gaussianVector hg
-    (A := (1 : Matrix n n ℝ).submatrix (Subtype.val : {i // p i} → n) id) (by
-      rw [HasOrthonormalCols, Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_submatrix,
-        ← Matrix.submatrix_mul _ _ _ _ _ Function.bijective_id, Matrix.conjTranspose_one,
-        Matrix.one_mul, Matrix.submatrix_one _ Subtype.val_injective])
-  convert h using 2 with ω
-  ext i
-  simp [Matrix.mulVec, dotProduct, Matrix.one_apply]
-
-/-- Probabilistic step: for a Gaussian vector independent of a Gaussian matrix the good event
-fails with probability at most $1/4$. -/
-private theorem IsChebyshevTwoIntervalSpectrum.measureReal_not_forall_le {κ : ℝ} {s M : ℕ}
-    {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 2 ≤ κ) {c : Type*}
-    [Fintype c] (hc : Fintype.card c + 12 * (s + 2) ≤ M) {g : Ω → n → ℝ}
-    (hg : HasLaw g (gaussianVector n) μ) {G : Ω → Matrix n c ℝ}
-    (hG : HasLaw G (gaussianMatrix n c) μ) (hgG : IndepFun g G μ) :
-    μ.real {ω | ¬ ∀ t ∈ Finset.univ.image d,
-      (((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c) *
-          ‖WithLp.toLp 2 (g ω)‖ ^ 2 <
-        4 * Fintype.card n * ‖WithLp.toLp 2
-          ((1 - rangeProjector ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => g ω i.1)‖ ^ 2} ≤ 1 / 4 := by
-  classical
-  have := hg.isProbabilityMeasure
-  rcases isEmpty_or_nonempty n with hn | hn
-  · simp [Finset.univ_eq_empty]
-  obtain ⟨i₀⟩ := id hn
-  have hM : ∀ t ∈ Finset.univ.image d, M ≤ (Finset.univ.filter fun i => d i = t).card :=
-    fun t ht => hd.le_card_filter hκ ht
-  have hnM : (M : ℝ) ≤ Fintype.card n := by
-    exact_mod_cast (hM _ (Finset.mem_image_of_mem d (Finset.mem_univ i₀))).trans
-      (Finset.card_le_univ _)
-  set r : ℝ → ℕ := fun t => (Finset.univ.filter fun i => d i = t).card - Fintype.card c with hr
-  have hsub : {ω | ¬ ∀ t ∈ Finset.univ.image d,
-      (((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c) *
-          ‖WithLp.toLp 2 (g ω)‖ ^ 2 <
-        4 * Fintype.card n * ‖WithLp.toLp 2
-          ((1 - rangeProjector ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => g ω i.1)‖ ^ 2} ⊆
-      {ω | (2 : ℝ) * Fintype.card n ≤ ‖WithLp.toLp 2 (g ω)‖ ^ 2} ∪
-        ⋃ t ∈ Finset.univ.image d, {ω | ‖WithLp.toLp 2
-          ((1 - rangeProjector ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => g ω i.1)‖ ^ 2 ≤ 1 / 2 * (r t : ℝ)} := by
-    intro ω hω
-    simp only [Set.mem_ofPred_eq, not_forall, not_lt, exists_prop] at hω
-    obtain ⟨t, ht, h⟩ := hω
-    rcases le_or_gt ((2 : ℝ) * Fintype.card n) (‖WithLp.toLp 2 (g ω)‖ ^ 2) with h2 | h2
-    · exact Or.inl h2
-    refine Or.inr (Set.mem_biUnion ht ?_)
-    simp only [Set.mem_ofPred_eq, hr]
-    have hcm : Fintype.card c ≤ (Finset.univ.filter fun i => d i = t).card := by
-      have := hM t ht; omega
-    rw [Nat.cast_sub hcm]
-    have h0 : (0 : ℝ) ≤ ((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c := by
-      have : (Fintype.card c : ℝ) ≤ (Finset.univ.filter fun i => d i = t).card := by
-        exact_mod_cast hcm
-      linarith
-    have hn : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr Fintype.card_pos
-    nlinarith [mul_le_mul_of_nonneg_left h2.le h0]
-  have hlog := Real.log_two_gt_d9
-  have hlog' := Real.log_two_lt_d9
-  have hchi : μ.real {ω | (2 : ℝ) * Fintype.card n ≤ ‖WithLp.toLp 2 (g ω)‖ ^ 2} ≤
-      Real.exp (-(1836 / 1000 * ((s : ℝ) + 2))) := by
-    refine (measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector hg one_le_two).trans
-      (Real.exp_le_exp.mpr ?_)
-    have : ((M : ℝ)) ≥ 12 * ((s : ℝ) + 2) := by exact_mod_cast (by omega : 12 * (s + 2) ≤ M)
-    nlinarith
-  have hlev : ∀ t ∈ Finset.univ.image d, μ.real {ω | ‖WithLp.toLp 2
-          ((1 - rangeProjector ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => g ω i.1)‖ ^ 2 ≤ 1 / 2 * (r t : ℝ)} ≤
-      Real.exp (-(1158 / 1000 * ((s : ℝ) + 2))) := by
-    intro t ht
-    have hP : Measurable fun A : Matrix n c ℝ =>
-        1 - rangeProjector (A.submatrix (Subtype.val : {i // d i = t} → n) id) :=
-      measurable_const.sub (measurable_rangeProjector.comp (by fun_prop))
-    refine (measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun
-      (hasLaw_subtype_of_hasLaw_gaussianVector hg (fun i => d i = t))
-      (hP.comp_aemeasurable hG.aemeasurable)
-      (hgG.comp (measurable_pi_lambda _ fun i : {i // d i = t} => measurable_pi_apply i.1) hP)
-      (fun ω => isStarProjection_one_sub_rangeProjector _) (r := r t) (fun ω => ?_)
-      (by norm_num) (by norm_num)).trans (Real.exp_le_exp.mpr ?_)
-    · have h1 := rank_one_sub_rangeProjector_add_rank
-        ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)
-      have h2 := Matrix.rank_le_card_width ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)
-      rw [Fintype.card_subtype] at h1
-      change r t ≤
-        (1 - rangeProjector ((G ω).submatrix (Subtype.val : {i // d i = t} → n) id)).rank
-      simp only [hr]
-      omega
-    · have hrt : (12 : ℝ) * ((s : ℝ) + 2) ≤ r t := by
-        have := hM t ht
-        exact_mod_cast (by simp only [hr]; omega : 12 * (s + 2) ≤ r t)
-      rw [one_div, Real.log_inv]
-      nlinarith
-  calc _ ≤ _ := measureReal_mono hsub
-    _ ≤ _ := measureReal_union_le _ _
-    _ ≤ Real.exp (-(1836 / 1000 * ((s : ℝ) + 2))) +
-        ∑ t ∈ Finset.univ.image d, Real.exp (-(1158 / 1000 * ((s : ℝ) + 2))) :=
-      add_le_add hchi ((measureReal_biUnion_finset_le _ _).trans (Finset.sum_le_sum hlev))
-    _ ≤ 1 / 4 := by
-      rw [Finset.sum_const, nsmul_eq_mul]
-      have : ((Finset.univ.image d).card : ℝ) ≤ s + 2 := by exact_mod_cast hd.card_image_le
-      nlinarith [add_one_mul_exp_add_exp_le s, Real.exp_pos (-(1158 / 1000 * ((s : ℝ) + 2)))]
-
-/-- **Gaussian block Krylov spaces do not solve a Chebyshev two-interval system**: let $\mathbf{d}$
-be a Chebyshev two-interval spectrum for $\kappa \ge 2$ with depth $s$ and margin $M$,
-$\mathbf{D} = \operatorname{diag}(\mathbf{d})$, $\boldsymbol{\xi}$ uniform on the unit sphere and
-$\mathbf{G}$ a standard Gaussian $n \times c$ matrix independent of $\boldsymbol{\xi}$, with
-$\lvert c \rvert + 12(s + 2) \le M$. Then
-$$\mathbb{P}\Bigl[\exists\,\mathbf{x} \in \mathcal{K}_s(\mathbf{D}, [\boldsymbol{\xi}, \mathbf{G}]):
-\ \|\boldsymbol{\xi} - \mathbf{D}\mathbf{x}\| < \tfrac14 e^{-2s/\kappa}\Bigr] \le \frac14 \,.$$
-[Shamir2026, Section 3.3]; there for a Gaussian $\mathbf{g}$ in place of $\boldsymbol{\xi}$, with
-$\|\mathbf{g}\|$ in the bound and the constants $\tfrac34$, $0.9$; the event is scale invariant,
-so the two forms are equivalent.
-Proof: write $\boldsymbol{\xi} = \mathbf{g}/\|\mathbf{g}\|$ for a standard Gaussian $\mathbf{g}$
-independent of $\mathbf{G}$ (`NLAlib.hasLaw_inv_norm_smul_of_hasLaw_gaussianVector`); the event is
-bounded by a measurable scale-invariant one, $\min_t \|\mathbf{h}_t\|^2/\|\mathbf{g}\|^2 <
-\lvert n \rvert^{-1}(m_t - M)/8$-type, so the law transfers. For Gaussian $\mathbf{g}$: by
-`NLAlib.exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq` the squared residual is at least
-$\sum_t r(t)^2\|\mathbf{h}_t\|^2$, $\mathbf{h}_t = (\mathbf{I} - \mathbf{P}_{\mathbf{G}_t})
-\mathbf{g}_t$. Outside an event of probability at most
-$(s + 2)e^{-1.1589(s+2)} + e^{-0.153\lvert n \rvert} \le \tfrac14$ (the level exponent is
-$0.09657 \cdot 12$):
-$\|\mathbf{h}_t\|^2 > \tfrac12(m_t - \lvert c \rvert)$ for every level
-(`NLAlib.measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun` with
-$\beta = \tfrac12$, rank at least $m_t - \lvert c \rvert$ by `NLAlib.rank_rangeProjector`; the
-coordinates of a level of a Gaussian vector are Gaussian,
-`NLAlib.hasLaw_mulVec_of_hasLaw_gaussianVector`)
-and $\|\mathbf{g}\|^2 < 2\lvert n \rvert$
-(`NLAlib.measureReal_norm_sq_ge_mul_card_le_of_hasLaw_gaussianVector`, $\beta = 2$). There
-$\sum_t r(t)^2\|\mathbf{h}_t\|^2 \ge \tfrac12\sum_t (m_t - M)r(t)^2 \ge \tfrac{\lvert n \rvert}{8}
-T_k(\cdot)^{-2}$ (`NLAlib.IsChebyshevTwoIntervalSpectrum.inv_sq_le_sum_card_sub_mul_eval_sq`), so
-the relative residual is at least $\tfrac14 T_k(\cdot)^{-1} \ge \tfrac14 e^{-4k/\kappa} \ge
-\tfrac14 e^{-2s/\kappa}$ (`NLAlib.exp_neg_le_inv_eval_T_real`, $k = \lfloor s/2 \rfloor$); union
-bound `MeasureTheory.measureReal_biUnion_finset_le`. L, about 150 lines. -/
-theorem IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le
-    {κ : ℝ} {s M : ℕ} {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 2 ≤ κ)
-    {c : Type*} [Fintype c] (hc : Fintype.card c + 12 * (s + 2) ≤ M) {ξ : Ω → n → ℝ}
-    (hξ : HasLaw ξ (uniformSphereVector n) μ) {G : Ω → Matrix n c ℝ}
-    (hG : HasLaw G (gaussianMatrix n c) μ) (hξG : IndepFun ξ G μ) :
-    μ.real {ω | ∃ x ∈ blockKrylovSpace (Matrix.diagonal d)
-        (Matrix.fromCols (Matrix.replicateCol Unit (ξ ω)) (G ω)) s,
-        ‖WithLp.toLp 2 (ξ ω - Matrix.diagonal d *ᵥ x)‖ < Real.exp (-(2 * s / κ)) / 4} ≤
-      1 / 4 := by
-  classical
-  have := hG.isProbabilityMeasure
-  set S : Set ((n → ℝ) × Matrix n c ℝ) := {p | ∀ t ∈ Finset.univ.image d,
-      (((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c) *
-          ‖WithLp.toLp 2 p.1‖ ^ 2 <
-        4 * Fintype.card n * ‖WithLp.toLp 2
-          ((1 - rangeProjector (p.2.submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => p.1 i.1)‖ ^ 2} with hS_def
-  set F : Set ((n → ℝ) × Matrix n c ℝ) := Sᶜ ∪ {p | ‖WithLp.toLp 2 p.1‖ < 1} with hF_def
-  set ν := (gaussianVector n).prod (gaussianMatrix n c) with hν
-  set N : (n → ℝ) × Matrix n c ℝ → (n → ℝ) × Matrix n c ℝ :=
-    Prod.map (fun g : n → ℝ => ‖WithLp.toLp 2 g‖⁻¹ • g) id with hN
-  have hS : MeasurableSet S := by
-    convert (Finset.univ.image d).measurableSet_biInter fun t _ => measurableSet_lt
-      (f := fun p : (n → ℝ) × Matrix n c ℝ =>
-        (((Finset.univ.filter fun i => d i = t).card : ℝ) - Fintype.card c) *
-          ‖WithLp.toLp 2 p.1‖ ^ 2)
-      (g := fun p : (n → ℝ) × Matrix n c ℝ => 4 * Fintype.card n * ‖WithLp.toLp 2
-          ((1 - rangeProjector (p.2.submatrix (Subtype.val : {i // d i = t} → n) id)) *ᵥ
-            fun i => p.1 i.1)‖ ^ 2) (by fun_prop) ?_ using 1
-    · ext p
-      simp only [hS_def, Set.mem_ofPred_eq, Set.mem_iInter]
-    · have h1 : Measurable fun p : (n → ℝ) × Matrix n c ℝ =>
-          rangeProjector (p.2.submatrix (Subtype.val : {i // d i = t} → n) id) :=
-        measurable_rangeProjector.comp (by fun_prop)
-      fun_prop
-  have hF : MeasurableSet F :=
-    hS.compl.union (measurableSet_lt (by fun_prop) measurable_const)
-  have hsub : {ω | ∃ x ∈ blockKrylovSpace (Matrix.diagonal d)
-        (Matrix.fromCols (Matrix.replicateCol Unit (ξ ω)) (G ω)) s,
-        ‖WithLp.toLp 2 (ξ ω - Matrix.diagonal d *ᵥ x)‖ < Real.exp (-(2 * s / κ)) / 4} ⊆
-      (fun ω => (ξ ω, G ω)) ⁻¹' F := by
-    rintro ω ⟨x, hx, hlt⟩
-    by_contra h
-    simp only [hF_def, Set.mem_preimage, Set.mem_union, Set.mem_compl_iff, Set.mem_ofPred_eq,
-      not_or, not_not, not_lt] at h
-    have := hd.le_norm_sub_mulVec_of_forall hκ (by omega) h.1 hx
-    have : Real.exp (-(2 * s / κ)) / 4 ≤ Real.exp (-(2 * s / κ)) / 4 * ‖WithLp.toLp 2 (ξ ω)‖ :=
-      le_mul_of_one_le_right (by positivity) h.2
-    linarith
-  have hlaw : μ.map (fun ω => (ξ ω, G ω)) = (uniformSphereVector n).prod (gaussianMatrix n c) := by
-    rw [(indepFun_iff_map_prod_eq_prod_map_map hξ.aemeasurable hG.aemeasurable).mp hξG,
-      hξ.map_eq, hG.map_eq]
-  have hprod : (uniformSphereVector n).prod (gaussianMatrix n c) = ν.map N := by
-    rw [hN, hν, ← Measure.map_prod_map _ _ measurable_inv_norm_smul measurable_id, Measure.map_id]
-    rfl
-  have hpre : N ⁻¹' F ⊆ Sᶜ := by
-    rintro ⟨g, H⟩ hp hgS
-    have hn : Nonempty n := by
-      by_contra h
-      have := hd.le_card_pos 0
-      rw [not_nonempty_iff] at h
-      simp only [Fintype.card_eq_zero, Nat.cast_zero, zero_div, zero_mul, zero_add,
-        Finset.univ_eq_empty, Finset.filter_empty, Finset.card_empty] at this
-      norm_cast at this
-      omega
-    obtain ⟨i₀⟩ := hn
-    rcases eq_or_ne g 0 with rfl | hg
-    · have := hgS (d i₀) (Finset.mem_image_of_mem _ (Finset.mem_univ _))
-      rw [show (fun _ : {i // d i = d i₀} => ((0 : n → ℝ) _ : ℝ)) = 0 from rfl] at this
-      simp at this
-    · have ha : 0 < ‖WithLp.toLp 2 g‖ := norm_pos_iff.mpr (by simpa using hg)
-      simp only [hF_def, hN, Set.mem_preimage, Prod.map_apply, id_eq, Set.mem_union,
-        Set.mem_compl_iff, Set.mem_ofPred_eq, WithLp.toLp_smul, norm_smul, norm_inv, norm_norm,
-        inv_mul_cancel₀ ha.ne', lt_irrefl, or_false] at hp
-      refine hp fun t ht => ?_
-      have h := hgS t ht
-      simp only [Pi.smul_apply, WithLp.toLp_smul, norm_smul, norm_inv, norm_norm]
-      rw [show (fun i : {i // d i = t} => ‖WithLp.toLp 2 g‖⁻¹ • g i.1) =
-        ‖WithLp.toLp 2 g‖⁻¹ • fun i => g i.1 from rfl, Matrix.mulVec_smul, WithLp.toLp_smul,
-        norm_smul, norm_inv, norm_norm]
-      have : 0 < ‖WithLp.toLp 2 g‖⁻¹ ^ 2 := by positivity
-      nlinarith [mul_lt_mul_of_pos_left h this]
-  have hν1 : ν.real Sᶜ ≤ 1 / 4 :=
-    hd.measureReal_not_forall_le hκ hc (g := Prod.fst) (G := Prod.snd)
-      ⟨measurable_fst.aemeasurable, by simp [hν]⟩ ⟨measurable_snd.aemeasurable, by simp [hν]⟩
-      ((indepFun_iff_map_prod_eq_prod_map_map measurable_fst.aemeasurable
-        measurable_snd.aemeasurable).mpr (by simp [hν]))
-  calc _ ≤ μ.real ((fun ω => (ξ ω, G ω)) ⁻¹' F) := measureReal_mono hsub
-    _ = (ν.map N).real F := by
-      rw [← hprod, ← hlaw, measureReal_def, measureReal_def,
-        Measure.map_apply_of_aemeasurable (hξ.aemeasurable.prodMk hG.aemeasurable) hF]
-    _ = ν.real (N ⁻¹' F) :=
-      map_measureReal_apply (measurable_inv_norm_smul.prodMap measurable_id) hF
-    _ ≤ ν.real Sᶜ := measureReal_mono hpre
-    _ ≤ 1 / 4 := hν1
 
 /-- The lower bound of
 `NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le_of_hasLaw_haarFrame` on a
@@ -442,8 +88,8 @@ private theorem IsChebyshevTwoIntervalSpectrum.measureReal_norm_sub_mulVec_lt_le
     rw [h]
     exact hG.indepFun.comp (by fun_prop) measurable_id
   refine (measureReal_mono_ae ?_).trans
-    (hd.measureReal_exists_norm_sub_mulVec_lt_le hκ (c := Fin q ⊕ Unit) (by simp; omega) hξ
-      hG.hasLaw_gaussianMatrix hξG)
+    (hd.measureReal_exists_norm_sub_mulVec_lt_le hκ (c := Fin q ⊕ Unit)
+      (by simp; omega) hξ hG.hasLaw_gaussianMatrix hξG)
   filter_upwards [hG.ae_range_le, ae_hasOrthonormalCols_of_hasLaw_haarFrame hU le_rfl]
     with ω hr hO hω
   simp only [QueryAlgorithm.run_mapOutput] at hr
@@ -687,7 +333,7 @@ theorem IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal {κ �
           (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖}ᶜ := by
     intro s hs
     have := mul_lt_mul_of_pos_right hε' hbpos
-    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, not_le] at hs ⊢
+    simp only [Set.mem_ofPred_eq, Set.mem_compl_iff, not_le] at hs ⊢
     linarith
   have hmono := measureReal_mono (μ := ρ) hsubset
   rw [probReal_compl_eq_one_sub hF] at hmono

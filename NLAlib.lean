@@ -152,6 +152,7 @@ public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.Filter
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
+public import NLAlib.LowerBounds.Krylov.LinearSystems
 public import NLAlib.LowerBounds.LowRank.EarlyTruncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian

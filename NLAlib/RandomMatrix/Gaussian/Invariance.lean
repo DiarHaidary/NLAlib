@@ -7,9 +7,12 @@ module
 
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
 public import Mathlib.Probability.IdentDistrib
+public import NLAlib.ForMathlib.Probability.Independence.Basic
 public import NLAlib.Matrix.Basic.Orthonormal
+public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Structured.Kronecker
+public import NLAlib.Probability.Distributions.ChiSquare
 public import NLAlib.RandomMatrix.Gaussian.Basic
 
 /-!
@@ -44,6 +47,8 @@ deferred-decision induction (`NLAlib/LowerBounds/QueryModel/DeferredDecision.lea
   $\mathbf{x}$.
 * `NLAlib.indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix`: independence of orthogonal blocks.
 * `NLAlib.identDistrib_mul_mul_of_hasLaw_gaussianMatrix`: resampling a nested block.
+* `NLAlib.measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector`.
+* `NLAlib.measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun`.
 -/
 
 @[expose] public section
@@ -220,7 +225,6 @@ theorem indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix [Finite p] [Finite q
 
 end NLAlib
 
-
 open MeasureTheory ProbabilityTheory
 open scoped Matrix
 
@@ -294,5 +298,120 @@ theorem identDistrib_mul_mul_of_hasLaw_gaussianMatrix {X X' : Ω → Matrix m n 
   rw [hfun]
   exact (hX.identDistrib hY).comp
     ((continuous_const.matrix_mul continuous_id).matrix_mul continuous_const).measurable
+
+end NLAlib
+
+open MeasureTheory ProbabilityTheory
+open scoped Matrix
+
+namespace NLAlib
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n : Type*} [Fintype n]
+  {g : Ω → n → ℝ}
+
+/-- **Lower tail of a projected Gaussian vector**: let $\mathbf{g}$ be a standard Gaussian vector
+and $\mathbf{P}$ an orthogonal projector of rank at least $r$. For $0 < \beta \le 1$,
+$$\mathbb{P}\bigl[\|\mathbf{P}\mathbf{g}\|^2 \le \beta r\bigr] \le
+\exp\Bigl(\frac{r}{2}(1 - \beta + \log\beta)\Bigr) \,.$$
+[LaurentMassart2000, Lemma 1]; there for a $\chi^2_r$ variable, here for every rank at least $r$. -/
+theorem measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector
+    (hg : HasLaw g (gaussianVector n) μ) {P : Matrix n n ℝ} (hP : IsStarProjection P) {r : ℕ}
+    (hr : r ≤ P.rank) {β : ℝ} (hβ0 : 0 < β) (hβ : β ≤ 1) :
+    μ.real {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ^ 2 ≤ β * r} ≤
+      Real.exp (r / 2 * (1 - β + Real.log β)) := by
+  have := hg.isProbabilityMeasure
+  rcases Nat.eq_zero_or_pos r with rfl | hr0
+  · simp only [Nat.cast_zero, zero_div, zero_mul, Real.exp_zero]
+    exact measureReal_le_one
+  obtain ⟨Q, hQ, hQP⟩ :=
+    hP.exists_hasOrthonormalCols_mul_conjTranspose_eq (p := Fin P.rank) (Fintype.card_fin _)
+  have hA : HasOrthonormalCols Qᴴᴴ := by rw [Matrix.conjTranspose_conjTranspose]; exact hQ
+  have hy := hasLaw_mulVec_of_hasLaw_gaussianVector hg hA
+  have hρ : (0 : ℝ) < P.rank := by exact_mod_cast hr0.trans_le hr
+  have hρr : (r : ℝ) ≤ P.rank := by exact_mod_cast hr
+  have hr0' : (0 : ℝ) < r := by exact_mod_cast hr0
+  have hβ'0 : 0 < β * r / P.rank := by positivity
+  have hβ'1 : β * r / P.rank ≤ 1 := by
+    rw [div_le_one hρ]; nlinarith
+  have hcard := measureReal_norm_sq_le_mul_card_le_of_hasLaw_gaussianVector hy hβ'0 hβ'1
+  rw [Fintype.card_fin] at hcard
+  have hsub : {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ^ 2 ≤ β * r} ⊆
+      {ω | ‖WithLp.toLp 2 (Qᴴ *ᵥ g ω)‖ ^ 2 ≤ β * r / P.rank * P.rank} := by
+    intro ω hω
+    simp only [Set.mem_ofPred_eq] at hω ⊢
+    rw [div_mul_cancel₀ _ hρ.ne']
+    rw [← hQP, ← Matrix.mulVec_mulVec, hQ.norm_toLp_mulVec] at hω
+    exact hω
+  have hL : Real.log β ≤ 0 := Real.log_nonpos hβ0.le hβ
+  have hlog : Real.log (β * r / P.rank) = Real.log β + Real.log (r / P.rank) := by
+    rw [← Real.log_mul hβ0.ne' (div_pos hr0' hρ).ne', mul_div_assoc]
+  have hlogr : (P.rank : ℝ) * Real.log (r / P.rank) ≤ r - P.rank := by
+    have h := Real.log_le_sub_one_of_pos (div_pos hr0' hρ)
+    have h2 : (P.rank : ℝ) * (r / P.rank - 1) = r - P.rank := by
+      field_simp
+    nlinarith [mul_le_mul_of_nonneg_left h hρ.le]
+  have hexp : (P.rank : ℝ) / 2 * (1 - β * r / P.rank + Real.log (β * r / P.rank)) ≤
+      r / 2 * (1 - β + Real.log β) := by
+    rw [hlog]
+    have h2 : β * r / P.rank * P.rank = β * r := div_mul_cancel₀ _ hρ.ne'
+    nlinarith [mul_nonneg (sub_nonneg.2 hρr) (neg_nonneg.2 hL)]
+  calc _ ≤ _ := measureReal_mono hsub
+    _ ≤ _ := hcard
+    _ ≤ _ := Real.exp_le_exp.mpr hexp
+
+/-- **Lower tail of a Gaussian vector projected by an independent projector**: let $\mathbf{g}$ be
+a standard Gaussian vector and $\mathbf{P}$ a random orthogonal projector independent of
+$\mathbf{g}$, of rank at least $r$ for every outcome. For $0 < \beta \le 1$,
+$$\mathbb{P}\bigl[\|\mathbf{P}\mathbf{g}\|^2 \le \beta r\bigr] \le
+\exp\Bigl(\frac{r}{2}(1 - \beta + \log\beta)\Bigr) \,.$$
+[Shamir2026, eq. (10)]; there for $\mathbf{P}$ the projector away from the span of independent
+Gaussian vectors. -/
+theorem measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector_of_indepFun
+    (hg : HasLaw g (gaussianVector n) μ) {P : Ω → Matrix n n ℝ} (hPm : AEMeasurable P μ)
+    (hgP : IndepFun g P μ) (hP : ∀ ω, IsStarProjection (P ω)) {r : ℕ}
+    (hr : ∀ ω, r ≤ (P ω).rank) {β : ℝ} (hβ0 : 0 < β) (hβ : β ≤ 1) :
+    μ.real {ω | ‖WithLp.toLp 2 (P ω *ᵥ g ω)‖ ^ 2 ≤ β * r} ≤
+      Real.exp (r / 2 * (1 - β + Real.log β)) := by
+  have := hg.isProbabilityMeasure
+  -- the good projectors: a star projection whose trace (= rank) is at least `r`
+  set G : Set (Matrix n n ℝ) := {Q | IsStarProjection Q ∧ (r : ℝ) ≤ Q.trace} with hGdef
+  have hG : MeasurableSet G := by
+    have h1 : MeasurableSet {Q : Matrix n n ℝ | Q * Q = Q} :=
+      measurableSet_eq_fun (by fun_prop) (by fun_prop)
+    have h2 : MeasurableSet {Q : Matrix n n ℝ | star Q = Q} :=
+      measurableSet_eq_fun (by fun_prop) (by fun_prop)
+    have h3 : G = ({Q : Matrix n n ℝ | Q * Q = Q} ∩ {Q : Matrix n n ℝ | star Q = Q}) ∩
+        {Q : Matrix n n ℝ | (r : ℝ) ≤ Q.trace} := by
+      ext Q
+      simp only [hGdef, Set.mem_ofPred_eq, Set.mem_inter_iff, isStarProjection_iff,
+        IsIdempotentElem, IsSelfAdjoint]
+    rw [h3]
+    exact (h1.inter h2).inter
+      (measurableSet_le measurable_const (by fun_prop : Measurable fun Q : Matrix n n ℝ => Q.trace))
+  have hE : MeasurableSet {p : (n → ℝ) × Matrix n n ℝ |
+      ‖WithLp.toLp 2 (p.2 *ᵥ p.1)‖ ^ 2 ≤ β * r} :=
+    measurableSet_le (by fun_prop) measurable_const
+  have htr : ∀ Q : Matrix n n ℝ, IsStarProjection Q → Q.trace = Q.rank := fun Q hQ => by
+    have h := trace_rangeProjector Q
+    rwa [hQ.rangeProjector_eq] at h
+  have hP' : ∀ ω, P ω ∈ G := fun ω => by
+    refine ⟨hP ω, ?_⟩
+    rw [htr _ (hP ω)]
+    exact_mod_cast hr ω
+  have hGc : μ.real {ω | P ω ∉ G} ≤ 0 := by
+    have : {ω | P ω ∉ G} = ∅ := by
+      ext ω
+      simp [hP' ω]
+    simp [this]
+  have hsec : ∀ Q ∈ G, μ.real {ω | (g ω, Q) ∈ {p : (n → ℝ) × Matrix n n ℝ |
+      ‖WithLp.toLp 2 (p.2 *ᵥ p.1)‖ ^ 2 ≤ β * r}} ≤ Real.exp (r / 2 * (1 - β + Real.log β)) := by
+    rintro Q ⟨hQ, hQr⟩
+    have hrank : r ≤ Q.rank := by
+      rw [htr _ hQ] at hQr
+      exact_mod_cast hQr
+    exact measureReal_norm_mulVec_sq_le_mul_le_of_hasLaw_gaussianVector hg hQ hrank hβ0 hβ
+  have key := hgP.measureReal_mem_le_add hg.aemeasurable hPm hE hG
+    (Real.exp_pos _).le hsec hGc
+  simpa using key
 
 end NLAlib

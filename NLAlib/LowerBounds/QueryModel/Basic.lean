@@ -12,8 +12,8 @@ public import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.MeasureTheory.MeasurableSpace.Pi
 public import Mathlib.MeasureTheory.MeasurableSpace.Prod
-public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
+public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Pi
 
 /-!
 # Adaptive query algorithms
@@ -94,6 +94,16 @@ on two-sided queries to $\mathbf{X}$, with `q` products on each side.
   `NLAlib.QueryAlgorithm.rightCount_gramSimulation_le`,
   `NLAlib.QueryAlgorithm.leftCount_gramSimulation_le`,
   `NLAlib.QueryAlgorithm.rank_rightQueryMatrix_gramSimulation_le`.
+* `NLAlib.QueryAlgorithm.history_comapResponse`, `NLAlib.QueryAlgorithm.run_comapResponse`.
+* `NLAlib.QueryAlgorithm.history_mapOutput`, `NLAlib.QueryAlgorithm.run_mapOutput`.
+* `NLAlib.QueryAlgorithm.IsMeasurable.comapResponse`,
+  `NLAlib.QueryAlgorithm.IsMeasurable.mapOutput`,
+  `NLAlib.QueryAlgorithm.IsMeasurableFamily.comapResponse`,
+  `NLAlib.QueryAlgorithm.IsMeasurableFamily.mapOutput`.
+* `NLAlib.QueryAlgorithm.IsPassStructured.comapResponse`,
+  `NLAlib.QueryAlgorithm.IsPassStructured.mapOutput`,
+  `NLAlib.QueryAlgorithm.isPassStructured_id`,
+  `NLAlib.QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive`.
 -/
 
 @[expose] public section
@@ -302,7 +312,6 @@ def gramSimulation {𝕜 d : Type*} [Zero 𝕜] (k : Type*) (alg : QueryAlgorith
 end QueryAlgorithm
 
 end NLAlib
-
 
 open MeasureTheory
 open scoped Matrix
@@ -724,6 +733,112 @@ theorem rank_rightQueryMatrix_gramSimulation_le
     (QueryAlgorithm.rightCount_gramSimulation_le alg τ)
 
 end Gram
+
+end QueryAlgorithm
+
+end NLAlib
+
+namespace NLAlib
+
+namespace QueryAlgorithm
+
+variable {Q R R' β β' : Type*} {q : ℕ}
+
+/-- Reading the responses through $f$ reproduces the history: the history of
+`alg.comapResponse f` against an oracle $O'$, read through $f$, is the history of `alg` against
+$f \circ O'$, at every length $i$. -/
+theorem history_comapResponse (f : R' → R) (alg : QueryAlgorithm Q R q β) (O : Q → R')
+    (i : ℕ) : f ∘ (alg.comapResponse f).history O i = alg.history (f ∘ O) i := by
+  induction i with
+  | zero => funext x; exact x.elim0
+  | succ i ih =>
+    rw [history, history, Fin.comp_snoc, ← ih]
+    rfl
+
+/-- An algorithm reading its responses through $f$ against the oracle $O'$ outputs what `alg`
+outputs against $f \circ O'$. So a lower bound for an oracle $O$ holds for every weaker oracle
+$f \circ O$: the matrix–vector oracle is the first component of `hiddenRotationOracle`. -/
+theorem run_comapResponse (f : R' → R) (alg : QueryAlgorithm Q R q β) (O : Q → R') :
+    (alg.comapResponse f).run O = alg.run (f ∘ O) := by
+  unfold QueryAlgorithm.run QueryAlgorithm.transcript
+  rw [← history_comapResponse f alg O]
+  rfl
+
+/-- Post-processing the output does not change the history. -/
+theorem history_mapOutput (g : β → β') (alg : QueryAlgorithm Q R q β) (O : Q → R) (i : ℕ) :
+    (alg.mapOutput g).history O i = alg.history O i := by
+  induction i with
+  | zero => rfl
+  | succ n ih => rw [history, history, ih]; rfl
+
+/-- The output of `alg.mapOutput g` is $g$ of the output of `alg`. -/
+theorem run_mapOutput (g : β → β') (alg : QueryAlgorithm Q R q β) (O : Q → R) :
+    (alg.mapOutput g).run O = g (alg.run O) := by
+  simp only [QueryAlgorithm.run, QueryAlgorithm.transcript, history_mapOutput]; rfl
+
+section Measurable
+
+variable [MeasurableSpace Q] [MeasurableSpace R] [MeasurableSpace R'] [MeasurableSpace β]
+  [MeasurableSpace β']
+
+private theorem measurable_comp_left {n : ℕ} {f : R' → R} (hf : Measurable f) :
+    Measurable fun h : Fin n → R' => f ∘ h :=
+  measurable_pi_iff.2 fun j => hf.comp (measurable_pi_apply j)
+
+/-- Reading the responses through a measurable map keeps an algorithm measurable. -/
+theorem IsMeasurable.comapResponse {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
+    {f : R' → R} (hf : Measurable f) : (alg.comapResponse f).IsMeasurable :=
+  { measurable_query := fun i hi => (halg.measurable_query i hi).comp (measurable_comp_left hf)
+    measurable_output := halg.measurable_output.comp (measurable_comp_left hf) }
+
+/-- Post-processing the output by a measurable map keeps an algorithm measurable. -/
+theorem IsMeasurable.mapOutput {alg : QueryAlgorithm Q R q β} (halg : alg.IsMeasurable)
+    {g : β → β'} (hg : Measurable g) : (alg.mapOutput g).IsMeasurable := by
+  exact ⟨halg.measurable_query, hg.comp halg.measurable_output⟩
+
+/-- A measurable seeded family reading its responses through a measurable map is measurable. -/
+theorem IsMeasurableFamily.comapResponse {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {f : R' → R}
+    (hf : Measurable f) : IsMeasurableFamily fun s => (alg s).comapResponse f := by
+  refine ⟨fun i hi => ?_, ?_⟩
+  · exact (halg.measurable_query i hi).comp (measurable_fst.prodMk
+      (measurable_pi_iff.2 fun j => hf.comp ((measurable_pi_apply j).comp measurable_snd)))
+  · exact (halg.measurable_output).comp (measurable_fst.prodMk
+      (measurable_pi_iff.2 fun j => hf.comp ((measurable_pi_apply j).comp measurable_snd)))
+
+/-- A measurable seeded family with its output post-processed by a measurable map is measurable. -/
+theorem IsMeasurableFamily.mapOutput {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm Q R q β} (halg : IsMeasurableFamily alg) {g : β → β'}
+    (hg : Measurable g) : IsMeasurableFamily fun s => (alg s).mapOutput g :=
+  ⟨halg.measurable_query, hg.comp halg.measurable_output⟩
+
+end Measurable
+
+/-- Reading the responses through a map keeps the pass structure. -/
+theorem IsPassStructured.comapResponse {alg : QueryAlgorithm Q R q β} {pass : ℕ → ℕ}
+    (h : alg.IsPassStructured pass) (f : R' → R) :
+    (alg.comapResponse f).IsPassStructured pass :=
+  ⟨h.monotone, fun i hi u u' huu' =>
+    h.query_eq i hi _ _ fun j hj => by simp only [Function.comp_apply]; rw [huu' j hj]⟩
+
+/-- Post-processing the output keeps the pass structure. -/
+theorem IsPassStructured.mapOutput {alg : QueryAlgorithm Q R q β} {pass : ℕ → ℕ}
+    (h : alg.IsPassStructured pass) (g : β → β') :
+    (alg.mapOutput g).IsPassStructured pass := by
+  exact ⟨h.monotone, h.query_eq⟩
+
+/-- Every algorithm is pass-structured with one query per pass: with `pass = id` the
+condition is that query $i$ depends only on the $i$ responses before it, which is the definition
+of an adaptive algorithm. The fully adaptive model is the $q$-pass case. -/
+theorem isPassStructured_id (alg : QueryAlgorithm Q R q β) : alg.IsPassStructured id :=
+  ⟨monotone_id, fun i _ _ _ hh => congrArg (alg.query i) (funext fun j => hh j j.isLt)⟩
+
+/-- One pass is non-adaptivity: an algorithm is pass-structured with every round in pass
+$0$ if and only if it is non-adaptive. -/
+theorem isPassStructured_zero_iff_isNonAdaptive (alg : QueryAlgorithm Q R q β) :
+    alg.IsPassStructured (fun _ => 0) ↔ alg.IsNonAdaptive := by
+  refine ⟨fun h i hi u u' => h.query_eq i hi u u' fun j hj => absurd hj (lt_irrefl _),
+    fun h => ⟨monotone_const, fun i hi u u' _ => h i hi u u'⟩⟩
 
 end QueryAlgorithm
 

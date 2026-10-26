@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Algebra.Group.ForwardDiff
 public import Mathlib.Data.Real.Basic
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
@@ -42,6 +43,7 @@ definition is still the sum; every theorem assumes `Set.InjOn v s`.
 * `NLAlib.dividedDifference_eval_eq_coeff`, `NLAlib.dividedDifference_eval_eq_zero`: on the
   values of a polynomial.
 * `NLAlib.isLeast_sum_mul_sq_sub_eval`: the weighted least-squares distance.
+* `NLAlib.sum_neg_one_pow_mul_choose_mul_eval_eq_zero`.
 -/
 
 @[expose] public section
@@ -155,5 +157,31 @@ theorem isLeast_sum_mul_sq_sub_eval {s : Finset ι} {v : ι → ℝ} (hvs : Set.
       (fun i hi => mul_nonneg (hu i hi).le (sq_nonneg _)) fun i hi => le_of_eq ?_
     have := (hu i hi).ne'
     field_simp
+
+end NLAlib
+
+open Polynomial Finset
+
+namespace NLAlib
+
+/-- Finite differences annihilate low-degree polynomials: for a polynomial $P$ over a
+commutative ring with $\deg P < n$ and any $x$, $h$,
+$$\sum_{j=0}^{n} (-1)^{n-j}\binom{n}{j} P(x + jh) = 0 \,.$$
+The equispaced case of `NLAlib.dividedDifference_eval_eq_zero`, with integer weights. -/
+theorem sum_neg_one_pow_mul_choose_mul_eval_eq_zero {R : Type*} [CommRing R] {P : R[X]}
+    {n : ℕ} (hP : P.natDegree < n) (x h : R) :
+    ∑ j ∈ range (n + 1), (-1 : R) ^ (n - j) * (n.choose j : R) * P.eval (x + j * h) = 0 := by
+  have hlin : (C x + C h * X).natDegree ≤ 1 := by
+    rw [add_comm]; exact natDegree_linear_le
+  have hdeg : (P.comp (C x + C h * X)).natDegree < n := by
+    have := Polynomial.natDegree_comp_le (p := P) (q := C x + C h * X)
+    have h2 : P.natDegree * (C x + C h * X).natDegree ≤ P.natDegree * 1 :=
+      Nat.mul_le_mul_left _ hlin
+    omega
+  have key := congrFun (fwdDiff_iter_eq_zero_of_degree_lt hdeg) 0
+  rw [fwdDiff_iter_eq_sum_shift] at key
+  simp only [eval_comp, eval_add, eval_mul, eval_C, eval_X, zsmul_eq_mul, Pi.zero_apply] at key
+  simpa [zero_add, nsmul_eq_mul, mul_comm, mul_assoc, mul_left_comm, Int.cast_mul,
+    Int.cast_pow] using key
 
 end NLAlib

@@ -47,3 +47,8 @@ reason = "the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact 
 name = "NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero"
 rule = "N9"
 reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
+
+[[allow]]
+name = "NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le"
+rule = "N9"
+reason = "LB-C SH1 (design note §3.5); with `_of_hasLaw_gaussianMatrix` the declaration line is 105 characters, past the line limit (as NAME-R4B)"
