@@ -205,7 +205,21 @@ $\xi_j \in [1, \kappa^2]$ (`NLAlib.chebyshevExtremum_mem_Icc`); `Real.sqrt_le_sq
 theorem IsChebyshevTwoIntervalSpectrum.mem_Icc_union_Icc {κ : ℝ} {s M : ℕ} {d : n → ℝ}
     (hd : IsChebyshevTwoIntervalSpectrum κ s M d) (hκ : 1 < κ) (i : n) :
     d i ∈ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ := by
-  sorry
+  obtain ⟨j, h | h⟩ := hd.exists_eq i
+  · have hξ := chebyshevExtremum_mem_Icc (a := 1) (a' := κ ^ 2) (by nlinarith) (s / 2) j
+    have h1 : 1 ≤ Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) :=
+      Real.one_le_sqrt.mpr hξ.1
+    have h2 : Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) ≤ κ :=
+      (Real.sqrt_le_sqrt hξ.2).trans_eq (Real.sqrt_sq (by linarith))
+    rw [h]
+    exact Set.mem_union_right _ ⟨h1, h2⟩
+  · have hξ := chebyshevExtremum_mem_Icc (a := 1) (a' := κ ^ 2) (by nlinarith) (s / 2) j
+    have h1 : 1 ≤ Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) :=
+      Real.one_le_sqrt.mpr hξ.1
+    have h2 : Real.sqrt (chebyshevExtremum 1 (κ ^ 2) (s / 2) j) ≤ κ :=
+      (Real.sqrt_le_sqrt hξ.2).trans_eq (Real.sqrt_sq (by linarith))
+    rw [h]
+    exact Set.mem_union_left _ ⟨by linarith, by linarith⟩
 
 /-- **Weighted residual bound on a Chebyshev two-interval spectrum**: for $\kappa > 1$, a
 Chebyshev two-interval spectrum $d$ with depth $s$ and margin $M$, and every real $p$ with
