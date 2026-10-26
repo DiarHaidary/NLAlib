@@ -487,7 +487,49 @@ theorem mul_frobNorm_mul_truncatedSVD_sq_add_le (B : Matrix m n ℝ) {k a : ℕ}
           frobNorm (W * rangeProjector (truncatedSVD B a)) ^ 2 ≤
       frobNorm (W * truncatedSVD B k) ^ 2 -
         singularValues B (k - 1) ^ 2 * frobNorm (W * rangeProjector (truncatedSVD B k)) ^ 2 := by
-  sorry
+  set θ := singularValues B (k - 1)
+  have hθ : 0 ≤ θ := singularValues_nonneg B (k - 1)
+  have hle := range_truncatedSVD_mono B hak
+  -- `P_a P_k = P_a = P_k P_a`
+  have hPP := rangeProjector_mul_rangeProjector_of_range_le' hle
+  have hPP' := rangeProjector_mul_rangeProjector_of_range_le hle
+  -- row orthogonality: `(B_k - B_a) B_aᴴ = 0`
+  have hBaP : truncatedSVD B a * rangeProjector (truncatedSVD B a)ᴴ = truncatedSVD B a := by
+    have h := congrArg Matrix.conjTranspose (rangeProjector_mul_self (truncatedSVD B a)ᴴ)
+    rwa [Matrix.conjTranspose_mul, conjTranspose_rangeProjector,
+      Matrix.conjTranspose_conjTranspose] at h
+  have hBaPk : truncatedSVD B a * rangeProjector (truncatedSVD B k)ᴴ = truncatedSVD B a := by
+    conv_lhs => rw [← rangeProjector_truncatedSVD_mul B a]
+    rw [Matrix.mul_assoc, mul_rangeProjector_conjTranspose_truncatedSVD,
+      ← rangeProjector_truncatedSVD_mul B k, ← Matrix.mul_assoc, hPP,
+      rangeProjector_truncatedSVD_mul]
+  have horth : (truncatedSVD B k - truncatedSVD B a) * (truncatedSVD B a)ᴴ = 0 := by
+    have e : ∀ j, truncatedSVD B a * (truncatedSVD B j)ᴴ =
+        truncatedSVD B a * rangeProjector (truncatedSVD B j)ᴴ * Bᴴ := by
+      intro j
+      conv_lhs => rw [← mul_rangeProjector_conjTranspose_truncatedSVD B j]
+      rw [Matrix.conjTranspose_mul, conjTranspose_rangeProjector, Matrix.mul_assoc]
+    rw [← Matrix.conjTranspose_conjTranspose (truncatedSVD B k - truncatedSVD B a),
+      ← Matrix.conjTranspose_mul, Matrix.conjTranspose_sub, Matrix.mul_sub, e k, e a, hBaPk,
+      hBaP, sub_self, Matrix.conjTranspose_zero]
+  have h1 : frobNorm (W * truncatedSVD B k) ^ 2 = frobNorm (W * truncatedSVD B a) ^ 2 +
+      frobNorm (W * (truncatedSVD B k - truncatedSVD B a)) ^ 2 := by
+    rw [← frobNorm_add_sq_of_frobInner_eq_zero, ← Matrix.mul_add, add_sub_cancel]
+    rw [frobInner_mul_right, Matrix.mul_assoc, horth, Matrix.mul_zero, frobInner_zero_right]
+  have h2 : frobNorm (W * rangeProjector (truncatedSVD B k)) ^ 2 =
+      frobNorm (W * rangeProjector (truncatedSVD B a)) ^ 2 +
+      frobNorm (W * (rangeProjector (truncatedSVD B k) -
+        rangeProjector (truncatedSVD B a))) ^ 2 := by
+    rw [← frobNorm_add_sq_of_frobInner_eq_zero, ← Matrix.mul_add, add_sub_cancel]
+    rw [frobInner_mul_right, Matrix.mul_assoc, conjTranspose_rangeProjector, Matrix.sub_mul, hPP',
+      rangeProjector_mul_rangeProjector, sub_self, Matrix.mul_zero, frobInner_zero_right]
+  have h3 := sq_mul_frobNorm_mul_sub_rangeProjector_sq_le B W hak hθ fun i _ hi =>
+    singularValues_antitone B (by omega : i ≤ k - 1)
+  have h4 := sq_mul_frobNorm_mul_sub_rangeProjector_sq_le B W (Nat.zero_le a)
+    (by positivity : 0 ≤ 2 * θ) fun i _ hi => ha i hi
+  rw [truncatedSVD_zero, rangeProjector_zero, sub_zero, sub_zero] at h4
+  nlinarith [mul_nonneg (sq_nonneg θ)
+    (sq_nonneg (frobNorm (W * rangeProjector (truncatedSVD B a))))]
 
 /-- **The tail weight**: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B})$, $b \ge k$ with $\sigma_b(\mathbf{B}) \le \theta/2$, and any
