@@ -14,8 +14,8 @@ For $\mathbf{C}, \mathbf{E} \in \Bbbk^{m \times n}$ and any best rank-$k$ approx
 $\mathbf{Y}$ of $\mathbf{C} + \mathbf{E}$, the error $\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2$
 exceeds the optimal $\|\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\|_{\mathsf{F}}^2$ by a
 cross term and a noise term. The next-$k$ form bounds the cross term by the spectral norm of
-$\mathbf{E}$ and the next $k$ singular values of $\mathbf{C}$. The localized form (over
-$\mathbb{R}$) sees the noise in the cross term only through its compression $\mu$ to the left and
+$\mathbf{E}$ and the next $k$ singular values of $\mathbf{C}$. The localized form sees the noise
+in the cross term only through its compression $\mu$ to the left and
 right singular subspaces of $\mathbf{C}$ whose singular values lie within a factor $2$ of
 $\theta = \sigma_{k-1}(\mathbf{C})$:
 $$\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
@@ -185,18 +185,18 @@ theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm
 
 end RCLike
 
-variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
 
 /-! ### The excess and the optimality of the perturbed truncation -/
 
-/-- The excess identity: for $\mathbf{B}, \mathbf{N} \in \mathbb{R}^{m \times n}$ and a best
+/-- The excess identity: for $\mathbf{B}, \mathbf{N} \in \Bbbk^{m \times n}$ and a best
 rank-$k$ approximation $\mathbf{Y}$ of $\mathbf{B} + \mathbf{N}$, with
 $\widehat{\mathbf{P}} = \mathbf{P}_{\mathbf{Y}}$,
 $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 =
 \|(\mathbf{I} - \widehat{\mathbf{P}})\mathbf{B}\|_{\mathsf{F}}^2 +
 \|\widehat{\mathbf{P}}\mathbf{N}\|_{\mathsf{F}}^2\,.$$
 No printed source. -/
-theorem IsBestRankApprox.frobNorm_sub_sq_eq_add {B N Y : Matrix m n ℝ} {k : ℕ}
+theorem IsBestRankApprox.frobNorm_sub_sq_eq_add {B N Y : Matrix m n 𝕜} {k : ℕ}
     (hY : IsBestRankApprox (B + N) k Y) :
     frobNorm (B - Y) ^ 2 =
       frobNorm ((1 - rangeProjector Y) * B) ^ 2 + frobNorm (rangeProjector Y * N) ^ 2 := by
@@ -218,16 +218,16 @@ theorem IsBestRankApprox.frobNorm_sub_sq_eq_add {B N Y : Matrix m n ℝ} {k : �
   exact frobNorm_sub_sq_of_frobInner_eq_zero horth
 
 /-- Pythagoras for the complement of a star projection, in the form `(1 - Q) * A`. -/
-private theorem frobNorm_one_sub_mul_sq {Q : Matrix m m ℝ} (hQ : IsStarProjection Q)
-    (A : Matrix m n ℝ) :
+private theorem frobNorm_one_sub_mul_sq {Q : Matrix m m 𝕜} (hQ : IsStarProjection Q)
+    (A : Matrix m n 𝕜) :
     frobNorm ((1 - Q) * A) ^ 2 = frobNorm A ^ 2 - frobNorm (Q * A) ^ 2 := by
   have h := hQ.frobNorm_sq_eq_add A
   linarith
 
 omit [DecidableEq m] in
 /-- Expansion of `‖Q (B + N)‖²` for a star projection `Q`. -/
-private theorem frobNorm_mul_add_sq {Q : Matrix m m ℝ} (hQ : IsStarProjection Q)
-    (B N : Matrix m n ℝ) :
+private theorem frobNorm_mul_add_sq {Q : Matrix m m 𝕜} (hQ : IsStarProjection Q)
+    (B N : Matrix m n 𝕜) :
     frobNorm (Q * (B + N)) ^ 2 =
       frobNorm (Q * B) ^ 2 + 2 * frobInner (Q * B) N + frobNorm (Q * N) ^ 2 := by
   classical
@@ -237,7 +237,7 @@ private theorem frobNorm_mul_add_sq {Q : Matrix m m ℝ} (hQ : IsStarProjection 
   rw [Matrix.mul_add, frobNorm_add_sq, hcross]
 
 /-- The optimality of the perturbed truncation: for $\mathbf{B}, \mathbf{N} \in
-\mathbb{R}^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
+\Bbbk^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
 $\mathbf{B} + \mathbf{N}$, with $\widehat{\mathbf{P}} = \mathbf{P}_{\mathbf{Y}}$ and
 $\mathbf{P}$ the range projector of $\llbracket\mathbf{B}\rrbracket_k$,
 $$\|(\mathbf{I} - \widehat{\mathbf{P}})\mathbf{B}\|_{\mathsf{F}}^2 -
@@ -245,7 +245,7 @@ $$\|(\mathbf{I} - \widehat{\mathbf{P}})\mathbf{B}\|_{\mathsf{F}}^2 -
 2\langle(\widehat{\mathbf{P}} - \mathbf{P})\mathbf{B}, \mathbf{N}\rangle_{\mathsf{F}} +
 \|\widehat{\mathbf{P}}\mathbf{N}\|_{\mathsf{F}}^2 - \|\mathbf{P}\mathbf{N}\|_{\mathsf{F}}^2\,.$$
 No printed source. -/
-theorem IsBestRankApprox.frobNorm_one_sub_rangeProjector_mul_sq_sub_le {B N Y : Matrix m n ℝ}
+theorem IsBestRankApprox.frobNorm_one_sub_rangeProjector_mul_sq_sub_le {B N Y : Matrix m n 𝕜}
     {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) :
     frobNorm ((1 - rangeProjector Y) * B) ^ 2 -
         frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2 ≤
@@ -274,7 +274,7 @@ theorem IsBestRankApprox.frobNorm_one_sub_rangeProjector_mul_sq_sub_le {B N Y : 
 
 omit [DecidableEq m] in
 /-- Perturbed truncation, large-noise form: for $\mathbf{B}, \mathbf{N} \in
-\mathbb{R}^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
+\Bbbk^{m \times n}$ and a best rank-$k$ approximation $\mathbf{Y}$ of
 $\mathbf{B} + \mathbf{N}$,
 $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 \|\mathbf{B} - \llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2 +
@@ -282,7 +282,7 @@ $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 Since the next $k$ singular values are at most $\sigma_k(\mathbf{B})$, this follows from
 `NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm`. No printed source. -/
 theorem IsBestRankApprox.frobNorm_sub_sq_le_add_singularValues_mul_specNorm
-    {B N Y : Matrix m n ℝ} {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) :
+    {B N Y : Matrix m n 𝕜} {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) :
     frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 +
       4 * k * singularValues B k * specNorm N + 12 * k * specNorm N ^ 2 := by
   have hγ : frobNorm (truncatedSVD (B - truncatedSVD B k) k) ≤
@@ -338,7 +338,7 @@ private theorem le_add_of_le_two_mul_add_window {D x y r ν k η θ μ q : ℝ} 
 $\operatorname{range}\llbracket\mathbf{B}\rrbracket_a^{\mathsf{H}} \subseteq
 \operatorname{range}\llbracket\mathbf{B}\rrbracket_b^{\mathsf{H}}$ for $a \le b$. -/
 private theorem range_conjTranspose_truncatedSVD_le {m' n' : Type*} [Fintype m'] [Fintype n']
-    (B : Matrix m' n' ℝ) {a b : ℕ} (hab : a ≤ b) :
+    (B : Matrix m' n' 𝕜) {a b : ℕ} (hab : a ≤ b) :
     LinearMap.range (truncatedSVD B a)ᴴ.mulVecLin ≤
       LinearMap.range (truncatedSVD B b)ᴴ.mulVecLin := by
   have hPab : rangeProjector (truncatedSVD B a) * rangeProjector (truncatedSVD B b) =
@@ -354,7 +354,7 @@ $\mathbf{L}' = \mathbf{P}'_b - \mathbf{P}'_a$,
 $|\langle\mathbf{L}\mathbf{\Delta}\mathbf{B}\mathbf{L}', \mathbf{N}\rangle| \le
 \|\mathbf{L}\mathbf{\Delta}\mathbf{L}\|_*\,\|\mathbf{L}\mathbf{N}\mathbf{L}'\|_2\,\sigma_a$. -/
 private theorem abs_frobInner_mul_mul_le_nuclearNorm_mul {m' n' : Type*} [Fintype m'] [Fintype n']
-    (B N : Matrix m' n' ℝ) {a b : ℕ} (hab : a ≤ b) (Δ : Matrix m' m' ℝ) :
+    (B N : Matrix m' n' 𝕜) {a b : ℕ} (hab : a ≤ b) (Δ : Matrix m' m' 𝕜) :
     |frobInner ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * Δ * B *
         (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ)) N| ≤
       nuclearNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * Δ *
@@ -380,7 +380,7 @@ private theorem abs_frobInner_mul_mul_le_nuclearNorm_mul {m' n' : Type*} [Fintyp
   have hLB : L * B = B * L' := by
     simp only [L, L', Matrix.sub_mul, Matrix.mul_sub, rangeProjector_truncatedSVD_mul,
       mul_rangeProjector_conjTranspose_truncatedSVD, Pa, Pb]
-  have hL2 : ∀ X : Matrix m' n' ℝ, L * (L * X) = L * X := fun X => by
+  have hL2 : ∀ X : Matrix m' n' 𝕜, L * (L * X) = L * X := fun X => by
     rw [← Matrix.mul_assoc, hLL]
   have hLBL : L * (B * L') = B * L' := by rw [← hLB, hL2]
   have hBL : B * L' * L' = B * L' := by rw [Matrix.mul_assoc, hL'L']
@@ -410,12 +410,12 @@ private theorem abs_frobInner_mul_mul_le_nuclearNorm_mul {m' n' : Type*} [Fintyp
   gcongr
 
 omit [DecidableEq m] in
-/-- The localized perturbed truncation: for $\mathbf{B}, \mathbf{N} \in
-\mathbb{R}^{m \times n}$, $1 \le k$, $\theta = \sigma_{k-1}(\mathbf{B})$, a window
+/-- **Localized hard truncation**: for $\mathbf{B}, \mathbf{N} \in
+\Bbbk^{m \times n}$, $1 \le k$, $\theta = \sigma_{k-1}(\mathbf{B})$, a window
 $a \le k \le b$ with $2\theta \le \sigma_i(\mathbf{B})$ for $i < a$,
 $\sigma_a(\mathbf{B}) \le 2\theta$ and $\sigma_b(\mathbf{B}) \le \theta/2$, and a best rank-$k$
 approximation $\mathbf{Y}$ of $\mathbf{B} + \mathbf{N}$, with $\mathbf{P}_i$, $\mathbf{P}'_i$
-the range projectors of $\llbracket\mathbf{B}\rrbracket_i$ and of its transpose and
+the range projectors of $\llbracket\mathbf{B}\rrbracket_i$ and of its conjugate transpose and
 $\mu = \|(\mathbf{P}_b - \mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b - \mathbf{P}'_a)\|_2$,
 $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 \|\mathbf{B} - \llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2 + 500k\,\|\mathbf{N}\|_2^2 +
@@ -423,8 +423,9 @@ $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 The noise enters the cross term only through its compression $\mu$ to the singular subspaces
 within a factor $2$ of the truncation level, and with weight $\min(k, b - k)$ instead of $k$.
 The proof gives $483$ and $32$ in place of $500$ and $40$. No printed source; research note
-OP6, Proposition 3.6, has $965$ in place of $500$, from a cruder split. -/
-theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : Matrix m n ℝ}
+OP6, Proposition 3.6, has $965$ in place of $500$, from a cruder split.
+Result: localized-hard-truncation -/
+theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : Matrix m n 𝕜}
     {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k)
     (hkb : k ≤ b) (ha : ∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i)
     (ha₂ : singularValues B a ≤ 2 * singularValues B (k - 1))

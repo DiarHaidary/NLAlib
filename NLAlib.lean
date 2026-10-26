@@ -135,7 +135,7 @@ public import NLAlib.LowRank.Gaussian.RotationInvariant
 public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle
-public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromUpper
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRate
 public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian

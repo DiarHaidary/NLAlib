@@ -164,7 +164,7 @@ files are deleted. Statements unchanged.
 | G1 | `RandomMatrix/Gaussian/BlockMoments.lean` | Gaussian block moments |
 | G2 | `Regression/SketchAndSolve.lean` | the sketch-and-solve excess |
 | R51 | `LowRank/Gaussian/RangeFinder.lean` | the range-finder moments |
-| G43, C45, M1, M2 | `LowRank/Gaussian/TruncatedGeneralizedNystromUpper.lean` (new) | the existing `TruncatedGeneralizedNystrom.lean` would exceed F10 |
+| G43, C45, M1, M2 | `LowRank/Gaussian/TruncatedGeneralizedNystromRate.lean` (new) | the existing `TruncatedGeneralizedNystrom.lean` would exceed F10 |
 
 Duplicates removed (§5, open question 3): the private next-$k$ perturbed truncation of
 `LowRank/Structural/Truncation.lean` and its two private steps are public in
@@ -174,5 +174,10 @@ former private spectral residual of `LowRank/Gaussian/TruncatedGeneralizedNystro
 with its three private helpers. Also public now: `IsBestRankApprox.rangeProjector_self_mul`
 (`Matrix/Spectral/BestRankApprox.lean`; five copies existed) and
 `IsStarProjection.frobNorm_sq_eq_add_mul_right` (`Matrix/Norms/Projector.lean`; three copies).
-Open questions 1 (`RCLike`) and 2 (explicit constants) remain open.
+Fable review (2026-10-26), all items applied: open question 1 is done (the 13 deterministic
+statements, S1–P36 and T3, are over `RCLike`; nothing needed ℝ); open question 2 in part: C45, M1,
+M2 have explicit theorems ($C = 12500$, $1750000$, $3500004$) and are their `Asymptotic:` forms
+(M1's and M2's `exists_forall_` names kept, N17 allowlisted, since the derived name is the older
+$8000\ell/\varepsilon$ asymptotic form, which M2 dominates; deprecating it is card TGN-DOMINATED).
+P36 is `Result: localized-hard-truncation`. The file is `…TruncatedGeneralizedNystromRate.lean`.
 

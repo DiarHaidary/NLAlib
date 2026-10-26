@@ -790,22 +790,22 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add (A : Matrix m n �
   exact h
 
 /-- The localized truncated generalized Nyström error, deterministic form: for
-$\mathbf{A} \in \mathbb{R}^{m \times n}$, $\mathbf{\Omega} \in \mathbb{R}^{n \times \ell}$ and
-$\mathbf{\Psi} \in \mathbb{R}^{m \times p}$ such that
-$\mathbf{\Psi}^{\mathsf{T}}\mathbf{A}\mathbf{\Omega}$ has the rank of $\mathbf{A}\mathbf{\Omega}$,
+$\mathbf{A} \in \Bbbk^{m \times n}$, $\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and
+$\mathbf{\Psi} \in \Bbbk^{m \times p}$ such that
+$\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}$ has the rank of $\mathbf{A}\mathbf{\Omega}$,
 $1 \le k$, $\mathbf{R} = \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$, the core noise
-$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{T}}}(\mathbf{A} -
+$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}(\mathbf{A} -
 \mathbf{R})$, $\theta = \sigma_{k-1}(\mathbf{R})$, and a window $a \le k \le b$ with
 $2\theta \le \sigma_i(\mathbf{R})$ for $i < a$, $\sigma_a(\mathbf{R}) \le 2\theta$ and
 $\sigma_b(\mathbf{R}) \le \theta/2$, with $\mathbf{P}_i$, $\mathbf{P}'_i$ the range projectors of
-$\llbracket\mathbf{R}\rrbracket_i$ and of its transpose,
+$\llbracket\mathbf{R}\rrbracket_i$ and of its conjugate transpose,
 $$\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
 \|_{\mathsf{F}}^2 \le \|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 +
 500k\,\|\mathbf{N}\|_2^2 + 40\,\theta\min(k, b - k)\,
 \|(\mathbf{P}_b - \mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b - \mathbf{P}'_a)\|_2\,.$$
 For the choice `truncatedSVD` makes. No printed source. -/
-theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matrix m n ℝ}
-    {Ω : Matrix n l ℝ} {Ψ : Matrix m p ℝ} (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) {k : ℕ}
+theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matrix m n 𝕜}
+    {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜} (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) {k : ℕ}
     (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k) (hkb : k ≤ b)
     (ha : ∀ i < a, 2 * singularValues (rsvd A Ω) (k - 1) ≤ singularValues (rsvd A Ω) i)
     (ha₂ : singularValues (rsvd A Ω) a ≤ 2 * singularValues (rsvd A Ω) (k - 1))

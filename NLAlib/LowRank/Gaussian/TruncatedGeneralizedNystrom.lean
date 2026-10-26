@@ -21,7 +21,13 @@ Nyström (`NLAlib.generalizedNystrom`, `NLAlib.truncatedSVD`) reaches relative e
 $1 + \varepsilon$ in expectation with $\ell = O(k/\varepsilon)$ and $p = O(k/\varepsilon^2)$:
 for $4k \le \ell$ and $4\ell \le p$ the expected squared Frobenius error is at most a named
 factor times $\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2$, a factor at
-most $1 + \varepsilon$ at $\ell \ge 6k/\varepsilon$, $p \ge 8000\ell/\varepsilon$. The proof
+most $1 + \varepsilon$ at $\ell \ge 6k/\varepsilon$, $p \ge 8000\ell/\varepsilon$. Both sizes
+$O(k/\varepsilon)$ suffice by the localized perturbed truncation, in
+`NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRate`
+(in namespace `NLAlib`,
+`integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix` and
+`integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`).
+The proof
 combines the perturbed truncation lemma
 `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm` (the spectral norm of
 the core noise enters with weight $\sqrt{k}$), the expected error of the truncated randomized SVD,
@@ -510,7 +516,10 @@ $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 \|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`.
-Proved without a literature source.
+The bound with both sizes $O(k/\varepsilon)$ ($\ell \ge 3500004\,k/\varepsilon$, $p \ge 4\ell$) is
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`
+(`NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRate`); this one has the smaller constant for
+$\ell$. Proved without a literature source.
 Result: tgn-expected-error -/
 theorem
     integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
@@ -544,7 +553,10 @@ $$\mathbb{E}\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega},
 The asymptotic form of
 `NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`
 through the factor's comparison at one shared $C$; the proof takes $C = 160$ and
-$\varepsilon_0 = 1$, against the explicit theorem's $6$ and $8000$ for the two sizes.
+$\varepsilon_0 = 1$, against the explicit theorem's $6$ and $8000$ for the two sizes. It is
+dominated by
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`,
+where $p = O(\ell)$ suffices.
 Asymptotic:
 NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix
 Result: tgn-expected-error -/

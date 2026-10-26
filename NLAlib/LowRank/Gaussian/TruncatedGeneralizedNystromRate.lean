@@ -232,31 +232,27 @@ private theorem mul_le_mul_div_sqrt_of_le {θ m I e s k γ P : ℝ} (hθ : 0 ≤
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- The expected error of truncated generalized Nyström at a fixed range test matrix: there is
-an absolute constant $C > 0$ such that for $\mathbf{A} \in \mathbb{R}^{m \times n}$, every fixed
-$\mathbf{x} \in \mathbb{R}^{n \times \ell}$, a standard Gaussian $\mathbf{\Psi} \in
-\mathbb{R}^{m \times p}$ with $4\ell \le p$, any $k$, $\mathbf{R} = \mathsf{rsvd}(\mathbf{A},
-\mathbf{x})$ and $\mathbf{E} = \mathbf{A} - \mathbf{R}$,
+/-- The expected error of truncated generalized Nyström at a fixed range test matrix: for
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, every fixed $\mathbf{x} \in \mathbb{R}^{n \times \ell}$,
+a standard Gaussian $\mathbf{\Psi} \in \mathbb{R}^{m \times p}$ with $4\ell \le p$, any $k$,
+$\mathbf{R} = \mathsf{rsvd}(\mathbf{A}, \mathbf{x})$ and $\mathbf{E} = \mathbf{A} - \mathbf{R}$,
 $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{x},
 \mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le
-\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 + Ck\Bigl(
+\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 + 12500\,k\Bigl(
 \frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \ell\,\|\mathbf{E}\|_2^2}{p} +
 \frac{\|\mathbf{E}\|_2\,\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}}{\sqrt p}
 \Bigr)\,.$$
-$O(1)$ suffices for $C$: the proof gives $C = 12500$. For the choice `truncatedSVD` makes.
+For the choice `truncatedSVD` makes. Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix`.
 No printed source; research note OP6, Corollary 4.5. -/
-theorem
-    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix :
-    ∃ C : ℝ, 0 < C ∧ ∀ {m n l p : Type} [Fintype m] [Fintype n] [Fintype l] [Fintype p]
-      (A : Matrix m n ℝ) (x : Matrix n l ℝ) (k : ℕ), 4 * Fintype.card l ≤ Fintype.card p →
-      ∫ ψ, frobNorm (A - truncatedSVD (generalizedNystrom A x ψ) k) ^ 2 ∂(gaussianMatrix m p) ≤
-        frobNorm (A - truncatedSVD (rsvd A x) k) ^ 2 +
-          C * k * ((frobNorm (A - rsvd A x) ^ 2 +
-              Fintype.card l * specNorm (A - rsvd A x) ^ 2) / Fintype.card p +
-            specNorm (A - rsvd A x) * frobNorm (rsvd A x - truncatedSVD (rsvd A x) k) /
-              √(Fintype.card p : ℝ)) := by
-  refine ⟨12500, by norm_num, ?_⟩
-  intro m n l p _ _ _ _ A x k hlp
+theorem integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix
+    (A : Matrix m n ℝ) (x : Matrix n l ℝ) (k : ℕ) (hlp : 4 * Fintype.card l ≤ Fintype.card p) :
+    ∫ ψ, frobNorm (A - truncatedSVD (generalizedNystrom A x ψ) k) ^ 2 ∂(gaussianMatrix m p) ≤
+      frobNorm (A - truncatedSVD (rsvd A x) k) ^ 2 +
+        12500 * k * ((frobNorm (A - rsvd A x) ^ 2 +
+            Fintype.card l * specNorm (A - rsvd A x) ^ 2) / Fintype.card p +
+          specNorm (A - rsvd A x) * frobNorm (rsvd A x - truncatedSVD (rsvd A x) k) /
+            √(Fintype.card p : ℝ)) := by
   classical
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · simp [truncatedSVD_zero]
@@ -329,6 +325,36 @@ theorem
     (Nat.cast_nonneg (α := ℝ) k) (frobNorm_nonneg _) hEμ hwin
   linarith
 
+/-- **The expected error of truncated generalized Nyström at a fixed range test matrix**: there is
+an absolute constant $C > 0$ such that for $\mathbf{A} \in \mathbb{R}^{m \times n}$, every fixed
+$\mathbf{x} \in \mathbb{R}^{n \times \ell}$, a standard Gaussian $\mathbf{\Psi} \in
+\mathbb{R}^{m \times p}$ with $4\ell \le p$, any $k$, $\mathbf{R} = \mathsf{rsvd}(\mathbf{A},
+\mathbf{x})$ and $\mathbf{E} = \mathbf{A} - \mathbf{R}$,
+$$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{x},
+\mathbf{\Psi})\rrbracket_k\|_{\mathsf{F}}^2 \le
+\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 + Ck\Bigl(
+\frac{\|\mathbf{E}\|_{\mathsf{F}}^2 + \ell\,\|\mathbf{E}\|_2^2}{p} +
+\frac{\|\mathbf{E}\|_2\,\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}}{\sqrt p}
+\Bigr)\,.$$
+$O(1)$ suffices for $C$; the explicit theorem has $C = 12500$. For the choice `truncatedSVD`
+makes. No printed source; research note OP6, Corollary 4.5.
+It is the asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix`.
+Asymptotic: NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix
+Result: tgn-expected-error -/
+theorem
+    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix :
+    ∃ C : ℝ, 0 < C ∧ ∀ {m n l p : Type} [Fintype m] [Fintype n] [Fintype l] [Fintype p]
+      (A : Matrix m n ℝ) (x : Matrix n l ℝ) (k : ℕ), 4 * Fintype.card l ≤ Fintype.card p →
+      ∫ ψ, frobNorm (A - truncatedSVD (generalizedNystrom A x ψ) k) ^ 2 ∂(gaussianMatrix m p) ≤
+        frobNorm (A - truncatedSVD (rsvd A x) k) ^ 2 +
+          C * k * ((frobNorm (A - rsvd A x) ^ 2 +
+              Fintype.card l * specNorm (A - rsvd A x) ^ 2) / Fintype.card p +
+            specNorm (A - rsvd A x) * frobNorm (rsvd A x - truncatedSVD (rsvd A x) k) /
+              √(Fintype.card p : ℝ)) :=
+  ⟨12500, by norm_num, fun A x k hlp =>
+    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix A x k hlp⟩
+
 /-- The linear majorant of the conditional bound: with $\gamma^2 \le a$, AM–GM on the product
 term $e\gamma/\sqrt P$ gives a bound linear in $a$, $b$ and $e^2$. -/
 private theorem add_mul_div_sqrt_le {C a b e γ L P : ℝ} (hC : 0 ≤ C) (hL : 0 < L) (hP : 0 < P)
@@ -385,35 +411,33 @@ private theorem moments_le_add_mul {C₁ K L P T g u v w : ℝ} (hC₁ : 0 ≤ C
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
-/-- **The expected error of truncated generalized Nyström, sketch sizes $O(k/\varepsilon)$**: there
-is an absolute constant $C > 0$ such that for every $\mathbf{A} \in \mathbb{R}^{m \times n}$ and
+/-- **The expected error of truncated generalized Nyström, sketch sizes $O(k/\varepsilon)$**: for
+every $\mathbf{A} \in \mathbb{R}^{m \times n}$ and
 independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
 $\mathbf{\Psi}$ ($m \times p$) with $4k \le \ell$ and $4\ell \le p$,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +
-C\Bigl(\frac{k}{p} + \frac{k}{\sqrt{\ell p}}\Bigr)\Bigr)
+1750000\Bigl(\frac{k}{p} + \frac{k}{\sqrt{\ell p}}\Bigr)\Bigr)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
-$O(1)$ suffices for $C$. For the choice `truncatedSVD` makes. Every rank of $\mathbf{A}$.
+For the choice `truncatedSVD` makes. Every rank of $\mathbf{A}$.
 The leading factor $1 + k/(\ell - k - 1)$ is that of the truncated randomized SVD.
 No printed source; research note OP6, Theorem (1), with $\ell \ge 6k$,
 $p \ge 2\ell + 2$ and explicit constants.
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`;
+the relative-error corollary
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`.
 Result: tgn-expected-error -/
 theorem
-    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix :
-    ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
-      [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
-      (Ψ : Ω → Matrix m p ℝ) (k : ℕ),
-      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
-      4 * k ≤ Fintype.card l → 4 * Fintype.card l ≤ Fintype.card p →
-      ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
-        (gaussianProjectionFactor k (Fintype.card l) +
-            C * ((k : ℝ) / Fintype.card p +
-              (k : ℝ) / √((Fintype.card l : ℝ) * Fintype.card p))) *
-          frobNorm (A - truncatedSVD A k) ^ 2 := by
-  obtain ⟨C₁, hC₁, hcond⟩ :=
-    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix
-  refine ⟨140 * C₁, by positivity, ?_⟩
-  intro Ω m n l p _ _ _ _ _ μ A X Ψ k hX hΨ hXΨ hkl hlp
+    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+    (A : Matrix m n ℝ) {X : Ω → Matrix n l ℝ} (k : ℕ) (hX : HasLaw X (gaussianMatrix n l) μ)
+    (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ) (hkl : 4 * k ≤ Fintype.card l)
+    (hlp : 4 * Fintype.card l ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
+      (gaussianProjectionFactor k (Fintype.card l) +
+          1750000 * ((k : ℝ) / Fintype.card p +
+            (k : ℝ) / √((Fintype.card l : ℝ) * Fintype.card p))) *
+        frobNorm (A - truncatedSVD A k) ^ 2 := by
   have := hX.isProbabilityMeasure
   rcases Nat.eq_zero_or_pos k with hk0 | hk
   · subst hk0
@@ -425,9 +449,9 @@ theorem
   have hP0 : (0 : ℝ) < P := by have : 0 < P := by omega
                                exact_mod_cast this
   -- coefficients of the linear majorant of the conditional bound
-  set c₀ := 1 + C₁ * k / (2 * √(L : ℝ) * √(P : ℝ)) with hc₀
-  set c₁ := C₁ * k / P with hc₁
-  set c₂ := C₁ * k * (L / P + √(L : ℝ) / (2 * √(P : ℝ))) with hc₂
+  set c₀ := 1 + 12500 * k / (2 * √(L : ℝ) * √(P : ℝ)) with hc₀
+  set c₁ := (12500 : ℝ) * k / P with hc₁
+  set c₂ := 12500 * k * (L / P + √(L : ℝ) / (2 * √(P : ℝ))) with hc₂
   set H : Matrix n l ℝ → ℝ := fun x => c₀ * frobNorm (A - truncatedSVD (rsvd A x) k) ^ 2 +
     c₁ * frobNorm (A - rsvd A x) ^ 2 + c₂ * specNorm (A - rsvd A x) ^ 2 with hHdef
   have hid : HasLaw (fun ψ : Matrix m p ℝ => ψ) (gaussianMatrix m p) (gaussianMatrix m p) :=
@@ -438,7 +462,8 @@ theorem
       (X := fun _ => x) A aemeasurable_const hid (indepFun_const_left x _) (by omega) k
   have hle (x : Matrix n l ℝ) : ∫ ψ, frobNorm (A - truncatedSVD (generalizedNystrom A x ψ) k) ^ 2
       ∂(gaussianMatrix m p) ≤ H x := by
-    refine (hcond A x k hlp).trans (add_mul_div_sqrt_le (by positivity) hL0 hP0 ?_)
+    refine (integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix A x k
+      hlp).trans (add_mul_div_sqrt_le (C := 12500 * k) (by positivity) hL0 hP0 ?_)
     rw [frobNorm_sub_truncatedSVD_rsvd_sq]
     linarith [sq_nonneg (frobNorm (A - rsvd A x))]
   have hU := (integrable_frobNorm_sub_truncatedSVD_rsvd_sq A hX.aemeasurable k).const_mul c₀
@@ -464,56 +489,95 @@ theorem
       linarith
     rw [gaussianProjectionFactor_def]
     linarith
-  exact moments_le_add_mul hC₁.le k.cast_nonneg hL0 hP0 (sq_nonneg _) hg
+  refine (moments_le_add_mul (by norm_num : (0 : ℝ) ≤ 12500) k.cast_nonneg hL0 hP0 (sq_nonneg _) hg
     (integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hk2)
     (integral_frobNorm_sub_rsvd_sq_le_of_hasLaw_gaussianMatrix A hX hk2)
-    (integral_specNorm_sub_rsvd_sq_le_div_of_hasLaw_gaussianMatrix A hX hk hkl)
+    (integral_specNorm_sub_rsvd_sq_le_div_of_hasLaw_gaussianMatrix A hX hk hkl)).trans_eq ?_
+  ring
+
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **The expected error of truncated generalized Nyström, sketch sizes $O(k/\varepsilon)$**: there
+is an absolute constant $C > 0$ such that for every $\mathbf{A} \in \mathbb{R}^{m \times n}$ and
+independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$) and
+$\mathbf{\Psi}$ ($m \times p$) with $4k \le \ell$ and $4\ell \le p$,
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
+\rrbracket_k\|_{\mathsf{F}}^2 \le \Bigl(1 + \frac{k}{\ell - k - 1} +
+C\Bigl(\frac{k}{p} + \frac{k}{\sqrt{\ell p}}\Bigr)\Bigr)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+$O(1)$ suffices for $C$; the explicit theorem has $C = 1750000$. For the choice `truncatedSVD`
+makes. Every rank of $\mathbf{A}$.
+The leading factor $1 + k/(\ell - k - 1)$ is that of the truncated randomized SVD.
+No printed source; research note OP6, Theorem (1), with $\ell \ge 6k$,
+$p \ge 2\ell + 2$ and explicit constants.
+It is the asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+Result: tgn-expected-error -/
+theorem
+    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix :
+    ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (Ψ : Ω → Matrix m p ℝ) (k : ℕ),
+      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
+      4 * k ≤ Fintype.card l → 4 * Fintype.card l ≤ Fintype.card p →
+      ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
+        (gaussianProjectionFactor k (Fintype.card l) +
+            C * ((k : ℝ) / Fintype.card p +
+              (k : ℝ) / √((Fintype.card l : ℝ) * Fintype.card p))) *
+          frobNorm (A - truncatedSVD A k) ^ 2 :=
+  ⟨1750000, by norm_num, fun μ A _ _ k hX hΨ hXΨ hkl hlp =>
+    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+      A k hX hΨ hXΨ hkl hlp⟩
 
 -- The declaration name alone exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **Truncated generalized Nyström reaches relative error $1 + \varepsilon$ with
-$O(k/\varepsilon)$ samples**: there is an absolute constant $C > 0$ such that for every
+$O(k/\varepsilon)$ samples**: for every
 $\mathbf{A} \in \mathbb{R}^{m \times n}$, every $k$, independent standard Gaussian test matrices
 $\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$), $0 < \varepsilon \le 1$,
-$\ell \ge Ck/\varepsilon$ and $p \ge 4\ell$,
+$\ell \ge 3500004\,k/\varepsilon$ and $p \ge 4\ell$,
 $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
 \rrbracket_k\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
-$O(k/\varepsilon)$ suffices for both sketch sizes, against $p = O(k/\varepsilon^2)$ in
+Both sketch sizes are $O(k/\varepsilon)$, against $p = O(k/\varepsilon^2)$ in
 `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
 For the choice `truncatedSVD` makes. No printed source; research note OP6, §6.
+Asymptotic form:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`.
 Result: tgn-expected-error -/
 theorem
-    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix :
-    ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
-      [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
-      (Ψ : Ω → Matrix m p ℝ) (k : ℕ) (ε : ℝ),
-      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
-      0 < ε → ε ≤ 1 → C * k ≤ ε * Fintype.card l → 4 * Fintype.card l ≤ Fintype.card p →
-      ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
-        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
-  obtain ⟨C₁, hC₁, hM⟩ :=
-    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
-  refine ⟨4 + 2 * C₁, by positivity, ?_⟩
-  intro Ω m n l p _ _ _ _ _ μ A X Ψ k ε hX hΨ hXΨ hε hε1 hkl hlp
+    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix
+    (A : Matrix m n ℝ) {X : Ω → Matrix n l ℝ} (k : ℕ) {ε : ℝ}
+    (hX : HasLaw X (gaussianMatrix n l) μ) (hΨ : HasLaw Ψ (gaussianMatrix m p) μ)
+    (hXΨ : IndepFun X Ψ μ) (hε : 0 < ε) (hε1 : ε ≤ 1) (hkl : 3500004 * k ≤ ε * Fintype.card l)
+    (hlp : 4 * Fintype.card l ≤ Fintype.card p) :
+    ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
+      (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 := by
   have hF : 0 ≤ frobNorm (A - truncatedSVD A k) ^ 2 := by positivity
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · have h1 : gaussianProjectionFactor 0 (Fintype.card l) = 1 := by
       simp [gaussianProjectionFactor_def]
-    have hM0 := hM μ A X Ψ 0 hX hΨ hXΨ (by simp) hlp
+    have hM0 :=
+      integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+        A 0 hX hΨ hXΨ (by simp) hlp
     refine hM0.trans (mul_le_mul_of_nonneg_right (by rw [h1]; simp; linarith) hF)
   · have hk0 : (0:ℝ) ≤ k := Nat.cast_nonneg k
     have hk1' : 1 ≤ k := hk
     have hk1 : (1:ℝ) ≤ k := by exact_mod_cast hk1'
     have hL0 : (0:ℝ) ≤ Fintype.card l := Nat.cast_nonneg _
-    have hkl' : (4 + 2 * C₁) * (k:ℝ) ≤ ε * (Fintype.card l : ℝ) := hkl
+    have hkl' : (4 + 2 * (1750000 : ℝ)) * (k:ℝ) ≤ ε * (Fintype.card l : ℝ) := by linarith
     have h4k : 4 * (k:ℝ) ≤ Fintype.card l := by
-      nlinarith [mul_nonneg hC₁.le hk0, mul_nonneg (sub_nonneg.2 hε1) hL0]
+      nlinarith [mul_nonneg (by norm_num : (0 : ℝ) ≤ 1750000) hk0,
+        mul_nonneg (sub_nonneg.2 hε1) hL0]
     have h4k' : 4 * k ≤ Fintype.card l := by exact_mod_cast h4k
     have hlp' : 4 * (Fintype.card l : ℝ) ≤ Fintype.card p := by exact_mod_cast hlp
     have hL : (4:ℝ) ≤ Fintype.card l := by linarith
     have hLpos : (0:ℝ) < Fintype.card l := by linarith
-    have hM' := hM μ A X Ψ k hX hΨ hXΨ h4k' hlp
+    have hM' :=
+      integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix
+        A k hX hΨ hXΨ h4k' hlp
     have hfac : gaussianProjectionFactor k (Fintype.card l) ≤
         1 + 2 * ((k:ℝ) / Fintype.card l) := by
       rw [gaussianProjectionFactor_def]
@@ -524,7 +588,7 @@ theorem
         ring
       linarith
     have hr0 : (0:ℝ) ≤ (k:ℝ) / Fintype.card l := div_nonneg hk0 hL0
-    have hkr : (4 + 2 * C₁) * ((k:ℝ) / Fintype.card l) ≤ ε := by
+    have hkr : (4 + 2 * (1750000 : ℝ)) * ((k:ℝ) / Fintype.card l) ≤ ε := by
       rw [mul_div_assoc', div_le_iff₀ hLpos]
       linarith
     have hsq : 2 * (Fintype.card l : ℝ) ≤ √((Fintype.card l : ℝ) * Fintype.card p) := by
@@ -542,10 +606,45 @@ theorem
             div_le_div_of_nonneg_left hk0 (by linarith) hsq
         _ = _ := by ring
     have hfin : gaussianProjectionFactor k (Fintype.card l) +
-        C₁ * ((k:ℝ) / Fintype.card p + (k:ℝ) / √((Fintype.card l : ℝ) * Fintype.card p)) ≤
+        1750000 * ((k:ℝ) / Fintype.card p + (k:ℝ) / √((Fintype.card l : ℝ) * Fintype.card p)) ≤
         1 + ε := by
-      have := mul_le_mul_of_nonneg_left (add_le_add e1 e2) hC₁.le
-      nlinarith [mul_nonneg hC₁.le hr0]
+      have := mul_le_mul_of_nonneg_left (add_le_add e1 e2) (by norm_num : (0 : ℝ) ≤ 1750000)
+      nlinarith [mul_nonneg (by norm_num : (0 : ℝ) ≤ 1750000) hr0]
     exact hM'.trans (mul_le_mul_of_nonneg_right hfin hF)
 
+-- The declaration name alone exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Truncated generalized Nyström reaches relative error $1 + \varepsilon$ with
+$O(k/\varepsilon)$ samples**: there is an absolute constant $C > 0$ such that for every
+$\mathbf{A} \in \mathbb{R}^{m \times n}$, every $k$, independent standard Gaussian test matrices
+$\mathbf{\Omega}$ ($n \times \ell$) and $\mathbf{\Psi}$ ($m \times p$), $0 < \varepsilon \le 1$,
+$\ell \ge Ck/\varepsilon$ and $p \ge 4\ell$,
+$$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})
+\rrbracket_k\|_{\mathsf{F}}^2 \le (1 + \varepsilon)
+\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+$O(k/\varepsilon)$ suffices for both sketch sizes (the explicit theorem has $C = 3500004$),
+against $p = O(k/\varepsilon^2)$ in
+`integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
+For the choice `truncatedSVD` makes. No printed source; research note OP6, §6.
+Its name is not the `exists_forall_` form of its explicit theorem's (rule N17), which
+the asymptotic form of the $p \ge 8000\ell/\varepsilon$ theorem holds:
+`NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`,
+dominated by this one.
+It is the asymptotic form of
+`NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`.
+Asymptotic:
+NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix
+Result: tgn-expected-error -/
+theorem
+    exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix :
+    ∃ C : ℝ, 0 < C ∧ ∀ {Ω m n l p : Type} [MeasurableSpace Ω] [Fintype m] [Fintype n]
+      [Fintype l] [Fintype p] (μ : Measure Ω) (A : Matrix m n ℝ) (X : Ω → Matrix n l ℝ)
+      (Ψ : Ω → Matrix m p ℝ) (k : ℕ) (ε : ℝ),
+      HasLaw X (gaussianMatrix n l) μ → HasLaw Ψ (gaussianMatrix m p) μ → IndepFun X Ψ μ →
+      0 < ε → ε ≤ 1 → C * k ≤ ε * Fintype.card l → 4 * Fintype.card l ≤ Fintype.card p →
+      ∫ ω, frobNorm (A - truncatedSVD (generalizedNystrom A (X ω) (Ψ ω)) k) ^ 2 ∂μ ≤
+        (1 + ε) * frobNorm (A - truncatedSVD A k) ^ 2 :=
+  ⟨3500004, by norm_num, fun μ A _ _ k _ hX hΨ hXΨ hε hε1 hkl hlp =>
+    integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix
+      A k hX hΨ hXΨ hε hε1 hkl hlp⟩
 end NLAlib

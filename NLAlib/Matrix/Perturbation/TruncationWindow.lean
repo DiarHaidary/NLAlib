@@ -17,14 +17,16 @@ public import NLAlib.Matrix.Spectral.SingularValues
 /-!
 # The window of singular values at the truncation level
 
-For $\mathbf{B} \in \mathbb{R}^{m \times n}$, $k \ge 1$ and $\theta = \sigma_{k-1}(\mathbf{B})$
+For $\mathbf{B} \in \Bbbk^{m \times n}$ ($\Bbbk$ any `RCLike` field),
+$k \ge 1$ and $\theta = \sigma_{k-1}(\mathbf{B})$
 (indices from $0$), the window $a \le k \le b$ collects the singular values in
 $[\theta/2, 2\theta]$ (`NLAlib.exists_singularValues_window`). The window projectors are
 differences of range projectors of truncations of $\mathbf{B}$, all built from the one chosen SVD
 (`NLAlib.truncatedSVD_def`), so no new definition is needed: $\mathbf{L} = \mathbf{P}_b -
 \mathbf{P}_a$ on the left and $\mathbf{L}' = \mathbf{P}'_b - \mathbf{P}'_a$ on the right, with
 $\mathbf{P}_i$, $\mathbf{P}'_i$ the range projectors of $\llbracket\mathbf{B}\rrbracket_i$ and of
-its transpose. For an orthogonal projector $\mathbf{Z}$ of rank at most $k$, the subspace error
+its conjugate transpose. For an orthogonal projector $\mathbf{Z}$ of rank at most $k$, the
+subspace error
 $D = \|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 - \|(\mathbf{I} -
 \mathbf{P}_k)\mathbf{B}\|_{\mathsf{F}}^2$ controls the part of $\mathbf{Z} - \mathbf{P}_k$ outside
 the window (in Frobenius norm) and its compression to the window (in nuclear norm). These are the
@@ -49,12 +51,12 @@ open scoped Matrix
 
 namespace NLAlib
 
-variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
 
 /-! ### Blocks of the chosen SVD -/
 
 omit [DecidableEq m] in
-/-- A singular-value floor on a block: for $\mathbf{B} \in \mathbb{R}^{m \times n}$,
+/-- A singular-value floor on a block: for $\mathbf{B} \in \Bbbk^{m \times n}$,
 $a \le j$, $c \ge 0$ with $c \le \sigma_i(\mathbf{B})$ for $a \le i < j$, and any
 $\mathbf{W}$, writing $\mathbf{P}_i$ for the range projector of
 $\llbracket\mathbf{B}\rrbracket_i$,
@@ -62,11 +64,11 @@ $$c^2\,\|\mathbf{W}(\mathbf{P}_j - \mathbf{P}_a)\|_{\mathsf{F}}^2 \le
 \|\mathbf{W}(\llbracket\mathbf{B}\rrbracket_j - \llbracket\mathbf{B}\rrbracket_a)
 \|_{\mathsf{F}}^2\,.$$
 Both truncations come from the one chosen SVD, so their difference is the block
-$\sum_{a \le i < j}\sigma_i\mathbf{u}_i\mathbf{v}_i^{\mathsf{T}}$ and
+$\sum_{a \le i < j}\sigma_i\mathbf{u}_i\mathbf{v}_i^{\mathsf{H}}$ and
 $\mathbf{P}_j - \mathbf{P}_a$ projects onto the span of its left singular vectors.
 No printed source. -/
-theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B : Matrix m n ℝ)
-    (W : Matrix p m ℝ) {a j : ℕ} (haj : a ≤ j) {c : ℝ} (hc : 0 ≤ c)
+theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B : Matrix m n 𝕜)
+    (W : Matrix p m 𝕜) {a j : ℕ} (haj : a ≤ j) {c : ℝ} (hc : 0 ≤ c)
     (hσ : ∀ i, a ≤ i → i < j → c ≤ singularValues B i) :
     c ^ 2 * frobNorm (W * (rangeProjector (truncatedSVD B j) -
         rangeProjector (truncatedSVD B a))) ^ 2 ≤
@@ -76,11 +78,11 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
   have hV := h.hasOrthonormalCols_right
   set U := svdU B
   set V := svdV B
-  have hdiag : ∀ d : Fin (min (Fintype.card m) (Fintype.card n)) → ℝ,
+  have hdiag : ∀ d : Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜,
       rangeProjector (Matrix.diagonal d * Vᴴ) =
         Matrix.diagonal (fun i => if d i = 0 then 0 else 1) := by
     intro d
-    set e : Fin (min (Fintype.card m) (Fintype.card n)) → ℝ := fun i => if d i = 0 then 0 else 1
+    set e : Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜 := fun i => if d i = 0 then 0 else 1
     have hed : Matrix.diagonal e * Matrix.diagonal d = Matrix.diagonal d := by
       rw [Matrix.diagonal_mul_diagonal]
       congr 1
@@ -106,13 +108,12 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
     · rw [← Matrix.mul_assoc, hed]
     · rw [Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ, hV.conjTranspose_mul_self, Matrix.one_mul, hdd]
   -- the truncated singular values and their supports
-  set s : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → ℝ :=
-    fun k i => if (i : ℕ) < k then singularValues B i else 0
-  set e : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → ℝ :=
+  set s : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜 :=
+    fun k i => if (i : ℕ) < k then ((singularValues B i : ℝ) : 𝕜) else 0
+  set e : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜 :=
     fun k i => if s k i = 0 then 0 else 1
   have hT : ∀ k, truncatedSVD B k = U * (Matrix.diagonal (s k) * Vᴴ) := fun k => by
     rw [truncatedSVD_def, Matrix.mul_assoc]
-    rfl
   have hP : ∀ k, rangeProjector (truncatedSVD B k) = U * Matrix.diagonal (e k) * Uᴴ := fun k => by
     rw [hT, hU.rangeProjector_mul, hdiag]
   have hL : W * (rangeProjector (truncatedSVD B j) - rangeProjector (truncatedSVD B a)) =
@@ -126,31 +127,32 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
     simp only [Matrix.mul_assoc]
     rfl
   rw [hL, hR, hU.frobNorm_mul_conjTranspose_right, hV.frobNorm_mul_conjTranspose_right,
-    frobNorm_sq_eq_sum_sq, frobNorm_sq_eq_sum_sq, Finset.mul_sum]
+    frobNorm_sq_eq_sum, frobNorm_sq_eq_sum, Finset.mul_sum]
   refine Finset.sum_le_sum fun p _ => ?_
   rw [Finset.mul_sum]
   refine Finset.sum_le_sum fun i _ => ?_
   simp only [Matrix.mul_diagonal, Pi.sub_apply]
-  have key : (c * (e j i - e a i)) ^ 2 ≤ (s j i - s a i) ^ 2 := by
+  have key : c ^ 2 * ‖e j i - e a i‖ ^ 2 ≤ ‖s j i - s a i‖ ^ 2 := by
     by_cases hia : (i : ℕ) < a
     · simp [s, e, hia, hia.trans_le haj]
     by_cases hij : (i : ℕ) < j
     · by_cases h0 : singularValues B i = 0
       · simp [s, e, hia, hij, h0]
       · have := hσ i (not_lt.mp hia) hij
-        simp [s, e, hia, hij, h0]
+        simp [s, e, hia, hij, h0, abs_of_nonneg (singularValues_nonneg B i)]
         nlinarith
     · simp [s, e, hia, hij]
-  nlinarith [mul_le_mul_of_nonneg_left key (sq_nonneg ((W * U) p i))]
+  rw [norm_mul, norm_mul, mul_pow, mul_pow]
+  nlinarith [mul_le_mul_of_nonneg_left key (sq_nonneg ‖(W * U) p i‖)]
 
 omit [DecidableEq m] in
-/-- The window of the truncation level: for $\mathbf{B} \in \mathbb{R}^{m \times n}$ and
+/-- The window of the truncation level: for $\mathbf{B} \in \Bbbk^{m \times n}$ and
 $k \ge 1$, with $\theta = \sigma_{k-1}(\mathbf{B})$, there are $a \le k \le b$ with
 $2\theta \le \sigma_i(\mathbf{B})$ for $i < a$, $\sigma_a(\mathbf{B}) \le 2\theta$,
 $\sigma_b(\mathbf{B}) \le \theta/2$ and
 $$(b - k)\,\theta^2 \le 4\,\|\mathbf{B} - \llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 No printed source. -/
-theorem exists_singularValues_window (B : Matrix m n ℝ) {k : ℕ} (hk : 1 ≤ k) :
+theorem exists_singularValues_window (B : Matrix m n 𝕜) {k : ℕ} (hk : 1 ≤ k) :
     ∃ a b : ℕ, a ≤ k ∧ k ≤ b ∧
       (∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i) ∧
       singularValues B a ≤ 2 * singularValues B (k - 1) ∧
@@ -208,7 +210,7 @@ theorem exists_singularValues_window (B : Matrix m n ℝ) {k : ℕ} (hk : 1 ≤ 
 
 /-! ### The weighted identity and its two weights -/
 
-/-- The weighted identity: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, an orthogonal
+/-- The weighted identity: for $\mathbf{B} \in \Bbbk^{m \times n}$, an orthogonal
 projector $\mathbf{Z}$, any $k$ and any real $\theta$, with $\mathbf{P}$ the range projector of
 $\llbracket\mathbf{B}\rrbracket_k$ and $\mathbf{B}_k = \llbracket\mathbf{B}\rrbracket_k$,
 $$\|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 -
@@ -221,7 +223,7 @@ $$\|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 -
 At $\theta = \sigma_{k-1}(\mathbf{B})$ the two brackets are nonnegative (head and tail weights,
 `NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le`, `NLAlib.mul_frobNorm_mul_one_sub_sq_add_le`).
 No printed source. -/
-theorem frobNorm_one_sub_mul_sq_sub_eq_add (B : Matrix m n ℝ) (k : ℕ) {Z : Matrix m m ℝ}
+theorem frobNorm_one_sub_mul_sq_sub_eq_add (B : Matrix m n 𝕜) (k : ℕ) {Z : Matrix m m 𝕜}
     (hZ : IsStarProjection Z) (θ : ℝ) :
     frobNorm ((1 - Z) * B) ^ 2 - frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2 =
       (frobNorm ((1 - Z) * truncatedSVD B k) ^ 2 -
@@ -263,7 +265,7 @@ theorem frobNorm_one_sub_mul_sq_sub_eq_add (B : Matrix m n ℝ) (k : ℕ) {Z : M
   ring
 
 omit [DecidableEq m] in
-/-- The head weight: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
+/-- The head weight: for $\mathbf{B} \in \Bbbk^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B})$, $a \le k$ with $2\theta \le \sigma_i(\mathbf{B})$ for
 $i < a$, and any $\mathbf{W}$, writing $\mathbf{B}_i = \llbracket\mathbf{B}\rrbracket_i$ and
 $\mathbf{P}_i$ for its range projector,
@@ -271,9 +273,9 @@ $$\tfrac38\|\mathbf{W}\mathbf{B}_a\|_{\mathsf{F}}^2 +
 \tfrac32\theta^2\|\mathbf{W}\mathbf{P}_a\|_{\mathsf{F}}^2 \le
 \|\mathbf{W}\mathbf{B}_k\|_{\mathsf{F}}^2 - \theta^2\|\mathbf{W}\mathbf{P}_k\|_{\mathsf{F}}^2\,.$$
 No printed source. -/
-theorem mul_frobNorm_mul_truncatedSVD_sq_add_le (B : Matrix m n ℝ) {k a : ℕ} (hk : 1 ≤ k)
+theorem mul_frobNorm_mul_truncatedSVD_sq_add_le (B : Matrix m n 𝕜) {k a : ℕ} (hk : 1 ≤ k)
     (hak : a ≤ k) (ha : ∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i)
-    (W : Matrix m m ℝ) :
+    (W : Matrix m m 𝕜) :
     3 / 8 * frobNorm (W * truncatedSVD B a) ^ 2 +
         3 / 2 * singularValues B (k - 1) ^ 2 *
           frobNorm (W * rangeProjector (truncatedSVD B a)) ^ 2 ≤
@@ -323,7 +325,7 @@ theorem mul_frobNorm_mul_truncatedSVD_sq_add_le (B : Matrix m n ℝ) {k a : ℕ}
   nlinarith [mul_nonneg (sq_nonneg θ)
     (sq_nonneg (frobNorm (W * rangeProjector (truncatedSVD B a))))]
 
-/-- The tail weight: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
+/-- The tail weight: for $\mathbf{B} \in \Bbbk^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B})$, $b \ge k$ with $\sigma_b(\mathbf{B}) \le \theta/2$, and any
 $\mathbf{W}$, writing $\mathbf{B}_i = \llbracket\mathbf{B}\rrbracket_i$ and $\mathbf{P}_i$ for
 its range projector,
@@ -332,9 +334,9 @@ $$\tfrac38\theta^2\|\mathbf{W}(\mathbf{I} - \mathbf{P}_b)\|_{\mathsf{F}}^2 +
 \theta^2\|\mathbf{W}(\mathbf{I} - \mathbf{P}_k)\|_{\mathsf{F}}^2 -
 \|\mathbf{W}(\mathbf{B} - \mathbf{B}_k)\|_{\mathsf{F}}^2\,.$$
 No printed source. -/
-theorem mul_frobNorm_mul_one_sub_sq_add_le (B : Matrix m n ℝ) {k b : ℕ} (hk : 1 ≤ k)
+theorem mul_frobNorm_mul_one_sub_sq_add_le (B : Matrix m n 𝕜) {k b : ℕ} (hk : 1 ≤ k)
     (hkb : k ≤ b) (hb : singularValues B b ≤ singularValues B (k - 1) / 2)
-    (W : Matrix m m ℝ) :
+    (W : Matrix m m 𝕜) :
     3 / 8 * singularValues B (k - 1) ^ 2 *
           frobNorm (W * (1 - rangeProjector (truncatedSVD B b))) ^ 2 +
         3 / 2 * frobNorm (W * (B - truncatedSVD B b)) ^ 2 ≤
@@ -409,7 +411,7 @@ theorem mul_frobNorm_mul_one_sub_sq_add_le (B : Matrix m n ℝ) {k b : ℕ} (hk 
 
 omit [DecidableEq m] in
 /-- The range projectors of nested truncations of the chosen SVD compose to the smaller one. -/
-private theorem rangeProjector_truncatedSVD_mul_of_le (B : Matrix m n ℝ) {i j : ℕ}
+private theorem rangeProjector_truncatedSVD_mul_of_le (B : Matrix m n 𝕜) {i j : ℕ}
     (hij : i ≤ j) :
     rangeProjector (truncatedSVD B j) * rangeProjector (truncatedSVD B i) =
         rangeProjector (truncatedSVD B i) ∧
@@ -421,7 +423,7 @@ private theorem rangeProjector_truncatedSVD_mul_of_le (B : Matrix m n ℝ) {i j 
 omit [DecidableEq m] in
 /-- The residual of a truncation is row-orthogonal to every smaller truncation:
 $(\mathbf{B} - \mathbf{B}_j)\mathbf{B}_i^{\mathsf{H}} = \mathbf{0}$ for $i \le j$. -/
-private theorem sub_truncatedSVD_mul_conjTranspose_of_le (B : Matrix m n ℝ) {i j : ℕ}
+private theorem sub_truncatedSVD_mul_conjTranspose_of_le (B : Matrix m n 𝕜) {i j : ℕ}
     (hij : i ≤ j) : (B - truncatedSVD B j) * (truncatedSVD B i)ᴴ = 0 := by
   have hP := isStarProjection_rangeProjector (truncatedSVD B j)ᴴ
   have h0 : (B - truncatedSVD B j) * (truncatedSVD B j)ᴴ = 0 := by
@@ -437,7 +439,7 @@ $\mathbf{P}_a\mathbf{P}_b = \mathbf{P}_a$, $\mathbf{Z}$ and $\mathbf{L} = \mathb
 \mathbf{P}_a$, $\|(\mathbf{I} - \mathbf{L})\mathbf{Z}\mathbf{L}\|_{\mathsf{F}}^2 \le
 \|(\mathbf{I} - \mathbf{Z})\mathbf{P}_a\|_{\mathsf{F}}^2 +
 \|\mathbf{Z}(\mathbf{I} - \mathbf{P}_b)\|_{\mathsf{F}}^2$. -/
-private theorem frobNorm_one_sub_sub_mul_mul_sub_sq_le {Pa Pb Z : Matrix m m ℝ}
+private theorem frobNorm_one_sub_sub_mul_mul_sub_sq_le {Pa Pb Z : Matrix m m 𝕜}
     (hPa : IsStarProjection Pa) (hPb : IsStarProjection Pb) (hZ : IsStarProjection Z)
     (hab : Pa * Pb = Pa) :
     frobNorm ((1 - (Pb - Pa)) * Z * (Pb - Pa)) ^ 2 ≤
@@ -468,8 +470,8 @@ private theorem frobNorm_one_sub_sub_mul_mul_sub_sq_le {Pa Pb Z : Matrix m m ℝ
 omit [DecidableEq m] in
 /-- At $\theta = \sigma_{k-1}(\mathbf{B})$, an orthogonal projector of rank at most $k$ has
 $\theta^2(\|\mathbf{P}_k\|_{\mathsf{F}}^2 - \|\mathbf{Z}\|_{\mathsf{F}}^2) \ge 0$. -/
-private theorem sq_singularValues_mul_frobNorm_sq_sub_nonneg (B : Matrix m n ℝ) {k : ℕ}
-    (hk : 1 ≤ k) {Z : Matrix m m ℝ} (hZ : IsStarProjection Z) (hZk : Z.rank ≤ k) :
+private theorem sq_singularValues_mul_frobNorm_sq_sub_nonneg (B : Matrix m n 𝕜) {k : ℕ}
+    (hk : 1 ≤ k) {Z : Matrix m m 𝕜} (hZ : IsStarProjection Z) (hZk : Z.rank ≤ k) :
     0 ≤ singularValues B (k - 1) ^ 2 *
       (frobNorm (rangeProjector (truncatedSVD B k)) ^ 2 - frobNorm Z ^ 2) := by
   rcases (singularValues_nonneg B (k - 1)).eq_or_lt with h0 | h0
@@ -480,21 +482,21 @@ private theorem sq_singularValues_mul_frobNorm_sq_sub_nonneg (B : Matrix m n ℝ
     exact mul_nonneg (sq_nonneg _) (sub_nonneg.2 (by exact_mod_cast hZk))
 
 /-- The off-window part of the subspace error is controlled by the misalignment: for
-$\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$, $\theta = \sigma_{k-1}(\mathbf{B})$, a window
+$\mathbf{B} \in \Bbbk^{m \times n}$, $1 \le k$, $\theta = \sigma_{k-1}(\mathbf{B})$, a window
 $a \le k \le b$ with $2\theta \le \sigma_i(\mathbf{B})$ for $i < a$, $\sigma_a(\mathbf{B}) \le
 2\theta$ and $\sigma_b(\mathbf{B}) \le \theta/2$, and an orthogonal projector $\mathbf{Z}$ of
 rank at most $k$, with $\mathbf{P}_i$, $\mathbf{P}'_i$ the range projectors of
-$\llbracket\mathbf{B}\rrbracket_i$ and of its transpose, $\mathbf{L} = \mathbf{P}_b -
+$\llbracket\mathbf{B}\rrbracket_i$ and of its conjugate transpose, $\mathbf{L} = \mathbf{P}_b -
 \mathbf{P}_a$, $\mathbf{L}' = \mathbf{P}'_b - \mathbf{P}'_a$ and
 $\mathbf{\Delta} = \mathbf{Z} - \mathbf{P}_k$,
 $$\|\mathbf{\Delta}\mathbf{B} - \mathbf{L}\mathbf{\Delta}\mathbf{B}\mathbf{L}'\|_{\mathsf{F}}^2
 \le 15\bigl(\|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 -
 \|(\mathbf{I} - \mathbf{P}_k)\mathbf{B}\|_{\mathsf{F}}^2\bigr)\,.$$
 No printed source; it is research note OP6, Lemma 3.4(b). -/
-theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n ℝ) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
+theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n 𝕜) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
     (hkb : k ≤ b) (ha : ∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i)
     (ha₂ : singularValues B a ≤ 2 * singularValues B (k - 1))
-    (hb : singularValues B b ≤ singularValues B (k - 1) / 2) {Z : Matrix m m ℝ}
+    (hb : singularValues B b ≤ singularValues B (k - 1) / 2) {Z : Matrix m m 𝕜}
     (hZ : IsStarProjection Z) (hZk : Z.rank ≤ k) :
     frobNorm ((Z - rangeProjector (truncatedSVD B k)) * B -
         (rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) *
@@ -515,7 +517,6 @@ theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n ℝ) {k a b : ℕ} (hk : 1 �
   have hBk := rangeProjector_truncatedSVD_mul B k
   have hPa := isStarProjection_rangeProjector (truncatedSVD B a)
   have hPb := isStarProjection_rangeProjector (truncatedSVD B b)
-  have hPk := isStarProjection_rangeProjector (truncatedSVD B k)
   have H1 := sub_truncatedSVD_mul_conjTranspose_of_le B (hak.trans hkb)
   have H2 := sub_truncatedSVD_mul_conjTranspose_of_le B le_rfl (i := a)
   have H3 := sub_truncatedSVD_mul_conjTranspose_of_le B le_rfl (i := b)
@@ -577,21 +578,23 @@ theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n ℝ) {k a b : ℕ} (hk : 1 �
   have hT : frobNorm ((1 - (Pb - Pa)) * Z * (Bb - Ba)) ^ 2 ≤
       4 * θ ^ 2 * frobNorm ((1 - Z) * Pa) ^ 2 + 4 * θ ^ 2 * frobNorm (Z * (1 - Pb)) ^ 2 := by
     have h4 := mul_le_mul_of_nonneg_left hY (by positivity : (0 : ℝ) ≤ 4 * θ ^ 2)
-    nlinarith [pow_le_pow_left₀ (frobNorm_nonneg _) hw 2]
-  nlinarith [hpy, mul_nonneg (sq_nonneg θ) (sq_nonneg (frobNorm ((1 - Z) * Pa))),
+    have h6 : (frobNorm ((1 - (Pb - Pa)) * Z * (Pb - Pa)) * (2 * θ)) ^ 2 =
+        4 * θ ^ 2 * frobNorm ((1 - (Pb - Pa)) * Z * (Pb - Pa)) ^ 2 := by ring
+    linarith [pow_le_pow_left₀ (frobNorm_nonneg _) hw 2]
+  linarith [mul_nonneg (sq_nonneg θ) (sq_nonneg (frobNorm ((1 - Z) * Pa))),
     mul_nonneg (sq_nonneg θ) (sq_nonneg (frobNorm (Z * (1 - Pb)))),
     sq_nonneg (frobNorm ((1 - Z) * Ba)), sq_nonneg (frobNorm (Z * (B - Bb)))]
 
 omit [DecidableEq m] in
-/-- The off-window part has rank at most $4k$: for $\mathbf{B} \in \mathbb{R}^{m \times n}$,
+/-- The off-window part has rank at most $4k$: for $\mathbf{B} \in \Bbbk^{m \times n}$,
 any $\mathbf{Z}$ of rank at most $k$, any $a, b$ and any
 $\mathbf{L}$, $\mathbf{L}'$, with $\mathbf{\Delta} = \mathbf{Z} - \mathbf{P}_k$
 ($\mathbf{P}_k$ the range projector of $\llbracket\mathbf{B}\rrbracket_k$),
 $$\operatorname{rank}(\mathbf{\Delta}\mathbf{B} - \mathbf{L}\mathbf{\Delta}\mathbf{B}\mathbf{L}')
 \le 4k\,.$$
 No printed source. -/
-theorem rank_sub_mul_mul_le (B : Matrix m n ℝ) (k : ℕ) {Z : Matrix m m ℝ} (hZk : Z.rank ≤ k)
-    (L : Matrix m m ℝ) (L' : Matrix n n ℝ) :
+theorem rank_sub_mul_mul_le (B : Matrix m n 𝕜) (k : ℕ) {Z : Matrix m m 𝕜} (hZk : Z.rank ≤ k)
+    (L : Matrix m m 𝕜) (L' : Matrix n n 𝕜) :
     ((Z - rangeProjector (truncatedSVD B k)) * B -
         L * (Z - rangeProjector (truncatedSVD B k)) * B * L').rank ≤ 4 * k := by
   have hP : (rangeProjector (truncatedSVD B k)).rank ≤ k := by
@@ -612,7 +615,7 @@ theorem rank_sub_mul_mul_le (B : Matrix m n ℝ) (k : ℕ) {Z : Matrix m m ℝ} 
 omit [DecidableEq m] in
 /-- The compression of a star projection by a star projection is a Gram matrix:
 $\|\mathbf{R}\mathbf{Q}\mathbf{R}\|_* = \|\mathbf{Q}\mathbf{R}\|_{\mathsf{F}}^2$. -/
-private theorem nuclearNorm_mul_mul_eq_frobNorm_sq {Q R : Matrix m m ℝ}
+private theorem nuclearNorm_mul_mul_eq_frobNorm_sq {Q R : Matrix m m 𝕜}
     (hQ : IsStarProjection Q) (hR : IsStarProjection R) :
     nuclearNorm (R * Q * R) = frobNorm (Q * R) ^ 2 := by
   rw [← nuclearNorm_conjTranspose_mul_self, Matrix.conjTranspose_mul, hQ.conjTranspose_eq,
@@ -625,7 +628,7 @@ $$\|\mathbf{L}(\mathbf{Z} - \mathbf{P})\mathbf{L}\|_* \le
 (\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{P}\|_{\mathsf{F}}^2) +
 (\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{Z}\|_{\mathsf{F}}^2) +
 \|\mathbf{Z}(\mathbf{I} - \mathbf{P}_b)\|_{\mathsf{F}}^2\,.$$ -/
-private theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m ℝ}
+private theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m 𝕜}
     (hPa : IsStarProjection Pa) (hP : IsStarProjection P) (hPb : IsStarProjection Pb)
     (hZ : IsStarProjection Z) (h1 : Pa * P = Pa) (h2 : P * Pa = Pa) (h3 : P * Pb = P)
     (h4 : Pb * P = P) (h5 : Pa * Pb = Pa) (h6 : Pb * Pa = Pa) :
@@ -659,7 +662,7 @@ private theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m ℝ
   have := hPb.frobNorm_sq_eq_add_mul_right Z
   linarith
 
-/-- The trace balance on the window: for $\mathbf{B} \in \mathbb{R}^{m \times n}$, $1 \le k$,
+/-- The trace balance on the window: for $\mathbf{B} \in \Bbbk^{m \times n}$, $1 \le k$,
 $\theta = \sigma_{k-1}(\mathbf{B}) > 0$, $a \le k \le b$ with $\sigma_b(\mathbf{B}) \le
 \theta/2$, and an orthogonal projector $\mathbf{Z}$ of rank at most $k$, with $\mathbf{P}_i$ the
 range projector of $\llbracket\mathbf{B}\rrbracket_i$, $\mathbf{L} = \mathbf{P}_b -
@@ -669,9 +672,9 @@ $$\|\mathbf{L}(\mathbf{Z} - \mathbf{P}_k)\mathbf{L}\|_* \le 4\min(k, b - k) +
 6\,\frac{D}{\theta^2}\,.$$
 No printed source; research note OP6, Lemma 3.5, proves the sharper
 $2\min(k, b - k) + \tfrac43 D/\theta^2$ through Weyl's inequalities. -/
-theorem nuclearNorm_mul_sub_mul_le (B : Matrix m n ℝ) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
+theorem nuclearNorm_mul_sub_mul_le (B : Matrix m n 𝕜) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
     (hkb : k ≤ b) (hθ : 0 < singularValues B (k - 1))
-    (hb : singularValues B b ≤ singularValues B (k - 1) / 2) {Z : Matrix m m ℝ}
+    (hb : singularValues B b ≤ singularValues B (k - 1) / 2) {Z : Matrix m m 𝕜}
     (hZ : IsStarProjection Z) (hZk : Z.rank ≤ k) :
     nuclearNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) *
         (Z - rangeProjector (truncatedSVD B k)) *
