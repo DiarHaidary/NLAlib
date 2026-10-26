@@ -66,7 +66,9 @@ Proof: induction on `i`; `QueryAlgorithm.mapOutput` has the same `query` field, 
 `rfl` after `QueryAlgorithm.history`. S, 4 lines. -/
 theorem history_mapOutput (g : β → β') (alg : QueryAlgorithm Q R q β) (O : Q → R) (i : ℕ) :
     (alg.mapOutput g).history O i = alg.history O i := by
-  sorry
+  induction i with
+  | zero => rfl
+  | succ n ih => rw [history, history, ih]; rfl
 
 /-- The output of `alg.mapOutput g` is $g$ of the output of `alg`.
 Proof: unfold `QueryAlgorithm.run`, `QueryAlgorithm.transcript`; rewrite with
