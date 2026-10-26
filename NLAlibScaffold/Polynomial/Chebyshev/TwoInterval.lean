@@ -239,6 +239,18 @@ theorem exp_neg_le_residualMinimax_Icc_union_Icc {κ : ℝ} (hκ : 2 ≤ κ) (q 
     div_le_div_of_nonneg_right (by linarith) hκ0.le
   linarith
 
+/-- Regrouping a sum over `ι` by the fibres of `g`: the weight of a point `x` is the sum of the
+weights `c i` over the preimage of `x`. -/
+private lemma sum_image_fiber_mul {ι : Type*} [Fintype ι] (g c : ι → ℝ) (F : ℝ → ℝ) :
+    ∑ x ∈ Finset.univ.image g, (∑ i ∈ Finset.univ.filter (fun i => g i = x), c i) * F x =
+      ∑ i, c i * F (g i) := by
+  rw [← Finset.sum_fiberwise_of_maps_to (g := g) (t := Finset.univ.image g)
+    (fun i _ => Finset.mem_image_of_mem g (Finset.mem_univ i))]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [Finset.sum_mul]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [(Finset.mem_filter.1 hi).2]
+
 /-- **Weighted inapproximability on two intervals**: for $0 < a < a'$ there are at most $q + 2$
 points of $S = [-a', -a] \cup [a, a']$ and positive weights summing to $1$ on them such that every
 $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
@@ -261,7 +273,86 @@ theorem exists_residualMinimax_Icc_union_Icc_sq_le_sum_mul_norm_sq (𝕜 : Type*
         ∀ p : 𝕜[X], p.degree ≤ q → p.eval 0 = 1 →
           residualMinimax (Set.Icc (-a') (-a) ∪ Set.Icc a a') q ^ 2 ≤
             ∑ x ∈ s, w x * ‖p.eval (x : 𝕜)‖ ^ 2 := by
-  sorry
+  have ha2 : 0 < a ^ 2 := by positivity
+  have haa2 : a ^ 2 < a' ^ 2 := by nlinarith
+  have ha' : 0 < a' := by linarith
+  -- the square roots of the Chebyshev extrema lie in [a, a']
+  have hsq : ∀ j : Fin (q / 2 + 1),
+      a ≤ Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) ∧
+      Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) ≤ a' := by
+    intro j
+    obtain ⟨h1, h2⟩ := chebyshevExtremum_mem_Icc haa2.le (q / 2) j
+    have h1' := Real.sqrt_le_sqrt h1
+    have h2' := Real.sqrt_le_sqrt h2
+    rw [Real.sqrt_sq ha.le] at h1'
+    rw [Real.sqrt_sq ha'.le] at h2'
+    exact ⟨h1', h2'⟩
+  obtain ⟨τ, hτdef⟩ : ∃ τ : ℝ,
+      τ = (T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)) := ⟨_, rfl⟩
+  have hτ : ∑ j : Fin (q / 2 + 1), chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j = τ := by
+    rw [hτdef]; exact sum_chebyshevWeight ha2 haa2 (q / 2)
+  have hτpos : 0 < τ := by
+    rw [← hτ]
+    exact Finset.sum_pos (fun j _ => chebyshevWeight_pos ha2 haa2 (q / 2) j) Finset.univ_nonempty
+  -- the points `±√ξ_j` (indexed by `(j, b)`) and the weights `ω_j / (2τ)`
+  let g : Fin (q / 2 + 1) × Bool → ℝ := fun i =>
+    if i.2 then Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) i.1)
+    else -Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) i.1)
+  let c : Fin (q / 2 + 1) × Bool → ℝ := fun i =>
+    chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) i.1 / (2 * τ)
+  have hg : ∀ i, g i ∈ Set.Icc (-a') (-a) ∪ Set.Icc a a' := by
+    rintro ⟨j, _ | _⟩
+    · exact Or.inl ⟨by change -a' ≤ -Real.sqrt _; linarith [(hsq j).2],
+        by change -Real.sqrt _ ≤ -a; linarith [(hsq j).1]⟩
+    · exact Or.inr (hsq j)
+  have hsub : (↑(Finset.univ.image g) : Set ℝ) ⊆ Set.Icc (-a') (-a) ∪ Set.Icc a a' := by
+    intro x hx
+    obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 (Finset.mem_coe.1 hx)
+    exact hg i
+  have hcard : (Finset.univ.image g).card ≤ q + 2 := by
+    refine Finset.card_image_le.trans ?_
+    simp only [Finset.card_univ, Fintype.card_prod, Fintype.card_bool, Fintype.card_fin]
+    omega
+  have hw : ∀ x ∈ Finset.univ.image g, 0 < ∑ i ∈ Finset.univ.filter (fun i => g i = x), c i := by
+    intro x hx
+    obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 hx
+    exact Finset.sum_pos
+      (fun j _ => div_pos (chebyshevWeight_pos ha2 haa2 (q / 2) j.1) (mul_pos two_pos hτpos))
+      ⟨i, Finset.mem_filter.2 ⟨Finset.mem_univ _, rfl⟩⟩
+  have hsum : ∑ x ∈ Finset.univ.image g, ∑ i ∈ Finset.univ.filter (fun i => g i = x), c i = 1 := by
+    have h := sum_image_fiber_mul g c (fun _ => (1 : ℝ))
+    simp only [mul_one] at h
+    have hc : ∀ j : Fin (q / 2 + 1), ∑ b : Bool, c (j, b) =
+        chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j / τ := by
+      intro j
+      rw [Fintype.sum_bool]
+      simp only [c]
+      ring
+    rw [h, Fintype.sum_prod_type, Finset.sum_congr rfl fun j _ => hc j]
+    simp only [div_eq_mul_inv]
+    rw [← Finset.sum_mul, hτ, mul_inv_cancel₀ hτpos.ne']
+  refine ⟨Finset.univ.image g, hsub, hcard, _, hw, hsum, ?_⟩
+  intro p hp hp₀
+  have hR := residualMinimax_Icc_union_Icc q ha haa
+  have hD := inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq (𝕜 := 𝕜) ha haa hp hp₀
+  rw [← hτdef] at hD
+  have key : ∑ x ∈ Finset.univ.image g,
+      (∑ i ∈ Finset.univ.filter (fun i => g i = x), c i) * ‖p.eval (x : 𝕜)‖ ^ 2 =
+      (∑ j : Fin (q / 2 + 1), chebyshevWeight (a ^ 2) (a' ^ 2) (q / 2) j / 2 *
+        (‖p.eval ((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜)‖ ^ 2 +
+          ‖p.eval (-((Real.sqrt (chebyshevExtremum (a ^ 2) (a' ^ 2) (q / 2) j) : ℝ) : 𝕜))‖ ^ 2)
+        / τ) := by
+    refine (sum_image_fiber_mul g c (fun x => ‖p.eval (x : 𝕜)‖ ^ 2)).trans ?_
+    rw [Fintype.sum_prod_type]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Fintype.sum_bool]
+    simp only [c, g, RCLike.ofReal_neg, if_true, Bool.false_eq_true, if_false]
+    ring
+  rw [hR, key, ← hτdef, sq]
+  have h2 := mul_le_mul_of_nonneg_left hD (inv_nonneg.2 hτpos.le)
+  refine h2.trans (le_of_eq ?_)
+  rw [Finset.mul_sum]
+  exact Finset.sum_congr rfl fun j _ => by ring
 
 variable {n : Type*} [Fintype n]
 
