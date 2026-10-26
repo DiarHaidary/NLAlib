@@ -76,6 +76,22 @@ theorem HasOrthonormalCols.frobNorm_mul_diagonal_mul_sub_truncatedSVD_sq
           (Fintype.card k)) ^ 2 = 14 * Fintype.card m := by
   sorry
 
+/-- The kernel of a coordinate restriction has dimension at least the number of the other
+coordinates. -/
+private theorem card_le_finrank_ker_funLeft {ι τ : Type*} [Fintype ι] [Fintype τ] (f : τ → ι) :
+    Fintype.card ι ≤
+      Module.finrank ℝ (LinearMap.ker (LinearMap.funLeft ℝ ℝ f)) + Fintype.card τ := by
+  have h1 := LinearMap.finrank_range_add_finrank_ker (LinearMap.funLeft ℝ ℝ f)
+  have h2 := Submodule.finrank_le (LinearMap.range (LinearMap.funLeft ℝ ℝ f))
+  rw [Module.finrank_fintype_fun_eq_card] at h1 h2
+  omega
+
+/-- The squared norm of a diagonal action is a weighted sum of squares. -/
+private theorem sq_norm_diagonal_mulVec {n : Type*} [Fintype n] [DecidableEq n] (d x : n → ℝ) :
+    ‖WithLp.toLp 2 (Matrix.diagonal d *ᵥ x)‖ ^ 2 = ∑ i, (d i * x i) ^ 2 := by
+  rw [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
+  simp only [Matrix.mulVec_diagonal]
+
 /-- The $(k + 1)$-st singular value of the two-pass hard instance is $3$: for orthogonal
 $\mathbf{U}$ and $m$ nonempty, $\sigma_k(\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}) = 3$
 (indices from $0$).
@@ -85,7 +101,56 @@ theorem HasOrthonormalCols.singularValues_mul_diagonal_mul_card [Nonempty m]
     {U : Matrix (k ⊕ (Fin 3 × m)) (k ⊕ (Fin 3 × m)) ℝ} (hU : HasOrthonormalCols U) :
     singularValues (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ) (Fintype.card k) =
       3 := by
-  sorry
+  rw [Matrix.mul_assoc, hU.singularValues_mul_left, hU.singularValues_mul_conjTranspose_right]
+  apply le_antisymm
+  · -- upper bound: the codimension-`k` subspace of tail coordinates
+    refine singularValues_le_of_forall_mem _
+      (LinearMap.ker (LinearMap.funLeft ℝ ℝ (Sum.inl : k → k ⊕ (Fin 3 × m)))) ?_ (by norm_num) ?_
+    · exact card_le_finrank_ker_funLeft (Sum.inl : k → k ⊕ (Fin 3 × m))
+    intro x hx
+    have hx' : ∀ a, x (Sum.inl a) = 0 := fun a => congrFun (LinearMap.mem_ker.mp hx) a
+    apply (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp
+    rw [mul_pow, sq_norm_diagonal_mulVec, EuclideanSpace.norm_toLp_sq_eq_sum_sq, Finset.mul_sum]
+    apply Finset.sum_le_sum
+    intro i _
+    rcases i with a | ⟨l, j⟩
+    · simp [hx' a]
+    · have hl : ((l : ℕ) : ℝ) ≤ 2 := by exact_mod_cast (by have := l.isLt; omega : (l : ℕ) ≤ 2)
+      have h0 : (0 : ℝ) ≤ (l : ℕ) + 1 := by positivity
+      have h3 : ((l : ℕ) : ℝ) + 1 ≤ 3 := by linarith
+      simp only [equispacedLevelSpectrum, Sum.elim_inr]
+      nlinarith [mul_le_mul_of_nonneg_right (pow_le_pow_left₀ h0 h3 2)
+        (sq_nonneg (x (Sum.inr (l, j))))]
+  · -- lower bound: the subspace killing the levels 0 and 1 has dimension above `k`
+    refine le_singularValues_of_forall_mem _ (LinearMap.ker (LinearMap.funLeft ℝ ℝ
+      (fun p : Fin 2 × m => (Sum.inr (Fin.castSucc p.1, p.2) : k ⊕ (Fin 3 × m))))) ?_ ?_
+    · have := card_le_finrank_ker_funLeft
+        (fun p : Fin 2 × m => (Sum.inr (Fin.castSucc p.1, p.2) : k ⊕ (Fin 3 × m)))
+      have hm : 0 < Fintype.card m := Fintype.card_pos
+      simp only [Fintype.card_sum, Fintype.card_prod, Fintype.card_fin] at this ⊢
+      omega
+    intro x hx
+    have hx' : ∀ (a : Fin 2) (j : m), x (Sum.inr (Fin.castSucc a, j)) = 0 :=
+      fun a j => congrFun (LinearMap.mem_ker.mp hx) (a, j)
+    apply (pow_le_pow_iff_left₀ (by positivity) (norm_nonneg _) two_ne_zero).mp
+    rw [mul_pow, sq_norm_diagonal_mulVec, EuclideanSpace.norm_toLp_sq_eq_sum_sq, Finset.mul_sum]
+    apply Finset.sum_le_sum
+    intro i _
+    rcases i with a | ⟨l, j⟩
+    · have hd : equispacedLevelSpectrum k m 2 (Sum.inl a) = 4 := by
+        simp [equispacedLevelSpectrum]; norm_num
+      rw [hd]
+      nlinarith [sq_nonneg (x (Sum.inl a))]
+    · by_cases hl : (l : ℕ) < 2
+      · have h0 : x (Sum.inr (l, j)) = 0 := by
+          have := hx' ⟨l, hl⟩ j
+          rwa [show Fin.castSucc (⟨l, hl⟩ : Fin 2) = l from Fin.ext rfl] at this
+        simp [h0]
+      · have hl2 : ((l : ℕ) : ℝ) = 2 := by
+          have := l.isLt
+          exact_mod_cast (by omega : (l : ℕ) = 2)
+        simp only [equispacedLevelSpectrum, Sum.elim_inr, hl2]
+        nlinarith [sq_nonneg (x (Sum.inr (l, j)))]
 
 /-- A real star projection is symmetric. -/
 private lemma isStarProjection_entry_symm {n : Type*} [Fintype n]
