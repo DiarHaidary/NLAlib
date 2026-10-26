@@ -775,6 +775,26 @@ theorem mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le
         2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - A *ᵥ (alg s).run A.mulVec)‖ ≤
           ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / ε) ≤ 4 * (q + 1) := by
-  sorry
+  have hL : 4 ≤ Real.log (1 / ε) := by
+    rw [one_div, Real.log_inv]
+    have := Real.log_le_log hε hε₀
+    rw [Real.log_exp] at this
+    linarith
+  have h4 : Real.log (1 / (4 * ε)) = Real.log (1 / ε) - Real.log 4 := by
+    rw [show 1 / (4 * ε) = (1 / ε) / 4 by ring,
+      Real.log_div (by positivity) (by norm_num)]
+  have hlog4 : Real.log 4 < 1.39 := by
+    have h2 : Real.log 4 = 2 * Real.log 2 := by
+      rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+      norm_num
+    have := Real.log_two_lt_d9
+    norm_num at this
+    linarith
+  have h := mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le hκ hε hn halg ρ hsucc
+  rw [h4] at h
+  have hk : 0 ≤ κ := by linarith
+  have hlog4' : 0 ≤ Real.log 4 := Real.log_nonneg (by norm_num)
+  nlinarith [mul_nonneg hk (sub_nonneg.mpr hL), mul_nonneg hk (sub_nonneg.mpr hlog4.le),
+    mul_le_mul_of_nonneg_left hlog4.le hk, mul_nonneg (by positivity : (0:ℝ) ≤ q + 1) hk]
 
 end NLAlib
