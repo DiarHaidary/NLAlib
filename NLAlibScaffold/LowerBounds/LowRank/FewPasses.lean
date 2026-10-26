@@ -74,7 +74,58 @@ theorem HasOrthonormalCols.frobNorm_mul_diagonal_mul_sub_truncatedSVD_sq
     frobNorm (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ -
         truncatedSVD (U * Matrix.diagonal (equispacedLevelSpectrum k m 2) * Uᴴ)
           (Fintype.card k)) ^ 2 = 14 * Fintype.card m := by
-  sorry
+  set d := equispacedLevelSpectrum k m 2
+  set A := U * Matrix.diagonal d * Uᴴ
+  set h : k ⊕ (Fin 3 × m) → ℝ := Sum.elim (fun _ => 4) 0
+  have hcard : Fintype.card (k ⊕ (Fin 3 × m)) = Fintype.card k + 3 * Fintype.card m := by
+    simp
+  -- the squared Frobenius norm of the diagonal pieces
+  have hD : frobNorm (Matrix.diagonal d) ^ 2 = 16 * Fintype.card k + 14 * Fintype.card m := by
+    rw [frobNorm_diagonal_sq]
+    simp [d, equispacedLevelSpectrum, Fintype.sum_sum_type, Fintype.sum_prod_type,
+      Fin.sum_univ_three]
+    ring
+  have hT : frobNorm (Matrix.diagonal (d - h)) ^ 2 = 14 * Fintype.card m := by
+    rw [frobNorm_diagonal_sq]
+    simp [d, h, equispacedLevelSpectrum, Fintype.sum_sum_type, Fintype.sum_prod_type,
+      Fin.sum_univ_three]
+    ring
+  have hrank : (U * Matrix.diagonal h * Uᴴ).rank ≤ Fintype.card k := by
+    refine (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_right _ _).trans ?_)
+    rw [Matrix.rank_diagonal]
+    refine Fintype.card_le_of_surjective (fun a : k => ⟨Sum.inl a, by norm_num [h]⟩) ?_
+    rintro ⟨a | x, hx⟩
+    · exact ⟨a, rfl⟩
+    · exact (hx rfl).elim
+  have hσ : ∀ i, singularValues A i ≤ 4 := by
+    intro i
+    refine (singularValues_le_specNorm A i).trans ?_
+    rw [hU.specNorm_mul_conjTranspose_right, hU.specNorm_mul_left]
+    refine specNorm_diagonal_le (by norm_num) fun i => ?_
+    rcases i with a | ⟨j, b⟩
+    · norm_num [d, equispacedLevelSpectrum]
+    · fin_cases j <;> norm_num [d, equispacedLevelSpectrum]
+  refine le_antisymm ?_ ?_
+  · -- Eckart–Young against the head part `U diag(h) Uᴴ`
+    rw [← hT]
+    refine pow_le_pow_left₀ (frobNorm_nonneg _)
+      ((frobNorm_sub_truncatedSVD_le_of_rank_le A hrank).trans_eq ?_) 2
+    rw [show A - U * Matrix.diagonal h * Uᴴ = U * Matrix.diagonal (d - h) * Uᴴ by
+      rw [show d - h = fun i => d i - h i from rfl, ← Matrix.diagonal_sub, Matrix.mul_sub,
+        Matrix.sub_mul],
+      hU.frobNorm_mul_conjTranspose_right, hU.frobNorm_mul_left]
+  · -- the head singular values are at most `4`, so the tail carries at least `14 |m|`
+    have hA : frobNorm A ^ 2 = 16 * Fintype.card k + 14 * Fintype.card m := by
+      rw [hU.frobNorm_mul_conjTranspose_right, hU.frobNorm_mul_left, hD]
+    have hhead : ∑ i ∈ Finset.range (Fintype.card k), singularValues A i ^ 2 ≤
+        16 * Fintype.card k := by
+      calc _ ≤ ∑ i ∈ Finset.range (Fintype.card k), (4 : ℝ) ^ 2 :=
+            Finset.sum_le_sum fun i _ => pow_le_pow_left₀ (singularValues_nonneg A i) (hσ i) 2
+        _ = _ := by simp; ring
+    rw [frobNorm_sub_truncatedSVD_sq, min_self]
+    rw [frobNorm_sq_eq_sum_singularValues_sq, ← Finset.sum_range_add_sum_Ico _
+      (hcard ▸ Nat.le_add_right _ _ : Fintype.card k ≤ _)] at hA
+    linarith
 
 /-- The kernel of a coordinate restriction has dimension at least the number of the other
 coordinates. -/
