@@ -226,7 +226,18 @@ Proof: `NLAlib.residualMinimax_Icc_union_Icc` with $a = 1$, $a' = \kappa$, then
 Result: polynomial-two-interval-inapproximability -/
 theorem exp_neg_le_residualMinimax_Icc_union_Icc {κ : ℝ} (hκ : 2 ≤ κ) (q : ℕ) :
     Real.exp (-(2 * q / κ)) ≤ residualMinimax (Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ) q := by
-  sorry
+  have hκ1 : (1 : ℝ) < κ := by linarith
+  have h := residualMinimax_Icc_union_Icc (a := 1) (a' := κ) q one_pos hκ1
+  rw [one_pow] at h
+  rw [h]
+  refine (Real.exp_le_exp.2 ?_).trans (exp_neg_le_inv_eval_T_real (by linarith) (q / 2))
+  have hq : ((4 * (q / 2 : ℕ) : ℕ) : ℝ) ≤ ((2 * q : ℕ) : ℝ) := by
+    exact_mod_cast (by omega : 4 * (q / 2) ≤ 2 * q)
+  push_cast at hq
+  have hκ0 : (0 : ℝ) < κ := by linarith
+  have : 4 * ((q / 2 : ℕ) : ℝ) / κ ≤ 2 * (q : ℝ) / κ :=
+    div_le_div_of_nonneg_right (by linarith) hκ0.le
+  linarith
 
 /-- **Weighted inapproximability on two intervals**: for $0 < a < a'$ there are at most $q + 2$
 points of $S = [-a', -a] \cup [a, a']$ and positive weights summing to $1$ on them such that every
