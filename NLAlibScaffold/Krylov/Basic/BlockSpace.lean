@@ -35,6 +35,28 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- One level of the residual: if `w i = r * g i - ∑ j, y j * G i j`, then `r ^ 2` times the squared
+norm of the part of `g` orthogonal to the columns of `G` is at most the squared norm of `w`.
+Proof: `1 - P` kills `G y` (`rangeProjector_mulVec_mulVec`), so `(1 - P) w = r • (1 - P) g`, and
+`‖w‖² = ‖P w‖² + ‖(1 - P) w‖²` (`IsStarProjection.norm_toLp_sq_eq_add`). -/
+private lemma norm_sq_mul_le_norm_sq_of_residual {m c : Type*} [Fintype m] [DecidableEq m]
+    [Fintype c] (G : Matrix m c ℝ) (g w : m → ℝ) (r : ℝ) (y : c → ℝ)
+    (hw : ∀ i, w i = r * g i - ∑ j, y j * G i j) :
+    r ^ 2 * ‖WithLp.toLp 2 ((1 - rangeProjector G) *ᵥ g)‖ ^ 2 ≤ ‖WithLp.toLp 2 w‖ ^ 2 := by
+  have hGy : (1 - rangeProjector G) *ᵥ (G *ᵥ y) = 0 := by
+    rw [Matrix.sub_mulVec, Matrix.one_mulVec, rangeProjector_mulVec_mulVec, sub_self]
+  have hwv : w = r • g - G *ᵥ y := by
+    funext i
+    simp [hw i, Matrix.mulVec, dotProduct, mul_comm]
+  have hw' : (1 - rangeProjector G) *ᵥ w = r • ((1 - rangeProjector G) *ᵥ g) := by
+    rw [hwv, Matrix.mulVec_sub, hGy, sub_zero, Matrix.mulVec_smul]
+  have hsc : ∀ v : m → ℝ, ‖WithLp.toLp 2 (r • v)‖ ^ 2 = r ^ 2 * ‖WithLp.toLp 2 v‖ ^ 2 := by
+    intro v
+    rw [WithLp.toLp_smul, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs]
+  have hpy := (isStarProjection_rangeProjector G).norm_toLp_sq_eq_add w
+  rw [← hsc, ← hw']
+  linarith [sq_nonneg ‖WithLp.toLp 2 (rangeProjector G *ᵥ w)‖]
+
 /-- **Level decomposition of a Krylov residual**: let
 $\mathbf{D} = \operatorname{diag}(\mathbf{d})$, $\mathbf{g} \in \mathbb{R}^n$ and
 $\mathbf{G} \in \mathbb{R}^{n \times c}$. For every $\mathbf{x}$ in
@@ -63,7 +85,42 @@ theorem exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq {n c : Type*} [Fint
           ‖WithLp.toLp 2 ((1 - rangeProjector (G.submatrix (Subtype.val : {i // d i = t} → n) id))
             *ᵥ fun i => g i.1)‖ ^ 2 ≤
         ‖WithLp.toLp 2 (g - Matrix.diagonal d *ᵥ x)‖ ^ 2 := by
-  sorry
+  obtain ⟨f, hf, hsum⟩ := mem_blockKrylovSpace_iff.1 hx
+  have hxi : ∀ i, x i = (f (Sum.inl ())).eval (d i) * g i +
+      ∑ j, (f (Sum.inr j)).eval (d i) * G i j := by
+    intro i
+    rw [← hsum]
+    simp [Fintype.sum_sum_type, aeval_diagonal_self, Matrix.mulVec_diagonal]
+  have hdeg : (1 - X * f (Sum.inl ())).degree ≤ (s : WithBot ℕ) := by
+    refine (degree_sub_le _ _).trans (max_le ?_ ?_)
+    · simp
+    · rw [degree_mul, degree_X, add_comm]
+      have h := hf (Sum.inl ())
+      rcases hd : (f (Sum.inl ())).degree with _ | k
+      · exact le_trans (le_of_eq (WithBot.bot_add _)) bot_le
+      · rw [hd] at h
+        have hk : k < s := WithBot.coe_lt_coe.mp h
+        exact WithBot.coe_le_coe.mpr (Nat.succ_le_of_lt hk)
+  have hres : ∀ i, (g - Matrix.diagonal d *ᵥ x) i = (1 - X * f (Sum.inl ())).eval (d i) * g i -
+      ∑ j, (X * f (Sum.inr j)).eval (d i) * G i j := by
+    intro i
+    rw [Pi.sub_apply, Matrix.mulVec_diagonal, hxi i]
+    simp only [eval_sub, eval_mul, eval_X, eval_one, Finset.mul_sum, sub_mul, one_mul, mul_add]
+    simp only [mul_assoc]
+    ring
+  refine ⟨1 - X * f (Sum.inl ()), hdeg, by simp, ?_⟩
+  rw [EuclideanSpace.real_norm_sq_eq, ← Finset.sum_fiberwise_of_maps_to (g := d)
+    (t := Finset.univ.image d) (fun i _ => Finset.mem_image_of_mem d (Finset.mem_univ i))]
+  refine Finset.sum_le_sum fun t _ => ?_
+  have hfib := norm_sq_mul_le_norm_sq_of_residual
+    (G.submatrix (Subtype.val : {i // d i = t} → n) id) (fun i => g i.1)
+    (fun i => (g - Matrix.diagonal d *ᵥ x) i.1) ((1 - X * f (Sum.inl ())).eval t)
+    (fun j => (X * f (Sum.inr j)).eval t)
+    (fun i => by simp only [hres i.1, i.2, Matrix.submatrix_apply, id_eq])
+  refine hfib.trans (le_of_eq ?_)
+  rw [EuclideanSpace.real_norm_sq_eq]
+  exact (Finset.sum_subtype (Finset.univ.filter fun i => d i = t) (by simp)
+    (fun i => (WithLp.toLp 2 (g - Matrix.diagonal d *ᵥ x)).ofLp i ^ 2)).symm
 
 /-- A block Krylov space depends on its starting block only through the range: if the range of
 $\mathbf{B}$ lies in that of $\mathbf{B}'$, then $\mathcal{K}_q(\mathbf{A}, \mathbf{B}) \subseteq
