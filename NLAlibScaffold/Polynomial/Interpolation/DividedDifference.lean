@@ -41,6 +41,17 @@ S, about 12 lines. -/
 theorem sum_neg_one_pow_mul_choose_mul_eval_eq_zero {R : Type*} [CommRing R] {P : R[X]}
     {n : ℕ} (hP : P.natDegree < n) (x h : R) :
     ∑ j ∈ range (n + 1), (-1 : R) ^ (n - j) * (n.choose j : R) * P.eval (x + j * h) = 0 := by
-  sorry
+  have hlin : (C x + C h * X).natDegree ≤ 1 := by
+    rw [add_comm]; exact natDegree_linear_le
+  have hdeg : (P.comp (C x + C h * X)).natDegree < n := by
+    have := Polynomial.natDegree_comp_le (p := P) (q := C x + C h * X)
+    have h2 : P.natDegree * (C x + C h * X).natDegree ≤ P.natDegree * 1 :=
+      Nat.mul_le_mul_left _ hlin
+    omega
+  have key := congrFun (fwdDiff_iter_eq_zero_of_degree_lt hdeg) 0
+  rw [fwdDiff_iter_eq_sum_shift] at key
+  simp only [eval_comp, eval_add, eval_mul, eval_C, eval_X, zsmul_eq_mul, Pi.zero_apply] at key
+  simpa [zero_add, nsmul_eq_mul, mul_comm, mul_assoc, mul_left_comm, Int.cast_mul,
+    Int.cast_pow] using key
 
 end NLAlib
