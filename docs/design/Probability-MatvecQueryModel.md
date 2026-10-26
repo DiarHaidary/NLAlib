@@ -283,7 +283,7 @@ gives "$F(T, Z)$ has law $\nu$ and is independent of $T$". Shared with S10 (§10
 
 | ID | Name | Shape | Diff |
 |---|---|---|---|
-| G1 | `NLAlib.identDistrib_mul_mul_of_hasLaw_gaussianMatrix` | fixed star projections, `E₁ * E₂ = E₂`, `F₁ * F₂ = F₂`, `X ⊥ X'` Gaussian: `IdentDistrib (E₁ X F₁) (E₁ X F₁ - E₂ X F₂ + E₂ X' F₂)` | L |
+| G1 | `NLAlib.identDistrib_mul_mul_of_hasLaw_gaussianMatrix` | fixed star projections `E₂`, `F₁`, `F₂` (no hypothesis on `E₁`, decision UNUSED-HE1), `E₁ * E₂ = E₂`, `F₁ * F₂ = F₂`, `X ⊥ X'` Gaussian: `IdentDistrib (E₁ X F₁) (E₁ X F₁ - E₂ X F₂ + E₂ X' F₂)` | L |
 | D1 | `QueryAlgorithm.transcript_resample` | `alg.transcript (twoSidedMulVec (alg.resample X X')) = τ X` (over `𝕜`, every `X X'`) | M |
 | D2 | `QueryAlgorithm.IsMeasurable.identDistrib_resample_of_hasLaw_gaussianMatrix` | `X ⊥ X'` Gaussian `d × k`: `IdentDistrib (τ X, X) (τ X, alg.resample X X')` | L |
 | D3 | `QueryAlgorithm.IsMeasurable.hasLaw_prodMk_conjTranspose_mul_mul_of_hasLaw_gaussianMatrix` | measurable frames `WL τ`, `WR τ` with orthonormal columns, `(WL τ)ᴴ * leftQueryMatrix τ = 0`, `(WR τ)ᴴ * rightQueryMatrix τ = 0`: `HasLaw (τ X, (WL (τ X))ᴴ * X * WR (τ X)) ((μ.map τX).prod (gaussianMatrix r s))` | M |
@@ -736,3 +736,6 @@ OQ1, OQ3–OQ9 (a). Fable review items 1–6 applied as follows.
   The scaffold file `RandomMatrix/DeferredDecision.lean` (1738 lines, over the F10 ceiling) was
   split by topic into the Gaussian (D1–D3), non-adaptive (H1) and adaptive (H2) files. R4a stays
   with its only consumer (decision card RANK-STEP-HOME in `Review-LBA.json`).
+* **Review-LBA decisions (2026-10-26, `state/decisions/Review-LBA.json`).**
+  * UNUSED-HE1 (a): G1 no longer takes `hE₁ : IsStarProjection E₁`; only `E₁ * E₂ = E₂` is used
+    on the left. The statement is weaker in its hypotheses, hence stronger.

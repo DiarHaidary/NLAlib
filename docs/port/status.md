@@ -26,6 +26,11 @@ for `history_gramSimulation` (proof term in its statement; decision T9-GRAM); al
 R4b (decision NAME-R4B). Reports:
 `reports/Review-LBA-Cleanup.md` and `reports/Stage-LBA.md` in the harness repository.
 
+Maintainer decisions (`Review-LBA.json`, 2026-10-26), one commit each:
+- UNUSED-HE1 (a): G1 `identDistrib_mul_mul_of_hasLaw_gaussianMatrix` drops its unused
+  `hE₁ : IsStarProjection E₁` (statement change: a weakening of the hypotheses); its two linter
+  suppressions are gone, and D2's step passes one argument fewer.
+
 ## S10 lower bounds for specific estimators: proofs (2026-10-25)
 
 Branch `cleanup/s10` (worktree `nlalib-cleanup-s10`), over `integrate/s10` with `origin/main`

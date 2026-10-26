@@ -242,8 +242,8 @@ private theorem indepFun_fst_snd' {α γ : Type*} [MeasurableSpace α] [Measurab
 
 /-- The frozen step: for fixed matrices the new response does not see the resampled block. -/
 private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k ℝ}
-    (hE : IsStarProjection E) (hE' : IsStarProjection E') (hF : IsStarProjection F)
-    (hF' : IsStarProjection F') (hEE : E * E' = E') (hEE' : E' * E = E') (hFF : F * F' = F')
+    (hE' : IsStarProjection E') (hF : IsStarProjection F) (hF' : IsStarProjection F')
+    (hEE : E * E' = E') (hEE' : E' * E = E') (hFF : F * F' = F')
     {w : k → ℝ} {u : d → ℝ} (hw : F' *ᵥ w = 0) (hu : E' *ᵥ u = 0) (t : Matrix d k ℝ)
     {γ : Type*} [MeasurableSpace γ] {c : (d → ℝ) × (k → ℝ) → γ} (hc : Measurable c) :
     ((gaussianMatrix d k).prod (gaussianMatrix d k)).map
@@ -258,7 +258,7 @@ private theorem map_resample_step_eq {E E' : Matrix d d ℝ} {F F' : Matrix k k 
     exact (hc.comp (measurable_twoSidedMulVec (measurable_const.matrix_add measurable_id)
       measurable_const)).prodMk (measurable_const.matrix_add measurable_id)
   have h := (identDistrib_mul_mul_of_hasLaw_gaussianMatrix measurePreserving_fst.hasLaw
-    measurePreserving_snd.hasLaw (indepFun_fst_snd' _ _) hE hE' hF hF' hEE hFF).comp hk
+    measurePreserving_snd.hasLaw (indepFun_fst_snd' _ _) hE' hF hF' hEE hFF).comp hk
   refine h.map_eq.trans (congrArg (fun f => Measure.map f _) (funext fun z => ?_))
   have hY : t - E * t * F + (E * z.1 * F - E' * z.1 * F' + E' * z.2 * F') =
       t - E * t * F + E * z.1 * F + E' * (z.2 - z.1) * F' := by
@@ -357,7 +357,7 @@ private theorem identDistrib_step_freeze {T T' : Type*} [MeasurableSpace T] [Mea
   rw [measurePreserving_snd.map_eq]
   obtain ⟨hE1, hE'1, hF1, hF'1, hEE, hEE', hFF, hw, hu⟩ := hproj (H t)
   simp only [hNx, hR]
-  exact map_resample_step_eq hE1 hE'1 hF1 hF'1 hEE hEE' hFF hw hu t (hc (H t))
+  exact map_resample_step_eq hE'1 hF1 hF'1 hEE hEE' hFF hw hu t (hc (H t))
 
 /-- The induction step for abstract history, projector and next-history maps. -/
 private theorem identDistrib_step_chain {T T' : Type*} [MeasurableSpace T] [MeasurableSpace T']

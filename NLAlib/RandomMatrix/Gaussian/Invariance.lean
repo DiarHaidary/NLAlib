@@ -229,24 +229,21 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n : Type*} [Fintype m]
   [Fintype n]
 
--- `hE₁` is not used: `E₁ * E₂ = E₂` suffices on the left (decision UNUSED-HE1).
-set_option linter.unusedVariables false in
 /-- **Resampling a block of a Gaussian matrix**: let $\mathbf{X}$, $\mathbf{X}'$ be independent
-standard Gaussian $m \times n$ matrices, and $\mathbf{E}_1, \mathbf{E}_2$,
-$\mathbf{F}_1, \mathbf{F}_2$ orthogonal projectors with $\mathbf{E}_1\mathbf{E}_2 = \mathbf{E}_2$
-and $\mathbf{F}_1\mathbf{F}_2 = \mathbf{F}_2$ (that is, $\mathbf{E}_2 \preceq \mathbf{E}_1$ and
-$\mathbf{F}_2 \preceq \mathbf{F}_1$). Then
+standard Gaussian $m \times n$ matrices, $\mathbf{E}_2$, $\mathbf{F}_1$, $\mathbf{F}_2$ orthogonal
+projectors and $\mathbf{E}_1$ a matrix with $\mathbf{E}_1\mathbf{E}_2 = \mathbf{E}_2$ and
+$\mathbf{F}_1\mathbf{F}_2 = \mathbf{F}_2$ (for an orthogonal projector $\mathbf{E}_1$ this is
+$\mathbf{E}_2 \preceq \mathbf{E}_1$; likewise $\mathbf{F}_2 \preceq \mathbf{F}_1$). Then
 $\mathbf{E}_1\mathbf{X}\mathbf{F}_1$ has the law of
 $$\mathbf{E}_1\mathbf{X}\mathbf{F}_1 - \mathbf{E}_2\mathbf{X}\mathbf{F}_2 +
 \mathbf{E}_2\mathbf{X}'\mathbf{F}_2\,.$$
 [ZhangEtAl2026, proof of Lemma 4.1]; there one query at a time with orthonormal frames and
 entries $\mathcal{N}(0, 1/d)$; here unit variance and any nested projectors. -/
-@[nolint unusedArguments]
 theorem identDistrib_mul_mul_of_hasLaw_gaussianMatrix {X X' : Ω → Matrix m n ℝ}
     (hX : HasLaw X (gaussianMatrix m n) μ) (hX' : HasLaw X' (gaussianMatrix m n) μ)
     (hXX' : IndepFun X X' μ) {E₁ E₂ : Matrix m m ℝ} {F₁ F₂ : Matrix n n ℝ}
-    (hE₁ : IsStarProjection E₁) (hE₂ : IsStarProjection E₂) (hF₁ : IsStarProjection F₁)
-    (hF₂ : IsStarProjection F₂) (hE : E₁ * E₂ = E₂) (hF : F₁ * F₂ = F₂) :
+    (hE₂ : IsStarProjection E₂) (hF₁ : IsStarProjection F₁) (hF₂ : IsStarProjection F₂)
+    (hE : E₁ * E₂ = E₂) (hF : F₁ * F₂ = F₂) :
     IdentDistrib (fun ω => E₁ * X ω * F₁)
       (fun ω => E₁ * X ω * F₁ - E₂ * X ω * F₂ + E₂ * X' ω * F₂) μ μ := by
   classical
