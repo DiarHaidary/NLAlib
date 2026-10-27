@@ -35,6 +35,17 @@ approved target registry, references, constants, generated rules, ledger and sou
 all 65 Python regression tests pass. Kernel replay checks 13,831 constants across 481 modules,
 with zero violations and zero findings in the non-strict tools library (previously two).
 
+## Chebyshev fixed-batch lower bounds (2026-10-27)
+
+Branch `stage/lbc-chebyshev`, based on `main` at `96d9f77`. Design
+`docs/design/LowerBounds-ChebyshevBatches.md`. The fixed-batch Frobenius and nuclear arguments
+are stated for a general level spectrum with an extrapolation constant; the equispaced headline
+theorems keep their statements, and new Chebyshev headline theorems prove
+`q > |k|/(12544*(r+1)^3*ε)` in both norms (squared Frobenius error, unsquared nuclear error), for
+`ε ≤ 1/(25088*(r+1)^3*(r+2))` and `|m| = ⌊|k|/(16ε(r+1)^3)⌋`. The extrapolation constant four
+comes from the existing Chebyshev dual weights (new `Polynomial/Chebyshev/ExtremaEvaluation`).
+Full build clean; both new proofs use only `propext`, `Classical.choice`, `Quot.sound`.
+
 ## Fixed-batch nuclear-norm extension: proofs (2026-10-26)
 
 Branch `stage/lbc-nuclear`, based on fixed-batch Frobenius commit `7cbaf1f`. The maintainer
