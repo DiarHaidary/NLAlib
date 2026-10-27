@@ -673,11 +673,17 @@ Executed with the `Float` interpreter on a 5 × 5 symmetric `A`:
 ### 7.4 The fixed-point example (run)
 
 * Tags `fx` (Q16, value `w / 2^16`) and `int` over `ℤ`.
-* `fxSem` (fixed-point `add`, and `mul` with the product shifted down), and `wordSem` (integer
-  operations only).
-* `fxImpl` (`add` and `mul` through reinterpretation, integer operations and `shr 16`; `conj` as a
-  copy) and `fxCost`.
-* Stated: `implementsInstr_fxImpl` and `fxSem_mul_abs_sub_le`.
+* `fxSem` (fixed-point `add`, `sub`, `neg`, and `mul` with the product shifted down), and
+  `wordSem` (integer operations only).
+* `fxImpl` (`add`, `sub`, `mul` and `neg` through reinterpretation and integer operations, with
+  `shr 16` for `mul`; `conj` as a copy) and `fxCost`.
+* Proved, 2026-10-27: `implementsInstr_fxImpl` and `fxSem_mul_abs_sub_le`, with their original
+  signatures. The audit found that the old implementation kept fixed-point subtraction and
+  negation even though `wordSem` rejects them. Both now have integer implementations, within
+  the existing four-integer-cell/256-bit scratch bound, and their operation costs are counted.
+  The error proof uses the nonnegative remainder of division by $2^{16}$, including negative
+  products. A regression run checks subtraction, negation, negative-product rounding and an
+  in-place destination; the original dot-product run and its counts are unchanged.
 
 The run of `dot` at `fx` gives the same word (−0.6875 = −45056/2^16) at both levels: 9 fixed-point
 operations versus 9 integer operations and 18 reinterpretations, peak 64 versus 320 bits.

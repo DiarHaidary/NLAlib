@@ -2,6 +2,39 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Computation fixed-point demo: proof repair (2026-10-27)
+
+Branch `fix/computation-fixedpoint`, based on PR #31 (`computation/stage1`, `d0ee823`). The
+maintainer requested fixing and proving the two fixed-point demo statements, then committing and
+updating the PR. Both statements in `NLAlibTools/FixedPoint.lean` are now proved with their
+original signatures; the tools' two deferred proofs recorded in the older entries below are
+closed. No new prototype ports; no ledger mappings or protected target statements change.
+
+The audit found that `fxImpl` kept fixed-point subtraction and negation unchanged even though
+`wordSem` rejects those instructions. Subtraction now uses three scratch integer cells and
+negation two, with the corresponding conversions and integer operations recorded in `fxCost`.
+The weighted demo count also charges integer negation. The four-cell/256-bit scratch bound is
+unchanged. The original dot-product example and its counts are unchanged; a second example checks
+subtraction, negation, negative sub-ulp product rounding toward negative infinity, and in-place
+negation, including its counts and scratch peak.
+
+Read-back: for every pair of interpretations satisfying the original semantics, common-tape,
+standard concrete-charge and 64-bit-width hypotheses, every successful abstract instruction has
+a successful implemented run with exactly the same whole store and tape positions. It restores
+current memory, costs at most `fxCost` of the instruction kind, and raises the peak only within
+the certificate's maximum of the old peak and current memory plus four integer cells/256 bits.
+For every integer fixed-point product, decoding the rounded word gives absolute rational error
+at most `1/65536`, including negative products. The word carrier remains unbounded integers;
+these results do not add a finite-width overflow guarantee.
+
+Validation: full warning-fatal build of all three libraries; the single-file check with an
+8000 MB cap; both theorem signatures mechanically compared with the PR head; both proof axiom
+lists contain only `propext`, `Classical.choice`, `Quot.sound`. Independent tier-1 review accepts
+the implementation, counts, memory, aliasing and rounding. Freshness, generated tools root,
+approved target registry, references, constants, generated rules, ledger and source rules pass;
+all 65 Python regression tests pass. Kernel replay checks 13,831 constants across 481 modules,
+with zero violations and zero findings in the non-strict tools library (previously two).
+
 ## Fixed-batch nuclear-norm extension: proofs (2026-10-26)
 
 Branch `stage/lbc-nuclear`, based on fixed-batch Frobenius commit `7cbaf1f`. The maintainer
