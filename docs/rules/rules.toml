@@ -5,10 +5,12 @@
 # `section`. A new rule gets its entry here, its check, a fixture in scripts/test_check_rules.py and
 # its id in brackets where CONTRIBUTING states it (§9.2).
 #
-# id        area letter and number, never reused
+# id        area letter and number, never reused (retired: E1 on 2026-10-23, the witness of a
+#           result being a first-order tree, docs/design/Computation.md F9; E7, merged into E1)
 # area      the area of the letter
 # severity  error (fails CI, ratcheted), warning (a heuristic, a review list) or review (no check)
-# check     source (the sources and documents), extraction (needs scripts/explore_data.sh), none
+# check     source (the sources and documents), extraction (needs scripts/explore_data.sh), lean
+#           (the built library, by scripts/Programs.lean), none
 # scope     "library", or the topic directories the rule applies to; exclude removes directories
 # exempt    directories exempt while the rule `exempt_while` has no violation (optional)
 # home      topics that list a library-wide rule first in their RULES.md (optional)
@@ -299,6 +301,83 @@ scope = "library"
 section = "§6 item 1"
 statement = '''A headline theorem says in its docstring when it assumes `[Nonempty n]`'''
 fix = '''Say "$n$ nonempty" (or $\lvert n \rvert \ge 1$)'''
+
+[[rule]]
+id = "E2"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''Programs, kernels and implementations are computable'''
+fix = '''Remove the noncomputable part; a program is data that runs'''
+
+[[rule]]
+id = "E3"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry'''
+fix = '''Prove the registered target itself; a `Result:` theorem about runs that proves no registered target loses its id, and a new or changed target needs the maintainer's approval (agents never edit `*Targets.lean` or the registry)'''
+
+[[rule]]
+id = "E4"
+area = "programs"
+severity = "error"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it'''
+fix = '''Compile the program (`<spec>Prog.compiled`) and ask the maintainer for its target'''
+
+[[rule]]
+id = "E5"
+area = "programs"
+severity = "error"
+check = "source"
+scope = ["NLAlib/Computation"]
+section = "§2"
+statement = '''A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`'''
+fix = '''Keep the Computation layer at layer 0: a program that needs library vocabulary lives in its topic file'''
+
+[[rule]]
+id = "E6"
+area = "programs"
+severity = "error"
+check = "source"
+scope = "library"
+exclude = ["NLAlib/Computation"]
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`'''
+fix = '''Define the semantics or interpretation in `NLAlib/Computation`, with its certificate'''
+
+[[rule]]
+id = "E8"
+area = "programs"
+severity = "error"
+check = "source"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''`Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it)'''
+fix = '''Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`'''
+
+[[rule]]
+id = "E9"
+area = "programs"
+severity = "warning"
+check = "lean"
+scope = "library"
+home = ["NLAlib/Computation"]
+section = "§5.5"
+statement = '''A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`'''
+fix = '''Wrap the callee's body in `scope`: an `alloc` is live for the rest of the enclosing block, so an open one stays allocated in the caller'''
 
 [[rule]]
 id = "F1"
@@ -924,6 +1003,16 @@ statement = '''A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `
 fix = '''Keep the Polynomial layer upstreamable: move what it needs to ForMathlib, or the declaration out of Polynomial'''
 
 [[rule]]
+id = "P12"
+area = "placement and layers"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml'''
+fix = '''The library imports only itself, Mathlib and its dependencies: move what it needs into `NLAlib/` (scripts/Replay.lean trusts no module built by this package unchecked)'''
+
+[[rule]]
 id = "R1"
 area = "result ids"
 severity = "error"
@@ -1032,6 +1121,16 @@ scope = "library"
 section = "§10"
 statement = '''`set_option linter.style.longLine false in` only on a declaration with a long line'''
 fix = '''Remove the option'''
+
+[[rule]]
+id = "S9"
+area = "source and proof style"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§7"
+statement = '''No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml'''
+fix = '''Write a total, safe definition; never switch off or bypass the kernel check (scripts/Replay.lean re-checks every constant)'''
 
 [[rule]]
 id = "T1"

@@ -2,6 +2,39 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Computation fixed-point demo: proof repair (2026-10-27)
+
+Branch `fix/computation-fixedpoint`, based on PR #31 (`computation/stage1`, `d0ee823`). The
+maintainer requested fixing and proving the two fixed-point demo statements, then committing and
+updating the PR. Both statements in `NLAlibTools/FixedPoint.lean` are now proved with their
+original signatures; the tools' two deferred proofs recorded in the older entries below are
+closed. No new prototype ports; no ledger mappings or protected target statements change.
+
+The audit found that `fxImpl` kept fixed-point subtraction and negation unchanged even though
+`wordSem` rejects those instructions. Subtraction now uses three scratch integer cells and
+negation two, with the corresponding conversions and integer operations recorded in `fxCost`.
+The weighted demo count also charges integer negation. The four-cell/256-bit scratch bound is
+unchanged. The original dot-product example and its counts are unchanged; a second example checks
+subtraction, negation, negative sub-ulp product rounding toward negative infinity, and in-place
+negation, including its counts and scratch peak.
+
+Read-back: for every pair of interpretations satisfying the original semantics, common-tape,
+standard concrete-charge and 64-bit-width hypotheses, every successful abstract instruction has
+a successful implemented run with exactly the same whole store and tape positions. It restores
+current memory, costs at most `fxCost` of the instruction kind, and raises the peak only within
+the certificate's maximum of the old peak and current memory plus four integer cells/256 bits.
+For every integer fixed-point product, decoding the rounded word gives absolute rational error
+at most `1/65536`, including negative products. The word carrier remains unbounded integers;
+these results do not add a finite-width overflow guarantee.
+
+Validation: full warning-fatal build of all three libraries; the single-file check with an
+8000 MB cap; both theorem signatures mechanically compared with the PR head; both proof axiom
+lists contain only `propext`, `Classical.choice`, `Quot.sound`. Independent tier-1 review accepts
+the implementation, counts, memory, aliasing and rounding. Freshness, generated tools root,
+approved target registry, references, constants, generated rules, ledger and source rules pass;
+all 65 Python regression tests pass. Kernel replay checks 13,831 constants across 481 modules,
+with zero violations and zero findings in the non-strict tools library (previously two).
+
 ## Fixed-batch nuclear-norm extension: proofs (2026-10-26)
 
 Branch `stage/lbc-nuclear`, based on fixed-batch Frobenius commit `7cbaf1f`. The maintainer
@@ -313,6 +346,238 @@ from `NLAlibScaffold` into `NLAlib` with their `Proof:` lines removed (D8):
 `NLAlib.Polynomial.Approximation.Jackson` (Gauss), `NLAlib.Krylov.Processes.LanczosPolynomials`
 (Quadrature). Public addition: `exists_ae_mem_Icc_spectralMeasure`. Report:
 `reports/Review-KS7-Cleanup.md` and `reports/Stage-KS7.md` in the harness repository.
+## Computation stage 1: replay audit fixed (2026-10-24)
+
+Branch `computation/stage1`, after `328eb35`. An audit of `scripts/Replay.lean`; findings and fixes
+in `docs/design/Computation.md`, "Final audits, 2026-10-24", "Replay audit". Blocking: the replay
+trusted every import outside its roots as base, modules this package builds included, so a lemma
+added in `NLAlibScaffold` with `addDeclCore … (doCheck := false)` and reached by `NLAlib` through
+`NLAlibTools` passed every check. Fixed: every base module must be read from `.lake/packages/` or
+the toolchain's `lib/lean`; the roots are every `lean_lib` of `lakefile.toml`, strict for
+`NLAlib` and any library it imports; the stage check replays as CI does; rule P12 (`NLAlib`
+imports no other library of the package); S9 also matches `addDeclCore` and `doCheck`.
+Non-blocking, done: strict modules fail on an axiom or a use of `sorryAx`, `ofReduceBool`,
+`ofReduceNat` or `trustCompiler`; freshness by `lake build --no-build --rehash` before the replay,
+and CI no longer restores `.lake` from the GitHub cache (`use-github-cache: false`); the stage
+check runs `mk_all --lib NLAlib --check`; the `_unsafe_rec` docstrings. The auditor's fixtures are
+`scripts/replay_fixtures/` with `scripts/replay_fixtures.sh` (CI and stage check): FxA, FxBase,
+FxB, FxC, FxD, FxE and FxF each fail for their own reason; FxF passes when not strict.
+
+Checks (logs in the session scratchpad, `comp-build/replay-fix/`): `lake build --wfail NLAlib` 4018
+jobs, 0 warnings; replay of the package 11871 constants of 425 modules, 0 violations (15
+auxiliaries `_unsafe_rec`); replay rooted at `NLAlibTools` alone fails on 215 `NLAlib` modules read
+from `.lake/build`; full `scripts/stage_check.sh` (the approval read from a scratch hash file): 419
+proved modules, 4016 jobs 0 warnings, audit 11760 declarations 0 violations, lint 0 errors, `mk_all
+--lib NLAlib --check` clean, freshness 4031 jobs up to date, replay 0 violations, replay fixtures 8
+verdicts as expected, `Programs.lean` 18 programs 0 violations, `Targets.lean` 5 targets 0
+violations, access-model fixtures 9 theorems, constants and LaTeX 0 problems, rules 0 errors (73 in
+the baseline), duplicates 0 classes (the rules step first failed on V6, a backquoted `lean_lib` in
+the new CONTRIBUTING text, reworded; it and the duplicates step were rerun on the same extraction);
+script tests 50 OK.
+
+## Computation stage 1: final audits fixed (2026-10-24)
+
+Branch `computation/stage1`, after `0bd2567`. Two independent final audits; findings and fixes in
+`docs/design/Computation.md`, "Final audits, 2026-10-24". Blocking (the whole library): an
+`unsafe` definition used by a theorem under `set_option debug.skipKernelTC true` forged any
+theorem past every check. Fixed by the kernel replay `scripts/Replay.lean` (Lean core's
+`Environment.replay` over every `NLAlib` constant from the `.olean` files; in CI with
+`NLAlibTools` and in `scripts/stage_check.sh`), rule S9 (no `unsafe`, `partial`, `implemented_by`,
+`extern`, `debug.` or kernel options), and `scripts/Audit.lean` failing on unsafe or partial
+constants. Replay of the whole library: 11760 constants of 420 modules, 0 violations (13
+compiler auxiliaries `_unsafe_rec` exempt); the forgery, built outside the library, is rejected.
+Non-blocking: the target lint follows constructors and reads instances and `Prop` definitions
+(item 2), pins the SHA-256 of `lake-manifest.json` and `lakefile.toml`, has the kernel check each
+registered tree against its normal form, erases proofs and numbers hygienic names in its hashes,
+and prints each tree's normal form into the registry; CODEOWNERS covers the check scripts, CI,
+the stage check and the build pins; `IExp.mod` by zero documented; G34, the trusted base, G61 and
+G62 in the note. `docs/targets.toml` regenerated by `TARGETS_UPDATE=1` only (every hash changed,
+no printed statement). **Approved by the maintainer, 2026-10-27** ("yes these are fine"): the
+docstring rewording of `MatrixFreeHutchpp` and `MatrixFreeGramSchmidt` (the bound includes the
+output cell), the `OpKind.…` spelling of `hutchppCount` (no hash changed) and the registry
+(`docs/targets.approved`).
+
+**Pending maintainer items** (added by the final audits):
+* Confirm the CODEOWNERS handle `@tchen01`; turn on branch protection with code-owner review.
+* Adding `lean4checker` is not needed (Lean core's `replay` sufficed).
+
+Checks (logs in the session scratchpad, `comp-build/final-fix/`): `lake build --wfail NLAlib`
+4018 jobs, 0 warnings; `mk_all --check` clean (NLAlib, NLAlibTools); replay of NLAlib with
+NLAlibTools 11871 constants of 424 modules, 0 violations; full `scripts/stage_check.sh` (the
+approval read from a scratch hash file): 419 proved modules, 4016 jobs 0 warnings, audit 11760
+declarations 0 violations, lint 0 errors, replay 0 violations, `Programs.lean` 18 programs and 3
+trees 0 violations, `Targets.lean` 5 targets 0 violations (the kernel accepts the 3 trees),
+fixtures 9 theorems, constants and LaTeX 0 problems, rules 0 errors (73 in the baseline),
+duplicates 0 classes; without the scratch approval `Targets.lean` fails on the approval item
+alone; script tests 49 OK; `lake build NLAlibTools` clean.
+
+## Computation stage 1: first-order programs, migration closed (2026-10-24)
+
+Branch `computation/stage1`, steps A, B and C done (`381f02d`, `f571a5f`, `e9f4fa5`, `8e3ce63`,
+`570be03`); this entry closes the migration. `HutchPlusPlusProgram.lean:1237` is rewrapped (a
+value marker began a docstring line; no change of mathematics), and the design note's "Changes
+during the migration" lists every departure of A to C. Checks: `lake build --wfail NLAlib` 4018
+jobs, 0 warnings; `mk_all --check` clean; full `scripts/stage_check.sh` (the approval read from a
+scratch copy of `docs/targets.toml`'s hash): 419 proved modules, 4016 jobs 0 warnings, audit 11760
+declarations 0 violations, lint 0 errors, `Programs.lean` 18 programs and 3 registered trees 0
+violations, `Targets.lean` 5 targets 0 violations, fixtures 9 theorems, constants 0 problems,
+LaTeX 0 problems, rules 0 errors (73 in the baseline), duplicates 0 classes; without the scratch
+approval `Targets.lean` fails on the approval item alone; script tests 48 OK; `lake build
+NLAlibTools` clean. Open for the maintainer: create `docs/targets.approved`
+(`sha256sum docs/targets.toml > docs/targets.approved`); confirm the CODEOWNERS handle
+(`@tchen01` is a guess); turn on branch protection with code-owner review on `main`; approve or
+decline respelling `hutchppCount` (no hash change); the Lanczos targets; the uniform sparse
+stage; the stage 2 note.
+
+## Computation stage 1: first-order programs, migration step C (2026-10-24)
+
+Branch `computation/stage1`, after step B (`f571a5f`). Step C of the migration
+(`docs/design/Computation.md`, F11; departures in "Changes during the migration"): the target lint
+`scripts/Targets.lean` (rule E3: one proof per registered target, `Result:` theorems about runs
+prove registered targets, SHA-256 closure hashes with the registered trees as leaves, printed
+statements, toolchain and Mathlib pins, Q5, the Q3 approval; fixtures on copies of a target), the
+registry `docs/targets.toml` (five targets, three trees, filled by `TARGETS_UPDATE=1`),
+`.github/CODEOWNERS`; `scripts/Programs.lean` with E1 and the old E3 retired, E4 against the
+registry, E9 a warning, `forgeNat` a compiler fixture; `scripts/AccessModelFixtures.lean` on
+trees; the NumPy emitter of first-order trees with a differential test against the `Float` run of
+the registered tree; rules E3, E4, E8 (theorems exempt), E9 rewritten, E1 retired; CONTRIBUTING
+§5.3, §5.5, §9, §11; CI and `scripts/stage_check.sh` run the target lint; the rename map
+`docs/renames/2026-10-computation.json`. Open for the maintainer: **the registry approval**
+(`sha256sum docs/targets.toml > docs/targets.approved` in his commit; until then
+`scripts/Targets.lean` fails on that item alone), the CODEOWNERS handle `@tchen01`, and branch
+protection with code-owner review on `main`. Checks (`scripts/stage_check.sh`, the registry
+approved by a scratch copy of the approval file): 419 proved modules, build 4016 jobs 0 warnings,
+audit 11760 declarations 0 violations, lint 0 errors, `Programs.lean` 18 programs, kernels and
+trees, 0 violations, 0 E9 warnings, `Targets.lean` 5 targets and 3 trees 0 violations (about 20
+seconds), fixtures 9 theorems; `check_constants.py` fails on step B's
+`HutchPlusPlusProgram.lean:1237` (a value marker begins a docstring line), so the rest was run by
+hand: LaTeX 0 problems, rules (with the extraction, N1–N18 included) 0 errors, 73 in the
+baseline, duplicates 0 classes; script tests 48 OK; `lake build NLAlibTools` clean.
+
+## Computation stage 1: first-order programs, migration step A (2026-10-23)
+
+Branch `computation/stage1`. Step A of the migration (`docs/design/Computation.md`, F11): the
+first-order syntax `FStmt`, `Prog` and the structural maps (`Syntax.lean`), the compiler and
+`toStmt` (new `Compile.lean`), the run `FStmt.exec`, `Prog.exec`, the bridge
+`FStmt.exec_eq_exec_toStmt`, `Prog.RunsWithin` and the run invariants for programs (new
+`FirstOrder.lean`), the models `MatrixFree`, `StoredEntries` (`Model.lean`) and `MatrixFreeProb`
+(`RandomMatrix/Tape.lean`) on `Prog`, the old ones renamed into namespace `ProgFamily` with
+transfer lemmas `ProgFamily.*.prog`, `ProgFamily.compile`, the composition theorems renamed into
+`ProgFamily.MatrixFree`, and Q4 (`exactSem` fails on `lt`, `le` of non-real values). Departures
+and the files of steps B and C touched: the note's "Changes during the migration". Checks:
+`lake build --wfail NLAlib` 4014 jobs, 0 warnings; `scripts/stage_check.sh` 415 proved modules,
+audit 11638 declarations 0 violations, lint 0 errors, `scripts/Programs.lean` 0 violations (10
+results in an access model), fixtures 9 theorems, rules 0 errors, 73 in the baseline;
+script tests 48 OK; `lake build NLAlibTools` clean; `mk_all --check` clean. Next: steps B and C,
+in parallel (briefs from the orchestrator).
+
+## Computation stage 1: guarantees (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), from `056f9ed`. The maintainer's change
+("this stuff needs to be watertight … Are we relying on checks or are we provably guaranteed about
+the costs. Make this change"): results about programs are instances of access models, so that the
+program cannot depend on the data and the counts and memory are functions of the sizes by
+definition, checked by the kernel. New `Computation/Model.lean` (`ProgFamily`, `MatrixFree`,
+`StoredEntries`, `storedInterp`); `MatrixFreeProb`, `tapeLaw`, `Dist.law` in
+`RandomMatrix/Tape.lean`; the invariants of the run in `Exec.lean` (counts grow, every allocation
+freed, peaks grow, no uncharged write or draw, a run with no oracle call is the same for every
+oracle); the composition at the level of the models in `Dense.lean`, `Sparse.lean`. Results:
+`matrixFree_gramSchmidtProg`, `matrixFree_hutchppProg`, `matrixFreeProb_hutchppProg`,
+`storedEntries_substOracle_hutchppProg_denseImpl`, `storedEntries_substOracle_hutchppProg_cooImpl`;
+the old realisations are private. E3 is now the lint "results about runs are instances", E4 asks
+for a result in a model, E1, E2, E9 are hygiene; `scripts/AccessModelFixtures.lean` proves the
+cheating realisations false as instances. Classification of every claimed property, and what is
+trusted: `docs/design/Computation.md`, "Guarantees" (55 properties: 37 proved, 8 trusted, 10
+modelling choices); the changes: its last section. Checks: `lake build --wfail NLAlib` 4012 jobs,
+0 warnings; `scripts/stage_check.sh`: 413 proved modules, 0 not yet, audit 11418 declarations 0
+violations, lint 0 errors, `scripts/Programs.lean` 14 programs and kernels (6 called by others), 7
+results in an access model, 0 violations, every fixture rejected or flagged;
+`scripts/AccessModelFixtures.lean` 9 theorems; references, constants, LaTeX 0 problems; rules 0
+errors, 73 in the baseline, 876 warnings (unchanged); duplicates 0 classes; script tests 48 OK;
+`lake build NLAlibTools` (2 `sorry` in `FixedPoint.lean`, expected); `mk_all --check` clean.
+
+Open items for the maintainer:
+* An adjoint oracle (a second matrix derived from $\mathbf{A}$) needs a model of its own (G32).
+* The analogue of the oracle-independence theorem for the tape and the read-only data is cheap
+  and not yet stated (G30).
+
+## Computation stage 1: proofs (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), base `88016e3` rebased onto `c31f6c0`
+(note `0f8d8a9`, skeleton `9c57c62`, review follow-ups `1dd6409`). Every statement of the
+skeleton is proved; `NLAlib` has no `sorry` (the tools' `FixedPoint.lean` keeps its 2). Proved:
+the two tape laws (`RandomMatrix/Tape.lean`), the nine kernel specifications (`BLAS.lean`, the
+level-2 and level-3 ones now in `BLAS/MatrixKernels.lean`), the dense and COO certificates
+(`Dense.lean`, `Sparse.lean`), `exec_orthAgainst`, `exec_gramSchmidtProg` and
+`runsWithin_gramSchmidtProg` (`Matrix/Factorizations/GramSchmidtProgram.lean`), and
+`runsWithin_hutchppProg`, with the Gaussian tail and the dense and sparse totals over it
+(`Estimation/Trace/HutchPlusPlusProgram.lean`). Public additions, all dated in the note's
+"Changes during the proofs": the store and run lemmas of proof agent A in `Exec.lean`; at the
+close, the new `Computation/Store.lean` (the store moved out of `Exec.lean`, 15 new store lemmas
+and the frame invariant `Store.BlockFrame` with 7 lemmas, replacing the private copies
+in `Dense.lean`, `Sparse.lean` and `BLAS.lean`), `exec_seq_of_exec_eq_some` and
+`exec_forRange_draw` (`Exec.lean`), `exec_apply_exactInterp` (`Exact.lean`),
+`exec_forRange_dot_add` and `run_gemv`, `run_ger`, `run_gemm` (`BLAS.lean`) and
+`exec_forRange_orthAgainst` (`GramSchmidtProgram.lean`), the last four groups the generic run
+lemmas of the Hutch++ proof. The close deletes every private copy (net about 450 Lean lines
+fewer): `BLAS.lean` 743 lines (1492), `BLAS/MatrixKernels.lean` 653, `HutchPlusPlusProgram.lean`
+976 (1270), `Store.lean` 775, `Exec.lean` 455. `IExp.eval_ofNat` drops an unused
+`[n.AtLeastTwo]` (linter); `Store.getElem?_shape` is allowlisted for N2 (the checker misreads
+`s.shape[b]?`).
+
+Checks: `mk_all --check` clean for `NLAlib` and `NLAlibScaffold`; `lake build NLAlibTools` (2
+`sorry` in `FixedPoint.lean`, expected); `scripts/stage_check.sh`: 412 proved modules, 0 not yet;
+build 4009 jobs, `--wfail`, 0 warnings; audit 11342 declarations, 0 violations; lint 6845
+declarations, 0 errors; `scripts/Programs.lean`: 14 programs and kernels (6 called by others), 5
+realisations, 0 violations, every fixture rejected; references 88 keys, 86 asymptotic forms, 0
+problems; constants 34, 429 value markers, 0 problems; LaTeX 27467 math spans, 0 problems; rules 0
+errors, 73 in the baseline, 876 warnings (876 at `1dd6409`, when 6 modules were not yet checked;
+S5 0, the round's F10 warnings gone; new: V7 for `Store.BlockFrame`, awaiting the maintainer; the
+T11 false positive and the N2 allowlist entry are gone with two checker fixes); duplicates 6044 theorems, 0 classes; script tests 48, OK; ledger
+0 targets missing.
+
+Open items for the maintainer:
+* Rule E9 (scope discipline): the maintainer is deciding whether it stays an error or becomes a
+  warning; unchanged here. `hutchppProg`, which no program calls, is reported and not counted.
+* `Store.BlockFrame` has no §5.3 row (V7): store API, not statement vocabulary; a row if wanted.
+* Lanczos is stage 1b (`Krylov/Processes/LanczosProgram.lean`, `lanczosState_reindex`).
+* Stateful oracles and integer index memory are deferred to a later stage.
+
+## Computation stage 1: skeleton (2026-10-23)
+
+Branch `computation/stage1` (worktree `nlalib-block`), from `d5c207b` (the approved note
+`docs/design/Computation.md`; its last section lists the changes during the skeleton). New layer
+`NLAlib/Computation/` (layer 0): `Syntax`, `Exec` (with the store and run lemmas), `RunsWithin`,
+`Subst`, `Exact`, `Contract`, all proved (the substitution theorem, the tail transfer and the
+contract results included); `BLAS` (9 kernel specifications, `sorry`), `Dense`, `Sparse` (1
+certificate each). Topic files: `Matrix/Factorizations/GramSchmidtProgram.lean` (3), `RandomMatrix/Tape.lean`
+(2), `Estimation/Trace/HutchPlusPlusProgram.lean` (1, the realisation; the Gaussian tail and the
+dense and sparse totals are proof terms over it). Proved additions to existing files:
+`hutchpp_reindex`, `ProbabilityTheory.HasLaw.comp_of_injective`,
+`Nat.add_mul_eq_add_mul_iff_of_lt` (new `ForMathlib/Data/Nat/Init.lean`). 17 `sorry` in all.
+Tools library `NLAlibTools` (new `lean_lib`, plain files): `Float.lean`, `NumPy.lean`,
+`FixedPoint.lean` (2 `sorry`). Checks E1 to E4 in `scripts/Programs.lean` (CI step), E5, E6, E8 in
+`scripts/check_rules.py`; CONTRIBUTING §2 row, §5.3 rows, §5.5.
+
+Checks: `lake build NLAlib` with 17 `declaration uses sorry` warnings and no other;
+`lake build NLAlibTools` (its `#guard`s reproduce the §6 Hutch++ rows and the §7.4 words; 2 more
+`sorry`); `mk_all --check` clean for the three libraries; `scripts/Programs.lean`: 14 programs
+and kernels, 5 realisations, 0 violations, every fixture rejected; `scripts/stage_check.sh`: 403
+proved modules, 6 not yet, `--wfail` build 0 warnings, audit 10680 declarations 0 violations,
+lint 0 errors, references 0 problems, constants 0 problems, rules 0 errors (876 warnings),
+duplicates 0; full extraction `check_rules.py`: 0 errors; script tests 47, OK. The emitted NumPy
+Hutch++ reproduces the `Float` values (19.326978, 15.0).
+
+Rebased 2026-10-23 onto `sketching/moments` at `c31f6c0` (note `0f8d8a9`, skeleton `9c57c62`).
+Skeleton review follow-ups: E3 checks the tape, E2 rejects opaque, `unsafe` and implemented-by
+programs, new rule E9 (a callee closes its allocations in `scope`), each with a fixture; E6 says
+"in the library"; `stage_check.sh` runs `Programs.lean`; two count docstrings spelled out; the
+note's "Changes during the skeleton" states the D2, D4 and D11 changes plainly.
+
+Proof plan: two agents on disjoint files. Agent A: `BLAS` (level 1, then `gemv`, `ger`,
+`gemm`), then `GramSchmidtProgram`, then `HutchPlusPlusProgram`. Agent B: `RandomMatrix/Tape.lean`,
+then `Dense` and `Sparse` (they need only `Exec` and `Exact`; a store lemma either needs goes to
+`Exec`, coordinated with A). Lanczos is stage 1b.
 
 ## Sketching moments round: proofs (2026-10-22)
 

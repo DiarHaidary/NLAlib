@@ -36,6 +36,7 @@ and `docs/rules/DIGEST.md`.
 - **P3** An `NLAlib` file never imports `NLAlibScaffold`. [§7]
 - **P8** Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure. [§3]
 - **P10** (warning) A statement lives with its topic, not in a higher layer than its vocabulary. [§8] placement
+- **P12** An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml. [§7]
 
 ### Source and proof style
 
@@ -47,6 +48,7 @@ and `docs/rules/DIGEST.md`.
 - **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
 - **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§10], proof-agent brief
 - **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
+- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [§7]
 
 ### Types and statement shape
 
@@ -142,6 +144,15 @@ and `docs/rules/DIGEST.md`.
 - **G2** Every port-ledger target is declared. [§9], AGENTS.md
 - **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
 
+### Programs
+
+- **E2** Programs, kernels and implementations are computable. [§5.5]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. [§5.5]
+- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [§5.5]
+- **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [§5.5]
+- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. [§5.5]
+
 ### Names
 
 - **N1** Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase. [§4.2]
@@ -170,6 +181,7 @@ and `docs/rules/DIGEST.md`.
 [§5.1]: ../../CONTRIBUTING.md#51-types
 [§5.2]: ../../CONTRIBUTING.md#52-shape
 [§5.3]: ../../CONTRIBUTING.md#53-vocabulary
+[§5.5]: ../../CONTRIBUTING.md#55-programs
 [§6]: ../../CONTRIBUTING.md#6-docstrings-and-citations
 [§7]: ../../CONTRIBUTING.md#7-proofs-sorry-and-the-scaffold-library
 [§8]: ../../CONTRIBUTING.md#8-designing-a-stage

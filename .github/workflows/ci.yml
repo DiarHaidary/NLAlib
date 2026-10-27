@@ -1,7 +1,7 @@
 name: CI
 on:
+  # every branch, so that an unapproved registry change fails where it is made (F12, Q3)
   push:
-    branches: [main]
   pull_request:
 concurrency:
   group: ci-${{ github.ref }}
@@ -19,14 +19,34 @@ jobs:
           build-args: "--wfail NLAlib NLAlibScaffold"
           lint: false
           test: false
+          # no build outputs from the GitHub cache: the library is built from its sources at every
+          # run, so the kernel replay checks the current sources' .olean files (final audits,
+          # 2026-10-24); Mathlib's .olean files still come from `lake exe cache get`
+          use-github-cache: false
       - name: Root modules are current
         run: |
           lake exe mk_all --lib NLAlib --check
           lake exe mk_all --lib NLAlibScaffold --check
-      - name: Axiom audit (import NLAlib is sorry-free)
+      - name: Axiom audit (import NLAlib is sorry-free, no unsafe or partial constant)
         run: lake env lean scripts/Audit.lean
       - name: Environment linters
         run: lake env lean scripts/Lint.lean
+      - name: Program checks (rules E2, E4 and E9, docs/design/Computation.md)
+        run: lake env lean scripts/Programs.lean
+      - name: Target lint (rule E3; docs/targets.toml, closure hashes, approval)
+        run: lake env lean scripts/Targets.lean
+      - name: Access-model fixtures (cheating realisations are false as instances)
+        run: lake env lean scripts/AccessModelFixtures.lean
+      - name: Tools library builds (NLAlibTools; not part of the library, may contain sorry)
+        run: |
+          lake build NLAlibTools
+          lake exe mk_all --lib NLAlibTools --check
+      - name: Build outputs are current (every hash recomputed)
+        run: lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+      - name: Kernel replay (every constant of every lean_lib re-checked by the kernel)
+        run: lake env lean scripts/Replay.lean
+      - name: Kernel replay fixtures (each forgery of the final audits is rejected)
+        run: bash scripts/replay_fixtures.sh
       - name: Reference keys resolve
         run: python3 scripts/check_refs.py
       - name: Generated rule files are current (docs/rules/rules.toml)

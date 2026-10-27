@@ -18,7 +18,8 @@ Every rule a script checks carries its id in brackets where it is stated, [F1], 
 messages cite the same id. The ids are a letter for the area and a number: N names (§4,
 `scripts/check_names.py`); F file template, P placement and layers, S source and proof style,
 T types and statement shape, V vocabulary, B bounds, D docstrings, M notation, C citations,
-R result ids, G design records (`scripts/check_rules.py`, §9.1). `python3 scripts/check_rules.py
+R result ids, G design records (`scripts/check_rules.py`, §9.1), E programs (§5.5;
+`scripts/Programs.lean` and `scripts/check_rules.py`). `python3 scripts/check_rules.py
 --list` prints every id with its level; a rule with no id is judged by review.
 
 Sections: 1 Ground rules · 2 Layout · 3 File template · 4 Names · 5 Statements · 6 Docstrings
@@ -65,6 +66,9 @@ checks · 10 Building without running out of memory · 11 Rules for agents.
 NLAlib/
   ForMathlib/      general facts not about NLAlib's objects, headed upstream;
                    files named after the Mathlib file they would join            (layer −1)
+  Computation/     programs over memory buffers: syntax, runs, counts, memory,
+                   substitution, exact arithmetic, BLAS kernels, oracle
+                   implementations (amended 2026-10-23)                           (layer 0)
   Matrix/          deterministic matrix analysis                                  (layer 0)
   Polynomial/      scalar approximation theory and the function classes it
                    approximates (amended 2026-10-17)                             (layer 0)
@@ -82,10 +86,13 @@ NLAlib/
                    other folder, and only LowerBounds imports it                  (layer 5)
 NLAlibScaffold/    same tree; statements with deferred proofs (§7)
 docs/              references.bib, design notes (docs/design/), port ledger (docs/port/)
-scripts/           Audit.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
+scripts/           Audit.lean, Replay.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
 ```
 
 The subdirectories of each layer are decided in that layer's design note (§8), not in advance.
+A file in `NLAlib/Computation` imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`
+[E5], so that programs over the library's objects live in their topic files
+(`docs/design/Computation.md`, D7).
 A module imports only its own layer and lower [P1]; `scripts/check_rules.py` (`LAYER`) holds
 the same numbers, and a top-level folder missing from it is a P1 error. The half layers follow
 the imports, not the topics (maintainer decision 2026-10-25): Probability may import Krylov, and
@@ -644,6 +651,22 @@ those layers are designed.
 | passes | `alg.IsPassStructured pass` for `pass : ℕ → ℕ` monotone: query `i` depends only on the responses of rounds in earlier passes; a `p`-pass algorithm adds `∀ i < q, pass i < p`; one pass is `IsNonAdaptive`, one query per pass is every algorithm; a weaker oracle `alg.comapResponse f`, a post-processed output `alg.mapOutput g` (LB-C note §2.1, 2026-10-26) | `QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive` (one pass), `QueryAlgorithm.isPassStructured_id`; Mathlib has none |
 | hidden rotation, Krylov coupling | the oracle `hiddenRotationOracle U D`, $\mathbf{x} \mapsto (\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}\mathbf{x}, \mathbf{U}^{\mathsf{H}}\mathbf{x})$, simulated on `twoSidedMulVec U` by `alg.hiddenRotationSimulation D`; the conclusion of the coupling theorem is the predicate `IsKrylovCoupling μ D s G₀ V G` (Gaussian `G` independent of `G₀`, a.s. `range V ≤ blockKrylovSpace D (fromCols G₀ G) s`), which lower bounds take as hypothesis (LB-C note §2.2) | `QueryAlgorithm.gramSimulation` is the case $\mathbf{D} = \mathbf{I}$ of the simulation; `QueryAlgorithm.run_hiddenRotationSimulation`; the coupling theorem is in the LB-C scaffold; Mathlib has none |
 | hard spectra of the hidden-rotation lower bounds | `IsChebyshevTwoIntervalSpectrum κ s M d` (values on the points $\pm\sqrt{\xi_j}$ of $[1, \kappa^2]$, multiplicities dominating the dual weights; linear systems); `equispacedLevelSpectrum k m p` (head $p + 2$, tail levels $1, \dots, p + 1$; few-pass low-rank approximation) (LB-C note §2.3) | built from `chebyshevExtremum`, `chebyshevWeight`; existence `exists_isChebyshevTwoIntervalSpectrum`; Mathlib has none |
+| program | `Computation.Stmt P ι VB VI` (tags `P`, oracle names `ι`, handles `VB`, indices `VI`), scalar instructions `Computation.Instr P VB VI`; a program `<spec>Prog` lives in its topic file (`hutchppProg`, `gramSchmidtProg`, the sweep `orthAgainst`), its counts `<spec>Count` with its targets (`hutchppCount`, `gramSchmidtCount`); the first-order program it compiles to, `Computation.FStmt P ι nb ni`, `Computation.Prog P ι r b`, run by `Computation.Prog.exec` and budgeted by `Computation.Prog.RunsWithin`; the compiler `Computation.Stmt.compile`, `Computation.ProgFamily.compile`, and the registered trees `hutchppProg.compiled`, `hutchppProg.compiledDense`, `gramSchmidtProg.compiled` (§5.5; computation note, 2026-10-23) | Mathlib has no syntax for imperative programs (searched) |
+| `do` notation for programs | `Computation.Builder P ι VB VI β`, an abbreviation of Mathlib's `ContT (Stmt P ι VB VI) Id β`, with `Builder.run`, `Builder.stmt`, `Builder.ins`, `Builder.alloc` (scoped to the rest of the block), `Builder.forRange`, `Builder.ifThenElse`, `Builder.named`, `Builder.scope` | Mathlib's `ContT`, `ContT.run` |
+| index expression, cell | `Computation.IExp VI`, `Computation.Cell VB VI` | — |
+| store, state, interpretation, run | `Computation.Store P K`, `Computation.St P K C` (with bit memory), `Computation.Interp P ι K C` (with read-only data and widths), `Computation.exec`; block access `Store.readBlock`, `Store.writeBlock`, `Store.shape`; one comparison `cmpStep`; the initial state of a realisation `Computation.inputState` | — |
+| value semantics | `Computation.ScalarSem P K`; exact arithmetic `Computation.exactSem` | — |
+| running within a budget | `Computation.RunsWithin I s st₀ c m Q`: success, counts at most `c` more, peak plus read-only data at most `m`, postcondition `Q`; an upper bound | `Computation.measureReal_not_runsWithin_le` (tails transfer) |
+| operation counts | `Computation.OpCount P ι := OpKind P ι →₀ ℕ`; a weighted total is `Finsupp.weight`; substituted counts `Computation.substCountG`, `Computation.substCount` | Mathlib's `Finsupp` |
+| matrix layout | column-major from an offset: `Computation.flatten`, `Computation.unflatten`, `Computation.Holds s p b off M`; a test matrix drawn from the tape `Computation.tapeMatrix x off N k` | `Matrix.of`; `Computation.unflatten_flatten` |
+| oracle semantics | `Computation.matOracle A`, `Computation.exactInterp (A : ι → Matrix (Fin N) (Fin N) 𝕜) ξ`; realisations at `Fin N`, reindexing lemmas for the specification (`hutchpp_reindex`) | Mathlib's matrix product |
+| substitution | `Computation.Stmt.subst`, `Computation.Stmt.substOracle`; certificates `Computation.ImplementsInstr`, `Computation.ImplementsOracle`; `Computation.RunsWithin.subst`, `Computation.RunsWithin.substOracle`; the oracle-only cost `substKind`, the simulation `Sim`, `St.withCnt` | — |
+| oracle implementations | `Computation.denseImpl`, `Computation.denseInterp`, `Computation.denseCost`; `Computation.cooImpl`, `Computation.cooMatrix`, `Computation.cooInterp`, `Computation.cooCost` | — |
+| error contract | `Computation.IsRelErrSem u dec safe sem`, error and success clauses per operation family; the real operations `BinOp.realOp` on `BinOp.IsArith`; the failing semantics `failSem` | `Computation.isRelErrSem_exactSem` |
+| random tape | `HasLaw ξ (iidSequence ν) μ` per distribution (the i.i.d. sequence row); the law of the whole tape `Computation.tapeLaw`, the tapes independent, the tape of `d` i.i.d. with law `Computation.Dist.law d` (guarantees, 2026-10-23) | `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `ProbabilityTheory.HasLaw.comp_of_injective`, `Computation.hasLaw_apply_of_hasLaw_tapeLaw` |
+| access models | `Computation.MatrixFree`, `Computation.MatrixFreeProb`, `Computation.StoredEntries` (interpretation `Computation.storedInterp`) on a first-order program; on a program family `Computation.ProgFamily P ι r b` (`ProgFamily.inst`, `ProgFamily.substOracle`), the proof infrastructure `Computation.ProgFamily.MatrixFree`, `Computation.ProgFamily.MatrixFreeProb`, `Computation.ProgFamily.StoredEntries`, with the transfer `Computation.ProgFamily.MatrixFree.prog`, §5.5 (guarantees, 2026-10-23) | `Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl`, `Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl` |
+| target | a `Prop` in `<Topic>/<Spec>Targets.lean`, an access model about a registered tree, registered in `docs/targets.toml` and proved by one theorem whose type is the constant: `MatrixFreeGramSchmidt`, `MatrixFreeHutchpp`, `MatrixFreeProbHutchpp`, `StoredEntriesDenseHutchpp`, `StoredEntriesCooHutchpp` (§5.5; first-order programs and target statements, 2026-10-23) | — |
+| BLAS kernels | `Computation.dot`, `Computation.axpy`, `Computation.scal`, `Computation.rscl`, `Computation.copyv`, `Computation.nrm2`, `Computation.gemv`, `Computation.ger`, `Computation.gemm`, each with its specification `Computation.exec_<kernel>` | — |
 
 Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
 and unitarily invariant norms, the principal-angle / subspace-distance interface. Rows from the
@@ -677,6 +700,77 @@ property P" as an input.
 - **Fewer, broader interfaces.** Before adding a new one, check whether an existing one with one
   more field, or one fewer, covers the case. The test is the downstream user: can they state their
   theorem with the interfaces that exist?
+
+### 5.5 Programs
+
+Algorithms analysed for their cost are programs over memory buffers (`NLAlib/Computation`,
+`docs/design/Computation.md`). A program `<spec>Prog` is written with the builder in its topic
+file, next to its specification, and compiled once, at symbolic sizes, into one first-order tree
+for all sizes, `<spec>Prog.compiled : Computation.Prog P ι r b` (a registered tree). A published
+cost result is a **target** (maintainer, 2026-10-23: "this stuff needs to be watertight, because
+we will be allowing stuff to prove autonomously"; first-order programs and target statements,
+2026-10-23):
+
+- A target is a library definition of type `Prop`, written and reviewed by the library, in a
+  file of its own, `<Topic>/<Spec>Targets.lean`, and registered in `docs/targets.toml`. It states
+  an access model about a registered tree: `Computation.MatrixFree`, `Computation.MatrixFreeProb`
+  or `Computation.StoredEntries`, which bind the program before the sizes and quantify over the
+  matrix, the tape and the declared inputs afterwards, so the counts and the memory are functions
+  of the sizes by the statement itself. Its name is the model, then the specification
+  (`MatrixFreeHutchpp`).
+- A result is `theorem matrixFreeHutchpp : MatrixFreeHutchpp`: its type is the target constant,
+  with no hypothesis, parameter or postcondition of the prover's, and each registered target has
+  exactly one such proof. A `Result:` theorem whose statement reaches a run or a budget proves a
+  registered target; a lemma about a program family is proof infrastructure and has no result id
+  [E3].
+- The registry records each target's closure hash (every library constant its statement reaches,
+  proofs erased and hygienic names numbered, the registered trees as leaves hashed by their
+  constructor normal forms, which the kernel checks are the trees), its printed statement, each
+  tree's printed normal form, the toolchain, the Mathlib revision and the SHA-256 of
+  `lake-manifest.json` and `lakefile.toml`; `docs/targets.approved` holds the registry's SHA-256. A
+  change of a target, of a definition it unfolds to, or of a tree changes a hash and needs the
+  maintainer's approval (Q3): he reviews the diff that `TARGETS_UPDATE=1 lake env lean
+  scripts/Targets.lean` writes and approves it with `sha256sum docs/targets.toml >
+  docs/targets.approved`. A declared input computed from the sizes carries the registry flag
+  `precomputed` and a `Precomputed:` docstring sentence (Q5) [E3].
+- Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls
+  it [E4]. This is completeness, not soundness.
+- What the models prove and what they trust is listed in `docs/design/Computation.md`,
+  "Guarantees: what is proved and what is trusted", re-classified in its F10. A reader of a target
+  still reads its size condition, its declared inputs, its postcondition and its bound: the model
+  guarantees that the program meets exactly that statement, not that the statement is the
+  interesting one.
+
+The other rules are hygiene: the guarantees do not rest on them.
+
+- Programs, kernels, implementations and compiled trees are computable: not `noncomputable`,
+  `partial`, `opaque` or `unsafe`, and they run no code other than their definition (no
+  implemented-by attribute) [E2]. It matters for the emitter and the `Float` runner.
+- An `alloc` is live for the rest of the enclosing block, so a program that another program calls
+  wraps its allocations in `scope` (a kernel is closed by its `named` node) [E9]. An open `alloc`
+  is still counted, in the target's `mem`, so the rule is a warning: it keeps the peak the author
+  intends.
+- Only `NLAlib/Computation` defines a value semantics (`Computation.ScalarSem`) or an
+  interpretation (`Computation.Interp`), each with its certificate [E6].
+- `Stmt.named`, which the NumPy emitter prints as a call into its prelude, is constructed only in
+  the BLAS and implementation files; a theorem may mention it [E8].
+
+A builder need not be generic in its variable sorts (the old E1, retired 2026-10-23): the theorem
+is about the compiled tree, and a handle forged from a number does not compile. E3 is checked by
+`scripts/Targets.lean`, whose fixtures (an axiom of a target's type, a vacuous outer hypothesis,
+an outer parameter, a postcondition of the prover's, a claim phrased through `exec`, a target of
+the prover's, a claim wrapped in a structure, in `Nonempty` of one, in an inductive `Prop` or in a
+class instance, a definition of type `Prop` with a result id; a term that is not a tree's normal
+form, which the kernel rejects; edits of a count, of the value under an `irreducible_def` and of a
+ForMathlib definition, each changing the hash, and of a proof, which does not; a toolchain, a
+manifest and a Lake configuration mismatch; a declared input computed from the sizes) must be
+rejected or detected. E2, E4 and E9 are checked by `scripts/Programs.lean`, with
+fixtures (a forged handle that does not compile, a noncomputable and a `partial` program, a
+program with no registered tree, a callee with an open `alloc`).
+`scripts/AccessModelFixtures.lean` proves that the model forms of the audit's cheating programs
+are false. E5, E6 and E8 are checked by `scripts/check_rules.py`. The tools library
+`NLAlibTools` (the `Float` interpreter, the NumPy emitter of first-order trees, the fixed-point
+example) is not part of the library and is not checked.
 
 ## 6. Docstrings and citations
 
@@ -820,6 +914,19 @@ combine extracted declarations with a different checkout.
   goals, no `simp_all` [S1], no `decide` on anything but tiny finite goals (review list: [S3]),
   `nlinarith`/`positivity`/`gcongr` welcome. A proof over 80 lines is split into named lemmas
   [S4]. Terminal `exact?` and `apply?` do not appear in committed code [S2].
+- Nothing in `NLAlib/` (or `NLAlibScaffold/`, or the `leanOptions` of `lakefile.toml`) is
+  `unsafe`, `partial`, `implemented_by` or `extern`, or sets a `debug.` option or a kernel option
+  (`set_option debug.skipKernelTC true in` makes the elaborator skip the kernel, and an `unsafe`
+  definition then inhabits any type with no axiom) [S9] (final audit, 2026-10-24). The checks
+  behind it: `scripts/Replay.lean` sends every constant of the package's `.olean` files (every
+  library of `lakefile.toml`) to the kernel again (Lean core's `Environment.replay`, as
+  `lean4checker` does), trusts as its base only modules read from `.lake/packages/` and the
+  toolchain, and in `NLAlib` (and any library it imports) fails on an `unsafe` or `partial`
+  constant, an axiom or a use of `sorryAx`, `Lean.ofReduceBool`, `Lean.ofReduceNat` or
+  `Lean.trustCompiler`; `scripts/Audit.lean` fails on an `unsafe` or `partial` constant.
+- `NLAlib`, every file and the root `NLAlib.lean`, imports no other library of the package:
+  neither `NLAlibTools` nor `NLAlibScaffold`, nor any library added to `lakefile.toml` [P12]
+  (final audits, 2026-10-24). It imports itself, Mathlib and Mathlib's dependencies only.
 - Instances: no global instance on a Mathlib type unless it is the one Mathlib would add
   (`Matrix.instMeasurableSpace` is the one exception, in `ForMathlib`; the others are allowlisted
   with their reason) [S6]. No `attribute [instance]` at file level [F9].
@@ -890,7 +997,12 @@ ports material [G2]. Before opening it, run:
 LEAN_NUM_THREADS=4 lake build --wfail NLAlib NLAlibScaffold
 lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --check
 lake env lean scripts/Audit.lean
+lake build NLAlibTools && lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+lake env lean scripts/Replay.lean && bash scripts/replay_fixtures.sh
 lake env lean scripts/Lint.lean
+lake env lean scripts/Programs.lean
+lake env lean scripts/Targets.lean
+lake env lean scripts/AccessModelFixtures.lean
 python3 scripts/check_refs.py
 python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py
@@ -1052,4 +1164,9 @@ files on top of Mathlib take 3 to 6 GB each, and the terminal gets killed. Rules
 - Do not add work beyond the brief: no new theorems "while you are there", no cleanup of files you
   do not own, no new §5.3 rows or §5.4 interfaces outside a design note. Note what you saw in
   `docs/port/status.md`.
+- Never edit a `*Targets.lean` file, `docs/targets.toml` or `docs/targets.approved`: target
+  statements and their registry change only with the maintainer's approval (Q3 of
+  `docs/design/Computation.md`, F12; `.github/CODEOWNERS` assigns them to him). A proof agent
+  proves the registered target as stated; if it cannot, it reports, and does not restate it.
+  Agent briefs list these paths as protected.
 - Never commit or push without being asked; never run a bare `lake build` (§10).

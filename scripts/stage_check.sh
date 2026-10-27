@@ -5,7 +5,16 @@
 # Usage: scripts/stage_check.sh [EXCLUDE_REGEX]
 # Builds every module that `scripts/proved_modules.py` lists (minus those matching EXCLUDE_REGEX,
 # for files an agent is editing) with warnings fatal (`--wfail`, as in CI), then runs the axiom
-# audit and the environment linters on exactly those modules, the reference check, the named-bound
+# audit and the environment linters on exactly those modules, `mk_all --check` on NLAlib (no
+# module unreachable from NLAlib.lean, hence unaudited), the kernel replay (scripts/Replay.lean:
+# every constant of the .olean files of every lean_lib re-checked by Lean's kernel, with the roots
+# and strictness of CI, after `lake build NLAlib NLAlibScaffold NLAlibTools` and the freshness
+# check `lake build --no-build --rehash` of the same targets) and its fixtures
+# (scripts/replay_fixtures.sh), the program checks
+# (scripts/Programs.lean, rules E2, E4 and E9, on the whole library as in CI, after a
+# `lake build NLAlib` in which `sorry` warnings are allowed), the target lint
+# (scripts/Targets.lean, rule E3: the registry docs/targets.toml, its closure hashes and its
+# approval), the access-model fixtures (scripts/AccessModelFixtures.lean), the reference check, the named-bound
 # value check (scripts/check_constants.py, on the whole library), the freshness of the generated
 # rule files (scripts/gen_rules_md.py --check), the rules check
 # (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
@@ -26,6 +35,32 @@ for check in Audit Lint; do
   { cat "$tmp/imports.txt"; sed '1d' "scripts/$check.lean"; } > "$tmp/$check.lean"
   LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/$check.lean" 2>&1 | tail -4
 done
+libs="NLAlib NLAlibScaffold NLAlibTools"
+LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build $libs > "$tmp/build-all.log" 2>&1 || \
+  { tail -30 "$tmp/build-all.log"; exit 1; }
+lake exe mk_all --lib NLAlib --check > "$tmp/mk_all.log" 2>&1 || { cat "$tmp/mk_all.log"; exit 1; }
+echo "mk_all --lib NLAlib --check: $(tail -1 "$tmp/mk_all.log")"
+# freshness: the .olean files the replay reads are those of the current sources (every hash
+# recomputed, none read from Lake's .hash files)
+lake build --no-build --rehash $libs > "$tmp/fresh.log" 2>&1 || \
+  { tail -30 "$tmp/fresh.log"; echo "stale .olean files: the replay would check old builds"; exit 1; }
+echo "freshness: $(tail -1 "$tmp/fresh.log")"
+# the same roots (every lean_lib) and strictness (NLAlib and what it imports) as CI
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Replay.lean > "$tmp/replay.log" 2>&1 || \
+  { cat "$tmp/replay.log"; exit 1; }
+echo "$(sed -n '/^replay:/,$p' "$tmp/replay.log" | tr -s ' \n' ' ')"
+bash scripts/replay_fixtures.sh > "$tmp/replay-fixtures.log" 2>&1 || \
+  { cat "$tmp/replay-fixtures.log"; exit 1; }
+echo "replay fixtures: $(grep -c ': ok' "$tmp/replay-fixtures.log") verdicts as expected"
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Programs.lean > "$tmp/programs.log" 2>&1 || \
+  { grep -v 'declaration uses .sorry.' "$tmp/programs.log"; exit 1; }
+grep '^programs:' "$tmp/programs.log"
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/Targets.lean > "$tmp/targets.log" 2>&1 || \
+  { grep -v 'declaration uses .sorry.' "$tmp/targets.log"; exit 1; }
+grep '^targets:' "$tmp/targets.log"
+LEAN_NUM_THREADS=1 lake env lean -M 8000 scripts/AccessModelFixtures.lean > "$tmp/fixtures.log" 2>&1 || \
+  { cat "$tmp/fixtures.log"; exit 1; }
+echo "access-model fixtures: $(grep -c '^theorem' scripts/AccessModelFixtures.lean) theorems, ok"
 python3 scripts/check_refs.py | tail -1
 python3 scripts/gen_rules_md.py --check
 python3 scripts/check_constants.py > "$tmp/constants.log" || { cat "$tmp/constants.log"; exit 1; }

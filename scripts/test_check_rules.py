@@ -142,6 +142,7 @@ FIX = {
     'P1': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlib.Sketching.B\n\n')}, {}),
     'P2': ({'NLAlib/Matrix/B.lean': lean('')}, {}),
     'P3': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibScaffold.Matrix.B\n\n')}, {}),
+    'P12': ({'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibTools.Float\n\n')}, {}),
     'P4': ([decl('Real.foo', ': specNorm 0 = 0', module='NLAlib.ForMathlib.Data.Real.Basic',
                  deps=['NLAlib.specNorm'])],
            [decl('Real.foo', ': (0 : ℝ) = 0', module='NLAlib.ForMathlib.Data.Real.Basic')]),
@@ -183,6 +184,11 @@ FIX = {
            [decl('NLAlib.instFoo', ': Foo (specNorm A)', kind='instance', deps=['NLAlib.specNorm'])]),
     'S7': (CITED.replace('A result.', 'A result ' + 'x ' * 50 + '.'),
            CITED.replace('[Def2001, §2].', '[Def2001, §2],\n`' + 'x' * 110 + '`.')),
+    'S9': ('/-- Doc. -/\nunsafe def anything.{u} (α : Sort u) : α := anything α\n\n'
+           '-- why\nset_option debug.skipKernelTC true in\n/-- Doc. -/\ntheorem t : False := anything _',
+           {'NLAlib/Matrix/A.lean': lean('/-- A partial isometry; `unsafe`, `partial` in prose. -/\n'
+                                         'theorem partialSum_unsafe : True := trivial'),
+            'lakefile.toml': '# no debug. options here\n[leanOptions]\nautoImplicit = false\n'}),
     'S8': ('-- why\nset_option linter.style.longLine false in\n' + CITED,
            '-- why\nset_option linter.style.longLine false in\n' + CITED.replace('A result.', '`' + 'x' * 110 + '`.')),
     'T1': ([decl('NLAlib.t', '(x : n → ℝ) : √(x ⬝ᵥ x) = 0')], [decl('NLAlib.t', '(x : n → ℝ) : ‖x‖ = 0')]),
@@ -196,7 +202,8 @@ FIX = {
     'T8': ([decl('NLAlib.t', ': ∀ i, P (hA.eigenvectorBasis i)')], [decl('NLAlib.t', ': ∀ u, P u')]),
     'T9': ([decl('NLAlib.t', ': f ⟨k, ⋯⟩ = 0')], [decl('NLAlib.t', '(hk : k < n) : f ⟨k, hk⟩ = 0')]),
     'T10': ([decl('NLAlib.t', ': ∀ θ : ℕ, θ • Y = 0')], [decl('NLAlib.t', ': ∀ θ : ℝ, θ • Y = 0')]),
-    'T11': ([decl('NLAlib.t', ': 0 ≤ x ∧ x ≤ 1')], [decl('NLAlib.t', ': 0 ≤ x')]),
+    'T11': ([decl('NLAlib.t', ': 0 ≤ x ∧ x ≤ 1')], [decl('NLAlib.t', ': 0 ≤ x'), decl('NLAlib.t2', ': P (fun k ↦ if a ∧ b then x else y)'),
+            decl('NLAlib.t3', ': P fun k ↦ if a ∧ b then x else y')]),
     'T12': ([decl('NLAlib.t', ': ∃ k, 0 < eigenvalue A k')], [decl('NLAlib.t', ': ∃ k < n, 0 < eigenvalue A k')]),
     'T13': ([decl('NLAlib.t', '(_hQ : P Q) : Q = Q')], [decl('NLAlib.t', '(hQ : P Q) : Q = Q')]),
     'T14': ([decl('NLAlib.t', ': μ {ω | b < X ω} ≤ δ')], [decl('NLAlib.t', ': μ.real {ω | b < X ω} ≤ δ')]),
@@ -298,6 +305,19 @@ FIX = {
     'G2': ({'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.gone", "stage": "M1"}}'},
            {'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.foo", "stage": "M1"}}'}),
     'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
+    'E5': ({'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
+           {'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Nat.Init\n'
+                                              'public import NLAlib.Computation.Exec\n\n')}),
+    'E6': ('/-- Doc. -/\nnoncomputable def mySem : ScalarSem P ℝ := exactSem',
+           {'NLAlib/Computation/A.lean': lean('/-- Doc. -/\nnoncomputable def mySem : ScalarSem P ℝ := '
+                                              'exactSem\n\n/-- Doc. -/\ntheorem t (I : Interp P ι K C) : True := trivial'),
+            'NLAlib/Matrix/A.lean': lean('/-- Doc. -/\ntheorem t (I : Interp P ι K C) : I = I := rfl')}),
+    'E8': ('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n  named "k" [] (pure ())',
+           {'NLAlib/Computation/BLAS.lean': lean('/-- Doc. -/\ndef k : Builder P ι VB VI Unit :=\n'
+                                                 '  named "k" [] (pure ())'),
+            'NLAlib/Matrix/A.lean': lean('/-- The `named` kernels. -/\ndef k : ℕ := 0\n\n'
+                                         '/-- A compile equation. -/\ntheorem t : Stmt.named "k" [] .skip = '
+                                         'Stmt.named "k" [] .skip :=\n  rfl')}),
 }
 
 
@@ -375,12 +395,27 @@ class RuleTests(unittest.TestCase):
                 self.assertEqual(set(sp) - {'id', 'area', 'severity', 'check', 'scope', 'exclude', 'home',
                                             'exempt', 'exempt_while', 'section', 'statement', 'fix'}, set())
                 self.assertIn(sp['severity'], ('error', 'warning', 'review'))
-                self.assertIn(sp['check'], ('source', 'extraction', 'none'))
+                self.assertIn(sp['check'], ('source', 'extraction', 'lean', 'none'))
                 self.assertEqual(sp['check'] == 'none', sp['severity'] == 'review')
                 self.assertTrue(sp['statement'] and sp['fix'] and '\n' not in sp['statement'])
                 self.assertFalse(sp['statement'].endswith('.'))
                 if sp['scope'] != 'library':
                     self.assertTrue(all(s.startswith('NLAlib/') for s in sp['scope']))
+
+    def test_lean_rules_are_checked_by_programs(self):
+        # rules with `check = "lean"` are checked by scripts/Programs.lean or scripts/Targets.lean,
+        # whose messages cite them: an error rule by `logError`, a warning by `logWarning`
+        here = Path(__file__).resolve().parent
+        text = (here / 'Programs.lean').read_text() + (here / 'Targets.lean').read_text()
+        for rid, sp in check_rules.SPECS.items():
+            if sp['check'] == 'lean':
+                with self.subTest(rule=rid):
+                    self.assertIn(sp['severity'], ('error', 'warning'))
+                    if sp['severity'] == 'warning':
+                        self.assertIn(f'logWarning m!"{rid} ', text)
+                    else:  # Targets.lean collects its messages as `s!"E3 …"`, then logs them
+                        self.assertTrue(f'logError m!"{rid} ' in text or f's!"{rid} ' in text)
+        self.assertNotIn('E1', check_rules.SPECS)  # retired, never reused
 
     def test_scope(self):
         # a rule scoped to the Matrix layer (T7) ignores the same declaration in LowRank
@@ -395,6 +430,36 @@ class RuleTests(unittest.TestCase):
     def test_message_shape(self):
         v = violations('S1', FIX['S1'][0])[0].text()
         self.assertRegex(v, r'^S1 NLAlib/Matrix/A\.lean:\d+ \S+: No `simp_all`')
+
+    def test_unsafe_and_kernel_options(self):
+        # S9 (final audit, 2026-10-24): each keyword and option that bypasses the kernel, in code
+        for body in ['/-- Doc. -/\npartial def f (n : ℕ) : ℕ := f n',
+                     '/-- Doc. -/\n@[implemented_by g] def f (n : ℕ) : ℕ := n',
+                     '/-- Doc. -/\n@[extern "f"] def f (n : ℕ) : ℕ := n',
+                     '/-- Doc. -/\ntheorem t : True := by\n  set_option debug.byAsSorry true in trivial',
+                     '-- why\nset_option debug.skipKernelTC true in\n' + FOO,
+                     '/-- Doc. -/\nunsafe inductive U : Type where\n  | mk : (U → U) → U',
+                     'run_cmd do\n  match (← getEnv).addDeclCore 0 0 d none (doCheck := false) with\n  | _ => pure ()']:
+            with self.subTest(body=body):
+                self.assertTrue(violations('S9', body), body)
+        for lake in ['[leanOptions]\ndebug.skipKernelTC = true\n',
+                     '[[lean_lib]]\nname = "NLAlib"\nmoreLeanArgs = ["-DautoImplicit=false"]\n']:
+            with self.subTest(lake=lake):
+                self.assertTrue(violations('S9', {'lakefile.toml': lake}), lake)
+        self.assertEqual(violations('S9', '/-- Doc. -/\ntheorem partialSum_le : True := trivial'), [])
+
+    def test_package_libraries_not_imported(self):
+        # P12 (final audits, 2026-10-24): neither tools nor scaffold, in a file or in the root,
+        # nor a library that lakefile.toml adds; a Mathlib or NLAlib import passes
+        for files in [{'NLAlib/Matrix/A.lean': lean(header=HDR + 'import NLAlibScaffold\n\n')},
+                      {'NLAlib.lean': 'module\n\npublic import NLAlib.Matrix.A\npublic import NLAlibTools\n'},
+                      {'lakefile.toml': '[[lean_lib]]\nname = "NLAlib"\n\n[[lean_lib]]\nname = "NLAlibExtra"\n',
+                       'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlibExtra.B\n\n')}]:
+            with self.subTest(files=files):
+                self.assertTrue(violations('P12', files), files)
+        self.assertEqual(violations('P12', {
+            'NLAlib.lean': 'module\n\npublic import NLAlib.Matrix.A\n',
+            'NLAlib/Matrix/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.B\nimport NLAlibToolsLike\n\n')}), [])
 
     def test_long_line_exemption(self):
         self.assertTrue(check_rules.long_line_exempt('  `' + 'x' * 120 + '`.'))

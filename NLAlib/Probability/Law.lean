@@ -32,6 +32,8 @@ hypotheses apart into independence and marginals, and back, and transports integ
 * `NLAlib.hasLaw_pi_iff`: a product law is independence plus marginals.
 * `NLAlib.hasLaw_infinitePi_iff`: the same for a countable family, which unfolds the
   i.i.d.-sequence hypothesis `HasLaw ξ (NLAlib.iidSequence ν) μ`.
+* `ProbabilityTheory.HasLaw.comp_of_injective`: finitely many distinct terms of an i.i.d.
+  sequence have the product law.
 * `ProbabilityTheory.HasLaw.eval`, `ProbabilityTheory.HasLaw.iIndepFun_eval`: its two halves.
 * `NLAlib.hasLaw_pi_pi_iff`: the same for the entries of a random matrix, indexed by the product
   type `m × n`.
@@ -116,6 +118,18 @@ a probability measure. -/
 noncomputable abbrev iidSequence {β : Type*} [MeasurableSpace β] (ν : Measure β) :
     Measure (ℕ → β) :=
   Measure.infinitePi fun _ : ℕ => ν
+
+/-- Reindexing an i.i.d. sequence: finitely many distinct terms of an i.i.d. sequence with
+marginal $\nu$ are independent, each with law $\nu$. For an injective $f : \iota \to \mathbb{N}$
+on a finite type, if $\xi$ has law `NLAlib.iidSequence ν` then
+$(\xi_{f(i)})_{i \in \iota}$ has the product law `Measure.pi fun _ => ν`. -/
+theorem _root_.ProbabilityTheory.HasLaw.comp_of_injective {β ι : Type*} [MeasurableSpace β]
+    [Fintype ι] {ν : Measure β} [IsProbabilityMeasure ν] {ξ : Ω → ℕ → β}
+    (hξ : HasLaw ξ (iidSequence ν) μ) {f : ι → ℕ} (hf : Function.Injective f) :
+    HasLaw (fun ω i => ξ ω (f i)) (Measure.pi fun _ : ι => ν) μ := by
+  have : IsProbabilityMeasure μ := hξ.isProbabilityMeasure_iff.mpr inferInstance
+  obtain ⟨hind, hlaw⟩ := (hasLaw_infinitePi_iff (ν := fun _ : ℕ => ν)).mp hξ
+  exact (hind.precomp hf).hasLaw_pi fun i => hlaw (f i)
 
 section Matrix
 

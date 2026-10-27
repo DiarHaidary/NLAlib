@@ -1,0 +1,76 @@
+{
+ "date": "2026-10-23",
+ "note": "First-order programs and target statements (docs/design/Computation.md, F1 and F11; CONTRIBUTING §5.5, rule E3). Before v0.1: no deprecated aliases. A published cost result is now the proof of a registered target (docs/targets.toml): the five program result ids moved from the results about program families to the target theorems, whose old declarations remain as unpublished lemmas (entries with resultId; the explorer moves the id, and keeps the old declaration's page). Step A renamed the models on program families into namespace ProgFamily and their composition theorems with them; the names MatrixFree, StoredEntries and MatrixFreeProb now denote the models on first-order programs, so the explorer does not redirect those links. statementChanged: the five family lemmas conclude the ProgFamily models (renamed in text, not in meaning).",
+ "renames": [
+  {
+   "old": "NLAlib.matrixFree_gramSchmidtProg",
+   "new": "NLAlib.matrixFreeGramSchmidt",
+   "rule": "E3",
+   "resultId": "gram-schmidt-program",
+   "note": "the result id gram-schmidt-program moved to the proof of the registered target; the old declaration remains as a lemma about the program family, with no result id"
+  },
+  {
+   "old": "NLAlib.matrixFree_hutchppProg",
+   "new": "NLAlib.matrixFreeHutchpp",
+   "rule": "E3",
+   "resultId": "hutchpp-program",
+   "note": "the result id hutchpp-program moved to the proof of the registered target; the old declaration remains as a lemma about the program family, with no result id"
+  },
+  {
+   "old": "NLAlib.matrixFreeProb_hutchppProg",
+   "new": "NLAlib.matrixFreeProbHutchpp",
+   "rule": "E3",
+   "resultId": "hutchpp-program-tail",
+   "note": "the result id hutchpp-program-tail moved to the proof of the registered target; the old declaration remains as a lemma about the program family, with no result id"
+  },
+  {
+   "old": "NLAlib.storedEntries_substOracle_hutchppProg_denseImpl",
+   "new": "NLAlib.storedEntriesDenseHutchpp",
+   "rule": "E3",
+   "resultId": "hutchpp-program-dense",
+   "note": "the result id hutchpp-program-dense moved to the proof of the registered target; the old declaration remains as a lemma about the program family, with no result id"
+  },
+  {
+   "old": "NLAlib.storedEntries_substOracle_hutchppProg_cooImpl",
+   "new": "NLAlib.storedEntriesCooHutchpp",
+   "rule": "E3",
+   "resultId": "hutchpp-program-sparse",
+   "note": "the result id hutchpp-program-sparse moved to the proof of the registered target; the old declaration remains as a lemma about the program family, with no result id"
+  },
+  {
+   "old": "NLAlib.Computation.MatrixFree.storedEntries_substOracle_denseImpl",
+   "new": "NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl",
+   "rule": "E3"
+  },
+  {
+   "old": "NLAlib.Computation.MatrixFree.storedEntries_substOracle_cooImpl",
+   "new": "NLAlib.Computation.ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl",
+   "rule": "E3"
+  },
+  {
+   "old": "NLAlib.Computation.MatrixFree",
+   "new": "NLAlib.Computation.ProgFamily.MatrixFree",
+   "rule": "E3",
+   "note": "the model on a program family moved to namespace ProgFamily; the old name now denotes the model on a first-order program (Prog), with the same arguments and meaning"
+  },
+  {
+   "old": "NLAlib.Computation.StoredEntries",
+   "new": "NLAlib.Computation.ProgFamily.StoredEntries",
+   "rule": "E3",
+   "note": "the model on a program family moved to namespace ProgFamily; the old name now denotes the model on a first-order program (Prog), with the same arguments and meaning"
+  },
+  {
+   "old": "NLAlib.Computation.MatrixFreeProb",
+   "new": "NLAlib.Computation.ProgFamily.MatrixFreeProb",
+   "rule": "E3",
+   "note": "the model on a program family moved to namespace ProgFamily; the old name now denotes the model on a first-order program (Prog), with the same arguments and meaning"
+  }
+ ],
+ "statementChanged": [
+  "NLAlib.matrixFree_gramSchmidtProg",
+  "NLAlib.matrixFree_hutchppProg",
+  "NLAlib.matrixFreeProb_hutchppProg",
+  "NLAlib.storedEntries_substOracle_hutchppProg_denseImpl",
+  "NLAlib.storedEntries_substOracle_hutchppProg_cooImpl"
+ ]
+}

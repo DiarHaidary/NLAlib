@@ -24,12 +24,14 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - P8 Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure.
 - P9 A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib.
 - P11 A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial` [Polynomial only].
+- P12 An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml.
 - S1 No `simp_all`.
 - S2 No search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, `aesop?`).
 - S4 A proof has at most 80 lines.
 - S6 No global instance on a Mathlib type, unless it is the one Mathlib would add.
 - S7 A line has at most 100 characters, unless one identifier or a URL makes it long.
 - S8 `set_option linter.style.longLine false in` only on a declaration with a long line.
+- S9 No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml.
 - T1 The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`.
 - T2 An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`.
 - T3 Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`.
@@ -83,6 +85,12 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - R3 Every id or declaration the explorer names exists.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - G2 Every port-ledger target is declared.
+- E2 Programs, kernels and implementations are computable.
+- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry.
+- E4 Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it.
+- E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
+- E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
+- E8 `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it).
 - N1 Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase.
 - N2 The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`).
 - N3 The conclusion part ends at the first `_of_` and names the main relation.

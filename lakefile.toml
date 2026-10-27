@@ -24,3 +24,9 @@ name = "NLAlib"
 # A declaration moves from here into NLAlib when it is proved; see CONTRIBUTING.md §7.
 [[lean_lib]]
 name = "NLAlibScaffold"
+
+# Tools, not part of the library (docs/design/Computation.md §8): the `Float` interpreter, the
+# NumPy emitter and the fixed-point example. They import NLAlib and are never imported by it, are
+# plain (non-`module`) files so that `#eval` runs the library's programs, and may contain `sorry`.
+[[lean_lib]]
+name = "NLAlibTools"

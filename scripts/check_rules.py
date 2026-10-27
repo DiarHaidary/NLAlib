@@ -10,7 +10,8 @@ Every rule has a stable id: a letter for its area and a number, as the naming ru
 (§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
 vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
 notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9). The rule data, severity, statement, fix, scope and section, is in
+records (§8, §9), E programs (§5.5; E2–E4 and E9 are checked on the built library by
+`scripts/Programs.lean` and `scripts/Targets.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
@@ -61,7 +62,7 @@ DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 # Krylov, Regression imports Sketching, Estimation imports LowRank; LowerBounds (2026-10-25) is the
 # top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
 # it gets files.
-LAYER = {'ForMathlib': -1, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
+LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
          'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
          'LowerBounds': 5}
 
@@ -425,6 +426,32 @@ MATRIX_VOCAB = re.compile(r'\bMatrix\b|\b(?:circulant|diagonal|vecMulVec|fromBlo
                           r'\.(?:PosDef|PosSemidef|IsHermitian|charpoly|det|trace|rank)\b')
 
 
+# Final audits, 2026-10-24: a forged lemma in `NLAlibScaffold`, reached by `NLAlib` through an
+# `NLAlibTools` import, was trusted as base by the replay. The library imports no other library of
+# the package (read from lakefile.toml; the two named ones always), in any file or the root.
+PACKAGE_LIBS = ('NLAlibScaffold', 'NLAlibTools')
+
+
+def other_package_libs(root):
+    lake = root / 'lakefile.toml'
+    names = set(PACKAGE_LIBS)
+    if lake.exists():
+        names |= {l['name'] for l in tomllib.loads(lake.read_text()).get('lean_lib', [])}
+    return names - {'NLAlib'}
+
+
+@rule('P12')
+def p_package_libs(c):
+    others = other_package_libs(c.root)
+    files = dict(c.lib_files)
+    top = c.root / 'NLAlib.lean'
+    if top.exists():
+        text = top.read_text()
+        files['NLAlib.lean'] = (text, leansrc.parse(text))
+    return [V('P12', p, ln, '(file)', mod) for p, (t, x) in files.items()
+            for ln, pub, mod in x['imports'] if mod.split('.')[0] in others]
+
+
 @rule('P11')
 def p_poly_imports(c):
     return [V('P11', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
@@ -562,6 +589,29 @@ def s_longline_option(c):
     return out
 
 
+# Final audit, 2026-10-24: `unsafe def anything (α : Sort u) : α := anything α` and
+# `set_option debug.skipKernelTC true in theorem t : T := anything _` elaborate with no warning and
+# no axiom. The keywords and options that switch off or bypass the kernel, in code (comments and
+# docstrings stripped); in lakefile.toml, the options and arguments passed to every file.
+UNSAFE_RE = re.compile(r"(?<![\w.'])(?:unsafe|partial|implemented_by|extern)(?![\w'])|skipKernelTC|"
+                       r"\bset_option\s+(?:debug\.|\S*(?:[Kk]ernel|trust))|"
+                       # meta code adding a declaration without the kernel (replay audit)
+                       r"\b(?:addDeclCore|addDeclWithoutChecking|doCheck)\b")
+LAKE_UNSAFE_RE = re.compile(r'debug\.|[Kk]ernel|trust|^\s*(?:more|weak)LeanArgs\b')
+
+
+@rule('S9')
+def s_unsafe(c):
+    out = [V('S9', p, i + 1, '(code)', l.strip()[:80]) for p in c.files
+           for i, l in enumerate(c.code(p)) if UNSAFE_RE.search(l)]
+    lake = c.root / 'lakefile.toml'
+    if lake.exists():
+        for i, l in enumerate(lake.read_text().split('\n'), 1):
+            if LAKE_UNSAFE_RE.search(l.split('#')[0]):
+                out.append(V('S9', 'lakefile.toml', i, '(option)', l.strip()[:80]))
+    return out
+
+
 # ================================================================== T: types and shapes
 def public_thms(c):
     return [d for d in c.decls if d['kind'] == 'theorem']
@@ -659,7 +709,9 @@ def conclusion_top_and(concl):
     s = concl.strip()
     if s.startswith(('∃', '∀', '¬')):
         return False
-    for ch in s:
+    for i, ch in enumerate(s):
+        if depth == 0 and (s.startswith(('fun ', 'λ', '↦', ' if '), i)):
+            return False
         if ch in '([{⦃⟨':
             depth += 1
         elif ch in ')]}⦄⟩':
@@ -768,7 +820,8 @@ def v_forbidden(c):
 
 KEYWORDS = {'native_decide', 'mk_all', 'set_option', 'snake_case', 'irreducible_def', 'previous_latex',
             'previous_display', 'lean_body', 'exists_forall_', 'explorer_role', 'simp_all',
-            'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0'}
+            'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0',
+            'implemented_by'}
 
 
 def mathlib_names(c):
@@ -1360,6 +1413,73 @@ def g_ledger(c):
             for old, new, stage in ledger_check.missing(c.root)[1]]
 
 
+# ================================================================== E: programs (§5.5)
+# E2–E4 and E9 need Lean's types and are checked by scripts/Programs.lean and scripts/Targets.lean
+# (`check = "lean"`); E1 is retired (docs/design/Computation.md, F9).
+COMPUTATION = 'NLAlib/Computation'
+# The files that may construct `Stmt.named`: the core that defines and eliminates it, the BLAS
+# kernels and the implementations.
+NAMED_FILES = tuple(f'{COMPUTATION}/{f}.lean' for f in
+                    ('Syntax', 'Exec', 'Subst', 'Compile', 'FirstOrder', 'BLAS', 'Dense',
+                     'Sparse'))
+NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.named\b|'
+                      r'(?<![\w.])named\s+"')
+
+
+@rule('E5')
+def e_computation_imports(c):
+    return [V('E5', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
+            if topic_of_path(p) == 'Computation' for ln, pub, mod in x['imports']
+            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
+                                                        'NLAlib.Computation.')))]
+
+
+def declared_type(stmt):
+    """The text after the top-level `:` of a declaration's statement, before `:=` or `where`."""
+    depth, i = 0, 0
+    while i < len(stmt):
+        ch = stmt[i]
+        if ch in '([{⦃⟨':
+            depth += 1
+        elif ch in ')]}⦄⟩':
+            depth -= 1
+        elif ch == ':' and depth == 0 and stmt[i:i + 2] != ':=':
+            rest = stmt[i + 1:]
+            return re.split(r':=|\bwhere\b', rest)[0]
+        i += 1
+    return ''
+
+
+@rule('E6')
+def e_semantics_home(c):
+    out = []
+    for p, (t, x) in c.lib_files.items():
+        if p.startswith(COMPUTATION + '/'):
+            continue
+        for d in x['decls']:
+            if d['kind'] in ('def', 'abbrev', 'instance', 'opaque', 'irreducible_def') and \
+                    re.match(r'\s*(?:NLAlib\.)?(?:Computation\.)?(?:ScalarSem|Interp)\b',
+                             declared_type(leansrc.strip_comments(d['stmt']))):
+                out.append(V('E6', p, d['line'], d['full'] or '(instance)'))
+    return out
+
+
+@rule('E8')
+def e_named(c):
+    # A theorem may mention `named` in its statement or proof (a compile equation, say): the
+    # rule is about programs, whose `named` nodes the emitter prints as calls.
+    out = []
+    for p, (t, x) in c.lib_files.items():
+        if p in NAMED_FILES:
+            continue
+        proofs = {i for d in x['decls'] if d['kind'] in ('theorem', 'lemma')
+                  for i in range(d['line'], d['end'] + 1)}
+        for i, line in enumerate(c.code(p), 1):
+            if i not in proofs and NAMED_RE.search(line):
+                out.append(V('E8', p, i, '(file)', line.strip()[:80]))
+    return out
+
+
 # ================================================================== allowlist, baseline, main
 def load_allow(path):
     if not path.exists():
@@ -1423,8 +1543,8 @@ def names_violations(c, partial):
 def check_registry():
     """Every checked rule of rules.toml outside N1–N18 (scripts/check_names.py) has a check here,
     and every check has its entry."""
-    missing = [r for r, sp in SPECS.items() if sp['check'] != 'none' and not r.startswith('N')
-               and r not in RULES]
+    missing = [r for r, sp in SPECS.items() if sp['check'] not in ('none', 'lean')
+               and not r.startswith('N') and r not in RULES]
     if missing:
         raise SystemExit(f'check_rules: no check for {", ".join(missing)} ({RULES_TOML})')
 
