@@ -49,7 +49,8 @@ names $\iota$, every tag $p$ and every `RCLike` field $\Bbbk$, the registered tr
 matrix $\mathbf{Y}$ over $\Bbbk$, held column-major in the one declared buffer at tag $p$ (the
 initial state holds nothing else), under exact arithmetic with every oracle name meaning any
 $N \times N$ matrix and any tape (the program uses neither), the program runs within the counts
-`gramSchmidtCount p N k` and $Nk + 3$ cells at tag $p$ (none at any other tag), and ends with
+`gramSchmidtCount p N k` and $Nk + 3$ cells at tag $p$, the declared buffer included (none at
+any other tag), and ends with
 `gramSchmidtQ Y`, the Gram–Schmidt factor of $\mathbf{Y}$ with zero columns where a column
 depends on the earlier ones, in the declared buffer. No hypothesis on the rank of $\mathbf{Y}$. -/
 def MatrixFreeGramSchmidt : Prop :=

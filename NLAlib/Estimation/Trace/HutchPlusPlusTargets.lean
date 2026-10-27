@@ -52,15 +52,16 @@ additions, $Nk + 1$ divisions, $k$ square roots, $NJ + 2Nk + Nk\ell + N\ell$ con
 $J + k\ell$ negations, $J + 3k + k\ell + \ell + 3$ literals and $k$ comparisons. -/
 noncomputable def hutchppCount {P ι : Type} (p : P) (o : ι) (d : Dist) (N k ℓ : ℕ) :
     OpCount P ι :=
-  Finsupp.single (.load p o) 2 + Finsupp.single (.matvec p o) (2 * k + ℓ) +
-  Finsupp.single (.draw p d) (N * (k + ℓ)) +
-  Finsupp.single (.bin p .mul) (2 * N * k.choose 2 + 2 * N * k + 2 * N * k * ℓ + N * ℓ) +
-  Finsupp.single (.bin p .add)
+  Finsupp.single (OpKind.load p o) 2 + Finsupp.single (OpKind.matvec p o) (2 * k + ℓ) +
+  Finsupp.single (OpKind.draw p d) (N * (k + ℓ)) +
+  Finsupp.single (OpKind.bin p .mul) (2 * N * k.choose 2 + 2 * N * k + 2 * N * k * ℓ + N * ℓ) +
+  Finsupp.single (OpKind.bin p .add)
     (2 * N * k.choose 2 + 2 * N * k + 2 * N * k * ℓ + N * ℓ + k + ℓ + 1) +
-  Finsupp.single (.bin p .div) (N * k + 1) + Finsupp.single (.un p .sqrt) k +
-  Finsupp.single (.un p .conj) (N * k.choose 2 + 2 * N * k + N * k * ℓ + N * ℓ) +
-  Finsupp.single (.un p .neg) (k.choose 2 + k * ℓ) +
-  Finsupp.single (.lit p) (k.choose 2 + 3 * k + k * ℓ + ℓ + 3) + Finsupp.single (.cmp p) k
+  Finsupp.single (OpKind.bin p .div) (N * k + 1) + Finsupp.single (OpKind.un p .sqrt) k +
+  Finsupp.single (OpKind.un p .conj) (N * k.choose 2 + 2 * N * k + N * k * ℓ + N * ℓ) +
+  Finsupp.single (OpKind.un p .neg) (k.choose 2 + k * ℓ) +
+  Finsupp.single (OpKind.lit p) (k.choose 2 + 3 * k + k * ℓ + ℓ + 3) +
+  Finsupp.single (OpKind.cmp p) k
 
 /-- **The target of Hutch++ as a program**, in the matrix-free model. For every type of tags $P$
 with decidable equality, every type of oracle names $\iota$, every tag $p$, oracle name $o$ and
@@ -69,7 +70,8 @@ distribution $d$ and every `RCLike` field $\Bbbk$, the registered tree
 every $N \times N$ matrix $\mathbf{A}$ over $\Bbbk$ (every oracle name means $\mathbf{A}$) and
 every tape $\xi$, under exact arithmetic, run from a state holding only one declared output
 cell (empty) at tag $p$, the program succeeds within the counts `hutchppCount p o d N k ℓ` and
-$2N(k + \ell) + 4$ cells at tag $p$ besides the output (none at any other tag), and its output is
+$2N(k + \ell) + 4$ cells at tag $p$, the output cell included (none at any other tag), and its
+output is
 $\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$, where $\mathbf{S}$ is the $N \times k$
 matrix drawn from the tape of $d$ from position $0$ and $\mathbf{G}$ the $N \times \ell$ matrix
 drawn after it, column-major. No hypothesis on the rank of $\mathbf{A}\mathbf{S}$. -/
