@@ -6,34 +6,43 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.LowerBounds.LowRank.FiniteSpectrum
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exp
 
 /-!
 # Minimax lower bounds for low-rank approximation
 
-Frobenius minimax lower bounds for any fixed natural batch count. The positive equispaced hard
-spectrum has a head at $r+2$ and $r+1$ tail levels. Gaussian overlap estimates and the general
-Krylov coupling give a distributional failure bound, a randomized worst-case hard input, and
-an explicit query lower bound in the specified dimension. Design:
-`docs/design/LowerBounds-FixedBatches.md`.
+Frobenius minimax lower bounds for any fixed natural batch count. A level spectrum has a head
+$L$ on $k$ and $r+1$ tail levels $\nu_j \in [0,\tau]$, and an extrapolation constant $C$
+controls degree-$r$ polynomials at the head by their tail values. Gaussian overlap estimates
+and the general Krylov coupling give a distributional failure bound and a randomized
+worst-case hard input for every such spectrum. Two explicit query lower bounds follow: the
+equispaced spectrum (head $r+2$, levels $1,\ldots,r+1$, $C = 4^{r+1}$) and the Chebyshev
+spectrum (head $1+1/(8(r+1)^2)$, Chebyshev levels in $[1/2,1]$, $C = 4$). Designs:
+`docs/design/LowerBounds-FixedBatches.md`, `docs/design/LowerBounds-ChebyshevBatches.md`.
 
 ## Main definitions
 
-* `NLAlib.equispacedQueryFactor`: denominator of the query lower bound.
-* `NLAlib.equispacedAccuracyBound`: admissible squared-error accuracy.
+* `NLAlib.equispacedQueryFactor`, `NLAlib.equispacedAccuracyBound`: the equispaced query
+  denominator and admissible squared-error accuracy.
+* `NLAlib.chebyshevQueryFactor`, `NLAlib.chebyshevAccuracyBound`: the Chebyshev ones.
 
-For natural $r$, the query factor is <!-- value equispacedQueryFactor r -->
+For natural $r$, the equispaced query factor is <!-- value equispacedQueryFactor r -->
 $256\cdot4^{r+1}(r+1)(r+2)$, and the accuracy cutoff is
 set to <!-- value equispacedAccuracyBound r -->
-$1/(512\cdot4^{r+1}(r+1)(r+2)^2)$.
+$1/(512\cdot4^{r+1}(r+1)(r+2)^2)$. The Chebyshev query factor is
+$r \mapsto$ <!-- value chebyshevQueryFactor r --> $12544(r+1)^3$, with the cutoff
+$r \mapsto$ <!-- value chebyshevAccuracyBound r --> $1/(25088(r+1)^3(r+2))$.
 
 ## Main results
 
 * In `QueryAlgorithm.IsPassStructured`,
   `measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt_of_hasLaw_haarFrame` bounds success on Haar
-  rotations of the fixed spectrum.
+  rotations of a level spectrum.
 * `NLAlib.exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt`: a randomized worst-case bound.
-* `NLAlib.div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt`: the explicit
+* `NLAlib.div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt`: the equispaced
   fixed-batch query lower bound.
+* `div_chebyshevQueryFactor_mul_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt`:
+  the Chebyshev fixed-batch query lower bound, $q = \Omega(k/(\varepsilon(r+1)^3))$.
 -/
 
 @[expose] public section
@@ -54,6 +63,21 @@ This suffices for the floor and Gaussian dimension conditions for every positive
 noncomputable irreducible_def equispacedAccuracyBound (r : ℕ) : ℝ :=
   1 / (512 * 4 ^ (r + 1) * ((r : ℝ) + 1) * (r + 2) ^ 2)
 
+/-- **Query factor for the Chebyshev fixed-batch bounds**: for natural $r$, the query lower
+bound uses <!-- value chebyshevQueryFactor r -->
+$$12544(r+1)^3 \,.$$
+It is $16\cdot4\cdot196$ times $(r+1)^3$: the tail multiplicity $k/(16\varepsilon(r+1)^3)$, a
+quarter of it for the queries, and the Gaussian width $14^2$. -/
+noncomputable irreducible_def chebyshevQueryFactor (r : ℕ) : ℝ := 12544 * ((r : ℝ) + 1) ^ 3
+
+/-- **Accuracy cutoff for the Chebyshev fixed-batch bounds**: natural $r$ permits accuracy at
+most <!-- value chebyshevAccuracyBound r -->
+$$1/(25088(r+1)^3(r+2)) \,.$$
+This makes the tail multiplicity large enough for the Gaussian width and the exceptional
+probability, for every positive target rank. -/
+noncomputable irreducible_def chebyshevAccuracyBound (r : ℕ) : ℝ :=
+  1 / (25088 * ((r : ℝ) + 1) ^ 3 * (r + 2))
+
 end NLAlib
 
 open MeasureTheory ProbabilityTheory
@@ -68,14 +92,10 @@ section GaussianCapture
 variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω}
 
 /-- Scalar comparison used after the interpolation estimate and Gaussian norm bounds. -/
-private theorem false_of_interpolation_lt {r : ℕ} {γ t s N sumH : ℝ} (hγ : 2 < γ)
+private theorem false_of_interpolation_lt {C γ t s N sumH : ℝ} (hC : 0 ≤ C) (hγ : 2 < γ)
     (ht : 0 < t) (hs : (γ - 2) * t ≤ s) (hN : 0 ≤ N)
-    (key : s ^ 2 * sumH ≤ equispacedInterpolationFactor r * (3 * t) ^ 2 * N)
-    (hlt : 9 * equispacedInterpolationFactor r / (γ - 2) ^ 2 * N < sumH) : False := by
-  let C := equispacedInterpolationFactor r
-  have hC : 0 ≤ C := by dsimp [C]; rw [equispacedInterpolationFactor_def]; positivity
-  change s ^ 2 * sumH ≤ C * (3 * t) ^ 2 * N at key
-  change 9 * C / (γ - 2) ^ 2 * N < sumH at hlt
+    (key : s ^ 2 * sumH ≤ C * (3 * t) ^ 2 * N)
+    (hlt : 9 * C / (γ - 2) ^ 2 * N < sumH) : False := by
   have hγ2 : 0 < γ - 2 := by linarith
   have hsp : 0 < s := lt_of_lt_of_le (mul_pos hγ2 ht) hs
   have h1 := mul_lt_mul_of_pos_left hlt (pow_pos hsp 2)
@@ -107,18 +127,18 @@ private theorem measureReal_not_gram_tail_le_of_pass_lt {r : ℕ}
 /-- Gaussian head-capture estimate with a free deviation parameter. -/
 private theorem
 measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_pass_lt_of_hasLaw_gaussianMatrix
-    (r : ℕ)
+    {r : ℕ} {L C : ℝ} {ν : Fin (r + 1) → ℝ} (hI : IsExtrapolationControl L ν C)
     {b : Type*} [Fintype b] {G : Ω → Matrix (k ⊕ (Fin (r + 1) × m)) b ℝ}
     (hG : HasLaw G (gaussianMatrix (k ⊕ (Fin (r + 1) × m)) b) μ)
     {γ : ℝ} (hγ : 2 < γ)
     (hkb : Fintype.card k ≤ Fintype.card b) (hbm : γ ^ 2 * Fintype.card b ≤ Fintype.card m) :
     μ.real {ω | ∃ z ∈ blockKrylovSpace
-      (Matrix.diagonal (equispacedLevelSpectrum k m r)) (G ω) (r + 1),
-        9 * equispacedInterpolationFactor r / (γ - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 <
-          ∑ a : k, z (Sum.inl a) ^ 2} ≤
+      (Matrix.diagonal (levelSpectrum k m L ν)) (G ω) (r + 1),
+        9 * C / (γ - 2) ^ 2 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} ≤
       (r + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) := by
   classical
   have hP : IsProbabilityMeasure μ := hG.isProbabilityMeasure
+  have hC : 0 ≤ C := hI.pos.le
   have hγ0 : 0 < γ := by linarith
   set a : ℝ := √(Fintype.card m : ℝ) with ha_def
   set c : ℝ := √(Fintype.card b : ℝ) with hc_def
@@ -173,9 +193,9 @@ measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_pass_lt_of_hasLaw_gaussi
         linarith [not_le.1 h]
       exact hnot (Or.inr hB')
     have key :=
-      mul_sum_sq_le_equispacedInterpolationFactor_mul_norm_sq_of_mem_blockKrylovSpace r hs hS hz
+      mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace_of_isExtrapolationControl hI hs hS hz
     have hsum : 0 < ∑ a : k, z (Sum.inl a) ^ 2 :=
-      lt_of_le_of_lt (by rw [equispacedInterpolationFactor_def]; positivity) hlt
+      lt_of_le_of_lt (by positivity) hlt
     have hne : Nonempty k := by
       by_contra h
       rw [not_nonempty_iff] at h
@@ -187,16 +207,15 @@ measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_pass_lt_of_hasLaw_gaussi
     have ha_pos : 0 < a := Real.sqrt_pos.2 hm
     have ht_pos : 0 < t := div_pos ha_pos hγ0
     have hs_lb : (γ - 2) * t ≤ a - c - t := by linarith [hat, hct]
-    exact false_of_interpolation_lt hγ ht_pos hs_lb (sq_nonneg _) key hlt
+    exact false_of_interpolation_lt hC hγ ht_pos hs_lb (sq_nonneg _) key hlt
   · rw [← hexp]
     linarith [hA, hB]
 
-
-/-- The numerical Gaussian deviation used in the fixed-batch theorem. -/
+/-- The numerical Gaussian deviation used in the equispaced fixed-batch theorem. -/
 private theorem equispaced_deviation (r : ℕ) :
     2 < 8 * (2 : ℝ) ^ (r + 1) ∧
       (8 * (2 : ℝ) ^ (r + 1)) ^ 2 = equispacedGaussianFactor r ∧
-      9 * equispacedInterpolationFactor r / (8 * (2 : ℝ) ^ (r + 1) - 2) ^ 2 ≤ 1 / 4 := by
+      36 * equispacedInterpolationFactor r ≤ (8 * (2 : ℝ) ^ (r + 1) - 2) ^ 2 := by
   have hp : (1 : ℝ) ≤ 2 ^ (r + 1) := one_le_pow₀ (by norm_num)
   have hpow : ((2 : ℝ) ^ (r + 1)) ^ 2 = 4 ^ (r + 1) := by
     rw [pow_two, ← mul_pow]
@@ -205,27 +224,30 @@ private theorem equispaced_deviation (r : ℕ) :
   refine ⟨hγ, ?_, ?_⟩
   · rw [equispacedGaussianFactor_def, mul_pow, hpow]
     norm_num
-  · rw [div_le_iff₀ (sq_pos_of_pos (sub_pos.mpr hγ)), equispacedInterpolationFactor_def]
+  · rw [equispacedInterpolationFactor_def, ← hpow]
     nlinarith [sq_nonneg (2 * (2 : ℝ) ^ (r + 1) - 2)]
 
-/-- Under the selected width condition, a Gaussian Krylov space rarely captures a quarter of
-its norm in the head eigenspace. -/
+/-- Under a width condition $\gamma^2\lvert b\rvert \le \lvert m\rvert$ with
+$36C \le (\gamma-2)^2$, a Gaussian Krylov space of a level spectrum with extrapolation constant
+$C$ rarely captures a quarter of its norm in the head eigenspace. -/
 theorem measureReal_exists_mem_blockKrylovSpace_gt_quarter_le_of_hasLaw_gaussianMatrix
-    (r : ℕ) {b : Type*} [Fintype b]
+    {r : ℕ} {L C : ℝ} {ν : Fin (r + 1) → ℝ} (hI : IsExtrapolationControl L ν C)
+    {γ : ℝ} (hγ : 2 < γ) (hγC : 36 * C ≤ (γ - 2) ^ 2) {b : Type*} [Fintype b]
     {G : Ω → Matrix (k ⊕ (Fin (r + 1) × m)) b ℝ}
     (hG : HasLaw G (gaussianMatrix (k ⊕ (Fin (r + 1) × m)) b) μ)
     (hkb : Fintype.card k ≤ Fintype.card b)
-    (hbm : equispacedGaussianFactor r * Fintype.card b ≤ Fintype.card m) :
+    (hbm : γ ^ 2 * Fintype.card b ≤ Fintype.card m) :
     μ.real {ω | ∃ z ∈ blockKrylovSpace
-      (Matrix.diagonal (equispacedLevelSpectrum k m r)) (G ω) (r + 1),
+      (Matrix.diagonal (levelSpectrum k m L ν)) (G ω) (r + 1),
       1 / 4 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2} ≤
-      (r + 2) * Real.exp (-(Fintype.card m / (2 * equispacedGaussianFactor r))) := by
+      (r + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) := by
   have := hG.isProbabilityMeasure
-  obtain ⟨hγ, hγsq, hcoeff⟩ := equispaced_deviation r
+  have hcoeff : 9 * C / (γ - 2) ^ 2 ≤ 1 / 4 := by
+    rw [div_le_iff₀ (sq_pos_of_pos (sub_pos.mpr hγ))]
+    linarith
   have hbad :=
     measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_pass_lt_of_hasLaw_gaussianMatrix
-    r hG hγ hkb (by rwa [hγsq])
-  rw [hγsq] at hbad
+      hI hG hγ hkb hbm
   refine (measureReal_mono fun ω hω => ?_).trans hbad
   obtain ⟨z, hz, hlt⟩ := hω
   exact ⟨z, hz, (mul_le_mul_of_nonneg_right hcoeff (sq_nonneg _)).trans_lt hlt⟩
@@ -233,26 +255,28 @@ theorem measureReal_exists_mem_blockKrylovSpace_gt_quarter_le_of_hasLaw_gaussian
 end GaussianCapture
 
 /-- Orthogonal change of coordinates and small head capture force excess Frobenius loss. -/
-private theorem le_frobNorm_of_orthonormal_range_of_pass_lt (r : ℕ) {b : Type*} [Fintype b]
+private theorem le_frobNorm_of_orthonormal_range_of_pass_lt {r : ℕ} {L τ : ℝ}
+    {ν : Fin (r + 1) → ℝ} (hν0 : ∀ j, 0 ≤ ν j) (hντ : ∀ j, ν j ≤ τ) (hτL : τ ≤ L)
+    {b : Type*} [Fintype b]
     {U : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ}
     {W : Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ}
     {M : Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ}
     {G : Matrix (k ⊕ (Fin (r + 1) × m)) b ℝ} (hU : HasOrthonormalCols U)
     (hr : LinearMap.range (Uᴴ * W).mulVecLin ≤
-      blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m r)) G (r + 1))
-    (hgood : ∀ z ∈ blockKrylovSpace (Matrix.diagonal (equispacedLevelSpectrum k m r)) G (r + 1),
+      blockKrylovSpace (Matrix.diagonal (levelSpectrum k m L ν)) G (r + 1))
+    (hgood : ∀ z ∈ blockKrylovSpace (Matrix.diagonal (levelSpectrum k m L ν)) G (r + 1),
       ¬ (1 / 4 * ‖WithLp.toLp 2 z‖ ^ 2 < ∑ a : k, z (Sum.inl a) ^ 2)) :
-    Fintype.card m * equispacedTailFactor r + (2 * (r : ℝ) + 3) * Fintype.card k / 2 ≤
-      frobNorm (U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ - W * M) ^ 2 := by
+    Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2 ≤
+      frobNorm (U * Matrix.diagonal (levelSpectrum k m L ν) * Uᴴ - W * M) ^ 2 := by
   classical
-  set D := Matrix.diagonal (equispacedLevelSpectrum k m r)
+  set D := Matrix.diagonal (levelSpectrum k m L ν)
   have heq : U * D * Uᴴ - W * M = U * (D - (Uᴴ * W) * (M * U)) * Uᴴ := by
     rw [Matrix.mul_sub, Matrix.sub_mul, ← Matrix.mul_assoc U (Uᴴ * W),
       ← Matrix.mul_assoc U Uᴴ, hU.mul_conjTranspose_self, Matrix.one_mul,
       Matrix.mul_assoc W, Matrix.mul_assoc M, hU.mul_conjTranspose_self,
       Matrix.mul_one, Matrix.mul_assoc]
   rw [heq, hU.conjTranspose.frobNorm_mul_right, hU.frobNorm_mul_left]
-  have hle := le_frobNorm_diagonal_sub_mul_sq_of_equispacedLevelSpectrum r (Uᴴ * W) (M * U)
+  have hle := le_frobNorm_diagonal_levelSpectrum_sub_mul_sq (L := L) hν0 hντ (Uᴴ * W) (M * U)
   have ht : ∑ a : k, ‖WithLp.toLp 2 (rangeProjector (Uᴴ * W) *ᵥ Pi.single (Sum.inl a) 1)‖ ^ 2
       ≤ 1 / 4 * Fintype.card k := by
     let P := rangeProjector (Uᴴ * W)
@@ -267,21 +291,22 @@ private theorem le_frobNorm_of_orthonormal_range_of_pass_lt (r : ℕ) {b : Type*
     simpa only [EuclideanSpace.norm_toLp_sq_eq_sum_sq, Matrix.mulVec_single_one,
       Matrix.col_apply, P] using hsum
   have hkn : (0 : ℝ) ≤ Fintype.card k := Nat.cast_nonneg _
-  have hrn : (0 : ℝ) ≤ r := Nat.cast_nonneg _
-  have hnon := mul_nonneg (by positivity : 0 ≤ 2 * (r : ℝ) + 3)
-    (sub_nonneg.mpr ht)
+  have hτ : 0 ≤ τ := (hν0 0).trans (hντ 0)
+  have hgap : 0 ≤ L ^ 2 - τ ^ 2 := sub_nonneg.mpr (pow_le_pow_left₀ hτ hτL 2)
+  have hnon := mul_nonneg hgap (sub_nonneg.mpr ht)
   dsimp only [D] at *
   nlinarith
 
 /-- A deterministic measurable algorithm using at most $r$ batches cannot attain the optimum
-plus $(2r+3)\lvert k\rvert/2$ on most Haar rotations of the equispaced hard instance.
-The width condition is <!-- value equispacedGaussianFactor r -->
-$$64\cdot4^{r+1}(q+\lvert k\rvert)\le\lvert m\rvert \,.$$
-Its success probability is at most <!-- value equispacedGaussianFactor r -->
-$$(r+2)\exp\bigl(-\lvert m\rvert/(2\cdot64\cdot4^{r+1})\bigr) \,.$$ -/
+plus $(L^2-\tau^2)\lvert k\rvert/2$ on most Haar rotations of a level spectrum with levels in
+$[0,\tau]$, $\tau \le L$, and extrapolation constant $C$. For a deviation $\gamma > 2$ with
+$36C \le (\gamma-2)^2$, the width condition is $\gamma^2(q+\lvert k\rvert)\le\lvert m\rvert$, and
+the success probability is at most $(r+2)\exp(-\lvert m\rvert/(2\gamma^2))$. -/
 theorem
 QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt_of_hasLaw_haarFrame
-    {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} {r q : ℕ}
+    {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} {r q : ℕ} {L τ C γ : ℝ}
+    {ν : Fin (r + 1) → ℝ} (hI : IsExtrapolationControl L ν C) (hν0 : ∀ j, 0 ≤ ν j)
+    (hντ : ∀ j, ν j ≤ τ) (hτL : τ ≤ L) (hγ : 2 < γ) (hγC : 36 * C ≤ (γ - 2) ^ 2)
     {alg : QueryAlgorithm (k ⊕ (Fin (r + 1) × m) → ℝ)
       ((k ⊕ (Fin (r + 1) × m) → ℝ) × (k ⊕ (Fin (r + 1) × m) → ℝ)) q
       (Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ × Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ)}
@@ -290,17 +315,17 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
     {U : Ω → Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ}
     (hU : HasLaw U (haarFrame (k ⊕ (Fin (r + 1) × m))
       (k ⊕ (Fin (r + 1) × m))) μ)
-    (hwidth : equispacedGaussianFactor r * (q + Fintype.card k) ≤ Fintype.card m) :
+    (hwidth : γ ^ 2 * (q + Fintype.card k) ≤ Fintype.card m) :
     μ.real {ω | frobNorm
-      (U ω * Matrix.diagonal (equispacedLevelSpectrum k m r) * (U ω)ᴴ -
+      (U ω * Matrix.diagonal (levelSpectrum k m L ν) * (U ω)ᴴ -
         (alg.run (hiddenRotationOracle (U ω)
-          (Matrix.diagonal (equispacedLevelSpectrum k m r)))).1 *
+          (Matrix.diagonal (levelSpectrum k m L ν)))).1 *
         (alg.run (hiddenRotationOracle (U ω)
-          (Matrix.diagonal (equispacedLevelSpectrum k m r)))).2) ^ 2 <
-      Fintype.card m * equispacedTailFactor r + (2 * (r : ℝ) + 3) * Fintype.card k / 2} ≤
-      (r + 2) * Real.exp (-(Fintype.card m / (2 * equispacedGaussianFactor r))) := by
+          (Matrix.diagonal (levelSpectrum k m L ν)))).2) ^ 2 <
+      Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2} ≤
+      (r + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) := by
   have := hU.isProbabilityMeasure
-  set D := Matrix.diagonal (equispacedLevelSpectrum k m r)
+  set D := Matrix.diagonal (levelSpectrum k m L ν)
   set μ' := μ.prod (gaussianMatrix (k ⊕ (Fin (r + 1) × m)) (Fin q ⊕ k))
   have hU₁ : HasLaw (fun p : Ω × Matrix (k ⊕ (Fin (r + 1) × m)) (Fin q ⊕ k) ℝ => U p.1)
       (haarFrame (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m))) μ' :=
@@ -311,12 +336,11 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
     measurePreserving_snd.hasLaw (indepFun_prod₀ hU.aemeasurable aemeasurable_id)
   have hbad :=
     measureReal_exists_mem_blockKrylovSpace_gt_quarter_le_of_hasLaw_gaussianMatrix
-      r hG.hasLaw_gaussianMatrix
+      hI hγ hγC hG.hasLaw_gaussianMatrix
     (by simp) (by simpa only [Fintype.card_sum, Fintype.card_fin, Nat.cast_add] using hwidth)
   calc _ = μ'.real (Prod.fst ⁻¹' {ω | frobNorm (U ω * D * (U ω)ᴴ -
         (alg.run (hiddenRotationOracle (U ω) D)).1 * (alg.run (hiddenRotationOracle (U ω) D)).2)
-          ^ 2 < Fintype.card m * equispacedTailFactor r +
-            (2 * (r : ℝ) + 3) * Fintype.card k / 2}) := by
+          ^ 2 < Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2}) := by
         rw [← Set.prod_univ, measureReal_def, measureReal_def, Measure.prod_prod, measure_univ,
           mul_one]
     _ ≤ _ := measureReal_mono_ae ?_
@@ -328,7 +352,7 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
   by_contra hne
   push Not at hne
   rw [QueryAlgorithm.run_mapOutput] at hω
-  exact absurd hlt (not_lt.2 (le_frobNorm_of_orthonormal_range_of_pass_lt r hUω hω
+  exact absurd hlt (not_lt.2 (le_frobNorm_of_orthonormal_range_of_pass_lt hν0 hντ hτL hUω hω
     (fun z hz => not_lt.mpr (hne z hz))))
 
 
@@ -336,11 +360,15 @@ QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt
 set_option maxHeartbeats 800000 in
 -- The indexed seed family and its stronger-oracle reduction require extra elaboration work.
 /-- A measurable randomized algorithm using at most $r$ batches has an orthogonal hard rotation
-on which its squared Frobenius error is at least the optimum plus $(2r+3)\lvert k\rvert/2$ with
-probability
-at least one minus the distributional exceptional probability. The hard input is PSD. -/
+of a level spectrum (levels in $[0,\tau]$, $\tau \le L$, extrapolation constant $C$) on which
+its squared Frobenius error is at least the optimum plus $(L^2-\tau^2)\lvert k\rvert/2$ with
+probability at least one minus the distributional exceptional probability
+$(r+2)\exp(-\lvert m\rvert/(2\gamma^2))$. -/
 theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
-    {r q : ℕ} (hwidth : equispacedGaussianFactor r * (q + Fintype.card k) ≤ Fintype.card m)
+    {r q : ℕ} {L τ C γ : ℝ} {ν : Fin (r + 1) → ℝ} (hI : IsExtrapolationControl L ν C)
+    (hν0 : ∀ j, 0 ≤ ν j) (hντ : ∀ j, ν j ≤ τ) (hτL : τ ≤ L) (hγ : 2 < γ)
+    (hγC : 36 * C ≤ (γ - 2) ^ 2)
+    (hwidth : γ ^ 2 * (q + Fintype.card k) ≤ Fintype.card m)
     {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm (k ⊕ (Fin (r + 1) × m) → ℝ)
       (k ⊕ (Fin (r + 1) × m) → ℝ) q
@@ -350,17 +378,14 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
     (ρ : Measure S) [IsProbabilityMeasure ρ] :
     ∃ U : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ,
       HasOrthonormalCols U ∧
-      1 - ((r : ℝ) + 2) *
-        Real.exp (-(Fintype.card m / (2 * equispacedGaussianFactor r))) ≤
-      ρ.real {s | let A := U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ
+      1 - ((r : ℝ) + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) ≤
+      ρ.real {s | let A := U * Matrix.diagonal (levelSpectrum k m L ν) * Uᴴ
         let output := (alg s).run A.mulVec
-        equispacedTailFactor r * Fintype.card m +
-          ((2 * r + 3 : ℕ) : ℝ) / 2 * Fintype.card k ≤
+        Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2 ≤
             frobNorm (A - output.1 * output.2) ^ 2} := by
-  let D := Matrix.diagonal (equispacedLevelSpectrum k m r)
-  let threshold := equispacedTailFactor r * Fintype.card m +
-    ((2 * r + 3 : ℕ) : ℝ) / 2 * Fintype.card k
-  let δ := ((r : ℝ) + 2) * Real.exp (-(Fintype.card m / (2 * equispacedGaussianFactor r)))
+  let D := Matrix.diagonal (levelSpectrum k m L ν)
+  let threshold := Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2
+  let δ := ((r : ℝ) + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2)))
   let B : Set (Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ ×
       (Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ × Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ)) :=
     {p | HasOrthonormalCols p.1 ∧ threshold ≤ frobNorm (p.1 * D * p.1ᴴ - p.2.1 * p.2.2) ^ 2}
@@ -389,7 +414,7 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
     have hpass' := (hpass s).comapResponse
       (R' := (k ⊕ (Fin (r + 1) × m) → ℝ) × (k ⊕ (Fin (r + 1) × m) → ℝ)) Prod.fst
     have hbad := hpass'.measureReal_frobNorm_sub_mul_sq_lt_le_of_pass_lt_of_hasLaw_haarFrame
-      (hp s)
+      hI hν0 hντ hτL hγ hγC (hp s)
       ((halg.isMeasurable s).comapResponse measurable_fst)
       (HasLaw.id (μ := haarFrame (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)))) hwidth
     change 1 - δ ≤ (haarFrame (k ⊕ (Fin (r + 1) × m))
@@ -404,15 +429,7 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
       exact ((measurable_id.matrix_mul measurable_const).matrix_mul
         (Measurable.matrix_conjTranspose (by fun_prop) measurable_id)).sub
         ((measurable_fst.comp hrun).matrix_mul (measurable_snd.comp hrun))
-    have hthreshold : threshold = Fintype.card m * equispacedTailFactor r +
-        (2 * (r : ℝ) + 3) * Fintype.card k / 2 := by
-      dsimp only [threshold]
-      push_cast
-      ring
-    apply le_measureReal_hasOrthonormalCols_and_ge _ hErr threshold δ
-    change _ ≤ δ at hbad
-    rw [← hthreshold] at hbad
-    exact hbad
+    exact le_measureReal_hasOrthonormalCols_and_ge _ hErr threshold δ hbad
   obtain ⟨U, hU⟩ := hA.exists_le_measureReal_run_mem_of_forall (ρ := ρ)
     (ν := haarFrame (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m))) hO hB hsucc
   by_cases hUo : HasOrthonormalCols U
@@ -422,6 +439,66 @@ theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
     exact h
   · exact ⟨1, hasOrthonormalCols_one, hU.trans (measureReal_mono fun s hs => absurd hs.1 hUo)⟩
 
+omit [DecidableEq k] [DecidableEq m] in
+/-- The common last step of the fixed-batch Frobenius query lower bounds: on a level spectrum
+with a positive head, a width condition, a small exceptional probability and an admissible
+excess below the threshold, no algorithm succeeds with probability one half on every PSD
+input. -/
+private theorem false_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
+    {r q : ℕ} {L τ C γ ε : ℝ} {ν : Fin (r + 1) → ℝ} (hI : IsExtrapolationControl L ν C)
+    (hν0 : ∀ j, 0 ≤ ν j) (hντ : ∀ j, ν j ≤ τ) (hτL : τ ≤ L) (hL : 0 < L) (hγ : 2 < γ)
+    (hγC : 36 * C ≤ (γ - 2) ^ 2)
+    (hwidth : γ ^ 2 * (q + Fintype.card k) ≤ Fintype.card m)
+    (hsmall : ((r : ℝ) + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) < 1 / 2)
+    (hexcess : ε * (Fintype.card m * ∑ j, ν j ^ 2) < (L ^ 2 - τ ^ 2) * Fintype.card k / 2)
+    {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm (k ⊕ (Fin (r + 1) × m) → ℝ)
+      (k ⊕ (Fin (r + 1) × m) → ℝ) q
+      (Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ × Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ)}
+    (halg : QueryAlgorithm.IsMeasurableFamily alg) {pass : S → ℕ → ℕ}
+    (hpass : ∀ s, (alg s).IsPassStructured (pass s)) (hp : ∀ s, ∀ i < q, pass s i < r)
+    (ρ : Measure S) [IsProbabilityMeasure ρ]
+    (hsucc : ∀ A : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ,
+      A.PosSemidef → 1 / 2 ≤ ρ.real {s |
+        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
+          (1 + ε) * frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2}) : False := by
+  classical
+  have hνL : ∀ j, ν j ≤ L := fun j => (hντ j).trans hτL
+  obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
+    hI hν0 hντ hτL hγ hγC hwidth halg hpass hp ρ
+  set A := U * Matrix.diagonal (levelSpectrum k m L ν) * Uᴴ
+  have hApsd : A.PosSemidef := posSemidef_mul_diagonal_levelSpectrum_mul_conjTranspose hL.le hν0 U
+  have hopt : frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2 =
+      Fintype.card m * ∑ j, ν j ^ 2 :=
+    hU.frobNorm_sub_truncatedSVD_sq_eq_mul_sum_sq hL hν0 hνL
+  have hsuccess := hsucc A hApsd
+  rw [hopt] at hsuccess
+  have hrun : Measurable fun s => (alg s).run A.mulVec := by
+    have hO : Measurable fun p :
+        Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ ×
+          (k ⊕ (Fin (r + 1) × m) → ℝ) => p.1.mulVec p.2 := by fun_prop
+    exact (halg.measurable_run
+      (O := fun B : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ => B.mulVec)
+      hO).comp (measurable_id.prodMk measurable_const)
+  let F : Set S := {s | Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2 ≤
+        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2}
+  have hFm : MeasurableSet F := by
+    exact measurableSet_le measurable_const
+      ((measurable_frobNorm.comp (measurable_const.sub
+        ((measurable_fst.comp hrun).matrix_mul (measurable_snd.comp hrun)))).pow_const 2)
+  have hsub : {s : S | frobNorm (A - ((alg s).run A.mulVec).1 *
+      ((alg s).run A.mulVec).2) ^ 2 ≤ (1 + ε) * (Fintype.card m * ∑ j, ν j ^ 2)} ⊆ Fᶜ := by
+    intro s hs hc
+    change frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
+      (1 + ε) * (Fintype.card m * ∑ j, ν j ^ 2) at hs
+    change Fintype.card m * ∑ j, ν j ^ 2 + (L ^ 2 - τ ^ 2) * Fintype.card k / 2 ≤
+        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 at hc
+    nlinarith
+  have hcompl := probReal_compl_eq_one_sub (μ := ρ) hFm
+  have hmono := measureReal_mono (μ := ρ) hsub
+  have hfail' : 1 - ((r : ℝ) + 2) * Real.exp (-(Fintype.card m / (2 * γ ^ 2))) ≤ ρ.real F :=
+    hfail
+  linarith
 
 /-- Numerical floor conditions forced by the selected accuracy cutoff. -/
 theorem equispacedGaussianFactor_mul_add_le_and_mul_le_of_floor {r : ℕ} {ε K : ℝ} {q m : ℕ}
@@ -495,23 +572,6 @@ private theorem mul_equispacedTailFactor_lt {r : ℕ} {ε K : ℝ} {m : ℕ}
       field_simp
     _ < (2 * (r : ℝ) + 3) * K / 2 := by nlinarith
 
-/-- A sufficiently large tail makes the Gaussian exceptional probability less than one half. -/
-theorem mul_exp_neg_div_lt_half {r m : ℕ}
-    (hm : 4 * equispacedGaussianFactor r * (r + 2) ≤ m) :
-    ((r : ℝ) + 2) * Real.exp (-(m / (2 * equispacedGaussianFactor r))) < 1 / 2 := by
-  have hR : (0 : ℝ) ≤ r := Nat.cast_nonneg _
-  have hA : 0 < equispacedGaussianFactor r := by rw [equispacedGaussianFactor_def]; positivity
-  have hy : 2 * ((r : ℝ) + 2) ≤ m / (2 * equispacedGaussianFactor r) := by
-    rw [le_div_iff₀ (by positivity)]
-    nlinarith
-  have hexp : 2 * ((r : ℝ) + 2) < Real.exp (m / (2 * equispacedGaussianFactor r)) := by
-    have h := Real.add_one_le_exp (m / (2 * equispacedGaussianFactor r))
-    linarith
-  have hinv : Real.exp (-(m / (2 * equispacedGaussianFactor r))) *
-      Real.exp (m / (2 * equispacedGaussianFactor r)) = 1 := by rw [← Real.exp_add]; simp
-  nlinarith [mul_pos (Real.exp_pos (-(m / (2 * equispacedGaussianFactor r))))
-    (sub_pos.mpr hexp)]
-
 omit [DecidableEq k] [DecidableEq m] in
 /-- **Fixed-batch Frobenius query lower bound**: for every natural $r$, positive target rank,
 $0<\varepsilon$ at most <!-- value equispacedAccuracyBound r -->
@@ -522,8 +582,9 @@ using at most $r$ batches and attaining squared relative Frobenius error $1+\var
 probability at least $1/2$ on every PSD input of dimension $\lvert k\rvert+(r+1)\lvert m\rvert$.
 The query lower bound is <!-- value equispacedQueryFactor r -->
 $$q>\frac{\lvert k\rvert}{256\cdot4^{r+1}(r+1)(r+2)\varepsilon} \,.$$
-Constants are conservative and no optimized dependence on the batch count is asserted.
-No printed source.
+Constants are conservative; for $r \ge 3$ the Chebyshev bound
+`div_chebyshevQueryFactor_mul_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt`
+has the smaller query factor. No printed source.
 Result: fixed-batch-low-rank-lower-bound -/
 theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
     [Nonempty k] {r : ℕ} {ε : ℝ} {q : ℕ} (hε : 0 < ε)
@@ -541,54 +602,130 @@ theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
         frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
           (1 + ε) * frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2}) :
     Fintype.card k / (equispacedQueryFactor r * ε) < q := by
-  classical
   have hk1 : (1 : ℝ) ≤ Fintype.card k := Nat.one_le_cast.mpr Fintype.card_pos
   have hkpos : (0 : ℝ) < Fintype.card k := Nat.cast_pos.mpr Fintype.card_pos
   by_contra hcon
   obtain ⟨hwidth, hmLarge⟩ := equispacedGaussianFactor_mul_add_le_and_mul_le_of_floor
     hk1 hε hεr hm (not_lt.mp hcon)
-  obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_frobNorm_sub_mul_sq_ge_of_pass_lt
-    hwidth halg hpass hp ρ
-  have hsmall := mul_exp_neg_div_lt_half hmLarge
-  set A := U * Matrix.diagonal (equispacedLevelSpectrum k m r) * Uᴴ
-  have hApsd : A.PosSemidef := posSemidef_mul_diagonal_equispacedLevelSpectrum_mul_conjTranspose r U
-  have hopt : frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2 =
-      Fintype.card m * equispacedTailFactor r :=
-    HasOrthonormalCols.frobNorm_sub_truncatedSVD_sq_eq_mul_equispacedTailFactor r hU
-  have hsuccess := hsucc A hApsd
-  rw [hopt] at hsuccess
+  obtain ⟨hγ, hγsq, hγC⟩ := equispaced_deviation r
+  have hG : 0 < equispacedGaussianFactor r := by rw [equispacedGaussianFactor_def]; positivity
+  have hsmall := Real.mul_exp_neg_div_lt_half hG hmLarge
+  have hR : (0 : ℝ) ≤ r := Nat.cast_nonneg r
   have hexcess := mul_equispacedTailFactor_lt hkpos hε hm
-  have hrun : Measurable fun s => (alg s).run A.mulVec := by
-    have hO : Measurable fun p :
-        Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ ×
-          (k ⊕ (Fin (r + 1) × m) → ℝ) => p.1.mulVec p.2 := by fun_prop
-    exact (halg.measurable_run
-      (O := fun B : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ => B.mulVec)
-      hO).comp (measurable_id.prodMk measurable_const)
-  let F : Set S := {s | Fintype.card m * equispacedTailFactor r +
-      (2 * (r : ℝ) + 3) * Fintype.card k / 2 ≤
-        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2}
-  have hFm : MeasurableSet F := by
-    exact measurableSet_le measurable_const
-      ((measurable_frobNorm.comp (measurable_const.sub
-        ((measurable_fst.comp hrun).matrix_mul (measurable_snd.comp hrun)))).pow_const 2)
-  have hsub : {s : S | frobNorm (A - ((alg s).run A.mulVec).1 *
-      ((alg s).run A.mulVec).2) ^ 2 ≤
-        (1 + ε) * (Fintype.card m * equispacedTailFactor r)} ⊆ Fᶜ := by
-    intro s hs hc
-    change frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
-      (1 + ε) * (Fintype.card m * equispacedTailFactor r) at hs
-    change Fintype.card m * equispacedTailFactor r +
-      (2 * (r : ℝ) + 3) * Fintype.card k / 2 ≤
-        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 at hc
-    nlinarith
-  have hcompl := probReal_compl_eq_one_sub (μ := ρ) hFm
-  have hmono := measureReal_mono (μ := ρ) hsub
-  have hfail' : 1 - ((r : ℝ) + 2) *
-      Real.exp (-(Fintype.card m / (2 * equispacedGaussianFactor r))) ≤ ρ.real F := by
-    simpa only [F, A, Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, mul_comm,
-      mul_left_comm, mul_assoc, div_eq_mul_inv] using hfail
-  linarith
+  rw [← sum_sq_eq_equispacedTailFactor] at hexcess
+  rw [← hγsq] at hwidth hsmall
+  exact false_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
+    (L := (r : ℝ) + 2) (τ := (r : ℝ) + 1) (isExtrapolationControl_equispacedInterpolationFactor r)
+    (fun j => by positivity)
+    (fun j => by have := (Nat.cast_le (α := ℝ)).2 (Nat.lt_succ_iff.mp j.is_lt); linarith)
+    (by linarith) (by positivity) hγ hγC hwidth hsmall
+    (by convert hexcess using 1; ring) halg hpass hp ρ hsucc
 
+/-- Numerical conditions forced by the Chebyshev accuracy cutoff and the tail multiplicity
+$\lfloor K/(16\varepsilon(r+1)^3)\rfloor$: the width $196(q+K)$ and the tail $784(r+2)$ fit. -/
+theorem mul_add_le_and_mul_le_of_floor_of_le_chebyshevAccuracyBound {r : ℕ} {ε K : ℝ}
+    {q m : ℕ} (hK : 1 ≤ K) (hε : 0 < ε) (hεr : ε ≤ chebyshevAccuracyBound r)
+    (hm : m = ⌊K / (16 * ε * ((r : ℝ) + 1) ^ 3)⌋₊)
+    (hq : (q : ℝ) ≤ K / (chebyshevQueryFactor r * ε)) :
+    (14 : ℝ) ^ 2 * (q + K) ≤ m ∧ 4 * (14 : ℝ) ^ 2 * (r + 2) ≤ m := by
+  have hR : (0 : ℝ) ≤ r := Nat.cast_nonneg _
+  set T : ℝ := ((r : ℝ) + 1) ^ 3 with hT_def
+  have hT1 : 1 ≤ T := one_le_pow₀ (by linarith)
+  set x := K / (16 * ε * T) with hx_def
+  have hden : 0 < 16 * ε * T := by positivity
+  have hcut : ε * T * (25088 * (r + 2)) ≤ 1 := by
+    rw [chebyshevAccuracyBound_def, le_div_iff₀ (by positivity)] at hεr
+    nlinarith [hεr]
+  have hx : 1568 * (r + 2) * K ≤ x := by
+    rw [hx_def, le_div_iff₀ hden]
+    nlinarith [mul_le_mul_of_nonneg_left hcut (by linarith : (0 : ℝ) ≤ K)]
+  have hx1568 : 1568 * ((r : ℝ) + 2) ≤ x := by nlinarith
+  have hmx : x / 2 ≤ (m : ℝ) := by
+    have hf : x - 1 < (m : ℝ) := by
+      rw [hm]
+      exact Nat.sub_one_lt_floor x
+    linarith
+  have hqx : 784 * (q : ℝ) ≤ x := by
+    have hq' : (q : ℝ) ≤ K / (12544 * T * ε) := by
+      rw [chebyshevQueryFactor_def] at hq
+      exact hq
+    rw [hx_def, le_div_iff₀ hden]
+    rw [le_div_iff₀ (by positivity)] at hq'
+    nlinarith [hq']
+  constructor <;> nlinarith
+
+/-- The Chebyshev tail multiplicity makes the admissible squared-error excess smaller than the
+Frobenius threshold. -/
+private theorem mul_sum_chebyshevTailLevel_sq_lt {r : ℕ} {ε K : ℝ} {m : ℕ}
+    (hK : 0 < K) (hε : 0 < ε) (hm : m = ⌊K / (16 * ε * ((r : ℝ) + 1) ^ 3)⌋₊) :
+    ε * (m * ∑ j, chebyshevTailLevel r j ^ 2) <
+      ((1 + chebyshevHeadGap r) ^ 2 - 1 ^ 2) * K / 2 := by
+  have hR : (0 : ℝ) ≤ r := Nat.cast_nonneg _
+  have hmle : (m : ℝ) ≤ K / (16 * ε * ((r : ℝ) + 1) ^ 3) := by
+    rw [hm]
+    exact Nat.floor_le (by positivity)
+  have hsum : ∑ j, chebyshevTailLevel r j ^ 2 ≤ (r : ℝ) + 1 := by
+    calc ∑ j, chebyshevTailLevel r j ^ 2 ≤ ∑ _j : Fin (r + 1), (1 : ℝ) :=
+          Finset.sum_le_sum fun j _ => by
+            have h0 := le_chebyshevTailLevel r j
+            have h1 := chebyshevTailLevel_le r j
+            nlinarith
+      _ = (r : ℝ) + 1 := by simp
+  have hsum0 : 0 ≤ ∑ j, chebyshevTailLevel r j ^ 2 := Finset.sum_nonneg fun _ _ => sq_nonneg _
+  have hδ : chebyshevHeadGap r = 1 / (8 * ((r : ℝ) + 1) ^ 2) := rfl
+  have hδ0 : 0 < chebyshevHeadGap r := chebyshevHeadGap_pos r
+  have hgap : 2 * chebyshevHeadGap r ≤ (1 + chebyshevHeadGap r) ^ 2 - 1 ^ 2 := by nlinarith
+  have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg m
+  calc ε * (m * ∑ j, chebyshevTailLevel r j ^ 2) ≤ ε * (m * ((r : ℝ) + 1)) := by gcongr
+    _ ≤ ε * (K / (16 * ε * ((r : ℝ) + 1) ^ 3) * ((r : ℝ) + 1)) := by gcongr
+    _ = K / (16 * ((r : ℝ) + 1) ^ 2) := by field_simp
+    _ < 2 * chebyshevHeadGap r * K / 2 := by
+      rw [hδ]
+      rw [div_lt_iff₀ (by positivity)]
+      field_simp
+      nlinarith
+    _ ≤ ((1 + chebyshevHeadGap r) ^ 2 - 1 ^ 2) * K / 2 := by gcongr
+
+omit [DecidableEq k] [DecidableEq m] in
+/-- **Chebyshev fixed-batch Frobenius query lower bound**: for every natural $r$, positive target
+rank, $0<\varepsilon$ at most <!-- value chebyshevAccuracyBound r -->
+$$1/(25088(r+1)^3(r+2)) \,,$$
+and $\lvert m\rvert=\lfloor \lvert k\rvert/(16\varepsilon(r+1)^3)\rfloor$, every measurable
+randomized algorithm using at most $r$ batches and attaining squared relative Frobenius error
+$1+\varepsilon$ with probability at least $1/2$ on every PSD input of dimension
+$\lvert k\rvert+(r+1)\lvert m\rvert$ uses <!-- value chebyshevQueryFactor r -->
+$$q>\frac{\lvert k\rvert}{12544(r+1)^3\varepsilon}$$
+queries. The hard spectrum has its head at $1+1/(8(r+1)^2)$ and Chebyshev tail levels in
+$[1/2,1]$ (`chebyshevLevelSpectrum`). The dependence on the batch count is polynomial; its
+optimal exponent is not asserted. No printed source.
+Result: fixed-batch-low-rank-lower-bound -/
+theorem div_chebyshevQueryFactor_mul_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
+    [Nonempty k] {r : ℕ} {ε : ℝ} {q : ℕ} (hε : 0 < ε)
+    (hεr : ε ≤ chebyshevAccuracyBound r)
+    (hm : Fintype.card m = ⌊(Fintype.card k : ℝ) / (16 * ε * ((r : ℝ) + 1) ^ 3)⌋₊)
+    {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm (k ⊕ (Fin (r + 1) × m) → ℝ)
+      (k ⊕ (Fin (r + 1) × m) → ℝ) q
+      (Matrix (k ⊕ (Fin (r + 1) × m)) k ℝ × Matrix k (k ⊕ (Fin (r + 1) × m)) ℝ)}
+    (halg : QueryAlgorithm.IsMeasurableFamily alg) {pass : S → ℕ → ℕ}
+    (hpass : ∀ s, (alg s).IsPassStructured (pass s)) (hp : ∀ s, ∀ i < q, pass s i < r)
+    (ρ : Measure S) [IsProbabilityMeasure ρ]
+    (hsucc : ∀ A : Matrix (k ⊕ (Fin (r + 1) × m)) (k ⊕ (Fin (r + 1) × m)) ℝ,
+      A.PosSemidef → 1 / 2 ≤ ρ.real {s |
+        frobNorm (A - ((alg s).run A.mulVec).1 * ((alg s).run A.mulVec).2) ^ 2 ≤
+          (1 + ε) * frobNorm (A - truncatedSVD A (Fintype.card k)) ^ 2}) :
+    Fintype.card k / (chebyshevQueryFactor r * ε) < q := by
+  have hk1 : (1 : ℝ) ≤ Fintype.card k := Nat.one_le_cast.mpr Fintype.card_pos
+  have hkpos : (0 : ℝ) < Fintype.card k := Nat.cast_pos.mpr Fintype.card_pos
+  by_contra hcon
+  obtain ⟨hwidth, hmLarge⟩ := mul_add_le_and_mul_le_of_floor_of_le_chebyshevAccuracyBound
+    hk1 hε hεr hm (not_lt.mp hcon)
+  have hsmall := Real.mul_exp_neg_div_lt_half (by norm_num : (0 : ℝ) < 14 ^ 2) hmLarge
+  have hδ := chebyshevHeadGap_pos r
+  exact false_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_pass_lt
+    (τ := 1) (γ := 14) (isExtrapolationControl_chebyshevTailLevel r)
+    (fun j => by linarith [le_chebyshevTailLevel r j]) (chebyshevTailLevel_le r)
+    (by linarith) (by linarith) (by norm_num) (by norm_num) hwidth hsmall
+    (mul_sum_chebyshevTailLevel_sq_lt hkpos hε hm) halg hpass hp ρ hsucc
 
 end NLAlib

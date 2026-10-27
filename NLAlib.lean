@@ -45,6 +45,7 @@ public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exp
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ExpDeriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
@@ -350,6 +351,7 @@ public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter
+public import NLAlib.Polynomial.Chebyshev.ExtremaEvaluation
 public import NLAlib.Polynomial.Chebyshev.Residual
 public import NLAlib.Polynomial.Chebyshev.ResidualMinimax
 public import NLAlib.Polynomial.Chebyshev.TwoInterval
