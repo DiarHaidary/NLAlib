@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Syntax
-public import NLAlibScaffold.Computation.Rounding
+public import NLAlib.Computation.Rounding
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Ring
@@ -131,7 +131,8 @@ private theorem IsDotTrace.exists_eq_sum_of_le {x y s : ℕ → ℝ}
 /-- **Backward error of an inner product** [Higham2002, §3.1], (3.4) there: under the standard
 model with unit roundoff $0 \le u$, $nu < 1$, the result $s_n$ of a trace of recursive
 accumulation is the exact inner product of slightly perturbed data,
-$$s_n = \sum_{k<n} x_k y_k (1 + \eta_k)\,, \qquad \lvert \eta_k \rvert \le \gamma_n\,.$$ -/
+$$s_n = \sum_{k<n} x_k y_k (1 + \eta_k)\,, \qquad \lvert \eta_k \rvert \le \gamma_n\,.$$
+Result: inner-product-backward-error -/
 theorem IsDotTrace.exists_eq_sum_mul_one_add {x y s : ℕ → ℝ}
     (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
     ∃ η : ℕ → ℝ, (∀ k < n, |η k| ≤ roundingFactor n u) ∧
@@ -141,7 +142,8 @@ theorem IsDotTrace.exists_eq_sum_mul_one_add {x y s : ℕ → ℝ}
 /-- **Forward error of an inner product** [Higham2002, §3.1], (3.5) there: under the standard
 model with $0 \le u$, $nu < 1$,
 $$\Bigl\lvert \sum_{k<n} x_k y_k - s_n \Bigr\rvert \le \gamma_n \sum_{k<n}
-\lvert x_k \rvert \lvert y_k \rvert\,.$$ -/
+\lvert x_k \rvert \lvert y_k \rvert\,.$$
+Result: inner-product-forward-error -/
 theorem IsDotTrace.abs_sum_mul_sub_le {x y s : ℕ → ℝ}
     (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
     |∑ k ∈ range n, x k * y k - s n| ≤ roundingFactor n u * ∑ k ∈ range n, |x k| * |y k| := by
@@ -262,7 +264,8 @@ private theorem IsSubstRowTrace.exists_sum_eq {t : ℕ → ℕ → ℝ} {b x s :
 diagonal entry $t_{ii}$ ($i < n$) is nonzero, a trace $\hat{x}$ of forward substitution solves a
 nearby system exactly: for some $\Delta t_{ij}$ with
 $\lvert \Delta t_{ij} \rvert \le \gamma_n \lvert t_{ij} \rvert$ ($j \le i < n$),
-$$\sum_{j \le i} (t_{ij} + \Delta t_{ij})\,\hat{x}_j = b_i \qquad (i < n)\,.$$ -/
+$$\sum_{j \le i} (t_{ij} + \Delta t_{ij})\,\hat{x}_j = b_i \qquad (i < n)\,.$$
+Result: forward-substitution-backward-error -/
 theorem IsSubstTrace.exists_sum_add_mul_eq {t : ℕ → ℕ → ℝ} {b x : ℕ → ℝ}
     (h : IsSubstTrace (fun _ => RelErr u) t b n x) (hdiag : ∀ i < n, t i i ≠ 0) (hu : 0 ≤ u)
     (hn : n * u < 1) :

@@ -32,6 +32,7 @@ Upstream candidate for `Mathlib.Algebra.Order.Round`. Design:
 * `Real.abs_sub_roundNearest_le`: $\lvert x - \mathrm{fl}(x) \rvert \le 2^{-t} \lvert x \rvert$.
 * `Real.roundNearest_mem_floatGrid`: rounding lands on the grid, for $t \ge 1$.
 * `Real.roundNearest_eq_self_of_mem_floatGrid`: rounding fixes the grid.
+* `Real.roundNearest_roundNearest`: rounding is idempotent, for $t \ge 1$.
 * `Real.neg_mem_floatGrid`: the grid is symmetric.
 -/
 
@@ -73,7 +74,7 @@ theorem abs_sub_roundNearest_le (t : ℕ) (x : ℝ) :
     _ = 2⁻¹ ^ t * 2 ^ k := h2
     _ ≤ 2⁻¹ ^ t * |x| := by gcongr
 
-/-- **Rounding lands on the grid**: for $t \ge 1$, $\mathrm{fl}(x)$ is a $t$-bit floating-point
+/-- Rounding lands on the grid: for $t \ge 1$, $\mathrm{fl}(x)$ is a $t$-bit floating-point
 number. (For $t = 0$ the grid is $\{0\}$ and rounding can give a power of two.) No printed
 source. -/
 theorem roundNearest_mem_floatGrid {t : ℕ} (ht : 0 < t) (x : ℝ) :
@@ -113,7 +114,7 @@ theorem roundNearest_mem_floatGrid {t : ℕ} (ht : 0 < t) (x : ℝ) :
     · refine ⟨-1, e + t, by simpa using h1, ?_⟩
       rw [h, zpow_add₀ two_ne_zero, zpow_natCast]; push_cast; ring
 
-/-- **Rounding fixes the grid**: a $t$-bit floating-point number $x$ rounds to itself. No printed
+/-- Rounding fixes the grid: a $t$-bit floating-point number $x$ rounds to itself. No printed
 source. -/
 theorem roundNearest_eq_self_of_mem_floatGrid {t : ℕ} {x : ℝ} (hx : x ∈ floatGrid t) :
     roundNearest t x = x := by
@@ -141,7 +142,13 @@ theorem roundNearest_eq_self_of_mem_floatGrid {t : ℕ} {x : ℝ} (hx : x ∈ fl
   rw [hq, round_intCast, ← hq]
   field_simp
 
-/-- **The grid is symmetric**: if $x$ is a $t$-bit floating-point number, so is $-x$. No printed
+/-- Rounding is idempotent for $t \ge 1$: $\mathrm{fl}(\mathrm{fl}(x)) = \mathrm{fl}(x)$, as
+$\mathrm{fl}(x)$ is on the grid. No printed source. -/
+theorem roundNearest_roundNearest {t : ℕ} (ht : 0 < t) (x : ℝ) :
+    roundNearest t (roundNearest t x) = roundNearest t x :=
+  roundNearest_eq_self_of_mem_floatGrid (roundNearest_mem_floatGrid ht x)
+
+/-- The grid is symmetric: if $x$ is a $t$-bit floating-point number, so is $-x$. No printed
 source. -/
 theorem neg_mem_floatGrid {t : ℕ} {x : ℝ} (hx : x ∈ floatGrid t) : -x ∈ floatGrid t := by
   obtain ⟨m, e, hm, rfl⟩ := hx

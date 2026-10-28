@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Computation.Contract
-public import NLAlibScaffold.ForMathlib.Algebra.Order.Round
+public import NLAlib.Computation.Contract
+public import NLAlib.ForMathlib.Algebra.Order.Round
 
 /-!
 # A floating-point semantics meeting the standard-model contract
@@ -18,15 +18,13 @@ the exact result on the decoded operands, as `NLAlib.Computation.exactSem` compu
 the standard-model contract `NLAlib.Computation.IsRelErrSem` with unit roundoff $u_p = 2^{-t_p}$
 and every value in range, and adds zero exactly (`NLAlib.Computation.AddsZeroExactly`), for
 $t_p \ge 1$: so the hypotheses of the headline theorems of
-`NLAlibScaffold/Computation/BLAS/RoundingErrors.lean` and
-`NLAlibScaffold/Computation/BLAS/Triangular.lean` hold together for a semantics with $u > 0$, and
-those theorems are not about exact arithmetic only.
+`NLAlib/Computation/BLAS/RoundingErrors.lean` and `NLAlib/Computation/BLAS/Triangular.lean` hold
+together for a semantics with $u > 0$, and those theorems are not about exact arithmetic only.
 
 Decoding through the rounding makes every word represent a grid point, which is what
 `NLAlib.Computation.AddsZeroExactly` needs: in a semantics whose words may be off the grid,
 $\mathrm{fl}(0 + y) = \mathrm{fl}(y) \ne y$. Different precisions per tag make it a witness for
-mixed precision through `convert` too. To move into `NLAlib/Computation/Grid.lean` when proved.
-Design: `docs/design/Computation-Rounding.md` (R7).
+mixed precision through `convert` too. Design: `docs/design/Computation-Rounding.md` (R7).
 
 ## Main definitions
 
@@ -75,13 +73,12 @@ theorem relErr_roundNearest (t : ℕ) (x : ℝ) : RelErr (2⁻¹ ^ t) x (Real.ro
 /-- **Floating-point arithmetic meets the standard model**: for $t_p \ge 1$ at every tag,
 `NLAlib.Computation.gridSem t`, with the decoding $x \mapsto \mathrm{fl}_p(x)$, meets the contract
 `NLAlib.Computation.IsRelErrSem` with unit roundoff $u_p = 2^{-t_p}$ and every value in range.
-[Higham2002, Theorem 2.2], with the model (2.4) of §2.2 for each operation family. -/
+[Higham2002, Theorem 2.2], with the model (2.4) of §2.2 for each operation family.
+Result: computation-grid-meets-contract -/
 theorem isRelErrSem_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
     IsRelErrSem (fun p => (2⁻¹ : ℝ) ^ t p) (fun p => Real.roundNearest (t p)) (fun _ _ => True)
       (gridSem t) := by
-  have hfix : ∀ p w, Real.roundNearest (t p) (Real.roundNearest (t p) w) =
-      Real.roundNearest (t p) w := fun p w =>
-    Real.roundNearest_eq_self_of_mem_floatGrid (Real.roundNearest_mem_floatGrid (ht p) w)
+  have hfix p w := Real.roundNearest_roundNearest (ht p) w
   have hrel : ∀ p a, ∃ δ : ℝ, |δ| ≤ (2⁻¹ : ℝ) ^ t p ∧
       Real.roundNearest (t p) (Real.roundNearest (t p) a) = a * (1 + δ) := fun p a => by
     rw [hfix]
@@ -138,7 +135,7 @@ theorem isRelErrSem_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
     subst h; exact hrel q _
   · intro p q x _; exact ⟨_, rfl⟩
 
-/-- **Floating-point arithmetic adds zero exactly**: for $t_p \ge 1$ at every tag,
+/-- Floating-point arithmetic adds zero exactly: for $t_p \ge 1$ at every tag,
 `NLAlib.Computation.gridSem t`, with the decoding $x \mapsto \mathrm{fl}_p(x)$, satisfies
 `NLAlib.Computation.AddsZeroExactly`: if $x$ decodes to $0$, then $x \oplus y$ decodes to the
 decoding of $y$, since that is a grid point and rounding fixes it. No printed source. -/
@@ -147,9 +144,6 @@ theorem addsZeroExactly_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
   intro p x y z h hx
   simp only [gridSem, exactSem, hx, zero_add, Option.map_some, Option.some.injEq] at h
   subst h
-  have hfix : ∀ w, Real.roundNearest (t p) (Real.roundNearest (t p) w) =
-      Real.roundNearest (t p) w := fun w =>
-    Real.roundNearest_eq_self_of_mem_floatGrid (Real.roundNearest_mem_floatGrid (ht p) w)
-  simp only [hfix]
+  simp only [Real.roundNearest_roundNearest (ht p)]
 
 end NLAlib.Computation

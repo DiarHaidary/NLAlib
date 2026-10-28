@@ -6,8 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.Block
-public import NLAlibScaffold.Computation.BLAS
-public import NLAlibScaffold.Computation.BLAS.RoundingErrors
+public import NLAlib.Computation.BLAS.RoundingErrors
 
 /-!
 # Triangular solve
@@ -40,17 +39,6 @@ namespace TrsvLower
 
 variable {P ι K C : Type} [DecidableEq P]
 
-omit [DecidableEq P] in
-private theorem trsvLower_run (p : P) (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ) (x : ℕ)
-    (xo : IExp ℕ) :
-    (trsvLower (ι := ι) p n T tOff x xo).run = .seq (.named "trsvLower"
-      [.idx n, .buf T, .idx tOff, .buf x, .idx xo]
-      (.alloc p 1 fun t => .seq (.loop n fun i => .seq (.loop (.var i) fun j =>
-        .seq (.instr (.bin p .mul ⟨t, 0⟩ ⟨T, tOff + .var i + n * .var j⟩ ⟨x, xo + .var j⟩))
-          (.seq (.instr (.bin p .sub ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨t, 0⟩)) .skip))
-        (.seq (.instr (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩
-          ⟨T, tOff + .var i + n * .var i⟩)) .skip)) .skip)) .skip := rfl
-
 /-- The counts of the first `i` rows: row `k` charges `k` multiplications and subtractions and
 one division. -/
 private def trsvCnt [AddMonoid C] (a b d : C) : ℕ → C
@@ -65,11 +53,6 @@ private theorem trsvCnt_eq {C : Type} [AddCommMonoid C] (a b d : C) (n : ℕ) :
   | succ n ih =>
     rw [trsvCnt, ih, Finset.sum_range_succ, add_nsmul, succ_nsmul]
     abel
-
-private theorem frame_congr {s₀ s : Store P K} {p : P} {T dst dOff L : ℕ} {g g' : ℕ → Option K}
-    (h : Store.BlockFrame s₀ p T dst dOff L s g) (hg : ∀ m < L, g m = g' m) :
-    Store.BlockFrame s₀ p T dst dOff L s g' :=
-  ⟨h.1, h.2.1, fun m hm => (h.2.2 m hm).trans (hg m hm)⟩
 
 /-- The data of a run of `trsvLower` from the store `s₀` with the scratch buffer `Tb` pushed. -/
 private structure Ctx (s₀ : Store P K) (p : P) (Tb A x n tOff xo : ℕ) (tw : ℕ → ℕ → K) :
@@ -100,7 +83,7 @@ private theorem exec_step (hC : Ctx s₀ p Tb A x n.eval tOff.eval xo.eval tw)
   have h₁' := h.write_scratch (fun _ => hC.x_ne (by omega)) h₁
   obtain ⟨k, hxsh, hxlt⟩ := hC.x_shape i hi
   obtain ⟨s₂, h₂⟩ := h₁'.exists_write_eq_some v hxsh hxlt
-  refine ⟨s₂, ?_, frame_congr (h₁'.write_of_lt hi h₂) fun m _ => ?_⟩
+  refine ⟨s₂, ?_, (h₁'.write_of_lt hi h₂).congr fun m _ => ?_⟩
   · obtain ⟨hAT, hAout⟩ := hC.T_out i hi j hj.le
     have hA : σ.store.read p A (tOff.eval + i + n.eval * j) = some (tw i j) :=
       (h.read_of_ne hAT hAout).trans (hC.T_read i hi j hj.le)
@@ -125,7 +108,7 @@ private theorem exec_div (hC : Ctx s₀ p Tb A x n.eval tOff.eval xo.eval tw)
       Store.BlockFrame s₀ p Tb x xo.eval n.eval s' (fun m => some (Function.update c i v m)) := by
   obtain ⟨k, hxsh, hxlt⟩ := hC.x_shape i hi
   obtain ⟨s₂, h₂⟩ := h.exists_write_eq_some v hxsh hxlt
-  refine ⟨s₂, ?_, frame_congr (h.write_of_lt hi h₂) fun m _ => ?_⟩
+  refine ⟨s₂, ?_, (h.write_of_lt hi h₂).congr fun m _ => ?_⟩
   · obtain ⟨hAT, hAout⟩ := hC.T_out i hi i le_rfl
     have hA : σ.store.read p A (tOff.eval + i + n.eval * i) = some (tw i i) :=
       (h.read_of_ne hAT hAout).trans (hC.T_read i hi i le_rfl)
@@ -249,7 +232,7 @@ private theorem exec_core (I : Interp P ι K C) (p : P) (st : St P K C) (n : IEx
         rcases hxT rfl with h | h <;> omega }
   have hbase : Store.BlockFrame st.store p st.store.size x xo.eval n.eval st.store
       (fun m => some (xw m)) := ⟨rfl, fun _ _ _ _ _ => rfl, fun m hm => hx m hm⟩
-  rw [trsvLower_run, exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
+  rw [run_trsvLower, exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
   obtain ⟨σF, hF, sF, cF, rfl, hIF, hG⟩ := exec_rows hC
     (σ := { st with
       store := st.store.push (p, Array.replicate (1 : IExp ℕ).eval none)

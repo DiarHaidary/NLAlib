@@ -1,9 +1,9 @@
 # Design note: rounding-error analysis of the BLAS kernels (standard model; bounded range designed)
 
-**Status: draft for the maintainer, 2026-10-28; review fixes applied (§8).** Branch
-`design/fp-toolkit`, based on `main` at `c4ff3d9`. Skeleton in `NLAlibScaffold/Computation/` and
-`NLAlibScaffold/ForMathlib/Algebra/Order/Round.lean` (38 statements, 34 with `sorry`;
-14 definitions; all elaborated with `lake env lean`). Decision sheet: `FP-Toolkit.json`.
+**Status: implemented, 2026-10-28** (layer 1; layer 2, R6, is designed only). Branch
+`design/fp-toolkit`, based on `main` at `c4ff3d9`; review fixes applied (§8). Every statement of
+§2 is proved and lives at its `NLAlib/` home (§9); the scaffold is empty again. Decision sheet:
+`FP-Toolkit.json`.
 
 ## Summary
 
@@ -424,3 +424,34 @@ what was done:
 | 10 (W) | `IsArithErrSem` will need `convert`, `sqrt`, other literals | **deferred**; when they join, each family gets its own relation (`errConvert p q`, `errSqrt p`), not `err p b` for a fictitious `BinOp` |
 | 11 (W) | layer-2 preview | no action; noted that the grid witness extends to a bounded-exponent one (R7) |
 | 12 (W) | conventions (docstrings, constants rows, `exec_axpy` name) | **deferred**; `IsRelErrSem.exec_axpy` may become `exec_axpy_eq_mul_one_add_add_mul_one_add` |
+
+## 9. Integration (2026-10-28)
+
+All of §2 moved to `NLAlib/` as §2 and §4 say: new files `Computation/Rounding.lean`,
+`Computation/Grid.lean`, `Computation/BLAS/{Traces,RoundingErrors,Triangular}.lean` and
+`ForMathlib/Algebra/Order/Round.lean`; additions to `Contract.lean` (`IsArithErrSem`,
+`AddsZeroExactly`, `IsRelErrSem.isArithErrSem`, `IsRelErrSem.nonneg`, `addsZeroExactly_exactSem`),
+`Exact.lean` (`HoldsDecoded`), `Exec.lean` (`Stmt.StraightLine`, `St.usage`,
+`usage_eq_of_exec_eq_some_of_straightLine`) and `BLAS.lean` (`trsvLower`). Statements are those of
+the skeleton. R4 was not changed: `AddsZeroExactly` stays a separate hypothesis (option (b)), so
+the `hz` hypotheses remain in the headlines until the maintainer decides R4.
+
+Clean-up while moving: the private copies of `BLAS.lean` helpers in the rounding files were
+removed in favour of one public lemma each (`run_dot`, `run_axpy`, the new `run_trsvLower`,
+`Store.read_push_size_set!_zero`, `Store.BlockFrame.congr`, and the ForMathlib
+`Option.exists_map_eq_some_of_exists`); `Real.roundNearest_roundNearest` (rounding is idempotent)
+replaces two local copies in `Grid.lean`; a local `Function.update` lemma is Mathlib's
+`Function.comp_update`.
+
+Registered: `NLAlib.Computation.roundingFactor` in `docs/constants.toml` (value $nu/(1 - nu)$;
+`scripts/check_constants.py` now finds a constant in a sub-namespace by its last name component);
+§5.3 rows. `Result:` ids (§7: the trace bounds a reader looks up, and the grid witness as the
+analogue of `isRelErrSem_exactSem`): `inner-product-backward-error`,
+`inner-product-forward-error`, `forward-substitution-backward-error`,
+`computation-grid-meets-contract`. The kernel headlines (`IsRelErrSem.exec_*`) state runs, so by
+E3 they get an id only as proofs of registered targets; none is registered.
+
+**Still unverified against the book** (§6): the equation numbers (3.4), (3.5) (inner product) and
+(3.11), (3.12), (3.13) (matrix-vector and matrix-matrix products) cited in the docstrings of
+`Traces.lean` and `RoundingErrors.lean`; the form of the ratio rule of Lemma 3.3; the citation
+[GolubVanLoan2013, §3.1] for `exec_trsvLower`.

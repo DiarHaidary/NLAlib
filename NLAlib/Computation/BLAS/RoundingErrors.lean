@@ -6,8 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.BLAS
-public import NLAlibScaffold.Computation.Contract
-public import NLAlibScaffold.Computation.BLAS.Traces
+public import NLAlib.Computation.Contract
+public import NLAlib.Computation.BLAS.Traces
 
 /-!
 # Rounding errors of the BLAS kernels
@@ -59,50 +59,15 @@ section Helpers
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
 
-omit [DecidableEq P] in
-private theorem dot_run' (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
-    (yo n : IExp ℕ) :
-    (dot (ι := ι) p dst x xo y yo n).run = .seq (.named "dot"
-      [.cell dst, .buf x, .idx xo, .buf y, .idx yo, .idx n]
-      (.seq (.instr (.lit p dst 0)) (.alloc p 1 fun t => .seq (.loop n fun i =>
-        .seq (.instr (.un p .conj ⟨t, 0⟩ ⟨x, xo + .var i⟩))
-          (.seq (.instr (.bin p .mul ⟨t, 0⟩ ⟨t, 0⟩ ⟨y, yo + .var i⟩))
-            (.seq (.instr (.bin p .add dst dst ⟨t, 0⟩)) .skip))) .skip))) .skip := rfl
-
-omit [DecidableEq P] in
-private theorem axpy_run' (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
-    (yo n : IExp ℕ) :
-    (axpy (ι := ι) p a x xo y yo n).run = .seq (.named "axpy"
-      [.cell a, .buf x, .idx xo, .buf y, .idx yo, .idx n]
-      (.alloc p 1 fun t => .seq (.loop n fun i =>
-        .seq (.instr (.bin p .mul ⟨t, 0⟩ a ⟨x, xo + .var i⟩))
-          (.seq (.instr (.bin p .add ⟨y, yo + .var i⟩ ⟨y, yo + .var i⟩ ⟨t, 0⟩)) .skip))
-        .skip)) .skip := rfl
-
-private theorem exists_map_eq_some' {α β : Type} {o : Option α} {f : α → β} {Q : α → Prop}
-    {R : β → Prop} (h : ∃ a, o = some a ∧ Q a) (hQ : ∀ a, Q a → R (f a)) :
-    ∃ b, o.map f = some b ∧ R b := by
-  obtain ⟨a, rfl, ha⟩ := h
-  exact ⟨f a, rfl, hQ a ha⟩
-
+/-- Reordering the witnesses of a successful run with two more. -/
 private theorem exists₃_of {β W S : Type} {o : Option β} {Q : β → W → S → Prop}
-    (h : ∃ b, o = some b ∧ ∃ w s, Q b w s) : ∃ b w s, o = some b ∧ Q b w s := by
-  obtain ⟨b, hb, w, s, hQ⟩ := h
-  exact ⟨b, w, s, hb, hQ⟩
+    (h : ∃ b, o = some b ∧ ∃ w s, Q b w s) : ∃ b w s, o = some b ∧ Q b w s :=
+  let ⟨b, hb, w, s, hQ⟩ := h; ⟨b, w, s, hb, hQ⟩
 
+/-- Reordering the witnesses of a successful run with one more. -/
 private theorem exists₂_of {β W : Type} {o : Option β} {Q : β → W → Prop}
-    (h : ∃ b, o = some b ∧ ∃ w, Q b w) : ∃ b w, o = some b ∧ Q b w := by
-  obtain ⟨b, hb, w, hQ⟩ := h
-  exact ⟨b, w, hb, hQ⟩
-
-omit [DecidableEq P] in
-private theorem foldlM_range_succ' {α : Type} (g : α → ℕ → Option α) (a : α) (i : ℕ) :
-    (List.range (i + 1)).foldlM g a = ((List.range i).foldlM g a).bind fun b => g b i := by
-  rw [List.range_succ, List.foldlM_append]
-  rcases (List.range i).foldlM g a with _ | b
-  · rfl
-  · change (g b i).bind (fun b => some b) = g b i
-    rcases g b i <;> rfl
+    (h : ∃ b, o = some b ∧ ∃ w, Q b w) : ∃ b w, o = some b ∧ Q b w :=
+  let ⟨b, hb, w, hQ⟩ := h; ⟨b, w, hb, hQ⟩
 
 /-- The writes of a fold depend only on the values at the indices of the list. -/
 private theorem foldlM_write_congr {s : Store P K} {p : P} {b : ℕ} {idx : ℕ → ℕ} {f g : ℕ → K}
@@ -114,11 +79,6 @@ private theorem foldlM_write_congr {s : Store P K} {p : P} {b : ℕ} {idx : ℕ 
   | cons i l ih =>
     rw [List.foldlM_cons, List.foldlM_cons, h i List.mem_cons_self]
     exact congrArg _ (funext fun s => ih (fun j hj => h j (List.mem_cons_of_mem _ hj)))
-
-/-- Reading the cell of a pushed one-cell scratch buffer just written. -/
-private theorem read_push_set_zero {s : Store P K} {p : P} {arr : Array (Option K)} {v : K}
-    (h : 0 < arr.size) : Store.read (s.push (p, arr.set! 0 (some v))) p s.size 0 = some v := by
-  simp [Store.read_push_size, h]
 
 /-- Extending a trace of recursive accumulation by one step. -/
 private theorem IsDotTrace.update {err : BinOp → ℝ → ℝ → Prop} {x y s : ℕ → ℝ} {k : ℕ}
@@ -196,11 +156,12 @@ private theorem exec_dot_step_err (h : IsArithErrSem err dec safe I.sem)
     (exec_seq_instr_un I (s := si.push (p, a₁)) (by rw [hst]; exact r1 arr) hzc
       (by dsimp only [IExp.eval_zero]; rw [hst, ← hsz, Store.write_push_size (by omega)])).trans
     ((exec_seq_instr_bin I (s := si.push (p, a₂))
-      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact read_push_set_zero (by omega)) (r3 _)
+      (by dsimp only [IExp.eval_zero]; rw [← hsz];
+          exact Store.read_push_size_set!_zero (by omega)) (r3 _)
       hzq (by dsimp only [IExp.eval_zero]; rw [← hsz, Store.write_push_size h₁])).trans
     ((exec_seq_instr_bin I
       (by rw [Store.read_push_of_lt hdlt]; exact Store.read_of_write_eq_some hsi)
-      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact read_push_set_zero h₁)
+      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact Store.read_push_size_set!_zero h₁)
       hzn w3).trans (exec_skip I _))),
     hq, hn, fun h0 => hz p w zq zn hzn h0⟩
 
@@ -242,25 +203,10 @@ private theorem exec_axpy_step_err (h : IsArithErrSem err dec safe I.sem) {si : 
       (by dsimp only [IExp.eval_zero]; rw [hst, ← ht, Store.write_push_size (by omega)])).trans
     ((exec_seq_instr_bin I
       (by rw [Store.read_push_of_lt hylt]; exact hy)
-      (by dsimp only [IExp.eval_zero]; rw [← ht]; exact read_push_set_zero (by omega))
+      (by dsimp only [IExp.eval_zero]; rw [← ht]; exact Store.read_push_size_set!_zero (by omega))
       hzn
       (by rw [Store.write_push_of_lt hylt]; dsimp only [IExp.eval_add, IExp.eval_var];
           rw [hsi', Option.map_some])).trans (exec_skip I _)), hq, hn⟩
-
-/-- A frame depends only on the values of the block below its length. -/
-private theorem Store.BlockFrame.congr_val {s₀ s : Store P K} {T dst dOff L : ℕ}
-    {g g' : ℕ → Option K} (hF : Store.BlockFrame s₀ p T dst dOff L s g)
-    (hg : ∀ k < L, g k = g' k) : Store.BlockFrame s₀ p T dst dOff L s g' :=
-  ⟨hF.1, hF.2.1, fun k hk => (hF.2.2 k hk).trans (hg k hk)⟩
-
-omit [DecidableEq P] in
-private theorem update_some_eq {W : ℕ → K} {i : ℕ} {w : K} :
-    Function.update (fun k => some (W k)) i (some w) =
-      fun k => some (Function.update W i w k) := by
-  funext k
-  by_cases hk : k = i
-  · subst hk; simp
-  · simp [hk]
 
 /-- The store facts of a run of `gemv` from the store `s₀` (with the scratch buffer `T`
 pushed): the scratch buffer, the cells of $\mathbf{y}$, and the decoded words of $\mathbf{A}$
@@ -345,7 +291,7 @@ private theorem exec_gemvRow_err (h : IsArithErrSem err dec safe I.sem)
   rw [htr.2] at hn h0
   refine ⟨σ'', hrun, Function.update W' i' w',
     Function.update S' i' (Function.update (S' i') (j + 1) (dec p w')),
-    by rw [← update_some_eq]; exact hF'', fun i hi => ?_⟩
+    by convert hF'' using 1; exact Function.comp_update some W' i' w', fun i hi => ?_⟩
   by_cases hii : i = i'
   · subst hii
     simp only [lt_add_one, if_true, Function.update_self]
@@ -444,12 +390,13 @@ theorem IsArithErrSem.exec_dot (h : IsArithErrSem err dec safe I.sem)
   obtain ⟨z0, hz0, hdz0⟩ := h.lit_zero p
   obtain ⟨v, s₁, hw⟩ := hdst
   obtain ⟨s0, hs0⟩ := Store.exists_write_eq_some_of_write_eq_some hw z0
-  rw [dot_run', exec_seq_skip, exec_named, exec_seq_instr_lit I hz0 hs0, exec_alloc,
+  rw [run_dot, exec_seq_skip, exec_named, exec_seq_instr_lit I hz0 hs0, exec_alloc,
     exec_seq_skip]
-  refine exists₃_of (exists_map_eq_some' (exists_exec_loop_eq_some_of_forall I (fun i st' =>
-    ∃ si : Store P K, ∃ arr : Array (Option K), ∃ w : K, ∃ s : ℕ → ℝ,
+  refine exists₃_of (Option.exists_map_eq_some_of_exists (exists_exec_loop_eq_some_of_forall I
+    (fun i st' => ∃ si : Store P K, ∃ arr : Array (Option K), ∃ w : K, ∃ s : ℕ → ℝ,
       st.store.write p dst.buf dst.idx.eval w = some si ∧ arr.size = 1 ∧
-      st'.store = si.push (p, arr) ∧ IsDotTrace (err p) xs ys i s ∧ dec p w = s i) ?_ ?_) ?_)
+      st'.store = si.push (p, arr) ∧ IsDotTrace (err p) xs ys i s ∧ dec p w = s i) ?_ ?_)
+    fun _ ⟨si, _, w, s, hsi, _, hst, htr, hws⟩ => ⟨w, s, by simpa [hst] using hsi, htr, hws⟩)
   · exact ⟨s0, Array.replicate 1 none, z0, fun _ => 0, hs0, by simp, rfl,
       ⟨rfl, fun k hk => absurd hk (Nat.not_lt_zero _)⟩, hdz0⟩
   · intro i hi st' ⟨si, arr, w, s, hsi, harr, hst, htr, hws⟩
@@ -464,15 +411,14 @@ theorem IsArithErrSem.exec_dot (h : IsArithErrSem err dec safe I.sem)
     rw [hws] at hn h0
     refine ⟨_, hrun, si', arr', w', Function.update s (i + 1) (dec p w'), hsi', harr', rfl,
       htr.update hq hn h0, by rw [Function.update_self]⟩
-  · intro stL ⟨si, arr, w, s, hsi, harr, hst, htr, hws⟩
-    exact ⟨w, s, by simpa [hst] using hsi, htr, hws⟩
 
 /-- **The run of `axpy` under an error contract**: if $a$ and the cells of $\mathbf{x}$ and
 $\mathbf{y}$ hold words decoding to $a$, $x_i$, $y_i$ ($i < n$), $a$ is not in $\mathbf{y}$,
 $\mathbf{x}$ and $\mathbf{y}$ are the same vector or do not overlap, and every $a x_i$ and every
 $q + y_i$ with $q$ related to $a x_i$ is in range, then the run succeeds, writes words $w_i$ into
 the cells of $\mathbf{y}$ and nothing else, and $w_i$ decodes to a value related by `err` to
-$q_i + y_i$ for a $q_i$ related to $a x_i$. No printed source. -/
+$q_i + y_i$ for a $q_i$ related to $a x_i$. From the model (2.4) of [Higham2002, §2.2], for
+the order of operations of `axpy`. -/
 theorem IsArithErrSem.exec_axpy (h : IsArithErrSem err dec safe I.sem) (a : Cell ℕ ℕ) (x : ℕ)
     (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (av : ℝ) (xs ys : ℕ → ℝ)
     (ha : ∃ w, st.store.read p a.buf a.idx.eval = some w ∧ dec p w = av)
@@ -486,12 +432,14 @@ theorem IsArithErrSem.exec_axpy (h : IsArithErrSem err dec safe I.sem) (a : Cell
       st.store.writeBlock p y yo.eval ((List.range n.eval).toArray.map W) = some st'.store ∧
       ∀ i < n.eval, ∃ q, err p .mul (av * xs i) q ∧ err p .add (q + ys i) (dec p (W i)) := by
   obtain ⟨wa, hwa, hva⟩ := ha
-  rw [axpy_run', exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
-  refine exists₂_of (exists_map_eq_some' (exists_exec_loop_eq_some_of_forall I (fun i st' =>
-    ∃ si : Store P K, ∃ arr : Array (Option K), ∃ W : ℕ → K,
+  rw [run_axpy, exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
+  refine exists₂_of (Option.exists_map_eq_some_of_exists (exists_exec_loop_eq_some_of_forall I
+    (fun i st' => ∃ si : Store P K, ∃ arr : Array (Option K), ∃ W : ℕ → K,
       (List.range i).foldlM (fun s j => s.write p y (yo.eval + j) (W j)) st.store = some si ∧
       arr.size = 1 ∧ st'.store = si.push (p, arr) ∧
-      ∀ k < i, ∃ q, err p .mul (av * xs k) q ∧ err p .add (q + ys k) (dec p (W k))) ?_ ?_) ?_)
+      ∀ k < i, ∃ q, err p .mul (av * xs k) q ∧ err p .add (q + ys k) (dec p (W k))) ?_ ?_)
+    fun _ ⟨si, _, W, hsi, _, hst, hW⟩ =>
+      ⟨W, by rw [Store.writeBlock_map_range, hsi]; simp [hst], hW⟩)
   · exact ⟨st.store, Array.replicate 1 none, fun _ => wa, rfl, by simp, rfl,
       fun k hk => absurd hk (Nat.not_lt_zero _)⟩
   · intro i hi st' ⟨si, arr, W, hsi, harr, hst, hW⟩
@@ -520,18 +468,14 @@ theorem IsArithErrSem.exec_axpy (h : IsArithErrSem err dec safe I.sem) (a : Cell
     rw [hva, hvx] at hq
     rw [hvy] at hn
     refine ⟨_, hrun, si', arr', Function.update W i w', ?_, harr', rfl, fun k hk => ?_⟩
-    · rw [foldlM_range_succ', foldlM_write_congr _ fun j hj => Function.update_of_ne
-        (Nat.ne_of_lt (List.mem_range.mp hj)) _ _, hsi, Option.bind_some, Function.update_self,
-        hsi']
+    · rw [List.range_succ, List.foldlM_append, foldlM_write_congr _ fun j hj =>
+        Function.update_of_ne (Nat.ne_of_lt (List.mem_range.mp hj)) _ _, hsi]
+      simp [hsi']
     · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
       · rw [Function.update_of_ne (Nat.ne_of_lt hk)]
         exact hW k hk
       · rw [Function.update_self]
         exact ⟨q, hq, hn⟩
-  · intro stL ⟨si, arr, W, hsi, harr, hst, hW⟩
-    refine ⟨W, ?_, hW⟩
-    rw [Store.writeBlock_map_range, hsi]
-    simp [hst]
 
 /-- **The run of `gemv` under an error contract**: if buffer $A$ holds words decoding to
 $a_{ij}$ ($i < m$, $j < n$, column-major from $\mathit{ao}$), the cells of $\mathbf{x}$ words
@@ -593,7 +537,7 @@ theorem IsArithErrSem.exec_gemv (h : IsArithErrSem err dec safe I.sem)
       peak := Function.update σ₁.peak p (max (σ₁.peak p) (σ₁.cur p + (1 : IExp ℕ).eval))
       curW := σ₁.curW + (1 : IExp ℕ).eval * I.width p
       peakW := max σ₁.peakW (σ₁.curW + (1 : IExp ℕ).eval * I.width p) })
-    hdz0 ((hI₁.push _ hylt).congr_val p hzr)
+    hdz0 ((hI₁.push _ hylt).congr hzr)
   rw [hF, Option.map_some]
   obtain ⟨s₁, hs₁⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store) (p := p)
     (b := y) (off := yo.eval) (xs := (List.range m.eval).toArray.map W)
@@ -763,10 +707,10 @@ theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add (h : IsRelErrSem u dec (fun _ _ 
   exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
 
 /-- **Forward error of `dot`** in the standard model [Higham2002, §3.1], (3.5) there: under the
-hypotheses of `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add` (the contract with
-every value in range, adding zero exactly, $n u_p < 1$, decoded inputs $x_i$, $y_i$, a cell
-$\mathit{dst}$ of tag $p$ in neither), the run of `dot` succeeds, writes one word $w$ into
-$\mathit{dst}$ and nothing else, and
+contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
+$n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
+($i < n$) and $\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes
+one word $w$ into $\mathit{dst}$ and nothing else, and
 $$\Bigl\lvert \sum_{i<n} x_i y_i - w \Bigr\rvert \le \gamma_n \sum_{i<n}
 \lvert x_i \rvert \lvert y_i \rvert\,,$$ with $w$ read through its decoding. -/
 theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -858,10 +802,11 @@ theorem IsRelErrSem.exec_gemv_eq_add_mulVec (h : IsRelErrSem u dec (fun _ _ => T
       simp [i.2, j.2]; ring
 
 /-- **Forward error of `gemv`** in the standard model [Higham2002, §3.5], (3.12) there: under
-the hypotheses of `NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec` (the contract with
-every value in range, adding zero exactly, $n u_p < 1$, $\mathbf{A}$ and $\mathbf{x}$ stored
-through the decoding, $\mathbf{y}$ cells of tag $p$ overlapping neither), the run of `gemv`
-succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and
+the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
+$n u_p < 1$, if buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding
+(column-major from $\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to
+$\mathbf{x}$, and the cells of $\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of
+`gemv` succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and
 $$\bigl\lvert (\mathbf{A}\mathbf{x})_i - w_i \bigr\rvert \le
 \gamma_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{x} \rvert\bigr)_i\,,$$ with $w_i$ read
 through its decoding and absolute values entrywise. -/

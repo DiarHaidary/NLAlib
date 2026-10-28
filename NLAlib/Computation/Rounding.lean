@@ -16,13 +16,13 @@ public import Mathlib.Tactic.Positivity
 /-!
 # Accumulated rounding errors
 
-The constant $\gamma_n = nu/(1 - nu)$ of the standard model of floating-point arithmetic,
-`NLAlib.Computation.roundingFactor n u`, and its algebra: a product of $n$ factors
-$(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u$ is $1 + \theta_n$ with
-$\lvert \theta_n \rvert \le \gamma_n$, and the rules that combine such $\theta$'s. The relation
-`NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with relative error at most $u$, the error
-clause of the model (2.4) of [Higham2002]. Every lemma assumes $nu < 1$, under which
-$\gamma_n$ is finite. Design: `docs/design/Computation-Rounding.md` (R1, R2).
+The constant <!-- value Computation.roundingFactor n u --> $\gamma_n = nu/(1 - nu)$ of the
+standard model of floating-point arithmetic, `NLAlib.Computation.roundingFactor n u`, and its
+algebra: a product of $n$ factors $(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u$
+is $1 + \theta_n$ with $\lvert \theta_n \rvert \le \gamma_n$, and the rules that combine such
+$\theta$'s [Higham2002]. The relation `NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with
+relative error at most $u$, the error clause of the standard model. Every lemma assumes
+$nu < 1$, under which $\gamma_n$ is finite. Design: `docs/design/Computation-Rounding.md` (R1, R2).
 
 ## Main definitions
 
@@ -43,8 +43,9 @@ $\gamma_n$ is finite. Design: `docs/design/Computation-Rounding.md` (R1, R2).
 
 namespace NLAlib.Computation
 
-/-- **The accumulated rounding factor** $\gamma_n = nu/(1 - nu)$ of [Higham2002, §3.1], the
-bound on $n$ accumulated relative errors of size at most $u$. It is meaningful for $nu < 1$, which
+/-- **The accumulated rounding factor** <!-- value Computation.roundingFactor n u -->
+$\gamma_n = nu/(1 - nu)$ of [Higham2002, §3.1], the bound on $n$ accumulated relative errors of
+size at most $u$. It is meaningful for $nu < 1$, which
 every lemma about it assumes. -/
 noncomputable def roundingFactor (n : ℕ) (u : ℝ) : ℝ := n * u / (1 - n * u)
 
