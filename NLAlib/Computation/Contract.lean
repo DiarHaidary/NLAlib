@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Computation.Exact
 public import NLAlib.Computation.Rounding
+public import Mathlib.Analysis.Normed.Lp.PiLp
 
 /-!
 # Error contracts on a value semantics
@@ -39,6 +40,9 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002]. D
 * `NLAlib.Computation.IsArithErrSem`: arithmetic error and success clauses for an error
   relation.
 * `NLAlib.Computation.AddsZeroExactly`: adding a decoded zero is exact.
+* `NLAlib.Computation.IsMatvecErr`: a normwise accuracy and success contract for an oracle.
+* `NLAlib.Computation.MatrixFreeRounded`: the matrix-free model in the standard model of
+  floating point.
 
 ## Main results
 
@@ -243,5 +247,59 @@ theorem addsZeroExactly_exactSem : AddsZeroExactly (P := P) (fun _ x => x)
   rw [← h, hx, zero_add]
 
 end ArithErr
+
+section Oracle
+open scoped Matrix
+variable {P ι K C : Type}
+
+/-- **A normwise matvec contract** for oracle `o` of interpretation `I`, at tag `p`, for the
+real $N \times N$ matrix $\mathbf{H}$ and bound $c$: the oracle has height $N$, and on every
+single column $\mathbf{x}$ of $N$ words it succeeds with $N$ words $\mathbf{y}$ with
+$\lVert\mathbf{H}\mathbf{x} - \mathbf{y}\rVert \le c\lVert\mathbf{x}\rVert$, vectors read
+through the decoding. The value semantics constrains scalar operations only, so the accuracy of
+an oracle is an assumption on the interpretation (`docs/design/Computation-Rounding.md` §5); a
+relative contract $\lVert\mathbf{H}\mathbf{x} - \mathbf{y}\rVert \le
+\varepsilon\lVert\mathbf{H}\rVert_2\lVert\mathbf{x}\rVert$ takes
+$c = \varepsilon\lVert\mathbf{H}\rVert_2$ (the spectral norm is a Matrix-layer name, which this
+layer does not import). Design: `docs/design/Krylov-LanczosRounding.md` (§2.4, L7). -/
+def IsMatvecErr (I : Interp P ι K C) (o : ι) (dec : P → K → ℝ) (p : P) {N : ℕ}
+    (H : Matrix (Fin N) (Fin N) ℝ) (c : ℝ) : Prop :=
+  I.height o = N ∧ ∀ X : Array K, (hX : X.size = N) → ∃ Y : Array K, ∃ hY : Y.size = N,
+    I.oracle o 1 X = some Y ∧
+      ‖WithLp.toLp 2 ((H *ᵥ fun i : Fin N => dec p (X[i.1]'(hX ▸ i.2))) -
+          fun i : Fin N => dec p (Y[i.1]'(hY ▸ i.2)))‖ ≤
+        c * ‖WithLp.toLp 2 (fun i : Fin N => dec p (X[i.1]'(hX ▸ i.2)))‖
+
+variable [DecidableEq P] [AddMonoid C] in
+/-- **The matrix-free model in the standard model of floating point.** The program family
+`prog` (a statement for each size; a compiled program enters as `Prog.toStmt`) runs, for all
+sizes $N$, $n$ satisfying `valid`, every declared input $x$ (of type `X N n`) and every real
+$N \times N$ matrix $\mathbf{H}$ satisfying the precondition `pre N n x H`, under **every**
+interpretation $I$ whose value semantics meets `NLAlib.Computation.IsRelErrSem` (unit roundoff
+`u`, decoding `dec`, every value in range) and `NLAlib.Computation.AddsZeroExactly`, and whose
+every oracle meets `NLAlib.Computation.IsMatvecErr` for $\mathbf{H}$ with the bound
+`mvBound N n H`, from the initial state that holds the declared buffers `inputs N n x` at tag
+`p` and nothing else, and ends in a state satisfying `post N n x H`.
+
+As in `NLAlib.Computation.MatrixFree`, the program is bound before the sizes, the matrix and the
+inputs, and learns $\mathbf{H}$ only through oracle calls; unlike it, the arithmetic is any
+semantics meeting the two contracts on scalars and the oracles any meeting the matvec contract
+(two contracts, not one bundled contract on `Interp`: decision L7 of
+`docs/design/Krylov-LanczosRounding.md`). No counts: the charge of `I` is arbitrary. -/
+def MatrixFreeRounded {r b : ℕ} (p : P) (prog : ℕ → (Fin r → ℕ) → Stmt P ι ℕ ℕ)
+    (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
+    (u : P → ℝ) (dec : P → K → ℝ)
+    (mvBound : (N : ℕ) → (Fin r → ℕ) → Matrix (Fin N) (Fin N) ℝ → ℝ)
+    (pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) ℝ → Prop)
+    (post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) ℝ → St P K C → Prop) :
+    Prop :=
+  ∀ N n, valid N n → ∀ (x : X N n) (H : Matrix (Fin N) (Fin N) ℝ) (I : Interp P ι K C),
+    IsRelErrSem u dec (fun _ _ => True) I.sem → AddsZeroExactly dec I.sem →
+    (∀ o, IsMatvecErr I o dec p H (mvBound N n H)) → pre N n x H →
+    ∃ st', exec I (prog N n) (inputState p (List.ofFn (inputs N n x))) = some st' ∧
+      post N n x H st'
+
+end Oracle
 
 end NLAlib.Computation

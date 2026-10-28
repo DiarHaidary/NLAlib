@@ -182,7 +182,8 @@ private theorem scal_run (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) 
         .seq (.instr (.bin p .mul ⟨x, xo + .var i⟩ a ⟨x, xo + .var i⟩)) .skip) .skip)) .skip :=
   rfl
 
-private theorem rscl_run (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) :
+/-- The program of `rscl`: divide $x_i$ by $a$ in place for each $i$. -/
+theorem run_rscl (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) :
     (rscl (ι := ι) p a x xo n).run = .seq (.named "rscl" [.cell a, .buf x, .idx xo, .idx n]
       (.seq (.loop n fun i =>
         .seq (.instr (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ a)) .skip) .skip)) .skip :=
@@ -536,7 +537,7 @@ theorem exec_rscl (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (av : 𝕜) (xs
       st'.cnt = st.cnt + n.eval • Finsupp.single (.bin p .div) 1 ∧
       st'.peak = st.peak ∧ st'.peakW = st.peakW := by
   rw [Store.writeBlock_map_range] at h₁
-  rw [rscl_run, exec_seq_skip, exec_named, exec_seq_skip]
+  rw [run_rscl, exec_seq_skip, exec_named, exec_seq_skip]
   refine Exists.imp (fun stL h => ⟨h.1, ?_⟩) (exists_exec_loop_eq_some_of_forall I (fun i st' =>
     ∃ si : Store P 𝕜,
       (List.range i).foldlM (fun s j => s.write p x (xo.eval + j) (xs j / av)) st.store =

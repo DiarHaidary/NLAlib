@@ -33,6 +33,7 @@ To move into `NLAlib/Krylov/FinitePrecision/LanczosRun.lean`. Design:
 ## Main definitions
 
 * `NLAlib.LanczosRun`: a run of $k$ steps with accuracy parameter $\varepsilon$.
+* `NLAlib.LanczosRun.ofLE`: the same run with a larger accuracy parameter.
 -/
 
 @[expose] public section
@@ -118,5 +119,38 @@ structure LanczosRun (n k : ℕ) where
   β_nonneg : ∀ j ≤ k, 0 ≤ β j
   /-- No breakdown before the last step. -/
   β_pos : ∀ j, 1 ≤ j → j < k → 0 < β j
+
+namespace LanczosRun
+
+variable {n k : ℕ}
+
+/-- **A run with a larger accuracy parameter**: a run with parameter $\varepsilon$ is one with
+any $\varepsilon' \ge \varepsilon$ such that $k\varepsilon' \le 1/100$; every field but the
+parameter is unchanged. For callers whose $\varepsilon$ differs from the one a construction
+produces (a coarser oracle contract, a uniform constant). No printed source. -/
+noncomputable def ofLE (L : LanczosRun n k) {ε' : ℝ} (hε : L.ε ≤ ε')
+    (h : (k : ℝ) * ε' ≤ 1 / 100) : LanczosRun n k :=
+  { L with
+    ε := ε'
+    ε_nonneg := L.ε_nonneg.trans hε
+    k_mul_ε_le := h
+    norm_eu_le := fun j hj => (L.norm_eu_le j hj).trans <| mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_right hε (specNorm_nonneg _)) (norm_nonneg _)
+    norm_ew_le := fun j hj => (L.norm_ew_le j hj).trans <|
+      mul_le_mul_of_nonneg_right hε (by positivity)
+    abs_eα_le := fun j hj => (L.abs_eα_le j hj).trans <| mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_right hε (norm_nonneg _)) (norm_nonneg _)
+    norm_ez_le := fun j hj => (L.norm_ez_le j hj).trans <|
+      mul_le_mul_of_nonneg_right hε (by positivity)
+    norm_δ_le := fun j hj => (L.norm_δ_le j hj).trans <|
+      mul_le_mul_of_nonneg_right hε (norm_nonneg _)
+    abs_norm_v_sq_sub_one_le := fun j h1 h2 => (L.abs_norm_v_sq_sub_one_le j h1 h2).trans hε
+    abs_norm_v_succ_sq_sub_one_le := fun hk => (L.abs_norm_v_succ_sq_sub_one_le hk).trans hε }
+
+/-- The run `NLAlib.LanczosRun.ofLE` has parameter $\varepsilon'$. -/
+@[simp] theorem ε_ofLE (L : LanczosRun n k) {ε' : ℝ} (hε : L.ε ≤ ε')
+    (h : (k : ℝ) * ε' ≤ 1 / 100) : (L.ofLE hε h).ε = ε' := rfl
+
+end LanczosRun
 
 end NLAlib

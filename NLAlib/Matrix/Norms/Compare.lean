@@ -23,6 +23,8 @@ Bounds that are linear in the norms are stated once, linearly; their squares fol
 * `NLAlib.specNorm_le_frobNorm`: $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{\mathsf{F}}$.
 * `NLAlib.frobNorm_mul_le_specNorm_mul_frobNorm`,
   `NLAlib.frobNorm_mul_le_frobNorm_mul_specNorm`: the mixed product bounds.
+* `NLAlib.norm_toLp_map_abs_mulVec_abs_le`: $\lVert\,\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert\,
+  \rVert \le \sqrt{\lvert n \rvert}\,\|\mathbf{A}\|_2\lVert\mathbf{x}\rVert$.
 * `NLAlib.HasOrthonormalCols.specNorm_mul_left`, `NLAlib.HasOrthonormalCols.frobNorm_mul_left`:
   both norms are invariant under left multiplication by a matrix with orthonormal columns, and
   under right multiplication by the conjugate transpose of one.
@@ -62,6 +64,24 @@ theorem frobNorm_le_sqrt_card_mul_specNorm (A : Matrix m n 𝕜) :
   refine (sq_le_sq₀ (frobNorm_nonneg A) (by positivity)).1 ?_
   rw [mul_pow, Real.sq_sqrt (Nat.cast_nonneg _)]
   exact frobNorm_sq_le_card_mul_specNorm_sq A
+
+/-- **The entrywise product bound**: for a real $\mathbf{A}$ with $n$ columns, absolute values
+taken entrywise, $\lVert\,\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert\,\rVert \le
+\|\mathbf{A}\|_{\mathsf{F}}\lVert\mathbf{x}\rVert \le \sqrt{\lvert n \rvert}\,
+\|\mathbf{A}\|_2\lVert\mathbf{x}\rVert$; it turns a componentwise error bound
+$\lvert\mathbf{e}\rvert \le c\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert$ into a normwise one.
+Cauchy–Schwarz by rows, then [GolubVanLoan2013, (2.3.7)]. -/
+theorem norm_toLp_map_abs_mulVec_abs_le (A : Matrix m n ℝ) (x : n → ℝ) :
+    ‖WithLp.toLp 2 (A.map abs *ᵥ fun j => |x j|)‖ ≤
+      √(Fintype.card n : ℝ) * specNorm A * ‖WithLp.toLp 2 x‖ := by
+  have hF : frobNorm (A.map abs) = frobNorm A := by
+    simp [frobNorm]
+  have hx : ‖WithLp.toLp 2 (fun j => |x j|)‖ = ‖WithLp.toLp 2 x‖ := by
+    simp [EuclideanSpace.norm_eq]
+  calc _ ≤ frobNorm (A.map abs) * ‖WithLp.toLp 2 (fun j => |x j|)‖ :=
+        norm_toLp_mulVec_le_frobNorm_mul _ _
+    _ = frobNorm A * ‖WithLp.toLp 2 x‖ := by rw [hF, hx]
+    _ ≤ _ := by gcongr; exact frobNorm_le_sqrt_card_mul_specNorm A
 
 /-- The squared Frobenius norm is at most the number of rows times the squared spectral norm,
 $\|\mathbf{A}\|_{\mathsf{F}}^2 \le \lvert m \rvert \|\mathbf{A}\|_2^2$ with $m$ the row index type:

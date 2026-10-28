@@ -35,6 +35,8 @@ absolute error in a multiplication or division is pushed onto its operands
 
 * `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add`: backward error of an inner
   product, [Higham2002, §3.1].
+* `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add_isRoundingProduct`: the same with
+  each $1 + \eta_k$ a product of rounding factors.
 * `NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le`: forward error of an inner product.
 * `NLAlib.Computation.exists_eq_mul_one_add_add_mul_one_add_of_relErr`: one `axpy` entry.
 * `NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq`: backward error of forward
@@ -93,10 +95,11 @@ private theorem exists_fun_of_forall_lt {α : Type} [Nonempty α] {k : ℕ} {Q :
   exact (h j hj).choose_spec
 
 /-- The invariant of a trace of recursive accumulation: after $k \le n$ steps,
-$s_k = \sum_{j<k} x_j y_j (1 + \eta_j)$ with $\lvert \eta_j \rvert \le \gamma_k$. -/
+$s_k = \sum_{j<k} x_j y_j (1 + \eta_j)$ with each $1 + \eta_j$ a product of $k$ rounding
+factors. -/
 private theorem IsDotTrace.exists_eq_sum_of_le {x y s : ℕ → ℝ}
-    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
-    ∀ k ≤ n, ∃ η : ℕ → ℝ, (∀ j < k, |η j| ≤ roundingFactor k u) ∧
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) :
+    ∀ k ≤ n, ∃ η : ℕ → ℝ, (∀ j < k, IsRoundingProduct u k (η j)) ∧
       s k = ∑ j ∈ range k, x j * y j * (1 + η j) := by
   intro k
   induction k with
@@ -105,28 +108,37 @@ private theorem IsDotTrace.exists_eq_sum_of_le {x y s : ℕ → ℝ}
     intro hk
     obtain ⟨η, hη, hs⟩ := ih (by omega)
     obtain ⟨q, ⟨δ, hδ, rfl⟩, ⟨ε, hε, hs₁⟩, h0⟩ := h.2 k (by omega)
-    have hu1 : u < 1 := by simpa using cast_mul_lt_one_of_le hu (m := 1) (by omega) hn
-    have hk1 : ((k + 1 : ℕ) : ℝ) * u < 1 := cast_mul_lt_one_of_le hu hk hn
-    have hγ1 := le_roundingFactor_one hu hu1
     rcases Nat.eq_zero_or_pos k with rfl | hk0
-    · refine ⟨fun _ => δ, fun j _ => by simpa using hδ.trans hγ1, ?_⟩
+    · refine ⟨fun _ => δ, fun j _ => isRoundingProduct_one_of_abs_le hδ, ?_⟩
       rw [h0 h.1]
       simp
     refine ⟨fun j => if j < k then (1 + η j) * (1 + ε) - 1 else (1 + δ) * (1 + ε) - 1,
       fun j hj => ?_, ?_⟩
     · by_cases hjk : j < k
       · simp only [if_pos hjk]
-        exact abs_one_add_mul_one_add_sub_one_le hu hk1 (hη j hjk) (hε.trans hγ1)
+        exact (hη j hjk).mul (isRoundingProduct_one_of_abs_le hε)
       · simp only [if_neg hjk]
-        refine (abs_one_add_mul_one_add_sub_one_le (k := 1) (j := 1) hu
-          (cast_mul_lt_one_of_le hu (by omega) hn) (hδ.trans hγ1) (hε.trans hγ1)).trans ?_
-        exact roundingFactor_le_roundingFactor hu (by omega) hk1
+        exact ((isRoundingProduct_one_of_abs_le hδ).mul
+          (isRoundingProduct_one_of_abs_le hε)).mono hu (by omega)
     · simp only [hs₁, hs, sum_range_succ, lt_irrefl, if_false, add_mul, sum_mul]
       congr 1
       · refine sum_congr rfl fun j hj => ?_
         rw [if_pos (mem_range.mp hj)]
         ring
       · ring
+
+/-- **Backward error of an inner product, product form** [Higham2002, §3.1], (3.4) there:
+under the standard model with unit roundoff $0 \le u$, the result $s_n$ of a trace of recursive
+accumulation is
+$$s_n = \sum_{k<n} x_k y_k (1 + \eta_k)\,,$$
+each $1 + \eta_k$ a product of $n$ factors $(1 + \delta)^{\pm 1}$ with
+$\lvert \delta \rvert \le u$ (`NLAlib.Computation.IsRoundingProduct`), so that the
+$\theta$-algebra of [Higham2002, Lemma 3.3] applies to it without loss. -/
+theorem IsDotTrace.exists_eq_sum_mul_one_add_isRoundingProduct {x y s : ℕ → ℝ}
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) :
+    ∃ η : ℕ → ℝ, (∀ k < n, IsRoundingProduct u n (η k)) ∧
+      s n = ∑ k ∈ range n, x k * y k * (1 + η k) :=
+  h.exists_eq_sum_of_le hu n le_rfl
 
 /-- **Backward error of an inner product** [Higham2002, §3.1], (3.4) there: under the standard
 model with unit roundoff $0 \le u$, $nu < 1$, the result $s_n$ of a trace of recursive
@@ -137,7 +149,8 @@ theorem IsDotTrace.exists_eq_sum_mul_one_add {x y s : ℕ → ℝ}
     (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
     ∃ η : ℕ → ℝ, (∀ k < n, |η k| ≤ roundingFactor n u) ∧
       s n = ∑ k ∈ range n, x k * y k * (1 + η k) :=
-  h.exists_eq_sum_of_le hu hn n le_rfl
+  let ⟨η, hη, hs⟩ := h.exists_eq_sum_mul_one_add_isRoundingProduct hu
+  ⟨η, fun k hk => (hη k hk).abs_le hn, hs⟩
 
 /-- **Forward error of an inner product** [Higham2002, §3.1], (3.5) there: under the standard
 model with $0 \le u$, $nu < 1$,

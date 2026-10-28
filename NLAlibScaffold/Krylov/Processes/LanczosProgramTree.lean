@@ -21,9 +21,10 @@ $$\mathbf{u} \leftarrow \mathbf{H}\mathbf{v}_j,\quad
 \mathbf{z} \leftarrow \mathbf{w} - \alpha_j\mathbf{v}_j\ (\texttt{axpy}),$$
 $$s \leftarrow \mathbf{z}^{\mathsf{H}}\mathbf{z}\ (\texttt{dot}),\quad \beta_j \leftarrow \sqrt{s},
 \quad \mathbf{v}_{j+1} \leftarrow \mathbf{z}/\beta_j\ (\texttt{rscl, one division per entry})
-\text{ unless } s = 0 .$$
+\text{ unless } \beta_j = 0 .$$
 All of $\mathbf{u}, \mathbf{w}, \mathbf{z}, \mathbf{v}_{j+1}$ live in one slot; three slots of
-length $N$ rotate ($j \bmod 3$). The breakdown test is the exact comparison $s = 0$; on breakdown
+length $N$ rotate ($j \bmod 3$). The breakdown test is the exact comparison $\beta_j = 0$ (the
+test `if z_j = 0` of [Chen, Algorithm 1]); on breakdown
 the slot keeps $\mathbf{z}$ (which is then $\mathbf{0}$ in exact and in standard-model
 arithmetic) and the loop continues, so every later output is $0$, as in the library's total
 recursion `NLAlib.lanczosState` (junk value $0^{-1} = 0$). The matrix-vector product is a
@@ -56,8 +57,7 @@ variable {P ι VB VI : Type}
 /-- **One Lanczos step** from slot `cur` (the previous vector in slot `prev`, $\beta_{j-1}$ in
 `s[1]`, a literal zero in `s[3]`) into slot `nxt`, with the matrix-vector product `mv W src dst`:
 writes $\alpha_j$ into `alphaCell`, $\beta_j$ into `betaCell` and into `s[1]`, and
-$\mathbf{v}_{j+1}$ into slot `nxt` (left unnormalised when $\mathbf{z}^{\mathsf{H}}\mathbf{z}$
-computes to $0$). -/
+$\mathbf{v}_{j+1}$ into slot `nxt` (left unnormalised when $\beta_j$ computes to $0$). -/
 def lanczosStepWith (mv : VB → IExp VI → IExp VI → Builder P ι VB VI Unit) (p : P)
     (N : IExp VI) (W : VB) (cur prev nxt : IExp VI) (s : VB) (alphaCell betaCell : Cell VB VI) :
     Builder P ι VB VI Unit := do
@@ -72,19 +72,18 @@ def lanczosStepWith (mv : VB → IExp VI → IExp VI → Builder P ι VB VI Unit
   dot p ⟨s, 2⟩ W nxt W nxt N
   ins (.un p .sqrt ⟨s, 1⟩ ⟨s, 2⟩)
   ins (.copy p betaCell ⟨s, 1⟩)
-  ifThenElse p .eq ⟨s, 2⟩ ⟨s, 3⟩ (pure ()) (rscl p ⟨s, 1⟩ W nxt N)
+  ifThenElse p .eq ⟨s, 1⟩ ⟨s, 3⟩ (pure ()) (rscl p ⟨s, 1⟩ W nxt N)
 
 /-- **The start**: slot 0 holds $\mathbf{b}/\|\mathbf{b}\|$ (computed as `dot`, `sqrt`, `rscl`;
-$\mathbf{b}$ itself if $\mathbf{b}^{\mathsf{H}}\mathbf{b}$ computes to $0$), slot 2 holds zero,
+$\mathbf{b}$ itself if $\|\mathbf{b}\|$ computes to $0$), slot 2 holds zero,
 `s[1]` $= \beta_0 = 0$ and `s[3]` $= 0$. -/
 def lanczosInit (p : P) (N : IExp VI) (b : VB) (W s : VB) : Builder P ι VB VI Unit := do
   ins (.lit p ⟨s, 3⟩ 0)
   forRange N fun i => ins (.lit p ⟨W, 2 * N + .var i⟩ 0)
   copyv p b 0 W 0 N
   dot p ⟨s, 2⟩ b 0 b 0 N
-  ifThenElse p .eq ⟨s, 2⟩ ⟨s, 3⟩ (pure ()) do
-    ins (.un p .sqrt ⟨s, 2⟩ ⟨s, 2⟩)
-    rscl p ⟨s, 2⟩ W 0 N
+  ins (.un p .sqrt ⟨s, 2⟩ ⟨s, 2⟩)
+  ifThenElse p .eq ⟨s, 2⟩ ⟨s, 3⟩ (pure ()) (rscl p ⟨s, 2⟩ W 0 N)
   ins (.lit p ⟨s, 1⟩ 0)
 
 /-- **Lanczos with the basis**, $q$ steps, product `mv`: inputs $\mathbf{b}$ (buffer `b`),
