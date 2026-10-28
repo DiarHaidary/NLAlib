@@ -55,9 +55,6 @@ for real symmetric $\mathbf{A}$, $\mathbf{B}$ and $f$ with $\lvert f(x) - f(y)\r
 \lvert x - y\rvert$,
 $\|f(\mathbf{A}) - f(\mathbf{B})\|_{\mathsf{F}} \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
 [Kittaneh1985], for normal operators and the Hilbert–Schmidt norm.
-Proof: in eigenbases $\mathbf{U}^{\mathsf{T}}(f(\mathbf{A}) - f(\mathbf{B}))\mathbf{W}$ has
-entries $(f(a_i) - f(b_j))q_{ij}$ and $\mathbf{U}^{\mathsf{T}}(\mathbf{A} - \mathbf{B})\mathbf{W}$
-has entries $(a_i - b_j)q_{ij}$; moderate.
 Result: lipschitz-cfc-frobenius -/
 theorem frobNorm_cfc_sub_cfc_le {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A B : Matrix ι ι ℝ} (hA : A.IsHermitian) (hB : B.IsHermitian) {f : ℝ → ℝ}
@@ -207,9 +204,7 @@ theorem isHermitian_backwardH : L.backwardH.IsHermitian := by
 /-- **The spectrum of the backward model is near that of $\mathbf{H}$**: every eigenvalue of
 $\tilde{\mathbf{H}}$ is within $2000k^4\varepsilon\|\mathbf{H}\|_2$ of an eigenvalue of
 $\mathbf{H}$. No printed source; the maintainer's draft, `rem:wasserstein` (by Weyl's
-inequality there).
-Proof: a unit eigenvector of $\tilde{\mathbf{H}}$ has residual at most $\|\boldsymbol{\Delta}\|$
-for $\hat{\mathbf{H}}$, whose eigenvalues are eigenvalues of $\mathbf{H}$; easy. -/
+inequality there). -/
 theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le {i : ℕ}
     (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
     ∃ j < n, |eigenvalue L.backwardH i - eigenvalue L.H j| ≤
@@ -238,9 +233,6 @@ $$\lvert\theta - \lambda\rvert \le \beta_k\lvert y_{k-1}\rvert
 No printed source; the maintainer's draft, `thm:stabilized`, states
 $\lesssim_k \beta_k\lvert\mathbf{e}_k^{\mathsf{T}}\mathbf{y}\rvert + \varepsilon\|\mathbf{A}\|$;
 [Paige1980, Theorem 3.1].
-Proof: $\hat{\mathbf{x}} = \hat{\mathbf{V}}_k\mathbf{y}$ is a unit vector with
-$(\tilde{\mathbf{H}} - \theta)\hat{\mathbf{x}} = \beta_k y_{k-1}\hat{\mathbf{v}}_{k+1}$; then
-`Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le` for $\hat{\mathbf{H}}$; easy.
 Result: paige-stabilized-ritz-values -/
 theorem exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
@@ -296,9 +288,6 @@ computed tridiagonal matrix satisfies $\lambda_{\min}(\mathbf{H}) - \theta \le
 2000k^4\varepsilon\|\mathbf{H}\|_2$, where $\lambda_{\min}(\mathbf{H}) = \lambda_m(\mathbf{H})$,
 $m + 1 = n$. No printed source; the maintainer's draft, `thm:containment`;
 [Paige1980, (3.48)].
-Proof: $\theta = \hat{\mathbf{x}}^{\mathsf{T}}\hat{\mathbf{H}}\hat{\mathbf{x}} +
-\hat{\mathbf{x}}^{\mathsf{T}}\boldsymbol{\Delta}\hat{\mathbf{x}}$ and the Rayleigh bounds of
-$\mathbf{H}$ on each block; easy.
 Result: paige-ritz-containment -/
 theorem eigenvalue_last_sub_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) {m : ℕ} (hm : m + 1 = n) :
@@ -333,7 +322,6 @@ theorem eigenvalue_last_sub_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
 computed tridiagonal matrix satisfies $\theta - \lambda_{\max}(\mathbf{H}) \le
 2000k^4\varepsilon\|\mathbf{H}\|_2$, where $\lambda_{\max}(\mathbf{H}) = \lambda_0(\mathbf{H})$.
 No printed source; the maintainer's draft, `thm:containment`; [Paige1980, (3.48)].
-Proof: as `NLAlib.LanczosRun.eigenvalue_last_sub_le_of_mulVec_eq_smul`; easy.
 Result: paige-ritz-containment -/
 theorem sub_eigenvalue_zero_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
@@ -366,8 +354,7 @@ theorem sub_eigenvalue_zero_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
 
 /-- The quadratic forms of $f(\hat{\mathbf{H}})$ at the dilated start and of $f(\mathbf{H})$ at
 $\bar{\mathbf{v}}_1$ agree: the spectral measure of $(\hat{\mathbf{H}}, \tilde{\mathbf{v}})$ is that
-of $(\mathbf{H}, \bar{\mathbf{v}}_1)$.
-Proof: $f(\hat{\mathbf{H}})$ is block diagonal with blocks $f(\mathbf{H})$; moderate. -/
+of $(\mathbf{H}, \bar{\mathbf{v}}_1)$. -/
 theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
     L.dilatedStart ⬝ᵥ (cfc f L.dilatedH *ᵥ L.dilatedStart) =
       L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) := by
@@ -406,8 +393,7 @@ theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
     exact hcfc
   rw [hcfc']
   simp only [dotProduct, Matrix.mulVec, Fintype.sum_prod_type, Matrix.blockDiagonal_apply,
-    dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ,
-    if_true]
+    dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero]
   rw [Finset.sum_comm, Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
     simp only [Fin.val_eq_zero_iff, if_neg hr, Finset.sum_const_zero])]
   simp only [Fin.val_zero, if_true]
@@ -428,8 +414,6 @@ within that distance in $W_1$.
 No printed source; the maintainer's draft, `rem:wasserstein`, bounds the difference by
 $\sqrt{2k}\|\boldsymbol{\Delta}\|$ (through the rank of $\boldsymbol{\Delta}$); here directly by
 $\|\boldsymbol{\Delta}\|_{\mathsf{F}}$.
-Proof: `NLAlib.LanczosRun.dotProduct_cfc_dilatedH_mulVec`, `NLAlib.frobNorm_cfc_sub_cfc_le` and
-`NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le`; easy.
 Result: lanczos-spectral-measure-wasserstein -/
 theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
     |L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) -

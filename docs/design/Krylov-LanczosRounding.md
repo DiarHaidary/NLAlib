@@ -454,6 +454,30 @@ Index set of the model: `Fin n × Fin (k + 1)` (row $i$ of block $r$), $\hat{\ma
 | `frobNorm_cfc_sub_cfc_le` | Kittaneh, used in `rem:wasserstein` | $1$ | $1$ |
 | `abs_dotProduct_cfc_mulVec_sub_le` | `rem:wasserstein` | $\sqrt{2k}\|\boldsymbol\Delta\|$; ext. $\sqrt{2k}\cdot480000k^6$ | $2000k^4\varepsilon\|\mathbf H\|_2$ |
 
+**Status (2026-10-28): all §3.6 headlines proved**, no `sorry`, axioms `propext`,
+`Classical.choice`, `Quot.sound` only. Files and lines: `LanczosData` 647 (generic layer, absorbs
+§3.5's identities), `Dilation` 306, `ExactLanczos` 120, `Backward` 980, `BackwardSpectral` 444;
+with §3.5 the whole re-proof is 3.5k lines against the external 6.6k. General facts that belong
+in the library proper when the scaffold moves: `Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le`,
+`frobNorm_le_card_mul_of_forall_abs_le`, `HasOrthonormalCols.specNorm_one_sub_mul_transpose_le`
+(Matrix/Norms), `frobNorm_cfc_sub_cfc_le` (Matrix/Functions), the dilation (`Dilation.lean`,
+Matrix/Basic or Matrix/Subspaces), `lanczosState_eq_of_orthonormal_recurrence`
+(Krylov/Processes/LanczosRecurrence). Not done: the quadrature reading
+($\mathbf e_0^{\mathsf T}f(\mathbf T_k)\mathbf e_0$ against `lanczosQuadrature` of the model), which
+needs only the exact-Lanczos identification proved here plus the library's quadrature
+exactness, and was not in the paper.
+
+On the paper's argument: correct as written. Simplifications used here: (i) no $\vec J$, $D_r$
+existentials (the defect $\mathbf Y_r$ is a definition); (ii) $\mathbf C$ as a finite Neumann
+series; (iii) Frobenius norms for $\hat{\mathbf E}$, $\boldsymbol\Delta$, which make the stacking
+exact and remove the rank bound $\sqrt{2k}$ from the Wasserstein remark; (iv) $\|\mathbf I -
+\hat{\mathbf V}_k\hat{\mathbf V}_k^{\mathsf T}\| \le 1$ directly instead of the projector form of
+$\boldsymbol\Delta$ via $\hat{\mathbf V}_k^{\mathsf T}\hat{\mathbf E}$ (both are used: the symmetry
+of $\hat{\mathbf V}_k^{\mathsf T}\hat{\mathbf E}$ gives $\tilde{\mathbf H}^{\mathsf T} =
+\tilde{\mathbf H}$). One point implicit in the paper: the normalised $\bar{\mathbf v}_{k+1}$ at a
+terminal step is arbitrary; here it is $\bar{\mathbf v}_1$ and every statement is unaffected
+because it is multiplied by $\beta_k = 0$.
+
 The $k^4$ (external $k^6$): $\|\bar{\mathbf M}_k\| \lesssim k^2$ (§3.5), $\|\mathbf Y_r\| \le
 r\|\mathbf Y_1\| \le 4r\|\bar{\mathbf M}_k\|$, $\|\bar{\mathbf V}_{k+1}\|_{\mathsf F} =
 \sqrt{k+1}$, and $k+1$ blocks.
