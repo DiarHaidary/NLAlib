@@ -253,6 +253,47 @@ theorem tridiagonalSucc_last (j : Fin k) :
   · rw [if_pos h, if_pos h]
   · rw [if_neg h, if_neg h, if_neg (by omega)]
 
+/-- Columns of $\mathbf{Q}\underline{\mathbf{T}}_k$ for any $\mathbf{Q}$ with $k + 1$ columns
+$\mathbf{u}_1, \dots, \mathbf{u}_{k+1}$: column $j$ is
+$\beta_j\mathbf{u}_j + \alpha_{j+1}\mathbf{u}_{j+1} + \beta_{j+1}\mathbf{u}_{j+2}$. -/
+theorem mul_tridiagonalSucc_apply {ι : Type*} (Q : Matrix ι (Fin (k + 1)) ℝ) (u : ℕ → ι → ℝ)
+    (hu : ∀ (m : ℕ) (hm : m < k + 1) (p : ι), Q p ⟨m, hm⟩ = u (m + 1) p) (p : ι) (j : Fin k) :
+    (Q * D.tridiagonalSucc) p j =
+      D.β j * u j p + D.α ((j : ℕ) + 1) * u ((j : ℕ) + 1) p +
+        D.β ((j : ℕ) + 1) * u ((j : ℕ) + 2) p := by
+  obtain ⟨j, hj⟩ := j
+  simp only [Matrix.mul_apply, tridiagonalSucc, Matrix.of_apply]
+  have hterm : ∀ l : Fin (k + 1), Q p l *
+      (if (l : ℕ) = j then D.α ((l : ℕ) + 1) else if (l : ℕ) = j + 1 then D.β l
+        else if j = (l : ℕ) + 1 then D.β j else 0) =
+      (fun m : ℕ => (if m = j then D.α (j + 1) * u (j + 1) p else 0) +
+        (if m = j + 1 then D.β (j + 1) * u (j + 2) p else 0) +
+        (if m + 1 = j then D.β j * u j p else 0)) l := by
+    intro l
+    obtain ⟨l, hl⟩ := l
+    rw [hu l hl p]
+    simp only
+    split_ifs <;> first | (exfalso; omega) | (subst_vars; ring)
+  rw [Finset.sum_congr rfl fun l _ => hterm l, Fin.sum_univ_eq_sum_range
+    (fun m : ℕ => (if m = j then D.α (j + 1) * u (j + 1) p else 0) +
+      (if m = j + 1 then D.β (j + 1) * u (j + 2) p else 0) +
+      (if m + 1 = j then D.β j * u j p else 0)) (k + 1)]
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_ite_eq' (Finset.range (k + 1)) j,
+    Finset.sum_ite_eq' (Finset.range (k + 1)) (j + 1), if_pos (Finset.mem_range.2 (by omega)),
+    if_pos (Finset.mem_range.2 (by omega))]
+  have h3 : ∑ m ∈ Finset.range (k + 1), (if m + 1 = j then D.β j * u j p else 0) =
+      D.β j * u j p := by
+    rcases Nat.eq_zero_or_pos j with rfl | hj0
+    · simp [D.β_zero]
+    · rw [Finset.sum_eq_single (j - 1)]
+      · rw [if_pos (by omega)]
+      · intro m _ hm
+        rw [if_neg (by omega)]
+      · intro hm
+        exact absurd (Finset.mem_range.2 (by omega)) hm
+  rw [h3]
+  ring
+
 /-- $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k = \mathbf{V}_k\mathbf{T}_k
 + (\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}}$. -/
 theorem basisSucc_mul_tridiagonalSucc :

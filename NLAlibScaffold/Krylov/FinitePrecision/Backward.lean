@@ -64,6 +64,44 @@ open scoped Matrix
 
 /-! ### Exact Lanczos from an orthonormal three-term recurrence -/
 
+/-- One step of the Lanczos recurrence on an orthonormal three-term recurrence: from the state
+$(\mathbf{u}_j, \mathbf{u}_{j+1}, \beta_j)$ the coefficient is $\alpha_{j+1}$ and the step
+produces $\beta_{j+1}$ and the vector $\beta_{j+1}^{-1}(\beta_{j+1}\mathbf{u}_{j+2})$. -/
+private theorem lanczosStep_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
+    {A : Matrix ι ι ℝ} {u : ℕ → ι → ℝ} {α β : ℕ → ℝ} {k : ℕ}
+    (horth : ∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      u i ⬝ᵥ u j = if i = j then 1 else 0)
+    (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
+    (hβ : ∀ j ≤ k, 0 ≤ β j) {j : ℕ} (hj : j < k) :
+    lanczosAlpha A ⟨u j, u (j + 1), β j⟩ = α (j + 1) ∧
+      lanczosStep A ⟨u j, u (j + 1), β j⟩ =
+        ⟨u (j + 1), (β (j + 1))⁻¹ • (β (j + 1) • u (j + 2)), β (j + 1)⟩ := by
+  have h11 := horth (j + 1) (j + 1) (by omega) (by omega) (by omega) (by omega)
+  have h12 := horth (j + 1) (j + 2) (by omega) (by omega) (by omega) (by omega)
+  rw [if_pos rfl] at h11
+  rw [if_neg (by omega)] at h12
+  have hα : lanczosAlpha A ⟨u j, u (j + 1), β j⟩ = α (j + 1) := by
+    simp only [lanczosAlpha, RCLike.ofReal_real_eq_id, id, star_trivial, RCLike.re_to_real]
+    have hrec' : A *ᵥ u (j + 1) - β j • u j = α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2) := by
+      rw [hrec j hj]
+      abel
+    rw [hrec']
+    simp only [dotProduct_add, dotProduct_smul, smul_eq_mul, h11, h12]
+    ring
+  refine ⟨hα, ?_⟩
+  have hw : A *ᵥ u (j + 1) - β j • u j - α (j + 1) • u (j + 1) = β (j + 1) • u (j + 2) := by
+    rw [hrec j hj]
+    abel
+  have hn : ‖WithLp.toLp 2 (u (j + 2))‖ = 1 := by
+    have h22 := horth (j + 2) (j + 2) (by omega) (by omega) (by omega) (by omega)
+    rw [if_pos rfl, ← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h22
+    have := norm_nonneg (WithLp.toLp 2 (u (j + 2)))
+    nlinarith
+  have hnw : ‖WithLp.toLp 2 (β (j + 1) • u (j + 2))‖ = β (j + 1) := by
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg (hβ (j + 1) (by omega)), hn,
+      mul_one]
+  simp only [lanczosStep, hα, RCLike.ofReal_real_eq_id, id, hw, hnw]
+
 /-- **An orthonormal three-term recurrence is the Lanczos recurrence**: if
 $\mathbf{u}_0 = \mathbf{0}$, $\mathbf{u}_1, \dots, \mathbf{u}_{k+1}$ are orthonormal,
 $\mathbf{A}\mathbf{u}_{j+1} = \beta_j\mathbf{u}_j + \alpha_{j+1}\mathbf{u}_{j+1}
@@ -80,7 +118,19 @@ theorem lanczosState_eq_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
     (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
     (hβ0 : β 0 = 0) (hβ : ∀ j ≤ k, 0 ≤ β j) (hβpos : ∀ j, 1 ≤ j → j < k → 0 < β j) :
     ∀ j < k, lanczosState A (u 1) j = ⟨u j, u (j + 1), β j⟩ := by
-  sorry
+  intro j hj
+  induction j with
+  | zero =>
+    have h1 := horth 1 1 le_rfl (by omega) le_rfl (by omega)
+    rw [if_pos rfl, ← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h1
+    have hn : ‖WithLp.toLp 2 (u 1)‖ = 1 := by
+      have := norm_nonneg (WithLp.toLp 2 (u 1))
+      nlinarith
+    simp only [lanczosState, hn, RCLike.ofReal_real_eq_id, id, inv_one, one_smul, hu0, hβ0]
+  | succ j ih =>
+    rw [show lanczosState A (u 1) (j + 1) = lanczosStep A (lanczosState A (u 1) j) from rfl,
+      ih (by omega), (lanczosStep_of_orthonormal_recurrence horth hrec hβ (by omega)).2,
+      smul_smul, inv_mul_cancel₀ (hβpos (j + 1) (by omega) hj).ne', one_smul]
 
 /-- Under the hypotheses of `NLAlib.lanczosState_eq_of_orthonormal_recurrence` the coefficient of
 the Lanczos state after $k$ steps is $\beta_k$: with $\mathbf{u}_0 = \mathbf{0}$,
@@ -95,7 +145,13 @@ theorem lanczosState_beta_eq_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
     (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
     (hβ0 : β 0 = 0) (hβ : ∀ j ≤ k, 0 ≤ β j) (hβpos : ∀ j, 1 ≤ j → j < k → 0 < β j) :
     (lanczosState A (u 1) k).beta = β k := by
-  sorry
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · rw [hβ0]
+    rfl
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+  rw [show lanczosState A (u 1) (m + 1) = lanczosStep A (lanczosState A (u 1) m) from rfl,
+    lanczosState_eq_of_orthonormal_recurrence hu0 horth hrec hβ0 hβ hβpos m (by omega),
+    (lanczosStep_of_orthonormal_recurrence horth hrec hβ (by omega)).2]
 
 /-! ### Leading blocks of upper triangular matrices -/
 
@@ -947,6 +1003,56 @@ theorem frobNorm_backwardH_sub_dilatedH_le :
     rw [one_mul, mul_one, frobNorm_transpose]
   linarith
 
+/-- The dilated vectors as a sequence: $\hat{\mathbf{u}}_m$ is column $m - 1$ of
+$\hat{\mathbf{V}}_{k+1}$ for $1 \le m \le k + 1$, and $\mathbf{0}$ otherwise. -/
+noncomputable def dilatedV (m : ℕ) : Fin n × Fin (k + 1) → ℝ :=
+  fun p => if h : 1 ≤ m ∧ m ≤ k + 1 then L.dilatedBasisSucc p ⟨m - 1, by omega⟩ else 0
+
+private theorem dilatedV_succ {m : ℕ} (hm : m < k + 1) (p : Fin n × Fin (k + 1)) :
+    L.dilatedBasisSucc p ⟨m, hm⟩ = L.dilatedV (m + 1) p := by
+  simp only [dilatedV, dif_pos (show 1 ≤ m + 1 ∧ m + 1 ≤ k + 1 by omega), Nat.add_sub_cancel]
+
+/-- The dilated sequence satisfies the hypotheses of
+`NLAlib.lanczosState_eq_of_orthonormal_recurrence` for the backward model. -/
+private theorem dilatedV_orthonormal_recurrence :
+    L.dilatedV 0 = 0 ∧
+    (∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      L.dilatedV i ⬝ᵥ L.dilatedV j = if i = j then 1 else 0) ∧
+    (∀ j < k, L.backwardH *ᵥ L.dilatedV (j + 1) = L.β j • L.dilatedV j +
+      L.α (j + 1) • L.dilatedV (j + 1) + L.β (j + 1) • L.dilatedV (j + 2)) ∧
+    L.dilatedV 1 = L.dilatedStart := by
+  have hQ := L.hasOrthonormalCols_dilatedBasisSucc
+  have hQQ : L.dilatedBasisSuccᵀ * L.dilatedBasisSucc = 1 := by
+    have := hQ.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · funext p
+    simp only [dilatedV, Pi.zero_apply]
+    rw [dif_neg (by omega)]
+  · intro i j hi1 hi2 hj1 hj2
+    obtain ⟨i, rfl⟩ : ∃ i', i = i' + 1 := ⟨i - 1, by omega⟩
+    obtain ⟨j, rfl⟩ : ∃ j', j = j' + 1 := ⟨j - 1, by omega⟩
+    have h := congrFun (congrFun hQQ ⟨i, by omega⟩) ⟨j, by omega⟩
+    rw [Matrix.mul_apply, Matrix.one_apply] at h
+    simp only [Matrix.transpose_apply, dilatedV_succ] at h
+    rw [dotProduct, h]
+    simp only [Fin.mk.injEq, Nat.add_right_cancel_iff]
+  · intro j hj
+    funext p
+    have hl := L.toLanczosData.mul_tridiagonalSucc_apply L.dilatedBasisSucc L.dilatedV
+      (fun m hm q => L.dilatedV_succ hm q) p ⟨j, hj⟩
+    have hcol : ∀ q, L.dilatedBasis q ⟨j, hj⟩ = L.dilatedV (j + 1) q := fun q =>
+      L.dilatedV_succ (by omega) q
+    have := congrFun (congrFun L.backwardH_mul_dilatedBasis p) ⟨j, hj⟩
+    rw [Matrix.mul_apply, tridiagonalSucc, hl] at this
+    simp only [hcol] at this
+    simp only [Matrix.mulVec, dotProduct, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    exact this
+  · rw [← L.dilatedBasisSucc_col_zero]
+    funext p
+    rw [Matrix.col_apply, show (0 : Fin (k + 1)) = ⟨0, by omega⟩ from Fin.ext (by simp),
+      L.dilatedV_succ (m := 0) (by omega)]
+
 /-- **Exact Lanczos on the backward model computes the computed tridiagonal matrix**: $k$ steps
 of the Lanczos recurrence on $\tilde{\mathbf{H}}$ from
 $(\bar{\mathbf{v}}_1, \mathbf{0}, \dots, \mathbf{0})$ give $\mathbf{T}_k$.
@@ -955,21 +1061,37 @@ Proof: `NLAlib.lanczosState_eq_of_orthonormal_recurrence` with the columns of
 $\hat{\mathbf{V}}_{k+1}$; easy. -/
 theorem lanczosTridiagonal_backwardH_dilatedStart :
     lanczosTridiagonal L.backwardH L.dilatedStart k = L.tridiagonal := by
-  sorry
+  obtain ⟨h0, horth, hrec, h1⟩ := L.dilatedV_orthonormal_recurrence
+  have hst := lanczosState_eq_of_orthonormal_recurrence h0 horth hrec L.β_zero L.β_nonneg
+    L.β_pos
+  rw [← h1]
+  ext i j
+  simp only [lanczosTridiagonal, Matrix.of_apply, hst i i.2, hst j j.2,
+    (lanczosStep_of_orthonormal_recurrence horth hrec L.β_nonneg i.2).1,
+    RCLike.ofReal_real_eq_id, id]
+  rfl
 
 /-- Exact Lanczos on the backward model computes the dilated vectors:
 `lanczosMatrix` of $\tilde{\mathbf{H}}$ from the dilated start is $\hat{\mathbf{V}}_k$.
 Proof: as `NLAlib.LanczosRun.lanczosTridiagonal_backwardH_dilatedStart`; easy. -/
 theorem lanczosMatrix_backwardH_dilatedStart :
     lanczosMatrix L.backwardH L.dilatedStart k = L.dilatedBasis := by
-  sorry
+  obtain ⟨h0, horth, hrec, h1⟩ := L.dilatedV_orthonormal_recurrence
+  have hst := lanczosState_eq_of_orthonormal_recurrence h0 horth hrec L.β_zero L.β_nonneg
+    L.β_pos
+  rw [← h1]
+  ext p j
+  simp only [lanczosMatrix, Matrix.of_apply, hst j j.2]
+  exact (L.dilatedV_succ (by omega) p).symm
 
 /-- Exact Lanczos on the backward model computes the last coefficient: $\beta_k$ is the
 coefficient of the state after $k$ steps.
 Proof: as `NLAlib.LanczosRun.lanczosTridiagonal_backwardH_dilatedStart`; easy. -/
 theorem lanczosState_backwardH_dilatedStart_beta :
     (lanczosState L.backwardH L.dilatedStart k).beta = L.β k := by
-  sorry
+  obtain ⟨h0, horth, hrec, h1⟩ := L.dilatedV_orthonormal_recurrence
+  rw [← h1]
+  exact lanczosState_beta_eq_of_orthonormal_recurrence h0 horth hrec L.β_zero L.β_nonneg L.β_pos
 
 end LanczosRun
 
