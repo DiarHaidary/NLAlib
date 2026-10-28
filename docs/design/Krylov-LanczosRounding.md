@@ -342,6 +342,48 @@ the bridge: e.g. "`lanczosBasisDenseProg` succeeds and for every eigenpair $(\th
 of the computed $\mathbf{T}_k$, …" with $\varepsilon$ as above, stated through
 `HasLanczosRunOutputs` (S1) and registered as instances of `MatrixFreeRounded` (L7, E3).
 
+### 3.5 Headlines of the re-proof: local errors, Ritz residual, Paige
+
+Scope of this pass (branch `prove/lanczos-analysis`): the external `Lanczos/Bounds.lean`
+(coefficients, local errors), `Lanczos/Assembly.lean` + `Ritz.lean` (matrix recurrence, Ritz
+residual) and `ComputedCommutator.lean` + `LossOfOrthogonality.lean` (Gram commutator, Paige).
+The Greenbaum backward model and its consequences (`thm:greenbaum`, `thm:stabilized`,
+`thm:containment`, `rem:wasserstein`) are not in this pass. Files, all in
+`NLAlibScaffold/Krylov/FinitePrecision/`: `LocalErrors.lean`, `Recurrence.lean`, `Paige.lean`.
+Docstrings say "No printed source" and name the maintainer's draft and its labels; `Paige1976`,
+`Paige1980` are added to `references.bib` for the classical forms.
+
+Conventions. `LanczosRun` is unchanged (1-based fields, as the bridges produce it). The derived
+objects are 0-based: step $j < k$ is the paper's step $j+1$ (reads $\mathbf{v}_{j+1}$); column $j$
+of `L.basis` is $\mathbf{v}_{j+1}$; `L.tridiagonal` is indexed as `lanczosTridiagonal`
+($\alpha_{i+1}$ on the diagonal, `L.β i` at $(i, i-1)$); `L.lastIndex : Fin k` is $k-1$, so no proof
+term appears in a statement (T9). Norms: `‖WithLp.toLp 2 ·‖`, `specNorm`, `frobNorm`.
+
+| headline (Lean) | paper | paper / external constant | here | why it changed |
+|---|---|---|---|---|
+| `LanczosRun.β_le` ($j \le k$) | `lem:coefficients` | $\beta_j \le 4j\|\mathbf{A}\|$ | $\tfrac54 j\|\mathbf{H}\|_2$ | recurrence $\beta_{j+1} \le (1+8\varepsilon)(\beta_j + (1+\varepsilon)\|\mathbf{H}\|)$ with $\|\mathbf{v}\| \le 1+\varepsilon/2$, $\|\mathbf{z}\| \le (1+4\varepsilon)\|\mathbf{w}\|$; the paper rounds $1.02\|\mathbf{A}\|$ up to $2\|\mathbf{A}\|$ |
+| `norm_u_le` | same, Step 2 | $2\|\mathbf{A}\|$ | $\tfrac{21}{20}\|\mathbf{H}\|_2$ | $(1+\varepsilon)(1+\varepsilon/2) \le 21/20$ |
+| `norm_w_le` | same, Step 4 | $5j$ | $\tfrac54(j+1)$ | as for β |
+| `abs_α_le` | same | $6j$ | $\tfrac43(j+1)$ | as for β |
+| `norm_z_le` | same | $7j$ | $\tfrac43(j+1)$ | as for β |
+| `norm_recurrenceError_le` | `thm:local-errors`, $\mathbf{f}_j$ | $\lesssim_k$; ext. $700j\varepsilon\|\mathbf{H}\|$ | $6(j+1)\varepsilon\|\mathbf{H}\|_2$ | the sharper coefficient bounds; the external envelope used $100j$ for every coefficient |
+| (field `abs_norm_v_sq_sub_one_le`) | `thm:local-errors`, $g_j$ | $\varepsilon$ | $\varepsilon$ | no theorem: it is an assumption of the interface |
+| `abs_adjacentInner_le` | `thm:local-errors`, $p_j$ | $\lesssim_k$; ext. $1200j$ | $7(j+1)\varepsilon\|\mathbf{H}\|_2$ | as above |
+| `H_mul_basis` | `eq:governing` | identity | identity | $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k$ written as $\mathbf{V}_k\mathbf{T}_k + \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}}$ (`vecMulVec`, `Pi.single`); no $\underline{\mathbf{T}}_k$ API needed |
+| `frobNorm_residual_le`, `specNorm_residual_le` | proof of `cor:gram-commutator` | $\sqrt{k}\max\|\mathbf{f}_j\|$; ext. $700k^2$ | $6k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$ | |
+| `H_mulVec_basis_mulVec_sub_smul` | `eq:ritz-residual-identity` | identity | identity | |
+| `norm_H_mulVec_basis_mulVec_sub_smul_le` | `eq:ritz-residual-bound` | $\sqrt{1+\varepsilon}\beta_k\lvert y_k\rvert + \|\mathbf{F}_k\|$, divided by $\|\mathbf{x}\|$ | $\sqrt{1+\varepsilon}\beta_k\lvert y_{k-1}\rvert + 6k\sqrt{k}\varepsilon\|\mathbf{H}\|_2$ | the division by $\|\mathbf{x}\|$ is dropped (it is the same inequality) |
+| `isUpperTriangular_gramCommutator`, `gramCommutator_sub_transpose` | `lem:gram-commutator`, `eq:generic-commutator` | identity | identity | Mathlib's `Matrix.IsUpperTriangular` |
+| `specNorm_gramCommutator_le` | `cor:gram-commutator` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | the paper bounds every entry and then passes to the Frobenius norm ($2k \cdot \max$); here the strict upper part is bounded by $\|\mathbf{M}-\mathbf{M}^{\mathsf{T}}\|_{\mathsf F}$ as a whole, and $\|\mathbf{V}_k^{\mathsf T}\mathbf{F}_k\|_{\mathsf F} \le \|\mathbf{V}_k\|_{\mathsf F}\|\mathbf{F}_k\|_{\mathsf F}$, saving a factor $k$ |
+| `abs_basis_mulVec_dotProduct_mul_abs_le` | `thm:paige` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | from the commutator bound |
+
+Dropped from the external files as not results: `ritz_residual_bound_div` (the bound divided by
+$\|\mathbf{x}\|$), the `CoefficientEnvelope` (every coefficient $\le 100j\|\mathbf{H}\|$), the
+`Fmat_bound` corollary ($k^2$ for $k^{3/2}$), `ambient_pos`. The constants are literals in the
+statements, as the paper's Step 4 prints its own; whether rule B (§5.2 rule 2) wants them as
+named bounds is a reviewer question (recommendation: no, they are the proof's small explicit
+values and nothing consumes them by name yet).
+
 ## 4. Toolkit dependencies
 
 Present and used: `IsRelErrSem` (`sqrt_err`, `sqrt_ok`, `cmp_eq`, `re`, `neg`, `lit_err`),
