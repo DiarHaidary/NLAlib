@@ -342,6 +342,146 @@ the bridge: e.g. "`lanczosBasisDenseProg` succeeds and for every eigenpair $(\th
 of the computed $\mathbf{T}_k$, …" with $\varepsilon$ as above, stated through
 `HasLanczosRunOutputs` (S1) and registered as instances of `MatrixFreeRounded` (L7, E3).
 
+### 3.5 Headlines of the re-proof: local errors, Ritz residual, Paige
+
+Scope of this pass (branch `prove/lanczos-analysis`): the external `Lanczos/Bounds.lean`
+(coefficients, local errors), `Lanczos/Assembly.lean` + `Ritz.lean` (matrix recurrence, Ritz
+residual) and `ComputedCommutator.lean` + `LossOfOrthogonality.lean` (Gram commutator, Paige).
+The Greenbaum backward model and its consequences (`thm:greenbaum`, `thm:stabilized`,
+`thm:containment`, `rem:wasserstein`) are not in this pass. Files, all in
+`NLAlibScaffold/Krylov/FinitePrecision/`: `LocalErrors.lean`, `Recurrence.lean`, `Paige.lean`.
+Docstrings say "No printed source" and name the maintainer's draft and its labels; `Paige1976`,
+`Paige1980` are added to `references.bib` for the classical forms.
+
+Conventions. `LanczosRun` is unchanged (1-based fields, as the bridges produce it). The derived
+objects are 0-based: step $j < k$ is the paper's step $j+1$ (reads $\mathbf{v}_{j+1}$); column $j$
+of `L.basis` is $\mathbf{v}_{j+1}$; `L.tridiagonal` is indexed as `lanczosTridiagonal`
+($\alpha_{i+1}$ on the diagonal, `L.β i` at $(i, i-1)$); `L.lastIndex : Fin k` is $k-1$, so no proof
+term appears in a statement (T9). Norms: `‖WithLp.toLp 2 ·‖`, `specNorm`, `frobNorm`.
+
+| headline (Lean) | paper | paper / external constant | here | why it changed |
+|---|---|---|---|---|
+| `LanczosRun.β_le` ($j \le k$) | `lem:coefficients` | $\beta_j \le 4j\|\mathbf{A}\|$ | $\tfrac54 j\|\mathbf{H}\|_2$ | recurrence $\beta_{j+1} \le (1+8\varepsilon)(\beta_j + (1+\varepsilon)\|\mathbf{H}\|)$ with $\|\mathbf{v}\| \le 1+\varepsilon/2$, $\|\mathbf{z}\| \le (1+4\varepsilon)\|\mathbf{w}\|$; the paper rounds $1.02\|\mathbf{A}\|$ up to $2\|\mathbf{A}\|$ |
+| `norm_u_le` | same, Step 2 | $2\|\mathbf{A}\|$ | $\tfrac{21}{20}\|\mathbf{H}\|_2$ | $(1+\varepsilon)(1+\varepsilon/2) \le 21/20$ |
+| `norm_w_le` | same, Step 4 | $5j$ | $\tfrac54(j+1)$ | as for β |
+| `abs_α_le` | same | $6j$ | $\tfrac43(j+1)$ | as for β |
+| `norm_z_le` | same | $7j$ | $\tfrac43(j+1)$ | as for β |
+| `norm_recurrenceError_le` | `thm:local-errors`, $\mathbf{f}_j$ | $\lesssim_k$; ext. $700j\varepsilon\|\mathbf{H}\|$ | $6(j+1)\varepsilon\|\mathbf{H}\|_2$ | the sharper coefficient bounds; the external envelope used $100j$ for every coefficient |
+| (field `abs_norm_v_sq_sub_one_le`) | `thm:local-errors`, $g_j$ | $\varepsilon$ | $\varepsilon$ | no theorem: it is an assumption of the interface |
+| `abs_adjacentInner_le` | `thm:local-errors`, $p_j$ | $\lesssim_k$; ext. $1200j$ | $7(j+1)\varepsilon\|\mathbf{H}\|_2$ | as above |
+| `H_mul_basis` | `eq:governing` | identity | identity | $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k$ written as $\mathbf{V}_k\mathbf{T}_k + \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}}$ (`vecMulVec`, `Pi.single`); no $\underline{\mathbf{T}}_k$ API needed |
+| `frobNorm_residual_le`, `specNorm_residual_le` | proof of `cor:gram-commutator` | $\sqrt{k}\max\|\mathbf{f}_j\|$; ext. $700k^2$ | $6k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$ | |
+| `H_mulVec_basis_mulVec_sub_smul` | `eq:ritz-residual-identity` | identity | identity | |
+| `norm_H_mulVec_basis_mulVec_sub_smul_le` | `eq:ritz-residual-bound` | $\sqrt{1+\varepsilon}\beta_k\lvert y_k\rvert + \|\mathbf{F}_k\|$, divided by $\|\mathbf{x}\|$ | $\sqrt{1+\varepsilon}\beta_k\lvert y_{k-1}\rvert + 6k\sqrt{k}\varepsilon\|\mathbf{H}\|_2$ | the division by $\|\mathbf{x}\|$ is dropped (it is the same inequality) |
+| `isUpperTriangular_gramCommutator`, `gramCommutator_sub_transpose` | `lem:gram-commutator`, `eq:generic-commutator` | identity | identity | Mathlib's `Matrix.IsUpperTriangular` |
+| `specNorm_gramCommutator_le` | `cor:gram-commutator` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | the paper bounds every entry and then passes to the Frobenius norm ($2k \cdot \max$); here the strict upper part is bounded by $\|\mathbf{M}-\mathbf{M}^{\mathsf{T}}\|_{\mathsf F}$ as a whole, and $\|\mathbf{V}_k^{\mathsf T}\mathbf{F}_k\|_{\mathsf F} \le \|\mathbf{V}_k\|_{\mathsf F}\|\mathbf{F}_k\|_{\mathsf F}$, saving a factor $k$ |
+| `abs_basis_mulVec_dotProduct_mul_abs_le` | `thm:paige` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | from the commutator bound |
+
+**Status (2026-10-28): all headlines proved**, no `sorry`, axioms `propext`,
+`Classical.choice`, `Quot.sound` only; 1.2k lines (`LocalErrors` 526, `Recurrence` 248, `Paige`
+434) against the external 2.6k of the corresponding files plus their `Core/` support. Supporting
+public API: `LanczosRun.ε_le`, `mul_ε_le`, `norm_v_le` ($\|\mathbf{v}_j\| \le 1 + \varepsilon/2$),
+`basis_mul_tridiagonal_apply`, `norm_β_smul_v_le`, `normSqDefect`, `gramCommutator_apply_self`,
+`abs_gramCommutator_apply_self_le`, `frobNorm_basis_le`,
+`frobNorm_transpose_basis_mul_residual_le`,
+`frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le`,
+`frobNorm_gramCommutator_sub_transpose_le`. One general fact,
+`Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le` (for upper triangular $\mathbf{M}$,
+$\|\mathbf{M} - \operatorname{diag}\mathbf{M}\|_{\mathsf F} \le \|\mathbf{M} - \mathbf{M}^{\mathsf T}\|_{\mathsf F}$),
+sits in `Paige.lean` and belongs in `NLAlib/Matrix/Norms/Frobenius.lean` when the files move
+(not moved now, to avoid rebuilding the library). The duplicate report finds no class involving
+the new declarations.
+
+Simplifications against the paper's argument: the Gram-commutator bound does not need
+`lem:gram-commutator`'s entrywise bound on the strict upper part (that is where the paper's
+$2k\max$ and the external $k^3$ come from): the strict upper part of an upper triangular
+matrix is dominated in the Frobenius norm by its skew part, which is
+`gramCommutator_sub_transpose` and is bounded by Frobenius norms of products. The paper's
+coefficient constants are loose because Step 2 rounds $(1+\varepsilon)^{5/2}\|\mathbf{A}\|$ to
+$2\|\mathbf{A}\|$ and then the $\beta$ induction absorbs a $2\|\mathbf{A}\|$ per step; keeping
+the factor near $1$ gives $\beta_j \le \tfrac54 j\|\mathbf{H}\|$. Nothing in the paper's
+argument was found wrong; one point is implicit there: Step 1b needs
+$\|\mathbf{v}_{k+1}\|^2 \ge 1 - \varepsilon$ at the last step, which holds only for $\beta_k \ne 0$
+(the field `abs_norm_v_succ_sq_sub_one_le`), the case $\beta_k = 0$ being trivial.
+
+Dropped from the external files as not results: `ritz_residual_bound_div` (the bound divided by
+$\|\mathbf{x}\|$), the `CoefficientEnvelope` (every coefficient $\le 100j\|\mathbf{H}\|$), the
+`Fmat_bound` corollary ($k^2$ for $k^{3/2}$), `ambient_pos`. The constants are literals in the
+statements, as the paper's Step 4 prints its own; whether rule B (§5.2 rule 2) wants them as
+named bounds is a reviewer question (recommendation: no, they are the proof's small explicit
+values and nothing consumes them by name yet).
+
+### 3.6 Headlines of the re-proof: the backward model and its spectral consequences
+
+Second pass (same branch): the external `Lanczos/Greenbaum/*` with `Core/{Dilation*,
+BackwardCorrection,Nilpotent,ExactLanczos}` and `Core/Measure/*`. Files:
+`LanczosData.lean` (refactor: the recurrence identities and the Gram commutator of §3.5 now hold
+for any `NLAlib.LanczosData` — matrix, vectors, coefficients — so that they apply to the computed
+and to the normalised vectors; `LanczosRun`'s statements are unchanged), `Dilation.lean`
+(generic orthonormal dilation of unit vectors), `Backward.lean`, `BackwardSpectral.lean`.
+Bibliography: `Greenbaum1989`, `Paige2009`, `Paige2010`, `Kittaneh1985` added.
+
+Design. The paper's $\vec J$ and $D_r$ are replaced by $(k+1)\times k$ matrices
+$\mathbf{Y}_r = \underline{\mathbf{T}}_k\mathbf{K}_k^r - \mathbf{K}^r\underline{\mathbf{T}}_k$
+with $\mathbf{Y}_{r+1} = \mathbf{Y}_r\mathbf{K}_k + \mathbf{K}^r\mathbf{Y}_1$ (no existential);
+$\mathbf{C} = (\mathbf{I}+\mathbf{R})^{-1}$ is the finite Neumann series (no inverse); the
+dilated residual $\hat{\mathbf{E}}$ is *defined* as $\hat{\mathbf{H}}\hat{\mathbf{V}}_k -
+\hat{\mathbf{V}}_{k+1}\underline{\mathbf{T}}_k$, so the recurrence is trivial and only its size
+is a theorem; norms of $\hat{\mathbf{E}}$, $\boldsymbol{\Delta}$ are Frobenius (stacking the
+$k+1$ blocks is exact in $\|\cdot\|_{\mathsf F}$, and the Wasserstein bound needs
+$\|\boldsymbol{\Delta}\|_{\mathsf F}$ anyway, so the rank argument $\sqrt{2k}$ disappears).
+"Exact Lanczos on $(\tilde{\mathbf{H}},\tilde{\mathbf{v}})$ computes $\mathbf{T}_k$" is stated with
+the library's `lanczosState`/`lanczosTridiagonal`/`lanczosMatrix`, through a general lemma
+(`lanczosState_eq_of_orthonormal_recurrence`: an orthonormal three-term recurrence is the
+Lanczos recurrence), which belongs in `NLAlib/Krylov/Processes/LanczosRecurrence.lean`.
+Index set of the model: `Fin n × Fin (k + 1)` (row $i$ of block $r$), $\hat{\mathbf{H}}$ =
+`Matrix.blockDiagonal`.
+
+| headline (Lean) | paper | paper / external constant | here |
+|---|---|---|---|
+| `norm_normalized_recurrenceError_le` | `lem:normalized-errors`, $\bar{\mathbf f}_j$ | $\lesssim_k$ | $12(j+1)\varepsilon\|\mathbf H\|_2$ |
+| `abs_normalized_adjacentInner_le` | same, $\bar p_j$ | $\lesssim_k$ | $8(j+1)\varepsilon\|\mathbf H\|_2$ |
+| `specNorm_normalized_gramCommutator_le` | `cor:normalized-commutator` | $\lesssim_k$ | $40k^2\varepsilon\|\mathbf H\|_2$ |
+| `hasOrthonormalCols_orthonormalDilation`, `transpose_dilationC_mul_mul_dilationC` | `lem:dilation`, `eq:CGC-identity` | identity | identity |
+| `specNorm_dilationK_le_one`, `specNorm_dilationC_le_two` | `lem:exchange` | $1$, $2$ | $1$, $2$ |
+| `frobNorm_dilatedResidual_le` | `lem:dilated-recurrence` | $\lesssim_k$; ext. $240000k^6$ (spectral) | $1000k^4\varepsilon\|\mathbf H\|_2$ (Frobenius) |
+| `backwardH_mul_dilatedBasis`, `transpose_backwardH`, `hasOrthonormalCols_dilatedBasisSucc`, `dilatedBasisSucc_col_zero` | `thm:greenbaum` | identities | identities |
+| `frobNorm_backwardH_sub_dilatedH_le` | `thm:greenbaum`, $\|\boldsymbol\Delta\|$ | $\lesssim_k$; ext. $480000k^6$ (spectral) | $2000k^4\varepsilon\|\mathbf H\|_2$ (Frobenius) |
+| `lanczosTridiagonal_backwardH_dilatedStart`, `lanczosMatrix_…`, `lanczosState_…_beta` | `thm:greenbaum` "in particular" | — | exact equalities with the library's Lanczos |
+| `exists_abs_eigenvalue_backwardH_sub_eigenvalue_le` | `rem:wasserstein`, Weyl | $\|\boldsymbol\Delta\|$ | $2000k^4\varepsilon\|\mathbf H\|_2$ |
+| `exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul` | `thm:stabilized` | $\lesssim_k\beta_k\lvert y_k\rvert+\varepsilon\|\mathbf A\|$ | $\beta_k\lvert y_{k-1}\rvert + 2000k^4\varepsilon\|\mathbf H\|_2$ |
+| `eigenvalue_last_sub_le_…`, `sub_eigenvalue_zero_le_…` | `thm:containment` | $\lesssim_k$ | $2000k^4\varepsilon\|\mathbf H\|_2$, two theorems |
+| `frobNorm_cfc_sub_cfc_le` | Kittaneh, used in `rem:wasserstein` | $1$ | $1$ |
+| `abs_dotProduct_cfc_mulVec_sub_le` | `rem:wasserstein` | $\sqrt{2k}\|\boldsymbol\Delta\|$; ext. $\sqrt{2k}\cdot480000k^6$ | $2000k^4\varepsilon\|\mathbf H\|_2$ |
+
+**Status (2026-10-28): all §3.6 headlines proved**, no `sorry`, axioms `propext`,
+`Classical.choice`, `Quot.sound` only. Files and lines: `LanczosData` 647 (generic layer, absorbs
+§3.5's identities), `Dilation` 306, `ExactLanczos` 120, `Backward` 980, `BackwardSpectral` 444;
+with §3.5 the whole re-proof is 3.5k lines against the external 6.6k. General facts that belong
+in the library proper when the scaffold moves: `Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le`,
+`frobNorm_le_card_mul_of_forall_abs_le`, `HasOrthonormalCols.specNorm_one_sub_mul_transpose_le`
+(Matrix/Norms), `frobNorm_cfc_sub_cfc_le` (Matrix/Functions), the dilation (`Dilation.lean`,
+Matrix/Basic or Matrix/Subspaces), `lanczosState_eq_of_orthonormal_recurrence`
+(Krylov/Processes/LanczosRecurrence). Not done: the quadrature reading
+($\mathbf e_0^{\mathsf T}f(\mathbf T_k)\mathbf e_0$ against `lanczosQuadrature` of the model), which
+needs only the exact-Lanczos identification proved here plus the library's quadrature
+exactness, and was not in the paper.
+
+On the paper's argument: correct as written. Simplifications used here: (i) no $\vec J$, $D_r$
+existentials (the defect $\mathbf Y_r$ is a definition); (ii) $\mathbf C$ as a finite Neumann
+series; (iii) Frobenius norms for $\hat{\mathbf E}$, $\boldsymbol\Delta$, which make the stacking
+exact and remove the rank bound $\sqrt{2k}$ from the Wasserstein remark; (iv) $\|\mathbf I -
+\hat{\mathbf V}_k\hat{\mathbf V}_k^{\mathsf T}\| \le 1$ directly instead of the projector form of
+$\boldsymbol\Delta$ via $\hat{\mathbf V}_k^{\mathsf T}\hat{\mathbf E}$ (both are used: the symmetry
+of $\hat{\mathbf V}_k^{\mathsf T}\hat{\mathbf E}$ gives $\tilde{\mathbf H}^{\mathsf T} =
+\tilde{\mathbf H}$). One point implicit in the paper: the normalised $\bar{\mathbf v}_{k+1}$ at a
+terminal step is arbitrary; here it is $\bar{\mathbf v}_1$ and every statement is unaffected
+because it is multiplied by $\beta_k = 0$.
+
+The $k^4$ (external $k^6$): $\|\bar{\mathbf M}_k\| \lesssim k^2$ (§3.5), $\|\mathbf Y_r\| \le
+r\|\mathbf Y_1\| \le 4r\|\bar{\mathbf M}_k\|$, $\|\bar{\mathbf V}_{k+1}\|_{\mathsf F} =
+\sqrt{k+1}$, and $k+1$ blocks.
+
 ## 4. Toolkit dependencies
 
 Present and used: `IsRelErrSem` (`sqrt_err`, `sqrt_ok`, `cmp_eq`, `re`, `neg`, `lit_err`),
