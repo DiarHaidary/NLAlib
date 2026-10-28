@@ -238,6 +238,21 @@ def tridiagonalSucc : Matrix (Fin (k + 1)) (Fin k) ℝ :=
     else if (j : ℕ) = i + 1 then D.β j
     else 0
 
+/-- The first $k$ rows of $\underline{\mathbf{T}}_k$ are $\mathbf{T}_k$. -/
+theorem tridiagonalSucc_castSucc (i j : Fin k) :
+    D.tridiagonalSucc (Fin.castSucc i) j = D.tridiagonal i j := by
+  simp only [tridiagonalSucc, tridiagonal, Matrix.of_apply, Fin.val_castSucc, Fin.ext_iff]
+
+/-- The last row of $\underline{\mathbf{T}}_k$ is $\beta_k\mathbf{e}_{k-1}^{\mathsf{T}}$. -/
+theorem tridiagonalSucc_last (j : Fin k) :
+    D.tridiagonalSucc (Fin.last k) j = if k = (j : ℕ) + 1 then D.β k else 0 := by
+  obtain ⟨j, hj⟩ := j
+  simp only [tridiagonalSucc, Matrix.of_apply, Fin.val_last]
+  rw [if_neg (by omega)]
+  by_cases h : k = j + 1
+  · rw [if_pos h, if_pos h]
+  · rw [if_neg h, if_neg h, if_neg (by omega)]
+
 /-- $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k = \mathbf{V}_k\mathbf{T}_k
 + (\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}}$. -/
 theorem basisSucc_mul_tridiagonalSucc :

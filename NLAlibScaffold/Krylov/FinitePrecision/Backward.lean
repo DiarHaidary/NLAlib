@@ -97,6 +97,49 @@ theorem lanczosState_beta_eq_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
     (lanczosState A (u 1) k).beta = β k := by
   sorry
 
+/-! ### Leading blocks of upper triangular matrices -/
+
+/-- Dropping the last column of $\mathbf{B}\mathbf{X}$, for $\mathbf{X}$ upper triangular, is
+$\mathbf{B}$ without its last column times the leading block of $\mathbf{X}$. -/
+private theorem submatrix_castSucc_mul {p : Type*} {m : ℕ} (B : Matrix p (Fin (m + 1)) ℝ)
+    {X : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} (hX : X.IsUpperTriangular) :
+    (B * X).submatrix id Fin.castSucc =
+      B.submatrix id Fin.castSucc * X.submatrix Fin.castSucc Fin.castSucc := by
+  ext i j
+  simp only [Matrix.submatrix_apply, id, Matrix.mul_apply]
+  rw [Fin.sum_univ_castSucc,
+    show X (Fin.last m) (Fin.castSucc j) = 0 from hX (Fin.castSucc_lt_last j), mul_zero, add_zero]
+
+/-- The leading block of a product with an upper triangular right factor is the product of the
+leading blocks. -/
+private theorem submatrix_castSucc_mul_castSucc {m : ℕ}
+    (X : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ) {Y : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
+    (hY : Y.IsUpperTriangular) :
+    (X * Y).submatrix Fin.castSucc Fin.castSucc =
+      X.submatrix Fin.castSucc Fin.castSucc * Y.submatrix Fin.castSucc Fin.castSucc := by
+  have h := submatrix_castSucc_mul X hY
+  ext i j
+  have := congrFun (congrFun h (Fin.castSucc i)) j
+  simpa only [Matrix.submatrix_apply, id, Matrix.mul_apply] using this
+
+/-- Block $r$ of $(\mathbf{I} \otimes \mathbf{H})\mathbf{M}$ is $\mathbf{H}$ times block $r$ of
+$\mathbf{M}$. -/
+private theorem submatrix_blockDiagonal_mul {n m : ℕ} {p : Type*}
+    (H : Matrix (Fin n) (Fin n) ℝ) (M : Matrix (Fin n × Fin m) p ℝ) (r : Fin m) :
+    (Matrix.blockDiagonal (fun _ : Fin m => H) * M).submatrix (fun i => (i, r)) id =
+      H * M.submatrix (fun i => (i, r)) id := by
+  ext i j
+  simp only [Matrix.submatrix_apply, id, Matrix.mul_apply, Fintype.sum_prod_type,
+    Matrix.blockDiagonal_apply, ite_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+
+/-- The squared Frobenius norm of a matrix with rows indexed by blocks is the sum over the
+blocks. -/
+private theorem frobNorm_sq_eq_sum_submatrix {n m : ℕ} {p : Type*} [Fintype p]
+    (M : Matrix (Fin n × Fin m) p ℝ) :
+    frobNorm M ^ 2 = ∑ r, frobNorm (M.submatrix (fun i => (i, r)) id) ^ 2 := by
+  simp only [frobNorm_sq_eq_sum_sq, Fintype.sum_prod_type, Matrix.submatrix_apply, id]
+  exact Finset.sum_comm
+
 namespace LanczosRun
 
 variable {n k : ℕ} (L : LanczosRun n k)
@@ -429,6 +472,252 @@ draft, `lem:dilation`.
 Proof: `NLAlib.orthonormalDilation_apply_of_val_eq_zero`; easy. -/
 theorem dilatedBasisSucc_col_zero : L.dilatedBasisSucc.col 0 = L.dilatedStart := by
   sorry
+
+private theorem submatrix_sub' {a b c d : Type*} (A B : Matrix a b ℝ) (f : c → a) (g : d → b) :
+    (A - B).submatrix f g = A.submatrix f g - B.submatrix f g := rfl
+
+/-- The **exchange defect** $\mathbf{Y}_r = \underline{\mathbf{T}}_k\mathbf{K}_k^r -
+\mathbf{K}^r\underline{\mathbf{T}}_k$ of the dilation ($\mathbf{K}_k$ the leading block of
+$\mathbf{K}$), which measures how far $\mathbf{K}^r$ is from intertwining
+$\underline{\mathbf{T}}_k$ (`lem:exchange` of the maintainer's draft). -/
+noncomputable def exchangeDefect (r : ℕ) : Matrix (Fin (k + 1)) (Fin k) ℝ :=
+  L.tridiagonalSucc *
+      (dilationK L.normalized.basisSucc ^ r).submatrix Fin.castSucc Fin.castSucc -
+    dilationK L.normalized.basisSucc ^ r * L.tridiagonalSucc
+
+/-- The normalised vectors have unit length: the Gram matrix of $\bar{\mathbf{V}}_{k+1}$ has unit
+diagonal. -/
+theorem transpose_basisSucc_mul_self_apply (j : Fin (k + 1)) :
+    (L.normalized.basisSuccᵀ * L.normalized.basisSucc) j j = 1 := by
+  have h := L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
+  have h2 : ‖WithLp.toLp 2 (L.normalizedV ((j : ℕ) + 1))‖ ^ 2 = 1 := by rw [h, one_pow]
+  rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h2
+  rw [Matrix.mul_apply]
+  exact h2
+
+/-- Block $r$ of the dilated residual:
+$\hat{\mathbf{E}}_r = \bar{\mathbf{F}}_k(\mathbf{C}\mathbf{K}^r)_k
++ \bar{\mathbf{V}}_{k+1}(\mathbf{Y}_r - \mathbf{Y}_{r+1})$. -/
+theorem dilatedResidual_submatrix (r : Fin (k + 1)) :
+    L.dilatedResidual.submatrix (fun i => (i, r)) id =
+      L.normalized.residual * (dilationC L.normalized.basisSucc *
+          dilationK L.normalized.basisSucc ^ (r : ℕ)).submatrix Fin.castSucc Fin.castSucc +
+        L.normalized.basisSucc * (L.exchangeDefect r - L.exchangeDefect (r + 1)) := by
+  set W := L.normalized.basisSucc
+  set C := dilationC W
+  set K := dilationK W
+  have hCKr : (C * K ^ (r : ℕ)).IsUpperTriangular :=
+    (isUpperTriangular_dilationC W).mul ((isUpperTriangular_dilationK W).pow _)
+  have hB : L.dilatedBasis.submatrix (fun i => (i, r)) id =
+      (W * (C * K ^ (r : ℕ))).submatrix id Fin.castSucc := by
+    ext i j
+    simp only [dilatedBasis, dilatedBasisSucc, orthonormalDilation, Matrix.submatrix_apply, id,
+      Matrix.of_apply, Matrix.mul_assoc]
+    rfl
+  have hBs : L.dilatedBasisSucc.submatrix (fun i => (i, r)) id = W * (C * K ^ (r : ℕ)) := by
+    ext i j
+    simp only [dilatedBasisSucc, orthonormalDilation, Matrix.submatrix_apply, id,
+      Matrix.of_apply, Matrix.mul_assoc]
+    rfl
+  have hW : W.submatrix id Fin.castSucc = L.normalized.basis := by
+    ext i j
+    rfl
+  have hrec := L.normalized.H_mul_basis_eq_basisSucc_mul
+  have hT : L.normalized.tridiagonalSucc = L.tridiagonalSucc := rfl
+  have hCK : C * K ^ (r : ℕ) = K ^ (r : ℕ) - K ^ ((r : ℕ) + 1) := by
+    have : C = 1 - K := by simp only [K, dilationK]; abel
+    rw [this, Matrix.sub_mul, Matrix.one_mul, pow_succ']
+  have hdil : L.dilatedH = Matrix.blockDiagonal (fun _ : Fin (k + 1) => L.H) := rfl
+  rw [dilatedResidual, submatrix_sub', hdil, submatrix_blockDiagonal_mul,
+    Matrix.submatrix_mul _ _ _ id _ Function.bijective_id, hB, hBs,
+    submatrix_castSucc_mul W hCKr, hW]
+  have hH : L.H = L.normalized.H := rfl
+  rw [hH, ← Matrix.mul_assoc, hrec, hT]
+  simp only [exchangeDefect]
+  rw [hCK, submatrix_sub']
+  simp only [Matrix.submatrix_id_id, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul,
+    Matrix.mul_assoc]
+  abel
+
+/-- The exchange defects satisfy $\mathbf{Y}_{r+1} = \mathbf{Y}_r\mathbf{K}_k +
+\mathbf{K}^r\mathbf{Y}_1$. -/
+theorem exchangeDefect_succ (r : ℕ) :
+    L.exchangeDefect (r + 1) =
+      L.exchangeDefect r * (dilationK L.normalized.basisSucc).submatrix Fin.castSucc
+          Fin.castSucc +
+        dilationK L.normalized.basisSucc ^ r * L.exchangeDefect 1 := by
+  set K := dilationK L.normalized.basisSucc
+  have hK := isUpperTriangular_dilationK L.normalized.basisSucc
+  simp only [exchangeDefect]
+  rw [pow_succ, submatrix_castSucc_mul_castSucc _ hK, pow_one]
+  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_assoc]
+  abel
+
+/-- $\mathbf{Y}_0 = \mathbf{0}$. -/
+theorem exchangeDefect_zero : L.exchangeDefect 0 = 0 := by
+  simp only [exchangeDefect, pow_zero, Matrix.one_mul]
+  rw [Matrix.submatrix_one _ (Fin.castSucc_injective k), Matrix.mul_one, sub_self]
+
+/-- **The exchange rule**: $\mathbf{Y}_1 = \mathbf{C}(\underline{\mathbf{T}}_k\mathbf{R}_k -
+\mathbf{R}\underline{\mathbf{T}}_k)\mathbf{C}_k$. No printed source; the maintainer's draft,
+`eq:L-commutator`; [Paige2010, (3.9)]. -/
+theorem exchangeDefect_one :
+    L.exchangeDefect 1 = dilationC L.normalized.basisSucc *
+      (L.tridiagonalSucc * (strictUpperGram L.normalized.basisSucc).submatrix Fin.castSucc
+          Fin.castSucc - strictUpperGram L.normalized.basisSucc * L.tridiagonalSucc) *
+      (dilationC L.normalized.basisSucc).submatrix Fin.castSucc Fin.castSucc := by
+  simp only [exchangeDefect, pow_one]
+  set W := L.normalized.basisSucc
+  set R := strictUpperGram W
+  set C := dilationC W
+  set K := dilationK W
+  set T := L.tridiagonalSucc
+  have hRC : R.submatrix Fin.castSucc Fin.castSucc * C.submatrix Fin.castSucc Fin.castSucc =
+      K.submatrix Fin.castSucc Fin.castSucc := by
+    rw [← submatrix_castSucc_mul_castSucc _ (isUpperTriangular_dilationC W),
+      ← dilationK_eq_strictUpperGram_mul]
+  have hCR : C * R = K := (dilationK_eq_dilationC_mul W).symm
+  have hC : C = 1 - K := by simp only [K, dilationK]; abel
+  have hCk :
+      C.submatrix Fin.castSucc Fin.castSucc = 1 - K.submatrix Fin.castSucc Fin.castSucc := by
+    rw [hC, submatrix_sub', Matrix.submatrix_one _ (Fin.castSucc_injective k)]
+  rw [Matrix.mul_sub, Matrix.sub_mul]
+  simp only [Matrix.mul_assoc]
+  rw [hRC, ← Matrix.mul_assoc C R, hCR, hCk]
+  conv_rhs => rw [hC]
+  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul]
+  abel
+
+/-- The commutator of the normalised Gram matrix with $\underline{\mathbf{T}}_k$ is the
+normalised Gram commutator with a zero last row:
+$\underline{\mathbf{T}}_k\mathbf{R}_k - \mathbf{R}\underline{\mathbf{T}}_k =
+\mathbf{J}\bar{\mathbf{M}}_k$, $\mathbf{J}$ the first $k$ columns of $\mathbf{I}_{k+1}$. -/
+theorem tridiagonalSucc_mul_sub_eq :
+    L.tridiagonalSucc * (strictUpperGram L.normalized.basisSucc).submatrix Fin.castSucc
+        Fin.castSucc - strictUpperGram L.normalized.basisSucc * L.tridiagonalSucc =
+      (1 : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).submatrix id Fin.castSucc *
+        L.normalized.gramCommutator := by
+  set D := L.normalized
+  have hT : L.tridiagonalSucc = D.tridiagonalSucc := rfl
+  have hRc : ∀ a b : Fin k, strictUpperGram D.basisSucc (Fin.castSucc a) (Fin.castSucc b) =
+      D.gramStrictUpper a b := fun a b => by
+    simp only [strictUpperGram, LanczosData.gramStrictUpper, Matrix.of_apply,
+      Fin.castSucc_lt_castSucc_iff, Matrix.mul_apply, Matrix.transpose_apply,
+      LanczosData.basisSucc, dotProduct, Fin.val_castSucc]
+  have hRlast : ∀ a : Fin k, strictUpperGram D.basisSucc (Fin.castSucc a) (Fin.last k) =
+      D.v ((a : ℕ) + 1) ⬝ᵥ D.v (k + 1) := fun a => by
+    simp only [strictUpperGram, Matrix.of_apply, if_pos (Fin.castSucc_lt_last a),
+      Matrix.mul_apply, Matrix.transpose_apply, LanczosData.basisSucc, dotProduct,
+      Fin.val_castSucc, Fin.val_last]
+  have hRl : ∀ l, strictUpperGram D.basisSucc (Fin.last k) l = 0 := fun l =>
+    strictUpperGram_apply_of_le _ (Fin.le_last l)
+  have hlast : ∀ j : Fin k, j = D.lastIndex ↔ k = (j : ℕ) + 1 := fun j => by
+    rw [Fin.ext_iff]
+    simp only [LanczosData.lastIndex]
+    have := D.k_pos
+    omega
+  ext i j
+  refine Fin.lastCases ?_ (fun i' => ?_) i
+  · have h1 : ∀ l : Fin k, (Fin.last k = Fin.castSucc l) ↔ False :=
+      fun l => ⟨fun h => (Fin.castSucc_lt_last l).ne' h, False.elim⟩
+    rw [Matrix.sub_apply, Matrix.mul_apply, Matrix.mul_apply, Matrix.mul_apply]
+    simp only [hRl, zero_mul, Finset.sum_const_zero, sub_zero, Matrix.submatrix_apply, id,
+      Matrix.one_apply, h1, if_false]
+    refine Finset.sum_eq_zero fun l _ => ?_
+    rw [hT, D.tridiagonalSucc_last]
+    split_ifs with h
+    · rw [strictUpperGram_apply_of_le _ (by rw [Fin.le_def]; simp only [Fin.val_castSucc]; omega),
+        mul_zero]
+    · rw [zero_mul]
+  · rw [Matrix.sub_apply, Matrix.mul_apply, Matrix.mul_apply, Fin.sum_univ_castSucc,
+      Matrix.mul_apply]
+    simp only [Matrix.submatrix_apply, id, hT, D.tridiagonalSucc_castSucc, D.tridiagonalSucc_last,
+      hRc, hRlast, Matrix.one_apply, Fin.castSucc_inj, ite_mul, one_mul, zero_mul,
+      Finset.sum_ite_eq, Finset.mem_univ, if_true]
+    simp only [LanczosData.gramCommutator, Matrix.sub_apply, Matrix.mul_apply,
+      Matrix.vecMulVec_apply, Pi.single_apply, hlast]
+    have hc : (D.basisᵀ *ᵥ (D.β k • D.v (k + 1))) i' = D.β k * (D.v ((i' : ℕ) + 1) ⬝ᵥ D.v (k + 1)) := by
+      simp only [Matrix.mulVec, dotProduct, Matrix.transpose_apply, LanczosData.basis,
+        Matrix.of_apply, Pi.smul_apply, smul_eq_mul, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun x _ => by ring
+    rw [hc]
+    by_cases h : k = (j : ℕ) + 1
+    · simp only [h, if_true]
+      ring
+    · simp only [h, if_false]
+      ring
+
+/-- The normalised basis with the next vector has Frobenius norm $\sqrt{k + 1}$. -/
+theorem frobNorm_normalized_basisSucc :
+    frobNorm L.normalized.basisSucc = Real.sqrt (k + 1) := by
+  rw [← Real.sqrt_sq (frobNorm_nonneg _), frobNorm_sq_eq_sum_col]
+  congr 1
+  have : ∀ j : Fin (k + 1), ‖WithLp.toLp 2 (L.normalized.basisSucc.col j)‖ = 1 := fun j =>
+    L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
+  simp only [this, one_pow, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+    nsmul_eq_mul, mul_one]
+  push_cast
+  ring
+
+/-- **The exchange rule, bounds**: $\|\mathbf{Y}_1\|_2 \le 160k^2\varepsilon\|\mathbf{H}\|_2$.
+No printed source; the maintainer's draft, `lem:exchange`. -/
+theorem specNorm_exchangeDefect_one_le :
+    specNorm (L.exchangeDefect 1) ≤ 160 * k ^ 2 * L.ε * specNorm L.H := by
+  set W := L.normalized.basisSucc
+  have hW := L.transpose_basisSucc_mul_self_apply
+  have hC := specNorm_dilationC_le_two hW
+  have hCk : specNorm ((dilationC W).submatrix Fin.castSucc Fin.castSucc) ≤ 2 :=
+    (specNorm_submatrix_le _ (Fin.castSucc_injective k) (Fin.castSucc_injective k)).trans hC
+  have hJ : HasOrthonormalCols ((1 : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ).submatrix id
+      Fin.castSucc) :=
+    hasOrthonormalCols_one.submatrix (Equiv.refl _) (Fin.castSucc_injective k)
+  have hZ : specNorm (L.tridiagonalSucc * (strictUpperGram W).submatrix Fin.castSucc
+      Fin.castSucc - strictUpperGram W * L.tridiagonalSucc) ≤ 40 * k ^ 2 * L.ε * specNorm L.H := by
+    rw [L.tridiagonalSucc_mul_sub_eq, hJ.specNorm_mul_left]
+    exact L.specNorm_normalized_gramCommutator_le
+  rw [L.exchangeDefect_one]
+  refine (specNorm_mul_le _ _).trans ?_
+  refine (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) (specNorm_nonneg _)).trans ?_
+  have h0 : 0 ≤ 40 * k ^ 2 * L.ε * specNorm L.H := by
+    have := L.ε_nonneg
+    have := specNorm_nonneg L.H
+    positivity
+  calc specNorm (dilationC W) * specNorm (L.tridiagonalSucc *
+        (strictUpperGram W).submatrix Fin.castSucc Fin.castSucc -
+        strictUpperGram W * L.tridiagonalSucc) *
+        specNorm ((dilationC W).submatrix Fin.castSucc Fin.castSucc)
+      ≤ 2 * (40 * k ^ 2 * L.ε * specNorm L.H) * 2 := by
+        gcongr
+    _ = 160 * k ^ 2 * L.ε * specNorm L.H := by ring
+
+/-- The exchange defects grow at most linearly: $\|\mathbf{Y}_r\|_2 \le r\|\mathbf{Y}_1\|_2$. -/
+theorem specNorm_exchangeDefect_le (r : ℕ) :
+    specNorm (L.exchangeDefect r) ≤ r * specNorm (L.exchangeDefect 1) := by
+  have hW := L.transpose_basisSucc_mul_self_apply
+  have hK := specNorm_dilationK_le_one hW
+  have hKk : specNorm ((dilationK L.normalized.basisSucc).submatrix Fin.castSucc
+      Fin.castSucc) ≤ 1 :=
+    (specNorm_submatrix_le _ (Fin.castSucc_injective k) (Fin.castSucc_injective k)).trans hK
+  have hKr : ∀ r : ℕ, specNorm (dilationK L.normalized.basisSucc ^ r) ≤ 1 := fun r =>
+    (specNorm_pow_le _ r).trans (pow_le_one₀ (specNorm_nonneg _) hK)
+  induction r with
+  | zero => rw [L.exchangeDefect_zero, specNorm_zero]; simp
+  | succ r ih =>
+    rw [L.exchangeDefect_succ]
+    refine (specNorm_add_le _ _).trans ?_
+    have h1 : specNorm (L.exchangeDefect r * (dilationK L.normalized.basisSucc).submatrix
+        Fin.castSucc Fin.castSucc) ≤ r * specNorm (L.exchangeDefect 1) :=
+      (specNorm_mul_le _ _).trans (by
+        calc specNorm (L.exchangeDefect r) * _ ≤ r * specNorm (L.exchangeDefect 1) * 1 := by
+              gcongr
+          _ = _ := mul_one _)
+    have h2 : specNorm (dilationK L.normalized.basisSucc ^ r * L.exchangeDefect 1) ≤
+        specNorm (L.exchangeDefect 1) :=
+      (specNorm_mul_le _ _).trans (by
+        calc _ ≤ 1 * specNorm (L.exchangeDefect 1) := by gcongr; exact hKr r
+          _ = _ := one_mul _)
+    push_cast
+    linarith
 
 /-- **The dilated recurrence** (the exchange rule and the dilated residual): the orthonormal
 dilated vectors satisfy the computed recurrence with the computed coefficients up to
