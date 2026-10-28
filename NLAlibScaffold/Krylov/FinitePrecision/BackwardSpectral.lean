@@ -371,7 +371,52 @@ Proof: $f(\hat{\mathbf{H}})$ is block diagonal with blocks $f(\mathbf{H})$; mode
 theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
     L.dilatedStart ⬝ᵥ (cfc f L.dilatedH *ᵥ L.dilatedStart) =
       L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) := by
-  sorry
+  have hH := L.isHermitian_H
+  set V := (hH.eigenvectorUnitary : Matrix (Fin n) (Fin n) ℝ)
+  have hV := hH.hasOrthonormalCols_eigenvectorUnitary
+  have hdec : ∀ g : ℝ → ℝ, cfc g L.H =
+      V * Matrix.diagonal (fun i => g (hH.eigenvalues i)) * Vᴴ := by
+    intro g
+    rw [hH.cfc_eq, Matrix.IsHermitian.cfc, Unitary.conjStarAlgAut_apply,
+      Matrix.star_eq_conjTranspose]
+    rfl
+  set U : Matrix (Fin n × Fin (k + 1)) (Fin n × Fin (k + 1)) ℝ :=
+    Matrix.blockDiagonal fun _ => V
+  have hU : HasOrthonormalCols U := by
+    have hVV : Vᴴ * V = 1 := hV.conjTranspose_mul_self
+    simp only [U, HasOrthonormalCols, Matrix.blockDiagonal_conjTranspose,
+      ← Matrix.blockDiagonal_mul, hVV]
+    exact Matrix.blockDiagonal_one
+  have hblk : ∀ g : ℝ → ℝ, Matrix.blockDiagonal (fun _ : Fin (k + 1) => cfc g L.H) =
+      U * Matrix.diagonal (fun p => ((g (hH.eigenvalues p.1) : ℝ) : ℝ)) * Uᴴ := by
+    intro g
+    rw [show (Matrix.diagonal fun p : Fin n × Fin (k + 1) => ((g (hH.eigenvalues p.1) : ℝ) : ℝ)) =
+        Matrix.blockDiagonal (fun _ : Fin (k + 1) =>
+          Matrix.diagonal fun i => g (hH.eigenvalues i)) from
+        (Matrix.blockDiagonal_diagonal
+          (fun (_ : Fin (k + 1)) (i : Fin n) => g (hH.eigenvalues i))).symm]
+    simp only [hdec, U, Matrix.blockDiagonal_conjTranspose, ← Matrix.blockDiagonal_mul]
+  have hA : L.dilatedH = U * Matrix.diagonal (fun p => ((hH.eigenvalues p.1 : ℝ) : ℝ)) * Uᴴ := by
+    have h := hblk (fun x => x)
+    rw [cfc_id' ℝ L.H] at h
+    exact h
+  have hcfc := HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU rfl hA f
+  have hcfc' : cfc f L.dilatedH = Matrix.blockDiagonal fun _ => cfc f L.H := by
+    rw [hblk f]
+    exact hcfc
+  rw [hcfc']
+  simp only [dotProduct, Matrix.mulVec, Fintype.sum_prod_type, Matrix.blockDiagonal_apply,
+    dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ,
+    if_true]
+  rw [Finset.sum_comm, Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
+    simp only [Fin.val_eq_zero_iff, if_neg hr, Finset.sum_const_zero])]
+  simp only [Fin.val_zero, if_true]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
+    simp only [Fin.val_eq_zero_iff, if_neg hr])]
+  simp
 
 /-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz $f$,
 $$\lvert\bar{\mathbf{v}}_1^{\mathsf{T}}f(\mathbf{H})\bar{\mathbf{v}}_1 -
@@ -390,7 +435,25 @@ theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1
     |L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) -
         L.dilatedStart ⬝ᵥ (cfc f L.backwardH *ᵥ L.dilatedStart)| ≤
       2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  have hs1 : ‖WithLp.toLp 2 L.dilatedStart‖ = 1 := by
+    have hQQ : L.dilatedBasisSuccᵀ * L.dilatedBasisSucc = 1 := by
+      have := L.hasOrthonormalCols_dilatedBasisSucc.conjTranspose_mul_self
+      rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+    have h := congrFun (congrFun hQQ 0) 0
+    rw [Matrix.mul_apply, Matrix.one_apply_eq] at h
+    have h2 : ‖WithLp.toLp 2 L.dilatedStart‖ ^ 2 = 1 := by
+      rw [← L.dilatedBasisSucc_col_zero, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+      exact h
+    have := norm_nonneg (WithLp.toLp 2 L.dilatedStart)
+    nlinarith
+  rw [← L.dotProduct_cfc_dilatedH_mulVec, ← dotProduct_sub, ← Matrix.sub_mulVec]
+  have h := norm_star_dotProduct_mulVec_le (cfc f L.dilatedH - cfc f L.backwardH)
+    L.dilatedStart L.dilatedStart
+  rw [star_trivial, Real.norm_eq_abs, hs1, one_mul, mul_one] at h
+  refine h.trans ((specNorm_le_frobNorm _).trans ?_)
+  refine (frobNorm_cfc_sub_cfc_le L.isHermitian_dilatedH L.isHermitian_backwardH hf).trans ?_
+  rw [← frobNorm_neg, neg_sub]
+  exact L.frobNorm_backwardH_sub_dilatedH_le
 
 end LanczosRun
 
