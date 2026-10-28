@@ -224,6 +224,48 @@ theorem H_mul_basis :
     rw [hv, hβ]
     ring
 
+/-- The basis with the next vector, $\mathbf{V}_{k+1} = [\mathbf{v}_1, \dots, \mathbf{v}_{k+1}]$:
+column $j \le k$ is $\mathbf{v}_{j+1}$. -/
+def basisSucc : Matrix (Fin n) (Fin (k + 1)) ℝ :=
+  Matrix.of fun i j => D.v ((j : ℕ) + 1) i
+
+/-- The tridiagonal matrix with the extra row $\beta_k\mathbf{e}_{k-1}^{\mathsf{T}}$,
+$\underline{\mathbf{T}}_k \in \mathbb{R}^{(k+1) \times k}$, indexed from $0$. -/
+def tridiagonalSucc : Matrix (Fin (k + 1)) (Fin k) ℝ :=
+  Matrix.of fun i j =>
+    if (i : ℕ) = j then D.α ((i : ℕ) + 1)
+    else if (i : ℕ) = j + 1 then D.β i
+    else if (j : ℕ) = i + 1 then D.β j
+    else 0
+
+/-- $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k = \mathbf{V}_k\mathbf{T}_k
++ (\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}}$. -/
+theorem basisSucc_mul_tridiagonalSucc :
+    D.basisSucc * D.tridiagonalSucc = D.basis * D.tridiagonal +
+      Matrix.vecMulVec (D.β k • D.v (k + 1)) (Pi.single D.lastIndex 1) := by
+  ext i j
+  rw [Matrix.mul_apply, Fin.sum_univ_castSucc, Matrix.add_apply, Matrix.mul_apply]
+  congr 1
+  · refine Finset.sum_congr rfl fun l _ => ?_
+    simp only [basisSucc, basis, tridiagonalSucc, tridiagonal, Matrix.of_apply,
+      Fin.val_castSucc, Fin.ext_iff]
+  · obtain ⟨j, hj⟩ := j
+    simp only [basisSucc, tridiagonalSucc, Matrix.of_apply, Fin.val_last,
+      Matrix.vecMulVec_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, lastIndex,
+      Fin.mk.injEq]
+    by_cases h : k = j + 1
+    · rw [if_neg (by omega), if_pos h, if_pos (by omega)]
+      ring
+    · rw [if_neg (by omega), if_neg h, if_neg (by omega), if_neg (by omega)]
+      ring
+
+/-- **The perturbed recurrence with the extended tridiagonal matrix**:
+$\mathbf{H}\mathbf{V}_k = \mathbf{V}_{k+1}\underline{\mathbf{T}}_k + \mathbf{F}_k$.
+No printed source; the maintainer's draft, `eq:governing`. -/
+theorem H_mul_basis_eq_basisSucc_mul :
+    D.H * D.basis = D.basisSucc * D.tridiagonalSucc + D.residual := by
+  rw [D.basisSucc_mul_tridiagonalSucc, D.H_mul_basis]
+
 /-- **The Ritz residual identity**: for an eigenpair $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$
 of the computed tridiagonal matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$
 satisfies

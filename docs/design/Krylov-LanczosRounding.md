@@ -411,6 +411,53 @@ statements, as the paper's Step 4 prints its own; whether rule B (§5.2 rule 2) 
 named bounds is a reviewer question (recommendation: no, they are the proof's small explicit
 values and nothing consumes them by name yet).
 
+### 3.6 Headlines of the re-proof: the backward model and its spectral consequences
+
+Second pass (same branch): the external `Lanczos/Greenbaum/*` with `Core/{Dilation*,
+BackwardCorrection,Nilpotent,ExactLanczos}` and `Core/Measure/*`. Files:
+`LanczosData.lean` (refactor: the recurrence identities and the Gram commutator of §3.5 now hold
+for any `NLAlib.LanczosData` — matrix, vectors, coefficients — so that they apply to the computed
+and to the normalised vectors; `LanczosRun`'s statements are unchanged), `Dilation.lean`
+(generic orthonormal dilation of unit vectors), `Backward.lean`, `BackwardSpectral.lean`.
+Bibliography: `Greenbaum1989`, `Paige2009`, `Paige2010`, `Kittaneh1985` added.
+
+Design. The paper's $\vec J$ and $D_r$ are replaced by $(k+1)\times k$ matrices
+$\mathbf{Y}_r = \underline{\mathbf{T}}_k\mathbf{K}_k^r - \mathbf{K}^r\underline{\mathbf{T}}_k$
+with $\mathbf{Y}_{r+1} = \mathbf{Y}_r\mathbf{K}_k + \mathbf{K}^r\mathbf{Y}_1$ (no existential);
+$\mathbf{C} = (\mathbf{I}+\mathbf{R})^{-1}$ is the finite Neumann series (no inverse); the
+dilated residual $\hat{\mathbf{E}}$ is *defined* as $\hat{\mathbf{H}}\hat{\mathbf{V}}_k -
+\hat{\mathbf{V}}_{k+1}\underline{\mathbf{T}}_k$, so the recurrence is trivial and only its size
+is a theorem; norms of $\hat{\mathbf{E}}$, $\boldsymbol{\Delta}$ are Frobenius (stacking the
+$k+1$ blocks is exact in $\|\cdot\|_{\mathsf F}$, and the Wasserstein bound needs
+$\|\boldsymbol{\Delta}\|_{\mathsf F}$ anyway, so the rank argument $\sqrt{2k}$ disappears).
+"Exact Lanczos on $(\tilde{\mathbf{H}},\tilde{\mathbf{v}})$ computes $\mathbf{T}_k$" is stated with
+the library's `lanczosState`/`lanczosTridiagonal`/`lanczosMatrix`, through a general lemma
+(`lanczosState_eq_of_orthonormal_recurrence`: an orthonormal three-term recurrence is the
+Lanczos recurrence), which belongs in `NLAlib/Krylov/Processes/LanczosRecurrence.lean`.
+Index set of the model: `Fin n × Fin (k + 1)` (row $i$ of block $r$), $\hat{\mathbf{H}}$ =
+`Matrix.blockDiagonal`.
+
+| headline (Lean) | paper | paper / external constant | here |
+|---|---|---|---|
+| `norm_normalized_recurrenceError_le` | `lem:normalized-errors`, $\bar{\mathbf f}_j$ | $\lesssim_k$ | $12(j+1)\varepsilon\|\mathbf H\|_2$ |
+| `abs_normalized_adjacentInner_le` | same, $\bar p_j$ | $\lesssim_k$ | $8(j+1)\varepsilon\|\mathbf H\|_2$ |
+| `specNorm_normalized_gramCommutator_le` | `cor:normalized-commutator` | $\lesssim_k$ | $40k^2\varepsilon\|\mathbf H\|_2$ |
+| `hasOrthonormalCols_orthonormalDilation`, `transpose_dilationC_mul_mul_dilationC` | `lem:dilation`, `eq:CGC-identity` | identity | identity |
+| `specNorm_dilationK_le_one`, `specNorm_dilationC_le_two` | `lem:exchange` | $1$, $2$ | $1$, $2$ |
+| `frobNorm_dilatedResidual_le` | `lem:dilated-recurrence` | $\lesssim_k$; ext. $240000k^6$ (spectral) | $1000k^4\varepsilon\|\mathbf H\|_2$ (Frobenius) |
+| `backwardH_mul_dilatedBasis`, `transpose_backwardH`, `hasOrthonormalCols_dilatedBasisSucc`, `dilatedBasisSucc_col_zero` | `thm:greenbaum` | identities | identities |
+| `frobNorm_backwardH_sub_dilatedH_le` | `thm:greenbaum`, $\|\boldsymbol\Delta\|$ | $\lesssim_k$; ext. $480000k^6$ (spectral) | $2000k^4\varepsilon\|\mathbf H\|_2$ (Frobenius) |
+| `lanczosTridiagonal_backwardH_dilatedStart`, `lanczosMatrix_…`, `lanczosState_…_beta` | `thm:greenbaum` "in particular" | — | exact equalities with the library's Lanczos |
+| `exists_abs_eigenvalue_backwardH_sub_eigenvalue_le` | `rem:wasserstein`, Weyl | $\|\boldsymbol\Delta\|$ | $2000k^4\varepsilon\|\mathbf H\|_2$ |
+| `exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul` | `thm:stabilized` | $\lesssim_k\beta_k\lvert y_k\rvert+\varepsilon\|\mathbf A\|$ | $\beta_k\lvert y_{k-1}\rvert + 2000k^4\varepsilon\|\mathbf H\|_2$ |
+| `eigenvalue_last_sub_le_…`, `sub_eigenvalue_zero_le_…` | `thm:containment` | $\lesssim_k$ | $2000k^4\varepsilon\|\mathbf H\|_2$, two theorems |
+| `frobNorm_cfc_sub_cfc_le` | Kittaneh, used in `rem:wasserstein` | $1$ | $1$ |
+| `abs_dotProduct_cfc_mulVec_sub_le` | `rem:wasserstein` | $\sqrt{2k}\|\boldsymbol\Delta\|$; ext. $\sqrt{2k}\cdot480000k^6$ | $2000k^4\varepsilon\|\mathbf H\|_2$ |
+
+The $k^4$ (external $k^6$): $\|\bar{\mathbf M}_k\| \lesssim k^2$ (§3.5), $\|\mathbf Y_r\| \le
+r\|\mathbf Y_1\| \le 4r\|\bar{\mathbf M}_k\|$, $\|\bar{\mathbf V}_{k+1}\|_{\mathsf F} =
+\sqrt{k+1}$, and $k+1$ blocks.
+
 ## 4. Toolkit dependencies
 
 Present and used: `IsRelErrSem` (`sqrt_err`, `sqrt_ok`, `cmp_eq`, `re`, `neg`, `lit_err`),
