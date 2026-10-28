@@ -16,14 +16,14 @@ The constant $\gamma_n = nu/(1 - nu)$ of the standard model of floating-point ar
 `NLAlib.Computation.roundingFactor n u`, and its algebra: a product of $n$ factors
 $(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u$ is $1 + \theta_n$ with
 $\lvert \theta_n \rvert \le \gamma_n$, and the rules that combine such $\theta$'s. The relation
-`NLAlib.Computation.relErr u a z` says that $z$ is $a$ with relative error at most $u$, the error
+`NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with relative error at most $u$, the error
 clause of the model (2.4) of [Higham2002]. Every lemma assumes $nu < 1$, under which
 $\gamma_n$ is finite. Design: `docs/design/Computation-Rounding.md` (R1, R2).
 
 ## Main definitions
 
 * `NLAlib.Computation.roundingFactor`: $\gamma_n$.
-* `NLAlib.Computation.relErr`: relative error at most $u$.
+* `NLAlib.Computation.RelErr`: relative error at most $u$.
 
 ## Main results
 
@@ -44,9 +44,9 @@ bound on $n$ accumulated relative errors of size at most $u$. It is meaningful f
 every lemma about it assumes. -/
 noncomputable def roundingFactor (n : ℕ) (u : ℝ) : ℝ := n * u / (1 - n * u)
 
-/-- `relErr u a z`: $z = a(1 + \delta)$ for some $\lvert \delta \rvert \le u$; the error clause of
+/-- `RelErr u a z`: $z = a(1 + \delta)$ for some $\lvert \delta \rvert \le u$; the error clause of
 the standard model [Higham2002, §2.2], (2.4) there. -/
-def relErr (u a z : ℝ) : Prop := ∃ δ : ℝ, |δ| ≤ u ∧ z = a * (1 + δ)
+def RelErr (u a z : ℝ) : Prop := ∃ δ : ℝ, |δ| ≤ u ∧ z = a * (1 + δ)
 
 variable {u : ℝ} {n k j : ℕ}
 

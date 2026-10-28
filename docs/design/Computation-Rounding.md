@@ -1,8 +1,9 @@
 # Design note: rounding-error analysis of the BLAS kernels (standard model; bounded range designed)
 
-**Status: draft for the maintainer, 2026-10-28.** Branch `design/fp-toolkit`, based on `main` at
-`c4ff3d9`. Skeleton in `NLAlibScaffold/Computation/` (30 statements with `sorry`, 9 definitions,
-all elaborated with `lake env lean`). Decision sheet: `FP-Toolkit.json`.
+**Status: draft for the maintainer, 2026-10-28; review fixes applied (§8).** Branch
+`design/fp-toolkit`, based on `main` at `c4ff3d9`. Skeleton in `NLAlibScaffold/Computation/` and
+`NLAlibScaffold/ForMathlib/Algebra/Order/Round.lean` (38 statements, 34 with `sorry`;
+14 definitions; all elaborated with `lake env lean`). Decision sheet: `FP-Toolkit.json`.
 
 ## Summary
 
@@ -54,11 +55,14 @@ underflow error onto an operand (R6).
 The name follows N11 (a multiplier in a bound ends in `Factor`); docstrings write $\gamma_n$. It
 needs a `docs/constants.toml` entry when it moves into `NLAlib` (B1).
 
-### R2. Placement: all in `NLAlib/Computation`, none in ForMathlib
+### R2. Placement: all in `NLAlib/Computation`, except the rounding grid
 
 P9 sends general facts to ForMathlib. The $\gamma_n$ lemmas mention `roundingFactor`, an NLAlib
 definition that would never join Mathlib, so they are NLAlib vocabulary and stay in
-`NLAlib/Computation/Rounding.lean`. The `trsvLower` kernel must go in `NLAlib/Computation/BLAS.lean` (E8: only
+`NLAlib/Computation/Rounding.lean`. The floating-point grid and rounding to nearest of the
+witness (R7) mention nothing of NLAlib and are upstream candidates, so they go to
+`NLAlib/ForMathlib/Algebra/Order/Round.lean` (next to Mathlib's `round`); the witness semantics
+itself goes to `NLAlib/Computation/Grid.lean`. The `trsvLower` kernel must go in `NLAlib/Computation/BLAS.lean` (E8: only
 that BLAS file may build `named` nodes).
 
 ### R3. Contracts: keep `IsRelErrSem`; add the arithmetic part with an error relation
@@ -76,7 +80,8 @@ structure IsArithErrSem (err : P → BinOp → ℝ → ℝ → Prop) (dec : P �
 ```
 
 with the projection `IsRelErrSem.isArithErrSem : IsRelErrSem u dec safe sem → IsArithErrSem
-(fun p _ => relErr (u p)) dec safe sem`. The run lemmas take `IsArithErrSem`, so the tedious part
+(fun p _ => RelErr (u p)) dec safe sem`. (`RelErr` is Prop-valued, hence UpperCamelCase, N1;
+the review's M2 renamed it from `relErr`.) The run lemmas take `IsArithErrSem`, so the tedious part
 (store reasoning through loops) is proved once for every error model. Only the clauses the
 kernels use are in it; `sqrt`, comparisons and conversions join when `nrm2` or a branching kernel
 is analysed.
@@ -95,6 +100,14 @@ exactly.
   `IsRelErrSem` as a field when this stage lands (one more line in `isRelErrSem_exactSem`; no
   other user constructs the structure). Constants are Higham's.
 * (b) Keep the contract, state $\gamma_{n+1}$.
+
+`AddsZeroExactly` is true of IEEE arithmetic only because every word is representable. It is
+**false under flush-to-zero** ($0 + y$ with $y$ subnormal flushes to $0$; FTZ already violates
+`bin_err` for addition), and false for any semantics whose words may be off the grid
+($\mathrm{fl}(0 + y) = \mathrm{fl}(y) \ne y$). So alternative R6(c) (flush-to-zero) must also
+drop `hz`, which costs the `dot` constants there one factor ($\gamma_{n+1}$). The trivial
+semantics $x \oplus y = (x + y)(1 + u)$ meets `IsRelErrSem` but not `AddsZeroExactly`; the
+witness of R7 meets both.
 * (c) Change the kernels to start from the first product. Changes their counts, hence the
   registered targets' hashes (Hutch++ uses `dot`).
 
@@ -116,8 +129,14 @@ exactly.
 * **Statements over words.** Inputs are given as words decoding to reals (`HoldsDecoded`, the
   decoded form of `Holds`); the conclusion gives the final store as the input store with the
   output words written (so the frame is part of it) and the error of their decodings. Counts and
-  memory are those of the exact specifications; a lemma that a run's counts do not depend on the
-  semantics of a straight-line kernel carries them over (to write when a target needs it).
+  memory are those of the exact specifications, carried over by
+  `usage_eq_of_exec_eq_some_of_straightLine` (`NLAlibScaffold/Computation/Exec.lean`, stated now,
+  review M3): for a straight-line statement (`Stmt.StraightLine`: no `ite`, no `whileFuel`),
+  two successful runs under interpretations with the same charge and widths, over any two
+  carriers, from states with the same usage (`St.usage`: tape positions, counts, current and peak
+  memory) and store shape end with the same usage. The carriers may differ, so the exact
+  specification over $\Bbbk$ gives the counts of a run over any word type; all five kernels are
+  straight-line. With it a floating-point headline becomes a `RunsWithin` statement in one step.
 * **Result ids.** A theorem that mentions a run is proof infrastructure unless it proves a
   registered target (E3), so the run-level theorems carry citations and no `Result:` id. The
   trace bounds and the $\gamma_n$ lemmas can carry ids. Floating-point targets (an access model
@@ -130,11 +149,11 @@ exactly.
 
 ```lean
 -- err for the model with gradual underflow ([Higham2002, §2.1, (2.8)]; Demmel's model):
-def relAbsErr (u η : ℝ) (b : BinOp) (a z : ℝ) : Prop :=
+def RelAbsErr (u η : ℝ) (b : BinOp) (a z : ℝ) : Prop :=
   ∃ δ e, |δ| ≤ u ∧ |e| ≤ η ∧ (b = .add ∨ b = .sub → e = 0) ∧ z = a * (1 + δ) + e
 structure IsFloatSem (u η Ω : P → ℝ) (dec) (sem) : Prop  -- name open
-  -- arithmetic: relAbsErr; success when |exact| ≤ Ω p (and divisor ≠ 0)
-  -- literals, conversions: relAbsErr (they can underflow); sqrt: relative only
+  -- arithmetic: RelAbsErr; success when |exact| ≤ Ω p (and divisor ≠ 0)
+  -- literals, conversions: RelAbsErr (they can underflow); sqrt: relative only
   -- neg, conj, re, comparisons: exact; adding zero exact
 ```
 
@@ -183,6 +202,43 @@ structure IsFloatSem (u η Ω : P → ℝ) (dec) (sem) : Prop  -- name open
   infinity can become finite again ($1/\infty = 0$), so error clauses would need exceptions; no
   analysis wants it.
 
+### R7. A witness with $u > 0$: rounding to nearest on a grid (review M1)
+
+Every headline assumes `IsRelErrSem u dec True sem` and `AddsZeroExactly dec sem`; the only
+semantics in the repository meeting both had $u = 0$. The witness:
+
+```lean
+def Real.floatGrid (t : ℕ) : Set ℝ := {x | ∃ m e : ℤ, |m| < 2 ^ t ∧ x = m * (2 : ℝ) ^ e}
+noncomputable def Real.roundNearest (t : ℕ) (x : ℝ) : ℝ :=
+  round (x / (2 : ℝ) ^ (Int.log 2 |x| + 1 - t)) * (2 : ℝ) ^ (Int.log 2 |x| + 1 - t)
+noncomputable def gridSem (t : P → ℕ) : ScalarSem P ℝ  -- exactSem on decodings, then round
+theorem isRelErrSem_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
+    IsRelErrSem (fun p => (2⁻¹ : ℝ) ^ t p) (fun p => Real.roundNearest (t p))
+      (fun _ _ => True) (gridSem t)
+theorem addsZeroExactly_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
+    AddsZeroExactly (fun p => Real.roundNearest (t p)) (gridSem t)
+```
+
+* **Format.** Binary, $t_p$ significant bits at tag $p$, unbounded exponent, round to nearest
+  with ties upward (Mathlib's `round`; any tie rule gives the same bound). Unit roundoff
+  $u_p = 2^{-t_p}$, Higham's $u = \tfrac12\beta^{1-t}$ at $\beta = 2$ [Higham2002, Theorem 2.2].
+  $t_p \ge 1$ is needed: for $t = 0$ the grid is $\{0\}$ and rounding is not idempotent.
+* **Carrier and decoding.** `K = ℝ` and `dec p x := roundNearest (t p) x` (the review's
+  recommended variant): every word decodes to a grid point, so $0 \oplus y$ decodes to
+  $\mathrm{fl}(\mathrm{fl}(y)) = \mathrm{fl}(y)$, the decoding of $y$, with no hypothesis on the
+  inputs. Each operation is `exactSem`'s on the decoded operands, rounded at its tag (a
+  conversion at the target tag); comparisons exact on decodings. With different `t p` per tag it
+  also witnesses mixed precision.
+* **Proof.** `isRelErrSem_gridSem` and `addsZeroExactly_gridSem` are proved in the skeleton
+  from three `sorry`'d grid facts: the error bound
+  $\lvert x - \mathrm{fl}(x)\rvert \le 2^{-t}\lvert x\rvert$ (`Real.abs_sub_roundNearest_le`,
+  the only real work, via `Int.zpow_log_le_self`, `Int.lt_zpow_succ_log_self` and
+  `abs_sub_round`), `Real.roundNearest_mem_floatGrid` ($t \ge 1$) and
+  `Real.roundNearest_eq_self_of_mem_floatGrid`. Mathlib has no rounding-to-grid theory to reuse:
+  `Mathlib.Data.FP.Basic` is an experimental, theorem-free implementation; `round` and `Int.log`
+  are the building blocks used. A bounded-exponent witness for layer 2 is the same semantics
+  failing above $\Omega$.
+
 ---
 
 ## 2. Declarations (skeleton)
@@ -194,7 +250,7 @@ Difficulty: S small (≤ 20 lines), M medium (≤ 80), L large (split into lemma
 | declaration | statement | source | est. |
 |---|---|---|---|
 | `roundingFactor n u` | $\gamma_n = nu/(1-nu)$ | [Higham2002, §3.1] | def |
-| `relErr u a z` | $z = a(1+\delta)$, $\lvert\delta\rvert \le u$ | (2.4) | def |
+| `RelErr u a z` | $z = a(1+\delta)$, $\lvert\delta\rvert \le u$ | (2.4) | def |
 | `roundingFactor_zero`, `roundingFactor_nonneg`, `le_roundingFactor_one` | $\gamma_0 = 0$; $\gamma_n \ge 0$; $u \le \gamma_1$ | §3.1 | S |
 | `roundingFactor_le_roundingFactor` | $k \le n \Rightarrow \gamma_k \le \gamma_n$ | §3.1 | S |
 | `abs_prod_one_add_zpow_sub_one_le` | $\lvert\prod_{i\in s}(1+\delta_i)^{\pm1} - 1\rvert \le \gamma_{\lvert s\rvert}$ | Lemma 3.1 | M |
@@ -214,6 +270,34 @@ Difficulty: S small (≤ 20 lines), M medium (≤ 80), L large (split into lemma
 | `IsRelErrSem.isArithErrSem` | the projection (needs `safe p 0`) | S |
 | `IsRelErrSem.nonneg` | $0 \le u_p$ (so no headline assumes it) | S |
 | `addsZeroExactly_exactSem` | exact arithmetic adds zero exactly | S |
+
+### `NLAlibScaffold/ForMathlib/Algebra/Order/Round.lean` → `NLAlib/ForMathlib/Algebra/Order/Round.lean` (new)
+
+| declaration | statement | source | est. |
+|---|---|---|---|
+| `Real.floatGrid t` | $\{m2^e : m, e \in \mathbb{Z},\ \lvert m\rvert < 2^t\}$ | | def |
+| `Real.roundNearest t x` | round to nearest onto the grid, via `Int.log` and `round` | | def |
+| `Real.abs_sub_roundNearest_le` | $\lvert x - \mathrm{fl}(x)\rvert \le 2^{-t}\lvert x\rvert$ | Thm 2.2 | M |
+| `Real.roundNearest_mem_floatGrid` | $t \ge 1 \Rightarrow \mathrm{fl}(x) \in$ grid | | M |
+| `Real.roundNearest_eq_self_of_mem_floatGrid` | $\mathrm{fl}$ fixes the grid | | S–M |
+| `Real.neg_mem_floatGrid` | the grid is symmetric (proved) | | S |
+
+### `NLAlibScaffold/Computation/Grid.lean` → `NLAlib/Computation/Grid.lean` (new)
+
+| declaration | statement | source | est. |
+|---|---|---|---|
+| `gridSem t` | R7 | | def |
+| `relErr_roundNearest` | $\mathrm{fl}(x) = x(1+\delta)$, $\lvert\delta\rvert \le 2^{-t}$ (proved) | Thm 2.2 | S |
+| `isRelErrSem_gridSem` | the contract at $u_p = 2^{-t_p}$ (proved from the grid facts) | Thm 2.2, (2.4) | S |
+| `addsZeroExactly_gridSem` | adds zero exactly (proved from the grid facts) | | S |
+
+### `NLAlibScaffold/Computation/Exec.lean` → `NLAlib/Computation/Exec.lean` (additions)
+
+| declaration | statement | est. |
+|---|---|---|
+| `Stmt.StraightLine` | no `ite`, no `whileFuel` | def |
+| `St.usage` | `(pos, cnt, cur, peak, curW, peakW)` | def |
+| `usage_eq_of_exec_eq_some_of_straightLine` | R5 "Statements over words" | M (induction over `Stmt`, `foldlM` for loops) |
 
 ### `NLAlibScaffold/Computation/BLAS.lean` → `NLAlib/Computation/BLAS.lean` (addition)
 
@@ -255,21 +339,24 @@ bound (S each).
 
 | declaration | statement | source | est. |
 |---|---|---|---|
-| `exec_trsvLower` | exact arithmetic: writes $\mathbf{T}^{-1}\mathbf{b}$, counts $n(n-1)/2$ mul and sub, $n$ div, peak $+1$ | [GolubVanLoan2013, §3.1] | M–L |
+| `exec_trsvLower` | exact arithmetic (only the lower triangle of $\mathbf{T}$ need be stored): writes $\mathbf{T}^{-1}\mathbf{b}$, counts $n(n-1)/2$ mul and sub, $n$ div, peak $+1$ | [GolubVanLoan2013, §3.1] | M–L |
 | `IsArithErrSem.exec_trsvLower` | run lemma; nonzero diagonal and every prefix in range give success and a trace | Lemma 8.4 | M |
-| `IsRelErrSem.exec_trsvLower_add_mulVec_eq` | success if the stored diagonal is nonzero; $(\mathbf{T}+\Delta\mathbf{T})\hat{\mathbf{x}} = \mathbf{b}$, $\lvert\Delta\mathbf{T}\rvert\le\gamma_n\lvert\mathbf{T}\rvert$ | Thm 8.5 | S |
+| `IsRelErrSem.exec_trsvLower_add_mulVec_eq` | lower triangle stored; success if the stored diagonal is nonzero; $(\mathbf{T}+\Delta\mathbf{T})\hat{\mathbf{x}} = \mathbf{b}$, $\lvert\Delta\mathbf{T}\rvert\le\gamma_n\lvert\mathbf{T}\rvert$ | Thm 8.5 | S |
 
 Lower triangularity is Mathlib's `M.BlockTriangular OrderDual.toDual`, as in
 `Matrix.det_of_lowerTriangular`; nothing new.
 
-**§5.3 rows to add:** `roundingFactor`, `relErr`, `IsArithErrSem`, `AddsZeroExactly`,
-`HoldsDecoded`, `IsDotTrace`, `IsSubstRowTrace`, `IsSubstTrace`, `trsvLower`, each "none;
-Mathlib has no floating-point model" (searched: Mathlib has no rounding model or $\gamma_n$).
+**§5.3 rows to add:** `roundingFactor`, `RelErr`, `IsArithErrSem`, `AddsZeroExactly`,
+`HoldsDecoded`, `IsDotTrace`, `IsSubstRowTrace`, `IsSubstTrace`, `trsvLower`, `gridSem`,
+`Stmt.StraightLine`, `St.usage`, each "none; Mathlib has no floating-point model" (searched:
+Mathlib has no rounding model or $\gamma_n$; `Mathlib.Data.FP` is an experimental implementation
+without theorems). `Real.floatGrid` and `Real.roundNearest` are ForMathlib upstream candidates.
 
 ## 3. Dependency order
 
-1. `Rounding.lean` (independent; can be dispatched at once).
-2. `Contract.lean` additions (independent of 1 except `relErr`).
+1. `Rounding.lean`, the grid facts of `ForMathlib/Algebra/Order/Round.lean`, and the
+   `Exec.lean` additions (independent of each other and of the rest; can be dispatched at once).
+2. `Contract.lean` additions (independent of 1 except `RelErr`).
 3. `Traces.lean` trace bounds (need 1).
 4. `trsvLower` into `BLAS.lean`, then `exec_trsvLower` (independent of 1–3).
 5. Run lemmas (need 2; independent of 3).
@@ -280,7 +367,7 @@ Mathlib has no floating-point model" (searched: Mathlib has no rounding model or
 The skeleton is in `NLAlibScaffold/` under the paths above and is not imported by `NLAlib.lean`
 (it has `sorry`). When a declaration is proved it moves to its `NLAlib/` home in the same PR;
 `trsvLower` and the `Contract.lean` additions move into the existing files, the three new files
-are added to `NLAlib.lean` by `lake exe mk_all`. Under R4 (a), `AddsZeroExactly` becomes the field
+are added to `NLAlib.lean` by `lake exe mk_all` (as are `Grid.lean` and the ForMathlib file). Under R4 (a), `AddsZeroExactly` becomes the field
 `add_zero` of `IsRelErrSem` and the `hz` hypotheses disappear from the headlines.
 
 ## 5. Deferred
@@ -288,7 +375,13 @@ are added to `NLAlib.lean` by `lake exe mk_all`. Under R4 (a), `AddsZeroExactly`
 * Layer 2 (R6): its own short note and skeleton once R6 is decided.
 * `trsvUpper`, `scal`, `rscl`, `nrm2` (with `sqrt_err`), and normwise corollaries.
 * Complex data (Higham's $\tilde{\gamma}_n$ for complex arithmetic, Lemma 3.5): decodings are real
-  today.
+  today; generalising `dec` to $\Bbbk$ is a pending maintainer decision (§8, finding 4).
+* Oracles and draws have no finite-precision contract: `IsArithErrSem` and `IsRelErrSem` cover
+  scalar operations only. A whole-algorithm analysis needs an accuracy and success clause for the
+  matvec oracle (e.g. backward: the decoded $\hat{\mathbf{y}} = (\mathbf{A} + \Delta\mathbf{A})
+  \mathbf{x}$, $\lvert\Delta\mathbf{A}\rvert \le \varepsilon\lvert\mathbf{A}\rvert$) and the law
+  of the decoded draws; whether headlines then quantify over (semantics, oracle) pairs meeting
+  two contracts or over one bundled `Interp` contract is decided with the first such analysis.
 * Forward error of triangular solve through condition numbers ([Higham2002, §8.2]).
 * Whole-algorithm analyses (Hutch++, Lanczos in floating point) and their targets.
 * Mixed precision through `convert`, stochastic rounding.
@@ -311,3 +404,23 @@ The decisions R1, R3/R6, R4, R5 and the IEEE success convention are on the sheet
 recommendation. One more, not on the sheet: should the trace bounds and the $\gamma_n$ lemmas get
 `Result:` ids now (recommended: only the trace bounds for `dot` and substitution, the two a reader
 would look up)?
+
+## 8. Review (Fable checkpoint, 2026-10-28) and dispositions
+
+Verdict: accept with changes (`reports/FP-Rounding-Review.md` in the harness). Each finding and
+what was done:
+
+| # | finding | disposition |
+|---|---|---|
+| 1 (M1) | no semantics with $u > 0$ meets `IsRelErrSem` and `AddsZeroExactly` together | **fixed**: R7, `gridSem` with `dec := roundNearest`, $u_p = 2^{-t_p}$, $t_p \ge 1$; both theorems proved from three grid facts (`sorry`). Grid in ForMathlib (P9), not in `Grid.lean` as the review placed it. FTZ remark added to R4 and to the `AddsZeroExactly` docstring |
+| 2 (M2) | `relErr` is Prop-valued | **fixed**: `RelErr`, and `RelAbsErr` in R6; theorem names keep the token `relErr` (`…_of_relErr`), as Mathlib lowers `IsFoo` to `isFoo` in names |
+| 3 (M3) | no lemma that straight-line counts do not depend on the semantics | **fixed** (statement; proof `sorry`): `Stmt.StraightLine`, `St.usage`, `usage_eq_of_exec_eq_some_of_straightLine`. Generalised over two carriers and two start states (same usage and store shape), since the exact specifications are over $\Bbbk$ and the floating ones over any `K`; named after its conclusion (N2) rather than the review's `exec_eq_of_straightLine_of_sem`, whose conclusion is not an `exec` equation. Lemmas that each kernel's `run` is straight-line: deferred to the proof of the first `RunsWithin` target |
+| 4 (D) | decodings are real-only; complex formats need $\Bbbk$-valued `dec` | **maintainer decision** pending; not done. Statements keep `dec : P → K → ℝ` in one place each, `RelErr` and the traces take the field only through `ℝ`, and `gridSem` would stay the real instance, so the generalisation remains mechanical |
+| 5 (W) | oracles and draws have no finite-precision contract | **deferred**; recorded in §5 |
+| 6 (W) | `ScalarSem` cannot read the tape, so stochastic rounding is not modelable as `Computation.md` §7.5 says | **deferred** (the §7.5 correction belongs to that note) |
+| 7 (W, cheap) | `trsvLower` headlines require the strictly upper part to be stored | **fixed**: `exec_trsvLower` and `IsRelErrSem.exec_trsvLower_add_mulVec_eq` take the lower triangle only, as the run lemma does |
+| 8 (W) | equation numbers (3.4)/(3.5), (3.11)–(3.13), (2.8) unverified | **deferred** to before merging; §6 keeps them as "to check"; they must not reach `docs/constants.toml` |
+| 9 (W) | `IsDotTrace` asks "adding zero is exact" at every step | **deferred** (kept; harmless now) |
+| 10 (W) | `IsArithErrSem` will need `convert`, `sqrt`, other literals | **deferred**; when they join, each family gets its own relation (`errConvert p q`, `errSqrt p`), not `err p b` for a fictitious `BinOp` |
+| 11 (W) | layer-2 preview | no action; noted that the grid witness extends to a bounded-exponent one (R7) |
+| 12 (W) | conventions (docstrings, constants rows, `exec_axpy` name) | **deferred**; `IsRelErrSem.exec_axpy` may become `exec_axpy_eq_mul_one_add_add_mul_one_add` |

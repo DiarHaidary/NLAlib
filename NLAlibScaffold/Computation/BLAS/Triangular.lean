@@ -35,17 +35,21 @@ open scoped Matrix
 namespace NLAlib.Computation
 
 /-- **`trsvLower` solves a lower triangular system** under exact arithmetic: if buffer $T$ holds
-the lower triangular $n \times n$ matrix $\mathbf{T}$ from $\mathit{tOff}$ with nonzero diagonal,
-the cells of $\mathbf{x}$ hold $\mathbf{b}$, and they lie outside the block of $\mathbf{T}$, the
-run writes $\mathbf{T}^{-1}\mathbf{b}$ into the cells of $\mathbf{x}$ and nothing else, keeps the
-tape and the current memory, raises the peak by one cell, and counts $n(n-1)/2$ multiplications
-and subtractions and $n$ divisions. The operation is in [GolubVanLoan2013, §3.1]. -/
+the lower triangular part of the lower triangular $n \times n$ matrix $\mathbf{T}$ from
+$\mathit{tOff}$ (column-major; the cells above the diagonal need not hold anything), with
+nonzero diagonal, the cells of $\mathbf{x}$ hold $\mathbf{b}$, and they lie outside the block of
+$\mathbf{T}$, the run writes $\mathbf{T}^{-1}\mathbf{b}$ into the cells of $\mathbf{x}$ and
+nothing else, keeps the tape and the current memory, raises the peak by one cell, and counts
+$n(n-1)/2$ multiplications and subtractions and $n$ divisions. The operation is in
+[GolubVanLoan2013, §3.1]. -/
 theorem exec_trsvLower {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P]
     (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) (st : St P 𝕜 (OpCount P ι))
     (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
     (M : Matrix (Fin n.eval) (Fin n.eval) 𝕜) (hM : M.BlockTriangular OrderDual.toDual)
-    (hdiag : ∀ i, M i i ≠ 0) (b : Fin n.eval → 𝕜) (hT : Holds st.store p T tOff.eval M)
+    (hdiag : ∀ i, M i i ≠ 0) (b : Fin n.eval → 𝕜)
+    (hT : ∀ i j : Fin n.eval, j ≤ i →
+      st.store.read p T (tOff.eval + i + n.eval * j) = some (M i j))
     (hx : ∀ i : Fin n.eval, st.store.read p x (xo.eval + i) = some (b i))
     (hxT : x = T → xo.eval + n.eval ≤ tOff.eval ∨ tOff.eval + n.eval * n.eval ≤ xo.eval)
     (s₁ : Store P 𝕜) (h₁ : st.store.writeBlock p x xo.eval (Array.ofFn (M⁻¹ *ᵥ b)) = some s₁) :
@@ -86,8 +90,9 @@ theorem IsArithErrSem.exec_trsvLower {err : P → BinOp → ℝ → ℝ → Prop
 
 /-- **Backward error of triangular solve** in the standard model [Higham2002, Theorem 8.5]:
 under the contract `NLAlib.Computation.IsRelErrSem` with every value in range and $n u_p < 1$, if
-buffer $T$ holds the real lower triangular $n \times n$ matrix $\mathbf{T}$ through the decoding
-(column-major from $\mathit{tOff}$) with nonzero diagonal, and the cells of $\mathbf{x}$ hold
+buffer $T$ holds the lower triangular part of the real lower triangular $n \times n$ matrix
+$\mathbf{T}$ through the decoding (column-major from $\mathit{tOff}$; the cells above the
+diagonal need not hold anything) with nonzero diagonal, and the cells of $\mathbf{x}$ hold
 words decoding to $\mathbf{b}$ and lie outside the block of $\mathbf{T}$, the run of
 `trsvLower` succeeds, writes words $w_i$ into the cells of $\mathbf{x}$ and nothing else, and the
 decoded $\hat{\mathbf{x}}$ solves a nearby system exactly: for some $\Delta\mathbf{T}$ with
@@ -98,7 +103,9 @@ theorem IsRelErrSem.exec_trsvLower_add_mulVec_eq {u : P → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ)
     (x : ℕ) (xo : IExp ℕ) (M : Matrix (Fin n.eval) (Fin n.eval) ℝ)
     (hM : M.BlockTriangular OrderDual.toDual) (hdiag : ∀ i, M i i ≠ 0) (b : Fin n.eval → ℝ)
-    (hn : n.eval * u p < 1) (hT : HoldsDecoded st.store dec p T tOff.eval M)
+    (hn : n.eval * u p < 1)
+    (hT : ∀ i j : Fin n.eval, j ≤ i → ∃ w,
+      st.store.read p T (tOff.eval + i + n.eval * j) = some w ∧ dec p w = M i j)
     (hx : ∀ i : Fin n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = b i)
     (hxT : x = T → xo.eval + n.eval ≤ tOff.eval ∨ tOff.eval + n.eval * n.eval ≤ xo.eval) :
     ∃ st', ∃ W : ℕ → K, exec I (trsvLower p n T tOff x xo).run st = some st' ∧

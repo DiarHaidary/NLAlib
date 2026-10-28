@@ -14,7 +14,7 @@ public import NLAlibScaffold.Computation.Rounding
 `NLAlib.Computation.IsArithErrSem err dec safe sem` is the part of an error contract that the
 kernel analyses use, with the error of each arithmetic operation given by a relation
 `err p b a z` between the exact result $a$ on the decoded operands and the decoded result $z$.
-The standard model is the relation `NLAlib.Computation.relErr` (relative error at most the unit
+The standard model is the relation `NLAlib.Computation.RelErr` (relative error at most the unit
 roundoff); a model with underflow adds an absolute term (`docs/design/Computation-Rounding.md`,
 R6). The run lemmas of the kernels are proved once against this structure, so each error model
 reuses them. `NLAlib.Computation.AddsZeroExactly dec sem` says that adding a decoded zero is
@@ -35,7 +35,7 @@ To move into `NLAlib/Computation/Contract.lean` when proved. Design:
 ## Main results
 
 * `NLAlib.Computation.IsRelErrSem.isArithErrSem`: the standard-model contract gives the
-  arithmetic part with the relation `NLAlib.Computation.relErr`.
+  arithmetic part with the relation `NLAlib.Computation.RelErr`.
 * `NLAlib.Computation.IsRelErrSem.nonneg`: the unit roundoff is nonnegative.
 * `NLAlib.Computation.addsZeroExactly_exactSem`: exact arithmetic adds zero exactly.
 -/
@@ -71,7 +71,10 @@ structure IsArithErrSem (err : P → BinOp → ℝ → ℝ → Prop) (dec : P �
 
 /-- **Adding zero is exact**: whenever an addition at tag `p` succeeds and its first operand
 decodes to $0$, the result decodes to the second operand. True of IEEE arithmetic, where
-$0 + y = y$ exactly. No printed source. -/
+$0 + y = y$ exactly because every word is representable; false under flush-to-zero (a subnormal
+$y$ flushes to $0$) and for a semantics that rounds words off the grid
+($\mathrm{fl}(0 + y) = \mathrm{fl}(y) \ne y$). `NLAlib.Computation.gridSem` meets it together
+with the standard model at $u > 0$. No printed source. -/
 def AddsZeroExactly (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
   ∀ (p : P) (x y z : K), sem.bin p .add x y = some z → dec p x = 0 → dec p z = dec p y
 
@@ -82,7 +85,7 @@ a(1 + \delta)$ for some $\lvert \delta \rvert \le u(p)$, and the zero literal is
 every value is. [Higham2002, §2.2], the model (2.4) there. -/
 theorem IsRelErrSem.isArithErrSem {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
     {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) (hsafe : ∀ p, safe p 0) :
-    IsArithErrSem (fun p _ => relErr (u p)) dec safe sem := by
+    IsArithErrSem (fun p _ => RelErr (u p)) dec safe sem := by
   sorry
 
 /-- **The unit roundoff of a contract is nonnegative** at every tag: an operation that succeeds

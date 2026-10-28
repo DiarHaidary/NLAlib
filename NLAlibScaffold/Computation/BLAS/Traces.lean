@@ -16,7 +16,7 @@ of intermediate values of the kernel's recursion, each operation's result relate
 result on the previous values by an error relation `err`. The run lemmas of
 `NLAlib/Computation/BLAS/RoundingErrors.lean` and `NLAlib/Computation/BLAS/Triangular.lean`
 prove that the run produces a trace; this file bounds traces, with no program in sight. Under the
-standard model (`err` the relation `NLAlib.Computation.relErr u` of relative error) the
+standard model (`err` the relation `NLAlib.Computation.RelErr u` of relative error) the
 bounds are those of [Higham2002, Chapters 3 and 8]. A model with underflow reuses them: an
 absolute error in a multiplication or division is pushed onto its operands
 (`docs/design/Computation-Rounding.md`, R6).
@@ -75,7 +75,7 @@ model with unit roundoff $0 \le u$, $nu < 1$, the result $s_n$ of a trace of rec
 accumulation is the exact inner product of slightly perturbed data,
 $$s_n = \sum_{k<n} x_k y_k (1 + \eta_k)\,, \qquad \lvert \eta_k \rvert \le \gamma_n\,.$$ -/
 theorem IsDotTrace.exists_eq_sum_mul_one_add {x y s : ℕ → ℝ}
-    (h : IsDotTrace (fun _ => relErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
     ∃ η : ℕ → ℝ, (∀ k < n, |η k| ≤ roundingFactor n u) ∧
       s n = ∑ k ∈ range n, x k * y k * (1 + η k) := by
   sorry
@@ -85,7 +85,7 @@ model with $0 \le u$, $nu < 1$,
 $$\Bigl\lvert \sum_{k<n} x_k y_k - s_n \Bigr\rvert \le \gamma_n \sum_{k<n}
 \lvert x_k \rvert \lvert y_k \rvert\,.$$ -/
 theorem IsDotTrace.abs_sum_mul_sub_le {x y s : ℕ → ℝ}
-    (h : IsDotTrace (fun _ => relErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
     |∑ k ∈ range n, x k * y k - s n| ≤ roundingFactor n u * ∑ k ∈ range n, |x k| * |y k| := by
   sorry
 
@@ -94,8 +94,8 @@ $u$ and $z$ is $q + y$ with relative error at most $u$, $0 \le u$ and $2u < 1$, 
 $$z = ax(1 + \theta) + y(1 + \delta)\,, \qquad \lvert \theta \rvert \le \gamma_2\,,\quad
 \lvert \delta \rvert \le u\,.$$ From the model (2.4) of [Higham2002, §2.2] and
 [Higham2002, Lemma 3.1]. -/
-theorem exists_eq_mul_one_add_add_mul_one_add_of_relErr {a x y q z : ℝ} (hq : relErr u (a * x) q)
-    (hz : relErr u (q + y) z) (hu : 0 ≤ u) (hu2 : 2 * u < 1) :
+theorem exists_eq_mul_one_add_add_mul_one_add_of_relErr {a x y q z : ℝ} (hq : RelErr u (a * x) q)
+    (hz : RelErr u (q + y) z) (hu : 0 ≤ u) (hu2 : 2 * u < 1) :
     ∃ θ δ : ℝ, |θ| ≤ roundingFactor 2 u ∧ |δ| ≤ u ∧ z = a * x * (1 + θ) + y * (1 + δ) := by
   sorry
 
@@ -106,7 +106,7 @@ nearby system exactly: for some $\Delta t_{ij}$ with
 $\lvert \Delta t_{ij} \rvert \le \gamma_n \lvert t_{ij} \rvert$ ($j \le i < n$),
 $$\sum_{j \le i} (t_{ij} + \Delta t_{ij})\,\hat{x}_j = b_i \qquad (i < n)\,.$$ -/
 theorem IsSubstTrace.exists_sum_add_mul_eq {t : ℕ → ℕ → ℝ} {b x : ℕ → ℝ}
-    (h : IsSubstTrace (fun _ => relErr u) t b n x) (hdiag : ∀ i < n, t i i ≠ 0) (hu : 0 ≤ u)
+    (h : IsSubstTrace (fun _ => RelErr u) t b n x) (hdiag : ∀ i < n, t i i ≠ 0) (hu : 0 ≤ u)
     (hn : n * u < 1) :
     ∃ Δ : ℕ → ℕ → ℝ, (∀ i < n, ∀ j ≤ i, |Δ i j| ≤ roundingFactor n u * |t i j|) ∧
       ∀ i < n, ∑ j ∈ range (i + 1), (t i j + Δ i j) * x j = b i := by
