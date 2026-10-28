@@ -86,7 +86,10 @@ every value is. [Higham2002, §2.2], the model (2.4) there. -/
 theorem IsRelErrSem.isArithErrSem {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
     {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) (hsafe : ∀ p, safe p 0) :
     IsArithErrSem (fun p _ => RelErr (u p)) dec safe sem := by
-  sorry
+  refine ⟨h.bin_err, h.bin_ok, fun p => ?_, h.neg, h.conj⟩
+  obtain ⟨z, hz⟩ := h.lit_ok p 0 (by simpa using hsafe p)
+  obtain ⟨δ, -, hδ⟩ := h.lit_err p 0 z hz
+  exact ⟨z, hz, by simpa using hδ⟩
 
 /-- **The unit roundoff of a contract is nonnegative** at every tag: an operation that succeeds
 has an error $\delta$ with $\lvert \delta \rvert \le u(p)$, and the literal $0$ succeeds when it is
@@ -94,13 +97,17 @@ in range. No printed source. -/
 theorem IsRelErrSem.nonneg {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
     {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) {p : P} (hp : safe p 0) :
     0 ≤ u p := by
-  sorry
+  obtain ⟨z, hz⟩ := h.lit_ok p 0 (by simpa using hp)
+  obtain ⟨δ, hδ, -⟩ := h.lit_err p 0 z hz
+  exact (abs_nonneg δ).trans hδ
 
 /-- **Exact arithmetic adds zero exactly**: `NLAlib.Computation.exactSem` over $\mathbb{R}$, with
 the identity decoding, satisfies `NLAlib.Computation.AddsZeroExactly`. No printed source. -/
 theorem addsZeroExactly_exactSem : AddsZeroExactly (P := P) (fun _ x => x)
     (exactSem (𝕜 := ℝ)) := by
-  sorry
+  intro p x y z h hx
+  simp only [exactSem, Option.some.injEq] at h hx ⊢
+  rw [← h, hx, zero_add]
 
 /-- Buffer `b` holds the real $N \times k$ matrix $\mathbf{M}$ at tag `p` through the decoding
 `dec`, column-major from offset `off`: each cell holds a word that decodes to the entry. The
