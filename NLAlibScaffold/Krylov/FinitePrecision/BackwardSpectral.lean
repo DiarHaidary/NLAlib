@@ -63,7 +63,61 @@ theorem frobNorm_cfc_sub_cfc_le {ι : Type*} [Fintype ι] [DecidableEq ι]
     {A B : Matrix ι ι ℝ} (hA : A.IsHermitian) (hB : B.IsHermitian) {f : ℝ → ℝ}
     (hf : LipschitzWith 1 f) :
     frobNorm (cfc f A - cfc f B) ≤ frobNorm (A - B) := by
-  sorry
+  have hdec : ∀ {C : Matrix ι ι ℝ} (hC : C.IsHermitian) (g : ℝ → ℝ),
+      cfc g C = (hC.eigenvectorUnitary : Matrix ι ι ℝ) *
+        Matrix.diagonal (fun i => g (hC.eigenvalues i)) *
+          (hC.eigenvectorUnitary : Matrix ι ι ℝ)ᵀ := by
+    intro C hC g
+    rw [hC.cfc_eq, Matrix.IsHermitian.cfc, Unitary.conjStarAlgAut_apply,
+      Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial]
+    rfl
+  set U := (hA.eigenvectorUnitary : Matrix ι ι ℝ)
+  set V := (hB.eigenvectorUnitary : Matrix ι ι ℝ)
+  set a := hA.eigenvalues
+  set b := hB.eigenvalues
+  have hU := hA.hasOrthonormalCols_eigenvectorUnitary
+  have hV := hB.hasOrthonormalCols_eigenvectorUnitary
+  have hUt : HasOrthonormalCols Uᵀ := by
+    have := hU.conjTranspose
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hUU : Uᵀ * U = 1 := by
+    have := hU.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hVV : Vᵀ * V = 1 := by
+    have := hV.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hA' : A = U * Matrix.diagonal a * Uᵀ := by
+    have := hdec hA (fun x => x)
+    rwa [cfc_id' ℝ A] at this
+  have hB' : B = V * Matrix.diagonal b * Vᵀ := by
+    have := hdec hB (fun x => x)
+    rwa [cfc_id' ℝ B] at this
+  -- conjugate both differences by the two eigenbases
+  have hconj : ∀ (d e : ι → ℝ), Uᵀ * (U * Matrix.diagonal d * Uᵀ - V * Matrix.diagonal e * Vᵀ) * V =
+      Matrix.diagonal d * (Uᵀ * V) - Uᵀ * V * Matrix.diagonal e := by
+    intro d e
+    simp only [Matrix.mul_sub, Matrix.sub_mul, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+    simp only [Matrix.mul_assoc, hVV, Matrix.mul_one]
+  have hfrob : ∀ X : Matrix ι ι ℝ, frobNorm X = frobNorm (Uᵀ * X * V) := fun X => by
+    rw [Matrix.mul_assoc, hUt.frobNorm_mul_left, hV.frobNorm_mul_right]
+  have hAB : A - B = U * Matrix.diagonal a * Uᵀ - V * Matrix.diagonal b * Vᵀ := by
+    rw [← hA', ← hB']
+  rw [hfrob, hfrob (A - B), hdec hA f, hdec hB f, hconj, hAB, hconj]
+  have hsq : frobNorm (Matrix.diagonal (fun i => f (a i)) * (Uᵀ * V) -
+      Uᵀ * V * Matrix.diagonal (fun i => f (b i))) ^ 2 ≤
+      frobNorm (Matrix.diagonal a * (Uᵀ * V) - Uᵀ * V * Matrix.diagonal b) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_sq, frobNorm_sq_eq_sum_sq]
+    refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
+    simp only [Matrix.sub_apply, Matrix.diagonal_mul, Matrix.mul_diagonal]
+    have hl : |f (a i) - f (b j)| ≤ |a i - b j| := by
+      have := hf.dist_le_mul (a i) (b j)
+      simpa [Real.dist_eq] using this
+    rw [show f (a i) * (Uᵀ * V) i j - (Uᵀ * V) i j * f (b j) =
+        (f (a i) - f (b j)) * (Uᵀ * V) i j by ring,
+      show a i * (Uᵀ * V) i j - (Uᵀ * V) i j * b j = (a i - b j) * (Uᵀ * V) i j by ring,
+      mul_pow, mul_pow, ← sq_abs (f (a i) - f (b j)), ← sq_abs (a i - b j)]
+    gcongr
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 hsq
 
 namespace LanczosRun
 
