@@ -277,4 +277,30 @@ theorem specNorm_dilationC_le_two {W : Matrix (Fin n) (Fin m) ℝ}
   have h1 : specNorm (1 : Matrix (Fin m) (Fin m) ℝ) ≤ 1 := specNorm_one_le
   linarith [specNorm_dilationK_le_one hW]
 
+/-- For $\mathbf{Q}$ with orthonormal columns, $\|\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{T}}\|_2
+\le 1$ (an orthogonal projector). -/
+theorem HasOrthonormalCols.specNorm_one_sub_mul_transpose_le {ι κ : Type*} [Fintype ι]
+    [DecidableEq ι] [Fintype κ] [DecidableEq κ] {Q : Matrix ι κ ℝ} (hQ : HasOrthonormalCols Q) :
+    specNorm (1 - Q * Qᵀ) ≤ 1 := by
+  have hQQ : Qᵀ * Q = 1 := by
+    have := hQ.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  refine (specNorm_le_iff zero_le_one).2 fun x => ?_
+  rw [one_mul]
+  set y := Qᵀ *ᵥ x
+  have hsq : ‖WithLp.toLp 2 ((1 - Q * Qᵀ) *ᵥ x)‖ ^ 2 = ‖WithLp.toLp 2 x‖ ^ 2 - y ⬝ᵥ y := by
+    simp only [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, Matrix.sub_mulVec,
+      Matrix.one_mulVec, ← Matrix.mulVec_mulVec, dotProduct_sub, sub_dotProduct]
+    have e1 : x ⬝ᵥ (Q *ᵥ y) = y ⬝ᵥ y := by
+      rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose]
+    have e2 : (Q *ᵥ y) ⬝ᵥ x = y ⬝ᵥ y := by rw [dotProduct_comm, e1]
+    have e3 : (Q *ᵥ y) ⬝ᵥ (Q *ᵥ y) = y ⬝ᵥ y := by
+      rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, Matrix.mulVec_mulVec, hQQ,
+        Matrix.one_mulVec]
+    rw [e1, e2, e3]
+    ring
+  have hy : 0 ≤ y ⬝ᵥ y := by
+    rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]; positivity
+  exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 (by linarith)
+
 end NLAlib

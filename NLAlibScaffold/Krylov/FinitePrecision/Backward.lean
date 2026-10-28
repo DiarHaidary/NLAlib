@@ -467,18 +467,31 @@ $\hat{\mathbf{E}} = \hat{\mathbf{H}}\hat{\mathbf{V}}_k - \hat{\mathbf{V}}_{k+1}
 noncomputable def dilatedResidual : Matrix (Fin n × Fin (k + 1)) (Fin k) ℝ :=
   L.dilatedH * L.dilatedBasis - L.dilatedBasisSucc * L.tridiagonalSucc
 
+/-- The normalised vectors have unit length: the Gram matrix of $\bar{\mathbf{V}}_{k+1}$ has unit
+diagonal. -/
+theorem transpose_basisSucc_mul_self_apply (j : Fin (k + 1)) :
+    (L.normalized.basisSuccᵀ * L.normalized.basisSucc) j j = 1 := by
+  have h := L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
+  have h2 : ‖WithLp.toLp 2 (L.normalizedV ((j : ℕ) + 1))‖ ^ 2 = 1 := by rw [h, one_pow]
+  rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h2
+  rw [Matrix.mul_apply]
+  exact h2
+
 /-- **The dilated vectors are orthonormal**. No printed source; the maintainer's draft,
 `lem:dilation`.
 Proof: `NLAlib.hasOrthonormalCols_orthonormalDilation` and
 `NLAlib.LanczosRun.norm_normalizedV`; easy. -/
-theorem hasOrthonormalCols_dilatedBasisSucc : HasOrthonormalCols L.dilatedBasisSucc := by
-  sorry
+theorem hasOrthonormalCols_dilatedBasisSucc : HasOrthonormalCols L.dilatedBasisSucc :=
+  hasOrthonormalCols_orthonormalDilation L.transpose_basisSucc_mul_self_apply
 
 /-- The first dilated vector is the dilated starting vector. No printed source; the maintainer's
 draft, `lem:dilation`.
 Proof: `NLAlib.orthonormalDilation_apply_of_val_eq_zero`; easy. -/
 theorem dilatedBasisSucc_col_zero : L.dilatedBasisSucc.col 0 = L.dilatedStart := by
-  sorry
+  funext p
+  rw [Matrix.col_apply, dilatedBasisSucc, orthonormalDilation_apply_of_val_eq_zero _ rfl]
+  simp only [dilatedStart, Fin.ext_iff, Fin.val_zero]
+  rfl
 
 private theorem submatrix_sub' {a b c d : Type*} (A B : Matrix a b ℝ) (f : c → a) (g : d → b) :
     (A - B).submatrix f g = A.submatrix f g - B.submatrix f g := rfl
@@ -491,16 +504,6 @@ noncomputable def exchangeDefect (r : ℕ) : Matrix (Fin (k + 1)) (Fin k) ℝ :=
   L.tridiagonalSucc *
       (dilationK L.normalized.basisSucc ^ r).submatrix Fin.castSucc Fin.castSucc -
     dilationK L.normalized.basisSucc ^ r * L.tridiagonalSucc
-
-/-- The normalised vectors have unit length: the Gram matrix of $\bar{\mathbf{V}}_{k+1}$ has unit
-diagonal. -/
-theorem transpose_basisSucc_mul_self_apply (j : Fin (k + 1)) :
-    (L.normalized.basisSuccᵀ * L.normalized.basisSucc) j j = 1 := by
-  have h := L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
-  have h2 : ‖WithLp.toLp 2 (L.normalizedV ((j : ℕ) + 1))‖ ^ 2 = 1 := by rw [h, one_pow]
-  rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h2
-  rw [Matrix.mul_apply]
-  exact h2
 
 /-- Block $r$ of the dilated residual:
 $\hat{\mathbf{E}}_r = \bar{\mathbf{F}}_k(\mathbf{C}\mathbf{K}^r)_k
@@ -837,11 +840,57 @@ noncomputable def backwardPerturbation : Matrix (Fin n × Fin (k + 1)) (Fin n ×
 noncomputable def backwardH : Matrix (Fin n × Fin (k + 1)) (Fin n × Fin (k + 1)) ℝ :=
   L.dilatedH + L.backwardPerturbation
 
+/-- The first $k$ dilated vectors are orthonormal. -/
+theorem hasOrthonormalCols_dilatedBasis : HasOrthonormalCols L.dilatedBasis :=
+  L.hasOrthonormalCols_dilatedBasisSucc.submatrix (Equiv.refl _) (Fin.castSucc_injective k)
+
+/-- $\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{V}}_{k+1}\underline{\mathbf{T}}_k = \mathbf{T}_k$. -/
+theorem transpose_dilatedBasis_mul_dilatedBasisSucc_mul :
+    L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiagonalSucc) = L.tridiagonal := by
+  have hQ := L.hasOrthonormalCols_dilatedBasisSucc
+  have hQQ : L.dilatedBasisSuccᵀ * L.dilatedBasisSucc = 1 := by
+    have := hQ.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have h1 : L.dilatedBasisᵀ * L.dilatedBasisSucc =
+      (L.dilatedBasisSuccᵀ * L.dilatedBasisSucc).submatrix Fin.castSucc id := by
+    rw [Matrix.submatrix_mul _ _ _ id _ Function.bijective_id]
+    rfl
+  rw [← Matrix.mul_assoc, h1, hQQ]
+  ext i j
+  simp only [Matrix.mul_apply, Matrix.submatrix_apply, id, Matrix.one_apply, ite_mul, one_mul,
+    zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+  exact L.toLanczosData.tridiagonalSucc_castSucc i j
+
+/-- $\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{E}}$ is symmetric:
+$\hat{\mathbf{E}}^{\mathsf{T}}\hat{\mathbf{V}}_k = \hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{E}}$. -/
+theorem transpose_dilatedResidual_mul_dilatedBasis :
+    L.dilatedResidualᵀ * L.dilatedBasis = L.dilatedBasisᵀ * L.dilatedResidual := by
+  have hH : L.dilatedHᵀ = L.dilatedH := by
+    rw [dilatedH, Matrix.blockDiagonal_transpose, L.transpose_H]
+  have hX : L.dilatedBasisᵀ * L.dilatedResidual =
+      L.dilatedBasisᵀ * L.dilatedH * L.dilatedBasis - L.tridiagonal := by
+    rw [dilatedResidual, Matrix.mul_sub, L.transpose_dilatedBasis_mul_dilatedBasisSucc_mul,
+      Matrix.mul_assoc]
+  rw [← Matrix.transpose_transpose (L.dilatedResidualᵀ * L.dilatedBasis), Matrix.transpose_mul,
+    Matrix.transpose_transpose, hX, Matrix.transpose_sub, L.transpose_tridiagonal,
+    Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose, hH, Matrix.mul_assoc]
+
 /-- The backward model is symmetric.
 Proof: $\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{E}} = \hat{\mathbf{V}}_k^{\mathsf{T}}
 \hat{\mathbf{H}}\hat{\mathbf{V}}_k - \mathbf{T}_k$ is symmetric; easy. -/
 theorem transpose_backwardH : L.backwardHᵀ = L.backwardH := by
-  sorry
+  set Q := L.dilatedBasis
+  set E := L.dilatedResidual
+  have hsym := L.transpose_dilatedResidual_mul_dilatedBasis
+  have hH : L.dilatedHᵀ = L.dilatedH := by
+    rw [dilatedH, Matrix.blockDiagonal_transpose, L.transpose_H]
+  rw [backwardH, backwardPerturbation, Matrix.transpose_add, hH]
+  congr 1
+  simp only [Matrix.transpose_sub, Matrix.transpose_neg, Matrix.transpose_mul,
+    Matrix.transpose_transpose, Matrix.transpose_one]
+  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul, Matrix.mul_assoc]
+  rw [← Matrix.mul_assoc Eᵀ Q, hsym, Matrix.mul_assoc]
+  abel
 
 /-- **The backward model satisfies the computed recurrence exactly**:
 $\tilde{\mathbf{H}}\hat{\mathbf{V}}_k = \hat{\mathbf{V}}_{k+1}\underline{\mathbf{T}}_k$ with
@@ -850,7 +899,15 @@ Proof: $\boldsymbol{\Delta}\hat{\mathbf{V}}_k = -\hat{\mathbf{E}}$ since
 $\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{V}}_k = \mathbf{I}$; easy. -/
 theorem backwardH_mul_dilatedBasis :
     L.backwardH * L.dilatedBasis = L.dilatedBasisSucc * L.tridiagonalSucc := by
-  sorry
+  have hQ := L.hasOrthonormalCols_dilatedBasis
+  have hQQ : L.dilatedBasisᵀ * L.dilatedBasis = 1 := by
+    have := hQ.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  rw [backwardH, backwardPerturbation, Matrix.add_mul, Matrix.sub_mul, Matrix.neg_mul]
+  simp only [Matrix.mul_assoc, Matrix.sub_mul, Matrix.one_mul, hQQ, Matrix.mul_one, sub_self,
+    Matrix.mul_zero, sub_zero]
+  rw [dilatedResidual]
+  abel
 
 /-- **Greenbaum-type backward model for finite-precision Lanczos**: the symmetric backward model
 $\tilde{\mathbf{H}}$ is close to $\mathbf{I}_{k+1} \otimes \mathbf{H}$,
@@ -870,7 +927,25 @@ Proof: $\|\hat{\mathbf{E}}\hat{\mathbf{V}}_k^{\mathsf{T}}\|_{\mathsf{F}} \le
 Result: greenbaum-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le :
     frobNorm (L.backwardH - L.dilatedH) ≤ 2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  have hQ := L.hasOrthonormalCols_dilatedBasis
+  have hE := L.frobNorm_dilatedResidual_le
+  have hQ1 : specNorm L.dilatedBasis ≤ 1 := hQ.specNorm_le_one
+  have hQt : specNorm L.dilatedBasisᵀ ≤ 1 := by rw [specNorm_transpose]; exact hQ1
+  have hP := hQ.specNorm_one_sub_mul_transpose_le
+  rw [backwardH, add_sub_cancel_left, backwardPerturbation]
+  refine (frobNorm_sub_le _ _).trans ?_
+  rw [frobNorm_neg]
+  have h1 : frobNorm (L.dilatedResidual * L.dilatedBasisᵀ) ≤ frobNorm L.dilatedResidual :=
+    (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+      (by simpa using mul_le_mul_of_nonneg_left hQt (frobNorm_nonneg L.dilatedResidual))
+  have h2 : frobNorm (L.dilatedBasis * L.dilatedResidualᵀ *
+      (1 - L.dilatedBasis * L.dilatedBasisᵀ)) ≤ frobNorm L.dilatedResidual := by
+    rw [Matrix.mul_assoc]
+    refine (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans ?_
+    refine (mul_le_mul hQ1 ((frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+      (mul_le_mul_of_nonneg_left hP (frobNorm_nonneg _))) (frobNorm_nonneg _) zero_le_one).trans ?_
+    rw [one_mul, mul_one, frobNorm_transpose]
+  linarith
 
 /-- **Exact Lanczos on the backward model computes the computed tridiagonal matrix**: $k$ steps
 of the Lanczos recurrence on $\tilde{\mathbf{H}}$ from
