@@ -366,7 +366,11 @@ Added with this note (2026-10-28, all **proved**, in `NLAlib/`):
 In the scaffold: `abs_norm_sq_sub_one_le_of_relErr_normalize` (**proved**),
 `lanczosBasisProg_matrixFreeRounded` (**proved** from the bridge), `LanczosRun.ofLE` (**proved**).
 
-Still missing (inside the bridge proofs): run lemmas for `copyv`, `ifThenElse` with an exact
+Proved (2026-10-28, branch `prove/lanczos-bridge`): both bridges, through
+`NLAlibScaffold/Krylov/Processes/LanczosStep.lean` (one step, `LanczosStepErr`) and
+`LanczosProgramRun.lean` (init, loop invariant over the three slots, allocations), for any
+product meeting `LanczosMvSpec` (oracle: `lanczosMvSpec_apply`; dense: `lanczosMvSpec_gemv`).
+No statement changed. Previously listed as missing (inside the bridge proofs): run lemmas for `copyv`, `ifThenElse` with an exact
 comparison, `un` instructions, and the `apply` statement under an error contract (S each; the
 store bookkeeping of the toolkit's run lemmas covers them). Not needed: `nrm2`, `scal`, a sqrt
 kernel.
