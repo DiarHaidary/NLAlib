@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlibScaffold.Krylov.FinitePrecision.LanczosRun
+public import NLAlibScaffold.Krylov.FinitePrecision.LanczosData
 
 /-!
 # Local errors of a finite-precision Lanczos run
@@ -246,17 +247,20 @@ private theorem norm_w_le_β {j : ℕ} (hj : j < k) :
         gcongr
     _ = _ := by ring
 
+/-- The recurrence data of a run: its matrix, vectors and coefficients. -/
+def toLanczosData : LanczosData n k :=
+  ⟨L.H, L.v, L.α, L.β, L.transpose_H, L.k_pos, L.v_zero, L.β_zero⟩
+
 /-- The **residual of the three-term recurrence** at step $j$ (0-based):
 $\mathbf{f}_j = \mathbf{H}\mathbf{v}_{j+1} - \beta_j\mathbf{v}_j - \alpha_{j+1}\mathbf{v}_{j+1}
-- \beta_{j+1}\mathbf{v}_{j+2}$, the paper's $\mathbf{f}_{j+1}$. At a terminal last step
-$\beta_k = 0$ and $\mathbf{v}_{k+1}$ does not enter. -/
+- \beta_{j+1}\mathbf{v}_{j+2}$, the paper's $\mathbf{f}_{j+1}$. -/
 noncomputable def recurrenceError (j : ℕ) : Fin n → ℝ :=
-  L.H *ᵥ L.v (j + 1) - L.β j • L.v j - L.α (j + 1) • L.v (j + 1) - L.β (j + 1) • L.v (j + 2)
+  L.toLanczosData.recurrenceError j
 
 /-- The **inner product of consecutive Lanczos vectors** at step $j$ (0-based):
 $\mathbf{v}_{j+1}^{\mathsf{T}}(\beta_{j+1}\mathbf{v}_{j+2})$, the paper's $p_{j+1}$. -/
 noncomputable def adjacentInner (j : ℕ) : ℝ :=
-  L.v (j + 1) ⬝ᵥ (L.β (j + 1) • L.v (j + 2))
+  L.toLanczosData.adjacentInner j
 
 /-! ### A priori coefficient bounds -/
 
@@ -398,7 +402,8 @@ theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
   have h4 : L.z (j + 1) = L.β (j + 1) • L.v (j + 2) - L.δ (j + 1) := by
     rw [L.smul_v_eq j hj]
     abel
-  rw [recurrenceError, h1, h2, h3, h4]
+  simp only [recurrenceError, LanczosData.recurrenceError, toLanczosData]
+  rw [h1, h2, h3, h4]
   abel
 
 /-- **Local error bound for finite-precision Lanczos** (Paige): the computed vectors satisfy the
@@ -467,7 +472,8 @@ theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
   have hal : L.v (j + 1) ⬝ᵥ L.w (j + 1) = L.α (j + 1) - L.eα (j + 1) := by
     rw [L.α_eq j hj]
     ring
-  rw [adjacentInner, L.smul_v_eq j hj, dotProduct_add, L.z_eq j hj,
+  simp only [adjacentInner, LanczosData.adjacentInner, toLanczosData]
+  rw [L.smul_v_eq j hj, dotProduct_add, L.z_eq j hj,
     EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
   simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hal]
   ring
