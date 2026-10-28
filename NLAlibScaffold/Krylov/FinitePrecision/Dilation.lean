@@ -237,7 +237,7 @@ theorem orthonormalDilation_apply_of_val_eq_zero (W : Matrix (Fin n) (Fin m) ℝ
     · simp only [pow_zero, Matrix.one_apply, true_and]
     · rw [pow_succ, Matrix.mul_apply, Finset.sum_eq_zero fun l _ => by rw [hK, mul_zero]]
       simp
-  simp only [orthonormalDilation, Matrix.of_apply, Matrix.mul_apply, hKr, hC]
+  simp only [orthonormalDilation, Matrix.of_apply, Matrix.mul_apply, hKr]
   by_cases hp : p.2 = j
   · have h0 : (p.2 : ℕ) = 0 := by rw [hp]; exact hj
     simp only [h0, true_and, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
