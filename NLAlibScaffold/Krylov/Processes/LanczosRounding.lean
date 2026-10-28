@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Computation.BLAS.RoundingErrors
+public import NLAlib.Computation.BLAS.RoundingErrors
 public import NLAlibScaffold.Krylov.FinitePrecision.LanczosRun
 public import NLAlibScaffold.Krylov.Processes.LanczosProgramTree
 
