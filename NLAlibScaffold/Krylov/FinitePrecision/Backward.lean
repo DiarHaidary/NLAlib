@@ -366,6 +366,32 @@ theorem abs_normalized_adjacentInner_le {j : ℕ} (hj : j < k) :
         have : 0 ≤ (j + 1) * L.ε * specNorm L.H := by have := L.ε_nonneg; positivity
         nlinarith
 
+/-- The normalised residual is small:
+$\|\bar{\mathbf{F}}_k\|_{\mathsf{F}} \le 12k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$. -/
+theorem frobNorm_normalized_residual_le :
+    frobNorm L.normalized.residual ≤ 12 * k * Real.sqrt k * L.ε * specNorm L.H := by
+  have hε0 := L.ε_nonneg
+  have hH := specNorm_nonneg L.H
+  have hcol : ∀ j : Fin k, ‖WithLp.toLp 2 (L.normalized.residual.col j)‖ ≤
+      12 * k * L.ε * specNorm L.H := by
+    intro j
+    have hjk : ((j : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast j.2
+    refine (L.norm_normalized_recurrenceError_le j.2).trans ?_
+    gcongr
+  have hsq : frobNorm L.normalized.residual ^ 2 ≤
+      (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_col]
+    calc ∑ j, ‖WithLp.toLp 2 (L.normalized.residual.col j)‖ ^ 2
+        ≤ ∑ _j : Fin k, (12 * k * L.ε * specNorm L.H) ^ 2 :=
+          Finset.sum_le_sum fun j _ => pow_le_pow_left₀ (norm_nonneg _) (hcol j) 2
+      _ = (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
+            show (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 =
+              (12 * k * L.ε * specNorm L.H) ^ 2 * Real.sqrt k ^ 2 by ring,
+            Real.sq_sqrt (Nat.cast_nonneg k)]
+          ring
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
+
 /-- **The normalised Gram commutator is small**:
 $\|\bar{\mathbf{M}}_k\|_2 \le 40k^2\varepsilon\|\mathbf{H}\|_2$. No printed source; the
 maintainer's draft, `cor:normalized-commutator`.
@@ -396,26 +422,7 @@ theorem specNorm_normalized_gramCommutator_le :
       L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
     simp only [this, one_pow, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
       nsmul_eq_mul, mul_one]
-  have hF : frobNorm L.normalized.residual ≤ 12 * k * Real.sqrt k * L.ε * specNorm L.H := by
-    have hcol : ∀ j : Fin k, ‖WithLp.toLp 2 (L.normalized.residual.col j)‖ ≤
-        12 * k * L.ε * specNorm L.H := by
-      intro j
-      have hjk : ((j : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast j.2
-      refine (L.norm_normalized_recurrenceError_le j.2).trans ?_
-      gcongr
-    have hsq : frobNorm L.normalized.residual ^ 2 ≤
-        (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
-      rw [frobNorm_sq_eq_sum_col]
-      calc ∑ j, ‖WithLp.toLp 2 (L.normalized.residual.col j)‖ ^ 2
-          ≤ ∑ _j : Fin k, (12 * k * L.ε * specNorm L.H) ^ 2 :=
-            Finset.sum_le_sum fun j _ => pow_le_pow_left₀ (norm_nonneg _) (hcol j) 2
-        _ = (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
-            rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
-              show (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 =
-                (12 * k * L.ε * specNorm L.H) ^ 2 * Real.sqrt k ^ 2 by ring,
-              Real.sq_sqrt (Nat.cast_nonneg k)]
-            ring
-    exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
+  have hF := L.frobNorm_normalized_residual_le
   have h := L.normalized.specNorm_gramCommutator_le ha hb hg
   rw [hV, mul_zero, mul_zero, mul_zero, add_zero] at h
   refine h.trans ?_
@@ -736,7 +743,84 @@ $\mathbf{Y}_1 = \mathbf{C}(\underline{\mathbf{T}}_k\mathbf{R}_k
 Result: lanczos-dilated-recurrence -/
 theorem frobNorm_dilatedResidual_le :
     frobNorm L.dilatedResidual ≤ 1000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  set W := L.normalized.basisSucc
+  have hW := L.transpose_basisSucc_mul_self_apply
+  have hε0 := L.ε_nonneg
+  have hH := specNorm_nonneg L.H
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
+  set A := L.ε * specNorm L.H with hA
+  have hA0 : 0 ≤ A := by positivity
+  have hY1 := L.specNorm_exchangeDefect_one_le
+  set c := (24 * k * Real.sqrt k + Real.sqrt (k + 1) * (2 * k + 1) * (160 * k ^ 2)) * A
+  have hblock : ∀ r : Fin (k + 1),
+      frobNorm (L.dilatedResidual.submatrix (fun i => (i, r)) id) ≤ c := by
+    intro r
+    have hr : ((r : ℕ) : ℝ) ≤ k := by exact_mod_cast Nat.lt_succ_iff.mp r.2
+    have hCK : specNorm ((dilationC W * dilationK W ^ (r : ℕ)).submatrix Fin.castSucc
+        Fin.castSucc) ≤ 2 := by
+      refine (specNorm_submatrix_le _ (Fin.castSucc_injective k)
+        (Fin.castSucc_injective k)).trans ((specNorm_mul_le _ _).trans ?_)
+      have h1 := specNorm_dilationC_le_two hW
+      have h2 : specNorm (dilationK W ^ (r : ℕ)) ≤ 1 :=
+        (specNorm_pow_le _ _).trans (pow_le_one₀ (specNorm_nonneg _)
+          (specNorm_dilationK_le_one hW))
+      calc _ ≤ 2 * 1 := mul_le_mul h1 h2 (specNorm_nonneg _) (by norm_num)
+        _ = 2 := by norm_num
+    have hY : specNorm (L.exchangeDefect r - L.exchangeDefect (r + 1)) ≤
+        (2 * k + 1) * (160 * k ^ 2 * L.ε * specNorm L.H) := by
+      refine (specNorm_sub_le _ _).trans ?_
+      have h1 := L.specNorm_exchangeDefect_le r
+      have h2 := L.specNorm_exchangeDefect_le (r + 1)
+      push_cast at h2
+      have hY0 := specNorm_nonneg (L.exchangeDefect 1)
+      nlinarith
+    rw [L.dilatedResidual_submatrix]
+    refine (frobNorm_add_le _ _).trans ?_
+    have hF := L.frobNorm_normalized_residual_le
+    have e1 := frobNorm_mul_le_frobNorm_mul_specNorm L.normalized.residual
+      ((dilationC W * dilationK W ^ (r : ℕ)).submatrix Fin.castSucc Fin.castSucc)
+    have e2 := frobNorm_mul_le_frobNorm_mul_specNorm W
+      (L.exchangeDefect r - L.exchangeDefect (r + 1))
+    rw [L.frobNorm_normalized_basisSucc] at e2
+    have hs1 : 0 ≤ Real.sqrt ((k : ℝ) + 1) := Real.sqrt_nonneg _
+    calc _ ≤ frobNorm L.normalized.residual * 2 +
+          Real.sqrt (k + 1) * ((2 * k + 1) * (160 * k ^ 2 * L.ε * specNorm L.H)) := by
+          gcongr
+          · exact e1.trans (mul_le_mul_of_nonneg_left hCK (frobNorm_nonneg _))
+          · exact e2.trans (mul_le_mul_of_nonneg_left hY hs1)
+      _ ≤ 12 * k * Real.sqrt k * L.ε * specNorm L.H * 2 +
+          Real.sqrt (k + 1) * ((2 * k + 1) * (160 * k ^ 2 * L.ε * specNorm L.H)) := by gcongr
+      _ = c := by simp only [c, hA]; ring
+  have hc0 : 0 ≤ c := by positivity
+  have hsq : frobNorm L.dilatedResidual ^ 2 ≤ (Real.sqrt (k + 1) * c) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_submatrix, mul_pow, Real.sq_sqrt (by positivity)]
+    calc ∑ r, frobNorm (L.dilatedResidual.submatrix (fun i => (i, r)) id) ^ 2
+        ≤ ∑ _r : Fin (k + 1), c ^ 2 :=
+          Finset.sum_le_sum fun r _ => pow_le_pow_left₀ (frobNorm_nonneg _) (hblock r) 2
+      _ = (k + 1) * c ^ 2 := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          push_cast
+          ring
+  refine ((sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq).trans ?_
+  have hsk : Real.sqrt (k + 1) * Real.sqrt (k + 1) = k + 1 := Real.mul_self_sqrt (by positivity)
+  have hss : Real.sqrt (k + 1) * Real.sqrt k ≤ 3 / 2 * k := by
+    rw [← Real.sqrt_mul (by positivity)]
+    rw [Real.sqrt_le_left (by positivity)]
+    nlinarith
+  have : Real.sqrt (k + 1) * c = (24 * k * (Real.sqrt (k + 1) * Real.sqrt k) +
+      (Real.sqrt (k + 1) * Real.sqrt (k + 1)) * (2 * k + 1) * (160 * k ^ 2)) * A := by
+    simp only [c]; ring
+  rw [this, hsk]
+  have hpoly : 24 * (k : ℝ) * (3 / 2 * k) + (k + 1) * (2 * k + 1) * (160 * k ^ 2) ≤
+      1000 * (k : ℝ) ^ 4 := by
+    have h2 : (k : ℝ) ≤ k ^ 2 := by nlinarith
+    have h3 : (k : ℝ) ^ 2 ≤ k ^ 3 := by nlinarith
+    have h4 : (k : ℝ) ^ 3 ≤ k ^ 4 := by nlinarith
+    nlinarith
+  calc (24 * k * (Real.sqrt (k + 1) * Real.sqrt k) + (k + 1) * (2 * k + 1) * (160 * k ^ 2)) * A
+      ≤ (24 * k * (3 / 2 * k) + (k + 1) * (2 * k + 1) * (160 * k ^ 2)) * A := by gcongr
+    _ ≤ 1000 * k ^ 4 * A := by gcongr
+    _ = 1000 * k ^ 4 * L.ε * specNorm L.H := by rw [hA]; ring
 
 /-! ### The backward model -/
 
