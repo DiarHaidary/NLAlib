@@ -125,11 +125,84 @@ variable {n k : ℕ} (L : LanczosRun n k)
 
 /-- The dilated matrix is symmetric. -/
 theorem isHermitian_dilatedH : L.dilatedH.IsHermitian := by
-  sorry
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, dilatedH,
+    Matrix.blockDiagonal_transpose, L.transpose_H]
+
+/-- The matrix of the run is symmetric. -/
+theorem isHermitian_H : L.H.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, L.transpose_H]
+
+/-- The dilated matrix acts blockwise: block $r$ of $\hat{\mathbf{H}}\mathbf{x}$ is
+$\mathbf{H}\mathbf{x}_r$. -/
+theorem dilatedH_mulVec_apply (x : Fin n × Fin (k + 1) → ℝ) (i : Fin n) (r : Fin (k + 1)) :
+    (L.dilatedH *ᵥ x) (i, r) = (L.H *ᵥ fun j => x (j, r)) i := by
+  simp only [dilatedH, Matrix.mulVec, dotProduct, Fintype.sum_prod_type,
+    Matrix.blockDiagonal_apply, ite_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+
+/-- Every eigenvalue of $\hat{\mathbf{H}}$ is an eigenvalue of $\mathbf{H}$: if
+$\hat{\mathbf{H}}\mathbf{u} = c\mathbf{u}$ with $\mathbf{u} \neq \mathbf{0}$, then
+$c = \lambda_j(\mathbf{H})$ for some $j < n$. -/
+theorem exists_eigenvalue_H_eq_of_dilatedH_mulVec_eq_smul {u : Fin n × Fin (k + 1) → ℝ} {c : ℝ}
+    (hu : u ≠ 0) (h : L.dilatedH *ᵥ u = c • u) : ∃ j < n, eigenvalue L.H j = c := by
+  obtain ⟨⟨i, r⟩, hir⟩ := Function.ne_iff.mp hu
+  have hur : (fun j => u (j, r)) ≠ 0 := fun h0 => hir (congrFun h0 i)
+  have hHu : L.H *ᵥ (fun j => u (j, r)) = c • fun j => u (j, r) := by
+    funext j
+    rw [← L.dilatedH_mulVec_apply, h]
+    rfl
+  obtain ⟨j, hj, hj'⟩ := L.isHermitian_H.exists_eigenvalue_eq_of_mulVec_eq_smul hur hHu
+  exact ⟨j, by simpa using hj, hj'⟩
+
+/-- There is at least one coordinate: $n \ge 1$ since $\mathbf{v}_1 \neq \mathbf{0}$. -/
+theorem n_pos {n k : ℕ} (L : LanczosRun n k) : 0 < n := by
+  by_contra h
+  have hpos := L.norm_v_pos le_rfl L.k_pos
+  have h0 : L.v 1 = 0 := funext fun i => absurd i.2 (by omega)
+  rw [h0, WithLp.toLp_zero, norm_zero] at hpos
+  exact lt_irrefl _ hpos
+
+/-- The backward perturbation in the spectral norm:
+$\|\tilde{\mathbf{H}} - \hat{\mathbf{H}}\|_2 \le 2000k^4\varepsilon\|\mathbf{H}\|_2$. -/
+theorem specNorm_backwardH_sub_dilatedH_le :
+    specNorm (L.backwardH - L.dilatedH) ≤ 2000 * k ^ 4 * L.ε * specNorm L.H :=
+  (specNorm_le_frobNorm _).trans L.frobNorm_backwardH_sub_dilatedH_le
+
+/-- The Rayleigh bounds of $\hat{\mathbf{H}}$ are those of $\mathbf{H}$, above. -/
+theorem dotProduct_dilatedH_mulVec_le (x : Fin n × Fin (k + 1) → ℝ) :
+    x ⬝ᵥ (L.dilatedH *ᵥ x) ≤ eigenvalue L.H 0 * ‖WithLp.toLp 2 x‖ ^ 2 := by
+  have hblk : x ⬝ᵥ (L.dilatedH *ᵥ x) =
+      ∑ r, (fun j => x (j, r)) ⬝ᵥ (L.H *ᵥ fun j => x (j, r)) := by
+    simp only [dotProduct, Fintype.sum_prod_type, L.dilatedH_mulVec_apply]
+    exact Finset.sum_comm
+  have hnorm : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ r, ‖WithLp.toLp 2 (fun j => x (j, r))‖ ^ 2 := by
+    simp only [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, dotProduct, Fintype.sum_prod_type]
+    exact Finset.sum_comm
+  rw [hblk, hnorm, Finset.mul_sum]
+  refine Finset.sum_le_sum fun r _ => ?_
+  have h := L.isHermitian_H.re_quadForm_le_eigenvalue_zero_mul (fun j => x (j, r))
+  simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using h
+
+/-- The Rayleigh bounds of $\hat{\mathbf{H}}$ are those of $\mathbf{H}$, below
+($m + 1 = n$). -/
+theorem eigenvalue_last_mul_le_dotProduct_dilatedH_mulVec {m : ℕ} (hm : m + 1 = n)
+    (x : Fin n × Fin (k + 1) → ℝ) :
+    eigenvalue L.H m * ‖WithLp.toLp 2 x‖ ^ 2 ≤ x ⬝ᵥ (L.dilatedH *ᵥ x) := by
+  have hblk : x ⬝ᵥ (L.dilatedH *ᵥ x) =
+      ∑ r, (fun j => x (j, r)) ⬝ᵥ (L.H *ᵥ fun j => x (j, r)) := by
+    simp only [dotProduct, Fintype.sum_prod_type, L.dilatedH_mulVec_apply]
+    exact Finset.sum_comm
+  have hnorm : ‖WithLp.toLp 2 x‖ ^ 2 = ∑ r, ‖WithLp.toLp 2 (fun j => x (j, r))‖ ^ 2 := by
+    simp only [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, dotProduct, Fintype.sum_prod_type]
+    exact Finset.sum_comm
+  rw [hblk, hnorm, Finset.mul_sum]
+  refine Finset.sum_le_sum fun r _ => ?_
+  have h := L.isHermitian_H.eigenvalue_last_mul_le_re_quadForm
+    (by simpa using hm) (fun j => x (j, r))
+  simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using h
 
 /-- The backward model is symmetric. -/
 theorem isHermitian_backwardH : L.backwardH.IsHermitian := by
-  sorry
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, L.transpose_backwardH]
 
 /-- **The spectrum of the backward model is near that of $\mathbf{H}$**: every eigenvalue of
 $\tilde{\mathbf{H}}$ is within $2000k^4\varepsilon\|\mathbf{H}\|_2$ of an eigenvalue of
@@ -141,7 +214,21 @@ theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le {i : ℕ}
     (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
     ∃ j < n, |eigenvalue L.backwardH i - eigenvalue L.H j| ≤
       2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  have : Nonempty (Fin n × Fin (k + 1)) := ⟨(⟨0, L.n_pos⟩, 0)⟩
+  obtain ⟨x, hx1, hx⟩ := L.isHermitian_backwardH.exists_norm_eq_one_and_mulVec_eq hi
+  set μ := eigenvalue L.backwardH i
+  obtain ⟨i', hi', hle⟩ := L.isHermitian_dilatedH.exists_abs_eigenvalue_sub_mul_norm_le x μ
+  obtain ⟨u, hu1, hu⟩ := L.isHermitian_dilatedH.exists_norm_eq_one_and_mulVec_eq hi'
+  have hu0 : u ≠ 0 := fun h => by rw [h, WithLp.toLp_zero, norm_zero] at hu1; exact zero_ne_one hu1
+  obtain ⟨j, hj, hj'⟩ := L.exists_eigenvalue_H_eq_of_dilatedH_mulVec_eq_smul hu0 hu
+  refine ⟨j, hj, ?_⟩
+  have hres : L.dilatedH *ᵥ x - μ • x = (L.dilatedH - L.backwardH) *ᵥ x := by
+    rw [Matrix.sub_mulVec, hx]
+  rw [hres, hx1, mul_one] at hle
+  have hb := norm_toLp_mulVec_le (L.dilatedH - L.backwardH) x
+  rw [hx1, mul_one, specNorm_sub_comm] at hb
+  rw [hj', abs_sub_comm]
+  exact hle.trans (hb.trans L.specNorm_backwardH_sub_dilatedH_le)
 
 /-- **Localization of stabilised Ritz values** (Paige): for a unit eigenpair
 $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$ of the computed tridiagonal matrix, some eigenvalue
@@ -159,7 +246,50 @@ theorem exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ :
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ j < n, |θ - eigenvalue L.H j| ≤
       L.β k * |y L.lastIndex| + 2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  have : Nonempty (Fin n × Fin (k + 1)) := ⟨(⟨0, L.n_pos⟩, 0)⟩
+  set Q := L.dilatedBasis
+  set x := Q *ᵥ y
+  have hQ := L.hasOrthonormalCols_dilatedBasis
+  have hx1 : ‖WithLp.toLp 2 x‖ = 1 := by rw [hQ.norm_toLp_mulVec, hy1]
+  set w : Fin n × Fin (k + 1) → ℝ := fun p => L.dilatedBasisSucc p (Fin.last k)
+  have hw1 : ‖WithLp.toLp 2 w‖ = 1 := by
+    have hQQ : L.dilatedBasisSuccᵀ * L.dilatedBasisSucc = 1 := by
+      have := L.hasOrthonormalCols_dilatedBasisSucc.conjTranspose_mul_self
+      rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+    have h := congrFun (congrFun hQQ (Fin.last k)) (Fin.last k)
+    rw [Matrix.mul_apply, Matrix.one_apply_eq] at h
+    have h2 : ‖WithLp.toLp 2 w‖ ^ 2 = 1 := by
+      rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+      exact h
+    have := norm_nonneg (WithLp.toLp 2 w)
+    nlinarith
+  have hAx : L.backwardH *ᵥ x = θ • x + (y L.lastIndex * L.β k) • w := by
+    rw [Matrix.mulVec_mulVec, L.backwardH_mul_dilatedBasis, tridiagonalSucc,
+      L.toLanczosData.mul_tridiagonalSucc, Matrix.add_mulVec, ← Matrix.mulVec_mulVec]
+    change Q *ᵥ (L.tridiagonal *ᵥ y) + _ = _
+    rw [hy, Matrix.mulVec_smul, Matrix.vecMulVec_mulVec, single_one_dotProduct, op_smul_eq_smul,
+      smul_smul]
+    simp only [x, w]
+    rfl
+  have hres : L.dilatedH *ᵥ x - θ • x =
+      (L.dilatedH - L.backwardH) *ᵥ x + (y L.lastIndex * L.β k) • w := by
+    rw [Matrix.sub_mulVec, hAx]
+    abel
+  obtain ⟨i', hi', hle⟩ := L.isHermitian_dilatedH.exists_abs_eigenvalue_sub_mul_norm_le x θ
+  obtain ⟨u, hu1, hu⟩ := L.isHermitian_dilatedH.exists_norm_eq_one_and_mulVec_eq hi'
+  have hu0 : u ≠ 0 := fun h => by rw [h, WithLp.toLp_zero, norm_zero] at hu1; exact zero_ne_one hu1
+  obtain ⟨j, hj, hj'⟩ := L.exists_eigenvalue_H_eq_of_dilatedH_mulVec_eq_smul hu0 hu
+  refine ⟨j, hj, ?_⟩
+  rw [hres, hx1, mul_one, WithLp.toLp_add] at hle
+  have hb := norm_toLp_mulVec_le (L.dilatedH - L.backwardH) x
+  rw [hx1, mul_one, specNorm_sub_comm] at hb
+  have hw : ‖WithLp.toLp 2 ((y L.lastIndex * L.β k) • w)‖ = L.β k * |y L.lastIndex| := by
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, hw1, mul_one, abs_mul,
+      abs_of_nonneg (L.β_nonneg k le_rfl), mul_comm]
+  rw [hj', abs_sub_comm]
+  refine hle.trans ((norm_add_le _ _).trans ?_)
+  rw [hw]
+  linarith [hb.trans L.specNorm_backwardH_sub_dilatedH_le]
 
 /-- **Containment of the computed Ritz values, below** (Paige): every eigenvalue $\theta$ of the
 computed tridiagonal matrix satisfies $\lambda_{\min}(\mathbf{H}) - \theta \le
@@ -173,7 +303,31 @@ Result: paige-ritz-containment -/
 theorem eigenvalue_last_sub_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) {m : ℕ} (hm : m + 1 = n) :
     eigenvalue L.H m - θ ≤ 2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  set Q := L.dilatedBasis
+  set x := Q *ᵥ y
+  have hQ := L.hasOrthonormalCols_dilatedBasis
+  have hx1 : ‖WithLp.toLp 2 x‖ = 1 := by rw [hQ.norm_toLp_mulVec, hy1]
+  have hθ : x ⬝ᵥ (L.backwardH *ᵥ x) = θ := by
+    have hT : Qᵀ * (L.backwardH * Q) = L.tridiagonal := by
+      rw [L.backwardH_mul_dilatedBasis, L.transpose_dilatedBasis_mul_dilatedBasisSucc_mul]
+    have hyy : y ⬝ᵥ y = 1 := by
+      rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hy1, one_pow]
+    calc x ⬝ᵥ (L.backwardH *ᵥ x) = y ⬝ᵥ ((Qᵀ * (L.backwardH * Q)) *ᵥ y) := by
+          rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec y Qᵀ,
+            Matrix.vecMul_transpose]
+      _ = θ := by rw [hT, hy, dotProduct_smul, smul_eq_mul, hyy, mul_one]
+  have hsplit : x ⬝ᵥ (L.backwardH *ᵥ x) =
+      x ⬝ᵥ (L.dilatedH *ᵥ x) + x ⬝ᵥ ((L.backwardH - L.dilatedH) *ᵥ x) := by
+    rw [Matrix.sub_mulVec, dotProduct_sub]
+    ring
+  have hΔ : |x ⬝ᵥ ((L.backwardH - L.dilatedH) *ᵥ x)| ≤ 2000 * k ^ 4 * L.ε * specNorm L.H := by
+    have h := norm_star_dotProduct_mulVec_le (L.backwardH - L.dilatedH) x x
+    rw [star_trivial, Real.norm_eq_abs, hx1, one_mul, mul_one] at h
+    exact h.trans L.specNorm_backwardH_sub_dilatedH_le
+  have hlow := L.eigenvalue_last_mul_le_dotProduct_dilatedH_mulVec hm x
+  rw [hx1, one_pow, mul_one] at hlow
+  have := (abs_le.mp hΔ).1
+  linarith
 
 /-- **Containment of the computed Ritz values, above** (Paige): every eigenvalue $\theta$ of the
 computed tridiagonal matrix satisfies $\theta - \lambda_{\max}(\mathbf{H}) \le
@@ -184,7 +338,31 @@ Result: paige-ritz-containment -/
 theorem sub_eigenvalue_zero_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     θ - eigenvalue L.H 0 ≤ 2000 * k ^ 4 * L.ε * specNorm L.H := by
-  sorry
+  set Q := L.dilatedBasis
+  set x := Q *ᵥ y
+  have hQ := L.hasOrthonormalCols_dilatedBasis
+  have hx1 : ‖WithLp.toLp 2 x‖ = 1 := by rw [hQ.norm_toLp_mulVec, hy1]
+  have hθ : x ⬝ᵥ (L.backwardH *ᵥ x) = θ := by
+    have hT : Qᵀ * (L.backwardH * Q) = L.tridiagonal := by
+      rw [L.backwardH_mul_dilatedBasis, L.transpose_dilatedBasis_mul_dilatedBasisSucc_mul]
+    have hyy : y ⬝ᵥ y = 1 := by
+      rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hy1, one_pow]
+    calc x ⬝ᵥ (L.backwardH *ᵥ x) = y ⬝ᵥ ((Qᵀ * (L.backwardH * Q)) *ᵥ y) := by
+          rw [← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec y Qᵀ,
+            Matrix.vecMul_transpose]
+      _ = θ := by rw [hT, hy, dotProduct_smul, smul_eq_mul, hyy, mul_one]
+  have hsplit : x ⬝ᵥ (L.backwardH *ᵥ x) =
+      x ⬝ᵥ (L.dilatedH *ᵥ x) + x ⬝ᵥ ((L.backwardH - L.dilatedH) *ᵥ x) := by
+    rw [Matrix.sub_mulVec, dotProduct_sub]
+    ring
+  have hΔ : |x ⬝ᵥ ((L.backwardH - L.dilatedH) *ᵥ x)| ≤ 2000 * k ^ 4 * L.ε * specNorm L.H := by
+    have h := norm_star_dotProduct_mulVec_le (L.backwardH - L.dilatedH) x x
+    rw [star_trivial, Real.norm_eq_abs, hx1, one_mul, mul_one] at h
+    exact h.trans L.specNorm_backwardH_sub_dilatedH_le
+  have hup := L.dotProduct_dilatedH_mulVec_le x
+  rw [hx1, one_pow, mul_one] at hup
+  have := (abs_le.mp hΔ).2
+  linarith
 
 /-- The quadratic forms of $f(\hat{\mathbf{H}})$ at the dilated start and of $f(\mathbf{H})$ at
 $\bar{\mathbf{v}}_1$ agree: the spectral measure of $(\hat{\mathbf{H}}, \tilde{\mathbf{v}})$ is that

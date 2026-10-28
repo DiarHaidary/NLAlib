@@ -294,6 +294,28 @@ theorem mul_tridiagonalSucc_apply {ι : Type*} (Q : Matrix ι (Fin (k + 1)) ℝ)
   rw [h3]
   ring
 
+/-- For any $\mathbf{Q}$ with $k + 1$ columns, $\mathbf{Q}\underline{\mathbf{T}}_k =
+\mathbf{Q}_k\mathbf{T}_k + (\beta_k\mathbf{q}_k)\mathbf{e}_{k-1}^{\mathsf{T}}$, $\mathbf{Q}_k$ its
+first $k$ columns and $\mathbf{q}_k$ its last. -/
+theorem mul_tridiagonalSucc {ι : Type*} (Q : Matrix ι (Fin (k + 1)) ℝ) :
+    Q * D.tridiagonalSucc = Q.submatrix id Fin.castSucc * D.tridiagonal +
+      Matrix.vecMulVec (D.β k • fun p => Q p (Fin.last k)) (Pi.single D.lastIndex 1) := by
+  ext i j
+  rw [Matrix.mul_apply, Fin.sum_univ_castSucc, Matrix.add_apply, Matrix.mul_apply]
+  congr 1
+  · refine Finset.sum_congr rfl fun l _ => ?_
+    rw [D.tridiagonalSucc_castSucc]
+    rfl
+  · obtain ⟨j, hj⟩ := j
+    rw [D.tridiagonalSucc_last]
+    simp only [Matrix.vecMulVec_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, lastIndex,
+      Fin.mk.injEq]
+    by_cases h : k = j + 1
+    · rw [if_pos h, if_pos (by omega)]
+      ring
+    · rw [if_neg h, if_neg (by omega)]
+      ring
+
 /-- $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k = \mathbf{V}_k\mathbf{T}_k
 + (\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}}$. -/
 theorem basisSucc_mul_tridiagonalSucc :
