@@ -85,7 +85,7 @@ theorem exec_copyv_decVec (st : St P K C) {S : Array (P × ℕ)} (hsh : st.store
       (.seq (.loop (.const N) fun i =>
         .seq (.instr (.copy p ⟨Y, yo + .var i⟩ ⟨X, xo + .var i⟩)) .skip) .skip)) .skip := rfl
   rw [hrun, exec_seq_skip, exec_named, exec_seq_skip]
-  obtain ⟨st', h', hf, hc⟩ := exec_loop_write I st (Y := Y) (off := yo.eval) (finExt v)
+  obtain ⟨st', h', hf, hc⟩ := exec_loop_write I st (Y := Y) (off := yo.eval) (vecSeq v)
       fun i hi st' hf => by
     obtain ⟨w, hw, hd⟩ := hx.nat i hi
     have hw' : st'.store.read p X (xo.eval + i) = some w := by
@@ -97,7 +97,7 @@ theorem exec_copyv_decVec (st : St P K C) {S : Array (P × ℕ)} (hsh : st.store
       hw' hs').trans (exec_skip I _), hs', hd⟩
   refine ⟨st', h', hf, fun i => ?_⟩
   obtain ⟨w, hw, hd⟩ := hc i i.2
-  exact ⟨w, hw, by rw [hd, finExt_fin]⟩
+  exact ⟨w, hw, by rw [hd, vecSeq_fin]⟩
 
 theorem StoreFrame.trans_same {p : P} {s s' s'' : Store P K} {A : ℕ → ℕ → Prop}
     (h : StoreFrame p s s' A) (h' : StoreFrame p s' s'' A) : StoreFrame p s s'' A :=
@@ -139,9 +139,10 @@ theorem exec_lanczosInit_fill (h : IsRelErrSem u dec (fun _ _ => True) I.sem) {N
     (by simp; omega) fun h' => absurd h' hBW
   refine ⟨st₃, fun f => ?_, (hf₁₂.trans hf₃).mono fun b i hb' => ?_, hv₃, fun i => ?_,
     hdz0 ▸ (DecCell.of_write (dec := dec) hs₁).frame ((hst₁ ▸ hf₂).trans hf₃) fun hb' => ?_⟩
-  · rw [exec_bind_of_exec_eq_some I (seqShape_ins _) h₁,
-      exec_bind_of_exec_eq_some I (seqShape_forRange _ _) ((exec_seq_skip I _ _).trans h₂),
-      exec_bind_of_exec_eq_some I (seqShape_copyv _ _ _ _ _ _) h₃]
+  · rw [exec_bind_of_exec_eq_some I h₁ (seqShape_ins _),
+      exec_bind_of_exec_eq_some I (b := forRange _ _) ((exec_seq_skip I _ _).trans h₂)
+        (seqShape_forRange _ _),
+      exec_bind_of_exec_eq_some I h₃ (seqShape_copyv _ _ _ _ _ _)]
   · rcases hb' with (⟨rfl, h1, h2⟩ | ⟨rfl, h1, h2⟩) | ⟨rfl, h1, h2⟩
     · exact Or.inr ⟨rfl, by omega, by omega⟩
     · exact Or.inl ⟨rfl, by omega, by omega⟩
@@ -203,19 +204,13 @@ theorem exec_lanczosInit (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     ⟨β, β • v - bv, hβpos, by abel, hδ⟩, hunit hβpos.ne'⟩
   · unfold lanczosInit
     simp only [bind_assoc]
-    rw [h₁ _, h₂ _, exec_bind_of_exec_eq_some I (seqShape_ifThenElse _ _ _ _ _ _) h₃,
-      exec_bind_of_exec_eq_some I (seqShape_ins _) h₄]
+    rw [h₁ _, h₂ _, exec_bind_of_exec_eq_some I h₃ (seqShape_ifThenElse _ _ _ _ _ _),
+      exec_bind_of_exec_eq_some I h₄ (seqShape_ins _)]
   · refine ((hf₁.trans_same (hf₂.mono fun b i hb' => ?_)).trans_same
       (hf₃.mono fun b i hb' => ?_)).trans_same (hf₄.mono fun b i hb' => ?_)
     · obtain ⟨rfl, h1, h2⟩ := hb'; exact Or.inr ⟨rfl, by omega, by omega⟩
     · obtain ⟨rfl, h1, h2⟩ := hb'; exact Or.inl ⟨rfl, by omega, by simp at h2; omega⟩
     · obtain ⟨rfl, h1, h2⟩ := hb'; exact Or.inr ⟨rfl, by omega, by simp at h2 ⊢; omega⟩
-
-/-- Two distinct slots of length $N$ do not overlap. -/
-theorem slot_disjoint (N : ℕ) {a b : ℕ} (hab : a ≠ b) : N * a + N ≤ N * b ∨ N * b + N ≤ N * a := by
-  rcases Nat.lt_or_gt_of_ne hab with h | h
-  · exact Or.inl (by nlinarith)
-  · exact Or.inr (by nlinarith)
 
 /-- **One iteration of the loop of the Lanczos program**: copy the current slot into column $j$
 of `Q`, then one step (`NLAlib.Computation.exec_lanczosStepWith`) with the slots rotated. -/
@@ -265,7 +260,7 @@ theorem exec_lanczos_iter (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
   refine ⟨st₂, uv, w, zv, v, α, β, ?_, (hf₁.trans hf₂).mono fun b i hb' => ?_, by exact hv₂, ?_,
     hβ₂', (h3.frame hf₁ fun hb' => hQs hb'.1.symm).frame hf₂ fun hb' => ?_, by exact hα₂,
     by exact hβ₂, hq₁.frame hf₂ fun i _ hb' => ?_, hE⟩
-  · rw [exec_bind_of_exec_eq_some I (seqShape_copyv _ _ _ _ _ _) h₁, h₂]
+  · rw [exec_bind_of_exec_eq_some I h₁ (seqShape_copyv _ _ _ _ _ _), h₂]
   · rcases hb' with ⟨rfl, h1, h2⟩ | ⟨rfl, h1, h2⟩ | hb' | hb' | hb'
     · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, h1, h2⟩)))
     · refine Or.inl ⟨rfl, Nat.zero_le _, ?_⟩
@@ -401,24 +396,6 @@ theorem LanczosLoopInv.succ (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     · simp only [Function.update_self, Function.update_of_ne (show k + 1 ≠ k + 2 by omega)]
       exact ⟨hα', hβ', hq'⟩
 
-/-- The run of an allocation, for a postcondition on the popped store. -/
-theorem exec_alloc_of {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C}
-    {Q : Store P K → Prop} (h' : ∀ st₁ : St P K C,
-      st₁.store = st.store.push (p, Array.replicate len.eval none) →
-      ∃ st₂ : St P K C, exec I (body st.store.size) st₁ = some st₂ ∧ Q st₂.store.pop) :
-    ∃ st' : St P K C, exec I (.alloc p len body) st = some st' ∧ Q st'.store := by
-  obtain ⟨st₂, h₂, hQ⟩ := h' { st with
-      store := st.store.push (p, Array.replicate len.eval none)
-      cur := Function.update st.cur p (st.cur p + len.eval)
-      peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval))
-      curW := st.curW + len.eval * I.width p
-      peakW := max st.peakW (st.curW + len.eval * I.width p) } rfl
-  exact ⟨_, by rw [exec_alloc, h₂]; rfl, hQ⟩
-
-omit [DecidableEq P] [AddMonoid C] in
-theorem run_alloc_bind (p : P) (len : IExp ℕ) (f : ℕ → Builder P ι ℕ ℕ Unit) :
-    (Builder.alloc p len >>= f).run = .alloc p len fun b => (f b).run := rfl
-
 /-- The facts of a run of the Lanczos program on its outputs, at the store `s`: computed vectors
 and coefficients with the start facts, the local errors of the $q$ steps, and the output buffers
 holding $\alpha_{j+1}$, $\beta_{j+1}$ ($j < q$) and $\mathbf{v}_{j+1}$ ($j \le q$). -/
@@ -477,8 +454,9 @@ theorem exec_lanczos_inner (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (by simp; nlinarith) fun h' => absurd h'.symm hQW
   refine ⟨st₃, ?_, hf₃.1.trans (hf.1.trans hsh), v, uv, w, z, α, β, hv0, hβ0, hst, hun, hE,
     fun k hk => ?_, fun k hk => ?_⟩
-  · rw [h₁ _, exec_bind_of_exec_eq_some I (seqShape_forRange _ _)
-      ((exec_seq_skip I _ _).trans h₂), h₃]
+  · rw [h₁ _,
+      exec_bind_of_exec_eq_some I (b := forRange _ _) ((exec_seq_skip I _ _).trans h₂)
+        (seqShape_forRange _ _), h₃]
   · obtain ⟨ha, hb, -⟩ := hout k hk
     exact ⟨ha.frame hf₃ fun hb' => hQa hb'.1.symm, hb.frame hf₃ fun hb' => hQb hb'.1.symm⟩
   · rcases Nat.lt_or_ge k q with hk' | hk'

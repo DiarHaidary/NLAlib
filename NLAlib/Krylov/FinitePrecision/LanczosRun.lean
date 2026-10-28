@@ -18,17 +18,16 @@ $$\mathbf{u}_j = \mathbf{H}\mathbf{v}_j + \mathbf{e}^u_j,\quad
 \alpha_j = \mathbf{v}_j^{\mathsf{T}}\mathbf{w}_j + e^\alpha_j,\quad
 \mathbf{z}_j = \mathbf{w}_j - \alpha_j\mathbf{v}_j + \mathbf{e}^z_j,\quad
 \beta_j\mathbf{v}_{j+1} = \mathbf{z}_j + \boldsymbol{\delta}_j .$$
-It is the interface between the rounding-error analysis of the Lanczos program
-(`NLAlib.Computation.IsRelErrSem.exists_lanczosRun_of_lanczosBasisProg`, which constructs one from
-a run) and the stability analysis (local errors, Paige's theorem, the Greenbaum backward model),
-which never mentions the model of computation. Port of `FinitePrecisionLanczos.LanczosRun`
+It is the interface between the rounding-error analysis of the Lanczos program in the standard
+model of floating-point arithmetic, which constructs one from a run of the program, and the
+stability analysis (local errors, Paige's theorem, the Greenbaum backward model), which never
+mentions the model of computation. Port of `FinitePrecisionLanczos.LanczosRun`
 (T. Chen, *A simple stability analysis of Lanczos in finite precision*, `sec:model`; Lean in
 <https://github.com/tchen-research/simple-lanczos-stability>), with the fields renamed after
 their statements (Naming N2), `vnorm` the library's `‖WithLp.toLp 2 x‖` and `‖H‖` its `specNorm`.
 Indices as in the paper: $\mathbf{v}_0 = \mathbf{0}$, $\beta_0 = 0$, steps $j = 1, \dots, k$.
 
-To move into `NLAlib/Krylov/FinitePrecision/LanczosRun.lean`. Design:
-`docs/design/Krylov-LanczosRounding.md` (§3).
+Design: `docs/design/Krylov-LanczosRounding.md` (§3).
 
 ## Main definitions
 

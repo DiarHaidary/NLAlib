@@ -273,6 +273,18 @@ theorem norm_toLp_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (x : 
   rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct,
     EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, hQ.star_mulVec_dotProduct_mulVec]
 
+omit [Fintype n] in
+/-- The columns of a matrix with orthonormal columns are unit vectors:
+$\|\mathbf{Q}\mathbf{e}_j\| = 1$. -/
+theorem norm_toLp_col {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (j : n) :
+    ‖WithLp.toLp 2 (Q.col j)‖ = 1 := by
+  have h := congrFun (congrFun hQ.conjTranspose_mul_self j) j
+  rw [Matrix.mul_apply, Matrix.one_apply_eq] at h
+  refine (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).1 ?_
+  rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct]
+  simp only [dotProduct, Matrix.col_apply, Pi.star_apply, Matrix.conjTranspose_apply] at h ⊢
+  rw [h, RCLike.one_re]
+
 /-- Multiplication by $\mathbf{Q}^{\mathsf{H}}$ does not increase the Euclidean norm (Bessel's
 inequality): $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$.
 Port of `NLAlib.sum_norm_sq_conjTranspose_mulVec_le`. -/

@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.Matrix.Normed
+public import Mathlib.LinearAlgebra.Matrix.Block
 public import Mathlib.LinearAlgebra.Matrix.Trace
 public import Mathlib.Tactic.Positivity.Core
 
@@ -35,6 +36,8 @@ that form; `positivity` knows `frobNorm`, so `gcongr` passes between a bound and
 * `NLAlib.frobNorm_sq_eq_sum`, `NLAlib.frobNorm_sq_eq_re_trace`: the squared norm as an entry sum
   and as a trace.
 * `NLAlib.frobNorm_sq_eq_sum_sq`, `NLAlib.frobInner_eq_sum_mul`: the entry sums over $\mathbb{R}$.
+* `Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le`: the strict upper part of an upper
+  triangular matrix is controlled by its skew part.
 * `NLAlib.frobNorm_add_sq`, `NLAlib.frobNorm_add_sq_of_frobInner_eq_zero`: the polar identity and
   Pythagoras.
 * `NLAlib.abs_frobInner_le`: Cauchy–Schwarz.
@@ -222,6 +225,38 @@ $\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{i,j} \mathbf{A}_{i,j}^2$. This is
 integral or a sum. Port of `NLAlib.frobSq_eq_sum_sq`. -/
 theorem frobNorm_sq_eq_sum_sq (A : Matrix m n ℝ) : frobNorm A ^ 2 = ∑ i, ∑ j, A i j ^ 2 := by
   simp only [frobNorm_sq_eq_sum, Real.norm_eq_abs, sq_abs]
+
+/-- **The strict upper part of an upper triangular matrix is controlled by its skew part**:
+for $\mathbf{M}$ upper triangular, the Frobenius norm of $\mathbf{M}$ minus its diagonal is at most
+$\|\mathbf{M} - \mathbf{M}^{\mathsf{T}}\|_{\mathsf{F}}$ (its entries above the diagonal are
+those of $\mathbf{M} - \mathbf{M}^{\mathsf{T}}$). -/
+theorem _root_.Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le {ι : Type*} [Fintype ι]
+    [LinearOrder ι] {M : Matrix ι ι ℝ} (hM : M.IsUpperTriangular) :
+    frobNorm (M - Matrix.diagonal fun i => M i i) ≤ frobNorm (M - Mᵀ) := by
+  have hsq : frobNorm (M - Matrix.diagonal fun i => M i i) ^ 2 ≤ frobNorm (M - Mᵀ) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_sq, frobNorm_sq_eq_sum_sq]
+    refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
+    simp only [Matrix.sub_apply, Matrix.diagonal_apply, Matrix.transpose_apply]
+    rcases lt_trichotomy i j with h | rfl | h
+    · rw [if_neg h.ne, hM h]
+    · simp
+    · rw [if_neg h.ne', hM h]
+      nlinarith [sq_nonneg (M j i)]
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 hsq
+
+/-- A square matrix with entries bounded by $c$ has Frobenius norm at most $\lvert n\rvert c$. -/
+theorem frobNorm_le_card_mul_of_forall_abs_le {ι : Type*} [Fintype ι] {M : Matrix ι ι ℝ} {c : ℝ}
+    (hc : 0 ≤ c) (h : ∀ i j, |M i j| ≤ c) : frobNorm M ≤ Fintype.card ι * c := by
+  have hsq : frobNorm M ^ 2 ≤ (Fintype.card ι * c) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_sq]
+    calc ∑ i, ∑ j, M i j ^ 2 ≤ ∑ _i : ι, ∑ _j : ι, c ^ 2 :=
+          Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => by
+            rw [← sq_abs]
+            exact pow_le_pow_left₀ (abs_nonneg _) (h i j) 2
+      _ = (Fintype.card ι * c) ^ 2 := by
+          simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+          ring
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
 /-- The Frobenius inner product of a matrix with itself is its squared Frobenius norm:
 $\langle \mathbf{A}, \mathbf{A} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_{\mathsf{F}}^2$. -/

@@ -78,3 +78,8 @@ name = "NLAlib.map_eval_uniformOn_injective"
 rule = "N4"
 reason = "`eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the token became a library function with `NLAlib.Computation.IExp.eval`, a different object"
 
+
+[[allow]]
+name = "NLAlib.LanczosRun.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
+rule = "N4"
+reason = "the statement is `L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiagonalSucc) = L.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached"

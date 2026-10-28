@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.LanczosRun
-public import NLAlibScaffold.Krylov.FinitePrecision.LanczosData
+public import NLAlib.Krylov.FinitePrecision.LanczosRun
+public import NLAlib.Krylov.FinitePrecision.LanczosData
 
 /-!
 # Local errors of a finite-precision Lanczos run
@@ -30,6 +30,9 @@ finite precision*), `lem:coefficients` and `thm:local-errors`; constants differ 
 * `NLAlib.LanczosRun.recurrenceError`: the residual $\mathbf{f}$ of the three-term recurrence.
 * `NLAlib.LanczosRun.adjacentInner`: the inner product $\beta\,\mathbf{v}^{\mathsf{T}}\mathbf{v}'$
   of consecutive vectors.
+* `NLAlib.lanczosRecurrenceErrorFactor`, `NLAlib.lanczosAdjacentInnerFactor`: the factors of
+  the two bounds at step $j$, <!-- value lanczosRecurrenceErrorFactor j --> $6(j + 1)$ and
+  then <!-- value lanczosAdjacentInnerFactor j --> $7(j + 1)$.
 
 ## Main results
 
@@ -45,6 +48,20 @@ finite precision*), `lem:coefficients` and `thm:local-errors`; constants differ 
 namespace NLAlib
 
 open scoped Matrix
+
+/-- **The factor of the local error bound** of a finite-precision Lanczos run at step $j$
+(`NLAlib.LanczosRun.norm_recurrenceError_le`): <!-- value lanczosRecurrenceErrorFactor j -->
+$$6(j + 1) \,.$$
+The maintainer's draft states the bound as $\lesssim_k \varepsilon\|\mathbf{A}\|_2$; its
+formalization has the factor $700j$. -/
+noncomputable irreducible_def lanczosRecurrenceErrorFactor (j : ℕ) : ℝ := 6 * ((j : ℝ) + 1)
+
+/-- **The factor of the local orthogonality bound** of a finite-precision Lanczos run at step
+$j$ (`NLAlib.LanczosRun.abs_adjacentInner_le`): <!-- value lanczosAdjacentInnerFactor j -->
+$$7(j + 1) \,.$$
+The maintainer's draft states the bound as $\lesssim_k \varepsilon\|\mathbf{A}\|_2$; its
+formalization has the factor $1200j$. -/
+noncomputable irreducible_def lanczosAdjacentInnerFactor (j : ℕ) : ℝ := 7 * ((j : ℝ) + 1)
 
 namespace LanczosRun
 
@@ -266,8 +283,9 @@ noncomputable def adjacentInner (j : ℕ) : ℝ :=
 
 /-- **The off-diagonal coefficients grow at most linearly**: for $j \le k$,
 $\beta_j \le \tfrac54\, j\,\|\mathbf{H}\|_2$.
-No printed source; the maintainer's draft, `lem:coefficients`, proves $\beta_j \le 4j\|\mathbf{A}\|$
-(Step 3); the recurrence $\beta_j \le (1 + 8\varepsilon)(\beta_{j-1} + (1+\varepsilon)
+No printed source; the maintainer's draft, `lem:coefficients`, proves
+$\beta_j \le 4j\|\mathbf{A}\|_2$ (Step 3); the recurrence
+$\beta_j \le (1 + 8\varepsilon)(\beta_{j-1} + (1+\varepsilon)
 \|\mathbf{H}\|_2)$ used here carries less slack. -/
 theorem β_le {j : ℕ} (hj : j ≤ k) : L.β j ≤ 5 / 4 * j * specNorm L.H := by
   induction j with
@@ -311,7 +329,7 @@ theorem β_le {j : ℕ} (hj : j ≤ k) : L.β j ≤ 5 / 4 * j * specNorm L.H := 
 /-- **The computed products are bounded**: for $j < k$,
 $\|\mathbf{u}_{j+1}\| \le \tfrac{21}{20}\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 2), prints
-$2\|\mathbf{A}\|$. -/
+$2\|\mathbf{A}\|_2$. -/
 theorem norm_u_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.u (j + 1))‖ ≤ 21 / 20 * specNorm L.H := by
   have hε0 := L.ε_nonneg
@@ -325,7 +343,7 @@ theorem norm_u_le {j : ℕ} (hj : j < k) :
 
 /-- **The first updates are bounded**: for $j < k$,
 $\|\mathbf{w}_{j+1}\| \le \tfrac54 (j + 1)\|\mathbf{H}\|_2$.
-No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints $5j\|\mathbf{A}\|$
+No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints $5j\|\mathbf{A}\|_2$
 in its 1-based indexing. -/
 theorem norm_w_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.w (j + 1))‖ ≤ 5 / 4 * (j + 1) * specNorm L.H := by
@@ -351,7 +369,7 @@ theorem norm_w_le {j : ℕ} (hj : j < k) :
 /-- **The diagonal coefficients are bounded**: for $j < k$,
 $\lvert\alpha_{j+1}\rvert \le \tfrac43 (j + 1)\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints
-$6j\|\mathbf{A}\|$ in its 1-based indexing. -/
+$6j\|\mathbf{A}\|_2$ in its 1-based indexing. -/
 theorem abs_α_le {j : ℕ} (hj : j < k) : |L.α (j + 1)| ≤ 4 / 3 * (j + 1) * specNorm L.H := by
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
@@ -369,7 +387,7 @@ theorem abs_α_le {j : ℕ} (hj : j < k) : |L.α (j + 1)| ≤ 4 / 3 * (j + 1) * 
 /-- **The unnormalised next vectors are bounded**: for $j < k$,
 $\|\mathbf{z}_{j+1}\| \le \tfrac43 (j + 1)\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints
-$7j\|\mathbf{A}\|$ in its 1-based indexing. -/
+$7j\|\mathbf{A}\|_2$ in its 1-based indexing. -/
 theorem norm_z_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.z (j + 1))‖ ≤ 4 / 3 * (j + 1) * specNorm L.H := by
   have hε1 := L.ε_le
@@ -407,16 +425,19 @@ theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
   abel
 
 /-- **Local error bound for finite-precision Lanczos** (Paige): the computed vectors satisfy the
-three-term recurrence up to a small residual, for $j < k$,
-$$\|\mathbf{H}\mathbf{v}_{j+1} - \beta_j\mathbf{v}_j - \alpha_{j+1}\mathbf{v}_{j+1}
-- \beta_{j+1}\mathbf{v}_{j+2}\| \le 6\,(j + 1)\,\varepsilon\,\|\mathbf{H}\|_2 \,.$$
+three-term recurrence up to a small residual, for $j <
+k$, <!-- value lanczosRecurrenceErrorFactor j -->
+$$\|\mathbf{H}\mathbf{v}_{j+1} - \beta_j\mathbf{v}_j - \alpha_{j+1}\mathbf{v}_{j+1} -
+\beta_{j+1}\mathbf{v}_{j+2}\| \le 6(j + 1)\,\varepsilon\,\|\mathbf{H}\|_2 \,.$$
 No printed source; the maintainer's draft, `thm:local-errors`, states
-$\|\mathbf{f}_j\| \lesssim_k \varepsilon\|\mathbf{A}\|$ (its formalization: $700j$); the
+$\|\mathbf{f}_j\| \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $700j$); the
 constant here comes from the sharper coefficient bounds. [Paige1976, §2–3] has bounds of this
 kind, from floating-point arithmetic directly.
 Result: lanczos-local-errors -/
 theorem norm_recurrenceError_le {j : ℕ} (hj : j < k) :
-    ‖WithLp.toLp 2 (L.recurrenceError j)‖ ≤ 6 * (j + 1) * L.ε * specNorm L.H := by
+    ‖WithLp.toLp 2 (L.recurrenceError j)‖ ≤
+      lanczosRecurrenceErrorFactor j * L.ε * specNorm L.H := by
+  rw [lanczosRecurrenceErrorFactor_def]
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
@@ -479,14 +500,15 @@ theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
   ring
 
 /-- **Local orthogonality of finite-precision Lanczos** (Paige): consecutive computed vectors
-are nearly orthogonal, for $j < k$,
+are nearly orthogonal, for $j < k$, <!-- value lanczosAdjacentInnerFactor j -->
 $$\lvert\beta_{j+1}\,\mathbf{v}_{j+1}^{\mathsf{T}}\mathbf{v}_{j+2}\rvert
-\le 7\,(j + 1)\,\varepsilon\,\|\mathbf{H}\|_2 \,.$$
+\le 7(j + 1)\,\varepsilon\,\|\mathbf{H}\|_2 \,.$$
 No printed source; the maintainer's draft, `thm:local-errors`, states
-$\lvert p_j\rvert \lesssim_k \varepsilon\|\mathbf{A}\|$ (its formalization: $1200j$).
+$\lvert p_j\rvert \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $1200j$).
 Result: lanczos-local-orthogonality -/
 theorem abs_adjacentInner_le {j : ℕ} (hj : j < k) :
-    |L.adjacentInner j| ≤ 7 * (j + 1) * L.ε * specNorm L.H := by
+    |L.adjacentInner j| ≤ lanczosAdjacentInnerFactor j * L.ε * specNorm L.H := by
+  rw [lanczosAdjacentInnerFactor_def]
   have hε0 := L.ε_nonneg
   have hH := specNorm_nonneg L.H
   set a := 1 + L.ε / 2 with ha_def

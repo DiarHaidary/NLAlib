@@ -3,6 +3,11 @@
 2026-10-28. Branch `design/lanczos-fp` (from `design/fp-toolkit` @ 36bab62). Decision sheet:
 `state/decisions/Lanczos-FP.json` in the harness (ids L1–L7 below).
 
+**Status: implemented, 2026-10-28.** The analysis (§3) is in `NLAlib/Krylov/FinitePrecision/`;
+the program, its exact specification, the bridge (§1–2) and the end-to-end headline (§3.4) are
+proved and stay in `NLAlibScaffold/Krylov/Processes/` until `lanczosBasisProg` and
+`lanczosBasisDenseProg` have registered targets (rule E4; §3.7).
+
 ## Summary
 
 The maintainer's request: define the Lanczos algorithm fully as a program in the model of
@@ -349,7 +354,7 @@ Scope of this pass (branch `prove/lanczos-analysis`): the external `Lanczos/Boun
 residual) and `ComputedCommutator.lean` + `LossOfOrthogonality.lean` (Gram commutator, Paige).
 The Greenbaum backward model and its consequences (`thm:greenbaum`, `thm:stabilized`,
 `thm:containment`, `rem:wasserstein`) are not in this pass. Files, all in
-`NLAlibScaffold/Krylov/FinitePrecision/`: `LocalErrors.lean`, `Recurrence.lean`, `Paige.lean`.
+`NLAlib/Krylov/FinitePrecision/` since the integration (§3.7): `LocalErrors.lean`, `Recurrence.lean`, `Paige.lean`.
 Docstrings say "No printed source" and name the maintainer's draft and its labels; `Paige1976`,
 `Paige1980` are added to `references.bib` for the classical forms.
 
@@ -369,10 +374,10 @@ term appears in a statement (T9). Norms: `‖WithLp.toLp 2 ·‖`, `specNorm`, `
 | `norm_recurrenceError_le` | `thm:local-errors`, $\mathbf{f}_j$ | $\lesssim_k$; ext. $700j\varepsilon\|\mathbf{H}\|$ | $6(j+1)\varepsilon\|\mathbf{H}\|_2$ | the sharper coefficient bounds; the external envelope used $100j$ for every coefficient |
 | (field `abs_norm_v_sq_sub_one_le`) | `thm:local-errors`, $g_j$ | $\varepsilon$ | $\varepsilon$ | no theorem: it is an assumption of the interface |
 | `abs_adjacentInner_le` | `thm:local-errors`, $p_j$ | $\lesssim_k$; ext. $1200j$ | $7(j+1)\varepsilon\|\mathbf{H}\|_2$ | as above |
-| `H_mul_basis` | `eq:governing` | identity | identity | $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k$ written as $\mathbf{V}_k\mathbf{T}_k + \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}}$ (`vecMulVec`, `Pi.single`); no $\underline{\mathbf{T}}_k$ API needed |
+| `mul_basis` | `eq:governing` | identity | identity | $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k$ written as $\mathbf{V}_k\mathbf{T}_k + \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}}$ (`vecMulVec`, `Pi.single`); no $\underline{\mathbf{T}}_k$ API needed |
 | `frobNorm_residual_le`, `specNorm_residual_le` | proof of `cor:gram-commutator` | $\sqrt{k}\max\|\mathbf{f}_j\|$; ext. $700k^2$ | $6k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$ | |
-| `H_mulVec_basis_mulVec_sub_smul` | `eq:ritz-residual-identity` | identity | identity | |
-| `norm_H_mulVec_basis_mulVec_sub_smul_le` | `eq:ritz-residual-bound` | $\sqrt{1+\varepsilon}\beta_k\lvert y_k\rvert + \|\mathbf{F}_k\|$, divided by $\|\mathbf{x}\|$ | $\sqrt{1+\varepsilon}\beta_k\lvert y_{k-1}\rvert + 6k\sqrt{k}\varepsilon\|\mathbf{H}\|_2$ | the division by $\|\mathbf{x}\|$ is dropped (it is the same inequality) |
+| `mulVec_basis_mulVec_sub_smul` | `eq:ritz-residual-identity` | identity | identity | |
+| `norm_mulVec_basis_mulVec_sub_smul_le` | `eq:ritz-residual-bound` | $\sqrt{1+\varepsilon}\beta_k\lvert y_k\rvert + \|\mathbf{F}_k\|$, divided by $\|\mathbf{x}\|$ | $\sqrt{1+\varepsilon}\beta_k\lvert y_{k-1}\rvert + 6k\sqrt{k}\varepsilon\|\mathbf{H}\|_2$ | the division by $\|\mathbf{x}\|$ is dropped (it is the same inequality) |
 | `isUpperTriangular_gramCommutator`, `gramCommutator_sub_transpose` | `lem:gram-commutator`, `eq:generic-commutator` | identity | identity | Mathlib's `Matrix.IsUpperTriangular` |
 | `specNorm_gramCommutator_le` | `cor:gram-commutator` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | the paper bounds every entry and then passes to the Frobenius norm ($2k \cdot \max$); here the strict upper part is bounded by $\|\mathbf{M}-\mathbf{M}^{\mathsf{T}}\|_{\mathsf F}$ as a whole, and $\|\mathbf{V}_k^{\mathsf T}\mathbf{F}_k\|_{\mathsf F} \le \|\mathbf{V}_k\|_{\mathsf F}\|\mathbf{F}_k\|_{\mathsf F}$, saving a factor $k$ |
 | `abs_basis_mulVec_dotProduct_mul_abs_le` | `thm:paige` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | from the commutator bound |
@@ -481,6 +486,54 @@ because it is multiplied by $\beta_k = 0$.
 The $k^4$ (external $k^6$): $\|\bar{\mathbf M}_k\| \lesssim k^2$ (§3.5), $\|\mathbf Y_r\| \le
 r\|\mathbf Y_1\| \le 4r\|\bar{\mathbf M}_k\|$, $\|\bar{\mathbf V}_{k+1}\|_{\mathsf F} =
 \sqrt{k+1}$, and $k+1$ blocks.
+
+### 3.7 Integration (2026-10-28)
+
+Files. `NLAlib/Krylov/FinitePrecision/{LanczosRun, LanczosData, LocalErrors, Recurrence, Paige,
+Normalized, Backward, BackwardSpectral}.lean` (`Normalized` split from `Backward`, F10). General
+facts moved to their topics: `orthonormalDilation` and its API →
+`NLAlib/Matrix/Subspaces/OrthonormalDilation.lean`; Kittaneh's bound, renamed
+`Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le` (N18) → `Matrix/Functions/HermitianCalculus.lean`;
+`Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le`, `frobNorm_le_card_mul_of_forall_abs_le` →
+`Matrix/Norms/Frobenius.lean`; `lanczosStep_of_orthonormal_recurrence`,
+`lanczosState_eq_of_orthonormal_recurrence`, `lanczosState_beta_eq_of_orthonormal_recurrence` →
+`Krylov/Processes/LanczosRecurrence.lean`; new `HasOrthonormalCols.norm_toLp_col`
+(`Matrix/Basic/Orthonormal.lean`). Removed in favour of the library:
+`HasOrthonormalCols.specNorm_one_sub_mul_transpose_le` (now `isStarProjection_mul_conjTranspose`,
+`IsStarProjection.one_sub`, `IsStarProjection.specNorm_le_one`) and the hand-made block form of
+$f(\hat{\mathbf{H}})$ (now `cfc_blockDiagonal`). The duplicate report finds no class.
+
+Named bounds (CONTRIBUTING §5.2 rule 2; the draft prints $\lesssim_k$, so every constant is
+"other"): `lanczosRecurrenceErrorFactor j` $= 6(j+1)$, `lanczosAdjacentInnerFactor j`
+$= 7(j+1)$, `lanczosResidualFactor k` $= 6k\sqrt{k}$, `lanczosGramCommutatorFactor k` $= 30k^2$,
+`lanczosDilatedResidualFactor k` $= 1000k^4$, `lanczosBackwardFactor k` $= 2000k^4$; registered
+in `docs/constants.toml`. The supporting lemmas (coefficient bounds $\tfrac54 j$, $\tfrac{21}{20}$,
+$\tfrac43(j+1)$; normalised $12(j+1)$, $8(j+1)$, $40k^2$; exchange $160k^2$) keep literal
+constants (maintainer to confirm).
+
+End to end (§3.4). `NLAlib.HasLanczosBackwardModel` (outputs, start vector, and a symmetric
+$\tilde{\mathbf{H}}$ of dimension $N(k+1)$ with $\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1}
+\otimes \mathbf{H}\|_{\mathsf{F}} \le 2000k^4\varepsilon\|\mathbf{H}\|_2$ on which exact
+Lanczos from $(\bar{\mathbf{v}}_1, \mathbf{0}, \dots)$ computes the output $\alpha_j$, $\beta_j$,
+$j < k$, with $W_1$-close spectral measures), `HasLanczosRunOutputs.hasLanczosBackwardModel`, and
+the headlines `IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisDenseProg` (Result
+`lanczos-program-backward-model`; $\varepsilon = \max(\sqrt{N}\gamma_N, \gamma_{N+4})$, all
+hypotheses on data, sizes and $u$) and `…_of_lanczosBasisProg` (oracle). New run-level lemmas
+`LanczosRun.lanczosAlpha_backwardH_dilatedStart`,
+`LanczosRun.lanczosState_backwardH_dilatedStart_succ_beta`.
+
+Clean-up of the scaffold part: one copy each of the allocation run lemmas (`run_alloc_bind`,
+`exec_alloc_of`), the slot lemma (`slot_disjoint`), the builder-sequencing API (`SeqShape`,
+`exec_bind_of_exec_eq_some`, now taking the run before the shape) and the zero-extension of a
+vector (`vecSeq`, formerly `lzVx` and `finExt`), all in `LanczosProgramTree.lean`; `LzUpd` is
+`BlockUpd`. Statements of the headlines unchanged.
+
+Open for the maintainer: (i) register targets for the two programs (then the four Processes files
+move to `NLAlib/Krylov/Processes/`); (ii) the $W_1$ statement is on quadratic forms of
+1-Lipschitz $f$, not yet on `spectralMeasure` (Q4); (iii) the end-to-end model is about
+$\bar{\mathbf{v}}_1$, the computed normalisation of $\mathbf{b}$
+($c\mathbf{v}_1 = \mathbf{b} + \boldsymbol\delta_0$, $\|\boldsymbol\delta_0\| \le u\|\mathbf{b}\|$), not
+$\mathbf{b}/\|\mathbf{b}\|$; (iv) the label of [Kittaneh1985] to cite.
 
 ## 4. Toolkit dependencies
 

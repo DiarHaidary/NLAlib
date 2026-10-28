@@ -33,7 +33,7 @@ finite precision*), `eq:governing`, `lem:gram-commutator`.
 
 ## Main results
 
-* `NLAlib.LanczosData.H_mul_basis`, `NLAlib.LanczosData.H_mul_basis_eq_basisSucc_mul`: the
+* `NLAlib.LanczosData.mul_basis`, `NLAlib.LanczosData.mul_basis_eq_basisSucc_mul`: the
   perturbed recurrence.
 * `NLAlib.LanczosData.gramCommutator_sub_transpose`,
   `NLAlib.LanczosData.specNorm_gramCommutator_le`: the Gram commutator.
@@ -44,38 +44,6 @@ finite precision*), `eq:governing`, `lem:gram-commutator`.
 namespace NLAlib
 
 open scoped Matrix
-
-/-- **The strict upper part of an upper triangular matrix is controlled by its skew part**:
-for $\mathbf{M}$ upper triangular, the Frobenius norm of $\mathbf{M}$ minus its diagonal is at most
-$\|\mathbf{M} - \mathbf{M}^{\mathsf{T}}\|_{\mathsf{F}}$ (its entries above the diagonal are
-those of $\mathbf{M} - \mathbf{M}^{\mathsf{T}}$). -/
-theorem _root_.Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le {ι : Type*} [Fintype ι]
-    [LinearOrder ι] {M : Matrix ι ι ℝ} (hM : M.IsUpperTriangular) :
-    frobNorm (M - Matrix.diagonal fun i => M i i) ≤ frobNorm (M - Mᵀ) := by
-  have hsq : frobNorm (M - Matrix.diagonal fun i => M i i) ^ 2 ≤ frobNorm (M - Mᵀ) ^ 2 := by
-    rw [frobNorm_sq_eq_sum_sq, frobNorm_sq_eq_sum_sq]
-    refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
-    simp only [Matrix.sub_apply, Matrix.diagonal_apply, Matrix.transpose_apply]
-    rcases lt_trichotomy i j with h | rfl | h
-    · rw [if_neg h.ne, hM h]
-    · simp
-    · rw [if_neg h.ne', hM h]
-      nlinarith [sq_nonneg (M j i)]
-  exact (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 hsq
-
-/-- A square matrix with entries bounded by $c$ has Frobenius norm at most $\lvert n\rvert c$. -/
-theorem frobNorm_le_card_mul_of_forall_abs_le {ι : Type*} [Fintype ι] {M : Matrix ι ι ℝ} {c : ℝ}
-    (hc : 0 ≤ c) (h : ∀ i j, |M i j| ≤ c) : frobNorm M ≤ Fintype.card ι * c := by
-  have hsq : frobNorm M ^ 2 ≤ (Fintype.card ι * c) ^ 2 := by
-    rw [frobNorm_sq_eq_sum_sq]
-    calc ∑ i, ∑ j, M i j ^ 2 ≤ ∑ _i : ι, ∑ _j : ι, c ^ 2 :=
-          Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => by
-            rw [← sq_abs]
-            exact pow_le_pow_left₀ (abs_nonneg _) (h i j) 2
-      _ = (Fintype.card ι * c) ^ 2 := by
-          simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-          ring
-  exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
 /-- The data of $k$ steps of a **symmetric three-term recurrence**: a real symmetric matrix,
 vectors $\mathbf{v}_j$ with $\mathbf{v}_0 = \mathbf{0}$ and coefficients $\alpha_j$, $\beta_j$
@@ -195,12 +163,12 @@ theorem basis_mul_tridiagonal_apply (i : Fin n) (j : Fin k) :
   ring
 
 /-- **The perturbed Lanczos recurrence**: the computed basis satisfies
-$$\mathbf{H}\mathbf{V}_k = \mathbf{V}_k\mathbf{T}_k
-+ (\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}} + \mathbf{F}_k$$
+$$\mathbf{H}\mathbf{V}_k = \mathbf{V}_k\mathbf{T}_k +
+(\beta_k\mathbf{v}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}} + \mathbf{F}_k$$
 ($\mathbf{e}_{k-1}$ the last coordinate vector, indexed from $0$), an identity of the
 definitions. No printed source; the maintainer's draft, `eq:governing`, writes it as
 $\mathbf{V}_{k+1}\underline{\mathbf{T}}_k + \mathbf{F}_k$. -/
-theorem H_mul_basis :
+theorem mul_basis :
     D.H * D.basis = D.basis * D.tridiagonal +
       Matrix.vecMulVec (D.β k • D.v (k + 1)) (Pi.single D.lastIndex 1) + D.residual := by
   ext i j
@@ -340,22 +308,22 @@ theorem basisSucc_mul_tridiagonalSucc :
 /-- **The perturbed recurrence with the extended tridiagonal matrix**:
 $\mathbf{H}\mathbf{V}_k = \mathbf{V}_{k+1}\underline{\mathbf{T}}_k + \mathbf{F}_k$.
 No printed source; the maintainer's draft, `eq:governing`. -/
-theorem H_mul_basis_eq_basisSucc_mul :
+theorem mul_basis_eq_basisSucc_mul :
     D.H * D.basis = D.basisSucc * D.tridiagonalSucc + D.residual := by
-  rw [D.basisSucc_mul_tridiagonalSucc, D.H_mul_basis]
+  rw [D.basisSucc_mul_tridiagonalSucc, D.mul_basis]
 
 /-- **The Ritz residual identity**: for an eigenpair $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$
 of the computed tridiagonal matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$
 satisfies
-$$(\mathbf{H} - \theta\mathbf{I})\mathbf{x} = y_{k-1}\,(\beta_k\mathbf{v}_{k+1})
-+ \mathbf{F}_k\mathbf{y}$$
+$$(\mathbf{H} - \theta\mathbf{I})\mathbf{x} = y_{k-1}\,(\beta_k\mathbf{v}_{k+1}) +
+\mathbf{F}_k\mathbf{y}$$
 ($y_{k-1}$ the last entry, indexed from $0$). No printed source; the maintainer's draft,
 `eq:ritz-residual-identity`. -/
-theorem H_mulVec_basis_mulVec_sub_smul {y : Fin k → ℝ} {θ : ℝ}
+theorem mulVec_basis_mulVec_sub_smul {y : Fin k → ℝ} {θ : ℝ}
     (hy : D.tridiagonal *ᵥ y = θ • y) :
     D.H *ᵥ (D.basis *ᵥ y) - θ • (D.basis *ᵥ y) =
       y D.lastIndex • (D.β k • D.v (k + 1)) + D.residual *ᵥ y := by
-  have h := congrArg (fun M => M *ᵥ y) D.H_mul_basis
+  have h := congrArg (fun M => M *ᵥ y) D.mul_basis
   simp only [Matrix.add_mulVec, ← Matrix.mulVec_mulVec, hy, Matrix.mulVec_smul,
     Matrix.vecMulVec_mulVec, single_one_dotProduct, op_smul_eq_smul] at h
   rw [h]
@@ -463,9 +431,9 @@ theorem gramCommutator_apply_self (i : Fin k) :
     ring
 
 /-- **The skew part of the Gram commutator** is given by the residual and the diagonal defects:
-$$\mathbf{M}_k - \mathbf{M}_k^{\mathsf{T}} = \mathbf{V}_k^{\mathsf{T}}\mathbf{F}_k
-- \mathbf{F}_k^{\mathsf{T}}\mathbf{V}_k
-- (\mathbf{T}_k\mathbf{\Gamma} - \mathbf{\Gamma}\mathbf{T}_k),
+$$\mathbf{M}_k - \mathbf{M}_k^{\mathsf{T}} = \mathbf{V}_k^{\mathsf{T}}\mathbf{F}_k -
+\mathbf{F}_k^{\mathsf{T}}\mathbf{V}_k -
+(\mathbf{T}_k\mathbf{\Gamma} - \mathbf{\Gamma}\mathbf{T}_k),
 \qquad \mathbf{\Gamma} = \operatorname{diag}(\|\mathbf{v}_{i+1}\|^2 - 1)_i \,.$$
 No printed source; the maintainer's draft, `eq:generic-commutator`. -/
 theorem gramCommutator_sub_transpose :
@@ -497,7 +465,7 @@ theorem gramCommutator_sub_transpose :
       exact Finset.sum_congr rfl fun x _ => mul_comm _ _
   have hT : Tᵀ = T := D.transpose_tridiagonal
   have hX : Vᵀ * (D.H * V) = (1 + Γ + R + Rᵀ) * T + P + Vᵀ * D.residual := by
-    rw [D.H_mul_basis, Matrix.mul_add, Matrix.mul_add, ← Matrix.mul_assoc, hG, hP]
+    rw [D.mul_basis, Matrix.mul_add, Matrix.mul_add, ← Matrix.mul_assoc, hG, hP]
   have hXt : (Vᵀ * (D.H * V))ᵀ = Vᵀ * (D.H * V) := by
     rw [Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose, D.transpose_H,
       Matrix.mul_assoc]
@@ -571,8 +539,8 @@ theorem frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le {b g :
 /-- **The Gram commutator is small when the recurrence nearly holds**: if
 $\lvert p_j\rvert \le a$, $\lvert\beta_j\rvert \le b$ ($j < k$) and $\lvert\gamma_i\rvert \le g$,
 then
-$$\|\mathbf{M}_k\|_2 \le 2a + 2\|\mathbf{V}_k\|_{\mathsf{F}}\|\mathbf{F}_k\|_{\mathsf{F}}
-+ 2kbg \,.$$
+$$\|\mathbf{M}_k\|_2 \le 2a + 2\|\mathbf{V}_k\|_{\mathsf{F}}\|\mathbf{F}_k\|_{\mathsf{F}} +
+2kbg \,.$$
 No printed source; the maintainer's draft, `lem:gram-commutator`, bounds every entry and passes
 to the Frobenius norm ($2k$ times the maximum); here the strict upper part is bounded at once by
 `NLAlib.LanczosData.gramCommutator_sub_transpose`. -/

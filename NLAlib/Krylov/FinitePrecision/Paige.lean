@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.Recurrence
+public import NLAlib.Krylov.FinitePrecision.Recurrence
 
 /-!
 # Paige's loss-of-orthogonality bound
@@ -30,6 +30,8 @@ finite precision*), `eq:M-def`, `cor:gram-commutator`, `lem:gram-commutator`, `t
 * `NLAlib.LanczosRun.gramStrictUpper`, `NLAlib.LanczosRun.normSqDefect`: the strict upper
   triangle $\mathbf{R}_k$ and the diagonal defects $\mathbf{\Gamma}$ of the Gram matrix.
 * `NLAlib.LanczosRun.gramCommutator`: the Gram commutator $\mathbf{M}_k$.
+* `NLAlib.lanczosGramCommutatorFactor`: the factor <!-- value lanczosGramCommutatorFactor k -->
+  $30k^2$ of its bound and of Paige's bound.
 
 ## Main results
 
@@ -44,6 +46,15 @@ finite precision*), `eq:M-def`, `cor:gram-commutator`, `lem:gram-commutator`, `t
 namespace NLAlib
 
 open scoped Matrix
+
+/-- **The factor of the Gram commutator bound** of a finite-precision Lanczos run of $k$ steps
+(`NLAlib.LanczosRun.specNorm_gramCommutator_le`, and Paige's bound
+`NLAlib.LanczosRun.abs_basis_mulVec_dotProduct_mul_abs_le`):
+the factor <!-- value lanczosGramCommutatorFactor k -->
+$$30k^2 \,.$$
+The maintainer's draft states the bound as $\lesssim_k \varepsilon\|\mathbf{A}\|_2$; its
+formalization has the factor $3000k^3$. -/
+noncomputable irreducible_def lanczosGramCommutatorFactor (k : ℕ) : ℝ := 30 * (k : ℝ) ^ 2
 
 namespace LanczosRun
 
@@ -77,9 +88,9 @@ theorem gramCommutator_apply_self (i : Fin k) :
   L.toLanczosData.gramCommutator_apply_self i
 
 /-- **The skew part of the Gram commutator** is given by the residual and the diagonal defects:
-$$\mathbf{M}_k - \mathbf{M}_k^{\mathsf{T}} = \mathbf{V}_k^{\mathsf{T}}\mathbf{F}_k
-- \mathbf{F}_k^{\mathsf{T}}\mathbf{V}_k
-- (\mathbf{T}_k\mathbf{\Gamma} - \mathbf{\Gamma}\mathbf{T}_k),
+$$\mathbf{M}_k - \mathbf{M}_k^{\mathsf{T}} = \mathbf{V}_k^{\mathsf{T}}\mathbf{F}_k -
+\mathbf{F}_k^{\mathsf{T}}\mathbf{V}_k -
+(\mathbf{T}_k\mathbf{\Gamma} - \mathbf{\Gamma}\mathbf{T}_k),
 \qquad \mathbf{\Gamma} = \operatorname{diag}(\|\mathbf{v}_{i+1}\|^2 - 1)_i \,.$$
 No printed source; the maintainer's draft, `eq:generic-commutator`. -/
 theorem gramCommutator_sub_transpose :
@@ -102,22 +113,24 @@ theorem frobNorm_basis_le : frobNorm L.basis ≤ (1 + L.ε / 2) * Real.sqrt k :=
           rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_comm]
   exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
-/-- **The Gram commutator is small**:
+/-- **The Gram commutator is small**: <!-- value lanczosGramCommutatorFactor k -->
 $\|\mathbf{M}_k\|_2 \le 30k^2\varepsilon\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `cor:gram-commutator`, states
-$\|\mathbf{M}_k\| \lesssim_k \varepsilon\|\mathbf{A}\|$ (its formalization: $3000k^3$); here the
+$\|\mathbf{M}_k\| \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $3000k^3$); here the
 strict upper part is bounded in the Frobenius norm by that of
 `NLAlib.LanczosRun.gramCommutator_sub_transpose`, and the diagonal entry by entry, which saves a
 factor $k$. [Paige1976, (22)]; [Paige1980, (2.17)–(2.18)].
 Result: lanczos-gram-commutator -/
 theorem specNorm_gramCommutator_le :
-    specNorm L.gramCommutator ≤ 30 * k ^ 2 * L.ε * specNorm L.H := by
+    specNorm L.gramCommutator ≤ lanczosGramCommutatorFactor k * L.ε * specNorm L.H := by
+  rw [lanczosGramCommutatorFactor_def]
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
   have ha : ∀ j < k, |L.toLanczosData.adjacentInner j| ≤ 7 * k * L.ε * specNorm L.H :=
     fun j hj => (L.abs_adjacentInner_le hj).trans (by
+      rw [lanczosAdjacentInnerFactor_def]
       have : (j : ℝ) + 1 ≤ k := by exact_mod_cast hj
       gcongr)
   have hb : ∀ j < k, |L.toLanczosData.β j| ≤ 5 / 4 * k * specNorm L.H := fun j hj => by
@@ -131,6 +144,7 @@ theorem specNorm_gramCommutator_le :
   have h := L.toLanczosData.specNorm_gramCommutator_le ha hb hg
   have hV := L.frobNorm_basis_le
   have hF := L.frobNorm_residual_le
+  rw [lanczosResidualFactor_def] at hF
   have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg k)
   have hVF : frobNorm L.basis * frobNorm L.residual ≤
       201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
@@ -152,21 +166,22 @@ theorem specNorm_gramCommutator_le :
 
 /-- **Paige's loss-of-orthogonality bound**: for a unit eigenpair
 $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$, $\|\mathbf{y}\| = 1$, of the computed tridiagonal
-matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$ satisfies
+matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$
+satisfies <!-- value lanczosGramCommutatorFactor k -->
 $$\lvert\mathbf{x}^{\mathsf{T}}(\beta_k\mathbf{v}_{k+1})\rvert\,\lvert y_{k-1}\rvert
 \le 30k^2\varepsilon\|\mathbf{H}\|_2$$
 ($y_{k-1}$ the last entry, indexed from $0$): orthogonality to $\mathbf{v}_{k+1}$ is lost only
 along Ritz vectors whose residual estimate $\beta_k\lvert y_{k-1}\rvert$ is small.
 No printed source; the maintainer's draft, `thm:paige`, states
 $\lvert\mathbf{x}^{\mathsf{T}}\mathbf{v}_{k+1}\rvert\beta_k\lvert\mathbf{e}_k^{\mathsf{T}}
-\mathbf{y}\rvert \lesssim_k \varepsilon\|\mathbf{A}\|$ (its formalization: $3000k^3$);
+\mathbf{y}\rvert \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $3000k^3$);
 [Paige1980, (3.11)–(3.13)].
 Result: paige-loss-of-orthogonality -/
 theorem abs_basis_mulVec_dotProduct_mul_abs_le {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     |(L.basis *ᵥ y) ⬝ᵥ (L.β k • L.v (k + 1))| * |y L.lastIndex| ≤
-      30 * k ^ 2 * L.ε * specNorm L.H := by
-  exact (L.toLanczosData.abs_basis_mulVec_dotProduct_mul_abs_le hy hy1).trans
+      lanczosGramCommutatorFactor k * L.ε * specNorm L.H :=
+  (L.toLanczosData.abs_basis_mulVec_dotProduct_mul_abs_le hy hy1).trans
     L.specNorm_gramCommutator_le
 
 end LanczosRun

@@ -7,7 +7,7 @@ module
 
 public import NLAlib.Computation.BLAS.RoundingErrors
 public import NLAlib.Matrix.Norms.Compare
-public import NLAlibScaffold.Krylov.FinitePrecision.LanczosRun
+public import NLAlib.Krylov.FinitePrecision.BackwardSpectral
 public import NLAlibScaffold.Krylov.Processes.LanczosProgramRun
 
 /-!
@@ -40,6 +40,7 @@ Design: `docs/design/Krylov-LanczosRounding.md` (§2).
 * `NLAlib.lanczosRoundingEps`: the accuracy parameter.
 * `NLAlib.LanczosOutputs`: the output buffers decode to $\alpha$, $\beta$, $\mathbf{V}$.
 * `NLAlib.HasLanczosRunOutputs`: the outputs of a final state form a `NLAlib.LanczosRun`.
+* `NLAlib.HasLanczosBackwardModel`: the outputs of a final state have a backward model.
 
 ## Main results
 
@@ -48,6 +49,9 @@ Design: `docs/design/Krylov-LanczosRounding.md` (§2).
 * `NLAlib.Computation.IsRelErrSem.exists_lanczosRun_of_lanczosBasisProg`: the matrix-free bridge.
 * `NLAlib.lanczosBasisProg_matrixFreeRounded`: the same as an instance of the access model.
 * `NLAlib.Computation.IsRelErrSem.exists_lanczosRun_of_lanczosBasisDenseProg`: the dense bridge.
+* `NLAlib.Computation.IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisDenseProg`,
+  `NLAlib.Computation.IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisProg`: the
+  programs, end to end: exact Lanczos on a nearby problem computes the computed coefficients.
 -/
 
 @[expose] public section
@@ -469,5 +473,130 @@ theorem _root_.NLAlib.Computation.IsRelErrSem.exists_lanczosRun_of_lanczosBasisD
   exact ⟨st', he, hasLanczosRunOutputs_of_lanczosRunFacts hq hH hu0 hu
     (mul_le_mul_of_nonneg_right (le_max_left _ _) (specNorm_nonneg _)) (le_max_right _ _) hsmall
     hF⟩
+
+/-! ### The backward model of a run of the program -/
+
+/-- **The outputs of a Lanczos run have a backward model**: the output buffers of `st` decode to
+$\alpha$, $\beta$, $\mathbf{V}$ (`NLAlib.LanczosOutputs`); $\mathbf{v}_1 = \mathbf{V}_0$ is a
+computed normalisation of $\mathbf{b}$ ($c\mathbf{v}_1 = \mathbf{b} + \boldsymbol{\delta}_0$,
+$c > 0$, $\lVert\boldsymbol{\delta}_0\rVert \le u\lVert\mathbf{b}\rVert$); and with
+$k$ = `NLAlib.lanczosSteps β q` there are a symmetric $\tilde{\mathbf{H}}$ of dimension
+$N(k+1)$ and the start $\tilde{\mathbf{v}} = (\bar{\mathbf{v}}_1, \mathbf{0}, \dots,
+\mathbf{0})$, $\bar{\mathbf{v}}_1 = \mathbf{v}_1/\lVert\mathbf{v}_1\rVert$,
+with <!-- value lanczosBackwardFactor k -->
+$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}
+\le 2000k^4\varepsilon\|\mathbf{H}\|_2 \,,$$
+such that $k$ steps of exact Lanczos (`NLAlib.lanczosState`) on $(\tilde{\mathbf{H}},
+\tilde{\mathbf{v}})$ compute the outputs $\alpha_j$, $\beta_j$ ($j < k$), and for every
+$1$-Lipschitz $f$, <!-- value lanczosBackwardFactor k -->
+$$\lvert\bar{\mathbf{v}}_1^{\mathsf{T}}f(\mathbf{H})\bar{\mathbf{v}}_1 -
+\tilde{\mathbf{v}}^{\mathsf{T}}f(\tilde{\mathbf{H}})\tilde{\mathbf{v}}\rvert \le
+2000k^4\varepsilon\|\mathbf{H}\|_2 \,.$$ -/
+def HasLanczosBackwardModel (st : St P K C) (p : P) (dec : P → K → ℝ) (u ε : ℝ)
+    (alpha beta Q : ℕ) {N : ℕ} (q : ℕ) (H : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) : Prop :=
+  ∃ (α β : ℕ → ℝ) (V : ℕ → Fin N → ℝ), LanczosOutputs st p dec alpha beta Q q α β V ∧
+    (∃ (c : ℝ) (δ₀ : Fin N → ℝ), 0 < c ∧ c • V 0 = b + δ₀ ∧
+      ‖WithLp.toLp 2 δ₀‖ ≤ u * ‖WithLp.toLp 2 b‖) ∧
+    ∃ (Ht : Matrix (Fin N × Fin (lanczosSteps β q + 1)) (Fin N × Fin (lanczosSteps β q + 1)) ℝ)
+      (vt : Fin N × Fin (lanczosSteps β q + 1) → ℝ),
+      vt = (fun x => if (x.2 : ℕ) = 0 then (‖WithLp.toLp 2 (V 0)‖⁻¹ • V 0) x.1 else 0) ∧
+      Htᵀ = Ht ∧
+      frobNorm (Ht - Matrix.blockDiagonal fun _ => H) ≤
+        lanczosBackwardFactor (lanczosSteps β q) * ε * specNorm H ∧
+      (∀ j < lanczosSteps β q, lanczosAlpha Ht (lanczosState Ht vt j) = α j ∧
+        (lanczosState Ht vt (j + 1)).beta = β j) ∧
+      ∀ f : ℝ → ℝ, LipschitzWith 1 f →
+        |(‖WithLp.toLp 2 (V 0)‖⁻¹ • V 0) ⬝ᵥ (cfc f H *ᵥ (‖WithLp.toLp 2 (V 0)‖⁻¹ • V 0)) -
+          vt ⬝ᵥ (cfc f Ht *ᵥ vt)| ≤ lanczosBackwardFactor (lanczosSteps β q) * ε * specNorm H
+
+omit [AddMonoid C] in
+/-- **The outputs of a Lanczos run that form a `NLAlib.LanczosRun` have a backward model**
+(`NLAlib.HasLanczosBackwardModel`): the Greenbaum-type model
+`NLAlib.LanczosRun.backwardH` of the run, read on the outputs. -/
+theorem HasLanczosRunOutputs.hasLanczosBackwardModel {st : St P K C} {p : P} {dec : P → K → ℝ}
+    {u ε : ℝ} {alpha beta Q N q : ℕ} {H : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
+    (h : HasLanczosRunOutputs st p dec u ε alpha beta Q q H b) :
+    HasLanczosBackwardModel st p dec u ε alpha beta Q q H b := by
+  obtain ⟨α, β, V, hout, hstart, -, -, L, rfl, rfl, hcoef, hvec⟩ := h
+  have hv1 : L.normalizedV 1 = ‖WithLp.toLp 2 (V 0)‖⁻¹ • V 0 := by
+    rw [L.normalizedV_of_le L.k_pos, hvec 0 (Nat.zero_le _)]
+  refine ⟨α, β, V, hout, hstart, L.backwardH, L.dilatedStart, ?_, L.transpose_backwardH,
+    L.frobNorm_backwardH_sub_dilatedH_le, fun j hj => ?_, fun f hf => ?_⟩
+  · funext x
+    simp only [LanczosRun.dilatedStart, hv1]
+  · rw [L.lanczosAlpha_backwardH_dilatedStart hj,
+      L.lanczosState_backwardH_dilatedStart_succ_beta hj]
+    exact hcoef j hj
+  · rw [← hv1]
+    exact L.abs_dotProduct_cfc_mulVec_sub_le hf
+
+/-- **The matrix-free Lanczos program has a backward model** (end to end): under the hypotheses
+of `NLAlib.Computation.IsRelErrSem.exists_lanczosRun_of_lanczosBasisProg` (the standard model,
+an oracle accurate to $\varepsilon_{\mathrm{mv}}\lVert\mathbf{H}\rVert_2$, $\mathbf{H}$ symmetric,
+$\mathbf{b} \ne \mathbf{0}$, $q \ge 1$, $(N + 4)u_p < 1$, $q\varepsilon \le 1/100$) the run of
+$q$ steps succeeds, and its computed coefficients are exactly those of $k$ steps of exact Lanczos
+on a symmetric $\tilde{\mathbf{H}}$ with <!-- value lanczosBackwardFactor k -->
+$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}
+\le 2000k^4\varepsilon\|\mathbf{H}\|_2 \,,
+\qquad \varepsilon = \max(\varepsilon_{\mathrm{mv}}, \gamma_{N+4}) \,,$$
+from a start with the spectral weights of the computed $\bar{\mathbf{v}}_1$
+(`NLAlib.HasLanczosBackwardModel`); $k$ is the number of steps before breakdown.
+[Chen, `sec:model`, `thm:greenbaum`], [Higham2002, §§2.2, 3.1, Lemma 3.3]. -/
+theorem _root_.NLAlib.Computation.IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisProg
+    {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C) (p : P) (o : ι)
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
+    {N : ℕ} (q : ℕ) (H : Matrix (Fin N) (Fin N) ℝ) (hH : Hᵀ = H) {εmv : ℝ}
+    (hmv : IsMatvecErr I o dec p H (εmv * specNorm H)) (b : Fin N → K)
+    (hb : (fun i => dec p (b i)) ≠ 0) (hq : 0 < q) (hu : ((N + 4 : ℕ) : ℝ) * u p < 1)
+    (hsmall : (q : ℝ) * lanczosRoundingEps N (u p) εmv ≤ 1 / 100) :
+    ∃ st', exec I (lanczosBasisProg p o (.const N) (.const q) 0 1 2 3).run
+        (inputState p [(List.ofFn fun i => some (b i)).toArray, Array.replicate q none,
+          Array.replicate q none, Array.replicate (N * (q + 1)) none]) = some st' ∧
+      HasLanczosBackwardModel st' p dec (u p) (lanczosRoundingEps N (u p) εmv) 1 2 3 q H
+        fun i => dec p (b i) := by
+  obtain ⟨st', he, hL⟩ :=
+    IsRelErrSem.exists_lanczosRun_of_lanczosBasisProg I p o h hz q H hH hmv b hb hq hu hsmall
+  exact ⟨st', he, hL.hasLanczosBackwardModel⟩
+
+/-- **The dense Lanczos program has a backward model** (end to end): in the standard model
+(`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly), with the
+product computed by `gemv` from the $N \times N$ words `Hw` decoding to a symmetric
+$\mathbf{H}$, a start vector $\mathbf{b}$ decoding to a nonzero vector, $q \ge 1$,
+$(N + 4)u_p < 1$ and $q\varepsilon \le 1/100$ for
+$\varepsilon = \max(\sqrt{N}\gamma_N, \gamma_{N+4})$ (about $N^{3/2}u_p$), the run of the
+program for $q$ steps succeeds; with $k \le q$ the number of steps before breakdown (read off
+the computed $\beta_j$), the computed $\alpha_j$, $\beta_j$ ($j < k$) are exactly the
+coefficients of $k$ steps of exact Lanczos on a symmetric $\tilde{\mathbf{H}}$ of dimension
+$N(k+1)$ with <!-- value lanczosBackwardFactor k -->
+$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}
+\le 2000k^4\varepsilon\|\mathbf{H}\|_2 \,,$$
+from $\tilde{\mathbf{v}} = (\bar{\mathbf{v}}_1, \mathbf{0}, \dots, \mathbf{0})$, the computed
+first Lanczos vector normalised, whose spectral measure under $\tilde{\mathbf{H}}$ is within
+that distance of the one of $(\mathbf{H}, \bar{\mathbf{v}}_1)$ in $W_1$
+(`NLAlib.HasLanczosBackwardModel`). Every hypothesis is on the data, the sizes and $u_p$.
+[Chen, `sec:model`, `thm:greenbaum`, `rem:wasserstein`]; [Higham2002, §§2.2, 3.1, 3.5,
+Lemma 3.3]; [Greenbaum1989] for the original model, of order $\varepsilon^{1/4}$.
+Result: lanczos-program-backward-model -/
+theorem _root_.NLAlib.Computation.IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisDenseProg
+    {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C) (p : P)
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
+    {N : ℕ} (q : ℕ) (Hw : Fin N → Fin N → K)
+    (hH : (Matrix.of fun i j => dec p (Hw i j))ᵀ = Matrix.of fun i j => dec p (Hw i j))
+    (b : Fin N → K) (hb : (fun i => dec p (b i)) ≠ 0)
+    (hq : 0 < q) (hu : ((N + 4 : ℕ) : ℝ) * u p < 1)
+    (hsmall : (q : ℝ) * lanczosRoundingEps N (u p) (√(N : ℝ) * roundingFactor N (u p)) ≤
+      1 / 100) :
+    ∃ st', exec I (lanczosBasisDenseProg p (.const N) (.const q) 0 1 2 3 4).run
+        (inputState p [(List.ofFn fun t : Fin (N * N) =>
+            some (Hw ⟨t % N, Nat.mod_lt _ (Nat.pos_of_mul_pos_right
+              (Nat.zero_lt_of_lt t.2))⟩ ⟨t / N, Nat.div_lt_of_lt_mul t.2⟩)).toArray,
+          (List.ofFn fun i => some (b i)).toArray, Array.replicate q none,
+          Array.replicate q none, Array.replicate (N * (q + 1)) none]) = some st' ∧
+      HasLanczosBackwardModel st' p dec (u p)
+        (lanczosRoundingEps N (u p) (√(N : ℝ) * roundingFactor N (u p))) 2 3 4 q
+        (Matrix.of fun i j => dec p (Hw i j)) fun i => dec p (b i) := by
+  obtain ⟨st', he, hL⟩ :=
+    IsRelErrSem.exists_lanczosRun_of_lanczosBasisDenseProg I p h hz q Hw hH b hb hq hu hsmall
+  exact ⟨st', he, hL.hasLanczosBackwardModel⟩
 
 end NLAlib

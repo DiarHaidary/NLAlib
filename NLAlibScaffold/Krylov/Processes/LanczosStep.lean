@@ -142,80 +142,6 @@ theorem exists_write_of_shape {S : Array (P × ℕ)} (hs : s.shape = S) {b i n :
 
 end Store
 
-/-! ### Builders that run one statement, then the rest -/
-
-section Seq
-
-variable {P ι K C : Type}
-
-/-- A builder that emits one statement before its continuation. -/
-def SeqShape (b : Builder P ι ℕ ℕ Unit) : Prop := ∃ X, ∀ k, ContT.run b k = .seq X (k ())
-
-theorem seqShape_stmt (s : Stmt P ι ℕ ℕ) : SeqShape (stmt s) := ⟨s, fun _ => rfl⟩
-
-theorem seqShape_ins (i : Instr P ℕ ℕ) : SeqShape (ι := ι) (ins i) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_named (name : String) (args : List (Arg ℕ ℕ)) (b : Builder P ι ℕ ℕ Unit) :
-    SeqShape (named name args b) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_forRange (n : IExp ℕ) (body : ℕ → Builder P ι ℕ ℕ Unit) :
-    SeqShape (forRange n body) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_ifThenElse (p : P) (c : CmpOp) (x y : Cell ℕ ℕ)
-    (t e : Builder P ι ℕ ℕ Unit) : SeqShape (ifThenElse p c x y t e) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_axpy (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
-    SeqShape (ι := ι) (axpy p a x xo y yo n) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_dot (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
-    SeqShape (ι := ι) (dot p dst x xo y yo n) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_copyv (p : P) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
-    SeqShape (ι := ι) (copyv p x xo y yo n) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_rscl (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) :
-    SeqShape (ι := ι) (rscl p a x xo n) := ⟨_, fun _ => rfl⟩
-
-theorem seqShape_gemv (p : P) (m n : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
-    (y : ℕ) (yo : IExp ℕ) : SeqShape (ι := ι) (gemv p m n A ao x xo y yo) := ⟨_, fun _ => rfl⟩
-
-variable [DecidableEq P] [AddMonoid C] (I : Interp P ι K C)
-
-/-- The run of a builder of one statement, then `f`. -/
-theorem exec_bind_of_seqShape {b : Builder P ι ℕ ℕ Unit} (hb : SeqShape b)
-    (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
-    exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) := by
-  obtain ⟨X, hX⟩ := hb; exact exec_run_bind I hX f st
-
-/-- A successful first statement: the run of the rest from its final state. -/
-theorem exec_bind_of_exec_eq_some {b : Builder P ι ℕ ℕ Unit} (hb : SeqShape b)
-    {st st' : St P K C} (h : exec I b.run st = some st') (f : Unit → Builder P ι ℕ ℕ Unit) :
-    exec I (b >>= f).run st = exec I (f ()).run st' := by
-  rw [exec_bind_of_seqShape I hb, h, Option.bind_some]
-
-variable {p : P} {st : St P K C}
-
-/-- The run of a unary instruction. -/
-theorem exec_ins_un {o : UnOp} {dst x : Cell ℕ ℕ} {a v : K} {s : Store P K}
-    (hx : st.store.read p x.buf x.idx.eval = some a) (hv : I.sem.un p o a = some v)
-    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
-    ∃ st', exec I (ins (ι := ι) (.un p o dst x)).run st = some st' ∧ st'.store = s :=
-  ⟨_, (exec_seq_instr_un I hx hv hw).trans (exec_skip I _), rfl⟩
-
-/-- The run of a copy. -/
-theorem exec_ins_copy {dst src : Cell ℕ ℕ} {v : K} {s : Store P K}
-    (hx : st.store.read p src.buf src.idx.eval = some v)
-    (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
-    ∃ st', exec I (ins (ι := ι) (.copy p dst src)).run st = some st' ∧ st'.store = s :=
-  ⟨_, (exec_seq_instr_copy I hx hw).trans (exec_skip I _), rfl⟩
-
-/-- The run of a literal. -/
-theorem exec_ins_lit {dst : Cell ℕ ℕ} {q : ℚ} {v : K} {s : Store P K}
-    (hv : I.sem.lit p q = some v) (hw : st.store.write p dst.buf dst.idx.eval v = some s) :
-    ∃ st', exec I (ins (ι := ι) (.lit p dst q)).run st = some st' ∧ st'.store = s :=
-  ⟨_, (exec_seq_instr_lit I hv hw).trans (exec_skip I _), rfl⟩
-
-end Seq
 
 /-! ### Normalisation -/
 
@@ -350,16 +276,10 @@ section Pieces
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] (I : Interp P ι K C) {p : P}
   {u : P → ℝ} {dec : P → K → ℝ}
 
-/-- A vector on `Fin N`, extended by zero to `ℕ`. -/
-noncomputable def finExt {N : ℕ} (x : Fin N → ℝ) (i : ℕ) : ℝ := if h : i < N then x ⟨i, h⟩ else 0
-
-theorem finExt_fin {N : ℕ} (x : Fin N → ℝ) (i : Fin N) : finExt x i = x i := by
-  simp [finExt, i.2]
-
 theorem DecVec.nat {s : Store P K} {b off N : ℕ} {x : Fin N → ℝ} (h : DecVec s p dec b off x) :
-    ∀ i < N, ∃ w, s.read p b (off + i) = some w ∧ dec p w = finExt x i := fun i hi => by
+    ∀ i < N, ∃ w, s.read p b (off + i) = some w ∧ dec p w = vecSeq x i := fun i hi => by
   obtain ⟨w, hw, hd⟩ := h ⟨i, hi⟩
-  exact ⟨w, hw, by rw [hd, finExt, dif_pos hi]⟩
+  exact ⟨w, hw, by rw [hd, vecSeq, dif_pos hi]⟩
 
 /-- **Negate a coefficient, then `axpy`**: `s[0] ← -s[src]`, then
 $\mathbf{y} \leftarrow s_0\mathbf{x} + \mathbf{y}$ on two disjoint slots of `W`. The new
@@ -385,22 +305,22 @@ theorem exec_neg_axpy (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hu : 2 * 
   rw [← hst₁] at hf₁
   have hn : ∀ i, ¬ StoreBlock sb 0 1 W i := fun _ hb => hWs hb.1
   obtain ⟨st₂, Wv, h₂, hb₂, hW⟩ := IsRelErrSem.exec_axpy I p st₁ h ⟨sb, 0⟩ W X W Y (.const N)
-    (-a) (finExt x) (finExt y) hu ⟨z, by rw [hst₁]; exact Store.read_of_write_eq_some hs₁,
+    (-a) (vecSeq x) (vecSeq y) hu ⟨z, by rw [hst₁]; exact Store.read_of_write_eq_some hs₁,
       by rw [hdz, hda]⟩ ((hx.frame hf₁ fun _ _ => hn _).nat) ((hy.frame hf₁ fun _ _ => hn _).nat)
     (fun h' => absurd h'.symm hWs) (fun _ i hi j hj he => by
       simp only [IExp.eval_const] at hi hj; omega)
   have hf₂ := storeFrame_of_writeBlock hb₂
   simp only [Array.size_map, List.size_toArray, List.length_range, IExp.eval_const] at hf₂
   refine ⟨st₂, fun i => dec p (Wv i), fun f => ?_, (hf₁.trans hf₂), DecVec.of_writeBlock hb₂, ?_⟩
-  · rw [exec_bind_of_exec_eq_some I (seqShape_ins _) h₁,
-      exec_bind_of_exec_eq_some I (seqShape_axpy _ _ _ _ _ _ _) h₂]
+  · rw [exec_bind_of_exec_eq_some I h₁ (seqShape_ins _),
+      exec_bind_of_exec_eq_some I h₂ (seqShape_axpy _ _ _ _ _ _ _)]
   · have hu0 : 0 ≤ u p := h.nonneg trivial
     have hγ0 : 0 ≤ roundingFactor 2 (u p) := roundingFactor_nonneg hu0 (by exact_mod_cast hu)
     have huγ : u p ≤ roundingFactor 2 (u p) := (le_roundingFactor_one hu0 (by linarith)).trans
       (roundingFactor_le_roundingFactor hu0 (by norm_num) (by exact_mod_cast hu))
     have hW' : ∀ i : Fin N, ∃ θ δ : ℝ, |θ| ≤ roundingFactor 2 (u p) ∧ |δ| ≤ u p ∧
         dec p (Wv i) = -a * x i * (1 + θ) + y i * (1 + δ) := fun i => by
-      simpa [finExt_fin] using hW i (by simp)
+      simpa [vecSeq_fin] using hW i (by simp)
     choose θ δ hθ hδ hWe using hW'
     have heq : (fun i : Fin N => dec p (Wv i)) - (y - a • x) =
         (fun i : Fin N => (-a * x i) * θ i) + fun i => y i * δ i := by
@@ -415,10 +335,10 @@ theorem exec_neg_axpy (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hu : 2 * 
     rw [h3] at h1
     nlinarith [norm_nonneg (WithLp.toLp 2 y), abs_nonneg a, norm_nonneg (WithLp.toLp 2 x)]
 
-theorem sum_range_finExt {N : ℕ} (f : ℝ → ℝ → ℝ) (x y : Fin N → ℝ) :
-    ∑ i ∈ range N, f (finExt x i) (finExt y i) = ∑ i : Fin N, f (x i) (y i) := by
-  rw [← Fin.sum_univ_eq_sum_range (fun i => f (finExt x i) (finExt y i))]
-  simp [finExt_fin]
+theorem sum_range_extendZero {N : ℕ} (f : ℝ → ℝ → ℝ) (x y : Fin N → ℝ) :
+    ∑ i ∈ range N, f (vecSeq x i) (vecSeq y i) = ∑ i : Fin N, f (x i) (y i) := by
+  rw [← Fin.sum_univ_eq_sum_range (fun i => f (vecSeq x i) (vecSeq y i))]
+  simp [vecSeq_fin]
 
 /-- Cauchy–Schwarz on absolute values: $\sum_i \lvert x_i\rvert\lvert y_i\rvert \le
 \|\mathbf{x}\|\|\mathbf{y}\|$. -/
@@ -448,7 +368,7 @@ theorem exec_dot_re_copy (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
       |a - x ⬝ᵥ y| ≤ roundingFactor N (u p) * ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
   obtain ⟨z0, -⟩ := h.lit_ok p 0 trivial
   obtain ⟨st₁, w₁, h₁, hw₁, hb₁⟩ := IsRelErrSem.exec_dot_abs_sum_mul_sub_le I p st h hz ⟨sb, 0⟩
-    W X W Y (.const N) (finExt x) (finExt y) hN hx.nat hy.nat (fun h' => absurd h'.symm hWs)
+    W X W Y (.const N) (vecSeq x) (vecSeq y) hN hx.nat hy.nat (fun h' => absurd h'.symm hWs)
     (fun h' => absurd h'.symm hWs) ⟨z0, exists_write_of_shape hsh hS (by norm_num) z0⟩
   have hf₁ := storeFrame_of_write hw₁
   obtain ⟨w₂, hw₂, hd₂⟩ := h.re p w₁
@@ -466,15 +386,15 @@ theorem exec_dot_re_copy (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     ⟨w₂, by rw [hst₃]; exact Store.read_of_write_eq_some hs₃, hd₂⟩,
     ⟨w₂, by rw [hst₃, Store.read_of_write_eq_some_of_ne hs₃ (Or.inl haCs.symm), hst₂]
             exact Store.read_of_write_eq_some hs₂, hd₂⟩, ?_⟩
-  · rw [exec_bind_of_exec_eq_some I (seqShape_dot _ _ _ _ _ _ _) h₁,
-      exec_bind_of_exec_eq_some I (seqShape_ins _) h₂,
-      exec_bind_of_exec_eq_some I (seqShape_ins _) h₃]
+  · rw [exec_bind_of_exec_eq_some I h₁ (seqShape_dot _ _ _ _ _ _ _),
+      exec_bind_of_exec_eq_some I h₂ (seqShape_ins _),
+      exec_bind_of_exec_eq_some I h₃ (seqShape_ins _)]
   · rcases hb with (hb | hb) | hb
     · exact Or.inl hb
     · exact Or.inl hb
     · exact Or.inr hb
-  · simp only [IExp.eval_const, sum_range_finExt (fun a b => a * b),
-      sum_range_finExt (fun a b => |a| * |b|)] at hb₁
+  · simp only [IExp.eval_const, sum_range_extendZero (fun a b => a * b),
+      sum_range_extendZero (fun a b => |a| * |b|)] at hb₁
     rw [abs_sub_comm]
     calc _ ≤ _ := hb₁
       _ ≤ _ := by
@@ -512,12 +432,12 @@ theorem exec_ifThenElse_rscl (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (st
   rw [show decide (β = 0) = false from decide_eq_false hβ, if_neg Bool.false_ne_true]
   obtain ⟨st', Wv, h', hb', hW⟩ := IsRelErrSem.exec_rscl I p
     { st with cnt := st.cnt + I.charge (.cmp p) } h ⟨sb, c⟩ W off (.const N) β
-    (finExt z) hβ ⟨wc, hwc, hdc⟩ hzv.nat (fun h'' => absurd h''.symm hWs)
+    (vecSeq z) hβ ⟨wc, hwc, hdc⟩ hzv.nat (fun h'' => absurd h''.symm hWs)
   have hf := storeFrame_of_writeBlock hb'
   simp only [Array.size_map, List.size_toArray, List.length_range, IExp.eval_const] at hf
   refine ⟨st', fun i => dec p (Wv i), h', hf, DecVec.of_writeBlock hb', fun h'' => absurd h'' hβ,
     fun _ i => ?_⟩
-  simpa [finExt_fin] using hW i (by simp)
+  simpa [vecSeq_fin] using hW i (by simp)
 
 /-- **The computed norm of a vector**: `s[2] ← xᴴx` by `dot`, then `s[d] ← √s[2]`
 ($d \in \{1, 2\}$); the result is $\sqrt{\sum_i x_i^2(1 + \eta_i)}\,(1 + \sigma)$, each
@@ -536,13 +456,13 @@ theorem exec_dot_sqrt (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
   obtain ⟨z0, -⟩ := h.lit_ok p 0 trivial
   obtain ⟨st₁, w₁, h₁, hw₁, η, hη, hd₁⟩ :=
     IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct I p st h hz ⟨sb, 2⟩ X xo X xo
-      (.const N) (finExt x) (finExt x) hx.nat hx.nat (fun h' => absurd h'.symm hXs)
+      (.const N) (vecSeq x) (vecSeq x) hx.nat hx.nat (fun h' => absurd h'.symm hXs)
       (fun h' => absurd h'.symm hXs) ⟨z0, exists_write_of_shape hsh hS (by norm_num) z0⟩
   have hf₁ := storeFrame_of_write hw₁
   have hsum : dec p w₁ = ∑ i : Fin N, x i * x i * (1 + η i) := by
-    rw [hd₁, IExp.eval_const, ← Fin.sum_univ_eq_sum_range (fun i => finExt x i * finExt x i *
+    rw [hd₁, IExp.eval_const, ← Fin.sum_univ_eq_sum_range (fun i => vecSeq x i * vecSeq x i *
       (1 + η i))]
-    simp [finExt_fin]
+    simp [vecSeq_fin]
   have hu0 : 0 ≤ u p := h.nonneg trivial
   have hnn : 0 ≤ dec p w₁ := by
     rw [hsum]
@@ -559,8 +479,8 @@ theorem exec_dot_sqrt (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
   refine ⟨st₂, fun i => η i, σ, dec p w₂, fun f => ?_, (hf₁.trans hf₂).mono fun b i hb => ?_,
     ⟨w₂, by rw [hst₂]; exact Store.read_of_write_eq_some hs₂, rfl⟩, fun i => hη i (by simp), hσ,
     by rw [hd₂, hsum]⟩
-  · rw [exec_bind_of_exec_eq_some I (seqShape_dot _ _ _ _ _ _ _) h₁,
-      exec_bind_of_exec_eq_some I (seqShape_ins _) h₂]
+  · rw [exec_bind_of_exec_eq_some I h₁ (seqShape_dot _ _ _ _ _ _ _),
+      exec_bind_of_exec_eq_some I h₂ (seqShape_ins _)]
   · rcases hb with ⟨rfl, h1, h2⟩ | ⟨rfl, h1, h2⟩
     · have h1' : 2 ≤ i := h1
       have h2' : i < 2 + 1 := h2
@@ -610,7 +530,7 @@ theorem exec_normalize_step (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     DecCell.frame ⟨wβ, by rw [hst₂]; exact Store.read_of_write_eq_some hs₂, hdβ⟩ hf₃
       fun hb => hbW hb.1,
     hβ₂.frame hf₃ fun hb => hWs hb.1.symm, hβ0, hzβ, hβv, hunit, hδ⟩
-  · rw [(h₁ _), exec_bind_of_exec_eq_some I (seqShape_ins _) h₂, h₃]
+  · rw [(h₁ _), exec_bind_of_exec_eq_some I h₂ (seqShape_ins _), h₃]
   · rcases hb with (hb | hb) | hb
     · exact Or.inr (Or.inl hb)
     · exact Or.inr (Or.inr hb)
@@ -706,7 +626,7 @@ theorem exec_lanczos_update (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
       rcases hb with hb | hb
       · exact haCs hb.1
       · exact haW hb.1, hb₁, hb₂, hb₃, hb₄⟩
-  · rw [exec_bind_of_exec_eq_some I (hmv.1 _ _ _) h₁, h₂, h₃, h₄]
+  · rw [exec_bind_of_exec_eq_some I h₁ (hmv.1 _ _ _), h₂, h₃, h₄]
   · rcases hb with (((hb | hb | hb) | hb | hb) | hb | hb)
     · exact Or.inl hb
     · exact Or.inr (Or.inl hb)
