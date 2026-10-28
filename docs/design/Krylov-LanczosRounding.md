@@ -377,6 +377,33 @@ term appears in a statement (T9). Norms: `‖WithLp.toLp 2 ·‖`, `specNorm`, `
 | `specNorm_gramCommutator_le` | `cor:gram-commutator` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | the paper bounds every entry and then passes to the Frobenius norm ($2k \cdot \max$); here the strict upper part is bounded by $\|\mathbf{M}-\mathbf{M}^{\mathsf{T}}\|_{\mathsf F}$ as a whole, and $\|\mathbf{V}_k^{\mathsf T}\mathbf{F}_k\|_{\mathsf F} \le \|\mathbf{V}_k\|_{\mathsf F}\|\mathbf{F}_k\|_{\mathsf F}$, saving a factor $k$ |
 | `abs_basis_mulVec_dotProduct_mul_abs_le` | `thm:paige` | $\lesssim_k$; ext. $3000k^3$ | $30k^2\varepsilon\|\mathbf{H}\|_2$ | from the commutator bound |
 
+**Status (2026-10-28): all headlines proved**, no `sorry`, axioms `propext`,
+`Classical.choice`, `Quot.sound` only; 1.2k lines (`LocalErrors` 526, `Recurrence` 248, `Paige`
+434) against the external 2.6k of the corresponding files plus their `Core/` support. Supporting
+public API: `LanczosRun.ε_le`, `mul_ε_le`, `norm_v_le` ($\|\mathbf{v}_j\| \le 1 + \varepsilon/2$),
+`basis_mul_tridiagonal_apply`, `norm_β_smul_v_le`, `normSqDefect`, `gramCommutator_apply_self`,
+`abs_gramCommutator_apply_self_le`, `frobNorm_basis_le`,
+`frobNorm_transpose_basis_mul_residual_le`,
+`frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le`,
+`frobNorm_gramCommutator_sub_transpose_le`. One general fact,
+`Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le` (for upper triangular $\mathbf{M}$,
+$\|\mathbf{M} - \operatorname{diag}\mathbf{M}\|_{\mathsf F} \le \|\mathbf{M} - \mathbf{M}^{\mathsf T}\|_{\mathsf F}$),
+sits in `Paige.lean` and belongs in `NLAlib/Matrix/Norms/Frobenius.lean` when the files move
+(not moved now, to avoid rebuilding the library). The duplicate report finds no class involving
+the new declarations.
+
+Simplifications against the paper's argument: the Gram-commutator bound does not need
+`lem:gram-commutator`'s entrywise bound on the strict upper part (that is where the paper's
+$2k\max$ and the external $k^3$ come from): the strict upper part of an upper triangular
+matrix is dominated in the Frobenius norm by its skew part, which is
+`gramCommutator_sub_transpose` and is bounded by Frobenius norms of products. The paper's
+coefficient constants are loose because Step 2 rounds $(1+\varepsilon)^{5/2}\|\mathbf{A}\|$ to
+$2\|\mathbf{A}\|$ and then the $\beta$ induction absorbs a $2\|\mathbf{A}\|$ per step; keeping
+the factor near $1$ gives $\beta_j \le \tfrac54 j\|\mathbf{H}\|$. Nothing in the paper's
+argument was found wrong; one point is implicit there: Step 1b needs
+$\|\mathbf{v}_{k+1}\|^2 \ge 1 - \varepsilon$ at the last step, which holds only for $\beta_k \ne 0$
+(the field `abs_norm_v_succ_sq_sub_one_le`), the case $\beta_k = 0$ being trivial.
+
 Dropped from the external files as not results: `ritz_residual_bound_div` (the bound divided by
 $\|\mathbf{x}\|$), the `CoefficientEnvelope` (every coefficient $\le 100j\|\mathbf{H}\|$), the
 `Fmat_bound` corollary ($k^2$ for $k^{3/2}$), `ambient_pos`. The constants are literals in the

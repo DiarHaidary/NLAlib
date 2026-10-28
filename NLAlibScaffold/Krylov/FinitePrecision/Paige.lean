@@ -235,6 +235,135 @@ theorem gramCommutator_sub_transpose :
     _ = Vᵀ * L.residual - L.residualᵀ * V - (T * Γ - Γ * T) := by
         rw [hXt, sub_self, add_zero]
 
+/-- The diagonal entries of the Gram commutator are small:
+$\lvert(\mathbf{M}_k)_{i,i}\rvert \le 14k\varepsilon\|\mathbf{H}\|_2$. -/
+theorem abs_gramCommutator_apply_self_le (i : Fin k) :
+    |L.gramCommutator i i| ≤ 14 * k * L.ε * specNorm L.H := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hH := specNorm_nonneg L.H
+  rw [L.gramCommutator_apply_self]
+  have h2 := L.abs_adjacentInner_le i.2
+  have hi : ((i : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast i.2
+  have h1 : |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1))| ≤ 7 * k * L.ε * specNorm L.H := by
+    rcases Nat.eq_zero_or_pos (i : ℕ) with h0 | h0
+    · rw [h0, L.β_zero, zero_mul, abs_zero]
+      positivity
+    · have h := L.abs_adjacentInner_le (j := (i : ℕ) - 1) (by omega)
+      rw [adjacentInner, show (i : ℕ) - 1 + 1 = i by omega,
+        show (i : ℕ) - 1 + 2 = i + 1 by omega, dotProduct_smul, smul_eq_mul] at h
+      refine h.trans ?_
+      have : (((i : ℕ) - 1 : ℕ) : ℝ) + 1 ≤ k := by
+        rw [Nat.cast_sub (by omega)]
+        push_cast
+        linarith
+      gcongr
+  calc |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1)) - L.adjacentInner i|
+      ≤ |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1))| + |L.adjacentInner i| := abs_sub _ _
+    _ ≤ 7 * k * L.ε * specNorm L.H + 7 * k * L.ε * specNorm L.H := by
+        gcongr
+        exact h2.trans (by gcongr)
+    _ = 14 * k * L.ε * specNorm L.H := by ring
+
+/-- The computed basis has Frobenius norm at most $(1 + \varepsilon/2)\sqrt{k}$. -/
+theorem frobNorm_basis_le : frobNorm L.basis ≤ (1 + L.ε / 2) * Real.sqrt k := by
+  have hε0 := L.ε_nonneg
+  have hsq : frobNorm L.basis ^ 2 ≤ ((1 + L.ε / 2) * Real.sqrt k) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_col, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+    calc ∑ j, ‖WithLp.toLp 2 (L.basis.col j)‖ ^ 2 ≤ ∑ _j : Fin k, (1 + L.ε / 2) ^ 2 :=
+          Finset.sum_le_sum fun j _ =>
+            pow_le_pow_left₀ (norm_nonneg _) (L.norm_v_le (j := (j : ℕ) + 1) j.2) 2
+      _ = (1 + L.ε / 2) ^ 2 * k := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_comm]
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
+
+/-- The residual seen from the computed basis:
+$\|\mathbf{V}_k^{\mathsf{T}}\mathbf{F}_k\|_{\mathsf{F}} \le
+\tfrac{201}{200}\cdot 6k^2\varepsilon\|\mathbf{H}\|_2$. -/
+theorem frobNorm_transpose_basis_mul_residual_le :
+    frobNorm (L.basisᵀ * L.residual) ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hH := specNorm_nonneg L.H
+  have hV := L.frobNorm_basis_le
+  have hF := L.frobNorm_residual_le
+  have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg k)
+  calc frobNorm (L.basisᵀ * L.residual)
+      ≤ specNorm L.basisᵀ * frobNorm L.residual := frobNorm_mul_le_specNorm_mul_frobNorm _ _
+    _ ≤ frobNorm L.basis * frobNorm L.residual := by
+        rw [specNorm_transpose]
+        gcongr
+        exact specNorm_le_frobNorm _
+    _ ≤ ((1 + L.ε / 2) * Real.sqrt k) * (6 * k * Real.sqrt k * L.ε * specNorm L.H) := by
+        gcongr
+    _ = (1 + L.ε / 2) * 6 * (Real.sqrt k * Real.sqrt k) * k * L.ε * specNorm L.H := by ring
+    _ ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
+        rw [hsk]
+        have : (1 + L.ε / 2) ≤ 201 / 200 := by linarith
+        have h0 : 0 ≤ (k : ℝ) * k * L.ε * specNorm L.H := by positivity
+        nlinarith
+
+/-- The commutator of the computed tridiagonal matrix with the diagonal defects is small:
+$\|\mathbf{T}_k\mathbf{\Gamma} - \mathbf{\Gamma}\mathbf{T}_k\|_{\mathsf{F}} \le
+k \cdot \tfrac52 k\varepsilon\|\mathbf{H}\|_2$. -/
+theorem frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le :
+    frobNorm (L.tridiagonal * Matrix.diagonal L.normSqDefect -
+      Matrix.diagonal L.normSqDefect * L.tridiagonal) ≤ k * (5 / 2 * k * L.ε * specNorm L.H) := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hH := specNorm_nonneg L.H
+  have := frobNorm_le_card_mul (M := L.tridiagonal * Matrix.diagonal L.normSqDefect -
+    Matrix.diagonal L.normSqDefect * L.tridiagonal) (c := 5 / 2 * k * L.ε * specNorm L.H)
+    (by positivity) (fun i j => ?_)
+  · simpa only [Fintype.card_fin] using this
+  rw [Matrix.sub_apply, Matrix.mul_diagonal, Matrix.diagonal_mul,
+    show L.tridiagonal i j * L.normSqDefect j - L.normSqDefect i * L.tridiagonal i j =
+      L.tridiagonal i j * (L.normSqDefect j - L.normSqDefect i) by ring, abs_mul]
+  have hg : ∀ l : Fin k, |L.normSqDefect l| ≤ L.ε := fun l =>
+    L.abs_norm_v_sq_sub_one_le ((l : ℕ) + 1) (by omega) l.2
+  have hgd : |L.normSqDefect j - L.normSqDefect i| ≤ 2 * L.ε := by
+    have := abs_sub (L.normSqDefect j) (L.normSqDefect i)
+    linarith [hg i, hg j]
+  have hTij : |L.tridiagonal i j| ≤ 5 / 4 * k * specNorm L.H ∨ i = j := by
+    by_cases hij : i = j
+    · exact Or.inr hij
+    left
+    have hb : ∀ m : ℕ, m < k → |L.β m| ≤ 5 / 4 * k * specNorm L.H := fun m hm => by
+      rw [abs_of_nonneg (L.β_nonneg m hm.le)]
+      refine (L.β_le hm.le).trans ?_
+      have : (m : ℝ) ≤ k := by exact_mod_cast hm.le
+      gcongr
+    simp only [tridiagonal, Matrix.of_apply, if_neg hij]
+    split_ifs
+    · exact hb i i.2
+    · exact hb j j.2
+    · rw [abs_zero]
+      positivity
+  rcases hTij with hTij | rfl
+  · calc |L.tridiagonal i j| * |L.normSqDefect j - L.normSqDefect i|
+        ≤ 5 / 4 * k * specNorm L.H * (2 * L.ε) := by gcongr
+      _ = 5 / 2 * k * L.ε * specNorm L.H := by ring
+  · rw [sub_self, abs_zero, mul_zero]
+    positivity
+
+/-- The skew part of the Gram commutator is small:
+$\|\mathbf{M}_k - \mathbf{M}_k^{\mathsf{T}}\|_{\mathsf{F}} \le 15k^2\varepsilon\|\mathbf{H}\|_2$. -/
+theorem frobNorm_gramCommutator_sub_transpose_le :
+    frobNorm (L.gramCommutator - L.gramCommutatorᵀ) ≤ 15 * k ^ 2 * L.ε * specNorm L.H := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hH := specNorm_nonneg L.H
+  have hVF := L.frobNorm_transpose_basis_mul_residual_le
+  have hFV : frobNorm (L.residualᵀ * L.basis) ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
+    rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
+    exact hVF
+  have hC := L.frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le
+  rw [L.gramCommutator_sub_transpose]
+  refine (frobNorm_sub_le _ _).trans ?_
+  refine (add_le_add_left (frobNorm_sub_le _ _) _).trans ?_
+  have : k * (5 / 2 * k * L.ε * specNorm L.H) = 5 / 2 * k ^ 2 * L.ε * specNorm L.H := by ring
+  nlinarith [mul_nonneg (mul_nonneg (sq_nonneg (k : ℝ)) hε0) hH]
+
 /-- **The Gram commutator is small**:
 $\|\mathbf{M}_k\|_2 \le 30k^2\varepsilon\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `cor:gram-commutator`, states
@@ -246,112 +375,18 @@ Result: lanczos-gram-commutator -/
 theorem specNorm_gramCommutator_le :
     specNorm L.gramCommutator ≤ 30 * k ^ 2 * L.ε * specNorm L.H := by
   have hε0 := L.ε_nonneg
-  have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
   set M := L.gramCommutator
   set D : Matrix (Fin k) (Fin k) ℝ := Matrix.diagonal fun i => M i i
-  -- the diagonal
   have hD : specNorm D ≤ 14 * k * L.ε * specNorm L.H := by
     refine specNorm_diagonal_le (by positivity) fun i => ?_
     rw [Real.norm_eq_abs]
-    change |L.gramCommutator i i| ≤ _
-    rw [L.gramCommutator_apply_self]
-    have h2 := L.abs_adjacentInner_le i.2
-    have hi : ((i : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast i.2
-    have h1 : |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1))| ≤ 7 * k * L.ε * specNorm L.H := by
-      rcases Nat.eq_zero_or_pos (i : ℕ) with h0 | h0
-      · rw [h0, L.β_zero, zero_mul, abs_zero]
-        positivity
-      · have h := L.abs_adjacentInner_le (j := (i : ℕ) - 1) (by omega)
-        rw [adjacentInner, show (i : ℕ) - 1 + 1 = i by omega,
-          show (i : ℕ) - 1 + 2 = i + 1 by omega, dotProduct_smul, smul_eq_mul] at h
-        refine h.trans ?_
-        have : (((i : ℕ) - 1 : ℕ) : ℝ) + 1 ≤ k := by
-          rw [Nat.cast_sub (by omega)]
-          push_cast
-          linarith
-        gcongr
-    calc |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1)) - L.adjacentInner i|
-        ≤ |L.β i * (L.v i ⬝ᵥ L.v ((i : ℕ) + 1))| + |L.adjacentInner i| := abs_sub _ _
-      _ ≤ 7 * k * L.ε * specNorm L.H + 7 * k * L.ε * specNorm L.H := by
-          gcongr
-          exact h2.trans (by gcongr)
-      _ = 14 * k * L.ε * specNorm L.H := by ring
-  -- the Frobenius norm of the computed basis
-  have hV : frobNorm L.basis ≤ (1 + L.ε / 2) * Real.sqrt k := by
-    have hsq : frobNorm L.basis ^ 2 ≤ ((1 + L.ε / 2) * Real.sqrt k) ^ 2 := by
-      rw [frobNorm_sq_eq_sum_col, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
-      calc ∑ j, ‖WithLp.toLp 2 (L.basis.col j)‖ ^ 2 ≤ ∑ _j : Fin k, (1 + L.ε / 2) ^ 2 :=
-            Finset.sum_le_sum fun j _ =>
-              pow_le_pow_left₀ (norm_nonneg _) (L.norm_v_le (j := (j : ℕ) + 1) j.2) 2
-        _ = (1 + L.ε / 2) ^ 2 * k := by
-            rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_comm]
-    exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
-  have hF := L.frobNorm_residual_le
-  have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg k)
-  have hVF : frobNorm (L.basisᵀ * L.residual) ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
-    calc frobNorm (L.basisᵀ * L.residual)
-        ≤ specNorm L.basisᵀ * frobNorm L.residual := frobNorm_mul_le_specNorm_mul_frobNorm _ _
-      _ ≤ frobNorm L.basis * frobNorm L.residual := by
-          rw [specNorm_transpose]
-          gcongr
-          exact specNorm_le_frobNorm _
-      _ ≤ ((1 + L.ε / 2) * Real.sqrt k) * (6 * k * Real.sqrt k * L.ε * specNorm L.H) := by
-          gcongr
-      _ = (1 + L.ε / 2) * 6 * (Real.sqrt k * Real.sqrt k) * k * L.ε * specNorm L.H := by ring
-      _ ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
-          rw [hsk]
-          have : (1 + L.ε / 2) ≤ 201 / 200 := by linarith
-          have h0 : 0 ≤ (k : ℝ) * k * L.ε * specNorm L.H := by positivity
-          nlinarith
-  have hFV : frobNorm (L.residualᵀ * L.basis) ≤ 201 / 200 * 6 * k ^ 2 * L.ε * specNorm L.H := by
-    rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
-    exact hVF
-  have hC : frobNorm (L.tridiagonal * Matrix.diagonal L.normSqDefect -
-      Matrix.diagonal L.normSqDefect * L.tridiagonal) ≤ k * (5 / 2 * k * L.ε * specNorm L.H) := by
-    have := frobNorm_le_card_mul (M := L.tridiagonal * Matrix.diagonal L.normSqDefect -
-      Matrix.diagonal L.normSqDefect * L.tridiagonal) (c := 5 / 2 * k * L.ε * specNorm L.H)
-      (by positivity) (fun i j => ?_)
-    · simpa only [Fintype.card_fin] using this
-    rw [Matrix.sub_apply, Matrix.mul_diagonal, Matrix.diagonal_mul,
-      show L.tridiagonal i j * L.normSqDefect j - L.normSqDefect i * L.tridiagonal i j =
-        L.tridiagonal i j * (L.normSqDefect j - L.normSqDefect i) by ring, abs_mul]
-    have hg : ∀ l : Fin k, |L.normSqDefect l| ≤ L.ε := fun l =>
-      L.abs_norm_v_sq_sub_one_le ((l : ℕ) + 1) (by omega) l.2
-    have hgd : |L.normSqDefect j - L.normSqDefect i| ≤ 2 * L.ε := by
-      have := abs_sub (L.normSqDefect j) (L.normSqDefect i)
-      linarith [hg i, hg j]
-    have hTij : |L.tridiagonal i j| ≤ 5 / 4 * k * specNorm L.H ∨ i = j := by
-      by_cases hij : i = j
-      · exact Or.inr hij
-      left
-      have hb : ∀ m : ℕ, m < k → |L.β m| ≤ 5 / 4 * k * specNorm L.H := fun m hm => by
-        rw [abs_of_nonneg (L.β_nonneg m hm.le)]
-        refine (L.β_le hm.le).trans ?_
-        have : (m : ℝ) ≤ k := by exact_mod_cast hm.le
-        gcongr
-      simp only [tridiagonal, Matrix.of_apply, if_neg hij]
-      split_ifs
-      · exact hb i i.2
-      · exact hb j j.2
-      · rw [abs_zero]
-        positivity
-    rcases hTij with hTij | rfl
-    · calc |L.tridiagonal i j| * |L.normSqDefect j - L.normSqDefect i|
-          ≤ 5 / 4 * k * specNorm L.H * (2 * L.ε) := by gcongr
-        _ = 5 / 2 * k * L.ε * specNorm L.H := by ring
-    · rw [sub_self, abs_zero, mul_zero]
-      positivity
-  have hS : frobNorm (M - Mᵀ) ≤ 15 * k ^ 2 * L.ε * specNorm L.H := by
-    rw [L.gramCommutator_sub_transpose]
-    refine (frobNorm_sub_le _ _).trans ?_
-    refine (add_le_add_left (frobNorm_sub_le _ _) _).trans ?_
-    have : k * (5 / 2 * k * L.ε * specNorm L.H) = 5 / 2 * k ^ 2 * L.ε * specNorm L.H := by ring
-    nlinarith [mul_nonneg (mul_nonneg (sq_nonneg (k : ℝ)) hε0) hH]
+    exact L.abs_gramCommutator_apply_self_le i
   have hU : specNorm (M - D) ≤ 15 * k ^ 2 * L.ε * specNorm L.H :=
     ((specNorm_le_frobNorm _).trans
-      (L.isUpperTriangular_gramCommutator.frobNorm_sub_diagonal_le)).trans hS
+      (L.isUpperTriangular_gramCommutator.frobNorm_sub_diagonal_le)).trans
+      L.frobNorm_gramCommutator_sub_transpose_le
   have hMD : M = D + (M - D) := by abel
   calc specNorm M = specNorm (D + (M - D)) := by rw [← hMD]
     _ ≤ specNorm D + specNorm (M - D) := specNorm_add_le _ _
