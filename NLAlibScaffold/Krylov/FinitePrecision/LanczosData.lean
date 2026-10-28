@@ -16,8 +16,9 @@ symmetric $\mathbf{H}$, vectors $\mathbf{v}_0 = \mathbf{0}, \mathbf{v}_1, \dots,
 \mathbf{v}_{k+1}$ and coefficients $\alpha_j$, $\beta_j$ with $\beta_0 = 0$, and no relation
 between them. Every such datum satisfies the perturbed recurrence
 $\mathbf{H}\mathbf{V}_k = \mathbf{V}_k\mathbf{T}_k
-+ \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}} + \mathbf{F}_k$ with its residual $\mathbf{F}_k$ by definition, and the Gram
-matrix of its vectors satisfies Paige's commutator identity. The finite-precision analysis applies these identities
++ \beta_k\mathbf{v}_{k+1}\mathbf{e}_{k-1}^{\mathsf{T}} + \mathbf{F}_k$ with its residual
+$\mathbf{F}_k$ by definition, and the Gram matrix of its vectors satisfies Paige's commutator
+identity. The finite-precision analysis applies these identities
 twice: to a computed run (`NLAlib.LanczosRun.toLanczosData`) and to its normalised vectors.
 
 Indices from $0$: column $j$ of the basis is $\mathbf{v}_{j+1}$, step $j$ reads $\mathbf{v}_{j+1}$.
