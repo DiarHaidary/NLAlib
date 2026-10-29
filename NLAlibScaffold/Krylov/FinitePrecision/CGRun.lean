@@ -1440,6 +1440,248 @@ private theorem abs_γ_mul_ep_dotProduct_s_le {P : ℝ} {i : ℕ} (hi : i + 1 < 
   have h7 := mul_le_mul_of_nonneg_left (h1.trans (h5.trans h6)) hγ.le
   linarith only [h7]
 
+/-- The coefficient ratio against $\beta_j$: $\delta_i\rho_i/\gamma_i \le (1 + 3.1\varepsilon)
+\beta_{i+1}\rho_{i+1}$, so at most $(1 + 3.1\varepsilon)B\rho_{i+1}$. -/
+private theorem δ_mul_ρ_div_γ_le {B : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hβ : C.lanczosβ (i + 1) ≤ B) :
+    C.δ i * C.ρ i / C.γ i ≤ (1 + 31 / 10 * C.ε) * B * C.ρ (i + 1) := by
+  have hi' : i < k := by omega
+  have hγ' := C.γ_pos hi'
+  have hρ := C.ρ_pos hi
+  have hρ' := C.ρ_pos hi'
+  have hε0 := C.ε_nonneg
+  obtain ⟨-, hδ1, -⟩ := C.δ_bounds hi'
+  have hβ' : C.ρ (i + 1) / (C.γ i * C.ρ i) ≤ B := by simpa [lanczosβ] using hβ
+  have e1 : C.δ i * C.ρ i / C.γ i = C.δ i * C.ρ i ^ 2 / (C.γ i * C.ρ i) := by field_simp
+  have e2 : (1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2 / (C.γ i * C.ρ i) =
+      (1 + 31 / 10 * C.ε) * C.ρ (i + 1) * (C.ρ (i + 1) / (C.γ i * C.ρ i)) := by
+    field_simp
+  have hpos : 0 < C.γ i * C.ρ i := mul_pos hγ' hρ'
+  have hc : 0 ≤ (1 + 31 / 10 * C.ε) * C.ρ (i + 1) :=
+    mul_nonneg (by linarith) hρ.le
+  rw [e1]
+  calc C.δ i * C.ρ i ^ 2 / (C.γ i * C.ρ i)
+      ≤ (1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2 / (C.γ i * C.ρ i) :=
+        div_le_div_of_nonneg_right hδ1 hpos.le
+    _ = (1 + 31 / 10 * C.ε) * C.ρ (i + 1) * (C.ρ (i + 1) / (C.γ i * C.ρ i)) := e2
+    _ ≤ (1 + 31 / 10 * C.ε) * C.ρ (i + 1) * B := mul_le_mul_of_nonneg_left hβ' hc
+    _ = _ := by ring
+
+/-- The scalar inequality behind the bound on the transported term of Lemma B. -/
+private theorem transport_scalar_le {ε N B P ρ D p q b : ℝ} (hε0 : 0 ≤ ε) (hε : ε ≤ 1 / 100)
+    (hN : 0 ≤ N) (hB : 0 ≤ B) (hP : 0 ≤ P) (hρ : 0 ≤ ρ) (hD0 : 0 ≤ D) (hp0 : 0 ≤ p)
+    (hq0 : 0 ≤ q) (hb0 : 0 ≤ b) (hD : D ≤ 21 / 20 * (p + ρ)) (hp : p ≤ P * ρ)
+    (hq : q ≤ (1 + 31 / 10 * ε) * B * ρ) (hb : b ≤ B) :
+    N * ((1 + ε) * D ^ 2 + (1 + ε) * D ^ 2 + (1 + ε) * D * p + D * p + D * p) + q * D +
+      (q + b * ρ) * (ρ + D) + q * p + 304 / 100 * B * ρ ^ 2 ≤
+      6 * (N * (1 + P) ^ 2 * ρ ^ 2) + 10 * (B * (1 + P) * ρ ^ 2) := by
+  have hDm : D ≤ 21 / 20 * ((1 + P) * ρ) := by nlinarith
+  have hpm : p ≤ (1 + P) * ρ := by nlinarith
+  have hqm : q ≤ 1031 / 1000 * B * ρ := by nlinarith [mul_nonneg hB hρ]
+  have hX : 0 ≤ (1 + P) * ρ := by positivity
+  have hD2 : D ^ 2 ≤ (21 / 20) ^ 2 * ((1 + P) * ρ) ^ 2 := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ hD0 hDm 2
+  have hDp : D * p ≤ 21 / 20 * ((1 + P) * ρ) * (P * ρ) := mul_le_mul hDm hp hp0 (by positivity)
+  have hqD : q * D ≤ 1031 / 1000 * B * ρ * (21 / 20 * ((1 + P) * ρ)) :=
+    mul_le_mul hqm hDm hD0 (by positivity)
+  have hqp : q * p ≤ 1031 / 1000 * B * ρ * (P * ρ) := mul_le_mul hqm hp hp0 (by positivity)
+  have hqb : (q + b * ρ) * (ρ + D) ≤ (1031 / 1000 * B * ρ + B * ρ) * (ρ + 21 / 20 * ((1 + P) * ρ)) :=
+    mul_le_mul (by nlinarith) (by linarith) (by positivity) (by positivity)
+  have hN1 : N * ((1 + ε) * D ^ 2 + (1 + ε) * D ^ 2 + (1 + ε) * D * p + D * p + D * p) ≤
+      N * (2 * (101 / 100) * ((21 / 20) ^ 2 * ((1 + P) * ρ) ^ 2) +
+        (101 / 100 + 2) * (21 / 20 * ((1 + P) * ρ) * (P * ρ))) := by
+    apply mul_le_mul_of_nonneg_left _ hN
+    have h1 : (1 + ε) * D ^ 2 ≤ 101 / 100 * ((21 / 20) ^ 2 * ((1 + P) * ρ) ^ 2) :=
+      mul_le_mul (by linarith) hD2 (sq_nonneg _) (by norm_num)
+    have h2 : (1 + ε) * D * p ≤ 101 / 100 * (21 / 20 * ((1 + P) * ρ) * (P * ρ)) := by
+      rw [mul_assoc]
+      exact mul_le_mul (by linarith) hDp (by positivity) (by norm_num)
+    linarith
+  have hN2 : N * (2 * (101 / 100) * ((21 / 20) ^ 2 * ((1 + P) * ρ) ^ 2) +
+        (101 / 100 + 2) * (21 / 20 * ((1 + P) * ρ) * (P * ρ))) ≤ 6 * (N * (1 + P) ^ 2 * ρ ^ 2) := by
+    have h1 : 0 ≤ N * ρ ^ 2 * P := by positivity
+    have h2 : 0 ≤ N * ρ ^ 2 := by positivity
+    have h3 : 0 ≤ N * ρ ^ 2 * P ^ 2 := by positivity
+    nlinarith
+  have hB1 : 0 ≤ B * ρ ^ 2 := by positivity
+  have hB2 : 0 ≤ B * ρ ^ 2 * P := by positivity
+  nlinarith
+
+/-- **The transported term of Lemma B**: with $b = \delta_i/\gamma_i$,
+$b\lvert S_{i+1}\rvert \le \varepsilon\bigl(6\|\mathbf{A}\|_2(1+\Pi)^2 + 10B(1+\Pi)\bigr)
+\rho_{i+1}^2$; only $\delta_i/\gamma_i$ and $\beta_{i+1}$ enter. -/
+private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1))
+    (hβ : C.lanczosβ (i + 1) ≤ B) (hδB : C.δ i ≤ B * C.γ i) :
+    C.δ i / C.γ i * |(C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
+        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
+        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
+        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
+      C.ε * (6 * (specNorm C.A * (1 + P) ^ 2 * C.ρ (i + 1) ^ 2) +
+        10 * (B * (1 + P) * C.ρ (i + 1) ^ 2)) := by
+  have hi' : i < k := by omega
+  have hγ := C.γ_pos hi
+  have hγ' := C.γ_pos hi'
+  have hρ := C.ρ_pos hi
+  have hρ' := C.ρ_pos hi'
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  obtain ⟨hδ0, -, -⟩ := C.δ_bounds hi'
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  have hb0 : 0 ≤ C.δ i / C.γ i := div_nonneg hδ0 hγ'.le
+  have hb : C.δ i / C.γ i ≤ B := by rw [div_le_iff₀ hγ']; exact hδB
+  have hB0 : 0 ≤ B := hb0.trans hb
+  have hq := C.δ_mul_ρ_div_γ_le hi hβ
+  have hq0 : 0 ≤ C.δ i * C.ρ i / C.γ i := div_nonneg (mul_nonneg hδ0 hρ'.le) hγ'.le
+  have hD := C.δ_mul_norm_p_le hi'
+  have hD0 : 0 ≤ C.δ i * ‖WithLp.toLp 2 (C.p i)‖ := mul_nonneg hδ0 (norm_nonneg _)
+  have hp0 := norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))
+  have hpi0 := norm_nonneg (WithLp.toLp 2 (C.p i))
+  have hs' := C.norm_s_le hi'
+  have her' := C.norm_er_le' hi'
+  have hep := C.norm_ep_le' hi'
+  have hes := C.norm_es_le (i + 1) hi
+  have hes' := C.norm_es_le i hi'
+  have heμ' := C.abs_eμ_le i hi'
+  -- δ ‖s_i‖ ≤ (1 + ε) N D
+  have hδs : C.δ i * ‖WithLp.toLp 2 (C.s i)‖ ≤
+      (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) := by
+    have := mul_le_mul_of_nonneg_left hs' hδ0
+    linarith only [this]
+  -- (a)
+  have ha : |C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2| ≤
+      304 / 100 * C.ε * C.ρ (i + 1) ^ 2 := by
+    have hν : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i)) = C.ρ (i + 1) ^ 2 * (1 + C.θ (i + 1)) *
+        (1 + C.eδ i) := by
+      have h1 := C.one_add_θ_pos hi'.le
+      rw [C.δ_eq i hi', C.ν_eq' hi.le, C.ν_eq' hi'.le]
+      field_simp
+    have e : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2 =
+        C.ρ (i + 1) ^ 2 * ((1 + C.θ (i + 1)) * (1 + C.eδ i) * (1 + C.eγ i) - 1) := by
+      linear_combination (1 + C.eγ i) * hν
+    rw [e, abs_mul, abs_of_nonneg (sq_nonneg _)]
+    have := abs_one_add_mul_three_sub_one_le (C.abs_θ_le (i + 1) hi.le) (C.abs_eδ_le i hi')
+      (C.abs_eγ_le i hi') hε
+    have := mul_le_mul_of_nonneg_left this (sq_nonneg (C.ρ (i + 1)))
+    linarith only [this]
+  -- (b)
+  have hb' : C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| ≤
+      C.ε * ((1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2) := by
+    have e : C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| = C.δ i ^ 2 * |C.eμ i| := by
+      rw [abs_mul, abs_mul, abs_of_nonneg hδ0, abs_of_pos hγ']
+      field_simp
+    rw [e]
+    have h1 := mul_le_mul_of_nonneg_left heμ' (sq_nonneg (C.δ i))
+    have h2 : C.δ i ^ 2 * (C.ε * ‖WithLp.toLp 2 (C.p i)‖ * ‖WithLp.toLp 2 (C.s i)‖) =
+        C.ε * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * (C.δ i * ‖WithLp.toLp 2 (C.s i)‖) := by ring
+    have h3 := mul_le_mul_of_nonneg_left hδs (mul_nonneg hε0 hD0)
+    nlinarith
+  -- (c)
+  have hc : C.δ i / C.γ i * |C.δ i * (C.p i ⬝ᵥ C.er i)| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i) * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) +
+        (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2) := by
+    rw [abs_mul, abs_of_nonneg hδ0]
+    have h1 := abs_dotProduct_le (C.p i) (C.er i)
+    have h2 := mul_le_mul_of_nonneg_left her' hpi0
+    have h3 : C.δ i / C.γ i * (C.δ i * (‖WithLp.toLp 2 (C.p i)‖ *
+        (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖)))) =
+        C.ε * ((C.δ i * C.ρ i / C.γ i) * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) +
+          (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * (C.δ i * ‖WithLp.toLp 2 (C.s i)‖)) := by
+      field_simp
+    have h4 := mul_le_mul_of_nonneg_left hδs hD0
+    have h5 : C.δ i / C.γ i * (C.δ i * |C.p i ⬝ᵥ C.er i|) ≤
+        C.δ i / C.γ i * (C.δ i * (‖WithLp.toLp 2 (C.p i)‖ *
+          (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖)))) :=
+      mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left (h1.trans h2) hδ0) hb0
+    rw [h3] at h5
+    have h6 := mul_le_mul_of_nonneg_left h4 hε0
+    nlinarith
+  -- (d)
+  have hd : C.δ i / C.γ i * |(C.r i - C.r (i + 1)) ⬝ᵥ C.ep i| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i + C.δ i / C.γ i * C.ρ (i + 1)) *
+        (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖)) := by
+    have h1 := abs_dotProduct_le (C.r i - C.r (i + 1)) (C.ep i)
+    have h2 := norm_toLp_sub_le (C.r i) (C.r (i + 1))
+    have h3 := mul_le_mul h2 hep (norm_nonneg _) (by positivity)
+    have h4 := mul_le_mul_of_nonneg_left (h1.trans h3) hb0
+    have e : C.δ i / C.γ i * ((‖WithLp.toLp 2 (C.r i)‖ + ‖WithLp.toLp 2 (C.r (i + 1))‖) *
+        (C.ε * (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖))) =
+        C.ε * ((C.δ i * C.ρ i / C.γ i + C.δ i / C.γ i * C.ρ (i + 1)) *
+          (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖)) := by
+      simp only [ρ]
+      ring
+    linarith only [h4, e]
+  -- (e)
+  have he : C.δ i / C.γ i * |C.er i ⬝ᵥ C.p (i + 1)| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i) * ‖WithLp.toLp 2 (C.p (i + 1))‖ +
+        (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+          ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+    have h1 := abs_dotProduct_le (C.er i) (C.p (i + 1))
+    have h2 := mul_le_mul_of_nonneg_right her' hp0
+    have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hb0
+    have e : C.δ i / C.γ i * (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖) *
+        ‖WithLp.toLp 2 (C.p (i + 1))‖) = C.ε * ((C.δ i * C.ρ i / C.γ i) *
+          ‖WithLp.toLp 2 (C.p (i + 1))‖ + (C.δ i * ‖WithLp.toLp 2 (C.s i)‖) *
+            ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+      field_simp
+    have h4 := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hδs hp0) hε0
+    linarith only [h3, e, h4]
+  -- (f), (g)
+  have hf : C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| ≤
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+    have e : C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| =
+        C.δ i * |C.es i ⬝ᵥ C.p (i + 1)| := by
+      rw [abs_mul, abs_of_pos hγ']
+      field_simp
+    rw [e]
+    have h1 := abs_dotProduct_le (C.es i) (C.p (i + 1))
+    have h2 := mul_le_mul_of_nonneg_right hes' hp0
+    have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
+    linarith only [h3]
+  have hg : C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+    have e : C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| =
+        C.δ i * |C.p i ⬝ᵥ C.es (i + 1)| := by
+      rw [abs_mul, abs_of_pos hγ']
+      field_simp
+    rw [e]
+    have h1 := abs_dotProduct_le (C.p i) (C.es (i + 1))
+    have h2 := mul_le_mul_of_nonneg_left hes hpi0
+    have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
+    linarith only [h3]
+  -- the triangle inequality
+  have tri : C.δ i / C.γ i * |(C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
+        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
+        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
+        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
+      C.δ i / C.γ i * |C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2| +
+      C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| + C.δ i / C.γ i * |C.δ i * (C.p i ⬝ᵥ C.er i)| +
+      C.δ i / C.γ i * |(C.r i - C.r (i + 1)) ⬝ᵥ C.ep i| +
+      C.δ i / C.γ i * |C.er i ⬝ᵥ C.p (i + 1)| +
+      C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| +
+      C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| := by
+    simp only [← mul_add]
+    refine mul_le_mul_of_nonneg_left ?_ hb0
+    refine (abs_add_le _ _).trans (add_le_add_left ?_ _)
+    refine (abs_sub _ _).trans (add_le_add_left ?_ _)
+    refine (abs_add_le _ _).trans (add_le_add_left ?_ _)
+    refine (abs_add_le _ _).trans (add_le_add_left ?_ _)
+    refine (abs_sub _ _).trans (add_le_add_left ?_ _)
+    exact abs_sub _ _
+  have ha' : C.δ i / C.γ i * |C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) -
+      C.ρ (i + 1) ^ 2| ≤ C.ε * (304 / 100 * B * C.ρ (i + 1) ^ 2) := by
+    have := mul_le_mul hb ha (abs_nonneg _) hB0
+    linarith only [this]
+  have hsc := transport_scalar_le hε0 hε hN hB0 hP0 hρ.le hD0 hp0 hq0 hb0 hD hP hq hb
+  have hsc' := mul_le_mul_of_nonneg_left hsc hε0
+  linarith only [tri, ha', hb', hc, hd, he, hf, hg, hsc']
+
 /-- **Lemma B (local orthogonality is inherited)**: with the certificates of
 `NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
