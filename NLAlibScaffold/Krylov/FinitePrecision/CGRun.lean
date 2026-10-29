@@ -500,6 +500,178 @@ theorem ρ_sq_le {j : ℕ} (hj : j < k) :
     nlinarith
   exact le_of_mul_le_mul_right h5 (by nlinarith)
 
+/-! ### Step relations used by Lemmas A and B -/
+
+/-- The sharper form of `NLAlib.CGRun.abs_δ_sub_le`:
+$\lvert\delta_j - \rho_{j+1}^2/\rho_j^2\rvert \le 3.1\varepsilon\rho_{j+1}^2/\rho_j^2$. -/
+private theorem abs_δ_sub_le' {j : ℕ} (hj : j < k) :
+    |C.δ j - C.ρ (j + 1) ^ 2 / C.ρ j ^ 2| ≤ 31 / 10 * C.ε * (C.ρ (j + 1) ^ 2 / C.ρ j ^ 2) := by
+  have hρ := C.ρ_pos hj
+  have hθ := abs_le.mp (C.abs_θ_le j hj.le)
+  have hθ' := abs_le.mp (C.abs_θ_le (j + 1) hj)
+  have he := abs_le.mp (C.abs_eδ_le j hj)
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  set R := C.ρ (j + 1) ^ 2 / C.ρ j ^ 2 with hR
+  have hR0 : 0 ≤ R := by positivity
+  have h1 := C.one_add_θ_pos hj.le
+  have hδ : C.δ j = R * ((1 + C.θ (j + 1)) * (1 + C.eδ j) / (1 + C.θ j)) := by
+    rw [C.δ_eq j hj, C.ν_eq' hj, C.ν_eq' hj.le, hR]
+    field_simp
+  have hu : |(1 + C.θ (j + 1)) * (1 + C.eδ j) / (1 + C.θ j) - 1| ≤ 31 / 10 * C.ε := by
+    rw [div_sub_one h1.ne', abs_div, abs_of_pos h1, div_le_iff₀ h1, abs_le]
+    constructor <;> nlinarith
+  rw [hδ, ← mul_sub_one, abs_mul, abs_of_nonneg hR0, mul_comm]
+  exact mul_le_mul_of_nonneg_right hu hR0
+
+/-- The bounds on $\delta_j$ that follow: $\delta_j \ge 0$,
+$\delta_j\rho_j^2 \le (1 + 3.1\varepsilon)\rho_{j+1}^2$ and
+$\rho_{j+1}^2 \le (1 + 3.2\varepsilon)\delta_j\rho_j^2$. -/
+private theorem δ_bounds {j : ℕ} (hj : j < k) :
+    0 ≤ C.δ j ∧ C.δ j * C.ρ j ^ 2 ≤ (1 + 31 / 10 * C.ε) * C.ρ (j + 1) ^ 2 ∧
+      C.ρ (j + 1) ^ 2 ≤ (1 + 16 / 5 * C.ε) * (C.δ j * C.ρ j ^ 2) := by
+  have h := abs_le.mp (C.abs_δ_sub_le' hj)
+  have hρ := C.ρ_pos hj
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hρ2 : 0 < C.ρ j ^ 2 := by positivity
+  set R := C.ρ (j + 1) ^ 2 / C.ρ j ^ 2 with hR
+  have hR0 : 0 ≤ R := by positivity
+  have hRe : R * C.ρ j ^ 2 = C.ρ (j + 1) ^ 2 := by
+    rw [hR]
+    field_simp
+  refine ⟨by nlinarith, ?_, ?_⟩
+  · have := mul_le_mul_of_nonneg_right (by linarith : C.δ j ≤ (1 + 31 / 10 * C.ε) * R) hρ2.le
+    nlinarith
+  · have h2 : R ≤ (1 + 16 / 5 * C.ε) * C.δ j := by nlinarith
+    have := mul_le_mul_of_nonneg_right h2 hρ2.le
+    nlinarith
+
+private theorem norm_er_le' {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (C.er j)‖ ≤ C.ε * (C.ρ j + C.γ j * ‖WithLp.toLp 2 (C.s j)‖) := by
+  have := C.norm_er_le j hj
+  rwa [abs_of_pos (C.γ_pos hj)] at this
+
+private theorem norm_ep_le' {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (C.ep j)‖ ≤ C.ε * (C.ρ (j + 1) + C.δ j * ‖WithLp.toLp 2 (C.p j)‖) := by
+  have := C.norm_ep_le j hj
+  rwa [abs_of_nonneg (C.δ_bounds hj).1] at this
+
+/-- The previous direction, scaled, is controlled by the current one:
+$\delta_j\|\mathbf{p}_j\| \le 1.05(\|\mathbf{p}_{j+1}\| + \rho_{j+1})$ (from the direction update),
+so no residual ratio is needed. -/
+private theorem δ_mul_norm_p_le {j : ℕ} (hj : j < k) :
+    C.δ j * ‖WithLp.toLp 2 (C.p j)‖ ≤
+      21 / 20 * (‖WithLp.toLp 2 (C.p (j + 1))‖ + C.ρ (j + 1)) := by
+  have hid : C.δ j • C.p j = C.p (j + 1) - C.r (j + 1) - C.ep j := by
+    rw [C.p_succ j hj]
+    abel
+  have h1 : C.δ j * ‖WithLp.toLp 2 (C.p j)‖ ≤
+      ‖WithLp.toLp 2 (C.p (j + 1))‖ + C.ρ (j + 1) + ‖WithLp.toLp 2 (C.ep j)‖ := by
+    have := norm_toLp_sub_le (C.p (j + 1) - C.r (j + 1)) (C.ep j)
+    have h2 := norm_toLp_sub_le (C.p (j + 1)) (C.r (j + 1))
+    rw [← hid, norm_toLp_smul, abs_of_nonneg (C.δ_bounds hj).1] at this
+    simp only [ρ]
+    linarith
+  have h3 := C.norm_ep_le' hj
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hp := norm_nonneg (WithLp.toLp 2 (C.p (j + 1)))
+  have hρ := C.ρ_nonneg (j + 1)
+  have hD : 0 ≤ C.δ j * ‖WithLp.toLp 2 (C.p j)‖ :=
+    mul_nonneg (C.δ_bounds hj).1 (norm_nonneg _)
+  nlinarith
+
+/-- The Lanczos vector of the run at a step taken. -/
+private theorem lanczosV_succ {j : ℕ} (hj : j < k) :
+    C.lanczosV (j + 1) = ((-1 : ℝ) ^ j * (C.ρ j)⁻¹) • C.r j := by
+  have hr : C.r j ≠ 0 := by
+    rw [Ne, ← C.ν_eq_zero_iff hj.le]
+    exact (C.ν_pos j hj).ne'
+  simp only [lanczosV, Nat.add_sub_cancel, if_neg (Nat.succ_ne_zero j), if_neg hr]
+
+/-- The normalisation step is exact:
+$\beta_{j+1}\bar{\mathbf{v}}_{j+2} = (-1)^{j+1}\mathbf{r}_{j+1}/(\gamma_j\rho_j)$, also when
+$\mathbf{r}_{j+1} = \mathbf{0}$. -/
+private theorem lanczosβ_smul_lanczosV {j : ℕ} (hj : j < k) :
+    C.lanczosβ (j + 1) • C.lanczosV (j + 2) =
+      (-((-1 : ℝ) ^ j * (C.γ j * C.ρ j)⁻¹)) • C.r (j + 1) := by
+  have hγ := C.γ_pos hj
+  have hρ := C.ρ_pos hj
+  by_cases hr : C.r (j + 1) = 0
+  · have h0 : C.ρ (j + 1) = 0 := by rw [ρ, hr, WithLp.toLp_zero, norm_zero]
+    rw [hr, smul_zero, lanczosβ, if_neg (Nat.succ_ne_zero j), h0, zero_div, zero_smul]
+  · have hρ' : C.ρ (j + 1) ≠ 0 := by
+      rw [ρ, norm_ne_zero_iff]
+      exact fun h => hr ((toLp_eq_zero_iff _).1 h)
+    simp only [lanczosV, lanczosβ, show j + 2 - 1 = j + 1 by omega, Nat.add_sub_cancel,
+      if_neg (show j + 2 ≠ 0 by omega), if_neg (Nat.succ_ne_zero j), if_neg hr, smul_smul]
+    congr 1
+    field_simp
+    ring
+
+/-- The backward term $\beta_j\bar{\mathbf{v}}_j$, $1 \le j < k$. -/
+private theorem lanczosβ_smul_lanczosV_self {i : ℕ} (hi : i + 1 < k) :
+    C.lanczosβ (i + 1) • C.lanczosV (i + 1) =
+      ((-1 : ℝ) ^ i * (C.ρ (i + 1) / (C.γ i * C.ρ i ^ 2))) • C.r i := by
+  have hγ := C.γ_pos (by omega : i < k)
+  have hρ := C.ρ_pos (by omega : i < k)
+  rw [C.lanczosV_succ (by omega), smul_smul, lanczosβ, if_neg (Nat.succ_ne_zero i),
+    Nat.add_sub_cancel]
+  congr 1
+  field_simp
+
+/-- The matrix–direction product of a step taken, solved from the residual update:
+$\mathbf{A}\mathbf{p}_j = \gamma_j^{-1}(\mathbf{r}_j - \mathbf{r}_{j+1} + \mathbf{e}^r_j) -
+\mathbf{e}^s_j$. -/
+private theorem mulVec_p_eq {j : ℕ} (hj : j < k) :
+    C.A *ᵥ C.p j = (C.γ j)⁻¹ • (C.r j - C.r (j + 1) + C.er j) - C.es j := by
+  have hγ := (C.γ_pos hj).ne'
+  rw [C.r_succ j hj, C.s_eq j hj]
+  match_scalars <;> field_simp <;> ring
+
+/-- **The recurrence error at the first step**:
+$\rho_0\bar{\mathbf{f}}_0 = -\mathbf{e}^s_0 + \gamma_0^{-1}\mathbf{e}^r_0$. -/
+private theorem recurrenceError_zero :
+    C.toLanczosData.recurrenceError 0 =
+      (C.ρ 0)⁻¹ • (-C.es 0 + (C.γ 0)⁻¹ • C.er 0) := by
+  have hk := C.k_pos
+  have hγ := (C.γ_pos hk).ne'
+  have hρ := (C.ρ_pos hk).ne'
+  have h1 := C.lanczosV_succ hk
+  have h2 := C.lanczosβ_smul_lanczosV hk
+  simp only [pow_zero, one_mul] at h1 h2
+  simp only [LanczosData.recurrenceError, toLanczosData, zero_add]
+  rw [show (2 : ℕ) = 0 + 2 from rfl, h2, h1, show C.lanczosβ 0 = 0 by simp [lanczosβ], zero_smul,
+    sub_zero, show C.lanczosα 1 = (C.γ 0)⁻¹ by simp [lanczosα]]
+  rw [C.r_succ 0 hk, C.s_eq 0 hk, C.p_zero, ← C.r_zero]
+  simp only [Matrix.mulVec_smul]
+  match_scalars <;> field_simp <;> ring
+
+/-- **The recurrence error at a later step** $j = i + 1 < k$, with
+$c = \rho_j^2/(\rho_i^2\gamma_i)$ the diagonal convention of `NLAlib.cgTridiagonal`:
+$(-1)^j\rho_j\bar{\mathbf{f}}_j = -\mathbf{e}^s_j + \gamma_j^{-1}\mathbf{e}^r_j -
+\mathbf{A}\mathbf{e}^p_i + \delta_i\mathbf{e}^s_i - (\delta_i/\gamma_i)\mathbf{e}^r_i +
+(c - \delta_i/\gamma_i)(\mathbf{r}_i - \mathbf{r}_j)$. -/
+private theorem recurrenceError_succ {i : ℕ} (hi : i + 1 < k) :
+    C.toLanczosData.recurrenceError (i + 1) =
+      ((-1 : ℝ) ^ (i + 1) * (C.ρ (i + 1))⁻¹) • (-C.es (i + 1) + (C.γ (i + 1))⁻¹ • C.er (i + 1) -
+        C.A *ᵥ C.ep i + C.δ i • C.es i - (C.δ i / C.γ i) • C.er i +
+        (C.ρ (i + 1) ^ 2 / C.ρ i ^ 2 / C.γ i - C.δ i / C.γ i) • (C.r i - C.r (i + 1))) := by
+  have hi' : i < k := by omega
+  have hγ := (C.γ_pos hi).ne'
+  have hγ' := (C.γ_pos hi').ne'
+  have hρ := (C.ρ_pos hi).ne'
+  have hρ' := (C.ρ_pos hi').ne'
+  simp only [LanczosData.recurrenceError, toLanczosData]
+  rw [C.lanczosβ_smul_lanczosV hi, C.lanczosβ_smul_lanczosV_self hi, C.lanczosV_succ hi]
+  rw [show C.lanczosα (i + 1 + 1) = (C.γ (i + 1))⁻¹ + (C.ρ (i + 1) / C.ρ i) ^ 2 / C.γ i by
+    simp [lanczosα]]
+  rw [C.r_succ (i + 1) hi, C.s_eq (i + 1) hi, C.p_succ i hi']
+  simp only [Matrix.mulVec_add, Matrix.mulVec_smul]
+  rw [C.mulVec_p_eq hi']
+  match_scalars <;> field_simp <;> ring
+
 /-- **Lemma A (recurrence error)**: with certificates $\|\mathbf{p}_j\| \le \Pi\rho_j$
 ($j < k$) and $\beta_{j+1}, \delta_j/\gamma_j \le B$ ($j + 1 < k$), the Lanczos data of the
 run satisfy
@@ -606,6 +778,45 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ}
     C.ρ k ≤ 2 * ‖WithLp.toLp 2 (C.p k)‖ := by
   sorry
 
+/-- One step of the residual gap: $\mathbf{g}_{j+1} = \mathbf{g}_j + \gamma_j\mathbf{e}^s_j -
+\mathbf{A}\mathbf{e}^x_j - \mathbf{e}^r_j$, bounded. -/
+private theorem norm_gap_succ_le {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1))‖ ≤
+      ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ + C.ε * (specNorm C.A *
+        (‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) := by
+  have hid : C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1) =
+      (C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j - C.A *ᵥ C.ex j - C.er j := by
+    rw [C.x_succ j hj, C.r_succ j hj, C.s_eq j hj, Matrix.mulVec_add, Matrix.mulVec_add,
+      Matrix.mulVec_smul, smul_add]
+    abel
+  rw [hid]
+  have h1 := norm_toLp_sub_le ((C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j - C.A *ᵥ C.ex j)
+    (C.er j)
+  have h2 := norm_toLp_sub_le ((C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j) (C.A *ᵥ C.ex j)
+  have h3 := norm_toLp_add_le (C.b - C.A *ᵥ C.x j - C.r j) (C.γ j • C.es j)
+  have hγ := C.γ_pos hj
+  rw [norm_toLp_smul, abs_of_pos hγ] at h3
+  have h4 := norm_toLp_mulVec_le C.A (C.ex j)
+  have h5 := C.norm_ex_le j hj
+  have h6 := C.norm_er_le j hj
+  have h7 := C.norm_es_le j hj
+  have h8 := C.norm_s_le hj
+  rw [abs_of_pos hγ] at h5 h6
+  have hN := specNorm_nonneg C.A
+  have hε := C.ε_nonneg
+  have hε1 := C.ε_le
+  have hp := norm_nonneg (WithLp.toLp 2 (C.p j))
+  have hx := norm_nonneg (WithLp.toLp 2 (C.x j))
+  have e1 := mul_le_mul_of_nonneg_left h5 hN
+  have e2 := mul_le_mul_of_nonneg_left h7 hγ.le
+  have e3 := mul_le_mul_of_nonneg_left h8 (mul_nonneg hε hγ.le)
+  have e4 : C.ε * C.γ j * ((1 + C.ε) * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖) ≤
+      C.ε * C.γ j * (2 * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖) := by
+    gcongr
+    linarith
+  simp only [ρ] at *
+  nlinarith
+
 /-- **The residual gap** (true minus updated residual): with $\mathbf{x}_0 = \mathbf{0}$,
 $\mathbf{r}_0 = \mathbf{b}$,
 $$\|(\mathbf{b} - \mathbf{A}\mathbf{x}_k) - \mathbf{r}_k\| \le \varepsilon\sum_{j<k}
@@ -619,7 +830,17 @@ theorem norm_sub_mulVec_x_sub_r_le :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       C.ε * ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
         4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) := by
-  sorry
+  suffices h : ∀ m ≤ k, ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x m - C.r m)‖ ≤
+      C.ε * ∑ j ∈ Finset.range m, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
+        4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) from h k le_rfl
+  intro m hm
+  induction m with
+  | zero =>
+    rw [C.x_zero, C.r_zero, Matrix.mulVec_zero, sub_zero, sub_self, WithLp.toLp_zero, norm_zero,
+      Finset.sum_range_zero, mul_zero]
+  | succ m ih =>
+    rw [Finset.sum_range_succ, mul_add]
+    exact (C.norm_gap_succ_le (by omega)).trans (by linarith [ih (by omega)])
 
 end CGRun
 
