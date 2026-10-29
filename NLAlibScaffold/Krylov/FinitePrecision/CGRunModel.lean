@@ -1025,9 +1025,12 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ}
   have hTy : T ≤ ‖WithLp.toLp 2 y‖ := (pow_le_pow_iff_left₀ hT0 (norm_nonneg _) two_ne_zero).1 hT2
   linarith only [hTy, hpk', hep, hT]
 
-/-- One step of the residual gap: $\mathbf{g}_{j+1} = \mathbf{g}_j + \gamma_j\mathbf{e}^s_j -
-\mathbf{A}\mathbf{e}^x_j - \mathbf{e}^r_j$, bounded. -/
-private theorem norm_gap_succ_le {j : ℕ} (hj : j < k) :
+/-- **One step of the residual gap**: $\mathbf{g}_{j+1} = \mathbf{g}_j +
+\gamma_j\mathbf{e}^s_j - \mathbf{A}\mathbf{e}^x_j - \mathbf{e}^r_j$ for
+$\mathbf{g}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j$, so for $j < k$
+$$\|\mathbf{g}_{j+1}\| \le \|\mathbf{g}_j\| + \varepsilon\bigl(\|\mathbf{A}\|_2(\|\mathbf{x}_j\| +
+4\gamma_j\|\mathbf{p}_j\|) + \|\mathbf{r}_j\|\bigr) .$$ -/
+theorem norm_sub_mulVec_x_sub_r_succ_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1))‖ ≤
       ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ + C.ε * (specNorm C.A *
         (‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) := by
@@ -1087,7 +1090,7 @@ theorem norm_sub_mulVec_x_sub_r_le :
       Finset.sum_range_zero, mul_zero]
   | succ m ih =>
     rw [Finset.sum_range_succ, mul_add]
-    exact (C.norm_gap_succ_le (by omega)).trans (by linarith [ih (by omega)])
+    exact (C.norm_sub_mulVec_x_sub_r_succ_le (by omega)).trans (by linarith [ih (by omega)])
 
 end CGRun
 

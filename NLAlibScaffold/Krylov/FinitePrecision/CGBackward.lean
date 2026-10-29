@@ -1447,6 +1447,34 @@ theorem abs_quadForm_backwardH_sub_cgIterate_sub_le {a a' : ℝ} (ha : 0 < a)
   ring
 
 
+/-- **The computed estimator is bounded a priori**: under (H),
+$\sum_{j<k}\gamma_j\|\mathbf{r}_j\|^2 \le 2\|\mathbf{b}\|^2/a$.
+Proof: `NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_eq` with the model's error
+$\ge 0$ and $\tilde{\mathbf{x}}_\star^{\mathsf{T}}\tilde{\mathbf{H}}\tilde{\mathbf{x}}_\star \le
+\|\mathbf{b}\|^2/(a/2)$. Difficulty: easy. -/
+theorem sum_γ_mul_ρ_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2 ≤ 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by
+  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
+  have hherm := C.isHermitian_backwardH
+  have hPD := posDef_of_spectrum hherm (by positivity : 0 < a / 2) hspec
+  set xs := C.backwardH⁻¹ *ᵥ C.dilatedRhs
+  have hxs : C.backwardH *ᵥ xs = C.dilatedRhs := by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
+      hPD.isUnit), Matrix.one_mulVec]
+  have h1 := C.quadForm_backwardH_sub_cgIterate_eq ha hs hsmall hxs
+  have h0 : 0 ≤ quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 k) := by
+    rw [quadForm_def]
+    simpa using hPD.posSemidef.dotProduct_mulVec_nonneg
+      (xs - cgIterate C.backwardH C.dilatedRhs 0 k)
+  have h2 := dotProduct_mulVec_le_of_mulVec_eq hherm (by positivity : 0 < a / 2) hspec hxs
+  rw [C.dilatedRhs_norm] at h2
+  have h3 : quadForm C.backwardH xs ≤ 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by
+    rw [quadForm_def, star_trivial]
+    calc _ ≤ _ := h2
+      _ = _ := by field_simp
+  linarith
+
 end CGRun
 
 end NLAlib
