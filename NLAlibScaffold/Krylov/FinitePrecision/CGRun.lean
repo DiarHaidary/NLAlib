@@ -672,6 +672,283 @@ private theorem recurrenceError_succ {i : ℕ} (hi : i + 1 < k) :
   rw [C.mulVec_p_eq hi']
   match_scalars <;> field_simp <;> ring
 
+/-- The inverse step length against a direction certificate: $\gamma_j^{-1} \le
+1.05\|\mathbf{A}\|_2\Pi^2$ when $\|\mathbf{p}_j\| \le \Pi\rho_j$ (from `NLAlib.CGRun.ρ_sq_le`). -/
+private theorem inv_γ_le {P : ℝ} {j : ℕ} (hj : j < k)
+    (hP : ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j) :
+    (C.γ j)⁻¹ ≤ 21 / 20 * specNorm C.A * P ^ 2 := by
+  have hγ := C.γ_pos hj
+  have hρ := C.ρ_pos hj
+  have h1 := C.ρ_sq_le hj
+  have hN := specNorm_nonneg C.A
+  have hp2 : ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ P ^ 2 * C.ρ j ^ 2 := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ (norm_nonneg _) hP 2
+  have h2 : C.ρ j ^ 2 * 1 ≤ C.ρ j ^ 2 * (21 / 20 * specNorm C.A * P ^ 2 * C.γ j) := by
+    have := mul_le_mul_of_nonneg_left hp2 (by positivity : 0 ≤ 21 / 20 * specNorm C.A * C.γ j)
+    nlinarith
+  have h3 := le_of_mul_le_mul_left h2 (by positivity)
+  rw [inv_le_iff_one_le_mul₀ hγ]
+  linarith
+
+set_option maxHeartbeats 1000000 in
+/-- The norm of the vector of `NLAlib.CGRun.recurrenceError_succ`, relative to $\rho_j$. -/
+private theorem norm_recurrenceError_succ_mul_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1))
+    (hβ : C.lanczosβ (i + 1) ≤ B) (hδB : C.δ i ≤ B * C.γ i) :
+    ‖WithLp.toLp 2 (-C.es (i + 1) + (C.γ (i + 1))⁻¹ • C.er (i + 1) -
+        C.A *ᵥ C.ep i + C.δ i • C.es i - (C.δ i / C.γ i) • C.er i +
+        (C.ρ (i + 1) ^ 2 / C.ρ i ^ 2 / C.γ i - C.δ i / C.γ i) • (C.r i - C.r (i + 1)))‖ ≤
+      8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B) * C.ρ (i + 1) := by
+  have hi' : i < k := by omega
+  have hγ := C.γ_pos hi
+  have hγ' := C.γ_pos hi'
+  have hρ := C.ρ_pos hi
+  have hρ' := C.ρ_pos hi'
+  have hN := specNorm_nonneg C.A
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  obtain ⟨hδ0, hδ1, hδ2⟩ := C.δ_bounds hi'
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  set N := specNorm C.A
+  set ρ := C.ρ (i + 1)
+  set ρ' := C.ρ i
+  set γ := C.γ (i + 1)
+  set γ' := C.γ i
+  set δ := C.δ i
+  set p := ‖WithLp.toLp 2 (C.p (i + 1))‖
+  set D := δ * ‖WithLp.toLp 2 (C.p i)‖
+  have hp0 : 0 ≤ p := norm_nonneg _
+  have hD : D ≤ 21 / 20 * (p + ρ) := C.δ_mul_norm_p_le hi'
+  have hD0 : 0 ≤ D := mul_nonneg hδ0 (norm_nonneg _)
+  have hβ' : ρ / (γ' * ρ') ≤ B := by
+    simpa [lanczosβ] using hβ
+  have hB0 : 0 ≤ B := le_trans (by positivity) hβ'
+  -- the six terms
+  have t1 : ‖WithLp.toLp 2 (C.es (i + 1))‖ ≤ C.ε * N * p := C.norm_es_le (i + 1) hi
+  have hs := C.norm_s_le hi
+  have hs' := C.norm_s_le hi'
+  have hinv := C.inv_γ_le hi hP
+  have t2 : ‖WithLp.toLp 2 ((C.γ (i + 1))⁻¹ • C.er (i + 1))‖ ≤
+      C.ε * (γ⁻¹ * ρ) + C.ε * ((1 + C.ε) * N * p) := by
+    rw [norm_toLp_smul, abs_inv, abs_of_pos hγ]
+    have := mul_le_mul_of_nonneg_left (C.norm_er_le' hi) (inv_nonneg.2 hγ.le)
+    have e : γ⁻¹ * (C.ε * (ρ + γ * ‖WithLp.toLp 2 (C.s (i + 1))‖)) =
+        C.ε * (γ⁻¹ * ρ) + C.ε * ‖WithLp.toLp 2 (C.s (i + 1))‖ := by
+      field_simp
+    rw [e] at this
+    nlinarith
+  have t3 : ‖WithLp.toLp 2 (C.A *ᵥ C.ep i)‖ ≤ N * (C.ε * (ρ + D)) :=
+    (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_left (C.norm_ep_le' hi') hN)
+  have t4 : ‖WithLp.toLp 2 (C.δ i • C.es i)‖ ≤ C.ε * N * D := by
+    rw [norm_toLp_smul, abs_of_nonneg hδ0]
+    have := mul_le_mul_of_nonneg_left (C.norm_es_le i hi') hδ0
+    calc _ ≤ _ := this
+      _ = _ := by ring
+  -- δ ρ' / γ' ≤ 1.031 ρ B
+  have hq : δ * ρ' / γ' ≤ (1 + 31 / 10 * C.ε) * B * ρ := by
+    have e1 : δ * ρ' / γ' = δ * ρ' ^ 2 / (γ' * ρ') := by field_simp
+    have e2 : (1 + 31 / 10 * C.ε) * ρ ^ 2 / (γ' * ρ') = (1 + 31 / 10 * C.ε) * ρ * (ρ / (γ' * ρ')) := by
+      field_simp
+    rw [e1]
+    calc δ * ρ' ^ 2 / (γ' * ρ') ≤ (1 + 31 / 10 * C.ε) * ρ ^ 2 / (γ' * ρ') := by gcongr
+      _ = (1 + 31 / 10 * C.ε) * ρ * (ρ / (γ' * ρ')) := e2
+      _ ≤ (1 + 31 / 10 * C.ε) * ρ * B := by gcongr
+      _ = _ := by ring
+  have t5 : ‖WithLp.toLp 2 ((C.δ i / C.γ i) • C.er i)‖ ≤
+      C.ε * ((1 + 31 / 10 * C.ε) * B * ρ) + C.ε * ((1 + C.ε) * N * D) := by
+    rw [norm_toLp_smul, abs_of_nonneg (div_nonneg hδ0 hγ'.le)]
+    have := mul_le_mul_of_nonneg_left (C.norm_er_le' hi') (div_nonneg hδ0 hγ'.le)
+    have e : δ / γ' * (C.ε * (ρ' + γ' * ‖WithLp.toLp 2 (C.s i)‖)) =
+        C.ε * (δ * ρ' / γ') + C.ε * (δ * ‖WithLp.toLp 2 (C.s i)‖) := by
+      field_simp
+    rw [e] at this
+    have h2 := mul_le_mul_of_nonneg_left hs' hδ0
+    have h3 : δ * ((1 + C.ε) * N * ‖WithLp.toLp 2 (C.p i)‖) = (1 + C.ε) * N * D := by ring
+    rw [h3] at h2
+    nlinarith
+  have t6 : ‖WithLp.toLp 2 ((ρ ^ 2 / ρ' ^ 2 / γ' - δ / γ') • (C.r i - C.r (i + 1)))‖ ≤
+      31 / 10 * C.ε * (ρ * B + (1 + 16 / 5 * C.ε) * B * ρ) := by
+    rw [norm_toLp_smul]
+    have hr := norm_toLp_sub_le (C.r i) (C.r (i + 1))
+    have hd := C.abs_δ_sub_le' hi'
+    set R := ρ ^ 2 / ρ' ^ 2
+    have hR0 : 0 ≤ R := by positivity
+    have e1 : R / γ' - δ / γ' = -(δ - R) / γ' := by ring
+    rw [e1, abs_div, abs_neg, abs_of_pos hγ']
+    have hRρ' : R * ρ' / γ' = ρ * (ρ / (γ' * ρ')) := by
+      simp only [R]
+      field_simp
+    have hRρ : R / γ' ≤ (1 + 16 / 5 * C.ε) * B := by
+      have : R ≤ (1 + 16 / 5 * C.ε) * δ := by
+        have := hδ2
+        simp only [R]
+        rw [div_le_iff₀ (by positivity)]
+        linarith
+      calc R / γ' ≤ (1 + 16 / 5 * C.ε) * δ / γ' := by gcongr
+        _ ≤ (1 + 16 / 5 * C.ε) * (B * γ') / γ' := by gcongr
+        _ = _ := by field_simp
+    calc |δ - R| / γ' * ‖WithLp.toLp 2 (C.r i - C.r (i + 1))‖
+        ≤ 31 / 10 * C.ε * R / γ' * (ρ' + ρ) :=
+          mul_le_mul (div_le_div_of_nonneg_right hd hγ'.le) hr (norm_nonneg _) (by positivity)
+      _ = 31 / 10 * C.ε * (ρ * (ρ / (γ' * ρ')) + R / γ' * ρ) := by
+          rw [← hRρ']
+          ring
+      _ ≤ _ := by gcongr
+  -- assemble
+  have hsum : ‖WithLp.toLp 2 (-C.es (i + 1) + (C.γ (i + 1))⁻¹ • C.er (i + 1) -
+        C.A *ᵥ C.ep i + C.δ i • C.es i - (C.δ i / C.γ i) • C.er i +
+        (ρ ^ 2 / ρ' ^ 2 / γ' - δ / γ') • (C.r i - C.r (i + 1)))‖
+      ≤ ‖WithLp.toLp 2 (C.es (i + 1))‖ + ‖WithLp.toLp 2 ((C.γ (i + 1))⁻¹ • C.er (i + 1))‖ +
+        ‖WithLp.toLp 2 (C.A *ᵥ C.ep i)‖ + ‖WithLp.toLp 2 (C.δ i • C.es i)‖ +
+        ‖WithLp.toLp 2 ((C.δ i / C.γ i) • C.er i)‖ +
+        ‖WithLp.toLp 2 ((ρ ^ 2 / ρ' ^ 2 / γ' - δ / γ') • (C.r i - C.r (i + 1)))‖ := by
+      refine (norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
+      refine (norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
+      refine (norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
+      refine (norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
+      refine (norm_toLp_add_le _ _).trans (le_of_eq ?_)
+      rw [WithLp.toLp_neg, norm_neg]
+  have hpP : p ≤ P * ρ := hP
+  have hfin1 : C.ε * (γ⁻¹ * ρ) ≤ C.ε * (21 / 20 * N * P ^ 2 * ρ) := by gcongr
+  have hNp : N * p ≤ N * (P * ρ) := by gcongr
+  have hND : N * D ≤ N * (21 / 20 * (P * ρ + ρ)) := by gcongr; linarith
+  have hNp0 : 0 ≤ N * p := mul_nonneg hN hp0
+  have hND0 : 0 ≤ N * D := mul_nonneg hN hD0
+  have hBρ0 : 0 ≤ B * ρ := mul_nonneg hB0 hρ.le
+  have hεNp : C.ε * N * p ≤ C.ε * (N * (P * ρ)) := by
+    have := mul_le_mul_of_nonneg_left hNp hε0
+    linarith
+  have hεNp' : C.ε * ((1 + C.ε) * N * p) ≤ C.ε * (2 * (N * (P * ρ))) := by
+    have h1 : (1 + C.ε) * (N * p) ≤ 2 * (N * (P * ρ)) :=
+      (mul_le_mul_of_nonneg_right (show 1 + C.ε ≤ 2 by linarith) hNp0).trans
+        (show 2 * (N * p) ≤ 2 * (N * (P * ρ)) by linarith)
+    have := mul_le_mul_of_nonneg_left h1 hε0
+    linarith
+  have hεND : C.ε * N * D ≤ C.ε * (N * (21 / 20 * (P * ρ + ρ))) := by
+    have := mul_le_mul_of_nonneg_left hND hε0
+    linarith
+  have hεND' : C.ε * ((1 + C.ε) * N * D) ≤ C.ε * (2 * (N * (21 / 20 * (P * ρ + ρ)))) := by
+    have h1 : (1 + C.ε) * (N * D) ≤ 2 * (N * (21 / 20 * (P * ρ + ρ))) :=
+      (mul_le_mul_of_nonneg_right (show 1 + C.ε ≤ 2 by linarith) hND0).trans
+        (show 2 * (N * D) ≤ 2 * (N * (21 / 20 * (P * ρ + ρ))) by linarith)
+    have := mul_le_mul_of_nonneg_left h1 hε0
+    linarith
+  have hεNρD : N * (C.ε * (ρ + D)) ≤ C.ε * (N * ρ + N * (21 / 20 * (P * ρ + ρ))) := by
+    have := mul_le_mul_of_nonneg_left hND hε0
+    linarith
+  have hB1 : C.ε * ((1 + 31 / 10 * C.ε) * B * ρ) ≤ C.ε * (1031 / 1000 * (B * ρ)) := by
+    have : (1 + 31 / 10 * C.ε) * (B * ρ) ≤ 1031 / 1000 * (B * ρ) :=
+      mul_le_mul_of_nonneg_right (by linarith) hBρ0
+    have := mul_le_mul_of_nonneg_left this hε0
+    linarith
+  have hB2 : 31 / 10 * C.ε * (ρ * B + (1 + 16 / 5 * C.ε) * B * ρ) ≤
+      C.ε * (6 * (B * ρ) + 3 / 10 * (B * ρ)) := by
+    have h1 : (1 + 16 / 5 * C.ε) * (B * ρ) ≤ (1 + 32 / 1000) * (B * ρ) :=
+      mul_le_mul_of_nonneg_right (by linarith) hBρ0
+    have h2 : 31 / 10 * (ρ * B + (1 + 16 / 5 * C.ε) * B * ρ) ≤ 6 * (B * ρ) + 3 / 10 * (B * ρ) := by
+      linarith
+    have := mul_le_mul_of_nonneg_left h2 hε0
+    linarith
+  have hpoly : N * (P * ρ) + 21 / 20 * N * P ^ 2 * ρ + 2 * (N * (P * ρ)) + (N * ρ +
+      N * (21 / 20 * (P * ρ + ρ))) + N * (21 / 20 * (P * ρ + ρ)) +
+      2 * (N * (21 / 20 * (P * ρ + ρ))) ≤ 8 * (N * (1 + P) ^ 2) * ρ := by
+    have h1 : 0 ≤ N * ρ := mul_nonneg hN hρ.le
+    have h2 : 0 ≤ N * ρ * P := mul_nonneg h1 hP0
+    have h3 : 0 ≤ N * ρ * P ^ 2 := mul_nonneg h1 (sq_nonneg P)
+    linarith only [h1, h2, h3]
+  have hfinal : C.ε * (N * (P * ρ) + 21 / 20 * N * P ^ 2 * ρ + 2 * (N * (P * ρ)) + (N * ρ +
+      N * (21 / 20 * (P * ρ + ρ))) + N * (21 / 20 * (P * ρ + ρ)) +
+      2 * (N * (21 / 20 * (P * ρ + ρ)))) ≤ C.ε * (8 * (N * (1 + P) ^ 2) * ρ) :=
+    mul_le_mul_of_nonneg_left hpoly hε0
+  have hBρ' : C.ε * (6 * (B * ρ) + 3 / 10 * (B * ρ)) + C.ε * (1031 / 1000 * (B * ρ)) ≤
+      C.ε * (8 * B * ρ) := by
+    have := mul_nonneg hε0 hBρ0
+    linarith only [this]
+  have e : 8 * C.ε * (N * (1 + P) ^ 2 + B) * ρ =
+      C.ε * (8 * (N * (1 + P) ^ 2) * ρ) + C.ε * (8 * B * ρ) := by ring
+  rw [e]
+  linarith only [hsum, t1, t2, t3, t4, t5, t6, hfin1, hεNp, hεNp', hεND, hεND', hεNρD, hB1, hB2,
+    hfinal, hBρ']
+
+/-- The coefficient certificate is nonnegative unless $k = 1$ (when it is vacuous):
+$0 < \beta_1 \le B$ for $k \ge 2$. -/
+private theorem nonneg_of_certificate {B : ℝ}
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) : 0 ≤ B ∨ k = 1 := by
+  by_cases hk : k = 1
+  · exact Or.inr hk
+  · exact Or.inl ((C.lanczosβ_pos le_rfl (by have := C.k_pos; omega)).le.trans
+      (hB 0 (by have := C.k_pos; omega)).1)
+
+/-- The first step of Lemma A: $\|\bar{\mathbf{f}}_0\| \le 8\varepsilon\|\mathbf{A}\|_2(1+\Pi)^2$. -/
+private theorem norm_recurrenceError_zero_le {P : ℝ}
+    (hP : ‖WithLp.toLp 2 (C.p 0)‖ ≤ P * C.ρ 0) :
+    ‖WithLp.toLp 2 (C.toLanczosData.recurrenceError 0)‖ ≤
+      8 * C.ε * (specNorm C.A * (1 + P) ^ 2) := by
+  have hk := C.k_pos
+  have hγ := C.γ_pos hk
+  have hρ := C.ρ_pos hk
+  have hN := specNorm_nonneg C.A
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hp0 := norm_nonneg (WithLp.toLp 2 (C.p 0))
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith
+  rw [C.recurrenceError_zero, norm_toLp_smul, abs_inv, abs_of_pos hρ]
+  have t := norm_toLp_add_le (-C.es 0) ((C.γ 0)⁻¹ • C.er 0)
+  rw [WithLp.toLp_neg, norm_neg, norm_toLp_smul, abs_inv, abs_of_pos hγ] at t
+  have t1 := C.norm_es_le 0 hk
+  have t2 := mul_le_mul_of_nonneg_left (C.norm_er_le' hk) (inv_nonneg.2 hγ.le)
+  have hs := C.norm_s_le hk
+  have hinv := C.inv_γ_le hk hP
+  have e : (C.γ 0)⁻¹ * (C.ε * (C.ρ 0 + C.γ 0 * ‖WithLp.toLp 2 (C.s 0)‖)) =
+      C.ε * ((C.γ 0)⁻¹ * C.ρ 0) + C.ε * ‖WithLp.toLp 2 (C.s 0)‖ := by
+    field_simp
+  rw [e] at t2
+  have h1 : C.ε * ((C.γ 0)⁻¹ * C.ρ 0) ≤ C.ε * (21 / 20 * specNorm C.A * P ^ 2 * C.ρ 0) := by
+    gcongr
+  have h2 : C.ε * ‖WithLp.toLp 2 (C.s 0)‖ ≤ C.ε * (2 * specNorm C.A * (P * C.ρ 0)) := by
+    gcongr
+    calc _ ≤ _ := hs
+      _ ≤ 2 * specNorm C.A * (P * C.ρ 0) := by gcongr; linarith
+  have h3 : C.ε * specNorm C.A * ‖WithLp.toLp 2 (C.p 0)‖ ≤ C.ε * specNorm C.A * (P * C.ρ 0) := by
+    gcongr
+  have hpoly : C.ε * (specNorm C.A * (P * C.ρ 0)) + C.ε * (21 / 20 * specNorm C.A * P ^ 2 * C.ρ 0) +
+      C.ε * (2 * specNorm C.A * (P * C.ρ 0)) ≤ 8 * C.ε * (specNorm C.A * (1 + P) ^ 2) * C.ρ 0 := by
+    have a1 : 0 ≤ C.ε * specNorm C.A * C.ρ 0 := by positivity
+    have a2 : 0 ≤ C.ε * specNorm C.A * C.ρ 0 * P := by positivity
+    have a3 : 0 ≤ C.ε * specNorm C.A * C.ρ 0 * P ^ 2 := by positivity
+    linarith only [a1, a2, a3]
+  rw [inv_mul_le_iff₀ hρ]
+  linarith only [t, t1, t2, h1, h2, h3, hpoly]
+
+/-- **Lemma A with a nonnegative certificate** $B \ge 0$: the form of
+`NLAlib.CGRun.norm_recurrenceError_le` that holds for every $k$ (for $k \ge 2$, $B \ge 0$
+follows from $\beta_1 \le B$). -/
+theorem norm_recurrenceError_le_of_nonneg {P B : ℝ}
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) (hB0 : 0 ≤ B) {j : ℕ}
+    (hj : j < k) :
+    ‖WithLp.toLp 2 (C.toLanczosData.recurrenceError j)‖ ≤
+      8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B) := by
+  rcases j with _ | i
+  · have h := C.norm_recurrenceError_zero_le (hP 0 C.k_pos)
+    have := mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) ≤ 8) C.ε_nonneg) hB0
+    nlinarith
+  · have hρ := C.ρ_pos hj
+    obtain ⟨hβ, hδ⟩ := hB i hj
+    have h := C.norm_recurrenceError_succ_mul_le hj (hP (i + 1) hj) hβ hδ
+    rw [C.recurrenceError_succ hj, norm_toLp_smul, abs_mul, abs_pow, abs_neg, abs_one, one_pow,
+      one_mul, abs_inv, abs_of_pos hρ, inv_mul_le_iff₀ hρ]
+    linarith
+
 /-- **Lemma A (recurrence error)**: with certificates $\|\mathbf{p}_j\| \le \Pi\rho_j$
 ($j < k$) and $\beta_{j+1}, \delta_j/\gamma_j \le B$ ($j + 1 < k$), the Lanczos data of the
 run satisfy
@@ -694,7 +971,11 @@ theorem norm_recurrenceError_le {P B : ℝ}
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.toLanczosData.recurrenceError j)‖ ≤
       8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B) := by
-  sorry
+  rcases C.nonneg_of_certificate hB with hB0 | hk
+  · exact C.norm_recurrenceError_le_of_nonneg hP hB hB0 hj
+  · -- `k = 1` and `B < 0`: the statement is false (the right side can be negative while
+    -- `‖f₀‖ > 0`); see `NLAlib.CGRun.norm_recurrenceError_le_of_nonneg`.
+    sorry
 
 /-- **The line search defect** [StrakosTichy2002, Theorem 9.1], a posteriori: with certificates
 $\|\mathbf{p}_i\| \le \Pi\rho_i$ and $\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2 \le K\rho_i^2$
