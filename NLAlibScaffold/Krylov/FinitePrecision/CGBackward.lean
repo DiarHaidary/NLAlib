@@ -130,6 +130,107 @@ noncomputable def take (m : ℕ) (hm : 0 < m) (hmk : m ≤ k) : CGRun n m where
   p_succ := fun j hj => C.p_succ j (hj.trans_le hmk)
   norm_ep_le := fun j hj => C.norm_ep_le j (hj.trans_le hmk)
 
+/-! ### Helpers -/
+
+/-- The computed residual norms are positive before the last step. -/
+private theorem ρ_pos {j : ℕ} (hj : j < k) : 0 < C.ρ j := by
+  rcases (norm_nonneg (WithLp.toLp 2 (C.r j))).lt_or_eq with h | h
+  · exact h
+  · have h1 := C.ν_pos j hj
+    rw [C.ν_eq j hj.le, ← h] at h1
+    simp at h1
+
+private theorem ρ_zero : C.ρ 0 = ‖WithLp.toLp 2 C.b‖ := by
+  simp [ρ, C.r_zero]
+
+private theorem norm_b_pos : 0 < ‖WithLp.toLp 2 C.b‖ := by
+  rw [← C.ρ_zero]
+  exact C.ρ_pos C.k_pos
+
+/-- Exact Lanczos does not see a positive scaling of its start. -/
+private theorem lanczosState_smul {m : Type*} [Fintype m] [DecidableEq m]
+    (H : Matrix m m ℝ) (v : m → ℝ) {c : ℝ} (hc : 0 < c) (j : ℕ) :
+    lanczosState H (c • v) j = lanczosState H v j := by
+  induction j with
+  | zero =>
+    simp only [lanczosState]
+    congr 1
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hc, smul_smul]
+    simp only [RCLike.ofReal_real_eq_id, id]
+    rw [mul_inv, mul_right_comm, inv_mul_cancel₀ hc.ne', one_mul]
+  | succ j ih => simp only [lanczosState, ih]
+
+private theorem lanczosTridiagonal_smul {m : Type*} [Fintype m] [DecidableEq m]
+    (H : Matrix m m ℝ) (v : m → ℝ) {c : ℝ} (hc : 0 < c) (q : ℕ) :
+    lanczosTridiagonal H (c • v) q = lanczosTridiagonal H v q := by
+  simp only [lanczosTridiagonal, lanczosState_smul H v hc]
+
+private theorem lanczosV_one : C.lanczosV 1 = (‖WithLp.toLp 2 C.b‖⁻¹ : ℝ) • C.b := by
+  simp only [lanczosV, one_ne_zero, if_false, Nat.sub_self, pow_zero, one_mul]
+  split_ifs <;> simp [ρ, C.r_zero]
+
+private theorem dilatedRhs_eq :
+    C.dilatedRhs = ‖WithLp.toLp 2 C.b‖ • C.toNormalizedLanczosData.dilatedStart := by
+  funext x
+  simp only [dilatedRhs, NormalizedLanczosData.dilatedStart, Pi.smul_apply, smul_eq_mul]
+  split_ifs
+  · change C.b x.1 = ‖WithLp.toLp 2 C.b‖ * C.lanczosV 1 x.1
+    rw [lanczosV_one, Pi.smul_apply, smul_eq_mul, ← mul_assoc,
+      mul_inv_cancel₀ C.norm_b_pos.ne', one_mul]
+  · simp
+
+/-- There is at least one coordinate: $\mathbf{b} \ne \mathbf{0}$. -/
+private theorem n_pos {n k : ℕ} (C : CGRun n k) : 0 < n := by
+  by_contra h
+  have h0 : C.b = 0 := funext fun i => absurd i.2 (by omega)
+  have := C.norm_b_pos
+  rw [h0, WithLp.toLp_zero, norm_zero] at this
+  exact lt_irrefl _ this
+
+/-- The Rayleigh bounds of a symmetric matrix with spectrum in $[l, l']$. -/
+private theorem quadForm_bounds {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
+    (hH : H.IsHermitian) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') (x : m → ℝ) :
+    l * ‖WithLp.toLp 2 x‖ ^ 2 ≤ x ⬝ᵥ (H *ᵥ x) ∧ x ⬝ᵥ (H *ᵥ x) ≤ l' * ‖WithLp.toLp 2 x‖ ^ 2 := by
+  rcases Nat.eq_zero_or_pos (Fintype.card m) with h0 | hpos
+  · have : IsEmpty m := Fintype.card_eq_zero_iff.mp h0
+    have hx : x = 0 := Subsingleton.elim _ _
+    subst hx
+    simp
+  · obtain ⟨c, hc⟩ : ∃ c, c + 1 = Fintype.card m := ⟨Fintype.card m - 1, by omega⟩
+    have h1 := hH.eigenvalue_last_mul_le_re_quadForm hc x
+    have h2 := hH.re_quadForm_le_eigenvalue_zero_mul x
+    simp only [quadForm_def, star_trivial, RCLike.re_to_real] at h1 h2
+    have e1 := (hH.spectrum_subset_iff.mp hs c (by omega)).1
+    have e2 := (hH.spectrum_subset_iff.mp hs 0 hpos).2
+    have hx := sq_nonneg ‖WithLp.toLp 2 x‖
+    exact ⟨(mul_le_mul_of_nonneg_right e1 hx).trans h1,
+      h2.trans (mul_le_mul_of_nonneg_right e2 hx)⟩
+
+/-- A symmetric matrix with spectrum in $[l, l']$, $l > 0$, is positive definite. -/
+private theorem posDef_of_spectrum {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
+    (hH : H.IsHermitian) {l l' : ℝ} (hl : 0 < l) (hs : spectrum ℝ H ⊆ Set.Icc l l') :
+    H.PosDef :=
+  hH.posDef_iff_eigenvalue_pos.mpr fun i hi => hl.trans_le (hH.spectrum_subset_iff.mp hs i hi).1
+
+/-- A nonempty spectrum in $[l, l']$ forces $l \le l'$. -/
+private theorem le_of_spectrum {m : Type*} [Fintype m] [DecidableEq m] [Nonempty m]
+    {H : Matrix m m ℝ} (hH : H.IsHermitian) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') :
+    l ≤ l' :=
+  let h := hH.spectrum_subset_iff.mp hs 0 Fintype.card_pos
+  h.1.trans h.2
+
+/-- The backward model is symmetric. -/
+private theorem isHermitian_backwardH : C.backwardH.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, backwardH,
+    NormalizedLanczosData.transpose_backwardH]
+
+/-- The matrix of the run is symmetric. -/
+private theorem isHermitian_A : C.A.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, C.transpose_A]
+
+private theorem nonempty_index {n k : ℕ} (C : CGRun n k) : Nonempty (Fin n × Fin (k + 1)) :=
+  ⟨(⟨0, C.n_pos⟩, 0)⟩
+
 /-! ### Exact CG on a positive definite model (no smallness hypothesis) -/
 
 /-- **Exact Lanczos on the model computes the CG tridiagonal matrix** of the run, from the
@@ -140,7 +241,30 @@ scaling of its start (a scaling lemma for `NLAlib.lanczosState`, to be added wit
 and the dilated right-hand side is $\|\mathbf{b}\|$ times the dilated start. Difficulty: easy. -/
 theorem lanczosTridiagonal_backwardH :
     lanczosTridiagonal C.backwardH C.dilatedRhs k = cgTridiagonal C.γ C.ρ k := by
-  sorry
+  rw [dilatedRhs_eq, lanczosTridiagonal_smul _ _ C.norm_b_pos, backwardH,
+    NormalizedLanczosData.lanczosTridiagonal_backwardH_dilatedStart]
+  exact C.tridiagonal_toLanczosData
+
+/-- Exact Lanczos on the model computes the last coefficient of the run. -/
+private theorem lanczosState_backwardH_beta :
+    (lanczosState C.backwardH C.dilatedRhs k).beta = C.ρ k / (C.γ (k - 1) * C.ρ (k - 1)) := by
+  rw [dilatedRhs_eq, lanczosState_smul _ _ C.norm_b_pos, backwardH,
+    NormalizedLanczosData.lanczosState_backwardH_dilatedStart_beta]
+  change C.lanczosβ k = _
+  simp [lanczosβ, C.k_pos.ne']
+
+/-- The dilated right-hand side has the norm of the right-hand side. -/
+private theorem dilatedRhs_norm : ‖WithLp.toLp 2 C.dilatedRhs‖ = ‖WithLp.toLp 2 C.b‖ := by
+  rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+  congr 1
+  rw [Fintype.sum_prod_type]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.sum_eq_single (0 : Fin (k + 1))]
+  · simp [dilatedRhs]
+  · intro r _ hr
+    have : (r : ℕ) ≠ 0 := fun h => hr (Fin.ext h)
+    simp [dilatedRhs, this]
+  · simp
 
 /-- **Exact CG on a positive definite model computes the computed step lengths**: if the
 backward model of the run is positive definite, then for $j < k$ the step length of
@@ -153,16 +277,20 @@ Proof: `Matrix.PosDef.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq` with
 lemma), `NLAlib.CGRun.γ_pos`, $\rho_j > 0$ from `C.ν_pos` and `NLAlib.CGRun.ν_eq_zero_iff`,
 $\rho_0 = \|\mathbf{b}\|$. Difficulty: easy. -/
 theorem cgAlpha_backwardH_of_posDef (hH : C.backwardH.PosDef) {j : ℕ} (hj : j < k) :
-    cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j := by
-  sorry
+    cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j :=
+  hH.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq C.k_pos C.lanczosTridiagonal_backwardH
+    C.lanczosState_backwardH_beta (fun _ hi => C.γ_pos hi) (fun _ hi => C.ρ_pos hi)
+    (C.ρ_zero.trans (by simp [dilatedRhs_norm])) hj
 
 /-- **Exact CG on a positive definite model has the computed residual norms**: if the backward
 model is positive definite, $\|\tilde{\mathbf{r}}_j\| = \|\mathbf{r}_j\|$ for $j \le k$.
 Proof: `Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq`, as
 `NLAlib.CGRun.cgAlpha_backwardH_of_posDef`. Difficulty: easy. -/
 theorem norm_cgState_backwardH_r_of_posDef (hH : C.backwardH.PosDef) {j : ℕ} (hj : j ≤ k) :
-    ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j := by
-  sorry
+    ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j :=
+  hH.norm_cgState_r_eq_of_lanczosTridiagonal_eq C.k_pos C.lanczosTridiagonal_backwardH
+    C.lanczosState_backwardH_beta (fun _ hi => C.γ_pos hi) (fun _ hi => C.ρ_pos hi)
+    (C.ρ_zero.trans (by simp [dilatedRhs_norm])) hj
 
 /-- **The residual ratios of the run are bounded by the model's condition number**: if the
 spectrum of the backward model lies in $[l, l']$, $l > 0$, then for $j \le k$
@@ -177,7 +305,31 @@ $\tilde{\mathbf{r}}_j \ne \mathbf{0}$; else both sides of the identity vanish an
 theorem sum_ρ_sq_div_ρ_sq_le {l l' : ℝ} (hl : 0 < l)
     (hH : spectrum ℝ C.backwardH ⊆ Set.Icc l l') {j : ℕ} (hj : j ≤ k) :
     ∑ i ∈ Finset.range (j + 1), C.ρ j ^ 2 / C.ρ i ^ 2 ≤ l' / l := by
-  sorry
+  have hPD := posDef_of_spectrum C.isHermitian_backwardH hl hH
+  have heq := hPD.norm_cgState_p_sq_eq C.dilatedRhs j
+  have hle := hPD.norm_cgState_p_sq_le hl hH C.dilatedRhs j
+  have hr : ∀ i ≤ j, ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 i).r‖ = C.ρ i :=
+    fun i hi => C.norm_cgState_backwardH_r_of_posDef hPD (hi.trans hj)
+  rw [hr j le_rfl] at heq hle
+  rw [Finset.sum_congr rfl fun i hi => by rw [hr i (Nat.lt_succ_iff.mp (Finset.mem_range.mp hi))]]
+    at heq
+  have := C.nonempty_index
+  have hll' : l ≤ l' := le_of_spectrum C.isHermitian_backwardH hH
+  rcases (norm_nonneg (WithLp.toLp 2 (C.r j))).lt_or_eq with hρ | hρ
+  · change 0 < C.ρ j at hρ
+    have hρ2 : 0 < C.ρ j ^ 2 := by positivity
+    have : ∑ i ∈ Finset.range (j + 1), C.ρ j ^ 2 / C.ρ i ^ 2 =
+        ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).p‖ ^ 2 / C.ρ j ^ 2 := by
+      rw [heq, Finset.mul_sum, Finset.sum_div]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      field_simp
+    rw [this, div_le_iff₀ hρ2]
+    exact hle
+  · change 0 = C.ρ j at hρ
+    rw [← hρ]
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_div,
+      Finset.sum_const_zero]
+    exact div_nonneg (hl.le.trans hll') hl.le
 
 /-! ### A priori certificates (the induction) -/
 
