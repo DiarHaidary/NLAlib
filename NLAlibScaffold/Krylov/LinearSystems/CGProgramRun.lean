@@ -592,6 +592,241 @@ theorem cgLoopInv_step (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     · change DecCell _ _ _ _ _ (Function.update T.ν (j + 1) Dd.ν (j + 1))
       rw [Function.update_self]; exact hn'
 
+omit [DecidableEq P] [AddMonoid C] in
+theorem run_ifThenElse_eq_seq (c : CmpOp) (x y : Cell ℕ ℕ) (t e : Builder P ι ℕ ℕ Unit) :
+    (ifThenElse p c x y t e).run = .seq (.ite p c x y t.run e.run) .skip := rfl
+
+/-- **One iteration of the loop keeps the invariant**: the exact test $\nu_k = 0$, then the skip
+(`NLAlib.cgLoopInv_skip`) or the step (`NLAlib.cgLoopInv_step`). -/
+theorem CGLoopInv.succ (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) {N : ℕ} (hu : ((N + 2 : ℕ) : ℝ) * u p < 1)
+    {mv : ℕ → IExp ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit} {R : ℕ} {s₀ s₁ : Store P K}
+    {A : Matrix (Fin N) (Fin N) ℝ} {c ε : ℝ} (hmv : LanczosMvSpec I mv p dec R s₀ A c)
+    (hc : c ≤ ε * specNorm A) (hε : roundingFactor (N + 2) (u p) ≤ ε) (hA : Aᵀ = A) {a a' : ℝ}
+    (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hκ : a ≤ a') {q : ℕ}
+    (hsm : ∀ m ≤ q, (m : ℝ) ^ 3 * ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmε : ∀ m ≤ q, (m : ℝ) * ε ≤ 1 / 100) (h3a : 3 * ε * a' ≤ a)
+    (h20 : ∀ m ≤ q, 20 * m * ε * (1 + 2 * (a' / a) + 21 / 20 * (a' / a)) ≤ 1)
+    {bv : Fin N → ℝ} (hb0 : bv ≠ 0) {S : Array (P × ℕ)} (hS₁ : s₁.shape = S)
+    (hR₁ : ∀ i, s₁.read p R i = s₀.read p R i) {W sb G D Nu : ℕ}
+    (hSW : S[W]? = some (p, 5 * N)) (hS : S[sb]? = some (p, 7)) (hSG : S[G]? = some (p, q))
+    (hSD : S[D]? = some (p, q)) (hSN : S[Nu]? = some (p, q + 1)) (hWs : W ≠ sb) (hGW : G ≠ W)
+    (hGs : G ≠ sb) (hDW : D ≠ W) (hDs : D ≠ sb) (hNW : Nu ≠ W) (hNs : Nu ≠ sb) (hGD : G ≠ D)
+    (hGN : G ≠ Nu) (hDN : D ≠ Nu) (hRW : R ≠ W) (hRs : R ≠ sb) (hRG : R ≠ G) (hRD : R ≠ D)
+    (hRN : R ≠ Nu) {j : ℕ} (hj : j < q) (st : St P K C)
+    (hinv : CGLoopInv p dec s₁ W sb G D Nu q A ε bv j st.store) :
+    ∃ st' : St P K C, exec I (ifThenElse p .eq ⟨sb, 0⟩ ⟨sb, 3⟩
+        (ins (.lit p ⟨G, IExp.var j⟩ 0) >>= fun _ =>
+          ins (.lit p ⟨D, IExp.var j⟩ 0) >>= fun _ => ins (.lit p ⟨Nu, IExp.var j + 1⟩ 0))
+        (cgStepWith mv p (.const N) W (3 * IExp.const N + IExp.const N * (IExp.var j % 2))
+          (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)) sb ⟨G, IExp.var j⟩
+          ⟨D, IExp.var j⟩ ⟨Nu, IExp.var j + 1⟩)).run st = some st' ∧
+      CGLoopInv p dec s₁ W sb G D Nu q A ε bv (j + 1) st'.store := by
+  obtain ⟨hf, k, T, hkj, hv, hstop, hx, hr, hp, hνc, h3, hout, hnu, hzo⟩ := hinv
+  obtain ⟨w0, hw0, hd0⟩ := hνc
+  obtain ⟨w3, hw3, hd3⟩ := h3
+  have hcmp : cmpStep I p .eq ⟨sb, 0⟩ ⟨sb, 3⟩ st =
+      some (decide (T.ν k = 0), { st with cnt := st.cnt + I.charge (.cmp p) }) := by
+    simp only [cmpStep]
+    rw [show (⟨sb, 0⟩ : Cell ℕ ℕ).idx.eval = 0 from rfl, hw0,
+      show (⟨sb, 3⟩ : Cell ℕ ℕ).idx.eval = 3 from rfl, hw3]
+    simp [h.cmp_eq, hd0, hd3]
+  rw [run_ifThenElse_eq_seq, exec_seq_skip, exec_ite, hcmp, Option.bind_some]
+  by_cases hν0 : T.ν k = 0
+  · rw [show decide (T.ν k = 0) = true from decide_eq_true hν0, if_pos rfl]
+    exact cgLoopInv_skip I h hS₁ hSG hSD hSN hGW hGs hDW hDs hNW hNs hGD hGN hDN hj
+      { st with cnt := st.cnt + I.charge (.cmp p) } hf hkj hv hx hr ⟨w0, hw0, hd0⟩
+      ⟨w3, hw3, hd3⟩ hout hnu hzo hν0
+  · obtain rfl : k = j := by
+      by_contra hne
+      exact hν0 (hstop (by omega))
+    rw [show decide (T.ν k = 0) = false from decide_eq_false hν0, if_neg Bool.false_ne_true]
+    exact cgLoopInv_step I h hz hu hmv hc hε hA ha hs hκ hsm hmε h3a h20 hb0 hS₁ hR₁ hSW hS hSG
+      hSD hSN hWs hGW hGs hDW hDs hNW hNs hGD hGN hDN hRW hRs hRG hRD hRN hj
+      { st with cnt := st.cnt + I.charge (.cmp p) } hf hv hx hr (hp hν0) ⟨w0, hw0, hd0⟩
+      ⟨w3, hw3, hd3⟩ hout hnu hν0
+
+/-- **The facts of a run of the CG program on its outputs**, at the store `s`: computed sequences
+of $k \ge 1$ steps (`NLAlib.CGSeq.Valid`), $\nu_k = 0$ if $k < q$, the iterate $\mathbf{x}_k$
+in `X`, $\gamma_i, \delta_i$ ($i < k$) and $\nu_i$ ($i \le k$) in the outputs, and zeros after
+the stop. -/
+def CGRunFacts (p : P) (dec : P → K → ℝ) (X G D Nu q : ℕ) {N : ℕ}
+    (A : Matrix (Fin N) (Fin N) ℝ) (ε : ℝ) (bv : Fin N → ℝ) (s : Store P K) : Prop :=
+  ∃ (k : ℕ) (T : CGSeq N), 0 < k ∧ k ≤ q ∧ T.Valid A bv ε k ∧ (k < q → T.ν k = 0) ∧
+    DecVec s p dec X 0 (T.x k) ∧
+    (∀ i < k, DecCell s p dec G i (T.γ i) ∧ DecCell s p dec D i (T.δ i)) ∧
+    (∀ i ≤ k, DecCell s p dec Nu i (T.ν i)) ∧
+    ∀ i, k ≤ i → i < q →
+      DecCell s p dec G i 0 ∧ DecCell s p dec D i 0 ∧ DecCell s p dec Nu (i + 1) 0
+
+/-- The sequences at the start: $\mathbf{x}_0 = \mathbf{0}$, $\mathbf{r}_0 = \mathbf{p}_0 =
+\mathbf{b}$, $\nu_0$ with relative error $\theta_0$. -/
+def CGSeq.start {N : ℕ} (bv : Fin N → ℝ) (ν θ : ℝ) : CGSeq N :=
+  ⟨fun _ => 0, fun _ => bv, fun _ => bv, 0, fun _ => ν, 0, 0, 0, 0, fun _ => θ, 0, 0, 0, 0, 0, 0⟩
+
+theorem CGSeq.start_valid {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {bv : Fin N → ℝ} {ε ν θ : ℝ}
+    (hν : ν = ‖WithLp.toLp 2 bv‖ ^ 2 * (1 + θ)) (hθ : |θ| ≤ ε) :
+    (CGSeq.start bv ν θ).Valid A bv ε 0 :=
+  ⟨rfl, rfl, rfl, hν, hθ, fun j hj => absurd hj (by omega), fun j hj => absurd hj (by omega)⟩
+
+/-- The CG program after its two allocations: the start, the loop and the copy of the
+iterate. -/
+theorem exec_cg_inner (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) {N : ℕ} (hu : ((N + 2 : ℕ) : ℝ) * u p < 1)
+    {mv : ℕ → IExp ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit} {R : ℕ} {s₀ : Store P K}
+    {A : Matrix (Fin N) (Fin N) ℝ} {c ε : ℝ} (hmv : LanczosMvSpec I mv p dec R s₀ A c)
+    (hc : c ≤ ε * specNorm A) (hε : roundingFactor (N + 2) (u p) ≤ ε) (hA : Aᵀ = A) {a a' : ℝ}
+    (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hκ : a ≤ a') {q : ℕ} (hq : 0 < q)
+    (hsm : ∀ m ≤ q, (m : ℝ) ^ 3 * ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmε : ∀ m ≤ q, (m : ℝ) * ε ≤ 1 / 100) (h3a : 3 * ε * a' ≤ a)
+    (h20 : ∀ m ≤ q, 20 * m * ε * (1 + 2 * (a' / a) + 21 / 20 * (a' / a)) ≤ 1)
+    (st : St P K C) {S : Array (P × ℕ)} (hsh : st.store.shape = S)
+    (hR₁ : ∀ i, st.store.read p R i = s₀.read p R i) {B X W sb G D Nu : ℕ} {bv : Fin N → ℝ}
+    (hB : DecVec st.store p dec B 0 bv) (hb0 : bv ≠ 0)
+    (hSX : S[X]? = some (p, N)) (hSW : S[W]? = some (p, 5 * N)) (hS : S[sb]? = some (p, 7))
+    (hSG : S[G]? = some (p, q)) (hSD : S[D]? = some (p, q)) (hSN : S[Nu]? = some (p, q + 1))
+    (hBW : B ≠ W) (hBs : B ≠ sb) (hBG : B ≠ G) (hBD : B ≠ D) (hBN : B ≠ Nu) (hWs : W ≠ sb)
+    (hXW : X ≠ W) (hXG : X ≠ G) (hXD : X ≠ D) (hXN : X ≠ Nu) (hGW : G ≠ W) (hGs : G ≠ sb)
+    (hDW : D ≠ W) (hDs : D ≠ sb) (hNW : Nu ≠ W) (hNs : Nu ≠ sb) (hGD : G ≠ D) (hGN : G ≠ Nu)
+    (hDN : D ≠ Nu) (hRW : R ≠ W) (hRs : R ≠ sb) (hRG : R ≠ G) (hRD : R ≠ D) (hRN : R ≠ Nu) :
+    ∃ st' : St P K C, exec I (ins (.lit p ⟨sb, 3⟩ 0) >>=
+        fun _ => forRange (.const N) (fun i => ins (.lit p ⟨W, IExp.var i⟩ 0)) >>=
+        fun _ => copyv p B 0 W (.const N) (.const N) >>=
+        fun _ => copyv p B 0 W (3 * IExp.const N) (.const N) >>=
+        fun _ => dot p ⟨sb, 0⟩ B 0 B 0 (.const N) >>=
+        fun _ => ins (.copy p ⟨Nu, 0⟩ ⟨sb, 0⟩) >>=
+        fun _ => (forRange (.const q) fun j => ifThenElse p .eq ⟨sb, 0⟩ ⟨sb, 3⟩
+          (ins (.lit p ⟨G, IExp.var j⟩ 0) >>= fun _ =>
+            ins (.lit p ⟨D, IExp.var j⟩ 0) >>= fun _ => ins (.lit p ⟨Nu, IExp.var j + 1⟩ 0))
+          (cgStepWith mv p (.const N) W (3 * IExp.const N + IExp.const N * (IExp.var j % 2))
+            (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)) sb ⟨G, IExp.var j⟩
+            ⟨D, IExp.var j⟩ ⟨Nu, IExp.var j + 1⟩)) >>=
+        fun _ => copyv p W 0 X 0 (.const N)).run st = some st' ∧
+      st'.store.shape = S ∧ CGRunFacts p dec X G D Nu q A ε bv st'.store := by
+  have hε1 : ε < 1 := by have := hmε 1 hq; simp at this; linarith
+  have hu1 : u p < 1 := by
+    simpa using cast_mul_lt_one_of_le (m := 1) (h.nonneg trivial) (Nat.le_add_left 1 (N + 1)) hu
+  obtain ⟨st₁, ν, θ, h₁, hf₁, hx₁, hr₁, hp₁, hν₁, h3₁, hn₁, hθ, hν⟩ := exec_cg_init I h hz hu1 st
+    hsh hB hBW hBs hWs hNW hNs hSW hS hSN (Nat.succ_pos q)
+  have hθε : |θ| ≤ ε :=
+    (hθ.abs_le (cast_mul_lt_one_of_le (h.nonneg trivial) (Nat.le_add_right N 2) hu)).trans
+      ((roundingFactor_le_roundingFactor (h.nonneg trivial) (Nat.le_add_right N 2) hu).trans hε)
+  have hv₀ := CGSeq.start_valid (A := A) hν hθε
+  have hinv₀ : CGLoopInv p dec st.store W sb G D Nu q A ε bv 0 st₁.store := by
+    refine ⟨hf₁.mono fun b i hb => ?_, 0, CGSeq.start bv ν θ, le_rfl, hv₀,
+      fun h' => absurd h' (lt_irrefl 0), hx₁, hr₁,
+      fun _ => by rw [show 3 * N + N * (0 % 2) = 3 * N by simp]; exact hp₁, hν₁, h3₁,
+      fun i hi => absurd hi (Nat.not_lt_zero i),
+      fun i hi => by obtain rfl : i = 0 := Nat.le_zero.mp hi
+                     exact hn₁, fun i h1 h2 => absurd h2 (Nat.not_lt_zero i)⟩
+    rcases hb with hb | hb | hb
+    · exact Or.inl hb
+    · exact Or.inr (Or.inl hb)
+    · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨hb.1, hb.2.1,
+      Nat.lt_of_lt_of_le hb.2.2 (Nat.add_le_add_left (Nat.succ_le_succ (Nat.zero_le q)) 0)⟩)))
+  obtain ⟨st₂, h₂, hinv⟩ := exists_exec_loop_eq_some_of_forall I (n := .const q)
+    (fun j st' => CGLoopInv p dec st.store W sb G D Nu q A ε bv j st'.store) hinv₀
+    fun j hj st' hI => CGLoopInv.succ I h hz hu hmv hc hε hA ha hs hκ hsm hmε h3a h20 hb0 hsh
+      hR₁ hSW hS hSG hSD hSN hWs hGW hGs hDW hDs hNW hNs hGD hGN hDN hRW hRs hRG hRD hRN hj
+      st' hI
+  obtain ⟨hf, k, T, hkq, hv, hstop, hx, -, -, -, -, hout, hnu, hzo⟩ := hinv
+  obtain ⟨st₃, h₃, hf₃, hX₃⟩ := exec_copyv_decVec I st₂ (hf.1.trans hsh) W 0 X 0
+    (by simpa using hx) hSX (by simp) fun h' => absurd h'.symm hXW
+  have hk : 0 < k := by
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · exfalso
+      have h0 := hstop (show 0 < q from hq)
+      have := hv.r_eq_zero_of_ν_eq_zero hε1 le_rfl h0
+      exact hb0 (by rw [← hv.r_zero]; exact this)
+    · exact hk
+  refine ⟨st₃, ?_, hf₃.1.trans (hf.1.trans hsh), k, T, hk, hkq, hv, hstop, by simpa using hX₃,
+    fun i hi => ⟨(hout i hi).1.frame hf₃ fun hb => hXG hb.1.symm,
+      (hout i hi).2.frame hf₃ fun hb => hXD hb.1.symm⟩,
+    fun i hi => (hnu i hi).frame hf₃ fun hb => hXN hb.1.symm, fun i h1 h2 => ?_⟩
+  · rw [h₁ _, exec_bind_of_exec_eq_some I (b := forRange _ _) ((exec_seq_skip I _ _).trans h₂)
+      (seqShape_forRange _ _)]
+    exact h₃
+  · obtain ⟨a1, a2, a3⟩ := hzo i h1 h2
+    exact ⟨a1.frame hf₃ fun hb => hXG hb.1.symm, a2.frame hf₃ fun hb => hXD hb.1.symm,
+      a3.frame hf₃ fun hb => hXN hb.1.symm⟩
+
+theorem cgRunFacts_pop {X G D Nu q N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {ε : ℝ}
+    {bv : Fin N → ℝ} {s : Store P K} (hX : X + 1 < s.size) (hG : G + 1 < s.size)
+    (hD : D + 1 < s.size) (hN : Nu + 1 < s.size) (h' : CGRunFacts p dec X G D Nu q A ε bv s) :
+    CGRunFacts p dec X G D Nu q A ε bv s.pop := by
+  obtain ⟨k, T, h1, h2, h3, h4, h5, h6, h7, h8⟩ := h'
+  have hpop : ∀ {b : ℕ}, b + 1 < s.size → ∀ i v, DecCell s p dec b i v →
+      DecCell s.pop p dec b i v :=
+    fun hb i v ⟨w, hw, hd⟩ => ⟨w, by rw [Store.read_pop_of_lt (by omega)]; exact hw, hd⟩
+  refine ⟨k, T, h1, h2, h3, h4, fun i => hpop hX _ _ (h5 i), fun i hi => ⟨hpop hG _ _ (h6 i hi).1,
+    hpop hD _ _ (h6 i hi).2⟩, fun i hi => hpop hN _ _ (h7 i hi), fun i hi hi' =>
+    ⟨hpop hG _ _ (h8 i hi hi').1, hpop hD _ _ (h8 i hi hi').2.1, hpop hN _ _ (h8 i hi hi').2.2⟩⟩
+
+/-- **The run of the CG program in the standard model**, for any product meeting
+`NLAlib.LanczosMvSpec` (with read-only buffer `R` as in the initial store): under
+`NLAlib.Computation.IsRelErrSem` with every value in range and adding zero exactly, with
+$(N + 2)u_p < 1$, $\varepsilon \ge \gamma_{N+2}$, the product bound $c \le
+\varepsilon\|\mathbf{A}\|_2$, a symmetric $\mathbf{A}$ with spectrum in $[a, a']$, $0 < a \le
+a'$, the smallness facts of the a priori analysis for every $m \le q$, a right-hand side
+$\mathbf{b} \ne \mathbf{0}$ in buffer `B` and writable outputs `X` ($N$ cells), `G`, `D` ($q$)
+and `Nu` ($q + 1$), the run succeeds and its outputs satisfy `NLAlib.CGRunFacts`. -/
+theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRunFacts_of_cgProgWith
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem) {N q : ℕ}
+    (hu : ((N + 2 : ℕ) : ℝ) * u p < 1) {mv : ℕ → IExp ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit}
+    {R : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {c ε : ℝ} (st : St P K C)
+    (hmv : LanczosMvSpec I mv p dec R st.store A c) (hc : c ≤ ε * specNorm A)
+    (hε : roundingFactor (N + 2) (u p) ≤ ε) (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') (hκ : a ≤ a') (hq : 0 < q)
+    (hsm : ∀ m ≤ q, (m : ℝ) ^ 3 * ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmε : ∀ m ≤ q, (m : ℝ) * ε ≤ 1 / 100) (h3a : 3 * ε * a' ≤ a)
+    (h20 : ∀ m ≤ q, 20 * m * ε * (1 + 2 * (a' / a) + 21 / 20 * (a' / a)) ≤ 1)
+    {B X G D Nu : ℕ} {bv : Fin N → ℝ} (hB : DecVec st.store p dec B 0 bv) (hb0 : bv ≠ 0)
+    (hBs : B < st.store.size) (hRs : R < st.store.size)
+    (hSX : st.store.shape[X]? = some (p, N)) (hSG : st.store.shape[G]? = some (p, q))
+    (hSD : st.store.shape[D]? = some (p, q)) (hSN : st.store.shape[Nu]? = some (p, q + 1))
+    (hBG : B ≠ G) (hBD : B ≠ D) (hBN : B ≠ Nu) (hXG : X ≠ G) (hXD : X ≠ D) (hXN : X ≠ Nu)
+    (hGD : G ≠ D) (hGN : G ≠ Nu) (hDN : D ≠ Nu) (hRG : R ≠ G) (hRD : R ≠ D) (hRN : R ≠ Nu) :
+    ∃ st' : St P K C,
+      exec I (cgProgWith mv p (.const N) (.const q) B X G D Nu).run st = some st' ∧
+      CGRunFacts p dec X G D Nu q A ε bv st'.store := by
+  have hlt : ∀ {b n}, st.store.shape[b]? = some (p, n) → b < st.store.size := fun hb' => by
+    have := (Array.getElem?_eq_some_iff.mp hb').1
+    rwa [Store.size_shape] at this
+  have hLX := hlt hSX
+  have hLG := hlt hSG
+  have hLD := hlt hSD
+  have hLN := hlt hSN
+  unfold cgProgWith
+  rw [run_alloc_bind]
+  refine exec_alloc_of I fun st₁ hst₁ => ?_
+  simp only [run_alloc_bind]
+  refine exec_alloc_of I (p := p) (st := st₁) (len := 7)
+    (Q := fun s => CGRunFacts p dec X G D Nu q A ε bv s.pop) fun st₃ hst₃ => ?_
+  have hsz₁ : st₁.store.size = st.store.size + 1 := by rw [hst₁]; simp
+  have hrd : ∀ b i, b < st.store.size → st₃.store.read p b i = st.store.read p b i :=
+    fun b i hb' => by
+      rw [hst₃, Store.read_push_of_lt (s := st₁.store) (by omega), hst₁,
+        Store.read_push_of_lt hb']
+  have hshp : ∀ b, b < st.store.size → st₃.store.shape[b]? = st.store.shape[b]? :=
+    fun b hb' => by
+      rw [hst₃, Store.getElem?_shape_push_of_lt (s := st₁.store) _ (by omega), hst₁,
+        Store.getElem?_shape_push_of_lt _ hb']
+  obtain ⟨st₄, h₄, hsh₄, hF⟩ := exec_cg_inner I h hz hu hmv hc hε hA ha hs hκ hq hsm hmε h3a h20
+    st₃ rfl (fun i => hrd R i hRs) (W := st.store.size) (sb := st₁.store.size)
+    (fun i => by rw [hrd B _ hBs]; exact hB i) hb0
+    (by rw [hshp _ hLX]; exact hSX)
+    (by rw [hst₃, Store.getElem?_shape_push_of_lt (s := st₁.store) _ (by omega), hst₁,
+      Store.getElem?_shape_push_size]; rfl)
+    (by rw [hst₃]; exact Store.getElem?_shape_push_size _ _ _)
+    (by rw [hshp _ hLG]; exact hSG) (by rw [hshp _ hLD]; exact hSD)
+    (by rw [hshp _ hLN]; exact hSN) (by omega) (by omega) hBG hBD hBN (by omega) (by omega)
+    hXG hXD hXN (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) hGD hGN hDN
+    (by omega) (by omega) hRG hRD hRN
+  have hsz₄ : st₄.store.size = st.store.size + 2 := by
+    rw [← Store.size_shape, hsh₄, Store.size_shape, hst₃]; simp [hsz₁]
+  refine ⟨st₄, h₄, cgRunFacts_pop ?_ ?_ ?_ ?_ (cgRunFacts_pop ?_ ?_ ?_ ?_ hF)⟩ <;>
+    simp [hsz₄] <;> omega
+
 end Run
 
 end NLAlib
