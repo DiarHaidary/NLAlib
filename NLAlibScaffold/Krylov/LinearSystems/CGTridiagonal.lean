@@ -44,6 +44,7 @@ rest is a new file `NLAlib/Krylov/LinearSystems/CGTridiagonal.lean`.
   `Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq`: the converse.
 * `Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ`: the decrease of
   the error.
+* `Matrix.PosDef.norm_cgState_p_sq_eq`: the direction norm [HestenesStiefel1952, Theorem 5:5].
 * `Matrix.PosDef.norm_cgState_r_le`, `Matrix.PosDef.norm_cgState_p_sq_le`,
   `Matrix.PosDef.cgAlpha_le`, `Matrix.PosDef.norm_cgState_r_succ_sq_div_le`: pivot bounds.
 -/
@@ -197,10 +198,29 @@ theorem _root_.Matrix.PosDef.norm_cgState_r_le {A : Matrix n n 𝕜} (hA : A.Pos
       Real.sqrt (a' / a) * ‖WithLp.toLp 2 (cgState A b 0 i).r‖ := by
   sorry
 
+/-- **The direction norm of exact CG** [HestenesStiefel1952, Theorem 5:5]: for positive definite
+$\mathbf{A}$,
+$$\|\mathbf{p}_j\|^2 = \|\mathbf{r}_j\|^4\sum_{i \le j}\|\mathbf{r}_i\|^{-2} .$$
+No hypothesis on the residuals: once $\mathbf{r}_i = \mathbf{0}$ the later residuals and
+directions vanish (the step length and the coefficient are $0$ in `NLAlib.cgStep`), and both
+sides are $0$. With (E2) it bounds the residual ratios of a positive definite CG run,
+$\sum_{i \le j}\|\mathbf{r}_j\|^2/\|\mathbf{r}_i\|^2 \le a'/a$: the step (P) of the a priori
+analysis of finite-precision CG, applied to exact CG on the backward model (design note §7).
+Proof: $\mathbf{p}_j = \mathbf{r}_j + \delta_{j-1}\mathbf{p}_{j-1}$ with
+$\delta_{j-1} = \|\mathbf{r}_j\|^2/\|\mathbf{r}_{j-1}\|^2$ and
+$\mathbf{p}_{j-1}^{\mathsf{H}}\mathbf{r}_j = 0$ (the line search,
+`Matrix.PosDef.star_cgState_r_dotProduct_eq_zero` with the direction update) give
+$\|\mathbf{p}_j\|^2 = \|\mathbf{r}_j\|^2 + \delta_{j-1}^2\|\mathbf{p}_{j-1}\|^2$; induct on $j$.
+Difficulty: easy. -/
+theorem _root_.Matrix.PosDef.norm_cgState_p_sq_eq {A : Matrix n n 𝕜} (hA : A.PosDef)
+    (b : n → 𝕜) (j : ℕ) :
+    ‖WithLp.toLp 2 (cgState A b 0 j).p‖ ^ 2 = ‖WithLp.toLp 2 (cgState A b 0 j).r‖ ^ 4 *
+      ∑ i ∈ Finset.range (j + 1), (‖WithLp.toLp 2 (cgState A b 0 i).r‖ ^ 2)⁻¹ := by
+  sorry
+
 /-- **Directions against residuals** (E2): for spectrum in $[a, a']$, $a > 0$,
-$\|\mathbf{p}_j\|^2 \le (a'/a)\|\mathbf{r}_j\|^2$ (in exact arithmetic
-$\|\mathbf{p}_j\|^2 = \|\mathbf{r}_j\|^4\sum_{i \le j}\|\mathbf{r}_i\|^{-2}$ [HestenesStiefel1952,
-Theorem 5:5]).
+$\|\mathbf{p}_j\|^2 \le (a'/a)\|\mathbf{r}_j\|^2$ (with
+`Matrix.PosDef.norm_cgState_p_sq_eq`, a bound on the residual ratios).
 Proof: by conjugacy $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_j =
 \mathbf{r}_j^{\mathsf{H}}\mathbf{A}\mathbf{r}_j - \delta_{j-1}^2\mathbf{p}_{j-1}^{\mathsf{H}}
 \mathbf{A}\mathbf{p}_{j-1} \le a'\|\mathbf{r}_j\|^2$ and $a\|\mathbf{p}_j\|^2 \le

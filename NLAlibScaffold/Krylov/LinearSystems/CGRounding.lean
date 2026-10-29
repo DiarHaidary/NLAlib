@@ -101,13 +101,24 @@ $q^3\varepsilon\kappa^2 \le 10^{-5}$ for $\varepsilon = \max(\varepsilon_{\mathr
 `C : NLAlib.CGRun N k` (`NLAlib.HasCGRunOutputs`); in particular every computed curvature
 $\mathbf{p}_j^{\mathsf{T}}\mathbf{A}\mathbf{p}_j$ is positive.
 [HestenesStiefel1952, (3:1)]; [Higham2002, §§2.2, 3.1, Lemma 3.3].
-Proof: loop invariant "after $m$ iterations the state decodes to `C.take (min m k)`"; the step
-lemma is the analogue of `NLAlib.exec_lanczosStepWith` (`dot`, `bin .div`, `axpy`, `copyv`;
-`NLAlib.LanczosMvSpec` is reused for the product); before the division by $\mu_m$,
-`NLAlib.CGRun.norm_r_le_two_mul_norm_p` on the prefix with the a priori certificates of
-`NLAlib/…/CGBackward.lean` gives $\mathbf{p}_m \ne \mathbf{0}$, and
-`NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc` gives $\mu_m > 0$. Difficulty: hard
-(about 900 lines, the Lanczos bridge as template). -/
+The stop test $\nu_j = 0$ detects $\mathbf{r}_j = \mathbf{0}$ exactly in this model of
+computation (`NLAlib.CGRun.ν_eq_zero_iff`; no underflow: in IEEE arithmetic
+$\mathrm{fl}(\|\mathbf{r}\|^2)$ can be $0$ with $\mathbf{r} \ne \mathbf{0}$).
+Proof: loop invariant on the iterations $m \le q$, built forward (it does not presuppose the
+final run): for $m = 0$ the decoded state is $\mathbf{x}_0 = \mathbf{0}$,
+$\mathbf{r}_0 = \mathbf{p}_0 = \mathbf{b}$, $\nu_0 = \|\mathbf{b}\|^2(1 + \theta_0)$ (there is
+no `NLAlib.CGRun` of $0$ steps); for $m \ge 1$ there is `R : NLAlib.CGRun N (min m k)` whose
+data decode the state (and the outputs so far), extended at each iteration by re-packaging its
+fields with the step-$m$ data and re-proving `k_mul_ε_le`. The step lemma is the analogue of
+`NLAlib.exec_lanczosStepWith` (`dot`, `bin .div`, `axpy`, `copyv`; `NLAlib.LanczosMvSpec` is
+reused for the product). Before the division by $\mu_m$ ($\nu_m \ne 0$): for $m = 0$,
+$\mathbf{p}_0 = \mathbf{b} \ne \mathbf{0}$; for $m \ge 1$,
+`NLAlib.CGRun.norm_r_le_two_mul_norm_p` on `R` with its a priori certificates
+(`NLAlib.CGRun.norm_p_sq_le`, `NLAlib.CGRun.specNorm_mul_γ_mul_norm_p_sq_le`; its smallness
+from $m^3 \le q^3$) gives $\mathbf{p}_m \ne \mathbf{0}$; in both cases
+`NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc` gives $\mu_m > 0$. Fallback (decision CG1 (b),
+design note §1.3): a guard `μ ≤ 0 → stop` decouples the bridge from the analysis.
+Difficulty: hard (about 1200 lines, the Lanczos bridge as template). -/
 theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRun_of_cgProg
     {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C) (p : P) (o : ι)
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)

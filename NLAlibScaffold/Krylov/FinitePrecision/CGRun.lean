@@ -33,7 +33,9 @@ matrix `NLAlib.cgTridiagonal` of the computed $\gamma_j$ and the norms $\rho_j =
 design note) are bounded a posteriori in terms of three run certificates: $\Pi \ge
 \|\mathbf{p}_j\|/\|\mathbf{r}_j\|$, $K \ge \|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2/
 \|\mathbf{r}_j\|^2$, and $B$ bounding the coefficients $\beta_{j+1} =
-\rho_{j+1}/(\gamma_j\rho_j)$ and $\delta_j/\gamma_j$. The a priori bounds on the certificates are in
+\rho_{j+1}/(\gamma_j\rho_j)$ and $\delta_j/\gamma_j$ for $j + 1 < k$ (the last pair,
+$\beta_k$ and $\delta_{k-1}/\gamma_{k-1}$, does not enter the local errors of $k$ steps). The
+a priori bounds on the certificates are in
 `NLAlibScaffold/Krylov/FinitePrecision/CGBackward.lean`.
 
 Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRounding.md` (§3, §6).
@@ -221,7 +223,9 @@ noncomputable def toLanczosData : LanczosData n k where
   β_zero := by simp [lanczosβ]
 
 /-- **The computed squared residual norm vanishes exactly with the residual**:
-$\nu_j = 0 \iff \mathbf{r}_j = \mathbf{0}$, $j \le k$.
+$\nu_j = 0 \iff \mathbf{r}_j = \mathbf{0}$, $j \le k$. This is a statement about the model
+of computation without underflow (`NLAlib.CGRun.ν_eq`); in IEEE arithmetic
+$\mathrm{fl}(\|\mathbf{r}\|^2)$ can underflow to $0$ with $\mathbf{r} \ne \mathbf{0}$.
 Proof: `C.ν_eq` and $1 + \theta_j \ge 1 - \varepsilon > 0$. Difficulty: easy. -/
 theorem ν_eq_zero_iff {j : ℕ} (hj : j ≤ k) : C.ν j = 0 ↔ C.r j = 0 := by
   sorry
@@ -290,8 +294,9 @@ theorem ρ_sq_le {j : ℕ} (hj : j < k) :
     C.ρ j ^ 2 ≤ 21 / 20 * specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
   sorry
 
-/-- **Lemma A (recurrence error)**: with certificates $\|\mathbf{p}_j\| \le \Pi\rho_j$ and
-$\beta_{j+1}, \delta_j/\gamma_j \le B$ ($j < k$), the Lanczos data of the run satisfy
+/-- **Lemma A (recurrence error)**: with certificates $\|\mathbf{p}_j\| \le \Pi\rho_j$
+($j < k$) and $\beta_{j+1}, \delta_j/\gamma_j \le B$ ($j + 1 < k$), the Lanczos data of the
+run satisfy
 $$\|\bar{\mathbf{f}}_j\| \le 8\varepsilon\bigl(\|\mathbf{A}\|_2(1 + \Pi)^2 + B\bigr),
 \qquad j < k .$$
 No residual ratio enters. No printed source; the research note `HSCG-FiniteP.md` §2.4, after
@@ -301,11 +306,14 @@ Proof: the exact identity $\mathbf{A}\mathbf{r}_j = (\gamma_j^{-1} + \delta_{j-1
 \mathbf{g}_j$ in the computed data (eliminate $\mathbf{A}\mathbf{p}_j$ between the residual and
 direction updates), normalise by $(-1)^j/\rho_j$, then the term table of the note; the
 diagonal convention of `NLAlib.cgTridiagonal` adds $\le 3.2\varepsilon\,\delta_{j-1}/
-\gamma_{j-1}$, and $\gamma_j^{-1} \le 1.05\|\mathbf{A}\|_2\pi_j^2$ (`C.ρ_sq_le`).
+\gamma_{j-1}$, and $\gamma_j^{-1} \le 1.05\|\mathbf{A}\|_2\pi_j^2$ (`C.ρ_sq_le`). Step $j$
+uses $B$ only for $\beta_j$ and $\delta_{j-1}/\gamma_{j-1}$ (index $j - 1$, so $j - 1 + 1 < k$);
+$\beta_{j+1}$ enters $\bar{\mathbf{f}}_j$ only through the exact cancellation
+$\beta_{j+1}\bar{\mathbf{v}}_{j+2} = (-1)^{j+1}\mathbf{r}_{j+1}/(\gamma_j\rho_j)$.
 Difficulty: hard (one identity, then about ten norm estimates). -/
 theorem norm_recurrenceError_le {P B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
-    (hB : ∀ j < k, C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.toLanczosData.recurrenceError j)‖ ≤
       8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B) := by
   sorry
@@ -330,8 +338,9 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
   sorry
 
 /-- **Lemma B (local orthogonality is inherited)**: with the certificates of
-`NLAlib.CGRun.norm_recurrenceError_le` and $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le
-K\rho_j^2$ ($j < k$), the adjacent inner products of the run's Lanczos data satisfy
+`NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
+$\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
+products of the run's Lanczos data satisfy
 $$\lvert\bar p_j\rvert \le 16(j+1)\varepsilon\bigl(\|\mathbf{A}\|_2(1 + \Pi)^2 +
 B(1 + \Pi + K)\bigr),\qquad j < k .$$
 No printed source; the research note `HSCG-FiniteP.md` §2.5. The orthogonality
@@ -345,23 +354,27 @@ $\beta_{j+1}$: this is what keeps the a priori hypothesis at $\kappa^2$), and
 theorem abs_adjacentInner_le {P K B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
-    (hB : ∀ j < k, C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
     |C.toLanczosData.adjacentInner j| ≤
       16 * (j + 1) * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
   sorry
 
-/-- **The a posteriori backward model**: with the certificates $\Pi$, $K$, $B$ of the run,
+/-- **The a posteriori backward model**: with the certificates $\Pi$, $K$ ($j < k$) and $B$
+($j + 1 < k$) of the run,
 
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le 102k^3 f + 96k^2 p,
 \quad f = 8\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B),\
 p = 16k\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B(1+\Pi+K)) .$$
-The certificates are computable from the run; in practice $\Pi \ll \sqrt{\kappa}$.
+The certificates are computable from the run; in practice $\Pi \ll \sqrt{\kappa}$. It is the
+engine of the a priori induction (`NLAlibScaffold/Krylov/FinitePrecision/CGBackward.lean`): the
+model of the prefix `C.take j` needs $B$ for the steps $i + 1 < j$ only, which the models of the
+shorter prefixes provide.
 Proof: `NLAlib.NormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le` with Lemmas A and B.
 Difficulty: easy. -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
-    (hB : ∀ j < k, C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) :
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) :
     frobNorm (C.backwardH - C.dilatedH) ≤
       normalizedBackwardBound k (8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B))
         (16 * k * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K))) := by
@@ -374,7 +387,12 @@ and the next curvature is positive (`NLAlib.dotProduct_add_pos_of_spectrum_subse
 program's next division succeeds.
 Proof: $\|\mathbf{r}_k + \delta_{k-1}\mathbf{p}_{k-1}\|^2 = \rho_k^2 + \delta_{k-1}^2
 \|\mathbf{p}_{k-1}\|^2 + 2\delta_{k-1}\tau_{k-1}$ with `NLAlib.CGRun.abs_p_dotProduct_r_succ_le`
-and $\delta_{k-1}\rho_{k-1}^2 \le 1.04\rho_k^2$; then `C.norm_ep_le`. Difficulty: moderate. -/
+and $\delta_{k-1}\rho_{k-1}^2 \le 1.04\rho_k^2$; then `C.norm_ep_le`, bounded through the
+quadratic mean, $\|\mathbf{e}^p_{k-1}\| \le \sqrt{2}\,\varepsilon\,(\rho_k^2 +
+\delta_{k-1}^2\|\mathbf{p}_{k-1}\|^2)^{1/2}$, and $\rho_k^2 + \delta_{k-1}^2\|\mathbf{p}_{k-1}\|^2
+\le \|\mathbf{r}_k + \delta_{k-1}\mathbf{p}_{k-1}\|^2 + 2\delta_{k-1}\lvert\tau_{k-1}\rvert$
+(bounding $\delta_{k-1}\|\mathbf{p}_{k-1}\|$ directly reintroduces $\rho_k/\rho_{k-1}$); the
+result is $\|\mathbf{p}_k\| \ge 0.67\rho_k$. Difficulty: moderate. -/
 theorem norm_r_le_two_mul_norm_p {P K : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)

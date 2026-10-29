@@ -38,8 +38,9 @@ Mathematical source: `docs/design/research/HSCG-FiniteP.md` (= harness
   $2\kappa+1$. Residual gap (local, $\kappa$-free) this round. The computed run's own
   $\|\mathbf x_\star-\mathbf x_k\|_{\mathbf A}$ (a rigorous Strakoš–Tichý Thm 10.1) recommended
   **next round**, statements in §9.4.
-* **Skeleton**: 6 scaffold files, 56 sorried statements (all typecheck; `check_rules` clean;
-  `check_constants` clean). Size estimate ≈ 5k lines (§10).
+* **Skeleton**: 6 scaffold files, 61 sorried statements (all typecheck; `check_rules` clean;
+  `check_constants` clean). Size estimate ≈ 5.3k lines (§10). Revised after the Fable review
+  (harness `reports/CG-FP-Review.md`, accept with changes): dispositions in §12.
 
 ---
 
@@ -104,14 +105,19 @@ divisor; `safe = True`, no overflow).
   steps $<j$ only); (ii) $\mu_j\ge(a-2.1\varepsilon a')\|\mathbf p_j\|^2>0$
   (`dotProduct_add_pos_of_spectrum_subset_Icc`). Hence $\gamma_j>0$, $\delta_j\ge0$.
 * So the bridge is an **induction over iterations interleaved with the analysis of the prefix
-  run**: after $m$ iterations the state decodes to `C.take m`; the a priori certificates of
-  `C.take m` give $\mathbf p_m\ne\mathbf 0$, so iteration $m$ succeeds.
+  run**. The invariant is built forward (it must not presuppose the final run): for $m=0$ the
+  state decodes to $\mathbf x_0=\mathbf 0$, $\mathbf r_0=\mathbf p_0=\mathbf b$, $\nu_0$ (there is no
+  `CGRun N 0`: `k_pos`), and $\mathbf p_0=\mathbf b\ne\mathbf 0$ gives $\mu_0>0$ directly; for $m\ge1$
+  there is `R : CGRun N (min m k)` decoding the state, extended each iteration by re-packaging
+  its ~30 fields with the step-$m$ data and re-proving `k_mul_ε_le`; the a priori certificates of
+  `R` give $\mathbf p_m\ne\mathbf 0$, so iteration $m$ succeeds.
 
 Alternatives. (b) Add a guard `if μ ≤ 0 then stop` (`cmp .le` is exact): the bridge becomes
 unconditional and independent of the analysis (exactly the Lanczos pattern), and the analysis
 proves the guard never fires under (H). Costs one comparison and departs from textbook HSCG.
-Fallback if the interleaved induction is awkward in Lean; statement unchanged except a
-"stop reason" conjunct. (c) Hypothesis "no breakdown" — rejected (a condition on the run). (d)
+Fallback if the interleaved induction is awkward in Lean (trigger: it costs > 300 lines over the
+Lanczos template); statement unchanged except a "stop reason" conjunct. Decision CG1 = (a),
+with (b) kept as the named fallback. (c) Hypothesis "no breakdown" — rejected (a condition on the run). (d)
 `whileFuel` with $k$ written out — same as Lanczos L1(b), not needed.
 
 ### 1.4 Exact specification
@@ -257,6 +263,7 @@ bound: $f=O(\varepsilon\kappa a')$, $p=O(k\varepsilon\kappa a')$, $\|\mathbf\Del
 | (E0′) `…cgAlpha_cgState_eq_of_lanczosTridiagonal_eq`, `…norm_cgState_r_eq_of_…` | converse: uniqueness of LDLᵀ | classical | new, moderate |
 | HS decrement `re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ` | $\|\mathbf e_j\|_A^2-\|\mathbf e_{j+1}\|_A^2=\gamma_j\|\mathbf r_j\|^2$ | HS52 Thm 6:1 | new, easy |
 | (E1) `PosDef.norm_cgState_r_le` | $\|\mathbf r_j\|\le\sqrt{a'/a}\|\mathbf r_i\|$, $i\le j$ | ST02 (7.20) | new, easy (`isMinOn_cgIterate`, exists) |
+| (HS) `PosDef.norm_cgState_p_sq_eq` | $\|\mathbf p_j\|^2=\|\mathbf r_j\|^4\sum_{i\le j}\|\mathbf r_i\|^{-2}$ (no hypothesis on $\mathbf r$) | HS52 Thm 5:5 | new, easy ($\mathbf r_j\perp\mathbf p_{j-1}$, induct) |
 | (E2) `PosDef.norm_cgState_p_sq_le` | $\|\mathbf p_j\|^2\le(a'/a)\|\mathbf r_j\|^2$ | HS52 Thm 5:5 | new, easy (conjugacy, exists) |
 | (E3) `PosDef.cgAlpha_le`, `…norm_cgState_r_succ_sq_div_le` | $\gamma_j\le1/a$; $\delta_j\le a'\gamma_j$ | report (E3) | new, easy |
 
@@ -271,7 +278,10 @@ public. Placement: `cgAlpha` and (E1)–(E3) to `CGRecurrence.lean`, the rest a 
 ## 6. Lemmas A–C, a posteriori (report §§2.4–2.6)
 
 Certificates (hypotheses, computable from the run): $\|\mathbf p_j\|\le\Pi\rho_j$;
-$\|\mathbf A\|_2\gamma_j\|\mathbf p_j\|^2\le K\rho_j^2$; $\beta_{j+1}\le B$ and $\delta_j\le B\gamma_j$ ($j<k$).
+$\|\mathbf A\|_2\gamma_j\|\mathbf p_j\|^2\le K\rho_j^2$ ($j<k$); $\beta_{j+1}\le B$ and $\delta_j\le B\gamma_j$
+($j+1<k$: step $j$ uses $\beta_j$ and $\delta_{j-1}/\gamma_{j-1}$ only; $\beta_{j+1}$ enters $\bar{\mathbf f}_j$
+through the exact cancellation $\beta_{j+1}\bar{\mathbf v}_{j+2}=(-1)^{j+1}\mathbf r_{j+1}/(\gamma_j\rho_j)$). In
+Lean: `hB : ∀ j, j + 1 < k → lanczosβ (j+1) ≤ B ∧ δ j ≤ B * γ j`.
 
 * **Lemma A** `CGRun.norm_recurrenceError_le`: $\|\bar{\mathbf f}_j\|\le8\varepsilon(\|\mathbf A\|_2(1+\Pi)^2+B)$.
   The report's $\varepsilon\|\mathbf A\|(5.1\pi_j+4.1)+\varepsilon(1/\gamma_j+4.2\beta_j)+3.2\varepsilon\delta_{j-1}/\gamma_{j-1}$,
@@ -300,15 +310,22 @@ $<j$. Step P(j) ⇒ P(j+1):
 
 1. **Model of the prefix.** `C.take j` with the P(j) certificates:
    $f\le8\varepsilon(a'(1+1.82\sqrt\kappa)^2+1.6a')\le89\varepsilon\kappa a'$,
-   $p\le16j\varepsilon(8\kappa a'+1.6a'\cdot3.9\kappa)\le322j\varepsilon\kappa a'$ (using $(1+1.82\sqrt\kappa)^2\le8\kappa$,
-   $1+\Pi+K\le3.9\kappa$), so $c_j:=\|\mathbf\Delta_j\|_F\le(102\cdot89+96\cdot322)j^3\varepsilon\kappa a'\le4\cdot10^4j^3\varepsilon\kappa a'\le0.4a$ by (H).
+   $p\le16j\varepsilon(8\kappa a'+1.6a'\cdot3.9\kappa)=227.8\,j\varepsilon\kappa a'\le230j\varepsilon\kappa a'$ (using $(1+1.82\sqrt\kappa)^2\le8\kappa$,
+   $1+\Pi+K\le3.9\kappa$; the first draft's $322$ was an arithmetic slip), so
+   $c_j:=\|\mathbf\Delta_j\|_F\le(102\cdot89+96\cdot230)j^3\varepsilon\kappa a'=31158\,j^3\varepsilon\kappa a'\le4\cdot10^4j^3\varepsilon\kappa a'\le0.4a$ by (H)
+   (margin 28% on the constant for the re-derivation of Lemmas A and B; the review's recount of
+   $L_j$, $\approx11\|\mathbf A\|(1+\Pi)^2+14.1B(1+\Pi+K)$ per $(j+1)$, stays under the 16). The model
+   of `C.take j` needs $B$ only for the steps $i+1<j$.
    Weyl: spectrum of $\tilde{\mathbf H}_j$ in $[a/2,a'+a/2]$, condition number $\le2\kappa+1\le3\kappa$.
 2. **Exact CG on the prefix model** reproduces $\gamma_i$ ($i<j$) and $\rho_i$ ($i\le j$) (§5 E0′ with
    `lanczosTridiagonal_backwardH`, `lanczosState_backwardH_dilatedStart_beta`).
 3. **Step-$j$ certificates.** (S) $K$: direct ($\mu_j\ge(1-2.1\varepsilon\kappa)a\|\mathbf p_j\|^2$), no model.
    (P) $\pi_j^2\le(1+2\varepsilon)^2[1+(1+\eta)^2(\rho_j/\rho_{j-1})^2\pi_{j-1}^2+2(1+\eta)|\tau_{j-1}|/\rho_{j-1}^2]$;
    unrolled, the ratios telescope to $S_j=\sum_{i\le j}\rho_j^2/\rho_i^2=\|\tilde{\mathbf p}_j\|^2/\rho_j^2\le\kappa(\tilde{\mathbf H}_j)\le3\kappa$
-   (E2 on the model), so $\pi_j^2\le1.1\cdot3\kappa$. (B) $\beta_{j}$, $\delta_{j-1}/\gamma_{j-1}\le1.04\lambda_{\max}(\tilde{\mathbf H}_j)\le1.6a'$ (E3 on
+   (the identity (HS) `norm_cgState_p_sq_eq` and (E2) on the model, with the reproduction of
+   $\rho_i$: `CGRun.sum_ρ_sq_div_ρ_sq_le`, hypothesis spectrum of the model in $[l,l']$), so
+   $\pi_j^2\le1.1\cdot3\kappa$. Without (HS) only (E1) termwise is available, $S_j\le1+j\kappa$,
+   which costs a factor $k$ in $p$ and turns (H) into $k^4\varepsilon\kappa^2$. (B) $\beta_{j}$, $\delta_{j-1}/\gamma_{j-1}\le1.04\lambda_{\max}(\tilde{\mathbf H}_j)\le1.6a'$ (E3 on
    the model). The new step-$j$ index needs the model of `C.take (j+1)` for $\beta_{j+1}$,
    $\delta_j/\gamma_j$: they are proved after P(j+1)'s $\Pi,K$ part — the induction is on the
    triple (Π,K at $j$) → model of $j+1$ → (B at $j$); no circularity, since the model of
@@ -316,16 +333,29 @@ $<j$. Step P(j) ⇒ P(j+1):
    use $\delta_{j-1}/\gamma_{j-1}$, $\beta_j$ (step $<j$) and $1/\gamma_j$ (via $\pi_j$), the audit of report §2.6′(L).
 4. **Next division.** $\rho_j\le2\|\mathbf p_j\|$ and $\mu_j>0$ (§1.3) — used by the bridge.
 
-**Formal shape.** One private theorem `aprioriCertificates (j ≤ k) : P j` by `Nat.rec`, from
-which `norm_p_sq_le`, `specNorm_mul_γ_mul_norm_p_sq_le`, `lanczosβ_succ_le`, `δ_le` follow;
-the backward model of every prefix is the *same construction* applied to `C.take j`, so the
-interface must be a plain structure over `LanczosData` (it is).
+**Formal shape.** One private theorem `aprioriCertificates (j ≤ k) : ∀ i < j, Π_i ∧ K_i ∧ β_{i+1} ∧ δ_i`
+by `Nat.rec` (skeletoned in `CGBackward.lean`), from which `norm_p_sq_le`,
+`specNorm_mul_γ_mul_norm_p_sq_le`, `lanczosβ_succ_le`, `δ_le` follow at $j=k$. It uses only the
+a posteriori engine `frobNorm_backwardH_sub_dilatedH_le_of_certificates` on `C.take j`, Weyl
+(`NormalizedLanczosData.spectrum_backwardH_subset_Icc`), and the reproduction lemmas with
+positive definiteness as a **hypothesis** (`cgAlpha_backwardH_of_posDef`,
+`norm_cgState_backwardH_r_of_posDef`, `sum_ρ_sq_div_ρ_sq_le`); never the public a priori
+`cgAlpha_backwardH` / `spectrum_backwardH_subset_Icc`, which depend on it (no file-level circle;
+the docstrings say so). Step $j=0$ is direct ($\mathbf p_0=\mathbf r_0$, no `take 0`). The backward
+model of every prefix is the *same construction* applied to `C.take j`, so the interface must be
+a plain structure over `LanczosData` (it is).
 
 **Arithmetic of (H).** $k^3\varepsilon\kappa^2\le10^{-5}$ gives $c_k\le0.4a$, $2.1\varepsilon\kappa\le10^{-5}$,
 $20k\varepsilon(1+\Pi+K)\le80k\varepsilon\kappa\le10^{-3}$, $k\varepsilon\le1/100$. The $\kappa^2$ is natural (the
 perturbation $\sim\varepsilon\kappa\|\mathbf A\|$ must stay below $\lambda_{\min}$: maintainer's point); the
 $\kappa$ in $\varepsilon_{\rm CG}$ is unavoidable for the interface quantities in the normwise model
 (report §2.7, attained by admissible error choices). Constants unoptimised.
+
+**Future work (not this round).** A sharper a priori $1/\gamma_j\le1.02\|\mathbf A\|$ (instead of
+$1.05\|\mathbf A\|\pi_j^2$), from $\mathbf p_j^{\mathsf T}\mathbf A\mathbf p_j=\mathbf r_j^{\mathsf T}\mathbf s_j+\delta_{j-1}\zeta_j+\dots$ with
+$O(k\varepsilon\kappa\|\mathbf A\|)$ corrections from P(j), with Kantorovich on $e^\mu$, gives
+$f=O(\varepsilon\sqrt\kappa a')$ and drops pieces (4), (7) of $L_j$; the total gain is only ~25% (the
+$p$ term dominates), and $\gamma_j\le1.02/a$ likewise. Recorded, not pursued (review §B).
 
 ## 8. Headlines (`FinitePrecision/CGBackward.lean`)
 
@@ -356,7 +386,9 @@ polynomial $k^3$. The a posteriori theorem (§6) has no $\kappa$ and holds for e
 $k\varepsilon\le1/100$. Lanczos is in the same position (its bound $2000k^4\varepsilon\|\mathbf H\|$ is informative
 only for $k\lesssim(5\cdot10^{-4}/\varepsilon)^{1/4}\approx100$). Improving the constants by $10^2$–$10^3$ is
 plausible (Lemma B and the exchange rule are crude) but does not change the picture for
-$\kappa=10^3$; the $\kappa^2$ is intrinsic (§7). State the range in the docstrings.
+$\kappa=10^3$; the $\kappa^2$ is intrinsic (§7). The range is stated in the docstrings of
+`CGBackward.lean` (module docstring and `frobNorm_backwardH_sub_dilatedH_le`). Within it the
+constants have a real margin: $31158\le4\cdot10^4$ (28%) and $c_k\le0.4a<a/2$ (20%).
 
 ## 9. Relating the errors of the model and of the computed run (maintainer requirement 3)
 
@@ -425,7 +457,10 @@ $\mathbf e_j:=\mathbf x_\star-\mathbf x_j$, $\mathbf A\mathbf e_j=\mathbf r_j+\m
 $$\|\mathbf e_j\|_A^2-\|\mathbf e_{j+1}\|_A^2=\gamma_j\rho_j^2(1+\zeta_j)+\xi_j,$$
 $\gamma_j\rho_j^2\zeta_j=\gamma_j[2\delta_{j-1}\tau_{j-1}+2\mathbf e^{p\mathsf T}_j\mathbf r_j-\rho_j^2(\theta_j+\eta^\gamma_j+\theta_j\eta^\gamma_j)+\gamma_j\mathbf p_j^{\mathsf T}\mathbf e^s_j+\gamma_je^\mu_j]$, so
 $|\zeta_j|\le C\,k\varepsilon\kappa$ by the line-search lemma and the a priori certificates;
-$\xi_j=2\gamma_j\mathbf p_j^{\mathsf T}\mathbf g_j-2(\mathbf e_j-\gamma_j\mathbf p_j)^{\mathsf T}\mathbf A\mathbf e^x_j+\|\mathbf e^x_j\|_A^2$, so
+$\mathbf e_{j+1}=\mathbf e_j-\gamma_j\mathbf p_j-\mathbf e^x_j$ and
+$\xi_j=2\gamma_j\mathbf p_j^{\mathsf T}\mathbf g_j+2\mathbf e^{x\mathsf T}_j\mathbf A\mathbf e_{j+1}+\|\mathbf e^x_j\|_A^2$
+(equivalently $+2\mathbf e^{x\mathsf T}_j\mathbf A(\mathbf e_j-\gamma_j\mathbf p_j)-\|\mathbf e^x_j\|_A^2$; the first draft had the
+cross term with the wrong sign, harmless for $|\xi_j|$), so
 $|\xi_j|\le2\gamma_j\|\mathbf p_j\|\|\mathbf g_j\|+2\|\mathbf A\|^{1/2}\|\mathbf e_{j+1}+\mathbf e^x_j\|_A\varepsilon(\|\mathbf x_j\|+\gamma_j\|\mathbf p_j\|)+\|\mathbf A\|\varepsilon^2(\cdot)^2$.
 Proposed statements (shape):
 
@@ -456,13 +491,14 @@ $\mathbf x$, $\mathbf e^x$ are already in place, so no refactor.
 | # | file (scaffold path = future path, except where noted) | content | sorry | est. lines |
 |---|---|---|---|---|
 | 1 | `Krylov/FinitePrecision/NormalizedBackward.lean` | §4 refactor (→ `LanczosData.lean`, `Backward*.lean`) | 10 | 300 (mostly moves) |
-| 2 | `Krylov/LinearSystems/CGTridiagonal.lean` | §5 exact layer | 11 | 650 |
+| 2 | `Krylov/LinearSystems/CGTridiagonal.lean` | §5 exact layer | 12 | 680 |
 | 3 | `Krylov/FinitePrecision/CGRun.lean` | §3, §6, gap | 15 | 1300 |
-| 4 | `Krylov/FinitePrecision/CGBackward.lean` | §7–§9.2 | 15 | 1000 |
+| 4 | `Krylov/FinitePrecision/CGBackward.lean` | §7–§9.2 | 19 | 1050 |
 | 5 | `Krylov/LinearSystems/CGProgramTree.lean` | §1 | 1 | 650 |
-| 6 | `Krylov/LinearSystems/CGRounding.lean` | §2 (+ step/run files like `LanczosStep`/`LanczosProgramRun`) | 4 | 1100 |
+| 6 | `Krylov/LinearSystems/CGRounding.lean` | §2 (+ step/run files like `LanczosStep`/`LanczosProgramRun`) | 4 | 1400 |
 
-Total ≈ 5k lines; next round ER3 ≈ 500. Imports: 1 ← `BackwardSpectral`; 2 ← `CGLanczos`,
+Total ≈ 5.3k lines (the bridge raised from 1100 to 1400: the forward invariant re-packages a
+`CGRun` per iteration, review M3); next round ER3 ≈ 500. Imports: 1 ← `BackwardSpectral`; 2 ← `CGLanczos`,
 `CGRecurrence`; 3 ← 1, 2; 4 ← 3; 5 ← `Computation.BLAS`, `Computation.Exact`, 2; 6 ← 4, 5,
 `BLAS.RoundingErrors`, `Matrix.Norms.Compare` (proof will also import
 `NLAlibScaffold.Krylov.Processes.LanczosStep` for `LanczosMvSpec`, decided at proof time). Every
@@ -485,7 +521,7 @@ everything in the table. Bibliography to add: `StrakosTichy2002`, `MeurantStrako
 * **Q1 (CG1) Breakdown.** No $\mu$-test, positivity a theorem, bridge interleaved with the
   analysis (recommended, maintainer's suggestion) vs guard `μ ≤ 0 → stop` (decoupled bridge,
   non-textbook). Recommend the first; switch to the guard only if the interleaved induction
-  costs > 300 extra lines.
+  costs > 300 extra lines. **Decided (a)**, (b) the named fallback.
 * **Q2 (CG2) Interface.** `NormalizedLanczosData` + bounds as hypotheses (recommended) vs the
   report's `PerturbedLanczos` with factor fields. Hypotheses keep one model per run and keep
   every Lanczos statement.
@@ -502,6 +538,23 @@ everything in the table. Bibliography to add: `StrakosTichy2002`, `MeurantStrako
   `Krylov/Processes/` next to Lanczos.
 * Still open mathematically (not for this round): whether another construction avoids the
   $\kappa$ in the model distance (report §2.7(3)); optimality of $k^3$ and $\kappa^2$.
+
+## 12. Review dispositions (Fable review 2026-10-29, `reports/CG-FP-Review.md`; CG1–CG7 = (a))
+
+| item | disposition |
+|---|---|
+| MF1 `hB` one index too strong | **fixed**: `hB : ∀ j, j + 1 < k → …` in `norm_recurrenceError_le`, `abs_adjacentInner_le`, `frobNorm_backwardH_sub_dilatedH_le_of_certificates`; conclusions unchanged. Downstream: the a priori headline and the induction (P(1) needs no $B$); no other use. §6, §7 updated. |
+| MF2 HS direction-norm identity | **fixed**: `Matrix.PosDef.norm_cgState_p_sq_eq` (§5, `CGTridiagonal.lean`) and `CGRun.sum_ρ_sq_div_ρ_sq_le` (on the model, `CGBackward.lean`), wired into step (P) of §7 and the docstring of the engine. |
+| MF3 induction engine | **fixed**: private `aprioriCertificates` skeletoned; the four a priori certificate docstrings cite it, not `cgAlpha_backwardH`; new hypothesis-form reproduction lemmas `cgAlpha_backwardH_of_posDef`, `norm_cgState_backwardH_r_of_posDef` (and `lanczosTridiagonal_backwardH` moved before the induction) break the file-level circle. Bridge invariant has an explicit $m=0$ case (§1.3, `exists_cgRun_of_cgProg` docstring). |
+| M1 constants margin | **fixed**: $p\le230j\varepsilon\kappa a'$ (§7 step 1); $102\cdot89+96\cdot230=31158\le4\cdot10^4$; the statement keeps $4\cdot10^4k^3\varepsilon\kappa a'$ and (H) $q^3\varepsilon\kappa^2\le10^{-5}$ (so $c_k\le0.4a$). Range in §8 and the docstrings. |
+| M2 ER3 $\xi_j$ sign | **fixed** in §9.4. |
+| M3 bridge cost | **accepted**: forward invariant (§1.3); estimate 1100 → 1400 lines; CG1 (b) kept as fallback. |
+| L1, L3 | verified by the review; no change. |
+| L2 `norm_r_le_two_mul_norm_p` | quadratic-mean hint added to the docstring. |
+| L4 scaling of `lanczosState` | cited in the `Proof:` lines of `lanczosTridiagonal_backwardH`, `cgAlpha_backwardH_of_posDef` (lemma to be added with the proof). |
+| L5 literals; underflow | underflow caveat added (`ν_eq_zero_iff`, bridge docstring). Named constants (`cgBackwardFactor`, `cgSmallness` in `docs/constants.toml`) deferred to integration: research branch, `check_constants` passes. |
+| §B Kantorovich / $1/\gamma_j\le1.02\|\mathbf A\|$ | **not done**, recorded as future work (§7). |
+| CG1–CG7 | approved (a); CG1 fallback (b) as in §1.3. |
 
 ## References
 
