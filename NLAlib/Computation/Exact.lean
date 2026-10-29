@@ -30,7 +30,8 @@ $\mathit{off} + i + Nj$. Realisations are stated at `Fin N` (D9). Design:
 
 * `NLAlib.Computation.exactSem`, `NLAlib.Computation.exactInterp`.
 * `NLAlib.Computation.flatten`, `NLAlib.Computation.unflatten`, `NLAlib.Computation.matOracle`.
-* `NLAlib.Computation.inputState`, `NLAlib.Computation.tapeMatrix`, `NLAlib.Computation.Holds`.
+* `NLAlib.Computation.inputState`, `NLAlib.Computation.tapeMatrix`, `NLAlib.Computation.Holds`,
+  `NLAlib.Computation.HoldsDecoded`.
 
 ## Main results
 
@@ -121,6 +122,13 @@ def tapeMatrix (x : ℕ → ℝ) (off N k : ℕ) : Matrix (Fin N) (Fin k) 𝕜 :
 `off`. -/
 def Holds {N k : ℕ} (s : Store P 𝕜) (p : P) (b off : ℕ) (M : Matrix (Fin N) (Fin k) 𝕜) : Prop :=
   ∀ (i : Fin N) (j : Fin k), s.read p b (off + i + N * j) = some (M i j)
+
+/-- Buffer `b` holds the real $N \times k$ matrix $\mathbf{M}$ at tag `p` through the decoding
+`dec`, column-major from offset `off`: each cell holds a word that decodes to the entry. The
+decoded form of `NLAlib.Computation.Holds`, for a semantics whose words are not reals. -/
+def HoldsDecoded {K : Type} {N k : ℕ} (s : Store P K) (dec : P → K → ℝ) (p : P) (b off : ℕ)
+    (M : Matrix (Fin N) (Fin k) ℝ) : Prop :=
+  ∀ (i : Fin N) (j : Fin k), ∃ w, s.read p b (off + i + N * j) = some w ∧ dec p w = M i j
 
 /-- The length of a flattened matrix. -/
 theorem size_flatten {N ℓ : ℕ} (X : Matrix (Fin N) (Fin ℓ) 𝕜) : (flatten X).size = N * ℓ := by

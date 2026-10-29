@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Exact
+public import NLAlib.ForMathlib.Data.Option.Basic
 public import NLAlib.ForMathlib.Order.Basic
 
 /-!
@@ -22,22 +23,25 @@ store is the store with the result written, which also gives the frame), the tap
 most), the memory in bits (likewise), and the counts (exact). Kernels that are not elementwise
 carry disjointness hypotheses; in-place kernels allow exact aliasing and forbid partial overlap.
 The specifications of the level-2 and level-3 kernels are in
-`NLAlib/Computation/BLAS/MatrixKernels.lean`. Design: `docs/design/Computation.md` (D13, D17, §4).
+`NLAlib/Computation/BLAS/MatrixKernels.lean`, that of `trsvLower` and the rounding-error analyses
+in `NLAlib/Computation/BLAS/Triangular.lean` and `NLAlib/Computation/BLAS/RoundingErrors.lean`.
+Design: `docs/design/Computation.md` (D13, D17, §4).
 
 ## Main definitions
 
 * Level 1: `NLAlib.Computation.dot`, `NLAlib.Computation.axpy`, `NLAlib.Computation.scal`,
   `NLAlib.Computation.rscl`, `NLAlib.Computation.copyv`, `NLAlib.Computation.nrm2`.
 * Levels 2 and 3: `NLAlib.Computation.gemv`, `NLAlib.Computation.ger`,
-  `NLAlib.Computation.gemm`.
+  `NLAlib.Computation.gemm`, and the triangular solve `NLAlib.Computation.trsvLower`.
 
 ## Main results
 
 * `NLAlib.Computation.exec_dot`, `NLAlib.Computation.exec_axpy`, `NLAlib.Computation.exec_scal`,
   `NLAlib.Computation.exec_rscl`, `NLAlib.Computation.exec_copyv`, `NLAlib.Computation.exec_nrm2`:
   the specifications of the level-1 kernels.
-* `NLAlib.Computation.run_gemv`, `NLAlib.Computation.run_ger`, `NLAlib.Computation.run_gemm`: the
-  level-2 and level-3 kernels unfolded.
+* `NLAlib.Computation.run_dot`, `NLAlib.Computation.run_axpy`, `NLAlib.Computation.run_gemv`,
+  `NLAlib.Computation.run_ger`, `NLAlib.Computation.run_gemm`,
+  `NLAlib.Computation.run_trsvLower`: the kernels unfolded.
 * `NLAlib.Computation.exec_forRange_dot_add`: a loop of `dot` calls accumulated into one cell.
 -/
 
@@ -130,6 +134,21 @@ def gemm (p : P) (m n l : IExp VI) (A : VB) (ao : IExp VI) (B : VB) (bo : IExp V
   named "gemm" [.idx m, .idx n, .idx l, .buf A, .idx ao, .buf B, .idx bo, .buf C, .idx co] do
     forRange l fun c => gemv p m n A ao B (bo + n * .var c) C (co + m * .var c)
 
+/-- `trsv` (lower, no transpose, non-unit diagonal): $\mathbf{x} \leftarrow \mathbf{T}^{-1}
+\mathbf{x}$ in place, for a stored lower triangular $n \times n$ matrix $\mathbf{T}$
+(column-major from $\mathit{tOff}$; the entries above the diagonal are not read), row by row:
+$x_i \leftarrow (x_i - \sum_{j<i} t_{ij}x_j)/t_{ii}$, subtracting in the order $j = 0, 1, \ldots$.
+One scratch cell. -/
+def trsvLower (p : P) (n : IExp VI) (T : VB) (tOff : IExp VI) (x : VB) (xo : IExp VI) :
+    Builder P ι VB VI Unit :=
+  named "trsvLower" [.idx n, .buf T, .idx tOff, .buf x, .idx xo] do
+    let t ← alloc p 1
+    forRange n fun i => do
+      forRange (.var i) fun j => do
+        ins (.bin p .mul ⟨t, 0⟩ ⟨T, tOff + .var i + n * .var j⟩ ⟨x, xo + .var j⟩)
+        ins (.bin p .sub ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨t, 0⟩)
+      ins (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨T, tOff + .var i + n * .var i⟩)
+
 end Kernels
 
 /-! ### Run lemmas: the kernels unfolded -/
@@ -138,7 +157,9 @@ section Runs
 
 variable {P ι : Type}
 
-private theorem dot_run (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
+/-- The program of `dot`: zero $\mathit{dst}$, then add $\bar{x}_i y_i$ for each $i$, through one
+scratch cell. -/
+theorem run_dot (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
     (dot (ι := ι) p dst x xo y yo n).run = .seq (.named "dot"
       [.cell dst, .buf x, .idx xo, .buf y, .idx yo, .idx n]
       (.seq (.instr (.lit p dst 0)) (.alloc p 1 fun t => .seq (.loop n fun i =>
@@ -146,7 +167,8 @@ private theorem dot_run (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (
           (.seq (.instr (.bin p .mul ⟨t, 0⟩ ⟨t, 0⟩ ⟨y, yo + .var i⟩))
             (.seq (.instr (.bin p .add dst dst ⟨t, 0⟩)) .skip))) .skip))) .skip := rfl
 
-private theorem axpy_run (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
+/-- The program of `axpy`: add $a x_i$ to $y_i$ for each $i$, through one scratch cell. -/
+theorem run_axpy (p : P) (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) :
     (axpy (ι := ι) p a x xo y yo n).run = .seq (.named "axpy"
       [.cell a, .buf x, .idx xo, .buf y, .idx yo, .idx n]
       (.alloc p 1 fun t => .seq (.loop n fun i =>
@@ -209,11 +231,16 @@ theorem run_gemm (p : P) (m n l : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (B : ℕ) 
       (.seq (.loop l fun c => (gemv p m n A ao B (bo + n * .var c) C (co + m * .var c)).run)
         .skip)) .skip := rfl
 
-private theorem exists_map_eq_some {α β : Type} {o : Option α} {f : α → β} {Q : α → Prop}
-    {R : β → Prop} (h : ∃ a, o = some a ∧ Q a) (hQ : ∀ a, Q a → R (f a)) :
-    ∃ b, o.map f = some b ∧ R b := by
-  obtain ⟨a, rfl, ha⟩ := h
-  exact ⟨f a, rfl, hQ a ha⟩
+/-- The program of `trsvLower`: for each row $i$, subtract $t_{ij} x_j$ from $x_i$ for $j < i$
+through one scratch cell, then divide by $t_{ii}$. -/
+theorem run_trsvLower (p : P) (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ) (x : ℕ) (xo : IExp ℕ) :
+    (trsvLower (ι := ι) p n T tOff x xo).run = .seq (.named "trsvLower"
+      [.idx n, .buf T, .idx tOff, .buf x, .idx xo]
+      (.alloc p 1 fun t => .seq (.loop n fun i => .seq (.loop (.var i) fun j =>
+        .seq (.instr (.bin p .mul ⟨t, 0⟩ ⟨T, tOff + .var i + n * .var j⟩ ⟨x, xo + .var j⟩))
+          (.seq (.instr (.bin p .sub ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨t, 0⟩)) .skip))
+        (.seq (.instr (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩
+          ⟨T, tOff + .var i + n * .var i⟩)) .skip)) .skip)) .skip := rfl
 
 private theorem foldlM_range_succ {α : Type} (g : α → ℕ → Option α) (a : α) (i : ℕ) :
     (List.range (i + 1)).foldlM g a = ((List.range i).foldlM g a).bind fun b => g b i := by
@@ -230,11 +257,6 @@ private theorem exists_foldlM_range_eq_some_of_le {α : Type} {g : α → ℕ �
   rw [List.range_add, List.foldlM_append] at h
   obtain ⟨c, hc, -⟩ := Option.bind_eq_some_iff.mp h
   exact ⟨c, hc⟩
-
-private theorem read_push_size_set {K : Type} [DecidableEq P] {s : Store P K} {p : P}
-    {arr : Array (Option K)} {v : K} (h : 0 < arr.size) :
-    Store.read (s.push (p, arr.set! 0 (some v))) p s.size 0 = some v := by
-  simp [Store.read_push_size, h]
 
 end Runs
 
@@ -289,12 +311,13 @@ private theorem exec_dot_step (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem 
       (by rw [hst]; exact r1 arr) (by rw [hI]; rfl)
       (by dsimp only [IExp.eval_zero]; rw [hst, ← hsz, Store.write_push_size (by omega)])).trans
     ((exec_seq_instr_bin I (s := si.push (p, a₂))
-      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact read_push_size_set (by omega)) (r3 _)
+      (by dsimp only [IExp.eval_zero]; rw [← hsz];
+          exact Store.read_push_size_set!_zero (by omega)) (r3 _)
       (by rw [hI]; rfl)
       (by dsimp only [IExp.eval_zero]; rw [← hsz, Store.write_push_size h₁])).trans
     ((exec_seq_instr_bin I
       (by rw [Store.read_push_of_lt hdlt]; exact Store.read_of_write_eq_some hsi)
-      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact read_push_size_set h₁)
+      (by dsimp only [IExp.eval_zero]; rw [← hsz]; exact Store.read_push_size_set!_zero h₁)
       (by rw [hI]; rfl) w3).trans (exec_skip I _)))⟩
 
 private theorem exec_axpy_step (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
@@ -320,7 +343,7 @@ private theorem exec_axpy_step (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem
       (by dsimp only [IExp.eval_zero]; rw [hst, ← ht, Store.write_push_size (by omega)])).trans
     ((exec_seq_instr_bin I
       (by rw [Store.read_push_of_lt hylt]; exact hy)
-      (by dsimp only [IExp.eval_zero]; rw [← ht]; exact read_push_size_set (by omega))
+      (by dsimp only [IExp.eval_zero]; rw [← ht]; exact Store.read_push_size_set!_zero (by omega))
       (by rw [hI]; exact congrArg some (add_comm _ _))
       (by rw [Store.write_push_of_lt hylt]; dsimp only [IExp.eval_add, IExp.eval_var];
           rw [hsi', Option.map_some])).trans (exec_skip I _))⟩
@@ -361,9 +384,9 @@ theorem exec_dot (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n 
   have hw := Store.exists_write_eq_some_of_write_eq_some h₁
   obtain ⟨s0, hs0⟩ := hw ((0 : ℚ) : 𝕜)
   have hv0 : I.sem.lit p (0 : ℚ) = some ((0 : ℚ) : 𝕜) := by rw [hI]; rfl
-  rw [dot_run, exec_seq_skip, exec_named, exec_seq_instr_lit I hv0 hs0, exec_alloc,
+  rw [run_dot, exec_seq_skip, exec_named, exec_seq_instr_lit I hv0 hs0, exec_alloc,
     exec_seq_skip]
-  refine exists_map_eq_some (exists_exec_loop_eq_some_of_forall I (fun i st' =>
+  refine Option.exists_map_eq_some_of_exists (exists_exec_loop_eq_some_of_forall I (fun i st' =>
     ∃ si : Store P 𝕜, ∃ arr : Array (Option 𝕜),
       st.store.write p dst.buf dst.idx.eval (S i) = some si ∧ arr.size = 1 ∧
       st'.store = si.push (p, arr) ∧ st'.cnt = st.cnt + I.charge (.lit p) +
@@ -412,8 +435,8 @@ theorem exec_axpy (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n :
       st'.peak = Function.update st.peak p (max (st.peak p) (st.cur p + 1)) ∧
       st'.peakW = max st.peakW (st.curW + I.width p) := by
   rw [Store.writeBlock_map_range] at h₁
-  rw [axpy_run, exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
-  refine exists_map_eq_some (exists_exec_loop_eq_some_of_forall I (fun i st' =>
+  rw [run_axpy, exec_seq_skip, exec_named, exec_alloc, exec_seq_skip]
+  refine Option.exists_map_eq_some_of_exists (exists_exec_loop_eq_some_of_forall I (fun i st' =>
     ∃ si : Store P 𝕜, ∃ arr : Array (Option 𝕜),
       (List.range i).foldlM (fun s j => s.write p y (yo.eval + j) (av * xs j + ys j)) st.store =
         some si ∧ arr.size = 1 ∧

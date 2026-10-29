@@ -2,6 +2,23 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Rounding-error analysis of the BLAS kernels: integration (2026-10-28)
+
+Branch `design/fp-toolkit`, based on `main` at `c4ff3d9`. Design
+`docs/design/Computation-Rounding.md` (now implemented; §9 records the integration). The
+standard-model layer is in the library: $\gamma_n$ (`Computation.roundingFactor`) and its
+algebra (Lemmas 3.1, 3.3 of Higham), the arithmetic part of a contract (`IsArithErrSem`,
+`AddsZeroExactly`), a witness with $u = 2^{-t} > 0$ (`gridSem`, rounding to nearest on a binary
+grid, ForMathlib `Real.roundNearest`), straight-line usage independence, the kernel
+`trsvLower` with its exact specification, the trace bounds for inner products and forward
+substitution, run lemmas for `dot`, `axpy`, `gemv`, `gemm`, `trsvLower` under any error relation,
+and the standard-model headlines (each asserts success): backward and forward error of `dot` and
+`gemv`, `axpy`, forward error of `gemm`, backward error of `trsvLower` (Theorem 8.5). Statements
+unchanged from the reviewed skeleton; the scaffold is empty again. Layer 2 (bounded exponent
+range, R6) is designed, not started; R4 (fold `AddsZeroExactly` into `IsRelErrSem`) is pending.
+Headline axioms: `propext`, `Classical.choice`, `Quot.sound`. Equation numbers (3.4)–(3.13) are
+still to be checked against the book.
+
 ## Computation fixed-point demo: proof repair (2026-10-27)
 
 Branch `fix/computation-fixedpoint`, based on PR #31 (`computation/stage1`, `d0ee823`). The

@@ -26563,5 +26563,25 @@
   "new": "NLAlib.div_chebyshevQueryFactor_mul_lt_of_forall_le_measureReal_nuclearNorm_sub_mul_le_of_pass_lt",
   "stage": "LB-chebyshev-batches",
   "note": "Fixed-batch nuclear-norm query lower bound on the Chebyshev hard spectrum, q > k/(12544(r+1)^3 eps)."
+ },
+ "NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add": {
+  "new": "NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add",
+  "stage": "FP-rounding",
+  "note": "Backward error of recursive inner-product accumulation in the standard model, s_n = sum x_k y_k (1 + eta_k), |eta_k| <= gamma_n (Higham 2002, §3.1)."
+ },
+ "NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le": {
+  "new": "NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le",
+  "stage": "FP-rounding",
+  "note": "Forward error of recursive inner-product accumulation, |x^T y - s_n| <= gamma_n |x|^T |y| (Higham 2002, §3.1)."
+ },
+ "NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq": {
+  "new": "NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq",
+  "stage": "FP-rounding",
+  "note": "Backward error of forward substitution, (T + Delta T) x = b with |Delta T| <= gamma_n |T| (Higham 2002, Thm 8.5)."
+ },
+ "NLAlib.Computation.isRelErrSem_gridSem": {
+  "new": "NLAlib.Computation.isRelErrSem_gridSem",
+  "stage": "FP-rounding",
+  "note": "Rounding to nearest on a t-bit grid with unbounded exponent meets the standard-model contract with u = 2^-t (Higham 2002, Thm 2.2)."
  }
 }

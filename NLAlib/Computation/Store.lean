@@ -289,6 +289,11 @@ theorem Store.read_push_size {s : Store P K} {p q : P} {arr : Array (Option K)} 
     Store.read (s.push (q, arr)) p s.size i = if q = p then (arr[i]?).join else none := by
   simp [Store.read]
 
+/-- The cell just written in the top buffer of a pushed store reads back. -/
+theorem Store.read_push_size_set!_zero {s : Store P K} {p : P} {arr : Array (Option K)} {v : K}
+    (h : 0 < arr.size) : Store.read (s.push (p, arr.set! 0 (some v))) p s.size 0 = some v := by
+  simp [Store.read_push_size, h]
+
 /-- A write keeps the number of buffers: the writes of a fold. -/
 theorem Store.size_of_foldlM_write_eq_some {s s' : Store P K} {p : P} {b : ℕ} (l : List ℕ)
     (idx : ℕ → ℕ) (f : ℕ → K) (h : l.foldlM (fun s j => s.write p b (idx j) (f j)) s = some s') :
@@ -686,6 +691,11 @@ theorem Store.BlockFrame.exists_write_eq_some (h : Store.BlockFrame s₀ p T dst
     {b i n : ℕ} (v : K) (hs : s₀.shape[b]? = some (p, n)) (hi : i < n) :
     ∃ s', s.write p b i v = some s' :=
   Store.exists_write_eq_some_of_getElem?_shape v (h.1 ▸ hs) hi
+
+/-- The frame depends only on the values of the block below its length. -/
+theorem Store.BlockFrame.congr (h : Store.BlockFrame s₀ p T dst dOff L s g) {g' : ℕ → Option K}
+    (hg : ∀ m < L, g m = g' m) : Store.BlockFrame s₀ p T dst dOff L s g' :=
+  ⟨h.1, h.2.1, fun m hm => (h.2.2 m hm).trans (hg m hm)⟩
 
 /-- In the frame, a cell outside the block and the scratch buffer reads as in `s₀`. -/
 theorem Store.BlockFrame.read_of_ne (h : Store.BlockFrame s₀ p T dst dOff L s g) {q : P}

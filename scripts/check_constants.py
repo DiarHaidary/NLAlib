@@ -368,7 +368,9 @@ def run(root, update_names):
                                     f"{name}`")
         path = root / c["file"]
         src = path.read_text() if path.exists() else ""
-        off, body = find_definition(src, name)
+        # a constant in a sub-namespace (`NLAlib.Computation.roundingFactor`) is defined by its
+        # last component inside `namespace NLAlib.Computation`
+        off, body = find_definition(src, name.rsplit(".", 1)[-1])
         if body is None:
             problems.append(f"{c['file']}: definition of {c['name']} not found (docs/constants.toml)")
             continue

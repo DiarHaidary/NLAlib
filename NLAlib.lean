@@ -2,13 +2,18 @@ module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Computation.BLAS
 public import NLAlib.Computation.BLAS.MatrixKernels
+public import NLAlib.Computation.BLAS.RoundingErrors
+public import NLAlib.Computation.BLAS.Traces
+public import NLAlib.Computation.BLAS.Triangular
 public import NLAlib.Computation.Compile
 public import NLAlib.Computation.Contract
 public import NLAlib.Computation.Dense
 public import NLAlib.Computation.Exact
 public import NLAlib.Computation.Exec
 public import NLAlib.Computation.FirstOrder
+public import NLAlib.Computation.Grid
 public import NLAlib.Computation.Model
+public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.Store
@@ -28,6 +33,7 @@ public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
+public import NLAlib.ForMathlib.Algebra.Order.Round
 public import NLAlib.ForMathlib.Algebra.Polynomial.Derivative
 public import NLAlib.ForMathlib.Algebra.Polynomial.Div
 public import NLAlib.ForMathlib.Algebra.Polynomial.Expand
@@ -64,6 +70,7 @@ public import NLAlib.ForMathlib.Data.Matrix.ColumnRowPartitioned
 public import NLAlib.ForMathlib.Data.Matrix.Mul
 public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.Data.Nat.Init
+public import NLAlib.ForMathlib.Data.Option.Basic
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
