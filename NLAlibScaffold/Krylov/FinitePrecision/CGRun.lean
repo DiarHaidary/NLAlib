@@ -1850,6 +1850,42 @@ theorem abs_adjacentInner_le {P K B : ℝ}
     -- `p̄₀ ≠ 0`); see `NLAlib.CGRun.abs_adjacentInner_le_of_nonneg`.
     sorry
 
+/-- **The a posteriori backward model with a nonnegative certificate** $B \ge 0$: the form of
+`NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates` that holds for every $k$ (for
+$k \ge 2$, $B \ge 0$ follows from $\beta_1 \le B$). -/
+theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg {P K B : ℝ}
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) (hB0 : 0 ≤ B) :
+    frobNorm (C.backwardH - C.dilatedH) ≤
+      normalizedBackwardBound k (8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B))
+        (16 * k * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K))) := by
+  have hk := C.k_pos
+  have hρ0 := C.ρ_pos hk
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ0
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p 0)), hP 0 hk]
+  have hK0 : 0 ≤ K := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h (pow_pos hρ0 2)
+    have : 0 ≤ specNorm C.A * C.γ 0 * ‖WithLp.toLp 2 (C.p 0)‖ ^ 2 :=
+      mul_nonneg (mul_nonneg (specNorm_nonneg _) (C.γ_pos hk).le) (sq_nonneg _)
+    linarith [hK 0 hk]
+  have hX : 0 ≤ C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
+    have := C.ε_nonneg
+    have := specNorm_nonneg C.A
+    positivity
+  refine C.toNormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le (fun j hj => ?_)
+    (fun j hj => ?_)
+  · exact C.norm_recurrenceError_le_of_nonneg hP hB hB0 hj
+  · refine (C.abs_adjacentInner_le_of_nonneg hP hK hB hB0 hj).trans ?_
+    have hjk : ((j : ℝ) + 1) ≤ k := by exact_mod_cast hj
+    have := mul_le_mul_of_nonneg_right hjk hX
+    linarith only [this]
+
 /-- **The a posteriori backward model**: with the certificates $\Pi$, $K$ ($j < k$) and $B$
 ($j + 1 < k$) of the run,
 
@@ -1869,7 +1905,11 @@ theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
     frobNorm (C.backwardH - C.dilatedH) ≤
       normalizedBackwardBound k (8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B))
         (16 * k * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K))) := by
-  sorry
+  rcases C.nonneg_of_certificate hB with hB0 | hk
+  · exact C.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg hP hK hB hB0
+  · -- `k = 1` and `B < 0`: the statement is false (for `B` negative enough the right side is
+    -- negative); see `NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg`.
+    sorry
 
 /-- **The next direction is not small**: with certificates $\Pi$, $K$ on the steps $j < k$ and
 $20k\varepsilon(1 + \Pi + K) \le 1$, the direction after the last step satisfies
