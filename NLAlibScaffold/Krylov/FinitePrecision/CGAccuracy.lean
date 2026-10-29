@@ -542,6 +542,286 @@ theorem quadForm_sub_x_succ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A 
 
 /-! ### The joint induction -/
 
+private theorem acc_norm_sol_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
+    ‖WithLp.toLp 2 xs‖ ≤ ‖WithLp.toLp 2 C.b‖ / a := by
+  have h1 := (C.acc_quadForm_bounds hs xs).1
+  rw [C.acc_quadForm_eq, hx] at h1
+  have h2 := (le_abs_self _).trans (EuclideanSpace.abs_dotProduct_le_norm xs C.b)
+  rw [le_div_iff₀ ha]
+  rcases (norm_nonneg (WithLp.toLp 2 xs)).lt_or_eq with hpos | hzero
+  · nlinarith
+  · rw [← hzero]
+    simp
+
+private theorem acc_quadForm_sol_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
+    quadForm C.A xs ≤ ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by
+  have h := C.acc_norm_sol_le ha hs hx
+  rw [C.acc_quadForm_eq, hx]
+  refine (le_abs_self _).trans ((EuclideanSpace.abs_dotProduct_le_norm xs C.b).trans ?_)
+  calc ‖WithLp.toLp 2 xs‖ * ‖WithLp.toLp 2 C.b‖ ≤
+        ‖WithLp.toLp 2 C.b‖ / a * ‖WithLp.toLp 2 C.b‖ :=
+        mul_le_mul_of_nonneg_right h (norm_nonneg _)
+    _ = ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by ring
+
+private theorem acc_quadForm_sol_ge {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
+    ‖WithLp.toLp 2 C.b‖ ^ 2 / a ≤ a' / a * quadForm C.A xs := by
+  have h := C.acc_norm_mulVec_sq_le ha hs xs
+  rw [hx] at h
+  rw [div_mul_eq_mul_div]
+  exact div_le_div_of_nonneg_right h ha.le
+
+private theorem acc_norm_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (v : Fin n → ℝ) : ‖WithLp.toLp 2 v‖ ^ 2 ≤ quadForm C.A v / a := by
+  rw [le_div_iff₀ ha, mul_comm]
+  exact (C.acc_quadForm_bounds hs v).1
+
+/-- The smallness of step $j \le k$ under (H). -/
+private theorem acc_small_j {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
+    (j : ℝ) * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (j : ℝ) ^ 2 * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
+      (j : ℝ) ^ 2 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
+  obtain ⟨-, hκ, -, -, hkεκ, hk2εκ, hk2εκ2⟩ := C.acc_small ha hs hsmall
+  have hε0 := C.ε_nonneg
+  have hjr : (j : ℝ) ≤ k := by exact_mod_cast hj
+  have hj2 : (j : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 := pow_le_pow_left₀ (by positivity) hjr 2
+  have hT0 : 0 ≤ C.ε * (a' / a) := by positivity
+  have hT1 : 0 ≤ C.ε * (a' / a) ^ 2 := by positivity
+  refine ⟨le_trans ?_ hkεκ, le_trans ?_ hk2εκ, le_trans ?_ hk2εκ2⟩
+  · have := mul_le_mul_of_nonneg_right hjr hT0
+    linarith
+  · have := mul_le_mul_of_nonneg_right hj2 hT0
+    linarith
+  · have := mul_le_mul_of_nonneg_right hj2 hT1
+    linarith
+
+/-- The crude a priori bounds at step $j$ used by the induction: from $E_j^2 \le
+2\|\mathbf{b}\|^2/a$ and $\|\mathbf{g}_j\| \le 12j\varepsilon\kappa\|\mathbf{b}\|$,
+$\|\mathbf{x}_\star - \mathbf{x}_j\| \le 2\|\mathbf{b}\|/a$, $\|\mathbf{x}_j\| \le
+3\|\mathbf{b}\|/a$ and $\rho_j \le 3\kappa\|\mathbf{b}\|$. -/
+private theorem acc_step_facts {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k)
+    (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
+      12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
+    (hQ : quadForm C.A (xs - C.x j) ≤ 2 * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)) :
+    ‖WithLp.toLp 2 (xs - C.x j)‖ ≤ 2 * ‖WithLp.toLp 2 C.b‖ / a ∧
+      ‖WithLp.toLp 2 (C.x j)‖ ≤ 3 * ‖WithLp.toLp 2 C.b‖ / a ∧
+      C.ρ j ≤ 3 * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
+  obtain ⟨haa', hκ, hspec, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  have hε0 := C.ε_nonneg
+  have hjε : (j : ℝ) * C.ε ≤ 1 / 100 := C.mul_ε_le' hj
+  set κ := a' / a with hκdef
+  set B := ‖WithLp.toLp 2 C.b‖ with hB
+  have hB0 : 0 ≤ B := norm_nonneg _
+  have ha'κ : a' = κ * a := by rw [hκdef]; field_simp
+  have hxs := C.acc_norm_sol_le ha hs hx
+  have he : ‖WithLp.toLp 2 (xs - C.x j)‖ ≤ 2 * B / a := by
+    have h1 := C.acc_norm_sq_le ha hs (xs - C.x j)
+    have h2 : ‖WithLp.toLp 2 (xs - C.x j)‖ ^ 2 ≤ (2 * B / a) ^ 2 := by
+      refine h1.trans ?_
+      rw [div_le_iff₀ ha]
+      have : (2 * B / a) ^ 2 * a = 4 * (B ^ 2 / a) := by field_simp; ring
+      rw [this]
+      have : 0 ≤ B ^ 2 / a := by positivity
+      linarith
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h2
+  refine ⟨he, ?_, ?_⟩
+  · have h := norm_sub_le (WithLp.toLp 2 xs) (WithLp.toLp 2 (xs - C.x j))
+    rw [← WithLp.toLp_sub, sub_sub_cancel] at h
+    have : 3 * B / a = B / a + 2 * B / a := by ring
+    linarith
+  · have hAe : ‖WithLp.toLp 2 (C.A *ᵥ (xs - C.x j))‖ ≤ a' * (2 * B / a) :=
+      (norm_toLp_mulVec_le _ _).trans (mul_le_mul hspec he (norm_nonneg _) (by linarith))
+    have hid : C.r j = C.A *ᵥ (xs - C.x j) - (C.b - C.A *ᵥ C.x j - C.r j) := by
+      rw [Matrix.mulVec_sub, hx]
+      abel
+    have h := norm_sub_le (WithLp.toLp 2 (C.A *ᵥ (xs - C.x j)))
+      (WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j))
+    rw [← WithLp.toLp_sub, ← hid] at h
+    have h2 : a' * (2 * B / a) = 2 * κ * B := by rw [ha'κ]; field_simp
+    have hκB : 0 ≤ κ * B := by positivity
+    have h3 : 12 * (j : ℝ) * C.ε * κ * B ≤ 12 / 100 * κ * B := by
+      have := mul_le_mul_of_nonneg_right hjε hκB
+      linarith
+    change ‖WithLp.toLp 2 (C.r j)‖ ≤ _
+    linarith
+
+/-- The gap step of the induction. -/
+private theorem acc_gap_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k)
+    (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
+      12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
+    (hQ : quadForm C.A (xs - C.x j) ≤ 2 * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)) :
+    ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1))‖ ≤
+      12 * ((j + 1 : ℕ) : ℝ) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
+  obtain ⟨haa', hκ, hspec, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  obtain ⟨-, hxj, hρ⟩ := C.acc_step_facts ha hs hsmall hx hj.le hG hQ
+  have hε0 := C.ε_nonneg
+  have hγp := C.γ_mul_norm_p_le ha hs hsmall hj
+  set κ := a' / a with hκdef
+  set B := ‖WithLp.toLp 2 C.b‖ with hB
+  have hB0 : 0 ≤ B := norm_nonneg _
+  have ha'κ : a' = κ * a := by rw [hκdef]; field_simp
+  have h := C.norm_sub_mulVec_x_sub_r_succ_le hj
+  have h0 : ‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ≤ 9 * B / a := by
+    have : 9 * B / a = 3 * B / a + 4 * (3 / 2 * B / a) := by ring
+    have : 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ = 4 * (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) := by
+      ring
+    linarith
+  have h1 : specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) ≤
+      a' * (9 * B / a) :=
+    mul_le_mul hspec h0 (by have := C.γ_pos hj; positivity) (by linarith)
+  have h2 : a' * (9 * B / a) = 9 * κ * B := by rw [ha'κ]; field_simp
+  have h3 : C.ε * (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
+      4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) ≤ C.ε * (12 * κ * B) := by
+    refine mul_le_mul_of_nonneg_left ?_ hε0
+    linarith
+  push_cast
+  linarith
+
+/-- The error step of the induction:
+$E_{j+1}^2 \le E_j^2 - 0.99\gamma_j\rho_j^2 + (36j + 19)\varepsilon\kappa\|\mathbf{b}\|^2/a$. -/
+private theorem acc_err_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k)
+    (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
+      12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
+    (hQ : quadForm C.A (xs - C.x j) ≤ 2 * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)) :
+    quadForm C.A (xs - C.x (j + 1)) ≤ quadForm C.A (xs - C.x j) -
+      99 / 100 * (C.γ j * C.ρ j ^ 2) +
+        (36 * j + 19) * (C.ε * (a' / a)) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a) := by
+  obtain ⟨haa', hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  obtain ⟨hjT, -, -⟩ := C.acc_small_j ha hs hsmall hj.le
+  obtain ⟨-, hxj, -⟩ := C.acc_step_facts ha hs hsmall hx hj.le hG hQ
+  obtain ⟨hX0, hstep⟩ := C.quadForm_sub_x_succ_le_aux ha hs hsmall hx hj
+  have hε0 := C.ε_nonneg
+  have hε1 := C.ε_le
+  have hγ := C.γ_pos hj
+  have hγp := C.γ_mul_norm_p_le ha hs hsmall hj
+  have hγρ : 0 ≤ C.γ j * C.ρ j ^ 2 := by positivity
+  set κ := a' / a with hκdef
+  set B := ‖WithLp.toLp 2 C.b‖ with hB
+  set u := B ^ 2 / a with hu
+  have hB0 : 0 ≤ B := norm_nonneg _
+  have hu0 : 0 ≤ u := by positivity
+  have hT0 : 0 ≤ C.ε * κ := by positivity
+  have ha'κ : a' = κ * a := by rw [hκdef]; field_simp
+  have ha' : 0 ≤ a' := by linarith
+  set G := ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ with hGdef
+  set Qj := quadForm C.A (xs - C.x j) with hQj
+  set X := Qj - 99 / 100 * (C.γ j * C.ρ j ^ 2) +
+    2 * (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) * G with hX
+  have hX1 : X ≤ Qj - 99 / 100 * (C.γ j * C.ρ j ^ 2) + 36 * j * (C.ε * κ) * u := by
+    have h1 : 2 * (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) * G ≤
+        2 * (3 / 2 * B / a) * (12 * j * C.ε * κ * B) :=
+      mul_le_mul (by linarith) hG (norm_nonneg _) (by positivity)
+    have h2 : 2 * (3 / 2 * B / a) * (12 * j * C.ε * κ * B) = 36 * j * (C.ε * κ) * u := by
+      rw [hu]
+      ring
+    linarith
+  have hX4 : X ≤ 4 * u := by
+    have : 36 * (j : ℝ) * (C.ε * κ) * u ≤ 36 / 10 ^ 5 * u := by
+      have := mul_le_mul_of_nonneg_right hjT hu0
+      linarith
+    linarith
+  set t := Real.sqrt a' * ‖WithLp.toLp 2 (C.ex j)‖ with ht
+  have hex : ‖WithLp.toLp 2 (C.ex j)‖ ≤ C.ε * (9 / 2 * B / a) := by
+    refine (C.norm_ex_le j hj).trans (mul_le_mul_of_nonneg_left ?_ hε0)
+    rw [abs_of_pos hγ]
+    have : 9 / 2 * B / a = 3 * B / a + 3 / 2 * B / a := by ring
+    linarith
+  have ht0 : 0 ≤ t := by positivity
+  have ht2 : t ^ 2 ≤ 81 / 4 * C.ε ^ 2 * κ * u := by
+    rw [ht, mul_pow, Real.sq_sqrt ha']
+    have h1 : ‖WithLp.toLp 2 (C.ex j)‖ ^ 2 ≤ (C.ε * (9 / 2 * B / a)) ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) hex 2
+    have h2 : a' * (C.ε * (9 / 2 * B / a)) ^ 2 = 81 / 4 * C.ε ^ 2 * κ * u := by
+      rw [hu, ha'κ]
+      field_simp
+      ring
+    calc a' * ‖WithLp.toLp 2 (C.ex j)‖ ^ 2 ≤ a' * (C.ε * (9 / 2 * B / a)) ^ 2 :=
+          mul_le_mul_of_nonneg_left h1 ha'
+      _ = _ := h2
+  have hXt : Real.sqrt X * t ≤ 9 * (C.ε * κ) * u := by
+    have h1 : (Real.sqrt X * t) ^ 2 ≤ (9 * (C.ε * κ) * u) ^ 2 := by
+      rw [mul_pow, Real.sq_sqrt hX0]
+      have h2 : X * t ^ 2 ≤ 4 * u * (81 / 4 * C.ε ^ 2 * κ * u) :=
+        mul_le_mul hX4 ht2 (sq_nonneg _) (by positivity)
+      have h3 : 4 * u * (81 / 4 * C.ε ^ 2 * κ * u) ≤ (9 * (C.ε * κ) * u) ^ 2 := by
+        have e1 : 4 * u * (81 / 4 * C.ε ^ 2 * κ * u) = 81 * C.ε ^ 2 * u ^ 2 * κ := by ring
+        have e2 : (9 * (C.ε * κ) * u) ^ 2 = 81 * C.ε ^ 2 * u ^ 2 * κ ^ 2 := by ring
+        rw [e1, e2]
+        have : κ ≤ κ ^ 2 := by nlinarith
+        exact mul_le_mul_of_nonneg_left this (by positivity)
+      linarith
+    exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) two_ne_zero).mp h1
+  have ht2' : t ^ 2 ≤ 1 / 4 * (C.ε * κ) * u := by
+    have e : 81 / 4 * C.ε ^ 2 * κ * u = 81 / 4 * C.ε * (C.ε * κ * u) := by ring
+    have := mul_le_mul_of_nonneg_right (by linarith : 81 / 4 * C.ε ≤ 1 / 4)
+      (by positivity : 0 ≤ C.ε * κ * u)
+    have e2 : 1 / 4 * (C.ε * κ * u) = 1 / 4 * (C.ε * κ) * u := by ring
+    linarith
+  have e : (Real.sqrt X + t) ^ 2 = X + 2 * (Real.sqrt X * t) + t ^ 2 := by
+    rw [add_sq, Real.sq_sqrt hX0]
+    ring
+  rw [e] at hstep
+  have e2 : (36 * (j : ℝ) + 19) * (C.ε * κ) * u =
+      36 * j * (C.ε * κ) * u + 19 * (C.ε * κ) * u := by ring
+  have : 0 ≤ (C.ε * κ) * u := by positivity
+  linarith
+
+/-- The joint induction on the gap and the computed run's error (G4). -/
+private theorem gapErrorInduction {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
+    ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
+        12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ ∧
+      quadForm C.A (xs - C.x j) + 99 / 100 * ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 ≤
+        quadForm C.A xs + 25 * j ^ 2 * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a) := by
+  have hQ0 := C.acc_quadForm_sol_le ha hs hx
+  have hε0 := C.ε_nonneg
+  induction j with
+  | zero =>
+    rw [C.x_zero, C.r_zero, Matrix.mulVec_zero, sub_zero, sub_self, WithLp.toLp_zero, norm_zero,
+      sub_zero, Finset.sum_range_zero]
+    push_cast
+    constructor <;> linarith
+  | succ j ih =>
+    have hjk : j < k := by omega
+    obtain ⟨hG, hQ⟩ := ih hjk.le
+    obtain ⟨hjT, hj2T, -⟩ := C.acc_small_j ha hs hsmall hjk.le
+    set u := ‖WithLp.toLp 2 C.b‖ ^ 2 / a with hu
+    have hu0 : 0 ≤ u := by positivity
+    have hS0 : 0 ≤ ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 := Finset.sum_nonneg fun i hi =>
+      mul_nonneg (C.γ_pos (by have := Finset.mem_range.mp hi; omega)).le (sq_nonneg _)
+    have hQ2 : quadForm C.A (xs - C.x j) ≤ 2 * u := by
+      have : 25 * (j : ℝ) ^ 2 * C.ε * (a' / a) * u ≤ 25 / 10 ^ 5 * u := by
+        have := mul_le_mul_of_nonneg_right hj2T hu0
+        linarith
+      linarith
+    refine ⟨C.acc_gap_step ha hs hsmall hx hjk hG hQ2, ?_⟩
+    have h := C.acc_err_step ha hs hsmall hx hjk hG hQ2
+    rw [Finset.sum_range_succ]
+    have hT : 0 ≤ C.ε * (a' / a) * u := by
+      have := (C.acc_small ha hs hsmall).2.1
+      have : 0 ≤ a' / a := by linarith
+      positivity
+    have e : 25 * (((j + 1 : ℕ) : ℝ)) ^ 2 * C.ε * (a' / a) * u =
+        25 * (j : ℝ) ^ 2 * C.ε * (a' / a) * u + (50 * j + 25) * (C.ε * (a' / a) * u) := by
+      push_cast
+      ring
+    have e2 : (36 * (j : ℝ) + 19) * (C.ε * (a' / a)) * u =
+        (36 * j + 19) * (C.ε * (a' / a) * u) := by ring
+    have hjj : (36 * (j : ℝ) + 19) * (C.ε * (a' / a) * u) ≤
+        (50 * j + 25) * (C.ε * (a' / a) * u) :=
+      mul_le_mul_of_nonneg_right (by have : (0 : ℝ) ≤ j := j.cast_nonneg; linarith) hT
+    rw [e]
+    linarith
+
 /-- **The residual gap, a priori, in $\|\mathbf{b}\|$**: under (H), for $j \le k$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j\| \le 12\,j\,\varepsilon\,\kappa\,
 \|\mathbf{b}\| .$$
@@ -552,7 +832,13 @@ theorem norm_sub_mulVec_x_sub_r_le_norm_b {a a' : ℝ} (ha : 0 < a)
     {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
-  sorry
+  have hherm := C.acc_isHermitian
+  have hPD : C.A.PosDef := hherm.posDef_iff_eigenvalue_pos.mpr fun i hi =>
+    ha.trans_le (hherm.spectrum_subset_iff.mp hs i hi).1
+  have hx : C.A *ᵥ (C.A⁻¹ *ᵥ C.b) = C.b := by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
+      hPD.isUnit), Matrix.one_mulVec]
+  exact (C.gapErrorInduction ha hs hsmall hx hj).1
 
 /-- **The computed estimator bounds the computed run's error decrease (one-sided ER3)**: under
 (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $j \le k$,
@@ -568,7 +854,8 @@ theorem quadForm_sub_x_le_sub_sum {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C
     quadForm C.A (xs - C.x j) ≤ quadForm C.A xs -
       99 / 100 * ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 +
         25 * j ^ 2 * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a) := by
-  sorry
+  have h := (C.gapErrorInduction ha hs hsmall hx hj).2
+  linarith
 
 /-- **The computed run's $\mathbf{A}$-norm error, a priori**: under (H), for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $j \le k$,
@@ -581,7 +868,22 @@ theorem quadForm_sub_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     quadForm C.A (xs - C.x j) ≤ (1 + 1 / 1000) * quadForm C.A xs := by
-  sorry
+  have h := (C.gapErrorInduction ha hs hsmall hx hj).2
+  obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  obtain ⟨-, -, hj2⟩ := C.acc_small_j ha hs hsmall hj
+  have hge := C.acc_quadForm_sol_ge ha hs hx
+  have hε0 := C.ε_nonneg
+  have hQ0 : 0 ≤ quadForm C.A xs := le_trans (by positivity) (C.acc_quadForm_bounds hs xs).1
+  have hS0 : 0 ≤ ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 := Finset.sum_nonneg fun i hi =>
+    mul_nonneg (C.γ_pos (by have := Finset.mem_range.mp hi; omega)).le (sq_nonneg _)
+  have h1 : 25 * (j : ℝ) ^ 2 * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a) ≤
+      25 * (j : ℝ) ^ 2 * C.ε * (a' / a) * (a' / a * quadForm C.A xs) :=
+    mul_le_mul_of_nonneg_left hge (by positivity)
+  have h2 : 25 * (j : ℝ) ^ 2 * C.ε * (a' / a) * (a' / a * quadForm C.A xs) =
+      25 * ((j : ℝ) ^ 2 * C.ε * (a' / a) ^ 2) * quadForm C.A xs := by ring
+  have h3 : 25 * ((j : ℝ) ^ 2 * C.ε * (a' / a) ^ 2) * quadForm C.A xs ≤
+      25 * (1 / 10 ^ 5) * quadForm C.A xs := by gcongr
+  linarith
 
 /-- **The computed iterates, a priori**: under (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$
 and $j \le k$,
@@ -597,7 +899,25 @@ theorem norm_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (C.x j)‖ ≤
       (1 + 1 / 1000) * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
-  sorry
+  have hQ := C.quadForm_sub_x_le ha hs hsmall hx hj
+  have hQ0 : 0 ≤ quadForm C.A xs := le_trans (by positivity) (C.acc_quadForm_bounds hs xs).1
+  have he2 := C.acc_norm_sq_le ha hs (xs - C.x j)
+  set M := Real.sqrt (quadForm C.A xs) / Real.sqrt a
+  have hM0 : 0 ≤ M := by positivity
+  have hM2 : M ^ 2 = quadForm C.A xs / a := by
+    rw [div_pow, Real.sq_sqrt hQ0, Real.sq_sqrt ha.le]
+  have he : ‖WithLp.toLp 2 (xs - C.x j)‖ ≤ (1 + 1 / 1000) * M := by
+    have h : ‖WithLp.toLp 2 (xs - C.x j)‖ ^ 2 ≤ ((1 + 1 / 1000) * M) ^ 2 := by
+      rw [mul_pow, hM2]
+      refine he2.trans ?_
+      rw [← mul_div_assoc]
+      apply div_le_div_of_nonneg_right _ ha.le
+      nlinarith
+    exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h
+  have h := norm_sub_le (WithLp.toLp 2 xs) (WithLp.toLp 2 (xs - C.x j))
+  rw [← WithLp.toLp_sub, sub_sub_cancel] at h
+  have := norm_nonneg (WithLp.toLp 2 xs)
+  nlinarith
 
 /-! ### The residual gap -/
 
