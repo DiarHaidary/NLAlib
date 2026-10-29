@@ -148,7 +148,7 @@ private theorem norm_b_pos : 0 < ‖WithLp.toLp 2 C.b‖ := by
   exact C.ρ_pos C.k_pos
 
 /-- Exact Lanczos does not see a positive scaling of its start. -/
-private theorem lanczosState_smul {m : Type*} [Fintype m] [DecidableEq m]
+private theorem lanczosState_smul {m : Type*} [Fintype m]
     (H : Matrix m m ℝ) (v : m → ℝ) {c : ℝ} (hc : 0 < c) (j : ℕ) :
     lanczosState H (c • v) j = lanczosState H v j := by
   induction j with
@@ -160,7 +160,7 @@ private theorem lanczosState_smul {m : Type*} [Fintype m] [DecidableEq m]
     rw [mul_inv, mul_right_comm, inv_mul_cancel₀ hc.ne', one_mul]
   | succ j ih => simp only [lanczosState, ih]
 
-private theorem lanczosTridiagonal_smul {m : Type*} [Fintype m] [DecidableEq m]
+private theorem lanczosTridiagonal_smul {m : Type*} [Fintype m]
     (H : Matrix m m ℝ) (v : m → ℝ) {c : ℝ} (hc : 0 < c) (q : ℕ) :
     lanczosTridiagonal H (c • v) q = lanczosTridiagonal H v q := by
   simp only [lanczosTridiagonal, lanczosState_smul H v hc]
@@ -419,7 +419,8 @@ private theorem one_div_le_cgAlpha {m : Type*} [Fintype m] [DecidableEq m] {H : 
     rw [h0, WithLp.toLp_zero, norm_zero] at heq
     have h4 : 0 < ‖WithLp.toLp 2 r‖ ^ 4 * (‖WithLp.toLp 2 r‖ ^ 2)⁻¹ := by positivity
     have := mul_le_mul_of_nonneg_left hsum (by positivity : 0 ≤ ‖WithLp.toLp 2 r‖ ^ 4)
-    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_eq_mul, pow_eq_zero_iff,
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_eq_mul,
+      pow_eq_zero_iff,
       norm_eq_zero] at heq
     rcases heq with h | h
     · exact hr (by simpa using h)
@@ -862,7 +863,6 @@ private theorem apriori_S {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
     exact h
 
 /-- **Step (Π) of the induction**: the direction certificate at step $j$ from P(j). -/
-
 private theorem apriori_Pi {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
     (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
@@ -1041,7 +1041,7 @@ depend on this theorem. Difficulty: easy given the induction. -/
 theorem norm_p_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ j ^ 2 := by
-  sorry
+  exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).1
 
 /-- **The curvature certificate, a priori**: under (H),
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le 1.05\kappa\rho_j^2$, $j < k$.
@@ -1053,7 +1053,7 @@ theorem specNorm_mul_γ_mul_norm_p_sq_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j < k) :
     specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ j ^ 2 := by
-  sorry
+  exact specNorm_mul_γ_mul_norm_p_sq_le_aux C ha hs hsmall hj
 
 /-- **The off-diagonal coefficients, a priori**: under (H), $\beta_{j+1} =
 \rho_{j+1}/(\gamma_j\rho_j) \le 1.6a'$, $j < k$.
@@ -1063,7 +1063,7 @@ $\beta_{j+1} \le 1.04\lambda_{\max}(\tilde{\mathbf{H}}_{j+1}) \le 1.6a'$ for the
 theorem lanczosβ_succ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     C.lanczosβ (j + 1) ≤ 8 / 5 * a' := by
-  sorry
+  exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).2.2.1
 
 /-- **The coefficient ratio, a priori**: under (H), $\delta_j \le 1.6a'\gamma_j$, $j < k$.
 Proof: the private induction `aprioriCertificates` of this file at $j = k$; there
@@ -1074,7 +1074,7 @@ Difficulty: easy given the induction. -/
 theorem δ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     C.δ j ≤ 8 / 5 * a' * C.γ j := by
-  sorry
+  exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).2.2.2
 
 /-! ### The backward model -/
 
@@ -1100,7 +1100,9 @@ certificates. -/
 theorem frobNorm_backwardH_sub_dilatedH_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     frobNorm (C.backwardH - C.dilatedH) ≤ 40000 * k ^ 3 * C.ε * (a' / a) * a' := by
-  sorry
+  have h := C.aprioriCertificates ha hs hsmall le_rfl
+  exact frobNorm_le_of_apriori C ha hs hsmall (fun i hi => (h i hi).1) (fun i hi => (h i hi).2.1)
+    (fun i hi => (h i (by omega)).2.2)
 
 /-- **The model is positive definite with condition number at most $2\kappa + 1$**: under (H)
 its spectrum lies in $[a/2, a' + a/2]$.
@@ -1110,7 +1112,8 @@ Proof: `NLAlib.NormalizedLanczosData.spectrum_backwardH_subset_Icc` and
 theorem spectrum_backwardH_subset_Icc {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     spectrum ℝ C.backwardH ⊆ Set.Icc (a / 2) (a' + a / 2) := by
-  sorry
+  exact spectrum_subset_of_frobNorm_le C ha hs hsmall
+    (C.frobNorm_backwardH_sub_dilatedH_le ha hs hsmall)
 
 /-- **Exact CG on the model computes the computed step lengths**: under (H), for $j < k$,
 the step length of `NLAlib.cgState` on $(\tilde{\mathbf{H}}, (\mathbf{b}, \mathbf{0}, \dots))$
@@ -1120,7 +1123,8 @@ Proof: `NLAlib.CGRun.cgAlpha_backwardH_of_posDef`, positive definiteness from
 theorem cgAlpha_backwardH {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j := by
-  sorry
+  exact C.cgAlpha_backwardH_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
+    (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
 
 /-- **Exact CG on the model has the computed residual norms**: under (H), for $j \le k$,
 $\|\tilde{\mathbf{r}}_j\| = \|\mathbf{r}_j\|$.
@@ -1129,7 +1133,8 @@ Difficulty: easy. -/
 theorem norm_cgState_backwardH_r {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j := by
-  sorry
+  exact C.norm_cgState_backwardH_r_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
+    (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
 
 /-- **Residual ratios of the run, a priori**: under (H), $\|\mathbf{r}_j\| \le
 \sqrt{3\kappa}\,\|\mathbf{r}_i\|$ for $i \le j \le k$ (the computed residual norms are those of
@@ -1141,7 +1146,98 @@ theorem ρ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {i j : ℕ} (hij : i ≤ j)
     (hj : j ≤ k) :
     C.ρ j ≤ Real.sqrt (3 * (a' / a)) * C.ρ i := by
-  sorry
+  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
+  have hPD := posDef_of_spectrum C.isHermitian_backwardH (by positivity : 0 < a / 2) hspec
+  have h := hPD.norm_cgState_r_le (by positivity : 0 < a / 2) hspec C.dilatedRhs hij
+  rw [C.norm_cgState_backwardH_r ha hs hsmall hj,
+    C.norm_cgState_backwardH_r ha hs hsmall (hij.trans hj)] at h
+  refine h.trans (mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt ?_) (norm_nonneg _))
+  have hκ : 1 ≤ a' / a := (small_facts C ha hs hsmall).2.1
+  have he : (a' + a / 2) / (a / 2) = 2 * (a' / a) + 1 := by field_simp
+  rw [he]
+  linarith
+
+/-! ### Helpers for the error relations -/
+
+/-- The bilinear form of a symmetric matrix is symmetric. -/
+private theorem dotProduct_mulVec_comm {m : Type*} [Fintype m] {H : Matrix m m ℝ}
+    (hT : Hᵀ = H) (u v : m → ℝ) : u ⬝ᵥ (H *ᵥ v) = v ⬝ᵥ (H *ᵥ u) := by
+  rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, hT, dotProduct_comm]
+
+/-- The dilated matrix acts blockwise. -/
+private theorem dilatedH_mulVec_apply (v : Fin n × Fin (k + 1) → ℝ) (i : Fin n)
+    (r : Fin (k + 1)) : (C.dilatedH *ᵥ v) (i, r) = (C.A *ᵥ fun j => v (j, r)) i := by
+  simp only [dilatedH, Matrix.mulVec, dotProduct, Fintype.sum_prod_type,
+    Matrix.blockDiagonal_apply, ite_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+
+/-- **The residual against the energy**: for positive definite $\mathbf{H}$ with spectrum in
+$[l, l']$, $\|\mathbf{H}\mathbf{e}\|^2 \le l'\,\mathbf{e}^{\mathsf{T}}\mathbf{H}\mathbf{e}$
+(Cauchy–Schwarz for the form of $\mathbf{H}$). -/
+private theorem norm_mulVec_sq_le {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
+    (hH : H.PosDef) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') (e : m → ℝ) :
+    ‖WithLp.toLp 2 (H *ᵥ e)‖ ^ 2 ≤ l' * (e ⬝ᵥ (H *ᵥ e)) := by
+  have hherm := hH.isHermitian
+  have hT : Hᵀ = H := by
+    have := hherm.eq
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hpsd : ∀ x : m → ℝ, 0 ≤ x ⬝ᵥ (H *ᵥ x) := fun x => by
+    simpa using hH.posSemidef.dotProduct_mulVec_nonneg x
+  set v := H *ᵥ e with hv
+  have hCS : (e ⬝ᵥ (H *ᵥ v)) ^ 2 ≤ (e ⬝ᵥ (H *ᵥ e)) * (v ⬝ᵥ (H *ᵥ v)) := by
+    have hd := discrim_le_zero (a := v ⬝ᵥ (H *ᵥ v)) (b := 2 * (e ⬝ᵥ (H *ᵥ v)))
+      (c := e ⬝ᵥ (H *ᵥ e)) (fun x => by
+        have h := hpsd (e + x • v)
+        have hc := dotProduct_mulVec_comm hT v e
+        simp only [Matrix.mulVec_add, Matrix.mulVec_smul, add_dotProduct, dotProduct_add,
+          smul_dotProduct, dotProduct_smul, smul_eq_mul] at h
+        rw [hc] at h
+        have : v ⬝ᵥ (H *ᵥ v) * (x * x) + 2 * (e ⬝ᵥ (H *ᵥ v)) * x + e ⬝ᵥ (H *ᵥ e) =
+            e ⬝ᵥ (H *ᵥ e) + x * (e ⬝ᵥ (H *ᵥ v)) + x * (e ⬝ᵥ (H *ᵥ v) + x * (v ⬝ᵥ (H *ᵥ v))) := by
+          ring
+        linarith)
+    unfold discrim at hd
+    nlinarith
+  have h1 : e ⬝ᵥ (H *ᵥ v) = ‖WithLp.toLp 2 v‖ ^ 2 := by
+    rw [dotProduct_mulVec_comm hT, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+  have h2 : v ⬝ᵥ (H *ᵥ v) ≤ l' * ‖WithLp.toLp 2 v‖ ^ 2 := (quadForm_bounds hherm hs v).2
+  have he0 := hpsd e
+  rw [h1] at hCS
+  rcases (sq_nonneg ‖WithLp.toLp 2 v‖).lt_or_eq with hpos | hzero
+  · have : (‖WithLp.toLp 2 v‖ ^ 2) ^ 2 ≤ (e ⬝ᵥ (H *ᵥ e)) * (l' * ‖WithLp.toLp 2 v‖ ^ 2) :=
+      hCS.trans (mul_le_mul_of_nonneg_left h2 he0)
+    nlinarith
+  · have hv0 : v = 0 := by
+      have : ‖WithLp.toLp 2 v‖ = 0 := by nlinarith [norm_nonneg (WithLp.toLp 2 v)]
+      simpa using this
+    rw [← hzero, hv0]
+    simp
+
+/-- The norm of a solution of a positive definite system: $\|\mathbf{x}\| \le
+\|\mathbf{b}\|/l$ for $\mathbf{H}\mathbf{x} = \mathbf{b}$, spectrum in $[l, l']$, $l > 0$. -/
+private theorem norm_le_of_mulVec_eq {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
+    (hH : H.IsHermitian) {l l' : ℝ} (hl : 0 < l) (hs : spectrum ℝ H ⊆ Set.Icc l l')
+    {x b : m → ℝ} (hx : H *ᵥ x = b) :
+    ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 b‖ / l := by
+  have h1 := (quadForm_bounds hH hs x).1
+  rw [hx] at h1
+  have h2 := (le_abs_self _).trans (EuclideanSpace.abs_dotProduct_le_norm x b)
+  rw [le_div_iff₀ hl]
+  rcases (norm_nonneg (WithLp.toLp 2 x)).lt_or_eq with hpos | hzero
+  · nlinarith
+  · rw [← hzero]; simp
+
+/-- The energy of the solution: $\mathbf{x}^{\mathsf{T}}\mathbf{H}\mathbf{x} \le
+\|\mathbf{b}\|^2/l$. -/
+private theorem dotProduct_mulVec_le_of_mulVec_eq {m : Type*} [Fintype m] [DecidableEq m]
+    {H : Matrix m m ℝ} (hH : H.IsHermitian) {l l' : ℝ} (hl : 0 < l)
+    (hs : spectrum ℝ H ⊆ Set.Icc l l') {x b : m → ℝ} (hx : H *ᵥ x = b) :
+    x ⬝ᵥ (H *ᵥ x) ≤ ‖WithLp.toLp 2 b‖ ^ 2 / l := by
+  have h := norm_le_of_mulVec_eq hH hl hs hx
+  rw [hx]
+  refine (le_abs_self _).trans ((EuclideanSpace.abs_dotProduct_le_norm x b).trans ?_)
+  calc ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 b‖ ≤ ‖WithLp.toLp 2 b‖ / l * ‖WithLp.toLp 2 b‖ :=
+        mul_le_mul_of_nonneg_right h (norm_nonneg _)
+    _ = ‖WithLp.toLp 2 b‖ ^ 2 / l := by ring
 
 /-- **The computed residual norms converge at the Chebyshev rate** of the widened interval:
 under (H), with $\kappa_c = 2\kappa + 1$, for $j \le k$,
@@ -1159,7 +1255,44 @@ theorem ρ_le_chebyshev {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set
     C.ρ j ≤ 2 * Real.sqrt (2 * (a' / a) + 1) *
       ((Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ j *
         ‖WithLp.toLp 2 C.b‖ := by
-  sorry
+  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
+  have hherm := C.isHermitian_backwardH
+  have hPD := posDef_of_spectrum hherm (by positivity : 0 < a / 2) hspec
+  have hκ : 1 ≤ a' / a := (small_facts C ha hs hsmall).2.1
+  have he : (a' + a / 2) / (a / 2) = 2 * (a' / a) + 1 := by field_simp
+  set xs := C.backwardH⁻¹ *ᵥ C.dilatedRhs
+  have hxs : C.backwardH *ᵥ xs = C.dilatedRhs := by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
+      hPD.isUnit), Matrix.one_mulVec]
+  have hcheb := hherm.re_quadForm_sub_cgIterate_le_four_mul_pow (by positivity : 0 < a / 2)
+    hspec hxs 0 j
+  rw [he, sub_zero] at hcheb
+  simp only [quadForm_def, star_trivial, RCLike.re_to_real] at hcheb
+  set q := (Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1) with hq
+  have hsq1 : 1 ≤ Real.sqrt (2 * (a' / a) + 1) := by
+    rw [Real.one_le_sqrt]; linarith
+  have hq0 : 0 ≤ q := div_nonneg (by linarith) (by linarith)
+  have hr : (cgState C.backwardH C.dilatedRhs 0 j).r =
+      C.backwardH *ᵥ (xs - cgIterate C.backwardH C.dilatedRhs 0 j) := by
+    rw [cgState_r_eq, hPD.cgState_x_eq, Matrix.mulVec_sub, hxs]
+  have h1 := norm_mulVec_sq_le hPD hspec (xs - cgIterate C.backwardH C.dilatedRhs 0 j)
+  conv_lhs at h1 => rw [← hr, C.norm_cgState_backwardH_r ha hs hsmall hj]
+  have h2 := dotProduct_mulVec_le_of_mulVec_eq hherm (by positivity : 0 < a / 2) hspec hxs
+  rw [C.dilatedRhs_norm] at h2
+  have hl' : 0 ≤ a' + a / 2 := by linarith [ha.le.trans (small_facts C ha hs hsmall).1]
+  have h3 : C.ρ j ^ 2 ≤ (2 * Real.sqrt (2 * (a' / a) + 1) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
+    have hq2 : 0 ≤ q ^ (2 * j) := by positivity
+    have hsqrt2 : Real.sqrt (2 * (a' / a) + 1) ^ 2 = 2 * (a' / a) + 1 :=
+      Real.sq_sqrt (by linarith)
+    calc C.ρ j ^ 2 ≤ (a' + a / 2) * (4 * q ^ (2 * j) * (xs ⬝ᵥ (C.backwardH *ᵥ xs))) :=
+          h1.trans (mul_le_mul_of_nonneg_left hcheb hl')
+      _ ≤ (a' + a / 2) * (4 * q ^ (2 * j) * (‖WithLp.toLp 2 C.b‖ ^ 2 / (a / 2))) := by
+          gcongr
+      _ = (2 * Real.sqrt (2 * (a' / a) + 1) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
+          rw [mul_pow, mul_pow, mul_pow, hsqrt2, ← pow_mul, ← he]
+          field_simp
+          ring
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h3
 
 /-! ### Errors of exact CG on the model, in the computed quantities -/
 
@@ -1181,7 +1314,20 @@ theorem quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate {a
     quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 j) -
         quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 (j + d)) =
       ∑ i ∈ Finset.Ico j (j + d), C.γ i * C.ρ i ^ 2 := by
-  sorry
+  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
+  have hPD := posDef_of_spectrum C.isHermitian_backwardH (by positivity : 0 < a / 2) hspec
+  have hstep : ∀ i < k, quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 i) -
+      quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 (i + 1)) =
+        C.γ i * C.ρ i ^ 2 := fun i hi => by
+    have h := hPD.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ hxs i
+    rw [C.cgAlpha_backwardH ha hs hsmall hi, C.norm_cgState_backwardH_r ha hs hsmall hi.le] at h
+    simpa only [RCLike.re_to_real] using h
+  induction d with
+  | zero => simp
+  | succ d ih =>
+    rw [← add_assoc, Finset.sum_Ico_succ_top (by omega), ← ih (by omega),
+      ← hstep (j + d) (by omega)]
+    ring
 
 /-- **The model's error is a Gauss quadrature error of the computed tridiagonal matrix**:
 under (H), $\|\tilde{\mathbf{x}}_\star - \tilde{\mathbf{x}}_k\|_{\tilde{\mathbf{H}}}^2 =
@@ -1200,7 +1346,10 @@ theorem quadForm_backwardH_sub_cgIterate_eq {a a' : ℝ} (ha : 0 < a)
     {xs : Fin n × Fin (k + 1) → ℝ} (hxs : C.backwardH *ᵥ xs = C.dilatedRhs) :
     quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 k) =
       quadForm C.backwardH xs - ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2 := by
-  sorry
+  have h := C.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate ha hs hsmall
+    hxs (j := 0) (d := k) (by omega)
+  rw [cgIterate_zero, sub_zero, zero_add, ← Finset.range_eq_Ico] at h
+  linarith
 
 /-- **The model's initial error is the true one up to the model distance**: under (H), for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $\tilde{\mathbf{H}}\tilde{\mathbf{x}}_\star =
@@ -1219,7 +1368,70 @@ theorem abs_quadForm_backwardH_sub_quadForm_le {a a' : ℝ} (ha : 0 < a)
     (hx : C.A *ᵥ x = C.b) :
     |quadForm C.backwardH xs - quadForm C.A x| ≤
       2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (40000 * k ^ 3 * C.ε * (a' / a) * a') / a ^ 2 := by
-  sorry
+  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
+  have hherm := C.isHermitian_backwardH
+  have hT : C.backwardHᵀ = C.backwardH := by
+    have := hherm.eq
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hc := C.frobNorm_backwardH_sub_dilatedH_le ha hs hsmall
+  set c := 40000 * (k : ℝ) ^ 3 * C.ε * (a' / a) * a'
+  -- the dilated true solution
+  set xh : Fin n × Fin (k + 1) → ℝ := fun p => if (p.2 : ℕ) = 0 then x p.1 else 0 with hxhdef
+  have hHxh : C.dilatedH *ᵥ xh = C.dilatedRhs := by
+    funext p
+    obtain ⟨i, r⟩ := p
+    rw [C.dilatedH_mulVec_apply]
+    by_cases h0 : (r : ℕ) = 0
+    · have h0' : r = 0 := Fin.ext h0
+      have : (fun j => xh (j, r)) = x := funext fun j => by simp [hxhdef, h0']
+      rw [this, hx]
+      simp [dilatedRhs, h0]
+    · have h0' : r ≠ 0 := fun h => h0 (by simp [h])
+      have : (fun j => xh (j, r)) = 0 := funext fun j => by simp [hxhdef, h0']
+      rw [this, Matrix.mulVec_zero]
+      simp [dilatedRhs, h0]
+  have hxhb : xh ⬝ᵥ C.dilatedRhs = x ⬝ᵥ C.b := by
+    simp only [dotProduct, Fintype.sum_prod_type, hxhdef, dilatedRhs]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Finset.sum_eq_single (0 : Fin (k + 1))]
+    · simp
+    · intro r _ hr
+      have : (r : ℕ) ≠ 0 := fun h => hr (Fin.ext h)
+      simp [this]
+    · simp
+  have hnxh : ‖WithLp.toLp 2 xh‖ = ‖WithLp.toLp 2 x‖ := by
+    rw [EuclideanSpace.norm_eq, EuclideanSpace.norm_eq]
+    congr 1
+    rw [Fintype.sum_prod_type]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Finset.sum_eq_single (0 : Fin (k + 1))]
+    · simp [hxhdef]
+    · intro r _ hr
+      simp [hxhdef, hr]
+    · simp
+  -- the difference is `-xsᵀΔx̂`
+  have hdiff : quadForm C.backwardH xs - quadForm C.A x =
+      -(xs ⬝ᵥ ((C.backwardH - C.dilatedH) *ᵥ xh)) := by
+    simp only [quadForm_def, star_trivial]
+    rw [hxs, hx, ← hxhb, Matrix.sub_mulVec, dotProduct_sub, hHxh,
+      dotProduct_mulVec_comm hT xs xh, hxs, dotProduct_comm]
+    ring
+  rw [hdiff, abs_neg]
+  have hnxs := norm_le_of_mulVec_eq hherm (by positivity : 0 < a / 2) hspec hxs
+  rw [C.dilatedRhs_norm] at hnxs
+  have hnx := norm_le_of_mulVec_eq C.isHermitian_A ha hs hx
+  have hΔ : ‖WithLp.toLp 2 ((C.backwardH - C.dilatedH) *ᵥ xh)‖ ≤ c * ‖WithLp.toLp 2 x‖ := by
+    refine (norm_toLp_mulVec_le _ _).trans ?_
+    rw [hnxh]
+    exact mul_le_mul_of_nonneg_right ((specNorm_le_frobNorm _).trans hc) (norm_nonneg _)
+  have hc0 : 0 ≤ c := (frobNorm_nonneg _).trans hc
+  refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans ?_
+  calc ‖WithLp.toLp 2 xs‖ * ‖WithLp.toLp 2 ((C.backwardH - C.dilatedH) *ᵥ xh)‖
+      ≤ (‖WithLp.toLp 2 C.b‖ / (a / 2)) * (c * (‖WithLp.toLp 2 C.b‖ / a)) :=
+        mul_le_mul hnxs (hΔ.trans (mul_le_mul_of_nonneg_left hnx hc0)) (norm_nonneg _)
+          (by positivity)
+    _ = 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * c / a ^ 2 := by field_simp
+
 
 /-- **The model's error at step $k$ in the computed quantities**: under (H),
 $$\Bigl\lvert\|\tilde{\mathbf{x}}_\star - \tilde{\mathbf{x}}_k\|_{\tilde{\mathbf{H}}}^2 -
@@ -1236,7 +1448,12 @@ theorem abs_quadForm_backwardH_sub_cgIterate_sub_le {a a' : ℝ} (ha : 0 < a)
     |quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 k) -
         (quadForm C.A x - ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2)| ≤
       2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (40000 * k ^ 3 * C.ε * (a' / a) * a') / a ^ 2 := by
-  sorry
+  have h1 := C.quadForm_backwardH_sub_cgIterate_eq ha hs hsmall hxs
+  have h2 := C.abs_quadForm_backwardH_sub_quadForm_le ha hs hsmall hxs hx
+  rw [h1]
+  convert h2 using 2
+  ring
+
 
 end CGRun
 
