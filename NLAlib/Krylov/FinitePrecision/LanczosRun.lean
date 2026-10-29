@@ -46,7 +46,8 @@ open scoped Matrix
 Paige's ordering A(1) for a real symmetric $\mathbf{H}$, each operation exact up to an error
 bounded by $\varepsilon$ times its operands, the Lanczos vectors nearly unit
 ($\lvert\|\mathbf{v}_j\|^2 - 1\rvert \le \varepsilon$), $\beta_j > 0$ before the last step,
-$\beta_k \ge 0$ (the last step may be terminal), and $k\varepsilon \le 1/100$. -/
+$\beta_k \ge 0$ (the last step may be terminal), and $k\varepsilon \le 1/100$.
+Algorithm: lanczos (run model) -/
 structure LanczosRun (n k : ℕ) where
   /-- The matrix. -/
   H : Matrix (Fin n) (Fin n) ℝ

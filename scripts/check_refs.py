@@ -11,7 +11,14 @@ any `Result:` line, that `NAME` (a full name) is declared in the same file, and 
 related both ways (the explorer's "Related"): the asymptotic form's docstring names `NAME` in
 backticks in a sentence besides the tag, and `NAME`'s docstring names the asymptotic form in
 backticks (full name or `NLAlib`-relative). A docstring
-saying "Asymptotic form: `X`" must name a declaration whose `Asymptotic:` tag points back."""
+saying "Asymptotic form: `X`" must name a declaration whose `Asymptotic:` tag points back.
+
+Algorithm tags (CONTRIBUTING §6 item 4b). A docstring line `Algorithm: <id>` or
+`Algorithm: <id> (<role>)` marks a definition or program as part of the algorithm `<id>` (the
+explorer's algorithm pages): the id is a slug like a result id, the role one of `ROLES`, the line
+standalone and the docstring's last [A1]; the declaration is a `def`, `abbrev`, `structure` or
+`inductive` [A2]; a docstring has at most one such line [A3]. The same check runs in
+`scripts/check_rules.py` under these ids."""
 import re
 import sys
 from pathlib import Path
@@ -31,6 +38,45 @@ DECL = re.compile(
 SKIP = re.compile(r"\s*(?:omit\b.*\bin\s*$|include\b.*\bin\s*$|variable\b.*\bin\s*$|@\[[^\]]*\]\s*$)")
 ASYM = re.compile(r"^\s*Asymptotic:[ \t]*(\S*)[ \t]*(?:-/)?[ \t]*$", re.M)
 ASYM_FORM = re.compile(r"Asymptotic form:\s*`([^`]+)`")
+ALGO_TAG = re.compile(r"\bAlgorithm:")
+ALGO_VALUE = re.compile(r"([a-z0-9]+(?:-[a-z0-9]+)*)(?:[ \t]+\(([a-z ]+)\))?")
+ROLES = ("specification", "run model")
+ALGO_KINDS = ("def", "irreducible_def", "abbrev", "structure", "inductive")
+
+
+def algorithm_tag_problems(doc, kind):
+    """[(rule id, problem)] for the `Algorithm:` lines of one docstring (`/-- … -/`, the comment
+    markers included or not) of a declaration of kind `kind` (`def`, `theorem`, …; None when the
+    docstring documents no declaration, a structure field for example)."""
+    body = doc.strip()
+    body = body[3:] if body.startswith("/--") else body
+    body = body[:-2] if body.endswith("-/") else body
+    bad, tags = [], 0
+    for occurrence in ALGO_TAG.finditer(body):
+        tags += 1
+        start = body.rfind("\n", 0, occurrence.start()) + 1
+        end = body.find("\n", occurrence.end())
+        end = len(body) if end < 0 else end
+        if body[start:occurrence.start()].strip():
+            bad.append(("A1", "inline `Algorithm:` tag"))
+            continue
+        value = body[occurrence.end():end].strip()
+        m = ALGO_VALUE.fullmatch(value)
+        if not m:
+            bad.append(("A1", f"malformed `Algorithm:` tag {value!r}: write `Algorithm: <id>` or "
+                              "`Algorithm: <id> (<role>)`, the id a slug"))
+        elif m.group(2) and m.group(2) not in ROLES:
+            bad.append(("A1", f"unknown role {m.group(2)!r} of an `Algorithm:` tag "
+                              f"(roles: {', '.join(ROLES)})"))
+        if body[end:].strip():
+            bad.append(("A1", "the `Algorithm:` line is not the docstring's last line"))
+        if kind not in ALGO_KINDS:
+            bad.append(("A2", f"an `Algorithm:` tag on a {kind or 'docstring of no declaration'}; "
+                              "only definitions, structures and programs carry one"))
+    if tags > 1:
+        bad.append(("A3", "more than one `Algorithm:` line: a declaration belongs to at most one "
+                          "algorithm"))
+    return bad
 
 
 def tag_format_problems(text):
@@ -61,7 +107,7 @@ def tag_format_problems(text):
 
 
 def declarations(path):
-    """(full name, short name, docstring or None) for each declaration of the file."""
+    """(full name, short name, docstring or None, kind) for each declaration of the file."""
     out, namespaces, doc, pending, buf = [], [], None, None, None
     lines = path.read_text().splitlines()
     i = 0
@@ -93,7 +139,7 @@ def declarations(path):
                 name = re.match(r"\s*([^\s:({\[]+)", lines[i + 1]).group(1)
             if name:
                 full = name[7:] if name.startswith("_root_.") else ".".join(namespaces + [name])
-                out.append((full, name.split(".")[-1], pending))
+                out.append((full, name.split(".")[-1], pending, m.group(1)))
             pending = None
         elif line.strip() and not SKIP.match(line):
             pending = None
@@ -109,7 +155,7 @@ def pair_has_result(asymptotic_doc, explicit_doc):
 def asymptotic_problems(paths):
     bad, decls = [], {}
     for path in paths:
-        for full, short, doc in declarations(path):
+        for full, short, doc, _ in declarations(path):
             decls[full] = (path, short, doc)
     tagged = 0
     for full, (path, short, doc) in decls.items():
@@ -175,11 +221,29 @@ def main():
                     if not slug.match(rid.strip()):
                         print(f"{path}: malformed result id {rid.strip()!r}")
                         bad += 1
+    algorithms = set()
+    for path in paths:
+        documented = set()
+        for full, _, doc, kind in declarations(path):
+            if not doc:
+                continue
+            documented.add(doc)
+            for rid, problem in algorithm_tag_problems(doc, kind):
+                print(f"{rid} {path}: {full}: {problem}")
+                bad += 1
+            algorithms.update(m.group(1) for m in re.finditer(
+                r"^\s*Algorithm:\s*([a-z0-9-]+)", doc, re.M))
+        for doc in re.finditer(r"/--[\s\S]*?-/", path.read_text()):
+            if doc.group(0) not in documented and ALGO_TAG.search(doc.group(0)):
+                for rid, problem in algorithm_tag_problems(doc.group(0), None):
+                    print(f"{rid} {path}: {problem}")
+                    bad += 1
     tagged, problems = asymptotic_problems(paths)
     for p in problems:
         print(p)
     bad += len(problems)
-    print(f"{len(keys)} bibliography keys; {tagged} asymptotic forms; {bad} problems")
+    print(f"{len(keys)} bibliography keys; {tagged} asymptotic forms; {len(algorithms)} algorithm "
+          f"ids; {bad} problems")
     sys.exit(1 if bad else 0)
 
 

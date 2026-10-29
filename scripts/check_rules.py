@@ -1369,7 +1369,8 @@ def r_orphan(c):
     ids = result_ids(c)
     names = {d['full'] for p, d in public_src(c)}
     out = []
-    for fn in ('collections.toml', 'results.toml', 'rates.toml', 'books.toml', 'facets.toml'):
+    for fn in ('collections.toml', 'results.toml', 'rates.toml', 'books.toml', 'facets.toml',
+               'algorithms.toml'):
         f = c.explore_repo / fn
         if not f.exists():
             continue
@@ -1382,7 +1383,40 @@ def r_orphan(c):
         for m in re.finditer(r"^(?:theorem|algorithm_definition|sketch_definition)\s*=\s*'''([^']+)'''", t, re.M):
             if m.group(1) not in names:
                 out.append(V('R3', 'explore/' + fn, 0, m.group(1), 'declaration'))
+        # algorithms.toml's bootstrap `definitions` lists name declarations
+        defs = re.finditer(r'^\s*definitions\s*=\s*\[([^\]]*)\]', t, re.M) if fn == 'algorithms.toml' else ()
+        for m in defs:
+            for r in re.findall(r'"([^"]+)"', m.group(1)):
+                if r not in names:
+                    out.append(V('R3', 'explore/' + fn, 0, r, 'declaration'))
     return out
+
+
+# ================================================================== A: algorithm tags (§6 item 4b)
+def algorithm_tag_violations(c, rid):
+    """The `Algorithm:` tag problems of rule `rid`, by scripts/check_refs.py's check."""
+    from check_refs import algorithm_tag_problems
+    out = []
+    for p, d in c.src_decls:
+        if d['doc'] and 'Algorithm:' in d['doc']:
+            out += [V(rid, p, d['line'], d['full'] or d['kind'], why)
+                    for r, why in algorithm_tag_problems(d['doc'], d['kind']) if r == rid]
+    return out
+
+
+@rule('A1')
+def a_format(c):
+    return algorithm_tag_violations(c, 'A1')
+
+
+@rule('A2')
+def a_kind(c):
+    return algorithm_tag_violations(c, 'A2')
+
+
+@rule('A3')
+def a_one(c):
+    return algorithm_tag_violations(c, 'A3')
 
 
 # ================================================================== G: design records

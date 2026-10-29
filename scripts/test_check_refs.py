@@ -2,7 +2,7 @@
 """Focused regressions for standalone documentation tags."""
 import unittest
 
-from check_refs import pair_has_result, tag_format_problems
+from check_refs import algorithm_tag_problems, pair_has_result, tag_format_problems
 
 
 class TagFormatTests(unittest.TestCase):
@@ -38,6 +38,38 @@ class TagFormatTests(unittest.TestCase):
                     'Asymptotic:', 'Asymptotic: `NLAlib.explicit`'):
             with self.subTest(tag=tag):
                 self.assertTrue(tag_format_problems(f'/-- A result.\n{tag} -/'))
+
+
+
+class AlgorithmTagTests(unittest.TestCase):
+    def rules(self, doc, kind='def'):
+        return [rid for rid, _ in algorithm_tag_problems(doc, kind)]
+
+    def test_well_formed(self):
+        for tag in ('Algorithm: cg', 'Algorithm: randomized-svd', 'Algorithm: cg (specification)',
+                    'Algorithm: lanczos (run model)'):
+            with self.subTest(tag=tag):
+                self.assertEqual(self.rules(f'/-- **A def.** Text.\n{tag} -/'), [])
+        self.assertEqual(self.rules('/-- A run.\nAlgorithm: lanczos -/', 'structure'), [])
+        self.assertEqual(self.rules('/-- No tag; the word Algorithm alone. -/', 'theorem'), [])
+
+    def test_malformed(self):
+        for tag in ('Algorithm:', 'Algorithm: CG', 'Algorithm: cg_state', 'Algorithm: cg pcg',
+                    'Algorithm: cg (program)', 'Algorithm: `cg`'):
+            with self.subTest(tag=tag):
+                self.assertEqual(self.rules(f'/-- A def.\n{tag} -/'), ['A1'])
+
+    def test_inline_and_not_last(self):
+        self.assertEqual(self.rules('/-- A def. Algorithm: cg -/'), ['A1'])
+        self.assertEqual(self.rules('/-- A def.\nAlgorithm: cg\nMore text. -/'), ['A1'])
+
+    def test_kinds(self):
+        for kind in ('theorem', 'lemma', 'instance', None):
+            with self.subTest(kind=kind):
+                self.assertEqual(self.rules('/-- A result.\nAlgorithm: cg -/', kind), ['A2'])
+
+    def test_at_most_one(self):
+        self.assertIn('A3', self.rules('/-- A def.\nAlgorithm: cg\nAlgorithm: pcg -/'))
 
 
 if __name__ == '__main__':

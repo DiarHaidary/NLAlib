@@ -152,14 +152,16 @@ private theorem toLp_mem_span_image_iff {ι κ : Type*} (v : ι → κ → 𝕜)
 /-- The matrix of Gram–Schmidt vectors of the columns of $\mathbf{A}$: column $j$ is the
 normalised component of column $j$ of $\mathbf{A}$ orthogonal to the earlier columns, or zero if
 that component is zero.
-Port of `NLAlib.gramSchmidtQ`, there by an explicit recursion over $\mathbb{R}$. -/
+Port of `NLAlib.gramSchmidtQ`, there by an explicit recursion over $\mathbb{R}$.
+Algorithm: gram-schmidt -/
 noncomputable def gramSchmidtQ (A : Matrix m n 𝕜) : Matrix m n 𝕜 :=
   Matrix.of fun i j =>
     InnerProductSpace.gramSchmidtNormed 𝕜 (fun k => WithLp.toLp 2 (A.col k)) j i
 
 /-- The triangular factor of the Gram–Schmidt process,
 $\mathbf{R} = \mathbf{Q}^{\mathsf{H}}\mathbf{A}$.
-Port of `NLAlib.gramSchmidtR`. -/
+Port of `NLAlib.gramSchmidtR`.
+Algorithm: gram-schmidt -/
 noncomputable def gramSchmidtR (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   (gramSchmidtQ A)ᴴ * A
 

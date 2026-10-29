@@ -83,6 +83,9 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - R1 `Result:` ids go on statements, never on definitions or structures.
 - R2 No two result ids one or two edits apart.
 - R3 Every id or declaration the explorer names exists.
+- A1 An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`.
+- A2 `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances.
+- A3 A declaration carries at most one `Algorithm:` tag.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - G2 Every port-ledger target is declared.
 - E2 Programs, kernels and implementations are computable.

@@ -350,7 +350,8 @@ $\|\mathbf{S}(\mathbf{A}\mathbf{X} - \mathbf{B})\|_{\mathsf{F}}$, column by colu
 (`NLAlib.isLeastSquaresSolution_pinv_mulVec`). Total; its junk value is $\mathbf{0}$ when
 $\mathbf{S}\mathbf{A} = \mathbf{0}$. The argument order is system, sketch, right-hand side, as in
 `NLAlib.obliqueProjector`.
-[EpperlyWebber2026, §2]; there with $\mathbf{S} = \mathbf{\Omega}^{\mathsf{H}}$. -/
+[EpperlyWebber2026, §2]; there with $\mathbf{S} = \mathbf{\Omega}^{\mathsf{H}}$.
+Algorithm: sketch-and-solve -/
 noncomputable def sketchAndSolve (A : Matrix m n 𝕜) (S : Matrix k m 𝕜) (B : Matrix m p 𝕜) :
     Matrix n p 𝕜 :=
   pinv (S * A) * (S * B)
