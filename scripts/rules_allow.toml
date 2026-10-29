@@ -63,3 +63,18 @@ reason = "used by the three Gaussian block tails of RandomMatrix/Gaussian/BlockT
 rule = "P9"
 decl = "NLAlib.sum_range_rpow_le_of_forall_prod_range_le"
 reason = "Weyl's majorant lemma: scalar statement, but the proof needs the Matrix majorization theory, which ForMathlib cannot import (P1); maintainer decision 2026-10-20"
+
+[[allow]]
+rule = "T10"
+decl = "NLAlib.lanczosStep_of_orthonormal_recurrence"
+reason = "`j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`"
+
+[[allow]]
+rule = "T10"
+decl = "NLAlib.lanczosState_eq_of_orthonormal_recurrence"
+reason = "`j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`"
+
+[[allow]]
+rule = "T10"
+decl = "NLAlib.lanczosState_beta_eq_of_orthonormal_recurrence"
+reason = "`j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`"

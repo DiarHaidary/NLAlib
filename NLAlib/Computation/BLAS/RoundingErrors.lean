@@ -36,8 +36,11 @@ Decoded values are real: the kernels are analysed over real data. Design:
   `NLAlib.Computation.IsArithErrSem.exec_gemv`, `NLAlib.Computation.IsArithErrSem.exec_gemm`:
   the run lemmas.
 * `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add`,
-  `NLAlib.Computation.IsRelErrSem.exec_dot_abs_sum_mul_sub_le`: `dot`, [Higham2002, §3.1].
+  `NLAlib.Computation.IsRelErrSem.exec_dot_abs_sum_mul_sub_le`,
+  `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct`: `dot`,
+  [Higham2002, §3.1].
 * `NLAlib.Computation.IsRelErrSem.exec_axpy`: `axpy`.
+* `NLAlib.Computation.IsRelErrSem.exec_rscl`: `rscl`.
 * `NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec`,
   `NLAlib.Computation.IsRelErrSem.exec_gemv_abs_mulVec_sub_le`: `gemv`, [Higham2002, §3.5].
 * `NLAlib.Computation.IsRelErrSem.exec_gemm_abs_mul_sub_le`: `gemm`, [Higham2002, §3.5].
@@ -706,6 +709,33 @@ theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add (h : IsRelErrSem u dec (fun _ _ 
   obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add (h.nonneg trivial) hn
   exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
 
+/-- **Backward error of `dot`, product form** in the standard model [Higham2002, §3.1], (3.4)
+there: under the contract `NLAlib.Computation.IsRelErrSem` with every value in range and adding
+zero exactly, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
+($i < n$) and $\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes
+one word $w$ into $\mathit{dst}$ and nothing else, and
+$$w \text{ decodes to } \sum_{i<n} x_i y_i (1 + \eta_i)\,,$$
+each $1 + \eta_i$ a product of $n$ factors $(1 + \delta)^{\pm 1}$ with
+$\lvert \delta \rvert \le u_p$ (`NLAlib.Computation.IsRoundingProduct`). -/
+theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
+    (yo n : IExp ℕ) (xs ys : ℕ → ℝ)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
+    (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
+    (hdy : dst.buf = y → ∀ i < n.eval, dst.idx.eval ≠ yo.eval + i)
+    (hdst : ∃ v s₁, st.store.write p dst.buf dst.idx.eval v = some s₁) :
+    ∃ st' w, exec I (dot p dst x xo y yo n).run st = some st' ∧
+      st.store.write p dst.buf dst.idx.eval w = some st'.store ∧
+      ∃ η : ℕ → ℝ, (∀ i < n.eval, IsRoundingProduct (u p) n.eval (η i)) ∧
+        dec p w = ∑ i ∈ range n.eval, xs i * ys i * (1 + η i) := by
+  obtain ⟨st', w, s, hrun, hst, htr, hw⟩ := IsArithErrSem.exec_dot I p st
+    (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
+    fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add_isRoundingProduct (h.nonneg trivial)
+  exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
+
 /-- **Forward error of `dot`** in the standard model [Higham2002, §3.1], (3.5) there: under the
 contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
 $n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
@@ -755,6 +785,58 @@ theorem IsRelErrSem.exec_axpy (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a
   refine ⟨st', W, hrun, hst, fun i hi => ?_⟩
   obtain ⟨q, hq, hz⟩ := hW i hi
   exact exists_eq_mul_one_add_add_mul_one_add_of_relErr hq hz (h.nonneg trivial) hu
+
+/-- **Rounding error of `rscl`** in the standard model: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, if $a$ decodes to a nonzero $a$ and
+the cells of $\mathbf{x}$ hold words decoding to $x_i$ ($i < n$), $a$ not among them, the run of
+`rscl` succeeds, writes words $w_i$ into the cells of $\mathbf{x}$ and nothing else, and
+$$w_i \text{ decodes to } \frac{x_i}{a}(1 + \delta_i)\,, \qquad \lvert \delta_i \rvert \le u_p\,.$$
+From the model (2.4) of [Higham2002, §2.2]. -/
+theorem IsRelErrSem.exec_rscl (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a : Cell ℕ ℕ)
+    (x : ℕ) (xo n : IExp ℕ) (av : ℝ) (xs : ℕ → ℝ) (hav : av ≠ 0)
+    (ha : ∃ w, st.store.read p a.buf a.idx.eval = some w ∧ dec p w = av)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hax : a.buf = x → ∀ i < n.eval, a.idx.eval ≠ xo.eval + i) :
+    ∃ st', ∃ W : ℕ → K, exec I (rscl p a x xo n).run st = some st' ∧
+      st.store.writeBlock p x xo.eval ((List.range n.eval).toArray.map W) = some st'.store ∧
+      ∀ i < n.eval, ∃ δ : ℝ, |δ| ≤ u p ∧ dec p (W i) = xs i / av * (1 + δ) := by
+  obtain ⟨wa, hwa, hva⟩ := ha
+  rw [run_rscl, exec_seq_skip, exec_named, exec_seq_skip]
+  refine exists₂_of (exists_exec_loop_eq_some_of_forall I (n := n)
+    (body := fun i => .seq (.instr (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ a)) .skip)
+    (fun i st' => ∃ W : ℕ → K, ∃ si : Store P K,
+      (List.range i).foldlM (fun s j => s.write p x (xo.eval + j) (W j)) st.store = some si ∧
+      st'.store = si ∧ ∀ k < i, ∃ δ : ℝ, |δ| ≤ u p ∧ dec p (W k) = xs k / av * (1 + δ))
+    ⟨fun _ => wa, st.store, rfl, rfl, fun k hk => absurd hk (Nat.not_lt_zero _)⟩ ?_ |>.imp
+      fun st' ⟨hrun, W, si, hsi, hst, hW⟩ =>
+        ⟨hrun, W, by rw [Store.writeBlock_map_range, hsi]; simp [hst], hW⟩)
+  intro i hi st' ⟨W, si, hsi, hst, hW⟩
+  have hrd : ∀ {b j : ℕ}, (∀ k < i, b ≠ x ∨ j ≠ xo.eval + k) →
+      si.read p b j = st.store.read p b j := fun h =>
+    Store.read_of_foldlM_write_eq_some_of_forall_ne _ _ _ hsi fun k hk =>
+      h k (List.mem_range.mp hk)
+  obtain ⟨wx, hwx, hvx⟩ := hx i hi
+  have ha' : si.read p a.buf a.idx.eval = some wa := by
+    rw [hrd fun k hk => ?_, hwa]
+    by_cases h : a.buf = x
+    · exact Or.inr (hax h k (hk.trans hi))
+    · exact Or.inl h
+  have hx' : si.read p x (xo.eval + i) = some wx := by
+    rw [hrd fun k hk => Or.inr (by omega), hwx]
+  obtain ⟨z, hz⟩ := h.bin_ok p .div wx wa trivial (fun _ => by rw [hva]; exact hav) trivial
+  obtain ⟨δ, hδ, hdz⟩ := h.bin_err p .div wx wa z trivial hz
+  obtain ⟨si', hsi'⟩ := Store.exists_write_eq_some_of_read_eq_some (v := z) hx'
+  refine ⟨_, (exec_seq_instr_bin I (st := st') (by rw [hst]; exact hx') (by rw [hst]; exact ha')
+    hz (by rw [hst]; exact hsi')).trans (exec_skip I _), Function.update W i z, si', ?_, rfl,
+    fun k hk => ?_⟩
+  · rw [List.range_succ, List.foldlM_append, foldlM_write_congr _ fun j hj =>
+      Function.update_of_ne (Nat.ne_of_lt (List.mem_range.mp hj)) _ _, hsi]
+    simp [hsi']
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · rw [Function.update_of_ne (Nat.ne_of_lt hk)]
+      exact hW k hk
+    · rw [Function.update_self]
+      exact ⟨δ, hδ, by rw [hdz, hvx, hva]; rfl⟩
 
 /-- **Backward error of `gemv`** in the standard model [Higham2002, §3.5], (3.11) there: under
 the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and

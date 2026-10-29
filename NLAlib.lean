@@ -122,6 +122,14 @@ public import NLAlib.Krylov.Basic.Grade
 public import NLAlib.Krylov.Basic.Space
 public import NLAlib.Krylov.Eigenvalues.PowerIteration
 public import NLAlib.Krylov.Eigenvalues.Ritz
+public import NLAlib.Krylov.FinitePrecision.Backward
+public import NLAlib.Krylov.FinitePrecision.BackwardSpectral
+public import NLAlib.Krylov.FinitePrecision.LanczosData
+public import NLAlib.Krylov.FinitePrecision.LanczosRun
+public import NLAlib.Krylov.FinitePrecision.LocalErrors
+public import NLAlib.Krylov.FinitePrecision.Normalized
+public import NLAlib.Krylov.FinitePrecision.Paige
+public import NLAlib.Krylov.FinitePrecision.Recurrence
 public import NLAlib.Krylov.Functions.LanczosFA
 public import NLAlib.Krylov.Functions.NearOptimality
 public import NLAlib.Krylov.Functions.Optimality
@@ -342,6 +350,7 @@ public import NLAlib.Matrix.Subspaces.Leverage
 public import NLAlib.Matrix.Subspaces.Oblique
 public import NLAlib.Matrix.Subspaces.ObliqueBases
 public import NLAlib.Matrix.Subspaces.ObliqueProjector
+public import NLAlib.Matrix.Subspaces.OrthonormalDilation
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
 public import NLAlib.Matrix.Subspaces.ProjectorPair
 public import NLAlib.Matrix.Subspaces.Tangent

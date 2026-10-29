@@ -2,6 +2,32 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## Finite-precision Lanczos: integration (2026-10-28)
+
+Branch `design/lanczos-fp` (local). Design `docs/design/Krylov-LanczosRounding.md` (status:
+implemented for the analysis; §3.7 records the integration). The re-proof of the stability
+analysis of *A simple stability analysis of Lanczos in finite precision* (T. Chen, draft) is in
+the library, `NLAlib/Krylov/FinitePrecision/`: the interface `LanczosRun`, the generic
+three-term recurrence `LanczosData`, local errors, the perturbed recurrence and Ritz residual,
+Paige's Gram commutator and loss-of-orthogonality bound, the normalised run, the Greenbaum-type
+backward model ($\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le
+2000k^4\varepsilon\|\mathbf{H}\|_2$; exact Lanczos on it computes $\mathbf{T}_k$), and its
+spectral consequences (localization, containment, $W_1$ closeness of the spectral measures).
+Constants are named bounds (`lanczos…Factor`, six entries in `docs/constants.toml`). General
+facts moved to their topics: the orthonormal dilation (`Matrix/Subspaces/OrthonormalDilation`),
+Kittaneh's Frobenius Lipschitz bound (`Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le`,
+`Matrix/Functions/HermitianCalculus`), `Matrix.IsUpperTriangular.frobNorm_sub_diagonal_le` and
+`frobNorm_le_card_mul_of_forall_abs_le` (`Matrix/Norms/Frobenius`), "an orthonormal three-term
+recurrence is Lanczos" (`Krylov/Processes/LanczosRecurrence`), `HasOrthonormalCols.norm_toLp_col`;
+the projector bound is the library's `IsStarProjection.specNorm_le_one`. The Lanczos program, its
+exact specification, the rounding bridge and the new end-to-end headline
+`IsRelErrSem.exists_lanczosBackwardModel_of_lanczosBasisDenseProg` (the dense program in the
+standard model has the backward model with $\varepsilon = \max(\sqrt{N}\gamma_N, \gamma_{N+4})$)
+stay in `NLAlibScaffold/Krylov/Processes/` (proved, no `sorry`): `lanczosBasisProg` and
+`lanczosBasisDenseProg` are `<spec>Prog`s and need registered targets (E3/E4, maintainer). Tier-1
+review: `nlalib-harness/reports/Lanczos-FP-Tier1.md`. Headline axioms: `propext`,
+`Classical.choice`, `Quot.sound`.
+
 ## Rounding-error analysis of the BLAS kernels: integration (2026-10-28)
 
 Branch `design/fp-toolkit`, based on `main` at `c4ff3d9`. Design

@@ -26583,5 +26583,65 @@
   "new": "NLAlib.Computation.isRelErrSem_gridSem",
   "stage": "FP-rounding",
   "note": "Rounding to nearest on a t-bit grid with unbounded exponent meets the standard-model contract with u = 2^-t (Higham 2002, Thm 2.2)."
+ },
+ "NLAlib.LanczosRun.norm_recurrenceError_le": {
+  "new": "NLAlib.LanczosRun.norm_recurrenceError_le",
+  "stage": "Lanczos-FP",
+  "note": "Local error bound of finite-precision Lanczos: ||H v_{j+1} - beta_j v_j - alpha_{j+1} v_{j+1} - beta_{j+1} v_{j+2}|| <= 6(j+1) eps ||H||_2 (Chen draft thm:local-errors; external 700j)."
+ },
+ "NLAlib.LanczosRun.abs_adjacentInner_le": {
+  "new": "NLAlib.LanczosRun.abs_adjacentInner_le",
+  "stage": "Lanczos-FP",
+  "note": "Local orthogonality of finite-precision Lanczos: |beta_{j+1} v_{j+1}^T v_{j+2}| <= 7(j+1) eps ||H||_2 (Chen draft thm:local-errors; external 1200j)."
+ },
+ "NLAlib.LanczosRun.norm_mulVec_basis_mulVec_sub_smul_le": {
+  "new": "NLAlib.LanczosRun.norm_mulVec_basis_mulVec_sub_smul_le",
+  "stage": "Lanczos-FP",
+  "note": "Ritz residual bound: ||H x - theta x|| <= sqrt(1+eps) beta_k |y_{k-1}| + 6k sqrt(k) eps ||H||_2 (Chen draft eq:ritz-residual-bound)."
+ },
+ "NLAlib.LanczosRun.specNorm_gramCommutator_le": {
+  "new": "NLAlib.LanczosRun.specNorm_gramCommutator_le",
+  "stage": "Lanczos-FP",
+  "note": "Paige's Gram commutator is small: ||M_k||_2 <= 30k^2 eps ||H||_2 (Chen draft cor:gram-commutator; external 3000k^3; Paige 1980 (2.17)-(2.18))."
+ },
+ "NLAlib.LanczosRun.abs_basis_mulVec_dotProduct_mul_abs_le": {
+  "new": "NLAlib.LanczosRun.abs_basis_mulVec_dotProduct_mul_abs_le",
+  "stage": "Lanczos-FP",
+  "note": "Paige's loss-of-orthogonality bound: |x^T (beta_k v_{k+1})| |y_{k-1}| <= 30k^2 eps ||H||_2 (Chen draft thm:paige; Paige 1980 (3.11)-(3.13))."
+ },
+ "NLAlib.LanczosRun.frobNorm_dilatedResidual_le": {
+  "new": "NLAlib.LanczosRun.frobNorm_dilatedResidual_le",
+  "stage": "Lanczos-FP",
+  "note": "Dilated recurrence of finite-precision Lanczos: orthonormal dilated vectors satisfy the computed recurrence up to ||E||_F <= 1000k^4 eps ||H||_2 (Chen draft lem:dilated-recurrence; external 240000k^6 spectral)."
+ },
+ "NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le": {
+  "new": "NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le",
+  "stage": "Lanczos-FP",
+  "note": "Greenbaum-type backward model: exact Lanczos on a symmetric H~ with ||H~ - I_{k+1} (x) H||_F <= 2000k^4 eps ||H||_2 computes T_k (Chen draft thm:greenbaum; external 480000k^6 spectral)."
+ },
+ "NLAlib.LanczosRun.exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul": {
+  "new": "NLAlib.LanczosRun.exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul",
+  "stage": "Lanczos-FP",
+  "note": "Localization of stabilised Ritz values: |theta - lambda| <= beta_k |y_{k-1}| + 2000k^4 eps ||H||_2 for some eigenvalue of H (Chen draft thm:stabilized; Paige 1980 Thm 3.1)."
+ },
+ "NLAlib.LanczosRun.eigenvalue_last_sub_le_of_mulVec_eq_smul": {
+  "new": "NLAlib.LanczosRun.eigenvalue_last_sub_le_of_mulVec_eq_smul",
+  "stage": "Lanczos-FP",
+  "note": "Containment of computed Ritz values, below: lambda_min(H) - theta <= 2000k^4 eps ||H||_2 (Chen draft thm:containment; Paige 1980 (3.48))."
+ },
+ "NLAlib.LanczosRun.sub_eigenvalue_zero_le_of_mulVec_eq_smul": {
+  "new": "NLAlib.LanczosRun.sub_eigenvalue_zero_le_of_mulVec_eq_smul",
+  "stage": "Lanczos-FP",
+  "note": "Containment of computed Ritz values, above: theta - lambda_max(H) <= 2000k^4 eps ||H||_2 (Chen draft thm:containment; Paige 1980 (3.48))."
+ },
+ "NLAlib.LanczosRun.abs_dotProduct_cfc_mulVec_sub_le": {
+  "new": "NLAlib.LanczosRun.abs_dotProduct_cfc_mulVec_sub_le",
+  "stage": "Lanczos-FP",
+  "note": "Spectral measures of (H, v1) and the backward model are W1-close: |v1^T f(H) v1 - v~^T f(H~) v~| <= 2000k^4 eps ||H||_2 for 1-Lipschitz f (Chen draft rem:wasserstein)."
+ },
+ "Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le": {
+  "new": "Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le",
+  "stage": "Lanczos-FP",
+  "note": "A 1-Lipschitz function is 1-Lipschitz in the Frobenius norm on real symmetric matrices (Kittaneh 1985, for normal operators)."
  }
 }
