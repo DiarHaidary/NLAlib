@@ -1182,6 +1182,101 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
       ring
     linarith only [t, h1, h2, h3, h3', h6, h7]
 
+/-- The adjacent inner product of the run's Lanczos data:
+$\bar p_j = -\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1}/(\gamma_j\rho_j^2)$. -/
+private theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
+    C.toLanczosData.adjacentInner j = -(C.r j ⬝ᵥ C.r (j + 1)) / (C.γ j * C.ρ j ^ 2) := by
+  have hγ := (C.γ_pos hj).ne'
+  have hρ := (C.ρ_pos hj).ne'
+  simp only [LanczosData.adjacentInner, toLanczosData]
+  rw [C.lanczosβ_smul_lanczosV hj, C.lanczosV_succ hj, smul_dotProduct, dotProduct_smul,
+    smul_eq_mul, smul_eq_mul]
+  have : (-1 : ℝ) ^ (j * 2) = 1 := by rw [mul_comm, pow_mul, neg_one_sq, one_pow]
+  field_simp
+  linear_combination (-(C.r j ⬝ᵥ C.r (j + 1))) * this
+
+/-- The consecutive residuals of a step taken:
+$\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1} = \rho_j^2 - \gamma_j\mathbf{r}_j^{\mathsf{T}}\mathbf{s}_j
++ \mathbf{r}_j^{\mathsf{T}}\mathbf{e}^r_j$. -/
+private theorem r_dotProduct_r_succ_eq {j : ℕ} (hj : j < k) :
+    C.r j ⬝ᵥ C.r (j + 1) = C.ρ j ^ 2 - C.γ j * (C.r j ⬝ᵥ C.s j) + C.r j ⬝ᵥ C.er j := by
+  rw [C.r_succ j hj, dotProduct_add, dotProduct_sub, dotProduct_smul, ρ, norm_toLp_sq,
+    smul_eq_mul]
+
+/-- The local part $R_j = -\rho_j^2(\theta_j + \eta^\gamma_j + \theta_j\eta^\gamma_j) +
+\gamma_je^\mu_j + \mathbf{r}_j^{\mathsf{T}}\mathbf{e}^r_j$ of the consecutive-residual identity. -/
+private noncomputable def localR (j : ℕ) : ℝ :=
+  -(C.ρ j ^ 2 * (C.θ j + C.eγ j + C.θ j * C.eγ j)) + C.γ j * C.eμ j + C.r j ⬝ᵥ C.er j
+
+/-- The first consecutive residuals: $\mathbf{r}_0^{\mathsf{T}}\mathbf{r}_1 = R_0$. -/
+private theorem r_dotProduct_r_one_eq : C.r 0 ⬝ᵥ C.r (0 + 1) = C.localR 0 := by
+  have hk := C.k_pos
+  have h1 : C.r 0 ⬝ᵥ C.s 0 = C.μ 0 - C.eμ 0 := by
+    rw [C.μ_eq 0 hk, C.p_zero, ← C.r_zero]
+    ring
+  have h2 := C.γ_mul_μ hk
+  rw [C.ν_eq' hk.le] at h2
+  rw [C.r_dotProduct_r_succ_eq hk, h1, localR]
+  linear_combination -h2
+
+/-- The conjugacy defect $\zeta_{i+1} = \mathbf{p}_i^{\mathsf{T}}\mathbf{s}_{i+1}$ transports the
+previous consecutive residuals: $\gamma_i\zeta_{i+1} = \mathbf{r}_i^{\mathsf{T}}\mathbf{r}_{i+1} +
+S_{i+1}$ (one use of $\mathbf{A}^{\mathsf{T}} = \mathbf{A}$). -/
+private theorem γ_mul_p_dotProduct_s_succ_eq {i : ℕ} (hi : i + 1 < k) :
+    C.γ i * (C.p i ⬝ᵥ C.s (i + 1)) = C.r i ⬝ᵥ C.r (i + 1) +
+      ((C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
+        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
+        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
+        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1))) := by
+  have hi' : i < k := by omega
+  have hγ := (C.γ_pos hi').ne'
+  -- symmetry
+  have hsym : C.p i ⬝ᵥ (C.A *ᵥ C.p (i + 1)) = (C.A *ᵥ C.p i) ⬝ᵥ C.p (i + 1) := by
+    rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, C.transpose_A, dotProduct_comm]
+  have hz : C.p i ⬝ᵥ C.s (i + 1) =
+      (C.γ i)⁻¹ * ((C.r i - C.r (i + 1)) ⬝ᵥ C.p (i + 1) + C.er i ⬝ᵥ C.p (i + 1)) -
+        C.es i ⬝ᵥ C.p (i + 1) + C.p i ⬝ᵥ C.es (i + 1) := by
+    rw [C.s_eq (i + 1) hi, dotProduct_add, hsym, C.mulVec_p_eq hi', sub_dotProduct,
+      smul_dotProduct, add_dotProduct, smul_eq_mul]
+  -- the direction update against the residual difference
+  have hpr : (C.r i - C.r (i + 1)) ⬝ᵥ C.p (i + 1) = C.r i ⬝ᵥ C.r (i + 1) +
+      C.δ i * (C.p i ⬝ᵥ (C.r i - C.r (i + 1))) - C.ρ (i + 1) ^ 2 +
+      (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i := by
+    rw [C.p_succ i hi', dotProduct_add, dotProduct_add, dotProduct_smul, sub_dotProduct,
+      sub_dotProduct, ρ, norm_toLp_sq, smul_eq_mul, dotProduct_comm (C.r i) (C.p i),
+      dotProduct_comm (C.r (i + 1)) (C.p i), dotProduct_sub]
+    ring
+  have hpd : C.p i ⬝ᵥ (C.r i - C.r (i + 1)) =
+      C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i) - C.γ i * C.eμ i - C.p i ⬝ᵥ C.er i := by
+    have h1 := C.p_dotProduct_r_succ_eq hi'
+    rw [dotProduct_sub]
+    linarith
+  rw [hz, hpr, hpd]
+  field_simp
+  ring
+
+/-- **The consecutive-residual recursion**:
+$\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1} = (\gamma_j\delta_i/\gamma_i)(\mathbf{r}_i^{\mathsf{T}}
+\mathbf{r}_j + S_j) + R_j + \gamma_j\mathbf{e}^{p\mathsf{T}}_i\mathbf{s}_j$, $j = i + 1 < k$. -/
+private theorem r_dotProduct_r_succ_succ_eq {i : ℕ} (hi : i + 1 < k) :
+    C.r (i + 1) ⬝ᵥ C.r (i + 1 + 1) = C.γ (i + 1) * C.δ i / C.γ i *
+      (C.γ i * (C.p i ⬝ᵥ C.s (i + 1))) + C.localR (i + 1) +
+        C.γ (i + 1) * (C.ep i ⬝ᵥ C.s (i + 1)) := by
+  have hi' : i < k := by omega
+  have hγ := (C.γ_pos hi').ne'
+  have h1 : C.r (i + 1) ⬝ᵥ C.s (i + 1) =
+      C.μ (i + 1) - C.eμ (i + 1) - C.δ i * (C.p i ⬝ᵥ C.s (i + 1)) - C.ep i ⬝ᵥ C.s (i + 1) := by
+    have hr : C.r (i + 1) = C.p (i + 1) - C.δ i • C.p i - C.ep i := by
+      rw [C.p_succ i hi']
+      abel
+    rw [hr, sub_dotProduct, sub_dotProduct, smul_dotProduct, C.μ_eq (i + 1) hi, smul_eq_mul]
+    ring
+  have h2 := C.γ_mul_μ hi
+  rw [C.ν_eq' hi.le] at h2
+  rw [C.r_dotProduct_r_succ_eq hi, h1, localR]
+  field_simp
+  linear_combination -h2
+
 /-- **Lemma B (local orthogonality is inherited)**: with the certificates of
 `NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
