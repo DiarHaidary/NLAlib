@@ -48,13 +48,132 @@ finite precision*), `rem:wasserstein`, `thm:stabilized`, `thm:containment`;
 
 namespace NLAlib
 
-open scoped Matrix
+open scoped Matrix MatrixOrder
 
 /-- The squared norm of a vector on `Fin n × Fin m` is the sum over the blocks. -/
 private theorem norm_toLp_sq_eq_sum_blocks {n m : ℕ} (x : Fin n × Fin m → ℝ) :
     ‖WithLp.toLp 2 x‖ ^ 2 = ∑ r, ‖WithLp.toLp 2 (fun j => x (j, r))‖ ^ 2 := by
   simp only [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, dotProduct, Fintype.sum_prod_type]
   exact Finset.sum_comm
+
+namespace LanczosData
+
+variable {n k : ℕ} (D : LanczosData n k)
+
+/-- The matrix of a three-term datum is symmetric. -/
+theorem isHermitian_H : D.H.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, D.transpose_H]
+
+/-- The dilated matrix is symmetric. -/
+theorem isHermitian_dilatedH : D.dilatedH.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, D.transpose_dilatedH]
+
+/-- The backward model of a datum with unit vectors is symmetric. -/
+theorem isHermitian_backwardH (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc) j j = 1) :
+    D.backwardH.IsHermitian := by
+  rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, D.transpose_backwardH hW]
+
+/-- The quadratic form of $\hat{\mathbf{H}}$ is the sum of those of $\mathbf{H}$ on the blocks. -/
+private theorem dotProduct_dilatedH_mulVec_eq_sum (x : Fin n × Fin (k + 1) → ℝ) :
+    x ⬝ᵥ (D.dilatedH *ᵥ x) = ∑ r, (fun j => x (j, r)) ⬝ᵥ (D.H *ᵥ fun j => x (j, r)) := by
+  have h : ∀ i r, (D.dilatedH *ᵥ x) (i, r) = (D.H *ᵥ fun j => x (j, r)) i := fun i r => by
+    simp only [dilatedH, Matrix.mulVec, dotProduct, Fintype.sum_prod_type,
+      Matrix.blockDiagonal_apply, ite_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+  simp only [dotProduct, Fintype.sum_prod_type, h]
+  exact Finset.sum_comm
+
+/-- **Weyl localisation of the backward model**: if the spectrum of $\mathbf{H}$ lies in
+$[a, a']$ and $\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le c$,
+the spectrum of $\tilde{\mathbf{H}}$ lies in $[a - c, a' + c]$. -/
+theorem spectrum_backwardH_subset_Icc (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc) j j = 1)
+    {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ Set.Icc a a')
+    (hc : frobNorm (D.backwardH - D.dilatedH) ≤ c) :
+    spectrum ℝ D.backwardH ⊆ Set.Icc (a - c) (a' + c) := by
+  have hH : IsSelfAdjoint D.H := D.isHermitian_H
+  have h₁ : a • (1 : Matrix (Fin n) (Fin n) ℝ) ≤ D.H := by
+    rw [← Algebra.algebraMap_eq_smul_one]
+    exact (algebraMap_le_iff_le_spectrum hH).mpr fun x hx => (hs hx).1
+  have h₂ : D.H ≤ a' • (1 : Matrix (Fin n) (Fin n) ℝ) := by
+    rw [← Algebra.algebraMap_eq_smul_one]
+    exact (le_algebraMap_iff_spectrum_le hH).mpr fun x hx => (hs hx).2
+  have hq : ∀ x : Fin n × Fin (k + 1) → ℝ,
+      a * ‖WithLp.toLp 2 x‖ ^ 2 ≤ x ⬝ᵥ (D.dilatedH *ᵥ x) ∧
+        x ⬝ᵥ (D.dilatedH *ᵥ x) ≤ a' * ‖WithLp.toLp 2 x‖ ^ 2 := by
+    intro x
+    rw [D.dotProduct_dilatedH_mulVec_eq_sum, norm_toLp_sq_eq_sum_blocks, Finset.mul_sum,
+      Finset.mul_sum]
+    constructor
+    · refine Finset.sum_le_sum fun r _ => ?_
+      have := re_quadForm_le_re_quadForm_of_le h₁ (fun j => x (j, r))
+      rw [re_quadForm_real_smul_one] at this
+      simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using this
+    · refine Finset.sum_le_sum fun r _ => ?_
+      have := re_quadForm_le_re_quadForm_of_le h₂ (fun j => x (j, r))
+      rw [re_quadForm_real_smul_one] at this
+      simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using this
+  have hsd := isHermitian_real_smul_one (n := Fin n × Fin (k + 1)) (𝕜 := ℝ)
+  have hd₁ : a • (1 : Matrix (Fin n × Fin (k + 1)) (Fin n × Fin (k + 1)) ℝ) ≤ D.dilatedH := by
+    rw [(hsd a).le_iff_re_quadForm_le D.isHermitian_dilatedH]
+    intro x
+    rw [re_quadForm_real_smul_one]
+    simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using (hq x).1
+  have hd₂ : D.dilatedH ≤ a' • (1 : Matrix (Fin n × Fin (k + 1)) (Fin n × Fin (k + 1)) ℝ) := by
+    rw [D.isHermitian_dilatedH.le_iff_re_quadForm_le (hsd a')]
+    intro x
+    rw [re_quadForm_real_smul_one]
+    simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using (hq x).2
+  have hΔ : (D.backwardH - D.dilatedH).IsHermitian :=
+    (D.isHermitian_backwardH hW).sub D.isHermitian_dilatedH
+  have hΔc : specNorm (D.backwardH - D.dilatedH) ≤ c := (specNorm_le_frobNorm _).trans hc
+  have hl := hΔ.neg_smul_one_le_of_specNorm_le hΔc
+  have hu := hΔ.le_smul_one_of_specNorm_le hΔc
+  have hB : D.backwardH = D.dilatedH + (D.backwardH - D.dilatedH) := by abel
+  refine spectrum_subset_Icc_of_le ?_ ?_
+  · rw [hB, sub_smul, sub_eq_add_neg]
+    exact add_le_add hd₁ hl
+  · rw [hB, add_smul]
+    exact add_le_add hd₂ hu
+
+/-- The quadratic forms of $f(\hat{\mathbf{H}})$ at the dilated start and of $f(\mathbf{H})$ at
+$\mathbf{v}_1$ agree. -/
+theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
+    D.dilatedStart ⬝ᵥ (cfc f D.dilatedH *ᵥ D.dilatedStart) =
+      D.v 1 ⬝ᵥ (cfc f D.H *ᵥ D.v 1) := by
+  have hcfc' : cfc f D.dilatedH = Matrix.blockDiagonal fun _ => cfc f D.H :=
+    cfc_blockDiagonal (fun _ => D.isHermitian_H) f
+  rw [hcfc']
+  simp only [dotProduct, Matrix.mulVec, Fintype.sum_prod_type, Matrix.blockDiagonal_apply,
+    dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero]
+  rw [Finset.sum_comm, Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
+    simp only [Fin.val_eq_zero_iff, if_neg hr, Finset.sum_const_zero])]
+  simp only [Fin.val_zero, if_true]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
+    simp only [Fin.val_eq_zero_iff, if_neg hr])]
+  simp
+
+/-- **The spectral measures are Wasserstein-close**: for unit vectors and every $1$-Lipschitz
+$f$, $\lvert\mathbf{v}_1^{\mathsf{T}}f(\mathbf{H})\mathbf{v}_1 -
+\tilde{\mathbf{v}}^{\mathsf{T}}f(\tilde{\mathbf{H}})\tilde{\mathbf{v}}\rvert \le
+\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}$. -/
+theorem abs_dotProduct_cfc_mulVec_sub_le_frobNorm
+    (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc) j j = 1) {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
+    |D.v 1 ⬝ᵥ (cfc f D.H *ᵥ D.v 1) - D.dilatedStart ⬝ᵥ (cfc f D.backwardH *ᵥ D.dilatedStart)| ≤
+      frobNorm (D.backwardH - D.dilatedH) := by
+  have hs1 : ‖WithLp.toLp 2 D.dilatedStart‖ = 1 := by
+    rw [← D.dilatedBasisSucc_col_zero]
+    exact (D.hasOrthonormalCols_dilatedBasisSucc hW).norm_toLp_col 0
+  rw [← D.dotProduct_cfc_dilatedH_mulVec, ← dotProduct_sub, ← Matrix.sub_mulVec]
+  have h := norm_star_dotProduct_mulVec_le (cfc f D.dilatedH - cfc f D.backwardH)
+    D.dilatedStart D.dilatedStart
+  rw [star_trivial, Real.norm_eq_abs, hs1, one_mul, mul_one] at h
+  refine h.trans ((specNorm_le_frobNorm _).trans ?_)
+  refine (D.isHermitian_dilatedH.frobNorm_cfc_sub_cfc_le (D.isHermitian_backwardH hW) hf).trans ?_
+  rw [← frobNorm_neg, neg_sub]
+
+end LanczosData
 
 namespace LanczosRun
 
@@ -271,21 +390,8 @@ $\bar{\mathbf{v}}_1$ agree: the spectral measure of $(\hat{\mathbf{H}}, \tilde{\
 of $(\mathbf{H}, \bar{\mathbf{v}}_1)$. -/
 theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
     L.dilatedStart ⬝ᵥ (cfc f L.dilatedH *ᵥ L.dilatedStart) =
-      L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) := by
-  have hcfc' : cfc f L.dilatedH = Matrix.blockDiagonal fun _ => cfc f L.H :=
-    cfc_blockDiagonal (fun _ => L.isHermitian) f
-  rw [hcfc']
-  simp only [dotProduct, Matrix.mulVec, Fintype.sum_prod_type, Matrix.blockDiagonal_apply,
-    dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero]
-  rw [Finset.sum_comm, Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
-    simp only [Fin.val_eq_zero_iff, if_neg hr, Finset.sum_const_zero])]
-  simp only [Fin.val_zero, if_true]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  congr 1
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [Fintype.sum_eq_single (0 : Fin (k + 1)) (fun r hr => by
-    simp only [Fin.val_eq_zero_iff, if_neg hr])]
-  simp
+      L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) :=
+  L.normalized.dotProduct_cfc_dilatedH_mulVec f
 
 /-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz
 $f$, <!-- value lanczosBackwardFactor k -->
@@ -302,18 +408,9 @@ Result: lanczos-spectral-measure-wasserstein -/
 theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
     |L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) -
         L.dilatedStart ⬝ᵥ (cfc f L.backwardH *ᵥ L.dilatedStart)| ≤
-      lanczosBackwardFactor k * L.ε * specNorm L.H := by
-  have hs1 : ‖WithLp.toLp 2 L.dilatedStart‖ = 1 := by
-    rw [← L.dilatedBasisSucc_col_zero]
-    exact L.hasOrthonormalCols_dilatedBasisSucc.norm_toLp_col 0
-  rw [← L.dotProduct_cfc_dilatedH_mulVec, ← dotProduct_sub, ← Matrix.sub_mulVec]
-  have h := norm_star_dotProduct_mulVec_le (cfc f L.dilatedH - cfc f L.backwardH)
-    L.dilatedStart L.dilatedStart
-  rw [star_trivial, Real.norm_eq_abs, hs1, one_mul, mul_one] at h
-  refine h.trans ((specNorm_le_frobNorm _).trans ?_)
-  refine (L.isHermitian_dilatedH.frobNorm_cfc_sub_cfc_le L.isHermitian_backwardH hf).trans ?_
-  rw [← frobNorm_neg, neg_sub]
-  exact L.frobNorm_backwardH_sub_dilatedH_le
+      lanczosBackwardFactor k * L.ε * specNorm L.H :=
+  (L.normalized.abs_dotProduct_cfc_mulVec_sub_le_frobNorm L.transpose_basisSucc_mul_self_apply
+    hf).trans L.frobNorm_backwardH_sub_dilatedH_le
 
 end LanczosRun
 

@@ -106,19 +106,25 @@ noncomputable def backwardH : Matrix (Fin n × Fin (k + 1)) (Fin n × Fin (k + 1
   D.dilatedH + (-(D.dilatedResidual * D.dilatedBasisᵀ) -
     D.dilatedBasis * D.dilatedResidualᵀ * (1 - D.dilatedBasis * D.dilatedBasisᵀ))
 
+/-- The unit vectors as the hypothesis of the `NLAlib.LanczosData` backward model: the Gram
+matrix of $\mathbf{V}_{k+1}$ has unit diagonal. -/
+theorem transpose_basisSucc_mul_self_apply (j : Fin (k + 1)) :
+    (D.basisSuccᵀ * D.basisSucc) j j = 1 :=
+  D.toLanczosData.transpose_basisSucc_mul_self_apply_of_norm D.norm_v j
+
 /-- The backward model is symmetric.
 Proof: as `NLAlib.LanczosRun.transpose_backwardH`, through the symmetry of
 $\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{E}}$; the proof uses only `D.transpose_H` and the
 unit columns. Difficulty: mechanical (move). -/
 theorem transpose_backwardH : D.backwardHᵀ = D.backwardH := by
-  sorry
+  exact D.toLanczosData.transpose_backwardH D.transpose_basisSucc_mul_self_apply
 
 /-- The model recurrence: $\tilde{\mathbf{H}}\hat{\mathbf{V}}_k = \hat{\mathbf{V}}_{k+1}
 \underline{\mathbf{T}}_k$. Proof: as `NLAlib.LanczosRun.backwardH_mul_dilatedBasis`.
 Difficulty: mechanical (move). -/
 theorem backwardH_mul_dilatedBasis :
     D.backwardH * D.dilatedBasis = D.dilatedBasisSucc * D.tridiagonalSucc := by
-  sorry
+  exact D.toLanczosData.backwardH_mul_dilatedBasis D.transpose_basisSucc_mul_self_apply
 
 /-- **The backward model of normalised Lanczos data**: if
 $\|\bar{\mathbf{f}}_j\| \le f$ and $\lvert\bar p_j\rvert \le p$ for $j < k$, then
@@ -137,7 +143,50 @@ theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
     (hf : ∀ j < k, ‖WithLp.toLp 2 (D.recurrenceError j)‖ ≤ f)
     (hp : ∀ j < k, |D.adjacentInner j| ≤ p) :
     frobNorm (D.backwardH - D.dilatedH) ≤ normalizedBackwardBound k f p := by
-  sorry
+  have hW := D.transpose_basisSucc_mul_self_apply
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast D.k_pos
+  have hf0 : 0 ≤ f := (norm_nonneg _).trans (hf 0 D.k_pos)
+  have hp0 : 0 ≤ p := (abs_nonneg _).trans (hp 0 D.k_pos)
+  have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg _)
+  have hV : frobNorm D.basis = Real.sqrt k := by
+    have hcols : ∀ j : Fin k, ‖WithLp.toLp 2 (D.basis.col j)‖ = 1 := fun j =>
+      D.norm_v ((j : ℕ) + 1) (by omega) (by omega)
+    rw [← Real.sqrt_sq (frobNorm_nonneg _), frobNorm_sq_eq_sum_col]
+    simp [hcols]
+  have hF : frobNorm D.residual ≤ Real.sqrt k * f := by
+    have hsq : frobNorm D.residual ^ 2 ≤ (Real.sqrt k * f) ^ 2 := by
+      rw [frobNorm_sq_eq_sum_col, mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+      calc ∑ j, ‖WithLp.toLp 2 (D.residual.col j)‖ ^ 2 ≤ ∑ _j : Fin k, f ^ 2 :=
+            Finset.sum_le_sum fun j _ => pow_le_pow_left₀ (norm_nonneg _) (hf j j.2) 2
+        _ = k * f ^ 2 := by simp
+    exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
+  have hb : ∀ j < k, |D.β j| ≤ ∑ i ∈ Finset.range k, |D.β i| := fun j hj =>
+    Finset.single_le_sum (f := fun i => |D.β i|) (fun i _ => abs_nonneg _) (Finset.mem_range.2 hj)
+  have hg : ∀ i, |D.normSqDefect i| ≤ 0 := fun i => by
+    simp [LanczosData.normSqDefect, D.norm_v ((i : ℕ) + 1) (by omega) (by omega)]
+  have hG := D.specNorm_gramCommutator_le hp hb hg
+  rw [hV] at hG
+  have hG' : specNorm D.gramCommutator ≤ 2 * p + 2 * k * f := by
+    refine hG.trans ?_
+    have := mul_le_mul_of_nonneg_left hF (Real.sqrt_nonneg (k : ℝ))
+    nlinarith
+  have hE := D.toLanczosData.frobNorm_dilatedResidual_le_of_le hW hF hG'
+  have h2 := D.toLanczosData.frobNorm_backwardH_sub_dilatedH_le_two_mul hW
+  change frobNorm (D.backwardH - D.dilatedH) ≤ 2 * frobNorm D.dilatedResidual at h2
+  change frobNorm D.dilatedResidual ≤ _ at hE
+  have hss : Real.sqrt (k + 1) * Real.sqrt k ≤ 3 / 2 * k := by
+    rw [← Real.sqrt_mul (by positivity), Real.sqrt_le_left (by positivity)]
+    nlinarith
+  refine h2.trans ?_
+  rw [normalizedBackwardBound]
+  have e1 : 2 * Real.sqrt (k + 1) * (Real.sqrt k * f) ≤ 2 * (3 / 2 * k) * f := by
+    have := mul_le_mul_of_nonneg_right hss hf0
+    nlinarith
+  have hkk : ((k : ℝ) + 1) * (2 * k + 1) ≤ 6 * k ^ 2 := by nlinarith
+  have e2 : 4 * (((k : ℝ) + 1) * (2 * k + 1)) * (2 * p + 2 * k * f) ≤
+      4 * (6 * k ^ 2) * (2 * p + 2 * k * f) := by gcongr
+  have hk3 : (k : ℝ) ≤ k ^ 3 := by nlinarith
+  nlinarith
 
 /-- **Exact Lanczos on the backward model computes the tridiagonal matrix**: $k$ steps of
 `NLAlib.lanczosState` on $\tilde{\mathbf{H}}$ from $(\mathbf{v}_1, \mathbf{0}, \dots)$ give
@@ -146,14 +195,16 @@ Proof: as `NLAlib.LanczosRun.lanczosTridiagonal_backwardH_dilatedStart`, through
 `NLAlib.lanczosState_eq_of_orthonormal_recurrence`. Difficulty: mechanical (move). -/
 theorem lanczosTridiagonal_backwardH_dilatedStart :
     lanczosTridiagonal D.backwardH D.dilatedStart k = D.tridiagonal := by
-  sorry
+  exact LanczosData.lanczosTridiagonal_backwardH_dilatedStart
+    D.transpose_basisSucc_mul_self_apply D.β_nonneg D.β_pos
 
 /-- Exact Lanczos on the backward model computes the last coefficient $\beta_k$.
 Proof: as `NLAlib.LanczosRun.lanczosState_backwardH_dilatedStart_beta`.
 Difficulty: mechanical (move). -/
 theorem lanczosState_backwardH_dilatedStart_beta :
     (lanczosState D.backwardH D.dilatedStart k).beta = D.β k := by
-  sorry
+  exact LanczosData.lanczosState_backwardH_dilatedStart_beta
+    D.transpose_basisSucc_mul_self_apply D.β_nonneg D.β_pos
 
 /-- Exact Lanczos on the backward model computes the dilated vectors: `lanczosMatrix` of
 $\tilde{\mathbf{H}}$ from the dilated start is $\hat{\mathbf{V}}_k$.
@@ -161,7 +212,8 @@ Proof: as `NLAlib.LanczosRun.lanczosMatrix_backwardH_dilatedStart`.
 Difficulty: mechanical (move). -/
 theorem lanczosMatrix_backwardH_dilatedStart :
     lanczosMatrix D.backwardH D.dilatedStart k = D.dilatedBasis := by
-  sorry
+  exact LanczosData.lanczosMatrix_backwardH_dilatedStart
+    D.transpose_basisSucc_mul_self_apply D.β_nonneg D.β_pos
 
 /-- **Weyl localisation of the model**: if the spectrum of $\mathbf{H}$ lies in $[a, a']$ and
 $\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le c$, the spectrum of
@@ -175,7 +227,7 @@ $\hat{\mathbf{H}}$ (`specNorm_le_frobNorm`), whose spectrum is that of $\mathbf{
 theorem spectrum_backwardH_subset_Icc {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ Set.Icc a a')
     (hc : frobNorm (D.backwardH - D.dilatedH) ≤ c) :
     spectrum ℝ D.backwardH ⊆ Set.Icc (a - c) (a' + c) := by
-  sorry
+  exact D.toLanczosData.spectrum_backwardH_subset_Icc D.transpose_basisSucc_mul_self_apply hs hc
 
 /-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz $f$,
 $\lvert\mathbf{v}_1^{\mathsf{T}}f(\mathbf{H})\mathbf{v}_1 -
@@ -186,7 +238,8 @@ $\|\mathbf{\Delta}\|_{\mathsf{F}}$. Difficulty: mechanical (move). -/
 theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
     |D.v 1 ⬝ᵥ (cfc f D.H *ᵥ D.v 1) - D.dilatedStart ⬝ᵥ (cfc f D.backwardH *ᵥ D.dilatedStart)| ≤
       frobNorm (D.backwardH - D.dilatedH) := by
-  sorry
+  exact D.toLanczosData.abs_dotProduct_cfc_mulVec_sub_le_frobNorm
+    D.transpose_basisSucc_mul_self_apply hf
 
 end NormalizedLanczosData
 
@@ -213,7 +266,7 @@ then $1224k^4 + 768k^3 \le 2000k^4$. Difficulty: easy. -/
 theorem frobNorm_toNormalizedLanczosData_backwardH_sub_dilatedH_le :
     frobNorm (L.toNormalizedLanczosData.backwardH - L.toNormalizedLanczosData.dilatedH) ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
-  sorry
+  exact L.frobNorm_backwardH_sub_dilatedH_le
 
 /-- The two constructions agree: the backward model of the run is that of its normalised
 data. After the refactor `NLAlib.LanczosRun.backwardH` is defined this way and this is `rfl`.
@@ -221,7 +274,7 @@ Proof: unfold both; the dilated residual and the perturbation are the same expre
 `L.normalized`. Difficulty: mechanical. -/
 theorem backwardH_eq_toNormalizedLanczosData_backwardH :
     L.backwardH = L.toNormalizedLanczosData.backwardH := by
-  sorry
+  rfl
 
 end LanczosRun
 
