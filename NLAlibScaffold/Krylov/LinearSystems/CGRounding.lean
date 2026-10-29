@@ -8,7 +8,8 @@ module
 public import NLAlib.Computation.BLAS.RoundingErrors
 public import NLAlib.Matrix.Norms.Compare
 public import NLAlibScaffold.Krylov.FinitePrecision.CGBackward
-public import NLAlibScaffold.Krylov.LinearSystems.CGProgramTree
+public import NLAlibScaffold.Krylov.LinearSystems.CGProgramRun
+public import NLAlibScaffold.Krylov.Processes.LanczosRounding
 
 /-!
 # Rounding errors of the conjugate gradient program
@@ -92,6 +93,111 @@ def HasCGRunOutputs (st : St P K C) (p : P) (dec : P → K → ℝ) (ε : ℝ) (
       (∀ j ≤ cgSteps ν q, R.ν j = ν j) ∧ R.x (cgSteps ν q) = x ∧
       (cgSteps ν q < q → R.r (cgSteps ν q) = 0)
 
+/-! ### The assembly of the run -/
+
+/-- **The smallness facts of the bridge** from $q^3\varepsilon\kappa^2 \le 10^{-5}$, $q \ge 1$,
+$0 < a \le a'$, $\varepsilon \ge 0$: for every $m \le q$, $m^3\varepsilon\kappa^2 \le 10^{-5}$,
+$m\varepsilon \le 1/100$ and $20m\varepsilon(1 + 2\kappa + 1.05\kappa) \le 1$; and
+$3\varepsilon a' \le a$. -/
+private theorem cg_smallness {q : ℕ} (hq : 0 < q) {ε a a' : ℝ} (hε : 0 ≤ ε) (ha : 0 < a)
+    (hκ : a ≤ a') (hsmall : (q : ℝ) ^ 3 * ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (∀ m ≤ q, (m : ℝ) ^ 3 * ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) ∧
+      (∀ m ≤ q, (m : ℝ) * ε ≤ 1 / 100) ∧ 3 * ε * a' ≤ a ∧
+      ∀ m ≤ q, 20 * m * ε * (1 + 2 * (a' / a) + 21 / 20 * (a' / a)) ≤ 1 := by
+  set κ := a' / a with hκdef
+  have hκ1 : 1 ≤ κ := (one_le_div ha).mpr hκ
+  have hsm : ∀ m ≤ q, (m : ℝ) ^ 3 * ε * κ ^ 2 ≤ 1 / 10 ^ 5 := fun m hm => by
+    have : (m : ℝ) ^ 3 ≤ (q : ℝ) ^ 3 := pow_le_pow_left₀ (Nat.cast_nonneg _) (by exact_mod_cast hm) 3
+    have h0 : 0 ≤ ε * κ ^ 2 := by positivity
+    nlinarith
+  have hm1 : ∀ m ≤ q, (m : ℝ) * ε * κ ≤ 1 / 10 ^ 5 := fun m hm => by
+    have h1 := hsm m hm
+    rcases Nat.eq_zero_or_pos m with rfl | hm0
+    · simp
+    have hm' : (1 : ℝ) ≤ m := by exact_mod_cast hm0
+    have hm2 : (1 : ℝ) ≤ (m : ℝ) ^ 2 := by nlinarith
+    have hmm : (m : ℝ) ≤ (m : ℝ) ^ 3 := by nlinarith
+    have hκκ : κ ≤ κ ^ 2 := by nlinarith
+    have : (m : ℝ) * ε * κ ≤ (m : ℝ) ^ 3 * ε * κ ^ 2 := by
+      have h2 : 0 ≤ ε * κ := by positivity
+      calc (m : ℝ) * ε * κ ≤ (m : ℝ) ^ 3 * (ε * κ) := by nlinarith
+        _ ≤ (m : ℝ) ^ 3 * (ε * κ ^ 2) := by gcongr
+        _ = _ := by ring
+    linarith
+  refine ⟨hsm, fun m hm => ?_, ?_, fun m hm => ?_⟩
+  · have := hm1 m hm
+    have : (m : ℝ) * ε ≤ (m : ℝ) * ε * κ := by
+      have : 0 ≤ (m : ℝ) * ε := by positivity
+      nlinarith
+    linarith
+  · have h1 := hm1 q le_rfl
+    have hq' : (1 : ℝ) ≤ q := by exact_mod_cast hq
+    have h2 : ε * κ ≤ (q : ℝ) * ε * κ := by
+      have : 0 ≤ ε * κ := by positivity
+      nlinarith
+    have h3 : ε * a' = ε * κ * a := by rw [hκdef]; field_simp
+    nlinarith
+  · have h1 := hm1 m hm
+    have : (0 : ℝ) ≤ m * ε := by positivity
+    have h2 : 1 + 2 * κ + 21 / 20 * κ ≤ 5 * κ := by linarith
+    nlinarith
+
+/-- **The number of steps is the stop of the sequences**: if $\nu_j > 0$ for $j < k$, $k \le q$,
+and $\nu_k = 0$ when $k < q$, then `NLAlib.cgSteps ν q` $= k$. -/
+private theorem cgSteps_eq {ν : ℕ → ℝ} {q k : ℕ} (hkq : k ≤ q) (hpos : ∀ j < k, 0 < ν j)
+    (hstop : k < q → ν k = 0) : cgSteps ν q = k := by
+  classical
+  unfold cgSteps
+  rcases lt_or_eq_of_le hkq with hk | rfl
+  · have hex : ∃ j, j < q ∧ ν j = 0 := ⟨k, hk, hstop hk⟩
+    rw [dif_pos hex]
+    refine (Nat.find_eq_iff hex).mpr ⟨⟨hk, hstop hk⟩, fun n hn h' => (hpos n hn).ne' h'.2⟩
+  · rw [dif_neg]
+    rintro ⟨j, hj, h0⟩
+    exact (hpos j hj).ne' h0
+
+variable [AddMonoid C] in
+/-- **The facts of a run of the program give a `NLAlib.CGRun`** on the outputs. -/
+private theorem hasCGRunOutputs_of_cgRunFacts {st : St P K C} {p : P} {dec : P → K → ℝ}
+    {ε : ℝ} {X G D Nu q N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {bv : Fin N → ℝ} (hA : Aᵀ = A)
+    (hε : 0 ≤ ε) (hε1 : ε < 1) (hmε : ∀ m ≤ q, (m : ℝ) * ε ≤ 1 / 100)
+    (hF : CGRunFacts p dec X G D Nu q A ε bv st.store) :
+    HasCGRunOutputs st p dec ε X G D Nu q A bv := by
+  classical
+  obtain ⟨k, T, hk, hkq, hv, hstop, hX, hout, hnu, hzo⟩ := hF
+  set νo : ℕ → ℝ := fun i => if i ≤ k then T.ν i else 0 with hνo
+  have hsteps : cgSteps νo q = k := cgSteps_eq hkq
+    (fun j hj => by simpa [hνo, hj.le] using hv.ν_pos j hj)
+    (fun h => by simpa [hνo] using hstop h)
+  refine ⟨T.x k, fun i => if i < k then T.γ i else 0, fun i => if i < k then T.δ i else 0, νo,
+    ⟨fun i => ?_, fun j hj => ?_, fun j hj => ?_, fun j hj => ?_⟩, ?_, ?_⟩
+  · obtain ⟨w, hw, hd⟩ := hX i
+    exact ⟨w, by simpa using hw, hd⟩
+  · by_cases hjk : j < k
+    · obtain ⟨w, hw, hd⟩ := (hout j hjk).1
+      exact ⟨w, hw, by simpa [hjk] using hd⟩
+    · obtain ⟨w, hw, hd⟩ := (hzo j (not_lt.mp hjk) hj).1
+      exact ⟨w, hw, by simpa [hjk] using hd⟩
+  · by_cases hjk : j < k
+    · obtain ⟨w, hw, hd⟩ := (hout j hjk).2
+      exact ⟨w, hw, by simpa [hjk] using hd⟩
+    · obtain ⟨w, hw, hd⟩ := (hzo j (not_lt.mp hjk) hj).2.1
+      exact ⟨w, hw, by simpa [hjk] using hd⟩
+  · by_cases hjk : j ≤ k
+    · obtain ⟨w, hw, hd⟩ := hnu j hjk
+      exact ⟨w, hw, by simpa [hνo, hjk] using hd⟩
+    · obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
+      obtain ⟨w, hw, hd⟩ := (hzo i (by omega) (by omega)).2.2
+      exact ⟨w, hw, by simpa [hνo, hjk] using hd⟩
+  · intro j hkj hjq
+    rw [hsteps] at hkj
+    exact ⟨by simp [show ¬ j < k by omega], by simp [show ¬ j < k by omega],
+      by simp [hνo, show ¬ j + 1 ≤ k by omega]⟩
+  · rw [hsteps]
+    refine ⟨hv.toCGRun hA hε hk (hmε k hkq), rfl, rfl, rfl, fun j hj => ⟨by change T.γ j = _; simp [hj], by change T.δ j = _; simp [hj]⟩,
+      fun j hj => by change T.ν j = νo j; simp [hνo, hj], rfl, fun h => ?_⟩
+    exact hv.r_eq_zero_of_ν_eq_zero hε1 le_rfl (hstop h)
+
 /-- **The matrix-free conjugate gradient program in the standard model**: under
 `NLAlib.Computation.IsRelErrSem` (every value in range) and adding zero exactly, an oracle
 accurate to $\varepsilon_{\mathrm{mv}}\|\mathbf{A}\|_2$, $\mathbf{A}$ symmetric with spectrum in
@@ -132,7 +238,29 @@ theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRun_of_cgProg
           Array.replicate q none, Array.replicate q none, Array.replicate (q + 1) none]) =
         some st' ∧
       HasCGRunOutputs st' p dec (cgRoundingEps N (u p) εmv) 1 2 3 4 q A fun i => dec p (b i) := by
-  sorry
+  have hu0 : 0 ≤ u p := h.nonneg trivial
+  have hN0 : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | hN
+    · exact absurd (funext fun i => i.elim0) hb
+    · exact hN
+  have hε : roundingFactor (N + 2) (u p) ≤ cgRoundingEps N (u p) εmv := le_max_right _ _
+  have hε0 : 0 ≤ cgRoundingEps N (u p) εmv := (roundingFactor_nonneg hu0 hu).trans hε
+  have hκ := le_of_spectrum_subset_Icc hN0 hA hs
+  obtain ⟨hsm, hmε, h3a, h20⟩ := cg_smallness hq hε0 ha hκ hsmall
+  have hε1 : cgRoundingEps N (u p) εmv < 1 := by
+    have := hmε 1 hq; simp at this; linarith
+  obtain ⟨st', he, hF⟩ := IsRelErrSem.exists_cgRunFacts_of_cgProgWith I h hz hu (q := q)
+    (inputState p [(List.ofFn fun i => some (b i)).toArray, Array.replicate N none,
+      Array.replicate q none, Array.replicate q none, Array.replicate (q + 1) none])
+    (lanczosMvSpec_apply I p o dec 0 _ (b ⟨0, hN0⟩) hmv)
+    (mul_le_mul_of_nonneg_right (le_max_left _ _) (specNorm_nonneg _)) hε hA ha hs hκ hq hsm
+    hmε h3a h20 (B := 0) (X := 1) (G := 2) (D := 3) (Nu := 4) (bv := fun i => dec p (b i))
+    (fun i => ⟨b i, by simp [inputState, Store.read], rfl⟩) hb (by simp [inputState])
+    (by simp [inputState]) (by simp [inputState, Store.shape]) (by simp [inputState, Store.shape])
+    (by simp [inputState, Store.shape]) (by simp [inputState, Store.shape]) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega)
+  exact ⟨st', he, hasCGRunOutputs_of_cgRunFacts hA hε0 hε1 hmε hF⟩
 
 /-- **The matrix-free conjugate gradient program in the access model**: the bridge
 `NLAlib.Computation.IsRelErrSem.exists_cgRun_of_cgProg` as an instance of
@@ -153,7 +281,9 @@ theorem cgProg_matrixFreeRounded (p : P) (o : ι) (u : P → ℝ) (dec : P → K
         (n 0 : ℝ) ^ 3 * cgRoundingEps N (u p) εmv * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
       (fun N n b A st => HasCGRunOutputs st p dec (cgRoundingEps N (u p) εmv) 1 2 3 4 (n 0) A
         fun i => dec p (b i)) := by
-  sorry
+  intro N n hn b A I h hz hmv ⟨hA, ha, hs, hb, hu, hsmall⟩
+  simpa [List.ofFn_succ] using
+    IsRelErrSem.exists_cgRun_of_cgProg I p o h hz (n 0) A hA ha hs (hmv o) b hb hn hu hsmall
 
 /-- **The dense conjugate gradient program in the standard model**: as
 `NLAlib.Computation.IsRelErrSem.exists_cgRun_of_cgProg`, with the product computed by `gemv`
@@ -181,7 +311,45 @@ theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRun_of_cgDenseProg
         some st' ∧
       HasCGRunOutputs st' p dec (cgRoundingEps N (u p) (√(N : ℝ) * roundingFactor N (u p)))
         2 3 4 5 q (Matrix.of fun i j => dec p (Aw i j)) fun i => dec p (b i) := by
-  sorry
+  have hu0 : 0 ≤ u p := h.nonneg trivial
+  have hN0 : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | hN
+    · exact absurd (funext fun i => i.elim0) hb
+    · exact hN
+  have huN : (N : ℝ) * u p < 1 := cast_mul_lt_one_of_le hu0 (by omega) hu
+  set ε := cgRoundingEps N (u p) (√(N : ℝ) * roundingFactor N (u p))
+  have hε : roundingFactor (N + 2) (u p) ≤ ε := le_max_right _ _
+  have hε0 : 0 ≤ ε := (roundingFactor_nonneg hu0 hu).trans hε
+  have hκ := le_of_spectrum_subset_Icc hN0 hA hs
+  obtain ⟨hsm, hmε, h3a, h20⟩ := cg_smallness hq hε0 ha hκ hsmall
+  have hε1 : ε < 1 := by
+    have := hmε 1 hq; simp at this; linarith
+  set st₀ : St P K C := inputState p [(List.ofFn fun t : Fin (N * N) =>
+      some (Aw ⟨t % N, Nat.mod_lt _ (Nat.pos_of_mul_pos_right (Nat.zero_lt_of_lt t.2))⟩
+        ⟨t / N, Nat.div_lt_of_lt_mul t.2⟩)).toArray,
+    (List.ofFn fun i => some (b i)).toArray, Array.replicate N none, Array.replicate q none,
+    Array.replicate q none, Array.replicate (q + 1) none] with hst₀
+  have hM : HoldsDecoded st₀.store dec p 0 0 (Matrix.of fun i j => dec p (Aw i j)) := by
+    intro i j
+    have hlt : (i : ℕ) + N * j < N * N := by nlinarith [i.2, j.2]
+    refine ⟨Aw i j, ?_, rfl⟩
+    simp only [hst₀, inputState, Store.read]
+    suffices Aw ⟨(i + N * j) % N, Nat.mod_lt _ hN0⟩ ⟨(i + N * j) / N, Nat.div_lt_of_lt_mul hlt⟩ =
+        Aw i j by simpa [hlt] using this
+    congr 1 <;> apply Fin.ext
+    · simp [Nat.mod_eq_of_lt i.2]
+    · simp [Nat.add_mul_div_left _ _ hN0, Nat.div_eq_of_lt i.2]
+  obtain ⟨st', he, hF⟩ := IsRelErrSem.exists_cgRunFacts_of_cgProgWith I h hz hu (q := q) st₀
+    (lanczosMvSpec_gemv I h hz p st₀.store _ hM huN)
+    (mul_le_mul_of_nonneg_right (le_max_left _ _) (specNorm_nonneg _)) hε hA ha hs hκ hq hsm
+    hmε h3a h20 (B := 1) (X := 2) (G := 3) (D := 4) (Nu := 5) (bv := fun i => dec p (b i))
+    (fun i => ⟨b i, by simp [hst₀, inputState, Store.read], rfl⟩) hb
+    (by simp [hst₀, inputState]) (by simp [hst₀, inputState])
+    (by simp [hst₀, inputState, Store.shape]) (by simp [hst₀, inputState, Store.shape])
+    (by simp [hst₀, inputState, Store.shape]) (by simp [hst₀, inputState, Store.shape])
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega)
+  exact ⟨st', he, hasCGRunOutputs_of_cgRunFacts hA hε0 hε1 hmε hF⟩
 
 /-- **The outputs of a conjugate gradient run have a backward model**: the outputs decode to
 $\mathbf{x}, \gamma, \delta, \nu$, and with $k$ = `NLAlib.cgSteps ν q` there is a symmetric
