@@ -83,3 +83,8 @@ reason = "`eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the t
 name = "NLAlib.LanczosRun.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
 rule = "N4"
 reason = "the statement is `L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiagonalSucc) = L.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached"
+
+[[allow]]
+name = "NLAlib.LanczosData.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
+rule = "N4"
+reason = "the statement is `D.dilatedBasisᵀ * (D.dilatedBasisSucc * D.tridiagonalSucc) = D.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached (as for its LanczosRun counterpart)"
