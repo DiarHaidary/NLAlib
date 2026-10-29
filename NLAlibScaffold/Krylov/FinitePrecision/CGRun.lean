@@ -61,7 +61,7 @@ Constants are unoptimised and carry a margin over the hand derivation of the res
 
 @[expose] public section
 
-open scoped Matrix
+open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
@@ -164,6 +164,66 @@ structure CGRun (n k : ℕ) where
   norm_ep_le : ∀ j < k, ‖WithLp.toLp 2 (ep j)‖ ≤
     ε * (‖WithLp.toLp 2 (r (j + 1))‖ + |δ j| * ‖WithLp.toLp 2 (p j)‖)
 
+/-! ### Vector norms -/
+
+private theorem norm_toLp_add_le {m : ℕ} (x y : Fin m → ℝ) :
+    ‖WithLp.toLp 2 (x + y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
+  rw [WithLp.toLp_add]
+  exact norm_add_le _ _
+
+private theorem norm_toLp_sub_le {m : ℕ} (x y : Fin m → ℝ) :
+    ‖WithLp.toLp 2 (x - y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
+  rw [WithLp.toLp_sub]
+  exact norm_sub_le _ _
+
+private theorem norm_toLp_smul {m : ℕ} (c : ℝ) (x : Fin m → ℝ) :
+    ‖WithLp.toLp 2 (c • x)‖ = |c| * ‖WithLp.toLp 2 x‖ := by
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
+
+private theorem abs_dotProduct_le {m : ℕ} (x y : Fin m → ℝ) :
+    |x ⬝ᵥ y| ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
+  have := abs_real_inner_le_norm (WithLp.toLp 2 y) (WithLp.toLp 2 x)
+  rwa [EuclideanSpace.inner_toLp_toLp, star_trivial, mul_comm ‖WithLp.toLp 2 y‖] at this
+
+private theorem norm_toLp_sq {m : ℕ} (x : Fin m → ℝ) :
+    ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
+  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
+
+/-- The two spectral facts used for a symmetric matrix with spectrum in $[a, a']$, $a \ge 0$:
+$\|\mathbf{A}\|_2 \le a'$ and $a\|\mathbf{p}\|^2 \le \mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$,
+for a nonzero $\mathbf{p}$ (which makes the spectrum nonempty). -/
+private theorem specNorm_le_and_le_dotProduct {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+    (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 ≤ a) (hs : spectrum ℝ A ⊆ Set.Icc a a') {p : Fin n → ℝ}
+    (hp : p ≠ 0) :
+    a ≤ a' ∧ specNorm A ≤ a' ∧ a * ‖WithLp.toLp 2 p‖ ^ 2 ≤ p ⬝ᵥ (A *ᵥ p) := by
+  have hH : A.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, hA]
+  have h₁ : a • (1 : Matrix (Fin n) (Fin n) ℝ) ≤ A :=
+    (hH.smul_one_le_iff_spectrum_subset_Ici a).2 fun x hx => (hs hx).1
+  have h₂ : A ≤ a' • (1 : Matrix (Fin n) (Fin n) ℝ) :=
+    (hH.le_smul_one_iff_spectrum_subset_Iic a').2 fun x hx => (hs hx).2
+  have hq : ∀ x : Fin n → ℝ, a * ‖WithLp.toLp 2 x‖ ^ 2 ≤ x ⬝ᵥ (A *ᵥ x) ∧
+      x ⬝ᵥ (A *ᵥ x) ≤ a' * ‖WithLp.toLp 2 x‖ ^ 2 := by
+    intro x
+    have e1 := re_quadForm_le_re_quadForm_of_le h₁ x
+    have e2 := re_quadForm_le_re_quadForm_of_le h₂ x
+    rw [re_quadForm_real_smul_one] at e1 e2
+    simp only [quadForm_def, star_trivial, RCLike.re_to_real] at e1 e2
+    exact ⟨e1, e2⟩
+  have hp0 : 0 < ‖WithLp.toLp 2 p‖ := by
+    rw [norm_pos_iff]
+    exact fun h => hp (by simpa using congrArg WithLp.ofLp h)
+  have haa : a ≤ a' := by
+    have := (hq p).1.trans (hq p).2
+    exact le_of_mul_le_mul_right this (by positivity)
+  refine ⟨haa, ?_, (hq p).1⟩
+  refine (hH.specNorm_le_iff_abs_re_quadForm_le (ha.trans haa)).2 fun x => ?_
+  simp only [quadForm_def, star_trivial, RCLike.re_to_real]
+  have h1 := (hq x).1
+  have h2 := (hq x).2
+  rw [abs_of_nonneg (le_trans (by positivity) h1)]
+  exact h2
+
 /-- **The computed curvature is positive** for a nonzero direction: if the spectrum of the
 symmetric $\mathbf{A}$ lies in $[a, a']$, $a > 0$, $\mathbf{s} = \mathbf{A}\mathbf{p} +
 \mathbf{e}$ with $\|\mathbf{e}\| \le \varepsilon\|\mathbf{A}\|_2\|\mathbf{p}\|$ and
@@ -180,7 +240,31 @@ theorem dotProduct_add_pos_of_spectrum_subset_Icc {n : ℕ} {A : Matrix (Fin n) 
     (he : ‖WithLp.toLp 2 e‖ ≤ ε * specNorm A * ‖WithLp.toLp 2 p‖)
     (he' : |e'| ≤ ε * ‖WithLp.toLp 2 p‖ * ‖WithLp.toLp 2 (A *ᵥ p + e)‖) :
     0 < p ⬝ᵥ (A *ᵥ p + e) + e' := by
-  sorry
+  obtain ⟨haa, hN, hq⟩ := specNorm_le_and_le_dotProduct hA ha.le hs hp
+  have hp0 : 0 < ‖WithLp.toLp 2 p‖ := by
+    rw [norm_pos_iff]
+    exact fun h => hp (by simpa using congrArg WithLp.ofLp h)
+  have hN0 := specNorm_nonneg A
+  set P := ‖WithLp.toLp 2 p‖
+  have hAp := norm_toLp_mulVec_le A p
+  have hs' : ‖WithLp.toLp 2 (A *ᵥ p + e)‖ ≤ (1 + ε) * specNorm A * P := by
+    have := norm_toLp_add_le (A *ᵥ p) e
+    nlinarith
+  have hpe := abs_dotProduct_le p e
+  have hε3 : 3 * ε ≤ 1 := by
+    by_contra h
+    push Not at h
+    nlinarith
+  rw [dotProduct_add]
+  have hE : ε * specNorm A ≤ a / 3 := by nlinarith
+  have h1 : |p ⬝ᵥ e| ≤ ε * specNorm A * P ^ 2 := by nlinarith
+  have h2 : |e'| ≤ ε * (1 + ε) * specNorm A * P ^ 2 := by
+    have := mul_le_mul_of_nonneg_left hs' (by positivity : 0 ≤ ε * P)
+    nlinarith
+  have h3 : ε * (1 + ε) * specNorm A ≤ 4 / 9 * a := by nlinarith
+  have hP2 : 0 < P ^ 2 := by positivity
+  nlinarith [abs_le.mp h1, abs_le.mp h2, mul_le_mul_of_nonneg_right h3 hP2.le,
+    mul_le_mul_of_nonneg_right hE hP2.le]
 
 namespace CGRun
 
@@ -189,6 +273,58 @@ variable {n k : ℕ} (C : CGRun n k)
 /-- The norms of the computed residuals, $\rho_j = \|\mathbf{r}_j\|$. -/
 noncomputable def ρ (j : ℕ) : ℝ :=
   ‖WithLp.toLp 2 (C.r j)‖
+
+/-! ### Elementary consequences of the interface -/
+
+private theorem ε_le : C.ε ≤ 1 / 100 := by
+  have hk : (1 : ℝ) ≤ k := by exact_mod_cast C.k_pos
+  nlinarith [C.k_mul_ε_le, C.ε_nonneg]
+
+private theorem ρ_nonneg (j : ℕ) : 0 ≤ C.ρ j := norm_nonneg _
+
+private theorem toLp_eq_zero_iff {m : ℕ} (x : Fin m → ℝ) : WithLp.toLp 2 x = 0 ↔ x = 0 := by
+  constructor
+  · intro h
+    simpa using congrArg WithLp.ofLp h
+  · rintro rfl
+    rfl
+
+private theorem ν_eq' {j : ℕ} (hj : j ≤ k) : C.ν j = C.ρ j ^ 2 * (1 + C.θ j) := C.ν_eq j hj
+
+private theorem one_add_θ_pos {j : ℕ} (hj : j ≤ k) : 0 < 1 + C.θ j := by
+  have := (abs_le.mp (C.abs_θ_le j hj)).1
+  linarith [C.ε_le]
+
+private theorem ρ_pos {j : ℕ} (hj : j < k) : 0 < C.ρ j := by
+  have h := C.ν_pos j hj
+  rw [C.ν_eq' hj.le] at h
+  rcases (C.ρ_nonneg j).lt_or_eq with h' | h'
+  · exact h'
+  · rw [← h'] at h
+    simp at h
+
+private theorem norm_s_le {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (C.s j)‖ ≤ (1 + C.ε) * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖ := by
+  rw [C.s_eq j hj]
+  have h1 := norm_toLp_add_le (C.A *ᵥ C.p j) (C.es j)
+  have h2 := norm_toLp_mulVec_le C.A (C.p j)
+  have h3 := C.norm_es_le j hj
+  nlinarith
+
+private theorem μ_le {j : ℕ} (hj : j < k) :
+    C.μ j ≤ (1 + C.ε) ^ 2 * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
+  rw [C.μ_eq j hj]
+  have h1 := (abs_le.mp (abs_dotProduct_le (C.p j) (C.s j))).2
+  have h2 := (abs_le.mp (C.abs_eμ_le j hj)).2
+  have h3 := C.norm_s_le hj
+  have hp := norm_nonneg (WithLp.toLp 2 (C.p j))
+  have hε := C.ε_nonneg
+  have h4 := mul_le_mul_of_nonneg_left h3 (by positivity : 0 ≤ (1 + C.ε) * ‖WithLp.toLp 2 (C.p j)‖)
+  nlinarith
+
+private theorem γ_mul_μ {j : ℕ} (hj : j < k) : C.γ j * C.μ j = C.ν j * (1 + C.eγ j) := by
+  rw [C.γ_eq j hj]
+  field_simp [(C.μ_pos j hj).ne']
 
 /-- The **Lanczos vectors of the run**, 1-based as `NLAlib.LanczosData`:
 $\bar{\mathbf{v}}_0 = \mathbf{0}$,
@@ -228,28 +364,53 @@ of computation without underflow (`NLAlib.CGRun.ν_eq`); in IEEE arithmetic
 $\mathrm{fl}(\|\mathbf{r}\|^2)$ can underflow to $0$ with $\mathbf{r} \ne \mathbf{0}$.
 Proof: `C.ν_eq` and $1 + \theta_j \ge 1 - \varepsilon > 0$. Difficulty: easy. -/
 theorem ν_eq_zero_iff {j : ℕ} (hj : j ≤ k) : C.ν j = 0 ↔ C.r j = 0 := by
-  sorry
+  rw [C.ν_eq' hj, mul_eq_zero, or_iff_left (C.one_add_θ_pos hj).ne', ρ, sq_eq_zero_iff,
+    norm_eq_zero, toLp_eq_zero_iff]
 
 /-- The step lengths are positive. Proof: `C.γ_eq`, `C.ν_pos`, `C.μ_pos`, $\varepsilon < 1$.
 Difficulty: easy. -/
 theorem γ_pos {j : ℕ} (hj : j < k) : 0 < C.γ j := by
-  sorry
+  rw [C.γ_eq j hj]
+  have := (abs_le.mp (C.abs_eγ_le j hj)).1
+  have := C.ε_le
+  exact mul_pos (div_pos (C.ν_pos j hj) (C.μ_pos j hj)) (by linarith)
 
 /-- The Lanczos vectors of the run are unit vectors. Proof: `C.ν_eq_zero_iff` and `C.ν_pos` give
 $\mathbf{r}_0 = \mathbf{b} \ne \mathbf{0}$; each branch of `NLAlib.CGRun.lanczosV` is normalised.
 Difficulty: easy. -/
 theorem norm_lanczosV {j : ℕ} (h1 : 1 ≤ j) (h2 : j ≤ k + 1) :
     ‖WithLp.toLp 2 (C.lanczosV j)‖ = 1 := by
-  sorry
+  have _ : j ≤ k + 1 := h2
+  have hb : C.b ≠ 0 := by
+    rw [← C.r_zero, Ne, ← C.ν_eq_zero_iff (Nat.zero_le k)]
+    exact (C.ν_pos 0 C.k_pos).ne'
+  have hb' : ‖WithLp.toLp 2 C.b‖ ≠ 0 := by
+    rw [norm_ne_zero_iff]
+    exact fun h => hb ((toLp_eq_zero_iff _).1 h)
+  unfold lanczosV
+  rw [if_neg (by omega)]
+  split_ifs with h
+  · rw [norm_toLp_smul, abs_inv, abs_norm, inv_mul_cancel₀ hb']
+  · have hρ : C.ρ (j - 1) ≠ 0 := by
+      rw [ρ, norm_ne_zero_iff]
+      exact fun h' => h ((toLp_eq_zero_iff _).1 h')
+    rw [norm_toLp_smul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul, abs_inv,
+      abs_of_nonneg (C.ρ_nonneg _), ← ρ, inv_mul_cancel₀ hρ]
 
 /-- The coefficients $\beta_j$ of the run are nonnegative. Proof: `C.γ_pos`. Difficulty: easy. -/
 theorem lanczosβ_nonneg {j : ℕ} (hj : j ≤ k) : 0 ≤ C.lanczosβ j := by
-  sorry
+  unfold lanczosβ
+  split_ifs with h
+  · exact le_rfl
+  · have := C.γ_pos (j := j - 1) (by omega)
+    exact div_nonneg (C.ρ_nonneg j) (mul_nonneg this.le (C.ρ_nonneg _))
 
 /-- The coefficients $\beta_j$, $1 \le j < k$, are positive. Proof: `C.γ_pos` and
 $\mathbf{r}_j \ne \mathbf{0}$ (`C.ν_pos`, `C.ν_eq_zero_iff`). Difficulty: easy. -/
 theorem lanczosβ_pos {j : ℕ} (h1 : 1 ≤ j) (h2 : j < k) : 0 < C.lanczosβ j := by
-  sorry
+  unfold lanczosβ
+  rw [if_neg (by omega)]
+  exact div_pos (C.ρ_pos h2) (mul_pos (C.γ_pos (by omega)) (C.ρ_pos (by omega)))
 
 /-- **The run as normalised Lanczos data** (`NLAlib.NormalizedLanczosData`). -/
 noncomputable def toNormalizedLanczosData : NormalizedLanczosData n k :=
@@ -276,14 +437,37 @@ def dilatedRhs : Fin n × Fin (k + 1) → ℝ :=
 lengths and residual norms. Proof: unfold; the cases of `NLAlib.cgTridiagonal` and
 `NLAlib.LanczosData.tridiagonal` match entry by entry. Difficulty: easy. -/
 theorem tridiagonal_toLanczosData : C.toLanczosData.tridiagonal = cgTridiagonal C.γ C.ρ k := by
-  sorry
+  ext i j
+  simp only [LanczosData.tridiagonal, cgTridiagonal, toLanczosData, Matrix.of_apply, lanczosα,
+    lanczosβ]
+  split_ifs <;> first
+    | rfl
+    | (exfalso; omega)
+    | (rw [show (i : ℕ) - 1 = j by omega])
+    | (rw [show (j : ℕ) - 1 = i by omega])
 
 /-- The direction coefficient against the exact residual ratio:
 $\lvert\delta_j - \rho_{j+1}^2/\rho_j^2\rvert \le 4\varepsilon\rho_{j+1}^2/\rho_j^2$, $j < k$.
 Proof: `C.δ_eq`, `C.ν_eq` at $j$ and $j + 1$, $\varepsilon \le 1/100$. Difficulty: easy. -/
 theorem abs_δ_sub_le {j : ℕ} (hj : j < k) :
     |C.δ j - C.ρ (j + 1) ^ 2 / C.ρ j ^ 2| ≤ 4 * C.ε * (C.ρ (j + 1) ^ 2 / C.ρ j ^ 2) := by
-  sorry
+  have hρ := C.ρ_pos hj
+  have hθ := abs_le.mp (C.abs_θ_le j hj.le)
+  have hθ' := abs_le.mp (C.abs_θ_le (j + 1) hj)
+  have he := abs_le.mp (C.abs_eδ_le j hj)
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  set R := C.ρ (j + 1) ^ 2 / C.ρ j ^ 2 with hR
+  have hR0 : 0 ≤ R := by positivity
+  have h1 := C.one_add_θ_pos hj.le
+  have hδ : C.δ j = R * ((1 + C.θ (j + 1)) * (1 + C.eδ j) / (1 + C.θ j)) := by
+    rw [C.δ_eq j hj, C.ν_eq' hj, C.ν_eq' hj.le, hR]
+    field_simp
+  have hu : |(1 + C.θ (j + 1)) * (1 + C.eδ j) / (1 + C.θ j) - 1| ≤ 4 * C.ε := by
+    rw [div_sub_one h1.ne', abs_div, abs_of_pos h1, div_le_iff₀ h1, abs_le]
+    constructor <;> nlinarith
+  rw [hδ, ← mul_sub_one, abs_mul, abs_of_nonneg hR0, mul_comm]
+  exact mul_le_mul_of_nonneg_right hu hR0
 
 /-- **The step length against the direction** (the computed Rayleigh quotient):
 $\rho_j^2 \le \tfrac{21}{20}\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2$, $j < k$, i.e.
@@ -292,7 +476,29 @@ Proof: $\mu_j \le (1+\varepsilon)^2\|\mathbf{A}\|_2\|\mathbf{p}_j\|^2$ and
 $\nu_j \ge (1-\varepsilon)\rho_j^2$. Difficulty: easy. -/
 theorem ρ_sq_le {j : ℕ} (hj : j < k) :
     C.ρ j ^ 2 ≤ 21 / 20 * specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
-  sorry
+  have hθ := abs_le.mp (C.abs_θ_le j hj.le)
+  have he := abs_le.mp (C.abs_eγ_le j hj)
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hγ := C.γ_pos hj
+  have hμ := C.μ_le hj
+  have hgm := C.γ_mul_μ hj
+  rw [C.ν_eq' hj.le] at hgm
+  have hX : 0 ≤ specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
+    have := specNorm_nonneg C.A
+    positivity
+  have hρ2 : 0 ≤ C.ρ j ^ 2 := by positivity
+  have h1 : C.ρ j ^ 2 * (1 - C.ε) ^ 2 ≤ C.γ j * C.μ j := by
+    rw [hgm]
+    have : (1 - C.ε) ^ 2 ≤ (1 + C.θ j) * (1 + C.eγ j) := by nlinarith
+    exact mul_le_mul_of_nonneg_left this hρ2 |>.trans (le_of_eq (by ring))
+  have h2 := mul_le_mul_of_nonneg_left hμ hγ.le
+  have h3 : (1 + C.ε) ^ 2 ≤ 21 / 20 * (1 - C.ε) ^ 2 := by nlinarith
+  have h4 := mul_le_mul_of_nonneg_left h3 (mul_nonneg hγ.le hX)
+  have h5 : C.ρ j ^ 2 * (1 - C.ε) ^ 2 ≤
+      21 / 20 * specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 * (1 - C.ε) ^ 2 := by
+    nlinarith
+  exact le_of_mul_le_mul_right h5 (by nlinarith)
 
 /-- **Lemma A (recurrence error)**: with certificates $\|\mathbf{p}_j\| \le \Pi\rho_j$
 ($j < k$) and $\beta_{j+1}, \delta_j/\gamma_j \le B$ ($j + 1 < k$), the Lanczos data of the
