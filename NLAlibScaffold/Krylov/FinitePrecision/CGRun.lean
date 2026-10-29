@@ -1925,7 +1925,8 @@ Difficulty: easy.
 negative for $B$ negative enough, while the left side is positive for a run with
 $\varepsilon > 0$ (e.g. $n = 1$, $\mathbf{A} = 1$, $\mathbf{b} = 1$,
 $\mathbf{e}^r_0 = 0.005$). The proved form is
-`NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg` (hypothesis $0 \le B$, automatic for $k \ge 2$ from $0 < \beta_1 \le B$). -/
+`NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg` (hypothesis
+$0 \le B$, automatic for $k \ge 2$ from $0 < \beta_1 \le B$). -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
