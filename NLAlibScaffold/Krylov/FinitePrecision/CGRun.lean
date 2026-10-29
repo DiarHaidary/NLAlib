@@ -1277,6 +1277,169 @@ private theorem r_dotProduct_r_succ_succ_eq {i : ℕ} (hi : i + 1 < k) :
   field_simp
   linear_combination -h2
 
+/-- $\lvert(1+x)(1+y)(1+z) - 1\rvert \le 3.04\varepsilon$ for $\lvert x\rvert, \lvert y\rvert,
+\lvert z\rvert \le \varepsilon \le 1/100$. -/
+private theorem abs_one_add_mul_three_sub_one_le {x y z ε : ℝ} (hx : |x| ≤ ε) (hy : |y| ≤ ε)
+    (hz : |z| ≤ ε) (hε : ε ≤ 1 / 100) :
+    |(1 + x) * (1 + y) * (1 + z) - 1| ≤ 304 / 100 * ε := by
+  have hε0 : 0 ≤ ε := (abs_nonneg x).trans hx
+  have e : (1 + x) * (1 + y) * (1 + z) - 1 = x + y + z + (x * y + y * z + x * z) + x * y * z := by
+    ring
+  rw [e]
+  have h1 : |x * y| ≤ ε * ε := by rw [abs_mul]; exact mul_le_mul hx hy (abs_nonneg _) hε0
+  have h2 : |y * z| ≤ ε * ε := by rw [abs_mul]; exact mul_le_mul hy hz (abs_nonneg _) hε0
+  have h3 : |x * z| ≤ ε * ε := by rw [abs_mul]; exact mul_le_mul hx hz (abs_nonneg _) hε0
+  have h4 : |x * y * z| ≤ ε * ε * ε := by
+    rw [abs_mul]; exact mul_le_mul h1 hz (abs_nonneg _) (by positivity)
+  have t1 := abs_add_three x y z
+  have t2 := abs_add_three (x * y) (y * z) (x * z)
+  have t3 := abs_add_le (x + y + z + (x * y + y * z + x * z)) (x * y * z)
+  have t4 := abs_add_le (x + y + z) (x * y + y * z + x * z)
+  have hεε : ε * ε ≤ 1 / 100 * ε := mul_le_mul_of_nonneg_right hε hε0
+  have hεεε : ε * ε * ε ≤ 1 / 100 * ε := by
+    have h5 := mul_le_mul_of_nonneg_right hεε hε0
+    have h6 : 1 / 100 * ε * ε ≤ 1 / 100 * ε := by nlinarith
+    linarith
+  linarith
+
+/-- The local part of the consecutive-residual recursion, with the direction-update term,
+relative to $\|\mathbf{A}\|_2\gamma_j\rho_j^2$:
+$\lvert R_j\rvert \le \varepsilon(5\Pi^2 + 2\Pi)\|\mathbf{A}\|_2\gamma_j\rho_j^2$. -/
+private theorem abs_localR_le {P : ℝ} {j : ℕ} (hj : j < k)
+    (hP : ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j) :
+    |C.localR j| ≤ C.ε * (5 * P ^ 2 + 2 * P) * (specNorm C.A * C.γ j * C.ρ j ^ 2) := by
+  have hγ := C.γ_pos hj
+  have hρ := C.ρ_pos hj
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  have hp0 := norm_nonneg (WithLp.toLp 2 (C.p j))
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith
+  have hs := C.norm_s_le hj
+  have heμ := C.abs_eμ_le j hj
+  have her := C.norm_er_le' hj
+  set N := specNorm C.A
+  set ρ := C.ρ j
+  set γ := C.γ j
+  set p := ‖WithLp.toLp 2 (C.p j)‖
+  set G := N * γ * ρ ^ 2 with hG
+  have hG0 : 0 ≤ G := mul_nonneg (mul_nonneg hN hγ.le) (sq_nonneg ρ)
+  have hp2 : p ^ 2 ≤ P ^ 2 * ρ ^ 2 := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ hp0 hP 2
+  have hNγp : N * γ * p ^ 2 ≤ P ^ 2 * G := by
+    have := mul_le_mul_of_nonneg_left hp2 (mul_nonneg hN hγ.le)
+    linarith only [this]
+  have hρ2 : ρ ^ 2 ≤ 21 / 20 * (P ^ 2 * G) := by
+    have := C.ρ_sq_le hj
+    have : 21 / 20 * N * γ * p ^ 2 ≤ 21 / 20 * (P ^ 2 * G) := by linarith only [hNγp]
+    linarith
+  -- three terms
+  have a1 : |-(ρ ^ 2 * (C.θ j + C.eγ j + C.θ j * C.eγ j))| ≤ C.ε * (212 / 100 * (P ^ 2 * G)) := by
+    rw [abs_neg, abs_mul, abs_of_nonneg (sq_nonneg ρ)]
+    have h1 : |C.θ j + C.eγ j + C.θ j * C.eγ j| ≤ 201 / 100 * C.ε := by
+      have := abs_one_add_mul_three_sub_one_le (C.abs_θ_le j hj.le) (C.abs_eγ_le j hj)
+        (show |(0 : ℝ)| ≤ C.ε by simpa using hε0) hε
+      have e : (1 + C.θ j) * (1 + C.eγ j) * (1 + 0) - 1 = C.θ j + C.eγ j + C.θ j * C.eγ j := by
+        ring
+      rw [e] at this
+      have h2 := abs_add_three (C.θ j) (C.eγ j) (C.θ j * C.eγ j)
+      have h3 : |C.θ j * C.eγ j| ≤ C.ε * C.ε := by
+        rw [abs_mul]
+        exact mul_le_mul (C.abs_θ_le j hj.le) (C.abs_eγ_le j hj) (abs_nonneg _) hε0
+      have := mul_le_mul_of_nonneg_right hε hε0
+      linarith [C.abs_θ_le j hj.le, C.abs_eγ_le j hj]
+    have := mul_le_mul h1 hρ2 (sq_nonneg _) (by linarith)
+    have := mul_nonneg hε0 (mul_nonneg (sq_nonneg P) hG0)
+    linarith
+  have hγps : γ * (p * ‖WithLp.toLp 2 (C.s j)‖) ≤ (1 + C.ε) * (N * γ * p ^ 2) := by
+    have := mul_le_mul_of_nonneg_left hs (mul_nonneg hγ.le hp0)
+    linarith only [this]
+  have a2 : |γ * C.eμ j| ≤ C.ε * (101 / 100 * (P ^ 2 * G)) := by
+    rw [abs_mul, abs_of_pos hγ]
+    have h1 := mul_le_mul_of_nonneg_left heμ hγ.le
+    have h2 : (1 + C.ε) * (N * γ * p ^ 2) ≤ 101 / 100 * (P ^ 2 * G) :=
+      (mul_le_mul_of_nonneg_right (by linarith : 1 + C.ε ≤ 101 / 100) (mul_nonneg (mul_nonneg hN hγ.le) (sq_nonneg p))).trans
+        (mul_le_mul_of_nonneg_left hNγp (by norm_num))
+    have h3 := mul_le_mul_of_nonneg_left (hγps.trans h2) hε0
+    linarith only [h1, h3]
+  have a3 : |C.r j ⬝ᵥ C.er j| ≤ C.ε * (21 / 20 * (P ^ 2 * G)) + C.ε * (101 / 100 * (P * G)) := by
+    refine (abs_dotProduct_le _ _).trans ?_
+    change ρ * ‖WithLp.toLp 2 (C.er j)‖ ≤ _
+    have h1 := mul_le_mul_of_nonneg_left her hρ.le
+    have h2 : ρ * (γ * ‖WithLp.toLp 2 (C.s j)‖) ≤ 101 / 100 * (P * G) := by
+      have := mul_le_mul_of_nonneg_left hs (mul_nonneg hρ.le hγ.le)
+      have h3 : ρ * γ * ((1 + C.ε) * N * p) ≤ ρ * γ * ((1 + C.ε) * N * (P * ρ)) :=
+        mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hP (mul_nonneg (by linarith) hN))
+          (mul_nonneg hρ.le hγ.le)
+      have h4 : ρ * γ * ((1 + C.ε) * N * (P * ρ)) = (1 + C.ε) * (P * G) := by
+        simp only [hG]; ring
+      have h5 : (1 + C.ε) * (P * G) ≤ 101 / 100 * (P * G) :=
+        mul_le_mul_of_nonneg_right (by linarith) (mul_nonneg hP0 hG0)
+      linarith only [this, h3, h4, h5]
+    have h6 : ρ * (C.ε * (ρ + γ * ‖WithLp.toLp 2 (C.s j)‖)) =
+        C.ε * ρ ^ 2 + C.ε * (ρ * (γ * ‖WithLp.toLp 2 (C.s j)‖)) := by ring
+    have h7 := mul_le_mul_of_nonneg_left hρ2 hε0
+    have h8 := mul_le_mul_of_nonneg_left h2 hε0
+    linarith only [h1, h6, h7, h8]
+  have t := abs_add_three (-(ρ ^ 2 * (C.θ j + C.eγ j + C.θ j * C.eγ j))) (γ * C.eμ j)
+    (C.r j ⬝ᵥ C.er j)
+  have hPG : 0 ≤ P * G := mul_nonneg hP0 hG0
+  have e : C.ε * (5 * P ^ 2 + 2 * P) * G = C.ε * (5 * (P ^ 2 * G)) + C.ε * (2 * (P * G)) := by ring
+  rw [localR, e]
+  have hεPG := mul_nonneg hε0 hPG
+  have hεP2G := mul_nonneg hε0 (mul_nonneg (sq_nonneg P) hG0)
+  linarith only [t, a1, a2, a3, hεPG, hεP2G]
+
+/-- The direction-update term of the consecutive-residual recursion:
+$\gamma_j\lvert\mathbf{e}^{p\mathsf{T}}_i\mathbf{s}_j\rvert \le
+\varepsilon(1.1\Pi^2 + 2.1\Pi)\|\mathbf{A}\|_2\gamma_j\rho_j^2$, $j = i + 1$. -/
+private theorem abs_γ_mul_ep_dotProduct_s_le {P : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1)) :
+    |C.γ (i + 1) * (C.ep i ⬝ᵥ C.s (i + 1))| ≤
+      C.ε * (11 / 10 * P ^ 2 + 21 / 10 * P) * (specNorm C.A * C.γ (i + 1) * C.ρ (i + 1) ^ 2) := by
+  have hi' : i < k := by omega
+  have hγ := C.γ_pos hi
+  have hρ := C.ρ_pos hi
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  rw [abs_mul, abs_of_pos hγ]
+  have h1 := abs_dotProduct_le (C.ep i) (C.s (i + 1))
+  have h2 := C.norm_ep_le' hi'
+  have h3 := C.norm_s_le hi
+  have hD := C.δ_mul_norm_p_le hi'
+  have hep : ‖WithLp.toLp 2 (C.ep i)‖ ≤ C.ε * ((41 / 20 + 21 / 20 * P) * C.ρ (i + 1)) := by
+    refine h2.trans (mul_le_mul_of_nonneg_left ?_ hε0)
+    nlinarith
+  have hsn : ‖WithLp.toLp 2 (C.s (i + 1))‖ ≤ 101 / 100 * specNorm C.A * (P * C.ρ (i + 1)) := by
+    refine h3.trans ?_
+    have := mul_le_mul_of_nonneg_left hP (mul_nonneg (by linarith : (0 : ℝ) ≤ 1 + C.ε) hN)
+    have h4 : (1 + C.ε) * specNorm C.A * (P * C.ρ (i + 1)) ≤
+        101 / 100 * specNorm C.A * (P * C.ρ (i + 1)) :=
+      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (by linarith) hN) (by positivity)
+    linarith
+  have h5 := mul_le_mul hep hsn (norm_nonneg _) (by positivity)
+  have h6 : C.ε * ((41 / 20 + 21 / 20 * P) * C.ρ (i + 1)) *
+      (101 / 100 * specNorm C.A * (P * C.ρ (i + 1))) ≤
+      C.ε * (11 / 10 * P ^ 2 + 21 / 10 * P) * (specNorm C.A * C.ρ (i + 1) ^ 2) := by
+    have hX : 0 ≤ C.ε * specNorm C.A * C.ρ (i + 1) ^ 2 := by positivity
+    have : (41 / 20 + 21 / 20 * P) * (101 / 100 * P) ≤ 11 / 10 * P ^ 2 + 21 / 10 * P := by
+      nlinarith
+    have := mul_le_mul_of_nonneg_left this hX
+    linarith only [this]
+  have h7 := mul_le_mul_of_nonneg_left (h1.trans (h5.trans h6)) hγ.le
+  linarith only [h7]
+
 /-- **Lemma B (local orthogonality is inherited)**: with the certificates of
 `NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
