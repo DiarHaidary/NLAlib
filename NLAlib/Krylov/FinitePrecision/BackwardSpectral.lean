@@ -61,7 +61,7 @@ namespace LanczosData
 variable {n k : ℕ} (D : LanczosData n k)
 
 /-- The matrix of a three-term datum is symmetric. -/
-theorem isHermitian_H : D.H.IsHermitian := by
+theorem isHermitian : D.H.IsHermitian := by
   rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, D.transpose_H]
 
 /-- The dilated matrix is symmetric. -/
@@ -89,7 +89,7 @@ theorem spectrum_backwardH_subset_Icc (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc
     {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ Set.Icc a a')
     (hc : frobNorm (D.backwardH - D.dilatedH) ≤ c) :
     spectrum ℝ D.backwardH ⊆ Set.Icc (a - c) (a' + c) := by
-  have hH : IsSelfAdjoint D.H := D.isHermitian_H
+  have hH : IsSelfAdjoint D.H := D.isHermitian
   have h₁ : a • (1 : Matrix (Fin n) (Fin n) ℝ) ≤ D.H := by
     rw [← Algebra.algebraMap_eq_smul_one]
     exact (algebraMap_le_iff_le_spectrum hH).mpr fun x hx => (hs hx).1
@@ -140,7 +140,7 @@ theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
     D.dilatedStart ⬝ᵥ (cfc f D.dilatedH *ᵥ D.dilatedStart) =
       D.v 1 ⬝ᵥ (cfc f D.H *ᵥ D.v 1) := by
   have hcfc' : cfc f D.dilatedH = Matrix.blockDiagonal fun _ => cfc f D.H :=
-    cfc_blockDiagonal (fun _ => D.isHermitian_H) f
+    cfc_blockDiagonal (fun _ => D.isHermitian) f
   rw [hcfc']
   simp only [dotProduct, Matrix.mulVec, Fintype.sum_prod_type, Matrix.blockDiagonal_apply,
     dilatedStart, ite_mul, zero_mul, mul_ite, mul_zero]
