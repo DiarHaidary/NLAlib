@@ -817,6 +817,32 @@ theorem Matrix.IsHermitian.eigenvalue_add_le ...
    (maintainer, 2026-10-19; an instance of a Prop-valued class is a statement and may). The ids
    key the literature map maintained in the `explore` repository; a new id is fine, a misspelt
    existing one is an error [R2], and an id or declaration the explorer names must exist [R3].
+4b. **`Algorithm: <id>`** on its own last line, for a definition, recurrence, run model or program
+   that is part of a named algorithm (maintainer, 2026-10-29; the explorer's algorithm pages,
+   `docs/design/algorithm-pages.md` in the `explore` repository):
+
+   ```lean
+   /-- The **Hestenes–Stiefel recurrence** (the conjugate gradient algorithm) from the start …
+   [HestenesStiefel1952, (3:1)]; …
+   Algorithm: cg -/
+   noncomputable def cgState …
+   ```
+
+   The id is a slug like a result id, and follows the result-id prefixes in use (`cg`, `pcg`,
+   `lanczos`, `hutchpp`, `randomized-svd`, `sketch-and-solve`, `gram-schmidt`), so that the
+   explorer attaches the results `cg-…` to the page `cg` without configuration. An optional role in
+   parentheses: `Algorithm: cg (specification)` on the definition of *what* is computed when a
+   separate recurrence computes it (`cgIterate`, `pcgIterate`), `Algorithm: lanczos (run model)`
+   on a model of a run in finite precision (`LanczosRun`); without a role the declaration is a
+   definition, and the explorer reads from its type whether it is a program. The tag goes on `def`,
+   `abbrev`, `structure` and `inductive` declarations only [A2], never on theorems: results reach an
+   algorithm through their ids and statements, and a cost target through the program its tree
+   comes from. The line is standalone and last, the id a slug, the role `specification` or
+   `run model` [A1]. A declaration belongs to at most one algorithm [A3]: a shared building block
+   (`galerkinInverse`, `gramSchmidtQ` inside Hutch++) carries the tag of the algorithm it
+   defines, or none, and is found through dependencies. Several declarations of one algorithm are
+   expected (`cgState` and `cgIterate`; `rsvd` and `earlyTruncatedRSVD`; `hutchpp` and
+   `hutchppProg`). A variant with a different definition has its own id (`pcg`).
 5. **Mathematics is LaTeX** (amended 2026-10-14): `$…$` inline and `$$…$$` displayed, as doc-gen4
    and the explorer render it with KaTeX. Standard LaTeX only, no custom macros [M12]. A named
    bound's value is written inside the equation in place of the constant (§5.2 rule 2), and the
@@ -1078,6 +1104,8 @@ line (before `Result:`) of an `exists_forall_` theorem's docstring, `NAME` is de
 file, and each docstring names the other in backticks in a sentence (the explorer's "Related"),
 the explicit one with "Asymptotic form: `…`."; a tag too long for 100 characters puts
 `NAME` alone on the next line.
+It also checks §6 item 4b's `Algorithm:` tags [A1, A2, A3], with the same messages as
+`scripts/check_rules.py`, and counts the algorithm ids in use.
 
 `scripts/Duplicates.lean` is a report, not a gate: it lists library theorems (private ones
 included) whose statements coincide with another library or Mathlib theorem up to universe

@@ -49,7 +49,8 @@ def orthAgainst (p : P) (N : IExp VI) (Q : VB) (k : IExp VI) (v : VB) (vo : IExp
 /-- **Gram–Schmidt as a program**: in-place rank-revealing modified Gram–Schmidt on the $k$
 columns of the $N$-row buffer $Y$. Column $j$ is swept against the earlier columns, its squared
 norm is computed, and it is divided by its norm unless the squared norm is exactly zero. Two
-scratch cells, freed at the end (`scope`). -/
+scratch cells, freed at the end (`scope`).
+Algorithm: gram-schmidt -/
 def gramSchmidtProg (p : P) (N k : IExp VI) (Y : VB) : Builder P ι VB VI Unit := scope do
   let t ← alloc p 2
   forRange k fun j => do

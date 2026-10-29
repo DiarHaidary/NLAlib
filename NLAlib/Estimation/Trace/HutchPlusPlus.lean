@@ -89,7 +89,8 @@ of the residual is $0$ and the output is $\operatorname{tr}\mathsf{rsvd}(\mathbf
 The basis form of the papers is `NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`.
 [MeyerMuscoMuscoWoodruff2021, Algorithm 1 and Algorithm 3]; [EpperlyTroppWebber2024, (1.3)];
 there with an orthonormal basis $\mathbf{Q}$ of the range of $\mathbf{A}\mathbf{S}$ and
-$\mathbf{S}$, $\mathbf{G}$ random (sign or Gaussian entries). -/
+$\mathbf{S}$, $\mathbf{G}$ random (sign or Gaussian entries).
+Algorithm: hutchpp -/
 noncomputable def hutchpp (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matrix n t 𝕜) : 𝕜 :=
   (rsvd A S).trace +
     girardHutchinson ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) G

@@ -18,6 +18,36 @@
 # fix       what to do about a violation
 
 [[rule]]
+id = "A1"
+area = "algorithm tags"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 4b"
+statement = '''An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`'''
+fix = '''Put the tag alone on the last line, the id kebab-case like a result id (`cg`, `randomized-svd`)'''
+
+[[rule]]
+id = "A2"
+area = "algorithm tags"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 4b"
+statement = '''`Algorithm:` tags go on definitions, structures and programs, never on theorems or instances'''
+fix = '''Delete it: a result reaches its algorithm page through its `Result:` id and its statement (the explorer's attachment rules)'''
+
+[[rule]]
+id = "A3"
+area = "algorithm tags"
+severity = "error"
+check = "source"
+scope = "library"
+section = "§6 item 4b"
+statement = '''A declaration carries at most one `Algorithm:` tag'''
+fix = '''Keep the algorithm the declaration defines; a shared building block is found through dependencies, not tagged twice'''
+
+[[rule]]
 id = "B1"
 area = "bounds"
 severity = "error"

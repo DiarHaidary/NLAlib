@@ -137,6 +137,12 @@ and `docs/rules/DIGEST.md`.
 - **R2** No two result ids one or two edits apart. [§6] item 4
 - **R3** Every id or declaration the explorer names exists. explore README
 
+### Algorithm tags
+
+- **A1** An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`. [§6] item 4b
+- **A2** `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances. [§6] item 4b
+- **A3** A declaration carries at most one `Algorithm:` tag. [§6] item 4b
+
 ### Design records
 
 - **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]

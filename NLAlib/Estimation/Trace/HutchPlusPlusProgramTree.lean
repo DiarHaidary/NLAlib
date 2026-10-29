@@ -45,7 +45,8 @@ $\mathbf{G}' = (\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{G}$, form
 $\mathbf{A}[\mathbf{Q}\ \mathbf{G}']$ (load 2, batched), and writes
 $\operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) +
 \operatorname{tr}(\mathbf{G}'^{\mathsf{H}}\mathbf{A}\mathbf{G}')/\ell$ into `out`.
-[MeyerMuscoMuscoWoodruff2021, Algorithm 1]. -/
+[MeyerMuscoMuscoWoodruff2021, Algorithm 1].
+Algorithm: hutchpp -/
 def hutchppProg (p : P) (o : ι) (d : Dist) (N k ℓ : IExp VI) (out : Cell VB VI) :
     Builder P ι VB VI Unit := do
   let B ← alloc p (N * (k + ℓ))

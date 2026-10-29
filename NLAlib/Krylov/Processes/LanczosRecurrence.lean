@@ -45,7 +45,8 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The state of the Lanczos recurrence before step $j$: the vectors $\mathbf{q}_{j-1}$,
-$\mathbf{q}_j$ and the coefficient $\beta_j$ that couples them. -/
+$\mathbf{q}_j$ and the coefficient $\beta_j$ that couples them.
+Algorithm: lanczos -/
 structure LanczosState (𝕜 n : Type*) where
   /-- The previous Lanczos vector $\mathbf{q}_{j-1}$ ($\mathbf{0}$ for $j = 0$). -/
   prev : n → 𝕜
@@ -57,7 +58,8 @@ structure LanczosState (𝕜 n : Type*) where
 /-- The diagonal coefficient of a Lanczos step,
 $\alpha_j = \operatorname{Re}\langle\mathbf{q}_j, \mathbf{A}\mathbf{q}_j - \beta_j
 \mathbf{q}_{j-1}\rangle$; in exact arithmetic and for Hermitian $\mathbf{A}$ it is
-$\mathbf{q}_j^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$. -/
+$\mathbf{q}_j^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$.
+Algorithm: lanczos -/
 noncomputable def lanczosAlpha (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) : ℝ :=
   RCLike.re (star s.cur ⬝ᵥ (A *ᵥ s.cur - (s.beta : 𝕜) • s.prev))
 
@@ -67,23 +69,27 @@ $\beta_{j+1} = \|\mathbf{w}\|$, $\mathbf{q}_{j+1} = \beta_{j+1}^{-1}\mathbf{w}$.
 $\beta_\nu = 0$ at the grade $\nu$, the state is $(\mathbf{q}_{\nu-1}, \mathbf{0}, 0)$, and it is
 zero from the following step on. [Paige1972, §2]; [Saad2011, §6.6]. It is the variant A(2, 7)
 there, equations (2) to (5), (7) and (8), for real symmetric $\mathbf{A}$;
-[Saad2003, Algorithm 6.15] is the same order. -/
+[Saad2003, Algorithm 6.15] is the same order.
+Algorithm: lanczos -/
 noncomputable def lanczosStep (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) : LanczosState 𝕜 n :=
   let w := A *ᵥ s.cur - (s.beta : 𝕜) • s.prev - (lanczosAlpha A s : 𝕜) • s.cur
   ⟨s.cur, (‖WithLp.toLp 2 w‖⁻¹ : 𝕜) • w, ‖WithLp.toLp 2 w‖⟩
 
 /-- The **Lanczos recurrence**: the state before step $j$, from
-$(\mathbf{0}, \mathbf{b}/\|\mathbf{b}\|, 0)$. [Saad2011, §6.6]. -/
+$(\mathbf{0}, \mathbf{b}/\|\mathbf{b}\|, 0)$. [Saad2011, §6.6].
+Algorithm: lanczos -/
 noncomputable def lanczosState (A : Matrix n n 𝕜) (b : n → 𝕜) : ℕ → LanczosState 𝕜 n
   | 0 => ⟨0, (‖WithLp.toLp 2 b‖⁻¹ : 𝕜) • b, 0⟩
   | j + 1 => lanczosStep A (lanczosState A b j)
 
-/-- The basis computed by $q$ steps of the Lanczos recurrence: column $j$ is $\mathbf{q}_j$. -/
+/-- The basis computed by $q$ steps of the Lanczos recurrence: column $j$ is $\mathbf{q}_j$.
+Algorithm: lanczos -/
 noncomputable def lanczosMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Matrix n (Fin q) 𝕜 :=
   Matrix.of fun i j => (lanczosState A b j).cur i
 
 /-- The tridiagonal matrix computed by the Lanczos recurrence: $\alpha_0, \dots, \alpha_{q-1}$ on
-the diagonal, $\beta_1, \dots, \beta_{q-1}$ beside it. -/
+the diagonal, $\beta_1, \dots, \beta_{q-1}$ beside it.
+Algorithm: lanczos -/
 noncomputable def lanczosTridiagonal (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     Matrix (Fin q) (Fin q) 𝕜 :=
   Matrix.of fun i j =>

@@ -44,7 +44,8 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The state of the Hestenes–Stiefel recurrence after $k$ steps: iterate $\mathbf{x}_k$,
-residual $\mathbf{r}_k$, search direction $\mathbf{p}_k$. -/
+residual $\mathbf{r}_k$, search direction $\mathbf{p}_k$.
+Algorithm: cg -/
 structure CGState (𝕜 n : Type*) where
   /-- The iterate $\mathbf{x}_k$. -/
   x : n → 𝕜
@@ -62,7 +63,8 @@ $\beta_k = \|\mathbf{r}_{k+1}\|^2/\|\mathbf{r}_k\|^2$,
 $\mathbf{p}_{k+1} = \mathbf{r}_{k+1} + \beta_k\mathbf{p}_k$. With $0^{-1} = 0$ a zero residual
 gives $\alpha_k = \beta_k = 0$ and the state stays put.
 [HestenesStiefel1952, (3:1)]; [TrefethenBau1997, Algorithm 38.1]. Hestenes and Stiefel write
-$(\mathbf{p}_k, \mathbf{A}\mathbf{p}_k)$ for real symmetric $\mathbf{A}$, here its real part. -/
+$(\mathbf{p}_k, \mathbf{A}\mathbf{p}_k)$ for real symmetric $\mathbf{A}$, here its real part.
+Algorithm: cg -/
 noncomputable def cgStep (A : Matrix n n 𝕜) (s : CGState 𝕜 n) : CGState 𝕜 n :=
   let α : ℝ := ‖WithLp.toLp 2 s.r‖ ^ 2 / RCLike.re (quadForm A s.p)
   let r' := s.r - (α : 𝕜) • (A *ᵥ s.p)
@@ -72,7 +74,8 @@ noncomputable def cgStep (A : Matrix n n 𝕜) (s : CGState 𝕜 n) : CGState �
 /-- The **Hestenes–Stiefel recurrence** (the conjugate gradient algorithm) from the start
 $\mathbf{x}_0$: the state after $k$ steps, from $(\mathbf{x}_0, \mathbf{r}_0, \mathbf{r}_0)$,
 $\mathbf{r}_0 = \mathbf{b} - \mathbf{A}\mathbf{x}_0$. [HestenesStiefel1952, (3:1)]; the start
-$\mathbf{p}_0 = \mathbf{r}_0$ is (3:1a) there. -/
+$\mathbf{p}_0 = \mathbf{r}_0$ is (3:1a) there.
+Algorithm: cg -/
 noncomputable def cgState (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : ℕ → CGState 𝕜 n
   | 0 => ⟨x₀, b - A *ᵥ x₀, b - A *ᵥ x₀⟩
   | k + 1 => cgStep A (cgState A b x₀ k)

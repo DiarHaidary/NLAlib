@@ -51,7 +51,8 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The state of the preconditioned Hestenes–Stiefel recurrence after $k$ steps. -/
+/-- The state of the preconditioned Hestenes–Stiefel recurrence after $k$ steps.
+Algorithm: pcg -/
 structure PCGState (𝕜 n : Type*) where
   /-- The iterate $\mathbf{x}_k$. -/
   x : n → 𝕜
@@ -69,7 +70,8 @@ $\mathbf{x}_{k+1} = \mathbf{x}_k + \alpha_k\mathbf{p}_k$,
 $\mathbf{r}_{k+1} = \mathbf{r}_k - \alpha_k\mathbf{A}\mathbf{p}_k$,
 $\mathbf{z}_{k+1} = \mathbf{M}\mathbf{r}_{k+1}$,
 $\beta_k = \rho_{k+1}/\rho_k$, $\mathbf{p}_{k+1} = \mathbf{z}_{k+1} + \beta_k\mathbf{p}_k$.
-[Saad2003, Algorithm 9.1]; [Greenbaum1997, §8.1]; locators to verify. -/
+[Saad2003, Algorithm 9.1]; [Greenbaum1997, §8.1]; locators to verify.
+Algorithm: pcg -/
 noncomputable def pcgStep (A M : Matrix n n 𝕜) (s : PCGState 𝕜 n) : PCGState 𝕜 n :=
   let ρ : ℝ := RCLike.re (star s.r ⬝ᵥ s.z)
   let α : ℝ := ρ / RCLike.re (quadForm A s.p)
@@ -78,7 +80,8 @@ noncomputable def pcgStep (A M : Matrix n n 𝕜) (s : PCGState 𝕜 n) : PCGSta
   ⟨s.x + (α : 𝕜) • s.p, r', z', z' + ((RCLike.re (star r' ⬝ᵥ z') / ρ : ℝ) : 𝕜) • s.p⟩
 
 /-- The **preconditioned Hestenes–Stiefel recurrence** from $\mathbf{x}_0$: the state after $k$
-steps, from $(\mathbf{x}_0, \mathbf{r}_0, \mathbf{M}\mathbf{r}_0, \mathbf{M}\mathbf{r}_0)$. -/
+steps, from $(\mathbf{x}_0, \mathbf{r}_0, \mathbf{M}\mathbf{r}_0, \mathbf{M}\mathbf{r}_0)$.
+Algorithm: pcg -/
 noncomputable def pcgState (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) : ℕ → PCGState 𝕜 n
   | 0 => ⟨x₀, b - A *ᵥ x₀, M *ᵥ (b - A *ᵥ x₀), M *ᵥ (b - A *ᵥ x₀)⟩
   | k + 1 => pcgStep A M (pcgState A M b x₀ k)

@@ -297,6 +297,12 @@ FIX = {
     'C7': ({'docs/references.bib': BIB.replace('Abc2000', 'Xyz2000')}, {}),
     'C8': ({'docs/references.bib': BIB + '\n@book{Ghi2002,\n  title = {C}\n}\n'}, {}),
     'C9': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', '').replace('\nResult: foo-result', ''), CITED),
+    'A1': ('/-- **A def.**\nAlgorithm: Bad_Id -/\ndef bar : ℝ := 0',
+           '/-- **A def.**\nAlgorithm: some-algo (specification) -/\ndef bar : ℝ := 0'),
+    'A2': ('/-- A docstring.\nAlgorithm: some-algo -/\ntheorem foo : True := trivial',
+           '/-- **A def.**\nAlgorithm: some-algo -/\nstructure Bar where\n  x : ℕ'),
+    'A3': ('/-- **A def.**\nAlgorithm: some-algo\nAlgorithm: other-algo -/\ndef bar : ℝ := 0',
+           '/-- **A def.**\nAlgorithm: some-algo -/\ndef bar : ℝ := 0'),
     'R1': ('/-- **A def.** [Abc2000, Definition 1].\nResult: a-def -/\ndef bar : ℝ := 0',
            '/-- **Invariant.** [Abc2000, Theorem 1].\nResult: a-inv -/\ninstance isFoo_bar : IsFoo bar := ⟨⟩'),
     'R2': (CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'foo-resukt'),
@@ -523,6 +529,10 @@ class RuleTests(unittest.TestCase):
             (ex / 'collections.toml').write_text('results = ["foo-result", "gone-result"]\n')
             c = Ctx(root, None, ex, ml)
             self.assertEqual([v.decl for v in RULES['R3']['fn'](c)], ['gone-result'])
+            (ex / 'algorithms.toml').write_text('[cg]\nresults = ["foo-result"]\nnot_results = ["gone-cg"]\n'
+                                                'definitions = ["NLAlib.foo", "NLAlib.gone"]\n')
+            self.assertEqual(sorted(v.decl for v in RULES['R3']['fn'](c)),
+                             ['NLAlib.gone', 'gone-cg', 'gone-result'])
 
 
 class RatchetTests(unittest.TestCase):
