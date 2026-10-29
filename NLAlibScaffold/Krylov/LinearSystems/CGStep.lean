@@ -467,6 +467,89 @@ theorem exec_cg_direction (h : IsRelErrSem u dec (fun _ _ => True) I.sem) {N : �
     · exact Or.inr (Or.inl hb)
     · exact Or.inr (Or.inr hb)
 
+/-- **One step of the CG program** (`NLAlib.cgStepWith`) in the standard model: from
+$\mathbf{x}$, $\mathbf{r}$, $\mathbf{p}$ in the slots at $0$, $N$, `pc`, $\nu \ne 0$ in `s[0]`,
+and a direction whose computed curvature is positive (`hpos`), the step succeeds, writes only
+the slots at $0, N, 2N$ and `pn`, the scalars but `s[3]`, and the three output cells, and has
+the local errors of `NLAlib.CGStepData.IsStep` with $\varepsilon \ge \gamma_{N+2}$ and the
+product bound $c \le \varepsilon\|\mathbf{A}\|_2$. -/
+theorem exec_cgStepWith (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) {N : ℕ} (hu : ((N + 2 : ℕ) : ℝ) * u p < 1)
+    {mv : ℕ → IExp ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit} {R : ℕ} {s₀ : Store P K}
+    {A : Matrix (Fin N) (Fin N) ℝ} {c ε : ℝ} (hmv : LanczosMvSpec I mv p dec R s₀ A c)
+    (hc : c ≤ ε * specNorm A) (hε : roundingFactor (N + 2) (u p) ≤ ε)
+    (st : St P K C) {S : Array (P × ℕ)} (hsh : st.store.shape = S)
+    (hR : ∀ i, st.store.read p R i = s₀.read p R i) {W sb Lg Ld Ln : ℕ} (pc pn : IExp ℕ)
+    (gC dC nC : Cell ℕ ℕ) (hWs : W ≠ sb) (hRW : R ≠ W) (hS : S[sb]? = some (p, 7))
+    (hSW : S[W]? = some (p, 5 * N)) (hSg : S[gC.buf]? = some (p, Lg)) (hgi : gC.idx.eval < Lg)
+    (hSd : S[dC.buf]? = some (p, Ld)) (hdi : dC.idx.eval < Ld)
+    (hSn : S[nC.buf]? = some (p, Ln)) (hni : nC.idx.eval < Ln) (hgW : gC.buf ≠ W)
+    (hgs : gC.buf ≠ sb) (hdW : dC.buf ≠ W) (hds : dC.buf ≠ sb) (hnW : nC.buf ≠ W)
+    (hns : nC.buf ≠ sb) (hgd : gC.buf ≠ dC.buf) (hgn : gC.buf ≠ nC.buf)
+    (hdn : dC.buf ≠ nC.buf) (hpc : 3 * N ≤ pc.eval ∧ pc.eval + N ≤ 5 * N)
+    (hpn : 3 * N ≤ pn.eval ∧ pn.eval + N ≤ 5 * N)
+    (hcn : pc.eval + N ≤ pn.eval ∨ pn.eval + N ≤ pc.eval) {xv rv pv : Fin N → ℝ} {ν : ℝ}
+    (hx : DecVec st.store p dec W 0 xv) (hr : DecVec st.store p dec W N rv)
+    (hp : DecVec st.store p dec W pc.eval pv) (hν : DecCell st.store p dec sb 0 ν)
+    (hν0 : ν ≠ 0)
+    (hpos : ∀ (es : Fin N → ℝ) (eμ : ℝ), ‖WithLp.toLp 2 es‖ ≤ ε * specNorm A * ‖WithLp.toLp 2 pv‖ →
+      |eμ| ≤ ε * ‖WithLp.toLp 2 pv‖ * ‖WithLp.toLp 2 (A *ᵥ pv + es)‖ →
+      0 < pv ⬝ᵥ (A *ᵥ pv + es) + eμ) :
+    ∃ (st' : St P K C) (D : CGStepData N),
+      exec I (cgStepWith mv p (.const N) W pc pn sb gC dC nC).run st = some st' ∧
+      StoreFrame p st.store st'.store (fun b i => StoreBlock W 0 (3 * N) b i ∨
+        StoreBlock W pn.eval N b i ∨ (b = sb ∧ i ≠ 3) ∨ StoreBlock gC.buf gC.idx.eval 1 b i ∨
+        StoreBlock dC.buf dC.idx.eval 1 b i ∨ StoreBlock nC.buf nC.idx.eval 1 b i) ∧
+      DecVec st'.store p dec W 0 D.x ∧ DecVec st'.store p dec W N D.r ∧
+      DecVec st'.store p dec W pn.eval D.p ∧ DecCell st'.store p dec sb 0 D.ν ∧
+      DecCell st'.store p dec gC.buf gC.idx.eval D.γ ∧
+      DecCell st'.store p dec dC.buf dC.idx.eval D.δ ∧
+      DecCell st'.store p dec nC.buf nC.idx.eval D.ν ∧ D.IsStep A ε xv rv pv ν := by
+  have hu0 : 0 ≤ u p := h.nonneg trivial
+  have hlt : ∀ m, m ≤ N + 2 → (m : ℝ) * u p < 1 := fun m hm =>
+    cast_mul_lt_one_of_le hu0 hm hu
+  have hγ : ∀ m, m ≤ N + 2 → roundingFactor m (u p) ≤ ε := fun m hm =>
+    (roundingFactor_le_roundingFactor hu0 hm hu).trans hε
+  have hu1 : u p < 1 := by simpa using hlt 1 (by omega)
+  have hu2 : 2 * u p < 1 := by simpa using hlt 2 (by omega)
+  have huε : u p ≤ ε := (le_roundingFactor_one hu0 hu1).trans (hγ 1 (by omega))
+  obtain ⟨st₁, sv, μ, γ, eγ, h₁, hf₁, hs₁, hγ₁, hg₁, hb₁, hb₂, hμ, hγe, heγ⟩ :=
+    exec_cg_curvature I h hz (hlt N (by omega)) hmv hc (hγ N (by omega)) st hsh hR pc gC hWs
+      hRW hS hSW hSg hgi hgW hgs hpc hp hν hpos
+  obtain ⟨st₂, x', r', ν', θ, δ, eδ, h₂, hf₂, hx₂, hr₂, hν₂, hδ₂, hd₂, hb₃, hb₄, hθ, hν', hδe,
+      heδ⟩ := exec_cg_update I h hz hu2 hu1 st₁ (hf₁.1.trans hsh) pc dC hWs hS hSd hdi hdW hds
+    hpc (hx.frame hf₁ fun i hi => by cg_nb) (hr.frame hf₁ fun i hi => by cg_nb)
+    (hp.frame hf₁ fun i hi => by cg_nb) hs₁ (hν.frame hf₁ (by cg_nb)) hγ₁ hν0
+  obtain ⟨st₃, p', h₃, hf₃, hp₃, hν₃, hn₃, hb₅⟩ := exec_cg_direction I h hu2 st₂
+    ((hf₁.trans hf₂).1.trans hsh) pc pn nC hWs hS hSW hSn hni hnW hns hpc hpn hcn hr₂
+    ((hp.frame hf₁ fun i hi => by cg_nb).frame hf₂ fun i hi => by cg_nb) hν₂ hδ₂
+  refine ⟨st₃, ⟨sv, sv - A *ᵥ pv, μ, μ - pv ⬝ᵥ sv, γ, eγ, x', x' - (xv + γ • pv), r',
+    r' - (rv - γ • sv), ν', θ, δ, eδ, p', p' - (r' + δ • pv)⟩, ?_, ?_,
+    hx₂.frame hf₃ fun i hi => by cg_nb, hr₂.frame hf₃ fun i hi => by cg_nb, hp₃, hν₃,
+    (hg₁.frame hf₂ (by cg_nb)).frame hf₃ (by cg_nb), hd₂.frame hf₃ (by cg_nb), hn₃, ?_⟩
+  · unfold cgStepWith
+    rw [h₁ _, h₂ _]
+    exact h₃
+  · refine ((hf₁.trans hf₂).trans hf₃).mono fun b i hb => ?_
+    rcases hb with ((hb | hb | hb) | (hb | hb | hb)) | (hb | hb | hb)
+    · exact Or.inl ⟨hb.1, by omega, by have := hb.2.2; omega⟩
+    · exact Or.inr (Or.inr (Or.inl ⟨hb.1, by have := hb.2; omega⟩))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl hb)))
+    · exact Or.inl ⟨hb.1, hb.2.1, by have := hb.2.2; omega⟩
+    · exact Or.inr (Or.inr (Or.inl ⟨hb.1, by have := hb.2; omega⟩))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hb))))
+    · exact Or.inr (Or.inl hb)
+    · exact Or.inr (Or.inr (Or.inl ⟨hb.1, by have := hb.2; omega⟩))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hb))))
+  · have hnγ : 0 ≤ roundingFactor N (u p) := roundingFactor_nonneg hu0 (hlt N (by omega))
+    have hγ2 := hγ 2 (by omega)
+    have hγN := hγ N (by omega)
+    refine ⟨(add_sub_cancel _ _).symm, hb₁.trans (by gcongr), (add_sub_cancel _ _).symm,
+      hb₂.trans (by gcongr), hμ, hγe, heγ.trans huε, (add_sub_cancel _ _).symm,
+      hb₃.trans (by gcongr), (add_sub_cancel _ _).symm, hb₄.trans (by gcongr), hν',
+      (hθ.abs_le (hlt N (by omega))).trans (hγ N (by omega)), hδe, heδ.trans huε,
+      (add_sub_cancel _ _).symm, hb₅.trans (by gcongr)⟩
+
 end Pieces
 
 end NLAlib
