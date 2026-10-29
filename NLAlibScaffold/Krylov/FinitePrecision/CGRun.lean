@@ -818,8 +818,9 @@ private theorem norm_recurrenceError_succ_mul_le {P B : ℝ} {i : ℕ} (hi : i +
       rw [WithLp.toLp_neg, norm_neg]
   have hpP : p ≤ P * ρ := hP
   have hfin1 : C.ε * (γ⁻¹ * ρ) ≤ C.ε * (21 / 20 * N * P ^ 2 * ρ) := by gcongr
-  have hNp : N * p ≤ N * (P * ρ) := by gcongr
-  have hND : N * D ≤ N * (21 / 20 * (P * ρ + ρ)) := by gcongr; linarith
+  have hNp : N * p ≤ N * (P * ρ) := mul_le_mul_of_nonneg_left hpP hN
+  have hND : N * D ≤ N * (21 / 20 * (P * ρ + ρ)) :=
+    mul_le_mul_of_nonneg_left (by linarith only [hD, hpP]) hN
   have hNp0 : 0 ≤ N * p := mul_nonneg hN hp0
   have hND0 : 0 ≤ N * D := mul_nonneg hN hD0
   have hBρ0 : 0 ≤ B * ρ := mul_nonneg hB0 hρ.le
