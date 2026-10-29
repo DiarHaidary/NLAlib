@@ -1682,6 +1682,148 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
   have hsc' := mul_le_mul_of_nonneg_left hsc hε0
   linarith only [tri, ha', hb', hc, hd, he, hf, hg, hsc']
 
+/-- **The recursion of Lemma B**: $\lvert\bar p_{i+1}\rvert \le (1 + 3.1\varepsilon)
+\lvert\bar p_i\rvert + \varepsilon\bigl(13\|\mathbf{A}\|_2(1+\Pi)^2 + 10B(1+\Pi)\bigr)$. -/
+private theorem abs_adjacentInner_succ_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1))
+    (hβ : C.lanczosβ (i + 1) ≤ B) (hδB : C.δ i ≤ B * C.γ i) :
+    |C.toLanczosData.adjacentInner (i + 1)| ≤
+      (1 + 31 / 10 * C.ε) * |C.toLanczosData.adjacentInner i| +
+        C.ε * (13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P))) := by
+  have hi' : i < k := by omega
+  have hγ := C.γ_pos hi
+  have hγ' := C.γ_pos hi'
+  have hρ := C.ρ_pos hi
+  have hρ' := C.ρ_pos hi'
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi'
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  have hG : 0 < C.γ (i + 1) * C.ρ (i + 1) ^ 2 := by positivity
+  rw [C.adjacentInner_eq hi, C.adjacentInner_eq hi', abs_div, abs_div, abs_neg, abs_neg,
+    abs_of_pos hG, abs_of_pos (by positivity : 0 < C.γ i * C.ρ i ^ 2), div_le_iff₀ hG]
+  rw [C.r_dotProduct_r_succ_succ_eq hi, C.γ_mul_p_dotProduct_s_succ_eq hi]
+  set S := (C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
+        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
+        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
+        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1)) with hS
+  have hT := C.transport_le hi hP hβ hδB
+  rw [← hS] at hT
+  have hR := C.abs_localR_le hi hP
+  have hE := C.abs_γ_mul_ep_dotProduct_s_le hi hP
+  set ψ := C.r i ⬝ᵥ C.r (i + 1)
+  have hc0 : 0 ≤ C.γ (i + 1) * C.δ i / C.γ i := div_nonneg (mul_nonneg hγ.le hδ0) hγ'.le
+  have t1 : |C.γ (i + 1) * C.δ i / C.γ i * (ψ + S) + C.localR (i + 1) +
+      C.γ (i + 1) * (C.ep i ⬝ᵥ C.s (i + 1))| ≤
+      C.γ (i + 1) * C.δ i / C.γ i * |ψ| + C.γ (i + 1) * (C.δ i / C.γ i * |S|) +
+        |C.localR (i + 1)| + |C.γ (i + 1) * (C.ep i ⬝ᵥ C.s (i + 1))| := by
+    have h1 := abs_add_three (C.γ (i + 1) * C.δ i / C.γ i * (ψ + S)) (C.localR (i + 1))
+      (C.γ (i + 1) * (C.ep i ⬝ᵥ C.s (i + 1)))
+    rw [abs_mul, abs_of_nonneg hc0] at h1
+    have h2 := mul_le_mul_of_nonneg_left (abs_add_le ψ S) hc0
+    have e : C.γ (i + 1) * C.δ i / C.γ i * |S| = C.γ (i + 1) * (C.δ i / C.γ i * |S|) := by ring
+    linarith only [h1, h2, e]
+  -- the transported previous defect
+  have t2 : C.γ (i + 1) * C.δ i / C.γ i * |ψ| ≤
+      (1 + 31 / 10 * C.ε) * (|ψ| / (C.γ i * C.ρ i ^ 2)) * (C.γ (i + 1) * C.ρ (i + 1) ^ 2) := by
+    have e : C.γ (i + 1) * C.δ i / C.γ i * |ψ| =
+        C.γ (i + 1) * (C.δ i * C.ρ i ^ 2) * (|ψ| / (C.γ i * C.ρ i ^ 2)) := by
+      field_simp
+    rw [e]
+    have hq0 : 0 ≤ |ψ| / (C.γ i * C.ρ i ^ 2) := by positivity
+    have := mul_le_mul_of_nonneg_left hδ1 hγ.le
+    have := mul_le_mul_of_nonneg_right this hq0
+    linarith only [this]
+  have t3 := mul_le_mul_of_nonneg_left hT hγ.le
+  have hX : 0 ≤ C.ε * specNorm C.A * C.γ (i + 1) * C.ρ (i + 1) ^ 2 := by positivity
+  have hpoly : 5 * P ^ 2 + 2 * P + (11 / 10 * P ^ 2 + 21 / 10 * P) ≤ 7 * (1 + P) ^ 2 := by
+    nlinarith
+  have t4 := mul_le_mul_of_nonneg_left hpoly hX
+  have e : (C.ε * (13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P)))) *
+      (C.γ (i + 1) * C.ρ (i + 1) ^ 2) = C.γ (i + 1) * (C.ε * (6 * (specNorm C.A * (1 + P) ^ 2 *
+        C.ρ (i + 1) ^ 2) + 10 * (B * (1 + P) * C.ρ (i + 1) ^ 2))) +
+        C.ε * specNorm C.A * C.γ (i + 1) * C.ρ (i + 1) ^ 2 * (7 * (1 + P) ^ 2) := by ring
+  rw [add_mul, e]
+  linarith only [t1, t2, t3, t4, hR, hE]
+
+/-- **Lemma B with a nonnegative certificate** $B \ge 0$: the form of
+`NLAlib.CGRun.abs_adjacentInner_le` that holds for every $k$ (for $k \ge 2$, $B \ge 0$ follows
+from $\beta_1 \le B$). -/
+theorem abs_adjacentInner_le_of_nonneg {P K B : ℝ}
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) (hB0 : 0 ≤ B) {j : ℕ}
+    (hj : j < k) :
+    |C.toLanczosData.adjacentInner j| ≤
+      16 * (j + 1) * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
+  have hk := C.k_pos
+  have hρ0 := C.ρ_pos hk
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  have hP0 : 0 ≤ P := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h hρ0
+    linarith [norm_nonneg (WithLp.toLp 2 (C.p 0)), hP 0 hk]
+  have hK0 : 0 ≤ K := by
+    by_contra h
+    push Not at h
+    have := mul_neg_of_neg_of_pos h (pow_pos hρ0 2)
+    have : 0 ≤ specNorm C.A * C.γ 0 * ‖WithLp.toLp 2 (C.p 0)‖ ^ 2 :=
+      mul_nonneg (mul_nonneg hN (C.γ_pos hk).le) (sq_nonneg _)
+    linarith [hK 0 hk]
+  have hX : 0 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K) := by positivity
+  induction j with
+  | zero =>
+    have hγ := C.γ_pos hk
+    have hG : 0 < C.γ 0 * C.ρ 0 ^ 2 := by positivity
+    rw [C.adjacentInner_eq hk, C.r_dotProduct_r_one_eq, abs_div, abs_neg, abs_of_pos hG,
+      div_le_iff₀ hG]
+    have hR := C.abs_localR_le hk (hP 0 hk)
+    have h1 : 5 * P ^ 2 + 2 * P ≤ 16 * (1 + P) ^ 2 := by nlinarith
+    have h2 : specNorm C.A * (1 + P) ^ 2 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K) := by
+      have : 0 ≤ B * (1 + P + K) := by positivity
+      linarith
+    have hY : 0 ≤ C.ε * specNorm C.A * C.γ 0 * C.ρ 0 ^ 2 := by positivity
+    have h3 := mul_le_mul_of_nonneg_left h1 hY
+    have h4 := mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ 16 * C.ε * (C.γ 0 * C.ρ 0 ^ 2))
+    push_cast
+    linarith only [hR, h3, h4]
+  | succ i ih =>
+    have hi : i < k := by omega
+    have ih := ih hi
+    obtain ⟨hβ, hδ⟩ := hB i hj
+    have h := C.abs_adjacentInner_succ_le hj (hP (i + 1) hj) hβ hδ
+    set X := specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)
+    have hL : C.ε * (13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P))) ≤ 13 * C.ε * X := by
+      have : 13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P)) ≤ 13 * X := by
+        have : B * (1 + P) ≤ B * (1 + P + K) := mul_le_mul_of_nonneg_left (by linarith) hB0
+        have : 0 ≤ B * (1 + P) := by positivity
+        simp only [X]
+        linarith
+      have := mul_le_mul_of_nonneg_left this hε0
+      linarith only [this]
+    have hiε : ((i : ℕ) + 1 : ℝ) * C.ε ≤ 1 / 100 := by
+      have := C.mul_ε_le' (j := i + 1) hj.le
+      exact_mod_cast this
+    have h2 : (1 + 31 / 10 * C.ε) * |C.toLanczosData.adjacentInner i| ≤
+        (1 + 31 / 10 * C.ε) * (16 * ((i : ℕ) + 1) * C.ε * X) :=
+      mul_le_mul_of_nonneg_left ih (by linarith)
+    have h3 : 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) ≤ 1 / 2 * (C.ε * X) := by
+      have e : 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) =
+          (496 / 10 * (((i : ℕ) + 1 : ℝ) * C.ε)) * (C.ε * X) := by ring
+      rw [e]
+      exact mul_le_mul_of_nonneg_right (by linarith) (mul_nonneg hε0 hX)
+    push_cast
+    have e2 : (1 + 31 / 10 * C.ε) * (16 * ((i : ℕ) + 1) * C.ε * X) =
+        16 * ((i : ℕ) + 1) * C.ε * X + 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) := by ring
+    have hεX := mul_nonneg hε0 hX
+    nlinarith
+
 /-- **Lemma B (local orthogonality is inherited)**: with the certificates of
 `NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
@@ -1702,7 +1844,11 @@ theorem abs_adjacentInner_le {P K B : ℝ}
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
     |C.toLanczosData.adjacentInner j| ≤
       16 * (j + 1) * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
-  sorry
+  rcases C.nonneg_of_certificate hB with hB0 | hk
+  · exact C.abs_adjacentInner_le_of_nonneg hP hK hB hB0 hj
+  · -- `k = 1` and `B < 0`: the statement is false (the right side can be negative while
+    -- `p̄₀ ≠ 0`); see `NLAlib.CGRun.abs_adjacentInner_le_of_nonneg`.
+    sorry
 
 /-- **The a posteriori backward model**: with the certificates $\Pi$, $K$ ($j < k$) and $B$
 ($j + 1 < k$) of the run,
