@@ -605,3 +605,291 @@ latter two are separate projects, the first is an open question.
 * Paige, *Accuracy of the Lanczos process for the eigenproblem and solution of equations*, SIMAX 40(4) (2019) 1371–1398.
 * Sinha, *Finite-precision symmetric Krylov methods: exact rounding examples, block Paige identities, and a variable-block Lanczos model*, arXiv:2609.08066 (2026). Abstract only.
 * Strakoš, Tichý, *On error estimation in the conjugate gradient method and why it works in finite precision computations*, ETNA 13 (2002) 56–80.
+
+---
+
+## 4. Addendum (2026-10-29): the residual gap a priori, and convergence of the updated residual
+
+Two further maintainer questions. (Q1) Greenbaum's residual-gap bounds are in terms of
+recursively computed quantities; is there an a priori bound? (Q2) Is there a proof that the
+computed (updated) residual $\hat{\mathbf r}_k\to0$? Notation as in the design note
+(`Krylov-CGRounding.md`): $\mathbf x_0=\mathbf 0$, $\mathbf r_0=\mathbf p_0=\mathbf b$,
+computed $\hat{\mathbf x}_j,\hat{\mathbf r}_j,\hat{\mathbf p}_j$, $\rho_j=\|\hat{\mathbf r}_j\|$,
+step lengths $\gamma_j$, gap $\mathbf g_j:=\mathbf b-\mathbf A\hat{\mathbf x}_j-\hat{\mathbf r}_j$,
+$\mathbf g_0=\mathbf 0$, spectrum of $\mathbf A$ in $[a,a']$, $\kappa=a'/a$, (H)
+$k^3\varepsilon\kappa^2\le10^{-5}$, $\mathbf x_\star=\mathbf A^{-1}\mathbf b$,
+$\mathbf e_j:=\mathbf x_\star-\hat{\mathbf x}_j$ (true error), $L:=\|\mathbf b\|/a$.
+
+### 4.1 Literature on the gap (full texts read unless marked)
+
+| Work | Gap statement | A priori? | Hypotheses / remarks |
+|---|---|---|---|
+| Greenbaum 1989, Thm 2 (via MeSt06 §5.4) | $\|\mathbf r_k-(\mathbf b-\mathbf A\mathbf x_k)\|\le\|\delta^r_0\|+\sum_{l\le k}(\|\delta^r_l\|+\|\mathbf A\delta^x_l\|)$: sum of the local terms | no (local terms) | first analysis of the gap |
+| Sleijpen–van der Vorst–Fokkema 1994 (via CRSTT18 (3.6)) | $\|\mathbf f_n\|\le O(\varepsilon)\|\mathbf A\|\max_{i\le n}\|\mathbf x-\mathbf x_i\|$ | no (computed errors) | Bi-CG family; the error form is the one that becomes $\le\|\mathbf x\|$ under Euclidean monotonicity |
+| Greenbaum 1997 SIMAX 18:535–551, Lemma 2.1, Thm 2.2 (TR 95-1515 Cornell; full text not machine-readable, bitmap fonts; cited via BCM26 (20)–(21), CRSTT18 (3.7), MeSt06 (5.5)) | $\|\mathbf f_n\|\le O(n\varepsilon)\|\mathbf A\|(\|\mathbf x\|+\max_{i\le n}\|\mathbf x_i\|)$; Lemma 2.1: $\sum\|\delta^x_j\|\le O(k\varepsilon)\max\|\mathbf x_j\|$, $\sum\|\delta^r_j\|\le O(nk\varepsilon)\|\mathbf A\|\max\|\mathbf x_j\|$ | **no**: $\max_j\|\mathbf x_j\|$ stays | attainable accuracy $\approx\varepsilon\|\mathbf A\|\|\mathbf x\|\max_j\|\mathbf x_j\|/\|\mathbf x\|$ *assuming* $\|\mathbf r_k\|$ falls below $\varepsilon$ (BCM26 §1: "she assumed that ... the recursively updated residual goes levels below the machine precision") |
+| Gutknecht–Strakoš 2000 (TR V-764 1997, §§1, 9) | two-term: Greenbaum's form, "the local roundoff contributions simply accumulate"; three-term: multipliers $\|\mathbf r_k\|^2/\|\mathbf r_{i-1}\|^2$ | no | "under the sole assumption that the first two recursions hold" |
+| van der Vorst–Ye 2000 (SISC 22:835–852; abstract only) | computable (a posteriori) estimates of the gap, used to trigger residual replacement | no | — |
+| Strakoš–Tichý 2002 (7.15)–(7.18) | $\|\varepsilon\mathbf f_j\|\le\varepsilon\|\mathbf A\|(\|\mathbf x\|+\max_{i\le j}\|\mathbf x_i\|)O(jc)$ | no | then *assume* "the final accuracy level has not been reached yet" |
+| Meurant–Strakoš 2006 §5.4, (5.5) | $\|\mathbf r_k-(\mathbf b-\mathbf A\mathbf x_k)\|\le\varepsilon\|\mathbf A\|\|\mathbf x\|O(k)[M_1+\max_{l\le k}\|\mathbf x_l\|/\|\mathbf x\|]$ | **heuristic a priori**: "$\|\mathbf x-\mathbf x_k\|<\|\mathbf x-\mathbf x_0\|$ implies $\|\mathbf x_k\|\le2\|\mathbf x\|+\|\mathbf x_0\|$. Using the backward-like error analysis of Greenbaum ... this upper bound holds true, to within a small error, in the finite precision CG algorithm" | not a theorem (Greenbaum's model concerns the $\mathbf A$-norm, not the Euclidean norm, and its hypotheses are not derived for HSCG). Also: "if $\|\mathbf r_k\|$ becomes of the order of the machine precision, which is often observed numerically ... but which has not yet been completely proved" |
+| Liesen–Strakoš 2013 §5.9.3 (not accessible) | survey of the above | — | — |
+| Cools et al. 2018 (SIMAX 39:426–450; ar5iv) (9)–(15) | HSCG: $\|\mathbf f_{i+1}\|\le\|\mathbf f_i\|+\varepsilon(\|\mathbf A\|\|\bar{\mathbf x}_i\|+(\mu\sqrt n+4)|\bar\alpha_i|\|\mathbf A\|\|\bar{\mathbf p}_i\|+\|\bar{\mathbf r}_i\|)$ | no (every bound in computed quantities) | $\mu$ = max nonzeros per row |
+| Carson–Rozložník–Strakoš–Tichý–Tůma 2018 §3, (3.4)–(3.7) | $\mathbf f_n=\mathbf f_0+\sum(\delta^r_i+\mathbf A\delta^x_i)$, quotes (3.6), (3.7) | no | methodology for pipelined variants |
+| Bake–Carson–Ma 2026 (arXiv 2510.11379v3; full text) Thm 1, (20)–(21) | $\|\Delta\tilde{\mathbf r}_k\|\le O(nku)\|\mathbf A\|\max_{j\le k}(\|\hat{\mathbf x}_j\|,\|\mathbf x\|)$ (Greenbaum's Lemma 2.1 and Thm 2.2 re-proved for PCG) | **no**: Thm 2 (97)–(99) and Remark 3 keep $\max_{j\le k^\star+1}(\|\hat{\mathbf x}_j\|/\|\mathbf x\|,1)$; Remark 1: "hard to construct examples at which PCG fails when $\|\mathbf x_0\|/\|\mathbf x\|=O(1)$" | $O(nu)\kappa\le1/2$; the "sufficiently many iterations" is an iteration $k^\star$ with $f(\hat{\mathbf x}_{k^\star})-f(\hat{\mathbf x}_{k^\star+1})$ small, obtained from a monotone-bounded-sequence argument (Lemma 5), so $k^\star$ is *not* a priori bounded and the bound carries $O(n(k^\star)^2u)$ |
+
+**Conclusion.** Every rigorous gap bound in the literature is a posteriori in
+$\max_j\|\hat{\mathbf x}_j\|$ (or $\max_j\|\mathbf x-\mathbf x_j\|$). The only a priori statement is
+the heuristic in MeSt06 §5.4 ($\|\mathbf x_k\|\le2\|\mathbf x\|+\|\mathbf x_0\|$ "to within a small
+error"), justified by Greenbaum's backward-like analysis, which is itself not derived from the
+rounding model for HSCG. Nobody bounds $\max_j\|\hat{\mathbf x}_j\|$ in terms of $\kappa,\|\mathbf x\|$
+from the standard model.
+
+### 4.2 Derivation: an a priori gap bound from the backward model
+
+The gap recursion (`CGRun.norm_sub_mulVec_x_sub_r_le`, a posteriori) is
+$$\mathbf g_{j+1}=\mathbf g_j+\gamma_j\mathbf e^s_j-\mathbf A\mathbf e^x_j-\mathbf e^r_j,\qquad
+\|\mathbf g_k\|\le\varepsilon\sum_{j<k}\bigl(a'(\|\hat{\mathbf x}_j\|+4\gamma_j\|\hat{\mathbf p}_j\|)+\rho_j\bigr)$$
+(the exact count is $a'\|\hat{\mathbf x}_j\|+3.01a'\gamma_j\|\hat{\mathbf p}_j\|+\rho_j$; the
+scaffold's 4 is kept). The task is to bound $\|\hat{\mathbf x}_j\|$, $\gamma_j\|\hat{\mathbf p}_j\|$,
+$\rho_j$ a priori. The crude route of the design note §9.3 ($\gamma_j\le2/a$,
+$\|\hat{\mathbf p}_j\|\le3.2\kappa\|\mathbf b\|$) gives $O(k^2\varepsilon\kappa^2\|\mathbf b\|)$. The route
+below gives $O(k\varepsilon\kappa\|\mathbf b\|)$ and $O(k\varepsilon\sqrt\kappa\,a'\|\mathbf x_\star\|)$, by
+controlling the **true** error $\|\mathbf e_j\|_{\mathbf A}$ of the computed run jointly with the gap
+(the one-sided half of ER3, design note §9.4; no exact decrement identity is needed).
+
+**Inputs (all under (H), all in the skeleton or exact arithmetic).** (i) Certificates:
+$\|\hat{\mathbf p}_j\|\le1.82\sqrt\kappa\rho_j$ (`norm_p_sq_le`), $K\le1.05\kappa$,
+$\delta_j\le(1+4\varepsilon)\rho_{j+1}^2/\rho_j^2$ (`abs_δ_sub_le`), $\rho_j/\rho_i\le\sqrt{3\kappa}$
+(`ρ_le`). (ii) Line search: $|\tau_{j}|=|\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_{j+1}|\le5(j+1)\varepsilon(1+\Pi+K)\rho_j^2\le19.5k\varepsilon\kappa\rho_j^2\le2\cdot10^{-4}\rho_j^2$
+(`abs_p_dotProduct_r_succ_le`; (H) gives $k\varepsilon\kappa\le10^{-5}$). (iii) The model:
+$\sum_{i\le j}\gamma_i\rho_i^2=\|\tilde{\mathbf x}_\star\|^2_{\tilde H}-\|\tilde{\mathbf e}_{j+1}\|^2_{\tilde H}\le\|\tilde{\mathbf x}_\star\|^2_{\tilde H}=\tilde{\mathbf b}^{\mathsf T}\tilde{\mathbf H}^{-1}\tilde{\mathbf b}\le2\|\mathbf b\|^2/a$
+(`quadForm_backwardH_sub_cgIterate_eq`, `spectrum_backwardH_subset_Icc`; **not** ER1c, whose
+error $2\|\mathbf b\|^2c/a^2$ is only $O(k^3\varepsilon\kappa^3)$ relative and useless here).
+
+**Lemma G1 (descent).** $\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_j\ge(1-3\cdot10^{-4})\rho_j^2$.
+From $\hat{\mathbf p}_j=\hat{\mathbf r}_j+\delta_{j-1}\hat{\mathbf p}_{j-1}+\mathbf e^p_j$:
+$\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_j=\rho_j^2+\delta_{j-1}\tau_{j-1}+\mathbf e^{p\mathsf T}_j\hat{\mathbf r}_j$,
+$|\delta_{j-1}\tau_{j-1}|\le(1+4\varepsilon)\cdot2\cdot10^{-4}\rho_j^2$, and
+$|\mathbf e^{p\mathsf T}_j\hat{\mathbf r}_j|\le\varepsilon(\rho_j+\delta_{j-1}\|\hat{\mathbf p}_{j-1}\|)\rho_j\le\varepsilon(1+1.82\cdot1.74(1+4\varepsilon)\kappa)\rho_j^2\le4.2\varepsilon\kappa\rho_j^2$.
+
+**Lemma G2 (step).** $\gamma_j^2\,\hat{\mathbf p}_j^{\mathsf T}\mathbf A\hat{\mathbf p}_j\le(1+4.2\varepsilon\kappa)\gamma_j\rho_j^2$:
+$\hat{\mathbf p}^{\mathsf T}\mathbf A\hat{\mathbf p}=\mu_j-e^\mu_j-\hat{\mathbf p}^{\mathsf T}\mathbf e^s\le\mu_j(1+2.1\varepsilon\kappa)$ and
+$\gamma_j\mu_j=\nu_j(1+e^\gamma_j)\le\rho_j^2(1+2.01\varepsilon)$. Hence
+$\|\gamma_j\hat{\mathbf p}_j\|_{\mathbf A}^2\le(1+4.2\varepsilon\kappa)\gamma_j\rho_j^2$ and, with (iii),
+$$\gamma_j\|\hat{\mathbf p}_j\|\le\|\gamma_j\hat{\mathbf p}_j\|_{\mathbf A}/\sqrt a\le1.42\,L .$$
+
+**Lemma G3 (one-step error inequality).** With $\mathbf w:=\mathbf e_j-\gamma_j\hat{\mathbf p}_j$,
+$\mathbf e_{j+1}=\mathbf w-\mathbf e^x_j$ and $\mathbf A\mathbf e_j=\hat{\mathbf r}_j+\mathbf g_j$:
+$$\|\mathbf w\|^2_{\mathbf A}=\|\mathbf e_j\|^2_{\mathbf A}-2\gamma_j\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_j-2\gamma_j\hat{\mathbf p}_j^{\mathsf T}\mathbf g_j+\gamma_j^2\hat{\mathbf p}_j^{\mathsf T}\mathbf A\hat{\mathbf p}_j
+\le\|\mathbf e_j\|^2_{\mathbf A}-0.999\,\gamma_j\rho_j^2+2\gamma_j\|\hat{\mathbf p}_j\|\|\mathbf g_j\|,$$
+$$\|\mathbf e_{j+1}\|_{\mathbf A}\le\|\mathbf w\|_{\mathbf A}+\sqrt{a'}\,\|\mathbf e^x_j\|,\qquad
+\|\mathbf e^x_j\|\le\varepsilon(\|\hat{\mathbf x}_j\|+1.42L).$$
+(G1, G2 make the bracket $-2\hat{\mathbf p}^{\mathsf T}\hat{\mathbf r}\gamma+\gamma^2\hat{\mathbf p}^{\mathsf T}\mathbf A\hat{\mathbf p}\le-0.999\gamma\rho^2\le0$.)
+
+**Lemma G4 (joint induction).** With $E_j:=\|\mathbf e_j\|_{\mathbf A}$, $G_j:=\|\mathbf g_j\|$,
+$\|\hat{\mathbf x}_j\|\le\|\mathbf x_\star\|+E_j/\sqrt a\le L+E_j/\sqrt a$ and $\rho_j\le\|\mathbf A\mathbf e_j\|+G_j\le\sqrt{a'}E_j+G_j$:
+$$\text{P}(j):\quad G_j\le10\,j\,\varepsilon\,a'L,\qquad E_j^2\le\|\mathbf x_\star\|^2_{\mathbf A}+30\,j^2\varepsilon\kappa\,aL^2 .$$
+P(0): $G_0=0$, $E_0=\|\mathbf x_\star\|_{\mathbf A}$. Step: P($j$) gives $E_j\le1.0002\sqrt aL$
+($\|\mathbf x_\star\|_{\mathbf A}^2\le aL^2$, $j^2\varepsilon\kappa\le10^{-5}$), $\|\hat{\mathbf x}_j\|\le2.0002L$,
+$\sqrt{a'}\|\mathbf e^x_j\|\le3.43\sqrt{a'}\varepsilon L$; G3:
+$E_{j+1}^2\le E_j^2+28.4j\varepsilon\kappa aL^2+6.9\varepsilon\sqrt\kappa aL^2+12a'\varepsilon^2L^2\le E_j^2+(28.4j+6.9)\varepsilon\kappa aL^2$,
+and $\sum_{i<j+1}(28.4i+6.9)\le14.2(j+1)^2\le30(j+1)^2$; gap recursion:
+$G_{j+1}\le(1+\varepsilon)G_j+\varepsilon a'L(2.0002+5.68+1.0003/\sqrt\kappa)\le(1+\varepsilon)10j\varepsilon a'L+8.69\varepsilon a'L\le10(j+1)\varepsilon a'L$
+(using $k\varepsilon\le10^{-2}$). No circularity: step $j$ uses $E_j,G_j$ and the model-derived
+$\gamma_j\|\hat{\mathbf p}_j\|\le1.42L$ only. Relative to $\|\mathbf x_\star\|^2_{\mathbf A}\ge aL^2/\kappa$ the
+additive term is $30j^2\varepsilon\kappa^2\le3\cdot10^{-4}$, so $E_j\le1.0002\|\mathbf x_\star\|_{\mathbf A}$.
+
+**Theorem (a priori residual gap; proposed).** Under (H), with
+$M:=\|\mathbf x_\star\|+\|\mathbf x_\star\|_{\mathbf A}/\sqrt a$ (the exact-arithmetic bound on
+$\max_j\|\mathbf x_j\|$ through the $\mathbf A$-norm), for $j\le k$:
+$$\|\hat{\mathbf x}_j\|\le1.001\,M,\qquad \|\mathbf x_\star-\hat{\mathbf x}_j\|_{\mathbf A}\le1.001\,\|\mathbf x_\star\|_{\mathbf A},\qquad
+\|\mathbf b-\mathbf A\hat{\mathbf x}_k-\hat{\mathbf r}_k\|\le11\,k\,\varepsilon\,a'M .$$
+Since $M\le(1+\sqrt\kappa)\|\mathbf x_\star\|$ and $M\le2L$, with the direct constants of the two
+specialisations ($\gamma_j\|\hat{\mathbf p}_j\|\le1.02(\|\hat{\mathbf x}_j\|+\|\hat{\mathbf x}_{j+1}\|)$ in the
+first, $\le1.42L$ in the second):
+$$\boxed{\ \|\mathbf g_k\|\le20\,k\,\varepsilon\sqrt{\kappa}\,a'\|\mathbf x_\star\|\ },\qquad
+\boxed{\ \|\mathbf g_k\|\le9\,k\,\varepsilon\,\kappa\,\|\mathbf b\|\ }.$$
+Corollaries: true residual $\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le\rho_k+\|\mathbf g_k\|\le2\sqrt{\kappa_c}\,q^k\|\mathbf b\|+11k\varepsilon a'M$
+($\kappa_c=2\kappa+1$, `ρ_le_chebyshev`); forward error
+$\|\mathbf x_\star-\hat{\mathbf x}_k\|\le(\rho_k+\|\mathbf g_k\|)/a$; and the one-sided ER3
+$\|\mathbf x_\star-\hat{\mathbf x}_k\|^2_{\mathbf A}\le\|\mathbf x_\star\|^2_{\mathbf A}-0.999\sum_{j<k}\gamma_j\rho_j^2+30k^2\varepsilon\kappa\|\mathbf b\|^2/a$
+(the computed estimator $\nu_{0,k}$ is a lower bound for the computed run's error decrease,
+up to a relative $3\cdot10^{-4}$). Constants unoptimised, to be re-derived in Lean (the margins
+1.42 → 1.5, 8.78 → 10, 14.2 → 30 are deliberate).
+
+### 4.3 Is $\sqrt\kappa$ optimal? Comparison with the literature
+
+* **A posteriori comparison.** Greenbaum/ST02: $\|\mathbf g_k\|\le O(k\varepsilon)\|\mathbf A\|(\|\mathbf x\|+\max_j\|\hat{\mathbf x}_j\|)$.
+  Our theorem is exactly this with $\max_j\|\hat{\mathbf x}_j\|\le1.001(\|\mathbf x_\star\|+\|\mathbf x_\star\|_{\mathbf A}/\sqrt a)$
+  proved, and with the $\rho_j$ term also absorbed ($\rho_j\le1.001a'\|\mathbf x_\star\|+\|\mathbf g_j\|$).
+  A sharper a posteriori form in $\max_j\|\hat{\mathbf x}_j\|$ alone,
+  $\|\mathbf g_k\|\le\varepsilon\sum_{j<k}(9.2a'\max_{i\le k}\|\hat{\mathbf x}_i\|+\rho_j)$, follows from
+  $\gamma_j\hat{\mathbf p}_j=\hat{\mathbf x}_{j+1}-\hat{\mathbf x}_j-\mathbf e^x_j$ and is worth adding to `CGRun.lean`.
+* **Folklore** ("attainable accuracy $\approx\varepsilon\|\mathbf A\|\|\mathbf x\|$", backward error $O(\varepsilon)$,
+  forward error $O(\varepsilon\kappa)$) corresponds to $\max_j\|\hat{\mathbf x}_j\|\le2\|\mathbf x\|$, i.e. to the
+  Euclidean monotonicity $\|\mathbf x-\mathbf x_{j+1}\|<\|\mathbf x-\mathbf x_j\|$ of exact CG
+  (Hestenes–Stiefel Thm 6:3). Our bound is $\sqrt\kappa$ worse: $\|\mathbf g_k\|/(a'\|\mathbf x_\star\|)\le20k\varepsilon\sqrt\kappa$,
+  forward error $\lesssim k\varepsilon\kappa^{3/2}\|\mathbf x_\star\|$ at stagnation. The $\sqrt\kappa$ is
+  the norm-equivalence price of using $\mathbf A$-norm monotonicity (which we can prove for the
+  computed run, G3–G4) instead of Euclidean monotonicity (which we cannot: its exact proof uses
+  $\mathbf e_j=\sum_{i\ge j}\gamma_i\mathbf p_i$ and $\mathbf p_i^{\mathsf T}\mathbf p_j>0$ for *all* future
+  directions, i.e. global conjugacy; no finite-precision analogue is known — this is exactly
+  what MeSt06 §5.4 asserts without proof).
+* **The $\|\mathbf b\|$-form** $9k\varepsilon\kappa\|\mathbf b\|$ is $\kappa$-free relative to the
+  natural scale $\|\mathbf b\|/a$ of $\|\hat{\mathbf x}_j\|$, and sharper than the $\|\mathbf x\|$-form when
+  $\mathbf b$ is rich in the small eigenvectors ($\|\mathbf b\|\approx a\|\mathbf x_\star\|$); neither form
+  dominates, which is why the $M$-form is the recommended headline.
+* **Is $\sqrt\kappa$ attained?** Not known. $\max_j\|\hat{\mathbf x}_j\|\ge(1+c\sqrt\kappa)\|\mathbf x_\star\|$
+  would require a computed run whose Euclidean error grows while its $\mathbf A$-norm error
+  decreases; exact CG forbids it, the model's exact CG forbids it for $\tilde{\mathbf x}_j$, and
+  the relation between $\hat{\mathbf x}_j$ and $\tilde{\mathbf x}_j$ is not direct (the model's
+  Lanczos vectors are the dilated $\hat{\mathbf V}$, not $\bar{\mathbf V}$). A $\kappa$-free a priori
+  gap bound is a well-posed open question; the ingredient would be a finite-precision Euclidean
+  monotonicity (Greenbaum 1989-type result for the Euclidean norm), not available in the literature.
+
+### 4.4 Recommended Lean statements (Q1)
+
+All in `CGBackward.lean` (they need the model), hypotheses as the headlines
+(`ha`, `hs`, `hsmall`, plus `hx : C.A *ᵥ xs = C.b`); ≈ 350 lines; nothing in `CGRun.lean`
+changes except the optional sharper a posteriori form.
+
+```lean
+theorem CGRun.p_dotProduct_r_ge (H) (hj : j < k) :              -- G1
+    (1 - 3 / 10 ^ 4) * C.ρ j ^ 2 ≤ C.p j ⬝ᵥ C.r j
+theorem CGRun.γ_sq_mul_dotProduct_mulVec_le (H) (hj : j < k) :  -- G2
+    C.γ j ^ 2 * (C.p j ⬝ᵥ (C.A *ᵥ C.p j)) ≤ (1 + 5 * C.ε * (a'/a)) * (C.γ j * C.ρ j ^ 2)
+theorem CGRun.γ_mul_norm_p_le (H) (hj : j < k) :                -- G2′, via the model
+    C.γ j * ‖toLp 2 (C.p j)‖ ≤ 3/2 * ‖toLp 2 C.b‖ / a
+theorem CGRun.quadForm_sub_x_succ_le (H) (hx) (hj : j < k) :    -- G3
+    quadForm C.A (xs - C.x (j+1)) ≤
+      (√(quadForm C.A (xs - C.x j) - 999/1000 * C.γ j * C.ρ j ^ 2
+          + 2 * C.γ j * ‖toLp 2 (C.p j)‖ * ‖toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖)
+        + √a' * ‖toLp 2 (C.ex j)‖) ^ 2
+private theorem CGRun.gapErrorInduction (H) (hx) (hj : j ≤ k) : -- G4, Nat.rec
+    ‖toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤ 10 * j * C.ε * a' * (‖toLp 2 C.b‖ / a) ∧
+    quadForm C.A (xs - C.x j) ≤ quadForm C.A xs + 30 * j ^ 2 * C.ε * (a'/a) * ‖toLp 2 C.b‖ ^ 2 / a
+theorem CGRun.quadForm_sub_x_le (H) (hx) (hj : j ≤ k) :         -- computed A-norm error
+    quadForm C.A (xs - C.x j) ≤ (1 + 1/1000) * quadForm C.A xs
+theorem CGRun.norm_x_le (H) (hx) (hj : j ≤ k) :                 -- iterates a priori
+    ‖toLp 2 (C.x j)‖ ≤ (1 + 1/1000) * (‖toLp 2 xs‖ + √(quadForm C.A xs) / √a)
+theorem CGRun.norm_gap_le (H) (hx) :                            -- headline
+    ‖toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
+      11 * k * C.ε * a' * (‖toLp 2 xs‖ + √(quadForm C.A xs) / √a)
+theorem CGRun.norm_gap_le_sqrt (H) (hx) : … ≤ 20 * k * C.ε * √(a'/a) * a' * ‖toLp 2 xs‖
+theorem CGRun.norm_gap_le_b (H) : … ≤ 9 * k * C.ε * (a'/a) * ‖toLp 2 C.b‖
+theorem CGRun.norm_true_residual_le (H) (hx) :                  -- Chebyshev + gap
+    ‖toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤ 2 * √κ_c * q ^ k * ‖toLp 2 C.b‖ + 11 * k * C.ε * a' * M
+theorem CGRun.quadForm_sub_x_le_sub_sum (H) (hx) :              -- one-sided ER3
+    quadForm C.A (xs - C.x k) ≤ quadForm C.A xs - 999/1000 * ∑ j < k, C.γ j * C.ρ j ^ 2
+      + 30 * k ^ 2 * C.ε * (a'/a) * ‖toLp 2 C.b‖ ^ 2 / a
+```
+
+Slots: after `ρ_le_chebyshev` and the ER1 block of §9.2 (G2′ needs
+`quadForm_backwardH_sub_cgIterate_eq`). `norm_gap_le_b` does not need `hx`. Risky step: none
+(all algebra is one step long); the bookkeeping of G4 is the only induction and it is on
+$j$ with explicit polynomials. Program level: `HasCGBackwardModel` gains the gap clause.
+
+### 4.5 (Q2) Does the updated residual converge to zero?
+
+**Literature.** No proof exists for HSCG in a rounding model. MeSt06 §5.4: convergence of
+recursive residuals "was analysed by Woźniakowski (1978, 1980) and Bollen (1984). Although some
+assumptions used there cannot in general be satisfied by the CG recurrence ..."; "if $\|\mathbf r_k\|$
+becomes of the order of the machine precision, which is often observed numerically for large
+$k$ but which has not yet been completely proved in the given literature". Greenbaum 1997
+*assumes* it (BCM26 §1). BCM26 Lemma 5 proves only the existence of some $k^\star$ with a small
+decrement $f(\hat{\mathbf x}_{k^\star})-f(\hat{\mathbf x}_{k^\star+1})$ (either $f$ increases at some
+step, or it is monotone and bounded below); $k^\star$ is not bounded a priori and their
+residual bound (97) grows like $(k^\star)^2$. Remark 3 there: Greenbaum 1989 "implicitly
+provides $k^\star\le n^2$" for $\sqrt u$ accuracy, under her (unverified) hypotheses. GLC21:
+the analysis "is of interest only as long as these updated vectors resemble the true
+residuals". Druskin–Knizhnerman-type $k$-uniform results exist for Lanczos-based solvers, not
+for HSCG.
+
+**Obstruction (new; exact algebra, sanity-checked).** In the standard model the statement
+"$\rho_k\to0$ for every admissible run" is **false** without a hypothesis of the form
+$k\varepsilon\le c$. Take the admissible rounding pattern $\theta_j=e^\gamma_j=\varepsilon$ for all
+$j$ (relative error $+\varepsilon$ in $\mathrm{fl}(\hat{\mathbf r}^{\mathsf T}\hat{\mathbf r})$ and in the
+division), every other operation exact. Then $\delta_j=\rho_{j+1}^2/\rho_j^2$ exactly, the gap is
+$\mathbf 0$, and the run is exact CG with every step length multiplied by $c:=(1+\varepsilon)^2$
+("over-relaxed CG"). With $t'_j:=\delta_{j-1}\hat{\mathbf p}_{j-1}^{\mathsf T}\hat{\mathbf r}_j/\rho_j^2$:
+$\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_j=\rho_j^2(1+t'_j)$, $\hat{\mathbf p}_j^{\mathsf T}\hat{\mathbf r}_{j+1}=\rho_j^2(1+t'_j-c)$,
+hence $t'_{j+1}=t'_j-(c-1)$, $t'_j=-j(c-1)$ **exactly** (the line-search defect of Lemma B′
+drifts linearly: it is inherited with multiplier $\delta_{j-1}\rho_{j-1}^2/\rho_j^2=1$ and never
+damped — the mechanism behind Strakoš–Tichý (9.6)), and
+$$\|\mathbf e_j\|^2_{\mathbf A}-\|\mathbf e_{j+1}\|^2_{\mathbf A}=\gamma_j\rho_j^2\,\bigl[\,1-(2j+1)(c-1)\,\bigr].$$
+For $j>j_1:=\tfrac12\bigl(\tfrac1{c-1}-1\bigr)\approx\tfrac1{4\varepsilon}$ the $\mathbf A$-norm error
+*increases* at every step, so $\rho_j=\|\mathbf A\mathbf e_j\|\ge\sqrt a\|\mathbf e_j\|_{\mathbf A}\ge\sqrt a\|\mathbf e_{j_1}\|_{\mathbf A}>0$
+for all $j\ge j_1$ (no breakdown as long as $\hat{\mathbf p}_j\ne\mathbf 0$, generic). The obstruction is
+independent of $\kappa$ and $n$. Sanity check (`/tmp/claude-1000/-home-ubuntu/a97acf5f-70ef-4a21-ba58-41a74c4f1ff9/scratchpad/overrelax.py`, session scratchpad, 120-digit decimal,
+$n=4$, $\kappa=20$, $\varepsilon=10^{-3}$, $j_1=249.4$): $t'_j=-j(c-1)$ to all digits, the
+$\mathbf A$-norm error decreases through $j=249$ (factor $0.9973$), increases from $j=250$ (factor
+$1.0052$), $\rho_j$ falls to $7\cdot10^{-47}$ and climbs back to $5\cdot10^{59}$ by $j=699$; the
+normalised consecutive-residual inner product (Lemma B's $\bar p_j/\|\mathbf A\|$) also drifts
+linearly, $\approx-0.3\,j\varepsilon$. Consequences: (1) every convergence theorem for HSCG in
+the standard model must carry $k\varepsilon\le c$ with $c<1/4$ — `CGRun.k_mul_ε_le` ($k\varepsilon\le1/100$)
+is of the right type and excludes the instance; (2) a **$k$-uniform backward model is impossible**
+in the worst case: Greenbaum's hypothesis $|\bar p_j|\le\epsilon\|\mathbf A\|$ for all $j$ fails
+(the defect reaches $O(\|\mathbf A\|)$ at $j\sim1/\varepsilon$), which answers option (b); the
+$\sqrt j\,\varepsilon$ growth seen in IEEE runs is a random-walk effect, not a theorem.
+
+**Option (a), windows/restarts.** Re-basing the analysis at step $j_0$ with data
+$(\hat{\mathbf x}_{j_0},\hat{\mathbf r}_{j_0},\hat{\mathbf p}_{j_0})$ does *not* work for plain HSCG: the
+normalised-residual three-term recurrence at step $j_0$ involves $\hat{\mathbf r}_{j_0-1}$ (through
+$\hat{\mathbf p}_{j_0}=\hat{\mathbf r}_{j_0}+\delta\hat{\mathbf p}_{j_0-1}$), so the window's data are a
+Lanczos-type recurrence with *two* prescribed starting vectors; the trailing block of $T_k$ is
+not the Lanczos matrix of any single start, and the missing first recurrence would enter the
+backward perturbation at size $\beta_{j_0}\approx\|\mathbf A\|$. It does work for the **restarted
+program** ($\hat{\mathbf p}\leftarrow\hat{\mathbf r}$ every $k_0$ steps, no residual recomputation):
+each window is a `CGRun` with $\mathbf b':=\hat{\mathbf r}_{j_0}$, $\mathbf x'_0=\mathbf 0$, so
+`ρ_le_chebyshev` gives $\rho_{j_0+k_0}\le2\sqrt{\kappa_c}q^{k_0}\rho_{j_0}\le\tfrac12\rho_{j_0}$ once
+$k_0\ge\tfrac12(\sqrt{\kappa_c}+1)\ln(4\sqrt{\kappa_c})$, and $\rho_{mk_0}\le2^{-m}\|\mathbf b\|$ for
+all $m$ — $k$-uniform geometric convergence of the updated residual, with (H) needed only for
+$k_0$. Range with the current constants: $k_0\le(10^{-5}/(\varepsilon\kappa^2))^{1/3}$ forces
+$\kappa\lesssim40$ ($\varepsilon=10^{-12}$) to $\kappa\lesssim70$ ($\varepsilon=10^{-13}$). Cost: the
+window's `CGRun` needs the iterate fields split off (`norm_ex_le` refers to the unshifted
+$\hat{\mathbf x}$; the model never uses `x`, `ex`), ≈ 200 lines; the gap then accumulates across
+windows by §4.2 applied window-wise. This is a different (legitimate) program, not HSCG.
+
+**What is provable for plain HSCG.** (i) Now: `ρ_le_chebyshev`, $\rho_k\le2\sqrt{\kappa_c}q^k\|\mathbf b\|$
+for $k\le K_H:=(10^{-5}/(\varepsilon\kappa^2))^{1/3}$ — a windowed "goes to zero" (for $\kappa=10$,
+$\varepsilon=10^{-12}$: $K_H=46$, reduction $q^{46}\approx10^{-9}$). (ii) A descent-type extension
+without the Lanczos model: G3 shows $\|\mathbf e_j\|_{\mathbf A}$ decreases by $\ge0.999\gamma_j\rho_j^2\ge\rho_j^2/(1.06a'\Pi^2)\ge\|\mathbf e_j\|^2_{\mathbf A}/(1.06\kappa\Pi^2)$
+per step while the line-search defect stays $\le1/4$ and the gap is below $\rho_j$; this gives
+$\rho_j\to$ gap level at the steepest-descent-like rate $(1-1/(3.5\kappa^2))^{j/2}$ — valid up to
+$k\lesssim1/(C\varepsilon\kappa)$ if $\Pi^2\le3.3\kappa$ were known there, but $\Pi$ itself comes
+from the model and (H). So the honest frontier is: CG-rate convergence for $k\le K_H$;
+nothing for $K_H<k<1/(4\varepsilon)$ (open: how far (H) can be relaxed towards $k\varepsilon\le c$;
+the $\kappa^2$ in (H) is intrinsic to the model, §7, the $k^3$ is the backward factor);
+non-convergence possible for $k\gtrsim1/(4\varepsilon)$.
+
+**Recommended statements (Q2).**
+
+```lean
+-- exact arithmetic, new def: CG with step lengths scaled by c (the admissible worst case)
+theorem overRelaxedCG.quadForm_sub_sub_quadForm_sub_succ_eq (hA : A.PosDef) (hc : 1 < c) (j) :
+    quadForm A (xs - x j) - quadForm A (xs - x (j+1)) =
+      cgAlphaScaled j * ‖r j‖ ^ 2 * (1 - (2 * j + 1) * (c - 1))
+theorem overRelaxedCG.norm_r_ge (hA) (hc) (hj : j₁ ≤ j) (hp : ∀ i ≤ j, p i ≠ 0) :
+    √a * √(quadForm A (xs - x j₁)) ≤ ‖r j‖                   -- no convergence past j₁
+theorem overRelaxedCG.isCGRun : ∀ k, k * ε ≤ 1/100 → … CGRun …  -- admissibility (θ = eγ = ε)
+-- windowed convergence of plain HSCG: exists, `CGRun.ρ_le_chebyshev`
+-- restarted program (maintainer decision; different program):
+theorem CGRestartRun.ρ_le_pow_half (H for k₀) (hk₀ : 2 * √κ_c * q ^ k₀ ≤ 1/2) (m) :
+    ρ (m * k₀) ≤ (1/2) ^ m * ‖b‖
+```
+
+The first two are ≈ 150 lines of exact algebra and settle the maintainer's question in the
+negative for the unconditional form; the restart theorem is the positive form available now
+(small $\kappa$); the unconditional HSCG statement for $k$ up to $c/(\varepsilon\,\mathrm{poly}(\kappa))$ is
+open and would need either a backward model with perturbation $O(\mathrm{poly}(k)\varepsilon\kappa\|\mathbf A\|)$
+valid under $k\varepsilon\,\mathrm{poly}(\kappa)\le c$ (i.e. removing the $\lambda_{\min}$-positivity
+requirement $c_k\le a/2$ from the model, which is what forces $\kappa^2$ and $k^3$) or a
+model-free descent argument with an a priori $\Pi$.
+
+### 4.6 Additional references
+
+* Bake, Carson, Ma, arXiv:2510.11379v3 (2026): now read in full (Thm 1, Lemmas 4–6, Thm 2, Remarks 1–3).
+* Cools, Yetkin, Agullo, Giraud, Vanroose, *Analyzing the effect of local rounding error propagation on the maximal attainable accuracy of the pipelined conjugate gradient method*, SIMAX 39(1) (2018) 426–450; arXiv:1601.07068.
+* Greenbaum, *Estimating the attainable accuracy of recursively computed residual methods*, Cornell CS TR 95-1515 (1995) = SIMAX 18(3) (1997) 535–551. PDF has bitmap fonts; Lemma 2.1 and Theorem 2.2 cited through Bake–Carson–Ma (20)–(21) and Carson et al. 2018 (3.7).
+* Sleijpen, van der Vorst, Fokkema, *BiCGstab($\ell$) and other hybrid Bi-CG methods*, Numer. Algorithms 7 (1994) 75–109 (via Carson et al. 2018 (3.6)); Sleijpen, van der Vorst, *Reliable updated residuals in hybrid Bi-CG methods*, Computing 56 (1996) 141–163.
+* van der Vorst, Ye, *Residual replacement strategies for Krylov subspace iterative methods for the convergence of true residuals*, SISC 22(3) (2000) 835–852. Abstract only.
+* Woźniakowski, *Roundoff-error analysis of a new class of conjugate-gradient algorithms*, LAA 29 (1980) 507–529; Bollen, *Numerical stability of descent methods for solving linear equations*, Numer. Math. 43 (1984) 361–377 (both via Meurant–Strakoš 2006 §5.4).
