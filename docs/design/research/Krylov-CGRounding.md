@@ -281,7 +281,8 @@ Certificates (hypotheses, computable from the run): $\|\mathbf p_j\|\le\Pi\rho_j
 $\|\mathbf A\|_2\gamma_j\|\mathbf p_j\|^2\le K\rho_j^2$ ($j<k$); $\beta_{j+1}\le B$ and $\delta_j\le B\gamma_j$
 ($j+1<k$: step $j$ uses $\beta_j$ and $\delta_{j-1}/\gamma_{j-1}$ only; $\beta_{j+1}$ enters $\bar{\mathbf f}_j$
 through the exact cancellation $\beta_{j+1}\bar{\mathbf v}_{j+2}=(-1)^{j+1}\mathbf r_{j+1}/(\gamma_j\rho_j)$). In
-Lean: `hB : ∀ j, j + 1 < k → lanczosβ (j+1) ≤ B ∧ δ j ≤ B * γ j`.
+Lean: `hB : ∀ j, j + 1 < k → lanczosβ (j+1) ≤ B ∧ δ j ≤ B * γ j`. With it the three statements below
+assume `hB0 : 0 ≤ B` (automatic for $k\ge2$ from $0<\beta_1\le B$; needed for $k=1$, see §13).
 
 * **Lemma A** `CGRun.norm_recurrenceError_le`: $\|\bar{\mathbf f}_j\|\le8\varepsilon(\|\mathbf A\|_2(1+\Pi)^2+B)$.
   The report's $\varepsilon\|\mathbf A\|(5.1\pi_j+4.1)+\varepsilon(1/\gamma_j+4.2\beta_j)+3.2\varepsilon\delta_{j-1}/\gamma_{j-1}$,
@@ -492,7 +493,7 @@ $\mathbf x$, $\mathbf e^x$ are already in place, so no refactor.
 |---|---|---|---|---|
 | 1 | `Krylov/FinitePrecision/NormalizedBackward.lean` | §4 refactor (→ `LanczosData.lean`, `Backward*.lean`) | 10 | 300 (mostly moves) |
 | 2 | `Krylov/LinearSystems/CGTridiagonal.lean` | §5 exact layer | 12 | 680 |
-| 3 | `Krylov/FinitePrecision/CGRun.lean` | §3, §6, gap | 15 | 1300 |
+| 3 | `Krylov/FinitePrecision/CGRun.lean`, `CGRunModel.lean` | §3, §6, gap | 15 | 1300 |
 | 4 | `Krylov/FinitePrecision/CGBackward.lean` | §7–§9.2 | 19 | 1050 |
 | 5 | `Krylov/LinearSystems/CGProgramTree.lean` | §1 | 1 | 650 |
 | 6 | `Krylov/LinearSystems/CGRounding.lean` | §2 (+ step/run files like `LanczosStep`/`LanczosProgramRun`) | 4 | 1400 |
@@ -555,6 +556,16 @@ everything in the table. Bibliography to add: `StrakosTichy2002`, `MeurantStrako
 | L5 literals; underflow | underflow caveat added (`ν_eq_zero_iff`, bridge docstring). Named constants (`cgBackwardFactor`, `cgSmallness` in `docs/constants.toml`) deferred to integration: research branch, `check_constants` passes. |
 | §B Kantorovich / $1/\gamma_j\le1.02\|\mathbf A\|$ | **not done**, recorded as future work (§7). |
 | CG1–CG7 | approved (a); CG1 fallback (b) as in §1.3. |
+
+## 13. Statement changes during the proofs (batches 1–4)
+
+| statement | change | reason |
+|---|---|---|
+| `CGRun.norm_recurrenceError_le` (Lemma A), `CGRun.abs_adjacentInner_le` (Lemma B), `CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates` | **hypothesis `hB0 : 0 ≤ B` added** (names kept; the interim `…_of_nonneg` variants removed) | false as stated for $k=1$, $B<0$: `hB` is vacuous and the right side is negative for $B$ negative enough, while the left side is positive (counterexample $n=1$, $\mathbf A=\mathbf b=1$, $\varepsilon=1/100$, $\mathbf e^r_0=0.005$, $\Pi=1$, $B=-100$). For $k\ge2$, $0<\beta_1\le B$ gives $B\ge0$, so nothing is lost. Only downstream use: the a priori engine in `CGBackward.lean`, where $B=1.6a'>0$. |
+| `Matrix.PosDef.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq`, `Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq` | unused hypothesis `hk : 0 < k` removed | generalisation (the $k=0$ case is vacuous or $
+ho_0=\|\mathbf b\|$) |
+| `Matrix.PosDef.norm_cgState_p_sq_eq` | unused instance `[DecidableEq n]` omitted | linter; no change of meaning |
+| `CGRun.lean` | split: Lemma B, the a posteriori model, the next division and the residual gap moved to `CGRunModel.lean` (F10); helper lemmas of `CGRun` used across the seam (`ρ_pos`, `δ_bounds`, `norm_s_le`, …) made public | file size |
 
 ## References
 

@@ -788,7 +788,7 @@ $\mathbf{L}\mathbf{D}\mathbf{L}^{\mathsf{T}}$ factorisation: the pivots of
 `NLAlib.cgTridiagonal` are read off by elimination, $D_0 = T_{00}$,
 $D_{i+1} = T_{i+1,i+1} - T_{i+1,i}^2/D_i$. Difficulty: moderate. -/
 theorem _root_.Matrix.PosDef.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq
-    {A : Matrix n n ℝ} (hA : A.PosDef) {b : n → ℝ} {γ ρ : ℕ → ℝ} {k : ℕ} (hk : 0 < k)
+    {A : Matrix n n ℝ} (hA : A.PosDef) {b : n → ℝ} {γ ρ : ℕ → ℝ} {k : ℕ}
     (hT : lanczosTridiagonal A b k = cgTridiagonal γ ρ k)
     (hβ : (lanczosState A b k).beta = ρ k / (γ (k - 1) * ρ (k - 1)))
     (hγ : ∀ j < k, 0 < γ j) (hρ : ∀ j < k, 0 < ρ j) (hρ0 : ρ 0 = ‖WithLp.toLp 2 b‖)
@@ -803,7 +803,7 @@ $\|\mathbf{r}_j\| = \rho_j$ for $j \le k$ (the last one from $\beta_k$).
 Proof: the same induction; $\|\mathbf{r}_{j+1}\| = \gamma_j\rho_j\beta_{j+1}$ in exact CG.
 Difficulty: moderate (shares the induction). -/
 theorem _root_.Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq
-    {A : Matrix n n ℝ} (hA : A.PosDef) {b : n → ℝ} {γ ρ : ℕ → ℝ} {k : ℕ} (hk : 0 < k)
+    {A : Matrix n n ℝ} (hA : A.PosDef) {b : n → ℝ} {γ ρ : ℕ → ℝ} {k : ℕ}
     (hT : lanczosTridiagonal A b k = cgTridiagonal γ ρ k)
     (hβ : (lanczosState A b k).beta = ρ k / (γ (k - 1) * ρ (k - 1)))
     (hγ : ∀ j < k, 0 < γ j) (hρ : ∀ j < k, 0 < ρ j) (hρ0 : ρ 0 = ‖WithLp.toLp 2 b‖)
@@ -909,6 +909,7 @@ theorem _root_.Matrix.PosDef.norm_cgState_r_le {A : Matrix n n 𝕜} (hA : A.Pos
     _ = Real.sqrt (a' / a) * ‖WithLp.toLp 2 (cgState A b 0 i).r‖ := by
       rw [Real.sqrt_mul hai, Real.sqrt_sq (norm_nonneg _)]
 
+omit [DecidableEq n] in
 /-- **The direction norm of exact CG** [HestenesStiefel1952, Theorem 5:5]: for positive definite
 $\mathbf{A}$,
 $$\|\mathbf{p}_j\|^2 = \|\mathbf{r}_j\|^4\sum_{i \le j}\|\mathbf{r}_i\|^{-2} .$$

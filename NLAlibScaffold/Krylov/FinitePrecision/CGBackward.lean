@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
+public import NLAlibScaffold.Krylov.FinitePrecision.CGRunModel
 
 /-!
 # An a priori backward model for finite-precision conjugate gradients
@@ -40,7 +40,7 @@ A and B close P(j + 1).
 Validity range: (H) bounds $k \le (10^{-5}/(\varepsilon\kappa^2))^{1/3}$; in double precision,
 $\kappa = 10$, about $k \le 30$ (dense, $N = 10^3$) to $k \le 97$ (oracle, $\varepsilon \approx
 Nu$), and vacuous for $\kappa = 10^3$ at practical sizes. The a posteriori model of
-`NLAlibScaffold/Krylov/FinitePrecision/CGRun.lean` has no such limit.
+`NLAlibScaffold/Krylov/FinitePrecision/CGRunModel.lean` has no such limit.
 
 Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRounding.md` (§6–§8).
 Constants are unoptimised; see the note.
@@ -131,14 +131,6 @@ noncomputable def take (m : ℕ) (hm : 0 < m) (hmk : m ≤ k) : CGRun n m where
   norm_ep_le := fun j hj => C.norm_ep_le j (hj.trans_le hmk)
 
 /-! ### Helpers -/
-
-/-- The computed residual norms are positive before the last step. -/
-private theorem ρ_pos {j : ℕ} (hj : j < k) : 0 < C.ρ j := by
-  rcases (norm_nonneg (WithLp.toLp 2 (C.r j))).lt_or_eq with h | h
-  · exact h
-  · have h1 := C.ν_pos j hj
-    rw [C.ν_eq j hj.le, ← h] at h1
-    simp at h1
 
 private theorem ρ_zero : C.ρ 0 = ‖WithLp.toLp 2 C.b‖ := by
   simp [ρ, C.r_zero]
@@ -278,7 +270,7 @@ lemma), `NLAlib.CGRun.γ_pos`, $\rho_j > 0$ from `C.ν_pos` and `NLAlib.CGRun.ν
 $\rho_0 = \|\mathbf{b}\|$. Difficulty: easy. -/
 theorem cgAlpha_backwardH_of_posDef (hH : C.backwardH.PosDef) {j : ℕ} (hj : j < k) :
     cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j :=
-  hH.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq C.k_pos C.lanczosTridiagonal_backwardH
+  hH.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq C.lanczosTridiagonal_backwardH
     C.lanczosState_backwardH_beta (fun _ hi => C.γ_pos hi) (fun _ hi => C.ρ_pos hi)
     (C.ρ_zero.trans (by simp [dilatedRhs_norm])) hj
 
@@ -288,7 +280,7 @@ Proof: `Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq`, as
 `NLAlib.CGRun.cgAlpha_backwardH_of_posDef`. Difficulty: easy. -/
 theorem norm_cgState_backwardH_r_of_posDef (hH : C.backwardH.PosDef) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j :=
-  hH.norm_cgState_r_eq_of_lanczosTridiagonal_eq C.k_pos C.lanczosTridiagonal_backwardH
+  hH.norm_cgState_r_eq_of_lanczosTridiagonal_eq C.lanczosTridiagonal_backwardH
     C.lanczosState_backwardH_beta (fun _ hi => C.γ_pos hi) (fun _ hi => C.ρ_pos hi)
     (C.ρ_zero.trans (by simp [dilatedRhs_norm])) hj
 
@@ -572,7 +564,7 @@ private theorem frobNorm_le_of_apriori {n m : ℕ} (D : CGRun n m) {a a' : ℝ} 
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
     rw [mul_pow, hP2]
     exact hP i hi
-  have h := D.frobNorm_backwardH_sub_dilatedH_le_of_certificates hP' hK hB
+  have h := D.frobNorm_backwardH_sub_dilatedH_le_of_certificates hP' hK hB (by linarith)
   refine h.trans ?_
   have hs0 : 0 ≤ specNorm D.A := specNorm_nonneg _
   have h1P : (1 + P) ^ 2 ≤ 86 / 10 * κ := by nlinarith [sq_nonneg (1 - P)]
@@ -618,7 +610,7 @@ private theorem spectrum_subset_of_frobNorm_le {n m : ℕ} (D : CGRun n m) {a a'
 
 /-- The direction coefficient against the exact residual ratio, one-sided:
 $0 \le \delta_i \le (1 + 4\varepsilon)\rho_{i+1}^2/\rho_i^2$. -/
-private theorem δ_bounds {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i < m) :
+private theorem δ_bounds_ratio {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i < m) :
     0 ≤ D.δ i ∧ D.δ i ≤ (1 + 4 * D.ε) * (D.ρ (i + 1) ^ 2 / D.ρ i ^ 2) := by
   have h := abs_le.mp (D.abs_δ_sub_le hi)
   have hq : 0 ≤ D.ρ (i + 1) ^ 2 / D.ρ i ^ 2 := by positivity
@@ -636,7 +628,7 @@ private theorem norm_p_succ_sq_le {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i 
     (ht0 : 0 ≤ t) (ht : t ≤ 1 / 10) (hτ : |D.p i ⬝ᵥ D.r (i + 1)| ≤ t * D.ρ i ^ 2) :
     ‖WithLp.toLp 2 (D.p (i + 1))‖ ^ 2 ≤ (1 + 3 * t + 4 * D.ε + 2 * D.ε ^ 2) *
       (D.ρ (i + 1) ^ 2 + D.δ i ^ 2 * ‖WithLp.toLp 2 (D.p i)‖ ^ 2) := by
-  obtain ⟨hδ0, hδ⟩ := δ_bounds D hi
+  obtain ⟨hδ0, hδ⟩ := δ_bounds_ratio D hi
   have hε := D.ε_nonneg
   have hε1 : D.ε ≤ 1 / 100 := by
     have h1 := D.k_mul_ε_le
@@ -755,7 +747,7 @@ private theorem norm_p_sq_le_unroll {n m : ℕ} (D : CGRun n m) {t : ℝ} (ht0 :
     have hjm : j < m := Nat.lt_of_succ_lt hj
     have ih' := ih hjm (fun i hi => hτ i (hi.trans (Nat.lt_succ_self j)))
     have hstep := norm_p_succ_sq_le D hjm ht0 ht (hτ j (Nat.lt_succ_self j))
-    obtain ⟨hδ0, hδ⟩ := δ_bounds D hjm
+    obtain ⟨hδ0, hδ⟩ := δ_bounds_ratio D hjm
     have hρ := D.ρ_pos hjm
     have hR := D.ρ_pos hj
     set R := D.ρ (j + 1)
@@ -956,7 +948,7 @@ private theorem apriori_B {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
   have hl' : 0 < a' + a / 2 := by positivity
   have hlγ : 1 ≤ (a' + a / 2) * C.γ j := by
     rw [div_le_iff₀ hl'] at hγl; linarith
-  obtain ⟨-, hδ⟩ := δ_bounds C hjk
+  obtain ⟨-, hδ⟩ := δ_bounds_ratio C hjk
   constructor
   · have hβ : C.lanczosβ (j + 1) = C.ρ (j + 1) / (C.γ j * C.ρ j) := by
       simp [lanczosβ]

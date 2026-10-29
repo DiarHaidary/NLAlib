@@ -2,6 +2,7 @@ module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlibScaffold.Krylov.FinitePrecision.CGBackward
 public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
+public import NLAlibScaffold.Krylov.FinitePrecision.CGRunModel
 public import NLAlibScaffold.Krylov.FinitePrecision.NormalizedBackward
 public import NLAlibScaffold.Krylov.LinearSystems.CGProgramRun
 public import NLAlibScaffold.Krylov.LinearSystems.CGProgramTree

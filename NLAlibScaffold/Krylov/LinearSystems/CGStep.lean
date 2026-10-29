@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
+public import NLAlibScaffold.Krylov.FinitePrecision.CGRunModel
 public import NLAlibScaffold.Krylov.LinearSystems.CGProgramTree
 public import NLAlibScaffold.Krylov.Processes.LanczosProgramRun
 
