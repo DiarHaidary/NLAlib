@@ -933,11 +933,7 @@ private theorem norm_recurrenceError_zero_le {P : ℝ}
   have hε := C.ε_le
   have hε0 := C.ε_nonneg
   have hp0 := norm_nonneg (WithLp.toLp 2 (C.p 0))
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ
-    linarith
+  have hP0 := C.P_nonneg hk hP
   rw [C.recurrenceError_zero, norm_toLp_smul, abs_inv, abs_of_pos hρ]
   have t := norm_toLp_add_le (-C.es 0) ((C.γ 0)⁻¹ • C.er 0)
   rw [WithLp.toLp_neg, norm_neg, norm_toLp_smul, abs_inv, abs_of_pos hγ] at t
@@ -1134,18 +1130,8 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
   have hk := C.k_pos
   have hρ0 := C.ρ_pos hk
   have hε0 := C.ε_nonneg
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ0
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p 0)), hP 0 hk]
-  have hK0 : 0 ≤ K := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h (pow_pos hρ0 2)
-    have : 0 ≤ specNorm C.A * C.γ 0 * ‖WithLp.toLp 2 (C.p 0)‖ ^ 2 :=
-      mul_nonneg (mul_nonneg (specNorm_nonneg _) (C.γ_pos hk).le) (sq_nonneg _)
-    linarith [hK 0 hk]
+  have hP0 := C.P_nonneg hk (hP 0 hk)
+  have hK0 := C.K_nonneg hk (hK 0 hk)
   have hX : 0 ≤ 1 + P + K := by linarith
   induction j with
   | zero =>
@@ -1347,11 +1333,7 @@ private theorem abs_localR_le {P : ℝ} {j : ℕ} (hj : j < k)
   have hε0 := C.ε_nonneg
   have hN := specNorm_nonneg C.A
   have hp0 := norm_nonneg (WithLp.toLp 2 (C.p j))
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ
-    linarith
+  have hP0 := C.P_nonneg hj hP
   have hs := C.norm_s_le hj
   have heμ := C.abs_eμ_le j hj
   have her := C.norm_er_le' hj
@@ -1441,11 +1423,7 @@ private theorem abs_γ_mul_ep_dotProduct_s_le {P : ℝ} {i : ℕ} (hi : i + 1 < 
   have hε := C.ε_le
   have hε0 := C.ε_nonneg
   have hN := specNorm_nonneg C.A
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  have hP0 := C.P_nonneg hi hP
   rw [abs_mul, abs_of_pos hγ]
   have h1 := abs_dotProduct_le (C.ep i) (C.s (i + 1))
   have h2 := C.norm_ep_le' hi'
@@ -1535,11 +1513,7 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
   have hε0 := C.ε_nonneg
   have hN := specNorm_nonneg C.A
   obtain ⟨hδ0, -, -⟩ := C.δ_bounds hi'
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  have hP0 := C.P_nonneg hi hP
   have hb0 : 0 ≤ C.δ i / C.γ i := div_nonneg hδ0 hγ'.le
   have hb : C.δ i / C.γ i ≤ B := by rw [div_le_iff₀ hγ']; exact hδB
   have hB0 : 0 ≤ B := hb0.trans hb
@@ -1704,11 +1678,7 @@ private theorem abs_adjacentInner_succ_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
   have hε0 := C.ε_nonneg
   have hN := specNorm_nonneg C.A
   obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi'
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))]
+  have hP0 := C.P_nonneg hi hP
   have hG : 0 < C.γ (i + 1) * C.ρ (i + 1) ^ 2 := by positivity
   rw [C.adjacentInner_eq hi, C.adjacentInner_eq hi', abs_div, abs_div, abs_neg, abs_neg,
     abs_of_pos hG, abs_of_pos (by positivity : 0 < C.γ i * C.ρ i ^ 2), div_le_iff₀ hG]
@@ -1770,18 +1740,8 @@ theorem abs_adjacentInner_le_of_nonneg {P K B : ℝ}
   have hρ0 := C.ρ_pos hk
   have hε0 := C.ε_nonneg
   have hN := specNorm_nonneg C.A
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ0
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p 0)), hP 0 hk]
-  have hK0 : 0 ≤ K := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h (pow_pos hρ0 2)
-    have : 0 ≤ specNorm C.A * C.γ 0 * ‖WithLp.toLp 2 (C.p 0)‖ ^ 2 :=
-      mul_nonneg (mul_nonneg hN (C.γ_pos hk).le) (sq_nonneg _)
-    linarith [hK 0 hk]
+  have hP0 := C.P_nonneg hk (hP 0 hk)
+  have hK0 := C.K_nonneg hk (hK 0 hk)
   have hX : 0 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K) := by positivity
   induction j with
   | zero =>
@@ -1868,18 +1828,8 @@ theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg {P K B : �
         (16 * k * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K))) := by
   have hk := C.k_pos
   have hρ0 := C.ρ_pos hk
-  have hP0 : 0 ≤ P := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h hρ0
-    linarith [norm_nonneg (WithLp.toLp 2 (C.p 0)), hP 0 hk]
-  have hK0 : 0 ≤ K := by
-    by_contra h
-    push Not at h
-    have := mul_neg_of_neg_of_pos h (pow_pos hρ0 2)
-    have : 0 ≤ specNorm C.A * C.γ 0 * ‖WithLp.toLp 2 (C.p 0)‖ ^ 2 :=
-      mul_nonneg (mul_nonneg (specNorm_nonneg _) (C.γ_pos hk).le) (sq_nonneg _)
-    linarith [hK 0 hk]
+  have hP0 := C.P_nonneg hk (hP 0 hk)
+  have hK0 := C.K_nonneg hk (hK 0 hk)
   have hX : 0 ≤ C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
     have := C.ε_nonneg
     have := specNorm_nonneg C.A
