@@ -18,12 +18,14 @@ $$\|\bar{\mathbf f}_j\| \le C\,\varepsilon\|\mathbf A\|\,(1+\Pi_k),\qquad
 |\bar p_j| \le C\,(j+1)\,\varepsilon\|\mathbf A\|\,\bigl[(1+\Pi_k)^2 + K_k\bigr],\qquad
 \Pi_k := \max_{j<k}\frac{\|\mathbf p_j\|}{\|\mathbf r_j\|},\quad K_k \le 1.04\,\kappa(\mathbf A),$$
 
-and a priori $\Pi_k^2 \le 1.2\,\kappa(\mathbf A)$ once $\varepsilon\,\mathrm{poly}(k)\,\kappa(\mathbf A)\le 1/100$.
+and a priori (§2.6′, by induction on $j$ through the backward model of the first $j$ steps)
+$\Pi_k^2\le3.3\,\kappa(\mathbf A)$ under the hypothesis (H′) $\varepsilon k^5\kappa(\mathbf A)^2\le1/(8.4\cdot10^5)$.
 So the `LanczosRun`-form bound holds with
-$\varepsilon_{\mathrm{CG}} = C\,k\,\varepsilon\,\kappa(\mathbf A)$ (or, with the observable
-certificate $\Pi_k$, $\varepsilon_{\mathrm{CG}} = C\,k\,\varepsilon\,(1+\Pi_k)^2$), and the backward
-model follows with $\|\tilde{\mathbf A} - \mathbf I\otimes\mathbf A\|_F \le 2000k^4\varepsilon_{\mathrm{CG}}\|\mathbf A\|$
-by the existing proof, after a refactor of its interface. The factor $\kappa(\mathbf A)$ (through
+$\varepsilon_{\mathrm{CG}} = 210\,k\,\varepsilon\,\kappa(\mathbf A)$ (or, with the observable
+certificates $\Pi_k, K_k$, $\varepsilon_{\mathrm{CG}} = C\,k\,\varepsilon\,[(1+\Pi_k)^2+K_k]$), and the backward
+model follows with $\|\tilde{\mathbf H} - \mathbf I\otimes\mathbf A\|_F \le 2000k^4\varepsilon_{\mathrm{CG}}\|\mathbf A\|\le\lambda_{\min}(\mathbf A)/2$
+by the existing proof, after a refactor of its interface. Exact CG on the model reproduces the
+computed $a_j, b_j$ and the computed residual norms exactly. The factor $\kappa(\mathbf A)$ (through
 $\Pi_k^2$) is unavoidable for the interface quantities in the normwise model (§2.7); residual-norm
 *ratios* do not appear as independent amplifiers (§2.5), which corrects part of the worry.
 Nothing of this is in the literature as a theorem: the closest rigorous result (Strakoš–Tichý
@@ -239,16 +241,169 @@ $$\|\bar{\mathbf f}_j\|\le C_1\,(j+1)\,\varepsilon\|\mathbf A\|(1+\Pi_k),\qquad 
 one gets $\beta_{j+1}\le 1.01\|\mathbf A\|\pi_j+\sqrt{2.1\,\alpha_{j+1}|\bar p_{j-1}|}+\dots$, i.e. no
 $j$-growth but a $\Pi$ factor; either is poly$(k,\Pi)$.)
 
-**Lemma D (a priori certificate).** Under $\alpha_{j+1}\le1.1\|\mathbf A\|$ and
-$2.1\varepsilon\kappa(\mathbf A)\le1/100$: $\pi_j^2\le1.03\kappa(\mathbf A)\alpha_{j+1}/\|\mathbf A\|\le1.14\,\kappa(\mathbf A)$
-and $\kappa_j\le1.04\kappa(\mathbf A)$. Hence (H) may be replaced by the a priori hypothesis
-$\text{(H')}\ C_0'\,k^2\,\varepsilon\,\kappa(\mathbf A)\le 1/100$ (the induction on $j$ closes with a
-fixed-point step: $X:=\alpha_{j+1}/\|\mathbf A\|$ satisfies $X\le1+\varepsilon\,\mathrm{poly}(k)\,\kappa\max(X,1.1)$,
-so $X\le1.1$). The exact-arithmetic analogue is the classical $\|\mathbf p_j\|^2/\|\mathbf r_j\|^2\le\kappa$
-(via $\|\mathbf A\|\|\mathbf p\|^2/\rho^2\le\kappa\cdot\mathbf p^T\mathbf A\mathbf p/\rho^2\le\kappa\,\alpha_{j+1}\le\kappa\|\mathbf A\|$).
+**Lemma D (a priori certificate) — superseded by §2.6′.** The first version of this note closed
+the induction with a fixed-point step ($X:=\alpha_{j+1}/\|\mathbf A\|$,
+$X\le1+\varepsilon\,\mathrm{poly}(k)\,\kappa\max(X,1.1)$) and the crude bound
+$\pi_j^2\le1.03\kappa(\mathbf A)\alpha_{j+1}/\|\mathbf A\|$. Following the maintainer's suggestion
+(2026-10-29) this is replaced by an induction on $j$ that uses the already-proved backward
+model for the first $j$ steps to control the step-$j$ quantities through the spectrum of the
+computed tridiagonal matrix; see §2.6′. The direct SPD-facts
+$\kappa_j\le1.04\kappa(\mathbf A)$ and $1/a_j\le1.03\|\mathbf A\|\pi_j^2$ (valid when
+$2.1\varepsilon\kappa(\mathbf A)\le1/100$, from $\mu_j=\mathbf p_j^T\mathbf A\mathbf p_j+\mathbf p_j^T\mathbf e^s_j+e^\mu_j$
+and $\lambda_{\min}\|\mathbf p\|^2\le\mathbf p^T\mathbf A\mathbf p\le\|\mathbf A\|\|\mathbf p\|^2$) are kept.
+
+### 2.6′ A priori closure through the backward model (replaces Lemma D)
+
+**Conventions.** Fix the tridiagonal matrix of the computed data as the *exact* LDL$^T$ product
+of the computed pivots and the exact norm ratios of the computed residuals:
+
+$$T_m:=L_mD_mL_m^T,\qquad D_m=\mathrm{diag}(1/a_0,\dots,1/a_{m-1}),\qquad (L_m)_{i+1,i}=-\rho_{i+1}/\rho_i,$$
+
+i.e. $\beta_{i+1}=\rho_{i+1}/(a_i\rho_i)$ as before and the diagonal
+$\alpha'_{i+1}:=1/a_i+\rho_i^2/(\rho_{i-1}^2a_{i-1})=1/a_i+b_{i-1}/((1+\eta_{i-1})a_{i-1})$. The
+recurrence of §2.3 has diagonal coefficient $\alpha_{i+1}=1/a_i+b_{i-1}/a_{i-1}$, so
+$\bar{\mathbf f}_i$ acquires the extra term $(\alpha_{i+1}-\alpha'_{i+1})\bar{\mathbf v}_{i+1}$ of
+norm $\le3.2\varepsilon\,b_{i-1}/a_{i-1}$ — the same order as the symmetrisation term already in
+Lemma A (and $b_{i-1}/a_{i-1}$ is bounded in (E3) below). With this convention $T_m\succ0$
+whenever $a_i>0$ (no breakdown), for every $m$.
+
+**Induction statement P(j)** ($0\le j\le k$): the data of steps $0,\dots,j-1$, namely
+$\bar{\mathbf V}_{j+1}=[\bar{\mathbf v}_1,\dots,\bar{\mathbf v}_{j+1}]$ (exactly unit), $T_j$,
+$\beta_j$, satisfy the perturbed-Lanczos interface (§3.2) with parameter
+
+$$\varepsilon_j:=C_1\,j\,\varepsilon\,\kappa_\ast,\qquad \kappa_\ast:=3\kappa(\mathbf A),\qquad C_1=70\ \text{(unoptimised)},$$
+
+i.e. $\|\bar{\mathbf f}_i\|,|\bar p_i|\le\varepsilon_j\|\mathbf A\|$ for $i<j$, $\beta_i>0$ for $1\le i\le j$,
+$j\varepsilon_j\le1/100$; and the step certificates $\pi_i^2\le1.1\kappa_\ast$,
+$\kappa_i\le1.04\kappa(\mathbf A)$ hold for $i<j$. P(0) is vacuous.
+
+**Hypothesis (H′).** With $c_j:=2000j^4\varepsilon_j\|\mathbf A\|=2000C_1j^5\varepsilon\kappa_\ast\|\mathbf A\|$
+(the library's backward-perturbation bound for a $j$-step interface with parameter $\varepsilon_j$):
+
+$$c_k\le\tfrac12\lambda_{\min}(\mathbf A)\quad\Longleftrightarrow\quad
+\varepsilon\,k^5\,\kappa(\mathbf A)^2\le\frac1{12000\,C_1}=\frac1{8.4\cdot10^5}.$$
+
+(H′) implies $2.1\varepsilon\kappa\le1/100$, $k\varepsilon\le1/100$ and
+$k\varepsilon_k=210k^2\varepsilon\kappa\le1/100$, and it makes $c_j\le c_k\le\lambda_{\min}/2$ at every step, so
+
+$$\kappa_{c_j}:=\frac{\lambda_{\max}(\mathbf A)+c_j}{\lambda_{\min}(\mathbf A)-c_j}\le\frac{\lambda_{\max}+\lambda_{\min}/2}{\lambda_{\min}/2}=2\kappa(\mathbf A)+1\le\kappa_\ast .$$
+
+The $\kappa^2$ in (H′) is the natural one: the backward perturbation is of size
+$\varepsilon_{\mathrm{CG}}\|\mathbf A\|\sim\varepsilon\kappa\|\mathbf A\|$ and must stay below $\lambda_{\min}$
+for the model to be positive definite and the implicit tridiagonal inversion to be meaningful
+(the maintainer's point). It can be rewritten as $c_k\le\lambda_{\min}/2$ in terms of
+$\lambda_{\min},\lambda_{\max},\|\mathbf A\|,k,N,u$.
+
+**Step P(j) ⇒ P(j+1).** Assume P(j), $j\ge1$ (the case $j=0$ only needs (S) and (P) below with
+$\pi_0=1$, $\beta_0=0$).
+
+*(B) Backward model for the first $j$ steps (library, after the interface refactor).*
+There is a symmetric $\tilde{\mathbf H}_j\in\mathbb R^{n(j+1)\times n(j+1)}$,
+$\|\tilde{\mathbf H}_j-\mathbf I\otimes\mathbf A\|_F\le c_j$ (`frobNorm_backwardH_sub_dilatedH_le`), with
+orthonormal $\hat{\mathbf V}_{j+1}$ such that $\tilde{\mathbf H}_j\hat{\mathbf V}_j=\hat{\mathbf V}_{j+1}\underline T_j$
+(`backwardH_mul_dilatedBasis`) and exact Lanczos on $(\tilde{\mathbf H}_j,\tilde{\mathbf v})$ produces
+$T_j$ and $\beta_j$ (`lanczosTridiagonal_backwardH_dilatedStart`,
+`lanczosState_backwardH_dilatedStart_beta`). By Weyl ($\|\Delta\|_2\le\|\Delta\|_F\le c_j$):
+$\mathrm{eig}(\tilde{\mathbf H}_j)\subset[\lambda_{\min}-c_j,\lambda_{\max}+c_j]$, so
+$\tilde{\mathbf H}_j\succ0$, $\lambda_{\max}(\tilde{\mathbf H}_j)\le\|\mathbf A\|+c_j\le1.5\|\mathbf A\|$,
+$\kappa(\tilde{\mathbf H}_j)\le\kappa_{c_j}\le\kappa_\ast$. Since $T_j=\hat{\mathbf V}_j^T\tilde{\mathbf H}_j\hat{\mathbf V}_j$,
+$\mathrm{eig}(T_j)\subset[\lambda_{\min}(\tilde{\mathbf H}_j),\lambda_{\max}(\tilde{\mathbf H}_j)]$ — this is
+what the library's containment theorems state for the Ritz values of the run's $T_k$
+(`sub_eigenvalue_zero_le_of_mulVec_eq_smul`, `eigenvalue_last_sub_le_of_mulVec_eq_smul`:
+$\lambda_{\min}(\mathbf A)-c\le\theta\le\lambda_{\max}(\mathbf A)+c$, proved through the quadratic form
+of $\hat{\mathbf H}$ at $\hat{\mathbf V}_k\mathbf y$); applied to the $j$-step *prefix run* they give exactly
+the statement needed for $T_j$ (the leading block at step $j$, not $T_{j+1}$). All entries of
+$\underline T_j$, in particular $\beta_j$ and $\alpha'_i$ ($i\le j$), are entries of
+$\hat{\mathbf V}_{j+1}^T\tilde{\mathbf H}_j\hat{\mathbf V}_j$, hence $\le\lambda_{\max}(\tilde{\mathbf H}_j)\le1.5\|\mathbf A\|$.
+
+*(E) Exact CG on the model reproduces the computed scalars.* Run exact CG on
+$(\tilde{\mathbf H}_j,\tilde{\mathbf b}:=\rho_0\tilde{\mathbf v})$ from $\tilde{\mathbf x}_0=\mathbf 0$. Its Lanczos
+data are $(\hat{\mathbf V},T_j,\beta_j)$, and the CG–Lanczos correspondence
+$T_i=\tilde L_i\tilde D_i\tilde L_i^T$ with $\tilde D=\mathrm{diag}(1/\tilde a_i)$,
+$(\tilde L)_{i+1,i}=-\sqrt{\tilde b_i}$ (Meurant–Strakoš §3.1, GLC §1.2) together with the
+uniqueness of the LDL$^T$ factorisation of $T_i\succ0$ gives
+
+$$\tilde a_i=a_i\ (i<j),\qquad \tilde b_i=\rho_{i+1}^2/\rho_i^2\ (i<j-1),\qquad
+\|\tilde{\mathbf r}_i\|=\rho_i\ (i\le j)$$
+
+(the last from $\|\tilde{\mathbf r}_i\|^2=\tilde b_{i-1}\|\tilde{\mathbf r}_{i-1}\|^2$ and $\|\tilde{\mathbf r}_0\|=\rho_0$;
+equivalently from $\|\tilde{\mathbf r}_i\|=\rho_0\beta_i|(T_i^{-1})_{i,1}|$ and the bidiagonal identity
+$(T_i^{-1})_{i,1}=a_{i-1}\rho_{i-1}/\rho_0$). Exact CG theory on the SPD $\tilde{\mathbf H}_j$ then
+yields, with $\tilde{\mathbf e}_i$ the model errors and $\tilde{\mathbf p}_i$ the model directions
+($\tilde{\mathbf p}_j=\tilde{\mathbf r}_j+\tilde b_{j-1}\tilde{\mathbf p}_{j-1}$ is defined by computed data
+only):
+
+- (E1) $\|\tilde{\mathbf e}_j\|_{\tilde H}\le\|\tilde{\mathbf e}_i\|_{\tilde H}$ for $i\le j$
+  (`isMinOn_cgIterate` over nested Krylov spaces), and
+  $\lambda_{\min}\|\tilde{\mathbf e}\|^2_{\tilde H}\le\|\tilde{\mathbf r}\|^2\le\lambda_{\max}\|\tilde{\mathbf e}\|^2_{\tilde H}$, so
+  $$\frac{\rho_j}{\rho_i}\le\sqrt{\kappa(\tilde{\mathbf H}_j)}\le\sqrt{\kappa_\ast}\qquad(i\le j).$$
+  This is Strakoš–Tichý's (7.20) made rigorous: the monotonicity they import is exact CG on
+  the model.
+- (E2) Hestenes–Stiefel: $\|\tilde{\mathbf p}_j\|^2=\rho_j^4\sum_{i\le j}\rho_i^{-2}$ (from
+  $\tilde{\mathbf r}_j\perp\tilde{\mathbf p}_{j-1}$), and by $\tilde{\mathbf H}$-conjugacy
+  $(\tilde b_{j-1}\tilde{\mathbf p}_{j-1})^T\tilde{\mathbf H}(\tilde b_{j-1}\tilde{\mathbf p}_{j-1})=\tilde{\mathbf r}_j^T\tilde{\mathbf H}\tilde{\mathbf r}_j-\tilde{\mathbf p}_j^T\tilde{\mathbf H}\tilde{\mathbf p}_j\ge0$,
+  so $\lambda_{\min}\|\tilde{\mathbf p}_j\|^2\le\tilde{\mathbf p}_j^T\tilde{\mathbf H}\tilde{\mathbf p}_j\le\tilde{\mathbf r}_j^T\tilde{\mathbf H}\tilde{\mathbf r}_j\le\lambda_{\max}\rho_j^2$:
+  $$S_j:=\sum_{i\le j}\frac{\rho_j^2}{\rho_i^2}=\frac{\|\tilde{\mathbf p}_j\|^2}{\rho_j^2}\le\kappa(\tilde{\mathbf H}_j)\le\kappa_\ast .$$
+  (A cruder route avoiding $\tilde{\mathbf p}_j$: $S_j\le1+j\kappa_\ast$ from (E1); it costs one factor
+  $k$ in $\varepsilon_{\mathrm{CG}}$.)
+- (E3) From the same conjugacy identity divided by $\rho_j^2$:
+  $\dfrac{b_{j-1}}{a_{j-1}}=(1+\eta_{j-1})\dfrac{\tilde b_{j-1}}{\tilde a_{j-1}}\le1.04\,\lambda_{\max}(\tilde{\mathbf H}_j)\le1.6\|\mathbf A\|$,
+  and $1/a_{j-1}=\tilde{\mathbf p}_{j-1}^T\tilde{\mathbf H}\tilde{\mathbf p}_{j-1}/\rho_{j-1}^2\ge\lambda_{\min}(\tilde{\mathbf H}_j)\ge\lambda_{\min}/2$
+  (using $\|\tilde{\mathbf p}_{j-1}\|\ge\rho_{j-1}$).
+
+*(S) Direct SPD facts at step $j$* (no model needed): $\kappa_j\le1.04\kappa(\mathbf A)$,
+$1/a_j\le1.03\|\mathbf A\|\pi_j^2$.
+
+*(P) The step-$j$ certificate.* From $\mathbf p_j=\mathbf r_j+b_{j-1}\mathbf p_{j-1}+\mathbf e^p_j$,
+$\|\mathbf r_j+b_{j-1}\mathbf p_{j-1}\|^2=\rho_j^2+b_{j-1}^2\|\mathbf p_{j-1}\|^2+2b_{j-1}\tau_{j-1}$ and
+$\|\mathbf e^p_j\|\le\varepsilon\sqrt2\,\|(\rho_j,b_{j-1}\|\mathbf p_{j-1}\|)\|$:
+
+$$\pi_j^2\le(1+2\varepsilon)^2\Bigl[1+(1+\eta_{j-1})^2\frac{\rho_j^2}{\rho_{j-1}^2}\pi_{j-1}^2+2(1+\eta_{j-1})\frac{|\tau_{j-1}|}{\rho_{j-1}^2}\Bigr],\qquad
+\frac{|\tau_{j-1}|}{\rho_{j-1}^2}\le1.04\sum_{i<j}\frac{|M_i|}{\rho_i^2}\le1.04\,j\,\varepsilon\max_{i<j}m_i,$$
+
+where $m_i\le4.1+2.1\pi_i+2.1\kappa_i$ is controlled by P(j). Unrolling the recursion (the
+ratios telescope to $\rho_j^2/\rho_i^2$) gives $\pi_j^2\le(1+11k\varepsilon)(1+2.1\,t)\,S_j$ with
+$t:=1.04k\varepsilon\max_{i<j}m_i\le1/50$ under (H′), hence by (E2)
+
+$$\pi_j^2\le1.1\,S_j\le1.1\,\kappa_\ast .$$
+
+*(L) Step-$j$ interface bounds.* Lemma A with (S), (E3), (B):
+$\|\bar{\mathbf f}_j\|\le\varepsilon\|\mathbf A\|(5.1\pi_j+4.1)+\varepsilon(1/a_j+4.2\beta_j)+3.2\varepsilon\,b_{j-1}/a_{j-1}
+\le\varepsilon\|\mathbf A\|\bigl(5.4\sqrt{\kappa_\ast}+4.1+1.14\kappa_\ast+6.3+5.2\bigr)\le13\,\varepsilon\kappa_\ast\|\mathbf A\|$.
+Lemma B: in $L_j$ the coefficient quantities are $b_{j-1}/a_{j-1}$ (pieces (1), (2), (3a), (3b)),
+$1/a_j$ (pieces (4), (7)) and $\beta_j$ — *not* $\alpha_{j+1}$ or $\beta_{j+1}$ — so with (E3), (S),
+(B), (P): $|L_j|\le\varepsilon\|\mathbf A\|\bigl[6(1+\pi_j)^2+1.6(13+5\pi_j+2.1\kappa_{j-1})+3.1\pi_j^2+3\cdot1.5(1+\pi_j)\bigr]\le64\,\varepsilon\kappa_\ast\|\mathbf A\|$,
+and $|\bar p_j|\le1.04\sum_{i\le j}|L_i|\le67(j+1)\varepsilon\kappa_\ast\|\mathbf A\|\le\varepsilon_{j+1}\|\mathbf A\|$.
+The earlier bounds are $\le\varepsilon_j\|\mathbf A\|\le\varepsilon_{j+1}\|\mathbf A\|$, $\beta_{j+1}>0$ by
+no-breakdown, $(j+1)\varepsilon_{j+1}\le1/100$ by (H′), and $\pi_j^2\le1.1\kappa_\ast$,
+$\kappa_j\le1.04\kappa$ by (P), (S). Hence P(j+1). $\square$
+
+No fixed point and no circularity remain: every step-$j$ quantity is bounded either by exact CG
+on the $j$-step model (which exists by P(j)) or by the positive definiteness of $\mathbf A$.
+The crude coefficient bounds of Lemma C are no longer needed (they are replaced by
+$\alpha'_i,\beta_i\le\lambda_{\max}(\tilde{\mathbf H}_j)$); the a posteriori Lemmas A–B remain the
+engine of the step.
+
+**Theorem (a priori, proposed).** Let $k$ steps of HSCG on SPD $\mathbf A$ run in the kernel
+contract with parameter $\varepsilon$ ($=\max(\varepsilon_{mv},\gamma_{N+c})$ for the program), without
+breakdown, and assume (H′): $\varepsilon\,k^5\,\kappa(\mathbf A)^2\le1/(8.4\cdot10^5)$. Then with
+$\varepsilon_{\mathrm{CG}}:=\varepsilon_k=210\,k\,\varepsilon\,\kappa(\mathbf A)$ the normalised data form a
+perturbed-Lanczos interface, and there is a symmetric $\tilde{\mathbf H}\in\mathbb R^{n(k+1)\times n(k+1)}$ with
+
+$$\|\tilde{\mathbf H}-\mathbf I_{k+1}\otimes\mathbf A\|_F\le2000k^4\varepsilon_{\mathrm{CG}}\|\mathbf A\|=4.2\cdot10^5\,k^5\,\varepsilon\,\kappa(\mathbf A)\,\|\mathbf A\|\ \bigl(\le\tfrac12\lambda_{\min}(\mathbf A)\bigr),$$
+
+such that exact Lanczos on $(\tilde{\mathbf H},\mathbf r_0/\|\mathbf r_0\|)$ produces $T_k$ (LDL$^T$
+convention) and $\beta_k$, and exact CG on $(\tilde{\mathbf H},\rho_0\tilde{\mathbf v})$ produces the
+computed $a_j,b_j$ (up to the $(1+\eta_j)$ factors in $b_j$) and residual norms exactly
+$\|\mathbf r_j\|$, $j\le k$. Consequences: $\mathrm{eig}(T_k)\subset[\lambda_{\min}-c_k,\lambda_{\max}+c_k]$,
+$\max_j\|\mathbf p_j\|/\|\mathbf r_j\|\le\sqrt{3.3\,\kappa(\mathbf A)}$, $\|\mathbf r_j\|/\|\mathbf r_i\|\le\sqrt{3\kappa(\mathbf A)}$
+($i\le j$), Paige's loss-of-orthogonality bound and the Wasserstein bound with
+$\varepsilon_{\mathrm{CG}}$. The constants $C_1=70$ and the exponent $k^5$ (one $k$ from the
+accumulation in $\bar p_j$, $k^4$ from the library's backward factor) are unoptimised.
 
 **Conclusion of §2.** Define
-$\varepsilon_{\mathrm{CG}}:=C\,k\,\varepsilon\bigl[(1+\Pi_k)^2+K_k\bigr]\le C'\,k\,\varepsilon\,\kappa(\mathbf A)$.
+$\varepsilon_{\mathrm{CG}}:=C\,k\,\varepsilon\bigl[(1+\Pi_k)^2+K_k\bigr]$ (a posteriori), or
+$\varepsilon_{\mathrm{CG}}=210\,k\,\varepsilon\,\kappa(\mathbf A)$ under (H′) of §2.6′ (a priori).
 The data $(\mathbf A,\bar{\mathbf v},\alpha,\beta)$ are a `LanczosData` with exactly unit columns,
 $\beta_j>0$, $\|\bar{\mathbf f}_j\|,|\bar p_j|\le\varepsilon_{\mathrm{CG}}\|\mathbf A\|$,
 $\alpha,\beta\le\mathrm{poly}(k)\|\mathbf A\|$, and $k\varepsilon_{\mathrm{CG}}\le1/100$ — the
@@ -331,20 +486,23 @@ steps of the first two runs. All consistent with §§2.4–2.6.
 
 ### 3.1 Target (statement shape)
 
-**Theorem (HSCG backward model, proposed).** Let $k$ steps of HSCG run on SPD $\mathbf A$ in the
-kernel contract with parameter $\varepsilon$ (program-level: `IsRelErrSem`, $\varepsilon=\max(\varepsilon_{mv},\gamma_{N+c})$),
-without breakdown, and let $\Pi_k=\max_{j<k}\|\mathbf p_j\|/\|\mathbf r_j\|$, $K_k=\max_j\kappa_j$ be
-the run certificates. If $C_0k^2\varepsilon[(1+\Pi_k)^2+K_k]\le1/100$ then, with
-$\varepsilon_{\mathrm{CG}}=Ck\varepsilon[(1+\Pi_k)^2+K_k]$, there is a symmetric
-$\tilde{\mathbf A}\in\mathbb R^{n(k+1)\times n(k+1)}$ with
-$\|\tilde{\mathbf A}-\mathbf I_{k+1}\otimes\mathbf A\|_F\le2000k^4\varepsilon_{\mathrm{CG}}\|\mathbf A\|$
-such that exact Lanczos on $(\tilde{\mathbf A},\mathrm{col}(\mathbf r_0/\|\mathbf r_0\|,\mathbf 0,\dots))$
-produces the tridiagonal matrix with entries $\alpha_{j+1}=1/a_j+b_{j-1}/a_{j-1}$,
-$\beta_{j+1}=\|\mathbf r_{j+1}\|/(a_j\|\mathbf r_j\|)$ of the computed coefficients; equivalently
-exact CG on $(\tilde{\mathbf A},\tilde{\mathbf b})$ produces the computed $a_j,b_j$ exactly and residual
-norms $\|\mathbf r_j\|\prod_{i<j}(1+\eta_i)^{1/2}$. **Corollary** (a priori): if
-$C_0'k^2\varepsilon\kappa(\mathbf A)\le1/100$ the hypothesis holds with
-$(1+\Pi_k)^2+K_k\le 6\kappa(\mathbf A)$, so $\varepsilon_{\mathrm{CG}}\le C'k\varepsilon\kappa(\mathbf A)$.
+**Main theorem (a priori; §2.6′).** HSCG, $k$ steps, SPD $\mathbf A$, kernel contract with
+parameter $\varepsilon$ (program-level: `IsRelErrSem`, $\varepsilon=\max(\varepsilon_{mv},\gamma_{N+c})$), no
+breakdown, and (H′) $\varepsilon k^5\kappa(\mathbf A)^2\le1/(8.4\cdot10^5)$. Then with
+$\varepsilon_{\mathrm{CG}}=210\,k\,\varepsilon\,\kappa(\mathbf A)$ there is a symmetric
+$\tilde{\mathbf H}\in\mathbb R^{n(k+1)\times n(k+1)}$ with
+$\|\tilde{\mathbf H}-\mathbf I_{k+1}\otimes\mathbf A\|_F\le2000k^4\varepsilon_{\mathrm{CG}}\|\mathbf A\|\le\lambda_{\min}(\mathbf A)/2$
+such that exact Lanczos on $(\tilde{\mathbf H},\mathrm{col}(\mathbf r_0/\|\mathbf r_0\|,\mathbf 0,\dots))$
+produces $T_k=L_kD_kL_k^T$ ($D=\mathrm{diag}(1/a_j)$, $L_{j+1,j}=-\|\mathbf r_{j+1}\|/\|\mathbf r_j\|$) and
+$\beta_k$, and exact CG on $(\tilde{\mathbf H},\|\mathbf r_0\|\tilde{\mathbf v})$ produces the computed
+$a_j$ exactly, $b_j/(1+\eta_j)$, and residual norms exactly $\|\mathbf r_j\|$.
+**A posteriori lemma (kept as a separate theorem).** Without (H′), with the run certificates
+$\Pi_k=\max_j\|\mathbf p_j\|/\|\mathbf r_j\|$, $K_k=\max_j\kappa_j$ and the hypothesis
+$C_0k^2\varepsilon[(1+\Pi_k)^2+K_k]\le1/100$, the same conclusion holds with
+$\varepsilon_{\mathrm{CG}}=Ck\varepsilon[(1+\Pi_k)^2+K_k]$. Worth keeping: it is the engine of the
+induction step (Lemmas A–B are statements about one step given its certificates), and in
+practice $\Pi_k\ll\sqrt\kappa$ (sanity runs: $\Pi_k\le0.42\sqrt\kappa$), so it certifies much more
+than the a priori bound for a given run.
 Downstream: Paige's loss-of-orthogonality bound, Ritz values in
 $[\lambda_{\min}-\delta,\lambda_{\max}+\delta]$, Wasserstein closeness of spectral measures — all
 with $\varepsilon_{\mathrm{CG}}$. Not covered (say so in the docstring): the true residual
@@ -378,10 +536,19 @@ the extra factor instead of hiding it in "$\lesssim_k$".
 3. **Lemma A** (§2.4): a short algebraic identity (`recurrenceError_eq`) plus norm bounds.
 4. **Lemma B** (§2.5): three identities ($\tau$-recursion, $\sigma$ in terms of $\zeta$,
    $a_{j-1}\zeta_j$ via symmetry) then the $\bar p$-recursion and the sum bound.
-5. **Lemma C/D** (§2.6): coefficient bounds by induction on $j$ and the fixed-point closure under
-   (H); then the a priori corollary from (H').
-6. **Assemble** `HSCGRun.toPerturbedLanczos` and instantiate the backward theorems; add the
-   LDL$^T$ corollary (exact CG on the model reproduces $a_j,b_j$).
+5. **Exact-CG layer (E)** (§2.6′), all exact arithmetic, on a general SPD matrix with an
+   orthonormal Lanczos basis: (E0) CG–Lanczos LDL$^T$ correspondence $T_i=\tilde L\tilde D\tilde L^T$
+   with $\tilde D=\mathrm{diag}(1/\tilde a)$, $\tilde L_{i+1,i}=-\sqrt{\tilde b_i}$, and uniqueness of
+   LDL$^T$ for $T\succ0$ (new; `CGLanczos.lean` has only $\mathbf x_k=\mathbf x_0+\rho_0\mathbf Q T^{+}\mathbf e_1$);
+   (E1) $\|\tilde{\mathbf e}_j\|_{\tilde H}\le\|\tilde{\mathbf e}_i\|_{\tilde H}$ (`isMinOn_cgIterate`, exists) and
+   the Rayleigh sandwich (easy); (E2) $\|\tilde{\mathbf p}_j\|^2=\rho_j^4\sum\rho_i^{-2}$ and the
+   conjugacy identity (from `star_cgState_r_dotProduct_eq_zero`,
+   `star_cgState_p_dotProduct_mulVec_eq_zero`, exist); (E3) the two coefficient bounds.
+   Prefix runs: `HSCGRun.take j` (fields are `ℕ`-indexed with `∀ j < k`, so this is a
+   restriction of hypotheses) and the backward/containment theorems applied to the prefix.
+6. **Induction** P(j) ⇒ P(j+1) (§2.6′), with (H′); then `HSCGRun.toPerturbedLanczos` and the
+   library's backward theorems for the full run; add the reproduction corollary (computed
+   $a_j$, $\|\mathbf r_j\|$).
 
 ### 3.3 Risky step
 
@@ -390,13 +557,30 @@ normalised residuals is a telescoped quantity involving three computed inner-pro
 the symmetry of $\mathbf A$ applied to *computed* products ($\mathbf s_j$ vs. $\mathbf A\mathbf p_j$), the
 cancellation $b_{j-1}\rho_{j-1}^2-\rho_j^2=\rho_j^2\eta_{j-1}$, and residual ratios that must be
 absorbed into $q_j$ or into $(\rho_j/\rho_{j-1})\beta_j\le1.04\alpha_{j+1}$ in the right places; any
-slip reintroduces an unabsorbed $\rho_j/\rho_{j-1}$ and destroys the bound. Second risk: the
-closure in Lemma C/D is a coupled induction whose smallness hypothesis must be stated once with
-constants that are correct for *all* three lemmas (the Lanczos analogue had the much simpler
-$k\varepsilon\le1/100$). Third (design, not mathematics): the interface refactor must keep the
-Lanczos theorems and their constants unchanged; do it as a separate, reviewable commit.
+slip reintroduces an unabsorbed $\rho_j/\rho_{j-1}$ and destroys the bound; the audit of
+§2.6′(L) — that $L_j$ involves only $b_{j-1}/a_{j-1}$, $1/a_j$, $\beta_j$ and not $\alpha_{j+1}$,
+$\beta_{j+1}$ — must survive the formal derivation, otherwise the step needs the crude coefficient
+bounds of Lemma C and the hypothesis degrades to $\kappa^3$. Second risk: the induction of §2.6′
+runs the *whole* backward construction inside the inductive step for every prefix, so the
+interface must be a plain structure over `LanczosData` with factor functions, and the
+constants ($C_1$, the $k^4$) must be fixed once for all $j$; the arithmetic of (H′) ⇒
+($j\varepsilon_j\le1/100$, $c_j\le\lambda_{\min}/2$, $t\le1/50$) is where a constant slip would
+surface. Third (design, not mathematics): the interface refactor must keep the Lanczos theorems
+and their constants unchanged; do it as a separate, reviewable commit.
 
-### 3.4 What not to attempt now
+### 3.4 Rigour audit (what is proved where)
+
+| piece | status |
+|---|---|
+| Backward model, reproduction of $T_k,\beta_k$, Weyl/containment of Ritz values | in `NLAlib/Krylov/FinitePrecision/{Backward,BackwardSpectral}.lean` for `LanczosRun`; needs only the interface refactor to apply to HSCG prefixes (the containment theorems are proved through the quadratic form of $\hat{\mathbf H}$ at $\hat{\mathbf V}\mathbf y$, i.e. they are exactly "$\mathrm{eig}(T)\subset[\lambda_{\min}(\mathbf A)-c,\lambda_{\max}(\mathbf A)+c]$" for the run's $T$; applied to the $j$-step prefix they give the statement for $T_j$) |
+| Exact CG facts (E1), (E2) | `CG.lean`/`CGRecurrence.lean`: minimisation, Galerkin orthogonality, conjugacy exist; the HS norm identity and the conjugacy inequality are short new lemmas |
+| CG–Lanczos LDL$^T$ correspondence (E0) and its uniqueness | new (classical; Meurant–Strakoš §3.1) |
+| Lemmas A, B (standard-model identities and bounds) | new; derived here by hand, constants unoptimised and unverified |
+| Induction §2.6′ and the arithmetic of (H′) | new; checked by hand; no circularity: step $j$ uses only the $j$-step model and SPD-ness of $\mathbf A$ |
+| Program level (`IsRelErrSem` ⇒ `HSCGRun`) | new, same pattern as `LanczosProgramRun` |
+| Not rigorous / open | optimality of the exponent $k^5$ and of $\kappa^2$ in (H′); whether a different construction avoids the $\kappa$ in $\varepsilon_{\mathrm{CG}}$ (§2.7(3)); nothing about the true residual $\mathbf b-\mathbf A\mathbf x_j$ |
+
+### 3.5 What not to attempt now
 
 A $\kappa$-free backward model for HSCG (§2.7(3)), the $\mathbf A$-norm error statement
 (Greenbaum 1989 Thm 3), and the attainable-accuracy analysis through the backward model; the
