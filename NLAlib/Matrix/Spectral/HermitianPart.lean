@@ -9,6 +9,7 @@ public import Mathlib.Algebra.Star.Module
 public import NLAlib.Matrix.Spectral.EigenvectorPairing
 public import NLAlib.Matrix.Spectral.Schur
 public import NLAlib.Matrix.Majorization.Schur
+public import NLAlib.Matrix.Inequalities.SchurHorn
 
 /-!
 # The Hermitian part and the real parts of the eigenvalues
@@ -64,6 +65,17 @@ theorem _root_.Matrix.IsHermitian.hermitianPart_eq {A : Matrix n n 𝕜} (hA : A
   rw [hermitianPart, hA.eq, ← two_smul ℝ A, smul_smul, inv_mul_cancel₀ two_ne_zero, one_smul]
 
 variable [Fintype n]
+
+/-- A Hermitian matrix is Frobenius-orthogonal to the skew-Hermitian part of any matrix.
+Port of `NLAlib.frobInner_eq_zero_of_skewHermitian_of_isHermitian`, specialized to the
+canonical Hermitian-part decomposition. -/
+theorem _root_.Matrix.IsHermitian.frobInner_sub_hermitianPart {X : Matrix n n 𝕜}
+    (hX : X.IsHermitian) (A : Matrix n n 𝕜) :
+    frobInner (A - hermitianPart A) X = 0 := by
+  have h := frobInner_conjTranspose A X
+  rw [hX.eq] at h
+  rw [frobInner_sub_left, hermitianPart, frobInner_smul_left, frobInner_add_left, h]
+  ring
 
 /-- The Hermitian part does not increase the Frobenius norm:
 $$\|\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\|_{\mathsf{F}} \le
@@ -217,6 +229,71 @@ theorem majorized_re_of_isEigenvalueListing {A : Matrix n n ℂ} {z : n → ℂ}
   have heq : hherm.eigenvalues = x ∘ e := funext fun i => Complex.ofReal_injective (congrFun he i)
   rw [heq] at hmaj
   exact hmaj.trans (majorized_comp_equiv x e)
+
+/-- Every real vector majorizing the real parts of a complex eigenvalue listing is realized
+as the eigenvalue listing of the Hermitian part of a matrix with that complex listing.
+Repeated eigenvalues and empty dimensions are included.
+Port of `NLAlib.exists_matrix_charpoly_and_selfAdjointPart_charpoly_of_majorized`. -/
+theorem exists_isEigenvalueListing_hermitianPart_of_majorized
+    {x : n → ℝ} {z : n → ℂ} (h : Majorized (fun i => (z i).re) x) :
+    ∃ A : Matrix n n ℂ, IsEigenvalueListing A z ∧
+      IsEigenvalueListing (hermitianPart A) (fun i => (x i : ℂ)) := by
+  classical
+  let _ : LinearOrder n := LinearOrder.lift' (Fintype.equivFin n) (Fintype.equivFin n).injective
+  obtain ⟨Q, hQ, hdiag⟩ := exists_hasOrthonormalCols_diag_eq_of_majorized h
+  let K := Q * Matrix.diagonal x * Qᴴ
+  have hK : K.IsHermitian :=
+    Matrix.isHermitian_mul_mul_conjTranspose Q (Matrix.isHermitian_diagonal x)
+  have hKd (i : n) : K i i = (z i).re := congrFun hdiag i
+  let T : Matrix n n ℂ := fun i j =>
+    if i = j then z i else if i < j then 2 * (K i j : ℂ) else 0
+  have hTd (i : n) : T i i = z i := by simp [T]
+  have hTri : T.IsUpperTriangular := by
+    intro i j hij
+    change j < i at hij
+    simp [T, ne_of_gt hij, not_lt.mpr hij.le]
+  have hc (r : ℝ) : RCLike.toComplex r = (r : ℂ) :=
+    RCLike.toComplex_ofReal (𝕜 := ℝ) r
+  have hPart : hermitianPart T = complexify K := by
+    ext i j
+    change (2⁻¹ : ℝ) • (T i j + star (T j i)) = RCLike.toComplex (K i j)
+    rw [hc]
+    have hKji : K j i = K i j := by
+      simpa only [Matrix.conjTranspose_apply, star_trivial] using
+        congrArg (fun M : Matrix n n ℝ => M i j) hK.eq
+    by_cases hij : i = j
+    · subst j
+      rw [hTd, hKd, Complex.star_def, Complex.add_conj, Complex.real_smul]
+      push_cast
+      ring
+    · have hji := Ne.symm hij
+      by_cases hlt : i < j
+      · have hnlt : ¬j < i := not_lt.mpr hlt.le
+        simp [T, hij, hji, hlt, hnlt, Complex.real_smul]
+      · have hgt : j < i := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hij)
+        simp [T, hij, hji, hlt, hgt, hKji, Complex.real_smul]
+  refine ⟨T, ?_, ?_⟩
+  · simpa only [hTd] using hTri.isEigenvalueListing_diag
+  · change (hermitianPart T).charpoly = ∏ i, (X - C (x i : ℂ))
+    rw [hPart]
+    simp only [K, complexify_mul, complexify_conjTranspose, complexify_diagonal,
+      hc]
+    rw [Matrix.charpoly_mul_comm, ← Matrix.mul_assoc,
+      hQ.complexify.conjTranspose_mul_self, Matrix.one_mul, Matrix.charpoly_diagonal]
+
+/-- **Converse real-part majorization.** Majorization is exactly the obstruction to prescribing
+both the eigenvalues of a complex matrix and those of its Hermitian part.
+No printed source. This iff combines the ported realization theorem with the existing forward
+majorization bound; this is provenance information, not a novelty claim.
+Result: real-part-majorization -/
+theorem majorized_re_iff_exists_isEigenvalueListing_hermitianPart
+    (x : n → ℝ) (z : n → ℂ) :
+    Majorized (fun i => (z i).re) x ↔
+      ∃ A : Matrix n n ℂ, IsEigenvalueListing A z ∧
+        IsEigenvalueListing (hermitianPart A) (fun i => (x i : ℂ)) := by
+  refine ⟨exists_isEigenvalueListing_hermitianPart_of_majorized, ?_⟩
+  rintro ⟨A, hz, hx⟩
+  exact majorized_re_of_isEigenvalueListing hz hx
 
 /-- An eigenvalue is the value of the quadratic form at a unit eigenvector: for $\mu$ in the
 spectrum there is $\mathbf{v} \ne \mathbf{0}$ with

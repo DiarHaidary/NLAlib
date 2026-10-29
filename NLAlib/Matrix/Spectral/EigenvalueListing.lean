@@ -303,7 +303,7 @@ theorem submatrix_sumCompl_eq_fromBlocks {M : Matrix n n K} {i₀ : n} {α : K}
 /-- The characteristic polynomial of a matrix with a multiple $\alpha$ of a coordinate vector in
 the column $i_0$ loses a linear factor $X - \alpha$ when the row and the column $i_0$ are
 deleted. -/
-private theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i₀ : n} {α : K}
+theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i₀ : n} {α : K}
     [DecidableEq {i // ¬i = i₀}] (hcol : ∀ i, M i i₀ = if i = i₀ then α else 0) :
     M.charpoly = (X - C α) *
       (M.submatrix (Subtype.val : {i // ¬i = i₀} → n) Subtype.val).charpoly := by
@@ -484,5 +484,37 @@ theorem IsEigenvalueListing.pow {A : Matrix n n K} {d : ι → K} (h : IsEigenva
     hpow, Matrix.charpoly_of_isUpperTriangular _ (hT.pow k)]
   simp only [pow_apply_self_of_isUpperTriangular hT, hdiag, Function.comp_apply]
   exact (Fintype.equivOfCardEq h.card_eq.symm).prod_comp fun i => X - C (d i ^ k)
+
+
+omit [Fintype n] in
+/-- Isolating both a row and a column gives a scalar direct-sum block.
+Port of `NLAlib.submatrix_eq_fromBlocks_of_isolated_coordinate`. -/
+theorem submatrix_eq_fromBlocks_of_isolated_coordinate (M : Matrix n n K) (i : n) (μ : K)
+    (hcol : ∀ j, M j i = if j = i then μ else 0)
+    (hrow : ∀ j, M i j = if j = i then μ else 0) :
+    M.submatrix (Equiv.sumCompl (fun j => j = i)) (Equiv.sumCompl (fun j => j = i)) =
+      Matrix.fromBlocks (Matrix.diagonal (fun _ : {j : n // j = i} => μ)) 0 0
+        (M.submatrix (fun j : {j : n // j ≠ i} => j.val) (fun j : {j : n // j ≠ i} => j.val)) := by
+  classical
+  let : Unique {j : n // j = i} := ⟨⟨⟨i, rfl⟩⟩, fun j => Subtype.ext j.property⟩
+  ext a b
+  cases a with
+  | inl a =>
+    cases b with
+    | inl b =>
+      change M a.val b.val = Matrix.diagonal (fun _ : {j : n // j = i} => μ) a b
+      rw [a.property, b.property, hcol]
+      simp only [ite_true, Matrix.diagonal_apply, Subsingleton.elim a b, ite_true]
+    | inr b =>
+      change M a.val b.val = 0
+      rw [a.property, hrow]
+      exact if_neg b.property
+  | inr a =>
+    cases b with
+    | inl b =>
+      change M a.val b.val = 0
+      rw [b.property, hcol]
+      exact if_neg a.property
+    | inr b => rfl
 
 end NLAlib

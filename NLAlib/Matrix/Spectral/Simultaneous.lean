@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Spectral.Normal
+public import NLAlib.Matrix.Factorizations.QR
 
 /-!
 # Simultaneous triangularisation and diagonalisation
@@ -361,5 +362,37 @@ theorem _root_.Matrix.IsHermitian.commute_iff_exists_eq_mul_diagonal_mul_conjTra
     exact ⟨U, a, b, hU, ha, hb⟩
   · rintro ⟨U, a, b, hU, rfl, rfl⟩
     exact commute_mul_diagonal_mul_conjTranspose hU _ _
+
+/-- A family is simultaneously triangularisable by similarity exactly when it is
+triangularisable by an orthonormal basis. The family need not commute and may be infinite.
+Port of `NLAlib.exists_simultaneous_triangular_similarity_iff_unitary`, generalized to
+real or complex scalars through the existing QR factorization. -/
+theorem exists_forall_isUpperTriangular_inv_mul_mul_iff [LinearOrder n]
+    (A : ι → Matrix n n 𝕜) :
+    (∃ V : Matrix n n 𝕜, IsUnit V ∧
+      ∀ i, (V⁻¹ * A i * V).IsUpperTriangular) ↔
+    ∃ U : Matrix n n 𝕜, HasOrthonormalCols U ∧
+      ∀ i, (Uᴴ * A i * U).IsUpperTriangular := by
+  constructor
+  · rintro ⟨V, hV, htri⟩
+    obtain ⟨Q, R, hQR, -⟩ := exists_isQR V le_rfl
+    have hR : IsUnit R := by
+      apply (Matrix.isUnit_iff_isUnit_det R).mpr
+      have hv := (Matrix.isUnit_iff_isUnit_det V).mp hV
+      rw [hQR.eq_mul, Matrix.det_mul] at hv
+      exact isUnit_of_mul_isUnit_right hv
+    have hVdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+    have hRinv : R * V⁻¹ = Qᴴ := by
+      rw [← hQR.conjTranspose_mul_eq, Matrix.mul_assoc,
+        Matrix.mul_nonsing_inv V hVdet, Matrix.mul_one]
+    refine ⟨Q, hQR.hasOrthonormalCols, fun i => ?_⟩
+    have heq : Qᴴ * A i * Q = R * (V⁻¹ * A i * V) * R⁻¹ := by
+      rw [← hRinv, ← hQR.mul_inv_eq hR]
+      simp only [Matrix.mul_assoc]
+    rw [heq]
+    exact (hQR.isUpperTriangular.mul (htri i)).mul hQR.isUpperTriangular.inv
+  · rintro ⟨U, hU, htri⟩
+    have hinv : U⁻¹ = Uᴴ := Matrix.inv_eq_left_inv hU.conjTranspose_mul_self
+    exact ⟨U, hU.isUnit, by simpa only [hinv] using htri⟩
 
 end NLAlib

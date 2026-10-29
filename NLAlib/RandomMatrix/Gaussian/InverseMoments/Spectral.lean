@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import Mathlib.Analysis.SpecialFunctions.Gamma.BohrMollerup
 public import Mathlib.Analysis.SpecialFunctions.Stirling
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.Matrix.Spectral.CourantFischer
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 
@@ -245,18 +245,6 @@ section GammaBounds
 
 open Real
 
-/-- $\Gamma(x + 1/2) \le \Gamma(x) \sqrt{x}$ for $x > 0$ (log-convexity). -/
-private theorem Gamma_add_half_le_mul_sqrt {x : ℝ} (hx : 0 < x) :
-    Gamma (x + 1 / 2) ≤ Gamma x * √x := by
-  have h := Gamma_mul_add_mul_le_rpow_Gamma_mul_rpow_Gamma hx (by linarith : 0 < x + 1)
-    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num)
-  have hG : 0 < Gamma x := Gamma_pos_of_pos hx
-  rw [show 1 / 2 * x + 1 / 2 * (x + 1) = x + 1 / 2 by ring, Gamma_add_one hx.ne',
-    ← Real.mul_rpow hG.le (by positivity), ← Real.sqrt_eq_rpow,
-    show Gamma x * (x * Gamma x) = Gamma x ^ 2 * x by ring,
-    Real.sqrt_mul (by positivity), Real.sqrt_sq hG.le] at h
-  exact h
-
 /-- AM–GM for an arithmetic progression:
 $\prod_{i=0}^{n} (a + i) \le \bigl((2a + n)/2\bigr)^{n+1}$ for $a \ge 0$. -/
 private theorem prod_range_add_le_pow (a : ℝ) (ha : 0 ≤ a) (n : ℕ) :
@@ -296,7 +284,7 @@ private theorem Gamma_add_nat_div_two_sq_le_mul_prod {x : ℝ} (hx : 0 < x) (n :
     have hg : Gamma (x + n / 2 + 1 / 2) ^ 2 ≤ (x + n / 2) * Gamma (x + n / 2) ^ 2 := by
       have h0 : 0 ≤ Gamma (x + n / 2 + 1 / 2) := (Gamma_pos_of_pos (by linarith)).le
       calc Gamma (x + n / 2 + 1 / 2) ^ 2 ≤ (Gamma (x + n / 2) * √(x + n / 2)) ^ 2 :=
-            pow_le_pow_left₀ h0 (Gamma_add_half_le_mul_sqrt hz) 2
+            pow_le_pow_left₀ h0 (Real.Gamma_add_half_le_mul_sqrt hz) 2
         _ = _ := by rw [mul_pow, Real.sq_sqrt hz.le]; ring
     have he : x + n / 2 + 1 / 2 = x + ((n + 1 : ℕ) : ℝ) / 2 := by push_cast; ring
     rw [he] at hg
@@ -345,7 +333,7 @@ private theorem Gamma_nat_add_one_div_two_sq_ge {d : ℕ} (hd : 1 ≤ d) :
     exact hdup
   have hupper : (d.factorial : ℝ) * (2 : ℝ) ^ (-(d : ℝ)) * √π ≤ Gamma z ^ 2 * √z := by
     rw [← hdup']
-    have := mul_le_mul_of_nonneg_left (Gamma_add_half_le_mul_sqrt hz0) hg0.le
+    have := mul_le_mul_of_nonneg_left (Real.Gamma_add_half_le_mul_sqrt hz0) hg0.le
     nlinarith
   have htwo : (2 : ℝ) ^ (-(d : ℝ)) * 2 ^ d = 1 := by
     rw [← Real.rpow_natCast, ← Real.rpow_add (by norm_num)]

@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.LinearSystems.PCG
+public import NLAlib.Matrix.Spectral.PowerBounds
 
 /-!
 # Preconditioned Richardson iteration
@@ -39,6 +40,10 @@ Design: `docs/design/Regression-SketchPrecondition.md` §3.1, §4.1.
 
 * `NLAlib.sub_richardsonIterate_eq`: the error is $(\mathbf{I} - \mathbf{M}\mathbf{A})^q$ times
   the initial error.
+* `NLAlib.forall_tendsto_richardsonIterate_iff_specRadius_lt_one`: the exact fixed-point
+  convergence criterion.
+* `NLAlib.forall_exists_mulVec_eq_and_tendsto_richardsonIterate_iff_specRadius_lt_one`:
+  unique solvability and convergence for every right-hand side and starting vector.
 * `NLAlib.richardsonIterate_sub_mem_krylovSpace`: the correction lies in the preconditioned
   Krylov space.
 * `NLAlib.richardsonIterate_mul_conjTranspose`: Richardson through $\mathbf{A}^{\mathsf{H}}$ is
@@ -53,6 +58,7 @@ Design: `docs/design/Regression-SketchPrecondition.md` §3.1, §4.1.
 @[expose] public section
 
 open scoped Matrix ComplexOrder
+open Filter Topology
 
 namespace NLAlib
 
@@ -118,6 +124,92 @@ theorem sub_richardsonIterate_eq {A : Matrix m n 𝕜} {M : Matrix n m 𝕜} {b 
     rw [richardsonIterate_succ, ← sub_sub, hr, Matrix.mulVec_add, hxs, zero_add,
       Matrix.mulVec_mulVec, ih, pow_succ', ← Matrix.mulVec_mulVec (M := 1 - M * A),
       Matrix.sub_mulVec, Matrix.one_mulVec]
+
+/-- Richardson iteration converges to a fixed point $\mathbf{x}_\star$ from every start
+$\mathbf{x}_0$ when $\rho(\mathbf{I}-\mathbf{M}\mathbf{A})<1$. The fixed-point condition is
+$\mathbf{M}(\mathbf{b}-\mathbf{A}\mathbf{x}_\star)=\mathbf{0}$; the matrices may be rectangular.
+The conclusion is $\mathsf{richardsonIterate}(\mathbf{A},\mathbf{M},\mathbf{b},\mathbf{x}_0,q)
+\to\mathbf{x}_\star$. This is the fixed-point implication of the backend
+`NLAlib.splittingConverges_iff_tendsto_pow_zero`, generalized to the Richardson interface. -/
+theorem tendsto_richardsonIterate_of_specRadius_lt_one
+    {A : Matrix m n 𝕜} {M : Matrix n m 𝕜} {b : m → 𝕜} {xs : n → 𝕜}
+    (hxs : M *ᵥ (b - A *ᵥ xs) = 0) (hρ : specRadius (1 - M * A) < 1)
+    (x₀ : n → 𝕜) :
+    Tendsto (richardsonIterate A M b x₀) atTop (𝓝 xs) := by
+  have hp := (tendsto_pow_zero_iff_specRadius_lt_one (1 - M * A)).mpr hρ
+  have hc : Continuous (fun H : Matrix n n 𝕜 => H *ᵥ (xs - x₀)) :=
+    continuous_id.matrix_mulVec continuous_const
+  have he : Tendsto (fun q => xs - richardsonIterate A M b x₀ q) atTop (𝓝 0) := by
+    simpa only [sub_richardsonIterate_eq hxs, Matrix.zero_mulVec, Function.comp_def] using
+      (hc.tendsto (0 : Matrix n n 𝕜)).comp hp
+  have hh : Tendsto (fun q => xs - (xs - richardsonIterate A M b x₀ q))
+      atTop (𝓝 (xs - 0)) := tendsto_const_nhds.sub he
+  simpa only [sub_zero, sub_sub_cancel] using hh
+
+/-- The iterates
+$\mathsf{richardsonIterate}(\mathbf{A},\mathbf{M},\mathbf{b},\mathbf{x}_0,q)$ converge to a
+fixed point $\mathbf{x}_\star$ as $q\to\infty$ from every starting vector $\mathbf{x}_0$
+if and only if $\rho(\mathbf{I}-\mathbf{M}\mathbf{A})<1$. The fixed-point condition is
+$\mathbf{M}(\mathbf{b}-\mathbf{A}\mathbf{x}_\star)=\mathbf{0}$, and the matrices may be
+rectangular. Convergence from one particular start alone does not imply this criterion.
+The fixed-point form of the backend `NLAlib.splittingConverges_iff_spectralRadius_lt_one`. -/
+theorem forall_tendsto_richardsonIterate_iff_specRadius_lt_one
+    {A : Matrix m n 𝕜} {M : Matrix n m 𝕜} {b : m → 𝕜} {xs : n → 𝕜}
+    (hxs : M *ᵥ (b - A *ᵥ xs) = 0) :
+    (∀ x₀ : n → 𝕜, Tendsto (richardsonIterate A M b x₀) atTop (𝓝 xs)) ↔
+      specRadius (1 - M * A) < 1 := by
+  constructor
+  · intro h
+    apply (tendsto_pow_zero_iff_specRadius_lt_one (1 - M * A)).mp
+    apply tendsto_pi_nhds.mpr
+    intro i
+    apply tendsto_pi_nhds.mpr
+    intro j
+    have he : Tendsto (fun q => xs - richardsonIterate A M b (xs - Pi.single j 1) q)
+        atTop (𝓝 (xs - xs)) := tendsto_const_nhds.sub (h (xs - Pi.single j 1))
+    simp only [sub_self, sub_richardsonIterate_eq hxs, sub_sub_cancel,
+      Matrix.mulVec_single_one] at he
+    simpa only [Matrix.col, Function.comp_def, Matrix.transpose_apply, Matrix.zero_apply,
+      Pi.zero_apply] using
+      ((continuous_apply i).tendsto (0 : n → 𝕜)).comp he
+  · intro hρ x₀
+    exact tendsto_richardsonIterate_of_specRadius_lt_one hxs hρ x₀
+
+/-- **The stationary iteration convergence criterion.** For square $\mathbf{A}$ and
+$\mathbf{M}$, every right-hand side has a unique solution and
+$\mathsf{richardsonIterate}(\mathbf{A},\mathbf{M},\mathbf{b},\mathbf{x}_0,q)$ converges to
+that solution for every start if and only if $\rho(\mathbf{I}-\mathbf{M}\mathbf{A})<1$.
+Neither matrix is assumed invertible; invertibility follows from the spectral condition.
+No printed source. Port of `NLAlib.splittingConverges_iff_spectralRadius_lt_one` and
+`NLAlib.splittingConverges_iff_complex_spectralRadius_lt_one`, using the existing Richardson
+iteration: a splitting $\mathbf{S}-\mathbf{N}$ uses preconditioner $\mathbf{S}^{-1}$.
+Result: richardson-iteration -/
+theorem forall_exists_mulVec_eq_and_tendsto_richardsonIterate_iff_specRadius_lt_one
+    (A M : Matrix n n 𝕜) :
+    (∀ b : n → 𝕜, ∃ xs : n → 𝕜,
+      A *ᵥ xs = b ∧
+      (∀ ys : n → 𝕜, A *ᵥ ys = b → ys = xs) ∧
+      ∀ x₀ : n → 𝕜, Tendsto (richardsonIterate A M b x₀) atTop (𝓝 xs)) ↔
+      specRadius (1 - M * A) < 1 := by
+  constructor
+  · intro h
+    obtain ⟨xs, _, huniq, hlim⟩ := h 0
+    have hzero : xs = 0 := (huniq 0 (Matrix.mulVec_zero A)).symm
+    subst xs
+    exact (forall_tendsto_richardsonIterate_iff_specRadius_lt_one
+      (A := A) (M := M) (b := 0) (xs := 0) (by simp only [Matrix.mulVec_zero, sub_self])).mp
+      hlim
+  · intro hρ b
+    have hA : IsUnit A := isUnit_of_specRadius_one_sub_mul_lt_one hρ
+    have hxs : A *ᵥ (A⁻¹ *ᵥ b) = b := by
+      rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv A
+        ((Matrix.isUnit_iff_isUnit_det A).mp hA), Matrix.one_mulVec]
+    refine ⟨A⁻¹ *ᵥ b, hxs, ?_, ?_⟩
+    · intro ys hys
+      exact Matrix.mulVec_injective_iff_isUnit.mpr hA (hys.trans hxs.symm)
+    · intro x₀
+      apply tendsto_richardsonIterate_of_specRadius_lt_one _ hρ x₀
+      rw [hxs, sub_self, Matrix.mulVec_zero]
 
 /-- The Richardson correction lies in the preconditioned Krylov space: for every
 $\mathbf{A} \in \Bbbk^{m \times n}$ and $\mathbf{M} \in \Bbbk^{n \times m}$, the iterate

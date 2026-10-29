@@ -420,4 +420,80 @@ theorem trace_eq_nuclearNorm_iff_posSemidef {M : Matrix n n 𝕜} :
       rw [← Matrix.trace_conjTranspose, h.isHermitian.eq]
     exact (RCLike.conj_eq_iff_re.mp hstar).symm
 
+/-! ### The nearest scaled isometry -/
+
+/-- The squared Frobenius distance to a real multiple of an isometric polar extension.
+The extension may be chosen even when the matrix is singular.
+Port of `NLAlib.frobSq_sub_smul_polar_eq`. -/
+theorem HasOrthonormalCols.frobNorm_sub_smul_sq_of_mul_sqrt_eq
+    {A U : Matrix m n 𝕜} (hU : HasOrthonormalCols U)
+    (hA : U * CFC.sqrt (Aᴴ * A) = A) (c : ℝ) :
+    frobNorm (A - c • U) ^ 2 =
+      frobNorm A ^ 2 - 2 * c * nuclearNorm A + (Fintype.card n : ℝ) * c ^ 2 := by
+  have hp : frobInner A U = nuclearNorm A := by
+    rw [frobInner_comm, frobInner_eq_re_trace]
+    conv_lhs => rw [← hA, hU.conjTranspose_mul_cancel_left]
+    exact (nuclearNorm_eq_re_trace_sqrt A).symm
+  rw [frobNorm_sub_sq, frobInner_smul_right, hp, frobNorm_real_smul,
+    mul_pow, sq_abs, hU.frobNorm_sq]
+  ring
+
+/-- Every scaled isometry has squared Frobenius error at least the optimum determined by
+the nuclear norm and the number of columns. Negative scales and empty dimensions are included.
+Port of `NLAlib.frobSq_sub_nuclearNorm_sq_div_card_le_sub_smul`. -/
+theorem HasOrthonormalCols.frobNorm_sq_sub_le_frobNorm_sub_smul_sq
+    {U : Matrix m n 𝕜} (hU : HasOrthonormalCols U) (A : Matrix m n 𝕜) (c : ℝ) :
+    frobNorm A ^ 2 - nuclearNorm A ^ 2 / (Fintype.card n : ℝ) ≤
+      frobNorm (A - c • U) ^ 2 := by
+  classical
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have hA : A = 0 := Subsingleton.elim _ _
+    have hU0 : U = 0 := Subsingleton.elim _ _
+    simp [hA, hU0]
+  · have hd : (0 : ℝ) < Fintype.card n := Nat.cast_pos.mpr Fintype.card_pos
+    have hp : |frobInner A U| ≤ nuclearNorm A :=
+      (abs_frobInner_le_nuclearNorm_mul_specNorm A U).trans
+        (mul_le_of_le_one_right (nuclearNorm_nonneg A) hU.specNorm_le_one)
+    have hp2 : frobInner A U ^ 2 ≤ nuclearNorm A ^ 2 := by
+      simpa only [sq_abs] using pow_le_pow_left₀ (abs_nonneg _) hp 2
+    have hdiv : nuclearNorm A ^ 2 / (Fintype.card n : ℝ) * (Fintype.card n : ℝ) =
+        nuclearNorm A ^ 2 := div_mul_cancel₀ _ hd.ne'
+    rw [frobNorm_sub_sq, frobInner_smul_right, frobNorm_real_smul,
+      mul_pow, sq_abs, hU.frobNorm_sq]
+    apply (mul_le_mul_iff_right₀ hd).mp
+    nlinarith [sq_nonneg ((Fintype.card n : ℝ) * c - frobInner A U)]
+
+/-- The optimal real scale of an isometric polar extension is the average singular value.
+The total division convention also gives the correct optimum for empty columns.
+Port of `NLAlib.frobSq_sub_avg_smul_polar_eq`. -/
+theorem HasOrthonormalCols.frobNorm_sub_smul_sq_eq_of_mul_sqrt_eq
+    {A U : Matrix m n 𝕜} (hU : HasOrthonormalCols U)
+    (hA : U * CFC.sqrt (Aᴴ * A) = A) :
+    frobNorm (A - (nuclearNorm A / (Fintype.card n : ℝ)) • U) ^ 2 =
+      frobNorm A ^ 2 - nuclearNorm A ^ 2 / (Fintype.card n : ℝ) := by
+  rw [hU.frobNorm_sub_smul_sq_of_mul_sqrt_eq hA]
+  rcases eq_or_ne (Fintype.card n : ℝ) 0 with hd | hd
+  · simp [hd]
+  · field_simp
+    ring
+
+/-- **The nearest scaled isometry in Frobenius norm.** The minimum squared error is
+$$\|\mathbf{A}\|_{\mathsf{F}}^2-\frac{\|\mathbf{A}\|_*^2}{\lvert n \rvert},$$
+attained by scaling an
+isometric polar extension by the average singular value. This includes complex rectangular
+matrices and singular matrices.
+No printed source. This exact rectangular formulation generalizes the named backend results;
+this is provenance information, not a novelty claim.
+Port of `NLAlib.isLeast_frobSq_sub_scaled_orthogonal` and its empty-dimension companion.
+Result: nearest-unitary -/
+theorem isLeast_frobNorm_sub_smul_sq (A : Matrix m n 𝕜)
+    (hcard : Fintype.card n ≤ Fintype.card m) :
+    IsLeast {z : ℝ | ∃ (c : ℝ) (U : Matrix m n 𝕜),
+      HasOrthonormalCols U ∧ frobNorm (A - c • U) ^ 2 = z}
+      (frobNorm A ^ 2 - nuclearNorm A ^ 2 / (Fintype.card n : ℝ)) := by
+  obtain ⟨U, hU, hA⟩ := exists_hasOrthonormalCols_mul_sqrt_eq A hcard
+  refine ⟨⟨_, U, hU, hU.frobNorm_sub_smul_sq_eq_of_mul_sqrt_eq hA⟩, ?_⟩
+  rintro z ⟨c, V, hV, rfl⟩
+  exact hV.frobNorm_sq_sub_le_frobNorm_sub_smul_sq A c
+
 end NLAlib

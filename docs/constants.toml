@@ -34,6 +34,33 @@
 # `lean_body` and `body_hash` and removes the `previous_*` fields; CI then runs the check.
 
 [[constant]]
+name = "NLAlib.chiSquareInverseMomentFactor"
+kind = "constant"
+file = "NLAlib/Probability/Distributions/ChiSquareMoments.lean"
+args = []
+latex = '4'
+lean_body = 'chiSquareInverseMomentFactor : ℝ := 4'
+body_hash = "d161375c7ae380da"
+
+[[constant]]
+name = "NLAlib.gaussianLowerTailConstant"
+kind = "constant"
+file = "NLAlib/Probability/Distributions/GaussianConcentration.lean"
+args = []
+latex = 'e^{-1}/\sqrt{2\pi}'
+lean_body = 'gaussianLowerTailConstant : ℝ := Real.exp (-1) / Real.sqrt (2 * Real.pi)'
+body_hash = "5e0764bfd29966ed"
+
+[[constant]]
+name = "NLAlib.gaussianMaximumLowerConstant"
+kind = "constant"
+file = "NLAlib/Probability/Distributions/GaussianMoments.lean"
+args = []
+latex = '1-\exp(-e^{-1}/(2\sqrt{2\pi}))'
+lean_body = 'gaussianMaximumLowerConstant : ℝ := 1 - Real.exp (-(Real.exp (-1) / Real.sqrt (2 * Real.pi)) / 2)'
+body_hash = "ff3b498718f29072"
+
+[[constant]]
 name = "NLAlib.psiTwoSubgaussianConstant"
 kind = "constant"
 file = "NLAlib/Probability/Orlicz.lean"

@@ -24,6 +24,8 @@ hypothesis is stated on `EuclideanSpace ℝ n`, since `n → ℝ` carries the su
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_stdGaussian`.
 * `NLAlib.hasSubgaussianMGF_sub_integral_of_lipschitzWith_of_hasLaw_gaussianVector`.
 * `NLAlib.measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector`: the upper tail.
+* `NLAlib.mul_exp_neg_sq_le_measureReal_abs_ge_of_hasLaw_gaussianReal`: a lower absolute tail
+  of the scalar standard Gaussian, from its density.
 
 ## References
 
@@ -110,5 +112,57 @@ theorem measureReal_ge_integral_add_le_of_lipschitzWith_of_hasLaw_gaussianVector
   exact h
 
 end Vector
+
+/-! ### A scalar lower tail -/
+
+/-- A positive factor in the standard Gaussian lower absolute tail.
+Its value is <!-- value gaussianLowerTailConstant -->$e^{-1}/\sqrt{2\pi}$, from integrating the
+density on a unit interval. -/
+noncomputable irreducible_def gaussianLowerTailConstant : ℝ :=
+  Real.exp (-1) / Real.sqrt (2 * Real.pi)
+
+/-- The scalar Gaussian lower-tail factor is positive. -/
+theorem gaussianLowerTailConstant_pos : 0 < gaussianLowerTailConstant := by
+  rw [gaussianLowerTailConstant_def]
+  positivity
+
+/-- The Gaussian density on $[t,t+1]$ gives a uniform lower mass. -/
+private theorem gaussianLowerTailConstant_mul_exp_le_measureReal_Icc (t : ℝ) (ht : 0 ≤ t) :
+    gaussianLowerTailConstant * exp (-t ^ 2) ≤ (gaussianReal 0 1).real (Set.Icc t (t + 1)) := by
+  rw [gaussianLowerTailConstant_def]
+  have hpoint (x : ℝ) (hx : x ∈ Set.Icc t (t + 1)) :
+      exp (-1) / sqrt (2 * π) * exp (-t ^ 2) ≤ gaussianPDFReal 0 1 x := by
+    have hx0 : 0 ≤ x := ht.trans hx.1
+    have hsq : x ^ 2 ≤ (t + 1) ^ 2 := pow_le_pow_left₀ hx0 hx.2 2
+    have he : -t ^ 2 - 1 ≤ -x ^ 2 / 2 := by nlinarith [sq_nonneg (t - 1)]
+    have hexp := exp_le_exp.mpr he
+    simp only [gaussianPDFReal, NNReal.coe_one, mul_one, sub_zero]
+    rw [show exp (-1) / sqrt (2 * π) * exp (-t ^ 2) =
+      (1 / sqrt (2 * π)) * exp (-t ^ 2 - 1) by rw [sub_eq_add_neg, exp_add]; ring]
+    simpa only [one_div] using mul_le_mul_of_nonneg_left hexp
+      (inv_nonneg.mpr (sqrt_nonneg (2 * π)))
+  have hconst : IntegrableOn (fun _ : ℝ => exp (-1) / sqrt (2 * π) * exp (-t ^ 2))
+      (Set.Icc t (t + 1)) volume := integrableOn_const (isCompact_Icc.measure_lt_top.ne)
+  have hmono := setIntegral_mono_on hconst (integrable_gaussianPDFReal 0 1).restrict
+    measurableSet_Icc hpoint
+  rw [integral_const] at hmono
+  simp only [Measure.real, Measure.restrict_apply_univ] at hmono
+  change volume.real (Set.Icc t (t + 1)) • _ ≤ _ at hmono
+  rw [volume_real_Icc_of_le (by linarith), show t + 1 - t = 1 by ring, one_smul] at hmono
+  rw [Measure.real, gaussianReal_apply_eq_integral 0 (by norm_num), ENNReal.toReal_ofReal
+    (integral_nonneg fun x => gaussianPDFReal_nonneg 0 1 x)]
+  exact hmono
+
+/-- For a standard scalar Gaussian and $t\ge0$, the absolute upper-tail event has the lower
+bound <!-- value gaussianLowerTailConstant -->$e^{-1}/\sqrt{2\pi}\,e^{-t^2}$.
+The Lean factor is `gaussianLowerTailConstant`; the bound follows by integrating the density
+on $[t,t+1]$. Port of `NLAlib.exp_neg_sq_div_sqrt_two_pi_le_gaussianReal_abs_tail`. -/
+theorem mul_exp_neg_sq_le_measureReal_abs_ge_of_hasLaw_gaussianReal
+    {X : Ω → ℝ} (hX : HasLaw X (gaussianReal 0 1) μ) {t : ℝ} (ht : 0 ≤ t) :
+    gaussianLowerTailConstant * exp (-t ^ 2) ≤ μ.real {ω | t ≤ |X ω|} := by
+  rw [hX.measureReal_eq (p := fun x => t ≤ |x|)
+    (measurableSet_le measurable_const measurable_abs)]
+  refine (gaussianLowerTailConstant_mul_exp_le_measureReal_Icc t ht).trans ?_
+  exact measureReal_mono (fun x hx => hx.1.trans (le_abs_self x))
 
 end NLAlib

@@ -32,6 +32,7 @@ $\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$ in
 * `NLAlib.isDiagonalizable_iff_exists_eq_mul_diagonal_mul_inv`.
 * `NLAlib.isDiagonalizable_of_injective_of_forall_mem_spectrum`: distinct eigenvalues.
 * `NLAlib.isDiagonalizable_iff_isSemisimple`.
+* `NLAlib.isDiagonalizable_iff_forall_finrank_eigenspace_eq_rootMultiplicity`.
 * `NLAlib.exists_forall_mul_eq_mul_diagonal_of_pairwise_commute`: commuting families.
 -/
 
@@ -288,5 +289,120 @@ theorem commute_of_mul_eq_mul_diagonal {A B V : Matrix n n K} {a b : n → K} (h
     simpa only [Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hV, Matrix.mul_one] using
       congrArg (· * V⁻¹) h
   exact h'
+
+/-- A diagonalisable matrix has equal geometric and algebraic multiplicities at every scalar,
+including scalars outside its spectrum. This refines the existing semisimplicity criterion.
+Port of `NLAlib.IsDiagonalizable.finrank_eigenspace_eq_rootMultiplicity`. -/
+theorem IsDiagonalizable.finrank_eigenspace_eq_rootMultiplicity
+    {A : Matrix n n K} (hA : IsDiagonalizable A) (μ : K) :
+    Module.finrank K (Module.End.eigenspace A.toLin' μ) =
+      A.charpoly.rootMultiplicity μ := by
+  have hm := LinearMap.finrank_maxGenEigenspace_eq A.toLin' μ
+  have heq : Module.End.maxGenEigenspace A.toLin' μ = Module.End.eigenspace A.toLin' μ :=
+    hA.isSemisimple.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace μ
+  rw [heq] at hm
+  simpa only [Matrix.charpoly_toLin'] using hm
+
+/-- Over an algebraically closed field, a matrix is diagonalisable exactly when its geometric
+and algebraic multiplicities agree at every scalar. Empty matrices are included.
+This refines the existing semisimplicity criterion.
+Port of `NLAlib.isDiagonalizable_iff_finrank_eigenspace_eq_rootMultiplicity`. -/
+theorem isDiagonalizable_iff_forall_finrank_eigenspace_eq_rootMultiplicity
+    [IsAlgClosed K] (A : Matrix n n K) :
+    IsDiagonalizable A ↔ ∀ μ : K,
+      Module.finrank K (Module.End.eigenspace A.toLin' μ) =
+        A.charpoly.rootMultiplicity μ := by
+  constructor
+  · exact fun hA μ => hA.finrank_eigenspace_eq_rootMultiplicity μ
+  · intro hmult
+    have heq (μ : K) : Module.End.eigenspace A.toLin' μ =
+        Module.End.maxGenEigenspace A.toLin' μ := by
+      apply Submodule.eq_of_le_of_finrank_eq Module.End.eigenspace_le_maxGenEigenspace
+      rw [hmult μ, LinearMap.finrank_maxGenEigenspace_eq, Matrix.charpoly_toLin']
+    apply isDiagonalizable_iff_iSup_eigenspace_eq_top.mpr
+    simpa only [heq] using Module.End.iSup_maxGenEigenspace_eq_top A.toLin'
+
+/-- An eigenvalue survives a principal submatrix when its geometric multiplicity exceeds
+the number of removed coordinates. The matrix need not be diagonalisable.
+Port of `NLAlib.mem_spectrum_principal_submatrix_of_finrank_eigenspace_gt`. -/
+theorem mem_spectrum_submatrix_of_card_lt_add_finrank_eigenspace
+    (A : Matrix n n K) (μ : K) (s : Finset n)
+    (h : Fintype.card n < s.card + Module.finrank K (Module.End.eigenspace A.toLin' μ)) :
+    μ ∈ spectrum K (A.submatrix (fun j : s => j.val) (fun j : s => j.val)) := by
+  classical
+  have hdim : Fintype.card n - s.card <
+      Module.finrank K (Module.End.eigenspace A.toLin' μ) := by
+    have := s.card_le_univ
+    omega
+  let W := Module.End.eigenspace A.toLin' μ
+  let T : W →ₗ[K] ({j : n // j ∉ s} → K) :=
+    { toFun x := fun j => x.val j.val
+      map_add' _ _ := rfl
+      map_smul' _ _ := rfl }
+  have hker : T.ker ≠ ⊥ := by
+    intro hzero
+    have hrank := LinearMap.finrank_le_finrank_of_injective (LinearMap.ker_eq_bot.mp hzero)
+    have hcard : Module.finrank K ({j : n // j ∉ s} → K) = Fintype.card n - s.card := by
+      rw [Module.finrank_fintype_fun_eq_card, Fintype.card_subtype_compl, Fintype.card_coe]
+    rw [hcard] at hrank
+    exact (not_le_of_gt hdim) hrank
+  obtain ⟨v, hv, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  have hout (j : n) (hj : j ∉ s) : v.val j = 0 := congrFun hv ⟨j, hj⟩
+  let w : s → K := fun j => v.val j.val
+  have hw : w ≠ 0 := by
+    intro hwzero
+    apply hv0
+    apply Subtype.ext
+    funext j
+    by_cases hj : j ∈ s
+    · exact congrFun hwzero ⟨j, hj⟩
+    · exact hout j hj
+  have heig : A *ᵥ v.val = μ • v.val := Module.End.mem_eigenspace_iff.mp v.property
+  have hAw : A.submatrix (fun j : s => j.val) (fun j : s => j.val) *ᵥ w = μ • w := by
+    funext i
+    have hsum := Fintype.sum_subtype_add_sum_subtype (fun j : n => j ∈ s)
+      (fun j => A i.val j * v.val j)
+    have hzero : (∑ j : {j : n // j ∉ s}, A i.val j.val * v.val j.val) = 0 := by
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [hout j.val j.property, mul_zero]
+    rw [hzero, add_zero] at hsum
+    change (∑ j : s, A i.val j.val * v.val j.val) = μ * v.val i.val
+    convert! hsum.trans (congrFun heig i.val) using 1
+    congr 1
+    ext j
+    simp only [Finset.mem_univ]
+  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one,
+    Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not]
+  apply Matrix.exists_mulVec_eq_zero_iff.mp
+  refine ⟨w, hw, ?_⟩
+  rw [Matrix.sub_mulVec, Matrix.smul_mulVec, Matrix.one_mulVec, hAw, sub_self]
+
+/-- The change between two eigenvector matrices with the same listing commutes with that diagonal.
+Port of `NLAlib.diagonal_mul_change_eigenbasis_eq_change_eigenbasis_mul_diagonal`. -/
+theorem diagonal_mul_inv_mul_eq_inv_mul_diagonal
+    {A V W : Matrix n n K} {d : n → K} (hV : IsUnit V)
+    (hAV : A * V = V * Matrix.diagonal d) (hAW : A * W = W * Matrix.diagonal d) :
+    Matrix.diagonal d * (V⁻¹ * W) = (V⁻¹ * W) * Matrix.diagonal d := by
+  apply hV.mul_left_cancel
+  change V * (Matrix.diagonal d * (V⁻¹ * W)) = V * ((V⁻¹ * W) * Matrix.diagonal d)
+  rw [← Matrix.mul_assoc V (Matrix.diagonal d), ← hAV,
+    Matrix.mul_assoc A V, ← Matrix.mul_assoc V V⁻¹,
+    Matrix.mul_nonsing_inv V ((Matrix.isUnit_iff_isUnit_det V).mp hV), Matrix.one_mul,
+    ← Matrix.mul_assoc V, ← Matrix.mul_assoc V V⁻¹,
+    Matrix.mul_nonsing_inv V ((Matrix.isUnit_iff_isUnit_det V).mp hV), Matrix.one_mul]
+  exact hAW
+
+/-- A change between aligned eigenvector matrices vanishes between distinct eigenvalues.
+Port of `NLAlib.change_eigenbasis_apply_eq_zero_of_eigenvalues_ne`. -/
+theorem inv_mul_apply_eq_zero_of_ne
+    {A V W : Matrix n n K} {d : n → K} (hV : IsUnit V)
+    (hAV : A * V = V * Matrix.diagonal d) (hAW : A * W = W * Matrix.diagonal d)
+    {i j : n} (hij : d i ≠ d j) : (V⁻¹ * W) i j = 0 := by
+  have h := congrArg (fun M : Matrix n n K => M i j)
+    (diagonal_mul_inv_mul_eq_inv_mul_diagonal hV hAV hAW)
+  rw [Matrix.diagonal_mul, Matrix.mul_diagonal] at h
+  exact (mul_eq_zero.mp (by linear_combination h : (d i - d j) * (V⁻¹ * W) i j = 0)).resolve_left
+    (sub_ne_zero.mpr hij)
 
 end NLAlib

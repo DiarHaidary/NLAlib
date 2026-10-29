@@ -380,7 +380,12 @@ and repaired before proofs started: the rank-revealing singular value bounds nee
 **Mathlib overlap.** None outright. Gram–Schmidt, `Matrix.BlockTriangular`, `Matrix.IsHadamard`
 and the LDL file are used, not duplicated.
 
-**Not ported, by decision.** §7.10 and §1; from the ledger pass: equality cases of von Neumann's
+**Historical omissions (amended 2026-10-29).** The scaled-isometry Frobenius minimum is now
+implemented in `Polar.lean`; see `Backend-MatrixApproximation.md` and the BI1 integration report
+in `docs/port/backend-integration-2026-10-29.md`. Its scope includes the former square real
+scaled-orthogonal result. The other decisions below are unchanged.
+
+**Not ported at the original stopping point.** §7.10 and §1; from the ledger pass: equality cases of von Neumann's
 trace inequality and of Mirsky's theorem, the scaled orthogonal Procrustes problem, the
 restricted rotations variant. Small companions noted for a later pass: a public
 `HasOrthonormalCols.singularValues_eq_one`, `principalMinor_transpose`, an entry formula for

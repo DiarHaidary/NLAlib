@@ -394,7 +394,15 @@ spectrum; `charpoly_coeff_eq_sum_principalMinor` is `Matrix.charpoly_coeff_eq_su
 Mathlib has no measurable space on matrices, no `rank_kronecker`, and Fuglede–Putnam only for
 one C⋆-algebra (the square case).
 
-**Not ported, by decision.** §7.9, and from the ledger pass: simultaneous triangularisation with
+**Historical omissions (amended 2026-10-29).** BI1 adds similarity-to-orthonormal transfer for
+simultaneous triangularization, spectral multiplicity criteria, the Sylvester converse and
+many-block equations, left-right
+deflation, Hermitian-part realization, and real skew/orthogonal normal-form specializations.
+These are implemented through existing interfaces; see the `Backend-*` design notes and
+`docs/port/backend-integration-2026-10-29.md`. Other omissions, including a prescribed listing
+for one member of a commuting family, retain their original decisions.
+
+**Not ported at the original stopping point.** §7.9, and from the ledger pass: simultaneous triangularisation with
 a prescribed listing for one member, the eigenspace dimension criterion for diagonalisability,
 irreducible weak diagonal dominance for the real parts, the converse direction of the Sylvester
 operator's injectivity, root-count constancy as a public statement, the negative rank-one

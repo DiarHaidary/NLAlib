@@ -6,7 +6,10 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+public import Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp
 public import Mathlib.MeasureTheory.Integral.Gamma
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Probability.Distributions.ChiSquared
 public import NLAlib.Probability.Distributions.Gaussian
 
@@ -29,6 +32,11 @@ the smallest singular value of a Gaussian matrix.
 * `NLAlib.integral_norm_sq_rpow_of_hasLaw_gaussianVector`.
 * `NLAlib.integral_comp_norm_of_hasLaw_gaussianVector`: polar coordinates, the $\chi_d$ density.
 * `NLAlib.integral_norm_sq_inv_of_hasLaw_gaussianVector`.
+* `NLAlib.integral_norm_sq_rpow_lt_of_five_le_card_of_hasLaw_gaussianVector`: the strict
+  uniform inverse-moment bound from HMT, including positive exponents below two.
+* `NLAlib.integral_norm_sq_rpow_le_of_hasLaw_gaussianVector`: a uniform inverse-moment bound
+  in all admissible dimensions, with `chiSquareInverseMomentFactor` currently
+  equal to <!-- value chiSquareInverseMomentFactor -->$4$.
 * `NLAlib.le_integral_norm_sub_integral_norm_of_hasLaw_gaussianVector`:
   $\sqrt{m} - \sqrt{n} \le \mathbb{E}\|\mathbf{g}_m\| - \mathbb{E}\|\mathbf{g}_n\|$ for
   $1 \le n \le m$.
@@ -153,6 +161,171 @@ theorem integral_norm_sq_inv_of_hasLaw_gaussianVector (hg : HasLaw g (gaussianVe
   rw [mul_div_assoc, mul_comm ((Fintype.card n : ℝ) / 2 + -1), ← div_div, div_self hG.ne',
     show (Fintype.card n : ℝ) / 2 + -1 = ((Fintype.card n : ℝ) - 2) / 2 by ring]
   field_simp
+
+/-! ### Uniform inverse moments -/
+
+/-- The absolute factor in the uniform inverse chi-square moment bound in all admissible
+dimensions. Its value is <!-- value chiSquareInverseMomentFactor -->$4$; dimension at least
+five admits the stronger factor three from [HalkoMartinssonTropp2011, Lemma A.10]. -/
+noncomputable irreducible_def chiSquareInverseMomentFactor : ℝ := 4
+
+/-- The uniform inverse chi-square moment factor is positive. -/
+theorem chiSquareInverseMomentFactor_pos : 0 < chiSquareInverseMomentFactor := by
+  rw [chiSquareInverseMomentFactor_def]
+  norm_num
+
+/-- The uniform inverse chi-square moment factor is at most four; its current value
+is <!-- value chiSquareInverseMomentFactor -->$4$. -/
+theorem chiSquareInverseMomentFactor_le_four : chiSquareInverseMomentFactor ≤ 4 := by
+  rw [chiSquareInverseMomentFactor_def]
+
+/-- The exact negative moment, written with a positive power in the denominator. -/
+private theorem integral_norm_sq_rpow_neg_eq (hg : HasLaw g (gaussianVector n) μ)
+    {q : ℝ} (hqd : q < (Fintype.card n : ℝ) / 2) :
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ =
+      Gamma ((Fintype.card n : ℝ) / 2 - q) /
+        (2 ^ q * Gamma ((Fintype.card n : ℝ) / 2)) := by
+  rw [integral_norm_sq_rpow_of_hasLaw_gaussianVector hg (by linarith),
+    rpow_neg (by norm_num : (0 : ℝ) ≤ 2)]
+  simp only [sub_eq_add_neg, div_eq_mul_inv, mul_inv_rev]
+  ring
+
+/-- Probability-space moment comparison, specialized to the reciprocal Gaussian squared norm. -/
+private theorem integral_norm_sq_rpow_neg_root_mono (hg : HasLaw g (gaussianVector n) μ)
+    {p q : ℝ} (hp : 0 < p) (hpq : p ≤ q) (hqd : q < (Fintype.card n : ℝ) / 2) :
+    (∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-p) ∂μ) ^ p⁻¹ ≤
+      (∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ) ^ q⁻¹ := by
+  have := hg.isProbabilityMeasure
+  let f : Ω → ℝ := fun ω => (‖WithLp.toLp 2 (g ω)‖ ^ 2)⁻¹
+  have hf : AEStronglyMeasurable f μ :=
+    ((by fun_prop : Measurable fun x : n → ℝ => (‖WithLp.toLp 2 x‖ ^ 2)⁻¹).comp_aemeasurable
+      hg.aemeasurable).aestronglyMeasurable
+  have he (ω : Ω) (t : ℝ) : ‖f ω‖ ^ t = (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-t) := by
+    dsimp [f]
+    rw [abs_of_nonneg (by positivity), ← rpow_neg_eq_inv_rpow]
+  have hq : 0 < q := hp.trans_le hpq
+  have hMp : MemLp f (ENNReal.ofReal p) μ :=
+    (integrable_norm_rpow_iff hf (by simp [hp]) (by simp)).1 (by
+      simpa only [ENNReal.toReal_ofReal hp.le, he] using
+        integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := -p) (by linarith))
+  have hMq : MemLp f (ENNReal.ofReal q) μ :=
+    (integrable_norm_rpow_iff hf (by simp [hq]) (by simp)).1 (by
+      simpa only [ENNReal.toReal_ofReal hq.le, he] using
+        integrable_norm_sq_rpow_of_hasLaw_gaussianVector hg (s := -q) (by linarith))
+  have hmono := eLpNorm_le_eLpNorm_of_exponent_le (ENNReal.ofReal_le_ofReal hpq) hf (μ := μ)
+  rw [hMp.eLpNorm_eq_integral_rpow_norm (by simp [hp]) (by simp),
+    hMq.eLpNorm_eq_integral_rpow_norm (by simp [hq]) (by simp)] at hmono
+  simp only [ENNReal.toReal_ofReal hp.le, ENNReal.toReal_ofReal hq.le, he] at hmono
+  exact (ENNReal.ofReal_le_ofReal_iff (by positivity)).1 hmono
+
+/-- For a standard Gaussian vector of dimension $d\ge5$ and $0<q\le(d-1)/2$,
+$\mathbb{E}\|\mathbf{g}\|^{-2q} < (3/d)^q$.
+Integrability is `integrable_norm_sq_rpow_of_hasLaw_gaussianVector` with exponent $-q$.
+[HalkoMartinssonTropp2011, Lemma A.10] states the rooted bound for $2\le q\le(d-1)/2$;
+probability-space moment comparison extends its endpoint to every positive $q$ in this range.
+Port of `NLAlib.integral_rpow_inv_sum_sq_gaussianVector_root_le_three_div` and the strict
+endpoint `NLAlib.integral_rpow_inv_sum_sq_gaussianVector_lt`. -/
+theorem integral_norm_sq_rpow_lt_of_five_le_card_of_hasLaw_gaussianVector
+    (hg : HasLaw g (gaussianVector n) μ) (hn : 5 ≤ Fintype.card n)
+    {q : ℝ} (hq : 0 < q) (hqd : 2 * q + 1 ≤ (Fintype.card n : ℝ)) :
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ <
+      (3 / (Fintype.card n : ℝ)) ^ q := by
+  have hd : (5 : ℝ) ≤ Fintype.card n := by exact_mod_cast hn
+  let r : ℝ := ((Fintype.card n : ℝ) - 1) / 2
+  have hr : 0 < r := by dsimp [r]; linarith
+  have hend : ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-r) ∂μ <
+      (3 / (Fintype.card n : ℝ)) ^ r := by
+    rw [integral_norm_sq_rpow_neg_eq hg (by dsimp [r]; linarith),
+      show (Fintype.card n : ℝ) / 2 - r = 1 / 2 by dsimp [r]; ring, Gamma_one_half_eq]
+    exact sqrt_pi_div_rpow_mul_Gamma_lt_rpow hn
+  have hmono := integral_norm_sq_rpow_neg_root_mono hg hq (q := r)
+    (by dsimp [r]; linarith) (by dsimp [r]; linarith)
+  have hroot : (∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ) ^ q⁻¹ <
+      3 / (Fintype.card n : ℝ) := by
+    refine hmono.trans_lt ?_
+    have h := rpow_lt_rpow (by positivity) hend (by positivity : 0 < r⁻¹)
+    rwa [rpow_rpow_inv (by positivity) hr.ne'] at h
+  have h := rpow_lt_rpow (by positivity) hroot hq
+  rwa [rpow_inv_rpow (by positivity) hq.ne'] at h
+
+/-- The two-dimensional endpoint, after taking the square. -/
+private theorem integral_norm_sq_rpow_neg_half_sq_le_two
+    (hg : HasLaw g (gaussianVector n) μ) (hn : Fintype.card n = 2) :
+    (∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-(1 / 2 : ℝ)) ∂μ) ^ 2 ≤ 2 := by
+  rw [integral_norm_sq_rpow_neg_eq hg (by norm_num [hn]), hn]
+  norm_num [Gamma_one_half_eq, Gamma_one, ← sqrt_eq_rpow]
+  have hs := sq_sqrt pi_nonneg
+  have ht := sq_sqrt (show (0 : ℝ) ≤ 2 by norm_num)
+  have hp := pi_le_four
+  rw [div_pow]
+  exact (div_le_iff₀ (by positivity : 0 < sqrt 2 ^ 2)).mpr (by nlinarith)
+
+/-- The four-dimensional endpoint is at most one. -/
+private theorem integral_norm_sq_rpow_neg_three_halves_le_one
+    (hg : HasLaw g (gaussianVector n) μ) (hn : Fintype.card n = 4) :
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-(3 / 2 : ℝ)) ∂μ ≤ 1 := by
+  rw [integral_norm_sq_rpow_neg_eq hg (by norm_num [hn]), hn]
+  norm_num [Gamma_one_half_eq, Gamma_two]
+  have hs : sqrt π ≤ 2 := by nlinarith [sq_sqrt pi_nonneg, sqrt_nonneg π, pi_le_four]
+  have ht : (2 : ℝ) ≤ 2 ^ (3 / 2 : ℝ) := by
+    simpa using rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+      (by norm_num : (1 : ℝ) ≤ 3 / 2)
+  exact (div_le_one (by positivity : (0 : ℝ) < 2 ^ (3 / 2 : ℝ))).mpr (hs.trans ht)
+
+/-- The small-dimension cases of the rooted inverse-moment bound. -/
+private theorem integral_norm_sq_rpow_neg_root_le_four_div_of_card_lt_five
+    (hg : HasLaw g (gaussianVector n) μ) (hn : Fintype.card n < 5)
+    {q : ℝ} (hq : 0 < q) (hqd : 2 * q + 1 ≤ (Fintype.card n : ℝ)) :
+    (∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ) ^ q⁻¹ ≤
+      4 / (Fintype.card n : ℝ) := by
+  have hd2 : 2 ≤ Fintype.card n := by
+    have : (1 : ℝ) < Fintype.card n := by linarith
+    have : 1 < Fintype.card n := by exact_mod_cast this
+    omega
+  have hcases : Fintype.card n = 2 ∨ Fintype.card n = 3 ∨ Fintype.card n = 4 := by omega
+  rcases hcases with hd | hd | hd
+  · have h := integral_norm_sq_rpow_neg_root_mono hg hq (q := 1 / 2)
+      (by norm_num [hd] at hqd ⊢; linarith) (by norm_num [hd])
+    have hb := integral_norm_sq_rpow_neg_half_sq_le_two hg hd
+    norm_num [hd] at h ⊢
+    exact h.trans hb
+  · have h := integral_norm_sq_rpow_neg_root_mono hg hq (q := 1)
+      (by norm_num [hd] at hqd ⊢; linarith) (by norm_num [hd])
+    have he := integral_norm_sq_inv_of_hasLaw_gaussianVector hg (by omega)
+    norm_num [hd, rpow_neg_one] at he h ⊢
+    rw [he] at h
+    exact h.trans (by norm_num)
+  · have h := integral_norm_sq_rpow_neg_root_mono hg hq (q := 3 / 2)
+      (by norm_num [hd] at hqd ⊢; linarith) (by norm_num [hd])
+    have hb := rpow_le_one (by positivity)
+      (integral_norm_sq_rpow_neg_three_halves_le_one hg hd)
+      (by norm_num : 0 ≤ (3 / 2 : ℝ)⁻¹)
+    exact h.trans (by simpa [hd] using hb)
+
+/-- For a standard Gaussian vector of dimension $d$ and $0\le q\le(d-1)/2$,
+we have <!-- value chiSquareInverseMomentFactor -->$\mathbb{E}\|\mathbf{g}\|^{-2q} \le (4/d)^q$.
+The Lean bound uses `chiSquareInverseMomentFactor`. Integrability is
+`integrable_norm_sq_rpow_of_hasLaw_gaussianVector` with exponent $-q$.
+This extends the dimension-at-least-five estimate of [HalkoMartinssonTropp2011, Lemma A.10]
+to dimensions two, three, and four using the exact Gamma formula; exponent zero is immediate.
+Port of `NLAlib.integral_rpow_inv_sum_sq_gaussianVector_root_le_four_div` and
+`NLAlib.integral_rpow_inv_sum_sq_root_le_four_div_of_hasLaw`. -/
+theorem integral_norm_sq_rpow_le_of_hasLaw_gaussianVector
+    (hg : HasLaw g (gaussianVector n) μ)
+    {q : ℝ} (hq : 0 ≤ q) (hqd : 2 * q + 1 ≤ (Fintype.card n : ℝ)) :
+    ∫ ω, (‖WithLp.toLp 2 (g ω)‖ ^ 2) ^ (-q) ∂μ ≤
+      (chiSquareInverseMomentFactor / (Fintype.card n : ℝ)) ^ q := by
+  have := hg.isProbabilityMeasure
+  rcases eq_or_lt_of_le hq with rfl | hq
+  · simp
+  rw [chiSquareInverseMomentFactor_def]
+  by_cases hn : 5 ≤ Fintype.card n
+  · exact (integral_norm_sq_rpow_lt_of_five_le_card_of_hasLaw_gaussianVector hg hn hq hqd).le.trans
+      (rpow_le_rpow (by positivity) (by gcongr; norm_num) hq.le)
+  have hroot := integral_norm_sq_rpow_neg_root_le_four_div_of_card_lt_five hg
+    (by omega) hq hqd
+  have h := rpow_le_rpow (by positivity) hroot hq.le
+  rwa [rpow_inv_rpow (by positivity) hq.ne'] at h
 
 /-! ### The growth of $\mathbb{E}\|\mathbf{g}_d\|$ -/
 

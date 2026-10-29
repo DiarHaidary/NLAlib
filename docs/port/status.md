@@ -2,6 +2,31 @@
 
 Updated at every stopping point. Newest entry first within each section.
 
+## BI1: backend results on existing interfaces (2026-10-29)
+
+Branch `codex/integrate-backend-results`, based on frontend `6491e75`; backend source
+`77514ce42a0e437d837797a063ac161f41022730`. The current user request reopens suitable omitted
+and unaccounted results. Bounded designs and independent statement reviews are recorded in
+the new `Backend-*` notes and `Matrix-PositivePart.md`, following the standing approvals and
+available-agent review fallback. No algorithm targets or hypothesis interfaces are added.
+
+The integration adds 53 authored public theorem statements and promotes one existing private
+characteristic-factorization theorem. It covers spectral multiplicities, principal-submatrix
+survival, left-right deflation, triangularization transfer, Sylvester block equations,
+spectral-floor projection, scaled-isometry approximation, Hermitian-part realization, real
+canonical forms, Richardson/projector convergence, and Gaussian moment/lower-tail estimates.
+The three numerical factors are in `docs/constants.toml`; `PositivePart.lean` is the only new
+theory module. The rest extends existing topic files and preserves dependency layers.
+
+The ledger reconciles 78 entries (38 earlier omissions, 40 previously unaccounted): 66 public
+API correspondences and 12 explicit nonpublic/reuse decisions. Existing coverage and private
+support are separated from new proof additions. See
+[`backend-integration-2026-10-29.md`](backend-integration-2026-10-29.md) for scope, read-back,
+remaining infrastructure, citations, and validation details. The warning-fatal full build,
+all three roots, freshness, axiom audit, Lean linters, program/target checks, kernel replay,
+eight replay fixtures, extraction-backed naming/rules, and documentation/regression checks
+pass. The report records the Windows runner adjustments and intentional advisory warnings.
+
 ## Finite-precision Lanczos: integration (2026-10-28)
 
 Branch `design/lanczos-fp` (local). Design `docs/design/Krylov-LanczosRounding.md` (status:

@@ -25,6 +25,8 @@ stay bounded exactly when it is at most one and the eigenvalues of modulus one a
 * `NLAlib.exists_forall_specNorm_pow_le_mul_pow`: growth of the powers.
 * `NLAlib.tendsto_pow_zero_iff_specRadius_lt_one`.
 * `NLAlib.hasSum_pow_inv_one_sub_of_specRadius_lt_one`: the Neumann series.
+* `NLAlib.isUnit_of_specRadius_one_sub_mul_lt_one`: invertibility from a stable
+  preconditioned iteration matrix.
 * `NLAlib.exists_specNorm_inv_mul_mul_le`: a similarity to within $\varepsilon$ of the spectral
   radius.
 * `NLAlib.exists_forall_specNorm_pow_le_iff`: power-bounded matrices.
@@ -179,6 +181,18 @@ theorem isUnit_det_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜} (hA : spec
   have h1 := norm_le_specRadius_of_mem_spectrum hmem
   rw [norm_one] at h1
   exact absurd hA (not_lt.mpr h1)
+
+/-- A square matrix $\mathbf{A}$ is invertible if the spectral radius of
+$\mathbf{I} - \mathbf{M}\mathbf{A}$ is less than one. No invertibility assumption on
+$\mathbf{M}$ is needed: the spectral condition makes the product invertible.
+The solvability step in the port of `NLAlib.isUnit_sub_of_tendsto_splitting_pow_zero`,
+restated for an arbitrary preconditioner. -/
+theorem isUnit_of_specRadius_one_sub_mul_lt_one
+    {A M : Matrix n n 𝕜} (hρ : specRadius (1 - M * A) < 1) : IsUnit A := by
+  have hdet := isUnit_det_one_sub_of_specRadius_lt_one hρ
+  rw [sub_sub_cancel, Matrix.det_mul] at hdet
+  exact (Matrix.isUnit_iff_isUnit_det A).mpr (isUnit_of_mul_isUnit_right hdet)
+
 /-! ### Similarity to within $\varepsilon$ -/
 
 omit [DecidableEq n] in
@@ -413,5 +427,81 @@ theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
 @[deprecated specNorm_pow_le_pseudoConditionNumber_mul (since := "2026-10-14")]
 alias specNorm_pow_le_conditionNumber_mul :=
   specNorm_pow_le_pseudoConditionNumber_mul
+
+
+/-! ### Fixed idempotent limits -/
+
+private theorem pow_mul_eq_of_mul_eq {K : Type*} [Semiring K]
+    (T P : Matrix n n K) (hTP : T * P = P) (k : ℕ) : T ^ k * P = P := by
+  induction k with
+  | zero => rw [pow_zero, one_mul]
+  | succ k ih => rw [pow_succ, mul_assoc, hTP, ih]
+
+/-- Removing an idempotent fixed on both sides removes it from every positive power.
+Port of `NLAlib.matrix_sub_projector_pow_succ`. -/
+theorem sub_pow_succ_eq_pow_succ_sub {K : Type*} [Ring K]
+    (T P : Matrix n n K) (hP : IsIdempotentElem P)
+    (hTP : T * P = P) (hPT : P * T = P) (k : ℕ) :
+    (T - P) ^ (k + 1) = T ^ (k + 1) - P := by
+  induction k with
+  | zero => simp only [zero_add, pow_one]
+  | succ k ih =>
+    rw [pow_succ, ih, sub_mul, mul_sub, mul_sub,
+      pow_mul_eq_of_mul_eq T P hTP, hPT, hP, ← pow_succ]
+    abel
+
+private theorem eventually_sub_pow_eq_pow_sub (T P : Matrix n n 𝕜)
+    (hP : IsIdempotentElem P) (hTP : T * P = P) (hPT : P * T = P) :
+    (fun k : ℕ => (T - P) ^ k) =ᶠ[atTop] (fun k => T ^ k - P) := by
+  filter_upwards [eventually_ge_atTop 1] with k hk
+  obtain ⟨j, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : k ≠ 0)
+  exact sub_pow_succ_eq_pow_succ_sub T P hP hTP hPT j
+
+/-- Powers converge to a fixed idempotent exactly when subtracting it leaves spectral
+radius less than one. No normality or diagonalizability is required.
+Port of `NLAlib.tendsto_matrix_pow_projector_of_deflated_spectralRadius_lt_one`. -/
+theorem tendsto_pow_iff_specRadius_sub_lt_one
+    (T P : Matrix n n 𝕜) (hP : IsIdempotentElem P)
+    (hTP : T * P = P) (hPT : P * T = P) :
+    Tendsto (fun k : ℕ => T ^ k) atTop (𝓝 P) ↔ specRadius (T - P) < 1 := by
+  have heq := eventually_sub_pow_eq_pow_sub T P hP hTP hPT
+  constructor
+  · intro h
+    apply (tendsto_pow_zero_iff_specRadius_lt_one (T - P)).mp
+    have hz : Tendsto (fun k : ℕ => T ^ k - P) atTop (𝓝 0) := by
+      simpa only [sub_self] using h.sub_const P
+    exact hz.congr' heq.symm
+  · intro h
+    have hz := (tendsto_pow_zero_iff_specRadius_lt_one (T - P)).mpr h
+    have hp : Tendsto (fun k : ℕ => (T - P) ^ k + P) atTop (𝓝 P) := by
+      simpa only [zero_add] using hz.add_const P
+    apply hp.congr'
+    filter_upwards [heq] with k hk
+    rw [hk, sub_add_cancel]
+
+/-- Powers approach a fixed idempotent with an $O(r^k)$ error for every rate strictly
+above the spectral radius after subtraction. The constant depends on the matrices and
+rate, and includes the zero exponent.
+Port of `NLAlib.exists_specNorm_matrix_pow_sub_projector_le_geometric`. -/
+theorem exists_forall_specNorm_pow_sub_le_mul_pow
+    (T P : Matrix n n 𝕜) (hP : IsIdempotentElem P)
+    (hTP : T * P = P) (hPT : P * T = P)
+    {r : ℝ} (hr : specRadius (T - P) < r) :
+    ∃ C : ℝ, 0 < C ∧ ∀ k : ℕ, specNorm (T ^ k - P) ≤ C * r ^ k := by
+  have hr0 : 0 < r := (specRadius_nonneg (T - P)).trans_lt hr
+  obtain ⟨C, hC, hbound⟩ := exists_forall_specNorm_pow_le_mul_pow (T - P)
+    (sub_pos.mpr hr)
+  have hb (k : ℕ) : specNorm ((T - P) ^ k) ≤ C * r ^ k := by
+    simpa only [add_sub_cancel] using hbound k
+  refine ⟨specNorm (1 - P) + C, add_pos_of_nonneg_of_pos (specNorm_nonneg _) hC,
+    fun k => ?_⟩
+  cases k with
+  | zero =>
+    simp only [pow_zero, mul_one]
+    exact le_add_of_nonneg_right hC.le
+  | succ k =>
+    rw [← sub_pow_succ_eq_pow_succ_sub T P hP hTP hPT]
+    exact (hb _).trans (mul_le_mul_of_nonneg_right
+      (le_add_of_nonneg_left (specNorm_nonneg _)) (pow_nonneg hr0.le _))
 
 end NLAlib

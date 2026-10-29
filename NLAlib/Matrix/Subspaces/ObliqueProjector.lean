@@ -410,4 +410,18 @@ theorem obliqueProjector_mul_one_sub_rangeProjector_mul_eq [DecidableEq m] {c : 
 @[deprecated Matrix.rank_mul_eq_iff_injOn (since := "2026-10-15")]
 alias rank_mul_eq_iff_injOn := Matrix.rank_mul_eq_iff_injOn
 
+/-- The normalized outer product is idempotent. If the pairing vanishes, the expression is
+zero by the total inverse convention; otherwise it projects onto the right vector's span.
+Port of `NLAlib.normalized_vecMulVec_mul_self`, with the zero-pairing case included. -/
+theorem isIdempotentElem_inv_smul_vecMulVec {K : Type*} [Field K]
+    {ι : Type*} [Fintype ι] {x y : ι → K} :
+    IsIdempotentElem ((y ⬝ᵥ x)⁻¹ • Matrix.vecMulVec x y) := by
+  by_cases h : y ⬝ᵥ x = 0
+  · simp only [h, inv_zero, zero_smul, IsIdempotentElem, mul_zero]
+  · change _ * _ = _
+    rw [Matrix.smul_mul, Matrix.mul_smul, Matrix.vecMulVec_mul_vecMulVec,
+      Matrix.vecMulVec_smul, smul_smul, smul_smul]
+    congr 1
+    field_simp
+
 end NLAlib
