@@ -331,6 +331,376 @@ theorem sum_ρ_sq_div_ρ_sq_le {l l' : ℝ} (hl : 0 < l)
       Finset.sum_const_zero]
     exact div_nonneg (hl.le.trans hll') hl.le
 
+/-! ### Helpers for the a priori induction -/
+
+/-- The elementary consequences of the spectral hypothesis and of (H) for a run of $m$ steps:
+$a \le a'$, $\kappa \ge 1$, $\|\mathbf{A}\|_2 \le a'$, and the smallness of $m^i\varepsilon\kappa$,
+$i \le 2$. -/
+private theorem small_facts {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
+    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    a ≤ a' ∧ 1 ≤ a' / a ∧ specNorm D.A ≤ a' ∧ D.ε ≤ 1 / 10 ^ 5 ∧
+      D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (m : ℝ) * D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
+      (m : ℝ) ^ 2 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (m : ℝ) ^ 3 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 := by
+  have hn := D.n_pos
+  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  have hherm := D.isHermitian_A
+  have haa' : a ≤ a' := le_of_spectrum hherm hs
+  have hκ : 1 ≤ a' / a := (one_le_div ha).mpr haa'
+  have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
+  have hε := D.ε_nonneg
+  have hspec : specNorm D.A ≤ a' := by
+    have hc : n - 1 + 1 = Fintype.card (Fin n) := by simp; omega
+    rw [hherm.specNorm_eq_max hc]
+    have e0 := hherm.spectrum_subset_iff.mp hs 0 (by simp; omega)
+    have e1 := hherm.spectrum_subset_iff.mp hs (n - 1) (by simp; omega)
+    rw [abs_of_pos (ha.trans_le e0.1), abs_of_pos (ha.trans_le e1.1)]
+    exact max_le e0.2 e1.2
+  have hκ2 : a' / a ≤ (a' / a) ^ 2 := by nlinarith
+  have hm2 : (m : ℝ) ≤ (m : ℝ) ^ 2 := by nlinarith
+  have hm3 : (m : ℝ) ^ 2 ≤ (m : ℝ) ^ 3 := by nlinarith
+  have h3 : (m : ℝ) ^ 3 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
+    le_trans (by have := mul_le_mul_of_nonneg_left hκ2 (by positivity : 0 ≤ (m : ℝ) ^ 3 * D.ε)
+                 linarith) hsmall
+  have h2 : (m : ℝ) ^ 2 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
+    le_trans (by have := mul_le_mul_of_nonneg_right hm3 (by positivity : 0 ≤ D.ε * (a' / a))
+                 nlinarith) h3
+  have h1 : (m : ℝ) * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
+    le_trans (by have := mul_le_mul_of_nonneg_right hm2 (by positivity : 0 ≤ D.ε * (a' / a))
+                 nlinarith) h2
+  have h0 : D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
+    le_trans (by have := mul_le_mul_of_nonneg_right hm (by positivity : 0 ≤ D.ε * (a' / a))
+                 nlinarith) h1
+  have he : D.ε ≤ 1 / 10 ^ 5 :=
+    le_trans (by have := mul_le_mul_of_nonneg_left hκ hε; nlinarith) h0
+  exact ⟨haa', hκ, hspec, he, h0, h1, h2, h3⟩
+
+/-- **Exact CG step lengths are at least $1/\lambda_{\max}$**: for positive definite
+$\mathbf{H}$ with spectrum in $[l, l']$ and $\mathbf{r}_j \ne \mathbf{0}$, $\gamma_j \ge 1/l'$
+(by conjugacy, $\mathbf{p}_j^{\mathsf{T}}\mathbf{H}\mathbf{p}_j \le
+\mathbf{r}_j^{\mathsf{T}}\mathbf{H}\mathbf{r}_j$). -/
+private theorem one_div_le_cgAlpha {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
+    (hH : H.PosDef) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') (b : m → ℝ)
+    (j : ℕ) (hr : (cgState H b 0 j).r ≠ 0) :
+    1 / l' ≤ cgAlpha H (cgState H b 0 j) := by
+  have hherm := hH.isHermitian
+  have hT : Hᵀ = H := by
+    have := hherm.eq
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hsymm : ∀ u v : m → ℝ, u ⬝ᵥ (H *ᵥ v) = v ⬝ᵥ (H *ᵥ u) := fun u v => by
+    rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, hT, dotProduct_comm]
+  set r := (cgState H b 0 j).r
+  set p := (cgState H b 0 j).p
+  have hrpos : 0 < ‖WithLp.toLp 2 r‖ := by
+    rcases (norm_nonneg (WithLp.toLp 2 r)).lt_or_eq with h | h
+    · exact h
+    · exact absurd (by simpa using h.symm) hr
+  -- `‖p‖ ≥ ‖r‖ > 0`
+  have hp : p ≠ 0 := by
+    intro h0
+    have heq := hH.norm_cgState_p_sq_eq b j
+    have hsum : (‖WithLp.toLp 2 r‖ ^ 2)⁻¹ ≤
+        ∑ i ∈ Finset.range (j + 1), (‖WithLp.toLp 2 (cgState H b 0 i).r‖ ^ 2)⁻¹ :=
+      Finset.single_le_sum (f := fun i => (‖WithLp.toLp 2 (cgState H b 0 i).r‖ ^ 2)⁻¹)
+        (fun i _ => by positivity) (Finset.self_mem_range_succ j)
+    change ‖WithLp.toLp 2 p‖ ^ 2 = ‖WithLp.toLp 2 r‖ ^ 4 * _ at heq
+    rw [h0, WithLp.toLp_zero, norm_zero] at heq
+    have h4 : 0 < ‖WithLp.toLp 2 r‖ ^ 4 * (‖WithLp.toLp 2 r‖ ^ 2)⁻¹ := by positivity
+    have := mul_le_mul_of_nonneg_left hsum (by positivity : 0 ≤ ‖WithLp.toLp 2 r‖ ^ 4)
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, zero_eq_mul, pow_eq_zero_iff,
+      norm_eq_zero] at heq
+    rcases heq with h | h
+    · exact hr (by simpa using h)
+    · rw [h] at this
+      linarith
+  have hqp : 0 < p ⬝ᵥ (H *ᵥ p) := by
+    have := hH.dotProduct_mulVec_pos hp
+    simpa using this
+  -- conjugacy: `pᵀHp ≤ rᵀHr`
+  have hle : p ⬝ᵥ (H *ᵥ p) ≤ r ⬝ᵥ (H *ᵥ r) := by
+    rcases j with _ | j
+    · exact le_of_eq rfl
+    · obtain ⟨c, hc⟩ : ∃ c : ℝ, p = r + c • (cgState H b 0 j).p := ⟨_, rfl⟩
+      set q := (cgState H b 0 j).p
+      have hconj : q ⬝ᵥ (H *ᵥ p) = 0 := by
+        simpa using hH.star_cgState_p_dotProduct_mulVec_eq_zero (b := b) (x₀ := 0)
+          (Nat.lt_succ_self j)
+      have hq0 : 0 ≤ q ⬝ᵥ (H *ᵥ q) := by
+        have := hH.posSemidef.dotProduct_mulVec_nonneg q
+        simpa using this
+      have e1 : p ⬝ᵥ (H *ᵥ p) = r ⬝ᵥ (H *ᵥ p) := by
+        have : (r + c • q) ⬝ᵥ (H *ᵥ p) = r ⬝ᵥ (H *ᵥ p) := by
+          rw [add_dotProduct, smul_dotProduct, hconj, smul_zero, add_zero]
+        rwa [← hc] at this
+      have e2 : r ⬝ᵥ (H *ᵥ p) = r ⬝ᵥ (H *ᵥ r) + c * (r ⬝ᵥ (H *ᵥ q)) := by
+        rw [hc, Matrix.mulVec_add, Matrix.mulVec_smul, dotProduct_add, dotProduct_smul,
+          smul_eq_mul]
+      have e3 : q ⬝ᵥ (H *ᵥ r) + c * (q ⬝ᵥ (H *ᵥ q)) = 0 := by
+        rw [← hconj, hc, Matrix.mulVec_add, Matrix.mulVec_smul, dotProduct_add, dotProduct_smul,
+          smul_eq_mul]
+      have e4 := hsymm r q
+      have e5 : c * (q ⬝ᵥ (H *ᵥ r)) = -(c ^ 2 * (q ⬝ᵥ (H *ᵥ q))) := by
+        linear_combination c * e3
+      rw [e4, e5] at e2
+      nlinarith [mul_nonneg (sq_nonneg c) hq0]
+  have hrr := (quadForm_bounds hherm hs r).2
+  have hl' : 0 < l' := by
+    have := hherm
+    nlinarith [(quadForm_bounds hherm hs p).2, sq_nonneg ‖WithLp.toLp 2 p‖,
+      (quadForm_bounds hherm hs r).1]
+  rw [cgAlpha, quadForm_def, star_trivial, RCLike.re_to_real, div_le_div_iff₀ hl' hqp]
+  nlinarith
+
+/-- The curvature certificate for any run (the content of
+`NLAlib.CGRun.specNorm_mul_γ_mul_norm_p_sq_le`): no model needed. -/
+private theorem specNorm_mul_γ_mul_norm_p_sq_le_aux {n m : ℕ} (D : CGRun n m) {a a' : ℝ}
+    (ha : 0 < a) (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
+    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < m) :
+    specNorm D.A * D.γ j * ‖WithLp.toLp 2 (D.p j)‖ ^ 2 ≤ 21 / 20 * (a' / a) * D.ρ j ^ 2 := by
+  obtain ⟨haa', hκ, hspec, he, hεκ, -⟩ := small_facts D ha hs hsmall
+  have hε := D.ε_nonneg
+  have hγ := D.γ_pos hj
+  set P0 := ‖WithLp.toLp 2 (D.p j)‖ with hP0
+  have hρ2 : 0 ≤ D.ρ j ^ 2 := sq_nonneg _
+  have hRHS : 0 ≤ 21 / 20 * (a' / a) * D.ρ j ^ 2 := by positivity
+  rcases (norm_nonneg (WithLp.toLp 2 (D.p j))).lt_or_eq with hpos | hzero
+  swap
+  · have : P0 = 0 := hP0.trans hzero.symm
+    rw [this]; simpa using hRHS
+  rw [← hP0] at hpos
+  -- the curvature from below
+  have hpAp := (quadForm_bounds D.isHermitian_A hs (D.p j)).1
+  have hes := D.norm_es_le j hj
+  have hes' : |D.p j ⬝ᵥ D.es j| ≤ D.ε * a' * P0 ^ 2 := by
+    refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans ?_
+    calc P0 * ‖WithLp.toLp 2 (D.es j)‖ ≤ P0 * (D.ε * specNorm D.A * P0) :=
+          mul_le_mul_of_nonneg_left hes hpos.le
+      _ ≤ P0 * (D.ε * a' * P0) := by gcongr
+      _ = D.ε * a' * P0 ^ 2 := by ring
+  have hs_norm : ‖WithLp.toLp 2 (D.s j)‖ ≤ (1 + D.ε) * a' * P0 := by
+    rw [D.s_eq j hj, WithLp.toLp_add]
+    refine (norm_add_le _ _).trans ?_
+    have h1 := norm_toLp_mulVec_le D.A (D.p j)
+    calc ‖WithLp.toLp 2 (D.A *ᵥ D.p j)‖ + ‖WithLp.toLp 2 (D.es j)‖
+        ≤ specNorm D.A * P0 + D.ε * specNorm D.A * P0 := add_le_add h1 hes
+      _ ≤ a' * P0 + D.ε * a' * P0 := by gcongr
+      _ = (1 + D.ε) * a' * P0 := by ring
+  have heμ : |D.eμ j| ≤ D.ε * (1 + D.ε) * a' * P0 ^ 2 := by
+    refine (D.abs_eμ_le j hj).trans ?_
+    calc D.ε * P0 * ‖WithLp.toLp 2 (D.s j)‖ ≤ D.ε * P0 * ((1 + D.ε) * a' * P0) := by gcongr
+      _ = D.ε * (1 + D.ε) * a' * P0 ^ 2 := by ring
+  have hεa' : D.ε * a' ≤ a / 10 ^ 5 := by
+    have : D.ε * a' = D.ε * (a' / a) * a := by field_simp
+    rw [this]
+    nlinarith
+  have hμ : (1 - 3 / 10 ^ 5) * a * P0 ^ 2 ≤ D.μ j := by
+    rw [D.μ_eq j hj, D.s_eq j hj, dotProduct_add]
+    have h1 := neg_abs_le (D.p j ⬝ᵥ D.es j)
+    have h2 := neg_abs_le (D.eμ j)
+    have hP2 : 0 ≤ P0 ^ 2 := sq_nonneg _
+    have : D.ε * (1 + D.ε) * a' * P0 ^ 2 ≤ 2 * (D.ε * a') * P0 ^ 2 := by
+      have : D.ε * (1 + D.ε) * a' ≤ 2 * (D.ε * a') := by nlinarith
+      nlinarith
+    nlinarith
+  have hμpos : 0 < D.μ j := D.μ_pos j hj
+  -- the step length from above
+  have hγμ : D.γ j * D.μ j = D.ν j * (1 + D.eγ j) := by
+    rw [D.γ_eq j hj]; field_simp
+  have hν : D.ν j * (1 + D.eγ j) ≤ (1 + D.ε) ^ 2 * D.ρ j ^ 2 := by
+    rw [D.ν_eq j hj.le]
+    have h1 := (abs_le.mp (D.abs_θ_le j hj.le)).2
+    have h2 := (abs_le.mp (D.abs_eγ_le j hj)).2
+    have h3 := (abs_le.mp (D.abs_eγ_le j hj)).1
+    have h4 := (abs_le.mp (D.abs_θ_le j hj.le)).1
+    change D.ρ j ^ 2 * (1 + D.θ j) * (1 + D.eγ j) ≤ _
+    have h5 : 0 ≤ 1 + D.eγ j := by linarith
+    have : (1 + D.θ j) * (1 + D.eγ j) ≤ (1 + D.ε) ^ 2 := by nlinarith
+    nlinarith
+  have hkey : D.γ j * P0 ^ 2 * ((1 - 3 / 10 ^ 5) * a) ≤ (1 + D.ε) ^ 2 * D.ρ j ^ 2 := by
+    calc D.γ j * P0 ^ 2 * ((1 - 3 / 10 ^ 5) * a) = D.γ j * ((1 - 3 / 10 ^ 5) * a * P0 ^ 2) := by
+          ring
+      _ ≤ D.γ j * D.μ j := mul_le_mul_of_nonneg_left hμ hγ.le
+      _ ≤ _ := hγμ ▸ hν
+  have hA : specNorm D.A * D.γ j * P0 ^ 2 ≤ a' * (D.γ j * P0 ^ 2) := by
+    rw [← mul_assoc]; gcongr
+  refine hA.trans ?_
+  have hc : 0 < (1 - 3 / 10 ^ 5) * a := by positivity
+  have hγP : D.γ j * P0 ^ 2 ≤ (1 + D.ε) ^ 2 * D.ρ j ^ 2 / ((1 - 3 / 10 ^ 5) * a) := by
+    rw [le_div_iff₀ hc]; exact hkey
+  calc a' * (D.γ j * P0 ^ 2) ≤ a' * ((1 + D.ε) ^ 2 * D.ρ j ^ 2 / ((1 - 3 / 10 ^ 5) * a)) := by
+        gcongr; linarith
+    _ = (a' / a) * ((1 + D.ε) ^ 2 / (1 - 3 / 10 ^ 5)) * D.ρ j ^ 2 := by
+        field_simp
+    _ ≤ (a' / a) * (21 / 20) * D.ρ j ^ 2 := by
+        have hq : (1 + D.ε) ^ 2 / (1 - 3 / 10 ^ 5) ≤ 21 / 20 := by
+          rw [div_le_iff₀ (by norm_num)]; nlinarith
+        exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hq (by positivity)) hρ2
+    _ = 21 / 20 * (a' / a) * D.ρ j ^ 2 := by ring
+
+/-- **The model from the a priori certificates**: with $\Pi^2 = 3.3\kappa$, $K = 1.05\kappa$,
+$B = 1.6a'$ the a posteriori engine gives $4 \cdot 10^4m^3\varepsilon\kappa a'$. -/
+private theorem frobNorm_le_of_apriori {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
+    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hP : ∀ i < m, ‖WithLp.toLp 2 (D.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * D.ρ i ^ 2)
+    (hK : ∀ i < m, specNorm D.A * D.γ i * ‖WithLp.toLp 2 (D.p i)‖ ^ 2 ≤
+      21 / 20 * (a' / a) * D.ρ i ^ 2)
+    (hB : ∀ i, i + 1 < m → D.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ D.δ i ≤ 8 / 5 * a' * D.γ i) :
+    frobNorm (D.backwardH - D.dilatedH) ≤ 40000 * m ^ 3 * D.ε * (a' / a) * a' := by
+  obtain ⟨haa', hκ, hspec, -⟩ := small_facts D ha hs hsmall
+  set κ := a' / a with hκdef
+  have hε := D.ε_nonneg
+  have ha' : 0 < a' := ha.trans_le haa'
+  set P := Real.sqrt (33 / 10 * κ) with hPdef
+  have hP0 : 0 ≤ P := Real.sqrt_nonneg _
+  have hP2 : P ^ 2 = 33 / 10 * κ := Real.sq_sqrt (by positivity)
+  have hP' : ∀ i < m, ‖WithLp.toLp 2 (D.p i)‖ ≤ P * D.ρ i := fun i hi => by
+    have hρ : 0 ≤ D.ρ i := norm_nonneg _
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
+    rw [mul_pow, hP2]
+    exact hP i hi
+  have h := D.frobNorm_backwardH_sub_dilatedH_le_of_certificates hP' hK hB
+  refine h.trans ?_
+  have hs0 : 0 ≤ specNorm D.A := specNorm_nonneg _
+  have h1P : (1 + P) ^ 2 ≤ 86 / 10 * κ := by nlinarith [sq_nonneg (1 - P)]
+  have hPK : 1 + P + 21 / 20 * κ ≤ 42 / 10 * κ := by nlinarith [sq_nonneg (1 - P)]
+  have hsP : specNorm D.A * (1 + P) ^ 2 ≤ a' * (86 / 10 * κ) :=
+    mul_le_mul hspec h1P (by positivity) ha'.le
+  have hBκ : 8 / 5 * a' ≤ 8 / 5 * (κ * a') := by nlinarith
+  have hf : 8 * D.ε * (specNorm D.A * (1 + P) ^ 2 + 8 / 5 * a') ≤
+      8 * D.ε * (102 / 10 * (κ * a')) := by
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    nlinarith
+  have hp : 16 * (m : ℝ) * D.ε * (specNorm D.A * (1 + P) ^ 2 + 8 / 5 * a' *
+      (1 + P + 21 / 20 * κ)) ≤ 16 * (m : ℝ) * D.ε * (1532 / 100 * (κ * a')) := by
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    have : 8 / 5 * a' * (1 + P + 21 / 20 * κ) ≤ 8 / 5 * a' * (42 / 10 * κ) :=
+      mul_le_mul_of_nonneg_left hPK (by positivity)
+    nlinarith
+  unfold normalizedBackwardBound
+  have hm3 : 0 ≤ (m : ℝ) ^ 3 := by positivity
+  have hm2 : 0 ≤ (m : ℝ) ^ 2 := by positivity
+  have := add_le_add (mul_le_mul_of_nonneg_left hf (by positivity : 0 ≤ 102 * (m : ℝ) ^ 3))
+    (mul_le_mul_of_nonneg_left hp (by positivity : 0 ≤ 96 * (m : ℝ) ^ 2))
+  refine this.trans ?_
+  have hE : 0 ≤ (m : ℝ) ^ 3 * (D.ε * (κ * a')) := by positivity
+  nlinarith
+
+/-- **Weyl localisation from the a priori model bound**: under (H) the model is within $0.4a$ of
+$\mathbf{I} \otimes \mathbf{A}$, so its spectrum is in $[a/2, a' + a/2]$. -/
+private theorem spectrum_subset_of_frobNorm_le {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
+    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hc : frobNorm (D.backwardH - D.dilatedH) ≤ 40000 * m ^ 3 * D.ε * (a' / a) * a') :
+    spectrum ℝ D.backwardH ⊆ Set.Icc (a / 2) (a' + a / 2) := by
+  have hc' : 40000 * (m : ℝ) ^ 3 * D.ε * (a' / a) * a' ≤ a / 2 := by
+    have : 40000 * (m : ℝ) ^ 3 * D.ε * (a' / a) * a' =
+        40000 * ((m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2) * a := by
+      field_simp
+    rw [this]
+    nlinarith
+  have h := NormalizedLanczosData.spectrum_backwardH_subset_Icc (D := D.toNormalizedLanczosData)
+    (a := a) (a' := a') hs (hc.trans hc')
+  exact h.trans (Set.Icc_subset_Icc (by linarith) le_rfl)
+
+/-- The direction coefficient against the exact residual ratio, one-sided:
+$0 \le \delta_i \le (1 + 4\varepsilon)\rho_{i+1}^2/\rho_i^2$. -/
+private theorem δ_bounds {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i < m) :
+    0 ≤ D.δ i ∧ D.δ i ≤ (1 + 4 * D.ε) * (D.ρ (i + 1) ^ 2 / D.ρ i ^ 2) := by
+  have h := abs_le.mp (D.abs_δ_sub_le hi)
+  have hq : 0 ≤ D.ρ (i + 1) ^ 2 / D.ρ i ^ 2 := by positivity
+  have hε : 4 * D.ε ≤ 1 := by
+    have h1 := D.k_mul_ε_le
+    have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
+    nlinarith [D.ε_nonneg]
+  constructor <;> nlinarith
+
+/-- **One step of the direction recursion**: with $\lvert\mathbf{p}_i^{\mathsf{T}}
+\mathbf{r}_{i+1}\rvert \le t\rho_i^2$, $0 \le t \le 1/10$,
+$\|\mathbf{p}_{i+1}\|^2 \le (1 + 3t + 4\varepsilon + 2\varepsilon^2)(\rho_{i+1}^2 +
+\delta_i^2\|\mathbf{p}_i\|^2)$. -/
+private theorem norm_p_succ_sq_le {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i < m) {t : ℝ}
+    (ht0 : 0 ≤ t) (ht : t ≤ 1 / 10) (hτ : |D.p i ⬝ᵥ D.r (i + 1)| ≤ t * D.ρ i ^ 2) :
+    ‖WithLp.toLp 2 (D.p (i + 1))‖ ^ 2 ≤ (1 + 3 * t + 4 * D.ε + 2 * D.ε ^ 2) *
+      (D.ρ (i + 1) ^ 2 + D.δ i ^ 2 * ‖WithLp.toLp 2 (D.p i)‖ ^ 2) := by
+  obtain ⟨hδ0, hδ⟩ := δ_bounds D hi
+  have hε := D.ε_nonneg
+  have hε1 : D.ε ≤ 1 / 100 := by
+    have h1 := D.k_mul_ε_le
+    have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
+    nlinarith
+  set R := D.ρ (i + 1) with hR
+  set Q := ‖WithLp.toLp 2 (D.p i)‖ with hQ
+  set δ := D.δ i with hδdef
+  set τ := D.p i ⬝ᵥ D.r (i + 1) with hτdef
+  have hR0 : 0 ≤ R := norm_nonneg _
+  have hQ0 : 0 ≤ Q := norm_nonneg _
+  set u := R ^ 2 + δ ^ 2 * Q ^ 2 with hu
+  have hu0 : 0 ≤ u := by positivity
+  set w := D.r (i + 1) + δ • D.p i with hw
+  have hW2 : ‖WithLp.toLp 2 w‖ ^ 2 = R ^ 2 + 2 * δ * τ + δ ^ 2 * Q ^ 2 := by
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hR, ρ,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hQ,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hw, hτdef]
+    simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul]
+    rw [dotProduct_comm (D.r (i + 1)) (D.p i)]
+    ring
+  -- `δ|τ| ≤ (1 + 4ε) t R²`
+  have hδτ : δ * |τ| ≤ (1 + 4 * D.ε) * t * R ^ 2 := by
+    rcases (norm_nonneg (WithLp.toLp 2 (D.r i))).lt_or_eq with hρ | hρ
+    · change 0 < D.ρ i at hρ
+      have hρ2 : 0 < D.ρ i ^ 2 := by positivity
+      calc δ * |τ| ≤ ((1 + 4 * D.ε) * (R ^ 2 / D.ρ i ^ 2)) * (t * D.ρ i ^ 2) :=
+            mul_le_mul hδ hτ (abs_nonneg _) (by positivity)
+        _ = (1 + 4 * D.ε) * t * R ^ 2 := by field_simp
+    · change 0 = D.ρ i at hρ
+      rw [← hρ] at hτ
+      have : |τ| = 0 := le_antisymm (by simpa using hτ) (abs_nonneg _)
+      rw [this, mul_zero]; positivity
+  have hτl := neg_abs_le τ
+  have hτu := le_abs_self τ
+  have hW2le : ‖WithLp.toLp 2 w‖ ^ 2 ≤ (1 + 3 * t) * u := by
+    rw [hW2]
+    have : 2 * δ * τ ≤ 2 * (δ * |τ|) := by nlinarith
+    have h5 : 2 * ((1 + 4 * D.ε) * t * R ^ 2) ≤ 3 * t * u := by
+      have h6 : 0 ≤ t * R ^ 2 := mul_nonneg ht0 (sq_nonneg R)
+      have h7 : 0 ≤ t * (δ ^ 2 * Q ^ 2) := mul_nonneg ht0 (by positivity)
+      have h8 : D.ε * (t * R ^ 2) ≤ 1 / 100 * (t * R ^ 2) := mul_le_mul_of_nonneg_right hε1 h6
+      rw [hu]
+      nlinarith
+    nlinarith
+  set W := ‖WithLp.toLp 2 w‖ with hWdef
+  have hW0 : 0 ≤ W := norm_nonneg _
+  set E := ‖WithLp.toLp 2 (D.ep i)‖ with hEdef
+  have hE : E ≤ D.ε * (R + δ * Q) := by
+    have := D.norm_ep_le i hi
+    rwa [abs_of_nonneg hδ0] at this
+  have hE0 : 0 ≤ E := norm_nonneg _
+  have hZ2 : (R + δ * Q) ^ 2 ≤ 2 * u := by nlinarith [sq_nonneg (R - δ * Q)]
+  have hZ0 : 0 ≤ R + δ * Q := by positivity
+  have hp : ‖WithLp.toLp 2 (D.p (i + 1))‖ ≤ W + E := by
+    rw [D.p_succ i hi, WithLp.toLp_add]
+    exact norm_add_le _ _
+  have hp2 : ‖WithLp.toLp 2 (D.p (i + 1))‖ ^ 2 ≤ (W + E) ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) hp 2
+  refine hp2.trans ?_
+  have h2WE : 2 * W * E ≤ D.ε * (W ^ 2 + (R + δ * Q) ^ 2) := by
+    have : W * E ≤ W * (D.ε * (R + δ * Q)) := mul_le_mul_of_nonneg_left hE hW0
+    nlinarith [sq_nonneg (W - (R + δ * Q)), mul_nonneg hε (sq_nonneg (W - (R + δ * Q)))]
+  have hE2 : E ^ 2 ≤ D.ε ^ 2 * (R + δ * Q) ^ 2 := by
+    have := pow_le_pow_left₀ hE0 hE 2
+    rwa [mul_pow] at this
+  have h3 : D.ε * (W ^ 2 + (R + δ * Q) ^ 2) ≤ D.ε * (4 * u) := by
+    apply mul_le_mul_of_nonneg_left _ hε
+    nlinarith
+  have h4 : D.ε ^ 2 * (R + δ * Q) ^ 2 ≤ D.ε ^ 2 * (2 * u) :=
+    mul_le_mul_of_nonneg_left hZ2 (sq_nonneg _)
+  have hexp : (W + E) ^ 2 = W ^ 2 + 2 * W * E + E ^ 2 := by ring
+  have hrhs : (1 + 3 * t + 4 * D.ε + 2 * D.ε ^ 2) * u =
+      (1 + 3 * t) * u + D.ε * (4 * u) + D.ε ^ 2 * (2 * u) := by ring
+  rw [hexp, hrhs]
+  linarith
+
 /-! ### A priori certificates (the induction) -/
 
 /-- **The a priori induction** P(j), $j \le k$: under (H), for every step $i < j$,
