@@ -54,6 +54,9 @@ Constants are unoptimised and carry a margin over the hand derivation of the res
 * `NLAlib.CGRun.norm_recurrenceError_le` (Lemma A),
   `NLAlib.CGRun.abs_adjacentInner_le` (Lemma B): the local errors.
 * `NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates`: the a posteriori model.
+* `NLAlib.CGRun.norm_recurrenceError_le_of_nonneg`, `NLAlib.CGRun.abs_adjacentInner_le_of_nonneg`,
+  `NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg`: the same with
+  $0 \le B$, which the three statements above need when $k = 1$.
 * `NLAlib.CGRun.norm_r_le_two_mul_norm_p`, `NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc`:
   the next division succeeds.
 * `NLAlib.CGRun.norm_sub_mulVec_x_sub_r_le`: the residual gap.
@@ -838,8 +841,8 @@ private theorem recurrenceError_scalar_le {ε N B P ρ g p D e₁ e₂ e₃ e₄
     linarith only [h1, h2, h3]
   have a7 := mul_le_mul_of_nonneg_left hpoly hε0
   have a8 := mul_nonneg hε0 hBρ0
-  have e : 8 * ε * (N * (1 + P) ^ 2 + B) * ρ = ε * (8 * (N * (1 + P) ^ 2) * ρ) + ε * (8 * B * ρ) := by
-    ring
+  have e : 8 * ε * (N * (1 + P) ^ 2 + B) * ρ =
+      ε * (8 * (N * (1 + P) ^ 2) * ρ) + ε * (8 * B * ρ) := by ring
   rw [e]
   linarith only [h₁, h₂, h₃, h₄, h₅, h₆, hgρ, a1, a2, a3, a4, a5, a6, a7, a8]
 
@@ -921,7 +924,8 @@ private theorem nonneg_of_certificate {B : ℝ}
   · exact Or.inl ((C.lanczosβ_pos le_rfl (by have := C.k_pos; omega)).le.trans
       (hB 0 (by have := C.k_pos; omega)).1)
 
-/-- The first step of Lemma A: $\|\bar{\mathbf{f}}_0\| \le 8\varepsilon\|\mathbf{A}\|_2(1+\Pi)^2$. -/
+/-- The first step of Lemma A:
+$\|\bar{\mathbf{f}}_0\| \le 8\varepsilon\|\mathbf{A}\|_2(1+\Pi)^2$. -/
 private theorem norm_recurrenceError_zero_le {P : ℝ}
     (hP : ‖WithLp.toLp 2 (C.p 0)‖ ≤ P * C.ρ 0) :
     ‖WithLp.toLp 2 (C.toLanczosData.recurrenceError 0)‖ ≤
@@ -998,7 +1002,12 @@ diagonal convention of `NLAlib.cgTridiagonal` adds $\le 3.2\varepsilon\,\delta_{
 uses $B$ only for $\beta_j$ and $\delta_{j-1}/\gamma_{j-1}$ (index $j - 1$, so $j - 1 + 1 < k$);
 $\beta_{j+1}$ enters $\bar{\mathbf{f}}_j$ only through the exact cancellation
 $\beta_{j+1}\bar{\mathbf{v}}_{j+2} = (-1)^{j+1}\mathbf{r}_{j+1}/(\gamma_j\rho_j)$.
-Difficulty: hard (one identity, then about ten norm estimates). -/
+Difficulty: hard (one identity, then about ten norm estimates).
+**As stated, false for $k = 1$ and $B < 0$**: then `hB` is vacuous and the right side is
+negative for $B$ negative enough, while the left side is positive for a run with
+$\varepsilon > 0$ (e.g. $n = 1$, $\mathbf{A} = 1$, $\mathbf{b} = 1$,
+$\mathbf{e}^r_0 = 0.005$). The proved form is `NLAlib.CGRun.norm_recurrenceError_le_of_nonneg`
+(hypothesis $0 \le B$, automatic for $k \ge 2$ from $0 < \beta_1 \le B$). -/
 theorem norm_recurrenceError_le {P B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) {j : ℕ} (hj : j < k) :
@@ -1012,7 +1021,8 @@ theorem norm_recurrenceError_le {P B : ℝ}
 
 /-- The line search identity of a step taken, before the direction update:
 $\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1} = \mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j -
-\rho_j^2(1+\theta_j)(1+\eta^\gamma_j) + \gamma_je^\mu_j + \mathbf{p}_j^{\mathsf{T}}\mathbf{e}^r_j$. -/
+\rho_j^2(1+\theta_j)(1+\eta^\gamma_j) + \gamma_je^\mu_j +
+\mathbf{p}_j^{\mathsf{T}}\mathbf{e}^r_j$. -/
 private theorem p_dotProduct_r_succ_eq {j : ℕ} (hj : j < k) :
     C.p j ⬝ᵥ C.r (j + 1) = C.p j ⬝ᵥ C.r j - C.ρ j ^ 2 * (1 + C.θ j) * (1 + C.eγ j) +
       C.γ j * C.eμ j + C.p j ⬝ᵥ C.er j := by
@@ -1190,7 +1200,8 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
     rw [h5]
     have hρ2 : 0 ≤ ρ ^ 2 := sq_nonneg _
     have h6 := mul_le_mul_of_nonneg_right h4 hρ2
-    have h7 : C.ε * (41 / 20 + 21 / 20 * P) * ρ ^ 2 + C.ε * (201 / 100 + P + 202 / 100 * K) * ρ ^ 2 +
+    have h7 : C.ε * (41 / 20 + 21 / 20 * P) * ρ ^ 2 +
+        C.ε * (201 / 100 + P + 202 / 100 * K) * ρ ^ 2 +
         155 / 1000 * C.ε * (1 + P + K) * ρ ^ 2 ≤ 5 * C.ε * (1 + P + K) * ρ ^ 2 := by
       have : (41 / 20 + 21 / 20 * P) + (201 / 100 + P + 202 / 100 * K) +
           155 / 1000 * (1 + P + K) ≤ 5 * (1 + P + K) := by linarith
@@ -1215,7 +1226,8 @@ private theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
   linear_combination (-(C.r j ⬝ᵥ C.r (j + 1))) * this
 
 /-- The consecutive residuals of a step taken:
-$\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1} = \rho_j^2 - \gamma_j\mathbf{r}_j^{\mathsf{T}}\mathbf{s}_j
+$\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1} =
+\rho_j^2 - \gamma_j\mathbf{r}_j^{\mathsf{T}}\mathbf{s}_j
 + \mathbf{r}_j^{\mathsf{T}}\mathbf{e}^r_j$. -/
 private theorem r_dotProduct_r_succ_eq {j : ℕ} (hj : j < k) :
     C.r j ⬝ᵥ C.r (j + 1) = C.ρ j ^ 2 - C.γ j * (C.r j ⬝ᵥ C.s j) + C.r j ⬝ᵥ C.er j := by
@@ -1357,11 +1369,6 @@ private theorem abs_localR_le {P : ℝ} {j : ℕ} (hj : j < k)
   have a1 : |-(ρ ^ 2 * (C.θ j + C.eγ j + C.θ j * C.eγ j))| ≤ C.ε * (212 / 100 * (P ^ 2 * G)) := by
     rw [abs_neg, abs_mul, abs_of_nonneg (sq_nonneg ρ)]
     have h1 : |C.θ j + C.eγ j + C.θ j * C.eγ j| ≤ 201 / 100 * C.ε := by
-      have := abs_one_add_mul_three_sub_one_le (C.abs_θ_le j hj.le) (C.abs_eγ_le j hj)
-        (show |(0 : ℝ)| ≤ C.ε by simpa using hε0) hε
-      have e : (1 + C.θ j) * (1 + C.eγ j) * (1 + 0) - 1 = C.θ j + C.eγ j + C.θ j * C.eγ j := by
-        ring
-      rw [e] at this
       have h2 := abs_add_three (C.θ j) (C.eγ j) (C.θ j * C.eγ j)
       have h3 : |C.θ j * C.eγ j| ≤ C.ε * C.ε := by
         rw [abs_mul]
@@ -1378,7 +1385,8 @@ private theorem abs_localR_le {P : ℝ} {j : ℕ} (hj : j < k)
     rw [abs_mul, abs_of_pos hγ]
     have h1 := mul_le_mul_of_nonneg_left heμ hγ.le
     have h2 : (1 + C.ε) * (N * γ * p ^ 2) ≤ 101 / 100 * (P ^ 2 * G) :=
-      (mul_le_mul_of_nonneg_right (by linarith : 1 + C.ε ≤ 101 / 100) (mul_nonneg (mul_nonneg hN hγ.le) (sq_nonneg p))).trans
+      (mul_le_mul_of_nonneg_right (by linarith : 1 + C.ε ≤ 101 / 100)
+        (mul_nonneg (mul_nonneg hN hγ.le) (sq_nonneg p))).trans
         (mul_le_mul_of_nonneg_left hNγp (by norm_num))
     have h3 := mul_le_mul_of_nonneg_left (hγps.trans h2) hε0
     linarith only [h1, h3]
@@ -1470,7 +1478,8 @@ private theorem transport_scalar_le {ε N B P ρ D p q b : ℝ} (hε0 : 0 ≤ ε
   have hqD : q * D ≤ 1031 / 1000 * B * ρ * (21 / 20 * ((1 + P) * ρ)) :=
     mul_le_mul hqm hDm hD0 (by positivity)
   have hqp : q * p ≤ 1031 / 1000 * B * ρ * (P * ρ) := mul_le_mul hqm hp hp0 (by positivity)
-  have hqb : (q + b * ρ) * (ρ + D) ≤ (1031 / 1000 * B * ρ + B * ρ) * (ρ + 21 / 20 * ((1 + P) * ρ)) :=
+  have hqb : (q + b * ρ) * (ρ + D) ≤
+      (1031 / 1000 * B * ρ + B * ρ) * (ρ + 21 / 20 * ((1 + P) * ρ)) :=
     mul_le_mul (by nlinarith) (by linarith) (by positivity) (by positivity)
   have hN1 : N * ((1 + ε) * D ^ 2 + (1 + ε) * D ^ 2 + (1 + ε) * D * p + D * p + D * p) ≤
       N * (2 * (101 / 100) * ((21 / 20) ^ 2 * ((1 + P) * ρ) ^ 2) +
@@ -1492,65 +1501,54 @@ private theorem transport_scalar_le {ε N B P ρ D p q b : ℝ} (hε0 : 0 ≤ ε
   have hB2 : 0 ≤ B * ρ ^ 2 * P := by positivity
   nlinarith
 
-/-- **The transported term of Lemma B**: with $b = \delta_i/\gamma_i$,
-$b\lvert S_{i+1}\rvert \le \varepsilon\bigl(6\|\mathbf{A}\|_2(1+\Pi)^2 + 10B(1+\Pi)\bigr)
-\rho_{i+1}^2$; only $\delta_i/\gamma_i$ and $\beta_{i+1}$ enter. -/
-private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
-    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1))
-    (hβ : C.lanczosβ (i + 1) ≤ B) (hδB : C.δ i ≤ B * C.γ i) :
-    C.δ i / C.γ i * |(C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
-        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
-        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
-        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
-      C.ε * (6 * (specNorm C.A * (1 + P) ^ 2 * C.ρ (i + 1) ^ 2) +
-        10 * (B * (1 + P) * C.ρ (i + 1) ^ 2)) := by
+/-- $\delta_i\|\mathbf{s}_i\| \le (1 + \varepsilon)\|\mathbf{A}\|_2\delta_i\|\mathbf{p}_i\|$. -/
+private theorem δ_mul_norm_s_le {i : ℕ} (hi : i < k) :
+    C.δ i * ‖WithLp.toLp 2 (C.s i)‖ ≤
+      (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) := by
+  have := mul_le_mul_of_nonneg_left (C.norm_s_le hi) (C.δ_bounds hi).1
+  linarith only [this]
+
+/-- The first transported term: $\lvert\delta_i\rho_i^2(1+\theta_i)(1+\eta^\gamma_i) -
+\rho_{i+1}^2\rvert \le 3.04\varepsilon\rho_{i+1}^2$. -/
+private theorem abs_transport_first_le {i : ℕ} (hi : i + 1 < k) :
+    |C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2| ≤
+      304 / 100 * C.ε * C.ρ (i + 1) ^ 2 := by
   have hi' : i < k := by omega
-  have hγ := C.γ_pos hi
-  have hγ' := C.γ_pos hi'
-  have hρ := C.ρ_pos hi
-  have hρ' := C.ρ_pos hi'
   have hε := C.ε_le
+  have hρ' := C.ρ_pos hi'
+  have hν : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i)) = C.ρ (i + 1) ^ 2 * (1 + C.θ (i + 1)) *
+      (1 + C.eδ i) := by
+    have h1 := C.one_add_θ_pos hi'.le
+    rw [C.δ_eq i hi', C.ν_eq' hi.le, C.ν_eq' hi'.le]
+    field_simp
+  have e : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2 =
+      C.ρ (i + 1) ^ 2 * ((1 + C.θ (i + 1)) * (1 + C.eδ i) * (1 + C.eγ i) - 1) := by
+    linear_combination (1 + C.eγ i) * hν
+  rw [e, abs_mul, abs_of_nonneg (sq_nonneg _)]
+  have := abs_one_add_mul_three_sub_one_le (C.abs_θ_le (i + 1) hi.le) (C.abs_eδ_le i hi')
+    (C.abs_eγ_le i hi') hε
+  have := mul_le_mul_of_nonneg_left this (sq_nonneg (C.ρ (i + 1)))
+  linarith only [this]
+
+/-- The transported terms with $e^\mu_i$ and $\mathbf{e}^r_i$ against $\mathbf{p}_i$. -/
+private theorem transport_mu_er_le {i : ℕ} (hi : i + 1 < k) :
+    (C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| ≤
+      C.ε * ((1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2)) ∧
+    (C.δ i / C.γ i * |C.δ i * (C.p i ⬝ᵥ C.er i)| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i) * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) +
+        (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2)) := by
+  have hi' : i < k := by omega
+  have hγ' := C.γ_pos hi'
+  have hρ' := C.ρ_pos hi'
   have hε0 := C.ε_nonneg
-  have hN := specNorm_nonneg C.A
   obtain ⟨hδ0, -, -⟩ := C.δ_bounds hi'
-  have hP0 := C.P_nonneg hi hP
   have hb0 : 0 ≤ C.δ i / C.γ i := div_nonneg hδ0 hγ'.le
-  have hb : C.δ i / C.γ i ≤ B := by rw [div_le_iff₀ hγ']; exact hδB
-  have hB0 : 0 ≤ B := hb0.trans hb
-  have hq := C.δ_mul_ρ_div_γ_le hi hβ
-  have hq0 : 0 ≤ C.δ i * C.ρ i / C.γ i := div_nonneg (mul_nonneg hδ0 hρ'.le) hγ'.le
-  have hD := C.δ_mul_norm_p_le hi'
   have hD0 : 0 ≤ C.δ i * ‖WithLp.toLp 2 (C.p i)‖ := mul_nonneg hδ0 (norm_nonneg _)
   have hp0 := norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))
   have hpi0 := norm_nonneg (WithLp.toLp 2 (C.p i))
-  have hs' := C.norm_s_le hi'
   have her' := C.norm_er_le' hi'
-  have hep := C.norm_ep_le' hi'
-  have hes := C.norm_es_le (i + 1) hi
-  have hes' := C.norm_es_le i hi'
+  have hδs := C.δ_mul_norm_s_le hi'
   have heμ' := C.abs_eμ_le i hi'
-  -- δ ‖s_i‖ ≤ (1 + ε) N D
-  have hδs : C.δ i * ‖WithLp.toLp 2 (C.s i)‖ ≤
-      (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) := by
-    have := mul_le_mul_of_nonneg_left hs' hδ0
-    linarith only [this]
-  -- (a)
-  have ha : |C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2| ≤
-      304 / 100 * C.ε * C.ρ (i + 1) ^ 2 := by
-    have hν : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i)) = C.ρ (i + 1) ^ 2 * (1 + C.θ (i + 1)) *
-        (1 + C.eδ i) := by
-      have h1 := C.one_add_θ_pos hi'.le
-      rw [C.δ_eq i hi', C.ν_eq' hi.le, C.ν_eq' hi'.le]
-      field_simp
-    have e : C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2 =
-        C.ρ (i + 1) ^ 2 * ((1 + C.θ (i + 1)) * (1 + C.eδ i) * (1 + C.eγ i) - 1) := by
-      linear_combination (1 + C.eγ i) * hν
-    rw [e, abs_mul, abs_of_nonneg (sq_nonneg _)]
-    have := abs_one_add_mul_three_sub_one_le (C.abs_θ_le (i + 1) hi.le) (C.abs_eδ_le i hi')
-      (C.abs_eγ_le i hi') hε
-    have := mul_le_mul_of_nonneg_left this (sq_nonneg (C.ρ (i + 1)))
-    linarith only [this]
-  -- (b)
   have hb' : C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| ≤
       C.ε * ((1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2) := by
     have e : C.δ i / C.γ i * |C.δ i * (C.γ i * C.eμ i)| = C.δ i ^ 2 * |C.eμ i| := by
@@ -1562,7 +1560,6 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
         C.ε * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * (C.δ i * ‖WithLp.toLp 2 (C.s i)‖) := by ring
     have h3 := mul_le_mul_of_nonneg_left hδs (mul_nonneg hε0 hD0)
     nlinarith
-  -- (c)
   have hc : C.δ i / C.γ i * |C.δ i * (C.p i ⬝ᵥ C.er i)| ≤
       C.ε * ((C.δ i * C.ρ i / C.γ i) * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) +
         (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2) := by
@@ -1582,7 +1579,38 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
     rw [h3] at h5
     have h6 := mul_le_mul_of_nonneg_left h4 hε0
     nlinarith
-  -- (d)
+  exact ⟨hb', hc⟩
+
+/-- The transported terms with $\mathbf{e}^p_i$, $\mathbf{e}^r_i$ against $\mathbf{p}_{i+1}$,
+and the product errors. -/
+private theorem transport_ep_es_le {i : ℕ} (hi : i + 1 < k) :
+    (C.δ i / C.γ i * |(C.r i - C.r (i + 1)) ⬝ᵥ C.ep i| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i + C.δ i / C.γ i * C.ρ (i + 1)) *
+        (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖))) ∧
+    (C.δ i / C.γ i * |C.er i ⬝ᵥ C.p (i + 1)| ≤
+      C.ε * ((C.δ i * C.ρ i / C.γ i) * ‖WithLp.toLp 2 (C.p (i + 1))‖ +
+        (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+          ‖WithLp.toLp 2 (C.p (i + 1))‖)) ∧
+    (C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| ≤
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+        ‖WithLp.toLp 2 (C.p (i + 1))‖)) ∧
+    (C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+        ‖WithLp.toLp 2 (C.p (i + 1))‖)) := by
+  have hi' : i < k := by omega
+  have hγ' := C.γ_pos hi'
+  have hρ' := C.ρ_pos hi'
+  have hε0 := C.ε_nonneg
+  obtain ⟨hδ0, -, -⟩ := C.δ_bounds hi'
+  have hb0 : 0 ≤ C.δ i / C.γ i := div_nonneg hδ0 hγ'.le
+  have hD0 : 0 ≤ C.δ i * ‖WithLp.toLp 2 (C.p i)‖ := mul_nonneg hδ0 (norm_nonneg _)
+  have hp0 := norm_nonneg (WithLp.toLp 2 (C.p (i + 1)))
+  have hpi0 := norm_nonneg (WithLp.toLp 2 (C.p i))
+  have her' := C.norm_er_le' hi'
+  have hδs := C.δ_mul_norm_s_le hi'
+  have hep := C.norm_ep_le' hi'
+  have hes := C.norm_es_le (i + 1) hi
+  have hes' := C.norm_es_le i hi'
   have hd : C.δ i / C.γ i * |(C.r i - C.r (i + 1)) ⬝ᵥ C.ep i| ≤
       C.ε * ((C.δ i * C.ρ i / C.γ i + C.δ i / C.γ i * C.ρ (i + 1)) *
         (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖)) := by
@@ -1597,7 +1625,6 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
       simp only [ρ]
       ring
     linarith only [h4, e]
-  -- (e)
   have he : C.δ i / C.γ i * |C.er i ⬝ᵥ C.p (i + 1)| ≤
       C.ε * ((C.δ i * C.ρ i / C.γ i) * ‖WithLp.toLp 2 (C.p (i + 1))‖ +
         (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
@@ -1612,9 +1639,9 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
       field_simp
     have h4 := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hδs hp0) hε0
     linarith only [h3, e, h4]
-  -- (f), (g)
   have hf : C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| ≤
-      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+        ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
     have e : C.δ i / C.γ i * |C.γ i * (C.es i ⬝ᵥ C.p (i + 1))| =
         C.δ i * |C.es i ⬝ᵥ C.p (i + 1)| := by
       rw [abs_mul, abs_of_pos hγ']
@@ -1625,7 +1652,8 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
     have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
     linarith only [h3]
   have hg : C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
-      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) * ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
+      C.ε * (specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
+        ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
     have e : C.δ i / C.γ i * |C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| =
         C.δ i * |C.p i ⬝ᵥ C.es (i + 1)| := by
       rw [abs_mul, abs_of_pos hγ']
@@ -1635,6 +1663,38 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
     have h2 := mul_le_mul_of_nonneg_left hes hpi0
     have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
     linarith only [h3]
+  exact ⟨hd, he, hf, hg⟩
+
+/-- **The transported term of Lemma B**: with $b = \delta_i/\gamma_i$,
+$b\lvert S_{i+1}\rvert \le \varepsilon\bigl(6\|\mathbf{A}\|_2(1+\Pi)^2 + 10B(1+\Pi)\bigr)
+\rho_{i+1}^2$; only $\delta_i/\gamma_i$ and $\beta_{i+1}$ enter. -/
+private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
+    (hP : ‖WithLp.toLp 2 (C.p (i + 1))‖ ≤ P * C.ρ (i + 1))
+    (hβ : C.lanczosβ (i + 1) ≤ B) (hδB : C.δ i ≤ B * C.γ i) :
+    C.δ i / C.γ i * |(C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
+        C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
+        (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i + C.er i ⬝ᵥ C.p (i + 1) -
+        C.γ i * (C.es i ⬝ᵥ C.p (i + 1)) + C.γ i * (C.p i ⬝ᵥ C.es (i + 1))| ≤
+      C.ε * (6 * (specNorm C.A * (1 + P) ^ 2 * C.ρ (i + 1) ^ 2) +
+        10 * (B * (1 + P) * C.ρ (i + 1) ^ 2)) := by
+  have hi' : i < k := by omega
+  have hγ' := C.γ_pos hi'
+  have hρ := C.ρ_pos hi
+  have hρ' := C.ρ_pos hi'
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  obtain ⟨hδ0, -, -⟩ := C.δ_bounds hi'
+  have hP0 := C.P_nonneg hi hP
+  have hb0 : 0 ≤ C.δ i / C.γ i := div_nonneg hδ0 hγ'.le
+  have hb : C.δ i / C.γ i ≤ B := by rw [div_le_iff₀ hγ']; exact hδB
+  have hB0 : 0 ≤ B := hb0.trans hb
+  have hq := C.δ_mul_ρ_div_γ_le hi hβ
+  have hq0 : 0 ≤ C.δ i * C.ρ i / C.γ i := div_nonneg (mul_nonneg hδ0 hρ'.le) hγ'.le
+  have hD0 : 0 ≤ C.δ i * ‖WithLp.toLp 2 (C.p i)‖ := mul_nonneg hδ0 (norm_nonneg _)
+  have ha := C.abs_transport_first_le hi
+  obtain ⟨hb', hc⟩ := C.transport_mu_er_le hi
+  obtain ⟨hd, he, hf, hg⟩ := C.transport_ep_es_le hi
   -- the triangle inequality
   have tri : C.δ i / C.γ i * |(C.δ i * (C.ρ i ^ 2 * (1 + C.θ i) * (1 + C.eγ i)) - C.ρ (i + 1) ^ 2) -
         C.δ i * (C.γ i * C.eμ i) - C.δ i * (C.p i ⬝ᵥ C.er i) +
@@ -1658,7 +1718,8 @@ private theorem transport_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
       C.ρ (i + 1) ^ 2| ≤ C.ε * (304 / 100 * B * C.ρ (i + 1) ^ 2) := by
     have := mul_le_mul hb ha (abs_nonneg _) hB0
     linarith only [this]
-  have hsc := transport_scalar_le hε0 hε hN hB0 hP0 hρ.le hD0 hp0 hq0 hD hP hq hb
+  have hsc := transport_scalar_le hε0 hε hN hB0 hP0 hρ.le hD0 (norm_nonneg _) hq0
+    (C.δ_mul_norm_p_le hi') hP hq hb
   have hsc' := mul_le_mul_of_nonneg_left hsc hε0
   linarith only [tri, ha', hb', hc, hd, he, hf, hg, hsc']
 
@@ -1756,7 +1817,8 @@ theorem abs_adjacentInner_le_of_nonneg {P K B : ℝ}
       linarith
     have hY : 0 ≤ C.ε * specNorm C.A * C.γ 0 * C.ρ 0 ^ 2 := by positivity
     have h3 := mul_le_mul_of_nonneg_left h1 hY
-    have h4 := mul_le_mul_of_nonneg_left h2 (by positivity : (0 : ℝ) ≤ 16 * C.ε * (C.γ 0 * C.ρ 0 ^ 2))
+    have h4 := mul_le_mul_of_nonneg_left h2
+      (by positivity : (0 : ℝ) ≤ 16 * C.ε * (C.γ 0 * C.ρ 0 ^ 2))
     push_cast
     linarith only [hR, h3, h4]
   | succ i ih =>
@@ -1803,7 +1865,12 @@ Proof: the recursion $\bar p_j = (1 + \eta_{j-1})\bar p_{j-1} + L_j$ (three iden
 computed data, one use of $\mathbf{A}^{\mathsf{T}} = \mathbf{A}$), the bound on $L_j$ in which
 only $\delta_{j-1}/\gamma_{j-1}$, $\gamma_j^{-1}$, $\beta_j$ occur (not $\alpha_{j+1}$,
 $\beta_{j+1}$: this is what keeps the a priori hypothesis at $\kappa^2$), and
-`NLAlib.CGRun.abs_p_dotProduct_r_succ_le`. Difficulty: hard (the risky step of the design). -/
+`NLAlib.CGRun.abs_p_dotProduct_r_succ_le`. Difficulty: hard (the risky step of the design).
+**As stated, false for $k = 1$ and $B < 0$**: then `hB` is vacuous and the right side is
+negative for $B$ negative enough, while the left side is positive for a run with
+$\varepsilon > 0$ (e.g. $n = 1$, $\mathbf{A} = 1$, $\mathbf{b} = 1$,
+$\mathbf{e}^r_0 = 0.005$). The proved form is `NLAlib.CGRun.abs_adjacentInner_le_of_nonneg`
+(hypothesis $0 \le B$, automatic for $k \ge 2$ from $0 < \beta_1 \le B$). -/
 theorem abs_adjacentInner_le {P K B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
@@ -1853,7 +1920,12 @@ engine of the a priori induction (`NLAlibScaffold/Krylov/FinitePrecision/CGBackw
 model of the prefix `C.take j` needs $B$ for the steps $i + 1 < j$ only, which the models of the
 shorter prefixes provide.
 Proof: `NLAlib.NormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le` with Lemmas A and B.
-Difficulty: easy. -/
+Difficulty: easy.
+**As stated, false for $k = 1$ and $B < 0$**: then `hB` is vacuous and the right side is
+negative for $B$ negative enough, while the left side is positive for a run with
+$\varepsilon > 0$ (e.g. $n = 1$, $\mathbf{A} = 1$, $\mathbf{b} = 1$,
+$\mathbf{e}^r_0 = 0.005$). The proved form is
+`NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates_of_nonneg` (hypothesis $0 \le B$, automatic for $k \ge 2$ from $0 < \beta_1 \le B$). -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
@@ -1916,7 +1988,8 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ}
   have hcross : |2 * C.δ i * (C.p i ⬝ᵥ C.r (i + 1))| ≤ 52 / 100 * C.ρ (i + 1) ^ 2 := by
     rw [abs_mul, abs_mul, abs_of_nonneg hδ0, abs_two]
     have h1 := mul_le_mul_of_nonneg_left hτ' (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) hδ0)
-    have h2 : 2 * C.δ i * (1 / 4 * C.ρ i ^ 2) ≤ 1 / 2 * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) := by
+    have h2 : 2 * C.δ i * (1 / 4 * C.ρ i ^ 2) ≤
+        1 / 2 * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) := by
       linarith only [hδ1]
     have h3 : 1 / 2 * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) ≤ 52 / 100 * C.ρ (i + 1) ^ 2 := by
       have := mul_le_mul_of_nonneg_right (show 1 + 31 / 10 * C.ε ≤ 104 / 100 by linarith)
