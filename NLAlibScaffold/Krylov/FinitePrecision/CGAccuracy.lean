@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Complex.ExponentialBounds
 public import NLAlibScaffold.Krylov.FinitePrecision.CGBackward
 
 /-!
@@ -72,11 +73,10 @@ open scoped Matrix
 namespace NLAlib
 
 /-- **The number of steps to gap level**: with $\kappa' = 2\kappa + 1$,
-<!-- value cgKStar \kappa \varepsilon \delta -->
 $k^\star(\kappa, \varepsilon, \delta) = \bigl\lceil\tfrac12(\sqrt{2\kappa+1} + 1)
 \ln\bigl(\sqrt{2\kappa+1}/(4\delta\varepsilon)\bigr)\bigr\rceil$. After $k^\star$ steps the
 Chebyshev factor $2\sqrt{\kappa'}q^{k}$, $q = (\sqrt{\kappa'} - 1)/(\sqrt{\kappa'} + 1)$, is at
-most $8\delta\varepsilon$ (`NLAlib.pow_cgKStar_le`). The research note has $\sqrt{\kappa'}$ in
+most $8\delta\varepsilon$ (`NLAlib.pow_le_of_cgKStar_le`). The research note has $\sqrt{\kappa'}$ in
 place of $\sqrt{\kappa'} + 1$ (from $\ln(1/q) \ge 2/\sqrt{\kappa'}$); here
 $q \le e^{-2/(\sqrt{\kappa'} + 1)}$, which is one line. -/
 noncomputable def cgKStar (κ ε δ : ℝ) : ℕ :=
@@ -88,17 +88,43 @@ $$\Bigl(\frac{\sqrt{\kappa'} - 1}{\sqrt{\kappa'} + 1}\Bigr)^m \le
 \frac{4\delta\varepsilon}{\sqrt{\kappa'}} \,.$$
 Proof: $q = 1 - 2/(\sqrt{\kappa'} + 1) \le e^{-2/(\sqrt{\kappa'} + 1)}$
 (`Real.add_one_le_exp`), $0 \le q$, and $2m/(\sqrt{\kappa'} + 1) \ge \ell$. Difficulty: easy. -/
-theorem pow_cgKStar_le {κ ε δ : ℝ} (hκ : 0 ≤ κ) (hε : 0 < ε) (hδ : 0 < δ) {m : ℕ}
+theorem pow_le_of_cgKStar_le {κ ε δ : ℝ} (hκ : 0 ≤ κ) (hε : 0 < ε) (hδ : 0 < δ) {m : ℕ}
     (hm : cgKStar κ ε δ ≤ m) :
     ((Real.sqrt (2 * κ + 1) - 1) / (Real.sqrt (2 * κ + 1) + 1)) ^ m ≤
       4 * δ * ε / Real.sqrt (2 * κ + 1) := by
-  sorry
+  set s := Real.sqrt (2 * κ + 1) with hsdef
+  have hs1 : 1 ≤ s := by rw [hsdef, Real.one_le_sqrt]; linarith
+  set q := (s - 1) / (s + 1) with hq
+  have hq0 : 0 ≤ q := div_nonneg (by linarith) (by linarith)
+  have hq1 : q ≤ Real.exp (-(2 / (s + 1))) := by
+    have h := Real.add_one_le_exp (-(2 / (s + 1)))
+    have : q = -(2 / (s + 1)) + 1 := by rw [hq]; field_simp; ring
+    rw [this]
+    exact h
+  have hm' : (s + 1) / 2 * Real.log (s / (4 * δ * ε)) ≤ m :=
+    (Nat.le_ceil _).trans (by exact_mod_cast hm)
+  have h1 : q ^ m ≤ Real.exp (-(2 / (s + 1))) ^ m := pow_le_pow_left₀ hq0 hq1 m
+  rw [← Real.exp_nat_mul] at h1
+  have h2 : Real.exp (m * -(2 / (s + 1))) ≤ Real.exp (-Real.log (s / (4 * δ * ε))) := by
+    apply Real.exp_le_exp.mpr
+    have : Real.log (s / (4 * δ * ε)) ≤ m * (2 / (s + 1)) := by
+      rw [mul_div_assoc', le_div_iff₀ (by linarith)]
+      linarith
+    linarith
+  have h3 : Real.exp (-Real.log (s / (4 * δ * ε))) = 4 * δ * ε / s := by
+    rw [Real.exp_neg, Real.exp_log (by positivity), inv_div]
+  linarith
 
 /-- $k^\star \ge 1$ for $\kappa \ge 0$, $0 < \delta \le 1$ and $0 < \varepsilon \le 1/100$:
 the logarithm is at least $\ln 25 > 0$. Proof: `Nat.ceil_pos`. Difficulty: easy. -/
 theorem cgKStar_pos {κ ε δ : ℝ} (hκ : 0 ≤ κ) (hε : 0 < ε) (hε1 : ε ≤ 1 / 100) (hδ : 0 < δ)
     (hδ1 : δ ≤ 1) : 0 < cgKStar κ ε δ := by
-  sorry
+  apply Nat.ceil_pos.mpr
+  have hs1 : 1 ≤ Real.sqrt (2 * κ + 1) := by rw [Real.one_le_sqrt]; linarith
+  have h : 1 < Real.sqrt (2 * κ + 1) / (4 * δ * ε) := by
+    rw [one_lt_div (by positivity)]
+    nlinarith
+  exact mul_pos (by linarith) (Real.log_pos h)
 
 /-- **The window condition for $k^\star$**: for $\kappa \ge 1$ and $0 < \varepsilon \le 1/100$,
 with $\ell = \ln(\sqrt{2\kappa + 1}/(4\varepsilon))$,
@@ -112,7 +138,43 @@ theorem cgKStar_cube_mul_le {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) (hε1 
     (h : κ ^ 3 * Real.sqrt κ * ε *
       Real.log (Real.sqrt (2 * κ + 1) / (4 * 1 * ε)) ^ 3 ≤ 7 / 10 ^ 7) :
     (cgKStar κ ε 1 : ℝ) ^ 3 * ε * κ ^ 2 ≤ 1 / 10 ^ 5 := by
-  sorry
+  set s := Real.sqrt (2 * κ + 1) with hsdef
+  set ℓ := Real.log (s / (4 * 1 * ε)) with hℓ
+  have hκ0 : 0 ≤ κ := by linarith
+  have hs1 : 1 ≤ s := by rw [hsdef, Real.one_le_sqrt]; linarith
+  have hsk : Real.sqrt κ ≥ 1 := by rw [ge_iff_le, Real.one_le_sqrt]; exact hκ
+  -- `ℓ ≥ 1`
+  have hℓ1 : 1 ≤ ℓ := by
+    rw [hℓ, Real.le_log_iff_exp_le (by positivity)]
+    have he := Real.exp_one_lt_d9
+    rw [le_div_iff₀ (by positivity)]
+    nlinarith
+  -- `s ≤ 1.74 √κ`
+  have hs3 : s ≤ 174 / 100 * Real.sqrt κ := by
+    have h3 : Real.sqrt 3 ≤ 174 / 100 := by
+      rw [Real.sqrt_le_left (by norm_num)]
+      norm_num
+    calc s ≤ Real.sqrt (3 * κ) := Real.sqrt_le_sqrt (by linarith)
+      _ = Real.sqrt 3 * Real.sqrt κ := Real.sqrt_mul (by norm_num) κ
+      _ ≤ _ := mul_le_mul_of_nonneg_right h3 (Real.sqrt_nonneg _)
+  have hK : (cgKStar κ ε 1 : ℝ) ≤ 237 / 100 * Real.sqrt κ * ℓ := by
+    have h := Nat.ceil_lt_add_one (by positivity : 0 ≤ (s + 1) / 2 * ℓ)
+    have : (s + 1) / 2 * ℓ + 1 ≤ 237 / 100 * Real.sqrt κ * ℓ := by nlinarith
+    exact (le_of_lt h).trans this
+  have hK0 : (0 : ℝ) ≤ cgKStar κ ε 1 := Nat.cast_nonneg _
+  have hK3 : (cgKStar κ ε 1 : ℝ) ^ 3 ≤ (237 / 100 * Real.sqrt κ * ℓ) ^ 3 :=
+    pow_le_pow_left₀ hK0 hK 3
+  have hsq : Real.sqrt κ ^ 2 = κ := Real.sq_sqrt hκ0
+  have e : (237 / 100 * Real.sqrt κ * ℓ) ^ 3 * ε * κ ^ 2 =
+      (237 / 100) ^ 3 * (κ ^ 3 * Real.sqrt κ * ε * ℓ ^ 3) := by
+    have : Real.sqrt κ ^ 3 = κ * Real.sqrt κ := by rw [pow_succ, hsq]
+    rw [mul_pow, mul_pow, this]
+    ring
+  calc (cgKStar κ ε 1 : ℝ) ^ 3 * ε * κ ^ 2 ≤ (237 / 100 * Real.sqrt κ * ℓ) ^ 3 * ε * κ ^ 2 := by
+        gcongr
+    _ = _ := e
+    _ ≤ (237 / 100) ^ 3 * (7 / 10 ^ 7) := by gcongr
+    _ ≤ 1 / 10 ^ 5 := by norm_num
 
 namespace CGRun
 
@@ -919,6 +981,46 @@ theorem norm_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a
   have := norm_nonneg (WithLp.toLp 2 xs)
   nlinarith
 
+/-- The error of the computed iterate, a priori:
+$\|\mathbf{x}_\star - \mathbf{x}_j\| \le 1.001\|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$. -/
+private theorem acc_norm_sub_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
+    ‖WithLp.toLp 2 (xs - C.x j)‖ ≤
+      (1 + 1 / 1000) * (Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
+  have hQ := C.quadForm_sub_x_le ha hs hsmall hx hj
+  have hQ0 : 0 ≤ quadForm C.A xs := le_trans (by positivity) (C.acc_quadForm_bounds hs xs).1
+  have he2 := C.acc_norm_sq_le ha hs (xs - C.x j)
+  have hM2 : (Real.sqrt (quadForm C.A xs) / Real.sqrt a) ^ 2 = quadForm C.A xs / a := by
+    rw [div_pow, Real.sq_sqrt hQ0, Real.sq_sqrt ha.le]
+  have h : ‖WithLp.toLp 2 (xs - C.x j)‖ ^ 2 ≤
+      ((1 + 1 / 1000) * (Real.sqrt (quadForm C.A xs) / Real.sqrt a)) ^ 2 := by
+    rw [mul_pow, hM2]
+    refine he2.trans ?_
+    rw [← mul_div_assoc]
+    apply div_le_div_of_nonneg_right _ ha.le
+    nlinarith
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h
+
+/-- $a\|\mathbf{v}\| \le \|\mathbf{A}\mathbf{v}\|$. -/
+private theorem acc_mul_norm_le {a a' : ℝ} (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (v : Fin n → ℝ) : a * ‖WithLp.toLp 2 v‖ ≤ ‖WithLp.toLp 2 (C.A *ᵥ v)‖ := by
+  have h1 := (C.acc_quadForm_bounds hs v).1
+  rw [C.acc_quadForm_eq] at h1
+  have h2 := (le_abs_self _).trans (EuclideanSpace.abs_dotProduct_le_norm v (C.A *ᵥ v))
+  rcases (norm_nonneg (WithLp.toLp 2 v)).lt_or_eq with hpos | hzero
+  · exact le_of_mul_le_mul_left (by nlinarith) hpos
+  · rw [← hzero, mul_zero]
+    exact norm_nonneg _
+
+/-- $\|\mathbf{b}\| \le a'\|\mathbf{x}_\star\|$. -/
+private theorem acc_norm_b_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hx : C.A *ᵥ xs = C.b) : ‖WithLp.toLp 2 C.b‖ ≤ a' * ‖WithLp.toLp 2 xs‖ := by
+  rw [← hx]
+  exact (norm_toLp_mulVec_le _ _).trans
+    (mul_le_mul_of_nonneg_right (C.acc_small ha hs hsmall).2.2.1 (norm_nonneg _))
+
 /-! ### The residual gap -/
 
 /-- **The residual gap, a priori**: under (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
@@ -936,7 +1038,80 @@ theorem norm_sub_mulVec_x_sub_r_le_energy {a a' : ℝ} (ha : 0 < a)
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       11 * k * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
-  sorry
+  obtain ⟨haa', hκ, hspec, hε5, hkεκ, -, -⟩ := C.acc_small ha hs hsmall
+  have hε0 := C.ε_nonneg
+  have hε1 := C.ε_le
+  set M := ‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a with hM
+  have hxs0 := norm_nonneg (WithLp.toLp 2 xs)
+  have hM' : Real.sqrt (quadForm C.A xs) / Real.sqrt a ≤ M := by linarith
+  have hxsM : ‖WithLp.toLp 2 xs‖ ≤ M := by
+    have : 0 ≤ Real.sqrt (quadForm C.A xs) / Real.sqrt a := by positivity
+    linarith
+  have hM0 : 0 ≤ M := by positivity
+  have ha' : 0 ≤ a' := by linarith
+  have hB := C.acc_norm_b_le ha hs hsmall hx
+  have hterm : ∀ j < k, specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
+      4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j ≤ 11 * (a' * M) := fun j hj => by
+    have hxj := C.norm_x_le ha hs hsmall hx hj.le
+    have hxj1 := C.norm_x_le ha hs hsmall hx (j := j + 1) hj
+    have hγ := C.γ_pos hj
+    -- the step through the iterate update
+    have hγp : C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ≤ 201 / 100 * M := by
+      have hid : C.γ j • C.p j = C.x (j + 1) - C.x j - C.ex j := by
+        rw [C.x_succ j hj]
+        abel
+      have h1 : C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ≤ ‖WithLp.toLp 2 (C.x (j + 1))‖ +
+          ‖WithLp.toLp 2 (C.x j)‖ + ‖WithLp.toLp 2 (C.ex j)‖ := by
+        have := norm_sub_le (WithLp.toLp 2 (C.x (j + 1) - C.x j)) (WithLp.toLp 2 (C.ex j))
+        have h2 := norm_sub_le (WithLp.toLp 2 (C.x (j + 1))) (WithLp.toLp 2 (C.x j))
+        rw [← WithLp.toLp_sub, ← hid, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs,
+          abs_of_pos hγ] at this
+        rw [← WithLp.toLp_sub] at h2
+        linarith
+      have h3 := C.norm_ex_le j hj
+      rw [abs_of_pos hγ] at h3
+      have h4 : C.ε * (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) ≤ 1 / 10 ^ 5 *
+          (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) :=
+        mul_le_mul_of_nonneg_right hε5 (by positivity)
+      have h5 : C.ε * ‖WithLp.toLp 2 (C.x j)‖ ≤ 1 / 10 ^ 5 * ((1 + 1 / 1000) * M) :=
+        mul_le_mul hε5 hxj (norm_nonneg _) (by norm_num)
+      nlinarith
+    -- the residual through the true residual and the gap
+    have hρ : C.ρ j ≤ 1002 / 1000 * (a' * M) := by
+      have he := C.acc_norm_sub_x_le ha hs hsmall hx hj.le
+      have hG := C.norm_sub_mulVec_x_sub_r_le_norm_b ha hs hsmall hj.le
+      have hid : C.r j = C.A *ᵥ (xs - C.x j) - (C.b - C.A *ᵥ C.x j - C.r j) := by
+        rw [Matrix.mulVec_sub, hx]
+        abel
+      have h := norm_sub_le (WithLp.toLp 2 (C.A *ᵥ (xs - C.x j)))
+        (WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j))
+      rw [← WithLp.toLp_sub, ← hid] at h
+      have hAe : ‖WithLp.toLp 2 (C.A *ᵥ (xs - C.x j))‖ ≤ a' * ((1 + 1 / 1000) * M) :=
+        (norm_toLp_mulVec_le _ _).trans (mul_le_mul hspec (he.trans (by nlinarith))
+          (norm_nonneg _) ha')
+      have hjT : (j : ℝ) * C.ε * (a' / a) ≤ 1 / 10 ^ 5 := (C.acc_small_j ha hs hsmall hj.le).1
+      have hG' : 12 * (j : ℝ) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ ≤
+          12 * (1 / 10 ^ 5) * (a' * M) := by
+        have : 12 * (j : ℝ) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ =
+            12 * ((j : ℝ) * C.ε * (a' / a)) * ‖WithLp.toLp 2 C.b‖ := by ring
+        rw [this]
+        exact mul_le_mul (by linarith) (hB.trans (mul_le_mul_of_nonneg_left hxsM ha'))
+          (norm_nonneg _) (by norm_num)
+      change ‖WithLp.toLp 2 (C.r j)‖ ≤ _
+      nlinarith
+    have h1 : ‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ≤ 905 / 100 * M := by
+      nlinarith
+    have h2 := mul_le_mul hspec h1 (by positivity) ha'
+    nlinarith
+  refine (C.norm_sub_mulVec_x_sub_r_le).trans ?_
+  have hsum : ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
+      4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) ≤ k * (11 * (a' * M)) := by
+    have := Finset.sum_le_sum fun j (hj : j ∈ Finset.range k) => hterm j (Finset.mem_range.mp hj)
+    simpa using this
+  calc C.ε * ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +
+        4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) ≤ C.ε * (k * (11 * (a' * M))) :=
+        mul_le_mul_of_nonneg_left hsum hε0
+    _ = _ := by ring
 
 /-- **The residual gap, a priori, in $\|\mathbf{x}_\star\|$**: under (H), for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
@@ -952,7 +1127,25 @@ theorem norm_sub_mulVec_x_sub_r_le_norm_sol {a a' : ℝ} (ha : 0 < a)
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       22 * k * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by
-  sorry
+  have h := C.norm_sub_mulVec_x_sub_r_le_energy ha hs hsmall hx
+  obtain ⟨haa', hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  have hε0 := C.ε_nonneg
+  have ha' : 0 ≤ a' := by linarith
+  have hQ := (C.acc_quadForm_bounds hs xs).2
+  have hs1 : 1 ≤ Real.sqrt (a' / a) := by rw [Real.one_le_sqrt]; exact hκ
+  have hxs0 := norm_nonneg (WithLp.toLp 2 xs)
+  have hq : Real.sqrt (quadForm C.A xs) ≤ Real.sqrt a' * ‖WithLp.toLp 2 xs‖ := by
+    rw [← Real.sqrt_sq hxs0, ← Real.sqrt_mul ha']
+    exact Real.sqrt_le_sqrt hQ
+  have h1 : Real.sqrt (quadForm C.A xs) / Real.sqrt a ≤
+      Real.sqrt (a' / a) * ‖WithLp.toLp 2 xs‖ := by
+    rw [Real.sqrt_div' a' ha.le, div_mul_eq_mul_div]
+    exact div_le_div_of_nonneg_right hq (Real.sqrt_nonneg _)
+  have h2 : ‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a ≤
+      2 * Real.sqrt (a' / a) * ‖WithLp.toLp 2 xs‖ := by nlinarith
+  refine h.trans ?_
+  have := mul_le_mul_of_nonneg_left h2 (by positivity : 0 ≤ 11 * (k : ℝ) * C.ε * a')
+  linarith
 
 /-- **The true residual**: under (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, with
 $\kappa' = 2\kappa + 1$, $q = (\sqrt{\kappa'} - 1)/(\sqrt{\kappa'} + 1)$ and
@@ -970,9 +1163,22 @@ theorem norm_sub_mulVec_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
           ((Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ k *
           ‖WithLp.toLp 2 C.b‖ +
         11 * k * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
-  sorry
+  have hid : C.b - C.A *ᵥ C.x k = C.r k + (C.b - C.A *ᵥ C.x k - C.r k) := by abel
+  rw [hid, WithLp.toLp_add]
+  refine (norm_add_le _ _).trans ?_
+  have h1 := C.ρ_le_chebyshev ha hs hsmall le_rfl
+  have h2 := C.norm_sub_mulVec_x_sub_r_le_energy ha hs hsmall hx
+  change C.ρ k + _ ≤ _
+  linarith
 
 /-! ### Attainable accuracy -/
+
+private theorem acc_norm_true_le (j : ℕ) : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j)‖ ≤
+    C.ρ j + ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ := by
+  set g := C.b - C.A *ᵥ C.x j - C.r j with hg
+  have hid : C.b - C.A *ᵥ C.x j = C.r j + g := by rw [hg]; abel
+  rw [hid, WithLp.toLp_add]
+  exact norm_add_le _ _
 
 /-- **The computed residual at gap level**: under (H), for $\varepsilon, \delta > 0$ and
 $k^\star(\kappa, \varepsilon, \delta) \le j \le k$ (`NLAlib.cgKStar`),
@@ -980,12 +1186,21 @@ $\|\mathbf{r}_j\| \le 8\delta\varepsilon\|\mathbf{b}\|$. With $\delta = 1$ this 
 every a priori gap bound ($\|\mathbf{b}\| \le a'M$); with $\delta < 1$ it is the $\delta$-form
 of "the computed residual is negligible", the only true one: exact arithmetic is an admissible
 run with zero gap.
-Proof: `NLAlib.CGRun.ρ_le_chebyshev` and `NLAlib.pow_cgKStar_le`. Difficulty: easy. -/
+Proof: `NLAlib.CGRun.ρ_le_chebyshev` and `NLAlib.pow_le_of_cgKStar_le`. Difficulty: easy. -/
 theorem ρ_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε) {δ : ℝ}
     (hδ : 0 < δ) {j : ℕ} (hkj : cgKStar (a' / a) C.ε δ ≤ j) (hj : j ≤ k) :
     C.ρ j ≤ 8 * δ * C.ε * ‖WithLp.toLp 2 C.b‖ := by
-  sorry
+  obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  have h1 := C.ρ_le_chebyshev ha hs hsmall hj
+  have h2 := pow_le_of_cgKStar_le (by linarith : 0 ≤ a' / a) hε hδ hkj
+  set s := Real.sqrt (2 * (a' / a) + 1) with hsdef
+  have hs0 : 0 < s := Real.sqrt_pos.mpr (by linarith)
+  have hB := norm_nonneg (WithLp.toLp 2 C.b)
+  have e : 2 * s * (4 * δ * C.ε / s) = 8 * δ * C.ε := by field_simp; ring
+  calc C.ρ j ≤ _ := h1
+    _ ≤ 2 * s * (4 * δ * C.ε / s) * ‖WithLp.toLp 2 C.b‖ := by gcongr
+    _ = 8 * δ * C.ε * ‖WithLp.toLp 2 C.b‖ := by rw [e]
 
 /-- **Past $k^\star(\delta)$ the true residual is the gap** up to $\delta$ times the gap's
 level: under (H), for $\varepsilon, \delta > 0$ and $k^\star(\kappa, \varepsilon, \delta) \le j
@@ -1000,7 +1215,13 @@ theorem abs_norm_sub_mulVec_x_sub_norm_gap_le {a a' : ℝ} (ha : 0 < a)
     (hj : j ≤ k) :
     |‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j)‖ - ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖| ≤
       8 * δ * C.ε * ‖WithLp.toLp 2 C.b‖ := by
-  sorry
+  have h := C.ρ_le_of_cgKStar_le ha hs hsmall hε hδ hkj hj
+  set g := C.b - C.A *ᵥ C.x j - C.r j with hg
+  have hid : C.b - C.A *ᵥ C.x j = C.r j + g := by rw [hg]; abel
+  rw [hid, WithLp.toLp_add]
+  have := abs_norm_sub_norm_le (WithLp.toLp 2 (C.r j) + WithLp.toLp 2 g) (WithLp.toLp 2 g)
+  rw [add_sub_cancel_right] at this
+  exact this.trans h
 
 /-- **Attainable accuracy at a prescribed step**: under (H), for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k^\star(\kappa, \varepsilon, 1)$, with
@@ -1015,8 +1236,29 @@ theorem norm_sub_mulVec_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤
-      (11 * k + 8) * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) :=
-  by sorry
+      (11 * k + 8) * C.ε * a' *
+        (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
+  have h1 := C.acc_norm_true_le k
+  have h2 := C.ρ_le_of_cgKStar_le ha hs hsmall hε one_pos hk le_rfl
+  have h3 := C.norm_sub_mulVec_x_sub_r_le_energy ha hs hsmall hx
+  have hB := C.acc_norm_b_le ha hs hsmall hx
+  have ha' : 0 ≤ a' := ha.le.trans (C.acc_le hs)
+  have hM : ‖WithLp.toLp 2 xs‖ ≤
+      ‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a := by
+    have : 0 ≤ Real.sqrt (quadForm C.A xs) / Real.sqrt a := by positivity
+    linarith
+  have h4 : 8 * 1 * C.ε * ‖WithLp.toLp 2 C.b‖ ≤
+      8 * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
+    have := mul_le_mul_of_nonneg_left (hB.trans (mul_le_mul_of_nonneg_left hM ha'))
+      (by have := C.ε_nonneg; positivity : (0 : ℝ) ≤ 8 * C.ε)
+    linarith
+  have e : (11 * (k : ℝ) + 8) * C.ε * a' *
+      (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) =
+      11 * k * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) +
+        8 * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
+    ring
+  rw [e]
+  linarith
 
 /-- **Attainable accuracy in $\|\mathbf{x}_\star\|$**: under (H), for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k^\star(\kappa, \varepsilon, 1)$,
@@ -1029,7 +1271,25 @@ theorem norm_sub_mulVec_x_le_norm_sol_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hε : 0 < C.ε) {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤
       (22 * k + 8) * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by
-  sorry
+  obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  have h1 := C.acc_norm_true_le k
+  have h2 := C.ρ_le_of_cgKStar_le ha hs hsmall hε one_pos hk le_rfl
+  have h3 := C.norm_sub_mulVec_x_sub_r_le_norm_sol ha hs hsmall hx
+  have hB := C.acc_norm_b_le ha hs hsmall hx
+  have ha' : 0 ≤ a' := ha.le.trans (C.acc_le hs)
+  have hs1 : 1 ≤ Real.sqrt (a' / a) := by rw [Real.one_le_sqrt]; exact hκ
+  have h4 : 8 * 1 * C.ε * ‖WithLp.toLp 2 C.b‖ ≤
+      8 * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by
+    have h5 : a' * ‖WithLp.toLp 2 xs‖ ≤ Real.sqrt (a' / a) * (a' * ‖WithLp.toLp 2 xs‖) :=
+      le_mul_of_one_le_left (by positivity) hs1
+    have := mul_le_mul_of_nonneg_left (hB.trans h5)
+      (by have := C.ε_nonneg; positivity : (0 : ℝ) ≤ 8 * C.ε)
+    linarith
+  have e : (22 * (k : ℝ) + 8) * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ =
+      22 * k * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ +
+        8 * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by ring
+  rw [e]
+  linarith
 
 /-- **Attainable accuracy in $\|\mathbf{b}\|$**: under (H), for $\varepsilon > 0$ and
 $k \ge k^\star(\kappa, \varepsilon, 1)$,
@@ -1041,7 +1301,20 @@ theorem norm_sub_mulVec_x_le_norm_b_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤ (12 * k + 8) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
-  sorry
+  obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  have h1 := C.acc_norm_true_le k
+  have h2 := C.ρ_le_of_cgKStar_le ha hs hsmall hε one_pos hk le_rfl
+  have h3 := C.norm_sub_mulVec_x_sub_r_le_norm_b ha hs hsmall le_rfl
+  have hB := norm_nonneg (WithLp.toLp 2 C.b)
+  have h4 : 8 * 1 * C.ε * ‖WithLp.toLp 2 C.b‖ ≤ 8 * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
+    have h5 : C.ε * ‖WithLp.toLp 2 C.b‖ ≤ (a' / a) * (C.ε * ‖WithLp.toLp 2 C.b‖) :=
+      le_mul_of_one_le_left (by have := C.ε_nonneg; positivity) hκ
+    linarith
+  have e : (12 * (k : ℝ) + 8) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ =
+      12 * k * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ +
+        8 * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by ring
+  rw [e]
+  linarith
 
 /-- **The forward error at a prescribed step**: under (H), for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k^\star(\kappa, \varepsilon, 1)$, with
@@ -1055,7 +1328,20 @@ theorem norm_sub_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ
     ‖WithLp.toLp 2 (xs - C.x k)‖ ≤
       (11 * k + 8) * C.ε * (a' / a) *
         (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
-  sorry
+  have h := C.norm_sub_mulVec_x_le_of_cgKStar_le ha hs hsmall hε hx hk
+  have h1 := C.acc_mul_norm_le hs (xs - C.x k)
+  rw [Matrix.mulVec_sub, hx] at h1
+  rw [← div_le_div_iff_of_pos_right ha] at h1
+  rw [mul_div_cancel_left₀ _ ha.ne'] at h1
+  refine h1.trans ?_
+  rw [div_le_iff₀ ha]
+  have e : (11 * (k : ℝ) + 8) * C.ε * (a' / a) *
+      (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) * a =
+      (11 * k + 8) * C.ε * a' *
+        (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
+    field_simp
+  rw [e]
+  exact h
 
 /-- **Attainable accuracy, a priori**: for $\varepsilon > 0$, $\mathbf{A}\mathbf{x}_\star =
 \mathbf{b}$, $k \ge k^\star = k^\star(\kappa, \varepsilon, 1)$ and (H) **at $k^\star$ only**,
@@ -1079,7 +1365,29 @@ theorem norm_sub_mulVec_x_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum �
       (11 / 2 * (Real.sqrt (2 * (a' / a) + 1) + 1) *
           Real.log (Real.sqrt (2 * (a' / a) + 1) / (4 * 1 * C.ε)) + 19) * C.ε * a' *
         (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
-  sorry
+  have haa' := C.acc_le hs
+  have ha' : 0 ≤ a' := ha.le.trans haa'
+  have hκ0 : 0 ≤ a' / a := div_nonneg ha' ha.le
+  have hε1 := C.ε_le
+  set K := cgKStar (a' / a) C.ε 1 with hKdef
+  have hK0 : 0 < K := cgKStar_pos hκ0 hε hε1 one_pos le_rfl
+  set M := ‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a with hM
+  have h : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x K)‖ ≤ (11 * K + 8) * C.ε * a' * M :=
+    (C.take K hK0 hk).norm_sub_mulVec_x_le_of_cgKStar_le ha hs hsmall hε hx le_rfl
+  set s := Real.sqrt (2 * (a' / a) + 1) with hsdef
+  have hs1 : 1 ≤ s := by rw [hsdef, Real.one_le_sqrt]; linarith
+  set ℓ := Real.log (s / (4 * 1 * C.ε)) with hℓ
+  have hℓ0 : 0 ≤ ℓ := Real.log_nonneg (by rw [le_div_iff₀ (by positivity)]; nlinarith)
+  have hK : (K : ℝ) ≤ (s + 1) / 2 * ℓ + 1 :=
+    (Nat.ceil_lt_add_one (by positivity : 0 ≤ (s + 1) / 2 * ℓ)).le
+  have hM0 : 0 ≤ M := by positivity
+  have hεaM : 0 ≤ C.ε * a' * M := by positivity
+  refine h.trans ?_
+  have e1 : (11 * (K : ℝ) + 8) * C.ε * a' * M = (11 * K + 8) * (C.ε * a' * M) := by ring
+  have e2 : (11 / 2 * (s + 1) * ℓ + 19) * C.ε * a' * M =
+      (11 / 2 * (s + 1) * ℓ + 19) * (C.ε * a' * M) := by ring
+  rw [e1, e2]
+  exact mul_le_mul_of_nonneg_right (by linarith) hεaM
 
 end CGRun
 

@@ -50,8 +50,9 @@ Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRound
 ## Main results
 
 * `NLAlib.overRelaxedCG_p_dotProduct_r`: the linear drift of the line search defect.
-* `NLAlib.overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ`: the $\mathbf{A}$-norm decrement.
-* `NLAlib.overRelaxedCG_quadForm_sub_le_of_le`: no decrease past $1/(4\varepsilon)$.
+* `NLAlib.quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ`: the
+  $\mathbf{A}$-norm decrement.
+* `NLAlib.quadForm_sub_overRelaxedCG_le_of_le`: no decrease past $1/(4\varepsilon)$.
 * `NLAlib.overRelaxedCG_exists_pos_le_norm_r`: no convergence.
 * `NLAlib.overRelaxedCGRun`: the admissible run.
 -/
@@ -174,7 +175,7 @@ Proof: $\|\mathbf{e} - \gamma\mathbf{p}\|_{\mathbf{A}}^2 = \|\mathbf{e}\|_{\math
 2\gamma\mathbf{p}^{\mathsf{T}}\mathbf{r} + \gamma^2\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$
 with $\mathbf{A}\mathbf{e}_j = \mathbf{r}_j$, `NLAlib.overRelaxedCG_p_dotProduct_r` and
 $\gamma_j\mathbf{p}_j^{\mathsf{T}}\mathbf{A}\mathbf{p}_j = c\rho_j^2$. Difficulty: easy. -/
-theorem overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ (b : Fin n → ℝ) (c : ℝ)
+theorem quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ (b : Fin n → ℝ) (c : ℝ)
     (hA : Aᵀ = A) {xs : Fin n → ℝ} (hx : A *ᵥ xs = b) {j : ℕ}
     (hμ : ∀ i ≤ j, (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0) :
     quadForm A (xs - (overRelaxedCG A b c j).x) -
@@ -211,9 +212,10 @@ theorem overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ (b : Fin n → ℝ) (c 
 $j_1 \le j$ with $(2j_1 + 1)(c - 1) \ge 1$,
 $\|\mathbf{x}_\star - \mathbf{x}_{j_1}\|_{\mathbf{A}}^2 \le \|\mathbf{x}_\star -
 \mathbf{x}_j\|_{\mathbf{A}}^2$. For $c = (1 + \varepsilon)^2$, $j_1 \approx 1/(4\varepsilon)$.
-Proof: every decrement of `NLAlib.overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ` from $j_1$
-on is $\le 0$ ($\gamma_i \ge 0$). Difficulty: easy. -/
-theorem overRelaxedCG_quadForm_sub_le_of_le (b : Fin n → ℝ) (hA : A.PosDef) (hc : 0 ≤ c)
+Proof: every decrement of
+`NLAlib.quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ` from $j_1$ on is
+$\le 0$ ($\gamma_i \ge 0$). Difficulty: easy. -/
+theorem quadForm_sub_overRelaxedCG_le_of_le (b : Fin n → ℝ) (hA : A.PosDef) (hc : 0 ≤ c)
     {xs : Fin n → ℝ} (hx : A *ᵥ xs = b) {j₁ j : ℕ} (hj₁ : 1 ≤ (2 * j₁ + 1) * (c - 1))
     (hj : j₁ ≤ j) (hp : ∀ i < j, (overRelaxedCG A b c i).p ≠ 0) :
     quadForm A (xs - (overRelaxedCG A b c j₁).x) ≤
@@ -244,7 +246,7 @@ theorem overRelaxedCG_quadForm_sub_le_of_le (b : Fin n → ℝ) (hA : A.PosDef) 
         (A *ᵥ (overRelaxedCG A b c (j₁ + m)).p) := by
       have := hA.dotProduct_mulVec_pos (hp (j₁ + m) (by omega))
       simpa only [star_trivial] using this
-    have hd := overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ b c hAT hx hμ
+    have hd := quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ b c hAT hx hμ
     have hR : 0 ≤ (overRelaxedCG A b c (j₁ + m)).r ⬝ᵥ (overRelaxedCG A b c (j₁ + m)).r :=
       Finset.sum_nonneg fun i _ => mul_self_nonneg _
     have hγ : 0 ≤ overRelaxedCGAlpha A c (overRelaxedCG A b c (j₁ + m)) :=
@@ -283,7 +285,7 @@ $\theta_j = \eta^\gamma_j = \varepsilon > 0$ has $\|\mathbf{r}_j\| \not\to 0$.
 No printed source; the research note, §4.6.
 Proof: for $j \ge j_1 = \lceil 1/(c - 1)\rceil$, $\|\mathbf{r}_j\|^2 = \|\mathbf{A}\mathbf{e}_j\|^2
 \ge a\|\mathbf{e}_j\|_{\mathbf{A}}^2 \ge a\|\mathbf{e}_{j_1}\|_{\mathbf{A}}^2 > 0$
-(`NLAlib.overRelaxedCG_quadForm_sub_le_of_le`); below $j_1$ finitely many $\mathbf{r}_j \ne
+(`NLAlib.quadForm_sub_overRelaxedCG_le_of_le`); below $j_1$ finitely many $\mathbf{r}_j \ne
 \mathbf{0}$ (a zero residual makes the next direction zero). Difficulty: easy. -/
 theorem overRelaxedCG_exists_pos_le_norm_r (b : Fin n → ℝ) (hA : Aᵀ = A) {a a' : ℝ}
     (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hc : 1 < c)
@@ -337,7 +339,7 @@ theorem overRelaxedCG_exists_pos_le_norm_r (b : Fin n → ℝ) (hA : Aᵀ = A) {
   rcases le_or_gt j j₁ with hj | hj
   · exact (min_le_right _ _).trans (Finset.inf'_le _ (by simp; omega))
   · refine (min_le_left _ _).trans ?_
-    have hmono := overRelaxedCG_quadForm_sub_le_of_le b hPD (by linarith) hx hj₁ hj.le
+    have hmono := quadForm_sub_overRelaxedCG_le_of_le b hPD (by linarith) hx hj₁ hj.le
       fun i _ => hp i
     have h1 := hlow (xs - (overRelaxedCG A b c j).x)
     have h3 : ‖WithLp.toLp 2 (A *ᵥ (xs - (overRelaxedCG A b c j).x))‖ =
