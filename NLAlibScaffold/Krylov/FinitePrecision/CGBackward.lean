@@ -333,6 +333,18 @@ theorem sum_ρ_sq_div_ρ_sq_le {l l' : ℝ} (hl : 0 < l)
 
 /-! ### Helpers for the a priori induction -/
 
+/-- The smallness hypothesis passes to prefixes. -/
+private theorem hsmall_take {a a' : ℝ} (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {m : ℕ} (hm : 0 < m) (hmk : m ≤ k) :
+    (m : ℝ) ^ 3 * (C.take m hm hmk).ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
+  refine le_trans ?_ hsmall
+  change (m : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ _
+  have : (m : ℝ) ^ 3 ≤ (k : ℝ) ^ 3 := pow_le_pow_left₀ (by positivity) (by exact_mod_cast hmk) 3
+  have h0 : 0 ≤ C.ε * (a' / a) ^ 2 := by have := C.ε_nonneg; positivity
+  nlinarith
+
+
+
 /-- The elementary consequences of the spectral hypothesis and of (H) for a run of $m$ steps:
 $a \le a'$, $\kappa \ge 1$, $\|\mathbf{A}\|_2 \le a'$, and the smallness of $m^i\varepsilon\kappa$,
 $i \le 2$. -/
@@ -701,7 +713,274 @@ private theorem norm_p_succ_sq_le {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i 
   rw [hexp, hrhs]
   linarith
 
+/-- A power of a number close to $1$: $(1 + x)^j \le 11/10$ for $0 \le x \le 1$ and
+$jx \le 1/11$. -/
+private theorem one_add_pow_le {x : ℝ} (hx0 : 0 ≤ x) (hx1 : x ≤ 1) {j : ℕ}
+    (hjx : (j : ℝ) * x ≤ 1 / 11) : (1 + x) ^ j ≤ 11 / 10 := by
+  have h1 : 1 + (j : ℝ) * (-x) ≤ (1 + -x) ^ j := one_add_mul_le_pow (by linarith) j
+  have h2 : (10 : ℝ) / 11 ≤ (1 - x) ^ j := by
+    rw [sub_eq_add_neg]; linarith
+  have h3 : (1 + x) ^ j * (1 - x) ^ j ≤ 1 := by
+    rw [← mul_pow]
+    exact pow_le_one₀ (by nlinarith) (by nlinarith)
+  have h4 : 0 ≤ (1 + x) ^ j := by positivity
+  nlinarith
+
+/-- **The unrolled direction recursion**: with $\lvert\mathbf{p}_i^{\mathsf{T}}
+\mathbf{r}_{i+1}\rvert \le t\rho_i^2$ for $i < j$,
+$\|\mathbf{p}_j\|^2 \le \Lambda^j\rho_j^4\sum_{i \le j}\rho_i^{-2}$,
+$\Lambda = (1 + 3t + 4\varepsilon + 2\varepsilon^2)(1 + 4\varepsilon)^2$. -/
+private theorem norm_p_sq_le_unroll {n m : ℕ} (D : CGRun n m) {t : ℝ} (ht0 : 0 ≤ t)
+    (ht : t ≤ 1 / 10) {j : ℕ} (hj : j < m)
+    (hτ : ∀ i < j, |D.p i ⬝ᵥ D.r (i + 1)| ≤ t * D.ρ i ^ 2) :
+    ‖WithLp.toLp 2 (D.p j)‖ ^ 2 ≤ ((1 + 3 * t + 4 * D.ε + 2 * D.ε ^ 2) * (1 + 4 * D.ε) ^ 2) ^ j *
+      D.ρ j ^ 4 * ∑ i ∈ Finset.range (j + 1), (D.ρ i ^ 2)⁻¹ := by
+  have hε := D.ε_nonneg
+  set c₁ := 1 + 3 * t + 4 * D.ε + 2 * D.ε ^ 2 with hc₁
+  set Λ := c₁ * (1 + 4 * D.ε) ^ 2 with hΛ
+  have hc₁1 : 1 ≤ c₁ := by rw [hc₁]; nlinarith
+  have hΛc : c₁ ≤ Λ := by
+    rw [hΛ]; nlinarith [sq_nonneg (1 + 4 * D.ε)]
+  have hΛ1 : 1 ≤ Λ := hc₁1.trans hΛc
+  induction j with
+  | zero =>
+    have hρ := D.ρ_pos hj
+    simp only [pow_zero, one_mul, zero_add, Finset.range_one, Finset.sum_singleton]
+    have : ‖WithLp.toLp 2 (D.p 0)‖ = D.ρ 0 := by simp [ρ, D.p_zero, D.r_zero]
+    rw [this]
+    field_simp
+    exact le_rfl
+  | succ j ih =>
+    have hjm : j < m := Nat.lt_of_succ_lt hj
+    have ih' := ih hjm (fun i hi => hτ i (hi.trans (Nat.lt_succ_self j)))
+    have hstep := norm_p_succ_sq_le D hjm ht0 ht (hτ j (Nat.lt_succ_self j))
+    obtain ⟨hδ0, hδ⟩ := δ_bounds D hjm
+    have hρ := D.ρ_pos hjm
+    have hR := D.ρ_pos hj
+    set R := D.ρ (j + 1)
+    set Sj := ∑ i ∈ Finset.range (j + 1), (D.ρ i ^ 2)⁻¹ with hSj
+    have hS0 : 0 ≤ Sj := Finset.sum_nonneg fun i _ => by positivity
+    have hδ2 : D.δ j ^ 2 ≤ (1 + 4 * D.ε) ^ 2 * (R ^ 2 / D.ρ j ^ 2) ^ 2 := by
+      rw [← mul_pow]; exact pow_le_pow_left₀ hδ0 hδ 2
+    have hQ : D.δ j ^ 2 * ‖WithLp.toLp 2 (D.p j)‖ ^ 2 ≤
+        (1 + 4 * D.ε) ^ 2 * Λ ^ j * R ^ 4 * Sj := by
+      calc D.δ j ^ 2 * ‖WithLp.toLp 2 (D.p j)‖ ^ 2
+          ≤ ((1 + 4 * D.ε) ^ 2 * (R ^ 2 / D.ρ j ^ 2) ^ 2) * (Λ ^ j * D.ρ j ^ 4 * Sj) :=
+            mul_le_mul hδ2 ih' (sq_nonneg _) (by positivity)
+        _ = (1 + 4 * D.ε) ^ 2 * Λ ^ j * R ^ 4 * Sj := by
+            field_simp
+    rw [Finset.sum_range_succ, ← hSj]
+    refine hstep.trans ?_
+    have hR2 : R ^ 2 = R ^ 4 * (R ^ 2)⁻¹ := by field_simp
+    have hΛj : c₁ ≤ Λ ^ (j + 1) := hΛc.trans (le_self_pow₀ hΛ1 (Nat.succ_ne_zero j))
+    have hR4 : 0 ≤ R ^ 4 * (R ^ 2)⁻¹ := by positivity
+    calc c₁ * (R ^ 2 + D.δ j ^ 2 * ‖WithLp.toLp 2 (D.p j)‖ ^ 2)
+        ≤ c₁ * (R ^ 4 * (R ^ 2)⁻¹ + (1 + 4 * D.ε) ^ 2 * Λ ^ j * R ^ 4 * Sj) := by
+          rw [← hR2]; gcongr
+      _ = c₁ * (R ^ 4 * (R ^ 2)⁻¹) + Λ ^ (j + 1) * R ^ 4 * Sj := by
+          rw [hΛ, pow_succ]; ring
+      _ ≤ Λ ^ (j + 1) * (R ^ 4 * (R ^ 2)⁻¹) + Λ ^ (j + 1) * R ^ 4 * Sj := by
+          gcongr
+      _ = Λ ^ (j + 1) * R ^ 4 * (Sj + (R ^ 2)⁻¹) := by ring
+
 /-! ### A priori certificates (the induction) -/
+
+/-- $\Lambda^j \le 1.1$ for the growth factor of the unrolled direction recursion. -/
+private theorem growth_pow_le {ε t : ℝ} {j : ℕ} (hε : 0 ≤ ε) (hε1 : ε ≤ 1 / 10 ^ 5)
+    (ht0 : 0 ≤ t) (ht1 : t ≤ 1 / 10) (hjt : (j : ℝ) * t ≤ 21 / 10 ^ 5)
+    (hjε : (j : ℝ) * ε ≤ 1 / 10 ^ 5) :
+    ((1 + 3 * t + 4 * ε + 2 * ε ^ 2) * (1 + 4 * ε) ^ 2) ^ j ≤ 11 / 10 := by
+  set x := (1 + 3 * t + 4 * ε + 2 * ε ^ 2) * (1 + 4 * ε) ^ 2 - 1 with hxdef
+  have hexp : x = 3 * t + 12 * ε + 50 * ε ^ 2 + 24 * (t * ε) + 80 * ε ^ 3 + 48 * (t * ε ^ 2) +
+      32 * ε ^ 4 := by rw [hxdef]; ring
+  have h1 : ε ^ 2 ≤ ε / 10 ^ 5 := by nlinarith
+  have h2 : t * ε ≤ ε / 10 := by nlinarith
+  have h3 : ε ^ 3 ≤ ε / 10 ^ 5 := by nlinarith [sq_nonneg ε]
+  have h4 : t * ε ^ 2 ≤ ε / 10 ^ 5 := by nlinarith [mul_nonneg ht0 hε]
+  have h5 : ε ^ 4 ≤ ε / 10 ^ 5 := by nlinarith [pow_nonneg hε 3]
+  have hx0 : 0 ≤ x := by rw [hexp]; positivity
+  have hx : x ≤ 3 * t + 15 * ε := by rw [hexp]; linarith
+  have hj0 : (0 : ℝ) ≤ j := by positivity
+  have hjx : (j : ℝ) * x ≤ 1 / 11 := by
+    have := mul_le_mul_of_nonneg_left hx hj0
+    nlinarith
+  have := one_add_pow_le hx0 (by linarith) hjx
+  rwa [hxdef, add_sub_cancel] at this
+
+/-- The line-search defects at the steps before $j$, from the certificates P(j). -/
+private theorem apriori_tau {a a' : ℝ} {j : ℕ} (hjk : j < k)
+    (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
+      specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2)
+    (hκ : 0 ≤ a' / a) :
+    ∀ i < j, |C.p i ⬝ᵥ C.r (i + 1)| ≤ 5 * (j : ℝ) * C.ε *
+      (1 + Real.sqrt (33 / 10 * (a' / a)) + 21 / 20 * (a' / a)) * C.ρ i ^ 2 := by
+  intro i hi
+  have hj0 : 0 < j := by omega
+  set P := Real.sqrt (33 / 10 * (a' / a)) with hPdef
+  have hP0 : 0 ≤ P := Real.sqrt_nonneg _
+  have hP2 : P ^ 2 = 33 / 10 * (a' / a) := Real.sq_sqrt (by positivity)
+  have hP' : ∀ i < j, ‖WithLp.toLp 2 ((C.take j hj0 hjk.le).p i)‖ ≤
+      P * (C.take j hj0 hjk.le).ρ i := fun i hi => by
+    have hρ : 0 ≤ C.ρ i := norm_nonneg _
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
+    rw [mul_pow, hP2]
+    exact (IH i hi).1
+  have hK' : ∀ i < j, specNorm (C.take j hj0 hjk.le).A * (C.take j hj0 hjk.le).γ i *
+      ‖WithLp.toLp 2 ((C.take j hj0 hjk.le).p i)‖ ^ 2 ≤
+        21 / 20 * (a' / a) * (C.take j hj0 hjk.le).ρ i ^ 2 := fun i hi => (IH i hi).2
+  have h := (C.take j hj0 hjk.le).abs_p_dotProduct_r_succ_le hP' hK' hi
+  refine h.trans ?_
+  change 5 * ((i : ℝ) + 1) * C.ε * (1 + P + 21 / 20 * (a' / a)) * C.ρ i ^ 2 ≤ _
+  have hi1 : (i : ℝ) + 1 ≤ j := by exact_mod_cast hi
+  have hq : 0 ≤ C.ε * (1 + P + 21 / 20 * (a' / a)) * C.ρ i ^ 2 := by
+    have := C.ε_nonneg; positivity
+  have := mul_le_mul_of_nonneg_right hi1 hq
+  nlinarith
+
+/-- The residual ratios at step $j$ from the model of the first $j$ steps. -/
+private theorem apriori_S {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
+      specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
+      C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
+    ∑ i ∈ Finset.range (j + 1), C.ρ j ^ 2 / C.ρ i ^ 2 ≤ 2 * (a' / a) + 1 := by
+  have hκ : 1 ≤ a' / a := (small_facts C ha hs hsmall).2.1
+  rcases Nat.eq_zero_or_pos j with h0 | hj0
+  · subst h0
+    have hρ := C.ρ_pos C.k_pos
+    simp only [zero_add, Finset.range_one, Finset.sum_singleton]
+    rw [div_self (by positivity)]
+    linarith
+  · have hsm := C.hsmall_take hsmall hj0 hjk.le
+    have hfrob := frobNorm_le_of_apriori (C.take j hj0 hjk.le) ha hs hsm
+      (fun i hi => (IH i hi).1) (fun i hi => (IH i hi).2.1) (fun i hi => (IH i (by omega)).2.2)
+    have hspecD := spectrum_subset_of_frobNorm_le (C.take j hj0 hjk.le) ha hs hsm hfrob
+    have h := (C.take j hj0 hjk.le).sum_ρ_sq_div_ρ_sq_le (by positivity : 0 < a / 2) hspecD
+      (le_refl j)
+    have he : (a' + a / 2) / (a / 2) = 2 * (a' / a) + 1 := by field_simp
+    rw [he] at h
+    exact h
+
+/-- **Step (Π) of the induction**: the direction certificate at step $j$ from P(j). -/
+
+private theorem apriori_Pi {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
+      specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
+      C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
+    ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ j ^ 2 := by
+  obtain ⟨-, hκ, -, he, -, hk1, hk2, -⟩ := small_facts C ha hs hsmall
+  have hε := C.ε_nonneg
+  have hjkR : (j : ℝ) ≤ k := by exact_mod_cast hjk.le
+  have hj0R : (0 : ℝ) ≤ j := by positivity
+  set P := Real.sqrt (33 / 10 * (a' / a)) with hPdef
+  have hP0 : 0 ≤ P := Real.sqrt_nonneg _
+  have hP2 : P ^ 2 = 33 / 10 * (a' / a) := Real.sq_sqrt (by positivity)
+  have hPK : 1 + P + 21 / 20 * (a' / a) ≤ 42 / 10 * (a' / a) := by
+    nlinarith [sq_nonneg (1 - P)]
+  set t := 5 * (j : ℝ) * C.ε * (1 + P + 21 / 20 * (a' / a)) with ht
+  have ht0 : 0 ≤ t := by positivity
+  have hjεκ : (j : ℝ) * C.ε * (a' / a) ≤ 1 / 10 ^ 5 := le_trans (by
+    have := mul_le_mul_of_nonneg_right hjkR (by positivity : 0 ≤ C.ε * (a' / a))
+    nlinarith) hk1
+  have hj2 : (j : ℝ) ^ 2 * C.ε * (a' / a) ≤ 1 / 10 ^ 5 := le_trans (by
+    have : (j : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 := pow_le_pow_left₀ hj0R hjkR 2
+    have := mul_le_mul_of_nonneg_right this (by positivity : 0 ≤ C.ε * (a' / a))
+    nlinarith) hk2
+  have htle : t ≤ 21 * ((j : ℝ) * C.ε * (a' / a)) := by
+    have := mul_le_mul_of_nonneg_left hPK (by positivity : 0 ≤ 5 * (j : ℝ) * C.ε)
+    nlinarith
+  have ht1 : t ≤ 1 / 10 := by nlinarith
+  have hjt : (j : ℝ) * t ≤ 21 / 10 ^ 5 := by
+    have := mul_le_mul_of_nonneg_left htle hj0R
+    nlinarith
+  have hjε : (j : ℝ) * C.ε ≤ 1 / 10 ^ 5 := le_trans (by
+    have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (j : ℝ) * C.ε)
+    nlinarith) hjεκ
+  have hτ : ∀ i < j, |C.p i ⬝ᵥ C.r (i + 1)| ≤ t * C.ρ i ^ 2 :=
+    C.apriori_tau hjk (fun i hi => ⟨(IH i hi).1, (IH i hi).2.1⟩) (by positivity)
+  have hu := norm_p_sq_le_unroll C ht0 ht1 hjk hτ
+  have hS := C.apriori_S ha hs hsmall hjk IH
+  have hΛj := growth_pow_le hε he ht0 ht1 hjt hjε
+  have hΛ0 : 0 ≤ ((1 + 3 * t + 4 * C.ε + 2 * C.ε ^ 2) * (1 + 4 * C.ε) ^ 2) ^ j := by positivity
+  generalize (1 + 3 * t + 4 * C.ε + 2 * C.ε ^ 2) * (1 + 4 * C.ε) ^ 2 = Λ at hu hΛj hΛ0
+  have hsum : C.ρ j ^ 4 * ∑ i ∈ Finset.range (j + 1), (C.ρ i ^ 2)⁻¹ =
+      C.ρ j ^ 2 * ∑ i ∈ Finset.range (j + 1), C.ρ j ^ 2 / C.ρ i ^ 2 := by
+    rw [Finset.mul_sum, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    ring
+  rw [mul_assoc, hsum] at hu
+  refine hu.trans ?_
+  have hρ2 : 0 ≤ C.ρ j ^ 2 := sq_nonneg _
+  calc Λ ^ j * (C.ρ j ^ 2 * ∑ i ∈ Finset.range (j + 1), C.ρ j ^ 2 / C.ρ i ^ 2)
+      ≤ 11 / 10 * (C.ρ j ^ 2 * (2 * (a' / a) + 1)) :=
+        mul_le_mul hΛj (mul_le_mul_of_nonneg_left hS hρ2)
+          (mul_nonneg hρ2 (Finset.sum_nonneg fun i _ => div_nonneg hρ2 (sq_nonneg _)))
+          (by norm_num)
+    _ ≤ 33 / 10 * (a' / a) * C.ρ j ^ 2 := by
+        have : 11 / 10 * (2 * (a' / a) + 1) ≤ 33 / 10 * (a' / a) := by linarith
+        nlinarith
+
+/-- **Step (B) of the induction**: the coefficient certificates at step $j$ from the model of
+the first $j + 1$ steps. -/
+private theorem apriori_B {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (hIH : ∀ i < j + 1, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
+      specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2)
+    (hB : ∀ i < j, C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
+    C.lanczosβ (j + 1) ≤ 8 / 5 * a' ∧ C.δ j ≤ 8 / 5 * a' * C.γ j := by
+  obtain ⟨haa', -, -, he, -⟩ := small_facts C ha hs hsmall
+  have hε := C.ε_nonneg
+  have ha' : 0 < a' := ha.trans_le haa'
+  set D := C.take (j + 1) (Nat.succ_pos j) hjk
+  have hsm := C.hsmall_take hsmall (Nat.succ_pos j) hjk
+  have hfrob := frobNorm_le_of_apriori D ha hs hsm (fun i hi => (hIH i hi).1)
+    (fun i hi => (hIH i hi).2) (fun i hi => hB i (by omega))
+  have hspecD := spectrum_subset_of_frobNorm_le D ha hs hsm hfrob
+  have hPD := posDef_of_spectrum D.isHermitian_backwardH (by positivity : 0 < a / 2) hspecD
+  have hγ : cgAlpha D.backwardH (cgState D.backwardH D.dilatedRhs 0 j) = C.γ j :=
+    D.cgAlpha_backwardH_of_posDef hPD (Nat.lt_succ_self j)
+  have hr0 : ‖WithLp.toLp 2 (cgState D.backwardH D.dilatedRhs 0 j).r‖ = C.ρ j :=
+    D.norm_cgState_backwardH_r_of_posDef hPD (Nat.le_succ j)
+  have hr1 : ‖WithLp.toLp 2 (cgState D.backwardH D.dilatedRhs 0 (j + 1)).r‖ = C.ρ (j + 1) :=
+    D.norm_cgState_backwardH_r_of_posDef hPD le_rfl
+  have hρ := C.ρ_pos hjk
+  have hγpos := C.γ_pos hjk
+  have hrne : (cgState D.backwardH D.dilatedRhs 0 j).r ≠ 0 := by
+    intro h0; rw [h0, WithLp.toLp_zero, norm_zero] at hr0; linarith
+  have hγl := one_div_le_cgAlpha hPD hspecD D.dilatedRhs j hrne
+  have hr := hPD.norm_cgState_r_succ_sq_div_le (by positivity : 0 < a / 2) hspecD
+    D.dilatedRhs j
+  rw [hγ] at hγl hr
+  rw [hr0, hr1] at hr
+  have hl' : 0 < a' + a / 2 := by positivity
+  have hlγ : 1 ≤ (a' + a / 2) * C.γ j := by
+    rw [div_le_iff₀ hl'] at hγl; linarith
+  obtain ⟨-, hδ⟩ := δ_bounds C hjk
+  constructor
+  · have hβ : C.lanczosβ (j + 1) = C.ρ (j + 1) / (C.γ j * C.ρ j) := by
+      simp [lanczosβ]
+    have hρ1 : C.ρ (j + 1) ≤ (a' + a / 2) * C.γ j * C.ρ j := by
+      refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
+      calc C.ρ (j + 1) ^ 2 ≤ (a' + a / 2) * C.γ j * C.ρ j ^ 2 := hr
+        _ ≤ (a' + a / 2) * C.γ j * C.ρ j ^ 2 * ((a' + a / 2) * C.γ j) :=
+            le_mul_of_one_le_right (by positivity) hlγ
+        _ = ((a' + a / 2) * C.γ j * C.ρ j) ^ 2 := by ring
+    rw [hβ, div_le_iff₀ (by positivity)]
+    have hγρ : 0 < C.γ j * C.ρ j := mul_pos hγpos hρ
+    have : (a' + a / 2) * C.γ j * C.ρ j ≤ 8 / 5 * a' * (C.γ j * C.ρ j) := by
+      rw [mul_assoc]
+      exact mul_le_mul_of_nonneg_right (by linarith) hγρ.le
+    linarith
+  · calc C.δ j ≤ (1 + 4 * C.ε) * (C.ρ (j + 1) ^ 2 / C.ρ j ^ 2) := hδ
+      _ ≤ (1 + 4 * C.ε) * ((a' + a / 2) * C.γ j) := by
+          gcongr
+          rw [div_le_iff₀ (by positivity)]
+          exact hr
+      _ ≤ 8 / 5 * a' * C.γ j := by
+          have h1 : (1 + 4 * C.ε) * (a' + a / 2) ≤ 8 / 5 * a' := by nlinarith
+          rw [← mul_assoc]
+          exact mul_le_mul_of_nonneg_right h1 hγpos.le
 
 /-- **The a priori induction** P(j), $j \le k$: under (H), for every step $i < j$,
 $\|\mathbf{p}_i\|^2 \le 3.3\kappa\rho_i^2$, $\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2 \le
@@ -734,7 +1013,24 @@ private theorem aprioriCertificates {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ
     ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
       C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i := by
-  sorry
+  induction j with
+  | zero => intro i hi; exact absurd hi (Nat.not_lt_zero _)
+  | succ j ih =>
+    have hjk : j < k := hj
+    have IH := ih hjk.le
+    have hPi := C.apriori_Pi ha hs hsmall hjk IH
+    have hK := specNorm_mul_γ_mul_norm_p_sq_le_aux C ha hs hsmall hjk
+    have hIH : ∀ i < j + 1, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
+        specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤
+          21 / 20 * (a' / a) * C.ρ i ^ 2 := fun i hi => by
+      rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | hi
+      · exact ⟨(IH i hi).1, (IH i hi).2.1⟩
+      · subst hi; exact ⟨hPi, hK⟩
+    have hB := C.apriori_B ha hs hsmall hjk hIH (fun i hi => (IH i hi).2.2)
+    intro i hi
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | hi
+    · exact IH i hi
+    · subst hi; exact ⟨hPi, hK, hB⟩
 
 /-- **Directions against residuals, a priori**: under (H), $\|\mathbf{p}_j\|^2 \le
 3.3\kappa\|\mathbf{r}_j\|^2$ for $j < k$, $\kappa = a'/a$. [StrakosTichy2002, (9.13)] has
