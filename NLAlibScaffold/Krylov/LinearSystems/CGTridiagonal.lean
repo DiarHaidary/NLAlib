@@ -248,6 +248,7 @@ private theorem rayleigh_sq_of_spectrum {A : Matrix n n 𝕜} (hA : A.PosDef) {a
   rw [← h1, h2] at this
   exact this
 
+omit [DecidableEq n] in
 /-- $\|\mathbf{r}_j\|^2 \le \|\mathbf{p}_j\|^2$. -/
 private theorem norm_r_sq_le_norm_p_sq {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀ : n → 𝕜) :
     ∀ j, ‖WithLp.toLp 2 (cgState A b x₀ j).r‖ ^ 2 ≤ ‖WithLp.toLp 2 (cgState A b x₀ j).p‖ ^ 2
@@ -259,6 +260,7 @@ private theorem norm_r_sq_le_norm_p_sq {A : Matrix n n 𝕜} (hA : A.PosDef) (b 
     have := sq_nonneg ‖WithLp.toLp 2 (cgState A b x₀ j).p‖
     nlinarith
 
+omit [DecidableEq n] in
 /-- $\mathbf{p}_j^{\mathsf{H}}\mathbf{A}\mathbf{p}_j \le
 \mathbf{r}_j^{\mathsf{H}}\mathbf{A}\mathbf{r}_j$. -/
 private theorem re_quadForm_p_le_r {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀ : n → 𝕜) :
@@ -463,6 +465,210 @@ theorem sq_mul_inv_cgTridiagonal_zero_zero {γ ρ : ℕ → ℝ} {k : ℕ} (hγ 
   rw [← pow_mul, mul_comm (a : ℕ) 2, pow_mul]
   norm_num
 
+/-! ### The Lanczos vectors of exact CG -/
+
+section LanczosVectors
+
+omit [DecidableEq n]
+
+/-- The **Lanczos vectors of CG**: $\mathbf{u}_0 = \mathbf{0}$ and
+$\mathbf{u}_{i+1} = (-1)^i\mathbf{r}_i/\|\mathbf{r}_i\|$. -/
+private noncomputable def cgLanczosU (A : Matrix n n ℝ) (b : n → ℝ) : ℕ → n → ℝ
+  | 0 => 0
+  | i + 1 => ((-1 : ℝ) ^ i * ‖WithLp.toLp 2 (cgState A b 0 i).r‖⁻¹) • (cgState A b 0 i).r
+
+/-- The off-diagonal coefficients of CG: $\beta_0 = 0$ and
+$\beta_{j+1} = \rho_{j+1}/(\gamma_j\rho_j)$. -/
+private noncomputable def cgLanczosBeta (A : Matrix n n ℝ) (b : n → ℝ) : ℕ → ℝ
+  | 0 => 0
+  | j + 1 => ‖WithLp.toLp 2 (cgState A b 0 (j + 1)).r‖ /
+      (cgAlpha A (cgState A b 0 j) * ‖WithLp.toLp 2 (cgState A b 0 j).r‖)
+
+/-- The diagonal coefficients of CG: $\gamma_j^{-1} + (\rho_j/\rho_{j-1})^2\gamma_{j-1}^{-1}$. -/
+private noncomputable def cgLanczosAlpha (A : Matrix n n ℝ) (b : n → ℝ) (j : ℕ) : ℝ :=
+  (cgAlpha A (cgState A b 0 j))⁻¹ + (if j = 0 then 0 else
+    (‖WithLp.toLp 2 (cgState A b 0 j).r‖ / ‖WithLp.toLp 2 (cgState A b 0 (j - 1)).r‖) ^ 2 /
+      cgAlpha A (cgState A b 0 (j - 1)))
+
+/-- One Lanczos step on a unit vector satisfying a three-term relation. -/
+private theorem lanczos_step_aux {ι : Type*} [Fintype ι] {A : Matrix ι ι ℝ} {u0 u1 u2 : ι → ℝ}
+    {b0 a1 b1 : ℝ} (h11 : u1 ⬝ᵥ u1 = 1) (h12 : u1 ⬝ᵥ u2 = 0)
+    (hrec : A *ᵥ u1 = b0 • u0 + a1 • u1 + b1 • u2) :
+    lanczosAlpha A ⟨u0, u1, b0⟩ = a1 ∧
+      lanczosStep A ⟨u0, u1, b0⟩ =
+        ⟨u1, (‖WithLp.toLp 2 (b1 • u2)‖⁻¹ : ℝ) • (b1 • u2), ‖WithLp.toLp 2 (b1 • u2)‖⟩ := by
+  have hα : lanczosAlpha A ⟨u0, u1, b0⟩ = a1 := by
+    simp only [lanczosAlpha, RCLike.ofReal_real_eq_id, id, star_trivial, RCLike.re_to_real]
+    rw [show A *ᵥ u1 - b0 • u0 = a1 • u1 + b1 • u2 by rw [hrec]; abel]
+    simp only [dotProduct_add, dotProduct_smul, smul_eq_mul, h11, h12]
+    ring
+  refine ⟨hα, ?_⟩
+  have hw : A *ᵥ u1 - b0 • u0 - a1 • u1 = b1 • u2 := by rw [hrec]; abel
+  simp only [lanczosStep, hα, RCLike.ofReal_real_eq_id, id, hw]
+
+/-- A nonzero residual has nonzero predecessors. -/
+private theorem cgState_r_ne_zero_of_succ {A : Matrix n n ℝ} {b : n → ℝ} {j : ℕ}
+    (h : (cgState A b 0 (j + 1)).r ≠ 0) : (cgState A b 0 j).r ≠ 0 :=
+  fun h0 => h (cgState_succ_of_r_eq_zero A b 0 h0).1
+
+/-- $\beta_{j+1}\mathbf{u}_{j+2} = (-1)^{j+1}\mathbf{r}_{j+1}/(\gamma_j\rho_j)$, also when
+$\mathbf{r}_{j+1} = \mathbf{0}$. -/
+private theorem cgLanczosBeta_smul_U (A : Matrix n n ℝ) (b : n → ℝ) (j : ℕ) :
+    cgLanczosBeta A b (j + 1) • cgLanczosU A b (j + 2) =
+      ((-1 : ℝ) ^ (j + 1) / (cgAlpha A (cgState A b 0 j) * ‖WithLp.toLp 2 (cgState A b 0 j).r‖)) •
+        (cgState A b 0 (j + 1)).r := by
+  simp only [cgLanczosBeta, cgLanczosU, smul_smul]
+  by_cases h : ‖WithLp.toLp 2 (cgState A b 0 (j + 1)).r‖ = 0
+  · have : (cgState A b 0 (j + 1)).r = 0 := by simpa using h
+    rw [this, smul_zero, smul_zero]
+  · congr 1
+    field_simp
+
+/-- The Lanczos vectors of CG are orthogonal. -/
+private theorem cgLanczosU_dotProduct_of_lt {A : Matrix n n ℝ} (hA : A.PosDef) (b : n → ℝ)
+    {i j : ℕ} (hij : i < j) : cgLanczosU A b (i + 1) ⬝ᵥ cgLanczosU A b (j + 1) = 0 := by
+  have h := hA.star_cgState_r_dotProduct_eq_zero (b := b) (x₀ := 0) hij
+  rw [star_trivial] at h
+  simp only [cgLanczosU, smul_dotProduct, dotProduct_smul, h, smul_zero]
+
+/-- The Lanczos vectors of CG are unit vectors while the residual is nonzero. -/
+private theorem cgLanczosU_dotProduct_self (A : Matrix n n ℝ) (b : n → ℝ) {i : ℕ}
+    (hr : (cgState A b 0 i).r ≠ 0) : cgLanczosU A b (i + 1) ⬝ᵥ cgLanczosU A b (i + 1) = 1 := by
+  have hρ : ‖WithLp.toLp 2 (cgState A b 0 i).r‖ ≠ 0 := by simpa using hr
+  simp only [cgLanczosU, smul_dotProduct, dotProduct_smul, smul_eq_mul]
+  rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+  field_simp
+  rw [← pow_mul, mul_comm i 2, pow_mul]
+  norm_num
+
+/-- **The three-term recurrence of the CG Lanczos vectors**: for $\mathbf{r}_j \ne \mathbf{0}$,
+$\mathbf{A}\mathbf{u}_{j+1} = \beta_j\mathbf{u}_j + \alpha_j\mathbf{u}_{j+1} +
+\beta_{j+1}\mathbf{u}_{j+2}$. -/
+private theorem mulVec_cgLanczosU {A : Matrix n n ℝ} (hA : A.PosDef) (b : n → ℝ) {j : ℕ}
+    (hr : (cgState A b 0 j).r ≠ 0) :
+    A *ᵥ cgLanczosU A b (j + 1) = cgLanczosBeta A b j • cgLanczosU A b j +
+      cgLanczosAlpha A b j • cgLanczosU A b (j + 1) +
+        cgLanczosBeta A b (j + 1) • cgLanczosU A b (j + 2) := by
+  rw [cgLanczosBeta_smul_U]
+  -- $\mathbf{A}\mathbf{p}_i = \gamma_i^{-1}(\mathbf{r}_i - \mathbf{r}_{i+1})$
+  have hAp : ∀ i, (cgState A b 0 i).r ≠ 0 → A *ᵥ (cgState A b 0 i).p =
+      (cgAlpha A (cgState A b 0 i))⁻¹ • ((cgState A b 0 i).r - (cgState A b 0 (i + 1)).r) := by
+    intro i hi
+    have hγ : cgAlpha A (cgState A b 0 i) ≠ 0 := by
+      obtain ⟨h1, h2⟩ := cgAlpha_mul_re_quadForm hA b 0 hi
+      intro h0
+      rw [h0, zero_mul] at h1
+      have : ‖WithLp.toLp 2 (cgState A b 0 i).r‖ ≠ 0 := by simpa using hi
+      exact this (by nlinarith [norm_nonneg (WithLp.toLp 2 (cgState A b 0 i).r)])
+    rw [(cgState_succ_eq A b 0 i).2.1, sub_sub_cancel, smul_smul]
+    simp only [RCLike.ofReal_real_eq_id, id]
+    rw [inv_mul_cancel₀ hγ, one_smul]
+  have hρ : ‖WithLp.toLp 2 (cgState A b 0 j).r‖ ≠ 0 := by simpa using hr
+  have hγj : cgAlpha A (cgState A b 0 j) ≠ 0 := by
+    obtain ⟨h1, h2⟩ := cgAlpha_mul_re_quadForm hA b 0 hr
+    intro h0
+    rw [h0, zero_mul] at h1
+    exact hρ (by nlinarith [norm_nonneg (WithLp.toLp 2 (cgState A b 0 j).r)])
+  cases j with
+  | zero =>
+    have h0 := hAp 0 hr
+    change A *ᵥ (cgState A b 0 0).r = _ at h0
+    simp only [cgLanczosU, cgLanczosBeta, cgLanczosAlpha, ↓reduceIte, add_zero, zero_smul,
+      zero_add, Matrix.mulVec_smul, h0, pow_zero, one_mul, pow_one]
+    funext x
+    simp only [Pi.add_apply, Pi.smul_apply, Pi.sub_apply, smul_eq_mul]
+    field_simp
+    ring
+  | succ m =>
+    have hrm := cgState_r_ne_zero_of_succ hr
+    have hρm : ‖WithLp.toLp 2 (cgState A b 0 m).r‖ ≠ 0 := by simpa using hrm
+    have hγm : cgAlpha A (cgState A b 0 m) ≠ 0 := by
+      obtain ⟨h1, h2⟩ := cgAlpha_mul_re_quadForm hA b 0 hrm
+      intro h0
+      rw [h0, zero_mul] at h1
+      exact hρm (by nlinarith [norm_nonneg (WithLp.toLp 2 (cgState A b 0 m).r)])
+    have h1 := hAp (m + 1) hr
+    have h0 := hAp m hrm
+    have hp := (cgState_succ_eq A b 0 m).2.2
+    have hAr : A *ᵥ (cgState A b 0 (m + 1)).r = A *ᵥ (cgState A b 0 (m + 1)).p -
+        (‖WithLp.toLp 2 (cgState A b 0 (m + 1)).r‖ ^ 2 /
+          ‖WithLp.toLp 2 (cgState A b 0 m).r‖ ^ 2) • A *ᵥ (cgState A b 0 m).p := by
+      rw [hp, Matrix.mulVec_add, Matrix.mulVec_smul]
+      simp only [RCLike.ofReal_real_eq_id, id]
+      abel
+    rw [h1, h0] at hAr
+    simp only [cgLanczosU, cgLanczosBeta, cgLanczosAlpha, Nat.add_sub_cancel,
+      Matrix.mulVec_smul, hAr, if_neg (Nat.succ_ne_zero m)]
+    funext x
+    simp only [Pi.add_apply, Pi.smul_apply, Pi.sub_apply, smul_eq_mul]
+    field_simp
+    ring
+
+/-- **The Lanczos recurrence on exact CG**: while $\mathbf{r}_0, \dots, \mathbf{r}_m \ne
+\mathbf{0}$, the Lanczos states are $(\mathbf{u}_i, \mathbf{u}_{i+1}, \beta_i)$, the diagonal
+coefficients are $\alpha_i$ ($i \le m$), and the next coefficient is $\beta_{m+1}$. -/
+private theorem lanczosState_cg {A : Matrix n n ℝ} (hA : A.PosDef) (b : n → ℝ) {m : ℕ}
+    (hr : ∀ i ≤ m, (cgState A b 0 i).r ≠ 0) :
+    (∀ i ≤ m, lanczosState A b i =
+        ⟨cgLanczosU A b i, cgLanczosU A b (i + 1), cgLanczosBeta A b i⟩) ∧
+      (∀ i ≤ m, lanczosAlpha A (lanczosState A b i) = cgLanczosAlpha A b i) ∧
+      (lanczosState A b (m + 1)).beta = cgLanczosBeta A b (m + 1) := by
+  have hstep : ∀ i ≤ m, lanczosState A b i =
+      ⟨cgLanczosU A b i, cgLanczosU A b (i + 1), cgLanczosBeta A b i⟩ →
+      lanczosAlpha A (lanczosState A b i) = cgLanczosAlpha A b i ∧
+        lanczosState A b (i + 1) = ⟨cgLanczosU A b (i + 1),
+          (‖WithLp.toLp 2 (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2))‖⁻¹ : ℝ) •
+            (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2)),
+          ‖WithLp.toLp 2 (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2))‖⟩ := by
+    intro i hi hs
+    have h := lanczos_step_aux (cgLanczosU_dotProduct_self A b (hr i hi))
+      (cgLanczosU_dotProduct_of_lt hA b (Nat.lt_succ_self i)) (mulVec_cgLanczosU hA b (hr i hi))
+    refine ⟨by rw [hs]; exact h.1, ?_⟩
+    change lanczosStep A (lanczosState A b i) = _
+    rw [hs]
+    exact h.2
+  have hnorm : ∀ i, ‖WithLp.toLp 2 (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2))‖ =
+      cgLanczosBeta A b (i + 1) := by
+    intro i
+    rw [cgLanczosBeta_smul_U, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_div, abs_pow,
+      abs_neg, abs_one, one_pow]
+    simp only [cgLanczosBeta]
+    rw [abs_of_nonneg (mul_nonneg (cgAlpha_nonneg hA _) (norm_nonneg _))]
+    ring
+  have hst : ∀ i ≤ m, lanczosState A b i =
+      ⟨cgLanczosU A b i, cgLanczosU A b (i + 1), cgLanczosBeta A b i⟩ := by
+    intro i hi
+    induction i with
+    | zero =>
+      simp only [lanczosState, cgLanczosU, cgLanczosBeta, cgState, Matrix.mulVec_zero, sub_zero,
+        pow_zero, one_mul, RCLike.ofReal_real_eq_id, id]
+    | succ i ih =>
+      obtain ⟨-, h2⟩ := hstep i (by omega) (ih (by omega))
+      rw [h2, hnorm]
+      have hr1 := hr (i + 1) hi
+      have hβ : cgLanczosBeta A b (i + 1) ≠ 0 := by
+        rw [← hnorm, cgLanczosBeta_smul_U]
+        intro h0
+        rw [norm_eq_zero, WithLp.toLp_eq_zero, smul_eq_zero] at h0
+        rcases h0 with h0 | h0
+        · rw [div_eq_zero_iff] at h0
+          rcases h0 with h0 | h0
+          · exact pow_ne_zero _ (by norm_num) h0
+          · have := cgState_r_ne_zero_of_succ hr1
+            have hρ : ‖WithLp.toLp 2 (cgState A b 0 i).r‖ ≠ 0 := by simpa using this
+            obtain ⟨e1, e2⟩ := cgAlpha_mul_re_quadForm hA b 0 this
+            rcases mul_eq_zero.1 h0 with h0 | h0
+            · rw [h0, zero_mul] at e1
+              exact hρ (by nlinarith [norm_nonneg (WithLp.toLp 2 (cgState A b 0 i).r)])
+            · exact hρ h0
+        · exact hr1 h0
+      rw [smul_smul, inv_mul_cancel₀ hβ, one_smul]
+  refine ⟨hst, fun i hi => (hstep i hi (hst i hi)).1, ?_⟩
+  rw [(hstep m le_rfl (hst m le_rfl)).2]
+  exact hnorm m
+
+end LanczosVectors
+
 omit [DecidableEq n] in
 /-- **Exact CG computes the Lanczos tridiagonal matrix** (the CG–Lanczos correspondence): for
 positive definite real $\mathbf{A}$ and residuals $\mathbf{r}_j \ne \mathbf{0}$, $j < k$, of CG
@@ -479,7 +685,95 @@ theorem _root_.Matrix.PosDef.lanczosTridiagonal_eq_cgTridiagonal
     (hr : ∀ j < k, (cgState A b 0 j).r ≠ 0) :
     lanczosTridiagonal A b k = cgTridiagonal (fun j => cgAlpha A (cgState A b 0 j))
       (fun j => ‖WithLp.toLp 2 (cgState A b 0 j).r‖) k := by
-  sorry
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · ext i
+    exact i.elim0
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+  obtain ⟨hst, hα, -⟩ := lanczosState_cg hA b (m := m) fun i hi => hr i (by omega)
+  have hb : ∀ l l' : Fin (m + 1), (l : ℕ) = l' + 1 → (lanczosState A b l).beta =
+      ‖WithLp.toLp 2 (cgState A b 0 l).r‖ /
+        (cgAlpha A (cgState A b 0 l') * ‖WithLp.toLp 2 (cgState A b 0 l').r‖) := by
+    intro l l' h
+    rw [hst l (by omega)]
+    change cgLanczosBeta A b l = _
+    obtain ⟨l, hl⟩ := l
+    simp only at h
+    subst h
+    rfl
+  ext i j
+  simp only [lanczosTridiagonal, cgTridiagonal, Matrix.of_apply, RCLike.ofReal_real_eq_id, id]
+  by_cases h1 : i = j
+  · rw [if_pos h1, if_pos h1, hα i (by omega)]
+    subst h1
+    rfl
+  · rw [if_neg h1, if_neg h1]
+    by_cases h2 : (i : ℕ) = j + 1
+    · rw [if_pos h2, if_pos h2, hb i j h2]
+    · rw [if_neg h2, if_neg h2]
+      by_cases h3 : (j : ℕ) = i + 1
+      · rw [if_pos h3, if_pos h3, hb j i h3]
+      · rw [if_neg h3, if_neg h3]
+
+omit [DecidableEq n] in
+/-- The induction behind the converse: exact Lanczos data with the CG tridiagonal matrix of
+$(\gamma, \rho)$ fix the residual norms $\rho_i$ ($i \le j$) and the step lengths $\gamma_i$
+($i < j$) of exact CG, for every $j \le k$. -/
+private theorem cg_of_lanczosTridiagonal_eq {A : Matrix n n ℝ} (hA : A.PosDef) {b : n → ℝ}
+    {γ ρ : ℕ → ℝ} {k : ℕ}
+    (hT : lanczosTridiagonal A b k = cgTridiagonal γ ρ k)
+    (hβ : (lanczosState A b k).beta = ρ k / (γ (k - 1) * ρ (k - 1)))
+    (hγ : ∀ j < k, 0 < γ j) (hρ : ∀ j < k, 0 < ρ j) (hρ0 : ρ 0 = ‖WithLp.toLp 2 b‖) :
+    ∀ j ≤ k, (∀ i ≤ j, ‖WithLp.toLp 2 (cgState A b 0 i).r‖ = ρ i) ∧
+      (∀ i < j, cgAlpha A (cgState A b 0 i) = γ i) := by
+  intro j hj
+  induction j with
+  | zero =>
+    refine ⟨fun i hi => ?_, fun i hi => absurd hi (by omega)⟩
+    obtain rfl : i = 0 := by omega
+    rw [hρ0]
+    simp [cgState]
+  | succ j ih =>
+    obtain ⟨ihρ, ihγ⟩ := ih (by omega)
+    have hr : ∀ i ≤ j, (cgState A b 0 i).r ≠ 0 := fun i hi h0 => by
+      have := ihρ i hi
+      rw [h0, WithLp.toLp_zero, norm_zero] at this
+      exact (hρ i (by omega)).ne' this.symm
+    obtain ⟨-, hα, hβ'⟩ := lanczosState_cg hA b hr
+    have hTjj := congrFun (congrFun hT ⟨j, by omega⟩) ⟨j, by omega⟩
+    simp only [lanczosTridiagonal, cgTridiagonal, Matrix.of_apply, if_true,
+      RCLike.ofReal_real_eq_id, id] at hTjj
+    rw [hα j le_rfl] at hTjj
+    unfold cgLanczosAlpha at hTjj
+    have hγj : cgAlpha A (cgState A b 0 j) = γ j := by
+      by_cases hj0 : j = 0
+      · subst hj0
+        simp only [if_true, add_zero] at hTjj
+        exact inv_inj.mp hTjj
+      · rw [if_neg hj0, if_neg hj0, ihρ j le_rfl, ihρ (j - 1) (by omega),
+          ihγ (j - 1) (by omega)] at hTjj
+        exact inv_inj.mp (add_right_cancel hTjj)
+    have hb : (lanczosState A b (j + 1)).beta = ρ (j + 1) / (γ j * ρ j) := by
+      rcases (show j + 1 < k ∨ j + 1 = k by omega) with h | h
+      · have := congrFun (congrFun hT ⟨j + 1, h⟩) ⟨j, by omega⟩
+        simp only [lanczosTridiagonal, cgTridiagonal, Matrix.of_apply, Fin.mk.injEq,
+          RCLike.ofReal_real_eq_id, id, show j + 1 ≠ j by omega, if_false, if_true] at this
+        exact this
+      · subst h
+        rw [hβ, Nat.add_sub_cancel]
+    rw [hβ'] at hb
+    change ‖WithLp.toLp 2 (cgState A b 0 (j + 1)).r‖ /
+      (cgAlpha A (cgState A b 0 j) * ‖WithLp.toLp 2 (cgState A b 0 j).r‖) = _ at hb
+    rw [hγj, ihρ j le_rfl] at hb
+    have hne : γ j * ρ j ≠ 0 := mul_ne_zero (hγ j (by omega)).ne' (hρ j (by omega)).ne'
+    have hρj1 : ‖WithLp.toLp 2 (cgState A b 0 (j + 1)).r‖ = ρ (j + 1) := by
+      rwa [div_left_inj' hne] at hb
+    refine ⟨fun i hi => ?_, fun i hi => ?_⟩
+    · rcases (show i ≤ j ∨ i = j + 1 by omega) with h | rfl
+      · exact ihρ i h
+      · exact hρj1
+    · rcases (show i < j ∨ i = j by omega) with h | rfl
+      · exact ihγ i h
+      · exact hγj
 
 omit [DecidableEq n] in
 /-- **Exact Lanczos data determine the CG step lengths**: if exact Lanczos on a positive
@@ -500,7 +794,7 @@ theorem _root_.Matrix.PosDef.cgAlpha_cgState_eq_of_lanczosTridiagonal_eq
     (hγ : ∀ j < k, 0 < γ j) (hρ : ∀ j < k, 0 < ρ j) (hρ0 : ρ 0 = ‖WithLp.toLp 2 b‖)
     {j : ℕ} (hj : j < k) :
     cgAlpha A (cgState A b 0 j) = γ j := by
-  sorry
+  exact (cg_of_lanczosTridiagonal_eq hA hT hβ hγ hρ hρ0 k le_rfl).2 j hj
 
 omit [DecidableEq n] in
 /-- **Exact Lanczos data determine the CG residual norms**: under the hypotheses of
@@ -515,7 +809,7 @@ theorem _root_.Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq
     (hγ : ∀ j < k, 0 < γ j) (hρ : ∀ j < k, 0 < ρ j) (hρ0 : ρ 0 = ‖WithLp.toLp 2 b‖)
     {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (cgState A b 0 j).r‖ = ρ j := by
-  sorry
+  exact (cg_of_lanczosTridiagonal_eq hA hT hβ hγ hρ hρ0 k le_rfl).1 j hj
 
 /-- **The decrease of the $\mathbf{A}$-norm error** in one CG step: for positive definite
 $\mathbf{A}$ and $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
