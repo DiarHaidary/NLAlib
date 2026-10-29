@@ -1929,7 +1929,70 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ}
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
     (hsmall : 20 * k * C.ε * (1 + P + K) ≤ 1) :
     C.ρ k ≤ 2 * ‖WithLp.toLp 2 (C.p k)‖ := by
-  sorry
+  obtain ⟨i, rfl⟩ : ∃ i, k = i + 1 := ⟨k - 1, by have := C.k_pos; omega⟩
+  have hi : i < i + 1 := Nat.lt_succ_self i
+  have hε := C.ε_le
+  have hε0 := C.ε_nonneg
+  have hρi := C.ρ_pos hi
+  have hρ := C.ρ_nonneg (i + 1)
+  obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi
+  have hτ := C.abs_p_dotProduct_r_succ_le hP hK hi
+  set D := C.δ i * ‖WithLp.toLp 2 (C.p i)‖ with hD
+  have hD0 : 0 ≤ D := mul_nonneg hδ0 (norm_nonneg _)
+  set y := C.r (i + 1) + C.δ i • C.p i with hy
+  -- the squared norm of `y`
+  have hy2 : ‖WithLp.toLp 2 y‖ ^ 2 = C.ρ (i + 1) ^ 2 + D ^ 2 +
+      2 * C.δ i * (C.p i ⬝ᵥ C.r (i + 1)) := by
+    rw [norm_toLp_sq, hy, hD, ρ, mul_pow, norm_toLp_sq, norm_toLp_sq]
+    simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+      dotProduct_comm (C.r (i + 1)) (C.p i)]
+    ring
+  -- the line search term is small
+  have hτ' : |C.p i ⬝ᵥ C.r (i + 1)| ≤ 1 / 4 * C.ρ i ^ 2 := by
+    refine hτ.trans ?_
+    have e : 5 * ((i : ℝ) + 1) * C.ε * (1 + P + K) = 1 / 4 * (20 * ((i + 1 : ℕ) : ℝ) * C.ε *
+        (1 + P + K)) := by
+      push_cast
+      ring
+    rw [e]
+    have := mul_le_mul_of_nonneg_left hsmall (by norm_num : (0 : ℝ) ≤ 1 / 4)
+    exact mul_le_mul_of_nonneg_right (by linarith) (sq_nonneg _)
+  have hcross : |2 * C.δ i * (C.p i ⬝ᵥ C.r (i + 1))| ≤ 52 / 100 * C.ρ (i + 1) ^ 2 := by
+    rw [abs_mul, abs_mul, abs_of_nonneg hδ0, abs_two]
+    have h1 := mul_le_mul_of_nonneg_left hτ' (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) hδ0)
+    have h2 : 2 * C.δ i * (1 / 4 * C.ρ i ^ 2) ≤ 1 / 2 * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) := by
+      linarith only [hδ1]
+    have h3 : 1 / 2 * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) ≤ 52 / 100 * C.ρ (i + 1) ^ 2 := by
+      have := mul_le_mul_of_nonneg_right (show 1 + 31 / 10 * C.ε ≤ 104 / 100 by linarith)
+        (sq_nonneg (C.ρ (i + 1)))
+      linarith only [this]
+    linarith only [h1, h2, h3]
+  have hylow : 48 / 100 * C.ρ (i + 1) ^ 2 + D ^ 2 ≤ ‖WithLp.toLp 2 y‖ ^ 2 := by
+    rw [hy2]
+    linarith only [(abs_le.mp hcross).1]
+  -- the update error
+  have hep := C.norm_ep_le' hi
+  rw [← hD] at hep
+  have hpk : C.p (i + 1) = y + C.ep i := by rw [C.p_succ i hi, hy]
+  have hpk' : ‖WithLp.toLp 2 y‖ - ‖WithLp.toLp 2 (C.ep i)‖ ≤ ‖WithLp.toLp 2 (C.p (i + 1))‖ := by
+    have h := norm_toLp_sub_le (C.p (i + 1)) (C.ep i)
+    have e : C.p (i + 1) - C.ep i = y := by rw [hpk]; abel
+    rw [e] at h
+    linarith only [h]
+  -- `‖y‖ ≥ ρ/2 + ε(ρ + D)`
+  set T := C.ρ (i + 1) / 2 + C.ε * (C.ρ (i + 1) + D) with hT
+  have hT0 : 0 ≤ T := by
+    have := mul_nonneg hε0 (add_nonneg hρ hD0)
+    linarith only [this, hρ, hT]
+  have hT2 : T ^ 2 ≤ ‖WithLp.toLp 2 y‖ ^ 2 := by
+    have h1 : T ≤ 51 / 100 * C.ρ (i + 1) + 1 / 100 * D := by
+      have := mul_le_mul_of_nonneg_right hε (add_nonneg hρ hD0)
+      linarith only [this, hT]
+    have h2 : T ^ 2 ≤ (51 / 100 * C.ρ (i + 1) + 1 / 100 * D) ^ 2 := pow_le_pow_left₀ hT0 h1 2
+    nlinarith [sq_nonneg (C.ρ (i + 1) - D), mul_nonneg hρ hD0]
+  have hTy : T ≤ ‖WithLp.toLp 2 y‖ := (pow_le_pow_iff_left₀ hT0 (norm_nonneg _) two_ne_zero).1 hT2
+  push_cast at hpk' ⊢
+  linarith only [hTy, hpk', hep, hT]
 
 /-- One step of the residual gap: $\mathbf{g}_{j+1} = \mathbf{g}_j + \gamma_j\mathbf{e}^s_j -
 \mathbf{A}\mathbf{e}^x_j - \mathbf{e}^r_j$, bounded. -/
