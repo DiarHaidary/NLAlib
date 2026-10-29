@@ -716,7 +716,126 @@ $\|\mathbf x_\star-\hat{\mathbf x}_k\|^2_{\mathbf A}\le\|\mathbf x_\star\|^2_{\m
 up to a relative $3\cdot10^{-4}$). Constants unoptimised, to be re-derived in Lean (the margins
 1.42 → 1.5, 8.78 → 10, 14.2 → 30 are deliberate).
 
-### 4.3 Is $\sqrt\kappa$ optimal? Comparison with the literature
+### 4.3 Attainable accuracy a priori (maintainer follow-up, 2026-10-29)
+
+Stagnation itself is not provable (§4.6), but a bound on the true residual after enough steps is:
+the computed residual falls below the gap *bound* at the Chebyshev rate of the model, and the
+triangle inequality $\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le\rho_k+\|\mathbf g_k\|$ does the rest.
+Throughout, $\kappa':=2\kappa+1$ (condition number of the model, `spectrum_backwardH_subset_Icc`),
+$q:=(\sqrt{\kappa'}-1)/(\sqrt{\kappa'}+1)$, $\ln(1/q)\ge2/\sqrt{\kappa'}$, $M=\|\mathbf x_\star\|+\|\mathbf x_\star\|_{\mathbf A}/\sqrt a$,
+$k_{\max}:=(10^{-5}/(\varepsilon\kappa^2))^{1/3}$ (the window of (H)).
+
+**Definition.** $k^\star:=\bigl\lceil\tfrac12\sqrt{\kappa'}\,\ell\bigr\rceil$, $\ell:=\ln\bigl(\sqrt{\kappa'}/(4\varepsilon)\bigr)$.
+Then $q^{k^\star}\le4\varepsilon/\sqrt{\kappa'}$, so `ρ_le_chebyshev` gives, for every $k$ with
+$k^\star\le k\le k_{\max}$ (the run of length $k$ satisfies (H)):
+$$\rho_k\le2\sqrt{\kappa'}\,q^{k}\|\mathbf b\|\le8\,\varepsilon\,\|\mathbf b\|\qquad(\le8\varepsilon a'\|\mathbf x_\star\|\le8\varepsilon a'M).$$
+This is the exact sense in which the computed residual is "of the order of the gap bound": it is
+below $8\varepsilon\|\mathbf b\|$, while every gap bound of §4.2 is at least $8\varepsilon a'M\ge8\varepsilon\|\mathbf b\|$ for $k\ge1$.
+
+**Theorem (attainable accuracy, a priori; proposed).** Under (H) for $k$, $\mathbf A\mathbf x_\star=\mathbf b$,
+and $k^\star\le k\le k_{\max}$:
+$$\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le(11k+8)\,\varepsilon\,a'M\le19\,k\,\varepsilon\,a'M,\qquad
+\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le(20k+8)\varepsilon\sqrt\kappa\,a'\|\mathbf x_\star\|,\qquad
+\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le(9k+8)\varepsilon\kappa\|\mathbf b\|,$$
+and the forward error $\|\mathbf x_\star-\hat{\mathbf x}_k\|\le(11k+8)\varepsilon\kappa M$. At $k=k^\star$
+(hypothesis (H) needed **only for $k^\star$**, by applying everything to `C.take k⋆`), with
+$k^\star\le\tfrac12\sqrt{\kappa'}\ell+1$ and $\sqrt{\kappa'}\le\sqrt3\sqrt\kappa$:
+$$\boxed{\ \|\mathbf b-\mathbf A\hat{\mathbf x}_{k^\star}\|\le\bigl(5.5\sqrt{\kappa'}\,\ell+19\bigr)\varepsilon a'M
+\le\bigl(9.6\sqrt\kappa\,\ell+19\bigr)(1+\sqrt\kappa)\,\varepsilon\,a'\|\mathbf x_\star\|\ },$$
+i.e. an attainable relative residual $\lesssim10\,\kappa\,\ln(1/\varepsilon)\,\varepsilon$ for large $\kappa$
+(one $\sqrt\kappa$ from the iterate bound, one from the number of steps $k^\star\propto\sqrt\kappa$;
+in the $\|\mathbf b\|$-form $(4.5\sqrt{\kappa'}\ell+17)\varepsilon\kappa\|\mathbf b\|\approx8\kappa^{3/2}\ell\,\varepsilon\|\mathbf b\|$).
+The linear growth in $k$ beyond $k^\star$ is real (the $\mathbf A\mathbf e^x_j$ term of the gap is
+$\approx\varepsilon a'\|\hat{\mathbf x}_j\|\approx\varepsilon a'\|\mathbf x_\star\|$ at every step and never decays;
+Greenbaum's $O(k\varepsilon)$ has the same shape), so "attainable accuracy" is a statement at a
+prescribed $k$, best at $k=k^\star$.
+
+**Window condition.** $k^\star\le k_{\max}$ is $\bigl(\tfrac12\sqrt{\kappa'}\ell+1\bigr)^3\varepsilon\kappa^2\le10^{-5}$;
+with $\kappa'\le3\kappa$ a sufficient condition is $\kappa^{7/2}\varepsilon\,\ell^3\le1.5\cdot10^{-5}$, i.e.
+$$\kappa\le0.050\,\varepsilon^{-2/7}\,\ell^{-6/7}\qquad(\ell\approx\ln(1/\varepsilon)\ \text{up to }O(\ln\kappa)).$$
+The exponent $2/7$ comes from $k^3\cdot\kappa^2$ with $k\propto\kappa^{1/2}$; in general $k^p$
+gives $\kappa\lesssim(C_H/\varepsilon)^{2/(p+4)}$. Double precision ($u=2^{-53}$), largest $\kappa$
+with $k^\star\le k_{\max}$ (computed; the formula agrees to 5%):
+
+| $\varepsilon$ | source | $\kappa_{\max}$ | $k^\star=k_{\max}$ there | $\ell$ | bound coefficient $(11k^\star+8)\varepsilon$ | $k^\star$, $k_{\max}$ at $\kappa=1$ |
+|---|---|---|---|---|---|---|
+| $3.5\cdot10^{-12}$ | dense `gemv`, $N=10^3$ ($\varepsilon\approx N^{3/2}u$) | 5.4 | 46 | 26 | $1.8\cdot10^{-9}$ | 23, 141 |
+| $1.1\cdot10^{-7}$ | dense `gemv`, $N=10^6$ | — (fails at $\kappa=1$: $k^\star=14>k_{\max}=4.5$) | | | | 14, 4.5 |
+| $1.1\cdot10^{-13}$ | oracle, $\varepsilon\approx Nu$, $N=10^3$ | 13.3 | 79 | 30 | $9.7\cdot10^{-11}$ | 26, 448 |
+| $1.1\cdot10^{-10}$ | oracle, $N=10^6$ | 2.2 | 26 | 22 | $3.3\cdot10^{-8}$ | 20, 45 |
+| $1.1\cdot10^{-16}$ | $\varepsilon\approx u$ | 80 | 241 | 38 | $3.0\cdot10^{-13}$ | 32, 4483 |
+
+Honest reading: with the present constants the a priori attainable-accuracy theorem is
+informative for $\kappa\lesssim10$–$80$ and vacuous for $N=10^6$ dense; this is the same range
+problem as the headline (§8 of the design note), made worse by $k^\star\propto\sqrt\kappa\ln(1/\varepsilon)$.
+
+**Where the range is lost, and how to widen it.**
+* The gap/iterate induction (G1–G4) uses the model for the *whole* run: $\Pi^2\le3.3\kappa$ at every
+  step, $\rho_j/\rho_i\le\sqrt{3\kappa}$, and $\sum\gamma_j\rho_j^2\le2\|\mathbf b\|^2/a$ all come from the
+  positive definite model of `C.take k`. The residual-norm reproduction alone is not enough; so
+  the attainable-accuracy conclusion needs (H) at $k^\star$ (for the bound at $k^\star$) or at
+  $k$ (for the bound at $k$) — nothing weaker with the present proof.
+* Inside (H), the $\kappa^2$ is $\kappa$ (perturbation $\propto\varepsilon\kappa a'$) times $\kappa$
+  (it must stay below $a/2$) and is intrinsic to any model-based route (§7 of the design note);
+  the $k^3$ is the backward factor ($k$ from the accumulation of $\bar p_j$, $k^2$ from the
+  dilation). Improving the constant $10^{-5}$ by $10^2$ widens $\kappa_{\max}$ by $100^{2/7}=3.7$;
+  $k^3\to k^2$ would give $\kappa\lesssim(2\cdot10^{-5}/\varepsilon)^{1/3}\ell^{-2/3}$ ($\approx500$ at $\varepsilon=u$).
+* "Only the first $k^\star$ steps need the model" is **not** available: for $k>k^\star$ the
+  certificate $\Pi_k$ (hence G1, G3) still needs the model of the $k$-step run, and no
+  model-free a priori $\Pi$ is known (§4.6). What *is* true is that the bound at $k^\star$ needs
+  (H) only at $k^\star$ (above).
+* Restarted program ($\hat{\mathbf p}\leftarrow\hat{\mathbf r}$ every $k_0$ steps, §4.6): (H) is needed
+  only for $k_0=\lceil\tfrac12\sqrt{\kappa'}\ln(4\sqrt{\kappa'})\rceil$ ($\ln\kappa$ instead of
+  $\ln(1/\varepsilon)$; condition $\kappa^{7/2}\varepsilon\ln^3(4\sqrt{3\kappa})\lesssim1.5\cdot10^{-5}$,
+  $\kappa_{\max}\approx180$ at $\varepsilon=u$, $\approx20$ at $3.5\cdot10^{-12}$), and then for all
+  $k$ with $k\varepsilon\le1/100$: $\rho_k\le2^{-\lfloor k/k_0\rfloor}\|\mathbf b\|$ and
+  $\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|\le2^{-\lfloor k/k_0\rfloor}\|\mathbf b\|+\varepsilon\sum_{j<k}(a'\|\hat{\mathbf x}_j\|+4a'\gamma_j\|\hat{\mathbf p}_j\|+\rho_j)(1+\varepsilon)^{k}$
+  with $\|\hat{\mathbf x}_j\|\le\|\mathbf x_\star\|+(\rho_j+\|\mathbf g_j\|)/a$ and the window-wise
+  $\gamma_j\|\hat{\mathbf p}_j\|\le1.42\rho_{j_0}/a$ summing geometrically: $\le2^{-\lfloor k/k_0\rfloor}\|\mathbf b\|+1.1k\varepsilon a'\|\mathbf x_\star\|+12k_0\varepsilon\kappa\|\mathbf b\|$
+  (constants to be fixed). A $k$-uniform attainable-accuracy statement, at the price of a
+  different program.
+
+**"Computed $\ll$ true" is not provable.** Exact arithmetic (all error terms $0$) is an
+admissible run; then $\mathbf g_k=\mathbf 0$ and $\rho_k=\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|$ exactly, so
+$\rho_k\le\delta\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|$ fails for every $\delta<1$; likewise
+$\rho_k\le\delta\|\mathbf g_k\|$ (no lower bound on the gap exists). The strongest true statement
+is relative to the gap **bound**: with $k^\star(\delta):=\lceil\tfrac12\sqrt{\kappa'}\ln(\sqrt{\kappa'}/(4\delta\varepsilon))\rceil$,
+for $k^\star(\delta)\le k\le k_{\max}$,
+$$\rho_k\le8\,\delta\,\varepsilon\|\mathbf b\|\le\delta\cdot(\text{any gap bound of §4.2}),\qquad
+\bigl|\,\|\mathbf b-\mathbf A\hat{\mathbf x}_k\|-\|\mathbf g_k\|\,\bigr|\le8\delta\varepsilon\|\mathbf b\| ,$$
+i.e. past $k^\star(\delta)$ the true residual *is* the gap to within $\delta$ times the gap's a
+priori bound; $k^\star(\delta)-k^\star\approx\tfrac12\sqrt{\kappa'}\ln(1/\delta)$ extra steps. (If
+(H) were relaxed to allow $k\to\infty$ this would still not give $\rho_k\to0$: §4.6.)
+
+**Lean (new file `Krylov/FinitePrecision/CGAccuracy.lean`, imports `CGBackward`; ≈ 150 lines
+given §4.5's theorems).**
+
+```lean
+noncomputable def CGRun.kStar (C : CGRun n k) (a a' : ℝ) : ℕ :=
+  ⌈√(2 * (a'/a) + 1) / 2 * Real.log (√(2 * (a'/a) + 1) / (4 * C.ε))⌉₊
+theorem CGRun.pow_q_kStar_le (hε : 0 < C.ε) : q ^ C.kStar a a' ≤ 4 * C.ε / √(2 * (a'/a) + 1)
+theorem CGRun.ρ_le_of_kStar_le (H) (hk : C.kStar a a' ≤ j) (hj : j ≤ k) :
+    C.ρ j ≤ 8 * C.ε * ‖toLp 2 C.b‖                                    -- computed residual at gap level
+theorem CGRun.norm_true_residual_le_of_kStar_le (H) (hx) (hk : C.kStar a a' ≤ k) :
+    ‖toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤ (11 * k + 8) * C.ε * a' * (‖toLp 2 xs‖ + √(quadForm C.A xs) / √a)
+theorem CGRun.norm_true_residual_le_sqrt (H) (hx) (hk) : … ≤ (20 * k + 8) * C.ε * √(a'/a) * a' * ‖toLp 2 xs‖
+theorem CGRun.norm_true_residual_le_b (H) (hk) : … ≤ (9 * k + 8) * C.ε * (a'/a) * ‖toLp 2 C.b‖
+theorem CGRun.norm_sub_x_le (H) (hx) (hk) :                           -- forward error
+    ‖toLp 2 (xs - C.x k)‖ ≤ (11 * k + 8) * C.ε * (a'/a) * (‖toLp 2 xs‖ + √(quadForm C.A xs) / √a)
+theorem CGRun.attainableAccuracy (H at kStar : (kStar)^3 * ε * (a'/a)^2 ≤ 1/10^5) (hk : kStar ≤ k) (hx) :
+    ‖toLp 2 (C.b - C.A *ᵥ C.x (C.kStar a a'))‖ ≤
+      (11/2 * √(2 * (a'/a) + 1) * Real.log (√(2 * (a'/a) + 1) / (4 * C.ε)) + 19) * C.ε * a' * M
+theorem CGRun.kStar_le_kmax_of (hκ : (a'/a) ^ (7/2 : ℝ) * C.ε * ℓ ^ 3 ≤ 3/(2 * 10^5)) : -- explicit window
+    ((C.kStar a a' : ℝ)) ^ 3 * C.ε * (a'/a) ^ 2 ≤ 1 / 10 ^ 5
+theorem CGRun.ρ_le_of_kStarδ_le (H) (hδ : 0 < δ) (hk : C.kStarδ a a' δ ≤ j) (hj : j ≤ k) :
+    C.ρ j ≤ 8 * δ * C.ε * ‖toLp 2 C.b‖                                -- the δ-form of "computed ≪ true"
+```
+
+`attainableAccuracy` is `norm_true_residual_le_of_kStar_le` on `C.take (C.kStar a a')` with the
+arithmetic $k^\star\le\tfrac12\sqrt{\kappa'}\ell+1$; the docstrings should carry the table above
+(range) and the exact-arithmetic remark (why no "$\rho_k\ll$ true residual" theorem is stated).
+
+### 4.4 Is $\sqrt\kappa$ optimal? Comparison with the literature
 
 * **A posteriori comparison.** Greenbaum/ST02: $\|\mathbf g_k\|\le O(k\varepsilon)\|\mathbf A\|(\|\mathbf x\|+\max_j\|\hat{\mathbf x}_j\|)$.
   Our theorem is exactly this with $\max_j\|\hat{\mathbf x}_j\|\le1.001(\|\mathbf x_\star\|+\|\mathbf x_\star\|_{\mathbf A}/\sqrt a)$
@@ -746,7 +865,7 @@ up to a relative $3\cdot10^{-4}$). Constants unoptimised, to be re-derived in Le
   gap bound is a well-posed open question; the ingredient would be a finite-precision Euclidean
   monotonicity (Greenbaum 1989-type result for the Euclidean norm), not available in the literature.
 
-### 4.4 Recommended Lean statements (Q1)
+### 4.5 Recommended Lean statements (Q1)
 
 All in `CGBackward.lean` (they need the model), hypotheses as the headlines
 (`ha`, `hs`, `hsmall`, plus `hx : C.A *ᵥ xs = C.b`); ≈ 350 lines; nothing in `CGRun.lean`
@@ -788,7 +907,7 @@ Slots: after `ρ_le_chebyshev` and the ER1 block of §9.2 (G2′ needs
 (all algebra is one step long); the bookkeeping of G4 is the only induction and it is on
 $j$ with explicit polynomials. Program level: `HasCGBackwardModel` gains the gap clause.
 
-### 4.5 (Q2) Does the updated residual converge to zero?
+### 4.6 (Q2) Does the updated residual converge to zero?
 
 **Literature.** No proof exists for HSCG in a rounding model. MeSt06 §5.4: convergence of
 recursive residuals "was analysed by Woźniakowski (1978, 1980) and Bollen (1984). Although some
@@ -885,7 +1004,7 @@ valid under $k\varepsilon\,\mathrm{poly}(\kappa)\le c$ (i.e. removing the $\lamb
 requirement $c_k\le a/2$ from the model, which is what forces $\kappa^2$ and $k^3$) or a
 model-free descent argument with an a priori $\Pi$.
 
-### 4.6 Additional references
+### 4.7 Additional references
 
 * Bake, Carson, Ma, arXiv:2510.11379v3 (2026): now read in full (Thm 1, Lemmas 4–6, Thm 2, Remarks 1–3).
 * Cools, Yetkin, Agullo, Giraud, Vanroose, *Analyzing the effect of local rounding error propagation on the maximal attainable accuracy of the pipelined conjugate gradient method*, SIMAX 39(1) (2018) 426–450; arXiv:1601.07068.
