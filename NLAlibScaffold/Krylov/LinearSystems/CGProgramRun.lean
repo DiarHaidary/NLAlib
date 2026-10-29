@@ -312,7 +312,7 @@ theorem CGSeq.Valid.pos_curvature {N : ℕ} {T : CGSeq N} {A : Matrix (Fin N) (F
   have hr0 : T.r k ≠ 0 := fun hr => hν (by rw [hv.ν_eq le_rfl, hr]; simp)
   have : R.ρ k ≤ 0 := by
     have hp : ‖WithLp.toLp 2 (R.p k)‖ = 0 := by
-      show ‖WithLp.toLp 2 (T.p k)‖ = 0
+      change ‖WithLp.toLp 2 (T.p k)‖ = 0
       rw [hp0]; simp
     linarith
   have hρ0 : R.ρ k = 0 := le_antisymm this (norm_nonneg _)
@@ -474,6 +474,23 @@ theorem cgLoopInv_skip (h : IsRelErrSem u dec (fun _ _ => True) I.sem) {s₁ : S
       exact ⟨a1.frame hf' (by cg_nb), a2.frame hf' (by cg_nb), a3.frame hf' (by cg_nb)⟩
     · exact ⟨(hg₁.frame hf₂ (by cg_nb)).frame hf₃ (by cg_nb), hd₂.frame hf₃ (by cg_nb), hn₃⟩
 
+/-- The two rotating direction slots of iteration $j$, at $3N + N(j \bmod 2)$ and
+$3N + N((j + 1) \bmod 2)$: inside $[3N, 5N)$ and disjoint. -/
+theorem cg_slots (N j : ℕ) :
+    (3 * N ≤ (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval ∧
+      (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval + N ≤ 5 * N) ∧
+    (3 * N ≤ (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval ∧
+      (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval + N ≤ 5 * N) ∧
+    ((3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval + N ≤
+        (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval ∨
+      (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval + N ≤
+        (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval) := by
+  simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const, IExp.eval_mod,
+    IExp.eval_var]
+  rcases Nat.mod_two_eq_zero_or_one j with h1 | h1
+  · rw [h1, show (j + 1) % 2 = 1 by omega]; omega
+  · rw [h1, show (j + 1) % 2 = 0 by omega]; omega
+
 /-- **An iteration that takes a step** ($\nu_j \ne 0$, so $k = j$) keeps the invariant: the
 a priori analysis of the prefix makes the curvature positive
 (`NLAlib.CGSeq.Valid.pos_curvature`), then one step (`NLAlib.exec_cgStepWith`). -/
@@ -512,22 +529,8 @@ theorem cgLoopInv_step (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
       (hR₁ i)
   have hε0 : 0 ≤ ε := (roundingFactor_nonneg (h.nonneg trivial) hu).trans hε
   have hε1 : ε < 1 := by have := hmε 1 (by omega); simp at this; linarith
-  have hm : (j % 2 = 0 ∧ (j + 1) % 2 = 1) ∨ (j % 2 = 1 ∧ (j + 1) % 2 = 0) := by omega
-  have hpc : 3 * N ≤ 3 * N + N * (j % 2) ∧ 3 * N + N * (j % 2) + N ≤ 5 * N := by
-    rcases hm with ⟨h1, -⟩ | ⟨h1, -⟩ <;> rw [h1] <;> omega
-  have hpn : 3 * N ≤ 3 * N + N * ((j + 1) % 2) ∧ 3 * N + N * ((j + 1) % 2) + N ≤ 5 * N := by
-    rcases hm with ⟨-, h1⟩ | ⟨-, h1⟩ <;> rw [h1] <;> omega
-  have hcn : 3 * N + N * (j % 2) + N ≤ 3 * N + N * ((j + 1) % 2) ∨
-      3 * N + N * ((j + 1) % 2) + N ≤ 3 * N + N * (j % 2) := by
-    rcases hm with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> rw [h1, h2] <;> omega
-  have hpc' : 3 * N ≤ (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval ∧
-      (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval + N ≤ 5 * N := hpc
-  have hpn' : 3 * N ≤ (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval ∧
-      (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval + N ≤ 5 * N := hpn
-  have hcn' : (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval + N ≤
-        (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval ∨
-      (3 * IExp.const N + IExp.const N * ((IExp.var j + 1) % 2)).eval + N ≤
-        (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval := hcn
+  obtain ⟨hpc', hpn', hcn'⟩ := cg_slots N j
+  have hpnN : 3 * N + N * ((j + 1) % 2) + N ≤ 5 * N := hpn'.2
   have hp'' : DecVec st.store p dec W (3 * IExp.const N + IExp.const N * (IExp.var j % 2)).eval
       (T.p j) := hp
   obtain ⟨st', Dd, he, hf', hx', hr', hp', hν', hg', hd', hn', hD⟩ := exec_cgStepWith I h hz hu
@@ -685,7 +688,7 @@ theorem exec_cg_inner (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hB : DecVec st.store p dec B 0 bv) (hb0 : bv ≠ 0)
     (hSX : S[X]? = some (p, N)) (hSW : S[W]? = some (p, 5 * N)) (hS : S[sb]? = some (p, 7))
     (hSG : S[G]? = some (p, q)) (hSD : S[D]? = some (p, q)) (hSN : S[Nu]? = some (p, q + 1))
-    (hBW : B ≠ W) (hBs : B ≠ sb) (hBG : B ≠ G) (hBD : B ≠ D) (hBN : B ≠ Nu) (hWs : W ≠ sb)
+    (hBW : B ≠ W) (hBs : B ≠ sb) (hWs : W ≠ sb)
     (hXW : X ≠ W) (hXG : X ≠ G) (hXD : X ≠ D) (hXN : X ≠ Nu) (hGW : G ≠ W) (hGs : G ≠ sb)
     (hDW : D ≠ W) (hDs : D ≠ sb) (hNW : Nu ≠ W) (hNs : Nu ≠ sb) (hGD : G ≠ D) (hGN : G ≠ Nu)
     (hDN : D ≠ Nu) (hRW : R ≠ W) (hRs : R ≠ sb) (hRG : R ≠ G) (hRD : R ≠ D) (hRN : R ≠ Nu) :
@@ -784,7 +787,7 @@ theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRunFacts_of_cgProgWith
     (hBs : B < st.store.size) (hRs : R < st.store.size)
     (hSX : st.store.shape[X]? = some (p, N)) (hSG : st.store.shape[G]? = some (p, q))
     (hSD : st.store.shape[D]? = some (p, q)) (hSN : st.store.shape[Nu]? = some (p, q + 1))
-    (hBG : B ≠ G) (hBD : B ≠ D) (hBN : B ≠ Nu) (hXG : X ≠ G) (hXD : X ≠ D) (hXN : X ≠ Nu)
+    (hXG : X ≠ G) (hXD : X ≠ D) (hXN : X ≠ Nu)
     (hGD : G ≠ D) (hGN : G ≠ Nu) (hDN : D ≠ Nu) (hRG : R ≠ G) (hRD : R ≠ D) (hRN : R ≠ Nu) :
     ∃ st' : St P K C,
       exec I (cgProgWith mv p (.const N) (.const q) B X G D Nu).run st = some st' ∧
@@ -819,7 +822,7 @@ theorem _root_.NLAlib.Computation.IsRelErrSem.exists_cgRunFacts_of_cgProgWith
       Store.getElem?_shape_push_size]; rfl)
     (by rw [hst₃]; exact Store.getElem?_shape_push_size _ _ _)
     (by rw [hshp _ hLG]; exact hSG) (by rw [hshp _ hLD]; exact hSD)
-    (by rw [hshp _ hLN]; exact hSN) (by omega) (by omega) hBG hBD hBN (by omega) (by omega)
+    (by rw [hshp _ hLN]; exact hSN) (by omega) (by omega) (by omega) (by omega)
     hXG hXD hXN (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) hGD hGN hDN
     (by omega) (by omega) hRG hRD hRN
   have hsz₄ : st₄.store.size = st.store.size + 2 := by

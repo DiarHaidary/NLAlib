@@ -498,8 +498,9 @@ theorem exec_cgStepWith (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     ∃ (st' : St P K C) (D : CGStepData N),
       exec I (cgStepWith mv p (.const N) W pc pn sb gC dC nC).run st = some st' ∧
       StoreFrame p st.store st'.store (fun b i => StoreBlock W 0 (3 * N) b i ∨
-        StoreBlock W pn.eval N b i ∨ (b = sb ∧ i < 7 ∧ i ≠ 3) ∨ StoreBlock gC.buf gC.idx.eval 1 b i ∨
-        StoreBlock dC.buf dC.idx.eval 1 b i ∨ StoreBlock nC.buf nC.idx.eval 1 b i) ∧
+        StoreBlock W pn.eval N b i ∨ (b = sb ∧ i < 7 ∧ i ≠ 3) ∨
+        StoreBlock gC.buf gC.idx.eval 1 b i ∨ StoreBlock dC.buf dC.idx.eval 1 b i ∨
+        StoreBlock nC.buf nC.idx.eval 1 b i) ∧
       DecVec st'.store p dec W 0 D.x ∧ DecVec st'.store p dec W N D.r ∧
       DecVec st'.store p dec W pn.eval D.p ∧ DecCell st'.store p dec sb 0 D.ν ∧
       DecCell st'.store p dec gC.buf gC.idx.eval D.γ ∧
