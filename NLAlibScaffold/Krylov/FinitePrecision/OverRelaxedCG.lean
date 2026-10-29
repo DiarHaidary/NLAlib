@@ -94,11 +94,42 @@ noncomputable def overRelaxedCG (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → 
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {b : Fin n → ℝ} {c : ℝ}
 
+private theorem orcg_x_succ (j : ℕ) : (overRelaxedCG A b c (j + 1)).x =
+    (overRelaxedCG A b c j).x + overRelaxedCGAlpha A c (overRelaxedCG A b c j) •
+      (overRelaxedCG A b c j).p := rfl
+
+private theorem orcg_r_succ (j : ℕ) : (overRelaxedCG A b c (j + 1)).r =
+    (overRelaxedCG A b c j).r - overRelaxedCGAlpha A c (overRelaxedCG A b c j) •
+      (A *ᵥ (overRelaxedCG A b c j).p) := rfl
+
+private theorem orcg_p_succ (j : ℕ) : (overRelaxedCG A b c (j + 1)).p =
+    (overRelaxedCG A b c (j + 1)).r + (((overRelaxedCG A b c (j + 1)).r ⬝ᵥ
+      (overRelaxedCG A b c (j + 1)).r) / ((overRelaxedCG A b c j).r ⬝ᵥ
+        (overRelaxedCG A b c j).r)) • (overRelaxedCG A b c j).p := rfl
+
+/-- The step length against the curvature: $\gamma\,\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}
+= c\,\mathbf{r}^{\mathsf{T}}\mathbf{r}$ when the curvature is nonzero. -/
+private theorem orcg_alpha_mul {s : CGState ℝ (Fin n)} (h : s.p ⬝ᵥ (A *ᵥ s.p) ≠ 0) :
+    overRelaxedCGAlpha A c s * (s.p ⬝ᵥ (A *ᵥ s.p)) = c * (s.r ⬝ᵥ s.r) := by
+  rw [overRelaxedCGAlpha, div_mul_cancel₀ _ h]
+
+/-- A zero residual stays zero. -/
+private theorem orcg_r_succ_eq_zero {j : ℕ} (h : (overRelaxedCG A b c j).r = 0) :
+    (overRelaxedCG A b c (j + 1)).r = 0 := by
+  rw [orcg_r_succ, overRelaxedCGAlpha, h]
+  simp
+
 /-- The updated residual of over-relaxed CG is the true one:
 $\mathbf{r}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j$. Proof: induction. Difficulty: easy. -/
 theorem overRelaxedCG_r_eq (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (c : ℝ) (j : ℕ) :
     (overRelaxedCG A b c j).r = b - A *ᵥ (overRelaxedCG A b c j).x := by
-  sorry
+  induction j with
+  | zero =>
+    change b = b - A *ᵥ 0
+    simp
+  | succ j ih =>
+    rw [orcg_r_succ, orcg_x_succ, ih, Matrix.mulVec_add, Matrix.mulVec_smul]
+    abel
 
 /-- **The line search defect drifts linearly**: if
 $\mathbf{p}_i^{\mathsf{T}}\mathbf{A}\mathbf{p}_i \ne 0$ for $i < j$, then
@@ -112,7 +143,25 @@ theorem overRelaxedCG_p_dotProduct_r (b : Fin n → ℝ) (c : ℝ) {j : ℕ}
     (hμ : ∀ i < j, (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0) :
     (overRelaxedCG A b c j).p ⬝ᵥ (overRelaxedCG A b c j).r =
       (1 - j * (c - 1)) * ((overRelaxedCG A b c j).r ⬝ᵥ (overRelaxedCG A b c j).r) := by
-  sorry
+  induction j with
+  | zero =>
+    change b ⬝ᵥ b = (1 - ((0 : ℕ) : ℝ) * (c - 1)) * (b ⬝ᵥ b)
+    simp
+  | succ j ih =>
+    have ih := ih fun i hi => hμ i (by omega)
+    have hμj := hμ j (by omega)
+    have hpr : (overRelaxedCG A b c j).p ⬝ᵥ (overRelaxedCG A b c (j + 1)).r =
+        (1 - j * (c - 1)) * ((overRelaxedCG A b c j).r ⬝ᵥ (overRelaxedCG A b c j).r) -
+          c * ((overRelaxedCG A b c j).r ⬝ᵥ (overRelaxedCG A b c j).r) := by
+      rw [orcg_r_succ, dotProduct_sub, dotProduct_smul, smul_eq_mul, orcg_alpha_mul hμj, ih]
+    by_cases hR : (overRelaxedCG A b c j).r ⬝ᵥ (overRelaxedCG A b c j).r = 0
+    · have hr1 := orcg_r_succ_eq_zero (A := A) (b := b) (c := c) (dotProduct_self_eq_zero.mp hR)
+      rw [orcg_p_succ, hr1]
+      simp
+    · rw [orcg_p_succ, add_dotProduct, smul_dotProduct, smul_eq_mul, hpr]
+      push_cast
+      field_simp
+      ring
 
 /-- **The $\mathbf{A}$-norm decrement of over-relaxed CG**: for symmetric $\mathbf{A}$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $\mathbf{p}_i^{\mathsf{T}}\mathbf{A}\mathbf{p}_i
@@ -133,7 +182,29 @@ theorem overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ (b : Fin n → ℝ) (c 
       overRelaxedCGAlpha A c (overRelaxedCG A b c j) *
         ((overRelaxedCG A b c j).r ⬝ᵥ (overRelaxedCG A b c j).r) *
           (1 - (2 * j + 1) * (c - 1)) := by
-  sorry
+  have hμj := hμ j le_rfl
+  have hpr := overRelaxedCG_p_dotProduct_r (A := A) b c (j := j) fun i hi => hμ i hi.le
+  have h1 := orcg_alpha_mul (A := A) (c := c) hμj
+  have hr : A *ᵥ (xs - (overRelaxedCG A b c j).x) = (overRelaxedCG A b c j).r := by
+    rw [Matrix.mulVec_sub, hx, overRelaxedCG_r_eq]
+  have hsym : ∀ u v : Fin n → ℝ, u ⬝ᵥ (A *ᵥ v) = v ⬝ᵥ (A *ᵥ u) := fun u v => by
+    rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, hA, dotProduct_comm]
+  have he : xs - (overRelaxedCG A b c (j + 1)).x = (xs - (overRelaxedCG A b c j).x) -
+      overRelaxedCGAlpha A c (overRelaxedCG A b c j) • (overRelaxedCG A b c j).p := by
+    rw [orcg_x_succ]
+    abel
+  rw [he]
+  simp only [quadForm_def, star_trivial]
+  set γ := overRelaxedCGAlpha A c (overRelaxedCG A b c j)
+  set e := xs - (overRelaxedCG A b c j).x
+  set p := (overRelaxedCG A b c j).p
+  have hexp : (e - γ • p) ⬝ᵥ (A *ᵥ (e - γ • p)) = e ⬝ᵥ (A *ᵥ e) - γ * (e ⬝ᵥ (A *ᵥ p)) -
+      γ * (p ⬝ᵥ (A *ᵥ e)) + γ * (γ * (p ⬝ᵥ (A *ᵥ p))) := by
+    simp only [Matrix.mulVec_sub, Matrix.mulVec_smul, sub_dotProduct, dotProduct_sub,
+      smul_dotProduct, dotProduct_smul, smul_eq_mul]
+    ring
+  rw [hexp, hsym e p, hr, h1, hpr]
+  ring
 
 /-- **No decrease past $j_1$**: for positive definite $\mathbf{A}$, $\mathbf{A}\mathbf{x}_\star =
 \mathbf{b}$, $c \ge 0$, directions $\mathbf{p}_i \ne \mathbf{0}$ for $i < j$ and
@@ -147,7 +218,62 @@ theorem overRelaxedCG_quadForm_sub_le_of_le (b : Fin n → ℝ) (hA : A.PosDef) 
     (hj : j₁ ≤ j) (hp : ∀ i < j, (overRelaxedCG A b c i).p ≠ 0) :
     quadForm A (xs - (overRelaxedCG A b c j₁).x) ≤
       quadForm A (xs - (overRelaxedCG A b c j).x) := by
-  sorry
+  have hAT : Aᵀ = A := by
+    have := hA.isHermitian.eq
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
+  have hc1 : 0 < c - 1 := by
+    by_contra h
+    have : (2 * (j₁ : ℝ) + 1) * (c - 1) ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (by positivity) (by linarith)
+    linarith
+  suffices h : ∀ m, j₁ + m ≤ j → quadForm A (xs - (overRelaxedCG A b c j₁).x) ≤
+      quadForm A (xs - (overRelaxedCG A b c (j₁ + m)).x) by
+    have := h (j - j₁) (by omega)
+    rwa [Nat.add_sub_cancel' hj] at this
+  intro m hm
+  induction m with
+  | zero => exact le_rfl
+  | succ m ih =>
+    have ih := ih (by omega)
+    have hμ : ∀ i ≤ j₁ + m,
+        (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0 := fun i hi => by
+      have := hA.dotProduct_mulVec_pos (hp i (by omega))
+      simp only [star_trivial] at this
+      exact this.ne'
+    have hpos : 0 < (overRelaxedCG A b c (j₁ + m)).p ⬝ᵥ
+        (A *ᵥ (overRelaxedCG A b c (j₁ + m)).p) := by
+      have := hA.dotProduct_mulVec_pos (hp (j₁ + m) (by omega))
+      simpa only [star_trivial] using this
+    have hd := overRelaxedCG_quadForm_sub_sub_quadForm_sub_succ b c hAT hx hμ
+    have hR : 0 ≤ (overRelaxedCG A b c (j₁ + m)).r ⬝ᵥ (overRelaxedCG A b c (j₁ + m)).r :=
+      Finset.sum_nonneg fun i _ => mul_self_nonneg _
+    have hγ : 0 ≤ overRelaxedCGAlpha A c (overRelaxedCG A b c (j₁ + m)) :=
+      div_nonneg (mul_nonneg hc hR) hpos.le
+    have hj' : 1 ≤ (2 * ((j₁ + m : ℕ) : ℝ) + 1) * (c - 1) := by
+      push_cast
+      nlinarith
+    have hneg : overRelaxedCGAlpha A c (overRelaxedCG A b c (j₁ + m)) *
+        ((overRelaxedCG A b c (j₁ + m)).r ⬝ᵥ (overRelaxedCG A b c (j₁ + m)).r) *
+          (1 - (2 * ((j₁ + m : ℕ) : ℝ) + 1) * (c - 1)) ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (mul_nonneg hγ hR) (by linarith)
+    rw [← add_assoc]
+    linarith
+
+/-- The Rayleigh lower bound of a symmetric matrix with spectrum in $[a, a']$. -/
+private theorem orcg_mul_norm_sq_le {a a' : ℝ} (hH : A.IsHermitian)
+    (hs : spectrum ℝ A ⊆ Set.Icc a a') (v : Fin n → ℝ) :
+    a * ‖WithLp.toLp 2 v‖ ^ 2 ≤ v ⬝ᵥ (A *ᵥ v) := by
+  rcases Nat.eq_zero_or_pos n with h0 | hpos
+  · subst h0
+    have hv : v = 0 := Subsingleton.elim _ _
+    subst hv
+    rw [WithLp.toLp_zero, norm_zero]
+    simp
+  · obtain ⟨c, hc⟩ : ∃ c, c + 1 = Fintype.card (Fin n) := ⟨n - 1, by simp; omega⟩
+    have h1 := hH.eigenvalue_last_mul_le_re_quadForm hc v
+    simp only [quadForm_def, star_trivial, RCLike.re_to_real] at h1
+    have e1 := (hH.spectrum_subset_iff.mp hs c (by omega)).1
+    exact (mul_le_mul_of_nonneg_right e1 (sq_nonneg _)).trans h1
 
 /-- **Over-relaxed CG does not converge**: for symmetric $\mathbf{A}$ with spectrum in
 $[a, a']$, $a > 0$, $c > 1$ and directions $\mathbf{p}_j \ne \mathbf{0}$ for all $j$, the
@@ -163,7 +289,67 @@ theorem overRelaxedCG_exists_pos_le_norm_r (b : Fin n → ℝ) (hA : Aᵀ = A) {
     (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hc : 1 < c)
     (hp : ∀ j, (overRelaxedCG A b c j).p ≠ 0) :
     ∃ η > 0, ∀ j, η ≤ ‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖ := by
-  sorry
+  have hherm : A.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, hA]
+  have hPD : A.PosDef := hherm.posDef_iff_eigenvalue_pos.mpr fun i hi =>
+    ha.trans_le (hherm.spectrum_subset_iff.mp hs i hi).1
+  have hr : ∀ j, (overRelaxedCG A b c j).r ≠ 0 := fun j h => hp (j + 1) (by
+    rw [orcg_p_succ, orcg_r_succ_eq_zero h]
+    simp)
+  set xs := A⁻¹ *ᵥ b
+  have hx : A *ᵥ xs = b := by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
+      hPD.isUnit), Matrix.one_mulVec]
+  have hre : ∀ j, A *ᵥ (xs - (overRelaxedCG A b c j).x) = (overRelaxedCG A b c j).r := fun j => by
+    rw [Matrix.mulVec_sub, hx, overRelaxedCG_r_eq]
+  -- `a eᵀAe ≤ ‖Ae‖²`
+  have hlow : ∀ e : Fin n → ℝ, a * (e ⬝ᵥ (A *ᵥ e)) ≤ ‖WithLp.toLp 2 (A *ᵥ e)‖ ^ 2 := fun e => by
+    have h1 := orcg_mul_norm_sq_le hherm hs e
+    have h2 := (le_abs_self _).trans (EuclideanSpace.abs_dotProduct_le_norm e (A *ᵥ e))
+    set N := ‖WithLp.toLp 2 e‖
+    set R := ‖WithLp.toLp 2 (A *ᵥ e)‖
+    have hN := norm_nonneg (WithLp.toLp 2 e)
+    have hR := norm_nonneg (WithLp.toLp 2 (A *ᵥ e))
+    rcases hN.lt_or_eq with hN' | hN'
+    · have haN : a * N ≤ R := le_of_mul_le_mul_left (by nlinarith) hN'
+      nlinarith
+    · have hN0 : N = 0 := hN'.symm
+      rw [hN0] at h1 h2
+      nlinarith
+  set j₁ := ⌈1 / (c - 1)⌉₊
+  have hc1 : 0 < c - 1 := by linarith
+  have hj₁ : 1 ≤ (2 * (j₁ : ℝ) + 1) * (c - 1) := by
+    have h := Nat.le_ceil (1 / (c - 1))
+    have : 1 ≤ (j₁ : ℝ) * (c - 1) := by
+      rw [div_le_iff₀ hc1] at h
+      linarith
+    nlinarith
+  set Q := quadForm A (xs - (overRelaxedCG A b c j₁).x)
+  have hQ : 0 < Q := by
+    have he : xs - (overRelaxedCG A b c j₁).x ≠ 0 := fun h => hr j₁ (by
+      rw [← hre j₁, h, Matrix.mulVec_zero])
+    simpa only [Q, quadForm_def] using hPD.dotProduct_mulVec_pos he
+  have hρ : ∀ j, 0 < ‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖ := fun j =>
+    norm_pos_iff.mpr fun h => hr j (by simpa using congrArg WithLp.ofLp h)
+  refine ⟨min (Real.sqrt (a * Q)) ((Finset.range (j₁ + 1)).inf' ⟨0, by simp⟩
+    fun j => ‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖), lt_min (Real.sqrt_pos.mpr
+      (mul_pos ha hQ)) ((Finset.lt_inf'_iff _).mpr fun j _ => hρ j), fun j => ?_⟩
+  rcases le_or_gt j j₁ with hj | hj
+  · exact (min_le_right _ _).trans (Finset.inf'_le _ (by simp; omega))
+  · refine (min_le_left _ _).trans ?_
+    have hmono := overRelaxedCG_quadForm_sub_le_of_le b hPD (by linarith) hx hj₁ hj.le
+      fun i _ => hp i
+    have h1 := hlow (xs - (overRelaxedCG A b c j).x)
+    have h3 : ‖WithLp.toLp 2 (A *ᵥ (xs - (overRelaxedCG A b c j).x))‖ =
+        ‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖ := by rw [hre j]
+    rw [h3] at h1
+    have h2 : a * Q ≤ ‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖ ^ 2 := by
+      have := mul_le_mul_of_nonneg_left hmono ha.le
+      simp only [Q, quadForm_def, star_trivial] at this ⊢
+      linarith
+    calc Real.sqrt (a * Q) ≤ Real.sqrt (‖WithLp.toLp 2 (overRelaxedCG A b c j).r‖ ^ 2) :=
+          Real.sqrt_le_sqrt h2
+      _ = _ := Real.sqrt_sq (norm_nonneg _)
 
 /-- The directions of over-relaxed CG are nonzero while the residuals are and
 $j(c - 1) < 1$: for positive definite $\mathbf{A}$, $c \ge 1$, $\mathbf{r}_i \ne \mathbf{0}$ for
@@ -172,7 +358,23 @@ Proof: `NLAlib.overRelaxedCG_p_dotProduct_r`, induction. Difficulty: easy. -/
 theorem overRelaxedCG_p_ne_zero (b : Fin n → ℝ) (hA : A.PosDef) (hc : 1 ≤ c) {j : ℕ}
     (hr : ∀ i ≤ j, (overRelaxedCG A b c i).r ≠ 0) (hj : j * (c - 1) < 1) :
     (overRelaxedCG A b c j).p ≠ 0 := by
-  sorry
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    have hR : ∀ i ≤ j, 0 < (overRelaxedCG A b c i).r ⬝ᵥ (overRelaxedCG A b c i).r :=
+      fun i hi => lt_of_le_of_ne (Finset.sum_nonneg fun l _ => mul_self_nonneg _)
+        fun h => hr i hi (dotProduct_self_eq_zero.mp h.symm)
+    have hμ : ∀ i < j,
+        (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0 := fun i hi => by
+      have hij : (i : ℝ) ≤ j := by exact_mod_cast hi.le
+      have hpi := ih i hi (fun i' hi' => hr i' (by omega)) (by nlinarith)
+      have := hA.dotProduct_mulVec_pos hpi
+      simp only [star_trivial] at this
+      exact this.ne'
+    have h := overRelaxedCG_p_dotProduct_r b c hμ
+    intro h0
+    rw [h0, zero_dotProduct] at h
+    have hu : 0 < 1 - (j : ℝ) * (c - 1) := by linarith
+    nlinarith [mul_pos hu (hR j le_rfl)]
 
 /-- **Over-relaxed CG is an admissible run**: for symmetric positive definite $\mathbf{A}$,
 $0 \le \varepsilon$, $1 \le k$, $k\varepsilon \le 1/100$ and $\mathbf{r}_j \ne \mathbf{0}$ for
@@ -213,23 +415,58 @@ noncomputable def overRelaxedCGRun (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n �
   r_zero := rfl
   p_zero := rfl
   ν_eq _ _ := rfl
-  abs_θ_le _ _ := by sorry
-  ν_pos := by sorry
-  s_eq _ _ := by sorry
-  norm_es_le := by sorry
-  μ_eq _ _ := by sorry
-  abs_eμ_le := by sorry
-  μ_pos := by sorry
-  γ_eq := by sorry
-  abs_eγ_le := by sorry
-  x_succ := by sorry
-  norm_ex_le := by sorry
-  r_succ := by sorry
-  norm_er_le := by sorry
-  δ_eq := by sorry
-  abs_eδ_le := by sorry
-  p_succ := by sorry
-  norm_ep_le := by sorry
+  abs_θ_le _ _ := (abs_of_nonneg hε).le
+  ν_pos j hj := by
+    have h : WithLp.toLp 2 (overRelaxedCG A b ((1 + ε) ^ 2) j).r ≠ 0 := fun h =>
+      hr j hj (by simpa using congrArg WithLp.ofLp h)
+    have := norm_pos_iff.mpr h
+    positivity
+  s_eq _ _ := (add_zero _).symm
+  norm_es_le _ _ := by
+    rw [WithLp.toLp_zero, norm_zero]
+    have := specNorm_nonneg A
+    positivity
+  μ_eq _ _ := (add_zero _).symm
+  abs_eμ_le _ _ := by
+    rw [abs_zero]
+    positivity
+  μ_pos j hj := by
+    have hε1 : ε ≤ 1 / 100 := by
+      have : (1 : ℝ) ≤ k := by exact_mod_cast hk
+      nlinarith
+    have hjε : (j : ℝ) * ε ≤ 1 / 100 := by
+      have : (j : ℝ) ≤ k := by exact_mod_cast hj.le
+      nlinarith
+    have hp := overRelaxedCG_p_ne_zero b hA (by nlinarith) (fun i hi => hr i (by omega))
+      (by nlinarith : (j : ℝ) * ((1 + ε) ^ 2 - 1) < 1)
+    simpa only [star_trivial] using hA.dotProduct_mulVec_pos hp
+  γ_eq _ _ := by
+    simp only [overRelaxedCGAlpha, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+    ring
+  abs_eγ_le _ _ := (abs_of_nonneg hε).le
+  x_succ _ _ := by
+    rw [add_zero]
+    rfl
+  norm_ex_le _ _ := by
+    rw [WithLp.toLp_zero, norm_zero]
+    positivity
+  r_succ _ _ := by
+    rw [add_zero]
+    rfl
+  norm_er_le _ _ := by
+    rw [WithLp.toLp_zero, norm_zero]
+    positivity
+  δ_eq _ _ := by rw [add_zero, mul_one]
+  abs_eδ_le _ _ := by
+    rw [abs_zero]
+    exact hε
+  p_succ j _ := by
+    rw [add_zero, orcg_p_succ, mul_div_mul_right _ _ (by linarith : (1 + ε) ≠ 0),
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+  norm_ep_le _ _ := by
+    rw [WithLp.toLp_zero, norm_zero]
+    positivity
 
 /-- The realized run is over-relaxed CG: its residuals are those of `NLAlib.overRelaxedCG` with
 $c = (1 + \varepsilon)^2$, so `NLAlib.overRelaxedCG_exists_pos_le_norm_r` applies to the data of
