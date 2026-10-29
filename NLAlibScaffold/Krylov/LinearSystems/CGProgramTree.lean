@@ -367,13 +367,14 @@ private theorem cg_exec_phaseA {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (ξ :
   have f1 := cg_frame p u1
   obtain ⟨st2, h2, u2⟩ := cg_exec_dot I rfl (fun _ => rfl) p st1 (dst := ⟨s, 1⟩) (x := W)
     (xo := pc) (y := W) (yo := 2 * .const N) (n := .const N)
-    (fun i (hi : i < N) => by rw [f1.2 _ _ ?_]; exact hp i hi; all_goals cg_out) (fun i hi => by exact u1.read_in hi)
+    (fun i (hi : i < N) => by rw [f1.2 _ _ ?_]; exacts [hp i hi, by cg_out])
+    (fun i hi => by exact u1.read_in hi)
     hWs.symm hWs.symm (by rw [u1.1]; exact hs) (by norm_num)
   replace u2 : BlockUpd p st1.store st2.store s 1 1 fun _ => star pv ⬝ᵥ (A *ᵥ pv) :=
     u2.congr fun _ _ => cg_sum_range_star_mul pv (A *ᵥ pv)
   have f2 := cg_frame p u2
   obtain ⟨st3, h3, u3⟩ := cg_exec_div I rfl p st2 (dst := ⟨s, 2⟩) (x := ⟨s, 0⟩) (y := ⟨s, 1⟩)
-    hμ (by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exact hν; all_goals cg_out)
+    hμ (by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exacts [hν, by cg_out, by cg_out])
     (u2.read_in (i := 0) Nat.one_pos) (by rw [u2.1, u1.1]; exact hs) (by norm_num)
   replace u3 : BlockUpd p st2.store st3.store s 2 1 fun _ => ν / (star pv ⬝ᵥ (A *ᵥ pv)) := u3
   have f3 := cg_frame p u3
@@ -384,11 +385,9 @@ private theorem cg_exec_phaseA {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (ξ :
       simp only [StoreBlock] at h ⊢; omega,
     fun i hi => ?_, ?_, by simpa using u4.read_in (i := 0) Nat.one_pos, fun R => ?_⟩
   · rw [f4.2 _ _ ?_, f3.2 _ _ ?_, f2.2 _ _ ?_]
-    exact u1.read_in hi
-    all_goals cg_out
+    exacts [u1.read_in hi, by cg_out, by cg_out, by cg_out]
   · rw [f4.2 _ _ ?_]
-    exact u3.read_in (i := 0) Nat.one_pos
-    all_goals cg_out
+    exacts [u3.read_in (i := 0) Nat.one_pos, by cg_out]
   · rw [exec_bind_of_exec_eq_some I h1 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h2 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h3 ⟨_, fun _ => rfl⟩,
@@ -435,14 +434,16 @@ private theorem cg_exec_phaseB {N : ℕ} (xv rv pv sv : Fin N → 𝕜) (γ ν :
     u1.congr fun i _ => cg_vecSeq_smul_add _ _ _ i
   have f1 := cg_frame p u1
   obtain ⟨st2, h2, u2⟩ := cg_exec_un I p st1 (dst := ⟨s, 6⟩) (x := ⟨s, 2⟩) (u := .neg)
-    (by rw [f1.2 _ _ ?_]; exact hγ; all_goals cg_out) (by rw [hI]; rfl) (by rw [u1.1]; exact hs)
+    (by rw [f1.2 _ _ ?_]; exacts [hγ, by cg_out]) (by rw [hI]; rfl) (by rw [u1.1]; exact hs)
     (by norm_num)
   replace u2 : BlockUpd p st1.store st2.store s 6 1 fun _ => -γ := u2
   have f2 := cg_frame p u2
   obtain ⟨st3, h3, u3⟩ := cg_exec_axpy I hI hc p st2 (a := ⟨s, 6⟩) (x := W) (xo := 2 * .const N)
     (y := W) (yo := .const N) (n := .const N) (u2.read_in (i := 0) Nat.one_pos)
-    (fun i (hi : i < N) => by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exact hsv i hi; all_goals cg_out)
-    (fun i (hi : i < N) => by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exact hr i hi; all_goals cg_out) hWs.symm
+    (fun i (hi : i < N)
+    => by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exacts [hsv i hi, by cg_out, by cg_out])
+    (fun i (hi : i < N)
+    => by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exacts [hr i hi, by cg_out, by cg_out]) hWs.symm
     (fun _ => by simp; omega) (by rw [u2.1, u1.1]; exact hW) (by simp; omega)
   replace u3 : BlockUpd p st2.store st3.store W N N (vecSeq r') :=
     u3.congr fun i _ => cg_vecSeq_smul_add _ _ _ i
@@ -457,7 +458,8 @@ private theorem cg_exec_phaseB {N : ℕ} (xv rv pv sv : Fin N → 𝕜) (γ ν :
   obtain ⟨st5, h5, u5⟩ := cg_exec_div I hI p st4 (dst := ⟨s, 5⟩) (x := ⟨s, 4⟩) (y := ⟨s, 0⟩)
     hν0 (u4.read_in (i := 0) Nat.one_pos) (by
       rw [f4.2 _ _ ?_, f3.2 _ _ ?_, f2.2 _ _ ?_,
-        f1.2 _ _ ?_]; exact hν; all_goals cg_out) (by rw [u4.1, u3.1, u2.1, u1.1]; exact hs)
+        f1.2 _ _ ?_]; exacts [hν, by cg_out, by cg_out, by cg_out, by cg_out])
+        (by rw [u4.1, u3.1, u2.1, u1.1]; exact hs)
     (by norm_num)
   replace u5 : BlockUpd p st4.store st5.store s 5 1 fun _ => star r' ⬝ᵥ r' / ν := u5
   have f5 := cg_frame p u5
@@ -469,17 +471,13 @@ private theorem cg_exec_phaseB {N : ℕ} (xv rv pv sv : Fin N → 𝕜) (γ ν :
     by simpa using u6.read_in (i := 0) Nat.one_pos, fun R => ?_⟩
   · rw [f6.2 _ _ ?_, f5.2 _ _ ?_, f4.2 _ _ ?_,
       f3.2 _ _ ?_, f2.2 _ _ ?_]
-    exact u1.read_in hi
-    all_goals cg_out
+    exacts [u1.read_in hi, by cg_out, by cg_out, by cg_out, by cg_out, by cg_out]
   · rw [f6.2 _ _ ?_, f5.2 _ _ ?_, f4.2 _ _ ?_]
-    exact u3.read_in hi
-    all_goals cg_out
+    exacts [u3.read_in hi, by cg_out, by cg_out, by cg_out]
   · rw [f6.2 _ _ ?_, f5.2 _ _ ?_]
-    exact u4.read_in (i := 0) Nat.one_pos
-    all_goals cg_out
+    exacts [u4.read_in (i := 0) Nat.one_pos, by cg_out, by cg_out]
   · rw [f6.2 _ _ ?_]
-    exact u5.read_in (i := 0) Nat.one_pos
-    all_goals cg_out
+    exacts [u5.read_in (i := 0) Nat.one_pos, by cg_out]
   · rw [exec_bind_of_exec_eq_some I h1 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h2 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h3 ⟨_, fun _ => rfl⟩,
@@ -512,14 +510,16 @@ private theorem cg_exec_phaseC {N : ℕ} (rv pv : Fin N → 𝕜) (δ ν' : 𝕜
   replace u1 : BlockUpd p st.store st1.store W pn.eval N (vecSeq rv) := u1
   have f1 := cg_frame p u1
   obtain ⟨st2, h2, u2⟩ := cg_exec_axpy I hI hc p st1 (a := ⟨s, 5⟩) (x := W) (xo := pc) (y := W)
-    (yo := pn) (n := .const N) (by rw [f1.2 _ _ ?_]; exact hδ; all_goals cg_out)
-    (fun i (hi : i < N) => by rw [f1.2 _ _ ?_]; exact hp i hi; all_goals cg_out) (fun i hi => u1.read_in hi)
+    (yo := pn) (n := .const N) (by rw [f1.2 _ _ ?_]; exacts [hδ, by cg_out])
+    (fun i (hi : i < N) => by rw [f1.2 _ _ ?_]; exacts [hp i hi, by cg_out])
+    (fun i hi => u1.read_in hi)
     hWs.symm (fun _ => by simp; omega) (by rw [u1.1]; exact hW) (by simp; omega)
   replace u2 : BlockUpd p st1.store st2.store W pn.eval N (vecSeq (δ • pv + rv)) :=
     u2.congr fun i _ => cg_vecSeq_smul_add _ _ _ i
   have f2 := cg_frame p u2
   obtain ⟨st3, h3, u3⟩ := cg_exec_copy I p st2 (dst := ⟨s, 0⟩) (x := ⟨s, 4⟩)
-    (by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exact hν'; all_goals cg_out) (by rw [u2.1, u1.1]; exact hs)
+    (by rw [f2.2 _ _ ?_, f1.2 _ _ ?_]; exacts [hν', by cg_out, by cg_out])
+    (by rw [u2.1, u1.1]; exact hs)
     (by norm_num)
   replace u3 : BlockUpd p st2.store st3.store s 0 1 fun _ => ν' := u3
   have f3 := cg_frame p u3
@@ -530,11 +530,9 @@ private theorem cg_exec_phaseC {N : ℕ} (rv pv : Fin N → 𝕜) (δ ν' : 𝕜
       simp only [StoreBlock] at h ⊢; omega, fun i hi => ?_, ?_,
     by simpa using u4.read_in (i := 0) Nat.one_pos, ?_⟩
   · rw [f4.2 _ _ ?_, f3.2 _ _ ?_]
-    exact u2.read_in hi
-    all_goals cg_out
+    exacts [u2.read_in hi, by cg_out, by cg_out]
   · rw [f4.2 _ _ ?_]
-    exact u3.read_in (i := 0) Nat.one_pos
-    all_goals cg_out
+    exacts [u3.read_in (i := 0) Nat.one_pos, by cg_out]
   · rw [exec_bind_of_exec_eq_some I h1 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h2 ⟨_, fun _ => rfl⟩,
       exec_bind_of_exec_eq_some I h3 ⟨_, fun _ => rfl⟩]
@@ -602,10 +600,10 @@ private theorem cg_exec_step {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A
   obtain ⟨st9, fB, xB, rB, νB, δB, dB, hB⟩ := cg_exec_phaseB I rfl (fun _ => rfl) p st3 S.x S.r
     S.p (A *ᵥ S.p) (cgAlpha A S : 𝕜) _ (by rw [fA.1]; exact hW) (by rw [fA.1]; exact hs)
     (by rw [fA.1]; exact hd) hdi hWs hdW hds hpc (cg_coe_norm_sq_ne_zero hr0)
-    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exact hx i hi; all_goals cg_out)
-    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exact hr i hi; all_goals cg_out)
-    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exact hp i hi; all_goals cg_out) sA γA
-    (by rw [fA.2 _ _ ?_]; exact hν; all_goals cg_out)
+    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exacts [hx i hi, by cg_out])
+    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exacts [hr i hi, by cg_out])
+    (fun i (hi : i < N) => by rw [fA.2 _ _ ?_]; exacts [hp i hi, by cg_out]) sA γA
+    (by rw [fA.2 _ _ ?_]; exacts [hν, by cg_out])
   have hr' : (-(cgAlpha A S : 𝕜)) • (A *ᵥ S.p) + S.r = (cgStep A S).r := by
     rw [neg_smul, neg_add_eq_sub]; rfl
   have hν' : star (cgStep A S).r ⬝ᵥ (cgStep A S).r =
@@ -617,7 +615,8 @@ private theorem cg_exec_step {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A
   obtain ⟨st13, fC, pC, sC, nC', hC⟩ := cg_exec_phaseC I rfl (fun _ => rfl) p st9 (cgStep A S).r
     S.p _ _ (by rw [fB.1, fA.1]; exact hW) (by rw [fB.1, fA.1]; exact hs)
     (by rw [fB.1, fA.1]; exact hn) hni hWs hnW hns hpc hpn hcn rB
-    (fun i (hi : i < N) => by rw [fB.2 _ _ ?_, fA.2 _ _ ?_]; exact hp i hi; all_goals cg_out) δB νB
+    (fun i (hi : i < N)
+    => by rw [fB.2 _ _ ?_, fA.2 _ _ ?_]; exacts [hp i hi, by cg_out, by cg_out]) δB νB
   refine ⟨st13, (hA' _).trans ((hB _).trans hC), ((fA.trans fB).trans fC).mono
       fun b i h => ?_, fun i hi => ?_,
     fun i hi => ?_, fun i hi => ?_, sC, ?_, ?_, nC'⟩
@@ -631,13 +630,321 @@ private theorem cg_exec_step {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A
     · exact Or.inl rfl
     · exact Or.inr (Or.inl ⟨rfl, by omega⟩)
     · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, by omega⟩)))
-  · rw [fC.2 _ _ ?_, cgStep_x, add_comm S.x]; exact xB i hi; all_goals cg_out
-  · rw [fC.2 _ _ ?_]; exact rB i hi; all_goals cg_out
+  · rw [fC.2 _ _ ?_, cgStep_x, add_comm S.x]; exacts [xB i hi, by cg_out]
+  · rw [fC.2 _ _ ?_]; exacts [rB i hi, by cg_out]
   · rw [pC i hi, add_comm]; rfl
-  · rw [fC.2 _ _ ?_, fB.2 _ _ ?_]; exact gA; all_goals cg_out
-  · rw [fC.2 _ _ ?_]; exact dB; all_goals cg_out
+  · rw [fC.2 _ _ ?_, fB.2 _ _ ?_]; exacts [gA, by cg_out, by cg_out]
+  · rw [fC.2 _ _ ?_]; exacts [dB, by cg_out]
 
 end CGStepExact
+
+section CGProgram
+
+omit [RCLike 𝕜] [DecidableEq P] in
+private theorem cg_run_ifThenElse (p : P) (c : CmpOp) (x y : Cell ℕ ℕ)
+    (t e : Builder P ι ℕ ℕ Unit) :
+    (ifThenElse p c x y t e).run = .seq (.ite p c x y t.run e.run) .skip := rfl
+
+omit [DecidableEq P] in
+/-- A CG step from a zero residual keeps the iterate and the residual. -/
+private theorem cg_step_of_r_eq_zero {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜)
+    {S : CGState 𝕜 (Fin N)} (h : S.r = 0) :
+    (cgStep A S).x = S.x ∧ (cgStep A S).r = 0 ∧ cgAlpha A S = 0 := by
+  refine ⟨?_, ?_, ?_⟩ <;> simp [cgStep, cgAlpha, h]
+
+/-- The loop invariant of the CG program before step `j`, with the buffers of the program
+(`2`, `3`, `4` the outputs, `5` the slots, `6` the scalars). The direction slot is meaningful
+only while the residual is nonzero. -/
+private def CgInv {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (b : Fin N → 𝕜) (p : P)
+    (sh : Array (P × ℕ)) (j : ℕ) (st : St P 𝕜 (OpCount P ι)) : Prop :=
+  st.store.shape = sh ∧
+  (∀ i < N, st.store.read p 5 (0 + i) = some (vecSeq (cgState A b 0 j).x i)) ∧
+  (∀ i < N, st.store.read p 5 (N + i) = some (vecSeq (cgState A b 0 j).r i)) ∧
+  ((cgState A b 0 j).r ≠ 0 → ∀ i < N,
+    st.store.read p 5 (3 * N + N * (j % 2) + i) = some (vecSeq (cgState A b 0 j).p i)) ∧
+  st.store.read p 6 0 = some ((‖WithLp.toLp 2 (cgState A b 0 j).r‖ ^ 2 : ℝ) : 𝕜) ∧
+  st.store.read p 6 3 = some 0 ∧
+  (∀ k < j, st.store.read p 2 k = some (cgAlpha A (cgState A b 0 k) : 𝕜) ∧
+    st.store.read p 3 k = some ((‖WithLp.toLp 2 (cgState A b 0 (k + 1)).r‖ ^ 2 /
+      ‖WithLp.toLp 2 (cgState A b 0 k).r‖ ^ 2 : ℝ) : 𝕜)) ∧
+  ∀ k ≤ j, st.store.read p 4 k = some ((‖WithLp.toLp 2 (cgState A b 0 k).r‖ ^ 2 : ℝ) : 𝕜)
+
+/-- A skipped iteration (zero residual) keeps the invariant. -/
+private theorem cg_inv_skip {N q : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (b : Fin N → 𝕜)
+    (ξ : Dist → ℕ → ℝ) (p : P) (sh : Array (P × ℕ)) (hg : sh[2]? = some (p, q))
+    (hd : sh[3]? = some (p, q)) (hn : sh[4]? = some (p, q + 1)) {j : ℕ} (hj : j < q)
+    (st : St P 𝕜 (OpCount P ι)) (h : CgInv A b p sh j st) (hr0 : (cgState A b 0 j).r = 0) :
+    ∃ st', exec (exactInterp (ι := ι) (fun _ => A) ξ) (ins (.lit p ⟨2, .var j⟩ 0) >>= fun _ =>
+      ins (.lit p ⟨3, .var j⟩ 0) >>= fun _ => ins (.lit p ⟨4, .var j + 1⟩ 0)).run st =
+        some st' ∧ CgInv A b p sh (j + 1) st' := by
+  set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
+  obtain ⟨hsh, hx, hr, -, hν, h3, hold, hnu⟩ := h
+  obtain ⟨hx', hr', hα⟩ := cg_step_of_r_eq_zero A hr0
+  obtain ⟨st1, h1, u1⟩ := cg_exec_lit I rfl p st (dst := ⟨2, .var j⟩) (by rw [hsh]; exact hg) hj
+  obtain ⟨st2, h2, u2⟩ := cg_exec_lit I rfl p st1 (dst := ⟨3, .var j⟩)
+    (by rw [u1.1, hsh]; exact hd) hj
+  obtain ⟨st3, h3', u3⟩ := cg_exec_lit I rfl p st2 (dst := ⟨4, .var j + 1⟩)
+    (by rw [u2.1, u1.1, hsh]; exact hn) (by simp; omega)
+  replace u1 : BlockUpd p st.store st1.store 2 j 1 fun _ => 0 := u1
+  replace u2 : BlockUpd p st1.store st2.store 3 j 1 fun _ => 0 := u2
+  replace u3 : BlockUpd p st2.store st3.store 4 (j + 1) 1 fun _ => 0 := u3
+  have hrd : ∀ b' i, b' ≠ 2 → b' ≠ 3 → b' ≠ 4 → st3.store.read p b' i = st.store.read p b' i :=
+    fun b' i h2 h3 h4 => by rw [u3.read_ne h4, u2.read_ne h3, u1.read_ne h2]
+  have hS : cgState A b 0 (j + 1) = cgStep A (cgState A b 0 j) := rfl
+  refine ⟨st3, by rw [exec_bind_of_exec_eq_some I h1 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h2 ⟨_, fun _ => rfl⟩]; exact h3',
+    ⟨by rw [u3.1, u2.1, u1.1, hsh], fun i hi => ?_, fun i hi => ?_, fun h' => ?_, ?_, ?_,
+      fun k hk => ?_, fun k hk => ?_⟩⟩
+  · rw [hrd _ _ (by norm_num) (by norm_num) (by norm_num), hS, hx']; exact hx i hi
+  · rw [hrd _ _ (by norm_num) (by norm_num) (by norm_num), hS, hr', ← hr0]; exact hr i hi
+  · exact absurd hr' h'
+  · rw [hrd _ _ (by norm_num) (by norm_num) (by norm_num), hS, hr', ← hr0]; exact hν
+  · rw [hrd _ _ (by norm_num) (by norm_num) (by norm_num)]; exact h3
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · refine ⟨?_, ?_⟩
+      · rw [u3.read_ne (by norm_num), u2.read_ne (by norm_num), u1.read_out (by omega)]
+        exact (hold k hk).1
+      · rw [u3.read_ne (by norm_num), u2.read_out (by omega), u1.read_ne (by norm_num)]
+        exact (hold k hk).2
+    · refine ⟨?_, ?_⟩
+      · rw [u3.read_ne (by norm_num), u2.read_ne (by norm_num)]
+        simpa [hα] using u1.read_in (i := 0) Nat.one_pos
+      · rw [u3.read_ne (by norm_num)]
+        simpa [hS, hr', hr0] using u2.read_in (i := 0) Nat.one_pos
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp (Nat.lt_succ_iff.mpr hk) with hk | rfl
+    · rw [u3.read_out (by omega), u2.read_ne (by norm_num), u1.read_ne (by norm_num)]
+      exact hnu k (Nat.lt_succ_iff.mp hk)
+    · simpa [hS, hr'] using u3.read_in (i := 0) Nat.one_pos
+
+/-- One iteration of the loop of the CG program keeps the invariant. -/
+private theorem cg_inv_step {N q : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A.PosDef)
+    (b : Fin N → 𝕜) (ξ : Dist → ℕ → ℝ) (o : ι) (p : P) (sh : Array (P × ℕ))
+    (hg : sh[2]? = some (p, q)) (hd : sh[3]? = some (p, q)) (hn : sh[4]? = some (p, q + 1))
+    (hW : sh[5]? = some (p, 5 * N)) (hs : sh[6]? = some (p, 7)) {j : ℕ} (hj : j < q)
+    (st : St P 𝕜 (OpCount P ι)) (h : CgInv A b p sh j st) :
+    ∃ st', exec (exactInterp (fun _ => A) ξ) (ifThenElse p .eq ⟨6, 0⟩ ⟨6, 3⟩
+      (ins (.lit p ⟨2, .var j⟩ 0) >>= fun _ =>
+        ins (.lit p ⟨3, .var j⟩ 0) >>= fun _ => ins (.lit p ⟨4, .var j + 1⟩ 0))
+      (cgStepWith (fun W src dst => stmt (.apply o p W dst W src 1)) p (.const N) 5
+        (3 * .const N + .const N * (.var j % 2)) (3 * .const N + .const N * ((.var j + 1) % 2))
+        6 ⟨2, .var j⟩ ⟨3, .var j⟩ ⟨4, .var j + 1⟩)).run st = some st' ∧
+      CgInv A b p sh (j + 1) st' := by
+  set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
+  rw [cg_run_ifThenElse, exec_seq_skip, cg_exec_ite_eq I rfl p st _ _ h.2.2.2.2.1 h.2.2.2.2.2.1]
+  by_cases hr0 : (cgState A b 0 j).r = 0
+  · rw [if_pos (by simp [hr0])]
+    exact cg_inv_skip b ξ p sh hg hd hn hj _ h hr0
+  rw [if_neg (cg_coe_norm_sq_ne_zero hr0)]
+  obtain ⟨hsh, hx, hr, hp, hν, h3, hold, hnu⟩ := h
+  have hm : (j % 2 = 0 ∧ (j + 1) % 2 = 1) ∨ (j % 2 = 1 ∧ (j + 1) % 2 = 0) := by omega
+  obtain ⟨st', hst, fS, xS, rS, pS, νS, gS, dS, nS⟩ := cg_exec_step hA ξ o p
+    { st with cnt := st.cnt + I.charge (.cmp p) } (cgState A b 0 j) (W := 5) (s := 6)
+    (pc := 3 * .const N + .const N * (.var j % 2))
+    (pn := 3 * .const N + .const N * ((.var j + 1) % 2))
+    (gC := ⟨2, .var j⟩) (dC := ⟨3, .var j⟩) (nC := ⟨4, .var j + 1⟩)
+    (by rw [hsh]; exact hW) (by rw [hsh]; exact hs) (by rw [hsh]; exact hg) hj
+    (by rw [hsh]; exact hd) hj (by rw [hsh]; exact hn) (by simp; omega) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
+    (by simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+      IExp.eval_mod, IExp.eval_var]; rcases hm with ⟨h1, -⟩ | ⟨h1, -⟩ <;> rw [h1] <;> omega)
+    (by simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+      IExp.eval_mod, IExp.eval_var]
+        rcases hm with ⟨-, h1⟩ | ⟨-, h1⟩ <;> rw [h1] <;> omega)
+    (by simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+      IExp.eval_mod, IExp.eval_var]
+        rcases hm with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> rw [h1, h2] <;> omega)
+    hx hr (hp hr0) hν hr0 (cg_p_ne_zero hA b hr0)
+  refine ⟨st', hst, ⟨fS.1.trans hsh, xS, rS, fun _ => pS, νS, ?_, fun k hk => ?_,
+    fun k hk => ?_⟩⟩
+  · rw [fS.2 6 3 (by simp)]; exact h3
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · refine ⟨?_, ?_⟩
+      · rw [fS.2 2 k (by simp; omega)]; exact (hold k hk).1
+      · rw [fS.2 3 k (by simp; omega)]; exact (hold k hk).2
+    · exact ⟨gS, dS⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp (Nat.lt_succ_iff.mpr hk) with hk | rfl
+    · rw [fS.2 4 k (by simp; omega)]; exact hnu k (Nat.lt_succ_iff.mp hk)
+    · exact nS
+
+end CGProgram
+
+section CGMain
+
+/-- **The start of the CG program**: from buffer `0` holding $\mathbf{b}$, the invariant at
+step $0$ (slots $0$, $N$, $3N$ hold $\mathbf{0}$, $\mathbf{b}$, $\mathbf{b}$, `s[0]` $=
+\|\mathbf{b}\|^2$, `s[3]` $= 0$, `nu[0]` $= \|\mathbf{b}\|^2$). -/
+private theorem cg_exec_init {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (b : Fin N → 𝕜)
+    (ξ : Dist → ℕ → ℝ) (p : P) (q : ℕ) (st : St P 𝕜 (OpCount P ι))
+    (hn : st.store.shape[4]? = some (p, q + 1)) (hW : st.store.shape[5]? = some (p, 5 * N))
+    (hs : st.store.shape[6]? = some (p, 7))
+    (hb : ∀ i < N, st.store.read p 0 (0 + i) = some (vecSeq b i)) :
+    ∃ st' : St P 𝕜 (OpCount P ι), CgInv A b p st.store.shape 0 st' ∧
+      ∀ R : Builder P ι ℕ ℕ Unit, exec (exactInterp (fun _ => A) ξ)
+        (ins (.lit p ⟨6, 3⟩ 0) >>= fun _ =>
+          forRange (.const N) (fun i => ins (.lit p ⟨5, .var i⟩ 0)) >>= fun _ =>
+          copyv p 0 0 5 (.const N) (.const N) >>= fun _ =>
+          copyv p 0 0 5 (3 * .const N) (.const N) >>= fun _ =>
+          dot p ⟨6, 0⟩ 0 0 0 0 (.const N) >>= fun _ =>
+          ins (.copy p ⟨4, 0⟩ ⟨6, 0⟩) >>= fun _ => R).run st =
+        exec (exactInterp (fun _ => A) ξ) R.run st' := by
+  set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
+  obtain ⟨st1, h1, u1⟩ := cg_exec_lit I rfl p st (dst := ⟨6, 3⟩) hs (show 3 < 7 by norm_num)
+  replace u1 : BlockUpd p st.store st1.store 6 3 1 fun _ => 0 := u1
+  obtain ⟨st2, h2, u2⟩ := cg_exec_forRange_lit I rfl p st1 (W := 5) (n := .const N)
+    (by rw [u1.1]; exact hW) (by simp only [IExp.eval_const]; omega)
+  replace u2 : BlockUpd p st1.store st2.store 5 0 N fun _ => 0 := u2
+  have hb2 : ∀ i < N, st2.store.read p 0 (0 + i) = some (vecSeq b i) := fun i hi => by
+    rw [u2.read_ne (by norm_num), u1.read_ne (by norm_num)]; exact hb i hi
+  obtain ⟨st3, h3, u3⟩ := cg_exec_copyv I (fun _ => rfl) p st2 (x := 0) (xo := 0) (y := 5)
+    (yo := .const N) (n := .const N) hb2 (fun h => absurd h (by norm_num))
+    (by rw [u2.1, u1.1]; exact hW) (by simp; omega)
+  replace u3 : BlockUpd p st2.store st3.store 5 N N (vecSeq b) := u3
+  obtain ⟨st4, h4, u4⟩ := cg_exec_copyv I (fun _ => rfl) p st3 (x := 0) (xo := 0) (y := 5)
+    (yo := 3 * .const N) (n := .const N)
+    (fun i hi => by rw [u3.read_ne (by norm_num)]; exact hb2 i hi)
+    (fun h => absurd h (by norm_num)) (by rw [u3.1, u2.1, u1.1]; exact hW) (by simp; omega)
+  replace u4 : BlockUpd p st3.store st4.store 5 (3 * N) N (vecSeq b) := u4
+  have hb4 : ∀ i < N, st4.store.read p 0 (0 + i) = some (vecSeq b i) := fun i hi => by
+    rw [u4.read_ne (by norm_num), u3.read_ne (by norm_num)]; exact hb2 i hi
+  obtain ⟨st5, h5, u5⟩ := cg_exec_dot I rfl (fun _ => rfl) p st4 (dst := ⟨6, 0⟩) (x := 0)
+    (xo := 0) (y := 0) (yo := 0) (n := .const N) hb4 hb4 (by norm_num) (by norm_num)
+    (by rw [u4.1, u3.1, u2.1, u1.1]; exact hs) (by norm_num)
+  replace u5 : BlockUpd p st4.store st5.store 6 0 1 fun _ => ((‖WithLp.toLp 2 b‖ ^ 2 : ℝ) : 𝕜) :=
+    u5.congr fun _ _ => (cg_sum_range_star_mul b b).trans
+      (EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq b)
+  obtain ⟨st6, h6, u6⟩ := cg_exec_copy I p st5 (dst := ⟨4, 0⟩) (x := ⟨6, 0⟩)
+    (u5.read_in (i := 0) Nat.one_pos) (by rw [u5.1, u4.1, u3.1, u2.1, u1.1]; exact hn)
+    (by norm_num)
+  replace u6 : BlockUpd p st5.store st6.store 4 0 1 fun _ => ((‖WithLp.toLp 2 b‖ ^ 2 : ℝ) : 𝕜) :=
+    u6
+  have h0 : cgState A b 0 0 = ⟨0, b, b⟩ := by simp [cgState]
+  have hW6 : ∀ i, st6.store.read p 5 i = st4.store.read p 5 i := fun i => by
+    rw [u6.read_ne (by norm_num), u5.read_ne (by norm_num)]
+  refine ⟨st6, ⟨by rw [u6.1, u5.1, u4.1, u3.1, u2.1, u1.1], fun i hi => ?_, fun i hi => ?_,
+    fun _ i hi => ?_, ?_, ?_, fun k hk => absurd hk (Nat.not_lt_zero k), fun k hk => ?_⟩,
+    fun R => ?_⟩
+  · rw [hW6, u4.read_out (by omega), u3.read_out (by omega), u2.read_in hi, h0]
+    simp [vecSeq]
+  · rw [hW6, u4.read_out (by omega), u3.read_in hi, h0]
+  · rw [hW6, h0, show 3 * N + N * (0 % 2) + i = 3 * N + i by simp, u4.read_in hi]
+  · rw [u6.read_ne (by norm_num), h0]; exact u5.read_in (i := 0) Nat.one_pos
+  · rw [u6.read_ne (by norm_num), u5.read_out (by norm_num), u4.read_ne (by norm_num),
+      u3.read_ne (by norm_num), u2.read_ne (by norm_num)]
+    exact u1.read_in (i := 0) Nat.one_pos
+  · obtain rfl : k = 0 := by omega
+    rw [h0]; exact u6.read_in (i := 0) Nat.one_pos
+  · rw [exec_bind_of_exec_eq_some I h1 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h2 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h3 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h4 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h5 ⟨_, fun _ => rfl⟩,
+      exec_bind_of_exec_eq_some I h6 ⟨_, fun _ => rfl⟩]
+
+/-- The outputs of the CG program in a store: `X` (buffer 1), `gam`, `del`, `nu` (buffers
+2, 3, 4). -/
+private def CgOut {N : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜) (b : Fin N → 𝕜) (p : P) (q : ℕ)
+    (s : Store P 𝕜) : Prop :=
+  (∀ i < N, s.read p 1 (0 + i) = some (vecSeq (cgState A b 0 q).x i)) ∧
+  (∀ k < q, s.read p 2 k = some (cgAlpha A (cgState A b 0 k) : 𝕜) ∧
+    s.read p 3 k = some ((‖WithLp.toLp 2 (cgState A b 0 (k + 1)).r‖ ^ 2 /
+      ‖WithLp.toLp 2 (cgState A b 0 k).r‖ ^ 2 : ℝ) : 𝕜)) ∧
+  ∀ k ≤ q, s.read p 4 k = some ((‖WithLp.toLp 2 (cgState A b 0 k).r‖ ^ 2 : ℝ) : 𝕜)
+
+omit [RCLike 𝕜] in
+private theorem cg_exec_forRange_bind (I : Interp P ι 𝕜 (OpCount P ι)) {n : IExp ℕ}
+    {body : ℕ → Builder P ι ℕ ℕ Unit} {st st₁ : St P 𝕜 (OpCount P ι)}
+    (h : exec I (.loop n fun i => (body i).run) st = some st₁) {f : Unit → Builder P ι ℕ ℕ Unit} :
+    exec I (forRange n body >>= f).run st = exec I (f ()).run st₁ := by
+  rw [exec_run_bind I (b := forRange n body) (X := .loop n fun i => (body i).run) (fun _ => rfl),
+    show (forRange n body).run =
+    .seq (.loop n fun i => (body i).run) .skip from rfl, exec_seq_skip, h, Option.bind_some]
+
+/-- The CG program after its two allocations. -/
+private theorem cg_exec_inner {N q : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A.PosDef)
+    (b : Fin N → 𝕜) (ξ : Dist → ℕ → ℝ) (o : ι) (p : P) (st : St P 𝕜 (OpCount P ι))
+    (hX : st.store.shape[1]? = some (p, N)) (hg : st.store.shape[2]? = some (p, q))
+    (hd : st.store.shape[3]? = some (p, q)) (hn : st.store.shape[4]? = some (p, q + 1))
+    (hW : st.store.shape[5]? = some (p, 5 * N)) (hs : st.store.shape[6]? = some (p, 7))
+    (hb : ∀ i < N, st.store.read p 0 (0 + i) = some (vecSeq b i)) :
+    ∃ st', exec (exactInterp (fun _ => A) ξ)
+        (ins (.lit p ⟨6, 3⟩ 0) >>= fun _ =>
+          forRange (.const N) (fun i => ins (.lit p ⟨5, .var i⟩ 0)) >>= fun _ =>
+          copyv p 0 0 5 (.const N) (.const N) >>= fun _ =>
+          copyv p 0 0 5 (3 * .const N) (.const N) >>= fun _ =>
+          dot p ⟨6, 0⟩ 0 0 0 0 (.const N) >>= fun _ =>
+          ins (.copy p ⟨4, 0⟩ ⟨6, 0⟩) >>= fun _ =>
+          (forRange (.const q) fun j => ifThenElse p .eq ⟨6, 0⟩ ⟨6, 3⟩
+            (ins (.lit p ⟨2, .var j⟩ 0) >>= fun _ =>
+              ins (.lit p ⟨3, .var j⟩ 0) >>= fun _ => ins (.lit p ⟨4, .var j + 1⟩ 0))
+            (cgStepWith (fun W src dst => stmt (.apply o p W dst W src 1)) p (.const N) 5
+              (3 * .const N + .const N * (.var j % 2))
+              (3 * .const N + .const N * ((.var j + 1) % 2)) 6 ⟨2, .var j⟩ ⟨3, .var j⟩
+              ⟨4, .var j + 1⟩)) >>= fun _ =>
+          copyv p 5 0 1 0 (.const N)).run st =
+          some st' ∧ st'.store.shape = st.store.shape ∧ CgOut A b p q st'.store := by
+  set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
+  obtain ⟨st1, inv0, h1⟩ := cg_exec_init A b ξ p q st hn hW hs hb
+  obtain ⟨st2, h2, inv⟩ := exists_exec_loop_eq_some_of_forall I (n := .const q)
+    (fun j st' => CgInv (ι := ι) A b p st.store.shape j st') inv0
+    (fun j hj st' h => cg_inv_step hA b ξ o p _ hg hd hn hW hs hj st' h)
+  obtain ⟨hshq, hxq, -, -, -, -, holdq, hnuq⟩ := inv
+  obtain ⟨st3, h3, u3⟩ := cg_exec_copyv I (fun _ => rfl) p st2 (x := 5) (xo := 0) (y := 1)
+    (yo := 0) (n := .const N) hxq (fun h => absurd h (by norm_num)) (by rw [hshq]; exact hX)
+    (by simp)
+  replace u3 : BlockUpd p st2.store st3.store 1 0 N (vecSeq (cgState A b 0 q).x) := u3
+  refine ⟨st3, ?_, by rw [u3.1, hshq], fun i hi => u3.read_in hi, fun k hk => ?_,
+    fun k hk => ?_⟩
+  · rw [h1, cg_exec_forRange_bind I h2]
+    exact h3
+  · rw [u3.read_ne (by norm_num), u3.read_ne (by norm_num)]; exact holdq k hk
+  · rw [u3.read_ne (by norm_num)]; exact hnuq k hk
+
+private theorem cg_CgOut_pop {N : ℕ} {A : Matrix (Fin N) (Fin N) 𝕜} {b : Fin N → 𝕜} {p : P}
+    {q : ℕ} {s : Store P 𝕜} (hs : 5 < s.size) (h : CgOut A b p q s) : CgOut A b p q s.pop := by
+  refine ⟨fun i hi => ?_, fun k hk => ?_, fun k hk => ?_⟩
+  · rw [Store.read_pop_of_lt (by omega)]; exact h.1 i hi
+  · rw [Store.read_pop_of_lt (by omega), Store.read_pop_of_lt (by omega)]; exact h.2.1 k hk
+  · rw [Store.read_pop_of_lt (by omega)]; exact h.2.2 k hk
+
+private theorem cg_exec_cgProg {N : ℕ} (q : ℕ) {A : Matrix (Fin N) (Fin N) 𝕜} (hA : A.PosDef)
+    (b : Fin N → 𝕜) (ξ : Dist → ℕ → ℝ) (o : ι) (p : P) (st : St P 𝕜 (OpCount P ι))
+    (hsz : st.store.size = 5) (hX : st.store.shape[1]? = some (p, N))
+    (hg : st.store.shape[2]? = some (p, q)) (hd : st.store.shape[3]? = some (p, q))
+    (hn : st.store.shape[4]? = some (p, q + 1))
+    (hb : ∀ i < N, st.store.read p 0 (0 + i) = some (vecSeq b i)) :
+    ∃ st', exec (exactInterp (fun _ => A) ξ)
+        (cgProg p o (.const N) (.const q) 0 1 2 3 4).run st = some st' ∧
+      CgOut A b p q st'.store := by
+  set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
+  unfold cgProg cgProgWith
+  rw [run_alloc_bind]
+  refine exec_alloc_of I fun st₁ h₁ => ?_
+  simp only [hsz, run_alloc_bind]
+  refine exec_alloc_of I (Q := fun s => CgOut A b p q s.pop) fun st₂ h₂ => ?_
+  have h6 : st₁.store.size = 6 := by rw [h₁, Array.size_push, hsz]
+  rw [h6]
+  have hsh : ∀ k < 5, st₂.store.shape[k]? = st.store.shape[k]? := fun k hk => by
+    rw [h₂, Store.getElem?_shape_push_of_lt (s := st₁.store) _ (by omega), h₁,
+      Store.getElem?_shape_push_of_lt (s := st.store) _ (by omega)]
+  have hW : st₂.store.shape[5]? = some (p, 5 * N) := by
+    rw [h₂, Store.getElem?_shape_push_of_lt (s := st₁.store) _ (by omega), h₁]
+    simpa [hsz] using Store.getElem?_shape_push_size st.store p (5 * N)
+  have hs : st₂.store.shape[6]? = some (p, 7) := by
+    rw [h₂, ← h6, Store.getElem?_shape_push_size]
+    rfl
+  have hb₂ : ∀ i < N, st₂.store.read p 0 (0 + i) = some (vecSeq b i) := fun i hi => by
+    rw [h₂, Store.read_push_of_lt (s := st₁.store) (by omega), h₁,
+      Store.read_push_of_lt (s := st.store) (by omega)]
+    exact hb i hi
+  obtain ⟨st₃, h₃, sh₃, out₃⟩ := cg_exec_inner hA b ξ o p st₂
+    (by rw [hsh 1 (by norm_num)]; exact hX) (by rw [hsh 2 (by norm_num)]; exact hg)
+    (by rw [hsh 3 (by norm_num)]; exact hd) (by rw [hsh 4 (by norm_num)]; exact hn) hW hs hb₂
+  have h7 : st₃.store.size = 7 := by
+    rw [Store.size_eq_of_shape_eq sh₃, h₂, Array.size_push, h6]
+  exact ⟨st₃, h₃, cg_CgOut_pop (by simp [h7]) (cg_CgOut_pop (by omega) out₃)⟩
+
+end CGMain
 
 /-- **The conjugate gradient program computes the Hestenes–Stiefel recurrence** in exact
 arithmetic: for positive definite $\mathbf{A}$ and every $\mathbf{b}$, the run succeeds,
@@ -665,6 +972,15 @@ theorem exec_cgProg_exactInterp (p : P) (o : ι) {N : ℕ} (q : ℕ)
           ‖WithLp.toLp 2 (cgState A b 0 j).r‖ ^ 2 : ℝ) : 𝕜)) ∧
       (∀ j ≤ q, st'.store.read p 4 j =
         some ((‖WithLp.toLp 2 (cgState A b 0 j).r‖ ^ 2 : ℝ) : 𝕜)) := by
-  sorry
+  obtain ⟨st', h, out⟩ := cg_exec_cgProg q hA b ξ o p
+    (inputState p [(List.ofFn fun i => some (b i)).toArray, Array.replicate N none,
+      Array.replicate q none, Array.replicate q none, Array.replicate (q + 1) none])
+    (by simp [inputState]) (by simp [inputState, Store.getElem?_shape])
+    (by simp [inputState, Store.getElem?_shape]) (by simp [inputState, Store.getElem?_shape])
+    (by simp [inputState, Store.getElem?_shape])
+    (fun i hi => by simp [inputState, Store.read, vecSeq, hi])
+  refine ⟨st', h, fun i => ?_, fun j hj => (out.2.1 j hj).1, fun j hj => (out.2.1 j hj).2,
+    out.2.2⟩
+  simpa [vecSeq_fin] using out.1 i i.2
 
 end NLAlib
