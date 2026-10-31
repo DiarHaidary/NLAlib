@@ -88,3 +88,18 @@ reason = "the statement is `L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiago
 name = "NLAlib.LanczosData.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
 rule = "N4"
 reason = "the statement is `D.dilatedBasisᵀ * (D.dilatedBasisSucc * D.tridiagonalSucc) = D.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached (as for its LanczosRun counterpart)"
+
+[[allow]]
+name = "Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ"
+rule = "N10"
+reason = "a difference of two errors, each `exact − computed` (`quadForm_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+
+[[allow]]
+name = "NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate"
+rule = "N10"
+reason = "a difference of two errors, each `exact − computed` (`backwardH_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+
+[[allow]]
+name = "NLAlib.CGRun.abs_quadForm_backwardH_sub_cgIterate_sub_le"
+rule = "N10"
+reason = "the gap between the model's error `quadForm (x⋆ − cgIterate)` (exact − computed) and the computed estimate; `cgIterate_sub` joins the error to the estimate (maintainer, 2026-10-31)"

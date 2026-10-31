@@ -124,11 +124,16 @@ public import NLAlib.Krylov.Eigenvalues.PowerIteration
 public import NLAlib.Krylov.Eigenvalues.Ritz
 public import NLAlib.Krylov.FinitePrecision.Backward
 public import NLAlib.Krylov.FinitePrecision.BackwardSpectral
+public import NLAlib.Krylov.FinitePrecision.CGAccuracy
+public import NLAlib.Krylov.FinitePrecision.CGBackward
+public import NLAlib.Krylov.FinitePrecision.CGRun
+public import NLAlib.Krylov.FinitePrecision.CGRunModel
 public import NLAlib.Krylov.FinitePrecision.LanczosData
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
 public import NLAlib.Krylov.FinitePrecision.LocalErrors
 public import NLAlib.Krylov.FinitePrecision.Normalized
 public import NLAlib.Krylov.FinitePrecision.NormalizedBackward
+public import NLAlib.Krylov.FinitePrecision.OverRelaxedCG
 public import NLAlib.Krylov.FinitePrecision.Paige
 public import NLAlib.Krylov.FinitePrecision.Recurrence
 public import NLAlib.Krylov.Functions.LanczosFA
@@ -140,6 +145,7 @@ public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGQuadrature
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
+public import NLAlib.Krylov.LinearSystems.CGTridiagonal
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
 public import NLAlib.Krylov.LinearSystems.Galerkin
