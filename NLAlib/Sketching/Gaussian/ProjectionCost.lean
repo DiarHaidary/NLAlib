@@ -28,8 +28,7 @@ additive $(d + \log(1/\delta))/\varepsilon^2$ of [CohenElderMuscoMuscoPersu2015]
 spectral approximate multiplication, not available for dense sketches.
 
 The Gaussian and sub-Gaussian statements moved here from their family files
-(2026-10-22), names unchanged. Design: `docs/design/LowRank-S9.md` §6,
-`docs/design/Sketching-Moments.md` §2.6, §4.3, §8 Q6.
+(2026-10-22), names unchanged.
 
 ## Main results
 

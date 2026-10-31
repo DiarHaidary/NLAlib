@@ -39,8 +39,7 @@ equation gives $\mathbf{E} = \mathbf{A} - \llbracket \mathbf{A} \rrbracket_k$ an
 
 Degenerate cases: for empty `r` every bound is the contraction
 $\|(\mathbf{I} - \mathbf{P})\mathbf{A}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi}$. Without the rank
-hypothesis the bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$). Design:
-`docs/design/LowRank-S1.md`.
+hypothesis the bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = [0]$).
 
 ## Main results
 

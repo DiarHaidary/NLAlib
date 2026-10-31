@@ -20,7 +20,6 @@ pseudoinverse of their overlap.
 
 This file holds the two-bases forms that replace the deprecated lemmas of
 `NLAlib.Matrix.Subspaces.Oblique`.
-Design: `docs/design/LowRank-S0.md` §3.2, §8.
 
 ## Main results
 

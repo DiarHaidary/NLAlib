@@ -29,7 +29,6 @@ per step, with no prefactor. Sketch-and-precondition (`NLAlib.sketchAndPrecondit
 preconditioned CG with the same preconditioner, is never worse
 (`Matrix.PosDef.re_quadForm_sub_pcgIterate_le_re_quadForm_sub_richardsonIterate`).
 [Epperly2024]; [MartinssonTropp2020].
-Design: `docs/design/Regression-SketchPrecondition.md`.
 
 ## Main definitions
 

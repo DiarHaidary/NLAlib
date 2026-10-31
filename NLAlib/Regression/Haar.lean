@@ -23,8 +23,7 @@ $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$ with constants $1 \mp \varepsilon
 unnormalized sketch $\mathbf{Q}^{\mathsf{H}}$ reaches relative squared Frobenius residual error
 with failure probability $\delta$ at $O((r + 1)\log(1/\delta)/\varepsilon)$ rows,
 $r = \operatorname{rank}\mathbf{A}$, through a constant subspace injection and the Haar JL moment
-at $p = \log(1/\delta)$; its expectation forms are in `NLAlib.Regression.SketchAndSolve`. Design:
-`docs/design/Regression-SketchPrecondition.md` §7, `docs/design/Sketching-Moments.md` §4.3.
+at $p = \log(1/\delta)$; its expectation forms are in `NLAlib.Regression.SketchAndSolve`.
 
 ## Main results
 

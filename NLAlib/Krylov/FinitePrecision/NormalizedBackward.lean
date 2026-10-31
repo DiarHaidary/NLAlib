@@ -27,7 +27,6 @@ exchange rule as in `NLAlib.LanczosRun.frobNorm_dilatedResidual_le`. For a Lancz
 ($f = 12k\varepsilon\|\mathbf{H}\|_2$, $p = 8k\varepsilon\|\mathbf{H}\|_2$) it is at most
 $1992k^4\varepsilon\|\mathbf{H}\|_2$, so the Lanczos statements keep their factor $2000k^4$.
 
-Design: `docs/design/research/Krylov-CGRounding.md` (§4).
 On integration the structure goes to `LanczosData.lean` and the theorems replace the
 `NLAlib.LanczosRun` versions in `Backward.lean` and `BackwardSpectral.lean`, which become
 one-line corollaries with unchanged statements.

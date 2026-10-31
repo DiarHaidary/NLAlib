@@ -37,8 +37,6 @@ Borel measurable (`NLAlib.measurable_truncatedSVD`), with
 `hYm := ((measurable_truncatedSVD k).comp_aemeasurable
 ((measurable_rsvd A).comp_aemeasurable hX)).aestronglyMeasurable`.
 
-Design: `docs/design/LowRank-S3.md` §3.1, §8 items 6 and 8; `docs/design/LowRank-S2c.md` §8
-item 7.
 
 ## Main results
 

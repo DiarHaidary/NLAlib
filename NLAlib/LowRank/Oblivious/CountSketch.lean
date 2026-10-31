@@ -32,8 +32,7 @@ through the family's OSI:
 ```
 isObliviousSubspaceInjection_of_hasLaw_countSketch_of_countSketchEmbeddingDim_le hX k hε hδ hl
 ```
-about `fun ω => (X ω)ᴴ` itself (the CountSketch is isotropic unscaled). Design:
-`docs/design/LowRank-S7.md` §3.5, §8.
+about `fun ω => (X ω)ᴴ` itself (the CountSketch is isotropic unscaled).
 
 ## Main results
 

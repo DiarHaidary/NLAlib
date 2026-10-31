@@ -18,8 +18,7 @@ test matrix $\mathbf{K}_q(\mathbf{A}^{\mathsf{H}}\mathbf{A}, \mathbf{\Omega})$; 
 `NLAlib.rbki A Ω q`, written $\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega}, q)$, and
 `NLAlib.nystromBKI H Ω q`, written $\mathsf{nystromBKI}(\mathbf{H}, \mathbf{\Omega}, q)$. Randomized
 subspace iteration (RSI) with $p$ power steps and its Nyström twin (NysSI) are the unnamed
-compositions `rsvd A ((Aᴴ * A) ^ p * Ω)` and `nystrom H (H ^ p * Ω)` (design note
-`docs/design/Krylov-Block.md`, BD3a, BD3b).
+compositions `rsvd A ((Aᴴ * A) ^ p * Ω)` and `nystrom H (H ^ p * Ω)`.
 
 In Tropp and Webber's count of matrix–vector products, $\mathsf{rbki}(\mathbf{A}, \mathbf{\Omega},
 q)$ uses $m = 2q$ products with $\mathbf{A}$ or $\mathbf{A}^{\mathsf{H}}$, RSI with $p$ power steps

@@ -285,7 +285,7 @@ $$\mathbb{E} \|\mathbf{S} (\mathbf{V}_2^{\mathsf{H}}\mathbf{G})
 `NLAlib.integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix` and proved from it; it keeps
 a name spelling its right side, as its moment bound
 `NLAlib.integral_specNorm_pinv_le_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix` does, because
-the range finder cites it (R4 §7 Q1, `docs/design/RandomMatrix-R4.md`). -/
+the range finder cites it. -/
 theorem integral_specNorm_mul_mul_pinv_le_add_exp_mul_sqrt_card_div_of_hasLaw_gaussianMatrix
     [DecidableEq r] [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
     {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)

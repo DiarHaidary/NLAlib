@@ -27,8 +27,7 @@ Degenerate cases are those of the law (`NLAlib/Sketching/Sparse/CountSketch.lean
 `HasLaw` forces $\mu = 0$ and every tail holds, hence `[Nonempty k]` on the OSI only; dimension
 $d = 0$ makes every bound $0$, and for $d > \lvert n \rvert$ the OSE at $d$ is the one at
 $\lvert n \rvert$. Split from `NLAlib/Sketching/Sparse/CountSketch.lean` (2026-10-16),
-the `Haar.lean` and `HaarEmbedding.lean` precedent. Design: `docs/design/Sketching-S7.md` §3.2,
-§8; `docs/design/LowRank-S9.md` §8 item 6.
+the `Haar.lean` and `HaarEmbedding.lean` precedent.
 
 ## Main definitions
 

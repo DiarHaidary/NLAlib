@@ -143,8 +143,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   elaborate without opening a norm scope in the statement.
 - **Cost.** Mathlib lemmas named `CFC.log_*` need the scope opened locally and a `rfl`.
 - **Status: not yet reviewed by the maintainer.** Forced by Mathlib's instances; revisit if
-  Mathlib relaxes the hypothesis. See
-  `Matrix-Functions.md` §7.2.
+  Mathlib relaxes the hypothesis.
 
 ## 7. Spectral radius
 
@@ -156,7 +155,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   and comparison with `specNorm`. Going through `ℂ` makes it the modulus of the largest complex
   eigenvalue also for a real matrix, whose real spectrum may be empty.
 - **Cost.** A second name next to Mathlib's.
-- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Structured.md` §7.3).
+- **Status: not yet reviewed by the maintainer.** Open.
 
 ## 8. Eigenvalues of a general matrix
 
@@ -169,7 +168,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   Kronecker product speak of the eigenvalues with multiplicity in some order. A set loses
   multiplicity; a multiset has no indices to sum over or to match with a diagonal.
 - **Cost.** A predicate with its own API.
-- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Structured.md` §7.1).
+- **Status: not yet reviewed by the maintainer.** Open.
 
 ## 9. Diagonalisability
 
@@ -182,7 +181,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   only through `Matrix.toLin'` and the bridge, and over a field that is not algebraically closed
   (`ℝ`) only in one direction (`IsDiagonalizable.isSemisimple`). The predicate needs
   `[DecidableEq n]` (for `Matrix.diagonal`).
-- **Status: open (`Matrix-Structured.md` §7.4).**
+- **Status: open.**
 
 ## 10. Derivatives of matrix-valued curves
 
@@ -208,7 +207,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   rules are proved again entrywise (`Matrix.hasDerivAt_mul_apply`,
   `Matrix.hasDerivAt_pow_succ_apply`, `Matrix.hasDerivAt_det`, `Matrix.hasDerivAt_inv_apply`). A
   user holding a Mathlib `HasDerivAt A A' t` converts with the bridge.
-- **Status: not yet reviewed by the maintainer.** Open (`Matrix-Functions.md` §7.6). With the
+- **Status: not yet reviewed by the maintainer.** Open. With the
   norm-scope reason withdrawn (2026-10-20), removing the deviation would cost: restating the six
   entrywise lemmas of `NLAlib/ForMathlib/Analysis/Calculus/Deriv/Matrix.lean`
   (`Matrix.hasDerivAt_mul_apply`, `Matrix.hasDerivAt_trace`, `Matrix.hasDerivAt_pow_succ_apply`,
@@ -233,7 +232,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   (equivalence of forms, the weighted-sum normal form) does not apply to the counts without the
   missing bridge. The counts are defined through `eigenvalue` and are `0` for a matrix that is
   not Hermitian, so statements carry `hA : A.IsHermitian` (entry 1).
-- **Status: open (`Matrix-Structured.md` §7.2).**
+- **Status: open.**
 
 ## 12. A measurable space on matrices
 
@@ -293,13 +292,13 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Why.** Mathlib's integral, conditional-expectation and Jensen API applies as is; the
   alternative, entrywise integrals with their own API, would rebuild conditional expectation and
   Jensen. (Maintainer: D10, 2026-10-14; the scope amended from Frobenius to `L2Operator` on
-  2026-10-14, `docs/design/Probability-P0.md` §7 Q1.)
+  2026-10-14.)
 - **Cost.** `[DecidableEq n]` on matrix-expectation statements (the `L2Operator` instance needs
   it). A user must open the scope to state a matrix expectation. If Mathlib makes the global
   topology reducibly the product one, Frobenius would work too; switching would change instance
   arguments only.
 - **Status: decided (maintainer, 2026-10-14; the scope
-  amended from Frobenius to `L2Operator` in `docs/design/Probability-P0.md` §7 Q1).**
+  amended from Frobenius to `L2Operator`).**
 - **Rule.** For analysis on matrices (integrals, Mathlib's normed API), open only
   `Matrix.Norms.L2Operator` (`CONTRIBUTING.md` §5.1).
 - **Bridges.** `Matrix.integral_apply`, `Matrix.integrable_iff` and the rest of
@@ -326,8 +325,7 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Cost.** A user who has `SMulInvariantMeasure` or a bundled unitary goes through the bridge.
   If Mathlib adds the action, the classes could become abbreviations of `SMulInvariantMeasure`;
   the field statements would not change.
-- **Status: open.** Orchestrator decision (classes over `𝕜`, left and right separately;
-  `docs/design/RandomMatrix-R5.md` §7 Q1, §8 items 2 and 10), 2026-10-14.
+- **Status: open.** Decision (classes over `𝕜`, left and right separately), 2026-10-14.
 
 ## 15. Haar measure on the orthogonal group, as a law on matrices
 
@@ -353,8 +351,7 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Cost.** A user with Mathlib's Haar measure on `O(n)` rewrites with the bridge; group-level
   facts (`IsHaarMeasure`, uniqueness up to scaling) are reached only through it.
 - **Status: bridge proved** (`haarFrame_eq_map_haarMeasure`,
-  `RandomMatrix/Haar/Uniqueness.lean`). `docs/design/RandomMatrix-R5.md` §7 Q6 and §8 item 1,
-  2026-10-14.
+  `RandomMatrix/Haar/Uniqueness.lean`), 2026-10-14.
 
 ## 16. The uniform law on the sphere
 
@@ -407,12 +404,11 @@ None of these was approved by the maintainer when it was made. Status is given p
   statement, and it would not shorten the one hard proof, conditional Lieb for an
   `m`-measurable `H`: `condExpKernel_ae_eq_condExp` holds per measurable set, so `H` is constant
   under the kernel only through the same approximation by countably valued `m`-measurable
-  matrices (`docs/design/Probability-P5d.md` §8 item 1).
+  matrices.
 - **Cost.** A user holding `HasCondSubgaussianMGF` goes through the bridge, and needs a standard
   Borel space there. Kernel-level facts (the conditional law as a measure) are not available
   from `HasCondMatrixMGFBound`; no consumer uses them.
-- **Status: bridge proved** (`hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF`,
-  `docs/design/Probability-P5d.md` §7 Q1, decided (a), and §8), 2026-10-14.
+- **Status: bridge proved** (`hasCondMatrixMGFBound_smul_of_hasCondSubgaussianMGF`), 2026-10-14.
   Conditional Lieb for an `m`-measurable `H` was proved through a dense sequence of fixed
   Hermitian offsets and the perturbation bound `tr exp A ≤ e^{‖A - B‖} tr exp B`, not through an
   approximation of `H`; the kernel would not have shortened that either.
@@ -426,7 +422,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   over `ℂ`).
 - **NLAlib.** `IsBoundedOrthonormal F β` (`NLAlib/Matrix/Structured/BoundedOrthonormal.lean`): a
   unitary `F` (`HasOrthonormalCols F`) whose entries satisfy `card n * ‖F i j‖ ^ 2 ≤ β`, the
-  hypothesis of every SRHT statement (`docs/design/Sketching-S6.md` §7 Q2, §8 items 6 and 7).
+  hypothesis of every SRHT statement.
 - **Why.** Generality, not convenience. The hypothesis is strictly weaker than `IsHadamard` on
   `√(card n) • F`: an inequality on the entries admits the discrete cosine and Hartley transforms
   (`β = 2`), which are not Hadamard and which Martinsson and Tropp list as SRTT transforms (the
@@ -469,14 +465,14 @@ None of these was approved by the maintainer when it was made. Status is given p
   (the injection hypothesis, the law of `S`).
 - **Bridge.** To the predicate: `isIdempotentElem_obliqueProjector` and
   `IsIdempotentElem.obliqueProjector_eq` (every idempotent is one). To Mathlib's projections:
-  not stated, added on demand in the same file (`docs/design/LowRank-S0.md` §7 Q11); it would
+  not stated, added on demand in the same file; it would
   read `LinearMap.IsProj (LinearMap.range X.mulVecLin) (obliqueProjector X S).mulVecLin` under
   the rank hypothesis, a corollary of `range_obliqueProjector` and
   `obliqueProjector_mul_eq_self_of_range_le`.
 - **Cost.** A user holding `Submodule.projection` writes the bridge first. The §5.3 two-bases
   spelling `X * (Yᴴ * X)⁻¹ * Yᴴ` becomes a lemma (`obliqueProjector_of_isUnit`), and six
   `Oblique.lean` lemmas are deprecated for one release.
-- **Status: proposed** (`docs/design/LowRank-S0.md` §8 item 3), 2026-10-15; not
+- **Status: proposed**, 2026-10-15; not
   approved by the maintainer.
 
 ## Small spelling choices
@@ -498,14 +494,11 @@ None of these was approved by the maintainer when it was made. Status is given p
 (`isLeastSquaresSolution_iff_isMinOn` bridges to `IsMinOn`), `IsSVD` and `truncatedSVD`,
 `Majorized`, `SymmetricGauge`, the Schatten, nuclear and Ky Fan norms, `OperatorConvexOn`, the
 factorization predicates and `gaussState`, `polarFactor`, `principalAngle`, `tangentMatrix`.
-`obliqueProjector` (entry 19), `sketchAndSolve`, `rsvd`, `generalizedNystrom`, `nystrom`
-(`docs/design/LowRank-S0.md` §8 item 3). `IsBestRankApprox`
-(`isBestRankApprox_iff_isMinOn` bridges to `IsMinOn`; `docs/design/LowRank-S2a.md`).
-`earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`, `IsProjectionCostPreserving` (`docs/design/LowRank-S2b.md` §1, §8). `svdU` and `svdV`, the chosen thin SVD from which
-`truncatedSVD` is now built (`docs/design/LowRank-S2c.md` §8 items 1, 2, 12).
-`HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving`
-(`docs/design/LowRank-S9.md` §1, §8 item 7). `girardHutchinson` (trace estimation,
-`docs/design/Probability-TraceEstimation.md`).
+`obliqueProjector` (entry 19), `sketchAndSolve`, `rsvd`, `generalizedNystrom`, `nystrom`. `IsBestRankApprox`
+(`isBestRankApprox_iff_isMinOn` bridges to `IsMinOn`).
+`earlyTruncatedRSVD`, `earlyTruncatedGeneralizedNystrom`, `IsProjectionCostPreserving`. `svdU` and `svdV`, the chosen thin SVD from which
+`truncatedSVD` is now built.
+`HasProjectionCostPreserving`, the tail form of `IsProjectionCostPreserving`. `girardHutchinson` (trace estimation).
 
 (2026-10-16) `Metric.IsUniformApproxOn` adds a fixed-error predicate absent from the
 pinned Mathlib; it uses Mathlib's `dist` directly and its compact continuous-map bridge is
@@ -525,7 +518,7 @@ is a bridge, not a claim that the two sets agree for every parameter. Analytic
 hypotheses use existing `DifferentiableOn`, `Set.EqOn` and `Metric.IsUniformApproxOn`; coefficients
 and truncation retain their spelling. No numbered deviation is introduced.
 
-Krylov (2026-10-17, `docs/design/Krylov-CG.md`): `krylovMatrix` and `krylovSpace`, the Krylov
+Krylov (2026-10-17): `krylovMatrix` and `krylovSpace`, the Krylov
 space as the column space of the Krylov matrix. Mathlib's nearest notion is the cyclic submodule
 `Submodule.span R[X] {AEval'.of φ b}` in the type synonym `Module.AEval'`, which cannot be stated
 about vectors `n → 𝕜` without transport; the column space plugs the space into `rangeProjector`,
@@ -538,7 +531,7 @@ optimality), `IsGradedKrylovBasis` and `arnoldiMatrix` (on Mathlib's `gramSchmid
 `gramSchmidtQ`), and the recurrences `lanczosState` and `cgState` are additions with no Mathlib
 counterpart. No numbered deviation is introduced.
 
-Poly-Best (2026-10-25, `docs/design/Polynomial-BestApproximation.md`): `minimaxError f s n`,
+Best polynomial approximation (2026-10-25): `minimaxError f s n`,
 the best uniform error on a raw `f : ℝ → ℝ` and `s : Set ℝ`, defined as the infimum of the
 errors of `Metric.IsUniformApproxOn` for degree-`n` polynomials (junk `0` where the true value
 is $+\infty$ and for `s = ∅`), the chosen best approximation `minimaxPoly f s n` (junk `0` when
@@ -547,7 +540,7 @@ none exists; canonical on an interval), and the predicate `AlternatesOn`. Mathli
 `Polynomial.toContinuousMapOnAlgHom s`; the bridge is `minimaxError_eq_infDist`. The pointwise
 form is what the Krylov and SLQ consumers hold. No numbered deviation is introduced.
 
-Lower bounds LB-A (2026-10-25, `docs/design/Probability-MatvecQueryModel.md`): `QueryAlgorithm`,
+Lower bounds (2026-10-25): `QueryAlgorithm`,
 a deterministic adaptive query algorithm as transcript functions (`query i` of the first `i`
 responses, `output` of all `q`), with `history`, `transcript`, `run`, `queries`, `queryMatrix`,
 `IsNonAdaptive`, `IsMeasurable`, `IsMeasurableFamily` (randomized algorithms as seeded families)

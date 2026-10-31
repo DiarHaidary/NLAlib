@@ -38,7 +38,6 @@ measurable (`NLAlib.measurable_truncatedSVD`), with
 `hYm := ((measurable_truncatedSVD k).comp_aemeasurable
 ((measurable_nystrom H).comp_aemeasurable hX)).aestronglyMeasurable`.
 
-Design: `docs/design/LowRank-S5.md` §3.2, §8; `docs/design/LowRank-S2c.md` §8 item 8.
 
 ## Main results
 

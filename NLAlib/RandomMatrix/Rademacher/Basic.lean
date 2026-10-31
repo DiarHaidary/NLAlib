@@ -20,7 +20,6 @@ needs are stated here. A Rademacher matrix read as a vector indexed by $m \times
 (`Function.uncurry`) is a `rademacherVector`; its columns are independent sign vectors; its
 transpose is again a Rademacher matrix.
 
-Design: `docs/design/Sketching-S3.md` §3.3.
 
 ## Main definitions
 

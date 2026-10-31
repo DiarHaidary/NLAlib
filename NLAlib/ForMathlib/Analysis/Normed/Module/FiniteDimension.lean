@@ -12,8 +12,8 @@ public import Mathlib.Analysis.Normed.Module.FiniteDimension
 
 A finite-dimensional subspace of a normed space over a proper field contains a nearest point to
 every vector of the space; the space itself need not be finite-dimensional or complete. This is
-the existence step of best uniform polynomial approximation
-(`docs/design/Polynomial-BestApproximation.md`). An upstream candidate for
+the existence step of best uniform polynomial approximation.
+An upstream candidate for
 `Mathlib/Analysis/Normed/Module/FiniteDimension.lean`, next to
 `IsCompact.exists_infDist_eq_dist`.
 

@@ -21,8 +21,8 @@ result on the previous values by an error relation `err`. The run lemmas of
 prove that the run produces a trace; this file bounds traces, with no program in sight. Under the
 standard model (`err` the relation `NLAlib.Computation.RelErr u` of relative error) the
 bounds are those of [Higham2002, Chapters 3 and 8]. A model with underflow reuses them: an
-absolute error in a multiplication or division is pushed onto its operands
-(`docs/design/Computation-Rounding.md`, R6).
+absolute error in a multiplication or division is pushed onto its operands.
+
 
 ## Main definitions
 

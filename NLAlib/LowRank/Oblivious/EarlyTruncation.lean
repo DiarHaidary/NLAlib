@@ -36,7 +36,6 @@ about the output the user computes without identifying outputs under ties.
 sketch known only to satisfy `NLAlib.HasProjectionCostPreserving`, the tail form of the
 deterministic `NLAlib.IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le`. For a
 sketch of a known family the structural route above uses fewer events and gives better constants.
-Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18; `docs/design/LowRank-S9.md` §3.6.
 
 ## Main results
 

@@ -20,12 +20,10 @@ $r=\operatorname{rank}\mathbf{A}$. The sketch is unnormalized: scaling cancels i
 `NLAlib.sketchAndSolve`. The proof combines a constant subspace injection with the Gaussian's
 second JL moment through `NLAlib.Regression.Oblivious`; it makes no optimal logarithmic-in-failure
 claim. Expected-error bounds are in `NLAlib.Regression.SketchAndSolve`.
-Design: `docs/design/Regression-Rates.md`.
 
 Sketch-and-precondition with the normalised Gaussian sketch $\lvert p\rvert^{-1/2}\mathbf{G}$
 reaches relative squared residual $1 + \tau$ with $O(\lvert n\rvert + 1 + \log(1/\delta))$ rows
-and $O(\log(1/\tau))$ iterations, from the sketch-and-solve start. Design:
-`docs/design/Regression-SketchPrecondition.md` §5.
+and $O(\log(1/\tau))$ iterations, from the sketch-and-solve start.
 
 ## Main results
 

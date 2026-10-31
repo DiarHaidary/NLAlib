@@ -39,7 +39,7 @@ sketches are the case $c = 1$ (`NLAlib.isSubgaussianVector_of_hasLaw_rademacherV
 `NLAlib.isIsotropic_of_hasLaw_rademacherVector`, `ProbabilityTheory.HasLaw.iIndepFun_eval`),
 with no separate statement. It is an oblivious subspace embedding and injection through JL
 plus a net (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $4\varepsilon/5$); that route
-dominates the rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1).
+dominates the rows theorem's Gram sandwich in every regime.
 Matrices with independent sub-Gaussian entries of unit variance reach the rows hypotheses through
 `NLAlib.iIndepFun_row_of_iIndepFun_entry`; only their JL tail is stated. The sample sizes are
 named quantities with nonnegativity, monotonicity and an explicit comparison.
@@ -52,7 +52,7 @@ $\varepsilon < 0$ the bound exceeds $2$. For $\varepsilon = 1$ the lower JL even
 $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$, which need not be null (for signs, probability
 $2^{-\lvert k \rvert}$ at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$); for
 $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0$ is vacuous
-(`NLAlib.isSubspaceInjection_of_nonpos`). Design: `docs/design/Sketching-S3.md` §3.3, §8.
+(`NLAlib.isSubspaceInjection_of_nonpos`).
 
 ## Main definitions
 
@@ -561,8 +561,8 @@ $$2 \cdot 21^d \, e^{-\frac{1}{36} \lvert k \rvert
 the constant being `subgaussianJLConstant`: JL plus a net of radius $1/10$ at $4\varepsilon/5$
 (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Vershynin2018, Theorem 4.6.1, (4.22)],
 there for the singular values, $K^2 \max(\delta, \delta^2)$ with an unspecified
-constant; it dominates the rows theorem's Gram sandwich in every regime
-(`docs/design/Sketching-S3.md` §7 Q1).
+constant; it dominates the rows theorem's Gram sandwich in every regime.
+
 Result: subgaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)

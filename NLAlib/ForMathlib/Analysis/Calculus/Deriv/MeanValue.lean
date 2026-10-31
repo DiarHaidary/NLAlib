@@ -16,7 +16,6 @@ $t^b f(t)$ antitone on $[0, \infty)$. Grönwall's inequality
 (`norm_le_gronwallBound_of_norm_deriv_right_le`) does not cover this case, because the coefficient
 $b/t$ is singular at $0$. Upstream candidate for `Mathlib.Analysis.Calculus.Deriv.MeanValue`.
 
-Design: `docs/design/Probability-Beta.md` §3.3, β4e.
 
 ## Main results
 

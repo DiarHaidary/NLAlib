@@ -16,7 +16,7 @@ public import NLAlib.LowerBounds.QueryModel.Basic
 A randomized algorithm is a measurable family of deterministic ones indexed by a seed
 (`NLAlib.QueryAlgorithm.IsMeasurableFamily`). Two forms of Yao's minimax principle (the easy
 direction, which is what lower bounds use), both Fubini on the product of the seed law and the
-input law (`docs/design/Probability-MatvecQueryModel.md`, §3.2):
+input law:
 
 * distributional: if every measurable deterministic algorithm has failure probability at most
   $\delta$ on a random input, so does every randomized one whose seed is independent of the input;

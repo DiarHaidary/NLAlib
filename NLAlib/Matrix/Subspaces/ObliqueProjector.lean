@@ -38,7 +38,7 @@ Degenerate cases: for $\mathbf{S}\mathbf{X} = \mathbf{0}$ (empty `k`, $\mathbf{S
 $\mathbf{X} = \mathbf{0}$, empty `r`) the projector is $\mathbf{0}$, and the rank hypothesis holds
 iff $\mathbf{X} = \mathbf{0}$. Without the hypothesis the projector still has range inside
 $\operatorname{range}\mathbf{X}$, but it does not fix $\mathbf{X}$ and depends on more than the
-range of $\mathbf{X}$. Design: `docs/design/LowRank-S0.md` §3.1, §8.
+range of $\mathbf{X}$.
 
 ## Main definitions
 

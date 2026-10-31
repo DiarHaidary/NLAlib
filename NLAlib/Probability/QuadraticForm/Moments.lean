@@ -26,8 +26,7 @@ $$\mathbb{E}\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}
 (m_4 - 2 - \lvert s\rvert^2) \sum_i \lvert \mathbf{A}_{i,i}\rvert^2\,.$$
 One statement covers real probes ($s = 1$: Gaussian $m_4 = 3$, Rademacher $m_4 = 1$) and complex
 ones ($s = 0$); the complex cases are not yet stated as corollaries, since no complex probe
-distribution is in the library (`docs/design/Probability-TraceEstimation.md`, "Deferred: complex
-probes"). For real symmetric $\mathbf{A}$
+distribution is in the library. For real symmetric $\mathbf{A}$
 it is the variance $2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$, stated
 with its Gaussian and Rademacher cases, their forms for any real $\mathbf{A}$ through the symmetric
 part, and the optimality of Rademacher probes ($m_4 \ge 1$). These are the single-probe

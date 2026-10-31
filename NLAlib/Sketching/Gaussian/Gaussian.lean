@@ -19,7 +19,7 @@ public import NLAlib.Sketching.Properties.Oblivious
 The Gaussian sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ for a standard Gaussian
 `G : Matrix k n ℝ` ($\lvert k \rvert$ rows). It is written out in each statement,
 `fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω`, with the hypothesis `HasLaw G (gaussianMatrix k n) μ`;
-there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
+there is no named sketch law.
 
 It is an isotropic sketch, a random subspace injection and embedding for a fixed $\mathbf{U}$ with
 orthonormal columns (Gordon's extreme singular values, one tail $e^{-t^2/2}$ per side), an
@@ -41,8 +41,7 @@ comparison; the "$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of
 Degenerate cases: for empty $k$, $(\sqrt{0})^{-1} = 0$ and $\mathbf{S} = \mathbf{0}$, which is not
 isotropic, hence `[Nonempty k]` on isotropy, the OSI and the moments; the hypothesis
 $t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ then forces $p$ empty. The JL bound is $2$
-for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
-`docs/design/Sketching-S2.md` §3.3, §8.
+for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$.
 
 ## Main definitions
 

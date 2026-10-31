@@ -34,7 +34,6 @@ and the mean iterate is Landweber's iteration with step $\|\mathbf{A}\|_{\mathsf
 [StrohmerVershynin2009]; [ZouziasFreris2013]; [GowerRichtarik2015]; [LeventhalLewis2010];
 [Needell2010]; [MaNeedellRamdas2015]. Block Kaczmarz with row pavings [NeedellTropp2014] and the
 randomized extended Kaczmarz method are not here yet.
-Design: `docs/design/Regression-Kaczmarz.md`.
 
 ## Main definitions
 

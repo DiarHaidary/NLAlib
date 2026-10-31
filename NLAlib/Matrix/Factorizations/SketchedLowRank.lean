@@ -39,7 +39,7 @@ Errors are written as $\mathbf{A}$ minus the named output.
 Degenerate cases: for empty `l`, $\mathbf{\Omega} = \mathbf{0}$ or $\mathbf{A} = \mathbf{0}$ all
 approximations are $\mathbf{0}$, and `NLAlib.generalizedNystrom_eq_self_of_rank_eq` then needs
 $\mathbf{A} = \mathbf{0}$, which its hypothesis says; for $k = 0$ the early-truncated outputs are
-$\mathbf{0}$. Design: `docs/design/LowRank-S0.md` §3.3, §8; `docs/design/LowRank-S2b.md` §3.1, §8.
+$\mathbf{0}$.
 
 ## Main definitions
 

@@ -48,7 +48,7 @@ a subspace embedding of the row space gives one.
 
 Every statement holds for every choice of the truncation under ties. Degenerate cases: for empty
 `r` the frame is $\mathbf{0}$, $\mathbf{E} = \mathbf{A}$ and $\chi = 0$; at $k = 0$ the output is
-$\mathbf{0}$. Design: `docs/design/LowRank-S2b.md` §3.3, §3.4, §8.
+$\mathbf{0}$.
 
 ## Main results
 

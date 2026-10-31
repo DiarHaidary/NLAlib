@@ -29,7 +29,7 @@ The deterministic bounds here are instances of the truncation lemmas of
 a positive semidefinite matrix (both are dominated by the input), an exact Pythagorean split for the
 randomized SVD in the Frobenius norm, the Gram correspondence between truncated Nyström and the
 truncated randomized SVD of a factor, and perturbed truncation for generalized Nyström. Every
-statement holds for every choice of the truncation. Design: `docs/design/LowRank-S2a.md`.
+statement holds for every choice of the truncation.
 
 ## Main results
 
@@ -59,14 +59,13 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm_mul_frobNorm`: the
   perturbed truncation with the next-$k$ tail in the cross term.
 * `NLAlib.le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq`: the reverse perturbed truncation,
-  under a gap. The last two are new (research note OP2 of the NLAlib workflow, and
-  `docs/design/LowRank-EstimatorLowerBounds.md` §3.2).
+  under a gap. The last two are new.
 * `NLAlib.generalizedNystrom_eq_rsvd_add`,
   `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add`: generalized Nyström is the
   randomized SVD plus the core noise, and its truncation error splits.
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window`: the localized
   perturbed truncation of `NLAlib/Matrix/Perturbation/BestRankApprox.lean` for generalized
-  Nyström (`docs/design/research/TruncatedGN-Upper.md`).
+  Nyström.
 -/
 
 @[expose] public section
@@ -560,7 +559,7 @@ Since $\gamma_k \le \min(\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mat
 \sqrt{k}\,\sigma_k(\mathbf{R}))$, it sharpens the cross term $4\sqrt{2k}\,\gamma\,\|\mathbf{N}\|_2$
 of `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm` (expanded), at the
 price of $12k$ for $8k$ in the noise term. For the choice `truncatedSVD` makes.
-No printed source. New (research note OP2, §2, D2, with the constants recomputed here). -/
+No printed source. New. -/
 theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm_mul_frobNorm
     {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜}
     (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) (k : ℕ) :
@@ -714,7 +713,7 @@ $$\|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 +
 Truncated generalized Nyström keeps the noise that falls in the dominant subspace of
 $\mathbf{R}$, up to a perturbation that vanishes as the gap grows. For the choice
 `truncatedSVD` makes (the left side is choice-free under the gap).
-No printed source. New (this design, §3.2, after research note OP2, §1). -/
+No printed source. New. -/
 theorem le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq
     {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜}
     (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) {k : ℕ} (hk : 0 < k)

@@ -16,7 +16,6 @@ of $p$: the bridge between the analytic jets of an interpolation remainder and t
 jets of the interpolant. Mathlib has the first derivative, `Polynomial.deriv`. Upstream candidate
 for `Mathlib.Analysis.Calculus.Deriv.Polynomial`, next to `Polynomial.deriv`.
 
-Design: `docs/design/Polynomial-QuadratureRemainder.md`, F2.
 
 ## Main results
 

@@ -19,8 +19,7 @@ $\lvert x \rvert$ in $[2^{t-1}, 2^t)$ (through `Int.log`), round to an integer w
 `round` (ties upward) and scale back. The relative error is at most $u = 2^{-t}$
 [Higham2002, Theorem 2.2]. Mathlib's `FP` (`Mathlib.Data.FP.Basic`) is an experimental
 implementation of floating-point numbers with no theorems about rounding; nothing here reuses it.
-Upstream candidate for `Mathlib.Algebra.Order.Round`. Design:
-`docs/design/Computation-Rounding.md` (R7).
+Upstream candidate for `Mathlib.Algebra.Order.Round`.
 
 ## Main definitions
 

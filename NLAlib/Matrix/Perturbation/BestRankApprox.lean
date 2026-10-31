@@ -23,8 +23,7 @@ $$\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 40\,\theta\min(k, b - k)\,\mu\,,$$
 with the window $a \le k \le b$ of `NLAlib.exists_singularValues_window`. The window tools are in
 `NLAlib/Matrix/Perturbation/TruncationWindow.lean`. Every statement holds for every best
-approximation, so in particular for every choice of `truncatedSVD`. Design:
-`docs/design/research/TruncatedGN-Upper.md` (research note OP6 of the NLAlib workflow).
+approximation, so in particular for every choice of `truncatedSVD`.
 
 ## Main results
 
@@ -422,8 +421,7 @@ $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
 40\,\theta\min(k, b - k)\,\mu\,.$$
 The noise enters the cross term only through its compression $\mu$ to the singular subspaces
 within a factor $2$ of the truncation level, and with weight $\min(k, b - k)$ instead of $k$.
-The proof gives $483$ and $32$ in place of $500$ and $40$. No printed source; research note
-OP6, Proposition 3.6, has $965$ in place of $500$, from a cruder split.
+The proof gives $483$ and $32$ in place of $500$ and $40$. No printed source.
 Result: localized-hard-truncation -/
 theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : Matrix m n 𝕜}
     {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k)

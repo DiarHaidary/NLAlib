@@ -35,8 +35,7 @@ $\mathbf{H} = \tfrac12(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$, for every sketch 
 Gaussian sketch too, the bounds of Meyer, Musco, Musco and Woodruff and of Epperly, Tropp and
 Webber follow. The high-probability bounds are in `NLAlib.Estimation.Trace.HutchPlusPlusTail`.
 Probabilistic statements are over $\mathbb{R}$, where the Gaussian law and Hanson–Wright live; the
-definition, the error identity and unbiasedness are over any `RCLike` field. Design:
-`docs/design/Estimation-HutchPP.md`.
+definition, the error identity and unbiasedness are over any `RCLike` field.
 
 ## Main definitions
 

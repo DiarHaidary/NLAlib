@@ -42,15 +42,12 @@ fact about independent families.
 Mathlib has the ingredients but not these statements. Upstream candidates for
 `Mathlib/Probability/Independence/Basic.lean`.
 
-Design: `docs/design/Sketching-S6.md` §3.1, §8 item 15; `docs/design/LowRank-S6.md` §4, L1; Hutch++
-(`docs/design/Estimation-HutchPP.md` §2.2, P1);
-randomized Kaczmarz (`docs/design/Regression-Kaczmarz.md` §4).
+Used by the SRHT, sketched regression, Hutch++ and randomized Kaczmarz.
 
 The freezing lemma: if $Z$ is independent of $T$, then in a function $F(T, Z)$ the variable $T$
 may be frozen, so the joint law of $(T, F(T, Z))$ is determined by the laws of $F(t, Z)$ for fixed
 $t$. This is the step of every deferred-decision argument where a transcript-dependent rotation or
-projection acts on an independent Gaussian or Haar matrix (design:
-`docs/design/Probability-MatvecQueryModel.md` §3.3).
+projection acts on an independent Gaussian or Haar matrix.
 
 ## Main results
 

@@ -30,8 +30,7 @@ fills the lower half).
 
 Degenerate cases: for empty $p$ every predicate holds; for empty $k$ or $\mathbf{S} = \mathbf{0}$
 the injection holds iff $a \le 0$ or $\mathbf{U} = \mathbf{0}$, the upper half iff $0 \le b$ or
-$\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous. Design:
-`docs/design/Sketching-S0.md`.
+$\mathbf{U} = \mathbf{0}$; for $a \le 0$ the injection is vacuous.
 
 ## Main definitions
 

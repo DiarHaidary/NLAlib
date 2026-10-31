@@ -22,8 +22,7 @@ trigonometric transform uses (`NLAlib.Sketching.Structured.Flattening`).
 
 The hypothesis is strictly weaker than Mathlib's `Matrix.IsHadamard` on the unnormalised matrix: an
 inequality on the entries admits the cosine and Hartley transforms, which are not Hadamard. The
-bridge is `Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul`. Design:
-`docs/design/Sketching-S6.md` §8, items 6 and 7.
+bridge is `Matrix.IsHadamard.isBoundedOrthonormal_inv_sqrt_smul`.
 
 ## Main definitions
 

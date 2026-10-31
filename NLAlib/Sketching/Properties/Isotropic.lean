@@ -23,7 +23,6 @@ Markov step of the injection tails of `NLAlib.Regression.Oblivious`.
 
 A matrix with isotropic rows, scaled by $1/\sqrt{\lvert k \rvert}$, is an isotropic sketch, with no
 independence between the rows; the product of two independent isotropic sketches is isotropic.
-Design: `docs/design/Sketching-S1.md` §3.1.
 
 ## Main definitions
 

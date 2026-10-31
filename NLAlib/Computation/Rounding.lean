@@ -23,7 +23,7 @@ algebra: a product of $n$ factors $(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i
 is $1 + \theta_n$ with $\lvert \theta_n \rvert \le \gamma_n$, and the rules that combine such
 $\theta$'s [Higham2002]. The relation `NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with
 relative error at most $u$, the error clause of the standard model. Every lemma assumes
-$nu < 1$, under which $\gamma_n$ is finite. Design: `docs/design/Computation-Rounding.md` (R1, R2).
+$nu < 1$, under which $\gamma_n$ is finite.
 
 ## Main definitions
 

@@ -31,8 +31,7 @@ statements do not. Degenerate cases: for a Hermitian $\mathbf{A}$ that is not po
 the rank lemma fails ($\mathbf{A} = \operatorname{diag}(1, -1)$,
 $\mathbf{\Omega} = (1, 1)^{\mathsf{T}}$); for empty `l` the approximation is $\mathbf{0}$.
 
-This file holds additions to `NLAlib.Matrix.Factorizations.Nystrom`. Design:
-`docs/design/LowRank-S0.md` §3.4, §8.
+This file holds additions to `NLAlib.Matrix.Factorizations.Nystrom`.
 
 ## Main definitions
 

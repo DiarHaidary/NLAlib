@@ -27,7 +27,6 @@ the source's. The primary statements are in Mathlib's measure-level form; the `H
 corollaries. Upstream candidates for `Mathlib.Probability.Distributions.Beta` (which would then
 import `…/Gamma.lean`).
 
-Design: `docs/design/Probability-Beta.md` §§3.2–3.3, β2 and β4.
 
 ## Main results
 

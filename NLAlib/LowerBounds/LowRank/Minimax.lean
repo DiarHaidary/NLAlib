@@ -17,8 +17,7 @@ controls degree-$r$ polynomials at the head by their tail values. Gaussian overl
 and the general Krylov coupling give a distributional failure bound and a randomized
 worst-case hard input for every such spectrum. Two explicit query lower bounds follow: the
 equispaced spectrum (head $r+2$, levels $1,\ldots,r+1$, $C = 4^{r+1}$) and the Chebyshev
-spectrum (head $1+1/(8(r+1)^2)$, Chebyshev levels in $[1/2,1]$, $C = 4$). Designs:
-`docs/design/LowerBounds-FixedBatches.md`, `docs/design/LowerBounds-ChebyshevBatches.md`.
+spectrum (head $1+1/(8(r+1)^2)$, Chebyshev levels in $[1/2,1]$, $C = 4$).
 
 ## Main definitions
 

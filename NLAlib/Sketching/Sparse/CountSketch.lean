@@ -56,8 +56,7 @@ event is empty; for $d > \lvert n \rvert$ the OSE at $d$ is the one at $\lvert n
 $d \le \lvert n \rvert$ is assumed. Signs off $\{\pm 1\}$ form a null set. For
 $\varepsilon \ge 1$ the injection is vacuous and the bound is still true. Split at the boundary
 "The Gram error and the embedding" into this file and
-`NLAlib/Sketching/Sparse/CountSketchEmbedding.lean` (2026-10-16). Design:
-`docs/design/Sketching-S7.md` §3.2, §8.
+`NLAlib/Sketching/Sparse/CountSketchEmbedding.lean` (2026-10-16).
 
 ## Main definitions
 

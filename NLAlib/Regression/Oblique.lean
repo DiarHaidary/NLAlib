@@ -30,8 +30,6 @@ $\|\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{Y}\|_{\Phi} \le
 with the sketch size when $\mathbf{P}_{\mathbf{A}}\mathbf{Y} = \mathbf{0}$.
 
 The oblique-projector bounds complement `NLAlib.Regression.Embedding`.
-Design: `docs/design/LowRank-S0.md` §3.7, §8; placement:
-`docs/design/Regression-Organization.md`.
 
 ## Main results
 

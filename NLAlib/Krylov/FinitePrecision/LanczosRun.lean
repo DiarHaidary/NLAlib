@@ -24,7 +24,6 @@ stability analysis (local errors, Paige's theorem, the Greenbaum backward model)
 mentions the model of computation.
 Indices as in the paper: $\mathbf{v}_0 = \mathbf{0}$, $\beta_0 = 0$, steps $j = 1, \dots, k$.
 
-Design: `docs/design/Krylov-LanczosRounding.md` (§3).
 
 ## Main definitions
 

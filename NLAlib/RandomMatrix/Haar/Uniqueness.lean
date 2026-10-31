@@ -646,7 +646,7 @@ $$(\mathbf{I} - \mathbf{E})\mathbf{Y} + \mathbf{F}\bigl((\mathbf{E}\mathbf{Y})^{
 is a standard Gaussian matrix. Its compression to $\operatorname{range}\mathbf{E}$ has the range
 of $\mathbf{F}$ whenever $\mathbf{E}\mathbf{Y}$ has full column rank: a Gaussian block whose
 unrevealed part spans a prescribed random frame, the step of the Krylov coupling.
-[Shamir2026, Lemma 4] and OP5 (research note), Lemma C; there one column, resp. in an
+[Shamir2026, Lemma 4]; there one column, resp. in an
 orthonormal basis of the subspace. -/
 theorem hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix [DecidableEq n] [DecidableEq k]
     {E : Matrix n n ℝ} (hE : IsStarProjection E) (hk : Fintype.card k ≤ E.rank)

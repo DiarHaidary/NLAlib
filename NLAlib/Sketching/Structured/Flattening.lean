@@ -56,8 +56,7 @@ transforms and sparse samplers are other instances.
 Degenerate cases. Rank zero: every leverage score is $0$ and the flattening event is empty. Empty
 `n`: every event is empty. For nonempty `n`, $\beta \ge 1$. The signs are $\pm 1$ only almost
 surely, so $\mathbf{F}\mathbf{D}$ is unitary only almost surely. The transfer takes
-$0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous. Design:
-`docs/design/Sketching-S6.md` §3.2, §8.
+$0 \le \delta_1$: with $L < 0$ its sampling hypothesis is vacuous.
 
 ## Main definitions
 

@@ -12,8 +12,8 @@ public import Mathlib.Probability.Moments.Variance
 
 A nonnegative random variable with a finite second moment exceeds a fraction $\theta$ of its mean
 with probability at least $(1 - \theta)^2 (\mathbb{E} Z)^2 / \mathbb{E} Z^2$. It is the
-anti-concentration step of the early-truncation lower bound
-(`docs/design/LowRank-EstimatorLowerBounds.md`, §3.1). Not in Mathlib (searched: `paley`,
+anti-concentration step of the early-truncation lower bound.
+Not in Mathlib (searched: `paley`,
 `zygmund`, `second moment method`); an upstream candidate for
 `Mathlib/Probability/Moments/Variance.lean` or a new `Mathlib/Probability/PaleyZygmund.lean`.
 

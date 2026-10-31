@@ -29,8 +29,7 @@ the perturbation in the Frobenius norm (perturbed truncation). Reverse Eckart–
 spectral error of any rank-$k$ matrix by its Frobenius or nuclear excess. The last results relate
 the truncation of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$ to that of $\mathbf{G}$.
 
-Every statement holds for every choice of the truncations involved. Design:
-`docs/design/LowRank-S2a.md`.
+Every statement holds for every choice of the truncations involved.
 
 ## Main definitions
 

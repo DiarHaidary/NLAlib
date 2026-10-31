@@ -24,8 +24,8 @@ of degree less than $q$ per column; in particular the range of $f(\mathbf{A})\ma
 for every polynomial of degree less than $q$, which is the only Krylov fact the analysis of
 randomized block Krylov iteration uses.
 
-The vector Krylov API (`NLAlib.krylovMatrix`, `NLAlib.krylovSpace`) is separate (design note
-`docs/design/Krylov-Block.md`, BD1 (b)); the bridges say that the one-column block objects are the
+The vector Krylov API (`NLAlib.krylovMatrix`, `NLAlib.krylovSpace`) is separate; the bridges say
+that the one-column block objects are the
 vector ones and that a block Krylov space is the supremum of the vector Krylov spaces of its
 columns.
 
@@ -55,7 +55,7 @@ $\mathbf{B}$.
 * `NLAlib.exists_sum_eval_sq_mul_norm_sq_le_norm_sub_mulVec_sq`.
 * `NLAlib.blockKrylovSpace_le_of_range_le`,
   `NLAlib.sup_sup_map_mulVecLin_le_blockKrylovSpace_add_two`: the depth count of the Krylov
-  coupling (design note §3.2).
+  coupling.
 -/
 
 @[expose] public section

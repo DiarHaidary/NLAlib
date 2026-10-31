@@ -27,8 +27,6 @@ $\operatorname{diag}(\mathbf{d})$, and such a polynomial is fixed at the head by
 tail levels (finite differences), so the head cannot be captured unless the number of products is
 of the order of $m$. This file has the deterministic and Gaussian steps; the two-pass
 algorithmic lower bounds ($p = 2$), which go through the Krylov coupling, are proved below.
-Design note
-`docs/design/LowerBounds-HiddenRotationLowerBounds.md` §3.6, research note OP5.
 
 ## Main definitions
 
@@ -221,8 +219,7 @@ $\mathbf{M} \in \mathbb{R}^{k \times n}$, $n = k \oplus (\{0, 1, 2\} \times m)$ 
 $\mathbf{D} = \operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m, 3\mathbf{I}_m)$,
 $$\|\mathbf{D} - \mathbf{W}\mathbf{M}\|_{\mathsf{F}}^2 \ge 14\lvert m \rvert + 7\bigl(\lvert k
 \rvert - t\bigr) \,, \qquad t = \sum_{a \in k}\|\mathbf{P}_{\mathbf{W}}\mathbf{e}_a\|^2 \,,$$
-$t$ the head mass captured by the range of $\mathbf{W}$.
-OP5, Step 1 (eq. (1)). -/
+$t$ the head mass captured by the range of $\mathbf{W}$. -/
 theorem le_frobNorm_diagonal_sub_mul_sq (W : Matrix (k ⊕ (Fin 3 × m)) k ℝ)
     (M : Matrix k (k ⊕ (Fin 3 × m)) ℝ) :
     14 * Fintype.card m + 7 * (Fintype.card k -
@@ -314,8 +311,7 @@ $\mathbf{M} \in \mathbb{R}^{k \times n}$, $k$ nonempty, $n = k \oplus (\{0, 1, 2
 $\mathbf{D} = \operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m, 3\mathbf{I}_m)$,
 $$\|\mathbf{D} - \mathbf{W}\mathbf{M}\|_2^2 \ge
 \frac{16(\lvert k \rvert - t)}{\lvert k \rvert} \,, \qquad
-t = \sum_{a \in k}\|\mathbf{P}_{\mathbf{W}}\mathbf{e}_a\|^2 \,.$$
-OP5, Step 1 (eq. (1')). -/
+t = \sum_{a \in k}\|\mathbf{P}_{\mathbf{W}}\mathbf{e}_a\|^2 \,.$$ -/
 theorem le_specNorm_diagonal_sub_mul_sq [Nonempty k] (W : Matrix (k ⊕ (Fin 3 × m)) k ℝ)
     (M : Matrix k (k ⊕ (Fin 3 × m)) ℝ) :
     16 * (Fintype.card k -
@@ -404,8 +400,7 @@ $\mathbf{G} \in \mathbb{R}^{n \times b}$ with tail blocks $\mathbf{G}_j$ (rows o
 and head block $\mathbf{G}_h$, $s^2\mathbf{I} \preceq \mathbf{G}_j^{\mathsf{H}}\mathbf{G}_j$ for
 $j = 0, 1, 2$ and $\|\mathbf{G}_h\|_2 \le S$. Every $\mathbf{z} \in \mathcal{K}_3(\mathbf{D},
 \mathbf{G})$ has
-$$s^2\sum_{a \in k} z_a^2 \le 19\,S^2\,\|\mathbf{z}\|^2 \,.$$
-OP5, Step 3 (eq. (2)). -/
+$$s^2\sum_{a \in k} z_a^2 \le 19\,S^2\,\|\mathbf{z}\|^2 \,.$$ -/
 theorem mul_sum_sq_le_mul_norm_sq_of_mem_blockKrylovSpace {b : Type*} [Fintype b]
     [DecidableEq b] {G : Matrix (k ⊕ (Fin 3 × m)) b ℝ} {s S : ℝ}
     (hs : ∀ j : Fin 3, s ^ 2 • (1 : Matrix b b ℝ) ≤
@@ -515,8 +510,7 @@ $n \times b$ matrix, $n = k \oplus (\{0, 1, 2\} \times m)$, $\gamma > 2$, $\lver
 \lvert b \rvert$ and $\gamma^2\lvert b \rvert \le \lvert m \rvert$. Then
 $$\mathbb{P}\Bigl[\exists\,\mathbf{z} \in \mathcal{K}_3(\mathbf{D}, \mathbf{G}):\
 \sum_{a \in k} z_a^2 > \frac{171}{(\gamma - 2)^2}\|\mathbf{z}\|^2\Bigr] \le
-4\exp\Bigl(-\frac{\lvert m \rvert}{2\gamma^2}\Bigr) \,.$$
-OP5, Step 3; there $\rho(\gamma) = 19(3/\gamma)^2/(1 - 2/\gamma)^2$, at $\gamma = 20$ and $26$. -/
+4\exp\Bigl(-\frac{\lvert m \rvert}{2\gamma^2}\Bigr) \,.$$ -/
 theorem measureReal_exists_mem_blockKrylovSpace_lt_sum_sq_le_of_hasLaw_gaussianMatrix
     {b : Type*} [Fintype b] {G : Ω → Matrix (k ⊕ (Fin 3 × m)) b ℝ}
     (hG : HasLaw G (gaussianMatrix (k ⊕ (Fin 3 × m)) b) μ) {γ : ℝ} (hγ : 2 < γ)
@@ -657,8 +651,7 @@ output $\mathbf{W} \in \mathbb{R}^{n \times k}$, $\mathbf{M} \in \mathbb{R}^{k \
 $400(q + \lvert k \rvert) \le \lvert m \rvert$, then
 $$\mathbb{P}\Bigl[\|\mathbf{A} - \mathbf{W}\mathbf{M}\|_{\mathsf{F}}^2 < 14\lvert m \rvert +
 3.3\lvert k \rvert\Bigr] \le 4e^{-\lvert m \rvert/800} \,,$$
-and $14\lvert m \rvert = \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2$.
-OP5, Theorem A. -/
+and $14\lvert m \rvert = \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2$. -/
 theorem QueryAlgorithm.IsPassStructured.measureReal_frobNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame
     {q : ℕ} {alg : QueryAlgorithm (k ⊕ (Fin 3 × m) → ℝ)
       ((k ⊕ (Fin 3 × m) → ℝ) × (k ⊕ (Fin 3 × m) → ℝ)) q
@@ -806,8 +799,7 @@ $\lvert k \rvert$), with $k$ nonempty and $676(q + \lvert k \rvert) \le \lvert m
 $$\mathbb{P}\Bigl[\|\mathbf{A} - \mathbf{W}\mathbf{M}\|_2^2 < \tfrac{45}{4}\Bigr] \le
 4e^{-\lvert m \rvert/1352} \,,$$
 while $\sigma_{k+1}(\mathbf{A})^2 = 9$: no $(1 + \varepsilon)\sigma_{k+1}$ approximation for
-$\varepsilon \le 0.1$.
-OP5, Theorem C. -/
+$\varepsilon \le 0.1$. -/
 theorem QueryAlgorithm.IsPassStructured.measureReal_specNorm_sub_mul_sq_lt_le_of_hasLaw_haarFrame
     [Nonempty k] {q : ℕ} {alg : QueryAlgorithm (k ⊕ (Fin 3 × m) → ℝ)
       ((k ⊕ (Fin 3 × m) → ℝ) × (k ⊕ (Fin 3 × m) → ℝ)) q
@@ -860,8 +852,7 @@ $400(q + \lvert k \rvert) \le \lvert m \rvert$, there is an orthogonal $\mathbf{
 $\mathbf{A} = \mathbf{U}\operatorname{diag}(4\mathbf{I}_k, \mathbf{I}_m, 2\mathbf{I}_m,
 3\mathbf{I}_m)\mathbf{U}^{\mathsf{H}}$
 $$\mathbb{P}_s\Bigl[\|\mathbf{A} - \mathbf{W}_s\mathbf{M}_s\|_{\mathsf{F}}^2 \ge
-14\lvert m \rvert + 3.3\lvert k \rvert\Bigr] \ge 1 - 4e^{-\lvert m \rvert/800} \,.$$
-OP5, Corollary B(i). -/
+14\lvert m \rvert + 3.3\lvert k \rvert\Bigr] \ge 1 - 4e^{-\lvert m \rvert/800} \,.$$ -/
 theorem exists_le_measureReal_frobNorm_sub_mul_sq_ge {q : ℕ}
     (hm : 400 * (q + Fintype.card k) ≤ Fintype.card m) {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm (k ⊕ (Fin 3 × m) → ℝ) (k ⊕ (Fin 3 × m) → ℝ) q
@@ -966,7 +957,7 @@ $\tfrac12$ for every symmetric $\mathbf{A}$, then
 $$q > \frac{\lvert k \rvert}{6400\,\varepsilon} \,.$$
 Two passes of randomized SVD with $O(k/\varepsilon)$ products achieve this accuracy in
 expectation, so the rate $k/\varepsilon$ is optimal for two-pass algorithms.
-No printed source; research note OP5, Corollary B(i), there $q \ge k/(3200\varepsilon) - k$.
+No printed source.
 Result: two-pass-low-rank-lower-bound -/
 theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le [Nonempty k] {ε : ℝ} {q : ℕ}
     (hε : 0 < ε) (hε₁ : ε ≤ 1 / 6500) (hεk : ε ≤ Fintype.card k / 14000)
@@ -1064,7 +1055,7 @@ $(1 + \varepsilon)$ of the best rank-$k$ Frobenius error with probability at lea
 every symmetric input makes $q > \lvert k \rvert/(6400\varepsilon)$ products. Truncated generalized
 Nyström attains the error in expectation with $O(k/\varepsilon)$ one-pass products
 (`LowRank/Gaussian/TruncatedGeneralizedNystromRate`), so the bound is tight up to constants.
-No printed source; research note OP5, Corollary B(iii).
+No printed source.
 Result: one-pass-low-rank-lower-bound -/
 theorem div_lt_of_forall_le_measureReal_frobNorm_sub_mul_sq_le_of_lt_one [Nonempty k] {ε : ℝ}
     {q : ℕ} (hε : 0 < ε) (hε₁ : ε ≤ 1 / 6500) (hεk : ε ≤ Fintype.card k / 14000)
@@ -1090,8 +1081,7 @@ k}$) with $\|\mathbf{A} - \mathbf{W}\mathbf{M}\|_2 \le (1 + \varepsilon)\sigma_{
 with probability at least $\tfrac12$ for every symmetric $\mathbf{A} \in \mathbb{R}^{n \times n}$,
 $n = \lvert k \rvert + 3\lvert m \rvert$, then
 $$\lvert m \rvert < 676\,(q + \lvert k \rvert) \,,$$
-i.e. $q > (n - \lvert k \rvert)/2028 - \lvert k \rvert$, whatever $\varepsilon \le 0.1$.
-OP5, Theorem C. -/
+i.e. $q > (n - \lvert k \rvert)/2028 - \lvert k \rvert$, whatever $\varepsilon \le 0.1$. -/
 theorem lt_of_forall_le_measureReal_specNorm_sub_mul_le [Nonempty k] {ε : ℝ} {q : ℕ}
     (hε : 0 ≤ ε) (hε₁ : ε ≤ 1 / 10) (hm : 2812 ≤ Fintype.card m) {S : Type*}
     [MeasurableSpace S]

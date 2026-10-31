@@ -23,7 +23,7 @@ directly: the rows are `ProbabilityTheory.HasLaw.eval`, their independence
 A Gaussian matrix read as a vector indexed by $m \times n$ (`Function.uncurry`) is a standard
 Gaussian vector, and its Frobenius norm is that vector's Euclidean norm; this is how the vector
 results of the probability layer apply to it. The law is real; a complex Gaussian matrix will be a
-separate law (`docs/design/Probability-P2.md` §7).
+separate law.
 
 ## Main definitions
 

@@ -24,8 +24,8 @@ ones whose proofs or statements use NLAlib's objects: the conditional expectatio
 sure positive definite values (through the eigenvalues), and commutes with the functional calculus
 of a fixed Hermitian matrix and with the Hermitian dilation.
 
-The conditional sibling of `NLAlib/Probability/MatrixIntegral.lean`
-(`docs/design/Probability-P5d.md` §3.1).
+The conditional sibling of `NLAlib/Probability/MatrixIntegral.lean`.
+
 
 ## Main results
 

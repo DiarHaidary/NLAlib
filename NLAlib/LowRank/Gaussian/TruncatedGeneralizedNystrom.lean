@@ -39,8 +39,7 @@ comparison rank near $\ell/2$
 bound, through the Frobenius norm of the core noise, has milder size conditions and better
 constants at practical sizes but needs $p = O(k/\varepsilon^3)$. Every rank of $\mathbf{A}$; the
 truncation is `truncatedSVD`, measurable (`NLAlib.measurable_truncatedSVD`), and both bounds hold
-for every best rank-$k$ approximation of the output. Real throughout. Design:
-`docs/design/LowRank-S6.md` §3.5, §3.7, §8.
+for every best rank-$k$ approximation of the output. Real throughout.
 
 ## Main definitions
 

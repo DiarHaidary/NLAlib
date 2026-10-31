@@ -15,16 +15,16 @@ An algorithm queries a matrix $\mathbf{X}$ with a right unitarily invariant law 
 through `twoSidedMulVec`. Then $\mathbf{X}$ may be rotated on the right by any orthogonal matrix
 that fixes what the transcript has revealed, chosen as a function of the transcript: the right parts
 of the queries and the second components (products $\mathbf{X}^{\mathsf{H}}\mathbf{u}$) of the
-responses. The joint law of transcript and matrix does not change (design note
-`docs/design/Probability-MatvecQueryModel.md` §3.4). The proof randomizes with the polar factor of a
+responses. The joint law of transcript and matrix does not change. The proof randomizes with the
+polar factor of a
 Gaussian matrix compressed to the complement of the revealed vectors and inducts over the rounds.
 
 ## Main definitions
 
 * `NLAlib.stabRand`: the stabilizer randomizer, a Haar element of the orthogonal matrices fixing a
   given range, built from a Gaussian matrix (with `NLAlib.map_mul_left_stabRand`,
-  `NLAlib.map_mul_right_stabRand`); the Krylov coupling of
-  `docs/design/LowerBounds-HiddenRotationLowerBounds.md` uses it.
+  `NLAlib.map_mul_right_stabRand`); the Krylov coupling of the
+  hidden-rotation lower bounds uses it.
 
 ## Main results
 

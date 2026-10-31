@@ -27,9 +27,7 @@ $\mathsf{sketchAndSolve}(\mathbf{A}, \mathbf{S}, \mathbf{B})$, has fitted values
 projection $\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{B}$, and when $\mathbf{S}$ keeps the rank of
 $\mathbf{A}$ it is the exact minimum-norm solution plus the sketched solution for the optimal
 residual. The solution does not change when the sketch is multiplied by a nonzero scalar, so
-the normalisations of Gaussian and Haar sketches do not matter for it. Design:
-`docs/design/LowRank-S0.md` §3.1, §8 (moved here from
-`NLAlib.Matrix.Subspaces.ObliqueProjector` on 2026-10-15).
+the normalisations of Gaussian and Haar sketches do not matter for it.
 
 ## Main definitions
 

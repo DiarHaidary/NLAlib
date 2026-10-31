@@ -39,7 +39,7 @@ co-range test matrix $\mathbf{\Psi}$. With standard Gaussian test matrices:
   $k$, one pass.
 
 The twins with a Haar co-range test matrix are in `NLAlib.LowRank.Gaussian.EarlyTruncationHaar`.
-Design: `docs/design/LowRank-S6.md` §3.6, §8 items 4, 13 and 17. Real throughout.
+Real throughout.
 
 ## Main results
 

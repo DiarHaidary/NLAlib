@@ -15,7 +15,7 @@ With probes $\sqrt{\lvert n\rvert}\,\mathbf{u}_j$, $\mathbf{u}_j$ independent an
 the unit sphere, the probe spectral measure and the SLQ estimate are probability measures, and
 the sharp sub-Gaussian proxy of Beta laws gives the failure probability
 $2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)$, with no unknown constant.
-[ChenTrogdonUbaru2025]. Design: `docs/design/Estimation-SLQ.md` §3.6.
+[ChenTrogdonUbaru2025].
 
 ## Main results
 

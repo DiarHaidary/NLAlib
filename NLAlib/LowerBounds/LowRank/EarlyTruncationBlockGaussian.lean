@@ -25,8 +25,8 @@ $1/24$: extreme singular value tails of the two row blocks and a Paley–Zygmund
 product $\mathbf{\Omega}_1\mathbf{\Omega}_2^{\mathsf{T}}$, conditionally on $\mathbf{\Omega}_2$.
 The $k = 1$ instance is in `NLAlib.LowerBounds.LowRank.EarlyTruncation`.
 
-New (research note `reports/OP1-EarlyTruncatedRSVD.md` of the NLAlib workflow, 2026-10-25).
-Design: `docs/design/LowRank-EstimatorLowerBounds.md` §3.1. Real throughout.
+New.
+Real throughout.
 
 ## Main results
 
@@ -586,10 +586,10 @@ $$\Bigl(1 + c\sqrt{k/\ell}\Bigr)\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\
 So relative error $1 + \varepsilon$ needs $\ell \ge c^2k/\varepsilon^2$: the $k$-dependence of
 the library's $900k/\varepsilon^2$ is also sharp. The constants are existential: the proof gives
 $c = 1/(96 \cdot 10^7)$, $C = 10^4$, $K_0 = 4000$; numerically
-$c \approx 0.2$ for every $k \ge 1$ (research note OP1, §2(b)). $k \ge K_0$ is where the proof's
+$c \approx 0.2$ for every $k \ge 1$. $k \ge K_0$ is where the proof's
 concentration events have probability at least $1/24$; for $2 \le k < K_0$ the statement is
-expected but not proved (design note, OQ3).
-No printed source. New (research note OP1, §4).
+expected but not proved.
+No printed source. New.
 Result: early-truncated-rsvd-lower-bound -/
 theorem
     exists_forall_le_integral_frobNorm_sub_earlyTruncatedRSVD_sq_of_hasLaw_gaussianMatrix :

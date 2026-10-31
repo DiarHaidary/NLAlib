@@ -57,8 +57,7 @@ Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, which is not isotrop
 `[Nonempty k]` on isotropy, the OSI and the moments; the JL bound is $2$ for
 $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. For $\varepsilon = 1$ the lower
 JL event $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$ has positive probability ($2^{-\lvert k \rvert}$
-at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it. Design:
-`docs/design/Sketching-S3.md` §3.3, §8.
+at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it.
 
 ## Main results
 

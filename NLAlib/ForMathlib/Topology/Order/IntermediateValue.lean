@@ -15,7 +15,7 @@ public import Mathlib.Order.Fin.Basic
 The intermediate value theorem, applied between consecutive points of an ordered tuple at which
 a continuous real function changes sign, gives one zero in each gap, so strictly ordered zeros.
 This is the root-counting step of de la Vallée Poussin's theorem and of the interpolation property
-of best approximants (`docs/design/Polynomial-BestApproximation.md`). An upstream candidate for
+of best approximants. An upstream candidate for
 `Mathlib/Topology/Order/IntermediateValue.lean`.
 
 ## Main results

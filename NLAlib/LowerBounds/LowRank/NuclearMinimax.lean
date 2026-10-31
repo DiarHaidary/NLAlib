@@ -14,7 +14,6 @@ public import NLAlib.Matrix.Perturbation.Continuity
 Fixed-batch nuclear-norm lower bounds on level spectra, with explicit forms for the equispaced
 and the Chebyshev hard spectra. The Gaussian overlap and hidden-rotation coupling of
 `NLAlib.LowerBounds.LowRank.Minimax` control missed nuclear mass.
-Designs: `docs/design/LowerBounds-Nuclear.md`, `docs/design/LowerBounds-ChebyshevBatches.md`.
 
 ## Main results
 

@@ -31,8 +31,7 @@ $\mathbf{E} = \mathbf{S}^{\mathsf{H}}\mathbf{S} - \mathbf{I}
 Pauli matrices $\boldsymbol{\sigma}_x$, $\boldsymbol{\sigma}_y$ and $c \le 1/\sqrt{2}$, one has
 $\mathbb{E}(\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x})^2 \le c^2 \|\mathbf{x}\|^4$ for every
 $\mathbf{x}$ but $\mathbb{E}\lvert\mathbf{e}_1^{\mathsf{H}}\mathbf{E}\mathbf{e}_2\rvert^2 = 2 c^2$.
-A form over $\Bbbk$ with $\sqrt{2}\,\varepsilon$ is added when a complex consumer appears. Design:
-`docs/design/Sketching-S1.md` §3.6, §7 Q2.
+A form over $\Bbbk$ with $\sqrt{2}\,\varepsilon$ is added when a complex consumer appears.
 
 ## Main results
 
