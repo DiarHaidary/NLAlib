@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache; warnings are fatal
+      # NLAlibScaffold is retired and empty; it is built only while lakefile.toml still lists it
+      # (the kernel replay reads every lean_lib of lakefile.toml)
+      - name: Build NLAlib (and the empty NLAlibScaffold root) with the Mathlib cache; warnings are fatal
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
@@ -23,10 +25,8 @@ jobs:
           # run, so the kernel replay checks the current sources' .olean files (final audits,
           # 2026-10-24); Mathlib's .olean files still come from `lake exe cache get`
           use-github-cache: false
-      - name: Root modules are current
-        run: |
-          lake exe mk_all --lib NLAlib --check
-          lake exe mk_all --lib NLAlibScaffold --check
+      - name: Root module is current
+        run: lake exe mk_all --lib NLAlib --check
       - name: Axiom audit (import NLAlib is sorry-free, no unsafe or partial constant)
         run: lake env lean scripts/Audit.lean
       - name: Environment linters

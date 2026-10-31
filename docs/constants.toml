@@ -497,3 +497,12 @@ args = ["k"]
 latex = '2000#1^4'
 lean_body = 'lanczosBackwardFactor (k : ℕ) : ℝ := 2000 * (k : ℝ) ^ 4'
 body_hash = "45d2700766dbe3df"
+
+[[constant]]
+name = "NLAlib.normalizedBackwardBound"
+kind = "bound"
+file = "NLAlib/Krylov/FinitePrecision/NormalizedBackward.lean"
+args = ["k", "f", "p"]
+latex = '102#1^3#2 + 96#1^2#3'
+lean_body = 'normalizedBackwardBound (k : ℕ) (f p : ℝ) : ℝ := 102 * (k : ℝ) ^ 3 * f + 96 * (k : ℝ) ^ 2 * p'
+body_hash = "70048d349016d18a"

@@ -5,14 +5,14 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
+public import NLAlib.Krylov.FinitePrecision.CGRun
 
 /-!
 # Local orthogonality and the a posteriori backward model of a conjugate gradient run
 
-Continues `NLAlibScaffold/Krylov/FinitePrecision/CGRun.lean` (the run, its Lanczos data and
+Continues `NLAlib/Krylov/FinitePrecision/CGRun.lean` (the run, its Lanczos data and
 Lemma A) with Lemma B of the design note, the a posteriori backward model, the next division and
-the residual gap. Research branch `research/hscg-fp`. Design:
+the residual gap. Design:
 `docs/design/research/Krylov-CGRounding.md` (§3, §6).
 
 ## Main results
@@ -166,12 +166,7 @@ $\|\mathbf{p}_i\| \le \Pi\rho_i$ and $\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2
 $$\lvert\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1}\rvert \le
 5(j+1)\varepsilon(1 + \Pi + K)\rho_j^2 .$$
 Strakoš and Tichý state it with $\kappa(\mathbf{A})$ and $+O(\varepsilon^2)$, using an imported
-bound on residual ratios; in normalised form the multipliers telescope and no ratio enters.
-Proof: $\tau_j = \delta_{j-1}\tau_{j-1} + M_j$ with
-$\lvert M_j\rvert \le \varepsilon(4.1 + 2.1\pi_j + 2.1\kappa_j)\rho_j^2$ (the updates and
-$\gamma_j\mu_j = \nu_j(1+\eta^\gamma_j)$), and
-$\delta_{j-1}\rho_{j-1}^2 = \rho_j^2(1 + O(\varepsilon))$;
-unroll. Difficulty: moderate. -/
+bound on residual ratios; in normalised form the multipliers telescope and no ratio enters. -/
 theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
@@ -836,11 +831,6 @@ B(1 + \Pi + K)\bigr),\qquad j < k .$$
 No printed source; the research note `HSCG-FiniteP.md` §2.5. The orthogonality
 $\mathbf{r}_j \perp \mathbf{r}_{j+1}$ is not produced at step $j$: it is the previous one
 transported by the conjugacy $\mathbf{p}_{j-1}^{\mathsf{T}}\mathbf{A}\mathbf{p}_j \approx 0$.
-Proof: the recursion $\bar p_j = (1 + \eta_{j-1})\bar p_{j-1} + L_j$ (three identities in the
-computed data, one use of $\mathbf{A}^{\mathsf{T}} = \mathbf{A}$), the bound on $L_j$ in which
-only $\delta_{j-1}/\gamma_{j-1}$, $\gamma_j^{-1}$, $\beta_j$ occur (not $\alpha_{j+1}$,
-$\beta_{j+1}$: this is what keeps the a priori hypothesis at $\kappa^2$), and
-`NLAlib.CGRun.abs_p_dotProduct_r_succ_le`. Difficulty: hard (the risky step of the design).
 The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
 for $k = 1$, where `hB` is vacuous. -/
 theorem abs_adjacentInner_le {P K B : ℝ}
@@ -912,11 +902,9 @@ $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le 
 \quad f = 8\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B),\
 p = 16k\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B(1+\Pi+K)) .$$
 The certificates are computable from the run; in practice $\Pi \ll \sqrt{\kappa}$. It is the
-engine of the a priori induction (`NLAlibScaffold/Krylov/FinitePrecision/CGBackward.lean`): the
+engine of the a priori induction (`NLAlib/Krylov/FinitePrecision/CGBackward.lean`): the
 model of the prefix `C.take j` needs $B$ for the steps $i + 1 < j$ only, which the models of the
 shorter prefixes provide.
-Proof: `NLAlib.NormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le` with Lemmas A and B.
-Difficulty: easy.
 The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
 for $k = 1$, where `hB` is vacuous. -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
@@ -946,15 +934,7 @@ theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
 $20k\varepsilon(1 + \Pi + K) \le 1$, the direction after the last step satisfies
 $\rho_k \le 2\|\mathbf{p}_k\|$. So $\mathbf{p}_k \ne \mathbf{0}$ when $\mathbf{r}_k \ne \mathbf{0}$,
 and the next curvature is positive (`NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc`): the
-program's next division succeeds.
-Proof: $\|\mathbf{r}_k + \delta_{k-1}\mathbf{p}_{k-1}\|^2 = \rho_k^2 + \delta_{k-1}^2
-\|\mathbf{p}_{k-1}\|^2 + 2\delta_{k-1}\tau_{k-1}$ with `NLAlib.CGRun.abs_p_dotProduct_r_succ_le`
-and $\delta_{k-1}\rho_{k-1}^2 \le 1.04\rho_k^2$; then `C.norm_ep_le`, bounded through the
-quadratic mean, $\|\mathbf{e}^p_{k-1}\| \le \sqrt{2}\,\varepsilon\,(\rho_k^2 +
-\delta_{k-1}^2\|\mathbf{p}_{k-1}\|^2)^{1/2}$, and $\rho_k^2 + \delta_{k-1}^2\|\mathbf{p}_{k-1}\|^2
-\le \|\mathbf{r}_k + \delta_{k-1}\mathbf{p}_{k-1}\|^2 + 2\delta_{k-1}\lvert\tau_{k-1}\rvert$
-(bounding $\delta_{k-1}\|\mathbf{p}_{k-1}\|$ directly reintroduces $\rho_k/\rho_{k-1}$); the
-result is $\|\mathbf{p}_k\| \ge 0.67\rho_k$. Difficulty: moderate. -/
+program's next division succeeds. -/
 theorem norm_r_le_two_mul_norm_p {P K : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
@@ -1072,10 +1052,7 @@ $\mathbf{r}_0 = \mathbf{b}$,
 $$\|(\mathbf{b} - \mathbf{A}\mathbf{x}_k) - \mathbf{r}_k\| \le \varepsilon\sum_{j<k}
 \bigl(\|\mathbf{A}\|_2(\|\mathbf{x}_j\| + 4\gamma_j\|\mathbf{p}_j\|) + \|\mathbf{r}_j\|\bigr) .$$
 [Greenbaum1997SIMAX]; [StrakosTichy2002, (7.16)], there with $\|\mathbf{x}\| +
-\max_j\|\mathbf{x}_j\|$ and $+O(\varepsilon^2)$. Local: no Lanczos reduction, no $\kappa$.
-Proof: the gap satisfies $\mathbf{g}_{j+1} = \mathbf{g}_j + \gamma_j\mathbf{e}^s_j -
-\mathbf{A}\mathbf{e}^x_j - \mathbf{e}^r_j$, $\mathbf{g}_0 = \mathbf{0}$; sum the norms.
-Difficulty: easy. -/
+\max_j\|\mathbf{x}_j\|$ and $+O(\varepsilon^2)$. Local: no Lanczos reduction, no $\kappa$. -/
 theorem norm_sub_mulVec_x_sub_r_le :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       C.ε * ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +

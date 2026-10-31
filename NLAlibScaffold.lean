@@ -1,17 +1,14 @@
-module  -- shake: keep-all --deprecated_module: ignore
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.CGAccuracy
-public import NLAlibScaffold.Krylov.FinitePrecision.CGBackward
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRunModel
-public import NLAlibScaffold.Krylov.FinitePrecision.NormalizedBackward
-public import NLAlibScaffold.Krylov.FinitePrecision.OverRelaxedCG
-public import NLAlibScaffold.Krylov.LinearSystems.CGProgramRun
-public import NLAlibScaffold.Krylov.LinearSystems.CGProgramTree
-public import NLAlibScaffold.Krylov.LinearSystems.CGRounding
-public import NLAlibScaffold.Krylov.LinearSystems.CGStep
-public import NLAlibScaffold.Krylov.LinearSystems.CGTridiagonal
-public import NLAlibScaffold.Krylov.Processes.LanczosProgramRun
-public import NLAlibScaffold.Krylov.Processes.LanczosProgramTree
-public import NLAlibScaffold.Krylov.Processes.LanczosRounding
-public import NLAlibScaffold.Krylov.Processes.LanczosStep
+/-!
+# Retired library
+
+`NLAlibScaffold` is retired and holds nothing. Its `lean_lib` entry stays in `lakefile.toml` only
+until the maintainer re-approves the target registry, which records the SHA-256 of
+`lakefile.toml` (`docs/targets.toml`); then the entry and this file are removed.
+-/

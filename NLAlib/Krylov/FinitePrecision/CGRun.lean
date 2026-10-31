@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.NormalizedBackward
-public import NLAlibScaffold.Krylov.LinearSystems.CGTridiagonal
+public import NLAlib.Krylov.FinitePrecision.NormalizedBackward
+public import NLAlib.Krylov.LinearSystems.CGTridiagonal
 
 /-!
 # A conjugate gradient run with bounded local errors
@@ -24,7 +24,7 @@ $$\mathbf{x}_{j+1} = \mathbf{x}_j + \gamma_j\mathbf{p}_j + \mathbf{e}^x_j,\quad
 \delta_j = \frac{\nu_{j+1}}{\nu_j}(1 + \eta^\delta_j),\quad
 \mathbf{p}_{j+1} = \mathbf{r}_{j+1} + \delta_j\mathbf{p}_j + \mathbf{e}^p_j .$$
 It is the interface between the rounding-error analysis of the conjugate gradient program
-(`NLAlibScaffold/Krylov/LinearSystems/CGRounding.lean`) and the stability analysis.
+(`NLAlib/Krylov/LinearSystems/CGRounding.lean`) and the stability analysis.
 
 The **Lanczos data of the run** (`NLAlib.CGRun.toNormalizedLanczosData`) are the normalised
 residuals $\bar{\mathbf{v}}_{j+1} = (-1)^j\mathbf{r}_j/\|\mathbf{r}_j\|$ with the tridiagonal
@@ -36,9 +36,9 @@ design note) are bounded a posteriori in terms of three run certificates: $\Pi \
 \rho_{j+1}/(\gamma_j\rho_j)$ and $\delta_j/\gamma_j$ for $j + 1 < k$ (the last pair,
 $\beta_k$ and $\delta_{k-1}/\gamma_{k-1}$, does not enter the local errors of $k$ steps). The
 a priori bounds on the certificates are in
-`NLAlibScaffold/Krylov/FinitePrecision/CGBackward.lean`.
+`NLAlib/Krylov/FinitePrecision/CGBackward.lean`.
 
-Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRounding.md` (§3, §6).
+Design: `docs/design/research/Krylov-CGRounding.md` (§3, §6).
 Constants are unoptimised and carry a margin over the hand derivation of the research note
 `docs/design/research/HSCG-FiniteP.md` §§2.4–2.5; they are to be re-derived in the proofs.
 
@@ -55,7 +55,7 @@ Constants are unoptimised and carry a margin over the hand derivation of the res
 * `NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc`: the next curvature is positive.
 
 Lemma B, the a posteriori backward model, the next division and the residual gap are in
-`NLAlibScaffold/Krylov/FinitePrecision/CGRunModel.lean`.
+`NLAlib/Krylov/FinitePrecision/CGRunModel.lean`.
 -/
 
 @[expose] public section
@@ -228,11 +228,7 @@ symmetric $\mathbf{A}$ lies in $[a, a']$, $a > 0$, $\mathbf{s} = \mathbf{A}\math
 \mathbf{e}$ with $\|\mathbf{e}\| \le \varepsilon\|\mathbf{A}\|_2\|\mathbf{p}\|$ and
 $\lvert e'\rvert \le \varepsilon\|\mathbf{p}\|\|\mathbf{s}\|$, and $3\varepsilon a' \le a$, then
 $\mathbf{p}^{\mathsf{T}}\mathbf{s} + e' > 0$. So the division by the computed
-$\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$ succeeds. [StrakosTichy2002, (7.14)].
-Proof: $\mathbf{p}^{\mathsf{T}}\mathbf{s} + e' \ge (a - \varepsilon a' -
-\varepsilon(1+\varepsilon)a')\|\mathbf{p}\|^2$, with $\|\mathbf{A}\|_2 \le a'$ and
-$\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p} \ge a\|\mathbf{p}\|^2$ from the spectrum.
-Difficulty: easy. -/
+$\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$ succeeds. [StrakosTichy2002, (7.14)]. -/
 theorem dotProduct_add_pos_of_spectrum_subset_Icc {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : Aᵀ = A) {a a' ε : ℝ} (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hε : 0 ≤ ε)
     (hsmall : 3 * ε * a' ≤ a) {p e : Fin n → ℝ} {e' : ℝ} (hp : p ≠ 0)
@@ -371,23 +367,19 @@ noncomputable def toLanczosData : LanczosData n k where
 /-- **The computed squared residual norm vanishes exactly with the residual**:
 $\nu_j = 0 \iff \mathbf{r}_j = \mathbf{0}$, $j \le k$. This is a statement about the model
 of computation without underflow (`NLAlib.CGRun.ν_eq`); in IEEE arithmetic
-$\mathrm{fl}(\|\mathbf{r}\|^2)$ can underflow to $0$ with $\mathbf{r} \ne \mathbf{0}$.
-Proof: `C.ν_eq` and $1 + \theta_j \ge 1 - \varepsilon > 0$. Difficulty: easy. -/
+$\mathrm{fl}(\|\mathbf{r}\|^2)$ can underflow to $0$ with $\mathbf{r} \ne \mathbf{0}$. -/
 theorem ν_eq_zero_iff {j : ℕ} (hj : j ≤ k) : C.ν j = 0 ↔ C.r j = 0 := by
   rw [C.ν_eq' hj, mul_eq_zero, or_iff_left (C.one_add_θ_pos hj).ne', ρ, sq_eq_zero_iff,
     norm_eq_zero, toLp_eq_zero_iff]
 
-/-- The step lengths are positive. Proof: `C.γ_eq`, `C.ν_pos`, `C.μ_pos`, $\varepsilon < 1$.
-Difficulty: easy. -/
+/-- The step lengths are positive. -/
 theorem γ_pos {j : ℕ} (hj : j < k) : 0 < C.γ j := by
   rw [C.γ_eq j hj]
   have := (abs_le.mp (C.abs_eγ_le j hj)).1
   have := C.ε_le
   exact mul_pos (div_pos (C.ν_pos j hj) (C.μ_pos j hj)) (by linarith)
 
-/-- The Lanczos vectors of the run are unit vectors. Proof: `C.ν_eq_zero_iff` and `C.ν_pos` give
-$\mathbf{r}_0 = \mathbf{b} \ne \mathbf{0}$; each branch of `NLAlib.CGRun.lanczosV` is normalised.
-Difficulty: easy. -/
+/-- The Lanczos vectors of the run are unit vectors. -/
 theorem norm_lanczosV {j : ℕ} (h1 : 1 ≤ j) (h2 : j ≤ k + 1) :
     ‖WithLp.toLp 2 (C.lanczosV j)‖ = 1 := by
   have _ : j ≤ k + 1 := h2
@@ -407,7 +399,7 @@ theorem norm_lanczosV {j : ℕ} (h1 : 1 ≤ j) (h2 : j ≤ k + 1) :
     rw [norm_toLp_smul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul, abs_inv,
       abs_of_nonneg (C.ρ_nonneg _), ← ρ, inv_mul_cancel₀ hρ]
 
-/-- The coefficients $\beta_j$ of the run are nonnegative. Proof: `C.γ_pos`. Difficulty: easy. -/
+/-- The coefficients $\beta_j$ of the run are nonnegative. -/
 theorem lanczosβ_nonneg {j : ℕ} (hj : j ≤ k) : 0 ≤ C.lanczosβ j := by
   unfold lanczosβ
   split_ifs with h
@@ -415,8 +407,7 @@ theorem lanczosβ_nonneg {j : ℕ} (hj : j ≤ k) : 0 ≤ C.lanczosβ j := by
   · have := C.γ_pos (j := j - 1) (by omega)
     exact div_nonneg (C.ρ_nonneg j) (mul_nonneg this.le (C.ρ_nonneg _))
 
-/-- The coefficients $\beta_j$, $1 \le j < k$, are positive. Proof: `C.γ_pos` and
-$\mathbf{r}_j \ne \mathbf{0}$ (`C.ν_pos`, `C.ν_eq_zero_iff`). Difficulty: easy. -/
+/-- The coefficients $\beta_j$, $1 \le j < k$, are positive. -/
 theorem lanczosβ_pos {j : ℕ} (h1 : 1 ≤ j) (h2 : j < k) : 0 < C.lanczosβ j := by
   unfold lanczosβ
   rw [if_neg (by omega)]
@@ -444,8 +435,7 @@ def dilatedRhs : Fin n × Fin (k + 1) → ℝ :=
   fun x => if (x.2 : ℕ) = 0 then C.b x.1 else 0
 
 /-- **The tridiagonal matrix of the run is the CG tridiagonal matrix** of the computed step
-lengths and residual norms. Proof: unfold; the cases of `NLAlib.cgTridiagonal` and
-`NLAlib.LanczosData.tridiagonal` match entry by entry. Difficulty: easy. -/
+lengths and residual norms. -/
 theorem tridiagonal_toLanczosData : C.toLanczosData.tridiagonal = cgTridiagonal C.γ C.ρ k := by
   ext i j
   simp only [LanczosData.tridiagonal, cgTridiagonal, toLanczosData, Matrix.of_apply, lanczosα,
@@ -457,8 +447,7 @@ theorem tridiagonal_toLanczosData : C.toLanczosData.tridiagonal = cgTridiagonal 
     | (rw [show (j : ℕ) - 1 = i by omega])
 
 /-- The direction coefficient against the exact residual ratio:
-$\lvert\delta_j - \rho_{j+1}^2/\rho_j^2\rvert \le 4\varepsilon\rho_{j+1}^2/\rho_j^2$, $j < k$.
-Proof: `C.δ_eq`, `C.ν_eq` at $j$ and $j + 1$, $\varepsilon \le 1/100$. Difficulty: easy. -/
+$\lvert\delta_j - \rho_{j+1}^2/\rho_j^2\rvert \le 4\varepsilon\rho_{j+1}^2/\rho_j^2$, $j < k$. -/
 theorem abs_δ_sub_le {j : ℕ} (hj : j < k) :
     |C.δ j - C.ρ (j + 1) ^ 2 / C.ρ j ^ 2| ≤ 4 * C.ε * (C.ρ (j + 1) ^ 2 / C.ρ j ^ 2) := by
   have hρ := C.ρ_pos hj
@@ -481,9 +470,7 @@ theorem abs_δ_sub_le {j : ℕ} (hj : j < k) :
 
 /-- **The step length against the direction** (the computed Rayleigh quotient):
 $\rho_j^2 \le \tfrac{21}{20}\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2$, $j < k$, i.e.
-$\gamma_j^{-1} \le 1.05\|\mathbf{A}\|_2\pi_j^2$.
-Proof: $\mu_j \le (1+\varepsilon)^2\|\mathbf{A}\|_2\|\mathbf{p}_j\|^2$ and
-$\nu_j \ge (1-\varepsilon)\rho_j^2$. Difficulty: easy. -/
+$\gamma_j^{-1} \le 1.05\|\mathbf{A}\|_2\pi_j^2$. -/
 theorem ρ_sq_le {j : ℕ} (hj : j < k) :
     C.ρ j ^ 2 ≤ 21 / 20 * specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
   have hθ := abs_le.mp (C.abs_θ_le j hj.le)
@@ -972,16 +959,6 @@ $$\|\bar{\mathbf{f}}_j\| \le 8\varepsilon\bigl(\|\mathbf{A}\|_2(1 + \Pi)^2 + B\b
 \qquad j < k .$$
 No residual ratio enters. No printed source; the research note `HSCG-FiniteP.md` §2.4, after
 [GreenbaumLiuChen2021, (2.2)–(2.4)], who derive the perturbation term but do not bound it.
-Proof: the exact identity $\mathbf{A}\mathbf{r}_j = (\gamma_j^{-1} + \delta_{j-1}/\gamma_{j-1})
-\mathbf{r}_j - \gamma_j^{-1}\mathbf{r}_{j+1} - (\delta_{j-1}/\gamma_{j-1})\mathbf{r}_{j-1} +
-\mathbf{g}_j$ in the computed data (eliminate $\mathbf{A}\mathbf{p}_j$ between the residual and
-direction updates), normalise by $(-1)^j/\rho_j$, then the term table of the note; the
-diagonal convention of `NLAlib.cgTridiagonal` adds $\le 3.2\varepsilon\,\delta_{j-1}/
-\gamma_{j-1}$, and $\gamma_j^{-1} \le 1.05\|\mathbf{A}\|_2\pi_j^2$ (`C.ρ_sq_le`). Step $j$
-uses $B$ only for $\beta_j$ and $\delta_{j-1}/\gamma_{j-1}$ (index $j - 1$, so $j - 1 + 1 < k$);
-$\beta_{j+1}$ enters $\bar{\mathbf{f}}_j$ only through the exact cancellation
-$\beta_{j+1}\bar{\mathbf{v}}_{j+2} = (-1)^{j+1}\mathbf{r}_{j+1}/(\gamma_j\rho_j)$.
-Difficulty: hard (one identity, then about ten norm estimates).
 The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
 for $k = 1$, where `hB` is vacuous. -/
 theorem norm_recurrenceError_le {P B : ℝ}

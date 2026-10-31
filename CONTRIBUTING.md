@@ -84,7 +84,7 @@ NLAlib/
   LowerBounds/     lower bounds for randomized algorithms and named estimators,
                    one subfolder per topic (LowRank/, ...); may import every
                    other folder, and only LowerBounds imports it                  (layer 5)
-NLAlibScaffold/    same tree; statements with deferred proofs (§7)
+NLAlibTools/       tools, not library: the Float interpreter, the NumPy emitter, examples
 docs/              references.bib, design notes (docs/design/), port ledger (docs/port/)
 scripts/           Audit.lean, Replay.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
 ```

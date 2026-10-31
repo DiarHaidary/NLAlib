@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Krylov.FinitePrecision.CGRun
+public import NLAlib.Krylov.FinitePrecision.CGRun
 
 /-!
 # Over-relaxed conjugate gradients: an admissible run that does not converge
@@ -24,7 +24,7 @@ increases at every step. So the updated residual is bounded away from zero
 (`NLAlib.overRelaxedCG_exists_pos_le_norm_r`), independently of $\kappa$ and $n$: every
 convergence theorem for HSCG in the standard model needs a hypothesis $k\varepsilon \le c_0$
 with $c_0 < 1/4$, and a $k$-uniform backward model is impossible in the worst case. The research
-note `~/nlalib-harness/reports/HSCG-FP-Research.md`, §4.6, with a numerical check.
+note `docs/design/research/HSCG-FiniteP.md`, §4.6, with a numerical check.
 
 **Realization.** `NLAlib.overRelaxedCGRun` realizes the first $k$ steps as an
 `NLAlib.CGRun` (the analysis interface) whenever $k\varepsilon \le 1/100$; the interface carries
@@ -41,7 +41,7 @@ $\eta^\gamma_j = 0$, i.e. $c = 1 + \varepsilon$; (2) the execution of `NLAlib.cg
 semantics for $q$ steps, a re-run of the proof of `NLAlib.exec_cgProg_exactInterp` with the
 perturbed dot product.
 
-Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRounding.md`.
+Design: `docs/design/research/Krylov-CGRounding.md`.
 
 ## Main definitions
 
@@ -121,7 +121,7 @@ private theorem orcg_r_succ_eq_zero {j : ℕ} (h : (overRelaxedCG A b c j).r = 0
   simp
 
 /-- The updated residual of over-relaxed CG is the true one:
-$\mathbf{r}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j$. Proof: induction. Difficulty: easy. -/
+$\mathbf{r}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j$. -/
 theorem overRelaxedCG_r_eq (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (c : ℝ) (j : ℕ) :
     (overRelaxedCG A b c j).r = b - A *ᵥ (overRelaxedCG A b c j).x := by
   induction j with
@@ -136,10 +136,7 @@ theorem overRelaxedCG_r_eq (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) 
 $\mathbf{p}_i^{\mathsf{T}}\mathbf{A}\mathbf{p}_i \ne 0$ for $i < j$, then
 $\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j = (1 - j(c - 1))\,\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_j$
 exactly. The multiplier $\delta_{j-1}\rho_{j-1}^2/\rho_j^2$ of the defect is $1$, so it is
-never damped (the mechanism behind [StrakosTichy2002, (9.6)]).
-Proof: $\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1} = \mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j -
-c\rho_j^2$ and $\mathbf{p}_{j+1}^{\mathsf{T}}\mathbf{r}_{j+1} = \rho_{j+1}^2 +
-(\rho_{j+1}^2/\rho_j^2)\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1}$; induction. Difficulty: easy. -/
+never damped (the mechanism behind [StrakosTichy2002, (9.6)]). -/
 theorem overRelaxedCG_p_dotProduct_r (b : Fin n → ℝ) (c : ℝ) {j : ℕ}
     (hμ : ∀ i < j, (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0) :
     (overRelaxedCG A b c j).p ⬝ᵥ (overRelaxedCG A b c j).r =
@@ -170,11 +167,7 @@ $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $\mathbf{p}_i^{\mathsf{T}}\mathbf{
 $$\|\mathbf{x}_\star - \mathbf{x}_j\|_{\mathbf{A}}^2 - \|\mathbf{x}_\star -
 \mathbf{x}_{j+1}\|_{\mathbf{A}}^2 = \gamma_j\,\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_j\,
 \bigl(1 - (2j + 1)(c - 1)\bigr) .$$
-Exact CG ($c = 1$) has $\gamma_j\rho_j^2$, the estimator of [StrakosTichy2002, (4.9)].
-Proof: $\|\mathbf{e} - \gamma\mathbf{p}\|_{\mathbf{A}}^2 = \|\mathbf{e}\|_{\mathbf{A}}^2 -
-2\gamma\mathbf{p}^{\mathsf{T}}\mathbf{r} + \gamma^2\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$
-with $\mathbf{A}\mathbf{e}_j = \mathbf{r}_j$, `NLAlib.overRelaxedCG_p_dotProduct_r` and
-$\gamma_j\mathbf{p}_j^{\mathsf{T}}\mathbf{A}\mathbf{p}_j = c\rho_j^2$. Difficulty: easy. -/
+Exact CG ($c = 1$) has $\gamma_j\rho_j^2$, the estimator of [StrakosTichy2002, (4.9)]. -/
 theorem quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ (b : Fin n → ℝ) (c : ℝ)
     (hA : Aᵀ = A) {xs : Fin n → ℝ} (hx : A *ᵥ xs = b) {j : ℕ}
     (hμ : ∀ i ≤ j, (overRelaxedCG A b c i).p ⬝ᵥ (A *ᵥ (overRelaxedCG A b c i).p) ≠ 0) :
@@ -211,10 +204,7 @@ theorem quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ (b : Fin 
 \mathbf{b}$, $c \ge 0$, directions $\mathbf{p}_i \ne \mathbf{0}$ for $i < j$ and
 $j_1 \le j$ with $(2j_1 + 1)(c - 1) \ge 1$,
 $\|\mathbf{x}_\star - \mathbf{x}_{j_1}\|_{\mathbf{A}}^2 \le \|\mathbf{x}_\star -
-\mathbf{x}_j\|_{\mathbf{A}}^2$. For $c = (1 + \varepsilon)^2$, $j_1 \approx 1/(4\varepsilon)$.
-Proof: every decrement of
-`NLAlib.quadForm_sub_overRelaxedCG_sub_quadForm_sub_overRelaxedCG_succ` from $j_1$ on is
-$\le 0$ ($\gamma_i \ge 0$). Difficulty: easy. -/
+\mathbf{x}_j\|_{\mathbf{A}}^2$. For $c = (1 + \varepsilon)^2$, $j_1 \approx 1/(4\varepsilon)$. -/
 theorem quadForm_sub_overRelaxedCG_le_of_le (b : Fin n → ℝ) (hA : A.PosDef) (hc : 0 ≤ c)
     {xs : Fin n → ℝ} (hx : A *ᵥ xs = b) {j₁ j : ℕ} (hj₁ : 1 ≤ (2 * j₁ + 1) * (c - 1))
     (hj : j₁ ≤ j) (hp : ∀ i < j, (overRelaxedCG A b c i).p ≠ 0) :
@@ -282,11 +272,7 @@ $[a, a']$, $a > 0$, $c > 1$ and directions $\mathbf{p}_j \ne \mathbf{0}$ for all
 residual norms are bounded away from $0$: there is $\eta > 0$ with $\eta \le \|\mathbf{r}_j\|$
 for every $j$. In particular the HSCG run with the admissible pattern
 $\theta_j = \eta^\gamma_j = \varepsilon > 0$ has $\|\mathbf{r}_j\| \not\to 0$.
-No printed source; the research note, §4.6.
-Proof: for $j \ge j_1 = \lceil 1/(c - 1)\rceil$, $\|\mathbf{r}_j\|^2 = \|\mathbf{A}\mathbf{e}_j\|^2
-\ge a\|\mathbf{e}_j\|_{\mathbf{A}}^2 \ge a\|\mathbf{e}_{j_1}\|_{\mathbf{A}}^2 > 0$
-(`NLAlib.quadForm_sub_overRelaxedCG_le_of_le`); below $j_1$ finitely many $\mathbf{r}_j \ne
-\mathbf{0}$ (a zero residual makes the next direction zero). Difficulty: easy. -/
+No printed source; the research note, §4.6. -/
 theorem overRelaxedCG_exists_pos_le_norm_r (b : Fin n → ℝ) (hA : Aᵀ = A) {a a' : ℝ}
     (ha : 0 < a) (hs : spectrum ℝ A ⊆ Set.Icc a a') (hc : 1 < c)
     (hp : ∀ j, (overRelaxedCG A b c j).p ≠ 0) :
@@ -355,8 +341,7 @@ theorem overRelaxedCG_exists_pos_le_norm_r (b : Fin n → ℝ) (hA : Aᵀ = A) {
 
 /-- The directions of over-relaxed CG are nonzero while the residuals are and
 $j(c - 1) < 1$: for positive definite $\mathbf{A}$, $c \ge 1$, $\mathbf{r}_i \ne \mathbf{0}$ for
-$i \le j$ and $j(c - 1) < 1$, $\mathbf{p}_j \ne \mathbf{0}$.
-Proof: `NLAlib.overRelaxedCG_p_dotProduct_r`, induction. Difficulty: easy. -/
+$i \le j$ and $j(c - 1) < 1$, $\mathbf{p}_j \ne \mathbf{0}$. -/
 theorem overRelaxedCG_p_ne_zero (b : Fin n → ℝ) (hA : A.PosDef) (hc : 1 ≤ c) {j : ℕ}
     (hr : ∀ i ≤ j, (overRelaxedCG A b c i).r ≠ 0) (hj : j * (c - 1) < 1) :
     (overRelaxedCG A b c j).p ≠ 0 := by
@@ -472,7 +457,7 @@ noncomputable def overRelaxedCGRun (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n �
 
 /-- The realized run is over-relaxed CG: its residuals are those of `NLAlib.overRelaxedCG` with
 $c = (1 + \varepsilon)^2$, so `NLAlib.overRelaxedCG_exists_pos_le_norm_r` applies to the data of
-every `NLAlib.overRelaxedCGRun`. Proof: `rfl`. Difficulty: easy. -/
+every `NLAlib.overRelaxedCGRun`. -/
 theorem overRelaxedCGRun_r (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (ε : ℝ) (k : ℕ)
     (hA : A.PosDef) (hAT : Aᵀ = A) (hε : 0 ≤ ε) (hk : 0 < k) (hkε : (k : ℝ) * ε ≤ 1 / 100)
     (hr : ∀ j < k, (overRelaxedCG A b ((1 + ε) ^ 2) j).r ≠ 0) (j : ℕ) :

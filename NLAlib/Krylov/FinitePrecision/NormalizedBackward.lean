@@ -27,7 +27,7 @@ exchange rule as in `NLAlib.LanczosRun.frobNorm_dilatedResidual_le`. For a Lancz
 ($f = 12k\varepsilon\|\mathbf{H}\|_2$, $p = 8k\varepsilon\|\mathbf{H}\|_2$) it is at most
 $1992k^4\varepsilon\|\mathbf{H}\|_2$, so the Lanczos statements keep their factor $2000k^4$.
 
-Research branch `research/hscg-fp`. Design: `docs/design/research/Krylov-CGRounding.md` (§4).
+Design: `docs/design/research/Krylov-CGRounding.md` (§4).
 On integration the structure goes to `LanczosData.lean` and the theorems replace the
 `NLAlib.LanczosRun` versions in `Backward.lean` and `BackwardSpectral.lean`, which become
 one-line corollaries with unchanged statements.
@@ -35,7 +35,8 @@ one-line corollaries with unchanged statements.
 ## Main definitions
 
 * `NLAlib.NormalizedLanczosData`: the interface.
-* `NLAlib.normalizedBackwardBound`: the bound $102k^3 f + 96k^2 p$.
+* `NLAlib.normalizedBackwardBound`: the bound <!-- value normalizedBackwardBound k f p -->
+  $102k^3 f + 96k^2 p$.
 * `NLAlib.NormalizedLanczosData.backwardH`: the backward model.
 * `NLAlib.LanczosRun.toNormalizedLanczosData`: a Lanczos run is an instance.
 
@@ -66,8 +67,9 @@ structure NormalizedLanczosData (n k : ℕ) extends LanczosData n k where
   /-- No breakdown before the last step. -/
   β_pos : ∀ j, 1 ≤ j → j < k → 0 < β j
 
-/-- **The bound of the normalised backward model**: $102k^3 f + 96k^2 p$, for recurrence
-residuals at most $f$ and adjacent inner products at most $p$ in absolute value. Unoptimised. -/
+/-- **The bound of the normalised backward model**: <!-- value normalizedBackwardBound k f p -->
+$102k^3 f + 96k^2 p$, for recurrence residuals at most $f$ and adjacent inner products at
+most $p$ in absolute value. Unoptimised. -/
 noncomputable def normalizedBackwardBound (k : ℕ) (f p : ℝ) : ℝ :=
   102 * (k : ℝ) ^ 3 * f + 96 * (k : ℝ) ^ 2 * p
 
@@ -112,16 +114,12 @@ theorem transpose_basisSucc_mul_self_apply (j : Fin (k + 1)) :
     (D.basisSuccᵀ * D.basisSucc) j j = 1 :=
   D.toLanczosData.transpose_basisSucc_mul_self_apply_of_norm D.norm_v j
 
-/-- The backward model is symmetric.
-Proof: as `NLAlib.LanczosRun.transpose_backwardH`, through the symmetry of
-$\hat{\mathbf{V}}_k^{\mathsf{T}}\hat{\mathbf{E}}$; the proof uses only `D.transpose_H` and the
-unit columns. Difficulty: mechanical (move). -/
+/-- The backward model is symmetric. -/
 theorem transpose_backwardH : D.backwardHᵀ = D.backwardH := by
   exact D.toLanczosData.transpose_backwardH D.transpose_basisSucc_mul_self_apply
 
 /-- The model recurrence: $\tilde{\mathbf{H}}\hat{\mathbf{V}}_k = \hat{\mathbf{V}}_{k+1}
-\underline{\mathbf{T}}_k$. Proof: as `NLAlib.LanczosRun.backwardH_mul_dilatedBasis`.
-Difficulty: mechanical (move). -/
+\underline{\mathbf{T}}_k$. -/
 theorem backwardH_mul_dilatedBasis :
     D.backwardH * D.dilatedBasis = D.dilatedBasisSucc * D.tridiagonalSucc := by
   exact D.toLanczosData.backwardH_mul_dilatedBasis D.transpose_basisSucc_mul_self_apply
@@ -131,14 +129,7 @@ $\|\bar{\mathbf{f}}_j\| \le f$ and $\lvert\bar p_j\rvert \le p$ for $j < k$, the
 
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le 102k^3 f + 96k^2 p
 \,.$$
-No printed source; the maintainer's draft, `thm:greenbaum`, for Lanczos runs.
-Proof: `NLAlib.LanczosRun.frobNorm_dilatedResidual_le` and
-`NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le` with the two inputs replaced:
-$\|\bar{\mathbf{F}}_k\|_{\mathsf{F}} \le \sqrt{k}f$ (columns) and, from
-`NLAlib.LanczosData.specNorm_gramCommutator_le` with $g = 0$ (unit columns, so $b$ is not
-needed), $\|\bar{\mathbf{M}}_k\|_2 \le 2p + 2kf$; then
-$\|\mathbf{\Delta}\|_{\mathsf{F}} \le 4\sqrt{k(k+1)}f + 8(k+1)(2k+1)(2p + 2kf)$ and
-$(k+1)(2k+1) \le 6k^2$. Difficulty: mechanical generalisation of the existing proof. -/
+No printed source; the maintainer's draft, `thm:greenbaum`, for Lanczos runs. -/
 theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
     (hf : ∀ j < k, ‖WithLp.toLp 2 (D.recurrenceError j)‖ ≤ f)
     (hp : ∀ j < k, |D.adjacentInner j| ≤ p) :
@@ -190,26 +181,20 @@ theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
 
 /-- **Exact Lanczos on the backward model computes the tridiagonal matrix**: $k$ steps of
 `NLAlib.lanczosState` on $\tilde{\mathbf{H}}$ from $(\mathbf{v}_1, \mathbf{0}, \dots)$ give
-$\mathbf{T}_k$. No hypothesis on the residuals.
-Proof: as `NLAlib.LanczosRun.lanczosTridiagonal_backwardH_dilatedStart`, through
-`NLAlib.lanczosState_eq_of_orthonormal_recurrence`. Difficulty: mechanical (move). -/
+$\mathbf{T}_k$. No hypothesis on the residuals. -/
 theorem lanczosTridiagonal_backwardH_dilatedStart :
     lanczosTridiagonal D.backwardH D.dilatedStart k = D.tridiagonal := by
   exact LanczosData.lanczosTridiagonal_backwardH_dilatedStart
     D.transpose_basisSucc_mul_self_apply D.β_nonneg D.β_pos
 
-/-- Exact Lanczos on the backward model computes the last coefficient $\beta_k$.
-Proof: as `NLAlib.LanczosRun.lanczosState_backwardH_dilatedStart_beta`.
-Difficulty: mechanical (move). -/
+/-- Exact Lanczos on the backward model computes the last coefficient $\beta_k$. -/
 theorem lanczosState_backwardH_dilatedStart_beta :
     (lanczosState D.backwardH D.dilatedStart k).beta = D.β k := by
   exact LanczosData.lanczosState_backwardH_dilatedStart_beta
     D.transpose_basisSucc_mul_self_apply D.β_nonneg D.β_pos
 
 /-- Exact Lanczos on the backward model computes the dilated vectors: `lanczosMatrix` of
-$\tilde{\mathbf{H}}$ from the dilated start is $\hat{\mathbf{V}}_k$.
-Proof: as `NLAlib.LanczosRun.lanczosMatrix_backwardH_dilatedStart`.
-Difficulty: mechanical (move). -/
+$\tilde{\mathbf{H}}$ from the dilated start is $\hat{\mathbf{V}}_k$. -/
 theorem lanczosMatrix_backwardH_dilatedStart :
     lanczosMatrix D.backwardH D.dilatedStart k = D.dilatedBasis := by
   exact LanczosData.lanczosMatrix_backwardH_dilatedStart
@@ -218,12 +203,7 @@ theorem lanczosMatrix_backwardH_dilatedStart :
 /-- **Weyl localisation of the model**: if the spectrum of $\mathbf{H}$ lies in $[a, a']$ and
 $\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le c$, the spectrum of
 $\tilde{\mathbf{H}}$ lies in $[a - c, a' + c]$. The form the conjugate gradient analysis uses
-(positive definiteness and the condition number of the model).
-Proof: the quadratic form of $\tilde{\mathbf{H}}$ at a unit vector is within
-$\|\mathbf{\Delta}\|_2 \le \|\mathbf{\Delta}\|_{\mathsf{F}}$ of that of the block diagonal
-$\hat{\mathbf{H}}$ (`specNorm_le_frobNorm`), whose spectrum is that of $\mathbf{H}$
-(`NLAlib.LanczosRun.dotProduct_dilatedH_mulVec_le` and its lower twin, moved), then
-`spectrum_subset_Icc_of_le`. Difficulty: easy. -/
+(positive definiteness and the condition number of the model). -/
 theorem spectrum_backwardH_subset_Icc {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ Set.Icc a a')
     (hc : frobNorm (D.backwardH - D.dilatedH) ≤ c) :
     spectrum ℝ D.backwardH ⊆ Set.Icc (a - c) (a' + c) := by
@@ -232,9 +212,7 @@ theorem spectrum_backwardH_subset_Icc {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ 
 /-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz $f$,
 $\lvert\mathbf{v}_1^{\mathsf{T}}f(\mathbf{H})\mathbf{v}_1 -
 \tilde{\mathbf{v}}^{\mathsf{T}}f(\tilde{\mathbf{H}})\tilde{\mathbf{v}}\rvert \le
-\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}$.
-Proof: as `NLAlib.LanczosRun.abs_dotProduct_cfc_mulVec_sub_le`, stopping before the bound on
-$\|\mathbf{\Delta}\|_{\mathsf{F}}$. Difficulty: mechanical (move). -/
+\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}$. -/
 theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
     |D.v 1 ⬝ᵥ (cfc f D.H *ᵥ D.v 1) - D.dilatedStart ⬝ᵥ (cfc f D.backwardH *ᵥ D.dilatedStart)| ≤
       frobNorm (D.backwardH - D.dilatedH) := by
@@ -258,20 +236,14 @@ noncomputable def toNormalizedLanczosData : NormalizedLanczosData n k :=
 /-- **The Lanczos backward model as an instance**: the model of the normalised data is
 within <!-- value lanczosBackwardFactor k --> $2000k^4\varepsilon\|\mathbf{H}\|_2$ of
 $\mathbf{I}_{k+1} \otimes \mathbf{H}$, the statement of
-`NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le` recovered from the interface.
-Proof: `NLAlib.NormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le` with
-$f = 12k\varepsilon\|\mathbf{H}\|_2$ (`NLAlib.LanczosRun.norm_normalized_recurrenceError_le`),
-$p = 8k\varepsilon\|\mathbf{H}\|_2$ (`NLAlib.LanczosRun.abs_normalized_adjacentInner_le`),
-then $1224k^4 + 768k^3 \le 2000k^4$. Difficulty: easy. -/
+`NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le` recovered from the interface. -/
 theorem frobNorm_toNormalizedLanczosData_backwardH_sub_dilatedH_le :
     frobNorm (L.toNormalizedLanczosData.backwardH - L.toNormalizedLanczosData.dilatedH) ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
   exact L.frobNorm_backwardH_sub_dilatedH_le
 
 /-- The two constructions agree: the backward model of the run is that of its normalised
-data. After the refactor `NLAlib.LanczosRun.backwardH` is defined this way and this is `rfl`.
-Proof: unfold both; the dilated residual and the perturbation are the same expressions in
-`L.normalized`. Difficulty: mechanical. -/
+data. After the refactor `NLAlib.LanczosRun.backwardH` is defined this way and this is `rfl`. -/
 theorem backwardH_eq_toNormalizedLanczosData_backwardH :
     L.backwardH = L.toNormalizedLanczosData.backwardH := by
   rfl

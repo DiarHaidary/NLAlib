@@ -356,7 +356,7 @@ class RuleTests(unittest.TestCase):
         # CONTRIBUTING §2's layout block and check_rules.LAYER give each top-level folder one layer
         import re
         text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
-        block = text[text.index('## 2. Layout'):text.index('NLAlibScaffold/    same tree')]
+        block = text[text.index('## 2. Layout'):text.index('NLAlibTools/')]
         table, folder = {}, None
         for line in block.splitlines():
             m = re.match(r'  (\w+)/', line)

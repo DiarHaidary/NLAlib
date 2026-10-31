@@ -2,7 +2,7 @@
 
 # Rules for `NLAlib/Computation`
 
-The rules a file in `NLAlib/Computation` (and `NLAlibScaffold/Computation`) keeps, generated from
+The rules a file in `NLAlib/Computation` keeps, generated from
 `docs/rules/rules.toml`. Errors fail CI; a warning is a heuristic review list; a review
 rule has no check. The reasons are in CONTRIBUTING at the linked section. Check a file
 with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file
