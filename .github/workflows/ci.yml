@@ -12,21 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build NLAlib and NLAlibScaffold with the Mathlib cache; warnings are fatal
+      - name: Build NLAlib with the Mathlib cache; warnings are fatal
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "--wfail NLAlib NLAlibScaffold"
+          build-args: "--wfail NLAlib"
           lint: false
           test: false
           # no build outputs from the GitHub cache: the library is built from its sources at every
           # run, so the kernel replay checks the current sources' .olean files (final audits,
           # 2026-10-24); Mathlib's .olean files still come from `lake exe cache get`
           use-github-cache: false
-      - name: Root modules are current
-        run: |
-          lake exe mk_all --lib NLAlib --check
-          lake exe mk_all --lib NLAlibScaffold --check
+      - name: Root module is current
+        run: lake exe mk_all --lib NLAlib --check
       - name: Axiom audit (import NLAlib is sorry-free, no unsafe or partial constant)
         run: lake env lean scripts/Audit.lean
       - name: Environment linters
@@ -42,7 +40,7 @@ jobs:
           lake build NLAlibTools
           lake exe mk_all --lib NLAlibTools --check
       - name: Build outputs are current (every hash recomputed)
-        run: lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+        run: lake build --no-build --rehash NLAlib NLAlibTools
       - name: Kernel replay (every constant of every lean_lib re-checked by the kernel)
         run: lake env lean scripts/Replay.lean
       - name: Kernel replay fixtures (each forgery of the final audits is rejected)
@@ -51,8 +49,6 @@ jobs:
         run: python3 scripts/check_refs.py
       - name: Generated rule files are current (docs/rules/rules.toml)
         run: python3 scripts/gen_rules_md.py --check
-      - name: Port-ledger targets exist (rule G2)
-        run: python3 scripts/ledger_check.py
       - name: Documentation metadata regressions
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Named bounds show their current values

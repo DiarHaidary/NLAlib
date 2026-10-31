@@ -24,8 +24,7 @@ Kroó–Pinkus characterization.
 A **Chebyshev two-interval spectrum** (`IsChebyshevTwoIntervalSpectrum`) is a list of
 $\lvert n \rvert$ values on those $2(k + 1)$ points, each taken often enough that the counting
 measure dominates $\lvert n \rvert/4$ times the normalized dual weights plus a margin $M$; it is
-the spectrum of the hard instance of the linear-system lower bound. Design note
-`docs/design/LowerBounds-HiddenRotationLowerBounds.md` §3.3.
+the spectrum of the hard instance of the linear-system lower bound.
 
 ## Main definitions
 

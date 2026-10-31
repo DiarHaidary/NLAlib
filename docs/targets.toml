@@ -23,7 +23,7 @@
 toolchain = "leanprover/lean4:v4.33.1"
 mathlib = "0df444a360eaa60ab8c11dca51a86af692955474"
 lake_manifest_sha256 = "8ce7fcbff6a73f78e31448336ae458e1ee55d07d46d211d10388c47e69963549"
-lakefile_sha256 = "912faea78db60fc0b9cdcc6a7063ac1e6efc4669d37bfc7f928b7261b834d074"
+lakefile_sha256 = "f9152e129e38d8b69e9ad2fffaa4aa697dbcf3a6b5eaf279fee469dc32a065b5"
 
 [[tree]]
 name = "NLAlib.gramSchmidtProg.compiled"

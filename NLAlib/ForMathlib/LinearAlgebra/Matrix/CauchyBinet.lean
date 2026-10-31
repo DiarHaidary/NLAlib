@@ -73,7 +73,6 @@ When $n$ has fewer elements than $m$ the sum is empty and the determinant is zer
 [HornJohnson2013, §0.8.7]; stated there with each term as a product of two minors, which is
 `Matrix.det_mul_eq_det_submatrix_mul_det_submatrix` applied to an enumeration of $s$. Here over
 any commutative ring and any finite index types.
-Port of `NLAlib.det_mul_eq_sum_det_submatrix_mul_det_submatrix`.
 Result: cauchy-binet -/
 theorem det_mul_eq_sum_powersetCard [DecidableEq m] (A : Matrix m n R) (B : Matrix n m R) :
     (A * B).det = ∑ s ∈ (Finset.univ : Finset n).powersetCard (Fintype.card m),
@@ -97,8 +96,7 @@ $\det(\mathbf{A}^{\mathsf{H}}\mathbf{A})
 = \sum_s \det(\mathbf{A}_{s,:}^{\mathsf{H}} \mathbf{A}_{s,:})$, over the sets $s$ of rows with as
 many elements as $\mathbf{A}$ has columns. Over $\mathbb{R}$ or $\mathbb{C}$ each term is the
 squared absolute value of a maximal minor.
-[HornJohnson2013, §0.8.7]. Port of `NLAlib.det_conjTranspose_mul_self_eq_sum_norm_sq` and
-`NLAlib.det_transpose_mul_self_eq_sum_det_sq`.
+[HornJohnson2013, §0.8.7].
 Result: cauchy-binet -/
 theorem det_conjTranspose_mul_self_eq_sum_powersetCard [StarRing R] [DecidableEq n]
     (A : Matrix m n R) :
@@ -133,7 +131,7 @@ theorem compound_apply (k : ℕ) (A : Matrix m n R) (s : Set.powersetCard m k)
 /-- **Multiplicativity of compound matrices.** Writing $C_k(\mathbf{A})$ for the $k$-th compound
 matrix (`compound k A`), $C_k(\mathbf{A}\mathbf{B}) = C_k(\mathbf{A}) C_k(\mathbf{B})$, the
 Cauchy–Binet formula for every $k \times k$ minor of a product.
-[HornJohnson2013, §0.8.1 and §0.8.7]. Port of `NLAlib.compoundMatrix_mul`.
+[HornJohnson2013, §0.8.1 and §0.8.7].
 Result: cauchy-binet -/
 theorem compound_mul [Fintype m] (k : ℕ) (A : Matrix l m R) (B : Matrix m n R) :
     compound k (A * B) = compound k A * compound k B := by
@@ -145,7 +143,7 @@ theorem compound_mul [Fintype m] (k : ℕ) (A : Matrix l m R) (B : Matrix m n R)
   rw [det_mul_eq_det_submatrix_mul_det_submatrix _ _ (Set.powersetCard.orderIsoOfFin u).toEquiv]
   rfl
 
-/-- The compound of the identity is the identity. Port of `NLAlib.compoundMatrix_one`. -/
+/-- The compound of the identity is the identity. -/
 @[simp]
 theorem compound_one (k : ℕ) : compound k (1 : Matrix n n R) = 1 := by
   ext s t
@@ -168,8 +166,7 @@ theorem compound_transpose (k : ℕ) (A : Matrix m n R) :
   ext s t
   rw [transpose_apply, compound_apply, compound_apply, ← transpose_submatrix, det_transpose]
 
-/-- Compound matrices commute with the conjugate transpose.
-Port of `NLAlib.compoundMatrix_conjTranspose`. -/
+/-- Compound matrices commute with the conjugate transpose. -/
 theorem compound_conjTranspose [StarRing R] (k : ℕ) (A : Matrix m n R) :
     compound k Aᴴ = (compound k A)ᴴ := by
   ext s t

@@ -24,11 +24,10 @@ The **standard-model theorems** (`NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum
 …) take the contract `NLAlib.Computation.IsRelErrSem` with every value in range
 ($\mathrm{safe} = \mathrm{True}$, underflow and overflow ignored as in [Higham2002, §2.2]), where
 the range hypothesis is void, and bound the trace by `NLAlib/Computation/BLAS/Traces.lean`. A
-model with underflow and overflow (`docs/design/Computation-Rounding.md`, R6) reuses the run
+model with underflow and overflow reuses the run
 lemmas and discharges their range hypothesis from explicit bounds on the data.
 
-Decoded values are real: the kernels are analysed over real data. Design:
-`docs/design/Computation-Rounding.md` (R3 to R5).
+Decoded values are real: the kernels are analysed over real data.
 
 ## Main results
 

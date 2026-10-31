@@ -308,8 +308,6 @@ FIX = {
     'R2': (CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'foo-resukt'),
            CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'bar-result')),
     'R3': (None, None),  # needs the explore repository; covered by test_orphans
-    'G2': ({'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.gone", "stage": "M1"}}'},
-           {'docs/port/ledger.json': '{"Old.foo": {"new": "NLAlib.foo", "stage": "M1"}}'}),
     'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
     'E5': ({'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
            {'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Nat.Init\n'
@@ -356,7 +354,7 @@ class RuleTests(unittest.TestCase):
         # CONTRIBUTING §2's layout block and check_rules.LAYER give each top-level folder one layer
         import re
         text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
-        block = text[text.index('## 2. Layout'):text.index('NLAlibScaffold/    same tree')]
+        block = text[text.index('## 2. Layout'):text.index('NLAlibTools/')]
         table, folder = {}, None
         for line in block.splitlines():
             m = re.match(r'  (\w+)/', line)

@@ -58,8 +58,7 @@ theorem quadForm_def (A : Matrix n n 𝕜) (z : n → 𝕜) : quadForm A z = sta
 
 /-- The quadratic form as a double sum over entries:
 $\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z} = \sum_i \sum_j \overline{\mathbf{z}_i} \,
-\mathbf{A}_{i,j} \, \mathbf{z}_j$.
-Port of `NLAlib.quadForm_eq_sum_mul_mul`. -/
+\mathbf{A}_{i,j} \, \mathbf{z}_j$. -/
 theorem quadForm_eq_sum (A : Matrix n n 𝕜) (z : n → 𝕜) :
     quadForm A z = ∑ i, ∑ j, star (z i) * A i j * z j := by
   simp only [quadForm, dotProduct, Matrix.mulVec, Pi.star_apply, Finset.mul_sum]
@@ -117,24 +116,21 @@ theorem quadForm_diagonal [DecidableEq n] (d : n → 𝕜) (z : n → 𝕜) :
   rw [mul_left_comm, RCLike.star_def, RCLike.conj_mul, RCLike.ofReal_pow]
 
 /-- The quadratic form of the rank-one matrix $\mathbf{b}\mathbf{b}^{\mathsf{H}}$ at $\mathbf{z}$
-is $\lvert \mathbf{b}^{\mathsf{H}}\mathbf{z} \rvert^2$.
-Port of `NLAlib.quadForm_vecMulVec_star_self`. -/
+is $\lvert \mathbf{b}^{\mathsf{H}}\mathbf{z} \rvert^2$. -/
 theorem quadForm_vecMulVec_star (b z : n → 𝕜) :
     quadForm (Matrix.vecMulVec b (star b)) z = ((‖star b ⬝ᵥ z‖ ^ 2 : ℝ) : 𝕜) := by
   rw [quadForm, Matrix.vecMulVec_mulVec, dotProduct_smul, op_smul_eq_mul,
     Matrix.star_dotProduct z b, RCLike.star_def, RCLike.conj_mul, RCLike.ofReal_pow]
 
 /-- The quadratic form of a compression $\mathbf{W}^{\mathsf{H}}\mathbf{A}\mathbf{W}$ at
-$\mathbf{v}$ is that of $\mathbf{A}$ at $\mathbf{W}\mathbf{v}$.
-Port of `NLAlib.quadForm_conjTranspose_mul_mul`. -/
+$\mathbf{v}$ is that of $\mathbf{A}$ at $\mathbf{W}\mathbf{v}$. -/
 theorem quadForm_conjTranspose_mul_mul [Fintype m] (A : Matrix m m 𝕜) (W : Matrix m n 𝕜)
     (v : n → 𝕜) : quadForm (Wᴴ * A * W) v = quadForm A (W *ᵥ v) := by
   rw [quadForm, quadForm, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec,
     Matrix.dotProduct_mulVec (star v) Wᴴ, Matrix.star_mulVec]
 
 /-- The quadratic form of a Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ at $\mathbf{z}$ is
-$\|\mathbf{A}\mathbf{z}\|^2$.
-Port of `NLAlib.quadForm_conjTranspose_mul_self`. -/
+$\|\mathbf{A}\mathbf{z}\|^2$. -/
 theorem quadForm_conjTranspose_mul_self [Fintype m] (A : Matrix m n 𝕜) (z : n → 𝕜) :
     quadForm (Aᴴ * A) z = ((‖WithLp.toLp 2 (A *ᵥ z)‖ ^ 2 : ℝ) : 𝕜) := by
   rw [← EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, Matrix.star_mulVec, quadForm,
@@ -163,8 +159,7 @@ theorem quadForm_zero_right (A : Matrix n n 𝕜) : quadForm A 0 = 0 := by
 
 /-- The quadratic form scales by $\lvert c \rvert^2$ under scaling of the vector:
 $(c\mathbf{z})^{\mathsf{H}}\mathbf{A}(c\mathbf{z}) = \bar{c} c \,
-\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$.
-Port of `NLAlib.quadForm_smul`. -/
+\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}$. -/
 theorem quadForm_smul_right (A : Matrix n n 𝕜) (c : 𝕜) (z : n → 𝕜) :
     quadForm A (c • z) = star c * c * quadForm A z := by
   simp only [quadForm, star_smul, Matrix.mulVec_smul, smul_dotProduct, dotProduct_smul,
@@ -181,8 +176,7 @@ theorem quadForm_neg_right (A : Matrix n n 𝕜) (z : n → 𝕜) : quadForm A (
 /-- The polar expansion of the quadratic form of a sum of vectors:
 $$(\mathbf{x} + \mathbf{y})^{\mathsf{H}}\mathbf{A}(\mathbf{x} + \mathbf{y})
   = \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x} + \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} +
-  \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x} + \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y}\,.$$
-Port of `NLAlib.quadForm_add`. -/
+  \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x} + \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y}\,.$$ -/
 theorem quadForm_add_right (A : Matrix n n 𝕜) (x y : n → 𝕜) :
     quadForm A (x + y) =
       quadForm A x + star x ⬝ᵥ (A *ᵥ y) + star y ⬝ᵥ (A *ᵥ x) + quadForm A y := by
@@ -199,8 +193,7 @@ theorem isHermitian_real_smul_one [DecidableEq n] (a : ℝ) :
     (a • (1 : Matrix n n 𝕜)).IsHermitian :=
   Matrix.isHermitian_one.smul (IsSelfAdjoint.all a)
 
-/-- The quadratic form of a Hermitian matrix is real: it is the coercion of its real part.
-Port of `Matrix.IsHermitian.ofReal_re_quadForm`. -/
+/-- The quadratic form of a Hermitian matrix is real: it is the coercion of its real part. -/
 theorem _root_.Matrix.IsHermitian.coe_re_quadForm {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (z : n → 𝕜) : (RCLike.re (quadForm A z) : 𝕜) = quadForm A z := by
   rw [← RCLike.conj_eq_iff_re, ← RCLike.star_def, star_quadForm, hA.eq]
@@ -212,8 +205,7 @@ theorem _root_.Matrix.IsHermitian.im_quadForm {A : Matrix n n 𝕜} (hA : A.IsHe
 
 /-- For Hermitian $\mathbf{A}$, the two cross terms of the polar expansion are conjugate:
 $\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x}
-= \overline{\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y}}$.
-Port of `Matrix.IsHermitian.star_dotProduct_mulVec_comm`. -/
+= \overline{\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y}}$. -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_comm {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x y : n → 𝕜) :
     star y ⬝ᵥ (A *ᵥ x) = star (star x ⬝ᵥ (A *ᵥ y)) := by

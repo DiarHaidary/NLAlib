@@ -58,7 +58,6 @@ $\mathbf{A}$ is Hermitian (then so is $\mathbf{B}$), every eigenvalue of $\mathb
 the corresponding eigenvalue of $\mathbf{B}$: $\lambda_k(\mathbf{A}) \le \lambda_k(\mathbf{B})$
 for every $k$.
 [HornJohnson2013, Corollary 4.3.12].
-Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_of_le`.
 Result: eigenvalue-monotonicity -/
 theorem eigenvalue_le_eigenvalue_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) (hA : A.IsHermitian)
     (k : ℕ) : eigenvalue A k ≤ eigenvalue B k := by
@@ -87,7 +86,6 @@ $\lambda_{i+j}(\mathbf{A} + \mathbf{B}) \le \lambda_i(\mathbf{A}) + \lambda_j(\m
 eigenvalues non-increasing and indexed from $0$.
 [HornJohnson2013, Theorem 4.3.1]; stated there over $\mathbb{C}$ with eigenvalues in increasing
 order.
-Port of `Matrix.IsHermitian.eigenvalues₀_add_le`.
 Result: weyl-inequality -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_add_le {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian)
@@ -169,7 +167,6 @@ theorem _root_.Matrix.IsHermitian.abs_eigenvalue_sub_le {A B : Matrix n n 𝕜} 
 with $\operatorname{rank} \mathbf{B} \le r$ and $k + r < \lvert n \rvert$,
 $\lambda_{k+r}(\mathbf{A} + \mathbf{B}) \le \lambda_k(\mathbf{A})$.
 [HornJohnson2013, Corollary 4.3.5].
-Port of `NLAlib.eigenvalues₀_add_le_of_rank_le`, there over $\mathbb{R}$.
 Result: low-rank-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_add_le_of_rank_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -188,7 +185,6 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_add_le_of_rank_le {A B : Matrix n n
 with $\operatorname{rank} \mathbf{B} \le r$ and $k + r < \lvert n \rvert$,
 $\lambda_{k+r}(\mathbf{A}) \le \lambda_k(\mathbf{A} + \mathbf{B})$.
 [HornJohnson2013, Corollary 4.3.5].
-Port of `NLAlib.eigenvalues₀_le_add_of_rank_le`, there over $\mathbb{R}$.
 Result: low-rank-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_rank_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -205,8 +201,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_rank_le {A B :
 /-- **Rank-one update, upper.** Adding $\mathbf{z}\mathbf{z}^{\mathsf{H}}$ to a Hermitian
 $\mathbf{A}$ moves each eigenvalue up by at most one position:
 $\lambda_{k+1}(\mathbf{A} + \mathbf{z}\mathbf{z}^{\mathsf{H}}) \le \lambda_k(\mathbf{A})$ for
-$k + 1 < \lvert n \rvert$. [HornJohnson2013, Corollary 4.3.9].
-Port of `NLAlib.eigenvalues₀_rank_one_add_interlacing`, there over $\mathbb{R}$ as a conjunction. -/
+$k + 1 < \lvert n \rvert$. [HornJohnson2013, Corollary 4.3.9]. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_add_vecMulVec_star_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (z : n → 𝕜)
     {k : ℕ} (hk : k + 1 < Fintype.card n) :

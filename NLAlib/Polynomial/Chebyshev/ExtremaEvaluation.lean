@@ -14,7 +14,6 @@ public import Mathlib.Analysis.Complex.ExponentialBounds
 A real polynomial of degree at most $q$ is controlled at zero by its values at the $q+1$
 Chebyshev extrema of a positive interval $[a, a']$. The constant is the squared Chebyshev value
 $T_q\bigl((a'+a)/(a'-a)\bigr)^2$, which stays below four once $a'/a \ge 4(q+1)^2$.
-Design: `docs/design/LowerBounds-ChebyshevBatches.md`.
 
 ## Main results
 

@@ -24,7 +24,7 @@ together for a semantics with $u > 0$, and those theorems are not about exact ar
 Decoding through the rounding makes every word represent a grid point, which is what
 `NLAlib.Computation.AddsZeroExactly` needs: in a semantics whose words may be off the grid,
 $\mathrm{fl}(0 + y) = \mathrm{fl}(y) \ne y$. Different precisions per tag make it a witness for
-mixed precision through `convert` too. Design: `docs/design/Computation-Rounding.md` (R7).
+mixed precision through `convert` too.
 
 ## Main definitions
 

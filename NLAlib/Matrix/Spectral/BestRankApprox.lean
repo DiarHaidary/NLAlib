@@ -29,8 +29,7 @@ the perturbation in the Frobenius norm (perturbed truncation). Reverse Eckart–
 spectral error of any rank-$k$ matrix by its Frobenius or nuclear excess. The last results relate
 the truncation of $\mathbf{G}^{\mathsf{H}}\mathbf{G}$ to that of $\mathbf{G}$.
 
-Every statement holds for every choice of the truncations involved. Design:
-`docs/design/LowRank-S2a.md`.
+Every statement holds for every choice of the truncations involved.
 
 ## Main definitions
 
@@ -86,8 +85,7 @@ unitarily invariant norm (`NLAlib.IsBestRankApprox.matrixNorm_sub`). The truncat
 (`NLAlib.isBestRankApprox_truncatedSVD`); under ties $\sigma_{k-1} = \sigma_k$ there are others,
 and an algorithm's $\mathbf{Q}\llbracket\mathbf{X}\rrbracket_k$ need not be
 `truncatedSVD (Q * X) k`.
-[GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9]; [HalkoMartinssonTropp2011, §2.1].
-Port of `NLAlib.IsBestFrobRankApprox`, there through the squared Frobenius norm. -/
+[GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9]; [HalkoMartinssonTropp2011, §2.1]. -/
 structure IsBestRankApprox (C : Matrix m n 𝕜) (k : ℕ) (Y : Matrix m n 𝕜) : Prop where
   /-- A best approximation has rank at most $k$. -/
   rank_le : Y.rank ≤ k
@@ -96,8 +94,7 @@ structure IsBestRankApprox (C : Matrix m n 𝕜) (k : ℕ) (Y : Matrix m n 𝕜)
 
 /-- **Eckart–Young**: the truncated SVD $\llbracket \mathbf{C} \rrbracket_k$ is a best
 approximation of $\mathbf{C}$ of rank at most $k$.
-[GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9].
-Port of `NLAlib.exists_isBestFrobRankApprox`. -/
+[GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9]. -/
 theorem isBestRankApprox_truncatedSVD (C : Matrix m n 𝕜) (k : ℕ) :
     IsBestRankApprox C k (truncatedSVD C k) :=
   ⟨rank_truncatedSVD_le C k, fun _ hB => frobNorm_sub_truncatedSVD_le_of_rank_le C hB⟩
@@ -702,7 +699,6 @@ theorem specNorm_sub_add_nuclearNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix 
     Finset.sum_le_sum fun i _ => singularValues_add_le_singularValues_sub_of_rank_le A hB (i + 1)
   linarith
 
--- Stage TE-0
 
 /-- **The tail of the singular values in the nuclear norm.** For every $\mathbf{A}$ and every
 $r \ge 1$,

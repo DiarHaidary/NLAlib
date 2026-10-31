@@ -34,8 +34,7 @@ passes, the rotated output $\mathbf{U}^{\mathsf{H}}\mathbf{W}$ of the
 algorithm lies in the block Krylov space
 $\mathcal{K}_{p+1}(\mathbf{D}, [\mathbf{U}^{\mathsf{H}}\mathbf{B}, \mathbf{G}])$ of $\mathbf{D}$,
 for a standard Gaussian $\mathbf{G}$ with one column per query and per output column, independent
-of the rotated initial data $\mathbf{U}^{\mathsf{H}}\mathbf{B}$. Design note
-`docs/design/LowerBounds-HiddenRotationLowerBounds.md`.
+of the rotated initial data $\mathbf{U}^{\mathsf{H}}\mathbf{B}$.
 
 ## Main definitions
 

@@ -64,8 +64,7 @@ injection (its isotropy field) and the injection's size form, never on an embedd
 Empty `k`: $\mathbf{S} = \mathbf{0}$, not isotropic, hence `[Nonempty k]` on isotropy and the
 injections. Empty `n` with replacement: the law is $0$ for nonempty `k`, hence `[Nonempty n]` on
 that model's isotropy and injections. $\lvert k \rvert = \lvert n \rvert$ without replacement:
-$\mathbf{S}$ is unitary and every event is empty. Rank zero: every event is empty. Design:
-`docs/design/Sketching-S6.md` §3.3, §8.
+$\mathbf{S}$ is unitary and every event is empty. Rank zero: every event is empty.
 
 ## Main definitions
 

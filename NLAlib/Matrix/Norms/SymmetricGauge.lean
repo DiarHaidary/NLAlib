@@ -46,8 +46,7 @@ namespace NLAlib
 permutations of the indices and under taking absolute values of the entries. It extends Mathlib's
 `Seminorm`, so the seminorm API applies (`map_zero`, `map_neg_eq_map`, `map_add_le_add`,
 `map_smul_eq_mul`, `apply_nonneg`, `Φ.toSeminorm`).
-[HornJohnson2013, Definition 7.4.7.1]; [Bhatia1997, §IV.1].
-Port of `NLAlib.SymmetricGauge`, there on `ι → ℝ` for one finite index type. -/
+[HornJohnson2013, Definition 7.4.7.1]; [Bhatia1997, §IV.1]. -/
 structure SymmetricGauge extends Seminorm ℝ (ℕ →₀ ℝ) where
   /-- Definiteness. -/
   eq_zero_of_map_eq_zero' : ∀ x, toFun x = 0 → x = 0
@@ -119,7 +118,7 @@ theorem eq_zero_iff {x : ℕ →₀ ℝ} : Φ x = 0 ↔ x = 0 := by
   refine ⟨Φ.eq_zero_of_map_eq_zero' x, fun h => ?_⟩
   rw [h, map_zero]
 
-/-- A gauge is a convex function. Port of `NLAlib.SymmetricGauge.convex_sublevel`. -/
+/-- A gauge is a convex function. -/
 theorem convexOn : ConvexOn ℝ Set.univ Φ := by
   exact Φ.toSeminorm.convexOn
 
@@ -131,7 +130,7 @@ theorem map_equivMapDomain (σ : Equiv.Perm ℕ) (x : ℕ →₀ ℝ) : Φ (x.eq
   Φ.map_equivMapDomain' σ x
 
 /-- A gauge depends only on the absolute values of the entries: $\Phi(\lvert x \rvert) = \Phi(x)$.
-Port of `NLAlib.SymmetricGauge.value_abs`. -/
+-/
 @[simp]
 theorem map_abs (x : ℕ →₀ ℝ) : Φ |x| = Φ x := by
   have h : |x| = x.mapRange abs abs_zero := by
@@ -218,8 +217,7 @@ private theorem le_of_abs_le_of_eq_off (s : Finset ℕ) :
 /-- **A gauge is monotone in the absolute values of the entries.** If
 $\lvert \mathbf{x}_i \rvert \le \lvert \mathbf{y}_i \rvert$ for every $i$ then
 $\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$.
-[HornJohnson2013, Theorem 5.4.19 and §7.4.7].
-Port of `NLAlib.SymmetricGauge.value_le_of_nonneg_of_le`. -/
+[HornJohnson2013, Theorem 5.4.19 and §7.4.7]. -/
 theorem le_of_abs_le {x y : ℕ →₀ ℝ} (h : ∀ i, |x i| ≤ |y i|) : Φ x ≤ Φ y := by
   classical
   refine Φ.le_of_abs_le_of_eq_off (x.support ∪ y.support) h fun i hi => ?_
@@ -231,8 +229,7 @@ values of entries of $\mathbf{x}$ over a finite index set $S$ is at most the sum
 $\lvert S \rvert$ entries of $\mathbf{y}$,
 $\sum_{i \in S} \lvert \mathbf{x}_i \rvert \le \sum_{i < \lvert S \rvert} \mathbf{y}_i$, then
 $\Phi(\mathbf{x}) \le \Phi(\mathbf{y})$: gauges respect weak majorization.
-[HornJohnson2013, Theorem 7.4.8.4]; [Bhatia1997, Theorem IV.1.6 context].
-Port of `NLAlib.SymmetricGauge.value_le_of_weaklyMajorized`. -/
+[HornJohnson2013, Theorem 7.4.8.4]; [Bhatia1997, Theorem IV.1.6 context]. -/
 theorem le_of_forall_sum_le {x y : ℕ →₀ ℝ} (hy : Antitone y)
     (h : ∀ S : Finset ℕ, ∑ i ∈ S, |x i| ≤ ∑ i ∈ Finset.range S.card, y i) : Φ x ≤ Φ y := by
   obtain ⟨N, hx0, hy0⟩ := Finsupp.exists_forall_le_apply_eq_zero x y

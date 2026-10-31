@@ -40,14 +40,12 @@ variable {R : Type*} {k : ℕ}
 
 /-- A matrix indexed by `Fin k` is **upper quasi-triangular** if it is upper Hessenberg and no
 two consecutive subdiagonal entries are nonzero: it is block upper triangular with diagonal
-blocks of size at most two. [HornJohnson2013, §2.3].
-Port of `NLAlib.IsUpperQuasiTriangular`. -/
+blocks of size at most two. [HornJohnson2013, §2.3]. -/
 def IsUpperQuasiTriangular [Zero R] (T : Matrix (Fin k) (Fin k) R) : Prop :=
   IsUpperHessenberg T ∧
     ∀ i j l : Fin k, (j : ℕ) + 1 = (i : ℕ) → (l : ℕ) + 1 = (j : ℕ) → T i j = 0 ∨ T j l = 0
 
-/-- An upper triangular matrix is upper quasi-triangular.
-Port of `NLAlib.isUpperQuasiTriangular_of_isUpperTriangular`. -/
+/-- An upper triangular matrix is upper quasi-triangular. -/
 theorem _root_.Matrix.IsUpperTriangular.isUpperQuasiTriangular [Zero R]
     {T : Matrix (Fin k) (Fin k) R} (hT : T.IsUpperTriangular) : IsUpperQuasiTriangular T :=
   ⟨hT.isUpperHessenberg, fun i j _ hij _ => Or.inl (hT (show j < i from Fin.lt_def.mpr (by omega)))⟩
@@ -62,8 +60,7 @@ private theorem mul_apply_of_succ_eq [Semiring R] {U T : Matrix (Fin k) (Fin k) 
   · rw [hT.1 l j (by have := Fin.val_ne_of_ne hli; have := Fin.lt_def.not.mp hlt; omega),
       mul_zero]
 
-/-- An upper triangular matrix times an upper quasi-triangular one is upper quasi-triangular.
-Port of `NLAlib.IsUpperQuasiTriangular.upperTriangular_mul`. -/
+/-- An upper triangular matrix times an upper quasi-triangular one is upper quasi-triangular. -/
 theorem _root_.Matrix.IsUpperTriangular.mul_isUpperQuasiTriangular [Semiring R]
     {U T : Matrix (Fin k) (Fin k) R} (hU : U.IsUpperTriangular)
     (hT : IsUpperQuasiTriangular T) : IsUpperQuasiTriangular (U * T) := by
@@ -88,9 +85,7 @@ variable {p q : ℕ} {S : Matrix (Fin p) (Fin p) R} {C : Matrix (Fin p) (Fin q) 
 /-- A block upper triangular matrix with upper quasi-triangular diagonal blocks is upper
 quasi-triangular: for upper quasi-triangular $\mathbf{S}$ and $\mathbf{T}$,
 $\begin{bmatrix} \mathbf{S} & \mathbf{C} \\ \mathbf{0} & \mathbf{T} \end{bmatrix}$ is, the blocks
-being placed in order along `Fin (p + q)`.
-Port of `NLAlib.isUpperQuasiTriangular_of_small_leading_block`, there for a leading block of size
-at most two. -/
+being placed in order along `Fin (p + q)`. -/
 theorem IsUpperQuasiTriangular.submatrix_fromBlocks [Zero R] (hS : IsUpperQuasiTriangular S)
     (hT : IsUpperQuasiTriangular T) (C : Matrix (Fin p) (Fin q) R) :
     IsUpperQuasiTriangular

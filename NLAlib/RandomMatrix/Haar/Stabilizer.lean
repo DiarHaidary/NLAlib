@@ -17,7 +17,7 @@ public import NLAlib.RandomMatrix.UnitaryInvariance
 For a right unitarily invariant law (Gaussian, Haar) of $\mathbf{X}$ and a fixed block of queries
 $\mathbf{V}$, the matrix may be rotated on the right by any orthogonal matrix that fixes
 $\mathbf{V}$, chosen as a function of the response $\mathbf{X}\mathbf{V}$, without changing the
-joint law of response and matrix (design note `docs/design/Probability-MatvecQueryModel.md` §3.4).
+joint law of response and matrix.
 The adaptive form is
 `NLAlib.QueryAlgorithm.IsMeasurable.identDistrib_prodMk_mul_of_isRightUnitarilyInvariant`.
 

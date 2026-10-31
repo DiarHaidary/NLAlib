@@ -1,7 +1,7 @@
 import Lean
 -- A "base" module (not under any replay root): a theorem added to the kernel with no check, no
--- `set_option`, no `unsafe`, no axiom. Mimics a forged lemma in NLAlibScaffold or a redirected
--- dependency.
+-- `set_option`, no `unsafe`, no axiom. Mimics a forged lemma in another library of the package
+-- or a redirected dependency.
 open Lean Elab Command in
 run_cmd do
   let env ← getEnv

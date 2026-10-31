@@ -20,14 +20,12 @@ $O(c^2(\lvert n\rvert + 1 + \log(1/\delta)))$ rows and $O(\log(1/\tau))$ iterati
 probability $\delta$. The sketch embeds $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$, of
 dimension at most $\lvert n\rvert + 1$
 (`NLAlib.isObliviousSubspaceEmbedding_of_isSubgaussianVector_of_subgaussianEmbeddingDim_le`).
-Design: `docs/design/Regression-SketchPrecondition.md` §5.
 
 Sketch-and-solve with the same sketch reaches relative squared Frobenius residual error with
 failure probability $\delta$ at $O(c^2(r + 1)\log(1/\delta)/\varepsilon)$ rows,
 $r = \operatorname{rank}\mathbf{A}$: a constant subspace injection and the family's JL moment at
 $p = \log(1/\delta)$ through
-`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. Design:
-`docs/design/Sketching-Moments.md` §2.6.
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
 
 ## Main results
 

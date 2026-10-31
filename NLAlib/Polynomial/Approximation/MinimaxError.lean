@@ -21,8 +21,7 @@ $s \subseteq \mathbb{R}$ by real polynomials of degree at most $n$. For $s$ comp
 continuous on $s$ a best approximant of degree at most $n$ exists, so $E_n(f; s)$ is a minimum;
 $E_n$ is nonnegative, antitone in $n$, monotone in $s$, invariant under adding a polynomial of
 degree at most $n$, absolutely homogeneous, subadditive and invariant under affine changes of
-variable, and tends to $0$ on an interval (Weierstrass). Design:
-`docs/design/Polynomial-BestApproximation.md`.
+variable, and tends to $0$ on an interval (Weierstrass).
 
 ## Main definitions
 

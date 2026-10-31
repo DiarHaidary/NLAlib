@@ -803,7 +803,7 @@ end Invariants
 A statement with no conditional and no loop on a comparison has its control flow fixed by its
 syntax, so the tape positions, counts and memory of a successful run do not depend on the value
 semantics: a floating-point analysis of a straight-line kernel takes them from its exact
-specification. Design: `docs/design/Computation-Rounding.md` (R5). -/
+specification. -/
 
 section StraightLine
 

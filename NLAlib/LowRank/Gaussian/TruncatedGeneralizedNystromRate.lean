@@ -26,9 +26,7 @@ noise (the library's sketch-and-solve bound) and its compression to the window o
 of $\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})$ within a factor $2$ of the truncation level,
 whose mean is $O(\sqrt{w/p})$ for a window of dimension $w$; then the range-finder moments.
 
-Real throughout; the constants are existential. Design:
-`docs/design/research/TruncatedGN-Upper.md` (research note OP6 of the NLAlib workflow,
-Theorem (1)).
+Real throughout; the constants are existential.
 
 ## Main results
 
@@ -64,7 +62,7 @@ $$\mathbb{E}\|\mathbf{F}\mathbf{N}\mathbf{T}\|_2 \le \frac{4}{\sqrt p}\bigl(
 \|(\mathbf{A} - \mathbf{R})\mathbf{T}\|_2\|\mathbf{F}\|_{\mathsf{F}} +
 \|(\mathbf{A} - \mathbf{R})\mathbf{T}\|_{\mathsf{F}}\|\mathbf{F}\|_2\bigr)\,.$$
 With $\mathbf{F}$, $\mathbf{T}$ projectors of rank $w$ the right side is at most
-$8\sqrt{w/p}\,\|\mathbf{A} - \mathbf{R}\|_2$ (research note OP6, §4.3).
+$8\sqrt{w/p}\,\|\mathbf{A} - \mathbf{R}\|_2$.
 No printed source. -/
 theorem integral_specNorm_mul_obliqueProjector_mul_sub_rsvd_mul_le_of_hasLaw_gaussianMatrix
     {a b : Type*} [Fintype a] [Fintype b] (A : Matrix m n ℝ) (x : Matrix n l ℝ)
@@ -244,7 +242,7 @@ $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \ma
 \Bigr)\,.$$
 For the choice `truncatedSVD` makes. Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix`.
-No printed source; research note OP6, Corollary 4.5. -/
+No printed source. -/
 theorem integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix
     (A : Matrix m n ℝ) (x : Matrix n l ℝ) (k : ℕ) (hlp : 4 * Fintype.card l ≤ Fintype.card p) :
     ∫ ψ, frobNorm (A - truncatedSVD (generalizedNystrom A x ψ) k) ^ 2 ∂(gaussianMatrix m p) ≤
@@ -337,7 +335,7 @@ $$\mathbb{E}_{\mathbf{\Psi}}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \ma
 \frac{\|\mathbf{E}\|_2\,\|\mathbf{R} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}}{\sqrt p}
 \Bigr)\,.$$
 $O(1)$ suffices for $C$; the explicit theorem has $C = 12500$. For the choice `truncatedSVD`
-makes. No printed source; research note OP6, Corollary 4.5.
+makes. No printed source.
 It is the asymptotic form of
 `NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix`.
 Asymptotic: NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianMatrix
@@ -421,7 +419,7 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \m
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 For the choice `truncatedSVD` makes. Every rank of $\mathbf{A}$.
 The leading factor $1 + k/(\ell - k - 1)$ is that of the truncated randomized SVD.
-No printed source; research note OP6, Theorem (1), with $\ell \ge 6k$,
+No printed source; with $\ell \ge 6k$,
 $p \ge 2\ell + 2$ and explicit constants.
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`;
@@ -508,7 +506,7 @@ C\Bigl(\frac{k}{p} + \frac{k}{\sqrt{\ell p}}\Bigr)\Bigr)
 $O(1)$ suffices for $C$; the explicit theorem has $C = 1750000$. For the choice `truncatedSVD`
 makes. Every rank of $\mathbf{A}$.
 The leading factor $1 + k/(\ell - k - 1)$ is that of the truncated randomized SVD.
-No printed source; research note OP6, Theorem (1), with $\ell \ge 6k$,
+No printed source; with $\ell \ge 6k$,
 $p \ge 2\ell + 2$ and explicit constants.
 It is the asymptotic form of
 `NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`.
@@ -543,7 +541,7 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \m
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
 Both sketch sizes are $O(k/\varepsilon)$, against $p = O(k/\varepsilon^2)$ in
 `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
-For the choice `truncatedSVD` makes. No printed source; research note OP6, §6.
+For the choice `truncatedSVD` makes. No printed source.
 Asymptotic form:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`.
 Result: tgn-expected-error -/
@@ -625,7 +623,7 @@ $$\mathbb{E}\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \m
 $O(k/\varepsilon)$ suffices for both sketch sizes (the explicit theorem has $C = 3500004$),
 against $p = O(k/\varepsilon^2)$ in
 `integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
-For the choice `truncatedSVD` makes. No printed source; research note OP6, §6.
+For the choice `truncatedSVD` makes. No printed source.
 Its name is not the `exists_forall_` form of its explicit theorem's (rule N17), which
 the asymptotic form of the $p \ge 8000\ell/\varepsilon$ theorem holds:
 `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix`,

@@ -1438,15 +1438,6 @@ def g_deviation_fields(c):
     return out
 
 
-@rule('G2')
-def g_ledger(c):
-    if not (c.root / 'docs/port/ledger.json').exists():
-        return []
-    import ledger_check
-    return [V('G2', 'docs/port/ledger.json', 0, old, f'{new}, stage {stage}')
-            for old, new, stage in ledger_check.missing(c.root)[1]]
-
-
 # ================================================================== E: programs (§5.5)
 # E2–E4 and E9 need Lean's types and are checked by scripts/Programs.lean and scripts/Targets.lean
 # (`check = "lean"`); E1 is retired (docs/design/Computation.md, F9).

@@ -5,7 +5,7 @@
 # SHA-256 in docs/targets.approved.
 #
 # The handle @tchen01 is a guess from the maintainer's repository account and has not been
-# confirmed by him yet (docs/port/status.md, open maintainer items); it is one replace-all here.
+# confirmed by him yet; it is one replace-all here.
 /docs/targets.toml @tchen01
 /docs/targets.approved @tchen01
 /NLAlib/**/*Targets.lean @tchen01
@@ -24,3 +24,11 @@
 /lakefile.toml @tchen01
 /lake-manifest.json @tchen01
 /lean-toolchain @tchen01
+# The contribution rules and their enforcement: the rule data, the rule and reference checks,
+# their allowlists and the ratchet baseline (CONTRIBUTING §9.1; AGENTS.md rule 1).
+/docs/rules/rules.toml @tchen01
+/scripts/check_*.py @tchen01
+/scripts/check_latex.mjs @tchen01
+/scripts/rules_allow.toml @tchen01
+/scripts/names_allow.toml @tchen01
+/scripts/rules_baseline.json @tchen01

@@ -68,7 +68,7 @@ def topic_md(topic, rules, anc):
     exempt = [r for r in rules if path in r.get('exempt', [])]
     rest = [r for r in rules if applies(r, topic) and not own(r, topic)]
     out = [HEADER, f'# Rules for `{path}`', '',
-           f'The rules a file in `{path}` (and `NLAlibScaffold/{topic}`) keeps, generated from',
+           f'The rules a file in `{path}` keeps, generated from',
            '`docs/rules/rules.toml`. Errors fail CI; a warning is a heuristic review list; a review',
            'rule has no check. The reasons are in CONTRIBUTING at the linked section. Check a file',
            'with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file',

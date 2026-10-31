@@ -42,8 +42,7 @@ variable {K : Type*} [Field K] {n : Type*} [Fintype n] [DecidableEq n]
 /-! ### Existence and biorthogonality -/
 
 /-- Every eigenvalue has a right eigenvector: for $\mu$ in the spectrum of $\mathbf{A}$ there is
-$\mathbf{x} \ne \mathbf{0}$ with $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$.
-Port of `NLAlib.exists_mulVec_eq_smul_of_mem_spectrum`. -/
+$\mathbf{x} \ne \mathbf{0}$ with $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$. -/
 theorem exists_mulVec_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K A) : ∃ x : n → K, x ≠ 0 ∧ A *ᵥ x = μ • x := by
   have hdet : (Matrix.scalar n μ - A).det = 0 := by
@@ -57,7 +56,7 @@ theorem exists_mulVec_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
 
 /-- Every eigenvalue has a left eigenvector: for $\mu$ in the spectrum of $\mathbf{A}$ there is
 $\mathbf{y} \ne \mathbf{0}$ with $\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$.
-Port of `NLAlib.exists_vecMul_eq_smul_of_mem_spectrum`. -/
+-/
 theorem exists_vecMul_eq_smul_of_mem_spectrum {A : Matrix n n K} {μ : K}
     (hμ : μ ∈ spectrum K A) : ∃ y : n → K, y ≠ 0 ∧ y ᵥ* A = μ • y := by
   have hT : μ ∈ spectrum K Aᵀ := by
@@ -71,8 +70,7 @@ omit [DecidableEq n] in
 /-- **Biorthogonality**: left and right eigenvectors for different eigenvalues are orthogonal: if
 $\mathbf{A}\mathbf{x} = \alpha\mathbf{x}$, $\mathbf{y}^{\mathsf{T}}\mathbf{A} =
 \mu\mathbf{y}^{\mathsf{T}}$ and $\alpha \ne \mu$, then $\mathbf{y}^{\mathsf{T}}\mathbf{x} = 0$.
-[HornJohnson2013, Theorem 1.4.7].
-Port of `NLAlib.dotProduct_eq_zero_of_left_right_eigenvalues_ne`. -/
+[HornJohnson2013, Theorem 1.4.7]. -/
 theorem dotProduct_eq_zero_of_vecMul_eq_smul_of_mulVec_eq_smul {A : Matrix n n K} {x y : n → K}
     {α μ : K} (hx : A *ᵥ x = α • x) (hy : y ᵥ* A = μ • y) (h : α ≠ μ) : y ⬝ᵥ x = 0 := by
   have h1 : α * (y ⬝ᵥ x) = μ * (y ⬝ᵥ x) := by
@@ -176,8 +174,7 @@ eigenvectors are not orthogonal**: if the eigenspace of $\mu$ has dimension one,
 $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$ and $\mathbf{y}^{\mathsf{T}}\mathbf{A} =
 \mu\mathbf{y}^{\mathsf{T}}$ with $\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then $\mu$ is a simple
 root of the characteristic polynomial if and only if $\mathbf{y}^{\mathsf{T}}\mathbf{x} \ne 0$.
-[HornJohnson2013, Theorem 1.4.12].
-Port of `NLAlib.rootMultiplicity_eq_one_iff_pairing_ne_zero_of_finrank_eigenspace_eq_one`. -/
+[HornJohnson2013, Theorem 1.4.12]. -/
 theorem rootMultiplicity_charpoly_eq_one_iff_dotProduct_ne_zero
     {A : Matrix n n K} {x y : n → K} {μ : K} (hx : x ≠ 0) (hy : y ≠ 0) (hAx : A *ᵥ x = μ • x)
     (hyA : y ᵥ* A = μ • y)
@@ -263,8 +260,7 @@ dimension one, $\mathbf{M}\mathbf{x} = \mathbf{0}$ and $\mathbf{y}^{\mathsf{T}}\
 \mathbf{0}$ with $\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then
 $\operatorname{adj} \mathbf{M} = c\,\mathbf{x}\mathbf{y}^{\mathsf{T}}$ for some $c \ne 0$. With
 $\mathbf{M} = \mathbf{A} - \mu\mathbf{I}$, $\mathbf{x}$ is a right and $\mathbf{y}$ a left
-eigenvector of $\mathbf{A}$ for $\mu$. [HornJohnson2013, §1.4.11].
-Port of `NLAlib.exists_adjugate_shift_eq_smul_vecMulVec_of_finrank_eigenspace_eq_one`. -/
+eigenvector of $\mathbf{A}$ for $\mu$. [HornJohnson2013, §1.4.11]. -/
 theorem exists_adjugate_eq_smul_vecMulVec {M : Matrix n n K} {x y : n → K} (hx : x ≠ 0)
     (hy : y ≠ 0) (hMx : M *ᵥ x = 0) (hyM : y ᵥ* M = 0)
     (h : Module.finrank K (LinearMap.ker M.mulVecLin) = 1) :

@@ -15,7 +15,7 @@ independent standard Gaussian test matrices $\mathbf{\Omega}$ ($n \times \ell$, 
 and $\mathbf{\Psi}$ ($m \times p$), the core noise of generalized Nyström in the dominant rank-$k$
 subspace of the randomized SVD, and the expected error of the oracle truncation that keeps that
 subspace. Split from `NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom` (the expected error of
-the late truncation). Real throughout. Design: `docs/design/LowRank-EstimatorLowerBounds.md`.
+the late truncation). Real throughout.
 
 ## Main results
 
@@ -25,7 +25,7 @@ the late truncation). Real throughout. Design: `docs/design/LowRank-EstimatorLow
 * `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix`:
   the oracle truncation's expected error, exactly, and its bound
   `integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasLaw_gaussianMatrix`.
-  Both are new (research note OP2 of the NLAlib workflow, §3); they feed the lower bound
+  Both are new; they feed the lower bound
   `NLAlib.LowerBounds.LowRank.TruncatedGeneralizedNystrom`.
 -/
 
@@ -191,7 +191,7 @@ $$\mathbb{E}\|\mathbf{P}_{\llbracket\mathbf{R}\rrbracket_k}\mathbf{N}\|_{\mathsf
 \frac{k}{p - \ell - 1}\,\mathbb{E}\|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2\,.$$
 Every rank of $\mathbf{A}$: if $\operatorname{rank}\mathbf{A} < \ell$ both sides vanish
 ($\mathbf{R} = \mathbf{A}$ almost surely). For the choice `truncatedSVD` makes.
-No printed source. New (research note OP2, §3, I2). -/
+No printed source. New. -/
 theorem integral_frobNorm_rangeProjector_mul_obliqueProjector_sq_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)
     (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ) {k : ℕ}
@@ -246,7 +246,7 @@ $$\mathbb{E}\|\mathbf{A} - \widehat{\mathbf{A}}\|_{\mathsf{F}}^2 =
 \frac{k}{p - \ell - 1}\,\mathbb{E}\|\mathbf{A} - \mathbf{R}\|_{\mathsf{F}}^2\,.$$
 The noise costs $k/(p - \ell - 1)$, not $\ell/(p - \ell - 1)$: what truncated generalized Nyström
 loses beyond this is the misalignment of its truncation subspace.
-No printed source. New (research note OP2, §3, I3). -/
+No printed source. New. -/
 theorem integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)
     (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ) {k : ℕ}
@@ -309,8 +309,8 @@ A statement about an analysis device, not an algorithm: the dominant subspace of
 is not available from the two sketches, so this says nothing about what an estimator built from
 them can reach. It separates the two losses of truncated generalized Nyström: the noise in a
 fixed rank-$k$ subspace costs $k/(p - \ell - 1)$; the rest is the misalignment of the data-driven
-truncation subspace (design note §3.2).
-No printed source. New (research note OP2, §3, I3). -/
+truncation subspace.
+No printed source. New. -/
 theorem integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasLaw_gaussianMatrix
     (A : Matrix m n ℝ) (hX : HasLaw X (gaussianMatrix n l) μ)
     (hΨ : HasLaw Ψ (gaussianMatrix m p) μ) (hXΨ : IndepFun X Ψ μ) {k : ℕ}

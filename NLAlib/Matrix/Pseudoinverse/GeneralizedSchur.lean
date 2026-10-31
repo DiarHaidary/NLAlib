@@ -42,7 +42,7 @@ private theorem mul_pinv_mul_eq_aux [Fintype n] {A : Matrix m m 𝕜} {B : Matri
 
 /-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, $\mathbf{A}\mathbf{A}^{+}\mathbf{B} =
-\mathbf{B}$. Port of `NLAlib.one_sub_mul_moorePenroseInverse_mul_eq_zero_of_fromBlocks_posSemidef`.
+\mathbf{B}$.
 -/
 theorem _root_.Matrix.PosSemidef.mul_pinv_mul_eq_of_fromBlocks [Finite n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
@@ -64,7 +64,7 @@ private theorem conjTranspose_pinv_mul_mul_pinv_mul {A : Matrix m m 𝕜} {B : M
 $\mathbf{A}$ is, the columns of $\mathbf{B}$ lie in the column space of $\mathbf{A}$, and the
 generalized Schur complement $\mathbf{C} - \mathbf{B}^{\mathsf{H}}\mathbf{A}^{+}\mathbf{B}$ is
 positive semidefinite.
-[HornJohnson2013, Theorem 7.7.9]. Port of `NLAlib.posSemidef_fromBlocks_iff`.
+[HornJohnson2013, Theorem 7.7.9].
 Result: schur-complement-psd, albert-theorem -/
 theorem posSemidef_fromBlocks_iff_pinv [Fintype n] {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} :
@@ -86,8 +86,7 @@ theorem posSemidef_fromBlocks_iff_pinv [Fintype n] {A : Matrix m m 𝕜} {B : Ma
 
 /-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$ the generalized Schur complement $\mathbf{C} -
-\mathbf{B}^{\mathsf{H}}\mathbf{A}^{+}\mathbf{B}$ is positive semidefinite. Port of
-`NLAlib.generalizedSchurComplement_nonneg`. -/
+\mathbf{B}^{\mathsf{H}}\mathbf{A}^{+}\mathbf{B}$ is positive semidefinite. -/
 theorem _root_.Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_pinv_mul_of_fromBlocks [Finite n]
     {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) : (C - Bᴴ * pinv A * B).PosSemidef := by
@@ -101,7 +100,6 @@ matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \ma
 $\mathbf{y}$, of the real part of the quadratic form of the block matrix at the stacked vector
 $\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}$.
 [HornJohnson2013, §7.7].
-Port of `NLAlib.isLeast_generalizedSchurComplement_quadratic`.
 Result: schur-complement-variational -/
 theorem _root_.Matrix.PosSemidef.isLeast_re_quadForm_fromBlocks [Fintype n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜}

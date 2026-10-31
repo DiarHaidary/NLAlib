@@ -2,7 +2,7 @@
 
 # Rules for `NLAlib/ForMathlib`
 
-The rules a file in `NLAlib/ForMathlib` (and `NLAlibScaffold/ForMathlib`) keeps, generated from
+The rules a file in `NLAlib/ForMathlib` keeps, generated from
 `docs/rules/rules.toml`. Errors fail CI; a warning is a heuristic review list; a review
 rule has no check. The reasons are in CONTRIBUTING at the linked section. Check a file
 with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file
@@ -45,7 +45,7 @@ and `docs/rules/DIGEST.md`.
 - **S4** A proof has at most 80 lines. [§7], §10
 - **S5** (warning) A helper two files need is one public lemma, not two private copies. [§3]
 - **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
-- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§10], proof-agent brief
+- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§3]
 - **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
 - **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [§7]
 
@@ -62,7 +62,7 @@ and `docs/rules/DIGEST.md`.
 - **T11** (warning) A two-sided bound is two theorems, not a top-level conjunction. [§5.2]
 - **T12** (warning) An `∃`-index into `eigenvalue` or `singularValues` carries its range. [§5.2]
 - **T13** No hypothesis named `_h…`: an unused hypothesis is dropped. [§5.2]
-- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. [§5.2], PORT_PROBABILITY D3
+- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. [§5.2]
 - **T15** A lower moment obtained by Jensen from a higher one is not a separate theorem. [§5.2]
 
 ### Vocabulary
@@ -146,8 +146,6 @@ and `docs/rules/DIGEST.md`.
 ### Design records
 
 - **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]
-- **G2** Every port-ledger target is declared. [§9], AGENTS.md
-- **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
 
 ### Programs
 
@@ -188,7 +186,6 @@ and `docs/rules/DIGEST.md`.
 [§5.3]: ../../CONTRIBUTING.md#53-vocabulary
 [§5.5]: ../../CONTRIBUTING.md#55-programs
 [§6]: ../../CONTRIBUTING.md#6-docstrings-and-citations
-[§7]: ../../CONTRIBUTING.md#7-proofs-sorry-and-the-scaffold-library
-[§8]: ../../CONTRIBUTING.md#8-designing-a-stage
-[§9]: ../../CONTRIBUTING.md#9-workflow-and-checks
+[§7]: ../../CONTRIBUTING.md#7-proofs-and-what-each-library-may-contain
+[§8]: ../../CONTRIBUTING.md#8-designing-new-material
 [§10]: ../../CONTRIBUTING.md#10-building-without-running-out-of-memory

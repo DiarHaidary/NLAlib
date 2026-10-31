@@ -75,9 +75,7 @@ theorem _root_.Matrix.IsLowerTriangular.submatrix_of_strictMono [Zero R] {A : Ma
     (A.submatrix e e).IsLowerTriangular := by
   exact fun i j hij => h (i := e i) (j := e j) (he (OrderDual.toDual_lt_toDual.mp hij))
 
-/-- A matrix that is both lower and upper triangular is diagonal.
-Port of `NLAlib.eq_diagonal_of_isLowerTriangular_of_isUpperTriangular`, there over
-$\mathbb{R}$. -/
+/-- A matrix that is both lower and upper triangular is diagonal. -/
 theorem eq_diagonal_of_isLowerTriangular_of_isUpperTriangular [Zero R] [DecidableEq n]
     {A : Matrix n n R} (hL : A.IsLowerTriangular) (hU : A.IsUpperTriangular) :
     A = Matrix.diagonal fun i => A i i := by
@@ -155,22 +153,19 @@ theorem _root_.Matrix.IsUpperTriangular.submatrix_mul_of_isLowerSet [NonUnitalNo
 variable [DecidableEq n]
 
 /-- An upper triangular matrix over a commutative ring is invertible ($\det \mathbf{A}$ is a
-unit) exactly when its diagonal entries are units.
-Port of `NLAlib.isUnit_det_iff_of_isUpperTriangular`, there over $\mathbb{R}$. -/
+unit) exactly when its diagonal entries are units. -/
 theorem _root_.Matrix.IsUpperTriangular.isUnit_det_iff [CommRing R] {A : Matrix n n R}
     (hA : A.IsUpperTriangular) : IsUnit A.det ↔ ∀ i, IsUnit (A i i) := by
   rw [Matrix.det_of_isUpperTriangular hA, IsUnit.prod_univ_iff]
 
 /-- A lower triangular matrix over a commutative ring is invertible ($\det \mathbf{A}$ is a
-unit) exactly when its diagonal entries are units.
-Port of `NLAlib.isUnit_det_iff_of_isLowerTriangular`, there over $\mathbb{R}$. -/
+unit) exactly when its diagonal entries are units. -/
 theorem _root_.Matrix.IsLowerTriangular.isUnit_det_iff [CommRing R] {A : Matrix n n R}
     (hA : A.IsLowerTriangular) : IsUnit A.det ↔ ∀ i, IsUnit (A i i) := by
   rw [Matrix.det_of_isLowerTriangular A hA, IsUnit.prod_univ_iff]
 
 /-- The inverse of an upper triangular matrix is upper triangular (for Mathlib's `⁻¹`, which is
-$\mathbf{0}$ on singular matrices).
-Port of `NLAlib.isUpperTriangular_inv`, there over $\mathbb{R}$. -/
+$\mathbf{0}$ on singular matrices). -/
 theorem _root_.Matrix.IsUpperTriangular.inv [CommRing R] {A : Matrix n n R}
     (hA : A.IsUpperTriangular) : A⁻¹.IsUpperTriangular := by
   by_cases h : IsUnit A.det
@@ -180,8 +175,7 @@ theorem _root_.Matrix.IsUpperTriangular.inv [CommRing R] {A : Matrix n n R}
     exact Matrix.blockTriangular_zero
 
 /-- The inverse of a lower triangular matrix is lower triangular (for Mathlib's `⁻¹`, which is
-$\mathbf{0}$ on singular matrices).
-Port of `NLAlib.isLowerTriangular_inv`, there over $\mathbb{R}$. -/
+$\mathbf{0}$ on singular matrices). -/
 theorem _root_.Matrix.IsLowerTriangular.inv [CommRing R] {A : Matrix n n R}
     (hA : A.IsLowerTriangular) : A⁻¹.IsLowerTriangular := by
   by_cases h : IsUnit A.det
@@ -191,8 +185,7 @@ theorem _root_.Matrix.IsLowerTriangular.inv [CommRing R] {A : Matrix n n R}
     exact Matrix.blockTriangular_zero
 
 /-- The diagonal of the inverse of an upper triangular matrix with nonzero diagonal:
-$(\mathbf{A}^{-1})_{i,i} = \mathbf{A}_{i,i}^{-1}$.
-Port of `NLAlib.inv_apply_self_of_isUpperTriangular`, there over $\mathbb{R}$. -/
+$(\mathbf{A}^{-1})_{i,i} = \mathbf{A}_{i,i}^{-1}$. -/
 theorem _root_.Matrix.IsUpperTriangular.inv_apply_self [Field K] {A : Matrix n n K}
     (hA : A.IsUpperTriangular) (hd : ∀ i, A i i ≠ 0) (i : n) : A⁻¹ i i = (A i i)⁻¹ := by
   have hu : IsUnit A.det :=
@@ -203,8 +196,7 @@ theorem _root_.Matrix.IsUpperTriangular.inv_apply_self [Field K] {A : Matrix n n
   exact eq_inv_of_mul_eq_one_right h1
 
 /-- The diagonal of the inverse of a lower triangular matrix with nonzero diagonal:
-$(\mathbf{A}^{-1})_{i,i} = \mathbf{A}_{i,i}^{-1}$.
-Port of `NLAlib.inv_apply_self_of_isLowerTriangular`, there over $\mathbb{R}$. -/
+$(\mathbf{A}^{-1})_{i,i} = \mathbf{A}_{i,i}^{-1}$. -/
 theorem _root_.Matrix.IsLowerTriangular.inv_apply_self [Field K] {A : Matrix n n K}
     (hA : A.IsLowerTriangular) (hd : ∀ i, A i i ≠ 0) (i : n) : A⁻¹ i i = (A i i)⁻¹ := by
   have hu : IsUnit A.det :=
@@ -218,35 +210,32 @@ end Fintype
 
 /-! ### Unit triangular matrices -/
 
-/-- A matrix is **unit lower triangular** if it is lower triangular with ones on the diagonal.
-Port of `NLAlib.IsUnitLowerTriangular`, there over $\mathbb{R}$. -/
+/-- A matrix is **unit lower triangular** if it is lower triangular with ones on the diagonal. -/
 structure IsUnitLowerTriangular [Zero R] [One R] (L : Matrix n n R) : Prop where
   /-- The matrix is lower triangular. -/
   isLowerTriangular : L.IsLowerTriangular
   /-- The diagonal entries are one. -/
   apply_self : ∀ i, L i i = 1
 
-/-- A matrix is **unit upper triangular** if it is upper triangular with ones on the diagonal.
-Port of `NLAlib.IsUnitUpperTriangular`, there over $\mathbb{R}$. -/
+/-- A matrix is **unit upper triangular** if it is upper triangular with ones on the diagonal. -/
 structure IsUnitUpperTriangular [Zero R] [One R] (U : Matrix n n R) : Prop where
   /-- The matrix is upper triangular. -/
   isUpperTriangular : U.IsUpperTriangular
   /-- The diagonal entries are one. -/
   apply_self : ∀ i, U i i = 1
 
-/-- The identity is unit lower triangular. Port of `NLAlib.isUnitLowerTriangular_one`. -/
+/-- The identity is unit lower triangular. -/
 theorem isUnitLowerTriangular_one [Zero R] [One R] [DecidableEq n] :
     IsUnitLowerTriangular (1 : Matrix n n R) := by
   exact ⟨Matrix.blockTriangular_one, fun _ => Matrix.one_apply_eq _⟩
 
-/-- The identity is unit upper triangular. Port of `NLAlib.isUnitUpperTriangular_one`. -/
+/-- The identity is unit upper triangular. -/
 theorem isUnitUpperTriangular_one [Zero R] [One R] [DecidableEq n] :
     IsUnitUpperTriangular (1 : Matrix n n R) := by
   exact ⟨Matrix.blockTriangular_one, fun _ => Matrix.one_apply_eq _⟩
 
 /-- $\mathbf{L}^{\mathsf{T}}$ is unit upper triangular exactly when $\mathbf{L}$ is unit lower
-triangular.
-Port of `NLAlib.isUnitUpperTriangular_transpose_iff`. -/
+triangular. -/
 theorem isUnitUpperTriangular_transpose_iff [Zero R] [One R] {L : Matrix n n R} :
     IsUnitUpperTriangular Lᵀ ↔ IsUnitLowerTriangular L := by
   exact ⟨fun h => ⟨fun i j hij => h.1 (i := j) (j := i) hij, h.2⟩,
@@ -262,16 +251,14 @@ section Fintype
 
 variable [Fintype n]
 
-/-- A product of unit lower triangular matrices is unit lower triangular.
-Port of `NLAlib.IsUnitLowerTriangular.mul`. -/
+/-- A product of unit lower triangular matrices is unit lower triangular. -/
 theorem IsUnitLowerTriangular.mul [NonAssocSemiring R] {A B : Matrix n n R}
     (hA : IsUnitLowerTriangular A) (hB : IsUnitLowerTriangular B) :
     IsUnitLowerTriangular (A * B) := by
   exact ⟨Matrix.BlockTriangular.mul hA.1 hB.1, fun i => by
     rw [Matrix.IsLowerTriangular.mul_apply_self hA.1 hB.1, hA.2, hB.2, one_mul]⟩
 
-/-- A product of unit upper triangular matrices is unit upper triangular.
-Port of `NLAlib.IsUnitUpperTriangular.mul`. -/
+/-- A product of unit upper triangular matrices is unit upper triangular. -/
 theorem IsUnitUpperTriangular.mul [NonAssocSemiring R] {A B : Matrix n n R}
     (hA : IsUnitUpperTriangular A) (hB : IsUnitUpperTriangular B) :
     IsUnitUpperTriangular (A * B) := by
@@ -280,22 +267,19 @@ theorem IsUnitUpperTriangular.mul [NonAssocSemiring R] {A B : Matrix n n R}
 
 variable [DecidableEq n]
 
-/-- A unit lower triangular matrix has determinant one.
-Port of `NLAlib.IsUnitLowerTriangular.det_eq_one`. -/
+/-- A unit lower triangular matrix has determinant one. -/
 theorem IsUnitLowerTriangular.det_eq_one [CommRing R] {L : Matrix n n R}
     (hL : IsUnitLowerTriangular L) : L.det = 1 := by
   rw [Matrix.det_of_isLowerTriangular L hL.1]
   exact Finset.prod_eq_one fun i _ => hL.2 i
 
-/-- A unit upper triangular matrix has determinant one.
-Port of `NLAlib.IsUnitUpperTriangular.det_eq_one`. -/
+/-- A unit upper triangular matrix has determinant one. -/
 theorem IsUnitUpperTriangular.det_eq_one [CommRing R] {U : Matrix n n R}
     (hU : IsUnitUpperTriangular U) : U.det = 1 := by
   rw [Matrix.det_of_isUpperTriangular hU.1]
   exact Finset.prod_eq_one fun i _ => hU.2 i
 
-/-- The inverse of a unit lower triangular matrix is unit lower triangular.
-Port of `NLAlib.IsUnitLowerTriangular.inv`. -/
+/-- The inverse of a unit lower triangular matrix is unit lower triangular. -/
 theorem IsUnitLowerTriangular.inv [CommRing R] {L : Matrix n n R}
     (hL : IsUnitLowerTriangular L) : IsUnitLowerTriangular L⁻¹ := by
   have hu : IsUnit L.det := by rw [hL.det_eq_one]; exact isUnit_one
@@ -304,8 +288,7 @@ theorem IsUnitLowerTriangular.inv [CommRing R] {L : Matrix n n R}
   rwa [Matrix.IsLowerTriangular.mul_apply_self hL.1 (Matrix.IsLowerTriangular.inv hL.1),
     Matrix.one_apply_eq, hL.2, one_mul] at h1
 
-/-- The inverse of a unit upper triangular matrix is unit upper triangular.
-Port of `NLAlib.IsUnitUpperTriangular.inv`. -/
+/-- The inverse of a unit upper triangular matrix is unit upper triangular. -/
 theorem IsUnitUpperTriangular.inv [CommRing R] {U : Matrix n n R}
     (hU : IsUnitUpperTriangular U) : IsUnitUpperTriangular U⁻¹ := by
   have hu : IsUnit U.det := by rw [hU.det_eq_one]; exact isUnit_one
@@ -316,8 +299,7 @@ theorem IsUnitUpperTriangular.inv [CommRing R] {U : Matrix n n R}
 
 end Fintype
 
-/-- A unit lower triangular matrix that is also upper triangular is the identity.
-Port of `NLAlib.eq_one_of_isUnitLowerTriangular_of_isUpperTriangular`. -/
+/-- A unit lower triangular matrix that is also upper triangular is the identity. -/
 theorem IsUnitLowerTriangular.eq_one_of_isUpperTriangular [Zero R] [One R] [DecidableEq n]
     {A : Matrix n n R} (hL : IsUnitLowerTriangular A) (hU : A.IsUpperTriangular) : A = 1 := by
   calc A = Matrix.diagonal fun i => A i i :=
@@ -328,13 +310,11 @@ theorem IsUnitLowerTriangular.eq_one_of_isUpperTriangular [Zero R] [One R] [Deci
 /-! ### Upper trapezoidal matrices -/
 
 /-- A rectangular matrix indexed by `Fin m` and `Fin n` is **upper trapezoidal** if its entries
-below the main diagonal vanish: $\mathbf{A}_{i,j} = 0$ for $j < i$.
-Port of `NLAlib.IsUpperTrapezoidal`. -/
+below the main diagonal vanish: $\mathbf{A}_{i,j} = 0$ for $j < i$. -/
 def IsUpperTrapezoidal [Zero R] {m n : ℕ} (A : Matrix (Fin m) (Fin n) R) : Prop :=
   ∀ (i : Fin m) (j : Fin n), (j : ℕ) < (i : ℕ) → A i j = 0
 
-/-- For a square matrix, upper trapezoidal means upper triangular.
-Port of `NLAlib.isUpperTrapezoidal_iff_isUpperTriangular`. -/
+/-- For a square matrix, upper trapezoidal means upper triangular. -/
 theorem isUpperTrapezoidal_iff_isUpperTriangular [Zero R] {n : ℕ}
     {A : Matrix (Fin n) (Fin n) R} : IsUpperTrapezoidal A ↔ A.IsUpperTriangular := by
   exact ⟨fun h i j hij => h i j (Fin.lt_def.mp hij), fun h i j hij => h (Fin.lt_def.mpr hij)⟩
@@ -367,8 +347,7 @@ def forwardSubstState (L : Matrix (Fin n) (Fin n) K) (b : Fin n → K) : ℕ →
       else forwardSubstState L b k i
 
 /-- **Forward substitution**: the solution of the lower triangular system
-$\mathbf{L}\mathbf{x} = \mathbf{b}$ over a field, computed from the first entry down.
-Port of `NLAlib.forwardSubst`, there over $\mathbb{R}$. -/
+$\mathbf{L}\mathbf{x} = \mathbf{b}$ over a field, computed from the first entry down. -/
 def forwardSubst (L : Matrix (Fin n) (Fin n) K) (b : Fin n → K) : Fin n → K :=
   forwardSubstState L b n
 
@@ -381,8 +360,7 @@ def backSubstState (U : Matrix (Fin n) (Fin n) K) (b : Fin n → K) : ℕ → Fi
       else backSubstState U b k i
 
 /-- **Back substitution**: the solution of the upper triangular system
-$\mathbf{U}\mathbf{x} = \mathbf{b}$ over a field, computed from the last entry up.
-Port of `NLAlib.backSubst`, there over $\mathbb{R}$. -/
+$\mathbf{U}\mathbf{x} = \mathbf{b}$ over a field, computed from the last entry up. -/
 def backSubst (U : Matrix (Fin n) (Fin n) K) (b : Fin n → K) : Fin n → K :=
   backSubstState U b n
 
@@ -457,14 +435,14 @@ private theorem backSubstState_eq (U : Matrix (Fin n) (Fin n) K) (b : Fin n → 
 
 /-- Forward substitution solves a lower triangular system with nonzero diagonal: if
 $\mathbf{x}$ is the output for $\mathbf{L}$, $\mathbf{b}$ then $\mathbf{L}\mathbf{x} = \mathbf{b}$.
-Port of `NLAlib.mulVec_forwardSubst`. -/
+-/
 theorem mulVec_forwardSubst {L : Matrix (Fin n) (Fin n) K} (hL : L.IsLowerTriangular)
     (hd : ∀ i, L i i ≠ 0) (b : Fin n → K) : L *ᵥ forwardSubst L b = b := by
   exact funext fun i => mulVec_forwardSubstState hL hd b n i i.2
 
 /-- Back substitution solves an upper triangular system with nonzero diagonal: if
 $\mathbf{x}$ is the output for $\mathbf{U}$, $\mathbf{b}$ then $\mathbf{U}\mathbf{x} = \mathbf{b}$.
-Port of `NLAlib.mulVec_backSubst`. -/
+-/
 theorem mulVec_backSubst {U : Matrix (Fin n) (Fin n) K} (hU : U.IsUpperTriangular)
     (hd : ∀ i, U i i ≠ 0) (b : Fin n → K) : U *ᵥ backSubst U b = b := by
   have hL : (U.submatrix Fin.rev Fin.rev).IsLowerTriangular :=

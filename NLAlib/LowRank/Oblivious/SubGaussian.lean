@@ -55,8 +55,7 @@ isObliviousSubspaceInjection_of_isSubgaussianVector_of_subgaussianEmbeddingDim_l
 hasJLMoment_of_isSubgaussianVector hind hsub hiso hε
 ```
 both about `fun ω => (√(Fintype.card l : ℝ))⁻¹ • (X ω)ᴴ`, which is
-`fun ω => ((√(Fintype.card l : ℝ))⁻¹ • X ω)ᴴ` by `Matrix.conjTranspose_smul`. Design:
-`docs/design/LowRank-S7.md` §3.5, §8.
+`fun ω => ((√(Fintype.card l : ℝ))⁻¹ • X ω)ᴴ` by `Matrix.conjTranspose_smul`.
 
 ## Main definitions
 

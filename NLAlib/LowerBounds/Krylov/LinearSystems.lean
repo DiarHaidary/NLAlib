@@ -25,7 +25,6 @@ $\tfrac14 e^{-2s/\kappa}$. On every level of $\mathbf{d}$ the part of $\boldsymb
 orthogonal to the Gaussian columns survives, and the Chebyshev dual weights turn this into the
 bound. The algorithmic lower bounds built on it (through the Krylov coupling of a hidden rotation)
 are proved below.
-Design note `docs/design/LowerBounds-HiddenRotationLowerBounds.md` §3.5.
 
 ## Main results
 

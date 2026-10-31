@@ -21,7 +21,7 @@ The realisation theorem says that for positive definite $\mathbf{A}$ and $\mathb
 computed iterates are `NLAlib.pcgIterate`, for every $k$ and with no breakdown hypothesis. The
 proof compares the recurrence, step by step, with the Hestenes–Stiefel recurrence on the split
 system for any factor $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$
-(`NLAlib.pcgState_x_eq_mulVec_cgState_x`), and then uses the K0 realisation
+(`NLAlib.pcgState_x_eq_mulVec_cgState_x`), and then uses the CG realisation
 `Matrix.PosDef.cgState_x_eq` and `Matrix.PosDef.pcgIterate_eq_mulVec_cgIterate`; the factor is
 in the proof only.
 

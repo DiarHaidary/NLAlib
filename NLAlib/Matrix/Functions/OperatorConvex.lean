@@ -48,7 +48,7 @@ $f(a\mathbf{A} + b\mathbf{B}) \preceq a f(\mathbf{A}) + b f(\mathbf{B})$ for all
 $a, b \ge 0$ with $a + b = 1$ and all Hermitian matrices $\mathbf{A}$, $\mathbf{B}$ of every size
 with spectrum in $s$. It is stated for complex matrices indexed by `Fin d`; the consequences below
 hold over any `RCLike` field and any index type.
-[Bhatia1997, §V.1]; [Tropp2015, Definition 8.4.5]. Port of `NLAlib.OperatorConvexOn`. -/
+[Bhatia1997, §V.1]; [Tropp2015, Definition 8.4.5]. -/
 def OperatorConvexOn (s : Set ℝ) (f : ℝ → ℝ) : Prop :=
   Convex ℝ s ∧ ∀ (d : ℕ) (A B : Matrix (Fin d) (Fin d) ℂ), A.IsHermitian → B.IsHermitian →
     spectrum ℝ A ⊆ s → spectrum ℝ B ⊆ s → ∀ a b : ℝ, 0 ≤ a → 0 ≤ b → a + b = 1 →
@@ -138,8 +138,7 @@ theorem operatorConvexOn_inv : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => x⁻�
 
 /-- **The negative logarithm is operator convex**: $t \mapsto -\log t$ is operator convex on
 $(0, \infty)$.
-[Bhatia1997, §V.2]; [Tropp2015, §8.4].
-Port of `NLAlib.operatorConvexOn_neg_log`. -/
+[Bhatia1997, §V.2]; [Tropp2015, §8.4]. -/
 theorem operatorConvexOn_neg_log : OperatorConvexOn (Set.Ioi 0) fun x : ℝ => -Real.log x := by
   refine ⟨convex_Ioi 0, fun d A B hA hB hAs hBs a b ha hb hab => ?_⟩
   open scoped Matrix.Norms.L2Operator in
@@ -265,7 +264,6 @@ columns, then
 $$f(\mathbf{K}^{\mathsf{H}}\mathbf{A}\mathbf{K})
   \preceq \mathbf{K}^{\mathsf{H}} f(\mathbf{A}) \mathbf{K} \,.$$
 [Tropp2015, Theorem 8.5.2]; [Bhatia1997, Theorem V.2.3].
-Port of `NLAlib.OperatorConvexOn.cfc_conjTranspose_mul_mul_le`, there over $\mathbb{C}$.
 Result: operator-jensen -/
 theorem OperatorConvexOn.cfc_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {A : Matrix m m 𝕜} (hA : A.IsHermitian)
@@ -330,8 +328,7 @@ Hermitian with spectrum in $s$, and $\sum_i \mathbf{K}_i^{\mathsf{H}}\mathbf{K}_
 a finite sum, then
 $$f\Bigl(\sum_i \mathbf{K}_i^{\mathsf{H}}\mathbf{A}_i\mathbf{K}_i\Bigr)
   \preceq \sum_i \mathbf{K}_i^{\mathsf{H}} f(\mathbf{A}_i) \mathbf{K}_i \,.$$
-[Tropp2015, Theorem 8.5.2]. Port of `NLAlib.operator_jensen`, there for two terms over
-$\mathbb{C}$.
+[Tropp2015, Theorem 8.5.2].
 Result: operator-jensen -/
 theorem OperatorConvexOn.cfc_sum_conjTranspose_mul_mul_le {s : Set ℝ} {f : ℝ → ℝ}
     (hf : OperatorConvexOn s f) {ι : Type*} [Fintype ι] {A : ι → Matrix m m 𝕜}

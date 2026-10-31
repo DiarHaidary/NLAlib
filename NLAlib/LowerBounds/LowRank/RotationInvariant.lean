@@ -24,8 +24,8 @@ Nyström tends to the factor times $b(r - q)$ as $a \to \infty$ (Epperly and Web
 the bound `NLAlib.integral_nuclearNorm_fromBlocks_sub_nystrom_le_of_isLeftUnitarilyInvariant`
 proves at every $a$. So for every constant below the factor some matrix of rank $r$ has a larger
 expected error: Epperly and Webber's Theorems 3.3, 3.6(b) and 4.2(b) for rotation-invariant laws.
-Their versions for an arbitrary full-rank law (an extra Haar rotation of the instance) are deferred
-(design note, §4). Real field. Design: `docs/design/LowRank-EstimatorLowerBounds.md` §3.3.
+Their versions for an arbitrary full-rank law (an extra Haar rotation of the instance) are deferred.
+Real field.
 
 ## Main results
 
@@ -406,7 +406,7 @@ $$c\,\|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_q\|_{\mathsf{F}}^2 <
 \mathbb{E}\|\mathbf{A} - \mathsf{gn}(\mathbf{A}, \mathbf{X}, \mathbf{\Psi})\|_{\mathsf{F}}^2\,.$$
 So with a Gaussian co-range the product of the two factors cannot be lowered. Epperly and
 Webber's §4.2 turns this into "$k' + \ell = \Theta(q/\varepsilon^2)$ samples"; that arithmetic over
-$\mathbb{R}$ is not proved here (design note §4, deferred). The matching upper bound is
+$\mathbb{R}$ is not proved here. The matching upper bound is
 `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_le_of_isLeftUnitarilyInvariant_of_hasLaw_gaussianMatrix_of_rank_le`.
 [EpperlyWebber2026, Theorem 4.2(b)]; there for every full-rank pair of laws and an orthonormal
 co-range, here for a left unitarily invariant range law and a Gaussian co-range ($\gamma = 1$).

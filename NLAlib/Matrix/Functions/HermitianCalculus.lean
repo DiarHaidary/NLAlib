@@ -113,9 +113,7 @@ real and $\mathbf{U}$ unitary, that is, with orthonormal columns and as many col
 any column index type, then
 $f(\mathbf{A}) = \mathbf{U}\operatorname{diag}(f(\mathbf{d}_i))\mathbf{U}^{\mathsf{H}}$. The frame
 of the spectral theorem `Matrix.IsHermitian.exists_eq_mul_diagonal_mul_conjTranspose` is such a
-$\mathbf{U}$.
-Port of `NLAlib.cfc_eq_eigenvectorUnitary_mul_diagonal_mul_conjTranspose`, there for the chosen
-eigenvector matrix. -/
+$\mathbf{U}$. -/
 theorem HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose {r : Type*} [Fintype r]
     [DecidableEq r]
     {A : Matrix n n 𝕜} {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
@@ -174,8 +172,7 @@ private theorem exists_cfc_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU hr hAU⟩
 
 /-- $f$ of a real diagonal matrix is the diagonal matrix of the values of $f$:
-$f(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(f(\mathbf{d}_i))$.
-Port of `NLAlib.cfc_diagonal_real`. -/
+$f(\operatorname{diag}(\mathbf{d})) = \operatorname{diag}(f(\mathbf{d}_i))$. -/
 theorem cfc_diagonal (f : ℝ → ℝ) (d : n → ℝ) :
     cfc f (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) =
       Matrix.diagonal fun i => ((f (d i) : ℝ) : 𝕜) := by
@@ -215,8 +212,7 @@ theorem _root_.Matrix.IsHermitian.cfc_mulVec_of_mulVec_eq_smul {A : Matrix n n �
 /-- $f$ commutes with unitary conjugation:
 $f(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}) = \mathbf{U} f(\mathbf{A}) \mathbf{U}^{\mathsf{H}}$
 for Hermitian $\mathbf{A}$ and $\mathbf{U}$ unitary, that is, with orthonormal columns and as many
-columns as rows, on any column index type.
-Port of `NLAlib.cfc_unitary_conj`, there over $\mathbb{C}$. -/
+columns as rows, on any column index type. -/
 theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq {r : Type*} [Fintype r]
     [DecidableEq r] {U : Matrix n r 𝕜}
     (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n) {A : Matrix r r 𝕜}
@@ -232,8 +228,7 @@ theorem HasOrthonormalCols.cfc_mul_mul_conjTranspose_of_card_eq {r : Type*} [Fin
   simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
 
 /-- $f$ commutes with relabelling: for Hermitian $\mathbf{A}$ and a bijection $e$ of index types,
-$f$ of $\mathbf{A}$ with rows and columns relabelled by $e$ is $f(\mathbf{A})$ relabelled by $e$.
-Port of `NLAlib.cfc_reindex_of_isHermitian`. -/
+$f$ of $\mathbf{A}$ with rows and columns relabelled by $e$ is $f(\mathbf{A})$ relabelled by $e$. -/
 theorem _root_.Matrix.IsHermitian.cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) (e : m ≃ n) :
     cfc f (A.submatrix e e) = (cfc f A).submatrix e e := by
@@ -259,8 +254,7 @@ theorem _root_.Matrix.IsHermitian.cfc_submatrix_equiv {A : Matrix n n 𝕜} (hA 
 /-- $f$ of a block diagonal matrix with Hermitian blocks $\mathbf{A}$, $\mathbf{B}$ is the
 block diagonal matrix of $f(\mathbf{A})$ and $f(\mathbf{B})$:
 $$f\left(\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}\right)
-  = \begin{bmatrix} f(\mathbf{A}) & \mathbf{0} \\ \mathbf{0} & f(\mathbf{B}) \end{bmatrix} .$$
-Port of `NLAlib.cfc_fromBlocks`, there over $\mathbb{C}$. -/
+  = \begin{bmatrix} f(\mathbf{A}) & \mathbf{0} \\ \mathbf{0} & f(\mathbf{B}) \end{bmatrix} .$$ -/
 theorem _root_.Matrix.IsHermitian.cfc_fromBlocks_zero₁₂_zero₂₁ {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (hB : B.IsHermitian) (f : ℝ → ℝ) :
@@ -458,7 +452,6 @@ $\operatorname{Re} \operatorname{tr} f(\mathbf{A})
 = \sum_{i < \lvert n \rvert} f(\lambda_i(\mathbf{A}))$.
 [Tropp2015, Definition 8.3.1]; there the sum defines the trace function, with the remark that it
 agrees with the trace of the standard matrix function.
-Port of `NLAlib.re_trace_cfc_eq_sum_eigenvalues`.
 Result: trace-of-matrix-function -/
 theorem _root_.Matrix.IsHermitian.re_trace_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (f : ℝ → ℝ) :
@@ -471,8 +464,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_cfc {A : Matrix n n 𝕜} (hA : A.IsH
 
 /-- Eigenvalues of $f(\mathbf{A})$ for a non-decreasing $f$: for Hermitian $\mathbf{A}$ and
 $k < \lvert n \rvert$, $\lambda_k(f(\mathbf{A})) = f(\lambda_k(\mathbf{A}))$, when $f$ is monotone
-on a set containing the spectrum of $\mathbf{A}$.
-Port of `NLAlib.eigenvalues₀_cfc_of_antitone`, there with the hypothesis on the composite. -/
+on a set containing the spectrum of $\mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_cfc_of_monotoneOn {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {f : ℝ → ℝ} {s : Set ℝ} (hf : MonotoneOn f s)
     (hs : spectrum ℝ A ⊆ s) {k : ℕ} (hk : k < Fintype.card n) :
@@ -503,8 +495,7 @@ type:
 $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x})
   = \sum_i f(\mathbf{d}_i) \, \lvert (\mathbf{U}^{\mathsf{H}}\mathbf{x})_i \rvert^2 \,.$$
 This is the identity behind Gauss quadrature for $\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x}$.
-Port of `NLAlib.dotProduct_cfc_mulVec_eq_sum`, there over $\mathbb{R}$ with the chosen
-eigenbasis. -/
+-/
 theorem HasOrthonormalCols.re_quadForm_cfc_eq_sum {r : Type*} [Fintype r] [DecidableEq r]
     {A : Matrix n n 𝕜}
     {U : Matrix n r 𝕜} {d : r → ℝ} (hU : HasOrthonormalCols U)
@@ -563,8 +554,7 @@ private theorem abs_re_quadForm_cfc_le_aux {A : Matrix n n 𝕜} (hA : A.IsHermi
 
 /-- The spectral norm of $f(\mathbf{A})$ is at most the largest $\lvert f \rvert$ on the
 spectrum: for Hermitian $\mathbf{A}$, if $c \ge 0$ and $\lvert f(x) \rvert \le c$ for every $x$ in
-the spectrum of $\mathbf{A}$, then $\|f(\mathbf{A})\|_2 \le c$.
-Port of `NLAlib.specNorm_aeval_le`, there for polynomials over $\mathbb{R}$. -/
+the spectrum of $\mathbf{A}$, then $\|f(\mathbf{A})\|_2 \le c$. -/
 theorem _root_.Matrix.IsHermitian.specNorm_cfc_le {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {f : ℝ → ℝ} {c : ℝ} (hc : 0 ≤ c) (h : ∀ x ∈ spectrum ℝ A, |f x| ≤ c) :
     specNorm (cfc f A) ≤ c := by
@@ -574,8 +564,7 @@ theorem _root_.Matrix.IsHermitian.specNorm_cfc_le {A : Matrix n n 𝕜} (hA : A.
 /-- The quadratic form of $f(\mathbf{A})$ is bounded by the largest $\lvert f \rvert$ on the
 spectrum: for Hermitian $\mathbf{A}$, if $\lvert f(x) \rvert \le c$ for every $x$ in the spectrum,
 then $\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}} f(\mathbf{A}) \mathbf{x}) \rvert
-\le c \|\mathbf{x}\|^2$ for every vector $\mathbf{x}$.
-Port of `NLAlib.abs_dotProduct_cfc_mulVec_le`. -/
+\le c \|\mathbf{x}\|^2$ for every vector $\mathbf{x}$. -/
 theorem _root_.Matrix.IsHermitian.abs_re_quadForm_cfc_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {f : ℝ → ℝ} {c : ℝ} (h : ∀ x ∈ spectrum ℝ A, |f x| ≤ c) (x : n → 𝕜) :
     |RCLike.re (quadForm (cfc f A) x)| ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by
@@ -637,8 +626,7 @@ theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le {A : Matrix
 
 /-- A lower bound for the trace of $f(\mathbf{A})$ from a lower bound of $f$ on the spectrum: for
 Hermitian $\mathbf{A}$, if $b \le f(x)$ for every $x$ in the spectrum, then
-$b \lvert n \rvert \le \operatorname{Re} \operatorname{tr} f(\mathbf{A})$.
-Port of `NLAlib.mul_card_le_re_trace_cfc_of_le`. -/
+$b \lvert n \rvert \le \operatorname{Re} \operatorname{tr} f(\mathbf{A})$. -/
 theorem _root_.Matrix.IsHermitian.mul_card_le_re_trace_cfc {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {f : ℝ → ℝ} {b : ℝ} (h : ∀ x ∈ spectrum ℝ A, b ≤ f x) :
     b * Fintype.card n ≤ RCLike.re (cfc f A).trace := by
@@ -713,8 +701,7 @@ private theorem cfc_inv_sqrt_mul_sqrt {A : Matrix n n 𝕜} (hA : A.PosDef) :
   exact inv_mul_cancel₀ hx0.ne'
 
 /-- The inverse of the square root of a positive definite matrix through the functional
-calculus: $(\mathbf{A}^{1/2})^{-1} = f(\mathbf{A})$ for $f(x) = 1/\sqrt{x}$.
-Port of `NLAlib.cfc_inv_sqrt_mul_sqrt`. -/
+calculus: $(\mathbf{A}^{1/2})^{-1} = f(\mathbf{A})$ for $f(x) = 1/\sqrt{x}$. -/
 theorem _root_.Matrix.PosDef.inv_sqrt_eq_cfc {A : Matrix n n 𝕜} (hA : A.PosDef) :
     (CFC.sqrt A)⁻¹ = cfc (fun x : ℝ => (√x)⁻¹) A := by
   exact Matrix.inv_eq_left_inv (cfc_inv_sqrt_mul_sqrt hA)
@@ -724,7 +711,6 @@ theorem _root_.Matrix.PosDef.isUnit_sqrt {A : Matrix n n 𝕜} (hA : A.PosDef) :
     IsUnit (CFC.sqrt A) := by
   exact IsUnit.of_mul_eq_one_right _ (cfc_inv_sqrt_mul_sqrt hA)
 
--- Stage B1a
 
 omit [DecidableEq m] in
 /-- A function of a Hermitian matrix on an invariant frame: if

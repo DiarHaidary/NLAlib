@@ -77,7 +77,6 @@ $$\operatorname{Re} \operatorname{tr}(\mathbf{A}\mathbf{B})
   \le \sum_{i < \lvert n \rvert} \lambda_i(\mathbf{A}) \, \lambda_i(\mathbf{B}) \,,$$
 the eigenvalues of each matrix in non-increasing order.
 [HornJohnson2013, Theorem 4.3.53].
-Port of `NLAlib.trace_mul_le_sum_eigenvalues₀_mul`, there over $\mathbb{R}$.
 Result: von-neumann-trace-inequality -/
 theorem _root_.Matrix.IsHermitian.re_trace_mul_le_sum_eigenvalue_mul {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) :
@@ -169,8 +168,6 @@ $$\lvert \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B}) \rvert
   \le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})
   \,.$$
 [HornJohnson2013, Theorem 7.4.1.1].
-Port of `NLAlib.frobInner_le_sum_singularValues_mul`, there over $\mathbb{R}$ and for the real
-part.
 Result: von-neumann-trace-inequality -/
 theorem norm_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
     ‖(Aᴴ * B).trace‖ ≤
@@ -185,7 +182,6 @@ theorem norm_trace_conjTranspose_mul_le_sum_singularValues_mul (A B : Matrix m n
 $\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
 \le \sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})$.
 [HornJohnson2013, Theorem 7.4.1.1].
-Port of `NLAlib.abs_frobInner_le_sum_singularValues_mul`, there over $\mathbb{R}$.
 Result: von-neumann-trace-inequality -/
 theorem abs_frobInner_le_sum_singularValues_mul (A B : Matrix m n 𝕜) :
     |frobInner A B| ≤
@@ -199,7 +195,6 @@ Frobenius norm: for Hermitian $\mathbf{A}$, $\mathbf{B}$ and any finite set $S$ 
 $$\sum_{i \in S} \bigl(\lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B})\bigr)^2
   \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 \,.$$
 [HornJohnson2013, Corollary 6.3.8].
-Port of `NLAlib.sum_sq_eigenvalues₀_sub_le_frobSq_sub`, there over $\mathbb{R}$.
 Result: hoffman-wielandt -/
 theorem _root_.Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -224,7 +219,6 @@ for any finite set $S$ of indices,
 $$\sum_{i \in S} \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2
   \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2 \,.$$
 [HornJohnson2013, Corollary 7.4.1.3].
-Port of `NLAlib.sum_sq_singularValues_add_sub_le_frobSq`, there over $\mathbb{R}$.
 Result: mirsky-inequality -/
 theorem sum_singularValues_sub_sq_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S : Finset ℕ) :
     ∑ i ∈ S, (singularValues A i - singularValues B i) ^ 2 ≤ frobNorm (A - B) ^ 2 := by
@@ -255,9 +249,7 @@ theorem sum_singularValues_sub_sq_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S 
 /-- The Frobenius inner product with a matrix of rank at most $r$ is bounded through the
 spectral norm: if $\operatorname{rank} \mathbf{X} \le r$ then
 $\langle \mathbf{X}, \mathbf{E} \rangle_{\mathsf{F}}
-\le \sqrt{r} \, \|\mathbf{X}\|_{\mathsf{F}} \|\mathbf{E}\|_2$.
-Port of `NLAlib.frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le`, there over
-$\mathbb{R}$. -/
+\le \sqrt{r} \, \|\mathbf{X}\|_{\mathsf{F}} \|\mathbf{E}\|_2$. -/
 theorem frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le {X : Matrix m n 𝕜} {r : ℕ}
     (hX : X.rank ≤ r) (E : Matrix m n 𝕜) :
     frobInner X E ≤ √(r : ℝ) * frobNorm X * specNorm E := by

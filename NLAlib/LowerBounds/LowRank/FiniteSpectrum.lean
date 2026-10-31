@@ -13,7 +13,7 @@ public import NLAlib.Polynomial.Chebyshev.ExtremaEvaluation
 # Finite-spectrum hard instances for low-rank approximation
 
 Numerical factors for the equispaced positive-spectrum family with a head at $r+2$ and tails
-at $1,\ldots,r+1$. Design: `docs/design/LowerBounds-FixedBatches.md`; the design is approved.
+at $1,\ldots,r+1$.
 
 ## Main definitions
 

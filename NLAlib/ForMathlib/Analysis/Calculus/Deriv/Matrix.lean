@@ -93,8 +93,7 @@ theorem hasDerivAt_pow_succ_apply {A : 𝔽 → Matrix n n R} {A' : Matrix n n R
     simpa only [pow_succ _ (k + 1)] using h
 
 /-- The derivative of the trace of a power:
-$(\operatorname{tr} \mathbf{A}^{k+1})' = (k + 1) \operatorname{tr}(\mathbf{A}' \mathbf{A}^k)$.
-Port of `NLAlib.hasDerivAt_matrix_trace_pow`, there over $\mathbb{R}$ in the operator norm. -/
+$(\operatorname{tr} \mathbf{A}^{k+1})' = (k + 1) \operatorname{tr}(\mathbf{A}' \mathbf{A}^k)$. -/
 theorem hasDerivAt_trace_pow_succ {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (k : ℕ) :
     HasDerivAt (fun s => (A s ^ (k + 1)).trace) ((k + 1) * (A' * A t ^ k).trace) t := by
@@ -110,8 +109,7 @@ theorem hasDerivAt_trace_pow_succ {A : 𝔽 → Matrix n n R} {A' : Matrix n n R
   exact h
 
 /-- The sum over rows $i$ of the determinants of $\mathbf{A}$ with row $i$ replaced by row $i$ of
-$\mathbf{H}$ is $\operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{H})$.
-Port of `NLAlib.sum_det_updateRow_eq_trace_adjugate_mul`, there over $\mathbb{R}$. -/
+$\mathbf{H}$ is $\operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{H})$. -/
 theorem sum_det_updateRow {S : Type*} [CommRing S] (A H : Matrix n n S) :
     ∑ i, (A.updateRow i (H i)).det = (A.adjugate * H).trace := by
   simp_rw [← Matrix.cramer_transpose_apply, Matrix.cramer_eq_adjugate_mulVec,
@@ -122,7 +120,6 @@ theorem sum_det_updateRow {S : Type*} [CommRing S] (A H : Matrix n n S) :
 
 /-- **Jacobi's formula**:
 $(\det \mathbf{A})' = \operatorname{tr}(\operatorname{adj}(\mathbf{A}) \mathbf{A}')$.
-Port of `NLAlib.hasDerivAt_det`, there over $\mathbb{R}$ in the entrywise norm.
 [HornJohnson2013, §0.8.10] (locator to check). -/
 theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) :
@@ -142,8 +139,7 @@ theorem hasDerivAt_det {A : 𝔽 → Matrix n n R} {A' : Matrix n n R} {t : 𝔽
 
 /-- The derivative of the inverse, entrywise:
 $(\mathbf{A}^{-1})' = -\mathbf{A}^{-1} \mathbf{A}' \mathbf{A}^{-1}$ where $\mathbf{A}(t)$ is
-invertible. Port of `NLAlib.hasDerivAt_matrix_inv`, there over $\mathbb{R}$ in the operator
-norm. -/
+invertible. -/
 theorem hasDerivAt_inv_apply {A : 𝔽 → Matrix n n 𝔽} {A' : Matrix n n 𝔽} {t : 𝔽}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (ht : IsUnit (A t).det) (i j : n) :
     HasDerivAt (fun s => (A s)⁻¹ i j) ((-((A t)⁻¹ * A' * (A t)⁻¹)) i j) t := by
@@ -188,7 +184,7 @@ theorem hasDerivAt_inv_apply {A : 𝔽 → Matrix n n 𝔽} {A' : Matrix n n �
 /-- The derivative of the logarithm of the determinant: for a family of real matrices,
 $(\log \det \mathbf{A})' = \operatorname{tr}(\mathbf{A}^{-1} \mathbf{A}')$ where
 $\det \mathbf{A}(t) \ne 0$ (the determinant may be negative: `Real.log` is the logarithm of the
-absolute value). Port of `NLAlib.hasDerivAt_log_det`. -/
+absolute value). -/
 theorem hasDerivAt_log_det {A : ℝ → Matrix n n ℝ} {A' : Matrix n n ℝ} {t : ℝ}
     (hA : ∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t) (ht : (A t).det ≠ 0) :
     HasDerivAt (fun s => Real.log (A s).det) ((A t)⁻¹ * A').trace t := by

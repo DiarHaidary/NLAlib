@@ -508,7 +508,6 @@ theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜
 
 /-! ### One column -/
 
--- Stage B0
 
 omit [Fintype r] [DecidableEq r] in
 /-- The Galerkin inverse $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$ is the same for

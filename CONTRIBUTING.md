@@ -22,9 +22,24 @@ R result ids, G design records (`scripts/check_rules.py`, §9.1), E programs (§
 `scripts/Programs.lean` and `scripts/check_rules.py`). `python3 scripts/check_rules.py
 --list` prints every id with its level; a rule with no id is judged by review.
 
-Sections: 1 Ground rules · 2 Layout · 3 File template · 4 Names · 5 Statements · 6 Docstrings
-and citations · 7 Proofs, `sorry` and the scaffold library · 8 Designing a stage · 9 Workflow and
-checks · 10 Building without running out of memory · 11 Rules for agents.
+Sections: Setup · 1 Ground rules · 2 Layout · 3 File template · 4 Names · 5 Statements ·
+6 Docstrings and citations · 7 Proofs and what each library may contain · 8 Designing new
+material · 9 Workflow, checks and pull requests · 10 Building without running out of memory ·
+11 AI agents.
+
+## Setup
+
+```
+git clone https://github.com/NLA-lib/nlalib.git && cd nlalib
+lake exe cache get                                  # Mathlib's .olean files; never build Mathlib
+LEAN_NUM_THREADS=4 lake build NLAlib > /tmp/build.log 2>&1
+```
+
+The toolchain is pinned in `lean-toolchain` (Lean and Mathlib `v4.33.1`); `elan` installs it.
+The checks also need Python 3.11 or later and, for the LaTeX check, Node 20 with
+`npm install --no-save --no-package-lock katex@0.16.22`. Read §10 before your first build: an
+unbounded `lake build` can exhaust the memory of a laptop. Before opening a PR, run
+`bash scripts/stage_check.sh` (§9).
 
 ## 1. Ground rules
 
@@ -49,16 +64,16 @@ checks · 10 Building without running out of memory · 11 Rules for agents.
 5. **General once, then corollaries.** Over `[RCLike 𝕜]` and arbitrary `[Fintype]` index types
    unless the mathematics needs ℝ or `Fin` (§5.1). The ℝ corollary, when useful, is one line.
 6. **Every public declaration is documented and cited** (§6).
-7. **No `sorry` on `main`** in the library. Deferred statements live in `NLAlibScaffold` (§7).
-   No `axiom`, no `native_decide`, no `admit`, no weakening a statement to make it provable.
+7. **No `sorry` on `main`.** A PR contains complete, checked work (§9); how you stage unfinished
+   work on your own branch is up to you. No `axiom`, no `native_decide`, no `admit`, no weakening
+   a statement to make it provable.
 8. **Files are topics, not proofs.** Up to about 1000 lines [F10] (Mathlib's linter limit of
    1500 is the hard ceiling; maintainer, 2026-10-14), one mathematical topic, ordered
    definitions → basic API → main theorems → corollaries. No file named after a paper, a round of
    work, or a proof technique. No "toolkit", "bundle" or "part 2" files [F11].
-9. **Design before code** (§8). Each stage of the library starts with a written design: the
+9. **Design before code** (§8). New material of any size starts with a written design: the
    objects, the hypothesis interfaces, the statement shapes, and how later layers will consume
-   them. Nothing is inherited from the prototype library by default; its organisation, names and
-   interfaces are material to evaluate, not a template.
+   them. Existing developments elsewhere are material to evaluate, not a template.
 
 ## 2. Layout
 
@@ -84,28 +99,33 @@ NLAlib/
   LowerBounds/     lower bounds for randomized algorithms and named estimators,
                    one subfolder per topic (LowRank/, ...); may import every
                    other folder, and only LowerBounds imports it                  (layer 5)
-NLAlibScaffold/    same tree; statements with deferred proofs (§7)
-docs/              references.bib, design notes (docs/design/), port ledger (docs/port/)
-scripts/           Audit.lean, Replay.lean, Lint.lean, check_refs.py, stage_check.sh, ledger and prototype tools
+NLAlibTools/       tools, not library: the Float interpreter, the NumPy emitter, examples
+docs/              references.bib, constants.toml (named bounds), targets.toml and targets.approved
+                   (the target registry, §5.5), rules/ (rule data, generated digest),
+                   design/ (design notes), renames/ (rename maps, §4.2 N12)
+scripts/           the checks (§9): stage_check.sh, Audit.lean, Replay.lean, Lint.lean,
+                   Programs.lean, Targets.lean, check_rules.py, check_refs.py, ..., and their tests
 ```
 
 The subdirectories of each layer are decided in that layer's design note (§8), not in advance.
 A file in `NLAlib/Computation` imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`
 [E5], so that programs over the library's objects live in their topic files
 (`docs/design/Computation.md`, D7).
-A module imports only its own layer and lower [P1]; `scripts/check_rules.py` (`LAYER`) holds
-the same numbers, and a top-level folder missing from it is a P1 error. The half layers follow
+A module imports only modules of its own layer number or lower [P1]: folders with the same number
+(Computation, Matrix and Polynomial, all 0) may import one another, except where P11 and E5 below
+forbid it. `scripts/check_rules.py` (`LAYER`) holds the same numbers, and a top-level folder
+missing from it is a P1 error; `python3 scripts/check_rules.py --files <files>` checks the import
+rules of the files you changed in seconds. The half layers follow
 the imports, not the topics (maintainer decision 2026-10-25): Probability may import Krylov, and
 Krylov does not import Probability; Regression may import Sketching, and Sketching does not
 import Regression; LowRank may import Regression; Estimation may import LowRank, and LowRank
 does not import Estimation. Lower bounds (for the matrix-vector query model and for specific
 estimators) combine Krylov, probability, sketching and low-rank theory, so they form the top layer
 `LowerBounds/` with topic subfolders (maintainer decision LOWERBOUNDS-FOLDER, 2026-10-25); a lemma
-they need that is not itself a lower bound stays in its topic folder. Randomized linear-system solvers (Kaczmarz, sketch-and-project) live
-in Regression: the former `Solvers/` folder (layer 5, placed by topic rather than by imports) was
-merged into it on 2026-10-25, and finding results by task is the explorer's job. The root files
-`NLAlib.lean` and `NLAlibScaffold.lean` are generated by `lake exe mk_all --module --lib <name>`;
-CI checks they are current.
+they need that is not itself a lower bound stays in its topic folder. Randomized linear-system
+solvers (Kaczmarz, sketch-and-project) live in Regression; finding results by task is the
+explorer's job. The root file `NLAlib.lean` is generated by `lake exe mk_all --module --lib
+NLAlib`; CI checks it is current.
 There are no per-directory aggregator files: a user imports the file they need [P2].
 
 `ForMathlib` holds only facts with no NLAlib vocabulary in their statement [P4]. They are declared
@@ -122,12 +142,12 @@ a Mathlib hypothesis structure [P8].
 
 The Polynomial layer is exempt from P9 (maintainer decision 2026-10-20): its headline scalar
 results (Chebyshev residuals and minimax, approximation of $1/x$, interpolation of Stieltjes
-functions) stay in `NLAlib/Polynomial`, where its design notes put them. The condition is that the
+functions) stay in `NLAlib/Polynomial`. The condition is that the
 layer stays easy to upstream to Mathlib as a whole: a file in `NLAlib/Polynomial` imports only
 Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial` [P11], and ForMathlib imports nothing outside
 ForMathlib (P1), so it never depends on the layer. The checker grants the exemption only while P11
-holds. What else an upstream PR would need is in `docs/design/Polynomial-Chebyshev.md`,
-section "Upstreaming to Mathlib". Weyl's majorant lemma `NLAlib.sum_range_rpow_le_of_forall_prod_range_le`
+holds.
+Weyl's majorant lemma `NLAlib.sum_range_rpow_le_of_forall_prod_range_le`
 is scalar but stays in `NLAlib/Matrix/Majorization/Horn.lean`, allowlisted for P9 (maintainer
 decision 2026-10-20): its proof needs the Matrix layer's majorization theory, which ForMathlib
 cannot import (P1).
@@ -176,7 +196,7 @@ end NLAlib
 Rules:
 
 - The header linter requires a non-empty `Authors:` line [F1]; use `NLAlib contributors` unless
-  the file is a port that must keep its original attribution.
+  the file keeps the attribution of material taken from elsewhere.
 - `module`, then `public import` lines (specific Mathlib files; never `import Mathlib` or
   `import Mathlib.Tactic` [F3]), then the module docstring, then `@[expose] public section` [F2].
 - Everything is in `namespace NLAlib` [F4], except lemmas whose subject is a Mathlib structure
@@ -296,7 +316,7 @@ The tokens of the §5.3 vocabulary, and the ones a statement shape forces:
 | id | rule | checked |
 |---|---|---|
 | N13 | A statistic on the left is the prefix: `integral_` (Bochner `∫ … ∂μ`), `variance_` (`Var[…]`), `covariance_` (`cov[…]`), `condExp_` (`μ[…\|m]`); never `expected`, `expectation`, `mean`. A mean square `∫ ‖·‖ ^ 2` has `_sq` before the relation (`integral_frobNorm_sub_rsvd_sq_le`); a mean `∫ ‖·‖` has none. | yes |
-| N14 | The tail prefix follows the statement, in every namespace, Mathlib's included: `μ.real {…}` is `measureReal_`, `μ {…}` (in `ℝ≥0∞`) is `measure_`. Tails are stated in `μ.real` (`docs/PORT_PROBABILITY.md` D3). (Replaces the 2026-10-14 rule, namespaced `measure_`; Mathlib's own `HasSubgaussianMGF.measure_ge_le` keeps its name.) | yes |
+| N14 | The tail prefix follows the statement, in every namespace, Mathlib's included: `μ.real {…}` is `measureReal_`, `μ {…}` (in `ℝ≥0∞`) is `measure_`. Tails are stated in `μ.real`. (Replaces the 2026-10-14 rule, namespaced `measure_`; Mathlib's own `HasSubgaussianMGF.measure_ge_le` keeps its name.) | yes |
 | N15 | The event comes first, subject first: the subject is the side that mentions `ω`, named by its tokens, then the event relation, then the tail relation: `{ω \| b < X ω}` is `X_gt`, `{ω \| b ≤ X ω}` `X_ge`, `{ω \| X ω ≤ b}` `X_le`, `{ω \| X ω < b}` `X_lt`; so a tail name has two relation tokens, `measureReal_frobNorm_sub_rsvd_sq_gt_le`. A subject with no token (a variable function `f (X ω)`) is left out: `measureReal_ge_integral_add_le`. A scalar event is stated positively, `{ω \| b < err ω}`, never `{ω \| ¬ (err ω ≤ b)}`, and `¬ ∀ i, x i ≤ b` is stated `∃ i, b < x i` (`measureReal_exists_…_gt_le`). `¬` stays only where there is no `<` form: a Loewner inequality, a conjunction, a named predicate (`measureReal_not_isSubspaceEmbedding_le`); the name says `not_`. | yes |
 
 **Sketching, low-rank approximation, regression.**
@@ -353,7 +373,7 @@ an error or a comparison. Reviewers check those.
   moments, quadratic forms, matrix-valued integrals, matrix concentration. ℝ only where the
   object is a real number (scalar MGFs and tails, the norm or singular value a tail is about) and,
   for now, for the Gaussian and Haar matrix laws, whose interfaces are still stated over `𝕜`
-  (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D4). A real corollary of a `𝕜`
+  (maintainer, 2026-10-14). A real corollary of a `𝕜`
   theorem is stated only when a downstream user needs it in `ᵀ` form that `simp` cannot produce.
 - Index types: `{m n : Type*} [Fintype m] [Fintype n]` plus `[DecidableEq _]` where Mathlib
   needs it. `Fin k` is appropriate where its order or recursion carries content: the `k` sorted
@@ -413,7 +433,7 @@ an error or a comparison. Reviewers check those.
   corollary stays only if another library proof uses it, allowlisted with "used by …"; otherwise
   that proof takes the Jensen step itself. A lower-moment bound proved independently (HMT 10.6's
   $\mathbb{E}\|\cdot\|_2$) is a separate result.
-- **Numerical bounds** (maintainer, 2026-10-14; `docs/PORT_PROBABILITY.md` D5). A later
+- **Numerical bounds** (maintainer, 2026-10-14). A later
   improvement, and a new proof whose bound is incomparable with the old one, must fit without a
   rename:
   1. A name says what the statement is, never how good it is: no `_sharp`, `_improved`,
@@ -464,7 +484,10 @@ an error or a comparison. Reviewers check those.
      docstring names a registered bound in backticks without a marker of it (the opt-out
      `<!-- mention NAME -->` is for a name mentioned only in passing, and is rare); the
      definition's own docstring shows its value. The script's docstring has the exact syntax.
-     A new named bound gets its registry entry in the commit that defines it [B1]. To change a
+     A new named bound gets its registry entry in the commit that defines it [B1]; the check
+     treats a public definition whose name ends in `Constant`, `Bound`, `Tail`, `Dim`, `Factor`,
+     `Size`, `Rows`, `Rate`, `Exponent` or `Threshold` as a named bound (a `…Ratio` is not
+     detected; register it by hand). To change a
      bound: edit its body; in the registry move `latex` (and `display`) to `previous_latex` (and
      `previous_display`) and write the new value; run
      `python3 scripts/check_constants.py --update NAME`, which replaces the previous value by the
@@ -514,7 +537,7 @@ an error or a comparison. Reviewers check those.
   definition.
 - A bound variable that only meets `•` gets its type written: `∀ θ : ℝ, … θ • Y ω …`. Without it
   Lean elaborates `θ : ℕ` (`ℕ` acts on every additive monoid), and the hypothesis silently quantifies
-  over natural numbers (found in P5a's Chernoff skeleton, 2026-10-14) [T10].
+  over natural numbers (2026-10-14) [T10].
 - Dot notation: a lemma whose first explicit argument is `hA : A.IsHermitian` lives in
   `Matrix.IsHermitian`; one about an `IsSVD` lives in `IsSVD` (§4 N18, checked for `IsHermitian`,
   `PosSemidef`, `PosDef`, `IsSVD` and `HasOrthonormalCols`).
@@ -541,7 +564,7 @@ those layers are designed.
 | SVD | `IsSVD A U σ V`: thin, any finite column type, `σ : r → ℝ` nonnegative, `A = U * diagonal σ * Vᴴ`; the library's chosen one (the lexicographically least thin SVD) is `svdU A`, `svdV A` | `isSVD_svdU_svdV` |
 | best rank-`k` approximation | `truncatedSVD A k`, the truncation of `svdU A`, `svdV A` (Borel measurable in `A`); any best approximation `IsBestRankApprox A k Y`; optimal errors `singularValues A k` (spectral) and `frobNorm (A - truncatedSVD A k)` (Frobenius) | `frobNorm_sub_truncatedSVD_sq`, `measurable_truncatedSVD`, `isBestRankApprox_iff_exists_isSVD` |
 | spectral gap | `eigengap A k`, `singularGap A k`, indexed by the dimension `k` of the leading subspace | `eigengap_succ`, `singularGap_succ` |
-| relative singular gap | `singularGapRatio A i j := (σᵢ - σⱼ) / (σᵢ + σⱼ)`, Tropp–Webber's γ, indices from `0`, in `[0, 1]` for `i ≤ j`; `0` when both singular values vanish; gap-dependent Krylov bounds take it, never the ratio `σⱼ / σᵢ` spelled out (block Krylov round, BD9, 2026-10-18) | `one_sub_singularGapRatio_div_one_add_singularGapRatio` (`(1 - γ) / (1 + γ) = σⱼ / σᵢ`), `singularGapRatio_nonneg`, `singularGapRatio_le_one`; Mathlib has none |
+| relative singular gap | `singularGapRatio A i j := (σᵢ - σⱼ) / (σᵢ + σⱼ)`, Tropp–Webber's γ, indices from `0`, in `[0, 1]` for `i ≤ j`; `0` when both singular values vanish; gap-dependent Krylov bounds take it, never the ratio `σⱼ / σᵢ` spelled out (2026-10-18) | `one_sub_singularGapRatio_div_one_add_singularGapRatio` (`(1 - γ) / (1 + γ) = σⱼ / σᵢ`), `singularGapRatio_nonneg`, `singularGapRatio_le_one`; Mathlib has none |
 | pseudoinverse | `pinv A`, every shape and rank; recognised through `IsPinv A B` (the four Penrose identities); full-rank formulas are lemmas, not definitions | `pinv_of_isUnit`; `mul_pinv : A * pinv A = rangeProjector A` |
 | full row rank | `Function.Injective Aᴴ.mulVec` | — |
 | least-squares solution | `IsLeastSquaresSolution A b x`; the optimal residual is `(1 - rangeProjector A) *ᵥ b` | `isLeastSquaresSolution_iff_isMinOn` |
@@ -577,8 +600,8 @@ those layers are designed.
 | real power, absolute value, positive part, inverse square root | Mathlib's `A ^ r`, `CFC.abs A` (rectangular: `CFC.sqrt (Aᴴ * A)`), `A⁺`, `(CFC.sqrt A)⁻¹`, under `MatrixOrder` | `CFC.rpow_eq_cfc_real`, `CFC.abs_eq_cfc_norm`, `Matrix.PosDef.inv_sqrt_eq_cfc` |
 | uniform scalar/function approximation | `Metric.IsUniformApproxOn g f s ε`: pointwise `dist (g x) (f x) ≤ ε` on `s`, with only a pseudometric codomain; degree, continuity, compactness and nonnegative error remain separate | `Metric.isUniformApproxOn_iff`; `Metric.isUniformApproxOn_iff_dist_le` uses Mathlib `ContinuousMap.dist_le` on compact domains |
 | normalized Chebyshev residual | `chebyshevResidual a b q : ℝ[X]`, the affine composition of Mathlib `Polynomial.Chebyshev.T`, normalized at zero for `0 < a < b`; scalar approximation bounds use the shared metric predicate | `eval_chebyshevResidual`, `degree_chebyshevResidual_le`, `eval_chebyshevResidual_zero`; inverse/division junk values documented in the definition |
-| residual minimax value | `residualMinimax s q : ℝ`, $\inf_p\sup_{x\in s}\lvert p(x)\rvert$ over real $p$ with `p.degree ≤ q` and `p.eval 0 = 1`, for `s : Set ℝ`; meaningful for bounded `s` (a finite spectrum, `Set.Icc a a'`), junk `0` for empty `s` and for unbounded `s` at `q ≥ 1`; the spectrum-optimal CG, PCG and MINRES bounds take it (Krylov K1 note L11) | `residualMinimax_le` (any residual polynomial bounds it), `residualMinimax_Icc` (the Chebyshev value on an interval, from `isLeast_chebyshev_minimax`), `exists_residualMinimax_sq_le_sum_mul_norm_sq` (weighted least-squares dual on a finite set); Mathlib has none |
-| Chebyshev extrema and dual weights | `chebyshevExtremum a a' q k`, $\xi_k=\tfrac{a'+a}{2}-\tfrac{a'-a}{2}\cos(k\pi/q)$, increasing for $k\le q$, where `chebyshevResidual a a' q` alternates (junk `a` at `q = 0`); `chebyshevWeight a a' q k` $=\lvert\ell_k(0)\rvert$ for `k : Fin (q + 1)`, $\ell_k$ the Lagrange basis at the extrema; the worst-case Krylov instances are built from them (Krylov K2b) | `eval_chebyshevResidual_chebyshevExtremum` (alternation), `sum_chebyshevWeight`, `chebyshevWeight_pos`, `inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq` (the dual certificate); the extremum is the affine image of Mathlib's `Polynomial.Chebyshev.node q k` by unfolding, no bridge lemma |
+| residual minimax value | `residualMinimax s q : ℝ`, $\inf_p\sup_{x\in s}\lvert p(x)\rvert$ over real $p$ with `p.degree ≤ q` and `p.eval 0 = 1`, for `s : Set ℝ`; meaningful for bounded `s` (a finite spectrum, `Set.Icc a a'`), junk `0` for empty `s` and for unbounded `s` at `q ≥ 1`; the spectrum-optimal CG, PCG and MINRES bounds take it | `residualMinimax_le` (any residual polynomial bounds it), `residualMinimax_Icc` (the Chebyshev value on an interval, from `isLeast_chebyshev_minimax`), `exists_residualMinimax_sq_le_sum_mul_norm_sq` (weighted least-squares dual on a finite set); Mathlib has none |
+| Chebyshev extrema and dual weights | `chebyshevExtremum a a' q k`, $\xi_k=\tfrac{a'+a}{2}-\tfrac{a'-a}{2}\cos(k\pi/q)$, increasing for $k\le q$, where `chebyshevResidual a a' q` alternates (junk `a` at `q = 0`); `chebyshevWeight a a' q k` $=\lvert\ell_k(0)\rvert$ for `k : Fin (q + 1)`, $\ell_k$ the Lagrange basis at the extrema; the worst-case Krylov instances are built from them | `eval_chebyshevResidual_chebyshevExtremum` (alternation), `sum_chebyshevWeight`, `chebyshevWeight_pos`, `inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq` (the dual certificate); the extremum is the affine image of Mathlib's `Polynomial.Chebyshev.node q k` by unfolding, no bridge lemma |
 | even Chebyshev filter | `evenChebyshevFilter k : ℝ[X]`, $U_{2k}(\sqrt x)/(2k+1)$, of degree at most $k$ in $x$, value $1$ at $1$ (Krylov-spectral note, 2026-10-22) | `eval_evenChebyshevFilter` (for `0 ≤ x`) |
 | open Bernstein ellipse | `openBernsteinEllipse ρ : Set ℂ`, focal-distance sum `‖z-1‖+‖z+1‖ < ρ+ρ⁻¹`; approximation assumes `1 < ρ` | `isOpen_openBernsteinEllipse`, `ofReal_mem_openBernsteinEllipse`, `joukowski_mem_openBernsteinEllipse`; no outer-boundary regularity |
 | full Chebyshev coefficient | `chebyshevCoeff f k` for `f : ℝ → 𝕜`, `[RCLike 𝕜]`; cosine Bochner integral, normalization 1/π at zero and 2/π otherwise | raw cosine integral by definition; `chebyshevCoeff_eval_T` gives basis delta; Mathlib cosine substitution/orthogonality reused |
@@ -587,11 +610,11 @@ those layers are designed.
 | nonnegative periodic Jackson kernel | `jacksonKernel N θ : ℝ`, finite cosine polynomial; period `2π`, integral `2π` | `jacksonKernel_eq_norm_sq`, `integral_jacksonKernel`, `integral_cos_mul_jacksonKernel`; ordinary functions, no new circle-function type |
 | canonical Jackson approximant | `jacksonApprox f N : 𝕜[X]` for `[RCLike 𝕜]`, `f : ℝ → 𝕜`; inclusive sum `0..N` with damping times the existing full coefficients | `eval_jacksonApprox`, `degree_jacksonApprox_le`, `chebyshevCoeff_jacksonApprox`; no arbitrary-function reconstruction claim |
 | Jackson approximation factor | `jacksonApproximationConstant : ℝ`, currently `Real.pi`, improving the source's `π²/2`; supporting numerical API | `jacksonApproximationConstant_pos`, `jacksonApproximationConstant_le`; the current-value comparison is `≤ Real.pi` |
-| divided difference | `dividedDifference s v r := ∑ i ∈ s, Lagrange.nodalWeight s v i * r i` for nodes `v : ι → F` on `s : Finset ι`, Mathlib's nodal weights; distinct nodes as `Set.InjOn v s`, the count as `#s = q + 1` (stage K2b, 2026-10-17) | `dividedDifference_eq_coeff_interpolate` (from Mathlib's `Lagrange.coeff_eq_sum`) |
+| divided difference | `dividedDifference s v r := ∑ i ∈ s, Lagrange.nodalWeight s v i * r i` for nodes `v : ι → F` on `s : Finset ι`, Mathlib's nodal weights; distinct nodes as `Set.InjOn v s`, the count as `#s = q + 1` (2026-10-17) | `dividedDifference_eq_coeff_interpolate` (from Mathlib's `Lagrange.coeff_eq_sum`) |
 | location of the spectrum | `spectrum ℝ A ⊆ s` for Hermitian `A`, the same format for an interval (`s = Set.Icc a b`) and a union of intervals; polynomial bounds on it are `∀ x ∈ s, \|p.eval x\| ≤ M`; a Loewner sandwich `a • 1 ≤ A`, `A ≤ b • 1` reaches it through a bridge (maintainer, 2026-10-17) | `Matrix.IsHermitian.spectrum_subset_iff`, `spectrum_subset_Icc_of_le`; Mathlib's `le_algebraMap_iff_spectrum_le`, `algebraMap_le_iff_le_spectrum` |
 | transfer from `𝕜` to `ℂ` | `complexify A = A.map RCLike.toComplex` | `Matrix.IsHermitian.complexify_cfc`, `complexify_le_complexify_iff` |
 | operator convexity | `OperatorConvexOn s f`; convex combinations as `a • A + b • B`, `a + b = 1` | `OperatorConvexOn.cfc_smul_add_smul_le` |
-| supporting line of a real function | `HasSupportingLineOn f s x := ∃ c, ∀ y ∈ s, f x + c * (y - x) ≤ f y` (ForMathlib, root namespace), for `f : ℝ → ℝ`; the hypothesis of Jensen's inequality for a function that need not be convex, never a raw `∃ c` in a statement (block Krylov round, BD9, 2026-10-18) | `ConvexOn.hasSupportingLineOn` (convex and differentiable at `x ∈ s`); Mathlib has no subgradient of a real function (searched) |
+| supporting line of a real function | `HasSupportingLineOn f s x := ∃ c, ∀ y ∈ s, f x + c * (y - x) ≤ f y` (ForMathlib, root namespace), for `f : ℝ → ℝ`; the hypothesis of Jensen's inequality for a function that need not be convex, never a raw `∃ c` in a statement (2026-10-18) | `ConvexOn.hasSupportingLineOn` (convex and differentiable at `x ∈ s`); Mathlib has no subgradient of a real function (searched) |
 | derivative of a matrix curve | entrywise, `∀ i j, HasDerivAt (fun s => A s i j) (A' i j) t` | `Matrix.hasDerivAt_iff_forall_apply` |
 | triangular, unit triangular | Mathlib's `Matrix.IsUpperTriangular`, `Matrix.IsLowerTriangular`; `IsUnitLowerTriangular`, `IsUnitUpperTriangular` | `Matrix.BlockTriangular` |
 | trapezoidal, Hessenberg, tridiagonal, quasi-triangular | `IsUpperTrapezoidal`, `IsUpperHessenberg`, `IsTridiagonal`, `IsUpperQuasiTriangular`, for matrices indexed by `Fin` | — |
@@ -619,7 +642,7 @@ those layers are designed.
 | independent test matrices | `IndepFun S G μ` for two random matrices (Hutch++'s sketch and residual test matrices, of any widths and laws; a deterministic one is a constant map); conditioning on one is `ProbabilityTheory.IndepFun.integral_comp_eq_integral_integral` (Hutch++ note §6, 2026-10-18) | Mathlib's; `indepFun_iff_map_prod_eq_prod_map_map`. To integrate out a factor $W$ with a named law (`HasLaw W ν μ`), the preferred route is the `ProbabilityTheory.IndepFun` conditioning lemmas: `lintegral_comp_eq_lintegral_lintegral_of_hasLaw`, `lintegral_ofReal_comp_eq_lintegral_ofReal_integral`, `integrable_comp_of_integral_le`, `integral_comp_le_of_integral_le`; `integrable_comp_iff` transfers integrability to the product of the laws (Consolidation note D1, 2026-10-22) |
 | Girard–Hutchinson estimate | `girardHutchinson A Ω := (Ωᴴ * A * Ω).trace / card m`, the probes the `m` columns of `Ω : Matrix n m 𝕜`; `0` with no columns; the column average is `girardHutchinson_eq_sum` (trace estimation note §4, 2026-10-18) | `girardHutchinson_eq_sum`; Mathlib has none |
 | Hutch++ | `hutchpp A S G := (rsvd A S).trace + girardHutchinson ((1 - P) * A * (1 - P)) G`, `P = rangeProjector (A * S)`, basis-free; the papers' orthonormal-basis form is a bridge (Hutch++ note §6, 2026-10-18) | `hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`, `trace_sub_hutchpp`; Mathlib has none |
-| projection-cost-preserving sketch | deterministic: `IsProjectionCostPreserving A Ã k a b` (S2b); random: `HasProjectionCostPreserving S A k a b δ μ`, the tail `μ.real {ω \| ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ`, with the sketch `S : Ω → Matrix l n 𝕜` in the Sketching orientation; on a LowRank test matrix, `fun ω => (X ω)ᴴ`; no oblivious (all-`A`) predicate | `HasSubspaceEmbedding.hasProjectionCostPreserving`, `IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`, `hasProjectionCostPreserving_conjTranspose_iff` (the LowRank orientation); Mathlib has none |
+| projection-cost-preserving sketch | deterministic: `IsProjectionCostPreserving A Ã k a b`; random: `HasProjectionCostPreserving S A k a b δ μ`, the tail `μ.real {ω \| ¬ IsProjectionCostPreserving A (A * (S ω)ᴴ) k a b} ≤ δ`, with the sketch `S : Ω → Matrix l n 𝕜` in the Sketching orientation; on a LowRank test matrix, `fun ω => (X ω)ᴴ`; no oblivious (all-`A`) predicate | `HasSubspaceEmbedding.hasProjectionCostPreserving`, `IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`, `hasProjectionCostPreserving_conjTranspose_iff` (the LowRank orientation); Mathlib has none |
 | preconditioned Richardson iteration | `richardsonIterate A M b x₀ q` for `A : Matrix m n 𝕜`, `M : Matrix n m 𝕜` (rectangular; a step size is folded into `M`), a total recursion; error `xs - richardsonIterate …` (sketch-and-precondition note D3, 2026-10-19) | `richardsonIterate_mul_conjTranspose` (Richardson through `Aᴴ` is Richardson on the normal equations), `sub_richardsonIterate_eq`; Mathlib has none |
 | sketch-and-precondition | `sketchAndPrecondition A S y x₀ q := pcgIterate (Aᴴ * A) (pinv ((S * A)ᴴ * (S * A))) (Aᴴ *ᵥ y) x₀ q`, basis-free; the start is explicit and the sketch-and-solve start is the hypothesis `IsLeastSquaresSolution (S * A) (S *ᵥ y) x₀` (note D1, D2) | `IsQR.sketchAndPrecondition_eq_mulVec_cgIterate`, `IsSVD.sketchAndPrecondition_eq_mulVec_cgIterate`, `pcgState_x_eq_sketchAndPrecondition`; Mathlib has none |
 | iterative sketching | `iterativeSketching A S ω y x₀ q := richardsonIterate A (ω • (pinv ((S * A)ᴴ * (S * A)) * Aᴴ)) y x₀ q`, one sketch for all steps | `iterativeSketching_eq`, `IsQR.iterativeSketching_succ`; Mathlib has none |
@@ -633,24 +656,24 @@ those layers are designed.
 | angle between a vector and an eigenspace | `spectralTangentSq A b c` $= \mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{c\})/\mu_{\mathbf{A},\mathbf{b}}(\{c\})$, junk $0$; eigenvalue bounds take `0 < (spectralMeasure A b).real {c}`, no eigenvector hypothesis (SD6) | `Matrix.IsHermitian.spectralTangentSq_le` (eigenvector form) |
 | moment matching | `MatchesMoments μ ν N`: equal integrals of every real polynomial of degree $< N$ (SD2); measures in the Polynomial layer are `[IsFiniteMeasure μ]` with `∀ᵐ x ∂μ, x ∈ Set.Icc a b` (SD3) | `matchesMoments_iff_forall_mem_degreeLT`, `matchesMoments_measureT` (Mathlib's Chebyshev–Gauss) |
 | orthogonality to lower degrees | `IsOrthogonalPolynomial μ k p`; monicity and degree stay separate hypotheses (SD4) | — |
-| positive definiteness up to a degree | `IsMomentPosDef μ k`: $\int p^2\,d\mu>0$ for every nonzero real `p` with `p.degree < k`, the $L^2$ form; vacuous at `k = 0`; the hypothesis of uniqueness of the orthogonal polynomials and of $k$ distinct Gauss nodes (KS7 orthogonal-structure note) | `isMomentPosDef_iff_forall_finset` (at least $k$ support points), `isMomentPosDef_succ_iff` (the last norm is positive), `Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff` (`k ≤ krylovGrade A b`); Mathlib has no moment-definiteness predicate (searched, KS7 note OQ5); the Hankel form through Mathlib's `Matrix.posDef_gram_iff_linearIndependent` is not stated |
+| positive definiteness up to a degree | `IsMomentPosDef μ k`: $\int p^2\,d\mu>0$ for every nonzero real `p` with `p.degree < k`, the $L^2$ form; vacuous at `k = 0`; the hypothesis of uniqueness of the orthogonal polynomials and of $k$ distinct Gauss nodes | `isMomentPosDef_iff_forall_finset` (at least $k$ support points), `isMomentPosDef_succ_iff` (the last norm is positive), `Matrix.IsHermitian.isMomentPosDef_spectralMeasure_iff` (`k ≤ krylovGrade A b`); Mathlib has no moment-definiteness predicate (searched); the Hankel form through Mathlib's `Matrix.posDef_gram_iff_linearIndependent` is not stated |
 | monic orthogonal polynomials, Jacobi matrix | `orthogonalPolynomial μ k : ℝ[X]`, defined by the Stieltjes three-term recurrence, monic of degree `k` for every `μ`; coefficients `jacobiAlpha μ k`, `jacobiBeta μ k` in Gautschi's convention ($\beta_k=\int\pi_k^2/\int\pi_{k-1}^2$, `jacobiBeta μ 0 = μ.real Set.univ`, junk `0` on a zero norm; OQ3); `jacobiMatrix μ k : Matrix (Fin k) (Fin k) ℝ` carries $\alpha_i$ and $\sqrt{\beta_i}$, the layout of `lanczosTridiagonal` | `orthogonalPolynomial_add_two` (`rfl`), `isOrthogonalPolynomial_orthogonalPolynomial`, `IsMomentPosDef.eq_orthogonalPolynomial`, `MatchesMoments.jacobiMatrix_eq`, `Matrix.IsHermitian.lanczosTridiagonal_eq_jacobiMatrix`; Mathlib has none for a general measure (its orthogonal families are for fixed weights, `Polynomial.Chebyshev.measureT`) |
 | Gauss rule at given nodes | `interpolatoryQuadrature μ s`, weight $\int\ell_x\,d\mu$ at each node, truncated at $0$; Gauss exactness under `IsOrthogonalPolynomial μ s.card (Lagrange.nodal s id)` (SD4) | `IsOrthogonalPolynomial.integral_interpolatoryQuadrature`; Mathlib has none beyond `Polynomial.Chebyshev.measureT` |
 | canonical $k$-point Gauss rule | `gaussQuadrature μ k := interpolatoryQuadrature μ (gaussNodes μ k)`, a finite measure for every `μ` and `k`; `gaussNodes μ k := (orthogonalPolynomial μ k).roots.toFinset`, `k` nodes under `IsMomentPosDef μ k`, and past the number of support points the rule is `μ` itself; Gauss statements take it, never the roots spelled out | `matchesMoments_gaussQuadrature` (exactness to degree $<2k$), `integral_gaussQuadrature_eq_sum`, `MatchesMoments.eq_gaussQuadrature` (uniqueness), `IsMomentPosDef.card_gaussNodes`; to Lanczos, `Matrix.IsHermitian.lanczosQuadrature_eq_gaussQuadrature`, `spectralMeasure_jacobiMatrix` (Golub–Welsch); Mathlib has none beyond `Polynomial.Chebyshev.measureT` |
-| Radau modified measure $\lvert x - c\rvert\,d\mu$ | `radauMeasure μ c` (Quadrature-remainder note §2, KS8) | `integral_radauMeasure` |
-| Radau rule, prescribed node $c$, $k$ free nodes | `radauQuadrature μ c k`; nodes `radauNodes μ c k` (KS8) | `matchesMoments_radauQuadrature`, `integral_radauQuadrature` |
-| Lobatto modified measure, rule | `lobattoMeasure μ a b`, `lobattoQuadrature μ a b k`, `lobattoNodes μ a b k` (KS8) | `integral_lobattoMeasure`, `matchesMoments_lobattoQuadrature`, `integral_lobattoQuadrature` |
-| Radau Jacobi matrix (Golub) | `radauJacobiMatrix μ c k`, corner `radauJacobiAlpha μ c k` (KS8) | `spectralMeasure_radauJacobiMatrix` |
-| nodes with multiplicity, nodal polynomial | `m : Multiset ℝ`, `(m.map fun y => X - C y).prod` (KS8) | Mathlib's `Multiset` API; `Lagrange.nodal s id` for a `Finset` |
-| jets | `(derivative^[k] H).eval y` (polynomial), `iteratedDeriv k f y` (function) (KS8) | `Polynomial.iteratedDeriv` |
+| Radau modified measure $\lvert x - c\rvert\,d\mu$ | `radauMeasure μ c` | `integral_radauMeasure` |
+| Radau rule, prescribed node $c$, $k$ free nodes | `radauQuadrature μ c k`; nodes `radauNodes μ c k` | `matchesMoments_radauQuadrature`, `integral_radauQuadrature` |
+| Lobatto modified measure, rule | `lobattoMeasure μ a b`, `lobattoQuadrature μ a b k`, `lobattoNodes μ a b k` | `integral_lobattoMeasure`, `matchesMoments_lobattoQuadrature`, `integral_lobattoQuadrature` |
+| Radau Jacobi matrix (Golub) | `radauJacobiMatrix μ c k`, corner `radauJacobiAlpha μ c k` | `spectralMeasure_radauJacobiMatrix` |
+| nodes with multiplicity, nodal polynomial | `m : Multiset ℝ`, `(m.map fun y => X - C y).prod` | Mathlib's `Multiset` API; `Lagrange.nodal s id` for a `Finset` |
+| jets | `(derivative^[k] H).eval y` (polynomial), `iteratedDeriv k f y` (function) | `Polynomial.iteratedDeriv` |
 | Lanczos quadrature rule | `lanczosQuadrature A b q`, the spectral measure of the projector compression; the scalar quadrature is `RCLike.re (star b ⬝ᵥ lanczosFA A f b q)` (SD5) | `integral_lanczosQuadrature`, `HasOrthonormalCols.lanczosQuadrature_eq`; Mathlib has none |
 | stochastic Lanczos quadrature | one estimator, two objects: `slq A f Ω q : 𝕜`, $m^{-1}\sum_j\int f\,d\,\mathsf{gaussQuadrature}(\mu_{\mathbf{A},\boldsymbol{\omega}_j},q)$, is canonical for trace estimates of $\operatorname{tr}f(\mathbf{A})$; `slqMeasure A Ω q : Measure ℝ`, scaled as `probeSpectralMeasure`, is canonical for spectral-density statements (distribution functions, Lipschitz test functions); the two are joined only by `integral_slqMeasure`, and neither is defined through the other; junk `0` with no probes or at `q = 0` | `integral_slqMeasure` (`∫ f ∂slqMeasure A Ω q = RCLike.re (slq A f Ω q) / card n`), `Matrix.IsHermitian.slq_eq_sum_lanczosFA` (the algorithm), `Matrix.IsHermitian.slqMeasure_eq_sum_lanczosQuadrature`, `matchesMoments_probeSpectralMeasure_slqMeasure`, `Matrix.IsHermitian.slqMeasure_eq_probeSpectralMeasure_of_card_le`; Mathlib has none |
 | query algorithm | `QueryAlgorithm Q R q β`, deterministic and adaptive: `query i` of the first `i` responses, `output` of all `q`; run against an oracle `f : Q → R` with `alg.transcript f`, `alg.run f`, the `i`-th query `alg.queryAt f i`; queries from a transcript `alg.queries τ`, for vector queries `alg.queryMatrix τ` (queries as columns); a randomized algorithm is `alg : S → QueryAlgorithm …` with `QueryAlgorithm.IsMeasurableFamily alg` and a seed independent of the input; lower bounds take `alg.IsMeasurable` | `QueryAlgorithm.history_apply`, `QueryAlgorithm.queryAt_eq_queries_transcript`; Mathlib has none (Markov kernels: §8) |
 | matrix–vector oracle | `A.mulVec` (one-sided, products $\mathbf{A}\mathbf{x}$); two-sided access is `twoSidedMulVec A`, pair query $(\mathbf{x}, \mathbf{y})$ ↦ $(\mathbf{A}\mathbf{x}, \mathbf{A}^{\mathsf{H}}\mathbf{y})$; right and left query matrices `alg.rightQueryMatrix τ`, `alg.leftQueryMatrix τ`; costs per side `alg.rightCount τ`, `alg.leftCount τ` (rounds with a nonzero part), budgets as hypotheses `∀ τ, alg.rightCount τ ≤ q` per side; one-sided `alg.IsOneSided`; one pass = `IsNonAdaptive` (both parts fixed up front) | `QueryAlgorithm.rank_rightQueryMatrix_le_rightCount`, `QueryAlgorithm.rank_leftQueryMatrix_le_leftCount` |
-| Gram simulation, truncation, Gaussian resampling | `alg.gramSimulation k`, the `2q`-round algorithm against `twoSidedMulVec X` that runs `q` queries to `X * Xᴴ`, its simulated responses `QueryAlgorithm.gramDecode h`; the first `i` rounds as an algorithm `alg.truncate i`; the transcript-dependent Gaussian resampling `alg.resample X X'` (LB-A note §3.4) | `QueryAlgorithm.run_gramSimulation`, `QueryAlgorithm.gramDecode_history_gramSimulation`, `QueryAlgorithm.transcript_truncate`, `QueryAlgorithm.transcript_resample`; Mathlib has none |
-| passes | `alg.IsPassStructured pass` for `pass : ℕ → ℕ` monotone: query `i` depends only on the responses of rounds in earlier passes; a `p`-pass algorithm adds `∀ i < q, pass i < p`; one pass is `IsNonAdaptive`, one query per pass is every algorithm; a weaker oracle `alg.comapResponse f`, a post-processed output `alg.mapOutput g` (LB-C note §2.1, 2026-10-26) | `QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive` (one pass), `QueryAlgorithm.isPassStructured_id`; Mathlib has none |
-| hidden rotation, Krylov coupling | the oracle `hiddenRotationOracle U D`, $\mathbf{x} \mapsto (\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}\mathbf{x}, \mathbf{U}^{\mathsf{H}}\mathbf{x})$, simulated on `twoSidedMulVec U` by `alg.hiddenRotationSimulation D`; the conclusion of the coupling theorem is the predicate `IsKrylovCoupling μ D s G₀ V G` (Gaussian `G` independent of `G₀`, a.s. `range V ≤ blockKrylovSpace D (fromCols G₀ G) s`), which lower bounds take as hypothesis (LB-C note §2.2) | `QueryAlgorithm.gramSimulation` is the case $\mathbf{D} = \mathbf{I}$ of the simulation; `QueryAlgorithm.run_hiddenRotationSimulation`; the coupling theorem is in the LB-C scaffold; Mathlib has none |
-| hard spectra of the hidden-rotation lower bounds | `IsChebyshevTwoIntervalSpectrum κ s M d` (values on the points $\pm\sqrt{\xi_j}$ of $[1, \kappa^2]$, multiplicities dominating the dual weights; linear systems); `equispacedLevelSpectrum k m p` (head $p + 2$, tail levels $1, \dots, p + 1$; few-pass low-rank approximation) (LB-C note §2.3) | built from `chebyshevExtremum`, `chebyshevWeight`; existence `exists_isChebyshevTwoIntervalSpectrum`; Mathlib has none |
+| Gram simulation, truncation, Gaussian resampling | `alg.gramSimulation k`, the `2q`-round algorithm against `twoSidedMulVec X` that runs `q` queries to `X * Xᴴ`, its simulated responses `QueryAlgorithm.gramDecode h`; the first `i` rounds as an algorithm `alg.truncate i`; the transcript-dependent Gaussian resampling `alg.resample X X'` | `QueryAlgorithm.run_gramSimulation`, `QueryAlgorithm.gramDecode_history_gramSimulation`, `QueryAlgorithm.transcript_truncate`, `QueryAlgorithm.transcript_resample`; Mathlib has none |
+| passes | `alg.IsPassStructured pass` for `pass : ℕ → ℕ` monotone: query `i` depends only on the responses of rounds in earlier passes; a `p`-pass algorithm adds `∀ i < q, pass i < p`; one pass is `IsNonAdaptive`, one query per pass is every algorithm; a weaker oracle `alg.comapResponse f`, a post-processed output `alg.mapOutput g` (2026-10-26) | `QueryAlgorithm.isPassStructured_zero_iff_isNonAdaptive` (one pass), `QueryAlgorithm.isPassStructured_id`; Mathlib has none |
+| hidden rotation, Krylov coupling | the oracle `hiddenRotationOracle U D`, $\mathbf{x} \mapsto (\mathbf{U}\mathbf{D}\mathbf{U}^{\mathsf{H}}\mathbf{x}, \mathbf{U}^{\mathsf{H}}\mathbf{x})$, simulated on `twoSidedMulVec U` by `alg.hiddenRotationSimulation D`; the conclusion of the coupling theorem is the predicate `IsKrylovCoupling μ D s G₀ V G` (Gaussian `G` independent of `G₀`, a.s. `range V ≤ blockKrylovSpace D (fromCols G₀ G) s`), which lower bounds take as hypothesis | `QueryAlgorithm.gramSimulation` is the case $\mathbf{D} = \mathbf{I}$ of the simulation; `QueryAlgorithm.run_hiddenRotationSimulation`; the coupling theorem is in the LB-C scaffold; Mathlib has none |
+| hard spectra of the hidden-rotation lower bounds | `IsChebyshevTwoIntervalSpectrum κ s M d` (values on the points $\pm\sqrt{\xi_j}$ of $[1, \kappa^2]$, multiplicities dominating the dual weights; linear systems); `equispacedLevelSpectrum k m p` (head $p + 2$, tail levels $1, \dots, p + 1$; few-pass low-rank approximation) | built from `chebyshevExtremum`, `chebyshevWeight`; existence `exists_isChebyshevTwoIntervalSpectrum`; Mathlib has none |
 | program | `Computation.Stmt P ι VB VI` (tags `P`, oracle names `ι`, handles `VB`, indices `VI`), scalar instructions `Computation.Instr P VB VI`; a program `<spec>Prog` lives in its topic file (`hutchppProg`, `gramSchmidtProg`, the sweep `orthAgainst`), its counts `<spec>Count` with its targets (`hutchppCount`, `gramSchmidtCount`); the first-order program it compiles to, `Computation.FStmt P ι nb ni`, `Computation.Prog P ι r b`, run by `Computation.Prog.exec` and budgeted by `Computation.Prog.RunsWithin`; the compiler `Computation.Stmt.compile`, `Computation.ProgFamily.compile`, and the registered trees `hutchppProg.compiled`, `hutchppProg.compiledDense`, `gramSchmidtProg.compiled` (§5.5; computation note, 2026-10-23) | Mathlib has no syntax for imperative programs (searched) |
 | `do` notation for programs | `Computation.Builder P ι VB VI β`, an abbreviation of Mathlib's `ContT (Stmt P ι VB VI) Id β`, with `Builder.run`, `Builder.stmt`, `Builder.ins`, `Builder.alloc` (scoped to the rest of the block), `Builder.forRange`, `Builder.ifThenElse`, `Builder.named`, `Builder.scope` | Mathlib's `ContT`, `ContT.run` |
 | index expression, cell | `Computation.IExp VI`, `Computation.Cell VB VI` | — |
@@ -663,7 +686,7 @@ those layers are designed.
 | substitution | `Computation.Stmt.subst`, `Computation.Stmt.substOracle`; certificates `Computation.ImplementsInstr`, `Computation.ImplementsOracle`; `Computation.RunsWithin.subst`, `Computation.RunsWithin.substOracle`; the oracle-only cost `substKind`, the simulation `Sim`, `St.withCnt` | — |
 | oracle implementations | `Computation.denseImpl`, `Computation.denseInterp`, `Computation.denseCost`; `Computation.cooImpl`, `Computation.cooMatrix`, `Computation.cooInterp`, `Computation.cooCost` | — |
 | error contract | `Computation.IsRelErrSem u dec safe sem`, error and success clauses per operation family; the real operations `BinOp.realOp` on `BinOp.IsArith`; the failing semantics `failSem`; the arithmetic part for an error relation, `Computation.IsArithErrSem err dec safe sem` (standard model: `Computation.RelErr`), and `Computation.AddsZeroExactly dec sem`; a witness with $u > 0$, `Computation.gridSem t` (rounding to nearest `Real.roundNearest` onto `Real.floatGrid`) | `Computation.isRelErrSem_exactSem`, `Computation.IsRelErrSem.isArithErrSem`, `Computation.isRelErrSem_gridSem` |
-| rounding factor | $\gamma_n$ is `Computation.roundingFactor n u` $= nu/(1 - nu)$, every lemma under $nu < 1$ (design note Computation-Rounding, R1) | none; Mathlib has no floating-point model (`Mathlib.Data.FP` has no theorems) |
+| rounding factor | $\gamma_n$ is `Computation.roundingFactor n u` $= nu/(1 - nu)$, every lemma under $nu < 1$ | none; Mathlib has no floating-point model (`Mathlib.Data.FP` has no theorems) |
 | rounding traces | the decoded intermediate values of a kernel run under an error relation: `Computation.IsDotTrace` (`dot`, each entry of `gemv` and `gemm`), `Computation.IsSubstRowTrace`, `Computation.IsSubstTrace` (`trsvLower`) | — |
 | straight-line runs | `Computation.Stmt.StraightLine` (no `ite`, no `whileFuel`); the usage of a state `Computation.St.usage` (tape positions, counts, memory) | `Computation.usage_eq_of_exec_eq_some_of_straightLine` |
 | random tape | `HasLaw ξ (iidSequence ν) μ` per distribution (the i.i.d. sequence row); the law of the whole tape `Computation.tapeLaw`, the tapes independent, the tape of `d` i.i.d. with law `Computation.Dist.law d` (guarantees, 2026-10-23) | `hasLaw_tapeMatrix_of_hasLaw_iidSequence`, `ProbabilityTheory.HasLaw.comp_of_injective`, `Computation.hasLaw_apply_of_hasLaw_tapeLaw` |
@@ -671,17 +694,12 @@ those layers are designed.
 | target | a `Prop` in `<Topic>/<Spec>Targets.lean`, an access model about a registered tree, registered in `docs/targets.toml` and proved by one theorem whose type is the constant: `MatrixFreeGramSchmidt`, `MatrixFreeHutchpp`, `MatrixFreeProbHutchpp`, `StoredEntriesDenseHutchpp`, `StoredEntriesCooHutchpp` (§5.5; first-order programs and target statements, 2026-10-23) | — |
 | BLAS kernels | `Computation.dot`, `Computation.axpy`, `Computation.scal`, `Computation.rscl`, `Computation.copyv`, `Computation.nrm2`, `Computation.gemv`, `Computation.ger`, `Computation.gemm`, `Computation.trsvLower`, each with its specification `Computation.exec_<kernel>` | — |
 
-Rows the remaining Matrix design notes are expected to add: majorization, the Schatten family
-and unitarily invariant norms, the principal-angle / subspace-distance interface. Rows from the
-foundations stage (`docs/design/Matrix-Foundations.md`) are in the table.
-
 ### 5.4 Interfaces and reusable hypotheses
 
-This is the rule the prototype library broke most, and the one that matters most for proving new
-things. There, a sketch had five different conclusion shapes across five distributions, isotropy
-was a four-hypothesis bundle repeated in every estimator theorem, orthonormality was sometimes a
-predicate and sometimes `Qᵀ * Q = 1`, and nothing downstream could take "any sketch with
-property P" as an input.
+This is the rule that matters most for proving new things. Without it, a sketch ends up with five
+different conclusion shapes across five distributions, isotropy becomes a four-hypothesis bundle
+repeated in every estimator theorem, orthonormality is sometimes a predicate and sometimes
+`Qᵀ * Q = 1`, and nothing downstream can take "any sketch with property P" as an input.
 
 - **A hypothesis is a named interface.** A `structure` or `def … : Prop` with a docstring, a
   constructor lemma from the obvious raw condition, and the API lemmas a consumer needs
@@ -737,7 +755,9 @@ we will be allowing stuff to prove autonomously"; first-order programs and targe
   docs/targets.approved`. A declared input computed from the sizes carries the registry flag
   `precomputed` and a `Precomputed:` docstring sentence (Q5) [E3].
 - Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls
-  it [E4]. This is completeness, not soundness.
+  it [E4]. This is completeness, not soundness. So a new program lands in `NLAlib` together with its registered
+  target, and only the maintainer registers targets: a PR that needs one proposes the target
+  statement in its description.
 - What the models prove and what they trust is listed in `docs/design/Computation.md`,
   "Guarantees: what is proved and what is trusted", re-classified in its F10. A reader of a target
   still reads its size condition, its declared inputs, its postcondition and its bound: the model
@@ -772,8 +792,7 @@ fixtures (a forged handle that does not compile, a noncomputable and a `partial`
 program with no registered tree, a callee with an open `alloc`).
 `scripts/AccessModelFixtures.lean` proves that the model forms of the audit's cheating programs
 are false. E5, E6 and E8 are checked by `scripts/check_rules.py`. The tools library
-`NLAlibTools` (the `Float` interpreter, the NumPy emitter of first-order trees, the fixed-point
-example) is not part of the library and is not checked.
+`NLAlibTools` (§7) is not part of the library and is not held to its rules.
 
 ## 6. Docstrings and citations
 
@@ -802,21 +821,26 @@ theorem Matrix.IsHermitian.eigenvalue_add_le ...
    printed theorem, section or equation, for every source where this result or the result it
    generalises or specialises appears. A citation of a specific result carries its label; a bare
    `[Key]` is for module docstrings only [C2] (maintainer, 2026-10-19). A `Result:` declaration
-   cites its source, or says "No printed source." [C1]; a bracket that looks like a citation is
+   cites its source, or says "No printed source." [C1] (the check accepts any wording it reads as
+   saying so: "no printed source", "no (literature) source", "without a source", "not in the
+   literature", "new here", "proved here", "folklore", "standard"; write "No printed source."); a bracket that looks like a citation is
    one `check_refs.py` can parse [C4]; a bold-named theorem with neither citation nor id is on a
    review list [C9]. Several are separated by `;`. Then the relation to the
    printed statement: generalisation, different constant, tail form instead of sample size,
    different indexing. The citation is provenance for the reader and the literature map; it does
    not bind the statement or the proof. A helper or a bridge needs no citation; it says what it
    is for.
-3. **Port provenance** when the proof was ported: the old library's declaration name, or the
-   external library and commit.
+3. **Provenance** when a statement or proof is taken from another formal library: the library
+   and commit.
 4. **`Result: <id>`** on its own last line, for a declaration that *is* the formal statement of a
    named mathematical result (`weyl-inequality`, `eckart-young-frobenius`). Several ids are
    comma-separated. Helpers carry none, and neither do definitions and structures [R1]
    (maintainer, 2026-10-19; an instance of a Prop-valued class is a statement and may). The ids
    key the literature map maintained in the `explore` repository; a new id is fine, a misspelt
-   existing one is an error [R2], and an id or declaration the explorer names must exist [R3].
+   existing one is an error [R2] (checked as: two ids of length at least 8 within edit distance 2
+   are rejected as near-duplicates, unless they differ in one dash-separated word by a `p` prefix
+   or a listed pair such as `ose`/`osi`; distinguish variants by words, `-frobenius`/`-spectral`,
+   not by a digit), and an id or declaration the explorer names must exist [R3].
 4b. **`Algorithm: <id>`** on its own last line, for a definition, recurrence, run model or program
    that is part of a named algorithm (maintainer, 2026-10-29; the explorer's algorithm pages,
    `docs/design/algorithm-pages.md` in the `explore` repository):
@@ -924,18 +948,17 @@ combine extracted declarations with a different checkout.
 `docs/references.bib` grows by adding the entry before citing it; keys are `AuthorSurnames + year`
 [C5], once each [C6], in alphabetical order [C7]; an entry nobody cites is on a review list [C8].
 
-## 7. Proofs, `sorry` and the scaffold library
+## 7. Proofs and what each library may contain
 
 - `import NLAlib` is sorry-free; `scripts/Audit.lean` checks every reachable declaration against
   `propext`, `Classical.choice`, `Quot.sound` only.
-- A statement worth having before its proof goes in `NLAlibScaffold/` under the same path it will
-  have in `NLAlib/`, with the full docstring, a `sorry` body, and a line
-  `Proof: <sketch, what it reduces to, estimated difficulty>` in the docstring. It compiles, is
-  linted and documented like library code, and may import `NLAlib` but is never imported by it
-  [P3]. When proved, the declaration moves to `NLAlib/` in the same PR that proves it, and its
-  `Proof:` line is deleted [D8] (maintainer, 2026-10-19). A scaffold is for
-  a statement you are confident of; it is not a place to park the hard part of the result you are
-  claiming.
+- `lakefile.toml` has two libraries that matter to contributors. `NLAlib` is the library: proved,
+  documented and checked by every rule here. `NLAlibTools` holds tools that are not part of the
+  library: the `Float` interpreter, the NumPy emitter of first-order trees and the fixed-point
+  example. Its files import `NLAlib`, are plain (non-`module`) files so that `#eval` runs the
+  library's programs, may contain `sorry` and are not held to the library's rules; CI builds
+  them, checks their root file and replays them, non-strictly.
+- A library docstring has no `Proof:` sketch line [D8]: what is merged is proved.
 - Proofs are free to differ from any source. Choose the argument that is shortest in Lean and
   reuses the most library API; a clever proof from the literature is worth nothing if a
   three-line one through Mathlib exists.
@@ -943,7 +966,7 @@ combine extracted declarations with a different checkout.
   goals, no `simp_all` [S1], no `decide` on anything but tiny finite goals (review list: [S3]),
   `nlinarith`/`positivity`/`gcongr` welcome. A proof over 80 lines is split into named lemmas
   [S4]. Terminal `exact?` and `apply?` do not appear in committed code [S2].
-- Nothing in `NLAlib/` (or `NLAlibScaffold/`, or the `leanOptions` of `lakefile.toml`) is
+- Nothing in `NLAlib/` (or the `leanOptions` of `lakefile.toml`) is
   `unsafe`, `partial`, `implemented_by` or `extern`, or sets a `debug.` option or a kernel option
   (`set_option debug.skipKernelTC true in` makes the elaborator skip the kernel, and an `unsafe`
   definition then inhabits any type with no axiom) [S9] (final audit, 2026-10-24). The checks
@@ -954,54 +977,44 @@ combine extracted declarations with a different checkout.
   constant, an axiom or a use of `sorryAx`, `Lean.ofReduceBool`, `Lean.ofReduceNat` or
   `Lean.trustCompiler`; `scripts/Audit.lean` fails on an `unsafe` or `partial` constant.
 - `NLAlib`, every file and the root `NLAlib.lean`, imports no other library of the package:
-  neither `NLAlibTools` nor `NLAlibScaffold`, nor any library added to `lakefile.toml` [P12]
+  neither `NLAlibTools` nor any other library of `lakefile.toml` [P3, P12]
   (final audits, 2026-10-24). It imports itself, Mathlib and Mathlib's dependencies only.
 - Instances: no global instance on a Mathlib type unless it is the one Mathlib would add
   (`Matrix.instMeasurableSpace` is the one exception, in `ForMathlib`; the others are allowlisted
   with their reason) [S6]. No `attribute [instance]` at file level [F9].
 
-## 8. Designing a stage
+## 8. Designing new material
 
-The library is built in stages, one at a time, in dependency order. Each stage covers one
-coherent body of mathematics (the norms; the spectral core; perturbation theory; …) and begins with
-a design note, `docs/design/<Stage>.md`, written by the orchestrating agent and approved by the
-maintainer before any proof is written. The note answers, with specifics:
+New material of any size (a new topic, a new interface, a new layer, or a batch of results that
+will be built on) starts with a design note, `docs/design/<Topic>.md`, reviewed before the proofs
+are written. It answers, with specifics:
 
-1. **Objects.** Which definitions this stage introduces, each as a §5.3 row with its Mathlib
-   bridge, and which Mathlib objects it uses directly instead.
-2. **Interfaces.** Which hypothesis predicates and structures (§5.4) this stage introduces or
-   extends, what each bundles, and the raw-condition constructor for each.
+1. **Objects.** Which definitions it introduces, each as a §5.3 row with its Mathlib bridge, and
+   which Mathlib objects it uses directly instead.
+2. **Interfaces.** Which hypothesis predicates and structures (§5.4) it introduces or extends,
+   what each bundles, and the raw-condition constructor for each.
 3. **Statement shapes.** For each headline result, the exact Lean signature: field, index types,
    interfaces taken, conclusion form, constants handling (§5.2), and the corollaries it will have.
    Written out, not described.
-4. **Consumers.** For each interface and headline statement, which later stage or layer will use
+4. **Consumers.** For each interface and headline statement, which later topic or layer will use
    it and in what form; a statement with no foreseeable consumer is questioned.
-5. **Files.** The file split for this stage, each file a topic of up to about 1000 lines, with the
-   declarations it will hold in order.
-   **Placement** (maintainer, 2026-10-15): every new declaration, including each one a stage adds
-   to a lower layer or to an existing file, goes where a user looking for its topic would find it,
+5. **Files.** The file split, each file a topic of up to about 1000 lines, with the declarations
+   it will hold in order.
+   **Placement** (maintainer, 2026-10-15): every new declaration, including each one added to a
+   lower layer or to an existing file, goes where a user looking for its topic would find it,
    judged by what the statement is about, never by what its proof imports. The note lists every
-   addition outside the stage's own new files with its home and a one-line reason. A declaration
-   placed anywhere else (for an import cycle, a file that cannot yet import it, a side file awaiting
-   a merge) is flagged in the note with its intended home, and the stage report lists every flag
-   still open. Reviews of notes and stage reports check placement explicitly (review list:
-   [P10]).
-   **Scaffold imports** (maintainer, 2026-10-25): every scaffold file imports the scaffold files
-   whose declarations its `Proof:` lines name, as well as its NLAlib counterpart, so that each
-   planned proof elaborates where it is written (precedent: `docs/design/Estimation-SLQ.md`, Imports
-   by file). The note's file list gives each scaffold file's imports; the harness checks, before
-   dispatch, that every name a `Proof:` line cites elaborates in the file's import closure, and
-   reviews of notes check it (review list: [G3]).
-6. **Material.** Which files of the prototype library were read, what in them is reused (as
+   addition outside its own new files with its home and a one-line reason. A declaration placed
+   anywhere else (for an import cycle, or a file that cannot yet import it) is flagged in the note
+   with its intended home. Reviews check placement explicitly (review list: [P10]).
+6. **Material.** Which sources and existing developments were read, what in them is reused (as
    mathematics to cover, as proof material), and what is deliberately not reproduced and why
    (twins, bundles, transport lemmas, local interfaces).
 7. **Open questions** for the maintainer, with a recommendation each.
 
 For each bridge and each API lemma that restates a Mathlib fact, the note names the Mathlib lemma
 it found, or records "searched, none". An exact overlap ships as an `alias` or a one-line proof
-citing the Mathlib lemma, never as an independent proof. A file added or split during the stage is
-recorded as a dated amendment to the note's file list when it happens, not first in the stage
-report.
+citing the Mathlib lemma, never as an independent proof. A file added or split during the work is
+recorded as a dated amendment to the note's file list.
 
 **Deviations from Mathlib are recorded.** Where Mathlib has a notion and the library states things
 with another one (a different index type, a total function in place of one that takes a proof, a
@@ -1012,56 +1025,97 @@ fields Mathlib, NLAlib, Bridge, Why, Cost and Status [G1]. A deviation with no e
 (Maintainer, 2026-10-14.)
 
 The note is reviewed as a design, with the question "will this be the interface people reach for
-in five years?", before the stage is implemented. The implementation PRs reference it. A
-divergence discovered during implementation is a one-line amendment to the note, approved the
-same way.
+in five years?". The implementation PRs reference it. A divergence discovered during
+implementation is a one-line amendment to the note, approved the same way.
 
-## 9. Workflow and checks
+## 9. Workflow, checks and pull requests
 
-One topic per branch and PR. A PR adds or changes one file's worth of mathematics (a new topic
-file, or a coherent change to one), plus the consumers it breaks, plus the ledger entry if it
-ports material [G2]. Before opening it, run:
+**Pull requests.** One topic per branch and PR. A PR adds or changes one file's worth of
+mathematics (a new topic file, or a coherent change to one), plus the consumers it breaks. It
+contains complete, checked work: every statement proved, documented and cited, and the checks
+below green. How you stage unfinished work on your own branch is up to you.
+
+**The one command before a PR.** From the repository root, with nothing else building:
 
 ```
-LEAN_NUM_THREADS=4 lake build --wfail NLAlib NLAlibScaffold
-lake exe mk_all --lib NLAlib --check && lake exe mk_all --lib NLAlibScaffold --check
-lake env lean scripts/Audit.lean
-lake build NLAlibTools && lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
-lake env lean scripts/Replay.lean && bash scripts/replay_fixtures.sh
-lake env lean scripts/Lint.lean
-lake env lean scripts/Programs.lean
-lake env lean scripts/Targets.lean
-lake env lean scripts/AccessModelFixtures.lean
-python3 scripts/check_refs.py
-python3 scripts/gen_rules_md.py --check
-python3 scripts/check_constants.py
-python3 scripts/ledger_check.py
-bash scripts/explore_data.sh /tmp/explore-data.json && python3 scripts/check_rules.py /tmp/explore-data.json
-lake env lean scripts/Duplicates.lean
+bash scripts/stage_check.sh > /tmp/stage-check.log 2>&1; echo $?
 ```
 
-Warnings are fatal (`--wfail`, maintainer, 2026-10-19). `scripts/check_names.py` checks the naming
-grammar (§4) on the extraction that `scripts/explore_data.sh` writes from the built library (about
-a minute after `lake build NLAlib`); its messages cite the rule ids N1–N18, and
-`scripts/names_allow.toml` is its allowlist (§4.5). `scripts/check_rules.py` runs it together
-with every other rule id (§9.1); `scripts/stage_check.sh` runs both on the proved modules.
+It must exit 0. It writes its logs to `$TMPDIR/nlalib-stage-check` (default `/tmp`). With an
+up-to-date build it takes roughly 10 to 20 minutes (9 minutes measured with 3 Lean threads, most
+of it the kernel replay, the extraction and the full build); after a Mathlib bump or a change low
+in the import graph, longer.
+It runs, in order:
+
+1. `lake build --wfail` of every NLAlib module (warnings are fatal, as in CI), then the axiom
+   audit `scripts/Audit.lean` and the environment linters `scripts/Lint.lean` on those modules;
+2. `lake build` of every library of `lakefile.toml`, `lake exe mk_all --lib NLAlib --check` (the
+   root `NLAlib.lean` is current), and the freshness check `lake build --no-build --rehash`;
+3. the kernel replay `scripts/Replay.lean` (every constant re-checked by Lean's kernel, §7) and
+   its fixtures `scripts/replay_fixtures.sh`;
+4. the program checks `scripts/Programs.lean` (E2, E4, E9), the target lint `scripts/Targets.lean`
+   (E3: the registry, its closure hashes and its approval) and `scripts/AccessModelFixtures.lean`
+   (§5.5);
+5. `scripts/check_refs.py` (citations, result ids, `Asymptotic:` and `Algorithm:` tags),
+   `scripts/gen_rules_md.py --check` (the generated rule files are current),
+   `scripts/check_constants.py` (named-bound values, §5.2), and `scripts/check_latex.mjs`
+   (docstring LaTeX renders with KaTeX; skipped with a message if KaTeX is not installed:
+   `npm install --no-save --no-package-lock katex@0.16.22`);
+6. the declaration extraction (`scripts/Explore.lean`) and `scripts/check_rules.py` on it: every
+   rule with an id, the naming rules N1–N18 included, against the ratchet (§9.1);
+7. the duplicate-statement report `scripts/Duplicates.lean`, which never fails the script.
+
+`scripts/stage_check.sh EXCLUDE_REGEX` leaves out the modules matching the regex from steps 1
+and 6, for files you are still editing. CI (`.github/workflows/ci.yml`) runs the same checks on
+every push and PR, and in addition the unit tests of the checks
+(`python3 -m unittest discover -s scripts -p 'test_*.py'` and
+`node --test scripts/test_check_latex.mjs`, also on Windows) and `mk_all --check` for
+`NLAlibTools`; run the unit tests too if you touched `scripts/`.
+
+While working, the fast checks are `lake lean <file> -- -M 8000` (§10) and
+`python3 scripts/check_rules.py --files <the files you changed>`, which checks the source-text
+rules (P1, P3, P11, P12, E5, the docstring, citation and notation rules) in seconds without a
+build.
+
+**When a step fails.** A build or linter failure is fixed in the source; `--wfail` makes every
+warning fatal. An Audit or Replay failure means an axiom, `sorry`, `unsafe` or `partial` constant
+reached the library (§7). A `mk_all` failure: run `lake exe mk_all --module --lib NLAlib`. A
+freshness failure: rebuild. A Targets failure on the approval hash means `docs/targets.toml`
+changed: only the maintainer approves it (§5.5); never edit `docs/targets.approved`. A
+message of the rules checker reads `<ID> <file>:<line> <declaration>: <what is wrong and the
+fix>`; `python3 scripts/check_rules.py --list` prints every id.
+
+**The pull request.** The description contains a read-back: for each headline theorem, what the
+Lean statement says, written from the Lean alone (hypotheses, conclusion, degenerate cases). The
+reviewer checks the read-back against the design note and the source, the names against §4, the
+hypotheses against §5.4, the vocabulary against §5.3. A green CI plus one approving review
+merges; a change to a §5.3 row or a §5.4 interface needs two. Changes to the checks, the rule
+data, the allowlists, the ratchet baseline, CI and the target registry need the maintainer's
+review (`.github/CODEOWNERS`).
+
+Branches are named by kind: `feat/`, `fix/`, `design/`, `cleanup/`, `docs/`. A commit message
+starts with the file or topic it changes and says what changed (`Krylov/CG: …`).
+
+Mathlib bumps are their own PRs and are tagged. Releases are tagged with the Lean version they
+build against (`v4.33.1-nlalib.1`).
 
 ### 9.1 The rules checker
 
-The rule data is in `docs/rules/rules.toml`, one entry per id (stage 3 of the rules enforcement,
-2026-10-20): area, severity, what the check needs, scope (the whole library or topic
-directories), the rule in one line, the fix and the section here. It is the single source:
-`scripts/check_rules.py` and `scripts/check_names.py` take severity, messages and scope from it,
-and `scripts/gen_rules_md.py` generates from it `NLAlib/<Topic>/RULES.md`, the rules of one topic
-with its own first, and `docs/rules/DIGEST.md`, every error rule in one line. CI and
-`scripts/stage_check.sh` fail when a generated file is stale (`--check`); a test checks that every
-id stated here is in `rules.toml` and the reverse.
+The rule data is in `docs/rules/rules.toml`, one entry per id: area, severity, what the check
+needs, scope (the whole library or topic directories), the rule in one line, the fix and the
+section here. It is the single source: `scripts/check_rules.py` and `scripts/check_names.py`
+take severity, messages and scope from it, and `scripts/gen_rules_md.py` generates from it
+`NLAlib/<Topic>/RULES.md`, the rules of one topic with its own first, and
+`docs/rules/DIGEST.md`, every error rule in one line. CI and `scripts/stage_check.sh` fail when a
+generated file is stale (`--check`); a test checks that every id stated here is in `rules.toml`
+and the reverse.
 
 `python3 scripts/check_rules.py [DATA.json]` checks every rule with an id, the naming rules
-included, and prints each violation as `<ID> <file>:<line> <declaration>: <what is wrong and the
-fix>`. Without the extraction it checks the source-text rules only, in seconds and without a build:
-`python3 scripts/check_rules.py --files <the files you changed>` is the check an author runs
-before reporting. `--list` prints the rules.
+included, on the extraction that `scripts/explore_data.sh` writes from the built library (about
+a minute after `lake build NLAlib`), and prints each violation as `<ID> <file>:<line>
+<declaration>: <what is wrong and the fix>`. Without the extraction it checks the source-text
+rules only (`--files <files>`). `scripts/check_names.py` is the naming part (§4), with
+`scripts/names_allow.toml` as its allowlist (§4.5).
 
 - **Errors and warnings.** An error fails CI. A warning is a heuristic too noisy to fail on (its
   message says so); `--warnings` prints them, and reviewers read them as a review list.
@@ -1069,17 +1123,16 @@ before reporting. `--list` prints the rules.
   `scripts/rules_baseline.json`, a count per rule and file. A count may only fall: CI fails when it
   rises, and on any violation of a rule with no baseline entry. When a count falls the check says
   so; lower it in the same commit with `--update-baseline`, which refuses to raise a count unless
-  `--force` is given, and a rise needs the maintainer. What is left is listed by topic in
-  `docs/rules/stage2-worklist.md`.
+  `--force` is given. `--force` is for the maintainer: a PR that raises a count says so and needs
+  his approval. The baseline file itself lists what is left, by rule and file.
 - **The allowlist** `scripts/rules_allow.toml` holds false positives: the rule, the declaration
   (or the file), and a reason. It is never the fix for a real violation, and a stale entry fails.
+  An entry is proposed in the PR and approved by the maintainer.
 
 ### 9.2 Adding or changing a rule
 
-A rule that arrives as text alone is kept by the authors of that afternoon and lost by the next
-round; the 2026-10-19 rules audit (`docs/rules/stage2-worklist.md` has its residue) found that
-every rule that shipped with a check and a sweep held, and the others drifted. So a PR that adds or
-changes a rule:
+A rule that arrives as text alone drifts; every rule that shipped with a check and a sweep has
+held. So a PR that adds or changes a rule:
 
 1. ships with its entry in `docs/rules/rules.toml` (then `python3 scripts/gen_rules_md.py`) and
    its check in `scripts/check_rules.py` (or `check_names.py`), with a fixture in
@@ -1087,11 +1140,13 @@ changes a rule:
    library in the same PR or the remaining count in the baseline; or it says in its text that it is
    judged by review only;
 2. is checked for conflicts with the other documents that state rules: this file, `AGENTS.md`,
-   `docs/port/proof-agent-brief.md`, `docs/design/Mathlib-deviations.md` and the headers of
-   `docs/references.bib` and `docs/constants.toml` (grep the rule's key terms); a conflict is fixed
-   in the same PR, so that an author cannot follow one text and break another;
+   `docs/design/Mathlib-deviations.md` and the headers of `docs/references.bib` and
+   `docs/constants.toml` (grep the rule's key terms); a conflict is fixed in the same PR, so that
+   an author cannot follow one text and break another;
 3. gives the rule an id in the area's letter series, cites it in brackets where the rule is
    stated, and uses the same id in the check's messages. Ids are never reused.
+
+### 9.3 The other scripts
 
 `scripts/check_constants.py` enforces §5.2 rule 2's displayed values: every named bound's body
 matches `docs/constants.toml`, every math span annotated by a value marker contains its filled
@@ -1110,35 +1165,28 @@ It also checks §6 item 4b's `Algorithm:` tags [A1, A2, A3], with the same messa
 `scripts/Duplicates.lean` is a report, not a gate: it lists library theorems (private ones
 included) whose statements coincide with another library or Mathlib theorem up to universe
 levels, binder names, metadata and eta, confirmed by reducible `isDefEq`. A private lemma that
-duplicates a public one is deleted in favour of the public one; `scripts/stage_check.sh` runs it.
+duplicates a public one is deleted in favour of the public one.
 
 `scripts/Reuse.lean` lists, for each declaration named in `scripts/reuse_targets.txt` (or every
 public theorem of a `module M` line), the NLAlib and Mathlib constants its proof uses directly,
 grouped by module. Run it on a PR's headline theorems to check that they are proved from the
 library's API for their topic rather than re-derived.
 
-The PR description contains a read-back: for each headline theorem, what the Lean statement says,
-written from the Lean alone. The reviewer checks the read-back against the design note and the
-source, the names against §4, the hypotheses against §5.4, the vocabulary against §5.3. A green CI
-plus one approving review merges; a change to a §5.3 row or a §5.4 interface needs two.
-
-Mathlib bumps are their own PRs and are tagged. Releases are tagged with the Lean version they
-build against (`v4.33.1-nlalib.1`).
-
 ## 10. Building without running out of memory
 
-The development machine has 8 cores and 31 GB. A default `lake build` runs 8 Lean workers; heavy
-files on top of Mathlib take 3 to 6 GB each, and the terminal gets killed. Rules:
+Heavy files on top of Mathlib take 3 to 6 GB each, and a default `lake build` runs one Lean
+worker per core. Rules:
 
-- **Never run a bare `lake build`.** Use `LEAN_NUM_THREADS=4 lake build <targets>`; `LEAN_NUM_THREADS=2` when another build,
-  a Lean language server with files open, or another agent is running on the machine.
+- **Never run a bare `lake build`.** Use `LEAN_NUM_THREADS=4 lake build <targets>` (on a machine
+  with 8 cores and about 32 GB; scale to yours), and `LEAN_NUM_THREADS=2` when another build, a
+  Lean language server with files open, or another agent is running on the machine.
 - Lake 5 has no `-j` flag. The `LEAN_NUM_THREADS` environment variable caps the number of Lean
   processes Lake runs at once (measured: `LEAN_NUM_THREADS=N` gives exactly `N`).
 - Check a file with `lake lean`, not `lake env lean`. `lake env lean` ignores the options in
   `lakefile.toml`, so `autoImplicit` is on (a typo becomes a variable) and the Mathlib linters are
   off. `lake lean <file> -- -M 8000` applies them and builds missing imports first; prefix it with
   `LEAN_NUM_THREADS=2`.
-- **One build per machine at a time.** If `lake build` is running, wait for it.
+- **One build per checkout at a time.** If `lake build` is running, wait for it.
 - **Check a single file** with `lake lean NLAlib/Matrix/Spectral/Weyl.lean -- -M 8000`
   (`-M` caps that process at 8000 MB). Imports of other NLAlib modules need their `.olean`:
   `LEAN_NUM_THREADS=4 lake build NLAlib.Matrix.Norms.Spectral` first.
@@ -1151,53 +1199,9 @@ files on top of Mathlib take 3 to 6 GB each, and the terminal gets killed. Rules
   repository; both load far more than needed.
 - `lake exe cache get` fetches Mathlib's oleans once; never build Mathlib from source.
 
-## 11. Rules for agents
+## 11. AI agents
 
-- Read this file, then the current stage's design note in `docs/design/` (or the port brief if the
-  note is not yet written), then `docs/port/status.md`, then the file you are about to write.
-- A brief to an agent that writes or reviews library code includes `docs/rules/DIGEST.md` whole and
-  the `NLAlib/<Topic>/RULES.md` of each topic it touches, so that the rules are in its context
-  (maintainer, rules decision 7); the author runs `python3 scripts/check_rules.py --files <files>`
-  before reporting.
-- The library is **designed** sequentially: one stage at a time, each design note and skeleton
-  written against the stages before it, and no proof starts before the maintainer approves the
-  note. **Proving** is parallel (maintainer, 2026-10-24, superseding the two-agent limit of
-  2026-10-14): once a skeleton's statements are fixed, the harness dispatches its declarations to
-  worker agents in the dependency order of the note's proof plan, as many at once as the machine
-  allows. A hard declaration may get several independent attempts, or be split into named steps
-  proved separately. A worker owns one declaration (or the small group the plan bundles) and may not
-  change any statement.
-- The orchestrating agent writes the design note (§8) before any implementation and stops for
-  the maintainer's approval. It does not inherit the prototype's organisation, interfaces or
-  names; it reads them as material and decides.
-- **Levels.** (0) The maintainer and the orchestrating agent: scope, design decisions, approval,
-  commits. (1) Claude agents: design notes and skeletons (`model: "opus"`), bounded reviews of
-  notes, interface questions and stage reports (`model: "fable"`: comments in, comments out), and
-  the tier-1 review below. (2) The dispatcher, a script: jobs, checks, retries, escalation between
-  worker models. (3) Workers: proofs and mechanical passes, open-weight models first and Claude as
-  the fallback. Every `Agent` call passes `model` explicitly; an omitted model inherits the
-  session's, with its usage limits, and that has killed agents mid-work before.
-- **Checks before anything is accepted.** A worker's report is never trusted. Per job, scripts check
-  that the statement is unchanged, only the owned file changed, there is no `sorry` or `admit`, the
-  module builds, and `#print axioms` shows only the standard three. Per batch, the §9 scripts run on
-  the changed modules. Then a **tier-1 review** (a Claude agent with the design note, the diffs and
-  the script output) checks: whether a helper or key step is already in Mathlib or NLAlib (the
-  duplicate and reuse reports first); design standards (placement [P10], statement shape against
-  the note, proof style [S1]–[S6]); metadata (docstrings, citations, the ledger, `status.md`,
-  `mk_all`). Its verdict is accept, return to the worker with a fix list, or **escalate**: to the
-  orchestrator for anything that needs a decision, and through the orchestrator to the
-  maintainer for anything that changes a design note, a statement or an interface.
-- Report state on disk (`docs/port/status.md`) at every stopping point so a successor can continue
-  from a cut-off.
-- Search before proving: Mathlib, then the already-built `NLAlib/`, then the prototype.
-- Do not weaken a statement to make it provable. If a proof fails within budget, the statement goes
-  to `NLAlibScaffold` with a `Proof:` note and the difficulty you observed, and you move on.
-- Do not add work beyond the brief: no new theorems "while you are there", no cleanup of files you
-  do not own, no new §5.3 rows or §5.4 interfaces outside a design note. Note what you saw in
-  `docs/port/status.md`.
-- Never edit a `*Targets.lean` file, `docs/targets.toml` or `docs/targets.approved`: target
-  statements and their registry change only with the maintainer's approval (Q3 of
-  `docs/design/Computation.md`, F12; `.github/CODEOWNERS` assigns them to him). A proof agent
-  proves the registered target as stated; if it cannot, it reports, and does not restate it.
-  Agent briefs list these paths as protected.
-- Never commit or push without being asked; never run a bare `lake build` (§10).
+The rules here apply to agents unchanged. `AGENTS.md` adds the few that are specific to agents
+(what they may not edit, push or register). A brief to an agent that writes or reviews library
+code includes `docs/rules/DIGEST.md` whole and the `NLAlib/<Topic>/RULES.md` of each topic it
+touches, so that the rules are in its context (maintainer, rules decision 7).

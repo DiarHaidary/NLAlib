@@ -22,8 +22,7 @@ single rotation for a random sketch of any law (in `lintegral`, since the expect
 infinite). The deterministic step is
 `NLAlib.frobNorm_pinv_le_frobNorm_pinv_conjTranspose_mul_mul_conjTranspose` (a weight does not
 shrink the pseudoinverse) through
-`NLAlib.mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame`. Design:
-`docs/design/LowRank-EstimatorLowerBounds.md` §3.3.
+`NLAlib.mul_le_integral_frobNorm_pinv_conjTranspose_mul_mul_sq_of_hasLaw_haarFrame`.
 
 ## Main results
 

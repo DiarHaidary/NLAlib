@@ -29,8 +29,7 @@ given by a relation `err p b a z` between the exact result $a$ on the decoded op
 decoded result $z$: the standard model is the relation `NLAlib.Computation.RelErr` of relative
 error, and a model with underflow adds an absolute term. `NLAlib.Computation.AddsZeroExactly`
 says that adding a decoded zero is exact, as in IEEE, fixed-point and exact arithmetic; with it
-the kernels, which accumulate from a zero, keep the constants of [Higham2002]. Design:
-`docs/design/Computation-Rounding.md` (R3, R4).
+the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 
 ## Main definitions
 
@@ -257,11 +256,11 @@ real $N \times N$ matrix $\mathbf{H}$ and bound $c$: the oracle has height $N$, 
 single column $\mathbf{x}$ of $N$ words it succeeds with $N$ words $\mathbf{y}$ with
 $\lVert\mathbf{H}\mathbf{x} - \mathbf{y}\rVert \le c\lVert\mathbf{x}\rVert$, vectors read
 through the decoding. The value semantics constrains scalar operations only, so the accuracy of
-an oracle is an assumption on the interpretation (`docs/design/Computation-Rounding.md` §5); a
+an oracle is an assumption on the interpretation; a
 relative contract $\lVert\mathbf{H}\mathbf{x} - \mathbf{y}\rVert \le
 \varepsilon\lVert\mathbf{H}\rVert_2\lVert\mathbf{x}\rVert$ takes
 $c = \varepsilon\lVert\mathbf{H}\rVert_2$ (the spectral norm is a Matrix-layer name, which this
-layer does not import). Design: `docs/design/Krylov-LanczosRounding.md` (§2.4, L7). -/
+layer does not import). -/
 def IsMatvecErr (I : Interp P ι K C) (o : ι) (dec : P → K → ℝ) (p : P) {N : ℕ}
     (H : Matrix (Fin N) (Fin N) ℝ) (c : ℝ) : Prop :=
   I.height o = N ∧ ∀ X : Array K, (hX : X.size = N) → ∃ Y : Array K, ∃ hY : Y.size = N,
@@ -284,8 +283,7 @@ every oracle meets `NLAlib.Computation.IsMatvecErr` for $\mathbf{H}$ with the bo
 As in `NLAlib.Computation.MatrixFree`, the program is bound before the sizes, the matrix and the
 inputs, and learns $\mathbf{H}$ only through oracle calls; unlike it, the arithmetic is any
 semantics meeting the two contracts on scalars and the oracles any meeting the matvec contract
-(two contracts, not one bundled contract on `Interp`: decision L7 of
-`docs/design/Krylov-LanczosRounding.md`). No counts: the charge of `I` is arbitrary. -/
+(two contracts, not one bundled contract on `Interp`). No counts: the charge of `I` is arbitrary. -/
 def MatrixFreeRounded {r b : ℕ} (p : P) (prog : ℕ → (Fin r → ℕ) → Stmt P ι ℕ ℕ)
     (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
     (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))

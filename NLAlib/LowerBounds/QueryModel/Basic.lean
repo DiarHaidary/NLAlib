@@ -23,8 +23,7 @@ outputs a value of type `β`: the `i`-th query is a function of the first `i` re
 output is a function of all `q` of them. Randomness is not part of the object: a randomized
 algorithm is a family `S → QueryAlgorithm Q R q β` indexed by a seed, and a random input is a
 random variable on the probability space, so a lower bound is a statement about one product
-probability space and needs no Markov kernels (design note
-`docs/design/Probability-MatvecQueryModel.md` §2, decision QUERY-MODEL-SCOPE (a)).
+probability space and needs no Markov kernels.
 
 The matrix–vector query model is the oracle `A.mulVec` of a matrix `A : Matrix m n 𝕜`: a query is
 a vector $\mathbf{x}$, its response $\mathbf{A}\mathbf{x}$. Access to both $\mathbf{A}$ and
@@ -34,8 +33,7 @@ $(\mathbf{A}\mathbf{x}, \mathbf{A}^{\mathsf{H}}\mathbf{y})$. Either side may be 
 side costs nothing: `rightCount τ` and `leftCount τ` count the rounds whose right part
 $\mathbf{x}$, respectively left part $\mathbf{y}$, is nonzero, so separate budgets for products
 with $\mathbf{A}$ and with $\mathbf{A}^{\mathsf{H}}$ are hypotheses `rightCount τ ≤ q_R`,
-`leftCount τ ≤ q_L` (design note `docs/design/Probability-MatvecQueryModel.md` §2.1, decisions
-OQ2 (c), OQ9). The number `q` of rounds bounds both.
+`leftCount τ ≤ q_L`. The number `q` of rounds bounds both.
 
 The definitions are total. `query i` is defined for every `i : ℕ`; only `i < q` is ever used.
 

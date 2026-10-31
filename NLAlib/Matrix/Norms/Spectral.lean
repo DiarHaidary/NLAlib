@@ -53,7 +53,7 @@ noncomputable def specNorm (A : Matrix m n 𝕜) : ℝ :=
 
 open scoped Matrix.Norms.L2Operator in
 /-- Bridge to Mathlib: the spectral norm $\|\mathbf{A}\|_2$ (`specNorm`) is the norm of
-$\mathbf{A}$ in the `Matrix.Norms.L2Operator` scope. Port of `NLAlib.specNorm_eq_norm`. -/
+$\mathbf{A}$ in the `Matrix.Norms.L2Operator` scope. -/
 theorem specNorm_eq_norm [DecidableEq n] (A : Matrix m n 𝕜) : specNorm A = ‖A‖ :=
   rfl
 
@@ -107,8 +107,7 @@ theorem specNorm_sub_le (A B : Matrix m n 𝕜) : specNorm (A - B) ≤ specNorm 
 open scoped Matrix.Norms.L2Operator in
 /-- The reverse triangle inequality
 $\lvert \|\mathbf{A}\|_2 - \|\mathbf{B}\|_2 \rvert \le \|\mathbf{A} - \mathbf{B}\|_2$: the
-spectral norm is $1$-Lipschitz for itself.
-Port of `NLAlib.abs_specNorm_sub_specNorm_le`. -/
+spectral norm is $1$-Lipschitz for itself. -/
 theorem abs_specNorm_sub_specNorm_le (A B : Matrix m n 𝕜) :
     |specNorm A - specNorm B| ≤ specNorm (A - B) := by
   classical
@@ -139,8 +138,7 @@ theorem specNorm_sum_le {ι : Type*} (s : Finset ι) (A : ι → Matrix m n 𝕜
 
 open scoped Matrix.Norms.L2Operator in
 /-- The defining bound of the spectral norm:
-$\|\mathbf{A}\mathbf{x}\| \le \|\mathbf{A}\|_2 \|\mathbf{x}\|$.
-Port of `NLAlib.sum_norm_sq_mulVec_le_specNorm_sq`. -/
+$\|\mathbf{A}\mathbf{x}\| \le \|\mathbf{A}\|_2 \|\mathbf{x}\|$. -/
 theorem norm_toLp_mulVec_le (A : Matrix m n 𝕜) (x : n → 𝕜) :
     ‖WithLp.toLp 2 (A *ᵥ x)‖ ≤ specNorm A * ‖WithLp.toLp 2 x‖ := by
   classical
@@ -156,8 +154,7 @@ theorem specNorm_le_iff {A : Matrix m n 𝕜} {c : ℝ} (hc : 0 ≤ c) :
   exact ⟨fun h x => h (WithLp.toLp 2 x), fun h x => h x.ofLp⟩
 
 /-- To bound the spectral norm by $c \ge 0$ it is enough to bound $\|\mathbf{A}\mathbf{x}\|$ by
-$c$ on unit vectors $\mathbf{x}$.
-Port of `NLAlib.specNorm_le_of_forall_sqrt_le`. -/
+$c$ on unit vectors $\mathbf{x}$. -/
 theorem specNorm_le_of_forall_norm_eq_one {A : Matrix m n 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ x, ‖WithLp.toLp 2 x‖ = 1 → ‖WithLp.toLp 2 (A *ᵥ x)‖ ≤ c) : specNorm A ≤ c :=
   ContinuousLinearMap.opNorm_le_of_unit_norm hc fun x hx => h x.ofLp hx
@@ -182,8 +179,7 @@ theorem exists_norm_eq_one_and_norm_mulVec_eq_specNorm [Nonempty n] (A : Matrix 
 
 /-- The bilinear form bound:
 $\lvert \mathbf{u}^{\mathsf{H}}\mathbf{A}\mathbf{x} \rvert
-\le \|\mathbf{u}\| \|\mathbf{A}\|_2 \|\mathbf{x}\|$.
-Port of `NLAlib.abs_dotProduct_mulVec_le`. -/
+\le \|\mathbf{u}\| \|\mathbf{A}\|_2 \|\mathbf{x}\|$. -/
 theorem norm_star_dotProduct_mulVec_le (A : Matrix m n 𝕜) (u : m → 𝕜) (x : n → 𝕜) :
     ‖star u ⬝ᵥ (A *ᵥ x)‖ ≤ ‖WithLp.toLp 2 u‖ * specNorm A * ‖WithLp.toLp 2 x‖ := by
   have hin : star u ⬝ᵥ (A *ᵥ x) = inner 𝕜 (WithLp.toLp 2 u) (WithLp.toLp 2 (A *ᵥ x)) := by
@@ -222,7 +218,7 @@ theorem specNorm_le_of_forall_norm_star_dotProduct_mulVec_le {A : Matrix m n �
 open scoped Matrix.Norms.L2Operator in
 /-- The spectral norm is submultiplicative, for rectangular factors:
 $\|\mathbf{A}\mathbf{B}\|_2 \le \|\mathbf{A}\|_2 \|\mathbf{B}\|_2$.
-[GolubVanLoan2013, §2.3.3]. Port of `NLAlib.specNorm_mul_le`. -/
+[GolubVanLoan2013, §2.3.3]. -/
 theorem specNorm_mul_le (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     specNorm (A * B) ≤ specNorm A * specNorm B := by
   classical
@@ -230,8 +226,7 @@ theorem specNorm_mul_le (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
   exact Matrix.l2_opNorm_mul A B
 
 open scoped Matrix.Norms.L2Operator in
-/-- The spectral norm is invariant under the conjugate transpose.
-Port of `NLAlib.specNorm_conjTranspose`. -/
+/-- The spectral norm is invariant under the conjugate transpose. -/
 @[simp]
 theorem specNorm_conjTranspose (A : Matrix m n 𝕜) : specNorm Aᴴ = specNorm A := by
   classical
@@ -254,8 +249,7 @@ theorem specNorm_map_star (A : Matrix m n 𝕜) : specNorm (A.map star) = specNo
     simp
   rwa [hA] at h
 
-/-- The spectral norm is invariant under the transpose, also over $\mathbb{C}$.
-Port of `NLAlib.specNorm_transpose`. -/
+/-- The spectral norm is invariant under the transpose, also over $\mathbb{C}$. -/
 @[simp]
 theorem specNorm_transpose (A : Matrix m n 𝕜) : specNorm Aᵀ = specNorm A := by
   have h : Aᵀ = Aᴴ.map star := by
@@ -264,16 +258,14 @@ theorem specNorm_transpose (A : Matrix m n 𝕜) : specNorm Aᵀ = specNorm A :=
   rw [h, specNorm_map_star, specNorm_conjTranspose]
 
 open scoped Matrix.Norms.L2Operator in
-/-- The **C*-identity**: $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_2 = \|\mathbf{A}\|_2^2$.
-Port of `NLAlib.specNorm_sq_eq_specNorm_conjTranspose_mul_self`. -/
+/-- The **C*-identity**: $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_2 = \|\mathbf{A}\|_2^2$. -/
 theorem specNorm_conjTranspose_mul_self (A : Matrix m n 𝕜) :
     specNorm (Aᴴ * A) = specNorm A ^ 2 := by
   classical
   rw [specNorm_eq_norm, specNorm_eq_norm, Matrix.l2_opNorm_conjTranspose_mul_self, sq]
 
 /-- The C*-identity for $\mathbf{A}\mathbf{A}^{\mathsf{H}}$:
-$\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_2 = \|\mathbf{A}\|_2^2$. Port of
-`NLAlib.specNorm_mul_conjTranspose_self`. -/
+$\|\mathbf{A}\mathbf{A}^{\mathsf{H}}\|_2 = \|\mathbf{A}\|_2^2$. -/
 theorem specNorm_mul_conjTranspose_self (A : Matrix m n 𝕜) :
     specNorm (A * Aᴴ) = specNorm A ^ 2 := by
   have h := specNorm_conjTranspose_mul_self Aᴴ
@@ -288,8 +280,7 @@ private theorem specNorm_submatrix_equiv_le (A : Matrix m n 𝕜) (e₁ : l ≃ 
     ← EuclideanSpace.norm_toLp_comp_equiv x e₂.symm]
   exact norm_toLp_mulVec_le A _
 
-/-- The spectral norm is invariant under relabelling rows and columns by bijections.
-Port of `NLAlib.specNorm_reindex`. -/
+/-- The spectral norm is invariant under relabelling rows and columns by bijections. -/
 @[simp]
 theorem specNorm_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ : p ≃ n) :
     specNorm (A.submatrix e₁ e₂) = specNorm A := by
@@ -326,8 +317,7 @@ theorem specNorm_diagonal [DecidableEq n] (d : n → 𝕜) : specNorm (Matrix.di
   rw [specNorm_eq_norm, Matrix.l2_opNorm_diagonal]
 
 /-- A diagonal matrix with entries bounded in modulus by $c \ge 0$ has spectral norm at most
-$c$.
-Port of `NLAlib.specNorm_diagonal_le`. -/
+$c$. -/
 theorem specNorm_diagonal_le [DecidableEq n] {d : n → 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (hd : ∀ i, ‖d i‖ ≤ c) : specNorm (Matrix.diagonal d) ≤ c := by
   rw [specNorm_diagonal]
@@ -367,7 +357,7 @@ theorem norm_toLp_col_le_specNorm (A : Matrix m n 𝕜) (j : n) :
   rwa [Matrix.mulVec_single_one, PiLp.toLp_single, PiLp.norm_single, norm_one, mul_one] at h
 
 /-- Every entry is bounded by the spectral norm: $\lvert \mathbf{A}_{i,j} \rvert \le
-\|\mathbf{A}\|_2$. Port of `NLAlib.abs_apply_le_specNorm`. -/
+\|\mathbf{A}\|_2$. -/
 theorem norm_apply_le_specNorm (A : Matrix m n 𝕜) (i : m) (j : n) : ‖A i j‖ ≤ specNorm A :=
   (PiLp.norm_apply_le (WithLp.toLp 2 (A.col j)) i).trans (norm_toLp_col_le_specNorm A j)
 

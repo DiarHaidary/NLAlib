@@ -89,13 +89,11 @@ private theorem measurable_of_continuousOn_fiber {X Y : Type*} [TopologicalSpace
   rw [huk]
   exact hu.measurableSet.inter (hr (measurableSet_singleton k))
 
-/-- The spectral norm $\mathbf{A} \mapsto \|\mathbf{A}\|_2$ is measurable.
-Port of `NLAlib.measurable_specNorm_of_entries`. -/
+/-- The spectral norm $\mathbf{A} \mapsto \|\mathbf{A}\|_2$ is measurable. -/
 theorem measurable_specNorm : Measurable (specNorm : Matrix m n 𝕜 → ℝ) := by
   exact continuous_specNorm.measurable
 
-/-- The Frobenius norm $\mathbf{A} \mapsto \|\mathbf{A}\|_{\mathsf{F}}$ is measurable.
-Port of `NLAlib.measurable_frobSq_of_entries`. -/
+/-- The Frobenius norm $\mathbf{A} \mapsto \|\mathbf{A}\|_{\mathsf{F}}$ is measurable. -/
 theorem measurable_frobNorm : Measurable (frobNorm : Matrix m n 𝕜 → ℝ) := by
   exact continuous_frobNorm.measurable
 
@@ -176,9 +174,7 @@ theorem measurable_rank [Finite m] : Measurable fun A : Matrix m n 𝕜 => A.ran
   rw [h]
   exact (isClosed_setOf_rank_le r).measurableSet.inter (isOpen_setOf_le_rank r).measurableSet
 
-/-- The pseudoinverse is measurable: $\mathbf{A} \mapsto \mathbf{A}^{+}$.
-Port of `NLAlib.measurable_pinvL_entry_of` and
-`NLAlib.measurable_pinvR_entry`. -/
+/-- The pseudoinverse is measurable: $\mathbf{A} \mapsto \mathbf{A}^{+}$. -/
 theorem measurable_pinv :
     Measurable (pinv : Matrix m n 𝕜 → Matrix n m 𝕜) := by
   exact measurable_of_continuousOn_fiber measurable_rank continuousOn_pinv_setOf_rank_eq
@@ -373,14 +369,13 @@ private theorem measurable_gramSchmidt [Finite n] [LinearOrder n] [LocallyFinite
     exact ((Measurable.inner (𝕜 := 𝕜) hi' (hcol j)).div
       (RCLike.continuous_ofReal.measurable.comp (hi'.norm.pow_const 2))).smul hi'
 
-/-- The polar factor is measurable. Port of `NLAlib.measurable_polarFrame_entry`. -/
+/-- The polar factor is measurable. -/
 theorem measurable_polarFactor [DecidableEq n] :
     Measurable (polarFactor : Matrix m n 𝕜 → Matrix m n 𝕜) := by
   have h := (continuous_sqrt_gram (𝕜 := 𝕜) (m := m) (n := n)).measurable
   exact measurable_id.matrix_mul (measurable_pinv.comp h)
 
-/-- The Gram–Schmidt orthonormalisation is measurable.
-Port of `NLAlib.measurable_qrNormalizedArray`. -/
+/-- The Gram–Schmidt orthonormalisation is measurable. -/
 theorem measurable_gramSchmidtQ [LinearOrder n] [LocallyFiniteOrderBot n] :
     Measurable (gramSchmidtQ : Matrix m n 𝕜 → Matrix m n 𝕜) := by
   refine Matrix.measurable_iff.2 fun i j => ?_

@@ -67,7 +67,7 @@ private theorem continuous_of_abs_sub_le {E : Type*} [TopologicalSpace E] [AddGr
   continuousOn_univ.mp (continuousOn_of_abs_sub_le hg hg0 fun A _ B _ => h A B)
 
 /-- Each singular value $\sigma_k(\mathbf{A})$ is a continuous function of the matrix $\mathbf{A}$.
-Port of `NLAlib.continuous_singularValues_array`. -/
+-/
 theorem continuous_singularValues (k : ℕ) :
     Continuous fun A : Matrix m n 𝕜 => singularValues A k := by
   exact continuous_of_abs_sub_le continuous_specNorm specNorm_zero fun A B =>
@@ -99,8 +99,7 @@ theorem isClosed_setOf_isSVD_singularValues {r : ℕ} :
       (continuous_snd.comp continuous_snd).matrix_conjTranspose))
 
 /-- Each sorted eigenvalue $\lambda_k(\mathbf{A})$ (indexed from $0$, non-increasing) is a
-continuous function of $\mathbf{A}$ on the Hermitian matrices.
-Port of `NLAlib.continuous_eigenvalues₀_pencil`, there along a line. -/
+continuous function of $\mathbf{A}$ on the Hermitian matrices. -/
 theorem continuousOn_eigenvalue (k : ℕ) :
     ContinuousOn (fun A : Matrix n n 𝕜 => eigenvalue A k) {A | A.IsHermitian} := by
   exact continuousOn_of_abs_sub_le continuous_specNorm specNorm_zero fun A hA B hB =>
@@ -151,9 +150,7 @@ $$\bigl\lvert \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}
 {} - \|\mathbf{B} - \llbracket \mathbf{B} \rrbracket_k\|_{\Phi} \bigr\rvert
 \le \|\mathbf{A} - \mathbf{B}\|_{\Phi},$$
 where $\llbracket \mathbf{A} \rrbracket_k$ is the rank-$k$ truncated SVD of $\mathbf{A}$. (In the
-spectral norm the error is $\sigma_k(\mathbf{A})$ and this is Weyl's inequality.)
-Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`, there over $\mathbb{R}$ in the Frobenius
-norm. -/
+spectral norm the error is $\sigma_k(\mathbf{A})$ and this is Weyl's inequality.) -/
 theorem SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) (k : ℕ) :
     |Φ.matrixNorm (A - truncatedSVD A k) - Φ.matrixNorm (B - truncatedSVD B k)| ≤
@@ -171,8 +168,7 @@ norm:
 $$\bigl\lvert \|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}
 {} - \|\mathbf{B} - \llbracket \mathbf{B} \rrbracket_k\|_{\mathsf{F}} \bigr\rvert
 \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}},$$
-where $\llbracket \mathbf{A} \rrbracket_k$ is the rank-$k$ truncated SVD of $\mathbf{A}$.
-Port of `NLAlib.abs_sqrt_bestRankFrobSq_sub_le_frobNorm`. -/
+where $\llbracket \mathbf{A} \rrbracket_k$ is the rank-$k$ truncated SVD of $\mathbf{A}$. -/
 theorem abs_frobNorm_sub_truncatedSVD_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
     |frobNorm (A - truncatedSVD A k) - frobNorm (B - truncatedSVD B k)| ≤ frobNorm (A - B) := by
   simpa only [lpGauge_two_matrixNorm] using
@@ -181,8 +177,7 @@ theorem abs_frobNorm_sub_truncatedSVD_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
 /-- The optimal error $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\Phi}$ of rank-$k$
 approximation, with $\llbracket \mathbf{A} \rrbracket_k$ the rank-$k$ truncated SVD, is continuous
 in $\mathbf{A}$, in every unitarily invariant norm. The truncated SVD itself is not: it jumps where
-$\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$.
-Port of `NLAlib.continuous_bestRankFrobSq`. -/
+$\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$. -/
 theorem SymmetricGauge.continuous_matrixNorm_sub_truncatedSVD (Φ : SymmetricGauge) (k : ℕ) :
     Continuous fun A : Matrix m n 𝕜 => Φ.matrixNorm (A - truncatedSVD A k) := by
   exact continuous_of_abs_sub_le Φ.continuous_matrixNorm Φ.matrixNorm_zero fun A B =>

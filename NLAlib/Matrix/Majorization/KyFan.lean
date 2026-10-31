@@ -59,7 +59,7 @@ largest eigenvalues:
 $$\operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
   \le \sum_{i < \lvert p \rvert} \lambda_i(\mathbf{A}) \,.$$
 [HornJohnson2013, Corollary 4.3.39]; stated there for the smallest eigenvalues and increasing
-order. Port of `NLAlib.trace_compression_le_eigenvaluePrefix`.
+order.
 Result: ky-fan-maximum-principle -/
 theorem _root_.Matrix.IsHermitian.re_trace_conjTranspose_mul_mul_le_sum_eigenvalue
     [DecidableEq p] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {Q : Matrix n p 𝕜}
@@ -74,7 +74,6 @@ eigenvectors: for Hermitian $\mathbf{A}$ and $k \le \lvert n \rvert$ there is $\
 $k$ orthonormal columns and
 $\operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})
 = \sum_{i < k} \lambda_i(\mathbf{A})$.
-Port of `NLAlib.exists_trace_compression_eq_eigenvaluePrefix`, there over $\mathbb{R}$.
 Result: ky-fan-maximum-principle -/
 theorem _root_.Matrix.IsHermitian.exists_re_trace_conjTranspose_mul_mul_eq_sum_eigenvalue
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {k : ℕ} (hk : k ≤ Fintype.card n) :
@@ -94,8 +93,7 @@ $\lvert p \rvert$ orthonormal directions is at least the sum of the $\lvert p \r
 eigenvalues: with $\lvert p \rvert + d = \lvert n \rvert$,
 $$\sum_{d \le i < \lvert n \rvert} \lambda_i(\mathbf{A})
   \le \operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) \,.$$
-[HornJohnson2013, Corollary 4.3.39].
-Port of `NLAlib.sum_bottom_eigenvalues_le_trace_compression`. -/
+[HornJohnson2013, Corollary 4.3.39]. -/
 theorem _root_.Matrix.IsHermitian.sum_Ico_eigenvalue_le_re_trace_conjTranspose_mul_mul
     [DecidableEq p] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {Q : Matrix n p 𝕜}
     (hQ : HasOrthonormalCols Q) {d : ℕ} (hd : Fintype.card p + d = Fintype.card n) :
@@ -121,7 +119,6 @@ every $k$,
 $$\sum_{i < k} \lambda_i(\mathbf{A} + \mathbf{B})
   \le \sum_{i < k} \lambda_i(\mathbf{A}) + \sum_{i < k} \lambda_i(\mathbf{B}) \,.$$
 [HornJohnson2013, Corollary 4.3.39 and Theorem 4.3.47].
-Port of `NLAlib.eigenvaluePrefix_add_le`, there over $\mathbb{R}$.
 Result: ky-fan-eigenvalue-sums -/
 theorem _root_.Matrix.IsHermitian.sum_range_eigenvalue_add_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -144,7 +141,6 @@ $\mathbf{A}$, $\mathbf{B}$, the vector
 $(\lambda_i(\mathbf{A} + \mathbf{B}))_{i < \lvert n \rvert}$ is majorized by
 $(\lambda_i(\mathbf{A}) + \lambda_i(\mathbf{B}))_{i < \lvert n \rvert}$.
 [HornJohnson2013, Theorem 4.3.47].
-Port of `NLAlib.majorized_eigenvalues₀_add`, there over $\mathbb{R}$.
 Result: ky-fan-eigenvalue-sums -/
 theorem _root_.Matrix.IsHermitian.majorized_eigenvalue_add {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
@@ -177,9 +173,7 @@ traces through their real parts: by monotonicity of the eigenvalues,
 $\operatorname{tr} \mathbf{R} - \tau$ is at most the sum of the $r$ largest eigenvalues of
 $\mathbf{R}$, and the Cauchy–Schwarz inequality bounds that sum. This is the step that turns the
 expected trace decrease of randomly pivoted Cholesky into its error bound.
-[ChenEtAl2025, proof of Theorem 3.1].
-Port of `NLAlib.sq_max_re_trace_sub_spectralTraceTail_le_of_eigenvalues₀_le` and of its real case
-`NLAlib.sq_max_trace_sub_spectralTraceTail_le_mul_trace_sq`. -/
+[ChenEtAl2025, proof of Theorem 3.1]. -/
 theorem _root_.Matrix.PosSemidef.sq_max_re_trace_sub_sum_Ico_eigenvalue_le {A R : Matrix n n 𝕜}
     (hR : R.PosSemidef) (hRA : R ≤ A) (r : ℕ) :
     max (RCLike.re R.trace - ∑ i ∈ Finset.Ico r (Fintype.card n), eigenvalue A i) 0 ^ 2 ≤
@@ -218,8 +212,7 @@ open scoped ComplexOrder in
 /-- A positive semidefinite matrix whose eigenvalues from index $r$ on sum to zero has rank at
 most $r$: if $\sum_{r \le i < \lvert n \rvert} \lambda_i(\mathbf{A}) = 0$ then
 $\operatorname{rank} \mathbf{A} \le r$. This is the exact-rank case of the trace-tail bound.
-[ChenEtAl2025, Theorem 3.1, exact-rank case].
-Port of `NLAlib.rank_le_of_spectralTraceTail_eq_zero`. -/
+[ChenEtAl2025, Theorem 3.1, exact-rank case]. -/
 theorem _root_.Matrix.PosSemidef.rank_le_of_sum_Ico_eigenvalue_eq_zero {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {r : ℕ}
     (h : ∑ i ∈ Finset.Ico r (Fintype.card n), eigenvalue A i = 0) : A.rank ≤ r := by
@@ -236,29 +229,26 @@ theorem _root_.Matrix.PosSemidef.rank_le_of_sum_Ico_eigenvalue_eq_zero {A : Matr
 /-- The **Ky Fan $k$-norm**: the sum of the $k$ largest singular values,
 $\|\mathbf{A}\|_{(k)} = \sum_{i < k} \sigma_i(\mathbf{A})$. The Ky Fan $1$-norm is the spectral
 norm, and the Ky Fan $k$-norm for $k$ at least the smaller dimension is the nuclear norm.
-[HornJohnson2013, §7.4.8]. Port of `NLAlib.kyFanNorm`, with the arguments in the other order. -/
+[HornJohnson2013, §7.4.8]. -/
 noncomputable def kyFanNorm (k : ℕ) (A : Matrix m n 𝕜) : ℝ :=
   ∑ i ∈ Finset.range k, singularValues A i
 
 /-- The Ky Fan $k$-norm is the sum of the first $k$ singular values:
-$\|\mathbf{A}\|_{(k)} = \sum_{i < k} \sigma_i(\mathbf{A})$.
-Port of `NLAlib.kyFanNorm_eq_sum_range`. -/
+$\|\mathbf{A}\|_{(k)} = \sum_{i < k} \sigma_i(\mathbf{A})$. -/
 theorem kyFanNorm_eq_sum_range (k : ℕ) (A : Matrix m n 𝕜) :
     kyFanNorm k A = ∑ i ∈ Finset.range k, singularValues A i :=
   rfl
 
-/-- Ky Fan norms are nonnegative: $\|\mathbf{A}\|_{(k)} \ge 0$.
-Port of `NLAlib.kyFanNorm_nonneg`. -/
+/-- Ky Fan norms are nonnegative: $\|\mathbf{A}\|_{(k)} \ge 0$. -/
 theorem kyFanNorm_nonneg (k : ℕ) (A : Matrix m n 𝕜) : 0 ≤ kyFanNorm k A := by
   exact Finset.sum_nonneg fun i _ => singularValues_nonneg A i
 
-/-- The Ky Fan $0$-norm vanishes: $\|\mathbf{A}\|_{(0)} = 0$. Port of `NLAlib.kyFanNorm_zero`. -/
+/-- The Ky Fan $0$-norm vanishes: $\|\mathbf{A}\|_{(0)} = 0$. -/
 @[simp]
 theorem kyFanNorm_zero_left (A : Matrix m n 𝕜) : kyFanNorm 0 A = 0 := by
   rw [kyFanNorm, Finset.range_zero, Finset.sum_empty]
 
-/-- The Ky Fan $1$-norm is the spectral norm: $\|\mathbf{A}\|_{(1)} = \|\mathbf{A}\|_2$.
-Port of `NLAlib.kyFanNorm_one_eq_specNorm`. -/
+/-- The Ky Fan $1$-norm is the spectral norm: $\|\mathbf{A}\|_{(1)} = \|\mathbf{A}\|_2$. -/
 @[simp]
 theorem kyFanNorm_one (A : Matrix m n 𝕜) : kyFanNorm 1 A = specNorm A := by
   rw [kyFanNorm, Finset.sum_range_one, singularValues_zero_eq_specNorm]
@@ -330,8 +320,6 @@ orthonormal columns indexed by $p$,
 $$\lvert \operatorname{tr}(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V}) \rvert
   \le \|\mathbf{A}\|_{(\lvert p \rvert)} \,.$$
 [HornJohnson1991, Theorem 3.4.1].
-Port of `NLAlib.trace_twoSided_compression_le_kyFanNorm`, there over $\mathbb{R}$ without the
-modulus.
 Result: ky-fan-singular-values -/
 theorem norm_trace_conjTranspose_mul_mul_le_kyFanNorm [DecidableEq p] (A : Matrix m n 𝕜)
     {U : Matrix m p 𝕜} {V : Matrix n p 𝕜} (hU : HasOrthonormalCols U)
@@ -349,7 +337,6 @@ theorem norm_trace_conjTranspose_mul_mul_le_kyFanNorm [DecidableEq p] (A : Matri
 by the leading singular vectors, with a real nonnegative trace: for $k$ at most both dimensions
 there are $\mathbf{U}$, $\mathbf{V}$ with $k$ orthonormal columns and
 $\operatorname{tr}(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V}) = \|\mathbf{A}\|_{(k)}$.
-Port of `NLAlib.exists_trace_twoSided_compression_eq_kyFanNorm`, there over $\mathbb{R}$.
 Result: ky-fan-singular-values -/
 theorem exists_trace_conjTranspose_mul_mul_eq_kyFanNorm (A : Matrix m n 𝕜) {k : ℕ}
     (hkm : k ≤ Fintype.card m) (hkn : k ≤ Fintype.card n) :
@@ -372,7 +359,6 @@ $\|\mathbf{A} + \mathbf{B}\|_{(k)} \le \|\mathbf{A}\|_{(k)} + \|\mathbf{B}\|_{(k
 $$\sum_{i < k} \sigma_i(\mathbf{A} + \mathbf{B})
   \le \sum_{i < k} \sigma_i(\mathbf{A}) + \sum_{i < k} \sigma_i(\mathbf{B}) \,.$$
 [HornJohnson1991, Corollary 3.4.3].
-Port of `NLAlib.kyFanNorm_add_le`, there over $\mathbb{R}$.
 Result: ky-fan-singular-values -/
 theorem kyFanNorm_add_le (k : ℕ) (A B : Matrix m n 𝕜) :
     kyFanNorm k (A + B) ≤ kyFanNorm k A + kyFanNorm k B := by
@@ -389,9 +375,7 @@ theorem kyFanNorm_add_le (k : ℕ) (A B : Matrix m n 𝕜) :
 /-- The Frobenius inner product with a matrix of rank at most $k$ and spectral norm at most one
 is at most the Ky Fan $k$-norm: if $\operatorname{rank} \mathbf{P} \le k$ and
 $\|\mathbf{P}\|_2 \le 1$, then
-$\langle \mathbf{A}, \mathbf{P} \rangle_{\mathsf{F}} \le \|\mathbf{A}\|_{(k)}$.
-Port of `NLAlib.frobInner_le_kyFanNorm_of_rank_le_of_specNorm_le_one`, there over
-$\mathbb{R}$. -/
+$\langle \mathbf{A}, \mathbf{P} \rangle_{\mathsf{F}} \le \|\mathbf{A}\|_{(k)}$. -/
 theorem frobInner_le_kyFanNorm_of_rank_le_of_specNorm_le_one (A : Matrix m n 𝕜)
     {P : Matrix m n 𝕜} {k : ℕ} (hP : P.rank ≤ k) (hPn : specNorm P ≤ 1) :
     frobInner A P ≤ kyFanNorm k A := by

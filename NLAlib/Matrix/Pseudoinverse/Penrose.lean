@@ -43,8 +43,7 @@ $$\mathbf{A}\mathbf{B}\mathbf{A} = \mathbf{A}, \quad \mathbf{B}\mathbf{A}\mathbf
   (\mathbf{B}\mathbf{A})^{\mathsf{H}} = \mathbf{B}\mathbf{A}\,.$$
 There is at most one such $\mathbf{B}$
 (`NLAlib.IsPinv.unique`), and every matrix has one (`NLAlib.exists_isPinv`).
-[GolubVanLoan2013, §5.5.2]; [HornJohnson2013, Problem 7.3.P7].
-Port of `NLAlib.IsMoorePenroseInverse`. -/
+[GolubVanLoan2013, §5.5.2]; [HornJohnson2013, Problem 7.3.P7]. -/
 structure IsPinv (A : Matrix m n 𝕜) (B : Matrix n m 𝕜) : Prop where
   /-- $\mathbf{A}\mathbf{B}\mathbf{A} = \mathbf{A}$. -/
   mul_mul_left : A * B * A = A
@@ -63,7 +62,6 @@ variable {A : Matrix m n 𝕜} {B C : Matrix n m 𝕜}
 if $\mathbf{B}$ and $\mathbf{C}$ both satisfy the four Penrose identities for $\mathbf{A}$, then
 $\mathbf{B} = \mathbf{C}$.
 [HornJohnson2013, Problem 7.3.P7].
-Port of `NLAlib.IsMoorePenroseInverse.unique`.
 Result: moore-penrose-uniqueness -/
 theorem unique (hB : IsPinv A B) (hC : IsPinv A C) : B = C := by
   have hBA : B * A = C * A := by
@@ -87,15 +85,13 @@ theorem unique (hB : IsPinv A B) (hC : IsPinv A C) : B = C := by
     _ = C := hC.mul_mul_right
 
 /-- The relation is symmetric: if $\mathbf{B}$ is a pseudoinverse of $\mathbf{A}$, then
-$\mathbf{A}$ is a pseudoinverse of $\mathbf{B}$.
-Port of `NLAlib.IsMoorePenroseInverse.swap`. -/
+$\mathbf{A}$ is a pseudoinverse of $\mathbf{B}$. -/
 protected theorem symm (h : IsPinv A B) : IsPinv B A := by
   exact ⟨h.mul_mul_right, h.mul_mul_left, h.isHermitian_right, h.isHermitian_left⟩
 
 /-- The conjugate transpose of a pseudoinverse is a pseudoinverse of the conjugate transpose: if
 $\mathbf{B}$ is a pseudoinverse of $\mathbf{A}$, then $\mathbf{B}^{\mathsf{H}}$ is one of
-$\mathbf{A}^{\mathsf{H}}$.
-Port of `NLAlib.IsMoorePenroseInverse.conjTranspose`. -/
+$\mathbf{A}^{\mathsf{H}}$. -/
 protected theorem conjTranspose (h : IsPinv A B) : IsPinv Aᴴ Bᴴ := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [← Matrix.conjTranspose_mul, ← Matrix.conjTranspose_mul, ← Matrix.mul_assoc,
@@ -107,8 +103,7 @@ protected theorem conjTranspose (h : IsPinv A B) : IsPinv Aᴴ Bᴴ := by
   · rw [← Matrix.conjTranspose_mul]
     exact h.isHermitian_left.conjTranspose
 
-/-- Relabelling rows and columns by bijections.
-Port of `NLAlib.IsMoorePenroseInverse.submatrix`. -/
+/-- Relabelling rows and columns by bijections. -/
 protected theorem submatrix (h : IsPinv A B) (e₁ : l ≃ m) (e₂ : p ≃ n) :
     IsPinv (A.submatrix e₁ e₂) (B.submatrix e₂ e₁) := by
   refine ⟨?_, ?_, ?_, ?_⟩
@@ -136,8 +131,7 @@ protected theorem smul (h : IsPinv A B) {c : 𝕜} (hc : c ≠ 0) : IsPinv (c �
 
 /-- Left multiplication by a matrix with orthonormal columns: if $\mathbf{B}$ is a pseudoinverse
 of $\mathbf{A}$ and $\mathbf{Q}$ has orthonormal columns, then $\mathbf{B}\mathbf{Q}^{\mathsf{H}}$
-is a pseudoinverse of $\mathbf{Q}\mathbf{A}$.
-Port of `NLAlib.IsMoorePenroseInverse.unitary_transform`. -/
+is a pseudoinverse of $\mathbf{Q}\mathbf{A}$. -/
 theorem mul_left [DecidableEq m] (h : IsPinv A B) {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) : IsPinv (Q * A) (B * Qᴴ) := by
   have hBA : B * Qᴴ * (Q * A) = B * A := by
@@ -161,20 +155,17 @@ theorem mul_conjTranspose_right [DecidableEq n] (h : IsPinv A B) {Q : Matrix l n
   rwa [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     Matrix.conjTranspose_conjTranspose, Matrix.conjTranspose_conjTranspose] at h'
 
-/-- $\mathbf{A}\mathbf{B}$ is an orthogonal projector.
-Port of `NLAlib.IsMoorePenroseInverse.mul_isIdempotentElem`. -/
+/-- $\mathbf{A}\mathbf{B}$ is an orthogonal projector. -/
 theorem isStarProjection_left (h : IsPinv A B) : IsStarProjection (A * B) := by
   rw [Matrix.isStarProjection_iff]
   exact ⟨by rw [← Matrix.mul_assoc, h.mul_mul_left], h.isHermitian_left⟩
 
-/-- $\mathbf{B}\mathbf{A}$ is an orthogonal projector.
-Port of `NLAlib.IsMoorePenroseInverse.inv_mul_isIdempotentElem`. -/
+/-- $\mathbf{B}\mathbf{A}$ is an orthogonal projector. -/
 theorem isStarProjection_right (h : IsPinv A B) : IsStarProjection (B * A) := by
   exact h.symm.isStarProjection_left
 
 /-- $\mathbf{A}\mathbf{B}$ is the orthogonal projector onto the column space of $\mathbf{A}$:
-$\mathbf{A}\mathbf{B} = \mathbf{P}_{\mathbf{A}}$.
-Port of `NLAlib.IsMoorePenroseInverse.range_mul_eq`. -/
+$\mathbf{A}\mathbf{B} = \mathbf{P}_{\mathbf{A}}$. -/
 theorem mul_eq_rangeProjector (h : IsPinv A B) : A * B = rangeProjector A := by
   refine h.isStarProjection_left.eq_rangeProjector (le_antisymm ?_ ?_)
   · exact range_le_iff_exists_mul.mpr ⟨B, rfl⟩
@@ -197,14 +188,12 @@ theorem range_eq (h : IsPinv A B) :
   · exact range_le_iff_exists_mul.mpr ⟨A, rfl⟩
 
 open scoped ComplexOrder in
-/-- A pseudoinverse of $\mathbf{A}$ has the rank of $\mathbf{A}$.
-Port of the argument of `NLAlib.IsMoorePenroseInverse.range_mul_eq`. -/
+/-- A pseudoinverse of $\mathbf{A}$ has the rank of $\mathbf{A}$. -/
 theorem rank_eq (h : IsPinv A B) : B.rank = A.rank := by
   rw [Matrix.rank, h.range_eq, ← Matrix.rank_conjTranspose A, Matrix.rank]
 
 /-- The Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ has pseudoinverse
-$\mathbf{B}\mathbf{B}^{\mathsf{H}}$, for $\mathbf{B}$ a pseudoinverse of $\mathbf{A}$.
-Port of `NLAlib.IsMoorePenroseInverse.conjTranspose_mul_self`. -/
+$\mathbf{B}\mathbf{B}^{\mathsf{H}}$, for $\mathbf{B}$ a pseudoinverse of $\mathbf{A}$. -/
 theorem conjTranspose_mul_self (h : IsPinv A B) : IsPinv (Aᴴ * A) (B * Bᴴ) := by
   have hCG : B * Bᴴ * (Aᴴ * A) = B * A := by
     rw [Matrix.mul_assoc B, ← Matrix.mul_assoc Bᴴ, ← Matrix.conjTranspose_mul,
@@ -256,8 +245,7 @@ private theorem star_mul_inv_self (a : 𝕜) : star (a * a⁻¹) = a * a⁻¹ :=
 
 /-- The pseudoinverse of a diagonal matrix inverts the nonzero diagonal entries:
 $\operatorname{diag}(\mathbf{d}_i^{-1})$, with $0^{-1} = 0$, is a pseudoinverse of
-$\operatorname{diag}(\mathbf{d})$.
-Port of `NLAlib.isMoorePenroseInverse_singleton`, there for a $1 \times 1$ real matrix. -/
+$\operatorname{diag}(\mathbf{d})$. -/
 theorem isPinv_diagonal [DecidableEq n] (d : n → 𝕜) :
     IsPinv (Matrix.diagonal d) (Matrix.diagonal fun i => (d i)⁻¹) := by
   refine ⟨?_, ?_, ?_, ?_⟩
@@ -295,8 +283,7 @@ theorem _root_.IsStarProjection.isPinv {P : Matrix m m 𝕜} (hP : IsStarProject
     exact hP.isHermitian
 
 /-- With full column rank ($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective),
-$(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$ is the pseudoinverse.
-Port of `NLAlib.isMoorePenroseInverse_pinvL`. -/
+$(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$ is the pseudoinverse. -/
 theorem isPinv_inv_mul_conjTranspose [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) : IsPinv A ((Aᴴ * A)⁻¹ * Aᴴ) := by
   have hinv := inv_conjTranspose_mul_self_mul_conjTranspose_mul hA
@@ -310,8 +297,7 @@ theorem isPinv_inv_mul_conjTranspose [DecidableEq n] {A : Matrix m n 𝕜}
     exact Matrix.isHermitian_one
 
 /-- With full row rank ($\mathbf{x} \mapsto \mathbf{A}^{\mathsf{H}}\mathbf{x}$ injective),
-$\mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$ is the pseudoinverse.
-Port of `NLAlib.isMoorePenroseInverse_pinvR`. -/
+$\mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$ is the pseudoinverse. -/
 theorem isPinv_conjTranspose_mul_inv [DecidableEq m] {A : Matrix m n 𝕜}
     (hA : Function.Injective Aᴴ.mulVec) : IsPinv A (Aᴴ * (A * Aᴴ)⁻¹) := by
   have h := (isPinv_inv_mul_conjTranspose hA).conjTranspose

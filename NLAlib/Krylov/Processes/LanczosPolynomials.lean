@@ -20,7 +20,7 @@ coefficients are $\alpha_j(\mu_{\mathbf{A},\mathbf{b}})$ and
 $\sqrt{\beta_{j+1}(\mu_{\mathbf{A},\mathbf{b}})}$, and the Lanczos tridiagonal matrix is the Jacobi
 matrix of $\mu_{\mathbf{A},\mathbf{b}}$, for every number of steps (past the grade both sides are
 padded with the same zeros). The spectral measure is positive definite up to degree $k$ exactly
-when $k$ is at most the grade (`docs/design/Polynomial-OrthogonalStructure.md`, §4.9).
+when $k$ is at most the grade.
 [GolubMeurant2010]; [Gautschi2004].
 
 ## Main results

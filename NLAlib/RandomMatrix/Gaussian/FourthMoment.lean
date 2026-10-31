@@ -53,7 +53,6 @@ $$\mathbb{E}\|\mathbf{A}\mathbf{G}\mathbf{B}\|_{\mathsf{F}}^4
 +2\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_{\mathsf{F}}^2
 \|\mathbf{B}\mathbf{B}^{\mathsf{H}}\|_{\mathsf{F}}^2\,.$$
 [Isserlis1918, fourth-order formula]; here its matrix contraction.
-Ported from `NLAlib.integral_frobSq_mul_gaussianMatrix_mul_sq`.
 Result: gaussian-frob-fourth-moment -/
 theorem integral_frobNorm_mul_mul_pow_four_of_hasLaw_gaussianMatrix
     {G : Ω → Matrix m n ℝ} (hG : HasLaw G (gaussianMatrix m n) μ)
@@ -269,7 +268,6 @@ $$\mathbb{E}\|\mathbf{A}(\mathbf{G}\mathbf{G}^{\mathsf{H}}/\lvert k\rvert)
 =\frac{\|\mathbf{A}\|_{\mathsf{F}}^2\|\mathbf{B}\|_{\mathsf{F}}^2
 +\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}}^2}{\lvert k\rvert}\,.$$
 [Isserlis1918, fourth-order formula]; the normalized centered Gram contraction.
-Ported from `NLAlib.integral_frobSq_mul_gram_mul_transpose_sub`.
 Result: gaussian-amm -/
 theorem integral_frobNorm_mul_smul_mul_conjTranspose_self_mul_sub_sq_of_hasLaw_gaussianMatrix
     [Nonempty k]

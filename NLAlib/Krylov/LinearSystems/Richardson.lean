@@ -29,7 +29,6 @@ $\mathbf{M}$ the energy error contracts at the rate
 $\max(\lvert 1 - a\rvert, \lvert 1 - a'\rvert)$ for the spectrum of $\mathbf{M}\mathbf{A}$ in
 $[a, a']$, which the step $2/(a + a')$ makes $(a' - a)/(a' + a)$.
 
-Design: `docs/design/Regression-SketchPrecondition.md` §3.1, §4.1.
 
 ## Main definitions
 

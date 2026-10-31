@@ -16,7 +16,6 @@ $2\,(\operatorname{contract}_2 p)(x^2) = p(x) + p(-x)$, and the degree and the v
 contraction. These turn a polynomial bound on a symmetric set $[-b, -a] \cup [a, b]$ into one on
 $[a^2, b^2]$. Upstream candidates for `Mathlib/Algebra/Polynomial/Expand.lean`.
 
-Design: consolidation round (`docs/design/Consolidation.md` §3.1, F6).
 
 ## Main results
 

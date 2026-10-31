@@ -15,7 +15,7 @@ The kernel `NLAlib.Computation.trsvLower` (forward substitution in place) under 
 and under an error contract. Every theorem asserts that the run succeeds under hypotheses on the
 inputs alone: the stored diagonal is nonzero. Under the standard model the computed solution
 solves a nearby triangular system exactly, with a componentwise relative perturbation of size
-$\gamma_n$ [Higham2002, Theorem 8.5]. Design: `docs/design/Computation-Rounding.md` (R5).
+$\gamma_n$ [Higham2002, Theorem 8.5].
 
 ## Main results
 

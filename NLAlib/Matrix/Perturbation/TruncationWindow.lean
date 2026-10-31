@@ -31,8 +31,7 @@ $D = \|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 - \|(\mathbf{I} -
 \mathbf{P}_k)\mathbf{B}\|_{\mathsf{F}}^2$ controls the part of $\mathbf{Z} - \mathbf{P}_k$ outside
 the window (in Frobenius norm) and its compression to the window (in nuclear norm). These are the
 deterministic tools of the localized perturbed truncation
-`NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window`. Design:
-`docs/design/research/TruncatedGN-Upper.md` (research note OP6 of the NLAlib workflow, §3).
+`NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window`.
 
 ## Main results
 
@@ -492,7 +491,7 @@ $\mathbf{\Delta} = \mathbf{Z} - \mathbf{P}_k$,
 $$\|\mathbf{\Delta}\mathbf{B} - \mathbf{L}\mathbf{\Delta}\mathbf{B}\mathbf{L}'\|_{\mathsf{F}}^2
 \le 15\bigl(\|(\mathbf{I} - \mathbf{Z})\mathbf{B}\|_{\mathsf{F}}^2 -
 \|(\mathbf{I} - \mathbf{P}_k)\mathbf{B}\|_{\mathsf{F}}^2\bigr)\,.$$
-No printed source; it is research note OP6, Lemma 3.4(b). -/
+No printed source. -/
 theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n 𝕜) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
     (hkb : k ≤ b) (ha : ∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i)
     (ha₂ : singularValues B a ≤ 2 * singularValues B (k - 1))
@@ -670,8 +669,8 @@ range projector of $\llbracket\mathbf{B}\rrbracket_i$, $\mathbf{L} = \mathbf{P}_
 \|(\mathbf{I} - \mathbf{P}_k)\mathbf{B}\|_{\mathsf{F}}^2$,
 $$\|\mathbf{L}(\mathbf{Z} - \mathbf{P}_k)\mathbf{L}\|_* \le 4\min(k, b - k) +
 6\,\frac{D}{\theta^2}\,.$$
-No printed source; research note OP6, Lemma 3.5, proves the sharper
-$2\min(k, b - k) + \tfrac43 D/\theta^2$ through Weyl's inequalities. -/
+No printed source; Weyl's inequalities give the sharper
+$2\min(k, b - k) + \tfrac43 D/\theta^2$. -/
 theorem nuclearNorm_mul_sub_mul_le (B : Matrix m n 𝕜) {k a b : ℕ} (hk : 1 ≤ k) (hak : a ≤ k)
     (hkb : k ≤ b) (hθ : 0 < singularValues B (k - 1))
     (hb : singularValues B b ≤ singularValues B (k - 1) / 2) {Z : Matrix m m 𝕜}

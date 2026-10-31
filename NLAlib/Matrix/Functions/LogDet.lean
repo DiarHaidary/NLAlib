@@ -175,8 +175,7 @@ private theorem exists_re_det_smul_add_smul_eq {A B : Matrix n n 𝕜} (hA : A.P
 /-- **The weighted geometric mean of determinants** is at most the determinant of the weighted
 mean: $(\det \mathbf{A})^a (\det \mathbf{B})^b \le \det(a\mathbf{A} + b\mathbf{B})$ for positive
 definite $\mathbf{A}$, $\mathbf{B}$ and weights $a, b \ge 0$, $a + b = 1$.
-[HornJohnson2013, Theorem 7.6.6 context].
-Port of `NLAlib.det_rpow_mul_le_det_smul_add`, there over $\mathbb{R}$. -/
+[HornJohnson2013, Theorem 7.6.6 context]. -/
 theorem _root_.Matrix.PosDef.re_det_rpow_mul_re_det_rpow_le {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a + b = 1) :
     RCLike.re A.det ^ a * RCLike.re B.det ^ b ≤ RCLike.re (a • A + b • B).det := by
@@ -193,8 +192,7 @@ theorem _root_.Matrix.PosDef.re_det_rpow_mul_re_det_rpow_le {A B : Matrix n n �
 
 /-- **The log-determinant is strictly concave**: $\mathbf{A} \mapsto \log \det \mathbf{A}$ is
 strictly concave on the positive definite matrices.
-[HornJohnson2013, Theorem 7.6.6]. Port of `NLAlib.strictConcaveOn_log_det`, there over
-$\mathbb{R}$.
+[HornJohnson2013, Theorem 7.6.6].
 Result: log-det-concavity -/
 theorem strictConcaveOn_log_re_det :
     StrictConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef} fun A => Real.log (RCLike.re A.det) := by
@@ -229,8 +227,7 @@ theorem strictConcaveOn_log_re_det :
 /-- Equality in the concavity of $\log \det$ holds only at $\mathbf{A} = \mathbf{B}$: for positive
 definite $\mathbf{A}$, $\mathbf{B}$ and $a, b > 0$ with $a + b = 1$,
 $\log \det(a\mathbf{A} + b\mathbf{B}) = a \log \det \mathbf{A} + b \log \det \mathbf{B}$ if and
-only if $\mathbf{A} = \mathbf{B}$.
-Port of `NLAlib.log_det_smul_add_eq_iff`, there over $\mathbb{R}$. -/
+only if $\mathbf{A} = \mathbf{B}$. -/
 theorem _root_.Matrix.PosDef.log_re_det_smul_add_smul_eq_iff {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.PosDef) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b = 1) :
     Real.log (RCLike.re (a • A + b • B).det) =
@@ -302,7 +299,6 @@ private theorem exists_re_trace_inv_smul_add_smul_eq {A B : Matrix n n 𝕜} (hA
 /-- **The trace of the inverse is strictly convex**:
 $\mathbf{A} \mapsto \operatorname{tr} \mathbf{A}^{-1}$ is strictly convex on the positive definite
 matrices.
-Port of `NLAlib.strictConvexOn_trace_inv`, there over $\mathbb{R}$.
 Result: trace-inverse-convexity -/
 theorem strictConvexOn_re_trace_inv :
     StrictConvexOn ℝ {A : Matrix n n 𝕜 | A.PosDef} fun A => RCLike.re A⁻¹.trace := by

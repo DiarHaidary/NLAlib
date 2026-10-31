@@ -59,7 +59,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-- The quadratic form is bounded by the spectral norm:
 $\lvert \mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z} \rvert \le \|\mathbf{A}\|_2 \|\mathbf{z}\|^2$.
-Port of `NLAlib.abs_re_star_dotProduct_mulVec_le_specNorm`. -/
+-/
 theorem norm_quadForm_le (A : Matrix n n 𝕜) (z : n → 𝕜) :
     ‖quadForm A z‖ ≤ specNorm A * ‖WithLp.toLp 2 z‖ ^ 2 := by
   refine (norm_star_dotProduct_mulVec_le A z z).trans_eq ?_
@@ -156,8 +156,7 @@ theorem conjTranspose_mul_self_le_smul_one_iff [DecidableEq n] {T : Matrix m n �
 /-- A lower Loewner bound on the Gram matrix of $\mathbf{T}$ is a lower bound on
 $\|\mathbf{T}\mathbf{x}\|^2$: $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ iff
 $a \|\mathbf{x}\|^2 \le \|\mathbf{T}\mathbf{x}\|^2$ for every $\mathbf{x}$. This is the form in
-which a one-sided subspace embedding is used vector by vector.
-Port of the hypothesis of `NLAlib.mul_specNorm_le_specNorm_mul_of_mulVec_sq_le`. -/
+which a one-sided subspace embedding is used vector by vector. -/
 theorem smul_one_le_conjTranspose_mul_self_iff [DecidableEq n] {T : Matrix m n 𝕜} {a : ℝ} :
     a • (1 : Matrix n n 𝕜) ≤ Tᴴ * T ↔
       ∀ x, a * ‖WithLp.toLp 2 x‖ ^ 2 ≤ ‖WithLp.toLp 2 (T *ᵥ x)‖ ^ 2 := by
@@ -206,9 +205,7 @@ theorem specNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Mat
     norm_num
 
 /-- A factor $\mathbf{T}$ with $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ shrinks the
-squared spectral norm by at most $a$: $a \|\mathbf{X}\|_2^2 \le \|\mathbf{T}\mathbf{X}\|_2^2$.
-Port of `NLAlib.mul_specNorm_le_specNorm_mul_of_mulVec_sq_le`, there over $\mathbb{R}$ with the
-hypothesis as a raw condition on vectors and the bound unsquared. -/
+squared spectral norm by at most $a$: $a \|\mathbf{X}\|_2^2 \le \|\mathbf{T}\mathbf{X}\|_2^2$. -/
 theorem mul_specNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
     (h : a • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
     a * specNorm X ^ 2 ≤ specNorm (T * X) ^ 2 := by
@@ -235,8 +232,7 @@ theorem frobNorm_mul_sq_le_of_conjTranspose_mul_self_le [DecidableEq m] {T : Mat
 
 /-- A factor $\mathbf{T}$ with $a\mathbf{I} \preceq \mathbf{T}^{\mathsf{H}}\mathbf{T}$ shrinks the
 squared Frobenius norm by at most $a$:
-$a \|\mathbf{X}\|_{\mathsf{F}}^2 \le \|\mathbf{T}\mathbf{X}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.mul_frobSq_le_frobSq_mul_of_mulVec_sq_le`. -/
+$a \|\mathbf{X}\|_{\mathsf{F}}^2 \le \|\mathbf{T}\mathbf{X}\|_{\mathsf{F}}^2$. -/
 theorem mul_frobNorm_sq_le_of_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} {a : ℝ}
     (h : a • (1 : Matrix m m 𝕜) ≤ Tᴴ * T) (X : Matrix m n 𝕜) :
     a * frobNorm X ^ 2 ≤ frobNorm (T * X) ^ 2 := by
@@ -258,8 +254,7 @@ theorem mul_specNorm_le_of_sq_smul_one_le [DecidableEq m] {T : Matrix l m 𝕜} 
 /-- For a Hermitian matrix and $c \ge 0$, $\|\mathbf{A}\|_2 \le c$ exactly when the real quadratic
 form is bounded by $c \|\mathbf{x}\|^2$:
 $\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \rvert \le c
-\|\mathbf{x}\|^2$ for every $\mathbf{x}$. Port of `NLAlib.specNorm_le_iff_abs_dotProduct_mulVec_le`,
-there over $\mathbb{R}$. -/
+\|\mathbf{x}\|^2$ for every $\mathbf{x}$. -/
 theorem _root_.Matrix.IsHermitian.specNorm_le_iff_abs_re_quadForm_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : 0 ≤ c) :
     specNorm A ≤ c ↔ ∀ x, |RCLike.re (quadForm A x)| ≤ c * ‖WithLp.toLp 2 x‖ ^ 2 := by
@@ -278,7 +273,7 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_iff_abs_re_quadForm_le {A : Matrix
 /-- The spectral norm of a Hermitian matrix is attained by its quadratic form at a unit vector:
 on a nonempty index type there is $\mathbf{x}$ with $\|\mathbf{x}\| = 1$ and
 $\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \rvert = \|\mathbf{A}\|_2$.
-Port of `NLAlib.exists_unit_abs_quadForm_eq_specNorm`, there over $\mathbb{R}$. -/
+-/
 theorem _root_.Matrix.IsHermitian.exists_norm_eq_one_and_abs_re_quadForm_eq_specNorm [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     ∃ x : n → 𝕜, ‖WithLp.toLp 2 x‖ = 1 ∧ |RCLike.re (quadForm A x)| = specNorm A := by

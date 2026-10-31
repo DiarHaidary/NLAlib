@@ -40,9 +40,7 @@ packaged in the Haar projection factor <!-- value haarProjectionFactor d p q -->
 $1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor d p q`), the completion
 factor of Haar sketch-and-solve. Real field, as the Haar frame. The moments
 are here rather than in `NLAlib.RandomMatrix.Haar.Moments` because they are moments of the block
-$\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments. Design:
-`docs/design/LowRank-S4.md` §3.2, §8 item 8; the sketching identity and the factor,
-`docs/design/LowRank-S6.md` §3.1, §8 items 3 and 6.
+$\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments.
 
 ## Main results
 

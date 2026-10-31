@@ -127,8 +127,7 @@ columns whose law is a left unitarily invariant probability measure is a Haar fr
 $\lvert k \rvert \le \lvert n \rvert$ is needed: without it there are no frames, and `hQ` cannot
 hold for a
 probability law. [Meckes2019, Ch. 1], as uniqueness of the invariant measure on the Stiefel
-manifold; here proved against `haarFrame n n` directly. Replaces the prototype's
-`measure_eq_haarFrameLaw_of_invariant`.
+manifold; here proved against `haarFrame n n` directly.
 Result: haar-frame-uniqueness -/
 theorem hasLaw_haarFrame_of_isLeftUnitarilyInvariant [DecidableEq n] [DecidableEq k]
     {ν : Measure (Matrix n k ℝ)} [IsProbabilityMeasure ν] [IsLeftUnitarilyInvariant ν]
@@ -161,7 +160,7 @@ private theorem isLeftUnitarilyInvariant_map [DecidableEq n] {ρ : Measure (Matr
 /-- **The QR construction of the Haar frame**: the Gram–Schmidt factor of a tall standard
 Gaussian matrix ($\lvert k \rvert \le \lvert n \rvert$) is a Haar frame. [Meckes2019, Ch. 1],
 there for square matrices; here any tall
-shape. Replaces the prototype's `gaussianMatrix_map_canonicalQRFrame`.
+shape.
 Result: haar-frame-gram-schmidt -/
 theorem hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix [LinearOrder k] [LocallyFiniteOrderBot k]
     {G : Ω → Matrix n k ℝ} (hG : HasLaw G (gaussianMatrix n k) μ)
@@ -647,7 +646,7 @@ $$(\mathbf{I} - \mathbf{E})\mathbf{Y} + \mathbf{F}\bigl((\mathbf{E}\mathbf{Y})^{
 is a standard Gaussian matrix. Its compression to $\operatorname{range}\mathbf{E}$ has the range
 of $\mathbf{F}$ whenever $\mathbf{E}\mathbf{Y}$ has full column rank: a Gaussian block whose
 unrevealed part spans a prescribed random frame, the step of the Krylov coupling.
-[Shamir2026, Lemma 4] and OP5 (research note), Lemma C; there one column, resp. in an
+[Shamir2026, Lemma 4]; there one column, resp. in an
 orthonormal basis of the subspace. -/
 theorem hasLaw_one_sub_mul_add_mul_sqrt_of_hasLaw_gaussianMatrix [DecidableEq n] [DecidableEq k]
     {E : Matrix n n ℝ} (hE : IsStarProjection E) (hk : Fintype.card k ≤ E.rank)

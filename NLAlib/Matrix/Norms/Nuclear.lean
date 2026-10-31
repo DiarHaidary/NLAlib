@@ -49,13 +49,13 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-- The **nuclear norm** (trace norm) $\|\mathbf{A}\|_*$: the sum of the singular values,
 $\sum_{i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A})$.
-[HornJohnson2013, §7.4.7]. Port of `NLAlib.nuclearNorm`. -/
+[HornJohnson2013, §7.4.7]. -/
 noncomputable def nuclearNorm (A : Matrix m n 𝕜) : ℝ :=
   ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)), singularValues A i
 
 /-- The nuclear norm is the sum of the first $N$ singular values for any $N$ at least the rank:
 $\|\mathbf{A}\|_* = \sum_{i < N} \sigma_i(\mathbf{A})$ when $\operatorname{rank} \mathbf{A} \le N$.
-Port of `NLAlib.nuclearNorm_eq_sum_rank_singularValues`. -/
+-/
 theorem nuclearNorm_eq_sum_range (A : Matrix m n 𝕜) {N : ℕ} (hN : A.rank ≤ N) :
     nuclearNorm A = ∑ i ∈ Finset.range N, singularValues A i := by
   have key : ∀ {M : ℕ}, A.rank ≤ M → ∑ i ∈ Finset.range M, singularValues A i =
@@ -75,7 +75,7 @@ theorem IsSVD.nuclearNorm_eq_sum {r : Type*} [Fintype r] [DecidableEq r] {A : Ma
   exact Finset.sum_congr rfl fun i _ => (he i).symm
 
 /-- Ky Fan norms beyond the rank are the nuclear norm: $\|\mathbf{A}\|_{(k)} = \|\mathbf{A}\|_*$
-when $\operatorname{rank} \mathbf{A} \le k$. Port of `NLAlib.kyFanNorm_eq_min`. -/
+when $\operatorname{rank} \mathbf{A} \le k$. -/
 theorem kyFanNorm_of_rank_le {k : ℕ} {A : Matrix m n 𝕜} (h : A.rank ≤ k) :
     kyFanNorm k A = nuclearNorm A := by
   exact (nuclearNorm_eq_sum_range A h).symm
@@ -85,7 +85,7 @@ theorem kyFanNorm_le_nuclearNorm (k : ℕ) (A : Matrix m n 𝕜) : kyFanNorm k A
   rw [← kyFanNorm_min_card]
   exact kyFanNorm_mono_left A (min_le_right _ _)
 
-/-- The nuclear norm is nonnegative. Port of `NLAlib.nuclearNorm_nonneg`. -/
+/-- The nuclear norm is nonnegative. -/
 theorem nuclearNorm_nonneg (A : Matrix m n 𝕜) : 0 ≤ nuclearNorm A := by
   exact Finset.sum_nonneg fun i _ => singularValues_nonneg A i
 
@@ -94,7 +94,7 @@ theorem nuclearNorm_nonneg (A : Matrix m n 𝕜) : 0 ≤ nuclearNorm A := by
 theorem nuclearNorm_zero : nuclearNorm (0 : Matrix m n 𝕜) = 0 := by
   exact kyFanNorm_zero _
 
-/-- The nuclear norm is definite. Port of `NLAlib.nuclearNorm_eq_zero_iff`. -/
+/-- The nuclear norm is definite. -/
 @[simp]
 theorem nuclearNorm_eq_zero_iff {A : Matrix m n 𝕜} : nuclearNorm A = 0 ↔ A = 0 := by
   refine ⟨fun h => specNorm_eq_zero_iff.mp (le_antisymm ?_ (specNorm_nonneg A)), fun h => ?_⟩
@@ -102,7 +102,7 @@ theorem nuclearNorm_eq_zero_iff {A : Matrix m n 𝕜} : nuclearNorm A = 0 ↔ A 
   · rw [h, nuclearNorm_zero]
 
 /-- The nuclear norm is absolutely homogeneous:
-$\|c\mathbf{A}\|_* = \lvert c \rvert \|\mathbf{A}\|_*$. Port of `NLAlib.nuclearNorm_smul`. -/
+$\|c\mathbf{A}\|_* = \lvert c \rvert \|\mathbf{A}\|_*$. -/
 theorem nuclearNorm_smul (c : 𝕜) (A : Matrix m n 𝕜) :
     nuclearNorm (c • A) = ‖c‖ * nuclearNorm A := by
   exact kyFanNorm_smul _ c A
@@ -117,28 +117,26 @@ theorem nuclearNorm_neg (A : Matrix m n 𝕜) : nuclearNorm (-A) = nuclearNorm A
 theorem nuclearNorm_conjTranspose (A : Matrix m n 𝕜) : nuclearNorm Aᴴ = nuclearNorm A := by
   rw [nuclearNorm, nuclearNorm, singularValues_conjTranspose, min_comm]
 
-/-- The nuclear norm is invariant under the transpose. Port of `NLAlib.nuclearNorm_transpose`. -/
+/-- The nuclear norm is invariant under the transpose. -/
 @[simp]
 theorem nuclearNorm_transpose (A : Matrix m n 𝕜) : nuclearNorm Aᵀ = nuclearNorm A := by
   rw [nuclearNorm, nuclearNorm, singularValues_transpose, min_comm]
 
-/-- The nuclear norm is invariant under relabelling rows and columns.
-Port of `NLAlib.nuclearNorm_reindex`. -/
+/-- The nuclear norm is invariant under relabelling rows and columns. -/
 @[simp]
 theorem nuclearNorm_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ : p ≃ n) :
     nuclearNorm (A.submatrix e₁ e₂) = nuclearNorm A := by
   rw [nuclearNorm, nuclearNorm, singularValues_submatrix_equiv, Fintype.card_congr e₁,
     Fintype.card_congr e₂]
 
-/-- The nuclear norm is invariant under left multiplication by a matrix with orthonormal columns.
-Port of `NLAlib.nuclearNorm_orthogonal_mul`. -/
+/-- The nuclear norm is invariant under left multiplication by a matrix with orthonormal columns. -/
 theorem HasOrthonormalCols.nuclearNorm_mul_left [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) : nuclearNorm (Q * A) = nuclearNorm A := by
   rw [nuclearNorm_eq_sum_range (Q * A) ((Matrix.rank_mul_le_right Q A).trans
     (le_min A.rank_le_card_height A.rank_le_card_width)), hQ.singularValues_mul_left, nuclearNorm]
 
 /-- The nuclear norm is invariant under right multiplication by the conjugate transpose of a
-matrix with orthonormal columns. Port of `NLAlib.nuclearNorm_mul_orthogonal`. -/
+matrix with orthonormal columns. -/
 theorem HasOrthonormalCols.nuclearNorm_mul_conjTranspose_right [DecidableEq n]
     {Q : Matrix p n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     nuclearNorm (A * Qᴴ) = nuclearNorm A := by
@@ -148,18 +146,17 @@ theorem HasOrthonormalCols.nuclearNorm_mul_conjTranspose_right [DecidableEq n]
 
 /-- **The triangle inequality for the nuclear norm.**
 $\|\mathbf{A} + \mathbf{B}\|_* \le \|\mathbf{A}\|_* + \|\mathbf{B}\|_*$.
-[HornJohnson2013, §7.4.7]. Port of `NLAlib.nuclearNorm_add_le`, there over $\mathbb{R}$. -/
+[HornJohnson2013, §7.4.7]. -/
 theorem nuclearNorm_add_le (A B : Matrix m n 𝕜) :
     nuclearNorm (A + B) ≤ nuclearNorm A + nuclearNorm B := by
   exact kyFanNorm_add_le _ A B
 
-/-- The spectral norm is at most the nuclear norm: $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_*$. Port of
-`NLAlib.specNorm_le_nuclearNorm`. -/
+/-- The spectral norm is at most the nuclear norm: $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_*$. -/
 theorem specNorm_le_nuclearNorm (A : Matrix m n 𝕜) : specNorm A ≤ nuclearNorm A := by
   exact (kyFanNorm_one A).symm.trans_le (kyFanNorm_le_nuclearNorm 1 A)
 
 /-- The Frobenius norm is at most the nuclear norm:
-$\|\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_*$. Port of `NLAlib.frobNorm_le_nuclearNorm`. -/
+$\|\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_*$. -/
 theorem frobNorm_le_nuclearNorm (A : Matrix m n 𝕜) : frobNorm A ≤ nuclearNorm A := by
   refine (sq_le_sq₀ (frobNorm_nonneg A) (nuclearNorm_nonneg A)).mp ?_
   rw [frobNorm_sq_eq_sum_range_singularValues_sq A
@@ -167,15 +164,13 @@ theorem frobNorm_le_nuclearNorm (A : Matrix m n 𝕜) : frobNorm A ≤ nuclearNo
   exact Finset.sum_sq_le_sq_sum_of_nonneg fun i _ => singularValues_nonneg A i
 
 /-- The nuclear norm is at most $\sqrt{\operatorname{rank} \mathbf{A}}$ times the Frobenius norm:
-$\|\mathbf{A}\|_* \le \sqrt{\operatorname{rank} \mathbf{A}} \, \|\mathbf{A}\|_{\mathsf{F}}$.
-Port of `NLAlib.nuclearNorm_le_sqrt_rank_mul_frobNorm`. -/
+$\|\mathbf{A}\|_* \le \sqrt{\operatorname{rank} \mathbf{A}} \, \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem nuclearNorm_le_sqrt_rank_mul_frobNorm (A : Matrix m n 𝕜) :
     nuclearNorm A ≤ √(A.rank : ℝ) * frobNorm A := by
   exact (kyFanNorm_of_rank_le le_rfl).symm.trans_le (kyFanNorm_le_sqrt_mul_frobNorm _ A)
 
 /-- The nuclear norm is at most the rank times the spectral norm:
-$\|\mathbf{A}\|_* \le (\operatorname{rank} \mathbf{A}) \, \|\mathbf{A}\|_2$.
-Port of `NLAlib.nuclearNorm_le_rank_mul_specNorm`. -/
+$\|\mathbf{A}\|_* \le (\operatorname{rank} \mathbf{A}) \, \|\mathbf{A}\|_2$. -/
 theorem nuclearNorm_le_rank_mul_specNorm (A : Matrix m n 𝕜) :
     nuclearNorm A ≤ A.rank * specNorm A := by
   exact (kyFanNorm_of_rank_le le_rfl).symm.trans_le (kyFanNorm_le_mul_specNorm _ A)
@@ -229,8 +224,7 @@ theorem norm_trace_conjTranspose_mul_le_nuclearNorm_mul_specNorm (A B : Matrix m
     mul_le_mul_of_nonneg_left (singularValues_le_specNorm B i) (singularValues_nonneg A i)
 
 /-- $\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
-\le \|\mathbf{A}\|_* \|\mathbf{B}\|_2$.
-Port of `NLAlib.abs_frobInner_le_nuclearNorm_mul_specNorm`, there over $\mathbb{R}$. -/
+\le \|\mathbf{A}\|_* \|\mathbf{B}\|_2$. -/
 theorem abs_frobInner_le_nuclearNorm_mul_specNorm (A B : Matrix m n 𝕜) :
     |frobInner A B| ≤ nuclearNorm A * specNorm B := by
   exact (RCLike.abs_re_le_norm _).trans
@@ -264,8 +258,7 @@ theorem re_trace_sub_rangeProjector_mul_le_nuclearNorm_sub_mul
 
 /-- The nuclear norm is attained as a Frobenius inner product with a matrix of spectral norm at
 most one: there is $\mathbf{B}$ with $\|\mathbf{B}\|_2 \le 1$ and
-$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_*$.
-Port of `NLAlib.exists_specNorm_le_one_frobInner_eq_nuclearNorm`, there over $\mathbb{R}$. -/
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_*$. -/
 theorem exists_specNorm_le_one_frobInner_eq_nuclearNorm (A : Matrix m n 𝕜) :
     ∃ B : Matrix m n 𝕜, specNorm B ≤ 1 ∧ frobInner A B = nuclearNorm A := by
   obtain ⟨W, -, hW, hWe⟩ := exists_rank_le_specNorm_le_one_frobInner_eq_kyFanNorm
@@ -277,7 +270,6 @@ product with a matrix of spectral norm at most one,
 $$\|\mathbf{A}\|_* = \max_{\|\mathbf{B}\|_2 \le 1}
   \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}\,.$$
 [HornJohnson2013, §5.6 and Theorem 7.4.1.1].
-Port of `NLAlib.isGreatest_nuclearNorm_frobInner`, there over $\mathbb{R}$.
 Result: nuclear-spectral-duality -/
 theorem isGreatest_frobInner_nuclearNorm (A : Matrix m n 𝕜) :
     IsGreatest ((fun B : Matrix m n 𝕜 => frobInner A B) '' {B | specNorm B ≤ 1})
@@ -291,7 +283,6 @@ theorem isGreatest_frobInner_nuclearNorm (A : Matrix m n 𝕜) :
 product with a matrix of nuclear norm at most one,
 $$\|\mathbf{A}\|_2 = \max_{\|\mathbf{B}\|_* \le 1}
   \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}\,.$$
-Port of `NLAlib.exists_nuclearNorm_le_one_frobInner_eq_specNorm`, there over $\mathbb{R}$.
 Result: nuclear-spectral-duality -/
 theorem isGreatest_frobInner_specNorm (A : Matrix m n 𝕜) :
     IsGreatest ((fun B : Matrix m n 𝕜 => frobInner A B) '' {B | nuclearNorm B ≤ 1})
@@ -310,8 +301,7 @@ theorem isGreatest_frobInner_specNorm (A : Matrix m n 𝕜) :
 /-! ### Hermitian and positive semidefinite matrices -/
 
 /-- The nuclear norm of a positive semidefinite matrix is its trace:
-$\|\mathbf{A}\|_* = \operatorname{Re} \operatorname{tr} \mathbf{A}$.
-Port of `NLAlib.nuclearNorm_eq_trace_of_posSemidef`, there over $\mathbb{R}$. -/
+$\|\mathbf{A}\|_* = \operatorname{Re} \operatorname{tr} \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.nuclearNorm_eq_re_trace {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     nuclearNorm A = RCLike.re A.trace := by
   rw [nuclearNorm, min_self, hA.singularValues_eq_eigenvalue,
@@ -325,8 +315,7 @@ theorem nuclearNorm_conjTranspose_mul_self (B : Matrix m n 𝕜) :
     frobNorm_sq_eq_re_trace]
 
 /-- The nuclear norm of a Hermitian matrix is the sum of the absolute values of its eigenvalues:
-$\|\mathbf{A}\|_* = \sum_{i < \lvert n \rvert} \lvert \lambda_i(\mathbf{A}) \rvert$.
-Port of `NLAlib.nuclearNorm_eq_sum_abs_eigenvalues₀`, there over $\mathbb{R}$. -/
+$\|\mathbf{A}\|_* = \sum_{i < \lvert n \rvert} \lvert \lambda_i(\mathbf{A}) \rvert$. -/
 theorem _root_.Matrix.IsHermitian.nuclearNorm_eq_sum_abs_eigenvalue {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     nuclearNorm A = ∑ i ∈ Finset.range (Fintype.card n), |eigenvalue A i| := by
@@ -343,8 +332,7 @@ theorem _root_.Matrix.IsHermitian.nuclearNorm_eq_sum_abs_eigenvalue {A : Matrix 
 /-- For Hermitian matrices, the sorted eigenvalues are $1$-Lipschitz in the nuclear norm, as
 vectors: for every finite set $S$ of indices, eigenvalues non-increasing and indexed from $0$,
 $\sum_{i \in S} \lvert \lambda_i(\mathbf{A}) - \lambda_i(\mathbf{B}) \rvert
-\le \|\mathbf{A} - \mathbf{B}\|_*$.
-Port of `NLAlib.sum_abs_eigenvalues₀_add_sub_le_nuclearNorm`, there over $\mathbb{R}$. -/
+\le \|\mathbf{A} - \mathbf{B}\|_*$. -/
 theorem _root_.Matrix.IsHermitian.sum_abs_eigenvalue_sub_le_nuclearNorm_sub {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (hB : B.IsHermitian) (S : Finset ℕ) :

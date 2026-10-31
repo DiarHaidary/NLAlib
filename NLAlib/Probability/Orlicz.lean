@@ -39,7 +39,7 @@ integrability of $e^{X^2 / K}$ does not give it (the sign is lost).
 A $\psi_2$ Hanson–Wright inequality is the $\psi_2$ bridge followed by
 `NLAlib.measureReal_quadForm_sub_integral_ge_le`, and a $\psi_1$ Bernstein inequality is the
 $\psi_1$ bridge followed by `NLAlib.HasSubexponentialMGF.measureReal_sum_ge_le_of_iIndepFun`;
-neither is restated (`docs/design/Probability-P7.md` §7 D3, D4).
+neither is restated.
 
 ## Main definitions
 

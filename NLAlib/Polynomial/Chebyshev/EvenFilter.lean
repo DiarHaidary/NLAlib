@@ -267,7 +267,7 @@ $p$ of degree at most $q$ with $p(1) = 1$ and
 $$1 - \frac{\int x\,p(x)^2\,d\nu}{\int p(x)^2\,d\nu} \le
 \frac{4}{q^2}\Bigl(1 + \frac{\log(\nu(\mathbb{R})/\nu(\{1\}))}{\log 2}\Bigr)^2\,;$$
 $p$ is a power of the even Chebyshev filter, the number of factors chosen from the logarithmic
-ratio. [KuczynskiWozniakowski1992, Theorem 4.2] (locator from the quarry, to check); there for
+ratio. [KuczynskiWozniakowski1992, Theorem 4.2] (locator to check); there for
 the Lanczos method with a random start, here for any such measure. -/
 theorem exists_natDegree_le_one_sub_integral_mul_div_le {ν : Measure ℝ} [IsFiniteMeasure ν]
     (hν : ∀ᵐ x ∂ν, x ∈ Set.Icc (0 : ℝ) 1) (h1 : 0 < ν.real {1}) {q : ℕ} (hq : 1 ≤ q) :

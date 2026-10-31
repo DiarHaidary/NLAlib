@@ -87,7 +87,6 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - A2 `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances.
 - A3 A declaration carries at most one `Algorithm:` tag.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
-- G2 Every port-ledger target is declared.
 - E2 Programs, kernels and implementations are computable.
 - E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry.
 - E4 Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it.

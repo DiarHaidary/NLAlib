@@ -5,7 +5,7 @@ rule 3) is tagged consistently. Exit 1 on any failure.
 
 Asymptotic forms. A docstring line `Asymptotic: NAME` (or `Asymptotic:` alone with `NAME` on the
 next line, when the two do not fit in 100 characters) marks its declaration as the asymptotic form
-of the explicit theorem `NAME`. The check, textual like `scripts/ledger_check.py`, requires that the
+of the explicit theorem `NAME`. The check, textual, requires that the
 tagged declaration is an `exists_forall_` theorem, that the tag is the docstring's last line before
 any `Result:` line, that `NAME` (a full name) is declared in the same file, and that the two are
 related both ways (the explorer's "Related"): the asymptotic form's docstring names `NAME` in

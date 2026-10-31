@@ -49,8 +49,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m : Type*} [Fintype m] [DecidableEq m]
 /-- The **Householder reflector** of $\mathbf{v}$:
 $\mathbf{I} - (2 / \|\mathbf{v}\|^2) \mathbf{v}\mathbf{v}^{\mathsf{H}}$. For
 $\mathbf{v} = \mathbf{0}$ it is the identity.
-[GolubVanLoan2013, §5.1.2]; [TrefethenBau1997, Lecture 10].
-Port of `NLAlib.householder`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.1.2]; [TrefethenBau1997, Lecture 10]. -/
 noncomputable def householder (v : m → 𝕜) : Matrix m m 𝕜 :=
   1 - ((2 / ‖WithLp.toLp 2 v‖ ^ 2 : ℝ) : 𝕜) • Matrix.vecMulVec v (star v)
 
@@ -58,21 +57,20 @@ noncomputable def householder (v : m → 𝕜) : Matrix m m 𝕜 :=
 private theorem star_ofReal (r : ℝ) : star (r : 𝕜) = r := by
   rw [← starRingEnd_apply, RCLike.conj_ofReal]
 
-/-- The reflector of the zero vector is the identity. Port of `NLAlib.householder_zero`. -/
+/-- The reflector of the zero vector is the identity. -/
 @[simp]
 theorem householder_zero : householder (0 : m → 𝕜) = 1 := by
   rw [householder, Matrix.zero_vecMulVec, smul_zero, sub_zero]
 
 /-- The action of the reflector $\mathbf{H}$ of $\mathbf{v}$:
 $\mathbf{H}\mathbf{x} = \mathbf{x} - (2\, \mathbf{v}^{\mathsf{H}}\mathbf{x} / \|\mathbf{v}\|^2)
-\mathbf{v}$.
-Port of `NLAlib.householder_mulVec`. -/
+\mathbf{v}$. -/
 theorem householder_mulVec (v x : m → 𝕜) :
     householder v *ᵥ x = x - ((2 / ‖WithLp.toLp 2 v‖ ^ 2 : ℝ) : 𝕜) • (star v ⬝ᵥ x) • v := by
   rw [householder, Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec,
     Matrix.vecMulVec_mulVec, op_smul_eq_smul]
 
-/-- A reflector is Hermitian. Port of `NLAlib.householder_transpose`. -/
+/-- A reflector is Hermitian. -/
 theorem isHermitian_householder (v : m → 𝕜) : (householder v).IsHermitian := by
   rw [Matrix.IsHermitian, householder, Matrix.conjTranspose_sub, Matrix.conjTranspose_one,
     Matrix.conjTranspose_smul, Matrix.conjTranspose_vecMulVec, star_star, star_ofReal]
@@ -82,7 +80,7 @@ private theorem two_div_mul_two_div_mul (t : ℝ) : 2 / t * (2 / t) * t = 2 * (2
   · rw [ht, div_zero, mul_zero, mul_zero]
   · field_simp
 
-/-- A reflector is an involution. Port of `NLAlib.householder_mul_self`. -/
+/-- A reflector is an involution. -/
 @[simp]
 theorem householder_mul_self (v : m → 𝕜) : householder v * householder v = 1 := by
   unfold householder
@@ -98,7 +96,7 @@ theorem householder_mul_self (v : m → 𝕜) : householder v * householder v = 
     Matrix.smul_mul, Matrix.mul_smul, hP, smul_smul, smul_smul, hc]
   module
 
-/-- A reflector is unitary. Port of `NLAlib.hasOrthonormalCols_householder`. -/
+/-- A reflector is unitary. -/
 theorem hasOrthonormalCols_householder (v : m → 𝕜) : HasOrthonormalCols (householder v) := by
   rw [HasOrthonormalCols, (isHermitian_householder v).eq, householder_mul_self]
 
@@ -106,8 +104,7 @@ omit [DecidableEq m] in
 private theorem norm_toLp_sq_ne_zero {v : m → 𝕜} (hv : v ≠ 0) : ‖WithLp.toLp 2 v‖ ^ 2 ≠ 0 :=
   pow_ne_zero 2 (norm_ne_zero_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hv))
 
-/-- A reflector negates its vector: $\mathbf{H}\mathbf{v} = -\mathbf{v}$.
-Port of `NLAlib.householder_mulVec_self`. -/
+/-- A reflector negates its vector: $\mathbf{H}\mathbf{v} = -\mathbf{v}$. -/
 theorem householder_mulVec_self (v : m → 𝕜) : householder v *ᵥ v = -v := by
   rw [householder_mulVec, EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq, smul_smul,
     ← RCLike.ofReal_mul]
@@ -117,8 +114,7 @@ theorem householder_mulVec_self (v : m → 𝕜) : householder v *ᵥ v = -v := 
     abel
 
 /-- A reflector fixes the vectors orthogonal to its vector: if
-$\mathbf{v}^{\mathsf{H}}\mathbf{w} = 0$ then $\mathbf{H}\mathbf{w} = \mathbf{w}$.
-Port of `NLAlib.householder_mulVec_of_dotProduct_eq_zero`. -/
+$\mathbf{v}^{\mathsf{H}}\mathbf{w} = 0$ then $\mathbf{H}\mathbf{w} = \mathbf{w}$. -/
 theorem householder_mulVec_of_dotProduct_eq_zero {v w : m → 𝕜} (h : star v ⬝ᵥ w = 0) :
     householder v *ᵥ w = w := by
   rw [householder_mulVec, h, zero_smul, smul_zero, sub_zero]
@@ -149,7 +145,7 @@ theorem det_householder {v : m → 𝕜} (hv : v ≠ 0) : (householder v).det = 
 $\mathbf{x} + \omega \|\mathbf{x}\| \mathbf{e}_{i_0}$, with the phase
 $\omega = \mathbf{x}_{i_0} / \lvert \mathbf{x}_{i_0} \rvert$, and $\omega = 1$ when
 $\mathbf{x}_{i_0} = 0$. The sign avoids cancellation.
-[GolubVanLoan2013, §5.1.3]. Port of `NLAlib.householderVector`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.1.3]. -/
 noncomputable def householderVector (x : m → 𝕜) (i₀ : m) : m → 𝕜 :=
   x + ((if x i₀ = 0 then 1 else x i₀ / (‖x i₀‖ : 𝕜)) * (‖WithLp.toLp 2 x‖ : 𝕜)) • Pi.single i₀ 1
 
@@ -170,8 +166,7 @@ private theorem star_phase_mul (z : 𝕜) :
 
 /-- The Householder reflector clears a vector: for the Householder vector $\mathbf{v}$ of
 $\mathbf{x}$ at $i_0$ and its reflector $\mathbf{H}$,
-$\mathbf{H}\mathbf{x} = \mathbf{x} - \mathbf{v}$, a multiple of $\mathbf{e}_{i_0}$.
-Port of `NLAlib.householder_mulVec_householderVector`. -/
+$\mathbf{H}\mathbf{x} = \mathbf{x} - \mathbf{v}$, a multiple of $\mathbf{e}_{i_0}$. -/
 theorem householder_mulVec_householderVector (x : m → 𝕜) (i₀ : m) :
     householder (householderVector x i₀) *ᵥ x = x - householderVector x i₀ := by
   set v := householderVector x i₀ with hv
@@ -254,15 +249,14 @@ noncomputable def householderState (A : Matrix (Fin m) (Fin n) 𝕜) :
 $m \times m$ product $\mathbf{Q} = \mathbf{H}_0 \mathbf{H}_1 \cdots \mathbf{H}_{n-1}$ of the
 reflectors of the $n$ steps (`householderStep`, the identity at the steps $k \ge \min(m, n)$).
 It is unitary (`hasOrthonormalCols_householderQ`) and $\mathbf{Q}\mathbf{R} = \mathbf{A}$ for
-$\mathbf{R}$ = `householderR A` (`householderQ_mul_householderR`).
-Port of `NLAlib.householderQ`, there over $\mathbb{R}$. -/
+$\mathbf{R}$ = `householderR A` (`householderQ_mul_householderR`). -/
 noncomputable def householderQ (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin m) 𝕜 :=
   (householderState A n).1
 
 /-- The upper trapezoidal factor of Householder QR of an $m \times n$ matrix $\mathbf{A}$: the
 $m \times n$ matrix $\mathbf{R} = \mathbf{H}_{n-1} \cdots \mathbf{H}_1 \mathbf{H}_0 \mathbf{A}$ left
 after the reflectors of the $n$ steps have cleared each column below the diagonal
-(`isUpperTrapezoidal_householderR`). Port of `NLAlib.householderR`. -/
+(`isUpperTrapezoidal_householderR`). -/
 noncomputable def householderR (A : Matrix (Fin m) (Fin n) 𝕜) : Matrix (Fin m) (Fin n) 𝕜 :=
   (householderState A n).2
 
@@ -346,27 +340,24 @@ private theorem householderState_snd_apply_eq_zero (A : Matrix (Fin m) (Fin n) �
   | zero => exact absurd hjk (Nat.not_lt_zero _)
   | succ k ih => exact householderStep_mul_apply_eq_zero ih hjk hji
 
-/-- The unitary factor of Householder QR is unitary.
-Port of `NLAlib.hasOrthonormalCols_householderQ`. -/
+/-- The unitary factor of Householder QR is unitary. -/
 theorem hasOrthonormalCols_householderQ (A : Matrix (Fin m) (Fin n) 𝕜) :
     HasOrthonormalCols (householderQ A) := by
   exact hasOrthonormalCols_householderState_fst A n
 
-/-- Householder QR factors the matrix: $\mathbf{Q}\mathbf{R} = \mathbf{A}$.
-Port of `NLAlib.householderQ_mul_householderR`. -/
+/-- Householder QR factors the matrix: $\mathbf{Q}\mathbf{R} = \mathbf{A}$. -/
 theorem householderQ_mul_householderR (A : Matrix (Fin m) (Fin n) 𝕜) :
     householderQ A * householderR A = A := by
   exact householderState_fst_mul_snd A n
 
 /-- **The second factor of Householder QR is upper trapezoidal.**
-[TrefethenBau1997, Lecture 10]. Port of `NLAlib.isUpperTrapezoidal_householderR`. -/
+[TrefethenBau1997, Lecture 10]. -/
 theorem isUpperTrapezoidal_householderR (A : Matrix (Fin m) (Fin n) 𝕜) :
     IsUpperTrapezoidal (householderR A) := by
   exact fun i j hji => householderState_snd_apply_eq_zero A n i j j.2 hji
 
 /-- Householder QR gives the thin QR factorization of a tall matrix: for $n \le m$, the first
-$n$ columns of $\mathbf{Q}$ and the first $n$ rows of $\mathbf{R}$.
-Port of `NLAlib.isQR_householderQR`. -/
+$n$ columns of $\mathbf{Q}$ and the first $n$ rows of $\mathbf{R}$. -/
 theorem isQR_householder (A : Matrix (Fin m) (Fin n) 𝕜) (h : n ≤ m) :
     IsQR A ((householderQ A).submatrix id (Fin.castLE h))
       ((householderR A).submatrix (Fin.castLE h) id) := by

@@ -35,16 +35,14 @@ alone (`NLAlib.HasOrthonormalCols.uniformSphereVector_map_conjTranspose_mulVec_e
 $\mathbf{V}^{\mathsf{H}}\mathbf{u}$ depends only on the column type of $\mathbf{V}$):
 $\sum_i \mathbf{u}_i^2 = 1$ and a $45^\circ$ rotation give
 $\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ when
-$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$. Design:
-`docs/design/Sketching-S2.md` §3.2, §8.
+$\lvert n \rvert \ge 2$; for $\lvert n \rvert = 1$, $\mathbf{u} = \pm 1$.
 
 For $0 < k < n$, $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 \sim \mathrm{Beta}(k/2, (n-k)/2)$: the
 two blocks of $\mathbf{W}^{\mathsf{H}}\mathbf{g}$ give independent chi-square laws, whose ratio is
 Beta. With the Beta sub-Gaussian proxy [MarchalArbel2017],
 $\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^2 - k/n$ has variance proxy $1/(2(n+2))$ for every
 $0 \le k \le n$, and Hoeffding gives the tail $2e^{-m(n+2)\tau^2}$ of the mean of $m$ independent
-copies (the last theorem of the file; its name is too long for the list below). Design:
-`docs/design/Probability-Beta.md` §3.4.
+copies (the last theorem of the file; its name is too long for the list below).
 
 ## Main results
 
@@ -721,7 +719,7 @@ theorem integrable_norm_conjTranspose_mulVec_pow_four_of_hasLaw_uniformSphereVec
 unit sphere of $\mathbb{R}^n$, $n$ nonempty, and $\mathbf{V}$ with orthonormal columns,
 $$\mathbb{E}\|\mathbf{V}^{\mathsf{H}}\mathbf{u}\|^4
 = \frac{\lvert k \rvert (\lvert k \rvert + 2)}{\lvert n \rvert (\lvert n \rvert + 2)} \,,$$
-from invariance alone (`docs/design/Sketching-S2.md` §7 Q5): $\sum_i \mathbf{u}_i^2 = 1$ and a
+from invariance alone: $\sum_i \mathbf{u}_i^2 = 1$ and a
 $45^\circ$ rotation give
 $\mathbb{E}\,\mathbf{u}_1^4 = 3 \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2$ and
 $\lvert n \rvert (\lvert n \rvert + 2) \, \mathbb{E}\,\mathbf{u}_1^2 \mathbf{u}_2^2 = 1$ when

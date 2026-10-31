@@ -17,7 +17,7 @@ The Haar sketch is $\mathbf{S} = \sqrt{\lvert n \rvert / \lvert k \rvert}
 \, \mathbf{Q}^{\mathsf{H}}$ for an $n \times k$ Haar frame $\mathbf{Q}$,
 $\lvert k \rvert \le \lvert n \rvert$: $\lvert k \rvert$ orthonormal rows, scaled. It is written out
 in each statement, `fun ω => √(Fintype.card n / Fintype.card k : ℝ) • (Q ω)ᴴ`, with the hypothesis
-`HasLaw Q (haarFrame n k) μ`; there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
+`HasLaw Q (haarFrame n k) μ`; there is no named sketch law.
 
 It is exactly isotropic, like a Gaussian sketch, and unlike it has a deterministic norm
 $\|\mathbf{S}\|_2 = \sqrt{\lvert n \rvert / \lvert k \rvert}$. Its upper half is deterministic:
@@ -37,7 +37,7 @@ projection tails give the JL moment property at every exponent, with the Gaussia
 and $O(\log(1/\delta)/\varepsilon^2)$ rows give it at $p = \max(2, \log(1/\delta))$.
 
 Degenerate cases: for empty $k$, $\sqrt{\lvert n \rvert / 0} = 0$ and $\mathbf{S} = \mathbf{0}$,
-hence `[Nonempty k]` on isotropy and the moments. Design: `docs/design/Sketching-S2.md` §3.4, §8.
+hence `[Nonempty k]` on isotropy and the moments.
 
 ## Main results
 

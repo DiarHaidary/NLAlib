@@ -27,8 +27,7 @@ $\mathbf{U} \in \Bbbk^{n \times p}$ with orthonormal columns; every consumer tak
 predicates transfer to a random subspace independent of the sketch, and compose over independent
 sketches.
 
-Theorems that compare two events take `[IsFiniteMeasure μ]`. Design:
-`docs/design/Sketching-S1.md` §3.3.
+Theorems that compare two events take `[IsFiniteMeasure μ]`.
 
 ## Main definitions
 

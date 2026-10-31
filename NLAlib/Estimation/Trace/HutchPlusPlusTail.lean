@@ -25,8 +25,7 @@ guarantee of Meyer, Musco, Musco and Woodruff: $O(\sqrt{\log(1/\delta)}/\varepsi
 \varepsilon\|\mathbf{A}\|_*$ with probability $1 - \delta$. Real throughout. The constants are
 explicit: the range-finder factor <!-- value subgaussianRangeFinderFactor c -->$1 + 5c/2$
 replaces MMMW's $2$ (their route through Musco and Musco is not in the library), and the
-Hanson–Wright constant is <!-- value hansonWrightConstant -->$1/196$. Design:
-`docs/design/Estimation-HutchPP.md` §3.4.
+Hanson–Wright constant is <!-- value hansonWrightConstant -->$1/196$.
 
 ## Main results
 
@@ -52,7 +51,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n s t : Type*} [Fintype n]
   [Fintype s] [Fintype t] [DecidableEq n]
 
--- Stage TE-5
 
 /-- **The deviation of Hutch++ given a range-finder guarantee.** Let the sketch test matrix
 $\mathbf{S}$ be almost everywhere measurable and the $n \times \ell$ residual test matrix

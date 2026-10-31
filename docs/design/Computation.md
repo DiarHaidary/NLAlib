@@ -22,8 +22,8 @@ memory counts, and the Gaussian tail with no new probability. Programs print as 
 Lean with `Float`.
 
 **What was elaborated and run.** Every Lean definition and statement below was elaborated
-during the design, against the library at `88016e3`, in scratch files that the stage-1 skeleton
-ports into `NLAlib/Computation/` and the topic files of §11. The core (syntax, semantics, the
+during the design, against the library at `88016e3`, in scratch files whose content is now in
+`NLAlib/Computation/` and the topic files of §11. The core (syntax, semantics, the
 substitution theorem) elaborated with no `sorry`, using only the axioms `propext`,
 `Classical.choice` and `Quot.sound`.
 
@@ -1949,7 +1949,7 @@ deleted):
    `scripts/Targets.lean`), and this note's changes sections.
 7. Bookkeeping for the five moved result ids (`gram-schmidt-program`, `hutchpp-program`,
    `hutchpp-program-tail`, `hutchpp-program-dense`, `hutchpp-program-sparse`):
-   `docs/port/ledger.json` (the declarations that carry them), the explorer metadata (each id's
+   the explorer metadata (each id's
    declaration, statement and file), and a rename map `docs/renames/2026-10-computation.json`
    (N12: the old instances to the target theorems).
 
@@ -2103,8 +2103,8 @@ these departures:
   `Prog.exec` of the registered tree (output, counts and peak).
 * **The access-model fixtures are trees** (`litTree`, `leakTree`, `copyTree`, `drawTree`), each
   `not_` theorem stated with the models on `Prog`.
-* **Bookkeeping**: the port ledger has no entry for the five moved ids (programs are not ported
-  material), nor has the explorer metadata (it is generated from the extraction); the rename map
+* **Bookkeeping**: the explorer metadata has no entry for the five moved
+  ids (it is generated from the extraction); the rename map
   `docs/renames/2026-10-computation.json` records the five id moves and step A's renames.
 
 **Step B and the closing pass** added these departures:
@@ -2203,8 +2203,8 @@ not only a target. Fixed three ways:
 6. *Documents*. The docstrings of `MatrixFreeHutchpp` ("$2N(k + \ell) + 4$ cells at tag $p$
    besides the output") and `MatrixFreeGramSchmidt` say or suggest that the memory bound leaves out
    the declared buffer, but the proved bound counts it (G15, G16: the declared buffers count from
-   the start). They are target files, so the rewording is a pending maintainer item
-   (`docs/port/status.md`); the statements are right. `IExp.mod` by zero returns the dividend, now
+   the start). They are target files, so the rewording is a pending maintainer item;
+   the statements are right. `IExp.mod` by zero returns the dividend, now
    documented at the constructor. G34 overstated "no host computation on sizes": `IExp.evalIn` and
    `litIdx` are uncounted host arithmetic on sizes (D), corrected in F10. The trusted base of F10
    gains the additions listed there: the kernel replay, `Meta.reduce` until item 4 (now the

@@ -18,11 +18,11 @@ at $O(((r+1)^2+(r+1)/\varepsilon)/\delta)$ rows, where $r=\operatorname{rank}\ma
 The statement works over any `RCLike` field and for a matrix right-hand side. It combines a
 constant subspace injection with CountSketch's own approximate-multiplication tail through
 `NLAlib.Regression.Oblivious`, preserving complex support. The sketch is unscaled, with one
-random sign in each column. Design: `docs/design/Regression-Rates.md`.
+random sign in each column.
 
 Sketch-and-precondition with a CountSketch reaches relative squared residual $1 + \tau$ from the
 sketch-and-solve start with $O((\lvert n\rvert + 1)^2/\delta)$ rows and $O(\log(1/\tau))$
-iterations. Design: `docs/design/Regression-SketchPrecondition.md` §5.
+iterations.
 
 ## Main results
 

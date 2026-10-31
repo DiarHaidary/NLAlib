@@ -166,7 +166,7 @@ $f : \mathbb{R} \to \mathbb{R}$ and every $q$,
 $$\int f\,d\,\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q + 1) =
 \|\mathbf{b}\|^2\operatorname{Re}\,\mathbf{e}_0^{\mathsf{H}}f(\mathbf{T})\mathbf{e}_0\,,$$
 with $\mathbf{T}$ the tridiagonal matrix of $q + 1$ steps of the Lanczos recurrence.
-[GolubMeurant2010, Ch. 6] (locator from the quarry). -/
+[GolubMeurant2010, Ch. 6] (locator to check). -/
 theorem _root_.Matrix.IsHermitian.integral_lanczosQuadrature_succ {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (f : ℝ → ℝ) (b : n → 𝕜) (q : ℕ) :
     ∫ x, f x ∂lanczosQuadrature A b (q + 1) =
@@ -182,7 +182,7 @@ tridiagonal matrix of $q + 1$ steps of the Lanczos recurrence,
 $$\mathsf{lanczosQuadrature}(\mathbf{A}, \mathbf{b}, q + 1) =
 \sum_i \|\mathbf{b}\|^2\lvert\mathbf{U}_{0,i}\rvert^2\,\delta_{\mathbf{d}_i}\,:$$
 the nodes are the eigenvalues of $\mathbf{T}$, the weights the squared first entries of its
-eigenvectors. [GolubMeurant2010, Ch. 6] (locator from the quarry).
+eigenvectors. [GolubMeurant2010, Ch. 6] (locator to check).
 Result: lanczos-gauss-quadrature -/
 theorem _root_.Matrix.IsHermitian.lanczosQuadrature_succ_eq_sum {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (q : ℕ) {U : Matrix (Fin (q + 1)) (Fin (q + 1)) 𝕜}
@@ -342,7 +342,7 @@ $$\bigl\lvert\mathbf{b}^{\mathsf{H}}\bigl(f(\mathbf{A})\mathbf{b} -
 \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\bigr)\bigr\rvert \le
 \frac{4M}{\rho^{2q + 1}(\rho - 1)}\|\mathbf{b}\|^2\,,$$
 twice the rate of Lanczos-FA in the exponent, from the Chebyshev truncation of degree
-$2q + 1$. [Trefethen2019, Theorem 8.2] (locator from the quarry), the approximation rate;
+$2q + 1$. [Trefethen2019, Theorem 8.2] (locator to check), the approximation rate;
 constants composed here.
 Result: lanczos-gauss-quadrature -/
 theorem

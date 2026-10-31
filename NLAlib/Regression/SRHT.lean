@@ -21,14 +21,12 @@ rows and $O(\log(1/\tau))$ iterations, except with probability $\delta$, over an
 This is Blendenpik's sketch, in exact arithmetic. The sketch embeds
 $\operatorname{range}[\mathbf{A}\ \mathbf{y}]$, of dimension at most $\lvert n\rvert + 1$
 (`NLAlib.isObliviousSubspaceEmbedding_of_hasLaw_srht_of_samplingEmbeddingDim_le`).
-Design: `docs/design/Regression-SketchPrecondition.md` §5.
 
 Sketch-and-solve with a real SRHT reaches relative squared Frobenius residual error with failure
 probability $\delta$ at $O(\beta(r + \log(\lvert m\rvert/\delta))\log(r/\delta) +
 \beta^2(r + 1)/(\varepsilon\delta))$ rows, $r = \operatorname{rank}\mathbf{A}$: the SRHT OSI at
 constant $1/2$ and its JL moment at $p = 2$ (`NLAlib.hasJLMoment_of_hasLaw_srht`) through
-`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`. Design:
-`docs/design/Sketching-Moments.md` §3.4.
+`NLAlib.HasJLMoment.measureReal_frobNorm_sub_mul_sketchAndSolve_sq_gt_le`.
 
 ## Main results
 

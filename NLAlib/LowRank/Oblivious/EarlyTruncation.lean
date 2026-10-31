@@ -36,7 +36,6 @@ about the output the user computes without identifying outputs under ties.
 sketch known only to satisfy `NLAlib.HasProjectionCostPreserving`, the tail form of the
 deterministic `NLAlib.IsProjectionCostPreserving.mul_frobNorm_sub_earlyTruncatedRSVD_sq_le`. For a
 sketch of a known family the structural route above uses fewer events and gives better constants.
-Design: `docs/design/LowRank-S7.md` §3.4, §8 items 1 and 18; `docs/design/LowRank-S9.md` §3.6.
 
 ## Main results
 
@@ -95,7 +94,8 @@ $$\|\mathbf{A} - \mathbf{P}\mathbf{A}\|_{\mathsf{F}}^2 \le
 except with probability $\delta + \delta_w + \delta_\chi$. The projector of
 $\llbracket\mathbf{A}\mathbf{\Omega}\rrbracket_k$ qualifies (Eckart–Young), and so does the
 projector of the output at $c^{-1}\mathbf{\Omega}$ when the analysis runs at $\mathbf{\Omega}$.
-Proved without a literature source (the deterministic core of LowRank S2b); the sketch conditions
+Proved without a literature source (the deterministic core of the early-truncation bound); the
+sketch conditions
 are those of [CohenElderMuscoMuscoPersu2015, proof of Theorem 12].
 Result: etrsvd -/
 theorem HasSubspaceInjection.measureReal_frobNorm_sub_mul_sq_gt_le [IsFiniteMeasure μ]
@@ -289,7 +289,7 @@ except with probability $\delta + 2\delta'$; with $\varepsilon$ of order $\varep
 this is $1 + O(\varepsilon_0)$ at $\ell = O(k/(\varepsilon_0^2\delta'))$ for the dense families. Its
 Gaussian expectation twin is
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`.
-Proved without a literature source (the deterministic core of LowRank S2b);
+Proved without a literature source (the deterministic core of the early-truncation bound);
 [CohenElderMuscoMuscoPersu2015, Theorem 12 and Lemma 3]; [Woodruff2014, Theorem 61] is the
 full-row-space form.
 Result: etrsvd -/

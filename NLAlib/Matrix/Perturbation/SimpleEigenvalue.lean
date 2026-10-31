@@ -209,9 +209,7 @@ private theorem exists_eq_smul_of_rootMultiplicity_eq_one {A : Matrix n n ℂ} {
 root of the characteristic polynomial of $\mathbf{A}$, $\mathbf{A}\mathbf{x} = \mu\mathbf{x}$ and
 $\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$ with
 $\mathbf{x}, \mathbf{y} \ne \mathbf{0}$, then $\mathbf{y}^{\mathsf{T}}\mathbf{x} \ne 0$.
-[HornJohnson2013, Lemma 6.3.10].
-Port of `NLAlib.dotProduct_ne_zero_of_simple_eigenvalue`, there over any algebraically closed
-field. -/
+[HornJohnson2013, Lemma 6.3.10]. -/
 theorem dotProduct_ne_zero_of_rootMultiplicity_eq_one {A : Matrix n n ℂ} {x y : n → ℂ} {μ : ℂ}
     (hx : x ≠ 0) (hy : y ≠ 0) (hAx : A *ᵥ x = μ • x) (hyA : y ᵥ* A = μ • y)
     (hμ : A.charpoly.rootMultiplicity μ = 1) : y ⬝ᵥ x ≠ 0 := by
@@ -424,7 +422,6 @@ $\mathbf{y}^{\mathsf{T}}\mathbf{A} = \mu\mathbf{y}^{\mathsf{T}}$; for Hermitian 
 $\mathbf{y} = \overline{\mathbf{x}}$ to recover the derivative
 $\mathbf{x}^{\mathsf{H}}\mathbf{E}\mathbf{x}$.
 [StewartSun1990, Theorem IV.2.3]; [HornJohnson2013, Theorem 6.3.12].
-Port of `NLAlib.exists_eigenvalue_branch_of_simple_with_multiplicity`.
 Result: simple-eigenvalue-perturbation -/
 theorem exists_eigenvalue_branch_of_rootMultiplicity_eq_one {A : Matrix n n ℂ}
     (E : Matrix n n ℂ) {x y : n → ℂ} {μ : ℂ} (hx : x ≠ 0) (hy : y ≠ 0) (hAx : A *ᵥ x = μ • x)

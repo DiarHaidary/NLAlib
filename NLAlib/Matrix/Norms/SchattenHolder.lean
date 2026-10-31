@@ -38,7 +38,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [F
 $q, r \ne 0$, then
 $$\|\mathbf{A}\mathbf{B}\|_{S_s} \le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}\,.$$
 [HornJohnson1991, Theorem 3.3.14]; [Bhatia1997, Exercise IV.2.7].
-Port of `NLAlib.schattenNorm_mul_le_mul`, there over $\mathbb{R}$ for exponents at least one.
 Result: schatten-holder -/
 theorem schattenNorm_mul_le {q r s : ℝ≥0∞} [ENNReal.HolderTriple q r s] (hq : q ≠ 0)
     (hr : r ≠ 0) (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) :
@@ -81,7 +80,6 @@ theorem schattenNorm_mul_le {q r s : ℝ≥0∞} [ENNReal.HolderTriple q r s] (h
 $$\lvert \operatorname{tr}(\mathbf{A}^{\mathsf{H}}\mathbf{B}) \rvert
   \le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}\,.$$
 [Bhatia1997, Corollary IV.2.6].
-Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over $\mathbb{R}$ for the real part.
 Result: schatten-holder -/
 theorem norm_trace_conjTranspose_mul_le_schattenNorm_mul {q r : ℝ≥0∞}
     [ENNReal.HolderConjugate q r] (A B : Matrix m n 𝕜) :
@@ -118,8 +116,7 @@ theorem norm_trace_mul_le_schattenNorm_mul {q r : ℝ≥0∞} [ENNReal.HolderCon
 
 /-- Hölder's inequality for the Frobenius inner product: for conjugate exponents,
 $\lvert \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} \rvert
-\le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}$.
-Port of `NLAlib.abs_frobInner_le_schattenNorm_mul`, there over $\mathbb{R}$. -/
+\le \|\mathbf{A}\|_{S_q} \|\mathbf{B}\|_{S_r}$. -/
 theorem abs_frobInner_le_schattenNorm_mul {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A B : Matrix m n 𝕜) : |frobInner A B| ≤ schattenNorm q A * schattenNorm r B := by
   exact (RCLike.abs_re_le_norm _).trans (norm_trace_conjTranspose_mul_le_schattenNorm_mul A B)
@@ -186,8 +183,7 @@ private theorem exists_schattenNorm_le_one_frobInner_eq_of_ne_top {q r : ℝ≥0
 
 /-- Equality in Hölder's inequality is attained: for conjugate exponents there is $\mathbf{B}$
 in the unit ball of the Schatten $r$-norm with
-$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_{S_q}$.
-Port of `NLAlib.exists_schattenNorm_le_one_frobInner_eq`, there over $\mathbb{R}$. -/
+$\langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}} = \|\mathbf{A}\|_{S_q}$. -/
 theorem exists_schattenNorm_le_one_frobInner_eq {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A : Matrix m n 𝕜) :
     ∃ B : Matrix m n 𝕜, schattenNorm r B ≤ 1 ∧ frobInner A B = schattenNorm q A := by
@@ -206,7 +202,7 @@ $q$-norm is the largest Frobenius inner product with a matrix in the unit ball o
 $r$-norm:
 $$\|\mathbf{A}\|_{S_q} = \max_{\|\mathbf{B}\|_{S_r} \le 1}
   \langle \mathbf{A}, \mathbf{B} \rangle_{\mathsf{F}}\,.$$
-[Bhatia1997, §IV.2]. Port of `NLAlib.isGreatest_schattenNorm_frobInner`, there over $\mathbb{R}$.
+[Bhatia1997, §IV.2].
 Result: schatten-duality -/
 theorem isGreatest_frobInner_schattenNorm {q r : ℝ≥0∞} [ENNReal.HolderConjugate q r]
     (A : Matrix m n 𝕜) :

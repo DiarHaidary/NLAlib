@@ -70,8 +70,7 @@ private theorem conjTranspose_mul_diagonal_mul_conjTranspose (U : Matrix n n �
     Matrix.diagonal_conjTranspose, Matrix.mul_assoc]
 
 /-- A unitarily diagonalisable matrix is normal: for unitary $\mathbf{U}$,
-$\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ is normal.
-Port of `NLAlib.mul_conjTranspose_eq_conjTranspose_mul_of_unitary_diagonalization`. -/
+$\mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ is normal. -/
 theorem HasOrthonormalCols.isStarNormal_mul_diagonal_mul_conjTranspose {U : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) (d : n → 𝕜) : IsStarNormal (U * Matrix.diagonal d * Uᴴ) := by
   refine ⟨?_⟩
@@ -96,8 +95,7 @@ theorem _root_.IsStarNormal.conjTranspose_mul_mul {A : Matrix n n 𝕜} (hA : Is
     Matrix.one_mul, Matrix.one_mul, ← Matrix.mul_assoc Aᴴ, h, Matrix.mul_assoc]
 
 omit [DecidableEq n] in
-/-- A normal upper triangular matrix is diagonal. [HornJohnson2013, Lemma 2.5.2].
-Port of `NLAlib.upper_fromBlocks_eq_diagonal_of_normal`, for a triangular matrix. -/
+/-- A normal upper triangular matrix is diagonal. [HornJohnson2013, Lemma 2.5.2]. -/
 theorem _root_.IsStarNormal.isDiag_of_isUpperTriangular [LinearOrder n] {T : Matrix n n 𝕜}
     (hT : IsStarNormal T) (h : T.IsUpperTriangular) : T.IsDiag := by
   classical
@@ -128,8 +126,7 @@ theorem _root_.IsStarNormal.eq_mul_diagonal_mul_conjTranspose_of_isUpperTriangul
 /-- **A normal matrix whose characteristic polynomial splits is unitarily diagonalisable**, with
 its eigenvalues in any prescribed order: if $\mathbf{d}$ lists the eigenvalues of the normal
 $\mathbf{A}$, then $\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$
-for a unitary $\mathbf{U}$. [HornJohnson2013, Theorem 2.5.3].
-Port of `NLAlib.exists_unitary_diagonalization_of_normal_with_charpoly`, there over $\mathbb{C}$. -/
+for a unitary $\mathbf{U}$. [HornJohnson2013, Theorem 2.5.3]. -/
 theorem _root_.IsStarNormal.exists_eq_mul_diagonal_mul_conjTranspose_of_isEigenvalueListing
     {A : Matrix n n 𝕜} (hA : IsStarNormal A) {d : n → 𝕜}
     (hd : IsEigenvalueListing A d) :
@@ -145,7 +142,6 @@ theorem _root_.IsStarNormal.exists_eq_mul_diagonal_mul_conjTranspose_of_isEigenv
 unitarily diagonalisable,
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\mathbf{d}) \mathbf{U}^{\mathsf{H}}$ for a unitary
 $\mathbf{U}$ and a complex $\mathbf{d}$. [HornJohnson2013, Theorem 2.5.3].
-Port of `NLAlib.normal_iff_exists_unitary_diagonalization`.
 Result: normal-spectral-theorem -/
 theorem isStarNormal_iff_exists_eq_mul_diagonal_mul_conjTranspose {A : Matrix n n ℂ} :
     IsStarNormal A ↔
@@ -162,8 +158,7 @@ omit [DecidableEq m] [DecidableEq n] in
 open scoped ComplexOrder in
 /-- A normal block upper triangular matrix is block diagonal: if
 $\begin{bmatrix} \mathbf{A} & \mathbf{C} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$ is normal then
-$\mathbf{C} = \mathbf{0}$.
-Port of `NLAlib.eq_zero_of_normal_upper_fromBlocks`, there over $\mathbb{C}$. -/
+$\mathbf{C} = \mathbf{0}$. -/
 theorem eq_zero_of_isStarNormal_fromBlocks {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     {C : Matrix m n 𝕜} (h : IsStarNormal (Matrix.fromBlocks A C 0 B)) : C = 0 := by
   have h1 := h.star_comm_self
@@ -211,7 +206,7 @@ theorem _root_.IsStarNormal.hasOrthonormalCols_iff_forall_norm_eq_one {A : Matri
 
 /-- The squared Frobenius norm of a normal matrix is the sum of the squared moduli of its
 eigenvalues: $\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_i \lvert \mathbf{d}_i \rvert^2$ for a listing
-$\mathbf{d}$. Port of `NLAlib.frobSq_eq_sum_norm_sq_of_normal`. -/
+$\mathbf{d}$. -/
 theorem _root_.IsStarNormal.frobNorm_sq_eq_sum {A : Matrix n n 𝕜} (hA : IsStarNormal A)
     {ι : Type*} [Fintype ι] {d : ι → 𝕜} (hd : IsEigenvalueListing A d) :
     frobNorm A ^ 2 = ∑ i, ‖d i‖ ^ 2 :=
@@ -260,8 +255,7 @@ omit [DecidableEq m] [DecidableEq n] in
 /-- **The Fuglede–Putnam theorem**: for normal complex $\mathbf{A}$, $\mathbf{B}$,
 $\mathbf{A}\mathbf{X} = \mathbf{X}\mathbf{B}$ exactly when
 $\mathbf{A}^{\mathsf{H}}\mathbf{X} = \mathbf{X}\mathbf{B}^{\mathsf{H}}$.
-[HornJohnson2013, Theorem 2.5.16].
-Port of `NLAlib.mul_eq_mul_iff_conjTranspose_mul_eq_mul_conjTranspose_of_normal_rectangular`. -/
+[HornJohnson2013, Theorem 2.5.16]. -/
 theorem _root_.IsStarNormal.mul_eq_mul_iff_conjTranspose_mul_eq_mul_conjTranspose
     {A : Matrix m m ℂ} {B : Matrix n n ℂ} (hA : IsStarNormal A) (hB : IsStarNormal B)
     {X : Matrix m n ℂ} : A * X = X * B ↔ Aᴴ * X = X * Bᴴ := by
@@ -279,8 +273,7 @@ theorem _root_.IsStarNormal.mul_eq_mul_iff_conjTranspose_mul_eq_mul_conjTranspos
 /-- Normal matrices are unitarily similar exactly when they have the same characteristic
 polynomial: for normal complex $\mathbf{A}$, $\mathbf{B}$, there is a unitary $\mathbf{U}$ with
 $\mathbf{B} = \mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$ if and only if
-$\det(X\mathbf{I} - \mathbf{A}) = \det(X\mathbf{I} - \mathbf{B})$.
-Port of `NLAlib.exists_unitary_similarity_iff_charpoly_eq_of_normal`. -/
+$\det(X\mathbf{I} - \mathbf{A}) = \det(X\mathbf{I} - \mathbf{B})$. -/
 theorem _root_.IsStarNormal.exists_eq_mul_mul_conjTranspose_iff_charpoly_eq {A B : Matrix n n ℂ}
     (hA : IsStarNormal A) (hB : IsStarNormal B) :
     (∃ U : Matrix n n ℂ, HasOrthonormalCols U ∧ B = U * A * Uᴴ) ↔ A.charpoly = B.charpoly := by

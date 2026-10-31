@@ -22,8 +22,7 @@ $j + 1$, it reads $\mathbf{v}_{j+1}$ (`L.v (j + 1)`) and produces $\mathbf{v}_{j
 $\lvert\|\mathbf{v}_{j+1}\|^2 - 1\rvert$ is the field `NLAlib.LanczosRun.abs_norm_v_sq_sub_one_le`.
 
 No printed source: the maintainer's draft (T. Chen, *A simple stability analysis of Lanczos in
-finite precision*), `lem:coefficients` and `thm:local-errors`; constants differ (design note
-`docs/design/Krylov-LanczosRounding.md`, §3.5).
+finite precision*), `lem:coefficients` and `thm:local-errors`; constants differ.
 
 ## Main definitions
 

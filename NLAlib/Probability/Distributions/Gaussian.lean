@@ -25,7 +25,7 @@ Its image in `EuclideanSpace ℝ n` is Mathlib's `stdGaussian`
 This file proves, for a random variable with a centred Gaussian law, the interfaces and moments
 the probability layers use: the sub-Gaussian proxy, the second and fourth moments, isotropy of a
 standard Gaussian vector and the law of its linear forms. The laws are real; a complex Gaussian
-law will be a separate definition (`docs/design/Probability-P2.md` §7).
+law will be a separate definition.
 
 ## Main definitions
 

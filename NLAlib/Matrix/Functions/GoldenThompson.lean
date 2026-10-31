@@ -277,8 +277,6 @@ theorem tendsto_exp_smul_mul_exp_smul_pow (H K : Matrix n n 𝕜) :
 $$\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \mathbf{K})
   \le \operatorname{Re} \operatorname{tr}(\exp(\mathbf{H})\exp(\mathbf{K})) \,.$$
 [Bhatia1997, §IX.3]; [Tropp2015, §3.1 notes].
-Port of the statement of `NLAlib.golden_thompson`, there over $\mathbb{C}$ and derived from Lieb's
-theorem by pinching; the proof here is by the Lie product formula.
 Result: golden-thompson -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp_add_le {H K : Matrix n n 𝕜} (hH : H.IsHermitian)
     (hK : K.IsHermitian) :
@@ -303,8 +301,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_add_le {H K : Matrix n n 𝕜} (h
 
 /-- The Golden–Thompson inequality with a logarithm: for Hermitian $\mathbf{H}$ and positive
 definite $\mathbf{X}$, $\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{X}))
-\le \operatorname{Re} \operatorname{tr}(\exp(\mathbf{H})\mathbf{X})$.
-Port of `NLAlib.traceExp_add_matrixLog_le`, there over $\mathbb{C}$. -/
+\le \operatorname{Re} \operatorname{tr}(\exp(\mathbf{H})\mathbf{X})$. -/
 theorem _root_.Matrix.PosDef.re_trace_exp_add_cfc_log_le {H X : Matrix n n 𝕜}
     (hH : H.IsHermitian) (hX : X.PosDef) :
     RCLike.re (exp (H + cfc Real.log X)).trace ≤ RCLike.re (exp H * X).trace := by

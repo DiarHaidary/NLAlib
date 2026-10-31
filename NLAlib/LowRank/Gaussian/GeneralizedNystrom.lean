@@ -39,7 +39,6 @@ $1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$, through
 rotation-invariant $\mathbf{\Omega}$ of full column rank, Epperly and Webber's sharp bound for the
 randomized SVD (`NLAlib.integral_frobNorm_sub_rsvd_sq_le_of_isLeftUnitarilyInvariant_of_rank_le`)
 gives their Theorem 4.2(a), for a Gaussian and for a Haar co-range test matrix. Real throughout.
-Design: `docs/design/LowRank-S6.md` §3.4, §8.
 
 ## Main results
 

@@ -19,7 +19,7 @@ public import NLAlib.Sketching.Properties.Oblivious
 The Gaussian sketch is $\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{G}$ for a standard Gaussian
 `G : Matrix k n ℝ` ($\lvert k \rvert$ rows). It is written out in each statement,
 `fun ω => (√(Fintype.card k : ℝ))⁻¹ • G ω`, with the hypothesis `HasLaw G (gaussianMatrix k n) μ`;
-there is no named sketch law (`docs/design/Sketching-S2.md` §7 Q1).
+there is no named sketch law.
 
 It is an isotropic sketch, a random subspace injection and embedding for a fixed $\mathbf{U}$ with
 orthonormal columns (Gordon's extreme singular values, one tail $e^{-t^2/2}$ per side), an
@@ -41,8 +41,7 @@ comparison; the "$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of
 Degenerate cases: for empty $k$, $(\sqrt{0})^{-1} = 0$ and $\mathbf{S} = \mathbf{0}$, which is not
 isotropic, hence `[Nonempty k]` on isotropy, the OSI and the moments; the hypothesis
 $t \le \sqrt{\lvert k \rvert} - \sqrt{\lvert p \rvert}$ then forces $p$ empty. The JL bound is $2$
-for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. Design:
-`docs/design/Sketching-S2.md` §3.3, §8.
+for $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$.
 
 ## Main definitions
 
@@ -198,7 +197,7 @@ and failure probability $\delta$, for $0 < \varepsilon \le 1$
 value the proof reaches ($t = \sqrt{2 \log(2/\delta)}$ and
 $(\sqrt{d} + t)/\sqrt{\lvert k \rvert} \le \varepsilon/3$); [Woodruff2014, Theorem 6] has
 $\Theta((d + \log(1/\delta))/\varepsilon^2)$ with no constant. Consumers use
-`gaussianEmbeddingDim_le`, the prototype's $18 (d + 2 \log(2/\delta))/\varepsilon^2$. Junk values:
+`gaussianEmbeddingDim_le`, the bound $18 (d + 2 \log(2/\delta))/\varepsilon^2$. Junk values:
 $0$ at $\varepsilon = 0$; for $\delta \ge 2$ the logarithm is at most $0$ and its square root is
 $0$. -/
 noncomputable irreducible_def gaussianEmbeddingDim (d : ℕ) (ε δ : ℝ) : ℝ :=
@@ -222,8 +221,7 @@ theorem gaussianEmbeddingDim_mono (hd : d ≤ d') (hε : 0 < ε) (hεε' : ε �
 $0 < \delta \le 2$, <!-- value gaussianEmbeddingDim d \varepsilon \delta -->
 $$\frac{9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2}{\varepsilon^2} \le
 \frac{18 (d + 2 \log(2/\delta))}{\varepsilon^2} \,,$$
-the left side being `gaussianEmbeddingDim d ε δ` and the right side the constant of the
-prototype's `one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`. -/
+the left side being `gaussianEmbeddingDim d ε δ`. -/
 theorem gaussianEmbeddingDim_le (d : ℕ) (ε : ℝ) (hδ : 0 < δ) (hδ2 : δ ≤ 2) :
     gaussianEmbeddingDim d ε δ ≤ 18 * (d + 2 * Real.log (2 / δ)) / ε ^ 2 := by
   rw [gaussianEmbeddingDim_def]
@@ -627,8 +625,8 @@ $\|\mathbf{S}\mathbf{x}\|^2 = \|\mathbf{G}\mathbf{x}\|^2/\lvert k \rvert$ is
 $\chi^2_{\lvert k \rvert} / \lvert k \rvert$
 (`NLAlib.measureReal_abs_norm_sq_div_card_sub_one_ge_le_of_hasLaw_gaussianVector`).
 [Woodruff2014, Lemma 18] (there $\varepsilon^2 \lvert k \rvert / 16$); [MartinssonTropp2020, §8.6];
-the exponent of Dasgupta and Gupta (`docs/PORT_SKETCHING.md` D12). No $\varepsilon < 1$: the bound
-is at least $2$ for $\varepsilon \ge 3/2$. Replaces the prototype's `jl_distributional`.
+the exponent of Dasgupta and Gupta. No $\varepsilon < 1$: the bound
+is at least $2$ for $\varepsilon \ge 3/2$.
 Result: jl-distributional -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix (hG : HasLaw G (gaussianMatrix k n) μ)
     (hε : 0 ≤ ε) :
@@ -757,9 +755,7 @@ least <!-- value gaussianEmbeddingDim d \varepsilon \delta -->
 $9 (\sqrt{d} + \sqrt{2 \log(2/\delta)})^2/\varepsilon^2$ rows (`gaussianEmbeddingDim d ε δ`) give
 an oblivious subspace embedding for dimension $d$ with constants $1 \mp \varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon \le 1$ and $\delta > 0$ (for $\delta \ge 2$ it is
-trivial). [Woodruff2014, Theorem 6]. Replaces the prototype's
-`one_sub_le_measure_isSubspaceEmbedding_gaussianMatrix`
-($\lvert k \rvert \ge 18 (d + 2 \log(2/\delta)) / \varepsilon^2$, now `gaussianEmbeddingDim_le`).
+trivial). [Woodruff2014, Theorem 6].
 Asymptotic form: `NLAlib.exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix`.
 Result: gaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_hasLaw_gaussianMatrix_of_gaussianEmbeddingDim_le
@@ -862,8 +858,7 @@ least <!-- value jlDim \varepsilon \delta -->$\log(2/\delta)/(\varepsilon^2/4 - 
 rows (`jlDim ε δ`) give the JL property with distortion $\varepsilon$ and failure
 probability $\delta$, for $0 < \varepsilon < 3/2$ and $\delta > 0$. [Woodruff2014, Theorem 4]
 (there $\Omega(\varepsilon^{-2} \log(f/\delta))$ rows for $f$ points, unspecified constant,
-proved in Lemma 18; here $f = 1$ with Dasgupta and Gupta's exponent). Replaces the prototype's
-`jl_lemma_prob_le_of_log_le`. Asymptotic form:
+proved in Lemma 18; here $f = 1$ with Dasgupta and Gupta's exponent). Asymptotic form:
 `NLAlib.exists_forall_hasJLProperty_of_hasLaw_gaussianMatrix`.
 Result: jl-distributional -/
 theorem hasJLProperty_of_hasLaw_gaussianMatrix_of_jlDim_le (hG : HasLaw G (gaussianMatrix k n) μ)
@@ -969,7 +964,7 @@ $\varepsilon$ and failure probability $\delta$), some $k \times n$ matrix
 $\mathbf{S}$ distorts every squared distance $\|\mathbf{x}_i - \mathbf{x}_j\|^2$ by a factor within
 $1 \pm \varepsilon$, for $0 < \varepsilon < 3/2$. A scaled Gaussian works with positive probability
 (the union bound over pairs, failure $< 1$). [Woodruff2014, Theorem 4], in squared-norm form;
-[MartinssonTropp2020, §8.6]. Replaces the prototype's `jl_lemma_exists`.
+[MartinssonTropp2020, §8.6].
 Result: jl-lemma -/
 theorem exists_forall_abs_norm_mulVec_sq_sub_le_of_jlDim_le [Fintype ι] (x : ι → n → ℝ)
     (hε : 0 < ε) (hε1 : ε < 3 / 2)

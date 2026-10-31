@@ -35,8 +35,7 @@ $\mathbf{H} = \tfrac12(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$, for every sketch 
 Gaussian sketch too, the bounds of Meyer, Musco, Musco and Woodruff and of Epperly, Tropp and
 Webber follow. The high-probability bounds are in `NLAlib.Estimation.Trace.HutchPlusPlusTail`.
 Probabilistic statements are over $\mathbb{R}$, where the Gaussian law and Hanson–Wright live; the
-definition, the error identity and unbiasedness are over any `RCLike` field. Design:
-`docs/design/Estimation-HutchPP.md`.
+definition, the error identity and unbiasedness are over any `RCLike` field.
 
 ## Main definitions
 
@@ -72,7 +71,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {n s t : Type*} [Fintype n] [Fintype s] [Fintype t] [DecidableEq n]
 
--- Stage TE-2
 
 /-- **Hutch++**: for a square $\mathbf{A}$, a sketch test matrix $\mathbf{S}$ and a residual test
 matrix $\mathbf{G}$,
@@ -569,7 +567,6 @@ theorem ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix (A : Matrix n n ℝ) {S : �
   filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hS hA] with ω hω
   exact hutchpp_eq_trace_of_rsvd_eq hω (G ω)
 
--- Stage TE-3
 
 /-- **The variance of Gaussian Hutch++, Halko–Martinsson–Tropp form**: if the
 $n \times \lvert s \rvert$ sketch test matrix $\mathbf{S}$ and the $n \times \ell$ residual test

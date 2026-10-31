@@ -131,10 +131,8 @@ in an interface namespace (N9) or in another predicate's namespace keeps it.
 311 public declarations renamed (194 by the grammar rules below, 117 more by N18, §1a) and 37
 statements changed (the 28 scalar tails stated positively,
 the 9 trace-estimation errors flipped), in `NLAlib/`, the docstrings that cite them, the live
-documents (CONTRIBUTING, `docs/port/ledger.json` "new" fields and notes, `docs/port/status.md`,
-the `docs/PORT_*` briefs, `docs/constants.toml`) and `docs/design/Mathlib-deviations.md`. Design
+documents (CONTRIBUTING, `docs/constants.toml`) and `docs/design/Mathlib-deviations.md`. Design
 notes stay historical and keep the old names; `docs/renames/2026-10-naming.json` maps them.
-Ledger keys and "Port of" provenance lines name the prototype's declarations and were left alone.
 Private helpers were not renamed; the checker does not see them.
 
 | rule | Matrix | Krylov | Probability | RandomMatrix | Sketching | LowRank | Regression | Estimation | ForMathlib | total |

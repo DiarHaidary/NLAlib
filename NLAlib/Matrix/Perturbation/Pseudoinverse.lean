@@ -102,7 +102,6 @@ $$\begin{aligned}
     (\mathbf{A}^{+})^{\mathsf{H}}\mathbf{A}^{+}.
 \end{aligned}$$
 [Wedin1973, Theorem 4.1]; [StewartSun1990, Theorem III.3.10].
-Port of `NLAlib.moorePenroseInverse_sub_eq`, there over $\mathbb{R}$.
 Result: pseudoinverse-perturbation -/
 theorem pinv_sub_pinv [DecidableEq m] [DecidableEq n] (A B : Matrix m n 𝕜) :
     pinv B - pinv A =
@@ -201,8 +200,6 @@ $$\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\Phi}
   \le \bigl(\|\mathbf{B}^{+}\|_2 \|\mathbf{A}^{+}\|_2 + \|\mathbf{B}^{+}\|_2^2 +
   \|\mathbf{A}^{+}\|_2^2\bigr) \|\mathbf{B} - \mathbf{A}\|_{\Phi}.$$
 [Wedin1973]; [StewartSun1990, Theorem III.3.8].
-Port of `NLAlib.specNorm_moorePenroseInverse_add_sub_le`, there over $\mathbb{R}$ in the spectral
-norm.
 Result: pseudoinverse-perturbation -/
 theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le (Φ : SymmetricGauge) (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (pinv B - pinv A) ≤
@@ -220,8 +217,7 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le (Φ : SymmetricGauge) (A B : 
 
 /-- $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\Phi} \le 3 \max(\|\mathbf{A}^{+}\|_2^2,
 \|\mathbf{B}^{+}\|_2^2) \, \|\mathbf{B} - \mathbf{A}\|_{\Phi}$ in every unitarily invariant norm
-$\|\cdot\|_{\Phi}$.
-Port of `NLAlib.specNorm_moorePenroseInverse_add_sub_le_three_mul_max`. -/
+$\|\cdot\|_{\Phi}$. -/
 theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_max (Φ : SymmetricGauge)
     (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (pinv B - pinv A) ≤
@@ -237,7 +233,6 @@ $$\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
   \le \frac{1 + \sqrt{5}}{2} \max\bigl(\|\mathbf{A}^{+}\|_2^2, \|\mathbf{B}^{+}\|_2^2\bigr)
   \|\mathbf{B} - \mathbf{A}\|_2.$$
 [Wedin1973, Theorem 4.1]; [StewartSun1990, Theorem III.3.8].
-Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_max_sq`, there over $\mathbb{R}$.
 Result: pseudoinverse-perturbation -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_max (A B : Matrix m n 𝕜) :
     specNorm (pinv B - pinv A) ≤
@@ -269,8 +264,7 @@ theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_max (A B : Matrix m n 𝕜) :
 $\mathbf{B} - \mathbf{A}$, in every unitarily invariant norm:
 $\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})\mathbf{P}_{\mathbf{A}}\|_{\Phi}
 \le \|\mathbf{A}^{+}\|_2
-\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{A} - \mathbf{B})\|_{\Phi}$.
-Port of `NLAlib.complement_columnProjector_mul_columnProjector_eq`. -/
+\|(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{A} - \mathbf{B})\|_{\Phi}$. -/
 theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le [DecidableEq m]
     (Φ : SymmetricGauge) (A B : Matrix m n 𝕜) :
     Φ.matrixNorm ((1 - rangeProjector B) * rangeProjector A) ≤
@@ -284,8 +278,7 @@ theorem SymmetricGauge.matrixNorm_one_sub_rangeProjector_mul_rangeProjector_le [
 /-- **Perturbation of the range projector.** For matrices of equal rank,
 $\|\mathbf{P}_{\mathbf{A}} - \mathbf{P}_{\mathbf{B}}\|_2
 \le \min(\|\mathbf{A}^{+}\|_2, \|\mathbf{B}^{+}\|_2) \, \|\mathbf{B} - \mathbf{A}\|_2$.
-[StewartSun1990, §III.3]; [Wedin1973].
-Port of `NLAlib.specNorm_sub_columnProjector_le_min_pinv_mul_specNorm`. -/
+[StewartSun1990, §III.3]; [Wedin1973]. -/
 theorem specNorm_rangeProjector_sub_rangeProjector_le {A B : Matrix m n 𝕜} (h : A.rank = B.rank) :
     specNorm (rangeProjector A - rangeProjector B) ≤
       min (specNorm (pinv A)) (specNorm (pinv B)) * specNorm (B - A) := by
@@ -384,8 +377,7 @@ theorem SymmetricGauge.matrixNorm_pinv_sub_pinv_le_three_mul_of_rank_eq (Φ : Sy
 
 /-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_2
 \le ((1 + \sqrt{5})/2) \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2$.
-[Wedin1973]; [StewartSun1990, Theorem III.3.9].
-Port of `NLAlib.specNorm_moorePenroseInverse_sub_le_goldenRatio_mul_of_rank_eq`. -/
+[Wedin1973]; [StewartSun1990, Theorem III.3.9]. -/
 theorem specNorm_pinv_sub_pinv_le_goldenRatio_mul_of_rank_eq {A B : Matrix m n 𝕜}
     (h : A.rank = B.rank) :
     specNorm (pinv B - pinv A) ≤
@@ -426,8 +418,7 @@ private theorem frobNorm_sq_add_add_le_two_mul [DecidableEq m] [DecidableEq n]
 
 /-- For matrices of equal rank, $\|\mathbf{B}^{+} - \mathbf{A}^{+}\|_{\mathsf{F}}
 \le \sqrt{2} \, \|\mathbf{A}^{+}\|_2 \|\mathbf{B}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_{\mathsf{F}}$.
-[Wedin1973]; [StewartSun1990, Theorem III.3.9].
-Port of `NLAlib.frobNorm_moorePenroseInverse_sub_le_sqrt_two_mul_of_rank_eq`. -/
+[Wedin1973]; [StewartSun1990, Theorem III.3.9]. -/
 theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜}
     (h : A.rank = B.rank) :
     frobNorm (pinv B - pinv A) ≤ √2 * specNorm (pinv A) * specNorm (pinv B) * frobNorm (B - A) := by
@@ -474,8 +465,7 @@ theorem frobNorm_pinv_sub_pinv_le_sqrt_two_mul_of_rank_eq {A B : Matrix m n 𝕜
 $\|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2 < 1$,
 $$\|\mathbf{B}^{+}\|_2
   \le \frac{\|\mathbf{A}^{+}\|_2}{1 - \|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2}.$$
-[Wedin1973]; [StewartSun1990, Theorem III.3.8].
-Port of `NLAlib.specNorm_moorePenroseInverse_le_div_of_rank_eq`. -/
+[Wedin1973]; [StewartSun1990, Theorem III.3.8]. -/
 theorem specNorm_pinv_le_div_of_rank_eq {A B : Matrix m n 𝕜} (h : A.rank = B.rank)
     (hsmall : specNorm (pinv A) * specNorm (B - A) < 1) :
     specNorm (pinv B) ≤ specNorm (pinv A) / (1 - specNorm (pinv A) * specNorm (B - A)) := by
@@ -499,8 +489,7 @@ theorem specNorm_pinv_le_div_of_rank_eq {A B : Matrix m n 𝕜} (h : A.rank = B.
 
 /-- A small perturbation of a matrix of full column rank has full column rank: if $\mathbf{A}$ has
 full column rank and $\|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 < 1$, then $\mathbf{A} + \mathbf{E}$ has
-full column rank.
-Port of `NLAlib.rank_add_eq_card_of_pinv_mul_specNorm_lt_one`. -/
+full column rank. -/
 theorem injective_mulVec_add_of_specNorm_pinv_mul_lt_one {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1) :
     Function.Injective (A + E).mulVec := by
@@ -518,8 +507,7 @@ theorem injective_mulVec_add_of_specNorm_pinv_mul_lt_one {A E : Matrix m n 𝕜}
 
 /-- For $\mathbf{A}$ of full column rank and $\|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 < 1$,
 $\|(\mathbf{A} + \mathbf{E})^{+}\|_2 \le \|\mathbf{A}^{+}\|_2 / (1 - \|\mathbf{A}^{+}\|_2
-\|\mathbf{E}\|_2)$.
-Port of `NLAlib.specNorm_pinv_add_le_of_rank_eq_card`. -/
+\|\mathbf{E}\|_2)$. -/
 theorem specNorm_pinv_add_le_of_injective {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1) :
     specNorm (pinv (A + E)) ≤ specNorm (pinv A) / (1 - specNorm (pinv A) * specNorm E) := by

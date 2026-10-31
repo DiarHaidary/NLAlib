@@ -197,8 +197,7 @@ theorem _root_.IsStarNormal.specNorm_eq_specRadius {A : Matrix n n 𝕜} (hA : I
 
 /-- The spectral radius is at most the largest row sum: if
 $\sum_j \lvert \mathbf{A}_{i,j} \rvert \le c$ for every $i$, with $c \ge 0$, then
-$\rho(\mathbf{A}) \le c$.
-Port of `NLAlib.spectralRadius_le_max_row_sum`. -/
+$\rho(\mathbf{A}) \le c$. -/
 theorem specRadius_le_of_forall_sum_le {A : Matrix n n 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ i, ∑ j, ‖A i j‖ ≤ c) : specRadius A ≤ c := by
   obtain ⟨d, hd⟩ := exists_isEigenvalueListing (complexify A)
@@ -230,8 +229,7 @@ theorem specRadius_conjTranspose (A : Matrix n n 𝕜) : specRadius Aᴴ = specR
 
 /-- The spectral radius is at most the largest column sum: if
 $\sum_i \lvert \mathbf{A}_{i,j} \rvert \le c$ for every $j$, with $c \ge 0$, then
-$\rho(\mathbf{A}) \le c$.
-Port of `NLAlib.spectralRadius_le_max_column_sum`. -/
+$\rho(\mathbf{A}) \le c$. -/
 theorem specRadius_le_of_forall_sum_col_le {A : Matrix n n 𝕜} {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ j, ∑ i, ‖A i j‖ ≤ c) : specRadius A ≤ c := by
   rw [← specRadius_transpose]

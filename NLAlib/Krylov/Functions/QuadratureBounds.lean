@@ -29,7 +29,6 @@ For $f(x) = x^{-1}$ on $[a, a']$, $a > 0$, Gauss and the right Radau rule bound 
 left Radau rule from above. The Radau rules are computed from the modified Lanczos tridiagonal
 (`Matrix.IsHermitian.integral_radauQuadrature_spectralMeasure`).
 
-Design: `docs/design/Polynomial-QuadratureRemainder.md`, K1–K9.
 
 ## Main results
 

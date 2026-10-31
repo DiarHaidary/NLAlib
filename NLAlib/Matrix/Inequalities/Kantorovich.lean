@@ -45,8 +45,7 @@ private theorem posDef_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha : 0 < 
 
 /-- **The Kantorovich inequality, operator form.** If $a\mathbf{I} \preceq \mathbf{A} \preceq
 b\mathbf{I}$ with $0 < a$, then $\mathbf{A} + ab\mathbf{A}^{-1} \preceq (a + b)\mathbf{I}$.
-[HornJohnson2013, §7.4.12].
-Port of `NLAlib.add_smul_inv_le_smul_one_of_sandwich`, there over $\mathbb{R}$. -/
+[HornJohnson2013, §7.4.12]. -/
 theorem add_smul_inv_le_smul_one {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) :
     A + (a * b) • A⁻¹ ≤ (a + b) • (1 : Matrix n n 𝕜) := by
@@ -75,7 +74,6 @@ $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
   \le \frac{(a + b)^2}{4ab} \|\mathbf{x}\|^4\,.$$
 [HornJohnson2013, (7.4.12.1)].
-Port of `NLAlib.quadForm_mul_quadForm_inv_le_of_sandwich`, there over $\mathbb{R}$.
 Result: kantorovich-inequality -/
 theorem re_quadForm_mul_re_quadForm_inv_le {A : Matrix n n 𝕜} {a b : ℝ} (ha : 0 < a)
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜)) (x : n → 𝕜) :
@@ -108,8 +106,6 @@ $$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \,
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{x})
   \le \frac{(\kappa + 1)^2}{4\kappa} \|\mathbf{x}\|^4\,.$$
 [HornJohnson2013, (7.4.12.1)].
-Port of `NLAlib.quadForm_mul_quadForm_inv_le_moorePenroseConditionNumber_sqrt`, there over
-$\mathbb{R}$.
 Result: kantorovich-inequality -/
 theorem _root_.Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionNumber
     {A : Matrix n n 𝕜} (hA : A.PosDef) (x : n → 𝕜) :
@@ -219,7 +215,6 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
   \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
   \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
 [HornJohnson2013, (7.4.12.2)].
-Port of `NLAlib.sq_bilinear_le_sq_ratio_mul_quadForm_of_sandwich`, there over $\mathbb{R}$.
 Result: wielandt-inequality -/
 theorem norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜))

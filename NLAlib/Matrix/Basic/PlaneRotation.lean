@@ -42,8 +42,7 @@ $$\mathbf{I} + (c - 1)(\mathbf{u}\mathbf{u}^{\mathsf{H}} + \mathbf{v}\mathbf{v}^
   s(\mathbf{u}\mathbf{v}^{\mathsf{H}} - \mathbf{v}\mathbf{u}^{\mathsf{H}})\,.$$
 It is a rotation when $\mathbf{u}$, $\mathbf{v}$ are orthonormal and $c^2 + s^2 = 1$; for other
 arguments it is just this matrix.
-[GolubVanLoan2013, §5.1.8]; there for standard basis vectors (Givens rotations).
-Port of `NLAlib.planeRotation`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.1.8]; there for standard basis vectors (Givens rotations). -/
 def planeRotation (u v : n → 𝕜) (c s : ℝ) : Matrix n n 𝕜 :=
   1 + ((c : 𝕜) - 1) • (Matrix.vecMulVec u (star u) + Matrix.vecMulVec v (star v)) +
     (s : 𝕜) • (Matrix.vecMulVec u (star v) - Matrix.vecMulVec v (star u))
@@ -52,8 +51,7 @@ def planeRotation (u v : n → 𝕜) (c s : ℝ) : Matrix n n 𝕜 :=
 $$\mathbf{R}\mathbf{x} = \mathbf{x} +
   (c - 1)\bigl((\mathbf{u}^{\mathsf{H}}\mathbf{x})\mathbf{u} + (\mathbf{v}^{\mathsf{H}}\mathbf{x})
   \mathbf{v}\bigr) + s\bigl((\mathbf{v}^{\mathsf{H}}\mathbf{x})\mathbf{u} -
-  (\mathbf{u}^{\mathsf{H}}\mathbf{x})\mathbf{v}\bigr)\,.$$
-Port of `NLAlib.planeRotation_mulVec`. -/
+  (\mathbf{u}^{\mathsf{H}}\mathbf{x})\mathbf{v}\bigr)\,.$$ -/
 theorem planeRotation_mulVec [Fintype n] (u v x : n → 𝕜) (c s : ℝ) :
     planeRotation u v c s *ᵥ x =
       x + ((c : 𝕜) - 1) • ((star u ⬝ᵥ x) • u + (star v ⬝ᵥ x) • v) +
@@ -109,8 +107,7 @@ theorem planeRotation_mulVec_of_orthogonal [Fintype n] {u v x : n → 𝕜}
     smul_zero, add_zero, add_zero]
 
 /-- A plane rotation is unitary, for orthonormal $\mathbf{u}$, $\mathbf{v}$ and
-$c^2 + s^2 = 1$.
-Port of `NLAlib.hasOrthonormalCols_planeRotation`, there over $\mathbb{R}$. -/
+$c^2 + s^2 = 1$. -/
 theorem hasOrthonormalCols_planeRotation [Fintype n] {u v : n → 𝕜}
     (hu : ‖WithLp.toLp 2 u‖ = 1) (hv : ‖WithLp.toLp 2 v‖ = 1) (huv : star u ⬝ᵥ v = 0)
     {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) : HasOrthonormalCols (planeRotation u v c s) := by

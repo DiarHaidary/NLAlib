@@ -29,8 +29,8 @@ The constant-factor statements have no accuracy parameter and no asymptotic form
 form their size is the family's injection size,
 `NLAlib.exists_forall_isObliviousSubspaceInjection_of_hasLaw_srht` and its with-replacement twin.
 The $(1 + \varepsilon)$ forms, randomized SVD and early truncation, go through the JL moment of a
-real SRHT at $p = 2$ (`NLAlib.hasJLMoment_of_hasLaw_srht`), hence $1/\delta$ in their second size
-(`docs/design/LowRank-S7.md` D6, `docs/design/Sketching-Moments.md` §3.4); a $\log(1/\delta)$ form
+real SRHT at $p = 2$ (`NLAlib.hasJLMoment_of_hasLaw_srht`), hence $1/\delta$ in their second size;
+a $\log(1/\delta)$ form
 through spectral approximate multiplication is quadratic in $k$ and is not stated (§5.5 there).
 
 **Statements with no per-family form.** Nyström, generalized Nyström and the truncations apply
@@ -40,8 +40,7 @@ isObliviousSubspaceInjection_of_hasLaw_srht_of_samplingInjectionDim_le hF hX hln
 isObliviousSubspaceInjection_of_hasLaw_srhtWithReplacement_of_samplingInjectionDim_le hF hX k
   hε hδ hl
 ```
-with `hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ` (respectively `srhtWithReplacement`). Design:
-`docs/design/LowRank-S7.md` §3.5, §8.
+with `hX : HasLaw (fun ω => (X ω)ᴴ) (srht l F) μ` (respectively `srhtWithReplacement`).
 
 ## Main results
 

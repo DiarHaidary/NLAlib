@@ -18,7 +18,7 @@ $2\lvert n\rvert\exp(-\tfrac{1}{196}m\lvert n\rvert\min(\tau^2/c^2, \tau/c))$: e
 Girard–Hutchinson estimate of a spectral projector. On that event the deterministic bounds of
 `NLAlib/Estimation/Spectral/SpectralDensity.lean` control every Lipschitz test function at once,
 for the probe measure, for SLQ (adding the Gauss error) and for the mass-normalised SLQ measure.
-[ChenTrogdonUbaru2021]. Design: `docs/design/Estimation-SLQ.md` §§3.5–3.6.
+[ChenTrogdonUbaru2021].
 
 ## Main results
 

@@ -173,8 +173,7 @@ theorem trace_conjTranspose_mul_hermitianPart_mul {k : Type*} [Fintype k] (Q : M
 
 /-- The Hermitian part commutes with unitary conjugation: the Hermitian part of
 $\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$ is $\mathbf{U}\mathbf{H}\mathbf{U}^{\mathsf{H}}$ for
-$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$, for any square $\mathbf{U}$.
-Port of `NLAlib.selfAdjointPart_mul_mul_conjTranspose`. -/
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$, for any square $\mathbf{U}$. -/
 theorem hermitianPart_mul_mul_conjTranspose (U A : Matrix n n 𝕜) :
     hermitianPart (U * A * Uᴴ) = U * hermitianPart A * Uᴴ := by
   simp only [hermitianPart, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
@@ -187,7 +186,6 @@ part** (Ky Fan): if $\mathbf{z}$ lists the eigenvalues of a complex matrix $\mat
 real $\mathbf{x}$ lists those of $\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$, then
 $(\operatorname{Re} \mathbf{z}_i)_i$ is majorized by $\mathbf{x}$ (`Majorized`).
 [HornJohnson1991, §3.3]; [Bhatia1997, Proposition III.5.3].
-Port of `NLAlib.majorized_real_parts_eigenvalues_selfAdjointPart`.
 Result: real-part-majorization -/
 theorem majorized_re_of_isEigenvalueListing {A : Matrix n n ℂ} {z : n → ℂ} {x : n → ℝ}
     (hz : IsEigenvalueListing A z)
@@ -233,8 +231,7 @@ private theorem exists_re_quadForm_eq_of_mem_spectrum {A : Matrix n n 𝕜} {μ 
 /-- **Bendixson's upper bound**: the real part of every eigenvalue $\mu$ of $\mathbf{A}$ is at
 most the largest eigenvalue of the Hermitian part:
 $\operatorname{Re} \mu \le \lambda_0\bigl(\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\bigr)$.
-[HornJohnson2013, §5.6].
-Port of `NLAlib.real_part_eigenvalue_mem_Icc_selfAdjointPart`, upper half. -/
+[HornJohnson2013, §5.6]. -/
 theorem re_le_eigenvalue_zero_hermitianPart {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : RCLike.re μ ≤ eigenvalue (hermitianPart A) 0 := by
   obtain ⟨v, hv, hq⟩ := exists_re_quadForm_eq_of_mem_spectrum hμ
@@ -246,7 +243,6 @@ theorem re_le_eigenvalue_zero_hermitianPart {A : Matrix n n 𝕜} {μ : 𝕜}
 least the smallest eigenvalue of the Hermitian part:
 $\lambda_j\bigl(\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\bigr) \le \operatorname{Re} \mu$
 for $j + 1 = \lvert n \rvert$.
-Port of `NLAlib.real_part_eigenvalue_mem_Icc_selfAdjointPart`, lower half.
 [HornJohnson1991, §1.5] (locator to check). -/
 theorem eigenvalue_hermitianPart_le_re {A : Matrix n n 𝕜} {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 A)
     {j : ℕ} (hj : j + 1 = Fintype.card n) : eigenvalue (hermitianPart A) j ≤ RCLike.re μ := by

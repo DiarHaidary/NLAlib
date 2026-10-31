@@ -426,8 +426,8 @@ open Bernstein ellipse $E_\rho$, $\rho > 1$. Then $q + 1$ steps give
 $$\|f(\mathbf{A})\mathbf{b} - \mathsf{lanczosFA}(\mathbf{A}, f, \mathbf{b}, q + 1)\| \le
 \frac{4M}{\rho^q(\rho - 1)}\|\mathbf{b}\|\,,$$
 from the uniform bound and the Chebyshev truncation of degree $q$.
-[Saad1992, Theorem 3.4] (locator from the quarry); [Trefethen2019, Theorem 8.2] (locator from
-the quarry), the approximation rate; constants composed here.
+[Saad1992, Theorem 3.4] (locator to check); [Trefethen2019, Theorem 8.2] (locator to check), the
+approximation rate; constants composed here.
 Result: lanczos-fa-uniform-bound -/
 theorem _root_.Matrix.IsHermitian.norm_cfc_mulVec_sub_lanczosFA_le_of_differentiableOn
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {a a' : ℝ} (haa : a < a')

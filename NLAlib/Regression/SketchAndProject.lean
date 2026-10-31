@@ -33,7 +33,6 @@ $\mathbb{E}_{\nu}[(\mathbf{S}\mathbf{A})^{+}\mathbf{S}\mathbf{A}]$ (Gower and Ri
 $\mathbb{E}[\mathbf{Z}]$ in the Euclidean metric), and its least eigenvalue on the row space of
 $\mathbf{A}$ is the rate. No rank assumption is needed. Matrix-valued integrals are taken under
 `open scoped Matrix.Norms.L2Operator`. [GowerRichtarik2015].
-Design: `docs/design/Regression-Kaczmarz.md`.
 
 ## Main definitions
 

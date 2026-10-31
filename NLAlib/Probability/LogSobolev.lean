@@ -450,8 +450,7 @@ $\|\nabla g\|^2$ integrable, then $g^2 \log g^2$ is integrable, so $\operatornam
 is not a junk value. The proof applies the inequality to the bounded truncations
 $(N + 1) \sin(g / (N + 1))$, whose energy is at most that of $g$, and uses Fatou's lemma. For the
 standard Gaussian this is
-`NLAlib.integrable_sq_mul_log_sq_stdGaussian`.
-Port of `NLAlib.HasEuclideanLogSobolev.integrable_sq_mul_log_sq`. -/
+`NLAlib.integrable_sq_mul_log_sq_stdGaussian`. -/
 theorem HasLogSobolev.integrable_sq_mul_log_sq (h : HasLogSobolev ν c) (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) ν) (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) ν) :
     Integrable (fun x => g x ^ 2 * Real.log (g x ^ 2)) ν := by
@@ -523,8 +522,7 @@ with $g^2$ and $\|\nabla g\|^2$ integrable, not only for the bounded test functi
 definition; $g^2 \log g^2$ is then integrable (`NLAlib.HasLogSobolev.integrable_sq_mul_log_sq`).
 The truncations $(N + 1) \sin(g / (N + 1))$ and dominated convergence. For the standard Gaussian
 this is
-`NLAlib.entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian`.
-Port of `NLAlib.HasEuclideanLogSobolev.inequality_of_integrable`. -/
+`NLAlib.entropy_sq_le_two_mul_integral_norm_fderiv_sq_stdGaussian`. -/
 theorem HasLogSobolev.entropy_sq_le_of_integrable (h : HasLogSobolev ν c) (hg : ContDiff ℝ 1 g)
     (hg2 : Integrable (fun x => g x ^ 2) ν) (hdg : Integrable (fun x => ‖fderiv ℝ g x‖ ^ 2) ν) :
     entropy ν (fun x => g x ^ 2) ≤ 2 * c * ∫ x, ‖fderiv ℝ g x‖ ^ 2 ∂ν := by

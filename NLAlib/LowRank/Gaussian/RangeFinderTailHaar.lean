@@ -22,8 +22,7 @@ throughout.
 The Gram form is stated, for every unitarily invariant norm; the Schatten, Frobenius and spectral
 forms are its corollaries at the gauges, as in the Gaussian file. This is the Haar case of the
 randomized SVD tail by range transfer, the twin of the expectation transfers of
-`NLAlib.LowRank.Gaussian.EarlyTruncationHaar`. Design: `docs/design/LowRank-S7.md` §3.5, §8
-item 3.
+`NLAlib.LowRank.Gaussian.EarlyTruncationHaar`.
 
 ## Main results
 
