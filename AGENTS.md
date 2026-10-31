@@ -1,25 +1,24 @@
 # Agents working in this repository
 
-1. Read `CONTRIBUTING.md` in full. It is the contract; §5.4 (interfaces), §8 (designing a stage),
-   §10 (memory) and §11 (agent rules) are not optional.
-2. Read the current brief (`docs/PORT_MATRIX.md` for the Matrix layer, finished;
-   `docs/PORT_PROBABILITY.md` for the Probability round) and the
-   current stage's design note in `docs/design/`. If the note does not exist, the stage has not
-   been designed: the orchestrator writes it and stops for approval before any proof is written.
-3. Read `docs/port/status.md` to see what is in progress and where the last agent stopped.
-4. Design is sequential, one stage at a time; proving is parallel (CONTRIBUTING §11). Do the
-   declaration or file you own and nothing else. Search Mathlib, then `NLAlib/`, then the prototype
-   files the design note names, before proving anything.
-5. Build with `LEAN_NUM_THREADS=2 lake build <your module>` and `lake lean <file> -- -M 8000`, output to a log
-   file. Never a bare `lake build`. In a shared checkout, never two builds at once; harness jobs
-   each build in their own copy over the shared base, and larger rebuilds go through the build
-   queue.
-6. Before stopping: update `docs/port/ledger.json` and `docs/port/status.md`, run the §9 checks,
-   and leave the read-back for the PR. Do not commit or push unless asked.
-7. If you orchestrate: keep your own context small. You make the decisions, write the agent briefs,
-   read review verdicts and escalations, and commit. Design notes and skeletons are drafted by Opus
-   agents from your brief and reviewed by a `model: "fable"` agent before they go to the maintainer.
-   Proofs are dispatched through the workflow harness (https://github.com/NLA-lib/workflow) to
-   worker agents, open-weight models first, with Claude as the fallback, and come back to you only
-   after the checks and the tier-1 review of CONTRIBUTING §11 (maintainer, 2026-10-24, superseding
-   the 2026-10-14 routing). Every `Agent` call passes `model` explicitly; there is no default.
+`CONTRIBUTING.md` is the contract, for agents as for people: read it in full before writing
+library code, and read `docs/rules/DIGEST.md` and the `NLAlib/<Topic>/RULES.md` of each topic you
+touch. The rules below are the ones specific to agents.
+
+1. **Do not change the checks.** Never edit `scripts/stage_check.sh`, the check scripts
+   (`scripts/check_*.py`, `scripts/check_latex.mjs`, `scripts/*.lean`, their tests and fixtures),
+   `docs/rules/rules.toml`, the allowlists `scripts/rules_allow.toml` and
+   `scripts/names_allow.toml`, the ratchet `scripts/rules_baseline.json`, `.github/` (CI,
+   CODEOWNERS, the PR template) or the build pins (`lakefile.toml`, `lake-manifest.json`,
+   `lean-toolchain`), unless that edit is the task you were given. If a check seems wrong, or a
+   false positive needs an allowlist entry, say so in your report; do not work around it.
+2. **Do not register targets.** Never edit a `*Targets.lean` file, `docs/targets.toml` or
+   `docs/targets.approved`; target statements change only with the maintainer's approval
+   (CONTRIBUTING §5.5). Prove a registered target as stated; if you cannot, report it.
+3. **Do not push**, and do not commit unless you are asked to.
+4. **Run the checks before you report.** `python3 scripts/check_rules.py --files <files>` while
+   working; `bash scripts/stage_check.sh` (exit 0) before you call the work finished
+   (CONTRIBUTING §9). Never run a bare `lake build`; build with `LEAN_NUM_THREADS=2` and a log
+   file, one build per checkout at a time (CONTRIBUTING §10).
+5. **Stay in scope.** Search Mathlib, then `NLAlib/`, before proving anything. Do not weaken a
+   statement to make it provable, and do not add theorems, interfaces or §5.3 rows beyond your
+   task; note what you saw in your report instead.
