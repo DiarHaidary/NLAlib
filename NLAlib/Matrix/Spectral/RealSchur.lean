@@ -44,8 +44,7 @@ variable {R : Type*} {k : ℕ}
 
 /-- A real matrix is in **real Schur form** if it is upper quasi-triangular and each diagonal
 block of size two has equal diagonal entries and off-diagonal entries of opposite sign, so that
-its eigenvalues are a pair of non-real complex conjugates. [HornJohnson2013, Theorem 2.3.4].
-Port of `NLAlib.IsRealSchurForm`. -/
+its eigenvalues are a pair of non-real complex conjugates. [HornJohnson2013, Theorem 2.3.4]. -/
 def IsRealSchurForm (T : Matrix (Fin k) (Fin k) ℝ) : Prop :=
   IsUpperQuasiTriangular T ∧
     ∀ i j : Fin k, (j : ℕ) + 1 = (i : ℕ) → T i j ≠ 0 → T i i = T j j ∧ T j i * T i j < 0
@@ -372,7 +371,6 @@ private theorem exists_isRealSchurForm_conjTranspose_mul_mul (k : ℕ) :
 Schur form: $\mathbf{A} = \mathbf{Q}\mathbf{T}\mathbf{Q}^{\mathsf{T}}$ with $\mathbf{Q}$
 orthogonal and $\mathbf{T}$ in real Schur form. [HornJohnson2013, Theorem 2.3.4];
 [GolubVanLoan2013, Theorem 7.4.1].
-Port of `NLAlib.exists_orthogonal_real_schur`.
 Result: real-schur -/
 theorem exists_hasOrthonormalCols_isRealSchurForm (A : Matrix (Fin k) (Fin k) ℝ) :
     ∃ Q T : Matrix (Fin k) (Fin k) ℝ, HasOrthonormalCols Q ∧ A = Q * T * Qᴴ ∧
@@ -384,8 +382,7 @@ theorem exists_hasOrthonormalCols_isRealSchurForm (A : Matrix (Fin k) (Fin k) �
 real scalars and blocks $\begin{bmatrix} a & b \\ -b & a \end{bmatrix}$:
 $\mathbf{A} = \mathbf{Q}\mathbf{T}\mathbf{Q}^{\mathsf{T}}$ with $\mathbf{Q}$ orthogonal and
 $\mathbf{T}$ in real Schur form with $\mathbf{T}_{i,j} = -\mathbf{T}_{j,i}$ for $i \ne j$.
-[HornJohnson2013, Theorem 2.5.8].
-Port of `NLAlib.exists_orthogonal_real_normal_form`. -/
+[HornJohnson2013, Theorem 2.5.8]. -/
 theorem exists_hasOrthonormalCols_isRealSchurForm_of_isStarNormal
     {A : Matrix (Fin k) (Fin k) ℝ} (hA : IsStarNormal A) :
     ∃ Q T : Matrix (Fin k) (Fin k) ℝ, HasOrthonormalCols Q ∧ A = Q * T * Qᴴ ∧
@@ -439,7 +436,7 @@ private theorem exists_mul_eq_mul_isUpperTriangular (hk : 0 < k)
 orthogonal matrices to an upper quasi-triangular and an upper triangular matrix:
 $\mathbf{Q}^{\mathsf{T}}\mathbf{A}\mathbf{Z}$ is upper quasi-triangular and
 $\mathbf{Q}^{\mathsf{T}}\mathbf{B}\mathbf{Z}$ upper triangular.
-[GolubVanLoan2013, Theorem 7.7.2]. Port of `NLAlib.exists_orthogonal_qz_triangularization`. -/
+[GolubVanLoan2013, Theorem 7.7.2]. -/
 theorem exists_hasOrthonormalCols_isUpperQuasiTriangular_isUpperTriangular
     (A B : Matrix (Fin k) (Fin k) ℝ) :
     ∃ Q Z : Matrix (Fin k) (Fin k) ℝ, HasOrthonormalCols Q ∧ HasOrthonormalCols Z ∧

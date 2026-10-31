@@ -46,8 +46,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 for real $\boldsymbol{\lambda}$, is the image of $\boldsymbol{\lambda}$ under the matrix of squared
 moduli of the entries of $\mathbf{Q}$:
 $\operatorname{Re}(\mathbf{Q} \operatorname{diag}(\boldsymbol{\lambda})
-\mathbf{Q}^{\mathsf{H}})_{i,i} = \sum_j \lvert \mathbf{Q}_{i,j} \rvert^2 \boldsymbol{\lambda}_j$.
-Port of `NLAlib.diagonal_conjugation_eq_sq_mulVec`, there over $\mathbb{R}$. -/
+\mathbf{Q}^{\mathsf{H}})_{i,i} = \sum_j \lvert \mathbf{Q}_{i,j} \rvert^2 \boldsymbol{\lambda}_j$. -/
 theorem re_mul_diagonal_mul_conjTranspose_apply_self (Q : Matrix n n 𝕜) (lam : n → ℝ) (i : n) :
     RCLike.re ((Q * Matrix.diagonal (fun j => ((lam j : ℝ) : 𝕜)) * Qᴴ) i i) =
       ((Matrix.of fun i j => ‖Q i j‖ ^ 2) *ᵥ lam) i := by
@@ -235,8 +234,7 @@ private theorem planeRotation_apply_eq_mulVec_single (u v : n → ℝ) (c s : �
   rw [Matrix.col_apply, Matrix.conjTranspose_apply, star_trivial]
 
 /-- Conjugating a real symmetric matrix by a rotation in the coordinates $i$, $j$ transfers
-between the diagonal entries $i$ and $j$ and fixes the other diagonal entries.
-Port of `NLAlib.planeRotation_single_conjugation_diag`. -/
+between the diagonal entries $i$ and $j$ and fixes the other diagonal entries. -/
 private theorem diag_planeRotation_single_mul_mul {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {i j : n} (hij : i ≠ j) {c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1) :
     (planeRotation (Pi.single i 1) (Pi.single j 1) c s * A *
@@ -365,7 +363,6 @@ theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_diag_eq_of_majorized
 there is a real orthogonal matrix $\mathbf{Q}$ such that $\mathbf{Q}
 \operatorname{diag}(\boldsymbol{\lambda}) \mathbf{Q}^{\mathsf{T}}$ has diagonal $\mathbf{d}$.
 [HornJohnson2013, Theorem 4.3.48].
-Port of `NLAlib.exists_orthogonal_diagonal_eq_of_majorized`.
 Result: schur-horn -/
 theorem exists_hasOrthonormalCols_diag_eq_of_majorized {d lam : n → ℝ} (h : Majorized d lam) :
     ∃ Q : Matrix n n ℝ, HasOrthonormalCols Q ∧ (Q * Matrix.diagonal lam * Qᴴ).diag = d :=
@@ -376,7 +373,6 @@ theorem exists_hasOrthonormalCols_diag_eq_of_majorized {d lam : n → ℝ} (h : 
 exactly when it is the diagonal of $\mathbf{Q} \operatorname{diag}(\boldsymbol{\lambda})
 \mathbf{Q}^{\mathsf{T}}$ for some real orthogonal $\mathbf{Q}$.
 [HornJohnson2013, Theorems 4.3.45 and 4.3.48].
-Port of `NLAlib.majorized_iff_exists_orthogonal_diagonal_eq`.
 Result: schur-horn -/
 theorem majorized_iff_exists_hasOrthonormalCols_diag_eq {d lam : n → ℝ} :
     Majorized d lam ↔

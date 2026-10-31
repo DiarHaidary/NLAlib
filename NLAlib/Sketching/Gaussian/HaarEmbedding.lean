@@ -49,8 +49,8 @@ sketches, and $O((d + \log(1/\delta))/\varepsilon^2)$ rows; no spectral input on
 needed.
 
 Degenerate cases: for empty $p$ every event is null; for empty $k$ the sketch is $\mathbf{0}$,
-hence `[Nonempty k]` on the OSI. Split from `NLAlib/Sketching/Gaussian/Haar.lean` at the
-Sketching wrap-up (2026-10-15). Design: `docs/design/Sketching-S2.md` §3.4, §8.
+hence `[Nonempty k]` on the OSI. Split from `NLAlib/Sketching/Gaussian/Haar.lean`
+(2026-10-15). Design: `docs/design/Sketching-S2.md` §3.4, §8.
 
 ## Main results
 

@@ -96,7 +96,6 @@ upper triangular with diagonal $\mathbf{d}$, in the given order:
 $(\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U})_{i,i} = \mathbf{d}_i$. Over $\mathbb{R}$ this is
 orthogonal triangularisation of a matrix with real eigenvalues.
 [HornJohnson2013, Theorem 2.3.1].
-Port of `NLAlib.exists_unitary_schur_triangularization_with_charpoly`.
 Result: schur-triangularization -/
 theorem IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular [LinearOrder n]
     {A : Matrix n n 𝕜} {d : n → 𝕜} (hd : IsEigenvalueListing A d) :
@@ -107,8 +106,7 @@ theorem IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular [LinearO
 
 /-- **Schur's theorem.** Every square complex matrix is unitarily similar to an upper triangular
 matrix: $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{U}$ is upper triangular for some unitary
-$\mathbf{U}$. [HornJohnson2013, Theorem 2.3.1]; [GolubVanLoan2013, Theorem 7.1.3].
-Port of `NLAlib.exists_unitary_schur_triangularization`. -/
+$\mathbf{U}$. [HornJohnson2013, Theorem 2.3.1]; [GolubVanLoan2013, Theorem 7.1.3]. -/
 theorem exists_hasOrthonormalCols_isUpperTriangular [LinearOrder n] (A : Matrix n n ℂ) :
     ∃ U : Matrix n n ℂ, HasOrthonormalCols U ∧ (Uᴴ * A * U).IsUpperTriangular := by
   obtain ⟨d, hd⟩ := exists_isEigenvalueListing A
@@ -130,8 +128,7 @@ $\mathbf{A}$, then for every $\varepsilon > 0$ the matrix $\mathbf{A}$ is simila
 triangular matrix with diagonal $\mathbf{d}$, in the given order, whose off-diagonal entries have
 modulus less than $\varepsilon$. This is the step from the spectral radius to a norm in which the
 matrix is almost as small.
-[HornJohnson2013, Lemma 5.6.10], there over $\mathbb{C}$.
-Port of `NLAlib.exists_similarity_upper_triangular_small_entries`. -/
+[HornJohnson2013, Lemma 5.6.10], there over $\mathbb{C}$. -/
 theorem IsEigenvalueListing.exists_isUpperTriangular_inv_mul_mul_norm_apply_lt [LinearOrder n]
     {A : Matrix n n 𝕜} {d : n → 𝕜} (hd : IsEigenvalueListing A d) {ε : ℝ} (hε : 0 < ε) :
     ∃ S : Matrix n n 𝕜, IsUnit S.det ∧ (S⁻¹ * A * S).IsUpperTriangular ∧
@@ -240,8 +237,7 @@ private theorem exists_hasOrthonormalCols_diag_eq {A : Matrix n n 𝕜} {d : ι 
 
 /-- **Schur's inequality**: the sum of the squared moduli of the eigenvalues is at most the
 squared Frobenius norm, $\sum_i \lvert \mathbf{d}_i \rvert^2 \le \|\mathbf{A}\|_{\mathsf{F}}^2$
-for a listing $\mathbf{d}$ of the eigenvalues. [HornJohnson2013, §2.3].
-Port of `NLAlib.sum_norm_sq_schur_diagonal_le_frobSq`. -/
+for a listing $\mathbf{d}$ of the eigenvalues. [HornJohnson2013, §2.3]. -/
 theorem IsEigenvalueListing.sum_norm_sq_le_frobNorm_sq {A : Matrix n n 𝕜} {d : ι → 𝕜}
     (hd : IsEigenvalueListing A d) : ∑ i, ‖d i‖ ^ 2 ≤ frobNorm A ^ 2 := by
   obtain ⟨U, e, hU, hdiag, -⟩ := exists_hasOrthonormalCols_diag_eq hd
@@ -254,8 +250,7 @@ theorem IsEigenvalueListing.sum_norm_sq_le_frobNorm_sq {A : Matrix n n 𝕜} {d 
 /-- **Equality in Schur's inequality holds exactly for normal matrices**:
 $\sum_i \lvert \mathbf{d}_i \rvert^2 = \|\mathbf{A}\|_{\mathsf{F}}^2$ for a listing $\mathbf{d}$
 of the eigenvalues if and only if $\mathbf{A}$ is normal.
-[HornJohnson2013, Theorem 2.5.3].
-Port of `NLAlib.sum_norm_sq_characteristic_eq_frobSq_iff_normal`. -/
+[HornJohnson2013, Theorem 2.5.3]. -/
 theorem IsEigenvalueListing.sum_norm_sq_eq_frobNorm_sq_iff {A : Matrix n n 𝕜} {d : ι → 𝕜}
     (hd : IsEigenvalueListing A d) : ∑ i, ‖d i‖ ^ 2 = frobNorm A ^ 2 ↔ IsStarNormal A := by
   obtain ⟨U, e, hU, hdiag, hnormal⟩ := exists_hasOrthonormalCols_diag_eq hd
@@ -301,8 +296,7 @@ and has a characteristic polynomial that splits, then there is a listing $\mathb
 eigenvalues of $\mathbf{B}$ on the same index type such that the sums
 $\mathbf{a}_i + \mathbf{b}_i$ and the products $\mathbf{a}_i\mathbf{b}_i$ list the eigenvalues of
 $\mathbf{A} + \mathbf{B}$ and $\mathbf{A}\mathbf{B}$. [HornJohnson2013, Theorem 2.4.8.1], there
-over $\mathbb{C}$ without the prescribed listing.
-Port of `NLAlib.exists_paired_charpoly_factors_add_mul_of_commute`. -/
+over $\mathbb{C}$ without the prescribed listing. -/
 theorem IsEigenvalueListing.exists_isEigenvalueListing_add_mul_of_commute {A B : Matrix n n K}
     {a : ι → K} (ha : IsEigenvalueListing A a) (h : Commute A B) (hB : B.charpoly.Splits) :
     ∃ b : ι → K, IsEigenvalueListing B b ∧
@@ -380,7 +374,7 @@ private theorem finite_setOf_not_separable_charpoly (A D : Matrix n n 𝕜)
     not_ne_iff.mp ((hsep t).not.mp ht)
 
 /-- **Matrices with distinct eigenvalues are dense.**
-[HornJohnson2013, Theorem 2.4.7.1]. Port of `NLAlib.dense_separable_charpoly`. -/
+[HornJohnson2013, Theorem 2.4.7.1]. -/
 theorem dense_setOf_separable_charpoly : Dense {A : Matrix n n 𝕜 | A.charpoly.Separable} := by
   have hD : (Matrix.diagonal fun i : n => ((Fintype.equivFin n i : ℕ) : 𝕜)).charpoly.Separable := by
     rw [Matrix.charpoly_diagonal]

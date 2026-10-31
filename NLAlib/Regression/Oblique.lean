@@ -27,7 +27,7 @@ The same injection bounds the sketched term in every unitarily invariant norm by
 approximate-multiplication error,
 $\|\mathbf{\Pi}_{\mathbf{A},\mathbf{S}}\mathbf{Y}\|_{\Phi} \le
 \|\mathbf{P}_{\mathbf{A}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{Y}\|_{\Phi} / a$, which decays
-with the sketch size when $\mathbf{P}_{\mathbf{A}}\mathbf{Y} = \mathbf{0}$ (LowRank stage S7).
+with the sketch size when $\mathbf{P}_{\mathbf{A}}\mathbf{Y} = \mathbf{0}$.
 
 The oblique-projector bounds complement `NLAlib.Regression.Embedding`.
 Design: `docs/design/LowRank-S0.md` §3.7, §8; placement:

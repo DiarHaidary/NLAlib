@@ -92,8 +92,7 @@ private theorem exists_isUnit_det_add_smul {X Y : Matrix n n ℝ}
 a family: if $\mathbf{A}_i\mathbf{S} = \mathbf{S}\mathbf{B}_i$ for every $i$ with $\mathbf{S}$
 complex invertible, there is a real invertible $\mathbf{T}$ with
 $\mathbf{A}_i\mathbf{T} = \mathbf{T}\mathbf{B}_i$ for every $i$.
-[HornJohnson2013, Theorem 1.3.29].
-Port of `NLAlib.exists_real_similarity_of_complex_similarity`. -/
+[HornJohnson2013, Theorem 1.3.29]. -/
 theorem exists_real_similarity_of_complexify {A B : ι → Matrix n n ℝ} {S : Matrix n n ℂ}
     (hS : IsUnit S.det) (h : ∀ i, complexify (A i) * S = S * complexify (B i)) :
     ∃ T : Matrix n n ℝ, IsUnit T.det ∧ ∀ i, A i * T = T * B i := by
@@ -113,8 +112,7 @@ $\mathbb{R}$**, simultaneously for a family: if
 $\mathbf{A}_i = \mathbf{U}\mathbf{B}_i\mathbf{U}^{\mathsf{H}}$ for every $i$ with $\mathbf{U}$
 unitary, there is a real orthogonal $\mathbf{Q}$ with
 $\mathbf{A}_i = \mathbf{Q}\mathbf{B}_i\mathbf{Q}^{\mathsf{T}}$ for every $i$.
-[HornJohnson2013, Theorem 2.5.21].
-Port of `NLAlib.exists_real_orthogonal_similarity_of_complex_unitary_similarity`. -/
+[HornJohnson2013, Theorem 2.5.21]. -/
 theorem HasOrthonormalCols.exists_real_orthogonal_of_complexify {A B : ι → Matrix n n ℝ}
     {U : Matrix n n ℂ} (hU : HasOrthonormalCols U)
     (h : ∀ i, NLAlib.complexify (A i) = U * NLAlib.complexify (B i) * Uᴴ) :

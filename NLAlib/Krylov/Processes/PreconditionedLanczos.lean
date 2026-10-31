@@ -120,7 +120,7 @@ variable {A M : Matrix n n 𝕜}
 /-! ### The correspondence with the split recurrence
 
 For every $\mathbf{A}$ and every $\mathbf{C}$ with $\mathbf{M} = \mathbf{C}\mathbf{C}^{\mathsf{H}}$,
-the state of the preconditioned recurrence from $\mathbf{b}$ corresponds to the K0 Lanczos state
+the state of the preconditioned recurrence from $\mathbf{b}$ corresponds to the Lanczos state
 of $\hat{\mathbf{A}} = \mathbf{C}^{\mathsf{H}}\mathbf{A}\mathbf{C}$ from
 $\mathbf{C}^{\mathsf{H}}\mathbf{b}$: $\mathbf{C}^{\mathsf{H}}\mathbf{v}_j = \hat{\mathbf{q}}_j$,
 $\mathbf{z}_j = \mathbf{C}\hat{\mathbf{q}}_j$, equal $\alpha_j$ and $\beta_j$. Proved by one joint

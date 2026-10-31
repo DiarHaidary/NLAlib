@@ -55,7 +55,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The **Givens rotation** in the coordinate plane $(i, j)$: the identity outside rows and
 columns $i$, $j$, and $\begin{bmatrix} c & s \\ -\bar{s} & \bar{c} \end{bmatrix}$ on them.
-[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.1.8]. -/
 def givens (i j : n) (c s : 𝕜) : Matrix n n 𝕜 :=
   1 + (c - 1) • Matrix.single i i 1 + (star c - 1) • Matrix.single j j 1 +
     s • Matrix.single i j 1 - star s • Matrix.single j i 1
@@ -63,7 +63,7 @@ def givens (i j : n) (c s : 𝕜) : Matrix n n 𝕜 :=
 omit [Fintype n] in
 /-- **The entries of a Givens rotation** in the plane $(i, j)$, $i \ne j$: $c$, $s$ in row $i$
 and $-\bar{s}$, $\bar{c}$ in row $j$ at the columns $i$, $j$, and the identity elsewhere.
-[GolubVanLoan2013, §5.1.8]. Port of `NLAlib.givens_apply`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.1.8]. -/
 theorem givens_apply {i j : n} (hij : i ≠ j) (c s : 𝕜) (a b : n) :
     givens i j c s a b =
       if a = i then (if b = i then c else if b = j then s else 0)
@@ -94,16 +94,14 @@ private theorem star_mul_self_add {c s : 𝕜} (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 
   rw [RCLike.star_def, RCLike.conj_mul, RCLike.conj_mul, ← RCLike.ofReal_pow,
     ← RCLike.ofReal_pow, ← RCLike.ofReal_add, hcs, RCLike.ofReal_one]
 
-/-- Coordinate $i$ of a rotated vector: $c \mathbf{x}_i + s \mathbf{x}_j$.
-Port of `NLAlib.givens_mulVec_apply_left`. -/
+/-- Coordinate $i$ of a rotated vector: $c \mathbf{x}_i + s \mathbf{x}_j$. -/
 theorem givens_mulVec_apply_left {i j : n} (hij : i ≠ j) (c s : 𝕜) (x : n → 𝕜) :
     (givens i j c s *ᵥ x) i = c * x i + s * x j := by
   rw [givens_mulVec]
   simp only [Pi.add_apply, Pi.smul_apply, Pi.single_eq_same, Pi.single_eq_of_ne hij, smul_eq_mul]
   ring
 
-/-- Coordinate $j$ of a rotated vector: $-\bar{s} \mathbf{x}_i + \bar{c} \mathbf{x}_j$.
-Port of `NLAlib.givens_mulVec_apply_right`. -/
+/-- Coordinate $j$ of a rotated vector: $-\bar{s} \mathbf{x}_i + \bar{c} \mathbf{x}_j$. -/
 theorem givens_mulVec_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (x : n → 𝕜) :
     (givens i j c s *ᵥ x) j = -star s * x i + star c * x j := by
   rw [givens_mulVec]
@@ -111,8 +109,7 @@ theorem givens_mulVec_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (x : n 
     smul_eq_mul]
   ring
 
-/-- The other coordinates of a rotated vector are unchanged.
-Port of `NLAlib.givens_mulVec_apply_of_ne`. -/
+/-- The other coordinates of a rotated vector are unchanged. -/
 theorem givens_mulVec_apply_of_ne {i j a : n} (hai : a ≠ i) (haj : a ≠ j) (c s : 𝕜)
     (x : n → 𝕜) : (givens i j c s *ᵥ x) a = x a := by
   rw [givens_mulVec]
@@ -167,8 +164,7 @@ theorem mul_givens_apply_right {i j : n} (hij : i ≠ j) (c s : 𝕜) (A : Matri
 
 omit [Fintype n] in
 /-- The conjugate transpose of a rotation is the rotation with parameters $\bar{c}$, $-s$; for
-$\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ it is the inverse rotation.
-Port of `NLAlib.transpose_givens`. -/
+$\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ it is the inverse rotation. -/
 theorem conjTranspose_givens (i j : n) (c s : 𝕜) :
     (givens i j c s)ᴴ = givens i j (star c) (-s) := by
   simp only [givens, Matrix.conjTranspose_add, Matrix.conjTranspose_sub,
@@ -177,8 +173,7 @@ theorem conjTranspose_givens (i j : n) (c s : 𝕜) :
   module
 
 /-- A Givens rotation is unitary when $\lvert c \rvert^2 + \lvert s \rvert^2 = 1$ and
-$i \ne j$.
-Port of `NLAlib.hasOrthonormalCols_givens`. -/
+$i \ne j$. -/
 theorem hasOrthonormalCols_givens {i j : n} (hij : i ≠ j) {c s : 𝕜}
     (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) : HasOrthonormalCols (givens i j c s) := by
   have h := star_mul_self_add hcs
@@ -196,8 +191,7 @@ theorem hasOrthonormalCols_givens {i j : n} (hij : i ≠ j) {c s : 𝕜}
     linear_combination x j * h
   · rw [givens_mulVec_apply_of_ne hai haj, givens_mulVec_apply_of_ne hai haj]
 
-/-- A unitary Givens rotation times its conjugate transpose is the identity.
-Port of `NLAlib.givens_mul_transpose_self`. -/
+/-- A unitary Givens rotation times its conjugate transpose is the identity. -/
 theorem givens_mul_conjTranspose_self {i j : n} (hij : i ≠ j) {c s : 𝕜}
     (hcs : ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1) : givens i j c s * (givens i j c s)ᴴ = 1 := by
   exact (hasOrthonormalCols_givens hij hcs).mul_conjTranspose_self
@@ -236,9 +230,7 @@ theorem det_givens {i j : n} (hij : i ≠ j) {c s : 𝕜} (hcs : ‖c‖ ^ 2 + �
 
 /-- Clearing an entry: for every vector $\mathbf{x}$ and $i \ne j$ there is a unitary Givens
 rotation ($\lvert c \rvert^2 + \lvert s \rvert^2 = 1$) that sends coordinate $j$ to zero and
-coordinate $i$ to $\sqrt{\lvert \mathbf{x}_i \rvert^2 + \lvert \mathbf{x}_j \rvert^2}$.
-Port of `NLAlib.givensRotation_transpose_mulVec_apply_right` and `…_left`, there over
-$\mathbb{R}$. -/
+coordinate $i$ to $\sqrt{\lvert \mathbf{x}_i \rvert^2 + \lvert \mathbf{x}_j \rvert^2}$. -/
 theorem exists_givens_mulVec_apply_eq_zero {i j : n} (hij : i ≠ j) (x : n → 𝕜) :
     ∃ c s : 𝕜, ‖c‖ ^ 2 + ‖s‖ ^ 2 = 1 ∧ (givens i j c s *ᵥ x) j = 0 ∧
       (givens i j c s *ᵥ x) i = ((√(‖x i‖ ^ 2 + ‖x j‖ ^ 2) : ℝ) : 𝕜) := by

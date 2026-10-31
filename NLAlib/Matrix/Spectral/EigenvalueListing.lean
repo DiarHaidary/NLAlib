@@ -107,8 +107,7 @@ theorem exists_isEigenvalueListing (A : Matrix n n ℂ) : ∃ d : n → ℂ, IsE
 
 /-- Two listings of the eigenvalues differ by a relabelling: if $\mathbf{a}$ and $\mathbf{b}$
 both list the eigenvalues of $\mathbf{A}$, then $\mathbf{a}_i = \mathbf{b}_{e(i)}$ for a
-bijection $e$.
-Port of `NLAlib.exists_perm_eq_of_prod_X_sub_C_eq`, there over $\mathbb{C}$ on one index type. -/
+bijection $e$. -/
 theorem IsEigenvalueListing.exists_equiv_eq {A : Matrix n n K} {a : ι → K} {b : κ → K}
     (ha : IsEigenvalueListing A a) (hb : IsEigenvalueListing A b) :
     ∃ e : ι ≃ κ, a = b ∘ e := by
@@ -144,8 +143,7 @@ theorem IsEigenvalueListing.spectrum_eq_range {A : Matrix n n K} {d : ι → K}
     eq_comm]
 
 /-- The trace is the sum of the listed eigenvalues:
-$\operatorname{tr} \mathbf{A} = \sum_i \mathbf{d}_i$.
-Port of `NLAlib.trace_eq_sum_of_charpoly_eq_prod`. -/
+$\operatorname{tr} \mathbf{A} = \sum_i \mathbf{d}_i$. -/
 theorem IsEigenvalueListing.trace_eq_sum {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : A.trace = ∑ i, d i := by
   classical
@@ -173,7 +171,7 @@ theorem _root_.Matrix.IsUpperTriangular.isEigenvalueListing_diag [LinearOrder n]
   Matrix.charpoly_of_isUpperTriangular T hT
 
 /-- A real matrix all of whose complex eigenvalues are real has a real listing of its
-eigenvalues. Port of `NLAlib.exists_real_charpoly_factors_of_complex_spectrum_real`. -/
+eigenvalues. -/
 theorem exists_isEigenvalueListing_of_forall_im_eq_zero {A : Matrix n n ℝ}
     (h : ∀ μ ∈ spectrum ℂ (complexify A), μ.im = 0) :
     ∃ d : n → ℝ, IsEigenvalueListing A d := by

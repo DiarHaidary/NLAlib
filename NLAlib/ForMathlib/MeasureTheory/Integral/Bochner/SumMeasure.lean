@@ -18,7 +18,7 @@ Lipschitz function: the one-dimensional Kantorovich–Rubinstein inequality, wea
 norm, for finite support. Upstream candidates for
 `Mathlib.MeasureTheory.Integral.Bochner.SumMeasure`, beside `setIntegral_finset`.
 
-Design: stage SLQ (`docs/design/Estimation-SLQ.md` §3.1, F3 to F5).
+Design: `docs/design/Estimation-SLQ.md` §3.1, F3 to F5.
 
 ## Main results
 

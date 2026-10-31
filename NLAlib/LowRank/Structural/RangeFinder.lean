@@ -98,7 +98,6 @@ theorem range_mul_mul_pinv_mul_conjTranspose_le (A : Matrix m n 𝕜) (Ω : Matr
 
 variable [DecidableEq r]
 
--- Stage B4 (made public)
 
 /-- Under the rank hypothesis, $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ has a right inverse, its
 pseudoinverse: $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}
@@ -122,8 +121,7 @@ with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$ and
 $\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^{+}$.
 [HalkoMartinssonTropp2011, Theorem 9.1 (proof)]; [Woodruff2014, Lemma 48 (proof)];
 [TroppWebber2023, Proposition 8.5 (proof)]; there with a partitioned SVD and
-$\mathbf{Z} = \mathbf{V}_1$, here any frame over any `RCLike` field.
-Port of `NLAlib.sub_mul_pinvR_mul_transpose_eq`, there over $\mathbb{R}$ with SVD blocks. -/
+$\mathbf{Z} = \mathbf{V}_1$, here any frame over any `RCLike` field. -/
 theorem HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_eq (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     A - A * Ω * pinv (Zᴴ * Ω) * Zᴴ =
@@ -165,8 +163,7 @@ theorem HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_mul_conjTranspose_
 /-- The squared Frobenius error of the competitor splits exactly:
 $$\|\mathbf{A} - \mathbf{C}\|_{\mathsf{F}}^2 = \|\mathbf{E}\|_{\mathsf{F}}^2 +
 \|\mathbf{M}\|_{\mathsf{F}}^2\,.$$
-[Woodruff2014, Lemma 48 (proof)], there over $\mathbb{R}$.
-Port of `NLAlib.frobSq_sub_mul_pinvR_mul_transpose_eq`. -/
+[Woodruff2014, Lemma 48 (proof)], there over $\mathbb{R}$. -/
 theorem HasOrthonormalCols.frobNorm_sub_mul_mul_pinv_mul_conjTranspose_sq
     (hZ : HasOrthonormalCols Z) (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
     frobNorm (A - A * Ω * pinv (Zᴴ * Ω) * Zᴴ) ^ 2 =
@@ -249,7 +246,6 @@ $\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2^2 \le
 \|\mathbf{E}\|_2^2 + \|\mathbf{M}\|_2^2\,.$$
 [HalkoMartinssonTropp2011, Theorem 9.1], there for a top-$k$ frame; here any frame.
-Port of `NLAlib.specNorm_residual_sq_le_of_range_subset`.
 Result: range-finder-structural-bound -/
 theorem HasOrthonormalCols.specNorm_sub_rsvd_sq_le (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
@@ -270,7 +266,6 @@ Dominated by `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le`, kept because H
 simpler form (CONTRIBUTING §5.2, numerical bounds, rule 6).
 [MartinssonTropp2020, Theorem 11.4]; [HalkoMartinssonTropp2011, proof of Theorem 10.6]; there for a
 top-$k$ frame.
-Port of `NLAlib.specNorm_residual_le_of_range_subset`.
 Result: range-finder-structural-bound -/
 theorem HasOrthonormalCols.specNorm_sub_rsvd_le (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
@@ -290,7 +285,6 @@ $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_{\mathsf{F}}^2 \le
 [HalkoMartinssonTropp2011, Theorem 9.1]; [Woodruff2014, Lemma 48];
 [CamanoEpperlyMeyerTropp2025, Imported Theorem 2.3]; there for a top-$k$ frame (HMT, CEMT) or any
 frame over $\mathbb{R}$ (Woodruff).
-Port of `NLAlib.frobSq_residual_le_of_range_subset`.
 Result: range-finder-structural-bound -/
 theorem HasOrthonormalCols.frobNorm_sub_rsvd_sq_le (hZ : HasOrthonormalCols Z)
     (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
@@ -314,8 +308,6 @@ $\mathbf{A} = \mathbf{\Omega} = \mathbf{Z} = \mathbf{I}_2$ and $k = 0$.
 [Woodruff2014, Lemma 48], its middle inequality, there over $\mathbb{R}$ with the best rank-$k$
 approximation in the column space of the sketch; here for any $\mathbf{Q}$ containing that column
 space.
-Port of `NLAlib.frobSq_sub_mul_le_of_isBestFrobRankApprox_of_range_subset`, there through an
-optimality predicate.
 Result: truncated-range-finder-structural-bound -/
 theorem HasOrthonormalCols.frobNorm_sub_mul_truncatedSVD_sq_le [DecidableEq q] {A : Matrix m n 𝕜}
     {Q : Matrix m q 𝕜} (hQ : HasOrthonormalCols Q)
@@ -463,7 +455,6 @@ theorem SymmetricGauge.matrixNorm_sub_nystrom_le_of_hasOrthonormalCols [Decidabl
 
 /-! ### The competitor projector -/
 
--- Stage B4
 
 /-- **The range finder at the competitor's test matrix**: for $\mathbf{Z}$ with orthonormal columns
 and $\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega}$ of full row rank, the test matrix

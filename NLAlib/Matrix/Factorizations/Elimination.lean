@@ -50,50 +50,45 @@ variable {K : Type*} [Field K] {𝕜 : Type*} [RCLike 𝕜] {m n : Type*}
 
 /-- **One step of elimination** at the diagonal pivot $t$: subtract from $\mathbf{A}$ the
 rank-one matrix $\mathbf{A}_{t,t}^{-1} \mathbf{A}_{:,t} \mathbf{A}_{t,:}$ (column $t$ times row
-$t$). If the pivot $\mathbf{A}_{t,t}$ is zero the step returns $\mathbf{A}$.
-Port of `NLAlib.eliminationStep`. -/
+$t$). If the pivot $\mathbf{A}_{t,t}$ is zero the step returns $\mathbf{A}$. -/
 def eliminationStep (A : Matrix n n K) (t : n) : Matrix n n K :=
   Matrix.of fun i j => A i j - (A t t)⁻¹ * (A i t * A t j)
 
 /-- Entries of an elimination step at $t$:
-$\mathbf{A}_{i,j} - \mathbf{A}_{t,t}^{-1} \mathbf{A}_{i,t} \mathbf{A}_{t,j}$, with $0^{-1} = 0$.
-Port of `NLAlib.eliminationStep_apply`. -/
+$\mathbf{A}_{i,j} - \mathbf{A}_{t,t}^{-1} \mathbf{A}_{i,t} \mathbf{A}_{t,j}$, with $0^{-1} = 0$. -/
 @[simp]
 theorem eliminationStep_apply (A : Matrix n n K) (t i j : n) :
     eliminationStep A t i j = A i j - (A t t)⁻¹ * (A i t * A t j) :=
   rfl
 
-/-- A step on the zero matrix. Port of `NLAlib.eliminationStep_zero`. -/
+/-- A step on the zero matrix. -/
 @[simp]
 theorem eliminationStep_zero (t : n) : eliminationStep (0 : Matrix n n K) t = 0 := by
   ext i j
   simp
 
-/-- A step at a zero pivot does nothing.
-Port of `NLAlib.eliminationStep_eq_self_of_apply_self_eq_zero`. -/
+/-- A step at a zero pivot does nothing. -/
 theorem eliminationStep_eq_self_of_apply_self_eq_zero {A : Matrix n n K} {t : n}
     (ht : A t t = 0) : eliminationStep A t = A := by
   ext i j
   simp [ht]
 
-/-- A step at a nonzero pivot clears the pivot row.
-Port of `NLAlib.eliminationStep_apply_pivot_left_of_ne_zero`. -/
+/-- A step at a nonzero pivot clears the pivot row. -/
 theorem eliminationStep_apply_pivot_left {A : Matrix n n K} {t : n} (ht : A t t ≠ 0) (j : n) :
     eliminationStep A t t j = 0 := by
   rw [eliminationStep_apply, ← mul_assoc, inv_mul_cancel₀ ht, one_mul, sub_self]
 
-/-- A step at a nonzero pivot clears the pivot column.
-Port of `NLAlib.eliminationStep_apply_pivot_right_of_ne_zero`. -/
+/-- A step at a nonzero pivot clears the pivot column. -/
 theorem eliminationStep_apply_pivot_right {A : Matrix n n K} {t : n} (ht : A t t ≠ 0) (i : n) :
     eliminationStep A t i t = 0 := by
   rw [eliminationStep_apply, mul_comm (A i t), ← mul_assoc, inv_mul_cancel₀ ht, one_mul, sub_self]
 
-/-- A zero row stays zero. Port of `NLAlib.eliminationStep_apply_eq_zero_of_row`. -/
+/-- A zero row stays zero. -/
 theorem eliminationStep_apply_eq_zero_of_row {A : Matrix n n K} {u : n} (hu : ∀ j, A u j = 0)
     (t j : n) : eliminationStep A t u j = 0 := by
   simp [hu]
 
-/-- A zero column stays zero. Port of `NLAlib.eliminationStep_apply_eq_zero_of_col`. -/
+/-- A zero column stays zero. -/
 theorem eliminationStep_apply_eq_zero_of_col {A : Matrix n n K} {u : n} (hu : ∀ i, A i u = 0)
     (t i : n) : eliminationStep A t i u = 0 := by
   simp [hu]
@@ -124,8 +119,7 @@ variable [Fintype n] [DecidableEq n]
 
 /-- The action of an elimination step at $t$ on a vector: it is $\mathbf{A}$ applied to
 $\mathbf{x} - ((\mathbf{A}\mathbf{x})_t / \mathbf{A}_{t,t}) \mathbf{e}_t$, with $\mathbf{e}_t$ the
-$t$-th standard basis vector.
-Port of `NLAlib.eliminationStep_mulVec_eq`. -/
+$t$-th standard basis vector. -/
 theorem eliminationStep_mulVec (A : Matrix n n K) (t : n) (x : n → K) :
     eliminationStep A t *ᵥ x = A *ᵥ (x - ((A *ᵥ x) t / A t t) • Pi.single t 1) := by
   rw [Matrix.mulVec_sub, Matrix.mulVec_smul, Matrix.mulVec_single_one]
@@ -163,8 +157,7 @@ private theorem ker_eliminationStep_eq_sup_span_singleton {A : Matrix n n K} {t 
 
 omit [DecidableEq n] in
 /-- A step at a nonzero pivot lowers the rank by one (Wedderburn's rank reduction): if
-$\mathbf{A}_{t,t} \ne 0$, the eliminated matrix has rank $\operatorname{rank} \mathbf{A} - 1$.
-Port of `NLAlib.rank_eliminationStep_add_one_eq`. -/
+$\mathbf{A}_{t,t} \ne 0$, the eliminated matrix has rank $\operatorname{rank} \mathbf{A} - 1$. -/
 theorem rank_eliminationStep_add_one {A : Matrix n n K} {t : n} (ht : A t t ≠ 0) :
     (eliminationStep A t).rank + 1 = A.rank := by
   classical
@@ -181,8 +174,7 @@ theorem rank_eliminationStep_add_one {A : Matrix n n K} {t : n} (ht : A t t ≠ 
 
 /-- The determinant through an elimination step: for $\mathbf{A}_{t,t} \ne 0$,
 $\det \mathbf{A}$ is the pivot $\mathbf{A}_{t,t}$ times the determinant of the Schur complement,
-which is the eliminated matrix on the complement of the pivot.
-Port of `NLAlib.det_eq_mul_det_pivotSchur`, there for the first pivot of a matrix on `Fin`. -/
+which is the eliminated matrix on the complement of the pivot. -/
 theorem det_eq_apply_self_mul_det_eliminationStep {A : Matrix n n K} {t : n} (ht : A t t ≠ 0) :
     A.det = A t t *
       ((eliminationStep A t).submatrix (Subtype.val : {i // i ≠ t} → n) Subtype.val).det := by
@@ -219,7 +211,7 @@ end Fintype
 
 /-! ### Elimination on Hermitian and positive semidefinite matrices -/
 
-/-- Elimination preserves Hermitian matrices. Port of `NLAlib.isHermitian_eliminationStep`. -/
+/-- Elimination preserves Hermitian matrices. -/
 theorem _root_.Matrix.IsHermitian.eliminationStep {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (t : n) : (eliminationStep A t).IsHermitian := by
   refine Matrix.IsHermitian.ext fun i j => ?_
@@ -227,7 +219,7 @@ theorem _root_.Matrix.IsHermitian.eliminationStep {A : Matrix n n 𝕜} (hA : A.
   ring
 
 /-- For a positive semidefinite matrix a step clears the pivot row, whether or not the pivot is
-zero. Port of `NLAlib.eliminationStep_apply_pivot_left`. -/
+zero. -/
 theorem _root_.Matrix.PosSemidef.eliminationStep_apply_pivot_left {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (t j : n) : eliminationStep A t t j = 0 := by
   by_cases h : A t t = 0
@@ -236,7 +228,7 @@ theorem _root_.Matrix.PosSemidef.eliminationStep_apply_pivot_left {A : Matrix n 
   · exact NLAlib.eliminationStep_apply_pivot_left h j
 
 /-- For a positive semidefinite matrix a step clears the pivot column, whether or not the pivot
-is zero. Port of `NLAlib.eliminationStep_apply_pivot_right`. -/
+is zero. -/
 theorem _root_.Matrix.PosSemidef.eliminationStep_apply_pivot_right {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (t i : n) : eliminationStep A t i t = 0 := by
   by_cases h : A t t = 0
@@ -248,8 +240,7 @@ section Finite
 
 variable [Finite n]
 
-/-- Elimination preserves positive semidefinite matrices.
-Port of `NLAlib.posSemidef_eliminationStep`. -/
+/-- Elimination preserves positive semidefinite matrices. -/
 theorem _root_.Matrix.PosSemidef.eliminationStep {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (t : n) : (eliminationStep A t).PosSemidef := by
   classical
@@ -277,8 +268,7 @@ theorem _root_.Matrix.PosSemidef.eliminationStep {A : Matrix n n 𝕜} (hA : A.P
   exact hA.conjTranspose_mul_mul_same _
 
 /-- Elimination decreases a positive semidefinite matrix in the Loewner order: the eliminated
-matrix is $\preceq \mathbf{A}$.
-Port of `NLAlib.eliminationStep_le`. -/
+matrix is $\preceq \mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.eliminationStep_le {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (t : n) : eliminationStep A t ≤ A := by
   rw [Matrix.le_iff]
@@ -295,8 +285,7 @@ theorem _root_.Matrix.PosSemidef.eliminationStep_le {A : Matrix n n 𝕜} (hA : 
 
 /-- Positive definiteness through an elimination step: a Hermitian $\mathbf{A}$ is positive
 definite exactly when the pivot $\mathbf{A}_{t,t}$ is positive and the Schur complement (the
-eliminated matrix on the complement of $t$) is positive definite.
-Port of `NLAlib.posDef_iff_pivotSchur`, there for the first pivot of a matrix on `Fin`. -/
+eliminated matrix on the complement of $t$) is positive definite. -/
 theorem _root_.Matrix.IsHermitian.posDef_iff_eliminationStep
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (t : n) :
     A.PosDef ↔ 0 < A t t ∧

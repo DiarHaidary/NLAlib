@@ -569,8 +569,8 @@ sub-Gaussian with proxy $1$, with $\mathbb{E}[Y_i^2] = 1$ and $\mathbb{E}[Y_i^4]
 $\varepsilon \ge 0$,
 $$\mathbb{P}\Bigl[\varepsilon \le \Bigl\lvert \frac{1}{k} \sum_i Y_i^2 - 1 \Bigr\rvert\Bigr]
 \le 2 e^{-k(\varepsilon^2/4 - \varepsilon^3/6)} \,, \qquad k = \lvert \iota \rvert \,.$$
-The exponent of Dasgupta and Gupta (2003) for $\chi^2_k$, cited by name only
-(`docs/PORT_SKETCHING.md` §7.2); here for any variables with the Gaussian's proxy and its second
+The exponent of Dasgupta and Gupta (2003) for $\chi^2_k$, cited by name only;
+here for any variables with the Gaussian's proxy and its second
 and fourth moments. The lower half covers $\varepsilon = 1$, where $\sum_i Y_i^2 = 0$ may have
 positive probability (up to $2^{-k}$ for Rademacher combinations). The bound is at least $2$ for
 $\varepsilon \ge 3/2$ and for empty $\iota$. -/

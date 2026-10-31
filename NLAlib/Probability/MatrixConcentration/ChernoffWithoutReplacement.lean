@@ -36,7 +36,7 @@ is the zero measure, `HasLaw` forces $\mu = 0$, and every statement holds with l
 no $\lvert k \rvert \le \lvert n \rvert$ is assumed. For empty `k` the sum and $\mathbf{V}$ are
 $\mathbf{0}$ and the bounds are at least $\lvert m \rvert \ge 1$.
 
-Design: Sketching stage S5 (`docs/design/Sketching-S5.md` §3.3, §8). The trace bound rests on
+Design: `docs/design/Sketching-S5.md` §3.3, §8. The trace bound rests on
 Hoeffding's comparison (`NLAlib/Probability/ConvexOrder.lean`).
 
 ## Main results

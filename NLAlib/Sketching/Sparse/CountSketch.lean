@@ -56,7 +56,7 @@ event is empty; for $d > \lvert n \rvert$ the OSE at $d$ is the one at $\lvert n
 $d \le \lvert n \rvert$ is assumed. Signs off $\{\pm 1\}$ form a null set. For
 $\varepsilon \ge 1$ the injection is vacuous and the bound is still true. Split at the boundary
 "The Gram error and the embedding" into this file and
-`NLAlib/Sketching/Sparse/CountSketchEmbedding.lean` (2026-10-16, LowRank S9). Design:
+`NLAlib/Sketching/Sparse/CountSketchEmbedding.lean` (2026-10-16). Design:
 `docs/design/Sketching-S7.md` §3.2, §8.
 
 ## Main definitions
@@ -623,11 +623,12 @@ $$\mathbb{P}\bigl[\varepsilon \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\maths
 \le \|\mathbf{A}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{B} -
 \mathbf{A}^{\mathsf{H}}\mathbf{B}\|_{\mathsf{F}}\bigr]
 \le \frac{2}{\lvert k \rvert \varepsilon^2}\,.$$
-S1's AMM route (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le` at
+The generic AMM route (`NLAlib.HasJLMoment.measureReal_frobNorm_conjTranspose_mul_sub_ge_le` at
 `NLAlib.hasJLMoment_of_hasLaw_countSketch`) is over $\mathbb{R}$ only, where it gives the same
 $2/(\lvert k \rvert \varepsilon^2)$; the direct identity is the only AMM for a complex
 CountSketch, and is a factor $2$ better in the failure probability than the
-$\sqrt{2}\,\varepsilon$ form S1 would state. [Woodruff2014, Theorem 13] (there $3\varepsilon$,
+$\sqrt{2}\,\varepsilon$ form the generic route would give. [Woodruff2014, Theorem 13] (there
+$3\varepsilon$,
 over $\mathbb{R}$). -/
 theorem measureReal_frobNorm_conjTranspose_mul_sub_ge_le_of_hasLaw_countSketch
     (hS : HasLaw S (countSketch k n) μ) (hε : 0 < ε) {A : Matrix n q 𝕜} {B : Matrix n r 𝕜}

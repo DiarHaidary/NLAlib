@@ -79,8 +79,7 @@ one, $\sigma_0(\mathbf{A}) / \sigma_{\min}(\mathbf{A})$ (`pseudoConditionNumber_
 and for an invertible matrix it is the classical
 $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$ (`pseudoConditionNumber_of_isUnit`);
 theorems about the classical condition number assume invertibility or full column rank.
-[GolubVanLoan2013, §2.6.2 and §5.3.7]. Port of `NLAlib.moorePenroseConditionNumber`; the
-prototype's $[0,\infty]$-valued `conditionNumber` of a square matrix is not reproduced. -/
+[GolubVanLoan2013, §2.6.2 and §5.3.7]. -/
 noncomputable def pseudoConditionNumber (A : Matrix m n 𝕜) : ℝ :=
   specNorm A * specNorm (pinv A)
 
@@ -89,20 +88,17 @@ theorem pseudoConditionNumber_def (A : Matrix m n 𝕜) :
     pseudoConditionNumber A = specNorm A * specNorm (pinv A) :=
   rfl
 
-/-- The pseudo-condition number is nonnegative.
-Port of `NLAlib.moorePenroseConditionNumber_nonneg`. -/
+/-- The pseudo-condition number is nonnegative. -/
 theorem pseudoConditionNumber_nonneg (A : Matrix m n 𝕜) : 0 ≤ pseudoConditionNumber A := by
   exact mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
 
-/-- The pseudo-condition number of the zero matrix is zero.
-Port of `NLAlib.moorePenroseConditionNumber_zero`. -/
+/-- The pseudo-condition number of the zero matrix is zero. -/
 @[simp]
 theorem pseudoConditionNumber_zero : pseudoConditionNumber (0 : Matrix m n 𝕜) = 0 := by
   rw [pseudoConditionNumber, specNorm_zero, zero_mul]
 
 /-- The pseudo-condition number of a nonzero matrix is at least one:
-$1 \le \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$ for $\mathbf{A} \ne \mathbf{0}$.
-Port of `NLAlib.one_le_moorePenroseConditionNumber`. -/
+$1 \le \|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$ for $\mathbf{A} \ne \mathbf{0}$. -/
 theorem one_le_pseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :
     1 ≤ pseudoConditionNumber A := by
   have hpos : 0 < specNorm A :=
@@ -116,8 +112,7 @@ theorem one_le_pseudoConditionNumber {A : Matrix m n 𝕜} (hA : A ≠ 0) :
 
 /-- The pseudo-condition number as a ratio of singular values: for
 $k + 1 = \operatorname{rank} \mathbf{A}$,
-$\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \sigma_0(\mathbf{A}) / \sigma_k(\mathbf{A})$.
-Port of `NLAlib.moorePenroseConditionNumber_eq_singularValues_ratio`. -/
+$\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \sigma_0(\mathbf{A}) / \sigma_k(\mathbf{A})$. -/
 theorem pseudoConditionNumber_eq_singularValues_div (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = A.rank) :
     pseudoConditionNumber A = singularValues A 0 / singularValues A k := by
@@ -126,24 +121,21 @@ theorem pseudoConditionNumber_eq_singularValues_div (A : Matrix m n 𝕜) {k : �
 /-- Agreement with the classical condition number at full column rank: if $\mathbf{A}$ has
 full column rank, its pseudo-condition number is the classical
 $\kappa(\mathbf{A}) = \sigma_0(\mathbf{A}) / \sigma_{\min}(\mathbf{A})$, written
-$\|\mathbf{A}\|_2 / \sigma_k(\mathbf{A})$ with $k + 1 = \lvert n \rvert$.
-Port of `NLAlib.moorePenroseConditionNumber_eq_specNorm_div_singularValues_last`. -/
+$\|\mathbf{A}\|_2 / \sigma_k(\mathbf{A})$ with $k + 1 = \lvert n \rvert$. -/
 theorem pseudoConditionNumber_of_injective {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec)
     {k : ℕ} (hk : k + 1 = Fintype.card n) :
     pseudoConditionNumber A = specNorm A / singularValues A k := by
   rw [pseudoConditionNumber, specNorm_pinv_of_injective hA hk, div_eq_mul_inv]
 
 /-- For an invertible matrix the pseudo-condition number is the classical condition number
-$\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$.
-Port of `NLAlib.moorePenroseConditionNumber_eq_mul_specNorm_inv`. -/
+$\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$. -/
 theorem pseudoConditionNumber_of_isUnit [DecidableEq n] {A : Matrix n n 𝕜} (hA : IsUnit A) :
     pseudoConditionNumber A = specNorm A * specNorm A⁻¹ := by
   rw [pseudoConditionNumber, pinv_of_isUnit hA]
 
 /-- For a positive definite matrix the pseudo-condition number is the ratio of the extreme
 eigenvalues: $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \lambda_0(\mathbf{A}) / \lambda_k(\mathbf{A})$
-for $k + 1 = \lvert n \rvert$, eigenvalues non-increasing and indexed from $0$.
-Port of `NLAlib.moorePenroseConditionNumber_eq_eigenvalues₀_ratio`, there over $\mathbb{R}$. -/
+for $k + 1 = \lvert n \rvert$, eigenvalues non-increasing and indexed from $0$. -/
 theorem _root_.Matrix.PosDef.pseudoConditionNumber_eq {A : Matrix n n 𝕜} (hA : A.PosDef) {k : ℕ}
     (hk : k + 1 = Fintype.card n) : pseudoConditionNumber A = eigenvalue A 0 / eigenvalue A k := by
   classical
@@ -152,8 +144,7 @@ theorem _root_.Matrix.PosDef.pseudoConditionNumber_eq {A : Matrix n n 𝕜} (hA 
     hA.posSemidef.singularValues_eq_eigenvalue]
 
 /-- The pseudo-condition number is invariant under the conjugate transpose:
-$\mathbf{A}^{\mathsf{H}}$ and $\mathbf{A}$ have the same pseudo-condition number.
-Port of `NLAlib.moorePenroseConditionNumber_conjTranspose`. -/
+$\mathbf{A}^{\mathsf{H}}$ and $\mathbf{A}$ have the same pseudo-condition number. -/
 @[simp]
 theorem pseudoConditionNumber_conjTranspose (A : Matrix m n 𝕜) :
     pseudoConditionNumber Aᴴ = pseudoConditionNumber A := by
@@ -167,8 +158,7 @@ theorem pseudoConditionNumber_pinv (A : Matrix m n 𝕜) :
   rw [pseudoConditionNumber, pinv_pinv, mul_comm, pseudoConditionNumber]
 
 /-- The pseudo-condition number is invariant under nonzero scaling: $c\mathbf{A}$ and
-$\mathbf{A}$ have the same pseudo-condition number for $c \ne 0$.
-Port of `NLAlib.moorePenroseConditionNumber_smul`. -/
+$\mathbf{A}$ have the same pseudo-condition number for $c \ne 0$. -/
 theorem pseudoConditionNumber_smul {c : 𝕜} (hc : c ≠ 0) (A : Matrix m n 𝕜) :
     pseudoConditionNumber (c • A) = pseudoConditionNumber A := by
   have hc' : ‖c‖ ≠ 0 := norm_ne_zero_iff.mpr hc
@@ -177,15 +167,14 @@ theorem pseudoConditionNumber_smul {c : 𝕜} (hc : c ≠ 0) (A : Matrix m n �
   field_simp
 
 /-- The pseudo-condition number of the Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ is the
-square of the pseudo-condition number of $\mathbf{A}$.
-Port of `NLAlib.moorePenroseConditionNumber_conjTranspose_mul_self`. -/
+square of the pseudo-condition number of $\mathbf{A}$. -/
 theorem pseudoConditionNumber_conjTranspose_mul_self (A : Matrix m n 𝕜) :
     pseudoConditionNumber (Aᴴ * A) = pseudoConditionNumber A ^ 2 := by
   rw [pseudoConditionNumber, specNorm_conjTranspose_mul_self, ← specNorm_pinv_sq,
     pseudoConditionNumber, mul_pow]
 
 /-- Left multiplication by a matrix with orthonormal columns preserves the pseudo-condition number.
-Port of `NLAlib.moorePenroseConditionNumber_mul_left_of_hasOrthonormalCols`. -/
+-/
 theorem HasOrthonormalCols.pseudoConditionNumber_mul_left [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     pseudoConditionNumber (Q * A) = pseudoConditionNumber A := by
@@ -215,9 +204,7 @@ theorem pseudoConditionNumber_sq_le_div_of_smul_one_le_of_le_smul_one [Decidable
 $\mathbf{A} + \mathbf{E}$ does not have full column rank, then
 $\sigma_k(\mathbf{A}) \le \|\mathbf{E}\|_2$ for $k + 1 = \lvert n \rvert$: $\sigma_k(\mathbf{A})$ is
 $\sigma_{\min}(\mathbf{A})$, the last of the $\lvert n \rvert$ singular values.
-[GolubVanLoan2013, Theorem 2.5.3 and §2.6.2].
-Port of `NLAlib.inv_specNorm_inv_le_specNorm_of_not_isUnit_add`, there for square real
-matrices. -/
+[GolubVanLoan2013, Theorem 2.5.3 and §2.6.2]. -/
 theorem singularValues_last_le_specNorm_of_not_injective_add (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) {E : Matrix m n 𝕜}
     (hE : ¬ Function.Injective (A + E).mulVec) : singularValues A k ≤ specNorm E := by
@@ -233,7 +220,6 @@ $\mathbf{E}$ for which $\mathbf{A} + \mathbf{E}$ loses full column rank, the sma
 is $\sigma_k(\mathbf{A})$ with $k + 1 = \lvert n \rvert$, that is $\sigma_{\min}(\mathbf{A})$; it is
 attained.
 [GolubVanLoan2013, §2.6.2].
-Port of `NLAlib.isLeast_specNorm_singular_perturbations`, there for square real matrices.
 Result: distance-to-singularity -/
 theorem isLeast_specNorm_not_injective_add (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) :
@@ -251,7 +237,6 @@ theorem isLeast_specNorm_not_injective_add (A : Matrix m n 𝕜) {k : ℕ}
 $1 / \|\mathbf{A}^{-1}\|_2$: it is the least $\|\mathbf{E}\|_2$ over $\mathbf{E}$ with
 $\mathbf{A} + \mathbf{E}$ singular, on a nonempty index type.
 [GolubVanLoan2013, §2.6.2].
-Port of `NLAlib.isLeast_specNorm_singular_perturbations`.
 Result: distance-to-singularity -/
 theorem isLeast_specNorm_not_isUnit_add [DecidableEq n] [Nonempty n] {A : Matrix n n 𝕜}
     (hA : IsUnit A) :
@@ -269,8 +254,7 @@ theorem isLeast_specNorm_not_isUnit_add [DecidableEq n] [Nonempty n] {A : Matrix
 /-- The relative distance from an invertible matrix to the singular matrices is the inverse of
 the pseudo-condition number, which for an invertible matrix is the classical condition number:
 the least $\|\mathbf{E}\|_2 / \|\mathbf{A}\|_2$ over $\mathbf{E}$ with $\mathbf{A} + \mathbf{E}$
-singular is $\kappa(\mathbf{A})^{-1} = (\|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2)^{-1}$. Port of
-`NLAlib.isLeast_relative_singular_perturbations`. -/
+singular is $\kappa(\mathbf{A})^{-1} = (\|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2)^{-1}$. -/
 theorem isLeast_specNorm_div_not_isUnit_add [DecidableEq n] [Nonempty n] {A : Matrix n n 𝕜}
     (hA : IsUnit A) :
     IsLeast ((fun E : Matrix n n 𝕜 => specNorm E / specNorm A) '' {E | ¬ IsUnit (A + E)})

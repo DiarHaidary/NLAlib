@@ -78,7 +78,7 @@ $$\llbracket \mathbf{A} \rrbracket_k = \mathsf{svdU}(\mathbf{A})\,
 truncation is Borel measurable in $\mathbf{A}$ (`NLAlib.measurable_truncatedSVD`), and one
 decomposition serves every $k$. When $\sigma_{k-1}(\mathbf{A}) = \sigma_k(\mathbf{A})$ this is one
 of several best approximations. For $k \ge \operatorname{rank} \mathbf{A}$ it is $\mathbf{A}$.
-[GolubVanLoan2013, Theorem 2.4.8]. Port of `NLAlib.truncatedSVD`. -/
+[GolubVanLoan2013, Theorem 2.4.8]. -/
 noncomputable def truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) : Matrix m n 𝕜 :=
   svdU A *
     Matrix.diagonal (fun i : Fin (min (Fintype.card m) (Fintype.card n)) =>
@@ -172,8 +172,7 @@ private theorem sum_Ico_singularValues_sq (A : Matrix m n 𝕜) (k : ℕ) :
     ((le_min A.rank_le_card_height A.rank_le_card_width).trans hi), zero_pow two_ne_zero]
 
 /-- The truncated SVD has rank at most $k$:
-$\operatorname{rank} \llbracket \mathbf{A} \rrbracket_k \le k$.
-Port of `NLAlib.IsSVD.rank_truncatedMatrix_le`. -/
+$\operatorname{rank} \llbracket \mathbf{A} \rrbracket_k \le k$. -/
 theorem rank_truncatedSVD_le (A : Matrix m n 𝕜) (k : ℕ) : (truncatedSVD A k).rank ≤ k := by
   obtain ⟨U, V, hT, -⟩ := exists_isSVD_truncatedSVD_sub A k
   rw [hT.rank_eq]
@@ -254,8 +253,7 @@ values**:
 $$\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}^2
   = \sum_{k \le i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A})^2.$$
 This is the rewrite rule that turns the best rank-$k$ Frobenius error into a sum.
-[GolubVanLoan2013, §2.4]. Port of `NLAlib.frobSq_sub_truncatedSVD_eq_bestRankFrobSq`, there
-through a named `bestRankFrobSq`. -/
+[GolubVanLoan2013, §2.4]. -/
 theorem frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜) (k : ℕ) :
     frobNorm (A - truncatedSVD A k) ^ 2 =
       ∑ i ∈ Finset.Ico k (min (Fintype.card m) (Fintype.card n)), singularValues A i ^ 2 := by
@@ -317,7 +315,7 @@ theorem singularValues_sub_truncatedSVD (A : Matrix m n 𝕜) (k i : ℕ) :
 
 /-- **The spectral error of the truncated SVD is the $k$-th singular value**:
 $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_2 = \sigma_k(\mathbf{A})$.
-[GolubVanLoan2013, Theorem 2.4.8]. Port of `NLAlib.specNorm_sub_truncatedSVD_eq`. -/
+[GolubVanLoan2013, Theorem 2.4.8]. -/
 @[simp]
 theorem specNorm_sub_truncatedSVD (A : Matrix m n 𝕜) (k : ℕ) :
     specNorm (A - truncatedSVD A k) = singularValues A k := by
@@ -330,9 +328,7 @@ since the $d$ singular values
 $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$ are at least $\sigma_{k+d}(\mathbf{A})$.
 It bounds the spectral residual of a range finder split at $k + d$ by the Frobenius tail at $k$.
 True at every $k$ and $d$, including indices past the smaller dimension, where
-$\sigma_{k+d}(\mathbf{A}) = 0$.
-Port of `NLAlib.sub_mul_sq_le_sum_Ico_sq` and `NLAlib.sq_le_sum_Ico_sq_div`, there for real
-sequences. -/
+$\sigma_{k+d}(\mathbf{A}) = 0$. -/
 theorem natCast_mul_singularValues_add_sq_le_frobNorm_sub_truncatedSVD_sq (A : Matrix m n 𝕜)
     (k d : ℕ) : (d : ℝ) * singularValues A (k + d) ^ 2 ≤ frobNorm (A - truncatedSVD A k) ^ 2 := by
   rw [frobNorm_sq_eq_sum_range_singularValues_sq (A - truncatedSVD A k)
@@ -616,7 +612,6 @@ theorem _root_.Matrix.PosSemidef.truncatedSVD_le {A : Matrix n n 𝕜} (hA : A.P
 in spectral norm than $\sigma_k(\mathbf{A})$: if $\operatorname{rank} \mathbf{B} \le k$ then
 $\sigma_k(\mathbf{A}) \le \|\mathbf{A} - \mathbf{B}\|_2$.
 [GolubVanLoan2013, Theorem 2.4.8]; [HornJohnson2013, §7.4.9].
-Port of `NLAlib.singularValues_le_specNorm_sub_of_rank_le`.
 Result: eckart-young-spectral -/
 theorem singularValues_le_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) {B : Matrix m n 𝕜} {k : ℕ}
     (hB : B.rank ≤ k) : singularValues A k ≤ specNorm (A - B) := by
@@ -627,7 +622,7 @@ theorem singularValues_le_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) {B : Mat
 $k$,
 $$\sum_{k \le i < \min(\lvert m \rvert, \lvert n \rvert)} \sigma_i(\mathbf{A})^2
   \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}^2.$$
-[HornJohnson2013, §7.4.9]. Port of `NLAlib.bestRankFrobSq_le_frobSq_sub_of_rank_le`.
+[HornJohnson2013, §7.4.9].
 Result: eckart-young-frobenius -/
 theorem sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le (A : Matrix m n 𝕜)
     {B : Matrix m n 𝕜} {k : ℕ} (hB : B.rank ≤ k) :
@@ -642,8 +637,7 @@ theorem sum_Ico_singularValues_sq_le_frobNorm_sub_sq_of_rank_le (A : Matrix m n 
 $\mathbf{A}$ in Frobenius norm than the truncated SVD: if $\operatorname{rank} \mathbf{B} \le k$
 then $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}
 \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
-[HornJohnson2013, §7.4.9]. Port of `NLAlib.isBestFrobRankApprox_truncatedSVD`, there through a
-predicate `IsBestFrobRankApprox`.
+[HornJohnson2013, §7.4.9].
 Result: eckart-young-frobenius -/
 theorem frobNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Matrix m n 𝕜} {k : ℕ}
     (hB : B.rank ≤ k) : frobNorm (A - truncatedSVD A k) ≤ frobNorm (A - B) := by
@@ -654,7 +648,6 @@ theorem frobNorm_sub_truncatedSVD_le_of_rank_le (A : Matrix m n 𝕜) {B : Matri
 /-- **Eckart–Young in the spectral norm**, as a least element: $\sigma_k(\mathbf{A})$ is the
 smallest spectral distance $\|\mathbf{A} - \mathbf{B}\|_2$ from $\mathbf{A}$ to a matrix
 $\mathbf{B}$ of rank at most $k$.
-Port of `NLAlib.isLeast_specNorm_sub_of_rank_le`.
 Result: eckart-young-spectral -/
 theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
     IsLeast ((fun B : Matrix m n 𝕜 => specNorm (A - B)) '' {B | B.rank ≤ k})
@@ -666,7 +659,6 @@ theorem isLeast_specNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
 /-- **Eckart–Young in the Frobenius norm**, as a least element: over the matrices $\mathbf{B}$ of
 rank at most $k$, the distance $\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$ has a least value, and
 it is $\|\mathbf{A} - \llbracket \mathbf{A} \rrbracket_k\|_{\mathsf{F}}$.
-Port of `NLAlib.bestRankFrobSq_eq_sInf`.
 Result: eckart-young-frobenius -/
 theorem isLeast_frobNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
     IsLeast ((fun B : Matrix m n 𝕜 => frobNorm (A - B)) '' {B | B.rank ≤ k})
@@ -675,7 +667,6 @@ theorem isLeast_frobNorm_sub_of_rank_le (A : Matrix m n 𝕜) (k : ℕ) :
   rintro _ ⟨B, hB, rfl⟩
   exact frobNorm_sub_truncatedSVD_le_of_rank_le A hB
 
--- Stage B4
 
 /-- The column spaces of the truncations are nested:
 $\operatorname{range}\llbracket\mathbf{A}\rrbracket_k \subseteq
@@ -697,7 +688,6 @@ theorem range_truncatedSVD_mono (A : Matrix m n 𝕜) :
   funext i
   split_ifs with h₁ h₂ <;> first | rfl | (exfalso; omega) | simp
 
--- Stage B5a
 
 /-- The truncation clause of
 `exists_hasOrthonormalCols_conjTranspose_mul_self_mul_eq_mul_diagonal`: the first $r$ columns

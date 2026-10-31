@@ -102,30 +102,26 @@ private theorem conjTranspose_eq_mul_mul (h : IsSVD A U σ V) :
 
 /-- $\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$, with
 $\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$: the right singular vectors are mapped
-to multiples of the left ones.
-Port of `NLAlib.IsSVD.mul_right`. -/
+to multiples of the left ones. -/
 theorem mul_right_eq (h : IsSVD A U σ V) :
     A * V = U * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
 /-- $\mathbf{U}^{\mathsf{H}}\mathbf{A} = \mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Vᴴ := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.conjTranspose_mul_cancel_left]
 
 /-- $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V} = \mathbf{\Sigma}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul_mul`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A * V = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.conjTranspose_mul_eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
 /-- The Gram matrix from an SVD:
 $\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{V}\mathbf{\Sigma}^2\mathbf{V}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul_self`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
     Aᴴ * A = V * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Vᴴ := by
   rw [h.conjTranspose_eq_mul_mul, Matrix.mul_assoc _ _ A, h.conjTranspose_mul_eq,
@@ -134,8 +130,7 @@ theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
 
 /-- The other Gram matrix from an SVD:
 $\mathbf{A}\mathbf{A}^{\mathsf{H}} = \mathbf{U}\mathbf{\Sigma}^2\mathbf{U}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.mul_conjTranspose_self`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem mul_conjTranspose_self_eq (h : IsSVD A U σ V) :
     A * Aᴴ = U * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Uᴴ := by
   rw [h.conjTranspose_eq_mul_mul, ← Matrix.mul_assoc, ← Matrix.mul_assoc, h.mul_right_eq,
@@ -154,8 +149,7 @@ theorem mulVec_col (h : IsSVD A U σ V) (i : r) : A *ᵥ V.col i = σ i • U.co
 
 /-! ### Stability -/
 
-/-- An SVD of $\mathbf{A}$ gives an SVD of $\mathbf{A}^{\mathsf{H}}$ with the factors exchanged.
-Port of `NLAlib.IsSVD.conjTranspose_eq`. -/
+/-- An SVD of $\mathbf{A}$ gives an SVD of $\mathbf{A}^{\mathsf{H}}$ with the factors exchanged. -/
 protected theorem conjTranspose (h : IsSVD A U σ V) : IsSVD Aᴴ V σ U :=
   ⟨h.hasOrthonormalCols_right, h.hasOrthonormalCols_left, h.nonneg,
     h.conjTranspose_eq_mul_mul⟩
@@ -244,7 +238,6 @@ private theorem singularValues_eq_singularValues_diagonal (h : IsSVD A U σ V) :
 /-- **Uniqueness of the singular values.** In an SVD with columns indexed by `Fin k` and
 $\boldsymbol{\sigma}$ non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values:
 $\sigma_i(\mathbf{A}) = \boldsymbol{\sigma}_i$ for $i < k$.
-Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
 Result: svd-uniqueness -/
 theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) (hσ : Antitone σ) (i : Fin k) :
@@ -396,7 +389,6 @@ with $\mathbf{U}$, $\mathbf{V}$ having $k$ orthonormal columns. With
 $k = \operatorname{rank} \mathbf{A}$ this is the compact SVD and with
 $k = \min(\lvert m \rvert, \lvert n \rvert)$ the thin SVD.
 [HornJohnson2013, Theorem 2.6.3]; [GolubVanLoan2013, Theorem 2.4.1].
-Port of `NLAlib.exists_isSVD`, there with square factors.
 Result: svd-existence -/
 theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : k ≤ Fintype.card m)
     (hkn : k ≤ Fintype.card n) :
@@ -442,8 +434,7 @@ theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : 
 /-- Existence of a split singular value decomposition: for $k + d$ between the rank of
 $\mathbf{A}$ and its smaller dimension, $\mathbf{A}$ has an SVD whose first block carries the $k$
 largest singular values $\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A})$ and whose second
-block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$.
-Port of `NLAlib.exists_svd_right_blocks`, there over $\mathbb{R}$ with `Fin` matrices. -/
+block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$. -/
 theorem exists_isSVD_fromCols (A : Matrix m n 𝕜) {k d : ℕ} (hk : A.rank ≤ k + d)
     (hkm : k + d ≤ Fintype.card m) (hkn : k + d ≤ Fintype.card n) :
     ∃ (U₁ : Matrix m (Fin k) 𝕜) (U₂ : Matrix m (Fin d) 𝕜) (V₁ : Matrix n (Fin k) 𝕜)

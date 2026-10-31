@@ -83,8 +83,7 @@ and $g(X_k)$ square integrable and $\mathbb{E} f(X_k) = \mathbf{0}$,
 $$\mathbb{E}\Bigl[\Bigl(\sum_k f(X_k)\Bigr) \Bigl(\sum_k g(X_k)\Bigr)\Bigr]
 = \sum_k \mathbb{E}\bigl[f(X_k)\, g(X_k)\bigr]\,.$$
 [Tropp2015, (2.2.5)], where $f = g = \mathrm{id}$, for Hermitian summands; here rectangular and
-over any `RCLike` field.
-Port of `NLAlib.integral_sum_mul_sum_eq_sum_integral_mul`, there over `ℂ` and `Fin`. -/
+over any `RCLike` field. -/
 theorem integral_sum_mul_sum_of_iIndepFun {X : ι → Ω → α} (hind : iIndepFun X μ)
     {f : α → Matrix l m 𝕜} {g : α → Matrix m n 𝕜} (hf : Measurable f) (hg : Measurable g)
     (hfX : ∀ k, MemLp (fun ω => f (X k ω)) 2 μ) (hgX : ∀ k, MemLp (fun ω => g (X k ω)) 2 μ)
@@ -125,8 +124,7 @@ theorem integral_sum_sq_of_iIndepFun (hind : iIndepFun X μ) (hX : ∀ k, MemLp 
 random square matrices:
 $$\mathbb{E}\Bigl(\sum_k \mathbf{X}_k - \mathbb{E} \sum_k \mathbf{X}_k\Bigr)^2
 = \sum_k \mathbb{E}(\mathbf{X}_k - \mathbb{E}\mathbf{X}_k)^2\,.$$
-[Tropp2015, (2.2.5)], there for Hermitian summands; the Hermitian hypothesis is not needed.
-Port of `NLAlib.variance_additivity`, there over `ℂ` and `Fin`. -/
+[Tropp2015, (2.2.5)], there for Hermitian summands; the Hermitian hypothesis is not needed. -/
 theorem integral_sum_sub_integral_sq_of_iIndepFun (hind : iIndepFun X μ)
     (hX : ∀ k, MemLp (X k) 2 μ) :
     ∫ ω, ((∑ k, X k ω) - ∫ ω', ∑ k, X k ω' ∂μ) ^ 2 ∂μ =

@@ -50,8 +50,7 @@ $$\begin{bmatrix} \mathbf{C} & \mathbf{S}\mathbf{E}^{\mathsf{H}} \\
   (\mathbf{I} - \mathbf{E}\mathbf{E}^{\mathsf{H}}) \end{bmatrix}$$
 with $\mathbf{C} = \operatorname{diag}(\mathbf{c})$, $\mathbf{S} = \operatorname{diag}(\mathbf{s})$
 and $\mathbf{E}$ the coordinate inclusion of $e$.
-[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3].
-Port of `NLAlib.csCanonicalMatrix`. -/
+[HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]. -/
 def csMatrix (𝕜 : Type*) [RCLike 𝕜] (c s : p → ℝ) (e : p ↪ q) : Matrix (p ⊕ q) (p ⊕ q) 𝕜 :=
   let E : Matrix q p 𝕜 := (1 : Matrix q q 𝕜).submatrix id e
   let C : Matrix p p 𝕜 := Matrix.diagonal fun i => ((c i : ℝ) : 𝕜)
@@ -106,8 +105,7 @@ private theorem conjTranspose_fromBlocks_mul_self_eq_one {C S : Matrix p p 𝕜}
     Matrix.fromBlocks_one]
 
 /-- The canonical CS matrix is unitary when $\mathbf{c}_i^2 + \mathbf{s}_i^2 = 1$ for all
-$i$.
-Port of `NLAlib.hasOrthonormalCols_csCanonicalMatrix`. -/
+$i$. -/
 theorem hasOrthonormalCols_csMatrix {c s : p → ℝ} (h : ∀ i, c i ^ 2 + s i ^ 2 = 1) (e : p ↪ q) :
     HasOrthonormalCols (csMatrix 𝕜 c s e) := by
   refine conjTranspose_fromBlocks_mul_self_eq_one (Matrix.conjTranspose_diagonal_ofReal c)
@@ -195,8 +193,6 @@ $\mathbf{c}_i, \mathbf{s}_i \ge 0$, $\mathbf{c}_i^2 + \mathbf{s}_i^2 = 1$; the c
 $\mathbf{c}$ are the singular values of the leading block, in some order.
 [HornJohnson2013, Theorem 2.7.1]; [GolubVanLoan2013, Theorem 2.5.3]; [PaigeWei1994, Theorem 8.1];
 Paige and Wei allow any $2 \times 2$ partitioning, here the diagonal blocks are square.
-Port of `NLAlib.exists_cs_decomposition_of_embedding` and
-`NLAlib.exists_complex_cs_decomposition_of_embedding`.
 Result: cs-decomposition -/
 theorem HasOrthonormalCols.exists_cs_decomposition {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
     (hU : HasOrthonormalCols U)
@@ -298,8 +294,7 @@ theorem HasOrthonormalCols.singularValues_toBlocks₁₂ {U : Matrix (p ⊕ q) (
     exact (sq_eq_sq₀ (singularValues_nonneg _ _) (singularValues_nonneg _ _)).mp h₁
 
 /-- The off-diagonal blocks of a partitioned unitary matrix have the same rank:
-$\operatorname{rank} \mathbf{U}_{12} = \operatorname{rank} \mathbf{U}_{21}$.
-Port of `NLAlib.rank_offDiagonal_blocks_eq_of_unitary`. -/
+$\operatorname{rank} \mathbf{U}_{12} = \operatorname{rank} \mathbf{U}_{21}$. -/
 theorem HasOrthonormalCols.rank_toBlocks₁₂ {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
     (hU : HasOrthonormalCols U) : U.toBlocks₁₂.rank = U.toBlocks₂₁.rank := by
   refine le_antisymm ?_ ?_
@@ -309,7 +304,7 @@ theorem HasOrthonormalCols.rank_toBlocks₁₂ {U : Matrix (p ⊕ q) (p ⊕ q) �
 /-- The ranks of the diagonal blocks of a partitioned unitary matrix differ by the difference of
 the block sizes:
 $\operatorname{rank} \mathbf{U}_{22} + \lvert p \rvert = \operatorname{rank} \mathbf{U}_{11} +
-\lvert q \rvert$. Port of `NLAlib.rank_bottomRight_eq_rank_topLeft_add_card_sub_of_unitary`. -/
+\lvert q \rvert$. -/
 theorem HasOrthonormalCols.rank_toBlocks₂₂_add {U : Matrix (p ⊕ q) (p ⊕ q) 𝕜}
     (hU : HasOrthonormalCols U) :
     U.toBlocks₂₂.rank + Fintype.card p = U.toBlocks₁₁.rank + Fintype.card q := by

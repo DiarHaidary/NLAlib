@@ -52,7 +52,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n s t : Type*} [Fintype n]
   [Fintype s] [Fintype t] [DecidableEq n]
 
--- Stage TE-5
 
 /-- **The deviation of Hutch++ given a range-finder guarantee.** Let the sketch test matrix
 $\mathbf{S}$ be almost everywhere measurable and the $n \times \ell$ residual test matrix

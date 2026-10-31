@@ -34,7 +34,7 @@ is $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$.
 
 The two-bases spelling $\mathbf{X}(\mathbf{Y}^{\mathsf{H}}\mathbf{X})^{-1}\mathbf{Y}^{\mathsf{H}}$
 is `NLAlib.obliqueProjector X Yᴴ` (`NLAlib.Matrix.Subspaces.ObliqueProjector`), every rank; the six
-lemmas stated with it here are deprecated since LowRank S0 (2026-10-15) for their restatements in
+lemmas stated with it here are deprecated since 2026-10-15 for their restatements in
 `NLAlib.Matrix.Subspaces.ObliqueProjector` and `NLAlib.Matrix.Subspaces.ObliqueBases`.
 -/
 
@@ -50,7 +50,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n p : Type*} [Fintype n] [Fintype p]
 
 /-- The trace of an idempotent matrix over a field is its rank:
 $\operatorname{tr} \mathbf{P} = \operatorname{rank} \mathbf{P}$.
-[HornJohnson2013, §3.1.P25 context]. Port of `NLAlib.trace_eq_rank_of_isIdempotentElem`. -/
+[HornJohnson2013, §3.1.P25 context]. -/
 theorem _root_.IsIdempotentElem.trace_eq_rank {K : Type*} [Field K] {P : Matrix n n K}
     (hP : IsIdempotentElem P) : P.trace = P.rank := by
   classical
@@ -61,8 +61,7 @@ theorem _root_.IsIdempotentElem.trace_eq_rank {K : Type*} [Field K] {P : Matrix 
 
 /-- An idempotent matrix fixes the column space of any matrix inside its range:
 $\mathbf{P}\mathbf{X} = \mathbf{X}$ when the column space of $\mathbf{X}$ lies in the range of
-$\mathbf{P}$.
-Port of `NLAlib.mul_eq_of_range_le_of_isIdempotentElem`. -/
+$\mathbf{P}$. -/
 theorem _root_.IsIdempotentElem.mul_eq_of_range_le {R : Type*} [CommSemiring R]
     {P : Matrix n n R} (hP : IsIdempotentElem P) {X : Matrix n p R}
     (h : LinearMap.range X.mulVecLin ≤ LinearMap.range P.mulVecLin) : P * X = X := by
@@ -176,8 +175,7 @@ theorem _root_.IsIdempotentElem.specNorm_sq {P : Matrix n n 𝕜} (hP : IsIdempo
   classical
   exact (specNorm_sq_eq_and hP).1 h0
 
-/-- A nonzero idempotent has spectral norm at least one: $1 \le \|\mathbf{P}\|_2$.
-Port of `NLAlib.one_le_specNorm_of_isIdempotentElem`. -/
+/-- A nonzero idempotent has spectral norm at least one: $1 \le \|\mathbf{P}\|_2$. -/
 theorem _root_.IsIdempotentElem.one_le_specNorm {P : Matrix n n 𝕜} (hP : IsIdempotentElem P)
     (h : P ≠ 0) : 1 ≤ specNorm P := by
   have hpos : 0 < specNorm P :=
@@ -208,7 +206,6 @@ theorem _root_.IsIdempotentElem.isStarProjection_iff_specNorm_le_one {P : Matrix
 /-- **An idempotent and its complement have the same norm**, when neither is zero:
 $\|\mathbf{I} - \mathbf{P}\|_2 = \|\mathbf{P}\|_2$ for $\mathbf{P} \ne \mathbf{0}, \mathbf{I}$.
 [Kato1995, §I.6.7]; [Szyld2006]; [HornJohnson2013, Corollary 3.4.3.3].
-Port of `NLAlib.specNorm_one_sub_eq_of_idempotent_of_rank_pos_lt`, there over $\mathbb{R}$.
 Result: oblique-projection-norm -/
 theorem _root_.IsIdempotentElem.specNorm_one_sub [DecidableEq n] {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : specNorm (1 - P) = specNorm P := by
@@ -232,8 +229,6 @@ $\theta_j = \theta_j(\mathbf{P}, \mathbf{P}^{\mathsf{H}})$ and
 $j + 1 = \operatorname{rank} \mathbf{P}$; that $\theta_j < \pi / 2$ is
 `IsIdempotentElem.principalAngle_conjTranspose_lt`.
 [HornJohnson2013, Corollary 3.4.3.3]; [Szyld2006].
-Port of `NLAlib.specNorm_idempotent_eq_secant_of_range_frames`, there over $\mathbb{R}$ with
-frames.
 Result: oblique-projection-norm -/
 theorem _root_.IsIdempotentElem.specNorm_mul_cos_principalAngle {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {j : ℕ} (hj : j + 1 = P.rank) :
@@ -305,9 +300,7 @@ space of $\mathbf{Y}$ contains the range of $\mathbf{P}^{\mathsf{H}}$ (the ortho
 the kernel of $\mathbf{P}$), then $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ is invertible.
 Matrices with orthonormal columns are the case `HasOrthonormalCols.mulVec_injective`; no
 independence of the columns of $\mathbf{Y}$ is assumed, it follows.
-[HornJohnson2013, Corollary 3.4.3.3 context].
-Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, first half, there over
-$\mathbb{R}$ for two frames spanning the two ranges. -/
+[HornJohnson2013, Corollary 3.4.3.3 context]. -/
 theorem _root_.IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {X Y : Matrix n p 𝕜} (hX : Function.Injective X.mulVec)
     (hXP : LinearMap.range X.mulVecLin ≤ LinearMap.range P.mulVecLin)
@@ -330,9 +323,7 @@ $\mathbf{Y}^{\mathsf{H}}\mathbf{X}$ invertible by
 `IsIdempotentElem.isUnit_conjTranspose_mul_of_range_le`. This is the converse of
 `NLAlib.isIdempotentElem_mul_inv_mul_conjTranspose`. Matrices with orthonormal columns are the case
 `HasOrthonormalCols.mulVec_injective`; for $\mathbf{P} = \mathbf{0}$ the bases have no columns.
-[HornJohnson2013, Corollary 3.4.3.3 context].
-Port of `NLAlib.isUnit_overlap_and_eq_mul_inv_mul_of_idempotent`, second half, there over
-$\mathbb{R}$ for two frames. -/
+[HornJohnson2013, Corollary 3.4.3.3 context]. -/
 @[deprecated "Use `IsIdempotentElem.obliqueProjector_eq` and `obliqueProjector_of_isUnit`."
   (since := "2026-10-15")]
 theorem _root_.IsIdempotentElem.eq_mul_inv_mul_conjTranspose {P : Matrix n n 𝕜}
@@ -360,7 +351,7 @@ No invertibility is assumed (Mathlib's inverse of a singular matrix is $\mathbf{
 $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ is invertible this is the reciprocal of its smallest singular
 value, that is, the secant of the largest principal angle
 (`HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose_mul_cos`).
-Deprecated (LowRank S0) for `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector`, which agrees
+Deprecated for `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector`, which agrees
 with this lemma where $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ is invertible; where it is singular
 both sides here are $0$ (Mathlib's inverse), a case the replacement states with the
 pseudoinverse instead, for frames of any widths.
@@ -375,7 +366,7 @@ theorem HasOrthonormalCols.specNorm_mul_inv_mul_conjTranspose {U V : Matrix n p 
 $\mathbf{U}$, $\mathbf{V}$ with orthonormal columns indexed by $p$ and
 $\mathbf{V}^{\mathsf{H}}\mathbf{U}$ invertible,
 $\|\mathbf{U}(\mathbf{V}^{\mathsf{H}}\mathbf{U})^{-1}\mathbf{V}^{\mathsf{H}}\|_2
-\cos \theta_j(\mathbf{U}, \mathbf{V}) = 1$ for $j + 1 = \lvert p \rvert$. Deprecated (LowRank S0)
+\cos \theta_j(\mathbf{U}, \mathbf{V}) = 1$ for $j + 1 = \lvert p \rvert$. Deprecated
 for `NLAlib.HasOrthonormalCols.specNorm_obliqueProjector_mul_cos`, the same statement. -/
 @[deprecated "Use `HasOrthonormalCols.specNorm_obliqueProjector_mul_cos`."
   (since := "2026-10-15")]

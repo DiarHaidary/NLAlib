@@ -27,7 +27,7 @@ The realisation theorem says that for invertible Hermitian $\mathbf{A}$ and posi
 $\mathbf{M}$ the computed iterate is `NLAlib.pminresIterate`, for every $k$, with no breakdown
 hypothesis. Invertibility is needed: for singular $\mathbf{A}$ a pivot $\gamma_k$ of the rotated
 tridiagonal matrix can vanish before the grade and the recurrence then fails (the QLP variant of
-Choi, Paige and Saunders treats that case; not in this round). The proof shows that the state
+Choi, Paige and Saunders treats that case, not stated here). The proof shows that the state
 after $j$ steps is the state after $j$ steps of Givens QR of the computed
 $\underline{\mathbf{T}}_k$ (two old rotations and one new per column, since the column has three
 nonzeros), that the directions satisfy $\mathbf{D}_k\mathbf{R}_k = \mathbf{Z}_k$ while the pivots

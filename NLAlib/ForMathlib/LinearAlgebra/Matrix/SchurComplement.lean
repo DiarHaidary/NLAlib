@@ -35,7 +35,6 @@ $\det \mathbf{M}$:
 $$\det\bigl((\mathbf{M}^{-1})_{22}\bigr) = \frac{\det(\mathbf{M}_{11})}{\det \mathbf{M}}\,.$$
 The upper left block may be singular and either block may be empty.
 [HornJohnson2013, §0.8.4]; here over any field.
-Port of `NLAlib.det_inverse_bottomRight_eq_topLeft_div_det`, there over $\mathbb{R}$.
 Result: jacobi-complementary-minors -/
 theorem det_inv_toBlocks₂₂ (M : Matrix (p ⊕ q) (p ⊕ q) K) (hM : IsUnit M) :
     M⁻¹.toBlocks₂₂.det = M.toBlocks₁₁.det / M.det := by
@@ -63,7 +62,6 @@ $e_r(q)$ is the minor of $\mathbf{A}$ on rows $e_r(p)$ and columns $e_c(p)$, tim
 permutation $e_r^{-1} \circ e_c$ (`ec.trans er.symm`), divided by $\det \mathbf{A}$.
 [HornJohnson2013, §0.8.4]; stated there for increasing index sets with the sign $(-1)^s$, $s$ the
 sum of the selected indices, here for any finite index types over any field.
-Port of `NLAlib.det_inverse_complement_minor_eq_sign_mul_div`, there over $\mathbb{R}$.
 Result: jacobi-complementary-minors -/
 theorem det_inv_submatrix_inr (A : Matrix n n K) (hA : IsUnit A) (er ec : p ⊕ q ≃ n) :
     (A⁻¹.submatrix (fun i => ec (Sum.inr i)) (fun j => er (Sum.inr j))).det =

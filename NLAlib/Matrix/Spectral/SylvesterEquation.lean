@@ -56,8 +56,7 @@ private theorem aeval_mul_eq_mul_aeval {A : Matrix m m K} {B : Matrix n n K} {Y 
       Matrix.smul_mul, Matrix.mul_smul, hpow]
 
 /-- If the characteristic polynomials of $\mathbf{A}$ and $\mathbf{B}$ are coprime, only
-$\mathbf{X} = \mathbf{0}$ satisfies $\mathbf{A}\mathbf{X} = \mathbf{X}\mathbf{B}$.
-Port of `NLAlib.eq_zero_of_mul_eq_mul_of_isCoprime_charpoly`. -/
+$\mathbf{X} = \mathbf{0}$ satisfies $\mathbf{A}\mathbf{X} = \mathbf{X}\mathbf{B}$. -/
 theorem eq_zero_of_mul_eq_mul_of_isCoprime_charpoly {A : Matrix m m K} {B : Matrix n n K}
     (h : IsCoprime A.charpoly B.charpoly) {X : Matrix m n K} (hX : A * X = X * B) : X = 0 := by
   obtain ⟨u, v, huv⟩ := h
@@ -70,7 +69,6 @@ theorem eq_zero_of_mul_eq_mul_of_isCoprime_charpoly {A : Matrix m m K} {B : Matr
 /-- **The Sylvester equation $\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$ has a
 unique solution** when the characteristic polynomials of $\mathbf{A}$ and $\mathbf{B}$ are
 coprime. [HornJohnson2013, Theorem 2.4.4.1].
-Port of `NLAlib.existsUnique_sylvester_of_isCoprime_charpoly`.
 Result: sylvester-equation -/
 theorem existsUnique_mul_sub_mul_eq_of_isCoprime_charpoly (A : Matrix m m K) (B : Matrix n n K)
     (h : IsCoprime A.charpoly B.charpoly) (C : Matrix m n K) :
@@ -87,7 +85,7 @@ theorem existsUnique_mul_sub_mul_eq_of_isCoprime_charpoly (A : Matrix m m K) (B 
   exact ⟨Y, hY, fun Z hZ => hinj (hZ.trans hY.symm)⟩
 
 /-- Over an algebraically closed field the characteristic polynomials are coprime exactly when
-the spectra are disjoint. Port of `NLAlib.isCoprime_charpoly_iff_disjoint_spectrum`. -/
+the spectra are disjoint. -/
 theorem isCoprime_charpoly_iff_disjoint_spectrum [IsAlgClosed K] (A : Matrix m m K)
     (B : Matrix n n K) :
     IsCoprime A.charpoly B.charpoly ↔ Disjoint (spectrum K A) (spectrum K B) := by

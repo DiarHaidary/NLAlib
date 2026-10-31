@@ -70,7 +70,7 @@ noncomputable def singularValues (A : Matrix m n 𝕜) : ℕ → ℝ :=
       (WithLp.linearEquiv 2 𝕜 (n → 𝕜)).toLinearMap))
 
 /-- Bridge to Mathlib. `singularValues A` is `LinearMap.singularValues` of
-`Matrix.toEuclideanLin A`. Port of `NLAlib.singularValues_eq_linearMap`. -/
+`Matrix.toEuclideanLin A`. -/
 theorem singularValues_eq_linearMap [DecidableEq n] (A : Matrix m n 𝕜) :
     singularValues A = ⇑(Matrix.toEuclideanLin A).singularValues :=
   rfl
@@ -95,8 +95,7 @@ private theorem eigenvalues_congr {E : Type*} [NormedAddCommGroup E] [InnerProdu
 
 /-- **Singular values are the square roots of the eigenvalues of the Gram matrix**:
 $\sigma_k(\mathbf{A})^2 = \lambda_k(\mathbf{A}^{\mathsf{H}}\mathbf{A})$ for every index $k$, both
-sequences being zero-padded. [HornJohnson2013, §2.6].
-Port of `NLAlib.sq_singularValues_eq_eigenvalues₀`. -/
+sequences being zero-padded. [HornJohnson2013, §2.6]. -/
 theorem singularValues_sq (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues A k ^ 2 = eigenvalue (Aᴴ * A) k := by
   classical
@@ -204,8 +203,7 @@ theorem det_conjTranspose_mul_self_eq_prod_singularValues_sq [DecidableEq n] (A 
   simp only [singularValues_sq]
 
 /-- A singular value is positive exactly when its index is below the rank:
-$0 < \sigma_k(\mathbf{A}) \iff k < \operatorname{rank} \mathbf{A}$.
-Port of `NLAlib.singularValues_pos_iff`. -/
+$0 < \sigma_k(\mathbf{A}) \iff k < \operatorname{rank} \mathbf{A}$. -/
 theorem singularValues_pos_iff (A : Matrix m n 𝕜) {k : ℕ} :
     0 < singularValues A k ↔ k < A.rank := by
   classical
@@ -245,8 +243,7 @@ theorem singularValues_eq_zero {A : Matrix m n 𝕜} : singularValues A = 0 ↔ 
 
 /-! ### Norms -/
 
-/-- The largest singular value is the spectral norm: $\sigma_0(\mathbf{A}) = \|\mathbf{A}\|_2$.
-Port of `NLAlib.singularValues_zero_eq_specNorm`. -/
+/-- The largest singular value is the spectral norm: $\sigma_0(\mathbf{A}) = \|\mathbf{A}\|_2$. -/
 theorem singularValues_zero_eq_specNorm (A : Matrix m n 𝕜) : singularValues A 0 = specNorm A := by
   refine (sq_eq_sq₀ (singularValues_nonneg A 0) (specNorm_nonneg A)).mp ?_
   rw [singularValues_sq, ← specNorm_conjTranspose_mul_self,
@@ -261,7 +258,7 @@ theorem singularValues_le_specNorm (A : Matrix m n 𝕜) (k : ℕ) :
 /-- **The squared Frobenius norm is the sum of the squared singular values**:
 $\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{k < \lvert n \rvert} \sigma_k(\mathbf{A})^2$. The sum may be
 taken over any range that reaches the rank; this is the form over the number of columns.
-[HornJohnson2013, §2.6]. Port of `NLAlib.frobSq_eq_sum_sq_singularValues`. -/
+[HornJohnson2013, §2.6]. -/
 theorem frobNorm_sq_eq_sum_singularValues_sq (A : Matrix m n 𝕜) :
     frobNorm A ^ 2 = ∑ k ∈ Finset.range (Fintype.card n), singularValues A k ^ 2 := by
   rw [frobNorm_sq_eq_re_trace,
@@ -279,15 +276,14 @@ private theorem sum_range_singularValues_sq (A : Matrix m n 𝕜) {N : ℕ} (hN 
 
 /-- The squared Frobenius norm is the sum of the squared singular values up to any index that
 reaches the rank: $\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{k < N} \sigma_k(\mathbf{A})^2$ for
-$\operatorname{rank} \mathbf{A} \le N$. Port of `NLAlib.frobSq_eq_sum_rank_singularValues_sq`. -/
+$\operatorname{rank} \mathbf{A} \le N$. -/
 theorem frobNorm_sq_eq_sum_range_singularValues_sq (A : Matrix m n 𝕜) {N : ℕ} (hN : A.rank ≤ N) :
     frobNorm A ^ 2 = ∑ k ∈ Finset.range N, singularValues A k ^ 2 := by
   rw [frobNorm_sq_eq_sum_singularValues_sq, sum_range_singularValues_sq A A.rank_le_card_width,
     sum_range_singularValues_sq A hN]
 
 /-- The squared Frobenius norm is at most the rank times the squared spectral norm:
-$\|\mathbf{A}\|_{\mathsf{F}}^2 \le \operatorname{rank} \mathbf{A} \, \|\mathbf{A}\|_2^2$.
-Port of `NLAlib.frobSq_le_rank_mul_specNorm_sq`. -/
+$\|\mathbf{A}\|_{\mathsf{F}}^2 \le \operatorname{rank} \mathbf{A} \, \|\mathbf{A}\|_2^2$. -/
 theorem frobNorm_sq_le_rank_mul_specNorm_sq (A : Matrix m n 𝕜) :
     frobNorm A ^ 2 ≤ A.rank * specNorm A ^ 2 := by
   rw [frobNorm_sq_eq_sum_range_singularValues_sq A le_rfl]
@@ -298,7 +294,7 @@ theorem frobNorm_sq_le_rank_mul_specNorm_sq (A : Matrix m n 𝕜) :
 
 /-- The Frobenius norm is at most $\sqrt{\operatorname{rank} \mathbf{A}}$ times the spectral norm:
 $\|\mathbf{A}\|_{\mathsf{F}} \le \sqrt{\operatorname{rank} \mathbf{A}} \, \|\mathbf{A}\|_2$.
-[GolubVanLoan2013, (2.3.7)]. Port of `NLAlib.frobNorm_le_sqrt_rank_mul_specNorm`. -/
+[GolubVanLoan2013, (2.3.7)]. -/
 theorem frobNorm_le_sqrt_rank_mul_specNorm (A : Matrix m n 𝕜) :
     frobNorm A ≤ √(A.rank : ℝ) * specNorm A := by
   refine (sq_le_sq₀ (frobNorm_nonneg A)
@@ -309,8 +305,7 @@ theorem frobNorm_le_sqrt_rank_mul_specNorm (A : Matrix m n 𝕜) :
 /-! ### Transformations -/
 
 /-- The conjugate transpose has the same singular values:
-$\sigma_k(\mathbf{A}^{\mathsf{H}}) = \sigma_k(\mathbf{A})$.
-Port of `NLAlib.singularValues_conjTranspose`. -/
+$\sigma_k(\mathbf{A}^{\mathsf{H}}) = \sigma_k(\mathbf{A})$. -/
 @[simp]
 theorem singularValues_conjTranspose (A : Matrix m n 𝕜) :
     singularValues Aᴴ = singularValues A := by
@@ -348,8 +343,7 @@ theorem singularValues_smul (c : 𝕜) (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues_sq]
 
 /-- Scaling a matrix by a real number scales its singular values by the absolute value:
-$\sigma_k(c\mathbf{A}) = \lvert c \rvert \, \sigma_k(\mathbf{A})$ for $c \in \mathbb{R}$.
-Port of `NLAlib.singularValues_smul`, there over $\mathbb{R}$. -/
+$\sigma_k(c\mathbf{A}) = \lvert c \rvert \, \sigma_k(\mathbf{A})$ for $c \in \mathbb{R}$. -/
 theorem singularValues_real_smul (c : ℝ) (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues (c • A) k = |c| * singularValues A k := by
   rw [RCLike.real_smul_eq_coe_smul (K := 𝕜), singularValues_smul, RCLike.norm_ofReal]
@@ -360,8 +354,7 @@ theorem singularValues_neg (A : Matrix m n 𝕜) : singularValues (-A) = singula
   funext k
   rw [← neg_one_smul 𝕜 A, singularValues_smul, norm_neg, norm_one, one_mul]
 
-/-- Relabelling rows and columns by bijections does not change the singular values.
-Port of `NLAlib.singularValues_reindex`. -/
+/-- Relabelling rows and columns by bijections does not change the singular values. -/
 @[simp]
 theorem singularValues_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ : p ≃ n) :
     singularValues (A.submatrix e₁ e₂) = singularValues A := by
@@ -372,8 +365,7 @@ theorem singularValues_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e
 
 /-- Matrices with the same Gram matrix have the same singular values, whatever their numbers of
 rows: if $\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{B}^{\mathsf{H}}\mathbf{B}$ then
-$\sigma_k(\mathbf{A}) = \sigma_k(\mathbf{B})$ for every $k$.
-Port of `NLAlib.singularValues_eq_of_gram_eq`. -/
+$\sigma_k(\mathbf{A}) = \sigma_k(\mathbf{B})$ for every $k$. -/
 theorem singularValues_eq_of_conjTranspose_mul_self_eq {A : Matrix m n 𝕜} {B : Matrix l n 𝕜}
     (h : Aᴴ * A = Bᴴ * B) : singularValues A = singularValues B := by
   funext k
@@ -382,8 +374,7 @@ theorem singularValues_eq_of_conjTranspose_mul_self_eq {A : Matrix m n 𝕜} {B 
 
 /-- Left multiplication by a matrix with orthonormal columns preserves the singular values:
 $\sigma_k(\mathbf{Q}\mathbf{A}) = \sigma_k(\mathbf{A})$ when
-$\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$.
-Port of `NLAlib.singularValues_isometry_mul`. -/
+$\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$. -/
 theorem HasOrthonormalCols.singularValues_mul_left [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     singularValues (Q * A) = singularValues A :=
@@ -391,8 +382,7 @@ theorem HasOrthonormalCols.singularValues_mul_left [DecidableEq m] {Q : Matrix l
 
 /-- Right multiplication by the conjugate transpose of a matrix with orthonormal columns
 preserves the singular values: $\sigma_k(\mathbf{A}\mathbf{Q}^{\mathsf{H}}) = \sigma_k(\mathbf{A})$
-when $\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$.
-Port of `NLAlib.singularValues_mul_isometry_conjTranspose`. -/
+when $\mathbf{Q}^{\mathsf{H}}\mathbf{Q} = \mathbf{I}$. -/
 theorem HasOrthonormalCols.singularValues_mul_conjTranspose_right [DecidableEq n]
     {Q : Matrix p n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
     singularValues (A * Qᴴ) = singularValues A := by
@@ -412,8 +402,7 @@ private theorem re_quadForm_conjTranspose_mul_self (A : Matrix m n 𝕜) (x : n 
 /-- **Courant–Fischer for singular values, lower bound.** If
 $c \|\mathbf{x}\| \le \|\mathbf{A}\mathbf{x}\|$ for every $\mathbf{x}$ in a subspace of dimension
 at least $k + 1$, then $c \le \sigma_k(\mathbf{A})$.
-[HornJohnson2013, Theorem 7.3.8].
-Port of `NLAlib.le_singularValues_of_forall_mem`, there with squared norms as dot products. -/
+[HornJohnson2013, Theorem 7.3.8]. -/
 theorem le_singularValues_of_forall_mem (A : Matrix m n 𝕜) {k : ℕ} (S : Submodule 𝕜 (n → 𝕜))
     (hS : k + 1 ≤ Module.finrank 𝕜 S) {c : ℝ}
     (h : ∀ x ∈ S, c * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖) :
@@ -431,8 +420,7 @@ theorem le_singularValues_of_forall_mem (A : Matrix m n 𝕜) {k : ℕ} (S : Sub
 /-- **Courant–Fischer for singular values, upper bound.** If
 $\|\mathbf{A}\mathbf{x}\| \le c \|\mathbf{x}\|$ for every $\mathbf{x}$ in a subspace of
 codimension at most $k$, with $0 \le c$, then $\sigma_k(\mathbf{A}) \le c$.
-[HornJohnson2013, Theorem 7.3.8].
-Port of `NLAlib.singularValues_le_of_forall_mem`. -/
+[HornJohnson2013, Theorem 7.3.8]. -/
 theorem singularValues_le_of_forall_mem (A : Matrix m n 𝕜) {k : ℕ} (W : Submodule 𝕜 (n → 𝕜))
     (hW : Fintype.card n ≤ Module.finrank 𝕜 W + k) {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ x ∈ W, ‖WithLp.toLp 2 (A *ᵥ x)‖ ≤ c * ‖WithLp.toLp 2 x‖) :
@@ -491,8 +479,7 @@ theorem exists_submodule_singularValues_mul_norm_le (A : Matrix m n 𝕜) {k : �
 
 /-- The smallest singular value bounds $\|\mathbf{A}\mathbf{x}\|$ from below: for a matrix with
 columns indexed by $n$ and $k + 1 = \lvert n \rvert$,
-$\sigma_k(\mathbf{A}) \|\mathbf{x}\| \le \|\mathbf{A}\mathbf{x}\|$ for every $\mathbf{x}$.
-Port of `NLAlib.singularValues_last_mul_norm_le`. -/
+$\sigma_k(\mathbf{A}) \|\mathbf{x}\| \le \|\mathbf{A}\mathbf{x}\|$ for every $\mathbf{x}$. -/
 theorem singularValues_last_mul_norm_le (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = Fintype.card n)
     (x : n → 𝕜) : singularValues A k * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
   have h2 := (Matrix.isHermitian_conjTranspose_mul_self A).eigenvalue_last_mul_le_re_quadForm hk x
@@ -501,8 +488,7 @@ theorem singularValues_last_mul_norm_le (A : Matrix m n 𝕜) {k : ℕ} (hk : k 
     (norm_nonneg _) two_ne_zero).mp h2
 
 /-- A lower bound $c \|\mathbf{x}\| \le \|\mathbf{A}\mathbf{x}\|$ for all $\mathbf{x}$ is a lower
-bound on the smallest singular value: $c \le \sigma_k(\mathbf{A})$ for $k + 1 = \lvert n \rvert$.
-Port of `NLAlib.le_singularValues_last`. -/
+bound on the smallest singular value: $c \le \sigma_k(\mathbf{A})$ for $k + 1 = \lvert n \rvert$. -/
 theorem le_singularValues_last (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = Fintype.card n) {c : ℝ}
     (h : ∀ x, c * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖) : c ≤ singularValues A k := by
   refine le_singularValues_of_forall_mem A ⊤ ?_ fun x _ => h x
@@ -528,8 +514,7 @@ theorem le_singularValues_last_sq_of_smul_one_le [DecidableEq n] {A : Matrix m n
 
 /-- The smallest singular value $\sigma_k(\mathbf{A})$, $k + 1 = \lvert n \rvert$, is positive
 exactly when $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective, that is, when the matrix has
-full column rank.
-Port of `NLAlib.singularValues_last_pos_iff_rank_eq_card`. -/
+full column rank. -/
 theorem singularValues_last_pos_iff_injective (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) : 0 < singularValues A k ↔ Function.Injective A.mulVec := by
   rw [singularValues_pos_iff, mulVec_injective_iff_rank_eq]

@@ -41,9 +41,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*}
 
 /-- Orthonormal basis of a column space: for any column index type $p$ with
 $\lvert p \rvert = \operatorname{rank} \mathbf{A}$, there is a $\mathbf{Q}$ with orthonormal
-columns indexed by $p$ and the same column space as $\mathbf{A}$. Port of
-`NLAlib.hasOrthonormalCols_orthonormalBasisMatrix` and `NLAlib.range_orthonormalBasisMatrix`, there
-a definition indexed by `Fin (finrank S)`. -/
+columns indexed by $p$ and the same column space as $\mathbf{A}$. -/
 theorem exists_hasOrthonormalCols_range_eq [Fintype m] [Fintype n] [Fintype p] [DecidableEq p]
     (A : Matrix m n 𝕜) (h : Fintype.card p = A.rank) :
     ∃ Q : Matrix m p 𝕜, HasOrthonormalCols Q ∧
@@ -139,8 +137,7 @@ $\lvert n \rvert + \lvert p \rvert = \lvert m \rvert$, to a matrix
 $\begin{bmatrix} \mathbf{Q} & \mathbf{Q}' \end{bmatrix}$ with orthonormal columns. That matrix has
 as many rows as columns, so it is unitary up to relabelling:
 `HasOrthonormalCols.mul_conjTranspose_add_mul_conjTranspose` gives
-$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} + \mathbf{Q}'\mathbf{Q}'^{\mathsf{H}} = \mathbf{I}$.
-Port of `NLAlib.exists_unitary_complement`. -/
+$\mathbf{Q}\mathbf{Q}^{\mathsf{H}} + \mathbf{Q}'\mathbf{Q}'^{\mathsf{H}} = \mathbf{I}$. -/
 theorem HasOrthonormalCols.exists_fromCols [Fintype m] [Fintype n] [Fintype p] [DecidableEq n]
     [DecidableEq p] {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (h : Fintype.card n + Fintype.card p = Fintype.card m) :

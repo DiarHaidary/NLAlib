@@ -75,8 +75,7 @@ private theorem exp_diagonal_ofReal (d : n → ℝ) :
 /-- The exponential commutes with unitary conjugation:
 $\exp(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
 = \mathbf{U}\exp(\mathbf{A})\mathbf{U}^{\mathsf{H}}$
-for $\mathbf{U}$ with orthonormal columns and as many columns as rows.
-Port of `NLAlib.matrixExp_unitary_conj`, there over $\mathbb{C}$. -/
+for $\mathbf{U}$ with orthonormal columns and as many columns as rows. -/
 theorem HasOrthonormalCols.exp_mul_mul_conjTranspose {r : Type*} [Fintype r] [DecidableEq r]
     {U : Matrix n r 𝕜}
     (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n) (A : Matrix r r 𝕜) :
@@ -107,8 +106,7 @@ theorem HasOrthonormalCols.exp_mul_diagonal_mul_conjTranspose {r : Type*} [Finty
       U * Matrix.diagonal (fun i => ((Real.exp (d i) : ℝ) : 𝕜)) * Uᴴ := by
   rw [HasOrthonormalCols.exp_mul_mul_conjTranspose hU hr, exp_diagonal_ofReal]
 
-/-- The exponential of a Hermitian matrix through the functional calculus.
-Port of `NLAlib.matrixExp_smul_eq_cfc`, at $s = 1$. -/
+/-- The exponential of a Hermitian matrix through the functional calculus. -/
 theorem _root_.Matrix.IsHermitian.exp_eq_cfc {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     exp A = cfc Real.exp A := by
   obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
@@ -161,8 +159,7 @@ theorem exp_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m m 𝕜) (B : Matrix n
 
 /-! ### Positivity and the logarithm -/
 
-/-- The exponential of a Hermitian matrix is positive definite.
-Port of `NLAlib.posDef_matrixExp_and_matrixLog_matrixExp`, first half. -/
+/-- The exponential of a Hermitian matrix is positive definite. -/
 theorem _root_.Matrix.IsHermitian.posDef_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     (exp A).PosDef := by
   rw [hA.exp.posDef_iff_eigenvalue_pos]
@@ -172,8 +169,7 @@ theorem _root_.Matrix.IsHermitian.posDef_exp {A : Matrix n n 𝕜} (hA : A.IsHer
   exact Real.exp_pos _
 
 /-- The logarithm inverts the exponential on Hermitian matrices:
-$\log(\exp(\mathbf{A})) = \mathbf{A}$.
-Port of `NLAlib.posDef_matrixExp_and_matrixLog_matrixExp`, second half. -/
+$\log(\exp(\mathbf{A})) = \mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.cfc_log_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     cfc Real.log (exp A) = A := by
   have hsa : IsSelfAdjoint A := hA
@@ -205,7 +201,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_exp {A : Matrix n n 𝕜} (hA : A.I
 
 /-- **The exponential lies above its tangent at zero**:
 $\mathbf{I} + \mathbf{A} \preceq \exp(\mathbf{A})$ for Hermitian $\mathbf{A}$.
-[Tropp2015, §2.1]. Port of `NLAlib.one_add_le_matrixExp_of_isHermitian`. -/
+[Tropp2015, §2.1]. -/
 theorem _root_.Matrix.IsHermitian.one_add_le_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     1 + A ≤ exp A := by
   have hsa : IsSelfAdjoint A := hA
@@ -219,8 +215,7 @@ theorem _root_.Matrix.IsHermitian.one_add_le_exp {A : Matrix n n 𝕜} (hA : A.I
 /-- **The transfer rule for the exponential.** If $e^{\theta x} \le 1 + \theta x + c x^2$ for
 every $x \in [a, b]$ and $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$, then
 $\exp(\theta\mathbf{A}) \preceq \mathbf{I} + \theta\mathbf{A} + c\mathbf{A}^2$.
-[Tropp2015, §2.1 and §6.6].
-Port of `NLAlib.matrixExp_smul_le_one_add_smul_add_smul_sq_of_spectrum_le`. -/
+[Tropp2015, §2.1 and §6.6]. -/
 theorem exp_smul_le_one_add_smul_add_smul_sq {A : Matrix n n 𝕜} {a b θ c : ℝ}
     (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜))
     (h : ∀ x ∈ Set.Icc a b, Real.exp (θ * x) ≤ 1 + θ * x + c * x ^ 2) :
@@ -300,9 +295,7 @@ $$\Bigl\|\exp\Bigl(\sum_{k \in s} \mathbf{A}_k\Bigr)\Bigr\|_2
 The matrices need not commute: the largest eigenvalue is subadditive. Unlike the bound
 $\prod_k e^{\|\mathbf{A}_k\|_2}$ from `NLAlib.specNorm_exp_le`, the right side is small when the
 $\mathbf{A}_k$ are very negative, which is what the integrability of the matrix Laplace transform
-bound needs.
-Port of `NLAlib.norm_matrixExp_sum_le_prod`, there over $\mathbb{C}$ with the weaker factors
-$1 + \|\exp(\mathbf{A}_k)\|$. -/
+bound needs. -/
 theorem specNorm_exp_sum_le_prod {ι : Type*} (s : Finset ι) {A : ι → Matrix n n 𝕜}
     (hA : ∀ k ∈ s, (A k).IsHermitian) :
     specNorm (exp (∑ k ∈ s, A k)) ≤ ∏ k ∈ s, specNorm (exp (A k)) := by
@@ -318,16 +311,14 @@ theorem specNorm_exp_sum_le_prod {ι : Type*} (s : Finset ι) {A : ι → Matrix
 
 /-- The trace of the exponential of a Hermitian matrix is the sum of the exponentials of its
 eigenvalues: $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
-= \sum_{i < \lvert n \rvert} e^{\lambda_i(\mathbf{A})}$.
-Port of `NLAlib.traceExp_smul_eq_sum`. -/
+= \sum_{i < \lvert n \rvert} e^{\lambda_i(\mathbf{A})}$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     RCLike.re (exp A).trace = ∑ i ∈ Finset.range (Fintype.card n), Real.exp (eigenvalue A i) := by
   rw [hA.exp_eq_cfc]
   exact hA.re_trace_cfc Real.exp
 
 /-- The trace exponential of a Hermitian matrix of positive size is positive:
-$\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) > 0$.
-Port of `NLAlib.traceExp_pos_of_isHermitian`. -/
+$\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) > 0$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp_pos [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : 0 < RCLike.re (exp A).trace := by
   rw [hA.re_trace_exp]
@@ -346,8 +337,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_nonneg {A : Matrix n n 𝕜} (hA 
 of positive size ($n$ nonempty),
 $e^{\lambda_0(\mathbf{A})} \le \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$.
 This is the first step of the matrix Laplace transform method.
-[Tropp2015, Proposition 3.2.1].
-Port of `NLAlib.exp_mul_lambdaMax_lambdaMin_le_traceExp_smul`. -/
+[Tropp2015, Proposition 3.2.1]. -/
 theorem _root_.Matrix.IsHermitian.exp_eigenvalue_zero_le_re_trace_exp [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     Real.exp (eigenvalue A 0) ≤ RCLike.re (exp A).trace := by
@@ -356,8 +346,7 @@ theorem _root_.Matrix.IsHermitian.exp_eigenvalue_zero_le_re_trace_exp [Nonempty 
 
 /-- The trace exponential is at most the dimension times the exponential of the largest
 eigenvalue: $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
-\le \lvert n \rvert \, e^{\lambda_0(\mathbf{A})}$ for Hermitian $\mathbf{A}$.
-Port of `NLAlib.traceExp_smul_le_mul_exp_mul_norm`, there with the norm. -/
+\le \lvert n \rvert \, e^{\lambda_0(\mathbf{A})}$ for Hermitian $\mathbf{A}$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp_le_card_mul_exp {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     RCLike.re (exp A).trace ≤ Fintype.card n * Real.exp (eigenvalue A 0) := by
@@ -370,8 +359,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_le_card_mul_exp {A : Matrix n n �
 /-- The trace exponential is invariant under unitary conjugation:
 $\operatorname{Re} \operatorname{tr} \exp(\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}})
 = \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$ for $\mathbf{U}$ with orthonormal columns
-and as many columns as rows.
-Port of `NLAlib.traceExp_unitary_conj`. -/
+and as many columns as rows. -/
 theorem HasOrthonormalCols.re_trace_exp_mul_mul_conjTranspose {r : Type*} [Fintype r]
     [DecidableEq r]
     {U : Matrix n r 𝕜} (hU : HasOrthonormalCols U) (hr : Fintype.card r = Fintype.card n)
@@ -382,22 +370,20 @@ theorem HasOrthonormalCols.re_trace_exp_mul_mul_conjTranspose {r : Type*} [Finty
 
 /-- A scalar shift factors out of the trace exponential:
 $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A} + t\mathbf{I})
-= e^t \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$.
-Port of `NLAlib.traceExp_add_smul_one_eq_exp_mul`. -/
+= e^t \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$. -/
 theorem re_trace_exp_add_real_smul_one (A : Matrix n n 𝕜) (t : ℝ) :
     RCLike.re (exp (A + t • (1 : Matrix n n 𝕜))).trace = Real.exp t * RCLike.re (exp A).trace := by
   rw [exp_add_real_smul_one, Matrix.trace_smul, RCLike.smul_re]
 
 /-- The trace exponential of a block diagonal matrix with diagonal blocks $\mathbf{A}$,
-$\mathbf{B}$ is the sum of the two trace exponentials.
-Port of the block case used in `NLAlib.intrinsicDimension_fromBlocks`. -/
+$\mathbf{B}$ is the sum of the two trace exponentials. -/
 theorem re_trace_exp_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m m 𝕜) (B : Matrix n n 𝕜) :
     RCLike.re (exp (Matrix.fromBlocks A 0 0 B)).trace =
       RCLike.re (exp A).trace + RCLike.re (exp B).trace := by
   rw [exp_fromBlocks_zero₁₂_zero₂₁, Matrix.trace_fromBlocks, map_add]
 
 /-- The trace exponential $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$
-is continuous. Port of `NLAlib.continuous_traceExp`. -/
+is continuous. -/
 theorem continuous_re_trace_exp :
     Continuous fun A : Matrix n n 𝕜 => RCLike.re (exp A).trace := by
   have h : Continuous (exp : Matrix n n 𝕜 → Matrix n n 𝕜) := by

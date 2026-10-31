@@ -205,8 +205,8 @@ $\rho_{\mathbf{A}}$ the Rayleigh quotient, for every $q$ (including $0$), every 
 repeated top eigenvalues and $\mathbf{A} = \mathbf{0}$; no gap. The factor is
 `randomStartPowerBound`. Asymptotic form:
 `NLAlib.exists_forall_integral_eigenvalue_sub_rayleighQuotient_pow_mulVec_le_of_hasLaw_gaussianVector`.
-[MartinssonTropp2020, Theorems 6.1 and 6.2] (verified per PORT_KRYLOV §9; which of the two is the
-power method is to check); [KuczynskiWozniakowski1992, Theorem 4.1] (locator to check); there as
+[MartinssonTropp2020, Theorems 6.1 and 6.2] (which of the two is the power method is
+to check); [KuczynskiWozniakowski1992, Theorem 4.1] (locator to check); there as
 a relative error with a different constant; constants composed here.
 Result: random-start-power -/
 theorem integral_eigenvalue_sub_rayleighQuotient_pow_mulVec_le_of_hasLaw_gaussianVector

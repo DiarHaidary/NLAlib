@@ -59,8 +59,7 @@ and invariant under orthogonal maps on both sides. Junk value: for
 $\lvert n \rvert < \lvert k \rvert$ it is the law of $\mathbf{P}^{\mathsf{H}}$ for a $k \times n$
 Haar frame $\mathbf{P}$ (orthonormal rows); every theorem using columns assumes
 $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 1], where it is constructed by Gram–Schmidt
-(`hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`); here any shape. Replaces the prototype's
-`haarFrameLaw`, there a measure on the bundled Stiefel manifold for $k \le n$. -/
+(`hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`); here any shape. -/
 noncomputable def haarFrame (n k : Type*) [Fintype n] [Fintype k] [DecidableEq k] :
     Measure (Matrix n k ℝ) :=
   (gaussianMatrix n k).map polarFactor
@@ -137,8 +136,7 @@ theorem memLp_apply_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFram
 /-! ### Invariance -/
 
 /-- **A Haar frame is left orthogonally invariant**: $\mathbf{U}\mathbf{Q}$ is a Haar frame for
-every orthogonal $\mathbf{U}$. Every shape. [Meckes2019, Ch. 1]. Replaces the prototype's
-`haarFrameLaw_map_smul`.
+every orthogonal $\mathbf{U}$. Every shape. [Meckes2019, Ch. 1].
 Result: haar-frame-invariance -/
 instance isLeftUnitarilyInvariant_haarFrame [DecidableEq n] [DecidableEq k] :
     IsLeftUnitarilyInvariant (haarFrame n k) := by

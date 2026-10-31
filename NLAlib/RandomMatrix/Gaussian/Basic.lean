@@ -14,7 +14,7 @@ public import NLAlib.Probability.Law
 
 `NLAlib.gaussianMatrix m n` is the law of an $m \times n$ real matrix with independent standard
 Gaussian entries, written as independent rows, each a standard Gaussian vector:
-`Measure.pi fun _ : m => gaussianVector n`. It is an `abbrev`, so P0's product-law lemmas apply
+`Measure.pi fun _ : m => gaussianVector n`. It is an `abbrev`, so the product-law lemmas apply
 directly: the rows are `ProbabilityTheory.HasLaw.eval`, their independence
 `ProbabilityTheory.HasLaw.iIndepFun_eval`, the entries `ProbabilityTheory.HasLaw.entry` and
 `ProbabilityTheory.HasLaw.iIndepFun_entry`. Since `Matrix` is a `def`, Mathlib's instances about

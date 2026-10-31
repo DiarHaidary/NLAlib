@@ -41,8 +41,7 @@ namespace NLAlib
 variable {K : Type*} [Field K] {m n : Type*}
 
 /-- The **Cauchy matrix** of two families $\mathbf{x}$, $\mathbf{y}$ over a field: entries
-$1 / (\mathbf{x}_i + \mathbf{y}_j)$.
-Port of `NLAlib.cauchyMatrix`, there over $\mathbb{R}$. -/
+$1 / (\mathbf{x}_i + \mathbf{y}_j)$. -/
 def cauchyMatrix (x : m → K) (y : n → K) : Matrix m n K :=
   Matrix.of fun i j => (x i + y j)⁻¹
 
@@ -137,7 +136,7 @@ $\{0, \dots, n - 1\}$ with $\mathbf{x}_i + \mathbf{y}_j \ne 0$ for all $i, j$, t
 $\mathbf{C}$ has
 $$\det \mathbf{C} = \frac{\prod_{i < j} (\mathbf{x}_j - \mathbf{x}_i)(\mathbf{y}_j - \mathbf{y}_i)}
   {\prod_{i, j} (\mathbf{x}_i + \mathbf{y}_j)}\,.$$
-[HornJohnson2013, §0.9.12]. Port of `NLAlib.det_cauchyMatrix_eq_prod_differences`. -/
+[HornJohnson2013, §0.9.12]. -/
 theorem det_cauchyMatrix {n : ℕ} (x y : Fin n → K) (h : ∀ i j, x i + y j ≠ 0) :
     (cauchyMatrix x y).det =
       (∏ i, ∏ j ∈ Finset.Ioi i, (x j - x i) * (y j - y i)) / ∏ i, ∏ j, (x i + y j) := by
@@ -145,7 +144,7 @@ theorem det_cauchyMatrix {n : ℕ} (x y : Fin n → K) (h : ∀ i j, x i + y j �
   simp only [Finset.prod_mul_distrib]
 
 /-- The determinant of a Cauchy matrix of strictly increasing families with positive denominators
-is positive. Port of `NLAlib.det_cauchyMatrix_pos_of_strictMono`. -/
+is positive. -/
 theorem det_cauchyMatrix_pos {n : ℕ} {x y : Fin n → ℝ} (hx : StrictMono x) (hy : StrictMono y)
     (h : ∀ i j, 0 < x i + y j) : 0 < (cauchyMatrix x y).det := by
   rw [det_cauchyMatrix x y fun i j => (h i j).ne']
@@ -154,18 +153,17 @@ theorem det_cauchyMatrix_pos {n : ℕ} {x y : Fin n → ℝ} (hx : StrictMono x)
       mul_pos (sub_pos.mpr (hx (Finset.mem_Ioi.mp hj))) (sub_pos.mpr (hy (Finset.mem_Ioi.mp hj))))
     (Finset.prod_pos fun i _ => Finset.prod_pos fun j _ => h i j)
 
-/-- The **Hilbert matrix** of order $n$: real entries $1 / (i + j + 1)$, indices from $0$.
-Port of `NLAlib.hilbertMatrix`. -/
+/-- The **Hilbert matrix** of order $n$: real entries $1 / (i + j + 1)$, indices from $0$. -/
 noncomputable def hilbertMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => ((i : ℝ) + j + 1)⁻¹
 
-/-- The Hilbert matrix is a Cauchy matrix. Port of `NLAlib.hilbertMatrix_eq_cauchyMatrix`. -/
+/-- The Hilbert matrix is a Cauchy matrix. -/
 theorem hilbertMatrix_eq_cauchyMatrix (n : ℕ) :
     hilbertMatrix n = cauchyMatrix (fun i : Fin n => (i : ℝ) + 1) fun j : Fin n => (j : ℝ) := by
   ext i j
   rw [cauchyMatrix_apply, hilbertMatrix, Matrix.of_apply, add_right_comm]
 
-/-- The determinant of the Hilbert matrix is positive. Port of `NLAlib.det_hilbertMatrix_pos`. -/
+/-- The determinant of the Hilbert matrix is positive. -/
 theorem det_hilbertMatrix_pos (n : ℕ) : 0 < (hilbertMatrix n).det := by
   rw [hilbertMatrix_eq_cauchyMatrix]
   refine det_cauchyMatrix_pos (fun i j hij => ?_) (fun i j hij => ?_) fun i j => by positivity

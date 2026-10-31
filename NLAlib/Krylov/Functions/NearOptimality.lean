@@ -23,7 +23,7 @@ also shows the general ratio bound of this file optimal. At $\alpha = 0$ this is
 Euclidean-norm guarantee with factor $\tfrac12(\sqrt\kappa + 1/\sqrt\kappa)$, also for CG.
 
 Errors are squared norms `RCLike.re (quadForm N (w - y))` with `N = A ^ α` or `N = cfc ν A`,
-as for CG in K0, and the best approximation is not named: the theorems compare with every
+as for CG, and the best approximation is not named: the theorems compare with every
 $\mathbf{y}$ in the Krylov space.
 
 The argument has one abstract step,

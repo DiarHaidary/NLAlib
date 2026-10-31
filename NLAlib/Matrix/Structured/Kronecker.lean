@@ -59,8 +59,7 @@ theorem uncurry_mul_mul {R : Type*} [CommSemiring R] {a b : Type*} [Fintype m] [
 
 /-! ### Frames and decompositions -/
 
-/-- The Kronecker product of two matrices with orthonormal columns has orthonormal columns.
-Port of `NLAlib.hasOrthonormalCols_kronecker`, there for real orthogonal matrices. -/
+/-- The Kronecker product of two matrices with orthonormal columns has orthonormal columns. -/
 theorem HasOrthonormalCols.kronecker [Fintype m] [Fintype p] [DecidableEq n] [DecidableEq q]
     {U : Matrix m n 𝕜} {V : Matrix p q 𝕜} (hU : HasOrthonormalCols U)
     (hV : HasOrthonormalCols V) : HasOrthonormalCols (U ⊗ₖ V) := by
@@ -68,8 +67,7 @@ theorem HasOrthonormalCols.kronecker [Fintype m] [Fintype p] [DecidableEq n] [De
   rw [Matrix.conjTranspose_kronecker, ← Matrix.mul_kronecker_mul, hU.conjTranspose_mul_self,
     hV.conjTranspose_mul_self, Matrix.one_kronecker_one]
 
-/-- The Kronecker product of two Hermitian matrices is Hermitian.
-Port of `NLAlib.isHermitian_kronecker`. -/
+/-- The Kronecker product of two Hermitian matrices is Hermitian. -/
 theorem _root_.Matrix.IsHermitian.kronecker {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) : (A ⊗ₖ B).IsHermitian := by
   rw [Matrix.IsHermitian, Matrix.conjTranspose_kronecker, hA.eq, hB.eq]
@@ -89,7 +87,7 @@ singular value decompositions: if $\mathbf{A} = \mathbf{U} \operatorname{diag}(\
 \mathbf{W}^{\mathsf{H}}$ are singular value decompositions (`IsSVD`), then so is
 $\mathbf{A} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{P})
 \operatorname{diag}(\sigma_i \tau_j) (\mathbf{V} \otimes \mathbf{W})^{\mathsf{H}}$.
-[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.IsSVD.kronecker_factorization`. -/
+[HornJohnson1991, Theorem 4.2.15]. -/
 theorem IsSVD.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] [Fintype r] [Fintype s]
     [DecidableEq r] [DecidableEq s] {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ}
     {V : Matrix n r 𝕜} {B : Matrix p q 𝕜} {P : Matrix p s 𝕜} {τ : s → ℝ} {W : Matrix q s 𝕜}
@@ -109,8 +107,7 @@ $\mathbf{B} = \mathbf{V} \operatorname{diag}(\mathbf{b}) \mathbf{V}^{\mathsf{H}}
 $$\mathbf{A} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{V})
   \operatorname{diag}(\mathbf{a}_i \mathbf{b}_j) (\mathbf{U} \otimes \mathbf{V})^{\mathsf{H}}\,.$$
 The identity needs no hypothesis on $\mathbf{U}$, $\mathbf{V}$; for unitary ones it is a unitary
-diagonalisation with eigenvalues $\mathbf{a}_i \mathbf{b}_j$. [HornJohnson1991, Theorem 4.2.12].
-Port of `NLAlib.eq_eigenvectorUnitary_kronecker_mul_diagonal_mul_transpose`. -/
+diagonalisation with eigenvalues $\mathbf{a}_i \mathbf{b}_j$. [HornJohnson1991, Theorem 4.2.12]. -/
 theorem kronecker_eq_mul_diagonal_mul_conjTranspose [Fintype m] [Fintype n] [DecidableEq m]
     [DecidableEq n] {A U : Matrix m m 𝕜} {B V : Matrix n n 𝕜} {a : m → 𝕜} {b : n → 𝕜}
     (hA : A = U * Matrix.diagonal a * Uᴴ) (hB : B = V * Matrix.diagonal b * Vᴴ) :
@@ -144,7 +141,7 @@ $\mathbf{B} = \mathbf{V} \operatorname{diag}(\mathbf{b}) \mathbf{V}^{\mathsf{H}}
 $\mathbf{U}$, $\mathbf{V}$ unitary, then
 $$\mathbf{A} \otimes \mathbf{I} + \mathbf{I} \otimes \mathbf{B} = (\mathbf{U} \otimes \mathbf{V})
   \operatorname{diag}(\mathbf{a}_i + \mathbf{b}_j) (\mathbf{U} \otimes \mathbf{V})^{\mathsf{H}}\,.$$
-[HornJohnson1991, Theorem 4.4.5]. Port of `NLAlib.multiset_eigenvalues_kronecker_sum`. -/
+[HornJohnson1991, Theorem 4.4.5]. -/
 theorem HasOrthonormalCols.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose
     [Fintype m] [Fintype n]
     [DecidableEq m] [DecidableEq n] {A U : Matrix m m 𝕜} {B V : Matrix n n 𝕜} {a : m → 𝕜}
@@ -326,7 +323,7 @@ private theorem pi_norm_mul_apply [Fintype r] [Fintype s] (σ : r → ℝ) (τ :
 
 /-- **The spectral norm is multiplicative on Kronecker products**:
 $\|\mathbf{A} \otimes \mathbf{B}\|_2 = \|\mathbf{A}\|_2 \|\mathbf{B}\|_2$.
-[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.specNorm_kronecker`, there over $\mathbb{R}$. -/
+[HornJohnson1991, Theorem 4.2.15]. -/
 theorem specNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     specNorm (A ⊗ₖ B) = specNorm A * specNorm B := by
@@ -338,8 +335,7 @@ theorem specNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : 
 
 /-- The Frobenius norm is multiplicative on Kronecker products:
 $\|\mathbf{A} \otimes \mathbf{B}\|_{\mathsf{F}}
-= \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$.
-Port of `NLAlib.frobNorm_kronecker`. -/
+= \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$. -/
 theorem frobNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     frobNorm (A ⊗ₖ B) = frobNorm A * frobNorm B := by
@@ -363,7 +359,7 @@ theorem nuclearNorm_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A
 /-- **The rank is multiplicative on Kronecker products**:
 $\operatorname{rank}(\mathbf{A} \otimes \mathbf{B})
 = \operatorname{rank} \mathbf{A} \cdot \operatorname{rank} \mathbf{B}$.
-[HornJohnson1991, Theorem 4.2.15]. Port of `NLAlib.rank_kronecker`, there over $\mathbb{R}$. -/
+[HornJohnson1991, Theorem 4.2.15]. -/
 theorem rank_kronecker [Finite m] [Fintype n] [Finite p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     (A ⊗ₖ B).rank = A.rank * B.rank := by
@@ -393,8 +389,7 @@ theorem IsPinv.kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] {A : Ma
     exact hA.isHermitian_right.kronecker hB.isHermitian_right
 
 /-- The pseudoinverse of a Kronecker product is the Kronecker product of the pseudoinverses:
-$(\mathbf{A} \otimes \mathbf{B})^{+} = \mathbf{A}^{+} \otimes \mathbf{B}^{+}$.
-Port of `NLAlib.moorePenroseInverse_kronecker`, there over $\mathbb{R}$. -/
+$(\mathbf{A} \otimes \mathbf{B})^{+} = \mathbf{A}^{+} \otimes \mathbf{B}^{+}$. -/
 theorem pinv_kronecker [Fintype m] [Fintype n] [Fintype p] [Fintype q] (A : Matrix m n 𝕜)
     (B : Matrix p q 𝕜) :
     pinv (A ⊗ₖ B) = pinv A ⊗ₖ pinv B :=

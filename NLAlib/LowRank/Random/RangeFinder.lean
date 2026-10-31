@@ -325,7 +325,6 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_add_frobNorm_sub_truncatedSVD
 
 /-! ### Randomized block Krylov iteration -/
 
--- Stage B5b
 
 section BlockKrylov
 

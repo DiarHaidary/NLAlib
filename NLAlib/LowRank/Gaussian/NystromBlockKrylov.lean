@@ -64,7 +64,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {n l : Type*} [Fintype n]
   [Fintype l] {X : Ω → Matrix n l ℝ} {H : Matrix n n ℝ}
 
--- Stage B7
 
 /-! ### The tail ratio of the square root -/
 

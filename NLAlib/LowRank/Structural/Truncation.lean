@@ -132,8 +132,7 @@ $$\|\mathbf{A} -
 \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k\|_{\mathsf{F}}^2\,,$$
 for every choice of the truncation.
 [Woodruff2014, Lemma 44]; there the optimality of a truncation inside a row space, here the exact
-split for the named output. Port of `NLAlib.frobSq_truncatedRsvdOutput_eq`, there for the
-algorithm's factored form. -/
+split for the named output. -/
 theorem frobNorm_sub_truncatedSVD_rsvd_sq (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 =
       frobNorm (A - rsvd A Ω) ^ 2 + frobNorm (rsvd A Ω - truncatedSVD (rsvd A Ω) k) ^ 2 :=
@@ -148,7 +147,6 @@ sharper than squaring the gauge form. Dominated by
 `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_truncatedSVD_sq_add`, kept because
 consumers cite this simpler form.
 [HalkoMartinssonTropp2011, Theorem 9.3]; [Woodruff2014, Lemma 44]; there in the spectral norm.
-Port of `NLAlib.frobSq_sub_truncatedRsvdOutput_le_bestRankFrobSq_add_frobSq_residual`.
 Result: truncation-lemma -/
 theorem frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add (A : Matrix m n 𝕜)
     (Ω : Matrix n l 𝕜) (k : ℕ) :
@@ -478,7 +476,6 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_specNorm
 
 /-! ### Truncation as a projection -/
 
--- Stage B4
 
 /-- **The truncated randomized SVD is a projection of $\mathbf{A}$**: with
 $\mathbf{T} = \llbracket\mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\rrbracket_k$,

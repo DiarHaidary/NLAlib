@@ -45,8 +45,7 @@ $$\begin{bmatrix} \mathbf{y} \\ \mathbf{x} \end{bmatrix}^{\mathsf{H}} \mathbf{M}
 \mathbf{y} \\ \mathbf{x} \end{bmatrix}
   = (\mathbf{y} + \mathbf{X}\mathbf{x})^{\mathsf{H}}\mathbf{A}(\mathbf{y} + \mathbf{X}\mathbf{x}) +
   \mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X})\mathbf{x}\,.$$
-Port of `NLAlib.dotProduct_fromBlocks_eq_generalizedSchurComplement_square`, there with
-$\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$. -/
+-/
 theorem _root_.Matrix.IsHermitian.quadForm_fromBlocks_eq_add [Fintype m] [Fintype n]
     {A : Matrix m m 𝕜}
     {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
@@ -73,8 +72,7 @@ theorem _root_.Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_mul_eq [Fintype m]
 
 /-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the kernel of the leading block $\mathbf{A}$ is
-contained in the kernel of $\mathbf{B}^{\mathsf{H}}$. Port of
-`NLAlib.conjTranspose_mulVec_eq_zero_of_fromBlocks_posSemidef`. -/
+contained in the kernel of $\mathbf{B}^{\mathsf{H}}$. -/
 theorem _root_.Matrix.PosSemidef.conjTranspose_mulVec_eq_zero_of_fromBlocks [Fintype m] [Finite n]
     {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
     (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) {z : m → 𝕜} (hz : A *ᵥ z = 0) :
@@ -92,8 +90,7 @@ theorem _root_.Matrix.PosSemidef.conjTranspose_mulVec_eq_zero_of_fromBlocks [Fin
 
 /-- In a positive semidefinite block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\
 \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$, the columns of the off-diagonal block
-$\mathbf{B}$ lie in the column space of the leading block $\mathbf{A}$.
-Port of `NLAlib.one_sub_mul_moorePenroseInverse_mul_eq_zero_of_fromBlocks_posSemidef`. -/
+$\mathbf{B}$ lie in the column space of the leading block $\mathbf{A}$. -/
 theorem _root_.Matrix.PosSemidef.range_le_of_fromBlocks [Fintype m] [Fintype n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
     LinearMap.range B.mulVecLin ≤ LinearMap.range A.mulVecLin := by
@@ -124,7 +121,6 @@ solution (equivalently for all, `Matrix.IsHermitian.conjTranspose_mul_mul_eq_of_
 $\mathbf{X} = \mathbf{A}^{+}\mathbf{B}$ and the range condition
 $\mathbf{A}\mathbf{A}^{+}\mathbf{B} = \mathbf{B}$, here with any solution, so that no
 pseudoinverse is needed.
-Port of `NLAlib.posSemidef_fromBlocks_iff`.
 Result: schur-complement-psd, albert-theorem -/
 theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} :
@@ -154,8 +150,7 @@ theorem posSemidef_fromBlocks_iff_exists [Fintype m] [Finite n] {A : Matrix m m 
 /-- If the block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} &
 \mathbf{C} \end{bmatrix}$ is positive semidefinite, then for every solution $\mathbf{X}$ of
 $\mathbf{A}\mathbf{X} = \mathbf{B}$ the Schur complement $\mathbf{C} -
-\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite.
-Port of `NLAlib.generalizedSchurComplement_nonneg`. -/
+\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X}$ is positive semidefinite. -/
 theorem _root_.Matrix.PosSemidef.posSemidef_sub_conjTranspose_mul_mul_of_fromBlocks [Fintype m]
     [Finite n]
     {A : Matrix m m 𝕜} {B X : Matrix m n 𝕜} {C : Matrix n n 𝕜}
@@ -172,7 +167,6 @@ $$\mathbf{x}^{\mathsf{H}}(\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{
   \mathbf{y} \\ \mathbf{x} \end{bmatrix}\,,$$
 in the order of $\Bbbk$. Equality holds at $\mathbf{y} = -\mathbf{X}\mathbf{x}$
 (`Matrix.IsHermitian.quadForm_fromBlocks_eq_add`).
-Port of `NLAlib.dotProduct_generalizedSchurComplement_mulVec_le`.
 Result: schur-complement-variational -/
 theorem _root_.Matrix.PosSemidef.quadForm_sub_conjTranspose_mul_mul_le [Fintype m] [Fintype n]
     {A : Matrix m m 𝕜}
@@ -185,8 +179,7 @@ theorem _root_.Matrix.PosSemidef.quadForm_sub_conjTranspose_mul_mul_le [Fintype 
 
 /-- The Schur complement of a positive semidefinite leading block is below $\mathbf{C}$ in the
 Loewner order: $\mathbf{C} - \mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} \preceq \mathbf{C}$ for
-$\mathbf{0} \preceq \mathbf{A}$ and any $\mathbf{X}$. Port of
-`NLAlib.generalizedSchurComplement_le`. -/
+$\mathbf{0} \preceq \mathbf{A}$ and any $\mathbf{X}$. -/
 theorem _root_.Matrix.PosSemidef.sub_conjTranspose_mul_mul_le [Fintype m] [Finite n]
     {A : Matrix m m 𝕜} (hA : A.PosSemidef)
     (X : Matrix m n 𝕜) (C : Matrix n n 𝕜) : C - Xᴴ * A * X ≤ C := by

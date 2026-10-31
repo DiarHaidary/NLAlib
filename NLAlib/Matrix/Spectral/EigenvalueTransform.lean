@@ -144,8 +144,7 @@ theorem _root_.Matrix.IsHermitian.det_eq_prod_range_eigenvalue [DecidableEq n] {
     RCLike.ofReal_prod]
 
 /-- The squared Frobenius norm of a Hermitian matrix is the sum of its squared eigenvalues:
-$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})^2$.
-Port of `NLAlib.frobSq_eq_sum_sq_eigenvalues`, there over $\mathbb{R}$. -/
+$\|\mathbf{A}\|_{\mathsf{F}}^2 = \sum_{k < \lvert n \rvert} \lambda_k(\mathbf{A})^2$. -/
 theorem _root_.Matrix.IsHermitian.frobNorm_sq_eq_sum_eigenvalue_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     frobNorm A ^ 2 = ∑ k ∈ Finset.range (Fintype.card n), eigenvalue A k ^ 2 := by
@@ -213,8 +212,7 @@ theorem eigenvalue_diagonal {q : ℕ} {d : Fin q → ℝ} (hd : Antitone d) (i :
 /-- Negation reverses and negates the eigenvalues:
 $\lambda_k(-\mathbf{A}) = -\lambda_j(\mathbf{A})$ when $k + j + 1 = \lvert n \rvert$. The index
 reversal is written with this equation so that no subtraction appears. No hypothesis on
-$\mathbf{A}$ is needed: both sides are zero when $\mathbf{A}$ is not Hermitian.
-Port of `NLAlib.eigenvalues₀_neg`, there over $\mathbb{R}$. -/
+$\mathbf{A}$ is needed: both sides are zero when $\mathbf{A}$ is not Hermitian. -/
 theorem eigenvalue_neg (A : Matrix n n 𝕜) {k j : ℕ} (h : k + j + 1 = Fintype.card n) :
     eigenvalue (-A) k = -eigenvalue A j := by
   classical

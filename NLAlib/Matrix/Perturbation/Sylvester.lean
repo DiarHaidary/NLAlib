@@ -74,8 +74,7 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul [DecidableEq m]
 /-- A Hermitian matrix with spectrum in $[a, b]$, that is
 $a\mathbf{I} \preceq \mathbf{M} \preceq b\mathbf{I}$, is within $(b - a)/2$ of the midpoint:
 $\|\mathbf{M} - c\mathbf{I}\|_2 \le (b - a)/2$ for $c = (a + b)/2$. The hypothesis $a \le b$ is
-automatic unless the matrix has size zero.
-Port of `NLAlib.specNorm_shift_le_half_width`. -/
+automatic unless the matrix has size zero. -/
 theorem specNorm_sub_smul_one_le_of_le [DecidableEq n] {M : Matrix n n 𝕜} {a b : ℝ}
     (hab : a ≤ b) (h₁ : a • (1 : Matrix n n 𝕜) ≤ M) (h₂ : M ≤ b • (1 : Matrix n n 𝕜)) :
     specNorm (M - ((a + b) / 2) • (1 : Matrix n n 𝕜)) ≤ (b - a) / 2 := by
@@ -91,8 +90,7 @@ theorem specNorm_sub_smul_one_le_of_le [DecidableEq n] {M : Matrix n n 𝕜} {a 
 
 /-- A Hermitian matrix whose eigenvalues are at distance at least $s \ge 0$ from $c$ is bounded
 below by $s$ after the shift: $s^2 \mathbf{I}
-\preceq (\mathbf{L} - c\mathbf{I})^{\mathsf{H}}(\mathbf{L} - c\mathbf{I})$.
-Port of `NLAlib.mulVec_shift_sq_ge_of_eigenvalue_abs_sub_ge`. -/
+\preceq (\mathbf{L} - c\mathbf{I})^{\mathsf{H}}(\mathbf{L} - c\mathbf{I})$. -/
 theorem _root_.Matrix.IsHermitian.sq_smul_one_le_sub_smul_one_conjTranspose_mul_self
     [DecidableEq m] {L : Matrix m m 𝕜} (hL : L.IsHermitian) {s c : ℝ} (hs : 0 ≤ s)
     (h : ∀ i, i < Fintype.card m → s ≤ |eigenvalue L i - c|) :
@@ -130,8 +128,6 @@ outside $(a - \delta, b + \delta)$, then $\delta \|\mathbf{X}\|_{\Phi}
 \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every unitarily invariant norm
 $\|\cdot\|_{\Phi}$.
 [Bhatia1997, Theorem VII.2.8 and §VII.3]; [DavisKahan1970].
-Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_interval`, there over $\mathbb{R}$ in the
-spectral norm.
 Result: sylvester-separation -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue [DecidableEq n]
     (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} (hL : L.IsHermitian) {a b δ : ℝ}
@@ -170,7 +166,6 @@ theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_eigenvalue [D
 $\mathbf{L} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \mathbf{M}$, then
 $\delta \|\mathbf{X}\|_{\Phi} \le \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\Phi}$ in every
 unitarily invariant norm $\|\cdot\|_{\Phi}$.
-Port of `NLAlib.mul_specNorm_le_specNorm_sylvester_of_one_sided`.
 [Bhatia1997, §VII.2] (locator to check). -/
 theorem SymmetricGauge.mul_matrixNorm_le_matrixNorm_mul_sub_mul_of_le [DecidableEq m]
     [DecidableEq n] (Φ : SymmetricGauge) {L : Matrix m m 𝕜} {M : Matrix n n 𝕜} {α δ : ℝ}
@@ -237,7 +232,6 @@ $\lvert \lambda_i(\mathbf{L}) - \lambda_j(\mathbf{M}) \rvert \ge \delta$ for all
 $\delta \|\mathbf{X}\|_{\mathsf{F}} \le
 \|\mathbf{L}\mathbf{X} - \mathbf{X}\mathbf{M}\|_{\mathsf{F}}$. No interval structure is needed.
 [Bhatia1997, §VII.2]; [StewartSun1990, §V.3].
-Port of `NLAlib.mul_frobNorm_le_frobNorm_sylvester`, there over $\mathbb{R}$.
 Result: sylvester-separation -/
 theorem _root_.Matrix.IsHermitian.mul_frobNorm_le_frobNorm_mul_sub_mul {L : Matrix m m 𝕜}
     {M : Matrix n n 𝕜}

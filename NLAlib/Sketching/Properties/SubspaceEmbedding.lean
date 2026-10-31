@@ -246,7 +246,7 @@ theorem HasOrthonormalCols.isSubspaceInjection_iff_le_singularValues_sq [Fintype
 $\|\mathbf{U}^{\mathsf{H}}\mathbf{S}^{\mathsf{H}}\mathbf{S}\mathbf{U} -
 \mathbf{U}^{\mathsf{H}}\mathbf{U}\|_{\mathsf{F}} \le \varepsilon$ for $\mathbf{U}$ with
 orthonormal columns, gives the $\varepsilon$-embedding, since the spectral norm is at most the
-Frobenius norm (`docs/PORT_SKETCHING.md` D7). -/
+Frobenius norm. -/
 theorem HasOrthonormalCols.isSubspaceEmbedding_of_frobNorm_le [Fintype p] [DecidableEq p]
     (hU : HasOrthonormalCols U) (h : frobNorm (Uᴴ * Sᴴ * S * U - Uᴴ * U) ≤ ε) :
     IsSubspaceEmbedding S U (1 - ε) (1 + ε) := by
@@ -415,7 +415,7 @@ theorem IsSubspaceInjection.injective_mulVec [Fintype p] (h : IsSubspaceInjectio
 
 /-- A subspace injection keeps the rank: for a positive constant,
 $\operatorname{rank}(\mathbf{S}\mathbf{U}) = \operatorname{rank}\mathbf{U}$. This is the rank
-hypothesis of the oblique projector $\mathbf{\Pi}_{\mathbf{U},\mathbf{S}}$ (LowRank stage S0),
+hypothesis of the oblique projector $\mathbf{\Pi}_{\mathbf{U},\mathbf{S}}$,
 so every statement about that projector applies under an injection. -/
 theorem IsSubspaceInjection.rank_mul_eq [Fintype p] (h : IsSubspaceInjection S U a) (ha : 0 < a) :
     (S * U).rank = U.rank := by

@@ -41,8 +41,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m
 
 /-- The squared Frobenius norm is additive over stacked rows:
 $$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{B} \end{bmatrix}\right\|_{\mathsf{F}}^2
-  = \|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2\,.$$
-Port of `NLAlib.frobSq_fromRows`, there over $\mathbb{R}$. -/
+  = \|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2\,.$$ -/
 theorem frobNorm_fromRows_sq (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
     frobNorm (Matrix.fromRows A B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   simp only [frobNorm_sq_eq_sum, Fintype.sum_sum_type, Matrix.fromRows_apply_inl,
@@ -50,8 +49,7 @@ theorem frobNorm_fromRows_sq (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
 
 /-- The squared Frobenius norm is additive over adjoined columns:
 $\|\begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}\|_{\mathsf{F}}^2 =
-\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_fromCols`, there over $\mathbb{R}$. -/
+\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2$. -/
 theorem frobNorm_fromCols_sq (A : Matrix m n 𝕜) (B : Matrix m p 𝕜) :
     frobNorm (Matrix.fromCols A B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   rw [← frobNorm_transpose, Matrix.transpose_fromCols, frobNorm_fromRows_sq, frobNorm_transpose,
@@ -127,8 +125,7 @@ theorem specNorm_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
 
 /-- The squared spectral norm of stacked rows is at most the sum of the squares:
 $$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{B} \end{bmatrix}\right\|_2^2 \le \|\mathbf{A}\|_2^2 +
-\|\mathbf{B}\|_2^2\,.$$
-Port of `NLAlib.specNorm_fromRows_sq_le`, there over $\mathbb{R}$. -/
+\|\mathbf{B}\|_2^2\,.$$ -/
 theorem specNorm_fromRows_sq_le (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
     specNorm (Matrix.fromRows A B) ^ 2 ≤ specNorm A ^ 2 + specNorm B ^ 2 := by
   rw [← specNorm_conjTranspose_mul_self (Matrix.fromRows A B),
@@ -138,7 +135,7 @@ theorem specNorm_fromRows_sq_le (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
 
 /-- The squared spectral norm of adjoined columns is at most the sum of the squares:
 $\|\begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}\|_2^2 \le \|\mathbf{A}\|_2^2 +
-\|\mathbf{B}\|_2^2$. Port of `NLAlib.specNorm_fromCols_sq_le`, there over $\mathbb{R}$. -/
+\|\mathbf{B}\|_2^2$. -/
 theorem specNorm_fromCols_sq_le (A : Matrix m n 𝕜) (B : Matrix m p 𝕜) :
     specNorm (Matrix.fromCols A B) ^ 2 ≤ specNorm A ^ 2 + specNorm B ^ 2 := by
   rw [← specNorm_mul_conjTranspose_self (Matrix.fromCols A B),
@@ -175,8 +172,7 @@ theorem specNorm_le_specNorm_fromCols_right (A : Matrix m n 𝕜) (B : Matrix m 
     Sum.inr_injective
 
 /-- Stacking zero rows under a matrix does not change its spectral norm:
-$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{0} \end{bmatrix}\right\|_2 = \|\mathbf{A}\|_2$.
-Port of `NLAlib.specNorm_fromRows_zero_sq`. -/
+$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{0} \end{bmatrix}\right\|_2 = \|\mathbf{A}\|_2$. -/
 @[simp]
 theorem specNorm_fromRows_zero (A : Matrix m n 𝕜) :
     specNorm (Matrix.fromRows A (0 : Matrix p n 𝕜)) = specNorm A := by
@@ -225,8 +221,7 @@ theorem specNorm_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m n 𝕜) (D : Mat
 
 /-- For summands with orthogonal row spaces ($\mathbf{X}\mathbf{Y}^{\mathsf{H}} = \mathbf{0}$),
 the squared spectral norm of the sum is at most the sum of the squares:
-$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$.
-Port of `NLAlib.specNorm_add_sq_le_of_mul_conjTranspose_eq_zero`. -/
+$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$. -/
 theorem specNorm_add_sq_le_of_mul_conjTranspose_eq_zero {X Y : Matrix m n 𝕜} (h : X * Yᴴ = 0) :
     specNorm (X + Y) ^ 2 ≤ specNorm X ^ 2 + specNorm Y ^ 2 := by
   have h' : Y * Xᴴ = 0 := by
@@ -241,8 +236,7 @@ theorem specNorm_add_sq_le_of_mul_conjTranspose_eq_zero {X Y : Matrix m n 𝕜} 
 
 /-- For summands with orthogonal ranges ($\mathbf{X}^{\mathsf{H}}\mathbf{Y} = \mathbf{0}$), the
 squared spectral norm of the sum is at most the sum of the squares:
-$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$.
-Port of `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`. -/
+$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$. -/
 theorem specNorm_add_sq_le_of_conjTranspose_mul_eq_zero {X Y : Matrix m n 𝕜} (h : Xᴴ * Y = 0) :
     specNorm (X + Y) ^ 2 ≤ specNorm X ^ 2 + specNorm Y ^ 2 := by
   have h' : Xᴴ * Yᴴᴴ = 0 := by

@@ -64,7 +64,6 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_2
 The two frames have the same number of columns, so the distance is symmetric in them
 (`IsStarProjection.singularValues_one_sub_mul_eq_of_rank_eq`).
 [YuWangSamworth2015, Theorem 2 context].
-Port of `NLAlib.specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
 Result: davis-kahan -/
 theorem _root_.Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap
     [DecidableEq n] {A E : Matrix n n 𝕜}
@@ -171,8 +170,7 @@ $$\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
   \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}^2
   \le \sum_{i=0}^{j} \lambda_i(\mathbf{A}) -
   \operatorname{Re} \operatorname{tr}(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}).$$
-This turns a near-optimal value of the Rayleigh trace into closeness of subspaces.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_trace_deficit`, there over $\mathbb{R}$. -/
+This turns a near-optimal value of the Rayleigh trace into closeness of subspaces. -/
 theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le [DecidableEq n]
     {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜} (hU : HasOrthonormalCols U)
@@ -227,9 +225,7 @@ with the Frobenius inner product
 $\langle \mathbf{X}, \mathbf{Y} \rangle_{\mathsf{F}} =
 \operatorname{Re} \operatorname{tr}(\mathbf{X}^{\mathsf{H}}\mathbf{Y})$ (`NLAlib.frobInner`).
 Nothing is assumed of $\mathbf{E}$, and $\mathbf{Q}$ need not be an eigenframe of
-$\mathbf{A} + \mathbf{E}$.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$
-for a frame attaining the largest Rayleigh trace. -/
+$\mathbf{A} + \mathbf{E}$. -/
 theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner_of_re_trace_le
     [DecidableEq n]
     {A E : Matrix n n 𝕜} (hA : A.IsHermitian) {j : ℕ} {U Q : Matrix n (Fin (j + 1)) 𝕜}
@@ -263,7 +259,6 @@ $\bigl(\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})\bigr)
 \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}^2
 \le \langle \mathbf{Q}\mathbf{Q}^{\mathsf{H}} - \mathbf{U}\mathbf{U}^{\mathsf{H}}, \mathbf{E}
 \rangle_{\mathsf{F}}$.
-Port of `NLAlib.mul_frobSq_sinePrincipalAngles_le_frobInner_perturbation`, there over $\mathbb{R}$.
 -/
 theorem _root_.Matrix.IsHermitian.eigengap_mul_frobNorm_one_sub_mul_sq_le_frobInner [DecidableEq n]
     {A E : Matrix n n 𝕜}
@@ -357,7 +352,6 @@ $$\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}
   \le \frac{\sqrt{2} \, \|\mathbf{E}\|_{\mathsf{F}}}
   {\lambda_j(\mathbf{A}) - \lambda_{j+1}(\mathbf{A})}.$$
 [YuWangSamworth2015, Theorem 2].
-Port of `NLAlib.frobNorm_sinePrincipalAngles_le_two_mul_min_div_population_gap`.
 Result: davis-kahan -/
 theorem _root_.Matrix.IsHermitian.frobNorm_one_sub_mul_le_sqrt_two_mul_frobNorm_div_eigengap
     [DecidableEq n]

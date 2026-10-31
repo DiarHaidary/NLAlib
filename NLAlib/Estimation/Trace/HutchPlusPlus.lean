@@ -72,7 +72,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {n s t : Type*} [Fintype n] [Fintype s] [Fintype t] [DecidableEq n]
 
--- Stage TE-2
 
 /-- **Hutch++**: for a square $\mathbf{A}$, a sketch test matrix $\mathbf{S}$ and a residual test
 matrix $\mathbf{G}$,
@@ -569,7 +568,6 @@ theorem ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix (A : Matrix n n ℝ) {S : �
   filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hS hA] with ω hω
   exact hutchpp_eq_trace_of_rsvd_eq hω (G ω)
 
--- Stage TE-3
 
 /-- **The variance of Gaussian Hutch++, Halko–Martinsson–Tropp form**: if the
 $n \times \lvert s \rvert$ sketch test matrix $\mathbf{S}$ and the $n \times \ell$ residual test

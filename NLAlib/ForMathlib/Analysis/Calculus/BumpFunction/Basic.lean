@@ -17,7 +17,6 @@ every point. They approximate a function of finite energy by compactly supported
 log-Sobolev inequalities). Upstream candidate for
 `Mathlib/Analysis/Calculus/BumpFunction/Basic.lean`.
 
-Design: consolidation round (`docs/design/Consolidation.md` §3.1, F3).
 
 ## Main results
 

@@ -505,8 +505,7 @@ row-space hypothesis, and the bound then fails. [ZouziasFreris2013, Theorem 7]; 
 $\|\mathbf{w}\|^2/\sigma_{\min}^2$, here with the factor $1 - \rho^q$. [Needell2010,
 Theorem 2.1]; there for full column rank, in the unsquared norm and with the larger horizon
 $R\gamma^2 \ge \|\mathbf{A}^{+}\|_2^2\|\mathbf{b} - \mathbf{A}\mathbf{x}_\star\|^2$, which this
-implies by Jensen's inequality. Port of `NLAlib.Kaczmarz.expErr_le_add_of_sub_mem_range` and
-five variants. Iteration count:
+implies by Jensen's inequality. Iteration count:
 `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`.
 Result: kaczmarz-inconsistent -/
 theorem integral_norm_sub_kaczmarzIterate_sq_le_add_of_hasLaw_iidSequence
@@ -599,7 +598,6 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 From $\mathbf{x}_0 = \mathbf{0}$ the limit is $\mathbf{A}^{+}\mathbf{b}$.
 [ZouziasFreris2013, Theorem 7], there from $\mathbf{x}_0 = \mathbf{0}$;
 [LeventhalLewis2010, Theorem 4.7], there for consistent systems.
-Port of `NLAlib.Kaczmarz.expErr_zero_le_moorePenroseInverse`.
 Result: kaczmarz-rank-deficient -/
 theorem integral_norm_add_pinv_mulVec_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence
     (hι : HasLaw ι (iidSequence (samplingMeasure (rowNormSqDistribution A))) μ)
@@ -652,7 +650,7 @@ $$\mathbb{E}\|\mathbf{x}_\star - \mathsf{kaczmarzIterate}(\mathbf{A}, \iota, \ma
 \Bigr)^q\|\mathbf{x}_\star - \mathbf{x}_0\|^2\,,$$
 the rate in $[0, 1)$ for $\mathbf{A} \ne \mathbf{0}$. [StrohmerVershynin2009, Theorem 2]; there
 for full column rank, where the row-space hypothesis is empty. [ZouziasFreris2013, Theorem 4].
-Port of `NLAlib.integral_sqErr_kaczmarz_le_frobPseudoConditionNumber`. Iteration count:
+Iteration count:
 `NLAlib.integral_norm_sub_kaczmarzIterate_sq_le_mul_of_hasLaw_iidSequence_of_mul_log_le`.
 Result: randomized-kaczmarz -/
 theorem integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence

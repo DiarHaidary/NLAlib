@@ -44,7 +44,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-- **Gelfand's formula**: as $k \to \infty$,
 $$\|\mathbf{A}^k\|_2^{1/k} \to \rho(\mathbf{A})\,.$$
 [HornJohnson2013, Corollary 5.6.14].
-Port of `NLAlib.tendsto_norm_matrix_pow_rpow_spectralRadius`, there over $\mathbb{C}$.
 Result: gelfand-formula -/
 theorem tendsto_specNorm_pow_rpow_specRadius (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => specNorm (A ^ k) ^ (1 / (k : ℝ))) atTop (𝓝 (specRadius A)) := by
@@ -89,8 +88,7 @@ theorem specNorm_pow_le_pseudoConditionNumber_mul (A : Matrix n n 𝕜) {S : Mat
 /-- **Growth of the powers**: for every $\varepsilon > 0$ there is $C > 0$ with
 $\|\mathbf{A}^k\|_2 \le C (\rho(\mathbf{A}) + \varepsilon)^k$ for every $k$, where
 $\rho(\mathbf{A})$ is the spectral radius.
-[HornJohnson2013, Corollary 5.6.13].
-Port of `NLAlib.exists_prefix_norm_matrix_pow_le_spectralRadius_add`. -/
+[HornJohnson2013, Corollary 5.6.13]. -/
 theorem exists_forall_specNorm_pow_le_mul_pow (A : Matrix n n 𝕜) {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, 0 < C ∧ ∀ k : ℕ, specNorm (A ^ k) ≤ C * (specRadius A + ε) ^ k := by
   set r := specRadius A + ε with hr
@@ -124,7 +122,6 @@ private theorem exists_forall_specNorm_pow_le_mul_pow_of_specRadius_lt_one {A : 
 /-- **The powers of a matrix tend to zero exactly when its spectral radius is less than one**:
 $\mathbf{A}^k \to \mathbf{0}$ if and only if $\rho(\mathbf{A}) < 1$.
 [HornJohnson2013, Theorem 5.6.12].
-Port of `NLAlib.tendsto_matrix_pow_zero_iff_spectralRadius_lt_one`, there over $\mathbb{C}$.
 Result: convergent-matrix -/
 theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => A ^ k) atTop (𝓝 0) ↔ specRadius A < 1 := by
@@ -148,8 +145,7 @@ theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
 
 /-- **The Neumann series** $\sum_{k \ge 0} \mathbf{A}^k$ converges to
 $(\mathbf{I} - \mathbf{A})^{-1}$ when the spectral radius $\rho(\mathbf{A})$ is less than one.
-[HornJohnson2013, Corollary 5.6.16].
-Port of `NLAlib.hasSum_matrix_pow_inv_of_spectralRadius_lt_one`. -/
+[HornJohnson2013, Corollary 5.6.16]. -/
 theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
     (hA : specRadius A < 1) : HasSum (fun k : ℕ => A ^ k) (1 - A)⁻¹ := by
   obtain ⟨C, r, -, hr0, hr1, hC⟩ := exists_forall_specNorm_pow_le_mul_pow_of_specRadius_lt_one hA
@@ -169,8 +165,7 @@ theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
   exact hs.hasSum
 
 /-- $\mathbf{I} - \mathbf{A}$ is invertible when the spectral radius of $\mathbf{A}$ is less than
-one.
-Port of `NLAlib.isUnit_one_sub_of_matrix_spectralRadius_lt_one`. -/
+one. -/
 theorem isUnit_det_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜} (hA : specRadius A < 1) :
     IsUnit (1 - A).det := by
   by_contra h
@@ -372,8 +367,7 @@ private theorem exists_forall_norm_pow_apply_le_of_specRadius_le_one {A : Matrix
 /-- **Power-bounded matrices.** The powers of $\mathbf{A}$ are bounded,
 $\sup_k \|\mathbf{A}^k\|_2 < \infty$, exactly when the spectral radius is at most one and every
 eigenvalue of modulus one (of $\mathbf{A}$ viewed over $\mathbb{C}$) is semisimple.
-[HornJohnson2013, Theorem 3.2.5.2].
-Port of `NLAlib.exists_bound_norm_matrix_pow_iff`, there over $\mathbb{C}$. -/
+[HornJohnson2013, Theorem 3.2.5.2]. -/
 theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
     (∃ C : ℝ, ∀ k : ℕ, specNorm (A ^ k) ≤ C) ↔
       specRadius A ≤ 1 ∧ ∀ μ : ℂ, ‖μ‖ = 1 →

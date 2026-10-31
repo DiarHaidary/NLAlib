@@ -20,7 +20,7 @@ interpolation remainder into the integral (quadrature) remainder. Mathlib's
 $f$ continuous, which a pointwise remainder is not. Upstream candidate for
 `Mathlib.MeasureTheory.Integral.MeanValue`.
 
-Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F4, F5).
+Design: `docs/design/Polynomial-QuadratureRemainder.md`, F4, F5.
 
 ## Main results
 

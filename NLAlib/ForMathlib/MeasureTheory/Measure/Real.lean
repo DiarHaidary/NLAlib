@@ -16,7 +16,6 @@ and $\mu(t)$ is finite. No measurability is needed. Mathlib has `MeasureTheory.m
 the step that bounds a tail by the tail of a larger event that contains it almost surely.
 Upstream candidate for `Mathlib/MeasureTheory/Measure/Real.lean`.
 
-Design: consolidation round (`docs/design/Consolidation.md` §3.1, F2).
 
 ## Main results
 

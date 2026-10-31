@@ -89,8 +89,7 @@ private theorem circulant_single_mul_apply {R : Type*} [Semiring R] [NeZero n]
   · exact fun h => absurd (Finset.mem_univ _) h
 
 /-- A matrix $\mathbf{A}$ that commutes with the cyclic shift is the circulant matrix of its
-first column $(\mathbf{A}_{i,0})_i$.
-Port of `NLAlib.eq_circulant_of_commute_cyclicShift`. -/
+first column $(\mathbf{A}_{i,0})_i$. -/
 theorem eq_circulant_of_mul_circulant_single_comm {R : Type*} [Semiring R] [NeZero n]
     {A : Matrix (Fin n) (Fin n) R}
     (h : A * Matrix.circulant (Pi.single 1 1) = Matrix.circulant (Pi.single 1 1) * A) :
@@ -105,8 +104,7 @@ theorem eq_circulant_of_mul_circulant_single_comm {R : Type*} [Semiring R] [NeZe
   ext i j
   rw [Matrix.circulant_apply, hall]
 
-/-- A matrix commutes with the cyclic shift exactly when it is circulant.
-Port of `NLAlib.commute_cyclicShift_iff_exists_circulant`, there over $\mathbb{R}$. -/
+/-- A matrix commutes with the cyclic shift exactly when it is circulant. -/
 theorem mul_circulant_single_comm_iff {R : Type*} [Semiring R] [NeZero n]
     (A : Matrix (Fin n) (Fin n) R) :
     A * Matrix.circulant (Pi.single 1 1) = Matrix.circulant (Pi.single 1 1) * A ↔

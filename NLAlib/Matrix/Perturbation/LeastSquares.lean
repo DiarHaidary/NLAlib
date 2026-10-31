@@ -80,7 +80,6 @@ $$\begin{aligned}
   &\qquad + \|\mathbf{A}^{+}\|_2 \|\mathbf{E}\|_2 \|\mathbf{b} - \mathbf{A}\mathbf{x}\|\bigr).
 \end{aligned}$$
 [GolubVanLoan2013, Theorem 5.3.1]; [Wedin1973]; [Higham2002, Theorem 20.1].
-Port of `NLAlib.norm_least_squares_sub_le_pinv`, there over $\mathbb{R}$.
 Result: least-squares-perturbation -/
 theorem IsLeastSquaresSolution.norm_sub_le {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (hE : specNorm (pinv A) * specNorm E < 1)
@@ -130,7 +129,6 @@ $$\begin{aligned}
 \end{aligned}$$
 The last term carries $\kappa(\mathbf{A})^2$ when the residual is not small.
 [GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_sub_le_relative_data`, there over $\mathbb{R}$.
 Result: least-squares-perturbation -/
 theorem IsLeastSquaresSolution.norm_sub_le_of_le {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
@@ -169,8 +167,7 @@ theorem IsLeastSquaresSolution.norm_sub_le_of_le {A E : Matrix m n 𝕜}
 rank, the residuals $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ and
 $(\mathbf{I} - \mathbf{P}_{\mathbf{B}})(\mathbf{b} + \mathbf{f})$ differ in norm by at most
 $\|\mathbf{A}^{+}\|_2 \|\mathbf{B} - \mathbf{A}\|_2 \|\mathbf{b}\| + \|\mathbf{f}\|$.
-[GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_residual_sub_le`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, Theorem 5.3.1]. -/
 theorem norm_one_sub_rangeProjector_mulVec_sub_le [DecidableEq m] {A B : Matrix m n 𝕜}
     (h : A.rank = B.rank) (b f : m → 𝕜) :
     ‖WithLp.toLp 2 ((1 - rangeProjector A) *ᵥ b - (1 - rangeProjector B) *ᵥ (b + f))‖ ≤
@@ -193,8 +190,7 @@ and $\kappa(\mathbf{A}) \varepsilon < 1$, the residuals
 $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{b}$ and
 $(\mathbf{I} - \mathbf{P}_{\mathbf{A} + \mathbf{E}})(\mathbf{b} + \mathbf{f})$ differ in norm by at
 most $(1 + \kappa(\mathbf{A})) \varepsilon \|\mathbf{b}\|$.
-[GolubVanLoan2013, Theorem 5.3.1].
-Port of `NLAlib.norm_least_squares_residual_sub_le_relative_data`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, Theorem 5.3.1]. -/
 theorem norm_one_sub_rangeProjector_mulVec_sub_le_of_le [DecidableEq m] {A E : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {ε : ℝ} (hE : specNorm E ≤ ε * specNorm A)
     (hε : pseudoConditionNumber A * ε < 1) {b f : m → 𝕜}

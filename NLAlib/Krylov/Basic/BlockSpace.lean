@@ -68,7 +68,6 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
   [DecidableEq n]
 
--- Stage B0
 
 omit [Fintype p] in
 /-- The **block Krylov matrix** $\mathbf{K}_q(\mathbf{A}, \mathbf{B}) =
@@ -256,8 +255,7 @@ theorem rank_blockKrylovMatrix_le (A : Matrix n n 𝕜) (B : Matrix n p 𝕜) (q
 /-- **The polynomial description of the block Krylov space**: $\mathbf{x} \in
 \mathcal{K}_q(\mathbf{A}, \mathbf{B})$ exactly when
 $\mathbf{x} = \sum_c f_c(\mathbf{A})\mathbf{b}_c$ for polynomials $f_c \in \Bbbk[X]$ of degree
-less than $q$, one per column $\mathbf{b}_c$ of $\mathbf{B}$. [Saad2003, §6.12].
-Port of `NLAlib.mem_blockKrylovSpace_iff` (prototype, `Krylov/Spaces/Block.lean`). -/
+less than $q$, one per column $\mathbf{b}_c$ of $\mathbf{B}$. [Saad2003, §6.12]. -/
 theorem mem_blockKrylovSpace_iff {A : Matrix n n 𝕜} {B : Matrix n p 𝕜} {q : ℕ} {x : n → 𝕜} :
     x ∈ blockKrylovSpace A B q ↔
       ∃ f : p → 𝕜[X], (∀ c, (f c).degree < q) ∧ ∑ c, aeval A (f c) *ᵥ B.col c = x := by
@@ -286,8 +284,7 @@ theorem exists_aeval_mul_eq_blockKrylovMatrix_mul {R : Type*} [CommSemiring R] [
 
 /-- **The range of a polynomial filter lies in the block Krylov space**: for $\deg f < q$,
 $\operatorname{range}(f(\mathbf{A})\mathbf{B}) \subseteq \mathcal{K}_q(\mathbf{A}, \mathbf{B})$.
-[TroppWebber2023, §9.3 (proof)].
-Port of `NLAlib.range_aeval_mul_le_blockKrylovSpace` (prototype). -/
+[TroppWebber2023, §9.3 (proof)]. -/
 theorem range_aeval_mul_le_blockKrylovSpace {R : Type*} [CommSemiring R] [Algebra R 𝕜]
     (A : Matrix n n 𝕜) (B : Matrix n p 𝕜) {q : ℕ} {f : R[X]} (hf : f.degree < q) :
     LinearMap.range (aeval A f * B).mulVecLin ≤ blockKrylovSpace A B q := by

@@ -670,7 +670,6 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
 
 /-! ### The normalised spectral bound -/
 
--- Stage B6b
 
 /-- The **range-finder tail ratio** (casts to $\mathbb{R}$),
 the number <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->

@@ -45,20 +45,16 @@ variable {𝕜 : Type*} [RCLike 𝕜] {R : Type*} {m n : ℕ}
 /-! ### The predicates -/
 
 /-- A matrix indexed by `Fin m` and `Fin n` is **upper Hessenberg** if its entries below the first
-subdiagonal vanish: $\mathbf{H}_{i,j} = 0$ for $j + 1 < i$. [GolubVanLoan2013, §7.4].
-Port of `NLAlib.IsUpperHessenberg`, there for
-square real matrices. -/
+subdiagonal vanish: $\mathbf{H}_{i,j} = 0$ for $j + 1 < i$. [GolubVanLoan2013, §7.4]. -/
 def IsUpperHessenberg [Zero R] (H : Matrix (Fin m) (Fin n) R) : Prop :=
   ∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
 
 /-- A square matrix indexed by `Fin n` is **tridiagonal** if its entries outside the main
-diagonal and the two adjacent ones vanish: $\mathbf{T}_{i,j} = 0$ for $\lvert i - j \rvert > 1$.
-Port of `NLAlib.IsTridiagonal`. -/
+diagonal and the two adjacent ones vanish: $\mathbf{T}_{i,j} = 0$ for $\lvert i - j \rvert > 1$. -/
 def IsTridiagonal [Zero R] (T : Matrix (Fin n) (Fin n) R) : Prop :=
   ∀ i j : Fin n, (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ) → T i j = 0
 
-/-- An upper trapezoidal matrix is upper Hessenberg.
-Port of `NLAlib.isUpperHessenberg_of_isUpperTriangular`. -/
+/-- An upper trapezoidal matrix is upper Hessenberg. -/
 theorem IsUpperTrapezoidal.isUpperHessenberg [Zero R] {A : Matrix (Fin m) (Fin n) R}
     (hA : IsUpperTrapezoidal A) : IsUpperHessenberg A := by
   exact fun i j hij => hA i j (by omega)
@@ -82,15 +78,13 @@ theorem isTridiagonal_iff [Zero R] {T : Matrix (Fin n) (Fin n) R} :
   · exact h.2 j i hij
   · exact h.1 i j hij
 
-/-- A Hermitian upper Hessenberg matrix is tridiagonal.
-Port of `NLAlib.IsUpperHessenberg.isTridiagonal_of_isHermitian`. -/
+/-- A Hermitian upper Hessenberg matrix is tridiagonal. -/
 theorem IsUpperHessenberg.isTridiagonal {H : Matrix (Fin n) (Fin n) 𝕜}
     (hH : IsUpperHessenberg H) (h : H.IsHermitian) : IsTridiagonal H := by
   refine isTridiagonal_iff.mpr ⟨hH, fun i j hij => ?_⟩
   rw [Matrix.transpose_apply, ← h.apply j i, hH i j hij, star_zero]
 
-/-- An upper Hessenberg matrix times an upper triangular one is upper Hessenberg.
-Port of `NLAlib.IsUpperHessenberg.mul_isUpperTriangular`. -/
+/-- An upper Hessenberg matrix times an upper triangular one is upper Hessenberg. -/
 theorem IsUpperHessenberg.mul_isUpperTriangular [NonUnitalNonAssocSemiring R]
     {H : Matrix (Fin m) (Fin n) R} {U : Matrix (Fin n) (Fin n) R} (hH : IsUpperHessenberg H)
     (hU : U.IsUpperTriangular) : IsUpperHessenberg (H * U) := by
@@ -101,8 +95,7 @@ theorem IsUpperHessenberg.mul_isUpperTriangular [NonUnitalNonAssocSemiring R]
   · rw [hH i k hk, zero_mul]
   · rw [hU (show j < k from Fin.lt_def.mpr (by omega)), mul_zero]
 
-/-- An upper triangular matrix times an upper Hessenberg one is upper Hessenberg.
-Port of `NLAlib.IsUpperHessenberg.isUpperTriangular_mul`. -/
+/-- An upper triangular matrix times an upper Hessenberg one is upper Hessenberg. -/
 theorem IsUpperHessenberg.isUpperTriangular_mul [NonUnitalNonAssocSemiring R]
     {U : Matrix (Fin m) (Fin m) R} {H : Matrix (Fin m) (Fin n) R} (hU : U.IsUpperTriangular)
     (hH : IsUpperHessenberg H) : IsUpperHessenberg (U * H) := by
@@ -114,8 +107,7 @@ theorem IsUpperHessenberg.isUpperTriangular_mul [NonUnitalNonAssocSemiring R]
   · rw [hH k j (by omega), mul_zero]
 
 /-- A shift of an upper Hessenberg matrix is upper Hessenberg: so is
-$\mathbf{H} - \mu \mathbf{I}$.
-Port of `NLAlib.IsUpperHessenberg.sub_smul_one`. -/
+$\mathbf{H} - \mu \mathbf{I}$. -/
 theorem IsUpperHessenberg.sub_smul_one [Ring R] {H : Matrix (Fin n) (Fin n) R}
     (hH : IsUpperHessenberg H) (μ : R) : IsUpperHessenberg (H - μ • (1 : Matrix _ _ R)) := by
   intro i j hij
@@ -213,7 +205,6 @@ private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : �
 upper Hessenberg matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$
 whose first column is the first coordinate vector $\mathbf{e}_0$.
 [GolubVanLoan2013, §7.4.3]; [HornJohnson2013, §2.5].
-Port of `NLAlib.exists_isHessenbergForm`, which the prototype leaves unproved.
 Result: hessenberg-reduction -/
 theorem exists_isUpperHessenberg_conjTranspose_mul_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     ∃ Q : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols Q ∧ IsUpperHessenberg (Qᴴ * A * Q) ∧
@@ -223,8 +214,7 @@ theorem exists_isUpperHessenberg_conjTranspose_mul_mul (A : Matrix (Fin n) (Fin 
 
 /-- **Reduction to tridiagonal form.** Every Hermitian matrix $\mathbf{A}$ is unitarily similar
 to a tridiagonal matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$
-whose first column is the first coordinate vector $\mathbf{e}_0$. [GolubVanLoan2013, §8.3.1].
-Port of `NLAlib.IsHessenbergForm.isTridiagonal`. -/
+whose first column is the first coordinate vector $\mathbf{e}_0$. [GolubVanLoan2013, §8.3.1]. -/
 theorem _root_.Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul
     {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
     ∃ Q : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols Q ∧ IsTridiagonal (Qᴴ * A * Q) ∧
@@ -314,8 +304,7 @@ private theorem exists_givens_state {H : Matrix (Fin n) (Fin n) 𝕜} (hH : IsUp
 /-- **A Hessenberg matrix has a QR factorization with a Hessenberg unitary factor**:
 $\mathbf{H} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ upper Hessenberg. No rank assumption is
 made.
-[GolubVanLoan2013, §5.2.5]. Port of `NLAlib.isQR_givensQR` with
-`NLAlib.isUpperHessenberg_givensQR_fst`, which the prototype leaves unproved. -/
+[GolubVanLoan2013, §5.2.5]. -/
 theorem IsUpperHessenberg.exists_isQR {H : Matrix (Fin n) (Fin n) 𝕜}
     (hH : IsUpperHessenberg H) : ∃ Q R, IsQR H Q R ∧ IsUpperHessenberg Q := by
   obtain ⟨S, R, hS, hSH, -, hRk, hSl, -⟩ := exists_givens_state hH n
@@ -325,16 +314,14 @@ theorem IsUpperHessenberg.exists_isQR {H : Matrix (Fin n) (Fin n) 𝕜}
 
 /-- A step of the QR iteration with a Hessenberg unitary factor keeps the Hessenberg form: if
 $\mathbf{H} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ upper Hessenberg, then $\mathbf{R}\mathbf{Q}$
-is upper Hessenberg.
-Port of `NLAlib.isUpperHessenberg_givensQR_snd_mul_fst`. -/
+is upper Hessenberg. -/
 theorem IsQR.isUpperHessenberg_mul {H Q R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR H Q R)
     (hQ : IsUpperHessenberg Q) : IsUpperHessenberg (R * Q) := by
   exact hQ.isUpperTriangular_mul h.isUpperTriangular
 
 /-- For a nonsingular Hessenberg matrix the unitary factor of any QR factorization is
 Hessenberg: if $\mathbf{H} = \mathbf{Q}\mathbf{R}$ is upper Hessenberg and the diagonal of
-$\mathbf{R}$ has no zero, then $\mathbf{Q}$ is upper Hessenberg.
-Port of `NLAlib.isUpperHessenberg_mul_of_isQR`. -/
+$\mathbf{R}$ has no zero, then $\mathbf{Q}$ is upper Hessenberg. -/
 theorem IsQR.isUpperHessenberg_of_isUpperHessenberg {H Q R : Matrix (Fin n) (Fin n) 𝕜}
     (h : IsQR H Q R) (hH : IsUpperHessenberg H) (hR : ∀ i, R i i ≠ 0) :
     IsUpperHessenberg Q := by
@@ -345,7 +332,7 @@ theorem IsQR.isUpperHessenberg_of_isUpperHessenberg {H Q R : Matrix (Fin n) (Fin
 $\mathbf{H} = \mathbf{Q}\mathbf{R}$ is Hermitian with $\mathbf{Q}$ upper Hessenberg, then
 $\mathbf{R}\mathbf{Q}$ is tridiagonal. That $\mathbf{H}$ is tridiagonal is not a hypothesis: it
 follows from $\mathbf{H}$ being Hermitian and $\mathbf{Q}$ upper Hessenberg.
-[GolubVanLoan2013, §8.3.3]. Port of `NLAlib.isTridiagonal_mul_of_isQR`. -/
+[GolubVanLoan2013, §8.3.3]. -/
 theorem IsQR.isTridiagonal_mul {H Q R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR H Q R)
     (hH : H.IsHermitian) (hQ : IsUpperHessenberg Q) : IsTridiagonal (R * Q) := by
   exact (h.isUpperHessenberg_mul hQ).isTridiagonal (h.isHermitian_mul hH)
@@ -397,7 +384,6 @@ $\mathbf{H}_1$ has no zero, then $\mathbf{Q}_2 = \mathbf{Q}_1\mathbf{D}$ and
 $\mathbf{H}_2 = \mathbf{D}^{\mathsf{H}}\mathbf{H}_1\mathbf{D}$ for a diagonal $\mathbf{D}$ whose
 entries have unit modulus, the first one being $1$.
 [GolubVanLoan2013, Theorem 7.4.2].
-Port of `NLAlib.IsHessenbergForm.exists_sign`, which the prototype leaves unproved.
 Result: implicit-q -/
 theorem HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg
     {A Q₁ Q₂ : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}

@@ -20,7 +20,7 @@ continuity is used. This is the step behind every Hermite interpolation remainde
 doubled, Radau and Lobatto endpoints simple). Mathlib has the single-derivative case
 `exists_deriv_eq_zero`. Upstream candidate for `Mathlib.Analysis.Calculus.LocalExtr.Rolle`.
 
-Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F3).
+Design: `docs/design/Polynomial-QuadratureRemainder.md`, F3.
 
 ## Main results
 

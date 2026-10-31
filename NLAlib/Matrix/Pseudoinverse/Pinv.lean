@@ -73,7 +73,7 @@ Moore–Penrose pseudoinverse: some $\mathbf{B}$ satisfies the four Penrose iden
 $$\mathbf{A}\mathbf{B}\mathbf{A} = \mathbf{A}, \quad \mathbf{B}\mathbf{A}\mathbf{B} = \mathbf{B},
   \quad (\mathbf{A}\mathbf{B})^{\mathsf{H}} = \mathbf{A}\mathbf{B}, \quad
   (\mathbf{B}\mathbf{A})^{\mathsf{H}} = \mathbf{B}\mathbf{A}\,.$$
-[GolubVanLoan2013, §5.5.2]. Port of `NLAlib.exists_isMoorePenroseInverse`.
+[GolubVanLoan2013, §5.5.2].
 Result: moore-penrose-existence -/
 theorem exists_isPinv (A : Matrix m n 𝕜) : ∃ B : Matrix n m 𝕜, IsPinv A B := by
   obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
@@ -84,12 +84,11 @@ open Classical in
 unique matrix satisfying the four Penrose identities with $\mathbf{A}$. For an invertible matrix it
 is the inverse, for the zero matrix it is zero, with full column rank it is
 $(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$.
-[GolubVanLoan2013, §5.5.2]. Port of `NLAlib.moorePenroseInverse`. -/
+[GolubVanLoan2013, §5.5.2]. -/
 noncomputable def pinv (A : Matrix m n 𝕜) : Matrix n m 𝕜 :=
   if h : ∃ B : Matrix n m 𝕜, IsPinv A B then h.choose else 0
 
-/-- The pseudoinverse satisfies the Penrose identities.
-Port of `NLAlib.isMoorePenroseInverse`. -/
+/-- The pseudoinverse satisfies the Penrose identities. -/
 theorem isPinv_pinv (A : Matrix m n 𝕜) : IsPinv A (pinv A) := by
   rw [pinv, dif_pos (exists_isPinv A)]
   exact (exists_isPinv A).choose_spec
@@ -107,22 +106,19 @@ theorem pinv_eq_iff {A : Matrix m n 𝕜} {B : Matrix n m 𝕜} : pinv A = B ↔
 
 /-! ### The Penrose identities and the projectors -/
 
-/-- $\mathbf{A}\mathbf{A}^{+}\mathbf{A} = \mathbf{A}$. Port of `NLAlib.mul_moorePenroseInverse_mul`.
+/-- $\mathbf{A}\mathbf{A}^{+}\mathbf{A} = \mathbf{A}$.
 -/
 @[simp]
 theorem mul_pinv_mul_self (A : Matrix m n 𝕜) : A * pinv A * A = A := by
   exact (isPinv_pinv A).mul_mul_left
 
-/-- $\mathbf{A}^{+}\mathbf{A}\mathbf{A}^{+} = \mathbf{A}^{+}$.
-Port of `NLAlib.moorePenroseInverse_mul_moorePenroseInverse`. -/
+/-- $\mathbf{A}^{+}\mathbf{A}\mathbf{A}^{+} = \mathbf{A}^{+}$. -/
 @[simp]
 theorem pinv_mul_mul_pinv (A : Matrix m n 𝕜) : pinv A * A * pinv A = pinv A := by
   exact (isPinv_pinv A).mul_mul_right
 
 /-- $\mathbf{A}\mathbf{A}^{+}$ is the orthogonal projector onto the column space of
-$\mathbf{A}$: $\mathbf{A}\mathbf{A}^{+} = \mathbf{P}_{\mathbf{A}}$.
-Port of `NLAlib.rangeProjector_eq_mul_moorePenroseInverse`, there the definition of
-`rangeProjector`. -/
+$\mathbf{A}$: $\mathbf{A}\mathbf{A}^{+} = \mathbf{P}_{\mathbf{A}}$. -/
 theorem mul_pinv (A : Matrix m n 𝕜) : A * pinv A = rangeProjector A := by
   exact (isPinv_pinv A).mul_eq_rangeProjector
 
@@ -144,8 +140,7 @@ theorem mul_pinv_mul_eq_of_range_le {A : Matrix m l 𝕜} {B : Matrix m n 𝕜}
     (h : LinearMap.range B.mulVecLin ≤ LinearMap.range A.mulVecLin) : A * pinv A * B = B := by
   exact mul_pinv_mul_eq_iff_range_le.mpr h
 
-/-- $\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}$. Port of
-`NLAlib.transpose_mul_mul_moorePenroseInverse`. -/
+/-- $\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}$. -/
 theorem conjTranspose_mul_mul_pinv (A : Matrix m n 𝕜) : Aᴴ * (A * pinv A) = Aᴴ := by
   rw [mul_pinv, conjTranspose_mul_rangeProjector]
 
@@ -163,24 +158,21 @@ theorem rank_pinv (A : Matrix m n 𝕜) : (pinv A).rank = A.rank := by
 /-! ### Transformations -/
 
 /-- The pseudoinverse commutes with the conjugate transpose:
-$(\mathbf{A}^{\mathsf{H}})^{+} = (\mathbf{A}^{+})^{\mathsf{H}}$.
-Port of `NLAlib.moorePenroseInverse_conjTranspose`. -/
+$(\mathbf{A}^{\mathsf{H}})^{+} = (\mathbf{A}^{+})^{\mathsf{H}}$. -/
 theorem pinv_conjTranspose (A : Matrix m n 𝕜) : pinv Aᴴ = (pinv A)ᴴ := by
   exact (isPinv_pinv A).conjTranspose.pinv_eq
 
-/-- The pseudoinverse is an involution: $(\mathbf{A}^{+})^{+} = \mathbf{A}$.
-Port of `NLAlib.moorePenroseInverse_moorePenroseInverse`. -/
+/-- The pseudoinverse is an involution: $(\mathbf{A}^{+})^{+} = \mathbf{A}$. -/
 @[simp]
 theorem pinv_pinv (A : Matrix m n 𝕜) : pinv (pinv A) = A := by
   exact (isPinv_pinv A).symm.pinv_eq
 
-/-- The pseudoinverse of the zero matrix is zero. Port of `NLAlib.moorePenroseInverse_zero`. -/
+/-- The pseudoinverse of the zero matrix is zero. -/
 @[simp]
 theorem pinv_zero : pinv (0 : Matrix m n 𝕜) = 0 := by
   exact isPinv_zero.pinv_eq
 
-/-- The pseudoinverse vanishes only for the zero matrix.
-Port of `NLAlib.moorePenroseInverse_eq_zero_iff`. -/
+/-- The pseudoinverse vanishes only for the zero matrix. -/
 @[simp]
 theorem pinv_eq_zero {A : Matrix m n 𝕜} : pinv A = 0 ↔ A = 0 := by
   refine ⟨fun h => ?_, fun h => by rw [h, pinv_zero]⟩
@@ -188,8 +180,7 @@ theorem pinv_eq_zero {A : Matrix m n 𝕜} : pinv A = 0 ↔ A = 0 := by
   rw [h, Matrix.mul_zero, Matrix.zero_mul] at hA
   exact hA.symm
 
-/-- Scaling: $(c\mathbf{A})^{+} = c^{-1}\mathbf{A}^{+}$, also for $c = 0$ with $0^{-1} = 0$.
-Port of `NLAlib.moorePenroseInverse_smul`. -/
+/-- Scaling: $(c\mathbf{A})^{+} = c^{-1}\mathbf{A}^{+}$, also for $c = 0$ with $0^{-1} = 0$. -/
 theorem pinv_smul (c : 𝕜) (A : Matrix m n 𝕜) : pinv (c • A) = c⁻¹ • pinv A := by
   by_cases hc : c = 0
   · rw [hc, zero_smul, pinv_zero, inv_zero, zero_smul]
@@ -201,8 +192,7 @@ theorem pinv_neg (A : Matrix m n 𝕜) : pinv (-A) = -pinv A := by
   have h := pinv_smul (-1 : 𝕜) A
   rwa [inv_neg_one, neg_one_smul, neg_one_smul] at h
 
-/-- The pseudoinverse of an invertible matrix is its inverse: $\mathbf{A}^{+} = \mathbf{A}^{-1}$.
-Port of `NLAlib.moorePenroseInverse_eq_inv_of_isUnit`. -/
+/-- The pseudoinverse of an invertible matrix is its inverse: $\mathbf{A}^{+} = \mathbf{A}^{-1}$. -/
 theorem pinv_of_isUnit [DecidableEq n] {A : Matrix n n 𝕜} (hA : IsUnit A) : pinv A = A⁻¹ := by
   exact (isPinv_inv hA).pinv_eq
 
@@ -212,20 +202,17 @@ theorem pinv_diagonal [DecidableEq n] (d : n → 𝕜) :
     pinv (Matrix.diagonal d) = Matrix.diagonal fun i => (d i)⁻¹ := by
   exact (isPinv_diagonal d).pinv_eq
 
-/-- The pseudoinverse commutes with relabelling.
-Port of `NLAlib.moorePenroseInverse_reindex`. -/
+/-- The pseudoinverse commutes with relabelling. -/
 theorem pinv_submatrix_equiv (A : Matrix m n 𝕜) (e₁ : l ≃ m) (e₂ : p ≃ n) :
     pinv (A.submatrix e₁ e₂) = (pinv A).submatrix e₂ e₁ := by
   exact ((isPinv_pinv A).submatrix e₁ e₂).pinv_eq
 
-/-- The pseudoinverse of a Hermitian matrix is Hermitian.
-Port of `Matrix.IsHermitian.moorePenroseInverse`. -/
+/-- The pseudoinverse of a Hermitian matrix is Hermitian. -/
 theorem _root_.Matrix.IsHermitian.pinv {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     (pinv A).IsHermitian := by
   rw [Matrix.IsHermitian, ← pinv_conjTranspose, hA.eq]
 
-/-- The pseudoinverse of a positive semidefinite matrix is positive semidefinite.
-Port of `Matrix.PosSemidef.moorePenroseInverse`. -/
+/-- The pseudoinverse of a positive semidefinite matrix is positive semidefinite. -/
 theorem _root_.Matrix.PosSemidef.pinv {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     (pinv A).PosSemidef := by
   have h := hA.mul_mul_conjTranspose_same (NLAlib.pinv A)
@@ -243,8 +230,7 @@ theorem HasOrthonormalCols.pinv_eq [DecidableEq n] {Q : Matrix m n 𝕜}
   exact hQ.isPinv.pinv_eq
 
 /-- $(\mathbf{Q}\mathbf{A})^{+} = \mathbf{A}^{+}\mathbf{Q}^{\mathsf{H}}$ for $\mathbf{Q}$ with
-orthonormal columns.
-Port of `NLAlib.moorePenroseInverse_mul_left_of_hasOrthonormalCols`. -/
+orthonormal columns. -/
 theorem HasOrthonormalCols.pinv_mul_left [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) : pinv (Q * A) = pinv A * Qᴴ := by
   exact ((isPinv_pinv A).mul_left hQ).pinv_eq
@@ -297,14 +283,12 @@ theorem pinv_mul_conjTranspose_of_mul_conjTranspose_mul_self_eq {Q : Matrix l n 
     Matrix.conjTranspose_conjTranspose]
 
 /-- The pseudoinverse of the Gram matrix:
-$(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+} = \mathbf{A}^{+}(\mathbf{A}^{+})^{\mathsf{H}}$.
-Port of `NLAlib.moorePenroseInverse_conjTranspose_mul_self`. -/
+$(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+} = \mathbf{A}^{+}(\mathbf{A}^{+})^{\mathsf{H}}$. -/
 theorem pinv_conjTranspose_mul_self (A : Matrix m n 𝕜) :
     pinv (Aᴴ * A) = pinv A * (pinv A)ᴴ := by
   exact (isPinv_pinv A).conjTranspose_mul_self.pinv_eq
 
-/-- $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+} = (\mathbf{A}^{+})^{\mathsf{H}}\mathbf{A}^{+}$.
-Port of `NLAlib.moorePenroseInverse_self_mul_conjTranspose`. -/
+/-- $(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+} = (\mathbf{A}^{+})^{\mathsf{H}}\mathbf{A}^{+}$. -/
 theorem pinv_mul_conjTranspose_self (A : Matrix m n 𝕜) :
     pinv (A * Aᴴ) = (pinv A)ᴴ * pinv A := by
   have h := pinv_conjTranspose_mul_self Aᴴ
@@ -389,8 +373,7 @@ theorem pinv_replicateRow (a : n → 𝕜) :
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\sigma}) \mathbf{V}^{\mathsf{H}}$,
 $\mathbf{A}^{+} = \mathbf{V} \operatorname{diag}(\boldsymbol{\sigma}_i^{-1})
 \mathbf{U}^{\mathsf{H}}$, where $0^{-1} = 0$ handles vanishing singular values.
-[GolubVanLoan2013, §5.5.2]. Port of `NLAlib.moorePenroseInverse_eq_svd`, there with square factors
-and a rectangular diagonal. -/
+[GolubVanLoan2013, §5.5.2]. -/
 theorem IsSVD.pinv_eq [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ}
     {V : Matrix n r 𝕜} (h : IsSVD A U σ V) :
     pinv A = V * Matrix.diagonal (fun i => (((σ i)⁻¹ : ℝ) : 𝕜)) * Uᴴ := by
@@ -407,28 +390,26 @@ theorem IsSVD.pinv [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {
 
 /-- **Full column rank.** If $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective then
 $\mathbf{A}^{+} = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$.
-[GolubVanLoan2013, §5.5.2]. Port of `NLAlib.moorePenroseInverse_eq_pinvL`, there with the
-hypothesis `IsUnit (Aᴴ * A)` and a separate definition `pinvL`. -/
+[GolubVanLoan2013, §5.5.2]. -/
 theorem pinv_eq_inv_mul_conjTranspose [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) : pinv A = (Aᴴ * A)⁻¹ * Aᴴ := by
   exact (isPinv_inv_mul_conjTranspose hA).pinv_eq
 
 /-- Full row rank: if $\mathbf{x} \mapsto \mathbf{A}^{\mathsf{H}}\mathbf{x}$ is injective
-then $\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$.
-Port of `NLAlib.moorePenroseInverse_eq_pinvR`. -/
+then $\mathbf{A}^{+} = \mathbf{A}^{\mathsf{H}}(\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}$. -/
 theorem pinv_eq_conjTranspose_mul_inv [DecidableEq m] {A : Matrix m n 𝕜}
     (hA : Function.Injective Aᴴ.mulVec) : pinv A = Aᴴ * (A * Aᴴ)⁻¹ := by
   exact (isPinv_conjTranspose_mul_inv hA).pinv_eq
 
 /-- With full column rank the pseudoinverse is a left inverse: $\mathbf{A}^{+}\mathbf{A} =
-\mathbf{I}$. Port of `NLAlib.pinvL_mul`. -/
+\mathbf{I}$. -/
 theorem pinv_mul_self_of_injective [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) : pinv A * A = 1 := by
   rw [pinv_eq_inv_mul_conjTranspose hA]
   exact inv_conjTranspose_mul_self_mul_conjTranspose_mul hA
 
 /-- With full row rank the pseudoinverse is a right inverse: $\mathbf{A}\mathbf{A}^{+} =
-\mathbf{I}$. Port of `NLAlib.mul_pinvR`. -/
+\mathbf{I}$. -/
 theorem mul_pinv_self_of_injective_conjTranspose [DecidableEq m] {A : Matrix m n 𝕜}
     (hA : Function.Injective Aᴴ.mulVec) : A * pinv A = 1 := by
   have h := congrArg Matrix.conjTranspose (pinv_mul_self_of_injective hA)

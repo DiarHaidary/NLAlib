@@ -88,8 +88,7 @@ private lemma cgState_succ (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (k : ℕ)
   rfl
 
 omit [DecidableEq n] in
-/-- The updated residual is the true residual, for every $\mathbf{A}$.
-Port of `NLAlib.cgRecurrence_r_eq` (prototype). -/
+/-- The updated residual is the true residual, for every $\mathbf{A}$. -/
 theorem cgState_r_eq (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (k : ℕ) :
     (cgState A b x₀ k).r = b - A *ᵥ (cgState A b x₀ k).x := by
   induction k with

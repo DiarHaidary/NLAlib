@@ -18,8 +18,8 @@ whose adjoint spans the range of $\mathbf{P}^{\mathsf{H}}$, with no independence
 the norm of the oblique projector of two frames, of any widths and any overlap, is the norm of the
 pseudoinverse of their overlap.
 
-This file holds the LowRank stage S0 additions to `NLAlib.Matrix.Subspaces.Oblique` and merges into
-it at the round's wrap-up, when the deprecated two-bases lemmas there point to these by name.
+This file holds the two-bases forms that replace the deprecated lemmas of
+`NLAlib.Matrix.Subspaces.Oblique`.
 Design: `docs/design/LowRank-S0.md` §3.2, §8.
 
 ## Main results

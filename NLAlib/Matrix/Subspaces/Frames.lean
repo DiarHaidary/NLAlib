@@ -56,8 +56,7 @@ theorem HasOrthonormalCols.conjTranspose_mul_of_range_le [DecidableEq p] [Decida
 /-- **Two frames of the same subspace differ by a unitary factor**: if $\mathbf{U}$,
 $\mathbf{V}$ have orthonormal columns and the same column space, then
 $\mathbf{U}\mathbf{T} = \mathbf{V}$ for a unitary $\mathbf{T}$.
-[HornJohnson2013, Theorem 2.1.4 context].
-Port of `NLAlib.exists_orthogonal_frame_transition`, there over $\mathbb{R}$. -/
+[HornJohnson2013, Theorem 2.1.4 context]. -/
 theorem HasOrthonormalCols.exists_mul_eq_of_range_eq [DecidableEq p] {U V : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     (h : LinearMap.range U.mulVecLin = LinearMap.range V.mulVecLin) :
@@ -65,7 +64,7 @@ theorem HasOrthonormalCols.exists_mul_eq_of_range_eq [DecidableEq p] {U V : Matr
   ⟨Uᴴ * V, hU.conjTranspose_mul_of_range_le hV h.ge, hU.mul_conjTranspose_mul_of_range_le h.ge⟩
 
 /-- There are orthonormal frames with $\lvert p \rvert$ columns in a space of dimension at least
-$\lvert p \rvert$. Port of `NLAlib.exists_hasOrthonormalCols_of_card_le`. -/
+$\lvert p \rvert$. -/
 theorem exists_hasOrthonormalCols_of_card_le [DecidableEq p] (𝕜 : Type*) [RCLike 𝕜]
     (h : Fintype.card p ≤ Fintype.card n) : ∃ J : Matrix n p 𝕜, HasOrthonormalCols J := by
   classical
@@ -88,8 +87,7 @@ theorem exists_hasOrthonormalCols_fromCols [DecidableEq p] [DecidableEq q] (𝕜
 
 /-- Matrices with the same Gram matrix have the same action on norms: if
 $\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{B}^{\mathsf{H}}\mathbf{B}$ then
-$\|\mathbf{A}\mathbf{x}\| = \|\mathbf{B}\mathbf{x}\|$.
-Port of `NLAlib.norm_toEuclideanLin_apply_eq_of_gram_eq`. -/
+$\|\mathbf{A}\mathbf{x}\| = \|\mathbf{B}\mathbf{x}\|$. -/
 theorem norm_mulVec_eq_of_conjTranspose_mul_self_eq {A : Matrix m n 𝕜} {B : Matrix p n 𝕜}
     (h : Aᴴ * A = Bᴴ * B) (x : n → 𝕜) :
     ‖WithLp.toLp 2 (A *ᵥ x)‖ = ‖WithLp.toLp 2 (B *ᵥ x)‖ := by
@@ -127,7 +125,6 @@ omit [Fintype n] in
 exactly when $\mathbf{A} = \mathbf{W}\mathbf{B}$ for some $\mathbf{W}$ with orthonormal columns,
 provided $\mathbf{A}$ has at least as many rows as $\mathbf{B}$.
 [HornJohnson2013, Theorem 7.3.11].
-Port of `NLAlib.gram_eq_iff_exists_isometry_mul_eq`, there over $\mathbb{R}$.
 Result: gram-isometry -/
 theorem conjTranspose_mul_self_eq_iff_exists_mul [Finite n] [DecidableEq p] {A : Matrix m n 𝕜}
     {B : Matrix p n 𝕜} (hcard : Fintype.card p ≤ Fintype.card m) :
@@ -162,8 +159,7 @@ theorem conjTranspose_mul_self_eq_iff_exists_mul [Finite n] [DecidableEq p] {A :
 /-- Two unitary matrices $\mathbf{X}$, $\mathbf{Y}$ with the same first block of columns differ
 by a unitary factor on the remaining columns:
 $\mathbf{X} \begin{bmatrix} \mathbf{I} & \mathbf{0} \\ \mathbf{0} & \mathbf{W} \end{bmatrix}
-= \mathbf{Y}$ for a unitary $\mathbf{W}$. [HornJohnson2013, Theorem 2.7.1, completion step].
-Port of `NLAlib.exists_unitary_right_block_of_first_columns_eq`. -/
+= \mathbf{Y}$ for a unitary $\mathbf{W}$. [HornJohnson2013, Theorem 2.7.1, completion step]. -/
 theorem HasOrthonormalCols.exists_mul_fromBlocks_one_eq [DecidableEq p] [DecidableEq q]
     {X Y : Matrix (p ⊕ q) (p ⊕ q) 𝕜} (hX : HasOrthonormalCols X) (hY : HasOrthonormalCols Y)
     (h : X.submatrix id Sum.inl = Y.submatrix id Sum.inl) :
@@ -189,8 +185,7 @@ theorem HasOrthonormalCols.exists_mul_fromBlocks_one_eq [DecidableEq p] [Decidab
 omit [Fintype p] [Fintype q] in
 /-- A block-diagonal matrix of two frames is a frame: if $\mathbf{A}$ and $\mathbf{B}$ have
 orthonormal columns, so does
-$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$.
-Port of `NLAlib.HasOrthonormalCols.fromBlocks_diagonal`. -/
+$\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$. -/
 theorem HasOrthonormalCols.fromBlocks_zero₁₂_zero₂₁ [DecidableEq p] [DecidableEq q]
     {A : Matrix m p 𝕜} {B : Matrix n q 𝕜} (hA : HasOrthonormalCols A)
     (hB : HasOrthonormalCols B) : HasOrthonormalCols (Matrix.fromBlocks A 0 0 B) := by
@@ -201,14 +196,13 @@ theorem HasOrthonormalCols.fromBlocks_zero₁₂_zero₂₁ [DecidableEq p] [Dec
 /-! ### Topology -/
 
 omit [Fintype p] in
-/-- The set of matrices with orthonormal columns is closed. Port of `NLAlib.isClosed_stiefel`. -/
+/-- The set of matrices with orthonormal columns is closed. -/
 theorem isClosed_setOf_hasOrthonormalCols [DecidableEq p] :
     IsClosed {Q : Matrix n p 𝕜 | HasOrthonormalCols Q} :=
   isClosed_eq (continuous_id.matrix_conjTranspose.matrix_mul continuous_id) continuous_const
 
 omit [Fintype p] in
-/-- The set of matrices with orthonormal columns (the Stiefel manifold) is compact.
-Port of `NLAlib.stiefelCompactSpace`, there for `Fin` indices over $\mathbb{R}$. -/
+/-- The set of matrices with orthonormal columns (the Stiefel manifold) is compact. -/
 theorem isCompact_setOf_hasOrthonormalCols [DecidableEq p] :
     IsCompact {Q : Matrix n p 𝕜 | HasOrthonormalCols Q} := by
   have hbox := isCompact_univ_pi fun _ : n => isCompact_univ_pi fun _ : p =>
@@ -220,7 +214,7 @@ theorem isCompact_setOf_hasOrthonormalCols [DecidableEq p] :
 
 /-- A continuous real function on matrices attains its minimum over the frames with
 $\lvert p \rvert$ columns, when $\lvert p \rvert \le \lvert n \rvert$ so that there is at least
-one. Port of `NLAlib.exists_orthogonal_isMinOn_of_continuous`. -/
+one. -/
 theorem exists_isMinOn_setOf_hasOrthonormalCols [DecidableEq p] {f : Matrix n p 𝕜 → ℝ}
     (hf : Continuous f) (h : Fintype.card p ≤ Fintype.card n) :
     ∃ Q : Matrix n p 𝕜, HasOrthonormalCols Q ∧

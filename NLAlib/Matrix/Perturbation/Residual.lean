@@ -71,8 +71,7 @@ private theorem exists_eigencoordinates_residual {A : Matrix n n 𝕜} (hA : A.I
 any vector $\mathbf{x}$ and any real $\mu$, some eigenvalue $\lambda_i(\mathbf{A})$,
 $i < \lvert n \rvert$, satisfies $\lvert \lambda_i(\mathbf{A}) - \mu \rvert \, \|\mathbf{x}\|
 \le \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$.
-[Parlett1998, Theorem 4.5.1].
-Port of `NLAlib.exists_eigenvalue_abs_sub_le_residual`, there over $\mathbb{R}$ for unit vectors. -/
+[Parlett1998, Theorem 4.5.1]. -/
 theorem _root_.Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ∃ i, i < Fintype.card n ∧
@@ -88,8 +87,7 @@ theorem _root_.Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le [Nonempt
   exact pow_le_pow_left₀ (abs_nonneg _) (hi j) 2
 
 /-- For Hermitian $\mathbf{A}$, the residual at the Rayleigh quotient $\rho$ of $\mathbf{x}$ is
-orthogonal to $\mathbf{x}$: $\mathbf{x}^{\mathsf{H}}(\mathbf{A}\mathbf{x} - \rho\mathbf{x}) = 0$.
-Port of `NLAlib.dotProduct_rayleigh_residual_eq_zero`. -/
+orthogonal to $\mathbf{x}$: $\mathbf{x}^{\mathsf{H}}(\mathbf{A}\mathbf{x} - \rho\mathbf{x}) = 0$. -/
 theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_sub_rayleighQuotient_smul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (x : n → 𝕜) :
     star x ⬝ᵥ (A *ᵥ x - rayleighQuotient A x • x) = 0 := by
@@ -102,7 +100,6 @@ $\mu$,
 $$\|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|^2
   = \|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2 + (\mu - \rho)^2 \|\mathbf{x}\|^2,$$
 with $\rho$ the Rayleigh quotient of $\mathbf{x}$.
-Port of `NLAlib.dotProduct_shifted_residual_eq_rayleigh_add_sq`.
 [Parlett1998, §4.6] (locator to check). -/
 theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_smul_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
@@ -125,7 +122,7 @@ theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_smul_sq {A : Matrix n n 𝕜}
 /-- **The Rayleigh quotient minimises the residual** over real shifts: for Hermitian $\mathbf{A}$,
 $\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\| \le \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$ for every
 real $\mu$, with $\rho$ the Rayleigh quotient of $\mathbf{x}$.
-[Parlett1998, §1.5]. Port of `NLAlib.rayleigh_residual_le_shifted_residual`. -/
+[Parlett1998, §1.5]. -/
 theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_rayleighQuotient_smul_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ‖WithLp.toLp 2 (A *ᵥ x - rayleighQuotient A x • x)‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ := by
@@ -155,8 +152,7 @@ Rayleigh quotient $\rho$, $\delta > 0$, and $\ell$ a number with
 $\lvert \ell - \rho \rvert < \delta$ such that every eigenvalue $\lambda_i(\mathbf{A})$ with
 $\lvert \lambda_i(\mathbf{A}) - \rho \rvert < \delta$ equals $\ell$. Then
 $\lvert \ell - \rho \rvert \, \delta \le \|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2$.
-[Parlett1998, Theorem 11.7.1].
-Port of `NLAlib.abs_eigenvalue_sub_rayleigh_le_residual_sq_div`, there over $\mathbb{R}$. -/
+[Parlett1998, Theorem 11.7.1]. -/
 theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_mul_le_norm_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {ℓ δ : ℝ} (hδ : 0 < δ)
     (hℓ : |ℓ - rayleighQuotient A x| < δ)
@@ -196,7 +192,7 @@ Rayleigh quotient $\rho < \beta$, and $\ell \in (\alpha, \beta)$ such that no ei
 $\ell$ lies in $(\alpha, \beta)$. Then
 $$\rho - \frac{\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2}{\beta - \rho} \le \ell.$$
 The bound $\alpha < \rho$ of the classical statement is not needed.
-[Parlett1998, §11.7]; [Kato1995, §I.6 context]. Port of `NLAlib.kato_temple_le_eigenvalue`. -/
+[Parlett1998, §11.7]; [Kato1995, §I.6 context]. -/
 theorem _root_.Matrix.IsHermitian.rayleighQuotient_sub_le_of_lt {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {α β ℓ : ℝ}
     (hρβ : rayleighQuotient A x < β) (hαℓ : α < ℓ) (hℓβ : ℓ < β)
@@ -216,7 +212,7 @@ Rayleigh quotient $\rho > \alpha$, and $\ell \in (\alpha, \beta)$ such that no e
 $\ell$ lies in $(\alpha, \beta)$,
 $$\ell \le \rho + \frac{\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2}{\rho - \alpha}.$$
 The bound $\rho < \beta$ of the classical statement is not needed.
-Port of `NLAlib.kato_temple_eigenvalue_le`. [Parlett1998, §10.5] (locator to check). -/
+[Parlett1998, §10.5] (locator to check). -/
 theorem _root_.Matrix.IsHermitian.le_rayleighQuotient_add_of_lt {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {α β ℓ : ℝ}
     (hαρ : α < rayleighQuotient A x) (hαℓ : α < ℓ) (hℓβ : ℓ < β)
@@ -240,7 +236,6 @@ $\lvert n \rvert \ge 1$, then for any vector $\mathbf{x}$ and scalar $\mu$ some 
 satisfies $\lvert \mathbf{d}_i - \mu \rvert \, \|\mathbf{x}\|
 \le \kappa(\mathbf{V}) \, \|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|$.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
-Port of `NLAlib.exists_eigenvalue_distance_mul_euclidean_norm_le_residual`, there over $\mathbb{C}$.
 -/
 theorem exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul [Nonempty n] {A V : Matrix n n 𝕜}
     {d : n → 𝕜} (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) (x : n → 𝕜) (μ : 𝕜) :
@@ -282,7 +277,6 @@ $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathb
 every eigenvalue $\mu$ of $\mathbf{A} + \mathbf{E}$ satisfies
 $\lvert \mathbf{d}_i - \mu \rvert \le \kappa(\mathbf{V}) \|\mathbf{E}\|_2$ for some $i$.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
-Port of `NLAlib.exists_eigenvalue_distance_le_euclidean_residual_div`, there over $\mathbb{C}$.
 Result: bauer-fike -/
 theorem exists_norm_sub_le_pseudoConditionNumber_mul_specNorm {A V E : Matrix n n 𝕜} {d : n → 𝕜}
     (hV : IsUnit V) (hA : A * V = V * Matrix.diagonal d) {x : n → 𝕜} (hx : x ≠ 0) {μ : 𝕜}
@@ -303,8 +297,7 @@ theorem exists_norm_sub_le_pseudoConditionNumber_mul_specNorm {A V E : Matrix n 
 
 /-- The diagonal entries of a diagonalisation are eigenvalues: if
 $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
-each $\mathbf{d}_i$ is an eigenvalue of $\mathbf{A}$.
-Port of `NLAlib.mem_spectrum_of_diagonal_intertwining`. -/
+each $\mathbf{d}_i$ is an eigenvalue of $\mathbf{A}$. -/
 theorem mem_spectrum_of_mul_eq_mul_diagonal {A V : Matrix n n 𝕜} {d : n → 𝕜} (hV : IsUnit V)
     (hA : A * V = V * Matrix.diagonal d) (i : n) : d i ∈ spectrum 𝕜 A := by
   have hcol : V.col i ≠ 0 := (Matrix.linearIndependent_cols_iff_isUnit.mpr hV).ne_zero i

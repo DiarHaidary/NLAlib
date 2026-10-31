@@ -24,7 +24,7 @@ Degenerate cases. For empty `k` there is exactly one injection, the empty map, a
 Dirac mass. For $\lvert n \rvert < \lvert k \rvert$ there is none and the law is $0$, so a random
 injection with this law lives on the zero measure.
 
-Design: Sketching stage S5 (`docs/design/Sketching-S5.md` §3.1, §8).
+Design: `docs/design/Sketching-S5.md` §3.1, §8.
 
 ## Main results
 

@@ -49,7 +49,6 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n r s : Type*} [Fintype l] [Fintype m] [Fintype n]
   [Fintype r] [Fintype s] [DecidableEq m] [DecidableEq n] [DecidableEq r] [DecidableEq s]
 
--- Stage B4
 
 /-- **Head capture by a filtered sketch, singular value by singular value**: for a real function
 $g$, an orthonormal frame $\mathbf{W}$ invariant under $\mathbf{A}^{\mathsf{H}}\mathbf{A}$,

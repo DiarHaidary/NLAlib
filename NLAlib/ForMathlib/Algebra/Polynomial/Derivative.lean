@@ -14,7 +14,7 @@ The $n$-th derivative of a polynomial of degree $n$ is the constant $n!$ times i
 coefficient. It is the step of every interpolation remainder that reads off the constant of a
 monic nodal polynomial. Upstream candidate for `Mathlib.Algebra.Polynomial.Derivative`.
 
-Design: stage KS8 (`docs/design/Polynomial-QuadratureRemainder.md`, F1).
+Design: `docs/design/Polynomial-QuadratureRemainder.md`, F1.
 
 ## Main results
 

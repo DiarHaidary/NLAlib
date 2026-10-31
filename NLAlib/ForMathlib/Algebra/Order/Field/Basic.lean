@@ -33,8 +33,7 @@ range-finder bounds is nonnegative for $r + 2 \le \ell$. Upstream candidates for
 @[expose] public section
 
 /-- The rational parametrisation of the circle: $c = (1 - t^2) / (1 + t^2)$ and
-$s = 2t / (1 + t^2)$ satisfy $c^2 + s^2 = 1$.
-Port of `NLAlib.sq_rational_rotation_coefficients`. -/
+$s = 2t / (1 + t^2)$ satisfy $c^2 + s^2 = 1$. -/
 theorem one_sub_sq_div_one_add_sq_sq_add_two_mul_div_one_add_sq_sq {K : Type*} [Field K]
     [LinearOrder K] [IsStrictOrderedRing K] (t : K) :
     ((1 - t ^ 2) / (1 + t ^ 2)) ^ 2 + (2 * t / (1 + t ^ 2)) ^ 2 = 1 := by

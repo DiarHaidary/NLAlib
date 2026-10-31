@@ -59,8 +59,7 @@ full column rank is replaced by $\mathbf{C}\mathbf{t} + \mathbf{d}$ with
 $\mathbf{C}^{\mathsf{H}}\mathbf{d} = \mathbf{0}$, the Gram determinant is multiplied by
 $$\lvert \mathbf{t}_i \rvert^2 + \|\mathbf{d}\|^2
   \bigl((\mathbf{C}^{\mathsf{H}}\mathbf{C})^{-1}\bigr)_{i,i}\,.$$
-[GuEisenstat1996, Lemma 3.1].
-Port of `NLAlib.det_gram_updateCol_eq_det_mul`, there over $\mathbb{R}$. -/
+[GuEisenstat1996, Lemma 3.1]. -/
 theorem re_det_conjTranspose_mul_self_updateCol [DecidableEq p] {C : Matrix m p 𝕜}
     (hC : Function.Injective C.mulVec) (i : p) (t : p → 𝕜) {d : m → 𝕜} (hd : Cᴴ *ᵥ d = 0) :
     RCLike.re ((C.updateCol i (C *ᵥ t + d))ᴴ * C.updateCol i (C *ᵥ t + d)).det =
@@ -128,8 +127,7 @@ squared distance of the new column $\mathbf{v}$ to the range of $\mathbf{C}$,
 $\|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2$, so that for
 $\mathbf{B} = \begin{bmatrix} \mathbf{C} & \mathbf{v} \end{bmatrix}$
 $$\det(\mathbf{B}^{\mathsf{H}}\mathbf{B}) = \det(\mathbf{C}^{\mathsf{H}}\mathbf{C})
-  \|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2\,.$$
-Port of `NLAlib.det_gram_fromCols_eq_mul_frobSq_sub_projector`, there over $\mathbb{R}$. -/
+  \|(\mathbf{I} - \mathbf{P}_{\mathbf{C}})\mathbf{v}\|^2\,.$$ -/
 theorem re_det_conjTranspose_mul_self_fromCols [DecidableEq m] [DecidableEq p]
     (C : Matrix m p 𝕜) (v : m → 𝕜) :
     RCLike.re ((Matrix.fromCols C (Matrix.replicateCol Unit v))ᴴ *
@@ -185,8 +183,7 @@ for all $i$, $j$ (which, for $\mathbf{D}$ orthogonal to the range of $\mathbf{C}
 volume formula that no exchange increases the squared volume by a factor more than $f^2$), then
 $$\|\mathbf{T}\|_{\mathsf{F}}^2 + \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2
   \le f^2 \lvert p \rvert \lvert q \rvert\,.$$
-[GuEisenstat1996, Theorem 3.2].
-Port of `NLAlib.frobSq_add_trace_inv_gram_mul_frobSq_le_of_maximum_volume`. -/
+[GuEisenstat1996, Theorem 3.2]. -/
 theorem frobNorm_sq_add_frobNorm_pinv_sq_mul_le [DecidableEq p] {C : Matrix m p 𝕜}
     {T : Matrix p q 𝕜} {D : Matrix m q 𝕜} {f : ℝ} (hC : Function.Injective C.mulVec)
     (h : ∀ i j, ‖T i j‖ ^ 2 +
@@ -228,9 +225,7 @@ $b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,
 $$\sigma_i\bigl(\begin{bmatrix} \mathbf{C} & \mathbf{C}\mathbf{T} + \mathbf{D} \end{bmatrix}\bigr)
   \le \sqrt{1 + b}\, \sigma_i(\mathbf{C})$$
-for $i < \lvert p \rvert$, the number of columns of $\mathbf{C}$.
-Port of `NLAlib.singularValues_upper_block_le_sqrt_budget_mul`, there for a triangular
-$\mathbf{C}$. -/
+for $i < \lvert p \rvert$, the number of columns of $\mathbf{C}$. -/
 theorem singularValues_fromCols_le_sqrt_mul {C : Matrix m p 𝕜} {T : Matrix p q 𝕜}
     {D : Matrix m q 𝕜} {b : ℝ} (hC : Function.Injective C.mulVec) (hD : Cᴴ * D = 0)
     (hb : frobNorm T ^ 2 + frobNorm (pinv C) ^ 2 * frobNorm D ^ 2 ≤ b) {i : ℕ}
@@ -340,8 +335,7 @@ $b \ge \|\mathbf{T}\|_{\mathsf{F}}^2 +
 \|\mathbf{C}^{+}\|_{\mathsf{F}}^2 \|\mathbf{D}\|_{\mathsf{F}}^2$,
 $$\sigma_j(\mathbf{D}) \le \sqrt{1 + b}\, \sigma_{\lvert p \rvert + j}
   \bigl(\begin{bmatrix} \mathbf{C} & \mathbf{C}\mathbf{T} + \mathbf{D} \end{bmatrix}\bigr)$$
-for every $j$.
-Port of `NLAlib.singularValues_trailing_le_sqrt_budget_mul`, there for a triangular $\mathbf{C}$. -/
+for every $j$. -/
 theorem singularValues_le_sqrt_mul_singularValues_fromCols {C : Matrix m p 𝕜}
     {T : Matrix p q 𝕜} {D : Matrix m q 𝕜} {b : ℝ} (hC : Function.Injective C.mulVec)
     (hD : Cᴴ * D = 0) (hb : frobNorm T ^ 2 + frobNorm (pinv C) ^ 2 * frobNorm D ^ 2 ≤ b)

@@ -16,7 +16,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Matrix
 # Laws of random vectors and random matrices
 
 Statements in NLAlib take a random variable $X$ with Mathlib's `HasLaw X ν μ`, never a canonical
-measure space (`docs/PORT_PROBABILITY.md` D2). "Independent coordinates with laws $\nu_i$" is the
+measure space. "Independent coordinates with laws $\nu_i$" is the
 single hypothesis `HasLaw X (Measure.pi ν) μ`, and a random matrix with independent entries has
 the nested product law `Measure.pi fun i => Measure.pi fun j => ν i j`. This file takes those
 hypotheses apart into independence and marginals, and back, and transports integrability and

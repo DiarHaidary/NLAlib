@@ -70,7 +70,6 @@ $$\operatorname{Re} \det \begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{
 \mathbf{C} \end{bmatrix}
   \le \operatorname{Re} \det \mathbf{A} \cdot \operatorname{Re} \det \mathbf{C}\,.$$
 [HornJohnson2013, Theorem 7.8.5].
-Port of `NLAlib.det_fromBlocks_le_mul_det_of_posSemidef`, there over $\mathbb{R}$.
 Result: fischer-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_fromBlocks_le {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef) :
@@ -112,8 +111,7 @@ private theorem eq_zero_of_conjTranspose_mul_mul_eq_zero [Finite n] {A : Matrix 
 
 /-- Equality in Fischer's inequality for a positive definite block matrix
 $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C} \end{bmatrix}$
-holds exactly when the off-diagonal block vanishes, $\mathbf{B} = \mathbf{0}$.
-Port of `NLAlib.det_fromBlocks_eq_mul_det_iff_of_posDef`, there over $\mathbb{R}$. -/
+holds exactly when the off-diagonal block vanishes, $\mathbf{B} = \mathbf{0}$. -/
 theorem _root_.Matrix.PosDef.re_det_fromBlocks_eq_iff {A : Matrix m m 𝕜} {B : Matrix m n 𝕜}
     {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosDef) :
     RCLike.re (Matrix.fromBlocks A B Bᴴ C).det = RCLike.re A.det * RCLike.re C.det ↔ B = 0 := by
@@ -256,8 +254,7 @@ private theorem apply_eq_zero_of_re_det_submatrix_val_eq_prod {A : Matrix n n �
 /-- **Hadamard's inequality.** The determinant of a positive semidefinite matrix is at most the
 product of its diagonal entries:
 $\operatorname{Re} \det \mathbf{A} \le \prod_i \operatorname{Re} \mathbf{A}_{i,i}$.
-[HornJohnson2013, Theorem 7.8.1]. Port of `NLAlib.det_le_prod_diag_of_posSemidef`, there over
-$\mathbb{R}$.
+[HornJohnson2013, Theorem 7.8.1].
 Result: hadamard-determinant-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_le_prod_re_diag {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     RCLike.re A.det ≤ ∏ i, RCLike.re (A i i) := by
@@ -267,8 +264,7 @@ theorem _root_.Matrix.PosSemidef.re_det_le_prod_re_diag {A : Matrix n n 𝕜} (h
 
 /-- Equality in Hadamard's inequality for a positive definite matrix holds exactly for diagonal
 matrices: $\operatorname{Re} \det \mathbf{A} = \prod_i \operatorname{Re} \mathbf{A}_{i,i}$ iff
-$\mathbf{A}$ is diagonal. [HornJohnson2013, Theorem 7.8.1].
-Port of `NLAlib.det_eq_prod_diag_iff_isDiag_of_posDef`, there over $\mathbb{R}$. -/
+$\mathbf{A}$ is diagonal. [HornJohnson2013, Theorem 7.8.1]. -/
 theorem _root_.Matrix.PosDef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜} (hA : A.PosDef) :
     RCLike.re A.det = ∏ i, RCLike.re (A i i) ↔ A.IsDiag := by
   constructor
@@ -289,8 +285,7 @@ theorem _root_.Matrix.PosDef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜} (h
 at most the product of the Euclidean norms of its columns:
 $\lvert \det \mathbf{B} \rvert \le \prod_i \|\mathbf{b}_i\|$, with $\mathbf{b}_i$ column $i$ of
 $\mathbf{B}$.
-[HornJohnson2013, Corollary 7.8.3]. Port of `NLAlib.abs_det_le_prod_column_norm`, there over
-$\mathbb{R}$.
+[HornJohnson2013, Corollary 7.8.3].
 Result: hadamard-determinant-inequality -/
 theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
     ‖B.det‖ ≤ ∏ i, ‖WithLp.toLp 2 (B.col i)‖ := by
@@ -313,7 +308,7 @@ theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
 /-- The **principal minor** of a square matrix on an index set: the determinant
 $\det \mathbf{A}_{s,s}$ of the principal submatrix $\mathbf{A}_{s,s}$ with rows and columns in $s$.
 The minor on the empty set is $1$.
-[HornJohnson2013, §0.7.1]. Port of `NLAlib.principalMinor`, there for real matrices. -/
+[HornJohnson2013, §0.7.1]. -/
 def principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) (s : Finset n) : R :=
   (A.submatrix (Subtype.val : ↥s → n) Subtype.val).det
 
@@ -377,16 +372,14 @@ theorem sum_principalMinor {R : Type*} [CommRing R] (A : Matrix n n R) :
 
 omit [Fintype n] in
 /-- The principal minors of a positive semidefinite matrix are nonnegative:
-$0 \le \operatorname{Re} \det \mathbf{A}_{s,s}$.
-Port of `NLAlib.principalMinor_nonneg`. -/
+$0 \le \operatorname{Re} \det \mathbf{A}_{s,s}$. -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_nonneg {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (s : Finset n) : 0 ≤ RCLike.re (principalMinor A s) :=
   (RCLike.nonneg_iff.mp (hA.submatrix (Subtype.val : s → n)).det_nonneg).1
 
 omit [Fintype n] in
 /-- The principal minors of a positive definite matrix are positive:
-$0 < \operatorname{Re} \det \mathbf{A}_{s,s}$.
-Port of `NLAlib.principalMinor_pos`. -/
+$0 < \operatorname{Re} \det \mathbf{A}_{s,s}$. -/
 theorem _root_.Matrix.PosDef.re_principalMinor_pos {A : Matrix n n 𝕜} (hA : A.PosDef)
     (s : Finset n) : 0 < RCLike.re (principalMinor A s) :=
   (RCLike.pos_iff.mp (hA.submatrix (Subtype.val_injective (p := (· ∈ s)))).det_pos).1
@@ -454,7 +447,6 @@ $$\operatorname{Re} \det \mathbf{A}_{s \cup t, s \cup t}
   \cdot \operatorname{Re} \det \mathbf{A}_{s \cap t, s \cap t}
   \le \operatorname{Re} \det \mathbf{A}_{s,s} \cdot \operatorname{Re} \det \mathbf{A}_{t,t}\,.$$
 [HornJohnson2013, Theorem 7.8.9].
-Port of `NLAlib.det_principal_union_mul_inter_le_of_posSemidef`, there over $\mathbb{R}$.
 Result: koteljanskii-inequality -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_union_mul_inter_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (s t : Finset n) :

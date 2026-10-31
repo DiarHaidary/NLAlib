@@ -61,7 +61,6 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [Fintype n]
   [DecidableEq n]
 
--- Stage B3
 
 omit [Fintype m] in
 /-- The range of $\mathbf{A}\,\mathbf{K}_q(\mathbf{B}, \mathbf{\Omega})$ is the image of the block

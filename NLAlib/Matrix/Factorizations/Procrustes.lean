@@ -41,7 +41,6 @@ $\mathbf{M} = \mathbf{U}(\mathbf{M}^{\mathsf{H}}\mathbf{M})^{1/2}$ with $\mathbf
 columns, then $\langle \mathbf{M}, \mathbf{U} \rangle_{\mathsf{F}} = \|\mathbf{M}\|_*$. This is the
 case of equality in `NLAlib.abs_frobInner_le_nuclearNorm_mul_specNorm`. Rectangular, any rank.
 [HornJohnson2013, §7.4.4].
-Port of `NLAlib.frobInner_eq_nuclearNorm_of_polar`, there over $\mathbb{R}$ for square matrices.
 -/
 theorem HasOrthonormalCols.frobInner_eq_nuclearNorm_of_mul_sqrt_eq [DecidableEq n]
     {M U : Matrix m n 𝕜} (hU : HasOrthonormalCols U) (h : U * CFC.sqrt (Mᴴ * M) = M) :
@@ -84,8 +83,7 @@ unitary $\mathbf{U}$ with
 $\mathbf{U}\bigl((\mathbf{A}\mathbf{B}^{\mathsf{H}})^{\mathsf{H}}
 \mathbf{A}\mathbf{B}^{\mathsf{H}}\bigr)^{1/2} = \mathbf{A}\mathbf{B}^{\mathsf{H}}$,
 $$\|\mathbf{A} - \mathbf{U}\mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
-  \|\mathbf{B}\|_{\mathsf{F}}^2 - 2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,.$$
-Port of `NLAlib.frobSq_sub_mul_eq_of_cross_polar`. -/
+  \|\mathbf{B}\|_{\mathsf{F}}^2 - 2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,.$$ -/
 theorem HasOrthonormalCols.frobNorm_sub_mul_sq_of_mul_sqrt_eq {A B : Matrix m n 𝕜}
     {U : Matrix m m 𝕜}
     (hU : HasOrthonormalCols U)
@@ -99,7 +97,6 @@ $$\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2 -
   2 \|\mathbf{A}\mathbf{B}^{\mathsf{H}}\|_*\,,$$
 attained at a polar factor of $\mathbf{A}\mathbf{B}^{\mathsf{H}}$.
 [GolubVanLoan2013, §6.4.1]; [HornJohnson2013, §7.4.5].
-Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul`, there over $\mathbb{R}$.
 Result: procrustes -/
 theorem isLeast_frobNorm_sub_mul_sq (A B : Matrix m n 𝕜) :
     IsLeast ((fun U : Matrix m m 𝕜 => frobNorm (A - U * B) ^ 2) '' {U | HasOrthonormalCols U})
@@ -121,8 +118,7 @@ $\|\mathbf{A} - \mathbf{U}\mathbf{B}\mathbf{W}\|_{\mathsf{F}}^2$ over unitary $\
 $\mathbf{W}$ is
 $$\sum_{i < \min(\lvert m \rvert, \lvert n \rvert)}
   \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2\,,$$
-singular values non-increasing and indexed from $0$. [HornJohnson2013, §7.4.1 context].
-Port of `NLAlib.isLeast_frobSq_sub_orthogonal_mul_mul`, there over $\mathbb{R}$. -/
+singular values non-increasing and indexed from $0$. [HornJohnson2013, §7.4.1 context]. -/
 theorem isLeast_frobNorm_sub_mul_mul_sq [DecidableEq n] (A B : Matrix m n 𝕜) :
     IsLeast
       ((fun P : Matrix m m 𝕜 × Matrix n n 𝕜 => frobNorm (A - P.1 * B * P.2) ^ 2) ''

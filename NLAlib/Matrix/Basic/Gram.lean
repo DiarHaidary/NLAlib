@@ -111,8 +111,7 @@ theorem posDef_conjTranspose_mul_self_iff [Fintype m] [Fintype n] {A : Matrix m 
     Matrix.PosDef.conjTranspose_mul_self A⟩
 
 /-- The Gram matrix $\mathbf{A}^{\mathsf{H}}\mathbf{A}$ is invertible exactly when
-$\operatorname{rank} \mathbf{A} = \lvert n \rvert$, the number of columns. Port of
-`NLAlib.det_ne_zero_of_rank_eq`, there for a square real matrix. -/
+$\operatorname{rank} \mathbf{A} = \lvert n \rvert$, the number of columns. -/
 theorem isUnit_conjTranspose_mul_self_iff_rank [Fintype m] [Fintype n] [DecidableEq n]
     {A : Matrix m n 𝕜} : IsUnit (Aᴴ * A) ↔ A.rank = Fintype.card n := by
   rw [isUnit_conjTranspose_mul_self_iff, mulVec_injective_iff_rank_eq]

@@ -44,8 +44,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
   \le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
   \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
-[HornJohnson2013, §7.7].
-Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_posSemidef`, there over $\mathbb{R}$. -/
+[HornJohnson2013, §7.7]. -/
 theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (x y : n → 𝕜) :
     ‖star x ⬝ᵥ A *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm A y) := by
@@ -67,8 +66,7 @@ $$\operatorname{Re}\left(\begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}^
   \begin{bmatrix} \mathbf{x} \\ \mathbf{y} \end{bmatrix}\right)
   = \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) +
   2\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y}) +
-  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
-Port of `NLAlib.quadForm_fromBlocks`, there over $\mathbb{R}$. -/
+  \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$ -/
 theorem re_quadForm_fromBlocks (A : Matrix m m 𝕜) (B : Matrix m n 𝕜) (C : Matrix n n 𝕜)
     (x : m → 𝕜) (y : n → 𝕜) :
     RCLike.re (quadForm (Matrix.fromBlocks A B Bᴴ C) (Sum.elim x y)) =
@@ -90,8 +88,7 @@ Cauchy–Schwarz bound
 $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
 \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
-[HornJohnson2013, Theorem 7.7.7].
-Port of `NLAlib.sq_bilinear_le_quadForm_mul_of_fromBlocks_posSemidef`, there over $\mathbb{R}$. -/
+[HornJohnson2013, Theorem 7.7.7]. -/
 theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef)
     (x : m → 𝕜) (y : n → 𝕜) :
@@ -109,7 +106,6 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
 \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})$$
 for all $\mathbf{x}$, $\mathbf{y}$.
 [HornJohnson2013, Theorem 7.7.7].
-Port of `NLAlib.posSemidef_fromBlocks_iff_bilinear_tests`, there over $\mathbb{R}$.
 Result: block-positivity -/
 theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜}
@@ -141,8 +137,7 @@ theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le {A 
 
 /-- $\begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} & \mathbf{I} \end{bmatrix}$
 is positive semidefinite exactly when $\|\mathbf{X}\|_2 \le 1$.
-[HornJohnson2013, §7.7].
-Port of `NLAlib.posSemidef_identity_fromBlocks_iff_specNorm_le_one`, there over $\mathbb{R}$. -/
+[HornJohnson2013, §7.7]. -/
 theorem posSemidef_fromBlocks_one_iff_specNorm_le_one [DecidableEq m] [DecidableEq n]
     (X : Matrix m n 𝕜) :
     (Matrix.fromBlocks 1 X Xᴴ 1).PosSemidef ↔ specNorm X ≤ 1 := by
@@ -192,8 +187,7 @@ private theorem posDef_one_sub_conjTranspose_mul_self_iff [DecidableEq n] (X : M
     nlinarith [norm_nonneg (WithLp.toLp 2 (X *ᵥ x))]
 
 /-- $\begin{bmatrix} \mathbf{I} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} & \mathbf{I} \end{bmatrix}$
-is positive definite exactly when $\|\mathbf{X}\|_2 < 1$.
-Port of `NLAlib.posDef_identity_fromBlocks_iff_specNorm_lt_one`, there over $\mathbb{R}$. -/
+is positive definite exactly when $\|\mathbf{X}\|_2 < 1$. -/
 theorem posDef_fromBlocks_one_iff_specNorm_lt_one [DecidableEq m] [DecidableEq n]
     (X : Matrix m n 𝕜) :
     (Matrix.fromBlocks 1 X Xᴴ 1).PosDef ↔ specNorm X < 1 := by
@@ -259,8 +253,6 @@ block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}}
 \mathbf{A}^{1/2}\mathbf{X}\mathbf{C}^{1/2}$ for some contraction $\mathbf{X}$, $\|\mathbf{X}\|_2 \le
 1$; here $\mathbf{A}^{1/2}$ is the positive semidefinite square root (`CFC.sqrt`).
 [HornJohnson2013, Theorem 7.7.9].
-Port of `NLAlib.posSemidef_fromBlocks_iff_exists_sqrt_contraction_factor`, there over
-$\mathbb{R}$.
 Result: block-positivity -/
 theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt
     {A : Matrix m m 𝕜}
@@ -289,8 +281,7 @@ theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_s
 omit [Fintype n] in
 /-- For positive definite $\mathbf{A}$ and any $\mathbf{X}$,
 $\begin{bmatrix} \mathbf{A} & \mathbf{X} \\ \mathbf{X}^{\mathsf{H}} &
-\mathbf{X}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{X} \end{bmatrix}$ is positive semidefinite.
-Port of `NLAlib.fromBlocks_inverse_gram_posSemidef`. -/
+\mathbf{X}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{X} \end{bmatrix}$ is positive semidefinite. -/
 theorem _root_.Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Finite n]
     [DecidableEq m]
     {A : Matrix m m 𝕜} (hA : A.PosDef) (X : Matrix m n 𝕜) :
@@ -311,9 +302,7 @@ omit [Fintype n] in
 /-- **Equal diagonal blocks.** $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B} & \mathbf{A}
 \end{bmatrix}$ is positive semidefinite exactly when
 $-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$.
-[HornJohnson2013, §7.7].
-Port of `NLAlib.posSemidef_equal_diagonal_fromBlocks_iff_le`, there for positive semidefinite
-$\mathbf{B}$ over $\mathbb{R}$. -/
+[HornJohnson2013, §7.7]. -/
 theorem posSemidef_fromBlocks_self_iff [Finite n] {A B : Matrix n n 𝕜} :
     (Matrix.fromBlocks A B B A).PosSemidef ↔ -A ≤ B ∧ B ≤ A := by
   classical
@@ -351,8 +340,7 @@ theorem posSemidef_fromBlocks_self_iff [Finite n] {A B : Matrix n n 𝕜} :
 /-- For Hermitian $\mathbf{A}$ and $\mathbf{B}$, the bound
 $-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ is the quadratic-form bound
 $\lvert \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{x}) \rvert
-\le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for all $\mathbf{x}$.
-Port of `NLAlib.abs_quadForm_le_iff_neg_le_and_le`, there over $\mathbb{R}$. -/
+\le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for all $\mathbf{x}$. -/
 theorem _root_.Matrix.IsHermitian.neg_le_and_le_iff_forall_abs_re_quadForm_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (hB : B.IsHermitian) :

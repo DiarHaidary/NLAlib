@@ -74,8 +74,7 @@ end HasOrthonormalCols
 /-! ### Bridges to Mathlib -/
 
 /-- $\mathbf{Q}$ has orthonormal columns exactly when its columns are an orthonormal family in
-`EuclideanSpace 𝕜 m`, in the sense of Mathlib's `Orthonormal`.
-Port of `NLAlib.hasOrthonormalCols_iff_orthonormal`. -/
+`EuclideanSpace 𝕜 m`, in the sense of Mathlib's `Orthonormal`. -/
 theorem hasOrthonormalCols_iff_orthonormal {Q : Matrix m n 𝕜} :
     HasOrthonormalCols Q ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
   rw [orthonormal_iff_ite, HasOrthonormalCols, ← Matrix.ext_iff]
@@ -241,9 +240,7 @@ theorem conjTranspose_mulVec_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCo
   rw [Matrix.mulVec_mulVec, hQ.conjTranspose_mul_self, Matrix.one_mulVec]
 
 /-- Multiplication by $\mathbf{Q}$ preserves the pairing $\mathbf{x}^{\mathsf{H}}\mathbf{y}$:
-$(\mathbf{Q}\mathbf{x})^{\mathsf{H}}(\mathbf{Q}\mathbf{y}) = \mathbf{x}^{\mathsf{H}}\mathbf{y}$.
-Port of `NLAlib.star_mulVec_dotProduct_mulVec_self_of_hasOrthonormalCols`, there for
-$\mathbf{x} = \mathbf{y}$. -/
+$(\mathbf{Q}\mathbf{x})^{\mathsf{H}}(\mathbf{Q}\mathbf{y}) = \mathbf{x}^{\mathsf{H}}\mathbf{y}$. -/
 theorem star_mulVec_dotProduct_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (x y : n → 𝕜) : star (Q *ᵥ x) ⬝ᵥ (Q *ᵥ y) = star x ⬝ᵥ y := by
   rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec, hQ.conjTranspose_mulVec_mulVec]
@@ -286,8 +283,7 @@ theorem norm_toLp_col {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (j : n) 
   rw [h, RCLike.one_re]
 
 /-- Multiplication by $\mathbf{Q}^{\mathsf{H}}$ does not increase the Euclidean norm (Bessel's
-inequality): $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$.
-Port of `NLAlib.sum_norm_sq_conjTranspose_mulVec_le`. -/
+inequality): $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$. -/
 theorem norm_toLp_conjTranspose_mulVec_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (x : m → 𝕜) : ‖WithLp.toLp 2 (Qᴴ *ᵥ x)‖ ≤ ‖WithLp.toLp 2 x‖ := by
   refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp ?_
@@ -301,8 +297,7 @@ theorem norm_toLp_conjTranspose_mulVec_le {Q : Matrix m n 𝕜} (hQ : HasOrthono
 /-! ### Rank and size -/
 
 /-- A matrix with orthonormal columns has at most as many columns as rows:
-$\lvert n \rvert \le \lvert m \rvert$.
-Port of `NLAlib.card_le_card_of_hasOrthonormalCols`. -/
+$\lvert n \rvert \le \lvert m \rvert$. -/
 theorem card_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
     Fintype.card n ≤ Fintype.card m := by
   have h := LinearMap.finrank_le_finrank_of_injective (f := Q.mulVecLin) hQ.mulVec_injective

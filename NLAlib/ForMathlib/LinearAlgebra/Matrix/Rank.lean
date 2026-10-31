@@ -94,8 +94,7 @@ theorem finrank_ker_add_rank (A : Matrix m n K) :
   have h := A.mulVecLin.finrank_range_add_finrank_ker
   rwa [Module.finrank_fintype_fun_eq_card, add_comm] at h
 
-/-- A matrix over a field has rank zero exactly when it is the zero matrix.
-Port of `NLAlib.eq_zero_of_matrix_rank_eq_zero`. -/
+/-- A matrix over a field has rank zero exactly when it is the zero matrix. -/
 @[simp]
 theorem rank_eq_zero {A : Matrix m n K} : A.rank = 0 ↔ A = 0 := by
   classical
@@ -106,7 +105,7 @@ theorem rank_eq_zero {A : Matrix m n K} : A.rank = 0 ↔ A = 0 := by
 $\operatorname{rank}(\mathbf{A} + \mathbf{B}) \le \operatorname{rank} \mathbf{A} +
 \operatorname{rank} \mathbf{B}$.
 [HornJohnson2013, §0.4.5]; stated there for complex matrices, here over any field and any finite
-index types. Port of `NLAlib.rank_add_le`.
+index types.
 Result: rank-inequalities -/
 theorem rank_add_le (A B : Matrix m n K) : (A + B).rank ≤ A.rank + B.rank := by
   rw [rank, rank, rank, mulVecLin_add]
@@ -129,8 +128,7 @@ $\operatorname{rank} \mathbf{A} + \operatorname{rank} \mathbf{B}
 \le \lvert n \rvert + \operatorname{rank}(\mathbf{A}\mathbf{B})$.
 [HornJohnson2013, §0.4.5]; stated there as
 $\operatorname{rank} \mathbf{A} + \operatorname{rank} \mathbf{B} - n
-\le \operatorname{rank}(\mathbf{A}\mathbf{B})$, here additively and over any field. Port of
-`NLAlib.rank_add_rank_sub_card_le_rank_mul`.
+\le \operatorname{rank}(\mathbf{A}\mathbf{B})$, here additively and over any field.
 Result: sylvester-rank-inequality, rank-inequalities -/
 theorem rank_add_rank_le_card_add_rank_mul [Fintype p] (A : Matrix m n K) (B : Matrix n p K) :
     A.rank + B.rank ≤ Fintype.card n + (A * B).rank := by
@@ -148,7 +146,6 @@ theorem rank_add_rank_le_card_add_rank_mul [Fintype p] (A : Matrix m n K) (B : M
 $\operatorname{rank}(\mathbf{A}\mathbf{B}) + \operatorname{rank}(\mathbf{B}\mathbf{C})
 \le \operatorname{rank} \mathbf{B} + \operatorname{rank}(\mathbf{A}\mathbf{B}\mathbf{C})$.
 [HornJohnson2013, §0.4.5]; here over any field and any finite index types.
-Port of `NLAlib.rank_mul_add_rank_mul_le_rank_add_rank_mul_mul`.
 Result: frobenius-rank-inequality, rank-inequalities -/
 theorem rank_mul_add_rank_mul_le [Fintype m] [Fintype p] (A : Matrix l m K) (B : Matrix m n K)
     (C : Matrix n p K) : (A * B).rank + (B * C).rank ≤ B.rank + (A * B * C).rank := by
@@ -164,8 +161,7 @@ theorem rank_mul_add_rank_mul_le [Fintype m] [Fintype p] (A : Matrix l m K) (B :
 /-- The rank of a block diagonal matrix is the sum of the ranks of its blocks. The blocks may be
 rectangular:
 $\operatorname{rank} \begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{D}
-\end{bmatrix} = \operatorname{rank} \mathbf{A} + \operatorname{rank} \mathbf{D}$.
-Port of `NLAlib.rank_fromBlocks_zero_zero_eq`, there over $\mathbb{R}$. -/
+\end{bmatrix} = \operatorname{rank} \mathbf{A} + \operatorname{rank} \mathbf{D}$. -/
 theorem rank_fromBlocks_zero₁₂_zero₂₁ [Fintype m] (A : Matrix l m K) (D : Matrix p n K) :
     (fromBlocks A 0 0 D).rank = A.rank + D.rank := by
   have h : (fromBlocks A 0 0 D).mulVecLin =
@@ -185,8 +181,7 @@ $$\operatorname{rank} \begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{C} & \m
 \end{bmatrix}
 = \lvert m \rvert + \operatorname{rank}(\mathbf{D} - \mathbf{C}\mathbf{A}^{-1}\mathbf{B}) \,.$$
 The trailing blocks may be rectangular.
-[HornJohnson2013, §0.8.5]; here over any field. Port of
-`NLAlib.rank_fromBlocks_eq_rank_add_rank_schur`, there over $\mathbb{R}$.
+[HornJohnson2013, §0.8.5]; here over any field.
 Result: schur-complement-rank -/
 theorem rank_fromBlocks₁₁ [Finite l] [Fintype m] [DecidableEq m] (A : Matrix m m K)
     (B : Matrix m n K) (C : Matrix l m K) (D : Matrix l n K) [Invertible A] :
@@ -201,7 +196,7 @@ theorem rank_fromBlocks₁₁ [Finite l] [Fintype m] [DecidableEq m] (A : Matrix
 
 /-- **Rouché–Capelli.** Adjoining the column $\mathbf{b}$ to $\mathbf{A}$ leaves the rank
 unchanged exactly when $\mathbf{A}\mathbf{x} = \mathbf{b}$ has a solution.
-[HornJohnson2013, §0.4.2]. Port of `NLAlib.rank_fromCols_eq_iff_exists_mulVec_eq`.
+[HornJohnson2013, §0.4.2].
 Result: rouche-capelli -/
 theorem rank_fromCols_replicateCol_eq_iff (A : Matrix m n K) (b : m → K) :
     (fromCols A (replicateCol Unit b)).rank = A.rank ↔ ∃ x, A *ᵥ x = b := by
@@ -239,7 +234,6 @@ $c$ (columns), the block of $\mathbf{A}$ on rows $r$ and columns $c$ and the blo
 $\mathbf{A}^{-1}$ on rows outside $c$ and columns outside $r$ have kernels of the same dimension.
 The blocks need not be square.
 [HornJohnson2013, §0.7.5]; here over any field.
-Port of `NLAlib.finrank_ker_toBlock_eq_finrank_ker_inverse_complement`.
 Result: complementary-nullities -/
 theorem finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not [DecidableEq n] (A : Matrix n n K)
     (hA : IsUnit A) (r c : n → Prop) [DecidablePred r] [DecidablePred c] :
@@ -265,8 +259,7 @@ theorem finrank_ker_toBlock_eq_finrank_ker_inv_toBlock_not [DecidableEq n] (A : 
 $\mathbf{A}$ on rows $r$ and columns $c$, plus the number of indices outside $r$, equals the rank
 of the complementary block of $\mathbf{A}^{-1}$ (rows outside $c$, columns outside $r$) plus the
 number of indices in $c$.
-[HornJohnson2013, §0.7.5]. Port of `NLAlib.card_columns_sub_rank_toBlock_eq_inverse_complement`,
-there with truncated subtraction.
+[HornJohnson2013, §0.7.5].
 Result: complementary-nullities -/
 theorem rank_toBlock_add_card_eq_rank_inv_toBlock_not_add_card [DecidableEq n] (A : Matrix n n K)
     (hA : IsUnit A) (r c : n → Prop) [DecidablePred r] [DecidablePred c] :

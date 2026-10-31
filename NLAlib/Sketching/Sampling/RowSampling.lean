@@ -418,7 +418,8 @@ $d = \operatorname{rank}\mathbf{U}$, restores isotropy at the price of a factor 
 domination constant ($\ell_i \le 2 d p_i$). A weakening of the fixed-subspace injection tails of
 `NLAlib.Regression.Oblivious` to
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] \preceq \mathbf{I}$ (sub-isotropy) would admit zero
-weights; it is open work for an S1 interface review (`docs/design/Sketching-S4.md` §8, item 10).
+weights; it is open work for a review of the sketching interfaces
+(`docs/design/Sketching-S4.md` §8, item 10).
 [MartinssonTropp2020, §9.6.3]. -/
 theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1) (hpos : ∀ i, 0 < p i) :

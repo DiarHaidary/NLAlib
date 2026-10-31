@@ -55,8 +55,7 @@ $$\inf_{\mathbf{x}_j = 1} \|\mathbf{A}\mathbf{x}\| \le \sqrt{\lvert n \rvert} \,
 the infimum, over the vectors $\mathbf{x}$ with $\mathbf{x}_j = 1$, being the distance from
 column $j$ to the span of the other columns. This is the deterministic step of the "invertibility
 via distance" argument for the least singular value of a random matrix.
-[RudelsonVershynin2008, Lemma 3.5]; stated there for square real matrices, in probability.
-Port of `NLAlib.exists_iInf_norm_mulVec_le_of_singularValues_last_le`, there over $\mathbb{R}$. -/
+[RudelsonVershynin2008, Lemma 3.5]; stated there for square real matrices, in probability. -/
 theorem exists_iInf_norm_mulVec_le_of_singularValues_le (A : Matrix m n 𝕜) {k : ℕ}
     (hk : k + 1 = Fintype.card n) {s : ℝ} (hs : singularValues A k ≤ s) :
     ∃ j : n, ⨅ x : {x : n → 𝕜 // x j = 1}, ‖WithLp.toLp 2 (A *ᵥ x.1)‖ ≤

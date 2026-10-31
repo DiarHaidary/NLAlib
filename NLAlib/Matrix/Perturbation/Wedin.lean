@@ -117,9 +117,7 @@ $$(\alpha - \beta) \max\bigl(\|\mathbf{X}\|_{\Phi}, \|\mathbf{Y}\|_{\Phi}\bigr)
   \le \max\bigl(\|\mathbf{D}\mathbf{Y} - \mathbf{X}\mathbf{T}\|_{\Phi},
   \|\mathbf{D}^{\mathsf{H}}\mathbf{X} - \mathbf{Y}\mathbf{T}^{\mathsf{H}}\|_{\Phi}\bigr).$$
 No sign condition on $\alpha$ is needed: the bound is trivial for $\alpha < \beta$.
-[Wedin1972]; [StewartSun1990, §V.4].
-Port of `NLAlib.sub_mul_max_specNorm_le_max_coupled_residual`, there over $\mathbb{R}$ in the
-spectral norm with diagonal $\mathbf{T}$. -/
+[Wedin1972]; [StewartSun1990, §V.4]. -/
 theorem SymmetricGauge.sub_mul_max_matrixNorm_le_max (Φ : SymmetricGauge) {D : Matrix m n 𝕜}
     {T : Matrix p p 𝕜} {α β : ℝ} (hT : (α ^ 2) • (1 : Matrix p p 𝕜) ≤ Tᴴ * T)
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
@@ -145,8 +143,7 @@ $\beta \le \alpha$, then
 $$(\alpha - \beta)^2 \bigl(\|\mathbf{X}\|_{\mathsf{F}}^2 + \|\mathbf{Y}\|_{\mathsf{F}}^2\bigr)
   \le \|\mathbf{D}\mathbf{Y} - \mathbf{X}\mathbf{T}\|_{\mathsf{F}}^2 +
   \|\mathbf{D}^{\mathsf{H}}\mathbf{X} - \mathbf{Y}\mathbf{T}^{\mathsf{H}}\|_{\mathsf{F}}^2.$$
-[Wedin1972].
-Port of `NLAlib.sub_sq_mul_add_sq_frobNorm_le_add_sq_coupled_residual`. -/
+[Wedin1972]. -/
 theorem sub_sq_mul_frobNorm_sq_add_frobNorm_sq_le {D : Matrix m n 𝕜} {T : Matrix p p 𝕜}
     {α β : ℝ} (hαβ : β ≤ α) (hT : (α ^ 2) • (1 : Matrix p p 𝕜) ≤ Tᴴ * T)
     (hD : specNorm D ≤ β) (X : Matrix m p 𝕜) (Y : Matrix n p 𝕜) :
@@ -333,8 +330,6 @@ $$\begin{aligned}
   \|\mathbf{A}^{\mathsf{H}}\mathbf{U}' - \mathbf{V}'\mathbf{S}^{\mathsf{H}}\|_{\Phi}\bigr).
 \end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
-Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_residual_div`, there over $\mathbb{R}$ in
-the spectral norm with square SVD factors.
 Result: wedin -/
 theorem SymmetricGauge.sub_mul_max_matrixNorm_one_sub_mul_le_max (Φ : SymmetricGauge)
     {A : Matrix m n 𝕜} {j : ℕ} {U : Matrix m (Fin (j + 1)) 𝕜} {V : Matrix n (Fin (j + 1)) 𝕜}
@@ -402,8 +397,6 @@ $$\begin{aligned}
   \|\mathbf{E}^{\mathsf{H}}\mathbf{U}'\|_{\Phi}\bigr).
 \end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
-Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_max_perturbation_frame_div`, there over
-$\mathbb{R}$ in the spectral norm with square SVD factors.
 Result: wedin -/
 theorem SymmetricGauge.mul_max_matrixNorm_one_sub_mul_le_of_singularValues_sub
     (Φ : SymmetricGauge) {A E : Matrix m n 𝕜} {j : ℕ} {U U' : Matrix m (Fin (j + 1)) 𝕜}
@@ -437,7 +430,6 @@ $$\begin{aligned}
   \|\mathbf{E}^{\mathsf{H}}\mathbf{U}'\|_{\mathsf{F}}^2.
 \end{aligned}$$
 [Wedin1972]; [StewartSun1990, Theorem V.4.1].
-Port of `NLAlib.sqrt_add_sq_frobNorm_sinePrincipalAngles_le_sqrt_add_sq_perturbation_frame_div`.
 Result: wedin -/
 theorem HasOrthonormalCols.sq_mul_frobNorm_one_sub_mul_sq_add_le_of_singularValues_sub
     {A E : Matrix m n 𝕜}
@@ -471,7 +463,6 @@ with orthonormal columns, and $\sigma_j(\mathbf{A}) > \sigma_{j+1}(\mathbf{A})$,
 $$\max\bigl(\|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{U}'\|_2,
   \|(\mathbf{I} - \mathbf{V}\mathbf{V}^{\mathsf{H}})\mathbf{V}'\|_2\bigr)
   \le \frac{2 \|\mathbf{E}\|_2}{\sigma_j(\mathbf{A}) - \sigma_{j+1}(\mathbf{A})}.$$
-Port of `NLAlib.max_specNorm_sinePrincipalAngles_le_two_mul_specNorm_div_population_gap`.
 Result: wedin -/
 theorem HasOrthonormalCols.max_specNorm_one_sub_mul_le_two_mul_specNorm_div_singularGap
     {A E : Matrix m n 𝕜}

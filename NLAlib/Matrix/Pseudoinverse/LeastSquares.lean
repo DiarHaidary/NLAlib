@@ -62,7 +62,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*} [Fintype l] [Fintype m] [F
 it minimises the Euclidean norm of the residual $\mathbf{b} - \mathbf{A}\mathbf{x}$ over all
 vectors, $\|\mathbf{b} - \mathbf{A}\mathbf{x}\| \le \|\mathbf{b} - \mathbf{A}\mathbf{y}\|$ for every
 $\mathbf{y}$.
-[GolubVanLoan2013, §5.3]. Port of `NLAlib.IsLeastSquaresSolution`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §5.3]. -/
 def IsLeastSquaresSolution (A : Matrix m n 𝕜) (b : m → 𝕜) (x : n → 𝕜) : Prop :=
   ∀ y : n → 𝕜, ‖WithLp.toLp 2 (b - A *ᵥ x)‖ ≤ ‖WithLp.toLp 2 (b - A *ᵥ y)‖
 
@@ -112,7 +112,7 @@ theorem isLeastSquaresSolution_iff_isMinOn {A : Matrix m n 𝕜} {b : m → 𝕜
 
 /-- **The normal equations.** $\mathbf{x}$ is a least-squares solution exactly when
 $\mathbf{A}^{\mathsf{H}}\mathbf{A}\mathbf{x} = \mathbf{A}^{\mathsf{H}}\mathbf{b}$.
-[GolubVanLoan2013, §5.3.1]. Port of `NLAlib.isLeastSquaresSolution_iff_transpose_mulVec_mulVec_eq`.
+[GolubVanLoan2013, §5.3.1].
 Result: normal-equations -/
 theorem isLeastSquaresSolution_iff_normal_equations {A : Matrix m n 𝕜} {b : m → 𝕜}
     {x : n → 𝕜} : IsLeastSquaresSolution A b x ↔ Aᴴ *ᵥ (A *ᵥ x) = Aᴴ *ᵥ b := by
@@ -121,8 +121,7 @@ theorem isLeastSquaresSolution_iff_normal_equations {A : Matrix m n 𝕜} {b : m
     Matrix.mulVec_sub, rangeProjector_mulVec_mulVec, sub_eq_zero, eq_comm]
 
 /-- $\mathbf{x}$ is a least-squares solution exactly when the residual is orthogonal to the
-column space: $\mathbf{A}^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{x}) = \mathbf{0}$.
-Port of `NLAlib.isLeastSquaresSolution_iff_forall_dotProduct_mulVec_eq_zero`. -/
+column space: $\mathbf{A}^{\mathsf{H}}(\mathbf{b} - \mathbf{A}\mathbf{x}) = \mathbf{0}$. -/
 theorem isLeastSquaresSolution_iff_conjTranspose_mulVec_sub_eq_zero {A : Matrix m n 𝕜}
     {b : m → 𝕜} {x : n → 𝕜} : IsLeastSquaresSolution A b x ↔ Aᴴ *ᵥ (b - A *ᵥ x) = 0 := by
   rw [isLeastSquaresSolution_iff_aux, ← rangeProjector_mulVec_eq_zero_iff, Matrix.mulVec_sub,
@@ -130,8 +129,7 @@ theorem isLeastSquaresSolution_iff_conjTranspose_mulVec_sub_eq_zero {A : Matrix 
 
 /-- $\mathbf{x}$ is a least-squares solution exactly when $\mathbf{A}\mathbf{x}$ is the
 projection of $\mathbf{b}$ onto the column space of $\mathbf{A}$:
-$\mathbf{A}\mathbf{x} = \mathbf{P}_{\mathbf{A}}\mathbf{b}$. Port of
-`NLAlib.isLeastSquaresSolution_iff_mulVec_eq`. -/
+$\mathbf{A}\mathbf{x} = \mathbf{P}_{\mathbf{A}}\mathbf{b}$. -/
 theorem isLeastSquaresSolution_iff_mulVec_eq_rangeProjector_mulVec {A : Matrix m n 𝕜}
     {b : m → 𝕜} {x : n → 𝕜} :
     IsLeastSquaresSolution A b x ↔ A *ᵥ x = rangeProjector A *ᵥ b := by
@@ -172,7 +170,7 @@ theorem mulVec_eq_rangeProjector_mulVec (h : IsLeastSquaresSolution A b x) :
 
 /-- The least-squares residual is the projection of $\mathbf{b}$ onto the orthogonal complement
 of the column space: $\mathbf{b} - \mathbf{A}\mathbf{x} = (\mathbf{I} -
-\mathbf{P}_{\mathbf{A}})\mathbf{b}$. Port of `NLAlib.IsLeastSquaresSolution.sub_mulVec_eq`. -/
+\mathbf{P}_{\mathbf{A}})\mathbf{b}$. -/
 theorem sub_mulVec_eq [DecidableEq m] (h : IsLeastSquaresSolution A b x) :
     b - A *ᵥ x = (1 - rangeProjector A) *ᵥ b := by
   rw [Matrix.sub_mulVec, Matrix.one_mulVec, h.mulVec_eq_rangeProjector_mulVec]
@@ -187,7 +185,6 @@ theorem norm_sub_mulVec_eq [DecidableEq m] (h : IsLeastSquaresSolution A b x) :
 $\mathbf{y}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{y}\|^2 = \|\mathbf{b} - \mathbf{A}\mathbf{x}\|^2 +
   \|\mathbf{A}(\mathbf{x} - \mathbf{y})\|^2\,.$$
-Port of `NLAlib.norm_sub_mulVec_sq_eq_add_of_transpose_mulVec_eq_zero`.
 [GolubVanLoan2013, §5.3] (locator to check). -/
 theorem norm_sub_mulVec_sq_eq_add (h : IsLeastSquaresSolution A b x) (y : n → 𝕜) :
     ‖WithLp.toLp 2 (b - A *ᵥ y)‖ ^ 2 =
@@ -203,8 +200,7 @@ theorem norm_sub_mulVec_sq_eq_add (h : IsLeastSquaresSolution A b x) (y : n → 
   rw [norm_toLp_sq_eq_add_one_sub_rangeProjector A (b - A *ᵥ y), h1, h2, add_comm]
 
 /-- The squared residual of a least-squares solution is
-$\|\mathbf{b} - \mathbf{A}\mathbf{x}\|^2 = \|\mathbf{b}\|^2 - \|\mathbf{A}\mathbf{x}\|^2$.
-Port of `NLAlib.IsLeastSquaresSolution.norm_sub_mulVec_sq_eq`. -/
+$\|\mathbf{b} - \mathbf{A}\mathbf{x}\|^2 = \|\mathbf{b}\|^2 - \|\mathbf{A}\mathbf{x}\|^2$. -/
 theorem norm_sub_mulVec_sq (h : IsLeastSquaresSolution A b x) :
     ‖WithLp.toLp 2 (b - A *ᵥ x)‖ ^ 2 =
       ‖WithLp.toLp 2 b‖ ^ 2 - ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 := by
@@ -231,7 +227,6 @@ theorem pinv_mulVec_mulVec (h : IsLeastSquaresSolution A b x) :
 /-- **The pseudoinverse solution has the smallest norm** among least-squares solutions:
 $\|\mathbf{A}^{+}\mathbf{b}\| \le \|\mathbf{x}\|$ for every least-squares solution $\mathbf{x}$.
 [GolubVanLoan2013, §5.5.2].
-Port of `NLAlib.IsLeastSquaresSolution.norm_moorePenroseInverse_mulVec_le`.
 Result: minimum-norm-least-squares -/
 theorem norm_pinv_mulVec_le (h : IsLeastSquaresSolution A b x) :
     ‖WithLp.toLp 2 (pinv A *ᵥ b)‖ ≤ ‖WithLp.toLp 2 x‖ := by
@@ -258,7 +253,6 @@ end IsLeastSquaresSolution
 /-- **The pseudoinverse solves least squares.** $\mathbf{A}^{+}\mathbf{b}$ is a least-squares
 solution.
 [GolubVanLoan2013, §5.5.2].
-Port of `NLAlib.isLeastSquaresSolution_moorePenroseInverse_mulVec`.
 Result: least-squares-pseudoinverse -/
 theorem isLeastSquaresSolution_pinv_mulVec (A : Matrix m n 𝕜) (b : m → 𝕜) :
     IsLeastSquaresSolution A b (pinv A *ᵥ b) := by
@@ -281,7 +275,7 @@ theorem norm_sub_mulVec_sq_eq_add_norm_mulVec_sub_pinv_sq [DecidableEq m] (A : M
   rw [h.norm_sub_mulVec_sq_eq_add y, h.sub_mulVec_eq, ← neg_sub y, Matrix.mulVec_neg,
     WithLp.toLp_neg, norm_neg]
 
-/-- A least-squares solution exists. Port of `NLAlib.exists_isLeastSquaresSolution`. -/
+/-- A least-squares solution exists. -/
 theorem exists_isLeastSquaresSolution (A : Matrix m n 𝕜) (b : m → 𝕜) :
     ∃ x, IsLeastSquaresSolution A b x := by
   exact ⟨pinv A *ᵥ b, isLeastSquaresSolution_pinv_mulVec A b⟩
@@ -304,8 +298,7 @@ theorem isLeastSquaresSolution_iff_exists [DecidableEq n] {A : Matrix m n 𝕜} 
       ← Matrix.mul_assoc, mul_pinv_mul_self, sub_self, Matrix.zero_mulVec, add_zero]
 
 /-- With full column rank the pseudoinverse solution is the only least-squares solution:
-$\mathbf{x}$ is one exactly when $\mathbf{x} = \mathbf{A}^{+}\mathbf{b}$.
-Port of `NLAlib.isLeastSquaresSolution_iff_eq_moorePenroseInverse_mulVec`. -/
+$\mathbf{x}$ is one exactly when $\mathbf{x} = \mathbf{A}^{+}\mathbf{b}$. -/
 theorem isLeastSquaresSolution_iff_eq_pinv_mulVec {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) {b : m → 𝕜} {x : n → 𝕜} :
     IsLeastSquaresSolution A b x ↔ x = pinv A *ᵥ b := by
@@ -317,8 +310,7 @@ theorem isLeastSquaresSolution_iff_eq_pinv_mulVec {A : Matrix m n 𝕜}
 
 /-- Uniqueness: the least-squares problem has a unique solution, for one right-hand side
 or equivalently for all, exactly when $\mathbf{A}$ has full column rank
-($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective).
-Port of `NLAlib.existsUnique_isLeastSquaresSolution_iff`. -/
+($\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ injective). -/
 theorem existsUnique_isLeastSquaresSolution_iff (A : Matrix m n 𝕜) (b : m → 𝕜) :
     (∃! x, IsLeastSquaresSolution A b x) ↔ Function.Injective A.mulVec := by
   constructor
