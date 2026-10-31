@@ -8,7 +8,7 @@
 # audit and the environment linters on exactly those modules, `mk_all --check` on NLAlib (no
 # module unreachable from NLAlib.lean, hence unaudited), the kernel replay (scripts/Replay.lean:
 # every constant of the .olean files of every lean_lib re-checked by Lean's kernel, with the roots
-# and strictness of CI, after `lake build NLAlib NLAlibScaffold NLAlibTools` and the freshness
+# and strictness of CI, after `lake build NLAlib NLAlibTools` and the freshness
 # check `lake build --no-build --rehash` of the same targets) and its fixtures
 # (scripts/replay_fixtures.sh), the program checks
 # (scripts/Programs.lean, rules E2, E4 and E9, on the whole library as in CI, after a
@@ -35,7 +35,7 @@ for check in Audit Lint; do
   { cat "$tmp/imports.txt"; sed '1d' "scripts/$check.lean"; } > "$tmp/$check.lean"
   LEAN_NUM_THREADS=1 lake env lean -M 8000 "$tmp/$check.lean" 2>&1 | tail -4
 done
-libs="NLAlib NLAlibScaffold NLAlibTools"
+libs="NLAlib NLAlibTools"
 LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" lake build $libs > "$tmp/build-all.log" 2>&1 || \
   { tail -30 "$tmp/build-all.log"; exit 1; }
 lake exe mk_all --lib NLAlib --check > "$tmp/mk_all.log" 2>&1 || { cat "$tmp/mk_all.log"; exit 1; }

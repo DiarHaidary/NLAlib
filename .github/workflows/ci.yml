@@ -12,13 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # NLAlibScaffold is retired and empty; it is built only while lakefile.toml still lists it
-      # (the kernel replay reads every lean_lib of lakefile.toml)
-      - name: Build NLAlib (and the empty NLAlibScaffold root) with the Mathlib cache; warnings are fatal
+      - name: Build NLAlib with the Mathlib cache; warnings are fatal
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "--wfail NLAlib NLAlibScaffold"
+          build-args: "--wfail NLAlib"
           lint: false
           test: false
           # no build outputs from the GitHub cache: the library is built from its sources at every
@@ -42,7 +40,7 @@ jobs:
           lake build NLAlibTools
           lake exe mk_all --lib NLAlibTools --check
       - name: Build outputs are current (every hash recomputed)
-        run: lake build --no-build --rehash NLAlib NLAlibScaffold NLAlibTools
+        run: lake build --no-build --rehash NLAlib NLAlibTools
       - name: Kernel replay (every constant of every lean_lib re-checked by the kernel)
         run: lake env lean scripts/Replay.lean
       - name: Kernel replay fixtures (each forgery of the final audits is rejected)

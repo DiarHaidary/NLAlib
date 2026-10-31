@@ -11,7 +11,7 @@ example `env.addDeclCore … (doCheck := false)`), or an `.olean` edited after t
 here; `scripts/Audit.lean` cannot see them, since it reads the axioms a constant uses, not whether
 the kernel checked it. Final audits, 2026-10-24 (`docs/design/Computation.md`, "Final audits").
 
-How it works. The roots are every `lean_lib` of `lakefile.toml` (`NLAlib`, `NLAlibScaffold`,
+How it works. The roots are every `lean_lib` of `lakefile.toml` (`NLAlib`,
 `NLAlibTools`). The script reads the `.olean` files of the replayed modules (the roots and every
 module they import whose name has a root as a prefix: `NLAlib` and `NLAlib.*`, and so on), every
 part of each, so that private declarations and proofs are included, and imports, as the base, the
@@ -35,11 +35,11 @@ imports, recursively, are strict. In a module of a strict library the script fai
 * an axiom, and a constant whose type or value uses `sorryAx`, `Lean.ofReduceBool`,
   `Lean.ofReduceNat` or `Lean.trustCompiler` (defence in depth beside `scripts/Audit.lean`,
   which follows axioms through every dependency).
-In the other libraries (`NLAlibScaffold` and `NLAlibTools`, which may contain `sorry`) these are
+In the other libraries (`NLAlibTools`, which may contain `sorry`) these are
 only counted.
 
 Run with `lake env lean scripts/Replay.lean` from the repository root, after
-`lake build NLAlib NLAlibScaffold NLAlibTools` and `lake build --no-build --rehash` of the same
+`lake build NLAlib NLAlibTools` and `lake build --no-build --rehash` of the same
 targets (the freshness check: the `.olean` files are those of the current sources;
 `scripts/stage_check.sh` and CI do both). A nonzero exit code means a violation.
 `REPLAY_ROOTS` (space-separated module names) replaces the roots, for fixtures; CI and the stage
