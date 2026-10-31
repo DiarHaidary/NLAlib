@@ -279,7 +279,7 @@ check = "source"
 scope = "library"
 section = "§7"
 statement = '''No `Proof:` sentence in a library docstring'''
-fix = '''Delete it: `Proof:` lines belong to scaffold statements and go when the proof lands'''
+fix = '''Delete it: a library docstring describes the proved result, not a proof plan'''
 
 [[rule]]
 id = "D9"
@@ -529,26 +529,6 @@ scope = "library"
 section = "§8"
 statement = '''A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status'''
 fix = '''Fill the missing fields'''
-
-[[rule]]
-id = "G2"
-area = "design records"
-severity = "error"
-check = "source"
-scope = "library"
-section = "§9, AGENTS.md"
-statement = '''Every port-ledger target is declared'''
-fix = '''Point the entry of docs/port/ledger.json at the current name (scripts/ledger_check.py)'''
-
-[[rule]]
-id = "G3"
-area = "design records"
-severity = "review"
-check = "none"
-scope = "library"
-section = "§8 item 5"
-statement = '''A scaffold file imports the scaffold files whose declarations its `Proof:` lines name'''
-fix = '''Add the import to the skeleton and the note's file list (the harness pre-dispatch check lists the missing names)'''
 
 [[rule]]
 id = "M1"
@@ -1138,7 +1118,7 @@ area = "source and proof style"
 severity = "error"
 check = "source"
 scope = "library"
-section = "§10, proof-agent brief"
+section = "§3"
 statement = '''A line has at most 100 characters, unless one identifier or a URL makes it long'''
 fix = '''Wrap it; only a line that is one identifier or contains a URL may be longer, under `set_option linter.style.longLine false in` with a comment'''
 
@@ -1300,7 +1280,7 @@ severity = "warning"
 check = "extraction"
 scope = "library"
 home = ["NLAlib/Probability", "NLAlib/RandomMatrix"]
-section = "§5.2, PORT_PROBABILITY D3"
+section = "§5.2"
 statement = '''Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`'''
 fix = '''State tails in `μ.real`'''
 
