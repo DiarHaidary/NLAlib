@@ -1042,8 +1042,9 @@ bash scripts/stage_check.sh > /tmp/stage-check.log 2>&1; echo $?
 ```
 
 It must exit 0. It writes its logs to `$TMPDIR/nlalib-stage-check` (default `/tmp`). With an
-up-to-date build it takes roughly 15 to 30 minutes on 8 cores (most of it the kernel replay, the
-extraction and the full build); after a Mathlib bump or a change low in the import graph, longer.
+up-to-date build it takes roughly 10 to 20 minutes (9 minutes measured with 3 Lean threads, most
+of it the kernel replay, the extraction and the full build); after a Mathlib bump or a change low
+in the import graph, longer.
 It runs, in order:
 
 1. `lake build --wfail` of every NLAlib module (warnings are fatal, as in CI), then the axiom
@@ -1081,8 +1082,8 @@ warning fatal. An Audit or Replay failure means an axiom, `sorry`, `unsafe` or `
 reached the library (§7). A `mk_all` failure: run `lake exe mk_all --module --lib NLAlib`. A
 freshness failure: rebuild. A Targets failure on the approval hash means `docs/targets.toml`
 changed: only the maintainer approves it (§5.5); never edit `docs/targets.approved`. A
-`check_rules` message reads `<ID> <file>:<line> <declaration>: <what is wrong and the fix>`;
-`python3 scripts/check_rules.py --list` prints every id.
+message of the rules checker reads `<ID> <file>:<line> <declaration>: <what is wrong and the
+fix>`; `python3 scripts/check_rules.py --list` prints every id.
 
 **The pull request.** The description contains a read-back: for each headline theorem, what the
 Lean statement says, written from the Lean alone (hypotheses, conclusion, degenerate cases). The
