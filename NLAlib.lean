@@ -303,6 +303,7 @@ public import NLAlib.Matrix.Perturbation.DavisKahanGap
 public import NLAlib.Matrix.Perturbation.Inverse
 public import NLAlib.Matrix.Perturbation.LeastSquares
 public import NLAlib.Matrix.Perturbation.Pseudoinverse
+public import NLAlib.Matrix.Perturbation.Pseudospectrum
 public import NLAlib.Matrix.Perturbation.Relative
 public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Perturbation.SimpleEigenvalue
