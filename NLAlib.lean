@@ -157,6 +157,7 @@ public import NLAlib.Krylov.LinearSystems.CGTridiagonal
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
 public import NLAlib.Krylov.LinearSystems.Galerkin
+public import NLAlib.Krylov.LinearSystems.Landweber
 public import NLAlib.Krylov.LinearSystems.MINRES
 public import NLAlib.Krylov.LinearSystems.MINRESLanczos
 public import NLAlib.Krylov.LinearSystems.MINRESRecurrence
@@ -319,11 +320,16 @@ public import NLAlib.Matrix.Perturbation.Sylvester
 public import NLAlib.Matrix.Perturbation.TruncationWindow
 public import NLAlib.Matrix.Perturbation.Wedin
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
+public import NLAlib.Matrix.Pseudoinverse.GeneralTikhonov
+public import NLAlib.Matrix.Pseudoinverse.GeneralTikhonovLimits
 public import NLAlib.Matrix.Pseudoinverse.GeneralizedSchur
 public import NLAlib.Matrix.Pseudoinverse.LeastSquares
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Pseudoinverse.Penrose
 public import NLAlib.Matrix.Pseudoinverse.Pinv
+public import NLAlib.Matrix.Pseudoinverse.RegularizedLeastSquares
+public import NLAlib.Matrix.Pseudoinverse.Tikhonov
+public import NLAlib.Matrix.Pseudoinverse.TruncatedSVD
 public import NLAlib.Matrix.Spectral.BestRankApprox
 public import NLAlib.Matrix.Spectral.Congruence
 public import NLAlib.Matrix.Spectral.CourantFischer

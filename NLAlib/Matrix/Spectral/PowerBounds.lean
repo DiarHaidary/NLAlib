@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Normed.Algebra.GelfandFormula
+public import Mathlib.Analysis.SpecificLimits.Basic
 public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 public import NLAlib.ForMathlib.Algebra.Ring.Idempotent
 public import NLAlib.Matrix.Spectral.SpectralRadius
@@ -32,6 +33,8 @@ stay bounded exactly when it is at most one and the eigenvalues of modulus one a
 * `NLAlib.tendsto_pow_iff_specRadius_sub_lt_one`: convergence to a fixed idempotent.
 * `NLAlib.exists_forall_specNorm_pow_sub_le_mul_pow`: geometric bounds on the power error.
 * `NLAlib.isUnit_of_specRadius_one_sub_mul_lt_one`: invertibility from spectral stability.
+* `NLAlib.IsSVD.one_sub_smul_conjTranspose_mul_self_pow`: the shifted Gram power formula.
+* `NLAlib.tendsto_one_sub_smul_conjTranspose_mul_self_pow`: the orthogonal kernel limit.
 -/
 
 @[expose] public section
@@ -482,6 +485,119 @@ theorem isUnit_of_specRadius_one_sub_mul_lt_one
   have hdet := isUnit_det_one_sub_of_specRadius_lt_one hρ
   rw [sub_sub_cancel, Matrix.det_mul] at hdet
   exact (Matrix.isUnit_iff_isUnit_det A).mpr (isUnit_of_mul_isUnit_right hdet)
+
+/-! ### Powers of identity minus a scaled Gram matrix
+
+These matrix identities supply the spectral error multipliers for Landweber iteration.
+Proof material is adapted from `tchen-research/NLAlib` at
+`77514ce42a0e437d837797a063ac161f41022730`, `NLAlib/Matrix/Basic/Landweber.lean`
+and `LandweberLimit.lean`.
+-/
+
+section ShiftedGramPowers
+
+variable {m r : Type*} [Fintype m] [Fintype r] [DecidableEq r]
+
+private theorem IsSVD.one_sub_smul_conjTranspose_mul_self_mul
+    {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+    (h : IsSVD A U σ V) (η : ℝ) :
+    (1 - η • (Aᴴ * A)) * V =
+        V * Matrix.diagonal (fun i => ((1 - η * σ i ^ 2 : ℝ) : 𝕜)) ∧
+      (1 - η • (Aᴴ * A)) * (1 - V * Vᴴ) = 1 - V * Vᴴ := by
+  have hgram : (Aᴴ * A) * V =
+      V * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) := by
+    rw [h.conjTranspose_mul_self_eq,
+      h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
+  constructor
+  · rw [Matrix.sub_mul, Matrix.one_mul, Matrix.smul_mul, hgram]
+    have hd : Matrix.diagonal (fun i => ((1 - η * σ i ^ 2 : ℝ) : 𝕜)) =
+        (1 : Matrix r r 𝕜) - η • Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) := by
+      ext i j
+      by_cases hij : i = j
+      · subst j
+        simp only [Matrix.diagonal_apply_eq, Matrix.sub_apply, Matrix.one_apply_eq,
+          Matrix.smul_apply, RCLike.ofReal_sub, RCLike.ofReal_one, RCLike.ofReal_mul,
+          RCLike.real_smul_eq_coe_mul]
+      · simp only [Matrix.diagonal_apply_ne _ hij, Matrix.sub_apply, Matrix.one_apply_ne hij,
+          Matrix.smul_apply, smul_zero, sub_zero]
+    rw [hd, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one]
+  · have hAP : A * (1 - V * Vᴴ) = 0 := by
+      rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, h.mul_right_eq, ← h.eq,
+        sub_self]
+    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.smul_mul,
+      Matrix.mul_assoc Aᴴ A, hAP, Matrix.mul_zero, smul_zero, sub_zero]
+
+/-- **Landweber error multipliers.** For any singular value decomposition
+$\mathbf{A}=\mathbf{U}\operatorname{diag}(\boldsymbol{\sigma})\mathbf{V}^{\mathsf{H}}$,
+every real step size and every $q\ge0$,
+$$ (\mathbf{I}-\eta\mathbf{A}^{\mathsf{H}}\mathbf{A})^q
+= \mathbf{I}-\mathbf{V}\mathbf{V}^{\mathsf{H}}+
+\mathbf{V}\operatorname{diag}((1-\eta\boldsymbol{\sigma}_i^2)^q)
+\mathbf{V}^{\mathsf{H}}\,.$$
+The identity permits zero singular values and empty dimensions.
+[FesslerNadakuditi2024, §§9.2–9.2.3].
+Result: landweber-spectral-filter -/
+theorem IsSVD.one_sub_smul_conjTranspose_mul_self_pow
+    {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+    (h : IsSVD A U σ V) (η : ℝ) (q : ℕ) :
+    (1 - η • (Aᴴ * A)) ^ q = 1 - V * Vᴴ +
+      V * Matrix.diagonal (fun i => (((1 - η * σ i ^ 2) ^ q : ℝ) : 𝕜)) * Vᴴ := by
+  induction q with
+  | zero => simp only [pow_zero, RCLike.ofReal_one, Matrix.diagonal_one, Matrix.mul_one,
+      sub_add_cancel]
+  | succ q ih =>
+    rw [pow_succ', ih, Matrix.mul_add,
+      (h.one_sub_smul_conjTranspose_mul_self_mul η).2,
+      ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      (h.one_sub_smul_conjTranspose_mul_self_mul η).1,
+      Matrix.mul_assoc V, Matrix.diagonal_mul_diagonal]
+    congr 3
+    funext i
+    simp only [pow_succ', RCLike.ofReal_mul]
+
+/-- The Landweber error-multiplier powers converge to the orthogonal kernel projector when
+$0<\eta$ and $\eta\|\mathbf{A}\|_2^2<2$. The product form of the step-size condition also
+covers the zero matrix and empty dimensions. -/
+theorem tendsto_one_sub_smul_conjTranspose_mul_self_pow (A : Matrix m n 𝕜)
+    {η : ℝ} (hη : 0 < η) (hstep : η * specNorm A ^ 2 < 2) :
+    Tendsto (fun q : ℕ => (1 - η • (Aᴴ * A)) ^ q) atTop
+      (𝓝 (1 - rangeProjector Aᴴ)) := by
+  obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
+  have hpos (i : Fin A.rank) : 0 < singularValues A i :=
+    (singularValues_pos_iff A).mpr i.isLt
+  have hscalar (i : Fin A.rank) : Tendsto
+      (fun q : ℕ => (((1 - η * singularValues A i ^ 2) ^ q : ℝ) : 𝕜)) atTop (𝓝 0) := by
+    have hs := hpos i
+    have hηs : η * singularValues A i ^ 2 < 2 :=
+      (mul_le_mul_of_nonneg_left
+        (pow_le_pow_left₀ hs.le (singularValues_le_specNorm A i) 2) hη.le).trans_lt hstep
+    have hroot : |1 - η * singularValues A i ^ 2| < 1 := by
+      rw [abs_lt]
+      constructor <;> nlinarith [mul_pos hη (sq_pos_of_pos hs)]
+    have hp := tendsto_pow_atTop_nhds_zero_of_abs_lt_one hroot
+    simpa only [RCLike.ofReal_zero, Function.comp_def] using
+      (RCLike.continuous_ofReal : Continuous (fun x : ℝ => (x : 𝕜))).continuousAt.tendsto.comp hp
+  have hdiag : Tendsto (fun q : ℕ => Matrix.diagonal
+      (fun i : Fin A.rank => (((1 - η * singularValues A i ^ 2) ^ q : ℝ) : 𝕜)))
+      atTop (𝓝 (0 : Matrix (Fin A.rank) (Fin A.rank) 𝕜)) := by
+    apply tendsto_pi_nhds.mpr
+    intro i
+    apply tendsto_pi_nhds.mpr
+    intro j
+    by_cases hij : i = j
+    · subst j
+      simpa only [Matrix.diagonal_apply_eq, Matrix.zero_apply] using hscalar i
+    · simpa only [Matrix.diagonal_apply_ne _ hij, Matrix.zero_apply] using
+        (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : 𝕜)) atTop (𝓝 0))
+  have hc : Continuous (fun M : Matrix (Fin A.rank) (Fin A.rank) 𝕜 =>
+      (1 - V * Vᴴ) + V * M * Vᴴ) := by fun_prop
+  have ht := hc.continuousAt.tendsto.comp hdiag
+  simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero] at ht
+  rw [h.rangeProjector_conjTranspose_eq hpos]
+  exact ht.congr' (Filter.Eventually.of_forall fun q =>
+    (h.one_sub_smul_conjTranspose_mul_self_pow η q).symm)
+
+end ShiftedGramPowers
 
 /-! ### Deprecated aliases -/
 
