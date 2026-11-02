@@ -386,6 +386,24 @@ theorem IsSVD.pinv [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {
   exact ⟨h.hasOrthonormalCols_right, h.hasOrthonormalCols_left,
     fun i => inv_nonneg.mpr (h.nonneg i), h.pinv_eq⟩
 
+/-- For an SVD with positive singular values, the row-space projector is
+$\mathbf{P}_{\mathbf{A}^{\mathsf{H}}} = \mathbf{V}\mathbf{V}^{\mathsf{H}}$.
+The index type of the retained singular vectors may be empty. -/
+theorem IsSVD.rangeProjector_conjTranspose_eq [DecidableEq r] {A : Matrix m n 𝕜}
+    {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+    (h : IsSVD A U σ V) (hσ : ∀ i, 0 < σ i) :
+    rangeProjector Aᴴ = V * Vᴴ := by
+  have hd : Matrix.diagonal (fun i => (((σ i)⁻¹ : ℝ) : 𝕜)) *
+      Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) = (1 : Matrix r r 𝕜) := by
+    rw [Matrix.diagonal_mul_diagonal]
+    ext i j
+    by_cases hij : i = j
+    · subst j
+      simp [(hσ i).ne']
+    · simp [hij]
+  rw [← pinv_mul, h.pinv_eq, Matrix.mul_assoc, h.conjTranspose_mul_eq,
+    ← Matrix.mul_assoc, Matrix.mul_assoc V, hd, Matrix.mul_one]
+
 /-! ### Full rank -/
 
 /-- **Full column rank.** If $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective then
