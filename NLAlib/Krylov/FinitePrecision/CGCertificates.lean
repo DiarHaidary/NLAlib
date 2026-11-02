@@ -552,9 +552,11 @@ theorem δ_le_of_certificate {a a' : ℝ}
     {j : ℕ} (hj : j < k) : C.δ j ≤ S.B * C.γ j :=
   (C.certificate_induction hs S le_rfl j hj).2.2
 
-/-- A feasible input certificate and spectrum in $[a,a']$ bound the backward model's Frobenius
+/-- **Input-certified CG backward error**: a feasible input certificate and spectrum in $[a,a']$
+bound the backward model's Frobenius
 error by the chosen distance $d$, without a fixed iteration-precision threshold. The positive
-margin $a-d$ is part of the scalar certificate. No printed source. -/
+margin $a-d$ is part of the scalar certificate. No printed source.
+Result: cg-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificate {a a' : ℝ}
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (S : CGBackwardCertificate k C.ε a a') :
     frobNorm (C.backwardH - C.dilatedH) ≤ S.d := by

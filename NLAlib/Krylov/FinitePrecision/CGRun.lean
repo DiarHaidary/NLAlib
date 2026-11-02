@@ -67,7 +67,8 @@ Hestenes–Stiefel recurrence from $\mathbf{x}_0 = \mathbf{0}$ for a real symmet
 every operation exact up to an error bounded by $\varepsilon$ times its operands (the normwise
 standard model), $\nu_j > 0$ and $\mu_j > 0$ at every step taken, and $\varepsilon \le 1/100$.
 The run length is unrestricted; accumulated-error bounds state their horizon assumptions.
-The computed $\nu_k$ after the last step may be $0$ (the program stops there). -/
+The computed $\nu_k$ after the last step may be $0$ (the program stops there).
+Algorithm: cg (run model) -/
 structure CGRun (n k : ℕ) where
   /-- The matrix. -/
   A : Matrix (Fin n) (Fin n) ℝ

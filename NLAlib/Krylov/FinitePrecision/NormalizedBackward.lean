@@ -141,7 +141,8 @@ $\|\bar{\mathbf{f}}_j\| \le f$ and $\lvert\bar p_j\rvert \le p$ for $j < k$, the
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}
 \le 22k^2 f + 17k\sqrt{k}p
 \,.$$
-No printed source; the maintainer's draft, `thm:greenbaum`, for Lanczos runs. -/
+No printed source. the maintainer's draft, `thm:greenbaum`, for Lanczos runs.
+Result: lanczos-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
     (hf : ∀ j < k, ‖WithLp.toLp 2 (D.recurrenceError j)‖ ≤ f)
     (hp : ∀ j < k, |D.adjacentInner j| ≤ p) :

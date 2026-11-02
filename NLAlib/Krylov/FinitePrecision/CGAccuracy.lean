@@ -875,10 +875,14 @@ private theorem gapErrorInduction {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C
     rw [e]
     linarith
 
-/-- **The residual gap, a priori, in $\|\mathbf{b}\|$**: under (H), for $j \le k$,
+/-- **The residual gap, a priori, in $\|\mathbf{b}\|$**: for a $k$-step CG run with spectrum in
+$[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $j \le k$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j\| \le 12\,j\,\varepsilon\,\kappa\,
 \|\mathbf{b}\| .$$
-No solution is needed in the statement. -/
+No solution is needed in the statement.
+No printed source.
+Result: cg-residual-gap -/
 theorem norm_sub_mulVec_x_sub_r_le_norm_b {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1008,12 +1012,15 @@ private theorem acc_norm_b_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
 
 /-! ### The residual gap -/
 
-/-- **The residual gap, a priori**: under (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
+/-- **The residual gap, a priori**: for a $k$-step CG run with spectrum in $[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\mathbf{A}\mathbf{x}_\star =
+\mathbf{b}$,
 with $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k - \mathbf{r}_k\| \le 11\,k\,\varepsilon\,a'M .$$
 [Greenbaum1997SIMAX]; [StrakosTichy2002, (7.16)], there with $\|\mathbf{x}_\star\| +
 \max_j\|\mathbf{x}_j\|$ (a posteriori) and $+O(\varepsilon^2)$; here
-$\max_j\|\mathbf{x}_j\| \le 1.001M$ is proved (`NLAlib.CGRun.norm_x_le`). -/
+$\max_j\|\mathbf{x}_j\| \le 1.001M$ is proved (`NLAlib.CGRun.norm_x_le`).
+Result: cg-residual-gap -/
 theorem norm_sub_mulVec_x_sub_r_le_energy {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1095,12 +1102,16 @@ theorem norm_sub_mulVec_x_sub_r_le_energy {a a' : ℝ} (ha : 0 < a)
         mul_le_mul_of_nonneg_left hsum hε0
     _ = _ := by ring
 
-/-- **The residual gap, a priori, in $\|\mathbf{x}_\star\|$**: under (H), for
+/-- **The residual gap, a priori, in $\|\mathbf{x}_\star\|$**: for a $k$-step CG run with spectrum
+in $[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k - \mathbf{r}_k\| \le 22\,k\,\varepsilon\sqrt{\kappa}\,
 a'\|\mathbf{x}_\star\| .$$
 $\sqrt{\kappa}$ worse than the folklore $O(k\varepsilon)a'\|\mathbf{x}_\star\|$, which rests on
-a Euclidean monotonicity of the errors not known in finite precision. -/
+a Euclidean monotonicity of the errors not known in finite precision.
+No printed source.
+Result: cg-residual-gap -/
 theorem norm_sub_mulVec_x_sub_r_le_norm_sol {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1127,11 +1138,15 @@ theorem norm_sub_mulVec_x_sub_r_le_norm_sol {a a' : ℝ} (ha : 0 < a)
   have := mul_le_mul_of_nonneg_left h2 (by positivity : 0 ≤ 11 * (k : ℝ) * C.ε * a')
   linarith
 
-/-- **The true residual**: under (H), for $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, with
+/-- **The true residual**: for a $k$-step CG run with spectrum in $[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\mathbf{A}\mathbf{x}_\star =
+\mathbf{b}$, with
 $\kappa' = 2\kappa + 1$, $q = (\sqrt{\kappa'} - 1)/(\sqrt{\kappa'} + 1)$ and
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le 2\sqrt{\kappa'}\,q^k\|\mathbf{b}\| +
-11\,k\,\varepsilon\,a'M .$$ -/
+11\,k\,\varepsilon\,a'M .$$
+No printed source.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_mulVec_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) :
@@ -1157,12 +1172,15 @@ private theorem acc_norm_true_le (j : ℕ) : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.
   rw [hid, WithLp.toLp_add]
   exact norm_add_le _ _
 
-/-- **The computed residual at gap level**: under (H), for $\varepsilon, \delta > 0$ and
+/-- **The computed residual at gap level**: for a $k$-step CG run with spectrum in $[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon, \delta > 0$ and
 $k_\star(\kappa, \varepsilon, \delta) \le j \le k$ (`NLAlib.cgKStar`),
 $\|\mathbf{r}_j\| \le 8\delta\varepsilon\|\mathbf{b}\|$. With $\delta = 1$ this is the level of
-the a priori gap bound ($\|\mathbf{b}\| \le a'M$). Smaller $\delta$ gives a smaller
-upper bound on the computed residual, but the increased $k_\star$ must still fit the horizon
-(H). This does not assert monotonicity, infinite-horizon convergence, or a nonzero gap. -/
+the a priori gap scale. Smaller $\delta$ gives a smaller
+upper bound on the computed residual, but the increased $k_\star$ must still fit the stated
+horizon. This does not assert monotonicity, infinite-horizon convergence, or a nonzero gap.
+No printed source.
+Result: cg-computed-residual-bound -/
 theorem ρ_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε) {δ : ℝ}
     (hδ : 0 < δ) {j : ℕ} (hkj : cgKStar (a' / a) C.ε δ ≤ j) (hj : j ≤ k) :
@@ -1179,11 +1197,15 @@ theorem ρ_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆
     _ = 8 * δ * C.ε * ‖WithLp.toLp 2 C.b‖ := by rw [e]
 
 /-- **Past $k_\star(\delta)$ the true residual is the gap** up to $\delta$ times the gap's
-level: under (H), for $\varepsilon, \delta > 0$ and $k_\star(\kappa, \varepsilon, \delta) \le j
+level: for a $k$-step CG run with spectrum in $[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon, \delta > 0$ and
+$k_\star(\kappa, \varepsilon, \delta) \le j
 \le k$,
 $$\bigl\lvert\|\mathbf{b} - \mathbf{A}\mathbf{x}_j\| -
 \|\mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j\|\bigr\rvert \le
-8\delta\varepsilon\|\mathbf{b}\| .$$ -/
+8\delta\varepsilon\|\mathbf{b}\| .$$
+No printed source.
+Result: cg-residual-gap -/
 theorem abs_norm_sub_mulVec_x_sub_norm_gap_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1199,7 +1221,9 @@ theorem abs_norm_sub_mulVec_x_sub_norm_gap_le {a a' : ℝ} (ha : 0 < a)
   rw [add_sub_cancel_right] at this
   exact this.trans h
 
-/-- **Attainable accuracy at a prescribed step**: under (H), for $\varepsilon > 0$,
+/-- **Attainable accuracy at a prescribed step**: for a $k$-step CG run with spectrum in $[a,a']$,
+$a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon, 1)$, with
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (11k + 8)\,\varepsilon\,a'M .$$
@@ -1208,7 +1232,8 @@ by the decaying computed residual (as in [Greenbaum1997SIMAX]). The bound is sma
 $k_\star$ (`NLAlib.CGRun.norm_sub_mulVec_x_cgKStar_le`); this does not identify the iterate
 with the smallest actual error. Related attainable-accuracy bounds appear in
 [BakeCarsonMa2025, Theorem 2], for mixed-precision PCG at some iterate up to a conditional
-existential index; here the step is prescribed and (H) is an explicit finite-horizon condition. -/
+existential index; here the step is prescribed and the finite-horizon condition is explicit.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_mulVec_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1238,10 +1263,14 @@ theorem norm_sub_mulVec_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
   rw [e]
   linarith
 
-/-- **Attainable accuracy in $\|\mathbf{x}_\star\|$**: under (H), for $\varepsilon > 0$,
+/-- **Attainable accuracy in $\|\mathbf{x}_\star\|$**: for a $k$-step CG run with spectrum in
+$[a,a']$, $a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon, 1)$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (22k + 8)\,\varepsilon\sqrt{\kappa}\,a'
-\|\mathbf{x}_\star\| .$$ -/
+\|\mathbf{x}_\star\| .$$
+No printed source.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_mulVec_x_le_norm_sol_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1268,9 +1297,13 @@ theorem norm_sub_mulVec_x_le_norm_sol_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
   rw [e]
   linarith
 
-/-- **Attainable accuracy in $\|\mathbf{b}\|$**: under (H), for $\varepsilon > 0$ and
+/-- **Attainable accuracy in $\|\mathbf{b}\|$**: for a $k$-step CG run with spectrum in $[a,a']$,
+$a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon > 0$ and
 $k \ge k_\star(\kappa, \varepsilon, 1)$,
-$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (12k + 8)\,\varepsilon\,\kappa\,\|\mathbf{b}\|$. -/
+$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (12k + 8)\,\varepsilon\,\kappa\,\|\mathbf{b}\|$.
+No printed source.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_mulVec_x_le_norm_b_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
@@ -1291,10 +1324,14 @@ theorem norm_sub_mulVec_x_le_norm_b_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
   rw [e]
   linarith
 
-/-- **The forward error at a prescribed step**: under (H), for $\varepsilon > 0$,
+/-- **The forward error at a prescribed step**: for a $k$-step CG run with spectrum in $[a,a']$,
+$a>0$,
+$\kappa=a'/a$ and $k^2\sqrt{k}\varepsilon\kappa^2\le10^{-5}$, for $\varepsilon > 0$,
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon, 1)$, with
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
-$\|\mathbf{x}_\star - \mathbf{x}_k\| \le (11k + 8)\,\varepsilon\,\kappa\,M$. -/
+$\|\mathbf{x}_\star - \mathbf{x}_k\| \le (11k + 8)\,\varepsilon\,\kappa\,M$.
+No printed source.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε)
     {xs : Fin n → ℝ}
@@ -1317,8 +1354,9 @@ theorem norm_sub_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ
   rw [e]
   exact h
 
-/-- **Attainable accuracy, a priori**: for $\varepsilon > 0$, $\mathbf{A}\mathbf{x}_\star =
-\mathbf{b}$, $k \ge k_\star = k_\star(\kappa, \varepsilon, 1)$ and (H) **at $k_\star$ only**,
+/-- **Attainable accuracy, a priori**: for a CG run with spectrum in $[a,a']$, $a>0$,
+$\kappa=a'/a$, $\varepsilon > 0$, $\mathbf{A}\mathbf{x}_\star =\mathbf{b}$,
+$k \ge k_\star = k_\star(\kappa, \varepsilon, 1)$ and the horizon condition **at $k_\star$ only**,
 $(k_\star)^2\sqrt{k_\star}\,\varepsilon\kappa^2 \le 10^{-5}$, with $\kappa' = 2\kappa + 1$,
 $\ell = \ln(\sqrt{\kappa'}/(4\varepsilon))$ and
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
@@ -1328,7 +1366,8 @@ an attainable relative residual of order $\kappa\ln(1/\varepsilon)\,\varepsilon$
 $\sqrt{\kappa}$ from $M \le (1 + \sqrt{\kappa})\|\mathbf{x}_\star\|$, one from
 $k_\star \propto \sqrt{\kappa}$). `NLAlib.cgKStar_cube_mul_le` gives a stronger sufficient
 condition at $k_\star$ from $\kappa^{7/2}\varepsilon\ell^3 \le 7 \cdot 10^{-7}$.
-No printed source. -/
+No printed source.
+Result: cg-finite-precision-accuracy -/
 theorem norm_sub_mulVec_x_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hε : 0 < C.ε) (hk : cgKStar (a' / a) C.ε 1 ≤ k)
     (hsmall : (cgKStar (a' / a) C.ε 1 : ℝ) ^ 2 *

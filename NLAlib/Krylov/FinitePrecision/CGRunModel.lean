@@ -993,7 +993,8 @@ theorem abs_adjacentInner_le {P K B : ℝ} (hsmall : (k : ℝ) * C.ε ≤ 1 / 10
         mul_le_mul_of_nonneg_left (by linarith) hB0
       exact mul_le_mul_of_nonneg_left (add_le_add le_rfl hBPK) (by positivity)
 
-/-- A posteriori backward error without a run-length restriction: if
+/-- **Geometric a posteriori CG backward error**: a posteriori backward error without a run-length
+restriction: if
 $\|\mathbf{p}_i\|\le P\rho_i$ ($i<k$), $\beta_{i+1}\le B$ and
 $\delta_i\le B\gamma_i$ ($i+1<k$), and $B\ge0$, then <!-- value normalizedBackwardBound k f p -->
 $$\|\tilde{\mathbf{H}}-\mathbf{I}_{k+1}\otimes\mathbf{A}\|_{\mathsf{F}}
@@ -1003,7 +1004,8 @@ with <!-- value cgAdjacentInnerFactor k \varepsilon -->
 $$p=13\varepsilon\sum_{i=0}^{k-1}(1+(31/10)\varepsilon)^i
 \bigl(\|\mathbf{A}\|_2(1+P)^2+B(1+P)\bigr).$$
 No printed source. The certificate can grow with the horizon; positive definiteness is not
-required for this backward-error bound. -/
+required for this backward-error bound.
+Result: cg-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_geom_sum_of_certificates {P B : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j)
@@ -1020,8 +1022,10 @@ theorem frobNorm_backwardH_sub_dilatedH_le_geom_sum_of_certificates {P B : ℝ}
     (cgAdjacentInnerFactor_mono C.ε_nonneg (show j + 1 ≤ k by omega)) (by positivity)
 
 /-- **The a posteriori backward model**: with $k\varepsilon\le1/100$ and the
-certificates $\Pi$, $K$ ($j < k$) and $B$
-($j + 1 < k$) of the run,
+certificates $\|\mathbf p_j\|\le\Pi\rho_j$ and
+$\|\mathbf A\|_2\gamma_j\|\mathbf p_j\|^2\le K\rho_j^2$ for $j<k$,
+and $\beta_{j+1}\le B$, $\delta_j\le B\gamma_j$ for $j+1<k$,
+where $\rho_j=\|\mathbf r_j\|$,
 
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}}
 \le 22k^2 f + 17k\sqrt{k}\,p,
@@ -1032,7 +1036,9 @@ engine of the a priori induction (`NLAlib/Krylov/FinitePrecision/CGBackward.lean
 model of the prefix `C.take j` needs $B$ for the steps $i + 1 < j$ only, which the models of the
 shorter prefixes provide.
 The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
-for $k = 1$, where `hB` is vacuous. -/
+for $k = 1$, where `hB` is vacuous.
+No printed source.
+Result: cg-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
     (hsmall : (k : ℝ) * C.ε ≤ 1 / 100)
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
@@ -1183,7 +1189,8 @@ $$\|(\mathbf{b} - \mathbf{A}\mathbf{x}_k) - \mathbf{r}_k\| \le \varepsilon\sum_{
 [Greenbaum1997SIMAX]; [StrakosTichy2002, (7.16)], there with $\|\mathbf{x}\| +
 \max_j\|\mathbf{x}_j\|$ and $+O(\varepsilon^2)$. Local: no Lanczos reduction, no $\kappa$.
 [BakeCarsonMa2025, Theorem 1] gives a related PCG gap bound through the same telescoping
-mechanism, retaining a maximum-iterate factor. -/
+mechanism, retaining a maximum-iterate factor.
+Result: cg-residual-gap -/
 theorem norm_sub_mulVec_x_sub_r_le :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       C.ε * ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +

@@ -504,9 +504,10 @@ $\kappa = a'/a$, and (H) $k^2\sqrt{k}\varepsilon\kappa^2 \le 10^{-5}$, the
 bound is <!-- value cgBackwardFactor k -->
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le
 6000k^2\sqrt{k}\,\varepsilon\,\kappa\,a' .$$
-No printed source; the module docstring compares it with the literature.
+No printed source. the module docstring compares it with the literature.
 For $\varepsilon > 0$ the validity range is
-$k \le (10^{-5}/(\varepsilon\kappa^2))^{2/5}$; the model distance is at most $0.06a$. -/
+$k \le (10^{-5}/(\varepsilon\kappa^2))^{2/5}$; the model distance is at most $0.06a$.
+Result: cg-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
@@ -651,7 +652,8 @@ $$\|\mathbf{r}_j\| \le 2\sqrt{\kappa_c}\Bigl(\frac{\sqrt{\kappa_c} - 1}{\sqrt{\k
 \|\mathbf{b}\| .$$
 No horizon condition is imposed; the run requires local $\varepsilon\le1/100$.
 This is an upper envelope, not monotonicity of the residual norms. No printed source in this
-form; compare the qualitative backward-model discussion in [MeurantStrakos2006, §5.2]. -/
+form; compare the qualitative backward-model discussion in [MeurantStrakos2006, §5.2].
+Result: cg-computed-residual-bound -/
 theorem ρ_le_chebyshev_of_spectrum_backwardH {l l' : ℝ} (hl : 0 < l)
     (hH : spectrum ℝ C.backwardH ⊆ Set.Icc l l') {j : ℕ} (hj : j ≤ k) :
     C.ρ j ≤ 2 * Real.sqrt (l' / l) *
@@ -692,12 +694,16 @@ theorem ρ_le_chebyshev_of_spectrum_backwardH {l l' : ℝ} (hl : 0 < l)
           ring
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h3
 
-/-- A $k$-step CG run with original spectrum in $[a,a']$ and certified Frobenius model error
+/-- **Computed residual bound from model distance**: a $k$-step CG run with original spectrum in
+$[a,a']$ and certified Frobenius model error
 $d<a$ has the Chebyshev residual envelope with ratio $\kappa_c=(a'+d)/(a-d)$:
 $$\|\mathbf{r}_j\|\le2\sqrt{\kappa_c}
 \Bigl(\frac{\sqrt{\kappa_c}-1}{\sqrt{\kappa_c}+1}\Bigr)^j\|\mathbf b\|\quad(j\le k)\,.$$
 The run's local $\varepsilon\le1/100$ remains; no horizon condition is needed.
-The certificate may come from the a posteriori recurrence bounds. -/
+The certificate may come from the a posteriori recurrence bounds.
+No printed source.
+This bounds the residual envelope for $j\le k$; it does not assert stepwise monotonicity.
+Result: cg-computed-residual-bound -/
 theorem ρ_le_chebyshev_of_frobNorm_le {a a' d : ℝ}
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hd : d < a)
     (hgap : frobNorm (C.backwardH - C.dilatedH) ≤ d) {j : ℕ} (hj : j ≤ k) :
@@ -707,9 +713,16 @@ theorem ρ_le_chebyshev_of_frobNorm_le {a a' d : ℝ}
   C.ρ_le_chebyshev_of_spectrum_backwardH (sub_pos.mpr hd)
     (C.toNormalizedLanczosData.spectrum_backwardH_subset_Icc hs hgap) hj
 
-/-- Computed residual decay from an input-only scalar certificate, with effective condition
-number $(a'+d)/(a-d)$. The certificate's strict spectral margin supplies positive definiteness;
-no additional iteration-horizon condition is imposed. -/
+/-- **Input-certified computed residual bound**: computed residual decay from an input-only scalar
+certificate, with effective condition
+number $\kappa_c=(a'+d)/(a-d)$ and input spectrum in $[a,a']$. For $j\le k$,
+$$\|\mathbf r_j\|\le2\sqrt{\kappa_c}
+\Bigl(\frac{\sqrt{\kappa_c}-1}{\sqrt{\kappa_c}+1}\Bigr)^j\|\mathbf b\|\,.$$
+The certificate's strict spectral margin supplies positive definiteness;
+no additional iteration-horizon condition is imposed.
+No printed source.
+This bounds the residual envelope for $j\le k$; it does not assert stepwise monotonicity.
+Result: cg-computed-residual-bound -/
 theorem ρ_le_chebyshev_of_certificate {a a' : ℝ}
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (S : CGBackwardCertificate k C.ε a a')
     {j : ℕ} (hj : j ≤ k) :
@@ -719,12 +732,14 @@ theorem ρ_le_chebyshev_of_certificate {a a' : ℝ}
   C.ρ_le_chebyshev_of_frobNorm_le hs S.d_lt
     (C.frobNorm_backwardH_sub_dilatedH_le_of_certificate hs S) hj
 
-/-- **The computed residual norms converge at the Chebyshev rate**: for a $k$-step CG run,
+/-- **Finite-horizon Chebyshev bound for the computed residual**: for a $k$-step CG run,
 $\operatorname{spec}(\mathbf A)\subseteq[a,a']$, $a>0$, $\kappa=a'/a$ and
 $k^{5/2}\varepsilon\kappa^2\le10^{-5}$, put $\kappa_c=2\kappa+1$. For $j\le k$,
 $$\|\mathbf{r}_j\|\le2\sqrt{\kappa_c}
 \Bigl(\frac{\sqrt{\kappa_c}-1}{\sqrt{\kappa_c}+1}\Bigr)^j\|\mathbf b\|\,.$$
-No printed source in this form; compare [MeurantStrakos2006, §5.2]. -/
+No printed source in this form; compare [MeurantStrakos2006, §5.2].
+This bounds the residual envelope for $j\le k$; it does not assert stepwise monotonicity.
+Result: cg-computed-residual-bound -/
 theorem ρ_le_chebyshev {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j ≤ k) :

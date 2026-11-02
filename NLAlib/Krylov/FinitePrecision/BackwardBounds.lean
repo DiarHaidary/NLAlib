@@ -238,9 +238,11 @@ private theorem β_le_specNorm_tridiagonalSucc {i : ℕ} (hi : i ≤ k) :
   rw [if_neg hne, if_pos heq, Real.norm_eq_abs, abs_of_nonneg (L.β_nonneg i hi)] at h
   exact h
 
-/-- A common bound on the matrix and computed coefficients controls the backward error.
+/-- **Coefficient-certified Lanczos backward error**: a common bound on the matrix and computed
+coefficients controls the backward error.
 This certificate estimate needs local accuracy only, without an iteration-horizon condition.
-No printed source. It combines the coefficient bounds with the normalized model. -/
+No printed source. It combines the coefficient bounds with the normalized model.
+Result: lanczos-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_coefficients_le {B : ℝ}
     (hH : specNorm L.H ≤ B)
     (hα : ∀ j < k, |L.α (j + 1)| ≤ B) (hβ : ∀ i ≤ k, L.β i ≤ B) :
@@ -296,13 +298,15 @@ private theorem frobNorm_backwardH_sub_dilatedH_le_mul_add :
     (L.β_le_specNorm_tridiagonalSucc hi).trans hc
   exact L.frobNorm_backwardH_sub_dilatedH_le_mul_of_coefficients_le hH hα hβ
 
-/-- The backward error with coefficient growth retained as a finite geometric sum.
+/-- **Geometric Lanczos backward error**: the backward error with coefficient growth retained as a
+finite geometric sum.
 Writing $G_k=(1+\varepsilon)\sum_{i<k}(1+8\varepsilon)^{i+1}$, the bound
 is <!-- value lanczosSmallRoundoffBackwardFactor k -->
 $1000k^2\varepsilon(1+G_k)\|\mathbf H\|_2$.
 Only local accuracy is assumed, and terminal breakdown is allowed. The geometric sum may
 be large; this theorem does not assert convergence as the number of steps increases.
-No printed source. It uses `NLAlib.LanczosRun.β_le_geom_sum` as a coefficient certificate. -/
+No printed source. It uses `NLAlib.LanczosRun.β_le_geom_sum` as a coefficient certificate.
+Result: lanczos-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_geom_sum :
     frobNorm (L.backwardH - L.dilatedH) ≤
       lanczosSmallRoundoffBackwardFactor k * L.ε *
@@ -333,7 +337,8 @@ theorem frobNorm_backwardH_sub_dilatedH_le_geom_sum :
   calc frobNorm (L.backwardH - L.dilatedH) ≤ 500 * (k : ℝ) ^ 2 * L.ε * B := h
     _ = _ := by rw [hB, hG]; ring
 
-/-- Backward error with the absorption denominator retained: for a $k$-step
+/-- **Lanczos backward error with an explicit margin**: backward error with the absorption
+denominator retained: for a $k$-step
 finite-precision Lanczos run with $k^2\varepsilon < 1/500$, let $F_k$ be
 `NLAlib.lanczosSmallRoundoffBackwardFactor k`, with
 value <!-- value lanczosSmallRoundoffBackwardFactor k --> $F_k = 1000k^2$.
@@ -342,7 +347,8 @@ $$\|\tilde{\mathbf{H}}-\mathbf{I}_{k+1}\otimes\mathbf{H}\|_{\mathsf{F}}
 \le \frac{F_k\varepsilon}{2-F_k\varepsilon}\|\mathbf{H}\|_2 \,.$$
 The denominator is positive under the hypothesis. No positive definiteness is required;
 terminal breakdown is allowed. The run assumes only local accuracy $\varepsilon \le 1/100$.
-No printed source. This is absorption of the model's own coefficient bound. -/
+No printed source. This is absorption of the model's own coefficient bound.
+Result: lanczos-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_sq_mul_lt
     (hsmall : (k : ℝ) ^ 2 * L.ε < 1 / 500) :
     frobNorm (L.backwardH - L.dilatedH) ≤
