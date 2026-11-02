@@ -258,6 +258,12 @@ algebraic examples below are investigation results, not additional Lean theorems
 
 ### Candidate input-only bootstrap with explicit factors
 
+Historical proposal: the implemented successor is described in
+[`Krylov-CG-Certificates.md`](Krylov-CG-Certificates.md). It retains the geometric error
+factors, removes the auxiliary line-search smallness restriction, and makes the existing
+fixed-condition results specializations of one certificate induction. The formulas below
+record the earlier derivation, not the final public interface.
+
 Read-only derivation from the existing inequalities, not yet a formalized theorem. With
 $\kappa=a'/a$, positive curvature follows when
 $\varepsilon(2+\varepsilon)\kappa<1$, and the curvature certificate can retain
