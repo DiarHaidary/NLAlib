@@ -12,12 +12,13 @@ public import NLAlib.Krylov.FinitePrecision.CGRunModel
 
 For a conjugate gradient run `C : NLAlib.CGRun n k` on a matrix with spectrum in $[a, a']$,
 $a > 0$, $\kappa = a'/a$, under the smallness hypothesis
-$$\text{(H)}\qquad k^3\,\varepsilon\,\kappa^2 \le 10^{-5},$$
+$$\text{(H)}\qquad k^2\sqrt{k}\,\varepsilon\,\kappa^2 \le 10^{-5},$$
 the run certificates are bounded a priori ($\|\mathbf{p}_j\|^2 \le 3.3\kappa\|\mathbf{r}_j\|^2$,
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le 1.05\kappa\|\mathbf{r}_j\|^2$, $\beta_{j+1},
-\delta_j/\gamma_j \le 1.6a'$), and the backward model of the run satisfies
+\delta_j/\gamma_j \le 1.6a'$). The backward model of the run
+satisfies <!-- value cgBackwardFactor k -->
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le
-4 \cdot 10^4\,k^3\,\varepsilon\,\kappa\,a' \le a/2 .$$
+6000k^2\sqrt{k}\,\varepsilon\,\kappa\,a' \le a/2 .$$
 Exact CG on $(\tilde{\mathbf{H}}, (\mathbf{b}, \mathbf{0}, \dots, \mathbf{0}))$ computes the
 computed step lengths $\gamma_j$ exactly and residuals of exactly the computed norms
 $\|\mathbf{r}_j\|$; its $\tilde{\mathbf{H}}$-norm error decreases by exactly
@@ -37,10 +38,9 @@ smallness hypothesis) and bounds the certificates of step $j$
 `Matrix.PosDef.norm_cgState_p_sq_le`; `Matrix.PosDef.norm_cgState_r_succ_sq_div_le`), and Lemmas
 A and B close P(j + 1).
 
-Validity range: (H) bounds $k \le (10^{-5}/(\varepsilon\kappa^2))^{1/3}$; in double precision,
-$\kappa = 10$, about $k \le 30$ (dense, $N = 10^3$) to $k \le 97$ (oracle, $\varepsilon \approx
-Nu$), and vacuous for $\kappa = 10^3$ at practical sizes. The a posteriori model of
-`NLAlib/Krylov/FinitePrecision/CGRunModel.lean` has no such limit.
+Validity range: for $\varepsilon > 0$, (H) bounds
+$k \le (10^{-5}/(\varepsilon\kappa^2))^{2/5}$, improving the earlier exponent $1/3$.
+The a posteriori model of `NLAlib/Krylov/FinitePrecision/CGRunModel.lean` has no such limit.
 
 Literature. [Greenbaum1989] states the backward model for perturbed recurrences, with a
 perturbation of order $\varepsilon^{1/4}$, and does not bound the perturbation terms of CG in
@@ -69,8 +69,10 @@ Constants are unoptimised.
 * `NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate`,
   `NLAlib.CGRun.abs_quadForm_backwardH_sub_cgIterate_sub_le`: the model's errors in terms of the
   computed coefficients.
-* `NLAlib.CGRun.ρ_le_chebyshev`: the computed residual norms converge at the Chebyshev rate of
-  $2\kappa + 1$.
+* `NLAlib.CGRun.ρ_le_chebyshev_of_spectrum_backwardH`,
+  `NLAlib.CGRun.ρ_le_chebyshev_of_frobNorm_le`: residual bounds retaining the certified model
+  interval, with no horizon hypothesis; the run requires only local $\varepsilon\le1/100$.
+* `NLAlib.CGRun.ρ_le_chebyshev`: the a priori corollary with ratio $2\kappa + 1$.
 -/
 
 @[expose] public section
@@ -78,6 +80,24 @@ Constants are unoptimised.
 open scoped Matrix
 
 namespace NLAlib
+
+/-- The factor in the a priori CG backward bound, with
+value <!-- value cgBackwardFactor k --> $6000k^2\sqrt{k}$.
+No printed source. It replaces the earlier bound $40000k^3$ using the stacked dilation
+estimate; the run's local orthogonality defect still grows with the iteration count. -/
+noncomputable irreducible_def cgBackwardFactor (k : ℕ) : ℝ :=
+  6000 * (k : ℝ) ^ 2 * Real.sqrt k
+
+/-- The CG backward factor is nonnegative. -/
+theorem cgBackwardFactor_nonneg (k : ℕ) : 0 ≤ cgBackwardFactor k := by
+  rw [cgBackwardFactor_def]
+  positivity
+
+/-- The CG backward factor has the comparison
+bound <!-- value cgBackwardFactor k --> $6000k^2\sqrt{k}$. -/
+theorem cgBackwardFactor_le (k : ℕ) :
+    cgBackwardFactor k ≤ 6000 * (k : ℝ) ^ 2 * Real.sqrt k := by
+  rw [cgBackwardFactor_def]
 
 namespace CGRun
 
@@ -110,9 +130,7 @@ noncomputable def take (m : ℕ) (hm : 0 < m) (hmk : m ≤ k) : CGRun n m where
   transpose_A := C.transpose_A
   ε_nonneg := C.ε_nonneg
   k_pos := hm
-  k_mul_ε_le := by
-    have h : (m : ℝ) ≤ k := by exact_mod_cast hmk
-    nlinarith [C.k_mul_ε_le, C.ε_nonneg]
+  ε_le := C.ε_le
   x_zero := C.x_zero
   r_zero := C.r_zero
   p_zero := C.p_zero
@@ -315,26 +333,25 @@ theorem sum_ρ_sq_div_ρ_sq_le {l l' : ℝ} (hl : 0 < l)
 /-! ### Helpers for the a priori induction -/
 
 /-- The smallness hypothesis passes to prefixes. -/
-private theorem hsmall_take {a a' : ℝ} (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+private theorem hsmall_take {a a' : ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {m : ℕ} (hm : 0 < m) (hmk : m ≤ k) :
-    (m : ℝ) ^ 3 * (C.take m hm hmk).ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
+    (m : ℝ) ^ 2 * Real.sqrt m * (C.take m hm hmk).ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
   refine le_trans ?_ hsmall
-  change (m : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ _
-  have : (m : ℝ) ^ 3 ≤ (k : ℝ) ^ 3 := pow_le_pow_left₀ (by positivity) (by exact_mod_cast hmk) 3
-  have h0 : 0 ≤ C.ε * (a' / a) ^ 2 := by have := C.ε_nonneg; positivity
-  nlinarith
-
-
+  change (m : ℝ) ^ 2 * Real.sqrt m * C.ε * (a' / a) ^ 2 ≤ _
+  have hε := C.ε_nonneg
+  gcongr
 
 /-- The elementary consequences of the spectral hypothesis and of (H) for a run of $m$ steps:
 $a \le a'$, $\kappa \ge 1$, $\|\mathbf{A}\|_2 \le a'$, and the smallness of $m^i\varepsilon\kappa$,
 $i \le 2$. -/
 private theorem small_facts {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
-    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (hsmall : (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     a ≤ a' ∧ 1 ≤ a' / a ∧ specNorm D.A ≤ a' ∧ D.ε ≤ 1 / 10 ^ 5 ∧
       D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (m : ℝ) * D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
-      (m : ℝ) ^ 2 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (m : ℝ) ^ 3 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 := by
+      (m : ℝ) ^ 2 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
+      (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ≤ 1 / 10 ^ 5 := by
   have hn := D.n_pos
   have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   have hherm := D.isHermitian_A
@@ -351,10 +368,14 @@ private theorem small_facts {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a
     exact max_le e0.2 e1.2
   have hκ2 : a' / a ≤ (a' / a) ^ 2 := by nlinarith
   have hm2 : (m : ℝ) ≤ (m : ℝ) ^ 2 := by nlinarith
-  have hm3 : (m : ℝ) ^ 2 ≤ (m : ℝ) ^ 3 := by nlinarith
-  have h3 : (m : ℝ) ^ 3 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
-    le_trans (by have := mul_le_mul_of_nonneg_left hκ2 (by positivity : 0 ≤ (m : ℝ) ^ 3 * D.ε)
-                 linarith) hsmall
+  have hm3 : (m : ℝ) ^ 2 ≤ (m : ℝ) ^ 2 * Real.sqrt m := by
+    have hs : 1 ≤ Real.sqrt (m : ℝ) := Real.one_le_sqrt.mpr hm
+    nlinarith
+  have h3 : (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
+    le_trans (by
+      have := mul_le_mul_of_nonneg_left hκ2
+        (by positivity : 0 ≤ (m : ℝ) ^ 2 * Real.sqrt m * D.ε)
+      linarith) hsmall
   have h2 : (m : ℝ) ^ 2 * D.ε * (a' / a) ≤ 1 / 10 ^ 5 :=
     le_trans (by have := mul_le_mul_of_nonneg_right hm3 (by positivity : 0 ≤ D.ε * (a' / a))
                  nlinarith) h3
@@ -449,9 +470,11 @@ private theorem one_div_le_cgAlpha {m : Type*} [Fintype m] [DecidableEq m] {H : 
 `NLAlib.CGRun.specNorm_mul_γ_mul_norm_p_sq_le`): no model needed. -/
 private theorem specNorm_mul_γ_mul_norm_p_sq_le_aux {n m : ℕ} (D : CGRun n m) {a a' : ℝ}
     (ha : 0 < a) (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
-    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < m) :
+    (hsmall : (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j < m) :
     specNorm D.A * D.γ j * ‖WithLp.toLp 2 (D.p j)‖ ^ 2 ≤ 21 / 20 * (a' / a) * D.ρ j ^ 2 := by
   obtain ⟨haa', hκ, hspec, he, hεκ, -⟩ := small_facts D ha hs hsmall
+  clear hsmall
   have hε := D.ε_nonneg
   have hγ := D.γ_pos hj
   set P0 := ‖WithLp.toLp 2 (D.p j)‖ with hP0
@@ -532,18 +555,22 @@ private theorem specNorm_mul_γ_mul_norm_p_sq_le_aux {n m : ℕ} (D : CGRun n m)
     _ = 21 / 20 * (a' / a) * D.ρ j ^ 2 := by ring
 
 /-- **The model from the a priori certificates**: with $\Pi^2 = 3.3\kappa$, $K = 1.05\kappa$,
-$B = 1.6a'$ the a posteriori engine gives $4 \cdot 10^4m^3\varepsilon\kappa a'$. -/
+$B = 1.6a'$ the a posteriori engine gives <!-- value cgBackwardFactor m -->
+$6000m^2\sqrt{m}\varepsilon\kappa a'$. -/
 private theorem frobNorm_le_of_apriori {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
-    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hP : ∀ i < m, ‖WithLp.toLp 2 (D.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * D.ρ i ^ 2)
     (hK : ∀ i < m, specNorm D.A * D.γ i * ‖WithLp.toLp 2 (D.p i)‖ ^ 2 ≤
       21 / 20 * (a' / a) * D.ρ i ^ 2)
     (hB : ∀ i, i + 1 < m → D.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ D.δ i ≤ 8 / 5 * a' * D.γ i) :
-    frobNorm (D.backwardH - D.dilatedH) ≤ 40000 * m ^ 3 * D.ε * (a' / a) * a' := by
-  obtain ⟨haa', hκ, hspec, -⟩ := small_facts D ha hs hsmall
-  set κ := a' / a with hκdef
+    frobNorm (D.backwardH - D.dilatedH) ≤ cgBackwardFactor m * D.ε * (a' / a) * a' := by
+  obtain ⟨haa', hκ, hspec, _, _, hmεκ, -⟩ := small_facts D ha hs hsmall
   have hε := D.ε_nonneg
+  have hwindow : (m : ℝ) * D.ε ≤ 1 / 100 := by
+    have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (m : ℝ) * D.ε)
+    nlinarith
+  set κ := a' / a with hκdef
   have ha' : 0 < a' := ha.trans_le haa'
   set P := Real.sqrt (33 / 10 * κ) with hPdef
   have hP0 : 0 ≤ P := Real.sqrt_nonneg _
@@ -553,7 +580,7 @@ private theorem frobNorm_le_of_apriori {n m : ℕ} (D : CGRun n m) {a a' : ℝ} 
     refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
     rw [mul_pow, hP2]
     exact hP i hi
-  have h := D.frobNorm_backwardH_sub_dilatedH_le_of_certificates hP' hK hB (by linarith)
+  have h := D.frobNorm_backwardH_sub_dilatedH_le_of_certificates hwindow hP' hK hB (by linarith)
   refine h.trans ?_
   have hs0 : 0 ≤ specNorm D.A := specNorm_nonneg _
   have h1P : (1 + P) ^ 2 ≤ 86 / 10 * κ := by nlinarith [sq_nonneg (1 - P)]
@@ -571,28 +598,34 @@ private theorem frobNorm_le_of_apriori {n m : ℕ} (D : CGRun n m) {a a' : ℝ} 
     have : 8 / 5 * a' * (1 + P + 21 / 20 * κ) ≤ 8 / 5 * a' * (42 / 10 * κ) :=
       mul_le_mul_of_nonneg_left hPK (by positivity)
     nlinarith
-  unfold normalizedBackwardBound
-  have hm3 : 0 ≤ (m : ℝ) ^ 3 := by positivity
-  have hm2 : 0 ≤ (m : ℝ) ^ 2 := by positivity
-  have := add_le_add (mul_le_mul_of_nonneg_left hf (by positivity : 0 ≤ 102 * (m : ℝ) ^ 3))
-    (mul_le_mul_of_nonneg_left hp (by positivity : 0 ≤ 96 * (m : ℝ) ^ 2))
-  refine this.trans ?_
-  have hE : 0 ≤ (m : ℝ) ^ 3 * (D.ε * (κ * a')) := by positivity
-  nlinarith
+  rw [normalizedBackwardBound, cgBackwardFactor_def]
+  have h := add_le_add (mul_le_mul_of_nonneg_left hf (by positivity : 0 ≤ 22 * (m : ℝ) ^ 2))
+    (mul_le_mul_of_nonneg_left hp (by positivity : 0 ≤ 17 * (m : ℝ) * Real.sqrt m))
+  refine h.trans ?_
+  have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
+  have hsqrt : 1 ≤ Real.sqrt (m : ℝ) := Real.one_le_sqrt.mpr hm
+  have hE : 0 ≤ (m : ℝ) ^ 2 * (D.ε * (κ * a')) := by positivity
+  have hscale := mul_le_mul_of_nonneg_right hsqrt hE
+  nlinarith only [hscale, hE]
 
-/-- **Weyl localisation from the a priori model bound**: under (H) the model is within $0.4a$ of
+/-- **Weyl localisation from the a priori model bound**: under (H) the model is within $0.06a$ of
 $\mathbf{I} \otimes \mathbf{A}$, so its spectrum is in $[a/2, a' + a/2]$. -/
 private theorem spectrum_subset_of_frobNorm_le {n m : ℕ} (D : CGRun n m) {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ D.A ⊆ Set.Icc a a')
-    (hsmall : (m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
-    (hc : frobNorm (D.backwardH - D.dilatedH) ≤ 40000 * m ^ 3 * D.ε * (a' / a) * a') :
+    (hsmall : (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hc : frobNorm (D.backwardH - D.dilatedH) ≤ cgBackwardFactor m * D.ε * (a' / a) * a') :
     spectrum ℝ D.backwardH ⊆ Set.Icc (a / 2) (a' + a / 2) := by
-  have hc' : 40000 * (m : ℝ) ^ 3 * D.ε * (a' / a) * a' ≤ a / 2 := by
-    have : 40000 * (m : ℝ) ^ 3 * D.ε * (a' / a) * a' =
-        40000 * ((m : ℝ) ^ 3 * D.ε * (a' / a) ^ 2) * a := by
+  have hc' : cgBackwardFactor m * D.ε * (a' / a) * a' ≤ a / 2 := by
+    have heq : 6000 * (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) * a' =
+        6000 * ((m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) ^ 2) * a := by
       field_simp
-    rw [this]
-    nlinarith
+    have hε := D.ε_nonneg
+    have ha' : 0 ≤ a' := ha.le.trans (small_facts D ha hs hsmall).1
+    calc cgBackwardFactor m * D.ε * (a' / a) * a'
+        ≤ 6000 * (m : ℝ) ^ 2 * Real.sqrt m * D.ε * (a' / a) * a' := by
+          gcongr; exact cgBackwardFactor_le m
+      _ = _ := heq
+      _ ≤ a / 2 := by nlinarith
   have h := NormalizedLanczosData.spectrum_backwardH_subset_Icc (D := D.toNormalizedLanczosData)
     (a := a) (a' := a') hs (hc.trans hc')
   exact h.trans (Set.Icc_subset_Icc (by linarith) le_rfl)
@@ -604,9 +637,7 @@ private theorem δ_bounds_ratio {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i < 
   have h := abs_le.mp (D.abs_δ_sub_le hi)
   have hq : 0 ≤ D.ρ (i + 1) ^ 2 / D.ρ i ^ 2 := by positivity
   have hε : 4 * D.ε ≤ 1 := by
-    have h1 := D.k_mul_ε_le
-    have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
-    nlinarith [D.ε_nonneg]
+    linarith [D.ε_le]
   constructor <;> nlinarith
 
 /-- **One step of the direction recursion**: with $\lvert\mathbf{p}_i^{\mathsf{T}}
@@ -619,10 +650,7 @@ private theorem norm_p_succ_sq_le {n m : ℕ} (D : CGRun n m) {i : ℕ} (hi : i 
       (D.ρ (i + 1) ^ 2 + D.δ i ^ 2 * ‖WithLp.toLp 2 (D.p i)‖ ^ 2) := by
   obtain ⟨hδ0, hδ⟩ := δ_bounds_ratio D hi
   have hε := D.ε_nonneg
-  have hε1 : D.ε ≤ 1 / 100 := by
-    have h1 := D.k_mul_ε_le
-    have hm : (1 : ℝ) ≤ m := by exact_mod_cast D.k_pos
-    nlinarith
+  have hε1 := D.ε_le
   set R := D.ρ (i + 1) with hR
   set Q := ‖WithLp.toLp 2 (D.p i)‖ with hQ
   set δ := D.δ i with hδdef
@@ -790,7 +818,8 @@ private theorem growth_pow_le {ε t : ℝ} {j : ℕ} (hε : 0 ≤ ε) (hε1 : ε
   rwa [hxdef, add_sub_cancel] at this
 
 /-- The line-search defects at the steps before $j$, from the certificates P(j). -/
-private theorem apriori_tau {a a' : ℝ} {j : ℕ} (hjk : j < k)
+private theorem apriori_tau (hwindow : (k : ℝ) * C.ε ≤ 1 / 100)
+    {a a' : ℝ} {j : ℕ} (hjk : j < k)
     (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2)
     (hκ : 0 ≤ a' / a) :
@@ -810,7 +839,8 @@ private theorem apriori_tau {a a' : ℝ} {j : ℕ} (hjk : j < k)
   have hK' : ∀ i < j, specNorm (C.take j hj0 hjk.le).A * (C.take j hj0 hjk.le).γ i *
       ‖WithLp.toLp 2 ((C.take j hj0 hjk.le).p i)‖ ^ 2 ≤
         21 / 20 * (a' / a) * (C.take j hj0 hjk.le).ρ i ^ 2 := fun i hi => (IH i hi).2
-  have h := (C.take j hj0 hjk.le).abs_p_dotProduct_r_succ_le hP' hK' hi
+  have h := (C.take j hj0 hjk.le).abs_p_dotProduct_r_succ_le
+    (C.mul_ε_le_of_le hwindow hjk.le) hP' hK' hi
   refine h.trans ?_
   change 5 * ((i : ℝ) + 1) * C.ε * (1 + P + 21 / 20 * (a' / a)) * C.ρ i ^ 2 ≤ _
   have hi1 : (i : ℝ) + 1 ≤ j := by exact_mod_cast hi
@@ -821,7 +851,8 @@ private theorem apriori_tau {a a' : ℝ} {j : ℕ} (hjk : j < k)
 
 /-- The residual ratios at step $j$ from the model of the first $j$ steps. -/
 private theorem apriori_S {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hjk : j < k)
     (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
       C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
@@ -845,7 +876,8 @@ private theorem apriori_S {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
 
 /-- **Step (Π) of the induction**: the direction certificate at step $j$ from P(j). -/
 private theorem apriori_Pi {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hjk : j < k)
     (IH : ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
       C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
@@ -878,8 +910,11 @@ private theorem apriori_Pi {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ 
   have hjε : (j : ℝ) * C.ε ≤ 1 / 10 ^ 5 := le_trans (by
     have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (j : ℝ) * C.ε)
     nlinarith) hjεκ
+  have hwindow : (k : ℝ) * C.ε ≤ 1 / 100 := by
+    have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (k : ℝ) * C.ε)
+    nlinarith
   have hτ : ∀ i < j, |C.p i ⬝ᵥ C.r (i + 1)| ≤ t * C.ρ i ^ 2 :=
-    C.apriori_tau hjk (fun i hi => ⟨(IH i hi).1, (IH i hi).2.1⟩) (by positivity)
+    C.apriori_tau hwindow hjk (fun i hi => ⟨(IH i hi).1, (IH i hi).2.1⟩) (by positivity)
   have hu := norm_p_sq_le_unroll C ht0 ht1 hjk hτ
   have hS := C.apriori_S ha hs hsmall hjk IH
   have hΛj := growth_pow_le hε he ht0 ht1 hjt hjε
@@ -905,7 +940,8 @@ private theorem apriori_Pi {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ 
 /-- **Step (B) of the induction**: the coefficient certificates at step $j$ from the model of
 the first $j + 1$ steps. -/
 private theorem apriori_B {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hjk : j < k)
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hjk : j < k)
     (hIH : ∀ i < j + 1, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2)
     (hB : ∀ i < j, C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i) :
@@ -968,7 +1004,8 @@ $\|\mathbf{p}_i\|^2 \le 3.3\kappa\rho_i^2$, $\|\mathbf{A}\|_2\gamma_i\|\mathbf{p
 1.05\kappa\rho_i^2$, $\beta_{i+1} \le 1.6a'$ and $\delta_i \le 1.6a'\gamma_i$. The single engine of
 the a priori theorems of this file; it uses no a priori theorem. -/
 private theorem aprioriCertificates {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j ≤ k) :
     ∀ i < j, ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ i ^ 2 ∧
       specNorm C.A * C.γ i * ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ i ^ 2 ∧
       C.lanczosβ (i + 1) ≤ 8 / 5 * a' ∧ C.δ i ≤ 8 / 5 * a' * C.γ i := by
@@ -995,14 +1032,16 @@ private theorem aprioriCertificates {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ
 3.3\kappa\|\mathbf{r}_j\|^2$ for $j < k$, $\kappa = a'/a$. [StrakosTichy2002, (9.13)] has
 $\|\mathbf{p}_j\|/\|\mathbf{r}_j\| \le 1 + j\kappa^{1/2}$ from an imported monotonicity. -/
 theorem norm_p_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ 33 / 10 * (a' / a) * C.ρ j ^ 2 := by
   exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).1
 
 /-- **The curvature certificate, a priori**: under (H),
 $\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le 1.05\kappa\rho_j^2$, $j < k$. -/
 theorem specNorm_mul_γ_mul_norm_p_sq_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j < k) :
     specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ 21 / 20 * (a' / a) * C.ρ j ^ 2 := by
   exact specNorm_mul_γ_mul_norm_p_sq_le_aux C ha hs hsmall hj
@@ -1010,29 +1049,32 @@ theorem specNorm_mul_γ_mul_norm_p_sq_le {a a' : ℝ} (ha : 0 < a)
 /-- **The off-diagonal coefficients, a priori**: under (H), $\beta_{j+1} =
 \rho_{j+1}/(\gamma_j\rho_j) \le 1.6a'$, $j < k$. -/
 theorem lanczosβ_succ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j < k) :
     C.lanczosβ (j + 1) ≤ 8 / 5 * a' := by
   exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).2.2.1
 
 /-- **The coefficient ratio, a priori**: under (H), $\delta_j \le 1.6a'\gamma_j$, $j < k$. -/
 theorem δ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j < k) :
     C.δ j ≤ 8 / 5 * a' * C.γ j := by
   exact (C.aprioriCertificates ha hs hsmall le_rfl j hj).2.2.2
 
 /-! ### The backward model -/
 
 /-- **The a priori backward model of finite-precision CG**: for spectrum in $[a, a']$, $a > 0$,
-$\kappa = a'/a$, and (H) $k^3\varepsilon\kappa^2 \le 10^{-5}$,
+$\kappa = a'/a$, and (H) $k^2\sqrt{k}\varepsilon\kappa^2 \le 10^{-5}$, the
+bound is <!-- value cgBackwardFactor k -->
 $$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le
-4 \cdot 10^4\,k^3\,\varepsilon\,\kappa\,a' .$$
+6000k^2\sqrt{k}\,\varepsilon\,\kappa\,a' .$$
 No printed source; the module docstring compares it with the literature.
-Valid for $k \le (10^{-5}/(\varepsilon\kappa^2))^{1/3}$ only (about $k \le 30$–$100$ in double
-precision for $\kappa = 10$; vacuous for $\kappa = 10^3$ at practical sizes); then the bound is
-at most $0.4a$. -/
+For $\varepsilon > 0$ the validity range is
+$k \le (10^{-5}/(\varepsilon\kappa^2))^{2/5}$; the model distance is at most $0.06a$. -/
 theorem frobNorm_backwardH_sub_dilatedH_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
-    frobNorm (C.backwardH - C.dilatedH) ≤ 40000 * k ^ 3 * C.ε * (a' / a) * a' := by
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    frobNorm (C.backwardH - C.dilatedH) ≤ cgBackwardFactor k * C.ε * (a' / a) * a' := by
   have h := C.aprioriCertificates ha hs hsmall le_rfl
   exact frobNorm_le_of_apriori C ha hs hsmall (fun i hi => (h i hi).1) (fun i hi => (h i hi).2.1)
     (fun i hi => (h i (by omega)).2.2)
@@ -1040,7 +1082,8 @@ theorem frobNorm_backwardH_sub_dilatedH_le {a a' : ℝ} (ha : 0 < a)
 /-- **The model is positive definite with condition number at most $2\kappa + 1$**: under (H)
 its spectrum lies in $[a/2, a' + a/2]$. -/
 theorem spectrum_backwardH_subset_Icc {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     spectrum ℝ C.backwardH ⊆ Set.Icc (a / 2) (a' + a / 2) := by
   exact spectrum_subset_of_frobNorm_le C ha hs hsmall
     (C.frobNorm_backwardH_sub_dilatedH_le ha hs hsmall)
@@ -1049,7 +1092,8 @@ theorem spectrum_backwardH_subset_Icc {a a' : ℝ} (ha : 0 < a)
 the step length of `NLAlib.cgState` on $(\tilde{\mathbf{H}}, (\mathbf{b}, \mathbf{0}, \dots))$
 from $\mathbf{0}$ is $\gamma_j$. -/
 theorem cgAlpha_backwardH {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j < k) :
     cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j := by
   exact C.cgAlpha_backwardH_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
     (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
@@ -1057,7 +1101,8 @@ theorem cgAlpha_backwardH {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
 /-- **Exact CG on the model has the computed residual norms**: under (H), for $j \le k$,
 $\|\tilde{\mathbf{r}}_j\| = \|\mathbf{r}_j\|$. -/
 theorem norm_cgState_backwardH_r {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j := by
   exact C.norm_cgState_backwardH_r_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
     (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
@@ -1067,7 +1112,8 @@ theorem norm_cgState_backwardH_r {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.
 exact CG on a matrix of condition number at most $2\kappa + 1$). This is [StrakosTichy2002,
 (7.20)] with the imported monotonicity replaced by the model. -/
 theorem ρ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {i j : ℕ} (hij : i ≤ j)
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {i j : ℕ} (hij : i ≤ j)
     (hj : j ≤ k) :
     C.ρ j ≤ Real.sqrt (3 * (a' / a)) * C.ρ i := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
@@ -1163,56 +1209,84 @@ private theorem dotProduct_mulVec_le_of_mulVec_eq {m : Type*} [Fintype m] [Decid
         mul_le_mul_of_nonneg_right h (norm_nonneg _)
     _ = ‖WithLp.toLp 2 b‖ ^ 2 / l := by ring
 
-/-- **The computed residual norms converge at the Chebyshev rate** of the widened interval:
-under (H), with $\kappa_c = 2\kappa + 1$, for $j \le k$,
+/-- **The computed residual bound from a model interval**: for a $k$-step CG run whose backward
+model has spectrum in $[l,l']$, $l>0$, put $\kappa_c=l'/l$. For $j\le k$,
 $$\|\mathbf{r}_j\| \le 2\sqrt{\kappa_c}\Bigl(\frac{\sqrt{\kappa_c} - 1}{\sqrt{\kappa_c} + 1}\Bigr)^j
 \|\mathbf{b}\| .$$
-No printed source in this form; for the qualitative statement see the module docstring and
-[MeurantStrakos2006, §5.2]. Valid for $k$ with (H), i.e. $k \lesssim (\varepsilon\kappa^2)^{-1/3}$.
--/
-theorem ρ_le_chebyshev {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
-    C.ρ j ≤ 2 * Real.sqrt (2 * (a' / a) + 1) *
-      ((Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ j *
+No horizon condition is imposed; the run requires local $\varepsilon\le1/100$.
+This is an upper envelope, not monotonicity of the residual norms. No printed source in this
+form; compare the qualitative backward-model discussion in [MeurantStrakos2006, §5.2]. -/
+theorem ρ_le_chebyshev_of_spectrum_backwardH {l l' : ℝ} (hl : 0 < l)
+    (hH : spectrum ℝ C.backwardH ⊆ Set.Icc l l') {j : ℕ} (hj : j ≤ k) :
+    C.ρ j ≤ 2 * Real.sqrt (l' / l) *
+      ((Real.sqrt (l' / l) - 1) / (Real.sqrt (l' / l) + 1)) ^ j *
         ‖WithLp.toLp 2 C.b‖ := by
-  have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
   have hherm := C.isHermitian_backwardH
-  have hPD := posDef_of_spectrum hherm (by positivity : 0 < a / 2) hspec
-  have hκ : 1 ≤ a' / a := (small_facts C ha hs hsmall).2.1
-  have he : (a' + a / 2) / (a / 2) = 2 * (a' / a) + 1 := by field_simp
+  have hPD := posDef_of_spectrum hherm hl hH
+  have := C.nonempty_index
+  have hll' := le_of_spectrum hherm hH
+  have hκ : 1 ≤ l' / l := (le_div_iff₀ hl).mpr (by simpa only [one_mul] using hll')
   set xs := C.backwardH⁻¹ *ᵥ C.dilatedRhs
   have hxs : C.backwardH *ᵥ xs = C.dilatedRhs := by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
       hPD.isUnit), Matrix.one_mulVec]
-  have hcheb := hherm.re_quadForm_sub_cgIterate_le_four_mul_pow (by positivity : 0 < a / 2)
-    hspec hxs 0 j
-  rw [he, sub_zero] at hcheb
+  have hcheb := hherm.re_quadForm_sub_cgIterate_le_four_mul_pow hl hH hxs 0 j
+  rw [sub_zero] at hcheb
   simp only [quadForm_def, star_trivial, RCLike.re_to_real] at hcheb
-  set q := (Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1) with hq
-  have hsq1 : 1 ≤ Real.sqrt (2 * (a' / a) + 1) := by
-    rw [Real.one_le_sqrt]; linarith
+  set q := (Real.sqrt (l' / l) - 1) / (Real.sqrt (l' / l) + 1) with hq
+  have hsq1 : 1 ≤ Real.sqrt (l' / l) := Real.one_le_sqrt.mpr hκ
   have hq0 : 0 ≤ q := div_nonneg (by linarith) (by linarith)
   have hr : (cgState C.backwardH C.dilatedRhs 0 j).r =
       C.backwardH *ᵥ (xs - cgIterate C.backwardH C.dilatedRhs 0 j) := by
     rw [cgState_r_eq, hPD.cgState_x_eq, Matrix.mulVec_sub, hxs]
-  have h1 := norm_mulVec_sq_le hPD hspec (xs - cgIterate C.backwardH C.dilatedRhs 0 j)
-  conv_lhs at h1 => rw [← hr, C.norm_cgState_backwardH_r ha hs hsmall hj]
-  have h2 := dotProduct_mulVec_le_of_mulVec_eq hherm (by positivity : 0 < a / 2) hspec hxs
+  have h1 := norm_mulVec_sq_le hPD hH (xs - cgIterate C.backwardH C.dilatedRhs 0 j)
+  conv_lhs at h1 => rw [← hr, C.norm_cgState_backwardH_r_of_posDef hPD hj]
+  have h2 := dotProduct_mulVec_le_of_mulVec_eq hherm hl hH hxs
   rw [C.dilatedRhs_norm] at h2
-  have hl' : 0 ≤ a' + a / 2 := by linarith [ha.le.trans (small_facts C ha hs hsmall).1]
-  have h3 : C.ρ j ^ 2 ≤ (2 * Real.sqrt (2 * (a' / a) + 1) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
+  have hl' : 0 ≤ l' := hl.le.trans hll'
+  have h3 : C.ρ j ^ 2 ≤ (2 * Real.sqrt (l' / l) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
     have hq2 : 0 ≤ q ^ (2 * j) := by positivity
-    have hsqrt2 : Real.sqrt (2 * (a' / a) + 1) ^ 2 = 2 * (a' / a) + 1 :=
-      Real.sq_sqrt (by linarith)
-    calc C.ρ j ^ 2 ≤ (a' + a / 2) * (4 * q ^ (2 * j) * (xs ⬝ᵥ (C.backwardH *ᵥ xs))) :=
+    have hsqrt2 : Real.sqrt (l' / l) ^ 2 = l' / l := Real.sq_sqrt (by linarith)
+    calc C.ρ j ^ 2 ≤ l' * (4 * q ^ (2 * j) * (xs ⬝ᵥ (C.backwardH *ᵥ xs))) :=
           h1.trans (mul_le_mul_of_nonneg_left hcheb hl')
-      _ ≤ (a' + a / 2) * (4 * q ^ (2 * j) * (‖WithLp.toLp 2 C.b‖ ^ 2 / (a / 2))) := by
+      _ ≤ l' * (4 * q ^ (2 * j) * (‖WithLp.toLp 2 C.b‖ ^ 2 / l)) := by
           gcongr
-      _ = (2 * Real.sqrt (2 * (a' / a) + 1) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
-          rw [mul_pow, mul_pow, mul_pow, hsqrt2, ← pow_mul, ← he]
-          field_simp
+      _ = (2 * Real.sqrt (l' / l) * q ^ j * ‖WithLp.toLp 2 C.b‖) ^ 2 := by
+          rw [mul_pow, mul_pow, mul_pow, hsqrt2, ← pow_mul]
           ring
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp h3
+
+/-- A $k$-step CG run with original spectrum in $[a,a']$ and certified Frobenius model error
+$d<a$ has the Chebyshev residual envelope with ratio $\kappa_c=(a'+d)/(a-d)$:
+$$\|\mathbf{r}_j\|\le2\sqrt{\kappa_c}
+\Bigl(\frac{\sqrt{\kappa_c}-1}{\sqrt{\kappa_c}+1}\Bigr)^j\|\mathbf b\|\quad(j\le k)\,.$$
+The run's local $\varepsilon\le1/100$ remains; no horizon condition is needed.
+The certificate may come from the a posteriori recurrence bounds. -/
+theorem ρ_le_chebyshev_of_frobNorm_le {a a' d : ℝ}
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hd : d < a)
+    (hgap : frobNorm (C.backwardH - C.dilatedH) ≤ d) {j : ℕ} (hj : j ≤ k) :
+    C.ρ j ≤ 2 * Real.sqrt ((a' + d) / (a - d)) *
+      ((Real.sqrt ((a' + d) / (a - d)) - 1) /
+        (Real.sqrt ((a' + d) / (a - d)) + 1)) ^ j * ‖WithLp.toLp 2 C.b‖ :=
+  C.ρ_le_chebyshev_of_spectrum_backwardH (sub_pos.mpr hd)
+    (C.toNormalizedLanczosData.spectrum_backwardH_subset_Icc hs hgap) hj
+
+/-- **The computed residual norms converge at the Chebyshev rate**: for a $k$-step CG run,
+$\operatorname{spec}(\mathbf A)\subseteq[a,a']$, $a>0$, $\kappa=a'/a$ and
+$k^{5/2}\varepsilon\kappa^2\le10^{-5}$, put $\kappa_c=2\kappa+1$. For $j\le k$,
+$$\|\mathbf{r}_j\|\le2\sqrt{\kappa_c}
+\Bigl(\frac{\sqrt{\kappa_c}-1}{\sqrt{\kappa_c}+1}\Bigr)^j\|\mathbf b\|\,.$$
+No printed source in this form; compare [MeurantStrakos2006, §5.2]. -/
+theorem ρ_le_chebyshev {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {j : ℕ} (hj : j ≤ k) :
+    C.ρ j ≤ 2 * Real.sqrt (2 * (a' / a) + 1) *
+      ((Real.sqrt (2 * (a' / a) + 1) - 1) / (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ j *
+        ‖WithLp.toLp 2 C.b‖ := by
+  have h := C.ρ_le_chebyshev_of_spectrum_backwardH (by positivity : 0 < a / 2)
+    (C.spectrum_backwardH_subset_Icc ha hs hsmall) hj
+  have he : (a' + a / 2) / (a / 2) = 2 * (a' / a) + 1 := by field_simp
+  rwa [he] at h
 
 /-! ### Errors of exact CG on the model, in the computed quantities -/
 
@@ -1225,7 +1299,7 @@ exactly, with the computed $\gamma_i$ and the norms of the computed residuals: t
 $\nu_{j,d}$ of [StrakosTichy2002, (4.9), (10.7)] is exact for the model. -/
 theorem quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate {a a' : ℝ}
     (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n × Fin (k + 1) → ℝ} (hxs : C.backwardH *ᵥ xs = C.dilatedRhs) {j d : ℕ}
     (hjd : j + d ≤ k) :
     quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 j) -
@@ -1257,7 +1331,8 @@ computed $\mathbf{T}_k$ and
 $\tilde{\mathbf{v}}^{\mathsf{T}}\tilde{\mathbf{H}}^{-1}\tilde{\mathbf{v}}$
 in place of $(\mathbf{T}_n^{-1})_{11}$. -/
 theorem quadForm_backwardH_sub_cgIterate_eq {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n × Fin (k + 1) → ℝ} (hxs : C.backwardH *ᵥ xs = C.dilatedRhs) :
     quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 k) =
       quadForm C.backwardH xs - ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2 := by
@@ -1268,24 +1343,26 @@ theorem quadForm_backwardH_sub_cgIterate_eq {a a' : ℝ} (ha : 0 < a)
 
 /-- **The model's initial error is the true one up to the model distance**: under (H), for
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $\tilde{\mathbf{H}}\tilde{\mathbf{x}}_\star =
-(\mathbf{b}, \mathbf{0}, \dots)$, with $c = 4 \cdot 10^4k^3\varepsilon\kappa a'$,
+(\mathbf{b}, \mathbf{0}, \dots)$, with <!-- value cgBackwardFactor k -->
+$c = 6000k^2\sqrt{k}\varepsilon\kappa a'$,
 $$\bigl\lvert\|\tilde{\mathbf{x}}_\star\|_{\tilde{\mathbf{H}}}^2 -
 \|\mathbf{x}_\star\|_{\mathbf{A}}^2\bigr\rvert \le 2\|\mathbf{b}\|^2c/a^2 .$$
 The start of the model is exactly $\mathbf{b}/\|\mathbf{b}\|$ in the first block
 ($\mathbf{r}_0 = \mathbf{b}$ is not rounded), so the comparison is with the true problem. -/
 theorem abs_quadForm_backwardH_sub_quadForm_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n × Fin (k + 1) → ℝ} (hxs : C.backwardH *ᵥ xs = C.dilatedRhs) {x : Fin n → ℝ}
     (hx : C.A *ᵥ x = C.b) :
     |quadForm C.backwardH xs - quadForm C.A x| ≤
-      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (40000 * k ^ 3 * C.ε * (a' / a) * a') / a ^ 2 := by
+      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (cgBackwardFactor k * C.ε * (a' / a) * a') / a ^ 2 := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
   have hherm := C.isHermitian_backwardH
   have hT : C.backwardHᵀ = C.backwardH := by
     have := hherm.eq
     rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
   have hc := C.frobNorm_backwardH_sub_dilatedH_le ha hs hsmall
-  set c := 40000 * (k : ℝ) ^ 3 * C.ε * (a' / a) * a'
+  set c := cgBackwardFactor k * C.ε * (a' / a) * a'
   -- the dilated true solution
   set xh : Fin n × Fin (k + 1) → ℝ := fun p => if (p.2 : ℕ) = 0 then x p.1 else 0 with hxhdef
   have hHxh : C.dilatedH *ᵥ xh = C.dilatedRhs := by
@@ -1343,31 +1420,31 @@ theorem abs_quadForm_backwardH_sub_quadForm_le {a a' : ℝ} (ha : 0 < a)
           (by positivity)
     _ = 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * c / a ^ 2 := by field_simp
 
-
-/-- **The model's error at step $k$ in the computed quantities**: under (H),
+/-- **The model's error at step $k$ in the computed quantities**: under (H), the
+bound is <!-- value cgBackwardFactor k -->
 $$\Bigl\lvert\|\tilde{\mathbf{x}}_\star - \tilde{\mathbf{x}}_k\|_{\tilde{\mathbf{H}}}^2 -
 \Bigl(\|\mathbf{x}_\star\|_{\mathbf{A}}^2 - \sum_{j<k}\gamma_j\|\mathbf{r}_j\|^2\Bigr)\Bigr\rvert
-\le 2\|\mathbf{b}\|^2c/a^2,\qquad c = 4 \cdot 10^4k^3\varepsilon\kappa a' .$$
+\le 2\|\mathbf{b}\|^2c/a^2,\qquad c = 6000k^2\sqrt{k}\varepsilon\kappa a' .$$
 The computed run's own error $\|\mathbf{x}_\star - \mathbf{x}_k\|_{\mathbf{A}}$ is not covered
 here. -/
 theorem abs_quadForm_backwardH_sub_cgIterate_sub_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n × Fin (k + 1) → ℝ} (hxs : C.backwardH *ᵥ xs = C.dilatedRhs) {x : Fin n → ℝ}
     (hx : C.A *ᵥ x = C.b) :
     |quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 k) -
         (quadForm C.A x - ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2)| ≤
-      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (40000 * k ^ 3 * C.ε * (a' / a) * a') / a ^ 2 := by
+      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (cgBackwardFactor k * C.ε * (a' / a) * a') / a ^ 2 := by
   have h1 := C.quadForm_backwardH_sub_cgIterate_eq ha hs hsmall hxs
   have h2 := C.abs_quadForm_backwardH_sub_quadForm_le ha hs hsmall hxs hx
   rw [h1]
   convert h2 using 2
   ring
 
-
 /-- **The computed estimator is bounded a priori**: under (H),
 $\sum_{j<k}\gamma_j\|\mathbf{r}_j\|^2 \le 2\|\mathbf{b}\|^2/a$. -/
 theorem sum_γ_mul_ρ_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2 ≤ 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
   have hherm := C.isHermitian_backwardH

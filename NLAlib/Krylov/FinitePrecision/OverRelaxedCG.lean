@@ -21,14 +21,16 @@ $$\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j = \bigl(1 - j(c - 1)\bigr)\rho_j^2,\qqua
 the line search defect drifts linearly and is never damped, and for
 $(2j + 1)(c - 1) \ge 1$, i.e. $j \gtrsim 1/(4\varepsilon)$, the $\mathbf{A}$-norm error
 increases at every step. So the updated residual is bounded away from zero
-(`NLAlib.overRelaxedCG_exists_pos_le_norm_r`), independently of $\kappa$ and $n$: every
-convergence theorem for HSCG in the standard model needs a hypothesis $k\varepsilon \le c_0$
-with $c_0 < 1/4$, and a $k$-uniform backward model is impossible in the worst case.
+(`NLAlib.overRelaxedCG_exists_pos_le_norm_r`). Thus this bounded-error recurrence does not
+support an unconditional residual-decay guarantee at every horizon. Conditional guarantees
+based on a positive spectral margin of the backward model remain possible.
 
 **Realization.** `NLAlib.overRelaxedCGRun` realizes the first $k$ steps as an
-`NLAlib.CGRun` (the analysis interface) whenever $k\varepsilon \le 1/100$; the interface carries
-that bound as a field, so the non-convergent regime $j > 1/(4\varepsilon)$ is outside every
-`NLAlib.CGRun`. A realization at the level of the program `NLAlib.cgProg` under a value
+`NLAlib.CGRun` (the analysis interface) whenever $k\varepsilon \le 1/100$ and the residuals
+before those steps are nonzero. The constructor uses that horizon to prove successful
+curvatures. The run interface itself assumes only $\varepsilon\le1/100$; this file does not
+construct an interface instance for the later non-convergent regime. A realization of the program
+`NLAlib.cgProg` under a value
 semantics meeting `NLAlib.Computation.IsRelErrSem` is **not** proved here. What it needs: (1) a
 semantics producing the pattern, for which a `NLAlib.Computation.ScalarSem` over $\mathbb{R}$
 does not suffice (it sees only the operand values, not which dot product or division it
@@ -395,7 +397,7 @@ noncomputable def overRelaxedCGRun (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n �
   transpose_A := hAT
   ε_nonneg := hε
   k_pos := hk
-  k_mul_ε_le := hkε
+  ε_le := (le_mul_of_one_le_left hε (by exact_mod_cast hk)).trans hkε
   x_zero := rfl
   r_zero := rfl
   p_zero := rfl

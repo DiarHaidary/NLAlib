@@ -77,6 +77,7 @@ public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Block
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.CauchyBinet
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Hadamard
@@ -124,11 +125,14 @@ public import NLAlib.Krylov.Basic.Space
 public import NLAlib.Krylov.Eigenvalues.PowerIteration
 public import NLAlib.Krylov.Eigenvalues.Ritz
 public import NLAlib.Krylov.FinitePrecision.Backward
+public import NLAlib.Krylov.FinitePrecision.BackwardBounds
 public import NLAlib.Krylov.FinitePrecision.BackwardSpectral
 public import NLAlib.Krylov.FinitePrecision.CGAccuracy
 public import NLAlib.Krylov.FinitePrecision.CGBackward
 public import NLAlib.Krylov.FinitePrecision.CGRun
 public import NLAlib.Krylov.FinitePrecision.CGRunModel
+public import NLAlib.Krylov.FinitePrecision.Dilation
+public import NLAlib.Krylov.FinitePrecision.DilationEstimates
 public import NLAlib.Krylov.FinitePrecision.LanczosData
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
 public import NLAlib.Krylov.FinitePrecision.LocalErrors

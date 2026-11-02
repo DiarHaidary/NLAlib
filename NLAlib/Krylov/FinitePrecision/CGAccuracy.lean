@@ -12,7 +12,7 @@ public import NLAlib.Krylov.FinitePrecision.CGBackward
 # The residual gap and the attainable accuracy of finite-precision CG, a priori
 
 For a conjugate gradient run `C : NLAlib.CGRun n k` on a matrix with spectrum in $[a, a']$,
-$a > 0$, $\kappa = a'/a$, under (H) $k^3\varepsilon\kappa^2 \le 10^{-5}$ and
+$a > 0$, $\kappa = a'/a$, under (H) $k^2\sqrt{k}\,\varepsilon\kappa^2 \le 10^{-5}$ and
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, the computed iterates, the $\mathbf{A}$-norm error of
 the computed run and the residual gap $\mathbf{g}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j -
 \mathbf{r}_j$ are bounded a priori: with
@@ -20,8 +20,8 @@ $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{x}_j\| \le 1.001\,M,\qquad
 \|\mathbf{x}_\star - \mathbf{x}_j\|_{\mathbf{A}}^2 \le 1.001\,\|\mathbf{x}_\star\|_{\mathbf{A}}^2,
 \qquad \|\mathbf{g}_k\| \le 11\,k\,\varepsilon\,a'M .$$
-Every rigorous gap bound in the literature keeps $\max_j\|\mathbf{x}_j\|$ (a posteriori);
-[MeurantStrakos2006, §5.4] states the a priori form as a heuristic.
+The gap estimate of [MeurantStrakos2006, §5.4] depends on the maximum norm of an iterate;
+its a priori form there is heuristic. Here the iterate bound is proved under (H).
 
 The proof is one joint induction (the private theorem `gapErrorInduction`) on the gap and the
 true $\mathbf{A}$-norm error $E_j$ of the computed run: the descent
@@ -31,16 +31,30 @@ $\gamma_j\|\mathbf{p}_j\| \le 1.5\|\mathbf{b}\|/a$ through the model's
 $\sum_j\gamma_j\rho_j^2 \le 2\|\mathbf{b}\|^2/a$ (G2′), and the one-step inequality for
 $E_{j+1}$ (G3).
 
-The **attainable accuracy**: after $k_\star = \lceil\tfrac12(\sqrt{\kappa'} + 1)\ell\rceil$ steps,
+The **attainable accuracy** for $\varepsilon > 0$: after
+$k_\star = \lceil\tfrac12(\sqrt{\kappa'} + 1)\ell\rceil$ steps,
 $\kappa' = 2\kappa + 1$, $\ell = \ln(\sqrt{\kappa'}/(4\varepsilon))$, the computed residual is
 below $8\varepsilon\|\mathbf{b}\|$ (`NLAlib.CGRun.ρ_le_of_cgKStar_le`, the Chebyshev bound of the
 model), so the true residual is the gap up to $8\varepsilon\|\mathbf{b}\|$. Exact arithmetic is
-an admissible run with zero gap, so no statement "computed residual $\ll$ true residual" holds;
-the $\delta$-form compares with the gap bound instead.
+an admissible run with zero gap, so the computed residual is not necessarily smaller than the
+true residual. For any $\delta > 0$, the theorem gives
+$\|\mathbf{r}_j\| \le 8\delta\varepsilon\|\mathbf{b}\|$ once
+$j \ge k_\star(\kappa, \varepsilon, \delta)$, provided $j \le k$ and (H) holds. Choosing a
+smaller $\delta$ costs logarithmically more iterations. This is a decreasing upper envelope,
+not a claim that the residual norm decreases at every step or tends to zero at fixed precision.
+The gap estimate does not assert stagnation or a positive lower bound for the true residual.
 
-Validity: (H) bounds the number of steps; with $k = k_\star$ this needs roughly
-$\kappa \lesssim 0.05\,\varepsilon^{-2/7}\ell^{-6/7}$ ($\kappa \le 80$ at $\varepsilon = u$ in
-double precision, $\kappa \le 5$ for dense products at $N = 10^3$).
+Validity: for $\varepsilon > 0$, (H) requires
+$k \le (10^{-5}/(\varepsilon\kappa^2))^{2/5}$. Every requested residual tolerance must fit
+this finite horizon. The stronger cubic condition in
+`NLAlib.cgKStar_cube_mul_le` remains a sufficient condition at $k_\star$.
+
+Related attainable-accuracy analysis for mixed-precision preconditioned CG appears in
+[BakeCarsonMa2025, Theorem 2]. Their argument uses an existential auxiliary-energy index,
+subject to their condition (91), and retains a maximum-iterate factor. Here unpreconditioned
+CG has an explicit Chebyshev threshold and a proved iterate bound under (H). The error models
+and hypotheses differ; this is not a formalization of their theorem or a comparison of its
+constants. Citation numbering refers to version 3 of that preprint.
 
 Constants are unoptimised (maintainer, 2026-10-29: "do whatever is cleanest proof-wise").
 
@@ -120,10 +134,13 @@ theorem cgKStar_pos {κ ε δ : ℝ} (hκ : 0 ≤ κ) (hε : 0 < ε) (hε1 : ε 
     nlinarith
   exact mul_pos (by linarith) (Real.log_pos h)
 
-/-- **The window condition for $k_\star$**: for $\kappa \ge 1$ and $0 < \varepsilon \le 1/100$,
+/-- **A sufficient cubic window condition for $k_\star$**: for $\kappa \ge 1$ and
+$0 < \varepsilon \le 1/100$,
 with $\ell = \ln(\sqrt{2\kappa + 1}/(4\varepsilon))$,
-$\kappa^3\sqrt{\kappa}\,\varepsilon\,\ell^3 \le 7 \cdot 10^{-7}$ implies that (H) holds at
-$k_\star$: $(k_\star)^3\varepsilon\kappa^2 \le 10^{-5}$. -/
+$\kappa^3\sqrt{\kappa}\,\varepsilon\,\ell^3 \le 7 \cdot 10^{-7}$ implies
+$(k_\star)^3\varepsilon\kappa^2 \le 10^{-5}$. This stronger condition also implies (H),
+$(k_\star)^2\sqrt{k_\star}\,\varepsilon\kappa^2 \le 10^{-5}$, since
+$\sqrt{k_\star} \le k_\star$ for $k_\star \ge 1$. -/
 theorem cgKStar_cube_mul_le {κ ε : ℝ} (hκ : 1 ≤ κ) (hε : 0 < ε) (hε1 : ε ≤ 1 / 100)
     (h : κ ^ 3 * Real.sqrt κ * ε *
       Real.log (Real.sqrt (2 * κ + 1) / (4 * 1 * ε)) ^ 3 ≤ 7 / 10 ^ 7) :
@@ -212,7 +229,7 @@ private theorem acc_le {a a' : ℝ} (hs : spectrum ℝ C.A ⊆ Set.Icc a a') : a
 
 /-- The elementary consequences of the spectral hypothesis and of (H). -/
 private theorem acc_small {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
     a ≤ a' ∧ 1 ≤ a' / a ∧ specNorm C.A ≤ a' ∧ C.ε ≤ 1 / 10 ^ 5 ∧
       (k : ℝ) * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (k : ℝ) ^ 2 * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
       (k : ℝ) ^ 2 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
@@ -230,7 +247,9 @@ private theorem acc_small {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
     exact max_le e0.2 e1.2
   have hκ2 : a' / a ≤ (a' / a) ^ 2 := by nlinarith
   have hm2 : (k : ℝ) ≤ (k : ℝ) ^ 2 := by nlinarith
-  have hm3 : (k : ℝ) ^ 2 ≤ (k : ℝ) ^ 3 := by nlinarith
+  have hsqrt : 1 ≤ Real.sqrt k := Real.one_le_sqrt.mpr hm
+  have hm3 : (k : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 * Real.sqrt k :=
+    le_mul_of_one_le_right (sq_nonneg _) hsqrt
   have hX : 0 ≤ C.ε * (a' / a) := by positivity
   have hY : 0 ≤ C.ε * (a' / a) ^ 2 := by positivity
   have h22 : (k : ℝ) ^ 2 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
@@ -251,7 +270,8 @@ private theorem acc_small {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
   exact ⟨haa', hκ, hspec, he, h1, h2, h22⟩
 
 private theorem acc_εκ {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) : C.ε * (a' / a) ≤ 1 / 10 ^ 5 := by
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    C.ε * (a' / a) ≤ 1 / 10 ^ 5 := by
   obtain ⟨-, hκ, -, -, hkεκ, -, -⟩ := C.acc_small ha hs hsmall
   have h1k : (1 : ℝ) ≤ k := by exact_mod_cast C.k_pos
   have := mul_le_mul_of_nonneg_right h1k (by have := C.ε_nonneg; positivity :
@@ -307,10 +327,13 @@ private theorem acc_norm_mulVec_sq_le {a a' : ℝ} (ha : 0 < a)
 $\mathbf{p}_{j-1}^{\mathsf{T}}\mathbf{r}_j$ enters through
 $\mathbf{p}_j = \mathbf{r}_j + \delta_{j-1}\mathbf{p}_{j-1} + \mathbf{e}^p_{j-1}$. -/
 theorem p_dotProduct_r_ge {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     (1 - 1 / 1000) * C.ρ j ^ 2 ≤ C.p j ⬝ᵥ C.r j := by
   obtain ⟨-, hκ, -, hε5, hkεκ, -, -⟩ := C.acc_small ha hs hsmall
   have hε0 := C.ε_nonneg
+  have hwindow : (k : ℝ) * C.ε ≤ 1 / 100 := by
+    have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (k : ℝ) * C.ε)
+    nlinarith
   have hP : ∀ i < k, ‖WithLp.toLp 2 (C.p i)‖ ≤ 2 * (a' / a) * C.ρ i := fun i hi => by
     have h := C.norm_p_sq_le ha hs hsmall hi
     have h2 : ‖WithLp.toLp 2 (C.p i)‖ ^ 2 ≤ (2 * (a' / a) * C.ρ i) ^ 2 := by
@@ -324,7 +347,7 @@ theorem p_dotProduct_r_ge {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
     have : 0 ≤ C.r 0 ⬝ᵥ C.r 0 := Finset.sum_nonneg fun i _ => mul_self_nonneg _
     linarith
   · have hi : i < k := by omega
-    have hτ := C.abs_p_dotProduct_r_succ_le hP hK hi
+    have hτ := C.abs_p_dotProduct_r_succ_le hwindow hP hK hi
     obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi
     have hep := C.norm_ep_le_of_lt hi
     have hD := C.δ_mul_norm_p_le hi
@@ -384,7 +407,8 @@ theorem p_dotProduct_r_ge {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
 $\gamma_j^2\,\mathbf{p}_j^{\mathsf{T}}\mathbf{A}\mathbf{p}_j \le
 1.001\,\gamma_j\|\mathbf{r}_j\|^2$. -/
 theorem γ_sq_mul_dotProduct_mulVec_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j < k) :
     C.γ j ^ 2 * (C.p j ⬝ᵥ (C.A *ᵥ C.p j)) ≤ (1 + 1 / 1000) * (C.γ j * C.ρ j ^ 2) := by
   obtain ⟨haa', hκ, hspec, hε5, -, -, -⟩ := C.acc_small ha hs hsmall
@@ -447,7 +471,7 @@ theorem γ_sq_mul_dotProduct_mulVec_le {a a' : ℝ} (ha : 0 < a)
 /-- **The step length, a priori (G2′)**: under (H), $\gamma_j\|\mathbf{p}_j\| \le
 1.5\|\mathbf{b}\|/a$ for $j < k$. -/
 theorem γ_mul_norm_p_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
     C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ≤ 3 / 2 * ‖WithLp.toLp 2 C.b‖ / a := by
   have hsum := C.sum_γ_mul_ρ_sq_le ha hs hsmall
   have hγ := C.γ_pos hj
@@ -482,7 +506,7 @@ theorem γ_mul_norm_p_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Se
 /-- G3 with the nonnegativity of the bracket, for the induction. -/
 private theorem quadForm_sub_x_succ_le_aux {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k) :
     0 ≤ quadForm C.A (xs - C.x j) - 99 / 100 * (C.γ j * C.ρ j ^ 2) +
           2 * (C.γ j * ‖WithLp.toLp 2 (C.p j)‖) * ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ∧
@@ -563,9 +587,12 @@ $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $j < k$, with the gap
 $\mathbf{g}_j = \mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j$,
 $$\|\mathbf{x}_\star - \mathbf{x}_{j+1}\|_{\mathbf{A}} \le
 \sqrt{\|\mathbf{x}_\star - \mathbf{x}_j\|_{\mathbf{A}}^2 - 0.99\,\gamma_j\|\mathbf{r}_j\|^2 +
-2\gamma_j\|\mathbf{p}_j\|\|\mathbf{g}_j\|} + \sqrt{a'}\,\|\mathbf{e}^x_j\| \,.$$ -/
+2\gamma_j\|\mathbf{p}_j\|\|\mathbf{g}_j\|} + \sqrt{a'}\,\|\mathbf{e}^x_j\| \,.$$
+Compare [BakeCarsonMa2025, Lemma 4], a perturbed energy-descent estimate for an auxiliary
+iterate with the accumulated iterate-update rounding removed. Here the estimate concerns
+the actual computed iterate and explicitly includes its update error. -/
 theorem quadForm_sub_x_succ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k) :
     quadForm C.A (xs - C.x (j + 1)) ≤
       (Real.sqrt (quadForm C.A (xs - C.x j) - 99 / 100 * (C.γ j * C.ρ j ^ 2) +
@@ -613,7 +640,7 @@ private theorem acc_norm_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A 
 
 /-- The smallness of step $j \le k$ under (H). -/
 private theorem acc_small_j {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j ≤ k) :
     (j : ℝ) * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧ (j : ℝ) ^ 2 * C.ε * (a' / a) ≤ 1 / 10 ^ 5 ∧
       (j : ℝ) ^ 2 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
   obtain ⟨-, hκ, -, -, hkεκ, hk2εκ, hk2εκ2⟩ := C.acc_small ha hs hsmall
@@ -635,7 +662,7 @@ private theorem acc_small_j {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆
 $\|\mathbf{x}_\star - \mathbf{x}_j\| \le 2\|\mathbf{b}\|/a$, $\|\mathbf{x}_j\| \le
 3\|\mathbf{b}\|/a$ and $\rho_j \le 3\kappa\|\mathbf{b}\|$. -/
 private theorem acc_step_facts {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k)
     (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
@@ -643,9 +670,12 @@ private theorem acc_step_facts {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A 
     ‖WithLp.toLp 2 (xs - C.x j)‖ ≤ 2 * ‖WithLp.toLp 2 C.b‖ / a ∧
       ‖WithLp.toLp 2 (C.x j)‖ ≤ 3 * ‖WithLp.toLp 2 C.b‖ / a ∧
       C.ρ j ≤ 3 * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
-  obtain ⟨haa', hκ, hspec, -, -, -, -⟩ := C.acc_small ha hs hsmall
+  obtain ⟨haa', hκ, hspec, _, hkεκ, -, -⟩ := C.acc_small ha hs hsmall
   have hε0 := C.ε_nonneg
-  have hjε : (j : ℝ) * C.ε ≤ 1 / 100 := C.mul_ε_le_of_le hj
+  have hwindow : (k : ℝ) * C.ε ≤ 1 / 100 := by
+    have := mul_le_mul_of_nonneg_left hκ (by positivity : 0 ≤ (k : ℝ) * C.ε)
+    nlinarith
+  have hjε : (j : ℝ) * C.ε ≤ 1 / 100 := C.mul_ε_le_of_le hwindow hj
   set κ := a' / a with hκdef
   set B := ‖WithLp.toLp 2 C.b‖ with hB
   have hB0 : 0 ≤ B := norm_nonneg _
@@ -684,7 +714,7 @@ private theorem acc_step_facts {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A 
 
 /-- The gap step of the induction. -/
 private theorem acc_gap_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k)
     (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
@@ -719,7 +749,7 @@ private theorem acc_gap_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
 /-- The error step of the induction:
 $E_{j+1}^2 \le E_j^2 - 0.99\gamma_j\rho_j^2 + (36j + 19)\varepsilon\kappa\|\mathbf{b}\|^2/a$. -/
 private theorem acc_err_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j < k)
     (hG : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖)
@@ -809,7 +839,7 @@ private theorem acc_err_step {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
 
 /-- The joint induction on the gap and the computed run's error (G4). -/
 private theorem gapErrorInduction {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
         12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ ∧
@@ -860,7 +890,8 @@ $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j\| \le 12\,j\,\varepsilon\
 \|\mathbf{b}\| .$$
 No solution is needed in the statement. -/
 theorem norm_sub_mulVec_x_sub_r_le_norm_b {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
@@ -880,7 +911,7 @@ $$\|\mathbf{x}_\star - \mathbf{x}_j\|_{\mathbf{A}}^2 \le \|\mathbf{x}_\star\|_{\
 The exact relation, for the model, is `NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_eq`; this
 is the computed run's own error. -/
 theorem quadForm_sub_x_le_sub_sum {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     quadForm C.A (xs - C.x j) ≤ quadForm C.A xs -
       99 / 100 * ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 +
@@ -893,7 +924,7 @@ $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $j \le k$,
 $\|\mathbf{x}_\star - \mathbf{x}_j\|_{\mathbf{A}}^2 \le
 1.001\,\|\mathbf{x}_\star\|_{\mathbf{A}}^2$. -/
 theorem quadForm_sub_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     quadForm C.A (xs - C.x j) ≤ (1 + 1 / 1000) * quadForm C.A xs := by
   have h := (C.gapErrorInduction ha hs hsmall hx hj).2
@@ -921,7 +952,7 @@ the exact-arithmetic bound on $\max_j\|\mathbf{x}_j\|$ through the $\mathbf{A}$-
 [MeurantStrakos2006, §5.4] assert $\|\mathbf{x}_j\| \le 2\|\mathbf{x}_\star\|$ "to within a
 small error" for finite-precision CG without proof; this is $\sqrt{\kappa}$ weaker and proved. -/
 theorem norm_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (C.x j)‖ ≤
       (1 + 1 / 1000) * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
@@ -948,7 +979,7 @@ theorem norm_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a
 /-- The error of the computed iterate, a priori:
 $\|\mathbf{x}_\star - \mathbf{x}_j\| \le 1.001\|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$. -/
 private theorem acc_norm_sub_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (xs - C.x j)‖ ≤
       (1 + 1 / 1000) * (Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
@@ -979,7 +1010,7 @@ private theorem acc_mul_norm_le {a a' : ℝ} (hs : spectrum ℝ C.A ⊆ Set.Icc 
 
 /-- $\|\mathbf{b}\| \le a'\|\mathbf{x}_\star\|$. -/
 private theorem acc_norm_b_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) : ‖WithLp.toLp 2 C.b‖ ≤ a' * ‖WithLp.toLp 2 xs‖ := by
   rw [← hx]
   exact (norm_toLp_mulVec_le _ _).trans
@@ -994,7 +1025,8 @@ $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k - \mathbf{r}_k\| \le 11\,k\,\varepsilon\
 \max_j\|\mathbf{x}_j\|$ (a posteriori) and $+O(\varepsilon^2)$; here
 $\max_j\|\mathbf{x}_j\| \le 1.001M$ is proved (`NLAlib.CGRun.norm_x_le`). -/
 theorem norm_sub_mulVec_x_sub_r_le_energy {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       11 * k * C.ε * a' * (‖WithLp.toLp 2 xs‖ + Real.sqrt (quadForm C.A xs) / Real.sqrt a) := by
@@ -1080,7 +1112,8 @@ a'\|\mathbf{x}_\star\| .$$
 $\sqrt{\kappa}$ worse than the folklore $O(k\varepsilon)a'\|\mathbf{x}_\star\|$, which rests on
 a Euclidean monotonicity of the errors not known in finite precision. -/
 theorem norm_sub_mulVec_x_sub_r_le_norm_sol {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       22 * k * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by
@@ -1110,7 +1143,7 @@ $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le 2\sqrt{\kappa'}\,q^k\|\mathbf{b}\| +
 11\,k\,\varepsilon\,a'M .$$ -/
 theorem norm_sub_mulVec_x_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤
       2 * Real.sqrt (2 * (a' / a) + 1) *
@@ -1137,11 +1170,11 @@ private theorem acc_norm_true_le (j : ℕ) : ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.
 /-- **The computed residual at gap level**: under (H), for $\varepsilon, \delta > 0$ and
 $k_\star(\kappa, \varepsilon, \delta) \le j \le k$ (`NLAlib.cgKStar`),
 $\|\mathbf{r}_j\| \le 8\delta\varepsilon\|\mathbf{b}\|$. With $\delta = 1$ this is the level of
-every a priori gap bound ($\|\mathbf{b}\| \le a'M$); with $\delta < 1$ it is the $\delta$-form
-of "the computed residual is negligible", the only true one: exact arithmetic is an admissible
-run with zero gap. -/
+the a priori gap bound ($\|\mathbf{b}\| \le a'M$). Smaller $\delta$ gives a smaller
+upper bound on the computed residual, but the increased $k_\star$ must still fit the horizon
+(H). This does not assert monotonicity, infinite-horizon convergence, or a nonzero gap. -/
 theorem ρ_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε) {δ : ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε) {δ : ℝ}
     (hδ : 0 < δ) {j : ℕ} (hkj : cgKStar (a' / a) C.ε δ ≤ j) (hj : j ≤ k) :
     C.ρ j ≤ 8 * δ * C.ε * ‖WithLp.toLp 2 C.b‖ := by
   obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
@@ -1162,7 +1195,8 @@ $$\bigl\lvert\|\mathbf{b} - \mathbf{A}\mathbf{x}_j\| -
 \|\mathbf{b} - \mathbf{A}\mathbf{x}_j - \mathbf{r}_j\|\bigr\rvert \le
 8\delta\varepsilon\|\mathbf{b}\| .$$ -/
 theorem abs_norm_sub_mulVec_x_sub_norm_gap_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) {δ : ℝ} (hδ : 0 < δ) {j : ℕ} (hkj : cgKStar (a' / a) C.ε δ ≤ j)
     (hj : j ≤ k) :
     |‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j)‖ - ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖| ≤
@@ -1179,11 +1213,15 @@ theorem abs_norm_sub_mulVec_x_sub_norm_gap_le {a a' : ℝ} (ha : 0 < a)
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon, 1)$, with
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (11k + 8)\,\varepsilon\,a'M .$$
-The bound grows linearly in $k$: the term $\mathbf{A}\mathbf{e}^x_j$ of the gap does not decay
-(as in [Greenbaum1997SIMAX]), so the best step is $k_\star$
-(`NLAlib.CGRun.norm_sub_mulVec_x_cgKStar_le`). -/
+The bound grows linearly in $k$: the iterate-update contribution to the gap is not bounded
+by the decaying computed residual (as in [Greenbaum1997SIMAX]). The bound is smallest at
+$k_\star$ (`NLAlib.CGRun.norm_sub_mulVec_x_cgKStar_le`); this does not identify the iterate
+with the smallest actual error. Related attainable-accuracy bounds appear in
+[BakeCarsonMa2025, Theorem 2], for mixed-precision PCG at some iterate up to a conditional
+existential index; here the step is prescribed and (H) is an explicit finite-horizon condition. -/
 theorem norm_sub_mulVec_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤
       (11 * k + 8) * C.ε * a' *
@@ -1215,7 +1253,8 @@ $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (22k + 8)\,\varepsilon\sqrt{\kappa}\,a'
 \|\mathbf{x}_\star\| .$$ -/
 theorem norm_sub_mulVec_x_le_norm_sol_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤
       (22 * k + 8) * C.ε * Real.sqrt (a' / a) * a' * ‖WithLp.toLp 2 xs‖ := by
@@ -1243,7 +1282,8 @@ theorem norm_sub_mulVec_x_le_norm_sol_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
 $k \ge k_\star(\kappa, \varepsilon, 1)$,
 $\|\mathbf{b} - \mathbf{A}\mathbf{x}_k\| \le (12k + 8)\,\varepsilon\,\kappa\,\|\mathbf{b}\|$. -/
 theorem norm_sub_mulVec_x_le_norm_b_of_cgKStar_le {a a' : ℝ} (ha : 0 < a)
-    (hs : spectrum ℝ C.A ⊆ Set.Icc a a') (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     (hε : 0 < C.ε) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k)‖ ≤ (12 * k + 8) * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
   obtain ⟨-, hκ, -, -, -, -, -⟩ := C.acc_small ha hs hsmall
@@ -1266,7 +1306,8 @@ $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$ and $k \ge k_\star(\kappa, \varepsilon
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $\|\mathbf{x}_\star - \mathbf{x}_k\| \le (11k + 8)\,\varepsilon\,\kappa\,M$. -/
 theorem norm_sub_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε) {xs : Fin n → ℝ}
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) (hε : 0 < C.ε)
+    {xs : Fin n → ℝ}
     (hx : C.A *ᵥ xs = C.b) (hk : cgKStar (a' / a) C.ε 1 ≤ k) :
     ‖WithLp.toLp 2 (xs - C.x k)‖ ≤
       (11 * k + 8) * C.ε * (a' / a) *
@@ -1288,18 +1329,20 @@ theorem norm_sub_x_le_of_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ
 
 /-- **Attainable accuracy, a priori**: for $\varepsilon > 0$, $\mathbf{A}\mathbf{x}_\star =
 \mathbf{b}$, $k \ge k_\star = k_\star(\kappa, \varepsilon, 1)$ and (H) **at $k_\star$ only**,
-$(k_\star)^3\varepsilon\kappa^2 \le 10^{-5}$, with $\kappa' = 2\kappa + 1$,
+$(k_\star)^2\sqrt{k_\star}\,\varepsilon\kappa^2 \le 10^{-5}$, with $\kappa' = 2\kappa + 1$,
 $\ell = \ln(\sqrt{\kappa'}/(4\varepsilon))$ and
 $M = \|\mathbf{x}_\star\| + \|\mathbf{x}_\star\|_{\mathbf{A}}/\sqrt{a}$,
 $$\|\mathbf{b} - \mathbf{A}\mathbf{x}_{k_\star}\| \le
 \Bigl(\frac{11}{2}(\sqrt{\kappa'} + 1)\,\ell + 19\Bigr)\varepsilon\,a'M ,$$
 an attainable relative residual of order $\kappa\ln(1/\varepsilon)\,\varepsilon$ (one
 $\sqrt{\kappa}$ from $M \le (1 + \sqrt{\kappa})\|\mathbf{x}_\star\|$, one from
-$k_\star \propto \sqrt{\kappa}$). `NLAlib.cgKStar_cube_mul_le` gives the hypothesis at $k_\star$
-from $\kappa^{7/2}\varepsilon\ell^3 \le 7 \cdot 10^{-7}$. No printed source. -/
+$k_\star \propto \sqrt{\kappa}$). `NLAlib.cgKStar_cube_mul_le` gives a stronger sufficient
+condition at $k_\star$ from $\kappa^{7/2}\varepsilon\ell^3 \le 7 \cdot 10^{-7}$.
+No printed source. -/
 theorem norm_sub_mulVec_x_cgKStar_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hε : 0 < C.ε) (hk : cgKStar (a' / a) C.ε 1 ≤ k)
-    (hsmall : (cgKStar (a' / a) C.ε 1 : ℝ) ^ 3 * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : (cgKStar (a' / a) C.ε 1 : ℝ) ^ 2 *
+      Real.sqrt (cgKStar (a' / a) C.ε 1) * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x (cgKStar (a' / a) C.ε 1))‖ ≤
       (11 / 2 * (Real.sqrt (2 * (a' / a) + 1) + 1) *

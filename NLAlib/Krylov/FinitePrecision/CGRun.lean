@@ -65,7 +65,8 @@ namespace NLAlib
 /-- **A conjugate gradient run with bounded local errors**: $k \ge 1$ steps of the
 Hestenes–Stiefel recurrence from $\mathbf{x}_0 = \mathbf{0}$ for a real symmetric $\mathbf{A}$,
 every operation exact up to an error bounded by $\varepsilon$ times its operands (the normwise
-standard model), $\nu_j > 0$ and $\mu_j > 0$ at every step taken, and $k\varepsilon \le 1/100$.
+standard model), $\nu_j > 0$ and $\mu_j > 0$ at every step taken, and $\varepsilon \le 1/100$.
+The run length is unrestricted; accumulated-error bounds state their horizon assumptions.
 The computed $\nu_k$ after the last step may be $0$ (the program stops there). -/
 structure CGRun (n k : ℕ) where
   /-- The matrix. -/
@@ -113,7 +114,7 @@ structure CGRun (n k : ℕ) where
   /-- At least one step. -/
   k_pos : 0 < k
   /-- Small accuracy parameter. -/
-  k_mul_ε_le : (k : ℝ) * ε ≤ 1 / 100
+  ε_le : ε ≤ 1 / 100
   /-- $\mathbf{x}_0 = \mathbf{0}$. -/
   x_zero : x 0 = 0
   /-- $\mathbf{r}_0 = \mathbf{b}$. -/
@@ -269,14 +270,10 @@ noncomputable def ρ (j : ℕ) : ℝ :=
 
 /-! ### Elementary consequences of the interface -/
 
-/-- The accuracy parameter is small: $\varepsilon \le 1/100$. -/
-theorem ε_le : C.ε ≤ 1 / 100 := by
-  have hk : (1 : ℝ) ≤ k := by exact_mod_cast C.k_pos
-  nlinarith [C.k_mul_ε_le, C.ε_nonneg]
-
-/-- $j\varepsilon \le 1/100$ for $j \le k$. -/
-theorem mul_ε_le_of_le {j : ℕ} (hj : j ≤ k) : (j : ℝ) * C.ε ≤ 1 / 100 :=
-  (mul_le_mul_of_nonneg_right (by exact_mod_cast hj) C.ε_nonneg).trans C.k_mul_ε_le
+/-- $j\varepsilon \le 1/100$ when $j \le k$ and $k\varepsilon \le 1/100$. -/
+theorem mul_ε_le_of_le (hsmall : (k : ℝ) * C.ε ≤ 1 / 100) {j : ℕ} (hj : j ≤ k) :
+    (j : ℝ) * C.ε ≤ 1 / 100 :=
+  (mul_le_mul_of_nonneg_right (by exact_mod_cast hj) C.ε_nonneg).trans hsmall
 
 /-- The residual norms are nonnegative. -/
 theorem ρ_nonneg (j : ℕ) : 0 ≤ C.ρ j := norm_nonneg _

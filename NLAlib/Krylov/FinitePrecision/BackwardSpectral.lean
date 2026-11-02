@@ -12,9 +12,10 @@ public import NLAlib.Matrix.Perturbation.Residual
 /-!
 # Spectral consequences of the backward model
 
-From the backward model $\tilde{\mathbf{H}}$ of a run `L : NLAlib.LanczosRun n k`
+For a run `L : NLAlib.LanczosRun n k` with $k\varepsilon \le 1/100$,
+the backward model $\tilde{\mathbf{H}}$ gives the following conclusions
 (`NLAlib.LanczosRun.backwardH`), with <!-- value lanczosBackwardFactor k -->
-$\delta = 2000k^4\varepsilon\|\mathbf{H}\|_2$:
+$\delta = 400k^3\varepsilon\|\mathbf{H}\|_2$:
 
 * every eigenvalue of $\tilde{\mathbf{H}}$ is within $\delta$ of an eigenvalue of $\mathbf{H}$;
 * a computed Ritz value $\theta$ with unit eigenvector $\mathbf{y}$ of $\mathbf{T}_k$ is within
@@ -241,20 +242,22 @@ theorem exists_abs_eigenvalue_sub_le_norm_dilatedH_mulVec_sub {x : Fin n × Fin 
   rw [hx1, mul_one] at hle
   exact ⟨j, hj, hj' ▸ hle⟩
 
-/-- The backward perturbation in the spectral norm: <!-- value lanczosBackwardFactor k -->
-$\|\tilde{\mathbf{H}} - \hat{\mathbf{H}}\|_2 \le 2000k^4\varepsilon\|\mathbf{H}\|_2$. -/
-theorem specNorm_backwardH_sub_dilatedH_le :
+/-- Under $k\varepsilon \le 1/100$,
+the backward perturbation in the spectral norm: <!-- value lanczosBackwardFactor k -->
+$\|\tilde{\mathbf{H}} - \hat{\mathbf{H}}\|_2 \le 400k^3\varepsilon\|\mathbf{H}\|_2$. -/
+theorem specNorm_backwardH_sub_dilatedH_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     specNorm (L.backwardH - L.dilatedH) ≤ lanczosBackwardFactor k * L.ε * specNorm L.H :=
-  (specNorm_le_frobNorm _).trans L.frobNorm_backwardH_sub_dilatedH_le
+  (specNorm_le_frobNorm _).trans (L.frobNorm_backwardH_sub_dilatedH_le hsmall)
 
-/-- The backward perturbation on a unit vector. -/
-private theorem norm_dilatedH_sub_backwardH_mulVec_le {x : Fin n × Fin (k + 1) → ℝ}
+/-- Under $k\varepsilon \le 1/100$, the backward perturbation on a unit vector. -/
+private theorem norm_dilatedH_sub_backwardH_mulVec_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {x : Fin n × Fin (k + 1) → ℝ}
     (hx1 : ‖WithLp.toLp 2 x‖ = 1) :
     ‖WithLp.toLp 2 ((L.dilatedH - L.backwardH) *ᵥ x)‖ ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
   refine (norm_toLp_mulVec_le _ x).trans ?_
   rw [hx1, mul_one, specNorm_sub_comm]
-  exact L.specNorm_backwardH_sub_dilatedH_le
+  exact L.specNorm_backwardH_sub_dilatedH_le hsmall
 
 /-- The Rayleigh bounds of $\hat{\mathbf{H}}$ are those of $\mathbf{H}$, above. -/
 theorem dotProduct_dilatedH_mulVec_le (x : Fin n × Fin (k + 1) → ℝ) :
@@ -275,12 +278,13 @@ theorem eigenvalue_last_mul_le_dotProduct_dilatedH_mulVec {m : ℕ} (hm : m + 1 
     (by simpa using hm) (fun j => x (j, r))
   simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using h
 
-/-- **The spectrum of the backward model is near that of $\mathbf{H}$**: every eigenvalue of
+/-- **The spectrum of the backward model is near that of $\mathbf{H}$**
+(assuming $k\varepsilon \le 1/100$): every eigenvalue of
 $\tilde{\mathbf{H}}$ is within <!-- value lanczosBackwardFactor k -->
-$2000k^4\varepsilon\|\mathbf{H}\|_2$ of an eigenvalue of
+$400k^3\varepsilon\|\mathbf{H}\|_2$ of an eigenvalue of
 $\mathbf{H}$. No printed source; the maintainer's draft, `rem:wasserstein` (by Weyl's
 inequality there). -/
-theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le {i : ℕ}
+theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {i : ℕ}
     (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
     ∃ j < n, |eigenvalue L.backwardH i - eigenvalue L.H j| ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
@@ -290,19 +294,21 @@ theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le {i : ℕ}
     (eigenvalue L.backwardH i)
   rw [← hx, ← Matrix.sub_mulVec] at hle
   exact ⟨j, hj, (abs_sub_comm _ _).trans_le
-    (hle.trans (L.norm_dilatedH_sub_backwardH_mulVec_le hx1))⟩
+    (hle.trans (L.norm_dilatedH_sub_backwardH_mulVec_le hsmall hx1))⟩
 
-/-- **Localization of stabilised Ritz values** (Paige): for a unit eigenpair
+/-- **Localization of stabilised Ritz values**
+(assuming $k\varepsilon \le 1/100$) (Paige): for a unit eigenpair
 $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$ of the computed tridiagonal matrix, some eigenvalue
 $\lambda$ of $\mathbf{H}$ satisfies <!-- value lanczosBackwardFactor k -->
 $$\lvert\theta - \lambda\rvert \le \beta_k\lvert y_{k-1}\rvert +
-2000k^4\varepsilon\|\mathbf{H}\|_2 \,.$$
+400k^3\varepsilon\|\mathbf{H}\|_2 \,.$$
 At a terminal last step ($\beta_k = 0$) this holds for every Ritz value.
 No printed source; the maintainer's draft, `thm:stabilized`, states
 $\lesssim_k \beta_k\lvert\mathbf{e}_k^{\mathsf{T}}\mathbf{y}\rvert + \varepsilon\|\mathbf{A}\|_2$;
 [Paige1980, Theorem 3.1].
 Result: paige-stabilized-ritz-values -/
-theorem exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
+theorem exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ j < n, |θ - eigenvalue L.H j| ≤
       L.β k * |y L.lastIndex| + lanczosBackwardFactor k * L.ε * specNorm L.H := by
@@ -330,14 +336,16 @@ theorem exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ :
   rw [hres, WithLp.toLp_add] at hle
   refine ⟨j, hj, (abs_sub_comm _ _).trans_le (hle.trans ((norm_add_le _ _).trans ?_))⟩
   rw [hw]
-  linarith [L.norm_dilatedH_sub_backwardH_mulVec_le hx1]
+  linarith [L.norm_dilatedH_sub_backwardH_mulVec_le hsmall hx1]
 
-/-- A Ritz value is a Rayleigh quotient of $\hat{\mathbf{H}}$ up to the backward perturbation:
+/-- Under $k\varepsilon \le 1/100$,
+a Ritz value is a Rayleigh quotient of $\hat{\mathbf{H}}$ up to the backward perturbation:
 for a unit eigenpair $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$ and
 $\hat{\mathbf{x}} = \hat{\mathbf{V}}_k\mathbf{y}$, <!-- value lanczosBackwardFactor k -->
 $$\lvert\hat{\mathbf{x}}^{\mathsf{T}}\hat{\mathbf{H}}\hat{\mathbf{x}} - \theta\rvert \le
-2000k^4\varepsilon\|\mathbf{H}\|_2 \,.$$ -/
-private theorem abs_dotProduct_dilatedH_mulVec_sub_le {y : Fin k → ℝ} {θ : ℝ}
+400k^3\varepsilon\|\mathbf{H}\|_2 \,.$$ -/
+private theorem abs_dotProduct_dilatedH_mulVec_sub_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     |(L.dilatedBasis *ᵥ y) ⬝ᵥ (L.dilatedH *ᵥ (L.dilatedBasis *ᵥ y)) - θ| ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
@@ -357,33 +365,37 @@ private theorem abs_dotProduct_dilatedH_mulVec_sub_le {y : Fin k → ℝ} {θ : 
   have h := norm_star_dotProduct_mulVec_le (L.dilatedH - L.backwardH) x x
   rw [star_trivial, Real.norm_eq_abs, hx1, one_mul, mul_one, Matrix.sub_mulVec, dotProduct_sub,
     hθ] at h
-  exact h.trans ((specNorm_sub_comm _ _).trans_le L.specNorm_backwardH_sub_dilatedH_le)
+  exact h.trans ((specNorm_sub_comm _ _).trans_le (L.specNorm_backwardH_sub_dilatedH_le hsmall))
 
-/-- **Containment of the computed Ritz values, below** (Paige): every eigenvalue $\theta$ of the
+/-- **Containment of the computed Ritz values, below**
+(assuming $k\varepsilon \le 1/100$) (Paige): every eigenvalue $\theta$ of the
 computed tridiagonal matrix satisfies <!-- value lanczosBackwardFactor k -->
-$\lambda_{\min}(\mathbf{H}) - \theta \le 2000k^4\varepsilon\|\mathbf{H}\|_2$, where
+$\lambda_{\min}(\mathbf{H}) - \theta \le 400k^3\varepsilon\|\mathbf{H}\|_2$, where
 $\lambda_{\min}(\mathbf{H}) = \lambda_m(\mathbf{H})$, $m + 1 = n$.
 No printed source; the maintainer's draft, `thm:containment`; [Paige1980, (3.48)].
 Result: paige-ritz-containment -/
-theorem eigenvalue_last_sub_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
+theorem eigenvalue_last_sub_le_of_mulVec_eq_smul
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) {m : ℕ} (hm : m + 1 = n) :
     eigenvalue L.H m - θ ≤ lanczosBackwardFactor k * L.ε * specNorm L.H := by
   have hlow := L.eigenvalue_last_mul_le_dotProduct_dilatedH_mulVec hm (L.dilatedBasis *ᵥ y)
   rw [L.hasOrthonormalCols_dilatedBasis.norm_toLp_mulVec, hy1, one_pow, mul_one] at hlow
-  linarith [(abs_le.mp (L.abs_dotProduct_dilatedH_mulVec_sub_le hy hy1)).2]
+  linarith [(abs_le.mp (L.abs_dotProduct_dilatedH_mulVec_sub_le hsmall hy hy1)).2]
 
-/-- **Containment of the computed Ritz values, above** (Paige): every eigenvalue $\theta$ of the
+/-- **Containment of the computed Ritz values, above**
+(assuming $k\varepsilon \le 1/100$) (Paige): every eigenvalue $\theta$ of the
 computed tridiagonal matrix satisfies <!-- value lanczosBackwardFactor k -->
-$\theta - \lambda_{\max}(\mathbf{H}) \le 2000k^4\varepsilon\|\mathbf{H}\|_2$, where
+$\theta - \lambda_{\max}(\mathbf{H}) \le 400k^3\varepsilon\|\mathbf{H}\|_2$, where
 $\lambda_{\max}(\mathbf{H}) = \lambda_0(\mathbf{H})$.
 No printed source; the maintainer's draft, `thm:containment`; [Paige1980, (3.48)].
 Result: paige-ritz-containment -/
-theorem sub_eigenvalue_zero_le_of_mulVec_eq_smul {y : Fin k → ℝ} {θ : ℝ}
+theorem sub_eigenvalue_zero_le_of_mulVec_eq_smul
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     θ - eigenvalue L.H 0 ≤ lanczosBackwardFactor k * L.ε * specNorm L.H := by
   have hup := L.dotProduct_dilatedH_mulVec_le (L.dilatedBasis *ᵥ y)
   rw [L.hasOrthonormalCols_dilatedBasis.norm_toLp_mulVec, hy1, one_pow, mul_one] at hup
-  linarith [(abs_le.mp (L.abs_dotProduct_dilatedH_mulVec_sub_le hy hy1)).1]
+  linarith [(abs_le.mp (L.abs_dotProduct_dilatedH_mulVec_sub_le hsmall hy hy1)).1]
 
 /-- The quadratic forms of $f(\hat{\mathbf{H}})$ at the dilated start and of $f(\mathbf{H})$ at
 $\bar{\mathbf{v}}_1$ agree: the spectral measure of $(\hat{\mathbf{H}}, \tilde{\mathbf{v}})$ is that
@@ -393,11 +405,12 @@ theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
       L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) :=
   L.normalized.dotProduct_cfc_dilatedH_mulVec f
 
-/-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz
+/-- **The spectral measures are Wasserstein-close**
+(assuming $k\varepsilon \le 1/100$): for every $1$-Lipschitz
 $f$, <!-- value lanczosBackwardFactor k -->
 $$\lvert\bar{\mathbf{v}}_1^{\mathsf{T}}f(\mathbf{H})\bar{\mathbf{v}}_1 -
 \tilde{\mathbf{v}}^{\mathsf{T}}f(\tilde{\mathbf{H}})\tilde{\mathbf{v}}\rvert
-\le 2000k^4\varepsilon\|\mathbf{H}\|_2 \,,$$
+\le 400k^3\varepsilon\|\mathbf{H}\|_2 \,,$$
 so the spectral measure of $(\mathbf{H}, \bar{\mathbf{v}}_1)$ and that of the backward model
 $(\tilde{\mathbf{H}}, \tilde{\mathbf{v}})$, on which exact Lanczos computes $\mathbf{T}_k$, are
 within that distance in $W_1$.
@@ -405,12 +418,13 @@ No printed source; the maintainer's draft, `rem:wasserstein`, bounds the differe
 $\sqrt{2k}\|\mathbf{\Delta}\|$ (through the rank of $\mathbf{\Delta}$); here directly by
 $\|\mathbf{\Delta}\|_{\mathsf{F}}$.
 Result: lanczos-spectral-measure-wasserstein -/
-theorem abs_dotProduct_cfc_mulVec_sub_le {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
+theorem abs_dotProduct_cfc_mulVec_sub_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {f : ℝ → ℝ} (hf : LipschitzWith 1 f) :
     |L.normalizedV 1 ⬝ᵥ (cfc f L.H *ᵥ L.normalizedV 1) -
         L.dilatedStart ⬝ᵥ (cfc f L.backwardH *ᵥ L.dilatedStart)| ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H :=
   (L.normalized.abs_dotProduct_cfc_mulVec_sub_le_frobNorm L.transpose_basisSucc_mul_self_apply
-    hf).trans L.frobNorm_backwardH_sub_dilatedH_le
+    hf).trans (L.frobNorm_backwardH_sub_dilatedH_le hsmall)
 
 end LanczosRun
 

@@ -12,14 +12,19 @@ public import NLAlib.Krylov.FinitePrecision.CGRun
 
 Continues `NLAlib/Krylov/FinitePrecision/CGRun.lean` (the run, its Lanczos data and
 Lemma A) with Lemma B, the a posteriori backward model, the next division and
-the residual gap.
+the residual gap. Geometric accumulation estimates apply at every run length; their linear
+corollaries assume $k\varepsilon\le1/100$ explicitly.
 
 ## Main results
 
 * `NLAlib.CGRun.abs_p_dotProduct_r_succ_le`: the line search inner products.
+* `NLAlib.CGRun.abs_p_dotProduct_r_succ_le_geom_sum`: the accumulated line search defect.
 * `NLAlib.CGRun.abs_adjacentInner_le` (Lemma B): local orthogonality.
+* `NLAlib.CGRun.abs_adjacentInner_le_geom_sum`: local orthogonality at every horizon.
 * `NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_of_certificates`: the a posteriori model.
-* `NLAlib.CGRun.norm_r_le_two_mul_norm_p`: the next division succeeds.
+* `NLAlib.CGRun.frobNorm_backwardH_sub_dilatedH_le_geom_sum_of_certificates`:
+  the a posteriori model with geometric accumulation and two run certificates.
+* `NLAlib.CGRun.norm_r_le_two_mul_norm_p`: a nonzero terminal residual gives a nonzero direction.
 * `NLAlib.CGRun.norm_sub_mulVec_x_sub_r_le`: the residual gap.
 -/
 
@@ -28,6 +33,93 @@ the residual gap.
 open scoped Matrix MatrixOrder
 
 namespace NLAlib
+
+/-- Accumulated line-search error over $m$ steps,
+currently <!-- value cgLineSearchFactor m \varepsilon -->
+$(41/10)\varepsilon\sum_{i=0}^{m-1}(1+(31/10)\varepsilon)^i$.
+No printed source. The factor sums the local forcing estimate without a horizon restriction;
+the finite sum also covers $\varepsilon=0$ and $m=0$. -/
+noncomputable irreducible_def cgLineSearchFactor (m : ℕ) (ε : ℝ) : ℝ :=
+  41 / 10 * ε * ∑ i ∈ Finset.range m, (1 + 31 / 10 * ε) ^ i
+
+/-- Accumulated adjacent-inner-product error over $m$ steps,
+currently <!-- value cgAdjacentInnerFactor m \varepsilon -->
+$13\varepsilon\sum_{i=0}^{m-1}(1+(31/10)\varepsilon)^i$.
+No printed source. The factor retains geometric propagation of local orthogonality errors;
+the finite sum also covers $\varepsilon=0$ and $m=0$. -/
+noncomputable irreducible_def cgAdjacentInnerFactor (m : ℕ) (ε : ℝ) : ℝ :=
+  13 * ε * ∑ i ∈ Finset.range m, (1 + 31 / 10 * ε) ^ i
+
+/-- The accumulated line-search factor is nonnegative for nonnegative accuracy. -/
+theorem cgLineSearchFactor_nonneg (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    0 ≤ cgLineSearchFactor m ε := by
+  rw [cgLineSearchFactor_def]
+  positivity
+
+/-- The accumulated adjacent-inner-product factor is nonnegative for nonnegative accuracy. -/
+theorem cgAdjacentInnerFactor_nonneg (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    0 ≤ cgAdjacentInnerFactor m ε := by
+  rw [cgAdjacentInnerFactor_def]
+  positivity
+
+/-- The accumulated line-search factor increases with the number of steps. -/
+theorem cgLineSearchFactor_mono {m l : ℕ} {ε : ℝ} (hε : 0 ≤ ε) (hml : m ≤ l) :
+    cgLineSearchFactor m ε ≤ cgLineSearchFactor l ε := by
+  rw [cgLineSearchFactor_def, cgLineSearchFactor_def]
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono hml)
+    (fun _ _ _ => pow_nonneg (by positivity) _)
+
+/-- The accumulated adjacent-inner-product factor increases with the number of steps. -/
+theorem cgAdjacentInnerFactor_mono {m l : ℕ} {ε : ℝ} (hε : 0 ≤ ε) (hml : m ≤ l) :
+    cgAdjacentInnerFactor m ε ≤ cgAdjacentInnerFactor l ε := by
+  rw [cgAdjacentInnerFactor_def, cgAdjacentInnerFactor_def]
+  apply mul_le_mul_of_nonneg_left _ (by positivity)
+  exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono hml)
+    (fun _ _ _ => pow_nonneg (by positivity) _)
+
+/-- One additional step propagates the previous line-search error and adds its local forcing. -/
+private theorem cgLineSearchFactor_succ (m : ℕ) (ε : ℝ) :
+    cgLineSearchFactor (m + 1) ε =
+      (1 + 31 / 10 * ε) * cgLineSearchFactor m ε + 41 / 10 * ε := by
+  rw [cgLineSearchFactor_def, cgLineSearchFactor_def, geom_sum_succ]
+  ring
+
+/-- One additional step propagates the previous adjacent-inner-product error and adds forcing. -/
+private theorem cgAdjacentInnerFactor_succ (m : ℕ) (ε : ℝ) :
+    cgAdjacentInnerFactor (m + 1) ε =
+      (1 + 31 / 10 * ε) * cgAdjacentInnerFactor m ε + 13 * ε := by
+  rw [cgAdjacentInnerFactor_def, cgAdjacentInnerFactor_def, geom_sum_succ]
+  ring
+
+/-- For $0\le\varepsilon$ and $m\varepsilon\le1/100$, the line-search factor is at most
+$5m\varepsilon$. -/
+theorem cgLineSearchFactor_le_mul {m : ℕ} {ε : ℝ} (hε : 0 ≤ ε)
+    (hsmall : (m : ℝ) * ε ≤ 1 / 100) : cgLineSearchFactor m ε ≤ 5 * m * ε := by
+  induction m with
+  | zero => simp only [cgLineSearchFactor_def, Finset.range_zero, Finset.sum_empty,
+      mul_zero, Nat.cast_zero, zero_mul, le_refl]
+  | succ m ih =>
+    have hm : (m : ℝ) * ε ≤ 1 / 100 := by
+      push_cast at hsmall
+      nlinarith
+    have h := mul_le_mul_of_nonneg_right hm hε
+    rw [cgLineSearchFactor_succ]
+    calc (1 + 31 / 10 * ε) * cgLineSearchFactor m ε + 41 / 10 * ε
+        ≤ (1 + 31 / 10 * ε) * (5 * m * ε) + 41 / 10 * ε := by
+          gcongr
+          exact ih hm
+      _ ≤ 5 * ((m + 1 : ℕ) : ℝ) * ε := by push_cast; nlinarith
+
+/-- For $0\le\varepsilon$ and $m\varepsilon\le1/100$, the adjacent-inner-product factor is at
+most $16m\varepsilon$. -/
+theorem cgAdjacentInnerFactor_le_mul {m : ℕ} {ε : ℝ} (hε : 0 ≤ ε)
+    (hsmall : (m : ℝ) * ε ≤ 1 / 100) : cgAdjacentInnerFactor m ε ≤ 16 * m * ε := by
+  have h := cgLineSearchFactor_le_mul hε hsmall
+  rw [cgLineSearchFactor_def] at h
+  rw [cgAdjacentInnerFactor_def]
+  have hmε : 0 ≤ (m : ℝ) * ε := mul_nonneg (Nat.cast_nonneg _) hε
+  nlinarith only [h, hmε]
 
 /-! ### Vector norms -/
 
@@ -159,20 +251,21 @@ private theorem abs_ep_dotProduct_r_le {P : ℝ} {i : ℕ} (hi : i < k)
   simp only [ρ] at *
   nlinarith
 
-/-- **The line search defect** [StrakosTichy2002, Theorem 9.1], a posteriori: with certificates
-$\|\mathbf{p}_i\| \le \Pi\rho_i$ and $\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2 \le K\rho_i^2$
-($i \le j < k$),
-$$\lvert\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1}\rvert \le
-5(j+1)\varepsilon(1 + \Pi + K)\rho_j^2 .$$
-Strakoš and Tichý state it with $\kappa(\mathbf{A})$ and $+O(\varepsilon^2)$, using an imported
-bound on residual ratios; in normalised form the multipliers telescope and no ratio enters. -/
-theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
+/-- The line-search defect for certificates $\|\mathbf{p}_i\|\le P\rho_i$ and
+$\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2\le K\rho_i^2$ ($i<k$), at any $j<k$,
+satisfies <!-- value cgLineSearchFactor j+1 \varepsilon -->
+$$\lvert\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1}\rvert\le
+(41/10)\varepsilon\sum_{i=0}^{j+1-1}(1+(31/10)\varepsilon)^i(1+P+K)\rho_j^2.$$
+This retains the geometric propagation omitted by the linear small-horizon bound.
+[StrakosTichy2002, Theorem 9.1] gives a related condition-number estimate with higher-order
+terms; the bound here follows from the run's explicit local errors. -/
+theorem abs_p_dotProduct_r_succ_le_geom_sum {P K : ℝ}
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
     {j : ℕ} (hj : j < k) :
-    |C.p j ⬝ᵥ C.r (j + 1)| ≤ 5 * (j + 1) * C.ε * (1 + P + K) * C.ρ j ^ 2 := by
+    |C.p j ⬝ᵥ C.r (j + 1)| ≤
+      cgLineSearchFactor (j + 1) C.ε * (1 + P + K) * C.ρ j ^ 2 := by
   have hk := C.k_pos
-  have hρ0 := C.ρ_pos hk
   have hε0 := C.ε_nonneg
   have hP0 := C.P_nonneg hk (hP 0 hk)
   have hK0 := C.nonneg_of_specNorm_mul_γ_mul_norm_p_sq_le hk (hK 0 hk)
@@ -186,12 +279,11 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
       ring
     rw [e]
     refine h.trans ?_
-    have : 201 / 100 + P + 202 / 100 * K ≤ 5 * ((0 : ℕ) + 1 : ℝ) * (1 + P + K) := by
-      push_cast
-      linarith
-    have := mul_le_mul_of_nonneg_left this hε0
-    have := mul_le_mul_of_nonneg_right this (sq_nonneg (C.ρ 0))
-    linarith
+    simp only [cgLineSearchFactor_def, Nat.zero_add, Finset.sum_range_one, pow_zero, mul_one]
+    have hcoef : 201 / 100 + P + 202 / 100 * K ≤ 41 / 10 * (1 + P + K) := by linarith
+    have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hcoef hε0)
+      (sq_nonneg (C.ρ 0))
+    linarith only [this]
   | succ i ih =>
     have hi : i < k := by omega
     have ih := ih hi
@@ -209,42 +301,42 @@ theorem abs_p_dotProduct_r_succ_le {P K : ℝ}
       (-(C.ρ (i + 1) ^ 2 * (C.θ (i + 1) + C.eγ (i + 1) + C.θ (i + 1) * C.eγ (i + 1))) +
         C.γ (i + 1) * C.eμ (i + 1) + C.p (i + 1) ⬝ᵥ C.er (i + 1))
     rw [abs_mul, abs_of_nonneg hδ0] at t
-    set ρ := C.ρ (i + 1)
-    set Y := 5 * ((i : ℕ) + 1 : ℝ) * C.ε * (1 + P + K)
-    have hY0 : 0 ≤ Y := by positivity
-    have h3 : C.δ i * |C.p i ⬝ᵥ C.r (i + 1)| ≤ Y * ((1 + 31 / 10 * C.ε) * ρ ^ 2) := by
-      calc C.δ i * |C.p i ⬝ᵥ C.r (i + 1)| ≤ C.δ i * (Y * C.ρ i ^ 2) :=
-            mul_le_mul_of_nonneg_left ih hδ0
+    set Y := cgLineSearchFactor (i + 1) C.ε * (1 + P + K)
+    have hY0 : 0 ≤ Y := mul_nonneg (cgLineSearchFactor_nonneg _ hε0) hX
+    have h3 : C.δ i * |C.p i ⬝ᵥ C.r (i + 1)| ≤
+        Y * ((1 + 31 / 10 * C.ε) * C.ρ (i + 1) ^ 2) := by
+      calc _ ≤ C.δ i * (Y * C.ρ i ^ 2) := mul_le_mul_of_nonneg_left ih hδ0
         _ = Y * (C.δ i * C.ρ i ^ 2) := by ring
         _ ≤ _ := mul_le_mul_of_nonneg_left hδ1 hY0
-    have hiε : ((i : ℕ) + 1 : ℝ) * C.ε ≤ 1 / 100 := by
-      have := C.mul_ε_le_of_le (j := i + 1) hj.le
-      exact_mod_cast this
-    have h4 : Y * (31 / 10 * C.ε) ≤ 155 / 1000 * C.ε * (1 + P + K) := by
-      have : Y * (31 / 10 * C.ε) = 31 / 2 * (((i : ℕ) + 1 : ℝ) * C.ε) * (C.ε * (1 + P + K)) := by
-        simp only [Y]
-        ring
-      rw [this]
-      have := mul_le_mul_of_nonneg_right hiε (mul_nonneg hε0 hX)
-      linarith
-    have h5 : 5 * (((i + 1 : ℕ) : ℝ) + 1) * C.ε * (1 + P + K) = Y + 5 * C.ε * (1 + P + K) := by
-      simp only [Y]
-      push_cast
-      ring
-    rw [h5]
-    have hρ2 : 0 ≤ ρ ^ 2 := sq_nonneg _
-    have h6 := mul_le_mul_of_nonneg_right h4 hρ2
-    have h7 : C.ε * (41 / 20 + 21 / 20 * P) * ρ ^ 2 +
-        C.ε * (201 / 100 + P + 202 / 100 * K) * ρ ^ 2 +
-        155 / 1000 * C.ε * (1 + P + K) * ρ ^ 2 ≤ 5 * C.ε * (1 + P + K) * ρ ^ 2 := by
-      have : (41 / 20 + 21 / 20 * P) + (201 / 100 + P + 202 / 100 * K) +
-          155 / 1000 * (1 + P + K) ≤ 5 * (1 + P + K) := by linarith
-      have := mul_le_mul_of_nonneg_left this hε0
-      have := mul_le_mul_of_nonneg_right this hρ2
-      linarith
-    have h3' : Y * ((1 + 31 / 10 * C.ε) * ρ ^ 2) = Y * ρ ^ 2 + Y * (31 / 10 * C.ε) * ρ ^ 2 := by
-      ring
-    linarith only [t, h1, h2, h3, h3', h6, h7]
+    have hcoef : (41 / 20 + 21 / 20 * P) + (201 / 100 + P + 202 / 100 * K) ≤
+        41 / 10 * (1 + P + K) := by linarith
+    have h4 := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hcoef hε0)
+      (sq_nonneg (C.ρ (i + 1)))
+    rw [cgLineSearchFactor_succ]
+    dsimp only [Y] at h3
+    nlinarith only [t, h1, h2, h3, h4]
+
+/-- **The line search defect** [StrakosTichy2002, Theorem 9.1], a posteriori: with
+$k\varepsilon\le1/100$, $\|\mathbf{p}_i\|\le P\rho_i$ and
+$\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2\le K\rho_i^2$ ($i<k$),
+$$\lvert\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_{j+1}\rvert\le
+5(j+1)\varepsilon(1+P+K)\rho_j^2,\qquad j<k.$$
+Strakoš and Tichý state a condition-number bound with higher-order terms and residual ratios;
+here normalized multipliers telescope. [BakeCarsonMa2025, Lemma 3] gives a related local
+orthogonality bound for mixed-precision PCG with a different error model. -/
+theorem abs_p_dotProduct_r_succ_le {P K : ℝ} (hsmall : (k : ℝ) * C.ε ≤ 1 / 100)
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
+    {j : ℕ} (hj : j < k) :
+    |C.p j ⬝ᵥ C.r (j + 1)| ≤ 5 * (j + 1) * C.ε * (1 + P + K) * C.ρ j ^ 2 := by
+  have hP0 := C.P_nonneg C.k_pos (hP 0 C.k_pos)
+  have hK0 := C.nonneg_of_specNorm_mul_γ_mul_norm_p_sq_le C.k_pos (hK 0 C.k_pos)
+  have h := cgLineSearchFactor_le_mul C.ε_nonneg
+    (C.mul_ε_le_of_le hsmall (show j + 1 ≤ k by omega))
+  refine (C.abs_p_dotProduct_r_succ_le_geom_sum hP hK hj).trans ?_
+  have := mul_le_mul_of_nonneg_right h (by positivity : 0 ≤ 1 + P + K)
+  have := mul_le_mul_of_nonneg_right this (sq_nonneg (C.ρ j))
+  exact_mod_cast this
 
 /-- The adjacent inner product of the run's Lanczos data:
 $\bar p_j = -\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1}/(\gamma_j\rho_j^2)$. -/
@@ -821,83 +913,118 @@ private theorem abs_adjacentInner_succ_le {P B : ℝ} {i : ℕ} (hi : i + 1 < k)
   rw [add_mul, e]
   linarith only [t1, t2, t3, t4, hR, hE]
 
-/-- **Lemma B (local orthogonality is inherited)**: with the certificates of
-`NLAlib.CGRun.norm_recurrenceError_le` ($B$ for $j + 1 < k$ only) and
-$\|\mathbf{A}\|_2\gamma_j\|\mathbf{p}_j\|^2 \le K\rho_j^2$ ($j < k$), the adjacent inner
-products of the run's Lanczos data satisfy
-$$\lvert\bar p_j\rvert \le 16(j+1)\varepsilon\bigl(\|\mathbf{A}\|_2(1 + \Pi)^2 +
-B(1 + \Pi + K)\bigr),\qquad j < k .$$
-No printed source. The orthogonality
-$\mathbf{r}_j \perp \mathbf{r}_{j+1}$ is not produced at step $j$: it is the previous one
-transported by the conjugacy $\mathbf{p}_{j-1}^{\mathsf{T}}\mathbf{A}\mathbf{p}_j \approx 0$.
-The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
-for $k = 1$, where `hB` is vacuous. -/
-theorem abs_adjacentInner_le {P K B : ℝ}
+/-- Local orthogonality at any horizon: if $\|\mathbf{p}_i\|\le P\rho_i$ ($i<k$),
+$\beta_{i+1}\le B$ and $\delta_i\le B\gamma_i$ ($i+1<k$), and $B\ge0$,
+then for $j<k$, <!-- value cgAdjacentInnerFactor j+1 \varepsilon -->
+$$\lvert\bar p_j\rvert\le13\varepsilon\sum_{i=0}^{j+1-1}(1+(31/10)\varepsilon)^i
+\bigl(\|\mathbf{A}\|_2(1+P)^2+B(1+P)\bigr).$$
+Here $\bar p_j$ is the adjacent inner product of the normalized Lanczos data.
+No printed source. This retains geometric propagation instead of restricting the run length. -/
+theorem abs_adjacentInner_le_geom_sum {P B : ℝ}
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j)
+    (hB0 : 0 ≤ B) {j : ℕ} (hj : j < k) :
+    |C.toLanczosData.adjacentInner j| ≤ cgAdjacentInnerFactor (j + 1) C.ε *
+      (specNorm C.A * (1 + P) ^ 2 + B * (1 + P)) := by
+  have hk := C.k_pos
+  have hε0 := C.ε_nonneg
+  have hN := specNorm_nonneg C.A
+  have hP0 := C.P_nonneg hk (hP 0 hk)
+  have hX : 0 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P) := by positivity
+  induction j with
+  | zero =>
+    have hγ := C.γ_pos hk
+    have hρ0 := C.ρ_pos hk
+    have hG : 0 < C.γ 0 * C.ρ 0 ^ 2 := by positivity
+    rw [C.adjacentInner_eq hk, C.r_dotProduct_r_one_eq, abs_div, abs_neg, abs_of_pos hG,
+      div_le_iff₀ hG]
+    simp only [cgAdjacentInnerFactor_def, Nat.zero_add, Finset.sum_range_one, pow_zero, mul_one]
+    have hR := C.abs_localR_le hk (hP 0 hk)
+    have h1 : 5 * P ^ 2 + 2 * P ≤ 13 * (1 + P) ^ 2 := by nlinarith
+    have h2 : specNorm C.A * (1 + P) ^ 2 ≤
+        specNorm C.A * (1 + P) ^ 2 + B * (1 + P) :=
+      le_add_of_nonneg_right (by positivity)
+    have h3 := mul_le_mul_of_nonneg_left h1
+      (by positivity : 0 ≤ C.ε * specNorm C.A * C.γ 0 * C.ρ 0 ^ 2)
+    have h4 := mul_le_mul_of_nonneg_left h2
+      (by positivity : (0 : ℝ) ≤ 13 * C.ε * (C.γ 0 * C.ρ 0 ^ 2))
+    nlinarith only [hR, h3, h4]
+  | succ i ih =>
+    have hi : i < k := by omega
+    have ih := ih hi
+    obtain ⟨hβ, hδ⟩ := hB i hj
+    have h := C.abs_adjacentInner_succ_le hj (hP (i + 1) hj) hβ hδ
+    have hL : C.ε * (13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P))) ≤
+        13 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P)) := by
+      have hBp : 0 ≤ C.ε * (B * (1 + P)) := by positivity
+      nlinarith only [hBp]
+    have h2 := mul_le_mul_of_nonneg_left ih
+      (by positivity : 0 ≤ 1 + 31 / 10 * C.ε)
+    rw [cgAdjacentInnerFactor_succ]
+    nlinarith only [h, hL, h2]
+
+/-- **Local orthogonality with a linear horizon factor:** if $k\varepsilon\le1/100$,
+$\|\mathbf{p}_i\|\le P\rho_i$ and
+$\|\mathbf{A}\|_2\gamma_i\|\mathbf{p}_i\|^2\le K\rho_i^2$ ($i<k$),
+$\beta_{i+1}\le B$ and $\delta_i\le B\gamma_i$ ($i+1<k$), and $B\ge0$, then
+$$\lvert\bar p_j\rvert\le16(j+1)\varepsilon
+\bigl(\|\mathbf{A}\|_2(1+P)^2+B(1+P+K)\bigr),\qquad j<k.$$
+No printed source. The consecutive residual inner product is transported by the preceding
+conjugacy defect. Nonnegative $B$ must be explicit for a one-step run. -/
+theorem abs_adjacentInner_le {P K B : ℝ} (hsmall : (k : ℝ) * C.ε ≤ 1 / 100)
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) (hB0 : 0 ≤ B) {j : ℕ}
     (hj : j < k) :
     |C.toLanczosData.adjacentInner j| ≤
       16 * (j + 1) * C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)) := by
-  have hk := C.k_pos
-  have hρ0 := C.ρ_pos hk
-  have hε0 := C.ε_nonneg
+  have hP0 := C.P_nonneg C.k_pos (hP 0 C.k_pos)
+  have hK0 := C.nonneg_of_specNorm_mul_γ_mul_norm_p_sq_le C.k_pos (hK 0 C.k_pos)
   have hN := specNorm_nonneg C.A
-  have hP0 := C.P_nonneg hk (hP 0 hk)
-  have hK0 := C.nonneg_of_specNorm_mul_γ_mul_norm_p_sq_le hk (hK 0 hk)
-  have hX : 0 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K) := by positivity
-  induction j with
-  | zero =>
-    have hγ := C.γ_pos hk
-    have hG : 0 < C.γ 0 * C.ρ 0 ^ 2 := by positivity
-    rw [C.adjacentInner_eq hk, C.r_dotProduct_r_one_eq, abs_div, abs_neg, abs_of_pos hG,
-      div_le_iff₀ hG]
-    have hR := C.abs_localR_le hk (hP 0 hk)
-    have h1 : 5 * P ^ 2 + 2 * P ≤ 16 * (1 + P) ^ 2 := by nlinarith
-    have h2 : specNorm C.A * (1 + P) ^ 2 ≤ specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K) := by
-      have : 0 ≤ B * (1 + P + K) := by positivity
-      linarith
-    have hY : 0 ≤ C.ε * specNorm C.A * C.γ 0 * C.ρ 0 ^ 2 := by positivity
-    have h3 := mul_le_mul_of_nonneg_left h1 hY
-    have h4 := mul_le_mul_of_nonneg_left h2
-      (by positivity : (0 : ℝ) ≤ 16 * C.ε * (C.γ 0 * C.ρ 0 ^ 2))
-    push_cast
-    linarith only [hR, h3, h4]
-  | succ i ih =>
-    have hi : i < k := by omega
-    have ih := ih hi
-    obtain ⟨hβ, hδ⟩ := hB i hj
-    have h := C.abs_adjacentInner_succ_le hj (hP (i + 1) hj) hβ hδ
-    set X := specNorm C.A * (1 + P) ^ 2 + B * (1 + P + K)
-    have hL : C.ε * (13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P))) ≤ 13 * C.ε * X := by
-      have : 13 * (specNorm C.A * (1 + P) ^ 2) + 10 * (B * (1 + P)) ≤ 13 * X := by
-        have : B * (1 + P) ≤ B * (1 + P + K) := mul_le_mul_of_nonneg_left (by linarith) hB0
-        have : 0 ≤ B * (1 + P) := by positivity
-        simp only [X]
-        linarith
-      have := mul_le_mul_of_nonneg_left this hε0
-      linarith only [this]
-    have hiε : ((i : ℕ) + 1 : ℝ) * C.ε ≤ 1 / 100 := by
-      have := C.mul_ε_le_of_le (j := i + 1) hj.le
-      exact_mod_cast this
-    have h2 : (1 + 31 / 10 * C.ε) * |C.toLanczosData.adjacentInner i| ≤
-        (1 + 31 / 10 * C.ε) * (16 * ((i : ℕ) + 1) * C.ε * X) :=
-      mul_le_mul_of_nonneg_left ih (by linarith)
-    have h3 : 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) ≤ 1 / 2 * (C.ε * X) := by
-      have e : 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) =
-          (496 / 10 * (((i : ℕ) + 1 : ℝ) * C.ε)) * (C.ε * X) := by ring
-      rw [e]
-      exact mul_le_mul_of_nonneg_right (by linarith) (mul_nonneg hε0 hX)
-    push_cast
-    have e2 : (1 + 31 / 10 * C.ε) * (16 * ((i : ℕ) + 1) * C.ε * X) =
-        16 * ((i : ℕ) + 1) * C.ε * X + 31 / 10 * C.ε * (16 * ((i : ℕ) + 1) * C.ε * X) := by ring
-    have hεX := mul_nonneg hε0 hX
-    nlinarith
+  have hε0 := C.ε_nonneg
+  have h := cgAdjacentInnerFactor_le_mul hε0
+    (C.mul_ε_le_of_le hsmall (show j + 1 ≤ k by omega))
+  refine (C.abs_adjacentInner_le_geom_sum hP hB hB0 hj).trans ?_
+  calc _ ≤ (16 * (j + 1) * C.ε) * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P)) := by
+        apply mul_le_mul_of_nonneg_right _ (by positivity)
+        exact_mod_cast h
+    _ ≤ _ := by
+      have hBPK : B * (1 + P) ≤ B * (1 + P + K) :=
+        mul_le_mul_of_nonneg_left (by linarith) hB0
+      exact mul_le_mul_of_nonneg_left (add_le_add le_rfl hBPK) (by positivity)
 
-/-- **The a posteriori backward model**: with the certificates $\Pi$, $K$ ($j < k$) and $B$
+/-- A posteriori backward error without a run-length restriction: if
+$\|\mathbf{p}_i\|\le P\rho_i$ ($i<k$), $\beta_{i+1}\le B$ and
+$\delta_i\le B\gamma_i$ ($i+1<k$), and $B\ge0$, then <!-- value normalizedBackwardBound k f p -->
+$$\|\tilde{\mathbf{H}}-\mathbf{I}_{k+1}\otimes\mathbf{A}\|_{\mathsf{F}}
+\le22k^2f+17k\sqrt{k}p,$$
+where $f=8\varepsilon(\|\mathbf{A}\|_2(1+P)^2+B)$ and
+with <!-- value cgAdjacentInnerFactor k \varepsilon -->
+$$p=13\varepsilon\sum_{i=0}^{k-1}(1+(31/10)\varepsilon)^i
+\bigl(\|\mathbf{A}\|_2(1+P)^2+B(1+P)\bigr).$$
+No printed source. The certificate can grow with the horizon; positive definiteness is not
+required for this backward-error bound. -/
+theorem frobNorm_backwardH_sub_dilatedH_le_geom_sum_of_certificates {P B : ℝ}
+    (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
+    (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j)
+    (hB0 : 0 ≤ B) :
+    frobNorm (C.backwardH - C.dilatedH) ≤
+      normalizedBackwardBound k (8 * C.ε * (specNorm C.A * (1 + P) ^ 2 + B))
+        (cgAdjacentInnerFactor k C.ε * (specNorm C.A * (1 + P) ^ 2 + B * (1 + P))) := by
+  have hP0 := C.P_nonneg C.k_pos (hP 0 C.k_pos)
+  have hN := specNorm_nonneg C.A
+  refine C.toNormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le
+    (fun j hj => C.norm_recurrenceError_le hP hB hB0 hj) (fun j hj => ?_)
+  refine (C.abs_adjacentInner_le_geom_sum hP hB hB0 hj).trans ?_
+  exact mul_le_mul_of_nonneg_right
+    (cgAdjacentInnerFactor_mono C.ε_nonneg (show j + 1 ≤ k by omega)) (by positivity)
+
+/-- **The a posteriori backward model**: with $k\varepsilon\le1/100$ and the
+certificates $\Pi$, $K$ ($j < k$) and $B$
 ($j + 1 < k$) of the run,
 
-$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}} \le 102k^3 f + 96k^2 p,
+$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{A}\|_{\mathsf{F}}
+\le 22k^2 f + 17k\sqrt{k}\,p,
 \quad f = 8\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B),\
 p = 16k\varepsilon(\|\mathbf{A}\|_2(1+\Pi)^2 + B(1+\Pi+K)) .$$
 The certificates are computable from the run; in practice $\Pi \ll \sqrt{\kappa}$. It is the
@@ -907,6 +1034,7 @@ shorter prefixes provide.
 The hypothesis $0 \le B$ is automatic for $k \ge 2$ ($0 < \beta_1 \le B$) and is needed
 for $k = 1$, where `hB` is vacuous. -/
 theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
+    (hsmall : (k : ℝ) * C.ε ≤ 1 / 100)
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
     (hB : ∀ j, j + 1 < k → C.lanczosβ (j + 1) ≤ B ∧ C.δ j ≤ B * C.γ j) (hB0 : 0 ≤ B) :
@@ -924,17 +1052,19 @@ theorem frobNorm_backwardH_sub_dilatedH_le_of_certificates {P K B : ℝ}
   refine C.toNormalizedLanczosData.frobNorm_backwardH_sub_dilatedH_le (fun j hj => ?_)
     (fun j hj => ?_)
   · exact C.norm_recurrenceError_le hP hB hB0 hj
-  · refine (C.abs_adjacentInner_le hP hK hB hB0 hj).trans ?_
+  · refine (C.abs_adjacentInner_le hsmall hP hK hB hB0 hj).trans ?_
     have hjk : ((j : ℝ) + 1) ≤ k := by exact_mod_cast hj
     have := mul_le_mul_of_nonneg_right hjk hX
     linarith only [this]
 
-/-- **The next direction is not small**: with certificates $\Pi$, $K$ on the steps $j < k$ and
+/-- **The next direction is not small**: with $k\varepsilon\le1/100$ and certificates
+$\Pi$, $K$ on the steps $j < k$ and
 $20k\varepsilon(1 + \Pi + K) \le 1$, the direction after the last step satisfies
-$\rho_k \le 2\|\mathbf{p}_k\|$. So $\mathbf{p}_k \ne \mathbf{0}$ when $\mathbf{r}_k \ne \mathbf{0}$,
-and the next curvature is positive (`NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc`): the
-program's next division succeeds. -/
-theorem norm_r_le_two_mul_norm_p {P K : ℝ}
+$\rho_k \le 2\|\mathbf{p}_k\|$. Thus $\mathbf{p}_k \ne \mathbf{0}$ whenever
+$\mathbf{r}_k \ne \mathbf{0}$.
+Positive next curvature additionally needs the spectral and rounding assumptions of
+`NLAlib.dotProduct_add_pos_of_spectrum_subset_Icc`; this norm bound alone does not imply it. -/
+theorem norm_r_le_two_mul_norm_p {P K : ℝ} (hwindow : (k : ℝ) * C.ε ≤ 1 / 100)
     (hP : ∀ j < k, ‖WithLp.toLp 2 (C.p j)‖ ≤ P * C.ρ j)
     (hK : ∀ j < k, specNorm C.A * C.γ j * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 ≤ K * C.ρ j ^ 2)
     (hsmall : 20 * k * C.ε * (1 + P + K) ≤ 1) :
@@ -946,7 +1076,7 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ}
   have hρi := C.ρ_pos hi
   have hρ := C.ρ_nonneg (i + 1)
   obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi
-  have hτ := C.abs_p_dotProduct_r_succ_le hP hK hi
+  have hτ := C.abs_p_dotProduct_r_succ_le hwindow hP hK hi
   set D := C.δ i * ‖WithLp.toLp 2 (C.p i)‖ with hD
   have hD0 : 0 ≤ D := mul_nonneg hδ0 (norm_nonneg _)
   set y := C.r (i + 1) + C.δ i • C.p i with hy
@@ -1051,7 +1181,9 @@ $\mathbf{r}_0 = \mathbf{b}$,
 $$\|(\mathbf{b} - \mathbf{A}\mathbf{x}_k) - \mathbf{r}_k\| \le \varepsilon\sum_{j<k}
 \bigl(\|\mathbf{A}\|_2(\|\mathbf{x}_j\| + 4\gamma_j\|\mathbf{p}_j\|) + \|\mathbf{r}_j\|\bigr) .$$
 [Greenbaum1997SIMAX]; [StrakosTichy2002, (7.16)], there with $\|\mathbf{x}\| +
-\max_j\|\mathbf{x}_j\|$ and $+O(\varepsilon^2)$. Local: no Lanczos reduction, no $\kappa$. -/
+\max_j\|\mathbf{x}_j\|$ and $+O(\varepsilon^2)$. Local: no Lanczos reduction, no $\kappa$.
+[BakeCarsonMa2025, Theorem 1] gives a related PCG gap bound through the same telescoping
+mechanism, retaining a maximum-iterate factor. -/
 theorem norm_sub_mulVec_x_sub_r_le :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x k - C.r k)‖ ≤
       C.ε * ∑ j ∈ Finset.range k, (specNorm C.A * (‖WithLp.toLp 2 (C.x j)‖ +

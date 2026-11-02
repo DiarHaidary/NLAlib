@@ -20,6 +20,7 @@ orthogonal ranges. Submatrices have smaller norms.
 * `NLAlib.frobNorm_fromRows_sq`, `NLAlib.frobNorm_fromCols_sq`, `NLAlib.frobNorm_fromBlocks_sq`.
 * `NLAlib.specNorm_fromRows_sq_le`, `NLAlib.specNorm_fromCols_sq_le`.
 * `NLAlib.specNorm_submatrix_le`, `NLAlib.frobNorm_submatrix_le`.
+* `NLAlib.frobNorm_le_of_row_eq`: selecting distinct rows and padding with zeros is contractive.
 * `NLAlib.specNorm_fromBlocks_zero₁₂_zero₂₁`: a block diagonal matrix has the larger of the two
   spectral norms.
 * `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`: summands with orthogonal ranges.
@@ -87,6 +88,32 @@ theorem frobNorm_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
     _ ≤ ∑ i, ∑ j, ‖A i j‖ ^ 2 :=
         sum_comp_le_sum_of_injective hr (f := fun i => ∑ j, ‖A i j‖ ^ 2) fun _ =>
           Finset.sum_nonneg fun _ _ => sq_nonneg _
+
+/-- Selecting distinct rows of a matrix and padding with zero rows cannot increase its
+Frobenius norm. The row map need only be injective on the selected rows $s$; outside $s$ the
+matrix on the left is zero. This includes shifted and truncated stacks of matrix blocks. -/
+theorem frobNorm_le_of_row_eq (A : Matrix m n 𝕜) (B : Matrix l n 𝕜) (s : Finset m)
+    (f : m → l) (hf : Set.InjOn f (s : Set m))
+    (heq : ∀ i ∈ s, ∀ j, A i j = B (f i) j)
+    (hzero : ∀ i ∉ s, ∀ j, A i j = 0) : frobNorm A ≤ frobNorm B := by
+  classical
+  refine (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 ?_
+  rw [frobNorm_sq_eq_sum, frobNorm_sq_eq_sum]
+  calc ∑ i, ∑ j, ‖A i j‖ ^ 2 = ∑ i ∈ s, ∑ j, ‖A i j‖ ^ 2 := by
+        symm
+        apply Finset.sum_subset (Finset.subset_univ s)
+        intro i _ hi
+        simp only [hzero i hi, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+          zero_pow, Finset.sum_const_zero]
+    _ = ∑ i ∈ s, ∑ j, ‖B (f i) j‖ ^ 2 := by
+        apply Finset.sum_congr rfl
+        intro i hi
+        simp only [heq i hi]
+    _ = ∑ i ∈ s.image f, ∑ j, ‖B i j‖ ^ 2 :=
+        (Finset.sum_image (s := s) (g := f) (f := fun i => ∑ j, ‖B i j‖ ^ 2) hf).symm
+    _ ≤ ∑ i, ∑ j, ‖B i j‖ ^ 2 :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun i _ _ =>
+          Finset.sum_nonneg fun j _ => sq_nonneg _
 
 /-- **Pythagoras for summands with orthogonal ranges**: if
 $\mathbf{A}^{\mathsf{H}}\mathbf{B} = \mathbf{0}$ then

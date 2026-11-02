@@ -16,7 +16,8 @@ $\mathbf{V}_k^{\mathsf{T}}\mathbf{V}_k = \mathbf{I} + \mathbf{R}_k^{\mathsf{T}} 
 **Gram commutator**
 $\mathbf{M}_k = \mathbf{T}_k\mathbf{R}_k - \mathbf{R}_k\mathbf{T}_k
 - (\mathbf{V}_k^{\mathsf{T}}\beta_k\mathbf{v}_{k+1})\mathbf{e}_k^{\mathsf{T}}$ is upper triangular
-and of size $O(k^2\varepsilon\|\mathbf{H}\|_2)$, although $\mathbf{R}_k$ itself need not be small.
+and, under $k\varepsilon \le 1/100$, of size $O(k^2\varepsilon\|\mathbf{H}\|_2)$,
+although $\mathbf{R}_k$ itself need not be small.
 In the quadratic form of an eigenvector of $\mathbf{T}_k$ the commutator vanishes, which gives
 Paige's bound: a Ritz vector loses orthogonality to $\mathbf{v}_{k+1}$ only when its scalar
 residual estimate $\beta_k\lvert y_k\rvert$ is small, that is, only after it has converged.
@@ -113,7 +114,8 @@ theorem frobNorm_basis_le : frobNorm L.basis ≤ (1 + L.ε / 2) * Real.sqrt k :=
           rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_comm]
   exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
-/-- **The Gram commutator is small**: <!-- value lanczosGramCommutatorFactor k -->
+/-- **The Gram commutator is small**
+(assuming $k\varepsilon \le 1/100$): <!-- value lanczosGramCommutatorFactor k -->
 $\|\mathbf{M}_k\|_2 \le 30k^2\varepsilon\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `cor:gram-commutator`, states
 $\|\mathbf{M}_k\| \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $3000k^3$); here the
@@ -121,7 +123,7 @@ strict upper part is bounded in the Frobenius norm by that of
 `NLAlib.LanczosRun.gramCommutator_sub_transpose`, and the diagonal entry by entry, which saves a
 factor $k$. [Paige1976, (22)]; [Paige1980, (2.17)–(2.18)].
 Result: lanczos-gram-commutator -/
-theorem specNorm_gramCommutator_le :
+theorem specNorm_gramCommutator_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     specNorm L.gramCommutator ≤ lanczosGramCommutatorFactor k * L.ε * specNorm L.H := by
   rw [lanczosGramCommutatorFactor_def]
   have hε0 := L.ε_nonneg
@@ -129,21 +131,21 @@ theorem specNorm_gramCommutator_le :
   have hH := specNorm_nonneg L.H
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
   have ha : ∀ j < k, |L.toLanczosData.adjacentInner j| ≤ 7 * k * L.ε * specNorm L.H :=
-    fun j hj => (L.abs_adjacentInner_le hj).trans (by
+    fun j hj => (L.abs_adjacentInner_le hsmall hj).trans (by
       rw [lanczosAdjacentInnerFactor_def]
       have : (j : ℝ) + 1 ≤ k := by exact_mod_cast hj
       gcongr)
   have hb : ∀ j < k, |L.toLanczosData.β j| ≤ 5 / 4 * k * specNorm L.H := fun j hj => by
     change |L.β j| ≤ _
     rw [abs_of_nonneg (L.β_nonneg j hj.le)]
-    refine (L.β_le hj.le).trans ?_
+    refine (L.β_le hsmall hj.le).trans ?_
     have : (j : ℝ) ≤ k := by exact_mod_cast hj.le
     gcongr
   have hg : ∀ i, |L.toLanczosData.normSqDefect i| ≤ L.ε := fun i =>
     L.abs_norm_v_sq_sub_one_le ((i : ℕ) + 1) (by omega) i.2
   have h := L.toLanczosData.specNorm_gramCommutator_le ha hb hg
   have hV := L.frobNorm_basis_le
-  have hF := L.frobNorm_residual_le
+  have hF := L.frobNorm_residual_le hsmall
   rw [lanczosResidualFactor_def] at hF
   have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg k)
   have hVF : frobNorm L.basis * frobNorm L.residual ≤
@@ -164,7 +166,8 @@ theorem specNorm_gramCommutator_le :
   have h0 : 0 ≤ L.ε * specNorm L.H := by positivity
   nlinarith [mul_le_mul_of_nonneg_right (show (k : ℝ) ≤ k ^ 2 by nlinarith) h0]
 
-/-- **Paige's loss-of-orthogonality bound**: for a unit eigenpair
+/-- **Paige's loss-of-orthogonality bound**
+(assuming $k\varepsilon \le 1/100$): for a unit eigenpair
 $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$, $\|\mathbf{y}\| = 1$, of the computed tridiagonal
 matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$
 satisfies <!-- value lanczosGramCommutatorFactor k -->
@@ -177,12 +180,13 @@ $\lvert\mathbf{x}^{\mathsf{T}}\mathbf{v}_{k+1}\rvert\beta_k\lvert\mathbf{e}_k^{\
 \mathbf{y}\rvert \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $3000k^3$);
 [Paige1980, (3.11)–(3.13)].
 Result: paige-loss-of-orthogonality -/
-theorem abs_basis_mulVec_dotProduct_mul_abs_le {y : Fin k → ℝ} {θ : ℝ}
+theorem abs_basis_mulVec_dotProduct_mul_abs_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     |(L.basis *ᵥ y) ⬝ᵥ (L.β k • L.v (k + 1))| * |y L.lastIndex| ≤
       lanczosGramCommutatorFactor k * L.ε * specNorm L.H :=
   (L.toLanczosData.abs_basis_mulVec_dotProduct_mul_abs_le hy hy1).trans
-    L.specNorm_gramCommutator_le
+    (L.specNorm_gramCommutator_le hsmall)
 
 end LanczosRun
 

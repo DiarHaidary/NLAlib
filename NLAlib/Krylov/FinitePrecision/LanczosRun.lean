@@ -42,7 +42,7 @@ open scoped Matrix
 Paige's ordering A(1) for a real symmetric $\mathbf{H}$, each operation exact up to an error
 bounded by $\varepsilon$ times its operands, the Lanczos vectors nearly unit
 ($\lvert\|\mathbf{v}_j\|^2 - 1\rvert \le \varepsilon$), $\beta_j > 0$ before the last step,
-$\beta_k \ge 0$ (the last step may be terminal), and $k\varepsilon \le 1/100$.
+$\beta_k \ge 0$ (the last step may be terminal), and $\varepsilon \le 1/100$.
 Algorithm: lanczos (run model) -/
 structure LanczosRun (n k : ℕ) where
   /-- The matrix. -/
@@ -77,8 +77,8 @@ structure LanczosRun (n k : ℕ) where
   ε_nonneg : 0 ≤ ε
   /-- At least one step. -/
   k_pos : 0 < k
-  /-- Small accuracy parameter (`ass:small-eps`). -/
-  k_mul_ε_le : (k : ℝ) * ε ≤ 1 / 100
+  /-- Local accuracy parameter; accumulated-error bounds state their own horizon. -/
+  ε_le : ε ≤ 1 / 100
   /-- $\mathbf{v}_0 = \mathbf{0}$. -/
   v_zero : v 0 = 0
   /-- $\beta_0 = 0$. -/
@@ -121,15 +121,15 @@ namespace LanczosRun
 variable {n k : ℕ}
 
 /-- **A run with a larger accuracy parameter**: a run with parameter $\varepsilon$ is one with
-any $\varepsilon' \ge \varepsilon$ such that $k\varepsilon' \le 1/100$; every field but the
+any $\varepsilon' \ge \varepsilon$ such that $\varepsilon' \le 1/100$; every field but the
 parameter is unchanged. For callers whose $\varepsilon$ differs from the one a construction
 produces (a coarser oracle contract, a uniform constant). No printed source. -/
 noncomputable def ofLE (L : LanczosRun n k) {ε' : ℝ} (hε : L.ε ≤ ε')
-    (h : (k : ℝ) * ε' ≤ 1 / 100) : LanczosRun n k :=
+    (h : ε' ≤ 1 / 100) : LanczosRun n k :=
   { L with
     ε := ε'
     ε_nonneg := L.ε_nonneg.trans hε
-    k_mul_ε_le := h
+    ε_le := h
     norm_eu_le := fun j hj => (L.norm_eu_le j hj).trans <| mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_right hε (specNorm_nonneg _)) (norm_nonneg _)
     norm_ew_le := fun j hj => (L.norm_ew_le j hj).trans <|
@@ -145,7 +145,7 @@ noncomputable def ofLE (L : LanczosRun n k) {ε' : ℝ} (hε : L.ε ≤ ε')
 
 /-- The run `NLAlib.LanczosRun.ofLE` has parameter $\varepsilon'$. -/
 @[simp] theorem ε_ofLE (L : LanczosRun n k) {ε' : ℝ} (hε : L.ε ≤ ε')
-    (h : (k : ℝ) * ε' ≤ 1 / 100) : (L.ofLE hε h).ε = ε' := rfl
+    (h : ε' ≤ 1 / 100) : (L.ofLE hε h).ε = ε' := rfl
 
 end LanczosRun
 

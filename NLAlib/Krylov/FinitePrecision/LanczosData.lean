@@ -36,7 +36,8 @@ finite precision*), `eq:governing`, `lem:gram-commutator`.
 * `NLAlib.LanczosData.mul_basis`, `NLAlib.LanczosData.mul_basis_eq_basisSucc_mul`: the
   perturbed recurrence.
 * `NLAlib.LanczosData.gramCommutator_sub_transpose`,
-  `NLAlib.LanczosData.specNorm_gramCommutator_le`: the Gram commutator.
+  `NLAlib.LanczosData.specNorm_gramCommutator_le`,
+  `NLAlib.LanczosData.frobNorm_gramCommutator_le`: the Gram commutator.
 -/
 
 @[expose] public section
@@ -536,6 +537,60 @@ theorem frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le {b g :
       exact hb0
   exact mul_le_mul hT hgd (abs_nonneg _) hb0
 
+/-- The skew part of the Gram commutator is controlled by the recurrence residual and norm
+defects: if $\lvert\beta_j\rvert \le b$ and $\lvert\gamma_i\rvert \le g$,
+its Frobenius norm is at most
+$2\|\mathbf{V}_k\|_{\mathsf{F}}\|\mathbf{F}_k\|_{\mathsf{F}} + 2kbg$.
+Shared by the operator and Frobenius commutator estimates. -/
+theorem frobNorm_gramCommutator_sub_transpose_le {b g : ℝ}
+    (hb : ∀ j < k, |D.β j| ≤ b) (hg : ∀ i, |D.normSqDefect i| ≤ g) :
+    frobNorm (D.gramCommutator - D.gramCommutatorᵀ) ≤
+      2 * (frobNorm D.basis * frobNorm D.residual) + k * (b * (2 * g)) := by
+  have hVF : frobNorm (D.basisᵀ * D.residual) ≤ frobNorm D.basis * frobNorm D.residual :=
+    (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans (by
+      rw [specNorm_transpose]
+      gcongr
+      exact specNorm_le_frobNorm _)
+  have hFV : frobNorm (D.residualᵀ * D.basis) ≤ frobNorm D.basis * frobNorm D.residual := by
+    rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
+    exact hVF
+  have hC := D.frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le hb hg
+  rw [D.gramCommutator_sub_transpose]
+  refine (frobNorm_sub_le _ _).trans ?_
+  refine (add_le_add_left (frobNorm_sub_le _ _) _).trans ?_
+  linarith
+
+/-- The Frobenius norm of the Gram commutator is at most
+$2\sqrt{k}a + 2\|\mathbf{V}_k\|_{\mathsf{F}}\|\mathbf{F}_k\|_{\mathsf{F}} + 2kbg$ when
+$\lvert p_j\rvert \le a$, $\lvert\beta_j\rvert \le b$ and
+$\lvert\gamma_i\rvert \le g$. The diagonal is bounded separately
+from the strict upper part, using the skew commutator identity. -/
+theorem frobNorm_gramCommutator_le {a b g : ℝ} (ha : ∀ j < k, |D.adjacentInner j| ≤ a)
+    (hb : ∀ j < k, |D.β j| ≤ b) (hg : ∀ i, |D.normSqDefect i| ≤ g) :
+    frobNorm D.gramCommutator ≤ 2 * Real.sqrt k * a +
+      2 * (frobNorm D.basis * frobNorm D.residual) + k * (b * (2 * g)) := by
+  have ha0 : 0 ≤ a := (abs_nonneg _).trans (ha 0 D.k_pos)
+  set M := D.gramCommutator
+  set Dg : Matrix (Fin k) (Fin k) ℝ := Matrix.diagonal fun i => M i i
+  have hDsq : frobNorm Dg ^ 2 ≤ (2 * Real.sqrt k * a) ^ 2 := by
+    rw [frobNorm_diagonal_sq]
+    calc ∑ i : Fin k, ‖M i i‖ ^ 2 ≤ ∑ _i : Fin k, (2 * a) ^ 2 := by
+          refine Finset.sum_le_sum fun i _ => ?_
+          rw [Real.norm_eq_abs]
+          exact pow_le_pow_left₀ (abs_nonneg _) (D.abs_gramCommutator_apply_self_le ha i) 2
+      _ = (2 * Real.sqrt k * a) ^ 2 := by
+          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          simp only [mul_pow, Real.sq_sqrt (Nat.cast_nonneg k)]
+          ring
+  have hD : frobNorm Dg ≤ 2 * Real.sqrt k * a :=
+    (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hDsq
+  have hU := D.isUpperTriangular_gramCommutator.frobNorm_sub_diagonal_le
+  have hS := D.frobNorm_gramCommutator_sub_transpose_le hb hg
+  have hMD : M = Dg + (M - Dg) := by abel
+  calc frobNorm M = frobNorm (Dg + (M - Dg)) := by rw [← hMD]
+    _ ≤ frobNorm Dg + frobNorm (M - Dg) := frobNorm_add_le _ _
+    _ ≤ _ := by linarith
+
 /-- **The Gram commutator is small when the recurrence nearly holds**: if
 $\lvert p_j\rvert \le a$, $\lvert\beta_j\rvert \le b$ ($j < k$) and $\lvert\gamma_i\rvert \le g$,
 then
@@ -555,21 +610,7 @@ theorem specNorm_gramCommutator_le {a b g : ℝ} (ha : ∀ j < k, |D.adjacentInn
     refine specNorm_diagonal_le (by positivity) fun i => ?_
     rw [Real.norm_eq_abs]
     exact D.abs_gramCommutator_apply_self_le ha i
-  have hVF : frobNorm (D.basisᵀ * D.residual) ≤ frobNorm D.basis * frobNorm D.residual :=
-    (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans (by
-      rw [specNorm_transpose]
-      gcongr
-      exact specNorm_le_frobNorm _)
-  have hFV : frobNorm (D.residualᵀ * D.basis) ≤ frobNorm D.basis * frobNorm D.residual := by
-    rw [← frobNorm_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
-    exact hVF
-  have hC := D.frobNorm_tridiagonal_mul_diagonal_sub_diagonal_mul_tridiagonal_le hb hg
-  have hS : frobNorm (M - Mᵀ) ≤
-      2 * (frobNorm D.basis * frobNorm D.residual) + k * (b * (2 * g)) := by
-    rw [D.gramCommutator_sub_transpose]
-    refine (frobNorm_sub_le _ _).trans ?_
-    refine (add_le_add_left (frobNorm_sub_le _ _) _).trans ?_
-    linarith
+  have hS := D.frobNorm_gramCommutator_sub_transpose_le hb hg
   have hU : specNorm (M - Dg) ≤ 2 * (frobNorm D.basis * frobNorm D.residual) +
       k * (b * (2 * g)) :=
     ((specNorm_le_frobNorm _).trans
