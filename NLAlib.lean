@@ -139,6 +139,7 @@ public import NLAlib.Krylov.FinitePrecision.LocalErrors
 public import NLAlib.Krylov.FinitePrecision.Normalized
 public import NLAlib.Krylov.FinitePrecision.NormalizedBackward
 public import NLAlib.Krylov.FinitePrecision.OverRelaxedCG
+public import NLAlib.Krylov.FinitePrecision.PCGRun
 public import NLAlib.Krylov.FinitePrecision.Paige
 public import NLAlib.Krylov.FinitePrecision.Recurrence
 public import NLAlib.Krylov.Functions.LanczosFA
@@ -223,6 +224,7 @@ public import NLAlib.Matrix.Basic.ComplementaryProjector
 public import NLAlib.Matrix.Basic.Dilation
 public import NLAlib.Matrix.Basic.FromCols
 public import NLAlib.Matrix.Basic.Gram
+public import NLAlib.Matrix.Basic.MatvecOracle
 public import NLAlib.Matrix.Basic.Orthonormal
 public import NLAlib.Matrix.Basic.OrthonormalBasis
 public import NLAlib.Matrix.Basic.PlaneRotation
