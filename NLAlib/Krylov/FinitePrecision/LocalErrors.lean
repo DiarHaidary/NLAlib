@@ -12,9 +12,9 @@ public import NLAlib.Krylov.FinitePrecision.LanczosData
 # Local errors of a finite-precision Lanczos run
 
 For a run `L : NLAlib.LanczosRun n k` (the recurrence in Paige's ordering A(1) with bounded local
-errors, accuracy parameter $\varepsilon$, $k\varepsilon \le 1/100$) the computed quantities stay
-bounded by a multiple of $\|\mathbf{H}\|_2$ that grows at most linearly in the step, and the
-computed vectors satisfy the three-term recurrence up to a residual of order
+errors and local accuracy $\varepsilon \le 1/100$), coefficient growth is bounded by an
+explicit finite geometric sum. Under the additional horizon $k\varepsilon \le 1/100$, this
+gives bounds linear in the step and a recurrence residual of order
 $j\varepsilon\|\mathbf{H}\|_2$, with consecutive vectors nearly orthogonal in the same sense.
 
 Steps are indexed from $0$ as the columns of the computed basis: step $j < k$ is the paper's step
@@ -35,6 +35,7 @@ finite precision*), `lem:coefficients` and `thm:local-errors`; constants differ.
 
 ## Main results
 
+* `NLAlib.LanczosRun.β_le_geom_sum`: coefficient growth without a horizon assumption.
 * `NLAlib.LanczosRun.β_le`, `NLAlib.LanczosRun.norm_u_le`, `NLAlib.LanczosRun.norm_w_le`,
   `NLAlib.LanczosRun.abs_α_le`, `NLAlib.LanczosRun.norm_z_le`: the a priori coefficient bounds.
 * `NLAlib.LanczosRun.recurrenceError_eq`: the residual is minus the sum of the local errors.
@@ -68,14 +69,10 @@ variable {n k : ℕ} (L : LanczosRun n k)
 
 /-! ### Elementary consequences of the interface -/
 
-/-- The accuracy parameter is at most $1/100$. -/
-theorem ε_le : L.ε ≤ 1 / 100 := by
-  have hk : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
-  nlinarith [L.k_mul_ε_le, L.ε_nonneg]
-
-/-- $j\varepsilon \le 1/100$ for $j \le k$. -/
-theorem mul_ε_le {j : ℕ} (hj : j ≤ k) : (j : ℝ) * L.ε ≤ 1 / 100 :=
-  (mul_le_mul_of_nonneg_right (by exact_mod_cast hj) L.ε_nonneg).trans L.k_mul_ε_le
+/-- Under $k\varepsilon \le 1/100$, $j\varepsilon \le 1/100$ for $j \le k$. -/
+theorem mul_ε_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j ≤ k) : (j : ℝ) * L.ε ≤ 1 / 100 :=
+  (mul_le_mul_of_nonneg_right (by exact_mod_cast hj) L.ε_nonneg).trans hsmall
 
 /-- The computed vectors up to step $k$ are at most $1 + \varepsilon/2$ long:
 $\|\mathbf{v}_j\| \le 1 + \varepsilon/2$ for $j \le k$ ($\mathbf{v}_0 = \mathbf{0}$). -/
@@ -280,13 +277,90 @@ noncomputable def adjacentInner (j : ℕ) : ℝ :=
 
 /-! ### A priori coefficient bounds -/
 
-/-- **The off-diagonal coefficients grow at most linearly**: for $j \le k$,
+/-- A single coefficient step, retaining its local growth factor. -/
+theorem β_succ_le {j : ℕ} (hj : j < k) :
+    L.β (j + 1) ≤ (1 + 8 * L.ε) * ((1 + L.ε) * specNorm L.H + L.β j) := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hβ := L.β_nonneg j hj.le
+  have h1 := L.β_succ_le_mul hj
+  have h2 := L.norm_z_le_mul hj
+  have h3 := L.norm_w_le_β hj
+  have hc : (1 + 2 * L.ε) * ((1 + 4 * L.ε) * ((1 + L.ε) * (1 + L.ε / 2))) ≤
+      1 + 8 * L.ε := by
+    nlinarith [mul_nonneg hε0
+      (show 0 ≤ 1 / 2 - 35 / 2 * L.ε - 15 * L.ε ^ 2 - 4 * L.ε ^ 3 by nlinarith)]
+  calc L.β (j + 1)
+      ≤ (1 + 2 * L.ε) * ((1 + 4 * L.ε) *
+          ((1 + L.ε) * (1 + L.ε / 2) * ((1 + L.ε) * specNorm L.H + L.β j))) := by
+        refine h1.trans ?_
+        gcongr
+        exact h2.trans (by gcongr)
+    _ = ((1 + 2 * L.ε) * ((1 + 4 * L.ε) * ((1 + L.ε) * (1 + L.ε / 2)))) *
+        ((1 + L.ε) * specNorm L.H + L.β j) := by ring
+    _ ≤ _ := mul_le_mul_of_nonneg_right hc (by positivity)
+
+/-- A diagonal coefficient is controlled by the matrix norm and the previous off-diagonal
+coefficient, using local accuracy alone. -/
+theorem abs_α_le_β {j : ℕ} (hj : j < k) :
+    |L.α (j + 1)| ≤ 2 * (specNorm L.H + L.β j) := by
+  have hε0 := L.ε_nonneg
+  have hε1 := L.ε_le
+  have hβ := L.β_nonneg j hj.le
+  have hH := specNorm_nonneg L.H
+  have hα := L.abs_α_le_mul hj
+  have hv := L.norm_v_le (by omega : j + 1 ≤ k)
+  have hw := L.norm_w_le_β hj
+  calc |L.α (j + 1)|
+      ≤ (1 + L.ε) * (1 + L.ε / 2) *
+          ((1 + L.ε) * (1 + L.ε / 2) * ((1 + L.ε) * specNorm L.H + L.β j)) := by
+        refine hα.trans ?_
+        gcongr
+    _ ≤ (101 / 100 : ℝ) * (201 / 200) *
+          ((101 / 100) * (201 / 200) * ((101 / 100) * specNorm L.H + L.β j)) := by
+        gcongr <;> linarith only [hε1]
+    _ ≤ _ := by nlinarith only [hH, hβ]
+
+/-- The coefficient bound with accumulated growth retained as a finite geometric sum.
+Only local accuracy is assumed; the formula includes $\varepsilon=0$ without division.
+No printed source. This is the unrolling of `NLAlib.LanczosRun.β_succ_le`. -/
+theorem β_le_geom_sum {j : ℕ} (hj : j ≤ k) :
+    L.β j ≤ (1 + L.ε) * specNorm L.H *
+      ∑ i ∈ Finset.range j, (1 + 8 * L.ε) ^ (i + 1) := by
+  have hε := L.ε_nonneg
+  induction j with
+  | zero => simp [L.β_zero]
+  | succ j ih =>
+    have hi := ih (Nat.le_of_succ_le hj)
+    have hstep := L.β_succ_le (Nat.lt_of_succ_le hj)
+    set q := 1 + 8 * L.ε with hq
+    have hq0 : 0 ≤ q := by positivity
+    have hs : ∑ i ∈ Finset.range (j + 1), q ^ (i + 1) =
+        q * (1 + ∑ i ∈ Finset.range j, q ^ (i + 1)) := by
+      rw [Finset.sum_range_succ']
+      simp only [zero_add, pow_one]
+      rw [mul_add, mul_one, Finset.mul_sum, add_comm]
+      congr 1
+      apply Finset.sum_congr rfl
+      intro i _
+      rw [pow_succ']
+    calc L.β (j + 1)
+        ≤ q * ((1 + L.ε) * specNorm L.H +
+            (1 + L.ε) * specNorm L.H * ∑ i ∈ Finset.range j, q ^ (i + 1)) := by
+          exact hstep.trans (mul_le_mul_of_nonneg_left (add_le_add le_rfl hi) hq0)
+      _ = (1 + L.ε) * specNorm L.H * ∑ i ∈ Finset.range (j + 1), q ^ (i + 1) := by
+          rw [hs]
+          ring
+
+/-- **The off-diagonal coefficients grow at most linearly**
+(assuming $k\varepsilon \le 1/100$): for $j \le k$,
 $\beta_j \le \tfrac54\, j\,\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients`, proves
 $\beta_j \le 4j\|\mathbf{A}\|_2$ (Step 3); the recurrence
 $\beta_j \le (1 + 8\varepsilon)(\beta_{j-1} + (1+\varepsilon)
 \|\mathbf{H}\|_2)$ used here carries less slack. -/
-theorem β_le {j : ℕ} (hj : j ≤ k) : L.β j ≤ 5 / 4 * j * specNorm L.H := by
+theorem β_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j ≤ k) : L.β j ≤ 5 / 4 * j * specNorm L.H := by
   induction j with
   | zero => simp [L.β_zero]
   | succ j ih =>
@@ -295,25 +369,9 @@ theorem β_le {j : ℕ} (hj : j ≤ k) : L.β j ≤ 5 / 4 * j * specNorm L.H := 
     have hε1 := L.ε_le
     have hH := specNorm_nonneg L.H
     have hβ := L.β_nonneg j hjk.le
-    have hjε := L.mul_ε_le hjk.le
+    have hjε := L.mul_ε_le hsmall hjk.le
     have ih := ih hjk.le
-    have h1 := L.β_succ_le_mul hjk
-    have h2 := L.norm_z_le_mul hjk
-    have h3 := L.norm_w_le_β hjk
-    have hc : (1 + 2 * L.ε) * ((1 + 4 * L.ε) * ((1 + L.ε) * (1 + L.ε / 2))) ≤ 1 + 8 * L.ε := by
-      nlinarith [mul_nonneg hε0
-        (show 0 ≤ 1 / 2 - 35 / 2 * L.ε - 15 * L.ε ^ 2 - 4 * L.ε ^ 3 by nlinarith)]
-    have hX : 0 ≤ (1 + L.ε) * specNorm L.H + L.β j := by positivity
-    have hstep : L.β (j + 1) ≤ (1 + 8 * L.ε) * ((1 + L.ε) * specNorm L.H + L.β j) :=
-      calc L.β (j + 1)
-          ≤ (1 + 2 * L.ε) * ‖WithLp.toLp 2 (L.z (j + 1))‖ := h1
-        _ ≤ (1 + 2 * L.ε) * ((1 + 4 * L.ε) *
-              ((1 + L.ε) * (1 + L.ε / 2) * ((1 + L.ε) * specNorm L.H + L.β j))) := by
-            gcongr
-            exact h2.trans (by gcongr)
-        _ = (1 + 2 * L.ε) * ((1 + 4 * L.ε) * ((1 + L.ε) * (1 + L.ε / 2))) *
-              ((1 + L.ε) * specNorm L.H + L.β j) := by ring
-        _ ≤ (1 + 8 * L.ε) * ((1 + L.ε) * specNorm L.H + L.β j) := by gcongr
+    have hstep := L.β_succ_le hjk
     have h8 : 8 * L.ε * L.β j ≤ 1 / 10 * specNorm L.H := by
       calc 8 * L.ε * L.β j ≤ 8 * L.ε * (5 / 4 * j * specNorm L.H) := by gcongr
         _ = 10 * (j * L.ε) * specNorm L.H := by ring
@@ -340,17 +398,17 @@ theorem norm_u_le {j : ℕ} (hj : j < k) :
     _ = (1 + L.ε) * (1 + L.ε / 2) * specNorm L.H := by ring
     _ ≤ 21 / 20 * specNorm L.H := by gcongr; nlinarith
 
-/-- **The first updates are bounded**: for $j < k$,
+/-- **The first updates are bounded** (assuming $k\varepsilon \le 1/100$): for $j < k$,
 $\|\mathbf{w}_{j+1}\| \le \tfrac54 (j + 1)\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints $5j\|\mathbf{A}\|_2$
 in its 1-based indexing. -/
-theorem norm_w_le {j : ℕ} (hj : j < k) :
+theorem norm_w_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.w (j + 1))‖ ≤ 5 / 4 * (j + 1) * specNorm L.H := by
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
-  have hjε := L.mul_ε_le hj.le
-  have hβ := L.β_le hj.le
+  have hjε := L.mul_ε_le hsmall hj.le
+  have hβ := L.β_le hsmall hj.le
   have ha : (1 + L.ε) * (1 + L.ε / 2) ≤ 1 + 8 / 5 * L.ε := by nlinarith
   have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
   have hβ0 := L.β_nonneg j hj.le
@@ -365,11 +423,13 @@ theorem norm_w_le {j : ℕ} (hj : j < k) :
         nlinarith
     _ ≤ 5 / 4 * (j + 1) * specNorm L.H := by nlinarith
 
-/-- **The diagonal coefficients are bounded**: for $j < k$,
+/-- **The diagonal coefficients are bounded** (assuming $k\varepsilon \le 1/100$): for $j < k$,
 $\lvert\alpha_{j+1}\rvert \le \tfrac43 (j + 1)\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints
 $6j\|\mathbf{A}\|_2$ in its 1-based indexing. -/
-theorem abs_α_le {j : ℕ} (hj : j < k) : |L.α (j + 1)| ≤ 4 / 3 * (j + 1) * specNorm L.H := by
+theorem abs_α_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100)
+    {j : ℕ} (hj : j < k) : |L.α (j + 1)| ≤ 4 / 3 * (j + 1) * specNorm L.H := by
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
@@ -379,15 +439,15 @@ theorem abs_α_le {j : ℕ} (hj : j < k) : |L.α (j + 1)| ≤ 4 / 3 * (j + 1) * 
     _ ≤ (1 + L.ε) * (1 + L.ε / 2) * (5 / 4 * (j + 1) * specNorm L.H) := by
         gcongr
         · exact L.norm_v_le (by omega)
-        · exact L.norm_w_le hj
+        · exact L.norm_w_le hsmall hj
     _ ≤ 16 / 15 * (5 / 4 * (j + 1) * specNorm L.H) := by gcongr; nlinarith
     _ = 4 / 3 * (j + 1) * specNorm L.H := by ring
 
-/-- **The unnormalised next vectors are bounded**: for $j < k$,
+/-- **The unnormalised next vectors are bounded** (assuming $k\varepsilon \le 1/100$): for $j < k$,
 $\|\mathbf{z}_{j+1}\| \le \tfrac43 (j + 1)\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, `lem:coefficients` (Step 4), prints
 $7j\|\mathbf{A}\|_2$ in its 1-based indexing. -/
-theorem norm_z_le {j : ℕ} (hj : j < k) :
+theorem norm_z_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.z (j + 1))‖ ≤ 4 / 3 * (j + 1) * specNorm L.H := by
   have hε1 := L.ε_le
   have hH := specNorm_nonneg L.H
@@ -396,7 +456,7 @@ theorem norm_z_le {j : ℕ} (hj : j < k) :
     _ ≤ (1 + 4 * L.ε) * (5 / 4 * (j + 1) * specNorm L.H) := by
         gcongr
         · linarith [L.ε_nonneg]
-        · exact L.norm_w_le hj
+        · exact L.norm_w_le hsmall hj
     _ ≤ 16 / 15 * (5 / 4 * (j + 1) * specNorm L.H) := by gcongr; linarith
     _ = 4 / 3 * (j + 1) * specNorm L.H := by ring
 
@@ -423,7 +483,8 @@ theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
   rw [h1, h2, h3, h4]
   abel
 
-/-- **Local error bound for finite-precision Lanczos** (Paige): the computed vectors satisfy the
+/-- **Local error bound for finite-precision Lanczos**
+(assuming $k\varepsilon \le 1/100$) (Paige): the computed vectors satisfy the
 three-term recurrence up to a small residual, for $j <
 k$, <!-- value lanczosRecurrenceErrorFactor j -->
 $$\|\mathbf{H}\mathbf{v}_{j+1} - \beta_j\mathbf{v}_j - \alpha_{j+1}\mathbf{v}_{j+1} -
@@ -433,7 +494,7 @@ $\|\mathbf{f}_j\| \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $7
 constant here comes from the sharper coefficient bounds. [Paige1976, §2–3] has bounds of this
 kind, from floating-point arithmetic directly.
 Result: lanczos-local-errors -/
-theorem norm_recurrenceError_le {j : ℕ} (hj : j < k) :
+theorem norm_recurrenceError_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.recurrenceError j)‖ ≤
       lanczosRecurrenceErrorFactor j * L.ε * specNorm L.H := by
   rw [lanczosRecurrenceErrorFactor_def]
@@ -448,11 +509,11 @@ theorem norm_recurrenceError_le {j : ℕ} (hj : j < k) :
   have hv0 : ‖WithLp.toLp 2 (L.v j)‖ ≤ a := L.norm_v_le hj.le
   have hβ : |L.β j| ≤ 5 / 4 * j * specNorm L.H := by
     rw [abs_of_nonneg (L.β_nonneg j hj.le)]
-    exact L.β_le hj.le
+    exact L.β_le hsmall hj.le
   have hu := L.norm_u_le hj
-  have hw := L.norm_w_le hj
-  have hα := L.abs_α_le hj
-  have hz := L.norm_z_le hj
+  have hw := L.norm_w_le hsmall hj
+  have hα := L.abs_α_le hsmall hj
+  have hz := L.norm_z_le hsmall hj
   have heu : ‖WithLp.toLp 2 (L.eu (j + 1))‖ ≤ L.ε * (specNorm L.H * a) :=
     (L.norm_eu_le j hj).trans (by rw [mul_assoc]; gcongr)
   have hew : ‖WithLp.toLp 2 (L.ew (j + 1))‖ ≤
@@ -498,14 +559,15 @@ theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
   simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hal]
   ring
 
-/-- **Local orthogonality of finite-precision Lanczos** (Paige): consecutive computed vectors
+/-- **Local orthogonality of finite-precision Lanczos**
+(assuming $k\varepsilon \le 1/100$) (Paige): consecutive computed vectors
 are nearly orthogonal, for $j < k$, <!-- value lanczosAdjacentInnerFactor j -->
 $$\lvert\beta_{j+1}\,\mathbf{v}_{j+1}^{\mathsf{T}}\mathbf{v}_{j+2}\rvert
 \le 7(j + 1)\,\varepsilon\,\|\mathbf{H}\|_2 \,.$$
 No printed source; the maintainer's draft, `thm:local-errors`, states
 $\lvert p_j\rvert \lesssim_k \varepsilon\|\mathbf{A}\|_2$ (its formalization: $1200j$).
 Result: lanczos-local-orthogonality -/
-theorem abs_adjacentInner_le {j : ℕ} (hj : j < k) :
+theorem abs_adjacentInner_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
     |L.adjacentInner j| ≤ lanczosAdjacentInnerFactor j * L.ε * specNorm L.H := by
   rw [lanczosAdjacentInnerFactor_def]
   have hε0 := L.ε_nonneg
@@ -513,9 +575,9 @@ theorem abs_adjacentInner_le {j : ℕ} (hj : j < k) :
   set a := 1 + L.ε / 2 with ha_def
   have ha : a ≤ 201 / 200 := by rw [ha_def]; linarith [L.ε_le]
   have hv1 : ‖WithLp.toLp 2 (L.v (j + 1))‖ ≤ a := L.norm_v_le (by omega)
-  have hw := L.norm_w_le hj
-  have hα := L.abs_α_le hj
-  have hz := L.norm_z_le hj
+  have hw := L.norm_w_le hsmall hj
+  have hα := L.abs_α_le hsmall hj
+  have hz := L.norm_z_le hsmall hj
   have hg : |‖WithLp.toLp 2 (L.v (j + 1))‖ ^ 2 - 1| ≤ L.ε :=
     L.abs_norm_v_sq_sub_one_le (j + 1) (by omega) (by omega)
   set W := 5 / 4 * (j + 1) * specNorm L.H

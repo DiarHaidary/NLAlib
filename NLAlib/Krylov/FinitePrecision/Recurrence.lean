@@ -12,7 +12,9 @@ public import NLAlib.Matrix.Norms.Compare
 /-!
 # The perturbed Lanczos recurrence and Ritz residuals
 
-The matrix form of the local error bounds of a run `L : NLAlib.LanczosRun n k`: with the computed
+The polynomial bounds below assume $k\varepsilon \le 1/100$ explicitly; the recurrence
+identities need only local accuracy. The matrix form of the local error bounds of a run
+`L : NLAlib.LanczosRun n k`: with the computed
 basis $\mathbf{V}_k = [\mathbf{v}_1, \dots, \mathbf{v}_k]$ (`L.basis`, column $j$ is
 $\mathbf{v}_{j+1}$), the computed tridiagonal matrix $\mathbf{T}_k$ (`L.tridiagonal`, entries
 indexed from $0$ as `NLAlib.lanczosTridiagonal`) and the residual matrix $\mathbf{F}_k$ of the
@@ -91,11 +93,12 @@ theorem mul_basis :
       Matrix.vecMulVec (L.β k • L.v (k + 1)) (Pi.single L.lastIndex 1) + L.residual :=
   L.toLanczosData.mul_basis
 
-/-- **The residual of the perturbed recurrence is small**: <!-- value lanczosResidualFactor k -->
+/-- **The residual of the perturbed recurrence is small**
+(assuming $k\varepsilon \le 1/100$): <!-- value lanczosResidualFactor k -->
 $\|\mathbf{F}_k\|_{\mathsf{F}} \le 6k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, proof of `cor:gram-commutator`, uses
 $\|\mathbf{F}_k\| \le \sqrt{k}\max_j\|\mathbf{f}_j\|$ (its formalization: $700k^2$). -/
-theorem frobNorm_residual_le :
+theorem frobNorm_residual_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     frobNorm L.residual ≤ lanczosResidualFactor k * L.ε * specNorm L.H := by
   rw [lanczosResidualFactor_def]
   have hε0 := L.ε_nonneg
@@ -103,7 +106,7 @@ theorem frobNorm_residual_le :
   have hcol : ∀ j : Fin k, ‖WithLp.toLp 2 (L.residual.col j)‖ ≤ 6 * k * L.ε * specNorm L.H := by
     intro j
     have hjk : ((j : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast j.2
-    refine (L.norm_recurrenceError_le j.2).trans ?_
+    refine (L.norm_recurrenceError_le hsmall j.2).trans ?_
     rw [lanczosRecurrenceErrorFactor_def]
     gcongr
   have hsq : frobNorm L.residual ^ 2 ≤ (6 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
@@ -119,13 +122,14 @@ theorem frobNorm_residual_le :
             _ = _ := by ring
   exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
-/-- **The residual of the perturbed recurrence is small** in the spectral
+/-- **The residual of the perturbed recurrence is small**
+(assuming $k\varepsilon \le 1/100$) in the spectral
 norm: <!-- value lanczosResidualFactor k -->
 $\|\mathbf{F}_k\|_2 \le 6k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$.
 No printed source; the maintainer's draft, proof of `cor:gram-commutator`. -/
-theorem specNorm_residual_le :
+theorem specNorm_residual_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     specNorm L.residual ≤ lanczosResidualFactor k * L.ε * specNorm L.H :=
-  (specNorm_le_frobNorm _).trans L.frobNorm_residual_le
+  (specNorm_le_frobNorm _).trans (L.frobNorm_residual_le hsmall)
 
 /-- The last computed vector, scaled: $\|\beta_k\mathbf{v}_{k+1}\| \le
 \sqrt{1 + \varepsilon}\,\beta_k$ ($\mathbf{v}_{k+1}$ is nearly unit when $\beta_k \neq 0$). -/
@@ -150,7 +154,8 @@ theorem mulVec_basis_mulVec_sub_smul {y : Fin k → ℝ} {θ : ℝ}
       y L.lastIndex • (L.β k • L.v (k + 1)) + L.residual *ᵥ y :=
   L.toLanczosData.mulVec_basis_mulVec_sub_smul hy
 
-/-- **The Ritz residual bound for finite-precision Lanczos**: for a unit eigenpair
+/-- **The Ritz residual bound for finite-precision Lanczos**
+(assuming $k\varepsilon \le 1/100$): for a unit eigenpair
 $\mathbf{T}_k\mathbf{y} = \theta\mathbf{y}$, $\|\mathbf{y}\| = 1$, of the computed tridiagonal
 matrix, the Ritz vector $\mathbf{x} = \mathbf{V}_k\mathbf{y}$
 satisfies <!-- value lanczosResidualFactor k -->
@@ -160,7 +165,8 @@ $$\|\mathbf{H}\mathbf{x} - \theta\mathbf{x}\|
 No printed source; the maintainer's draft, `eq:ritz-residual-bound`, with
 $\|\mathbf{F}_k\|$ for the last term and both sides divided by $\|\mathbf{x}\|$.
 Result: lanczos-ritz-residual -/
-theorem norm_mulVec_basis_mulVec_sub_smul_le {y : Fin k → ℝ} {θ : ℝ}
+theorem norm_mulVec_basis_mulVec_sub_smul_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100)
+    {y : Fin k → ℝ} {θ : ℝ}
     (hy : L.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     ‖WithLp.toLp 2 (L.H *ᵥ (L.basis *ᵥ y) - θ • (L.basis *ᵥ y))‖ ≤
       Real.sqrt (1 + L.ε) * L.β k * |y L.lastIndex| +
@@ -172,7 +178,7 @@ theorem norm_mulVec_basis_mulVec_sub_smul_le {y : Fin k → ℝ} {θ : ℝ}
     exact L.norm_β_smul_v_le
   · refine (norm_toLp_mulVec_le _ _).trans ?_
     rw [hy1, mul_one]
-    exact L.specNorm_residual_le
+    exact L.specNorm_residual_le hsmall
 
 end LanczosRun
 

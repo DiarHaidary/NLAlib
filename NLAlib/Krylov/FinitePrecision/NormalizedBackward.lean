@@ -20,22 +20,19 @@ adjacent inner products $\lvert\bar p_j\rvert$. This file states the model for t
 Lanczos run (`NLAlib.LanczosRun.toNormalizedLanczosData`) and to the Lanczos data of a
 finite-precision conjugate gradient run (`NLAlib.CGRun.toNormalizedLanczosData`).
 
-The bound is $102k^3 f + 96k^2 p$, from
-$\|\bar{\mathbf{F}}_k\|_{\mathsf{F}} \le \sqrt{k}f$, the Gram commutator
-$\|\bar{\mathbf{M}}_k\|_2 \le 2p + 2kf$ (unit columns: no normalisation defect), and the
-exchange rule as in `NLAlib.LanczosRun.frobNorm_dilatedResidual_le`. For a Lanczos run
-($f = 12k\varepsilon\|\mathbf{H}\|_2$, $p = 8k\varepsilon\|\mathbf{H}\|_2$) it is at most
-$1992k^4\varepsilon\|\mathbf{H}\|_2$, so the Lanczos statements keep their factor $2000k^4$.
-
-On integration the structure goes to `LanczosData.lean` and the theorems replace the
-`NLAlib.LanczosRun` versions in `Backward.lean` and `BackwardSpectral.lean`, which become
-one-line corollaries with unchanged statements.
+The bound is $22k^2 f + 17k\sqrt{k}\,p$, from
+$\|\bar{\mathbf{F}}_k\|_{\mathsf{F}} \le \sqrt{k}f$ and the Frobenius Gram-commutator estimate
+$\|\bar{\mathbf{M}}_k\|_{\mathsf{F}} \le 2\sqrt{k}p + 2kf$ (unit columns: no normalisation defect).
+The shifted-stack estimate retains the orthonormality of the whole dilation. For a Lanczos run
+with the additional horizon $k\varepsilon \le 1/100$
+($f = 12k\varepsilon\|\mathbf{H}\|_2$, $p = 8k\varepsilon\|\mathbf{H}\|_2$), the model bound is
+at most $400k^3\varepsilon\|\mathbf{H}\|_2$, within the registered factor $400k^3$.
 
 ## Main definitions
 
 * `NLAlib.NormalizedLanczosData`: the interface.
 * `NLAlib.normalizedBackwardBound`: the bound <!-- value normalizedBackwardBound k f p -->
-  $102k^3 f + 96k^2 p$.
+  $22k^2f + 17k\sqrt{k} p$.
 * `NLAlib.NormalizedLanczosData.backwardH`: the backward model.
 * `NLAlib.LanczosRun.toNormalizedLanczosData`: a Lanczos run is an instance.
 
@@ -67,10 +64,25 @@ structure NormalizedLanczosData (n k : ℕ) extends LanczosData n k where
   β_pos : ∀ j, 1 ≤ j → j < k → 0 < β j
 
 /-- **The bound of the normalised backward model**: <!-- value normalizedBackwardBound k f p -->
-$102k^3 f + 96k^2 p$, for recurrence residuals at most $f$ and adjacent inner products at
-most $p$ in absolute value. Unoptimised. -/
+$22k^2f + 17k\sqrt{k} p$, for recurrence residuals at most $f$ and adjacent inner products at
+most $p$ in absolute value. -/
 noncomputable def normalizedBackwardBound (k : ℕ) (f p : ℝ) : ℝ :=
-  102 * (k : ℝ) ^ 3 * f + 96 * (k : ℝ) ^ 2 * p
+  22 * (k : ℝ) ^ 2 * f + 17 * k * Real.sqrt k * p
+
+/-- The normalized backward bound is bounded by its former cubic estimate for nonnegative
+residual and adjacent-inner-product bounds and at least one step. -/
+theorem normalizedBackwardBound_le {k : ℕ} (hk : 1 ≤ k) {f p : ℝ}
+    (hf : 0 ≤ f) (hp : 0 ≤ p) :
+    normalizedBackwardBound k f p ≤ 102 * (k : ℝ) ^ 3 * f + 96 * (k : ℝ) ^ 2 * p := by
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hsk : Real.sqrt (k : ℝ) ≤ k := by
+    rw [Real.sqrt_le_left (by positivity)]
+    nlinarith
+  have hk2 : (k : ℝ) ^ 2 ≤ k ^ 3 := by nlinarith
+  unfold normalizedBackwardBound
+  have h1 := mul_le_mul_of_nonneg_right hk2 hf
+  have h2 := mul_le_mul_of_nonneg_right hsk (by positivity : 0 ≤ (k : ℝ) * p)
+  nlinarith
 
 namespace NormalizedLanczosData
 
@@ -126,9 +138,11 @@ theorem backwardH_mul_dilatedBasis :
 /-- **The backward model of normalised Lanczos data**: if
 $\|\bar{\mathbf{f}}_j\| \le f$ and $\lvert\bar p_j\rvert \le p$ for $j < k$, then
 
-$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}} \le 102k^3 f + 96k^2 p
+$$\|\tilde{\mathbf{H}} - \mathbf{I}_{k+1} \otimes \mathbf{H}\|_{\mathsf{F}}
+\le 22k^2 f + 17k\sqrt{k}p
 \,.$$
-No printed source; the maintainer's draft, `thm:greenbaum`, for Lanczos runs. -/
+No printed source. the maintainer's draft, `thm:greenbaum`, for Lanczos runs.
+Result: lanczos-backward-model -/
 theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
     (hf : ∀ j < k, ‖WithLp.toLp 2 (D.recurrenceError j)‖ ≤ f)
     (hp : ∀ j < k, |D.adjacentInner j| ≤ p) :
@@ -154,15 +168,15 @@ theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
     Finset.single_le_sum (f := fun i => |D.β i|) (fun i _ => abs_nonneg _) (Finset.mem_range.2 hj)
   have hg : ∀ i, |D.normSqDefect i| ≤ 0 := fun i => by
     simp [LanczosData.normSqDefect, D.norm_v ((i : ℕ) + 1) (by omega) (by omega)]
-  have hG := D.specNorm_gramCommutator_le hp hb hg
+  have hG := D.frobNorm_gramCommutator_le hp hb hg
   rw [hV] at hG
-  have hG' : specNorm D.gramCommutator ≤ 2 * p + 2 * k * f := by
+  have hG' : frobNorm D.gramCommutator ≤ 2 * Real.sqrt k * p + 2 * k * f := by
     refine hG.trans ?_
     have := mul_le_mul_of_nonneg_left hF (Real.sqrt_nonneg (k : ℝ))
     nlinarith
-  have hE := D.toLanczosData.frobNorm_dilatedResidual_le_of_le hW hF hG'
-  have h2 := D.toLanczosData.frobNorm_backwardH_sub_dilatedH_le_two_mul hW
-  change frobNorm (D.backwardH - D.dilatedH) ≤ 2 * frobNorm D.dilatedResidual at h2
+  have hE := D.toLanczosData.frobNorm_dilatedResidual_le_of_frobNorm_gramCommutator_le hW hF hG'
+  have h2 := D.toLanczosData.frobNorm_backwardH_sub_dilatedH_le_sqrt_two_mul hW
+  change frobNorm (D.backwardH - D.dilatedH) ≤ Real.sqrt 2 * frobNorm D.dilatedResidual at h2
   change frobNorm D.dilatedResidual ≤ _ at hE
   have hss : Real.sqrt (k + 1) * Real.sqrt k ≤ 3 / 2 * k := by
     rw [← Real.sqrt_mul (by positivity), Real.sqrt_le_left (by positivity)]
@@ -172,11 +186,23 @@ theorem frobNorm_backwardH_sub_dilatedH_le {f p : ℝ}
   have e1 : 2 * Real.sqrt (k + 1) * (Real.sqrt k * f) ≤ 2 * (3 / 2 * k) * f := by
     have := mul_le_mul_of_nonneg_right hss hf0
     nlinarith
-  have hkk : ((k : ℝ) + 1) * (2 * k + 1) ≤ 6 * k ^ 2 := by nlinarith
-  have e2 : 4 * (((k : ℝ) + 1) * (2 * k + 1)) * (2 * p + 2 * k * f) ≤
-      4 * (6 * k ^ 2) * (2 * p + 2 * k * f) := by gcongr
-  have hk3 : (k : ℝ) ≤ k ^ 3 := by nlinarith
-  nlinarith
+  have hk2 : (k : ℝ) ≤ k ^ 2 := by nlinarith
+  have hcoef : 4 * (k : ℝ) + 2 ≤ 6 * k := by linarith
+  have e2 : (4 * (k : ℝ) + 2) * (2 * Real.sqrt k * p + 2 * k * f) ≤
+      (6 * k) * (2 * Real.sqrt k * p + 2 * k * f) := by gcongr
+  have e3 := mul_le_mul_of_nonneg_right hk2 hf0
+  have hE' : frobNorm D.dilatedResidual ≤
+      15 * (k : ℝ) ^ 2 * f + 12 * k * Real.sqrt k * p := by
+    nlinarith only [hE, e1, e2, e3]
+  have hs : Real.sqrt (2 : ℝ) ≤ 17 / 12 := by
+    rw [Real.sqrt_le_left (by norm_num)]
+    norm_num
+  have hf' := mul_le_mul_of_nonneg_right (show Real.sqrt (2 : ℝ) * 15 ≤ 22 by linarith)
+    (by positivity : 0 ≤ (k : ℝ) ^ 2 * f)
+  have hp' := mul_le_mul_of_nonneg_right (show Real.sqrt (2 : ℝ) * 12 ≤ 17 by linarith)
+    (by positivity : 0 ≤ (k : ℝ) * Real.sqrt k * p)
+  have hE'' := mul_le_mul_of_nonneg_left hE' (Real.sqrt_nonneg 2)
+  nlinarith only [hf', hp', hE'']
 
 /-- **Exact Lanczos on the backward model computes the tridiagonal matrix**: $k$ steps of
 `NLAlib.lanczosState` on $\tilde{\mathbf{H}}$ from $(\mathbf{v}_1, \mathbf{0}, \dots)$ give
@@ -232,14 +258,16 @@ noncomputable def toNormalizedLanczosData : NormalizedLanczosData n k :=
     β_nonneg := L.β_nonneg
     β_pos := L.β_pos }
 
-/-- **The Lanczos backward model as an instance**: the model of the normalised data is
-within <!-- value lanczosBackwardFactor k --> $2000k^4\varepsilon\|\mathbf{H}\|_2$ of
+/-- **The Lanczos backward model as an instance**
+(assuming $k\varepsilon \le 1/100$): the model of the normalised data is
+within <!-- value lanczosBackwardFactor k --> $400k^3\varepsilon\|\mathbf{H}\|_2$ of
 $\mathbf{I}_{k+1} \otimes \mathbf{H}$, the statement of
 `NLAlib.LanczosRun.frobNorm_backwardH_sub_dilatedH_le` recovered from the interface. -/
-theorem frobNorm_toNormalizedLanczosData_backwardH_sub_dilatedH_le :
+theorem frobNorm_toNormalizedLanczosData_backwardH_sub_dilatedH_le
+    (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     frobNorm (L.toNormalizedLanczosData.backwardH - L.toNormalizedLanczosData.dilatedH) ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
-  exact L.frobNorm_backwardH_sub_dilatedH_le
+  exact L.frobNorm_backwardH_sub_dilatedH_le hsmall
 
 /-- The two constructions agree: the backward model of the run is that of its normalised
 data. After the refactor `NLAlib.LanczosRun.backwardH` is defined this way and this is `rfl`. -/

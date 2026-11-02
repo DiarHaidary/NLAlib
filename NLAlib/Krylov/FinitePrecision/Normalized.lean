@@ -10,7 +10,9 @@ public import NLAlib.Krylov.FinitePrecision.Paige
 /-!
 # The normalised vectors of a finite-precision Lanczos run
 
-For a run `L : NLAlib.LanczosRun n k`, the computed vectors rescaled to unit length,
+Normalization and its bounds from local certificates require only local accuracy.
+The polynomial error bounds below additionally assume $k\varepsilon \le 1/100$.
+For such a run `L : NLAlib.LanczosRun n k`, the computed vectors rescaled to unit length,
 $\bar{\mathbf{v}}_j = \mathbf{v}_j/\|\mathbf{v}_j\|$, with the computed coefficients
 (`NLAlib.LanczosRun.normalized`, a `NLAlib.LanczosData`), still satisfy the three-term
 recurrence up to residuals of order $j\varepsilon\|\mathbf{H}\|_2$, consecutive normalised
@@ -29,9 +31,12 @@ finite precision*), `sec:normalized`, `lem:normalized-errors`, `cor:normalized-c
 
 ## Main results
 
+* `NLAlib.LanczosRun.norm_normalized_recurrenceError_le_of_le`,
+  `NLAlib.LanczosRun.abs_normalized_adjacentInner_le_of_le`: normalization from local bounds.
 * `NLAlib.LanczosRun.norm_normalized_recurrenceError_le`,
   `NLAlib.LanczosRun.abs_normalized_adjacentInner_le`: normalised local errors.
-* `NLAlib.LanczosRun.specNorm_normalized_gramCommutator_le`: the normalised Gram commutator.
+* `NLAlib.LanczosRun.frobNorm_normalized_gramCommutator_le`,
+  `NLAlib.LanczosRun.specNorm_normalized_gramCommutator_le`: the normalised Gram commutator.
 -/
 
 @[expose] public section
@@ -145,15 +150,15 @@ theorem norm_normalizedV {j : ℕ} (h1 : 1 ≤ j) (h2 : j ≤ k + 1) :
     · subst hj
       exact hunit _ (L.norm_v_succ_pos (fun hβ => h ⟨rfl, hβ⟩))
 
-/-- **Normalised local errors**: the normalised vectors satisfy the computed recurrence up to
-$\|\bar{\mathbf{f}}_j\| \le 12(j + 1)\varepsilon\|\mathbf{H}\|_2$, $j < k$.
-No printed source; the maintainer's draft, `lem:normalized-errors`, states
-$\lesssim_k \varepsilon\|\mathbf{A}\|_2$. -/
-theorem norm_normalized_recurrenceError_le {j : ℕ} (hj : j < k) :
-    ‖WithLp.toLp 2 (L.normalized.recurrenceError j)‖ ≤ 12 * (j + 1) * L.ε * specNorm L.H := by
+/-- A raw residual bound and bounds on the neighboring coefficients control the normalized
+residual. Each normalization correction is at most $2\varepsilon B$. -/
+theorem norm_normalized_recurrenceError_le_of_le {j : ℕ} (hj : j < k) {F B : ℝ}
+    (hFraw : ‖WithLp.toLp 2 (L.recurrenceError j)‖ ≤ F)
+    (hβ : ∀ i ≤ j + 1, L.β i ≤ B) :
+    ‖WithLp.toLp 2 (L.normalized.recurrenceError j)‖ ≤ 100 / 99 * F + 4 * L.ε * B := by
   have hε0 := L.ε_nonneg
   have hε1 := L.ε_le
-  have hH := specNorm_nonneg L.H
+  have hB0 : 0 ≤ B := (L.β_nonneg 0 (by omega)).trans (hβ 0 (by omega))
   set d := ‖WithLp.toLp 2 (L.v (j + 1))‖ with hd
   set dj := ‖WithLp.toLp 2 (L.v j)‖ with hdj
   set d2 := ‖WithLp.toLp 2 (L.v (j + 2))‖ with hd2
@@ -188,7 +193,7 @@ theorem norm_normalized_recurrenceError_le {j : ℕ} (hj : j < k) :
             field_simp
         _ ≤ 2 * L.ε := hr
   have hA : ‖WithLp.toLp 2 ((L.β j * (d⁻¹ - dj⁻¹)) • L.v j)‖ ≤
-      5 / 4 * j * specNorm L.H * (2 * L.ε) := by
+      B * (2 * L.ε) := by
     refine (hterm (L.β j) j ?_ ?_).trans ?_
     · rcases Nat.eq_zero_or_pos j with h | h
       · exact Or.inl h
@@ -196,40 +201,55 @@ theorem norm_normalized_recurrenceError_le {j : ℕ} (hj : j < k) :
     · intro h; rw [h]; exact L.v_zero
     · rw [abs_of_nonneg (L.β_nonneg j hj.le)]
       gcongr
-      exact L.β_le hj.le
+      exact hβ j (by omega)
   have hB : ‖WithLp.toLp 2 ((L.β (j + 1) * (d⁻¹ - d2⁻¹)) • L.v (j + 2))‖ ≤
-      5 / 4 * (j + 1) * specNorm L.H * (2 * L.ε) := by
-    by_cases hβ : L.β (j + 1) = 0
-    · rw [hβ, zero_mul, zero_smul, WithLp.toLp_zero, norm_zero]
+      B * (2 * L.ε) := by
+    by_cases hzero : L.β (j + 1) = 0
+    · rw [hzero, zero_mul, zero_smul, WithLp.toLp_zero, norm_zero]
       positivity
-    refine (hterm (L.β (j + 1)) (j + 2) (Or.inr (L.abs_norm_v_add_two_sq_sub_one_le hj hβ))
+    refine (hterm (L.β (j + 1)) (j + 2) (Or.inr (L.abs_norm_v_add_two_sq_sub_one_le hj hzero))
       (fun h => by omega)).trans ?_
     rw [abs_of_nonneg (L.β_nonneg (j + 1) (by omega))]
     gcongr
-    have := L.β_le (j := j + 1) (by omega)
-    push_cast at this
-    exact this
+    exact hβ (j + 1) (by omega)
   have hF : ‖WithLp.toLp 2 (d⁻¹ • L.recurrenceError j)‖ ≤
-      100 / 99 * (6 * (j + 1) * L.ε * specNorm L.H) := by
+      100 / 99 * F := by
     rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hdpos]
     gcongr
     · rw [inv_le_comm₀ hdpos (by norm_num)]
       linarith
-    · simpa only [lanczosRecurrenceErrorFactor_def] using L.norm_recurrenceError_le hj
   rw [heq, WithLp.toLp_add, WithLp.toLp_add]
   refine (norm_add_le _ _).trans ?_
   refine (add_le_add_left (norm_add_le _ _) _).trans ?_
-  have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
-  have h0 : 0 ≤ L.ε * specNorm L.H := by positivity
-  nlinarith [mul_nonneg hj0 h0]
+  nlinarith only [hA, hB, hF]
 
-/-- **Normalised local orthogonality**:
-$\lvert\bar p_j\rvert \le 8(j + 1)\varepsilon\|\mathbf{H}\|_2$, $j < k$. No printed source; the
-maintainer's draft, `lem:normalized-errors`. -/
-theorem abs_normalized_adjacentInner_le {j : ℕ} (hj : j < k) :
-    |L.normalized.adjacentInner j| ≤ 8 * (j + 1) * L.ε * specNorm L.H := by
-  have hε1 := L.ε_le
+/-- **Normalised local errors**
+(assuming $k\varepsilon \le 1/100$): the normalised vectors satisfy the computed recurrence up to
+$\|\bar{\mathbf{f}}_j\| \le 12(j + 1)\varepsilon\|\mathbf{H}\|_2$, $j < k$.
+No printed source; the maintainer's draft, `lem:normalized-errors`, states
+$\lesssim_k \varepsilon\|\mathbf{A}\|_2$. -/
+theorem norm_normalized_recurrenceError_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (L.normalized.recurrenceError j)‖ ≤ 12 * (j + 1) * L.ε * specNorm L.H := by
+  have hε0 := L.ε_nonneg
   have hH := specNorm_nonneg L.H
+  have hF := L.norm_recurrenceError_le hsmall hj
+  rw [lanczosRecurrenceErrorFactor_def] at hF
+  have hβ : ∀ i ≤ j + 1, L.β i ≤ 5 / 4 * (j + 1) * specNorm L.H := by
+    intro i hi
+    refine (L.β_le hsmall (by omega)).trans ?_
+    have hi' : (i : ℝ) ≤ j + 1 := by exact_mod_cast hi
+    gcongr
+  have h := L.norm_normalized_recurrenceError_le_of_le hj hF hβ
+  have h0 : 0 ≤ (j + 1) * L.ε * specNorm L.H := by positivity
+  nlinarith only [h, h0]
+
+/-- Normalizing two adjacent vectors amplifies their weighted inner product by at most
+$(100/99)^2$, including the terminal zero-coefficient case. -/
+theorem abs_normalized_adjacentInner_le_of_le {j : ℕ} (hj : j < k) {p : ℝ}
+    (hp : |L.adjacentInner j| ≤ p) :
+    |L.normalized.adjacentInner j| ≤ (100 / 99) ^ 2 * p := by
+  have hε1 := L.ε_le
+  have hp0 : 0 ≤ p := (abs_nonneg _).trans hp
   set d := ‖WithLp.toLp 2 (L.v (j + 1))‖
   set d2 := ‖WithLp.toLp 2 (L.v (j + 2))‖
   have heq : L.normalized.adjacentInner j = d⁻¹ * d2⁻¹ * L.adjacentInner j := by
@@ -249,23 +269,32 @@ theorem abs_normalized_adjacentInner_le {j : ℕ} (hj : j < k) :
   have hd2sq : |d2 ^ 2 - 1| ≤ L.ε := L.abs_norm_v_add_two_sq_sub_one_le hj hβ
   have hd1 := (nearUnit (norm_nonneg _) (norm_nonneg _) hε1 hdsq hdsq).1
   have hd21 := (nearUnit (norm_nonneg _) (norm_nonneg _) hε1 hd2sq hd2sq).1
-  have hp := L.abs_adjacentInner_le hj
-  rw [lanczosAdjacentInnerFactor_def] at hp
   have hinv : d⁻¹ * d2⁻¹ ≤ 100 / 99 * (100 / 99) := by
     have h1 : d⁻¹ ≤ 100 / 99 := by rw [inv_le_comm₀ (by linarith) (by norm_num)]; linarith
     have h2 : d2⁻¹ ≤ 100 / 99 := by rw [inv_le_comm₀ (by linarith) (by norm_num)]; linarith
     exact mul_le_mul h1 h2 (by positivity) (by norm_num)
   rw [heq, abs_mul, abs_of_pos (by positivity : 0 < d⁻¹ * d2⁻¹)]
   calc d⁻¹ * d2⁻¹ * |L.adjacentInner j|
-      ≤ 100 / 99 * (100 / 99) * (7 * (j + 1) * L.ε * specNorm L.H) := by
-        gcongr
-    _ ≤ 8 * (j + 1) * L.ε * specNorm L.H := by
-        have : 0 ≤ (j + 1) * L.ε * specNorm L.H := by have := L.ε_nonneg; positivity
-        nlinarith
+      ≤ (100 / 99) ^ 2 * p := by
+        calc _ ≤ (100 / 99 * (100 / 99)) * p := by gcongr
+          _ = _ := by ring
 
-/-- The normalised residual is small:
+/-- **Normalised local orthogonality** (assuming $k\varepsilon \le 1/100$):
+$\lvert\bar p_j\rvert \le 8(j + 1)\varepsilon\|\mathbf{H}\|_2$, $j < k$. No printed source; the
+maintainer's draft, `lem:normalized-errors`. -/
+theorem abs_normalized_adjacentInner_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ} (hj : j < k) :
+    |L.normalized.adjacentInner j| ≤ 8 * (j + 1) * L.ε * specNorm L.H := by
+  have hp := L.abs_adjacentInner_le hsmall hj
+  rw [lanczosAdjacentInnerFactor_def] at hp
+  have h := L.abs_normalized_adjacentInner_le_of_le hj hp
+  have h0 : 0 ≤ (j + 1) * L.ε * specNorm L.H := by
+    have := L.ε_nonneg
+    positivity
+  nlinarith only [h, h0]
+
+/-- Under $k\varepsilon \le 1/100$, the normalised residual is small:
 $\|\bar{\mathbf{F}}_k\|_{\mathsf{F}} \le 12k\sqrt{k}\,\varepsilon\|\mathbf{H}\|_2$. -/
-theorem frobNorm_normalized_residual_le :
+theorem frobNorm_normalized_residual_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
     frobNorm L.normalized.residual ≤ 12 * k * Real.sqrt k * L.ε * specNorm L.H := by
   have hε0 := L.ε_nonneg
   have hH := specNorm_nonneg L.H
@@ -273,7 +302,7 @@ theorem frobNorm_normalized_residual_le :
       12 * k * L.ε * specNorm L.H := by
     intro j
     have hjk : ((j : ℕ) : ℝ) + 1 ≤ k := by exact_mod_cast j.2
-    refine (L.norm_normalized_recurrenceError_le j.2).trans ?_
+    refine (L.norm_normalized_recurrenceError_le hsmall j.2).trans ?_
     gcongr
   have hsq : frobNorm L.normalized.residual ^ 2 ≤
       (12 * k * Real.sqrt k * L.ε * specNorm L.H) ^ 2 := by
@@ -289,22 +318,22 @@ theorem frobNorm_normalized_residual_le :
           ring
   exact (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 hsq
 
-/-- **The normalised Gram commutator is small**:
-$\|\bar{\mathbf{M}}_k\|_2 \le 40k^2\varepsilon\|\mathbf{H}\|_2$. No printed source; the
+/-- **The normalised Gram commutator is small** (assuming $k\varepsilon \le 1/100$):
+$\|\bar{\mathbf{M}}_k\|_{\mathsf{F}} \le 40k^2\varepsilon\|\mathbf{H}\|_2$. No printed source; the
 maintainer's draft, `cor:normalized-commutator`. -/
-theorem specNorm_normalized_gramCommutator_le :
-    specNorm L.normalized.gramCommutator ≤ 40 * k ^ 2 * L.ε * specNorm L.H := by
+theorem frobNorm_normalized_gramCommutator_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
+    frobNorm L.normalized.gramCommutator ≤ 40 * k ^ 2 * L.ε * specNorm L.H := by
   have hε0 := L.ε_nonneg
   have hH := specNorm_nonneg L.H
   have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast L.k_pos
   have ha : ∀ j < k, |L.normalized.adjacentInner j| ≤ 8 * k * L.ε * specNorm L.H :=
-    fun j hj => (L.abs_normalized_adjacentInner_le hj).trans (by
+    fun j hj => (L.abs_normalized_adjacentInner_le hsmall hj).trans (by
       have : (j : ℝ) + 1 ≤ k := by exact_mod_cast hj
       gcongr)
   have hb : ∀ j < k, |L.normalized.β j| ≤ 5 / 4 * k * specNorm L.H := fun j hj => by
     change |L.β j| ≤ _
     rw [abs_of_nonneg (L.β_nonneg j hj.le)]
-    refine (L.β_le hj.le).trans ?_
+    refine (L.β_le hsmall hj.le).trans ?_
     have : (j : ℝ) ≤ k := by exact_mod_cast hj.le
     gcongr
   have hg : ∀ i, |L.normalized.normSqDefect i| ≤ 0 := fun i => by
@@ -318,8 +347,8 @@ theorem specNorm_normalized_gramCommutator_le :
       L.norm_normalizedV (j := (j : ℕ) + 1) (by omega) (by omega)
     simp only [this, one_pow, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
       nsmul_eq_mul, mul_one]
-  have hF := L.frobNorm_normalized_residual_le
-  have h := L.normalized.specNorm_gramCommutator_le ha hb hg
+  have hF := L.frobNorm_normalized_residual_le hsmall
+  have h := L.normalized.frobNorm_gramCommutator_le ha hb hg
   rw [hV, mul_zero, mul_zero, mul_zero, add_zero] at h
   refine h.trans ?_
   have hsk : Real.sqrt k * Real.sqrt k = k := Real.mul_self_sqrt (Nat.cast_nonneg k)
@@ -329,8 +358,21 @@ theorem specNorm_normalized_gramCommutator_le :
         ≤ 2 * (Real.sqrt k * (12 * k * Real.sqrt k * L.ε * specNorm L.H)) := by gcongr
       _ = 24 * (Real.sqrt k * Real.sqrt k) * k * L.ε * specNorm L.H := by ring
       _ = 24 * k ^ 2 * L.ε * specNorm L.H := by rw [hsk]; ring
-  have h0 : 0 ≤ L.ε * specNorm L.H := by positivity
-  nlinarith [mul_le_mul_of_nonneg_right (show (k : ℝ) ≤ k ^ 2 by nlinarith) h0]
+  have hs : Real.sqrt (k : ℝ) ≤ k := by
+    rw [Real.sqrt_le_left (by positivity)]
+    nlinarith
+  have hd : 2 * Real.sqrt (k : ℝ) * (8 * k * L.ε * specNorm L.H) ≤
+      16 * k ^ 2 * L.ε * specNorm L.H := by
+    calc _ ≤ 2 * k * (8 * k * L.ε * specNorm L.H) := by gcongr
+      _ = _ := by ring
+  linarith
+
+/-- **The normalised Gram commutator is small** (assuming $k\varepsilon \le 1/100$):
+$\|\bar{\mathbf{M}}_k\|_2 \le 40k^2\varepsilon\|\mathbf{H}\|_2$. No printed source; the
+maintainer's draft, `cor:normalized-commutator`. -/
+theorem specNorm_normalized_gramCommutator_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) :
+    specNorm L.normalized.gramCommutator ≤ 40 * k ^ 2 * L.ε * specNorm L.H :=
+  (specNorm_le_frobNorm _).trans (L.frobNorm_normalized_gramCommutator_le hsmall)
 
 end LanczosRun
 

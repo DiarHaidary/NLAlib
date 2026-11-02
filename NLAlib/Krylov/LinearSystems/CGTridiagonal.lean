@@ -273,6 +273,20 @@ private theorem re_quadForm_p_le_r {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀
       ‖WithLp.toLp 2 (cgState A b x₀ j).r‖ ^ 2)
     nlinarith
 
+/-- For positive definite $\mathbf{A}$ over $\Bbbk$ with spectrum in $[a,a']$, every
+exact CG step from an arbitrary initial iterate with nonzero residual has step length at
+least $1/a'$. This follows from conjugacy and the upper Rayleigh bound. -/
+theorem _root_.Matrix.PosDef.one_div_le_cgAlpha {A : Matrix n n 𝕜} (hA : A.PosDef)
+    {a a' : ℝ} (hs : spectrum ℝ A ⊆ Set.Icc a a') (b x₀ : n → 𝕜)
+    (j : ℕ) (hr : (cgState A b x₀ j).r ≠ 0) :
+    1 / a' ≤ cgAlpha A (cgState A b x₀ j) := by
+  obtain ⟨-, hQ⟩ := cgAlpha_mul_re_quadForm hA b x₀ hr
+  have h := (re_quadForm_p_le_r hA b x₀ j).trans
+    (rayleigh_of_spectrum hA.isHermitian hs (cgState A b x₀ j).r).2
+  have ha' : 0 < a' := by nlinarith [sq_nonneg ‖WithLp.toLp 2 (cgState A b x₀ j).r‖]
+  rw [cgAlpha, div_le_div_iff₀ ha' hQ]
+  nlinarith
+
 /-- The **unit lower bidiagonal factor** $\mathbf{L}_k$: ones on the diagonal and
 $\rho_{i+1}/\rho_i$ at $(i + 1, i)$. -/
 noncomputable def cgBidiagonal (ρ : ℕ → ℝ) (k : ℕ) : Matrix (Fin k) (Fin k) ℝ :=

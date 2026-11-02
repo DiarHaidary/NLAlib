@@ -60,6 +60,13 @@ def dilationC (W : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin m) (Fin m) ℝ :=
 def dilationK (W : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin m) (Fin m) ℝ :=
   1 - dilationC W
 
+/-- The two factors of the nilpotent dilation commute, since $\mathbf{K}=\mathbf{I}-\mathbf{C}$.
+This also lets powers of $\mathbf{K}$ move past $\mathbf{C}$ in the exchange identities. -/
+theorem commute_dilationC_dilationK (W : Matrix (Fin n) (Fin m) ℝ) :
+    Commute (dilationC W) (dilationK W) := by
+  change dilationC W * (1 - dilationC W) = (1 - dilationC W) * dilationC W
+  simp only [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul]
+
 /-- The **orthonormal dilation** of the columns of $\mathbf{W}$: the $m$ stacked blocks
 $\mathbf{W}\mathbf{C}\mathbf{K}^r$, $r < m$; row $(i, r)$ is row $i$ of block $r$. -/
 def orthonormalDilation (W : Matrix (Fin n) (Fin m) ℝ) :

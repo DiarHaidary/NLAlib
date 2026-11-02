@@ -485,24 +485,61 @@ name = "NLAlib.lanczosDilatedResidualFactor"
 kind = "factor"
 file = "NLAlib/Krylov/FinitePrecision/Backward.lean"
 args = ["k"]
-latex = '1000#1^4'
-lean_body = 'lanczosDilatedResidualFactor (k : ℕ) : ℝ := 1000 * (k : ℝ) ^ 4'
-body_hash = "9adbe52b1c9d9633"
+latex = '280#1^3'
+lean_body = 'lanczosDilatedResidualFactor (k : ℕ) : ℝ := 280 * (k : ℝ) ^ 3'
+body_hash = "2b219b425dd2a600"
 
 [[constant]]
 name = "NLAlib.lanczosBackwardFactor"
 kind = "factor"
 file = "NLAlib/Krylov/FinitePrecision/Backward.lean"
 args = ["k"]
-latex = '2000#1^4'
-lean_body = 'lanczosBackwardFactor (k : ℕ) : ℝ := 2000 * (k : ℝ) ^ 4'
-body_hash = "45d2700766dbe3df"
+latex = '400#1^3'
+lean_body = 'lanczosBackwardFactor (k : ℕ) : ℝ := 400 * (k : ℝ) ^ 3'
+body_hash = "d7f0c9789f9f2160"
+
+[[constant]]
+name = "NLAlib.lanczosSmallRoundoffBackwardFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/BackwardBounds.lean"
+args = ["k"]
+latex = '1000#1^2'
+lean_body = 'lanczosSmallRoundoffBackwardFactor (k : ℕ) : ℝ := 1000 * (k : ℝ) ^ 2'
+body_hash = "07c44ed0735354f3"
 
 [[constant]]
 name = "NLAlib.normalizedBackwardBound"
 kind = "bound"
 file = "NLAlib/Krylov/FinitePrecision/NormalizedBackward.lean"
 args = ["k", "f", "p"]
-latex = '102#1^3#2 + 96#1^2#3'
-lean_body = 'normalizedBackwardBound (k : ℕ) (f p : ℝ) : ℝ := 102 * (k : ℝ) ^ 3 * f + 96 * (k : ℝ) ^ 2 * p'
-body_hash = "70048d349016d18a"
+latex = '22#1^2#2 + 17#1\sqrt{#1}#3'
+lean_body = 'normalizedBackwardBound (k : ℕ) (f p : ℝ) : ℝ := 22 * (k : ℝ) ^ 2 * f + 17 * k * Real.sqrt k * p'
+body_hash = "704e6b4d76c5778b"
+
+[[constant]]
+name = "NLAlib.cgBackwardFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/CGBackward.lean"
+args = ["k"]
+latex = '6000#1^2\sqrt{#1}'
+lean_body = 'cgBackwardFactor (k : ℕ) : ℝ := 6000 * (k : ℝ) ^ 2 * Real.sqrt k'
+body_hash = "bad9f79fadd21a88"
+
+
+[[constant]]
+name = "NLAlib.cgLineSearchFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/CGRunModel.lean"
+args = ["m", "ε"]
+latex = '(41/10)#2\sum_{i=0}^{#1-1}(1+(31/10)#2)^i'
+lean_body = 'cgLineSearchFactor (m : ℕ) (ε : ℝ) : ℝ := 41 / 10 * ε * ∑ i ∈ Finset.range m, (1 + 31 / 10 * ε) ^ i'
+body_hash = "e0fc757e71b8f767"
+
+[[constant]]
+name = "NLAlib.cgAdjacentInnerFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/CGRunModel.lean"
+args = ["m", "ε"]
+latex = '13#2\sum_{i=0}^{#1-1}(1+(31/10)#2)^i'
+lean_body = 'cgAdjacentInnerFactor (m : ℕ) (ε : ℝ) : ℝ := 13 * ε * ∑ i ∈ Finset.range m, (1 + 31 / 10 * ε) ^ i'
+body_hash = "41580184a75c52ed"

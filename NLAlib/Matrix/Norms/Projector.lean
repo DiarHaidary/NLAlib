@@ -22,6 +22,7 @@ $\mathbf{P}_{\mathbf{Y}}$ the orthogonal projector onto the range of $\mathbf{Y}
 
 ## Main results
 
+* `NLAlib.HasOrthonormalCols.frobNorm_add_mul_conjTranspose_le`: the orthogonal completion.
 * `IsStarProjection.specNorm_le_one`, `IsStarProjection.specNorm_mul_le`,
   `IsStarProjection.frobNorm_mul_le`: contraction.
 * `IsStarProjection.frobNorm_sq_eq_add`: Pythagoras;
@@ -150,6 +151,30 @@ theorem _root_.IsStarProjection.frobNorm_sub_mul_sq_eq_sub_frobInner {P : Matrix
     frobNorm (X - P * X) ^ 2 = frobNorm X ^ 2 - frobInner P (X * Xᴴ) := by
   rw [← frobInner_self (X - P * X), hP.frobInner_sub_mul_sub_mul, frobInner_sub_left,
     frobInner_self, frobInner_mul_right]
+
+/-- For orthonormal columns of $\mathbf{Q}$, the two summands of the orthogonal completion
+have orthogonal row spaces, giving
+$$\|\mathbf{A}\mathbf{Q}^{\mathsf{H}} + \mathbf{Q}\mathbf{A}^{\mathsf{H}}
+(\mathbf{I}-\mathbf{Q}\mathbf{Q}^{\mathsf{H}})\|_{\mathsf{F}}
+\le \sqrt{2}\|\mathbf{A}\|_{\mathsf{F}} \,.$$
+This norm bound does not require a compatibility or Hermitian hypothesis on $\mathbf{A}$. -/
+theorem HasOrthonormalCols.frobNorm_add_mul_conjTranspose_le [DecidableEq m] [DecidableEq n]
+    {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix m n 𝕜) :
+    frobNorm (A * Qᴴ + Q * Aᴴ * (1 - Q * Qᴴ)) ≤ Real.sqrt 2 * frobNorm A := by
+  have hPQ : (1 - Q * Qᴴ) * Q = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hQ.conjTranspose_mul_self,
+      Matrix.mul_one, sub_self]
+  have hz : frobInner (A * Qᴴ) (Q * Aᴴ * (1 - Q * Qᴴ)) = 0 := by
+    rw [frobInner_mul_right, Matrix.conjTranspose_conjTranspose, Matrix.mul_assoc,
+      hPQ, Matrix.mul_zero, frobInner_zero_right]
+  have hb : frobNorm (Q * Aᴴ * (1 - Q * Qᴴ)) ≤ frobNorm A := by
+    rw [Matrix.mul_assoc, hQ.frobNorm_mul_left]
+    exact (hQ.isStarProjection_mul_conjTranspose.one_sub.frobNorm_mul_right_le Aᴴ).trans_eq
+      (frobNorm_conjTranspose A)
+  apply (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).mp
+  rw [frobNorm_add_sq_of_frobInner_eq_zero hz, hQ.frobNorm_mul_conjTranspose_right,
+    mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+  nlinarith only [pow_le_pow_left₀ (frobNorm_nonneg _) hb 2]
 
 /-- The head–tail split of a projection residual for a frame $\mathbf{Z}$ and any
 $\mathbf{P}$: with $\mathbf{E} = \mathbf{A} - \mathbf{A}\mathbf{Z}\mathbf{Z}^{\mathsf{H}}$,
