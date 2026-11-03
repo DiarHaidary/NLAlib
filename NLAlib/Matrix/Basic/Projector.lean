@@ -532,3 +532,41 @@ theorem toEuclideanLin_rangeProjector [Fintype m] [Fintype n] [DecidableEq m] [D
   simp only [hS]
 
 end NLAlib
+
+
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {n r : Type*}
+  [Fintype n] [Fintype r] [DecidableEq r]
+/-- For an orthonormal frame, the range projector of a diagonal matrix times its adjoint
+is the diagonal indicator of the nonzero diagonal entries. No printed source. -/
+theorem HasOrthonormalCols.rangeProjector_diagonal_mul_conjTranspose
+    {V : Matrix n r 𝕜} (hV : HasOrthonormalCols V) (d : r → 𝕜) :
+    rangeProjector (Matrix.diagonal d * Vᴴ) =
+      Matrix.diagonal (fun i => if d i = 0 then 0 else 1) := by
+  set e : r → 𝕜 := fun i => if d i = 0 then 0 else 1
+  have hed : Matrix.diagonal e * Matrix.diagonal d = Matrix.diagonal d := by
+    rw [Matrix.diagonal_mul_diagonal]
+    congr 1
+    funext i
+    by_cases hi : d i = 0 <;> simp [e, hi]
+  have hdd : Matrix.diagonal d * Matrix.diagonal d⁻¹ = Matrix.diagonal e := by
+    rw [Matrix.diagonal_mul_diagonal]
+    congr 1
+    funext i
+    by_cases hi : d i = 0 <;> simp [e, hi]
+  have hP : IsStarProjection (Matrix.diagonal e) := by
+    rw [Matrix.isStarProjection_iff]
+    refine ⟨?_, ?_⟩
+    · rw [Matrix.diagonal_mul_diagonal]
+      congr 1
+      funext i
+      by_cases hi : d i = 0 <;> simp [e, hi]
+    · exact Matrix.isHermitian_diagonal_of_self_adjoint _ (by
+        ext i; simp [e])
+  rw [← hP.rangeProjector_eq, rangeProjector_inj]
+  refine le_antisymm (range_le_iff_exists_mul.mpr ⟨Matrix.diagonal d * Vᴴ, ?_⟩)
+    (range_le_iff_exists_mul.mpr ⟨V * Matrix.diagonal d⁻¹, ?_⟩)
+  · rw [← Matrix.mul_assoc, hed]
+  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ, hV.conjTranspose_mul_self, Matrix.one_mul, hdd]
+
+end NLAlib

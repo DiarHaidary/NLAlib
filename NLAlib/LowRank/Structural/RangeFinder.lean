@@ -44,6 +44,9 @@ hypothesis the bounds fail ($\mathbf{A} = \mathbf{Z} = [1]$, $\mathbf{\Omega} = 
 
 ## Main results
 
+* `NLAlib.HasOrthonormalCols.frobNorm_sub_rangeProjector_mul_mul_conjTranspose_sq_le`:
+  nested-head projection error controlled by the comparison-rank tail.
+
 * `NLAlib.HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_eq`,
   `NLAlib.HasOrthonormalCols.sub_mul_mul_pinv_mul_conjTranspose_mul_conjTranspose_eq`,
   `NLAlib.HasOrthonormalCols.frobNorm_sub_mul_mul_pinv_mul_conjTranspose_sq`,
@@ -489,5 +492,35 @@ theorem HasOrthonormalCols.specNorm_sub_rsvd_mul_pinv_sq_le (hZ : HasOrthonormal
     rw [hT, hI, Matrix.conjTranspose_one, Matrix.rank_one, hZ.rank_eq]
   have h := hZ.specNorm_sub_rsvd_sq_le hΩ' A
   rwa [hI, pinv_of_isUnit isUnit_one, inv_one, Matrix.mul_one, ← Matrix.mul_assoc] at h
+
+
+/-- A nested head frame can be approximated in the sampled range with error controlled only
+by the comparison-rank tail and the corresponding columns of the inverse design.
+No printed source. -/
+theorem HasOrthonormalCols.frobNorm_sub_rangeProjector_mul_mul_conjTranspose_sq_le
+    [DecidableEq q] {Z : Matrix n r 𝕜} (hZ : HasOrthonormalCols Z)
+    {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
+    (hWZ : LinearMap.range W.mulVecLin ≤ LinearMap.range Z.mulVecLin)
+    {Ω : Matrix n l 𝕜} (hΩ : (Ωᴴ * Z).rank = Z.rank) (A : Matrix m n 𝕜) :
+    frobNorm (A * W * Wᴴ - rangeProjector (A * Ω) * (A * W * Wᴴ)) ^ 2 ≤
+      frobNorm ((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) * (Zᴴ * W)) ^ 2 := by
+  classical
+  have hZW : Z * (Zᴴ * W) = W := by
+    rw [← Matrix.mul_assoc, ← hZ.rangeProjector_eq]
+    exact rangeProjector_mul_eq_self_iff.mpr hWZ
+  have hhead : A * Z * Zᴴ * Ω * pinv (Zᴴ * Ω) * (Zᴴ * W) = A * W := by
+    rw [Matrix.mul_assoc (A * Z) Zᴴ Ω, Matrix.mul_assoc (A * Z) (Zᴴ * Ω),
+      hZ.mul_pinv_self_of_rank_eq hΩ, Matrix.mul_one, Matrix.mul_assoc, hZW]
+  have herr : A * W * Wᴴ -
+      (A * Ω) * (pinv (Zᴴ * Ω) * (Zᴴ * W) * Wᴴ) =
+        -(((A - A * Z * Zᴴ) * Ω * pinv (Zᴴ * Ω) * (Zᴴ * W)) * Wᴴ) := by
+    rw [Matrix.sub_mul, Matrix.sub_mul, Matrix.sub_mul, hhead, Matrix.sub_mul]
+    simp only [Matrix.mul_assoc]
+    abel
+  have h := frobNorm_one_sub_rangeProjector_mul_le_frobNorm_sub_mul (A * Ω) (A * W * Wᴴ)
+    (pinv (Zᴴ * Ω) * (Zᴴ * W) * Wᴴ)
+  rw [Matrix.sub_mul, Matrix.one_mul, herr, frobNorm_neg,
+    hW.frobNorm_mul_conjTranspose_right] at h
+  exact pow_le_pow_left₀ (frobNorm_nonneg _) h 2
 
 end NLAlib

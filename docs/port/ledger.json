@@ -403,6 +403,11 @@
   "note": "predicate dropped",
   "stage": "M3"
  },
+ "NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_one_lt": {
+  "new": "NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
  "NLAlib.IsCholesky": {
   "new": "NLAlib.IsCholesky",
   "stage": "M9"
@@ -13367,6 +13372,11 @@
   "note": "not ported in this strength: the family form NLAlib.exists_hasOrthonormalCols_forall_isUpperTriangular_of_pairwise_commute does not prescribe the order of the diagonal of a designated member; the order is prescribed only for one matrix, NLAlib.IsEigenvalueListing.exists_hasOrthonormalCols_isUpperTriangular, and for a commuting pair by the private exists_schur_pair; that each diagonal is a listing is NLAlib.HasOrthonormalCols.isEigenvalueListing_of_isUpperTriangular_conjTranspose_mul_mul",
   "stage": "M10"
  },
+ "NLAlib.exists_singularValues_window_of_one_lt": {
+  "new": "NLAlib.exists_singularValues_window_of_one_lt",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
  "NLAlib.exists_small_real_schur_subspace": {
   "new": null,
   "note": "private helper exists_mul_eq_mul_isRealSchurForm of NLAlib.exists_hasOrthonormalCols_isRealSchurForm, in matrix form",
@@ -14002,6 +14012,21 @@
  "NLAlib.frobNorm_sub_le": {
   "new": "NLAlib.frobNorm_sub_le",
   "stage": "M2"
+ },
+ "NLAlib.frobNorm_sub_mul_mul_sq_le_of_one_lt": {
+  "new": "NLAlib.frobNorm_sub_mul_mul_sq_le_of_one_lt",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_one_lt": {
+  "new": "NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.frobNorm_sub_truncatedSVD_sq_add_natCast_mul_singularValues_sq_le": {
+  "new": "NLAlib.frobNorm_sub_truncatedSVD_sq_add_natCast_mul_singularValues_sq_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
  },
  "NLAlib.frobNorm_transpose": {
   "new": "NLAlib.frobNorm_transpose",
@@ -17133,6 +17158,31 @@
   "new": "NLAlib.integral_samplingMeasure",
   "stage": "P2"
  },
+ "NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_earlyTruncatedGNRangeDim_le": {
+  "new": "NLAlib.integral_frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_earlyTruncatedGNRangeDim_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_earlyTruncatedRSVDRelativeErrorDim_le": {
+  "new": "NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix_of_earlyTruncatedRSVDRelativeErrorDim_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_fourteen_mul_le": {
+  "new": "NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_fourteen_mul_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix_of_truncatedGeneralizedNystromRangeDim_le": {
+  "new": "NLAlib.integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix_of_truncatedGeneralizedNystromRangeDim_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
+ "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_add_of_hasLaw_gaussianMatrix": {
+  "new": "NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sq_le_add_of_hasLaw_gaussianMatrix",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
  "NLAlib.integral_frobSq_countSketch_gram_error": {
   "new": null,
   "note": "private conditional step of the trace form; Sketching-S7 §5",
@@ -17740,6 +17790,11 @@
   "new": "NLAlib.integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix",
   "stage": "R3"
  },
+ "NLAlib.integral_specNorm_pinv_sq_le_add_exp_of_hasLaw_gaussianMatrix": {
+  "new": "NLAlib.integral_specNorm_pinv_sq_le_add_exp_of_hasLaw_gaussianMatrix",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
  "NLAlib.integral_specNorm_sq_mul_gaussianMatrix_mul_le": {
   "new": null,
   "note": "Chevet no longer goes through it",
@@ -17749,6 +17804,11 @@
   "new": null,
   "note": "private step in RandomMatrix/Gaussian/{SpectralNorm,ExtremeSingularValues}.lean",
   "stage": "R3"
+ },
+ "NLAlib.integral_specNorm_sub_rsvd_sq_le_div_of_hasLaw_gaussianMatrix_of_gaussianRangeFinderResidualDim_le": {
+  "new": "NLAlib.integral_specNorm_sub_rsvd_sq_le_div_of_hasLaw_gaussianMatrix_of_gaussianRangeFinderResidualDim_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
  },
  "NLAlib.integral_specNorm_sum_le_of_intrinsicDimension": {
   "new": "NLAlib.integral_specNorm_sum_le_bernstein_intrinsicDimension",
@@ -21289,6 +21349,11 @@
   "new": "NLAlib.HasOrthonormalCols.nuclearNorm_mul_conjTranspose_right",
   "stage": "M3b"
  },
+ "NLAlib.nuclearNorm_mul_sub_mul_le_of_one_lt": {
+  "new": "NLAlib.nuclearNorm_mul_sub_mul_le_of_one_lt",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
+ },
  "NLAlib.nuclearNorm_mul_transpose_le_sum_singularValues_mul": {
   "new": "NLAlib.sum_range_singularValues_mul_rpow_le",
   "note": "at r = 1, with nuclearNorm_eq_sum_range and singularValues_conjTranspose; Horn's inequality for any product and exponent",
@@ -22466,10 +22531,6 @@
   "note": "private step in RandomMatrix/Gaussian/{SpectralNorm,ExtremeSingularValues}.lean",
   "stage": "R3"
  },
- "NLAlib.range_rangeProjector": {
-  "new": "NLAlib.range_rangeProjector",
-  "stage": "M1"
- },
  "NLAlib.range_mul_moorePenroseInverse_eq": {
   "new": "NLAlib.mul_pinv",
   "note": "with range_rangeProjector",
@@ -22477,6 +22538,10 @@
  },
  "NLAlib.range_orthonormalBasisMatrix": {
   "new": "NLAlib.exists_hasOrthonormalCols_range_eq",
+  "stage": "M1"
+ },
+ "NLAlib.range_rangeProjector": {
+  "new": "NLAlib.range_rangeProjector",
   "stage": "M1"
  },
  "NLAlib.range_sizedSubsetIndex": {
@@ -22658,6 +22723,11 @@
   "new": null,
   "note": "one step from Matrix.rank_sub_le and Matrix.rank_mul_le_left; the new proof of the 2 √k bound, private frobInner_mul_conjTranspose_sub_le, does not use it",
   "stage": "M6"
+ },
+ "NLAlib.rank_sub_mul_mul_truncatedSVD_le": {
+  "new": "NLAlib.rank_sub_mul_mul_truncatedSVD_le",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
  },
  "NLAlib.rayleighQuotient": {
   "new": "NLAlib.rayleighQuotient",
@@ -26543,5 +26613,10 @@
   "new": null,
   "note": "HasLaw's constructor; P0 states with HasLaw directly",
   "stage": "P0"
+ },
+ "Real.le_add_sqrt_of_forall_le_div_one_sub": {
+  "new": "Real.le_add_sqrt_of_forall_le_div_one_sub",
+  "note": "Compiled with warnings as errors; global axiom audit permits only propext, Classical.choice, Quot.sound.",
+  "stage": "Nystrom-Constants"
  }
 }

@@ -33,6 +33,9 @@ statement holds for every choice of the truncation. Design: `docs/design/LowRank
 
 ## Main results
 
+* `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le`:
+  reciprocal-window generalized Nyström bound with constants 69 and 320/21.
+
 * `NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_rsvd_le`: HMT Theorem 9.3, every gauge.
 * `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`, `NLAlib.frobNorm_rsvd_sub_truncatedSVD_le`,
   `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq_le_frobNorm_sub_rsvd_sq_add`: the Frobenius split.
@@ -824,6 +827,41 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matri
     rw [← generalizedNystrom_eq_rsvd_add h]
     exact isBestRankApprox_truncatedSVD _ k
   have P := IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window hY hk hak hkb ha ha₂ hb
+  rw [frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add A Ω Ψ k,
+    frobNorm_sub_truncatedSVD_rsvd_sq A Ω k]
+  linarith
+
+
+/-- Reciprocal-window localized generalized Nyström: writing R for the randomized SVD, N for
+its oblique-projector completion noise, theta for the k-th singular value of R and mu for
+the compressed noise norm, the error is bounded by
+$$\|A-\operatorname{trunc}_k(\operatorname{GN})\|_{\mathsf F}^2
+\le\|A-R_k\|_{\mathsf F}^2+69k\|N\|_2^2+(320/21)\theta\min(k,b-k)\mu.$$
+The hypotheses give the completion-rank condition and reciprocal spectral thresholds 5/3.
+No printed source. -/
+theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le
+    {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜}
+    (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) {k : ℕ}
+    (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k) (hkb : k ≤ b)
+    (ha : ∀ i < a, (5 / 3 : ℝ) * singularValues (rsvd A Ω) (k - 1) ≤
+      singularValues (rsvd A Ω) i)
+    (ha₂ : singularValues (rsvd A Ω) a ≤ (5 / 3 : ℝ) * singularValues (rsvd A Ω) (k - 1))
+    (hb : singularValues (rsvd A Ω) b ≤ singularValues (rsvd A Ω) (k - 1) / (5 / 3 : ℝ)) :
+    frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 ≤
+      frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 +
+        69 * k * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 +
+        (320 / 21 : ℝ) * singularValues (rsvd A Ω) (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+          specNorm ((rangeProjector (truncatedSVD (rsvd A Ω) b) -
+              rangeProjector (truncatedSVD (rsvd A Ω) a)) *
+            (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) *
+            (rangeProjector (truncatedSVD (rsvd A Ω) b)ᴴ -
+              rangeProjector (truncatedSVD (rsvd A Ω) a)ᴴ)) := by
+  have hY : IsBestRankApprox (rsvd A Ω + obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) k
+      (truncatedSVD (generalizedNystrom A Ω Ψ) k) := by
+    rw [← generalizedNystrom_eq_rsvd_add h]
+    exact isBestRankApprox_truncatedSVD _ k
+  have P := IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le
+    hY hk hak hkb ha ha₂ hb
   rw [frobNorm_sub_truncatedSVD_generalizedNystrom_sq_eq_add A Ω Ψ k,
     frobNorm_sub_truncatedSVD_rsvd_sq A Ω k]
   linarith

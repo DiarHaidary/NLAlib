@@ -38,10 +38,12 @@ deterministic tools of the localized perturbed truncation
 
 * `NLAlib.sq_mul_frobNorm_mul_sub_rangeProjector_sq_le`: a singular-value floor on a block.
 * `NLAlib.exists_singularValues_window`: the window $[\theta/2, 2\theta]$.
+* `NLAlib.exists_singularValues_window_of_one_lt`: a reciprocal window for any factor above $1$.
 * `NLAlib.frobNorm_one_sub_mul_sq_sub_eq_add`: the weighted identity for the subspace error.
 * `NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le`, `NLAlib.mul_frobNorm_mul_one_sub_sq_add_le`:
   the head and tail weights.
 * `NLAlib.frobNorm_sub_mul_mul_sq_le`, `NLAlib.rank_sub_mul_mul_le`: the off-window part.
+* `NLAlib.rank_sub_mul_mul_truncatedSVD_le`: the window-specific rank bound $3k$.
 * `NLAlib.nuclearNorm_mul_sub_mul_le`: the trace balance on the window.
 -/
 
@@ -80,33 +82,8 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
   set V := svdV B
   have hdiag : ∀ d : Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜,
       rangeProjector (Matrix.diagonal d * Vᴴ) =
-        Matrix.diagonal (fun i => if d i = 0 then 0 else 1) := by
-    intro d
-    set e : Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜 := fun i => if d i = 0 then 0 else 1
-    have hed : Matrix.diagonal e * Matrix.diagonal d = Matrix.diagonal d := by
-      rw [Matrix.diagonal_mul_diagonal]
-      congr 1
-      funext i
-      by_cases hi : d i = 0 <;> simp [e, hi]
-    have hdd : Matrix.diagonal d * Matrix.diagonal d⁻¹ = Matrix.diagonal e := by
-      rw [Matrix.diagonal_mul_diagonal]
-      congr 1
-      funext i
-      by_cases hi : d i = 0 <;> simp [e, hi]
-    have hP : IsStarProjection (Matrix.diagonal e) := by
-      rw [Matrix.isStarProjection_iff]
-      refine ⟨?_, ?_⟩
-      · rw [Matrix.diagonal_mul_diagonal]
-        congr 1
-        funext i
-        by_cases hi : d i = 0 <;> simp [e, hi]
-      · exact Matrix.isHermitian_diagonal_of_self_adjoint _ (by
-          ext i; simp [e])
-    rw [← hP.rangeProjector_eq, rangeProjector_inj]
-    refine le_antisymm (range_le_iff_exists_mul.mpr ⟨Matrix.diagonal d * Vᴴ, ?_⟩)
-      (range_le_iff_exists_mul.mpr ⟨V * Matrix.diagonal d⁻¹, ?_⟩)
-    · rw [← Matrix.mul_assoc, hed]
-    · rw [Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ, hV.conjTranspose_mul_self, Matrix.one_mul, hdd]
+        Matrix.diagonal (fun i => if d i = 0 then 0 else 1) :=
+    fun d => hV.rangeProjector_diagonal_mul_conjTranspose d
   -- the truncated singular values and their supports
   set s : ℕ → Fin (min (Fintype.card m) (Fintype.card n)) → 𝕜 :=
     fun k i => if (i : ℕ) < k then ((singularValues B i : ℝ) : 𝕜) else 0
@@ -146,6 +123,78 @@ theorem sq_mul_frobNorm_mul_sub_rangeProjector_sq_le {p : Type*} [Fintype p] (B 
   nlinarith [mul_le_mul_of_nonneg_left key (sq_nonneg ‖(W * U) p i‖)]
 
 omit [DecidableEq m] in
+/-- A reciprocal window around the truncation level: for $\mathbf{B} \in \Bbbk^{m \times n}$,
+$k \ge 1$, $c > 1$, and $\theta = \sigma_{k-1}(\mathbf{B})$, there are $a \le k \le b$ such
+that the singular values above $a$ are at least $c\theta$, the value at $a$ is at most
+$c\theta$, the value at $b$ is at most $\theta/c$, and
+$$(b-k)\theta^2 \le c^2\|\mathbf{B}-\llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+No printed source. -/
+theorem exists_singularValues_window_of_one_lt (B : Matrix m n 𝕜) {k : ℕ}
+    (hk : 1 ≤ k) {c : ℝ} (hc : 1 < c) :
+    ∃ a b : ℕ, a ≤ k ∧ k ≤ b ∧
+      (∀ i < a, c * singularValues B (k - 1) ≤ singularValues B i) ∧
+      singularValues B a ≤ c * singularValues B (k - 1) ∧
+      singularValues B b ≤ singularValues B (k - 1) / c ∧
+      ((b - k : ℕ) : ℝ) * singularValues B (k - 1) ^ 2 ≤
+        c ^ 2 * frobNorm (B - truncatedSVD B k) ^ 2 := by
+  have hc0 : 0 < c := lt_trans zero_lt_one hc
+  rcases eq_or_lt_of_le (singularValues_nonneg B (k - 1)) with hθ | hθ
+  · refine ⟨k, k, le_rfl, le_rfl, ?_, ?_, ?_, ?_⟩
+    · intro i _
+      rw [← hθ]
+      simpa only [← hθ, mul_zero] using singularValues_nonneg B i
+    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
+      simpa only [← hθ, mul_zero] using h1
+    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
+      simpa only [← hθ, zero_div] using h1
+    · simp only [Nat.sub_self, Nat.cast_zero, zero_mul]
+      positivity
+  · have hex1 : ∃ i, singularValues B i ≤ c * singularValues B (k - 1) :=
+      ⟨k - 1, by nlinarith⟩
+    have hr0 : singularValues B (min (Fintype.card m) (Fintype.card n)) = 0 :=
+      (singularValues_eq_zero_iff B).mpr
+        (le_min (Matrix.rank_le_card_height B) (Matrix.rank_le_card_width B))
+    have hr_lt : singularValues B (min (Fintype.card m) (Fintype.card n)) <
+        singularValues B (k - 1) / c := by
+      rw [hr0]; exact div_pos hθ hc0
+    have hex2 : ∃ i, singularValues B i < singularValues B (k - 1) / c := ⟨_, hr_lt⟩
+    have ha_min : ∀ i < Nat.find hex1, c * singularValues B (k - 1) ≤ singularValues B i :=
+      fun i hi => (not_le.mp (Nat.find_min hex1 hi)).le
+    have hb_min : ∀ i < Nat.find hex2, singularValues B (k - 1) / c ≤ singularValues B i :=
+      fun i hi => not_lt.mp (Nat.find_min hex2 hi)
+    have ha_k : Nat.find hex1 ≤ k - 1 :=
+      Nat.find_min' hex1 (show singularValues B (k - 1) ≤ c * singularValues B (k - 1) by nlinarith)
+    have hbr : Nat.find hex2 ≤ min (Fintype.card m) (Fintype.card n) := Nat.find_min' hex2 hr_lt
+    have hkb : k ≤ Nat.find hex2 := by
+      by_contra h
+      have h1 := singularValues_antitone B (show Nat.find hex2 ≤ k - 1 by omega)
+      have hd := (div_lt_self hθ hc).le
+      linarith [Nat.find_spec hex2]
+    have hsum : ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / c) ^ 2 ≤
+        ∑ i ∈ Finset.Ico k (min (Fintype.card m) (Fintype.card n)), singularValues B i ^ 2 := by
+      have hsub : Finset.Ico k (Nat.find hex2) ⊆
+          Finset.Ico k (min (Fintype.card m) (Fintype.card n)) :=
+        Finset.Ico_subset_Ico_right hbr
+      calc ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / c) ^ 2
+          = ∑ i ∈ Finset.Ico k (Nat.find hex2), (singularValues B (k - 1) / c) ^ 2 := by
+            simp [Finset.sum_const, Nat.card_Ico]
+        _ ≤ ∑ i ∈ Finset.Ico k (Nat.find hex2), singularValues B i ^ 2 :=
+            Finset.sum_le_sum fun i hi =>
+              pow_le_pow_left₀ (by positivity)
+                (hb_min i (Finset.mem_Ico.mp hi).2) 2
+        _ ≤ _ := Finset.sum_le_sum_of_subset_of_nonneg hsub fun i _ _ => sq_nonneg _
+    refine ⟨Nat.find hex1, Nat.find hex2, by omega, hkb, fun i hi => ha_min i hi,
+      (Nat.find_spec hex1), (Nat.find_spec hex2).le, ?_⟩
+    rw [frobNorm_sub_truncatedSVD_sq]
+    have hmul : c ^ 2 * (((Nat.find hex2 - k : ℕ) : ℝ) *
+        (singularValues B (k - 1) / c) ^ 2) =
+        ((Nat.find hex2 - k : ℕ) : ℝ) * singularValues B (k - 1) ^ 2 := by
+      field_simp
+    have hfinal := mul_le_mul_of_nonneg_left hsum (sq_nonneg c)
+    rw [hmul] at hfinal
+    exact hfinal
+
+omit [DecidableEq m] in
 /-- The window of the truncation level: for $\mathbf{B} \in \Bbbk^{m \times n}$ and
 $k \ge 1$, with $\theta = \sigma_{k-1}(\mathbf{B})$, there are $a \le k \le b$ with
 $2\theta \le \sigma_i(\mathbf{B})$ for $i < a$, $\sigma_a(\mathbf{B}) \le 2\theta$,
@@ -159,54 +208,8 @@ theorem exists_singularValues_window (B : Matrix m n 𝕜) {k : ℕ} (hk : 1 ≤
       singularValues B b ≤ singularValues B (k - 1) / 2 ∧
       ((b - k : ℕ) : ℝ) * singularValues B (k - 1) ^ 2 ≤
         4 * frobNorm (B - truncatedSVD B k) ^ 2 := by
-  rcases eq_or_lt_of_le (singularValues_nonneg B (k - 1)) with hθ | hθ
-  · refine ⟨k, k, le_rfl, le_rfl, ?_, ?_, ?_, ?_⟩
-    · intro i _
-      rw [← hθ]
-      linarith [singularValues_nonneg B i]
-    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
-      linarith
-    · have h1 := singularValues_antitone B (show k - 1 ≤ k by omega)
-      linarith
-    · simp only [Nat.sub_self, Nat.cast_zero, zero_mul]
-      positivity
-  · have hex1 : ∃ i, singularValues B i ≤ 2 * singularValues B (k - 1) :=
-      ⟨k - 1, by linarith⟩
-    have hr0 : singularValues B (min (Fintype.card m) (Fintype.card n)) = 0 :=
-      (singularValues_eq_zero_iff B).mpr
-        (le_min (Matrix.rank_le_card_height B) (Matrix.rank_le_card_width B))
-    have hr_lt : singularValues B (min (Fintype.card m) (Fintype.card n)) <
-        singularValues B (k - 1) / 2 := by
-      rw [hr0]; linarith
-    have hex2 : ∃ i, singularValues B i < singularValues B (k - 1) / 2 := ⟨_, hr_lt⟩
-    have ha_min : ∀ i < Nat.find hex1, 2 * singularValues B (k - 1) ≤ singularValues B i :=
-      fun i hi => (not_le.mp (Nat.find_min hex1 hi)).le
-    have hb_min : ∀ i < Nat.find hex2, singularValues B (k - 1) / 2 ≤ singularValues B i :=
-      fun i hi => not_lt.mp (Nat.find_min hex2 hi)
-    have ha_k : Nat.find hex1 ≤ k - 1 :=
-      Nat.find_min' hex1 (show singularValues B (k - 1) ≤ 2 * singularValues B (k - 1) by linarith)
-    have hbr : Nat.find hex2 ≤ min (Fintype.card m) (Fintype.card n) := Nat.find_min' hex2 hr_lt
-    have hkb : k ≤ Nat.find hex2 := by
-      by_contra h
-      have h1 := singularValues_antitone B (show Nat.find hex2 ≤ k - 1 by omega)
-      linarith [Nat.find_spec hex2]
-    have hsum : ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / 2) ^ 2 ≤
-        ∑ i ∈ Finset.Ico k (min (Fintype.card m) (Fintype.card n)), singularValues B i ^ 2 := by
-      have hsub : Finset.Ico k (Nat.find hex2) ⊆
-          Finset.Ico k (min (Fintype.card m) (Fintype.card n)) :=
-        Finset.Ico_subset_Ico_right hbr
-      calc ((Nat.find hex2 - k : ℕ) : ℝ) * (singularValues B (k - 1) / 2) ^ 2
-          = ∑ i ∈ Finset.Ico k (Nat.find hex2), (singularValues B (k - 1) / 2) ^ 2 := by
-            simp [Finset.sum_const, Nat.card_Ico]
-        _ ≤ ∑ i ∈ Finset.Ico k (Nat.find hex2), singularValues B i ^ 2 :=
-            Finset.sum_le_sum fun i hi =>
-              pow_le_pow_left₀ (by positivity)
-                (hb_min i (Finset.mem_Ico.mp hi).2) 2
-        _ ≤ _ := Finset.sum_le_sum_of_subset_of_nonneg hsub fun i _ _ => sq_nonneg _
-    refine ⟨Nat.find hex1, Nat.find hex2, by omega, hkb, fun i hi => ha_min i hi,
-      (Nat.find_spec hex1), (Nat.find_spec hex2).le, ?_⟩
-    rw [frobNorm_sub_truncatedSVD_sq]
-    nlinarith [hsum]
+  simpa only [show (2 : ℝ) ^ 2 = 4 by norm_num] using
+    exists_singularValues_window_of_one_lt B hk (c := 2) (by norm_num)
 
 /-! ### The weighted identity and its two weights -/
 
@@ -470,7 +473,7 @@ private theorem frobNorm_one_sub_sub_mul_mul_sub_sq_le {Pa Pb Z : Matrix m m �
 omit [DecidableEq m] in
 /-- At $\theta = \sigma_{k-1}(\mathbf{B})$, an orthogonal projector of rank at most $k$ has
 $\theta^2(\|\mathbf{P}_k\|_{\mathsf{F}}^2 - \|\mathbf{Z}\|_{\mathsf{F}}^2) \ge 0$. -/
-private theorem sq_singularValues_mul_frobNorm_sq_sub_nonneg (B : Matrix m n 𝕜) {k : ℕ}
+theorem singularValues_sq_mul_frobNorm_sq_sub_nonneg (B : Matrix m n 𝕜) {k : ℕ}
     (hk : 1 ≤ k) {Z : Matrix m m 𝕜} (hZ : IsStarProjection Z) (hZk : Z.rank ≤ k) :
     0 ≤ singularValues B (k - 1) ^ 2 *
       (frobNorm (rangeProjector (truncatedSVD B k)) ^ 2 - frobNorm Z ^ 2) := by
@@ -521,7 +524,7 @@ theorem frobNorm_sub_mul_mul_sq_le (B : Matrix m n 𝕜) {k a b : ℕ} (hk : 1 �
   have H2 := sub_truncatedSVD_mul_conjTranspose_of_le B le_rfl (i := a)
   have H3 := sub_truncatedSVD_mul_conjTranspose_of_le B le_rfl (i := b)
   have hσa := (specNorm_sub_truncatedSVD B a).trans_le ha₂
-  have hrank := sq_singularValues_mul_frobNorm_sq_sub_nonneg B hk hZ hZk
+  have hrank := singularValues_sq_mul_frobNorm_sq_sub_nonneg B hk hZ hZk
   set θ := singularValues B (k - 1) with hθ
   set Pa := rangeProjector (truncatedSVD B a) with hPa_def
   set Pb := rangeProjector (truncatedSVD B b) with hPb_def
@@ -613,9 +616,65 @@ theorem rank_sub_mul_mul_le (B : Matrix m n 𝕜) (k : ℕ) {Z : Matrix m m 𝕜
   omega
 
 omit [DecidableEq m] in
+/-- The off-window part for the window of the chosen SVD has rank at most $3k$:
+for $\mathbf{B} \in \Bbbk^{m \times n}$, $a \le k \le b$, and any $\mathbf{Z}$ of rank at most
+$k$, write $\mathbf{L} = \mathbf{P}_b - \mathbf{P}_a$ and
+$\mathbf{L}' = \mathbf{P}'_b - \mathbf{P}'_a$ for the left and right window projectors.
+Then
+$$\operatorname{rank}\bigl((\mathbf{Z}-\mathbf{P}_k)\mathbf{B} -
+\mathbf{L}(\mathbf{Z}-\mathbf{P}_k)\mathbf{B}\mathbf{L}'\bigr) \le 3k\,.$$
+No printed source. -/
+theorem rank_sub_mul_mul_truncatedSVD_le (B : Matrix m n 𝕜) (k : ℕ) {a b : ℕ}
+    (hak : a ≤ k) (hkb : k ≤ b) {Z : Matrix m m 𝕜} (hZk : Z.rank ≤ k) :
+    ((Z - rangeProjector (truncatedSVD B k)) * B -
+        (rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) *
+          (Z - rangeProjector (truncatedSVD B k)) * B *
+          (rangeProjector ((truncatedSVD B b)ᴴ) -
+            rangeProjector ((truncatedSVD B a)ᴴ))).rank ≤ 3 * k := by
+  rw [Matrix.mul_assoc _ B, Matrix.mul_sub B, mul_rangeProjector_conjTranspose_truncatedSVD,
+    mul_rangeProjector_conjTranspose_truncatedSVD]
+  set Pa := rangeProjector (truncatedSVD B a)
+  set Pk := rangeProjector (truncatedSVD B k)
+  set Pb := rangeProjector (truncatedSVD B b)
+  set Ba := truncatedSVD B a
+  set Bk := truncatedSVD B k
+  set Bb := truncatedSVD B b
+  have hak' := rangeProjector_truncatedSVD_mul_of_le B hak
+  have hkb' := rangeProjector_truncatedSVD_mul_of_le B hkb
+  have hab' := rangeProjector_truncatedSVD_mul_of_le B (hak.trans hkb)
+  have hBa : Pa * B = Ba := rangeProjector_truncatedSVD_mul B a
+  have hBk : Pk * B = Bk := rangeProjector_truncatedSVD_mul B k
+  have hBb : Pb * B = Bb := rangeProjector_truncatedSVD_mul B b
+  have hPkBa : Pk * Ba = Ba := by
+    rw [← hBa, ← Matrix.mul_assoc, hak'.1, hBa]
+  have hPkBb : Pk * Bb = Bk := by
+    rw [← hBb, ← Matrix.mul_assoc, hkb'.2, hBk]
+  have hPaBa : Pa * Ba = Ba := by
+    rw [← hBa, ← Matrix.mul_assoc, (isStarProjection_rangeProjector _).mul_self, hBa]
+  have hPaBb : Pa * Bb = Ba := by
+    rw [← hBb, ← Matrix.mul_assoc, hab'.2, hBa]
+  have hcompress : (Pb - Pa) * Pk * (Bb - Ba) = Bk - Ba := by
+    rw [Matrix.sub_mul Pb Pa Pk, hkb'.1, hak'.2, Matrix.sub_mul, Matrix.mul_sub,
+      Matrix.mul_sub, hPkBb, hPkBa, hPaBb, hPaBa]
+    abel
+  have hdec : (Z - Pk) * B - (Pb - Pa) * (Z - Pk) * (Bb - Ba) =
+      Z * B - (Pb - Pa) * Z * (Bb - Ba) - Ba := by
+    rw [Matrix.mul_sub (Pb - Pa) Z Pk, Matrix.sub_mul _ _ (Bb - Ba), hcompress,
+      Matrix.sub_mul Z Pk B, hBk]
+    abel
+  rw [hdec]
+  have h1 : (Z * B).rank ≤ k := (Matrix.rank_mul_le_left _ _).trans hZk
+  have h2 : ((Pb - Pa) * Z * (Bb - Ba)).rank ≤ k :=
+    (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_mul_le_right _ _).trans hZk)
+  have h3 : Ba.rank ≤ k := (rank_truncatedSVD_le B a).trans hak
+  have h4 := Matrix.rank_sub_le (Z * B) ((Pb - Pa) * Z * (Bb - Ba))
+  have h5 := Matrix.rank_sub_le (Z * B - (Pb - Pa) * Z * (Bb - Ba)) Ba
+  omega
+
+omit [DecidableEq m] in
 /-- The compression of a star projection by a star projection is a Gram matrix:
 $\|\mathbf{R}\mathbf{Q}\mathbf{R}\|_* = \|\mathbf{Q}\mathbf{R}\|_{\mathsf{F}}^2$. -/
-private theorem nuclearNorm_mul_mul_eq_frobNorm_sq {Q R : Matrix m m 𝕜}
+theorem nuclearNorm_mul_mul_eq_frobNorm_sq {Q R : Matrix m m 𝕜}
     (hQ : IsStarProjection Q) (hR : IsStarProjection R) :
     nuclearNorm (R * Q * R) = frobNorm (Q * R) ^ 2 := by
   rw [← nuclearNorm_conjTranspose_mul_self, Matrix.conjTranspose_mul, hQ.conjTranspose_eq,
@@ -628,7 +687,7 @@ $$\|\mathbf{L}(\mathbf{Z} - \mathbf{P})\mathbf{L}\|_* \le
 (\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{P}\|_{\mathsf{F}}^2) +
 (\|\mathbf{P}_b\|_{\mathsf{F}}^2 - \|\mathbf{Z}\|_{\mathsf{F}}^2) +
 \|\mathbf{Z}(\mathbf{I} - \mathbf{P}_b)\|_{\mathsf{F}}^2\,.$$ -/
-private theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m 𝕜}
+theorem nuclearNorm_mul_sub_mul_le_of_mul_eq {Pa P Pb Z : Matrix m m 𝕜}
     (hPa : IsStarProjection Pa) (hP : IsStarProjection P) (hPb : IsStarProjection Pb)
     (hZ : IsStarProjection Z) (h1 : Pa * P = Pa) (h2 : P * Pa = Pa) (h3 : P * Pb = P)
     (h4 : Pb * P = P) (h5 : Pa * Pb = Pa) (h6 : Pb * Pa = Pa) :

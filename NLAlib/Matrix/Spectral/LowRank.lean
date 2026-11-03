@@ -365,6 +365,32 @@ theorem frobNorm_sq_eq_truncatedSVD_add (A : Matrix m n 𝕜) (k : ℕ) :
   have h := frobNorm_add_sq_of_frobInner_eq_zero (frobInner_truncatedSVD_sub A k)
   rwa [add_sub_cancel] at h
 
+/-- The residual tail at rank $k+d$ and the $d$ intervening singular values spend disjoint
+parts of the Frobenius tail at rank $k$:
+$$\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_{k+d}\|_{\mathsf{F}}^2
++d\,\sigma_{k+d}(\mathbf{A})^2 \le
+\|\mathbf{A}-\llbracket\mathbf{A}\rrbracket_k\|_{\mathsf{F}}^2\,.$$
+This retains the coupling between a comparison rank's spectral and Frobenius tails.
+No printed source. -/
+theorem frobNorm_sub_truncatedSVD_sq_add_natCast_mul_singularValues_sq_le
+    (A : Matrix m n 𝕜) (k d : ℕ) :
+    frobNorm (A - truncatedSVD A (k + d)) ^ 2 +
+        (d : ℝ) * singularValues A (k + d) ^ 2 ≤
+      frobNorm (A - truncatedSVD A k) ^ 2 := by
+  have hflat : (d : ℝ) * singularValues A (k + d) ^ 2 ≤
+      ∑ i ∈ Finset.range d, singularValues A (k + i) ^ 2 := by
+    calc (d : ℝ) * singularValues A (k + d) ^ 2
+        = (Finset.range d).card • singularValues A (k + d) ^ 2 := by
+          rw [Finset.card_range, nsmul_eq_mul]
+      _ ≤ _ := Finset.card_nsmul_le_sum _ _ _ fun i hi =>
+        pow_le_pow_left₀ (singularValues_nonneg _ _)
+          (singularValues_antitone A (by have := Finset.mem_range.mp hi; omega)) 2
+  have hsum := Finset.sum_range_add (fun i => singularValues A i ^ 2) k d
+  have hk := frobNorm_sq_eq_truncatedSVD_add A k
+  have hkd := frobNorm_sq_eq_truncatedSVD_add A (k + d)
+  rw [frobNorm_truncatedSVD_sq] at hk hkd
+  nlinarith
+
 /-- The truncated SVD is the projection of $\mathbf{A}$ onto its own column space:
 $\mathbf{P}_{\llbracket \mathbf{A} \rrbracket_k} \mathbf{A} = \llbracket \mathbf{A} \rrbracket_k$.
 -/

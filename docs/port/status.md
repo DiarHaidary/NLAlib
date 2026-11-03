@@ -1,3 +1,24 @@
+## Nyström constants: proved and verified (2026-11-03)
+
+Branch proof/nystrom-constants-2026-11-02, isolated worktree /home/ubuntu/nlalib-nystrom-constants.
+Design: docs/design/research/Nystrom-Constants.md. The maintainer requested a PR on 2026-11-03; committing and publishing this branch are authorized.
+
+Read-back from the checked Lean statements:
+- Independent Gaussian range/co-range sketches, 0<eps<=1, ell>=200k/eps and p>=14ell
+  give expected squared Frobenius error at most (1+eps) times the rank-k optimal squared error.
+  Main theorem: Gaussian/TruncatedGeneralizedNystromRelativeError.lean.
+- Gaussian early RSVD uses ell>=max(900,400k/eps^2). Early generalized Nyström uses
+  ell>=max(900,500k/eps^2), p>=10k/eps+10k+1; the previous left-width form now uses1600.
+- The comparison-rank baseline is Tk + k/(ell-j-1)*Tj for k<=j and j+2<=ell.
+- Reciprocal-window Frobenius/nuclear estimates and deterministic69 and320/21 constants
+  feed the complete conditional Gaussian proof. Degenerate ranks and zero tails are covered.
+
+Validation: full NLAlib/NLAlibScaffold build with --wfail, global axiom audit,14Leanlinters,
+generated imports,42constant registrations, ledger, references, full extracted-source/name
+rules and duplicate report completed. Only propext,Classical.choice,Quot.sound are allowed.
+No new sorry,axiom,admit or native_decide was added. Original checkouts are unchanged.
+The optional800/4 alternative was not formalized or claimed in this branch.
+
 # Port status
 
 Updated at every stopping point. Newest entry first within each section.

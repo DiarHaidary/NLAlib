@@ -5,6 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.LinearAlgebra.Matrix.ConjTranspose
+
 public import NLAlib.Matrix.Basic.Orthonormal
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Matrix.Norms.Spectral
@@ -277,4 +279,43 @@ theorem frobNorm_sq {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
 
 end HasOrthonormalCols
 
+end NLAlib
+
+
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {m n p r : Type*}
+  [Fintype m] [Fintype n] [Fintype p] [Fintype r] [DecidableEq r]
+/-- A full orthonormal eigenframe of the left Gram matrix transfers the squared
+Frobenius norm of a product to the corresponding diagonal product. No printed source. -/
+theorem HasOrthonormalCols.frobNorm_mul_sq_eq_mul_mul_diagonal_sq
+    {Q : Matrix m r 𝕜} (hQ : HasOrthonormalCols Q)
+    (hcard : Fintype.card r = Fintype.card m)
+    (B : Matrix m n 𝕜) (d : r → ℝ)
+    (hG : B * Bᴴ * Q = Q * Matrix.diagonal (fun i => ((d i ^ 2 : ℝ) : 𝕜)))
+    (X : Matrix p m 𝕜) :
+    frobNorm (X * B) ^ 2 =
+      frobNorm (X * Q * Matrix.diagonal (fun i => (d i : 𝕜))) ^ 2 := by
+  classical
+  have hQQ := hQ.mul_conjTranspose_self_of_card_eq hcard.symm
+  have hGram : B * Bᴴ =
+      Q * Matrix.diagonal (fun i => ((d i ^ 2 : ℝ) : 𝕜)) * Qᴴ := by
+    calc B * Bᴴ = B * Bᴴ * (Q * Qᴴ) := by rw [hQQ, Matrix.mul_one]
+      _ = (B * Bᴴ * Q) * Qᴴ := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hG]
+  let D : Matrix r r 𝕜 := Matrix.diagonal (fun i => (d i : 𝕜))
+  have hDD : D * D = Matrix.diagonal (fun i => ((d i ^ 2 : ℝ) : 𝕜)) := by
+    rw [Matrix.diagonal_mul_diagonal]
+    congr 1
+    funext i
+    simp only [sq, RCLike.ofReal_mul]
+  have hsquare : (X * Q * D) * (X * Q * D)ᴴ = (X * B) * (X * B)ᴴ := by
+    rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_diagonal_ofReal]
+    calc X * Q * D * (D * (Qᴴ * Xᴴ)) = X * (Q * (D * D) * Qᴴ) * Xᴴ := by
+          simp only [Matrix.mul_assoc]
+      _ = (X * B) * (X * B)ᴴ := by
+        rw [hDD, ← hGram, Matrix.conjTranspose_mul]
+        simp only [Matrix.mul_assoc]
+  rw [frobNorm_sq_eq_re_trace, frobNorm_sq_eq_re_trace,
+    Matrix.trace_mul_comm (X * B)ᴴ, Matrix.trace_mul_comm (X * Q * D)ᴴ, hsquare]
 end NLAlib

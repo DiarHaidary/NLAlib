@@ -21,6 +21,7 @@ for `Mathlib.Analysis.Real.Sqrt`.
 ## Main results
 
 * `Real.le_sqrt_of_forall_le_div_add_mul`.
+* `Real.le_add_sqrt_of_forall_le_div_one_sub`.
 -/
 
 @[expose] public section
@@ -62,6 +63,25 @@ theorem le_sqrt_of_forall_le_div_add_mul {x a b : ℝ} (ha : 0 ≤ a) (hb : 0 �
     rw [← hpa, ← hqb]
     field_simp
     ring
+  linarith
+
+/-- If $a,b \ge 0$ and $x \le (a+b/\theta)/(1-\theta)$ for every
+$0 < \theta < 1$, then $x \le a+2b+\sqrt{4b(a+b)}$. -/
+theorem le_add_sqrt_of_forall_le_div_one_sub {x a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b)
+    (h : ∀ θ : ℝ, 0 < θ → θ < 1 → x ≤ (a + b / θ) / (1 - θ)) :
+    x ≤ a + 2 * b + √(4 * b * (a + b)) := by
+  have hopt : x - a - 2 * b ≤ √(4 * b * (a + b)) := by
+    apply le_sqrt_of_forall_le_div_add_mul hb (add_nonneg ha hb)
+    intro u hu
+    have hu1 : 0 < 1 + u := by linarith
+    have ht : u / (1 + u) < 1 := (div_lt_one hu1).2 (by linarith)
+    have hh := h (u / (1 + u)) (div_pos hu hu1) ht
+    have he : (a + b / (u / (1 + u))) / (1 - u / (1 + u)) =
+        a + 2 * b + (b / u + (a + b) * u) := by
+      field_simp
+      ring
+    rw [he] at hh
+    linarith
   linarith
 
 end Real

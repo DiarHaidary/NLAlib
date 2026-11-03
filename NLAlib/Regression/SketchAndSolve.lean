@@ -191,9 +191,12 @@ theorem integral_frobNorm_sub_mul_sketchAndSolve_sq_of_hasLaw_gaussianMatrix
 
 /-! ### The spectral norm of the excess -/
 
-/-- The excess in spectral norm, almost surely: the spectral norm of the Gaussian block in the
-two bases. -/
-private theorem ae_specNorm_obliqueProjector_mul_eq (hS : HasLaw S (gaussianMatrix p m) μ)
+/-- For a Gaussian sketch S, rank(X) at most its width, an orthonormal frame Q1 spanning
+the range of X and a frame Q2 representing E=(I-P_X)B, the oblique noise satisfies almost surely
+$$\|\Pi_{X,S}E\|_2^2=\|(SQ_1)^+(SQ_2)(Q_2^{\mathsf H}E)\|_2^2.$$
+No printed source. -/
+theorem ae_specNorm_obliqueProjector_mul_eq_of_hasLaw_gaussianMatrix
+    (hS : HasLaw S (gaussianMatrix p m) μ)
     {X : Matrix m s ℝ} (hX : X.rank ≤ Fintype.card p) {B : Matrix m r ℝ} {t : ℕ}
     {Q₁ : Matrix m (Fin X.rank) ℝ} {Q₂ : Matrix m (Fin t) ℝ} (hQ₁ : HasOrthonormalCols Q₁)
     (hR₁ : LinearMap.range Q₁.mulVecLin = LinearMap.range X.mulVecLin)
@@ -217,7 +220,8 @@ theorem
   have hint := integrable_specNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix hG hQ₁ hQ₂ h₁₂ hrk
     (Q₂ᴴ * ((1 - rangeProjector X) * B))
   simp only [Matrix.conjTranspose_conjTranspose] at hint
-  exact hint.congr ((ae_specNorm_obliqueProjector_mul_eq hS (by omega) hQ₁ hR₁ hE).mono
+  exact hint.congr ((ae_specNorm_obliqueProjector_mul_eq_of_hasLaw_gaussianMatrix
+      hS (by omega) hQ₁ hR₁ hE).mono
     fun _ h => h.symm)
 
 /-- **The spectral norm of the Gaussian sketch-and-solve excess**: with
@@ -257,7 +261,8 @@ theorem
   have hQE' : specNorm (Q₂ᴴ * ((1 - rangeProjector X) * B)) =
       specNorm ((1 - rangeProjector X) * B) := by
     rw [← hQ₂.specNorm_mul_left, hE]
-  rw [integral_congr_ae (ae_specNorm_obliqueProjector_mul_eq hS (by omega) hQ₁ hR₁ hE)]
+  rw [integral_congr_ae (ae_specNorm_obliqueProjector_mul_eq_of_hasLaw_gaussianMatrix
+      hS (by omega) hQ₁ hR₁ hE)]
   rwa [hQE, hQE'] at hval
 
 /-- The numerical constant of the Gaussian excess: for $4q \le p$ and

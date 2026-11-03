@@ -12,6 +12,7 @@ import json
 import re
 import sys
 from pathlib import Path
+import leansrc
 
 ROOT = Path(__file__).resolve().parent.parent
 DECL = re.compile(
@@ -23,10 +24,13 @@ def declared_names(root=ROOT):
     names = set()
     for lib in ("NLAlib", "NLAlibScaffold"):
         for f in (root / lib).rglob("*.lean"):
+            text = f.read_text()
+            # Include valid multiline declarations via the canonical Lean-source parser.
+            names.update(d["full"] for d in leansrc.parse(text)["decls"] if d["full"])
             namespaces = []
             structure = None
             in_doc = False
-            for line in f.read_text().splitlines():
+            for line in text.splitlines():
                 if in_doc:  # a docstring continuation line is not a column-0 command
                     in_doc = "-/" not in line
                     continue

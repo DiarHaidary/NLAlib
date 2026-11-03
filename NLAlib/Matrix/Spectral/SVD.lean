@@ -635,3 +635,37 @@ theorem HasOrthonormalCols.singularValues_eq_one [DecidableEq n] {V : Matrix m n
   rw [h1, Matrix.PosSemidef.one.singularValues_eq_eigenvalue, eigenvalue_one hi]
 
 end NLAlib
+
+
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {m n r : Type*}
+  [Fintype m] [Fintype n] [Fintype r] [DecidableEq r]
+  {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+/-- Complete the left SVD frame to a full orthonormal frame of the supplied cardinality.
+The left Gram matrix has the original squared singular values and then zeros.
+The original singular vectors are preserved. No printed source. -/
+theorem IsSVD.exists_fromCols_mul_conjTranspose_self_mul_eq_mul_diagonal
+    {p : Type*} [Fintype p] [DecidableEq p]
+    (h : IsSVD A U σ V)
+    (hp : Fintype.card r + Fintype.card p = Fintype.card m) :
+    ∃ U' : Matrix m p 𝕜, HasOrthonormalCols (Matrix.fromCols U U') ∧
+      A * Aᴴ * Matrix.fromCols U U' = Matrix.fromCols U U' *
+        Matrix.diagonal (Sum.elim (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) (fun _ => 0)) := by
+  obtain ⟨U', hUU'⟩ := h.hasOrthonormalCols_left.exists_fromCols hp
+  obtain ⟨-, -, h01⟩ := hasOrthonormalCols_fromCols_iff.mp hUU'
+  have hG := h.mul_conjTranspose_self_eq
+  have h0 : A * Aᴴ * U = U * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) := by
+    rw [hG, h.hasOrthonormalCols_left.mul_conjTranspose_mul_cancel_right]
+  have h1 : A * Aᴴ * U' = 0 := by
+    rw [hG, Matrix.mul_assoc, h01, Matrix.mul_zero]
+  refine ⟨U', hUU', ?_⟩
+  ext a (j | j)
+  · have e := congrFun (congrFun h0 a) j
+    rw [Matrix.mul_diagonal] at e
+    rw [Matrix.mul_diagonal, Matrix.fromCols_apply_inl, Sum.elim_inl]
+    simpa only [Matrix.mul_apply, Matrix.fromCols_apply_inl] using e
+  · have e := congrFun (congrFun h1 a) j
+    rw [Matrix.zero_apply] at e
+    rw [Matrix.mul_diagonal, Matrix.fromCols_apply_inr, Sum.elim_inr, mul_zero]
+    simpa only [Matrix.mul_apply, Matrix.fromCols_apply_inr] using e
+end NLAlib
