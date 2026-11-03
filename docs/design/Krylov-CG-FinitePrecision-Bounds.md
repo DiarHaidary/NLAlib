@@ -325,3 +325,171 @@ Program, target, access-model, reference, constant and LaTeX checks passed. The 
 reported zero new errors, 73 existing baseline entries and 496 heuristic warnings. The duplicate
 report retained eight private-only classes and found no public duplicates. No checks, targets,
 approval files, build pins, or baselines were changed. Changes remain uncommitted.
+
+## Physical energy convergence through computed decrements (2026-11-03)
+
+The earlier physical-energy estimate retained only `0.99` times the computed decrement
+sum. Combining that estimate with a vanishing model energy leaves a fixed fraction of the
+initial energy. This amendment retains the arithmetic precision in the descent coefficient,
+so the additive physical-energy error vanishes at zero precision. The parent reviewed and
+accepted the statement/file plan before implementation; the independent energy reviewer
+checked the local constants, telescoping estimate and exact-model consumers.
+
+No mathematical object or hypothesis interface is introduced. Use the existing real `CGRun`,
+its full-horizon `backwardH`, the physical solution equation, Mathlib quadratic forms,
+spectral inclusion and finite sums. The local arithmetic model, successful divisions,
+nonzero taken residuals and terminal-zero convention are unchanged. In particular, none of
+the new statements assumes positive precision or a nonzero terminal residual. No Mathlib
+deviation is introduced. Mathlib was searched for finite-precision CG energy and backward
+comparison theorems; none was found. The existing NLAlib results supply the a priori control
+and exact-CG convergence; they are not reproved.
+
+The new numerical definition belongs to the finite-precision CG accumulation vocabulary:
+
+```lean
+noncomputable irreducible_def cgEnergyFactor (j : ℕ) : ℝ := 135 * (j : ℝ) ^ 2
+theorem cgEnergyFactor_nonneg (j : ℕ) : 0 ≤ cgEnergyFactor j
+theorem cgEnergyFactor_le (j : ℕ) : cgEnergyFactor j ≤ 135 * (j : ℝ) ^ 2
+```
+
+Its value and body are registered in `docs/constants.toml`. It is a scalar error budget,
+not a second energy definition. Its consumer API remains valid if that budget decreases.
+
+### Statements
+
+For `C : CGRun n k`, the shared assumption in every signature below is precisely the
+existing input-only window, not a premise about measured convergence. The physical-energy
+statement retains coefficient one on the computed decrement sum:
+
+```lean
+theorem CGRun.quadForm_sub_x_le_sub_sum_add {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
+    quadForm C.A (xs - C.x j) ≤ quadForm C.A xs -
+      ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2 +
+      cgEnergyFactor j * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)
+```
+
+The computed sum receives an explicit lower bound, in the physical initial energy:
+
+```lean
+theorem CGRun.sum_γ_mul_ρ_sq_ge {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
+    (1 - 4 * ((Real.sqrt (2 * (a' / a) + 1) - 1) /
+      (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ (2 * j)) * quadForm C.A xs -
+      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (cgBackwardFactor k * C.ε * (a' / a) * a') / a ^ 2 ≤
+      ∑ i ∈ Finset.range j, C.γ i * C.ρ i ^ 2
+```
+
+The resulting convergence envelope concerns the actual computed iterate directly:
+
+```lean
+theorem CGRun.quadForm_sub_x_le_four_mul_pow_add {a a' : ℝ} (ha : 0 < a)
+    (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) {j : ℕ} (hj : j ≤ k) :
+    quadForm C.A (xs - C.x j) ≤
+      4 * ((Real.sqrt (2 * (a' / a) + 1) - 1) /
+        (Real.sqrt (2 * (a' / a) + 1) + 1)) ^ (2 * j) * quadForm C.A xs +
+      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (cgBackwardFactor k * C.ε * (a' / a) * a') / a ^ 2 +
+      cgEnergyFactor j * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)
+```
+
+An independently usable model comparison is also exposed, before the Chebyshev consumers:
+
+```lean
+theorem CGRun.quadForm_sub_x_le_quadForm_backwardH_sub_cgIterate_add {a a' : ℝ}
+    (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b)
+    {ys : Fin n × Fin (k + 1) → ℝ} (hy : C.backwardH *ᵥ ys = C.dilatedRhs)
+    {j : ℕ} (hj : j ≤ k) :
+    quadForm C.A (xs - C.x j) ≤
+      quadForm C.backwardH (ys - cgIterate C.backwardH C.dilatedRhs 0 j) +
+      2 * ‖WithLp.toLp 2 C.b‖ ^ 2 * (cgBackwardFactor k * C.ε * (a' / a) * a') / a ^ 2 +
+      cgEnergyFactor j * C.ε * (a' / a) * (‖WithLp.toLp 2 C.b‖ ^ 2 / a)
+```
+
+Consumers are physical-iterate accuracy estimates, a posteriori interpretation of the
+computed decrement sum, and later convergence bounds that use energy directly rather than
+convert a residual bound to energy with another condition-number factor. These remain
+finite-horizon sufficient bounds. They do not assert feasibility of the smallness window
+at arbitrary horizons, monotonic physical energy, or unrestricted fixed-precision limits.
+The full-horizon model distance contributes its existing error term; this work does not
+remove that dependence.
+
+### Derivation, placement and reuse
+
+Write `z=εκ`, `u=‖b‖²/a`, `s_i=γ_iρ_i²`, and `E_i=quadForm A (xs-x_i)`.
+The public precision-dependent local estimates in `CGAccuracy.lean` are
+
+```
+p_i · r_i ≥ (1 - 26 i z) ρ_i²,
+γ_i² p_i · A p_i ≤ (1 + 6 z) s_i.
+```
+
+For the pairing estimate the line-search contribution is at most `21.5 i z ρ_i²` and
+the direction-rounding contribution is at most `4.25 z ρ_i²`; `i=0` is exact and
+`i≥1` absorbs the latter into `26 i z ρ_i²`. For the curvature estimate, retain
+`μ_i≥(1-3z)p_i·A p_i` and `γ_i μ_i≤(1+z)²ρ_i²`. The inequality
+`(1+z)²≤(1+6z)(1-3z)` follows from `0≤z≤1/19`; the existing window gives the
+stronger `z≤10⁻⁵`.
+
+Generalize the existing private one-step energy and iterate-rounding helpers to an arbitrary
+nonnegative descent coefficient. This shares the physical energy expansion, the square-root
+estimate and the rounding budget with the existing `0.99` theorems, which remain unchanged.
+The existing weaker a priori theorem supplies `E_i≤2u` and the already proved gap estimate
+supplies `‖g_i‖≤12 i z ‖b‖`; there is no circular induction. Together with the existing
+`γ_i‖p_i‖≤1.5‖b‖/a`, the new public step inequality is
+
+```
+E_(i+1) ≤ E_i - s_i + (52 i + 6) z s_i + (36 i + 19) z u.
+```
+
+The weighted telescoping sum bounds its last additive contribution by `25 j² z u`.
+For `i<j`, `52 i+6≤52j`; the existing `sum_γ_mul_ρ_sq_le` gives
+`S_j≤S_k≤2u`. Hence the other accumulated contribution is at most `104 j z u`.
+At `j≥1`, `25j²+104j≤129j²≤135j²`; `j=0` is exact. The named budget `135j²`
+is retained as a readable explicit margin.
+
+The exact decrement identity at every `j≤k` uses the existing interval theorem
+`quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate` with start zero
+and length `j`; it needs no new prefix model. Reuse the existing initial-energy comparison
+`abs_quadForm_backwardH_sub_quadForm_le` and exact-CG
+`Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow`. For
+`Q=4q^(2j)≤1`, the model decrement lower bound gives
+`S_j≥(1-Q)E_0-(1-Q)η≥(1-Q)E_0-η`. For `Q≥1`, nonnegativity of the sum and
+physical initial energy proves the same statement. This keeps coefficient one on `η`.
+The final physical-energy envelope follows by substitution.
+
+File amendment:
+
+* `CGAccuracy.lean`: precision-dependent pairing and curvature API, the generalized shared
+  private helpers, and the local physical-energy step. These belong with the existing
+  arithmetic/gap analysis; no second joint induction is added. Existing numerical corollaries
+  are reproved through the precision-dependent estimates. The file remains below 1500 lines.
+* New `CGEnergy.lean`, importing `CGAccuracy`: numerical factor, weighted telescoping proof,
+  physical-energy sum bound, model-energy comparison, explicit decrement lower bound, and
+  direct Chebyshev energy convergence. Its statements concern physical energy and its
+  relationship to the backward model, rather than residual-gap accumulation.
+* `docs/constants.toml`: the numerical factor. `NLAlib.lean`: generated module import.
+
+Focused validation completed on 2026-11-03: the modified `CGAccuracy` and new `CGEnergy`
+modules built successfully with `LEAN_NUM_THREADS=2`, with no Lean warnings. All four new
+energy/sum consumers are checked. Source-rule checks report zero errors; the named-constant
+check reports 55 constants and zero problems. Logs are `/tmp/cg-energy-build.log`,
+`/tmp/cg-energy-rules.log` and `/tmp/cg-energy-constants.log`. The parent owns the mandatory
+complete stage audit and records its final evidence separately. No checks, targets, pins,
+approval files or baselines were changed.
+
+Full validation, 2026-11-03: `LEAN_NUM_THREADS=2 bash scripts/stage_check.sh` exited 0
+(log `/tmp/cg-energy-stage.log`). All 521 proved modules built (4141 jobs) with zero
+compiler warnings. The axiom audit checked 15914 declarations with zero violations;
+14 environment linters passed. Kernel replay checked 16144 constants from 526 modules
+with zero violations. Program, target, access-model, citation, constant and LaTeX checks
+passed; all 109 declaration rules reported zero errors. The duplicate report found no
+private/public or public/public equivalence classes. Existing library baseline entries
+and heuristic review warnings remain; no ratchet, allowlist or check was changed.

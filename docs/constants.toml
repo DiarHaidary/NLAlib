@@ -543,3 +543,12 @@ args = ["m", "ε"]
 latex = '13#2\sum_{i=0}^{#1-1}(1+(31/10)#2)^i'
 lean_body = 'cgAdjacentInnerFactor (m : ℕ) (ε : ℝ) : ℝ := 13 * ε * ∑ i ∈ Finset.range m, (1 + 31 / 10 * ε) ^ i'
 body_hash = "41580184a75c52ed"
+
+[[constant]]
+name = "NLAlib.cgEnergyFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/CGEnergy.lean"
+args = ["j"]
+latex = '135#1^2'
+lean_body = 'cgEnergyFactor (j : ℕ) : ℝ := 135 * (j : ℝ) ^ 2'
+body_hash = "6fe0ddd703fba6c8"
