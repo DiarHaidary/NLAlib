@@ -28,6 +28,33 @@ def rules(*decls, registered=()):
     return {(r, n) for r, n, _ in check(list(LIB) + list(decls), registered)}
 
 
+class GenericFunctionNotationTests(unittest.TestCase):
+    def test_zero_function_does_not_hide_zero_numeral(self):
+        zero = defn('NLAlib.Computation.StaticCost.zero', ': StaticCost P i')
+        for sig in [': f x = 0', '(h : x = 0) : f x = 0']:
+            d = thm('NLAlib.f_eq_zero', sig)
+            self.assertNotIn(('N4', d['name']), rules(zero, d))
+        for sig in [': f x = 1', ': f x = 10', ': f x = x0']:
+            d = thm('NLAlib.f_eq_zero', sig)
+            self.assertIn(('N4', d['name']), rules(zero, d))
+        d = thm('NLAlib.f_eq_of_zero', '(h : x = 0) : f x = y')
+        self.assertNotIn(('N4', d['name']), rules(zero, d))
+
+    def test_branch_function_accepts_conditional_notation(self):
+        branch = defn('NLAlib.Computation.StaticCost.branch', ': StaticCost P i')
+        good = thm('NLAlib.exec_branch_eq', ': exec I (ifThenElse p c x y t e).run st = z')
+        bad = thm('NLAlib.exec_branch_eq', ': exec I t st = z')
+        self.assertNotIn(('N4', good['name']), rules(branch, good))
+        self.assertIn(('N4', bad['name']), rules(branch, bad))
+
+    def test_zero_numeral_after_power_is_not_a_function_argument(self):
+        zero = defn('NLAlib.Computation.StaticCost.zero', ': StaticCost P i')
+        good = thm('NLAlib.eval_comp_X_sq_zero', ': (p.comp (X ^ 2)).eval 0 = 1')
+        bad = thm('NLAlib.sq_zero', ': zero x ^ 2 = y')
+        self.assertNotIn(('N6', good['name']), rules(zero, good))
+        self.assertIn(('N6', bad['name']), rules(zero, bad))
+
+
 class TailTests(unittest.TestCase):
     def test_prefix_follows_statement(self):
         sig = '(h : HasFoo X μ) : μ.real {ω | b < frobNorm (X ω)} ≤ δ'
