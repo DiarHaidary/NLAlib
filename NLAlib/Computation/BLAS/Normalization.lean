@@ -32,8 +32,8 @@ open Finset
 
 /-- Squared norm defect after a rounded norm and componentwise rounded division. The value is
 currently <!-- value Computation.normalizationRoundingFactor n u -->
-$$\frac{u+\frac{(n+1)u}{1-(n+1)u}}{1-\frac{(n+1)u}{1-(n+1)u}}
-\left(2+\frac{u+\frac{(n+1)u}{1-(n+1)u}}{1-\frac{(n+1)u}{1-(n+1)u}}\right).$$
+$$\frac{u+(1-u)^{-(n+1)}-1}{2-(1-u)^{-(n+1)}}
+\left(2+\frac{u+(1-u)^{-(n+1)}-1}{2-(1-u)^{-(n+1)}}\right).$$
 The divisions are total; theorems require the accumulated norm rounding factor to be below one. -/
 noncomputable irreducible_def normalizationRoundingFactor (n : ℕ) (u : ℝ) : ℝ :=
   let t := (u + roundingFactor (n + 1) u) / (1 - roundingFactor (n + 1) u)
@@ -45,7 +45,11 @@ theorem normalizationRoundingFactor_nonneg {n : ℕ} {u : ℝ} (hu : 0 ≤ u)
     (hn : (n + 1 : ℕ) * u < 1) (hg : roundingFactor (n + 1) u < 1) :
     0 ≤ normalizationRoundingFactor n u := by
   rw [normalizationRoundingFactor_def]
-  have hγ := roundingFactor_nonneg hu hn
+  have hu1 : u < 1 := by
+    have : u ≤ (n + 1 : ℕ) * u := le_mul_of_one_le_left hu
+      (by exact_mod_cast Nat.succ_le_succ (Nat.zero_le n))
+    exact this.trans_lt hn
+  have hγ := roundingFactor_nonneg (n := n + 1) hu hu1
   positivity
 
 private theorem roundingFactor_succ_le_two_mul {n : ℕ} {u : ℝ} (hu : 0 ≤ u)
@@ -53,6 +57,8 @@ private theorem roundingFactor_succ_le_two_mul {n : ℕ} {u : ℝ} (hu : 0 ≤ u
     roundingFactor (n + 1) u ≤ 2 * ((n + 1 : ℕ) * u) := by
   let q : ℝ := (n + 1 : ℕ) * u
   have hq : 0 ≤ q := by dsimp [q]; positivity
+  have hn : (n + 1 : ℕ) * u < 1 := by linarith
+  apply (roundingFactor_le hu hn).trans
   change q / (1 - q) ≤ 2 * q
   apply (div_le_iff₀ (by change 0 < 1 - q; change q ≤ _ at hsmall; linarith)).mpr
   have hprod : 0 ≤ q * (1 - 2 * q) := mul_nonneg hq (by change q ≤ _ at hsmall; linarith)
@@ -69,7 +75,9 @@ theorem normalizationRoundingFactor_le {n : ℕ} {u : ℝ} (hu : 0 ≤ u)
   have hq : 0 ≤ q := by dsimp [q]; positivity
   have hqs : q ≤ 1 / 100 := hsmall
   have hn : (n + 1 : ℕ) * u < 1 := by linarith
-  have hg : 0 ≤ g := roundingFactor_nonneg hu hn
+  have hu1 : u < 1 :=
+    (le_mul_of_one_le_left hu (by exact_mod_cast Nat.succ_le_succ (Nat.zero_le n))).trans_lt hn
+  have hg : 0 ≤ g := roundingFactor_nonneg hu hu1
   have hgle : g ≤ 2 * q := roundingFactor_succ_le_two_mul hu hsmall
   have hgl : g < 1 := by linarith
   have huq : u ≤ q := by
@@ -94,22 +102,19 @@ theorem normalizationRoundingFactor_le {n : ℕ} {u : ℝ} (hu : 0 ≤ u)
 private theorem roundingFactor_add_mul_le {n : ℕ} {u : ℝ} (hu : 0 ≤ u)
     (hn : (n + 1 : ℕ) * u < 1) :
     roundingFactor n u + u * (1 + roundingFactor n u) ≤ roundingFactor (n + 1) u := by
-  have hn' : (n : ℝ) * u < 1 := by
-    have hcast : (n : ℝ) ≤ n + 1 := by linarith
-    exact (mul_le_mul_of_nonneg_right hcast hu).trans_lt (by simpa using hn)
   have hu1 : u < 1 := by
     have hcast : (1 : ℝ) ≤ n + 1 := by have := Nat.cast_nonneg (α := ℝ) n; linarith
     exact (le_mul_of_one_le_left hu hcast).trans_lt (by simpa using hn)
-  have hγ := roundingFactor_nonneg hu hn'
-  have h₁ := le_roundingFactor_one hu hu1
-  have hprod := roundingFactor_add_add_mul_le (k := n) (j := 1) hu hn
+  have hγ := roundingFactor_nonneg (n := n) hu hu1
+  have h₁ := le_roundingFactor_one (u := u) hu1
+  have hprod := roundingFactor_add_add_mul (k := n) (j := 1) (u := u)
   nlinarith
 
 private theorem abs_sub_sqrt_le_roundingFactor {n : ℕ} {u r s : ℝ}
     (hu : 0 ≤ u) (hn : n * u < 1) (hr : 0 ≤ r) (hs : 0 ≤ s)
     (h : |r ^ 2 - s| ≤ roundingFactor n u * r ^ 2) :
     |r - Real.sqrt s| ≤ roundingFactor n u * r := by
-  have hγ := roundingFactor_nonneg hu hn
+  have hγ := roundingFactor_nonneg_of_mul_lt_one hu hn
   have hsq := Real.sq_sqrt hs
   have hroot := Real.sqrt_nonneg s
   have hprod : |r - Real.sqrt s| * (r + Real.sqrt s) = |r ^ 2 - s| := by
@@ -192,7 +197,9 @@ theorem RelErr.abs_norm_sq_sub_one_le {n : ℕ} {u q : ℝ} {x y : Fin n → ℝ
   let a := ‖WithLp.toLp 2 y‖
   let g := roundingFactor (n + 1) u
   let t := (u + g) / (1 - g)
-  have hg : 0 ≤ g := roundingFactor_nonneg hu hn
+  have hu1 : u < 1 :=
+    (le_mul_of_one_le_left hu (by exact_mod_cast Nat.succ_le_succ (Nat.zero_le n))).trans_lt hn
+  have hg : 0 ≤ g := roundingFactor_nonneg hu hu1
   have ht : 0 ≤ t := div_nonneg (add_nonneg hu hg) (by linarith)
   have hqpos : 0 < q := by
     have hupper := (abs_le.mp hq).2
@@ -256,10 +263,10 @@ theorem IsRelErrSem.exec_nrm2_abs_norm_sub_le
       have := Nat.cast_nonneg (α := ℝ) n.eval
       linarith
     exact (le_mul_of_one_le_left hu hcast).trans_lt (by simpa using hn)
-  have hγ := roundingFactor_nonneg hu hn'
-  have hγ1 := roundingFactor_le_roundingFactor hu (Nat.le_succ n.eval) hn
+  have hγ := roundingFactor_nonneg (n := n.eval) hu hu1
+  have hγ1 := roundingFactor_le_roundingFactor hu hu1 (Nat.le_succ n.eval)
   obtain ⟨st₁, w, hrun, hwrite, herr⟩ :=
-    h.exec_dot_abs_sum_mul_sub_le I p st hz dst x xo x xo n xs xs hn' hx hx hdx hdx hdst
+    h.exec_dot_abs_sum_mul_sub_le I p st hz dst x xo x xo n xs xs hu1 hx hx hdx hdx hdst
   let r := ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖
   have hr : 0 ≤ r := norm_nonneg _
   have hsq : r ^ 2 = ∑ i ∈ range n.eval, xs i * xs i := by

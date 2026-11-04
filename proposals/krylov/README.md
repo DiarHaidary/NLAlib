@@ -1,7 +1,9 @@
 # Krylov implementation development files
 
 These files retain the checked development of the concrete CG and Lanczos implementations.
-They are outside `NLAlib` and are not library imports. The maintainer approved both exact
+They are outside `NLAlib` and are not library imports. The initial standalone program snapshots
+record the earlier development API; the six rounded CG modules use the current canonical
+library APIs and are checked against the merged rounding-factor implementation. The maintainer approved both exact
 program/target statements on 2026-11-04; their complete proofs are now in the library:
 
 | Program | Approved target | Complete library proof |

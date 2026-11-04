@@ -139,3 +139,10 @@ standard arithmetic contract. The assumptions contain no output error certificat
 Targeted `lake lean` and `lake build ... --wfail` passed with no Lean warnings. Full-library
 stage checks and registry integration are owned by the parent task; no check or target file
 was changed here.
+
+## Current rounding-factor API
+
+After integration with main, `roundingFactor n u` is the primary compound factor
+`(1-u)^(-n)-1`. The old rational expression `n*u/(1-n*u)` is used only as an upper comparison
+under the existing precision windows. Kernel and normalization statement signatures, including
+zero-length cases and the `12*(n+1)*u` comparison, are preserved.

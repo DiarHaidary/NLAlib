@@ -1,0 +1,37 @@
+{
+ "date": "2026-11-04",
+ "note": "Rounding factor round (maintainer request, 2026-11-04). Before v0.1: no deprecated aliases. NLAlib.Computation.roundingFactor n u changes value from Higham's nu/(1 - nu) to (1 - u)^{-n} - 1 of Carson, Ma and Shao (arXiv 2610.35420, (3)); every lemma about it and every BLAS trace and kernel bound (dot, axpy, gemv, gemm, trsvLower) now assumes u < 1 (u_p < 1 for the kernels) in place of nu < 1 (2u < 1 for axpy), and the bounds read with the new factor. The composition rule becomes an equality and is renamed accordingly (roundingFactor_add_add_mul_le -> roundingFactor_add_add_mul). abs_inv_one_add_sub_one_le now bounds a single inverted rounding error, |(1 + δ)^{-1} - 1| ≤ γ_1, in place of the γ_{2j} bound from |θ| ≤ γ_j (inverses of counted products are IsRoundingProduct.inv). Higham's nu/(1 - nu) survives only in roundingFactor_le. Result ids are unchanged.",
+ "renames": [
+  {
+   "old": "NLAlib.Computation.roundingFactor_add_add_mul_le",
+   "new": "NLAlib.Computation.roundingFactor_add_add_mul",
+   "rule": "N3"
+  }
+ ],
+ "statementChanged": [
+  "NLAlib.Computation.roundingFactor",
+  "NLAlib.Computation.roundingFactor_zero",
+  "NLAlib.Computation.one_add_roundingFactor",
+  "NLAlib.Computation.le_roundingFactor",
+  "NLAlib.Computation.roundingFactor_nonneg",
+  "NLAlib.Computation.le_roundingFactor_one",
+  "NLAlib.Computation.roundingFactor_le_roundingFactor",
+  "NLAlib.Computation.abs_prod_one_add_zpow_sub_one_le",
+  "NLAlib.Computation.abs_one_add_mul_one_add_sub_one_le",
+  "NLAlib.Computation.abs_inv_one_add_sub_one_le",
+  "NLAlib.Computation.mul_roundingFactor_le",
+  "NLAlib.Computation.roundingFactor_add_le",
+  "NLAlib.Computation.IsRoundingProduct.abs_le",
+  "NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add",
+  "NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le",
+  "NLAlib.Computation.exists_eq_mul_one_add_add_mul_one_add_of_relErr",
+  "NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq",
+  "NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add",
+  "NLAlib.Computation.IsRelErrSem.exec_dot_abs_sum_mul_sub_le",
+  "NLAlib.Computation.IsRelErrSem.exec_axpy",
+  "NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec",
+  "NLAlib.Computation.IsRelErrSem.exec_gemv_abs_mulVec_sub_le",
+  "NLAlib.Computation.IsRelErrSem.exec_gemm_abs_mul_sub_le",
+  "NLAlib.Computation.IsRelErrSem.exec_trsvLower_add_mulVec_eq"
+ ]
+}

@@ -61,7 +61,8 @@ theorem roundingFactor_le_two_mul_of_cgImplementationRoundoffBound_le {N : ℕ}
   have hNu := (cg_implementation_mul_le hN hu).trans hsmall
   have hNu0 : 0 ≤ (N : ℝ) * u := by positivity
   have hden : 0 < 1 - (N : ℝ) * u := by linarith
-  rw [Computation.roundingFactor, div_le_iff₀ hden]
+  refine (Computation.roundingFactor_le hu (by linarith : (N : ℝ) * u < 1)).trans ?_
+  rw [div_le_iff₀ hden]
   nlinarith [mul_nonneg hNu0 (show 0 ≤ 1 / 2 - (N : ℝ) * u by linarith)]
 
 /-- The dense matvec spectral-error multiplier is bounded by the input-only proposed
@@ -92,8 +93,12 @@ theorem roundingFactor_two_le_cgImplementationRoundoffBound {N : ℕ}
   have h4u := four_mul_le_cgImplementationRoundoffBound hN hu
   have hden : 0 < 1 - (2 : ℝ) * u := by linarith
   have hγ : Computation.roundingFactor 2 u ≤ 4 * u := by
-    rw [Computation.roundingFactor, Nat.cast_ofNat, div_le_iff₀ hden]
-    nlinarith [mul_nonneg hu (show 0 ≤ 1 / 4 - u by linarith)]
+    calc
+      Computation.roundingFactor 2 u ≤ 2 * u / (1 - 2 * u) :=
+        Computation.roundingFactor_le hu (by norm_num; linarith)
+      _ ≤ 4 * u := by
+        rw [div_le_iff₀ hden]
+        nlinarith [mul_nonneg hu (show 0 ≤ 1 / 4 - u by linarith)]
   exact hγ.trans h4u
 
 /-- The input-only CG horizon window implies the local implementation budget is at most

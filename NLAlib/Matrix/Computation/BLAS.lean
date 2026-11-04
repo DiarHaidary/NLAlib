@@ -53,8 +53,18 @@ theorem IsRelErrSem.exec_dot_abs_dotProduct_sub_le (h : IsRelErrSem u dec (fun _
       |(fun i : Fin n.eval => xs i) ⬝ᵥ (fun i : Fin n.eval => ys i) - dec p w| ≤
         roundingFactor n.eval (u p) * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ *
           ‖WithLp.toLp 2 (fun i : Fin n.eval => ys i)‖ := by
+  by_cases hn0 : n.eval = 0
+  · have : IsEmpty (Fin n.eval) := ⟨fun i => by have := i.2; omega⟩
+    obtain ⟨st', w, hrun, hwrite, η, -, hw⟩ :=
+      h.exec_dot_eq_sum_mul_one_add_isRoundingProduct I p st hz dst x xo y yo n xs ys
+        hx hy hdx hdy hdst
+    have hw0 : dec p w = 0 := by simpa only [hn0, Finset.sum_range_zero] using hw
+    refine ⟨st', w, hrun, hwrite, ?_⟩
+    simp [hn0, dotProduct, hw0, roundingFactor_zero]
+  have hu1 : u p < 1 := (le_mul_of_one_le_left (h.nonneg trivial)
+    (by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hn0)).trans_lt hn
   obtain ⟨st', w, hrun, hwrite, herr⟩ := h.exec_dot_abs_sum_mul_sub_le I p st
-    hz dst x xo y yo n xs ys hn hx hy hdx hdy hdst
+    hz dst x xo y yo n xs ys hu1 hx hy hdx hdy hdst
   refine ⟨st', w, hrun, hwrite, ?_⟩
   have hsum : (∑ i ∈ Finset.range n.eval, |xs i| * |ys i|) ≤
       ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ *
@@ -68,7 +78,7 @@ theorem IsRelErrSem.exec_dot_abs_dotProduct_sub_le (h : IsRelErrSem u dec (fun _
           (fun i : Fin n.eval => |xs i|) (fun i : Fin n.eval => |ys i|)
   rw [← Fin.sum_univ_eq_sum_range] at herr
   exact herr.trans (by simpa [mul_assoc] using
-    mul_le_mul_of_nonneg_left hsum (roundingFactor_nonneg (h.nonneg trivial) hn))
+    mul_le_mul_of_nonneg_left hsum (roundingFactor_nonneg_of_mul_lt_one (h.nonneg trivial) hn))
 
 /-- Relative forward error of the actual self-`dot` run under the input-only relative-error
 contract, exact addition of zero, $nu_p < 1$, decoded inputs and a disjoint writable
@@ -93,7 +103,7 @@ theorem IsRelErrSem.exec_dot_self_relErr (h : IsRelErrSem u dec (fun _ _ => True
   have hq : 0 ≤ ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ^ 2 := sq_nonneg _
   generalize ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ^ 2 = q at herr' hq ⊢
   by_cases hzero : q = 0
-  · refine ⟨0, by simpa using roundingFactor_nonneg (h.nonneg trivial) hn, ?_⟩
+  · refine ⟨0, by simpa using roundingFactor_nonneg_of_mul_lt_one (h.nonneg trivial) hn, ?_⟩
     simp only [hzero, zero_sub, abs_neg, mul_zero] at herr'
     have hw := abs_eq_zero.mp (le_antisymm herr' (abs_nonneg _))
     simp [hzero, hw]
@@ -120,12 +130,13 @@ theorem IsRelErrSem.exec_axpy_norm_sub_le
       ‖WithLp.toLp 2 (fun i : Fin n.eval => ys i + av * xs i - dec p (W i))‖ ≤
         roundingFactor 2 (u p) * (‖WithLp.toLp 2 (fun i : Fin n.eval => ys i)‖ +
           |av| * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖) := by
+  have hu1 : u p < 1 := by linarith [h.nonneg (p := p) trivial]
   obtain ⟨st', W, hrun, hwrite, hW⟩ := h.exec_axpy I p st a x xo y yo n av xs ys
-    hu ha hx hy hay hxy
+    hu1 ha hx hy hay hxy
   refine ⟨st', W, hrun, hwrite, ?_⟩
-  have hγ := roundingFactor_nonneg (h.nonneg trivial) hu
+  have hγ := roundingFactor_nonneg (n := 2) (h.nonneg trivial) hu1
   have huγ : u p ≤ roundingFactor 2 (u p) := by
-    have := le_roundingFactor (h.nonneg trivial) hu
+    have := le_roundingFactor (n := 2) (h.nonneg trivial) hu1
     norm_num at this
     linarith [h.nonneg (p := p) trivial]
   have hpoint (i : Fin n.eval) :
@@ -180,10 +191,30 @@ theorem IsRelErrSem.exec_gemv_norm_sub_le_frobNorm_mul
       st.store.writeBlock p y yo.eval ((List.range m.eval).toArray.map W) = some st'.store ∧
       ‖WithLp.toLp 2 (M *ᵥ xv - fun i : Fin m.eval => dec p (W i))‖ ≤
         roundingFactor n.eval (u p) * frobNorm M * ‖WithLp.toLp 2 xv‖ := by
+  by_cases hn0 : n.eval = 0
+  · have : IsEmpty (Fin n.eval) := ⟨fun i => by have := i.2; omega⟩
+    obtain ⟨st', W, S, hrun, hwrite, hS⟩ := IsArithErrSem.exec_gemv I p st
+      (h.isArithErrSem fun _ => trivial) hz m n A ao x xo y yo
+      (fun _ _ => 0) (fun _ => 0)
+      (fun _ _ _ hj => by omega) (fun _ hj => by omega) hyA hyx hy
+      (fun _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩)
+    have hw0 (i : Fin m.eval) : dec p (W i) = 0 := by
+      have hs0 := (hS i i.2).1.1
+      have hval := (hS i i.2).2
+      rw [hn0] at hval
+      exact hval.trans hs0
+    have hdiff : M *ᵥ xv - (fun i : Fin m.eval => dec p (W i)) = 0 := by
+      ext i
+      simp [Matrix.mulVec, dotProduct, hw0]
+    refine ⟨st', W, hrun, hwrite, ?_⟩
+    have hγ0 : roundingFactor n.eval (u p) = 0 := by rw [hn0, roundingFactor_zero]
+    rw [hdiff, WithLp.toLp_zero, norm_zero, hγ0, zero_mul, zero_mul]
+  have hu1 : u p < 1 := (le_mul_of_one_le_left (h.nonneg trivial)
+    (by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hn0)).trans_lt hn
   obtain ⟨st', W, hrun, hwrite, herr⟩ := h.exec_gemv_abs_mulVec_sub_le I p st
-    hz m n A ao x xo y yo M xv hn hA hx hyA hyx hy
+    hz m n A ao x xo y yo M xv hu1 hA hx hyA hyx hy
   refine ⟨st', W, hrun, hwrite, ?_⟩
-  have hγ := roundingFactor_nonneg (h.nonneg trivial) hn
+  have hγ := roundingFactor_nonneg_of_mul_lt_one (h.nonneg trivial) hn
   have hnorm := EuclideanSpace.norm_toLp_le_norm_toLp
     (x := M *ᵥ xv - fun i : Fin m.eval => dec p (W i))
     (y := roundingFactor n.eval (u p) • ((M.map abs) *ᵥ (fun j => |xv j|)))
@@ -222,7 +253,7 @@ theorem IsRelErrSem.exec_gemv_norm_sub_le_specNorm_mul
   obtain ⟨st', W, hrun, hwrite, herr⟩ := h.exec_gemv_norm_sub_le_frobNorm_mul I p st
     hz m n A ao x xo y yo M xv hn hA hx hyA hyx hy
   refine ⟨st', W, hrun, hwrite, herr.trans ?_⟩
-  have hγ := roundingFactor_nonneg (h.nonneg trivial) hn
+  have hγ := roundingFactor_nonneg_of_mul_lt_one (h.nonneg trivial) hn
   have hF := frobNorm_le_sqrt_card_mul_specNorm M
   simp only [Fintype.card_fin] at hF
   calc

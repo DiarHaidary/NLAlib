@@ -35,15 +35,15 @@ private theorem norm_axpy_sub_le_of_relErr {N : ℕ} {u a : ℝ} {x y q z : Fin 
     (hq : ∀ i, RelErr u (a * x i) (q i)) (hz : ∀ i, RelErr u (q i + y i) (z i)) :
     ‖WithLp.toLp 2 (fun i => z i - (y i + a * x i))‖ ≤
       roundingFactor 2 u * (‖WithLp.toLp 2 y‖ + |a| * ‖WithLp.toLp 2 x‖) := by
-  have hγ := roundingFactor_nonneg hu hu2
+  have hu1 : u < 1 := by linarith
+  have hγ := roundingFactor_nonneg (n := 2) hu hu1
   have huγ : u ≤ roundingFactor 2 u := by
-    have := le_roundingFactor hu hu2
-    norm_num at this
+    have htwo : 2 * u ≤ roundingFactor 2 u := le_roundingFactor hu hu1
     linarith
   have hpoint (i : Fin N) : |z i - (y i + a * x i)| ≤
       roundingFactor 2 u * (|y i| + |a| * |x i|) := by
     obtain ⟨θ, δ, hθ, hδ, he⟩ :=
-      exists_eq_mul_one_add_add_mul_one_add_of_relErr (hq i) (hz i) hu hu2
+      exists_eq_mul_one_add_add_mul_one_add_of_relErr (hq i) (hz i) hu1
     rw [he]
     calc
       _ = |y i * δ + a * x i * θ| := by congr 1; ring

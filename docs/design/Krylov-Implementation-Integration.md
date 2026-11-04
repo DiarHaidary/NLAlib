@@ -90,3 +90,32 @@ rule errors or warnings in the source-only check. They are outside the library r
 The explorer preview builds from fresh library extraction; its 16 algorithm-page tests pass,
 and generated data confirms both program members, proved targets and cost/output result
 placement. The companion changes are on `update/krylov-implementation-bridges`.
+
+## Integration with current main
+
+The merge of `0e62a517` retains both the upstream quadrature/Chebyshev recurrence results
+and the physical bounded-function results. The backward-spectrum compression helper is named
+`LanczosRun.spectrum_tridiagonal_subset_Icc_of_backwardH` to distinguish its certified
+backward-spectrum premise from the input-spectrum/enlarged-interval specialization.
+
+Upstream run-level specializations still called backward and residual estimates as though
+`k * epsilon <= 1/100` were a global run field. The maintainer explicitly approved adding
+that condition to the five affected spectral-containment, quadrature and function-vector
+statements. Their conclusions are unchanged; the global run interface keeps only its local
+accuracy condition. Their displayed enlargement now matches the existing `400*k^3` factor.
+
+The implementation bridges now use the primary factor `(1-u)^(-n)-1` and its existing rational
+upper comparison. All 18 normalization/Matrix BLAS statement signatures and the six rounded
+CG proposal interfaces are preserved, including empty-dimensional cases. A shared nonnegativity
+lemma handles the zero-length case without assuming `u < 1` there. The normalization factor's
+definition and numerical constants are unchanged; its displayed formula uses the new primary
+factor. Both approved program trees, counts, target statements and registry entries are unchanged.
+
+The merged-source full stage check exits 0: 556 proved modules, zero Lean build warnings,
+16,799 audited declarations and 17,103 kernel-replayed constants without violations. All seven
+targets/five trees, references, 67 bound values and 36,194 math spans pass. Source rules have
+zero new errors. The duplicate report has seven private-only classes: the earlier six plus
+the upstream coordinate-unit-norm helper shared with SchurHorn; no public API duplicates.
+All six rounded CG proposals separately pass warnings-fatal Lean checks with unchanged
+interfaces. The fresh explorer preview and its 16 algorithm tests pass; generated statements
+show the five approved horizon premises and both retained finite-precision result families.
