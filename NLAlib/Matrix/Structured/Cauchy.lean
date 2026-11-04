@@ -23,7 +23,8 @@ $\mathbf{x}_i = i + 1$, $\mathbf{y}_j = j$, indices from $0$.
 
 ## Main results
 
-* `NLAlib.det_cauchyMatrix`: Cauchy's determinant formula.
+* `NLAlib.det_cauchyMatrix`, `NLAlib.det_cauchyMatrix_eq_vandermonde`: Cauchy's determinant
+  formula on ordered coordinates and on arbitrary finite labels.
 * `NLAlib.det_cauchyMatrix_pos`, `NLAlib.det_hilbertMatrix_pos`.
 * `NLAlib.posDef_cauchyMatrix_self`: a symmetric Cauchy matrix of distinct positive numbers is
   positive definite.
@@ -136,12 +137,39 @@ $\{0, \dots, n - 1\}$ with $\mathbf{x}_i + \mathbf{y}_j \ne 0$ for all $i, j$, t
 $\mathbf{C}$ has
 $$\det \mathbf{C} = \frac{\prod_{i < j} (\mathbf{x}_j - \mathbf{x}_i)(\mathbf{y}_j - \mathbf{y}_i)}
   {\prod_{i, j} (\mathbf{x}_i + \mathbf{y}_j)}\,.$$
-[HornJohnson2013, §0.9.12]. -/
+[HornJohnson2013, §0.9.12].
+Result: cauchy-determinant -/
 theorem det_cauchyMatrix {n : ℕ} (x y : Fin n → K) (h : ∀ i j, x i + y j ≠ 0) :
     (cauchyMatrix x y).det =
       (∏ i, ∏ j ∈ Finset.Ioi i, (x j - x i) * (y j - y i)) / ∏ i, ∏ j, (x i + y j) := by
   rw [det_cauchyMatrix_aux x y h]
   simp only [Finset.prod_mul_distrib]
+
+/-- **Cauchy's determinant on finite labels.** For field-valued families
+$\mathbf{x},\mathbf{y}$ on the same finite index type, assume
+$\mathbf{x}_i + \mathbf{y}_j \ne 0$ for every pair. Order both families by the same
+enumeration and let $\mathbf{V}_{\mathbf{x}},\mathbf{V}_{\mathbf{y}}$ be their Vandermonde
+matrices in this order. The determinant of the Cauchy matrix $\mathbf{C}$ is
+$$\det \mathbf{C} =
+  \frac{\det \mathbf{V}_{\mathbf{x}}\,\det \mathbf{V}_{\mathbf{y}}}
+    {\prod_{i,j}(\mathbf{x}_i + \mathbf{y}_j)}\,.$$
+The formula includes repeated parameters and the empty index type.
+[HornJohnson2013, §0.9.12], with arbitrary finite labels.
+Adapted from tchen-research/NLAlib at `77514ce42a0e437d837797a063ac161f41022730`.
+Result: cauchy-determinant -/
+theorem det_cauchyMatrix_eq_vandermonde {n : Type*} [Fintype n] [DecidableEq n]
+    (e : n ≃ Fin (Fintype.card n)) (x y : n → K) (h : ∀ i j, x i + y j ≠ 0) :
+    (cauchyMatrix x y).det =
+      (Matrix.vandermonde (x ∘ e.symm)).det * (Matrix.vandermonde (y ∘ e.symm)).det /
+        (∏ i : n, ∏ j : n, (x i + y j)) := by
+  have hdet := det_cauchyMatrix_aux (x ∘ e.symm) (y ∘ e.symm) (fun i j => h (e.symm i) (e.symm j))
+  have hmatrix : cauchyMatrix (x ∘ e.symm) (y ∘ e.symm) = (cauchyMatrix x y).reindex e e := rfl
+  rw [hmatrix, Matrix.det_reindex_self, ← Matrix.det_vandermonde (x ∘ e.symm),
+    ← Matrix.det_vandermonde (y ∘ e.symm)] at hdet
+  have hprod : (∏ i, ∏ j, (x (e.symm i) + y (e.symm j))) = ∏ i : n, ∏ j : n, (x i + y j) := by
+    rw [e.symm.prod_comp (fun i : n => ∏ j, (x i + y (e.symm j)))]
+    exact Finset.prod_congr rfl (fun i _ => e.symm.prod_comp (fun j : n => x i + y j))
+  simpa only [Function.comp_apply, hprod] using hdet
 
 /-- The determinant of a Cauchy matrix of strictly increasing families with positive denominators
 is positive. -/

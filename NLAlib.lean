@@ -295,6 +295,7 @@ public import NLAlib.Matrix.Functions.Complexification
 public import NLAlib.Matrix.Functions.Exponential
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
+public import NLAlib.Matrix.Functions.InversePowerSoftMin
 public import NLAlib.Matrix.Functions.Lieb
 public import NLAlib.Matrix.Functions.LogDet
 public import NLAlib.Matrix.Functions.OperatorConvex
@@ -339,6 +340,8 @@ public import NLAlib.Matrix.Perturbation.BestRankApprox
 public import NLAlib.Matrix.Perturbation.Continuity
 public import NLAlib.Matrix.Perturbation.DavisKahan
 public import NLAlib.Matrix.Perturbation.DavisKahanGap
+public import NLAlib.Matrix.Perturbation.GramCutoff
+public import NLAlib.Matrix.Perturbation.GramSoftMin
 public import NLAlib.Matrix.Perturbation.Inverse
 public import NLAlib.Matrix.Perturbation.LeastSquares
 public import NLAlib.Matrix.Perturbation.Pseudoinverse
@@ -401,7 +404,9 @@ public import NLAlib.Matrix.Spectral.Weyl
 public import NLAlib.Matrix.Structured.BoundedOrthonormal
 public import NLAlib.Matrix.Structured.Cauchy
 public import NLAlib.Matrix.Structured.Circulant
+public import NLAlib.Matrix.Structured.CoefficientBlock
 public import NLAlib.Matrix.Structured.Kronecker
+public import NLAlib.Matrix.Structured.ToeplitzHankel
 public import NLAlib.Matrix.Structured.Walsh
 public import NLAlib.Matrix.Subspaces.CSDecomposition
 public import NLAlib.Matrix.Subspaces.Frames
@@ -504,6 +509,7 @@ public import NLAlib.RandomMatrix.Gaussian.FourthMoment
 public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius
+public import NLAlib.RandomMatrix.Gaussian.InverseMoments.GramCutoff
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.SpectralTail
 public import NLAlib.RandomMatrix.Gaussian.Moments

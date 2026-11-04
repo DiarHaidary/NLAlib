@@ -27,6 +27,8 @@ method of exchangeable pairs for random matrices use.
   `Matrix.IsHermitian.re_trace_pow_le_card_mul_specNorm_pow`: traces of powers through the
   eigenvalues (`Matrix.IsHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow`); the moment bound for
   the spectral norm is `NLAlib.specNorm_pow_le_re_trace_pow`.
+* `Matrix.PosDef.trace_pow_pos`, `Matrix.PosSemidef.re_trace_pow_add_le_mul`:
+  positivity and submultiplicativity of power traces.
 * `Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal`:
   $\operatorname{tr}(\mathbf{C} \operatorname{diag}(\mathbf{x}) \mathbf{C}
   \operatorname{diag}(\mathbf{y}))$
@@ -140,6 +142,28 @@ theorem _root_.Matrix.PosSemidef.re_trace_pow_nonneg {A : Matrix n n 𝕜} (hA :
     (r : ℕ) : 0 ≤ RCLike.re (A ^ r).trace := by
   rw [hA.isHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow]
   exact Finset.sum_nonneg fun i _ => pow_nonneg (hA.eigenvalue_nonneg i) r
+
+/-- A positive definite real matrix has positive power trace in nonzero dimension. -/
+theorem _root_.Matrix.PosDef.trace_pow_pos [Nonempty n] {R : Matrix n n ℝ}
+    (hR : R.PosDef) (k : ℕ) : 0 < Matrix.trace (R ^ k) := by
+  rw [← RCLike.re_to_real (x := Matrix.trace (R ^ k)),
+    hR.isHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow]
+  exact Finset.sum_pos (fun i hi => pow_pos
+    (hR.isHermitian.posDef_iff_eigenvalue_pos.mp hR i (Finset.mem_range.mp hi)) k)
+    ⟨0, Finset.mem_range.mpr Fintype.card_pos⟩
+
+/-- The product of two power traces of a positive semidefinite matrix dominates
+the trace of the combined power. -/
+theorem _root_.Matrix.PosSemidef.re_trace_pow_add_le_mul
+    {R : Matrix n n 𝕜} (hR : R.PosSemidef) (a b : ℕ) :
+    RCLike.re (R ^ (a + b)).trace ≤ RCLike.re (R ^ a).trace * RCLike.re (R ^ b).trace := by
+  simp only [hR.isHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow, Finset.sum_mul]
+  apply Finset.sum_le_sum
+  intro i hi
+  rw [pow_add]
+  exact mul_le_mul_of_nonneg_left
+    (Finset.single_le_sum (fun j _ => pow_nonneg (hR.eigenvalue_nonneg j) b) hi)
+    (pow_nonneg (hR.eigenvalue_nonneg i) a)
 
 /-- The trace of a power is at most the dimension times the power of the spectral norm: for
 Hermitian $\mathbf{A}$,
