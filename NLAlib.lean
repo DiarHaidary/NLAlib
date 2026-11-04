@@ -221,6 +221,18 @@ public import NLAlib.Krylov.Processes.LanczosPolynomials
 public import NLAlib.Krylov.Processes.LanczosProgram
 public import NLAlib.Krylov.Processes.LanczosProgramCounts
 public import NLAlib.Krylov.Processes.LanczosProgramInitialization
+public import NLAlib.Krylov.Processes.LanczosProgramRounded
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedBackward
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedCommit
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedExecution
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedInitialization
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedPreallocated
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedPrefix
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedPrefixState
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedRun
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedState
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedStep
+public import NLAlib.Krylov.Processes.LanczosProgramRoundedZero
 public import NLAlib.Krylov.Processes.LanczosProgramRounding
 public import NLAlib.Krylov.Processes.LanczosProgramScope
 public import NLAlib.Krylov.Processes.LanczosProgramState
@@ -299,6 +311,7 @@ public import NLAlib.Matrix.Basic.QuadForm
 public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
+public import NLAlib.Matrix.Computation.BLASNegAxpy
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
 public import NLAlib.Matrix.Factorizations.Elimination

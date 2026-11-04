@@ -1,96 +1,98 @@
-# Rounded stored-entry Lanczos execution: design assessment
+# Rounded execution and backward models of the stored Lanczos program
 
-Status: local precision and executed normalization helpers are checked; whole-program
-rounded Lanczos construction is the next increment. No new numerical target is introduced.
-The registered dense Lanczos tree, exact target and operation/count bodies remain frozen.
-The completed canonical CG bridge is checked and published independently of this extension.
+The full stored-program bridge is checked. It uses the existing scalar contracts, original
+compiled tree, approved counts and existing `LanczosRun`; it introduces no replacement
+arithmetic semantics, numerical run interface or registered target.
 
-## Reusable facts and actual operation order
+## Inputs and local precision
 
-Use the existing IsRelErrSem contract with unbounded range, AddsZeroExactly, decoded input
-words and column-major ROM words. Computation BLAS already supplies actual executed gemv,
-dot, axpy, nrm2 and rscl traces with normwise errors and store-write provenance. The new
-arbitrary-word literal-zero fill in Frames covers the canonical initialization/tail loops.
-The exact Lanczos storage and scoped allocation proofs can be reused or generalized without
-an alternative numerical interface.
+`LanczosImplementation.exec_rounded_compiled` in `LanczosProgramRounded.lean` takes actual
+six-buffer input storage, decoded input b, column-major ROM words decoding to symmetric A,
+standard operation charges, `IsRelErrSem` with unbounded safe range and `AddsZeroExactly`.
+Output buffers need not be initialized. The only precision condition is
 
-The actual initializer loads A, writes zero beta/previous vector, computes nrm2(b), then
-branches on its decoded zero. The nonzero branch copies b to the first basis column and
-rscl divides that copied column by the stored computed norm. In each iteration it computes
-matvec, negative previous beta and axpy, dot for alpha, negative alpha and axpy, nrm2 for
-next beta, copies current basis to previous, then writes zero or copies/rescales the next
-basis column. nrm2 and rscl are separated by an actual copy, so the convenience theorem
-exec_nrm2_rscl cannot be substituted as though the program calls a combined kernel. Its
-scalar/norm algebra can be reused with the actual copy frame and norm-word provenance.
+    epsilon = lanczosImplementationRoundoffBound N u = 16*(N+1)^2*u <= 1/100.
 
-## Checked input-only local budget
+There is no accumulated q*epsilon condition for program completion or run construction.
+`LanczosProgramRounding.lean` proves all required scalar windows and bounds: ordered dot,
+dense matvec, two-operation axpy, component division and squared normalization defect.
+The formula includes N=0 and controls u there. CG's different 4*N^2*u allowance is not used
+for Lanczos normalization.
 
-`lanczosImplementationRoundoffBound N u` is epsilon = 16*(N+1)^2*u(tag), defined in
-`LanczosProgramRounding.lean`. This is a separate budget from stored CG. Under nonnegative
-unit roundoff and epsilon <= 1/100:
+## Actual primitive order and initialization
 
-- (N+1)*u <= 1/1600, so the nrm2/rscl window and all divisors used after a nonzero norm test
-  are justified by existing successful-execution and zero/positive norm theorems.
-- The squared normalization defect is <= 12*(N+1)*u <= epsilon by the existing public
-  normalizationRoundingFactor_le theorem; this is the extra condition absent from CG.
-- Dense matvec error is <= gamma_N*sqrt(N) <= 2*N*sqrt(N)*u <= epsilon.
-- Ordered dot error gamma_N <= 2*N*u <= epsilon, and two-operation axpy error
-  gamma_2 <= 4*u <= epsilon, including all cross terms retained in the checked adapters.
-- Component division gives the Lanczos normalization residual norm <= u*norm(z), hence
-  <= epsilon*norm(z). Negation and copies are exact on decodings/words as appropriate.
+The initializer loads A, writes initial beta/previous-vector zeros, executes nrm2(b), then
+writes a zero first basis column or copies b and divides that copied column by the computed
+norm. Each Paige step executes gemv, negation/axpy, dot, negation/axpy, nrm2, previous-column
+copy, and guarded zero-fill or copy/rscl for the next column. No convenience theorem silently
+replaces that norm/copy/divide order with a different combined kernel.
 
-Completion and run-prefix extraction require only local epsilon <= 1/100, for every q.
-Backward/spectral conclusions separately assume m*epsilon <= 1/100 for the extracted active
-prefix, or the sufficient input-only q*epsilon <= 1/100. No accumulated horizon is needed
-to justify the actual program completion. The q=0 initializer still computes and divides
-by a rounded norm when its input is nonzero, so its local bound remains necessary.
-Unlike the CG formula, this bound also controls u at N=0. These scalar comparisons are
-checked in `LanczosProgramRounding.lean`. The actual
-norm/copy/divide provenance and direction estimate are checked in
-`Computation/BLAS/NormalizationFrames.lean`.
+`Computation/BLAS/NormalizationFrames.lean` retains the actual norm execution and norm word
+through intervening guards/copies. `Matrix/Computation/BLASNegAxpy.lean` shares the two executed
+negation/subtraction adapters. Actual local errors, sign/zero facts and successful divisions
+are derived; they are not initialized-state or desired-local-error premises.
 
-## Output and stopping semantics
+The final theorem retains the stored norm s and initial computed column v1. It proves
+s>=0, s=0 iff b=0, a norm error bounded by gamma_(N+1)*norm(b), the raw rescaling residual
+norm(b-s*v1)<=u*norm(b), and
 
-Prove a supporting theorem on the same actual lanczosProg.compiled.exec, with input/storage,
-scalar-contract and precision premises only. Derive all LanczosRun fields from primitive
-execution; neither LanczosRun nor desired local defects are inputs.
+    norm(b-s*normalized(v1)) <= (2*u+gamma_(N+1))*norm(b).
 
-For decoded b nonzero and q>0, return a positive prefix m<=q and L:LanczosRun N m with
-L.H=A, L.epsilon equal to the approved implementation budget. Actual basis/coefficient
-words through the active prefix decode to L.v, L.alpha and L.beta. The first zero computed
-beta is permitted at m, and no beta before m is zero. The terminal normalized-vector field
-is conditional on beta_m!=0, exactly as required by the existing run model.
+The backward model therefore does not assume that b is exactly parallel to the initial
+computed column. Here gamma_n is the existing primary product factor (1-u)^(-n)-1.
 
-The canonical program continues every requested iteration after beta=0; it does not have
-CG's status-skip loop. Prove the zero tail by actual zero arithmetic and frames: subsequent
-basis columns, alpha and beta are zero. Do not pad L with zero vectors, since its near-unit
-premises would fail. Return the active prefix and actual padded outputs separately. The
-full q-loop still pays its actual operations, controlled by the existing static-cost lemma.
+## Active prefix and actual output buffers
 
-For b=0 (including N=0), actual nrm2 is zero, initialization writes a zero first column,
-and every subsequent iteration writes the zero tail. No positive-length LanczosRun is
-constructed. For q=0, return the actual initial norm/normalized first column or its zero
-branch, with no LanczosRun 0. All divisions occur only after nonzero norm comparisons.
+For q>0 and b nonzero, execution supplies 0<m<=q and an existing `LanczosRun N m`, with H=A
+and epsilon equal to the implementation allowance. All actual declared output words decode
+to its vectors and coefficients, including the full allocated basis/alpha/beta arrays,
+computed input norm, retained input and final previous vector.
 
-## Input direction and backward model
+The active run stops at the first computed zero beta. Its terminal next vector is proved
+zero by the actual guard. Later program iterations still execute and write zero columns and
+coefficients; those outputs are retained separately through default-zero run functions.
+The previous vector can be nonzero at the first zero continuation, because its multiplier is
+zero. A zero tail is not appended as near-unit vectors to `LanczosRun`.
 
-Return the stored input norm s>=0 and the actual normalized initial direction certificate
-norm(b-s*normalizedV_1) <= (2*u+gamma_(N+1))*norm(b). The input norm need not equal the exact
-norm, and the computed basis vectors need not have norm exactly one. Existing normalization
-lemmas supply both this mismatch and the squared near-unit defects needed by LanczosRun.
+For q=0 or b=0 (including N=0), the theorem returns the actual initialized/zero outputs and
+norm certificates without inventing `LanczosRun N 0`. Arbitrary finite q is permitted under
+local precision because this arithmetic contract has unbounded range.
 
-For m>0 apply the existing Lanczos backward-model API to the extracted L, retaining its
-explicit perturbation bounds and the horizon m*epsilon<=1/100 inherited from m<=q. Export
-actual coefficient/basis and scaled input-direction ties. The existing physical transfer
-formula M*tau+s*E+zeta can be used by a later consumer, but this implementation bridge makes
-no matrix-function postprocessing, eigensolver or returned matrix-function-vector claim.
+## Exact model and explicit input-only radii
 
-## Minimum remaining proof work
+`LanczosImplementation.exec_rounded_compiled_backward` in `LanczosProgramRoundedBackward.lean`
+selects the nonzero-input/positive-budget case. It retains actual execution, decoded outputs,
+resources, norm/direction certificates and active-prefix ties. The canonical Hermitian
+matrix B=R.backwardH and unit start d=R.dilatedStart reproduce the active tridiagonal T_m,
+dilated basis and terminal beta exactly.
 
-1. Generic decoded initializer/store invariant for the existing Lanczos layout and norm word.
-2. Actual gemv/axpy/dot/nrm2/copy/rscl per-step defects with retained frames.
-3. Existing LanczosRun prefix construction and actual zero-tail induction.
-4. Scoped compiled-tree execution, decoded outputs and static-cost/backward consequences.
+A radius depending only on N, q, u and norm(A), valid with local precision alone, is
 
-All checks run in the isolated verification checkout, two Lean threads and one build at a
-time, warnings fatal. No registry/target/check changes are made by this supporting work.
+    1000*q^2*epsilon*(1+(1+epsilon)*sum_(i<q)(1+8*epsilon)^(i+1))*norm(A).
+
+It bounds the Frobenius difference from the block-diagonal dilation of A. Coefficient growth
+is explicit and this bound may become large. The same model also satisfies:
+
+- 400*q^3*epsilon*norm(A) when q*epsilon<=1/100;
+- 1000*q^2*epsilon*norm(A) when q^2*epsilon<=1/1000.
+
+These are applications of the existing backward theory, not newly assumed defects. The
+model/spectral statements concern the active prefix m. If m<q, the full padded T_q has extra
+zero eigenvalues, which need not be near the input spectrum. Raw computed columns need not
+be orthogonal; the exact model's orthonormal basis lives in the dilated space.
+
+## Proof placement and resources
+
+The rounded modules separate decoded StoreContext, primitive Step/Commit/Execution, actual
+Zero continuation, existing-Run constructors, RoundedPrefix bookkeeping, full loop and
+Preallocated ROM/initializer composition. `LanczosProgramRounded.lean` proves the actual
+compiled-tree allocation/body/release identity and final decoded outputs.
+`LanczosProgramScope.lean` shares generic allocation and cleanup with exact/oracle proofs.
+
+`LanczosProgramStaticCost.lean` analyzes the unchanged tree independently of numerical
+correctness. The rounded theorem reuses its approved count formula and additional workspace
+N^2+N+3 cells with the corresponding bit-width bound. Initial declared storage and external
+ROM are handled by the existing resource model.
+
+Matrix-function evaluation/postprocessing and an IEEE format/range certificate remain
+separate obligations. Float smoke executions check selected executions, not those contracts.

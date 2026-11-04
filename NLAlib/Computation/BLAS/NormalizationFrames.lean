@@ -19,6 +19,8 @@ or arithmetic model is defined.
 
 * `NLAlib.Computation.IsRelErrSem.exec_copyv_rscl`: actual copied-vector normalization.
 * `NLAlib.Computation.IsRelErrSem.exec_copyv_rscl_of_nrm2_execution`: norm-word provenance.
+* `NLAlib.Computation.IsRelErrSem.exec_nrm2_abs_norm_sub_le_zero_iff`: exact norm zero tests.
+* `NLAlib.Computation.IsRelErrSem.exec_guarded_copyv_rscl_of_nrm2_execution`: both guard branches.
 -/
 
 @[expose] public section
@@ -170,5 +172,127 @@ theorem IsRelErrSem.exec_copyv_rscl_of_nrm2_execution
       ⟨w, hr, rfl⟩ hx hxy hay hy
   exact ⟨copied, out, w, W, ec, er, ecr, hshape, hr,
     (frame p a.buf a.idx.eval (Or.inl hay)).trans hr, hpos, herr, hW, frame, hres, hunit, hdir⟩
+
+/-- The actual rounded norm is nonnegative and detects exactly a zero decoded vector.
+The strict accumulated-error window excludes an erroneous zero norm. The vector may have
+length zero; all error and zero-test conclusions come from the executed norm kernel. -/
+theorem IsRelErrSem.exec_nrm2_abs_norm_sub_le_zero_iff {C : Type} [AddMonoid C]
+    (I : Interp P ι K C) (p : P) (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (st : St P K C)
+    (dst : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (xs : ℕ → ℝ)
+    (hn : (n.eval + 1 : ℕ) * u p < 1) (hg : roundingFactor (n.eval + 1) (u p) < 1)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
+    (hdst : ∃ v s, st.store.write p dst.buf dst.idx.eval v = some s) :
+    ∃ out w, exec I (nrm2 p dst x xo n).run st = some out ∧
+      st.store.write p dst.buf dst.idx.eval w = some out.store ∧ 0 ≤ dec p w ∧
+      |‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ - dec p w| ≤
+        roundingFactor (n.eval + 1) (u p) * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ∧
+      (dec p w = 0 ↔ (fun i : Fin n.eval => xs i) = 0) := by
+  obtain ⟨out, w, he, hw, hnonneg, herr⟩ := h.exec_nrm2_abs_norm_sub_le I p st hz
+    dst x xo n xs hn hg hx hdx hdst
+  refine ⟨out, w, he, hw, hnonneg, herr, ?_⟩
+  constructor
+  · intro hzero
+    have hupper : ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ≤
+        roundingFactor (n.eval + 1) (u p) * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ := by
+      simpa only [hzero, sub_zero, abs_of_nonneg (norm_nonneg _)] using herr
+    have hmul : (1 - roundingFactor (n.eval + 1) (u p)) *
+        ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ≤ 0 := by nlinarith
+    have hr : ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ≤ 0 :=
+      (mul_le_mul_iff_left₀ (sub_pos.mpr hg)).mp (by nlinarith [hmul])
+    exact (WithLp.toLp_eq_zero 2).mp (norm_eq_zero.mp (le_antisymm hr (norm_nonneg _)))
+  · intro hzero
+    rw [hzero, WithLp.toLp_zero, norm_zero, mul_zero, zero_sub, abs_neg] at herr
+    exact abs_eq_zero.mp (le_antisymm herr (abs_nonneg _))
+
+/-- Execute the actual zero-norm guard and either fill zero or copy and divide. The norm
+was actually computed earlier; only raw norm-word provenance and actual source reads are
+required through intervening framed operations. Zero input and zero-length windows take
+the zero branch. No normalization error or nonbreakdown fact is assumed. -/
+theorem IsRelErrSem.exec_guarded_copyv_rscl_of_nrm2_execution
+    (I : Interp P ι K (OpCount P ι)) (p : P)
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
+    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (predot normed ready : St P K (OpCount P ι))
+    (a zeroCell : Cell ℕ ℕ) (x y : ℕ) (xo yo n : IExp ℕ) (xs : ℕ → ℝ)
+    (hn : (n.eval + 1 : ℕ) * u p < 1) (hg : roundingFactor (n.eval + 1) (u p) < 1)
+    (hprex : ∀ i < n.eval,
+      ∃ w, predot.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hx : ∀ i < n.eval, ∃ w, ready.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hdx : a.buf ≠ x) (hxy : x ≠ y) (hay : a.buf ≠ y)
+    (hdst : ∃ v s, predot.store.write p a.buf a.idx.eval v = some s)
+    (hy : ∀ i < n.eval, ∃ len, ready.store.shape[y]? = some (p, len) ∧ yo.eval + i < len)
+    (hnorm : exec I (nrm2 p a x xo n).run predot = some normed)
+    (horigin : ready.store.read p a.buf a.idx.eval = normed.store.read p a.buf a.idx.eval)
+    (hzero : ∃ w, ready.store.read p zeroCell.buf zeroCell.idx.eval = some w ∧ dec p w = 0) :
+    ∃ (out : St P K (OpCount P ι)) (w : K) (W : ℕ → K),
+      exec I (ifThenElse p .eq a zeroCell
+        (forRange n fun i => ins (.lit p ⟨y, yo + .var i⟩ 0))
+        (do copyv p x xo y yo n; rscl p a y yo n)).run ready = some out ∧
+      out.store.shape = ready.store.shape ∧
+      ready.store.read p a.buf a.idx.eval = some w ∧
+      out.store.read p a.buf a.idx.eval = some w ∧ 0 ≤ dec p w ∧
+      |‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ - dec p w| ≤
+        roundingFactor (n.eval + 1) (u p) * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ∧
+      (dec p w = 0 ↔ (fun i : Fin n.eval => xs i) = 0) ∧
+      (∀ i : Fin n.eval, out.store.read p y (yo.eval + i) = some (W i)) ∧
+      (∀ q buf idx, (buf ≠ y ∨ idx < yo.eval ∨ yo.eval + n.eval ≤ idx) →
+        out.store.read q buf idx = ready.store.read q buf idx) ∧
+      (dec p w = 0 → (fun i : Fin n.eval => dec p (W i)) = 0) ∧
+      (dec p w ≠ 0 → |‖WithLp.toLp 2 (fun i : Fin n.eval => dec p (W i))‖ ^ 2 - 1| ≤
+        normalizationRoundingFactor n.eval (u p)) ∧
+      ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i - dec p w * dec p (W i))‖ ≤
+        u p * ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ ∧
+      ‖WithLp.toLp 2 ((fun i : Fin n.eval => xs i) -
+        dec p w • (‖WithLp.toLp 2 (fun i : Fin n.eval => dec p (W i))‖⁻¹ •
+          (fun i : Fin n.eval => dec p (W i))))‖ ≤
+        (2 * u p + roundingFactor (n.eval + 1) (u p)) *
+          ‖WithLp.toLp 2 (fun i : Fin n.eval => xs i)‖ := by
+  classical
+  obtain ⟨stN, w, he, hw, hn0, herr, hiff⟩ := h.exec_nrm2_abs_norm_sub_le_zero_iff
+    I p hz predot a x xo n xs hn hg hprex (fun he => (hdx he).elim) hdst
+  have hst : stN = normed := Option.some.inj (he.symm.trans hnorm)
+  have hr : ready.store.read p a.buf a.idx.eval = some w := by
+    rw [horigin, ← hst]
+    exact Store.read_of_write_eq_some hw
+  obtain ⟨z, hzread, hzdec⟩ := hzero
+  have hcmpsem : I.sem.cmp p .eq w z = some (if dec p w = 0 then true else false) := by
+    by_cases hd : dec p w = 0 <;> simpa [hzdec, hd] using h.cmp_eq p w z
+  let mid := { ready with cnt := ready.cnt + I.charge (.cmp p) }
+  have hcmp : cmpStep I p .eq a zeroCell ready =
+      some ((if dec p w = 0 then true else false), mid) := by
+    simp only [cmpStep, hr, hzread, Option.bind_some, hcmpsem, Option.map_some, mid]
+  by_cases hzero : dec p w = 0
+  · obtain ⟨zero, hlit, hdz⟩ := (h.isArithErrSem (fun _ => trivial)).lit_zero p
+    obtain ⟨store, ezero, sh, rzero, fzero⟩ :=
+      exec_forRange_literal_zero I p zero hlit mid n y yo hy
+    let out := { mid with store := store, cnt := mid.cnt + n.eval • I.charge (.lit p) }
+    have frame (q : P) (buf idx : ℕ)
+        (hout : buf ≠ y ∨ idx < yo.eval ∨ yo.eval + n.eval ≤ idx) :
+        out.store.read q buf idx = ready.store.read q buf idx := fzero q buf idx (Or.inr hout)
+    have hxzero := hiff.mp hzero
+    have hyzero : (fun i : Fin n.eval => dec p zero) = 0 := funext (fun _ => hdz)
+    refine ⟨out, w, fun _ => zero, ?_, sh, hr,
+      (frame p a.buf a.idx.eval (Or.inl hay)).trans hr, hn0, herr, hiff,
+      (fun i => rzero i i.isLt), frame, fun _ => hyzero, ?_, ?_, ?_⟩
+    · change exec I (.seq (.ite p .eq a zeroCell _ _) .skip) ready = _
+      rw [exec_seq_skip, exec_ite, hcmp, Option.bind_some]
+      simpa only [hzero, Bool.false_eq_true, Bool.true_eq, ↓reduceIte] using ezero
+    · exact fun hne => (hne hzero).elim
+    · simpa only [hzero, zero_mul, sub_zero, hxzero, WithLp.toLp_zero, norm_zero, mul_zero]
+        using (le_refl (0 : ℝ))
+    · simp only [hzero, zero_smul, sub_zero, hxzero, WithLp.toLp_zero, norm_zero, mul_zero,
+        le_refl]
+  · obtain ⟨copied, out, w', W, ec, er, ecr, sh, hr', hrout, hpos, _, hW, frame,
+        hres, hunit, hdir⟩ := h.exec_copyv_rscl_of_nrm2_execution I p hz hc predot normed mid
+      a x y xo yo n xs hn hg hprex hx hdx hxy hay hdst hy hnorm horigin ⟨w, hr, hzero⟩
+    have hword : w' = w := Option.some.inj (hr'.symm.trans hr)
+    subst w'
+    refine ⟨out, w, W, ?_, sh, hr, hrout, hn0, herr, hiff, hW, frame,
+      fun he => (hzero he).elim, fun _ => hunit, hres, hdir⟩
+    change exec I (.seq (.ite p .eq a zeroCell _ _) .skip) ready = _
+    rw [exec_seq_skip, exec_ite, hcmp, Option.bind_some]
+    simpa only [hzero, Bool.false_eq_true, Bool.true_eq, ↓reduceIte] using ecr
 
 end NLAlib.Computation

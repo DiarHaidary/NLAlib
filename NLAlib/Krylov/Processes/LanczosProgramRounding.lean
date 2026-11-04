@@ -62,6 +62,16 @@ theorem roundingFactor_le_two_mul_of_lanczosImplementationRoundoffBound_le {N m 
   apply (div_le_iff₀ (by linarith : 0 < 1 - (m : ℝ) * u)).mpr
   nlinarith [mul_nonneg hmu0 (show 0 ≤ 1 - 2 * ((m : ℝ) * u) by linarith)]
 
+/-- The actual ordered dot-product error fits the implementation budget in every dimension. -/
+theorem roundingFactor_le_lanczosImplementationRoundoffBound (N : ℕ) {u : ℝ} (hu : 0 ≤ u)
+    (hsmall : lanczosImplementationRoundoffBound N u ≤ 1 / 100) :
+    roundingFactor N u ≤ lanczosImplementationRoundoffBound N u := by
+  have hγ := roundingFactor_le_two_mul_of_lanczosImplementationRoundoffBound_le
+    (N := N) (m := N) (by omega) hu hsmall
+  have hMu := mul_succ_le_budget N hu
+  have hNu : 0 ≤ (N : ℝ) * u := by positivity
+  nlinarith
+
 /-- The Frobenius-to-spectral multiplier of the actual dense matrix kernel fits the
 input-only implementation budget, also in empty dimension. -/
 theorem roundingFactor_mul_sqrt_le_lanczosImplementationRoundoffBound (N : ℕ)

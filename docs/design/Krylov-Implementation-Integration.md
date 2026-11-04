@@ -1,9 +1,8 @@
 # Concrete Krylov implementations and their guarantees
 
 2026-11-04. Both stored-entry and matrix-free CG and Lanczos have approved exact targets and
-complete program proofs. The stored CG program also constructs its finite-precision run and
-backward model from primitive execution. Whole rounded Lanczos construction is the next
-increment; its local precision and normalization helpers are already checked.
+complete program proofs. The stored CG and Lanczos programs also construct their
+finite-precision runs and backward models from primitive execution.
 
 ## Programs and targets
 
@@ -68,16 +67,21 @@ separate. The comparison uses energy directly, without converting a residual-gap
 See [the rounded bridge](CG-Rounded-Program-Bridge.md) and
 [the backward theorem](CG-Rounded-Backward.md).
 
-## Rounded Lanczos and remaining endpoints
+## Complete rounded Lanczos bridge
 
-`LanczosProgramRounding.lean` proves that `16*(N+1)^2*u` controls the actual dense kernels and
-squared normalization defect under its local small-roundoff condition.
-`Computation/BLAS/NormalizationFrames.lean` handles the executed norm, preserved norm word,
-intervening copies and component division. It proves norm residual, near-unit and initial
-normalized-direction bounds from actual primitive execution.
-The complete `LanczosRun` extraction, zero tail and compiled backward corollary remain the
-[next increment](Lanczos-Rounded-Program-Bridge.md). The backward-analysis horizon is distinct
-from these local arithmetic conditions.
+`LanczosProgramRounded.lean` proves actual compiled execution, all six decoded output buffers,
+computed input norm/direction certificates and an existing active `LanczosRun`. Its primitive
+contracts and explicit `16*(N+1)^2*u <= 1/100` local condition justify every operation; no
+accumulated horizon is needed for completion. Zero input/dimension/steps and actual zero
+continuation are separate cases, with no padded zero vectors in the near-unit run model.
+
+`LanczosProgramRoundedBackward.lean` retains those outputs and the initial-direction mismatch
+while exposing the canonical exact model of the active tridiagonal prefix. Its unconditional
+geometric radius depends only on N, q, u and the matrix norm. It also gives the existing
+`400*q^3*epsilon*norm(A)` bound under `q*epsilon <= 1/100`, and the sharper
+`1000*q^2*epsilon*norm(A)` bound under `q^2*epsilon <= 1/1000`.
+The model concerns the active prefix, not the extra zero eigenvalues of a padded T_q.
+See [the complete Lanczos bridge](Lanczos-Rounded-Program-Bridge.md).
 
 The arithmetic contracts use an unbounded range. Float smoke executions do not certify an
 IEEE format, overflow/underflow behavior or arbitrary external oracle accuracy. Matrix-function

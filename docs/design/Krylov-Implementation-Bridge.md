@@ -3,10 +3,10 @@
 Design, 2026-11-04. User request: a library-wide pass linking algorithmic theory to particular
 implementations. The coverage inventory is in `Implementation-Coverage.md`; this note owns the
 Lanczos and integration interfaces. CG and rounded normalization have separate reviewed notes.
-The stored and oracle CG/Lanczos exact targets now have complete library proofs. Stored CG
-also has a complete rounded execution-to-run/backward theorem; see the
-[integration record](Krylov-Implementation-Integration.md). Whole rounded Lanczos remains
-the next increment; the interfaces below are goals unless identified as completed.
+The stored and oracle CG/Lanczos exact targets now have complete library proofs. Stored CG and Lanczos
+also have complete rounded execution-to-run/backward theorems; see the
+[integration record](Krylov-Implementation-Integration.md). The implementation
+interfaces below are goals unless identified there as completed.
 
 ## Required chain and scope
 
@@ -78,9 +78,9 @@ variants add `matrixFreeConjugateGradient` and `matrixFreeLanczos`; the registry
 targets and seven trees. Every previous registry entry, allowlist, ratchet and pin remains
 unchanged. The naming-check notation correction was separately approved.
 
-Stored CG rounded execution and its backward/physical-energy corollary are supporting
-theorems on the registered compiled tree, with no new rounded target. Whole rounded Lanczos
-remains open, with checked local normalization helpers. Any new rounded
+Stored CG and Lanczos rounded execution/backward corollaries are supporting theorems on
+their registered compiled trees, with no new rounded target. CG also retains its direct
+physical-energy comparison; Lanczos retains its actual initial-direction certificate. Any new rounded
 target must be concrete and reviewable before its own approval; the existing exact-target
 approval does not authorize an unspecified replacement statement.
 

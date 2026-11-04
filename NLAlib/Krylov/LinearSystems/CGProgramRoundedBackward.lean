@@ -33,23 +33,23 @@ variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ}
 
 /-- The actual stored CG tree, under an unbounded relative-error scalar contract with exact
 addition of zero, produces a backward model and a physical-energy certificate. Let $N$ be the
-matrix dimension, $q>0$ the requested budget, $\mathbf b$ the nonzero decoded input,
+matrix dimension, $q>0$ the requested budget, $\mathbf{b}$ the nonzero decoded input,
 with <!-- value cgImplementationRoundoffBound N u -->$\varepsilon=4N^2u$, and
 $\kappa=a'/a$. Assume $u<1$, $\varepsilon\le1/100$, symmetric
-$\mathbf A$ with spectrum in $[a,a']$, $a>0$, and
+$\mathbf{A}$ with spectrum in $[a,a']$, $a>0$, and
 $q^2\sqrt q\varepsilon\kappa^2\le10^{-5}$. Actual execution completes $0<m\le q$ active
-steps, possibly stopping early, and returns the decoded physical vector $\widehat{\mathbf x}$.
-The canonical model $\mathbf B$ has spectrum in $[a/2,a'+a/2]$, starts from
-$\mathbf d=(\mathbf b,0,\ldots)$, and its exact CG step lengths and residual norms match
+steps, possibly stopping early, and returns the decoded physical vector $\widehat{\mathbf{x}}$.
+The canonical model $\mathbf{B}$ has spectrum in $[a/2,a'+a/2]$, starts from
+$\mathbf{d}=(\mathbf{b},0,\ldots)$, and its exact CG step lengths and residual norms match
 those of the computed run. Its perturbation radius is, with <!-- value cgBackwardFactor m -->
 $\delta_m=6000m^2\sqrt{m}\varepsilon\kappa a'$. The physical rounding remainder is,
 with <!-- value cgEnergyEstimatorFactor 0 m -->
-$R_m=150m(0+m)\varepsilon\kappa\|\mathbf b\|^2/a$.
-For physical and model solutions $\mathbf A\mathbf x_\star=\mathbf b$ and
-$\mathbf B\mathbf y_\star=\mathbf d$, the returned decoded iterate satisfies
-$$\left\lvert\|\mathbf x_\star-\widehat{\mathbf x}\|_{\mathbf A}^2-
- \|\mathbf y_\star-\mathsf{cgIterate}(\mathbf B,\mathbf d,0,m)\|_{\mathbf B}^2\right\rvert
- \le 2\|\mathbf b\|^2\delta_m/a^2+R_m.$$
+$R_m=150m(0+m)\varepsilon\kappa\|\mathbf{b}\|^2/a$.
+For physical and model solutions $\mathbf{A}\mathbf{x}_\star=\mathbf{b}$ and
+$\mathbf{B}\mathbf{y}_\star=\mathbf{d}$, the returned decoded iterate satisfies
+$$\left\lvert\|\mathbf{x}_\star-\widehat{\mathbf{x}}\|_{\mathbf{A}}^2-
+ \|\mathbf{y}_\star-\mathsf{cgIterate}(\mathbf{B},\mathbf{d},0,m)\|_{\mathbf{B}}^2\right\rvert
+ \le 2\|\mathbf{b}\|^2\delta_m/a^2+R_m.$$
 The scalar program theorem supplies actual output and resource ties; the energy comparison
 uses the canonical direct physical-energy estimator, with no residual-to-energy conversion.
 Zero budget or decoded zero input is covered by `exec_rounded_compiled`, without constructing

@@ -29,9 +29,13 @@ actual-output backward/physical-energy corollary in
 Its input-only precision and spectral conditions are explicit, including zero cases and
 actual stopping. No desired local-error run or initialized numerical header is assumed.
 
-Whole rounded Lanczos construction remains open. Its normalization-aware implementation
-budget and actual norm/copy/divide helper are checked; matrix-function postprocessing,
-preconditioning, external rounded oracles and IEEE endpoints remain separate obligations.
+Stored Lanczos now has the corresponding complete execution-to-`LanczosRun` theorem in
+[LanczosProgramRounded.lean](../../NLAlib/Krylov/Processes/LanczosProgramRounded.lean) and
+[compiled backward corollary](../../NLAlib/Krylov/Processes/LanczosProgramRoundedBackward.lean).
+Local precision suffices for completion; geometric growth and the sharper horizon-dependent
+backward radii are explicit. Actual zero continuation is separate from the active run.
+Matrix-function postprocessing, preconditioning, external rounded oracles and IEEE endpoints
+remain separate obligations.
 The [integration record](Krylov-Implementation-Integration.md) gives the current source map.
 Twenty-eight Float cases execute the actual stored/oracle trees and check outputs and
 resources. They do not certify the Float arithmetic contract.
