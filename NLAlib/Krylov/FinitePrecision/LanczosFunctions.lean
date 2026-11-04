@@ -27,6 +27,8 @@ in the output definitions are exact postprocessing of a finite precision recurre
   a bounded-function guarantee under an explicit polynomial precision budget.
 * `NLAlib.LanczosRun.norm_cfc_mulVec_sub_functionApprox_le_of_isUniformApproxOn`:
   a compositional physical basis bound with a scalar polynomial Lipschitz coefficient.
+* `NLAlib.LanczosRun.norm_cfc_mulVec_sub_le_of_norm_sub_smul_le`:
+  transfer to rounded initialization and a certified final returned vector.
 * `NLAlib.LanczosRun.norm_cfc_mulVec_sub_smul_functionApprox_le_of_precision`:
   the bounded-function approximation theorem for the scaled physical computed output.
 -/
@@ -375,6 +377,42 @@ theorem norm_cfc_mulVec_sub_le_of_norm_sub_smul_functionApprox_le
         (‖WithLp.toLp 2 b‖ • L.functionApprox f - y) := by abel
   rw [heq, WithLp.toLp_add]
   exact (norm_add_le _ _).trans (add_le_add h hy)
+
+/-- Transfer a physical computed-basis guarantee to the actual input and returned vector.
+The function is bounded by $M$ on the matrix spectrum, the computed nonnegative scale is $s$,
+the initial-direction mismatch is at most $\tau$, and the final output error is at most
+$\zeta$. An error $E$ for the normalized initial direction then gives
+$\|f(\mathbf{H})\mathbf{b}-\mathbf{y}\| \le M\tau+sE+\zeta$.
+No exact equality between rounded initialization and the normalized input is required. -/
+theorem norm_cfc_mulVec_sub_le_of_norm_sub_smul_le
+    {a a' M E s τ ζ : ℝ} {f : ℝ → ℝ}
+    (hs : spectrum ℝ L.H ⊆ Set.Icc a a')
+    (hM : 0 ≤ M) (hf : ∀ x ∈ Set.Icc a a', |f x| ≤ M)
+    (hs0 : 0 ≤ s)
+    (hE : ‖WithLp.toLp 2
+      (cfc f L.H *ᵥ L.normalizedV 1 - L.functionApprox f)‖ ≤ E)
+    (b y : Fin n → ℝ)
+    (hinit : ‖WithLp.toLp 2 (b - s • L.normalizedV 1)‖ ≤ τ)
+    (hpost : ‖WithLp.toLp 2 (s • L.functionApprox f - y)‖ ≤ ζ) :
+    ‖WithLp.toLp 2 (cfc f L.H *ᵥ b - y)‖ ≤ M * τ + s * E + ζ := by
+  have hspec : specNorm (cfc f L.H) ≤ M :=
+    L.isHermitian.specNorm_cfc_le hM fun x hx => hf x (hs hx)
+  have hin : ‖WithLp.toLp 2 (cfc f L.H *ᵥ (b - s • L.normalizedV 1))‖ ≤ M * τ :=
+    (norm_toLp_mulVec_le _ _).trans
+      (mul_le_mul hspec hinit (norm_nonneg _) hM)
+  have hscaled : ‖WithLp.toLp 2
+      (s • (cfc f L.H *ᵥ L.normalizedV 1 - L.functionApprox f))‖ ≤ s * E := by
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg hs0]
+    exact mul_le_mul_of_nonneg_left hE hs0
+  have heq : cfc f L.H *ᵥ b - y =
+      (cfc f L.H *ᵥ (b - s • L.normalizedV 1) +
+        s • (cfc f L.H *ᵥ L.normalizedV 1 - L.functionApprox f)) +
+          (s • L.functionApprox f - y) := by
+    rw [Matrix.mulVec_sub, Matrix.mulVec_smul, smul_sub]
+    abel
+  rw [heq, WithLp.toLp_add, WithLp.toLp_add]
+  exact (norm_add_le _ _).trans
+    (add_le_add ((norm_add_le _ _).trans (add_le_add hin hscaled)) hpost)
 
 /-- **Finite precision Lanczos for bounded functions.** Let the spectrum of a run's matrix
 lie in $[a,a']$, with $a<a'$, and let $p$ of degree below $k$ approximate $f$ to error

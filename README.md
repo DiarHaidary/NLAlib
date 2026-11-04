@@ -17,6 +17,12 @@ LEAN_NUM_THREADS=4 lake build NLAlib
 
 Pinned: Lean `v4.33.1`, Mathlib `v4.33.1`.
 
+## Theory and implementations
+
+[Implementation coverage](docs/design/Implementation-Coverage.md) maps algorithm specifications
+and finite-precision guarantees to concrete programs, execution proofs and remaining obligations.
+It distinguishes exact arithmetic, rounding contracts and verified machine implementations.
+
 ## Contributing
 
 [CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide: setup, layout and import rules,

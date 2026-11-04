@@ -23,8 +23,9 @@ $$\mathbf{x}_{j+1} = \mathbf{x}_j + \gamma_j\mathbf{p}_j + \mathbf{e}^x_j,\quad
 \mathbf{r}_{j+1} = \mathbf{r}_j - \gamma_j\mathbf{s}_j + \mathbf{e}^r_j,\quad
 \delta_j = \frac{\nu_{j+1}}{\nu_j}(1 + \eta^\delta_j),\quad
 \mathbf{p}_{j+1} = \mathbf{r}_{j+1} + \delta_j\mathbf{p}_j + \mathbf{e}^p_j .$$
-It is the interface between the rounding-error analysis of the conjugate gradient program
-(`NLAlib/Krylov/LinearSystems/CGRounding.lean`) and the stability analysis.
+This is an abstract local-error interface for the stability analysis. Applying its guarantees
+to a particular program requires a separate execution theorem constructing this interface
+from the decoded computed states; the recurrence assumptions alone do not provide that theorem.
 
 The **Lanczos data of the run** (`NLAlib.CGRun.toNormalizedLanczosData`) are the normalised
 residuals $\bar{\mathbf{v}}_{j+1} = (-1)^j\mathbf{r}_j/\|\mathbf{r}_j\|$ with the tridiagonal

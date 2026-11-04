@@ -521,6 +521,16 @@ lean_body = 'roundingFactor (n : ℕ) (u : ℝ) : ℝ := n * u / (1 - n * u)'
 body_hash = "c6162e4df9d87dfa"
 
 [[constant]]
+name = "NLAlib.Computation.normalizationRoundingFactor"
+kind = "factor"
+file = "NLAlib/Computation/BLAS/Normalization.lean"
+args = ["n", "u"]
+latex = '((#2+(#1+1)#2/(1-(#1+1)#2))/(1-(#1+1)#2/(1-(#1+1)#2)))(2+(#2+(#1+1)#2/(1-(#1+1)#2))/(1-(#1+1)#2/(1-(#1+1)#2)))'
+display = '\frac{#2+\frac{(#1+1)#2}{1-(#1+1)#2}}{1-\frac{(#1+1)#2}{1-(#1+1)#2}}\left(2+\frac{#2+\frac{(#1+1)#2}{1-(#1+1)#2}}{1-\frac{(#1+1)#2}{1-(#1+1)#2}}\right)'
+lean_body = 'normalizationRoundingFactor (n : ℕ) (u : ℝ) : ℝ := let t := (u + roundingFactor (n + 1) u) / (1 - roundingFactor (n + 1) u) t * (2 + t)'
+body_hash = "050b93c9720b2e9f"
+
+[[constant]]
 name = "NLAlib.lanczosRecurrenceErrorFactor"
 kind = "factor"
 file = "NLAlib/Krylov/FinitePrecision/LocalErrors.lean"

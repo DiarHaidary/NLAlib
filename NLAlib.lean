@@ -2,6 +2,7 @@ module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Computation.BLAS
 public import NLAlib.Computation.BLAS.MatrixKernels
+public import NLAlib.Computation.BLAS.Normalization
 public import NLAlib.Computation.BLAS.RoundingErrors
 public import NLAlib.Computation.BLAS.Traces
 public import NLAlib.Computation.BLAS.Triangular
@@ -244,6 +245,7 @@ public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Matrix.Basic.QuadForm
 public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
+public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
 public import NLAlib.Matrix.Factorizations.Elimination
