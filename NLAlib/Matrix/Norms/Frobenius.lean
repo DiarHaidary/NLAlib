@@ -9,6 +9,8 @@ public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.Matrix.Normed
 public import Mathlib.LinearAlgebra.Matrix.Block
 public import Mathlib.LinearAlgebra.Matrix.Trace
+public import Mathlib.LinearAlgebra.Matrix.Hermitian
+public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity.Core
 
 /-!
@@ -527,3 +529,49 @@ meta def evalFrobNorm : PositivityExt where eval {_ _} _ pα? e :=
     pure (.nonnegative pf)
 
 end Mathlib.Meta.Positivity
+
+open scoped Matrix
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+/-- For a Hermitian matrix and real weights, a bound on the sum of two squared diagonal
+weights at every nonzero entry controls the weighted squared Frobenius norm. No printed source. -/
+theorem _root_.Matrix.IsHermitian.frobNorm_mul_diagonal_sq_le_sum
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (d e : n → ℝ)
+    (hde : ∀ i j, A i j ≠ 0 → d i ^ 2 + d j ^ 2 ≤ e i + e j) :
+    frobNorm (A * Matrix.diagonal (fun i => (d i : 𝕜))) ^ 2 ≤
+      ∑ i, e i * ∑ j, ‖A i j‖ ^ 2 := by
+  have hsym (f : n → ℝ) :
+      ∑ i, ∑ j, ‖A i j‖ ^ 2 * f i = ∑ i, ∑ j, ‖A i j‖ ^ 2 * f j := by
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+    rw [← hA.apply i j, norm_star]
+  have hpair : ∀ i j, ‖A i j‖ ^ 2 * (d i ^ 2 + d j ^ 2) ≤
+      ‖A i j‖ ^ 2 * (e i + e j) := by
+    intro i j
+    by_cases h0 : A i j = 0
+    · simp only [h0, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0), zero_mul, le_refl]
+    · exact mul_le_mul_of_nonneg_left (hde i j h0) (sq_nonneg _)
+  have hsum := Finset.sum_le_sum fun i (_ : i ∈ (Finset.univ : Finset n)) =>
+    Finset.sum_le_sum fun j (_ : j ∈ (Finset.univ : Finset n)) => hpair i j
+  simp only [mul_add, Finset.sum_add_distrib] at hsum
+  rw [hsym (fun i => d i ^ 2), hsym e] at hsum
+  have hfinal : (∑ i, ∑ j, ‖A i j‖ ^ 2 * d j ^ 2) ≤
+      ∑ i, ∑ j, ‖A i j‖ ^ 2 * e j := by linarith
+  rw [← hsym e] at hfinal
+  simpa only [frobNorm_sq_eq_sum, Matrix.mul_diagonal, norm_mul, mul_pow,
+    RCLike.norm_ofReal, sq_abs, Finset.mul_sum, mul_comm] using hfinal
+end NLAlib
+
+
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
+/-- The squared moduli of a row of a Hermitian matrix sum to the real diagonal entry
+of its square. -/
+theorem _root_.Matrix.IsHermitian.sum_norm_apply_sq_eq_re_mul_self_apply
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (i : n) :
+    (∑ j, ‖A i j‖ ^ 2) = RCLike.re ((A * A) i i) := by
+  simp only [Matrix.mul_apply, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [← hA.apply j i, RCLike.star_def, RCLike.mul_conj]
+  simp only [← RCLike.ofReal_pow, RCLike.ofReal_re]
+end NLAlib

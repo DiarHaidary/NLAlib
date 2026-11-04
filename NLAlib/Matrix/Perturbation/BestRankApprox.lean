@@ -6,6 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Perturbation.TruncationWindow
+public import NLAlib.Matrix.Perturbation.TruncationWindowFrobenius
+public import NLAlib.Matrix.Perturbation.TruncationWindowNuclear
 
 /-!
 # Perturbed best rank-$k$ approximation
@@ -26,6 +28,9 @@ with the window $a \le k \le b$ of `NLAlib.exists_singularValues_window`. The wi
 approximation, so in particular for every choice of `truncatedSVD`.
 
 ## Main results
+
+* `NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le`:
+  reciprocal-window perturbation bound with constants 69 and 320/21.
 
 * `NLAlib.IsBestRankApprox.frobNorm_sub_sq_sub_le_two_mul_frobInner`: the optimality step.
 * `NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm`: perturbed truncation
@@ -336,7 +341,7 @@ private theorem le_add_of_le_two_mul_add_window {D x y r ν k η θ μ q : ℝ} 
 /-- The row spaces of the truncations are nested:
 $\operatorname{range}\llbracket\mathbf{B}\rrbracket_a^{\mathsf{H}} \subseteq
 \operatorname{range}\llbracket\mathbf{B}\rrbracket_b^{\mathsf{H}}$ for $a \le b$. -/
-private theorem range_conjTranspose_truncatedSVD_le {m' n' : Type*} [Fintype m'] [Fintype n']
+theorem range_conjTranspose_truncatedSVD_le {m' n' : Type*} [Fintype m'] [Fintype n']
     (B : Matrix m' n' 𝕜) {a b : ℕ} (hab : a ≤ b) :
     LinearMap.range (truncatedSVD B a)ᴴ.mulVecLin ≤
       LinearMap.range (truncatedSVD B b)ᴴ.mulVecLin := by
@@ -492,6 +497,224 @@ theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : 
       (by nlinarith [sq_nonneg (frobNorm (rangeProjector (truncatedSVD B k) * N))]) hx
       (frobNorm_sub_mul_mul_sq_le B hk hak hkb ha ha₂ hb hZ hZk) hy
       (nuclearNorm_mul_sub_mul_le B hk hak hkb hθ hb hZ hZk)
+    rw [hY.frobNorm_sub_sq_eq_add, hBk]
+    nlinarith
+
+end NLAlib
+
+open scoped Matrix
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+private theorem frobNorm_sub_rangeProjector_mul_sq_eq_add
+    (B : Matrix m n 𝕜) (k : ℕ) {Z : Matrix m m 𝕜} (hZ : IsStarProjection Z) :
+    frobNorm ((Z - rangeProjector (truncatedSVD B k)) * B) ^ 2 =
+      (frobNorm ((1 - Z) * B) ^ 2 -
+        frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2) +
+      2 * frobNorm (Z * (B - truncatedSVD B k)) ^ 2 := by
+  have hrow : truncatedSVD B k * rangeProjector ((truncatedSVD B k)ᴴ) = truncatedSVD B k := by
+    simpa only [Matrix.conjTranspose_conjTranspose] using
+      conjTranspose_mul_rangeProjector (truncatedSVD B k)ᴴ
+  have htail : (B - truncatedSVD B k) * (truncatedSVD B k)ᴴ = 0 := by
+    rw [← rangeProjector_mul_self (truncatedSVD B k)ᴴ, ← Matrix.mul_assoc, Matrix.sub_mul,
+      mul_rangeProjector_conjTranspose_truncatedSVD, hrow, sub_self, Matrix.zero_mul]
+  have hdec : (Z - rangeProjector (truncatedSVD B k)) * B =
+      -((1 - Z) * truncatedSVD B k) + Z * (B - truncatedSVD B k) := by
+    simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, rangeProjector_truncatedSVD_mul]
+    abel
+  have horth : frobInner (-((1 - Z) * truncatedSVD B k)) (Z * (B - truncatedSVD B k)) = 0 := by
+    rw [frobInner_neg_left, frobInner_mul_right, Matrix.mul_assoc, htail, Matrix.mul_zero,
+      frobInner_zero_right, neg_zero]
+  have hD := frobNorm_one_sub_mul_sq_sub_eq_add B k hZ 0
+  simp only [zero_pow two_ne_zero, zero_mul, sub_zero, zero_sub, add_zero] at hD
+  rw [hdec, frobNorm_add_sq_of_frobInner_eq_zero horth, frobNorm_neg]
+  linarith
+end NLAlib
+
+namespace NLAlib
+private theorem le_mul_of_le_two_mul_add
+    {D K a r : ℝ} (hK : 0 ≤ K) (ha : a ^ 2 ≤ 2 * K)
+    (hr : r ^ 2 ≤ D + (961 / 2 : ℝ) * K)
+    (hD : D ≤ 2 * a * r + K) : D ≤ 68 * K := by
+  by_contra h
+  have hgt : 68 * K < D := lt_of_not_ge h
+  have h0 : 0 ≤ D - K := by linarith
+  have h1 : D - K ≤ 2 * a * r := by linarith
+  have hs : (D - K) ^ 2 ≤ 4 * a ^ 2 * r ^ 2 := by
+    calc (D - K) ^ 2 ≤ (2 * a * r) ^ 2 := pow_le_pow_left₀ h0 h1 2
+      _ = _ := by ring
+  have h2 := mul_le_mul_of_nonneg_right ha (by positivity : 0 ≤ 4 * r ^ 2)
+  have h3 := mul_le_mul_of_nonneg_left hr (by positivity : 0 ≤ 8 * K)
+  have hp : 0 < (D - 68 * K) * (D + 58 * K) :=
+    mul_pos (by linarith) (by linarith)
+  nlinarith [sq_nonneg K]
+end NLAlib
+namespace NLAlib
+private theorem le_add_window_of_mul_lt {D x y r ν k η θ μ q : ℝ} (hk : 0 ≤ k)
+    (hμ : 0 ≤ μ) (hq : 0 ≤ q) (hθμ : (31 / 2 : ℝ) * μ < θ)
+    (hD : D ≤ 2 * (x + y) + k * η ^ 2) (hx : |x| ≤ √(3 * k) * r * η)
+    (hr : r ^ 2 ≤ (17 / 8 : ℝ) * D)
+    (hy : |y| ≤ ν * (μ * ((5 / 3 : ℝ) * θ)))
+    (hν : ν ≤ 2 * q + (25 / 16 : ℝ) * (D / θ ^ 2)) :
+    D ≤ 68 * k * η ^ 2 + (320 / 21 : ℝ) * θ * μ * q := by
+  have hθ : 0 < θ := by linarith
+  rcases le_or_gt D 0 with hD0 | hD0
+  · nlinarith [mul_nonneg (mul_nonneg hθ.le hμ) hq, mul_nonneg hk (sq_nonneg η)]
+  have hs : (√(3 * k)) ^ 2 = 3 * k := Real.sq_sqrt (by positivity)
+  have hx' : 2 * x ≤ (337 / 3162 : ℝ) * r ^ 2 + (9486 / 337 : ℝ) * k * η ^ 2 := by
+    nlinarith [le_abs_self x, sq_nonneg (r - (3162 / 337 : ℝ) * √(3 * k) * η)]
+  have hw : D / θ ^ 2 * θ ^ 2 = D := div_mul_cancel₀ D (by positivity)
+  have hy' : 2 * y ≤ (20 / 3 : ℝ) * θ * μ * q + (125 / 372 : ℝ) * D := by
+    have h1 : 2 * y ≤ (10 / 3 : ℝ) * θ * μ *
+        (2 * q + (25 / 16 : ℝ) * (D / θ ^ 2)) := by
+      nlinarith [le_abs_self y, mul_le_mul_of_nonneg_left hν (mul_nonneg hμ hθ.le)]
+    have h2 : μ * θ * (D / θ ^ 2) ≤
+        (2 / 31 : ℝ) * θ * θ * (D / θ ^ 2) := by
+      gcongr
+      linarith
+    nlinarith
+  nlinarith [mul_nonneg hk (sq_nonneg η)]
+end NLAlib
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+omit [DecidableEq m] in
+private theorem large_window_bound {B N Y : Matrix m n 𝕜} {k : ℕ}
+    (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k)
+    (hθ : singularValues B (k - 1) ≤ (31 / 2 : ℝ) * specNorm N) :
+    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 +
+      69 * k * specNorm N ^ 2 := by
+  classical
+  let Z := rangeProjector Y
+  let D := frobNorm ((1 - Z) * B) ^ 2 -
+    frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2
+  let K := (k : ℝ) * specNorm N ^ 2
+  have hZ : IsStarProjection Z := isStarProjection_rangeProjector Y
+  have hZk : Z.rank ≤ k := by rw [rank_rangeProjector]; exact hY.rank_le
+  have hnoise : frobNorm (Z * N) ^ 2 ≤ K := by
+    refine (frobNorm_sq_le_rank_mul_specNorm_sq _).trans ?_
+    exact mul_le_mul (Nat.cast_le.mpr ((Matrix.rank_mul_le_left _ _).trans hZk))
+      (pow_le_pow_left₀ (specNorm_nonneg _) (hZ.specNorm_mul_le N) 2)
+      (sq_nonneg _) (Nat.cast_nonneg k)
+  have htail : frobNorm (Z * (B - truncatedSVD B k)) ^ 2 ≤
+      (k : ℝ) * singularValues B (k - 1) ^ 2 := by
+    refine (frobNorm_sq_le_rank_mul_specNorm_sq _).trans ?_
+    refine mul_le_mul (Nat.cast_le.mpr ((Matrix.rank_mul_le_left _ _).trans hZk))
+      (pow_le_pow_left₀ (specNorm_nonneg _) ?_ 2) (sq_nonneg _) (Nat.cast_nonneg k)
+    exact (hZ.specNorm_mul_le _).trans (by
+      rw [specNorm_sub_truncatedSVD]
+      exact singularValues_antitone B (Nat.sub_le k 1))
+  have hrank : ((Z - rangeProjector (truncatedSVD B k)) * B).rank ≤ 2 * k := by
+    refine (Matrix.rank_mul_le_left _ _).trans ((Matrix.rank_sub_le _ _).trans ?_)
+    have hPk : (rangeProjector (truncatedSVD B k)).rank ≤ k := by
+      rw [rank_rangeProjector]; exact rank_truncatedSVD_le B k
+    omega
+  have hx := frobInner_le_sqrt_mul_frobNorm_mul_specNorm_of_rank_le hrank N
+  rw [Nat.cast_mul, Nat.cast_ofNat] at hx
+  have hopt := hY.frobNorm_one_sub_rangeProjector_mul_sq_sub_le
+  have hD : D ≤ 2 * (√(2 * (k : ℝ)) * specNorm N) *
+      frobNorm ((Z - rangeProjector (truncatedSVD B k)) * B) + K := by
+    dsimp [D, Z] at *
+    nlinarith [sq_nonneg (frobNorm (rangeProjector (truncatedSVD B k) * N))]
+  have he := frobNorm_sub_rangeProjector_mul_sq_eq_add B k hZ
+  have ht : 2 * frobNorm (Z * (B - truncatedSVD B k)) ^ 2 ≤ (961 / 2 : ℝ) * K := by
+    have hsq := pow_le_pow_left₀ (singularValues_nonneg B (k - 1)) hθ 2
+    have hm := mul_le_mul_of_nonneg_left hsq (Nat.cast_nonneg k)
+    dsimp [K]
+    nlinarith
+  have hbound := le_mul_of_le_two_mul_add (D := D) (K := K)
+    (a := √(2 * (k : ℝ)) * specNorm N)
+    (r := frobNorm ((Z - rangeProjector (truncatedSVD B k)) * B))
+    (by dsimp [K]; positivity)
+    (by rw [mul_pow, Real.sq_sqrt (by positivity)]; dsimp [K]; ring_nf; exact le_rfl)
+    (by dsimp [D] at *; linarith) hD
+  have hBk : B - truncatedSVD B k = (1 - rangeProjector (truncatedSVD B k)) * B := by
+    rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_truncatedSVD_mul]
+  rw [hY.frobNorm_sub_sq_eq_add, hBk]
+  dsimp [D, K, Z] at *
+  nlinarith
+end NLAlib
+
+namespace NLAlib
+variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
+omit [DecidableEq m] in
+/-- Reciprocal-window hard truncation: every best rank-k approximation Y of B+N satisfies
+the squared Frobenius error bound
+$$\|B-Y\|_{\mathsf F}^2\le\|B-B_k\|_{\mathsf F}^2
++69k\|N\|_2^2+(320/21)\theta\min(k,b-k)\|W_LNW_R\|_2,$$
+where theta is the k-th singular value and the window thresholds have ratio 5/3.
+The hypotheses specify the nested window and its spectral thresholds.
+No printed source. -/
+theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le
+    {B N Y : Matrix m n 𝕜}
+    {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k)
+    (hkb : k ≤ b) (ha : ∀ i < a, (5 / 3 : ℝ) * singularValues B (k - 1) ≤ singularValues B i)
+    (ha₂ : singularValues B a ≤ (5 / 3 : ℝ) * singularValues B (k - 1))
+    (hb : singularValues B b ≤ singularValues B (k - 1) / (5 / 3 : ℝ)) :
+    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 + 69 * k * specNorm N ^ 2 +
+      (320 / 21 : ℝ) * singularValues B (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+        specNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * N *
+          (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ)) := by
+  classical
+  have hab := hak.trans hkb
+  have hZ := isStarProjection_rangeProjector Y
+  have hZk : (rangeProjector Y).rank ≤ k := by rw [rank_rangeProjector]; exact hY.rank_le
+  have hLs : IsStarProjection (rangeProjector (truncatedSVD B b) -
+      rangeProjector (truncatedSVD B a)) :=
+    (isStarProjection_rangeProjector _).sub_of_mul_eq_right (isStarProjection_rangeProjector _)
+      (rangeProjector_mul_rangeProjector_of_range_le (range_truncatedSVD_mono B hab))
+  have hL's : IsStarProjection (rangeProjector (truncatedSVD B b)ᴴ -
+      rangeProjector (truncatedSVD B a)ᴴ) :=
+    (isStarProjection_rangeProjector _).sub_of_mul_eq_right (isStarProjection_rangeProjector _)
+      (rangeProjector_mul_rangeProjector_of_range_le (range_conjTranspose_truncatedSVD_le B hab))
+  set θ := singularValues B (k - 1)
+  set η := specNorm N
+  set q : ℝ := ((min k (b - k) : ℕ) : ℝ)
+  set μ := specNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * N *
+    (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ))
+  have hη : 0 ≤ η := specNorm_nonneg N
+  have hμ0 : 0 ≤ μ := specNorm_nonneg _
+  have hμη : μ ≤ η := (hL's.specNorm_mul_right_le _).trans (hLs.specNorm_mul_le N)
+  have hθ0 : 0 ≤ θ := singularValues_nonneg _ _
+  have hq0 : 0 ≤ q := Nat.cast_nonneg _
+  have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
+  have hwin : 0 ≤ (320 / 21 : ℝ) * θ * q * μ :=
+    mul_nonneg (mul_nonneg (mul_nonneg (by norm_num) hθ0) hq0) hμ0
+  rcases le_or_gt θ ((31 / 2 : ℝ) * μ) with hA | hB
+  · have hlarge := large_window_bound hY hk (show θ ≤ (31 / 2 : ℝ) * η by linarith)
+    nlinarith
+  · -- small window noise: absorb the cross term
+    have hθ : 0 < θ := by linarith
+    have hBk : B - truncatedSVD B k = (1 - rangeProjector (truncatedSVD B k)) * B := by
+      rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_truncatedSVD_mul]
+    have hZN : frobNorm (rangeProjector Y * N) ^ 2 ≤ k * η ^ 2 := by
+      refine (frobNorm_sq_le_rank_mul_specNorm_sq _).trans ?_
+      exact mul_le_mul (Nat.cast_le.mpr ((Matrix.rank_mul_le_left _ _).trans hZk))
+        (pow_le_pow_left₀ (specNorm_nonneg _) (hZ.specNorm_mul_le N) 2) (by positivity) hk0
+    have hopt := hY.frobNorm_one_sub_rangeProjector_mul_sq_sub_le
+    rw [← sub_add_cancel ((rangeProjector Y - rangeProjector (truncatedSVD B k)) * B)
+      ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) *
+        (rangeProjector Y - rangeProjector (truncatedSVD B k)) * B *
+        (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ)),
+      frobInner_add_left] at hopt
+    have hx := (abs_frobInner_le_nuclearNorm_mul_specNorm _ N).trans
+      (mul_le_mul_of_nonneg_right ((nuclearNorm_le_sqrt_rank_mul_frobNorm _).trans
+        (mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt (Nat.cast_le.mpr
+          (rank_sub_mul_mul_truncatedSVD_le B k hak hkb hZk))) (frobNorm_nonneg _))) hη)
+    rw [Nat.cast_mul, Nat.cast_ofNat] at hx
+    have hy := (abs_frobInner_mul_mul_le_nuclearNorm_mul B N hab
+      (rangeProjector Y - rangeProjector (truncatedSVD B k))).trans
+      (mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left ha₂ hμ0) (nuclearNorm_nonneg _))
+    have hD := le_add_window_of_mul_lt
+      (D := frobNorm ((1 - rangeProjector Y) * B) ^ 2 -
+        frobNorm ((1 - rangeProjector (truncatedSVD B k)) * B) ^ 2) hk0 hμ0 hq0 hB
+      (by nlinarith [sq_nonneg (frobNorm (rangeProjector (truncatedSVD B k) * N))]) hx
+      (by
+        convert frobNorm_sub_mul_mul_sq_le_of_one_lt B hk
+          (by norm_num : (1 : ℝ) < 5 / 3) hak hkb ha hb hZ hZk using 1
+        norm_num) hy
+      (by
+        convert nuclearNorm_mul_sub_mul_le_of_one_lt B hk hak hkb
+          (by norm_num : (1 : ℝ) < 5 / 3) hθ hb hZ hZk using 1
+        norm_num [q, θ, Nat.cast_min])
     rw [hY.frobNorm_sub_sq_eq_add, hBk]
     nlinarith
 

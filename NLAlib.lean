@@ -92,6 +92,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Constructions.PiUpdate
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.CondJensen
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Set
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
 public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
@@ -176,12 +177,14 @@ public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.LowRank.Gaussian.BlockKrylovGapless
 public import NLAlib.LowRank.Gaussian.EarlyTruncation
 public import NLAlib.LowRank.Gaussian.EarlyTruncationHaar
+public import NLAlib.LowRank.Gaussian.EarlyTruncationRSVD
 public import NLAlib.LowRank.Gaussian.Filter
 public import NLAlib.LowRank.Gaussian.GeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.Nystrom
 public import NLAlib.LowRank.Gaussian.NystromBlockKrylov
 public import NLAlib.LowRank.Gaussian.NystromTail
 public import NLAlib.LowRank.Gaussian.RangeFinder
+public import NLAlib.LowRank.Gaussian.RangeFinderMoments
 public import NLAlib.LowRank.Gaussian.RangeFinderTail
 public import NLAlib.LowRank.Gaussian.RangeFinderTailHaar
 public import NLAlib.LowRank.Gaussian.RotationInvariant
@@ -189,6 +192,8 @@ public import NLAlib.LowRank.Gaussian.RotationInvariantFactor
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystrom
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromOracle
 public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRate
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromRelativeError
+public import NLAlib.LowRank.Gaussian.TruncatedGeneralizedNystromWindow
 public import NLAlib.LowRank.Oblivious.CountSketch
 public import NLAlib.LowRank.Oblivious.EarlyTruncation
 public import NLAlib.LowRank.Oblivious.Gaussian
@@ -319,6 +324,8 @@ public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Perturbation.SimpleEigenvalue
 public import NLAlib.Matrix.Perturbation.Sylvester
 public import NLAlib.Matrix.Perturbation.TruncationWindow
+public import NLAlib.Matrix.Perturbation.TruncationWindowFrobenius
+public import NLAlib.Matrix.Perturbation.TruncationWindowNuclear
 public import NLAlib.Matrix.Perturbation.Wedin
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Pseudoinverse.GeneralTikhonov
@@ -472,6 +479,7 @@ public import NLAlib.RandomMatrix.Gaussian.Invariance
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Frobenius
 public import NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral
+public import NLAlib.RandomMatrix.Gaussian.InverseMoments.SpectralTail
 public import NLAlib.RandomMatrix.Gaussian.Moments
 public import NLAlib.RandomMatrix.Gaussian.Rank
 public import NLAlib.RandomMatrix.Gaussian.SpectralNorm
@@ -498,6 +506,7 @@ public import NLAlib.Regression.SRHT
 public import NLAlib.Regression.SketchAndPrecondition
 public import NLAlib.Regression.SketchAndProject
 public import NLAlib.Regression.SketchAndSolve
+public import NLAlib.Regression.SketchAndSolveMoments
 public import NLAlib.Regression.SubGaussian
 public import NLAlib.Sketching.Gaussian.Gaussian
 public import NLAlib.Sketching.Gaussian.Haar
