@@ -37,6 +37,9 @@ finite precision*), `rem:wasserstein`, `thm:stabilized`, `thm:containment`;
 
 ## Main results
 
+* `NLAlib.LanczosData.spectrum_backwardH_subset_iUnion_Icc`: localization from any certified
+  Frobenius backward error, retaining the individual closed intervals.
+* `NLAlib.LanczosData.spectrum_dilatedH_subset`: dilation preserves spectral-set inclusion.
 * `NLAlib.LanczosRun.exists_abs_eigenvalue_backwardH_sub_eigenvalue_le`: localization of the
   model's spectrum.
 * `NLAlib.LanczosRun.exists_abs_sub_eigenvalue_le_of_mulVec_eq_smul`: stabilised Ritz values.
@@ -135,6 +138,75 @@ theorem spectrum_backwardH_subset_Icc (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc
   · rw [hB, add_smul]
     exact add_le_add hd₂ hu
 
+/-- Every eigenvalue of the block dilation is an input eigenvalue: a nonzero block of
+an eigenvector gives an eigenvector of the input matrix. -/
+theorem exists_eigenvalue_eq_of_dilatedH_mulVec_eq_smul
+    {u : Fin n × Fin (k + 1) → ℝ} {c : ℝ} (hu : u ≠ 0)
+    (h : D.dilatedH *ᵥ u = c • u) : ∃ j < n, eigenvalue D.H j = c := by
+  obtain ⟨⟨r, b⟩, hrb⟩ := Function.ne_iff.mp hu
+  have hblock : (fun j => u (j, b)) ≠ 0 := fun h => hrb (congrFun h r)
+  have hmul : D.H *ᵥ (fun j => u (j, b)) = c • (fun j => u (j, b)) := by
+    funext j
+    have hh := congrFun h (j, b)
+    simpa only [dilatedH, Matrix.mulVec, dotProduct, Fintype.sum_prod_type,
+      Matrix.blockDiagonal_apply, ite_mul, zero_mul, Finset.sum_ite_eq,
+      Finset.mem_univ, if_true, Pi.smul_apply, smul_eq_mul] using hh
+  obtain ⟨j, hj, hj'⟩ := D.isHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul hblock hmul
+  exact ⟨j, by simpa using hj, hj'⟩
+
+/-- The block dilation retains every set containing the input spectrum. -/
+theorem spectrum_dilatedH_subset {S : Set ℝ} (hs : spectrum ℝ D.H ⊆ S) :
+    spectrum ℝ D.dilatedH ⊆ S := by
+  rw [D.isHermitian_dilatedH.spectrum_eq_image_eigenvalue]
+  rintro _ ⟨i, hi, rfl⟩
+  obtain ⟨u, hu1, hu⟩ := D.isHermitian_dilatedH.exists_norm_eq_one_and_mulVec_eq hi
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h, WithLp.toLp_zero, norm_zero] at hu1
+    exact zero_ne_one hu1
+  obtain ⟨j, hj, hj'⟩ := D.exists_eigenvalue_eq_of_dilatedH_mulVec_eq_smul hu0 hu
+  rw [← hj']
+  exact hs (D.isHermitian.eigenvalue_mem_spectrum (by simpa using hj))
+
+/-- Every backward eigenvalue is within the certified Frobenius distance of an input
+ eigenvalue, for three-term data with unit columns. This retains the individual spectral
+ intervals rather than their convex hull. -/
+theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le
+    (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc) j j = 1) {δ : ℝ}
+    (hgap : frobNorm (D.backwardH - D.dilatedH) ≤ δ) {i : ℕ}
+    (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
+    ∃ j < n, |eigenvalue D.backwardH i - eigenvalue D.H j| ≤ δ := by
+  have : Nonempty (Fin n × Fin (k + 1)) :=
+    Fintype.card_pos_iff.mp (lt_of_le_of_lt (Nat.zero_le i) hi)
+  obtain ⟨x, hx1, hx⟩ := (D.isHermitian_backwardH hW).exists_norm_eq_one_and_mulVec_eq hi
+  obtain ⟨t, ht, hres⟩ := D.isHermitian_dilatedH.exists_abs_eigenvalue_sub_mul_norm_le
+    x (eigenvalue D.backwardH i)
+  rw [hx1, mul_one, ← hx, ← Matrix.sub_mulVec] at hres
+  have hdist : |eigenvalue D.dilatedH t - eigenvalue D.backwardH i| ≤ δ := by
+    refine hres.trans ((norm_toLp_mulVec_le _ x).trans ?_)
+    rw [hx1, mul_one, specNorm_sub_comm]
+    exact (specNorm_le_frobNorm _).trans hgap
+  obtain ⟨u, hu1, hu⟩ := D.isHermitian_dilatedH.exists_norm_eq_one_and_mulVec_eq ht
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h, WithLp.toLp_zero, norm_zero] at hu1
+    exact zero_ne_one hu1
+  obtain ⟨j, hj, hj'⟩ := D.exists_eigenvalue_eq_of_dilatedH_mulVec_eq_smul hu0 hu
+  exact ⟨j, by simpa using hj, by rw [hj', abs_sub_comm]; exact hdist⟩
+
+/-- A Frobenius certificate localizes the backward spectrum in the union of closed intervals
+ of radius $\delta$ around the valid input eigenvalues, for unit-column three-term data. -/
+theorem spectrum_backwardH_subset_iUnion_Icc
+    (hW : ∀ j, (D.basisSuccᵀ * D.basisSucc) j j = 1) {δ : ℝ}
+    (hgap : frobNorm (D.backwardH - D.dilatedH) ≤ δ) :
+    spectrum ℝ D.backwardH ⊆ ⋃ i ∈ Set.Iio n,
+      Set.Icc (eigenvalue D.H i - δ) (eigenvalue D.H i + δ) := by
+  rw [(D.isHermitian_backwardH hW).spectrum_eq_image_eigenvalue]
+  rintro _ ⟨i, hi, rfl⟩
+  obtain ⟨j, hj, hdist⟩ := D.exists_abs_eigenvalue_backwardH_sub_eigenvalue_le hW hgap hi
+  refine Set.mem_iUnion.mpr ⟨j, Set.mem_iUnion.mpr ⟨hj, ?_⟩⟩
+  exact ⟨by linarith [(abs_le.mp hdist).1], by linarith [(abs_le.mp hdist).2]⟩
+
 /-- The quadratic forms of $f(\hat{\mathbf{H}})$ at the dilated start and of $f(\mathbf{H})$ at
 $\mathbf{v}_1$ agree. -/
 theorem dotProduct_cfc_dilatedH_mulVec (f : ℝ → ℝ) :
@@ -211,14 +283,7 @@ $\hat{\mathbf{H}}\mathbf{u} = c\mathbf{u}$ with $\mathbf{u} \neq \mathbf{0}$, th
 $c = \lambda_j(\mathbf{H})$ for some $j < n$. -/
 theorem exists_eigenvalue_eq_of_dilatedH_mulVec_eq_smul {u : Fin n × Fin (k + 1) → ℝ} {c : ℝ}
     (hu : u ≠ 0) (h : L.dilatedH *ᵥ u = c • u) : ∃ j < n, eigenvalue L.H j = c := by
-  obtain ⟨⟨i, r⟩, hir⟩ := Function.ne_iff.mp hu
-  have hur : (fun j => u (j, r)) ≠ 0 := fun h0 => hir (congrFun h0 i)
-  have hHu : L.H *ᵥ (fun j => u (j, r)) = c • fun j => u (j, r) := by
-    funext j
-    rw [← L.dilatedH_mulVec_apply, h]
-    rfl
-  obtain ⟨j, hj, hj'⟩ := L.isHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul hur hHu
-  exact ⟨j, by simpa using hj, hj'⟩
+  exact L.normalized.exists_eigenvalue_eq_of_dilatedH_mulVec_eq_smul hu h
 
 /-- There is at least one coordinate: $n \ge 1$ since $\mathbf{v}_1 \neq \mathbf{0}$. -/
 theorem n_pos {n k : ℕ} (L : LanczosRun n k) : 0 < n := by
@@ -288,13 +353,8 @@ theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le (hsmall : (k : ℝ) * 
     (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
     ∃ j < n, |eigenvalue L.backwardH i - eigenvalue L.H j| ≤
       lanczosBackwardFactor k * L.ε * specNorm L.H := by
-  have : Nonempty (Fin n × Fin (k + 1)) := ⟨(⟨0, L.n_pos⟩, 0)⟩
-  obtain ⟨x, hx1, hx⟩ := L.isHermitian_backwardH.exists_norm_eq_one_and_mulVec_eq hi
-  obtain ⟨j, hj, hle⟩ := L.exists_abs_eigenvalue_sub_le_norm_dilatedH_mulVec_sub hx1
-    (eigenvalue L.backwardH i)
-  rw [← hx, ← Matrix.sub_mulVec] at hle
-  exact ⟨j, hj, (abs_sub_comm _ _).trans_le
-    (hle.trans (L.norm_dilatedH_sub_backwardH_mulVec_le hsmall hx1))⟩
+  exact L.normalized.exists_abs_eigenvalue_backwardH_sub_eigenvalue_le
+    L.transpose_basisSucc_mul_self_apply (L.frobNorm_backwardH_sub_dilatedH_le hsmall) hi
 
 /-- **Localization of stabilised Ritz values**
 (assuming $k\varepsilon \le 1/100$) (Paige): for a unit eigenpair

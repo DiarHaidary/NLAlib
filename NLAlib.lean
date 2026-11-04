@@ -132,12 +132,15 @@ public import NLAlib.Krylov.FinitePrecision.CGAccuracy
 public import NLAlib.Krylov.FinitePrecision.CGBackward
 public import NLAlib.Krylov.FinitePrecision.CGCertificates
 public import NLAlib.Krylov.FinitePrecision.CGEnergy
+public import NLAlib.Krylov.FinitePrecision.CGEnergyEstimator
 public import NLAlib.Krylov.FinitePrecision.CGModel
 public import NLAlib.Krylov.FinitePrecision.CGRun
 public import NLAlib.Krylov.FinitePrecision.CGRunModel
+public import NLAlib.Krylov.FinitePrecision.CGSpectralConvergence
 public import NLAlib.Krylov.FinitePrecision.Dilation
 public import NLAlib.Krylov.FinitePrecision.DilationEstimates
 public import NLAlib.Krylov.FinitePrecision.LanczosData
+public import NLAlib.Krylov.FinitePrecision.LanczosFunctions
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
 public import NLAlib.Krylov.FinitePrecision.LocalErrors
 public import NLAlib.Krylov.FinitePrecision.Normalized
@@ -399,6 +402,7 @@ public import NLAlib.Polynomial.Approximation.Equioscillation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
+public import NLAlib.Polynomial.Approximation.Markov
 public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter

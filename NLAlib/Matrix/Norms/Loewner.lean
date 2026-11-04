@@ -72,6 +72,33 @@ theorem abs_re_quadForm_le (A : Matrix n n 𝕜) (z : n → 𝕜) :
     |RCLike.re (quadForm A z)| ≤ specNorm A * ‖WithLp.toLp 2 z‖ ^ 2 := by
   exact (RCLike.abs_re_le_norm _).trans (norm_quadForm_le A z)
 
+open scoped Matrix.Norms.L2Operator in
+/-- For positive semidefinite $\mathbf{A}\preceq u\mathbf{I}$, its action satisfies
+$\|\mathbf{A}\mathbf{x}\|^2\le u\operatorname{Re}
+(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$.
+This converts a Loewner upper bound into a residual-versus-energy estimate. -/
+theorem _root_.Matrix.PosSemidef.norm_toLp_mulVec_sq_le [DecidableEq n]
+    {A : Matrix n n 𝕜} (hA : A.PosSemidef) {u : ℝ}
+    (hu : A ≤ u • (1 : Matrix n n 𝕜)) (x : n → 𝕜) :
+    ‖WithLp.toLp 2 (A *ᵥ x)‖ ^ 2 ≤ u * RCLike.re (quadForm A x) := by
+  have hs : ∀ t ∈ spectrum ℝ A, t ≤ u := by
+    apply (le_algebraMap_iff_spectrum_le hA.isHermitian).mp
+    simpa only [Algebra.algebraMap_eq_smul_one] using hu
+  have hle : cfc (fun t : ℝ => t ^ 2) A ≤ cfc (fun t : ℝ => u * t) A := by
+    refine cfc_mono (fun t ht => ?_) (by fun_prop) (by fun_prop)
+    simpa only [pow_two] using mul_le_mul_of_nonneg_right (hs t ht)
+      (spectrum_nonneg_of_nonneg hA.nonneg ht)
+  have hid : cfc (fun t : ℝ => t ^ 2) A = A ^ 2 :=
+    cfc_pow_id (R := ℝ) A 2 hA.isHermitian
+  have hmul : cfc (fun t : ℝ => u * t) A = u • A :=
+    cfc_const_mul_id u A hA.isHermitian
+  rw [hid, hmul, pow_two] at hle
+  have hgram : Aᴴ * A ≤ u • A := by simpa only [hA.isHermitian.eq] using hle
+  have hq := re_quadForm_le_re_quadForm_of_le hgram x
+  rw [RCLike.real_smul_eq_coe_smul (K := 𝕜), quadForm_smul_left,
+    RCLike.re_ofReal_mul, quadForm_conjTranspose_mul_self, RCLike.ofReal_re] at hq
+  exact hq
+
 /-! ### Congruence -/
 
 omit [Fintype n] in

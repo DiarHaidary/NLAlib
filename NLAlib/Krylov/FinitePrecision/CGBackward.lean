@@ -69,7 +69,7 @@ Constants are unoptimised.
 
 @[expose] public section
 
-open scoped Matrix
+open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
@@ -583,41 +583,10 @@ $[l, l']$, $\|\mathbf{H}\mathbf{e}\|^2 \le l'\,\mathbf{e}^{\mathsf{T}}\mathbf{H}
 private theorem norm_mulVec_sq_le {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
     (hH : H.PosDef) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') (e : m → ℝ) :
     ‖WithLp.toLp 2 (H *ᵥ e)‖ ^ 2 ≤ l' * (e ⬝ᵥ (H *ᵥ e)) := by
-  have hherm := hH.isHermitian
-  have hT : Hᵀ = H := by
-    have := hherm.eq
-    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at this
-  have hpsd : ∀ x : m → ℝ, 0 ≤ x ⬝ᵥ (H *ᵥ x) := fun x => by
-    simpa using hH.posSemidef.dotProduct_mulVec_nonneg x
-  set v := H *ᵥ e with hv
-  have hCS : (e ⬝ᵥ (H *ᵥ v)) ^ 2 ≤ (e ⬝ᵥ (H *ᵥ e)) * (v ⬝ᵥ (H *ᵥ v)) := by
-    have hd := discrim_le_zero (a := v ⬝ᵥ (H *ᵥ v)) (b := 2 * (e ⬝ᵥ (H *ᵥ v)))
-      (c := e ⬝ᵥ (H *ᵥ e)) (fun x => by
-        have h := hpsd (e + x • v)
-        have hc := dotProduct_mulVec_comm hT v e
-        simp only [Matrix.mulVec_add, Matrix.mulVec_smul, add_dotProduct, dotProduct_add,
-          smul_dotProduct, dotProduct_smul, smul_eq_mul] at h
-        rw [hc] at h
-        have : v ⬝ᵥ (H *ᵥ v) * (x * x) + 2 * (e ⬝ᵥ (H *ᵥ v)) * x + e ⬝ᵥ (H *ᵥ e) =
-            e ⬝ᵥ (H *ᵥ e) + x * (e ⬝ᵥ (H *ᵥ v)) + x * (e ⬝ᵥ (H *ᵥ v) + x * (v ⬝ᵥ (H *ᵥ v))) := by
-          ring
-        linarith)
-    unfold discrim at hd
-    nlinarith
-  have h1 : e ⬝ᵥ (H *ᵥ v) = ‖WithLp.toLp 2 v‖ ^ 2 := by
-    rw [dotProduct_mulVec_comm hT, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
-  have h2 : v ⬝ᵥ (H *ᵥ v) ≤ l' * ‖WithLp.toLp 2 v‖ ^ 2 := (quadForm_bounds hherm hs v).2
-  have he0 := hpsd e
-  rw [h1] at hCS
-  rcases (sq_nonneg ‖WithLp.toLp 2 v‖).lt_or_eq with hpos | hzero
-  · have : (‖WithLp.toLp 2 v‖ ^ 2) ^ 2 ≤ (e ⬝ᵥ (H *ᵥ e)) * (l' * ‖WithLp.toLp 2 v‖ ^ 2) :=
-      hCS.trans (mul_le_mul_of_nonneg_left h2 he0)
-    nlinarith
-  · have hv0 : v = 0 := by
-      have : ‖WithLp.toLp 2 v‖ = 0 := by nlinarith [norm_nonneg (WithLp.toLp 2 v)]
-      simpa using this
-    rw [← hzero, hv0]
-    simp
+  have hu : H ≤ l' • (1 : Matrix m m ℝ) :=
+    (hH.isHermitian.le_smul_one_iff_spectrum_subset_Iic l').mpr fun x hx => (hs hx).2
+  simpa only [quadForm_def, star_trivial, RCLike.re_to_real] using
+    hH.posSemidef.norm_toLp_mulVec_sq_le hu e
 
 /-- The norm of a solution of a positive definite system: $\|\mathbf{x}\| \le
 \|\mathbf{b}\|/l$ for $\mathbf{H}\mathbf{x} = \mathbf{b}$, spectrum in $[l, l']$, $l > 0$. -/

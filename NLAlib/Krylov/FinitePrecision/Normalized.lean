@@ -104,6 +104,29 @@ theorem normalizedV_of_le {j : ℕ} (hj : j ≤ k) :
     L.normalizedV j = ‖WithLp.toLp 2 (L.v j)‖⁻¹ • L.v j := by
   rw [normalizedV, if_neg (fun h => by omega)]
 
+/-- Normalizing a computed vector changes it by at most the local accuracy parameter. -/
+theorem norm_v_sub_normalizedV_le {j : ℕ} (h1 : 1 ≤ j) (hj : j ≤ k) :
+    ‖WithLp.toLp 2 (L.v j - L.normalizedV j)‖ ≤ L.ε := by
+  set r := ‖WithLp.toLp 2 (L.v j)‖
+  have hr : 0 < r := L.norm_v_pos h1 hj
+  have hv : L.v j = r • L.normalizedV j := by
+    rw [L.normalizedV_of_le hj, smul_smul, mul_inv_cancel₀ hr.ne', one_smul]
+  have heq : L.v j - L.normalizedV j = (r - 1) • L.normalizedV j := by
+    conv_lhs => rw [hv]
+    rw [sub_smul, one_smul]
+  have hunit : ‖WithLp.toLp 2 (L.normalizedV j)‖ = 1 := by
+    rw [L.normalizedV_of_le hj, WithLp.toLp_smul, norm_smul, norm_inv, Real.norm_eq_abs,
+      abs_of_pos hr, inv_mul_cancel₀ hr.ne']
+  rw [heq, WithLp.toLp_smul, norm_smul, hunit, mul_one, Real.norm_eq_abs]
+  have hsq := L.abs_norm_v_sq_sub_one_le j h1 hj
+  have habs : |r - 1| ≤ |r ^ 2 - 1| := by
+    have hid : |r ^ 2 - 1| = |r - 1| * (r + 1) := by
+      rw [show r ^ 2 - 1 = (r - 1) * (r + 1) by ring, abs_mul,
+        abs_of_nonneg (by positivity : 0 ≤ r + 1)]
+    rw [hid]
+    nlinarith [abs_nonneg (r - 1)]
+  exact habs.trans hsq
+
 /-- $\beta_{j+1}\bar{\mathbf{v}}_{j+2} = \beta_{j+1}\mathbf{v}_{j+2}/\|\mathbf{v}_{j+2}\|$ for every
 $j$ (at a terminal step both sides vanish). -/
 theorem β_smul_normalizedV (j : ℕ) :
