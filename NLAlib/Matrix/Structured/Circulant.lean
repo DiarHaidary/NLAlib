@@ -10,6 +10,7 @@ public import Mathlib.Analysis.SpecialFunctions.Complex.Circle
 public import Mathlib.RingTheory.RootsOfUnity.Complex
 public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Structured.BoundedOrthonormal
+public import NLAlib.Matrix.Structured.ToeplitzHankel
 
 /-!
 # Circulant matrices and the discrete Fourier transform
@@ -33,6 +34,7 @@ circulant exactly when it commutes with the cyclic shift.
 * `NLAlib.circulant_eq_fourierMatrix_mul_diagonal_mul_conjTranspose`: Fourier diagonalisation.
 * `NLAlib.specNorm_circulant_le_iff`: the spectral norm is the largest Fourier coefficient.
 * `NLAlib.mul_circulant_single_comm_iff`: characterisation by commutation with the shift.
+* `NLAlib.exists_toeplitzMatrix_eq_circulant`: a circulant has ordinary Toeplitz parameters.
 -/
 
 @[expose] public section
@@ -114,6 +116,34 @@ theorem mul_circulant_single_comm_iff {R : Type*} [Semiring R] [NeZero n]
   ext i j
   rw [mul_circulant_single_apply, circulant_single_mul_apply, Matrix.circulant_apply,
     Matrix.circulant_apply, sub_sub, add_comm 1 j]
+
+open scoped Fin.NatCast in
+/-- **A circulant is Toeplitz.** For a vector $\mathbf{v}$ of any length $n$ over a type with
+zero, the circulant with entry $\mathbf{v}_{i-j}$ modulo $n$ admits integer-indexed diagonal
+parameters $t_d$ giving entries $t_{j-i}$. The empty matrix is included.
+[HornJohnson2013, §0.9.7].
+Adapted from tchen-research/NLAlib at `77514ce42a0e437d837797a063ac161f41022730`.
+Result: circulant-toeplitz -/
+theorem exists_toeplitzMatrix_eq_circulant {R : Type*} [Zero R] (v : Fin n → R) :
+    ∃ t : ℤ → R, toeplitzMatrix t = Matrix.circulant v := by
+  rcases n with _ | n
+  · exact ⟨0, Subsingleton.elim _ _⟩
+  classical
+  let t : ℤ → R := fun d =>
+    if h : ∃ i j : Fin (n + 1), (j.val : ℤ) - (i.val : ℤ) = d then
+      v (h.choose - h.choose_spec.choose) else 0
+  refine ⟨t, Matrix.ext fun i j => ?_⟩
+  have h : ∃ a b : Fin (n + 1), (b.val : ℤ) - (a.val : ℤ) = (j.val : ℤ) - (i.val : ℤ) :=
+    ⟨i, j, rfl⟩
+  change t ((j.val : ℤ) - (i.val : ℤ)) = v (i - j)
+  dsimp only [t]
+  rw [dif_pos h]
+  apply congrArg v
+  have hDiff := h.choose_spec.choose_spec
+  have hSum : h.choose.val + j.val = i.val + h.choose_spec.choose.val := by omega
+  have hFin := congrArg (fun k : ℕ => (k : Fin (n + 1))) hSum
+  simp only [Nat.cast_add, Fin.cast_val_eq_self] at hFin
+  exact sub_eq_sub_iff_add_eq_add.mpr hFin
 
 /-! ### The Fourier matrix -/
 

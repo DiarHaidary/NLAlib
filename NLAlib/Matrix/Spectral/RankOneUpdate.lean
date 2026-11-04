@@ -195,7 +195,13 @@ eigenvalues in place, as an identity of characteristic polynomials over any comm
 $$(X - \mu) \, p_{\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}}(X)
   = (X - \mu - \mathbf{y}^{\mathsf{T}}\mathbf{x}) \, p_{\mathbf{A}}(X),$$
 with $p_{\mathbf{M}}(X) = \det(X\mathbf{I} - \mathbf{M})$.
-[HornJohnson2013, Example 1.2.8], there over $\mathbb{C}$. -/
+Over a field, a nonzero $\mathbf{x}$ implies that $X-\mu$ divides $p_{\mathbf{A}}$.
+Cancelling this factor exhibits the common polynomial for the unchanged eigenvalues, including
+their multiplicities. To write the update as $\mathbf{x}\mathbf{v}^{\mathsf{H}}$ over $\mathbb{C}$,
+take `y = star v`.
+[HornJohnson2013, Theorem 2.4.10.1] gives the complex case.
+
+Result: rank-one-eigenvalue-update -/
 theorem X_sub_C_mul_charpoly_add_vecMulVec {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
     {μ : R} (hAx : A *ᵥ x = μ • x) (y : n → R) :
     (X - C μ) * (A + Matrix.vecMulVec x y).charpoly = (X - C (μ + y ⬝ᵥ x)) * A.charpoly := by

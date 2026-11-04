@@ -29,7 +29,8 @@ spectral, Frobenius and nuclear norms, the rank, the pseudoinverse and the pseud
   `NLAlib.pseudoConditionNumber_kronecker`.
 * `NLAlib.kronecker_eq_mul_diagonal_mul_conjTranspose`,
   `NLAlib.HasOrthonormalCols.kronecker_one_add_one_kronecker_eq_mul_diagonal_mul_conjTranspose`:
-  eigenvalues of a Kronecker product and of a Kronecker sum. -/
+  eigenvalues of a Kronecker product and of a Kronecker sum.
+* `Matrix.IsHermitian.eigenvalue_zero_kronecker_one`: the largest eigenvalue under amplification. -/
 
 @[expose] public section
 
@@ -272,6 +273,19 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_zero_kronecker_one_add_one_kronecke
     (i₀ := (⟨0, Fintype.card_pos⟩, ⟨0, Fintype.card_pos⟩)) fun ij =>
       add_le_add (hA.eigenvalue_le_eigenvalue (Nat.zero_le _) ij.1.isLt)
         (hB.eigenvalue_le_eigenvalue (Nat.zero_le _) ij.2.isLt)
+
+/-- Tensoring a Hermitian matrix with a nonempty finite identity preserves its largest eigenvalue.
+The equality uses zero padding when the original matrix has empty size.
+[HornJohnson1991, Theorem 4.2.12]. -/
+theorem _root_.Matrix.IsHermitian.eigenvalue_zero_kronecker_one [Fintype m] [Fintype n]
+    [DecidableEq n] [Nonempty n] {A : Matrix m m 𝕜} (hA : A.IsHermitian) :
+    eigenvalue (A ⊗ₖ (1 : Matrix n n 𝕜)) 0 = eigenvalue A 0 := by
+  classical
+  rcases isEmpty_or_nonempty m with hm | hm
+  · rw [eigenvalue_of_card_le _ (by simp), eigenvalue_of_card_le A (by simp)]
+  · simpa only [Matrix.kronecker_zero, add_zero, eigenvalue_zero] using
+      hA.eigenvalue_zero_kronecker_one_add_one_kronecker
+        (Matrix.isHermitian_zero (n := n) (α := 𝕜))
 
 /-- The largest eigenvalue of a Kronecker product of positive semidefinite matrices is the
 product of the largest eigenvalues:
