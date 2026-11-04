@@ -17,13 +17,16 @@ public import Mathlib.Tactic.Positivity
 /-!
 # Accumulated rounding errors
 
-The constant <!-- value Computation.roundingFactor n u --> $\gamma_n = nu/(1 - nu)$ of the
-standard model of floating-point arithmetic, `NLAlib.Computation.roundingFactor n u`, and its
-algebra: a product of $n$ factors $(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u$
-is $1 + \theta_n$ with $\lvert \theta_n \rvert \le \gamma_n$, and the rules that combine such
-$\theta$'s [Higham2002]. The relation `NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with
-relative error at most $u$, the error clause of the standard model. Every lemma assumes
-$nu < 1$, under which $\gamma_n$ is finite.
+The rounding factor <!-- value Computation.roundingFactor n u --> $\gamma_n = (1 - u)^{-n} - 1$,
+`NLAlib.Computation.roundingFactor n u`, of [CarsonMaShao2026, (3)], and its algebra: a product
+of $n$ factors $(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u < 1$ is
+$1 + \theta_n$ with $\lvert \theta_n \rvert \le \gamma_n$, with no condition on $nu$, and the
+composition rule $(1 + \gamma_k)(1 + \gamma_j) = 1 + \gamma_{k+j}$ holds with equality. It is at
+most Higham's $nu/(1 - nu)$ when $nu < 1$ [Higham2002, §3.1]. A rounding error analysis
+tracks the number of factors with `NLAlib.Computation.IsRoundingProduct` (closed under products,
+inverses and ratios, the counts adding) and evaluates $\gamma_n$ only at the end. The relation
+`NLAlib.Computation.RelErr u a z` says that $z$ is $a$ with relative error at most $u$, the error
+clause of the standard model.
 
 ## Main definitions
 
@@ -35,11 +38,12 @@ $nu < 1$, under which $\gamma_n$ is finite.
 ## Main results
 
 * `NLAlib.Computation.abs_prod_one_add_zpow_sub_one_le`: the product of $n$ factors
-  $(1 + \delta_i)^{\pm 1}$ is $1 + \theta_n$, $\lvert \theta_n \rvert \le \gamma_n$.
-* `NLAlib.Computation.roundingFactor_add_add_mul_le`:
-  $\gamma_k + \gamma_j + \gamma_k\gamma_j \le \gamma_{k+j}$.
+  $(1 + \delta_i)^{\pm 1}$ is $1 + \theta_n$, $\lvert \theta_n \rvert \le \gamma_n$, for $u < 1$.
+* `NLAlib.Computation.roundingFactor_add_add_mul`:
+  $\gamma_k + \gamma_j + \gamma_k\gamma_j = \gamma_{k+j}$.
 * `NLAlib.Computation.abs_one_add_mul_one_add_sub_one_le`: $(1 + \theta_k)(1 + \theta_j) =
   1 + \theta_{k+j}$.
+* `NLAlib.Computation.roundingFactor_le`: $\gamma_n \le nu/(1 - nu)$ for $nu < 1$.
 * `NLAlib.Computation.IsRoundingProduct.abs_le`, `NLAlib.Computation.IsRoundingProduct.mul`,
   `NLAlib.Computation.IsRoundingProduct.inv`, `NLAlib.Computation.IsRoundingProduct.div`:
   [Higham2002, Lemma 3.3] for products of rounding errors, with the ratio rule
@@ -55,10 +59,11 @@ $nu < 1$, under which $\gamma_n$ is finite.
 namespace NLAlib.Computation
 
 /-- **The accumulated rounding factor** <!-- value Computation.roundingFactor n u -->
-$\gamma_n = nu/(1 - nu)$ of [Higham2002, §3.1], the bound on $n$ accumulated relative errors of
-size at most $u$. It is meaningful for $nu < 1$, which
-every lemma about it assumes. -/
-noncomputable def roundingFactor (n : ℕ) (u : ℝ) : ℝ := n * u / (1 - n * u)
+$\gamma_n = (1 - u)^{-n} - 1$ of [CarsonMaShao2026, (3)], the bound on $n$ accumulated relative
+errors of size at most $u$, in the standard model and in the model
+$\mathrm{fl}(x \circ y) = (x \circ y)/(1 + \delta)$. It is finite for every $n$ when $u < 1$,
+and at most Higham's $nu/(1 - nu)$ when $nu < 1$. -/
+noncomputable def roundingFactor (n : ℕ) (u : ℝ) : ℝ := ((1 - u) ^ n)⁻¹ - 1
 
 /-- `RelErr u a z`: $z = a(1 + \delta)$ for some $\lvert \delta \rvert \le u$; the error clause of
 the standard model [Higham2002, §2.2], (2.4) there. -/
@@ -66,163 +71,166 @@ def RelErr (u a z : ℝ) : Prop := ∃ δ : ℝ, |δ| ≤ u ∧ z = a * (1 + δ)
 
 variable {u : ℝ} {n k j : ℕ}
 
-/-- **$\gamma_0 = 0$.** [Higham2002, §3.1]. -/
+/-- **$\gamma_0 = 0$.** [CarsonMaShao2026, (3)]. -/
 theorem roundingFactor_zero : roundingFactor 0 u = 0 := by
   simp [roundingFactor]
 
-/-- **$1 + \gamma_n = (1 - nu)^{-1}$** for $nu < 1$. [Higham2002, §3.1]. -/
-theorem one_add_roundingFactor (hn : n * u < 1) : 1 + roundingFactor n u = (1 - n * u)⁻¹ := by
-  have : 1 - n * u ≠ 0 := by linarith
+/-- **$1 + \gamma_n = (1 - u)^{-n}$.** [CarsonMaShao2026, (3)]. -/
+theorem one_add_roundingFactor : 1 + roundingFactor n u = ((1 - u) ^ n)⁻¹ := by
   rw [roundingFactor]
+  ring
+
+/-- **$\gamma_1 = u/(1 - u)$** for $u \ne 1$. [CarsonMaShao2026, (3)]. -/
+theorem roundingFactor_one (hu1 : u ≠ 1) : roundingFactor 1 u = u / (1 - u) := by
+  have : 1 - u ≠ 0 := sub_ne_zero.mpr (Ne.symm hu1)
+  rw [roundingFactor, pow_one]
   field_simp
   ring
 
-/-- **$\gamma_n \ge nu$** for $0 \le u$ and $nu < 1$. [Higham2002, §3.1]. -/
-theorem le_roundingFactor (hu : 0 ≤ u) (hn : n * u < 1) : n * u ≤ roundingFactor n u :=
-  le_div_self (by positivity) (by linarith) (by linarith [show 0 ≤ (n : ℝ) * u by positivity])
+/-- **$\gamma_n \ge 0$** for $0 \le u < 1$. [CarsonMaShao2026, (3)]. -/
+theorem roundingFactor_nonneg (hu : 0 ≤ u) (hu1 : u < 1) :
+    0 ≤ roundingFactor n u := by
+  rw [roundingFactor, sub_nonneg]
+  exact (one_le_inv₀ (pow_pos (by linarith) n)).mpr (pow_le_one₀ (by linarith) (by linarith))
 
-/-- **$\gamma_n \ge 0$** for $0 \le u$ and $nu < 1$. [Higham2002, §3.1]. -/
-theorem roundingFactor_nonneg (hu : 0 ≤ u) (hn : n * u < 1) : 0 ≤ roundingFactor n u :=
-  (show 0 ≤ (n : ℝ) * u by positivity).trans (le_roundingFactor hu hn)
+/-- **$\gamma_1 \ge u$**, so a single rounding error is within $\gamma_1$: for
+$u < 1$, $u \le \gamma_1$. [CarsonMaShao2026, (3)]. -/
+theorem le_roundingFactor_one (hu1 : u < 1) : u ≤ roundingFactor 1 u := by
+  rw [roundingFactor_one hu1.ne, le_div_iff₀ (by linarith)]
+  nlinarith [sq_nonneg u]
 
-/-- **$\gamma_1 \ge u$**, so a single rounding error is within $\gamma_1$: for $0 \le u < 1$,
-$u \le \gamma_1$. [Higham2002, §3.1]. -/
-theorem le_roundingFactor_one (hu : 0 ≤ u) (hu1 : u < 1) : u ≤ roundingFactor 1 u := by
-  simpa using le_roundingFactor (n := 1) hu (by simpa using hu1)
+/-- **Adding accumulated errors is exact** [CarsonMaShao2026, Lemma 2], (10) there: for every
+$u$, $\gamma_k + \gamma_j + \gamma_k\gamma_j =
+\gamma_{k+j}$, that is, $(1 + \gamma_k)(1 + \gamma_j) =
+1 + \gamma_{k+j}$. -/
+theorem roundingFactor_add_add_mul :
+    roundingFactor k u + roundingFactor j u +
+        roundingFactor k u * roundingFactor j u =
+      roundingFactor (k + j) u := by
+  simp only [roundingFactor, pow_add, mul_inv]
+  ring
 
-/-- **$\gamma_n$ is monotone in $n$**: for $0 \le u$, $k \le n$ and $nu < 1$,
-$\gamma_k \le \gamma_n$. [Higham2002, §3.1]. -/
-theorem roundingFactor_le_roundingFactor (hu : 0 ≤ u) (hkn : k ≤ n) (hn : n * u < 1) :
-    roundingFactor k u ≤ roundingFactor n u := by
-  have hk : (k : ℝ) * u ≤ n * u := by gcongr
-  have h := inv_anti₀ (by linarith) (by linarith : 1 - n * u ≤ 1 - k * u)
-  rw [← one_add_roundingFactor hn, ← one_add_roundingFactor (hk.trans_lt hn)] at h
+/-- **$\gamma_n$ is monotone in $n$**: for $0 \le u < 1$ and $k \le n$,
+$\gamma_k \le \gamma_n$. [CarsonMaShao2026, Lemma 2]. -/
+theorem roundingFactor_le_roundingFactor (hu : 0 ≤ u) (hu1 : u < 1)
+    (hkn : k ≤ n) : roundingFactor k u ≤ roundingFactor n u := by
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hkn
+  rw [← roundingFactor_add_add_mul]
+  have := roundingFactor_nonneg (n := k) hu hu1
+  have := roundingFactor_nonneg (n := m) hu hu1
+  nlinarith
+
+/-- **Composing accumulated errors** [CarsonMaShao2026, Lemma 2]: for every $u$, if
+$\lvert \theta \rvert \le \gamma_k$ and $\lvert \theta' \rvert \le \gamma_j$,
+then $\lvert (1 + \theta)(1 + \theta') - 1 \rvert \le \gamma_{k+j}$. -/
+theorem abs_one_add_mul_one_add_sub_one_le {θ θ' : ℝ}
+    (hθ : |θ| ≤ roundingFactor k u) (hθ' : |θ'| ≤ roundingFactor j u) :
+    |(1 + θ) * (1 + θ') - 1| ≤ roundingFactor (k + j) u := by
+  calc |(1 + θ) * (1 + θ') - 1| = |θ + θ' + θ * θ'| := by ring_nf
+    _ ≤ |θ| + |θ'| + |θ| * |θ'| := by
+      rw [← abs_mul]; exact (abs_add_le _ _).trans (by gcongr; exact abs_add_le _ _)
+    _ ≤ roundingFactor k u + roundingFactor j u +
+        roundingFactor k u * roundingFactor j u := by
+      gcongr; exact (abs_nonneg _).trans hθ
+    _ = roundingFactor (k + j) u := roundingFactor_add_add_mul
+
+/-- **Scaling the index** [CarsonMaShao2026, Lemma 2]: for $0 \le u < 1$,
+$i\gamma_k \le \gamma_{ik}$. -/
+theorem mul_roundingFactor_le (i : ℕ) (hu : 0 ≤ u) (hu1 : u < 1) :
+    i * roundingFactor k u ≤ roundingFactor (i * k) u := by
+  have h0 := roundingFactor_nonneg (n := k) hu hu1
+  have hb := one_add_mul_le_pow (a := roundingFactor k u) (by linarith) i
+  have hp : (1 + roundingFactor k u) ^ i = 1 + roundingFactor (i * k) u := by
+    rw [one_add_roundingFactor, one_add_roundingFactor, inv_pow, ← pow_mul,
+      Nat.mul_comm k i]
   linarith
 
-/-- **Products of rounding errors** [Higham2002, Lemma 3.1]: for $\lvert \delta_i \rvert \le u$,
-exponents $\rho_i = \pm 1$ ($i$ in a finite set $s$ of $n$ elements) and $nu < 1$,
-$$\Bigl\lvert \prod_{i \in s} (1 + \delta_i)^{\rho_i} - 1 \Bigr\rvert \le \gamma_n\,.$$ -/
-theorem abs_prod_one_add_zpow_sub_one_le {ι : Type} (s : Finset ι) (δ : ι → ℝ) (ρ : ι → ℤ)
-    (hδ : ∀ i ∈ s, |δ i| ≤ u) (hρ : ∀ i ∈ s, ρ i = 1 ∨ ρ i = -1) (hn : s.card * u < 1) :
-    |∏ i ∈ s, (1 + δ i) ^ ρ i - 1| ≤ roundingFactor s.card u := by
-  rcases s.eq_empty_or_nonempty with rfl | ⟨i₀, hi₀⟩
+/-- **One more rounding** [CarsonMaShao2026, Lemma 2]: for $0 \le u < 1$,
+$\gamma_k + u \le \gamma_{k+1}$. -/
+theorem roundingFactor_add_le (hu : 0 ≤ u) (hu1 : u < 1) :
+    roundingFactor k u + u ≤ roundingFactor (k + 1) u := by
+  have h1 := le_roundingFactor_one hu1
+  have := mul_nonneg (roundingFactor_nonneg (n := k) hu hu1)
+    (roundingFactor_nonneg (n := 1) hu hu1)
+  linarith [roundingFactor_add_add_mul (k := k) (j := 1) (u := u)]
+
+/-- **The rounding factor bounds $n$ rounding errors upward**: for $0 \le u < 1$,
+$(1 + u)^n - 1 \le \gamma_n$, as $(1 + u)(1 - u) \le 1$. [CarsonMaShao2026, §2]. -/
+theorem one_add_pow_sub_one_le_roundingFactor (hu : 0 ≤ u) (hu1 : u < 1) :
+    (1 + u) ^ n - 1 ≤ roundingFactor n u := by
+  have h1u : 0 < (1 - u) ^ n := pow_pos (by linarith) n
+  rw [roundingFactor, sub_le_sub_iff_right, ← one_div, le_div_iff₀ h1u, ← mul_pow]
+  exact pow_le_one₀ (by nlinarith) (by nlinarith)
+
+/-- $\gamma_n \ge nu$ for $0 \le u < 1$: $1 + nu \le (1 + u)^n \le (1 - u)^{-n}$. -/
+theorem le_roundingFactor (hu : 0 ≤ u) (hu1 : u < 1) : n * u ≤ roundingFactor n u := by
+  linarith [one_add_mul_le_pow (a := u) (by linarith) n,
+    one_add_pow_sub_one_le_roundingFactor (n := n) hu hu1]
+
+/-- **The rounding factor is at most Higham's** [CarsonMaShao2026, §2]: for $0 \le u$ and
+$nu < 1$, $\gamma_n \le nu/(1 - nu)$, the constant of [Higham2002, §3.1], by Bernoulli's
+inequality $1 - nu \le (1 - u)^n$. -/
+theorem roundingFactor_le (hu : 0 ≤ u) (hn : n * u < 1) :
+    roundingFactor n u ≤ n * u / (1 - n * u) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn0
   · simp [roundingFactor]
-  have hu : 0 ≤ u := (abs_nonneg _).trans (hδ i₀ hi₀)
-  have hcard : (1 : ℝ) ≤ s.card := by exact_mod_cast Finset.card_pos.mpr ⟨i₀, hi₀⟩
-  have h1u : 0 < 1 - u := by nlinarith
-  -- each factor lies in `[1 - u, (1 - u)⁻¹]`, as `1 + u ≤ (1 - u)⁻¹`
+  have hu1 : u < 1 := lt_of_le_of_lt (le_mul_of_one_le_left hu (by exact_mod_cast hn0)) hn
+  have hbern : 1 - n * u ≤ (1 - u) ^ n := by
+    simpa [sub_eq_add_neg] using one_add_mul_le_pow (a := -u) (by linarith) n
+  have h := inv_anti₀ (by linarith) hbern
+  have he : n * u / (1 - n * u) = (1 - n * u)⁻¹ - 1 := by
+    field_simp [show 1 - n * u ≠ 0 by linarith]; ring
+  rw [roundingFactor, he]
+  linarith
+
+/-- A factor $(1 + \delta)^{\pm 1}$ with $\lvert \delta \rvert \le u < 1$ lies in
+$[1 - u, (1 - u)^{-1}]$. -/
+private theorem one_add_zpow_mem_Icc {δ : ℝ} {ρ : ℤ} (hδ : |δ| ≤ u) (hu1 : u < 1)
+    (hρ : ρ = 1 ∨ ρ = -1) : 1 - u ≤ (1 + δ) ^ ρ ∧ (1 + δ) ^ ρ ≤ (1 - u)⁻¹ := by
+  have h1u : 0 < 1 - u := by linarith
+  have hu : 0 ≤ u := (abs_nonneg _).trans hδ
   have hinv : 1 + u ≤ (1 - u)⁻¹ := by
     rw [← one_div, le_div_iff₀ h1u]; nlinarith
-  have hfac : ∀ i ∈ s, 1 - u ≤ (1 + δ i) ^ ρ i ∧ (1 + δ i) ^ ρ i ≤ (1 - u)⁻¹ := by
-    intro i hi
-    obtain ⟨hlo, hhi⟩ := abs_le.mp (hδ i hi)
-    have hpos : 0 < 1 + δ i := by linarith
-    rcases hρ i hi with h | h <;> simp only [h, zpow_one, zpow_neg]
-    · exact ⟨by linarith, by linarith⟩
-    · exact ⟨(le_inv_comm₀ h1u hpos).mpr (by linarith), inv_anti₀ h1u (by linarith)⟩
+  obtain ⟨hlo, hhi⟩ := abs_le.mp hδ
+  have hpos : 0 < 1 + δ := by linarith
+  rcases hρ with h | h <;> simp only [h, zpow_one, zpow_neg]
+  · exact ⟨by linarith, by linarith⟩
+  · exact ⟨(le_inv_comm₀ h1u hpos).mpr (by linarith), inv_anti₀ h1u (by linarith)⟩
+
+/-- **Products of rounding errors** [CarsonMaShao2026, Lemma 2], (6) there: for
+$\lvert \delta_i \rvert \le u < 1$ and exponents $\rho_i = \pm 1$ ($i$ in a finite set $s$ of
+$n$ elements),
+$$\Bigl\lvert \prod_{i \in s} (1 + \delta_i)^{\rho_i} - 1 \Bigr\rvert \le
+\gamma_n\,.$$ No condition on $nu$ is needed. -/
+theorem abs_prod_one_add_zpow_sub_one_le {ι : Type} (s : Finset ι)
+    (δ : ι → ℝ) (ρ : ι → ℤ) (hδ : ∀ i ∈ s, |δ i| ≤ u) (hρ : ∀ i ∈ s, ρ i = 1 ∨ ρ i = -1)
+    (hu1 : u < 1) :
+    |∏ i ∈ s, (1 + δ i) ^ ρ i - 1| ≤ roundingFactor s.card u := by
+  have h1u : 0 < 1 - u := by linarith
+  have hfac := fun i hi => one_add_zpow_mem_Icc (hδ i hi) hu1 (hρ i hi)
   have hlo : (1 - u) ^ s.card ≤ ∏ i ∈ s, (1 + δ i) ^ ρ i := by
     rw [← Finset.prod_const]
     exact Finset.prod_le_prod (fun _ _ => h1u.le) (fun i hi => (hfac i hi).1)
   have hhi : ∏ i ∈ s, (1 + δ i) ^ ρ i ≤ ((1 - u) ^ s.card)⁻¹ := by
     rw [← inv_pow, ← Finset.prod_const]
     exact Finset.prod_le_prod (fun i hi => h1u.le.trans (hfac i hi).1) (fun i hi => (hfac i hi).2)
-  -- Bernoulli's inequality: `1 - nu ≤ (1 - u)^n`
-  have hbern : 1 - s.card * u ≤ (1 - u) ^ s.card := by
-    simpa [sub_eq_add_neg] using one_add_mul_le_pow (a := -u) (by linarith) s.card
-  have hup := inv_anti₀ (by linarith) hbern
-  rw [← one_add_roundingFactor hn] at hup
-  have := le_roundingFactor hu hn
-  rw [abs_le]
-  constructor <;> linarith
-
-/-- **Adding accumulated errors** [Higham2002, Lemma 3.3]: for $0 \le u$ and $(k + j)u < 1$,
-$\gamma_k + \gamma_j + \gamma_k\gamma_j \le \gamma_{k+j}$. -/
-theorem roundingFactor_add_add_mul_le (hu : 0 ≤ u) (hkj : (k + j : ℕ) * u < 1) :
-    roundingFactor k u + roundingFactor j u + roundingFactor k u * roundingFactor j u ≤
-      roundingFactor (k + j) u := by
-  have hk : (k : ℝ) * u < 1 := lt_of_le_of_lt (by gcongr; omega) hkj
-  have hj : (j : ℝ) * u < 1 := lt_of_le_of_lt (by gcongr; omega) hkj
-  have hle : 1 - (k + j : ℕ) * u ≤ (1 - k * u) * (1 - j * u) := by
-    push_cast; nlinarith [show 0 ≤ (k : ℝ) * u * (j * u) by positivity]
-  have h := inv_anti₀ (by linarith) hle
-  rw [mul_inv, ← one_add_roundingFactor hk, ← one_add_roundingFactor hj,
-    ← one_add_roundingFactor hkj] at h
-  linarith
-
-/-- **Composing accumulated errors** [Higham2002, Lemma 3.3]: if
-$\lvert \theta \rvert \le \gamma_k$ and $\lvert \theta' \rvert \le \gamma_j$, $0 \le u$ and
-$(k + j)u < 1$, then $\lvert (1 + \theta)(1 + \theta') - 1 \rvert \le \gamma_{k+j}$. -/
-theorem abs_one_add_mul_one_add_sub_one_le (hu : 0 ≤ u) (hkj : (k + j : ℕ) * u < 1)
-    {θ θ' : ℝ} (hθ : |θ| ≤ roundingFactor k u) (hθ' : |θ'| ≤ roundingFactor j u) :
-    |(1 + θ) * (1 + θ') - 1| ≤ roundingFactor (k + j) u := by
-  calc |(1 + θ) * (1 + θ') - 1| = |θ + θ' + θ * θ'| := by ring_nf
-    _ ≤ |θ| + |θ'| + |θ| * |θ'| := by
-      rw [← abs_mul]; exact (abs_add_le _ _).trans (by gcongr; exact abs_add_le _ _)
-    _ ≤ roundingFactor k u + roundingFactor j u + roundingFactor k u * roundingFactor j u := by
-      gcongr; exact (abs_nonneg _).trans hθ
-    _ ≤ roundingFactor (k + j) u := roundingFactor_add_add_mul_le hu hkj
-
-/-- **Inverting an accumulated error**: if $\lvert \theta \rvert \le \gamma_j$, $0 \le u$ and
-$2ju < 1$, then $\lvert (1 + \theta)^{-1} - 1 \rvert \le \gamma_{2j}$. [Higham2002, Lemma 3.3]
-states the sharper $\gamma_{k+j}$ for a ratio $(1 + \theta_k)/(1 + \theta_j)$ of products of
-rounding errors with $j \le k$; this form needs only the bound on $\theta$. For products of
-rounding errors, `NLAlib.Computation.IsRoundingProduct.inv` keeps the index $j$ and
-`NLAlib.Computation.IsRoundingProduct.div` gives the ratio rule with $\gamma_{k+j}$. -/
-theorem abs_inv_one_add_sub_one_le (hu : 0 ≤ u) (hj : (2 * j : ℕ) * u < 1) {θ : ℝ}
-    (hθ : |θ| ≤ roundingFactor j u) : |(1 + θ)⁻¹ - 1| ≤ roundingFactor (2 * j) u := by
-  push_cast at hj
-  have hju0 : 0 ≤ (j : ℝ) * u := by positivity
-  have hju : (j : ℝ) * u < 1 := by linarith
-  have h1 : 0 < 1 - j * u := by linarith
-  have h2 : 0 < 1 - 2 * j * u := by linarith
-  -- `1 - γ_j = (1 - 2ju)/(1 - ju) > 0`
-  have hγ : 1 - roundingFactor j u = (1 - 2 * j * u) / (1 - j * u) := by
-    rw [roundingFactor]; field_simp; ring
-  have hγ1 : 0 < 1 - roundingFactor j u := by rw [hγ]; positivity
-  have hθ1 : 1 - roundingFactor j u ≤ 1 + θ := by linarith [neg_abs_le θ]
-  have hpos : 0 < 1 + θ := hγ1.trans_le hθ1
-  calc |(1 + θ)⁻¹ - 1| = |θ| / (1 + θ) := by
-        rw [show (1 + θ)⁻¹ - 1 = -θ / (1 + θ) by field_simp; ring, abs_div, abs_neg,
-          abs_of_pos hpos]
-    _ ≤ roundingFactor j u / (1 - roundingFactor j u) :=
-        div_le_div₀ (roundingFactor_nonneg hu hju) hθ hγ1 hθ1
-    _ = j * u / (1 - 2 * j * u) := by
-        rw [hγ, roundingFactor]; field_simp
-    _ ≤ roundingFactor (2 * j) u := by
-        rw [roundingFactor]; push_cast
-        gcongr
-        linarith
-
-/-- **Scaling the index** [Higham2002, Lemma 3.3]: for $0 \le u$ and $iku < 1$,
-$i\gamma_k \le \gamma_{ik}$. -/
-theorem mul_roundingFactor_le (i : ℕ) (hu : 0 ≤ u) (hik : (i * k : ℕ) * u < 1) :
-    i * roundingFactor k u ≤ roundingFactor (i * k) u := by
-  rcases Nat.eq_zero_or_pos i with rfl | hi
+  -- `1 - a ≤ a⁻¹ - 1` for `a = (1 - u)^n ∈ (0, 1]`
+  have hp : 0 < (1 - u) ^ s.card := pow_pos h1u _
+  rcases s.eq_empty_or_nonempty with rfl | ⟨i₀, hi₀⟩
   · simp [roundingFactor]
-  have hi1 : (1 : ℝ) ≤ i := by exact_mod_cast hi
-  have hku0 : 0 ≤ (k : ℝ) * u := by positivity
-  push_cast at hik
-  have hle : (k : ℝ) * u ≤ i * k * u := by nlinarith
-  rw [roundingFactor, roundingFactor, mul_div_assoc']
-  push_cast
-  rw [← mul_assoc]
-  gcongr
-
-/-- **One more rounding** [Higham2002, Lemma 3.3]: for $0 \le u$ and $(k + 1)u < 1$,
-$\gamma_k + u \le \gamma_{k+1}$. -/
-theorem roundingFactor_add_le (hu : 0 ≤ u) (hk : (k + 1 : ℕ) * u < 1) :
-    roundingFactor k u + u ≤ roundingFactor (k + 1) u := by
-  have hk' : (k : ℝ) * u < 1 := lt_of_le_of_lt (by gcongr; omega) hk
-  have hu1 : u < 1 := lt_of_le_of_lt (le_mul_of_one_le_left hu (by simp)) hk
-  have h1 := le_roundingFactor_one hu hu1
-  have := mul_nonneg (roundingFactor_nonneg hu hk') (roundingFactor_nonneg (n := 1) hu (by simpa))
-  linarith [roundingFactor_add_add_mul_le (k := k) (j := 1) hu hk]
+  have hu : 0 ≤ u := (abs_nonneg _).trans (hδ i₀ hi₀)
+  have hp1 : (1 - u) ^ s.card ≤ 1 := pow_le_one₀ h1u.le (by linarith)
+  have hinv : 1 ≤ ((1 - u) ^ s.card)⁻¹ := (one_le_inv₀ hp).mpr hp1
+  have hsym : 1 - (1 - u) ^ s.card ≤ ((1 - u) ^ s.card)⁻¹ - 1 := by
+    nlinarith [mul_nonneg (sub_nonneg.mpr hp1) (sub_nonneg.mpr hinv), mul_inv_cancel₀ hp.ne']
+  rw [roundingFactor, abs_le]
+  constructor <;> linarith
 
 /-! ### Products of rounding errors -/
 
 /-- `IsRoundingProduct u j θ`: $1 + \theta = \prod_{i<j} (1 + \delta_i)^{\rho_i}$ for some
 $\lvert \delta_i \rvert \le u$ and $\rho_i = \pm 1$, the quantity $\theta_j$ of
-[Higham2002, Lemma 3.1]. Unlike the bound $\lvert \theta \rvert \le \gamma_j$
+[Higham2002, Lemma 3.1]. Unlike the bound $\lvert \theta \rvert \le \gamma_j$ for $u < 1$
 (`NLAlib.Computation.IsRoundingProduct.abs_le`), the predicate is closed under inversion with
 the same $j$. -/
 def IsRoundingProduct (u : ℝ) (j : ℕ) (θ : ℝ) : Prop :=
@@ -240,14 +248,15 @@ $\theta_1 = \delta$. [Higham2002, Lemma 3.1]. -/
 theorem isRoundingProduct_one_of_abs_le (hθ : |θ| ≤ u) : IsRoundingProduct u 1 θ :=
   ⟨fun _ => θ, fun _ => 1, fun _ => hθ, fun _ => Or.inl rfl, by simp⟩
 
-/-- **Products of rounding errors are bounded by $\gamma_j$** [Higham2002, Lemma 3.1]: if
-$1 + \theta$ is a product of $j$ factors $(1 + \delta_i)^{\pm 1}$, $\lvert \delta_i \rvert \le u$,
-and $ju < 1$, then $\lvert \theta \rvert \le \gamma_j$. -/
-theorem IsRoundingProduct.abs_le (h : IsRoundingProduct u j θ) (hj : j * u < 1) :
-    |θ| ≤ roundingFactor j u := by
+/-- **Products of rounding errors are bounded by $\gamma_j$**
+[CarsonMaShao2026, Lemma 2], (6) there: if $1 + \theta$ is a product of $j$ factors
+$(1 + \delta_i)^{\pm 1}$ with $\lvert \delta_i \rvert \le u$ and $u < 1$, then
+$\lvert \theta \rvert \le \gamma_j$, with no condition on $ju$. -/
+theorem IsRoundingProduct.abs_le (h : IsRoundingProduct u j θ)
+    (hu1 : u < 1) : |θ| ≤ roundingFactor j u := by
   obtain ⟨δ, ρ, hδ, hρ, he⟩ := h
-  have := abs_prod_one_add_zpow_sub_one_le Finset.univ δ ρ (fun i _ => hδ i) (fun i _ => hρ i)
-    (by simpa using hj)
+  have := abs_prod_one_add_zpow_sub_one_le Finset.univ δ ρ
+    (fun i _ => hδ i) (fun i _ => hρ i) hu1
   simpa [he] using this
 
 /-- **Multiplying products of rounding errors** [Higham2002, Lemma 3.3]:
@@ -263,9 +272,7 @@ theorem IsRoundingProduct.mul (h : IsRoundingProduct u k θ) (h' : IsRoundingPro
     simp [he, he']
 
 /-- **Inverting a product of rounding errors** keeps its length:
-$(1 + \theta_j)^{-1} = 1 + \theta_j$ [Higham2002, Lemma 3.3]. Compare
-`NLAlib.Computation.abs_inv_one_add_sub_one_le`, which from the bound on $\theta$ alone gives
-$\gamma_{2j}$. -/
+$(1 + \theta_j)^{-1} = 1 + \theta_j$ [Higham2002, Lemma 3.3]. -/
 theorem IsRoundingProduct.inv (h : IsRoundingProduct u j θ) :
     IsRoundingProduct u j ((1 + θ)⁻¹ - 1) := by
   obtain ⟨δ, ρ, hδ, hρ, he⟩ := h
@@ -278,6 +285,13 @@ theorem IsRoundingProduct.div (h : IsRoundingProduct u k θ) (h' : IsRoundingPro
     IsRoundingProduct u (k + j) ((1 + θ) / (1 + θ') - 1) := by
   simpa [div_eq_mul_inv] using h.mul h'.inv
 
+/-- **An inverted rounding error** is within $\gamma_1 = u/(1 - u)$ of $1$: for
+$\lvert \delta \rvert \le u < 1$, $\lvert (1 + \delta)^{-1} - 1 \rvert \le \gamma_1$.
+[CarsonMaShao2026, Lemma 2]. -/
+theorem abs_inv_one_add_sub_one_le {δ : ℝ} (hδ : |δ| ≤ u) (hu1 : u < 1) :
+    |(1 + δ)⁻¹ - 1| ≤ roundingFactor 1 u := by
+  simpa using ((isRoundingProduct_one_of_abs_le hδ).inv).abs_le hu1
+
 /-- **A shorter product is a longer one**: for $0 \le u$ and $j \le k$, $1 + \theta_j$ is a
 $1 + \theta_k$ (pad with factors $1 + 0$). [Higham2002, Lemma 3.1]. -/
 theorem IsRoundingProduct.mono (h : IsRoundingProduct u j θ) (hu : 0 ≤ u) (hjk : j ≤ k) :
@@ -286,20 +300,6 @@ theorem IsRoundingProduct.mono (h : IsRoundingProduct u j θ) (hu : 0 ≤ u) (hj
   have h0 : IsRoundingProduct u m 0 :=
     ⟨fun _ => 0, fun _ => 1, fun _ => by simpa using hu, fun _ => Or.inl rfl, by simp⟩
   simpa using h.mul h0
-
-/-- A factor $(1 + \delta)^{\pm 1}$ with $\lvert \delta \rvert \le u < 1$ lies in
-$[1 - u, (1 - u)^{-1}]$. -/
-private theorem one_add_zpow_mem_Icc {δ : ℝ} {ρ : ℤ} (hδ : |δ| ≤ u) (hu1 : u < 1)
-    (hρ : ρ = 1 ∨ ρ = -1) : 1 - u ≤ (1 + δ) ^ ρ ∧ (1 + δ) ^ ρ ≤ (1 - u)⁻¹ := by
-  have h1u : 0 < 1 - u := by linarith
-  have hu : 0 ≤ u := (abs_nonneg _).trans hδ
-  have hinv : 1 + u ≤ (1 - u)⁻¹ := by
-    rw [← one_div, le_div_iff₀ h1u]; nlinarith
-  obtain ⟨hlo, hhi⟩ := abs_le.mp hδ
-  have hpos : 0 < 1 + δ := by linarith
-  rcases hρ with h | h <;> simp only [h, zpow_one, zpow_neg]
-  · exact ⟨by linarith, by linarith⟩
-  · exact ⟨(le_inv_comm₀ h1u hpos).mpr (by linarith), inv_anti₀ h1u (by linarith)⟩
 
 /-- **The values of a product of rounding errors** [Higham2002, Lemma 3.1]: for
 $0 \le u < 1$, $1 + \theta$ is a product of $j$ factors $(1 + \delta_i)^{\pm 1}$ with

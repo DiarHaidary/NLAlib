@@ -15,7 +15,7 @@ The kernel `NLAlib.Computation.trsvLower` (forward substitution in place) under 
 and under an error contract. Every theorem asserts that the run succeeds under hypotheses on the
 inputs alone: the stored diagonal is nonzero. Under the standard model the computed solution
 solves a nearby triangular system exactly, with a componentwise relative perturbation of size
-$\gamma_n$ [Higham2002, Theorem 8.5].
+$\gamma_n = (1 - u)^{-n} - 1$ for $u < 1$ [Higham2002, Theorem 8.5], [CarsonMaShao2026].
 
 ## Main results
 
@@ -445,22 +445,24 @@ theorem IsArithErrSem.exec_trsvLower {err : P → BinOp → ℝ → ℝ → Prop
           exact hve)
   exact ⟨st', c, hrun, hwb, hG⟩
 
-/-- **Backward error of triangular solve** in the standard model [Higham2002, Theorem 8.5]:
-under the contract `NLAlib.Computation.IsRelErrSem` with every value in range and $n u_p < 1$, if
-buffer $T$ holds the lower triangular part of the real lower triangular $n \times n$ matrix
-$\mathbf{T}$ through the decoding (column-major from $\mathit{tOff}$; the cells above the
-diagonal need not hold anything) with nonzero diagonal, and the cells of $\mathbf{x}$ hold
-words decoding to $\mathbf{b}$ and lie outside the block of $\mathbf{T}$, the run of
-`trsvLower` succeeds, writes words $w_i$ into the cells of $\mathbf{x}$ and nothing else, and the
-decoded $\hat{\mathbf{x}}$ solves a nearby system exactly: for some $\Delta\mathbf{T}$ with
+/-- **Backward error of triangular solve** in the standard model
+[Higham2002, Theorem 8.5], with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range and $u_p < 1$, if buffer $T$ holds the
+lower triangular part of the real lower triangular $n \times n$ matrix $\mathbf{T}$ through the
+decoding (column-major from $\mathit{tOff}$; the cells above the diagonal need not hold anything)
+with nonzero diagonal, and the cells of $\mathbf{x}$ hold words decoding to $\mathbf{b}$ and lie
+outside the block of $\mathbf{T}$, the run of `trsvLower` succeeds, writes words $w_i$ into the
+cells of $\mathbf{x}$ and nothing else, and the decoded $\hat{\mathbf{x}}$ solves a nearby system
+exactly: for some $\Delta\mathbf{T}$ with
 $\lvert \Delta t_{ij} \rvert \le \gamma_n \lvert t_{ij} \rvert$,
+$\gamma_n = (1 - u_p)^{-n} - 1$,
 $$(\mathbf{T} + \Delta\mathbf{T})\,\hat{\mathbf{x}} = \mathbf{b}\,.$$
 Then $\Delta\mathbf{T}$ is lower triangular too. -/
 theorem IsRelErrSem.exec_trsvLower_add_mulVec_eq {u : P → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ)
     (x : ℕ) (xo : IExp ℕ) (M : Matrix (Fin n.eval) (Fin n.eval) ℝ)
     (hM : M.BlockTriangular OrderDual.toDual) (hdiag : ∀ i, M i i ≠ 0) (b : Fin n.eval → ℝ)
-    (hn : n.eval * u p < 1)
+    (hu1 : u p < 1)
     (hT : ∀ i j : Fin n.eval, j ≤ i → ∃ w,
       st.store.read p T (tOff.eval + i + n.eval * j) = some w ∧ dec p w = M i j)
     (hx : ∀ i : Fin n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = b i)
@@ -484,7 +486,8 @@ theorem IsRelErrSem.exec_trsvLower_add_mulVec_eq {u : P → ℝ}
         hT ⟨i, hi⟩ ⟨j, by omega⟩ (Fin.mk_le_mk.mpr hj))
     htd (fun i hi => by simpa [hbv, hi] using hx ⟨i, hi⟩) hxT
     (fun _ _ _ _ => ⟨fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩, fun _ _ => trivial⟩)
-  obtain ⟨Δ, hΔ, hsum⟩ := htr.exists_sum_add_mul_eq htd (h.nonneg trivial) hn
+  obtain ⟨Δ, hΔ, hsum⟩ :=
+    htr.exists_sum_add_mul_eq htd (h.nonneg trivial) hu1
   refine ⟨st', W, hrun, hwb, fun i j => if (j : ℕ) ≤ i then Δ i j else 0, fun i j => ?_, ?_⟩
   · dsimp only
     split_ifs with hji

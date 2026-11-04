@@ -516,9 +516,9 @@ name = "NLAlib.Computation.roundingFactor"
 kind = "factor"
 file = "NLAlib/Computation/Rounding.lean"
 args = ["n", "u"]
-latex = '#1#2/(1 - #1#2)'
-lean_body = 'roundingFactor (n : ℕ) (u : ℝ) : ℝ := n * u / (1 - n * u)'
-body_hash = "c6162e4df9d87dfa"
+latex = '(1 - #2)^{-#1} - 1'
+lean_body = 'roundingFactor (n : ℕ) (u : ℝ) : ℝ := ((1 - u) ^ n)⁻¹ - 1'
+body_hash = "7315fa4a8ce0fd30"
 
 [[constant]]
 name = "NLAlib.lanczosRecurrenceErrorFactor"

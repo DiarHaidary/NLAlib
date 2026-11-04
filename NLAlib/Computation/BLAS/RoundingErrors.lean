@@ -23,9 +23,10 @@ error relation `err` and range condition `safe`: the run succeeds and produces a
 The **standard-model theorems** (`NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add`,
 …) take the contract `NLAlib.Computation.IsRelErrSem` with every value in range
 ($\mathrm{safe} = \mathrm{True}$, underflow and overflow ignored as in [Higham2002, §2.2]), where
-the range hypothesis is void, and bound the trace by `NLAlib/Computation/BLAS/Traces.lean`. A
-model with underflow and overflow reuses the run
-lemmas and discharges their range hypothesis from explicit bounds on the data.
+the range hypothesis is void, and bound the trace by `NLAlib/Computation/BLAS/Traces.lean`.
+The factor is $\gamma_n = (1 - u_p)^{-n} - 1$ of [CarsonMaShao2026], under $u_p < 1$ alone. A
+model with underflow and overflow reuses the run lemmas and discharges their range hypothesis
+from explicit bounds on the data.
 
 Decoded values are real: the kernels are analysed over real data.
 
@@ -683,16 +684,18 @@ section StandardModel
 
 variable {u : P → ℝ}
 
-/-- **Backward error of `dot`** in the standard model [Higham2002, §3.1], (3.4) there: under the
-contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
-$n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
-($i < n$) and $\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes
-one word $w$ into $\mathit{dst}$ and nothing else, and
+/-- **Backward error of `dot`** in the standard model [Higham2002, §3.1], (3.4)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$ ($i < n$) and
+$\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes one word $w$ into
+$\mathit{dst}$ and nothing else, and
 $$w \text{ decodes to } \sum_{i<n} x_i y_i (1 + \eta_i)\,, \qquad
-\lvert \eta_i \rvert \le \gamma_n\,.$$ -/
-theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+\lvert \eta_i \rvert \le \gamma_n = (1 - u_p)^{-n} - 1\,.$$ -/
+theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
-    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hn : n.eval * u p < 1)
+    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
     (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
     (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
     (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
@@ -705,7 +708,7 @@ theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add (h : IsRelErrSem u dec (fun _ _ 
   obtain ⟨st', w, s, hrun, hst, htr, hw⟩ := IsArithErrSem.exec_dot I p st
     (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
     fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
-  obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add (h.nonneg trivial) hn
+  obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add (h.nonneg trivial) hu1
   exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
 
 /-- **Backward error of `dot`, product form** in the standard model [Higham2002, §3.1], (3.4)
@@ -735,16 +738,19 @@ theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct
   obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add_isRoundingProduct (h.nonneg trivial)
   exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
 
-/-- **Forward error of `dot`** in the standard model [Higham2002, §3.1], (3.5) there: under the
-contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
-$n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
-($i < n$) and $\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes
-one word $w$ into $\mathit{dst}$ and nothing else, and
+/-- **Forward error of `dot`** in the standard model [Higham2002, §3.1], (3.5)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$ ($i < n$) and
+$\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes one word $w$ into
+$\mathit{dst}$ and nothing else, and
 $$\Bigl\lvert \sum_{i<n} x_i y_i - w \Bigr\rvert \le \gamma_n \sum_{i<n}
-\lvert x_i \rvert \lvert y_i \rvert\,,$$ with $w$ read through its decoding. -/
-theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+\lvert x_i \rvert \lvert y_i \rvert\,,$$ with $w$ read through its decoding and
+$\gamma_n = (1 - u_p)^{-n} - 1$. -/
+theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
-    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hn : n.eval * u p < 1)
+    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
     (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
     (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
     (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
@@ -757,18 +763,21 @@ theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le (h : IsRelErrSem u dec (fun _ _ 
   obtain ⟨st', w, s, hrun, hst, htr, hw⟩ := IsArithErrSem.exec_dot I p st
     (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
     fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
-  exact ⟨st', w, hrun, hst, hw ▸ htr.abs_sum_mul_sub_le (h.nonneg trivial) hn⟩
+  exact ⟨st', w, hrun, hst,
+    hw ▸ htr.abs_sum_mul_sub_le (h.nonneg trivial) hu1⟩
 
 /-- **Rounding error of `axpy`** in the standard model: under the contract
-`NLAlib.Computation.IsRelErrSem` with every value in range and $2u_p < 1$, if $a$ and the cells
+`NLAlib.Computation.IsRelErrSem` with every value in range and $u_p < 1$, if $a$ and the cells
 of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $a$, $x_i$, $y_i$ ($i < n$), $a$ is not
 in $\mathbf{y}$, and $\mathbf{x}$ and $\mathbf{y}$ are the same vector or do not overlap, the run
 of `axpy` succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and
 $$w_i \text{ decodes to } a x_i (1 + \theta_i) + y_i (1 + \delta_i)\,, \qquad
-\lvert \theta_i \rvert \le \gamma_2\,,\quad \lvert \delta_i \rvert \le u_p\,.$$ From the model
-(2.4) of [Higham2002, §2.2]. -/
-theorem IsRelErrSem.exec_axpy (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a : Cell ℕ ℕ)
-    (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (av : ℝ) (xs ys : ℕ → ℝ) (hu : 2 * u p < 1)
+\lvert \theta_i \rvert \le \gamma_2 = (1 - u_p)^{-2} - 1\,,\quad
+\lvert \delta_i \rvert \le u_p\,.$$ From the model (2.4) of [Higham2002, §2.2] and
+[CarsonMaShao2026, Lemma 2]. -/
+theorem IsRelErrSem.exec_axpy
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a : Cell ℕ ℕ)
+    (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (av : ℝ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
     (ha : ∃ w, st.store.read p a.buf a.idx.eval = some w ∧ dec p w = av)
     (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
     (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
@@ -783,7 +792,7 @@ theorem IsRelErrSem.exec_axpy (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a
     fun _ _ => ⟨trivial, fun _ _ => trivial⟩
   refine ⟨st', W, hrun, hst, fun i hi => ?_⟩
   obtain ⟨q, hq, hz⟩ := hW i hi
-  exact exists_eq_mul_one_add_add_mul_one_add_of_relErr hq hz (h.nonneg trivial) hu
+  exact exists_eq_mul_one_add_add_mul_one_add_of_relErr hq hz hu1
 
 /-- **Rounding error of `rscl`** in the standard model: under the contract
 `NLAlib.Computation.IsRelErrSem` with every value in range, if $a$ decodes to a nonzero $a$ and
@@ -837,18 +846,21 @@ theorem IsRelErrSem.exec_rscl (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a
     · rw [Function.update_self]
       exact ⟨δ, hδ, by rw [hdz, hvx, hva]; rfl⟩
 
-/-- **Backward error of `gemv`** in the standard model [Higham2002, §3.5], (3.11) there: under
-the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
-$n u_p < 1$, if buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding
-(column-major from $\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to
-$\mathbf{x}$, and the cells of $\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of
-`gemv` succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and for some
-$\Delta\mathbf{A}$ with $\lvert \Delta a_{ij} \rvert \le \gamma_n \lvert a_{ij} \rvert$,
+/-- **Backward error of `gemv`** in the standard model [Higham2002, §3.5], (3.11)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding (column-major from
+$\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to $\mathbf{x}$, and the cells of
+$\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of `gemv` succeeds, writes words
+$w_i$ into the cells of $\mathbf{y}$ and nothing else, and for some $\Delta\mathbf{A}$ with
+$\lvert \Delta a_{ij} \rvert \le \gamma_n \lvert a_{ij} \rvert$,
+$\gamma_n = (1 - u_p)^{-n} - 1$,
 $$w_i \text{ decodes to } \bigl((\mathbf{A} + \Delta\mathbf{A})\mathbf{x}\bigr)_i\,.$$ -/
-theorem IsRelErrSem.exec_gemv_eq_add_mulVec (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+theorem IsRelErrSem.exec_gemv_eq_add_mulVec
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (m n : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
     (y : ℕ) (yo : IExp ℕ) (M : Matrix (Fin m.eval) (Fin n.eval) ℝ) (xv : Fin n.eval → ℝ)
-    (hn : n.eval * u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
+    (hu1 : u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
     (hx : ∀ j : Fin n.eval, ∃ w, st.store.read p x (xo.eval + j) = some w ∧ dec p w = xv j)
     (hyA : y = A → yo.eval + m.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ yo.eval)
     (hyx : y = x → yo.eval + m.eval ≤ xo.eval ∨ xo.eval + n.eval ≤ yo.eval)
@@ -869,7 +881,8 @@ theorem IsRelErrSem.exec_gemv_eq_add_mulVec (h : IsRelErrSem u dec (fun _ _ => T
       (∀ k < n.eval, |η k| ≤ roundingFactor n.eval (u p)) ∧ dec p (W i) =
         ∑ k ∈ range n.eval, (if h : (i : ℕ) < m.eval ∧ k < n.eval then M ⟨i, h.1⟩ ⟨k, h.2⟩
           else 0) * (if h : k < n.eval then xv ⟨k, h⟩ else 0) * (1 + η k) := fun i => by
-    obtain ⟨η, hη, hs⟩ := (hS i i.2).1.exists_eq_sum_mul_one_add (h.nonneg trivial) hn
+    obtain ⟨η, hη, hs⟩ :=
+      (hS i i.2).1.exists_eq_sum_mul_one_add (h.nonneg trivial) hu1
     exact ⟨η, hη, (hS i i.2).2.trans hs⟩
   choose η hηb hηe using hη
   refine ⟨st', W, hrun, hst, fun i j => M i j * η i j, fun i j => ?_, fun i => ?_⟩
@@ -882,19 +895,22 @@ theorem IsRelErrSem.exec_gemv_eq_add_mulVec (h : IsRelErrSem u dec (fun _ _ => T
       change _ = (M i j + M i j * η i j) * xv j
       simp [i.2, j.2]; ring
 
-/-- **Forward error of `gemv`** in the standard model [Higham2002, §3.5], (3.12) there: under
-the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
-$n u_p < 1$, if buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding
-(column-major from $\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to
-$\mathbf{x}$, and the cells of $\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of
-`gemv` succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and
+/-- **Forward error of `gemv`** in the standard model [Higham2002, §3.5], (3.12)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding (column-major from
+$\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to $\mathbf{x}$, and the cells of
+$\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of `gemv` succeeds, writes words
+$w_i$ into the cells of $\mathbf{y}$ and nothing else, and
 $$\bigl\lvert (\mathbf{A}\mathbf{x})_i - w_i \bigr\rvert \le
-\gamma_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{x} \rvert\bigr)_i\,,$$ with $w_i$ read
-through its decoding and absolute values entrywise. -/
-theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+\gamma_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{x} \rvert\bigr)_i\,,$$ with $w_i$
+read through its decoding and absolute values entrywise and $\gamma_n = (1 - u_p)^{-n} - 1$.
+-/
+theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (m n : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
     (y : ℕ) (yo : IExp ℕ) (M : Matrix (Fin m.eval) (Fin n.eval) ℝ) (xv : Fin n.eval → ℝ)
-    (hn : n.eval * u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
+    (hu1 : u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
     (hx : ∀ j : Fin n.eval, ∃ w, st.store.read p x (xo.eval + j) = some w ∧ dec p w = xv j)
     (hyA : y = A → yo.eval + m.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ yo.eval)
     (hyx : y = x → yo.eval + m.eval ≤ xo.eval ∨ xo.eval + n.eval ≤ yo.eval)
@@ -911,7 +927,7 @@ theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le (h : IsRelErrSem u dec (fun _ _ 
     (fun j hj => by simpa [hj] using hx ⟨j, hj⟩) hyA hyx hy
     fun _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
   refine ⟨st', W, hrun, hst, fun i => ?_⟩
-  have key := (hS i i.2).1.abs_sum_mul_sub_le (h.nonneg trivial) hn
+  have key := (hS i i.2).1.abs_sum_mul_sub_le (h.nonneg trivial) hu1
   rw [← (hS i i.2).2] at key
   convert key using 2
   · simp only [Matrix.mulVec, dotProduct]
@@ -922,19 +938,22 @@ theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le (h : IsRelErrSem u dec (fun _ _ 
     rw [← Fin.sum_univ_eq_sum_range]
     exact sum_congr rfl fun j _ => by simp [i.2, j.2]
 
-/-- **Forward error of `gemm`** in the standard model [Higham2002, §3.5], (3.13) there: under
-the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
-$n u_p < 1$, if buffers $A$ and $B$ hold the real $m \times n$ and $n \times l$ matrices
-$\mathbf{A}$, $\mathbf{B}$ through the decoding (column-major from $\mathit{ao}$, $\mathit{bo}$)
-and the block of $\mathbf{C}$ is $ml$ cells of tag $p$ overlapping neither, the run of `gemm`
-succeeds, writes words $w_{i+mj}$ into the block of $\mathbf{C}$ and nothing else, and
+/-- **Forward error of `gemm`** in the standard model [Higham2002, §3.5], (3.13)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffers $A$ and $B$ hold the real $m \times n$ and $n \times l$ matrices $\mathbf{A}$, $\mathbf{B}$
+through the decoding (column-major from $\mathit{ao}$, $\mathit{bo}$) and the block of $\mathbf{C}$
+is $ml$ cells of tag $p$ overlapping neither, the run of `gemm` succeeds, writes words $w_{i+mj}$
+into the block of $\mathbf{C}$ and nothing else, and
 $$\bigl\lvert (\mathbf{A}\mathbf{B})_{ij} - w_{i+mj} \bigr\rvert \le
 \gamma_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{B} \rvert\bigr)_{ij}\,,$$ with
-$w_{i+mj}$ read through its decoding and absolute values entrywise. -/
-theorem IsRelErrSem.exec_gemm_abs_mul_sub_le (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+$w_{i+mj}$ read through its decoding and absolute values entrywise and
+$\gamma_n = (1 - u_p)^{-n} - 1$. -/
+theorem IsRelErrSem.exec_gemm_abs_mul_sub_le
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (m n l : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (B : ℕ)
     (bo : IExp ℕ) (C : ℕ) (co : IExp ℕ) (MA : Matrix (Fin m.eval) (Fin n.eval) ℝ)
-    (MB : Matrix (Fin n.eval) (Fin l.eval) ℝ) (hn : n.eval * u p < 1)
+    (MB : Matrix (Fin n.eval) (Fin l.eval) ℝ) (hu1 : u p < 1)
     (hA : HoldsDecoded st.store dec p A ao.eval MA) (hB : HoldsDecoded st.store dec p B bo.eval MB)
     (hCA : C = A → co.eval + m.eval * l.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ co.eval)
     (hCB : C = B → co.eval + m.eval * l.eval ≤ bo.eval ∨ bo.eval + n.eval * l.eval ≤ co.eval)
@@ -952,7 +971,7 @@ theorem IsRelErrSem.exec_gemm_abs_mul_sub_le (h : IsRelErrSem u dec (fun _ _ => 
     (fun k hk j hj => by simpa [hk, hj] using hB ⟨k, hk⟩ ⟨j, hj⟩) hCA hCB hC
     fun _ _ _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
   refine ⟨st', W, hrun, hst, fun i j => ?_⟩
-  have key := (hS i i.2 j j.2).1.abs_sum_mul_sub_le (h.nonneg trivial) hn
+  have key := (hS i i.2 j j.2).1.abs_sum_mul_sub_le (h.nonneg trivial) hu1
   rw [← (hS i i.2 j j.2).2] at key
   convert key using 2
   · simp only [Matrix.mul_apply]
