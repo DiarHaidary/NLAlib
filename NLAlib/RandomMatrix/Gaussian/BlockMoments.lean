@@ -43,6 +43,9 @@ forms are the sketch-and-solve noise.
 
 ## Main results
 
+* `NLAlib.integral_frobNorm_mul_mul_pinv_mul_sq_of_hasLaw_gaussianMatrix`: the exact two-sided
+  Frobenius second moment, with integrability.
+
 * `NLAlib.integral_frobNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix`.
 * `NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_gaussianMatrix`: the transposed form.
 * `NLAlib.integral_specNorm_mul_mul_pinv_le_of_hasLaw_gaussianMatrix`: the spectral block bound;
@@ -50,6 +53,10 @@ forms are the sketch-and-solve noise.
   the form of Halko, Martinsson and Tropp.
 * `NLAlib.integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix`: the spectral block
   bound with a factor on both sides.
+* `NLAlib.integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix_of_integral_le`:
+  weighted first moment with a supplied inverse second moment and exact inverse-Wishart term;
+  `NLAlib.integral_specNorm_mul_pinv_mul_mul_le_of_hasLaw_gaussianMatrix_of_integral_le`:
+  its adjoint form.
 * `NLAlib.integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix`: the second spectral
   moment; `NLAlib.integral_specNorm_pinv_mul_mul_sq_le_of_hasLaw_gaussianMatrix`: the transposed
   form.
@@ -422,6 +429,58 @@ theorem integrable_specNorm_mul_mul_pinv_sq_of_hasLaw_gaussianMatrix [DecidableE
   · rw [Real.norm_of_nonneg (sq_nonneg _)]
     exact pow_le_pow_left₀ (specNorm_nonneg _) (specNorm_le_frobNorm _) 2
 
+/-- A supplied inverse spectral second moment controls the Gaussian block second moment.
+For independent orthogonal Gaussian blocks, any nonnegative bound β on the inverse
+root-mean-square norm may replace the universal inverse-moment constant.
+No printed source. -/
+theorem integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix_of_integral_le
+    [DecidableEq r]
+    [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
+    {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (S : Matrix a s ℝ)
+    {β : ℝ} (hβ0 : 0 ≤ β)
+    (hEP : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤ β ^ 2) :
+    ∫ ω, specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤
+      (specNorm S * √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) +
+          frobNorm S * β) ^ 2 +
+        (specNorm S * β) ^ 2 := by
+  have := hX.isProbabilityMeasure
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hrk' : (Fintype.card r : ℝ) + 2 ≤ Fintype.card k := by exact_mod_cast hrk
+  have hh : 0 ≤ (Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1) :=
+    div_nonneg (Nat.cast_nonneg _) (by linarith)
+  have hF2 : Integrable (fun ω => frobNorm (pinv (V₁ᴴ * X ω)) ^ 2) μ :=
+    integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk
+  have hP2 : Integrable (fun ω => specNorm (pinv (V₁ᴴ * X ω)) ^ 2) μ := by
+    have := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hY two_pos (by linarith)
+    simpa only [Real.rpow_two] using this
+  have hFL : MemLp (fun ω => frobNorm (pinv (V₁ᴴ * X ω))) 2 μ :=
+    (memLp_two_iff_integrable_sq (((continuous_frobNorm.measurable.comp
+      measurable_pinv).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable)).2 hF2
+  have hPL : MemLp (fun ω => specNorm (pinv (V₁ᴴ * X ω))) 2 μ :=
+    (memLp_two_iff_integrable_sq (((continuous_specNorm.measurable.comp
+      measurable_pinv).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable)).2 hP2
+  have hFP : Integrable (fun ω => frobNorm (pinv (V₁ᴴ * X ω)) * specNorm (pinv (V₁ᴴ * X ω))) μ :=
+    hFL.integrable_mul hPL
+  have hEF := integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk
+  have hsqP : √(∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ) ≤
+      β := by
+    rw [← Real.sqrt_sq hβ0]
+    exact Real.sqrt_le_sqrt hEP
+  have hEFP : ∫ ω, frobNorm (pinv (V₁ᴴ * X ω)) * specNorm (pinv (V₁ᴴ * X ω)) ∂μ ≤
+      √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) *
+        β := by
+    refine (integral_mul_le_sqrt_mul_sqrt (fun _ => frobNorm_nonneg _)
+      (fun _ => specNorm_nonneg _) hFL hPL).trans ?_
+    rw [hEF]
+    exact mul_le_mul_of_nonneg_left hsqP (Real.sqrt_nonneg _)
+  refine (integral_specNorm_mul_mul_sq_le_of_hasLaw_gaussianMatrix_of_indepFun hY.aemeasurable
+    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
+    (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
+    (S := fun _ => S) measurable_const measurable_pinv
+    (integrable_chevet_sq (specNorm S) (frobNorm S) hF2 hP2 hFP)).trans ?_
+  exact integral_chevet_sq_le (specNorm_nonneg S) (frobNorm_nonneg S) hh hF2 hP2 hFP hEF hEP hEFP
+
 /-- **The second spectral moment of a Gaussian block**: with
 $\mathbf{G}_1 = \mathbf{V}_1^{\mathsf{H}}\mathbf{X}$ and
 $\mathbf{G}_2 = \mathbf{V}_2^{\mathsf{H}}\mathbf{X}$ independent, $r = \lvert r \rvert$,
@@ -441,48 +500,13 @@ theorem integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix [Decidable
       (specNorm S * √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) +
           frobNorm S * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)) ^ 2 +
         (specNorm S * gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k)) ^ 2 := by
-  have := hX.isProbabilityMeasure
   have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
   have hrk' : (Fintype.card r : ℝ) + 2 ≤ Fintype.card k := by exact_mod_cast hrk
-  have hβ0 : 0 ≤ gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) :=
-    gaussianPinvSpecNormBound_nonneg (by omega)
-  have hh : 0 ≤ (Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1) :=
-    div_nonneg (Nat.cast_nonneg _) (by linarith)
-  have hF2 : Integrable (fun ω => frobNorm (pinv (V₁ᴴ * X ω)) ^ 2) μ :=
-    integrable_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk
-  have hP2 : Integrable (fun ω => specNorm (pinv (V₁ᴴ * X ω)) ^ 2) μ := by
-    have := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hY two_pos (by linarith)
-    simpa only [Real.rpow_two] using this
-  have hFL : MemLp (fun ω => frobNorm (pinv (V₁ᴴ * X ω))) 2 μ :=
-    (memLp_two_iff_integrable_sq (((continuous_frobNorm.measurable.comp
-      measurable_pinv).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable)).2 hF2
-  have hPL : MemLp (fun ω => specNorm (pinv (V₁ᴴ * X ω))) 2 μ :=
-    (memLp_two_iff_integrable_sq (((continuous_specNorm.measurable.comp
-      measurable_pinv).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable)).2 hP2
-  have hFP : Integrable (fun ω => frobNorm (pinv (V₁ᴴ * X ω)) * specNorm (pinv (V₁ᴴ * X ω))) μ :=
-    hFL.integrable_mul hPL
-  have hEF := integral_frobNorm_pinv_sq_of_hasLaw_gaussianMatrix hY hrk
-  have hEP : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤
-      gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) ^ 2 := by
-    have := integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix hY two_pos (by linarith)
-    simpa only [Real.rpow_two, ← gaussianPinvSpecNormBound_def] using this
-  have hsqP : √(∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ) ≤
-      gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) := by
-    rw [← Real.sqrt_sq hβ0]
-    exact Real.sqrt_le_sqrt hEP
-  have hEFP : ∫ ω, frobNorm (pinv (V₁ᴴ * X ω)) * specNorm (pinv (V₁ᴴ * X ω)) ∂μ ≤
-      √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) *
-        gaussianPinvSpecNormBound (Fintype.card r) (Fintype.card k) := by
-    refine (integral_mul_le_sqrt_mul_sqrt (fun _ => frobNorm_nonneg _)
-      (fun _ => specNorm_nonneg _) hFL hPL).trans ?_
-    rw [hEF]
-    exact mul_le_mul_of_nonneg_left hsqP (Real.sqrt_nonneg _)
-  refine (integral_specNorm_mul_mul_sq_le_of_hasLaw_gaussianMatrix_of_indepFun hY.aemeasurable
-    (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
-    (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
-    (S := fun _ => S) measurable_const measurable_pinv
-    (integrable_chevet_sq (specNorm S) (frobNorm S) hF2 hP2 hFP)).trans ?_
-  exact integral_chevet_sq_le (specNorm_nonneg S) (frobNorm_nonneg S) hh hF2 hP2 hFP hEF hEP hEFP
+  refine integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix_of_integral_le
+    hX hV₁ hV₂ h₁₂ hrk S (gaussianPinvSpecNormBound_nonneg (by omega)) ?_
+  have h := integral_specNorm_pinv_rpow_le_of_hasLaw_gaussianMatrix hY two_pos
+    (by linarith)
+  simpa only [Real.rpow_two, ← gaussianPinvSpecNormBound_def] using h
 
 private theorem specNorm_pinv_mul_mul_eq (A : Matrix n k ℝ) (V₁ : Matrix n r ℝ)
     (V₂ : Matrix n s ℝ) (S : Matrix s a ℝ) :
@@ -530,5 +554,167 @@ theorem integral_specNorm_pinv_mul_mul_sq_le_of_hasLaw_gaussianMatrix [Decidable
   simp only [specNorm_pinv_mul_mul_eq]
   have h := integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂ hrk Sᴴ
   rwa [specNorm_conjTranspose, frobNorm_conjTranspose] at h
+
+
+/-- A supplied inverse second moment also controls the adjoint Gaussian block.
+No printed source; this follows by conjugate transpose from the two-block estimate. -/
+theorem integral_specNorm_pinv_mul_mul_sq_le_of_hasLaw_gaussianMatrix_of_integral_le
+    [DecidableEq r]
+    [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ) {V₁ : Matrix n r ℝ}
+    {V₂ : Matrix n s ℝ} (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k) (S : Matrix s a ℝ)
+    {β : ℝ} (hβ0 : 0 ≤ β)
+    (hEP : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤ β ^ 2) :
+    ∫ ω, specNorm (pinv ((X ω)ᴴ * V₁) * ((X ω)ᴴ * V₂) * S) ^ 2 ∂μ ≤
+      (specNorm S * √((Fintype.card r : ℝ) / ((Fintype.card k : ℝ) - Fintype.card r - 1)) +
+          frobNorm S * β) ^ 2 +
+        (specNorm S * β) ^ 2 := by
+  simp only [specNorm_pinv_mul_mul_eq]
+  have h := integral_specNorm_mul_mul_pinv_sq_le_of_hasLaw_gaussianMatrix_of_integral_le
+    hX hV₁ hV₂ h₁₂ hrk Sᴴ hβ0 hEP
+  rwa [specNorm_conjTranspose, frobNorm_conjTranspose] at h
+
+
+/-- Weighted first spectral moment of an orthogonal Gaussian block: if
+$\mathbf G_i=\mathbf V_i^{\mathsf H}\mathbf X$, the frames have orthonormal columns and are
+orthogonal, $r+2\le k$, and $\mathbb E\|\mathbf G_1^+\|_2^2\le\beta^2$ for $\beta\ge0$, then
+$$\mathbb E\|\mathbf S\mathbf G_2\mathbf G_1^+\mathbf T\|_2
+\le \|\mathbf S\|_2\|\mathbf T\|_{\mathsf F}/\sqrt{k-r-1}
++\beta\|\mathbf S\|_{\mathsf F}\|\mathbf T\|_2.$$
+No printed source; Chevet's inequality and the exact weighted inverse-Wishart moment. -/
+theorem integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix_of_integral_le
+    [DecidableEq r] [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ)
+    {V₁ : Matrix n r ℝ} {V₂ : Matrix n s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k)
+    (S : Matrix a s ℝ) (T : Matrix r b ℝ) {β : ℝ} (hβ0 : 0 ≤ β)
+    (hEP : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤ β ^ 2) :
+    ∫ ω, specNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω) * T) ∂μ ≤
+      specNorm S * frobNorm T /
+          √((Fintype.card k : ℝ) - Fintype.card r - 1) +
+        β * frobNorm S * specNorm T := by
+  have := hX.isProbabilityMeasure
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hkr : (Fintype.card r : ℝ) + 2 ≤ Fintype.card k := by exact_mod_cast hrk
+  have hP2 : Integrable (fun ω => specNorm (pinv (V₁ᴴ * X ω)) ^ 2) μ := by
+    have h := integrable_specNorm_pinv_rpow_of_hasLaw_gaussianMatrix hY two_pos (by linarith)
+    simpa only [Real.rpow_two] using h
+  have hPL : MemLp (fun ω => specNorm (pinv (V₁ᴴ * X ω))) 2 μ :=
+    (memLp_two_iff_integrable_sq (((continuous_specNorm.measurable.comp
+      measurable_pinv).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable)).2 hP2
+  have hP := hPL.integrable one_le_two
+  have hEP1 : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ∂μ ≤ β := by
+    have hv := variance_nonneg (fun ω => specNorm (pinv (V₁ᴴ * X ω))) μ
+    rw [variance_eq_sub hPL] at hv
+    simp only [Pi.pow_apply] at hv
+    have hs : (∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ∂μ) ^ 2 ≤ β ^ 2 := by linarith
+    exact (le_abs_self _).trans ((Real.abs_le_sqrt hs).trans_eq (Real.sqrt_sq hβ0))
+  obtain ⟨hF2, hEF2⟩ := integral_frobNorm_pinv_mul_sq_of_hasLaw_gaussianMatrix hY hrk T
+  have hm : AEStronglyMeasurable (fun ω => frobNorm (pinv (V₁ᴴ * X ω) * T)) μ :=
+    ((continuous_frobNorm.measurable.comp (measurable_pinv.matrix_mul
+      measurable_const)).comp_aemeasurable hY.aemeasurable).aestronglyMeasurable
+  have hFL := (memLp_two_iff_integrable_sq hm).2 hF2
+  have hF := hFL.integrable one_le_two
+  have hEF : ∫ ω, frobNorm (pinv (V₁ᴴ * X ω) * T) ∂μ ≤
+      frobNorm T / √((Fintype.card k : ℝ) - Fintype.card r - 1) := by
+    have hv := variance_nonneg (fun ω => frobNorm (pinv (V₁ᴴ * X ω) * T)) μ
+    rw [variance_eq_sub hFL] at hv
+    simp only [Pi.pow_apply] at hv
+    have hs : (∫ ω, frobNorm (pinv (V₁ᴴ * X ω) * T) ∂μ) ^ 2 ≤
+        frobNorm T ^ 2 / ((Fintype.card k : ℝ) - Fintype.card r - 1) := by
+      rw [hEF2] at hv
+      linarith
+    have he := (le_abs_self _).trans (Real.abs_le_sqrt hs)
+    rwa [Real.sqrt_div (sq_nonneg _), Real.sqrt_sq (frobNorm_nonneg T)] at he
+  have hQ : Integrable (fun ω => specNorm (pinv (V₁ᴴ * X ω) * T)) μ := by
+    refine (hP.mul_const (specNorm T)).mono' ?_ (ae_of_all _ fun ω => ?_)
+    · exact ((continuous_specNorm.measurable.comp
+        (measurable_pinv.matrix_mul measurable_const)).comp_aemeasurable
+          hY.aemeasurable).aestronglyMeasurable
+    · rw [Real.norm_of_nonneg (specNorm_nonneg _)]
+      exact specNorm_mul_le _ _
+  have hEQ : ∫ ω, specNorm (pinv (V₁ᴴ * X ω) * T) ∂μ ≤ β * specNorm T := by
+    calc _ ≤ ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) * specNorm T ∂μ :=
+          integral_mono hQ (hP.mul_const _) (fun _ => specNorm_mul_le _ _)
+      _ = (∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ∂μ) * specNorm T :=
+        integral_mul_const _ _
+      _ ≤ _ := mul_le_mul_of_nonneg_right hEP1 (specNorm_nonneg T)
+  have hc := (hF.const_mul (specNorm S)).add (hQ.const_mul (frobNorm S))
+  have hmain := integral_specNorm_mul_mul_le_of_hasLaw_gaussianMatrix_of_indepFun
+    hY.aemeasurable (hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂)
+    (indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂)
+    (S := fun _ => S) (T := fun G => pinv G * T) measurable_const
+    (measurable_pinv.matrix_mul measurable_const) hc
+  simp only [Matrix.mul_assoc] at hmain ⊢
+  rw [integral_add (hF.const_mul _) (hQ.const_mul _),
+    integral_const_mul, integral_const_mul] at hmain
+  have h1 := mul_le_mul_of_nonneg_left hEF (specNorm_nonneg S)
+  have h2 := mul_le_mul_of_nonneg_left hEQ (frobNorm_nonneg S)
+  rw [← mul_div_assoc] at h1
+  nlinarith
+
+/-- Weighted first spectral moment of the adjoint Gaussian block: for orthogonal frames,
+$r+2\le k$ and a supplied inverse spectral second moment at most $\beta^2$, $\beta\ge0$,
+$$\mathbb E\|\mathbf F(\mathbf X^{\mathsf H}\mathbf V_1)^+
+(\mathbf X^{\mathsf H}\mathbf V_2)\mathbf S\|_2
+\le\beta\|\mathbf F\|_2\|\mathbf S\|_{\mathsf F}
++\|\mathbf F\|_{\mathsf F}\|\mathbf S\|_2/\sqrt{k-r-1}.$$
+No printed source; the conjugate-transpose form of the weighted Gaussian block bound. -/
+theorem integral_specNorm_mul_pinv_mul_mul_le_of_hasLaw_gaussianMatrix_of_integral_le
+    [DecidableEq r] [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ)
+    {V₁ : Matrix n r ℝ} {V₂ : Matrix n s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k)
+    (F : Matrix a r ℝ) (S : Matrix s b ℝ) {β : ℝ} (hβ0 : 0 ≤ β)
+    (hEP : ∫ ω, specNorm (pinv (V₁ᴴ * X ω)) ^ 2 ∂μ ≤ β ^ 2) :
+    ∫ ω, specNorm (F * pinv ((X ω)ᴴ * V₁) * ((X ω)ᴴ * V₂) * S) ∂μ ≤
+      β * specNorm F * frobNorm S + frobNorm F * specNorm S /
+        √((Fintype.card k : ℝ) - Fintype.card r - 1) := by
+  have he (ω : Ω) : specNorm (F * pinv ((X ω)ᴴ * V₁) * ((X ω)ᴴ * V₂) * S) =
+      specNorm (Sᴴ * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω) * Fᴴ) := by
+    rw [← specNorm_conjTranspose]
+    simp only [Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
+      ← pinv_conjTranspose, Matrix.mul_assoc]
+  simp_rw [he]
+  have h := integral_specNorm_mul_mul_pinv_mul_le_of_hasLaw_gaussianMatrix_of_integral_le
+    hX hV₁ hV₂ h₁₂ hrk Sᴴ Fᴴ hβ0 hEP
+  simp only [specNorm_conjTranspose, frobNorm_conjTranspose] at h
+  convert h using 1
+  ring
+
+
+/-- The exact squared Frobenius moment of an orthogonal Gaussian block: for orthonormal
+frames $\mathbf V_1,\mathbf V_2$ with $\mathbf V_1^{\mathsf H}\mathbf V_2=0$, a standard
+Gaussian $\mathbf X$, $r+2\le k$, and fixed factors $\mathbf S,\mathbf T$,
+$$\mathbb E\|\mathbf S(\mathbf V_2^{\mathsf H}\mathbf X)
+(\mathbf V_1^{\mathsf H}\mathbf X)^+\mathbf T\|_{\mathsf F}^2
+=\|\mathbf S\|_{\mathsf F}^2\|\mathbf T\|_{\mathsf F}^2/(k-r-1),$$
+and the squared norm is integrable. No printed source. -/
+theorem integral_frobNorm_mul_mul_pinv_mul_sq_of_hasLaw_gaussianMatrix
+    [DecidableEq r] [DecidableEq s] (hX : HasLaw X (gaussianMatrix n k) μ)
+    {V₁ : Matrix n r ℝ} {V₂ : Matrix n s ℝ}
+    (hV₁ : HasOrthonormalCols V₁) (hV₂ : HasOrthonormalCols V₂)
+    (h₁₂ : V₁ᴴ * V₂ = 0) (hrk : Fintype.card r + 2 ≤ Fintype.card k)
+    (S : Matrix a s ℝ) (T : Matrix r b ℝ) :
+    Integrable (fun ω => frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω) * T) ^ 2) μ ∧
+      ∫ ω, frobNorm (S * (V₂ᴴ * X ω) * pinv (V₁ᴴ * X ω) * T) ^ 2 ∂μ =
+        frobNorm S ^ 2 * frobNorm T ^ 2 /
+          ((Fintype.card k : ℝ) - Fintype.card r - 1) := by
+  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁
+  have hG := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₂
+  have hind := indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hX hV₁ hV₂ h₁₂
+  have hm : Measurable (fun G : Matrix r k ℝ => pinv G * T) :=
+    measurable_pinv.matrix_mul measurable_const
+  obtain ⟨hint, hval⟩ := integral_frobNorm_pinv_mul_sq_of_hasLaw_gaussianMatrix hY hrk T
+  have hnorm : Integrable (fun ω => frobNorm S ^ 2 *
+      frobNorm (pinv (V₁ᴴ * X ω) * T) ^ 2) μ := hint.const_mul _
+  have hi := (integrable_frobNorm_mul_mul_sq_iff_of_hasLaw_gaussianMatrix_of_indepFun
+    hG hY.aemeasurable hind (S := fun _ => S) measurable_const hm).2 hnorm
+  have hv := integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun
+    hG hY.aemeasurable hind (S := fun _ => S) measurable_const hm
+  simp only [Matrix.mul_assoc] at hi hv ⊢
+  refine ⟨hi, ?_⟩
+  rw [hv, integral_const_mul, hval]
+  ring
 
 end NLAlib

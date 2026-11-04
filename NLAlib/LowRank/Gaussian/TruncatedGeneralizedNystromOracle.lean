@@ -43,52 +43,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l p : Ty
 
 section Oracle
 
-/-- Almost surely $\|\mathbf{G}^{+}\mathbf{M}\|_{\mathsf{F}}^2 =
-\operatorname{tr}(\mathbf{M}^{\mathsf{H}}(\mathbf{G}\mathbf{G}^{\mathsf{H}})^{-1}\mathbf{M})$ for a
-standard Gaussian $r \times k$ matrix $\mathbf{G}$ with $\lvert r \rvert \le \lvert k \rvert$. -/
-private theorem ae_frobNorm_pinv_mul_sq_eq_trace {r k a : Type*} [Fintype r] [Fintype k]
-    [Fintype a] [DecidableEq r] {Y : Ω → Matrix r k ℝ} (hY : HasLaw Y (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r ≤ Fintype.card k) (M : Matrix r a ℝ) :
-    ∀ᵐ ω ∂μ, frobNorm (pinv (Y ω) * M) ^ 2 = (Mᴴ * (Y ω * (Y ω)ᴴ)⁻¹ * M).trace := by
-  filter_upwards [ae_rank_eq_min_of_hasLaw_gaussianMatrix hY] with ω hω
-  have hu : IsUnit (Y ω * (Y ω)ᴴ) := by
-    have h := (isUnit_conjTranspose_mul_self_iff_rank (A := (Y ω)ᴴ)).2
-      (by rw [Matrix.rank_conjTranspose, hω, min_eq_left hrk])
-    rwa [Matrix.conjTranspose_conjTranspose] at h
-  rw [frobNorm_sq_eq_re_trace, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc _ _ M,
-    ← pinv_mul_conjTranspose_self, pinv_of_isUnit hu, ← Matrix.mul_assoc, RCLike.re_to_real]
-
-open scoped Matrix.Norms.L2Operator in
-/-- The weighted inverse moment: $\mathbb{E}\|\mathbf{G}^{+}\mathbf{M}\|_{\mathsf{F}}^2 =
-\|\mathbf{M}\|_{\mathsf{F}}^2/(\lvert k \rvert - \lvert r \rvert - 1)$, with integrability. -/
-private theorem integral_frobNorm_pinv_mul_sq {r k a : Type*} [Fintype r] [Fintype k]
-    [Fintype a] {Y : Ω → Matrix r k ℝ} (hY : HasLaw Y (gaussianMatrix r k) μ)
-    (hrk : Fintype.card r + 2 ≤ Fintype.card k) (M : Matrix r a ℝ) :
-    Integrable (fun ω => frobNorm (pinv (Y ω) * M) ^ 2) μ ∧
-      ∫ ω, frobNorm (pinv (Y ω) * M) ^ 2 ∂μ =
-        frobNorm M ^ 2 / ((Fintype.card k : ℝ) - Fintype.card r - 1) := by
-  classical
-  have := hY.isProbabilityMeasure
-  have hZ := integrable_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix hY hrk
-  have hZ' := Matrix.integrable_iff.1 hZ
-  have hMZ : Integrable (fun ω => Mᴴ * (Y ω * (Y ω)ᴴ)⁻¹ * M) μ := by
-    refine Matrix.integrable_iff.2 fun i j => ?_
-    simp only [Matrix.mul_apply]
-    exact integrable_finsetSum _ fun b _ => (integrable_finsetSum _ fun c _ =>
-      (hZ' c b).const_mul _).mul_const _
-  have htr : Integrable (fun ω => (Mᴴ * (Y ω * (Y ω)ᴴ)⁻¹ * M).trace) μ :=
-    integrable_finsetSum _ fun i _ => Matrix.integrable_iff.1 hMZ i i
-  have hae := ae_frobNorm_pinv_mul_sq_eq_trace hY (by omega) M
-  refine ⟨htr.congr (hae.mono fun _ h => h.symm), ?_⟩
-  rw [integral_congr_ae hae, Matrix.integral_trace hMZ, Matrix.integral_mul_const
-    (Matrix.integrable_iff.2 fun i j => by
-      simp only [Matrix.mul_apply]
-      exact integrable_finsetSum _ fun c _ => (hZ' c j).const_mul _) M,
-    Matrix.integral_const_mul _ hZ,
-    integral_mul_conjTranspose_inv_of_hasLaw_gaussianMatrix hY hrk, Matrix.mul_smul, Matrix.mul_one,
-    Matrix.smul_mul, Matrix.trace_smul, smul_eq_mul, frobNorm_sq_eq_re_trace, RCLike.re_to_real,
-    div_eq_inv_mul]
-
 /-- The Gaussian block with a left factor, conjugate-transposed. -/
 private theorem frobNorm_mul_pinv_mul_mul_eq {r s c a : Type*} [Fintype r] [Fintype s]
     [Fintype c] [Fintype a] (G : Matrix m p ℝ) (V₁ : Matrix m r ℝ) (V₂ : Matrix m s ℝ)
@@ -114,17 +68,11 @@ private theorem integral_frobNorm_mul_pinv_mul_mul_sq {r s c a : Type*} [Fintype
       ∫ ω, frobNorm (T * pinv ((G ω)ᴴ * V₁) * ((G ω)ᴴ * V₂) * W) ^ 2 ∂μ =
         frobNorm W ^ 2 * (frobNorm T ^ 2 / ((Fintype.card p : ℝ) - Fintype.card r - 1)) := by
   simp only [frobNorm_mul_pinv_mul_mul_eq]
-  have hY := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hG hV₁
-  have hX := hasLaw_conjTranspose_mul_of_hasLaw_gaussianMatrix hG hV₂
-  have hI := indepFun_conjTranspose_mul_of_hasLaw_gaussianMatrix hG hV₁ hV₂ h₁₂
-  have hT : Measurable fun y : Matrix r p ℝ => pinv y * Tᴴ := measurable_pinv.matrix_mul
-    measurable_const
-  obtain ⟨hint, hval⟩ := integral_frobNorm_pinv_mul_sq hY hrk Tᴴ
-  refine ⟨(integrable_frobNorm_mul_mul_sq_iff_of_hasLaw_gaussianMatrix_of_indepFun hX
-    hY.aemeasurable hI (S := fun _ => Wᴴ) measurable_const hT).2 (hint.const_mul _), ?_⟩
-  rw [integral_frobNorm_mul_mul_sq_of_hasLaw_gaussianMatrix_of_indepFun hX hY.aemeasurable hI
-    (S := fun _ => Wᴴ) measurable_const hT, integral_const_mul, hval, frobNorm_conjTranspose,
-    frobNorm_conjTranspose]
+  have h := integral_frobNorm_mul_mul_pinv_mul_sq_of_hasLaw_gaussianMatrix
+    hG hV₁ hV₂ h₁₂ hrk Wᴴ Tᴴ
+  simp only [frobNorm_conjTranspose, Matrix.mul_assoc] at h ⊢
+  convert h using 1
+  ring
 
 /-- Fixed range test matrix: for $\mathbf{F}$ with
 $\mathbf{F}\mathbf{P}_{\mathbf{A}\mathbf{\Omega}} = \mathbf{F}$ and
