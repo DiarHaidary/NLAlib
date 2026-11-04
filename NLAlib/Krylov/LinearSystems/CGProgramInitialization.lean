@@ -318,7 +318,9 @@ private theorem composable_cg_preload (I : Interp P ι ℝ (OpCount P ι)) (tag 
           (fun _ => rfl)).bind
           (executionComposable_single I (b := ins (.copy tag ⟨4, 0⟩ ⟨7, 6⟩)) (fun _ => rfl)))))
 
-private theorem composable_cg_vectors (I : Interp P ι ℝ (OpCount P ι)) (tag : P) (N : ℕ) :
+/-- The canonical zero-iterate and input-copy prefix composes with later execution. This
+syntactic certificate is shared by the stored and oracle CG initializers. -/
+theorem executionComposable_cg_vectors (I : Interp P ι ℝ (OpCount P ι)) (tag : P) (N : ℕ) :
     ExecutionComposable I (do
       forRange (.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0)
       copyv tag 0 0 2 0 (.const N)
@@ -427,7 +429,7 @@ theorem exec_cg_initialization (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem 
           ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
             (ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()))).run st = some out
     rw [composable_cg_preload I tag N, epre, Option.bind_some,
-      composable_cg_vectors I tag N, evec, Option.bind_some]
+      executionComposable_cg_vectors I tag N, evec, Option.bind_some]
     exact eout
   · intro i
     exact (frame tag 0 i (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
@@ -472,7 +474,7 @@ theorem executionComposable_cg_initialization (I : Interp P ι ℝ (OpCount P ι
       copyv tag 0 0 3 0 (.const N)
       dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)
       ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩ (ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ())) := by
-  exact (composable_cg_preload I tag N).bind ((composable_cg_vectors I tag N).bind
+  exact (composable_cg_preload I tag N).bind ((executionComposable_cg_vectors I tag N).bind
     ((executionComposable_single I (b := dot tag ⟨7, 0⟩ 2 0 2 0 (.const N))
       (fun _ => rfl)).bind (executionComposable_single I (b := ifThenElse tag .eq
         ⟨7, 0⟩ ⟨7, 6⟩ (ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ())) (fun _ => rfl))))

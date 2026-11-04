@@ -20,7 +20,8 @@ Zero initialization includes both offset and direct-index syntax and zero-length
 
 * `exec_copyv_frame`, `exec_gemv_frame`, `exec_rscl_frame`, `exec_nrm2_frame`: kernel frames.
 * `exec_dot_frame`, `exec_axpy_frame`: finite-vector pairing and update frames.
-* `exec_forRange_zero`, `exec_forRange_zero_var`: literal-zero loops with storage frames.
+* `exec_forRange_zero`, `exec_forRange_zero_var`: exact literal-zero loops and frames.
+* `exec_forRange_literal_zero`, `exec_forRange_literal_zero_var`: arbitrary-word zero fills.
 * `exec_forRange_zero_var_eq`: semantic equality of direct-index and zero-offset loops.
 -/
 
@@ -37,20 +38,21 @@ variable {P ι C : Type} [DecidableEq P] [AddMonoid C]
 /-- The actual literal-zero loop succeeds where its output window is writable. It writes
 zero to that window, preserves all other cells and every usage field except the literal
 count, and keeps the shape. The window may be uninitialized or have length zero. -/
-theorem exec_forRange_zero (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (tag : P)
-    (st : St P ℝ C) (n : IExp ℕ) (buf : ℕ) (off : IExp ℕ)
+theorem exec_forRange_literal_zero {K : Type} (I : Interp P ι K C) (tag : P)
+    (zero : K) (hzero : I.sem.lit tag 0 = some zero)
+    (st : St P K C) (n : IExp ℕ) (buf : ℕ) (off : IExp ℕ)
     (hshape : ∀ i < n.eval, ∃ len,
       st.store.shape[buf]? = some (tag, len) ∧ off.eval + i < len) :
     ∃ s', exec I (forRange n fun i => ins (.lit tag ⟨buf, off + .var i⟩ 0)).run st =
       some { st with store := s', cnt := st.cnt + n.eval • I.charge (.lit tag) } ∧
       s'.shape = st.store.shape ∧
-      (∀ i < n.eval, s'.read tag buf (off.eval + i) = some 0) ∧
+      (∀ i < n.eval, s'.read tag buf (off.eval + i) = some zero) ∧
       ∀ q b j, (q ≠ tag ∨ b ≠ buf ∨ j < off.eval ∨ off.eval + n.eval ≤ j) →
         s'.read q b j = st.store.read q b j := by
-  let R (k : ℕ) (out : St P ℝ C) : Prop :=
+  let R (k : ℕ) (out : St P K C) : Prop :=
     ∃ s', out = { st with store := s', cnt := st.cnt + k • I.charge (.lit tag) } ∧
       s'.shape = st.store.shape ∧
-      (∀ i < k, s'.read tag buf (off.eval + i) = some 0) ∧
+      (∀ i < k, s'.read tag buf (off.eval + i) = some zero) ∧
       ∀ q b j, (q ≠ tag ∨ b ≠ buf ∨ j < off.eval ∨ off.eval + n.eval ≤ j) →
         s'.read q b j = st.store.read q b j
   have h0 : R 0 st := ⟨st.store, by simp only [zero_nsmul, add_zero], rfl,
@@ -61,15 +63,15 @@ theorem exec_forRange_zero (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (tag 
     rintro i hi out ⟨s, rfl, hsh, hread, hframe⟩
     obtain ⟨len, hlen, hlt⟩ := hshape i hi
     have hlen' : s.shape[buf]? = some (tag, len) := by rw [hsh]; exact hlen
-    obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape (0 : ℝ) hlen' hlt
+    obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape zero hlen' hlt
     refine ⟨{ st with store := s', cnt := st.cnt + (i + 1) • I.charge (.lit tag) },
       ?_, s', rfl, (Store.shape_of_write_eq_some hs').trans hsh, ?_, ?_⟩
-    · have hwrite : s.write tag buf (off + IExp.var i).eval 0 = some s' := by
+    · have hwrite : s.write tag buf (off + IExp.var i).eval zero = some s' := by
         simpa only [IExp.eval_add, IExp.eval_var] using hs'
       have hrun := (exec_seq_instr_lit I (p := tag) (q := 0) (t := .skip)
         (dst := ⟨buf, off + IExp.var i⟩)
         (st := { st with store := s, cnt := st.cnt + i • I.charge (.lit tag) })
-        (by rw [hI]; simp only [exactSem, Rat.cast_zero]) hwrite).trans (exec_skip I _)
+        hzero hwrite).trans (exec_skip I _)
       simpa only [succ_nsmul, add_assoc] using hrun
     · intro j hj
       rcases Nat.eq_or_lt_of_le (Nat.le_of_lt_succ hj) with rfl | hji
@@ -94,6 +96,22 @@ theorem exec_forRange_zero (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (tag 
   change exec I (.seq (.loop n _) .skip) st = _
   rw [exec_seq_skip]
   exact hout ▸ hrun
+
+/-- The actual literal-zero loop succeeds where its output window is writable. It writes
+zero to that window, preserves all other cells and every usage field except the literal
+count, and keeps the shape. The window may be uninitialized or have length zero. -/
+theorem exec_forRange_zero (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (tag : P)
+    (st : St P ℝ C) (n : IExp ℕ) (buf : ℕ) (off : IExp ℕ)
+    (hshape : ∀ i < n.eval, ∃ len,
+      st.store.shape[buf]? = some (tag, len) ∧ off.eval + i < len) :
+    ∃ s', exec I (forRange n fun i => ins (.lit tag ⟨buf, off + .var i⟩ 0)).run st =
+      some { st with store := s', cnt := st.cnt + n.eval • I.charge (.lit tag) } ∧
+      s'.shape = st.store.shape ∧
+      (∀ i < n.eval, s'.read tag buf (off.eval + i) = some 0) ∧
+      ∀ q b j, (q ≠ tag ∨ b ≠ buf ∨ j < off.eval ∨ off.eval + n.eval ≤ j) →
+        s'.read q b j = st.store.read q b j := by
+  exact exec_forRange_literal_zero I tag 0 (by rw [hI]; simp only [exactSem, Rat.cast_zero])
+    st n buf off hshape
 
 /-- The existing copy kernel preserves the entire store outside its destination window,
 including earlier columns of the same basis buffer. Writable capacity suffices; destination
@@ -358,6 +376,31 @@ theorem exec_forRange_zero_var_eq {K : Type} (I : Interp P ι K C) (tag : P)
     exec I (.seq (.instr (.lit tag ⟨buf, 0 + .var i⟩ 0)) .skip) σ
   simp [exec, Instr.run, Instr.kind, IExp.eval]
 
+/-- Direct-index syntax has the same actual zero-word execution and complete frame. -/
+theorem exec_forRange_literal_zero_var {K : Type} (I : Interp P ι K C) (tag : P)
+    (zero : K) (hzero : I.sem.lit tag 0 = some zero)
+    (st : St P K C) (n : IExp ℕ) (buf : ℕ)
+    (hshape : ∀ i < n.eval, ∃ len,
+      st.store.shape[buf]? = some (tag, len) ∧ i < len) :
+    ∃ s', exec I (forRange n fun i => ins (.lit tag ⟨buf, .var i⟩ 0)).run st =
+      some { st with store := s', cnt := st.cnt + n.eval • I.charge (.lit tag) } ∧
+      s'.shape = st.store.shape ∧
+      (∀ i < n.eval, s'.read tag buf i = some zero) ∧
+      ∀ q b j, (q ≠ tag ∨ b ≠ buf ∨ n.eval ≤ j) →
+        s'.read q b j = st.store.read q b j := by
+  obtain ⟨s', hrun, hsh, hread, hframe⟩ := exec_forRange_literal_zero I tag zero hzero
+    st n buf 0 (fun i hi => by simpa only [IExp.eval, zero_add] using hshape i hi)
+  refine ⟨s', (exec_forRange_zero_var_eq I tag st n buf).trans hrun,
+    hsh, ?_, ?_⟩
+  · intro i hi
+    simpa only [IExp.eval, zero_add] using hread i hi
+  · intro q b j hj
+    apply hframe q b j
+    rcases hj with hq | hb | hj
+    · exact Or.inl hq
+    · exact Or.inr (Or.inl hb)
+    · exact Or.inr (Or.inr (Or.inr (by simpa only [IExp.eval, zero_add] using hj)))
+
 /-- Direct-index literal initialization retains the existing offset-kernel guarantees,
 including zero-length windows, store frames and exact charges. -/
 theorem exec_forRange_zero_var (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (tag : P)
@@ -370,17 +413,7 @@ theorem exec_forRange_zero_var (I : Interp P ι ℝ C) (hI : I.sem = exactSem) (
       (∀ i < n.eval, s'.read tag buf i = some 0) ∧
       ∀ q b j, (q ≠ tag ∨ b ≠ buf ∨ n.eval ≤ j) →
         s'.read q b j = st.store.read q b j := by
-  obtain ⟨s', hrun, hsh, hread, hframe⟩ := exec_forRange_zero I hI tag st n buf 0
-    (fun i hi => by simpa only [IExp.eval, zero_add] using hshape i hi)
-  refine ⟨s', ?_, hsh, ?_, ?_⟩
-  · exact (exec_forRange_zero_var_eq I tag st n buf).trans hrun
-  · intro i hi
-    simpa only [IExp.eval, zero_add] using hread i hi
-  · intro q b j hj
-    apply hframe q b j
-    rcases hj with hq | hb | hj
-    · exact Or.inl hq
-    · exact Or.inr (Or.inl hb)
-    · exact Or.inr (Or.inr (Or.inr (by simpa only [IExp.eval, zero_add] using hj)))
+  exact exec_forRange_literal_zero_var I tag 0
+    (by rw [hI]; simp only [exactSem, Rat.cast_zero]) st n buf hshape
 
 end NLAlib.Computation

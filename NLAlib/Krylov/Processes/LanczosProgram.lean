@@ -65,11 +65,6 @@ local macro "lanczosBody(" tag:term "," N:term "," q:term ","
   lanczosInit($tag,$N,$scalars)
   lanczosLoop($tag,$N,$q,$A,$work,$scalars))
 
-private def declaredState (tag : P) (N q : ℕ) (b : Fin N → ℝ) : St P ℝ (OpCount P ι) :=
-  inputState tag [(Array.ofFn b).map some, Array.replicate (N * (q + 1)) none,
-    Array.replicate q none, Array.replicate (q + 1) none, Array.replicate 1 none,
-    Array.replicate N none]
-
 private def pushState (tag : P) (len : ℕ) (st : St P ℝ (OpCount P ι)) :
     St P ℝ (OpCount P ι) :=
   { st with store := st.store.push (tag, Array.replicate len none)
@@ -81,7 +76,7 @@ private def workspaceState (tag : P) (N q : ℕ) (b : Fin N → ℝ) :
   pushState tag 2 (pushState tag N (pushState tag (N * N) (declaredState tag N q b)))
 
 private theorem declared_shape (tag : P) (N q : ℕ) (b : Fin N → ℝ) :
-    (declaredState (ι := ι) tag N q b).store.shape =
+    (declaredState (C := OpCount P ι) tag N q b).store.shape =
       #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1), (tag, 1), (tag, N)] := by
   simp [declaredState, inputState, Store.shape]
 
@@ -134,20 +129,12 @@ private theorem exec_allocations (I : Interp P ι ℝ (OpCount P ι)) (tag : P)
         .alloc tag (.const N) fun work => .alloc tag 2 (body A work))
       (declaredState tag N q b) =
         (exec I (body 6 7 8) (workspaceState (ι := ι) tag N q b)).map (cleanState tag N) := by
-  have hs : (declaredState (ι := ι) tag N q b).store.size = 6 := by
+  have hs : (declaredState (C := OpCount P ι) tag N q b).store.size = 6 := by
     simpa [Store.shape] using
       congrArg Array.size (declared_shape (ι := ι) tag N q b)
   simp only [exec_alloc, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat, hw,
     mul_zero, add_zero, Nat.sub_zero, hs, Array.size_push, Option.map_map]
   rfl
-
-private theorem cleanState_read (tag : P) (N : ℕ) (st : St P ℝ (OpCount P ι))
-    (hs : st.store.size = 9) (p : P) (k i : ℕ) (hk : k < 6) :
-    (cleanState tag N st).store.read p k i = st.store.read p k i := by
-  simp only [cleanState, popState]
-  rw [Store.read_pop_of_lt (by simp only [Array.size_pop]; omega),
-    Store.read_pop_of_lt (by simp only [Array.size_pop]; omega)]
-  exact Store.read_pop_of_lt (by omega)
 
 private theorem declared_post (tag : P) {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {st : St P ℝ (OpCount P ι)} (h : State tag N q q A b st) :
@@ -160,27 +147,7 @@ private theorem declared_post (tag : P) {N q : ℕ} {A : Matrix (Fin N) (Fin N) 
     (cleanState tag N st).store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
     Holds (cleanState tag N st).store tag 5 0
       (fun i (_ : Fin 1) => (lanczosState A b q).prev i) := by
-  have hs : st.store.size = 9 := by
-    simpa [Store.shape] using congrArg Array.size h.shape
-  have hf := cleanState_read tag N st hs
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
-  · intro i j
-    rw [hf tag 0 _ (by decide)]
-    simpa using h.input i
-  · intro i j
-    rw [hf tag 1 _ (by decide)]
-    simpa only [lanczosMatrix, Matrix.of_apply, zero_add, Nat.add_comm] using
-      h.basis j (Nat.le_of_lt_succ j.isLt) i
-  · intro i j
-    rw [hf tag 2 _ (by decide)]
-    simpa using h.alpha i i.isLt
-  · intro i j
-    rw [hf tag 3 _ (by decide)]
-    simpa using h.beta i (Nat.le_of_lt_succ i.isLt)
-  · exact (hf tag 4 0 (by decide)).trans h.inputNorm
-  · intro i j
-    rw [hf tag 5 _ (by decide)]
-    simpa using h.prev i
+  simpa only [cleanState, popState] using h.holds_pop_pop_pop
 
 private theorem memory_bound (tag : P) (N q : ℕ) (b : Fin N → ℝ)
     (vals : ℕ → ℝ) (ξ : Dist → ℕ → ℝ) (out : St P ℝ (OpCount P ι))

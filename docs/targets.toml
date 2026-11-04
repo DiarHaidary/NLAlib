@@ -2444,3 +2444,1011 @@ statement = '''
             st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
               NLAlib.Computation.Holds st.store tag 5 0 fun i x =>
                 (NLAlib.lanczosState A b (q 0)).prev i'''
+
+[[tree]]
+name = "NLAlib.cgOracleProg.compiled"
+hash = "38112416bfb5a3aa35a5e80681cc43129622c3720a81fa652fe6a89da2d2bfc6"
+normal_form = '''
+NLAlib.cgOracleProg.compiled :
+  {P ι : Type} → P → ι → Prog P ι 1 5 :=
+fun {P ι} tag o =>
+  (FStmt.alloc tag (IExp.const 0)
+        (FStmt.alloc tag (IExp.var ⟨0, @proofToken⟩)
+          (FStmt.alloc tag (IExp.const 9)
+            ((FStmt.instr
+                  (Instr.lit tag { buf := ⟨7, @proofToken⟩, idx := IExp.const 6 }
+                    { num := Int.ofNat 0, den_nz := @proofToken, reduced := @proofToken })).seq
+              ((FStmt.instr
+                    (Instr.lit tag { buf := ⟨7, @proofToken⟩, idx := IExp.const 7 }
+                      { num := Int.ofNat 1, den_nz := @proofToken, reduced := @proofToken })).seq
+                ((FStmt.instr
+                      (Instr.un tag UnOp.neg { buf := ⟨7, @proofToken⟩, idx := IExp.const 8 }
+                        { buf := ⟨7, @proofToken⟩, idx := IExp.const 7 })).seq
+                  ((FStmt.instr
+                        (Instr.copy tag { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                          { buf := ⟨7, @proofToken⟩, idx := IExp.const 6 })).seq
+                    ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                          ((FStmt.instr
+                                (Instr.lit tag
+                                  { buf := ⟨1, @proofToken⟩, idx := IExp.var ⟨2, @proofToken⟩ }
+                                  { num := Int.ofNat 0, den_nz := @proofToken,
+                                    reduced := @proofToken })).seq
+                            FStmt.skip)).seq
+                      ((FStmt.named "copy"
+                            [Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                              Arg.buf ⟨2, @proofToken⟩, Arg.idx (IExp.const 0),
+                              Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                            ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                  ((FStmt.instr
+                                        (Instr.copy tag
+                                          { buf := ⟨2, @proofToken⟩,
+                                            idx := (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) }
+                                          { buf := ⟨0, @proofToken⟩,
+                                            idx :=
+                                              (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) })).seq
+                                    FStmt.skip)).seq
+                              FStmt.skip)).seq
+                        ((FStmt.named "copy"
+                              [Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                                Arg.buf ⟨3, @proofToken⟩, Arg.idx (IExp.const 0),
+                                Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                              ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                    ((FStmt.instr
+                                          (Instr.copy tag
+                                            { buf := ⟨3, @proofToken⟩,
+                                              idx :=
+                                                (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) }
+                                            { buf := ⟨0, @proofToken⟩,
+                                              idx :=
+                                                (IExp.const 0).add
+                                                  (IExp.var ⟨2, @proofToken⟩) })).seq
+                                      FStmt.skip)).seq
+                                FStmt.skip)).seq
+                          ((FStmt.named "dot"
+                                [Arg.cell { buf := ⟨7, @proofToken⟩, idx := IExp.const 0 },
+                                  Arg.buf ⟨2, @proofToken⟩, Arg.idx (IExp.const 0),
+                                  Arg.buf ⟨2, @proofToken⟩, Arg.idx (IExp.const 0),
+                                  Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                ((FStmt.instr
+                                      (Instr.lit tag
+                                        { buf := ⟨7, @proofToken⟩, idx := IExp.const 0 }
+                                        { num := Int.ofNat 0, den_nz := @proofToken,
+                                          reduced := @proofToken })).seq
+                                  (FStmt.alloc tag (IExp.const 1)
+                                    ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                          ((FStmt.instr
+                                                (Instr.un tag UnOp.conj
+                                                  { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                                                  { buf := ⟨2, @proofToken⟩,
+                                                    idx :=
+                                                      (IExp.const 0).add
+                                                        (IExp.var ⟨2, @proofToken⟩) })).seq
+                                            ((FStmt.instr
+                                                  (Instr.bin tag BinOp.mul
+                                                    { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                                                    { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                                                    { buf := ⟨2, @proofToken⟩,
+                                                      idx :=
+                                                        (IExp.const 0).add
+                                                          (IExp.var ⟨2, @proofToken⟩) })).seq
+                                              ((FStmt.instr
+                                                    (Instr.bin tag BinOp.add
+                                                      { buf := ⟨7, @proofToken⟩,
+                                                        idx := IExp.const 0 }
+                                                      { buf := ⟨7, @proofToken⟩,
+                                                        idx := IExp.const 0 }
+                                                      { buf := ⟨8, @proofToken⟩,
+                                                        idx := IExp.const 0 })).seq
+                                                FStmt.skip)))).seq
+                                      FStmt.skip)))).seq
+                            ((FStmt.ite tag CmpOp.eq
+                                  { buf := ⟨7, @proofToken⟩, idx := IExp.const 0 }
+                                  { buf := ⟨7, @proofToken⟩, idx := IExp.const 6 }
+                                  ((FStmt.instr
+                                        (Instr.copy tag
+                                          { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                          { buf := ⟨7, @proofToken⟩, idx := IExp.const 7 })).seq
+                                    FStmt.skip)
+                                  FStmt.skip).seq
+                              ((FStmt.loop (IExp.var ⟨1, @proofToken⟩)
+                                    ((FStmt.ite tag CmpOp.eq
+                                          { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                          { buf := ⟨7, @proofToken⟩, idx := IExp.const 6 }
+                                          ((FStmt.apply o tag ⟨6, @proofToken⟩ (IExp.const 0)
+                                                ⟨3, @proofToken⟩ (IExp.const 0) (IExp.const 1)).seq
+                                            ((FStmt.named "dot"
+                                                  [Arg.cell
+                                                      { buf := ⟨7, @proofToken⟩,
+                                                        idx := IExp.const 2 },
+                                                    Arg.buf ⟨3, @proofToken⟩,
+                                                    Arg.idx (IExp.const 0),
+                                                    Arg.buf ⟨6, @proofToken⟩,
+                                                    Arg.idx (IExp.const 0),
+                                                    Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                  ((FStmt.instr
+                                                        (Instr.lit tag
+                                                          { buf := ⟨7, @proofToken⟩,
+                                                            idx := IExp.const 2 }
+                                                          { num := Int.ofNat 0,
+                                                            den_nz := @proofToken,
+                                                            reduced := @proofToken })).seq
+                                                    (FStmt.alloc tag (IExp.const 1)
+                                                      ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                            ((FStmt.instr
+                                                                  (Instr.un tag UnOp.conj
+                                                                    { buf := ⟨8, @proofToken⟩,
+                                                                      idx := IExp.const 0 }
+                                                                    { buf := ⟨3, @proofToken⟩,
+                                                                      idx :=
+                                                                        (IExp.const 0).add
+                                                                          (IExp.var
+                                                                            ⟨3,
+                                                                              @proofToken⟩) })).seq
+                                                              ((FStmt.instr
+                                                                    (Instr.bin tag BinOp.mul
+                                                                      { buf := ⟨8, @proofToken⟩,
+                                                                        idx := IExp.const 0 }
+                                                                      { buf := ⟨8, @proofToken⟩,
+                                                                        idx := IExp.const 0 }
+                                                                      { buf := ⟨6, @proofToken⟩,
+                                                                        idx :=
+                                                                          (IExp.const 0).add
+                                                                            (IExp.var
+                                                                              ⟨3,
+                                                                                @proofToken⟩) })).seq
+                                                                ((FStmt.instr
+                                                                      (Instr.bin tag BinOp.add
+                                                                        { buf := ⟨7, @proofToken⟩,
+                                                                          idx := IExp.const 2 }
+                                                                        { buf := ⟨7, @proofToken⟩,
+                                                                          idx := IExp.const 2 }
+                                                                        { buf := ⟨8, @proofToken⟩,
+                                                                          idx :=
+                                                                            IExp.const 0 })).seq
+                                                                  FStmt.skip)))).seq
+                                                        FStmt.skip)))).seq
+                                              ((FStmt.ite tag CmpOp.lt
+                                                    { buf := ⟨7, @proofToken⟩, idx := IExp.const 6 }
+                                                    { buf := ⟨7, @proofToken⟩, idx := IExp.const 2 }
+                                                    ((FStmt.instr
+                                                          (Instr.bin tag BinOp.div
+                                                            { buf := ⟨7, @proofToken⟩,
+                                                              idx := IExp.const 3 }
+                                                            { buf := ⟨7, @proofToken⟩,
+                                                              idx := IExp.const 0 }
+                                                            { buf := ⟨7, @proofToken⟩,
+                                                              idx := IExp.const 2 })).seq
+                                                      ((FStmt.named "axpy"
+                                                            [Arg.cell
+                                                                { buf := ⟨7, @proofToken⟩,
+                                                                  idx := IExp.const 3 },
+                                                              Arg.buf ⟨3, @proofToken⟩,
+                                                              Arg.idx (IExp.const 0),
+                                                              Arg.buf ⟨1, @proofToken⟩,
+                                                              Arg.idx (IExp.const 0),
+                                                              Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                            (FStmt.alloc tag (IExp.const 1)
+                                                              ((FStmt.loop
+                                                                    (IExp.var ⟨0, @proofToken⟩)
+                                                                    ((FStmt.instr
+                                                                          (Instr.bin tag BinOp.mul
+                                                                            {
+                                                                              buf :=
+                                                                                ⟨8, @proofToken⟩,
+                                                                              idx := IExp.const 0 }
+                                                                            {
+                                                                              buf :=
+                                                                                ⟨7, @proofToken⟩,
+                                                                              idx := IExp.const 3 }
+                                                                            {
+                                                                              buf :=
+                                                                                ⟨3, @proofToken⟩,
+                                                                              idx :=
+                                                                                (IExp.const 0).add
+                                                                                  (IExp.var
+                                                                                    ⟨3,
+                                                                                      @proofToken⟩) })).seq
+                                                                      ((FStmt.instr
+                                                                            (Instr.bin tag BinOp.add
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨1, @proofToken⟩,
+                                                                                idx :=
+                                                                                  (IExp.const 0).add
+                                                                                    (IExp.var
+                                                                                      ⟨3,
+                                                                                        @proofToken⟩) }
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨1, @proofToken⟩,
+                                                                                idx :=
+                                                                                  (IExp.const 0).add
+                                                                                    (IExp.var
+                                                                                      ⟨3,
+                                                                                        @proofToken⟩) }
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨8, @proofToken⟩,
+                                                                                idx :=
+                                                                                  IExp.const
+                                                                                    0 })).seq
+                                                                        FStmt.skip))).seq
+                                                                FStmt.skip))).seq
+                                                        ((FStmt.instr
+                                                              (Instr.un tag UnOp.neg
+                                                                { buf := ⟨7, @proofToken⟩,
+                                                                  idx := IExp.const 5 }
+                                                                { buf := ⟨7, @proofToken⟩,
+                                                                  idx := IExp.const 3 })).seq
+                                                          ((FStmt.named "axpy"
+                                                                [Arg.cell
+                                                                    { buf := ⟨7, @proofToken⟩,
+                                                                      idx := IExp.const 5 },
+                                                                  Arg.buf ⟨6, @proofToken⟩,
+                                                                  Arg.idx (IExp.const 0),
+                                                                  Arg.buf ⟨2, @proofToken⟩,
+                                                                  Arg.idx (IExp.const 0),
+                                                                  Arg.idx
+                                                                    (IExp.var ⟨0, @proofToken⟩)]
+                                                                (FStmt.alloc tag (IExp.const 1)
+                                                                  ((FStmt.loop
+                                                                        (IExp.var ⟨0, @proofToken⟩)
+                                                                        ((FStmt.instr
+                                                                              (Instr.bin tag
+                                                                                BinOp.mul
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨8,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    IExp.const 0 }
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨7,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    IExp.const 5 }
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨6,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    (IExp.const
+                                                                                          0).add
+                                                                                      (IExp.var
+                                                                                        ⟨3,
+                                                                                          @proofToken⟩) })).seq
+                                                                          ((FStmt.instr
+                                                                                (Instr.bin tag
+                                                                                  BinOp.add
+                                                                                  {
+                                                                                    buf :=
+                                                                                      ⟨2,
+                                                                                        @proofToken⟩,
+                                                                                    idx :=
+                                                                                      (IExp.const
+                                                                                            0).add
+                                                                                        (IExp.var
+                                                                                          ⟨3,
+                                                                                            @proofToken⟩) }
+                                                                                  {
+                                                                                    buf :=
+                                                                                      ⟨2,
+                                                                                        @proofToken⟩,
+                                                                                    idx :=
+                                                                                      (IExp.const
+                                                                                            0).add
+                                                                                        (IExp.var
+                                                                                          ⟨3,
+                                                                                            @proofToken⟩) }
+                                                                                  {
+                                                                                    buf :=
+                                                                                      ⟨8,
+                                                                                        @proofToken⟩,
+                                                                                    idx :=
+                                                                                      IExp.const
+                                                                                        0 })).seq
+                                                                            FStmt.skip))).seq
+                                                                    FStmt.skip))).seq
+                                                            ((FStmt.named "dot"
+                                                                  [Arg.cell
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx := IExp.const 1 },
+                                                                    Arg.buf ⟨2, @proofToken⟩,
+                                                                    Arg.idx (IExp.const 0),
+                                                                    Arg.buf ⟨2, @proofToken⟩,
+                                                                    Arg.idx (IExp.const 0),
+                                                                    Arg.idx
+                                                                      (IExp.var ⟨0, @proofToken⟩)]
+                                                                  ((FStmt.instr
+                                                                        (Instr.lit tag
+                                                                          { buf := ⟨7, @proofToken⟩,
+                                                                            idx := IExp.const 1 }
+                                                                          { num := Int.ofNat 0,
+                                                                            den_nz := @proofToken,
+                                                                            reduced :=
+                                                                              @proofToken })).seq
+                                                                    (FStmt.alloc tag (IExp.const 1)
+                                                                      ((FStmt.loop
+                                                                            (IExp.var
+                                                                              ⟨0, @proofToken⟩)
+                                                                            ((FStmt.instr
+                                                                                  (Instr.un tag
+                                                                                    UnOp.conj
+                                                                                    {
+                                                                                      buf :=
+                                                                                        ⟨8,
+                                                                                          @proofToken⟩,
+                                                                                      idx :=
+                                                                                        IExp.const
+                                                                                          0 }
+                                                                                    {
+                                                                                      buf :=
+                                                                                        ⟨2,
+                                                                                          @proofToken⟩,
+                                                                                      idx :=
+                                                                                        (IExp.const
+                                                                                              0).add
+                                                                                          (IExp.var
+                                                                                            ⟨3,
+                                                                                              @proofToken⟩) })).seq
+                                                                              ((FStmt.instr
+                                                                                    (Instr.bin tag
+                                                                                      BinOp.mul
+                                                                                      {
+                                                                                        buf :=
+                                                                                          ⟨8,
+                                                                                            @proofToken⟩,
+                                                                                        idx :=
+                                                                                          IExp.const
+                                                                                            0 }
+                                                                                      {
+                                                                                        buf :=
+                                                                                          ⟨8,
+                                                                                            @proofToken⟩,
+                                                                                        idx :=
+                                                                                          IExp.const
+                                                                                            0 }
+                                                                                      {
+                                                                                        buf :=
+                                                                                          ⟨2,
+                                                                                            @proofToken⟩,
+                                                                                        idx :=
+                                                                                          (IExp.const
+                                                                                                0).add
+                                                                                            (IExp.var
+                                                                                              ⟨3,
+                                                                                                @proofToken⟩) })).seq
+                                                                                ((FStmt.instr
+                                                                                      (Instr.bin tag
+                                                                                        BinOp.add
+                                                                                        {
+                                                                                          buf :=
+                                                                                            ⟨7,
+                                                                                              @proofToken⟩,
+                                                                                          idx :=
+                                                                                            IExp.const
+                                                                                              1 }
+                                                                                        {
+                                                                                          buf :=
+                                                                                            ⟨7,
+                                                                                              @proofToken⟩,
+                                                                                          idx :=
+                                                                                            IExp.const
+                                                                                              1 }
+                                                                                        {
+                                                                                          buf :=
+                                                                                            ⟨8,
+                                                                                              @proofToken⟩,
+                                                                                          idx :=
+                                                                                            IExp.const
+                                                                                              0 })).seq
+                                                                                  FStmt.skip)))).seq
+                                                                        FStmt.skip)))).seq
+                                                              ((FStmt.instr
+                                                                    (Instr.bin tag BinOp.div
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx := IExp.const 4 }
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx := IExp.const 1 }
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx := IExp.const 0 })).seq
+                                                                ((FStmt.loop
+                                                                      (IExp.var ⟨0, @proofToken⟩)
+                                                                      ((FStmt.instr
+                                                                            (Instr.bin tag BinOp.mul
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨7, @proofToken⟩,
+                                                                                idx :=
+                                                                                  IExp.const 2 }
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨7, @proofToken⟩,
+                                                                                idx :=
+                                                                                  IExp.const 4 }
+                                                                              {
+                                                                                buf :=
+                                                                                  ⟨3, @proofToken⟩,
+                                                                                idx :=
+                                                                                  IExp.var
+                                                                                    ⟨3,
+                                                                                      @proofToken⟩ })).seq
+                                                                        ((FStmt.instr
+                                                                              (Instr.bin tag
+                                                                                BinOp.add
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨3,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    IExp.var
+                                                                                      ⟨3,
+                                                                                        @proofToken⟩ }
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨2,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    IExp.var
+                                                                                      ⟨3,
+                                                                                        @proofToken⟩ }
+                                                                                {
+                                                                                  buf :=
+                                                                                    ⟨7,
+                                                                                      @proofToken⟩,
+                                                                                  idx :=
+                                                                                    IExp.const
+                                                                                      2 })).seq
+                                                                          FStmt.skip))).seq
+                                                                  ((FStmt.instr
+                                                                        (Instr.copy tag
+                                                                          { buf := ⟨7, @proofToken⟩,
+                                                                            idx := IExp.const 0 }
+                                                                          { buf := ⟨7, @proofToken⟩,
+                                                                            idx :=
+                                                                              IExp.const 1 })).seq
+                                                                    ((FStmt.ite tag CmpOp.eq
+                                                                          { buf := ⟨7, @proofToken⟩,
+                                                                            idx := IExp.const 0 }
+                                                                          { buf := ⟨7, @proofToken⟩,
+                                                                            idx := IExp.const 6 }
+                                                                          ((FStmt.instr
+                                                                                (Instr.copy tag
+                                                                                  {
+                                                                                    buf :=
+                                                                                      ⟨4,
+                                                                                        @proofToken⟩,
+                                                                                    idx :=
+                                                                                      IExp.const 0 }
+                                                                                  {
+                                                                                    buf :=
+                                                                                      ⟨7,
+                                                                                        @proofToken⟩,
+                                                                                    idx :=
+                                                                                      IExp.const
+                                                                                        7 })).seq
+                                                                            FStmt.skip)
+                                                                          FStmt.skip).seq
+                                                                      FStmt.skip)))))))))
+                                                    ((FStmt.instr
+                                                          (Instr.copy tag
+                                                            { buf := ⟨4, @proofToken⟩,
+                                                              idx := IExp.const 0 }
+                                                            { buf := ⟨7, @proofToken⟩,
+                                                              idx := IExp.const 8 })).seq
+                                                      FStmt.skip)).seq
+                                                FStmt.skip)))
+                                          FStmt.skip).seq
+                                      FStmt.skip)).seq
+                                FStmt.skip))))))))))))).seq
+    FStmt.skip'''
+
+[[tree]]
+name = "NLAlib.lanczosOracleProg.compiled"
+hash = "2b6b56f93c18d6cc636a47222b05afd29b688eb3d82b1185414aa72b0e047d5e"
+normal_form = '''
+NLAlib.lanczosOracleProg.compiled :
+  {P ι : Type} → P → ι → Prog P ι 1 6 :=
+fun {P ι} tag o =>
+  (FStmt.alloc tag (IExp.const 0)
+        (FStmt.alloc tag (IExp.var ⟨0, @proofToken⟩)
+          (FStmt.alloc tag (IExp.const 2)
+            ((FStmt.instr
+                  (Instr.lit tag { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                    { num := Int.ofNat 0, den_nz := @proofToken, reduced := @proofToken })).seq
+              ((FStmt.instr
+                    (Instr.lit tag { buf := ⟨3, @proofToken⟩, idx := IExp.const 0 }
+                      { num := Int.ofNat 0, den_nz := @proofToken, reduced := @proofToken })).seq
+                ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                      ((FStmt.instr
+                            (Instr.lit tag
+                              { buf := ⟨5, @proofToken⟩, idx := IExp.var ⟨2, @proofToken⟩ }
+                              { num := Int.ofNat 0, den_nz := @proofToken,
+                                reduced := @proofToken })).seq
+                        FStmt.skip)).seq
+                  ((FStmt.named "nrm2"
+                        [Arg.cell { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 },
+                          Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                          Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                        ((FStmt.named "dot"
+                              [Arg.cell { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 },
+                                Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                                Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                                Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                              ((FStmt.instr
+                                    (Instr.lit tag { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                      { num := Int.ofNat 0, den_nz := @proofToken,
+                                        reduced := @proofToken })).seq
+                                (FStmt.alloc tag (IExp.const 1)
+                                  ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                        ((FStmt.instr
+                                              (Instr.un tag UnOp.conj
+                                                { buf := ⟨9, @proofToken⟩, idx := IExp.const 0 }
+                                                { buf := ⟨0, @proofToken⟩,
+                                                  idx :=
+                                                    (IExp.const 0).add
+                                                      (IExp.var ⟨2, @proofToken⟩) })).seq
+                                          ((FStmt.instr
+                                                (Instr.bin tag BinOp.mul
+                                                  { buf := ⟨9, @proofToken⟩, idx := IExp.const 0 }
+                                                  { buf := ⟨9, @proofToken⟩, idx := IExp.const 0 }
+                                                  { buf := ⟨0, @proofToken⟩,
+                                                    idx :=
+                                                      (IExp.const 0).add
+                                                        (IExp.var ⟨2, @proofToken⟩) })).seq
+                                            ((FStmt.instr
+                                                  (Instr.bin tag BinOp.add
+                                                    { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                                    { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                                    { buf := ⟨9, @proofToken⟩,
+                                                      idx := IExp.const 0 })).seq
+                                              FStmt.skip)))).seq
+                                    FStmt.skip)))).seq
+                          ((FStmt.instr
+                                (Instr.un tag UnOp.sqrt
+                                  { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                                  { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 })).seq
+                            FStmt.skip))).seq
+                    ((FStmt.ite tag CmpOp.eq { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 }
+                          { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                          ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                ((FStmt.instr
+                                      (Instr.lit tag
+                                        { buf := ⟨1, @proofToken⟩,
+                                          idx := IExp.var ⟨2, @proofToken⟩ }
+                                        { num := Int.ofNat 0, den_nz := @proofToken,
+                                          reduced := @proofToken })).seq
+                                  FStmt.skip)).seq
+                            FStmt.skip)
+                          ((FStmt.named "copy"
+                                [Arg.buf ⟨0, @proofToken⟩, Arg.idx (IExp.const 0),
+                                  Arg.buf ⟨1, @proofToken⟩, Arg.idx (IExp.const 0),
+                                  Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                      ((FStmt.instr
+                                            (Instr.copy tag
+                                              { buf := ⟨1, @proofToken⟩,
+                                                idx :=
+                                                  (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) }
+                                              { buf := ⟨0, @proofToken⟩,
+                                                idx :=
+                                                  (IExp.const 0).add
+                                                    (IExp.var ⟨2, @proofToken⟩) })).seq
+                                        FStmt.skip)).seq
+                                  FStmt.skip)).seq
+                            ((FStmt.named "rscl"
+                                  [Arg.cell { buf := ⟨4, @proofToken⟩, idx := IExp.const 0 },
+                                    Arg.buf ⟨1, @proofToken⟩, Arg.idx (IExp.const 0),
+                                    Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                  ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                        ((FStmt.instr
+                                              (Instr.bin tag BinOp.div
+                                                { buf := ⟨1, @proofToken⟩,
+                                                  idx :=
+                                                    (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) }
+                                                { buf := ⟨1, @proofToken⟩,
+                                                  idx :=
+                                                    (IExp.const 0).add (IExp.var ⟨2, @proofToken⟩) }
+                                                { buf := ⟨4, @proofToken⟩,
+                                                  idx := IExp.const 0 })).seq
+                                          FStmt.skip)).seq
+                                    FStmt.skip)).seq
+                              FStmt.skip))).seq
+                      ((FStmt.loop (IExp.var ⟨1, @proofToken⟩)
+                            ((FStmt.apply o tag ⟨7, @proofToken⟩ (IExp.const 0) ⟨1, @proofToken⟩
+                                  ((IExp.var ⟨0, @proofToken⟩).mul (IExp.var ⟨2, @proofToken⟩))
+                                  (IExp.const 1)).seq
+                              ((FStmt.instr
+                                    (Instr.un tag UnOp.neg
+                                      { buf := ⟨8, @proofToken⟩, idx := IExp.const 1 }
+                                      { buf := ⟨3, @proofToken⟩,
+                                        idx := IExp.var ⟨2, @proofToken⟩ })).seq
+                                ((FStmt.named "axpy"
+                                      [Arg.cell { buf := ⟨8, @proofToken⟩, idx := IExp.const 1 },
+                                        Arg.buf ⟨5, @proofToken⟩, Arg.idx (IExp.const 0),
+                                        Arg.buf ⟨7, @proofToken⟩, Arg.idx (IExp.const 0),
+                                        Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                      (FStmt.alloc tag (IExp.const 1)
+                                        ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                              ((FStmt.instr
+                                                    (Instr.bin tag BinOp.mul
+                                                      { buf := ⟨9, @proofToken⟩,
+                                                        idx := IExp.const 0 }
+                                                      { buf := ⟨8, @proofToken⟩,
+                                                        idx := IExp.const 1 }
+                                                      { buf := ⟨5, @proofToken⟩,
+                                                        idx :=
+                                                          (IExp.const 0).add
+                                                            (IExp.var ⟨3, @proofToken⟩) })).seq
+                                                ((FStmt.instr
+                                                      (Instr.bin tag BinOp.add
+                                                        { buf := ⟨7, @proofToken⟩,
+                                                          idx :=
+                                                            (IExp.const 0).add
+                                                              (IExp.var ⟨3, @proofToken⟩) }
+                                                        { buf := ⟨7, @proofToken⟩,
+                                                          idx :=
+                                                            (IExp.const 0).add
+                                                              (IExp.var ⟨3, @proofToken⟩) }
+                                                        { buf := ⟨9, @proofToken⟩,
+                                                          idx := IExp.const 0 })).seq
+                                                  FStmt.skip))).seq
+                                          FStmt.skip))).seq
+                                  ((FStmt.named "dot"
+                                        [Arg.cell
+                                            { buf := ⟨2, @proofToken⟩,
+                                              idx := IExp.var ⟨2, @proofToken⟩ },
+                                          Arg.buf ⟨1, @proofToken⟩,
+                                          Arg.idx
+                                            ((IExp.var ⟨0, @proofToken⟩).mul
+                                              (IExp.var ⟨2, @proofToken⟩)),
+                                          Arg.buf ⟨7, @proofToken⟩, Arg.idx (IExp.const 0),
+                                          Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                        ((FStmt.instr
+                                              (Instr.lit tag
+                                                { buf := ⟨2, @proofToken⟩,
+                                                  idx := IExp.var ⟨2, @proofToken⟩ }
+                                                { num := Int.ofNat 0, den_nz := @proofToken,
+                                                  reduced := @proofToken })).seq
+                                          (FStmt.alloc tag (IExp.const 1)
+                                            ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                  ((FStmt.instr
+                                                        (Instr.un tag UnOp.conj
+                                                          { buf := ⟨9, @proofToken⟩,
+                                                            idx := IExp.const 0 }
+                                                          { buf := ⟨1, @proofToken⟩,
+                                                            idx :=
+                                                              ((IExp.var ⟨0, @proofToken⟩).mul
+                                                                    (IExp.var ⟨2, @proofToken⟩)).add
+                                                                (IExp.var ⟨3, @proofToken⟩) })).seq
+                                                    ((FStmt.instr
+                                                          (Instr.bin tag BinOp.mul
+                                                            { buf := ⟨9, @proofToken⟩,
+                                                              idx := IExp.const 0 }
+                                                            { buf := ⟨9, @proofToken⟩,
+                                                              idx := IExp.const 0 }
+                                                            { buf := ⟨7, @proofToken⟩,
+                                                              idx :=
+                                                                (IExp.const 0).add
+                                                                  (IExp.var
+                                                                    ⟨3, @proofToken⟩) })).seq
+                                                      ((FStmt.instr
+                                                            (Instr.bin tag BinOp.add
+                                                              { buf := ⟨2, @proofToken⟩,
+                                                                idx := IExp.var ⟨2, @proofToken⟩ }
+                                                              { buf := ⟨2, @proofToken⟩,
+                                                                idx := IExp.var ⟨2, @proofToken⟩ }
+                                                              { buf := ⟨9, @proofToken⟩,
+                                                                idx := IExp.const 0 })).seq
+                                                        FStmt.skip)))).seq
+                                              FStmt.skip)))).seq
+                                    ((FStmt.instr
+                                          (Instr.un tag UnOp.neg
+                                            { buf := ⟨8, @proofToken⟩, idx := IExp.const 1 }
+                                            { buf := ⟨2, @proofToken⟩,
+                                              idx := IExp.var ⟨2, @proofToken⟩ })).seq
+                                      ((FStmt.named "axpy"
+                                            [Arg.cell
+                                                { buf := ⟨8, @proofToken⟩, idx := IExp.const 1 },
+                                              Arg.buf ⟨1, @proofToken⟩,
+                                              Arg.idx
+                                                ((IExp.var ⟨0, @proofToken⟩).mul
+                                                  (IExp.var ⟨2, @proofToken⟩)),
+                                              Arg.buf ⟨7, @proofToken⟩, Arg.idx (IExp.const 0),
+                                              Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                            (FStmt.alloc tag (IExp.const 1)
+                                              ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                    ((FStmt.instr
+                                                          (Instr.bin tag BinOp.mul
+                                                            { buf := ⟨9, @proofToken⟩,
+                                                              idx := IExp.const 0 }
+                                                            { buf := ⟨8, @proofToken⟩,
+                                                              idx := IExp.const 1 }
+                                                            { buf := ⟨1, @proofToken⟩,
+                                                              idx :=
+                                                                ((IExp.var ⟨0, @proofToken⟩).mul
+                                                                      (IExp.var
+                                                                        ⟨2, @proofToken⟩)).add
+                                                                  (IExp.var
+                                                                    ⟨3, @proofToken⟩) })).seq
+                                                      ((FStmt.instr
+                                                            (Instr.bin tag BinOp.add
+                                                              { buf := ⟨7, @proofToken⟩,
+                                                                idx :=
+                                                                  (IExp.const 0).add
+                                                                    (IExp.var ⟨3, @proofToken⟩) }
+                                                              { buf := ⟨7, @proofToken⟩,
+                                                                idx :=
+                                                                  (IExp.const 0).add
+                                                                    (IExp.var ⟨3, @proofToken⟩) }
+                                                              { buf := ⟨9, @proofToken⟩,
+                                                                idx := IExp.const 0 })).seq
+                                                        FStmt.skip))).seq
+                                                FStmt.skip))).seq
+                                        ((FStmt.named "nrm2"
+                                              [Arg.cell
+                                                  { buf := ⟨3, @proofToken⟩,
+                                                    idx :=
+                                                      (IExp.var ⟨2, @proofToken⟩).add
+                                                        (IExp.const 1) },
+                                                Arg.buf ⟨7, @proofToken⟩, Arg.idx (IExp.const 0),
+                                                Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                              ((FStmt.named "dot"
+                                                    [Arg.cell
+                                                        { buf := ⟨3, @proofToken⟩,
+                                                          idx :=
+                                                            (IExp.var ⟨2, @proofToken⟩).add
+                                                              (IExp.const 1) },
+                                                      Arg.buf ⟨7, @proofToken⟩,
+                                                      Arg.idx (IExp.const 0),
+                                                      Arg.buf ⟨7, @proofToken⟩,
+                                                      Arg.idx (IExp.const 0),
+                                                      Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                    ((FStmt.instr
+                                                          (Instr.lit tag
+                                                            { buf := ⟨3, @proofToken⟩,
+                                                              idx :=
+                                                                (IExp.var ⟨2, @proofToken⟩).add
+                                                                  (IExp.const 1) }
+                                                            { num := Int.ofNat 0,
+                                                              den_nz := @proofToken,
+                                                              reduced := @proofToken })).seq
+                                                      (FStmt.alloc tag (IExp.const 1)
+                                                        ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                              ((FStmt.instr
+                                                                    (Instr.un tag UnOp.conj
+                                                                      { buf := ⟨9, @proofToken⟩,
+                                                                        idx := IExp.const 0 }
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx :=
+                                                                          (IExp.const 0).add
+                                                                            (IExp.var
+                                                                              ⟨3,
+                                                                                @proofToken⟩) })).seq
+                                                                ((FStmt.instr
+                                                                      (Instr.bin tag BinOp.mul
+                                                                        { buf := ⟨9, @proofToken⟩,
+                                                                          idx := IExp.const 0 }
+                                                                        { buf := ⟨9, @proofToken⟩,
+                                                                          idx := IExp.const 0 }
+                                                                        { buf := ⟨7, @proofToken⟩,
+                                                                          idx :=
+                                                                            (IExp.const 0).add
+                                                                              (IExp.var
+                                                                                ⟨3,
+                                                                                  @proofToken⟩) })).seq
+                                                                  ((FStmt.instr
+                                                                        (Instr.bin tag BinOp.add
+                                                                          { buf := ⟨3, @proofToken⟩,
+                                                                            idx :=
+                                                                              (IExp.var
+                                                                                    ⟨2,
+                                                                                      @proofToken⟩).add
+                                                                                (IExp.const 1) }
+                                                                          { buf := ⟨3, @proofToken⟩,
+                                                                            idx :=
+                                                                              (IExp.var
+                                                                                    ⟨2,
+                                                                                      @proofToken⟩).add
+                                                                                (IExp.const 1) }
+                                                                          { buf := ⟨9, @proofToken⟩,
+                                                                            idx :=
+                                                                              IExp.const 0 })).seq
+                                                                    FStmt.skip)))).seq
+                                                          FStmt.skip)))).seq
+                                                ((FStmt.instr
+                                                      (Instr.un tag UnOp.sqrt
+                                                        { buf := ⟨3, @proofToken⟩,
+                                                          idx :=
+                                                            (IExp.var ⟨2, @proofToken⟩).add
+                                                              (IExp.const 1) }
+                                                        { buf := ⟨3, @proofToken⟩,
+                                                          idx :=
+                                                            (IExp.var ⟨2, @proofToken⟩).add
+                                                              (IExp.const 1) })).seq
+                                                  FStmt.skip))).seq
+                                          ((FStmt.named "copy"
+                                                [Arg.buf ⟨1, @proofToken⟩,
+                                                  Arg.idx
+                                                    ((IExp.var ⟨0, @proofToken⟩).mul
+                                                      (IExp.var ⟨2, @proofToken⟩)),
+                                                  Arg.buf ⟨5, @proofToken⟩, Arg.idx (IExp.const 0),
+                                                  Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                      ((FStmt.instr
+                                                            (Instr.copy tag
+                                                              { buf := ⟨5, @proofToken⟩,
+                                                                idx :=
+                                                                  (IExp.const 0).add
+                                                                    (IExp.var ⟨3, @proofToken⟩) }
+                                                              { buf := ⟨1, @proofToken⟩,
+                                                                idx :=
+                                                                  ((IExp.var ⟨0, @proofToken⟩).mul
+                                                                        (IExp.var
+                                                                          ⟨2, @proofToken⟩)).add
+                                                                    (IExp.var
+                                                                      ⟨3, @proofToken⟩) })).seq
+                                                        FStmt.skip)).seq
+                                                  FStmt.skip)).seq
+                                            ((FStmt.ite tag CmpOp.eq
+                                                  { buf := ⟨3, @proofToken⟩,
+                                                    idx :=
+                                                      (IExp.var ⟨2, @proofToken⟩).add
+                                                        (IExp.const 1) }
+                                                  { buf := ⟨8, @proofToken⟩, idx := IExp.const 0 }
+                                                  ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                        ((FStmt.instr
+                                                              (Instr.lit tag
+                                                                { buf := ⟨1, @proofToken⟩,
+                                                                  idx :=
+                                                                    ((IExp.var ⟨0, @proofToken⟩).mul
+                                                                          ((IExp.var
+                                                                                ⟨2,
+                                                                                  @proofToken⟩).add
+                                                                            (IExp.const 1))).add
+                                                                      (IExp.var ⟨3, @proofToken⟩) }
+                                                                { num := Int.ofNat 0,
+                                                                  den_nz := @proofToken,
+                                                                  reduced := @proofToken })).seq
+                                                          FStmt.skip)).seq
+                                                    FStmt.skip)
+                                                  ((FStmt.named "copy"
+                                                        [Arg.buf ⟨7, @proofToken⟩,
+                                                          Arg.idx (IExp.const 0),
+                                                          Arg.buf ⟨1, @proofToken⟩,
+                                                          Arg.idx
+                                                            ((IExp.var ⟨0, @proofToken⟩).mul
+                                                              ((IExp.var ⟨2, @proofToken⟩).add
+                                                                (IExp.const 1))),
+                                                          Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                        ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                              ((FStmt.instr
+                                                                    (Instr.copy tag
+                                                                      { buf := ⟨1, @proofToken⟩,
+                                                                        idx :=
+                                                                          ((IExp.var
+                                                                                    ⟨0,
+                                                                                      @proofToken⟩).mul
+                                                                                ((IExp.var
+                                                                                      ⟨2,
+                                                                                        @proofToken⟩).add
+                                                                                  (IExp.const
+                                                                                    1))).add
+                                                                            (IExp.var
+                                                                              ⟨3, @proofToken⟩) }
+                                                                      { buf := ⟨7, @proofToken⟩,
+                                                                        idx :=
+                                                                          (IExp.const 0).add
+                                                                            (IExp.var
+                                                                              ⟨3,
+                                                                                @proofToken⟩) })).seq
+                                                                FStmt.skip)).seq
+                                                          FStmt.skip)).seq
+                                                    ((FStmt.named "rscl"
+                                                          [Arg.cell
+                                                              { buf := ⟨3, @proofToken⟩,
+                                                                idx :=
+                                                                  (IExp.var ⟨2, @proofToken⟩).add
+                                                                    (IExp.const 1) },
+                                                            Arg.buf ⟨1, @proofToken⟩,
+                                                            Arg.idx
+                                                              ((IExp.var ⟨0, @proofToken⟩).mul
+                                                                ((IExp.var ⟨2, @proofToken⟩).add
+                                                                  (IExp.const 1))),
+                                                            Arg.idx (IExp.var ⟨0, @proofToken⟩)]
+                                                          ((FStmt.loop (IExp.var ⟨0, @proofToken⟩)
+                                                                ((FStmt.instr
+                                                                      (Instr.bin tag BinOp.div
+                                                                        { buf := ⟨1, @proofToken⟩,
+                                                                          idx :=
+                                                                            ((IExp.var
+                                                                                      ⟨0,
+                                                                                        @proofToken⟩).mul
+                                                                                  ((IExp.var
+                                                                                        ⟨2,
+                                                                                          @proofToken⟩).add
+                                                                                    (IExp.const
+                                                                                      1))).add
+                                                                              (IExp.var
+                                                                                ⟨3, @proofToken⟩) }
+                                                                        { buf := ⟨1, @proofToken⟩,
+                                                                          idx :=
+                                                                            ((IExp.var
+                                                                                      ⟨0,
+                                                                                        @proofToken⟩).mul
+                                                                                  ((IExp.var
+                                                                                        ⟨2,
+                                                                                          @proofToken⟩).add
+                                                                                    (IExp.const
+                                                                                      1))).add
+                                                                              (IExp.var
+                                                                                ⟨3, @proofToken⟩) }
+                                                                        { buf := ⟨3, @proofToken⟩,
+                                                                          idx :=
+                                                                            (IExp.var
+                                                                                  ⟨2,
+                                                                                    @proofToken⟩).add
+                                                                              (IExp.const 1) })).seq
+                                                                  FStmt.skip)).seq
+                                                            FStmt.skip)).seq
+                                                      FStmt.skip))).seq
+                                              FStmt.skip)))))))))).seq
+                        FStmt.skip))))))))).seq
+    FStmt.skip'''
+
+[[target]]
+name = "NLAlib.MatrixFreeConjugateGradient"
+file = "NLAlib/Krylov/LinearSystems/CGOracleTargets.lean"
+trees = ["NLAlib.cgOracleProg.compiled"]
+precomputed = []
+reviewed = "2026-11-04"
+hash = "e026690e00398eac483f765596163c484b140c65db4f8037c3aaac02502aaff9"
+statement = '''
+∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
+  NLAlib.Computation.MatrixFree tag (NLAlib.cgOracleProg.compiled tag o) (fun x x_1 => True)
+    (fun N x => Fin N → ℝ)
+    (fun N x b =>
+      ![Array.map some (Array.ofFn b), Array.replicate N none, Array.replicate N none,
+        Array.replicate N none, Array.replicate 1 none])
+    (fun N q => NLAlib.cgOracleCount tag o N (q 0)) (fun N x p => if p = tag then 5 * N + 11 else 0)
+    fun x q b A x_1 st =>
+    ∃ status,
+      st.store.read tag 4 0 = some status ∧
+        (status = 0 ∨ status = 1 ∨ status = -1) ∧
+          (NLAlib.Computation.Holds st.store tag 0 0 fun i x => b i) ∧
+            (A.PosDef →
+              (NLAlib.Computation.Holds st.store tag 1 0 fun i x_2 =>
+                  (NLAlib.cgState A b 0 (q 0)).x i) ∧
+                (NLAlib.Computation.Holds st.store tag 2 0 fun i x_2 =>
+                    (NLAlib.cgState A b 0 (q 0)).r i) ∧
+                  (NLAlib.Computation.Holds st.store tag 3 0 fun i x_2 =>
+                      (NLAlib.cgState A b 0 (q 0)).p i) ∧
+                    (status = 1 ↔ (NLAlib.cgState A b 0 (q 0)).r = 0) ∧ status ≠ -1)'''
+
+[[target]]
+name = "NLAlib.MatrixFreeLanczos"
+file = "NLAlib/Krylov/Processes/LanczosOracleTargets.lean"
+trees = ["NLAlib.lanczosOracleProg.compiled"]
+precomputed = []
+reviewed = "2026-11-04"
+hash = "359a6e147dcf49efa4317581eda5bfdafdbf8d52e7c1f66dfc04274ff5f1e82a"
+statement = '''
+∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
+  NLAlib.Computation.MatrixFree tag (NLAlib.lanczosOracleProg.compiled tag o) (fun x x_1 => True)
+    (fun N x => Fin N → ℝ)
+    (fun N q b =>
+      ![Array.map some (Array.ofFn b), Array.replicate (N * (q 0 + 1)) none,
+        Array.replicate (q 0) none, Array.replicate (q 0 + 1) none, Array.replicate 1 none,
+        Array.replicate N none])
+    (fun N q => NLAlib.lanczosOracleCount tag o N (q 0))
+    (fun N q p => if p = tag then N * (q 0 + 4) + 2 * q 0 + 5 else 0) fun x q b A x_1 st =>
+    (NLAlib.Computation.Holds st.store tag 0 0 fun i x => b i) ∧
+      NLAlib.Computation.Holds st.store tag 1 0 (NLAlib.lanczosMatrix A b (q 0 + 1)) ∧
+        (NLAlib.Computation.Holds st.store tag 2 0 fun j x_2 =>
+            NLAlib.lanczosAlpha A (NLAlib.lanczosState A b ↑j)) ∧
+          (NLAlib.Computation.Holds st.store tag 3 0 fun j x_2 =>
+              (NLAlib.lanczosState A b ↑j).beta) ∧
+            st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+              NLAlib.Computation.Holds st.store tag 5 0 fun i x_2 =>
+                (NLAlib.lanczosState A b (q 0)).prev i'''

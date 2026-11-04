@@ -7,33 +7,37 @@ subsequent maintainer approval and complete implementation proofs.
 
 ## Current implementation coverage, 2026-11-04
 
-Both approved concrete implementations now have complete exact execution proofs:
+The stored and oracle variants now have complete exact execution proofs:
 
 | Program | Registered target and proof | Output scope |
 |---|---|---|
 | `cgProg.compiled` | `StoredEntriesConjugateGradient`, proved by `storedEntriesConjugateGradient` in [CGProgram.lean](../../NLAlib/Krylov/LinearSystems/CGProgram.lean) | Successful guarded execution for every real matrix and RHS, input preservation and legal status; for SPD matrices, all three vectors equal `cgState A b 0 q`, including zero termination |
 | `lanczosProg.compiled` | `StoredEntriesLanczos`, proved by `storedEntriesLanczos` in [LanczosProgram.lean](../../NLAlib/Krylov/Processes/LanczosProgram.lean) | Basis, diagonal and subdiagonal coefficients, input norm, previous vector and preserved input agree with the total recurrence for every real matrix and RHS |
+| `cgOracleProg.compiled` | `MatrixFreeConjugateGradient`, `matrixFreeConjugateGradient` in [CGOracleProgram.lean](../../NLAlib/Krylov/LinearSystems/CGOracleProgram.lean) | The same guarded CG outputs with oracle matrix-vector access |
+| `lanczosOracleProg.compiled` | `MatrixFreeLanczos`, `matrixFreeLanczos` in [LanczosOracleProgram.lean](../../NLAlib/Krylov/Processes/LanczosOracleProgram.lean) | The same Lanczos outputs with oracle access and no matrix ROM |
 
-Both proofs cover actual ROM loads, scalar operations, guards, allocations, complete loops,
-cleanup, componentwise operation budgets and peak numeric-cell memory including ROM.
-The registry now contains **seven targets and five concrete trees**, covering four complete
-exact algorithm families: Gram–Schmidt, Hutch++, CG and Lanczos. The sparse Hutch++ pattern
-family remains additional to the five concrete trees. There are 29 Algorithm-tagged
-declarations grouped under the same seven ids.
+The stored proofs cover actual ROM loads; the oracle variants execute actual oracle calls.
+All four cover scalar operations, guards, allocations, complete loops, cleanup and approved
+operation/memory bounds. There are **nine targets and seven concrete trees**, covering the
+same four exact families: Gram–Schmidt, Hutch++, CG and Lanczos. Oracle internal costs remain
+outside the matrix-free model; the sparse Hutch++ pattern family is additional to these trees.
 
-Whole rounded execution-to-`CGRun` and `LanczosRun` constructors remain open. Proved rounded
-kernel bounds, local CG phase extraction and input/output transfer bounds are useful pieces;
-they do not yet connect a complete rounded solver execution to every existing convergence
-theorem. No finite-word IEEE endpoint is certified. See the
-[integration record](Krylov-Implementation-Integration.md) for source placement and validation.
-The tables and review history below describe the explicitly identified baseline, with dated
-amendments recording progress; they are not the current coverage totals.
+Stored CG now has a complete primitive-execution-to-`CGRun` theorem in
+[CGProgramRounded.lean](../../NLAlib/Krylov/LinearSystems/CGProgramRounded.lean) and a direct
+actual-output backward/physical-energy corollary in
+[CGProgramRoundedBackward.lean](../../NLAlib/Krylov/LinearSystems/CGProgramRoundedBackward.lean).
+Its input-only precision and spectral conditions are explicit, including zero cases and
+actual stopping. No desired local-error run or initialized numerical header is assumed.
 
-The integrated full stage check exits 0: 555 proved modules, zero Lean build warnings,
-16,701 declarations audited and 17,005 constants kernel-replayed without violations.
-Source checks have zero new errors; the six existing private duplicate classes are unchanged.
-Fourteen actual compiled-tree Float smoke cases pass. These checks establish the stated exact
-implementation coverage and supporting proofs, with the rounded obligations above retained.
+Whole rounded Lanczos construction remains open. Its normalization-aware implementation
+budget and actual norm/copy/divide helper are checked; matrix-function postprocessing,
+preconditioning, external rounded oracles and IEEE endpoints remain separate obligations.
+The [integration record](Krylov-Implementation-Integration.md) gives the current source map.
+Twenty-eight Float cases execute the actual stored/oracle trees and check outputs and
+resources. They do not certify the Float arithmetic contract.
+
+The tables and review history below describe the explicitly identified audit baseline;
+they are historical evidence, not current coverage totals.
 
 ## Finding and scope
 

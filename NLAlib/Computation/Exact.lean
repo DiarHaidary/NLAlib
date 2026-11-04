@@ -169,6 +169,39 @@ theorem Holds.write {N k : ℕ} {s s' : Store P 𝕜} {p p' : P} {b off b' i' : 
     rcases hout rfl with h1 | h1 <;> omega
   · exact Or.inl hb
 
+/-- An exact oracle application from an arbitrary source block offset to an arbitrary
+writable destination offset. One load and one matvec per column are charged; distinct source
+and destination buffers guarantee disjointness. Zero rows and zero columns are permitted. -/
+theorem exec_apply_exactInterp_offset {N m : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜)
+    (ξ : Dist → ℕ → ℝ) (o : ι) (p : P) (dst src : ℕ) (dOff sOff cols : IExp ℕ) (hm : cols.eval = m)
+    (st : St P 𝕜 (OpCount P ι)) (W : Matrix (Fin N) (Fin m) 𝕜) (hne : dst ≠ src)
+    (hsrc : ∀ (a : Fin N) (c : Fin m), st.store.read p src (sOff.eval + (N * c + a)) = some (W a c))
+    {s' : Store P 𝕜} (hw : st.store.writeBlock p dst dOff.eval (flatten (A * W)) = some s') :
+    exec (exactInterp (fun _ => A) ξ) (.apply o p dst dOff src sOff cols) st =
+      some { st with
+        store := s'
+        cnt := st.cnt + (Finsupp.single (OpKind.load p o) 1 +
+          m • Finsupp.single (OpKind.matvec p o) 1) } := by
+  subst hm
+  rw [exec, if_pos (Or.inl hne)]
+  have hrb : st.store.readBlock p src sOff.eval
+      ((exactInterp (P := P) (fun _ => A) ξ).height o * cols.eval) = some (flatten W) :=
+    Store.readBlock_eq_some_map_range _ fun i hi => by
+      change i < N * cols.eval at hi
+      have hN : 0 < N := Nat.pos_of_ne_zero (by rintro rfl; simp at hi)
+      have hc : i / N < cols.eval := Nat.div_lt_of_lt_mul hi
+      rw [← Nat.div_add_mod i N,
+        hsrc ⟨i % N, Nat.mod_lt _ hN⟩ ⟨i / N, hc⟩, Nat.div_add_mod i N]
+      simp [Nat.mod_lt _ hN, hc]
+  rw [hrb]
+  simp only [Option.bind_some]
+  have hor : (exactInterp (P := P) (fun _ => A) ξ).oracle o cols.eval (flatten W) =
+      some (flatten (A * W)) := by
+    change matOracle A cols.eval (flatten W) = _
+    rw [matOracle, if_pos (size_flatten W), unflatten_flatten]
+  rw [hor, Option.bind_some, hw]
+  rfl
+
 /-- An oracle call under the exact interpretation of $\mathbf{A}$, from offset $0$ of buffer
 `src` into offset $0$ of another buffer `dst`, with $m$ columns: if `src` holds the
 $N \times m$ matrix $\mathbf{W}$ column-major and the block write of $\mathbf{A}\mathbf{W}$
@@ -184,24 +217,7 @@ theorem exec_apply_exactInterp {N m : ℕ} (A : Matrix (Fin N) (Fin N) 𝕜)
         store := s'
         cnt := st.cnt + (Finsupp.single (OpKind.load p o) 1 +
           m • Finsupp.single (OpKind.matvec p o) 1) } := by
-  subst hm
-  rw [exec, if_pos (Or.inl hne)]
-  have hrb : st.store.readBlock p src (IExp.eval 0)
-      ((exactInterp (P := P) (fun _ => A) ξ).height o * cols.eval) = some (flatten W) :=
-    Store.readBlock_eq_some_map_range _ fun i hi => by
-      change i < N * cols.eval at hi
-      have hN : 0 < N := Nat.pos_of_ne_zero (by rintro rfl; simp at hi)
-      have hc : i / N < cols.eval := Nat.div_lt_of_lt_mul hi
-      rw [IExp.eval_zero, zero_add, ← Nat.div_add_mod i N,
-        hsrc ⟨i % N, Nat.mod_lt _ hN⟩ ⟨i / N, hc⟩, Nat.div_add_mod i N]
-      simp [Nat.mod_lt _ hN, hc]
-  rw [hrb]
-  simp only [Option.bind_some]
-  have hor : (exactInterp (P := P) (fun _ => A) ξ).oracle o cols.eval (flatten W) =
-      some (flatten (A * W)) := by
-    change matOracle A cols.eval (flatten W) = _
-    rw [matOracle, if_pos (size_flatten W), unflatten_flatten]
-  rw [hor, Option.bind_some, IExp.eval_zero, hw]
-  rfl
+  exact exec_apply_exactInterp_offset A ξ o p dst src 0 0 cols hm st W hne
+    (fun a c => by simpa only [IExp.eval_zero, zero_add] using hsrc a c) hw
 
 end NLAlib.Computation

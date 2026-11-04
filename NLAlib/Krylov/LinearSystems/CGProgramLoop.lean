@@ -30,19 +30,20 @@ variable {P ι : Type} [DecidableEq P]
 /-- Actual stored vectors and stop status after a loop prefix. Safety applies to every real
 matrix; correspondence with the mathematical recurrence is conditional on positive definiteness. -/
 def LoopInvariant (tag : P) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
-    (j : ℕ) (store : Store P ℝ) : Prop :=
+    (j : ℕ) (store : Store P ℝ) (storedMatrix : Bool := true) : Prop :=
   ∃ (v : CGState ℝ (Fin N)) (status : ℝ),
-    StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) status 1 store ∧
+    StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) status 1 store storedMatrix ∧
     (status = 0 ∨ status = 1 ∨ status = -1) ∧
     (status = 0 → v.r ≠ 0) ∧
     (A.PosDef → v = cgState A b 0 j ∧ (status = 1 ↔ v.r = 0) ∧ status ≠ -1)
 
 /-- The actual initialized CG buffers satisfy the induction invariant, including the
 zero-right-hand-side status and zero-dimensional case. -/
-theorem loopInvariant_initial (tag : P) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
-    (b : Fin N → ℝ) (store : Store P ℝ)
+theorem loopInvariant_initial_of_storeContext (tag : P) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (b : Fin N → ℝ) (store : Store P ℝ) (storedMatrix : Bool)
     (h : StoreContext tag (fun _ x => x) N A b ⟨0, b, b⟩ (b ⬝ᵥ b)
-      (if b = 0 then 1 else 0) 1 store) : LoopInvariant tag N A b 0 store := by
+      (if b = 0 then 1 else 0) 1 store storedMatrix) :
+    LoopInvariant tag N A b 0 store storedMatrix := by
   classical
   refine ⟨⟨0, b, b⟩, if b = 0 then 1 else 0, h, ?_, ?_, ?_⟩
   · split_ifs <;> norm_num
@@ -56,7 +57,16 @@ theorem loopInvariant_initial (tag : P) (N : ℕ) (A : Matrix (Fin N) (Fin N) �
     · by_cases hb : b = 0 <;> simp [hb]
     · split_ifs <;> norm_num
 
-private theorem guarded_next_invariants {N j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
+/-- The initialized stored-matrix CG buffers satisfy the exact loop invariant. -/
+theorem loopInvariant_initial (tag : P) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (b : Fin N → ℝ) (store : Store P ℝ)
+    (h : StoreContext tag (fun _ x => x) N A b ⟨0, b, b⟩ (b ⬝ᵥ b)
+      (if b = 0 then 1 else 0) 1 store) : LoopInvariant tag N A b 0 store :=
+  loopInvariant_initial_of_storeContext tag N A b store true h
+
+/-- The guarded mathematical step preserves legal statuses and SPD recurrence correspondence,
+including exact zero-residual continuation. It does not refer to a matrix access backend. -/
+theorem guarded_next_invariants {N j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {status : ℝ}
     (hstatus : status = 0 ∨ status = 1 ∨ status = -1)
     (hactive : status = 0 → v.r ≠ 0)
