@@ -284,6 +284,24 @@ theorem residualMinimax_le {s : Set ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree �
     exact Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
   · exact Real.iSup_le (fun x => Real.iSup_le (fun hx => hη x hx) hη₀) hη₀
 
+/-- Enlarging a spectral approximation set cannot decrease its residual minimax value
+when the larger set is compact: for $s\subseteq t$ and compact $t$,
+$\mathsf{residualMinimax}(s,q)\le\mathsf{residualMinimax}(t,q)$.
+Compactness excludes the total supremum's junk value for unbounded polynomial images. -/
+theorem residualMinimax_mono {s t : Set ℝ} (ht : IsCompact t) (hst : s ⊆ t) (q : ℕ) :
+    residualMinimax s q ≤ residualMinimax t q := by
+  have h1 : (1 : ℝ[X]).degree ≤ q :=
+    degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
+  have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} := ⟨⟨1, h1, eval_one⟩⟩
+  refine le_ciInf fun p => residualMinimax_le p.2.1 p.2.2
+    (Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _) fun x hx => ?_
+  obtain ⟨M, hM⟩ := ht.bddAbove_image p.1.continuous.abs.continuousOn
+  refine le_ciSup₂ (f := fun y (_ : y ∈ t) => |p.1.eval y|)
+    ⟨M, fun z hz => ?_⟩ x (hst hx)
+  simp only [Set.mem_iUnion, Set.mem_range] at hz
+  obtain ⟨y, hy, rfl⟩ := hz
+  exact hM ⟨y, hy, rfl⟩
+
 /-- **The minimax value of an interval is the Chebyshev value**: for $0 < a < a'$,
 $\mathsf{residualMinimax}([a, a'], q) = T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$.
 [Saad2003, Theorem 6.25]. -/

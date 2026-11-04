@@ -29,8 +29,8 @@ based on a positive spectral margin of the backward model remain possible.
 `NLAlib.CGRun` (the analysis interface) whenever $k\varepsilon \le 1/100$ and the residuals
 before those steps are nonzero. The constructor uses that horizon to prove successful
 curvatures. The run interface itself assumes only $\varepsilon\le1/100$; this file does not
-construct an interface instance for the later non-convergent regime. A realization of the program
-`NLAlib.cgProg` under a value
+construct an interface instance for the later non-convergent regime. A realization of a concrete
+CG program under a value
 semantics meeting `NLAlib.Computation.IsRelErrSem` is **not** proved here. What it needs: (1) a
 semantics producing the pattern, for which a `NLAlib.Computation.ScalarSem` over $\mathbb{R}$
 does not suffice (it sees only the operand values, not which dot product or division it
@@ -38,9 +38,10 @@ evaluates; perturbing the products with equal operands $x \cdot x$ is admissible
 coincide with other products of the run) while a carrier of words that record their history
 (terms, decoded by evaluation) does: $\mathrm{fl}(x \cdot x) = x^2(1 + \varepsilon)$ for
 syntactically equal operands, exact otherwise, gives $\theta_j = \varepsilon$,
-$\eta^\gamma_j = 0$, i.e. $c = 1 + \varepsilon$; (2) the execution of `NLAlib.cgProg` under that
-semantics for $q$ steps, a re-run of the proof of `NLAlib.exec_cgProg_exactInterp` with the
-perturbed dot product.
+$\eta^\gamma_j = 0$, i.e. $c = 1 + \varepsilon$; (2) an execution theorem for that concrete
+program under the chosen
+semantics for $q$ steps, deriving its computed states with the perturbed dot product. Neither
+a program realization nor such an execution theorem is established by this recurrence example.
 
 
 ## Main definitions

@@ -55,6 +55,13 @@ $\max_i \lvert x_i \rvert \le \|\mathbf{x}\|$. -/
 theorem norm_le_norm_toLp (x : n → 𝕜) : ‖x‖ ≤ ‖WithLp.toLp 2 x‖ :=
   (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr fun i => PiLp.norm_apply_le (WithLp.toLp 2 x) i
 
+/-- Coordinatewise domination of norms implies domination of Euclidean norms. -/
+theorem norm_toLp_le_norm_toLp {x y : n → 𝕜} (h : ∀ i, ‖x i‖ ≤ ‖y i‖) :
+    ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 y‖ := by
+  refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).1 ?_
+  rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq]
+  exact Finset.sum_le_sum fun i _ => pow_le_pow_left₀ (norm_nonneg _) (h i) 2
+
 /-- The inner product of two coordinate vectors in Euclidean space is
 $\langle \mathbf{x}, \mathbf{y} \rangle = \mathbf{x}^{\mathsf{H}}\mathbf{y}$ (`star x ⬝ᵥ y`). -/
 theorem inner_toLp_toLp_eq_star_dotProduct (x y : n → 𝕜) :

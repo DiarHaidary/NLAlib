@@ -93,6 +93,15 @@ theorem roundingFactor_nonneg (hu : 0 ≤ u) (hu1 : u < 1) :
   rw [roundingFactor, sub_nonneg]
   exact (one_le_inv₀ (pow_pos (by linarith) n)).mpr (pow_le_one₀ (by linarith) (by linarith))
 
+/-- The accumulated factor is nonnegative under $nu<1$, including $n=0$ without
+requiring $u<1$. This retains empty-kernel cases in dimension-dependent error bounds. -/
+theorem roundingFactor_nonneg_of_mul_lt_one (hu : 0 ≤ u) (hn : (n : ℝ) * u < 1) :
+    0 ≤ roundingFactor n u := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn0
+  · rw [roundingFactor_zero]
+  · exact roundingFactor_nonneg hu
+      ((le_mul_of_one_le_left hu (by exact_mod_cast hn0)).trans_lt hn)
+
 /-- **$\gamma_1 \ge u$**, so a single rounding error is within $\gamma_1$: for
 $u < 1$, $u \le \gamma_1$. [CarsonMaShao2026, (3)]. -/
 theorem le_roundingFactor_one (hu1 : u < 1) : u ≤ roundingFactor 1 u := by

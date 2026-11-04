@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Norms.Compare
+public import Mathlib.Algebra.Order.Chebyshev
 
 /-!
 # An orthonormal dilation of unit vectors
@@ -46,6 +47,47 @@ open scoped Matrix
 
 variable {n m : ℕ}
 
+/-- The matrix which sums all blocks of a vector indexed by a product. -/
+def blockSumMatrix (ι κ : Type*) [DecidableEq ι] (𝕜 : Type*) [RCLike 𝕜] :
+    Matrix ι (ι × κ) 𝕜 :=
+  Matrix.of fun i p => if i = p.1 then 1 else 0
+
+/-- Multiplication by the block sum matrix sums the blocks. -/
+theorem blockSumMatrix_mulVec {ι κ : Type*} [Fintype ι] [Fintype κ] [DecidableEq ι]
+    {𝕜 : Type*} [RCLike 𝕜] (x : ι × κ → 𝕜) :
+    blockSumMatrix ι κ 𝕜 *ᵥ x = fun i => ∑ r, x (i, r) := by
+  ext i
+  simp only [blockSumMatrix, Matrix.mulVec, dotProduct, Fintype.sum_prod_type,
+    Matrix.of_apply, ite_mul, one_mul, zero_mul]
+  rw [Finset.sum_comm]
+  simp only [Finset.sum_ite_eq, Finset.mem_univ, if_true]
+
+/-- Summing blocks has operator norm at most the square root of their count. -/
+theorem specNorm_blockSumMatrix_le {ι κ : Type*} [Fintype ι] [Fintype κ] [DecidableEq ι]
+    {𝕜 : Type*} [RCLike 𝕜] :
+    specNorm (blockSumMatrix ι κ 𝕜) ≤ Real.sqrt (Fintype.card κ) := by
+  classical
+  refine (specNorm_le_iff (Real.sqrt_nonneg _)).2 fun x => ?_
+  have hsplit : ‖WithLp.toLp 2 x‖ ^ 2 =
+      ∑ r : κ, ‖WithLp.toLp 2 (fun i => x (i, r))‖ ^ 2 := by
+    simp only [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type]
+    exact Finset.sum_comm
+  have hsum : ‖WithLp.toLp 2 (blockSumMatrix ι κ 𝕜 *ᵥ x)‖ ≤
+      ∑ r : κ, ‖WithLp.toLp 2 (fun i => x (i, r))‖ := by
+    rw [blockSumMatrix_mulVec]
+    have he : WithLp.toLp 2 (fun i => ∑ r : κ, x (i, r)) =
+        ∑ r : κ, WithLp.toLp 2 (fun i => x (i, r)) := by ext i; simp
+    rw [he]
+    exact norm_sum_le _ _
+  have hsq := sq_sum_le_card_mul_sum_sq
+    (s := Finset.univ) (f := fun r : κ => ‖WithLp.toLp 2 (fun i => x (i, r))‖)
+  simp only [Finset.card_univ] at hsq
+  apply (sq_le_sq₀ (norm_nonneg _) (mul_nonneg (Real.sqrt_nonneg _) (norm_nonneg _))).mp
+  calc _ ≤ (∑ r : κ, ‖WithLp.toLp 2 (fun i => x (i, r))‖) ^ 2 :=
+      sq_le_sq₀ (norm_nonneg _) (Finset.sum_nonneg fun _ _ => norm_nonneg _) |>.mpr hsum
+    _ ≤ _ := hsq
+    _ = _ := by rw [mul_pow, Real.sq_sqrt (Nat.cast_nonneg _), hsplit]
+
 /-- The **strict upper triangle of the Gram matrix** of the columns of $\mathbf{W}$:
 $\mathbf{R}_{i,j} = \mathbf{w}_i^{\mathsf{T}}\mathbf{w}_j$ for $i < j$, and $0$ otherwise. -/
 def strictUpperGram (W : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin m) (Fin m) ℝ :=
@@ -72,6 +114,25 @@ $\mathbf{W}\mathbf{C}\mathbf{K}^r$, $r < m$; row $(i, r)$ is row $i$ of block $r
 def orthonormalDilation (W : Matrix (Fin n) (Fin m) ℝ) :
     Matrix (Fin n × Fin m) (Fin m) ℝ :=
   Matrix.of fun p j => (W * dilationC W * dilationK W ^ (p.2 : ℕ)) p.1 j
+
+/-- Multiplication by the block sum matrix adds the blocks of a rectangular matrix. -/
+theorem blockSumMatrix_mul {ι κ π : Type*} [Fintype ι] [Fintype κ] [DecidableEq ι]
+    {𝕜 : Type*} [RCLike 𝕜] (Q : Matrix (ι × κ) π 𝕜) :
+    blockSumMatrix ι κ 𝕜 * Q = ∑ r : κ, Q.submatrix (fun i => (i, r)) id := by
+  ext i j
+  have h := congrFun (blockSumMatrix_mulVec (fun p => Q p j)) i
+  simpa only [Matrix.mul_apply, Matrix.mulVec, dotProduct, Matrix.sum_apply,
+    Matrix.submatrix_apply, id] using h
+
+/-- Summing blocks intertwines a repeated block diagonal matrix with its common block. -/
+theorem blockSumMatrix_mul_blockDiagonal {ι κ : Type*} [Fintype ι] [Fintype κ]
+    [DecidableEq ι] [DecidableEq κ] {𝕜 : Type*} [RCLike 𝕜] (A : Matrix ι ι 𝕜) :
+    blockSumMatrix ι κ 𝕜 * Matrix.blockDiagonal (fun _ : κ => A) =
+      A * blockSumMatrix ι κ 𝕜 := by
+  ext i p
+  simp only [Matrix.mul_apply, Fintype.sum_prod_type, blockSumMatrix, Matrix.of_apply,
+    Matrix.blockDiagonal_apply, ite_mul, one_mul, zero_mul, mul_ite, mul_one, mul_zero,
+    Finset.sum_ite_eq, Finset.sum_ite_eq', Finset.mem_univ, if_true]
 
 /-- $\mathbf{R}$ is strictly upper triangular: $\mathbf{R}_{i,j} = 0$ for $j \le i$. -/
 theorem strictUpperGram_apply_of_le (W : Matrix (Fin n) (Fin m) ℝ) {i j : Fin m} (h : j ≤ i) :
@@ -139,6 +200,19 @@ theorem dilationK_pow_eq_zero (W : Matrix (Fin n) (Fin m) ℝ) : dilationK W ^ m
   have hc : Commute (strictUpperGram W) (dilationC W) := by
     rw [Commute, SemiconjBy, ← dilationK_eq_strictUpperGram_mul, ← dilationK_eq_dilationC_mul]
   rw [dilationK_eq_strictUpperGram_mul, hc.mul_pow, strictUpperGram_pow_eq_zero, zero_mul]
+
+/-- Summing every block of the orthonormal dilation recovers the original columns. -/
+theorem blockSumMatrix_mul_orthonormalDilation (W : Matrix (Fin n) (Fin m) ℝ) :
+    blockSumMatrix (Fin n) (Fin m) ℝ * orthonormalDilation W = W := by
+  have hC : dilationC W = 1 - dilationK W := by simp only [dilationK]; abel
+  have hgeom : dilationC W * ∑ r ∈ Finset.range m, dilationK W ^ r = 1 := by
+    rw [hC, mul_neg_geom_sum, dilationK_pow_eq_zero, sub_zero]
+  rw [blockSumMatrix_mul]
+  have hb : ∀ r : Fin m, (orthonormalDilation W).submatrix (fun i => (i, r)) id =
+      W * dilationC W * dilationK W ^ (r : ℕ) := fun _ => rfl
+  simp_rw [hb]
+  rw [Fin.sum_univ_eq_sum_range (fun r => W * dilationC W * dilationK W ^ r),
+    ← Matrix.mul_sum, Matrix.mul_assoc, hgeom, Matrix.mul_one]
 
 /-- $\mathbf{C}$ is upper triangular. -/
 theorem isUpperTriangular_dilationC (W : Matrix (Fin n) (Fin m) ℝ) :

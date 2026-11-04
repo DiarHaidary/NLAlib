@@ -521,6 +521,16 @@ lean_body = 'roundingFactor (n : ℕ) (u : ℝ) : ℝ := ((1 - u) ^ n)⁻¹ - 1'
 body_hash = "7315fa4a8ce0fd30"
 
 [[constant]]
+name = "NLAlib.Computation.normalizationRoundingFactor"
+kind = "factor"
+file = "NLAlib/Computation/BLAS/Normalization.lean"
+args = ["n", "u"]
+latex = '((#2+(1-#2)^{-(#1+1)}-1)/(2-(1-#2)^{-(#1+1)}))(2+(#2+(1-#2)^{-(#1+1)}-1)/(2-(1-#2)^{-(#1+1)}))'
+display = '\frac{#2+(1-#2)^{-(#1+1)}-1}{2-(1-#2)^{-(#1+1)}}\left(2+\frac{#2+(1-#2)^{-(#1+1)}-1}{2-(1-#2)^{-(#1+1)}}\right)'
+lean_body = 'normalizationRoundingFactor (n : ℕ) (u : ℝ) : ℝ := let t := (u + roundingFactor (n + 1) u) / (1 - roundingFactor (n + 1) u) t * (2 + t)'
+body_hash = "050b93c9720b2e9f"
+
+[[constant]]
 name = "NLAlib.lanczosRecurrenceErrorFactor"
 kind = "factor"
 file = "NLAlib/Krylov/FinitePrecision/LocalErrors.lean"
@@ -628,3 +638,30 @@ args = ["j"]
 latex = '135#1^2'
 lean_body = 'cgEnergyFactor (j : ℕ) : ℝ := 135 * (j : ℝ) ^ 2'
 body_hash = "6fe0ddd703fba6c8"
+
+[[constant]]
+name = "NLAlib.cgEnergyEstimatorFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/CGEnergyEstimator.lean"
+args = ["j", "d"]
+latex = '150#2(#1+#2)'
+lean_body = 'cgEnergyEstimatorFactor (j d : ℕ) : ℝ := 150 * (d : ℝ) * (j + d)'
+body_hash = "f43c9f15695d5b5e"
+
+[[constant]]
+name = "NLAlib.polynomialDerivativeFactor"
+kind = "factor"
+file = "NLAlib/Polynomial/Approximation/Markov.lean"
+args = ["n"]
+latex = '4#1^2'
+lean_body = 'polynomialDerivativeFactor (n : ℕ) : ℝ := 4 * (n : ℝ) ^ 2'
+body_hash = "480529fb8ac2a057"
+
+[[constant]]
+name = "NLAlib.lanczosFunctionApproxFactor"
+kind = "factor"
+file = "NLAlib/Krylov/FinitePrecision/LanczosFunctions.lean"
+args = ["k"]
+latex = '4#1'
+lean_body = 'lanczosFunctionApproxFactor (k : ℕ) : ℝ := 4 * (k : ℝ)'
+body_hash = "417fabccafe041b9"

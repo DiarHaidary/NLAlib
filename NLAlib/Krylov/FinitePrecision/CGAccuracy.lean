@@ -187,8 +187,6 @@ namespace CGRun
 
 variable {n k : ℕ} (C : CGRun n k)
 
-/-! ### Helpers -/
-
 private theorem acc_quadForm_eq (v : Fin n → ℝ) : quadForm C.A v = v ⬝ᵥ (C.A *ᵥ v) := by
   rw [quadForm_def, star_trivial]
 
@@ -310,15 +308,13 @@ private theorem acc_norm_mulVec_sq_le {a a' : ℝ} (ha : 0 < a)
     have ha' : 0 ≤ a' := ha.le.trans (C.acc_le hs)
     positivity
 
-/-! ### One step -/
-
-/-- The direction-residual pairing retains its precision dependence: for a successful run
-with spectrum in $[a,a']$, $a>0$ and $k^2\sqrt{k}\varepsilon(a'/a)^2\le10^{-5}$,
-$\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j\ge
-(1-26j\varepsilon a'/a)\|\mathbf{r}_j\|^2$ for $j<k$. -/
-theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+/-- The absolute direction-residual pairing defect retains its precision dependence: for a
+successful run with spectrum in $[a,a']$, $a>0$ and $k^2\sqrt{k}\varepsilon(a'/a)^2\le10^{-5}$,
+$\lvert\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j-\|\mathbf{r}_j\|^2\rvert\le
+26j\varepsilon(a'/a)\|\mathbf{r}_j\|^2$ for $j<k$. -/
+theorem abs_p_dotProduct_r_sub_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
-    (1 - 26 * j * C.ε * (a' / a)) * C.ρ j ^ 2 ≤ C.p j ⬝ᵥ C.r j := by
+    |C.p j ⬝ᵥ C.r j - C.ρ j ^ 2| ≤ 26 * j * C.ε * (a' / a) * C.ρ j ^ 2 := by
   obtain ⟨-, hκ, -, hε5, hkεκ, -, -⟩ := C.acc_small ha hs hsmall
   have hε0 := C.ε_nonneg
   have hwindow : (k : ℝ) * C.ε ≤ 1 / 100 := by
@@ -334,8 +330,7 @@ theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
   have hK := fun i (hi : i < k) => C.specNorm_mul_γ_mul_norm_p_sq_le ha hs hsmall hi
   rcases j with _ | i
   · rw [C.p_zero, ← C.r_zero, ρ, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
-    have : 0 ≤ C.r 0 ⬝ᵥ C.r 0 := Finset.sum_nonneg fun i _ => mul_self_nonneg _
-    linarith
+    simp only [sub_self, abs_zero, Nat.cast_zero, mul_zero, zero_mul, le_refl]
   · have hi : i < k := by omega
     have hτ := C.abs_p_dotProduct_r_succ_le hwindow hP hK hi
     obtain ⟨hδ0, hδ1, -⟩ := C.δ_bounds hi
@@ -349,7 +344,6 @@ theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
     rw [hid]
     set ρ1 := C.ρ (i + 1)
     have hρ1 : 0 ≤ ρ1 := C.ρ_nonneg _
-    -- the line search term
     have hY : 5 * ((i : ℝ) + 1) * C.ε * (1 + 2 * (a' / a) + 21 / 20 * (a' / a)) ≤
         41 / 2 * ((i : ℝ) + 1) * C.ε * (a' / a) := by
       have h1 : 1 + 2 * (a' / a) + 21 / 20 * (a' / a) ≤ 41 / 10 * (a' / a) := by linarith
@@ -372,7 +366,6 @@ theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
         _ ≤ (43 / 2 * ((i : ℝ) + 1) * C.ε * (a' / a)) * ρ1 ^ 2 := by
           have hz : 0 ≤ ((i : ℝ) + 1) * C.ε * (a' / a) * ρ1 ^ 2 := by positivity
           nlinarith [mul_nonneg (show 0 ≤ 1 / 10 ^ 5 - C.ε by linarith) hz]
-    -- the direction update term
     have hepr : |C.ep i ⬝ᵥ C.r (i + 1)| ≤ (17 / 4 * (C.ε * (a' / a))) * ρ1 ^ 2 := by
       refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans ?_
       have h1 : ‖WithLp.toLp 2 (C.ep i)‖ ≤ C.ε * (ρ1 + 21 / 20 * (2 * (a' / a) * ρ1 + ρ1)) := by
@@ -388,12 +381,22 @@ theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A �
       calc ‖WithLp.toLp 2 (C.ep i)‖ * ‖WithLp.toLp 2 (C.r (i + 1))‖ ≤
             (17 / 4 * (C.ε * (a' / a))) * ρ1 * ρ1 := mul_le_mul_of_nonneg_right (h1.trans h2) hρ1
         _ = _ := by ring
-    have := (abs_le.mp hδτ).1
-    have := (abs_le.mp hepr).1
+    have hδτ' := abs_le.mp hδτ
+    have hepr' := abs_le.mp hepr
     have hz : 0 ≤ C.ε * (a' / a) * ρ1 ^ 2 := by positivity
     have hi0 : 0 ≤ (i : ℝ) := by positivity
+    apply abs_le.mpr
     push_cast
-    nlinarith [mul_nonneg hi0 hz]
+    constructor <;> nlinarith [mul_nonneg hi0 hz]
+
+/-- For a successful run with spectrum in $[a,a']$, $a>0$ and
+$k^2\sqrt{k}\varepsilon(a'/a)^2\le10^{-5}$, the pairing is at least
+$(1-26j\varepsilon a'/a)\|\mathbf{r}_j\|^2$ for $j<k$. -/
+theorem p_dotProduct_r_ge_mul {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
+    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) {j : ℕ} (hj : j < k) :
+    (1 - 26 * j * C.ε * (a' / a)) * C.ρ j ^ 2 ≤ C.p j ⬝ᵥ C.r j := by
+  have h := (abs_le.mp (C.abs_p_dotProduct_r_sub_le ha hs hsmall hj)).1
+  nlinarith
 
 /-- **Descent (G1)**: under (H), $\mathbf{p}_j^{\mathsf{T}}\mathbf{r}_j \ge
 0.999\,\|\mathbf{r}_j\|^2$ for $j < k$. Exact CG has equality; here the line search defect
@@ -639,8 +642,6 @@ theorem quadForm_sub_x_succ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A 
   have h3 := mul_le_mul_of_nonneg_left h1 (by positivity : 0 ≤ 2 * C.γ j)
   exact (C.quadForm_sub_x_succ_le_of_descent ha hs hx hj (c := 99 / 100)
     (by nlinarith)).2
-
-/-! ### The joint induction -/
 
 private theorem acc_norm_sol_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     {xs : Fin n → ℝ} (hx : C.A *ᵥ xs = C.b) :

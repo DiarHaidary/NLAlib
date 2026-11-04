@@ -195,7 +195,8 @@ private theorem copyv_run (p : P) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IE
       (.seq (.loop n fun i =>
         .seq (.instr (.copy p ⟨y, yo + .var i⟩ ⟨x, xo + .var i⟩)) .skip) .skip)) .skip := rfl
 
-private theorem nrm2_run (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) :
+/-- The norm kernel executes the ordered dot product, then one square root in the same cell. -/
+theorem run_nrm2 (p : P) (dst : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) :
     (nrm2 (ι := ι) p dst x xo n).run = .seq (.named "nrm2" [.cell dst, .buf x, .idx xo, .idx n]
       (dot p dst x xo x xo n >>= fun _ => ins (.un p .sqrt dst dst)).run) .skip := rfl
 
@@ -629,7 +630,7 @@ theorem exec_nrm2 (dst : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (xs : ℕ →
   have hv : I.sem.un p .sqrt (∑ i ∈ Finset.range n.eval, star (xs i) * xs i) =
       some ((√(RCLike.re (∑ i ∈ Finset.range n.eval, star (xs i) * xs i)) : ℝ) : 𝕜) := by
     rw [hI]; exact if_pos hnn
-  rw [nrm2_run, exec_seq_skip, exec_named, exec_run_bind I (b := dot p dst x xo x xo n)
+  rw [run_nrm2, exec_seq_skip, exec_named, exec_run_bind I (b := dot p dst x xo x xo n)
     (fun _ => rfl), h1, Option.bind_some]
   refine ⟨_, (exec_seq_instr_un I (by rw [hs1]; exact Store.read_of_write_eq_some hs₀) hv
     (by rw [hs1, Store.write_of_write_eq_some hs₀]; exact h₁)).trans (exec_skip I _), rfl, hpos,

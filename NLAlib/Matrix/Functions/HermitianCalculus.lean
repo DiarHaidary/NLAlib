@@ -78,7 +78,7 @@ $a\mathbf{I} \preceq \mathbf{A} \preceq b\mathbf{I}$ for an interval.
 
 @[expose] public section
 
-open scoped Matrix ComplexOrder MatrixOrder
+open scoped Matrix ComplexOrder MatrixOrder NNReal
 
 namespace NLAlib
 
@@ -736,18 +736,16 @@ theorem _root_.Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq {r : Type*} 
 
 /-! ### Lipschitz functions in the Frobenius norm -/
 
-/-- **A $1$-Lipschitz function is $1$-Lipschitz in the Frobenius norm on Hermitian matrices**:
-for Hermitian $\mathbf{A}$, $\mathbf{B}$ over $\Bbbk$ and $f : \mathbb{R} \to \mathbb{R}$ with
-$\lvert f(x) - f(y)\rvert \le
-\lvert x - y\rvert$,
-$\|f(\mathbf{A}) - f(\mathbf{B})\|_{\mathsf{F}} \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
-The finite-dimensional Hermitian specialization of [Kittaneh1985, abstract], with Lipschitz
-constant one. The statement includes both real and complex matrices and empty index types.
-Result: lipschitz-cfc-frobenius -/
-theorem _root_.Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le {ι : Type*} [Fintype ι]
-    [DecidableEq ι] {A B : Matrix ι ι 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian) {f : ℝ → ℝ}
-    (hf : LipschitzWith 1 f) :
-    frobNorm (cfc f A - cfc f B) ≤ frobNorm (A - B) := by
+/-- A function Lipschitz on a set containing both Hermitian spectra is Lipschitz in
+Frobenius norm: $\|f(\mathbf{A})-f(\mathbf{B})\|_{\mathsf{F}}\le
+L\|\mathbf{A}-\mathbf{B}\|_{\mathsf{F}}$ when its Lipschitz constant on that set is $L$.
+The spectral-set form of [Kittaneh1985, abstract], valid over real and complex scalars. -/
+theorem _root_.Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith
+    {ι : Type*} [Fintype ι] [DecidableEq ι] {A B : Matrix ι ι 𝕜}
+    (hA : A.IsHermitian) (hB : B.IsHermitian) {s : Set ℝ} {f : ℝ → ℝ} {ℓ : ℝ≥0}
+    (hAs : spectrum ℝ A ⊆ s) (hBs : spectrum ℝ B ⊆ s)
+    (hf : LipschitzOnWith ℓ f s) :
+    frobNorm (cfc f A - cfc f B) ≤ (ℓ : ℝ) * frobNorm (A - B) := by
   have hdec : ∀ {C : Matrix ι ι 𝕜} (hC : C.IsHermitian) (g : ℝ → ℝ),
       cfc g C = (hC.eigenvectorUnitary : Matrix ι ι 𝕜) *
         Matrix.diagonal (fun i => ((g (hC.eigenvalues i) : ℝ) : 𝕜)) *
@@ -785,21 +783,44 @@ theorem _root_.Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le {ι : Type*} [Fintype 
   rw [hfrob, hfrob (A - B), hdec hA f, hdec hB f, hconj, hAB, hconj]
   have hsq : frobNorm (Matrix.diagonal (fun i => ((f (a i) : ℝ) : 𝕜)) * (Uᴴ * V) -
       Uᴴ * V * Matrix.diagonal (fun i => ((f (b i) : ℝ) : 𝕜))) ^ 2 ≤
-      frobNorm (Matrix.diagonal (fun i => ((a i : ℝ) : 𝕜)) * (Uᴴ * V) -
-        Uᴴ * V * Matrix.diagonal (fun i => ((b i : ℝ) : 𝕜))) ^ 2 := by
-    rw [frobNorm_sq_eq_sum, frobNorm_sq_eq_sum]
-    refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
+      ((ℓ : ℝ) * frobNorm (Matrix.diagonal (fun i => ((a i : ℝ) : 𝕜)) * (Uᴴ * V) -
+        Uᴴ * V * Matrix.diagonal (fun i => ((b i : ℝ) : 𝕜)))) ^ 2 := by
+    rw [frobNorm_sq_eq_sum, mul_pow, frobNorm_sq_eq_sum, Finset.mul_sum]
+    refine Finset.sum_le_sum fun i _ => ?_
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
     simp only [Matrix.sub_apply, Matrix.diagonal_mul, Matrix.mul_diagonal]
-    have hl : |f (a i) - f (b j)| ≤ |a i - b j| := by
-      have := hf.dist_le_mul (a i) (b j)
-      simpa only [Real.dist_eq, NNReal.coe_one, one_mul] using this
+    have hl : |f (a i) - f (b j)| ≤ (ℓ : ℝ) * |a i - b j| := by
+      have := hf.dist_le_mul (a i) (hAs (hA.eigenvalues_mem_spectrum_real i))
+        (b j) (hBs (hB.eigenvalues_mem_spectrum_real j))
+      simpa only [Real.dist_eq] using this
     have he (x y : ℝ) (z : 𝕜) :
         ‖(x : 𝕜) * z - z * (y : 𝕜)‖ = |x - y| * ‖z‖ := by
       rw [show (x : 𝕜) * z - z * (y : 𝕜) = ((x - y : ℝ) : 𝕜) * z by
         push_cast
         ring, norm_mul, RCLike.norm_ofReal]
     rw [he, he]
-    gcongr
-  exact (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 hsq
+    calc (|f (a i) - f (b j)| * ‖(Uᴴ * V) i j‖) ^ 2
+        ≤ ((ℓ : ℝ) * |a i - b j| * ‖(Uᴴ * V) i j‖) ^ 2 := by gcongr
+      _ = (ℓ : ℝ) ^ 2 * (|a i - b j| * ‖(Uᴴ * V) i j‖) ^ 2 := by ring
+  exact (sq_le_sq₀ (frobNorm_nonneg _) (mul_nonneg ℓ.coe_nonneg
+    (frobNorm_nonneg _))).1 hsq
+
+
+/-- **A $1$-Lipschitz function is $1$-Lipschitz in the Frobenius norm on Hermitian matrices**:
+for Hermitian $\mathbf{A}$, $\mathbf{B}$ over $\Bbbk$ and $f : \mathbb{R} \to \mathbb{R}$ with
+$\lvert f(x) - f(y)\rvert \le
+\lvert x - y\rvert$,
+$\|f(\mathbf{A}) - f(\mathbf{B})\|_{\mathsf{F}} \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
+The finite-dimensional Hermitian specialization of [Kittaneh1985, abstract], with Lipschitz
+constant one. The statement includes both real and complex matrices and empty index types.
+Result: lipschitz-cfc-frobenius -/
+theorem _root_.Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le {ι : Type*} [Fintype ι]
+    [DecidableEq ι] {A B : Matrix ι ι 𝕜} (hA : A.IsHermitian) (hB : B.IsHermitian) {f : ℝ → ℝ}
+    (hf : LipschitzWith 1 f) :
+    frobNorm (cfc f A - cfc f B) ≤ frobNorm (A - B) := by
+  simpa only [NNReal.coe_one, one_mul] using
+    hA.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith hB
+      (Set.subset_univ _) (Set.subset_univ _) hf.lipschitzOnWith
 
 end NLAlib

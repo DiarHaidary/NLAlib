@@ -1,5 +1,15 @@
 # Design note: computation, stage 1 (exact arithmetic, counts, memory, oracles, draws)
 
+Current implementation status (2026-11-04): this note includes historical proposals and
+skeletons. Complete registered exact program proofs now cover Gram–Schmidt, Hutch++, CG
+and Lanczos. The current Krylov implementations and their unchanged approved targets are
+in `Krylov/LinearSystems/CGProgram.lean` and `Krylov/Processes/LanczosProgram.lean`.
+The tree emitter exists and remains unverified; the target approval file exists.
+See [Implementation coverage](Implementation-Coverage.md) and
+[the integration record](Krylov-Implementation-Integration.md) for current evidence and
+remaining rounded execution and machine-format obligations.
+
+
 **Approved by the maintainer, 2026-10-23:** D1 option C (deep embedding); all other decisions as recommended; D16 to D19 (added after the first approval) as recommended; the same day, the change of section "Guarantees" (results are instances of access models, the scripts demoted); the same day, the two changes of section "First-order programs and target statements" (targets are library definitions; witnesses are first-order programs), whose design is that section.
 
 **History.** Drafts 1 to 6, 2026-10-22 and 23, each after a bounded review. The fourth draft's

@@ -42,6 +42,8 @@ at most $400k^3\varepsilon\|\mathbf{H}\|_2$, within the registered factor $400k^
 * `NLAlib.NormalizedLanczosData.lanczosTridiagonal_backwardH_dilatedStart`: exact Lanczos on
   the model computes $\mathbf{T}_k$.
 * `NLAlib.NormalizedLanczosData.spectrum_backwardH_subset_Icc`: Weyl localisation.
+* `NLAlib.NormalizedLanczosData.spectrum_backwardH_subset_iUnion_Icc`: localization in a union
+  of closed intervals about the input eigenvalues.
 -/
 
 @[expose] public section
@@ -233,6 +235,29 @@ theorem spectrum_backwardH_subset_Icc {a a' c : ℝ} (hs : spectrum ℝ D.H ⊆ 
     (hc : frobNorm (D.backwardH - D.dilatedH) ≤ c) :
     spectrum ℝ D.backwardH ⊆ Set.Icc (a - c) (a' + c) := by
   exact D.toLanczosData.spectrum_backwardH_subset_Icc D.transpose_basisSucc_mul_self_apply hs hc
+
+/-- The block dilation retains every set containing the input spectrum. -/
+theorem spectrum_dilatedH_subset {S : Set ℝ} (hs : spectrum ℝ D.H ⊆ S) :
+    spectrum ℝ D.dilatedH ⊆ S :=
+  D.toLanczosData.spectrum_dilatedH_subset hs
+
+/-- Every backward eigenvalue is within a certified Frobenius distance of an input
+ eigenvalue, for normalized three-term data. -/
+theorem exists_abs_eigenvalue_backwardH_sub_eigenvalue_le {δ : ℝ}
+    (hgap : frobNorm (D.backwardH - D.dilatedH) ≤ δ) {i : ℕ}
+    (hi : i < Fintype.card (Fin n × Fin (k + 1))) :
+    ∃ j < n, |eigenvalue D.backwardH i - eigenvalue D.H j| ≤ δ :=
+  D.toLanczosData.exists_abs_eigenvalue_backwardH_sub_eigenvalue_le
+    D.transpose_basisSucc_mul_self_apply hgap hi
+
+/-- The backward spectrum lies in the union of closed intervals of radius $\delta$ about
+ the valid input eigenvalues when the Frobenius backward error is at most $\delta$. -/
+theorem spectrum_backwardH_subset_iUnion_Icc {δ : ℝ}
+    (hgap : frobNorm (D.backwardH - D.dilatedH) ≤ δ) :
+    spectrum ℝ D.backwardH ⊆ ⋃ i ∈ Set.Iio n,
+      Set.Icc (eigenvalue D.H i - δ) (eigenvalue D.H i + δ) :=
+  D.toLanczosData.spectrum_backwardH_subset_iUnion_Icc
+    D.transpose_basisSucc_mul_self_apply hgap
 
 /-- **The spectral measures are Wasserstein-close**: for every $1$-Lipschitz $f$,
 $\lvert\mathbf{v}_1^{\mathsf{T}}f(\mathbf{H})\mathbf{v}_1 -

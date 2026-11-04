@@ -43,6 +43,7 @@ rest is a new file `NLAlib/Krylov/LinearSystems/CGTridiagonal.lean`.
   `Matrix.PosDef.norm_cgState_r_eq_of_lanczosTridiagonal_eq`: the converse.
 * `Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ`: the decrease of
   the error.
+* `Matrix.PosDef.cgState_p_ne_zero`: a nonzero residual gives a nonzero direction.
 * `Matrix.PosDef.norm_cgState_p_sq_eq`: the direction norm [HestenesStiefel1952, Theorem 5:5].
 * `Matrix.PosDef.norm_cgState_r_le`, `Matrix.PosDef.norm_cgState_p_sq_le`,
   `Matrix.PosDef.cgAlpha_le`, `Matrix.PosDef.norm_cgState_r_succ_sq_div_le`: pivot bounds.
@@ -123,7 +124,8 @@ private theorem star_p_dotProduct_r_succ {A : Matrix n n 𝕜} (hA : A.PosDef) (
   star_p_dotProduct_r_succ_of hA b x₀ j (star_p_dotProduct_r hA b x₀ j)
 
 /-- A nonzero residual has a nonzero direction. -/
-private theorem p_ne_zero {A : Matrix n n 𝕜} (hA : A.PosDef) (b x₀ : n → 𝕜) {j : ℕ}
+theorem _root_.Matrix.PosDef.cgState_p_ne_zero {A : Matrix n n 𝕜}
+    (hA : A.PosDef) (b x₀ : n → 𝕜) {j : ℕ}
     (hr : (cgState A b x₀ j).r ≠ 0) : (cgState A b x₀ j).p ≠ 0 := by
   intro hp
   have h := star_p_dotProduct_r hA b x₀ j
@@ -138,7 +140,7 @@ private theorem cgAlpha_mul_re_quadForm {A : Matrix n n 𝕜} (hA : A.PosDef) (b
     cgAlpha A (cgState A b x₀ j) * RCLike.re (quadForm A (cgState A b x₀ j).p) =
         ‖WithLp.toLp 2 (cgState A b x₀ j).r‖ ^ 2 ∧
       0 < RCLike.re (quadForm A (cgState A b x₀ j).p) := by
-  have hQ := hA.re_quadForm_pos (p_ne_zero hA b x₀ hr)
+  have hQ := hA.re_quadForm_pos (hA.cgState_p_ne_zero b x₀ hr)
   exact ⟨div_mul_cancel₀ _ hQ.ne', hQ⟩
 
 /-- A zero residual stays zero, with a zero direction. -/
@@ -985,7 +987,7 @@ theorem _root_.Matrix.PosDef.norm_cgState_r_succ_sq_div_le {A : Matrix n n 𝕜}
     positivity
   have hρ' : 0 ≤ ρ' := by positivity
   have hp0 : 0 < ‖WithLp.toLp 2 (cgState A b 0 j).p‖ ^ 2 := by
-    have : WithLp.toLp 2 (cgState A b 0 j).p ≠ 0 := by simpa using p_ne_zero hA b 0 hr
+    have : WithLp.toLp 2 (cgState A b 0 j).p ≠ 0 := by simpa using hA.cgState_p_ne_zero b 0 hr
     positivity
   have haa : a ≤ a' := by
     obtain ⟨e1, e2⟩ := rayleigh_of_spectrum hA.isHermitian hs (cgState A b 0 j).p

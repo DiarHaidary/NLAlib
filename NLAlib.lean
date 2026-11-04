@@ -1,7 +1,10 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Computation.BLAS
+public import NLAlib.Computation.BLAS.Frames
+public import NLAlib.Computation.BLAS.GuardedNormalization
 public import NLAlib.Computation.BLAS.MatrixKernels
+public import NLAlib.Computation.BLAS.Normalization
 public import NLAlib.Computation.BLAS.RoundingErrors
 public import NLAlib.Computation.BLAS.Traces
 public import NLAlib.Computation.BLAS.Triangular
@@ -15,6 +18,7 @@ public import NLAlib.Computation.Grid
 public import NLAlib.Computation.Model
 public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RunsWithin
+public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.Store
 public import NLAlib.Computation.Subst
@@ -132,9 +136,11 @@ public import NLAlib.Krylov.FinitePrecision.CGAccuracy
 public import NLAlib.Krylov.FinitePrecision.CGBackward
 public import NLAlib.Krylov.FinitePrecision.CGCertificates
 public import NLAlib.Krylov.FinitePrecision.CGEnergy
+public import NLAlib.Krylov.FinitePrecision.CGEnergyEstimator
 public import NLAlib.Krylov.FinitePrecision.CGModel
 public import NLAlib.Krylov.FinitePrecision.CGRun
 public import NLAlib.Krylov.FinitePrecision.CGRunModel
+public import NLAlib.Krylov.FinitePrecision.CGSpectralConvergence
 public import NLAlib.Krylov.FinitePrecision.Dilation
 public import NLAlib.Krylov.FinitePrecision.DilationEstimates
 public import NLAlib.Krylov.FinitePrecision.LanczosData
@@ -154,8 +160,17 @@ public import NLAlib.Krylov.Functions.Quadrature
 public import NLAlib.Krylov.Functions.QuadratureBounds
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
+public import NLAlib.Krylov.LinearSystems.CGProgram
+public import NLAlib.Krylov.LinearSystems.CGProgramBody
+public import NLAlib.Krylov.LinearSystems.CGProgramCounts
+public import NLAlib.Krylov.LinearSystems.CGProgramDirection
+public import NLAlib.Krylov.LinearSystems.CGProgramGuards
+public import NLAlib.Krylov.LinearSystems.CGProgramInitialization
+public import NLAlib.Krylov.LinearSystems.CGProgramLoop
+public import NLAlib.Krylov.LinearSystems.CGProgramTree
 public import NLAlib.Krylov.LinearSystems.CGQuadrature
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
+public import NLAlib.Krylov.LinearSystems.CGTargets
 public import NLAlib.Krylov.LinearSystems.CGTridiagonal
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
@@ -172,7 +187,14 @@ public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
 public import NLAlib.Krylov.Processes.LanczosPolynomials
+public import NLAlib.Krylov.Processes.LanczosProgram
+public import NLAlib.Krylov.Processes.LanczosProgramCounts
+public import NLAlib.Krylov.Processes.LanczosProgramInitialization
+public import NLAlib.Krylov.Processes.LanczosProgramState
+public import NLAlib.Krylov.Processes.LanczosProgramStep
+public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
+public import NLAlib.Krylov.Processes.LanczosTargets
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.LowRank.Gaussian.BlockKrylovGapless
@@ -242,6 +264,7 @@ public import NLAlib.Matrix.Basic.Projector
 public import NLAlib.Matrix.Basic.QuadForm
 public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
+public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
 public import NLAlib.Matrix.Factorizations.Elimination
@@ -400,6 +423,7 @@ public import NLAlib.Polynomial.Approximation.Equioscillation
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
+public import NLAlib.Polynomial.Approximation.Markov
 public import NLAlib.Polynomial.Approximation.MinimaxError
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter

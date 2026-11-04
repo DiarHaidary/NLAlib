@@ -18,10 +18,10 @@ $$\mathbf{u}_j = \mathbf{H}\mathbf{v}_j + \mathbf{e}^u_j,\quad
 \alpha_j = \mathbf{v}_j^{\mathsf{T}}\mathbf{w}_j + e^\alpha_j,\quad
 \mathbf{z}_j = \mathbf{w}_j - \alpha_j\mathbf{v}_j + \mathbf{e}^z_j,\quad
 \beta_j\mathbf{v}_{j+1} = \mathbf{z}_j + \boldsymbol{\delta}_j .$$
-It is the interface between the rounding-error analysis of the Lanczos program in the standard
-model of floating-point arithmetic, which constructs one from a run of the program, and the
-stability analysis (local errors, Paige's theorem, the Greenbaum backward model), which never
-mentions the model of computation.
+This is an abstract local-error interface for the stability analysis (local errors, Paige's
+theorem and the Greenbaum backward model). Connecting a particular program requires an execution
+theorem deriving these fields from its decoded outputs and scalar arithmetic contract. The
+interface itself neither supplies that theorem nor certifies a floating-point implementation.
 Indices as in the paper: $\mathbf{v}_0 = \mathbf{0}$, $\beta_0 = 0$, steps $j = 1, \dots, k$.
 
 
