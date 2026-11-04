@@ -23,7 +23,10 @@ error relation `err` and range condition `safe`: the run succeeds and produces a
 The **standard-model theorems** (`NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add`,
 …) take the contract `NLAlib.Computation.IsRelErrSem` with every value in range
 ($\mathrm{safe} = \mathrm{True}$, underflow and overflow ignored as in [Higham2002, §2.2]), where
-the range hypothesis is void, and bound the trace by `NLAlib/Computation/BLAS/Traces.lean`. A
+the range hypothesis is void, and bound the trace by `NLAlib/Computation/BLAS/Traces.lean`.
+Each comes in two forms: with the compound factor $\tilde{\gamma}_n = (1 - u_p)^{-n} - 1$ of
+[CarsonMaShao2026] under $u_p < 1$ alone (suffix `_compoundRoundingFactor`), and with Higham's
+$\gamma_n = nu_p/(1 - nu_p)$ under $nu_p < 1$. A
 model with underflow and overflow reuses the run
 lemmas and discharges their range hypothesis from explicit bounds on the data.
 
@@ -34,15 +37,21 @@ Decoded values are real: the kernels are analysed over real data.
 * `NLAlib.Computation.IsArithErrSem.exec_dot`, `NLAlib.Computation.IsArithErrSem.exec_axpy`,
   `NLAlib.Computation.IsArithErrSem.exec_gemv`, `NLAlib.Computation.IsArithErrSem.exec_gemm`:
   the run lemmas.
-* `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add`,
+* `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_dot_abs_sum_mul_sub_le_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add`,
   `NLAlib.Computation.IsRelErrSem.exec_dot_abs_sum_mul_sub_le`,
   `NLAlib.Computation.IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct`: `dot`,
   [Higham2002, §3.1].
-* `NLAlib.Computation.IsRelErrSem.exec_axpy`: `axpy`.
+* `NLAlib.Computation.IsRelErrSem.exec_axpy_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_axpy`: `axpy`.
 * `NLAlib.Computation.IsRelErrSem.exec_rscl`: `rscl`.
-* `NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec`,
+* `NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_gemv_abs_mulVec_sub_le_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_gemv_eq_add_mulVec`,
   `NLAlib.Computation.IsRelErrSem.exec_gemv_abs_mulVec_sub_le`: `gemv`, [Higham2002, §3.5].
-* `NLAlib.Computation.IsRelErrSem.exec_gemm_abs_mul_sub_le`: `gemm`, [Higham2002, §3.5].
+* `NLAlib.Computation.IsRelErrSem.exec_gemm_abs_mul_sub_le_compoundRoundingFactor`,
+  `NLAlib.Computation.IsRelErrSem.exec_gemm_abs_mul_sub_le`: `gemm`, [Higham2002, §3.5].
 -/
 
 @[expose] public section
@@ -683,6 +692,33 @@ section StandardModel
 
 variable {u : P → ℝ}
 
+/-- **Backward error of `dot`, compound factor** in the standard model [Higham2002, §3.1], (3.4)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$ ($i < n$) and
+$\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes one word $w$ into
+$\mathit{dst}$ and nothing else, and
+$$w \text{ decodes to } \sum_{i<n} x_i y_i (1 + \eta_i)\,, \qquad
+\lvert \eta_i \rvert \le \tilde{\gamma}_n = (1 - u_p)^{-n} - 1\,.$$ -/
+theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
+    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
+    (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
+    (hdy : dst.buf = y → ∀ i < n.eval, dst.idx.eval ≠ yo.eval + i)
+    (hdst : ∃ v s₁, st.store.write p dst.buf dst.idx.eval v = some s₁) :
+    ∃ st' w, exec I (dot p dst x xo y yo n).run st = some st' ∧
+      st.store.write p dst.buf dst.idx.eval w = some st'.store ∧
+      ∃ η : ℕ → ℝ, (∀ i < n.eval, |η i| ≤ compoundRoundingFactor n.eval (u p)) ∧
+        dec p w = ∑ i ∈ range n.eval, xs i * ys i * (1 + η i) := by
+  obtain ⟨st', w, s, hrun, hst, htr, hw⟩ := IsArithErrSem.exec_dot I p st
+    (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
+    fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add_compoundRoundingFactor (h.nonneg trivial) hu1
+  exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
+
 /-- **Backward error of `dot`** in the standard model [Higham2002, §3.1], (3.4) there: under the
 contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
 $n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
@@ -735,6 +771,34 @@ theorem IsRelErrSem.exec_dot_eq_sum_mul_one_add_isRoundingProduct
   obtain ⟨η, hη, hs⟩ := htr.exists_eq_sum_mul_one_add_isRoundingProduct (h.nonneg trivial)
   exact ⟨st', w, hrun, hst, η, hη, hw.trans hs⟩
 
+/-- **Forward error of `dot`, compound factor** in the standard model [Higham2002, §3.1], (3.5)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$ ($i < n$) and
+$\mathit{dst}$ is a cell of tag $p$ in neither, the run of `dot` succeeds, writes one word $w$ into
+$\mathit{dst}$ and nothing else, and
+$$\Bigl\lvert \sum_{i<n} x_i y_i - w \Bigr\rvert \le \tilde{\gamma}_n \sum_{i<n}
+\lvert x_i \rvert \lvert y_i \rvert\,,$$ with $w$ read through its decoding and
+$\tilde{\gamma}_n = (1 - u_p)^{-n} - 1$. -/
+theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (dst : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ)
+    (yo n : IExp ℕ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
+    (hdx : dst.buf = x → ∀ i < n.eval, dst.idx.eval ≠ xo.eval + i)
+    (hdy : dst.buf = y → ∀ i < n.eval, dst.idx.eval ≠ yo.eval + i)
+    (hdst : ∃ v s₁, st.store.write p dst.buf dst.idx.eval v = some s₁) :
+    ∃ st' w, exec I (dot p dst x xo y yo n).run st = some st' ∧
+      st.store.write p dst.buf dst.idx.eval w = some st'.store ∧
+      |∑ i ∈ range n.eval, xs i * ys i - dec p w| ≤
+        compoundRoundingFactor n.eval (u p) * ∑ i ∈ range n.eval, |xs i| * |ys i| := by
+  obtain ⟨st', w, s, hrun, hst, htr, hw⟩ := IsArithErrSem.exec_dot I p st
+    (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
+    fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  exact ⟨st', w, hrun, hst,
+    hw ▸ htr.abs_sum_mul_sub_le_compoundRoundingFactor (h.nonneg trivial) hu1⟩
+
 /-- **Forward error of `dot`** in the standard model [Higham2002, §3.1], (3.5) there: under the
 contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
 $n u_p < 1$, if the cells of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $x_i$, $y_i$
@@ -758,6 +822,34 @@ theorem IsRelErrSem.exec_dot_abs_sum_mul_sub_le (h : IsRelErrSem u dec (fun _ _ 
     (h.isArithErrSem fun _ => trivial) hz dst x xo y yo n xs ys hx hy hdx hdy hdst
     fun _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
   exact ⟨st', w, hrun, hst, hw ▸ htr.abs_sum_mul_sub_le (h.nonneg trivial) hn⟩
+
+/-- **Rounding error of `axpy`, compound factor** in the standard model: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range and $u_p < 1$, if $a$ and the cells
+of $\mathbf{x}$ and $\mathbf{y}$ hold words decoding to $a$, $x_i$, $y_i$ ($i < n$), $a$ is not
+in $\mathbf{y}$, and $\mathbf{x}$ and $\mathbf{y}$ are the same vector or do not overlap, the run
+of `axpy` succeeds, writes words $w_i$ into the cells of $\mathbf{y}$ and nothing else, and
+$$w_i \text{ decodes to } a x_i (1 + \theta_i) + y_i (1 + \delta_i)\,, \qquad
+\lvert \theta_i \rvert \le \tilde{\gamma}_2 = (1 - u_p)^{-2} - 1\,,\quad
+\lvert \delta_i \rvert \le u_p\,.$$ From the model (2.4) of [Higham2002, §2.2] and
+[CarsonMaShao2026, Lemma 2]. -/
+theorem IsRelErrSem.exec_axpy_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a : Cell ℕ ℕ)
+    (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (av : ℝ) (xs ys : ℕ → ℝ) (hu1 : u p < 1)
+    (ha : ∃ w, st.store.read p a.buf a.idx.eval = some w ∧ dec p w = av)
+    (hx : ∀ i < n.eval, ∃ w, st.store.read p x (xo.eval + i) = some w ∧ dec p w = xs i)
+    (hy : ∀ i < n.eval, ∃ w, st.store.read p y (yo.eval + i) = some w ∧ dec p w = ys i)
+    (hay : a.buf = y → ∀ i < n.eval, a.idx.eval ≠ yo.eval + i)
+    (hxy : x = y → ∀ i < n.eval, ∀ j < n.eval, xo.eval + i = yo.eval + j → i = j) :
+    ∃ st', ∃ W : ℕ → K, exec I (axpy p a x xo y yo n).run st = some st' ∧
+      st.store.writeBlock p y yo.eval ((List.range n.eval).toArray.map W) = some st'.store ∧
+      ∀ i < n.eval, ∃ θ δ : ℝ, |θ| ≤ compoundRoundingFactor 2 (u p) ∧ |δ| ≤ u p ∧
+        dec p (W i) = av * xs i * (1 + θ) + ys i * (1 + δ) := by
+  obtain ⟨st', W, hrun, hst, hW⟩ := IsArithErrSem.exec_axpy I p st
+    (h.isArithErrSem fun _ => trivial) a x xo y yo n av xs ys ha hx hy hay hxy
+    fun _ _ => ⟨trivial, fun _ _ => trivial⟩
+  refine ⟨st', W, hrun, hst, fun i hi => ?_⟩
+  obtain ⟨q, hq, hz⟩ := hW i hi
+  exact exists_eq_mul_one_add_add_mul_one_add_compoundRoundingFactor_of_relErr hq hz hu1
 
 /-- **Rounding error of `axpy`** in the standard model: under the contract
 `NLAlib.Computation.IsRelErrSem` with every value in range and $2u_p < 1$, if $a$ and the cells
@@ -837,6 +929,55 @@ theorem IsRelErrSem.exec_rscl (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (a
     · rw [Function.update_self]
       exact ⟨δ, hδ, by rw [hdz, hvx, hva]; rfl⟩
 
+/-- **Backward error of `gemv`, compound factor** in the standard model [Higham2002, §3.5], (3.11)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding (column-major from
+$\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to $\mathbf{x}$, and the cells of
+$\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of `gemv` succeeds, writes words
+$w_i$ into the cells of $\mathbf{y}$ and nothing else, and for some $\Delta\mathbf{A}$ with
+$\lvert \Delta a_{ij} \rvert \le \tilde{\gamma}_n \lvert a_{ij} \rvert$,
+$\tilde{\gamma}_n = (1 - u_p)^{-n} - 1$,
+$$w_i \text{ decodes to } \bigl((\mathbf{A} + \Delta\mathbf{A})\mathbf{x}\bigr)_i\,.$$ -/
+theorem IsRelErrSem.exec_gemv_eq_add_mulVec_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (m n : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
+    (y : ℕ) (yo : IExp ℕ) (M : Matrix (Fin m.eval) (Fin n.eval) ℝ) (xv : Fin n.eval → ℝ)
+    (hu1 : u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
+    (hx : ∀ j : Fin n.eval, ∃ w, st.store.read p x (xo.eval + j) = some w ∧ dec p w = xv j)
+    (hyA : y = A → yo.eval + m.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ yo.eval)
+    (hyx : y = x → yo.eval + m.eval ≤ xo.eval ∨ xo.eval + n.eval ≤ yo.eval)
+    (hy : ∀ i < m.eval, ∃ v s₁, st.store.write p y (yo.eval + i) v = some s₁) :
+    ∃ st', ∃ W : ℕ → K, exec I (gemv p m n A ao x xo y yo).run st = some st' ∧
+      st.store.writeBlock p y yo.eval ((List.range m.eval).toArray.map W) = some st'.store ∧
+      ∃ ΔA : Matrix (Fin m.eval) (Fin n.eval) ℝ,
+        (∀ i j, |ΔA i j| ≤ compoundRoundingFactor n.eval (u p) * |M i j|) ∧
+        ∀ i : Fin m.eval, dec p (W i) = ((M + ΔA) *ᵥ xv) i := by
+  obtain ⟨st', W, S, hrun, hst, hS⟩ := IsArithErrSem.exec_gemv I p st
+    (h.isArithErrSem fun _ => trivial) hz m n A ao x xo y yo
+    (fun i j => if h : i < m.eval ∧ j < n.eval then M ⟨i, h.1⟩ ⟨j, h.2⟩ else 0)
+    (fun j => if h : j < n.eval then xv ⟨j, h⟩ else 0)
+    (fun i hi j hj => by simpa [hi, hj] using hA ⟨i, hi⟩ ⟨j, hj⟩)
+    (fun j hj => by simpa [hj] using hx ⟨j, hj⟩) hyA hyx hy
+    fun _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  have hη : ∀ i : Fin m.eval, ∃ η : ℕ → ℝ,
+      (∀ k < n.eval, |η k| ≤ compoundRoundingFactor n.eval (u p)) ∧ dec p (W i) =
+        ∑ k ∈ range n.eval, (if h : (i : ℕ) < m.eval ∧ k < n.eval then M ⟨i, h.1⟩ ⟨k, h.2⟩
+          else 0) * (if h : k < n.eval then xv ⟨k, h⟩ else 0) * (1 + η k) := fun i => by
+    obtain ⟨η, hη, hs⟩ :=
+      (hS i i.2).1.exists_eq_sum_mul_one_add_compoundRoundingFactor (h.nonneg trivial) hu1
+    exact ⟨η, hη, (hS i i.2).2.trans hs⟩
+  choose η hηb hηe using hη
+  refine ⟨st', W, hrun, hst, fun i j => M i j * η i j, fun i j => ?_, fun i => ?_⟩
+  · rw [abs_mul, mul_comm]
+    exact mul_le_mul_of_nonneg_right (hηb i j j.2) (abs_nonneg _)
+  · rw [hηe i]
+    simp only [Matrix.mulVec, dotProduct]
+    rw [← Fin.sum_univ_eq_sum_range]
+    exact sum_congr rfl fun j _ => by
+      change _ = (M i j + M i j * η i j) * xv j
+      simp [i.2, j.2]; ring
+
 /-- **Backward error of `gemv`** in the standard model [Higham2002, §3.5], (3.11) there: under
 the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
 $n u_p < 1$, if buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding
@@ -882,6 +1023,49 @@ theorem IsRelErrSem.exec_gemv_eq_add_mulVec (h : IsRelErrSem u dec (fun _ _ => T
       change _ = (M i j + M i j * η i j) * xv j
       simp [i.2, j.2]; ring
 
+/-- **Forward error of `gemv`, compound factor** in the standard model [Higham2002, §3.5], (3.12)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding (column-major from
+$\mathit{ao}$), the cells of $\mathbf{x}$ hold words decoding to $\mathbf{x}$, and the cells of
+$\mathbf{y}$ are cells of tag $p$ overlapping neither, the run of `gemv` succeeds, writes words
+$w_i$ into the cells of $\mathbf{y}$ and nothing else, and
+$$\bigl\lvert (\mathbf{A}\mathbf{x})_i - w_i \bigr\rvert \le
+\tilde{\gamma}_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{x} \rvert\bigr)_i\,,$$ with $w_i$
+read through its decoding and absolute values entrywise and $\tilde{\gamma}_n = (1 - u_p)^{-n} - 1$.
+-/
+theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (m n : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (x : ℕ) (xo : IExp ℕ)
+    (y : ℕ) (yo : IExp ℕ) (M : Matrix (Fin m.eval) (Fin n.eval) ℝ) (xv : Fin n.eval → ℝ)
+    (hu1 : u p < 1) (hA : HoldsDecoded st.store dec p A ao.eval M)
+    (hx : ∀ j : Fin n.eval, ∃ w, st.store.read p x (xo.eval + j) = some w ∧ dec p w = xv j)
+    (hyA : y = A → yo.eval + m.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ yo.eval)
+    (hyx : y = x → yo.eval + m.eval ≤ xo.eval ∨ xo.eval + n.eval ≤ yo.eval)
+    (hy : ∀ i < m.eval, ∃ v s₁, st.store.write p y (yo.eval + i) v = some s₁) :
+    ∃ st', ∃ W : ℕ → K, exec I (gemv p m n A ao x xo y yo).run st = some st' ∧
+      st.store.writeBlock p y yo.eval ((List.range m.eval).toArray.map W) = some st'.store ∧
+      ∀ i : Fin m.eval, |(M *ᵥ xv) i - dec p (W i)| ≤
+        compoundRoundingFactor n.eval (u p) * ((M.map abs) *ᵥ (fun j => |xv j|)) i := by
+  obtain ⟨st', W, S, hrun, hst, hS⟩ := IsArithErrSem.exec_gemv I p st
+    (h.isArithErrSem fun _ => trivial) hz m n A ao x xo y yo
+    (fun i j => if h : i < m.eval ∧ j < n.eval then M ⟨i, h.1⟩ ⟨j, h.2⟩ else 0)
+    (fun j => if h : j < n.eval then xv ⟨j, h⟩ else 0)
+    (fun i hi j hj => by simpa [hi, hj] using hA ⟨i, hi⟩ ⟨j, hj⟩)
+    (fun j hj => by simpa [hj] using hx ⟨j, hj⟩) hyA hyx hy
+    fun _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  refine ⟨st', W, hrun, hst, fun i => ?_⟩
+  have key := (hS i i.2).1.abs_sum_mul_sub_le_compoundRoundingFactor (h.nonneg trivial) hu1
+  rw [← (hS i i.2).2] at key
+  convert key using 2
+  · simp only [Matrix.mulVec, dotProduct]
+    rw [← Fin.sum_univ_eq_sum_range]
+    congr 1
+    exact sum_congr rfl fun j _ => by simp [i.2, j.2]
+  · simp only [Matrix.mulVec, dotProduct, Matrix.map_apply]
+    rw [← Fin.sum_univ_eq_sum_range]
+    exact sum_congr rfl fun j _ => by simp [i.2, j.2]
+
 /-- **Forward error of `gemv`** in the standard model [Higham2002, §3.5], (3.12) there: under
 the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and
 $n u_p < 1$, if buffer $A$ holds the real $m \times n$ matrix $\mathbf{A}$ through the decoding
@@ -921,6 +1105,50 @@ theorem IsRelErrSem.exec_gemv_abs_mulVec_sub_le (h : IsRelErrSem u dec (fun _ _ 
   · simp only [Matrix.mulVec, dotProduct, Matrix.map_apply]
     rw [← Fin.sum_univ_eq_sum_range]
     exact sum_congr rfl fun j _ => by simp [i.2, j.2]
+
+/-- **Forward error of `gemm`, compound factor** in the standard model [Higham2002, §3.5], (3.13)
+there, with the factor of [CarsonMaShao2026, (3)]: under the contract
+`NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and $u_p < 1$, if
+buffers $A$ and $B$ hold the real $m \times n$ and $n \times l$ matrices $\mathbf{A}$, $\mathbf{B}$
+through the decoding (column-major from $\mathit{ao}$, $\mathit{bo}$) and the block of $\mathbf{C}$
+is $ml$ cells of tag $p$ overlapping neither, the run of `gemm` succeeds, writes words $w_{i+mj}$
+into the block of $\mathbf{C}$ and nothing else, and
+$$\bigl\lvert (\mathbf{A}\mathbf{B})_{ij} - w_{i+mj} \bigr\rvert \le
+\tilde{\gamma}_n \bigl(\lvert \mathbf{A} \rvert \lvert \mathbf{B} \rvert\bigr)_{ij}\,,$$ with
+$w_{i+mj}$ read through its decoding and absolute values entrywise and
+$\tilde{\gamma}_n = (1 - u_p)^{-n} - 1$. -/
+theorem IsRelErrSem.exec_gemm_abs_mul_sub_le_compoundRoundingFactor
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (m n l : IExp ℕ) (A : ℕ) (ao : IExp ℕ) (B : ℕ)
+    (bo : IExp ℕ) (C : ℕ) (co : IExp ℕ) (MA : Matrix (Fin m.eval) (Fin n.eval) ℝ)
+    (MB : Matrix (Fin n.eval) (Fin l.eval) ℝ) (hu1 : u p < 1)
+    (hA : HoldsDecoded st.store dec p A ao.eval MA) (hB : HoldsDecoded st.store dec p B bo.eval MB)
+    (hCA : C = A → co.eval + m.eval * l.eval ≤ ao.eval ∨ ao.eval + m.eval * n.eval ≤ co.eval)
+    (hCB : C = B → co.eval + m.eval * l.eval ≤ bo.eval ∨ bo.eval + n.eval * l.eval ≤ co.eval)
+    (hC : ∀ t < m.eval * l.eval, ∃ v s₁, st.store.write p C (co.eval + t) v = some s₁) :
+    ∃ st', ∃ W : ℕ → K, exec I (gemm p m n l A ao B bo C co).run st = some st' ∧
+      st.store.writeBlock p C co.eval ((List.range (m.eval * l.eval)).toArray.map W) =
+        some st'.store ∧
+      ∀ (i : Fin m.eval) (j : Fin l.eval), |(MA * MB) i j - dec p (W (i + m.eval * j))| ≤
+        compoundRoundingFactor n.eval (u p) * (MA.map abs * MB.map abs) i j := by
+  obtain ⟨st', W, S, hrun, hst, hS⟩ := IsArithErrSem.exec_gemm I p st
+    (h.isArithErrSem fun _ => trivial) hz m n l A ao B bo C co
+    (fun i k => if h : i < m.eval ∧ k < n.eval then MA ⟨i, h.1⟩ ⟨k, h.2⟩ else 0)
+    (fun k j => if h : k < n.eval ∧ j < l.eval then MB ⟨k, h.1⟩ ⟨j, h.2⟩ else 0)
+    (fun i hi k hk => by simpa [hi, hk] using hA ⟨i, hi⟩ ⟨k, hk⟩)
+    (fun k hk j hj => by simpa [hk, hj] using hB ⟨k, hk⟩ ⟨j, hj⟩) hCA hCB hC
+    fun _ _ _ _ _ _ _ _ => ⟨trivial, fun _ _ => trivial⟩
+  refine ⟨st', W, hrun, hst, fun i j => ?_⟩
+  have key := (hS i i.2 j j.2).1.abs_sum_mul_sub_le_compoundRoundingFactor (h.nonneg trivial) hu1
+  rw [← (hS i i.2 j j.2).2] at key
+  convert key using 2
+  · simp only [Matrix.mul_apply]
+    rw [← Fin.sum_univ_eq_sum_range]
+    congr 1
+    exact sum_congr rfl fun k _ => by simp [i.2, j.2, k.2]
+  · simp only [Matrix.mul_apply, Matrix.map_apply]
+    rw [← Fin.sum_univ_eq_sum_range]
+    exact sum_congr rfl fun k _ => by simp [i.2, j.2, k.2]
 
 /-- **Forward error of `gemm`** in the standard model [Higham2002, §3.5], (3.13) there: under
 the contract `NLAlib.Computation.IsRelErrSem` with every value in range, adding zero exactly, and

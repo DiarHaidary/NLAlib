@@ -512,6 +512,15 @@ lean_body = 'chebyshevAccuracyBound (r : ℕ) : ℝ := 1 / (25088 * ((r : ℝ) +
 body_hash = "70ecb6788121f0cb"
 
 [[constant]]
+name = "NLAlib.Computation.compoundRoundingFactor"
+kind = "factor"
+file = "NLAlib/Computation/Rounding.lean"
+args = ["n", "u"]
+latex = '(1 - #2)^{-#1} - 1'
+lean_body = 'compoundRoundingFactor (n : ℕ) (u : ℝ) : ℝ := ((1 - u) ^ n)⁻¹ - 1'
+body_hash = "fef1392f2e528df8"
+
+[[constant]]
 name = "NLAlib.Computation.roundingFactor"
 kind = "factor"
 file = "NLAlib/Computation/Rounding.lean"

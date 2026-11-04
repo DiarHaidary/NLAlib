@@ -20,8 +20,10 @@ result on the previous values by an error relation `err`. The run lemmas of
 `NLAlib/Computation/BLAS/RoundingErrors.lean` and `NLAlib/Computation/BLAS/Triangular.lean`
 prove that the run produces a trace; this file bounds traces, with no program in sight. Under the
 standard model (`err` the relation `NLAlib.Computation.RelErr u` of relative error) the
-bounds are those of [Higham2002, Chapters 3 and 8]. A model with underflow reuses them: an
-absolute error in a multiplication or division is pushed onto its operands.
+bounds are those of [Higham2002, Chapters 3 and 8], each stated with the compound factor
+$\tilde{\gamma}_n = (1 - u)^{-n} - 1$ of [CarsonMaShao2026] under $u < 1$ alone, and with
+Higham's $\gamma_n = nu/(1 - nu)$ under $nu < 1$ as a corollary. A model with underflow reuses them:
+an absolute error in a multiplication or division is pushed onto its operands.
 
 
 ## Main definitions
@@ -33,13 +35,17 @@ absolute error in a multiplication or division is pushed onto its operands.
 
 ## Main results
 
-* `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add`: backward error of an inner
-  product, [Higham2002, §3.1].
+* `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add_compoundRoundingFactor`,
+  `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add`: backward error of an inner
+  product, [Higham2002, §3.1], with $\tilde{\gamma}_n$ and with $\gamma_n$.
 * `NLAlib.Computation.IsDotTrace.exists_eq_sum_mul_one_add_isRoundingProduct`: the same with
   each $1 + \eta_k$ a product of rounding factors.
-* `NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le`: forward error of an inner product.
-* `NLAlib.Computation.exists_eq_mul_one_add_add_mul_one_add_of_relErr`: one `axpy` entry.
-* `NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq`: backward error of forward
+* `NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le_compoundRoundingFactor`,
+  `NLAlib.Computation.IsDotTrace.abs_sum_mul_sub_le`: forward error of an inner product.
+* `NLAlib.Computation.exists_eq_mul_one_add_add_mul_one_add_compoundRoundingFactor_of_relErr`,
+  `NLAlib.Computation.exists_eq_mul_one_add_add_mul_one_add_of_relErr`: one `axpy` entry.
+* `NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq_compoundRoundingFactor`,
+  `NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq`: backward error of forward
   substitution, [Higham2002, Theorem 8.5].
 -/
 
@@ -74,11 +80,6 @@ def IsSubstTrace (err : BinOp → ℝ → ℝ → Prop) (t : ℕ → ℕ → ℝ
   ∀ i < n, ∃ s : ℕ → ℝ, IsSubstRowTrace err t b x i i s ∧ err .div (s i / t i i) (x i)
 
 variable {u : ℝ} {n : ℕ}
-
-/-- $mu < 1$ from $nu < 1$ for $m \le n$. -/
-private theorem cast_mul_lt_one_of_le (hu : 0 ≤ u) {m : ℕ} (hm : m ≤ n) (hn : n * u < 1) :
-    (m : ℝ) * u < 1 :=
-  lt_of_le_of_lt (mul_le_mul_of_nonneg_right (by exact_mod_cast hm) hu) hn
 
 /-- A rounding error of size at most $u < 1$ leaves $1 + \delta$ nonzero. -/
 private theorem one_add_ne_zero_of_abs_le {δ : ℝ} (hδ : |δ| ≤ u) (hu1 : u < 1) : 1 + δ ≠ 0 := by
@@ -140,6 +141,19 @@ theorem IsDotTrace.exists_eq_sum_mul_one_add_isRoundingProduct {x y s : ℕ → 
       s n = ∑ k ∈ range n, x k * y k * (1 + η k) :=
   h.exists_eq_sum_of_le hu n le_rfl
 
+/-- **Backward error of an inner product, compound factor** [Higham2002, §3.1], (3.4) there,
+with the factor of [CarsonMaShao2026, (3)]: under the standard model with unit roundoff
+$0 \le u < 1$, the result $s_n$ of a trace of recursive accumulation is the exact inner product
+of slightly perturbed data,
+$$s_n = \sum_{k<n} x_k y_k (1 + \eta_k)\,, \qquad
+\lvert \eta_k \rvert \le \tilde{\gamma}_n = (1 - u)^{-n} - 1\,,$$ with no condition on $nu$. -/
+theorem IsDotTrace.exists_eq_sum_mul_one_add_compoundRoundingFactor {x y s : ℕ → ℝ}
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hu1 : u < 1) :
+    ∃ η : ℕ → ℝ, (∀ k < n, |η k| ≤ compoundRoundingFactor n u) ∧
+      s n = ∑ k ∈ range n, x k * y k * (1 + η k) :=
+  let ⟨η, hη, hs⟩ := h.exists_eq_sum_mul_one_add_isRoundingProduct hu
+  ⟨η, fun k hk => (hη k hk).abs_le_compoundRoundingFactor hu1, hs⟩
+
 /-- **Backward error of an inner product** [Higham2002, §3.1], (3.4) there: under the standard
 model with unit roundoff $0 \le u$, $nu < 1$, the result $s_n$ of a trace of recursive
 accumulation is the exact inner product of slightly perturbed data,
@@ -152,6 +166,30 @@ theorem IsDotTrace.exists_eq_sum_mul_one_add {x y s : ℕ → ℝ}
   let ⟨η, hη, hs⟩ := h.exists_eq_sum_mul_one_add_isRoundingProduct hu
   ⟨η, fun k hk => (hη k hk).abs_le hn, hs⟩
 
+/-- A perturbation $s = \sum_k x_k y_k (1 + \eta_k)$ with $\lvert \eta_k \rvert \le c$ moves the
+inner product by at most $c \sum_k \lvert x_k \rvert \lvert y_k \rvert$. -/
+private theorem abs_sum_mul_sub_le_of_eq_sum {x y η : ℕ → ℝ} {c t : ℝ}
+    (hη : ∀ k < n, |η k| ≤ c) (hs : t = ∑ k ∈ range n, x k * y k * (1 + η k)) :
+    |∑ k ∈ range n, x k * y k - t| ≤ c * ∑ k ∈ range n, |x k| * |y k| := by
+  have hdiff : ∑ k ∈ range n, x k * y k - t = -∑ k ∈ range n, x k * y k * η k := by
+    rw [hs, ← sum_sub_distrib, ← sum_neg_distrib]
+    exact sum_congr rfl fun k _ => by ring
+  rw [hdiff, abs_neg, mul_sum]
+  refine (abs_sum_le_sum_abs _ _).trans (sum_le_sum fun k hk => ?_)
+  rw [abs_mul, abs_mul, mul_comm c]
+  exact mul_le_mul_of_nonneg_left (hη k (mem_range.mp hk)) (by positivity)
+
+/-- **Forward error of an inner product, compound factor** [Higham2002, §3.1], (3.5) there, with
+the factor of [CarsonMaShao2026, (3)]: under the standard model with $0 \le u < 1$,
+$$\Bigl\lvert \sum_{k<n} x_k y_k - s_n \Bigr\rvert \le \tilde{\gamma}_n \sum_{k<n}
+\lvert x_k \rvert \lvert y_k \rvert\,, \qquad \tilde{\gamma}_n = (1 - u)^{-n} - 1\,.$$ -/
+theorem IsDotTrace.abs_sum_mul_sub_le_compoundRoundingFactor {x y s : ℕ → ℝ}
+    (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hu1 : u < 1) :
+    |∑ k ∈ range n, x k * y k - s n| ≤
+      compoundRoundingFactor n u * ∑ k ∈ range n, |x k| * |y k| :=
+  let ⟨_, hη, hs⟩ := h.exists_eq_sum_mul_one_add_compoundRoundingFactor hu hu1
+  abs_sum_mul_sub_le_of_eq_sum hη hs
+
 /-- **Forward error of an inner product** [Higham2002, §3.1], (3.5) there: under the standard
 model with $0 \le u$, $nu < 1$,
 $$\Bigl\lvert \sum_{k<n} x_k y_k - s_n \Bigr\rvert \le \gamma_n \sum_{k<n}
@@ -159,15 +197,26 @@ $$\Bigl\lvert \sum_{k<n} x_k y_k - s_n \Bigr\rvert \le \gamma_n \sum_{k<n}
 Result: inner-product-forward-error -/
 theorem IsDotTrace.abs_sum_mul_sub_le {x y s : ℕ → ℝ}
     (h : IsDotTrace (fun _ => RelErr u) x y n s) (hu : 0 ≤ u) (hn : n * u < 1) :
-    |∑ k ∈ range n, x k * y k - s n| ≤ roundingFactor n u * ∑ k ∈ range n, |x k| * |y k| := by
-  obtain ⟨η, hη, hs⟩ := h.exists_eq_sum_mul_one_add hu hn
-  have hdiff : ∑ k ∈ range n, x k * y k - s n = -∑ k ∈ range n, x k * y k * η k := by
-    rw [hs, ← sum_sub_distrib, ← sum_neg_distrib]
-    exact sum_congr rfl fun k _ => by ring
-  rw [hdiff, abs_neg, mul_sum]
-  refine (abs_sum_le_sum_abs _ _).trans (sum_le_sum fun k hk => ?_)
-  rw [abs_mul, abs_mul, mul_comm (roundingFactor n u)]
-  exact mul_le_mul_of_nonneg_left (hη k (mem_range.mp hk)) (by positivity)
+    |∑ k ∈ range n, x k * y k - s n| ≤ roundingFactor n u * ∑ k ∈ range n, |x k| * |y k| :=
+  let ⟨_, hη, hs⟩ := h.exists_eq_sum_mul_one_add hu hn
+  abs_sum_mul_sub_le_of_eq_sum hη hs
+
+/-- **One entry of `axpy`, compound factor** under the standard model: if $q$ is $ax$ with
+relative error at most $u$ and $z$ is $q + y$ with relative error at most $u$, and $u < 1$, then
+$$z = ax(1 + \theta) + y(1 + \delta)\,, \qquad
+\lvert \theta \rvert \le \tilde{\gamma}_2 = (1 - u)^{-2} - 1\,,\quad
+\lvert \delta \rvert \le u\,.$$ From the model (2.4) of [Higham2002, §2.2] and
+[CarsonMaShao2026, Lemma 2]. -/
+theorem exists_eq_mul_one_add_add_mul_one_add_compoundRoundingFactor_of_relErr {a x y q z : ℝ}
+    (hq : RelErr u (a * x) q) (hz : RelErr u (q + y) z) (hu1 : u < 1) :
+    ∃ θ δ : ℝ, |θ| ≤ compoundRoundingFactor 2 u ∧ |δ| ≤ u ∧
+      z = a * x * (1 + θ) + y * (1 + δ) := by
+  obtain ⟨δ₁, hδ₁, rfl⟩ := hq
+  obtain ⟨δ₂, hδ₂, rfl⟩ := hz
+  have hγ1 := le_compoundRoundingFactor_one hu1
+  refine ⟨(1 + δ₁) * (1 + δ₂) - 1, δ₂, ?_, hδ₂, by ring⟩
+  exact abs_one_add_mul_one_add_sub_one_le_compoundRoundingFactor (k := 1) (j := 1)
+    (hδ₁.trans hγ1) (hδ₂.trans hγ1)
 
 /-- **One entry of `axpy`** under the standard model: if $q$ is $ax$ with relative error at most
 $u$ and $z$ is $q + y$ with relative error at most $u$, $0 \le u$ and $2u < 1$, then
@@ -177,28 +226,24 @@ $$z = ax(1 + \theta) + y(1 + \delta)\,, \qquad \lvert \theta \rvert \le \gamma_2
 theorem exists_eq_mul_one_add_add_mul_one_add_of_relErr {a x y q z : ℝ} (hq : RelErr u (a * x) q)
     (hz : RelErr u (q + y) z) (hu : 0 ≤ u) (hu2 : 2 * u < 1) :
     ∃ θ δ : ℝ, |θ| ≤ roundingFactor 2 u ∧ |δ| ≤ u ∧ z = a * x * (1 + θ) + y * (1 + δ) := by
-  obtain ⟨δ₁, hδ₁, rfl⟩ := hq
-  obtain ⟨δ₂, hδ₂, rfl⟩ := hz
-  have hu1 : u < 1 := by linarith
-  have hγ1 := le_roundingFactor_one hu hu1
-  refine ⟨(1 + δ₁) * (1 + δ₂) - 1, δ₂, ?_, hδ₂, by ring⟩
-  exact abs_one_add_mul_one_add_sub_one_le (k := 1) (j := 1) hu (by norm_num; linarith)
-    (hδ₁.trans hγ1) (hδ₂.trans hγ1)
+  obtain ⟨θ, δ, hθ, hδ, he⟩ :=
+    exists_eq_mul_one_add_add_mul_one_add_compoundRoundingFactor_of_relErr hq hz (by linarith)
+  exact ⟨θ, δ, hθ.trans (compoundRoundingFactor_le_roundingFactor hu (by norm_num; linarith)),
+    hδ, he⟩
 
 /-- A product of $k + 1$ rounding factors, $(1 + d)^{e}$ times $k$ inverted factors
-$(1 + c_l)^{-1}$, is $1 + \theta$ with $\lvert \theta \rvert \le \gamma_{k+1}$. -/
+$(1 + c_l)^{-1}$, is $1 + \theta$ with $\lvert \theta \rvert \le \tilde{\gamma}_{k+1}$. -/
 private theorem abs_zpow_mul_inv_prod_sub_one_le (c : ℕ → ℝ) (d : ℝ) (k : ℕ)
-    (hc : ∀ l < k, |c l| ≤ u) (hd : |d| ≤ u) (hk : ((k + 1 : ℕ) : ℝ) * u < 1) (e : ℤ)
+    (hc : ∀ l < k, |c l| ≤ u) (hd : |d| ≤ u) (hu1 : u < 1) (e : ℤ)
     (he : e = 1 ∨ e = -1) :
-    |(1 + d) ^ e * (∏ l ∈ range k, (1 + c l))⁻¹ - 1| ≤ roundingFactor (k + 1) u := by
-  have key := abs_prod_one_add_zpow_sub_one_le (u := u) (range (k + 1))
+    |(1 + d) ^ e * (∏ l ∈ range k, (1 + c l))⁻¹ - 1| ≤ compoundRoundingFactor (k + 1) u := by
+  have key := abs_prod_one_add_zpow_sub_one_le_compoundRoundingFactor (u := u) (range (k + 1))
     (fun l => if l < k then c l else d) (fun l => if l < k then -1 else e)
     (fun l hl => by
       by_cases hlk : l < k
       · simpa [hlk] using hc l hlk
       · simpa [hlk] using hd)
-    (fun l _ => by by_cases hlk : l < k <;> simp [hlk, he])
-    (by simpa using hk)
+    (fun l _ => by by_cases hlk : l < k <;> simp [hlk, he]) hu1
   rw [card_range, prod_range_succ] at key
   simp only [lt_irrefl, if_false] at key
   rw [prod_congr rfl (g := fun l => (1 + c l) ^ (-1 : ℤ)) fun l hl => by
@@ -206,20 +251,19 @@ private theorem abs_zpow_mul_inv_prod_sub_one_le (c : ℕ → ℝ) (d : ℝ) (k 
   simpa [zpow_neg_one, prod_inv_distrib, mul_comm] using key
 
 /-- **One row of forward substitution**: under the hypotheses of
-`NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq`, row $i$ is solved exactly by a
-perturbed row, $\sum_{j \le i} t_{ij}(1 + \theta_j)\hat{x}_j = b_i$ with
-$\lvert \theta_j \rvert \le \gamma_n$. -/
+`NLAlib.Computation.IsSubstTrace.exists_sum_add_mul_eq_compoundRoundingFactor`, row $i$ is solved
+exactly by a perturbed row, $\sum_{j \le i} t_{ij}(1 + \theta_j)\hat{x}_j = b_i$ with
+$\lvert \theta_j \rvert \le \tilde{\gamma}_n$. -/
 private theorem IsSubstRowTrace.exists_sum_eq {t : ℕ → ℕ → ℝ} {b x s : ℕ → ℝ} {i : ℕ}
     (hrow : IsSubstRowTrace (fun _ => RelErr u) t b x i i s) (hdiv : RelErr u (s i / t i i) (x i))
-    (hd : t i i ≠ 0) (hu : 0 ≤ u) (hi : i < n) (hn : n * u < 1) :
-    ∃ θ : ℕ → ℝ, (∀ j ≤ i, |θ j| ≤ roundingFactor n u) ∧
+    (hd : t i i ≠ 0) (hu : 0 ≤ u) (hu1 : u < 1) (hi : i < n) :
+    ∃ θ : ℕ → ℝ, (∀ j ≤ i, |θ j| ≤ compoundRoundingFactor n u) ∧
       ∑ j ∈ range (i + 1), (t i j + t i j * θ j) * x j = b i := by
   obtain ⟨f, hf⟩ := exists_fun_of_forall_lt (k := i) (Q := fun j (de : ℝ × ℝ) =>
       |de.1| ≤ u ∧ |de.2| ≤ u ∧ s (j + 1) = (s j - t i j * x j * (1 + de.1)) * (1 + de.2))
     fun j hj => by
       obtain ⟨q, ⟨δ, hδ, rfl⟩, ⟨ε, hε, h⟩⟩ := hrow.2 j hj
       exact ⟨(δ, ε), hδ, hε, h⟩
-  have hu1 : u < 1 := by simpa using cast_mul_lt_one_of_le hu (m := 1) (by omega) hn
   set E : ℕ → ℝ := fun k => ∏ l ∈ range k, (1 + (f l).2) with hE
   have hE0 : ∀ k ≤ i, E k ≠ 0 := fun k hk => prod_ne_zero_iff.mpr fun l hl =>
     one_add_ne_zero_of_abs_le (hf l (by have := mem_range.mp hl; omega)).2.1 hu1
@@ -240,21 +284,19 @@ private theorem IsSubstRowTrace.exists_sum_eq {t : ℕ → ℕ → ℝ} {b x s :
   have hsi : s i = t i i * x i * (1 + δ')⁻¹ := by
     rw [hx]
     field_simp
-  have hγ : ∀ m ≤ n, roundingFactor m u ≤ roundingFactor n u := fun m hm =>
-    roundingFactor_le_roundingFactor hu hm hn
+  have hγ : ∀ m ≤ n, compoundRoundingFactor m u ≤ compoundRoundingFactor n u := fun m hm =>
+    compoundRoundingFactor_le_compoundRoundingFactor hu hu1 hm
   refine ⟨fun j => if j < i then (1 + (f j).1) * (E j)⁻¹ - 1 else (1 + δ')⁻¹ * (E i)⁻¹ - 1,
     fun j hj => ?_, ?_⟩
   · by_cases hji : j < i
     · simp only [if_pos hji]
       have := abs_zpow_mul_inv_prod_sub_one_le (fun l => (f l).2) (f j).1 j
-        (fun l hl => (hf l (by omega)).2.1) (hf j hji).1
-        (cast_mul_lt_one_of_le hu (by omega) hn) 1 (Or.inl rfl)
+        (fun l hl => (hf l (by omega)).2.1) (hf j hji).1 hu1 1 (Or.inl rfl)
       rw [zpow_one] at this
       exact this.trans (hγ _ (by omega))
     · simp only [if_neg hji]
       have := abs_zpow_mul_inv_prod_sub_one_le (fun l => (f l).2) δ' i
-        (fun l hl => (hf l hl).2.1) hδ' (cast_mul_lt_one_of_le hu (by omega) hn) (-1)
-        (Or.inr rfl)
+        (fun l hl => (hf l hl).2.1) hδ' hu1 (-1) (Or.inr rfl)
       rw [zpow_neg_one] at this
       exact this.trans (hγ _ (by omega))
   · have hb := hs i le_rfl
@@ -272,6 +314,28 @@ private theorem IsSubstRowTrace.exists_sum_eq {t : ℕ → ℕ → ℝ} {b x s :
     · exact sum_congr rfl fun j _ => by ring
     · ring
 
+/-- **Backward error of forward substitution, compound factor** [Higham2002, Theorem 8.5], from
+[Higham2002, Lemma 8.4], with the factor of [CarsonMaShao2026, (3)]: under the standard model
+with $0 \le u < 1$, if every diagonal entry $t_{ii}$ ($i < n$) is nonzero, a trace $\hat{x}$ of
+forward substitution solves a nearby system exactly: for some $\Delta t_{ij}$ with
+$\lvert \Delta t_{ij} \rvert \le \tilde{\gamma}_n \lvert t_{ij} \rvert$ ($j \le i < n$),
+$\tilde{\gamma}_n = (1 - u)^{-n} - 1$,
+$$\sum_{j \le i} (t_{ij} + \Delta t_{ij})\,\hat{x}_j = b_i \qquad (i < n)\,.$$ -/
+theorem IsSubstTrace.exists_sum_add_mul_eq_compoundRoundingFactor {t : ℕ → ℕ → ℝ} {b x : ℕ → ℝ}
+    (h : IsSubstTrace (fun _ => RelErr u) t b n x) (hdiag : ∀ i < n, t i i ≠ 0) (hu : 0 ≤ u)
+    (hu1 : u < 1) :
+    ∃ Δ : ℕ → ℕ → ℝ, (∀ i < n, ∀ j ≤ i, |Δ i j| ≤ compoundRoundingFactor n u * |t i j|) ∧
+      ∀ i < n, ∑ j ∈ range (i + 1), (t i j + Δ i j) * x j = b i := by
+  obtain ⟨θ, hθ⟩ := exists_fun_of_forall_lt (k := n) (Q := fun i (θ : ℕ → ℝ) =>
+      (∀ j ≤ i, |θ j| ≤ compoundRoundingFactor n u) ∧
+        ∑ j ∈ range (i + 1), (t i j + t i j * θ j) * x j = b i)
+    fun i hi => by
+      obtain ⟨s, hrow, hdiv⟩ := h i hi
+      exact hrow.exists_sum_eq hdiv (hdiag i hi) hu hu1 hi
+  refine ⟨fun i j => t i j * θ i j, fun i hi j hj => ?_, fun i hi => (hθ i hi).2⟩
+  rw [abs_mul, mul_comm]
+  exact mul_le_mul_of_nonneg_right ((hθ i hi).1 j hj) (abs_nonneg _)
+
 /-- **Backward error of forward substitution** [Higham2002, Theorem 8.5], from
 [Higham2002, Lemma 8.4]: under the standard model with $0 \le u$ and $nu < 1$, if every
 diagonal entry $t_{ii}$ ($i < n$) is nonzero, a trace $\hat{x}$ of forward substitution solves a
@@ -284,14 +348,11 @@ theorem IsSubstTrace.exists_sum_add_mul_eq {t : ℕ → ℕ → ℝ} {b x : ℕ 
     (hn : n * u < 1) :
     ∃ Δ : ℕ → ℕ → ℝ, (∀ i < n, ∀ j ≤ i, |Δ i j| ≤ roundingFactor n u * |t i j|) ∧
       ∀ i < n, ∑ j ∈ range (i + 1), (t i j + Δ i j) * x j = b i := by
-  obtain ⟨θ, hθ⟩ := exists_fun_of_forall_lt (k := n) (Q := fun i (θ : ℕ → ℝ) =>
-      (∀ j ≤ i, |θ j| ≤ roundingFactor n u) ∧
-        ∑ j ∈ range (i + 1), (t i j + t i j * θ j) * x j = b i)
-    fun i hi => by
-      obtain ⟨s, hrow, hdiv⟩ := h i hi
-      exact hrow.exists_sum_eq hdiv (hdiag i hi) hu hi hn
-  refine ⟨fun i j => t i j * θ i j, fun i hi j hj => ?_, fun i hi => (hθ i hi).2⟩
-  rw [abs_mul, mul_comm]
-  exact mul_le_mul_of_nonneg_right ((hθ i hi).1 j hj) (abs_nonneg _)
+  rcases Nat.eq_zero_or_pos n with rfl | hn0
+  · exact ⟨0, fun i hi => absurd hi (Nat.not_lt_zero _), fun i hi => absurd hi (Nat.not_lt_zero _)⟩
+  have hu1 : u < 1 := lt_of_le_of_lt (le_mul_of_one_le_left hu (by exact_mod_cast hn0)) hn
+  obtain ⟨Δ, hΔ, hsum⟩ := h.exists_sum_add_mul_eq_compoundRoundingFactor hdiag hu hu1
+  exact ⟨Δ, fun i hi j hj => (hΔ i hi j hj).trans (mul_le_mul_of_nonneg_right
+    (compoundRoundingFactor_le_roundingFactor hu hn) (abs_nonneg _)), hsum⟩
 
 end NLAlib.Computation
