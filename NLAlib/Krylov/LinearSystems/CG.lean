@@ -80,7 +80,8 @@ the Krylov space is singular, the pseudoinverse formula of `galerkinInverse`.
 the recurrence (3:1) and show in Theorem 6:1 that it minimises the error function
 $(\mathbf{x}_\star - \mathbf{x})^{\mathsf{H}}\mathbf{A}(\mathbf{x}_\star - \mathbf{x})$ on the
 plane through $\mathbf{x}_0, \dots, \mathbf{x}_q$; Saad defines it as the orthogonal projection
-onto the Krylov space, which is this definition. -/
+onto the Krylov space, which is this definition.
+Algorithm: cg (specification) -/
 noncomputable def cgIterate (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + galerkinInverse A (krylovMatrix A (b - A *ᵥ x₀) q) *ᵥ (b - A *ᵥ x₀)
 
@@ -507,7 +508,6 @@ theorem _root_.Matrix.PosDef.cgIterate_eq_of_krylovGrade_le {A : Matrix n n 𝕜
 
 /-! ### One column -/
 
--- Stage B0
 
 omit [Fintype r] [DecidableEq r] in
 /-- The Galerkin inverse $\mathsf{galerkinInverse}(\mathbf{A}, \mathbf{X})$ is the same for

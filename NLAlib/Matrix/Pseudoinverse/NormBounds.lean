@@ -60,8 +60,7 @@ theorem singularValues_pinv (A : Matrix m n 𝕜) {i j : ℕ} (h : i + j + 1 = A
 /-- **The spectral norm of the pseudoinverse** is the inverse of the smallest nonzero singular
 value: for $k + 1 = \operatorname{rank} \mathbf{A}$, $\|\mathbf{A}^{+}\|_2 =
 \sigma_k(\mathbf{A})^{-1}$.
-[GolubVanLoan2013, §5.5.2].
-Port of `NLAlib.specNorm_moorePenroseInverse_eq_inv_singularValues_last_positive`. -/
+[GolubVanLoan2013, §5.5.2]. -/
 theorem specNorm_pinv (A : Matrix m n 𝕜) {k : ℕ} (hk : k + 1 = A.rank) :
     specNorm (pinv A) = (singularValues A k)⁻¹ := by
   rw [← singularValues_zero_eq_specNorm]
@@ -73,8 +72,7 @@ theorem specNorm_pinv_of_injective {A : Matrix m n 𝕜} (hA : Function.Injectiv
     (hk : k + 1 = Fintype.card n) : specNorm (pinv A) = (singularValues A k)⁻¹ := by
   exact specNorm_pinv A (hk.trans (mulVec_injective_iff_rank_eq.mp hA).symm)
 
-/-- $\|\mathbf{A}^{+}\|_2^2 = \|(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+}\|_2$.
-Port of `NLAlib.specNorm_moorePenroseInverse_sq`. -/
+/-- $\|\mathbf{A}^{+}\|_2^2 = \|(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{+}\|_2$. -/
 theorem specNorm_pinv_sq (A : Matrix m n 𝕜) :
     specNorm (pinv A) ^ 2 = specNorm (pinv (Aᴴ * A)) := by
   rw [pinv_conjTranspose_mul_self, specNorm_mul_conjTranspose_self]
@@ -96,9 +94,7 @@ theorem specNorm_pinv_sq_le_inv_of_smul_one_le [DecidableEq n] {A : Matrix m n �
   exact h₁.trans (pow_le_pow_left₀ (norm_nonneg _) h₂ 2)
 
 /-- The pseudoinverse bounds the vector below: with full column rank,
-$\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$.
-Port of `NLAlib.inv_specNorm_pinvL_sq_mul_dotProduct_le`, there over $\mathbb{R}$ in squared
-form. -/
+$\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$. -/
 theorem norm_le_specNorm_pinv_mul_norm_mulVec {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) (x : n → 𝕜) :
     ‖WithLp.toLp 2 x‖ ≤ specNorm (pinv A) * ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
@@ -107,8 +103,7 @@ theorem norm_le_specNorm_pinv_mul_norm_mulVec {A : Matrix m n 𝕜}
 
 /-- For a vector $\mathbf{x}$ in the row space of $\mathbf{A}$ (the range of
 $\mathbf{A}^{\mathsf{H}}$), $\|\mathbf{x}\| \le \|\mathbf{A}^{+}\|_2 \|\mathbf{A}\mathbf{x}\|$, with
-no rank assumption.
-Port of `NLAlib.inv_specNorm_moorePenroseInverse_sq_mul_dotProduct_le`, there over $\mathbb{R}$. -/
+no rank assumption. -/
 theorem norm_le_specNorm_pinv_mul_norm_mulVec_of_mem_range (A : Matrix m n 𝕜) {x : n → 𝕜}
     (hx : x ∈ LinearMap.range Aᴴ.mulVecLin) :
     ‖WithLp.toLp 2 x‖ ≤ specNorm (pinv A) * ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
@@ -142,8 +137,7 @@ theorem frobNorm_pinv_sq (A : Matrix m n 𝕜) :
 $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
 \operatorname{tr}\bigl((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\bigr)$. This is the quantity whose
 expectation for a Gaussian matrix drives the randomized range finder bounds.
-[HalkoMartinssonTropp2011, Proposition 10.2] uses it in this form.
-Port of `NLAlib.frobSq_pinvL_eq_trace_inv`. -/
+[HalkoMartinssonTropp2011, Proposition 10.2] uses it in this form. -/
 theorem frobNorm_pinv_sq_eq_re_trace_inv [DecidableEq n] {A : Matrix m n 𝕜}
     (hA : Function.Injective A.mulVec) :
     frobNorm (pinv A) ^ 2 = RCLike.re ((Aᴴ * A)⁻¹).trace := by
@@ -154,8 +148,7 @@ theorem frobNorm_pinv_sq_eq_re_trace_inv [DecidableEq n] {A : Matrix m n 𝕜}
 $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
 \operatorname{tr}\bigl((\mathbf{A}\mathbf{A}^{\mathsf{H}})^{-1}\bigr)$. This is the form the
 randomized range finder uses, for the full-row-rank Gaussian block $\mathbf{\Omega}_1$.
-[HalkoMartinssonTropp2011, Proposition 10.2].
-Port of `NLAlib.frobSq_pinvR_eq_trace_inv`. -/
+[HalkoMartinssonTropp2011, Proposition 10.2]. -/
 theorem frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose [DecidableEq m]
     {A : Matrix m n 𝕜} (hA : Function.Injective Aᴴ.mulVec) :
     frobNorm (pinv A) ^ 2 = RCLike.re ((A * Aᴴ)⁻¹).trace := by
@@ -163,8 +156,7 @@ theorem frobNorm_pinv_sq_eq_re_trace_inv_of_injective_conjTranspose [DecidableEq
   rwa [pinv_conjTranspose, frobNorm_conjTranspose, Matrix.conjTranspose_conjTranspose] at h
 
 /-- $\|\mathbf{A}^{+}\|_{\mathsf{F}}^2 = \operatorname{Re}
-\operatorname{tr}\bigl((\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+}\bigr)$, with no rank assumption.
-Port of `NLAlib.frobSq_moorePenroseInverse_eq_trace_moorePenroseInverse`. -/
+\operatorname{tr}\bigl((\mathbf{A}\mathbf{A}^{\mathsf{H}})^{+}\bigr)$, with no rank assumption. -/
 theorem frobNorm_pinv_sq_eq_re_trace_pinv (A : Matrix m n 𝕜) :
     frobNorm (pinv A) ^ 2 = RCLike.re (pinv (A * Aᴴ)).trace := by
   rw [frobNorm_sq_eq_re_trace, pinv_mul_conjTranspose_self]

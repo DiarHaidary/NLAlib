@@ -27,7 +27,6 @@ early-truncated randomized SVD in expectation and the $(1 + \varepsilon)$ forms;
 early-truncated randomized SVD there combines with the statement here for any law of
 $\mathbf{\Omega}$ independent of $\mathbf{\Psi}$.
 
-Design: `docs/design/LowRank-S6.md` §3.6, §8 items 4, 13 and 17.
 
 ## Main results
 

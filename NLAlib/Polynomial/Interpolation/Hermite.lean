@@ -28,8 +28,7 @@ and Lobatto remainders (`NLAlib.Polynomial.Orthogonal.Gauss`,
 `NLAlib.Polynomial.Orthogonal.Radau`, `NLAlib.Polynomial.Orthogonal.Lobatto`).
 
 There is no Hermite interpolant definition: the remainder is stated for any polynomial matching
-the jets, and the existence theorem supplies one (`docs/design/Polynomial-QuadratureRemainder.md`,
-OQ1).
+the jets, and the existence theorem supplies one.
 
 ## Main results
 

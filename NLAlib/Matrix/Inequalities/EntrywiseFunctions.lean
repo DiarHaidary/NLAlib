@@ -46,7 +46,7 @@ private theorem map_pow_succ (A : Matrix n n 𝕜) (k : ℕ) :
 
 /-- **Entrywise powers of a positive semidefinite matrix are positive semidefinite**: for every
 $k$, the matrix $\mathbf{A}^{\circ k}$ with entries $\mathbf{A}_{i,j}^k$ is positive semidefinite.
-[HornJohnson2013, Theorem 7.5.9]. Port of `NLAlib.posSemidef_map_pow`, there over $\mathbb{R}$. -/
+[HornJohnson2013, Theorem 7.5.9]. -/
 theorem _root_.Matrix.PosSemidef.map_pow [Finite n] {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (k : ℕ) : (A.map fun t => t ^ k).PosSemidef := by
   induction k with
@@ -65,8 +65,7 @@ theorem _root_.Matrix.PosSemidef.map_pow [Finite n] {A : Matrix n n 𝕜} (hA : 
 /-- Entrywise powers are monotone on positive semidefinite matrices:
 $\mathbf{0} \preceq \mathbf{B} \preceq \mathbf{A}$ gives
 $\mathbf{B}^{\circ k} \preceq \mathbf{A}^{\circ k}$, with $\mathbf{A}^{\circ k}$ the entrywise
-$k$-th power. [HornJohnson1991, §5.2 context].
-Port of `NLAlib.map_pow_le_map_pow_of_posSemidef_le`, there over $\mathbb{R}$. -/
+$k$-th power. [HornJohnson1991, §5.2 context]. -/
 theorem _root_.Matrix.PosSemidef.map_pow_le_map_pow_of_le [Finite n] {A B : Matrix n n 𝕜}
     (hB : B.PosSemidef) (h : B ≤ A) (k : ℕ) : (B.map fun t => t ^ k) ≤ A.map fun t => t ^ k := by
   have hA : A.PosSemidef := by
@@ -98,7 +97,6 @@ If $f(t) = \sum_k c_k t^k$ with $c_k \ge 0$, the series converging at every entr
 positive semidefinite matrix $\mathbf{A}$, then the matrix with entries $f(\mathbf{A}_{i,j})$ is
 positive semidefinite.
 [HornJohnson2013, Theorem 7.5.9]; [HornJohnson1991, Theorem 6.3.6 context].
-Port of `NLAlib.posSemidef_map_of_nonneg_powerSeries`.
 Result: schur-product-power-series -/
 theorem _root_.Matrix.PosSemidef.map_of_hasSum [Finite n] {A : Matrix n n ℝ}
     (hA : A.PosSemidef) {c : ℕ → ℝ} (hc : ∀ k, 0 ≤ c k) {f : ℝ → ℝ}
@@ -118,7 +116,7 @@ private theorem hasSum_inv_factorial_smul_map_pow (A : Matrix n n ℝ) :
 
 /-- **The entrywise exponential of a positive semidefinite matrix is positive semidefinite**: for
 real positive semidefinite $\mathbf{A}$, so is the matrix with entries $e^{\mathbf{A}_{i,j}}$.
-[HornJohnson2013, Theorem 7.5.9]. Port of `NLAlib.posSemidef_map_exp`. -/
+[HornJohnson2013, Theorem 7.5.9]. -/
 theorem _root_.Matrix.PosSemidef.map_exp [Finite n] {A : Matrix n n ℝ} (hA : A.PosSemidef) :
     (A.map Real.exp).PosSemidef :=
   hA.map_of_hasSum (fun k => inv_nonneg.mpr k.factorial.cast_nonneg) fun i j =>
@@ -126,8 +124,7 @@ theorem _root_.Matrix.PosSemidef.map_exp [Finite n] {A : Matrix n n ℝ} (hA : A
 
 /-- The entrywise exponential is monotone on positive semidefinite matrices: for real
 $\mathbf{0} \preceq \mathbf{B} \preceq \mathbf{A}$, the entrywise exponential of $\mathbf{B}$ is
-below that of $\mathbf{A}$ in the Loewner order.
-Port of `NLAlib.map_exp_le_map_exp_of_posSemidef_le`. -/
+below that of $\mathbf{A}$ in the Loewner order. -/
 theorem _root_.Matrix.PosSemidef.map_exp_le_map_exp_of_le [Finite n] {A B : Matrix n n ℝ}
     (hB : B.PosSemidef) (h : B ≤ A) : B.map Real.exp ≤ A.map Real.exp := by
   refine Matrix.le_iff.mpr (Matrix.PosSemidef.of_hasSum (fun k => ?_)
@@ -248,7 +245,6 @@ private theorem exists_injective_vecMulVec_le [Finite n] {A : Matrix n n ℝ} (h
 when its rows are distinct**: for real positive semidefinite $\mathbf{A}$, the matrix with entries
 $e^{\mathbf{A}_{i,j}}$ is positive definite iff no two rows of $\mathbf{A}$ are equal.
 [HornJohnson2013, Theorem 7.5.9 context].
-Port of `NLAlib.posDef_map_exp_iff_rows_injective`.
 Result: exponential-kernel -/
 theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n ℝ}
     (hA : A.PosSemidef) : (A.map Real.exp).PosDef ↔ Function.Injective A.row := by
@@ -266,8 +262,7 @@ theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n �
     rwa [add_sub_cancel] at h
 
 /-- For distinct real numbers $\mathbf{b}_i$, the matrix with entries
-$e^{\mathbf{b}_i \mathbf{b}_j}$ is positive definite.
-Port of `NLAlib.posDef_sum_inv_factorial_map_pow_vecMulVec_of_injective`, in the limit. -/
+$e^{\mathbf{b}_i \mathbf{b}_j}$ is positive definite. -/
 theorem posDef_exp_mul_of_injective [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
     (Matrix.of fun i j => Real.exp (b i * b j)).PosDef :=
   posDef_map_exp_vecMulVec hb

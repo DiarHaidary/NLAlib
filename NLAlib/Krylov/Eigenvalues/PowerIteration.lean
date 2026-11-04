@@ -50,8 +50,8 @@ $$\bigl\lvert c - \rho_{\mathbf{A}}(\mathbf{A}^q\mathbf{b})\bigr\rvert \le
 (\lvert c\rvert + r)\Bigl(\frac{r}{\lvert c\rvert}\Bigr)^{2q}\tan^2\angle(\mathbf{b}, E_c)\,,$$
 $\rho_{\mathbf{A}}$ the Rayleigh quotient and $\tan^2\angle(\mathbf{b}, E_c)$ the ratio
 $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{c\})/\mu_{\mathbf{A},\mathbf{b}}(\{c\})$ of the
-spectral measure. [TrefethenBau1997, Theorem 27.1]; [GolubVanLoan2013, Theorem 8.2.1] (locators
-from the quarry); there for a simple dominant eigenvalue and an eigenvector, here any
+spectral measure. [TrefethenBau1997, Theorem 27.1]; [GolubVanLoan2013, Theorem 8.2.1] (locators to
+check); there for a simple dominant eigenvalue and an eigenvector, here any
 multiplicity.
 Result: power-iteration -/
 theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_pow_mulVec_le {A : Matrix n n 𝕜}
@@ -154,7 +154,7 @@ $$\lambda_0 - \rho_{\mathbf{A}}(\mathbf{A}^q\mathbf{b}) \le
 $\rho_{\mathbf{A}}$ the Rayleigh quotient and $\tan^2\angle(\mathbf{b}, E_{\lambda_0})$ the ratio
 $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{\lambda_0\})/
 \mu_{\mathbf{A},\mathbf{b}}(\{\lambda_0\})$ of the spectral measure; no gap, every $q$ including
-$0$. [KuczynskiWozniakowski1992, Theorem 4.1] (locator from the quarry, to check); there as a
+$0$. [KuczynskiWozniakowski1992, Theorem 4.1] (locator to check); there as a
 relative error for a random start, here deterministic. -/
 theorem _root_.Matrix.PosSemidef.eigenvalue_sub_rayleighQuotient_pow_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (b : n → 𝕜) (hb : 0 < (spectralMeasure A b).real {eigenvalue A 0})
@@ -216,7 +216,7 @@ $$\bigl\lvert c - \rho_{\mathbf{A}}((\mathbf{A} - \sigma\mathbf{I})^{-q}\mathbf{
 \le D\Bigl(\frac{\lvert c - \sigma\rvert}{d}\Bigr)^{2q}\tan^2\angle(\mathbf{b}, E_c)\,,$$
 $\rho_{\mathbf{A}}$ the Rayleigh quotient and $\tan^2\angle(\mathbf{b}, E_c)$ the ratio
 $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{c\})/\mu_{\mathbf{A},\mathbf{b}}(\{c\})$ of the
-spectral measure. [TrefethenBau1997, Theorem 27.2] (locator from the quarry); there for a simple
+spectral measure. [TrefethenBau1997, Theorem 27.2] (locator to check); there for a simple
 eigenvalue and an eigenvector, here any multiplicity. -/
 theorem _root_.Matrix.IsHermitian.abs_sub_rayleighQuotient_inv_pow_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {s : Set ℝ} {c σ d D : ℝ} (hs : spectrum ℝ A ⊆ s ∪ {c})

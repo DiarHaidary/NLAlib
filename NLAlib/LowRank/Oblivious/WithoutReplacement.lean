@@ -22,8 +22,7 @@ $1/2$. Any `RCLike` field.
 
 The factor is constant and there is no accuracy parameter, so no asymptotic form; in $O(\cdot)$
 form the size is the family's injection size,
-`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`. Design:
-`docs/design/LowRank-S7.md` §3.5, §8 item 10.
+`NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketchWithoutReplacement`.
 
 ## Main results
 

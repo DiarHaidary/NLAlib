@@ -16,7 +16,6 @@ controlled by the partial sums $\sum_{y\in s,\,y\le x} d(y)$: a finite Abel summ
 Stieltjes integral. Upstream candidates for `Mathlib.Topology.MetricSpace.Lipschitz`; Mathlib's
 summation by parts (`Finset.sum_range_by_parts`) is over `ℕ` ranges.
 
-Design: stage SLQ (`docs/design/Estimation-SLQ.md` §3.1, F1 and F2).
 
 ## Main results
 

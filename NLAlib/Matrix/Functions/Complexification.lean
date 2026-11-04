@@ -50,8 +50,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {l m n : Type*}
 
 /-- The **complexification** of a matrix over an `RCLike` field: the complex matrix with the same
-real and imaginary parts. Over $\mathbb{C}$ it is the identity, over $\mathbb{R}$ the inclusion.
-Port of `NLAlib.realMatrixComplexification`, there for real matrices. -/
+real and imaginary parts. Over $\mathbb{C}$ it is the identity, over $\mathbb{R}$ the inclusion. -/
 noncomputable def complexify (A : Matrix m n 𝕜) : Matrix m n ℂ :=
   A.map RCLike.toComplex
 
@@ -276,8 +275,7 @@ theorem specNorm_complexify [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     hP.specNorm_eq_eigenvalue_zero, eigenvalue_complexify]
 
 /-- The complexification preserves the singular values, so every unitarily invariant quantity of
-a real matrix can be computed over $\mathbb{C}$. Port of `NLAlib.singularValues_map_ofReal`, there
-for the inclusion of $\mathbb{R}$ in an `RCLike` field. -/
+a real matrix can be computed over $\mathbb{C}$. -/
 @[simp]
 theorem singularValues_complexify [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     singularValues (complexify A) = singularValues A := by

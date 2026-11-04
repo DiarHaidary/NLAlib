@@ -1,0 +1,12 @@
+{
+ "date": "2026-10-29",
+ "note": "Main stage-check fixes (rule N1): the symmetry lemma of the matrix of a three-term datum is named as its LanczosRun counterpart (NLAlib.LanczosRun.isHermitian), the field `H` being the namespace's object. Statement unchanged.",
+ "renames": [
+  {
+   "old": "NLAlib.LanczosData.isHermitian_H",
+   "new": "NLAlib.LanczosData.isHermitian",
+   "rule": "N1"
+  }
+ ],
+ "statementChanged": []
+}

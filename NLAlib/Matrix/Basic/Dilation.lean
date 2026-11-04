@@ -16,7 +16,7 @@ public import Mathlib.LinearAlgebra.Matrix.Hermitian
 off the diagonal. It carries statements about Hermitian matrices (eigenvalue perturbation, matrix
 concentration) to rectangular matrices: its eigenvalues are plus and minus the singular values of
 $\mathbf{A}$, and its spectral norm is that of $\mathbf{A}$. Those two facts are proved with the
-spectral stage; this file has the algebra.
+spectral theory; this file has the algebra.
 
 ## Main definitions
 
@@ -40,7 +40,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*}
 
 /-- The **Hermitian dilation** of a rectangular matrix $\mathbf{A}$: the block matrix
 $\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0} \end{bmatrix}$,
-with row and column index type `m ⊕ n`. [Tropp2015, §2.1.16]. Port of `NLAlib.dilation`. -/
+with row and column index type `m ⊕ n`. [Tropp2015, §2.1.16]. -/
 def dilation (A : Matrix m n 𝕜) : Matrix (m ⊕ n) (m ⊕ n) 𝕜 :=
   Matrix.fromBlocks 0 A Aᴴ 0
 
@@ -50,7 +50,7 @@ built with `Matrix.fromBlocks`. -/
 theorem dilation_def (A : Matrix m n 𝕜) : dilation A = Matrix.fromBlocks 0 A Aᴴ 0 :=
   rfl
 
-/-- The Hermitian dilation is Hermitian. Port of `NLAlib.isHermitian_dilation`. -/
+/-- The Hermitian dilation is Hermitian. -/
 theorem isHermitian_dilation (A : Matrix m n 𝕜) : (dilation A).IsHermitian := by
   rw [Matrix.IsHermitian, dilation, Matrix.fromBlocks_conjTranspose, Matrix.conjTranspose_zero,
     Matrix.conjTranspose_zero, Matrix.conjTranspose_conjTranspose]
@@ -65,7 +65,7 @@ theorem conjTranspose_dilation (A : Matrix m n 𝕜) : (dilation A)ᴴ = dilatio
 theorem dilation_zero : dilation (0 : Matrix m n 𝕜) = 0 := by
   rw [dilation, Matrix.conjTranspose_zero, Matrix.fromBlocks_zero]
 
-/-- The dilation is additive. Port of `NLAlib.dilation_add`. -/
+/-- The dilation is additive. -/
 theorem dilation_add (A B : Matrix m n 𝕜) : dilation (A + B) = dilation A + dilation B := by
   rw [dilation, dilation, dilation, Matrix.fromBlocks_add, Matrix.conjTranspose_add, add_zero,
     add_zero]

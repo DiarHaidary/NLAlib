@@ -76,7 +76,6 @@ private theorem card_add_finrank_le_finrank_comap_add_card (B : Matrix p n 𝕜)
 /-- **Weyl's inequality for singular values.**
 $\sigma_{i+j}(\mathbf{A} + \mathbf{B}) \le \sigma_i(\mathbf{A}) + \sigma_j(\mathbf{B})$, for all
 indices from $0$. [HornJohnson1991, Theorem 3.3.16].
-Port of `NLAlib.singularValues_add_add_le`.
 Result: weyl-singular-values -/
 theorem singularValues_add_le (A B : Matrix m n 𝕜) (i j : ℕ) :
     singularValues (A + B) (i + j) ≤ singularValues A i + singularValues B j := by
@@ -90,8 +89,7 @@ theorem singularValues_add_le (A B : Matrix m n 𝕜) (i j : ℕ) :
     exact (norm_add_le _ _).trans (add_le_add (hA x hx.1) (hB x hx.2))
 
 /-- A perturbation raises each singular value by at most its spectral norm:
-$\sigma_k(\mathbf{A} + \mathbf{E}) \le \sigma_k(\mathbf{A}) + \|\mathbf{E}\|_2$.
-Port of `NLAlib.singularValues_add_le_add_specNorm`. -/
+$\sigma_k(\mathbf{A} + \mathbf{E}) \le \sigma_k(\mathbf{A}) + \|\mathbf{E}\|_2$. -/
 theorem singularValues_add_le_add_specNorm (A E : Matrix m n 𝕜) (k : ℕ) :
     singularValues (A + E) k ≤ singularValues A k + specNorm E := by
   have h := singularValues_add_le A E k 0
@@ -101,7 +99,6 @@ theorem singularValues_add_le_add_specNorm (A E : Matrix m n 𝕜) (k : ℕ) :
 $\lvert \sigma_k(\mathbf{A}) - \sigma_k(\mathbf{B}) \rvert \le \|\mathbf{A} - \mathbf{B}\|_2$ for
 every $k$.
 [HornJohnson2013, Corollary 7.3.5].
-Port of `NLAlib.abs_singularValues_sub_le_specNorm`.
 Result: weyl-singular-values, singular-value-perturbation -/
 theorem abs_singularValues_sub_le_specNorm (A B : Matrix m n 𝕜) (k : ℕ) :
     |singularValues A k - singularValues B k| ≤ specNorm (A - B) := by
@@ -116,8 +113,7 @@ theorem abs_singularValues_sub_le_specNorm (A B : Matrix m n 𝕜) (k : ℕ) :
 
 /-- Singular values are $1$-Lipschitz in the Frobenius norm:
 $\lvert \sigma_k(\mathbf{A}) - \sigma_k(\mathbf{B}) \rvert \le
-\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
-Port of `NLAlib.abs_singularValues_sub_le_frobNorm`. -/
+\|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$. -/
 theorem abs_singularValues_sub_le_frobNorm (A B : Matrix m n 𝕜) (k : ℕ) :
     |singularValues A k - singularValues B k| ≤ frobNorm (A - B) := by
   exact (abs_singularValues_sub_le_specNorm A B k).trans (specNorm_le_frobNorm _)
@@ -162,8 +158,7 @@ theorem singularValues_add_le_singularValues_sub_of_rank_le (A : Matrix m n 𝕜
 
 /-- A left factor scales singular values by at most its spectral norm:
 $\sigma_k(\mathbf{B}\mathbf{A}) \le \|\mathbf{B}\|_2 \, \sigma_k(\mathbf{A})$.
-[HornJohnson1991, Theorem 3.3.16].
-Port of `NLAlib.singularValues_mul_le_specNorm_mul`. -/
+[HornJohnson1991, Theorem 3.3.16]. -/
 theorem singularValues_mul_le_specNorm_mul (B : Matrix l m 𝕜) (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues (B * A) k ≤ specNorm B * singularValues A k := by
   obtain ⟨W, hW, hA⟩ := exists_submodule_norm_mulVec_le A k
@@ -174,8 +169,7 @@ theorem singularValues_mul_le_specNorm_mul (B : Matrix l m 𝕜) (A : Matrix m n
     (mul_le_mul_of_nonneg_left (hA x hx) (specNorm_nonneg B))
 
 /-- A right factor scales singular values by at most its spectral norm:
-$\sigma_k(\mathbf{A}\mathbf{C}) \le \sigma_k(\mathbf{A}) \, \|\mathbf{C}\|_2$.
-Port of `NLAlib.singularValues_mul_le_mul_specNorm`. -/
+$\sigma_k(\mathbf{A}\mathbf{C}) \le \sigma_k(\mathbf{A}) \, \|\mathbf{C}\|_2$. -/
 theorem singularValues_mul_le_mul_specNorm (A : Matrix m n 𝕜) (C : Matrix n p 𝕜) (k : ℕ) :
     singularValues (A * C) k ≤ singularValues A k * specNorm C := by
   have h := singularValues_mul_le_specNorm_mul Cᴴ Aᴴ k
@@ -186,7 +180,6 @@ theorem singularValues_mul_le_mul_specNorm (A : Matrix m n 𝕜) (C : Matrix n p
 $\sigma_{i+j}(\mathbf{A}\mathbf{B}) \le \sigma_i(\mathbf{A}) \, \sigma_j(\mathbf{B})$ for all
 indices from $0$.
 [HornJohnson1991, Theorem 3.3.16].
-Port of `NLAlib.singularValues_mul_add_le`, there over $\mathbb{R}$.
 Result: weyl-singular-values-product -/
 theorem singularValues_mul_add_le (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) (i j : ℕ) :
     singularValues (A * B) (i + j) ≤ singularValues A i * singularValues B j := by
@@ -277,8 +270,6 @@ private theorem singularValues_submatrix_cols_le (A : Matrix m n 𝕜) {c : p �
 (columns) has singular values at most those of the matrix:
 $\sigma_k(\mathbf{A}_{r,c}) \le \sigma_k(\mathbf{A})$, where $\mathbf{A}_{r,c}$ is
 `A.submatrix r c`. [HornJohnson1991, Corollary 3.1.3].
-Port of `NLAlib.singularValues_submatrix_rows_le` and `NLAlib.singularValues_submatrix_cols_le`,
-there over $\mathbb{R}$.
 Result: singular-value-interlacing -/
 theorem singularValues_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
     (hr : Function.Injective r) (hc : Function.Injective c) (k : ℕ) :
@@ -296,8 +287,6 @@ theorem singularValues_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p �
 of the $\lvert p \rvert + d$ columns of $\mathbf{A}$, then
 $\sigma_{k+d}(\mathbf{A}) \le \sigma_k(\mathbf{A}')$ for every $k$, where $\mathbf{A}'$ is
 `A.submatrix id c`. [HornJohnson1991, Corollary 3.1.3].
-Port of `NLAlib.singularValues_le_submatrix_cols`, there over $\mathbb{R}$ with truncated
-subtraction.
 Result: singular-value-interlacing -/
 theorem singularValues_le_singularValues_submatrix_cols (A : Matrix m n 𝕜) {c : p → n}
     (hc : Function.Injective c) {d : ℕ} (hd : Fintype.card p + d = Fintype.card n) (k : ℕ) :
@@ -318,8 +307,6 @@ theorem singularValues_le_singularValues_submatrix_cols (A : Matrix m n 𝕜) {c
 the $\lvert l \rvert + d$ rows of $\mathbf{A}$, then
 $\sigma_{k+d}(\mathbf{A}) \le \sigma_k(\mathbf{A}')$ for every $k$, where $\mathbf{A}'$ is
 `A.submatrix r id`. [HornJohnson1991, Corollary 3.1.3].
-Port of `NLAlib.singularValues_le_submatrix_rows`, there over $\mathbb{R}$ with truncated
-subtraction.
 Result: singular-value-interlacing -/
 theorem singularValues_le_singularValues_submatrix_rows (A : Matrix m n 𝕜) {r : l → m}
     (hr : Function.Injective r) {d : ℕ} (hd : Fintype.card l + d = Fintype.card m) (k : ℕ) :
@@ -329,9 +316,7 @@ theorem singularValues_le_singularValues_submatrix_rows (A : Matrix m n 𝕜) {r
     Matrix.conjTranspose_submatrix, Matrix.conjTranspose_conjTranspose] at h
 
 /-- Left multiplication by an orthogonal projector does not increase any singular value:
-$\sigma_k(\mathbf{P}\mathbf{A}) \le \sigma_k(\mathbf{A})$.
-Port of `NLAlib.singularValues_residual_le`, there for the residual of an orthonormal
-$\mathbf{Q}$. -/
+$\sigma_k(\mathbf{P}\mathbf{A}) \le \sigma_k(\mathbf{A})$. -/
 theorem _root_.IsStarProjection.singularValues_mul_le {P : Matrix m m 𝕜}
     (hP : IsStarProjection P) (A : Matrix m n 𝕜) (k : ℕ) :
     singularValues (P * A) k ≤ singularValues A k := by
@@ -351,9 +336,7 @@ theorem singularValues_one_sub_rangeProjector_mul_le [DecidableEq m] (Y : Matrix
 $$\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - \mathbf{I}\|_2
   = \max_{k < \lvert n \rvert} \lvert \sigma_k(\mathbf{A})^2 - 1 \rvert,$$
 the maximum over the indices below the number of columns (an empty supremum, zero, when there are
-none).
-Port of `NLAlib.specNorm_gram_sub_one_eq_norm_singularValues_sq_sub_one`, there over $\mathbb{R}$
-and `Fin`, with the supremum norm of a vector on the right. -/
+none). -/
 theorem specNorm_conjTranspose_mul_self_sub_one_eq_iSup [DecidableEq n] (A : Matrix m n 𝕜) :
     specNorm (Aᴴ * A - 1) = ⨆ k : Fin (Fintype.card n), |singularValues A k ^ 2 - 1| := by
   have hG := Matrix.isHermitian_conjTranspose_mul_self A
@@ -394,9 +377,7 @@ theorem specNorm_conjTranspose_mul_self_sub_one_le_iff [DecidableEq n] {A : Matr
 $\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N\mathbf{I}\|_2 \le N \max(\alpha, \alpha^2)$, then
 $\|\mathbf{A}\|_2 \le \sqrt{N} (1 + \alpha)$. This is the deterministic step from a
 concentration bound for $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, with $N$ the number of rows, to the
-largest singular value. [Vershynin2018, Lemma 4.1.5]; stated there for $N = 1$ over $\mathbb{R}$.
-Port of `NLAlib.specNorm_le_sqrt_mul_one_add_of_gram_error`, there over $\mathbb{R}$ and with
-$0 \le N$. -/
+largest singular value. [Vershynin2018, Lemma 4.1.5]; stated there for $N = 1$ over $\mathbb{R}$. -/
 theorem specNorm_le_sqrt_mul_one_add_of_specNorm_sub_smul_one_le [DecidableEq n]
     {A : Matrix m n 𝕜} {N α : ℝ} (hα : 0 ≤ α)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n 𝕜)) ≤ N * max α (α ^ 2)) :
@@ -419,9 +400,7 @@ theorem specNorm_le_sqrt_mul_one_add_of_specNorm_sub_smul_one_le [DecidableEq n]
 $\|\mathbf{A}^{\mathsf{H}}\mathbf{A} - N\mathbf{I}\|_2 \le N \max(\alpha, \alpha^2)$, then the
 smallest singular value of $\mathbf{A}$ is at least $\sqrt{N}(1 - \alpha)$:
 $\sqrt{N}(1 - \alpha) \le \sigma_k(\mathbf{A})$ for $k + 1 = \lvert n \rvert$.
-[Vershynin2018, Lemma 4.1.5]; stated there for $N = 1$ over $\mathbb{R}$.
-Port of `NLAlib.sqrt_mul_one_sub_le_singularValues_last_of_gram_error`, there over $\mathbb{R}$
-and with $0 \le N$. -/
+[Vershynin2018, Lemma 4.1.5]; stated there for $N = 1$ over $\mathbb{R}$. -/
 theorem sqrt_mul_one_sub_le_singularValues_of_specNorm_sub_smul_one_le [DecidableEq n]
     {A : Matrix m n 𝕜} {N α : ℝ} (hα : 0 ≤ α) {k : ℕ} (hk : k + 1 = Fintype.card n)
     (h : specNorm (Aᴴ * A - N • (1 : Matrix n n 𝕜)) ≤ N * max α (α ^ 2)) :
@@ -475,7 +454,6 @@ theorem abs_singularGap_sub_le (A B : Matrix m n 𝕜) (k : ℕ) :
   rw [singularGap, singularGap, abs_le]
   constructor <;> linarith
 
--- Stage B1a
 
 /-- **A larger range gives a smaller projection residual**, singular value by singular value: if
 the range of $\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then

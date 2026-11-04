@@ -36,8 +36,8 @@ variable {α E : Type*} {m0 : MeasurableSpace α} [NormedAddCommGroup E] [Normed
 /-- **Jensen's inequality** $\int g(f(x)) \, d\mu(x) \le g\bigl(\int f(x) \, d\mu(x)\bigr)$ for a
 probability measure $\mu$ and $g$ concave and continuous on a convex set $s$ that need not be
 closed, provided $f$ takes values in $s$ almost everywhere, $f$ and $g \circ f$ are integrable,
-and the mean of $f$ lies in $s$. Mathlib's `ConcaveOn.le_map_integral` needs $s$ closed. Port of the
-prototype lemma of the same name. [Vershynin2018, §1.2] (locator to check). -/
+and the mean of $f$ lies in $s$. Mathlib's `ConcaveOn.le_map_integral` needs $s$ closed.
+[Vershynin2018, §1.2] (locator to check). -/
 theorem ConcaveOn.le_map_integral_of_integral_mem [IsProbabilityMeasure μ] (hg : ConcaveOn ℝ s g)
     (hgc : ContinuousOn g s) (hfs : ∀ᵐ x ∂μ, f x ∈ s) (hfi : Integrable f μ)
     (hgi : Integrable (g ∘ f) μ) (hm : ∫ x, f x ∂μ ∈ s) :
@@ -53,7 +53,6 @@ theorem ConcaveOn.le_map_integral_of_integral_mem [IsProbabilityMeasure μ] (hg 
       ⟨(continuous_fst.tendsto _).comp hlim, Eventually.of_forall fun k => (hu k).1⟩)
   exact le_of_tendsto_of_tendsto' ((continuous_snd.tendsto _).comp hlim) hglim fun k => (hu k).2
 
--- Stage B1b
 
 /-- **Jensen's inequality from a supporting line**: for a probability measure $\mu$, a real random
 variable $X$ with values in $s$ almost everywhere, and $\varphi$ with a supporting line on $s$ at

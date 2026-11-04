@@ -63,8 +63,7 @@ $\mathbf{U}$ has orthonormal columns and $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is 
 singular values are the tangents of the principal angles between the two column spaces, and it
 depends only on the column space of $\mathbf{Y}$. It is $\mathbf{0}$ when
 $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is singular.
-[GolubVanLoan2013, §8.2.4]; [Saad2011, §5.2].
-Port of `NLAlib.overlapTangentNorm` and `NLAlib.tangentPrincipalAngles`, as a matrix. -/
+[GolubVanLoan2013, §8.2.4]; [Saad2011, §5.2]. -/
 noncomputable def tangentMatrix (U Y : Matrix n p 𝕜) : Matrix n p 𝕜 :=
   (1 - U * Uᴴ) * Y * (Uᴴ * Y)⁻¹
 
@@ -75,8 +74,7 @@ theorem tangentMatrix_def (U Y : Matrix n p 𝕜) :
   rfl
 
 /-- The tangent matrix does not depend on the basis of the second subspace: replacing
-$\mathbf{Y}$ by $\mathbf{Y}\mathbf{R}$ with $\mathbf{R}$ invertible does not change it.
-Port of `NLAlib.overlapTangentNorm_mul_right`. -/
+$\mathbf{Y}$ by $\mathbf{Y}\mathbf{R}$ with $\mathbf{R}$ invertible does not change it. -/
 @[simp]
 theorem tangentMatrix_mul_right (U Y : Matrix n p 𝕜) {R : Matrix p p 𝕜} (hR : IsUnit R) :
     tangentMatrix U (Y * R) = tangentMatrix U Y := by
@@ -85,8 +83,7 @@ theorem tangentMatrix_mul_right (U Y : Matrix n p 𝕜) {R : Matrix p p 𝕜} (h
     ← Matrix.mul_assoc _ Y R, Matrix.mul_assoc _ R, ← Matrix.mul_assoc R,
     Matrix.mul_nonsing_inv R hR', Matrix.one_mul]
 
-/-- The tangent matrix vanishes when $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is singular.
-Port of `NLAlib.overlapTangentNorm_eq_zero_of_not_isUnit`. -/
+/-- The tangent matrix vanishes when $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is singular. -/
 theorem tangentMatrix_of_not_isUnit {U Y : Matrix n p 𝕜} (h : ¬ IsUnit (Uᴴ * Y)) :
     tangentMatrix U Y = 0 := by
   rw [tangentMatrix, Matrix.nonsing_inv_apply_not_isUnit _
@@ -96,8 +93,7 @@ theorem tangentMatrix_of_not_isUnit {U Y : Matrix n p 𝕜} (h : ¬ IsUnit (Uᴴ
 $\mathbf{U}\mathbf{U}^{\mathsf{H}} + \mathbf{W}\mathbf{W}^{\mathsf{H}} = \mathbf{I}$ with
 $\mathbf{W}$ having orthonormal columns, then the tangent matrix and
 $\mathbf{W}^{\mathsf{H}}\mathbf{Y}(\mathbf{U}^{\mathsf{H}}\mathbf{Y})^{-1}$ have the same singular
-values.
-Port of `NLAlib.overlapTangentNorm_eq_specNorm_transpose_mul_mul`. -/
+values. -/
 theorem HasOrthonormalCols.singularValues_tangentMatrix_eq_of_mul_conjTranspose_add_eq_one
     [DecidableEq q]
     {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
@@ -109,8 +105,7 @@ theorem HasOrthonormalCols.singularValues_tangentMatrix_eq_of_mul_conjTranspose_
 omit [DecidableEq n] in
 /-- The acute case for a frame and a basis with the same number of columns:
 $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ is invertible exactly when the largest principal angle is below
-$\pi / 2$: $\theta_j(\mathbf{U}, \mathbf{Y}) < \pi / 2$ for $j + 1 = \lvert p \rvert$.
-Port of `NLAlib.isUnit_overlap_of_principalAngles_last_lt_pi_div_two`. -/
+$\pi / 2$: $\theta_j(\mathbf{U}, \mathbf{Y}) < \pi / 2$ for $j + 1 = \lvert p \rvert$. -/
 theorem HasOrthonormalCols.isUnit_conjTranspose_mul_iff {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) (Y : Matrix n p 𝕜) {j : ℕ} (hj : j + 1 = Fintype.card p) :
     IsUnit (Uᴴ * Y) ↔ principalAngle U Y j < Real.pi / 2 := by
@@ -140,7 +135,6 @@ $\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible, the singular values of the tange
 $\mathbf{T}$ are the tangents of the principal angles, in reverse order:
 $\sigma_i(\mathbf{T}) = \tan \theta_j(\mathbf{U}, \mathbf{Y})$ for $i + j + 1 = \lvert p \rvert$.
 [GolubVanLoan2013, §8.2.4 (proof of Theorem 8.2.2)]; [Saad2011, §5.2].
-Port of `NLAlib.tan_principalAngles_sq` and `NLAlib.tanThetaMax_eq_tan_principalAngles`.
 Result: principal-angles -/
 theorem HasOrthonormalCols.singularValues_tangentMatrix {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) {Y : Matrix n p 𝕜} (hY : IsUnit (Uᴴ * Y)) {i j : ℕ}
@@ -189,8 +183,7 @@ theorem HasOrthonormalCols.singularValues_tangentMatrix {U : Matrix n p 𝕜}
 
 /-- The tangent of the largest principal angle as a spectral norm:
 $\|\mathbf{T}\|_2 = \tan \theta_j(\mathbf{U}, \mathbf{Y})$ for the tangent matrix $\mathbf{T}$,
-$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible and $j + 1 = \lvert p \rvert$.
-Port of `NLAlib.specNorm_tangentPrincipalAngles_eq_tan_last`. -/
+$\mathbf{U}^{\mathsf{H}}\mathbf{Y}$ invertible and $j + 1 = \lvert p \rvert$. -/
 theorem HasOrthonormalCols.specNorm_tangentMatrix {U : Matrix n p 𝕜}
     (hU : HasOrthonormalCols U) {Y : Matrix n p 𝕜} (hY : IsUnit (Uᴴ * Y)) {j : ℕ}
     (hj : j + 1 = Fintype.card p) :
@@ -203,8 +196,7 @@ $\mathbf{U}^{\mathsf{H}}\mathbf{W} = \mathbf{0}$, the tangent matrix of
 $\mathbf{U} + \mathbf{W}\mathbf{F}$ relative to $\mathbf{U}$ is $\mathbf{W}\mathbf{F}$, for every
 $\mathbf{F}$. When $\mathbf{W}$ has orthonormal columns too, its singular values are those of
 $\mathbf{F}$
-(`NLAlib.HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul`). [Saad2011, §5.1].
-Port of `NLAlib.subspaceTangent_range_graph_eq_specNorm`. -/
+(`NLAlib.HasOrthonormalCols.singularValues_eq_tan_principalAngle_add_mul`). [Saad2011, §5.1]. -/
 theorem HasOrthonormalCols.tangentMatrix_add_mul {U : Matrix n p 𝕜} {W : Matrix n q 𝕜}
     (hU : HasOrthonormalCols U) (hUW : Uᴴ * W = 0) (F : Matrix q p 𝕜) :
     tangentMatrix U (U + W * F) = W * F := by
@@ -244,9 +236,7 @@ $\mathbf{u}$, the tangent is at most $\|\mathbf{w}\|$, stated here without the d
 $\|(\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}\| \le \|\mathbf{w}\| \,
 \|\mathbf{Q}^{\mathsf{H}}\mathbf{u}\|$. This is the per-vector form of the tangent bounds for
 subspace iterations: it needs no assumption on the dimension of the column space of $\mathbf{Q}$,
-where `NLAlib.HasOrthonormalCols.tangentMatrix_add_mul` compares subspaces of equal dimension.
-Port of `NLAlib.vectorTangentToFrame_le_of_orthogonal_competitor`, there over $\mathbb{R}$ and as
-a quotient. -/
+where `NLAlib.HasOrthonormalCols.tangentMatrix_add_mul` compares subspaces of equal dimension. -/
 theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_le_mul {Q : Matrix n p 𝕜}
     (hQ : HasOrthonormalCols Q) {u w : n → 𝕜} (hu : ‖WithLp.toLp 2 u‖ = 1)
     (huw : star u ⬝ᵥ w = 0) (hw : u + w ∈ LinearMap.range Q.mulVecLin) :
@@ -285,8 +275,7 @@ $\mathbf{u}_i$ of $\mathbf{U}$ and the column space of $\mathbf{Q}$ is at most t
 $\mathbf{f}_i$ of $\mathbf{F}$, stated without the division:
 $\|(\mathbf{I} - \mathbf{Q}\mathbf{Q}^{\mathsf{H}})\mathbf{u}_i\| \le \|\mathbf{f}_i\| \,
 \|\mathbf{Q}^{\mathsf{H}}\mathbf{u}_i\|$. This is how a tangent bound for a subspace iteration gives
-a bound for each target vector.
-Port of `NLAlib.vectorTangentToFrame_graph_col_le`, there over $\mathbb{R}$ and as a quotient. -/
+a bound for each target vector. -/
 theorem HasOrthonormalCols.norm_toLp_one_sub_mul_mulVec_col_le_mul {r : Type*} [Fintype r]
     [DecidableEq q] [DecidableEq r] {Q : Matrix n p 𝕜} (hQ : HasOrthonormalCols Q)
     {U : Matrix n q 𝕜} {W : Matrix n r 𝕜} (hU : HasOrthonormalCols U)

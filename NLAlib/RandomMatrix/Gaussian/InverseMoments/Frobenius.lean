@@ -20,8 +20,8 @@ so both reduce to the moments of the entries of the inverse Wishart matrix
 (`NLAlib.RandomMatrix.Gaussian.InverseMoments`). The spectral moments of $\mathbf{G}^{+}$
 (Proposition 10.4) are in `NLAlib.RandomMatrix.Gaussian.InverseMoments.Spectral`.
 
-Split from `NLAlib.RandomMatrix.Gaussian.InverseMoments` on 2026-10-15
-(`docs/design/LowRank-S3.md`).
+Split from `NLAlib.RandomMatrix.Gaussian.InverseMoments` on 2026-10-15.
+
 
 ## Main results
 

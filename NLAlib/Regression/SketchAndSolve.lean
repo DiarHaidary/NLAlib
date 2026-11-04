@@ -47,7 +47,7 @@ the factor is <!-- value haarProjectionFactor m p q -->
 $1 + (m - p)/(m - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor m p q`), at most the
 Gaussian one: orthogonality helps, but only a bit. Every Haar statement carries $p \le m$: a wider
 Haar frame has orthonormal rows, the sketch is an isometry and the factor would be $1$. Real
-throughout. Design: `docs/design/LowRank-S6.md` §3.2, §8.
+throughout.
 
 ## Main results
 

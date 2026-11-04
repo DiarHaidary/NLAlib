@@ -24,7 +24,6 @@ Mathlib has the product measure and the independence of its coordinates
 (`ProbabilityTheory.iIndepFun_iff_hasLaw_Pi_infinitePi`) but not this statement. Upstream
 candidate for `Mathlib/Probability/Independence/InfinitePi.lean`.
 
-Design: `docs/design/Regression-Kaczmarz.md` §4.
 
 ## Main results
 

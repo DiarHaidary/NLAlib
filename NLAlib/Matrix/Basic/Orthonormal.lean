@@ -74,8 +74,7 @@ end HasOrthonormalCols
 /-! ### Bridges to Mathlib -/
 
 /-- $\mathbf{Q}$ has orthonormal columns exactly when its columns are an orthonormal family in
-`EuclideanSpace 𝕜 m`, in the sense of Mathlib's `Orthonormal`.
-Port of `NLAlib.hasOrthonormalCols_iff_orthonormal`. -/
+`EuclideanSpace 𝕜 m`, in the sense of Mathlib's `Orthonormal`. -/
 theorem hasOrthonormalCols_iff_orthonormal {Q : Matrix m n 𝕜} :
     HasOrthonormalCols Q ↔ Orthonormal 𝕜 fun j => WithLp.toLp 2 (Q.col j) := by
   rw [orthonormal_iff_ite, HasOrthonormalCols, ← Matrix.ext_iff]
@@ -94,6 +93,45 @@ theorem hasOrthonormalCols_iff_mem_unitaryGroup [Fintype n] {Q : Matrix n n 𝕜
 /-- The identity matrix has orthonormal columns. -/
 theorem hasOrthonormalCols_one [Fintype n] : HasOrthonormalCols (1 : Matrix n n 𝕜) := by
   rw [HasOrthonormalCols, Matrix.conjTranspose_one, Matrix.one_mul]
+
+open scoped ComplexOrder in
+omit [DecidableEq n] in
+/-- A zero diagonal entry of the Gram matrix forces the corresponding column to vanish.
+This supplies the zero-column case when normalizing singular columns. -/
+theorem col_eq_zero_of_conjTranspose_mul_self_apply_eq_zero (B : Matrix m n 𝕜) {i : n}
+    (hi : (Bᴴ * B) i i = 0) : B.col i = 0 :=
+  dotProduct_star_self_eq_zero.mp hi
+
+/-- If the Gram matrix of $\mathbf{B}$ is the diagonal of the real squares $s_i^2$, then
+any injectively selected columns with $s_i \ne 0$, divided by $s_i$, are orthonormal.
+This is the shared normalization step for singular and generalized singular columns.
+Proof material adapted from `tchen-research/NLAlib` at
+`77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib/Matrix/Factorizations/GeneralizedSVD.lean`. -/
+theorem hasOrthonormalCols_div_of_conjTranspose_mul_self_eq_diagonal
+    {B : Matrix m n 𝕜} {s : n → ℝ}
+    (hB : Bᴴ * B = Matrix.diagonal (fun i => ((s i ^ 2 : ℝ) : 𝕜)))
+    {r : Type*} [DecidableEq r] (e : r → n) (he : Function.Injective e)
+    (hs : ∀ i, s (e i) ≠ 0) :
+    HasOrthonormalCols (Matrix.of (fun j i => B j (e i) / (s (e i) : 𝕜))) := by
+  ext i j
+  have hij := congrArg (fun M : Matrix n n 𝕜 => M (e i) (e j)) hB
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.diagonal_apply] at hij
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.of_apply,
+    star_div₀, RCLike.star_def, RCLike.conj_ofReal, div_mul_div_comm,
+    ← Finset.sum_div, Matrix.one_apply]
+  simp only [RCLike.star_def] at hij
+  by_cases h : i = j
+  · subst j
+    simp only [ite_true] at hij ⊢
+    rw [hij]
+    have hi : (s (e i) : 𝕜) ≠ 0 := by exact_mod_cast hs i
+    push_cast
+    field_simp
+  · have hij' : e i ≠ e j := fun h' => h (he h')
+    simp only [hij', ite_false] at hij
+    rw [hij]
+    simp only [zero_div, h, ite_false]
 
 namespace HasOrthonormalCols
 
@@ -241,9 +279,7 @@ theorem conjTranspose_mulVec_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCo
   rw [Matrix.mulVec_mulVec, hQ.conjTranspose_mul_self, Matrix.one_mulVec]
 
 /-- Multiplication by $\mathbf{Q}$ preserves the pairing $\mathbf{x}^{\mathsf{H}}\mathbf{y}$:
-$(\mathbf{Q}\mathbf{x})^{\mathsf{H}}(\mathbf{Q}\mathbf{y}) = \mathbf{x}^{\mathsf{H}}\mathbf{y}$.
-Port of `NLAlib.star_mulVec_dotProduct_mulVec_self_of_hasOrthonormalCols`, there for
-$\mathbf{x} = \mathbf{y}$. -/
+$(\mathbf{Q}\mathbf{x})^{\mathsf{H}}(\mathbf{Q}\mathbf{y}) = \mathbf{x}^{\mathsf{H}}\mathbf{y}$. -/
 theorem star_mulVec_dotProduct_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (x y : n → 𝕜) : star (Q *ᵥ x) ⬝ᵥ (Q *ᵥ y) = star x ⬝ᵥ y := by
   rw [Matrix.star_mulVec, ← Matrix.dotProduct_mulVec, hQ.conjTranspose_mulVec_mulVec]
@@ -273,9 +309,20 @@ theorem norm_toLp_mulVec {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (x : 
   rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct,
     EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct, hQ.star_mulVec_dotProduct_mulVec]
 
+omit [Fintype n] in
+/-- The columns of a matrix with orthonormal columns are unit vectors:
+$\|\mathbf{Q}\mathbf{e}_j\| = 1$. -/
+theorem norm_toLp_col {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (j : n) :
+    ‖WithLp.toLp 2 (Q.col j)‖ = 1 := by
+  have h := congrFun (congrFun hQ.conjTranspose_mul_self j) j
+  rw [Matrix.mul_apply, Matrix.one_apply_eq] at h
+  refine (pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero).1 ?_
+  rw [EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct]
+  simp only [dotProduct, Matrix.col_apply, Pi.star_apply, Matrix.conjTranspose_apply] at h ⊢
+  rw [h, RCLike.one_re]
+
 /-- Multiplication by $\mathbf{Q}^{\mathsf{H}}$ does not increase the Euclidean norm (Bessel's
-inequality): $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$.
-Port of `NLAlib.sum_norm_sq_conjTranspose_mulVec_le`. -/
+inequality): $\|\mathbf{Q}^{\mathsf{H}}\mathbf{x}\| \le \|\mathbf{x}\|$. -/
 theorem norm_toLp_conjTranspose_mulVec_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (x : m → 𝕜) : ‖WithLp.toLp 2 (Qᴴ *ᵥ x)‖ ≤ ‖WithLp.toLp 2 x‖ := by
   refine (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp ?_
@@ -289,8 +336,7 @@ theorem norm_toLp_conjTranspose_mulVec_le {Q : Matrix m n 𝕜} (hQ : HasOrthono
 /-! ### Rank and size -/
 
 /-- A matrix with orthonormal columns has at most as many columns as rows:
-$\lvert n \rvert \le \lvert m \rvert$.
-Port of `NLAlib.card_le_card_of_hasOrthonormalCols`. -/
+$\lvert n \rvert \le \lvert m \rvert$. -/
 theorem card_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
     Fintype.card n ≤ Fintype.card m := by
   have h := LinearMap.finrank_le_finrank_of_injective (f := Q.mulVecLin) hQ.mulVec_injective

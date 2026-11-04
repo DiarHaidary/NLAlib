@@ -166,8 +166,7 @@ $$\mathbf{A}\mathbf{U} = \mathbf{U}
 The matrix $\mathbf{U}$ has as many columns as rows, so
 `HasOrthonormalCols.mul_conjTranspose_self_of_card_eq` gives
 $\mathbf{U}\mathbf{U}^{\mathsf{H}} = \mathbf{I}$.
-[HornJohnson2013, Theorem 2.5.6]. Port of `NLAlib.mul_sortedEigenframe_eq_mul_diagonal`, there
-for a chosen `sortedEigenframe`. -/
+[HornJohnson2013, Theorem 2.5.6]. -/
 theorem _root_.Matrix.IsHermitian.exists_mul_eq_mul_diagonal {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) :
     ∃ U : Matrix n (Fin (Fintype.card n)) 𝕜, HasOrthonormalCols U ∧
@@ -270,8 +269,7 @@ theorem _root_.Matrix.IsHermitian.exists_eigenvalue_eq_of_mulVec_eq_smul {A : Ma
 $\mathbf{A} = \mathbf{U} \operatorname{diag}(\boldsymbol{\mu}) \mathbf{U}^{\mathsf{H}}$ with
 $\mathbf{U}$ having orthonormal columns indexed by `Fin q`, $q$ the size of $\mathbf{A}$, and
 $\boldsymbol{\mu}$ non-increasing, then $\lambda_i(\mathbf{A}) = \boldsymbol{\mu}_i$ for every
-$i < q$.
-Port of `NLAlib.eigenvalues₀_eq_of_eq_mul_diagonal_mul`. -/
+$i < q$. -/
 theorem HasOrthonormalCols.eigenvalue_eq_of_eq_mul_diagonal_mul_conjTranspose {q : ℕ}
     {A : Matrix n n 𝕜}
     {U : Matrix n (Fin q) 𝕜} {μ : Fin q → ℝ} (hU : HasOrthonormalCols U)

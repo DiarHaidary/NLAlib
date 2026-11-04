@@ -47,22 +47,20 @@ theorem selectionMatrix_eq_submatrix (s : p → n) :
   rfl
 
 /-- The entries of a selection matrix $\mathbf{S}$: $\mathbf{S}_{i,j} = 1$ if $i = s(j)$ and $0$
-otherwise. Port of `NLAlib.transpose_selectionMatrix_apply`. -/
+otherwise. -/
 theorem selectionMatrix_apply (s : p → n) (i : n) (j : p) :
     (selectionMatrix s : Matrix n p 𝕜) i j = if i = s j then 1 else 0 := by
   rw [selectionMatrix, Matrix.submatrix_apply, Matrix.one_apply, id]
 
 /-- Right multiplication by a selection matrix selects columns: column $j$ of
-$\mathbf{A}\mathbf{S}$ is column $s(j)$ of $\mathbf{A}$.
-Port of `NLAlib.mul_selectionMatrix`, there over $\mathbb{R}$ with `Fin`-indexed selections. -/
+$\mathbf{A}\mathbf{S}$ is column $s(j)$ of $\mathbf{A}$. -/
 @[simp]
 theorem mul_selectionMatrix [Fintype n] (A : Matrix m n 𝕜) (s : p → n) :
     A * selectionMatrix s = A.submatrix id s :=
   Matrix.mul_submatrix_one (Equiv.refl n) s A
 
 /-- Left multiplication by the conjugate transpose of a selection matrix selects rows: row $j$
-of $\mathbf{S}^{\mathsf{H}}\mathbf{A}$ is row $s(j)$ of $\mathbf{A}$.
-Port of `NLAlib.transpose_selectionMatrix_mul`. -/
+of $\mathbf{S}^{\mathsf{H}}\mathbf{A}$ is row $s(j)$ of $\mathbf{A}$. -/
 @[simp]
 theorem conjTranspose_selectionMatrix_mul [Fintype n] (s : p → n) (A : Matrix n m 𝕜) :
     (selectionMatrix s : Matrix n p 𝕜)ᴴ * A = A.submatrix s id := by

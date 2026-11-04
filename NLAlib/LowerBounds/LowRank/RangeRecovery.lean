@@ -18,7 +18,7 @@ outputs, with probability one, a matrix whose range does not contain the range o
 unless that output has full rank $d$. In particular no algorithm with fewer than $k$ queries
 outputs a rank-$k$ projector $\mathbf{P}$ with $\mathbf{A}(\mathbf{I} - \mathbf{P}) = \mathbf{0}$
 with positive probability, for any $k < d$. This is the first end-to-end theorem of the query
-model (`docs/design/Probability-MatvecQueryModel.md`, §3.6): Yao's principle, the Gram simulation
+model: Yao's principle, the Gram simulation
 and the adaptive Gaussian deferred decision. Since $\mathbf{A}$ is Hermitian, products with
 $\mathbf{A}^{\mathsf{H}}$ are products with $\mathbf{A}$, so the bound counts all products.
 

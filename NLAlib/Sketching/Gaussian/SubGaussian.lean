@@ -39,7 +39,7 @@ sketches are the case $c = 1$ (`NLAlib.isSubgaussianVector_of_hasLaw_rademacherV
 `NLAlib.isIsotropic_of_hasLaw_rademacherVector`, `ProbabilityTheory.HasLaw.iIndepFun_eval`),
 with no separate statement. It is an oblivious subspace embedding and injection through JL
 plus a net (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding` at $4\varepsilon/5$); that route
-dominates the rows theorem's Gram sandwich in every regime (`docs/design/Sketching-S3.md` §7 Q1).
+dominates the rows theorem's Gram sandwich in every regime.
 Matrices with independent sub-Gaussian entries of unit variance reach the rows hypotheses through
 `NLAlib.iIndepFun_row_of_iIndepFun_entry`; only their JL tail is stated. The sample sizes are
 named quantities with nonnegativity, monotonicity and an explicit comparison.
@@ -52,7 +52,7 @@ $\varepsilon < 0$ the bound exceeds $2$. For $\varepsilon = 1$ the lower JL even
 $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$, which need not be null (for signs, probability
 $2^{-\lvert k \rvert}$ at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$); for
 $\varepsilon > 1$ it is empty, and the lower OSE constant $1 - \varepsilon \le 0$ is vacuous
-(`NLAlib.isSubspaceInjection_of_nonpos`). Design: `docs/design/Sketching-S3.md` §3.3, §8.
+(`NLAlib.isSubspaceInjection_of_nonpos`).
 
 ## Main definitions
 
@@ -109,8 +109,8 @@ private theorem two_mul_twentyOne_pow_mul_exp_le {d : ℕ} {L δ : ℝ} (hδ : 0
 /-- The constant $C$ of the sub-Gaussian JL tail
 $2 e^{-C \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, proved
 with <!-- value subgaussianJLConstant -->$C = 1/36$. Unspecified in
-[Vershynin2018, Exercise 5.3.3, Theorem 2.8.1]; the prototype had $1/(256 e^2)$, for
-$\varepsilon < 1$ only. The proof gives the centred square the parameters $(18 c^2, 18 c)$
+[Vershynin2018, Exercise 5.3.3, Theorem 2.8.1]. The
+proof gives the centred square the parameters $(18 c^2, 18 c)$
 (`ProbabilityTheory.HasSubgaussianMGF.hasSubexponentialMGF_sq_sub_integral_of_le`), which
 Bernstein's inequality turns into $\min(\varepsilon^2/(36 c^2), \varepsilon/(36 c))$: the window
 $18c$ is the one at which the two regimes have the same constant. Honorio and Jaakkola's
@@ -400,9 +400,7 @@ unit $\mathbf{x}$, <!-- value subgaussianJLConstant -->
 $$\mathbb{P}\bigl[\varepsilon \le \lvert \|\mathbf{S}\mathbf{x}\|^2 - 1 \rvert\bigr]
 \le 2 e^{-\frac{1}{36} \lvert k \rvert \min(\varepsilon^2/c^2, \, \varepsilon/c)} \,,$$
 the constant being `subgaussianJLConstant`. [Vershynin2018, Exercise 5.3.3], there
-with an unspecified constant. Replaces the prototype's
-`measure_lt_abs_mulVec_sq_sub_le_of_independent_isotropic_rows` (constant $1/(256 e^2)$,
-$\varepsilon < 1$, $K \ge 1$ assumed). For proxy $1$ and fourth directional moments at most $3$,
+with an unspecified constant. For proxy $1$ and fourth directional moments at most $3$,
 `NLAlib.hasJLProperty_of_isSubgaussianVector_of_integral_pow_four_le` is better for
 $\varepsilon \lesssim 1.43$ and this one beyond.
 Result: jl-subgaussian -/
@@ -563,8 +561,8 @@ $$2 \cdot 21^d \, e^{-\frac{1}{36} \lvert k \rvert
 the constant being `subgaussianJLConstant`: JL plus a net of radius $1/10$ at $4\varepsilon/5$
 (`NLAlib.HasJLProperty.isObliviousSubspaceEmbedding`). [Vershynin2018, Theorem 4.6.1, (4.22)],
 there for the singular values, $K^2 \max(\delta, \delta^2)$ with an unspecified
-constant; it dominates the rows theorem's Gram sandwich in every regime
-(`docs/design/Sketching-S3.md` §7 Q1).
+constant; it dominates the rows theorem's Gram sandwich in every regime.
+
 Result: subgaussian-ose -/
 theorem isObliviousSubspaceEmbedding_of_isSubgaussianVector (hind : iIndepFun (fun i ω => X ω i) μ)
     (hsub : ∀ i, IsSubgaussianVector (fun ω => X ω i) c μ)
@@ -910,12 +908,11 @@ $\mathbb{E}[\mathbf{X}_{i,j}^2] = 1$,
 $$\mathbf{S} = \lvert k \rvert^{-1/2} \, \mathbf{X}$$
 has the JL property with failure probability <!-- value subgaussianJLConstant -->
 $2 e^{-(1/36) \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, the constant being
-`subgaussianJLConstant`. The mean is $0$ by `HasSubgaussianMGF.integral_eq_zero` (the
-prototype's `hmean` is dropped), so the second moment is the variance. The rows hypotheses
+`subgaussianJLConstant`. The mean is $0$ by `HasSubgaussianMGF.integral_eq_zero`, so the second
+moment is the variance. The rows hypotheses
 follow by `NLAlib.iIndepFun_row_of_iIndepFun_entry`, `IsSubgaussianVector.of_iIndepFun` and
 `IsIsotropic.of_iIndepFun`; the other rows theorems apply to entries through the same three
-steps. [Vershynin2018, Exercise 5.3.3]. Replaces the prototype's
-`…_of_independent_subgaussian_entries`.
+steps. [Vershynin2018, Exercise 5.3.3].
 Result: jl-subgaussian -/
 theorem hasJLProperty_of_iIndepFun_entry
     (hind : iIndepFun (fun p : k × n => fun ω => X ω p.1 p.2) μ)

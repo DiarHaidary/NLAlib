@@ -168,7 +168,7 @@ $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{\lambda_0\})/
 \mu_{\mathbf{A},\mathbf{b}}(\{\lambda_0\})$ of the spectral measure.
 The proof gives the sharp factor $1/T_q\bigl(1 + 2(\lambda_0 - c)/(c - a)\bigr)^2$ in place of
 $4(\cdot)^{2q}$; they differ by $(1 + \rho^{2q})^2 \le 4$ (rule B6). [Saad2011, Theorem 6.4] (the
-case $i = 1$; locator from the quarry and PORT_KRYLOV §9, to verify); there with
+case $i = 1$; locator to verify); there with
 $a = \lambda_{n}$, $c = \lambda_1$, an eigenvector of a simple eigenvalue and the Chebyshev form.
 Result: kaniel-paige-saad -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le
@@ -324,8 +324,8 @@ $\mu_{\mathbf{A},\mathbf{b}}(\mathbb{R}\setminus\{\lambda_0\})/
 dependence on the start and no gap. Incomparable with
 `Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_add`: this bound needs no
 $\varepsilon$ and degrades only logarithmically with a poor start, that one is better for a fixed
-target accuracy with a good start. [KuczynskiWozniakowski1992, Theorem 4.2] (locator from the
-quarry, to check); there as a relative error for a random start, here deterministic.
+target accuracy with a good start. [KuczynskiWozniakowski1992, Theorem 4.2] (locator
+to check); there as a relative error for a random start, here deterministic.
 Result: ritz-value-gap-free -/
 theorem _root_.Matrix.PosSemidef.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le_div_sq
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) {b : n → 𝕜}

@@ -13,8 +13,8 @@ public import Mathlib.Topology.Instances.Real.Lemmas
 
 On a compact space, a continuous perturbation with the sign of a function at every point where
 its modulus attains the uniform norm decreases the norm after a small positive step. This is the
-perturbation step of the necessity half of Chebyshev's equioscillation theorem
-(`docs/design/Polynomial-BestApproximation.md`). An upstream candidate for
+perturbation step of the necessity half of Chebyshev's equioscillation theorem.
+An upstream candidate for
 `Mathlib/Topology/ContinuousMap/Compact.lean`.
 
 ## Main results

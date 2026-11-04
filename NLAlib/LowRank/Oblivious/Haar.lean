@@ -26,7 +26,6 @@ frame. Real throughout.
 
 The Haar randomized SVD to relative error by this route is dominated by Tropp and Webber's bound
 through the range transfer (`NLAlib.LowRank.Gaussian.RangeFinderTailHaar`) and is not stated.
-Design: `docs/design/LowRank-S7.md` §3.5, D3; `docs/design/Sketching-Moments.md` §4.3.
 
 ## Main results
 

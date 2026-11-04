@@ -44,7 +44,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-- **The matrix determinant lemma**: for invertible $\mathbf{M}$ over a field,
 $$\det(\mathbf{M} + \mathbf{u}\mathbf{v}^{\mathsf{T}})
   = \det \mathbf{M} \, (1 + \mathbf{v}^{\mathsf{T}}\mathbf{M}^{-1}\mathbf{u}).$$
-Port of `NLAlib.det_add_vecMulVec`. [HornJohnson2013, §0.8.5] (locator to check). -/
+[HornJohnson2013, §0.8.5] (locator to check). -/
 theorem det_add_vecMulVec {K : Type*} [Field K] {M : Matrix n n K} (hM : IsUnit M.det)
     (u v : n → K) : (M + Matrix.vecMulVec u v).det = M.det * (1 + v ⬝ᵥ M⁻¹ *ᵥ u) := by
   have hfactor : M + Matrix.vecMulVec u v = M * (1 + Matrix.vecMulVec (M⁻¹ *ᵥ u) v) := by
@@ -108,7 +108,7 @@ matrix, over any commutative ring,
 $$\det\bigl(X\mathbf{I} - \operatorname{diag}(\mathbf{d}) - \mathbf{u}\mathbf{v}^{\mathsf{T}}\bigr)
   = \prod_i (X - \mathbf{d}_i) -
   \sum_i \mathbf{u}_i \mathbf{v}_i \prod_{j \ne i} (X - \mathbf{d}_j).$$
-[GolubVanLoan2013, §8.4.3]. Port of `NLAlib.charpoly_diagonal_add_vecMulVec`. -/
+[GolubVanLoan2013, §8.4.3]. -/
 theorem charpoly_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → R) :
     (Matrix.diagonal d + Matrix.vecMulVec u v).charpoly =
       ∏ i, (X - C (d i)) - ∑ i, C (u i * v i) * ∏ j ∈ Finset.univ.erase i, (X - C (d j)) := by
@@ -137,8 +137,7 @@ theorem charpoly_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → 
 /-- The determinant of a diagonal matrix plus a rank-one matrix, with no invertibility
 assumption:
 $$\det\bigl(\operatorname{diag}(\mathbf{d}) + \mathbf{u}\mathbf{v}^{\mathsf{T}}\bigr)
-  = \prod_i \mathbf{d}_i + \sum_i \mathbf{u}_i \mathbf{v}_i \prod_{j \ne i} \mathbf{d}_j.$$
-Port of `NLAlib.det_diagonal_add_vecMulVec_of_forall_ne_zero`. -/
+  = \prod_i \mathbf{d}_i + \sum_i \mathbf{u}_i \mathbf{v}_i \prod_{j \ne i} \mathbf{d}_j.$$ -/
 theorem det_diagonal_add_vecMulVec {R : Type*} [CommRing R] (d u v : n → R) :
     (Matrix.diagonal d + Matrix.vecMulVec u v).det =
       ∏ i, d i + ∑ i, u i * v i * ∏ j ∈ Finset.univ.erase i, d j := by
@@ -167,8 +166,7 @@ $$\det\left(X\mathbf{I} - \begin{bmatrix} \operatorname{diag}(\mathbf{d}) & \mat
   \mathbf{w}^{\mathsf{T}} & a \end{bmatrix}\right)
   = (X - a) \prod_i (X - \mathbf{d}_i) -
   \sum_i \mathbf{u}_i \mathbf{w}_i \prod_{j \ne i} (X - \mathbf{d}_j).$$
-[GolubVanLoan2013, §8.4.3 context].
-Port of `NLAlib.charpoly_fromBlocks_diagonal_replicate`. -/
+[GolubVanLoan2013, §8.4.3 context]. -/
 theorem charpoly_fromBlocks_diagonal_replicateCol {R : Type*} [CommRing R] (d u w : n → R)
     (a : R) :
     (Matrix.fromBlocks (Matrix.diagonal d) (Matrix.replicateCol Unit u)
@@ -197,8 +195,7 @@ eigenvalues in place, as an identity of characteristic polynomials over any comm
 $$(X - \mu) \, p_{\mathbf{A} + \mathbf{x}\mathbf{y}^{\mathsf{T}}}(X)
   = (X - \mu - \mathbf{y}^{\mathsf{T}}\mathbf{x}) \, p_{\mathbf{A}}(X),$$
 with $p_{\mathbf{M}}(X) = \det(X\mathbf{I} - \mathbf{M})$.
-[HornJohnson2013, Example 1.2.8], there over $\mathbb{C}$.
-Port of `NLAlib.charpoly_add_vecMulVec_mul_X_sub_C`. -/
+[HornJohnson2013, Example 1.2.8], there over $\mathbb{C}$. -/
 theorem X_sub_C_mul_charpoly_add_vecMulVec {R : Type*} [CommRing R] {A : Matrix n n R} {x : n → R}
     {μ : R} (hAx : A *ᵥ x = μ • x) (y : n → R) :
     (X - C μ) * (A + Matrix.vecMulVec x y).charpoly = (X - C (μ + y ⬝ᵥ x)) * A.charpoly := by
@@ -250,8 +247,7 @@ theorem _root_.Matrix.IsHermitian.isEigenvalueListing_eigenvalue {A : Matrix n n
   exact Fintype.prod_equiv e _ _ fun i => by rw [he]
 
 /-- Hermitian matrices with the same characteristic polynomial have the same eigenvalues:
-$\lambda_k(\mathbf{A}) = \lambda_k(\mathbf{B})$ for every $k$.
-Port of `NLAlib.eigenvalues₀_eq_of_charpoly_eq`. -/
+$\lambda_k(\mathbf{A}) = \lambda_k(\mathbf{B})$ for every $k$. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_eq_of_charpoly_eq {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) (h : A.charpoly = B.charpoly) :
     eigenvalue A = eigenvalue B := by

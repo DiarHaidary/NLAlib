@@ -48,7 +48,6 @@ $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$ is at most the $k$-th eigenvalue o
 $\lambda_k(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}) \le \lambda_k(\mathbf{A})$ for
 $k < \lvert p \rvert$.
 [HornJohnson2013, Corollary 4.3.37].
-Port of `Matrix.IsHermitian.eigenvalues₀_compression_le`.
 Result: poincare-separation, cauchy-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_conjTranspose_mul_mul_le [DecidableEq p]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {Q : Matrix n p 𝕜} (hQ : HasOrthonormalCols Q)
@@ -67,7 +66,6 @@ is at most the $k$-th eigenvalue of the compression:
 $\lambda_{k+d}(\mathbf{A}) \le \lambda_k(\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q})$ for
 $k < \lvert p \rvert$.
 [HornJohnson2013, Corollary 4.3.37].
-Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_compression`.
 Result: poincare-separation, cauchy-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_conjTranspose_mul_mul
     [DecidableEq p] {A : Matrix n n 𝕜} (hA : A.IsHermitian) {Q : Matrix n p 𝕜}
@@ -87,7 +85,6 @@ matrix is at most the $k$-th eigenvalue of the matrix: for an injective $s : p \
 $k < \lvert p \rvert$, $\lambda_k(\mathbf{A}_{s,s}) \le \lambda_k(\mathbf{A})$, where
 $\mathbf{A}_{s,s}$ is `A.submatrix s s`.
 [HornJohnson2013, Theorem 4.3.17].
-Port of `Matrix.IsHermitian.eigenvalues₀_submatrix_le`.
 Result: cauchy-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_submatrix_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {s : p → n} (hs : Function.Injective s) {k : ℕ}
@@ -100,7 +97,6 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_submatrix_le {A : Matrix n n 𝕜}
 $s : p \to n$ injective) of a Hermitian matrix of size $\lvert p \rvert + d$,
 $\lambda_{k+d}(\mathbf{A}) \le \lambda_k(\mathbf{A}_{s,s})$ for $k < \lvert p \rvert$.
 [HornJohnson2013, Theorem 4.3.17].
-Port of `Matrix.IsHermitian.eigenvalues₀_le_eigenvalues₀_submatrix`.
 Result: cauchy-interlacing -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_submatrix {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {s : p → n} (hs : Function.Injective s) {k d : ℕ}

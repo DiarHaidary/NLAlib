@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Algebra.Order.Chebyshev
 public import Mathlib.Algebra.Star.StarProjection
 public import Mathlib.Analysis.InnerProductSpace.Adjoint
 public import Mathlib.Analysis.Matrix.Order
@@ -143,8 +144,7 @@ theorem _root_.IsStarProjection.norm_toLp_mulVec_le [Fintype m] {P : Matrix m m 
   exact le_add_of_nonneg_right (sq_nonneg _)
 
 /-- For $\mathbf{Q}$ with orthonormal columns, $\mathbf{Q}\mathbf{Q}^{\mathsf{H}}$ is a star
-projection.
-Port of `NLAlib.mul_conjTranspose_mul_mul_conjTranspose`. -/
+projection. -/
 theorem HasOrthonormalCols.isStarProjection_mul_conjTranspose [Fintype m] [Fintype n]
     [DecidableEq n] {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
     IsStarProjection (Q * Qᴴ) := by
@@ -195,8 +195,7 @@ private theorem rangeProjector_mulVec_eq_self_iff_aux [Fintype m] [Fintype n]
     ← toEuclideanCLM_rangeProjector, Matrix.toEuclideanCLM_toLp]
   exact (WithLp.toLp_injective 2).eq_iff.symm
 
-/-- The range projector is a star projection: idempotent and Hermitian.
-Port of `NLAlib.rangeProjector_isHermitian` and `NLAlib.rangeProjector_isIdempotentElem`. -/
+/-- The range projector is a star projection: idempotent and Hermitian. -/
 theorem isStarProjection_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     IsStarProjection (rangeProjector A) := by
   classical
@@ -216,8 +215,7 @@ theorem conjTranspose_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n �
     (rangeProjector A)ᴴ = rangeProjector A :=
   (isStarProjection_rangeProjector A).conjTranspose_eq
 
-/-- The range of $\mathbf{P}_{\mathbf{A}}$ is the column space of $\mathbf{A}$.
-Port of `NLAlib.range_mulVecLin_rangeProjector`. -/
+/-- The range of $\mathbf{P}_{\mathbf{A}}$ is the column space of $\mathbf{A}$. -/
 theorem range_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     LinearMap.range (rangeProjector A).mulVecLin = LinearMap.range A.mulVecLin := by
   ext x
@@ -225,7 +223,7 @@ theorem range_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     rangeProjector_mulVec_eq_self_iff_aux]
 
 /-- The range projector of $\mathbf{A}$ fixes $\mathbf{A}$:
-$\mathbf{P}_{\mathbf{A}}\mathbf{A} = \mathbf{A}$. Port of `NLAlib.rangeProjector_mul`. -/
+$\mathbf{P}_{\mathbf{A}}\mathbf{A} = \mathbf{A}$. -/
 @[simp]
 theorem rangeProjector_mul_self [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     rangeProjector A * A = A :=
@@ -251,8 +249,7 @@ theorem rangeProjector_mulVec_eq_self_iff [Fintype m] [Fintype n] {B : Matrix m 
   rangeProjector_mulVec_eq_self_iff_aux
 
 /-- $\mathbf{P}_{\mathbf{B}}\mathbf{Y} = \mathbf{Y}$ exactly when the column space of
-$\mathbf{Y}$ is contained in that of $\mathbf{B}$.
-Port of `NLAlib.rangeProjector_mul_of_range_le`, there one direction. -/
+$\mathbf{Y}$ is contained in that of $\mathbf{B}$. -/
 theorem rangeProjector_mul_eq_self_iff [Fintype m] [Fintype n] [Fintype p] {B : Matrix m n 𝕜}
     {Y : Matrix m p 𝕜} :
     rangeProjector B * Y = Y ↔ LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin := by
@@ -359,8 +356,7 @@ theorem rangeProjector_inj [Fintype m] [Fintype n] [Fintype p] {A : Matrix m n �
 
 /-- If the column space of $\mathbf{Y}$ is inside that of $\mathbf{B}$, projecting onto
 $\mathbf{B}$ after $\mathbf{Y}$ is projecting onto $\mathbf{Y}$:
-$\mathbf{P}_{\mathbf{B}}\mathbf{P}_{\mathbf{Y}} = \mathbf{P}_{\mathbf{Y}}$.
-Port of `NLAlib.rangeProjector_mul_rangeProjector_of_mul_eq`. -/
+$\mathbf{P}_{\mathbf{B}}\mathbf{P}_{\mathbf{Y}} = \mathbf{P}_{\mathbf{Y}}$. -/
 theorem rangeProjector_mul_rangeProjector_of_range_le [Fintype m] [Fintype n] [Fintype p]
     {B : Matrix m n 𝕜} {Y : Matrix m p 𝕜}
     (h : LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin) :
@@ -392,8 +388,7 @@ theorem rangeProjector_mono [Fintype m] [Fintype n] [Fintype p] {B : Matrix m n 
 
 /-! ### Special cases -/
 
-/-- The range projector of the zero matrix is zero, for every shape.
-Port of `NLAlib.rangeProjector_zero`. -/
+/-- The range projector of the zero matrix is zero, for every shape. -/
 @[simp]
 theorem rangeProjector_zero [Fintype m] [Fintype n] : rangeProjector (0 : Matrix m n 𝕜) = 0 := by
   refine ((IsStarProjection.zero (Matrix m m 𝕜)).eq_rangeProjector ?_).symm
@@ -438,8 +433,7 @@ theorem rangeProjector_mul_conjTranspose_self [Fintype m] [Fintype n] (A : Matri
   exact LinearMap.range_comp_le_range _ _
 
 /-- For $\mathbf{Q}$ with orthonormal columns,
-$\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$.
-Port of `NLAlib.rangeProjector_eq_mul_conjTranspose_of_hasOrthonormalCols`. -/
+$\mathbf{P}_{\mathbf{Q}} = \mathbf{Q}\mathbf{Q}^{\mathsf{H}}$. -/
 theorem HasOrthonormalCols.rangeProjector_eq [Fintype m] [Fintype n] [DecidableEq n]
     {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : rangeProjector Q = Q * Qᴴ := by
   rw [← rangeProjector_mul_conjTranspose_self,
@@ -487,8 +481,7 @@ $\mathbf{P}_{\mathbf{A}} =
 \mathbf{A}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{-1}\mathbf{A}^{\mathsf{H}}$.
 [GolubVanLoan2013, §5.3.1]; the hypothesis is taken as invertibility of the Gram matrix
 $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, which `NLAlib.isUnit_conjTranspose_mul_self_iff` converts to
-and from injectivity of $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$.
-Port of `NLAlib.rangeProjector_eq_mul_inv_gram_conjTranspose`. -/
+and from injectivity of $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$. -/
 theorem rangeProjector_eq_mul_inv_mul_conjTranspose [Fintype m] [Fintype n] [DecidableEq n]
     {A : Matrix m n 𝕜} (hA : IsUnit (Aᴴ * A)) : rangeProjector A = A * (Aᴴ * A)⁻¹ * Aᴴ := by
   have hdet := (Matrix.isUnit_iff_isUnit_det _).mp hA
@@ -506,8 +499,7 @@ theorem rangeProjector_eq_mul_inv_mul_conjTranspose [Fintype m] [Fintype n] [Dec
     exact range_le_iff_exists_mul.mpr ⟨_, rfl⟩
   · exact range_le_iff_exists_mul.mpr ⟨_, hfix.symm⟩
 
-/-- $\operatorname{rank} \mathbf{P}_{\mathbf{A}} = \operatorname{rank} \mathbf{A}$.
-Port of `NLAlib.rank_rangeProjector`. -/
+/-- $\operatorname{rank} \mathbf{P}_{\mathbf{A}} = \operatorname{rank} \mathbf{A}$. -/
 @[simp]
 theorem rank_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
     (rangeProjector A).rank = A.rank := by
@@ -516,7 +508,7 @@ theorem rank_rangeProjector [Fintype m] [Fintype n] (A : Matrix m n 𝕜) :
 /-! ### Bridge to Mathlib -/
 
 /-- The range projector is the matrix of Mathlib's `Submodule.starProjection` onto the range of
-`Matrix.toEuclideanLin A`. Port of `NLAlib.toEuclideanLin_rangeProjector`. -/
+`Matrix.toEuclideanLin A`. -/
 theorem toEuclideanLin_rangeProjector [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
     (A : Matrix m n 𝕜) :
     Matrix.toEuclideanLin (rangeProjector A) =
@@ -530,6 +522,65 @@ theorem toEuclideanLin_rangeProjector [Fintype m] [Fintype n] [DecidableEq m] [D
       exact ⟨WithLp.toLp 2 z, rfl⟩
   rw [← Matrix.coe_toEuclideanCLM_eq_toEuclideanLin, toEuclideanCLM_rangeProjector]
   simp only [hS]
+
+/-- The squared norm of the `j`-th column of a real star projection is its `(j, j)` entry. -/
+theorem _root_.IsStarProjection.norm_toLp_mulVec_single_sq {n : Type*} [Fintype n] [DecidableEq n]
+    {P : Matrix n n ℝ} (hP : IsStarProjection P) (j : n) :
+    ‖WithLp.toLp 2 (P *ᵥ Pi.single j 1)‖ ^ 2 = P j j := by
+  have h := congrFun (congrFun hP.mul_self j) j
+  rw [Matrix.mul_apply] at h
+  rw [EuclideanSpace.norm_sq_eq, ← h]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [Matrix.mulVec_single_one, Matrix.col_apply, Real.norm_eq_abs, sq_abs]
+  have hsymm : P j i = P i j := by
+    simpa only [star_trivial] using hP.isHermitian.apply i j
+  rw [hsymm]
+  ring
+
+
+/-- Head mass of a projector: if every column $\mathbf{P}\mathbf{e}_a$ ($a$ in the head)
+has head mass at most $c$ times its norm, then
+$\sum_a \|\mathbf{P}\mathbf{e}_a\|^2 \le c\,\lvert\kappa\rvert$. -/
+theorem _root_.IsStarProjection.sum_head_mass_sq_le {κ r : Type*} [Fintype κ] [Fintype r]
+    {P : Matrix (κ ⊕ r) (κ ⊕ r) ℝ} (hP : IsStarProjection P) {c : ℝ} (hc : 0 ≤ c)
+    (h : ∀ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 ≤ c * ∑ i, P i (Sum.inl a) ^ 2) :
+    ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 ≤ c * Fintype.card κ := by
+  have hsymm : ∀ i j, P j i = P i j := fun i j => by
+    have h := congrFun (congrFun hP.conjTranspose_eq j) i
+    have h' : P i j = P j i := by simpa [Matrix.conjTranspose_apply] using h
+    exact h'.symm
+  have hdiag : ∀ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = P (Sum.inl a) (Sum.inl a) := by
+    intro a
+    have key : ∀ i, P (Sum.inl a) i = P i (Sum.inl a) := fun i => (hsymm (Sum.inl a) i).symm
+    have h := congrFun (congrFun hP.mul_self (Sum.inl a)) (Sum.inl a)
+    rw [Matrix.mul_apply] at h
+    rw [← h]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [key i, sq]
+  have hT : ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 = ∑ a : κ, P (Sum.inl a) (Sum.inl a) :=
+    Finset.sum_congr rfl fun a _ => hdiag a
+  have hS2 : ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2
+      ≤ c * ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_le_sum fun a _ => h a
+  have hsq : ∑ a : κ, P (Sum.inl a) (Sum.inl a) ^ 2
+      ≤ ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 :=
+    Finset.sum_le_sum fun a _ => Finset.single_le_sum (f := fun b : κ =>
+      P (Sum.inl b) (Sum.inl a) ^ 2) (fun b _ => sq_nonneg _) (Finset.mem_univ a)
+  have hCS : (∑ a : κ, P (Sum.inl a) (Sum.inl a)) ^ 2
+      ≤ Fintype.card κ * ∑ a : κ, ∑ b : κ, P (Sum.inl b) (Sum.inl a) ^ 2 := by
+    have := sq_sum_le_card_mul_sum_sq (s := Finset.univ)
+      (f := fun a : κ => P (Sum.inl a) (Sum.inl a))
+    simp only [Finset.card_univ] at this
+    exact this.trans (mul_le_mul_of_nonneg_left hsq (Nat.cast_nonneg _))
+  rw [← hT] at hCS
+  have hT0 : 0 ≤ ∑ a : κ, ∑ i, P i (Sum.inl a) ^ 2 :=
+    Finset.sum_nonneg fun a _ => Finset.sum_nonneg fun i _ => sq_nonneg _
+  have hk : (0 : ℝ) ≤ Fintype.card κ := Nat.cast_nonneg _
+  rcases hT0.eq_or_lt with h0 | h0
+  · rw [← h0]; exact mul_nonneg hc hk
+  · nlinarith [mul_le_mul_of_nonneg_left hS2 hk]
+
 
 end NLAlib
 

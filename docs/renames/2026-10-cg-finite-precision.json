@@ -1,0 +1,27 @@
+{
+ "date": "2026-10-31",
+ "note": "Finite-precision CG files moved from NLAlibScaffold into NLAlib (maintainer, 2026-10-31): names brought to the grammar (N1, N3). Statements unchanged.",
+ "renames": [
+  {
+   "old": "NLAlib.CGRun.K_nonneg",
+   "new": "NLAlib.CGRun.nonneg_of_specNorm_mul_γ_mul_norm_p_sq_le",
+   "rule": "N1"
+  },
+  {
+   "old": "NLAlib.CGRun.mul_ε_le'",
+   "new": "NLAlib.CGRun.mul_ε_le_of_le",
+   "rule": "N3"
+  },
+  {
+   "old": "NLAlib.CGRun.norm_er_le'",
+   "new": "NLAlib.CGRun.norm_er_le_of_lt",
+   "rule": "N3"
+  },
+  {
+   "old": "NLAlib.CGRun.norm_ep_le'",
+   "new": "NLAlib.CGRun.norm_ep_le_of_lt",
+   "rule": "N3"
+  }
+ ],
+ "statementChanged": []
+}

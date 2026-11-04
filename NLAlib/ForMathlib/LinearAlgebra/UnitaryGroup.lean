@@ -27,8 +27,7 @@ import it).
 namespace Matrix
 
 /-- The unitary group `Matrix.unitaryGroup n 𝕜` (over $\mathbb{R}$, the orthogonal group) is
-compact, in every dimension including $0$. Port of the prototype's `orthogonalGroupCompactSpace`,
-there for `Fin n` over $\mathbb{R}$. -/
+compact, in every dimension including $0$. -/
 instance compactSpace_unitaryGroup {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] :
     CompactSpace (Matrix.unitaryGroup n 𝕜) := by
   have hb : IsCompact (Set.univ.pi fun _ : n => Set.univ.pi fun _ : n =>

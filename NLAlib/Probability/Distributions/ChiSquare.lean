@@ -336,9 +336,7 @@ A corollary of the exact small ball
 $\Gamma(x + 1) \ge (x/e)^x$ at $x = d/2$; it is also Chernoff's bound at $\beta = u/d$, after
 dropping the factor $e^{-u/2} \le 1$. It decays like $u^{d/2}$ as $u \to 0$, which
 `NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (better for thresholds near $d$) does
-not see; it is at least $1$ for $u \ge d$ and for $d = 0$.
-Port of `NLAlib.measureReal_sum_sq_le_le_gaussianVector`, there for `Fin d`, $d \ge 1$ and
-$u \le d$. -/
+not see; it is at least $1$ for $u \ge d$ and for $d = 0$. -/
 theorem measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) {u : ℝ} (hu : 0 ≤ u) :
     μ.real {ω | ‖WithLp.toLp 2 (g ω)‖ ^ 2 ≤ u} ≤

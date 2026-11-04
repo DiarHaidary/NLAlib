@@ -50,8 +50,7 @@ The two corollaries at the leverage-score distribution and at uniform weights ta
 $\sum_i p_i = 1$: when their weights fail it ($\mathbf{U} = \mathbf{0}$, or `n` empty) the law is
 the zero measure for nonempty `k`, so `HasLaw` forces $\mu = 0$, and for empty `k` the law is a
 Dirac mass at $\mathbf{0}$, a probability measure; in both subcases
-$\operatorname{rank}\mathbf{U} = 0$ and every embedding event is full. Design:
-`docs/design/Sketching-S4.md` §3.2, §8.
+$\operatorname{rank}\mathbf{U} = 0$ and every embedding event is full.
 
 Proofs. The two halves pass to an orthonormal basis $\mathbf{Q}$ of
 $\operatorname{range}\mathbf{U}$, whose rows satisfy $\|\mathbf{q}_i\|^2 \le L p_i$, and to the
@@ -224,8 +223,7 @@ theorem samplingSketchMatrix_eq_diagonal_mul [DecidableEq k] (p : n → ℝ≥0)
 disjoint supports, so $\mathbf{S}\mathbf{S}^{\mathsf{H}}$ is diagonal with entries
 $(\lvert k \rvert \, p_{\iota(j)})^{-1}$ ($0$ where $p_{\iota(j)} = 0$). At uniform weights it is
 $(\lvert n \rvert / \lvert k \rvert) \mathbf{I}$, the partial isometry of row sampling without
-replacement and of the subsampled randomized Hadamard transform. Amendment of
-`docs/design/Sketching-S4.md` by `docs/design/Sketching-S6.md` §1, item 4. -/
+replacement and of the subsampled randomized Hadamard transform. -/
 theorem samplingSketchMatrix_mul_conjTranspose_of_injective [DecidableEq k] (p : n → ℝ≥0)
     {ι : k → n} (hι : Function.Injective ι) :
     (samplingSketchMatrix p ι : Matrix k n 𝕜) * (samplingSketchMatrix p ι)ᴴ =
@@ -418,7 +416,8 @@ $d = \operatorname{rank}\mathbf{U}$, restores isotropy at the price of a factor 
 domination constant ($\ell_i \le 2 d p_i$). A weakening of the fixed-subspace injection tails of
 `NLAlib.Regression.Oblivious` to
 $\mathbb{E}[\mathbf{S}^{\mathsf{H}}\mathbf{S}] \preceq \mathbf{I}$ (sub-isotropy) would admit zero
-weights; it is open work for an S1 interface review (`docs/design/Sketching-S4.md` §8, item 10).
+weights; it is open work for a review of the sketching interfaces.
+
 [MartinssonTropp2020, §9.6.3]. -/
 theorem isIsotropicSketch_of_hasLaw_samplingSketch [Nonempty k]
     (hS : HasLaw S (samplingSketch k p) μ) (hp : ∑ i, p i = 1) (hpos : ∀ i, 0 < p i) :

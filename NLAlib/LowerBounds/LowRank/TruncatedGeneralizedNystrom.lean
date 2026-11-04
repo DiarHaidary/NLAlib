@@ -25,12 +25,8 @@ the same instance untruncated generalized Nyström pays $\ell/(p - \ell - 1)$ in
 $k/(p - \ell - 1)$ (Epperly and Webber's identity,
 `NLAlib.integral_frobNorm_sub_generalizedNystrom_sq_eq_mul_integral_of_hasLaw_gaussianMatrix`):
 late truncation gains the factor $\ell/k$ where Epperly and Webber's lower bound for generalized
-Nyström lives. Whether $p = O(k/\varepsilon)$ suffices for every $\mathbf{A}$ is open
-(design note §5).
-New (research note `reports/OP2-TruncatedGN.md` of the NLAlib workflow, §3, L1; the
-finite-gap argument through
-`NLAlib.le_frobNorm_sub_truncatedSVD_generalizedNystrom_sq` is this design's). Design:
-`docs/design/LowRank-EstimatorLowerBounds.md` §3.2. Real.
+Nyström lives. Whether $p = O(k/\varepsilon)$ suffices for every $\mathbf{A}$ is open.
+New. Real.
 
 ## Main results
 
@@ -703,8 +699,7 @@ $$\lvert t\rvert + \frac{k(n - \ell)}{p - \ell - 1} - \eta \le
 where $\lvert t\rvert = \|\mathbf{A}_a - \llbracket\mathbf{A}_a\rrbracket_k\|_{\mathsf{F}}^2$ for
 $a \ge 1$. For $n \le \ell$ the bound is below the optimum and trivially true. For the choice
 `truncatedSVD` makes.
-No printed source. New (research note OP2, §3, L1, there as a limit inferior; the instance is
-[EpperlyWebber2026, §6.5]).
+No printed source. New.
 Result: truncated-gn-lower-bound -/
 theorem eventually_le_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq
     (hX : HasLaw X (gaussianMatrix (s ⊕ t) l) μ) (hΨ : HasLaw Ψ (gaussianMatrix (s ⊕ t) p) μ)
@@ -732,7 +727,7 @@ $\mathbf{A}_a = \operatorname{diag}(a\mathbf{I}_k, \mathbf{I}_{n-k})$ with $a \g
 ($k = \lvert s\rvert$, $n = \lvert s\rvert + \lvert t\rvert$), then
 $$k(n - \ell) \le \varepsilon\,(p - \ell - 1)\,\lvert t\rvert\,.$$
 For $n \gg \ell$: $p \ge \ell + 1 + k/\varepsilon$ up to the factor $(n-\ell)/(n-k)$.
-No printed source. New (research note OP2, §3, L1). -/
+No printed source. New. -/
 theorem mul_le_of_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_fromBlocks_sq_le
     (hX : HasLaw X (gaussianMatrix (s ⊕ t) l) μ) (hΨ : HasLaw Ψ (gaussianMatrix (s ⊕ t) p) μ)
     (hXΨ : IndepFun X Ψ μ) (hsl : Fintype.card s + 2 ≤ Fintype.card l)

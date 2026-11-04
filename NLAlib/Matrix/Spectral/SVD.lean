@@ -102,30 +102,26 @@ private theorem conjTranspose_eq_mul_mul (h : IsSVD A U σ V) :
 
 /-- $\mathbf{A}\mathbf{V} = \mathbf{U}\mathbf{\Sigma}$, with
 $\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$: the right singular vectors are mapped
-to multiples of the left ones.
-Port of `NLAlib.IsSVD.mul_right`. -/
+to multiples of the left ones. -/
 theorem mul_right_eq (h : IsSVD A U σ V) :
     A * V = U * Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
 /-- $\mathbf{U}^{\mathsf{H}}\mathbf{A} = \mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) * Vᴴ := by
   rw [h.eq_mul_mul, h.hasOrthonormalCols_left.conjTranspose_mul_cancel_left]
 
 /-- $\mathbf{U}^{\mathsf{H}}\mathbf{A}\mathbf{V} = \mathbf{\Sigma}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul_mul`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_mul_eq (h : IsSVD A U σ V) :
     Uᴴ * A * V = Matrix.diagonal (fun i => ((σ i : ℝ) : 𝕜)) := by
   rw [h.conjTranspose_mul_eq, h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
 
 /-- The Gram matrix from an SVD:
 $\mathbf{A}^{\mathsf{H}}\mathbf{A} = \mathbf{V}\mathbf{\Sigma}^2\mathbf{V}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.conjTranspose_mul_self`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
     Aᴴ * A = V * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Vᴴ := by
   rw [h.conjTranspose_eq_mul_mul, Matrix.mul_assoc _ _ A, h.conjTranspose_mul_eq,
@@ -134,8 +130,7 @@ theorem conjTranspose_mul_self_eq (h : IsSVD A U σ V) :
 
 /-- The other Gram matrix from an SVD:
 $\mathbf{A}\mathbf{A}^{\mathsf{H}} = \mathbf{U}\mathbf{\Sigma}^2\mathbf{U}^{\mathsf{H}}$, with
-$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$.
-Port of `NLAlib.IsSVD.mul_conjTranspose_self`. -/
+$\mathbf{\Sigma} = \operatorname{diag}(\boldsymbol{\sigma})$. -/
 theorem mul_conjTranspose_self_eq (h : IsSVD A U σ V) :
     A * Aᴴ = U * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) * Uᴴ := by
   rw [h.conjTranspose_eq_mul_mul, ← Matrix.mul_assoc, ← Matrix.mul_assoc, h.mul_right_eq,
@@ -154,8 +149,7 @@ theorem mulVec_col (h : IsSVD A U σ V) (i : r) : A *ᵥ V.col i = σ i • U.co
 
 /-! ### Stability -/
 
-/-- An SVD of $\mathbf{A}$ gives an SVD of $\mathbf{A}^{\mathsf{H}}$ with the factors exchanged.
-Port of `NLAlib.IsSVD.conjTranspose_eq`. -/
+/-- An SVD of $\mathbf{A}$ gives an SVD of $\mathbf{A}^{\mathsf{H}}$ with the factors exchanged. -/
 protected theorem conjTranspose (h : IsSVD A U σ V) : IsSVD Aᴴ V σ U :=
   ⟨h.hasOrthonormalCols_right, h.hasOrthonormalCols_left, h.nonneg,
     h.conjTranspose_eq_mul_mul⟩
@@ -244,7 +238,6 @@ private theorem singularValues_eq_singularValues_diagonal (h : IsSVD A U σ V) :
 /-- **Uniqueness of the singular values.** In an SVD with columns indexed by `Fin k` and
 $\boldsymbol{\sigma}$ non-increasing, $\boldsymbol{\sigma}$ is the sequence of singular values:
 $\sigma_i(\mathbf{A}) = \boldsymbol{\sigma}_i$ for $i < k$.
-Port of `NLAlib.singularValues_eq_of_eq_mul_rectDiag_mul`.
 Result: svd-uniqueness -/
 theorem singularValues_eq {k : ℕ} {U : Matrix m (Fin k) 𝕜} {σ : Fin k → ℝ}
     {V : Matrix n (Fin k) 𝕜} (h : IsSVD A U σ V) (hσ : Antitone σ) (i : Fin k) :
@@ -334,17 +327,6 @@ end IsSVD
 
 /-! ### Existence -/
 
-omit [Fintype r] in
-/-- A column of $\mathbf{B}$ whose diagonal entry in the Gram matrix
-$\mathbf{B}^{\mathsf{H}}\mathbf{B}$ vanishes is zero. -/
-private theorem apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal {B : Matrix m r 𝕜}
-    {d : r → 𝕜} (hB : Bᴴ * B = Matrix.diagonal d) {i : r} (hi : d i = 0) (j : m) :
-    B j i = 0 := by
-  have h0 : star (B.col i) ⬝ᵥ B.col i = 0 := by
-    have hii := congrFun (congrFun hB i) i
-    rwa [Matrix.diagonal_apply_eq, hi] at hii
-  exact congrFun (dotProduct_star_self_eq_zero.mp h0) j
-
 /-- A matrix $\mathbf{B}$ whose Gram matrix is $\operatorname{diag}(\mathbf{s})^2$ is
 $\mathbf{U} \operatorname{diag}(\mathbf{s})$ for a $\mathbf{U}$ with orthonormal columns, when
 $\lvert r \rvert \le \lvert m \rvert$: normalise the columns with $\mathbf{s}_i \ne 0$ and complete
@@ -357,19 +339,13 @@ private theorem exists_hasOrthonormalCols_mul_diagonal_eq {B : Matrix m r 𝕜} 
   classical
   obtain ⟨C, hCB⟩ : ∃ C : Matrix m r 𝕜,
       C = B * Matrix.diagonal fun i => (((s i)⁻¹ : ℝ) : 𝕜) := ⟨_, rfl⟩
-  have hC : Cᴴ * C =
-      Matrix.diagonal fun i => (((s i)⁻¹ : ℝ) : 𝕜) * (((s i ^ 2 : ℝ) : 𝕜) * ((s i)⁻¹ : ℝ)) := by
-    rw [hCB, Matrix.conjTranspose_mul, Matrix.conjTranspose_diagonal_ofReal, Matrix.mul_assoc,
-      ← Matrix.mul_assoc Bᴴ, hB, Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
   have hQ₁ : HasOrthonormalCols (C.submatrix id (Subtype.val : {i // s i ≠ 0} → r)) := by
-    rw [HasOrthonormalCols, Matrix.conjTranspose_submatrix,
-      ← Matrix.submatrix_mul _ _ _ id _ Function.bijective_id, hC,
-      Matrix.submatrix_diagonal _ _ Subtype.val_injective, ← Matrix.diagonal_one]
-    congr 1
-    funext i
-    have hi : s i ≠ 0 := i.2
-    rw [Function.comp_apply, ← RCLike.ofReal_mul, ← RCLike.ofReal_mul,
-      show (s i)⁻¹ * (s i ^ 2 * (s i)⁻¹) = 1 by field_simp, RCLike.ofReal_one]
+    have hQ := hasOrthonormalCols_div_of_conjTranspose_mul_self_eq_diagonal hB
+      (Subtype.val : {i // s i ≠ 0} → r) Subtype.val_injective (fun i => i.2)
+    convert hQ using 1
+    ext j i
+    simp only [hCB, Matrix.submatrix_apply, id_eq, Matrix.mul_diagonal, Matrix.of_apply,
+      RCLike.ofReal_inv, div_eq_mul_inv]
   obtain ⟨Q₂, hQ⟩ := hQ₁.exists_fromCols_of_card_le (p := {i // ¬ s i ≠ 0}) (by
     rw [← Fintype.card_sum, Fintype.card_congr (Equiv.sumCompl fun i => s i ≠ 0)]
     exact hr)
@@ -384,8 +360,9 @@ private theorem exists_hasOrthonormalCols_mul_diagonal_eq {B : Matrix m r 𝕜} 
     rw [mul_assoc, ← RCLike.ofReal_mul, inv_mul_cancel₀ hi, RCLike.ofReal_one, mul_one]
   · have hi0 : s i = 0 := not_not.mp hi
     rw [hi0, RCLike.ofReal_zero, mul_zero]
-    refine (apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal hB ?_ j).symm
-    rw [hi0, zero_pow two_ne_zero, RCLike.ofReal_zero]
+    exact (congrFun (col_eq_zero_of_conjTranspose_mul_self_apply_eq_zero B
+      (by rw [hB, Matrix.diagonal_apply_eq, hi0, zero_pow two_ne_zero,
+        RCLike.ofReal_zero])) j).symm
 
 /-- **Existence of the singular value decomposition.** For every $k$ between the rank of
 $\mathbf{A}$ and its smaller dimension,
@@ -396,7 +373,6 @@ with $\mathbf{U}$, $\mathbf{V}$ having $k$ orthonormal columns. With
 $k = \operatorname{rank} \mathbf{A}$ this is the compact SVD and with
 $k = \min(\lvert m \rvert, \lvert n \rvert)$ the thin SVD.
 [HornJohnson2013, Theorem 2.6.3]; [GolubVanLoan2013, Theorem 2.4.1].
-Port of `NLAlib.exists_isSVD`, there with square factors.
 Result: svd-existence -/
 theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : k ≤ Fintype.card m)
     (hkn : k ≤ Fintype.card n) :
@@ -435,15 +411,16 @@ theorem exists_isSVD (A : Matrix m n 𝕜) {k : ℕ} (hk : A.rank ≤ k) (hkm : 
   have hki : k ≤ i := by
     by_contra hlt
     exact hi ⟨⟨i, not_le.mp hlt⟩, Fin.ext rfl⟩
-  rw [apply_eq_zero_of_conjTranspose_mul_self_eq_diagonal hAW ?_ a, zero_mul]
-  rw [(singularValues_eq_zero_iff A).mpr (hk.trans hki), zero_pow two_ne_zero,
-    RCLike.ofReal_zero]
+  have hi0 : (A * W).col i = 0 :=
+    col_eq_zero_of_conjTranspose_mul_self_apply_eq_zero (A * W) (by
+      rw [hAW, Matrix.diagonal_apply_eq, (singularValues_eq_zero_iff A).mpr (hk.trans hki),
+        zero_pow two_ne_zero, RCLike.ofReal_zero])
+  rw [show (A * W) a i = 0 from congrFun hi0 a, zero_mul]
 
 /-- Existence of a split singular value decomposition: for $k + d$ between the rank of
 $\mathbf{A}$ and its smaller dimension, $\mathbf{A}$ has an SVD whose first block carries the $k$
 largest singular values $\sigma_0(\mathbf{A}), \dots, \sigma_{k-1}(\mathbf{A})$ and whose second
-block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$.
-Port of `NLAlib.exists_svd_right_blocks`, there over $\mathbb{R}$ with `Fin` matrices. -/
+block carries the next $d$, $\sigma_k(\mathbf{A}), \dots, \sigma_{k+d-1}(\mathbf{A})$. -/
 theorem exists_isSVD_fromCols (A : Matrix m n 𝕜) {k d : ℕ} (hk : A.rank ≤ k + d)
     (hkm : k + d ≤ Fintype.card m) (hkn : k + d ≤ Fintype.card n) :
     ∃ (U₁ : Matrix m (Fin k) 𝕜) (U₂ : Matrix m (Fin d) 𝕜) (V₁ : Matrix n (Fin k) 𝕜)

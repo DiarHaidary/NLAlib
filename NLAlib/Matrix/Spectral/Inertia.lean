@@ -42,14 +42,13 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
 /-- The **positive index of inertia** $i_+(\mathbf{A})$: the number of positive eigenvalues.
-[HornJohnson2013, Definition 4.5.6]. Port of `NLAlib.inertiaPos`, there over $\mathbb{R}$ through
-the signature of the quadratic form. For a matrix that is not Hermitian the value is $0$, since
+[HornJohnson2013, Definition 4.5.6]. For a matrix that is not Hermitian the value is $0$, since
 `eigenvalue` is then zero. -/
 noncomputable def inertiaPos (A : Matrix n n 𝕜) : ℕ :=
   ((Finset.range (Fintype.card n)).filter fun i => 0 < eigenvalue A i).card
 
 /-- The **negative index of inertia** $i_-(\mathbf{A})$: the number of negative eigenvalues; $0$
-for a matrix that is not Hermitian. Port of `NLAlib.inertiaNeg`. -/
+for a matrix that is not Hermitian. -/
 noncomputable def inertiaNeg (A : Matrix n n 𝕜) : ℕ :=
   ((Finset.range (Fintype.card n)).filter fun i => eigenvalue A i < 0).card
 
@@ -108,8 +107,7 @@ private theorem card_filter_range_eigenvalue {r : Type*} [Fintype r] {A : Matrix
 
 /-- The positive and negative indices of a Hermitian matrix add up to its rank:
 $i_+(\mathbf{A}) + i_-(\mathbf{A}) = \operatorname{rank} \mathbf{A}$, writing $i_+$, $i_-$ for
-`inertiaPos`, `inertiaNeg`.
-Port of `NLAlib.inertiaPos_add_inertiaNeg_eq_rank`. -/
+`inertiaPos`, `inertiaNeg`. -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_add_inertiaNeg {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : inertiaPos A + inertiaNeg A = A.rank := by
   rw [hA.rank_eq_card_eigenvalue_ne_zero, inertiaPos, inertiaNeg,
@@ -127,7 +125,7 @@ private theorem exists_equiv_eq_eigenvalue_diagonal [DecidableEq n] (d : n → �
     (by rw [Matrix.conjTranspose_one, Matrix.one_mul, Matrix.mul_one])
 
 /-- The positive index of a real diagonal matrix $\operatorname{diag}(\mathbf{d})$ is the number
-of indices $i$ with $\mathbf{d}_i > 0$. Port of `NLAlib.inertiaPos_diagonal`. -/
+of indices $i$ with $\mathbf{d}_i > 0$. -/
 theorem inertiaPos_diagonal [DecidableEq n] (d : n → ℝ) :
     inertiaPos (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) =
       (Finset.univ.filter fun i => 0 < d i).card := by
@@ -135,7 +133,7 @@ theorem inertiaPos_diagonal [DecidableEq n] (d : n → ℝ) :
   exact card_filter_range_eigenvalue e he fun x => 0 < x
 
 /-- The negative index of a real diagonal matrix $\operatorname{diag}(\mathbf{d})$ is the number
-of indices $i$ with $\mathbf{d}_i < 0$. Port of `NLAlib.inertiaNeg_diagonal`. -/
+of indices $i$ with $\mathbf{d}_i < 0$. -/
 theorem inertiaNeg_diagonal [DecidableEq n] (d : n → ℝ) :
     inertiaNeg (Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) =
       (Finset.univ.filter fun i => d i < 0).card := by
@@ -280,8 +278,7 @@ theorem _root_.Matrix.IsHermitian.le_inertiaPos_iff_exists_posDef
 
 /-- A congruence by any matrix does not increase the positive index:
 $i_+(\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S}) \le i_+(\mathbf{A})$, writing $i_+$ for
-`inertiaPos`.
-Port of `NLAlib.card_eigenvalues₀_pos_congruence_le`. -/
+`inertiaPos`. -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (S : Matrix n m 𝕜) : inertiaPos (Sᴴ * A * S) ≤ inertiaPos A := by
@@ -294,8 +291,7 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul_le
 
 /-- A congruence by any matrix does not increase the negative index:
 $i_-(\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S}) \le i_-(\mathbf{A})$, writing $i_-$ for
-`inertiaNeg`.
-Port of `NLAlib.card_eigenvalues₀_neg_congruence_le`. -/
+`inertiaNeg`. -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_conjTranspose_mul_mul_le
     {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (S : Matrix n m 𝕜) : inertiaNeg (Sᴴ * A * S) ≤ inertiaNeg A := by
@@ -307,7 +303,6 @@ theorem _root_.Matrix.IsHermitian.inertiaNeg_conjTranspose_mul_mul_le
 the number of positive eigenvalues, $i_+(\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S}) =
 i_+(\mathbf{A})$ for Hermitian $\mathbf{A}$ and invertible $\mathbf{S}$, writing $i_+$ for
 `inertiaPos`. [HornJohnson2013, Theorem 4.5.8].
-Port of `NLAlib.inertiaPos_transpose_mul_mul`, there over $\mathbb{R}$.
 Result: sylvester-inertia -/
 theorem _root_.Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -323,7 +318,6 @@ theorem _root_.Matrix.IsHermitian.inertiaPos_conjTranspose_mul_mul [DecidableEq 
 the number of negative eigenvalues, $i_-(\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S}) =
 i_-(\mathbf{A})$ for Hermitian $\mathbf{A}$ and invertible $\mathbf{S}$, writing $i_-$ for
 `inertiaNeg`.
-Port of `NLAlib.inertiaNeg_transpose_mul_mul`, there over $\mathbb{R}$.
 Result: sylvester-inertia -/
 theorem _root_.Matrix.IsHermitian.inertiaNeg_conjTranspose_mul_mul [DecidableEq n]
     {A : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -418,7 +412,7 @@ factor between the squares of the smallest and largest singular values of $\math
 Hermitian $\mathbf{A}$, $k < \lvert n \rvert$ and $j + 1 = \lvert n \rvert$,
 $\lambda_k(\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S}) = \theta \lambda_k(\mathbf{A})$ for some
 $\theta$ with $\sigma_j(\mathbf{S})^2 \le \theta \le \|\mathbf{S}\|_2^2$.
-[HornJohnson2013, Theorem 4.5.9]. Port of `NLAlib.exists_eigenvalues₀_congruence_scale`.
+[HornJohnson2013, Theorem 4.5.9].
 Result: ostrowski -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_conjTranspose_mul_mul_eq_mul
     {A : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -477,8 +471,7 @@ theorem _root_.Matrix.IsHermitian.exists_eigenvalue_conjTranspose_mul_mul_eq_mul
 $p$ places**: $\lambda_{i+p}(\mathbf{A} + \mathbf{B}) \le \lambda_i(\mathbf{A})$ with
 $p = i_+(\mathbf{B})$ (`inertiaPos B`), for Hermitian $\mathbf{A}$, $\mathbf{B}$ and
 $i + p < \lvert n \rvert$.
-[HornJohnson2013, Corollary 4.3.5].
-Port of `NLAlib.eigenvalues₀_add_le_of_card_pos`. -/
+[HornJohnson2013, Corollary 4.3.5]. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_add_le_of_inertiaPos
     {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {i : ℕ} (hi : i + inertiaPos B < Fintype.card n) :
@@ -492,8 +485,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_add_le_of_inertiaPos
 /-- Adding a Hermitian matrix with $q$ negative eigenvalues moves each eigenvalue down by at most
 $q$ places: $\lambda_{i+q}(\mathbf{A}) \le \lambda_i(\mathbf{A} + \mathbf{B})$ with
 $q = i_-(\mathbf{B})$ (`inertiaNeg B`), for Hermitian $\mathbf{A}$, $\mathbf{B}$ and
-$i + q < \lvert n \rvert$.
-Port of `NLAlib.eigenvalues₀_le_add_of_card_neg`. -/
+$i + q < \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_inertiaNeg
     {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hB : B.IsHermitian) {i : ℕ} (hi : i + inertiaNeg B < Fintype.card n) :
@@ -505,7 +497,6 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_eigenvalue_add_of_inertiaNeg
 /-- **A strict Courant–Fischer bound from below**: if $\mathbf{V}$ has $k + 1$ orthonormal columns
 and $\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V} - c\mathbf{I}$ is positive definite (the form of
 $\mathbf{A}$ exceeds $c$ on the range of $\mathbf{V}$), then $c < \lambda_k(\mathbf{A})$.
-Port of `NLAlib.lt_eigenvalues₀_of_forall_mem`.
 [HornJohnson2013, Theorem 4.2.6] (locator to check). -/
 theorem _root_.Matrix.IsHermitian.lt_eigenvalue_of_posDef_conjTranspose_mul_mul_sub
     {A : Matrix n n 𝕜}

@@ -42,8 +42,7 @@ The spectral error of truncated Nyström depends on the choice `truncatedSVD` ma
 expectation is stated for any measurable choice of best approximations and, directly, for
 `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). The hypothesis
 $k + 2 \le \ell$ is necessary: at $\ell = k + 1$ the expectation is not bounded by any multiple of
-$\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$. Design:
-`docs/design/LowRank-S5.md` §3.3, §8; `docs/design/LowRank-S2c.md` §8 item 8.
+$\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_*$.
 
 ## Main results
 

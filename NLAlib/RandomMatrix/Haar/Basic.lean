@@ -59,8 +59,7 @@ and invariant under orthogonal maps on both sides. Junk value: for
 $\lvert n \rvert < \lvert k \rvert$ it is the law of $\mathbf{P}^{\mathsf{H}}$ for a $k \times n$
 Haar frame $\mathbf{P}$ (orthonormal rows); every theorem using columns assumes
 $\lvert k \rvert \le \lvert n \rvert$. [Meckes2019, Ch. 1], where it is constructed by Gram–Schmidt
-(`hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`); here any shape. Replaces the prototype's
-`haarFrameLaw`, there a measure on the bundled Stiefel manifold for $k \le n$. -/
+(`hasLaw_gramSchmidtQ_of_hasLaw_gaussianMatrix`); here any shape. -/
 noncomputable def haarFrame (n k : Type*) [Fintype n] [Fintype k] [DecidableEq k] :
     Measure (Matrix n k ℝ) :=
   (gaussianMatrix n k).map polarFactor
@@ -137,8 +136,7 @@ theorem memLp_apply_of_hasLaw_haarFrame [DecidableEq k] (hX : HasLaw X (haarFram
 /-! ### Invariance -/
 
 /-- **A Haar frame is left orthogonally invariant**: $\mathbf{U}\mathbf{Q}$ is a Haar frame for
-every orthogonal $\mathbf{U}$. Every shape. [Meckes2019, Ch. 1]. Replaces the prototype's
-`haarFrameLaw_map_smul`.
+every orthogonal $\mathbf{U}$. Every shape. [Meckes2019, Ch. 1].
 Result: haar-frame-invariance -/
 instance isLeftUnitarilyInvariant_haarFrame [DecidableEq n] [DecidableEq k] :
     IsLeftUnitarilyInvariant (haarFrame n k) := by
@@ -224,5 +222,21 @@ theorem hasLaw_replicateCol_of_hasLaw_uniformSphereVector {u : Ω → n → ℝ}
   convert Measure.map_id
   funext x i j
   rfl
+
+/-- A scalar lower-tail bound and almost-sure orthogonality give a joint lower bound. -/
+theorem le_measureReal_hasOrthonormalCols_and_ge {n : Type*} [Fintype n] [DecidableEq n]
+    (F : Matrix n n ℝ → ℝ) (hF : Measurable F) (a δ : ℝ)
+    (hbad : (haarFrame n n).real {U | F U < a} ≤ δ) :
+    1 - δ ≤ (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
+  have hBm : MeasurableSet {U | F U < a} := measurableSet_lt hF measurable_const
+  have hcomp := probReal_compl_eq_one_sub (μ := haarFrame n n) hBm
+  have hmono : (haarFrame n n).real {U | F U < a}ᶜ ≤
+      (haarFrame n n).real {U | HasOrthonormalCols U ∧ a ≤ F U} := by
+    refine measureReal_mono_ae ?_ (measure_ne_top _ _)
+    filter_upwards [ae_hasOrthonormalCols_of_hasLaw_haarFrame
+      (HasLaw.id (μ := haarFrame n n)) le_rfl] with U hU hnot
+    exact ⟨hU, not_lt.mp hnot⟩
+  rw [hcomp] at hmono
+  linarith
 
 end NLAlib

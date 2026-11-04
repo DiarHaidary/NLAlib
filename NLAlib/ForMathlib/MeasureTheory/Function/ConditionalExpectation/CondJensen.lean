@@ -38,9 +38,7 @@ variable {Ω E : Type*} {m mΩ : MeasurableSpace Ω} [NormedAddCommGroup E] [Nor
 $\mathbb{E}[\varphi(f) \mid m] \le \varphi(\mathbb{E}[f \mid m])$ almost everywhere, for $\varphi$
 concave and continuous on a convex set $s$ that need not be closed, provided $f$ and
 $\varphi \circ f$ are integrable, and $f$ and its conditional mean lie in $s$ almost everywhere.
-Mathlib's `ConcaveOn.condExp_map_le` needs $s$ closed.
-Port of the prototype lemma of the same name
-(`NLAlib/ForMathlib/MeasureTheory/ConditionalJensen.lean`). -/
+Mathlib's `ConcaveOn.condExp_map_le` needs $s$ closed. -/
 theorem ConcaveOn.condExp_map_le_of_condExp_mem (hm : m ≤ mΩ) [SigmaFinite (μ.trim hm)]
     {s : Set E} {φ : E → ℝ} {f : Ω → E} (hφ : ConcaveOn ℝ s φ) (hφc : ContinuousOn φ s)
     (hfs : ∀ᵐ ω ∂μ, f ω ∈ s) (hf : Integrable f μ) (hφf : Integrable (fun ω => φ (f ω)) μ)

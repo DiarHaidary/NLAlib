@@ -20,6 +20,7 @@ orthogonal ranges. Submatrices have smaller norms.
 * `NLAlib.frobNorm_fromRows_sq`, `NLAlib.frobNorm_fromCols_sq`, `NLAlib.frobNorm_fromBlocks_sq`.
 * `NLAlib.specNorm_fromRows_sq_le`, `NLAlib.specNorm_fromCols_sq_le`.
 * `NLAlib.specNorm_submatrix_le`, `NLAlib.frobNorm_submatrix_le`.
+* `NLAlib.frobNorm_le_of_row_eq`: selecting distinct rows and padding with zeros is contractive.
 * `NLAlib.specNorm_fromBlocks_zero₁₂_zero₂₁`: a block diagonal matrix has the larger of the two
   spectral norms.
 * `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`: summands with orthogonal ranges.
@@ -41,8 +42,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p q : Type*} [Fintype l] [Fintype m
 
 /-- The squared Frobenius norm is additive over stacked rows:
 $$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{B} \end{bmatrix}\right\|_{\mathsf{F}}^2
-  = \|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2\,.$$
-Port of `NLAlib.frobSq_fromRows`, there over $\mathbb{R}$. -/
+  = \|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2\,.$$ -/
 theorem frobNorm_fromRows_sq (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
     frobNorm (Matrix.fromRows A B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   simp only [frobNorm_sq_eq_sum, Fintype.sum_sum_type, Matrix.fromRows_apply_inl,
@@ -50,8 +50,7 @@ theorem frobNorm_fromRows_sq (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
 
 /-- The squared Frobenius norm is additive over adjoined columns:
 $\|\begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}\|_{\mathsf{F}}^2 =
-\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_fromCols`, there over $\mathbb{R}$. -/
+\|\mathbf{A}\|_{\mathsf{F}}^2 + \|\mathbf{B}\|_{\mathsf{F}}^2$. -/
 theorem frobNorm_fromCols_sq (A : Matrix m n 𝕜) (B : Matrix m p 𝕜) :
     frobNorm (Matrix.fromCols A B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
   rw [← frobNorm_transpose, Matrix.transpose_fromCols, frobNorm_fromRows_sq, frobNorm_transpose,
@@ -90,6 +89,32 @@ theorem frobNorm_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
         sum_comp_le_sum_of_injective hr (f := fun i => ∑ j, ‖A i j‖ ^ 2) fun _ =>
           Finset.sum_nonneg fun _ _ => sq_nonneg _
 
+/-- Selecting distinct rows of a matrix and padding with zero rows cannot increase its
+Frobenius norm. The row map need only be injective on the selected rows $s$; outside $s$ the
+matrix on the left is zero. This includes shifted and truncated stacks of matrix blocks. -/
+theorem frobNorm_le_of_row_eq (A : Matrix m n 𝕜) (B : Matrix l n 𝕜) (s : Finset m)
+    (f : m → l) (hf : Set.InjOn f (s : Set m))
+    (heq : ∀ i ∈ s, ∀ j, A i j = B (f i) j)
+    (hzero : ∀ i ∉ s, ∀ j, A i j = 0) : frobNorm A ≤ frobNorm B := by
+  classical
+  refine (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 ?_
+  rw [frobNorm_sq_eq_sum, frobNorm_sq_eq_sum]
+  calc ∑ i, ∑ j, ‖A i j‖ ^ 2 = ∑ i ∈ s, ∑ j, ‖A i j‖ ^ 2 := by
+        symm
+        apply Finset.sum_subset (Finset.subset_univ s)
+        intro i _ hi
+        simp only [hzero i hi, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+          zero_pow, Finset.sum_const_zero]
+    _ = ∑ i ∈ s, ∑ j, ‖B (f i) j‖ ^ 2 := by
+        apply Finset.sum_congr rfl
+        intro i hi
+        simp only [heq i hi]
+    _ = ∑ i ∈ s.image f, ∑ j, ‖B i j‖ ^ 2 :=
+        (Finset.sum_image (s := s) (g := f) (f := fun i => ∑ j, ‖B i j‖ ^ 2) hf).symm
+    _ ≤ ∑ i, ∑ j, ‖B i j‖ ^ 2 :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun i _ _ =>
+          Finset.sum_nonneg fun j _ => sq_nonneg _
+
 /-- **Pythagoras for summands with orthogonal ranges**: if
 $\mathbf{A}^{\mathsf{H}}\mathbf{B} = \mathbf{0}$ then
 $\|\mathbf{A} + \mathbf{B}\|_{\mathsf{F}}^2 = \|\mathbf{A}\|_{\mathsf{F}}^2 +
@@ -127,8 +152,7 @@ theorem specNorm_submatrix_le (A : Matrix m n 𝕜) {r : l → m} {c : p → n}
 
 /-- The squared spectral norm of stacked rows is at most the sum of the squares:
 $$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{B} \end{bmatrix}\right\|_2^2 \le \|\mathbf{A}\|_2^2 +
-\|\mathbf{B}\|_2^2\,.$$
-Port of `NLAlib.specNorm_fromRows_sq_le`, there over $\mathbb{R}$. -/
+\|\mathbf{B}\|_2^2\,.$$ -/
 theorem specNorm_fromRows_sq_le (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
     specNorm (Matrix.fromRows A B) ^ 2 ≤ specNorm A ^ 2 + specNorm B ^ 2 := by
   rw [← specNorm_conjTranspose_mul_self (Matrix.fromRows A B),
@@ -138,7 +162,7 @@ theorem specNorm_fromRows_sq_le (A : Matrix m n 𝕜) (B : Matrix p n 𝕜) :
 
 /-- The squared spectral norm of adjoined columns is at most the sum of the squares:
 $\|\begin{bmatrix} \mathbf{A} & \mathbf{B} \end{bmatrix}\|_2^2 \le \|\mathbf{A}\|_2^2 +
-\|\mathbf{B}\|_2^2$. Port of `NLAlib.specNorm_fromCols_sq_le`, there over $\mathbb{R}$. -/
+\|\mathbf{B}\|_2^2$. -/
 theorem specNorm_fromCols_sq_le (A : Matrix m n 𝕜) (B : Matrix m p 𝕜) :
     specNorm (Matrix.fromCols A B) ^ 2 ≤ specNorm A ^ 2 + specNorm B ^ 2 := by
   rw [← specNorm_mul_conjTranspose_self (Matrix.fromCols A B),
@@ -175,8 +199,7 @@ theorem specNorm_le_specNorm_fromCols_right (A : Matrix m n 𝕜) (B : Matrix m 
     Sum.inr_injective
 
 /-- Stacking zero rows under a matrix does not change its spectral norm:
-$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{0} \end{bmatrix}\right\|_2 = \|\mathbf{A}\|_2$.
-Port of `NLAlib.specNorm_fromRows_zero_sq`. -/
+$\left\|\begin{bmatrix} \mathbf{A} \\ \mathbf{0} \end{bmatrix}\right\|_2 = \|\mathbf{A}\|_2$. -/
 @[simp]
 theorem specNorm_fromRows_zero (A : Matrix m n 𝕜) :
     specNorm (Matrix.fromRows A (0 : Matrix p n 𝕜)) = specNorm A := by
@@ -225,8 +248,7 @@ theorem specNorm_fromBlocks_zero₁₂_zero₂₁ (A : Matrix m n 𝕜) (D : Mat
 
 /-- For summands with orthogonal row spaces ($\mathbf{X}\mathbf{Y}^{\mathsf{H}} = \mathbf{0}$),
 the squared spectral norm of the sum is at most the sum of the squares:
-$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$.
-Port of `NLAlib.specNorm_add_sq_le_of_mul_conjTranspose_eq_zero`. -/
+$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$. -/
 theorem specNorm_add_sq_le_of_mul_conjTranspose_eq_zero {X Y : Matrix m n 𝕜} (h : X * Yᴴ = 0) :
     specNorm (X + Y) ^ 2 ≤ specNorm X ^ 2 + specNorm Y ^ 2 := by
   have h' : Y * Xᴴ = 0 := by
@@ -241,8 +263,7 @@ theorem specNorm_add_sq_le_of_mul_conjTranspose_eq_zero {X Y : Matrix m n 𝕜} 
 
 /-- For summands with orthogonal ranges ($\mathbf{X}^{\mathsf{H}}\mathbf{Y} = \mathbf{0}$), the
 squared spectral norm of the sum is at most the sum of the squares:
-$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$.
-Port of `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`. -/
+$\|\mathbf{X} + \mathbf{Y}\|_2^2 \le \|\mathbf{X}\|_2^2 + \|\mathbf{Y}\|_2^2$. -/
 theorem specNorm_add_sq_le_of_conjTranspose_mul_eq_zero {X Y : Matrix m n 𝕜} (h : Xᴴ * Y = 0) :
     specNorm (X + Y) ^ 2 ≤ specNorm X ^ 2 + specNorm Y ^ 2 := by
   have h' : Xᴴ * Yᴴᴴ = 0 := by

@@ -5,6 +5,9 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Algebra.Group.ForwardDiff
+public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+public import Mathlib.Data.Nat.Choose.Sum
 public import Mathlib.Data.Real.Basic
 public import Mathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
@@ -42,6 +45,8 @@ definition is still the sum; every theorem assumes `Set.InjOn v s`.
 * `NLAlib.dividedDifference_eval_eq_coeff`, `NLAlib.dividedDifference_eval_eq_zero`: on the
   values of a polynomial.
 * `NLAlib.isLeast_sum_mul_sq_sub_eval`: the weighted least-squares distance.
+* `NLAlib.sum_neg_one_pow_mul_choose_mul_eval_eq_zero`.
+* `NLAlib.sum_eval_sq_le_equispacedInterpolationFactor_mul_sum_eval_sq_of_natDegree_lt`.
 -/
 
 @[expose] public section
@@ -155,5 +160,109 @@ theorem isLeast_sum_mul_sq_sub_eval {s : Finset ι} {v : ι → ℝ} (hvs : Set.
       (fun i hi => mul_nonneg (hu i hi).le (sq_nonneg _)) fun i hi => le_of_eq ?_
     have := (hu i hi).ne'
     field_simp
+
+end NLAlib
+
+open Polynomial Finset
+
+namespace NLAlib
+
+/-- Finite differences annihilate low-degree polynomials: for a polynomial $P$ over a
+commutative ring with $\deg P < n$ and any $x$, $h$,
+$$\sum_{j=0}^{n} (-1)^{n-j}\binom{n}{j} P(x + jh) = 0 \,.$$
+The equispaced case of `NLAlib.dividedDifference_eval_eq_zero`, with integer weights. -/
+theorem sum_neg_one_pow_mul_choose_mul_eval_eq_zero {R : Type*} [CommRing R] {P : R[X]}
+    {n : ℕ} (hP : P.natDegree < n) (x h : R) :
+    ∑ j ∈ range (n + 1), (-1 : R) ^ (n - j) * (n.choose j : R) * P.eval (x + j * h) = 0 := by
+  have hlin : (C x + C h * X).natDegree ≤ 1 := by
+    rw [add_comm]; exact natDegree_linear_le
+  have hdeg : (P.comp (C x + C h * X)).natDegree < n := by
+    have := Polynomial.natDegree_comp_le (p := P) (q := C x + C h * X)
+    have h2 : P.natDegree * (C x + C h * X).natDegree ≤ P.natDegree * 1 :=
+      Nat.mul_le_mul_left _ hlin
+    omega
+  have key := congrFun (fwdDiff_iter_eq_zero_of_degree_lt hdeg) 0
+  rw [fwdDiff_iter_eq_sum_shift] at key
+  simp only [eval_comp, eval_add, eval_mul, eval_C, eval_X, zsmul_eq_mul, Pi.zero_apply] at key
+  simpa [zero_add, nsmul_eq_mul, mul_comm, mul_assoc, mul_left_comm, Int.cast_mul,
+    Int.cast_pow] using key
+
+/-- **Equispaced interpolation factor**: a conservative squared coefficient bound for
+extrapolating a polynomial of degree at most $r$ from $1,\ldots,r+1$ to $r+2$.
+For $r$ a natural number, <!-- value equispacedInterpolationFactor r -->
+$$4^{r+1} \,.$$
+The binomial finite-difference coefficients have squared sum at most this value. -/
+noncomputable irreducible_def equispacedInterpolationFactor (r : ℕ) : ℝ := 4 ^ (r + 1)
+
+
+/-- The squared finite-difference coefficients on the first `n` nodes have sum at most `4^n`. -/
+private theorem sum_neg_one_pow_mul_choose_sq_le (n : ℕ) :
+    ∑ j ∈ Finset.range n, ((-1 : ℝ) ^ (n - j) * (n.choose j : ℝ)) ^ 2 ≤ 4 ^ n := by
+  have hsign (j : ℕ) : ((-1 : ℝ) ^ (n - j)) ^ 2 = 1 := by
+    rw [← pow_mul, Nat.mul_comm (n - j) 2, pow_mul]
+    norm_num
+  have htotal : (∑ j ∈ Finset.range (n + 1), (n.choose j : ℝ)) = 2 ^ n := by
+    exact_mod_cast Nat.sum_range_choose n
+  have hsum : (∑ j ∈ Finset.range n, (n.choose j : ℝ)) ≤ 2 ^ n := by
+    rw [Finset.sum_range_succ] at htotal
+    simp only [Nat.choose_self, Nat.cast_one] at htotal
+    linarith
+  calc
+    _ = ∑ j ∈ Finset.range n, (n.choose j : ℝ) ^ 2 := by
+      simp only [mul_pow, hsign, one_mul]
+    _ ≤ (∑ j ∈ Finset.range n, (n.choose j : ℝ)) ^ 2 :=
+      Finset.sum_sq_le_sq_sum_of_nonneg fun _ _ => Nat.cast_nonneg _
+    _ ≤ (2 ^ n : ℝ) ^ 2 :=
+      pow_le_pow_left₀ (Finset.sum_nonneg fun _ _ => Nat.cast_nonneg _) hsum 2
+    _ = 4 ^ n := by rw [sq, ← mul_pow]; norm_num
+
+/-- Finite differences express the next value as the negative of the preceding weighted sum. -/
+private theorem eval_add_two_eq_neg_sum_of_natDegree_lt (r : ℕ) {P : Polynomial ℝ}
+    (hP : P.natDegree < r + 1) :
+    P.eval ((r : ℝ) + 2) =
+      -(∑ j ∈ Finset.range (r + 1),
+        (-1 : ℝ) ^ (r + 1 - j) * ((r + 1).choose j : ℝ) * P.eval ((j : ℝ) + 1)) := by
+  have h := sum_neg_one_pow_mul_choose_mul_eval_eq_zero hP 1 1
+  rw [Finset.sum_range_succ] at h
+  simp only [Nat.sub_self, pow_zero, Nat.choose_self, Nat.cast_one, mul_one, one_mul,
+    Nat.cast_add, Nat.cast_one] at h
+  simp only [add_comm (1 : ℝ)] at h
+  have harg : (r : ℝ) + 1 + 1 = r + 2 := by ring
+  rw [harg] at h
+  linarith
+
+/-- A real polynomial of degree at most $r$ has its value at $r+2$ controlled by the preceding
+$r+1$ integer values. The factor is <!-- value equispacedInterpolationFactor r -->
+$$4^{r+1} \,.$$
+This follows from the binomial finite-difference identity and Cauchy--Schwarz. -/
+theorem eval_sq_le_equispacedInterpolationFactor_mul_sum_eval_sq_of_natDegree_lt
+    (r : ℕ) {P : Polynomial ℝ} (hP : P.natDegree < r + 1) :
+    P.eval ((r : ℝ) + 2) ^ 2 ≤
+      equispacedInterpolationFactor r * ∑ j : Fin (r + 1), P.eval ((j : ℝ) + 1) ^ 2 := by
+  rw [eval_add_two_eq_neg_sum_of_natDegree_lt r hP, neg_sq]
+  have hCS := Finset.sum_mul_sq_le_sq_mul_sq (Finset.range (r + 1))
+    (fun j => (-1 : ℝ) ^ (r + 1 - j) * ((r + 1).choose j : ℝ))
+    (fun j => P.eval ((j : ℝ) + 1))
+  refine hCS.trans ?_
+  rw [Fin.sum_univ_eq_sum_range (fun j : ℕ => P.eval ((j : ℝ) + 1) ^ 2) (r + 1),
+    equispacedInterpolationFactor_def]
+  exact mul_le_mul_of_nonneg_right (sum_neg_one_pow_mul_choose_sq_le (r + 1))
+    (Finset.sum_nonneg fun _ _ => sq_nonneg _)
+
+/-- Summing the equispaced extrapolation estimate over any finite polynomial family gives
+a bound with factor <!-- value equispacedInterpolationFactor r -->
+$$\sum_c P_c(r+2)^2\le4^{r+1}\sum_{j=0}^{r}\sum_c P_c(j+1)^2 \,,$$
+provided each polynomial has degree at most $r$. -/
+theorem sum_eval_sq_le_equispacedInterpolationFactor_mul_sum_eval_sq_of_natDegree_lt
+    (r : ℕ) {b : Type*} [Fintype b] {f : b → Polynomial ℝ}
+    (hdeg : ∀ c, (f c).natDegree < r + 1) :
+    (∑ c, (f c).eval ((r : ℝ) + 2) ^ 2) ≤
+      equispacedInterpolationFactor r * ∑ j : Fin (r + 1), ∑ c,
+        (f c).eval ((j : ℝ) + 1) ^ 2 := by
+  have h := Finset.sum_le_sum fun c (_ : c ∈ Finset.univ) =>
+    eval_sq_le_equispacedInterpolationFactor_mul_sum_eval_sq_of_natDegree_lt r (hdeg c)
+  rw [← Finset.mul_sum] at h
+  rw [Finset.sum_comm] at h
+  exact h
 
 end NLAlib

@@ -23,7 +23,7 @@ embedding. This is the moment method of the sparse embeddings and of the Gaussia
 sketches at $q = 1$.
 
 At $q = 0$ the hypothesis is $\lvert p \rvert \, \mu(\Omega) \le B$ and the consequences still
-hold. Design: `docs/design/Sketching-S1.md` §3.7.
+hold.
 
 ## Main definitions
 

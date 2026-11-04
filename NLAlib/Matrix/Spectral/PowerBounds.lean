@@ -6,7 +6,9 @@ Authors: NLAlib contributors
 module
 
 public import Mathlib.Analysis.Normed.Algebra.GelfandFormula
+public import Mathlib.Analysis.SpecificLimits.Basic
 public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+public import NLAlib.ForMathlib.Algebra.Ring.Idempotent
 public import NLAlib.Matrix.Spectral.SpectralRadius
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 
@@ -28,6 +30,11 @@ stay bounded exactly when it is at most one and the eigenvalues of modulus one a
 * `NLAlib.exists_specNorm_inv_mul_mul_le`: a similarity to within $\varepsilon$ of the spectral
   radius.
 * `NLAlib.exists_forall_specNorm_pow_le_iff`: power-bounded matrices.
+* `NLAlib.tendsto_pow_iff_specRadius_sub_lt_one`: convergence to a fixed idempotent.
+* `NLAlib.exists_forall_specNorm_pow_sub_le_mul_pow`: geometric bounds on the power error.
+* `NLAlib.isUnit_of_specRadius_one_sub_mul_lt_one`: invertibility from spectral stability.
+* `NLAlib.IsSVD.one_sub_smul_conjTranspose_mul_self_pow`: the shifted Gram power formula.
+* `NLAlib.tendsto_one_sub_smul_conjTranspose_mul_self_pow`: the orthogonal kernel limit.
 -/
 
 @[expose] public section
@@ -44,7 +51,6 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-- **Gelfand's formula**: as $k \to \infty$,
 $$\|\mathbf{A}^k\|_2^{1/k} \to \rho(\mathbf{A})\,.$$
 [HornJohnson2013, Corollary 5.6.14].
-Port of `NLAlib.tendsto_norm_matrix_pow_rpow_spectralRadius`, there over $\mathbb{C}$.
 Result: gelfand-formula -/
 theorem tendsto_specNorm_pow_rpow_specRadius (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => specNorm (A ^ k) ^ (1 / (k : ℝ))) atTop (𝓝 (specRadius A)) := by
@@ -89,8 +95,7 @@ theorem specNorm_pow_le_pseudoConditionNumber_mul (A : Matrix n n 𝕜) {S : Mat
 /-- **Growth of the powers**: for every $\varepsilon > 0$ there is $C > 0$ with
 $\|\mathbf{A}^k\|_2 \le C (\rho(\mathbf{A}) + \varepsilon)^k$ for every $k$, where
 $\rho(\mathbf{A})$ is the spectral radius.
-[HornJohnson2013, Corollary 5.6.13].
-Port of `NLAlib.exists_prefix_norm_matrix_pow_le_spectralRadius_add`. -/
+[HornJohnson2013, Corollary 5.6.13]. -/
 theorem exists_forall_specNorm_pow_le_mul_pow (A : Matrix n n 𝕜) {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, 0 < C ∧ ∀ k : ℕ, specNorm (A ^ k) ≤ C * (specRadius A + ε) ^ k := by
   set r := specRadius A + ε with hr
@@ -124,7 +129,6 @@ private theorem exists_forall_specNorm_pow_le_mul_pow_of_specRadius_lt_one {A : 
 /-- **The powers of a matrix tend to zero exactly when its spectral radius is less than one**:
 $\mathbf{A}^k \to \mathbf{0}$ if and only if $\rho(\mathbf{A}) < 1$.
 [HornJohnson2013, Theorem 5.6.12].
-Port of `NLAlib.tendsto_matrix_pow_zero_iff_spectralRadius_lt_one`, there over $\mathbb{C}$.
 Result: convergent-matrix -/
 theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
     Tendsto (fun k : ℕ => A ^ k) atTop (𝓝 0) ↔ specRadius A < 1 := by
@@ -148,8 +152,7 @@ theorem tendsto_pow_zero_iff_specRadius_lt_one (A : Matrix n n 𝕜) :
 
 /-- **The Neumann series** $\sum_{k \ge 0} \mathbf{A}^k$ converges to
 $(\mathbf{I} - \mathbf{A})^{-1}$ when the spectral radius $\rho(\mathbf{A})$ is less than one.
-[HornJohnson2013, Corollary 5.6.16].
-Port of `NLAlib.hasSum_matrix_pow_inv_of_spectralRadius_lt_one`. -/
+[HornJohnson2013, Corollary 5.6.16]. -/
 theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
     (hA : specRadius A < 1) : HasSum (fun k : ℕ => A ^ k) (1 - A)⁻¹ := by
   obtain ⟨C, r, -, hr0, hr1, hC⟩ := exists_forall_specNorm_pow_le_mul_pow_of_specRadius_lt_one hA
@@ -169,8 +172,7 @@ theorem hasSum_pow_inv_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜}
   exact hs.hasSum
 
 /-- $\mathbf{I} - \mathbf{A}$ is invertible when the spectral radius of $\mathbf{A}$ is less than
-one.
-Port of `NLAlib.isUnit_one_sub_of_matrix_spectralRadius_lt_one`. -/
+one. -/
 theorem isUnit_det_one_sub_of_specRadius_lt_one {A : Matrix n n 𝕜} (hA : specRadius A < 1) :
     IsUnit (1 - A).det := by
   by_contra h
@@ -372,8 +374,7 @@ private theorem exists_forall_norm_pow_apply_le_of_specRadius_le_one {A : Matrix
 /-- **Power-bounded matrices.** The powers of $\mathbf{A}$ are bounded,
 $\sup_k \|\mathbf{A}^k\|_2 < \infty$, exactly when the spectral radius is at most one and every
 eigenvalue of modulus one (of $\mathbf{A}$ viewed over $\mathbb{C}$) is semisimple.
-[HornJohnson2013, Theorem 3.2.5.2].
-Port of `NLAlib.exists_bound_norm_matrix_pow_iff`, there over $\mathbb{C}$. -/
+[HornJohnson2013, Theorem 3.2.5.2]. -/
 theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
     (∃ C : ℝ, ∀ k : ℕ, specNorm (A ^ k) ≤ C) ↔
       specRadius A ≤ 1 ∧ ∀ μ : ℂ, ‖μ‖ = 1 →
@@ -407,6 +408,196 @@ theorem exists_forall_specNorm_pow_le_iff (A : Matrix n n 𝕜) :
     rw [hij]
     exact (norm_le_pi_norm _ i).trans ((hC j k).trans
       (Finset.single_le_sum (fun j _ => hC0 j) (Finset.mem_univ j)))
+
+/-! ### Fixed idempotent limits -/
+
+private theorem eventually_sub_pow_eq_pow_sub (T P : Matrix n n 𝕜)
+    (hP : IsIdempotentElem P) (hTP : T * P = P) (hPT : P * T = P) :
+    (fun k : ℕ => (T - P) ^ k) =ᶠ[atTop] (fun k => T ^ k - P) := by
+  filter_upwards [eventually_ge_atTop 1] with k hk
+  obtain ⟨j, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : k ≠ 0)
+  exact hP.sub_pow_succ hTP hPT j
+
+/-- **Convergence to a fixed idempotent.** For an idempotent $\mathbf{P}$ satisfying
+$\mathbf{T}\mathbf{P}=\mathbf{P}\mathbf{T}=\mathbf{P}$,
+$$\mathbf{T}^k\longrightarrow\mathbf{P}\quad\Longleftrightarrow\quad
+\rho(\mathbf{T}-\mathbf{P})<1\,.$$
+The idempotent may be oblique, and no normality or diagonalizability is required.
+No printed source. This is a consequence of the zero-limit power criterion.
+Adapted from `tchen-research/NLAlib` at `77514ce42a0e437d837797a063ac161f41022730`,
+`tendsto_matrix_pow_projector_of_deflated_spectralRadius_lt_one`, generalized from real
+matrices to either scalar field and from an implication to an equivalence.
+Result: convergent-matrix -/
+theorem tendsto_pow_iff_specRadius_sub_lt_one
+    (T P : Matrix n n 𝕜) (hP : IsIdempotentElem P)
+    (hTP : T * P = P) (hPT : P * T = P) :
+    Tendsto (fun k : ℕ => T ^ k) atTop (𝓝 P) ↔ specRadius (T - P) < 1 := by
+  have heq := eventually_sub_pow_eq_pow_sub T P hP hTP hPT
+  constructor
+  · intro h
+    apply (tendsto_pow_zero_iff_specRadius_lt_one (T - P)).mp
+    have hz : Tendsto (fun k : ℕ => T ^ k - P) atTop (𝓝 0) := by
+      simpa only [sub_self] using h.sub_const P
+    exact hz.congr' heq.symm
+  · intro h
+    have hz := (tendsto_pow_zero_iff_specRadius_lt_one (T - P)).mpr h
+    have hp : Tendsto (fun k : ℕ => (T - P) ^ k + P) atTop (𝓝 P) := by
+      simpa only [zero_add] using hz.add_const P
+    apply hp.congr'
+    filter_upwards [heq] with k hk
+    rw [hk, sub_add_cancel]
+
+/-- For an idempotent $\mathbf{P}$ with $\mathbf{T}\mathbf{P}=\mathbf{P}\mathbf{T}=\mathbf{P}$
+and every $r>\rho(\mathbf{T}-\mathbf{P})$, there is a matrix- and rate-dependent $C>0$ such that
+$$\|\mathbf{T}^k-\mathbf{P}\|_2\le C r^k\qquad(k\ge0)\,.$$
+This includes exponent zero; a rate below one gives geometric convergence. No normality
+or diagonalizability is needed. This is the fixed-idempotent form of the existing power bound.
+Adapted from `tchen-research/NLAlib` at `77514ce42a0e437d837797a063ac161f41022730`,
+`exists_specNorm_matrix_pow_sub_projector_le_geometric`, generalized to either scalar field. -/
+theorem exists_forall_specNorm_pow_sub_le_mul_pow
+    (T P : Matrix n n 𝕜) (hP : IsIdempotentElem P)
+    (hTP : T * P = P) (hPT : P * T = P)
+    {r : ℝ} (hr : specRadius (T - P) < r) :
+    ∃ C : ℝ, 0 < C ∧ ∀ k : ℕ, specNorm (T ^ k - P) ≤ C * r ^ k := by
+  have hr0 : 0 < r := (specRadius_nonneg (T - P)).trans_lt hr
+  obtain ⟨C, hC, hbound⟩ := exists_forall_specNorm_pow_le_mul_pow (T - P) (sub_pos.mpr hr)
+  have hb (k : ℕ) : specNorm ((T - P) ^ k) ≤ C * r ^ k := by
+    simpa only [add_sub_cancel] using hbound k
+  refine ⟨specNorm (1 - P) + C, add_pos_of_nonneg_of_pos (specNorm_nonneg _) hC,
+    fun k => ?_⟩
+  cases k with
+  | zero =>
+    simp only [pow_zero, mul_one]
+    exact le_add_of_nonneg_right hC.le
+  | succ k =>
+    rw [← hP.sub_pow_succ hTP hPT]
+    exact (hb _).trans (mul_le_mul_of_nonneg_right
+      (le_add_of_nonneg_left (specNorm_nonneg _)) (pow_nonneg hr0.le _))
+
+/-- A square matrix $\mathbf{A}$ is invertible when
+$\rho(\mathbf{I}-\mathbf{M}\mathbf{A})<1$. The spectral condition implies invertibility
+of the product, so no invertibility hypothesis on the preconditioner is needed.
+This is the algebraic solvability consequence used by stationary iterations.
+Adapted from `tchen-research/NLAlib` at `77514ce42a0e437d837797a063ac161f41022730`,
+`isUnit_sub_of_tendsto_splitting_pow_zero`, with an arbitrary square preconditioner. -/
+theorem isUnit_of_specRadius_one_sub_mul_lt_one
+    {A M : Matrix n n 𝕜} (hρ : specRadius (1 - M * A) < 1) : IsUnit A := by
+  have hdet := isUnit_det_one_sub_of_specRadius_lt_one hρ
+  rw [sub_sub_cancel, Matrix.det_mul] at hdet
+  exact (Matrix.isUnit_iff_isUnit_det A).mpr (isUnit_of_mul_isUnit_right hdet)
+
+/-! ### Powers of identity minus a scaled Gram matrix
+
+These matrix identities supply the spectral error multipliers for Landweber iteration.
+Proof material is adapted from `tchen-research/NLAlib` at
+`77514ce42a0e437d837797a063ac161f41022730`, `NLAlib/Matrix/Basic/Landweber.lean`
+and `LandweberLimit.lean`.
+-/
+
+section ShiftedGramPowers
+
+variable {m r : Type*} [Fintype m] [Fintype r] [DecidableEq r]
+
+private theorem IsSVD.one_sub_smul_conjTranspose_mul_self_mul
+    {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+    (h : IsSVD A U σ V) (η : ℝ) :
+    (1 - η • (Aᴴ * A)) * V =
+        V * Matrix.diagonal (fun i => ((1 - η * σ i ^ 2 : ℝ) : 𝕜)) ∧
+      (1 - η • (Aᴴ * A)) * (1 - V * Vᴴ) = 1 - V * Vᴴ := by
+  have hgram : (Aᴴ * A) * V =
+      V * Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) := by
+    rw [h.conjTranspose_mul_self_eq,
+      h.hasOrthonormalCols_right.mul_conjTranspose_mul_cancel_right]
+  constructor
+  · rw [Matrix.sub_mul, Matrix.one_mul, Matrix.smul_mul, hgram]
+    have hd : Matrix.diagonal (fun i => ((1 - η * σ i ^ 2 : ℝ) : 𝕜)) =
+        (1 : Matrix r r 𝕜) - η • Matrix.diagonal (fun i => ((σ i ^ 2 : ℝ) : 𝕜)) := by
+      ext i j
+      by_cases hij : i = j
+      · subst j
+        simp only [Matrix.diagonal_apply_eq, Matrix.sub_apply, Matrix.one_apply_eq,
+          Matrix.smul_apply, RCLike.ofReal_sub, RCLike.ofReal_one, RCLike.ofReal_mul,
+          RCLike.real_smul_eq_coe_mul]
+      · simp only [Matrix.diagonal_apply_ne _ hij, Matrix.sub_apply, Matrix.one_apply_ne hij,
+          Matrix.smul_apply, smul_zero, sub_zero]
+    rw [hd, Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one]
+  · have hAP : A * (1 - V * Vᴴ) = 0 := by
+      rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, h.mul_right_eq, ← h.eq,
+        sub_self]
+    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.smul_mul,
+      Matrix.mul_assoc Aᴴ A, hAP, Matrix.mul_zero, smul_zero, sub_zero]
+
+/-- **Landweber error multipliers.** For any singular value decomposition
+$\mathbf{A}=\mathbf{U}\operatorname{diag}(\boldsymbol{\sigma})\mathbf{V}^{\mathsf{H}}$,
+every real step size and every $q\ge0$,
+$$ (\mathbf{I}-\eta\mathbf{A}^{\mathsf{H}}\mathbf{A})^q
+= \mathbf{I}-\mathbf{V}\mathbf{V}^{\mathsf{H}}+
+\mathbf{V}\operatorname{diag}((1-\eta\boldsymbol{\sigma}_i^2)^q)
+\mathbf{V}^{\mathsf{H}}\,.$$
+The identity permits zero singular values and empty dimensions.
+[FesslerNadakuditi2024, §§9.2–9.2.3].
+Result: landweber-spectral-filter -/
+theorem IsSVD.one_sub_smul_conjTranspose_mul_self_pow
+    {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {σ : r → ℝ} {V : Matrix n r 𝕜}
+    (h : IsSVD A U σ V) (η : ℝ) (q : ℕ) :
+    (1 - η • (Aᴴ * A)) ^ q = 1 - V * Vᴴ +
+      V * Matrix.diagonal (fun i => (((1 - η * σ i ^ 2) ^ q : ℝ) : 𝕜)) * Vᴴ := by
+  induction q with
+  | zero => simp only [pow_zero, RCLike.ofReal_one, Matrix.diagonal_one, Matrix.mul_one,
+      sub_add_cancel]
+  | succ q ih =>
+    rw [pow_succ', ih, Matrix.mul_add,
+      (h.one_sub_smul_conjTranspose_mul_self_mul η).2,
+      ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      (h.one_sub_smul_conjTranspose_mul_self_mul η).1,
+      Matrix.mul_assoc V, Matrix.diagonal_mul_diagonal]
+    congr 3
+    funext i
+    simp only [pow_succ', RCLike.ofReal_mul]
+
+/-- The Landweber error-multiplier powers converge to the orthogonal kernel projector when
+$0<\eta$ and $\eta\|\mathbf{A}\|_2^2<2$. The product form of the step-size condition also
+covers the zero matrix and empty dimensions. -/
+theorem tendsto_one_sub_smul_conjTranspose_mul_self_pow (A : Matrix m n 𝕜)
+    {η : ℝ} (hη : 0 < η) (hstep : η * specNorm A ^ 2 < 2) :
+    Tendsto (fun q : ℕ => (1 - η • (Aᴴ * A)) ^ q) atTop
+      (𝓝 (1 - rangeProjector Aᴴ)) := by
+  obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
+  have hpos (i : Fin A.rank) : 0 < singularValues A i :=
+    (singularValues_pos_iff A).mpr i.isLt
+  have hscalar (i : Fin A.rank) : Tendsto
+      (fun q : ℕ => (((1 - η * singularValues A i ^ 2) ^ q : ℝ) : 𝕜)) atTop (𝓝 0) := by
+    have hs := hpos i
+    have hηs : η * singularValues A i ^ 2 < 2 :=
+      (mul_le_mul_of_nonneg_left
+        (pow_le_pow_left₀ hs.le (singularValues_le_specNorm A i) 2) hη.le).trans_lt hstep
+    have hroot : |1 - η * singularValues A i ^ 2| < 1 := by
+      rw [abs_lt]
+      constructor <;> nlinarith [mul_pos hη (sq_pos_of_pos hs)]
+    have hp := tendsto_pow_atTop_nhds_zero_of_abs_lt_one hroot
+    simpa only [RCLike.ofReal_zero, Function.comp_def] using
+      (RCLike.continuous_ofReal : Continuous (fun x : ℝ => (x : 𝕜))).continuousAt.tendsto.comp hp
+  have hdiag : Tendsto (fun q : ℕ => Matrix.diagonal
+      (fun i : Fin A.rank => (((1 - η * singularValues A i ^ 2) ^ q : ℝ) : 𝕜)))
+      atTop (𝓝 (0 : Matrix (Fin A.rank) (Fin A.rank) 𝕜)) := by
+    apply tendsto_pi_nhds.mpr
+    intro i
+    apply tendsto_pi_nhds.mpr
+    intro j
+    by_cases hij : i = j
+    · subst j
+      simpa only [Matrix.diagonal_apply_eq, Matrix.zero_apply] using hscalar i
+    · simpa only [Matrix.diagonal_apply_ne _ hij, Matrix.zero_apply] using
+        (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : 𝕜)) atTop (𝓝 0))
+  have hc : Continuous (fun M : Matrix (Fin A.rank) (Fin A.rank) 𝕜 =>
+      (1 - V * Vᴴ) + V * M * Vᴴ) := by fun_prop
+  have ht := hc.continuousAt.tendsto.comp hdiag
+  simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero] at ht
+  rw [h.rangeProjector_conjTranspose_eq hpos]
+  exact ht.congr' (Filter.Eventually.of_forall fun q =>
+    (h.one_sub_smul_conjTranspose_mul_self_pow η q).symm)
+
+end ShiftedGramPowers
 
 /-! ### Deprecated aliases -/
 

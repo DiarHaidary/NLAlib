@@ -70,7 +70,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type*} [Fintype m]
   [Fintype n] [Fintype l] [DecidableEq n] {X : Ω → Matrix n l ℝ}
 
--- Stage B6a
 
 omit [DecidableEq n] in
 /-- Musco and Musco's case split: for $\varepsilon > 0$, either
@@ -454,7 +453,6 @@ theorem exists_forall_integral_specNorm_sub_truncatedSVD_rbki_sq_le_of_hasLaw_ga
         add_le_add (mul_le_mul_of_nonneg_right h13 hσ2) htail
     _ = (1 + ε) * σ ^ 2 := by ring
 
--- Stage B6b
 
 open Polynomial.Chebyshev in
 /-- The rescaled Chebyshev filter $\varphi(y) = y\,T_j(2y/s - 1)^2$ has a supporting line on

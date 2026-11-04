@@ -19,7 +19,6 @@ range test matrix may have any law. Composed with a range-finder tail (the injec
 `NLAlib.LowRank.Oblivious.RangeFinder`, the Gaussian tail of S3, a sampling bound) it gives the
 one-pass bounds of [CamanoEpperlyMeyerTropp2025, Corollary 2.8] and [Woodruff2014, Theorem 47],
 and a late-truncated form. Errors are spelled as the matrix minus the named output.
-Design: `docs/design/LowRank-S7.md` §3.3, §8.
 
 ## Main results
 

@@ -35,9 +35,7 @@ $\varepsilon^{-1}$:
   (`NLAlib.LowerBounds.LowRank.EarlyTruncationBlock` for the deterministic step,
   `NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian` for the expectation bound).
 
-These results are new: no printed source states a lower bound for this estimator (research note
-`reports/OP1-EarlyTruncatedRSVD.md` of the NLAlib workflow, 2026-10-25). Design:
-`docs/design/LowRank-EstimatorLowerBounds.md` §3.1. Real throughout.
+These results are new: no printed source states a lower bound for this estimator. Real throughout.
 
 ## Main results
 
@@ -295,7 +293,7 @@ $2 \times \ell$ test matrix with rows $\mathbf{\omega}_1, \mathbf{\omega}_2$, $\
 $\delta = 1/(4\sqrt{\ell})$,
 $$\mathbb{P}\bigl[\|\mathbf{\omega}_1\|^2 < (1 - \delta)^2\|\mathbf{\omega}_2\|^2\bigr] \ge
 \frac{1}{12}\,.$$
-No printed source. New (research note OP1, §1). -/
+No printed source. New. -/
 theorem le_measureReal_sum_sq_lt_of_hasLaw_gaussianMatrix {X : Ω → Matrix (Fin 2) l ℝ}
     (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ) (hl : 100 ≤ Fintype.card l) :
     1 / 12 ≤ μ.real {ω | ∑ j, X ω 0 j ^ 2 <
@@ -367,8 +365,8 @@ relative error $1 + \varepsilon$ in expectation needs $\ell \ge 10^{-4}/\varepsi
 $\varepsilon^{-2}$ of
 `NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`. The
 constant $1/100$ is safe, not sharp: the proof gives about $0.0206$, and the excess on this instance
-is about $0.5/\sqrt{\ell}$ (research note OP1, §2).
-No printed source. New (research note OP1, §1).
+is about $0.5/\sqrt{\ell}$.
+No printed source. New.
 Result: early-truncated-rsvd-lower-bound -/
 theorem le_integral_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq_of_hasLaw_gaussianMatrix
     {X : Ω → Matrix (Fin 2) l ℝ} (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ)
@@ -444,7 +442,7 @@ $$\mathbb{P}\Bigl[\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf
 \|_{\mathsf{F}}^2 > (1 + \varepsilon)
 \|\mathbf{A} - \llbracket\mathbf{A}\rrbracket_1\|_{\mathsf{F}}^2
 \Bigr] \ge \frac{1}{12}\,.$$
-No printed source. New (research note OP1, §1). -/
+No printed source. New. -/
 theorem
     le_measureReal_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq_gt_of_hasLaw_gaussianMatrix
     {X : Ω → Matrix (Fin 2) l ℝ} (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ)
@@ -498,7 +496,7 @@ $\mathbb{E}\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omega
 $1 \le 10^4\varepsilon^2\ell$. The library's sufficient condition is $\ell \ge 900k/\varepsilon^2$
 (`NLAlib.integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_one_add_mul_of_hasLaw_gaussianMatrix`):
 the rate is $\Theta(\varepsilon^{-2})$.
-No printed source. New (research note OP1). -/
+No printed source. New. -/
 theorem one_le_mul_card_of_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le
     {X : Ω → Matrix (Fin 2) l ℝ} (hX : HasLaw X (gaussianMatrix (Fin 2) l) μ)
     (hl : 100 ≤ Fintype.card l) {ε : ℝ}
@@ -537,7 +535,7 @@ $$\mathbb{E}\|\mathbf{A} - \mathsf{earlyTruncatedRSVD}(\mathbf{A}, \mathbf{\Omeg
 The negation of the $\varepsilon^{-1}$ analogue of
 `NLAlib.exists_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix`
 (which holds with $\ell \ge Ck/\varepsilon^2$).
-No printed source. New (research note OP1). -/
+No printed source. New. -/
 theorem
     not_exists_forall_integral_frobNorm_sub_earlyTruncatedRSVD_sq_le_of_hasLaw_gaussianMatrix :
     ¬ ∃ C ε₀ : ℝ, 0 < C ∧ 0 < ε₀ ∧ ∀ {Ω m n l : Type} [MeasurableSpace Ω] [Fintype m]

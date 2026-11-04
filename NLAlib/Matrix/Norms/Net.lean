@@ -44,8 +44,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 /-- **Spectral norm from a net.** If $N$ is an $\varepsilon$-net of the unit sphere with
 $\varepsilon < 1$, $M \ge 0$ and $\|\mathbf{A}\mathbf{x}\| \le M$ for every $\mathbf{x}$ in $N$,
 then $\|\mathbf{A}\|_2 \le M / (1 - \varepsilon)$.
-[Vershynin2018, Lemma 4.4.1]. Port of `NLAlib.specNorm_le_div_of_net`, there over $\mathbb{R}$
-with the net property as a raw condition. -/
+[Vershynin2018, Lemma 4.4.1]. -/
 theorem specNorm_le_div_of_isCover (A : Matrix m n 𝕜) {N : Set (EuclideanSpace 𝕜 n)} {ε : ℝ≥0}
     (hε : ε < 1) (hN : Metric.IsCover ε (Metric.sphere (0 : EuclideanSpace 𝕜 n) 1) N) {M : ℝ}
     (hM0 : 0 ≤ M) (hM : ∀ x ∈ N, ‖WithLp.toLp 2 (A *ᵥ WithLp.ofLp x)‖ ≤ M) :
@@ -66,7 +65,7 @@ theorem specNorm_le_div_of_isCover (A : Matrix m n 𝕜) {N : Set (EuclideanSpac
 of the domain and codomain with $\varepsilon < 1/2$, the codomain net $N'$ contained in the unit
 ball, $M \ge 0$ and $\lvert \mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{x} \rvert \le M$ for
 $\mathbf{x} \in N$, $\mathbf{y} \in N'$, then $\|\mathbf{A}\|_2 \le M / (1 - 2\varepsilon)$.
-[Vershynin2018, Exercise 4.4.3]. Port of `NLAlib.specNorm_le_div_of_net_bilinear`. -/
+[Vershynin2018, Exercise 4.4.3]. -/
 theorem specNorm_le_div_of_isCover_of_isCover (A : Matrix m n 𝕜)
     {N : Set (EuclideanSpace 𝕜 n)} {N' : Set (EuclideanSpace 𝕜 m)} {ε : ℝ≥0} (hε : ε < 1 / 2)
     (hN : Metric.IsCover ε (Metric.sphere (0 : EuclideanSpace 𝕜 n) 1) N)
@@ -105,8 +104,7 @@ theorem specNorm_le_div_of_isCover_of_isCover (A : Matrix m n 𝕜)
 unit sphere with $\varepsilon < 1/2$, contained in the unit ball, $M \ge 0$ and
 $\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x} \rvert \le M$ (a real number, $\mathbf{A}$ being
 Hermitian) for every $\mathbf{x}$ in $N$, then $\|\mathbf{A}\|_2 \le M / (1 - 2\varepsilon)$.
-[Vershynin2018, Exercise 4.4.3]. Port of `NLAlib.specNorm_le_div_of_net_quadForm`, there over
-$\mathbb{R}$. -/
+[Vershynin2018, Exercise 4.4.3]. -/
 theorem _root_.Matrix.IsHermitian.specNorm_le_div_of_isCover {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {N : Set (EuclideanSpace 𝕜 n)} {ε : ℝ≥0} (hε : ε < 1 / 2)
     (hN : Metric.IsCover ε (Metric.sphere (0 : EuclideanSpace 𝕜 n) 1) N)
@@ -169,7 +167,6 @@ $0 < \varepsilon < 1$ there is a set $N$ of at most $(1 + 2/\varepsilon)^d$ unit
 and $\|\mathbf{A}\mathbf{x}\| \le M$ on $N$, $M \ge 0$, has
 $$\|\mathbf{A}\|_2 \le \frac{M}{1 - \varepsilon}\,.$$
 [Vershynin2018, Lemma 4.4.1 with Corollary 4.2.13].
-Port of `NLAlib.exists_finset_net_specNorm_le`, there over $\mathbb{R}$.
 Result: spectral-norm-net -/
 theorem exists_finset_specNorm_le_div (𝕜 : Type*) [RCLike 𝕜] (n : Type*) [Fintype n] {ε : ℝ}
     (hε0 : 0 < ε) (hε1 : ε < 1) :

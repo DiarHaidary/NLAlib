@@ -24,9 +24,9 @@ leverage sampling at the head is $L = k$. Any `RCLike` field.
 The factor is constant ($1 + 2t$ at failure probability $\delta + 1/t$) and there is no accuracy
 parameter, so no asymptotic form; in $O(\cdot)$ form the size is the family's injection size,
 `NLAlib.exists_forall_hasSubspaceInjection_of_hasLaw_samplingSketch`. Early truncation with
-sampling is deferred (`docs/design/LowRank-S7.md` §0.2, D6: the probabilities would depend on the
+sampling is deferred (the probabilities would depend on the
 tail). Nyström takes an OSI, which leverage sampling at one subspace is not, so it has no sampling
-form here. Design: `docs/design/LowRank-S7.md` §3.5, §8 item 10.
+form here.
 
 ## Main results
 

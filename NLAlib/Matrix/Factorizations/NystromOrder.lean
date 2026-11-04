@@ -34,9 +34,6 @@ $\operatorname{Re}\langle\mathbf{x}, \mathbf{H}\mathbf{x}\rangle$; for
 $\mathbf{\Omega} = \mathbf{0}$ "Nyström helps" is an equality; an empty sum in the superadditivity
 is $\mathbf{0}$ on both sides.
 
-Design: `docs/design/LowRank-S0.md` §3.5, §8; the two-level matrix,
-`docs/design/LowRank-S4.md` §3.1.
-
 ## Main results
 
 * `Matrix.PosSemidef.isLeast_re_quadForm_sub_mulVec`: the variational form.

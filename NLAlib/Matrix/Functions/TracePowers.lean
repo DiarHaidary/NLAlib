@@ -55,8 +55,7 @@ $\mathbf{b}$ real and $\mathbf{U}$, $\mathbf{V}$ unitary (orthonormal columns, a
 rows), then
 $$\operatorname{Re} \operatorname{tr}(f(\mathbf{A}) g(\mathbf{B}))
   = \sum_{i, j} \lvert (\mathbf{U}^{\mathsf{H}}\mathbf{V})_{i,j} \rvert^2 f(\mathbf{a}_i)
-  g(\mathbf{b}_j) \,.$$
-Port of `NLAlib.re_trace_pow_mul_pow_eq_sum_overlap`, there for powers over $\mathbb{C}$. -/
+  g(\mathbf{b}_j) \,.$$ -/
 theorem HasOrthonormalCols.re_trace_cfc_mul_cfc_eq_sum {r s : Type*} [Fintype r] [Fintype s]
     [DecidableEq r]
     [DecidableEq s] {A B : Matrix n n 𝕜} {U : Matrix n r 𝕜} {V : Matrix n s 𝕜} {a : r → ℝ}
@@ -129,16 +128,14 @@ theorem _root_.Matrix.IsHermitian.sum_re_trace_cfc_mul_cfc_le_of_forall {ι : Ty
 /-! ### Traces of powers -/
 
 /-- The trace of an even power of a Hermitian matrix is nonnegative:
-$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$ for even $r$.
-Port of `NLAlib.re_trace_pow_nonneg_of_even`. -/
+$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$ for even $r$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_pow_nonneg {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {r : ℕ} (hr : Even r) : 0 ≤ RCLike.re (A ^ r).trace := by
   rw [hA.re_trace_pow_eq_sum_range_eigenvalue_pow]
   exact Finset.sum_nonneg fun i _ => hr.pow_nonneg _
 
 /-- The trace of a power of a positive semidefinite matrix is nonnegative:
-$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$.
-Port of `NLAlib.re_trace_pow_nonneg_of_posSemidef`. -/
+$\operatorname{Re} \operatorname{tr} \mathbf{A}^r \ge 0$. -/
 theorem _root_.Matrix.PosSemidef.re_trace_pow_nonneg {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (r : ℕ) : 0 ≤ RCLike.re (A ^ r).trace := by
   rw [hA.isHermitian.re_trace_pow_eq_sum_range_eigenvalue_pow]
@@ -184,9 +181,7 @@ $$\operatorname{Re} \operatorname{tr}\bigl(\mathbf{C}\operatorname{diag}(\mathbf
   = \sum_{i, j} \lvert \mathbf{C}_{i,j} \rvert^2 \mathbf{x}_j \mathbf{y}_i \,.$$
 In an eigenbasis of $\mathbf{H}$ this expresses
 $\operatorname{tr}(\mathbf{C} f(\mathbf{H}) \mathbf{C} g(\mathbf{H}))$ through the eigenvalues of
-$\mathbf{H}$.
-Port of `NLAlib.trace_mul_diagonal_pow_mul_mul_diagonal_pow`, there over $\mathbb{R}$ for powers
-of one diagonal matrix. -/
+$\mathbf{H}$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_mul_diagonal_mul_mul_diagonal {p : Type*} [Fintype p]
     [DecidableEq p]
     {C : Matrix p p 𝕜} (hC : C.IsHermitian) (x y : p → ℝ) :
@@ -234,8 +229,7 @@ private theorem exists_re_trace_mul_pow_mul_pow_eq_sum {C H : Matrix n n 𝕜} (
 /-- **Rearranging powers inside a trace**: for Hermitian $\mathbf{C}$, $\mathbf{H}$ and $l + k$
 even,
 $\operatorname{Re} \operatorname{tr}(\mathbf{C}\mathbf{H}^l\mathbf{C}\mathbf{H}^k)
-\le \operatorname{Re} \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$. [MackeyEtAl2014, §3].
-Port of `NLAlib.re_trace_mul_pow_mul_le_trace_sq_mul_pow`, there over $\mathbb{C}$. -/
+\le \operatorname{Re} \operatorname{tr}(\mathbf{C}^2\mathbf{H}^{l+k})$. [MackeyEtAl2014, §3]. -/
 theorem _root_.Matrix.IsHermitian.re_trace_mul_pow_mul_pow_le {C H : Matrix n n 𝕜}
     (hC : C.IsHermitian)
     (hH : H.IsHermitian) {l k : ℕ} (h : Even (l + k)) :
@@ -435,8 +429,7 @@ $$\operatorname{Re} \operatorname{tr}\bigl((\mathbf{H} - \mathbf{K})
   (\mathbf{H}^{m+1} - \mathbf{K}^{m+1})\bigr)
   \le \frac{m + 1}{2} \operatorname{Re} \operatorname{tr}\bigl((\mathbf{H} - \mathbf{K})^2
   (\mathbf{H}^m + \mathbf{K}^m)\bigr) \,.$$
-[MackeyEtAl2014, Lemma 3.4]. Port of `NLAlib.re_trace_sub_mul_sub_pow_le`, there over
-$\mathbb{C}$. -/
+[MackeyEtAl2014, Lemma 3.4]. -/
 theorem _root_.Matrix.IsHermitian.re_trace_sub_mul_pow_sub_pow_le {H K : Matrix n n 𝕜}
     (hH : H.IsHermitian)
     (hK : K.IsHermitian) {m : ℕ} (hm : Even m) :
@@ -484,8 +477,7 @@ $$(q + 1)(2q + 1) \operatorname{tr}(\mathbf{V}\mathbf{H}^{2q})
   \le (2q + 1)^{q+1} \operatorname{tr} \mathbf{V}^{q+1} + q \operatorname{tr} \mathbf{H}^{2q+2}
   \,,$$
 traces through their real parts.
-[MackeyEtAl2014, proof of Theorem 7.1].
-Port of `NLAlib.nat_mul_mul_re_trace_mul_pow_le`, there over $\mathbb{C}$ with $p = q + 1$. -/
+[MackeyEtAl2014, proof of Theorem 7.1]. -/
 theorem _root_.Matrix.PosSemidef.re_trace_mul_pow_le_add {V H : Matrix n n 𝕜} (hV : V.PosSemidef)
     (hH : H.IsHermitian)
     (q : ℕ) :

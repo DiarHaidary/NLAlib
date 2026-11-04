@@ -82,8 +82,7 @@ private theorem isHermitian_of_mul_eq_mul [DecidableEq q] {A : Matrix n n 𝕜} 
 /-- The Sylvester identity behind the $\sin \Theta$ theorems: if $\mathbf{A}$ is Hermitian,
 $\mathbf{A}\mathbf{V} = \mathbf{V}\mathbf{M}$ and $\mathbf{M}$ is Hermitian, then
 $\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L}) =
-\mathbf{M}(\mathbf{V}^{\mathsf{H}}\mathbf{U}) - (\mathbf{V}^{\mathsf{H}}\mathbf{U})\mathbf{L}$.
-Port of `NLAlib.sylvester_complement_overlap_eq`. -/
+\mathbf{M}(\mathbf{V}^{\mathsf{H}}\mathbf{U}) - (\mathbf{V}^{\mathsf{H}}\mathbf{U})\mathbf{L}$. -/
 theorem _root_.Matrix.IsHermitian.conjTranspose_mul_mul_sub_mul_eq {A : Matrix n n 𝕜}
     {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
     (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) (U : Matrix n p 𝕜)
@@ -99,8 +98,6 @@ invariant norm $\|\cdot\|_{\Phi}$
 $$\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
   \le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}.$$
 [DavisKahan1970]; [Bhatia1997, Theorem VII.3.1]; [StewartSun1990, Theorem V.3.6].
-Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_interval`, there over $\mathbb{R}$
-for the spectral norm.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_eigenvalue [DecidableEq p]
     (Φ : SymmetricGauge) {A : Matrix n n 𝕜} {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
@@ -118,7 +115,6 @@ $\mathbf{M} \preceq (\alpha - \delta)\mathbf{I}$ and $\alpha\mathbf{I} \preceq \
 $\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\Phi}
 \le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\Phi}$ in every
 unitarily invariant norm $\|\cdot\|_{\Phi}$.
-Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_of_one_sided_frames`.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_conjTranspose_mul_le_of_le [DecidableEq p]
     [DecidableEq q] (Φ : SymmetricGauge) {A : Matrix n n 𝕜} {V : Matrix n q 𝕜}
@@ -136,7 +132,6 @@ are pairwise at distance at least $\delta$, then $\delta
 \|\mathbf{V}^{\mathsf{H}}\mathbf{U}\|_{\mathsf{F}}
 \le \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{U} - \mathbf{U}\mathbf{L})\|_{\mathsf{F}}$.
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.4].
-Port of `NLAlib.frobNorm_sinePrincipalAngles_le_compressed_residual_div`, there over $\mathbb{R}$.
 Result: davis-kahan -/
 theorem _root_.Matrix.IsHermitian.mul_frobNorm_conjTranspose_mul_le {A : Matrix n n 𝕜}
     {V : Matrix n q 𝕜}
@@ -155,8 +150,7 @@ $\delta \|\mathbf{V}^{\mathsf{H}}\mathbf{x}\| \le
 \|\mathbf{V}^{\mathsf{H}}(\mathbf{A}\mathbf{x} - \rho\mathbf{x})\|$. With $\mathbf{V}$ a frame of
 the complement of an eigenspace this bounds the sine of the angle between $\mathbf{x}$ and the
 eigenspace by $\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\| / \delta$.
-[Parlett1998, Theorem 11.7.1 context].
-Port of `NLAlib.sqrt_complement_eigenvalueProjector_le_residual_div`. -/
+[Parlett1998, Theorem 11.7.1 context]. -/
 theorem _root_.Matrix.IsHermitian.mul_norm_conjTranspose_mulVec_le {A : Matrix n n 𝕜}
     {V : Matrix n q 𝕜} {M : Matrix q q 𝕜}
     (hA : A.IsHermitian) (hM : M.IsHermitian) (hAV : A * V = V * M) {ρ δ : ℝ}
@@ -495,8 +489,6 @@ invariant norm $\|\cdot\|_{\Phi}$
 $$\delta \|(\mathbf{I} - \mathbf{U}'\mathbf{U}'^{\mathsf{H}})\mathbf{U}\|_{\Phi}
   \le \|\mathbf{E}\mathbf{U}\|_{\Phi}.$$
 [DavisKahan1970]; [StewartSun1990, Theorem V.3.6].
-Port of `NLAlib.sinePrincipalAngles_le_compressed_residual_div_top_gap`, there over $\mathbb{R}$
-with chosen eigenframes.
 Result: davis-kahan -/
 theorem SymmetricGauge.mul_matrixNorm_one_sub_mul_le_of_eigenvalue_sub [DecidableEq n]
     [DecidableEq p] (Φ : SymmetricGauge) {A E : Matrix n n 𝕜} (hA : A.IsHermitian)

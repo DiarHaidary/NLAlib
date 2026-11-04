@@ -100,8 +100,7 @@ variable (Φ : SymmetricGauge)
 /-- The **unitarily invariant norm** $\|\mathbf{A}\|_{\Phi}$ of a symmetric gauge function
 $\Phi$: the gauge of the singular values,
 $\Phi\bigl(\sigma_0(\mathbf{A}), \sigma_1(\mathbf{A}), \dots\bigr)$.
-[HornJohnson2013, Theorem 7.4.7.2] (von Neumann). Port of `NLAlib.SymmetricGauge.matrixValue`,
-there for one shape over $\mathbb{R}$. -/
+[HornJohnson2013, Theorem 7.4.7.2] (von Neumann). -/
 noncomputable def matrixNorm (A : Matrix m n 𝕜) : ℝ :=
   Φ (singularValuesFinsupp A)
 
@@ -127,16 +126,14 @@ theorem matrixNorm_zero : Φ.matrixNorm (0 : Matrix m n 𝕜) = 0 := by
     DFunLike.coe_injective singularValues_zero
   rw [matrixNorm_def, h, map_zero]
 
-/-- Unitarily invariant norms are definite.
-Port of `NLAlib.SymmetricGauge.eq_zero_of_matrixValue_eq_zero`. -/
+/-- Unitarily invariant norms are definite. -/
 @[simp]
 theorem matrixNorm_eq_zero_iff {A : Matrix m n 𝕜} : Φ.matrixNorm A = 0 ↔ A = 0 := by
   rw [matrixNorm_def, Φ.eq_zero_iff, ← singularValues_eq_zero, ← coe_singularValuesFinsupp,
     Finsupp.coe_eq_zero]
 
 /-- Unitarily invariant norms are absolutely homogeneous:
-$\|c\mathbf{A}\|_{\Phi} = \lvert c \rvert \|\mathbf{A}\|_{\Phi}$.
-Port of `NLAlib.SymmetricGauge.matrixValue_smul`. -/
+$\|c\mathbf{A}\|_{\Phi} = \lvert c \rvert \|\mathbf{A}\|_{\Phi}$. -/
 theorem matrixNorm_smul (c : 𝕜) (A : Matrix m n 𝕜) :
     Φ.matrixNorm (c • A) = ‖c‖ * Φ.matrixNorm A := by
   have h : singularValuesFinsupp (c • A) = ‖c‖ • singularValuesFinsupp A := by
@@ -210,8 +207,6 @@ $\|\mathbf{A}\|_{(k)} \le \|\mathbf{B}\|_{(k)}$ for all $k$, then every unitaril
 $\mathbf{A}$ is at most that of $\mathbf{B}$: $\|\mathbf{A}\|_{\Phi} \le \|\mathbf{B}\|_{\Phi}$.
 The shapes may differ.
 [HornJohnson2013, Theorem 7.4.8.4]; [Bhatia1997, Theorem IV.2.2].
-Port of `NLAlib.forall_invariantNorm_le_iff_weaklyMajorized`, there for one shape over
-$\mathbb{R}$.
 Result: fan-dominance -/
 theorem matrixNorm_le_of_forall_kyFanNorm_le {A : Matrix m n 𝕜} {B : Matrix l p 𝕜}
     (h : ∀ k, kyFanNorm k A ≤ kyFanNorm k B) : Φ.matrixNorm A ≤ Φ.matrixNorm B := by
@@ -223,7 +218,6 @@ and matrices $\mathbf{A}$, $\mathbf{B}$ of the same shape,
 $\|\mathbf{A} + \mathbf{B}\|_{\Phi} \le \|\mathbf{A}\|_{\Phi} + \|\mathbf{B}\|_{\Phi}$, where
 $\|\mathbf{A}\|_{\Phi}$ (`Φ.matrixNorm A`) is the gauge of the singular values of $\mathbf{A}$.
 [HornJohnson2013, Theorem 7.4.7.2].
-Port of `NLAlib.SymmetricGauge.matrixValue_add_le`, there over $\mathbb{R}$.
 Result: unitarily-invariant-norm -/
 theorem matrixNorm_add_le (A B : Matrix m n 𝕜) :
     Φ.matrixNorm (A + B) ≤ Φ.matrixNorm A + Φ.matrixNorm B := by
@@ -341,8 +335,6 @@ $$\Phi\bigl(\sigma_0(\mathbf{A}) - \sigma_0(\mathbf{B}),\,
   \sigma_1(\mathbf{A}) - \sigma_1(\mathbf{B}),\, \dots\bigr)
   \le \|\mathbf{A} - \mathbf{B}\|_{\Phi}\,.$$
 [HornJohnson2013, Corollary 7.4.9.3]; [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.invariantNorm_rectangularDiagonal_singularValues_add_sub_le`, there over
-$\mathbb{R}$.
 Result: mirsky-inequality -/
 theorem apply_singularValuesFinsupp_sub_le (A B : Matrix m n 𝕜) :
     Φ (singularValuesFinsupp A - singularValuesFinsupp B) ≤ Φ.matrixNorm (A - B) := by
@@ -376,8 +368,7 @@ end SymmetricGauge
 
 /-! ### Schatten and Ky Fan norms as gauge norms -/
 
-/-- The norm of the $\ell^q$ gauge is the Schatten $q$-norm $\|\mathbf{A}\|_{S_q}$.
-Port of `NLAlib.schattenInvariantNorm_apply`. -/
+/-- The norm of the $\ell^q$ gauge is the Schatten $q$-norm $\|\mathbf{A}\|_{S_q}$. -/
 @[simp]
 theorem lpGauge_matrixNorm {q : ℝ≥0∞} [Fact (1 ≤ q)] (A : Matrix m n 𝕜) :
     (lpGauge q).matrixNorm A = schattenNorm q A := by
@@ -399,8 +390,7 @@ theorem lpGauge_one_matrixNorm (A : Matrix m n 𝕜) :
     (lpGauge 1).matrixNorm A = nuclearNorm A := by
   rw [lpGauge_matrixNorm, schattenNorm_one]
 
-/-- The norm of the Ky Fan $k$-gauge is the Ky Fan $k$-norm $\|\mathbf{A}\|_{(k)}$.
-Port of `NLAlib.kyFanInvariantNorm`. -/
+/-- The norm of the Ky Fan $k$-gauge is the Ky Fan $k$-norm $\|\mathbf{A}\|_{(k)}$. -/
 @[simp]
 theorem kyFanGauge_matrixNorm {k : ℕ} (hk : k ≠ 0) (A : Matrix m n 𝕜) :
     (kyFanGauge k hk).matrixNorm A = kyFanNorm k A := by
@@ -424,7 +414,6 @@ theorem forall_matrixNorm_le_iff_forall_kyFanNorm_le {A : Matrix m n 𝕜} {B : 
   · have hk' := h (kyFanGauge k hk)
     rwa [kyFanGauge_matrixNorm, kyFanGauge_matrixNorm] at hk'
 
--- Stage B1a
 
 /-- **A larger range gives a smaller projection residual**, in every unitarily invariant norm: if
 the range of $\mathbf{Y}$ is contained in the range of $\mathbf{B}$ then

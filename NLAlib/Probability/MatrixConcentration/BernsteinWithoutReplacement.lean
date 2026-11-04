@@ -26,13 +26,13 @@ $\lambda_0(\mathbf{Y})$; rectangular populations go through the Hermitian dilati
 dimension $\lvert q\rvert + \lvert r\rvert$, and the $1 \times 1$ case is Bernstein's inequality
 without replacement, Hoeffding's setting [Hoeffding1963].
 
-The population is centred (`docs/design/Sketching-Moments.md` §8 Q7): a consumer with a population
+The population is centred: a consumer with a population
 of mean $\bar{\mathbf{X}}$ centres its atoms in one line. Lower tails follow by
 $\mathbf{X} \mapsto -\mathbf{X}$; the rectangular form covers two-sided Hermitian use.
 
 Degenerate cases. For $\lvert n \rvert < \lvert k \rvert$ there is no injection, the law of $\iota$
 is the zero measure, `HasLaw` forces $\mu = 0$, and every statement holds; so no
-$\lvert k \rvert \le \lvert n \rvert$ is assumed. Design: `docs/design/Sketching-Moments.md` §5.
+$\lvert k \rvert \le \lvert n \rvert$ is assumed.
 
 ## Main results
 

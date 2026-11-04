@@ -1,0 +1,2 @@
+# Keep Lean source and generated root modules consistent across platforms.
+*.lean text eol=lf

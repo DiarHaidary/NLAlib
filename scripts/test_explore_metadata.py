@@ -15,7 +15,7 @@ class MetadataTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         (self.root / "docs").mkdir()
         (self.root / "NLAlib").mkdir()
-        (self.root / "NLAlib/Example.lean").write_text("-- a source file\n")
+        (self.root / "NLAlib/Example.lean").write_bytes(b"-- a source file\n")
         self.registry = self.root / "docs/constants.toml"
         self.registry.write_text('[[constant]]\nname = "NLAlib.bound"\n')
         self.data = {"modules": [{"path": "NLAlib/Example.lean"}],

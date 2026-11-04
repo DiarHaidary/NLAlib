@@ -150,9 +150,7 @@ private lemma krylovGrade_eq_index {m : ℕ} (hm : ∀ i < m, A ^ i *ᵥ b ∉ k
 end Index
 
 /-- **The Krylov spaces stop growing exactly at the grade**: $\nu \le q$ iff
-$\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$. [Saad2003, §6.2].
-Proof ported from the prototype `NLAlib.krylovGrade_le_of_pow_mulVec_mem` and
-`NLAlib.pow_mulVec_notMem_krylovSpace_of_lt_krylovGrade`, there for a `finrank` definition. -/
+$\mathbf{A}^q\mathbf{b} \in \mathcal{K}_q$. [Saad2003, §6.2]. -/
 theorem krylovGrade_le_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
     krylovGrade A b ≤ q ↔ A ^ q *ᵥ b ∈ krylovSpace A b q := by
   obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
@@ -164,7 +162,6 @@ theorem krylovGrade_le_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
 
 /-- **The dimension of a Krylov space**: $\dim\mathcal{K}_q(\mathbf{A}, \mathbf{b}) = \min(q, \nu)$,
 $\nu$ the grade of $\mathbf{b}$ for $\mathbf{A}$. [Saad2003, Proposition 6.2]; it is (6.4) there.
-Port of `NLAlib.finrank_krylovSpace` (prototype, real scalars).
 Result: krylov-space-dimension -/
 theorem finrank_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     Module.finrank 𝕜 (krylovSpace A b q) = min q (krylovGrade A b) := by
@@ -195,8 +192,7 @@ theorem krylovGrade_le_card (A : Matrix n n 𝕜) (b : n → 𝕜) :
   exact index_le_card hm
 
 /-- The Krylov vectors $\mathbf{b}, \dots, \mathbf{A}^{q-1}\mathbf{b}$ are linearly independent
-exactly up to the grade: the Krylov matrix has full column rank iff $q \le \nu$.
-Port of `NLAlib.linearIndependent_pow_mulVec_iff_le_krylovGrade` (prototype). -/
+exactly up to the grade: the Krylov matrix has full column rank iff $q \le \nu$. -/
 theorem krylovMatrix_mulVec_injective_iff {A : Matrix n n 𝕜} {b : n → 𝕜} {q : ℕ} :
     Function.Injective (krylovMatrix A b q).mulVec ↔ q ≤ krylovGrade A b := by
   obtain ⟨m, hm, hm'⟩ := exists_index (A := A) (b := b)
@@ -220,8 +216,7 @@ theorem mulVec_mem_krylovSpace_of_krylovGrade_le {A : Matrix n n 𝕜} {b x : n 
 
 /-- **The solution lies in the Krylov space of the grade**: for invertible $\mathbf{A}$ and
 $\mathbf{A}\mathbf{x}_\star = \mathbf{b}$, $\mathbf{x}_\star \in \mathcal{K}_q$ once $\nu \le q$.
-[Saad2003, §6.2].
-Port of `NLAlib.sub_mem_krylovSpace_krylovGrade` (prototype). -/
+[Saad2003, §6.2]. -/
 theorem mem_krylovSpace_of_krylovGrade_le {A : Matrix n n 𝕜} (hA : IsUnit A) {b xs : n → 𝕜}
     (hxs : A *ᵥ xs = b) {q : ℕ} (h : krylovGrade A b ≤ q) : xs ∈ krylovSpace A b q := by
   set K := krylovSpace A b q

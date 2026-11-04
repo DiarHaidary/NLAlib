@@ -134,8 +134,6 @@ of size $N = \lvert n \rvert \ge 1$,
 $$(\operatorname{Re} \det \mathbf{A})^{1/N} + (\operatorname{Re} \det \mathbf{B})^{1/N}
   \le (\operatorname{Re} \det(\mathbf{A} + \mathbf{B}))^{1/N}\,.$$
 [HornJohnson2013, Theorem 7.8.21].
-Port of `NLAlib.det_rpow_inv_card_add_le`, there over $\mathbb{R}$ for positive definite
-matrices.
 Result: minkowski-determinant-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_rpow_add_le [Nonempty n] {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -162,7 +160,7 @@ private theorem re_det_real_smul_rpow [Nonempty n] {A : Matrix n n 𝕜} (hA : A
 
 /-- $\mathbf{A} \mapsto (\operatorname{Re} \det \mathbf{A})^{1/N}$, with
 $N = \lvert n \rvert \ge 1$, is concave on the positive definite matrices.
-[HornJohnson2013, Theorem 7.8.21]. Port of `NLAlib.concaveOn_det_rpow_inv_card`. -/
+[HornJohnson2013, Theorem 7.8.21]. -/
 theorem concaveOn_re_det_rpow [Nonempty n] :
     ConcaveOn ℝ {A : Matrix n n 𝕜 | A.PosDef}
       fun A => RCLike.re A.det ^ (Fintype.card n : ℝ)⁻¹ := by

@@ -76,7 +76,8 @@ $\mathsf{pcgIterate}(\mathbf{A}, \mathbf{M}, \mathbf{b}, \mathbf{x}_0, q) := \ma
 \mathbf{M}\mathbf{r}_0))\,\mathbf{r}_0$. Basis-free, total, no square root; the preconditioned
 Hestenes–Stiefel recurrence computes it (`Matrix.PosDef.pcgState_x_eq`). Junk value: that of
 `galerkinInverse` when the compression of $\mathbf{A}$ is singular.
-[Saad2003, §9.2]; [Greenbaum1997, §8.1]; locators to verify. -/
+[Saad2003, §9.2]; [Greenbaum1997, §8.1]; locators to verify.
+Algorithm: pcg (specification) -/
 noncomputable def pcgIterate (A M : Matrix n n 𝕜) (b x₀ : n → 𝕜) (q : ℕ) : n → 𝕜 :=
   x₀ + galerkinInverse A (krylovMatrix (M * A) (M *ᵥ (b - A *ᵥ x₀)) q) *ᵥ (b - A *ᵥ x₀)
 

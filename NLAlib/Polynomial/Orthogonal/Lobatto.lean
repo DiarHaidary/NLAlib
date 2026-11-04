@@ -20,7 +20,6 @@ For a finite measure $\mu$ supported in $[a, b]$ and $a < b$, the Lobatto rule i
 polynomial of degree at most $2k + 1$ exactly (it matches $2k + 2$ moments), and its remainder
 is $f^{(2k+2)}(\xi)/(2k+2)!$ times $\int(x - a)(x - b)\hat\pi_k(x)^2\,d\mu(x)$, a nonpositive
 weight, which gives two one-sided bounds.
-Design: `docs/design/Polynomial-QuadratureRemainder.md`.
 
 ## Main definitions
 

@@ -2,7 +2,7 @@
 
 # Rules for `NLAlib/Sketching`
 
-The rules a file in `NLAlib/Sketching` (and `NLAlibScaffold/Sketching`) keeps, generated from
+The rules a file in `NLAlib/Sketching` keeps, generated from
 `docs/rules/rules.toml`. Errors fail CI; a warning is a heuristic review list; a review
 rule has no check. The reasons are in CONTRIBUTING at the linked section. Check a file
 with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file
@@ -42,6 +42,7 @@ and `docs/rules/DIGEST.md`.
 - **P8** Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure. [§3]
 - **P9** A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib. [§2]
 - **P10** (warning) A statement lives with its topic, not in a higher layer than its vocabulary. [§8] placement
+- **P12** An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml. [§7]
 
 ### Source and proof style
 
@@ -51,8 +52,9 @@ and `docs/rules/DIGEST.md`.
 - **S4** A proof has at most 80 lines. [§7], §10
 - **S5** (warning) A helper two files need is one public lemma, not two private copies. [§3]
 - **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
-- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§10], proof-agent brief
+- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§3]
 - **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
+- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [§7]
 
 ### Types and statement shape
 
@@ -67,7 +69,7 @@ and `docs/rules/DIGEST.md`.
 - **T11** (warning) A two-sided bound is two theorems, not a top-level conjunction. [§5.2]
 - **T12** (warning) An `∃`-index into `eigenvalue` or `singularValues` carries its range. [§5.2]
 - **T13** No hypothesis named `_h…`: an unused hypothesis is dropped. [§5.2]
-- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. [§5.2], PORT_PROBABILITY D3
+- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. [§5.2]
 - **T15** A lower moment obtained by Jensen from a higher one is not a separate theorem. [§5.2]
 
 ### Vocabulary
@@ -138,11 +140,24 @@ and `docs/rules/DIGEST.md`.
 - **R2** No two result ids one or two edits apart. [§6] item 4
 - **R3** Every id or declaration the explorer names exists. explore README
 
+### Algorithm tags
+
+- **A1** An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`. [§6] item 4b
+- **A2** `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances. [§6] item 4b
+- **A3** A declaration carries at most one `Algorithm:` tag. [§6] item 4b
+
 ### Design records
 
 - **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]
-- **G2** Every port-ledger target is declared. [§9], AGENTS.md
-- **G3** (review) A scaffold file imports the scaffold files whose declarations its `Proof:` lines name. [§8] item 5
+
+### Programs
+
+- **E2** Programs, kernels and implementations are computable. [§5.5]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. [§5.5]
+- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [§5.5]
+- **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [§5.5]
+- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. [§5.5]
 
 ### Names
 
@@ -172,8 +187,8 @@ and `docs/rules/DIGEST.md`.
 [§5.1]: ../../CONTRIBUTING.md#51-types
 [§5.2]: ../../CONTRIBUTING.md#52-shape
 [§5.3]: ../../CONTRIBUTING.md#53-vocabulary
+[§5.5]: ../../CONTRIBUTING.md#55-programs
 [§6]: ../../CONTRIBUTING.md#6-docstrings-and-citations
-[§7]: ../../CONTRIBUTING.md#7-proofs-sorry-and-the-scaffold-library
-[§8]: ../../CONTRIBUTING.md#8-designing-a-stage
-[§9]: ../../CONTRIBUTING.md#9-workflow-and-checks
+[§7]: ../../CONTRIBUTING.md#7-proofs-and-what-each-library-may-contain
+[§8]: ../../CONTRIBUTING.md#8-designing-new-material
 [§10]: ../../CONTRIBUTING.md#10-building-without-running-out-of-memory

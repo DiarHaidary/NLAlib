@@ -41,8 +41,7 @@ $\|\mathbf{E}\|_{\mathsf{F}}^2$.
 The spectral error of the truncated output depends on the choice `truncatedSVD` makes; its
 expectation is stated for any measurable choice of best approximations and, directly, for
 `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). The integrability
-companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`. Design:
-`docs/design/LowRank-S3.md` §3.5, §8; `docs/design/LowRank-S2c.md` §8 item 7.
+companions are law-free, in `NLAlib.LowRank.Random.RangeFinder`.
 
 ## Main results
 
@@ -670,7 +669,6 @@ theorem integral_specNorm_sub_truncatedSVD_rsvd_sq_le_of_hasLaw_gaussianMatrix
 
 /-! ### The normalised spectral bound -/
 
--- Stage B6b
 
 /-- The **range-finder tail ratio** (casts to $\mathbb{R}$),
 the number <!-- value rangeFinderTailRatio \mathbf{A} r \ell -->

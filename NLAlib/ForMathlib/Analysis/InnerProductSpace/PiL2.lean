@@ -63,8 +63,7 @@ theorem inner_toLp_toLp_eq_star_dotProduct (x y : n → 𝕜) :
 
 /-- The squared Euclidean norm of a coordinate vector is the real part of
 $\mathbf{x}^{\mathsf{H}}\mathbf{x}$: $\|\mathbf{x}\|^2
-= \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{x})$.
-Port of `NLAlib.norm_toLp_sq_eq_re_star_dotProduct`. -/
+= \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{x})$. -/
 theorem norm_toLp_sq_eq_re_star_dotProduct (x : n → 𝕜) :
     ‖WithLp.toLp 2 x‖ ^ 2 = RCLike.re (star x ⬝ᵥ x) := by
   rw [← inner_toLp_toLp_eq_star_dotProduct, inner_self_eq_norm_sq]
@@ -76,8 +75,7 @@ theorem star_dotProduct_self_eq_coe_norm_sq (x : n → 𝕜) :
   rw [← inner_toLp_toLp_eq_star_dotProduct, inner_self_eq_norm_sq_to_K, RCLike.ofReal_pow]
 
 /-- Over $\mathbb{R}$, the squared Euclidean norm of a coordinate vector is
-$\|\mathbf{x}\|^2 = \mathbf{x}^{\mathsf{T}}\mathbf{x}$.
-Port of `NLAlib.norm_toLp_sq_eq_dotProduct_self`. -/
+$\|\mathbf{x}\|^2 = \mathbf{x}^{\mathsf{T}}\mathbf{x}$. -/
 theorem norm_toLp_sq_eq_dotProduct_self (x : n → ℝ) : ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
   rw [norm_toLp_sq_eq_re_star_dotProduct, star_trivial, RCLike.re_to_real]
 

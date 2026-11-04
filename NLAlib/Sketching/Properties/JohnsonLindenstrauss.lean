@@ -34,8 +34,7 @@ property gives the Johnson–Lindenstrauss lemma for finitely many points by a u
 pairs. The moment property also gives approximate matrix multiplication
 (`NLAlib.Sketching.Properties.MatrixMultiplication`).
 
-Both are stated with the non-strict threshold event $\{\varepsilon \le X\}$. Design:
-`docs/design/Sketching-S1.md` §3.5.
+Both are stated with the non-strict threshold event $\{\varepsilon \le X\}$.
 
 **From the JL property to subspace embeddings.** A distributional JL tail at $\varepsilon$ makes
 any sketch $\mathbf{S}$ a subspace embedding with constants $1 \mp (5/4)\varepsilon$ of a fixed
@@ -52,10 +51,10 @@ and $441^{\lvert p \rvert}$. Any family with a JL tail and no Gram-level tail ge
 Conversely an OSE for dimension $1$ with constants strictly inside $1 \mp \varepsilon$ has the
 JL property at $\varepsilon$ (`NLAlib.IsObliviousSubspaceEmbedding.hasJLProperty`), the route of
 the SRHT.
-Degenerate cases: for empty $p$ every sketch is an embedding (`docs/design/Sketching-S3.md` §8,
-item 6); for $\varepsilon \le 0$ and nonempty $p$ the JL hypothesis bounds the whole space. No
+Degenerate cases: for empty $p$ every sketch is an embedding; for $\varepsilon \le 0$ and nonempty
+$p$ the JL hypothesis bounds the whole space. No
 hypothesis on $\varepsilon$; $\delta \ge 0$ is needed for the union bound over an empty net and
-for `mono`. Design: `docs/design/Sketching-S3.md` §3.1.
+for `mono`.
 
 ## Main definitions
 

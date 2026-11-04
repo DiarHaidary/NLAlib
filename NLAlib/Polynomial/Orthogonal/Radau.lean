@@ -26,7 +26,6 @@ $\tilde\pi_k$ the orthogonal polynomial of `radauMeasure μ c`. At $c = a$ the w
 nonnegative and at $c = b$ nonpositive, which gives the four one-sided bounds. The Lobatto rule
 is in `NLAlib.Polynomial.Orthogonal.Lobatto` and the Radau Jacobi matrix in
 `NLAlib.Polynomial.Orthogonal.RadauJacobi`.
-Design: `docs/design/Polynomial-QuadratureRemainder.md`.
 
 ## Main definitions
 

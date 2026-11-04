@@ -119,6 +119,15 @@ class AsymptoticTests(unittest.TestCase):
                          'exists_forall_isObliviousSubspaceEmbedding_of_hasLaw_countSketch')
 
 
+class IndexHeadTests(unittest.TestCase):
+    def test_getelem_head(self):
+        from leanexpr import head_candidates
+        self.assertIn('getElem?', head_candidates('s.shape[b]?'))
+        self.assertIn('getElem', head_candidates('x[i]'))
+        self.assertIn('getElem', head_candidates('x[i]!'))
+        self.assertNotIn('getElem', head_candidates('x.shape'))
+
+
 class AllowlistTests(unittest.TestCase):
     def run_main(self, decls, allow):
         with tempfile.TemporaryDirectory() as d:

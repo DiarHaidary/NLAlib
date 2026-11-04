@@ -32,12 +32,11 @@ Gauss error $2\varepsilon\|\mathbf{\Omega}\|_{\mathsf{F}}^2/m$, $\varepsilon$ th
 from $f$ to polynomials of degree less than $2q$ on an interval containing the spectrum, with the
 Lipschitz (Jackson) and analytic (Bernstein ellipse) rates; composing with the Hanson–Wright tail
 of Girard–Hutchinson gives the tails with independent sub-Gaussian entries, the quadrature term
-random inside the event. [CortinovisKressner2022]. Design: `docs/design/Estimation-SLQ.md` §3.2.
+random inside the event. [CortinovisKressner2022].
 
 For every test matrix, SLQ with $q$ Lanczos steps is below the Girard–Hutchinson estimate when
 $f^{(2q)} \ge 0$ on an interval containing the spectrum, and above it when $f^{(2q)} \le 0$: the
-Gauss error has a sign probe by probe, so the SLQ bias is one-signed. Design:
-`docs/design/Polynomial-QuadratureRemainder.md` (S1, S2).
+Gauss error has a sign probe by probe, so the SLQ bias is one-signed.
 
 ## Main definitions
 

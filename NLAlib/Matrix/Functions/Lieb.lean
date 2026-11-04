@@ -57,7 +57,7 @@ $$D(\mathbf{A}; \mathbf{H}) = \operatorname{Re} \operatorname{tr}\bigl(\mathbf{A
 the Bregman divergence of
 $\mathbf{A} \mapsto \operatorname{tr}(\mathbf{A}\log(\mathbf{A}) - \mathbf{A})$. The definition
 takes any two square matrices; it is meant for positive definite ones.
-[Tropp2015, Definition 8.1.2]. Port of `NLAlib.relativeEntropy`. -/
+[Tropp2015, Definition 8.1.2]. -/
 noncomputable def relativeEntropy (A H : Matrix n n 𝕜) : ℝ :=
   RCLike.re (A * (cfc Real.log A - cfc Real.log H) - (A - H)).trace
 
@@ -89,8 +89,7 @@ theorem relativeEntropy_eq (A H : Matrix n n 𝕜) :
 $\mathbf{A}$ and $\mathbf{H}$,
 $$D(\mathbf{A}; \mathbf{H}) = \operatorname{tr}\bigl(\mathbf{A}(\log(\mathbf{A}) -
   \log(\mathbf{H})) - (\mathbf{A} - \mathbf{H})\bigr) \ge 0 \,.$$
-[Tropp2015, Proposition 8.3.5]. Port of `NLAlib.relativeEntropy_nonneg`, there over
-$\mathbb{C}$.
+[Tropp2015, Proposition 8.3.5].
 Result: relative-entropy -/
 theorem _root_.Matrix.PosDef.relativeEntropy_nonneg {A H : Matrix n n 𝕜} (hA : A.PosDef)
     (hH : H.PosDef) :
@@ -269,7 +268,6 @@ $$D(a\mathbf{A}_1 + b\mathbf{A}_2; a\mathbf{H}_1 + b\mathbf{H}_2)
 [Tropp2015, §8.3 and §8.8]; [Lindblad1974, Lemma 2]; Lindblad states it for positive trace-class
 operators on a separable Hilbert space and finite convex combinations, with the same definition
 $\operatorname{tr}(\mathbf{A}\log\mathbf{A} - \mathbf{A}\log\mathbf{H} + \mathbf{H} - \mathbf{A})$.
-Port of `NLAlib.convexOn_relativeEntropy`, there over $\mathbb{C}$ on `Fin d`.
 Result: relative-entropy -/
 theorem convexOn_relativeEntropy :
     ConvexOn ℝ {P : Matrix n n 𝕜 × Matrix n n 𝕜 | P.1.PosDef ∧ P.2.PosDef}
@@ -305,7 +303,7 @@ theorem convexOn_relativeEntropy :
 $$\operatorname{tr} \mathbf{M} = \max_{\mathbf{T}} \operatorname{tr}(\mathbf{T}\log(\mathbf{M}) -
   \mathbf{T}\log(\mathbf{T}) + \mathbf{T})$$
 over positive definite $\mathbf{T}$, traces through their real parts.
-[Tropp2015, §8.3]. Port of `NLAlib.isGreatest_variational_trace`. -/
+[Tropp2015, §8.3]. -/
 theorem _root_.Matrix.PosDef.isGreatest_re_trace_mul_cfc_log_sub {M : Matrix n n 𝕜} (hM : M.PosDef)
     :
     IsGreatest
@@ -328,8 +326,7 @@ $$\operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A})) = \max_{\mathbf{T}}
   D(\mathbf{T}; \mathbf{A})\bigr]$$
 over positive definite $\mathbf{T}$, traces through their real parts. The formula needs no
 hypothesis on $\mathbf{A}$; it is used for positive definite $\mathbf{A}$.
-[Tropp2015, §8.3].
-Port of `NLAlib.isGreatest_variational_traceExp`, there over $\mathbb{C}$ on `Fin d`. -/
+[Tropp2015, §8.3]. -/
 theorem _root_.Matrix.IsHermitian.isGreatest_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜}
     (hH : H.IsHermitian)
     (A : Matrix n n 𝕜) :
@@ -355,7 +352,6 @@ $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\
 concave on the positive definite matrices.
 [Lieb1973, Theorem 6]; [Tropp2015, Theorem 8.1.1]; Lieb states it for the trace on a
 finite-dimensional complex Hilbert space, here over $\Bbbk$ with the real part of the trace.
-Port of `NLAlib.lieb_concavity`, there over $\mathbb{C}$.
 Result: lieb-concavity -/
 theorem _root_.Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log {H : Matrix n n 𝕜}
     (hH : H.IsHermitian) :
@@ -386,8 +382,7 @@ theorem _root_.Matrix.IsHermitian.concaveOn_re_trace_exp_add_cfc_log {H : Matrix
 
 /-- The function
 $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \log(\mathbf{A}))$ of
-Lieb's theorem is continuous on the positive definite matrices, for every square $\mathbf{H}$.
-Port of `NLAlib.continuousOn_traceExp_add_matrixLog`, there over $\mathbb{C}$. -/
+Lieb's theorem is continuous on the positive definite matrices, for every square $\mathbf{H}$. -/
 theorem continuousOn_re_trace_exp_add_cfc_log (H : Matrix n n 𝕜) :
     ContinuousOn (fun A : Matrix n n 𝕜 => RCLike.re (exp (H + cfc Real.log A)).trace)
       {A | A.PosDef} := by

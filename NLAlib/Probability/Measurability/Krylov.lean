@@ -34,7 +34,6 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n p : Type*} [Fintype n] [DecidableEq n]
 
--- Stage B0
 
 /-- The block Krylov matrix $\mathbf{B} \mapsto \mathbf{K}_q(\mathbf{A}, \mathbf{B})$ is a
 measurable function of the starting block. -/

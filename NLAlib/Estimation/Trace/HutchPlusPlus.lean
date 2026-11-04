@@ -35,8 +35,7 @@ $\mathbf{H} = \tfrac12(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$, for every sketch 
 Gaussian sketch too, the bounds of Meyer, Musco, Musco and Woodruff and of Epperly, Tropp and
 Webber follow. The high-probability bounds are in `NLAlib.Estimation.Trace.HutchPlusPlusTail`.
 Probabilistic statements are over $\mathbb{R}$, where the Gaussian law and Hanson–Wright live; the
-definition, the error identity and unbiasedness are over any `RCLike` field. Design:
-`docs/design/Estimation-HutchPP.md`.
+definition, the error identity and unbiasedness are over any `RCLike` field.
 
 ## Main definitions
 
@@ -46,6 +45,7 @@ definition, the error identity and unbiasedness are over any `RCLike` field. Des
 
 * `NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`: the papers' form with an
   orthonormal basis of the sketch.
+* `NLAlib.hutchpp_reindex`: invariance under relabelling the rows.
 * `NLAlib.trace_sub_hutchpp`: the error identity; `NLAlib.hutchpp_eq_trace_of_rsvd_eq`,
   `NLAlib.hutchpp_eq_trace_of_rank_eq`: exactness when the sketch captures $\mathbf{A}$.
 * `NLAlib.integral_hutchpp`: unbiasedness.
@@ -71,7 +71,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*} [RCLike 𝕜]
   {n s t : Type*} [Fintype n] [Fintype s] [Fintype t] [DecidableEq n]
 
--- Stage TE-2
 
 /-- **Hutch++**: for a square $\mathbf{A}$, a sketch test matrix $\mathbf{S}$ and a residual test
 matrix $\mathbf{G}$,
@@ -88,7 +87,8 @@ of the residual is $0$ and the output is $\operatorname{tr}\mathsf{rsvd}(\mathbf
 The basis form of the papers is `NLAlib.hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector`.
 [MeyerMuscoMuscoWoodruff2021, Algorithm 1 and Algorithm 3]; [EpperlyTroppWebber2024, (1.3)];
 there with an orthonormal basis $\mathbf{Q}$ of the range of $\mathbf{A}\mathbf{S}$ and
-$\mathbf{S}$, $\mathbf{G}$ random (sign or Gaussian entries). -/
+$\mathbf{S}$, $\mathbf{G}$ random (sign or Gaussian entries).
+Algorithm: hutchpp -/
 noncomputable def hutchpp (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matrix n t 𝕜) : 𝕜 :=
   (rsvd A S).trace +
     girardHutchinson ((1 - rangeProjector (A * S)) * A * (1 - rangeProjector (A * S))) G
@@ -263,6 +263,32 @@ theorem hutchpp_eq_of_mul_conjTranspose_self_eq_rangeProjector {q : Type*} [Fint
     hutchpp A S G =
       (Qᴴ * A * Q).trace + girardHutchinson ((1 - Q * Qᴴ) * A * (1 - Q * Qᴴ)) G := by
   rw [hutchpp, rsvd, ← hQS, Matrix.mul_assoc Q Qᴴ A, Matrix.trace_mul_comm Q (Qᴴ * A)]
+
+/-- Hutch++ is invariant under relabelling the rows: for a bijection $e$ of the row indices,
+reindexing $\mathbf{A}$ (rows and columns) and $\mathbf{S}$, $\mathbf{G}$ (rows) along $e$ leaves
+$\mathsf{hutchpp}(\mathbf{A}, \mathbf{S}, \mathbf{G})$ unchanged. Realisations of programs are
+stated at `Fin N` (`docs/design/Computation.md`, D9), and reach any finite index type through
+this lemma. -/
+theorem hutchpp_reindex {n' : Type*} [Fintype n'] [DecidableEq n'] (e : n ≃ n')
+    (A : Matrix n n 𝕜) (S : Matrix n s 𝕜) (G : Matrix n t 𝕜) :
+    hutchpp (Matrix.reindex e e A) (Matrix.reindex e (Equiv.refl s) S)
+      (Matrix.reindex e (Equiv.refl t) G) = hutchpp A S G := by
+  have hP : rangeProjector ((A * S).submatrix e.symm (Equiv.refl s)) =
+      (rangeProjector (A * S)).submatrix e.symm e.symm := by
+    rw [← mul_pinv, ← mul_pinv, pinv_submatrix_equiv, Matrix.submatrix_mul_equiv]
+  have htr : ∀ M : Matrix n n 𝕜, (M.submatrix e.symm e.symm).trace = M.trace := fun M => by
+    simp only [Matrix.trace, Matrix.diag, Matrix.submatrix_apply]
+    exact Equiv.sum_comp e.symm (fun i => M i i)
+  have h1 : (1 : Matrix n' n' 𝕜) = (1 : Matrix n n 𝕜).submatrix e.symm e.symm :=
+    (Matrix.submatrix_one_equiv e.symm).symm
+  simp only [hutchpp, rsvd, girardHutchinson, Matrix.reindex_apply, Equiv.refl_symm,
+    Matrix.submatrix_mul_equiv]
+  have hs : ∀ X Y : Matrix n n 𝕜,
+      X.submatrix e.symm e.symm - Y.submatrix e.symm e.symm = (X - Y).submatrix e.symm e.symm :=
+    fun _ _ => rfl
+  rw [hP, h1, hs]
+  simp only [Matrix.submatrix_mul_equiv, htr, Matrix.conjTranspose_submatrix, Equiv.coe_refl,
+    Matrix.submatrix_id_id]
 
 /-- **The error of Hutch++ is the error of Girard–Hutchinson on the compressed residual**: for
 every square $\mathbf{A}$ and all test matrices $\mathbf{S}$, $\mathbf{G}$, with
@@ -541,7 +567,6 @@ theorem ae_hutchpp_eq_trace_of_hasLaw_gaussianMatrix (A : Matrix n n ℝ) {S : �
   filter_upwards [ae_rsvd_eq_self_of_hasLaw_gaussianMatrix A hS hA] with ω hω
   exact hutchpp_eq_trace_of_rsvd_eq hω (G ω)
 
--- Stage TE-3
 
 /-- **The variance of Gaussian Hutch++, Halko–Martinsson–Tropp form**: if the
 $n \times \lvert s \rvert$ sketch test matrix $\mathbf{S}$ and the $n \times \ell$ residual test

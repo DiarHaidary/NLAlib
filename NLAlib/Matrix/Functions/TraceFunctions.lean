@@ -248,7 +248,6 @@ $\mathbf{A} \preceq \mathbf{B}$, both have spectrum in $s$ and $f$ is non-decrea
 $\operatorname{Re} \operatorname{tr} f(\mathbf{A}) \le \operatorname{Re} \operatorname{tr}
 f(\mathbf{B})$.
 [Tropp2015, §2.1 and §8.3]; [Carlen2010, Theorem 2.10].
-Port of `NLAlib.traceExp_le_traceExp`, there for the exponential over $\mathbb{C}$.
 Result: trace-monotonicity -/
 theorem _root_.Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : A ≤ B)
@@ -267,8 +266,6 @@ theorem _root_.Matrix.IsHermitian.re_trace_cfc_le_re_trace_cfc_of_le {A B : Matr
 $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} f(\mathbf{A})$ is convex on the Hermitian
 matrices with spectrum in $s$.
 [Carlen2010, Theorem 2.10]; [Bhatia1997, Problem IX.8.14 context].
-Port of `NLAlib.convexOn_traceExp_isHermitian` and `NLAlib.convexOn_traceEvenPower`, there for
-the exponential and for even powers.
 Result: trace-convexity -/
 theorem convexOn_re_trace_cfc {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ s f) :
     ConvexOn ℝ {A : Matrix n n 𝕜 | A.IsHermitian ∧ spectrum ℝ A ⊆ s}
@@ -282,7 +279,7 @@ theorem convexOn_re_trace_cfc {f : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ
 $\sum_i f_i(a) g_i(h) \ge 0$ for all $a, h \in s$, then
 $\sum_i \operatorname{Re} \operatorname{tr}(f_i(\mathbf{A}) g_i(\mathbf{H})) \ge 0$ for Hermitian
 $\mathbf{A}$, $\mathbf{H}$ with spectrum in $s$.
-[Tropp2015, Proposition 8.3.5]. Port of `NLAlib.generalized_klein`. -/
+[Tropp2015, Proposition 8.3.5]. -/
 theorem sum_re_trace_cfc_mul_cfc_nonneg {ι : Type*} [Fintype ι] {f g : ι → ℝ → ℝ} {s : Set ℝ}
     (hfg : ∀ a ∈ s, ∀ h ∈ s, 0 ≤ ∑ i, f i a * g i h) {A H : Matrix n n 𝕜} (hA : A.IsHermitian)
     (hH : H.IsHermitian) (hAs : spectrum ℝ A ⊆ s) (hHs : spectrum ℝ H ⊆ s) :
@@ -311,7 +308,6 @@ $$\operatorname{Re} \operatorname{tr}((\mathbf{A} - \mathbf{B}) f'(\mathbf{B}))
   \le \operatorname{Re} \operatorname{tr} f(\mathbf{A}) - \operatorname{Re} \operatorname{tr}
   f(\mathbf{B}) \,.$$
 [Carlen2010, Theorem 2.11]; [Tropp2015, §8.3].
-Port of `NLAlib.generalized_klein`, in its classical form.
 Result: klein-inequality -/
 theorem re_trace_mul_cfc_le_re_trace_cfc_sub {f f' : ℝ → ℝ} {s : Set ℝ} (hf : ConvexOn ℝ s f)
     (hf' : ∀ x ∈ s, HasDerivWithinAt f (f' x) s x) {A B : Matrix n n 𝕜} (hA : A.IsHermitian)
@@ -399,7 +395,7 @@ theorem re_trace_cfc_conjTranspose_mul_mul_le {f : ℝ → ℝ} {s : Set ℝ} (h
 $\mathbf{A} \preceq \mathbf{B}$,
 $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A}) \le \operatorname{Re} \operatorname{tr}
 \exp(\mathbf{B})$.
-[Tropp2015, §2.1]. Port of `NLAlib.traceExp_le_traceExp`, there over $\mathbb{C}$. -/
+[Tropp2015, §2.1]. -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (h : A ≤ B) : RCLike.re (exp A).trace ≤ RCLike.re (exp B).trace := by
@@ -413,7 +409,7 @@ theorem _root_.Matrix.IsHermitian.re_trace_exp_le_re_trace_exp_of_le {A B : Matr
 
 /-- **The trace exponential is convex** on the Hermitian matrices:
 $\mathbf{A} \mapsto \operatorname{Re} \operatorname{tr} \exp(\mathbf{A})$ is convex there.
-[Tropp2015, §8.3]. Port of `NLAlib.convexOn_traceExp_isHermitian`, there over $\mathbb{C}$. -/
+[Tropp2015, §8.3]. -/
 theorem convexOn_re_trace_exp :
     ConvexOn ℝ {A : Matrix n n 𝕜 | A.IsHermitian} fun A => RCLike.re (exp A).trace := by
   have h := convexOn_re_trace_cfc (𝕜 := 𝕜) (n := n) convexOn_exp
@@ -429,8 +425,7 @@ theorem convexOn_re_trace_exp :
 /-- The trace exponential is stable under perturbation:
 $\operatorname{Re} \operatorname{tr} \exp(\mathbf{A})
 \le e^{\|\mathbf{A} - \mathbf{B}\|_2} \operatorname{Re} \operatorname{tr} \exp(\mathbf{B})$ for
-Hermitian $\mathbf{A}$, $\mathbf{B}$.
-Port of `NLAlib.traceExp_le_exp_mul_traceExp_of_norm_sub_le`. -/
+Hermitian $\mathbf{A}$, $\mathbf{B}$. -/
 theorem _root_.Matrix.IsHermitian.re_trace_exp_le_exp_specNorm_sub_mul {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
     (hB : B.IsHermitian) :
@@ -447,7 +442,7 @@ $\operatorname{intdim}(\mathbf{A}) = \operatorname{Re} \operatorname{tr} \mathbf
 \|\mathbf{A}\|_2$
 (Lean's division by zero gives $0$ for $\mathbf{A} = \mathbf{0}$). For a nonzero positive
 semidefinite matrix it lies between $1$ and the rank.
-[Tropp2015, Definition 7.1.1]. Port of `NLAlib.intrinsicDimension`, there over $\mathbb{C}$. -/
+[Tropp2015, Definition 7.1.1]. -/
 noncomputable def intrinsicDimension (A : Matrix n n 𝕜) : ℝ :=
   RCLike.re A.trace / specNorm A
 
@@ -494,7 +489,7 @@ private theorem re_trace_div_le_intrinsicDimension {A : Matrix n n 𝕜} (hA : A
 omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at most the sum
 of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
-[Tropp2015, §7.3]. Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
+[Tropp2015, §7.3]. -/
 theorem _root_.Matrix.PosSemidef.intrinsicDimension_fromBlocks_le {A : Matrix m m 𝕜}
     {B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -507,8 +502,7 @@ theorem _root_.Matrix.PosSemidef.intrinsicDimension_fromBlocks_le {A : Matrix m 
 
 omit [DecidableEq m] [DecidableEq n] in
 /-- The intrinsic dimension of a block diagonal positive semidefinite matrix is at least the
-smaller of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$.
-Port of `NLAlib.intrinsicDimension_fromBlocks`. -/
+smaller of the intrinsic dimensions of the blocks $\mathbf{A}$, $\mathbf{B}$. -/
 theorem _root_.Matrix.PosSemidef.min_intrinsicDimension_le_intrinsicDimension_fromBlocks
     {A : Matrix m m 𝕜}
     {B : Matrix n n 𝕜} (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -531,7 +525,6 @@ $\varphi(0) = 0$ and positive semidefinite $\mathbf{A}$,
 $$\operatorname{Re} \operatorname{tr} \varphi(\mathbf{A})
   \le \operatorname{intdim}(\mathbf{A}) \, \varphi(\|\mathbf{A}\|_2) \,.$$
 [Tropp2015, Lemma 7.5.1].
-Port of `NLAlib.traceFunction_le_intrinsicDimension_mul`, there over $\mathbb{C}$.
 Result: intrinsic-dimension -/
 theorem _root_.Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {φ : ℝ → ℝ} (hφ : ConvexOn ℝ (Set.Ici 0) φ) (hφ0 : φ 0 = 0) :
@@ -557,7 +550,6 @@ theorem _root_.Matrix.PosSemidef.re_trace_cfc_le_intrinsicDimension_mul {A : Mat
 
 /-! ### Jensen from a supporting line -/
 
--- Stage B1b
 
 omit [DecidableEq m] [DecidableEq p] in
 /-- **Jensen's inequality for a quadratic form, from a supporting line**: for Hermitian

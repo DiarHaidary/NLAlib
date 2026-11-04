@@ -29,7 +29,7 @@ conditioning step of the randomized range finder's error bound; the two sides ar
 together.
 
 The isotropic statements are over $\Bbbk$ and are stated at the root (their subject is
-`Function.uncurry X`, so P0's `IsIsotropic` dot notation would not apply); the Gaussian ones are
+`Function.uncurry X`, so the `IsIsotropic` dot notation would not apply); the Gaussian ones are
 their corollaries over $\mathbb{R}$.
 
 ## Main results

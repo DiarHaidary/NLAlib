@@ -261,8 +261,7 @@ private theorem principalMinor_filter_lt_eq_prod (A : Matrix (Fin n) (Fin n) K) 
 
 /-- Pivots and leading principal minors: while the earlier pivots are nonzero, the leading
 principal minor of order $i + 1$ is the product of the first $i + 1$ pivots
-$\mathbf{A}^{(l)}_{l,l}$, $l \le i$.
-Port of `NLAlib.leadingMinor_succ_eq_mul_leadingMinor_pivotSchur`, in closed form. -/
+$\mathbf{A}^{(l)}_{l,l}$, $l \le i$. -/
 theorem principalMinor_Iic_eq_prod_gaussState (A : Matrix (Fin n) (Fin n) K) (i : Fin n)
     (hp : ∀ l : Fin n, l < i → gaussState A l l l ≠ 0) :
     principalMinor A (Finset.Iic i) = ∏ l ∈ Finset.Iic i, gaussState A l l l := by

@@ -9,6 +9,7 @@ public import Mathlib.Algebra.Star.Module
 public import NLAlib.Matrix.Spectral.EigenvectorPairing
 public import NLAlib.Matrix.Spectral.Schur
 public import NLAlib.Matrix.Majorization.Schur
+public import NLAlib.Matrix.Inequalities.SchurHorn
 
 /-!
 # The Hermitian part and the real parts of the eigenvalues
@@ -26,12 +27,18 @@ Hermitian part (Ky Fan), so they lie between its extreme eigenvalues (Bendixson)
 ## Main results
 
 * `NLAlib.majorized_re_of_isEigenvalueListing`: Ky Fan's majorization.
+* `NLAlib.majorized_re_iff_exists_isEigenvalueListing_hermitianPart`: majorization is the exact
+  compatibility condition for a prescribed complex spectrum and Hermitian-part spectrum.
 * `NLAlib.re_le_eigenvalue_zero_hermitianPart`, `NLAlib.eigenvalue_hermitianPart_le_re`:
   Bendixson's bounds.
 * `Matrix.PosDef.det_ne_zero_of_hermitianPart`: a matrix with positive definite Hermitian part is
   invertible.
 * `NLAlib.quadForm_hermitianPart`, `NLAlib.trace_conjTranspose_mul_hermitianPart_mul`: over
   $\mathbb{R}$, quadratic forms and traces of compressions see only the symmetric part.
+* `Matrix.IsHermitian.frobNorm_sub_sq`: orthogonal decomposition of the error to a Hermitian
+  matrix into its skew-Hermitian and Hermitian components.
+* `Matrix.IsHermitian.frobNorm_sub_eq_frobNorm_sub_hermitianPart_iff`: uniqueness of the
+  nearest Hermitian matrix in Frobenius norm.
 -/
 
 @[expose] public section
@@ -63,7 +70,52 @@ theorem _root_.Matrix.IsHermitian.hermitianPart_eq {A : Matrix n n 𝕜} (hA : A
     hermitianPart A = A := by
   rw [hermitianPart, hA.eq, ← two_smul ℝ A, smul_smul, inv_mul_cancel₀ two_ne_zero, one_smul]
 
+/-- Taking the Hermitian part commutes with subtraction. This transports the norm contraction
+to differences of two matrices. -/
+theorem hermitianPart_sub (A B : Matrix n n 𝕜) :
+    hermitianPart (A - B) = hermitianPart A - hermitianPart B := by
+  simp only [hermitianPart, Matrix.conjTranspose_sub, smul_sub, smul_add]
+  abel
+
 variable [Fintype n]
+
+/-- A Hermitian matrix is Frobenius-orthogonal to the skew-Hermitian part of any matrix.
+Adapted from `tchen-research/NLAlib` at `77514ce42a0e437d837797a063ac161f41022730`,
+`frobInner_eq_zero_of_skewHermitian_of_isHermitian`, for the canonical decomposition. -/
+theorem _root_.Matrix.IsHermitian.frobInner_sub_hermitianPart {X : Matrix n n 𝕜}
+    (hX : X.IsHermitian) (A : Matrix n n 𝕜) :
+    frobInner (A - hermitianPart A) X = 0 := by
+  have h := frobInner_conjTranspose A X
+  rw [hX.eq] at h
+  rw [frobInner_sub_left, hermitianPart, frobInner_smul_left, frobInner_add_left, h]
+  ring
+
+/-- For any matrix $\mathbf{A}$ and Hermitian $\mathbf{X}$, with
+$\mathbf{H}=(\mathbf{A}+\mathbf{A}^{\mathsf{H}})/2$, the squared error splits orthogonally:
+$$\|\mathbf{A}-\mathbf{X}\|_{\mathsf{F}}^2 =
+\|\mathbf{A}-\mathbf{H}\|_{\mathsf{F}}^2 + \|\mathbf{H}-\mathbf{X}\|_{\mathsf{F}}^2\,.$$
+[Higham1988, proof of Theorem 2.1]; generalized from real matrices to either scalar field.
+This identity gives nearest-Hermitian approximation and its error certificate. -/
+theorem _root_.Matrix.IsHermitian.frobNorm_sub_sq {X : Matrix n n 𝕜}
+    (hX : X.IsHermitian) (A : Matrix n n 𝕜) :
+    frobNorm (A - X) ^ 2 = frobNorm (A - hermitianPart A) ^ 2 +
+      frobNorm (hermitianPart A - X) ^ 2 := by
+  have horth := ((isHermitian_hermitianPart A).sub hX).frobInner_sub_hermitianPart A
+  rw [show A - X = (A - hermitianPart A) + (hermitianPart A - X) by abel,
+    frobNorm_add_sq_of_frobInner_eq_zero horth]
+
+/-- For any matrix $\mathbf{A}$ and Hermitian $\mathbf{X}$, the Frobenius distance to
+$\mathbf{X}$ equals that to $\mathbf{H}=(\mathbf{A}+\mathbf{A}^{\mathsf{H}})/2$ exactly when
+$\mathbf{X}=\mathbf{H}$. Thus the Hermitian-part approximation has a unique minimizer.
+[Higham1988, proof of Theorem 2.1]; generalized from real matrices to either scalar field. -/
+theorem _root_.Matrix.IsHermitian.frobNorm_sub_eq_frobNorm_sub_hermitianPart_iff
+    {X : Matrix n n 𝕜} (hX : X.IsHermitian) (A : Matrix n n 𝕜) :
+    frobNorm (A - X) = frobNorm (A - hermitianPart A) ↔ X = hermitianPart A := by
+  refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
+  have he := hX.frobNorm_sub_sq A
+  rw [h] at he
+  have hz : frobNorm (hermitianPart A - X) = 0 := by nlinarith
+  exact (sub_eq_zero.mp (frobNorm_eq_zero_iff.mp hz)).symm
 
 /-- The Hermitian part does not increase the Frobenius norm:
 $$\|\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\|_{\mathsf{F}} \le
@@ -171,23 +223,37 @@ theorem trace_conjTranspose_mul_hermitianPart_mul {k : Type*} [Fintype k] (Q : M
     Matrix.add_mul, Matrix.trace_add, h, smul_eq_mul]
   ring
 
-/-- The Hermitian part commutes with unitary conjugation: the Hermitian part of
-$\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$ is $\mathbf{U}\mathbf{H}\mathbf{U}^{\mathsf{H}}$ for
-$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$, for any square $\mathbf{U}$.
-Port of `NLAlib.selfAdjointPart_mul_mul_conjTranspose`. -/
-theorem hermitianPart_mul_mul_conjTranspose (U A : Matrix n n 𝕜) :
+/-- The Hermitian part commutes with congruence by any rectangular matrix:
+the Hermitian part of $\mathbf{U}\mathbf{A}\mathbf{U}^{\mathsf{H}}$ is
+$\mathbf{U}\mathbf{H}\mathbf{U}^{\mathsf{H}}$ for
+$\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$. -/
+theorem hermitianPart_mul_mul_conjTranspose {m : Type*}
+    (U : Matrix m n 𝕜) (A : Matrix n n 𝕜) :
     hermitianPart (U * A * Uᴴ) = U * hermitianPart A * Uᴴ := by
   simp only [hermitianPart, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_add, Matrix.add_mul, Matrix.mul_assoc]
 
 variable [DecidableEq n]
 
+open scoped MatrixOrder in
+/-- Compression to orthonormal columns preserves any scalar upper bound on the Hermitian
+part. In particular, a strict dissipativity bound survives compression with the same constant. -/
+theorem HasOrthonormalCols.hermitianPart_conjTranspose_mul_mul_le
+    {k : Type*} [DecidableEq k] {V : Matrix n k 𝕜}
+    (hV : HasOrthonormalCols V) {A : Matrix n n 𝕜} {b : ℝ}
+    (hA : hermitianPart A ≤ b • (1 : Matrix n n 𝕜)) :
+    hermitianPart (Vᴴ * A * V) ≤ b • (1 : Matrix k k 𝕜) := by
+  have hpart := hermitianPart_mul_mul_conjTranspose Vᴴ A
+  simp only [Matrix.conjTranspose_conjTranspose] at hpart
+  rw [hpart]
+  simpa only [Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one, hV.conjTranspose_mul_self]
+    using conjTranspose_mul_mul_le_conjTranspose_mul_mul hA V
+
 /-- **The real parts of the eigenvalues are majorized by the eigenvalues of the Hermitian
 part** (Ky Fan): if $\mathbf{z}$ lists the eigenvalues of a complex matrix $\mathbf{A}$ and the
 real $\mathbf{x}$ lists those of $\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$, then
 $(\operatorname{Re} \mathbf{z}_i)_i$ is majorized by $\mathbf{x}$ (`Majorized`).
 [HornJohnson1991, §3.3]; [Bhatia1997, Proposition III.5.3].
-Port of `NLAlib.majorized_real_parts_eigenvalues_selfAdjointPart`.
 Result: real-part-majorization -/
 theorem majorized_re_of_isEigenvalueListing {A : Matrix n n ℂ} {z : n → ℂ} {x : n → ℝ}
     (hz : IsEigenvalueListing A z)
@@ -218,6 +284,80 @@ theorem majorized_re_of_isEigenvalueListing {A : Matrix n n ℂ} {z : n → ℂ}
   rw [heq] at hmaj
   exact hmaj.trans (majorized_comp_equiv x e)
 
+/-- **Realization of a spectrum and a Hermitian-part spectrum.** For real $\mathbf{x}$ and
+complex $\mathbf{z}$ indexed by any finite type, if $(\operatorname{Re}\mathbf{z}_i)_i$ is
+majorized by $\mathbf{x}$, there is a complex matrix $\mathbf{A}$ whose eigenvalues are
+$\mathbf{z}$ and whose Hermitian part has eigenvalues $\mathbf{x}$. Both listings include
+algebraic multiplicities; repeated entries and the empty index type are allowed.
+[HornJohnson2013, Theorem 4.3.50]. Adapted from `tchen-research/NLAlib`, commit
+`77514ce42a0e437d837797a063ac161f41022730`,
+`exists_matrix_charpoly_and_selfAdjointPart_charpoly_of_majorized`.
+Result: real-part-majorization -/
+theorem exists_isEigenvalueListing_hermitianPart_of_majorized
+    {x : n → ℝ} {z : n → ℂ} (h : Majorized (fun i => (z i).re) x) :
+    ∃ A : Matrix n n ℂ, IsEigenvalueListing A z ∧
+      IsEigenvalueListing (hermitianPart A) (fun i => (x i : ℂ)) := by
+  classical
+  let _ : LinearOrder n := LinearOrder.lift' (Fintype.equivFin n) (Fintype.equivFin n).injective
+  obtain ⟨Q, hQ, hdiag⟩ := exists_hasOrthonormalCols_diag_eq_of_majorized h
+  let K := Q * Matrix.diagonal x * Qᴴ
+  have hK : K.IsHermitian :=
+    Matrix.isHermitian_mul_mul_conjTranspose Q (Matrix.isHermitian_diagonal x)
+  have hKd (i : n) : K i i = (z i).re := congrFun hdiag i
+  let T : Matrix n n ℂ := fun i j =>
+    if i = j then z i else if i < j then 2 * (K i j : ℂ) else 0
+  have hTd (i : n) : T i i = z i := by simp [T]
+  have hTri : T.IsUpperTriangular := by
+    intro i j hij
+    change j < i at hij
+    simp [T, ne_of_gt hij, not_lt.mpr hij.le]
+  have hc (r : ℝ) : RCLike.toComplex r = (r : ℂ) :=
+    RCLike.toComplex_ofReal (𝕜 := ℝ) r
+  have hPart : hermitianPart T = complexify K := by
+    ext i j
+    change (2⁻¹ : ℝ) • (T i j + star (T j i)) = RCLike.toComplex (K i j)
+    rw [hc]
+    have hKji : K j i = K i j := by
+      simpa only [Matrix.conjTranspose_apply, star_trivial] using
+        congrArg (fun M : Matrix n n ℝ => M i j) hK.eq
+    by_cases hij : i = j
+    · subst j
+      rw [hTd, hKd, Complex.star_def, Complex.add_conj, Complex.real_smul]
+      push_cast
+      ring
+    · have hji := Ne.symm hij
+      by_cases hlt : i < j
+      · have hnlt : ¬j < i := not_lt.mpr hlt.le
+        simp [T, hij, hji, hlt, hnlt, Complex.real_smul]
+      · have hgt : j < i := lt_of_le_of_ne (le_of_not_gt hlt) (Ne.symm hij)
+        simp [T, hij, hji, hlt, hgt, hKji, Complex.real_smul]
+  refine ⟨T, ?_, ?_⟩
+  · simpa only [hTd] using hTri.isEigenvalueListing_diag
+  · change (hermitianPart T).charpoly = ∏ i, (X - C (x i : ℂ))
+    rw [hPart]
+    simp only [K, complexify_mul, complexify_conjTranspose, complexify_diagonal, hc]
+    rw [Matrix.charpoly_mul_comm, ← Matrix.mul_assoc,
+      hQ.complexify.conjTranspose_mul_self, Matrix.one_mul, Matrix.charpoly_diagonal]
+
+/-- **Real-part majorization characterizes spectral compatibility.** For a real list
+$\mathbf{x}$ and a complex list $\mathbf{z}$ indexed by the same finite type,
+$(\operatorname{Re}\mathbf{z}_i)_i$ is majorized by $\mathbf{x}$ if and only if a complex
+matrix has eigenvalue listing $\mathbf{z}$ and its Hermitian part has eigenvalue listing
+$\mathbf{x}$. The listings record algebraic multiplicities, including repeated entries;
+the index type may be empty.
+[HornJohnson2013, Theorem 4.3.50]. Adapted from `tchen-research/NLAlib`, commit
+`77514ce42a0e437d837797a063ac161f41022730`,
+`majorized_real_parts_iff_exists_charpoly_and_selfAdjointPart_charpoly`.
+Result: real-part-majorization -/
+theorem majorized_re_iff_exists_isEigenvalueListing_hermitianPart
+    (x : n → ℝ) (z : n → ℂ) :
+    Majorized (fun i => (z i).re) x ↔
+      ∃ A : Matrix n n ℂ, IsEigenvalueListing A z ∧
+        IsEigenvalueListing (hermitianPart A) (fun i => (x i : ℂ)) := by
+  refine ⟨exists_isEigenvalueListing_hermitianPart_of_majorized, ?_⟩
+  rintro ⟨A, hz, hx⟩
+  exact majorized_re_of_isEigenvalueListing hz hx
+
 /-- An eigenvalue is the value of the quadratic form at a unit eigenvector: for $\mu$ in the
 spectrum there is $\mathbf{v} \ne \mathbf{0}$ with
 $\operatorname{Re}(\mathbf{v}^{\mathsf{H}}\mathbf{A}\mathbf{v}) = \operatorname{Re}(\mu)
@@ -233,8 +373,7 @@ private theorem exists_re_quadForm_eq_of_mem_spectrum {A : Matrix n n 𝕜} {μ 
 /-- **Bendixson's upper bound**: the real part of every eigenvalue $\mu$ of $\mathbf{A}$ is at
 most the largest eigenvalue of the Hermitian part:
 $\operatorname{Re} \mu \le \lambda_0\bigl(\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\bigr)$.
-[HornJohnson2013, §5.6].
-Port of `NLAlib.real_part_eigenvalue_mem_Icc_selfAdjointPart`, upper half. -/
+[HornJohnson2013, §5.6]. -/
 theorem re_le_eigenvalue_zero_hermitianPart {A : Matrix n n 𝕜} {μ : 𝕜}
     (hμ : μ ∈ spectrum 𝕜 A) : RCLike.re μ ≤ eigenvalue (hermitianPart A) 0 := by
   obtain ⟨v, hv, hq⟩ := exists_re_quadForm_eq_of_mem_spectrum hμ
@@ -246,7 +385,6 @@ theorem re_le_eigenvalue_zero_hermitianPart {A : Matrix n n 𝕜} {μ : 𝕜}
 least the smallest eigenvalue of the Hermitian part:
 $\lambda_j\bigl(\tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})\bigr) \le \operatorname{Re} \mu$
 for $j + 1 = \lvert n \rvert$.
-Port of `NLAlib.real_part_eigenvalue_mem_Icc_selfAdjointPart`, lower half.
 [HornJohnson1991, §1.5] (locator to check). -/
 theorem eigenvalue_hermitianPart_le_re {A : Matrix n n 𝕜} {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 A)
     {j : ℕ} (hj : j + 1 = Fintype.card n) : eigenvalue (hermitianPart A) j ≤ RCLike.re μ := by

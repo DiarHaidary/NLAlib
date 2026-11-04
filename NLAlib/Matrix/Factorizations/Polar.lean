@@ -118,8 +118,7 @@ variable [DecidableEq n]
 
 /-- The **polar factor** of a matrix: the partial isometry
 $\mathbf{A}\bigl((\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}\bigr)^{+}$.
-[HornJohnson2013, Theorem 7.3.1]; [Higham2008, Theorem 8.1].
-Port of `NLAlib.polarFrame`, there for real matrices of full column rank. -/
+[HornJohnson2013, Theorem 7.3.1]; [Higham2008, Theorem 8.1]. -/
 noncomputable def polarFactor (A : Matrix m n 𝕜) : Matrix m n 𝕜 :=
   A * pinv (CFC.sqrt (Aᴴ * A))
 
@@ -139,7 +138,6 @@ theorem IsSVD.polarFactor_eq [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m
 /-- **The polar decomposition**
 $\mathbf{A} = \mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$, with $\mathbf{U}$ the polar
 factor.
-Port of `NLAlib.exists_isometry_mul_sqrt_gram_eq`, for the canonical factor.
 [HornJohnson2013, Theorem 7.3.1] (locator to check). -/
 theorem polarFactor_mul_sqrt (A : Matrix m n 𝕜) :
     polarFactor A * CFC.sqrt (Aᴴ * A) = A := by
@@ -151,8 +149,7 @@ theorem polarFactor_mul_sqrt (A : Matrix m n 𝕜) :
 open scoped Classical in
 /-- The left polar decomposition
 $\mathbf{A} = (\mathbf{A}\mathbf{A}^{\mathsf{H}})^{1/2}\mathbf{U}$, with the same polar factor
-$\mathbf{U}$.
-Port of `NLAlib.sqrt_rowGram_mul_eq_of_isometry_mul_sqrt_gram_eq`. -/
+$\mathbf{U}$. -/
 theorem sqrt_mul_polarFactor (A : Matrix m n 𝕜) :
     CFC.sqrt (A * Aᴴ) * polarFactor A = A := by
   obtain ⟨k, U, σ, V, h⟩ := exists_isSVD_rank A
@@ -210,8 +207,7 @@ theorem polarFactor_mul_conjTranspose_self (A : Matrix m n 𝕜) :
   rwa [polarFactor_conjTranspose, Matrix.conjTranspose_conjTranspose,
     Matrix.conjTranspose_conjTranspose] at h
 
-/-- The polar factor has orthonormal columns exactly when the matrix has full column rank.
-Port of `NLAlib.hasOrthonormalCols_polarFrame`. -/
+/-- The polar factor has orthonormal columns exactly when the matrix has full column rank. -/
 theorem hasOrthonormalCols_polarFactor_iff {A : Matrix m n 𝕜} :
     HasOrthonormalCols (polarFactor A) ↔ Function.Injective A.mulVec := by
   rw [hasOrthonormalCols_iff, conjTranspose_polarFactor_mul_self, ← pinv_mul]
@@ -235,9 +231,7 @@ theorem _root_.Matrix.PosDef.polarFactor_eq_one {A : Matrix n n 𝕜} (hA : A.Po
 
 /-- The polar factor intertwines: if $\mathbf{A}\mathbf{T} = \mathbf{T}\mathbf{B}$ and
 $\mathbf{A}^{\mathsf{H}}\mathbf{T} = \mathbf{T}\mathbf{B}^{\mathsf{H}}$, then
-$\mathbf{A}\mathbf{U} = \mathbf{U}\mathbf{B}$ for the polar factor $\mathbf{U}$ of $\mathbf{T}$.
-Port of `NLAlib.mul_polarFrame_eq_polarFrame_mul_of_intertwining`, there for $\mathbf{T}$ of full
-column rank. -/
+$\mathbf{A}\mathbf{U} = \mathbf{U}\mathbf{B}$ for the polar factor $\mathbf{U}$ of $\mathbf{T}$. -/
 theorem mul_polarFactor_eq_polarFactor_mul {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     {T : Matrix m n 𝕜} (h : A * T = T * B) (h' : Aᴴ * T = T * Bᴴ) :
     A * polarFactor T = polarFactor T * B := by
@@ -260,7 +254,7 @@ theorem mul_polarFactor_eq_polarFactor_mul {A : Matrix m m 𝕜} {B : Matrix n n
 if $\lvert n \rvert \le \lvert m \rvert$, then
 $\mathbf{A} = \mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$ for some $\mathbf{U}$ with
 orthonormal columns.
-[HornJohnson2013, Theorem 7.3.1]. Port of `NLAlib.exists_isometry_mul_sqrt_gram_eq`.
+[HornJohnson2013, Theorem 7.3.1].
 Result: polar-decomposition -/
 theorem exists_hasOrthonormalCols_mul_sqrt_eq (A : Matrix m n 𝕜)
     (h : Fintype.card n ≤ Fintype.card m) :
@@ -277,8 +271,7 @@ theorem exists_hasOrthonormalCols_mul_sqrt_eq (A : Matrix m n 𝕜)
 
 /-- The positive semidefinite polar factor is unique: if $\mathbf{A} = \mathbf{U}\mathbf{P}$
 with $\mathbf{U}$ having orthonormal columns and $\mathbf{P}$ positive semidefinite, then
-$\mathbf{P} = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$.
-Port of `NLAlib.eq_sqrt_gram_of_isometry_mul_eq`. -/
+$\mathbf{P} = (\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$. -/
 theorem HasOrthonormalCols.eq_sqrt_of_mul_eq {A U : Matrix m n 𝕜} {P : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) (hP : P.PosSemidef) (h : U * P = A) :
     P = CFC.sqrt (Aᴴ * A) := by
@@ -287,8 +280,7 @@ theorem HasOrthonormalCols.eq_sqrt_of_mul_eq {A U : Matrix m n 𝕜} {P : Matrix
 
 /-- For a matrix of full column rank, the isometric polar factor is the polar factor: any
 $\mathbf{U}$ with $\mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2} = \mathbf{A}$ is
-`polarFactor A`.
-Port of `NLAlib.eq_polarFrame_of_isometry_mul_sqrt_gram_eq`. -/
+`polarFactor A`. -/
 theorem eq_polarFactor_of_mul_sqrt_eq {A U : Matrix m n 𝕜} (hA : Function.Injective A.mulVec)
     (h : U * CFC.sqrt (Aᴴ * A) = A) : U = polarFactor A := by
   have hS : IsUnit (CFC.sqrt (Aᴴ * A)) := (Matrix.PosDef.conjTranspose_mul_self A hA).isUnit_sqrt
@@ -300,8 +292,7 @@ theorem eq_polarFactor_of_mul_sqrt_eq {A U : Matrix m n 𝕜} (hA : Function.Inj
 /-- The isometric polar factor is unique exactly when the matrix has full column rank: given
 one $\mathbf{U}$ with orthonormal columns and
 $\mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2} = \mathbf{A}$, every other such factor equals
-$\mathbf{U}$ if and only if $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective.
-Port of `NLAlib.polar_isometry_unique_iff_rank_eq_card`. -/
+$\mathbf{U}$ if and only if $\mathbf{x} \mapsto \mathbf{A}\mathbf{x}$ is injective. -/
 theorem HasOrthonormalCols.forall_eq_of_mul_sqrt_eq_iff {A U : Matrix m n 𝕜}
     (hU : HasOrthonormalCols U)
     (h : U * CFC.sqrt (Aᴴ * A) = A) :
@@ -361,7 +352,6 @@ invariant norm (Fan and Hoffman): if $\mathbf{U}$ has orthonormal columns and
 $\mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2} = \mathbf{A}$, then
 $\|\mathbf{A} - \mathbf{U}\|_{\Phi} \le \|\mathbf{A} - \mathbf{V}\|_{\Phi}$ for every $\mathbf{V}$
 with orthonormal columns. [Higham2008, Theorem 8.4]; [HornJohnson2013, §7.4.9 context].
-Port of `NLAlib.invariantNorm_sub_polar_le_sub_isometry`, there over $\mathbb{R}$.
 Result: nearest-unitary -/
 theorem SymmetricGauge.matrixNorm_sub_le_matrixNorm_sub_of_mul_sqrt_eq (Φ : SymmetricGauge)
     {A U V : Matrix m n 𝕜} (hU : HasOrthonormalCols U) (hA : U * CFC.sqrt (Aᴴ * A) = A)
@@ -385,8 +375,7 @@ theorem SymmetricGauge.matrixNorm_sub_le_matrixNorm_sub_of_mul_sqrt_eq (Φ : Sym
 
 omit [DecidableEq n] in
 /-- The trace of a square matrix equals its nuclear norm,
-$\operatorname{tr} \mathbf{M} = \|\mathbf{M}\|_*$, exactly when it is positive semidefinite.
-Port of `NLAlib.trace_eq_nuclearNorm_iff_posSemidef`, there over $\mathbb{R}$. -/
+$\operatorname{tr} \mathbf{M} = \|\mathbf{M}\|_*$, exactly when it is positive semidefinite. -/
 theorem trace_eq_nuclearNorm_iff_posSemidef {M : Matrix n n 𝕜} :
     M.trace = (nuclearNorm M : 𝕜) ↔ M.PosSemidef := by
   classical

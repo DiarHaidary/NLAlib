@@ -35,8 +35,7 @@ variable {R : Type*} [CommRing R] {m n : Type*} [Fintype m] [Fintype n] [Decidab
 /-- Adding $a$ to the $(i, j)$ entry of $\mathbf{A}$ adds $a$ times the $(i, j)$ cofactor, which
 is $\operatorname{adj}(\mathbf{A})_{j,i}$, to the determinant:
 $\det(\mathbf{A} + a \mathbf{e}_i \mathbf{e}_j^{\mathsf{T}})
-= \det \mathbf{A} + a \operatorname{adj}(\mathbf{A})_{j,i}$. No invertibility is assumed.
-Port of `NLAlib.det_add_single_diagonal`, there over $\mathbb{R}$ and for a diagonal entry. -/
+= \det \mathbf{A} + a \operatorname{adj}(\mathbf{A})_{j,i}$. No invertibility is assumed. -/
 theorem det_add_single (A : Matrix n n R) (i j : n) (a : R) :
     (A + single i j a).det = A.det + a * A.adjugate j i := by
   have h : A + single i j a = A.updateRow i (A i + a • Pi.single j 1) := by
@@ -51,8 +50,7 @@ theorem det_add_single (A : Matrix n n R) (i j : n) (a : R) :
 
 /-- A diagonal cofactor depends only on the entries outside its row and column: if
 $\mathbf{A}_{a,b} = \mathbf{B}_{a,b}$ whenever $a \ne i$ and $b \ne i$, then
-$\operatorname{adj}(\mathbf{A})_{i,i} = \operatorname{adj}(\mathbf{B})_{i,i}$.
-Port of `NLAlib.det_updateCol_single_eq_of_complement_eq`, there over $\mathbb{R}$. -/
+$\operatorname{adj}(\mathbf{A})_{i,i} = \operatorname{adj}(\mathbf{B})_{i,i}$. -/
 theorem adjugate_apply_self_congr {A B : Matrix n n R} (i : n)
     (h : ∀ a b, a ≠ i → b ≠ i → A a b = B a b) : A.adjugate i i = B.adjugate i i := by
   simp only [adjugate_apply, det_apply]
@@ -72,8 +70,7 @@ theorem adjugate_apply_self_congr {A B : Matrix n n R} (i : n)
 
 /-- Reindexing the rows by a bijection $e_r$ and the columns by a bijection $e_c$ multiplies the
 determinant by the sign of the permutation $e_r^{-1} \circ e_c$ (`ec.trans er.symm`). With
-$e_r = e_c$ this is `Matrix.det_submatrix_equiv_self`.
-Port of `NLAlib.det_submatrix_equiv_eq_sign_mul`, there over $\mathbb{R}$. -/
+$e_r = e_c$ this is `Matrix.det_submatrix_equiv_self`. -/
 theorem det_submatrix_equiv_equiv (A : Matrix n n R) (er ec : m ≃ n) :
     (A.submatrix er ec).det = (Equiv.Perm.sign (ec.trans er.symm) : ℤ) * A.det := by
   have h : A.submatrix er ec = (A.submatrix er er).submatrix id (ec.trans er.symm) := by

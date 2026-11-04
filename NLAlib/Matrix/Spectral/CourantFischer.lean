@@ -219,7 +219,6 @@ $\mathbf{x}$ in a subspace of dimension at least $k + 1$, then $c \le \lambda_k(
 [HornJohnson2013, Theorem 4.2.6]; stated there as an equation over $\mathbb{C}$ with eigenvalues
 in increasing order, here as the inequality a proof applies, over any `RCLike` field,
 non-increasing.
-Port of `Matrix.IsHermitian.le_eigenvalues₀_of_forall_mem`.
 Result: courant-fischer -/
 theorem _root_.Matrix.IsHermitian.le_eigenvalue_of_forall_mem {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (S : Submodule 𝕜 (n → 𝕜)) (hS : k + 1 ≤ Module.finrank 𝕜 S)
@@ -243,7 +242,6 @@ $\mathbf{x}$ in a subspace of codimension at most $k$, for a valid index $k < \l
 then $\lambda_k(\mathbf{A}) \le c$. The index must be valid: beyond the size of $\mathbf{A}$ the
 eigenvalue is $0$ by convention while the zero subspace satisfies the hypothesis for negative $c$.
 [HornJohnson2013, Theorem 4.2.6].
-Port of `Matrix.IsHermitian.eigenvalues₀_le_of_forall_mem`.
 Result: courant-fischer -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_le_of_forall_mem {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) (W : Submodule 𝕜 (n → 𝕜))
@@ -262,8 +260,7 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_of_forall_mem {A : Matrix n n �
 $k + 1$ on which
 $\lambda_k(\mathbf{A}) \|\mathbf{x}\|^2 \le
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ (the span of the first $k + 1$
-eigenvectors).
-Port of `Matrix.IsHermitian.exists_submodule_eigenvalues₀_mul_le`. -/
+eigenvectors). -/
 theorem _root_.Matrix.IsHermitian.exists_submodule_eigenvalue_mul_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     ∃ S : Submodule 𝕜 (n → 𝕜), Module.finrank 𝕜 S = k + 1 ∧
@@ -278,8 +275,7 @@ theorem _root_.Matrix.IsHermitian.exists_submodule_eigenvalue_mul_le {A : Matrix
 /-- The upper bound is attained: for $k < \lvert n \rvert$ there is a subspace of codimension $k$
 on which
 $\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) \le \lambda_k(\mathbf{A})
-\|\mathbf{x}\|^2$ (the span of the eigenvectors from the $k$-th on).
-Port of `Matrix.IsHermitian.exists_submodule_le_eigenvalues₀_mul`. -/
+\|\mathbf{x}\|^2$ (the span of the eigenvectors from the $k$-th on). -/
 theorem _root_.Matrix.IsHermitian.exists_submodule_le_eigenvalue_mul {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
     ∃ W : Submodule 𝕜 (n → 𝕜), Module.finrank 𝕜 W + k = Fintype.card n ∧
@@ -299,7 +295,6 @@ $$\lambda_k(\mathbf{A}) = \sup_{\dim S = k + 1} \;
   \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}),$$
 the supremum over subspaces $S$.
 [HornJohnson2013, Theorem 4.2.6].
-Port of `Matrix.IsHermitian.eigenvalues₀_eq_iSup_iInf`.
 Result: courant-fischer -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_eq_iSup_iInf {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
@@ -329,7 +324,6 @@ $$\lambda_k(\mathbf{A}) = \inf_{\dim W + k = \lvert n \rvert} \;
   \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}),$$
 the infimum over subspaces $W$ of codimension $k$.
 [HornJohnson2013, Theorem 4.2.6].
-Port of `Matrix.IsHermitian.eigenvalues₀_eq_iInf_iSup`.
 Result: courant-fischer -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_eq_iInf_iSup {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) :
@@ -372,8 +366,7 @@ eigenvalue times $\|\mathbf{x}\|^2$:
 $\lambda_k(\mathbf{A}) \|\mathbf{x}\|^2 \le
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$, the last index given by the
 equation $k + 1 = \lvert n \rvert$.
-[HornJohnson2013, Theorem 4.2.2].
-Port of `Matrix.IsHermitian.eigenvalues₀_last_eq_iInf`, there as an infimum. -/
+[HornJohnson2013, Theorem 4.2.2]. -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_last_mul_le_re_quadForm {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k + 1 = Fintype.card n) (x : n → 𝕜) :
     eigenvalue A k * ‖WithLp.toLp 2 x‖ ^ 2 ≤ RCLike.re (quadForm A x) := by
@@ -453,7 +446,6 @@ is the infimum of its quadratic form over unit vectors:
 $\lambda_k(\mathbf{A}) = \inf_{\|\mathbf{x}\| = 1}
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for $k + 1 = \lvert n \rvert$.
 [HornJohnson2013, Theorem 4.2.2].
-Port of `Matrix.IsHermitian.eigenvalues₀_last_eq_iInf`.
 Result: rayleigh-ritz -/
 theorem _root_.Matrix.IsHermitian.eigenvalue_last_eq_iInf {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {k : ℕ} (hk : k + 1 = Fintype.card n) :
@@ -484,9 +476,7 @@ theorem _root_.Matrix.IsHermitian.abs_eigenvalue_le_specNorm {A : Matrix n n �
 
 /-- The spectral norm of a Hermitian matrix is the larger of the absolute values of its extreme
 eigenvalues: $\|\mathbf{A}\|_2 = \max(\lvert \lambda_0(\mathbf{A}) \rvert,
-\lvert \lambda_k(\mathbf{A}) \rvert)$ for $k + 1 = \lvert n \rvert$.
-Port of `NLAlib.specNorm_eq_norm_eigenvalue`, there over $\mathbb{R}$ as a supremum over the
-unsorted eigenvalues. -/
+\lvert \lambda_k(\mathbf{A}) \rvert)$ for $k + 1 = \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.specNorm_eq_max {A : Matrix n n 𝕜} (hA : A.IsHermitian) {k : ℕ}
     (hk : k + 1 = Fintype.card n) :
     specNorm A = max |eigenvalue A 0| |eigenvalue A k| := by
@@ -516,8 +506,7 @@ theorem _root_.Matrix.PosSemidef.specNorm_eq_eigenvalue_zero {A : Matrix n n �
   exact hA.isHermitian.le_eigenvalue_zero_smul_one
 
 /-- A positive semidefinite matrix on a nonempty index type has a unit eigenvector for its
-spectral norm: $\|\mathbf{u}\| = 1$ and $\mathbf{A}\mathbf{u} = \|\mathbf{A}\|_2 \mathbf{u}$.
-Port of `NLAlib.exists_unit_mulVec_eq_specNorm_smul`, there over $\mathbb{R}$. -/
+spectral norm: $\|\mathbf{u}\| = 1$ and $\mathbf{A}\mathbf{u} = \|\mathbf{A}\|_2 \mathbf{u}$. -/
 theorem _root_.Matrix.PosSemidef.exists_norm_eq_one_and_mulVec_eq_specNorm_smul [Nonempty n]
     {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
     ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ A *ᵥ u = specNorm A • u := by

@@ -25,6 +25,8 @@ Bounds that are linear in the norms are stated once, linearly; their squares fol
 * `NLAlib.specNorm_le_frobNorm`: $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{\mathsf{F}}$.
 * `NLAlib.frobNorm_mul_le_specNorm_mul_frobNorm`,
   `NLAlib.frobNorm_mul_le_frobNorm_mul_specNorm`: the mixed product bounds.
+* `NLAlib.norm_toLp_map_abs_mulVec_abs_le`: $\lVert\,\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert\,
+  \rVert \le \sqrt{\lvert n \rvert}\,\|\mathbf{A}\|_2\lVert\mathbf{x}\rVert$.
 * `NLAlib.HasOrthonormalCols.specNorm_mul_left`, `NLAlib.HasOrthonormalCols.frobNorm_mul_left`:
   both norms are invariant under left multiplication by a matrix with orthonormal columns, and
   under right multiplication by the conjugate transpose of one.
@@ -42,7 +44,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-- The spectral norm is at most the Frobenius norm:
 $\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{\mathsf{F}}$.
-[GolubVanLoan2013, (2.3.7)]. Port of `NLAlib.specNorm_le_frobNorm`. -/
+[GolubVanLoan2013, (2.3.7)]. -/
 theorem specNorm_le_frobNorm (A : Matrix m n 𝕜) : specNorm A ≤ frobNorm A := by
   exact (specNorm_le_iff (frobNorm_nonneg A)).2 (norm_toLp_mulVec_le_frobNorm_mul A)
 
@@ -65,6 +67,24 @@ theorem frobNorm_le_sqrt_card_mul_specNorm (A : Matrix m n 𝕜) :
   rw [mul_pow, Real.sq_sqrt (Nat.cast_nonneg _)]
   exact frobNorm_sq_le_card_mul_specNorm_sq A
 
+/-- **The entrywise product bound**: for a real $\mathbf{A}$ with $n$ columns, absolute values
+taken entrywise, $\lVert\,\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert\,\rVert \le
+\|\mathbf{A}\|_{\mathsf{F}}\lVert\mathbf{x}\rVert \le \sqrt{\lvert n \rvert}\,
+\|\mathbf{A}\|_2\lVert\mathbf{x}\rVert$; it turns a componentwise error bound
+$\lvert\mathbf{e}\rvert \le c\lvert\mathbf{A}\rvert\lvert\mathbf{x}\rvert$ into a normwise one.
+Cauchy–Schwarz by rows, then [GolubVanLoan2013, (2.3.7)]. -/
+theorem norm_toLp_map_abs_mulVec_abs_le (A : Matrix m n ℝ) (x : n → ℝ) :
+    ‖WithLp.toLp 2 (A.map abs *ᵥ fun j => |x j|)‖ ≤
+      √(Fintype.card n : ℝ) * specNorm A * ‖WithLp.toLp 2 x‖ := by
+  have hF : frobNorm (A.map abs) = frobNorm A := by
+    simp [frobNorm]
+  have hx : ‖WithLp.toLp 2 (fun j => |x j|)‖ = ‖WithLp.toLp 2 x‖ := by
+    simp [EuclideanSpace.norm_eq]
+  calc _ ≤ frobNorm (A.map abs) * ‖WithLp.toLp 2 (fun j => |x j|)‖ :=
+        norm_toLp_mulVec_le_frobNorm_mul _ _
+    _ = frobNorm A * ‖WithLp.toLp 2 x‖ := by rw [hF, hx]
+    _ ≤ _ := by gcongr; exact frobNorm_le_sqrt_card_mul_specNorm A
+
 /-- The squared Frobenius norm is at most the number of rows times the squared spectral norm,
 $\|\mathbf{A}\|_{\mathsf{F}}^2 \le \lvert m \rvert \|\mathbf{A}\|_2^2$ with $m$ the row index type:
 the row-count twin of `NLAlib.frobNorm_sq_le_card_mul_specNorm_sq`, which counts columns.
@@ -76,7 +96,7 @@ theorem frobNorm_sq_le_card_rows_mul_specNorm_sq (A : Matrix m n 𝕜) :
 
 /-- The mixed product bound with the spectral norm on the left factor:
 $\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}} \le \|\mathbf{A}\|_2 \|\mathbf{B}\|_{\mathsf{F}}$.
-[HornJohnson2013, §5.6, Problem 20]. Port of `NLAlib.frobNorm_mul_le_specNorm_mul_frobNorm`. -/
+[HornJohnson2013, §5.6, Problem 20]. -/
 theorem frobNorm_mul_le_specNorm_mul_frobNorm (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     frobNorm (A * B) ≤ specNorm A * frobNorm B := by
   refine (sq_le_sq₀ (by positivity) (by positivity)).1 ?_
@@ -87,8 +107,7 @@ theorem frobNorm_mul_le_specNorm_mul_frobNorm (A : Matrix l m 𝕜) (B : Matrix 
   exact norm_toLp_mulVec_le A (B.col j)
 
 /-- The mixed product bound with the spectral norm on the right factor:
-$\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_2$.
-Port of `NLAlib.frobNorm_mul_le_frobNorm_mul_specNorm`. -/
+$\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_2$. -/
 theorem frobNorm_mul_le_frobNorm_mul_specNorm (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     frobNorm (A * B) ≤ frobNorm A * specNorm B := by
   have h := frobNorm_mul_le_specNorm_mul_frobNorm Bᴴ Aᴴ
@@ -97,7 +116,7 @@ theorem frobNorm_mul_le_frobNorm_mul_specNorm (A : Matrix l m 𝕜) (B : Matrix 
 
 /-- The Frobenius norm is submultiplicative:
 $\|\mathbf{A}\mathbf{B}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}} \|\mathbf{B}\|_{\mathsf{F}}$.
-Port of `NLAlib.frobNorm_mul_le`. -/
+-/
 theorem frobNorm_mul_le (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
     frobNorm (A * B) ≤ frobNorm A * frobNorm B := by
   refine (frobNorm_mul_le_specNorm_mul_frobNorm A B).trans ?_
@@ -105,8 +124,7 @@ theorem frobNorm_mul_le (A : Matrix l m 𝕜) (B : Matrix m n 𝕜) :
   exact specNorm_le_frobNorm A
 
 /-- The spectral norm is $1$-Lipschitz for the Frobenius norm:
-$\lvert \|\mathbf{A}\|_2 - \|\mathbf{B}\|_2 \rvert \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$.
-Port of `NLAlib.abs_specNorm_sub_specNorm_le_frobNorm`. -/
+$\lvert \|\mathbf{A}\|_2 - \|\mathbf{B}\|_2 \rvert \le \|\mathbf{A} - \mathbf{B}\|_{\mathsf{F}}$. -/
 theorem abs_specNorm_sub_specNorm_le_frobNorm (A B : Matrix m n 𝕜) :
     |specNorm A - specNorm B| ≤ frobNorm (A - B) := by
   exact (abs_specNorm_sub_specNorm_le A B).trans (specNorm_le_frobNorm (A - B))
@@ -137,8 +155,7 @@ namespace HasOrthonormalCols
 variable [DecidableEq n]
 
 /-- Left multiplication by a matrix with orthonormal columns preserves the spectral norm:
-$\|\mathbf{Q}\mathbf{A}\|_2 = \|\mathbf{A}\|_2$.
-Port of `NLAlib.specNorm_mul_left_of_hasOrthonormalCols`. -/
+$\|\mathbf{Q}\mathbf{A}\|_2 = \|\mathbf{A}\|_2$. -/
 theorem specNorm_mul_left {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix n p 𝕜) :
     specNorm (Q * A) = specNorm A := by
   have h (x : p → 𝕜) : ‖WithLp.toLp 2 ((Q * A) *ᵥ x)‖ = ‖WithLp.toLp 2 (A *ᵥ x)‖ := by
@@ -151,16 +168,14 @@ theorem specNorm_mul_left {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A :
     exact norm_toLp_mulVec_le (Q * A) x
 
 /-- Right multiplication by the conjugate transpose of a matrix with orthonormal columns
-preserves the spectral norm: $\|\mathbf{A}\mathbf{Q}^{\mathsf{H}}\|_2 = \|\mathbf{A}\|_2$.
-Port of `NLAlib.specNorm_mul_conjTranspose_right_of_hasOrthonormalCols`. -/
+preserves the spectral norm: $\|\mathbf{A}\mathbf{Q}^{\mathsf{H}}\|_2 = \|\mathbf{A}\|_2$. -/
 theorem specNorm_mul_conjTranspose_right {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (A : Matrix p n 𝕜) : specNorm (A * Qᴴ) = specNorm A := by
   rw [← specNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     hQ.specNorm_mul_left, specNorm_conjTranspose]
 
 /-- Left multiplication by a matrix with orthonormal columns preserves the Frobenius norm:
-$\|\mathbf{Q}\mathbf{A}\|_{\mathsf{F}} = \|\mathbf{A}\|_{\mathsf{F}}$.
-Port of `NLAlib.frobSq_mul_left_of_orthonormal`. -/
+$\|\mathbf{Q}\mathbf{A}\|_{\mathsf{F}} = \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem frobNorm_mul_left {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix n p 𝕜) :
     frobNorm (Q * A) = frobNorm A := by
   refine (sq_eq_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 ?_
@@ -168,14 +183,14 @@ theorem frobNorm_mul_left {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A :
 
 /-- Right multiplication by the conjugate transpose of a matrix with orthonormal columns
 preserves the Frobenius norm: $\|\mathbf{A}\mathbf{Q}^{\mathsf{H}}\|_{\mathsf{F}}
-= \|\mathbf{A}\|_{\mathsf{F}}$. Port of `NLAlib.frobSq_mul_right_of_orthonormal`. -/
+= \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem frobNorm_mul_conjTranspose_right {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (A : Matrix p n 𝕜) : frobNorm (A * Qᴴ) = frobNorm A := by
   rw [← frobNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
     hQ.frobNorm_mul_left, frobNorm_conjTranspose]
 
 /-- Left multiplication of both arguments by a matrix with orthonormal columns preserves the
-Frobenius inner product. Port of `NLAlib.frobInner_mul_left_of_orthonormal`. -/
+Frobenius inner product. -/
 theorem frobInner_mul_left {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) (A B : Matrix n p 𝕜) :
     frobInner (Q * A) (Q * B) = frobInner A B := by
   rw [frobInner, frobInner, hQ.conjTranspose_mul_mul]
@@ -198,8 +213,7 @@ theorem specNorm_conjTranspose_mul_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormal
 
 /-- For $\mathbf{Q}$ with orthonormal columns, left multiplication by $\mathbf{Q}^{\mathsf{H}}$
 does not increase the Frobenius norm:
-$\|\mathbf{Q}^{\mathsf{H}}\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$.
-Port of `NLAlib.frobSq_conjTranspose_mul_le`. -/
+$\|\mathbf{Q}^{\mathsf{H}}\mathbf{A}\|_{\mathsf{F}} \le \|\mathbf{A}\|_{\mathsf{F}}$. -/
 theorem frobNorm_conjTranspose_mul_le {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q)
     (A : Matrix m p 𝕜) : frobNorm (Qᴴ * A) ≤ frobNorm A := by
   refine (sq_le_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _)).1 ?_
@@ -259,8 +273,7 @@ theorem frobNorm_mul_right {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q) (A 
     frobNorm (A * Q) = frobNorm A :=
   hQ.frobNorm_mul_right_of_card_eq rfl A
 
-/-- A matrix with orthonormal columns has spectral norm at most one.
-Port of `NLAlib.specNorm_le_one_of_orthonormal`. -/
+/-- A matrix with orthonormal columns has spectral norm at most one. -/
 theorem specNorm_le_one {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) : specNorm Q ≤ 1 := by
   rw [← Matrix.mul_one Q, hQ.specNorm_mul_left]
   exact specNorm_one_le
@@ -271,8 +284,7 @@ theorem specNorm_eq_one [Nonempty n] {Q : Matrix m n 𝕜} (hQ : HasOrthonormalC
   rw [← Matrix.mul_one Q, hQ.specNorm_mul_left, specNorm_one]
 
 /-- The squared Frobenius norm of a matrix with orthonormal columns is its number of columns:
-$\|\mathbf{Q}\|_{\mathsf{F}}^2 = \lvert n \rvert$.
-Port of `NLAlib.frobSq_frame_eq_card`. -/
+$\|\mathbf{Q}\|_{\mathsf{F}}^2 = \lvert n \rvert$. -/
 theorem frobNorm_sq {Q : Matrix m n 𝕜} (hQ : HasOrthonormalCols Q) :
     frobNorm Q ^ 2 = Fintype.card n := by
   rw [← Matrix.mul_one Q, hQ.frobNorm_mul_left, frobNorm_one_sq]

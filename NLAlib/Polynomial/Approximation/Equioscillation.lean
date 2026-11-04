@@ -25,7 +25,7 @@ with level $\varepsilon$ gives $\varepsilon \le E_n(f; s)$, on any set and for a
 Chebyshev: on $[a, b]$, $a < b$, with $f$ continuous, $p$ is a best approximation if and only if
 $f - p$ equioscillates at $n + 2$ points; the best approximation is unique and interpolates $f$
 at $n + 1$ interior points. The Chebyshev polynomial $T_n$ alternates at $n + 1$ points, which
-gives $E_n(x^{n + 1}; [-1, 1]) = 2^{-n}$. Design: `docs/design/Polynomial-BestApproximation.md`.
+gives $E_n(x^{n + 1}; [-1, 1]) = 2^{-n}$.
 
 ## Main definitions
 
@@ -231,7 +231,7 @@ $\lvert e(x) \rvert = E$, and the sign of $e(a)$ to the left of $a$, $e(a)q(x) >
 $x \le a$; or $e$ alternates at $n + 2$ points of $\{x \in [a, b] : \lvert e(x) \rvert = E\}$
 with level $E$. The second clause of the first alternative is what makes the induction on $n$
 compose; the lemma is public so that the equioscillation theorem on compact sets and its
-weighted form (`docs/design/Polynomial-BestApproximation.md`, §11) reuse it.
+weighted form reuse it.
 [Trefethen2019, Theorem 10.1] (the perturbation argument there, locator to check). -/
 theorem exists_degree_le_or_alternatesOn (n : ℕ) {e : ℝ → ℝ} {a b E : ℝ}
     (he : ContinuousOn e (Set.Icc a b)) (hE : 0 < E) (hab : a ≤ b) (hea : |e a| = E) :

@@ -102,7 +102,6 @@ $$\prod_{i < k} \sigma_i(\mathbf{A}\mathbf{B})
   \le \prod_{i < k} \sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B}) \,,$$
 singular values indexed from $0$ and non-increasing.
 [HornJohnson1991, Theorem 3.3.4].
-Port of `NLAlib.prod_singularValues_mul_le`, there over $\mathbb{R}$.
 Result: horn-product-inequality -/
 theorem prod_range_singularValues_mul_le (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) (k : ℕ) :
     ∏ i ∈ Finset.range k, singularValues (A * B) i ≤
@@ -177,8 +176,7 @@ private theorem sum_range_rpow_le_of_forall_prod_range_le_of_pos {x y : ℕ → 
 /-- **Weyl's lemma: log-majorization implies weak majorization of powers.** For nonnegative
 non-increasing real sequences $x$, $y$ with $\prod_{i < k} x_i \le \prod_{i < k} y_i$ for all
 $k \le N$, and any real $r > 0$, $\sum_{i < N} x_i^r \le \sum_{i < N} y_i^r$.
-[HornJohnson1991, Theorem 3.3.13 and Corollary 3.3.10].
-Port of `NLAlib.sum_range_rpow_le_of_nonneg_of_prod_le`. -/
+[HornJohnson1991, Theorem 3.3.13 and Corollary 3.3.10]. -/
 theorem sum_range_rpow_le_of_forall_prod_range_le {x y : ℕ → ℝ} {N : ℕ} (hx0 : ∀ i, 0 ≤ x i)
     (hy0 : ∀ i, 0 ≤ y i) (hx : Antitone x) (hy : Antitone y)
     (h : ∀ k ≤ N, ∏ i ∈ Finset.range k, x i ≤ ∏ i ∈ Finset.range k, y i) {r : ℝ} (hr : 0 < r) :
@@ -201,8 +199,7 @@ theorem sum_range_rpow_le_of_forall_prod_range_le {x y : ℕ → ℝ} {N : ℕ} 
 /-- Power sums of the singular values of a product: for real $r > 0$ and every $N$,
 $$\sum_{i < N} \sigma_i(\mathbf{A}\mathbf{B})^r
   \le \sum_{i < N} \bigl(\sigma_i(\mathbf{A}) \, \sigma_i(\mathbf{B})\bigr)^r \,.$$
-[HornJohnson1991, Theorem 3.3.14].
-Port of `NLAlib.sum_range_singularValues_mul_rpow_le`, there over $\mathbb{R}$. -/
+[HornJohnson1991, Theorem 3.3.14]. -/
 theorem sum_range_singularValues_mul_rpow_le (A : Matrix m p 𝕜) (B : Matrix p n 𝕜) (N : ℕ)
     {r : ℝ} (hr : 0 < r) :
     ∑ i ∈ Finset.range N, singularValues (A * B) i ^ r ≤

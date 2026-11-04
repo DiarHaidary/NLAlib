@@ -31,7 +31,6 @@ $(\mathbf{I} - \mathbf{P}_{\mathbf{A}})\mathbf{y} = \mathbf{0}$ need no hypothes
 combine the deterministic bounds of `NLAlib.Regression.Embedding` with Markov's
 inequality for $\mathbb{E}\|\mathbf{S}\mathbf{M}\|_{\mathsf{F}}^2 = \|\mathbf{M}\|_{\mathsf{F}}^2$
 off the injection event (`NLAlib.measureReal_le_add_one_div`, in `NLAlib.Probability.Tail`).
-Design: `docs/design/Sketching-S1.md` §3.4.
 
 ## Main results
 

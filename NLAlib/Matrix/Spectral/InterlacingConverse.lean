@@ -238,7 +238,6 @@ for $i < \lvert n \rvert$ and $b_{i+1} \le \lambda_i(\mathbf{A})$ for $i + 1 < \
 there is a vector $\mathbf{z}$ such that
 $\lambda_i(\mathbf{A} + \mathbf{z}\mathbf{z}^{\mathsf{H}}) = b_i$ for every $i < \lvert n \rvert$.
 [HornJohnson2013, Theorem 4.3.26].
-Port of `NLAlib.exists_add_vecMulVec_charpoly_of_interlacing`, there over $\mathbb{R}$.
 Result: interlacing-converse -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_add_vecMulVec_star_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {b : ℕ → ℝ} (h₁ : ∀ i, i < Fintype.card n → eigenvalue A i ≤ b i)
@@ -274,7 +273,6 @@ $$\begin{bmatrix} \mathbf{A} & \mathbf{z} \\ \mathbf{z}^{\mathsf{H}} & a \end{bm
   \quad \text{with } a \in \mathbb{R},$$
 whose eigenvalues are $b_0, \dots, b_{\lvert n \rvert}$.
 [HornJohnson2013, Theorem 4.3.21].
-Port of `NLAlib.exists_bordered_charpoly_of_interlacing`, there over $\mathbb{R}$.
 Result: interlacing-converse -/
 theorem _root_.Matrix.IsHermitian.exists_eigenvalue_fromBlocks_eq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {b : ℕ → ℝ} (h₁ : ∀ i, i < Fintype.card n → eigenvalue A i ≤ b i)

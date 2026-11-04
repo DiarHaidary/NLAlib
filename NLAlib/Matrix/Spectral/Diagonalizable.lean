@@ -32,6 +32,11 @@ $\mathbf{A}\mathbf{X} - \mathbf{X}\mathbf{B} = \mathbf{C}$ in
 * `NLAlib.isDiagonalizable_iff_exists_eq_mul_diagonal_mul_inv`.
 * `NLAlib.isDiagonalizable_of_injective_of_forall_mem_spectrum`: distinct eigenvalues.
 * `NLAlib.isDiagonalizable_iff_isSemisimple`.
+* `NLAlib.isDiagonalizable_iff_forall_finrank_eigenspace_eq_rootMultiplicity`:
+  equality of geometric and algebraic multiplicities.
+* `NLAlib.card_add_finrank_eigenspace_le`: geometric multiplicity under principal compression.
+* `NLAlib.mem_spectrum_submatrix_of_card_lt_add_finrank_eigenspace`: eigenvalue survival.
+* `NLAlib.inv_mul_apply_eq_zero_of_ne`: coordinates in an eigenvector basis.
 * `NLAlib.exists_forall_mul_eq_mul_diagonal_of_pairwise_commute`: commuting families.
 -/
 
@@ -49,15 +54,13 @@ variable {K : Type*} [Field K] {ι m n : Type*} [Fintype m] [Fintype n] [Decidab
 
 /-- A square matrix is **diagonalisable** if
 $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ for an invertible $\mathbf{V}$:
-the columns of $\mathbf{V}$ are a basis of eigenvectors. [HornJohnson2013, Definition 1.3.6].
-Port of `NLAlib.IsDiagonalizable`. -/
+the columns of $\mathbf{V}$ are a basis of eigenvectors. [HornJohnson2013, Definition 1.3.6]. -/
 def IsDiagonalizable (A : Matrix n n K) : Prop :=
   ∃ (V : Matrix n n K) (d : n → K), IsUnit V.det ∧ A * V = V * Matrix.diagonal d
 
 /-- Diagonalisability as a similarity
 $\mathbf{A} = \mathbf{V} \operatorname{diag}(\mathbf{d}) \mathbf{V}^{-1}$ with $\mathbf{V}$
-invertible.
-Port of `NLAlib.isDiagonalizable_iff_exists_similarity`. -/
+invertible. -/
 theorem isDiagonalizable_iff_exists_eq_mul_diagonal_mul_inv {A : Matrix n n K} :
     IsDiagonalizable A ↔
       ∃ (V : Matrix n n K) (d : n → K), IsUnit V.det ∧ A = V * Matrix.diagonal d * V⁻¹ := by
@@ -82,8 +85,7 @@ private theorem mul_eq_mul_diagonal_iff {A V : Matrix n n K} {d : n → K} :
     rfl
 
 /-- Diagonalisability as a linearly independent family of eigenvectors: vectors $\mathbf{v}_j$,
-$j \in n$, linearly independent, with $\mathbf{A}\mathbf{v}_j = \mathbf{d}_j \mathbf{v}_j$.
-Port of `NLAlib.isDiagonalizable_iff_exists_independent_eigenvectors`. -/
+$j \in n$, linearly independent, with $\mathbf{A}\mathbf{v}_j = \mathbf{d}_j \mathbf{v}_j$. -/
 theorem isDiagonalizable_iff_exists_linearIndependent {A : Matrix n n K} :
     IsDiagonalizable A ↔
       ∃ (v : n → n → K) (d : n → K), LinearIndependent K v ∧ ∀ j, A *ᵥ v j = d j • v j := by
@@ -112,7 +114,7 @@ theorem isEigenvalueListing_of_mul_eq_mul_diagonal {A V : Matrix n n K} {d : n �
 /-- **A matrix with distinct eigenvalues is diagonalisable**: if the entries of $\mathbf{d}$ are
 pairwise distinct and each lies in the spectrum of $\mathbf{A}$, then $\mathbf{A}$ is
 diagonalisable.
-[HornJohnson2013, Theorem 1.3.9]. Port of `NLAlib.isDiagonalizable_of_distinct_eigenvalues`. -/
+[HornJohnson2013, Theorem 1.3.9]. -/
 theorem isDiagonalizable_of_injective_of_forall_mem_spectrum {A : Matrix n n K} {d : n → K}
     (hd : Function.Injective d) (h : ∀ j, d j ∈ spectrum K A) : IsDiagonalizable A := by
   choose v hv hAv using fun j => exists_mulVec_eq_smul_of_mem_spectrum (h j)
@@ -137,8 +139,7 @@ private theorem exists_linearIndependent_of_span_eq_top [Finite n] {S : Set (n �
     hli.comp _ (Fintype.equivOfCardEq hcard).symm.injective,
     fun j => hbS ((Fintype.equivOfCardEq hcard).symm j).2⟩
 
-/-- A matrix is diagonalisable exactly when its eigenspaces span.
-Port of `NLAlib.isDiagonalizable_iff_iSup_eigenspace_eq_top`. -/
+/-- A matrix is diagonalisable exactly when its eigenspaces span. -/
 theorem isDiagonalizable_iff_iSup_eigenspace_eq_top {A : Matrix n n K} :
     IsDiagonalizable A ↔ ⨆ μ, Module.End.eigenspace (Matrix.toLin' A) μ = ⊤ := by
   rw [isDiagonalizable_iff_exists_linearIndependent]
@@ -159,7 +160,7 @@ theorem isDiagonalizable_iff_iSup_eigenspace_eq_top {A : Matrix n n K} :
     choose d hd using hvS
     exact ⟨v, d, hv, hd⟩
 
-/-- A diagonalisable matrix is semisimple. Port of `NLAlib.IsDiagonalizable.isSemisimple`. -/
+/-- A diagonalisable matrix is semisimple. -/
 theorem IsDiagonalizable.isSemisimple {A : Matrix n n K} (hA : IsDiagonalizable A) :
     Module.End.IsSemisimple (Matrix.toLin' A) := by
   classical
@@ -177,17 +178,134 @@ theorem IsDiagonalizable.isSemisimple {A : Matrix n n K} (hA : IsDiagonalizable 
     Finset.prod_eq_zero (Finset.mem_image_of_mem d (Finset.mem_univ j)) (by simp), zero_smul,
     LinearMap.zero_apply]
 
-/-- Over an algebraically closed field a semisimple matrix is diagonalisable.
-Port of `NLAlib.isDiagonalizable_of_isSemisimple`. -/
+/-- Over an algebraically closed field a semisimple matrix is diagonalisable. -/
 theorem isDiagonalizable_of_isSemisimple [IsAlgClosed K] {A : Matrix n n K}
     (hA : Module.End.IsSemisimple (Matrix.toLin' A)) : IsDiagonalizable A :=
   isDiagonalizable_iff_iSup_eigenspace_eq_top.mpr hA.iSup_eigenspace_eq_top
 
-/-- Over an algebraically closed field, diagonalisable means semisimple.
-Port of `NLAlib.isDiagonalizable_iff_isSemisimple`. -/
+/-- Over an algebraically closed field, diagonalisable means semisimple. -/
 theorem isDiagonalizable_iff_isSemisimple [IsAlgClosed K] {A : Matrix n n K} :
     IsDiagonalizable A ↔ Module.End.IsSemisimple (Matrix.toLin' A) :=
   ⟨IsDiagonalizable.isSemisimple, isDiagonalizable_of_isSemisimple⟩
+
+/-- A diagonalisable matrix over any field has equal geometric and algebraic multiplicities:
+$\dim E_\mu(\mathbf{A})$ equals the multiplicity of $\mu$ in its characteristic polynomial,
+including scalars outside the spectrum. [HornJohnson2013, §§1.3–1.4]; the field is generalized.
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.IsDiagonalizable.finrank_eigenspace_eq_rootMultiplicity`. -/
+theorem IsDiagonalizable.finrank_eigenspace_eq_rootMultiplicity
+    {A : Matrix n n K} (hA : IsDiagonalizable A) (μ : K) :
+    Module.finrank K (Module.End.eigenspace A.toLin' μ) =
+      A.charpoly.rootMultiplicity μ := by
+  have hm := LinearMap.finrank_maxGenEigenspace_eq A.toLin' μ
+  have heq : Module.End.maxGenEigenspace A.toLin' μ = Module.End.eigenspace A.toLin' μ :=
+    hA.isSemisimple.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace μ
+  rw [heq] at hm
+  simpa only [Matrix.charpoly_toLin'] using hm
+
+/-- **Diagonalizability by multiplicities.** Over an algebraically closed field, a matrix
+$\mathbf{A}$ is diagonalisable exactly when $\dim E_\mu(\mathbf{A})$ equals the multiplicity
+of $\mu$ in its characteristic polynomial for every scalar $\mu$. Empty matrices and scalars
+outside the spectrum are included. [HornJohnson2013, §§1.3–1.4]; generalized from complex scalars.
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.isDiagonalizable_iff_finrank_eigenspace_eq_rootMultiplicity`.
+Result: diagonalizable-def -/
+theorem isDiagonalizable_iff_forall_finrank_eigenspace_eq_rootMultiplicity
+    [IsAlgClosed K] (A : Matrix n n K) :
+    IsDiagonalizable A ↔ ∀ μ : K,
+      Module.finrank K (Module.End.eigenspace A.toLin' μ) =
+        A.charpoly.rootMultiplicity μ := by
+  constructor
+  · exact fun hA μ => hA.finrank_eigenspace_eq_rootMultiplicity μ
+  · intro hmult
+    have heq (μ : K) : Module.End.eigenspace A.toLin' μ =
+        Module.End.maxGenEigenspace A.toLin' μ := by
+      apply Submodule.eq_of_le_of_finrank_eq Module.End.eigenspace_le_maxGenEigenspace
+      rw [hmult μ, LinearMap.finrank_maxGenEigenspace_eq, Matrix.charpoly_toLin']
+    apply isDiagonalizable_iff_iSup_eigenspace_eq_top.mpr
+    simpa only [heq] using Module.End.iSup_maxGenEigenspace_eq_top A.toLin'
+
+/-! ### Geometric multiplicity under principal compression -/
+
+/-- Removing coordinates from any matrix decreases the geometric multiplicity of each scalar
+by at most the number removed. For the retained set $s$ and any scalar $\mu$,
+$$\lvert s\rvert+\dim E_\mu(\mathbf{A})\le
+\lvert n\rvert+\dim E_\mu(\mathbf{A}_{s,s})\,.$$
+No diagonalizability is required; empty sets and scalars outside the spectrum are included.
+This strengthens the survival conclusion in [HornJohnson2013, Theorem 1.4.10].
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.mem_spectrum_principal_submatrix_of_finrank_eigenspace_gt`; strengthened from survival
+to a dimension bound using the same coordinate restriction. -/
+theorem card_add_finrank_eigenspace_le (A : Matrix n n K) (μ : K) (s : Finset n) :
+    s.card + Module.finrank K (Module.End.eigenspace A.toLin' μ) ≤
+      Fintype.card n + Module.finrank K
+        (Module.End.eigenspace
+          (A.submatrix (fun j : s => j.val) (fun j : s => j.val)).toLin' μ) := by
+  classical
+  let E := Module.End.eigenspace A.toLin' μ
+  let T : E →ₗ[K] ({j : n // j ∉ s} → K) :=
+    { toFun x := fun j => x.val j.val
+      map_add' _ _ := rfl
+      map_smul' _ _ := rfl }
+  let E' := Module.End.eigenspace
+    (A.submatrix (fun j : s => j.val) (fun j : s => j.val)).toLin' μ
+  let R : T.ker →ₗ[K] E' :=
+    { toFun v := ⟨fun j => v.val.val j.val, by
+        apply Module.End.mem_eigenspace_iff.mpr
+        have heig : A *ᵥ v.val.val = μ • v.val.val :=
+          Module.End.mem_eigenspace_iff.mp v.val.property
+        funext i
+        have hsum := Fintype.sum_subtype_add_sum_subtype (fun j : n => j ∈ s)
+          (fun j => A i.val j * v.val.val j)
+        have hzero : (∑ j : {j : n // j ∉ s}, A i.val j.val * v.val.val j.val) = 0 := by
+          apply Finset.sum_eq_zero
+          intro j _
+          have hj : v.val.val j.val = 0 := congrFun v.property j
+          rw [hj, mul_zero]
+        rw [hzero, add_zero] at hsum
+        change (∑ j : s, A i.val j.val * v.val.val j.val) = μ * v.val.val i.val
+        convert! hsum.trans (congrFun heig i.val) using 1
+        congr 1
+        ext j
+        simp only [Finset.mem_univ]⟩
+      map_add' _ _ := rfl
+      map_smul' _ _ := rfl }
+  have hR : Function.Injective R := by
+    intro x y hxy
+    apply Subtype.ext
+    apply Subtype.ext
+    funext j
+    by_cases hj : j ∈ s
+    · exact congrArg (fun z : E' => z.val ⟨j, hj⟩) hxy
+    · have hx : x.val.val j = 0 := congrFun x.property ⟨j, hj⟩
+      have hy : y.val.val j = 0 := congrFun y.property ⟨j, hj⟩
+      exact hx.trans hy.symm
+  have hdimR := LinearMap.finrank_le_finrank_of_injective hR
+  have hdimT := T.finrank_range_add_finrank_ker
+  have hdimRange := (T.range).finrank_le
+  rw [Module.finrank_fintype_fun_eq_card, Fintype.card_subtype_compl,
+    Fintype.card_coe] at hdimRange
+  have hcard := s.card_le_univ
+  change s.card + Module.finrank K E ≤ Fintype.card n + Module.finrank K E'
+  omega
+
+/-- **Principal-submatrix eigenvalue survival.** Over any field, if the geometric multiplicity
+of $\mu$ for $\mathbf{A}$ exceeds the number of deleted coordinates, then $\mu$ remains an
+eigenvalue of $\mathbf{A}_{s,s}$. The matrix need not be diagonalisable.
+[HornJohnson2013, Theorem 1.4.10]; generalized to arbitrary fields and finite index types.
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.mem_spectrum_principal_submatrix_of_finrank_eigenspace_gt`; the additive dimension
+condition avoids truncated subtraction.
+Result: principal-submatrix-eigenvalue-survival -/
+theorem mem_spectrum_submatrix_of_card_lt_add_finrank_eigenspace
+    (A : Matrix n n K) (μ : K) (s : Finset n)
+    (h : Fintype.card n < s.card + Module.finrank K (Module.End.eigenspace A.toLin' μ)) :
+    μ ∈ spectrum K (A.submatrix (fun j : s => j.val) (fun j : s => j.val)) := by
+  have hdim := card_add_finrank_eigenspace_le A μ s
+  rw [← Matrix.spectrum_toLin', ← Module.End.hasEigenvalue_iff_mem_spectrum,
+    Module.End.hasEigenvalue_iff]
+  apply Submodule.one_le_finrank_iff.mp
+  omega
 
 /-- Diagonalisability passes along a surjective linear map that intertwines two matrices. -/
 private theorem IsDiagonalizable.of_surjective {A : Matrix m m K} {B : Matrix n n K}
@@ -205,8 +323,7 @@ private theorem IsDiagonalizable.of_surjective {A : Matrix m m K} {B : Matrix n 
 
 /-- A block diagonal matrix
 $\begin{bmatrix} \mathbf{A} & \mathbf{0} \\ \mathbf{0} & \mathbf{B} \end{bmatrix}$ is
-diagonalisable exactly when its blocks $\mathbf{A}$ and $\mathbf{B}$ are.
-Port of `NLAlib.isDiagonalizable_fromBlocks_zero_zero_iff`. -/
+diagonalisable exactly when its blocks $\mathbf{A}$ and $\mathbf{B}$ are. -/
 theorem isDiagonalizable_fromBlocks_zero₁₂_zero₂₁_iff {A : Matrix m m K} {B : Matrix n n K} :
     IsDiagonalizable (Matrix.fromBlocks A 0 0 B) ↔ IsDiagonalizable A ∧ IsDiagonalizable B := by
   constructor
@@ -225,7 +342,7 @@ theorem isDiagonalizable_fromBlocks_zero₁₂_zero₂₁_iff {A : Matrix m m K}
     · rw [← Matrix.fromBlocks_diagonal, Matrix.fromBlocks_multiply, Matrix.fromBlocks_multiply]
       simp only [Matrix.mul_zero, Matrix.zero_mul, zero_add, add_zero, hAV, hBW]
 
-/-- A Hermitian matrix is diagonalisable. Port of `NLAlib.isDiagonalizable_of_isHermitian`. -/
+/-- A Hermitian matrix is diagonalisable. -/
 theorem _root_.Matrix.IsHermitian.isDiagonalizable {𝕜 : Type*} [RCLike 𝕜] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) : IsDiagonalizable A := by
   obtain ⟨U, hU, hd⟩ := exists_hasOrthonormalCols_forall_eq_mul_diagonal_of_pairwise_commute
@@ -244,8 +361,7 @@ theorem _root_.IsStarNormal.isDiagonalizable {A : Matrix n n ℂ} (hA : IsStarNo
 /-- **A commuting family of diagonalisable matrices is simultaneously diagonalisable**: if the
 $\mathbf{A}_i$ are diagonalisable and commute pairwise, there is one invertible $\mathbf{V}$ with
 $\mathbf{A}_i\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d}_i)$ for every $i$.
-[HornJohnson2013, Theorem 1.3.21].
-Port of `NLAlib.exists_simultaneous_diagonalization_of_commute`. -/
+[HornJohnson2013, Theorem 1.3.21]. -/
 theorem exists_forall_mul_eq_mul_diagonal_of_pairwise_commute {A : ι → Matrix n n K}
     (hA : ∀ i, IsDiagonalizable (A i)) (h : Pairwise fun i j => Commute (A i) (A j)) :
     ∃ V : Matrix n n K, IsUnit V.det ∧ ∀ i, ∃ d : n → K, A i * V = V * Matrix.diagonal d := by
@@ -275,8 +391,7 @@ theorem exists_forall_mul_eq_mul_diagonal_of_pairwise_commute {A : ι → Matrix
 /-- Simultaneously diagonalisable matrices commute: if $\mathbf{V}$ is invertible,
 $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{a})$ and
 $\mathbf{B}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{b})$, then
-$\mathbf{A}\mathbf{B} = \mathbf{B}\mathbf{A}$.
-Port of `NLAlib.commute_of_simultaneous_diagonalization`. -/
+$\mathbf{A}\mathbf{B} = \mathbf{B}\mathbf{A}$. -/
 theorem commute_of_mul_eq_mul_diagonal {A B V : Matrix n n K} {a b : n → K} (hV : IsUnit V.det)
     (hA : A * V = V * Matrix.diagonal a) (hB : B * V = V * Matrix.diagonal b) : Commute A B := by
   have h : A * B * V = B * A * V := by
@@ -288,5 +403,49 @@ theorem commute_of_mul_eq_mul_diagonal {A B V : Matrix n n K} {a b : n → K} (h
     simpa only [Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hV, Matrix.mul_one] using
       congrArg (· * V⁻¹) h
   exact h'
+
+/-! ### Coordinates in an eigenvector basis -/
+
+/-- Expressing an eigenvector family in an eigenvector basis intertwines the two diagonal
+eigenvalue matrices: if $\mathbf{A}\mathbf{V}=\mathbf{V}\operatorname{diag}(\mathbf{d})$,
+$\mathbf{A}\mathbf{W}=\mathbf{W}\operatorname{diag}(\mathbf{e})$, and $\mathbf{V}$ is invertible,
+then $\operatorname{diag}(\mathbf{d})\mathbf{V}^{-1}\mathbf{W}=
+\mathbf{V}^{-1}\mathbf{W}\operatorname{diag}(\mathbf{e})$. The family $\mathbf{W}$ may be
+rectangular or dependent, and its listing need not agree with $\mathbf{d}$.
+[HornJohnson2013, Theorem 1.3.27]; generalized from two aligned eigenvector bases.
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.diagonal_mul_change_eigenbasis_eq_change_eigenbasis_mul_diagonal`. -/
+theorem diagonal_mul_inv_mul_eq_inv_mul_diagonal
+    {A V : Matrix n n K} {W : Matrix n m K} {d : n → K} {e : m → K}
+    (hV : IsUnit V) (hAV : A * V = V * Matrix.diagonal d)
+    (hAW : A * W = W * Matrix.diagonal e) :
+    Matrix.diagonal d * (V⁻¹ * W) = (V⁻¹ * W) * Matrix.diagonal e := by
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  apply Matrix.mul_right_injective_of_inv V⁻¹ V (Matrix.nonsing_inv_mul V hdet)
+  change V * (Matrix.diagonal d * (V⁻¹ * W)) = V * ((V⁻¹ * W) * Matrix.diagonal e)
+  rw [← Matrix.mul_assoc V (Matrix.diagonal d), ← hAV,
+    Matrix.mul_assoc A V, ← Matrix.mul_assoc V V⁻¹,
+    Matrix.mul_nonsing_inv V hdet, Matrix.one_mul,
+    ← Matrix.mul_assoc V, ← Matrix.mul_assoc V V⁻¹,
+    Matrix.mul_nonsing_inv V hdet, Matrix.one_mul]
+  exact hAW
+
+/-- Coordinates of an eigenvector in an eigenvector basis vanish at different eigenvalues.
+If $\mathbf{A}\mathbf{V}=\mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
+$\mathbf{A}\mathbf{W}=\mathbf{W}\operatorname{diag}(\mathbf{e})$, and $d_i\ne e_j$, then
+$(\mathbf{V}^{-1}\mathbf{W})_{i,j}=0$. The matrix $\mathbf{W}$ may be rectangular or dependent.
+[HornJohnson2013, Theorem 1.3.27]; generalized from two aligned eigenvector bases.
+Formal source: `tchen-research/NLAlib`, commit `77514ce42a0e437d837797a063ac161f41022730`,
+`NLAlib.change_eigenbasis_apply_eq_zero_of_eigenvalues_ne`. -/
+theorem inv_mul_apply_eq_zero_of_ne
+    {A V : Matrix n n K} {W : Matrix n m K} {d : n → K} {e : m → K}
+    (hV : IsUnit V) (hAV : A * V = V * Matrix.diagonal d)
+    (hAW : A * W = W * Matrix.diagonal e) {i : n} {j : m} (hij : d i ≠ e j) :
+    (V⁻¹ * W) i j = 0 := by
+  have h := congrArg (fun M : Matrix n m K => M i j)
+    (diagonal_mul_inv_mul_eq_inv_mul_diagonal hV hAV hAW)
+  rw [Matrix.diagonal_mul, Matrix.mul_diagonal] at h
+  exact (mul_eq_zero.mp (by linear_combination h : (d i - e j) * (V⁻¹ * W) i j = 0)).resolve_left
+    (sub_ne_zero.mpr hij)
 
 end NLAlib

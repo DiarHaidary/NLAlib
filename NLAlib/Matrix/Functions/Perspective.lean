@@ -43,7 +43,7 @@ $$\psi_f(\mathbf{A}, \mathbf{H})
   = \mathbf{A}^{1/2} f(\mathbf{A}^{-1/2}\mathbf{H}\mathbf{A}^{-1/2}) \mathbf{A}^{1/2}$$
 of a function $f$ at a positive definite $\mathbf{A}$ and a Hermitian $\mathbf{H}$; the square
 root and the inverse give junk values when $\mathbf{A}$ is not positive definite.
-[Tropp2015, Definition 8.6.1]. Port of `NLAlib.matrixPerspective`. -/
+[Tropp2015, Definition 8.6.1]. -/
 noncomputable def matrixPerspective (f : ℝ → ℝ) (A H : Matrix n n 𝕜) : Matrix n n 𝕜 :=
   CFC.sqrt A * cfc f ((CFC.sqrt A)⁻¹ * H * (CFC.sqrt A)⁻¹) * CFC.sqrt A
 
@@ -254,7 +254,6 @@ $\mathbf{H}_1$, $\mathbf{H}_2$ and weights $a, b \ge 0$ with $a + b = 1$,
 $$\psi_f(a\mathbf{A}_1 + b\mathbf{A}_2, a\mathbf{H}_1 + b\mathbf{H}_2)
   \preceq a \, \psi_f(\mathbf{A}_1, \mathbf{H}_1) + b \, \psi_f(\mathbf{A}_2, \mathbf{H}_2) \,.$$
 [Tropp2015, Theorem 8.6.2].
-Port of `NLAlib.matrixPerspective_jointly_operatorConvex`, there over $\mathbb{C}$ on `Fin d`.
 Result: perspective-convexity -/
 theorem OperatorConvexOn.matrixPerspective_smul_add_smul_le {f : ℝ → ℝ}
     (hf : OperatorConvexOn (Set.Ioi 0) f) {A₁ A₂ H₁ H₂ : Matrix n n 𝕜} (hA₁ : A₁.PosDef)

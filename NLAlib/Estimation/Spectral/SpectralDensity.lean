@@ -36,7 +36,6 @@ measure and of the empirical spectral measure are close at the eigenvalues, a fi
 summation bounds the error on every Lipschitz test function at once. The random tails are in
 `NLAlib/Estimation/Spectral/SpectralDensitySubgaussian.lean` (independent sub-Gaussian entries)
 and `NLAlib/Estimation/Spectral/SpectralDensitySphere.lean` (probes uniform on the sphere).
-Design: `docs/design/Estimation-SLQ.md` §§3.3–3.6.
 
 ## Main definitions
 

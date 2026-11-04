@@ -107,8 +107,7 @@ theorem exists_isEigenvalueListing (A : Matrix n n ℂ) : ∃ d : n → ℂ, IsE
 
 /-- Two listings of the eigenvalues differ by a relabelling: if $\mathbf{a}$ and $\mathbf{b}$
 both list the eigenvalues of $\mathbf{A}$, then $\mathbf{a}_i = \mathbf{b}_{e(i)}$ for a
-bijection $e$.
-Port of `NLAlib.exists_perm_eq_of_prod_X_sub_C_eq`, there over $\mathbb{C}$ on one index type. -/
+bijection $e$. -/
 theorem IsEigenvalueListing.exists_equiv_eq {A : Matrix n n K} {a : ι → K} {b : κ → K}
     (ha : IsEigenvalueListing A a) (hb : IsEigenvalueListing A b) :
     ∃ e : ι ≃ κ, a = b ∘ e := by
@@ -144,8 +143,7 @@ theorem IsEigenvalueListing.spectrum_eq_range {A : Matrix n n K} {d : ι → K}
     eq_comm]
 
 /-- The trace is the sum of the listed eigenvalues:
-$\operatorname{tr} \mathbf{A} = \sum_i \mathbf{d}_i$.
-Port of `NLAlib.trace_eq_sum_of_charpoly_eq_prod`. -/
+$\operatorname{tr} \mathbf{A} = \sum_i \mathbf{d}_i$. -/
 theorem IsEigenvalueListing.trace_eq_sum {A : Matrix n n K} {d : ι → K}
     (h : IsEigenvalueListing A d) : A.trace = ∑ i, d i := by
   classical
@@ -173,7 +171,7 @@ theorem _root_.Matrix.IsUpperTriangular.isEigenvalueListing_diag [LinearOrder n]
   Matrix.charpoly_of_isUpperTriangular T hT
 
 /-- A real matrix all of whose complex eigenvalues are real has a real listing of its
-eigenvalues. Port of `NLAlib.exists_real_charpoly_factors_of_complex_spectrum_real`. -/
+eigenvalues. -/
 theorem exists_isEigenvalueListing_of_forall_im_eq_zero {A : Matrix n n ℝ}
     (h : ∀ μ ∈ spectrum ℂ (complexify A), μ.im = 0) :
     ∃ d : n → ℝ, IsEigenvalueListing A d := by
@@ -300,10 +298,28 @@ theorem submatrix_sumCompl_eq_fromBlocks {M : Matrix n n K} {i₀ : n} {α : K}
     simp [hcol, hi]
   · simp
 
+omit [Fintype n] in
+/-- Isolating row and column $i$ of $\mathbf{M}$ at $\mu$ gives the scalar direct-sum block
+$[\mu]\oplus\mathbf{B}$, where $\mathbf{B}$ deletes row and column $i$.
+This derives the paired deflation block from the existing one-column block decomposition.
+Adapted from `NLAlib.submatrix_eq_fromBlocks_of_isolated_coordinate` in
+`tchen-research/NLAlib` at `77514ce42a0e437d837797a063ac161f41022730`. -/
+theorem submatrix_eq_fromBlocks_of_isolated_coordinate (M : Matrix n n K) (i : n) (μ : K)
+    (hcol : ∀ j, M j i = if j = i then μ else 0)
+    (hrow : ∀ j, M i j = if j = i then μ else 0) :
+    M.submatrix (Equiv.sumCompl (fun j => j = i)) (Equiv.sumCompl (fun j => j = i)) =
+      Matrix.fromBlocks (Matrix.diagonal (fun _ : {j : n // j = i} => μ)) 0 0
+        (M.submatrix (fun j : {j : n // j ≠ i} => j.val) (fun j : {j : n // j ≠ i} => j.val)) := by
+  rw [submatrix_sumCompl_eq_fromBlocks hcol]
+  congr 1
+  ext ⟨j, hj⟩ ⟨k, hk⟩
+  change M j k = 0
+  rw [hj, hrow, if_neg hk]
+
 /-- The characteristic polynomial of a matrix with a multiple $\alpha$ of a coordinate vector in
 the column $i_0$ loses a linear factor $X - \alpha$ when the row and the column $i_0$ are
 deleted. -/
-private theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i₀ : n} {α : K}
+theorem charpoly_eq_X_sub_C_mul_charpoly_submatrix {M : Matrix n n K} {i₀ : n} {α : K}
     [DecidableEq {i // ¬i = i₀}] (hcol : ∀ i, M i i₀ = if i = i₀ then α else 0) :
     M.charpoly = (X - C α) *
       (M.submatrix (Subtype.val : {i // ¬i = i₀} → n) Subtype.val).charpoly := by

@@ -48,8 +48,7 @@ variable {R K : Type*} {n : Type*} [LinearOrder n] [Fintype n]
 
 /-- `IsLU A L U`: **$\mathbf{A} = \mathbf{L}\mathbf{U}$ is an LU factorization**, with
 $\mathbf{L}$ unit lower triangular and $\mathbf{U}$ upper triangular.
-[GolubVanLoan2013, §3.2]; [HornJohnson2013, §3.5].
-Port of `NLAlib.IsLU`, there over $\mathbb{R}$. -/
+[GolubVanLoan2013, §3.2]; [HornJohnson2013, §3.5]. -/
 structure IsLU [Semiring R] (A L U : Matrix n n R) : Prop where
   /-- The left factor is unit lower triangular. -/
   isUnitLowerTriangular : IsUnitLowerTriangular L
@@ -62,8 +61,7 @@ section CommRing
 
 variable [CommRing R] [DecidableEq n] {A L U : Matrix n n R}
 
-/-- The determinant is the product of the pivots: $\det \mathbf{A} = \prod_i \mathbf{U}_{i,i}$.
-Port of `NLAlib.IsLU.det_eq_prod`. -/
+/-- The determinant is the product of the pivots: $\det \mathbf{A} = \prod_i \mathbf{U}_{i,i}$. -/
 theorem IsLU.det_eq_prod (h : IsLU A L U) : A.det = ∏ i, U i i := by
   rw [h.eq_mul, Matrix.det_mul, h.isUnitLowerTriangular.det_eq_one, one_mul,
     Matrix.det_of_isUpperTriangular h.isUpperTriangular]
@@ -75,8 +73,7 @@ theorem IsLU.isUnit_det_iff (h : IsLU A L U) : IsUnit A.det ↔ ∀ i, IsUnit (U
   exact h.isUpperTriangular.isUnit_det_iff
 
 omit [DecidableEq n] in
-/-- The leading blocks of an LU factorization are LU factorizations of the leading blocks.
-Port of `NLAlib.IsLU.leadingSubmatrix`. -/
+/-- The leading blocks of an LU factorization are LU factorizations of the leading blocks. -/
 theorem IsLU.submatrix_of_isLowerSet (h : IsLU A L U) {s : Finset n}
     (hs : IsLowerSet (s : Set n)) :
     IsLU (A.submatrix (Subtype.val : s → n) (Subtype.val : s → n))
@@ -90,8 +87,7 @@ theorem IsLU.submatrix_of_isLowerSet (h : IsLU A L U) {s : Finset n}
 
 /-- Principal minors on lower sets: for an LU factorization
 $\mathbf{A} = \mathbf{L}\mathbf{U}$ and a lower set $s$ of indices, the principal minor of
-$\mathbf{A}$ on $s$ is the product of the pivots $\mathbf{U}_{i,i}$, $i \in s$.
-Port of `NLAlib.IsLU.leadingMinor_eq_prod`, there for leading blocks of a matrix on `Fin`. -/
+$\mathbf{A}$ on $s$ is the product of the pivots $\mathbf{U}_{i,i}$, $i \in s$. -/
 theorem IsLU.principalMinor_eq_prod (h : IsLU A L U) {s : Finset n}
     (hs : IsLowerSet (s : Set n)) : principalMinor A s = ∏ i ∈ s, U i i := by
   rw [principalMinor, (h.submatrix_of_isLowerSet hs).det_eq_prod]
@@ -100,7 +96,7 @@ theorem IsLU.principalMinor_eq_prod (h : IsLU A L U) {s : Finset n}
 /-- **The LU factorization of a nonsingular matrix is unique**: over a commutative ring, if
 $\det \mathbf{A}$ is a unit and $\mathbf{A} = \mathbf{L}\mathbf{U} = \mathbf{L}'\mathbf{U}'$ are LU
 factorizations, then $\mathbf{L} = \mathbf{L}'$ and $\mathbf{U} = \mathbf{U}'$.
-[HornJohnson2013, Corollary 3.5.6]. Port of `NLAlib.IsLU.unique`. -/
+[HornJohnson2013, Corollary 3.5.6]. -/
 theorem IsLU.unique {L' U' : Matrix n n R} (hA : IsUnit A.det) (h : IsLU A L U)
     (h' : IsLU A L' U') : L = L' ∧ U = U' := by
   have hU : IsUnit U.det := by
@@ -190,19 +186,17 @@ variable [Field K] {n : ℕ}
 /-- The unit lower triangular factor computed by elimination without pivoting: column $j$ holds
 the multipliers of step $j$, the entry $(i, j)$ for $j < i$ being
 $\mathbf{A}^{(j)}_{i,j} / \mathbf{A}^{(j)}_{j,j}$ with $\mathbf{A}^{(j)}$ the state after $j$
-steps (`NLAlib.gaussState`). Port of `NLAlib.lu`, first component. -/
+steps (`NLAlib.gaussState`). -/
 def luLower (A : Matrix (Fin n) (Fin n) K) : Matrix (Fin n) (Fin n) K :=
   Matrix.of fun i j =>
     if j < i then gaussState A j i j / gaussState A j j j else if i = j then 1 else 0
 
 /-- The upper triangular factor computed by elimination without pivoting: row $i$ is the pivot
-row of step $i$, the entry $(i, j)$ for $i \le j$ being $\mathbf{A}^{(i)}_{i,j}$.
-Port of `NLAlib.lu`, second component. -/
+row of step $i$, the entry $(i, j)$ for $i \le j$ being $\mathbf{A}^{(i)}_{i,j}$. -/
 def luUpper (A : Matrix (Fin n) (Fin n) K) : Matrix (Fin n) (Fin n) K :=
   Matrix.of fun i j => if i ≤ j then gaussState A i i j else 0
 
-/-- The lower factor of elimination is unit lower triangular.
-Port of `NLAlib.isUnitLowerTriangular_lu_fst`. -/
+/-- The lower factor of elimination is unit lower triangular. -/
 theorem isUnitLowerTriangular_luLower (A : Matrix (Fin n) (Fin n) K) :
     IsUnitLowerTriangular (luLower A) := by
   refine ⟨fun i j hij => ?_, fun i => ?_⟩
@@ -210,8 +204,7 @@ theorem isUnitLowerTriangular_luLower (A : Matrix (Fin n) (Fin n) K) :
     simp only [luLower, Matrix.of_apply, if_neg hij'.not_gt, if_neg hij'.ne]
   · simp only [luLower, Matrix.of_apply, lt_self_iff_false, if_false, if_true]
 
-/-- The upper factor of elimination is upper triangular.
-Port of `NLAlib.isUpperTriangular_lu_snd`. -/
+/-- The upper factor of elimination is upper triangular. -/
 theorem isUpperTriangular_luUpper (A : Matrix (Fin n) (Fin n) K) :
     (luUpper A).IsUpperTriangular := by
   intro i j hij
@@ -282,8 +275,7 @@ theorem eq_luLower_mul_luUpper {A : Matrix (Fin n) (Fin n) K}
     rw [hz, zero_add] at ht
     exact ht
 
-/-- Elimination computes the LU factorization when every pivot but the last is nonzero.
-Port of `NLAlib.isLU_lu`. -/
+/-- Elimination computes the LU factorization when every pivot but the last is nonzero. -/
 theorem isLU_luLower_luUpper {A : Matrix (Fin n) (Fin n) K}
     (h : ∀ i : Fin n, (i : ℕ) + 1 < n → luUpper A i i ≠ 0) :
     IsLU A (luLower A) (luUpper A) := by
@@ -294,7 +286,7 @@ theorem isLU_luLower_luUpper {A : Matrix (Fin n) (Fin n) K}
   exact h j (by have := Fin.lt_def.mp hji; omega)
 
 /-- Elimination computes the LU factorization of a matrix whose proper leading principal minors
-are nonzero. Port of `NLAlib.isLU_lu_of_forall_leadingMinor_ne_zero`. -/
+are nonzero. -/
 theorem isLU_luLower_luUpper_of_forall_principalMinor_ne_zero {A : Matrix (Fin n) (Fin n) K}
     (h : ∀ i, principalMinor A (Finset.Iio i) ≠ 0) : IsLU A (luLower A) (luUpper A) := by
   refine isLU_luLower_luUpper fun i hi => ?_
@@ -309,7 +301,7 @@ theorem isLU_luLower_luUpper_of_forall_principalMinor_ne_zero {A : Matrix (Fin n
   exact h _
 
 /-- Elimination runs without a zero pivot exactly when all leading principal minors are
-nonzero. Port of `NLAlib.luSucceeds_iff_forall_leadingMinor_ne_zero`. -/
+nonzero. -/
 theorem forall_luUpper_apply_self_ne_zero_iff (A : Matrix (Fin n) (Fin n) K) :
     (∀ i, luUpper A i i ≠ 0) ↔ ∀ i, principalMinor A (Finset.Iic i) ≠ 0 := by
   simp only [luUpper_apply_self]
@@ -433,8 +425,7 @@ section Field
 
 variable [Field K] [DecidableEq n] [LocallyFiniteOrderBot n]
 
-/-- A matrix whose proper leading principal minors are nonzero has an LU factorization.
-Port of `NLAlib.exists_isLU_of_forall_leadingMinor_ne_zero`, there over $\mathbb{R}$. -/
+/-- A matrix whose proper leading principal minors are nonzero has an LU factorization. -/
 theorem exists_isLU_of_forall_principalMinor_ne_zero (A : Matrix n n K)
     (h : ∀ i, principalMinor A (Finset.Iio i) ≠ 0) : ∃ L U, IsLU A L U := by
   refine exists_isLU_of_orderIso (Fintype.orderIsoFinOfCardEq n rfl) ⟨_, _,
@@ -447,8 +438,7 @@ theorem exists_isLU_of_forall_principalMinor_ne_zero (A : Matrix n n K)
 /-- **A matrix whose leading principal minors up to its rank are nonzero has an LU
 factorization**: over a field, if the leading principal minors of every order at most
 $\operatorname{rank} \mathbf{A}$ are nonzero, then $\mathbf{A} = \mathbf{L}\mathbf{U}$ with
-$\mathbf{L}$ unit lower and $\mathbf{U}$ upper triangular. [HornJohnson2013, Corollary 3.5.4].
-Port of `NLAlib.exists_unit_triangular_factorizations_of_leading_minors_through_rank`. -/
+$\mathbf{L}$ unit lower and $\mathbf{U}$ upper triangular. [HornJohnson2013, Corollary 3.5.4]. -/
 theorem exists_isLU_of_forall_principalMinor_ne_zero_of_le_rank (A : Matrix n n K)
     (h : ∀ i, (Finset.Iic i).card ≤ A.rank → principalMinor A (Finset.Iic i) ≠ 0) :
     ∃ L U, IsLU A L U := by
@@ -468,7 +458,6 @@ theorem exists_isLU_of_forall_principalMinor_ne_zero_of_le_rank (A : Matrix n n 
 
 /-- **A nonsingular matrix has an LU factorization exactly when its leading principal minors
 are nonzero.** [HornJohnson2013, Corollary 3.5.4].
-Port of `NLAlib.exists_isLU_iff_forall_leadingMinor_ne_zero`, there over $\mathbb{R}$.
 Result: lu-existence -/
 theorem exists_isLU_iff_forall_principalMinor_ne_zero {A : Matrix n n K} (hA : IsUnit A.det) :
     (∃ L U, IsLU A L U) ↔ ∀ i, principalMinor A (Finset.Iic i) ≠ 0 := by
@@ -481,8 +470,7 @@ theorem exists_isLU_iff_forall_principalMinor_ne_zero {A : Matrix n n K} (hA : I
 omit [DecidableEq n] [LocallyFiniteOrderBot n] in
 /-- **Every square matrix has an LU factorization after a row permutation**: over a field, for
 some permutation $\sigma$ the matrix with rows $\mathbf{A}_{\sigma(i),:}$ has an LU factorization.
-[GolubVanLoan2013, Theorem 3.4.1 context]. Port of `NLAlib.isPLU_luPartialPivot`, as an
-existence statement over any field. -/
+[GolubVanLoan2013, Theorem 3.4.1 context]. -/
 theorem exists_perm_isLU (A : Matrix n n K) :
     ∃ (σ : Equiv.Perm n) (L U : Matrix n n K), IsLU (A.submatrix σ id) L U := by
   set e := Fintype.orderIsoFinOfCardEq n rfl with he
@@ -505,7 +493,6 @@ at most $2^{\lvert n \rvert - 1}$: if $\lvert \mathbf{A}_{i,j} \rvert \le M$ for
 $\lvert \mathbf{L}_{i,j} \rvert \le 1$ and
 $\lvert \mathbf{U}_{i,j} \rvert \le 2^{\lvert n \rvert - 1} M$.
 [GolubVanLoan2013, §3.4.5]; [Higham2002, §9.3].
-Port of `NLAlib.exists_isPLU_abs_le_one` and `NLAlib.abs_luPartialPivot_upper_le_two_pow`.
 Result: partial-pivoting-growth -/
 theorem exists_perm_isLU_norm_le {𝕜 : Type*} [RCLike 𝕜] (A : Matrix n n 𝕜)
     {M : ℝ} (hM : ∀ i j, ‖A i j‖ ≤ M) :

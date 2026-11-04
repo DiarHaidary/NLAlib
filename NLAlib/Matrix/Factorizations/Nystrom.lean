@@ -185,7 +185,7 @@ end Finite
 in the kernel of the matrix eliminated at $t$, for any square matrix over a field and any pivot,
 zero or not. For a positive semidefinite matrix
 this is the exhaustion of the column space by the pivots of a partial Cholesky factorization.
-[ChenEtAl2025, §2]. Port of `NLAlib.ker_mulVecLin_le_ker_eliminationStep`. -/
+[ChenEtAl2025, §2]. -/
 theorem ker_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
     (A : Matrix n n K) (t : n) :
     LinearMap.ker A.mulVecLin ≤ LinearMap.ker (eliminationStep A t).mulVecLin := by
@@ -201,8 +201,7 @@ theorem ker_le_ker_eliminationStep {K : Type*} [Field K] [Fintype n]
 with $\operatorname{tr} \mathbf{A} \ne 0$, choosing the pivot $i$ with probability
 $\mathbf{A}_{i,i} / \operatorname{tr} \mathbf{A}$ gives, on average,
 $\mathbf{A} - \mathbf{A}^2 / \operatorname{tr} \mathbf{A}$.
-[ChenEtAl2025, §5].
-Port of `NLAlib.sum_choleskyPivotProbability_smul_eliminationStep_eq`. -/
+[ChenEtAl2025, §5]. -/
 theorem _root_.Matrix.PosSemidef.sum_smul_eliminationStep [Fintype n] {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (ht : RCLike.re A.trace ≠ 0) :
     ∑ i, (RCLike.re (A i i) / RCLike.re A.trace) • eliminationStep A i =

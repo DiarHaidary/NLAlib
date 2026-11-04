@@ -16,7 +16,6 @@ $c$ is an eigenvalue (`radauJacobiMatrix`, Golub's construction). This file prov
 an eigenvalue and that the modified matrix has the moments of the Jacobi matrix through degree
 $2k$; the identification with the Radau rule is `NLAlib.spectralMeasure_radauJacobiMatrix` in
 `NLAlib.Krylov.Functions.Quadrature`.
-Design: `docs/design/Polynomial-QuadratureRemainder.md`.
 
 ## Main definitions
 

@@ -40,9 +40,7 @@ packaged in the Haar projection factor <!-- value haarProjectionFactor d p q -->
 $1 + (d - p)/(d - q) \cdot (q/(p - q - 1))$ (`NLAlib.haarProjectionFactor d p q`), the completion
 factor of Haar sketch-and-solve. Real field, as the Haar frame. The moments
 are here rather than in `NLAlib.RandomMatrix.Haar.Moments` because they are moments of the block
-$\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments. Design:
-`docs/design/LowRank-S4.md` §3.2, §8 item 8; the sketching identity and the factor,
-`docs/design/LowRank-S6.md` §3.1, §8 items 3 and 6.
+$\mathbf{W}\mathbf{Q}$, proved from its law and the Gaussian inverse moments.
 
 ## Main results
 
@@ -800,8 +798,13 @@ $$\frac{m - p}{m - r}\cdot\frac{r}{p - r - 1}\,\|\mathbf{B}\|_{\mathsf{F}}^2 \le
 \mathbb{E}\bigl\|(\mathbf{R}^{\mathsf{H}}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_1)^{+}
 \mathbf{R}^{\mathsf{H}}\mathbf{Q}^{\mathsf{H}}\mathbf{V}_2\mathbf{B}\bigr\|_{\mathsf{F}}^2\,,$$
 with equality at $\mathbf{R} = \mathbf{I}$
-(`NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame`). The integrand is integrable
-(it is at most $\|\mathbf{R}\|_2^2\|\mathbf{R}^{-1}\|_2^2$ times the $\mathbf{R} = \mathbf{I}$ one).
+(`NLAlib.integral_frobNorm_pinv_mul_mul_sq_of_hasLaw_haarFrame`). The integrand is almost surely
+at most
+$$\|\mathbf{R}\|_2^2\|\mathbf{R}^{-1}\|_2^2
+\|(\mathbf{V}_1^{\mathsf{H}}\mathbf{Q})^{+}\|_{\mathsf{F}}^2
+\|\mathbf{B}\|_{\mathsf{F}}^2\,,$$
+which is integrable by
+`NLAlib.integrable_frobNorm_pinv_const_mul_sq_of_hasLaw_haarFrame`.
 [EpperlyWebber2026, Proposition 5.7]; there over $\mathbb{R}$ and $\mathbb{C}$ with the rows of
 $\mathbf{\Omega}$ split, here with the blocks $\mathbf{V}_1^{\mathsf{H}}\mathbf{Q}$,
 $\mathbf{V}_2^{\mathsf{H}}\mathbf{Q}$. -/

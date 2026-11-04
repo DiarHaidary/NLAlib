@@ -44,8 +44,7 @@ Degenerate cases: for $a \le 0$ the lower half holds automatically and the conse
 at $k = 0$ the only projector is $\mathbf{0}$ and the predicate is a scaled preservation of
 $\|\mathbf{A}\|_{\mathsf{F}}^2$; for $k \ge \lvert m \rvert$ the projector $\mathbf{I}$ forces
 $c = 0$; at $k = 0$ the head is void and only the upper Frobenius preservation of $\mathbf{A}$
-remains, which is why the family sizes carry $d + 1$. Design: `docs/design/LowRank-S2b.md` §3.2,
-§8; `docs/design/LowRank-S9.md` §3, §8.
+remains, which is why the family sizes carry $d + 1$.
 
 ## Main definitions
 

@@ -57,7 +57,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [Dec
 omit [DecidableEq n] in
 /-- The trace is monotone in the Loewner order: $\mathbf{A} \preceq \mathbf{B}$ gives
 $\operatorname{Re} \operatorname{tr} \mathbf{A} \le \operatorname{Re} \operatorname{tr} \mathbf{B}$.
-Port of `NLAlib.trace_le_of_le`. -/
+-/
 theorem re_trace_le_re_trace_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) :
     RCLike.re A.trace ≤ RCLike.re B.trace := by
   have h' := (Matrix.le_iff.mp h).re_trace_nonneg
@@ -67,8 +67,7 @@ theorem re_trace_le_re_trace_of_le {A B : Matrix n n 𝕜} (h : A ≤ B) :
 omit [DecidableEq n] in
 /-- Loewner-ordered matrices with the same trace are equal: $\mathbf{A} \preceq \mathbf{B}$ and
 $\operatorname{Re} \operatorname{tr} \mathbf{A} = \operatorname{Re} \operatorname{tr} \mathbf{B}$
-give $\mathbf{A} = \mathbf{B}$.
-Port of `NLAlib.trace_eq_iff_of_le`. -/
+give $\mathbf{A} = \mathbf{B}$. -/
 theorem eq_of_le_of_re_trace_eq {A B : Matrix n n 𝕜} (h : A ≤ B)
     (ht : RCLike.re A.trace = RCLike.re B.trace) : A = B := by
   have h' := (Matrix.le_iff.mp h).re_trace_eq_zero_iff.mp
@@ -84,7 +83,7 @@ theorem _root_.Matrix.IsHermitian.det_eq_re_det {A : Matrix n n 𝕜} (hA : A.Is
 /-- **The determinant is monotone on positive semidefinite matrices**: for positive
 semidefinite $\mathbf{A} \preceq \mathbf{B}$,
 $\operatorname{Re} \det \mathbf{A} \le \operatorname{Re} \det \mathbf{B}$.
-[HornJohnson2013, Corollary 7.7.4]. Port of `NLAlib.det_le_det_of_posSemidef_le`. -/
+[HornJohnson2013, Corollary 7.7.4]. -/
 theorem _root_.Matrix.PosSemidef.re_det_le_re_det_of_le {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : A ≤ B) : RCLike.re A.det ≤ RCLike.re B.det := by
   have hB : B.PosSemidef := Matrix.nonneg_iff_posSemidef.mp (hA.nonneg.trans h)
@@ -96,7 +95,7 @@ theorem _root_.Matrix.PosSemidef.re_det_le_re_det_of_le {A B : Matrix n n 𝕜}
 /-- Equality in the monotonicity of the determinant: if $\mathbf{B} \preceq \mathbf{A}$ with
 $\mathbf{A}$ positive definite, $\mathbf{B}$ positive semidefinite and
 $\det \mathbf{B} = \det \mathbf{A}$, then $\mathbf{B} = \mathbf{A}$.
-[HornJohnson2013, Corollary 7.7.4]. Port of `NLAlib.det_eq_iff_eq_of_posSemidef_le_posDef`. -/
+[HornJohnson2013, Corollary 7.7.4]. -/
 theorem _root_.Matrix.PosDef.eq_of_le_of_det_eq {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosSemidef) (h : B ≤ A) (hdet : B.det = A.det) : B = A := by
   refine eq_of_le_of_re_trace_eq h ?_
@@ -128,8 +127,7 @@ theorem _root_.Matrix.PosDef.eq_of_le_of_det_eq {A B : Matrix n n 𝕜} (hA : A.
 /-- Congruence by an invertible matrix preserves and reflects the Loewner order: for
 invertible $\mathbf{S}$,
 $\mathbf{S}^{\mathsf{H}}\mathbf{A}\mathbf{S} \preceq \mathbf{S}^{\mathsf{H}}\mathbf{B}\mathbf{S}$
-iff $\mathbf{A} \preceq \mathbf{B}$.
-Port of `NLAlib.congruence_le_congruence_iff`. -/
+iff $\mathbf{A} \preceq \mathbf{B}$. -/
 theorem conjTranspose_mul_mul_le_conjTranspose_mul_mul_iff {A B S : Matrix n n 𝕜}
     (hS : IsUnit S) : Sᴴ * A * S ≤ Sᴴ * B * S ↔ A ≤ B := by
   rw [Matrix.le_iff, Matrix.le_iff, ← Matrix.sub_mul, ← Matrix.mul_sub]
@@ -189,8 +187,7 @@ theorem inv_le_inv_smul_one_of_smul_one_le {A : Matrix n n 𝕜} {a : ℝ} (ha :
 $(\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V})^{-1}
 \preceq \mathbf{V}^{\mathsf{H}}\mathbf{A}^{-1}\mathbf{V}$ for positive definite $\mathbf{A}$ and
 $\mathbf{V}$ with orthonormal columns.
-[HornJohnson2013, Theorem 7.7.15 context].
-Port of `NLAlib.inv_compression_le_compression_inv`. -/
+[HornJohnson2013, Theorem 7.7.15 context]. -/
 theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} (hA : A.PosDef)
     {V : Matrix m n 𝕜} (hV : HasOrthonormalCols V) : (Vᴴ * A * V)⁻¹ ≤ Vᴴ * A⁻¹ * V := by
   have hM : (Vᴴ * A * V).PosDef := hA.conjTranspose_mul_mul_same hV.mulVec_injective
@@ -214,7 +211,7 @@ theorem _root_.Matrix.PosDef.inv_conjTranspose_mul_mul_le {A : Matrix m m 𝕜} 
 
 /-- The inverse of a principal submatrix is at most the principal submatrix of the inverse, for
 positive definite $\mathbf{A}$ and the submatrix along an injective map of indices.
-[HornJohnson2013, Theorem 7.7.15]. Port of `NLAlib.inv_submatrix_le_submatrix_inv`. -/
+[HornJohnson2013, Theorem 7.7.15]. -/
 theorem _root_.Matrix.PosDef.inv_submatrix_le {A : Matrix m m 𝕜} (hA : A.PosDef) {f : n → m}
     (hf : Function.Injective f) : (A.submatrix f f)⁻¹ ≤ A⁻¹.submatrix f f := by
   have hV : HasOrthonormalCols ((1 : Matrix m m 𝕜).submatrix id f) :=
@@ -231,15 +228,13 @@ theorem _root_.Matrix.PosDef.inv_submatrix_le {A : Matrix m m 𝕜} (hA : A.PosD
 /-! ### Comparison with the identity -/
 
 /-- A positive semidefinite matrix is at most the identity exactly when its spectral norm is at
-most one: $\mathbf{A} \preceq \mathbf{I}$ iff $\|\mathbf{A}\|_2 \le 1$. Port of
-`NLAlib.le_one_iff_specNorm_le_one_of_posSemidef`. -/
+most one: $\mathbf{A} \preceq \mathbf{I}$ iff $\|\mathbf{A}\|_2 \le 1$. -/
 theorem _root_.Matrix.PosSemidef.le_one_iff_specNorm_le_one {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : A ≤ 1 ↔ specNorm A ≤ 1 := by
   rw [hA.specNorm_le_iff zero_le_one, one_smul]
 
 /-- For positive semidefinite $\mathbf{A}$, $\mathbf{I} - \mathbf{A}$ is positive definite
-exactly when $\|\mathbf{A}\|_2 < 1$.
-Port of `NLAlib.posDef_one_sub_iff_specNorm_lt_one_of_posSemidef`. -/
+exactly when $\|\mathbf{A}\|_2 < 1$. -/
 theorem _root_.Matrix.PosSemidef.posDef_one_sub_iff_specNorm_lt_one {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) : (1 - A).PosDef ↔ specNorm A < 1 := by
   have hH : (1 - A).IsHermitian := Matrix.isHermitian_one.sub hA.isHermitian
@@ -396,7 +391,6 @@ private theorem le_smul_one_iff_forall_spectrum_le {H : Matrix n n 𝕜} (hH : H
 and Hermitian $\mathbf{B}$, $a\mathbf{A} \preceq \mathbf{B} \preceq b\mathbf{A}$ exactly when the
 real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ lies in $[a, b]$.
 [HornJohnson2013, Theorem 7.6.4 context].
-Port of `NLAlib.loewner_sandwich_iff_relative_spectrum_subset`, there over $\mathbb{R}$.
 Result: relative-spectrum -/
 theorem _root_.Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (a b : ℝ) :
@@ -411,8 +405,7 @@ theorem _root_.Matrix.PosDef.smul_le_and_le_smul_iff_spectrum_subset {A B : Matr
 
 /-- The upper half: for positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$,
 $\mathbf{B} \preceq b\mathbf{A}$ exactly when the real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ is at
-most $b$.
-Port of `NLAlib.le_smul_iff_relative_spectrum_upper`. -/
+most $b$. -/
 theorem _root_.Matrix.PosDef.le_smul_iff_forall_spectrum_le {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (b : ℝ) :
     B ≤ b • A ↔ ∀ z ∈ spectrum ℝ (A⁻¹ * B), z ≤ b := by
@@ -422,8 +415,7 @@ theorem _root_.Matrix.PosDef.le_smul_iff_forall_spectrum_le {A B : Matrix n n �
 
 /-- The lower half: for positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$,
 $a\mathbf{A} \preceq \mathbf{B}$ exactly when the real spectrum of $\mathbf{A}^{-1}\mathbf{B}$ is at
-least $a$.
-Port of `NLAlib.smul_le_iff_relative_spectrum_lower`. -/
+least $a$. -/
 theorem _root_.Matrix.PosDef.smul_le_iff_forall_le_spectrum {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) (a : ℝ) :
     a • A ≤ B ↔ ∀ z ∈ spectrum ℝ (A⁻¹ * B), a ≤ z := by
@@ -472,8 +464,7 @@ theorem _root_.Matrix.PosDef.spectrum_mul_subset_Icc_of_le {M A : Matrix n n �
   rwa [Matrix.nonsing_inv_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hM.isUnit)] at h
 
 /-- $\mathbf{B}^2 \preceq \mathbf{A}^2$ exactly when $\|\mathbf{B}\mathbf{A}^{-1}\|_2 \le 1$, for
-positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$.
-Port of `NLAlib.sq_le_sq_iff_relative_specNorm_le_one`. -/
+positive definite $\mathbf{A}$ and Hermitian $\mathbf{B}$. -/
 theorem _root_.Matrix.PosDef.sq_le_sq_iff_specNorm_mul_inv_le_one {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.IsHermitian) : B ^ 2 ≤ A ^ 2 ↔ specNorm (B * A⁻¹) ≤ 1 := by
   have hdet := (Matrix.isUnit_iff_isUnit_det A).mp hA.isUnit
@@ -490,7 +481,7 @@ theorem _root_.Matrix.PosDef.sq_le_sq_iff_specNorm_mul_inv_le_one {A B : Matrix 
 /-! ### Convexity of the cones -/
 
 omit [Fintype n] [DecidableEq n] in
-/-- The positive definite matrices form a convex set. Port of `NLAlib.convex_setOf_posDef`. -/
+/-- The positive definite matrices form a convex set. -/
 theorem convex_setOf_posDef : Convex ℝ {A : Matrix n n 𝕜 | A.PosDef} := by
   intro A hA B hB a b ha hb hab
   rcases ha.eq_or_lt with rfl | ha'

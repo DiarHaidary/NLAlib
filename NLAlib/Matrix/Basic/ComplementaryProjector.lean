@@ -55,8 +55,7 @@ theorem one_sub_rangeProjector_mul_self [Fintype m] [Fintype n] [DecidableEq m]
   rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
 
 /-- The projection residual is orthogonal to the columns of $\mathbf{B}$:
-$\mathbf{B}^{\mathsf{H}}(\mathbf{I} - \mathbf{P}_{\mathbf{B}}) = \mathbf{0}$.
-Port of `NLAlib.conjTranspose_mul_residual`. -/
+$\mathbf{B}^{\mathsf{H}}(\mathbf{I} - \mathbf{P}_{\mathbf{B}}) = \mathbf{0}$. -/
 @[simp]
 theorem conjTranspose_mul_one_sub_rangeProjector [Fintype m] [Fintype n] [DecidableEq m]
     (B : Matrix m n 𝕜) : Bᴴ * (1 - rangeProjector B) = 0 := by
@@ -126,7 +125,6 @@ theorem norm_toLp_sq_eq_add_one_sub_rangeProjector [Fintype m] [Fintype n] [Deci
         ‖WithLp.toLp 2 ((1 - rangeProjector B) *ᵥ x)‖ ^ 2 :=
   (isStarProjection_rangeProjector B).norm_toLp_sq_eq_add x
 
--- Stage TE-0
 
 /-- **The trace split** for an idempotent $\mathbf{P}$ ($\mathbf{P}^2 = \mathbf{P}$, not
 necessarily Hermitian) over any commutative ring: for every square $\mathbf{A}$,

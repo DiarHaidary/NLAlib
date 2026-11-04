@@ -17,7 +17,7 @@ right, has the range of its matrix and spectral norm at most one, and normalises
 frames with the same number of columns differ by a unitary on the left; and a matrix that every
 unitary conjugation fixes is a multiple of the identity.
 
-These are the Matrix-layer additions of `docs/design/RandomMatrix-R5.md` §1. They stay in their own
+These are the Matrix-layer facts the Haar frame law needs. They stay in their own
 file: `Procrustes.lean` imports it, and it imports both `Polar.lean` and `OrthonormalBasis.lean`.
 
 ## Main results
@@ -116,8 +116,7 @@ theorem polarFactor_replicateCol (x : m → 𝕜) :
 /-- Unitaries act transitively on frames: two matrices $\mathbf{X}$, $\mathbf{Y}$ with
 orthonormal columns and the same column index differ by a unitary factor on the left,
 $\mathbf{U}\mathbf{X} = \mathbf{Y}$. Used by the two-sided Procrustes problem
-(`NLAlib.isLeast_frobNorm_sub_mul_mul_sq`) and the Haar frame law
-(`docs/design/RandomMatrix-R5.md` §1, addition 5). -/
+(`NLAlib.isLeast_frobNorm_sub_mul_mul_sq`) and the Haar frame law. -/
 theorem HasOrthonormalCols.exists_mul_eq [DecidableEq m] {r : Type*} [Finite r] [DecidableEq r]
     {X Y : Matrix m r 𝕜} (hX : HasOrthonormalCols X) (hY : HasOrthonormalCols Y) :
     ∃ U : Matrix m m 𝕜, HasOrthonormalCols U ∧ U * X = Y := by

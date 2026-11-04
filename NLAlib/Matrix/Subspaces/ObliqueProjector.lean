@@ -38,7 +38,7 @@ Degenerate cases: for $\mathbf{S}\mathbf{X} = \mathbf{0}$ (empty `k`, $\mathbf{S
 $\mathbf{X} = \mathbf{0}$, empty `r`) the projector is $\mathbf{0}$, and the rank hypothesis holds
 iff $\mathbf{X} = \mathbf{0}$. Without the hypothesis the projector still has range inside
 $\operatorname{range}\mathbf{X}$, but it does not fix $\mathbf{X}$ and depends on more than the
-range of $\mathbf{X}$. Design: `docs/design/LowRank-S0.md` §3.1, §8.
+range of $\mathbf{X}$.
 
 ## Main definitions
 
@@ -404,6 +404,22 @@ theorem obliqueProjector_mul_one_sub_rangeProjector_mul_eq [DecidableEq m] {c : 
   rw [obliqueProjector_eq_of_range_eq h hR₁.symm, obliqueProjector]
   conv_lhs => rw [← hE]
   simp only [Matrix.mul_assoc]
+
+/-- The normalized outer product $(\mathbf{y}^{\mathsf{T}}\mathbf{x})^{-1}
+\mathbf{x}\mathbf{y}^{\mathsf{T}}$ is idempotent over any field. If the pairing vanishes,
+it is zero by the total inverse convention; otherwise it projects onto the span of $\mathbf{x}$.
+Generalizes `NLAlib.normalized_vecMulVec_mul_self` from `tchen-research/NLAlib` at
+`77514ce42a0e437d837797a063ac161f41022730` to include zero pairing. -/
+theorem isIdempotentElem_inv_smul_vecMulVec {K : Type*} [Field K]
+    {ι : Type*} [Fintype ι] {x y : ι → K} :
+    IsIdempotentElem ((y ⬝ᵥ x)⁻¹ • Matrix.vecMulVec x y) := by
+  by_cases h : y ⬝ᵥ x = 0
+  · simp only [h, inv_zero, zero_smul, IsIdempotentElem, mul_zero]
+  · change _ * _ = _
+    rw [Matrix.smul_mul, Matrix.mul_smul, Matrix.vecMulVec_mul_vecMulVec,
+      Matrix.vecMulVec_smul, smul_smul, smul_smul]
+    congr 1
+    field_simp
 
 /-! ### Deprecated aliases -/
 

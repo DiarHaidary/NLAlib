@@ -22,7 +22,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Measure.Real
 # Tail probabilities and moments
 
 Tail bounds in NLAlib are failure probabilities in $\mathbb{R}$, with non-strict events:
-`μ.real {ω | t ≤ f ω} ≤ bound` (`docs/PORT_PROBABILITY.md` D3). Mathlib's Chernoff bound
+`μ.real {ω | t ≤ f ω} ≤ bound`. Mathlib's Chernoff bound
 `ProbabilityTheory.measure_ge_le_exp_mul_mgf` and Markov's inequality
 `MeasureTheory.mul_meas_ge_le_integral_of_nonneg` already have this form; the union bound and the
 complement are `MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_biUnion_finset_le`

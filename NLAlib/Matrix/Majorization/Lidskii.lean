@@ -81,8 +81,6 @@ of indices below $\lvert n \rvert$,
 $$\sum_{j \in J} \bigl(\lambda_j(\mathbf{A} + \mathbf{B}) - \lambda_j(\mathbf{A})\bigr)
   \le \sum_{i < \lvert J \rvert} \lambda_i(\mathbf{B}) \,.$$
 [HornJohnson2013, Theorem 4.3.47(b)]; [Bhatia1997, Theorem III.4.1].
-Port of `NLAlib.sum_eigenvalues₀_add_le_sum_add_eigenvaluePrefix`, there over $\mathbb{R}$; the
-proof here is new.
 Result: lidskii-inequality -/
 theorem _root_.Matrix.IsHermitian.sum_eigenvalue_add_sub_le_sum_range {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -134,7 +132,6 @@ eigenvalue differences $(\lambda_i(\mathbf{A} + \mathbf{B}) - \lambda_i(\mathbf{
 \rvert}$
 are majorized by the eigenvalues $(\lambda_i(\mathbf{B}))_{i < \lvert n \rvert}$.
 [Bhatia1997, Corollary III.4.2].
-Port of `NLAlib.majorized_eigenvalues₀_add_sub`, there over $\mathbb{R}$.
 Result: lidskii-inequality -/
 theorem _root_.Matrix.IsHermitian.majorized_eigenvalue_add_sub {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian)
@@ -213,7 +210,6 @@ private theorem sum_abs_singularValues_add_sub_le_kyFanNorm_of_lt (A E : Matrix 
 $$\sum_{i \in S} \lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert
   \le \|\mathbf{E}\|_{(\lvert S \rvert)} = \sum_{j < \lvert S \rvert} \sigma_j(\mathbf{E}) \,.$$
 [HornJohnson1991, Theorem 3.4.5]; [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.sum_abs_singularValues_add_sub_le_sum_range`, there over $\mathbb{R}$.
 Result: lidskii-singular-values, mirsky-inequality -/
 theorem sum_abs_singularValues_add_sub_le_kyFanNorm (A E : Matrix m n 𝕜) (S : Finset ℕ) :
     ∑ i ∈ S, |singularValues (A + E) i - singularValues A i| ≤ kyFanNorm S.card E := by
@@ -239,7 +235,6 @@ of the perturbation, for every $N$:
 $(\lvert \sigma_i(\mathbf{A} + \mathbf{E}) - \sigma_i(\mathbf{A}) \rvert)_{i < N}$ is weakly
 majorized by $(\sigma_i(\mathbf{E}))_{i < N}$.
 [Bhatia1997, Theorem IV.3.4].
-Port of `NLAlib.weaklyMajorized_abs_singularValues_add_sub_padded`, there over $\mathbb{R}$.
 Result: lidskii-singular-values -/
 theorem weaklyMajorized_abs_singularValues_add_sub (A E : Matrix m n 𝕜) (N : ℕ) :
     WeaklyMajorized (fun i : Fin N => |singularValues (A + E) i - singularValues A i|)

@@ -39,7 +39,7 @@ Errors are written as $\mathbf{A}$ minus the named output.
 Degenerate cases: for empty `l`, $\mathbf{\Omega} = \mathbf{0}$ or $\mathbf{A} = \mathbf{0}$ all
 approximations are $\mathbf{0}$, and `NLAlib.generalizedNystrom_eq_self_of_rank_eq` then needs
 $\mathbf{A} = \mathbf{0}$, which its hypothesis says; for $k = 0$ the early-truncated outputs are
-$\mathbf{0}$. Design: `docs/design/LowRank-S0.md` §3.3, §8; `docs/design/LowRank-S2b.md` §3.1, §8.
+$\mathbf{0}$.
 
 ## Main definitions
 
@@ -89,7 +89,8 @@ $\mathbf{A}$. Its rank is at most
 $\operatorname{rank}(\mathbf{A}\mathbf{\Omega}) \le \lvert l \rvert$ (`NLAlib.rank_rsvd_le`); it is
 $\mathbf{0}$ when $\mathbf{A}\mathbf{\Omega} = \mathbf{0}$.
 [HalkoMartinssonTropp2011, Algorithm 4.1]; [MartinssonTropp2020, Algorithm 8]; there with a random
-test matrix and an orthonormal basis of the sketch. -/
+test matrix and an orthonormal basis of the sketch.
+Algorithm: randomized-svd -/
 noncomputable def rsvd (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) : Matrix m n 𝕜 :=
   rangeProjector (A * Ω) * A
 
@@ -317,7 +318,8 @@ $\sigma_{k-1}(\mathbf{A}\mathbf{\Omega}) = \sigma_k(\mathbf{A}\mathbf{\Omega})$ 
 choice `truncatedSVD` makes, and so does its error.
 [Woodruff2014, Theorem 61]; there transposed, with the sketch on the left.
 [CohenElderMuscoMuscoPersu2015, §10.1], there transposed; [CohenElderMuscoMuscoPersu2015, §7.2], a
-remark in this orientation. -/
+remark in this orientation.
+Algorithm: randomized-svd -/
 noncomputable def earlyTruncatedRSVD (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (k : ℕ) :
     Matrix m n 𝕜 :=
   rangeProjector (truncatedSVD (A * Ω) k) * A

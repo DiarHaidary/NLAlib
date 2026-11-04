@@ -43,8 +43,7 @@ bounded orthonormal $\mathbf{F}$ with constant $\beta$, in both sampling models.
   then sample (`NLAlib.Sketching.Sampling.MatrixMultiplication`); any field.
 
 The relative-error sketch-and-solve, randomized SVD and early truncation through the JL moment
-are in `NLAlib.Regression.SRHT` and `NLAlib.LowRank.Oblivious.SRHT`. Design:
-`docs/design/Sketching-Moments.md` §3, §5.4.
+are in `NLAlib.Regression.SRHT` and `NLAlib.LowRank.Oblivious.SRHT`.
 
 ## Main results
 

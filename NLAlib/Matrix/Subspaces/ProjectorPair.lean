@@ -90,8 +90,7 @@ theorem singularValues_le_one_of_conjTranspose_mul_self_add_eq_one [DecidableEq 
 /-- If $\mathbf{U}\mathbf{U}^{\mathsf{H}} + \mathbf{W}\mathbf{W}^{\mathsf{H}} = \mathbf{I}$ and
 $\mathbf{W}$ has orthonormal columns, then $\mathbf{W}^{\mathsf{H}}\mathbf{A}$ and
 $(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{A}$ have the same singular values: the
-complement of a subspace can be given by a frame or by a projector. Port of
-`NLAlib.residual_eq_complement_mul_overlap`. -/
+complement of a subspace can be given by a frame or by a projector. -/
 theorem HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTranspose_add_eq_one
     [DecidableEq n]
     [DecidableEq q] {U : Matrix n p 𝕜} {W : Matrix n q 𝕜} (hW : HasOrthonormalCols W)
@@ -102,16 +101,14 @@ theorem HasOrthonormalCols.singularValues_conjTranspose_mul_eq_of_mul_conjTransp
 /-! ### Traces and diagonals of a projector -/
 
 /-- The trace of an orthogonal projector is its rank:
-$\operatorname{tr} \mathbf{P} = \operatorname{rank} \mathbf{P}$.
-Port of `NLAlib.trace_eq_rank_of_isIdempotentElem` for star projections. -/
+$\operatorname{tr} \mathbf{P} = \operatorname{rank} \mathbf{P}$. -/
 theorem _root_.IsStarProjection.trace_eq_rank {P : Matrix n n 𝕜} (hP : IsStarProjection P) :
     P.trace = P.rank := by
   have h := trace_rangeProjector P
   rwa [hP.rangeProjector_eq] at h
 
 /-- The diagonal entries of an orthogonal projector (the leverage scores of its range) lie in
-$[0, 1]$: $0 \le \operatorname{Re} \mathbf{P}_{i,i} \le 1$. Port of
-`NLAlib.re_diag_mem_Icc_of_isHermitian_of_isIdempotentElem`. -/
+$[0, 1]$: $0 \le \operatorname{Re} \mathbf{P}_{i,i} \le 1$. -/
 theorem _root_.IsStarProjection.re_apply_self_mem_Icc {P : Matrix n n 𝕜}
     (hP : IsStarProjection P) (i : n) : RCLike.re (P i i) ∈ Set.Icc (0 : ℝ) 1 := by
   classical
@@ -138,8 +135,7 @@ theorem _root_.IsStarProjection.re_apply_self_eq_norm_sq {P : Matrix n n 𝕜}
 
 /-- The trace of a product of two orthogonal projectors is the squared Frobenius norm of the
 product: $\operatorname{Re} \operatorname{tr}(\mathbf{P}\mathbf{Q})
-= \|\mathbf{P}\mathbf{Q}\|_{\mathsf{F}}^2$. Port of
-`NLAlib.frobInner_frame_projectors_eq_frobSq_overlap`. -/
+= \|\mathbf{P}\mathbf{Q}\|_{\mathsf{F}}^2$. -/
 theorem _root_.IsStarProjection.re_trace_mul {P Q : Matrix n n 𝕜} (hP : IsStarProjection P)
     (hQ : IsStarProjection Q) : RCLike.re (P * Q).trace = frobNorm (P * Q) ^ 2 := by
   rw [frobNorm_sq_eq_re_trace, Matrix.conjTranspose_mul, hP.conjTranspose_eq,
@@ -174,8 +170,7 @@ variable [DecidableEq n]
 
 /-- The difference of two matrices in terms of the two one-sided products:
 $\mathbf{P} - \mathbf{Q} = (\mathbf{I} - \mathbf{Q})\mathbf{P} - \mathbf{Q}(\mathbf{I} -
-\mathbf{P})$.
-Port of `NLAlib.sub_projector_eq_complement_mul_sub`. -/
+\mathbf{P})$. -/
 theorem sub_eq_one_sub_mul_sub_mul_one_sub (P Q : Matrix n n 𝕜) :
     P - Q = (1 - Q) * P - Q * (1 - P) := by
   rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one]
@@ -183,8 +178,7 @@ theorem sub_eq_one_sub_mul_sub_mul_one_sub (P Q : Matrix n n 𝕜) :
 
 /-- The Gram matrix of $(\mathbf{I} - \mathbf{Q})\mathbf{P}$, for orthogonal projectors
 $\mathbf{P}$, $\mathbf{Q}$: $((\mathbf{I} - \mathbf{Q})\mathbf{P})^{\mathsf{H}}(\mathbf{I} -
-\mathbf{Q})\mathbf{P} = \mathbf{P} - \mathbf{P}\mathbf{Q}\mathbf{P}$.
-Port of `NLAlib.conjTranspose_residual_mul_residual_eq_one_sub_overlap`. -/
+\mathbf{Q})\mathbf{P} = \mathbf{P} - \mathbf{P}\mathbf{Q}\mathbf{P}$. -/
 theorem _root_.IsStarProjection.conjTranspose_one_sub_mul_mul_one_sub_mul {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) :
     ((1 - Q) * P)ᴴ * ((1 - Q) * P) = P - P * Q * P := by
@@ -238,8 +232,7 @@ theorem _root_.IsStarProjection.singularValues_of_lt_rank {P : Matrix n n 𝕜}
 
 /-- The spectral norm of $(\mathbf{I} - \mathbf{Q})\mathbf{P}$ from the smallest relevant singular
 value of $\mathbf{Q}\mathbf{P}$: $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2^2 = 1 -
-\sigma_k(\mathbf{Q}\mathbf{P})^2$ for $k + 1 = \operatorname{rank} \mathbf{P}$.
-Port of `NLAlib.specNorm_residual_sq_eq_one_sub_singularValues_last_sq`. -/
+\sigma_k(\mathbf{Q}\mathbf{P})^2$ for $k + 1 = \operatorname{rank} \mathbf{P}$. -/
 theorem _root_.IsStarProjection.specNorm_one_sub_mul_sq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) {k : ℕ} (hk : k + 1 = P.rank) :
     specNorm ((1 - Q) * P) ^ 2 = 1 - singularValues (Q * P) k ^ 2 := by
@@ -248,8 +241,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_sq {P Q : Matrix n n 𝕜}
 
 /-- The Frobenius norm of $(\mathbf{I} - \mathbf{Q})\mathbf{P}$:
 $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_{\mathsf{F}}^2 = \operatorname{rank} \mathbf{P} -
-\|\mathbf{Q}\mathbf{P}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_residual_eq_card_sub`. -/
+\|\mathbf{Q}\mathbf{P}\|_{\mathsf{F}}^2$. -/
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_sq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) :
     frobNorm ((1 - Q) * P) ^ 2 = P.rank - frobNorm (Q * P) ^ 2 := by
@@ -266,8 +258,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_le_one {P Q : Matrix n n �
 
 /-- The acute case. $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2 < 1$ exactly when $\mathbf{Q}$ is
 injective on the range of $\mathbf{P}$, that is, when
-$\operatorname{rank}(\mathbf{Q}\mathbf{P}) = \operatorname{rank} \mathbf{P}$.
-Port of `NLAlib.directedSubspaceGap_lt_one_iff_isUnit`. -/
+$\operatorname{rank}(\mathbf{Q}\mathbf{P}) = \operatorname{rank} \mathbf{P}$. -/
 theorem _root_.IsStarProjection.specNorm_one_sub_mul_lt_one_iff {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) :
     specNorm ((1 - Q) * P) < 1 ↔ (Q * P).rank = P.rank := by
@@ -349,8 +340,7 @@ theorem _root_.IsStarProjection.frobNorm_one_sub_mul_le_add {P R : Matrix n n �
 /-- **Symmetry for equal ranks.** For orthogonal projectors of the same rank,
 $(\mathbf{I} - \mathbf{Q})\mathbf{P}$ and $(\mathbf{I} - \mathbf{P})\mathbf{Q}$ have the same
 singular values, hence the same norm in every unitarily invariant norm. [GolubVanLoan2013, Theorem
-2.5.1 context].
-Port of `NLAlib.specNorm_complement_mul_projector_eq_of_rank_eq` and its Frobenius twin. -/
+2.5.1 context]. -/
 theorem _root_.IsStarProjection.singularValues_one_sub_mul_eq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
     singularValues ((1 - Q) * P) = singularValues ((1 - P) * Q) := by
@@ -384,8 +374,7 @@ theorem _root_.IsStarProjection.specNorm_one_sub_mul_eq_of_rank_eq {P Q : Matrix
 
 /-- For projectors of equal rank the two directed gaps agree in the Frobenius norm:
 $\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_{\mathsf{F}} = \|(\mathbf{I} -
-\mathbf{P})\mathbf{Q}\|_{\mathsf{F}}$.
-Port of `NLAlib.frobSq_complement_mul_projector_eq_of_rank_eq`. -/
+\mathbf{P})\mathbf{Q}\|_{\mathsf{F}}$. -/
 theorem _root_.IsStarProjection.frobNorm_one_sub_mul_eq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
     frobNorm ((1 - Q) * P) = frobNorm ((1 - P) * Q) := by
@@ -398,8 +387,7 @@ theorem _root_.IsStarProjection.frobNorm_one_sub_mul_eq_of_rank_eq {P Q : Matrix
 norm at most the larger of the two: if $\mathbf{X}\mathbf{P} = \mathbf{X}$,
 $\mathbf{Y}(\mathbf{I} - \mathbf{P}) = \mathbf{Y}$ and
 $\mathbf{X}^{\mathsf{H}}\mathbf{Y} = \mathbf{0}$, then
-$\|\mathbf{X} + \mathbf{Y}\|_2 \le \max(\|\mathbf{X}\|_2, \|\mathbf{Y}\|_2)$. Port of
-`NLAlib.specNorm_add_le_max_of_projector_supports`. -/
+$\|\mathbf{X} + \mathbf{Y}\|_2 \le \max(\|\mathbf{X}\|_2, \|\mathbf{Y}\|_2)$. -/
 theorem _root_.IsStarProjection.specNorm_add_le_max {P : Matrix n n 𝕜} (hP : IsStarProjection P)
     {X Y : Matrix m n 𝕜} (hX : X * P = X) (hY : Y * (1 - P) = Y) (hXY : Xᴴ * Y = 0) :
     specNorm (X + Y) ≤ max (specNorm X) (specNorm Y) := by
@@ -432,7 +420,6 @@ theorem _root_.IsStarProjection.specNorm_add_le_max {P : Matrix n n 𝕜} (hP : 
 /-- **The gap between two orthogonal projectors**: $\|\mathbf{P} - \mathbf{Q}\|_2$ is the larger
 of the two directed gaps, $\max(\|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2, \|(\mathbf{I} -
 \mathbf{P})\mathbf{Q}\|_2)$. [GolubVanLoan2013, §2.5.3]; [Kato1995, §I.6.8].
-Port of `NLAlib.specNorm_sub_projector_eq_max`.
 Result: projector-gap -/
 theorem _root_.IsStarProjection.specNorm_sub_eq_max {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) :
@@ -481,7 +468,6 @@ theorem _root_.IsStarProjection.rank_eq_of_specNorm_sub_lt_one {P Q : Matrix n n
 
 /-- **The gap between orthogonal projectors of equal rank.** For orthogonal projectors of equal
 rank, $\|\mathbf{P} - \mathbf{Q}\|_2 = \|(\mathbf{I} - \mathbf{Q})\mathbf{P}\|_2$.
-Port of `NLAlib.specNorm_sub_projector_eq_complement_mul_of_rank_eq`.
 Result: projector-gap -/
 theorem _root_.IsStarProjection.specNorm_sub_eq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
@@ -504,8 +490,7 @@ theorem _root_.IsStarProjection.frobNorm_sub_sq {P Q : Matrix n n 𝕜}
 
 /-- For orthogonal projectors of equal rank,
 $\|\mathbf{P} - \mathbf{Q}\|_{\mathsf{F}}^2 = 2\|(\mathbf{I} -
-\mathbf{Q})\mathbf{P}\|_{\mathsf{F}}^2$.
-Port of `NLAlib.frobSq_sub_frame_projector_eq_two_mul_residual`. -/
+\mathbf{Q})\mathbf{P}\|_{\mathsf{F}}^2$. -/
 theorem _root_.IsStarProjection.frobNorm_sub_sq_of_rank_eq {P Q : Matrix n n 𝕜}
     (hP : IsStarProjection P) (hQ : IsStarProjection Q) (h : P.rank = Q.rank) :
     frobNorm (P - Q) ^ 2 = 2 * frobNorm ((1 - Q) * P) ^ 2 := by
@@ -529,8 +514,7 @@ theorem HasOrthonormalCols.frobNorm_one_sub_mul_sq [DecidableEq p] [DecidableEq 
 /-- The projectors of two frames with the same number of columns are at Frobenius distance
 $\sqrt{2} \, \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}$:
 $\|\mathbf{Q}\mathbf{Q}^{\mathsf{H}} - \mathbf{U}\mathbf{U}^{\mathsf{H}}\|_{\mathsf{F}}
-= \sqrt{2} \, \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}$. Port of
-`NLAlib.frobNorm_projector_distance_eq_sqrt_two_mul_sinePrincipalAngles`. -/
+= \sqrt{2} \, \|(\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf{H}})\mathbf{Q}\|_{\mathsf{F}}$. -/
 theorem HasOrthonormalCols.frobNorm_mul_conjTranspose_sub_mul_conjTranspose [DecidableEq p]
     {U Q : Matrix n p 𝕜} (hU : HasOrthonormalCols U) (hQ : HasOrthonormalCols Q) :
     frobNorm (Q * Qᴴ - U * Uᴴ) = √2 * frobNorm ((1 - U * Uᴴ) * Q) := by

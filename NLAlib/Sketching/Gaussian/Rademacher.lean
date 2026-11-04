@@ -57,8 +57,7 @@ Degenerate cases: for empty $k$, $\mathbf{S} = \mathbf{0}$, which is not isotrop
 `[Nonempty k]` on isotropy, the OSI and the moments; the JL bound is $2$ for
 $\lvert k \rvert = 0$ and at least $2$ for $\varepsilon \ge 3/2$. For $\varepsilon = 1$ the lower
 JL event $\{\mathbf{S}\mathbf{x} = \mathbf{0}\}$ has positive probability ($2^{-\lvert k \rvert}$
-at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it. Design:
-`docs/design/Sketching-S3.md` §3.3, §8.
+at $\mathbf{x} = (\mathbf{e}_1 + \mathbf{e}_2)/\sqrt{2}$), and the proof covers it.
 
 ## Main results
 
@@ -152,7 +151,7 @@ $\mathbb{E} \langle \boldsymbol{\xi}, \mathbf{x} \rangle^4
 = 3 \|\mathbf{x}\|^4 - 2 \sum_j \mathbf{x}_j^4$
 (`NLAlib.variance_quadForm_of_hasLaw_rademacherVector` at `vecMulVec x x`).
 [Woodruff2014, §2.1, after Theorem 6]; constants of [Achlioptas2003, Theorem 1.1], locator to
-confirm (`docs/PORT_SKETCHING.md` §7.2). For $\varepsilon \gtrsim 1.43$,
+confirm. For $\varepsilon \gtrsim 1.43$,
 `NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$ is better.
 Result: jl-rademacher -/
 theorem hasJLProperty_of_hasLaw_rademacherMatrix (hX : HasLaw X (rademacherMatrix k n) μ)

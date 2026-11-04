@@ -33,7 +33,7 @@ Degenerate cases: for empty `k`, $\mathbf{S} = \mathbf{0}$ and the sampled produ
 $\mathbf{0}$, hence `[Nonempty k]` on every mean and tail; the integrability statements need
 neither it nor $\sum_i p_i = 1$. A zero weight with $\mathbf{A}_i \ne \mathbf{0}$ and
 $\mathbf{B}_i \ne \mathbf{0}$ biases the estimator, which the support hypothesis excludes and the
-domination hypothesis implies. Design: `docs/design/Sketching-S4.md` §3.3, §8.
+domination hypothesis implies.
 
 In the spectral norm, matrix Bernstein for the rectangular atoms
 (`NLAlib.Probability.MatrixConcentration.Bernstein`) needs a uniform atom bound and the two
@@ -45,7 +45,7 @@ domination alone does not bound the variances (a row with $\|\mathbf{A}_i\|$ lar
 $\|\mathbf{B}_i\|$ small). At $p_i \propto \|\mathbf{A}_i\|^2 + \|\mathbf{B}_i\|^2$ this is the
 stable-rank form. Without replacement the weights are uniform and matrix Bernstein without
 replacement (`NLAlib.Probability.MatrixConcentration.BernsteinWithoutReplacement`) gives the same
-bound. Design: `docs/design/Sketching-Moments.md` §5.3.
+bound.
 
 Proofs. Every expectation is transported to $\lvert k \rvert$ i.i.d. indices
 (`NLAlib.samplingSketch_eq_map`), where the sampled product is a sum of i.i.d. atoms whose weighted

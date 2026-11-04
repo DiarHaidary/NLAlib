@@ -37,7 +37,6 @@ The probabilistic statements take an embedding that fails with probability $\del
 (`NLAlib.HasSubspaceEmbedding`); the sketch families are in `NLAlib.Regression.Gaussian`,
 `NLAlib.Regression.SubGaussian`, `NLAlib.Regression.SRHT` and `NLAlib.Regression.CountSketch`.
 [MartinssonTropp2020]; [Epperly2024]; [EpperlyMeierNakatsukasa2024].
-Design: `docs/design/Regression-SketchPrecondition.md`.
 
 ## Main definitions
 

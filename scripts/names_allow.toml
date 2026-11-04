@@ -49,6 +49,11 @@ rule = "N9"
 reason = "LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)"
 
 [[allow]]
+name = "NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le"
+rule = "N9"
+reason = "LB-C SH1 (design note §3.5); with `_of_hasLaw_gaussianMatrix` the declaration line is 105 characters, past the line limit (as NAME-R4B)"
+
+[[allow]]
 name = "NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le"
 rule = "N2"
 reason = "TGN-Upper L34h (head weight): the conclusion is `3 / 8 * ‖W B_a‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`"
@@ -67,3 +72,34 @@ reason = "TGN-Upper M1: the derived name `exists_forall_integral_frobNorm_sub_tr
 name = "NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix"
 rule = "N17"
 reason = "TGN-Upper M2: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem, which M2 dominates (decision card TGN-DOMINATED)"
+
+[[allow]]
+name = "NLAlib.map_eval_uniformOn_injective"
+rule = "N4"
+reason = "`eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the token became a library function with `NLAlib.Computation.IExp.eval`, a different object"
+
+
+[[allow]]
+name = "NLAlib.LanczosRun.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
+rule = "N4"
+reason = "the statement is `L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiagonalSucc) = L.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached"
+
+[[allow]]
+name = "NLAlib.LanczosData.transpose_dilatedBasis_mul_dilatedBasisSucc_mul"
+rule = "N4"
+reason = "the statement is `D.dilatedBasisᵀ * (D.dilatedBasisSucc * D.tridiagonalSucc) = D.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached (as for its LanczosRun counterpart)"
+
+[[allow]]
+name = "Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ"
+rule = "N10"
+reason = "a difference of two errors, each `exact − computed` (`quadForm_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+
+[[allow]]
+name = "NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate"
+rule = "N10"
+reason = "a difference of two errors, each `exact − computed` (`backwardH_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+
+[[allow]]
+name = "NLAlib.CGRun.abs_quadForm_backwardH_sub_cgIterate_sub_le"
+rule = "N10"
+reason = "the gap between the model's error `quadForm (x⋆ − cgIterate)` (exact − computed) and the computed estimate; `cgIterate_sub` joins the error to the estimate (maintainer, 2026-10-31)"

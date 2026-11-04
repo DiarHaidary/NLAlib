@@ -46,7 +46,7 @@ bound $d \cdot e^0$ is at least $1$ when $\mathbf{U} \ne \mathbf{0}$, and the sk
 isotropic, hence `[Nonempty k]` on isotropy. Rank zero: every failure event is empty. $L \le 0$
 forces rank zero, so no $0 < L$ is assumed. For $\varepsilon \ge 1$ the injection is vacuous.
 The tails rest on Hoeffding's comparison of sampling without and with replacement
-(`NLAlib.Probability.ConvexOrder`). Design: `docs/design/Sketching-S5.md` §3.4, §8.
+(`NLAlib.Probability.ConvexOrder`).
 
 ## Main definitions
 

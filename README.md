@@ -1,12 +1,12 @@
 # NLAlib
 
 A Lean 4 / Mathlib library of the foundations of numerical linear algebra: matrix analysis and
-perturbation theory, random matrices and concentration, sketching, low-rank approximation,
-Krylov methods and randomized solvers. The aim is reusable statements that other people's
-proofs can cite, stated once, generally, in Mathlib's style.
+perturbation theory, polynomial approximation, Krylov methods, probability and random matrices,
+sketching, randomized least squares, low-rank approximation, trace estimation and lower bounds.
+The aim is reusable statements that other people's proofs can cite, stated once, generally, in
+Mathlib's style.
 
-Website: https://nla-lib.org. The library is being rebuilt from an internal prototype, one
-layer at a time, starting with `NLAlib/Matrix/`.
+Website: https://nla-lib.org.
 
 ## Using
 
@@ -19,12 +19,12 @@ Pinned: Lean `v4.33.1`, Mathlib `v4.33.1`.
 
 ## Contributing
 
-[CONTRIBUTING.md](CONTRIBUTING.md) is the contract: layout, file template, names, statement
-conventions and vocabulary, docstrings and citations, the no-`sorry` rule and the scaffold library,
-the PR checks, and how to build without exhausting memory. Agents start at
-[AGENTS.md](AGENTS.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide: setup, layout and import rules,
+names, statement conventions and vocabulary, docstrings and citations, the checks
+(`bash scripts/stage_check.sh` before every PR), and how to build without exhausting memory.
+AI agents also follow [AGENTS.md](AGENTS.md).
 
 ## License
 
-Apache License 2.0, see [LICENSE](LICENSE). Ported material keeps its original attribution in the
-file header.
+Apache License 2.0, see [LICENSE](LICENSE). Material taken from elsewhere keeps its original
+attribution in the file header.

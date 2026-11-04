@@ -260,3 +260,10 @@ Their statements and proofs are unchanged. Required Result displays use the regi
 algorithm names. The ledger scanner now also unions declarations from the existing canonical
 Lean-source parser, preserving its old structure-field handling and recognizing valid
 multiline theorem names. An independent corpus check found no lost declarations.
+
+## PR integration (2026-11-04)
+
+Merged current main after proof verification. Retained upstream removal of the legacy port ledger,
+status record and ledger checker; the PR does not restore or alter those checks. Resolved the
+EarlyTruncation introduction using the new split and bounds, and retained both independent
+constant-registry additions. Mathematical proof bodies are unchanged by conflict resolution.

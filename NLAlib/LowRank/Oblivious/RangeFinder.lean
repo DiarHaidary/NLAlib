@@ -36,7 +36,7 @@ $\delta + 1/t$; [CamanoEpperlyMeyerTropp2025, Theorem 2.2]), the bounded-sketch 
 [HalkoMartinssonTropp2011, Theorem 11.2]) and the approximate-multiplication route (factor
 $1 + k\varepsilon^2/a^2$, which reaches $1 + \varepsilon$; [Woodruff2014, Lemma 45]). Each is a
 composition of the structural bounds of `NLAlib.LowRank.Structural.RangeFinder` with the
-Sketching predicates' tails. Design: `docs/design/LowRank-S7.md` §3.2, §8.
+Sketching predicates' tails.
 
 ## Main results
 

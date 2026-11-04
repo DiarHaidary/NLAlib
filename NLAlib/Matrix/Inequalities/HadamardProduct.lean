@@ -91,8 +91,7 @@ omit [Fintype n] [DecidableEq n] in
 /-- **The Hadamard product with a positive semidefinite matrix is monotone**: for positive
 semidefinite $\mathbf{A}$, $\mathbf{B} \preceq \mathbf{C}$ gives
 $\mathbf{A} \circ \mathbf{B} \preceq \mathbf{A} \circ \mathbf{C}$.
-[HornJohnson1991, §5.2]. Port of `NLAlib.hadamard_le_hadamard_of_posSemidef_left`, there over
-$\mathbb{R}$. -/
+[HornJohnson1991, §5.2]. -/
 theorem _root_.Matrix.PosSemidef.hadamard_le_hadamard_of_le {A B C : Matrix n n 𝕜}
     (hA : A.PosSemidef) (h : B ≤ C) : A ⊙ B ≤ A ⊙ C := by
   rw [Matrix.le_iff] at h ⊢
@@ -114,8 +113,7 @@ omit [Fintype n] [DecidableEq n] in
 /-- A two-sided bound is preserved by Hadamard products, upper half: if
 $-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ and
 $-\mathbf{C} \preceq \mathbf{D} \preceq \mathbf{C}$ then
-$\mathbf{B} \circ \mathbf{D} \preceq \mathbf{A} \circ \mathbf{C}$.
-Port of `NLAlib.hadamard_le_hadamard_of_neg_le_of_le`, there over $\mathbb{R}$. -/
+$\mathbf{B} \circ \mathbf{D} \preceq \mathbf{A} \circ \mathbf{C}$. -/
 theorem hadamard_le_hadamard_of_neg_le_of_le {A B C D : Matrix n n 𝕜} (hAB : -A ≤ B)
     (hBA : B ≤ A) (hCD : -C ≤ D) (hDC : D ≤ C) : B ⊙ D ≤ A ⊙ C := by
   obtain ⟨hp, hm⟩ := posSemidef_add_and_sub hAB hBA
@@ -135,8 +133,7 @@ $\mathbf{A}, \mathbf{B}, \mathbf{C}, \mathbf{D}$ over $\Bbbk$, if
 $-\mathbf{A} \preceq \mathbf{B} \preceq \mathbf{A}$ and
 $-\mathbf{C} \preceq \mathbf{D} \preceq \mathbf{C}$ then
 $-(\mathbf{A} \circ \mathbf{C}) \preceq \mathbf{B} \circ \mathbf{D}$, with $\circ$ the
-Hadamard (entrywise) product. The upper half is `NLAlib.hadamard_le_hadamard_of_neg_le_of_le`.
-Port of `NLAlib.neg_hadamard_le_hadamard_of_neg_le_of_le`, there over $\mathbb{R}$. -/
+Hadamard (entrywise) product. The upper half is `NLAlib.hadamard_le_hadamard_of_neg_le_of_le`. -/
 theorem neg_hadamard_le_hadamard_of_neg_le_of_le {A B C D : Matrix n n 𝕜} (hAB : -A ≤ B)
     (hBA : B ≤ A) (hCD : -C ≤ D) (hDC : D ≤ C) : -(A ⊙ C) ≤ B ⊙ D := by
   obtain ⟨hp, hm⟩ := posSemidef_add_and_sub hAB hBA
@@ -185,8 +182,7 @@ theorem _root_.Matrix.PosSemidef.hadamard_le_smul_diagonal {A B : Matrix n n �
 omit [Fintype n] [DecidableEq n] in
 /-- The Hadamard product of a positive definite matrix with a positive semidefinite matrix with
 positive diagonal ($\operatorname{Re} \mathbf{B}_{i,i} > 0$ for all $i$) is positive definite.
-[HornJohnson1991, Theorem 5.2.1].
-Port of `NLAlib.posDef_hadamard_of_posDef_of_diag_pos`, there over $\mathbb{R}$. -/
+[HornJohnson1991, Theorem 5.2.1]. -/
 theorem _root_.Matrix.PosDef.hadamard_of_forall_diag_pos [Finite n] {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.PosSemidef) (hdiag : ∀ i, 0 < RCLike.re (B i i)) :
     (A ⊙ B).PosDef := by
@@ -203,8 +199,7 @@ theorem _root_.Matrix.PosDef.hadamard_of_forall_diag_pos [Finite n] {A B : Matri
 /-- **The inverse of a Hadamard product is at most the Hadamard product of the inverses**: for
 positive definite $\mathbf{A}$, $\mathbf{B}$,
 $(\mathbf{A} \circ \mathbf{B})^{-1} \preceq \mathbf{A}^{-1} \circ \mathbf{B}^{-1}$.
-[HornJohnson1991, Theorem 5.4.3 context].
-Port of `NLAlib.inv_hadamard_le_hadamard_inv`, there over $\mathbb{R}$. -/
+[HornJohnson1991, Theorem 5.4.3 context]. -/
 theorem _root_.Matrix.PosDef.inv_hadamard_le_hadamard_inv {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.PosDef) : (A ⊙ B)⁻¹ ≤ A⁻¹ ⊙ B⁻¹ := by
   have h := (hA.kronecker hB).inv_submatrix_le (f := fun i : n => (i, i))
@@ -214,8 +209,7 @@ theorem _root_.Matrix.PosDef.inv_hadamard_le_hadamard_inv {A B : Matrix n n 𝕜
 
 /-- **Fiedler's inequality**: $\mathbf{I} \preceq \mathbf{A} \circ \mathbf{A}^{-1}$ for positive
 definite $\mathbf{A}$.
-[HornJohnson1991, Theorem 5.4.3]. Port of `NLAlib.one_le_hadamard_inv`, there over
-$\mathbb{R}$. -/
+[HornJohnson1991, Theorem 5.4.3]. -/
 theorem _root_.Matrix.PosDef.one_le_hadamard_inv {A : Matrix n n 𝕜} (hA : A.PosDef) :
     1 ≤ A ⊙ A⁻¹ := by
   have h1 : (Matrix.fromBlocks A 1 1 A⁻¹).PosSemidef := by
@@ -240,9 +234,7 @@ that the eigenvalues of $\mathbf{A}\mathbf{B}$ are at least $c$ (the lower half 
 says that the smallest eigenvalue of $\mathbf{A} \circ \mathbf{B}$ is at least that of
 $\mathbf{A}\mathbf{B}$. For $c < 0$ the bound can fail, already for $\mathbf{B} = c\mathbf{A}^{-1}$.
 [HornJohnson2013, Theorem 7.7.18]; stated there for the smallest eigenvalues of two positive
-definite matrices.
-Port of `NLAlib.max_sInf_spectrum_mul_le_sInf_spectrum_hadamard`, there over $\mathbb{R}$ for
-positive definite $\mathbf{B}$ with $c$ the infimum of the spectrum of $\mathbf{A}\mathbf{B}$. -/
+definite matrices. -/
 theorem _root_.Matrix.PosDef.smul_one_le_hadamard_of_smul_inv_le {A B : Matrix n n 𝕜} {c : ℝ}
     (hA : A.PosDef) (hc : 0 ≤ c) (h : c • A⁻¹ ≤ B) : c • (1 : Matrix n n 𝕜) ≤ A ⊙ B := by
   have h1 : c • (1 : Matrix n n 𝕜) ≤ c • (A ⊙ A⁻¹) :=
@@ -384,7 +376,6 @@ private theorem re_det_mul_prod_le_of_posDef {A B : Matrix n n 𝕜} (hA : A.Pos
 $$\operatorname{Re} \det \mathbf{A} \cdot \prod_i \operatorname{Re} \mathbf{B}_{i,i}
   \le \operatorname{Re} \det(\mathbf{A} \circ \mathbf{B})\,.$$
 [HornJohnson2013, Theorem 7.8.16].
-Port of `NLAlib.det_mul_prod_diag_le_det_hadamard`, there over $\mathbb{R}$.
 Result: oppenheim-inequality -/
 theorem _root_.Matrix.PosSemidef.re_det_mul_prod_re_diag_le_re_det_hadamard {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :

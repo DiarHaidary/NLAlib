@@ -97,7 +97,6 @@ private lemma aeval_sum_fin_mulVec (A : Matrix n n 𝕜) (b : n → 𝕜) {q : �
 /-- **The polynomial description of the Krylov space**: $\mathbf{x} \in \mathcal{K}_q$ exactly
 when $\mathbf{x} = p(\mathbf{A})\mathbf{b}$ for a polynomial $p \in \Bbbk[X]$ of degree less
 than $q$. [Saad2003, §6.2].
-Port of `NLAlib.mem_krylovSpace_iff` (prototype, real scalars).
 Result: krylov-space-polynomial -/
 theorem mem_krylovSpace_iff {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ} :
     x ∈ krylovSpace A b q ↔ ∃ p : 𝕜[X], p.degree < q ∧ aeval A p *ᵥ b = x := by
@@ -138,8 +137,7 @@ theorem krylovSpace_zero (A : Matrix n n 𝕜) (b : n → 𝕜) : krylovSpace A 
   rw [krylovSpace_eq_span, Set.range_eq_empty, Submodule.span_empty]
 
 /-- One step adds one generator: $\mathcal{K}_{q+1} = \mathcal{K}_q +
-\operatorname{span}\{\mathbf{A}^q\mathbf{b}\}$.
-Port of `NLAlib.krylovSpace_succ` (prototype). -/
+\operatorname{span}\{\mathbf{A}^q\mathbf{b}\}$. -/
 theorem krylovSpace_succ (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     krylovSpace A b (q + 1) = krylovSpace A b q ⊔ Submodule.span 𝕜 {A ^ q *ᵥ b} := by
   rw [krylovSpace_eq_span, krylovSpace_eq_span, ← Submodule.span_union]
@@ -160,8 +158,7 @@ theorem self_mem_krylovSpace (A : Matrix n n 𝕜) (b : n → 𝕜) {q : ℕ} (h
     b ∈ krylovSpace A b q := by
   simpa using pow_mulVec_mem_krylovSpace A b hq
 
-/-- $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$.
-Port of `NLAlib.mulVec_mem_krylovSpace_succ` (prototype). -/
+/-- $\mathbf{A}\mathcal{K}_q \subseteq \mathcal{K}_{q+1}$. -/
 theorem mulVec_mem_krylovSpace_succ {A : Matrix n n 𝕜} {b x : n → 𝕜} {q : ℕ}
     (hx : x ∈ krylovSpace A b q) : A *ᵥ x ∈ krylovSpace A b (q + 1) := by
   have hle : krylovSpace A b q ≤ (krylovSpace A b (q + 1)).comap A.mulVecLin := by
@@ -215,8 +212,7 @@ theorem krylovMatrix_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : �
 
 /-- Krylov spaces under a change of variables:
 $\mathcal{K}_q(\mathbf{C}\mathbf{B}, \mathbf{C}\mathbf{v}) =
-\mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$.
-Port of `NLAlib.krylovSpace_mul_mulVec_eq_map` (prototype). -/
+\mathbf{C}\,\mathcal{K}_q(\mathbf{B}\mathbf{C}, \mathbf{v})$. -/
 theorem krylovSpace_mul_mulVec (B C : Matrix n n 𝕜) (v : n → 𝕜) (q : ℕ) :
     krylovSpace (C * B) (C *ᵥ v) q = (krylovSpace (B * C) v q).map C.mulVecLin := by
   rw [krylovSpace, krylovSpace, krylovMatrix_mul_mulVec, Matrix.mulVecLin_mul,

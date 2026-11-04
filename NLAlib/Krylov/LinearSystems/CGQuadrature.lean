@@ -20,7 +20,6 @@ With the Radau rules at bounds $0 < a \le \lambda_{\min}$ and $a' \ge \lambda_{\
 the computable two-sided estimates of Golub and Meurant (Golub–Strakoš): the left Radau rule
 bounds the error from above, the right Radau rule from below.
 
-Design: `docs/design/Polynomial-QuadratureRemainder.md`, C1–C3.
 
 ## Main results
 

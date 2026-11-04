@@ -21,9 +21,7 @@ $\mathbf{\Omega}$. Deterministic.
 
 This is the linear-algebra step of the general-$k$ lower bound; the Gaussian concentration and the
 expectation bound are in `NLAlib.LowerBounds.LowRank.EarlyTruncationBlockGaussian`, the
-$k = 1$ instance in `NLAlib.LowerBounds.LowRank.EarlyTruncation`. New (research note
-`reports/OP1-EarlyTruncatedRSVD.md` of the NLAlib workflow, 2026-10-25). Design:
-`docs/design/LowRank-EstimatorLowerBounds.md` §3.1. Real throughout.
+$k = 1$ instance in `NLAlib.LowerBounds.LowRank.EarlyTruncation`. New. Real throughout.
 
 ## Main results
 
@@ -355,7 +353,7 @@ $$\begin{aligned}
 \sin^2\theta\,\bigl(\|\mathbf{\Omega}_1\|_{\mathsf{F}}^2 -
 s^2\|\mathbf{\Omega}_2\|_{\mathsf{F}}^2\bigr)\,.
 \end{aligned}$$
-No printed source. New (research note OP1, §4 steps 1–3). -/
+No printed source. New. -/
 theorem frobNorm_sub_earlyTruncatedRSVD_fromBlocks_sq_ge_and_variational {k : ℕ} {s : ℝ}
     (hs0 : 0 ≤ s) {A : Matrix (Fin k ⊕ Fin k) (Fin k ⊕ Fin k) ℝ}
     (hA : A = Matrix.fromBlocks 1 0 0 (s • 1)) {Ω' : Matrix (Fin k ⊕ Fin k) l ℝ}

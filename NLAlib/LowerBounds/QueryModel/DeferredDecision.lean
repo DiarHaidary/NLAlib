@@ -23,7 +23,7 @@ standard Gaussian $\mathbf{X} \in \mathbb{R}^{d \times k}$ queried through `twoS
 $\mathbf{E}\mathbf{X}\mathbf{F}$, with $\mathbf{E}$ and $\mathbf{F}$ the orthogonal projectors onto
 the complements of the spans of the left queries $\mathbf{u}_i$ and of the right queries
 $\mathbf{w}_i$; it can be replaced by an independent copy without changing the joint law of the
-transcript and the matrix (design note `docs/design/Probability-MatvecQueryModel.md` §3.4).
+transcript and the matrix.
 
 The replaced matrix is `QueryAlgorithm.resample`. It gives the same transcript
 (`QueryAlgorithm.transcript_resample`) and the same joint law of transcript and matrix

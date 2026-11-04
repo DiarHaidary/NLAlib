@@ -46,13 +46,13 @@ variable {𝕜 : Type*} [RCLike 𝕜] {l m n p : Type*} [Fintype l] [Fintype m] 
 
 /-! ### Norm properties and invariance -/
 
-/-- The Ky Fan norms of the zero matrix vanish. Port of `NLAlib.kyFanNorm_zero_matrix`. -/
+/-- The Ky Fan norms of the zero matrix vanish. -/
 @[simp]
 theorem kyFanNorm_zero (k : ℕ) : kyFanNorm k (0 : Matrix m n 𝕜) = 0 := by
   simp only [kyFanNorm, singularValues_zero, Pi.zero_apply, Finset.sum_const_zero]
 
 /-- For $k \ne 0$ the Ky Fan $k$-norm is definite: $\|\mathbf{A}\|_{(k)} = 0$ iff
-$\mathbf{A} = \mathbf{0}$. Port of `NLAlib.kyFanNorm_eq_zero_iff`. -/
+$\mathbf{A} = \mathbf{0}$. -/
 theorem kyFanNorm_eq_zero_iff {k : ℕ} (hk : k ≠ 0) {A : Matrix m n 𝕜} :
     kyFanNorm k A = 0 ↔ A = 0 := by
   refine ⟨fun h => specNorm_eq_zero_iff.mp (le_antisymm ?_ (specNorm_nonneg A)), fun h => ?_⟩
@@ -61,7 +61,7 @@ theorem kyFanNorm_eq_zero_iff {k : ℕ} (hk : k ≠ 0) {A : Matrix m n 𝕜} :
   · rw [h, kyFanNorm_zero]
 
 /-- Ky Fan norms are absolutely homogeneous:
-$\|c\mathbf{A}\|_{(k)} = \lvert c \rvert \|\mathbf{A}\|_{(k)}$. Port of `NLAlib.kyFanNorm_smul`. -/
+$\|c\mathbf{A}\|_{(k)} = \lvert c \rvert \|\mathbf{A}\|_{(k)}$. -/
 theorem kyFanNorm_smul (k : ℕ) (c : 𝕜) (A : Matrix m n 𝕜) :
     kyFanNorm k (c • A) = ‖c‖ * kyFanNorm k A := by
   rw [kyFanNorm, kyFanNorm, Finset.mul_sum]
@@ -77,7 +77,7 @@ theorem kyFanNorm_neg (k : ℕ) (A : Matrix m n 𝕜) : kyFanNorm k (-A) = kyFan
 theorem kyFanNorm_conjTranspose (k : ℕ) (A : Matrix m n 𝕜) : kyFanNorm k Aᴴ = kyFanNorm k A := by
   simp only [kyFanNorm, singularValues_conjTranspose]
 
-/-- Ky Fan norms are invariant under the transpose. Port of `NLAlib.kyFanNorm_transpose`. -/
+/-- Ky Fan norms are invariant under the transpose. -/
 @[simp]
 theorem kyFanNorm_transpose (k : ℕ) (A : Matrix m n 𝕜) : kyFanNorm k Aᵀ = kyFanNorm k A := by
   simp only [kyFanNorm, singularValues_transpose]
@@ -88,15 +88,14 @@ theorem kyFanNorm_submatrix_equiv (k : ℕ) (A : Matrix m n 𝕜) (e₁ : l ≃ 
     kyFanNorm k (A.submatrix e₁ e₂) = kyFanNorm k A := by
   simp only [kyFanNorm, singularValues_submatrix_equiv]
 
-/-- Ky Fan norms are invariant under left multiplication by a matrix with orthonormal columns.
-Port of `NLAlib.kyFanNorm_orthogonal_mul`. -/
+/-- Ky Fan norms are invariant under left multiplication by a matrix with orthonormal columns. -/
 theorem HasOrthonormalCols.kyFanNorm_mul_left [DecidableEq m] {Q : Matrix l m 𝕜}
     (hQ : HasOrthonormalCols Q) (k : ℕ) (A : Matrix m n 𝕜) :
     kyFanNorm k (Q * A) = kyFanNorm k A := by
   simp only [kyFanNorm, hQ.singularValues_mul_left]
 
 /-- Ky Fan norms are invariant under right multiplication by the conjugate transpose of a matrix
-with orthonormal columns. Port of `NLAlib.kyFanNorm_mul_orthogonal`. -/
+with orthonormal columns. -/
 theorem HasOrthonormalCols.kyFanNorm_mul_conjTranspose_right [DecidableEq n] {Q : Matrix p n 𝕜}
     (hQ : HasOrthonormalCols Q) (k : ℕ) (A : Matrix m n 𝕜) :
     kyFanNorm k (A * Qᴴ) = kyFanNorm k A := by
@@ -105,8 +104,7 @@ theorem HasOrthonormalCols.kyFanNorm_mul_conjTranspose_right [DecidableEq n] {Q 
 /-! ### Comparison and products -/
 
 /-- The spectral norm is at most every Ky Fan $k$-norm with $k \ne 0$:
-$\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{(k)}$.
-Port of `NLAlib.specNorm_le_kyFanNorm`. -/
+$\|\mathbf{A}\|_2 \le \|\mathbf{A}\|_{(k)}$. -/
 theorem specNorm_le_kyFanNorm {k : ℕ} (hk : k ≠ 0) (A : Matrix m n 𝕜) :
     specNorm A ≤ kyFanNorm k A := by
   rw [← kyFanNorm_one]

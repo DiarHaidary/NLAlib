@@ -39,10 +39,7 @@ statement for the randomized SVD at a factor $\mathbf{F}$ with
 $\mathbf{H} = \mathbf{F}^{\mathsf{H}}\mathbf{F}$, through the Gram correspondence
 (`NLAlib.conjTranspose_mul_self_sub_nystrom`); the spectral error of truncated Nyström adds reverse
 Eckart–Young (`NLAlib.LowRank.Random.Nystrom`) and is stated for a measurable selector and,
-directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`). Design:
-`docs/design/LowRank-S3.md` §3.6, §8 items 6 and 8; `docs/design/LowRank-S5.md` §3.5, §8;
-`docs/design/LowRank-S2c.md` §8 item 8; Epperly and Webber's sharp bounds,
-`docs/design/LowRank-S4.md` §3.4, §8 items 1, 5, 13.
+directly, for `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`).
 
 ## Main results
 

@@ -23,7 +23,7 @@ $[\mathbf{A}, \mathbf{y}]$ in a solver) and the hypotheses of the oblivious cons
 the Gram error (matrix Chernoff) and of the smallest singular value convert to them here.
 
 Theorems that compare two events take `[IsFiniteMeasure μ]`, since `μ.real` of a set of infinite
-measure is $0$. Design: `docs/design/Sketching-S1.md` §3.2.
+measure is $0$.
 
 ## Main definitions
 

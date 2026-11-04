@@ -31,6 +31,9 @@ Breakdown happens exactly at the grade.
 * `Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix`: the recurrence computes the Lanczos basis.
 * `Matrix.IsHermitian.lanczosTridiagonal_eq`: it computes the compression.
 * `Matrix.IsHermitian.lanczosState_beta_eq_zero_iff`: breakdown happens exactly at the grade.
+* `NLAlib.lanczosState_eq_of_orthonormal_recurrence`,
+  `NLAlib.lanczosState_beta_eq_of_orthonormal_recurrence`: an orthonormal three-term recurrence
+  is the Lanczos recurrence.
 -/
 
 @[expose] public section
@@ -42,7 +45,8 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The state of the Lanczos recurrence before step $j$: the vectors $\mathbf{q}_{j-1}$,
-$\mathbf{q}_j$ and the coefficient $\beta_j$ that couples them. -/
+$\mathbf{q}_j$ and the coefficient $\beta_j$ that couples them.
+Algorithm: lanczos -/
 structure LanczosState (𝕜 n : Type*) where
   /-- The previous Lanczos vector $\mathbf{q}_{j-1}$ ($\mathbf{0}$ for $j = 0$). -/
   prev : n → 𝕜
@@ -54,7 +58,8 @@ structure LanczosState (𝕜 n : Type*) where
 /-- The diagonal coefficient of a Lanczos step,
 $\alpha_j = \operatorname{Re}\langle\mathbf{q}_j, \mathbf{A}\mathbf{q}_j - \beta_j
 \mathbf{q}_{j-1}\rangle$; in exact arithmetic and for Hermitian $\mathbf{A}$ it is
-$\mathbf{q}_j^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$. -/
+$\mathbf{q}_j^{\mathsf{H}}\mathbf{A}\mathbf{q}_j$.
+Algorithm: lanczos -/
 noncomputable def lanczosAlpha (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) : ℝ :=
   RCLike.re (star s.cur ⬝ᵥ (A *ᵥ s.cur - (s.beta : 𝕜) • s.prev))
 
@@ -64,23 +69,27 @@ $\beta_{j+1} = \|\mathbf{w}\|$, $\mathbf{q}_{j+1} = \beta_{j+1}^{-1}\mathbf{w}$.
 $\beta_\nu = 0$ at the grade $\nu$, the state is $(\mathbf{q}_{\nu-1}, \mathbf{0}, 0)$, and it is
 zero from the following step on. [Paige1972, §2]; [Saad2011, §6.6]. It is the variant A(2, 7)
 there, equations (2) to (5), (7) and (8), for real symmetric $\mathbf{A}$;
-[Saad2003, Algorithm 6.15] is the same order. -/
+[Saad2003, Algorithm 6.15] is the same order.
+Algorithm: lanczos -/
 noncomputable def lanczosStep (A : Matrix n n 𝕜) (s : LanczosState 𝕜 n) : LanczosState 𝕜 n :=
   let w := A *ᵥ s.cur - (s.beta : 𝕜) • s.prev - (lanczosAlpha A s : 𝕜) • s.cur
   ⟨s.cur, (‖WithLp.toLp 2 w‖⁻¹ : 𝕜) • w, ‖WithLp.toLp 2 w‖⟩
 
 /-- The **Lanczos recurrence**: the state before step $j$, from
-$(\mathbf{0}, \mathbf{b}/\|\mathbf{b}\|, 0)$. [Saad2011, §6.6]. -/
+$(\mathbf{0}, \mathbf{b}/\|\mathbf{b}\|, 0)$. [Saad2011, §6.6].
+Algorithm: lanczos -/
 noncomputable def lanczosState (A : Matrix n n 𝕜) (b : n → 𝕜) : ℕ → LanczosState 𝕜 n
   | 0 => ⟨0, (‖WithLp.toLp 2 b‖⁻¹ : 𝕜) • b, 0⟩
   | j + 1 => lanczosStep A (lanczosState A b j)
 
-/-- The basis computed by $q$ steps of the Lanczos recurrence: column $j$ is $\mathbf{q}_j$. -/
+/-- The basis computed by $q$ steps of the Lanczos recurrence: column $j$ is $\mathbf{q}_j$.
+Algorithm: lanczos -/
 noncomputable def lanczosMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) : Matrix n (Fin q) 𝕜 :=
   Matrix.of fun i j => (lanczosState A b j).cur i
 
 /-- The tridiagonal matrix computed by the Lanczos recurrence: $\alpha_0, \dots, \alpha_{q-1}$ on
-the diagonal, $\beta_1, \dots, \beta_{q-1}$ beside it. -/
+the diagonal, $\beta_1, \dots, \beta_{q-1}$ beside it.
+Algorithm: lanczos -/
 noncomputable def lanczosTridiagonal (A : Matrix n n 𝕜) (b : n → 𝕜) (q : ℕ) :
     Matrix (Fin q) (Fin q) 𝕜 :=
   Matrix.of fun i j =>
@@ -409,5 +418,97 @@ theorem _root_.Matrix.IsHermitian.lanczosState_beta_eq_zero_iff {A : Matrix n n 
   change lanczosR A b (j + 1) / lanczosR A b j = 0 ↔ _
   rw [div_eq_zero_iff, lanczosR_eq_zero_iff, lanczosR_eq_zero_iff]
   omega
+
+/-! ### Exact Lanczos from an orthonormal three-term recurrence
+
+Orthonormal vectors that satisfy a three-term recurrence with $\beta_j > 0$ before the last step
+are the Lanczos vectors of their first vector, and the coefficients are the Lanczos coefficients.
+The finite-precision analysis reads its backward model as exact Lanczos through this. -/
+
+/-- One step of the Lanczos recurrence on an orthonormal three-term recurrence: from the state
+$(\mathbf{u}_j, \mathbf{u}_{j+1}, \beta_j)$ the coefficient is $\alpha_{j+1}$ and the step
+produces $\beta_{j+1}$ and the vector $\beta_{j+1}^{-1}(\beta_{j+1}\mathbf{u}_{j+2})$. -/
+theorem lanczosStep_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
+    {A : Matrix ι ι ℝ} {u : ℕ → ι → ℝ} {α β : ℕ → ℝ} {k : ℕ}
+    (horth : ∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      u i ⬝ᵥ u j = if i = j then 1 else 0)
+    (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
+    (hβ : ∀ j ≤ k, 0 ≤ β j) {j : ℕ} (hj : j < k) :
+    lanczosAlpha A ⟨u j, u (j + 1), β j⟩ = α (j + 1) ∧
+      lanczosStep A ⟨u j, u (j + 1), β j⟩ =
+        ⟨u (j + 1), (β (j + 1))⁻¹ • (β (j + 1) • u (j + 2)), β (j + 1)⟩ := by
+  have h11 := horth (j + 1) (j + 1) (by omega) (by omega) (by omega) (by omega)
+  have h12 := horth (j + 1) (j + 2) (by omega) (by omega) (by omega) (by omega)
+  rw [if_pos rfl] at h11
+  rw [if_neg (by omega)] at h12
+  have hα : lanczosAlpha A ⟨u j, u (j + 1), β j⟩ = α (j + 1) := by
+    simp only [lanczosAlpha, RCLike.ofReal_real_eq_id, id, star_trivial, RCLike.re_to_real]
+    have hrec' : A *ᵥ u (j + 1) - β j • u j = α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2) := by
+      rw [hrec j hj]
+      abel
+    rw [hrec']
+    simp only [dotProduct_add, dotProduct_smul, smul_eq_mul, h11, h12]
+    ring
+  refine ⟨hα, ?_⟩
+  have hw : A *ᵥ u (j + 1) - β j • u j - α (j + 1) • u (j + 1) = β (j + 1) • u (j + 2) := by
+    rw [hrec j hj]
+    abel
+  have hn : ‖WithLp.toLp 2 (u (j + 2))‖ = 1 := by
+    have h22 := horth (j + 2) (j + 2) (by omega) (by omega) (by omega) (by omega)
+    rw [if_pos rfl, ← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h22
+    have := norm_nonneg (WithLp.toLp 2 (u (j + 2)))
+    nlinarith
+  have hnw : ‖WithLp.toLp 2 (β (j + 1) • u (j + 2))‖ = β (j + 1) := by
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg (hβ (j + 1) (by omega)), hn,
+      mul_one]
+  simp only [lanczosStep, hα, RCLike.ofReal_real_eq_id, id, hw, hnw]
+
+/-- **An orthonormal three-term recurrence is the Lanczos recurrence**: if
+$\mathbf{u}_0 = \mathbf{0}$, $\mathbf{u}_1, \dots, \mathbf{u}_{k+1}$ are orthonormal,
+$\mathbf{A}\mathbf{u}_{j+1} = \beta_j\mathbf{u}_j + \alpha_{j+1}\mathbf{u}_{j+1}
++ \beta_{j+1}\mathbf{u}_{j+2}$ for $j < k$, $\beta_0 = 0$, $\beta_j > 0$ for $1 \le j < k$ and
+$\beta_k \ge 0$, then the Lanczos recurrence from $\mathbf{u}_1$ has state
+$(\mathbf{u}_j, \mathbf{u}_{j+1}, \beta_j)$ before step $j < k$. No symmetry of $\mathbf{A}$ is
+needed. [Saad2011, §6.6] for the exact recurrence. -/
+theorem lanczosState_eq_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
+    {A : Matrix ι ι ℝ} {u : ℕ → ι → ℝ} {α β : ℕ → ℝ} {k : ℕ} (hu0 : u 0 = 0)
+    (horth : ∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      u i ⬝ᵥ u j = if i = j then 1 else 0)
+    (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
+    (hβ0 : β 0 = 0) (hβ : ∀ j ≤ k, 0 ≤ β j) (hβpos : ∀ j, 1 ≤ j → j < k → 0 < β j) :
+    ∀ j < k, lanczosState A (u 1) j = ⟨u j, u (j + 1), β j⟩ := by
+  intro j hj
+  induction j with
+  | zero =>
+    have h1 := horth 1 1 le_rfl (by omega) le_rfl (by omega)
+    rw [if_pos rfl, ← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h1
+    have hn : ‖WithLp.toLp 2 (u 1)‖ = 1 := by
+      have := norm_nonneg (WithLp.toLp 2 (u 1))
+      nlinarith
+    simp only [lanczosState, hn, RCLike.ofReal_real_eq_id, id, inv_one, one_smul, hu0, hβ0]
+  | succ j ih =>
+    rw [show lanczosState A (u 1) (j + 1) = lanczosStep A (lanczosState A (u 1) j) from rfl,
+      ih (by omega), (lanczosStep_of_orthonormal_recurrence horth hrec hβ (by omega)).2,
+      smul_smul, inv_mul_cancel₀ (hβpos (j + 1) (by omega) hj).ne', one_smul]
+
+/-- If $\mathbf{u}_0 = \mathbf{0}$, $\mathbf{u}_1, \dots, \mathbf{u}_{k+1}$ are orthonormal,
+$\mathbf{A}\mathbf{u}_{j+1} = \beta_j\mathbf{u}_j + \alpha_{j+1}\mathbf{u}_{j+1}
++ \beta_{j+1}\mathbf{u}_{j+2}$ for $j < k$, $\beta_0 = 0$, $\beta_j > 0$ for $1 \le j < k$ and
+$\beta_k \ge 0$, then the coefficient of the Lanczos state after $k$ steps from $\mathbf{u}_1$
+is $\beta_k$. -/
+theorem lanczosState_beta_eq_of_orthonormal_recurrence {ι : Type*} [Fintype ι]
+    {A : Matrix ι ι ℝ} {u : ℕ → ι → ℝ} {α β : ℕ → ℝ} {k : ℕ} (hu0 : u 0 = 0)
+    (horth : ∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      u i ⬝ᵥ u j = if i = j then 1 else 0)
+    (hrec : ∀ j < k, A *ᵥ u (j + 1) = β j • u j + α (j + 1) • u (j + 1) + β (j + 1) • u (j + 2))
+    (hβ0 : β 0 = 0) (hβ : ∀ j ≤ k, 0 ≤ β j) (hβpos : ∀ j, 1 ≤ j → j < k → 0 < β j) :
+    (lanczosState A (u 1) k).beta = β k := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · rw [hβ0]
+    rfl
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+  rw [show lanczosState A (u 1) (m + 1) = lanczosStep A (lanczosState A (u 1) m) from rfl,
+    lanczosState_eq_of_orthonormal_recurrence hu0 horth hrec hβ0 hβ hβpos m (by omega),
+    (lanczosStep_of_orthonormal_recurrence horth hrec hβ (by omega)).2]
 
 end NLAlib

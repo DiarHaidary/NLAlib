@@ -38,8 +38,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 /-- The matrix of squared moduli of the entries of a unitary matrix is doubly stochastic: for
 square $\mathbf{U}$ with orthonormal columns, $(\lvert \mathbf{U}_{i,j} \rvert^2)_{i,j}$ is doubly
 stochastic.
-[HornJohnson2013, §8.7]. Port of
-`NLAlib.norm_sq_entries_mem_doublyStochastic_of_hasOrthonormalCols`. -/
+[HornJohnson2013, §8.7]. -/
 theorem HasOrthonormalCols.norm_sq_mem_doublyStochastic {U : Matrix n n 𝕜}
     (hU : HasOrthonormalCols U) :
     (Matrix.of fun i j => ‖U i j‖ ^ 2) ∈ doublyStochastic ℝ n := by
@@ -74,7 +73,6 @@ a unitary $\mathbf{U}$ and real $\mathbf{d}$, the real diagonal
 $(\operatorname{Re} \mathbf{A}_{i,i})_i$ is majorized by $\mathbf{d}$: the diagonal of a Hermitian
 matrix is majorized by its eigenvalues, in any enumeration.
 [HornJohnson2013, Theorem 4.3.45].
-Port of `NLAlib.majorized_diagonal_eigenvalues`.
 Result: schur-majorization -/
 theorem HasOrthonormalCols.majorized_re_diag_of_mul_eq_mul_diagonal {A U : Matrix n n 𝕜} {d : n → ℝ}
     (hU : HasOrthonormalCols U) (h : A * U = U * Matrix.diagonal fun i => ((d i : ℝ) : 𝕜)) :
@@ -126,8 +124,7 @@ theorem _root_.Matrix.IsHermitian.sumLargest_re_diag_le_sum_eigenvalue {A : Matr
 omit [DecidableEq n] in
 /-- Each diagonal entry of a Hermitian matrix lies between its extreme eigenvalues:
 $\lambda_k(\mathbf{A}) \le \operatorname{Re} \mathbf{A}_{i,i} \le \lambda_0(\mathbf{A})$ for
-$k + 1 = \lvert n \rvert$.
-Port of `NLAlib.re_diagonal_mem_Icc_eigenvalues₀`. -/
+$k + 1 = \lvert n \rvert$. -/
 theorem _root_.Matrix.IsHermitian.re_apply_self_mem_Icc {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (i : n) {k : ℕ} (hk : k + 1 = Fintype.card n) :
     RCLike.re (A i i) ∈ Set.Icc (eigenvalue A k) (eigenvalue A 0) := by

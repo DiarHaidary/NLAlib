@@ -1,6 +1,6 @@
 {
  "date": "2026-10-21",
- "note": "Consolidation round (docs/design/Consolidation.md; CONTRIBUTING §3, rule S5). Before v0.1: no deprecated aliases. Re-proved private helpers became public lemmas in the file of their topic and the copies were deleted. Entries with \"removed\": true delete a public duplicate; \"new\" is the declaration that carries its content, and the explorer redirects the old link there. statementChanged lists declarations whose statements changed: conjTranspose_mul_mul_le_conjTranspose_mul_mul drops an unneeded [Finite n].",
+ "note": "Consolidation of re-proved helpers (CONTRIBUTING §3, rule S5). Before v0.1: no deprecated aliases. Re-proved private helpers became public lemmas in the file of their topic and the copies were deleted. Entries with \"removed\": true delete a public duplicate; \"new\" is the declaration that carries its content, and the explorer redirects the old link there. statementChanged lists declarations whose statements changed: conjTranspose_mul_mul_le_conjTranspose_mul_mul drops an unneeded [Finite n].",
  "renames": [
   {
    "old": "NLAlib.integral_comp_eq_integral_integral_of_indepFun",

@@ -59,8 +59,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 $\mathbf{\Omega}$, whose $m$ columns are the probes:
 $\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega}) :=
 \operatorname{tr}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) / m$. Junk value: $0$ when
-$\mathbf{\Omega}$ has no columns. [Epperly2023, Girard–Hutchinson Estimator: The Basics];
-the prototype's `hutchinsonEstimate`, there over $\mathbb{R}$. -/
+$\mathbf{\Omega}$ has no columns. [Epperly2023, Girard–Hutchinson Estimator: The Basics]. -/
 noncomputable def girardHutchinson (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) : 𝕜 :=
   (Ωᴴ * A * Ω).trace / Fintype.card m
 
@@ -300,7 +299,6 @@ theorem integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_rademacherMatrix {
   rw [h]
   ring
 
--- Stage TE-1
 
 /-- The quadratic form of the stacked columns $\operatorname{vec}(\mathbf{X})$ in
 $\mathbf{I}_m \otimes \mathbf{B}$ is the sum of the quadratic forms of the columns:

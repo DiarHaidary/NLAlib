@@ -316,9 +316,7 @@ private lemma entropy_comp_sum_le {ι : Type*} [Fintype ι] {g : ℝ → ℝ}
 function: $\operatorname{Ent}_\gamma(g^2) \le 2\, \mathbb{E}_\gamma[g'^2]$ for the standard Gaussian
 $\gamma$ ([BoucheronLugosiMassart2013, Theorem 5.4], whose proof by random signs and the central
 limit theorem is followed here). The
-general integrable form is `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`.
-Port: the old library's `entropy_sq_le_two_mul_integral_sq_deriv_gaussianReal_of_hasCompactSupport`,
-re-proved without the Ornstein–Uhlenbeck semigroup. -/
+general integrable form is `NLAlib.entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal`. -/
 theorem entropy_sq_le_two_mul_integral_deriv_sq_gaussianReal_of_hasCompactSupport {g : ℝ → ℝ}
     (hg : ContDiff ℝ 1 g) (hgc : HasCompactSupport g) :
     entropy (gaussianReal 0 1) (fun x => g x ^ 2) ≤

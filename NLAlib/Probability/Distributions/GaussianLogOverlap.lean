@@ -461,8 +461,6 @@ $$\mathbb{P}\Bigl[t \le \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf
 with $N = \lvert n \rvert$; the bound is below $1$ exactly when $t > \log(2N)$. The logarithm is
 $0$ on the null event $\langle \mathbf{u}, \mathbf{g} \rangle = 0$. The random-start step of the
 power and Lanczos methods [KuczynskiWozniakowski1992], in logarithmic form.
-Port of `NLAlib.pi_gaussianReal_logOverlap_gt_le`, there for a coordinate of `Fin (n + 1)`, a
-strict event and $t \ge \log(2N)$.
 Result: random-start-log-overlap -/
 theorem measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) (t : ℝ) :
@@ -497,8 +495,6 @@ Integrating the tail `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaus
 random-start step of the power and Lanczos methods [KuczynskiWozniakowski1992]. The exact mean is
 $\psi(N/2) - \psi(1/2) \sim \log(2N) + \gamma$ (digamma $\psi$, Euler's constant $\gamma$), so the
 additive constant is not tight.
-Port of `NLAlib.integrable_and_integral_gaussianLogOverlap_le` and
-`NLAlib.integrable_and_integral_log_sum_div_sq_pi_gaussianReal_le`, there for a coordinate.
 Result: random-start-log-overlap -/
 theorem integral_log_norm_sq_div_sq_le_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :
@@ -533,8 +529,6 @@ $$\mathbb{E}\Bigl(\log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \r
 \le T^2 + 4T + 8,$$
 so the logarithmic overlap has variance $O(1)$ around a mean of order $\log N$. Integrating the
 tail `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector` beyond $T$.
-Port of `NLAlib.integrable_and_integral_gaussianLogOverlap_le` and
-`NLAlib.integrable_and_integral_log_sum_div_sq_pi_gaussianReal_le`, there for a coordinate.
 Result: random-start-log-overlap -/
 theorem integral_log_norm_sq_div_sq_sq_le_of_hasLaw_gaussianVector
     (hg : HasLaw g (gaussianVector n) μ) (hu : ‖WithLp.toLp 2 u‖ = 1) :

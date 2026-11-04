@@ -66,7 +66,6 @@ namespace NLAlib
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {m n l : Type*} [Fintype m]
   [Fintype n] [Fintype l] [DecidableEq n] {X : Ω → Matrix n l ℝ}
 
--- Stage B5b
 
 /-! ### Shared reductions -/
 

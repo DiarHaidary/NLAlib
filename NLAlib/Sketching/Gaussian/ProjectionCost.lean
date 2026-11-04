@@ -27,9 +27,8 @@ The product form $(d + 1)\log(1/\delta)$ is what JL moments give through this co
 additive $(d + \log(1/\delta))/\varepsilon^2$ of [CohenElderMuscoMuscoPersu2015] needs stable-rank
 spectral approximate multiplication, not available for dense sketches.
 
-The Gaussian and sub-Gaussian statements moved here from their family files at the
-sketching-moments round (2026-10-22), names unchanged. Design: `docs/design/LowRank-S9.md` §6,
-`docs/design/Sketching-Moments.md` §2.6, §4.3, §8 Q6.
+The Gaussian and sub-Gaussian statements moved here from their family files
+(2026-10-22), names unchanged.
 
 ## Main results
 

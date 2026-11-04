@@ -52,8 +52,7 @@ theorem principalMinor_erase_univ_eq_adjugate {R : Type*} [CommRing R] (A : Matr
 /-- **Complementary minors and the inverse.** For an invertible matrix over a field, the
 principal minor on the complement of an index $i$ is $\det \mathbf{A} \cdot
 (\mathbf{A}^{-1})_{i,i}$.
-[HornJohnson2013, §0.8.4]. Port of
-`NLAlib.det_principal_complement_singleton_eq_det_mul_inv_diag`. -/
+[HornJohnson2013, §0.8.4]. -/
 theorem principalMinor_erase_univ_eq {K : Type*} [Field K] {A : Matrix n n K} (hA : IsUnit A)
     (i : n) : principalMinor A (Finset.univ.erase i) = A.det * A⁻¹ i i := by
   have hdet : A.det ≠ 0 := ((Matrix.isUnit_iff_isUnit_det A).mp hA).ne_zero
@@ -96,9 +95,7 @@ omit [Fintype n] in
 index set $t$ with $k + 1$ elements, writing $\det \mathbf{A}_{s,s}$ for the principal minor on $s$,
 $$(\operatorname{Re} \det \mathbf{A}_{t,t})^k
   \le \prod_{i \in t} \operatorname{Re} \det \mathbf{A}_{t \setminus \{i\}, t \setminus \{i\}}\,.$$
-[HornJohnson2013, Theorem 7.8.11 (step)].
-Port of `NLAlib.principalMinor_pow_pred_le_prod_erase`, there over $\mathbb{R}$ for positive
-definite matrices. -/
+[HornJohnson2013, Theorem 7.8.11 (step)]. -/
 theorem _root_.Matrix.PosSemidef.re_principalMinor_pow_le_prod_erase {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {t : Finset n} {k : ℕ} (hk : t.card = k + 1) :
     RCLike.re (principalMinor A t) ^ k ≤ ∏ i ∈ t, RCLike.re (principalMinor A (t.erase i)) := by
@@ -162,7 +159,6 @@ $P_k$ be the product of the principal minors $\operatorname{Re} \det \mathbf{A}_
 index sets $s$ with $k$ elements ($P_0 = 1$). Then $P_{k+1}^k \le P_k^{N-k}$ for $k \le N$, stated
 with $k + d = N$ and exponent $d$.
 [HornJohnson2013, Theorem 7.8.11].
-Port of `NLAlib.principalMinorProduct_succ_pow_le_of_posSemidef`, there over $\mathbb{R}$.
 Result: szasz-inequality -/
 theorem _root_.Matrix.PosSemidef.prod_re_principalMinor_succ_pow_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {k d : ℕ} (hkd : k + d = Fintype.card n) :
@@ -176,8 +172,7 @@ theorem _root_.Matrix.PosSemidef.prod_re_principalMinor_succ_pow_le {A : Matrix 
 $N$: $(\operatorname{Re} \det \mathbf{A})^{N-1}
 \le \prod_i \operatorname{Re} \det \mathbf{A}_{\{i\}^{c}, \{i\}^{c}}$, with $\{i\}^{c}$ the
 complement of $i$.
-[HornJohnson2013, Theorem 7.8.11].
-Port of `NLAlib.det_pow_card_pred_le_prod_complement_singleton`. -/
+[HornJohnson2013, Theorem 7.8.11]. -/
 theorem _root_.Matrix.PosSemidef.re_det_pow_le_prod_re_principalMinor_erase {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) {k : ℕ} (hk : k + 1 = Fintype.card n) :
     RCLike.re A.det ^ k ≤ ∏ i, RCLike.re (principalMinor A (Finset.univ.erase i)) :=
@@ -191,8 +186,7 @@ positive semidefinite $\mathbf{A}$ and $\mathbf{V}$ with orthonormal columns ind
 $$\operatorname{Re} \det(\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V})
   \le \prod_{i < \lvert p \rvert} \lambda_i(\mathbf{A})\,,$$
 eigenvalues non-increasing and indexed from $0$. With no columns both sides are $1$.
-[HornJohnson2013, Corollary 4.3.37]; a consequence of the Poincaré separation theorem.
-Port of `NLAlib.det_transpose_mul_mul_le_prod_eigenvalues₀`, there over $\mathbb{R}$. -/
+[HornJohnson2013, Corollary 4.3.37]; a consequence of the Poincaré separation theorem. -/
 theorem _root_.Matrix.PosSemidef.re_det_conjTranspose_mul_mul_le_prod_range_eigenvalue
     {p : Type*} [Fintype p] [DecidableEq p] {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     {V : Matrix n p 𝕜} (hV : HasOrthonormalCols V) :

@@ -41,8 +41,7 @@ makes. Its tails hold for every choice of best approximations, measurable or not
 non-measurable one they bound `μ.real` of a possibly non-measurable set, which is the outer
 measure: the failure event lies in a measurable event of at most the stated probability. At
 `truncatedSVD`, which is Borel measurable (`NLAlib.measurable_truncatedSVD`), the failure event
-is measurable and the success-set form follows by `measureReal_compl`. Design:
-`docs/design/LowRank-S5.md` §3.4 and §8.
+is measurable and the success-set form follows by `measureReal_compl`.
 
 ## Main results
 

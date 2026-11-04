@@ -71,8 +71,7 @@ $98 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and scale $28 c \|\mathbf{A}\|_2$ (the di
 $32 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and $4 c \|\mathbf{A}\|_2$, the off-diagonal part
 $18 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2$ and $12 c \|\mathbf{A}\|_2$, combined by convexity with
 weights $4/7$ and $3/7$), so its tail is at most
-$\exp(-\min(t^2 / (196 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2), t / (56 c \|\mathbf{A}\|_2)))$. The
-prototype's proof reached $1 / (256 e^2)$. -/
+$\exp(-\min(t^2 / (196 c^2 \|\mathbf{A}\|_{\mathsf{F}}^2), t / (56 c \|\mathbf{A}\|_2)))$. -/
 noncomputable irreducible_def hansonWrightConstant : ℝ := 1 / 196
 
 /-- The Hanson–Wright constant is positive: $C_{\mathrm{HW}} > 0$. -/

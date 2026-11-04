@@ -21,8 +21,9 @@ $\mathbf{B} = \mathbf{S}\mathbf{D}\mathbf{S}^{\mathsf{H}}$ with $\mathbf{D}$ rea
 entries of $\mathbf{D}$ are the generalized eigenvalues of the pair, the eigenvalues of
 $\mathbf{A}^{-1}\mathbf{B}$, so $\mathbf{A}^{-1}\mathbf{B}$ and $\mathbf{A}\mathbf{B}$ are
 diagonalisable with real spectrum. Two positive semidefinite matrices are simultaneously
-diagonalised by congruence as well, and for an indefinite invertible $\mathbf{A}$ this happens
-exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable with real eigenvalues. Over
+diagonalised by congruence as well, with nonnegative diagonals whose coordinate sums are zero
+or one. For an indefinite invertible $\mathbf{A}$, simultaneous diagonalisation by congruence
+is possible exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable with real eigenvalues. Over
 $\mathbb{C}$ every pair of square matrices is simultaneously unitarily triangularised (the
 generalized Schur, or QZ, decomposition).
 
@@ -32,7 +33,7 @@ generalized Schur, or QZ, decomposition).
   pair.
 * `NLAlib.isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose`,
   `Matrix.PosDef.isDiagonalizable_inv_mul`.
-* `Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal`: the semidefinite pair.
+* `Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal`: the normalized semidefinite pair.
 * `NLAlib.exists_hasOrthonormalCols_isUpperTriangular_isUpperTriangular`: the QZ decomposition.
 -/
 
@@ -80,7 +81,6 @@ $\mathbf{B}$ Hermitian there are an invertible $\mathbf{S}$ and a real $\mathbf{
 $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
 $\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$.
 [HornJohnson2013, Theorem 7.6.4]; [GolubVanLoan2013, Theorem 8.7.1].
-Port of `NLAlib.exists_definite_pair_congruence_diagonal`, there over $\mathbb{R}$.
 Result: definite-pair -/
 theorem _root_.Matrix.PosDef.exists_eq_mul_conjTranspose_and_eq_mul_diagonal_mul_conjTranspose
     {A B : Matrix n n 𝕜} (hA : A.PosDef) (hB : B.IsHermitian) :
@@ -121,8 +121,7 @@ $\mathbf{A}^{-1}\mathbf{B}$: if $\mathbf{S}$ is invertible,
 $\mathbf{A} = \mathbf{S}\mathbf{S}^{\mathsf{H}}$ and
 $\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$, then the
 entries of $\mathbf{d}$ list the eigenvalues of $\mathbf{A}^{-1}\mathbf{B}$ with multiplicity
-(`IsEigenvalueListing`).
-Port of `NLAlib.charpoly_inverse_mul_eq_prod_of_congruence`. -/
+(`IsEigenvalueListing`). -/
 theorem isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose {A B S : Matrix n n 𝕜}
     {d : n → ℝ} (hS : IsUnit S.det) (hA : A = S * Sᴴ)
     (hB : B = S * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Sᴴ) :
@@ -133,7 +132,7 @@ theorem isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose {A B S 
 
 /-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ Hermitian, $\mathbf{A}^{-1}\mathbf{B}$ is
 diagonalisable.
-[HornJohnson2013, Theorem 7.6.3]. Port of `NLAlib.isDiagonalizable_inverse_mul_of_posDef`. -/
+[HornJohnson2013, Theorem 7.6.3]. -/
 theorem _root_.Matrix.PosDef.isDiagonalizable_inv_mul {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.IsHermitian) : IsDiagonalizable (A⁻¹ * B) := by
   obtain ⟨S, d, hS, hA', hB'⟩ :=
@@ -142,8 +141,7 @@ theorem _root_.Matrix.PosDef.isDiagonalizable_inv_mul {A B : Matrix n n 𝕜} (h
     inv_mul_mul_inv_conjTranspose hS hA' hB'⟩
 
 /-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ Hermitian, $\mathbf{A}\mathbf{B}$ is
-diagonalisable.
-Port of `NLAlib.isDiagonalizable_mul_of_posDef`. -/
+diagonalisable. -/
 theorem _root_.Matrix.PosDef.isDiagonalizable_mul {A B : Matrix n n 𝕜} (hA : A.PosDef)
     (hB : B.IsHermitian) : IsDiagonalizable (A * B) := by
   have h := hA.inv.isDiagonalizable_inv_mul hB
@@ -161,8 +159,7 @@ theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul {A B : Matrix n n �
   exact ⟨d, h⟩
 
 /-- For $\mathbf{A}$ positive definite and $\mathbf{B}$ positive semidefinite, the eigenvalues of
-$\mathbf{A}\mathbf{B}$ are real and nonnegative.
-Port of `NLAlib.spectrum_mul_subset_nonneg_of_posDef`. -/
+$\mathbf{A}\mathbf{B}$ are real and nonnegative. -/
 theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul_nonneg {A B : Matrix n n 𝕜}
     (hA : A.PosDef) (hB : B.PosSemidef) :
     ∃ d : n → ℝ, IsEigenvalueListing (A * B) (fun i => ((d i : ℝ) : 𝕜)) ∧ ∀ i, 0 ≤ d i := by
@@ -178,8 +175,7 @@ theorem _root_.Matrix.PosDef.exists_isEigenvalueListing_mul_nonneg {A B : Matrix
 /-- The positive index of inertia of $\mathbf{B}$ is read off the diagonal of a congruence: if
 $\mathbf{B} = \mathbf{S} \operatorname{diag}(\mathbf{d}) \mathbf{S}^{\mathsf{H}}$ with
 $\mathbf{S}$ invertible and $\mathbf{d}$ real, then `inertiaPos B` is the number of indices $i$
-with $\mathbf{d}_i > 0$.
-Port of `NLAlib.inertia_diagonal_eq_of_congruence`. -/
+with $\mathbf{d}_i > 0$. -/
 theorem inertiaPos_eq_card_of_eq_mul_diagonal_mul_conjTranspose {B S : Matrix n n 𝕜} {d : n → ℝ}
     (hS : IsUnit S.det) (hB : B = S * Matrix.diagonal (fun i => ((d i : ℝ) : 𝕜)) * Sᴴ) :
     inertiaPos B = (Finset.univ.filter fun i => 0 < d i).card := by
@@ -193,8 +189,7 @@ theorem inertiaPos_eq_card_of_eq_mul_diagonal_mul_conjTranspose {B S : Matrix n 
 
 omit [DecidableEq n] in
 /-- The kernel of a sum of positive semidefinite matrices is the intersection of the kernels:
-$\ker(\mathbf{A} + \mathbf{B}) = \ker \mathbf{A} \cap \ker \mathbf{B}$.
-Port of `NLAlib.ker_add_eq_inf_of_posSemidef`. -/
+$\ker(\mathbf{A} + \mathbf{B}) = \ker \mathbf{A} \cap \ker \mathbf{B}$. -/
 theorem _root_.Matrix.PosSemidef.ker_add {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
     (hB : B.PosSemidef) :
     LinearMap.ker (A + B).mulVecLin = LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin := by
@@ -270,17 +265,18 @@ private theorem exists_conjTranspose_mul_mul_eq_diagonal_indicator {C : Matrix n
       exact (Real.sq_sqrt (hc i)).symm
 
 /-- **Two positive semidefinite matrices are simultaneously diagonalised by congruence**, with
-nonnegative diagonals: there are an invertible $\mathbf{X}$ and nonnegative real $\mathbf{a}$,
-$\mathbf{b}$ with $\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} = \operatorname{diag}(\mathbf{a})$
-and $\mathbf{X}^{\mathsf{H}}\mathbf{B}\mathbf{X} = \operatorname{diag}(\mathbf{b})$.
-[HornJohnson2013, Theorem 7.6.4 context].
-Port of `NLAlib.exists_diagonal_congruence_of_posSemidef`, there over $\mathbb{R}$. -/
+normalized nonnegative diagonals: there are an invertible $\mathbf{X}$ and nonnegative real
+$\mathbf{a}$, $\mathbf{b}$ with
+$\mathbf{X}^{\mathsf{H}}\mathbf{A}\mathbf{X} = \operatorname{diag}(\mathbf{a})$
+and $\mathbf{X}^{\mathsf{H}}\mathbf{B}\mathbf{X} = \operatorname{diag}(\mathbf{b})$, and each
+$\mathbf{a}_i + \mathbf{b}_i$ is zero or one.
+[HornJohnson2013, Theorem 7.6.4 context]; the diagonals are normalized by whitening their sum. -/
 theorem _root_.Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal {A B : Matrix n n 𝕜}
     (hA : A.PosSemidef) (hB : B.PosSemidef) :
     ∃ (X : Matrix n n 𝕜) (a b : n → ℝ), IsUnit X.det ∧
       Xᴴ * A * X = Matrix.diagonal (fun i => ((a i : ℝ) : 𝕜)) ∧
       Xᴴ * B * X = Matrix.diagonal (fun i => ((b i : ℝ) : 𝕜)) ∧
-      (∀ i, 0 ≤ a i) ∧ ∀ i, 0 ≤ b i := by
+      (∀ i, 0 ≤ a i) ∧ (∀ i, 0 ≤ b i) ∧ ∀ i, a i + b i = 0 ∨ a i + b i = 1 := by
   obtain ⟨X₁, e, hX₁, hsum, he⟩ := exists_conjTranspose_mul_mul_eq_diagonal_indicator
     (hA.add hB)
   have hA' := hA.conjTranspose_mul_mul_same X₁
@@ -305,17 +301,32 @@ theorem _root_.Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal {A B :
   have hb0 := hB.conjTranspose_mul_mul_same (X₁ * V)
   rw [hXA, Matrix.posSemidef_diagonal_iff] at ha0
   rw [hXB, Matrix.posSemidef_diagonal_iff] at hb0
+  have hD : Matrix.diagonal (fun i => ((a i + b i : ℝ) : 𝕜)) =
+      Vᴴ * Matrix.diagonal (fun i => ((e i : ℝ) : 𝕜)) * V := by
+    rw [← hsum, Matrix.mul_add, Matrix.add_mul, hV.eq_mul_mul_conjTranspose_iff.mp ha,
+      hV.eq_mul_mul_conjTranspose_iff.mp hb]
+    simp only [RCLike.ofReal_add, Matrix.diagonal_add]
+  have hDsq : Matrix.diagonal (fun i => ((a i + b i : ℝ) : 𝕜)) *
+      Matrix.diagonal (fun i => ((a i + b i : ℝ) : 𝕜)) =
+      Matrix.diagonal (fun i => ((a i + b i : ℝ) : 𝕜)) := by
+    rw [hD]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc V Vᴴ, hV.mul_conjTranspose_self, Matrix.one_mul,
+      ← Matrix.mul_assoc (Matrix.diagonal _) (Matrix.diagonal _), hP]
   refine ⟨X₁ * V, a, b, ?_, hXA, hXB, fun i => RCLike.ofReal_nonneg.mp (ha0 i),
-    fun i => RCLike.ofReal_nonneg.mp (hb0 i)⟩
-  rw [Matrix.det_mul]
-  exact hX₁.mul ((Matrix.isUnit_iff_isUnit_det V).mp hV.isUnit)
+    fun i => RCLike.ofReal_nonneg.mp (hb0 i), fun i => ?_⟩
+  · rw [Matrix.det_mul]
+    exact hX₁.mul ((Matrix.isUnit_iff_isUnit_det V).mp hV.isUnit)
+  · have hi := congrArg (fun M : Matrix n n 𝕜 => M i i) hDsq
+    simp only [Matrix.diagonal_mul_diagonal, Matrix.diagonal_apply_eq,
+      ← RCLike.ofReal_mul] at hi
+    exact IsIdempotentElem.iff_eq_zero_or_one.mp (RCLike.ofReal_injective hi)
 
 /-- **A real symmetric pair with invertible $\mathbf{A}$ is simultaneously diagonalised by
 congruence exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable over $\mathbb{R}$**: there
 is an invertible $\mathbf{X}$ with $\mathbf{X}^{\mathsf{T}}\mathbf{A}\mathbf{X}$ and
 $\mathbf{X}^{\mathsf{T}}\mathbf{B}\mathbf{X}$ diagonal if and only if $\mathbf{A}^{-1}\mathbf{B}$
-is diagonalisable. [HornJohnson2013, Theorem 4.5.17].
-Port of `NLAlib.exists_diagonal_congruence_iff_isDiagonalizable_inverse_mul`. -/
+is diagonalisable. [HornJohnson2013, Theorem 4.5.17]. -/
 theorem _root_.Matrix.IsHermitian.exists_conjTranspose_mul_mul_eq_diagonal_iff
     {A B : Matrix n n ℝ} (hA : A.IsHermitian) (hAu : IsUnit A.det) (hB : B.IsHermitian) :
     (∃ (X : Matrix n n ℝ) (a b : n → ℝ), IsUnit X.det ∧ Xᴴ * A * X = Matrix.diagonal a ∧
@@ -410,7 +421,6 @@ upper triangular form by two unitary matrices: there are unitary $\mathbf{Q}$, $
 $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Z}$ and $\mathbf{Q}^{\mathsf{H}}\mathbf{B}\mathbf{Z}$
 upper triangular.
 [GolubVanLoan2013, Theorem 7.7.1]; [HornJohnson2013, Theorem 2.6.1].
-Port of `NLAlib.exists_unitary_qz_triangularization`.
 Result: qz -/
 theorem exists_hasOrthonormalCols_isUpperTriangular_isUpperTriangular
     [LinearOrder n] (A B : Matrix n n ℂ) :

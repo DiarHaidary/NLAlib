@@ -626,7 +626,7 @@ theorem measureReal_specNorm_sum_ge_le_bernstein_intrinsicDimension (hind : iInd
 end Rectangular
 
 /-- The absolute constant $C$ of the intrinsic-dimension Bernstein means.
-[Tropp2015, Theorem 7.3.1] leaves it unspecified; the prototype's proof reached $20$, the proof
+[Tropp2015, Theorem 7.3.1] leaves it unspecified; the proof
 here reaches <!-- value intrinsicBernsteinMeanConstant -->$8$, which is the body. A smaller value is
 a better bound. Use only `intrinsicBernsteinMeanConstant_pos` and
 `intrinsicBernsteinMeanConstant_le`. -/

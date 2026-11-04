@@ -15,7 +15,6 @@ count behind every shifted Chebyshev filter $T_n(2x/s - 1)$ and every normalized
 residual. Upstream candidate for `Mathlib/RingTheory/Polynomial/Chebyshev.lean`, beside
 `Polynomial.Chebyshev.natDegree_T`.
 
-Design: consolidation round (`docs/design/Consolidation.md` §3.1, F5).
 
 ## Main results
 

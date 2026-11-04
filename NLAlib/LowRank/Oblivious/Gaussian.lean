@@ -39,8 +39,7 @@ both about `fun ω => (√(Fintype.card l : ℝ))⁻¹ • (X ω)ᴴ`, which is
 `fun ω => ((√(Fintype.card l : ℝ))⁻¹ • X ω)ᴴ` by `Matrix.conjTranspose_smul`; a statement about
 `rsvd` at the rescaled test matrix is one about the raw one by `NLAlib.rsvd_smul_right` (the
 library has no such identity for the other outputs yet, and early truncation needs none: the
-projector form takes the projector of the raw output). Design: `docs/design/LowRank-S7.md` §3.5,
-§8.
+projector form takes the projector of the raw output).
 
 ## Main results
 
