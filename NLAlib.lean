@@ -1,6 +1,8 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlib.Computation.BLAS
+public import NLAlib.Computation.BLAS.Frames
+public import NLAlib.Computation.BLAS.GuardedNormalization
 public import NLAlib.Computation.BLAS.MatrixKernels
 public import NLAlib.Computation.BLAS.Normalization
 public import NLAlib.Computation.BLAS.RoundingErrors
@@ -16,6 +18,7 @@ public import NLAlib.Computation.Grid
 public import NLAlib.Computation.Model
 public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RunsWithin
+public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.Store
 public import NLAlib.Computation.Subst
@@ -157,8 +160,17 @@ public import NLAlib.Krylov.Functions.Quadrature
 public import NLAlib.Krylov.Functions.QuadratureBounds
 public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
+public import NLAlib.Krylov.LinearSystems.CGProgram
+public import NLAlib.Krylov.LinearSystems.CGProgramBody
+public import NLAlib.Krylov.LinearSystems.CGProgramCounts
+public import NLAlib.Krylov.LinearSystems.CGProgramDirection
+public import NLAlib.Krylov.LinearSystems.CGProgramGuards
+public import NLAlib.Krylov.LinearSystems.CGProgramInitialization
+public import NLAlib.Krylov.LinearSystems.CGProgramLoop
+public import NLAlib.Krylov.LinearSystems.CGProgramTree
 public import NLAlib.Krylov.LinearSystems.CGQuadrature
 public import NLAlib.Krylov.LinearSystems.CGRecurrence
+public import NLAlib.Krylov.LinearSystems.CGTargets
 public import NLAlib.Krylov.LinearSystems.CGTridiagonal
 public import NLAlib.Krylov.LinearSystems.GMRES
 public import NLAlib.Krylov.LinearSystems.GMRESArnoldi
@@ -175,7 +187,14 @@ public import NLAlib.Krylov.LinearSystems.WorstCase
 public import NLAlib.Krylov.Processes.ArnoldiRecurrence
 public import NLAlib.Krylov.Processes.Lanczos
 public import NLAlib.Krylov.Processes.LanczosPolynomials
+public import NLAlib.Krylov.Processes.LanczosProgram
+public import NLAlib.Krylov.Processes.LanczosProgramCounts
+public import NLAlib.Krylov.Processes.LanczosProgramInitialization
+public import NLAlib.Krylov.Processes.LanczosProgramState
+public import NLAlib.Krylov.Processes.LanczosProgramStep
+public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
+public import NLAlib.Krylov.Processes.LanczosTargets
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov
 public import NLAlib.LowRank.Gaussian.BlockKrylovGapless

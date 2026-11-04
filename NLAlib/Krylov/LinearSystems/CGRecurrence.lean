@@ -29,10 +29,13 @@ that the residual is orthogonal to it, through the Galerkin characterisation
 ## Main results
 
 * `NLAlib.cgState_r_eq`, `NLAlib.cgState_x_sub_mem_krylovSpace`: for every $\mathbf{A}$.
+* `NLAlib.cgStep_eq`: real dot-product scalarization of the specified step.
 * `Matrix.PosDef.conjTranspose_krylovMatrix_mulVec_cgState_r_eq_zero`: the residual is
   orthogonal to the Krylov space.
 * `Matrix.PosDef.cgState_x_eq`: the Hestenes–Stiefel iterates are the CG iterates.
 * `Matrix.PosDef.cgState_r_eq_zero_iff`: the residual vanishes exactly from the grade on.
+* `NLAlib.cgState_p_eq_zero_of_r_eq_zero`, `NLAlib.cgState_succ_eq_of_r_eq_zero`:
+  a zero residual has zero direction and the entire recurrence state stays fixed.
 -/
 
 @[expose] public section
@@ -49,7 +52,8 @@ Algorithm: cg -/
 structure CGState (𝕜 n : Type*) where
   /-- The iterate $\mathbf{x}_k$. -/
   x : n → 𝕜
-  /-- The residual $\mathbf{r}_k$, equal to $\mathbf{b} - \mathbf{A}\mathbf{x}_k$. -/
+  /-- The residual vector $\mathbf{r}_k$. The exact recurrence identifies it with
+  $\mathbf{b} - \mathbf{A}\mathbf{x}_k$; a stored rounded state may have a residual gap. -/
   r : n → 𝕜
   /-- The search direction $\mathbf{p}_k$. -/
   p : n → 𝕜
@@ -79,6 +83,52 @@ Algorithm: cg -/
 noncomputable def cgState (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) : ℕ → CGState 𝕜 n
   | 0 => ⟨x₀, b - A *ᵥ x₀, b - A *ᵥ x₀⟩
   | k + 1 => cgStep A (cgState A b x₀ k)
+
+omit [DecidableEq n] in
+/-- The specified real CG step expressed using dot products and componentwise arithmetic.
+Squared Euclidean residual norms equal self-dot products, and the real quadratic form is
+$\mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$. No positivity or nonbreakdown assumption is
+needed because division is total. This identifies the exact scalar-loop outputs with the
+existing recurrence. -/
+theorem cgStep_eq (A : Matrix n n ℝ) (s : CGState ℝ n) :
+    cgStep A s =
+      let α := (s.r ⬝ᵥ s.r) / (s.p ⬝ᵥ (A *ᵥ s.p))
+      let r' := fun i => s.r i - α * (A *ᵥ s.p) i
+      ⟨fun i => s.x i + α * s.p i, r',
+        fun i => r' i + ((r' ⬝ᵥ r') / (s.r ⬝ᵥ s.r)) * s.p i⟩ := by
+  simp only [cgStep, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, quadForm,
+    star_trivial, RCLike.re_to_real]
+  rfl
+
+omit [DecidableEq n] in
+/-- A zero residual in the total CG recurrence has zero direction, for every matrix and
+starting vector. This includes the initial state and terminal states after any step. -/
+theorem cgState_p_eq_zero_of_r_eq_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) {j : ℕ}
+    (hr : (cgState A b x₀ j).r = 0) : (cgState A b x₀ j).p = 0 := by
+  cases j with
+  | zero => exact hr
+  | succ j =>
+    have hp : (cgState A b x₀ (j + 1)).p = (cgState A b x₀ (j + 1)).r +
+        ((‖WithLp.toLp 2 (cgState A b x₀ (j + 1)).r‖ ^ 2 /
+          ‖WithLp.toLp 2 (cgState A b x₀ j).r‖ ^ 2 : ℝ) : 𝕜) • (cgState A b x₀ j).p := rfl
+    rw [hp, hr]
+    simp
+
+omit [DecidableEq n] in
+/-- Once its residual is zero, the entire total CG recurrence state is fixed at the next
+step. This justifies zero-residual stopping without changing a later exact iterate. -/
+theorem cgState_succ_eq_of_r_eq_zero (A : Matrix n n 𝕜) (b x₀ : n → 𝕜) {j : ℕ}
+    (hr : (cgState A b x₀ j).r = 0) :
+    cgState A b x₀ (j + 1) = cgState A b x₀ j := by
+  have hp := cgState_p_eq_zero_of_r_eq_zero A b x₀ hr
+  change cgStep A (cgState A b x₀ j) = cgState A b x₀ j
+  generalize cgState A b x₀ j = s at hr hp ⊢
+  rcases s with ⟨x, r, p⟩
+  change r = 0 at hr
+  change p = 0 at hp
+  subst r
+  subst p
+  simp [cgStep]
 
 variable {A : Matrix n n 𝕜} {b x₀ : n → 𝕜}
 

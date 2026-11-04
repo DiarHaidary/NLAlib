@@ -2,7 +2,38 @@
 
 Audit baseline: `d2e02916`, branch `feat/implementation-bridges`, 2026-11-04.
 This is a source/interface audit, not a new kernel replay or a machine-execution certificate.
-The audit edits this note only. It does not approve or register any target.
+The baseline audit did not approve or register targets. The current integration below records
+subsequent maintainer approval and complete implementation proofs.
+
+## Current implementation coverage, 2026-11-04
+
+Both approved concrete implementations now have complete exact execution proofs:
+
+| Program | Registered target and proof | Output scope |
+|---|---|---|
+| `cgProg.compiled` | `StoredEntriesConjugateGradient`, proved by `storedEntriesConjugateGradient` in [CGProgram.lean](../../NLAlib/Krylov/LinearSystems/CGProgram.lean) | Successful guarded execution for every real matrix and RHS, input preservation and legal status; for SPD matrices, all three vectors equal `cgState A b 0 q`, including zero termination |
+| `lanczosProg.compiled` | `StoredEntriesLanczos`, proved by `storedEntriesLanczos` in [LanczosProgram.lean](../../NLAlib/Krylov/Processes/LanczosProgram.lean) | Basis, diagonal and subdiagonal coefficients, input norm, previous vector and preserved input agree with the total recurrence for every real matrix and RHS |
+
+Both proofs cover actual ROM loads, scalar operations, guards, allocations, complete loops,
+cleanup, componentwise operation budgets and peak numeric-cell memory including ROM.
+The registry now contains **seven targets and five concrete trees**, covering four complete
+exact algorithm families: Gram–Schmidt, Hutch++, CG and Lanczos. The sparse Hutch++ pattern
+family remains additional to the five concrete trees. There are 29 Algorithm-tagged
+declarations grouped under the same seven ids.
+
+Whole rounded execution-to-`CGRun` and `LanczosRun` constructors remain open. Proved rounded
+kernel bounds, local CG phase extraction and input/output transfer bounds are useful pieces;
+they do not yet connect a complete rounded solver execution to every existing convergence
+theorem. No finite-word IEEE endpoint is certified. See the
+[integration record](Krylov-Implementation-Integration.md) for source placement and validation.
+The tables and review history below describe the explicitly identified baseline, with dated
+amendments recording progress; they are not the current coverage totals.
+
+The integrated full stage check exits 0: 555 proved modules, zero Lean build warnings,
+16,701 declarations audited and 17,005 constants kernel-replayed without violations.
+Source checks have zero new errors; the six existing private duplicate classes are unchanged.
+Fourteen actual compiled-tree Float smoke cases pass. These checks establish the stated exact
+implementation coverage and supporting proofs, with the rounded obligations above retained.
 
 ## Finding and scope
 
@@ -70,7 +101,7 @@ metadata; it is not evidence of a program or a realization theorem.
 All paths in the tables, unless prefixed otherwise, are relative to `NLAlib/`. Line numbers
 identify the baseline; declarations are the stable lookup keys after edits.
 
-## Registered programs and exact targets
+## Registered programs and exact targets at the audit baseline
 
 `docs/targets.toml` contains **three registered concrete trees and five targets**. The sparse
 Hutch++ tree is additionally a function of a public COO pattern; its target has `trees = []` and
@@ -460,7 +491,7 @@ relative-error contract, or an IEEE machine certificate. The count and memory
 checks use the DSL's charged operations and scalar-cell footprint, not host
 machine cycles or object sizes.
 
-## Approved exact targets and verification checkpoint, 2026-11-04
+## Foundation checkpoint before whole-program integration, 2026-11-04
 
 The maintainer subsequently approved both exact target statements and their identified
 programs: “Approve both exact target statements.” `StoredEntriesConjugateGradient` and

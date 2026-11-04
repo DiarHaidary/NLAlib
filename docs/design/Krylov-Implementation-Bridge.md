@@ -3,6 +3,9 @@
 Design, 2026-11-04. User request: a library-wide pass linking algorithmic theory to particular
 implementations. The coverage inventory is in `Implementation-Coverage.md`; this note owns the
 Lanczos and integration interfaces. CG and rounded normalization have separate reviewed notes.
+The approved exact CG and Lanczos programs now have complete library proofs; see the
+[integration record](Krylov-Implementation-Integration.md). The whole rounded-run interfaces
+below remain proof goals unless explicitly identified as completed.
 
 ## Required chain and scope
 
@@ -27,7 +30,7 @@ by `rscl`; for each step compute a matvec, subtract the previous-vector term, ta
 product for alpha, subtract the current-vector term, run `nrm2`, and divide componentwise when
 the norm is nonzero. The zero-norm branch writes a zero next column and performs no division.
 The buffers contain the input vector, computed basis, alpha and beta arrays, and computed input
-norm. The implementation records the actual rounded input norm; it never assumes exact initial
+norm, and the final previous vector. The implementation records the actual rounded input norm; it never assumes exact initial
 normalization. Guarded zero continuation agrees with the existing total exact recurrence.
 The active finite-precision prefix stops at the first zero off-diagonal coefficient; zero input
 is handled without inventing a positive-length `LanczosRun`.
@@ -63,19 +66,20 @@ The bounded-function precision theorem supplies `E`; a kernel-level initializati
 supplies `τ` and the actually computed scale `s`; a concrete postprocessor or its explicit error
 certificate supplies `ζ`. This transfer adds no interface, new arithmetic or named bound.
 
-## Target approval and staging
+## Target approval and integration
 
 CONTRIBUTING section 5.5 requires every new top-level program to have a registered compiled tree
-and an approved target. AGENTS prohibits agents from registering those targets without the
-maintainer's approval. Programs, target statements and their proofs will therefore first be
-checked as explicit proposals outside `NLAlib`, under `proposals/krylov/`. They are not imported
-by the library and are not counted as completed implementation coverage. Once the concrete
-proposal is checked and reviewable, request approval to register its exact statement; no check,
-allowlist, ratchet, build pin or existing approved target is changed to bypass this step.
+and a maintainer-approved target. The concrete proposals were first checked outside `NLAlib`.
+The maintainer approved both exact statements and identified programs on 2026-11-04. Their
+unchanged trees, counts and target bodies are now in the library with the complete proofs
+`storedEntriesConjugateGradient` and `storedEntriesLanczos`; only these two targets and trees
+were added to the registry. Existing registry entries, checks, allowlists, ratchets and pins
+are unchanged.
 
-Generic kernel proofs and truthful source documentation can land independently. No runtime or
-cost Result id is placed on unregistered output claims. A proposal is not a verified deployed
-implementation, and no manuscript or explorer status may imply otherwise.
+Rounded execution proposals remain separate, with no registered rounded target or complete
+whole-solver realization claim. They reuse the canonical library program APIs. Any new rounded
+target must be concrete and reviewable before its own approval; the existing exact-target
+approval does not authorize an unspecified replacement statement.
 
 ## Placement and reuse
 

@@ -1,12 +1,11 @@
 # A concrete square-root-free conjugate gradient implementation
 
-Design proposal, 2026-11-04. The existing `CGRun` is an analysis interface. This work connects
-one fixed program over the existing Computation DSL and scalar semantics to that interface.
-Until the maintainer approves the exact target statement, the canonical program, its compiled
-tree, proposed target, and proofs stay outside the library in
-`proposals/krylov/ConjugateGradient.lean`. They are genuine DSL programs, not renamed programs
-or a second bounded-error arithmetic interface. No target registry, approval, checks, pins or
-allowlists change. No cost/output theorem carries a `Result:` id in this proposal.
+Design and implementation record, 2026-11-04. The existing `CGRun` is a conditional analysis
+interface. The approved square-root-free program now has a complete exact execution proof in
+`Krylov/LinearSystems/CGProgram.lean`, with its fixed target in `CGTargets.lean`. The earlier
+development is preserved in `proposals/krylov/`; the library uses only the canonical library
+modules. This note records the algorithm choice and the remaining rounded execution-to-run
+construction. See [the integration record](Krylov-Implementation-Integration.md).
 
 ## Concrete algorithm and storage
 
@@ -182,16 +181,17 @@ ROM/input decoding facts, and precisely the input window above, and concludes
 
 The full theorem additionally records the final status and, for each j<=m, the actual
 truncated-budget program execution whose output holds `C.x j`, `C.r j` and `C.p j`.
-These executions are consequences of the same prefix induction, not premises. Physical
-energy, delayed estimator, and true-residual corollaries apply the existing `CGRun` theorems
-to this constructed C and rewrite the output-layout facts. At m=0, output x=0 is handled
-directly. All statements retain their original finite-horizon hypotheses.
+The intended prefix induction must derive these executions rather than assume them. Once
+that construction is proved, physical energy, delayed estimator and true-residual corollaries
+can apply the existing `CGRun` theorems to the constructed C and rewrite the output-layout
+facts. The m=0 output x=0 requires its own branch. These remain planned rounded results,
+with their original finite-horizon hypotheses.
 
-## Proposed exact target, costs and output
+## Approved exact target, costs and output
 
 The existing access models are exact-arithmetic models. The target is therefore the exact
 execution/cost/output theorem for this same canonical tree; finite-precision bridges are
-separate supporting theorems about it, with no `Result:` tags. Its proposed name is
+separate supporting theorems about it, with no `Result:` tags. Its name is
 `StoredEntriesConjugateGradient`, with `storedEntriesConjugateGradient` its proof.
 
 For arbitrary real ROM entries and b, the guards make the program succeed, with status in
@@ -203,8 +203,8 @@ excluded on SPD input. No SPD assumption is hidden in the size validity predicat
 The target is `StoredEntries (𝕜 := ℝ) tag (cgProg.compiled tag)` with `valid := True`,
 `X N _ := Fin N → ℝ`, b as the only initialized declared buffer, output buffers initially
 uninitialized with the lengths in the storage table, ROM length N*N, and the postcondition
-just described for `A i j := vals (i + N*j)`. This is a concrete proposal for maintainer
-review, not a registered target.
+just described for `A i j := vals (i + N*j)`. It is now registered and proved in
+`Krylov/LinearSystems/CGProgram.lean`.
 
 The operation budget, an upper bound including early termination and curvature rejection, is:
 
@@ -223,8 +223,8 @@ The operation budget, an upper bound including early termination and curvature r
 All other counts are zero. The cell-memory budget is `2*N^2+5*N+11` at tag, zero at every
 other tag. It includes N^2 read-only cells, N^2 loaded matrix cells, the four declared N-vectors,
 product workspace N, declared status cell, nine scalar cells and at most one kernel scratch.
-The proof may lower a budget if the exact accounting reaches a stronger bound; changes to
-this proposed statement are recorded before approval.
+These approved formulas are proved unchanged. Any future change to the registered statement
+requires a separate review; intermediate accounting may establish stronger inequalities.
 
 ## Reuse, files and review
 
@@ -301,7 +301,7 @@ def StoredEntriesConjugateGradient : Prop :=
 theorem storedEntriesConjugateGradient : StoredEntriesConjugateGradient
 ```
 
-This exact target is proposed for later maintainer approval. Its status and output assertions
+This exact target received maintainer approval on 2026-11-04. Its status and output assertions
 are entirely in the postcondition fixed by the target, not a prover-chosen postcondition.
 
 ### Generic execution bridge signature submitted for review
@@ -358,56 +358,51 @@ only `cgProg` and `cgProg.compiled`, with no separate `cgStepProg` declaration. 
 unnecessary second program rather than rename it or bypass its target obligation. The operation
 order, storage, target and numerical interfaces above are unchanged. The current interface section contains only the resulting canonical program and tree.
 
-## Implementation status before target registration
+## Exact implementation and remaining rounded work
 
-The integration review approved this design before implementation. The sole canonical
-`cgProg`, its symbolic compiled tree, and the proposed `StoredEntriesConjugateGradient`
-statement have been checked by Lean. The scalar lemmas bounding the dot/matvec and
-vector-update rounding factors by `cgImplementationRoundoffBound` are proved in the proposal.
-The input-buffer preservation assertion was added after independent target review; the
-final target statement is rechecked before delivery.
+The maintainer-approved `cgProg`, its symbolic compiled tree and
+`StoredEntriesConjugateGradient` now live in the library. The complete proof is
+`storedEntriesConjugateGradient` in `Krylov/LinearSystems/CGProgram.lean`. It includes ROM
+loading, initialization, all guards, the full loop, scoped allocations and cleanup. For every
+real matrix it preserves the input and returns a legal status; under positive definiteness
+its x, r and p buffers equal `cgState A b 0 q`, including padding after zero termination.
+All approved operation and memory bounds are proved unchanged.
 
-Actual execution support is proved separately: `CGInitialization.lean` loads ROM words with
-an exact count/state identity and cell frame; `CGDirectionUpdate.lean` proves execution of the
-actual inline two-operation direction update, its count/state identity, cell frame, and
-componentwise rounding traces. Generic dot, self-dot, axpy and gemv adapters are proved in
-`NLAlib/Matrix/Computation/BLAS.lean`, retaining their actual execution and store witnesses.
+Generic scalar/ROM execution and zero-fill/BLAS frames were extracted into the Computation
+topic. CG direction, initialization, body, guard, loop and accounting proofs live beside the
+concrete CG program. They use mathematical nonzero-direction and stopping lemmas rather
+than assuming the desired execution result. See the
+[integration record](Krylov-Implementation-Integration.md) for placement.
 
-The exact whole-program target is **not yet proved**. Initialization composition, the guarded
-loop invariant, and the final exact-CG output/count/memory theorem remain. The rounded
-whole-program construction of `CGRun` is also **not yet proved**; the displayed high-level
-signature is a reviewed goal, not a declaration available for use. Consequently no existing
-physical energy or residual theorem has yet been connected to the whole canonical program.
-A compiled program definition, a well-typed target statement, and correct kernel bounds do
-not establish those missing compositions. This proposal is not counted as completed
-implementation coverage, and no target registry or approval file has been changed.
-
-Files added during proof staging on 2026-11-04:
-
-* `proposals/krylov/CGInitialization.lean`: actual ROM-loading execution proof.
-* `proposals/krylov/CGDirectionUpdate.lean`: the actual inline direction-update loop proof,
-  supplied by integration, with no separate program definition.
-
-Both are supporting proposal files. Generic ROM/literal-loop support is intended for the
-Computation execution topic if promoted after review. The direction-update proof belongs
-with this concrete CG implementation. No duplicate arithmetic-run structure is introduced.
-
-
-### Amendment: shared zero initialization
-
-The CG exact initialization will reuse `LanczosImplementation.exec_forRange_zero` from the
-shared proposal execution support. The CG-specific uncompiled literal-fill copy was removed;
-`CGInitialization.lean` retains the generic ROM-loading execution. The exact specialization
-of the shared direction-update execution lives beside the canonical program in
-`ConjugateGradient.lean`. A future rounded initializer must derive its word
-values from the existing scalar contract, rather than assume exact literals for an arbitrary
-carrier.
+The rounded whole-program construction of `CGRun` remains open. The displayed high-level
+rounded signature earlier in this design is a goal, not an available theorem. Proposal-only
+work derives local phase error bounds from actual operations under the existing scalar
+contract; whole rounded initialization, prefix composition and horizon guard guarantees
+still require proof. Consequently the exact program theorem alone does not instantiate the
+physical finite-precision energy or residual bounds at a whole rounded execution.
 
 ## Maintainer approval, 2026-11-04
 
 The user approved the concrete `StoredEntriesConjugateGradient` and `StoredEntriesLanczos`
 statements and their identified programs: “Approve both exact target statements.” The exact
 CG statement, program, guards and budgets are fixed for the proof; registration is authorized
-once the required proof is complete. The whole-program proof and the rounded execution-to-run
-bridge remain work in progress. This supersedes earlier references to awaiting approval of
+and the required exact proof is now complete. The rounded execution-to-run
+bridge remains work in progress. This supersedes earlier references to awaiting approval of
 these exact statements; it does not approve an unstated rounded target.
+
+## Exact stopping and curvature API
+
+To discharge the fixed program's guards, expose the existing nonzero-direction result as
+`Matrix.PosDef.cgState_p_ne_zero` in `CGTridiagonal.lean`, reusing its existing proof rather
+than reproving line search. Add `cgState_p_eq_zero_of_r_eq_zero` and
+`cgState_succ_eq_of_r_eq_zero` in `CGRecurrence.lean`: for every matrix, zero residual implies
+zero direction and a fixed whole recurrence state. These follow from the already specified
+total step, and require no new arithmetic model or desired program-output assumption. They
+justify skipping remaining iterations after the computed exact residual vanishes. No CG
+specification definition changes; the target's mathematical output remains fixed.
+
+The real scalarization `cgStep_eq` in `CGRecurrence.lean` rewrites the same specified step
+using exact dot products for both squared residual norms and the curvature. Its output is
+componentwise multiplication and addition in the program's order, with no assumptions on the
+matrix or state and total real division. It uses the existing Euclidean norm-square identity
+and real quadratic form, not a second CG recurrence.
