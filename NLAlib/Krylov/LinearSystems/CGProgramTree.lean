@@ -39,6 +39,9 @@ output iterate, residual, direction, and one status cell. Matrix entries are rea
 from ROM; all scratch is scoped. A zero cached squared residual sets positive status, while a
 nonpositive curvature sets negative status. Zero status after the requested loop means budget
 exhausted. Each subsequent loop iteration skips the body after either stop.
+Rounded execution under the relative-error scalar contract is proved by
+`NLAlib.CGImplementation.exec_rounded_compiled`; the returned iterate's backward model and
+physical energy comparison are in `NLAlib.CGImplementation.exec_rounded_compiled_backward`.
 Algorithm: cg -/
 def cgProg {P ι VB VI : Type} (tag : P) (N q : IExp VI)
     (b x r p status : VB) : Builder P ι VB VI Unit := scope do

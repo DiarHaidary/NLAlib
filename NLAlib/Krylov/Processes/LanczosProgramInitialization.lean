@@ -33,11 +33,11 @@ variable {P ι : Type} [DecidableEq P]
 /-- Execute the literal prefix in the fixed nine-buffer layout. The actual scalar zero,
 initial beta and previous vector are initialized; the other buffers remain unchanged.
 All non-store fields are retained except the exact literal count. -/
-theorem exec_initialize_zeros (I : Interp P ι ℝ (OpCount P ι))
+theorem exec_initialize_zeros_of_workspace (storedMatrix : Bool)
+    (I : Interp P ι ℝ (OpCount P ι))
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
-    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
-      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)]) :
+    (hshape : st.store.shape = workspaceShape tag N q storedMatrix) :
     ∃ out, exec I (do
         ins (.lit tag ⟨8, 0⟩ 0)
         ins (.lit tag ⟨3, 0⟩ 0)
@@ -106,11 +106,11 @@ theorem executionComposable_initialize_zeros (I : Interp P ι ℝ (OpCount P ι)
 /-- The actual norm prefix follows literal initialization with `nrm2` on the unchanged input.
 It retains all other buffers, gives the exact stored norm, and accounts for its actual square
 root and scratch memory. This holds for zero input and zero dimension. -/
-theorem exec_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
+theorem exec_initialize_norm_of_workspace (storedMatrix : Bool)
+    (I : Interp P ι ℝ (OpCount P ι))
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι)) (b : Fin N → ℝ)
-    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
-      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i)) :
     ∃ out, exec I (do
         ins (.lit tag ⟨8, 0⟩ 0)
@@ -131,7 +131,7 @@ theorem exec_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
       out.peak = Function.update st.peak tag (max (st.peak tag) (st.cur tag + 1)) ∧
       out.peakW = max st.peakW (st.curW + I.width tag) := by
   obtain ⟨setupState, hprefix, hpstate, hpshape, hpzero, hpbeta, hpprev, hpframe⟩ :=
-    exec_initialize_zeros I hI hc tag N q st hshape
+    exec_initialize_zeros_of_workspace storedMatrix I hI hc tag N q st hshape
   let xs : ℕ → ℝ := fun i => if hi : i < N then b ⟨i, hi⟩ else 0
   have hvec : (fun i : Fin N => xs i) = b := by ext i; exact dif_pos i.2
   have hinput : ∀ i < N, setupState.store.read tag 0 (0 + i) = some (xs i) := by
@@ -173,17 +173,17 @@ theorem exec_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
 
 /-- Flat initialized-buffer facts give the exact zero-step loop invariant. This constructor
 has no execution conclusion: each read is supplied by the actual initialization proof. -/
-theorem State.of_initial_reads (tag : P) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+theorem State.of_initial_reads_of_workspace (storedMatrix : Bool)
+    (tag : P) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (st : St P ℝ (OpCount P ι))
-    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
-      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
-    (hA : Holds st.store tag 6 0 A)
+    (hA : if storedMatrix then Holds st.store tag 6 0 A else True)
     (hV : ∀ i : Fin N, st.store.read tag 1 i = some (‖WithLp.toLp 2 b‖⁻¹ * b i))
     (hbeta : st.store.read tag 3 0 = some 0)
     (hnorm : st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖)
     (hprev : ∀ i : Fin N, st.store.read tag 5 i = some 0)
-    (hzero : st.store.read tag 8 0 = some 0) : State tag N q 0 A b st := by
+    (hzero : st.store.read tag 8 0 = some 0) : State tag N q 0 A b st storedMatrix := by
   refine ⟨hshape, hb, hA, ?_, ?_, ?_, hnorm, ?_, hzero⟩
   · intro c hc i
     have hc0 : c = 0 := by omega
@@ -215,14 +215,14 @@ theorem executionComposable_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
 Lanczos recurrence state. The input norm is taken from the input buffer before copying
 and dividing into the basis; zero input and zero dimension use the explicit zero branch.
 Its counts and scratch peak are the compositional bounds used in the approved target. -/
-theorem exec_initialize (I : Interp P ι ℝ (OpCount P ι))
+theorem exec_initialize_of_workspace (storedMatrix : Bool)
+    (I : Interp P ι ℝ (OpCount P ι))
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
-    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
-      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
-    (hA : Holds st.store tag 6 0 A) :
+    (hA : if storedMatrix then Holds st.store tag 6 0 A else True) :
     ∃ out, exec I (do
         ins (.lit tag ⟨8, 0⟩ 0)
         ins (.lit tag ⟨3, 0⟩ 0)
@@ -232,12 +232,13 @@ theorem exec_initialize (I : Interp P ι ℝ (OpCount P ι))
           (forRange (.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0)) (do
             copyv tag 0 0 1 0 (.const N)
             rscl tag ⟨4, 0⟩ 1 0 (.const N))).run st = some out ∧
-      State tag N q 0 A b out ∧ out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
+      State tag N q 0 A b out storedMatrix ∧ out.pos = st.pos ∧ out.cur = st.cur ∧
+      out.curW = st.curW ∧
       out.cnt ≤ st.cnt + initializationCount tag N ∧
       out.peak = Function.update st.peak tag (max (st.peak tag) (st.cur tag + 1)) ∧
       out.peakW = max st.peakW (st.curW + I.width tag) := by
   obtain ⟨mid, hnorm, hsh, hn, hz, hβ, hp, hf, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩ :=
-    exec_initialize_norm I hI hc tag N q st b hshape hb
+    exec_initialize_norm_of_workspace storedMatrix I hI hc tag N q st b hshape hb
   let xs : ℕ → ℝ := fun i => if hi : i < N then b ⟨i, hi⟩ else 0
   have hvec : (fun i : Fin N => xs i) = b := by ext i; exact dif_pos i.2
   have hx : ∀ i < N, mid.store.read tag 0 (0 + i) = some (xs i) := by
@@ -254,14 +255,18 @@ theorem exec_initialize (I : Interp P ι ℝ (OpCount P ι))
         change 0 + i < N * (q + 1)
         rw [Nat.mul_succ]
         omega⟩)
-  have hstate : State tag N q 0 A b out := by
-    apply State.of_initial_reads tag N q A b out (hs'.trans (hsh.trans hshape))
+  have hstate : State tag N q 0 A b out storedMatrix := by
+    apply State.of_initial_reads_of_workspace storedMatrix tag N q A b out
+      (hs'.trans (hsh.trans hshape))
     · intro i
       exact (hframe tag 0 i (Or.inl (by decide))).trans
         ((hf tag 0 i (by decide) (by decide) (by decide) (by decide)).trans (hb i))
-    · intro i j
-      exact (hframe tag 6 _ (Or.inl (by decide))).trans
-        ((hf tag 6 _ (by decide) (by decide) (by decide) (by decide)).trans (hA i j))
+    · cases storedMatrix with
+      | false => trivial
+      | true =>
+        intro i j
+        exact (hframe tag 6 _ (Or.inl (by decide))).trans
+          ((hf tag 6 _ (by decide) (by decide) (by decide) (by decide)).trans (hA i j))
     · intro i
       have hi := hread i i.2
       change out.store.read tag 1 (0 + i) =
@@ -307,5 +312,100 @@ theorem executionComposable_initialize (I : Interp P ι ℝ (OpCount P ι))
         (forRange (.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0)) (do
           copyv tag 0 0 1 0 (.const N)
           rscl tag ⟨4, 0⟩ 1 0 (.const N))) (fun _ => rfl))
+
+/-- Execute the literal prefix in the fixed nine-buffer layout. The actual scalar zero,
+initial beta and previous vector are initialized; the other buffers remain unchanged.
+All non-store fields are retained except the exact literal count. -/
+theorem exec_initialize_zeros (I : Interp P ι ℝ (OpCount P ι))
+    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)]) :
+    ∃ out, exec I (do
+        ins (.lit tag ⟨8, 0⟩ 0)
+        ins (.lit tag ⟨3, 0⟩ 0)
+        forRange (.const N) fun i => ins (.lit tag ⟨5, .var i⟩ 0)).run st = some out ∧
+      out = { st with
+        store := out.store
+        cnt := st.cnt + (N + 2) • Finsupp.single (.lit tag) 1 } ∧
+      out.store.shape = st.store.shape ∧
+      out.store.read tag 8 0 = some 0 ∧ out.store.read tag 3 0 = some 0 ∧
+      (∀ i < N, out.store.read tag 5 i = some 0) ∧
+      ∀ p b i, b ≠ 3 → b ≠ 5 → b ≠ 8 →
+        out.store.read p b i = st.store.read p b i := by
+  exact exec_initialize_zeros_of_workspace true I hI hc tag N q st hshape
+
+/-- The actual norm prefix follows literal initialization with `nrm2` on the unchanged input.
+It retains all other buffers, gives the exact stored norm, and accounts for its actual square
+root and scratch memory. This holds for zero input and zero dimension. -/
+theorem exec_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
+    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι)) (b : Fin N → ℝ)
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i)) :
+    ∃ out, exec I (do
+        ins (.lit tag ⟨8, 0⟩ 0)
+        ins (.lit tag ⟨3, 0⟩ 0)
+        forRange (.const N) fun i => ins (.lit tag ⟨5, .var i⟩ 0)
+        nrm2 tag ⟨4, 0⟩ 0 0 (.const N)).run st = some out ∧
+      out.store.shape = st.store.shape ∧
+      out.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+      out.store.read tag 8 0 = some 0 ∧ out.store.read tag 3 0 = some 0 ∧
+      (∀ i < N, out.store.read tag 5 i = some 0) ∧
+      (∀ p d i, d ≠ 3 → d ≠ 5 → d ≠ 8 → d ≠ 4 →
+        out.store.read p d i = st.store.read p d i) ∧
+      out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
+      out.cnt = st.cnt + (N + 2) • Finsupp.single (.lit tag) 1 +
+        (N • (Finsupp.single (.un tag .conj) 1 + Finsupp.single (.bin tag .mul) 1 +
+          Finsupp.single (.bin tag .add) 1) + Finsupp.single (.lit tag) 1 +
+            Finsupp.single (.un tag .sqrt) 1) ∧
+      out.peak = Function.update st.peak tag (max (st.peak tag) (st.cur tag + 1)) ∧
+      out.peakW = max st.peakW (st.curW + I.width tag) := by
+  exact exec_initialize_norm_of_workspace true I hI hc tag N q st b hshape hb
+
+/-- Flat initialized-buffer facts give the exact zero-step loop invariant. This constructor
+has no execution conclusion: each read is supplied by the actual initialization proof. -/
+theorem State.of_initial_reads (tag : P) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+    (st : St P ℝ (OpCount P ι))
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
+    (hA : Holds st.store tag 6 0 A)
+    (hV : ∀ i : Fin N, st.store.read tag 1 i = some (‖WithLp.toLp 2 b‖⁻¹ * b i))
+    (hbeta : st.store.read tag 3 0 = some 0)
+    (hnorm : st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖)
+    (hprev : ∀ i : Fin N, st.store.read tag 5 i = some 0)
+    (hzero : st.store.read tag 8 0 = some 0) : State tag N q 0 A b st := by
+  exact State.of_initial_reads_of_workspace true tag N q A b st hshape hb hA hV
+    hbeta hnorm hprev hzero
+
+/-- The actual full initializer of the approved program produces the zero-step stored
+Lanczos recurrence state. The input norm is taken from the input buffer before copying
+and dividing into the basis; zero input and zero dimension use the explicit zero branch.
+Its counts and scratch peak are the compositional bounds used in the approved target. -/
+theorem exec_initialize (I : Interp P ι ℝ (OpCount P ι))
+    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
+    (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
+    (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
+    (hA : Holds st.store tag 6 0 A) :
+    ∃ out, exec I (do
+        ins (.lit tag ⟨8, 0⟩ 0)
+        ins (.lit tag ⟨3, 0⟩ 0)
+        forRange (.const N) fun i => ins (.lit tag ⟨5, .var i⟩ 0)
+        nrm2 tag ⟨4, 0⟩ 0 0 (.const N)
+        ifThenElse tag .eq ⟨4, 0⟩ ⟨8, 0⟩
+          (forRange (.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0)) (do
+            copyv tag 0 0 1 0 (.const N)
+            rscl tag ⟨4, 0⟩ 1 0 (.const N))).run st = some out ∧
+      State tag N q 0 A b out ∧ out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
+      out.cnt ≤ st.cnt + initializationCount tag N ∧
+      out.peak = Function.update st.peak tag (max (st.peak tag) (st.cur tag + 1)) ∧
+      out.peakW = max st.peakW (st.curW + I.width tag) := by
+  exact exec_initialize_of_workspace true I hI hc tag N q st A b hshape hb hA
+
 
 end NLAlib.LanczosImplementation

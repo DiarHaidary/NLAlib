@@ -117,11 +117,11 @@ theorem guardedStepCount_le (tag : P) (N : ℕ) (status μ ρ : ℝ) :
 
 /-- The actual curvature guard executes the complete mathematical CG step when positive,
 and otherwise writes breakdown status while preserving every vector and cached residual. -/
-theorem exec_exact_curvature_guard (I : Interp P ι ℝ (OpCount P ι))
+theorem exec_exact_curvature_guard {storedMatrix : Bool} (I : Interp P ι ℝ (OpCount P ι))
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (h : StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) 0 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) 0 1 st.store storedMatrix)
     (hμ : st.store.read tag 7 2 = some (v.p ⬝ᵥ (A *ᵥ v.p))) (hr : v.r ⬝ᵥ v.r ≠ 0)
     (hs : ∀ i : Fin N, st.store.read tag 6 i = some ((A *ᵥ v.p) i)) :
     let μ := v.p ⬝ᵥ (A *ᵥ v.p)
@@ -142,7 +142,7 @@ theorem exec_exact_curvature_guard (I : Interp P ι ℝ (OpCount P ι))
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()))
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))).run st = some out ∧
       StoreContext tag (fun _ x => x) N A b next nextρ
-        (if 0 < μ then if nextρ = 0 then 1 else 0 else -1) 1 out.store ∧
+        (if 0 < μ then if nextρ = 0 then 1 else 0 else -1) 1 out.store storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt = st.cnt + Finsupp.single (.cmp tag) 1 +
         (if 0 < μ then positiveBodyCount tag N nextρ else Finsupp.single (.copy tag) 1) ∧

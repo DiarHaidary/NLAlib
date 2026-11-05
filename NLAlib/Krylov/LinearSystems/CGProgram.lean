@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Krylov.LinearSystems.CGProgramInitialization
 public import NLAlib.Krylov.LinearSystems.CGProgramLoop
+public import NLAlib.Krylov.LinearSystems.CGProgramScope
 
 /-!
 # Outer realization of the approved stored CG target
@@ -32,10 +33,6 @@ open scoped Matrix
 
 variable {P ι : Type} [DecidableEq P]
 
-private def initialState (tag : P) (N : ℕ) (b : Fin N → ℝ) : St P ℝ (OpCount P ι) :=
-  inputState tag [(Array.ofFn b).map some, Array.replicate N none,
-    Array.replicate N none, Array.replicate N none, Array.replicate 1 none]
-
 private def workspaceState (tag : P) (N : ℕ) (b : Fin N → ℝ) : St P ℝ (OpCount P ι) where
   store := #[(tag, (Array.ofFn b).map some), (tag, Array.replicate N none),
     (tag, Array.replicate N none), (tag, Array.replicate N none),
@@ -57,7 +54,7 @@ private theorem workspaceState_read (tag : P) (N : ℕ) (b : Fin N → ℝ) (i :
   simp [workspaceState, Store.read, i.isLt]
 
 private theorem allocationState_eq_workspace (tag : P) (N : ℕ) (b : Fin N → ℝ) :
-    (let st0 := initialState (ι := ι) tag N b
+    (let st0 := declaredState (C := OpCount P ι) tag N b
      let st1 := { st0 with
        store := st0.store.push (tag, Array.replicate (N * N) none)
        cur := Function.update st0.cur tag (st0.cur tag + N * N)
@@ -76,7 +73,7 @@ private theorem allocationState_eq_workspace (tag : P) (N : ℕ) (b : Fin N → 
        peak := Function.update st2.peak tag (max (st2.peak tag) (st2.cur tag + 9))
        curW := st2.curW + 9 * 0
        peakW := max st2.peakW (st2.curW + 9 * 0) }) = workspaceState tag N b := by
-  dsimp only [initialState, workspaceState, inputState]
+  dsimp only [declaredState, workspaceState, inputState]
   congr 1
   · funext q
     by_cases hq : q = tag <;> simp [hq]
@@ -98,13 +95,13 @@ private theorem exec_cg_allocations (I : Interp P ι ℝ (OpCount P ι))
       let A ← alloc tag (IExp.const N * IExp.const N)
       let s ← alloc tag (IExp.const N)
       let scalars ← alloc tag 9
-      body A s scalars).run (initialState tag N b) = some (releasedState tag N out) := by
+      body A s scalars).run (declaredState tag N b) = some (releasedState tag N out) := by
   change exec I (.seq (.alloc tag (IExp.const N * IExp.const N) fun A =>
     .alloc tag (IExp.const N) fun s => .alloc tag 9 fun scalars => (body A s scalars).run)
-      .skip) (initialState tag N b) = _
+      .skip) (declaredState tag N b) = _
   rw [exec_seq_skip, exec_alloc, exec_alloc, exec_alloc]
-  have hsize : (initialState (ι := ι) tag N b).store.size = 5 := by
-    simp [initialState, inputState]
+  have hsize : (declaredState (C := OpCount P ι) tag N b).store.size = 5 := by
+    simp [declaredState, inputState]
   simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat, hw, Array.size_push,
     hsize, Nat.reduceAdd]
   rw [allocationState_eq_workspace, hbody]
@@ -240,7 +237,7 @@ private theorem exec_cg_workspace_body (I : Interp P ι ℝ (OpCount P ι))
   obtain ⟨ini, eini, sh, inp, mat, hx, hr, hp, hnu, hz, ho, hn, hs, _, pos, cur,
       curW, cnt, peak, peakW⟩ := exec_cg_initialization I hI hc tag
     (workspaceState tag N b) N b vals (by
-      simpa only [workspaceShape] using workspaceState_shape (ι := ι) tag N b)
+      simpa [workspaceShape] using workspaceState_shape (ι := ι) tag N b)
     (workspaceState_read tag N b) hrom
   have ctx : StoreContext tag (fun _ x => x) N (fun i j => vals (i + N * j)) b
       ⟨0, b, b⟩ (b ⬝ᵥ b) (if b = 0 then 1 else 0) 1 ini.store := by
@@ -323,7 +320,7 @@ private theorem exec_cg_program (I : Interp P ι ℝ (OpCount P ι))
     (tag : P) (N q : ℕ) (b : Fin N → ℝ) (vals : ℕ → ℝ)
     (hw : I.width tag = 0) (hrom : ∀ i < N * N, I.rom i = some (vals i)) :
     ∃ final, exec I (cgProg tag (IExp.const N) (IExp.const q) 0 1 2 3 4).run
-        (initialState tag N b) = some final ∧ final.cnt ≤ cgCount tag N q ∧
+        (declaredState tag N b) = some final ∧ final.cnt ≤ cgCount tag N q ∧
       (∀ p, final.peak p ≤ if p = tag then N * N + 5 * N + 11 else 0) ∧
       ∃ status : ℝ, final.store.read tag 4 0 = some status ∧
         (status = 0 ∨ status = 1 ∨ status = -1) ∧

@@ -64,7 +64,7 @@ BOUND_SUFFIXES = ('Constant', 'Factor', 'Tail', 'Bound', 'Ratio', 'Dim')
 # N4: function tokens written as notation in statements
 SYMBOL_OF = {'conjTranspose': 'ᴴ', 'mulVec': '*ᵥ', 'dotProduct': '⬝ᵥ', 'kronecker': 'kroneckerMap',
              'integral': '∫', 'sqrt': '√', 'transpose': 'ᵀ', 'hadamard': '⊙', 'exp': 'exp',
-             'variance': 'Var[', 'condExp': ' | ', 'rpow': ' ^ '}
+             'variance': 'Var[', 'condExp': ' | ', 'rpow': ' ^ ', 'branch': 'ifThenElse'}
 EXTRA_FUNC_TOKENS = {'frobNorm', 'specNorm', 'pinv', 'trace', 'det', 'rank', 'eigenvalue',
                      'singularValues', 'conjTranspose', 'quadForm', 'cfc', 'charpoly', 'submatrix',
                      'diagonal', 'fromBlocks', 'kronecker', 'dotProduct', 'mulVec', 'variance',
@@ -218,6 +218,13 @@ def dot_namespace(e):
 
 
 # ------------------------------------------------------------------ the checks
+def occurs_as_notation(token, text):
+    """Recognize an identifier's notation, with numeral boundaries for zero."""
+    if token == 'zero' and re.search(r'(?<![\w])0(?![\w])', text):
+        return True
+    return bool(SYMBOL_OF.get(token) and SYMBOL_OF[token] in text)
+
+
 def check(decls, registered=()):
     """Yield (rule, full name, message) for every violation."""
     D = [record(d) for d in decls]
@@ -273,6 +280,7 @@ def check(decls, registered=()):
         first_rel = next((i for i, x in enumerate(cp) if x in REL_TOKENS), len(cp))
         for i, x in enumerate(cp[:-1]):
             if x in ('sq', 'pow', 'rpow') and cp[i + 1] in lib_defs and \
+                    not (cp[i + 1] == 'zero' and occurs_as_notation('zero', e['concl'])) and \
                     (x == 'sq' or (i < first_rel and cp[0] != 'tendsto')):
                 bad('N6', e, f'`{x}_{cp[i + 1]}`: a power follows its argument '
                     f'(`{cp[i + 1]}_…_{x}`)')
@@ -349,9 +357,9 @@ def check(decls, registered=()):
         bind = binder_text(e)
         bind_ids = idents(bind) | concl_ids
         miss = [x for x in cp if x in func_tokens and x not in concl_ids
-                and not (SYMBOL_OF.get(x) and SYMBOL_OF[x] in e['concl'])]
+                and not occurs_as_notation(x, e['concl'])]
         miss += ['of_' + x for x in hp if x in func_tokens and x not in bind_ids
-                 and not (SYMBOL_OF.get(x) and SYMBOL_OF[x] in bind)]
+                 and not occurs_as_notation(x, bind)]
         if miss:
             bad('N4', e, 'name token(s) not in the statement: ' + ', '.join(f'`{x}`' for x in miss))
 

@@ -1,4 +1,5 @@
 import NLAlibTools.FixedPoint
 import NLAlibTools.Float
+import NLAlibTools.KrylovOracleSmoke
 import NLAlibTools.KrylovSmoke
 import NLAlibTools.NumPy

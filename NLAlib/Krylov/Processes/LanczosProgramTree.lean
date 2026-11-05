@@ -37,6 +37,9 @@ open Computation Computation.Builder
 input, all basis columns through the final state, alpha, beta, input norm and final previous
 vector. Matrix and work storage are scoped. Initialization uses actual `nrm2` and `rscl`, and
 zero continuation performs every requested step without dividing by a zero norm.
+Rounded execution of this same tree is proved by
+`NLAlib.LanczosImplementation.exec_rounded_compiled`; its active-prefix backward model and
+input-direction certificate are in `NLAlib.LanczosImplementation.exec_rounded_compiled_backward`.
 Algorithm: lanczos -/
 def lanczosProg {P ι VB VI : Type} (tag : P) (N q : IExp VI)
     (b V alpha beta inputNorm prev : VB) : Builder P ι VB VI Unit := scope do

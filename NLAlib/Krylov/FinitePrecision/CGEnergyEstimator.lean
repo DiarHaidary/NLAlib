@@ -53,12 +53,6 @@ namespace CGRun
 
 variable {n k : ℕ} (C : CGRun n k)
 
-private theorem estimator_lower {a a' : ℝ} (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (v : Fin n → ℝ) : a * ‖WithLp.toLp 2 v‖ ^ 2 ≤ quadForm C.A v := by
-  have hA := C.isHermitian.smul_one_le_iff_spectrum_subset_Ici a
-  have h := re_quadForm_le_re_quadForm_of_le (hA.mpr fun x hx => (hs hx).1) v
-  simpa only [re_quadForm_real_smul_one, RCLike.re_to_real] using h
-
 private theorem estimator_facts {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
@@ -96,7 +90,7 @@ private theorem estimator_norms {a a' : ℝ} (ha : 0 < a)
     ‖WithLp.toLp 2 (C.x j)‖ ≤ 3 * ‖WithLp.toLp 2 C.b‖ / a := by
   set B := ‖WithLp.toLp 2 C.b‖
   have hxs : ‖WithLp.toLp 2 xs‖ ≤ B / a := by
-    have h1 := C.estimator_lower hs xs
+    have h1 := C.mul_norm_sq_le_quadForm hs xs
     rw [quadForm_def, star_trivial, hx] at h1
     have h2 := (le_abs_self _).trans (EuclideanSpace.abs_dotProduct_le_norm xs C.b)
     rw [le_div_iff₀ ha]
@@ -113,7 +107,7 @@ private theorem estimator_norms {a a' : ℝ} (ha : 0 < a)
   have hE := (C.quadForm_sub_x_le ha hs hsmall hx hj).trans
     (mul_le_mul_of_nonneg_left hE0 (by norm_num : (0 : ℝ) ≤ 1 + 1 / 1000))
   have he : ‖WithLp.toLp 2 (xs - C.x j)‖ ≤ 2 * B / a := by
-    have hlow := C.estimator_lower hs (xs - C.x j)
+    have hlow := C.mul_norm_sq_le_quadForm hs (xs - C.x j)
     have hsq : ‖WithLp.toLp 2 (xs - C.x j)‖ ^ 2 ≤ (2 * B / a) ^ 2 := by
       rw [← mul_le_mul_iff_right₀ ha]
       have heq : a * (2 * B / a) ^ 2 = 4 * (B ^ 2 / a) := by field_simp; ring
@@ -140,7 +134,7 @@ private theorem estimator_μ {a a' : ℝ} (ha : 0 < a)
   set P := C.p j ⬝ᵥ (C.A *ᵥ C.p j)
   set z := C.ε * (a' / a)
   have hPlow : a * N ^ 2 ≤ P := by
-    simpa only [quadForm_def, star_trivial] using C.estimator_lower hs (C.p j)
+    simpa only [quadForm_def, star_trivial] using C.mul_norm_sq_le_quadForm hs (C.p j)
   have hN : a' * N ^ 2 ≤ (a' / a) * P := by
     have h := mul_le_mul_of_nonneg_left hPlow (by positivity : 0 ≤ a' / a)
     have heq : (a' / a) * (a * N ^ 2) = a' * N ^ 2 := by field_simp
@@ -232,15 +226,6 @@ private theorem estimator_curvature {a a' : ℝ} (ha : 0 < a)
       (mul_nonneg hz hs0)]
   exact hTs.trans (by nlinarith)
 
-private theorem estimator_expand (e v : Fin n → ℝ) :
-    quadForm C.A (e - v) = quadForm C.A e - 2 * (v ⬝ᵥ (C.A *ᵥ e)) +
-      quadForm C.A v := by
-  have hc : e ⬝ᵥ (C.A *ᵥ v) = v ⬝ᵥ (C.A *ᵥ e) := by
-    rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, C.transpose_A, dotProduct_comm]
-  simp only [quadForm_def, star_trivial, Matrix.mulVec_sub, sub_dotProduct, dotProduct_sub]
-  rw [hc]
-  ring
-
 private theorem estimator_bilinear {a' : ℝ} (hspec : specNorm C.A ≤ a')
     (v w : Fin n → ℝ) :
     |v ⬝ᵥ (C.A *ᵥ w)| ≤ a' * ‖WithLp.toLp 2 v‖ * ‖WithLp.toLp 2 w‖ := by
@@ -301,7 +286,7 @@ private theorem estimator_rounding {a a' : ℝ} (ha : 0 < a)
     rw [C.x_succ j hj]
     dsimp only [w]
     abel
-  rw [hxe, C.estimator_expand]
+  rw [hxe, C.quadForm_sub_eq]
   have ht := abs_add_le (-2 * (C.ex j ⬝ᵥ (C.A *ᵥ w))) (quadForm C.A (C.ex j))
   have heq : quadForm C.A w - 2 * (C.ex j ⬝ᵥ (C.A *ᵥ w)) +
       quadForm C.A (C.ex j) - quadForm C.A w =
@@ -368,7 +353,7 @@ private theorem estimator_step {a a' : ℝ} (ha : 0 < a)
       2 * C.γ j * (C.p j ⬝ᵥ C.r j) - 2 * C.γ j * (C.p j ⬝ᵥ g) +
       C.γ j ^ 2 * (C.p j ⬝ᵥ (C.A *ᵥ C.p j)) := by
     dsimp only [w]
-    rw [C.estimator_expand, hAe, dotProduct_add]
+    rw [C.quadForm_sub_eq, hAe, dotProduct_add]
     simp only [quadForm_def, star_trivial, Matrix.mulVec_smul, smul_dotProduct,
       dotProduct_smul, smul_eq_mul]
     ring
@@ -450,7 +435,7 @@ theorem sum_sub_le_quadForm_sub_x {a a' : ℝ} (ha : 0 < a)
       cgEnergyEstimatorFactor j d * C.ε * (a' / a) *
         (‖WithLp.toLp 2 C.b‖ ^ 2 / a) ≤ quadForm C.A (xs - C.x j) := by
   have h := C.abs_quadForm_sub_x_sub_quadForm_sub_x_sub_sum_le ha hs hsmall hx hjd
-  have hE := C.estimator_lower hs (xs - C.x (j + d))
+  have hE := C.mul_norm_sq_le_quadForm hs (xs - C.x (j + d))
   have hE0 : 0 ≤ quadForm C.A (xs - C.x (j + d)) := le_trans (by positivity) hE
   linarith [(abs_le.mp h).1]
 
@@ -471,7 +456,7 @@ theorem abs_quadForm_sub_x_sub_sum_le {a a' : ℝ} (ha : 0 < a)
       cgEnergyEstimatorFactor j d * C.ε * (a' / a) *
         (‖WithLp.toLp 2 C.b‖ ^ 2 / a) := by
   have h := C.abs_quadForm_sub_x_sub_quadForm_sub_x_sub_sum_le ha hs hsmall hx hjd
-  have hE := C.estimator_lower hs (xs - C.x (j + d))
+  have hE := C.mul_norm_sq_le_quadForm hs (xs - C.x (j + d))
   have hE0 : 0 ≤ quadForm C.A (xs - C.x (j + d)) := le_trans (by positivity) hE
   apply abs_le.mpr
   constructor <;> linarith [(abs_le.mp h).1, (abs_le.mp h).2]

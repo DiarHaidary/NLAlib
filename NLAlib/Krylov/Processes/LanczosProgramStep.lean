@@ -76,19 +76,23 @@ private theorem exec_run_bind_three (I : Interp P ι ℝ C)
 /-- Writing the work vector, current alpha, next beta and negative scratch leaves the exact
 completed-state invariant unchanged. Those are precisely the temporary writes before the
 previous and next basis vectors are committed. -/
-theorem State.of_frame {tag : P} {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
-    {b : Fin N → ℝ} {st out : St P ℝ (OpCount P ι)} (h : State tag N q j A b st)
+theorem State.of_frame {storedMatrix : optParam Bool true}
+    {tag : P} {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
+    {b : Fin N → ℝ} {st out : St P ℝ (OpCount P ι)} (h : State tag N q j A b st storedMatrix)
     (hsh : out.store.shape = st.store.shape)
     (hf : ∀ p k i, k ≠ 7 → (k = 2 → i ≠ j) → (k = 3 → i ≠ j + 1) →
       (k = 8 → i ≠ 1) → out.store.read p k i = st.store.read p k i) :
-    State tag N q j A b out := by
+    State tag N q j A b out storedMatrix := by
   refine ⟨hsh.trans h.shape, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i
     rw [hf tag 0 i (by decide) (by omega) (by omega) (by omega)]
     exact h.input i
-  · intro i k
-    rw [hf tag 6 _ (by decide) (by omega) (by omega) (by omega)]
-    exact h.matrix i k
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i k
+      rw [hf tag 6 _ (by decide) (by omega) (by omega) (by omega)]
+      exact h.matrix i k
   · intro c hc i
     rw [hf tag 1 _ (by decide) (by omega) (by omega) (by omega)]
     exact h.basis c hc i
@@ -295,11 +299,11 @@ theorem exec_mv_prev
 
 /-- The actual diagonal-coefficient and second update in a Paige step produce its exact
 unnormalized next vector. The completed prefix, counts, frame and scratch peak are retained. -/
-theorem exec_project
+theorem exec_project {storedMatrix : optParam Bool true}
     (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st) (hj : j < q)
+    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st storedMatrix) (hj : j < q)
     (hw : ∀ i : Fin N, st.store.read tag 7 i =
       some ((A *ᵥ (lanczosState A b j).cur -
         (lanczosState A b j).beta • (lanczosState A b j).prev) i)) :
@@ -307,7 +311,7 @@ theorem exec_project
         dot tag ⟨2, IExp.var j⟩ 1 (IExp.const N * IExp.var j) 7 0 (IExp.const N)
         ins (.un tag .neg ⟨8, 1⟩ ⟨2, .var j⟩)
         axpy tag ⟨8, 1⟩ 1 (IExp.const N * IExp.var j) 7 0 (IExp.const N)).run st = some out ∧
-      State tag N q j A b out ∧
+      State tag N q j A b out storedMatrix ∧
       out.store.read tag 2 j = some (lanczosAlpha A (lanczosState A b j)) ∧
       (∀ i : Fin N, out.store.read tag 7 i = some
         ((A *ᵥ (lanczosState A b j).cur - (lanczosState A b j).beta •
@@ -336,7 +340,7 @@ theorem exec_project
       (IExp.const N * IExp.var j) 0 (IExp.var j) 1 s.cur w hx hy ⟨0, sa, hsa⟩ ⟨0, sn, hsn⟩
   have hα : s.cur ⬝ᵥ w = lanczosAlpha A s := by
     simp only [lanczosAlpha, star_trivial, RCLike.re_to_real, w, RCLike.ofReal_real_eq_id, id_eq]
-  have hstate : State tag N q j A b out := h.of_frame hsh (by
+  have hstate : State tag N q j A b out storedMatrix := h.of_frame hsh (by
     intro p k i hk hai _ hti
     exact hf p k i (Or.inl hk) hai hti)
   refine ⟨out, hr, hstate, ?_, ?_, hp, hcur, hcurW, ?_, hpeak, hpeakW⟩
@@ -349,9 +353,10 @@ theorem exec_project
 
 /-- Committing the new column and previous vector extends the completed recurrence prefix.
 All other cells are transported by the concrete copy/normalization frame. -/
-theorem State.succ_of_commit {tag : P} {N q j : ℕ}
+theorem State.succ_of_commit {storedMatrix : optParam Bool true}
+    {tag : P} {N q j : ℕ}
     {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    {st out : St P ℝ (OpCount P ι)} (h : State tag N q j A b st)
+    {st out : St P ℝ (OpCount P ι)} (h : State tag N q j A b st storedMatrix)
     (ha : st.store.read tag 2 j = some (lanczosAlpha A (lanczosState A b j)))
     (hb : st.store.read tag 3 (j + 1) = some ((lanczosState A b (j + 1)).beta))
     (hsh : out.store.shape = st.store.shape)
@@ -360,12 +365,15 @@ theorem State.succ_of_commit {tag : P} {N q j : ℕ}
     (hp : ∀ i : Fin N, out.store.read tag 5 i =
       some ((lanczosState A b (j + 1)).prev i))
     (hf : ∀ p k i, k ≠ 5 → (k ≠ 1 ∨ i < N * (j + 1) ∨ N * (j + 1) + N ≤ i) →
-      out.store.read p k i = st.store.read p k i) : State tag N q (j + 1) A b out := by
+      out.store.read p k i = st.store.read p k i) : State tag N q (j + 1) A b out storedMatrix := by
   refine ⟨hsh.trans h.shape, ?_, ?_, ?_, ?_, ?_, ?_, hp, ?_⟩
   · intro i
     exact (hf tag 0 i (by decide) (Or.inl (by decide))).trans (h.input i)
-  · intro i k
-    exact (hf tag 6 _ (by decide) (Or.inl (by decide))).trans (h.matrix i k)
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i k
+      exact (hf tag 6 _ (by decide) (Or.inl (by decide))).trans (h.matrix i k)
   · intro c hc i
     by_cases he : c = j + 1
     · subst c; exact hv i
@@ -395,9 +403,10 @@ noncomputable def commitCount {P ι : Type} (tag : P) (N : ℕ) : OpCount P ι :
       Finsupp.single (.bin tag .div) 1)
 
 /-- The next basis column is writable at every actual step, including zero dimension. -/
-theorem State.next_capacity {tag : P} {N q j : ℕ}
+theorem State.next_capacity {storedMatrix : optParam Bool true}
+    {tag : P} {N q j : ℕ}
     {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    {st : St P ℝ (OpCount P ι)} (h : State tag N q j A b st) (hj : j < q) :
+    {st : St P ℝ (OpCount P ι)} (h : State tag N q j A b st storedMatrix) (hj : j < q) :
     ∀ i < N, ∃ len, st.store.shape[1]? = some (tag, len) ∧
       N * (j + 1) + i < len := by
   intro i hi
@@ -407,10 +416,11 @@ theorem State.next_capacity {tag : P} {N q j : ℕ}
 
 /-- The actual copy-previous then guarded-normalization tail commits the exact next state.
 It preserves the candidate's operation order, including the total zero continuation. -/
-theorem exec_commit (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
+theorem exec_commit {storedMatrix : optParam Bool true}
+    (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st) (hj : j < q)
+    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st storedMatrix) (hj : j < q)
     (ha : st.store.read tag 2 j = some (lanczosAlpha A (lanczosState A b j)))
     (hb : st.store.read tag 3 (j + 1) = some ((lanczosState A b (j + 1)).beta))
     (hw : ∀ i : Fin N, st.store.read tag 7 i = some
@@ -425,7 +435,7 @@ theorem exec_commit (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
           (do copyv tag 7 0 1 (IExp.const N * (IExp.var j + 1)) (IExp.const N)
               rscl tag ⟨3, IExp.var j + 1⟩ 1
                 (IExp.const N * (IExp.var j + 1)) (IExp.const N))).run st = some out ∧
-      State tag N q (j + 1) A b out ∧
+      State tag N q (j + 1) A b out storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt ≤ st.cnt + commitCount tag N ∧ out.peak = st.peak ∧
       out.peakW = st.peakW := by
@@ -460,7 +470,7 @@ theorem exec_commit (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
       (by change ∀ i < N, ∃ len, mid.store.shape[1]? = some (tag, len) ∧
           N * (j + 1) + i < len
           simpa only [hsh] using h.next_capacity hj)
-  have hstate : State tag N q (j + 1) A b out := h.succ_of_commit ha hb
+  have hstate : State tag N q (j + 1) A b out storedMatrix := h.succ_of_commit ha hb
     (hsh'.trans hsh) (by
       intro i
       have hvv := hv' i i.isLt
@@ -490,17 +500,18 @@ noncomputable def normCount {P ι : Type} (tag : P) (N : ℕ) : OpCount P ι :=
 
 /-- Executing the actual norm on the projected work vector writes the next recurrence beta,
 retaining its input work vector and the newly computed alpha. -/
-theorem exec_next_norm (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
+theorem exec_next_norm {storedMatrix : optParam Bool true}
+    (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactSem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st) (hj : j < q)
+    (st : St P ℝ (OpCount P ι)) (h : State tag N q j A b st storedMatrix) (hj : j < q)
     (ha : st.store.read tag 2 j = some (lanczosAlpha A (lanczosState A b j)))
     (hw : ∀ i : Fin N, st.store.read tag 7 i = some
       ((A *ᵥ (lanczosState A b j).cur - (lanczosState A b j).beta •
         (lanczosState A b j).prev - lanczosAlpha A (lanczosState A b j) •
           (lanczosState A b j).cur) i)) :
     ∃ out, exec I (nrm2 tag ⟨3, IExp.var j + 1⟩ 7 0 (IExp.const N)).run st = some out ∧
-      State tag N q j A b out ∧
+      State tag N q j A b out storedMatrix ∧
       out.store.read tag 2 j = some (lanczosAlpha A (lanczosState A b j)) ∧
       out.store.read tag 3 (j + 1) = some ((lanczosState A b (j + 1)).beta) ∧
       (∀ i : Fin N, out.store.read tag 7 i = some
@@ -523,7 +534,7 @@ theorem exec_next_norm (I : Interp P ι ℝ (OpCount P ι)) (hI : I.sem = exactS
   obtain ⟨out, hr, hsh, hb, hf, hp, hcur, hcurW, hcnt, hpeak, hpeakW⟩ :=
     exec_nrm2_frame I hI hc tag st ⟨3, IExp.var j + 1⟩ 7 0 (.const N) xs hx
       (by change (3 : ℕ) ≠ 7; decide) ⟨0, s', hs'⟩
-  have hstate : State tag N q j A b out := h.of_frame hsh (by
+  have hstate : State tag N q j A b out storedMatrix := h.of_frame hsh (by
     intro p k i _ _ hbi _
     apply hf p k i
     by_cases hk : k = 3

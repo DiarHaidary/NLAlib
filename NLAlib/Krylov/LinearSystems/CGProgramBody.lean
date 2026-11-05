@@ -32,20 +32,22 @@ open scoped Matrix
 
 variable {P K : Type} [DecidableEq P]
 
-/-- Exact layout after the three canonical scoped workspace allocations. -/
-def workspaceShape (tag : P) (N : ℕ) : Array (P × ℕ) :=
+/-- Layout after the three workspace allocations; oracle access reserves an empty matrix slot. -/
+def workspaceShape (tag : P) (N : ℕ) (storedMatrix : Bool := true) : Array (P × ℕ) :=
   #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1),
-    (tag, N * N), (tag, N), (tag, 9)]
+    (tag, if storedMatrix then N * N else 0), (tag, N), (tag, 9)]
 
 /-- Initialized cells in the canonical CG workspace, expressed through the interpretation
-decoder. This is a store invariant, with no arithmetic-error or trajectory assumptions. -/
+decoder. The default stored-matrix specialization keeps the canonical dense layout and all its
+matrix reads; oracle access reserves a zero-capacity slot instead. This is a store invariant,
+with no arithmetic-error or trajectory assumptions. -/
 structure StoreContext (tag : P) (dec : P → K → ℝ) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag : ℝ) (store : Store P K) : Prop where
+    (ν status flag : ℝ) (store : Store P K) (storedMatrix : Bool := true) : Prop where
   /-- Exact declared and scoped buffer shape. -/
-  shape : store.shape = workspaceShape tag N
-  /-- Loaded read-only matrix entries. -/
-  matrix : HoldsDecoded store dec tag 5 0 A
+  shape : store.shape = workspaceShape tag N storedMatrix
+  /-- Loaded matrix entries when this implementation stores its matrix. -/
+  matrix : if storedMatrix then HoldsDecoded store dec tag 5 0 A else True
   /-- Preserved right-hand side cells. -/
   input : ∀ i : Fin N, ∃ w, store.read tag 0 i = some w ∧ dec tag w = b i
   /-- Actual decoded iterate cells. -/
@@ -65,6 +67,8 @@ structure StoreContext (tag : P) (dec : P → K → ℝ) (N : ℕ)
   /-- Persistent negative breakdown-status value. -/
   negative : ∃ w, store.read tag 7 8 = some w ∧ dec tag w = -flag
 
+variable {storedMatrix : Bool}
+
 private def baseCell (buf idx : ℕ) : Prop :=
   buf = 0 ∨ buf = 5 ∨ (buf = 7 ∧ (idx = 6 ∨ idx = 7 ∨ idx = 8))
 
@@ -79,7 +83,7 @@ private theorem read_decoded_of_frame {tag : P} {dec : P → K → ℝ}
 private theorem StoreContext.of_state_frame
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v v' : CGState ℝ (Fin N)} {ν ν' status status' flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape)
     (hframe : ∀ buf idx, baseCell buf idx → next.read tag buf idx = old.read tag buf idx)
     (hx : ∀ i : Fin N, ∃ w, next.read tag 1 i = some w ∧ dec tag w = v'.x i)
@@ -87,10 +91,13 @@ private theorem StoreContext.of_state_frame
     (hp : ∀ i : Fin N, ∃ w, next.read tag 3 i = some w ∧ dec tag w = v'.p i)
     (hν : ∃ w, next.read tag 7 0 = some w ∧ dec tag w = ν')
     (hstatus : ∃ w, next.read tag 4 0 = some w ∧ dec tag w = status') :
-    StoreContext tag dec N A b v' ν' status' flag next := by
+    StoreContext tag dec N A b v' ν' status' flag next storedMatrix := by
   refine ⟨hshape.trans h.shape, ?_, ?_, hx, hr, hp, hν, hstatus, ?_, ?_, ?_⟩
-  · intro i j
-    exact read_decoded_of_frame (hframe 5 _ (Or.inr (Or.inl rfl))) (h.matrix i j)
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i j
+      exact read_decoded_of_frame (hframe 5 _ (Or.inr (Or.inl rfl))) (h.matrix i j)
   · intro i
     exact read_decoded_of_frame (hframe 0 i (Or.inl rfl)) (h.input i)
   · exact read_decoded_of_frame
@@ -104,12 +111,12 @@ private theorem StoreContext.of_state_frame
 theorem StoreContext.preserve_frame
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν status flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape)
     (hframe : ∀ buf idx, (buf ≤ 5 ∨ (buf = 7 ∧
       (idx = 0 ∨ idx = 6 ∨ idx = 7 ∨ idx = 8))) →
       next.read tag buf idx = old.read tag buf idx) :
-    StoreContext tag dec N A b v ν status flag next := by
+    StoreContext tag dec N A b v ν status flag next storedMatrix := by
   apply h.of_state_frame hshape
   · intro buf idx hb
     rcases hb with rfl | rfl | ⟨rfl, hi⟩
@@ -133,10 +140,10 @@ private theorem baseCell_ne_vector {buf idx slot : ℕ} (hs : 1 ≤ slot) (hs' :
 theorem StoreContext.preserve_scalar_write
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν status flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     {idx : ℕ} (hi : 1 ≤ idx) (hi' : idx ≤ 5) {word : K}
     (hw : old.write tag 7 idx word = some next) :
-    StoreContext tag dec N A b v ν status flag next := by
+    StoreContext tag dec N A b v ν status flag next storedMatrix := by
   apply h.preserve_frame (Store.shape_of_write_eq_some hw)
   intro buf j hcell
   apply Store.read_of_write_eq_some_of_ne hw
@@ -148,11 +155,11 @@ theorem StoreContext.preserve_scalar_write
 theorem StoreContext.replace_iterate
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν status flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape) (xnew : Fin N → ℝ)
     (hframe : ∀ buf idx, buf ≠ 1 → next.read tag buf idx = old.read tag buf idx)
     (hnew : ∀ i : Fin N, ∃ w, next.read tag 1 i = some w ∧ dec tag w = xnew i) :
-    StoreContext tag dec N A b ⟨xnew, v.r, v.p⟩ ν status flag next := by
+    StoreContext tag dec N A b ⟨xnew, v.r, v.p⟩ ν status flag next storedMatrix := by
   apply h.of_state_frame hshape
   · intro buf idx hb
     exact hframe buf idx (baseCell_ne_vector (by norm_num) (by norm_num) hb)
@@ -168,11 +175,11 @@ theorem StoreContext.replace_iterate
 theorem StoreContext.replace_residual
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν status flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape) (xnew : Fin N → ℝ)
     (hframe : ∀ buf idx, buf ≠ 2 → next.read tag buf idx = old.read tag buf idx)
     (hnew : ∀ i : Fin N, ∃ w, next.read tag 2 i = some w ∧ dec tag w = xnew i) :
-    StoreContext tag dec N A b ⟨v.x, xnew, v.p⟩ ν status flag next := by
+    StoreContext tag dec N A b ⟨v.x, xnew, v.p⟩ ν status flag next storedMatrix := by
   apply h.of_state_frame hshape
   · intro buf idx hb
     exact hframe buf idx (baseCell_ne_vector (by norm_num) (by norm_num) hb)
@@ -188,13 +195,13 @@ theorem StoreContext.replace_residual
 theorem StoreContext.replace_registers
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν ν' status status' flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape)
     (hframe : ∀ buf idx, (buf ≠ 7 ∨ idx ≠ 0) → (buf ≠ 4 ∨ idx ≠ 0) →
       next.read tag buf idx = old.read tag buf idx)
     (hν : ∃ w, next.read tag 7 0 = some w ∧ dec tag w = ν')
     (hstatus : ∃ w, next.read tag 4 0 = some w ∧ dec tag w = status') :
-    StoreContext tag dec N A b v ν' status' flag next := by
+    StoreContext tag dec N A b v ν' status' flag next storedMatrix := by
   apply h.of_state_frame hshape
   · intro buf idx hb
     rcases hb with rfl | rfl | ⟨rfl, hi⟩
@@ -284,13 +291,13 @@ theorem exec_exact_iterate_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status μ : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hμ : st.store.read tag 7 2 = some μ) (hne : μ ≠ 0) :
     ∃ out, exec I (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
       axpy tag ⟨7, 3⟩ 3 0 1 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       StoreContext tag (fun _ x => x) N A b
-        ⟨fun i => v.x i + (ν / μ) * v.p i, v.r, v.p⟩ ν status 1 out.store ∧
+        ⟨fun i => v.x i + (ν / μ) * v.p i, v.r, v.p⟩ ν status 1 out.store storedMatrix ∧
       out.store.read tag 7 3 = some (ν / μ) ∧
       (∀ i : Fin N, out.store.read tag 6 i = st.store.read tag 6 i) ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
@@ -307,7 +314,7 @@ theorem exec_exact_iterate_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι
     ⟨9, by simp [h.shape, workspaceShape], by norm_num⟩
   let mid : St P ℝ (OpCount P ι) :=
     { st with store := store, cnt := st.cnt + I.charge (.bin tag .div) }
-  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store :=
+  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store storedMatrix :=
     h.preserve_scalar_write (by norm_num) (by norm_num) hw
   have hp : ∀ i : Fin N, mid.store.read tag 3 (0 + i) = some (v.p i) := by
     intro i
@@ -341,14 +348,14 @@ theorem exec_exact_residual_update {ι : Type} (I : Interp P ι ℝ (OpCount P �
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status γ : ℝ) (sv : Fin N → ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hγ : st.store.read tag 7 3 = some γ)
     (hs : ∀ i : Fin N, st.store.read tag 6 i = some (sv i)) :
     ∃ out, exec I (do
       Builder.ins (.un tag .neg ⟨7, 5⟩ ⟨7, 3⟩)
       axpy tag ⟨7, 5⟩ 6 0 2 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       StoreContext tag (fun _ x => x) N A b
-        ⟨v.x, fun i => v.r i - γ * sv i, v.p⟩ ν status 1 out.store ∧
+        ⟨v.x, fun i => v.r i - γ * sv i, v.p⟩ ν status 1 out.store storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt = st.cnt + Finsupp.single (.un tag .neg) 1 +
         N • (Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) ∧
@@ -359,7 +366,7 @@ theorem exec_exact_residual_update {ι : Type} (I : Interp P ι ℝ (OpCount P �
     ⟨9, by simp [h.shape, workspaceShape], by norm_num⟩
   let mid : St P ℝ (OpCount P ι) :=
     { st with store := store, cnt := st.cnt + I.charge (.un tag .neg) }
-  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store :=
+  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store storedMatrix :=
     h.preserve_scalar_write (by norm_num) (by norm_num) hw
   have hs' : ∀ i : Fin N, mid.store.read tag 6 (0 + i) = some (sv i) := by
     intro i
@@ -390,7 +397,7 @@ theorem exec_exact_primal_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status μ : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hμ : st.store.read tag 7 2 = some μ) (hne : μ ≠ 0)
     (hs : ∀ i : Fin N, st.store.read tag 6 i = some ((A *ᵥ v.p) i)) :
     ∃ out, exec I (do
@@ -400,7 +407,7 @@ theorem exec_exact_primal_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
       axpy tag ⟨7, 5⟩ 6 0 2 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       StoreContext tag (fun _ x => x) N A b
         ⟨fun i => v.x i + (ν / μ) * v.p i,
-          fun i => v.r i - (ν / μ) * (A *ᵥ v.p) i, v.p⟩ ν status 1 out.store ∧
+          fun i => v.r i - (ν / μ) * (A *ᵥ v.p) i, v.p⟩ ν status 1 out.store storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt = st.cnt + Finsupp.single (.bin tag .div) 1 +
         N • (Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) +
@@ -436,11 +443,11 @@ theorem exec_exact_direction_quotient {ι : Type} (I : Interp P ι ℝ (OpCount 
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store) (hne : ν ≠ 0) :
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix) (hne : ν ≠ 0) :
     ∃ out, exec I (do
       dot tag ⟨7, 1⟩ 2 0 2 0 (.const N)
       Builder.ins (.bin tag .div ⟨7, 4⟩ ⟨7, 1⟩ ⟨7, 0⟩) : Builder P ι ℕ ℕ Unit).run st = some out ∧
-      StoreContext tag (fun _ x => x) N A b v ν status 1 out.store ∧
+      StoreContext tag (fun _ x => x) N A b v ν status 1 out.store storedMatrix ∧
       out.store.read tag 7 1 = some (v.r ⬝ᵥ v.r) ∧
       out.store.read tag 7 4 = some ((v.r ⬝ᵥ v.r) / ν) ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
@@ -459,7 +466,7 @@ theorem exec_exact_direction_quotient {ι : Type} (I : Interp P ι ℝ (OpCount 
   obtain ⟨mid, hrun, hshape, hnew, hframe, hpos, hcur, hcurW, hcnt, hpeak, hpeakW⟩ :=
     Computation.exec_dot_frame I hI hc tag st N ⟨7, 1⟩ 2 2 0 0 v.r v.r hr hr
       (by norm_num) (by norm_num) ⟨0, scratch, hwrite⟩
-  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store := by
+  have hctx : StoreContext tag (fun _ x => x) N A b v ν status 1 mid.store storedMatrix := by
     apply h.preserve_frame hshape
     intro buf idx hcell
     apply hframe tag buf idx
@@ -492,13 +499,13 @@ theorem exec_exact_direction_update {ι : Type} (I : Interp P ι ℝ (OpCount P 
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status δ : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hδ : st.store.read tag 7 4 = some δ) :
     ∃ out, exec I (Builder.forRange (.const N) fun i => do
       Builder.ins (.bin tag .mul ⟨7, 2⟩ ⟨7, 4⟩ ⟨3, .var i⟩)
       Builder.ins (.bin tag .add ⟨3, .var i⟩ ⟨2, .var i⟩ ⟨7, 2⟩)).run st = some out ∧
       StoreContext tag (fun _ x => x) N A b
-        ⟨v.x, v.r, fun i => v.r i + δ * v.p i⟩ ν status 1 out.store ∧
+        ⟨v.x, v.r, fun i => v.r i + δ * v.p i⟩ ν status 1 out.store storedMatrix ∧
       (∀ idx, idx ≠ 2 → out.store.read tag 7 idx = st.store.read tag 7 idx) ∧
       out = { st with store := out.store, cnt := st.cnt +
         N • (Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) } := by
@@ -551,10 +558,10 @@ This is the actual final scalar copy of an active step. -/
 theorem exec_exact_cache_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι)) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν νnext status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hnext : st.store.read tag 7 1 = some νnext) :
     ∃ out, exec I (Builder.ins (.copy tag ⟨7, 0⟩ ⟨7, 1⟩)).run st = some out ∧
-      StoreContext tag (fun _ x => x) N A b v νnext status 1 out.store ∧
+      StoreContext tag (fun _ x => x) N A b v νnext status 1 out.store storedMatrix ∧
       out = { st with store := out.store, cnt := st.cnt + I.charge (.copy tag) } := by
   obtain ⟨store, hw, hrun, hshape, hν, hf⟩ := exec_scalar_copy I tag st
     ⟨7, 0⟩ ⟨7, 1⟩ νnext hnext ⟨9, by simp [h.shape, workspaceShape], by norm_num⟩
@@ -571,10 +578,11 @@ previous status untouched. The result includes the actual branch-dependent copy 
 theorem exec_exact_zero_guard {ι : Type} (I : Interp P ι ℝ (OpCount P ι))
     (hI : I.sem = exactSem) (tag : P) (st : St P ℝ (OpCount P ι)) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store) :
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix) :
     ∃ out, exec I (Builder.ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ())).run st = some out ∧
-      StoreContext tag (fun _ x => x) N A b v ν (if ν = 0 then 1 else status) 1 out.store ∧
+      StoreContext tag (fun _ x => x) N A b v ν
+        (if ν = 0 then 1 else status) 1 out.store storedMatrix ∧
       out = { st with store := out.store, cnt := st.cnt + I.charge (.cmp tag) +
         (if ν = 0 then I.charge (.copy tag) else 0) } := by
   classical
@@ -622,7 +630,7 @@ theorem exec_exact_direction_tail {ι : Type} (I : Interp P ι ℝ (OpCount P ι
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν νnext status δ : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix)
     (hδ : st.store.read tag 7 4 = some δ) (hnext : st.store.read tag 7 1 = some νnext) :
     ∃ out, exec I (do
       Builder.forRange (.const N) fun i => do
@@ -633,7 +641,7 @@ theorem exec_exact_direction_tail {ι : Type} (I : Interp P ι ℝ (OpCount P ι
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag (fun _ x => x) N A b
         ⟨v.x, v.r, fun i => v.r i + δ * v.p i⟩ νnext
-        (if νnext = 0 then 1 else status) 1 out.store ∧
+        (if νnext = 0 then 1 else status) 1 out.store storedMatrix ∧
       out = { st with store := out.store, cnt := st.cnt +
         N • (Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) +
         Finsupp.single (.copy tag) 1 + Finsupp.single (.cmp tag) 1 +
@@ -663,7 +671,7 @@ theorem exec_exact_search_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store) (hne : ν ≠ 0) :
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix) (hne : ν ≠ 0) :
     ∃ out, exec I (do
       dot tag ⟨7, 1⟩ 2 0 2 0 (.const N)
       Builder.ins (.bin tag .div ⟨7, 4⟩ ⟨7, 1⟩ ⟨7, 0⟩)
@@ -675,7 +683,7 @@ theorem exec_exact_search_update {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag (fun _ x => x) N A b
         ⟨v.x, v.r, fun i => v.r i + ((v.r ⬝ᵥ v.r) / ν) * v.p i⟩ (v.r ⬝ᵥ v.r)
-        (if v.r ⬝ᵥ v.r = 0 then 1 else status) 1 out.store ∧
+        (if v.r ⬝ᵥ v.r = 0 then 1 else status) 1 out.store storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt = st.cnt + (N • (Finsupp.single (.un tag .conj) 1 +
         Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) +
@@ -715,7 +723,7 @@ theorem exec_exact_positive_body {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
     (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) status 1 st.store)
+    (h : StoreContext tag (fun _ x => x) N A b v (v.r ⬝ᵥ v.r) status 1 st.store storedMatrix)
     (hμ : st.store.read tag 7 2 = some (v.p ⬝ᵥ (A *ᵥ v.p)))
     (hne : v.p ⬝ᵥ (A *ᵥ v.p) ≠ 0) (hr : v.r ⬝ᵥ v.r ≠ 0)
     (hs : ∀ i : Fin N, st.store.read tag 6 i = some ((A *ᵥ v.p) i)) :
@@ -734,7 +742,7 @@ theorem exec_exact_positive_body {ι : Type} (I : Interp P ι ℝ (OpCount P ι)
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag (fun _ x => x) N A b (cgStep A v)
         ((cgStep A v).r ⬝ᵥ (cgStep A v).r)
-        (if (cgStep A v).r ⬝ᵥ (cgStep A v).r = 0 then 1 else status) 1 out.store ∧
+        (if (cgStep A v).r ⬝ᵥ (cgStep A v).r = 0 then 1 else status) 1 out.store storedMatrix ∧
       out.pos = st.pos ∧ out.cur = st.cur ∧ out.curW = st.curW ∧
       out.cnt = st.cnt + Finsupp.single (.bin tag .div) 1 +
         N • (Finsupp.single (.bin tag .mul) 1 + Finsupp.single (.bin tag .add) 1) +
@@ -785,9 +793,9 @@ outcome and is not used to represent this status. -/
 theorem exec_exact_rejection {ι : Type} (I : Interp P ι ℝ (OpCount P ι)) (tag : P)
     (st : St P ℝ (OpCount P ι)) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status : ℝ)
-    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store) :
+    (h : StoreContext tag (fun _ x => x) N A b v ν status 1 st.store storedMatrix) :
     ∃ out, exec I (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩)).run st = some out ∧
-      StoreContext tag (fun _ x => x) N A b v ν (-1) 1 out.store ∧
+      StoreContext tag (fun _ x => x) N A b v ν (-1) 1 out.store storedMatrix ∧
       out = { st with store := out.store, cnt := st.cnt + I.charge (.copy tag) } := by
   have hn : st.store.read tag 7 8 = some (-1) := by
     obtain ⟨word, hw, hword⟩ := h.negative
@@ -807,12 +815,12 @@ retaining the residual, iterate, old cache and stop status. -/
 theorem StoreContext.replace_direction
     {tag : P} {dec : P → K → ℝ} {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
     {b : Fin N → ℝ} {v : CGState ℝ (Fin N)} {ν status flag : ℝ}
-    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old)
+    {old next : Store P K} (h : StoreContext tag dec N A b v ν status flag old storedMatrix)
     (hshape : next.shape = old.shape) (pnew : Fin N → ℝ)
     (hframe : ∀ buf idx, buf ≠ 3 → (buf ≠ 7 ∨ idx ≠ 2) →
       next.read tag buf idx = old.read tag buf idx)
     (hnew : ∀ i : Fin N, ∃ w, next.read tag 3 i = some w ∧ dec tag w = pnew i) :
-    StoreContext tag dec N A b ⟨v.x, v.r, pnew⟩ ν status flag next := by
+    StoreContext tag dec N A b ⟨v.x, v.r, pnew⟩ ν status flag next storedMatrix := by
   apply h.of_state_frame hshape
   · intro buf idx hb
     rcases hb with rfl | rfl | ⟨rfl, hi⟩

@@ -3,9 +3,10 @@
 Design, 2026-11-04. User request: a library-wide pass linking algorithmic theory to particular
 implementations. The coverage inventory is in `Implementation-Coverage.md`; this note owns the
 Lanczos and integration interfaces. CG and rounded normalization have separate reviewed notes.
-The approved exact CG and Lanczos programs now have complete library proofs; see the
-[integration record](Krylov-Implementation-Integration.md). The whole rounded-run interfaces
-below remain proof goals unless explicitly identified as completed.
+The stored and oracle CG/Lanczos exact targets now have complete library proofs. Stored CG and Lanczos
+also have complete rounded execution-to-run/backward theorems; see the
+[integration record](Krylov-Implementation-Integration.md). The implementation
+interfaces below are goals unless identified there as completed.
 
 ## Required chain and scope
 
@@ -72,12 +73,14 @@ CONTRIBUTING section 5.5 requires every new top-level program to have a register
 and a maintainer-approved target. The concrete proposals were first checked outside `NLAlib`.
 The maintainer approved both exact statements and identified programs on 2026-11-04. Their
 unchanged trees, counts and target bodies are now in the library with the complete proofs
-`storedEntriesConjugateGradient` and `storedEntriesLanczos`; only these two targets and trees
-were added to the registry. Existing registry entries, checks, allowlists, ratchets and pins
-are unchanged.
+`storedEntriesConjugateGradient` and `storedEntriesLanczos`. The separately approved oracle
+variants add `matrixFreeConjugateGradient` and `matrixFreeLanczos`; the registry now has nine
+targets and seven trees. Every previous registry entry, allowlist, ratchet and pin remains
+unchanged. The naming-check notation correction was separately approved.
 
-Rounded execution proposals remain separate, with no registered rounded target or complete
-whole-solver realization claim. They reuse the canonical library program APIs. Any new rounded
+Stored CG and Lanczos rounded execution/backward corollaries are supporting theorems on
+their registered compiled trees, with no new rounded target. CG also retains its direct
+physical-energy comparison; Lanczos retains its actual initial-direction certificate. Any new rounded
 target must be concrete and reviewable before its own approval; the existing exact-target
 approval does not authorize an unspecified replacement statement.
 
