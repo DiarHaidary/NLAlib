@@ -50,7 +50,7 @@ Mathlib's `ProbabilityTheory.stdGaussian` on $\mathbb{C}$ (the real two-dimensio
 Gaussian, of variance $1$ in each part) under $z \mapsto z/\sqrt2$.
 Proof: `ProbabilityTheory.stdGaussian_eq_map_pi_orthonormalBasis` with the basis
 `Complex.orthonormalBasisOneI`, then `Measure.map_map` and
-`ProbabilityTheory.gaussianReal_map_const_mul` on each coordinate, `Measure.map_prod_map`. S,
+`ProbabilityTheory.gaussianReal_map_const_mul` on each coordinate, `Measure.map_prod_map`. M,
 about 25 lines. -/
 theorem complexGaussian_eq_map_stdGaussian :
     complexGaussian = (stdGaussian ℂ).map fun z => ((√2 : ℝ)⁻¹ : ℂ) * z := by
@@ -65,7 +65,7 @@ $(x + iy)/\sqrt2$ with $x, y \sim \mathcal{N}(0, 1)$ independent is `NLAlib.comp
 (`ProbabilityTheory.gaussianReal_map_const_mul`, `Measure.map_map`, `Measure.map_prod_map`);
 reorganise the index $(m \oplus m) \times n$ as $m \times n \times \mathrm{Bool}$
 (`MeasureTheory.measurePreserving_piCongrLeft`, `MeasureTheory.Measure.pi_map_pi`-type lemmas).
-M, about 70 lines. -/
+L, about 70 lines. -/
 theorem complexGaussianMatrix_eq_map_gaussianMatrix :
     complexGaussianMatrix m n = (gaussianMatrix (m ⊕ m) n).map fun X =>
       (√2 : ℝ)⁻¹ • ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
@@ -94,7 +94,7 @@ standard complex Gaussian matrix.
 Proof: as `NLAlib.hasLaw_submatrix_of_hasLaw_gaussianMatrix` (selection matrices with orthonormal
 columns, `NLAlib.hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix` on both sides via the
 transpose), or directly from the product structure (`MeasureTheory.Measure.pi_map_restrict`-type
-marginal lemmas). S, about 25 lines. -/
+marginal lemmas). M, about 25 lines. -/
 theorem hasLaw_submatrix_of_hasLaw_complexGaussianMatrix {G : Ω → Matrix m n ℂ}
     (hG : HasLaw G (complexGaussianMatrix m n) μ) {f : p → m} (hf : Function.Injective f)
     {e : q → n} (he : Function.Injective e) :
@@ -110,8 +110,9 @@ $\mathbb{P}[\|\mathbf{G}\|_2 > (2\sqrt2 + t)\sqrt n] \le 2e^{-nt^2}$ for square 
 constant in the exponent differs.
 Proof: with the realification,
 $\|\mathbf{G}\|_2 \le (\|\mathbf{G}_1\|_2 + \|\mathbf{G}_2\|_2)/\sqrt2$
-(`NLAlib.specNorm_add_le`, `NLAlib.specNorm_smul`, the norm of the entrywise coercion equals the
-real norm); if the left event holds one of the two real norms is at least
+(`NLAlib.specNorm_add_le`, `NLAlib.specNorm_smul`, and $\|\mathbf{A}.\mathrm{map}(\uparrow)\|_2
+\le \|\mathbf{A}\|_2$ for real $\mathbf{A}$, not in the library: a private lemma of about 15
+lines, only $\le$ needed); if the left event holds one of the two real norms is at least
 $\sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t$; union bound and
 `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix` for the two blocks
 (`NLAlib.hasLaw_submatrix_of_hasLaw_gaussianMatrix` on `Sum.inl`, `Sum.inr`). M, about 45 lines. -/
@@ -133,7 +134,7 @@ with a one-column frame, or the realification and
 `NLAlib.hasLaw_dotProduct_of_hasLaw_gaussianVector`); its squared modulus is a sum of two
 independent $\mathcal{N}(0, 1/2)$ squares, whose CDF at $s^2$ is $1 - e^{-s^2}$ (polar
 coordinates, `integral_comp_polarCoord_symm`, or the $\chi^2_2$ law of
-`Probability/Distributions/ChiSquare.lean`); `Real.add_one_le_exp`. M, about 60 lines. -/
+`Probability/Distributions/ChiSquare.lean`); `Real.add_one_le_exp`. L, about 60 lines. -/
 theorem measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector {g : Ω → n → ℂ}
     (hg : HasLaw g (complexGaussianVector n) μ) {P : Matrix n n ℂ} (hP : IsStarProjection P)
     (hP₀ : P ≠ 0) {s : ℝ} (hs : 0 ≤ s) :

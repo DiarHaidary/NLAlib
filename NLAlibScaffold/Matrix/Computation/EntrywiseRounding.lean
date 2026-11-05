@@ -48,17 +48,19 @@ theorem isRoundingFn_roundNearest (t : ℕ) (Ω : ℝ) :
   sorry
 
 /-- **Error of scalar rounding**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$\tau \ge 0$, every $z$ with $\lvert z \rvert \le \Omega$ satisfies
+$u, \tau \ge 0$, every $z$ with $\lvert z \rvert \le \Omega$ satisfies
 $\lvert z - \mathrm{fl}(z) \rvert \le u(\lvert z \rvert + 2\tau)$, $\mathrm{fl}(z)$ its rounded
 real and imaginary parts (`NLAlib.roundScalar`).
 Proof: `RCLike.re_add_im` for $z$; the two part errors are at most $u\max(\lvert \operatorname{Re}
 z \rvert, \tau)$ and $u\max(\lvert \operatorname{Im} z \rvert, \tau)$ (`RCLike.abs_re_le_norm`,
-`RCLike.abs_im_le_norm`); $\lvert a + bi \rvert \le \lvert a \rvert + \lvert b \rvert$
-(`norm_add_le`, `RCLike.norm_ofReal`, `RCLike.norm_I_le_one`-type bounds), then
-$\max(x, \tau) \le x + \tau$. Careful over $\mathbb{R}$
-($\operatorname{Im} = 0$, `RCLike.I = 0`). S, about 20 lines. -/
+`RCLike.abs_im_le_norm`); then $\lvert z - \mathrm{fl}(z)\rvert^2 \le u^2(\max(\lvert
+\operatorname{Re} z\rvert, \tau)^2 + \max(\lvert \operatorname{Im} z\rvert, \tau)^2) \le
+u^2(\lvert z\rvert^2 + 2\tau^2) \le u^2(\lvert z\rvert + 2\tau)^2$ (`RCLike.norm_sq_eq_def`;
+the route through $\lvert a\rvert + \lvert b\rvert$ loses $\sqrt2$). Careful over $\mathbb{R}$
+($\operatorname{Im} = 0$, `RCLike.I = 0`). M, about 20 lines. -/
 theorem IsRoundingFn.norm_sub_roundScalar_le {u τ Ω : ℝ} {fl : ℝ → ℝ} (h : IsRoundingFn u τ Ω fl)
-    (hτ : 0 ≤ τ) {z : 𝕜} (hz : ‖z‖ ≤ Ω) : ‖z - roundScalar fl z‖ ≤ u * (‖z‖ + 2 * τ) := by
+    (hu : 0 ≤ u) (hτ : 0 ≤ τ) {z : 𝕜} (hz : ‖z‖ ≤ Ω) :
+    ‖z - roundScalar fl z‖ ≤ u * (‖z‖ + 2 * τ) := by
   sorry
 
 /-- The rounded Hermitian matrix is Hermitian, for every matrix and every rounding function.
@@ -76,7 +78,7 @@ theorem _root_.Matrix.IsHermitian.isHermitian_roundDiag [DecidableEq n] {X : Mat
   sorry
 
 /-- **Error of the rounded Hermitian matrix**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$\tau \ge 0$, a Hermitian $\mathbf{X}$ with $\|\mathbf{X}\|_2 \le \Omega$ satisfies
+$u, \tau \ge 0$, a Hermitian $\mathbf{X}$ with $\|\mathbf{X}\|_2 \le \Omega$ satisfies
 $$\|\mathbf{X} - \mathrm{fl}_{\mathrm{H}}(\mathbf{X})\|_2 \le
 u\bigl(\sqrt{\lvert n \rvert}\,\|\mathbf{X}\|_2 + 2\lvert n \rvert\tau\bigr) \,,$$
 $\mathrm{fl}_{\mathrm{H}}$ the rounding `NLAlib.roundHermitian`; the entrywise errors are
@@ -89,13 +91,15 @@ $\|\mathbf{X}\|_2 \le \Omega$ (`NLAlib.norm_apply_le_specNorm`);
 $\|\mathbf{X}\|_{\mathsf{F}} \le \sqrt{\lvert n \rvert}\|\mathbf{X}\|_2$
 (`NLAlib.frobNorm_le_sqrt_card_mul_specNorm`). M, about 45 lines. -/
 theorem IsRoundingFn.specNorm_sub_roundHermitian_le [Fintype n] [LinearOrder n] {u τ Ω : ℝ}
-    {fl : ℝ → ℝ} (h : IsRoundingFn u τ Ω fl) (hτ : 0 ≤ τ) {X : Matrix n n 𝕜} (hX : X.IsHermitian)
+    {fl : ℝ → ℝ} (h : IsRoundingFn u τ Ω fl) (hu : 0 ≤ u) (hτ : 0 ≤ τ) {X : Matrix n n 𝕜}
+    (hX : X.IsHermitian)
     (hXΩ : specNorm X ≤ Ω) :
     specNorm (X - roundHermitian fl X) ≤
       u * (√(Fintype.card n : ℝ) * specNorm X + 2 * Fintype.card n * τ) := by
   sorry
 
-/-- **Error of rounding the diagonal**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$, a
+/-- **Error of rounding the diagonal**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
+$u \ge 0$, a
 Hermitian $\mathbf{X}$ with $\|\mathbf{X}\|_2 \le \Omega$ satisfies
 $\|\mathbf{X} - \mathrm{fl}_{\mathrm{D}}(\mathbf{X})\|_2 \le u\max(\|\mathbf{X}\|_2, \tau)$,
 $\mathrm{fl}_{\mathrm{D}}$ the rounding of the diagonal `NLAlib.roundDiag`. The error is
@@ -103,10 +107,9 @@ diagonal, so its norm is its largest entry, as [Shah2024, proof of Lemma 2.1] no
 Proof: the difference is `Matrix.diagonal` of the diagonal errors (real since $\mathbf{X}$ is
 Hermitian), each at most $u\max(\lvert \mathbf{X}_{i,i} \rvert, \tau) \le
 u\max(\|\mathbf{X}\|_2, \tau)$; the spectral norm of a diagonal matrix is its largest modulus
-(`NLAlib.specNorm_diagonal_le`). Mind the degenerate case $u < 0$, in which
-the hypotheses force $\mathbf{X} = \mathbf{0}$ or are contradictory. S, about 25 lines. -/
+(`NLAlib.specNorm_diagonal_le`). M, about 25 lines. -/
 theorem IsRoundingFn.specNorm_sub_roundDiag_le [Fintype n] [DecidableEq n] {u τ Ω : ℝ} {fl : ℝ → ℝ}
-    (h : IsRoundingFn u τ Ω fl) {X : Matrix n n 𝕜} (hX : X.IsHermitian)
+    (h : IsRoundingFn u τ Ω fl) (hu : 0 ≤ u) {X : Matrix n n 𝕜} (hX : X.IsHermitian)
     (hXΩ : specNorm X ≤ Ω) : specNorm (X - roundDiag fl X) ≤ u * max (specNorm X) τ := by
   sorry
 

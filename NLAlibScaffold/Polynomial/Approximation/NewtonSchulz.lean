@@ -59,7 +59,7 @@ Proof: by oddness (`NLAlib.newtonSchulz_neg`) reduce to $x > 0$. $g$ is concave 
 so it lies above the chords through $(0,0)$, $(1,1)$, $(\sqrt3, 0)$: $g(x) \ge x$ on $[0,1]$ and
 $g(x) \ge (\sqrt3 - x)/(\sqrt3 - 1)$ on $[1, \sqrt3]$ (polynomial inequalities, `nlinarith`
 with `Real.sq_sqrt`, `Real.sqrt_lt_sqrt`); both exceed $u \ge \lvert \xi \rvert$ on the range.
-S, about 25 lines. -/
+M, about 25 lines. -/
 theorem mul_newtonSchulz_add_pos {u x ξ : ℝ} (hξ : |ξ| ≤ u) (hux : u < |x|)
     (hx : |x| < √3 - (√3 - 1) * u) : 0 < x * (newtonSchulz x + ξ) := by
   sorry

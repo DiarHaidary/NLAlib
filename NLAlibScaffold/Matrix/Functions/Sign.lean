@@ -46,7 +46,7 @@ $g(\mathbf{A}) = \tfrac12\mathbf{A}(3\mathbf{I} - \mathbf{A}^2)$.
 Proof: `cfc_mul`, `cfc_sub`, `cfc_const`, `cfc_id`, `cfc_pow` (Mathlib's unital continuous
 functional calculus) after rewriting
 `NLAlib.newtonSchulz` as `fun x => (2⁻¹ : ℝ) * (x * (3 - x * x))`; or
-`Matrix.IsHermitian.cfc_eq` and a diagonal computation. S, about 12 lines. -/
+`Matrix.IsHermitian.cfc_eq` and a diagonal computation. M, about 12 lines. -/
 theorem _root_.Matrix.IsHermitian.cfc_newtonSchulz {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     cfc newtonSchulz A = (2⁻¹ : ℝ) • (A * ((3 : ℝ) • (1 : Matrix n n 𝕜) - A * A)) := by
   sorry
@@ -82,7 +82,7 @@ $\operatorname{sign}(g(\mathbf{A})) = \operatorname{sign}(\mathbf{A})$. [Shah202
 Theorem 2.6].
 Proof: `cfc_comp` (Mathlib `cfc_comp'`), and $\operatorname{sign} \circ g = \operatorname{sign}$
 on the spectrum (`NLAlib.mul_newtonSchulz_add_pos` at $\xi = u = 0$, or directly:
-$g(x) = x(3 - x^2)/2$ has the sign of $x$), `cfc_congr`. S, about 12 lines. -/
+$g(x) = x(3 - x^2)/2$ has the sign of $x$), `cfc_congr`. M, about 12 lines. -/
 theorem _root_.Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : ∀ x ∈ spectrum ℝ A, 0 < |x| ∧ |x| < √3) :
     cfc Real.sign (cfc newtonSchulz A) = cfc Real.sign A := by
@@ -128,7 +128,7 @@ eigenvalue, $\operatorname{Re}\operatorname{tr}\tfrac12(\mathbf{I} + \operatorna
 Proof: `Matrix.IsHermitian.re_trace_cfc` for $f(x) = \tfrac12(1 + \operatorname{sign}(x - c))$
 (the left side is $\operatorname{tr}$ of `cfc` of it, `cfc_add`, `cfc_const`), which is the
 indicator of $(c, \infty)$ on the spectrum; count with `NLAlib.inertiaPos` and
-`Matrix.IsHermitian.lt_inertiaPos_iff`. S, about 20 lines. -/
+`Matrix.IsHermitian.lt_inertiaPos_iff`. M, about 20 lines. -/
 theorem _root_.Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) :
     RCLike.re ((2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix n n 𝕜)))).trace =

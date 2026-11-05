@@ -85,25 +85,25 @@ every $\mathbf{A} \in \Bbbk^{m \times n}$ with $\|\mathbf{A}\|_2 \le \Omega$ and
 $(\mathbf{Q}, \mathbf{R}) = \mathrm{qr}(\mathbf{A})$, $d = \max(m, n)$, the factor
 $\mathbf{R}$ is upper trapezoidal and there are a unitary $\mathbf{Q}'$ and a matrix
 $\mathbf{A}' = \mathbf{Q}'\mathbf{R}$ with
-$$\|\mathbf{Q} - \mathbf{Q}'\|_2 \le \mu(d)\,u \,, \qquad
+$$\|\mathbf{Q}' - \mathbf{Q}\|_2 \le \mu(d)\,u \,, \qquad
 \|\mathbf{A} - \mathbf{A}'\|_2 \le \mu(d)\,u\max(\|\mathbf{A}\|_2, \tau) \,.$$
 [Shah2024, Definition 1.2], with $\tau = 0$ and no range there. -/
 def IsQRErr (u τ Ω : ℝ) (μ : ℕ → ℝ) (qr : QRMap 𝕜) : Prop :=
   ∀ {m n : ℕ} (A : Matrix (Fin m) (Fin n) 𝕜), specNorm A ≤ Ω →
     IsUpperTrapezoidal (qr A).2 ∧
       ∃ Q' : Matrix (Fin m) (Fin m) 𝕜, HasOrthonormalCols Q' ∧
-        specNorm ((qr A).1 - Q') ≤ μ (max m n) * u ∧
+        specNorm (Q' - (qr A).1) ≤ μ (max m n) * u ∧
         specNorm (A - Q' * (qr A).2) ≤ μ (max m n) * u * max (specNorm A) τ
 
 /-- `IsUnifSampler u unif`: **`unif` turns an ideal uniform sample into a computed one**: for a
 scale $s \ge 0$ and $v \in [-1, 1]$, the computed sample $c = \mathrm{unif}(s, v)$ lies in
-$[-s, s]$ and $\lvert c - sv \rvert \le s u$. With $v$ uniform on $[-1, 1]$ this is the coupling
+$[-s, s]$ and $\lvert sv - c \rvert \le s u$. With $v$ uniform on $[-1, 1]$ this is the coupling
 of [Shah2024, Definition 1.3]. -/
 def IsUnifSampler (u : ℝ) (unif : ℝ → ℝ → ℝ) : Prop :=
-  ∀ s v : ℝ, 0 ≤ s → v ∈ Set.Icc (-1 : ℝ) 1 → |unif s v| ≤ s ∧ |unif s v - s * v| ≤ s * u
+  ∀ s v : ℝ, 0 ≤ s → v ∈ Set.Icc (-1 : ℝ) 1 → |unif s v| ≤ s ∧ |s * v - unif s v| ≤ s * u
 
 /-- `IsNormalSampler u c normal`: **`normal` turns an ideal complex Gaussian sample into a
-computed one** with relative error $c\,u$: $\lvert \mathrm{normal}(z) - z \rvert \le c\,u
+computed one** with relative error $c\,u$: $\lvert z - \mathrm{normal}(z) \rvert \le c\,u
 \lvert z \rvert$ for every $z \in \mathbb{C}$. With $z$ standard complex Gaussian this is the
 coupling of [Shah2024, Definition 1.4]. -/
 def IsNormalSampler (u c : ℝ) (normal : ℂ → ℂ) : Prop :=

@@ -126,8 +126,9 @@ scale $R_0$, failure parameter $\rho$ and at most $N$ sign steps: a leaf
 $(\mathbf{I}, \operatorname{Re}\operatorname{diag}\mathbf{A})$ for $k \le 1$, a leaf
 $(\mathbf{I}, \mathbf{0})$ for $R \le \varepsilon R_0$; otherwise the computed shift
 $c = \mathrm{unif}(R/\ell, v)$, $\mathbf{B}$ the Newton–Schulz sign of the rounded
-$\mathbf{A} - c\mathbf{I}$ at accuracy `NLAlib.bisectionSignTol` and scale $2R$, the rounded
-projectors $\mathbf{P}_{\pm} = \tfrac12(\mathbf{I} \pm \mathbf{B})$, $k_+$ the rounded trace of
+$\mathbf{A} - c\mathbf{I}$ at accuracy `NLAlib.bisectionSignTol` and scale $2R$, the projectors
+$\mathbf{P}_{\pm} = \tfrac12(\mathbf{I} \pm \mathbf{B})$ stored as rounded Hermitian matrices
+(every entry rounded, so no exact halving is assumed), $k_+$ the rounded trace of
 $\mathbf{P}_+$ rounded to an integer and capped at $k$; one child on
 $\mathbf{A} \mp (R/2)\mathbf{I}$ when $k_+ \in \{k, 0\}$, and otherwise the deflated bases
 $\mathbf{Q}_{\pm}$ of $\mathbf{P}_\pm$ and
@@ -142,8 +143,8 @@ noncomputable def eighStep (P : EighPrimitives) (N signFuel : ℕ) (R₀ ρ : �
     let c := P.unif (R / ℓ) s.1
     let Ash := roundDiag P.fl (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))
     let B := newtonSchulzSign P.mm P.fl (bisectionSignTol k ε ρ ℓ) (2 * R) signFuel Ash
-    let Pp := roundDiag P.fl ((2⁻¹ : ℝ) • (1 + B))
-    let Pm := roundDiag P.fl ((2⁻¹ : ℝ) • (1 - B))
+    let Pp := roundHermitian P.fl ((2⁻¹ : ℝ) • (1 + B))
+    let Pm := roundHermitian P.fl ((2⁻¹ : ℝ) • (1 - B))
     let kp := min k (round (roundedSum P.fl fun i => RCLike.re (Pp i i))).toNat
     if kp = k then .shift true (roundDiag P.fl (A - (R / 2) • (1 : Matrix (Fin k) (Fin k) ℂ)))
       (R / 2)
@@ -254,14 +255,15 @@ structure IsApproxDiagonalization {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- `IsEighGoodSample w x t y s`: **the good events of the node $y$ for its ideal sample**
 $s = (v, \mathbf{G}_\pm)$, with the ideal shift $c' = (R/\ell)v$:
-(I) every eigenvalue of $\mathbf{A}$ is at distance at least $w$ from $c'$; (II) for each side
+(I) the seed lies in $[-1, 1]$ (true almost surely) and every eigenvalue of $\mathbf{A}$ is
+at distance at least $w$ from $c'$; (II) for each side
 $\pm$ whose spectral projector $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} -
 c'\mathbf{I}))$ has rank $r$ with $0 < r < k$, and every orthonormal basis $\mathbf{V}$ of its
 range, the leading $k \times k$ block $\mathbf{G}$ of $\mathbf{G}_\pm$ has
 $\|\mathbf{G}\|_2 < t$ and $\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) > x$, with
 $\mathbf{G}_1$ its first $r$ columns. [Shah2024, Lemma 4.1], Events I and II there. -/
 def IsEighGoodSample {N : ℕ} (w x t : ℝ) (y : EighNode) (s : EighSample N) : Prop :=
-  (∀ e ∈ spectrum ℝ y.A, w ≤ |e - y.R / y.ℓ * s.1|) ∧
+  (s.1 ∈ Set.Icc (-1 : ℝ) 1 ∧ ∀ e ∈ spectrum ℝ y.A, w ≤ |e - y.R / y.ℓ * s.1|) ∧
     ∀ (b : Bool) (r : ℕ) (V : Matrix (Fin y.k) (Fin r) ℂ), 0 < r → r < y.k →
       HasOrthonormalCols V →
       V * Vᴴ = (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) •

@@ -37,12 +37,14 @@ namespace NLAlib
 /-- **Union bound over adaptively chosen events with fresh samples**: let $\zeta_i$ ($i$ in a
 countable set) be random samples of law $\nu$, and $X_i$ random states with countably many
 values, each event $\{X_i = y\}$ measurable and independent of $\zeta_i$. Let $S_i(y)$ be
-measurable sets and $q_i(y, \cdot) \ge 0$ measurable charges with
+sets (not necessarily measurable) and $q_i(y, \cdot) \ge 0$ measurable charges with
 $\nu(S_i(y)) \le \int q_i(y, z)\,d\nu(z)$ for every $y$, and suppose
 $\sum_i q_i(X_i, \zeta_i) \le \theta$ surely. Then
 $$\mathbb{P}[\exists i,\ \zeta_i \in S_i(X_i)] \le \theta \,.$$
 No printed source; [Shah2024, proof of Theorem 4.2] applies the union bound informally.
-Proof: $\mathbb{P}[\exists i, \cdot] \le \sum_i \mathbb{P}[\zeta_i \in S_i(X_i)]$
+Proof: replace $S_i(y)$ by `MeasureTheory.toMeasurable` $\nu$ $S_i(y)$, measurable with the same
+measure (`MeasureTheory.measure_toMeasurable`, `MeasureTheory.subset_toMeasurable`); then
+$\mathbb{P}[\exists i, \cdot] \le \sum_i \mathbb{P}[\zeta_i \in S_i(X_i)]$
 (`MeasureTheory.measure_iUnion_le`); split each by the countably many values $y$ of $X_i$
 (`MeasureTheory.measure_biUnion_le` or `tsum` over `Set.Countable.toEncodable`), use
 independence of $\{X_i = y\}$ and $\zeta_i$
@@ -51,13 +53,13 @@ and the law, bound $\nu(S_i(y))$ by the mean of $q_i(y, \cdot)$, reassemble with
 again into $\int q_i(X_i, \zeta_i)\,d\mu$ (`MeasureTheory.lintegral_tsum`,
 `ProbabilityTheory.IndepFun.lintegral_mul_eq_mul_lintegral`-type factorisation on each fibre),
 exchange sum and integral, and bound by $\theta$ (`MeasureTheory.lintegral_mono`,
-`MeasureTheory.measureReal_def`). M, about 80 lines. -/
+`MeasureTheory.measureReal_def`). L, about 80 lines. -/
 theorem measureReal_exists_mem_le_of_forall_measure_le_lintegral {ι γ β Ω : Type*} [Countable ι]
     {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsProbabilityMeasure μ] [MeasurableSpace β]
     {ν : Measure β} {ζ : ι → Ω → β} {X : ι → Ω → γ} (hζ : ∀ i, HasLaw (ζ i) ν μ)
     (hXc : ∀ i, (Set.range (X i)).Countable) (hXm : ∀ i y, MeasurableSet {ω | X i ω = y})
     (hind : ∀ i y, IndepFun (fun ω => X i ω = y) (ζ i) μ) {S : ι → γ → Set β}
-    (hS : ∀ i y, MeasurableSet (S i y)) {q : ι → γ → β → ℝ≥0∞} (hq : ∀ i y, Measurable (q i y))
+    {q : ι → γ → β → ℝ≥0∞} (hq : ∀ i y, Measurable (q i y))
     (hSq : ∀ i y, ν (S i y) ≤ ∫⁻ z, q i y z ∂ν) {θ : ℝ} (hθ : 0 ≤ θ)
     (hsum : ∀ ω, ∑' i, q i (X i ω) (ζ i ω) ≤ ENNReal.ofReal θ) :
     μ.real {ω | ∃ i, ζ i ω ∈ S i (X i ω)} ≤ θ := by

@@ -1,9 +1,15 @@
 # Design note: Hermitian diagonalization in linear precision — Newton–Schulz sign, randomized deflation and spectral bisection under black-box multiplication and QR (stage HDIAG)
 
-Status: draft for review (APPROVE and OQ1–OQ12 pending; decision sheet
-`~/nlalib-harness/state/decisions/HDIAG.json`, reviewer field "Fable: pending"). Branch
+Status: reviewed (Fable, `~/nlalib-harness/reports/Review-Fable-HDIAG-Design.md`: approve with
+changes); APPROVE and OQ1–OQ13 pending with the maintainer (decision sheet
+`~/nlalib-harness/state/decisions/HDIAG.json`). Review changes (second commit): items 1–3 applied
+(new public EB1a child invariant and EB1b rank recovery; $\mathbf{P}_\pm$ stored by
+`roundHermitian`), Event I now includes "seed in $[-1, 1]$" (without it EB1 was false: the sampler
+contract says nothing outside $[-1, 1]$), and the non-blocking items 4–10 (EB4 route and label, UB1
+without measurability of the bad sets, EB2 outline, R2 route and `0 ≤ u` on R2/R5/R6, EV7 at
+$n = 0$, relabels, N10 orientation of `IsQRErr`/`IsUnifSampler`); 60 statements. Branch
 `design/hdiag` (worktree `~/nlalib-design-hdiag`, from `origin/main` 4d4e9fc9). Targets:
-`~/nlalib-harness/pilot/hdiag-targets.json` (58 statements).
+`~/nlalib-harness/pilot/hdiag-targets.json` (60 statements).
 Source read in full: R. Shah, *Fast Hermitian Diagonalization with Nearly Optimal Precision*,
 arXiv:2408.09880v1 (LaTeX source; §1.2 model, Proposition 1.1, Definitions 1.1–1.4, §2 Lemmas
 2.1–2.5 and Theorem 2.6, §3 Lemmas 3.1–3.2 and Theorem 3.3, §4 Algorithm 3, Lemma 4.1,
@@ -19,11 +25,11 @@ Matrix-SpectralProjections,Matrix-EigenvectorDeflation}.md`.
 
 Checks on the skeleton (all run on this branch, `LEAN_NUM_THREADS=2`, module targets only):
 `lake build --wfail` of the seven new `NLAlib` modules (definitions only) succeeds;
-`lake build NLAlibScaffold` gives exactly 58 `declaration uses sorry` warnings and nothing else;
+`lake build NLAlibScaffold` gives exactly 60 `declaration uses sorry` warnings and nothing else;
 `scripts/check_rules.py --files` on every touched file (0 errors; one warning, C8 on `Demmel1997`,
 predates this stage), `check_refs.py`, `check_constants.py`, `check_latex.mjs` (KaTeX 0.16.22) and
 both `lake exe mk_all --module --lib NLAlib --check` and `… --lib NLAlibScaffold --check` are
-clean; `bin/check-skeleton --strict` (rule G3): 58 targets, 0 names missing an import, 0
+clean; `bin/check-skeleton --strict` (rule G3): 60 targets, 0 names missing an import, 0
 unresolved. The extraction-based name check (N1–N18) was not run; names for review are in §9.
 
 ## Maintainer decisions already made (2026-11-05)
@@ -49,10 +55,10 @@ unresolved. The extraction-based name check (N1–N18) was not run; names for re
 | Algorithms (new definitions, `NLAlib`, build `--wfail`) | `newtonSchulz` and `newtonSchulzSteps` (scalar); `newtonSchulzRounded`, `IsNewtonSchulzConverged`, `newtonSchulzLoop`, `newtonSchulzSign` (Algorithm 1); `deflate` (Algorithm 2); `EighPrimitives`, `EighSample`, `leadingBlock`, `bisectionSignTol`, `bisectionDepth`, `EighStep`, `EighStep.IsSplit`, `eighStep`, `eighAux`, `eigh` (Algorithm 3), `EighNode`, `eighChild`, `eighNodeAt` (the recursion tree), `IsApproxDiagonalization` (output guarantee), `IsEighGoodSample` (Events I, II); `complexGaussian`, `complexGaussianVector`, `complexGaussianMatrix` |
 | Headline | Theorem 4.2 (EV6): with probability at least $1 - \theta$, $\mathsf{eigh}$ returns $(\mathbf{U}, \mathbf{d})$ with $\|\mathbf{A} - \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}\|_2 \le 2\varepsilon R_0$ and $\sigma_i(\mathbf{U}) \in [1 \pm \varepsilon/3]$, under explicit precision hypotheses; in bits (EV7) $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ |
 | Other results | Lemmas 2.1, 2.3–2.5, Theorem 2.6 (SIGN, SN4), Theorem 3.3 (deterministic DF2, probabilistic DP1), Lemma 4.1 (EB1), Proposition 1.1 (LB3, OQ5); the replacements of Lemmas 2.2 (SG2) and 3.1 (CG6) |
-| Paper gaps found and fixed | G1 the iterates of SIGN and the compressions $\mathbf{C}_\pm$ are treated as Hermitian but MM does not make them so (fixed by rounded Hermitian parts, OQ8); G2 the probability of missing Event I is $nw\ell/R$, not $nw/R$ (factor $\ell$ dropped, OQ9; costs one $\log_2\log_2(1/\varepsilon)$); G3 Proposition 1.1's sign-of-entries argument bounds the Frobenius norm, not the spectral norm (fixed by choosing the sign from $\mathbf{1}^{\mathsf{T}}\mathbf{R}\mathbf{1}$, same conclusion); G4 Lemma 4.1's bound on $\|\mathbf{D}_\pm\|_2$ drops the $R_0$ part of the children's residual (absorbed by the slack $\varepsilon R_0/\ell$); G5 Lemma 2.5 needs $\varepsilon > 0$ and $x_0 \ne 0$ explicitly |
-| Statements | 58 sorried: S 28, M 21, L 6, H 3, in 12 scaffold files (§3.11) |
-| Staging | W1 scalar, rounding, contracts, sign facts (28); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH (13); LB Proposition 1.1 (3); W5 bounded-exponent bridge later (§12) |
-| Open questions | 12 (§10), each with a recommendation |
+| Paper gaps found and fixed | G1 the iterates of SIGN and the compressions $\mathbf{C}_\pm$ are treated as Hermitian but MM does not make them so (fixed by rounded Hermitian parts, OQ8); G2 the probability of missing Event I is $nw\ell/R$, not $nw/R$ (factor $\ell$ dropped, OQ9; costs one $\log_2\log_2(1/\varepsilon)$); G3 Proposition 1.1's sign-of-entries argument bounds the Frobenius norm, not the spectral norm (fixed by choosing the sign from $\mathbf{1}^{\mathsf{T}}\mathbf{R}\mathbf{1}$, same conclusion); G4 Lemma 4.1's bound on $\|\mathbf{D}_\pm\|_2$ drops the $R_0$ part of the children's residual (absorbed by the slack $\varepsilon R_0/\ell$). Side condition (not a paper gap): Lemma 2.5 needs $\varepsilon > 0$ and $x_0 \ne 0$ explicitly because $u = 0$ is allowed. Also noted: the paper's depth check compares $R_\ell$ with $\varepsilon$, not $\varepsilon_\ell$; its Lemma 2.5 proof needs $\lvert x_k\rvert \ge 20u$ throughout (NS9) |
+| Statements | 60 sorried: S 19, M 26, L 12, H 3, in 12 scaffold files (§3.11) |
+| Staging | W1 scalar, rounding, contracts, sign facts (28); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH (15); LB Proposition 1.1 (3); W5 bounded-exponent bridge later (§12) |
+| Open questions | 13 (§10), each with a recommendation |
 
 ## 1. Scope
 
@@ -112,9 +118,9 @@ structure IsMatMulErr (u τ Ω : ℝ) (μ : ℕ → ℝ) (mm : MatMulMap 𝕜) :
   isHermitian_conjTranspose : ∀ {m n} (A : Matrix (Fin m) (Fin n) 𝕜), Matrix.IsHermitian (mm A Aᴴ)
 def IsQRErr (u τ Ω) (μ) (qr : QRMap 𝕜) : Prop :=
   ∀ {m n} (A), specNorm A ≤ Ω → IsUpperTrapezoidal (qr A).2 ∧ ∃ Q', HasOrthonormalCols Q' ∧
-    specNorm ((qr A).1 - Q') ≤ μ (max m n) * u ∧ specNorm (A - Q' * (qr A).2) ≤ μ (max m n) * u * max (specNorm A) τ
+    specNorm (Q' - (qr A).1) ≤ μ (max m n) * u ∧ specNorm (A - Q' * (qr A).2) ≤ μ (max m n) * u * max (specNorm A) τ
 def IsUnifSampler (u) (unif : ℝ → ℝ → ℝ) : Prop :=        -- scale s, ideal seed v ∈ [-1, 1]
-  ∀ s v, 0 ≤ s → v ∈ Set.Icc (-1) 1 → |unif s v| ≤ s ∧ |unif s v - s * v| ≤ s * u
+  ∀ s v, 0 ≤ s → v ∈ Set.Icc (-1) 1 → |unif s v| ≤ s ∧ |s * v - unif s v| ≤ s * u
 def IsNormalSampler (u c) (normal : ℂ → ℂ) : Prop := ∀ z, ‖z - normal z‖ ≤ c * u * ‖z‖
 ```
 
@@ -156,10 +162,14 @@ satisfiable. Errors are written exact minus computed (N10).
   side with true projector of rank $0 < r < k$ and every orthonormal basis $\mathbf{V}$ of it,
   $\|\mathbf{G}\|_2 < t$ and $\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) > x$).
 
-Modelling deviations from Algorithm 3 (OQ12): scalar parameters $R$, $\varepsilon$, $\ell$,
-$\beta$ exact; $k_- = k - k_+$ with $k_+$ capped at $k$; stopping test componentwise; explicit step
-caps (`signFuel`, recursion budget) whose sufficiency is a hypothesis/theorem; rounded Hermitian
-parts (OQ8).
+Modelling deviations from Algorithms 1 and 3 (OQ12): scalar parameters $R$, $\varepsilon$,
+$\ell$, $\beta$ exact; $k_- = k - k_+$ with $k_+$ capped at $k$; stopping test componentwise and
+applied before each step (the paper's repeat–until steps first; harmless: a passing start is
+already accurate); explicit step caps (`signFuel`, recursion budget) whose sufficiency is a
+hypothesis/theorem; rounded Hermitian parts of the iterates and compressions (OQ8); the projectors
+$\mathbf{P}_\pm = \tfrac12(\mathbf{I} \pm \mathbf{B})$ stored by `roundHermitian` (every entry
+rounded), so a bounded-exponent model never needs exact halving of subnormals (review item 3);
+Event I of `IsEighGoodSample` includes "seed in $[-1, 1]$" (a null event under the law).
 
 ### 2.4 Complex Gaussian (`NLAlib/RandomMatrix/Gaussian/Complex.lean`, written)
 
@@ -191,7 +201,7 @@ $0 < \lvert x_0\rvert$, $20u \le \lvert x_0\rvert \le 3/2$ and $\lvert x_{k+1} -
 u$, $\lvert 1 - x_N^2\rvert \le \varepsilon$ for every natural $N \ge$ `newtonSchulzSteps x₀ ε`.
 NS8 and NS9 are the invariants $\lvert x_{k+1}\rvert \le 1 + u$ and $\lvert x_k\rvert \ge
 \min(\lvert x_0\rvert, 1/2)$ (the latter used implicitly in Theorem 2.6 when every step is bounded
-by $a/b$; gap G5's companion). NS11/NS12: monotonicity of the step count. Degenerate cases:
+by $a/b$). NS11/NS12: monotonicity of the step count. Degenerate cases:
 $u = 0$ is exact arithmetic (allowed; then $x_0 \ne 0$ is needed, hence `h₀`); $\varepsilon = 0$
 would make NS10 false (the iteration converges only in the limit), hence `hε`.
 
@@ -269,7 +279,8 @@ conditions ⟹ $\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}
 ### 3.7 Union bound with fresh samples (UB1, `Probability/AdaptiveUnionBound.lean`)
 
 Index set countable (paths), samples $\zeta_i \sim \nu$, states $X_i$ with countable range,
-measurable fibres $\{X_i = y\}$ independent of $\zeta_i$, bad sets $S_i(y)$ with $\nu(S_i(y)) \le
+measurable fibres $\{X_i = y\}$ independent of $\zeta_i$, bad sets $S_i(y)$ (not assumed
+measurable; the proof passes to `toMeasurable`) with $\nu(S_i(y)) \le
 \int q_i(y, \cdot)\,d\nu$, $\sum_i q_i(X_i, \zeta_i) \le \theta$ surely ⟹ $\mathbb{P}[\exists i,
 \zeta_i \in S_i(X_i)] \le \theta$. The charge $q$ lets the bound count "expected number of splits"
 (Event II is charged only at splits, as in the paper's $\lvert X_D\rvert = n - 1$) although the
@@ -278,14 +289,19 @@ so no measurable space on the (dependent-type) node states is needed.
 
 ### 3.8 Algorithm 3, deterministic (EB1–EB5, `Matrix/Computation/SpectralBisection.lean`)
 
+**EB1b** (rank recovery on Event I, public so that EV2 can use it): for an internal node with
+seed in $[-1, 1]$ and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$.
+**EB1a** (child invariant): under EB1's hypotheses without the children's guarantee, every child
+has a Hermitian matrix of norm at most its window — what EB5's induction needs at each child.
 **EB1** (Lemma 4.1): node contracts and precision hypotheses (written in §3.11's table and the
 docstring), good sample when internal ($k \ge 2$, $R > \varepsilon R_0$), children approximate
 diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$ ⟹ node output with
-$(\varepsilon(R + R_0), \varepsilon/3)$. EB2 depth $\le \ell$ (exact telescoping
+$(\varepsilon(R + R_0), \varepsilon/3)$, using EB1a and EB1b. EB2 depth $\le \ell$ (exact telescoping
 $\prod_{i<\ell}\frac{\ell+i+4}{\ell+i} = \frac{2\ell(2\ell+1)(2\ell+2)(2\ell+3)}{\ell(\ell+1)(\ell+2)(\ell+3)}$
 against $\varepsilon_\ell = \varepsilon(\ell-1)/(2\ell-1)$; the paper compares with $\varepsilon$
 instead of $\varepsilon_\ell$, which is also fine but by a margin of order $1/\ell$). EB3 at most
-$(n+1)(\ell+1)$ nodes, EB4 at most $n$ splits. **EB5**: every internal node good ⟹
+$(n+1)(\ell+1)$ nodes, EB4 at most $n$ splits (by induction on the path length, since the tree
+may be infinite without depth hypotheses). **EB5**: every internal node good ⟹
 $\mathsf{eigh}$ is an approximate diagonalization with $(2\varepsilon R_0, \varepsilon/3)$, under
 the global hypotheses with
 $$\beta = \frac{\varepsilon\sqrt\theta}{2880\,\ell n^{3/2}(2\sqrt n + \sqrt{2\log(16n/\theta)})}
@@ -335,7 +351,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | NS1 | `newtonSchulz_neg` | S | 0 | — |
 | NS2 | `one_sub_newtonSchulz_sq` | S | 0 | — |
 | NS3 | `abs_newtonSchulz_le_one` | S | 1 | NS2 |
-| NS4 | `mul_newtonSchulz_add_pos` | S | 1 | NS1 |
+| NS4 | `mul_newtonSchulz_add_pos` | M | 1 | NS1 |
 | NS5 | `abs_le_abs_newtonSchulz_add` | S | 1 | NS1 |
 | NS6 | `abs_one_sub_sq_newtonSchulz_add_le` | M | 1 | NS1, NS2 |
 | NS7 | `abs_one_sub_sq_newtonSchulz_add_le_add` | S | 2 | NS2, NS3 |
@@ -349,23 +365,23 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| SG1 | `Matrix.IsHermitian.cfc_newtonSchulz` | S | 0 | — |
+| SG1 | `Matrix.IsHermitian.cfc_newtonSchulz` | M | 0 | — |
 | SG2 | `Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le` | M | 0 | — |
-| SG3 | `Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz` | S | 2 | NS4 |
+| SG3 | `Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz` | M | 2 | NS4 |
 | SG4 | `Matrix.IsHermitian.specNorm_sub_cfc_sign_le` | S | 0 | — |
 | SG5 | `Matrix.IsHermitian.exists_hasOrthonormalCols_mul_conjTranspose_eq` | M | 0 | — |
-| SG6 | `Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign` | S | 0 | — |
+| SG6 | `Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign` | M | 0 | — |
 
 **Matrix/Computation/EntrywiseRounding.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | R1 | `isRoundingFn_roundNearest` | S | 0 | — |
-| R2 | `IsRoundingFn.norm_sub_roundScalar_le` | S | 0 | — |
+| R2 | `IsRoundingFn.norm_sub_roundScalar_le` | M | 0 | — |
 | R3 | `isHermitian_roundHermitian` | S | 0 | — |
 | R4 | `Matrix.IsHermitian.isHermitian_roundDiag` | S | 0 | — |
 | R5 | `IsRoundingFn.specNorm_sub_roundHermitian_le` | M | 1 | R2 |
-| R6 | `IsRoundingFn.specNorm_sub_roundDiag_le` | S | 0 | — |
+| R6 | `IsRoundingFn.specNorm_sub_roundDiag_le` | M | 0 | — |
 | R7 | `IsRoundingFn.abs_sum_sub_roundedSum_le` | M | 0 | — |
 
 **Matrix/Computation/Primitives.lean**
@@ -389,12 +405,12 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| CG0 | `complexGaussian_eq_map_stdGaussian` | S | 0 | — |
-| CG1 | `complexGaussianMatrix_eq_map_gaussianMatrix` | M | 0 | — |
+| CG0 | `complexGaussian_eq_map_stdGaussian` | M | 0 | — |
+| CG1 | `complexGaussianMatrix_eq_map_gaussianMatrix` | L | 0 | — |
 | CG2 | `hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix` | M | 1 | CG1 |
-| CG3 | `hasLaw_submatrix_of_hasLaw_complexGaussianMatrix` | S | 1 | CG1 |
+| CG3 | `hasLaw_submatrix_of_hasLaw_complexGaussianMatrix` | M | 1 | CG1 |
 | CG4 | `measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix` | M | 1 | CG1 |
-| CG5 | `measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector` | M | 2 | CG2 |
+| CG5 | `measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector` | L | 2 | CG2 |
 | CG6 | `measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix` | L | 3 | CG5, CG3 |
 
 **Matrix/Computation/Deflation.lean**
@@ -414,29 +430,31 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| UB1 | `measureReal_exists_mem_le_of_forall_measure_le_lintegral` | M | 0 | — |
+| UB1 | `measureReal_exists_mem_le_of_forall_measure_le_lintegral` | L | 0 | — |
 
 **Matrix/Computation/SpectralBisection.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| EB1 | `isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 6 | SN4, SG2, SG5, SG6, R5, R6, R7, DF2 |
+| EB1b | `eighStep_isSplit_iff_of_forall_le_abs_sub` | M | 6 | SN4, SG2, SG6, R5, R6, R7 |
+| EB1a | `isHermitian_and_specNorm_le_of_eighChild_eq_some` | M | 7 | EB1b, SG5, DF2, R3, R4, R5, R6 |
+| EB1 | `isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 8 | EB1a, EB1b, SG5, DF1, DF2, R5 |
 | EB2 | `eighNodeAt_eq_none_of_bisectionDepth_lt_length` | M | 0 | — |
-| EB3 | `encard_eighNodeAt_ne_none_le` | M | 1 | EB2 |
-| EB4 | `encard_eighNodeAt_isSplit_le` | M | 0 | — |
-| EB5 | `isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 7 | EB1, EB2, NS11, NS12 |
+| EB3 | `encard_eighNodeAt_ne_none_le` | L | 1 | EB2 |
+| EB4 | `encard_eighNodeAt_isSplit_le` | L | 0 | — |
+| EB5 | `isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 9 | EB1, EB1a, EB2, NS11, NS12 |
 
 **Eigensolvers/SpectralBisection.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| EV1 | `measureReal_exists_abs_sub_lt_le` | S | 0 | — |
-| EV2 | `measure_not_isEighGoodSample_le` | L | 4 | EV1, CG2, CG3, CG4, CG6, SG5, SG6 |
+| EV1 | `measureReal_exists_abs_sub_lt_le` | M | 0 | — |
+| EV2 | `measure_not_isEighGoodSample_le` | L | 7 | EV1, EB1b, CG2, CG3, CG4, CG6, SG5 |
 | EV3 | `countable_range_eighNodeAt` | M | 0 | — |
-| EV4 | `measurableSet_eighNodeAt_eq` | M | 1 | EV3 |
+| EV4 | `measurableSet_eighNodeAt_eq` | L | 1 | EV3 |
 | EV5 | `indepFun_eighNodeAt_eq` | H | 2 | EV4 |
-| EV6 | `measureReal_not_isApproxDiagonalization_eigh_le` | L | 8 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
-| EV7 | `measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 9 | EV6 |
+| EV6 | `measureReal_not_isApproxDiagonalization_eigh_le` | L | 10 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
+| EV7 | `measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 11 | EV6 |
 
 **LowerBounds/Eigensolvers/Precision.lean**
 
@@ -457,14 +475,14 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | (2.4) $\mathsf g$, Algorithm 1 | `newtonSchulzRounded`, `newtonSchulzLoop`, `newtonSchulzSign` | Hermitian part each step (G1); componentwise test; step cap |
 | Lemma 2.1 | SN3 | regime $\|\mathbf{A}\| \le 1.1$; $4\sqrt n(8 + \mu)$ in place of $\tfrac12(7 + (6+\mu)a^2)a$ |
 | Lemma 2.2 | SG2 | Davis–Kahan, $2\|\mathbf{E}\|/a$, Hermitian only (OQ6) |
-| Lemmas 2.3, 2.4, 2.5 | NS4–NS5, NS6–NS7, NS10 (+ NS2, NS3, NS8, NS9) | $\varepsilon > 0$, $x_0 \ne 0$ explicit (G5) |
+| Lemmas 2.3, 2.4, 2.5 | NS4–NS5, NS6–NS7, NS10 (+ NS2, NS3, NS8, NS9) | $\varepsilon > 0$, $x_0 \ne 0$ explicit (side condition) |
 | Theorem 2.6 | SN4 (+ SG1, SG3, SG4) | constants (§3.4) |
 | Algorithm 2 | `deflate` | — |
 | Lemma 3.1 (Edelman) | CG6 (+ CG5, library's distance lemma) | $r^2x^2$ in place of $(r/2)x^2$ (OQ7) |
 | Lemma 3.2 (BKMS21) | CG4 (+ CG0–CG3) | $\sqrt2(2\sqrt n + t)$, $2e^{-t^2/2}$ |
 | Theorem 3.3 | DF1, DF2 (deterministic), DP1 (probability) | general invertible $\mathbf{S}$ |
 | Algorithm 3, root call | `eighStep`, `eighAux`, `eigh` | §2.3 modelling deviations; $R_0$ an input |
-| Lemma 4.1 | EB1 (deterministic), EV1–EV2 (probabilities) | Event I bound $nw\ell/R$ (G2); $R_0$ term (G4); rounded compressions (G1) |
+| Lemma 4.1 | EB1 with EB1a (child invariant), EB1b (rank recovery); EV1–EV2 (probabilities) | Event I bound $nw\ell/R$ (G2); $R_0$ term (G4); rounded compressions (G1) |
 | Theorem 4.2, residual/probability | EB2–EB5, UB1, EV3–EV6 | $w$ smaller by $\ell_x(n+1)/n$ (G2); counts $(n+1)(\ell+1)$, $n$ |
 | Theorem 4.2, bits | EV7 | constants (§3.9) |
 | Theorem 4.2, flops; Remarks | — | out of scope (OQ11) |
@@ -639,11 +657,16 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
     shallow counter (2 MM per sign step, one MM and one QR per deflation) if wanted; (b) state
     `Computation.StaticCost` bounds (only for deep-embedded programs, OQ3(b)). (a): decision 3
     puts runtime out of scope.
-12. **Modelling deviations and staging** — (a) **accept the deviations of §2.3 (exact scalar
-    parameters, $k_- = k - k_+$, componentwise test, step caps) and dispatch in three sub-stages
-    by `--only`: HDIAG-1 = W1 + W2 + LB (35 targets), HDIAG-2 = W3 (10), HDIAG-3 = W4 (13),
-    with the three H outlines (EB1, EB5, EV5) reviewed by Fable before HDIAG-3**; (b) round the
-    scalar parameters too ((1 + u) factors throughout) and approve the sub-stages separately.
+12. **Modelling deviations and staging** — (a) **accept the deviations of §2.3 and dispatch
+    HDIAG-1 (W1 + W2 + LB, 35 targets) and HDIAG-2 (W3, 10) now, HDIAG-3 (W4, 15) after a Fable
+    re-check of the H/L outlines** (review items 1–3 are already applied); (b) round the scalar
+    parameters too and approve the sub-stages separately.
+13. **The Hermitian-exactness clause of `IsMatMulErr`** — (a) **keep it** (classical gemm with
+    round-to-nearest-even meets it; SN3 uses it so that the diagonal of $\mathrm{mm}(\mathbf{A},
+    \mathbf{A})$ is real); (b) drop it and let `roundDiag` discard the imaginary part of that
+    diagonal, at an extra $1.21\mu u$ in SN3 (Strassen-type products do not meet the clause, so
+    (b) widens the bridge). Fable leans to considering (b) for the bounded bridge; the statements
+    change only in SN3's constant.
 
 ## 11. Deferred, with what each needs
 
@@ -705,18 +728,15 @@ after the bounded model is on main, adds three statements and changes none:
 
 ## 13. Proof plan for dispatch
 
-Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 27 independent targets
-(NS1, NS2, NS11, NS12, SG1, SG2, SG4, SG5, SG6, R1, R2, R3, R4, R6, R7, C1, C2, C3, CG0, CG1, DF1,
-UB1, EB2, EB4, EV1, EV3, LB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1→EB5→EV6→EV7,
+Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 27 independent
+targets (C1, C2, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R2, R3, R4, R6, R7, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7,
 NS1→{NS4, NS5, NS6}, NS4→SG3, R2→R5→SN3→SN4, R3→SN1→SN2, CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2},
-DF1→DF2→{DP1, EB1}, EB2→EB3, EV3→EV4→EV5→EV6, LB1→LB2→LB3. Difficulties: S 28, M 21, L 6 (NS10,
-SN4, CG6, DF2, EV2, EV6), H 3 (EB1, EB5, EV5). By group: W1 28 (S 21, M 6, L 1), W2 4 (S 2, M 1,
-L 1), W3 10 (S 2, M 6, L 2), W4 13 (S 1, M 7, L 2, H 3), LB 3 (S 2, M 1). Model tiers: S and M on
-haiku first with sonnet escalation (the default), L and H on opus from the start (`--hard L,H`);
-failed L/H targets get Opus continuation sessions. Dependents may start on sorried dependencies.
-EB1 is the longest proof (Lemma 4.1, about 350 lines in five private lemmas); its outline should
-be reviewed (Fable) before HDIAG-3, together with EB5 (parameter tracking) and EV5 (the prefix
-decomposition shared with EV4).
+DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6, LB1→LB2→LB3. Difficulties (after the
+review's relabels): S 19, M 26, L 12, H 3. By group: W1 28, W2 4, W3 10,
+W4 15, LB 3. Model tiers: S and M on haiku first with sonnet escalation, L and H on opus from the
+start (`--hard L,H`); failed L/H targets get Opus continuation sessions. Dependents may start on
+sorried dependencies. HDIAG-1 and HDIAG-2 can go now; HDIAG-3 after a Fable re-check of the
+amended outlines of EB1, EB1a, EB1b, EB4, EB5, EV2, EV5, EV6.
 
 ## 14. Literature
 

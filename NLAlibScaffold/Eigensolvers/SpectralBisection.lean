@@ -62,7 +62,7 @@ $nw/R$, which drops the factor $\ell$; here $c = R/\ell$ gives $nw\ell/R$.
 Proof: the event is the union over $\lambda$ of $\{v : \lvert v - \lambda/c \rvert < w/c\}$, each
 of uniform measure at most $(2w/c)/2$ (`ProbabilityTheory.cond_apply`,
 `Real.volume_Ioo`, `MeasureTheory.measure_mono` to the interval, `Real.volume_Icc`);
-`MeasureTheory.measure_biUnion_finset_le`. S, about 25 lines. -/
+`MeasureTheory.measure_biUnion_finset_le`. M, about 25 lines. -/
 theorem measureReal_exists_abs_sub_lt_le (Λ : Finset ℝ) {c w : ℝ} (hc : 0 < c) (hw : 0 ≤ w) :
     (ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)).real
       {v | ∃ e ∈ Λ, |e - c * v| < w} ≤ Λ.card * w / c := by
@@ -79,10 +79,10 @@ the node splitting when `NLAlib.eighStep` is `NLAlib.EighStep.split`. [Shah2024,
 $1 - 2\rho$".
 Proof: Event I fails with probability at most $kw\ell/R$
 (`NLAlib.measureReal_exists_abs_sub_lt_le` with $\Lambda$ the eigenvalues, $c = R/\ell$; the
-first marginal of `NLAlib.eighSampleLaw`). On Event I the node splits exactly when the true
-projector has rank strictly between $0$ and $k$ (the rank recovery inside the proof of
-`NLAlib.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample`; factor it out as a private
-lemma). Given the seed, the two Gaussian matrices are independent with the complex Gaussian law
+first marginal of `NLAlib.eighSampleLaw`; the seed lies in $[-1, 1]$ almost surely). On Event I
+the node splits exactly when the true projector has rank strictly between $0$ and $k$
+(`NLAlib.eighStep_isSplit_iff_of_forall_le_abs_sub`), and the split depends on the seed only.
+Given the seed, the two Gaussian matrices are independent with the complex Gaussian law
 (`MeasureTheory.Measure.prod_apply`, `MeasureTheory.Measure.pi_pi`), and for each side the
 leading block fails Event II with probability at most $2e^{-\log(4/\rho)} + k^2 \cdot
 \rho/(2k^2) = \rho$
@@ -139,7 +139,7 @@ Proof: the node at $a$ is a function of the computed samples at the proper prefi
 finite tuple of measurable maps into countable sets
 (`NLAlib.countable_range_eighNodeAt`'s decomposition); its fibre at $y$ is a countable union of
 fibres of that tuple (`MeasurableSet.iUnion`, `measurableSet_eq_fun`-type lemmas,
-`Measurable.comp`). M, about 60 lines. -/
+`Measurable.comp`). L, about 60 lines. -/
 theorem measurableSet_eighNodeAt_eq {P : EighPrimitives} (hunifm : ∀ s, Measurable (P.unif s))
     (hunif : ∀ s, (Set.range (P.unif s)).Countable) (hnormalm : Measurable P.normal)
     (hnormal : (Set.range P.normal).Countable) {N signFuel : ℕ} {R₀ ρ : ℝ} {Ω' : Type*}
@@ -245,7 +245,9 @@ n^{1.5}\sqrt n c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varep
 the third power of $\ell$ (from the corrected shift-avoidance probability) differ.
 Proof: exponentiate (`Real.logb_le_logb`, `Real.rpow_logb`, `Real.logb_mul`, `Real.logb_rpow`)
 to get both precision conditions of
-`NLAlib.measureReal_not_isApproxDiagonalization_eigh_le` ($640 \cdot 16 \cdot 2880 \le 2^{25}$,
+`NLAlib.measureReal_not_isApproxDiagonalization_eigh_le` for $n \ge 1$ (at $n = 0$ the condition
+on $\beta = 0$ is unreachable, so handle $n = 0$ directly: the empty matrices are an approximate
+diagonalization and the event is empty) ($640 \cdot 16 \cdot 2880 \le 2^{25}$,
 $\ell^2(\ell + 1) \le (\ell + 1)^3$, $\log_2(N_* + 1) \ge 0$), and apply it. M, about 50
 lines. -/
 theorem measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le {P : EighPrimitives}
