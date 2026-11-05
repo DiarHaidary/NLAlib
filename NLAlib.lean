@@ -342,8 +342,13 @@ public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Computation.BLASNegAxpy
+public import NLAlib.Matrix.Computation.Deflation
+public import NLAlib.Matrix.Computation.EntrywiseRounding
 public import NLAlib.Matrix.Computation.MatvecRoutine
+public import NLAlib.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Computation.ResidualGap
+public import NLAlib.Matrix.Computation.SpectralBisection
 public import NLAlib.Matrix.Computation.Underflow
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
@@ -510,6 +515,7 @@ public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
 public import NLAlib.Polynomial.Approximation.Markov
 public import NLAlib.Polynomial.Approximation.MinimaxError
+public import NLAlib.Polynomial.Approximation.NewtonSchulz
 public import NLAlib.Polynomial.Approximation.Stieltjes
 public import NLAlib.Polynomial.Chebyshev.EvenFilter
 public import NLAlib.Polynomial.Chebyshev.ExtremaEvaluation
@@ -583,6 +589,7 @@ public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
 public import NLAlib.RandomMatrix.Gaussian.ClippedInverseMoments
+public import NLAlib.RandomMatrix.Gaussian.Complex
 public import NLAlib.RandomMatrix.Gaussian.Concentration
 public import NLAlib.RandomMatrix.Gaussian.ExtremeSingularValues
 public import NLAlib.RandomMatrix.Gaussian.FourthMoment
