@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Krylov.LinearSystems.CGProgramRoundedKernels
 public import NLAlib.Krylov.LinearSystems.CGProgramBody
+public import NLAlib.Matrix.Computation.MatvecRoutine
 
 /-!
 # Rounded local CG phases from actual stores
@@ -29,53 +30,59 @@ open Computation
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+  {mv : Builder P ι ℕ ℕ Unit}
 
-/-- The actual dense product phase preserves persistent CG cells and returns decoded product
-cells with the `CGRun.norm_es_le` error, under the explicit input-only implementation budget. -/
-theorem exec_rounded_matvec (I : Interp P ι K C) (tag : P)
+/-- Scalar floating-point accuracy certifies the stored dense backend at the existing CG
+implementation budget. This supplies the backend assumption of the common rounded solver
+proof, including empty dimension. -/
+theorem isMatvecRoutine_dense (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
+    (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
+    IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => HoldsDecoded store dec tag 5 0 A) 3 6 0 0
+      (gemv tag (.const N) (.const N) 5 0 3 0 6 0) := by
+  have hu := hsem.nonneg (p := tag) trivial
+  have hn : (N : ℝ) * u tag < 1 := by
+    by_cases hN : 0 < N
+    · exact (cgImplementationRoundoffBound_kernel_bounds hN hu hsmall).1
+    · have hN : N = 0 := by omega
+      simp [hN]
+  refine (hsem.isMatvecRoutine_gemv I tag hz N A 5 3 6 0 0 0 hn
+    (by omega) (by omega)).mono (mul_le_mul_of_nonneg_right ?_ (specNorm_nonneg A))
+  by_cases hN : 0 < N
+  · exact roundingFactor_mul_sqrt_le_cgImplementationRoundoffBound hN hu hsmall
+  · have hN : N = 0 := by omega
+    simp [hN, cgImplementationRoundoffBound_def]
+
+/-- A certified matvec backend produces the stored product and preserves all persistent
+CG cells. Its accuracy is independent of the scalar arithmetic contract. -/
+theorem exec_rounded_matvec (I : Interp P ι K C) (tag : P)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
-    (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
-    ∃ (out : St P K C) (sv : Fin N → ℝ),
-      exec I (gemv tag (.const N) (.const N) 5 0 3 0 6 0).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
+    {c : ℝ} (hmv : IsMatvecRoutine I dec tag A c
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A else True)
+      3 6 0 0 mv) :
+    ∃ (out : St P K C) (sv : Fin N → ℝ), exec I mv.run st = some out ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 6 i = some w ∧ dec tag w = sv i) ∧
-      ‖WithLp.toLp 2 (A *ᵥ v.p - sv)‖ ≤
-        cgImplementationRoundoffBound N (u tag) * specNorm A * ‖WithLp.toLp 2 v.p‖ := by
-  have hu := hsem.nonneg (p := tag) trivial
-  obtain ⟨hNu, _, _⟩ := cgImplementationRoundoffBound_kernel_bounds hN hu hsmall
-  obtain ⟨zero, _, _⟩ := h.zero
-  have hd (i : ℕ) (hi : i < N) : ∃ w s, st.store.write tag 6 i w = some s := by
-    obtain ⟨store, hw⟩ := Store.exists_write_eq_some_of_getElem?_shape zero
-      (show st.store.shape[6]? = some (tag, N) by simp [h.shape, workspaceShape]) hi
-    exact ⟨zero, store, hw⟩
-  obtain ⟨out, W, hrun, hwrite, herr⟩ := hsem.exec_gemv_norm_sub_le_specNorm_mul I tag st
-    hz (.const N) (.const N) 5 0 3 0 6 0 A v.p hNu h.matrix
-    (by simpa only [IExp.eval_zero, IExp.eval_const, zero_add] using h.direction)
-    (by norm_num) (by norm_num) (by simpa only [IExp.eval_zero, IExp.eval_const, zero_add] using hd)
-  have hframe (q : P) (buf idx : ℕ) (hb : buf ≠ 6) :
-      out.store.read q buf idx = st.store.read q buf idx :=
-    Store.read_of_writeBlock_eq_some_of_ne hwrite (Or.inl hb)
-  have hctx : StoreContext tag dec N A b v ν status flag out.store := by
-    apply h.preserve_frame (Store.shape_of_writeBlock_eq_some hwrite)
+      ‖WithLp.toLp 2 (A *ᵥ v.p - sv)‖ ≤ c * ‖WithLp.toLp 2 v.p‖ := by
+  obtain ⟨out, W, hr, hw, he⟩ := hmv.run st v.p h.matrix
+    (by simpa only [IExp.eval_zero, zero_add] using h.direction)
+    (fun i hi => ⟨N, by simp [h.shape, workspaceShape], by simpa using hi⟩)
+  refine ⟨out, fun i => dec tag (W i), hr, ?_, ?_, he⟩
+  · apply h.preserve_frame (Store.shape_of_writeBlock_eq_some hw)
     intro buf idx hcell
-    apply hframe tag buf idx
+    apply Store.read_of_writeBlock_eq_some_of_ne hw (Or.inl ?_)
     rcases hcell with hb | ⟨rfl, _⟩ <;> omega
-  refine ⟨out, fun i => dec tag (W i), hrun, hctx, ?_, herr.trans ?_⟩
   · intro i
     refine ⟨W i, ?_, rfl⟩
-    simpa only [IExp.eval_zero, IExp.eval_const, zero_add, Array.getElem?_map,
-      List.getElem?_toArray,
-      List.getElem?_range i.isLt, Option.map_some] using
-      Store.read_of_writeBlock_eq_some_of_lt (j := (i : ℕ)) hwrite
-        (by simp [i.isLt])
-  · exact mul_le_mul_of_nonneg_right
-      (mul_le_mul_of_nonneg_right
-        (roundingFactor_mul_sqrt_le_cgImplementationRoundoffBound hN hu hsmall)
-        (specNorm_nonneg A)) (norm_nonneg _)
+    simpa using Store.read_of_writeBlock_eq_some_of_lt hw
+      (j := (i : ℕ)) (by simp)
 
 /-- The actual curvature dot contributes only its own dot-product defect against the
 already computed product. The matvec error is not counted again in `CGRun.abs_eμ_le`. -/
@@ -83,12 +90,14 @@ theorem exec_rounded_curvature (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ) (sv : Fin N → ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hs : ∀ i : Fin N, ∃ w, st.store.read tag 6 i = some w ∧ dec tag w = sv i)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (μ : ℝ),
       exec I (dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∃ w, out.store.read tag 7 2 = some w ∧ dec tag w = μ) ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 6 i = some w ∧ dec tag w = sv i) ∧
       |v.p ⬝ᵥ sv - μ| ≤ cgImplementationRoundoffBound N (u tag) *
@@ -127,13 +136,15 @@ coefficient. Positivity of the two cached operands is supplied by the actual bra
 theorem exec_rounded_step_length (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag μ : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν status flag μ : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hμ : ∃ w, st.store.read tag 7 2 = some w ∧ dec tag w = μ)
     (hνpos : 0 < ν) (hμpos : 0 < μ) (hN : 0 < N)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (γ eγ : ℝ),
       exec I (Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∃ w, out.store.read tag 7 3 = some w ∧ dec tag w = γ) ∧
       γ = ν / μ * (1 + eγ) ∧ |eγ| ≤ cgImplementationRoundoffBound N (u tag) ∧ 0 < γ ∧
       ∀ q buf idx, (q ≠ tag ∨ buf ≠ 7 ∨ idx ≠ 3) →
@@ -168,12 +179,14 @@ bound, preserving the residual, direction, cache and all scalar words. -/
 theorem exec_rounded_iterate_update (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag γ : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν status flag γ : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hγ : ∃ w, st.store.read tag 7 3 = some w ∧ dec tag w = γ)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (xnext : Fin N → ℝ),
       exec I (axpy tag ⟨7, 3⟩ 3 0 1 0 (.const N)).run st = some out ∧
-      StoreContext tag dec N A b ⟨xnext, v.r, v.p⟩ ν status flag out.store ∧
+      StoreContext tag dec N A b ⟨xnext, v.r, v.p⟩ ν status flag
+        out.store storedMatrix ∧
       ‖WithLp.toLp 2 (v.x + γ • v.p - xnext)‖ ≤ cgImplementationRoundoffBound N (u tag) *
         (‖WithLp.toLp 2 v.x‖ + |γ| * ‖WithLp.toLp 2 v.p‖) ∧
       ∀ q buf idx, buf ≠ 1 → out.store.read q buf idx = st.store.read q buf idx := by
@@ -194,14 +207,16 @@ theorem exec_rounded_residual_update (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
     (ν status flag γ : ℝ) (sv : Fin N → ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hγ : ∃ w, st.store.read tag 7 3 = some w ∧ dec tag w = γ)
     (hs : ∀ i : Fin N, ∃ w, st.store.read tag 6 i = some w ∧ dec tag w = sv i)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (rnext : Fin N → ℝ), exec I (do
       Builder.ins (.un tag .neg ⟨7, 5⟩ ⟨7, 3⟩)
       axpy tag ⟨7, 5⟩ 6 0 2 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
-      StoreContext tag dec N A b ⟨v.x, rnext, v.p⟩ ν status flag out.store ∧
+      StoreContext tag dec N A b ⟨v.x, rnext, v.p⟩ ν status flag
+        out.store storedMatrix ∧
       ‖WithLp.toLp 2 (v.r - γ • sv - rnext)‖ ≤ cgImplementationRoundoffBound N (u tag) *
         (‖WithLp.toLp 2 v.r‖ + |γ| * ‖WithLp.toLp 2 sv‖) ∧
       ∀ q buf idx, buf ≠ 2 → (q ≠ tag ∨ buf ≠ 7 ∨ idx ≠ 5) →
@@ -213,7 +228,7 @@ theorem exec_rounded_residual_update (I : Interp P ι K C) (tag : P)
     ⟨7, 5⟩ ⟨7, 3⟩ wγ neg hγread hneg
     ⟨9, by simp [h.shape, workspaceShape], by norm_num⟩
   let mid : St P K C := { st with store := store, cnt := st.cnt + I.charge (.un tag .neg) }
-  have hctx : StoreContext tag dec N A b v ν status flag mid.store :=
+  have hctx : StoreContext tag dec N A b v ν status flag mid.store storedMatrix :=
     h.preserve_scalar_write (by norm_num) (by norm_num) hw
   have hs' (i : Fin N) : ∃ w, mid.store.read tag 6 i = some w ∧ dec tag w = sv i := by
     obtain ⟨w, hread, hdec⟩ := hs i
@@ -240,11 +255,13 @@ theorem exec_rounded_residual_pairing (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (νnext θnext : ℝ),
       exec I (dot tag ⟨7, 1⟩ 2 0 2 0 (.const N)).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∃ w, out.store.read tag 7 1 = some w ∧ dec tag w = νnext) ∧
       νnext = ‖WithLp.toLp 2 v.r‖ ^ 2 * (1 + θnext) ∧
       |θnext| ≤ cgImplementationRoundoffBound N (u tag) ∧ 0 ≤ νnext ∧
@@ -274,12 +291,14 @@ newly paired numerator. Its `CGRun.δ_eq` error comes from this primitive divisi
 theorem exec_rounded_direction_coefficient (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hνnext : ∃ w, st.store.read tag 7 1 = some w ∧ dec tag w = νnext)
     (hνpos : 0 < ν) (hN : 0 < N) :
     ∃ (out : St P K C) (δ eδ : ℝ),
       exec I (Builder.ins (.bin tag .div ⟨7, 4⟩ ⟨7, 1⟩ ⟨7, 0⟩)).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∃ w, out.store.read tag 7 4 = some w ∧ dec tag w = δ) ∧
       δ = νnext / ν * (1 + eδ) ∧ |eδ| ≤ cgImplementationRoundoffBound N (u tag) ∧
       ∀ q buf idx, (q ≠ tag ∨ buf ≠ 7 ∨ idx ≠ 4) →
@@ -310,14 +329,16 @@ under the input-only implementation budget, and retains the old cache until its 
 theorem exec_rounded_direction_update (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag δ : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν status flag δ : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hδ : ∃ w, st.store.read tag 7 4 = some w ∧ dec tag w = δ)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (pnext : Fin N → ℝ),
       exec I (Builder.forRange (.const N) fun i => do
         Builder.ins (.bin tag .mul ⟨7, 2⟩ ⟨7, 4⟩ ⟨3, .var i⟩)
         Builder.ins (.bin tag .add ⟨3, .var i⟩ ⟨2, .var i⟩ ⟨7, 2⟩)).run st = some out ∧
-      StoreContext tag dec N A b ⟨v.x, v.r, pnext⟩ ν status flag out.store ∧
+      StoreContext tag dec N A b ⟨v.x, v.r, pnext⟩ ν status flag
+        out.store storedMatrix ∧
       ‖WithLp.toLp 2 (v.r + δ • v.p - pnext)‖ ≤ cgImplementationRoundoffBound N (u tag) *
         (‖WithLp.toLp 2 v.r‖ + |δ| * ‖WithLp.toLp 2 v.p‖) ∧
       ∀ idx, idx ≠ 2 → out.store.read tag 7 idx = st.store.read tag 7 idx := by

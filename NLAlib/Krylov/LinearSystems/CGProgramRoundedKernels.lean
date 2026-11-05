@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Krylov.LinearSystems.CGProgramRounding
 public import NLAlib.Krylov.LinearSystems.CGProgramDirection
+public import NLAlib.Krylov.LinearSystems.CGProgramUnderflowKernels
 public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Computation.BLAS.Normalization
@@ -187,11 +188,8 @@ theorem IsRelErrSem.exec_cg_division (I : Interp P ι K C) (tag : P)
       RelErr (u tag) (dec tag wx / dec tag wy) (dec tag w) ∧
       ∀ q buf idx, (q ≠ tag ∨ buf ≠ dst.buf ∨ idx ≠ dst.idx.eval) →
         out.store.read q buf idx = st.store.read q buf idx := by
-  obtain ⟨w, hsem⟩ := h.bin_ok tag .div wx wy trivial (fun _ => hne) trivial
-  obtain ⟨store, hw, hrun, hshape, hread, hframe⟩ :=
-    exec_scalar_bin I tag st .div dst x y wx wy w hx hy hsem hd
-  exact ⟨{ st with store := store, cnt := st.cnt + I.charge (.bin tag .div) },
-    w, hrun, rfl, hshape, hread, h.bin_err tag .div wx wy w trivial hsem, hframe⟩
+  exact (h.isArithErrSem (fun _ => trivial)).exec_cg_division I tag st
+    dst x y wx wy hx hy hne trivial hd
 
 /-- A true actual strict comparison exposes initialized operand words and strict order of
 their decodings. In CG this supplies positive curvature from the executed zero/curvature guard. -/

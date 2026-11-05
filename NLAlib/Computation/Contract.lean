@@ -119,6 +119,35 @@ structure IsRelErrSem (u : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ 
   /-- Conversions in range at the target succeed. -/
   convert_ok : ∀ (p q : P) (x : K), safe q (dec p x) → ∃ z, sem.convert p q x = some z
 
+/-- Increasing a scalar roundoff allowance preserves the relative-error contract and all
+its success clauses. This lets a solver choose a common run budget covering scalar
+rounding and an independently specified matvec error. -/
+theorem IsRelErrSem.mono {u v : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
+    {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) (hu : ∀ p, u p ≤ v p) :
+    IsRelErrSem v dec safe sem where
+  bin_err p b x y z hb he := by
+    obtain ⟨δ, hδ, hd⟩ := h.bin_err p b x y z hb he
+    exact ⟨δ, hδ.trans (hu p), hd⟩
+  bin_ok := h.bin_ok
+  lit_err p q z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.lit_err p q z he
+    exact ⟨δ, hδ.trans (hu p), hd⟩
+  lit_ok := h.lit_ok
+  neg := h.neg
+  conj := h.conj
+  re := h.re
+  sqrt_err p x z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.sqrt_err p x z he
+    exact ⟨δ, hδ.trans (hu p), hd⟩
+  sqrt_ok := h.sqrt_ok
+  cmp_eq := h.cmp_eq
+  cmp_lt := h.cmp_lt
+  cmp_le := h.cmp_le
+  convert_err p q x z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.convert_err p q x z he
+    exact ⟨δ, hδ.trans (hu q), hd⟩
+  convert_ok := h.convert_ok
+
 /-- **Exact real arithmetic meets the standard-model contract** with unit roundoff $0$, the identity
 decoding and every value in range: `NLAlib.Computation.exactSem` over $\mathbb{R}$ satisfies every
 error and success clause. [Higham2002, §2.2], the model (2.4) at $u = 0$.
@@ -268,6 +297,15 @@ def IsMatvecErr (I : Interp P ι K C) (o : ι) (dec : P → K → ℝ) (p : P) {
       ‖WithLp.toLp 2 ((H *ᵥ fun i : Fin N => dec p (X[i.1]'(hX ▸ i.2))) -
           fun i : Fin N => dec p (Y[i.1]'(hY ▸ i.2)))‖ ≤
         c * ‖WithLp.toLp 2 (fun i : Fin N => dec p (X[i.1]'(hX ▸ i.2)))‖
+
+/-- Increasing the operator-error allowance preserves oracle accuracy and success. -/
+theorem IsMatvecErr.mono {I : Interp P ι K C} {o : ι} {dec : P → K → ℝ} {p : P}
+    {N : ℕ} {H : Matrix (Fin N) (Fin N) ℝ} {c d : ℝ}
+    (h : IsMatvecErr I o dec p H c) (hc : c ≤ d) : IsMatvecErr I o dec p H d := by
+  refine ⟨h.1, ?_⟩
+  intro X hX
+  obtain ⟨Y, hY, hr, he⟩ := h.2 X hX
+  exact ⟨Y, hY, hr, he.trans (mul_le_mul_of_nonneg_right hc (norm_nonneg _))⟩
 
 variable [DecidableEq P] [AddMonoid C] in
 /-- **The matrix-free model in the standard model of floating point.** The program family

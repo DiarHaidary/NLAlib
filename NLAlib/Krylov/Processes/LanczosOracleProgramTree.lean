@@ -38,6 +38,8 @@ vector. Work storage is scoped; slot 6 is reserved empty. Initialization uses ac
 and `rscl`, and
 zero continuation performs every requested step without dividing by a zero norm.
 The oracle's hidden storage and implementation arithmetic are outside this access model.
+Rounded execution with separate scalar and oracle accuracy contracts is proved by
+`NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
 Algorithm: lanczos -/
 def lanczosOracleProg {P ι VB VI : Type} (tag : P) (o : ι) (N q : IExp VI)
     (b V alpha beta inputNorm prev : VB) : Builder P ι VB VI Unit := scope do

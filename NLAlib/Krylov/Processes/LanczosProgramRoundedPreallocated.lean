@@ -130,7 +130,8 @@ theorem exec_rounded_preallocated (I : Interp P ι K (OpCount P ι)) (tag : P)
   obtain ⟨initialized, s, v1, einit, ctx, hs, herr, hiff, hzero, hunit, hres, hdir⟩ :=
     exec_rounded_initialize I tag hsem hz hc mid N q A b hmshape hmb hmA hsmall
   have hzeroV : b = 0 → v1 = 0 := fun hb => hzero (hiff.mpr hb)
-  obtain ⟨out, eloop, hprefix⟩ := exec_rounded_loop I hsem hz hc tag initialized
+  obtain ⟨out, eloop, hprefix⟩ := exec_rounded_loop
+      (hmv := isMatvecRoutine_dense I tag hsem hz N A hsmall) I hsem hz hc tag initialized
     (Or.inl ⟨Or.inl rfl, ctx⟩) hA hsmall hzeroV hunit
   refine ⟨out, s, v1, ?_, hprefix, hs, herr, hiff, hzero, hunit, hres, hdir⟩
   have erom' : exec I (forRange (IExp.const N * IExp.const N) fun i =>

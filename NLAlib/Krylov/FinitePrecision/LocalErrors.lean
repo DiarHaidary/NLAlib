@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
-public import NLAlib.Krylov.FinitePrecision.LanczosData
+public import NLAlib.Krylov.FinitePrecision.LanczosDefects
 
 /-!
 # Local errors of a finite-precision Lanczos run
@@ -467,21 +467,10 @@ $\mathbf{f}_j = -(\mathbf{e}^u_{j+1} + \mathbf{e}^w_{j+1} + \mathbf{e}^z_{j+1}
 + \boldsymbol{\delta}_{j+1})$ for $j < k$. -/
 theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
     L.recurrenceError j = -(L.eu (j + 1) + L.ew (j + 1) + L.ez (j + 1) + L.δ (j + 1)) := by
-  have h1 : L.H *ᵥ L.v (j + 1) = L.u (j + 1) - L.eu (j + 1) := by
-    rw [L.u_eq j hj]
-    abel
-  have h2 : L.u (j + 1) = L.w (j + 1) + L.β j • L.v j - L.ew (j + 1) := by
-    rw [L.w_eq j hj]
-    abel
-  have h3 : L.w (j + 1) = L.z (j + 1) + L.α (j + 1) • L.v (j + 1) - L.ez (j + 1) := by
-    rw [L.z_eq j hj]
-    abel
-  have h4 : L.z (j + 1) = L.β (j + 1) • L.v (j + 2) - L.δ (j + 1) := by
-    rw [L.smul_v_eq j hj]
-    abel
-  simp only [recurrenceError, LanczosData.recurrenceError, toLanczosData]
-  rw [h1, h2, h3, h4]
-  abel
+  exact L.toLanczosData.recurrenceError_eq_of_eq j
+    (L.u (j + 1)) (L.w (j + 1)) (L.z (j + 1))
+    (L.eu (j + 1)) (L.ew (j + 1)) (L.ez (j + 1)) (L.δ (j + 1))
+    (L.u_eq j hj) (L.w_eq j hj) (L.z_eq j hj) (L.smul_v_eq j hj)
 
 /-- **Local error bound for finite-precision Lanczos**
 (assuming $k\varepsilon \le 1/100$) (Paige): the computed vectors satisfy the
@@ -550,14 +539,9 @@ $p_j = -e^\alpha_{j+1} - (\|\mathbf{v}_{j+1}\|^2 - 1)\alpha_{j+1}
 theorem adjacentInner_eq {j : ℕ} (hj : j < k) :
     L.adjacentInner j = -L.eα (j + 1) - (‖WithLp.toLp 2 (L.v (j + 1))‖ ^ 2 - 1) * L.α (j + 1)
       + L.v (j + 1) ⬝ᵥ L.ez (j + 1) + L.v (j + 1) ⬝ᵥ L.δ (j + 1) := by
-  have hal : L.v (j + 1) ⬝ᵥ L.w (j + 1) = L.α (j + 1) - L.eα (j + 1) := by
-    rw [L.α_eq j hj]
-    ring
-  simp only [adjacentInner, LanczosData.adjacentInner, toLanczosData]
-  rw [L.smul_v_eq j hj, dotProduct_add, L.z_eq j hj,
-    EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
-  simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hal]
-  ring
+  exact L.toLanczosData.adjacentInner_eq_of_eq j
+    (L.w (j + 1)) (L.z (j + 1)) (L.ez (j + 1)) (L.δ (j + 1)) (L.eα (j + 1))
+    (L.α_eq j hj) (L.z_eq j hj) (L.smul_v_eq j hj)
 
 /-- **Local orthogonality of finite-precision Lanczos**
 (assuming $k\varepsilon \le 1/100$) (Paige): consecutive computed vectors

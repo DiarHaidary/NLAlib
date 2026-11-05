@@ -31,12 +31,12 @@ vector is zero as a consequence of the actual guarded normalization. Every writt
 is retained in the context, while the run length stops at the first zero coefficient. -/
 def RoundedPrefix {P K : Type} [DecidableEq P] (tag : P) (dec : P → K → ℝ)
     (N q j : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b v1 : Fin N → ℝ)
-    (ε s : ℝ) (store : Computation.Store P K) : Prop :=
+    (ε s : ℝ) (store : Computation.Store P K) (storedMatrix : Bool := true) : Prop :=
   ((j = 0 ∨ b = 0) ∧
     StoreContext tag dec N q j A b (Function.update (0 : ℕ → Fin N → ℝ) 1 v1)
-      (fun _ => 0) (fun _ => 0) s store) ∨
+      (fun _ => 0) (fun _ => 0) s store storedMatrix) ∨
   ∃ (m : ℕ) (R : LanczosRun N m), m ≤ j ∧ R.H = A ∧ R.ε = ε ∧ R.v 1 = v1 ∧
-    StoreContext tag dec N q j A b R.v R.α R.β s store ∧
+    StoreContext tag dec N q j A b R.v R.α R.β s store storedMatrix ∧
     (∀ i, m + 1 < i → R.v i = 0) ∧
     (∀ i, m < i → R.α i = 0 ∧ R.β i = 0) ∧
     (R.β m = 0 → R.v (m + 1) = 0) ∧ (m < j → R.β m = 0)

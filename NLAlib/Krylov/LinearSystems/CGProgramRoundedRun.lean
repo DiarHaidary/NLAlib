@@ -28,7 +28,8 @@ open Computation
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+  {mv : Builder P ι ℕ ℕ Unit}
 
 /-- The initial cache error is derived from its actual self-dot run and the preserved word
 origin at the active header. The initial-cache error bound is a conclusion, not a premise. -/
@@ -36,7 +37,7 @@ theorem initial_cache_of_self_dot_execution (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (predot cached header : St P K C) (N : ℕ) (b : Fin N → ℝ) (ν : ℝ)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
-    (hshape : predot.store.shape = workspaceShape tag N)
+    (hshape : predot.store.shape = workspaceShape tag N storedMatrix)
     (hr : ∀ i : Fin N, ∃ w, predot.store.read tag 2 i = some w ∧ dec tag w = b i)
     (hrun : exec I (dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)).run predot = some cached)
     (horigin : header.store.read tag 7 0 = cached.store.read tag 7 0)
@@ -149,22 +150,26 @@ theorem cgRun_one_of_initial_dot_execution (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (predot cached st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (ν flag : ℝ)
-    (h : StoreContext tag dec N A b ⟨0, b, b⟩ ν 0 flag st.store)
-    (hpreShape : predot.store.shape = workspaceShape tag N)
+    (h : StoreContext tag dec N A b ⟨0, b, b⟩ ν 0 flag
+      st.store storedMatrix)
+    (hpreShape : predot.store.shape = workspaceShape tag N storedMatrix)
     (hpreR : ∀ i : Fin N, ∃ w, predot.store.read tag 2 i = some w ∧ dec tag w = b i)
     (hinit : exec I (dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)).run predot = some cached)
     (horigin : st.store.read tag 7 0 = cached.store.read tag 7 0)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hb : b ≠ 0) :
+    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hb : b ≠ 0)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ (prestate out : St P K C) (R : CGRun N 1),
       exec I (do
-        gemv tag (.const N) (.const N) 5 0 3 0 6 0
+        mv
         dot tag ⟨7, 2⟩ 3 0 6 0 (.const N) : Builder P ι ℕ ℕ Unit).run
           { st with cnt := st.cnt + I.charge (.cmp tag) } = some prestate ∧
       exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -183,7 +188,8 @@ theorem cgRun_one_of_initial_dot_execution (I : Interp P ι K C) (tag : P)
       (pure ())).run st = some out ∧
       R.A = A ∧ R.b = b ∧ R.ε = cgImplementationRoundoffBound N (u tag) ∧ R.ν 0 = ν ∧
       StoreContext tag dec N A b ⟨R.x 1, R.r 1, R.p 1⟩ (R.ν 1)
-        (if R.ν 1 = 0 then flag else 0) flag out.store ∧
+        (if R.ν 1 = 0 then flag else 0) flag
+        out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, prestate.store.read tag 6 i = some w ∧ dec tag w = R.s 0 i) ∧
       (∃ w, prestate.store.read tag 7 2 = some w ∧ dec tag w = R.μ 0) ∧
       (∃ w, out.store.read tag 7 3 = some w ∧ dec tag w = R.γ 0) ∧
@@ -193,7 +199,7 @@ theorem cgRun_one_of_initial_dot_execution (I : Interp P ι K C) (tag : P)
   have hνpos : 0 < ν := lt_of_le_of_ne hνnonneg (Ne.symm (fun he => hb (hνzero.mp he)))
   obtain ⟨prestate, out, next, sv, μ, ν1, θ1, γ, eγ, δ, eδ, hprefix, hrun, hctx,
       hs, hμ, hμpos, hes, heμ, hν1eq, hθ1, _, _, hγeq, heγ, _, hδeq, heδ,
-      hex, her, hep, hγ, hδ⟩ := exec_rounded_positive_step I tag hsem hz st N A b
+      hex, her, hep, hγ, hδ⟩ := exec_rounded_positive_step (hmv := hmv) I tag hsem hz st N A b
         ⟨0, b, b⟩ ν flag h hνpos hN hsmall hA ha hspec hprec hb
   have hex' : ‖WithLp.toLp 2 (γ • b - next.x)‖ ≤
       cgImplementationRoundoffBound N (u tag) * (|γ| * ‖WithLp.toLp 2 b‖) := by

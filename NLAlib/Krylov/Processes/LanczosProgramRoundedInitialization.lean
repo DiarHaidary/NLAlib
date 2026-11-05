@@ -32,7 +32,7 @@ open Computation Computation.Builder
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
 
 /-- The two scalar-zero literals and previous-vector zero fill execute in the exact
 canonical order. All other cells and all non-store usage fields except the literal count
@@ -202,16 +202,16 @@ theorem exec_rounded_initial_normalization (I : Interp P ι K (OpCount P ι)) (t
 indices are zero defaults, and no arithmetic or near-unit facts are assumed here. -/
 theorem StoreContext.of_initial_reads (tag : P) (N q : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b v1 : Fin N → ℝ) (s : ℝ) (store : Store P K)
-    (hshape : store.shape = workspaceShape tag N q)
+    (hshape : store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, ∃ w, store.read tag 0 i = some w ∧ dec tag w = b i)
-    (hA : HoldsDecoded store dec tag 6 0 A)
+    (hA : if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
     (hV : ∀ i : Fin N, ∃ w, store.read tag 1 i = some w ∧ dec tag w = v1 i)
     (hbeta : ∃ w, store.read tag 3 0 = some w ∧ dec tag w = 0)
     (hs : ∃ w, store.read tag 4 0 = some w ∧ dec tag w = s)
     (hp : ∀ i : Fin N, ∃ w, store.read tag 5 i = some w ∧ dec tag w = 0)
     (hz : ∃ w, store.read tag 8 0 = some w ∧ dec tag w = 0) :
     StoreContext tag dec N q 0 A b (Function.update (0 : ℕ → Fin N → ℝ) 1 v1)
-      (fun _ => 0) (fun _ => 0) s store := by
+      (fun _ => 0) (fun _ => 0) s store storedMatrix := by
   refine ⟨hshape, hb, hA, ?_, ?_, ?_, hs, ?_, hz⟩
   · intro c hc i
     have hc0 : c = 0 := by omega
@@ -233,9 +233,9 @@ theorem exec_rounded_initialize (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (hc : ∀ k, I.charge k = Finsupp.single k 1)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
-    (hshape : st.store.shape = workspaceShape tag N q)
+    (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
-    (hA : HoldsDecoded st.store dec tag 6 0 A)
+    (hA : if storedMatrix then HoldsDecoded st.store dec tag 6 0 A else True)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K (OpCount P ι)) (s : ℝ) (v1 : Fin N → ℝ),
       exec I (do
@@ -247,7 +247,7 @@ theorem exec_rounded_initialize (I : Interp P ι K (OpCount P ι)) (tag : P)
           (forRange (.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0))
           (do copyv tag 0 0 1 0 (.const N); rscl tag ⟨4, 0⟩ 1 0 (.const N))).run st = some out ∧
       StoreContext tag dec N q 0 A b (Function.update (0 : ℕ → Fin N → ℝ) 1 v1)
-        (fun _ => 0) (fun _ => 0) s out.store ∧
+        (fun _ => 0) (fun _ => 0) s out.store storedMatrix ∧
       0 ≤ s ∧ |‖WithLp.toLp 2 b‖ - s| ≤ roundingFactor (N + 1) (u tag) * ‖WithLp.toLp 2 b‖ ∧
       (s = 0 ↔ b = 0) ∧ (s = 0 → v1 = 0) ∧
       (b ≠ 0 → |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤ lanczosImplementationRoundoffBound N (u tag)) ∧
@@ -290,10 +290,13 @@ theorem exec_rounded_initialize (I : Interp P ι K (OpCount P ι)) (tag : P)
       rw [frame tag 0 i (by norm_num) (by norm_num),
         fz tag 0 i (by norm_num) (Or.inl (by norm_num)) (Or.inl (by norm_num))]
       exact hb i
-    · intro i j
-      rw [frame tag 6 _ (by norm_num) (by norm_num),
-        fz tag 6 _ (by norm_num) (Or.inl (by norm_num)) (Or.inl (by norm_num))]
-      exact hA i j
+    · cases storedMatrix with
+      | false => trivial
+      | true =>
+        intro i j
+        rw [frame tag 6 _ (by norm_num) (by norm_num),
+          fz tag 6 _ (by norm_num) (Or.inl (by norm_num)) (Or.inl (by norm_num))]
+        exact hA i j
     · exact rv
     · exact ⟨zero, (frame tag 3 0 (by norm_num) (by norm_num)).trans rb, dz⟩
     · exact rs

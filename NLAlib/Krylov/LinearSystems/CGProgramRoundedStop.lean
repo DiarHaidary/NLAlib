@@ -27,16 +27,19 @@ open Computation
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+  {mv : Builder P ι ℕ ℕ Unit}
 
 /-- The actual cache copy preserves the computed word without introducing arithmetic error.
 It updates the decoded cache after the direction has consumed its old value. -/
 theorem exec_rounded_cache_copy (I : Interp P ι K C) (tag : P) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hnext : ∃ w, st.store.read tag 7 1 = some w ∧ dec tag w = νnext) :
     ∃ out, exec I (Builder.ins (.copy tag ⟨7, 0⟩ ⟨7, 1⟩)).run st = some out ∧
-      StoreContext tag dec N A b v νnext status flag out.store ∧
+      StoreContext tag dec N A b v νnext status flag
+        out.store storedMatrix ∧
       ∀ q buf idx, (q ≠ tag ∨ buf ≠ 7 ∨ idx ≠ 0) →
         out.store.read q buf idx = st.store.read q buf idx := by
   obtain ⟨word, hnext, hdec⟩ := hnext
@@ -55,10 +58,12 @@ the new cache is zero. Other vector, scalar and input buffers retain their actua
 theorem exec_rounded_stop_guard (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store) :
+    (ν status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix) :
     ∃ out, exec I (Builder.ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ())).run st = some out ∧
-      StoreContext tag dec N A b v ν (if ν = 0 then flag else status) flag out.store ∧
+      StoreContext tag dec N A b v ν (if ν = 0 then flag else status) flag
+        out.store storedMatrix ∧
       ∀ q buf idx, buf ≠ 4 → out.store.read q buf idx = st.store.read q buf idx := by
   classical
   obtain ⟨wν, hν, hνdec⟩ := h.squaredResidual
@@ -98,14 +103,16 @@ The iterate, residual and direction are retained, including a zero terminal next
 theorem exec_rounded_cache_and_stop (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν νnext status flag : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hnext : ∃ w, st.store.read tag 7 1 = some w ∧ dec tag w = νnext) :
     ∃ out, exec I (do
       Builder.ins (.copy tag ⟨7, 0⟩ ⟨7, 1⟩)
       Builder.ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag dec N A b v νnext
-        (if νnext = 0 then flag else status) flag out.store ∧
+        (if νnext = 0 then flag else status) flag
+        out.store storedMatrix ∧
       ∀ idx, idx ≠ 0 → out.store.read tag 7 idx = st.store.read tag 7 idx := by
   obtain ⟨mid, hrun, hctx, hcopyframe⟩ := exec_rounded_cache_copy I tag st N A b v
     ν νnext status flag h hnext

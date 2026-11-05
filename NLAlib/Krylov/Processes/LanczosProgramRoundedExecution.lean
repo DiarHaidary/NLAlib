@@ -28,16 +28,16 @@ open Computation Builder
 open scoped Matrix
 
 variable {P ι K : Type} [DecidableEq P]
-    {u : P → ℝ} {dec : P → K → ℝ}
+    {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+    {mv : ℕ → Builder P ι ℕ ℕ Unit}
 
 local macro "roundedUpdate(" tag:term "," N:term "," j:term "," coeff:term ","
     src:term "," off:term ")" : term => `(do
   ins (.un $tag .neg ⟨8, 1⟩ ⟨$coeff, IExp.var ($j)⟩)
   axpy $tag ⟨8, 1⟩ $src $off 7 0 (IExp.const ($N)))
 
-local macro "roundedWork(" tag:term "," N:term "," j:term ")" : term => `(do
-  gemv $tag (IExp.const ($N)) (IExp.const ($N)) 6 0 1
-    (IExp.const ($N) * IExp.var ($j)) 7 0
+local macro "roundedWork(" tag:term "," N:term "," j:term "," mv:term ")" : term => `(do
+  ($mv ($j))
   (roundedUpdate($tag,$N,$j,3,5,0))
   dot $tag ⟨2, IExp.var ($j)⟩ 1 (IExp.const ($N) * IExp.var ($j)) 7 0 (IExp.const ($N))
   (roundedUpdate($tag,$N,$j,2,1,IExp.const ($N) * IExp.var ($j)))
@@ -52,8 +52,8 @@ local macro "roundedCommit(" tag:term "," N:term "," j:term ")" : term => `(do
       rscl $tag ⟨3, IExp.var ($j) + 1⟩ 1
         (IExp.const ($N) * (IExp.var ($j) + 1)) (IExp.const ($N))))
 
-local macro "roundedStep(" tag:term "," N:term "," j:term ")" : term => `(do
-  (roundedWork($tag,$N,$j))
+local macro "roundedStep(" tag:term "," N:term "," j:term "," mv:term ")" : term => `(do
+  (roundedWork($tag,$N,$j,$mv))
   (roundedCommit($tag,$N,$j)))
 
 private theorem executionComposable_roundedUpdate {C : Type} [AddMonoid C]
@@ -70,10 +70,10 @@ private theorem executionComposable_roundedUpdate {C : Type} [AddMonoid C]
         (b := axpy tag ⟨8, 1⟩ src off 7 0 (IExp.const N)) (fun _ => rfl))
 
 private theorem executionComposable_roundedWork {C : Type} [AddMonoid C]
-    (I : Interp P ι K C) (tag : P) (N j : ℕ) :
-    ExecutionComposable I (roundedWork(tag,N,j) : Builder P ι ℕ ℕ Unit) := by
-  have cg : ExecutionComposable I (gemv tag (IExp.const N) (IExp.const N) 6 0 1
-      (IExp.const N * IExp.var j) 7 0) := executionComposable_single I (fun _ => rfl)
+    (I : Interp P ι K C) (tag : P) (N j : ℕ)
+    (hmv : ExecutionComposable I (mv j)) :
+    ExecutionComposable I (roundedWork(tag,N,j,mv) : Builder P ι ℕ ℕ Unit) := by
+  have cg : ExecutionComposable I (mv j) := hmv
   have cp := executionComposable_roundedUpdate I tag N j 3 5 0
   have cd : ExecutionComposable I (dot tag ⟨2, IExp.var j⟩ 1
       (IExp.const N * IExp.var j) 7 0 (IExp.const N)) :=
@@ -90,14 +90,18 @@ theorem exec_rounded_work (I : Interp P ι K (OpCount P ι))
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
-    (hj : j < q) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
+    (hj : j < q) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
     ∃ (predot out : St P K (OpCount P ι)) (uv wv zv : Fin N → ℝ) (an bn : ℝ),
-      exec I (roundedWork(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+      exec I (roundedWork(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       exec I (nrm2 tag ⟨3, IExp.var j + 1⟩ 7 0 (IExp.const N)).run predot = some out ∧
-      StoreContext tag dec N q j A b v α β s predot.store ∧
+      StoreContext tag dec N q j A b v α β s predot.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, predot.store.read tag 7 i = some w ∧ dec tag w = zv i) ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 7 i = some w ∧ dec tag w = zv i) ∧
       (∃ w, out.store.read tag 2 j = some w ∧ dec tag w = an) ∧
       (∃ w, out.store.read tag 3 (j + 1) = some w ∧ dec tag w = bn) ∧
@@ -121,7 +125,7 @@ theorem exec_rounded_work (I : Interp P ι K (OpCount P ι))
     have hsucc := hwin.1
     push_cast at hsucc
     nlinarith
-  obtain ⟨st₁, uv, hr₁, hs₁, hu, heu⟩ := exec_rounded_matvec I h hz tag st hs hsmall
+  obtain ⟨st₁, uv, hr₁, hs₁, hu, heu⟩ := exec_rounded_matvec I tag st hs (hmv j)
   obtain ⟨st₂, wv, hr₂, hs₂, hw, hew⟩ := exec_rounded_previous_update I h tag st₁ hs₁ uv hu hsmall
   obtain ⟨st₃, an, hr₃, hs₃, ha, hea, hf₃⟩ := exec_rounded_dot I h hz tag st₂ hs₂ hj wv hw hn
   have hw₃ (i : Fin N) : ∃ w, st₃.store.read tag 7 i = some w ∧ dec tag w = wv i := by
@@ -144,15 +148,14 @@ theorem exec_rounded_work (I : Interp P ι K (OpCount P ι))
     heu, hew, hea, hez,
     hbn, hbzero, hnorm⟩
   change exec I (do
-    gemv tag (IExp.const N) (IExp.const N) 6 0 1 (IExp.const N * IExp.var j) 7 0
+    mv j
     (roundedUpdate(tag,N,j,3,5,0))
     dot tag ⟨2, IExp.var j⟩ 1 (IExp.const N * IExp.var j) 7 0 (IExp.const N)
     (roundedUpdate(tag,N,j,2,1,IExp.const N * IExp.var j))
     nrm2 tag ⟨3, IExp.var j + 1⟩ 7 0 (IExp.const N)).run st = some out
   have cp := executionComposable_roundedUpdate I tag N j 3 5 0
   have cz := executionComposable_roundedUpdate I tag N j 2 1 (IExp.const N * IExp.var j)
-  rw [exec_run_bind I (b := gemv tag (IExp.const N) (IExp.const N) 6 0 1
-      (IExp.const N * IExp.var j) 7 0) (fun _ => rfl), hr₁, Option.bind_some,
+  rw [(hmv j).composable, hr₁, Option.bind_some,
     cp, hr₂, Option.bind_some,
     exec_run_bind I (b := dot tag ⟨2, IExp.var j⟩ 1 (IExp.const N * IExp.var j)
       7 0 (IExp.const N)) (fun _ => rfl), hr₃, Option.bind_some,
@@ -172,12 +175,16 @@ theorem exec_rounded_step (I : Interp P ι K (OpCount P ι))
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
-    (hj : j < q) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
+    (hj : j < q) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
     ∃ (out : St P K (OpCount P ι)) (uv wv zv : Fin N → ℝ) (an bn : ℝ) (vn : Fin N → ℝ),
-      exec I (roundedStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+      exec I (roundedStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       StoreContext tag dec N q (j + 1) A b (Function.update v (j + 2) vn)
-        (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s out.store ∧
+        (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s out.store storedMatrix ∧
       ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) * specNorm A *
           ‖WithLp.toLp 2 (v (j + 1))‖ ∧
@@ -196,15 +203,15 @@ theorem exec_rounded_step (I : Interp P ι K (OpCount P ι))
       (bn ≠ 0 → |‖WithLp.toLp 2 vn‖ ^ 2 - 1| ≤
         lanczosImplementationRoundoffBound N (u tag)) := by
   obtain ⟨predot, normed, uv, wv, zv, an, _, hwork, hnorm, hp, hzp, hsn, hzn, han, _,
-      heu, hew, hea, hez, _⟩ := exec_rounded_work I h hz tag st hs hj hsmall
+      heu, hew, hea, hez, _⟩ := exec_rounded_work (hmv := hmv) I h hz tag st hs hj hsmall
   obtain ⟨out, vn, bn, hcommit, hctx, hbn, hzero, hvzero, hvunit, hres⟩ :=
     exec_rounded_commit I h hz hc tag predot normed hp hsn hj an han zv hzp hzn hnorm hsmall
   refine ⟨out, uv, wv, zv, an, bn, vn, ?_, hctx, heu, hew, ?_, hez, hres,
     hbn, hzero, hvzero, hvunit⟩
   · change exec I (do
-      (roundedWork(tag,N,j))
+      (roundedWork(tag,N,j,mv))
       (roundedCommit(tag,N,j))).run st = some out
-    rw [executionComposable_roundedWork I tag N j, hwork, Option.bind_some]
+    rw [executionComposable_roundedWork I tag N j (hmv j).composable, hwork, Option.bind_some]
     exact hcommit
   · exact hea.trans (mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_right

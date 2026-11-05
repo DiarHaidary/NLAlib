@@ -17,6 +17,7 @@ extra multiplication by one is inserted. It introduces no separate algorithm pro
 
 ## Main results
 
+* `NLAlib.Computation.IsArithErrSem.exec_cg_direction_update`: general range-aware execution.
 * `NLAlib.Computation.IsRelErrSem.exec_cg_direction_update`: actual successful loop execution,
   componentwise rounding traces, exact charged operation counts, unchanged usage fields,
   and store preservation outside the direction and scratch.
@@ -31,6 +32,7 @@ open Builder
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
   (I : Interp P ι K C) (tag : P) {dec : P → K → ℝ} {u : P → ℝ}
+  {err : P → BinOp → ℝ → ℝ → Prop} {safe : P → ℝ → Prop}
 
 private theorem read_of_write_of_outside {s s' : Store P K} {p q : P}
     {b i b' i' : ℕ} {v : K} (hw : s.write p b i v = some s')
@@ -41,12 +43,14 @@ private theorem read_of_write_of_outside {s s' : Store P K} {p q : P}
 
 /-- A single direction component, retaining the actual writes and their error relations. -/
 private theorem exec_cg_direction_component
-    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (h : IsArithErrSem err dec safe I.sem)
     (st : St P K C) (coeff tmp : Cell ℕ ℕ) (p r i : ℕ)
     {wc wp wr : K} (hc : st.store.read tag coeff.buf coeff.idx.eval = some wc)
     (hp : st.store.read tag p i = some wp) (hr : st.store.read tag r i = some wr)
     (htr : tmp.buf ≠ r)
-    (ht : ∃ w s, st.store.write tag tmp.buf tmp.idx.eval w = some s) :
+    (ht : ∃ w s, st.store.write tag tmp.buf tmp.idx.eval w = some s)
+    (hmul : safe tag (dec tag wc * dec tag wp))
+    (hadd : ∀ q, err tag .mul (dec tag wc * dec tag wp) q → safe tag (dec tag wr + q)) :
     ∃ st' w v s₁,
       exec I (.seq (.instr (.bin tag .mul tmp coeff ⟨p, .const i⟩))
         (.seq (.instr (.bin tag .add ⟨p, .const i⟩ ⟨r, .const i⟩ tmp)) .skip)) st =
@@ -56,15 +60,16 @@ private theorem exec_cg_direction_component
       st' = { st with
         store := st'.store
         cnt := (st.cnt + I.charge (.bin tag .mul)) + I.charge (.bin tag .add) } ∧
-      RelErr (u tag) (dec tag wc * dec tag wp) (dec tag v) ∧
-      RelErr (u tag) (dec tag wr + dec tag v) (dec tag w) := by
-  obtain ⟨v, hv⟩ := h.bin_ok tag .mul wc wp trivial (fun h => nomatch h) trivial
+      err tag .mul (dec tag wc * dec tag wp) (dec tag v) ∧
+      err tag .add (dec tag wr + dec tag v) (dec tag w) := by
+  obtain ⟨v, hv⟩ := h.bin_ok tag .mul wc wp trivial (fun h => nomatch h) hmul
   obtain ⟨old, s, hs⟩ := ht
   obtain ⟨s₁, h₁⟩ := Store.exists_write_eq_some_of_write_eq_some hs v
   have hr₁ : s₁.read tag r i = some wr := by
     rw [Store.read_of_write_eq_some_of_ne h₁ (Or.inl htr.symm)]
     exact hr
-  obtain ⟨w, hw⟩ := h.bin_ok tag .add wr v trivial (fun h => nomatch h) trivial
+  obtain ⟨w, hw⟩ := h.bin_ok tag .add wr v trivial (fun h => nomatch h)
+    (hadd _ (h.bin_err tag .mul wc wp v trivial hv))
   obtain ⟨s₀, h₀⟩ := Store.exists_write_eq_some_of_read_eq_some (v := w) hp
   obtain ⟨s₂, h₂⟩ := Store.exists_write_eq_some_of_shape_eq
     (Store.shape_of_write_eq_some h₁) h₀ w
@@ -76,13 +81,14 @@ private theorem exec_cg_direction_component
   exact (exec_seq_instr_bin I hc hp hv h₁).trans
     ((exec_seq_instr_bin I hr₁ (Store.read_of_write_eq_some h₁) hw h₂).trans (exec_skip I _))
 
-/-- The stored CG direction update succeeds under the scalar relative-error contract.
+/-- The actual CG direction update succeeds under an arithmetic error contract when every
+product and next addition is in range.
 Only direction entries and the scratch cell change. The returned errors are derived from
 executed multiplication and addition, and are not premises about their desired outputs.
 The count increases by exactly the dimension times the charge of one multiplication followed
 by one addition. All non-store, non-count state fields remain unchanged. -/
-theorem IsRelErrSem.exec_cg_direction_update
-    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+theorem IsArithErrSem.exec_cg_direction_update
+    (h : IsArithErrSem err dec safe I.sem)
     (st : St P K C) (coeff tmp : Cell ℕ ℕ) (p r : ℕ) (n : IExp ℕ)
     (av : ℝ) (pv rv : ℕ → ℝ)
     (hc : ∃ w, st.store.read tag coeff.buf coeff.idx.eval = some w ∧ dec tag w = av)
@@ -90,7 +96,9 @@ theorem IsRelErrSem.exec_cg_direction_update
     (hr : ∀ i < n.eval, ∃ w, st.store.read tag r i = some w ∧ dec tag w = rv i)
     (hpr : p ≠ r) (htp : tmp.buf ≠ p) (htr : tmp.buf ≠ r) (hcp : coeff.buf ≠ p)
     (htc : tmp.buf = coeff.buf → tmp.idx.eval ≠ coeff.idx.eval)
-    (ht : ∃ w s, st.store.write tag tmp.buf tmp.idx.eval w = some s) :
+    (ht : ∃ w s, st.store.write tag tmp.buf tmp.idx.eval w = some s)
+    (hsafe : ∀ i < n.eval, safe tag (av * pv i) ∧
+      ∀ q, err tag .mul (av * pv i) q → safe tag (rv i + q)) :
     ∃ st', exec I (forRange n fun i => do
         ins (.bin tag .mul tmp coeff ⟨p, .var i⟩)
         ins (.bin tag .add ⟨p, .var i⟩ ⟨r, .var i⟩ tmp)).run st = some st' ∧
@@ -102,7 +110,7 @@ theorem IsRelErrSem.exec_cg_direction_update
         (q ≠ tag ∨ b ≠ tmp.buf ∨ j ≠ tmp.idx.eval) →
         st'.store.read q b j = st.store.read q b j) ∧
       ∀ i < n.eval, ∃ w v, st'.store.read tag p i = some w ∧
-        RelErr (u tag) (av * pv i) v ∧ RelErr (u tag) (rv i + v) (dec tag w) := by
+        err tag .mul (av * pv i) v ∧ err tag .add (rv i + v) (dec tag w) := by
   classical
   obtain ⟨wc, hc, hvc⟩ := hc
   let R (k : ℕ) (σ : St P K C) : Prop :=
@@ -114,7 +122,7 @@ theorem IsRelErrSem.exec_cg_direction_update
       (q ≠ tag ∨ b ≠ tmp.buf ∨ j ≠ tmp.idx.eval) →
       σ.store.read q b j = st.store.read q b j) ∧
     ∀ i < k, ∃ w v, σ.store.read tag p i = some w ∧
-      RelErr (u tag) (av * pv i) v ∧ RelErr (u tag) (rv i + v) (dec tag w)
+      err tag .mul (av * pv i) v ∧ err tag .add (rv i + v) (dec tag w)
   have h0 : R 0 st := ⟨rfl, by simp, fun _ _ _ _ _ => rfl, fun i hi => by omega⟩
   have hstep : ∀ i < n.eval, ∀ σ, R i σ → ∃ σ',
       exec I (.seq (.instr (.bin tag .mul tmp coeff ⟨p, .const i⟩))
@@ -136,8 +144,11 @@ theorem IsRelErrSem.exec_cg_direction_update
     have ht' : ∃ w s, σ.store.write tag tmp.buf tmp.idx.eval w = some s := by
       obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_shape_eq hshape hs old
       exact ⟨old, s', hs'⟩
+    have hsf := hsafe i hi
+    rw [← hvc, ← hvp, ← hvr] at hsf
     obtain ⟨σ', w, v, s₁, hrun, h₁, h₂, hstate', hmul, hadd⟩ :=
       exec_cg_direction_component I tag h σ coeff tmp p r i hc' hp' hr' htr ht'
+        hsf.1 hsf.2
     refine ⟨σ', hrun, (Store.shape_of_write_eq_some h₂).trans
       ((Store.shape_of_write_eq_some h₁).trans hshape), ?_, ?_, ?_⟩
     · calc
@@ -172,6 +183,38 @@ theorem IsRelErrSem.exec_cg_direction_update
   change exec I (.seq (.loop n _) .skip) st = some st'
   rw [exec_seq_skip]
   exact hrun
+
+/-- The stored CG direction update succeeds under the scalar relative-error contract.
+Only direction entries and the scratch cell change. The returned errors are derived from
+executed multiplication and addition, and are not premises about their desired outputs.
+The count increases by exactly the dimension times the charge of one multiplication followed
+by one addition. All non-store, non-count state fields remain unchanged. -/
+theorem IsRelErrSem.exec_cg_direction_update
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (st : St P K C) (coeff tmp : Cell ℕ ℕ) (p r : ℕ) (n : IExp ℕ)
+    (av : ℝ) (pv rv : ℕ → ℝ)
+    (hc : ∃ w, st.store.read tag coeff.buf coeff.idx.eval = some w ∧ dec tag w = av)
+    (hp : ∀ i < n.eval, ∃ w, st.store.read tag p i = some w ∧ dec tag w = pv i)
+    (hr : ∀ i < n.eval, ∃ w, st.store.read tag r i = some w ∧ dec tag w = rv i)
+    (hpr : p ≠ r) (htp : tmp.buf ≠ p) (htr : tmp.buf ≠ r) (hcp : coeff.buf ≠ p)
+    (htc : tmp.buf = coeff.buf → tmp.idx.eval ≠ coeff.idx.eval)
+    (ht : ∃ w s, st.store.write tag tmp.buf tmp.idx.eval w = some s) :
+    ∃ st', exec I (forRange n fun i => do
+        ins (.bin tag .mul tmp coeff ⟨p, .var i⟩)
+        ins (.bin tag .add ⟨p, .var i⟩ ⟨r, .var i⟩ tmp)).run st = some st' ∧
+      st'.store.shape = st.store.shape ∧
+      st' = { st with
+        store := st'.store
+        cnt := st.cnt + n.eval • (I.charge (.bin tag .mul) + I.charge (.bin tag .add)) } ∧
+      (∀ q b j, (q ≠ tag ∨ b ≠ p ∨ n.eval ≤ j) →
+        (q ≠ tag ∨ b ≠ tmp.buf ∨ j ≠ tmp.idx.eval) →
+        st'.store.read q b j = st.store.read q b j) ∧
+      ∀ i < n.eval, ∃ w v, st'.store.read tag p i = some w ∧
+        RelErr (u tag) (av * pv i) v ∧ RelErr (u tag) (rv i + v) (dec tag w) := by
+  exact IsArithErrSem.exec_cg_direction_update I tag
+    (h.isArithErrSem (fun _ => trivial)) st coeff tmp p r n av pv rv
+    hc hp hr hpr htp htr hcp htc ht
+    (fun _ _ => ⟨trivial, fun _ _ => trivial⟩)
 
 end NLAlib.Computation
 
