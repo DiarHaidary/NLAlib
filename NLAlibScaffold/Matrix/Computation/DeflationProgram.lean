@@ -203,6 +203,205 @@ theorem holds_of_exec_deflateProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       st'.pos = Function.update st.pos .gaussian (st.pos .gaussian + 2 * (n * n)) := by
   sorry
 
+private theorem exists_exec_kcalls_deflateProg {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
+    (n r : ℕ) {Pm Q G Yb Qf Rf : ℕ} {po qo : IExp ℕ} {s : St P K C}
+    {P₀ Gm : Matrix (Fin n) (Fin n) (K × K)}
+    (hP : pairLayout.Holds s.store p Pm po.eval P₀) (hG : pairLayout.Holds s.store p G 0 Gm)
+    (hYb : s.store.shape[Yb]? = some (p, 2 * (n * n)))
+    (hQf : s.store.shape[Qf]? = some (p, 2 * (n * n)))
+    (hRf : s.store.shape[Rf]? = some (p, 2 * (n * n)))
+    (hQ : ∃ len, s.store.shape[Q]? = some (p, len) ∧ qo.eval + 2 * (n * r) ≤ len)
+    (hne : (Yb ≠ Pm ∨ n = 0) ∧ Yb ≠ G ∧ Qf ≠ Yb ∧ Rf ≠ Yb ∧ Qf ≠ Rf ∧ Q ≠ Qf) :
+    ∃ s', exec I (do
+      stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+      stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+      zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+      zzero p (.const n) (.const r - .const n) Q
+        (qo + 2 * (.const n * (.const r - (.const r - .const n)))) :
+        Builder P ι ℕ ℕ Unit).run s = some s' := by
+  obtain ⟨len, hQs, hle⟩ := hQ
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hne
+  have hsz : ∀ (A : Matrix (Fin n) (Fin n) (K × K)) {st : Store P K} {b : ℕ},
+      st.shape[b]? = some (p, 2 * (n * n)) → ∃ st', st.writeBlock p b 0 (pairLayout.toArray A) =
+        some st' := fun A st b hb => Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi =>
+    ⟨_, hb, by simp only [EntryLayout.size_toArray, pairLayout] at hi; linarith⟩
+  have hca : blockDisjoint (Yb, 0, n * n * 2) (Pm, po.eval,
+      n * n * 2) = true := by rcases h1 with h1 | rfl <;> simp [blockDisjoint, *]
+  have hcb : blockDisjoint (Yb, 0, n * n * 2) (G, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h2]
+  obtain ⟨s₁, hs₁⟩ := hsz (mmR (pairLayout.toMatrix n n (pairLayout.toArray P₀))
+    (pairLayout.toMatrix n n (pairLayout.toArray Gm))) hYb
+  have hk₁ : I.kcallStore mm p [n, n, n] [(Pm, po.eval), (G, 0)] [(Yb, 0)] s.store = some s₁ :=
+    (hmm.kcallStore_eq p ((pairLayout.holds_iff_readBlock_eq_some _ _ _ _ _).mp hP)
+      ((pairLayout.holds_iff_readBlock_eq_some _ _ _ _ _).mp hG) hca hcb).trans hs₁
+  have hY := (hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hP hG hca hcb hk₁).1
+  have hd₁ : blockDisjoint (Qf, 0, n * n * 2) (Rf, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h5]
+  have hd₂ : blockDisjoint (Qf, 0, n * n * 2) (Yb, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h3]
+  have hd₃ : blockDisjoint (Rf, 0, n * n * 2) (Yb, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h4]
+  have hsh₁ := Store.shape_of_writeBlock_eq_some hs₁
+  obtain ⟨s₂, hs₂⟩ := hsz (qrR (pairLayout.toMatrix n n (pairLayout.toArray (mmR P₀ Gm)))).1
+    (b := Qf) (by rw [hsh₁]; exact hQf)
+  have hsh₂ := Store.shape_of_writeBlock_eq_some hs₂
+  obtain ⟨s₃, hs₃⟩ := hsz (qrR (pairLayout.toMatrix n n (pairLayout.toArray (mmR P₀ Gm)))).2
+    (b := Rf) (by rw [hsh₂, hsh₁]; exact hRf)
+  have hk₂ : I.kcallStore qr p [n, n] [(Yb, 0)] [(Qf, 0), (Rf, 0)] s₁ = some s₃ :=
+    (hqr.kcallStore_eq p ((pairLayout.holds_iff_readBlock_eq_some _ _ _ _ _).mp hY) hd₁ hd₂
+      hd₃).trans (by rw [hs₂, Option.bind_some, hs₃])
+  have hQm := (hqr.holds_of_kcallStore_eq_some pairLayout.get_put p hY hd₁ hd₂ hd₃ hk₂).1
+  have hsh₃ := (Store.shape_of_writeBlock_eq_some hs₃).trans (hsh₂.trans hsh₁)
+  have hm : r - (r - n) ≤ n ∧ r - (r - n) ≤ r := ⟨by omega, by omega⟩
+  have hnr : n * (r - (r - n)) + n * (r - n) = n * r := by
+    rw [← Nat.mul_add, Nat.sub_add_cancel (Nat.sub_le r n)]
+  change ∃ s', exec I (.seq (.kcall mm p _ _ _) (.seq (.kcall qr p _ _ _)
+    (.seq (.named _ _ (.seq (.loop _ _) .skip)) (.seq (.named _ _ (.seq (.loop _ _) .skip))
+    .skip)))) s = some s'
+  rw [exec_seq, exec_kcall, show I.kcallStore mm p ([IExp.const n, IExp.const n,
+    IExp.const n].map IExp.eval) ([(Pm, po), (G, (0 : IExp ℕ))].map fun x => (x.1, x.2.eval))
+    ([(Yb, (0 : IExp ℕ))].map fun x => (x.1, x.2.eval)) s.store = some s₁ from hk₁,
+    Option.map_some, Option.bind_some, exec_seq, exec_kcall, show I.kcallStore qr p
+    ([IExp.const n, IExp.const n].map IExp.eval) ([(Yb, (0 : IExp ℕ))].map fun x =>
+    (x.1, x.2.eval)) ([(Qf, (0 : IExp ℕ)), (Rf, 0)].map fun x => (x.1, x.2.eval)) s₁ = some s₃
+    from hk₂, Option.map_some, Option.bind_some, exec_seq, exec_named, exec_seq_skip]
+  have hA : pairLayout.Holds s₃ p Qf (IExp.eval 0)
+      (Matrix.of fun i (j : Fin (r - (r - n))) => (qrR (mmR P₀ Gm)).1 i ⟨j, by omega⟩) :=
+    fun i j t => hQm i ⟨j, by omega⟩ t
+  have hXY : blockDisjoint (Q, qo.eval, 2 * (n * (r - (r - n)))) (Qf, IExp.eval 0,
+      2 * (n * (r - (r - n)))) = true := by simp [blockDisjoint, h6]
+  obtain ⟨s₄, h₄⟩ := exists_exec_zcopy (I := I) (ι := ι) p n (r - (r - n)) (yo := qo)
+    (st := { s with store := s₃, cnt := _ }) hA hXY ⟨len, by rw [hsh₃]; exact hQs, by nlinarith⟩
+  have hsh₄ := (holds_of_exec_zcopy p n (r - (r - n)) hA hXY h₄).2.2.1
+  change exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) _ = some s₄ at h₄
+  rw [exec_seq_skip, exec_named, exec_seq_skip, exec_loop] at h₄
+  rw [exec_loop, show IExp.eval (2 * (IExp.const n * (IExp.const r - (IExp.const r -
+    IExp.const n))) : IExp ℕ) = IExp.eval (2 * (IExp.const n * IExp.const (r - (r - n))))
+    from rfl, h₄, Option.bind_some,
+    exec_seq_skip, exec_named, exec_seq_skip]
+  obtain ⟨s₅, h₅⟩ := exists_exec_zzero (I := I) (ι := ι) p n (r - n) (Y := Q)
+    (yo := qo + 2 * (.const n * (.const r - (.const r - .const n)))) (st := s₄) hsem
+    ⟨len, by rw [hsh₄, hsh₃]; exact hQs, by
+      simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_sub, IExp.eval_const, IExp.eval_ofNat]
+      omega⟩
+  change exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) _ = some s₅ at h₅
+  rw [exec_seq_skip, exec_named, exec_seq_skip, exec_loop] at h₅
+  rw [exec_loop, show IExp.eval (2 * (IExp.const n * (IExp.const r - IExp.const n)) : IExp ℕ) =
+    IExp.eval (2 * (IExp.const n * IExp.const (r - n))) from rfl, h₅]
+  exact ⟨s₅, rfl⟩
+
+omit [Inhabited K] in
+private theorem exists_exec_drawMul_deflateProg {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {t G : ℕ} {v : K}
+    {s : St P K C} (ht : s.store.read p t 0 = some v)
+    (hG : s.store.shape[G]? = some (p, 2 * (n * n))) (htG : t ≠ G) :
+    ∃ s', exec I (.loop (2 * (.const n * .const n)) fun w => (do
+      ins (ι := ι) (.draw p .gaussian ⟨G, .var w⟩)
+      ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩) : Builder P ι ℕ ℕ Unit).run) s =
+        some s' := by
+  refine (exists_exec_loop_eq_some_of_forall I (fun _ s' => s'.store.shape = s.store.shape ∧
+    s'.store.read p t 0 = some v) ⟨rfl, ht⟩ ?_).imp fun _ h => h.1
+  intro w hw s₀ ⟨hsh, hr⟩
+  have hw' : w < 2 * (n * n) := hw
+  have hG₀ : s₀.store.shape[G]? = some (p, 2 * (n * n)) := hsh ▸ hG
+  obtain ⟨s₁, hw₁⟩ := Store.exists_write_eq_some_of_getElem?_shape
+    (I.tape .gaussian (s₀.pos .gaussian)) hG₀ hw'
+  obtain ⟨z, hz⟩ := hsem.bin_ok p .mul (I.tape .gaussian (s₀.pos .gaussian)) v trivial
+    (by simp) trivial
+  obtain ⟨s₂, hw₂⟩ := Store.exists_write_eq_some_of_getElem?_shape z
+    (by rw [Store.shape_of_write_eq_some hw₁]; exact hG₀) hw'
+  change ∃ s', exec I (.seq (.instr (.draw p .gaussian _)) (.seq (.instr (.bin p .mul _ _ _))
+    .skip)) s₀ = some s' ∧ _
+  rw [exec_seq_instr_draw I hw₁, exec_seq_instr_bin I (Store.read_of_write_eq_some hw₁)
+    ((Store.read_of_write_eq_some_of_ne hw₁ (Or.inl htG)).trans hr) hz hw₂, exec_skip]
+  exact ⟨_, rfl, (Store.shape_of_write_eq_some hw₂).trans
+    ((Store.shape_of_write_eq_some hw₁).trans hsh), (Store.read_of_write_eq_some_of_ne hw₂
+    (Or.inl htG)).trans ((Store.read_of_write_eq_some_of_ne hw₁ (Or.inl htG)).trans hr)⟩
+
+private theorem exists_exec_body_deflateProg {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hlit : IsExactIntLit dec I.sem 2) (p : P) (hu : u p ≤ 1) (n r : ℕ)
+    {Pm Q t G Yb Qf Rf : ℕ} {po qo : IExp ℕ} {s : St P K C}
+    {P₀ : Matrix (Fin n) (Fin n) (K × K)} (hP : pairLayout.Holds s.store p Pm po.eval P₀)
+    (ht : s.store.shape[t]? = some (p, 2)) (hG : s.store.shape[G]? = some (p, 2 * (n * n)))
+    (hYb : s.store.shape[Yb]? = some (p, 2 * (n * n)))
+    (hQf : s.store.shape[Qf]? = some (p, 2 * (n * n)))
+    (hRf : s.store.shape[Rf]? = some (p, 2 * (n * n)))
+    (hQ : ∃ len, s.store.shape[Q]? = some (p, len) ∧ qo.eval + 2 * (n * r) ≤ len)
+    (hPm : n = 0 ∨ (t ≠ Pm ∧ G ≠ Pm ∧ Yb ≠ Pm))
+    (hne : t ≠ G ∧ Yb ≠ G ∧ Qf ≠ Yb ∧ Rf ≠ Yb ∧ Qf ≠ Rf ∧ Q ≠ Qf) :
+    ∃ s', exec I (do
+      ins (.lit p ⟨t, 0⟩ 1)
+      ins (.litIdx p ⟨t, 1⟩ 2)
+      ins (.bin p .div ⟨t, 0⟩ ⟨t, 0⟩ ⟨t, 1⟩)
+      ins (.un p .sqrt ⟨t, 0⟩ ⟨t, 0⟩)
+      forRange (2 * (.const n * .const n)) fun w => do
+        ins (.draw p .gaussian ⟨G, .var w⟩)
+        ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩)
+      stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+      stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+      zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+      zzero p (.const n) (.const r - .const n) Q
+        (qo + 2 * (.const n * (.const r - (.const r - .const n)))) :
+        Builder P ι ℕ ℕ Unit).run s = some s' := by
+  obtain ⟨htG, hrest⟩ := hne
+  obtain ⟨v₁, hv₁⟩ := hsem.lit_ok p 1 trivial
+  obtain ⟨z₂, hz₂, hd₂⟩ := hlit p 2 le_rfl
+  obtain ⟨δ₁, hδ₁, hdv₁⟩ := hsem.lit_err p 1 v₁ hv₁
+  obtain ⟨v₃, hv₃⟩ := hsem.bin_ok p .div v₁ z₂ trivial (fun _ => by rw [hd₂]; norm_num) trivial
+  obtain ⟨δ₃, hδ₃, hdv₃⟩ := hsem.bin_err p .div v₁ z₂ v₃ trivial hv₃
+  have hpos : 0 ≤ dec p v₃ := by
+    have := abs_le.mp (hδ₁.trans hu)
+    have := abs_le.mp (hδ₃.trans hu)
+    rw [hdv₃, hdv₁, hd₂]
+    simp only [BinOp.realOp, Rat.cast_one, one_mul, Nat.cast_ofNat]
+    exact mul_nonneg (div_nonneg (by linarith) (by norm_num)) (by linarith)
+  obtain ⟨v₄, hv₄⟩ := hsem.sqrt_ok p v₃ hpos
+  have hw : ∀ {st : Store P K} (i : ℕ) (v : K), st.shape = s.store.shape → i < 2 →
+      ∃ st', st.write p t i v = some st' := fun i v hsh hi =>
+    Store.exists_write_eq_some_of_getElem?_shape v (hsh ▸ ht) hi
+  obtain ⟨s₁, hw₁⟩ := hw 0 v₁ rfl (by norm_num)
+  have hsh₁ := Store.shape_of_write_eq_some hw₁
+  obtain ⟨s₂, hw₂⟩ := hw 1 z₂ hsh₁ (by norm_num)
+  have hsh₂ := (Store.shape_of_write_eq_some hw₂).trans hsh₁
+  obtain ⟨s₃, hw₃⟩ := hw 0 v₃ hsh₂ (by norm_num)
+  have hsh₃ := (Store.shape_of_write_eq_some hw₃).trans hsh₂
+  obtain ⟨s₄, hw₄⟩ := hw 0 v₄ hsh₃ (by norm_num)
+  have hsh₄ := (Store.shape_of_write_eq_some hw₄).trans hsh₃
+  change ∃ s', exec I (.seq (.instr (.lit p _ 1)) (.seq (.instr (.litIdx p _ 2))
+    (.seq (.instr (.bin p .div _ _ _)) (.seq (.instr (.un p .sqrt _ _))
+    (.seq (.loop _ _) _))))) s = some s'
+  rw [exec_seq_instr_lit I hv₁ hw₁, exec_seq_instr_litIdx I hz₂ hw₂,
+    exec_seq_instr_bin I ((Store.read_of_write_eq_some_of_ne hw₂ (Or.inr (by norm_num))).trans
+      (Store.read_of_write_eq_some hw₁)) (Store.read_of_write_eq_some hw₂) hv₃ hw₃,
+    exec_seq_instr_un I (Store.read_of_write_eq_some hw₃) hv₄ hw₄]
+  obtain ⟨s₅, h₅⟩ := exists_exec_drawMul_deflateProg (I := I) (ι := ι) hsem p n
+    (s := { s with store := s₄, cnt := _ }) (Store.read_of_write_eq_some hw₄)
+    (by rw [hsh₄]; exact hG) htG
+  rw [exec_seq, h₅, Option.bind_some]
+  have hz₂' : I.sem.lit p 2 = some z₂ := by simpa using hz₂
+  have hsq : v₄ = I.sem.sqrtHalf p := by simp [ScalarSem.sqrtHalf, hv₁, hz₂', hv₃, hv₄]
+  obtain ⟨hGm, -, hfr, hsh₅⟩ := holds_of_exec_forRange_drawMul (I := I) (ι := ι) p n
+    (s := ⟨t, 0⟩) (st := { s with store := s₄, cnt := _ }) (hsq ▸ Store.read_of_write_eq_some hw₄)
+    htG (by change exec I (.seq (.loop _ _) .skip) _ = _; rw [exec_seq_skip]; exact h₅)
+  have hsh₅' : s₅.store.shape = s.store.shape := hsh₅.trans hsh₄
+  refine exists_exec_kcalls_deflateProg hmm hqr hsem p n r (P₀ := P₀) ?_ hGm (hsh₅' ▸ hYb)
+    (hsh₅' ▸ hQf)
+    (hsh₅' ▸ hRf) (hsh₅' ▸ hQ) ⟨hPm.elim Or.inr fun h => Or.inl h.2.2, hrest⟩
+  rcases hPm with rfl | ⟨h1, h2, -⟩
+  · exact fun i => i.elim0
+  intro i j k
+  rw [hfr p Pm _ h2.symm]
+  dsimp only
+  rw [Store.read_of_write_eq_some_of_ne hw₄ (Or.inl h1.symm),
+    Store.read_of_write_eq_some_of_ne hw₃ (Or.inl h1.symm),
+    Store.read_of_write_eq_some_of_ne hw₂ (Or.inl h1.symm),
+    Store.read_of_write_eq_some_of_ne hw₁ (Or.inl h1.symm)]
+  exact hP i j k
+
 /-- **The refinement of the deflation program, success**: under the standard model at $u$ with
 every value in range, $u(p) \le 1$ and exact literals up to $2$, if kernels `mm` and `qr` of `I`
 are routines on interleaved pairs, the input block at `Pm` holds a stored matrix and the output
@@ -224,7 +423,48 @@ theorem exists_exec_deflateProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayo
     (hQP : blockDisjoint (Q, qo.eval, 2 * (n * r)) (Pm, po.eval, 2 * (n * n)) = true)
     (hQ : ∃ len, st.store.shape[Q]? = some (p, len) ∧ qo.eval + 2 * (n * r) ≤ len) :
     ∃ st', exec I (deflateProg p mm qr (.const n) (.const r) Pm po Q qo).run st = some st' := by
-  sorry
+  have hmap : ∀ {α β : Type} {o : Option α} {f : α → β}, (∃ x, o = some x) →
+      ∃ y, o.map f = some y := fun {_ _ _ f} ⟨x, hx⟩ => ⟨f x, by rw [hx]; rfl⟩
+  change ∃ st', exec I (.seq (.alloc p _ _) .skip) st = some st'
+  rw [exec_seq_skip, exec_alloc]
+  apply hmap
+  change ∃ st', exec I (.alloc p _ _) _ = some st'
+  rw [exec_alloc]; apply hmap
+  change ∃ st', exec I (.alloc p _ _) _ = some st'
+  rw [exec_alloc]; apply hmap
+  change ∃ st', exec I (.alloc p _ _) _ = some st'
+  rw [exec_alloc]; apply hmap
+  change ∃ st', exec I (.alloc p _ _) _ = some st'
+  rw [exec_alloc]; apply hmap
+  obtain ⟨len, hQs, hle⟩ := hQ
+  have hQS : Q < st.store.size := by
+    rw [← Store.size_shape]
+    exact (Array.getElem?_eq_some_iff.mp hQs).1
+  have hPm : n = 0 ∨ Pm < st.store.size := by
+    rcases Nat.eq_zero_or_pos n with h | h
+    · exact Or.inl h
+    · exact Or.inr (Store.lt_size_of_read_eq_some (hP ⟨0, h⟩ ⟨0, h⟩ (0 : Fin 2)))
+  refine exists_exec_body_deflateProg hmm hqr hsem hlit p hu n r (P₀ := P₀) ?_ ?_ ?_ ?_ ?_ ?_
+    ⟨len, ?_, hle⟩ ?_ ?_
+  · rcases hPm with rfl | hPm
+    · exact fun i => i.elim0
+    intro i j k
+    dsimp only
+    repeat rw [Store.read_push_of_lt
+      (by first | omega | (simp only [Array.size_push]; omega))]
+    exact hP i j k
+  iterate 5
+    · repeat rw [Store.getElem?_shape_push_of_lt _
+        (by first | omega | (simp only [Array.size_push]; omega))]
+      exact Store.getElem?_shape_push_size _ _ _
+  · dsimp only
+    repeat rw [Store.getElem?_shape_push_of_lt _
+      (by first | omega | (simp only [Array.size_push]; omega))]
+    exact hQs
+  · rcases hPm with h | h
+    · exact Or.inl h
+    · exact Or.inr (by simp only [Array.size_push]; omega)
+  · simp only [Array.size_push]; omega
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- **The tape sampler is a sampler of ideal complex Gaussians**: for a rounding $\rho$ of real
