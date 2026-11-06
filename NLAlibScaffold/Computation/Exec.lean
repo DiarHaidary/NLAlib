@@ -59,7 +59,8 @@ Proof: `rw [exec, hf]`; `List.range_zero`, `List.foldlM_nil`, then `if_pos rfl`.
 theorem exec_whileFuel_of_eval_eq_zero {fuel : IExp ℕ} (hf : fuel.eval = 0) (p : P) (c : CmpOp)
     (x y : Cell ℕ ℕ) (body : Stmt P ι ℕ ℕ) (st : St P K C) :
     exec I (.whileFuel fuel p c x y body) st = none := by
-  sorry
+  rw [exec, hf, List.range_zero, List.foldlM_nil]
+  simp only [Option.pure_def, Option.bind_some, if_true]
 
 /-- **`whileFuel` unrolled by one test**: with fuel $j + 1$, the loop compares; if the comparison
 is true it runs the body and continues with fuel $j$, and otherwise it stops in the charged
