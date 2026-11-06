@@ -207,7 +207,29 @@ $\lvert (g + \xi)^2 - g^2 \rvert \le \lvert \xi \rvert(2\lvert g \rvert + \lvert
 `abs_sub_abs_le_abs_sub`, `nlinarith`. S, about 15 lines. -/
 theorem abs_one_sub_sq_newtonSchulz_add_le_add {x ξ : ℝ} (hx : |x| ≤ √2) (hξ : |ξ| ≤ 1) :
     |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 + 4 * |ξ| := by
-  sorry
+  have hx2 : x ^ 2 ≤ 2 := by
+    have := pow_le_pow_left₀ (abs_nonneg x) hx 2
+    rwa [sq_abs, Real.sq_sqrt (by norm_num)] at this
+  have hs2 : √2 ≤ 2 := by
+    nlinarith [Real.sq_sqrt (show (0:ℝ) ≤ 2 by norm_num), Real.sqrt_nonneg 2]
+  have hx2' : |x| ≤ 2 := hx.trans hs2
+  have hg1 := abs_newtonSchulz_le_one hx2'
+  have h1 : 0 ≤ 1 - newtonSchulz x ^ 2 := by
+    rw [one_sub_newtonSchulz_sq]
+    exact div_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by norm_num)
+  have h2 : 1 - newtonSchulz x ^ 2 ≤ (1 - x ^ 2) ^ 2 := by
+    rw [one_sub_newtonSchulz_sq]
+    nlinarith [mul_nonneg (sq_nonneg (1 - x ^ 2)) (sq_nonneg x)]
+  have hgξ : |newtonSchulz x * ξ| ≤ |ξ| := by
+    rw [abs_mul]
+    nlinarith [abs_nonneg (newtonSchulz x), abs_nonneg ξ]
+  have hξ2 : ξ ^ 2 ≤ |ξ| := by
+    have := sq_abs ξ
+    nlinarith [abs_nonneg ξ]
+  rw [sq_abs, abs_le]
+  constructor <;>
+    nlinarith [neg_abs_le (newtonSchulz x * ξ), le_abs_self (newtonSchulz x * ξ),
+      sq_nonneg (1 - x ^ 2), abs_nonneg ξ]
 
 /-- **The perturbed iteration stays in $[-1 - u, 1 + u]$**: if $\lvert x_0 \rvert \le 3/2$,
 $u \le 1/2$ and $\lvert x_{k+1} - g(x_k) \rvert \le u$ for every $k$, then
