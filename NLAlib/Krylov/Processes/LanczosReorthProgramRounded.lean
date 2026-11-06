@@ -22,8 +22,6 @@ Patterned on `NLAlib.LanczosImplementation.exec_rounded_compiled` and
 
 ## Main results
 
-* `NLAlib.cgsPassBound_le_cgsPassBound`: monotonicity of the CGS pass bound in the number of
-  columns.
 * `NLAlib.LanczosReorthImplementation.exec_rounded_compiled`,
   `NLAlib.LanczosReorthImplementation.exec_rounded_oracle_compiled`: the rounded runs.
 * `NLAlib.LanczosReorthImplementation.exec_rounded_compiled_backward`: the backward model.
@@ -37,17 +35,6 @@ open scoped Matrix
 namespace NLAlib
 
 open Computation Computation.Builder
-
-/-- The CGS pass bound `NLAlib.cgsPassBound` $N\,j\,u\,\eta_0$ =
-<!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$ is monotone in the
-number $j$ of columns for $u, \eta_0 \ge 0$. -/
-theorem cgsPassBound_le_cgsPassBound (N : ℕ) {j k : ℕ} (hjk : j ≤ k) {u η₀ : ℝ} (hu : 0 ≤ u)
-    (hη₀ : 0 ≤ η₀) : cgsPassBound N j u η₀ ≤ cgsPassBound N k u η₀ := by
-  rw [cgsPassBound_def, cgsPassBound_def]
-  have hs : Real.sqrt ((j : ℝ) + 1) ≤ Real.sqrt ((k : ℝ) + 1) :=
-    Real.sqrt_le_sqrt (by exact_mod_cast Nat.add_le_add_right hjk 1)
-  have hn : ((N + j + 2 : ℕ) : ℝ) ≤ ((N + k + 2 : ℕ) : ℝ) := by exact_mod_cast (by omega)
-  gcongr
 
 namespace LanczosReorthImplementation
 
@@ -222,7 +209,8 @@ computed tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}', \mathbf{
 symmetric $\mathbf{H}'$ with
 $\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r + 3\|\mathbf{A}\|_2(3\varepsilon +
 2\sqrt{3(m+1)}\,\mu)$, $r$ = `NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the
-orthogonality level. No printed source; [Paige1970] in substance. -/
+orthogonality level. No printed source for the program statement; [Paige1971, §6.1] in
+substance. -/
 theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)

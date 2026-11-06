@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedLoop
+public import NLAlib.Matrix.Computation.ClassicalGramSchmidtProgram
 public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
 public import NLAlib.Computation.StaticCost
 

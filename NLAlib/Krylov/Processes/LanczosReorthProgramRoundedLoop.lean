@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedStep
+public import NLAlib.Matrix.Computation.OrthRoutine
 
 /-!
 # The rounded loop of Lanczos with full reorthogonalization as a program

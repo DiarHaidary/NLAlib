@@ -34,6 +34,7 @@ pass give for the guarantee `NLAlib.IsOrthErr`. The rounding errors of a pass ar
 
 ## Main results
 
+* `NLAlib.cgsPassBound_le_cgsPassBound`: the pass bound is monotone in the number of columns.
 * `NLAlib.norm_transpose_mulVec_le_of_norm_sub_le`: one pass leaves a first-order loss of
   orthogonality.
 * `NLAlib.isOrthErr_of_one_pass`: one pass meets the guarantee with a first-order input term.
@@ -81,6 +82,17 @@ a safe multiple of the first-order count
 $(1+\eta_0)\sqrt{j}\,(\gamma_N + \gamma_j) + 4u$. -/
 noncomputable irreducible_def cgsPassBound (N j : ℕ) (u η₀ : ℝ) : ℝ :=
   2 * (1 + η₀) * Real.sqrt ((j : ℝ) + 1) * ((N + j + 2 : ℕ) : ℝ) * u
+
+/-- The CGS pass bound `NLAlib.cgsPassBound` $N\,j\,u\,\eta_0$ =
+<!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$ is monotone in the
+number $j$ of columns for $u, \eta_0 \ge 0$. -/
+theorem cgsPassBound_le_cgsPassBound (N : ℕ) {j k : ℕ} (hjk : j ≤ k) {u η₀ : ℝ} (hu : 0 ≤ u)
+    (hη₀ : 0 ≤ η₀) : cgsPassBound N j u η₀ ≤ cgsPassBound N k u η₀ := by
+  rw [cgsPassBound_def, cgsPassBound_def]
+  have hs : Real.sqrt ((j : ℝ) + 1) ≤ Real.sqrt ((k : ℝ) + 1) :=
+    Real.sqrt_le_sqrt (by exact_mod_cast Nat.add_le_add_right hjk 1)
+  have hn : ((N + j + 2 : ℕ) : ℝ) ≤ ((N + k + 2 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  gcongr
 
 /-- **One pass leaves a first-order loss of orthogonality**: if
 $\|\mathbf{w}_1 - (\mathbf{w} - \mathbf{V}\mathbf{V}^{\mathsf{T}}\mathbf{w})\| \le
