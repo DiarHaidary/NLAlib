@@ -86,7 +86,7 @@ i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \ge
 (4.2) there.
 Proof: the chain of the paper: promising, then Jensen for $1/x$ (`ConvexOn.map_sum_le` with
 `convexOn_zpow` at $-1$) and for $x^2$ (`Finset.sum_mul_sq_le_sq_mul_sq`), then
-`NLAlib.norm_mul_diagonal_mul_inv_last_sq_le` with $\mathbf{g} = p(\mathbf{d})$ and
+`NLAlib.sum_lastRowWeights_mul_sq_le` with $\mathbf{g} = p(\mathbf{d})$ and
 `NLAlib.aeval_eq_mul_diagonal_mul_inv`, then optimality. M, about 50 lines. -/
 theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} {ss : List ℂ} {r : ℂ}

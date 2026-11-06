@@ -15,7 +15,7 @@ The shifting strategy of [BanksGarzaVargasSrivastava2021, §4.2] as a mathematic
 current Hessenberg iterate $\mathbf{H}$ and a list of $k = 2^m$ approximate Ritz values: if a
 Ritz value is an eigenvalue, shift by it (the step then decouples exactly); otherwise try the
 promising Ritz value $r$ of `NLAlib.findRitz`, then the exceptional shifts, a square grid on the
-disk of radius $(2B)^{1/k}\theta\alpha\,\psi_k(\mathbf{H})$ about $r$, and take the first shift
+disk of radius $(2B)^{1/k}\theta\alpha\,\psi_k(\mathbf{H})$ about $r$, and take a shift
 $s$ whose degree $k$ step $(z - s)^k$ decouples exactly or reduces the potential by $1 - \gamma$.
 The iteration `NLAlib.shqrIterate` repeats this with a Ritz-value oracle.
 
@@ -87,20 +87,19 @@ noncomputable def shqrCandidates (B θ α γ : ℝ) (m : ℕ) (H : Matrix (Fin (
       (exceptionalRadius (2 ^ m) B θ α (hessenbergPotential (2 ^ m) H))
       (exceptionalSpacing (2 ^ m) B θ α ((1 - γ) ^ 2))
 
-/-- The **shift chosen by $\mathrm{Sh}_{k,B}$**, $k = 2^m$: the first Ritz value in `ss` that is
-an eigenvalue of $\mathbf{H}$ if there is one; otherwise the first success among
-`NLAlib.shqrCandidates` (the promising Ritz value $r$ first), and $r$ if none succeeds (which the
-convergence theorem excludes). The first clause covers the case the paper sets aside, where the
-shift polynomial is singular. [BanksGarzaVargasSrivastava2021, §4.2]. -/
+open Classical in
+/-- The **shift chosen by $\mathrm{Sh}_{k,B}$**, $k = 2^m$: a Ritz value in `ss` that is an
+eigenvalue of $\mathbf{H}$ if there is one; otherwise a success among `NLAlib.shqrCandidates`
+(the promising Ritz value $r$ or an exceptional shift) if there is one, and $r$ if none succeeds
+(which the convergence theorem excludes). Which eigenvalue or success is taken is a classical
+choice; no statement depends on it (the paper tries the candidates in order and stops at the
+first success). The first clause covers the case the paper sets aside, where the shift
+polynomial is singular. [BanksGarzaVargasSrivastava2021, §4.2]. -/
 noncomputable def shqrShift (B θ α γ : ℝ) (m : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
     (ss : List ℂ) : ℂ :=
-  match ss.find? (fun r => @decide ((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0)
-      (Classical.propDecidable _)) with
-  | some r => r
-  | none =>
-    ((shqrCandidates B θ α γ m H ss).find? fun s =>
-        @decide (IsShiftSuccess γ (2 ^ m) H s) (Classical.propDecidable _)).getD
-      (findRitz H m 1 ss)
+  if h : ∃ r ∈ ss, (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 then h.choose
+  else if h' : ∃ s ∈ shqrCandidates B θ α γ m H ss, IsShiftSuccess γ (2 ^ m) H s then h'.choose
+  else findRitz H m 1 ss
 
 /-- One **iteration of $\mathrm{Sh}_{k,B}$**, $k = 2^m$: the degree $k$ QR step with shift
 polynomial $(z - s)^k$, $s$ the shift `NLAlib.shqrShift`.

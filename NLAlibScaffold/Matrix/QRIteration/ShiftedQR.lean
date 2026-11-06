@@ -110,7 +110,7 @@ those of $\mathbf{e}_k^{\mathsf{H}}p(\mathbf{H}_{(k)})$. With Cayley–Hamilton
 (`Matrix.aeval_self_charpoly`) they vanish for $\chi_k$; the entries before column $n - k$ vanish by
 `NLAlib.IsUpperHessenberg.aeval_apply_last_eq_zero`, and the remaining one is the product of
 `NLAlib.IsUpperHessenberg.aeval_apply_last_eq_prod` (`Matrix.charpoly_monic`,
-`Matrix.charpoly_natDegree_eq_dim`). M, about 70 lines (split the restriction lemma off). -/
+`Matrix.charpoly_natDegree_eq_dim`). L, about 90 lines (split the restriction lemma off). -/
 theorem IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
     (hkn : k ≤ n) :
@@ -147,8 +147,8 @@ shift $s$, `NLAlib.shiftedQRStep` $\mathbf{H}$ $s$ is upper Hessenberg, also whe
 $\mathbf{H} - s\mathbf{I}$ is singular.
 Proof: with $\mathbf{Q}$, $\mathbf{R}$ the Givens factors of $\mathbf{H} - s\mathbf{I}$,
 $\mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q} = \mathbf{R}\mathbf{Q} + s\mathbf{I}$
-(`NLAlib.givensHessenbergState_fst_mul_snd`, unitarity
-`NLAlib.hasOrthonormalCols_givensHessenbergState_fst`), $\mathbf{R}$ upper triangular
+(`NLAlib.IsQR.mul_add_smul_one_eq` with `NLAlib.isQR_givensHessenberg`), $\mathbf{R}$
+upper triangular
 (`NLAlib.isUpperTrapezoidal_givensHessenbergR`) and $\mathbf{Q}$ upper Hessenberg
 (`NLAlib.isUpperHessenberg_givensHessenbergQ`); `NLAlib.IsUpperHessenberg.isUpperTriangular_mul`.
 S, about 20 lines. -/
@@ -279,7 +279,7 @@ pivots $\mathbf{R}_{i,i}$, $i < n$, are nonzero
 (`NLAlib.forall_givensHessenbergR_apply_self_ne_zero_iff` on the leading columns) and
 $\det = 0$ forces $\mathbf{R}_{n,n} = 0$; then the last row of $\mathbf{R}\mathbf{Q}$ is
 $\mathbf{R}_{n,n}\mathbf{e}_n^{\mathsf{H}}\mathbf{Q} = \mathbf{0}$, so the entry $(n, n - 1)$ of
-$\mathbf{R}\mathbf{Q} + s\mathbf{I}$ vanishes. M, about 50 lines. -/
+$\mathbf{R}\mathbf{Q} + s\mathbf{I}$ vanishes. L, about 70 lines (the leading-block rank step). -/
 theorem IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n) {s : ℂ}
     (hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0) :

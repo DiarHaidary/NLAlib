@@ -1,6 +1,6 @@
 # Design note: global convergence of the Hessenberg shifted QR algorithm — potential, promising Ritz values, exceptional shifts (stage SHIFTED-QR)
 
-Status: design, no proofs. Branch `design/shifted-qr` (worktree `~/nlalib-design-sqr`, from
+Status: design, no proofs; Fable review applied (second commit, §13). Branch `design/shifted-qr` (worktree `~/nlalib-design-sqr`, from
 `origin/main` 0e9d7d6c). Decision sheet `~/nlalib-harness/state/decisions/SHIFTED-QR.json`
 (APPROVE, OQ1–OQ10; reviewer fields empty for Fable). Targets
 `~/nlalib-harness/pilot/shifted-qr-targets.json` (stage SQR-1, 50 statements). Board card T109.
@@ -57,7 +57,7 @@ Checks on the skeleton (this branch, `LEAN_NUM_THREADS=2`): §15.
 | Headline (M3) | For $\mathbf{H}_0$ upper Hessenberg, $\mathbf{H}_0\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$, $k = 2^m \le n$, $\theta$-optimal Ritz oracle, $B^{4m} \le \alpha^k$, $0 < \gamma < 1$: some $t \le \lceil\log(1/\delta)/\log(1/(1-\gamma))\rceil$ has $\mathbf{H}_t$ $\delta$-decoupled (Theorem 1.6(1)) |
 | Other results | variational formula (Lemma 2.3), $\psi_k(\widehat{\mathbf{H}}) \le \tau_p(\mathbf{H})$ (Lemma 2.5) and the singular case, approximate functional calculus (Lemma 4.2), moment comparison and almost-monotonicity (Lemma 4.4), Find (Lemma 4.5), stagnation implies support (Lemma 4.6), Exc (Lemma 4.7), one iteration (M1), shifts per iteration (Theorem 1.6(2) as a count, M4/M5), normal case (N1, Theorem 1.2); from Part II the exact-arithmetic composition lemma (3.2) and the dichotomy (Lemma 4.2, Theorem 4.1) |
 | Paper gaps found | 17 (§10); four change statements: G1 the normal-case exceptional net does not reduce the potential as printed; G2 "$\mathrm{dec}_\delta \le 4\log(1/\delta)$" is false for $\delta$ near 1; G4 the singular case of Lemma 2.5; G10 the dichotomy's constant $\tfrac12$ is not reached (true: $\tfrac12k^{-1/(2k)} \ge \tfrac25$) |
-| Statements (SQR-1) | 50 sorried: S 26, M 21, L 3, H 0, in 8 scaffold files |
+| Statements (SQR-1) | 50 sorried: S 26, M 16, L 8, H 0, in 8 scaffold files |
 | Waves | 0–6 (§13); critical path Q0 → Q1 → Q3 → Q6 → M1 → M3 → N1 |
 | Stage 2 (SQR-2) | Part II in finite precision, ≈ 60 statements (S ≈ 12, M ≈ 25, L ≈ 16, H ≈ 6), §9 |
 | Open questions | 10 (§12) |
@@ -128,7 +128,7 @@ $\mathbf{e}_n^{\mathsf{H}}\mathbf{M}$ is `M (Fin.last n)` and its norm
   `exceptionalRadius k B θ α ψ` $=(2B)^{1/k}\theta\alpha\psi$; `exceptionalSpacing k B θ α ρ`
   $=(\rho/((14B^4)^{1/k}\alpha^2\theta^2))^{k/(k-1)}$; `IsShiftSuccess γ k H s`;
   `shqrCandidates` (Find's $r$, then the grid); `shqrShift` (a Ritz value that is an eigenvalue,
-  else the first success, else $r$); `shqrStep`; `shqrIterate B θ α γ m ritz H₀ t`.
+  else a success, else $r$, by `open Classical in` and `if h : ∃ … then h.choose`); `shqrStep`; `shqrIterate B θ α γ m ritz H₀ t`.
 
 **Eigenvector condition (OQ9).** No definition of $\kappa_V$: every statement takes
 `(hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d)` and `pseudoConditionNumber V ≤ B` (or
@@ -223,17 +223,18 @@ theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
     {B θ α γ : ℝ} (hB : pseudoConditionNumber V ≤ B) {m : ℕ} (hm : 1 ≤ m) (hmn : 2 ^ m ≤ n)
     (hθ : 1 ≤ θ) (hα1 : 1 ≤ α) (hα : B ^ (4 * m) ≤ α ^ 2 ^ m) (hγ0 : 0 < γ) (hγ1 : γ < 1)
     {ritz : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ → List ℂ}
-    (hritz : ∀ H', IsUpperHessenberg H' →
+    (hritz : ∀ H', IsUpperHessenberg H' → 0 < hessenbergPotential (2 ^ m) H' →
       (ritz H').length = 2 ^ m ∧ IsOptimalRitzValues θ H' (ritz H'))
     {δ : ℝ} (hδ : 0 < δ) :
     ∃ t ≤ ⌈Real.log (1 / δ) / Real.log (1 / (1 - γ))⌉₊,
       IsDecoupled δ (shqrIterate B θ α γ m ritz H₀ t)
 ```
 
-The oracle hypothesis quantifies over all Hessenberg matrices (the iterates are Hessenberg by
-M2a); it is satisfiable by `ritzValues` (R1b, monotone in $\theta$). A version with the oracle
-hypothesis only along the iterates would need the iterates in the statement; the uniform form is
-what a Ritz-value finder guarantees.
+The oracle hypothesis quantifies over all Hessenberg matrices with $\psi_k > 0$ (the iterates
+are Hessenberg by M2a), as Definition 1.5 requires a Ritz-value finder to succeed only when the
+minimum is nonzero, and as stage 2's Regularize delivers (for $\varepsilon$-unreduced input);
+the proof uses the oracle only at unreduced iterates (review item 3). It is satisfiable by
+`ritzValues` (R1b, monotone in $\theta$).
 
 ### 3.7 The dichotomy (D1, D2; Part II §4.1, exact)
 
@@ -253,7 +254,7 @@ $\tfrac25$ (G10) and strict $\beta < c\Gamma$ (G10b).
 | P2a | `IsUpperHessenberg.aeval_apply_last_eq_zero` | M | 0 | — |
 | P2b | `IsUpperHessenberg.aeval_apply_last_eq_prod` | M | 0 | — |
 | P3 | `IsUpperHessenberg.hessenbergPotential_pow_le_norm_aeval` | S | 1 | P1, P2b |
-| P4 | `IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq` | M | 1 | P1, P2a, P2b |
+| P4 | `IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq` | L | 1 | P1, P2a, P2b |
 | P5 | `hessenbergPotential_le_specNorm` | S | 0 | — |
 | P6 | `isDecoupled_of_hessenbergPotential_le` | S | 1 | P1 |
 | Q1 | `IsUpperHessenberg.isUpperHessenberg_shiftedQRStep` | S | 1 | Q0 |
@@ -264,7 +265,7 @@ $\tfrac25$ (G10) and strict $\beta < c\Gamma$ (G10b).
 | Q6 | `IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le` | M | 3 | Q3, Q1b, P3 |
 | Q8 | `IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero` | M | 1 | Q0 |
 | Q8b | `IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep` | S | 2 | Q8, Q1 |
-| Q7 | `IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero` | M | 2 | Q8 |
+| Q7 | `IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero` | L | 2 | Q8 |
 | Q9 | `IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero` | M | 3 | Q7, Q8b, Q1 |
 | F1 | `aeval_eq_mul_diagonal_mul_inv` | S | 0 | — |
 | F2 | `inv_aeval_eq_mul_diagonal_mul_inv` | S | 1 | F1 |
@@ -278,7 +279,7 @@ $\tfrac25$ (G10) and strict $\beta < c\Gamma$ (G10b).
 | R1a | `length_ritzValues` | S | 0 | — |
 | R1b | `IsUpperHessenberg.isOptimalRitzValues_one_ritzValues` | S | 2 | P4, R1a |
 | R2 | `norm_le_specNorm_of_mem_ritzValues` | S | 0 | — |
-| R3 | `IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div` | M | 1 | F1, F4, F5, F5a |
+| R3 | `IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div` | M | 1 | F1, F3, F5, F5a |
 | R4 | `IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le` | M | 4 | R3, F2, F2b, F3, Q6 |
 | L1 | `sum_lastRowWeights_div_norm_eval_shiftPoly_le` | M | 2 | F2, F2b, F3, F4, F5a |
 | R5a | `findRitz_mem` | S | 0 | — |
@@ -292,12 +293,12 @@ $\tfrac25$ (G10) and strict $\beta < c\Gamma$ (G10b).
 | M2a | `IsUpperHessenberg.isUpperHessenberg_shqrIterate` | S | 3 | Q1b |
 | M2b | `specNorm_shqrIterate` | S | 1 | Q4 |
 | M2c | `exists_isUnit_mul_eq_mul_diagonal_shqrIterate` | S | 1 | Q5 |
-| M3 | `IsUpperHessenberg.exists_le_isDecoupled_shqrIterate` | M | 5 | M1, M2a, M2b, M2c, P5, P6 |
+| M3 | `IsUpperHessenberg.exists_le_isDecoupled_shqrIterate` | L | 5 | M1, M2a, M2b, M2c, P5, P6 |
 | M4 | `length_shqrCandidates_le` | S | 1 | S3 |
-| M5 | `exceptionalSpacing_ge` | M | 0 | — |
+| M5 | `exceptionalSpacing_ge` | L | 0 | — |
 | N1 | `IsStarNormal.exists_le_isDecoupled_shqrIterate_ritzValues` | S | 6 | M3, F6, R1a, R1b |
 | D1 | `sum_lastRowWeights_mul_norm_eval_sq_sub_le` | L | 1 | F5a |
-| D2 | `IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le` | M | 2 | D1, F1, F2, F2b, F3, F4, P4, R1a, R2 |
+| D2 | `IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le` | L | 2 | D1, F1, F2, F2b, F3, F4, P4, R1a, R2 |
 
 ## 4. Map to the source and deviations
 
@@ -313,7 +314,7 @@ $\tfrac25$ (G10) and strict $\beta < c\Gamma$ (G10b).
 | I, Find, Lemma 4.5 | `findRitz`, L1, R5 | halves by `take`/`drop`; any $\alpha$ with $\kappa^{4m} \le \alpha^k$ |
 | I, Lemma 4.6 | S1 | Part II's weaker stagnation hypothesis; ratio $\xi$ general |
 | I, Exc, Lemma 4.7 | `squareGrid`, `exceptionalSpacing`, S2–S4, E1 | explicit square grid, $12/\varepsilon^2$ points, constant $14$; ratio $\xi$ general; "or an eigenvalue" |
-| I, $\mathsf{Sh}_{k,B}$ | `shqrCandidates`, `shqrShift`, `shqrStep` | first clause for a Ritz value that is an eigenvalue (OQ6); first success in candidate order |
+| I, $\mathsf{Sh}_{k,B}$ | `shqrCandidates`, `shqrShift`, `shqrStep` | first clause for a Ritz value that is an eigenvalue (OQ6); any success, by classical choice (the paper: the first in order) |
 | I, Thm 1.6(1) | M3 | ceiling (G2); oracle hypothesis on all Hessenberg matrices |
 | I, Thm 1.6(2) | M4, M5 | count of QR steps per iteration instead of arithmetic operations; $0.0018$ for $0.002$ |
 | I, Thm 1.2 / Thm 3.3, Lemma 3.2 | N1 | via the general strategy with $B = 1$, not the separate greedy Wilkinson $\mathsf{Sh}_{2,1}$ (whose printed net is wrong, G1); Lemma 3.2 is S1 at $\kappa = 1$ |
@@ -352,7 +353,9 @@ GivensHessenberg.lean` (Q0), `…/Matrix/Spectral/Diagonalizable.lean` (F1, F2, 
 EigenvectorWeights (F3–F5a), Ritz (R*, L1), Strategy (S*, E1, M*, N1), Dichotomy (D1, D2)}.lean`.
 
 Other edits: `NLAlib.lean` (four generated import lines), `lakefile.toml` (the `NLAlibScaffold`
-library, as on the HDIAG and LB-C design branches; removed when the stage lands),
+library, as on the HDIAG and LB-C design branches; a build-pin edit under AGENTS.md rule 1,
+needed only for the sorried statements, which **must not reach main**: it is dropped before the
+stage lands),
 `docs/references.bib` (two entries). Not touched: `docs/constants.toml` (no named bound: the
 spacing and radius are definitions with explicit formulas, OQ10), CONTRIBUTING's vocabulary
 (rows for `hessenbergPotential`, `IsDecoupled`, `lastRowWeights`, `IsOptimalRitzValues` proposed
@@ -369,9 +372,8 @@ long alternative). The Hessenberg-preservation theorems are
 `IsUpperHessenberg.isUpperHessenberg_shiftedQRStep` (and `…_multiShiftedQRStep`, `…_shqrIterate`)
 rather than `IsUpperHessenberg.shiftedQRStep`: inside the namespace the short name would shadow
 the definition in every later `IsUpperHessenberg.*` statement (found by the first build). The
-extraction-based name check (N1–N18) was not run. `shqrShift` uses `@decide … (Classical.propDecidable _)`
-inside `List.find?`, which the rules checker's heuristic S3 reports as a warning (it is a term,
-not the tactic).
+extraction-based name check (N1–N18) was not run. `shqrShift` is `open Classical in` with `if h : ∃ … then
+h.choose` (review item 2; the first draft's `List.find?` with `@decide` drew an S3 warning).
 
 Expected sizes: ShiftedQR ≈ 600 lines, EigenvectorWeights ≈ 200, Ritz ≈ 450, Strategy ≈ 700
 (split `ExceptionalShifts.lean` off if E1 + grid exceed 350; amendment then), Dichotomy ≈ 350.
@@ -570,7 +572,9 @@ Waves (longest dependency chain, from the targets file): wave 0: Q0, P1, P2a, P2
 Chains: Q0 → Q1 → {Q1b, Q3} → Q6 → {R4, M1}; Q0 → Q8 → {Q7, Q8b} → Q9 → M1; P1/P2a/P2b → P4 →
 {R1b, D2}; F1–F5a → {R3, L1, S1, E1}; W1 → S1 → E1 → M1 → M3 → N1; L1 → R5 → M1; D1 → D2.
 Model tiers: S and M on haiku with sonnet escalation, L on opus from the start
-(`--hard L`). Suggested dispatch: SQR-1a = waves 0–2 (41 targets, including D1, D2) then SQR-1b = waves 3–6
+(`--hard L`). Review applied (Fable, `~/nlalib-harness/reports/Review-Fable-ShiftedQR-Design.md`, approve
+with changes): items 1–3 (R3 cites F3, `shqrShift` restructured, M3's oracle needs $\psi_k > 0$),
+labels Q7, P4, M3, M5, D2 → L, and nits 5–7, 9. Suggested dispatch: SQR-1a = waves 0–2 (41 targets, including D1, D2) then SQR-1b = waves 3–6
 (Q6, Q9, R5, E1, M2a, R4, M1, M3, N1; 9 targets) after a Fable outline check of E1, M1, D1, D2.
 
 ## 14. Literature
@@ -588,8 +592,7 @@ On this branch, `LEAN_NUM_THREADS=2`: `lake build NLAlib NLAlibScaffold` (full, 
 succeeds with exactly 50 `declaration uses 'sorry'` warnings and nothing else; `lake build
 --wfail` of the four new `NLAlib/Matrix/QRIteration/` modules succeeds; `lake exe mk_all --module
 --lib NLAlib --check` and `… --lib NLAlibScaffold --check` are clean; `scripts/check_rules.py
---files` on every touched file: 0 errors, one warning (S3, the `@decide` term in `shqrShift`,
-§6); `check_refs.py`, `check_constants.py`, `check_latex.mjs`: 0 problems;
+--files` on every touched file: 0 errors, 0 warnings; `check_refs.py`, `check_constants.py`, `check_latex.mjs`: 0 problems;
 `bin/check-skeleton --strict`: 50 targets, 0 names missing an import, 0 unresolved. Not run:
 `scripts/stage_check.sh` (the full suite; the machine was memory-bound by other jobs) and the
 extraction-based name check (N1–N18).

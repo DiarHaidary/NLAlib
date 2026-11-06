@@ -85,7 +85,8 @@ Proof: if `rs` is not optimal, $\sum_i w_i\lvert p(\mathbf{d}_i)\rvert^2 \ge
 \|_2 + \beta))^{2k})$ within $\beta/(2c)$ of the Ritz values; each Ritz value has at most one
 eigenvalue that close ($\beta/c < \Gamma$), so one eigenvalue $\mathbf{d}_j$ carries $1/k$ of it
 and is within $\beta(1 + 1/(2c))$ of some $r_i$; then `NLAlib.sum_lastRowWeights_mul_sq_le` for
-$(\mathbf{H} - r_i\mathbf{I})^{-k}$ and $k^{-1/(2k)} \ge 4/5$. M, about 70 lines.
+$(\mathbf{H} - r_i\mathbf{I})^{-k}$ and $k^{-1/(2k)} \ge 4/5$. L, about 90 lines (pigeonhole over
+the $k$ Ritz values with the `List.Forall₂` bookkeeping).
 Result: shifted-qr-ritz-dichotomy -/
 theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {d : Fin (n + 1) → ℂ}

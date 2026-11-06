@@ -171,7 +171,9 @@ $\kappa^{4m} \le B^{4m} \le \alpha^k$); if it is a success it is found first; el
 `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le` it stagnates with
 $\xi = 1 - \gamma$, and `NLAlib.IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le`
 gives a grid point that succeeds (by the same two lemmas); `List.find?` returns a success when
-one exists (`List.find?_some`, `List.find?_eq_none`). L, about 80 lines. -/
+one exists (`Classical.choose_spec` on the `∃` of `NLAlib.shqrShift`); E1's spacing at
+$\xi = 1 - \gamma$ is `exceptionalSpacing … ((1 - γ) * (1 - γ))`, the candidates' is
+`… ((1 - γ) ^ 2)`: one `sq` rewrite. L, about 80 lines. -/
 theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {d : Fin (n + 1) → ℂ}
     (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {B θ α γ : ℝ}
@@ -224,7 +226,9 @@ $\mathbf{H}_0\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\math
 and $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$ (so $\kappa_V(\mathbf{H}_0) \le B$); let
 $k = 2^m$, $m \ge 1$, $k \le n$; $\theta \ge 1$; $\alpha \ge 1$ with $B^{4m} \le \alpha^k$ (e.g.
 $\alpha = B^{4\log_2 k/k}$); $0 < \gamma < 1$; and let the Ritz-value oracle return, on every
-upper Hessenberg matrix, $k$ $\theta$-optimal Ritz values. Then for every $\delta > 0$ some
+upper Hessenberg matrix with $\psi_k > 0$, $k$ $\theta$-optimal Ritz values (as
+[BanksGarzaVargasSrivastava2021, Definition 1.5] requires only when the minimum is nonzero).
+Then for every $\delta > 0$ some
 $$t \le \Bigl\lceil\frac{\log(1/\delta)}{\log(1/(1 - \gamma))}\Bigr\rceil$$
 has $\mathsf{shqrIterate}(\mathbf{H}_0)_t$ $\delta$-decoupled: a subdiagonal entry of modulus at
 most $\delta\|\mathbf{H}_t\|_2$. [BanksGarzaVargasSrivastava2021, Theorem 1.6, item 1], printed
@@ -239,8 +243,11 @@ invariants `NLAlib.IsUpperHessenberg.isUpperHessenberg_shqrIterate`,
 $\delta \ge 0$. At the stated $t$, $(1 - \gamma)^t \le \delta$ (`Nat.le_ceil`, `Real.log_le_log`,
 `Real.rpow_natCast`), so $\psi_k(\mathbf{H}_t) \le \delta\|\mathbf{H}_0\|_2 =
 \delta\|\mathbf{H}_t\|_2$ (`NLAlib.hessenbergPotential_le_specNorm`,
-`NLAlib.specNorm_shqrIterate`), and `NLAlib.isDecoupled_of_hessenbergPotential_le`.
-M, about 60 lines.
+`NLAlib.specNorm_shqrIterate`), and `NLAlib.isDecoupled_of_hessenbergPotential_le`; the oracle is
+used only at unreduced iterates, where $\psi_k > 0$. For $\delta \ge 1$ the ceiling is $0$
+(`Real.log (1/δ) ≤ 0`) and $\mathbf{H}_0$ is $\delta$-decoupled since `Fin n` is nonempty
+($n \ge 2^m \ge 2$) and every entry is at most $\|\mathbf{H}_0\|_2 \le \delta\|\mathbf{H}_0\|_2$;
+`IsDecoupled 0` implies `IsDecoupled δ` for $\delta \ge 0$. L, about 80 lines.
 Result: shifted-qr-rapid-decoupling -/
 theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
     {H₀ V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H₀)
@@ -248,7 +255,7 @@ theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
     {B θ α γ : ℝ} (hB : pseudoConditionNumber V ≤ B) {m : ℕ} (hm : 1 ≤ m) (hmn : 2 ^ m ≤ n)
     (hθ : 1 ≤ θ) (hα1 : 1 ≤ α) (hα : B ^ (4 * m) ≤ α ^ 2 ^ m) (hγ0 : 0 < γ) (hγ1 : γ < 1)
     {ritz : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ → List ℂ}
-    (hritz : ∀ H', IsUpperHessenberg H' →
+    (hritz : ∀ H', IsUpperHessenberg H' → 0 < hessenbergPotential (2 ^ m) H' →
       (ritz H').length = 2 ^ m ∧ IsOptimalRitzValues θ H' (ritz H'))
     {δ : ℝ} (hδ : 0 < δ) :
     ∃ t ≤ ⌈Real.log (1 / δ) / Real.log (1 / (1 - γ))⌉₊,
@@ -281,7 +288,7 @@ $k$ for $k - 1$; gap G6).
 Proof: unfold `NLAlib.exceptionalSpacing`; the base is $0.16\cdot14^{-1/k}B^{-(4 + 8m)/k}$;
 raise to $k/(k - 1) \le 2$ (`Real.rpow_le_rpow_of_exponent_ge` for the factors below $1$,
 `Real.rpow_mul`, `Real.rpow_natCast`): $0.16^{k/(k-1)}14^{-1/(k-1)} \ge 0.16^2/14 \ge 0.0018$.
-M, about 40 lines. -/
+L, about 60 lines (three monotonicity steps in `Real.rpow`). -/
 theorem exceptionalSpacing_ge {B : ℝ} (hB : 1 ≤ B) {m : ℕ} (hm : 1 ≤ m) :
     0.0018 * B ^ (-(8 * m + 4 : ℝ) / ((2 : ℝ) ^ m - 1)) ≤
       exceptionalSpacing (2 ^ m) B 2 (B ^ ((4 * m : ℝ) / (2 : ℝ) ^ m)) ((1 - 0.2) ^ 2) := by
