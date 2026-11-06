@@ -180,6 +180,49 @@ theorem exists_backward (hη : L.η₀ ≤ 1 / 100)
   · rw [Matrix.add_mul, hEU, hR, neg_sub, add_sub_cancel]
     exact D.mul_tridiagonalSucc U
 
+/-- **Start-vector bound** for `exists_lanczosState_backward`: the first column of the polar
+factor is within $2\sqrt{3(k+1)}\,\mu$ of $\mathbf{v}_1$. Proof: the Frobenius bound on
+`frobNorm_polarFactor_sub_le`, then a column of the difference. -/
+private theorem lanczosState_backward_start_norm (hη : L.η₀ ≤ 1 / 100)
+    (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) :
+    ‖WithLp.toLp 2 (colSeq (polarFactor (basisOf L.v (k + 1))) 1 - L.v 1)‖ ≤
+      2 * Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
+  set P := polarFactor (basisOf L.v (k + 1)) with hPdef
+  have hgram := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+  have hsq : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) = Real.sqrt (3 * ((k : ℝ) + 1)) := by
+    push_cast; ring_nf
+  rw [hsq] at hgram
+  have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) ≤ 1 / 100 :=
+    (specNorm_le_frobNorm _).trans (by linarith)
+  have hfro : frobNorm (P - basisOf L.v (k + 1)) ≤
+      frobNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) /
+        (2 * Real.sqrt (1 - 1 / 100)) :=
+    frobNorm_polarFactor_sub_le hspec (by norm_num)
+  have hsqrt1 : (1 : ℝ) ≤ 2 * Real.sqrt (1 - 1 / 100) := by
+    have h := Real.sqrt_le_sqrt (show (1 / 4 : ℝ) ≤ 1 - 1 / 100 by norm_num)
+    rw [show (1 / 4 : ℝ) = (1 / 2) ^ 2 by norm_num, Real.sqrt_sq (by norm_num)] at h
+    linarith
+  have hfro1 : frobNorm (P - basisOf L.v (k + 1)) ≤
+      Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel :=
+    (hfro.trans (div_le_self (frobNorm_nonneg _) hsqrt1)).trans hgram
+  have hcolV : colSeq P 1 - L.v 1 =
+      (P - basisOf L.v (k + 1)) *ᵥ Pi.single (0 : Fin (k + 1)) (1 : ℝ) := by
+    funext r
+    simp [colSeq, basisOf]
+  have horth0 : 0 ≤ L.orthLevel := by
+    unfold LanczosReorthRun.orthLevel
+    have h1 : 0 ≤ L.ε₃ / L.τ := div_nonneg L.ε₃_nonneg L.τ_pos.le
+    linarith [L.ε₁_nonneg, L.ε_nonneg]
+  have hnorm := norm_toLp_mulVec_le_frobNorm_mul (P - basisOf L.v (k + 1))
+    (Pi.single (0 : Fin (k + 1)) (1 : ℝ))
+  rw [← hcolV] at hnorm
+  have hs : 0 ≤ Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel :=
+    mul_nonneg (Real.sqrt_nonneg _) horth0
+  have hone : ‖WithLp.toLp 2 (Pi.single (0 : Fin (k + 1)) (1 : ℝ) : Fin (k + 1) → ℝ)‖ = 1 := by
+    simp
+  rw [hone, mul_one] at hnorm
+  nlinarith [hnorm, hfro1, hs]
+
 /-- **Exact Lanczos on the backward model computes the run** (E4): with $\mathbf{u}_j$ the
 columns of the polar factor (`NLAlib.LanczosReorthRun.colSeq`), the exact Lanczos recurrence on
 $(\mathbf{H} + \mathbf{E}, \mathbf{u}_1)$ has states $(\mathbf{u}_j, \mathbf{u}_{j+1}, \beta_j)$
@@ -206,7 +249,86 @@ theorem exists_lanczosState_backward (hη : L.η₀ ≤ 1 / 100)
         L.toLanczosData.tridiagonal ∧
       ‖WithLp.toLp 2 (colSeq (polarFactor (basisOf L.v (k + 1))) 1 - L.v 1)‖ ≤
         2 * Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
-  sorry
+  obtain ⟨E, hEs, hE, hid⟩ := L.exists_backward hη hsmall hrec hτ
+  have hPo : HasOrthonormalCols (polarFactor (basisOf L.v (k + 1))) := by
+    have hgram := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+    have hsq : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) = Real.sqrt (3 * ((k : ℝ) + 1)) := by
+      push_cast; ring_nf
+    rw [hsq] at hgram
+    have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) ≤ 1 / 100 :=
+      (specNorm_le_frobNorm _).trans (by linarith)
+    exact hasOrthonormalCols_polarFactor hspec (by norm_num)
+  set P := polarFactor (basisOf L.v (k + 1)) with hPdef
+  have hu0 : colSeq P 0 = 0 := by
+    funext i; simp [colSeq]
+  have hcol : ∀ i (h1 : 1 ≤ i) (h2 : i ≤ k + 1),
+      colSeq P i = fun r => P r ⟨i - 1, by omega⟩ := by
+    intro i h1 h2
+    funext r
+    simp [colSeq, h1, h2]
+  have horth : ∀ i j, 1 ≤ i → i ≤ k + 1 → 1 ≤ j → j ≤ k + 1 →
+      colSeq P i ⬝ᵥ colSeq P j = if i = j then 1 else 0 := by
+    intro i j hi1 hi2 hj1 hj2
+    have hdot : colSeq P i ⬝ᵥ colSeq P j = (Pᴴ * P) ⟨i - 1, by omega⟩ ⟨j - 1, by omega⟩ := by
+      rw [hcol i hi1 hi2, hcol j hj1 hj2]
+      simp [Matrix.mul_apply, dotProduct]
+    rw [hdot, hPo.conjTranspose_mul_self, Matrix.one_apply]
+    by_cases h : i = j
+    · subst h; simp
+    · have hne : (⟨i - 1, by omega⟩ : Fin (k + 1)) ≠ ⟨j - 1, by omega⟩ := by
+        intro e; apply h; have := congrArg Fin.val e; simp at this; omega
+      simp [h, hne]
+  have hν : ∀ m < k, 0 ≤ L.ν (m + 1) := by
+    intro m hm
+    have hz := (abs_le.mp (L.abs_ν_sub_le m hm)).1
+    nlinarith [norm_nonneg (WithLp.toLp 2 (L.z (m + 1))), L.ε_le, L.ε_nonneg]
+  have hβ : ∀ j ≤ k, 0 ≤ L.β j := by
+    intro j hj
+    rcases Nat.eq_zero_or_pos j with rfl | hj0
+    · rw [L.β_zero]
+    · obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+      have h1 := L.admissible m (by omega)
+      have h2 := mul_nonneg L.τ_pos.le (hν m (by omega))
+      linarith
+  have hβpos : ∀ j, 1 ≤ j → j < k → 0 < L.β j := by
+    intro j h1 h2
+    obtain ⟨m, rfl⟩ : ∃ m, j = m + 1 := ⟨j - 1, by omega⟩
+    have h3 := L.admissible m (by omega)
+    have h4 := mul_nonneg L.τ_pos.le (hν m (by omega))
+    linarith
+  have hrec : ∀ j < k, (L.H + E) *ᵥ colSeq P (j + 1) =
+      L.β j • colSeq P j + L.toLanczosData.α (j + 1) • colSeq P (j + 1) +
+        L.β (j + 1) • colSeq P (j + 2) := by
+    intro j hj
+    have hid' : (L.H + E) * P.submatrix id Fin.castSucc =
+        P * L.toLanczosData.tridiagonalSucc := by
+      rw [hid, L.toLanczosData.mul_tridiagonalSucc]; rfl
+    have hu : ∀ (m : ℕ) (hm : m < k + 1) (p : Fin n), P p ⟨m, hm⟩ = colSeq P (m + 1) p := by
+      intro m hm p
+      simp only [colSeq]
+      rw [dif_pos ⟨by omega, by omega⟩]
+      rfl
+    have hβe : L.toLanczosData.β = L.β := rfl
+    funext r
+    have h1 := congrFun (congrFun hid' r) ⟨j, hj⟩
+    have h2 := L.toLanczosData.mul_tridiagonalSucc_apply P (colSeq P) hu r ⟨j, hj⟩
+    have h3 : ((L.H + E) *ᵥ colSeq P (j + 1)) r =
+        ((L.H + E) * P.submatrix id Fin.castSucc) r ⟨j, hj⟩ := by
+      simp [Matrix.mulVec, dotProduct, Matrix.mul_apply, colSeq, hj.le]
+    rw [hβe] at h2
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] at h2 ⊢
+    linarith [h1, h2, h3]
+  have hstate := lanczosState_eq_of_orthonormal_recurrence hu0 horth hrec L.β_zero hβ hβpos
+  refine ⟨E, hEs, hE, fun j hj => hstate j hj, ?_, ?_⟩
+  · have hdiag : ∀ i : Fin k, lanczosAlpha (L.H + E) (lanczosState (L.H + E) (colSeq P 1) i) =
+        L.toLanczosData.α (i + 1) := fun i => by
+      rw [hstate i i.isLt]; exact (lanczosStep_of_orthonormal_recurrence horth hrec hβ i.isLt).1
+    have hbeta : ∀ i : Fin k, (lanczosState (L.H + E) (colSeq P 1) i).beta = L.β i :=
+      fun i => by rw [hstate i i.isLt]
+    ext i j
+    simp only [lanczosTridiagonal, LanczosData.tridiagonal, Matrix.of_apply, hdiag, hbeta]
+    split_ifs <;> rfl
+  · exact lanczosState_backward_start_norm L hη hsmall
 
 /-- **The backward model with the exact start vector** (E5, S5): if the computed $\mathbf{v}_1$ is
 within $\delta_b$ of $\mathbf{b}/\|\mathbf{b}\|$, some symmetric $\mathbf{H}'$ with
