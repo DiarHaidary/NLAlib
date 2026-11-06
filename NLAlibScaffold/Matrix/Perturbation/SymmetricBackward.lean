@@ -359,6 +359,7 @@ theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n �
     rw [hs, hxx, hyy]
     nlinarith
 
+
 /-- **Orthonormal approximate eigenvectors are counted by the spectrum** (F2a): for symmetric
 $\mathbf{M}$, $r$ orthonormal vectors $\mathbf{x}_i$ and values $\theta_i \in [a, b]$ with
 residuals $\|\mathbf{M}\mathbf{x}_i - \theta_i\mathbf{x}_i\| < d/\sqrt r$, $d > 0$, the number of
@@ -382,6 +383,81 @@ theorem card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
     (hres : ∀ i, ‖WithLp.toLp 2 (M *ᵥ (fun k => X k i) - θ i • fun k => X k i)‖ <
       d / Real.sqrt r) :
     r ≤ ((Finset.range n).filter fun i => eigenvalue M i ∈ Set.Ioo (a - d) (b + d)).card := by
-  sorry
+  classical
+  rcases Nat.eq_zero_or_pos r with rfl | hr
+  · exact Nat.zero_le _
+  obtain ⟨U, hU, hMU⟩ := hM.exists_eq_mul_diagonal_mul_conjTranspose
+  have hU' : HasOrthonormalCols Uᴴ := hU.conjTranspose_of_card_eq (Fintype.card_fin _).symm
+  -- the coordinates of the `i`-th vector in the eigenbasis
+  set z : Fin r → Fin (Fintype.card (Fin n)) → ℝ := fun i => Uᴴ *ᵥ fun k => X k i with hz
+  have hnorm (i : Fin r) : ∑ j, z i j ^ 2 = 1 := by
+    rw [← EuclideanSpace.norm_toLp_sq_eq_sum_sq, hU'.norm_toLp_mulVec]
+    rw [show (fun k => X k i) = X.col i from rfl, hX.norm_toLp_col, one_pow]
+  have hres2 (i : Fin r) :
+      ∑ j : Fin (Fintype.card (Fin n)), (eigenvalue M j - θ i) ^ 2 * z i j ^ 2 =
+      ‖WithLp.toLp 2 (M *ᵥ (fun k => X k i) - θ i • fun k => X k i)‖ ^ 2 := by
+    rw [← hU'.norm_toLp_mulVec, EuclideanSpace.norm_toLp_sq_eq_sum_sq]
+    have h2 : Uᴴ *ᵥ (M *ᵥ fun k => X k i) =
+        (Matrix.diagonal fun j : Fin (Fintype.card (Fin n)) => eigenvalue M ↑j) *ᵥ z i := by
+      conv_lhs => rw [hMU]
+      rw [Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+        hU.conjTranspose_mul_self, Matrix.one_mul]
+      rfl
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Matrix.mulVec_sub, Matrix.mulVec_smul, h2, Pi.sub_apply, Matrix.mulVec_diagonal,
+      Pi.smul_apply, smul_eq_mul]
+    ring
+  have hbessel (j : Fin (Fintype.card (Fin n))) : ∑ i, z i j ^ 2 ≤ 1 := by
+    have h := hX.norm_toLp_conjTranspose_mulVec_le (U.col j)
+    rw [hU.norm_toLp_col] at h
+    have h2 : ∑ i, z i j ^ 2 = ‖WithLp.toLp 2 (Xᴴ *ᵥ U.col j)‖ ^ 2 := by
+      rw [EuclideanSpace.norm_toLp_sq_eq_sum_sq]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      simp only [hz, Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, star_trivial,
+        Matrix.col_apply, mul_comm]
+    rw [h2]
+    exact pow_le_one₀ (norm_nonneg _) h
+  set S := Finset.univ.filter fun j : Fin (Fintype.card (Fin n)) =>
+    eigenvalue M j ∈ Set.Ioo (a - d) (b + d) with hS
+  have hr' : (0 : ℝ) < r := Nat.cast_pos.mpr hr
+  have hin (i : Fin r) : 1 - 1 / r < ∑ j ∈ S, z i j ^ 2 := by
+    have hlt :
+        ‖WithLp.toLp 2 (M *ᵥ (fun k => X k i) - θ i • fun k => X k i)‖ ^ 2 < d ^ 2 / r := by
+      rw [← Real.sq_sqrt hr'.le, ← div_pow]
+      exact pow_lt_pow_left₀ (hres i) (norm_nonneg _) two_ne_zero
+    have hout : d ^ 2 * ∑ j ∈ Sᶜ, z i j ^ 2 ≤
+        ∑ j : Fin (Fintype.card (Fin n)), (eigenvalue M j - θ i) ^ 2 * z i j ^ 2 := by
+      rw [Finset.mul_sum]
+      refine (Finset.sum_le_sum fun j hj => ?_).trans
+        (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun j _ _ => by positivity)
+      simp only [hS, Finset.mem_compl, Finset.mem_filter, Finset.mem_univ, true_and,
+        Set.mem_Ioo, not_and_or, not_lt] at hj
+      obtain ⟨h1, h2⟩ := hθ i
+      refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+      rcases hj with hj | hj <;> nlinarith
+    have h := hnorm i
+    rw [← Finset.sum_add_sum_compl S] at h
+    have : ∑ j ∈ Sᶜ, z i j ^ 2 < 1 / r := by
+      rw [lt_div_iff₀ hr']
+      nlinarith [hres2 i, mul_div_cancel₀ (d ^ 2) hr'.ne']
+    linarith
+  have hlt : (r : ℝ) - 1 < S.card := by
+    have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
+    calc (r : ℝ) - 1 = ∑ _i : Fin r, (1 - 1 / (r : ℝ)) := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          field_simp
+      _ < ∑ i, ∑ j ∈ S, z i j ^ 2 :=
+          Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty fun i _ => hin i
+      _ = ∑ j ∈ S, ∑ i, z i j ^ 2 := Finset.sum_comm
+      _ ≤ ∑ _j ∈ S, (1 : ℝ) := Finset.sum_le_sum fun j _ => hbessel j
+      _ = S.card := by rw [Finset.sum_const, nsmul_one]
+  have hcard : S.card =
+      ((Finset.range n).filter fun i => eigenvalue M i ∈ Set.Ioo (a - d) (b + d)).card := by
+    rw [hS, Finset.card_filter, Finset.card_filter,
+      Fin.sum_univ_eq_sum_range
+        (fun k => if eigenvalue M k ∈ Set.Ioo (a - d) (b + d) then 1 else 0),
+      Fintype.card_fin]
+  have : r < S.card + 1 := by exact_mod_cast (by linarith : (r : ℝ) < S.card + 1)
+  omega
 
 end NLAlib
