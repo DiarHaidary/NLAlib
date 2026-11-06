@@ -56,7 +56,9 @@ theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
       basisOf L.v (j + 1) *ᵥ (fun i => L.h (j + 1) i) +
         (L.z (j + 1) - basisOf L.v (j + 1) *ᵥ (fun i => L.h (j + 1) i) - L.z' (j + 1)) -
         L.δ (j + 1) - L.eu (j + 1) - L.ew (j + 1) - L.ez (j + 1) := by
-  sorry
+  simp only [LanczosData.recurrenceError, toLanczosData]
+  rw [L.smul_v_eq j hj, L.z_eq j hj, L.w_eq j hj, L.u_eq j hj]
+  abel
 
 /-- **One admissible column is nearly orthogonal to the previous ones** (D5a): if
 $\|\mathbf{V}_{j+1}^{\mathsf{T}}\mathbf{V}_{j+1} - \mathbf{I}\|_2 \le \eta_0 \le 1/100$ then
