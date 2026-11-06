@@ -24,6 +24,7 @@ public import NLAlib.Computation.Float
 public import NLAlib.Computation.Grid
 public import NLAlib.Computation.IEEE
 public import NLAlib.Computation.IEEESqrt
+public import NLAlib.Computation.IndexNormal
 public import NLAlib.Computation.KernelCall
 public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Computation.Model

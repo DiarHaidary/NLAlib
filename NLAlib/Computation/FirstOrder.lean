@@ -53,6 +53,7 @@ statements" (F3, F7).
 * `NLAlib.Computation.Prog.exec_eq_of_exec_eq_some_of_cnt_load_le`: a run that makes no oracle
   call is the same under any oracle.
 * `NLAlib.Computation.FStmt.exec_kcall`: the run of a first-order kernel call.
+* `NLAlib.Computation.FStmt.exec_bindIdx`: the run of a first-order index binder.
 -/
 
 @[expose] public section
@@ -68,8 +69,9 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] (I : Interp P ι K C)
 /-- **The run of a first-order statement** under `I`, in an environment of handles `ρB` and of index
 values `ρI`. The leaves (instructions, oracle calls, kernel calls, read-only reads, comparisons) run
 by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the environment;
-`alloc` binds the new handle `st.store.size` and `loop` the iteration index. A `whileFuel` loop
-tests its comparison at most `fuel` times and fails if every test it makes holds. -/
+`alloc` binds the new handle `st.store.size`, `loop` the iteration index and `bindIdx` the clamped
+conversion of its cell. A `whileFuel` loop tests its comparison at most `fuel` times and fails if
+every test it makes holds. -/
 def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → ℕ) →
     St P K C → Option (St P K C)
   | _, _, .skip, _, _, st => some st
@@ -120,6 +122,9 @@ def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fi
       (I.kcallStore o p (dims.map (·.evalIn ρI)) (ins.map fun x => (ρB x.1, x.2.evalIn ρI))
         (outs.map fun x => (ρB x.1, x.2.evalIn ρI)) st.store).map fun s =>
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) }
+  | _, _, .bindIdx p x bound body, ρB, ρI, st =>
+      (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
+        body.exec ρB (Fin.snoc (α := fun _ => ℕ) ρI (min r.1 (bound.evalIn ρI))) r.2
 
 /-- **The run of a program** at the sizes $N$ and $n$: declared buffer $j$ at handle $j$, the
 oracle dimension $N$ as index variable $0$ and size $i$ as index variable $i + 1$. -/
@@ -160,6 +165,14 @@ theorem cmpStep_subst_congr {nb ni : ℕ} (p : P) (c : CmpOp) (x y : Cell (Fin n
       cmpStep I p c (x.subst f σ') (y.subst f σ') st := by
   have h' : (fun v => (σ v).eval) = fun v => (σ' v).eval := funext h
   simp only [cmpStep, Cell.subst, IExp.eval_subst, h']
+
+/-- A conversion step runs the same under two substitutions of index expressions with the same
+values. -/
+theorem toNatStep_subst_congr {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni)) (f : Fin nb → ℕ)
+    {σ σ' : Fin ni → IExp ℕ} (h : ∀ v, (σ v).eval = (σ' v).eval) (st : St P K C) :
+    toNatStep I p (x.subst f σ) st = toNatStep I p (x.subst f σ') st := by
+  have h' : (fun v => (σ v).eval) = fun v => (σ' v).eval := funext h
+  simp only [toNatStep, Cell.subst, IExp.eval_subst, h']
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- The values of the substitution under a loop binder. -/
@@ -213,6 +226,12 @@ theorem FStmt.exec_eq_exec_toStmt : ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ
   | _, _, .kcall o p dims ins outs, ρB, σ, st => by
       rw [FStmt.exec, FStmt.toStmt, Computation.exec]
       simp only [List.map_map, Function.comp_def, IExp.eval_subst]
+  | _, _, .bindIdx p x bound body, ρB, σ, st => by
+      rw [FStmt.exec, FStmt.toStmt, Computation.exec,
+        toNatStep_subst_congr I p x ρB (σ' := σ) (fun v => by simp)]
+      simp only [IExp.eval_subst]
+      congr 1; funext r
+      rw [← eval_snoc, body.exec_eq_exec_toStmt]
 
 /-- The bridge for programs: the run of a program at the sizes $N$ and $n$ is the current
 run of its instantiation at these sizes. -/
@@ -329,6 +348,17 @@ theorem FStmt.exec_kcall (I : Interp P ι K C) {nb ni : ℕ} (o : ι) (p : P)
           { st with
             store := s
             cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) } := by
+  rw [FStmt.exec]
+
+/-- The run of a first-order index binder: in the environment of handles `ρB` and of index values
+`ρI`, it converts the value of its cell (`NLAlib.Computation.toNatStep`) and runs the body with the
+value clamped to its bound as the new index variable. No printed source. -/
+theorem FStmt.exec_bindIdx (I : Interp P ι K C) {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni))
+    (bound : IExp (Fin ni)) (body : FStmt P ι nb (ni + 1)) (ρB : Fin nb → ℕ) (ρI : Fin ni → ℕ)
+    (st : St P K C) :
+    (FStmt.bindIdx p x bound body).exec I ρB ρI st =
+      (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
+        body.exec I ρB (Fin.snoc (α := fun _ => ℕ) ρI (min r.1 (bound.evalIn ρI))) r.2 := by
   rw [FStmt.exec]
 
 end KernelCalls

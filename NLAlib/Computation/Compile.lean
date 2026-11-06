@@ -108,12 +108,14 @@ def Stmt.compile {P ι : Type} : Stmt P ι ℕ ℕ → (nb ni : ℕ) → Option 
       return .kcall o p (← dims.mapM (IExp.scope? ni))
         (← ins.mapM fun x => return (← finScope? nb x.1, ← x.2.scope? ni))
         (← outs.mapM fun x => return (← finScope? nb x.1, ← x.2.scope? ni))
+  | .bindIdx p x bound body, nb, ni =>
+      return .bindIdx p (← x.scope? nb ni) (← bound.scope? ni) (← (body ni).compile nb (ni + 1))
 
 /-! ### Instantiation -/
 
 /-- A first-order statement as a statement of the current syntax at `VB := ℕ`, `VI := ℕ`:
 handles renamed by `ρB`, index variables replaced by the index expressions `σ`; the handle bound
-by `alloc` is the one the run supplies, and a loop variable is `.var i`. -/
+by `alloc` is the one the run supplies, and a loop or binder variable is `.var i`. -/
 def FStmt.toStmt {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) →
     (Fin ni → IExp ℕ) → Stmt P ι ℕ ℕ
   | _, _, .skip, _, _ => .skip
@@ -135,6 +137,9 @@ def FStmt.toStmt {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb 
   | _, _, .kcall o p dims ins outs, ρB, σ =>
       .kcall o p (dims.map (IExp.subst σ)) (ins.map fun x => (ρB x.1, x.2.subst σ))
         (outs.map fun x => (ρB x.1, x.2.subst σ))
+  | _, _, .bindIdx p x bound body, ρB, σ =>
+      .bindIdx p (x.subst ρB σ) (bound.subst σ) fun i =>
+        body.toStmt ρB (Fin.snoc (α := fun _ => IExp ℕ) σ (.var i))
 
 /-- The statement a program instantiates to at the sizes $N$ and $n$, as
 `NLAlib.Computation.ProgFamily.inst` builds it: declared buffer $j$ at handle $j$, the sizes

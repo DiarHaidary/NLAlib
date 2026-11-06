@@ -124,6 +124,9 @@ def emitF {P ι : Type} (inline : Bool) (kname : ι → String) :
       let outs' := outs.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
       [pad d ++ s!"{kname o}([{", ".intercalate (dims.map emitIExp)}], " ++
         s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
+  | _, ni, .bindIdx _ x bound body, d =>
+      [pad d ++ s!"i{ni} = min(max(int(np.floor({emitCell x})), 0), {emitIExp bound})"] ++
+        emitF inline kname body d
 
 /-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`; a
 kernel call of `o` is printed as a call of `kname o` (by default `kernel`). -/

@@ -1203,6 +1203,15 @@ private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : S
     · simp [Stmt.subst, Stmt.compile, ha, hcb]
     · simp [Stmt.subst, FStmt.toStmt, hcb' ρB σ M hM]
   | kcall o p dims ins outs => exact fun hni c h => compile_substOracle_kcall pattern hni h
+  | bindIdx p x bound body ih =>
+    intro nb ni hni c h
+    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨x', hx, n', hn, b', hb, rfl⟩ := h
+    obtain ⟨cb, hcb, hcb'⟩ := ih ni (Nat.succ_pos ni) b' hb
+    refine ⟨.bindIdx p x' n' cb, ?_, fun ρB σ M hM => ?_⟩
+    · simp [Stmt.subst, Stmt.compile, hx, hn, hcb]
+    · simp [Stmt.subst, FStmt.toStmt, hcb' _ _ M ((Fin.snoc_castSucc (i := ⟨0, hni⟩) ..).trans hM)]
 
 /-- The sparse family compiles, for every pattern: Hutch++ with its oracle calls served by
 `NLAlib.Computation.cooImpl`, compiled at symbolic sizes, is some first-order program, and that

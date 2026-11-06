@@ -50,7 +50,7 @@ variable {P : Type}
 exponent: a word $x$ at tag $p$ decodes to $\mathrm{fl}_p(x)$ (`Real.roundNearest (t p) x`), and
 each operation is the operation of `NLAlib.Computation.exactSem` over $\mathbb{R}$ on the decoded
 operands, rounded at its tag (a conversion at the target tag); comparisons are exact on the
-decoded operands. -/
+decoded operands, and the conversion to an index is the floor of the decoded value. -/
 noncomputable def gridSem (t : P → ℕ) : ScalarSem P ℝ where
   lit p q := some (Real.roundNearest (t p) q)
   bin p b x y := ((exactSem (𝕜 := ℝ)).bin p b (Real.roundNearest (t p) x)
@@ -60,6 +60,7 @@ noncomputable def gridSem (t : P → ℕ) : ScalarSem P ℝ where
   cmp p c x y := (exactSem (𝕜 := ℝ)).cmp p c (Real.roundNearest (t p) x)
     (Real.roundNearest (t p) y)
   convert p q x := some (Real.roundNearest (t q) (Real.roundNearest (t p) x))
+  toNat p x := some ⌊Real.roundNearest (t p) x⌋₊
 
 /-- **Rounding to nearest has relative error at most $2^{-t}$**: $\mathrm{fl}(x) = x(1 + \delta)$
 for some $\lvert \delta \rvert \le 2^{-t}$. [Higham2002, Theorem 2.2]. -/

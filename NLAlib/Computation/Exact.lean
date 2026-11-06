@@ -54,7 +54,8 @@ open Classical in
 $\Bbbk$, so of a real number) and failing otherwise; equality tests exact; the comparisons
 `lt` and `le` in the order of $\Bbbk$ when both arguments are real (imaginary part $0$) and
 failing otherwise, so that a branch on two incomparable complex numbers fails, as a division by
-zero does; conversions the identity; integer and bitwise operations failing. -/
+zero does; conversions the identity; the conversion to an index the floor of a real value, $0$
+below zero, and failing on a non-real one; integer and bitwise operations failing. -/
 noncomputable def exactSem : ScalarSem P 𝕜 where
   lit _ q := some (q : 𝕜)
   bin _ b x y := match b with
@@ -70,6 +71,7 @@ noncomputable def exactSem : ScalarSem P 𝕜 where
     | .lt => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x < y)) else none
     | .le => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x ≤ y)) else none
   convert _ _ x := some x
+  toNat _ x := if RCLike.im x = 0 then some ⌊RCLike.re x⌋₊ else none
 
 /-- An $N \times \ell$ matrix as a column-major array of length $N\ell$: entry $(i, j)$ at
 $i + Nj$. -/

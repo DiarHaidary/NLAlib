@@ -66,7 +66,7 @@ theorem cgBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | un p u => cases p; cases u <;> simp [cgBudget, cgOracleCount]
   | draw p d => cases p; cases d <;> simp [cgBudget, cgOracleCount]
   | convert p q => cases p; cases q; simp [cgBudget, cgOracleCount]
-  | lit p | cmp p | copy p | rom p => cases p; simp [cgBudget, cgOracleCount]
+  | lit p | cmp p | copy p | rom p | toNat p => cases p; simp [cgBudget, cgOracleCount]
   | load p o | matvec p o => cases p; cases o; simp [cgBudget, cgOracleCount]
   | kcall p o ds => cases p; cases o; simp [cgBudget, cgOracleCount]
 
@@ -79,7 +79,7 @@ theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | un p u => cases p; cases u <;> simp [lanczosBudget, lanczosOracleCount]
   | draw p d => cases p; cases d <;> simp [lanczosBudget, lanczosOracleCount]
   | convert p q => cases p; cases q; simp [lanczosBudget, lanczosOracleCount]
-  | lit p | cmp p | copy p | rom p => cases p; simp [lanczosBudget, lanczosOracleCount]
+  | lit p | cmp p | copy p | rom p | toNat p => cases p; simp [lanczosBudget, lanczosOracleCount]
   | load p o | matvec p o => cases p; cases o; simp [lanczosBudget, lanczosOracleCount]
   | kcall p o ds => cases p; cases o; simp [lanczosBudget, lanczosOracleCount]
 

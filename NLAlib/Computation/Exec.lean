@@ -40,8 +40,9 @@ of the access models rest on (`docs/design/Computation.md`, "Guarantees"). Desig
   and memory.
 * `NLAlib.Computation.Interp.kcallStore`: a black-box kernel call on contiguous blocks;
   `NLAlib.Computation.Interp.withKernel`: an interpretation with one kernel replaced.
+* `NLAlib.Computation.toNatStep`: one conversion of a stored value to an index.
 * `NLAlib.Computation.exec`: the run.
-* `NLAlib.Computation.Stmt.StraightLine`: no `ite` and no `whileFuel`.
+* `NLAlib.Computation.Stmt.StraightLine`: no `ite`, no `whileFuel` and no `bindIdx`.
 
 ## Main results
 
@@ -70,8 +71,8 @@ namespace NLAlib.Computation
 
 /-- The kinds of operations a run counts: binary and unary operations, literals, comparisons,
 copies and conversions per tag, draws per tag and distribution, read-only reads per tag, the
-loads and matrix-vector products of each oracle per tag, and the calls of each kernel per tag and
-dimensions. -/
+loads and matrix-vector products of each oracle per tag, the calls of each kernel per tag and
+dimensions, and the conversions of stored values to indices per tag. -/
 inductive OpKind (P ι : Type) where
   /-- A binary operation at a tag. -/
   | bin (p : P) (b : BinOp)
@@ -97,13 +98,16 @@ inductive OpKind (P ι : Type) where
   are different kinds, so a weighted total (flops) is `Finsupp.weight` of a function of the
   dimensions. -/
   | kcall (p : P) (o : ι) (dims : List ℕ)
+  /-- One conversion of a stored value to a natural number (an index binder) at a tag. -/
+  | toNat (p : P)
 
 /-- Counts of operations: finitely supported functions on the kinds. A weighted total (flops, bit
 operations) is Mathlib's `Finsupp.weight`. -/
 abbrev OpCount (P ι : Type) := OpKind P ι →₀ ℕ
 
 /-- A value semantics over the carrier `K`: each scalar operation at a tag, partial (`none` marks
-an operation outside its domain, such as a division by zero). -/
+an operation outside its domain, such as a division by zero), and the conversion of a stored value
+to a natural number that an index binder applies. -/
 structure ScalarSem (P K : Type) where
   /-- The value of a rational literal. -/
   lit : P → ℚ → Option K
@@ -115,6 +119,10 @@ structure ScalarSem (P K : Type) where
   cmp : P → CmpOp → K → K → Option Bool
   /-- A conversion from one tag to another. -/
   convert : P → P → K → Option K
+  /-- The conversion of a stored value to a natural number, for an index binder (by default
+  none: every binder fails). Its exactness is the separate contract
+  `NLAlib.Computation.IsExactToNat`. -/
+  toNat : P → K → Option ℕ := fun _ _ => none
 
 /-- The value of a closed index expression. -/
 def IExp.eval : IExp ℕ → ℕ
@@ -281,13 +289,21 @@ def cmpStep (p : P) (c : CmpOp) (x y : Cell ℕ ℕ) (st : St P K C) : Option (B
   (st.store.read p x.buf x.idx.eval).bind fun a => (st.store.read p y.buf y.idx.eval).bind
     fun b => (I.sem.cmp p c a b).map fun r => (r, { st with cnt := st.cnt + I.charge (.cmp p) })
 
+/-- One conversion of a stored value to an index: the cell `x` read at tag `p` and converted by the
+semantics, with the charged state. -/
+def toNatStep (p : P) (x : Cell ℕ ℕ) (st : St P K C) : Option (ℕ × St P K C) :=
+  (st.store.read p x.buf x.idx.eval).bind fun v => (I.sem.toNat p v).map fun k =>
+    (k, { st with cnt := st.cnt + I.charge (.toNat p) })
+
 /-- **The run** of a statement under an interpretation. An allocation pushes a fresh buffer of
 uninitialised cells, raises the current and peak memory, runs the body with the new buffer's
 handle (its position in the stack) and pops the buffer. An oracle call reads the source block,
 charges one load and one matrix-vector product per column, and writes the product; it fails if
 the source and destination blocks overlap (an aliased call, which no implementation with bounded
 scratch can serve). A kernel call runs `NLAlib.Computation.Interp.kcallStore` and charges one call
-of its kind at its dimensions. -/
+of its kind at its dimensions. An index binder converts the value of its cell
+(`NLAlib.Computation.toNatStep`, one charged conversion) and runs its body at the value clamped
+to its bound. -/
 def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
   | .skip, st => some st
   | .seq s t, st => (exec s st).bind (exec t)
@@ -331,6 +347,8 @@ def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
       (I.kcallStore o p (dims.map IExp.eval) (ins.map fun x => (x.1, x.2.eval))
         (outs.map fun x => (x.1, x.2.eval)) st.store).map fun s =>
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map IExp.eval)) }
+  | .bindIdx p x bound body, st => (toNatStep I p x st).bind fun r =>
+      exec (body (min r.1 bound.eval)) r.2
 
 /-! ### Run lemmas -/
 
@@ -342,6 +360,14 @@ theorem exec_seq (s t : Stmt P ι ℕ ℕ) (st : St P K C) :
 /-- The run of a loop is a fold over the indices. -/
 theorem exec_loop (n : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ) (st : St P K C) :
     exec I (.loop n body) st = (List.range n.eval).foldlM (fun st i => exec I (body i) st) st := by
+  rw [exec]
+
+/-- The run of an index binder: the converted value of its cell, clamped to the bound, is bound
+for the body. -/
+theorem exec_bindIdx (p : P) (x : Cell ℕ ℕ) (bound : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ)
+    (st : St P K C) :
+    exec I (.bindIdx p x bound body) st =
+      (toNatStep I p x st).bind fun r => exec I (body (min r.1 bound.eval)) r.2 := by
   rw [exec]
 
 /-- The run of a named kernel is the run of its body. -/
@@ -561,6 +587,14 @@ theorem snd_of_cmpStep_eq_some {C : Type} [AddMonoid C] {I : Interp P ι K C} {p
   obtain ⟨_, -, _, -, _, -, rfl⟩ := h
   rfl
 
+/-- A conversion step charges one conversion and changes nothing else. -/
+theorem snd_of_toNatStep_eq_some {C : Type} [AddMonoid C] {I : Interp P ι K C} {p : P}
+    {x : Cell ℕ ℕ} {st : St P K C} {r : ℕ × St P K C} (h : toNatStep I p x st = some r) :
+    r.2 = { st with cnt := st.cnt + I.charge (.toNat p) } := by
+  simp only [toNatStep, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, -, _, -, rfl⟩ := h
+  rfl
+
 /-- A kernel call keeps the shape of the store. -/
 theorem Interp.shape_of_kcallStore_eq_some {C : Type} {I : Interp P ι K C} {o : ι} {p : P}
     {ds : List ℕ} {ins outs : List (ℕ × ℕ)} {s s' : Store P K}
@@ -716,6 +750,13 @@ private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : S
     rw [exec_named] at h
     exact runInv_of_exec_eq_some body h
   | .kcall o p dims ins outs, st, st', h => runInv_kcall I o p dims ins outs h
+  | .bindIdx p x bound body, st, st', h => by
+    rw [exec_bindIdx] at h
+    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hstep : RunInv I st r.2 := by
+      rw [snd_of_toNatStep_eq_some hr]
+      exact RunInv.step I (pos := st.pos) rfl fun hc => hc _
+    exact hstep.trans I (runInv_of_exec_eq_some (body _) h2)
 
 variable {I} {s : Stmt P ι ℕ ℕ} {st st' : St P K (OpCount P ι)}
 
@@ -868,6 +909,14 @@ theorem exec_eq_of_exec_eq_some_of_cnt_load_le (hc : ∀ k, I.charge k = Finsupp
     rw [exec_named] at h ⊢
     exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O body h hl
   | .kcall .., st, st', h, _ => h
+  | .bindIdx p x bound body, st, st', h, hl => by
+    rw [exec_bindIdx] at h ⊢
+    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+    have hm : st.cnt ≤ r.2.cnt := by rw [snd_of_toNatStep_eq_some hr]; exact le_self_add
+    change (toNatStep I p x st).bind _ = _
+    rw [hr, Option.bind_some]
+    exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O (body _) h2
+      fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
 
 end Invariants
 
@@ -882,10 +931,11 @@ section StraightLine
 
 variable {P ι VB VI : Type}
 
-/-- A statement is **straight-line** if it has no conditional (`ite`) and no loop on a comparison
-(`whileFuel`), in any loop or allocation body: which instructions it runs is fixed by its syntax
-and its index values, not by the stored values. A kernel call is one charged step whose kind is
-fixed by its dimensions, so it is straight-line. -/
+/-- A statement is **straight-line** if it has no conditional (`ite`), no loop on a comparison
+(`whileFuel`) and no index binder (`bindIdx`), in any loop or allocation body: which instructions it
+runs is fixed by its syntax and its index values, not by the stored values. A kernel call is one
+charged step whose kind is fixed by its dimensions, so it is straight-line; an index binder is not
+(two runs can bind different values). -/
 def Stmt.StraightLine : Stmt P ι VB VI → Prop
   | .skip => True
   | .seq s t => s.StraightLine ∧ t.StraightLine
@@ -898,6 +948,7 @@ def Stmt.StraightLine : Stmt P ι VB VI → Prop
   | .ite .. => False
   | .named _ _ body => body.StraightLine
   | .kcall .. => True
+  | .bindIdx .. => False
 
 /-- The **usage** of a state: the tape positions, the counts, and the current and peak memory,
 in cells per tag and in bits; the state without its store. -/
@@ -1029,6 +1080,7 @@ private theorem shape_usage_eq_of_exec (I : Interp P ι K C) (I' : Interp P ι K
     exact shape_usage_eq_of_exec I I' hc hw body hst hsh hu h h'
   | .kcall o p dims ins outs, _, _, _, _, _, hsh, hu, h, h' =>
     shape_usage_eq_of_exec_kcall I I' hc o p dims ins outs hsh hu h h'
+  | .bindIdx .., hst, _, _, _, _, _, _, _, _ => hst.elim
 
 /-- The costs of a straight-line run do not depend on the value semantics: for interpretations
 `I` and `I'` (over any carriers) with the same charge and the same widths, and a straight-line

@@ -40,6 +40,9 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
   relation.
 * `NLAlib.Computation.AddsZeroExactly`: adding a decoded zero is exact.
 * `NLAlib.Computation.IsExactIntLit`: integer literals up to a bound are exact.
+* `NLAlib.Computation.IsExactToNat`: the conversion to an index is the exact floor.
+* `NLAlib.Computation.MulShrinks`: multiplication by a value of modulus at most one does not
+  increase the modulus.
 * `NLAlib.Computation.IsTapeRounding`: the stored draws are a rounding of the ideal tape.
 * `NLAlib.Computation.IsMatvecErr`: a normwise accuracy and success contract for an oracle.
 * `NLAlib.Computation.MatrixFreeRounded`: the matrix-free model in the standard model of
@@ -199,7 +202,8 @@ theorem isRelErrSem_exactSem : IsRelErrSem (P := P) (fun _ => 0) (fun _ x => x)
 
 /-- The semantics that always fails. -/
 def failSem : ScalarSem P K :=
-  ⟨fun _ _ => none, fun _ _ _ _ => none, fun _ _ _ => none, fun _ _ _ _ => none, fun _ _ _ => none⟩
+  ⟨fun _ _ => none, fun _ _ _ _ => none, fun _ _ _ => none, fun _ _ _ _ => none, fun _ _ _ => none,
+    fun _ _ => none⟩
 
 /-- **The success clauses matter**: for a nonempty type of tags, the semantics that always fails
 does not meet the standard-model contract, for any unit roundoff and decoding with every value in
@@ -258,6 +262,24 @@ it, a size written by `litIdx` reads back exactly, and an equality test against 
 literal decides equality of sizes. No printed source. -/
 def IsExactIntLit (dec : P → K → ℝ) (sem : ScalarSem P K) (B : ℕ) : Prop :=
   ∀ (p : P) (k : ℕ), k ≤ B → ∃ z, sem.lit p k = some z ∧ dec p z = k
+
+/-- **The conversion to an index is the exact floor**: at every tag `p`, the conversion of every
+stored value succeeds and is the floor of its decoding, $0$ below zero (`Nat.floor`). True of IEEE
+truncation of a float to an unsigned integer (clamped at $0$), and of `NLAlib.Computation.exactSem`
+on real values. With `NLAlib.Computation.IsExactIntLit`, a size written by `litIdx` and read back
+by an index binder is the size. No printed source. -/
+def IsExactToNat (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
+  ∀ (p : P) (x : K), sem.toNat p x = some ⌊dec p x⌋₊
+
+/-- **Multiplication by a value of modulus at most one does not increase the modulus**: whenever
+a product at tag `p` succeeds and its second factor decodes into $[-1, 1]$, the result decodes to
+at most the modulus of the first factor. True of every monotone rounding that is exact on the
+stored values (IEEE rounding to nearest, `NLAlib.Computation.gridSem`), not implied by the standard
+model, under which $\mathrm{fl}(s v)$ may exceed $s$. A uniform shift $\mathrm{fl}(s v)$ then stays
+in the window $[-s, s]$, the clause $\lvert \bar c \rvert \le \bar s$ of `NLAlib.IsUnifSampler`.
+No printed source. -/
+def MulShrinks (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
+  ∀ (p : P) (x y z : K), sem.bin p .mul x y = some z → |dec p y| ≤ 1 → |dec p z| ≤ |dec p x|
 
 /-- **The tape-rounding contract**: the stored draws are a rounding $\rho$ of the ideal tape.
 For every distribution $d$, tape position $i$ and ideal value $x$ with $\lvert x \rvert \le \Omega$,

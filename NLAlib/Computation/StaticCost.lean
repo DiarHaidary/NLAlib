@@ -11,10 +11,11 @@ public import NLAlib.Computation.FirstOrder
 # Static resource bounds for first-order programs
 
 The fixed first-order tree determines an upper bound on counts and additional live workspace.
-Branches use pointwise maxima, bounded loops sum the actual index-dependent body costs, and
-fuel-bounded loops include every possible comparison. Scoped allocations add workspace only
-while their body runs. These bounds apply to successful execution under arbitrary scalar
-semantics and oracles; they do not assert successful execution or charge memory hidden inside
+Branches use pointwise maxima, bounded loops sum the actual index-dependent body costs, fuel-bounded
+loops include every possible comparison, and an index binder takes the maximum of its body over
+every value up to its bound (`NLAlib.Computation.StaticCost.supRange`). Scoped allocations add
+workspace only while their body runs. These bounds apply to successful execution under arbitrary
+scalar semantics and oracles; they do not assert successful execution or charge memory hidden inside
 an external scalar operation or oracle implementation.
 
 ## Main results
@@ -75,6 +76,12 @@ noncomputable def repetitions (n : ℕ) (body : StaticCost P ι) : StaticCost P 
 noncomputable def sequence {α : Type} : List α → (α → StaticCost P ι) → StaticCost P ι
   | [], _ => zero
   | x :: xs, cost => seq (cost x) (sequence xs cost)
+
+/-- The **supremum over a range**: a summary that bounds each of `f 0`, …, `f (m - 1)`, the
+pointwise maxima of their counts and workspaces (`NLAlib.Computation.StaticCost.branch` folded over
+the range). It bounds a body that runs at an index value below `m` not known statically. -/
+noncomputable def supRange (m : ℕ) (f : ℕ → StaticCost P ι) : StaticCost P ι :=
+  (List.range m).foldr (fun k c => (f k).branch c) zero
 
 /-- A resource summary bounds an actual transition: counts grow by at most its charge,
 current memory is restored, and peaks allow its additional workspace above initial current
@@ -142,6 +149,20 @@ theorem Bounds.branch_right {a b : StaticCost P ι} {st st' : St P K (OpCount P 
 /-- An unchanged state obeys any nonnegative resource summary. -/
 theorem Bounds.id (c : StaticCost P ι) (st : St P K (OpCount P ι)) : c.Bounds st st :=
   (Bounds.refl st).mono zero_le (fun _ => Nat.zero_le _) (Nat.zero_le _)
+
+/-- A summary of an index below the range bounds the supremum over the range. -/
+theorem Bounds.supRange {f : ℕ → StaticCost P ι} {m k : ℕ} (hk : k < m)
+    {st st' : St P K (OpCount P ι)} (h : (f k).Bounds st st') : (supRange m f).Bounds st st' := by
+  unfold StaticCost.supRange
+  suffices ∀ l : List ℕ, k ∈ l → (l.foldr (fun k c => (f k).branch c) zero).Bounds st st' from
+    this _ (List.mem_range.mpr hk)
+  intro l hl
+  induction l with
+  | nil => exact absurd hl List.not_mem_nil
+  | cons j l ih =>
+    rcases List.mem_cons.mp hl with rfl | hl
+    · exact h.branch_left
+    · exact (ih hl).branch_right
 
 /-- One charged store/tape update has no additional workspace. -/
 theorem Bounds.step (st : St P K (OpCount P ι)) (s : Store P K) (pos : Dist → ℕ)
@@ -304,6 +325,9 @@ noncomputable def FStmt.staticCost (charge : OpKind P ι → OpCount P ι) (widt
   -- Eliminate the first-order label; no named program node is constructed by the analysis.
   | _, _, FStmt.named _ _ body, ρI => body.staticCost charge width ρI
   | _, _, .kcall o p dims _ _, ρI => StaticCost.step (charge (.kcall p o (dims.map (·.evalIn ρI))))
+  | _, _, .bindIdx p _ bound body, ρI => (StaticCost.step (charge (.toNat p))).seq
+      (StaticCost.supRange (bound.evalIn ρI + 1)
+        fun k => body.staticCost charge width (Fin.snoc (α := fun _ => ℕ) ρI k))
 
 /-- The static resource summary of a program at its declared sizes. -/
 noncomputable def Prog.staticCost {r b : ℕ} (prog : Prog P ι r b)
@@ -409,6 +433,13 @@ theorem FStmt.bounds_staticCost_of_exec_eq_some :
   | _, _, .kcall o p dims ins outs, ρB, ρI, st, _, h => by
     obtain ⟨out, -, rfl⟩ := Option.map_eq_some_iff.mp h
     exact StaticCost.Bounds.step st out st.pos _
+  | _, _, .bindIdx p x bound body, ρB, ρI, st, _, h => by
+    obtain ⟨r, hr, hb⟩ := Option.bind_eq_some_iff.mp h
+    have hc : (StaticCost.step (I.charge (.toNat p))).Bounds st r.2 := by
+      rw [snd_of_toNatStep_eq_some hr]
+      exact StaticCost.Bounds.step st st.store st.pos _
+    exact hc.trans (StaticCost.Bounds.supRange (Nat.lt_succ_of_le (min_le_right _ _))
+      (body.bounds_staticCost_of_exec_eq_some ρB _ hb))
 
 /-- A successful execution of a program satisfies the count, cell-peak and bit-peak summary
 obtained from its fixed first-order tree at the declared sizes. -/
