@@ -44,6 +44,17 @@ theorem isExactIntLit_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     (hmax : 0 ≤ (2 ^ fmt.exponentBits : ℤ) - 2 - fmt.exponentBias -
       fmt.mantissaBitsWithoutImplicit) :
     IsExactIntLit (fun _ x => x.val) (binaryFloatSem (P := P) fmt he r hr) B := by
-  sorry
+  intro q k hk
+  have hrep : IsBinaryRep fmt (k : ℝ) := by
+    refine ⟨k, 0, ?_, hmin, hmax, ?_⟩
+    · have h1 : k < 2 ^ fmt.mantissaBits := lt_of_le_of_lt hk hB
+      have h2 : (k : ℤ) < 2 ^ fmt.mantissaBits := by exact_mod_cast h1
+      simpa [abs_of_nonneg (Int.natCast_nonneg k)] using h2
+    · simp
+  have hq : binaryFloatQuantize fmt he r hr ((k : ℚ) : ℝ) = some ⟨(k : ℝ), hrep⟩ := by
+    rw [Rat.cast_natCast, binaryFloatQuantize, dif_pos hrep.abs_le]
+    congr 1
+    exact Subtype.ext (binaryFloatRound_eq_self fmt hr hrep)
+  exact ⟨_, hq, rfl⟩
 
 end NLAlib.Computation
