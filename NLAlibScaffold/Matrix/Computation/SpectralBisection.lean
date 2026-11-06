@@ -1666,7 +1666,105 @@ private theorem FloatMachine.IsAccurate.exists_frames_of_eighStep_eq_split_aux
           dec σ • (1 : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) ℂ))) ≤
             (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
               ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) := by
-  sorry
+  -- the node is internal and the leaf test fails
+  have hk2 : 2 ≤ y.k := by
+    by_contra h
+    unfold eighStep at hsplit
+    rw [if_pos (by omega)] at hsplit
+    cases hsplit
+  have hint : M.le y.R (M.mul y.ε R₀) = false := by
+    cases h : M.le y.R (M.mul y.ε R₀)
+    · rfl
+    · unfold eighStep at hsplit
+      rw [if_neg (by omega), if_pos h] at hsplit
+      cases hsplit
+  obtain ⟨⟨hv, hI⟩, hII⟩ := hgood hk2 hint
+  have hlt : dec (M.mul y.ε R₀) < dec y.R :=
+    not_le.mp (mt (hM.le_iff y.R (M.mul y.ε R₀)).mpr (by simp [hint]))
+  obtain ⟨hu1, hτ1, hτR6, hkτR, hΩ2, hΩ4, hη0, hη1, hβη, hβ1, htx, hx0, hτx, hΩt, hdefl, hμ,
+    hsk, huβ⟩ := eighSplit_numerics_aux hk2 hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol hμM hμQ hcN hu
+      husign hudefl hτ₀ hτ hΩ (hM.mul y.ε R₀) hlt
+  have hR0 : 0 < dec y.R := hw.trans_le hwR
+  -- the shift
+  have hσ := abs_dec_div_ofNat_two_sub_le_aux hM hu hu1 hτ₀ hτ1 hR0 hτR6 hΩ2 (by linarith)
+  have hhalf : |dec (M.div y.R (M.ofNat 2))| ≤ dec y.R := by
+    have h1 := abs_sub_abs_le_abs_sub (dec (M.div y.R (M.ofNat 2))) (dec y.R / 2)
+    rw [abs_of_pos (by linarith : 0 < dec y.R / 2)] at h1
+    have h2 := mul_le_mul_of_nonneg_right hu1 hR0.le
+    have h3 : 3 * u * (dec y.R / 2) = 3 / 2 * (u * dec y.R) := by ring
+    linarith
+  have hhalf' : |dec (M.neg (M.div y.R (M.ofNat 2)))| ≤ dec y.R := by
+    rw [hM.dec_neg, abs_neg]; exact hhalf
+  have htwo : |dec (M.ofNat 2) - 2| ≤ 3 * u := by
+    have h := abs_sub_le_of_isRoundingOf_aux (hM.ofNat 2)
+      (by push_cast; rw [abs_two]; exact hΩ2) hu hτ₀
+    push_cast at h
+    rw [abs_two, abs_sub_comm] at h
+    have : u * τ ≤ u * 1 := mul_le_mul_of_nonneg_left (by linarith) hu
+    linarith
+  -- Event I: the ideal shift is not an eigenvalue
+  have hc : ∀ x ∈ spectrum ℝ (decodeMatrix dec y.A), x ≠ dec y.R / y.ℓ * smp.1 := by
+    intro x hx hxc
+    have := hI x hx
+    rw [hxc, sub_self, abs_zero] at this
+    linarith
+  have hkpr := hM.min_toNat_eighProjector_eq_inertiaPos (N := N) (signFuel := signFuel)
+    (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk2 hint
+    hv hI
+  obtain ⟨hPp, hPm⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_le_eq_false (N := N)
+    (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
+    husign hfuel hτ₀ hτ hΩ hint hv hI
+  have hk1 : 1 ≤ y.k := by omega
+  have hη3 : (2 + dec β) * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) / 3 ≤
+      (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) := by
+    have := mul_le_mul_of_nonneg_right (by linarith : 2 + dec β ≤ 3) hη0.le
+    linarith
+  -- unfold the step
+  unfold eighStep at hsplit
+  rw [if_neg (by omega), if_neg (by simp [hint])] at hsplit
+  dsimp only at hsplit
+  split_ifs at hsplit with h1 h2
+  cases hsplit
+  refine ⟨hσ, ?_, ?_⟩
+  · -- the positive side
+    obtain ⟨V, hV, hVV, hsp⟩ := exists_frame_pos_eighSplit_aux hA hR hc hkpr.symm
+    have hr0 : 0 < min y.k (M.toNat (M.add (M.traceRe (M.hermScale (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)))
+        (M.div M.one (M.ofNat 2)))) := Nat.pos_of_ne_zero h2
+    have hrk := lt_of_le_of_ne (min_le_left _ _) h1
+    obtain ⟨hGt, hσG⟩ := hII true _ V hr0 hrk hV (by rw [if_pos rfl, one_smul]; exact hVV)
+    have hP' := hPp
+    rw [specNorm_sub_comm, ← hVV] at hP'
+    obtain ⟨W, hW, hWb⟩ := exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux hM hr0
+      hrk.le hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀ hτx hΩt
+    refine ⟨V, hV, hVV, hsp, W, hW, hWb.trans hη3, ?_⟩
+    exact specNorm_decodeMatrix_compress_sub_le_eighSplit_aux hM hk1 hrk.le hu huβ hμM hμ hsk
+      hβ.le hβη hη0 hη1 hR0 hτ₀ hkτR hΩ4 hA hR hV hW hWb htwo hhalf
+  · -- the negative side
+    have hfr : ∀ m : ℕ, inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) = m → m ≤ y.k →
+        ∃ V : Matrix (Fin y.k) (Fin (y.k - m)) ℂ, HasOrthonormalCols V ∧
+          V * Vᴴ = (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
+            (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) ∧
+          spectrum ℝ (Vᴴ * decodeMatrix dec y.A * V) ⊆
+            Set.Icc (-dec y.R) (dec y.R / y.ℓ * smp.1) :=
+      fun m hm hmk => exists_frame_neg_eighSplit_aux hA hR hc (by omega)
+    obtain ⟨V, hV, hVV, hsp⟩ := hfr _ hkpr.symm (min_le_left _ _)
+    have hr0 := Nat.sub_pos_of_lt (lt_of_le_of_ne (min_le_left _ _) h1)
+    have hrk : y.k - _ < y.k := Nat.sub_lt (by omega) (Nat.pos_of_ne_zero h2)
+    obtain ⟨hGt, hσG⟩ := hII false _ V hr0 hrk hV
+      (by rw [if_neg (by simp), neg_one_smul, ← sub_eq_add_neg]; exact hVV)
+    have hP' := hPm
+    rw [specNorm_sub_comm, ← hVV] at hP'
+    obtain ⟨W, hW, hWb⟩ := exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux hM hr0
+      hrk.le hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀ hτx hΩt
+    refine ⟨V, hV, hVV, hsp, W, hW, hWb.trans hη3, ?_⟩
+    have hC := specNorm_decodeMatrix_compress_sub_le_eighSplit_aux hM hk1 hrk.le hu huβ hμM hμ hsk
+      hβ.le hβη hη0 hη1 hR0 hτ₀ hkτR hΩ4 hA hR hV hW hWb htwo hhalf'
+    rwa [hM.dec_neg, neg_smul, sub_neg_eq_add] at hC
+
+
 -- copied from module (renamed)
 private theorem le_eq_false_and_eq_of_eighChild_eq_some_eb1a {F Su Sg : Type*} [Inhabited Sg]
     (M : FloatMachine F Su Sg) {N signFuel : ℕ} {R₀ β : F} {x y : EighNode F}
@@ -2065,7 +2163,8 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eig
           dec σ • (1 : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) ℂ))) ≤
             (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
               ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) := by
-  sorry
+  exact hM.exists_frames_of_eighStep_eq_split_aux hμM hμQ hcN hu hA hR
+    hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hsplit
 /-- A rounding of a nonnegative number in range, with the floor as an absolute term. -/
 private lemma le_and_le_of_isRoundingOf_eb1 {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z)
     (ha0 : 0 ≤ a) (ha : a ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) :
