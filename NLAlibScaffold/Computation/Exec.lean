@@ -41,7 +41,7 @@ theorem exec_kcall [AddMonoid C] (I : Interp P ι K C) (o : ι) (p : P) (dims : 
       (I.kcallStore o p (dims.map IExp.eval) (ins.map fun x => (x.1, x.2.eval))
         (outs.map fun x => (x.1, x.2.eval)) st.store).map fun s =>
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map IExp.eval)) } := by
-  sorry
+  rw [exec]
 
 /-- **No kernel, no call**: if kernel `o` of `I` fails on every list of input blocks at the
 dimensions `ds`, every call of it at `ds` fails. No printed source.
