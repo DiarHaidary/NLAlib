@@ -380,6 +380,91 @@ theorem measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector {g : Ω �
       simp
     _ ≤ s ^ 2 := complexGaussian_real_closedBall_le hs
 
+/-- The distance from column $j$ to the span of the other columns is at most the norm of any
+combination of the columns with coefficient $1$ on column $j$. -/
+private theorem iInf_norm_add_mulVec_le_iInf {r : Type*} [Fintype r] [DecidableEq r]
+    (A : Matrix r r ℂ) (j : r) :
+    ⨅ z : {j' // j' ≠ j} → ℂ, ‖WithLp.toLp 2 ((fun i => A i j) +
+      A.submatrix id (Subtype.val : {j' // j' ≠ j} → r) *ᵥ z)‖ ≤
+      ⨅ x : {x : r → ℂ // x j = 1}, ‖WithLp.toLp 2 (A *ᵥ x.1)‖ := by
+  have : Nonempty {x : r → ℂ // x j = 1} := ⟨⟨Pi.single j 1, by simp⟩⟩
+  refine le_ciInf fun ⟨x, hx⟩ => (ciInf_le ⟨0, ?_⟩ fun j' => x j'.1).trans_eq ?_
+  · rintro _ ⟨z, rfl⟩
+    positivity
+  · congr 2
+    ext i
+    simp only [Matrix.mulVec, dotProduct, Pi.add_apply, Matrix.submatrix_apply, id]
+    rw [Fintype.sum_eq_add_sum_subtype_ne _ j, hx, mul_one]
+
+/-- The residual of $\mathbf{g}$ off the range of $\mathbf{Y}$ is at most its distance to
+that range. -/
+private theorem norm_one_sub_rangeProjector_mulVec_le_iInf {r q : Type*} [Fintype r]
+    [Fintype q] [DecidableEq r] (Y : Matrix r q ℂ) (g : r → ℂ) :
+    ‖WithLp.toLp 2 ((1 - rangeProjector Y) *ᵥ g)‖ ≤
+      ⨅ z : q → ℂ, ‖WithLp.toLp 2 (g + Y *ᵥ z)‖ := by
+  have hQY : (1 - rangeProjector Y) * Y = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, rangeProjector_mul_self, sub_self]
+  refine le_ciInf fun z => ?_
+  calc _ = ‖WithLp.toLp 2 ((1 - rangeProjector Y) *ᵥ (g + Y *ᵥ z))‖ := by
+        rw [Matrix.mulVec_add, Matrix.mulVec_mulVec, hQY, Matrix.zero_mulVec, add_zero]
+    _ ≤ _ := (isStarProjection_rangeProjector Y).one_sub.norm_toLp_mulVec_le _
+
+/-- The projector off the range of a matrix with fewer columns than rows is nonzero. -/
+private theorem one_sub_rangeProjector_ne_zero {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] (Y : Matrix r q ℂ) (h : Fintype.card q < Fintype.card r) :
+    1 - rangeProjector Y ≠ 0 := by
+  intro h0
+  have h1 := Matrix.rank_mul_le_left Y (pinv Y)
+  rw [mul_pinv, ← sub_eq_zero.mp h0, Matrix.rank_one] at h1
+  exact absurd (h1.trans (Matrix.rank_le_card_width Y)) (not_le.mpr h)
+
+/-- Column $j$ of a standard complex Gaussian square matrix is within $s$ of the span of the other
+columns with probability at most $s^2$: condition on the other columns, which are independent of
+it. -/
+private theorem measureReal_iInf_norm_add_mulVec_le_le {r : Type*} [Fintype r]
+    [DecidableEq r] {G : Ω → Matrix r r ℂ} (hG : HasLaw G (complexGaussianMatrix r r) μ) (j : r)
+    {s : ℝ} (hs : 0 ≤ s) :
+    μ.real {ω | ⨅ z : {j' // j' ≠ j} → ℂ, ‖WithLp.toLp 2 ((fun i => G ω i j) +
+      (G ω).submatrix id (Subtype.val : {j' // j' ≠ j} → r) *ᵥ z)‖ ≤ s} ≤ s ^ 2 := by
+  have : IsProbabilityMeasure μ := hG.isProbabilityMeasure_iff.2 inferInstance
+  -- split the matrix into column `j` and the other columns, which are independent
+  let : Fintype {j' // j' = j} := Subtype.fintype _
+  have h1 : MeasurePreserving (fun x : {j' // j' = j} → ℂ => x ⟨j, rfl⟩)
+      (Measure.pi fun _ => complexGaussian) complexGaussian := by
+    convert measurePreserving_funUnique complexGaussian {j' // j' = j}
+    exact congrArg _ (Subsingleton.elim _ _)
+  have hΨ := ((measurePreserving_pi _ _ fun _ => h1).prod
+      (MeasurePreserving.id (Measure.pi fun _ : r =>
+        Measure.pi fun _ : {j' // ¬j' = j} => complexGaussian))).comp
+    ((measurePreserving_arrowProdEquivProdArrow _ _ r _ _).comp
+      (measurePreserving_pi _ _ fun _ =>
+        measurePreserving_piEquivPiSubtypeProd (fun _ : r => complexGaussian) (· = j)))
+  set S : Set ((r → ℂ) × (r → {j' // ¬j' = j} → ℂ)) :=
+    {p | ⨅ z : {j' // ¬j' = j} → ℂ, ‖WithLp.toLp 2 (p.1 + Matrix.of p.2 *ᵥ z)‖ ≤ s}
+  have hS : MeasurableSet S := by
+    refine measurableSet_le (UpperSemicontinuous.measurable (upperSemicontinuous_ciInf
+      (fun p => ⟨0, ?_⟩) fun z => Continuous.upperSemicontinuous ?_)) measurable_const
+    · rintro _ ⟨z, rfl⟩
+      positivity
+    · fun_prop
+  calc _ = ((complexGaussianVector r).prod
+        (Measure.pi fun _ : r => Measure.pi fun _ : {j' // ¬j' = j} => complexGaussian)).real S :=
+        (hΨ.comp_hasLaw hG).measureReal_eq (p := (· ∈ S)) hS
+    _ ≤ s ^ 2 := by
+      rw [measureReal_def, Measure.prod_apply_symm hS]
+      refine ENNReal.toReal_le_of_le_ofReal (sq_nonneg s) ?_
+      refine (lintegral_mono fun y => ?_).trans_eq (by rw [lintegral_const, measure_univ, mul_one])
+      have h := measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector HasLaw.id
+        (isStarProjection_rangeProjector (Matrix.of y)).one_sub
+        (one_sub_rangeProjector_ne_zero _ (Fintype.card_subtype_lt (x := j) (by simp))) hs
+      calc _ ≤ complexGaussianVector r
+            {x | ‖WithLp.toLp 2 ((1 - rangeProjector (Matrix.of y)) *ᵥ x)‖ ≤ s} :=
+            measure_mono fun x hx => (norm_one_sub_rangeProjector_mulVec_le_iInf _ x).trans hx
+        _ = ENNReal.ofReal ((complexGaussianVector r).real
+            {x | ‖WithLp.toLp 2 ((1 - rangeProjector (Matrix.of y)) *ᵥ x)‖ ≤ s}) :=
+            (ofReal_measureReal (measure_ne_top _ _)).symm
+        _ ≤ ENNReal.ofReal (s ^ 2) := ENNReal.ofReal_le_ofReal h
+
 /-- **Smallest singular value of a square complex Gaussian matrix** (Lemma 3.1): for a standard
 complex Gaussian $r \times r$ matrix $\mathbf{G}$, $k + 1 = \lvert r \rvert$ and $x \ge 0$,
 $$\mathbb{P}[\sigma_k(\mathbf{G}) \le x] \le \lvert r \rvert^2 x^2 \,.$$
@@ -404,6 +489,20 @@ theorem measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix {r : Ty
     {G : Ω → Matrix r r ℂ} (hG : HasLaw G (complexGaussianMatrix r r) μ) {k : ℕ}
     (hk : k + 1 = Fintype.card r) {x : ℝ} (hx : 0 ≤ x) :
     μ.real {ω | singularValues (G ω) k ≤ x} ≤ (Fintype.card r : ℝ) ^ 2 * x ^ 2 := by
-  sorry
+  classical
+  have : IsProbabilityMeasure μ := hG.isProbabilityMeasure_iff.2 inferInstance
+  calc μ.real {ω | singularValues (G ω) k ≤ x}
+      ≤ μ.real (⋃ j, {ω | ⨅ z : {j' // j' ≠ j} → ℂ, ‖WithLp.toLp 2 ((fun i => G ω i j) +
+          (G ω).submatrix id (Subtype.val : {j' // j' ≠ j} → r) *ᵥ z)‖ ≤
+            √(Fintype.card r) * x}) := measureReal_mono fun ω hω => by
+        obtain ⟨j, hj⟩ := exists_iInf_norm_mulVec_le_of_singularValues_le (G ω) hk hω
+        exact Set.mem_iUnion.2 ⟨j, (iInf_norm_add_mulVec_le_iInf _ j).trans hj⟩
+    _ ≤ ∑ j : r, (√(Fintype.card r) * x) ^ 2 := (measureReal_iUnion_fintype_le _).trans
+        (Finset.sum_le_sum fun j _ =>
+          measureReal_iInf_norm_add_mulVec_le_le hG j (by positivity))
+    _ = (Fintype.card r : ℝ) ^ 2 * x ^ 2 := by
+      rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_pow,
+        Real.sq_sqrt (Nat.cast_nonneg _)]
+      ring
 
 end NLAlib
