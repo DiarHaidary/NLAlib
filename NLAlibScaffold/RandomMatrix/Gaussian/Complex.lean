@@ -284,6 +284,35 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix {G : Ω → M
       2 * Real.exp (-t ^ 2 / 2) := by
   sorry
 
+/-- The disk of radius $s$ has mass at most $s^2$ under a standard complex Gaussian: $\sqrt2$
+times its real and imaginary parts form a standard Gaussian vector of dimension $2$. -/
+private theorem complexGaussian_real_closedBall_le {s : ℝ} (hs : 0 ≤ s) :
+    complexGaussian.real (Metric.closedBall 0 s) ≤ s ^ 2 := by
+  have h1 : MeasurePreserving (fun x : ℝ => √2 * x) (gaussianReal 0 2⁻¹) (gaussianReal 0 1) := by
+    refine ⟨measurable_const_mul _, ?_⟩
+    rw [gaussianReal_map_const_mul, mul_zero]
+    congr 1
+    ext
+    simp
+  have h2 : MeasurePreserving Complex.measurableEquivRealProd complexGaussian
+      ((gaussianReal 0 2⁻¹).prod (gaussianReal 0 2⁻¹)) :=
+    (MeasurePreserving.symm Complex.measurableEquivRealProd.symm
+      ⟨Complex.measurableEquivRealProd.symm.measurable, rfl⟩)
+  have hΦ := ((measurePreserving_finTwoArrow (gaussianReal 0 1)).symm.comp
+    (h1.prod h1)).comp h2
+  have key := measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector hΦ.hasLaw
+    (u := 2 * s ^ 2) (by positivity)
+  refine (le_of_eq (congrArg complexGaussian.real ?_)).trans (key.trans (le_of_eq ?_))
+  · ext z
+    simp only [Metric.mem_closedBall, dist_zero_right, Set.mem_ofPred_eq, Function.comp_apply]
+    rw [EuclideanSpace.norm_toLp_sq_eq_sum_sq, Fin.sum_univ_two]
+    simp only [Complex.measurableEquivRealProd_apply, Prod.map_apply,
+      MeasurableEquiv.finTwoArrow_symm_apply, Fin.cons_zero, Fin.cons_one, mul_pow,
+      Real.sq_sqrt zero_le_two]
+    rw [← sq_le_sq₀ (norm_nonneg z) hs, Complex.sq_norm, Complex.normSq_apply]
+    constructor <;> intro h <;> nlinarith
+  · norm_num
+
 /-- **Small ball of a projected complex Gaussian vector**: for a standard complex Gaussian vector
 $\mathbf{g}$, a nonzero orthogonal projector $\mathbf{\Pi}$ and $s \ge 0$,
 $\mathbb{P}[\|\mathbf{\Pi}\mathbf{g}\| \le s] \le s^2$. A complex Gaussian has two real degrees of
@@ -301,7 +330,55 @@ theorem measureReal_norm_mulVec_le_le_of_hasLaw_complexGaussianVector {g : Ω �
     (hg : HasLaw g (complexGaussianVector n) μ) {P : Matrix n n ℂ} (hP : IsStarProjection P)
     (hP₀ : P ≠ 0) {s : ℝ} (hs : 0 ≤ s) :
     μ.real {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ≤ s} ≤ s ^ 2 := by
-  sorry
+  classical
+  have : IsProbabilityMeasure μ := hg.isProbabilityMeasure_iff.2 inferInstance
+  -- a unit vector `w` in the range of `P`
+  obtain ⟨v, hv⟩ : ∃ v, P *ᵥ v ≠ 0 := by
+    by_contra! h
+    exact hP₀ (Matrix.ext_iff_mulVec.mpr fun x => by rw [h x, Matrix.zero_mulVec])
+  have hu : ‖WithLp.toLp 2 (P *ᵥ v)‖ ≠ 0 := by simpa using hv
+  set w : n → ℂ := ((‖WithLp.toLp 2 (P *ᵥ v)‖ : ℂ)⁻¹) • (P *ᵥ v) with hw_def
+  have hw : ‖WithLp.toLp 2 w‖ = 1 := by simp [hw_def, norm_smul, hu]
+  have hPw : Pᴴ *ᵥ w = w := by
+    rw [hP.conjTranspose_eq, hw_def, Matrix.mulVec_smul, Matrix.mulVec_mulVec, hP.mul_self]
+  -- `w` as a one-column frame, and `g` as a one-column matrix
+  let V : Matrix n Unit ℂ := Matrix.of fun i _ => w i
+  have hV : HasOrthonormalCols V := by
+    ext a b
+    have h1 := EuclideanSpace.inner_toLp_toLp w w
+    rw [inner_self_eq_norm_sq_to_K, hw] at h1
+    simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, V, Matrix.of_apply,
+      Matrix.one_apply_eq]
+    rw [dotProduct] at h1
+    simpa [mul_comm] using h1.symm
+  have hG : HasLaw (fun ω => Matrix.of fun i (_ : Unit) => g ω i)
+      (complexGaussianMatrix n Unit) μ :=
+    (measurePreserving_pi _ _ fun _ =>
+      (measurePreserving_funUnique complexGaussian Unit).symm).comp_hasLaw hg
+  have hz : HasLaw (fun ω => (Vᴴ * Matrix.of fun i (_ : Unit) => g ω i) () ())
+      complexGaussian μ :=
+    ((measurePreserving_funUnique complexGaussian Unit).comp
+      (measurePreserving_funUnique (complexGaussianVector Unit) Unit)).comp_hasLaw
+      (hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix hG hV)
+  calc μ.real {ω | ‖WithLp.toLp 2 (P *ᵥ g ω)‖ ≤ s}
+      ≤ μ.real {ω | ‖(Vᴴ * Matrix.of fun i (_ : Unit) => g ω i) () ()‖ ≤ s} :=
+        measureReal_mono fun ω hω => by
+          simp only [Set.mem_ofPred_eq] at hω ⊢
+          have h1 : (Vᴴ * Matrix.of fun i (_ : Unit) => g ω i) () () =
+              inner ℂ (WithLp.toLp 2 w) (WithLp.toLp 2 (P *ᵥ g ω)) := by
+            rw [EuclideanSpace.inner_toLp_toLp, dotProduct_comm, Matrix.dotProduct_mulVec,
+              ← Matrix.conjTranspose_conjTranspose P, ← Matrix.star_mulVec, hPw]
+            rfl
+          rw [h1]
+          refine (norm_inner_le_norm _ _).trans ?_
+          rwa [hw, one_mul]
+    _ = complexGaussian.real (Metric.closedBall 0 s) := by
+      rw [hz.measureReal_eq (p := fun z => ‖z‖ ≤ s) (measurableSet_le measurable_norm
+        measurable_const)]
+      congr 1
+      ext z
+      simp
+    _ ≤ s ^ 2 := complexGaussian_real_closedBall_le hs
 
 /-- **Smallest singular value of a square complex Gaussian matrix** (Lemma 3.1): for a standard
 complex Gaussian $r \times r$ matrix $\mathbf{G}$, $k + 1 = \lvert r \rvert$ and $x \ge 0$,
