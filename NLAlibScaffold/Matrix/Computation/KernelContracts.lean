@@ -192,7 +192,30 @@ theorem EntryLayout.holds_inputState {C : Type} [Zero C] (L : EntryLayout K E) {
     (p : P) {bufs : List (Array (Option K))} {k : ℕ} {Y : Matrix (Fin l) (Fin m) E}
     (hk : bufs[k]? = some ((L.toArray Y).map some)) :
     L.Holds (inputState (C := C) p bufs).store p k 0 Y := by
-  sorry
+  have hget : ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      (L.toArray Y)[L.width * (i + l * j) + t]? = some (L.put (Y i j) t) := by
+    intro i j t
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    have hlt : L.width * (i + l * j) + t < m * l * L.width := by
+      nlinarith [Nat.mul_le_mul_left L.width hi, t.isLt]
+    have e1 : (finProdFinEquiv.symm ⟨L.width * (i + l * j) + t, hlt⟩ : Fin (m * l) × Fin L.width)
+        = (⟨i + l * j, by omega⟩, t) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+      ring
+    have e2 : (finProdFinEquiv.symm (⟨i + l * j, by omega⟩ : Fin (m * l))
+        : Fin m × Fin l) = (j, i) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+    simp only [EntryLayout.toArray, Array.getElem?_ofFn, hlt, dif_pos, e1, e2]
+  unfold EntryLayout.Holds
+  intro i j t
+  have hk' : (inputState (C := C) p bufs).store[k]? = some (p, (L.toArray Y).map some) := by
+    simp [inputState, hk]
+  simp only [Store.read, hk', zero_add, Array.getElem?_map, hget i j t]
+  rfl
 
 /-- **Holding is local**: if the store `s'` reads like `s` on the block of buffer `b` from `off`
 of `m * l * L.width` words, and `s` holds $\mathbf{Y}$ there, so does `s'`. No printed source.
