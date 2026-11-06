@@ -232,6 +232,35 @@ theorem frobNorm_polarFactor_sub_le {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ}
     div_eq_mul_one_div]
   exact key.trans_eq (mul_comm _ _)
 
+/-- Real form of `NLAlib.householder_mulVec`. -/
+private theorem householder_mulVec_real {n : ℕ} (v u : Fin n → ℝ) :
+    householder v *ᵥ u = u - (2 / ‖WithLp.toLp 2 v‖ ^ 2 * (v ⬝ᵥ u)) • v := by
+  rw [householder_mulVec, star_trivial, smul_smul]
+  rfl
+
+/-- The squared norm of the difference of two reflectors applied to a vector. -/
+private theorem norm_householder_sub_householder_add_mulVec_sq {n : ℕ} {x y : Fin n → ℝ}
+    (hx : ‖WithLp.toLp 2 x‖ = 1) (hy : ‖WithLp.toLp 2 y‖ = 1) (hw : x + y ≠ 0) (v : Fin n → ℝ) :
+    ‖WithLp.toLp 2 ((householder x - householder (x + y)) *ᵥ v)‖ ^ 2 * (1 + x ⬝ᵥ y) =
+      2 * ((x ⬝ᵥ v) ^ 2 + (y ⬝ᵥ v) ^ 2 - 2 * (x ⬝ᵥ y) * (x ⬝ᵥ v) * (y ⬝ᵥ v)) := by
+  have hxx : x ⬝ᵥ x = 1 := by rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hx, one_pow]
+  have hyy : y ⬝ᵥ y = 1 := by rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hy, one_pow]
+  have hww : ‖WithLp.toLp 2 (x + y)‖ ^ 2 = 2 * (1 + x ⬝ᵥ y) := by
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+    simp only [dotProduct_add, add_dotProduct, hxx, hyy, dotProduct_comm y x]; ring
+  have hc : 0 < 1 + x ⬝ᵥ y := by
+    have : ‖WithLp.toLp 2 (x + y)‖ ≠ 0 :=
+      norm_ne_zero_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hw)
+    have : 0 < ‖WithLp.toLp 2 (x + y)‖ ^ 2 := by positivity
+    linarith
+  rw [Matrix.sub_mulVec, householder_mulVec_real, householder_mulVec_real, hx, hww,
+    EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+  simp only [dotProduct_add, add_dotProduct, dotProduct_sub, sub_dotProduct, dotProduct_smul,
+    smul_dotProduct, smul_eq_mul, hxx, hyy, dotProduct_comm y x, dotProduct_comm v x,
+    dotProduct_comm v y]
+  field_simp
+  ring
+
 /-- **A rotation taking one unit vector to another** (E5): for unit $\mathbf{x}$, $\mathbf{y}$ the
 orthogonal $\mathbf{Z} = \mathbf{H}_{\mathbf{x}+\mathbf{y}}\mathbf{H}_{\mathbf{x}}$ (two
 reflectors, `NLAlib.householder`; the identity on $\{\mathbf{x}, \mathbf{y}\}^\perp$) satisfies
@@ -267,7 +296,68 @@ theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n �
     ∃ Z : Matrix (Fin n) (Fin n) ℝ, Zᵀ * Z = 1 ∧ Z *ᵥ x = y ∧
       specNorm (Z - 1) ≤ ‖WithLp.toLp 2 (x - y)‖ ∧
       frobNorm (Z - 1) ≤ Real.sqrt 2 * ‖WithLp.toLp 2 (x - y)‖ := by
-  sorry
+  have hxx : x ⬝ᵥ x = 1 := by rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hx, one_pow]
+  have hyy : y ⬝ᵥ y = 1 := by rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hy, one_pow]
+  have hH (v : Fin n → ℝ) : (householder v)ᵀ = householder v := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial, (isHermitian_householder v).eq]
+  by_cases hw : x + y = 0
+  · obtain rfl : y = -x := (neg_eq_of_add_eq_zero_right hw).symm
+    have hD : householder x - 1 = -((2 : ℝ) • Matrix.vecMulVec x x) := by
+      rw [householder, hx, star_trivial]; simp
+    have h2 : ‖WithLp.toLp 2 (x - -x)‖ = 2 := by
+      rw [sub_neg_eq_add, ← two_smul ℝ x, WithLp.toLp_smul, norm_smul, hx]; norm_num
+    refine ⟨householder x, by rw [hH, householder_mul_self], householder_mulVec_self x, ?_, ?_⟩
+    · rw [hD, specNorm_neg, specNorm_smul, specNorm_vecMulVec, hx, h2]; norm_num
+    · rw [hD, frobNorm_neg, frobNorm_smul, frobNorm_vecMulVec, hx, h2]
+      norm_num
+  have hc : 0 < 1 + x ⬝ᵥ y := by
+    have : ‖WithLp.toLp 2 (x + y)‖ ≠ 0 :=
+      norm_ne_zero_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hw)
+    have h : 0 < ‖WithLp.toLp 2 (x + y)‖ ^ 2 := by positivity
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at h
+    simp only [dotProduct_add, add_dotProduct, hxx, hyy, dotProduct_comm y x] at h
+    linarith
+  have hxy : ‖WithLp.toLp 2 (x - y)‖ ^ 2 = 2 - 2 * (x ⬝ᵥ y) := by
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+    simp only [dotProduct_sub, sub_dotProduct, hxx, hyy, dotProduct_comm y x]; ring
+  have hZ : householder (x + y) * householder x - 1 =
+      householder (x + y) * (householder x - householder (x + y)) := by
+    rw [Matrix.mul_sub, householder_mul_self]
+  have key := norm_householder_sub_householder_add_mulVec_sq hx hy hw
+  refine ⟨householder (x + y) * householder x, ?_, ?_, ?_, ?_⟩
+  · rw [Matrix.transpose_mul, hH, hH, Matrix.mul_assoc, ← Matrix.mul_assoc (householder (x + y)),
+      householder_mul_self, Matrix.one_mul, householder_mul_self]
+  · rw [← Matrix.mulVec_mulVec, householder_mulVec_self, householder_mulVec_real]
+    have hs : 2 / ‖WithLp.toLp 2 (x + y)‖ ^ 2 * ((x + y) ⬝ᵥ -x) = -1 := by
+      rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
+      simp only [dotProduct_add, add_dotProduct, dotProduct_neg, hxx, hyy, dotProduct_comm y x]
+      rw [div_mul_eq_mul_div, div_eq_iff (by linarith)]
+      ring
+    rw [hs]; module
+  · rw [hZ, (hasOrthonormalCols_householder _).specNorm_mul_left]
+    refine (specNorm_le_iff (norm_nonneg _)).2 fun v => ?_
+    have cs := pow_le_pow_left₀ (abs_nonneg _)
+      (EuclideanSpace.abs_dotProduct_le_norm (y - (x ⬝ᵥ y) • x) (v - (x ⬝ᵥ v) • x)) 2
+    rw [sq_abs, mul_pow, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self] at cs
+    simp only [dotProduct_sub, sub_dotProduct, dotProduct_smul, smul_dotProduct, smul_eq_mul,
+      hxx, hyy, dotProduct_comm y x, dotProduct_comm v x] at cs
+    have := key v
+    refine (sq_le_sq₀ (norm_nonneg _) (by positivity)).1 ?_
+    rw [mul_pow, hxy, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self v]
+    refine le_of_mul_le_mul_right ?_ hc
+    nlinarith
+  · rw [hZ, (hasOrthonormalCols_householder _).frobNorm_mul_left]
+    refine (sq_le_sq₀ (frobNorm_nonneg _) (by positivity)).1 ?_
+    rw [mul_pow, hxy, Real.sq_sqrt zero_le_two, frobNorm_sq_eq_sum_col]
+    refine le_of_mul_le_mul_right ?_ hc
+    simp only [Finset.sum_mul, ← Matrix.mulVec_single_one, key, dotProduct_single_one]
+    have hs (c : ℝ) : ∑ j, 2 * (x j ^ 2 + y j ^ 2 - 2 * c * x j * y j) =
+        2 * (x ⬝ᵥ x) + 2 * (y ⬝ᵥ y) - 4 * c * (x ⬝ᵥ y) := by
+      simp only [dotProduct, Finset.mul_sum, ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
+      exact Finset.sum_congr rfl fun j _ => by ring
+    rw [hs, hxx, hyy]
+    nlinarith
 
 /-- **Orthonormal approximate eigenvectors are counted by the spectrum** (F2a): for symmetric
 $\mathbf{M}$, $r$ orthonormal vectors $\mathbf{x}_i$ and values $\theta_i \in [a, b]$ with
