@@ -152,7 +152,34 @@ computation of `NLAlib.Computation.EntryLayout.toMatrix_toArray` (`Array.getElem
 theorem EntryLayout.holds_of_writeBlock_eq_some (L : EntryLayout K E) {l m : ℕ} {s s' : Store P K}
     {p : P} {b off : ℕ} {Y : Matrix (Fin l) (Fin m) E}
     (h : s.writeBlock p b off (L.toArray Y) = some s') : L.Holds s' p b off Y := by
-  sorry
+  have hlt : ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      L.width * (i + l * j) + t < m * l * L.width := by
+    intro i j t
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    nlinarith [Nat.mul_le_mul_left L.width hi, t.isLt]
+  have hget : ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      (L.toArray Y)[L.width * (i + l * j) + t]? = some (L.put (Y i j) t) := by
+    intro i j t
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    have hl := hlt i j t
+    have e1 : (finProdFinEquiv.symm ⟨L.width * (i + l * j) + t, hl⟩ : Fin (m * l) × Fin L.width)
+        = (⟨i + l * j, by omega⟩, t) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+      ring
+    have e2 : (finProdFinEquiv.symm (⟨i + l * j, by omega⟩ : Fin (m * l))
+        : Fin m × Fin l) = (j, i) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+    simp only [EntryLayout.toArray, Array.getElem?_ofFn, hl, dif_pos, e1, e2]
+  unfold EntryLayout.Holds
+  intro i j t
+  have hj : L.width * (i + l * j) + t < (L.toArray Y).size := by
+    rw [EntryLayout.size_toArray]
+    exact hlt i j t
+  rw [Store.read_of_writeBlock_eq_some_of_lt h hj, hget i j t]
 
 /-- **A declared input holds its matrix**: in the initial state whose declared buffer $k$ is the
 packed storage of $\mathbf{Y}$ (every word present), buffer $k$ holds $\mathbf{Y}$ from offset
