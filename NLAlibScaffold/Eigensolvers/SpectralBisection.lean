@@ -425,6 +425,21 @@ theorem measurableSet_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     | none => exact MeasurableSet.const (none = y)
     | some y' => exact ih (fun a' => hζ _) y'
 
+/-- The node at a path depends on the samples only at the proper prefixes of the path. -/
+private lemma eighNodeAt_eq_of_forall_lt_length {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {N signFuel : ℕ} {R₀ β : F} (a : List Bool) (x : EighNode F)
+    {s s' : List Bool → EighSample ℝ ℂ N} (h : ∀ i < a.length, s (a.take i) = s' (a.take i)) :
+    eighNodeAt M N signFuel R₀ β a x s = eighNodeAt M N signFuel R₀ β a x s' := by
+  induction a generalizing x s s' with
+  | nil => rfl
+  | cons b a ih =>
+    have h0 := h 0 (by simp)
+    simp only [List.take_zero] at h0
+    simp only [eighNodeAt, h0]
+    congr 1
+    funext y
+    exact ih y fun i hi => h (i + 1) (by simpa using hi)
+
 /-- **The node at a path is independent of its own sample**: under the hypotheses of
 `NLAlib.measurableSet_eighNodeAt_eq` and independence of the samples
 ($(\zeta_b)_b$ mutually independent), the event that the node at the path $a$ is $y$ is
@@ -448,7 +463,40 @@ theorem indepFun_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     {ζ : List Bool → Ω' → EighSample ℝ ℂ N} (hζ : ∀ b, Measurable (ζ b)) (hind : iIndepFun ζ μ)
     (a : List Bool) (x : EighNode F) (y : Option (EighNode F)) :
     IndepFun (fun ω => eighNodeAt M N signFuel R₀ β a x (fun b => ζ b ω) = y) (ζ a) μ := by
-  sorry
+  -- the proper prefixes of `a`
+  set S : Finset (List Bool) := (Finset.range a.length).image fun i => a.take i
+  have haS : a ∉ S := by
+    simp only [S, Finset.mem_image, Finset.mem_range, not_exists, not_and]
+    intro i hi he
+    have := congrArg List.length he
+    simp only [List.length_take] at this
+    omega
+  have hST := hind.indepFun_finset S {a} (Finset.disjoint_singleton_right.mpr haS) hζ
+  -- the samples on `S`, extended by a default value
+  let ext : (S → EighSample ℝ ℂ N) → List Bool → EighSample ℝ ℂ N :=
+    fun t c => if h : c ∈ S then t ⟨c, h⟩ else default
+  have hext : ∀ c, Measurable fun t => ext t c := by
+    intro c
+    by_cases h : c ∈ S
+    · simp only [ext, dif_pos h]
+      exact measurable_pi_apply _
+    · simp only [ext, dif_neg h]
+      exact measurable_const
+  have hφ : Measurable fun t => eighNodeAt M N signFuel R₀ β a x (ext t) = y :=
+    measurableSet_setOfPred.mp
+      (measurableSet_eighNodeAt_eq hunifm hunif hnormalm hnormal (ζ := fun c t => ext t c)
+        hext a x y)
+  have hψ : Measurable fun t : ({a} : Finset (List Bool)) → EighSample ℝ ℂ N =>
+      t ⟨a, Finset.mem_singleton_self a⟩ :=
+    measurable_pi_apply _
+  convert hST.comp hφ hψ using 1
+  · funext ω
+    simp only [Function.comp]
+    congr 1
+    refine eighNodeAt_eq_of_forall_lt_length a x fun i hi => ?_
+    have hi' : a.take i ∈ S := Finset.mem_image_of_mem _ (Finset.mem_range.mpr hi)
+    simp only [ext, dif_pos hi']
+  · rfl
 
 /-- **Hermitian diagonalization in linear precision** (Theorem 4.2): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ (constants $\mu_{\mathrm{MM}}$,
