@@ -191,7 +191,39 @@ theorem specNorm_sub_decodeMatrix_hermShift_le (hM : M.IsAccurate dec u τ Ω μ
     specNorm ((decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ)) -
       decodeMatrix dec (M.hermShift X c)) ≤
         u * max (specNorm (decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ))) τ := by
-  sorry
+  set D := decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ) with hD
+  have hS := specNorm_nonneg D
+  have hre : ∀ i, (D i i).re = dec (X i i).1 - dec c := by
+    intro i
+    simp [hD, Matrix.one_apply, decodeMatrix, decodeComplex, Complex.real_smul]
+  have hE : D - decodeMatrix dec (M.hermShift X c) =
+      Matrix.diagonal fun i => (((dec (X i i).1 - dec c) - dec (M.sub (X i i).1 c) : ℝ) : ℂ) := by
+    ext i j
+    rcases eq_or_ne i j with rfl | hij
+    · have hi : dec (X i i).2 = 0 := by
+        have h := congrArg Complex.im (hX.apply i i)
+        simp [decodeMatrix, decodeComplex] at h
+        linarith
+      apply Complex.ext <;> simp [hD, decodeMatrix, FloatMachine.hermShift,
+        FloatMachine.hermFrom, decodeComplex, Matrix.one_apply, hM.dec_zero, hi]
+    · rcases lt_or_gt_of_ne hij with h | h
+      · simp [hD, decodeMatrix, FloatMachine.hermShift, FloatMachine.hermFrom,
+          decodeComplex, Matrix.one_apply, hij, h]
+      · have h' : ¬ i < j := not_lt.2 h.le
+        have h2 := congrArg Complex.re (hX.apply i j)
+        have h3 := congrArg Complex.im (hX.apply i j)
+        simp [decodeMatrix, decodeComplex] at h2 h3
+        simp [hD, decodeMatrix, FloatMachine.hermShift, FloatMachine.hermFrom,
+          decodeComplex, Matrix.one_apply, hij, h', h, hM.dec_neg]
+        apply Complex.ext <;> simp <;> linarith
+  rw [hE]
+  refine specNorm_diagonal_le (mul_nonneg hu (le_max_of_le_left hS)) fun i => ?_
+  have ha : |dec (X i i).1 - dec c| ≤ specNorm D := by
+    rw [← hre i]
+    exact (Complex.abs_re_le_norm _).trans (norm_apply_le_specNorm D i i)
+  have h2 := hM.sub (X i i).1 c (ha.trans hΩ)
+  rw [Complex.norm_real, Real.norm_eq_abs]
+  refine h2.trans (mul_le_mul_of_nonneg_left (max_le_max ha le_rfl) hu)
 
 /-- **Error of the stored division by a scalar**: under `NLAlib.FloatMachine.IsAccurate` with
 $u, \tau \ge 0$, for a stored $\mathbf{X}$ with Hermitian decoding and a stored $c$ with
