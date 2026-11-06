@@ -150,7 +150,7 @@ Proof: `⟨Function.update_self .., Function.update_self ..⟩` after unfolding
 theorem isMatMulKernel_withKernel [DecidableEq ι] [Inhabited K] (I : Interp P ι K C) (o : ι)
     (L : EntryLayout K E) (mm : MatMulMap E) :
     IsMatMulKernel (I.withKernel o (liftMM L mm) (mmShape L)) o L mm := by
-  sorry
+  exact ⟨Function.update_self .., Function.update_self ..⟩
 
 /-- **A lifted QR routine meets the kernel contract**: the interpretation `I` with kernel `o`
 replaced by the routine `qr` lifted to blocks in the layout `L`, of the QR shape, meets
