@@ -1345,6 +1345,71 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
   exact hM.measureReal_not_isApproxDiagonalization_eigh_le hunifm hunifc hnormalm hnormalc hμM
     hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN h₁ h₂ hfuel hτ₀ hτ hΩ hind hlaw
 
+private theorem le_zpow_of_logb_logb_add_two_le {L : ℝ} {E : ℕ} (hE : 2 ≤ E) (hL : 1 ≤ L)
+    (h : Real.logb 2 (Real.logb 2 L + 2) + 1 ≤ E) : L ≤ (2 : ℝ) ^ ((2 : ℤ) ^ (E - 1) - 2) := by
+  have h0 : 0 ≤ Real.logb 2 L := Real.logb_nonneg one_lt_two hL
+  have h1 : Real.logb 2 L + 2 ≤ (2 : ℝ) ^ (E - 1) := by
+    have : Real.logb 2 (Real.logb 2 L + 2) ≤ ((E - 1 : ℕ) : ℝ) := by
+      push_cast [Nat.cast_sub (by omega : 1 ≤ E)]; linarith
+    rwa [Real.logb_le_iff_le_rpow one_lt_two (by linarith), Real.rpow_natCast] at this
+  have h2 : Real.logb 2 L ≤ (((2 : ℤ) ^ (E - 1) - 2 : ℤ) : ℝ) := by push_cast; linarith
+  rwa [Real.logb_le_iff_le_rpow one_lt_two (by linarith), Real.rpow_intCast] at h2
+
+private theorem mul_le_min_and_le_of_mul_le {n ℓ e θ R τ Ω : ℝ} (hn : 0 ≤ n) (hℓ : 0 ≤ ℓ)
+    (he : 0 < e) (he₁ : e ≤ 1) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR : 1 / 2 ≤ R) (hR₁ : R ≤ 1)
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (1536 * (n + ℓ + 2) ^ 2) ≤ e * θ)
+    (hΩ : 3072 * (n + ℓ + 2) ^ 2 ≤ Ω * (e * θ)) :
+    τ * (100 * n * √n) ≤ min (√(θ / (8 * n))) (e * min R 1) ∧
+      16 * (2 * R + n + 2 * ℓ + √(Real.log (16 * n / θ))) ≤ Ω := by
+  have hm : 2 ≤ n + ℓ + 2 := by linarith
+  have hm2 : 0 < 1536 * (n + ℓ + 2) ^ 2 := by positivity
+  have hs : √n ^ 2 = n := Real.sq_sqrt hn
+  have hsn : √n ≤ n + ℓ + 2 := by nlinarith [Real.sqrt_nonneg n]
+  have hnsn : n * √n ≤ (n + ℓ + 2) ^ 2 := by
+    rw [sq]; exact mul_le_mul (by linarith) hsn (Real.sqrt_nonneg n) (by linarith)
+  have heθ : e * θ ≤ θ := mul_le_of_le_one_left hθ.le he₁
+  have hX0 : 0 ≤ τ * (100 * n * √n) := by positivity
+  have hX : τ * (100 * n * √n) * (1536 * (n + ℓ + 2) ^ 2) ≤ 100 * n * √n * (e * θ) := by
+    have := mul_le_mul_of_nonneg_left hτ (by positivity : (0 : ℝ) ≤ 100 * n * √n)
+    linarith
+  refine ⟨le_min ?_ ?_, ?_⟩
+  · rcases hn.eq_or_lt with rfl | hn0
+    · simp
+    rw [← Real.sqrt_sq hX0]
+    refine Real.sqrt_le_sqrt ?_
+    rw [le_div_iff₀ (by positivity)]
+    refine le_of_mul_le_mul_right ?_ (pow_pos hm2 2)
+    have h1 := pow_le_pow_left₀ (by positivity) hX 2
+    have h2 : (100 * n * √n * (e * θ)) ^ 2 = 10000 * n ^ 3 * (e * θ) ^ 2 := by
+      linear_combination (10000 * n ^ 2 * (e * θ) ^ 2) * hs
+    have h3 : n ^ 4 ≤ (n + ℓ + 2) ^ 4 := pow_le_pow_left₀ hn (by linarith) 4
+    have h4 : (e * θ) ^ 2 ≤ θ := by nlinarith [mul_pos he hθ]
+    have h5 := mul_le_mul h3 h4 (by positivity) (by positivity)
+    nlinarith
+  · have h1 : 1 / 2 ≤ min R 1 := le_min hR (by norm_num)
+    refine le_trans ?_ (mul_le_mul_of_nonneg_left h1 he.le)
+    refine le_of_mul_le_mul_right ?_ hm2
+    have := mul_le_mul_of_nonneg_left hnsn (by positivity : (0 : ℝ) ≤ 100 * (e * θ))
+    have := mul_le_mul_of_nonneg_right (mul_le_of_le_one_right he.le hθ₁)
+      (sq_nonneg (n + ℓ + 2))
+    linarith [mul_nonneg he.le (sq_nonneg (n + ℓ + 2))]
+  · have hy : 0 ≤ 16 * n / θ := by positivity
+    have h1 : √(Real.log (16 * n / θ)) ≤ 16 * n / θ + 1 :=
+      (Real.sqrt_le_sqrt (Real.log_le_self hy)).trans
+        (by nlinarith [Real.sq_sqrt hy, Real.sqrt_nonneg (16 * n / θ)])
+    have h2 : (16 * n / θ) * θ = 16 * n := div_mul_cancel₀ _ hθ.ne'
+    refine le_of_mul_le_mul_right ?_ (mul_pos he hθ)
+    calc 16 * (2 * R + n + 2 * ℓ + √(Real.log (16 * n / θ))) * (e * θ)
+        ≤ 16 * (2 + n + 2 * ℓ + (16 * n / θ + 1)) * (e * θ) := by gcongr; linarith
+      _ = 16 * (3 + n + 2 * ℓ) * (e * θ) + 256 * n * e := by linear_combination 16 * e * h2
+      _ ≤ 16 * (3 + n + 2 * ℓ) + 256 * n := by
+          have := mul_le_mul_of_nonneg_left (mul_le_one₀ he₁ hθ.le hθ₁)
+            (by positivity : (0 : ℝ) ≤ 16 * (3 + n + 2 * ℓ))
+          have := mul_le_mul_of_nonneg_left he₁ (by positivity : (0 : ℝ) ≤ 256 * n)
+          linarith
+      _ ≤ 3072 * (n + ℓ + 2) ^ 2 := by nlinarith
+      _ ≤ Ω * (e * θ) := hΩ
+
 /-- **Hermitian diagonalization in a bounded binary format: $\log_2\log_2(n/(\varepsilon\theta)) +
 O(1)$ exponent bits suffice** (Theorem 4.2 for a finite exponent range): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` with $u = 2^{-p}$, floor $2^{e_{\min} + p - 1}$ (the smallest
@@ -1400,6 +1465,54 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
       (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
       (dec ε / 3)} ≤ θ := by
-  sorry
+  have hτeq : fmt.minExponent + (fmt.mantissaBits : ℤ) - 1 =
+      -((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) := by
+    simp only [Float.Model.Format.minExponent]; ring
+  have hB : fmt.maxExponentBound = (2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits := by
+    have h1 : 1 ≤ 2 ^ (fmt.exponentBits - 1) := Nat.one_le_two_pow
+    have h2 : (2 : ℤ) ^ fmt.exponentBits = 2 * 2 ^ (fmt.exponentBits - 1) := by
+      rw [← pow_succ']; congr 1; omega
+    simp only [Float.Model.Format.maxExponentBound, Float.Model.Format.exponentBias,
+      Float.Model.Format.mantissaBits]
+    rw [Nat.cast_sub h1]
+    push_cast
+    rw [h2]
+    ring
+  have hp : 1 ≤ fmt.mantissaBits := by simp only [Float.Model.Format.mantissaBits]; omega
+  have hmax : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) ≤ fmt.maxFinite := by
+    rw [Float.Model.Format.maxFinite, hB]
+    have h2p : (2 : ℝ) ≤ 2 ^ fmt.mantissaBits := by
+      simpa using pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 2) hp
+    have : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) =
+        (2 ^ fmt.mantissaBits / 2) * 2 ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits) := by
+      rw [← zpow_natCast, div_eq_mul_inv, ← zpow_neg_one, ← zpow_add₀ two_ne_zero,
+        ← zpow_add₀ two_ne_zero, mul_comm (2 : ℝ), ← zpow_add_one₀ two_ne_zero]
+      congr 1; ring
+    rw [this]
+    gcongr
+    linarith
+  set m : ℝ := (n : ℝ) + ℓ + 2 with hm_def
+  have hm : 2 ≤ m := by
+    have := (Nat.cast_nonneg n : (0 : ℝ) ≤ n); have := (Nat.cast_nonneg ℓ : (0 : ℝ) ≤ ℓ)
+    linarith
+  have he₁ : dec ε ≤ 1 := hε₁.trans (by norm_num)
+  have hL1 : 1 ≤ 1536 * m ^ 2 / (dec ε * θ) := by
+    rw [le_div_iff₀ (by positivity), one_mul]
+    nlinarith [mul_le_one₀ he₁ hθ.le hθ₁]
+  have hL := le_zpow_of_logb_logb_add_two_le hE hL1 (by simpa only [m] using hexp)
+  have hτ : (2 : ℝ) ^ (fmt.minExponent + (fmt.mantissaBits : ℤ) - 1) *
+      (1536 * m ^ 2) ≤ dec ε * θ := by
+    rw [hτeq, zpow_neg, ← div_eq_inv_mul, div_le_iff₀ (by positivity)]
+    rw [div_le_iff₀ (by positivity)] at hL
+    linarith
+  have hΩ : 3072 * m ^ 2 ≤ fmt.maxFinite * (dec ε * θ) := by
+    rw [div_le_iff₀ (by positivity)] at hL
+    nlinarith [mul_le_mul_of_nonneg_right hmax (by positivity : 0 ≤ dec ε * θ)]
+  obtain ⟨h₁, h₂⟩ := mul_le_min_and_le_of_mul_le (Nat.cast_nonneg n) (Nat.cast_nonneg ℓ) hε he₁
+    hθ hθ₁ hR₀half hR₀one (by positivity) hτ hΩ
+  refine hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le hunifm hunifc hnormalm
+    hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN
+    (by positivity) ?_ hfuel (by positivity) h₁ h₂ hind hlaw
+  rwa [inv_pow, inv_inv, Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
 
 end NLAlib
