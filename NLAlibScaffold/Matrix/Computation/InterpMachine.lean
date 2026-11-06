@@ -309,7 +309,8 @@ theorem boxTest_toFloatMachine_exactSem_iff (p : P) {m n : ℕ}
     ((List.finRange m).all fun i => (List.finRange n).all fun j =>
       M.le lo (A i j).1 && M.le (A i j).1 hi && M.le lo (A i j).2 && M.le (A i j).2 hi) = true ↔
       ∀ i j, lo ≤ (A i j).1 ∧ (A i j).1 ≤ hi ∧ lo ≤ (A i j).2 ∧ (A i j).2 ≤ hi := by
-  sorry
+  simp [List.all_eq_true, List.mem_finRange, Bool.and_eq_true, ScalarSem.toFloatMachine,
+    exactSem, and_assoc]
 
 /-- **The exact entrywise sum**: on exact real arithmetic, adding the real and imaginary parts
 of two stored matrices with the machine's addition decodes to the sum of the decodings. No
