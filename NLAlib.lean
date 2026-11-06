@@ -365,6 +365,8 @@ public import NLAlib.Matrix.Computation.SpectralBisection.Node
 public import NLAlib.Matrix.Computation.SpectralBisection.Projectors
 public import NLAlib.Matrix.Computation.SpectralBisection.Split
 public import NLAlib.Matrix.Computation.SpectralBisection.Tree
+public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
+public import NLAlib.Matrix.Computation.SpectralBisectionTape
 public import NLAlib.Matrix.Computation.Underflow
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
@@ -605,6 +607,7 @@ public import NLAlib.Probability.SubGaussianVector.Norm
 public import NLAlib.Probability.Tail
 public import NLAlib.RandomMatrix.Computation.DeflationTargets
 public import NLAlib.RandomMatrix.Computation.NewtonSchulzSignTargets
+public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
 public import NLAlib.RandomMatrix.Gaussian.BlockTail
