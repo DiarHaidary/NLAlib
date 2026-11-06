@@ -225,7 +225,14 @@ theorem EntryLayout.Holds.of_forall_read_eq {L : EntryLayout K E} {l m : ℕ} {s
     {p : P} {b off : ℕ} {Y : Matrix (Fin l) (Fin m) E} (hY : L.Holds s p b off Y)
     (h : ∀ i, off ≤ i → i < off + m * l * L.width → s'.read p b i = s.read p b i) :
     L.Holds s' p b off Y := by
-  sorry
+  unfold EntryLayout.Holds at hY ⊢
+  intro i j t
+  have hlt : L.width * (i + l * j) + t < m * l * L.width := by
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    nlinarith [Nat.mul_le_mul_left L.width hi, t.isLt]
+  rw [h (off + (L.width * (i + l * j) + t)) (Nat.le_add_right _ _)
+    (Nat.add_lt_add_left hlt off)]
+  exact hY i j t
 
 variable {ι C : Type}
 
