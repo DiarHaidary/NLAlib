@@ -321,7 +321,8 @@ theorem decodeMatrix_addParts_toFloatMachine_exactSem (p : P) {m n : ℕ}
     let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
     decodeMatrix id (Matrix.of fun i j => (M.add (A i j).1 (B i j).1, M.add (A i j).2 (B i j).2)) =
       decodeMatrix id A + decodeMatrix id B := by
-  sorry
+  ext i j
+  apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]
 
 /-- **The exact entrywise difference**: on exact real arithmetic, subtracting the real and
 imaginary parts of two stored matrices with the machine's subtraction decodes to the difference
