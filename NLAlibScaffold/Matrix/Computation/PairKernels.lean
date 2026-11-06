@@ -833,6 +833,147 @@ theorem holds_of_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   sorry
 
+omit [DecidableEq P] [Inhabited K] in
+private theorem zhermAvg_bind {α β : Type} {o : Option α} {f : α → Option β} (R : α → Prop)
+    (h₁ : ∃ a, o = some a ∧ R a) (h₂ : ∀ a, R a → ∃ b, f a = some b) :
+    ∃ b, o.bind f = some b := by
+  obtain ⟨a, rfl, ha⟩ := h₁
+  exact h₂ a ha
+
+omit [DecidableEq P] in
+private theorem zhermAvg_disj {X Y xo yo N k : ℕ}
+    (h : blockDisjoint (Y, yo, N) (X, xo, N) = true) (hk : k < N) :
+    blockDisjoint (X, xo + k, 1) (Y, yo, N) = true := by
+  simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at h ⊢
+  omega
+
+omit [Inhabited K] in
+private theorem zhermAvg_write {s₀ s : Store P K} {p : P} {Y yo len k N : ℕ}
+    (hY : s₀.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len) (hk : k < N)
+    (hsh : s.shape = s₀.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s.read q b i = s₀.read q b i)
+    (v : K) :
+    ∃ s', s.write p Y (yo + k) v = some s' ∧ s'.shape = s₀.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = s₀.read q b i) ∧
+      (∃ w, s'.read p Y (yo + k) = some w) ∧
+      (∀ k', (∃ w, s.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w) := by
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape v (hsh ▸ hY)
+    (show yo + k < len by omega)
+  refine ⟨s', hs', (Store.shape_of_write_eq_some hs').trans hsh, fun q b i hb => ?_,
+    ⟨v, Store.read_of_write_eq_some hs'⟩, fun k' ⟨w, hw⟩ => ?_⟩
+  · refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans (hfr q b i hb)
+    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hb
+    omega
+  · by_cases hkk : k' = yo + k
+    · exact ⟨v, hkk ▸ Store.read_of_write_eq_some hs'⟩
+    · exact ⟨w, (Store.read_of_write_eq_some_of_ne hs' (Or.inr hkk)).trans hw⟩
+
+omit [Inhabited K] in
+private theorem zhermAvg_bin {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) {p : P} {b : BinOp} (hb : b.IsArith)
+    {st σ : St P K C} {Y yo len N : ℕ}
+    (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len)
+    (hsh : σ.store.shape = st.store.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true →
+      σ.store.read q b i = st.store.read q b i)
+    (dk : IExp ℕ) (x y : Cell ℕ ℕ) (k : ℕ) (hk : k < N) (hdk : dk.eval = yo + k)
+    (hx : ∃ a, σ.store.read p x.buf x.idx.eval = some a)
+    (hy : ∃ c, σ.store.read p y.buf y.idx.eval = some c ∧ (b = .div → dec p c ≠ 0)) :
+    ∃ s', (∀ t, exec I (.seq (.instr (.bin p b ⟨Y, dk⟩ x y)) t) σ =
+        exec I t { σ with store := s', cnt := σ.cnt + I.charge (.bin p b) }) ∧
+      s'.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = st.store.read q b i) ∧
+      (∃ w, s'.read p Y (yo + k) = some w) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w := by
+  obtain ⟨a, ha⟩ := hx
+  obtain ⟨c, hc, hc0⟩ := hy
+  obtain ⟨v, hv⟩ := hsem.bin_ok p b a c hb hc0 trivial
+  obtain ⟨s', hw, hrest⟩ := zhermAvg_write hYsh hlen hk hsh hfr v
+  exact ⟨s', fun t => exec_seq_instr_bin I ha hc hv (by rw [hdk]; exact hw), hrest⟩
+
+omit [Inhabited K] in
+private theorem zhermAvg_lit {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) {p : P} {st σ : St P K C}
+    {Y yo len N : ℕ} (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len)
+    (hsh : σ.store.shape = st.store.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true →
+      σ.store.read q b i = st.store.read q b i)
+    (dk : IExp ℕ) (k : ℕ) (hk : k < N) (hdk : dk.eval = yo + k) :
+    ∃ s', (∀ t, exec I (.seq (.instr (.lit p ⟨Y, dk⟩ 0)) t) σ =
+        exec I t { σ with store := s', cnt := σ.cnt + I.charge (.lit p) }) ∧
+      s'.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = st.store.read q b i) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w := by
+  obtain ⟨v, hv⟩ := hsem.lit_ok p 0 trivial
+  obtain ⟨s', hw, hsh', hfr', -, hmono⟩ := zhermAvg_write hYsh hlen hk hsh hfr v
+  exact ⟨s', fun t => exec_seq_instr_lit I hv (by rw [hdk]; exact hw), hsh', hfr', hmono⟩
+
+omit [Inhabited K] in
+private theorem zhermAvg_entry {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) {p : P} {n X Y : ℕ} {xo yo : IExp ℕ}
+    {c : Cell ℕ ℕ} {cv : K} (hcv : dec p cv ≠ 0) {st σ : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hc : st.store.read p c.buf c.idx.eval = some cv)
+    (hXY : blockDisjoint (Y, yo.eval, 2 * (n * n)) (X, xo.eval, 2 * (n * n)) = true)
+    (hcY : blockDisjoint (c.buf, c.idx.eval, 1) (Y, yo.eval, 2 * (n * n)) = true) {len : ℕ}
+    (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo.eval + 2 * (n * n) ≤ len)
+    (hs₀ : σ.store.shape = st.store.shape)
+    (hf₀ : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      σ.store.read q b i = st.store.read q b i) {i j : ℕ} (hij : i < j) (hj : j < n) :
+    ∃ σ', exec I (.seq (.instr (.bin p .add ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var j)⟩ ⟨X, xo + zidx (.const n) (.var j) (.var i)⟩))
+        (.seq (.instr (.bin p .div ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
+          ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩ c))
+        (.seq (.instr (.bin p .sub ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩
+          ⟨X, xo + zidx (.const n) (.var j) (.var i) + 1⟩))
+        (.seq (.instr (.bin p .div ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩
+          ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩ c)) .skip)))) σ = some σ' ∧
+      σ'.store.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+        σ'.store.read q b i = st.store.read q b i) ∧
+      ((∃ v, σ'.store.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+        ∃ v, σ'.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, σ'.store.read p Y k' = some w := by
+  have hn : ∀ i j : ℕ, i < n → j < n → 2 * (i + n * j) + 1 < 2 * (n * n) := by
+    intro i j hi hj; nlinarith
+  have hX : ∀ s : Store P K, (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      s.read q b i = st.store.read q b i) → ∀ i j, i < n → j < n →
+      (∃ a, s.read p X (xo.eval + 2 * (i + n * j)) = some a) ∧
+      ∃ a, s.read p X (xo.eval + (2 * (i + n * j) + 1)) = some a := fun s hs i j hi hj =>
+    ⟨⟨_, (hs _ _ _ (zhermAvg_disj hXY (by have := hn i j hi hj; omega))).trans
+        (hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨0, Nat.zero_lt_two⟩)⟩,
+      ⟨_, (hs _ _ _ (zhermAvg_disj hXY (hn i j hi hj))).trans
+        (hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨1, Nat.one_lt_two⟩)⟩⟩
+  have hC : ∀ s : Store P K, (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      s.read q b i = st.store.read q b i) →
+      ∃ c', s.read p c.buf c.idx.eval = some c' ∧ (BinOp.div = .div → dec p c' ≠ 0) :=
+    fun s hs => ⟨cv, (hs _ _ _ hcY).trans hc, fun _ => hcv⟩
+  have hk := hn i j (by omega) hj
+  obtain ⟨s₁, he₁, hs₁, hf₁, hr₁, hm₁⟩ := zhermAvg_bin hsem (b := .add) trivial hYsh hlen hs₀ hf₀
+    (yo + zidx (.const n) (.var i) (.var j)) ⟨X, xo + zidx (.const n) (.var i) (.var j)⟩
+    ⟨X, xo + zidx (.const n) (.var j) (.var i)⟩ (2 * (i + n * j)) (by omega) rfl
+    (hX _ hf₀ i j (by omega) hj).1
+    (((hX _ hf₀ j i hj (by omega)).1).imp fun _ h => ⟨h, nofun⟩)
+  obtain ⟨s₂, he₂, hs₂, hf₂, hr₂, hm₂⟩ := zhermAvg_bin hsem (b := .div) trivial hYsh hlen
+    (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
+    (yo + zidx (.const n) (.var i) (.var j)) ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
+    c (2 * (i + n * j)) (by omega) rfl hr₁ (hC _ hf₁)
+  obtain ⟨s₃, he₃, hs₃, hf₃, hr₃, hm₃⟩ := zhermAvg_bin hsem (b := .sub) trivial hYsh hlen
+    (σ := { σ with store := s₂, cnt := _ }) hs₂ hf₂
+    (yo + zidx (.const n) (.var i) (.var j) + 1)
+    ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩
+    ⟨X, xo + zidx (.const n) (.var j) (.var i) + 1⟩ (2 * (i + n * j) + 1) hk rfl
+    (hX _ hf₂ i j (by omega) hj).2
+    (((hX _ hf₂ j i hj (by omega)).2).imp fun _ h => ⟨h, nofun⟩)
+  obtain ⟨s₄, he₄, hs₄, hf₄, hr₄, hm₄⟩ := zhermAvg_bin hsem (b := .div) trivial hYsh hlen
+    (σ := { σ with store := s₃, cnt := _ }) hs₃ hf₃
+    (yo + zidx (.const n) (.var i) (.var j) + 1)
+    ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩ c (2 * (i + n * j) + 1) hk rfl
+    hr₃ (hC _ hf₃)
+  exact ⟨_, (he₁ _).trans ((he₂ _).trans ((he₃ _).trans ((he₄ _).trans (exec_skip I _)))),
+    hs₄, hf₄, ⟨hm₄ _ (hm₃ _ hr₂), hr₄⟩, fun k' h => hm₄ _ (hm₃ _ (hm₂ _ (hm₁ _ h)))⟩
+
 /-- **`zhermAvg` succeeds** under the standard model with every value in range, when $c$ decodes
 to a nonzero value and the buffer `Y` at tag `p` is long enough (every addition, subtraction,
 negation and literal then succeeds, and every division by $c$). No printed source.
@@ -847,7 +988,85 @@ theorem exists_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {c
     (hcY : blockDisjoint (c.buf, c.idx.eval, 1) (Y, yo.eval, 2 * (n * n)) = true)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len) :
     ∃ st', exec I (zhermAvg (ι := ι) p (.const n) X xo c Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYsh, hlen⟩ := hY
+  have hn : ∀ i j : ℕ, i < n → j < n → 2 * (i + n * j) + 1 < 2 * (n * n) := by
+    intro i j hi hj; nlinarith
+  -- `Fr σ`: the shape of `st` and every cell outside the block at `Y` kept
+  let Fr : St P K C → Prop := fun σ => σ.store.shape = st.store.shape ∧
+    ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      σ.store.read q b i = st.store.read q b i
+  -- `Up σ S`: both parts of every upper entry in `S` initialised
+  let Up : St P K C → (ℕ → ℕ → Prop) → Prop := fun σ S => ∀ i j, S i j →
+    (∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+      ∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v
+  -- the reads of `X` and `c` survive in every framed store
+  have hX : ∀ s : Store P K, (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      s.read q b i = st.store.read q b i) → ∀ i j, i < n → j < n →
+      (∃ a, s.read p X (xo.eval + 2 * (i + n * j)) = some a) ∧
+      ∃ a, s.read p X (xo.eval + (2 * (i + n * j) + 1)) = some a := fun s hs i j hi hj =>
+    ⟨⟨_, (hs _ _ _ (zhermAvg_disj hXY (by have := hn i j hi hj; omega))).trans
+        (hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨0, Nat.zero_lt_two⟩)⟩,
+      ⟨_, (hs _ _ _ (zhermAvg_disj hXY (hn i j hi hj))).trans
+        (hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨1, Nat.one_lt_two⟩)⟩⟩
+  have hC : ∀ s : Store P K, (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      s.read q b i = st.store.read q b i) →
+      ∃ c', s.read p c.buf c.idx.eval = some c' ∧ (BinOp.div = .div → dec p c' ≠ 0) :=
+    fun s hs => ⟨cv, (hs _ _ _ hcY).trans hc, fun _ => hcv⟩
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) _))) .skip) st =
+    some st'
+  rw [exec_seq_skip, exec_named, exec_seq]
+  -- the strict upper triangle
+  refine zhermAvg_bind (fun σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n)
+    ((exists_exec_loop_eq_some_of_forall I
+    (fun j σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < j) ⟨⟨rfl, fun _ _ _ _ => rfl⟩,
+      fun _ _ h => absurd h.2 (Nat.not_lt_zero _)⟩ (fun j hj σ ⟨hσ, hup⟩ => by
+        have hj : j < n := hj
+        change ∃ st', exec I (.seq (.loop _ _) .skip) σ = some st' ∧ _
+        rw [exec_seq_skip]
+        -- column `j`, rows `i < j`
+        refine (exists_exec_loop_eq_some_of_forall I
+          (fun i σ' => Fr σ' ∧ Up σ' fun i' j' => i' < j' ∧ (j' < j ∨ j' = j ∧ i' < i))
+          ⟨hσ, fun i' j' h => hup i' j' ⟨h.1, by omega⟩⟩ (fun i hi σ' ⟨⟨hs₀, hf₀⟩, hup'⟩ => by
+            obtain ⟨σ'', he, hs, hf, hr, hm⟩ := zhermAvg_entry hsem hcv hA hc hXY hcY hYsh hlen
+              hs₀ hf₀ (show i < j from hi) hj
+            refine ⟨σ'', he, ⟨hs, hf⟩, fun i' j' h => ?_⟩
+            by_cases hij : i' = i ∧ j' = j
+            · obtain ⟨rfl, rfl⟩ := hij
+              exact hr
+            · have := hup' i' j' ⟨h.1, by omega⟩
+              exact ⟨hm _ this.1, hm _ this.2⟩)).imp
+          fun σ' ⟨h', hF', hup'⟩ => ⟨h', hF', fun i' j' h => hup' i' j' ⟨h.1, by
+            simp only [IExp.eval_var]; omega⟩⟩))) fun σ₁ ⟨hσ₁, hup₁⟩ => ?_
+  rw [exec_seq]
+  -- the diagonal
+  refine zhermAvg_bind (fun σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n)
+    (exists_exec_loop_eq_some_of_forall I (fun _ σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n)
+      ⟨hσ₁, hup₁⟩ (fun i hi σ ⟨⟨hs₀, hf₀⟩, hup⟩ => by
+        have hi : i < n := hi
+        have hk := hn i i hi hi
+        obtain ⟨s₁, he₁, hs₁, hf₁, hr₁, hm₁⟩ := zhermAvg_bin hsem (b := .add) trivial hYsh hlen
+          hs₀ hf₀
+          (yo + zidx (.const n) (.var i) (.var i)) ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩ (2 * (i + n * i)) (by omega) rfl
+          (hX _ hf₀ i i hi hi).1 (((hX _ hf₀ i i hi hi).1).imp fun _ h => ⟨h, nofun⟩)
+        obtain ⟨s₂, he₂, hs₂, hf₂, -, hm₂⟩ := zhermAvg_bin hsem (b := .div) trivial hYsh hlen
+          (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
+          (yo + zidx (.const n) (.var i) (.var i)) ⟨Y, yo + zidx (.const n) (.var i) (.var i)⟩
+          c (2 * (i + n * i)) (by omega) rfl hr₁ (hC _ hf₁)
+        obtain ⟨s₃, he₃, hs₃, hf₃, hm₃⟩ := zhermAvg_lit hsem hYsh hlen
+          (σ := { σ with store := s₂, cnt := _ }) hs₂ hf₂
+          (yo + zidx (.const n) (.var i) (.var i) + 1) (2 * (i + n * i) + 1) hk rfl
+        exact ⟨_, (he₁ _).trans ((he₂ _).trans ((he₃ _).trans (exec_skip I _))), ⟨hs₃, hf₃⟩,
+          fun i' j' h => ⟨hm₃ _ (hm₂ _ (hm₁ _ (hup i' j' h).1)),
+            hm₃ _ (hm₂ _ (hm₁ _ (hup i' j' h).2))⟩⟩))
+    fun σ₂ ⟨hσ₂, hup₂⟩ => ?_
+  -- the mirror
+  refine exists_exec_zmirror p n (B := fun i j =>
+    ((σ₂.store.read p Y (yo.eval + 2 * (i + n * j))).getD default,
+      (σ₂.store.read p Y (yo.eval + 2 * (i + n * j) + 1)).getD default))
+    (fun i j hij => ?_) hsem ⟨len, hσ₂.1 ▸ hYsh, hlen⟩
+  obtain ⟨⟨v, hv⟩, ⟨w, hw⟩⟩ := hup₂ i j ⟨hij, j.2⟩
+  simp only [hv, hw, Option.getD_some, and_self]
 
 /-! ### The max-modulus test -/
 
