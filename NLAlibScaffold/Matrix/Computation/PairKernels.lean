@@ -85,7 +85,34 @@ theorem exists_exec_zcopy (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st
     (hXY : blockDisjoint (Y, yo.eval, 2 * (m * n)) (X, xo.eval, 2 * (m * n)) = true)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (m * n) ≤ len) :
     ∃ st', exec I (zcopy (ι := ι) p (.const m) (.const n) X xo Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYs, hlen⟩ := hY
+  have hX : ∀ k < 2 * (m * n), ∃ v, st.store.read p X (xo.eval + k) = some v := by
+    intro k hk
+    have hm : 0 < m := Nat.pos_of_ne_zero (by rintro rfl; simp at hk)
+    have e : 2 * (k / 2 % m + m * (k / 2 / m)) + k % 2 = k := by rw [Nat.mod_add_div]; omega
+    exact ⟨_, e ▸ hA ⟨_, Nat.mod_lt _ hm⟩ ⟨_, Nat.div_lt_of_lt_mul (by omega)⟩
+      ⟨_, Nat.mod_lt _ two_pos⟩⟩
+  have hrun : (zcopy (ι := ι) p (.const m) (.const n) X xo Y yo).run = .seq (.named "zcopy"
+      [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.copy p ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall I
+    (fun _ s => s.store.shape = st.store.shape ∧ ∀ k < 2 * (m * n),
+      s.store.read p X (xo.eval + k) = st.store.read p X (xo.eval + k))
+    ⟨rfl, fun _ _ => rfl⟩ ?_).imp fun _ h => h.1
+  rintro w hw s ⟨hsh, hs⟩
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  obtain ⟨v, hv⟩ := hX w hw
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape v (hsh ▸ hYs)
+    (i := yo.eval + w) (by omega)
+  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hXY
+  refine ⟨_, (exec_seq_instr_copy I (by exact (hs w hw).trans hv) hs').trans (exec_skip I _),
+    (Store.shape_of_write_eq_some hs').trans hsh, fun k hk => ?_⟩
+  refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans (hs k hk)
+  by_cases hb : X = Y
+  · exact Or.inr (by omega)
+  · exact Or.inl hb
 
 /-- **`zzero` writes the stored zero matrix**: a successful run of `NLAlib.Computation.zzero`
 ends with the block at `Y` holding the machine's zero matrix (`NLAlib.FloatMachine.zeroMat`),
