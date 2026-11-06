@@ -544,7 +544,10 @@ theorem deflateProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm
     ∃ st' : St P K C, (deflateProg.compiled p mm qr).exec I N ![r]
       (inputState p [(pairLayout.toArray P₀).map some, Array.replicate (2 * (N * r)) none]) =
         some st' := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, deflateProg.toStmt_compiled]
+  exact exists_exec_deflateProg hmm hqr hsem hlit p hu N r (Pm := 0) (Q := 1) (po := 0) (qo := 0)
+    (pairLayout.holds_inputState p (k := 0) rfl) (by simp [blockDisjoint])
+    ⟨2 * (N * r), by simp [inputState, Store.getElem?_shape], by simp⟩
 
 /-- **The counts and the memory of the registered tree**: under the standard charge (one per
 operation), every successful run of `NLAlib.deflateProg.compiled` at the sizes $N$ and $(r)$ adds
