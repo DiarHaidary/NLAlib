@@ -563,7 +563,127 @@ theorem holds_of_exec_zscal (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {
       (Matrix.of fun i j => (M.mul av (A i j).1, M.mul av (A i j).2)) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  intro M
+  have key : (zscal (ι := ι) p (.const m) (.const n) a X xo Y yo).run = .seq
+      (.named "zscal" [.idx (.const m), .idx (.const n), .cell a, .buf X, .idx xo, .buf Y,
+        .idx yo] (.seq (.loop (2 * (IExp.const m * IExp.const n)) fun w => .seq
+          (.instr (.bin p .mul ⟨Y, yo + .var w⟩ a ⟨X, xo + .var w⟩)) .skip) .skip))
+      .skip := rfl
+  rw [key, exec_seq_skip, exec_named, exec_seq_skip] at h
+  -- one word of the loop
+  have bstep : ∀ (k : ℕ) (s₁ s₂ : St P K C), s₁.store.read p a.buf a.idx.eval = some av →
+      exec I (.seq (.instr (.bin p .mul ⟨Y, yo + .var k⟩ a ⟨X, xo + .var k⟩)) .skip) s₁ =
+        some s₂ →
+      ∃ x s, s₁.store.read p X (xo.eval + k) = some x ∧
+        s₁.store.write p Y (yo.eval + k) (M.mul av x) = some s ∧
+        s₂.store = s ∧ s₂.pos = s₁.pos := by
+    intro k s₁ s₂ hav hr
+    obtain ⟨x, hx⟩ : ∃ x, s₁.store.read p X (xo.eval + k) = some x := by
+      cases hx : s₁.store.read p X (xo.eval + k) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hav, hx] at hr
+      | some x => exact ⟨x, rfl⟩
+    obtain ⟨v, hv⟩ : ∃ v, I.sem.bin p .mul av x = some v := by
+      cases hb : I.sem.bin p .mul av x with
+      | none => simp [exec_seq, exec_instr, Instr.run, hav, hx, hb] at hr
+      | some v => exact ⟨v, rfl⟩
+    obtain ⟨s, hw⟩ : ∃ s, s₁.store.write p Y (yo.eval + k) v = some s := by
+      cases hw : s₁.store.write p Y (yo.eval + k) v with
+      | none => simp [exec_seq, exec_instr, Instr.run, hav, hx, hv, hw] at hr
+      | some s => exact ⟨s, rfl⟩
+    have hMv : M.mul av x = v := by
+      show (I.sem.bin p .mul av x).getD default = v
+      rw [hv]; rfl
+    rw [exec_seq_instr_bin (dst := (⟨Y, yo + IExp.var k⟩ : Cell ℕ ℕ))
+      (x := a) (y := (⟨X, xo + IExp.var k⟩ : Cell ℕ ℕ)) I hav hx hv hw, exec_skip] at hr
+    cases hr
+    exact ⟨x, s, hx, hMv ▸ hw, rfl, rfl⟩
+  -- distinct words are distinct cells
+  have dis : ∀ k w, k < 2 * (m * n) → w < 2 * (m * n) → w ≠ k →
+      X ≠ Y ∨ xo.eval + w ≠ yo.eval + k := by
+    intro k w hk hw hwk
+    rcases hXY with h | ⟨h1, h2⟩
+    · by_cases hXY' : X = Y
+      · right
+        subst hXY'
+        simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+          Bool.or_eq_true] at h
+        omega
+      · exact Or.inl hXY'
+    · right; omega
+  have inv := forall_of_exec_loop_eq_some (I := I) (fun k s₁ =>
+      (∀ w < k, ∃ x, st.store.read p X (xo.eval + w) = some x ∧
+          s₁.store.read p Y (yo.eval + w) = some (M.mul av x)) ∧
+      (∀ w, k ≤ w → w < 2 * (m * n) →
+          s₁.store.read p X (xo.eval + w) = st.store.read p X (xo.eval + w)) ∧
+      s₁.store.read p a.buf a.idx.eval = some av ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
+          s₁.store.read q b i = st.store.read q b i) ∧
+      s₁.store.shape = st.store.shape ∧ s₁.pos = st.pos) ?_ ?_ h
+  rotate_left
+  · refine ⟨fun w hw => absurd hw (Nat.not_lt_zero _), fun w _ _ => rfl, ha,
+      fun q b i _ => rfl, rfl, rfl⟩
+  · intro k hk s₁ s₂ ⟨hY, hX, hav, hout, hsh, hpos⟩ hr
+    have hk2 : k < 2 * (m * n) := hk
+    obtain ⟨x, s, hx, hw, hs, hp⟩ := bstep k s₁ s₂ hav hr
+    have hx' : st.store.read p X (xo.eval + k) = some x := by
+      rw [← hX k le_rfl hk2]; exact hx
+    have hXn : ∀ w, k + 1 ≤ w → w < 2 * (m * n) →
+        s₂.store.read p X (xo.eval + w) = st.store.read p X (xo.eval + w) := by
+      intro w hw1 hw2
+      rw [hs, Store.read_of_write_eq_some_of_ne hw (dis k w hk2 hw2 (by omega)),
+        hX w (by omega) hw2]
+    have hYn : ∀ w < k + 1, ∃ x', st.store.read p X (xo.eval + w) = some x' ∧
+        s₂.store.read p Y (yo.eval + w) = some (M.mul av x') := by
+      intro w hw1
+      rcases Nat.lt_or_ge w k with hlt | hge
+      · obtain ⟨x', hxa, hyz⟩ := hY w hlt
+        refine ⟨x', hxa, ?_⟩
+        rw [hs, Store.read_of_write_eq_some_of_ne hw
+          (Or.inr (show yo.eval + w ≠ yo.eval + k by omega) : Y ≠ Y ∨ yo.eval + w ≠ yo.eval + k)]
+        exact hyz
+      · have hwk : w = k := by omega
+        subst hwk
+        exact ⟨x, hx', by rw [hs, Store.read_of_write_eq_some hw]⟩
+    have hav' : s₂.store.read p a.buf a.idx.eval = some av := by
+      rw [hs]
+      have hne : a.buf ≠ Y ∨ a.idx.eval ≠ yo.eval + k := by
+        by_cases hb : a.buf = Y
+        · right
+          rw [hb] at haY
+          simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+            Bool.or_eq_true] at haY
+          omega
+        · exact Or.inl hb
+      rw [Store.read_of_write_eq_some_of_ne hw hne]
+      exact hav
+    have hout' : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
+        s₂.store.read q b i = st.store.read q b i := by
+      intro q b i hd
+      have hne : b ≠ Y ∨ i ≠ yo.eval + k := by
+        by_cases hb : b = Y
+        · right
+          subst hb
+          simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+            Bool.or_eq_true] at hd
+          omega
+        · exact Or.inl hb
+      rw [hs, Store.read_of_write_eq_some_of_ne hw hne]
+      exact hout q b i hd
+    exact ⟨hYn, hXn, hav', hout', by rw [hs, Store.shape_of_write_eq_some hw, hsh],
+      by rw [hp, hpos]⟩
+  obtain ⟨hY, hX, hav, hout, hsh, hpos⟩ := inv
+  have hbnd : ∀ (i : Fin m) (j : Fin n) (t : Fin 2),
+      2 * ((i : ℕ) + m * j) + (t : ℕ) < 2 * (m * n) := by
+    intro i j t
+    have h1 : (i : ℕ) + m * j < m * n := by
+      nlinarith [i.isLt, j.isLt, Nat.mul_le_mul_left m (show (j : ℕ) + 1 ≤ n from j.isLt)]
+    have := t.isLt
+    omega
+  refine ⟨fun i j (t : Fin 2) => ?_, hout⟩
+  obtain ⟨x, hxa, hyz⟩ := hY _ (hbnd i j t)
+  have hx : x = pairLayout.put (A i j) t := Option.some.inj (hxa.symm.trans (hA i j t))
+  rw [hx] at hyz
+  convert hyz using 2 <;> fin_cases t <;> simp [pairLayout]
 
 /-- **`zconjTranspose` computes the machine's conjugate transpose**: a successful run of
 `NLAlib.Computation.zconjTranspose` from a block at `X` holding the complex $m \times n$ matrix
