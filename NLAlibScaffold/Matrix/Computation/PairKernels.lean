@@ -579,7 +579,76 @@ theorem exists_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len) :
     ∃ st', exec I (zmirror (ι := ι) p (.const n) Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYs, hlen⟩ := hY
+  have hn : ∀ i j : ℕ, i < n → j < n → 2 * (i + n * j) + 1 < 2 * (n * n) := by
+    intro i j hi hj; nlinarith
+  have hprog : (zmirror (ι := ι) p (.const n) Y yo).run = .seq (.named "zmirror"
+      [.idx (.const n), .buf Y, .idx yo] (.seq (.loop (.const n) fun j =>
+        .seq (.loop (.var j) fun i =>
+          .seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var j) (.var i)⟩
+            ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩))
+          (.seq (.instr (.un p .neg ⟨Y, yo + zidx (.const n) (.var j) (.var i) + 1⟩
+            ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩)) .skip)) .skip) .skip)) .skip := rfl
+  rw [hprog, exec_seq_skip, exec_named, exec_seq_skip]
+  let R : St P K C → Prop := fun s => s.store.shape = st.store.shape ∧ ∀ i j : Fin n, i < j →
+    s.store.read p Y (yo.eval + 2 * (i + n * j)) = st.store.read p Y (yo.eval + 2 * (i + n * j)) ∧
+    s.store.read p Y (yo.eval + 2 * (i + n * j) + 1) =
+      st.store.read p Y (yo.eval + 2 * (i + n * j) + 1)
+  refine (exists_exec_loop_eq_some_of_forall I (fun _ s => R s)
+    ⟨rfl, fun _ _ _ => ⟨rfl, rfl⟩⟩ ?_).imp fun _ h => h.1
+  rintro j hj s₁ hR₁
+  simp only [IExp.eval_const] at hj
+  rw [exec_seq_skip]
+  refine exists_exec_loop_eq_some_of_forall I (fun _ s => R s) hR₁ ?_
+  rintro i hi s ⟨hsh, hs⟩
+  simp only [IExp.eval_var] at hi
+  have hi' : i < n := by omega
+  obtain ⟨hb1, hb2⟩ := hB ⟨i, hi'⟩ ⟨j, hj⟩ (Fin.mk_lt_mk.mpr hi)
+  obtain ⟨e1, e2⟩ := hs ⟨i, hi'⟩ ⟨j, hj⟩ (Fin.mk_lt_mk.mpr hi)
+  have hne : ∀ a b : Fin n, a < b → ∀ t < 2, ∀ t' < 2,
+      yo.eval + 2 * (a + n * b) + t ≠ yo.eval + 2 * (j + n * i) + t' := by
+    intro a b hab t ht t' ht' he
+    have hab' : a.1 < b.1 := hab
+    have := zmirror_index_inj a.2 hj (show a.1 + n * b = j + n * i by omega)
+    omega
+  have hk := hn j i hj hi'
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape (B ⟨i, hi'⟩ ⟨j, hj⟩).1
+    (hsh ▸ hYs) (i := yo.eval + 2 * (j + n * i)) (by omega)
+  obtain ⟨z, hz, -⟩ := hsem.neg p (B ⟨i, hi'⟩ ⟨j, hj⟩).2
+  have hsh' := (Store.shape_of_write_eq_some hs').trans hsh
+  obtain ⟨s'', hs''⟩ := Store.exists_write_eq_some_of_getElem?_shape z
+    (hsh' ▸ hYs) (i := yo.eval + 2 * (j + n * i) + 1) (by omega)
+  have hidx : ∀ a b : ℕ,
+      (yo + zidx (.const n) (.var a) (.var b)).eval = yo.eval + 2 * (a + n * b) := by
+    intro a b; simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat]
+  have hidx1 : ∀ a b : ℕ, (yo + zidx (.const n) (.var a) (.var b) + 1).eval =
+      yo.eval + 2 * (a + n * b) + 1 := by
+    intro a b; simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat, IExp.eval_one]
+  have r1 : s.store.read p Y (yo + zidx (.const n) (.var i) (.var j)).eval =
+      some (B ⟨i, hi'⟩ ⟨j, hj⟩).1 := by rw [hidx, e1, hb1]
+  have w1 : s.store.write p Y (yo + zidx (.const n) (.var j) (.var i)).eval
+      (B ⟨i, hi'⟩ ⟨j, hj⟩).1 = some s' := by rw [hidx]; exact hs'
+  have r2 : s'.read p Y (yo + zidx (.const n) (.var i) (.var j) + 1).eval =
+      some (B ⟨i, hi'⟩ ⟨j, hj⟩).2 := by
+    rw [hidx1, Store.read_of_write_eq_some_of_ne hs' (Or.inr (by omega)), e2, hb2]
+  have w2 : s'.write p Y (yo + zidx (.const n) (.var j) (.var i) + 1).eval z = some s'' := by
+    rw [hidx1]; exact hs''
+  refine ⟨_, (exec_seq_instr_copy I (dst := ⟨Y, _⟩) (src := ⟨Y, _⟩) r1 w1).trans
+    ((exec_seq_instr_un I (dst := ⟨Y, _⟩) (x := ⟨Y, _⟩) r2 hz w2).trans (exec_skip I _)), ?_,
+    fun a b hab => ?_⟩
+  · exact (Store.shape_of_write_eq_some hs'').trans hsh'
+  · obtain ⟨f1, f2⟩ := hs a b hab
+    have h00 := hne a b hab 0 (by omega) 0 (by omega)
+    have h01 := hne a b hab 0 (by omega) 1 (by omega)
+    have h10 := hne a b hab 1 (by omega) 0 (by omega)
+    have h11 := hne a b hab 1 (by omega) 1 (by omega)
+    simp only [add_zero] at h00 h01 h10 h11
+    exact ⟨by rw [Store.read_of_write_eq_some_of_ne hs'' (Or.inr h01),
+        Store.read_of_write_eq_some_of_ne hs' (Or.inr h00), f1],
+      by rw [Store.read_of_write_eq_some_of_ne hs'' (Or.inr h11),
+        Store.read_of_write_eq_some_of_ne hs' (Or.inr h10), f2]⟩
 
 /-! ### The Hermitian kernels -/
 
