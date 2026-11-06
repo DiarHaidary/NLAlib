@@ -154,7 +154,18 @@ theorem frobNorm_gram_sub_one_sq_eq {m : ℕ} (V : Matrix (Fin n) (Fin (m + 1)) 
       frobNorm ((V.submatrix id Fin.castSucc)ᵀ * V.submatrix id Fin.castSucc - 1) ^ 2 +
       2 * ‖WithLp.toLp 2 ((V.submatrix id Fin.castSucc)ᵀ *ᵥ fun i => V i (Fin.last m))‖ ^ 2 +
       (‖WithLp.toLp 2 (fun i => V i (Fin.last m))‖ ^ 2 - 1) ^ 2 := by
-  sorry
+  have hne : ∀ i : Fin m, Fin.castSucc i ≠ Fin.last m := fun i => (Fin.castSucc_lt_last i).ne
+  have hc : ∀ i : Fin m, ∑ j, V j (Fin.last m) * V j i.castSucc =
+      ∑ j, V j i.castSucc * V j (Fin.last m) :=
+    fun i => Finset.sum_congr rfl fun j _ => mul_comm _ _
+  rw [frobNorm_sq_eq_sum, frobNorm_sq_eq_sum]
+  simp only [EuclideanSpace.norm_sq_eq, Fin.sum_univ_castSucc, Matrix.sub_apply,
+    Matrix.one_apply, Matrix.mul_apply, Matrix.transpose_apply, Matrix.submatrix_apply,
+    Real.norm_eq_abs, sq_abs, Matrix.mulVec, dotProduct, id, Fin.castSucc_inj, hne,
+    (hne _).symm, ↓reduceIte, sub_zero, hc, Finset.sum_add_distrib,
+    Finset.mul_sum, ← sq]
+  simp only [two_mul, Finset.sum_add_distrib]
+  ring
 
 /-- **Column-wise orthogonality accumulates as $\sqrt{3m}$** (B6): if each vector
 $\mathbf{v}_{c+1}$ of a sequence satisfies $\|\mathbf{V}_c^{\mathsf{T}}\mathbf{v}_{c+1}\| \le \mu$
