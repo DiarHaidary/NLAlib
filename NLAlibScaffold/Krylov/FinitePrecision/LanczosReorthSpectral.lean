@@ -340,7 +340,33 @@ theorem exists_abs_eigenvalue_sub_le_of_β_le (hη : L.η₀ ≤ 1 / 100)
     {i : ℕ} (hi : i < k) :
     ∃ l < n, |eigenvalue L.H l - eigenvalue L.toLanczosData.tridiagonal i| ≤
       ρ + L.backwardRadius := by
-  sorry
+  have hT : L.toLanczosData.tridiagonal.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial,
+      LanczosData.transpose_tridiagonal]
+  obtain ⟨y, hy1, hy⟩ := hT.exists_norm_eq_one_and_mulVec_eq (k := i) (by simpa using hi)
+  obtain ⟨l, hl, hab⟩ := L.exists_abs_eigenvalue_sub_le_of_mulVec_eq_smul hη hsmall hrec hτ hy hy1
+  refine ⟨l, hl, hab.trans ?_⟩
+  have hβ : 0 ≤ L.β k := by
+    rcases Nat.eq_zero_or_pos k with h0 | h0
+    · subst h0; rw [L.β_zero]
+    · have hadm := L.admissible (k - 1) (by omega)
+      have hk : k - 1 + 1 = k := by omega
+      rw [hk] at hadm
+      have hz := L.abs_ν_sub_le (k - 1) (by omega)
+      rw [hk] at hz
+      have hz' := (abs_le.mp hz).1
+      have hnn : 0 ≤ ‖WithLp.toLp 2 (L.z k)‖ := norm_nonneg _
+      have hε := L.ε_le
+      have hε0 := L.ε_nonneg
+      have hντ : 0 ≤ L.τ * L.ν k := mul_nonneg L.τ_pos.le (by nlinarith)
+      linarith
+  have hyl : |y L.toLanczosData.lastIndex| ≤ 1 := by
+    have := PiLp.norm_apply_le (WithLp.toLp 2 y) L.toLanczosData.lastIndex
+    rw [hy1, Real.norm_eq_abs] at this
+    exact this
+  have : L.β k * |y L.toLanczosData.lastIndex| ≤ ρ :=
+    (mul_le_of_le_one_right hβ hyl).trans hρ
+  linarith
 
 /-- **Containment** (F4): every Ritz value lies in $[\lambda_{n-1}(\mathbf{H}) - e,
 \lambda_0(\mathbf{H}) + e]$. [Paige1980] for plain Lanczos.
