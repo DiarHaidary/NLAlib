@@ -1282,7 +1282,7 @@ private theorem exec_forRange_dot_rel {u : P → ℝ} {dec : P → K → ℝ} (I
     (hV : HoldsDecoded st.store dec tag Vb 0 V)
     (hw : ∀ i : Fin NE.eval, ∃ x, st.store.read tag wb (wo.eval + i) = some x ∧ dec tag x = w i)
     (hhlen : ∀ i < jE.eval, ∃ len, st.store.shape[hb]? = some (tag, len) ∧ ho.eval + i < len)
-    (hne : hb ≠ wb ∧ hb ≠ Vb) :
+    (hne : 0 < NE.eval → 0 < jE.eval → hb ≠ wb ∧ hb ≠ Vb) :
     ∃ s', exec I (.loop jE fun i =>
         (dot tag ⟨hb, ho + .var i⟩ Vb (NE * .var i) wb wo NE).run) st = some s' ∧
       s'.store.shape = st.store.shape ∧
@@ -1309,12 +1309,14 @@ private theorem exec_forRange_dot_rel {u : P → ℝ} {dec : P → K → ℝ} (I
         (fun r hr => by
           obtain ⟨x, hx, hdx⟩ := hV ⟨r, hr⟩ ⟨k, hk⟩
           refine ⟨x, ?_, by simp [hr, hdx]⟩
-          rw [hrd (Ne.symm hne.2)]
+          rw [hrd (Ne.symm (hne (by omega) (by omega)).2)]
           simpa [IExp.eval, Nat.add_comm] using hx)
         (fun r hr => by
           obtain ⟨x, hx, hdx⟩ := hw ⟨r, hr⟩
-          exact ⟨x, by rw [hrd (Ne.symm hne.1)]; exact hx, by simp [hr, hdx]⟩)
-        (fun e => absurd e hne.2) (fun e => absurd e hne.1) (by
+          exact ⟨x, by rw [hrd (Ne.symm (hne (by omega) (by omega)).1)]; exact hx,
+            by simp [hr, hdx]⟩)
+        (fun e r hr => absurd e (hne (by omega) (by omega)).2)
+        (fun e r hr => absurd e (hne (by omega) (by omega)).1) (by
           obtain ⟨len, hlen, hlt⟩ := hhlen k hk
           obtain ⟨z0, -⟩ := h.lit_ok tag 0 trivial
           exact ⟨z0, Store.exists_write_eq_some_of_getElem?_shape z0 (hs ▸ hlen) hlt⟩)
@@ -1387,7 +1389,7 @@ private theorem exec_cgsPass_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I
     (hV : HoldsDecoded st.store dec tag Vb 0 V)
     (hw : ∀ i : Fin NE.eval, ∃ x, st.store.read tag wb (wo.eval + i) = some x ∧ dec tag x = w i)
     (hhlen : ∀ i < jE.eval, ∃ len, st.store.shape[hb]? = some (tag, len) ∧ ho.eval + i < len)
-    (hne : hb ≠ wb ∧ hb ≠ Vb)
+    (hne : 0 < NE.eval → 0 < jE.eval → hb ≠ wb ∧ hb ≠ Vb)
     (hsS : st.store.shape[S]? = some (tag, NE.eval))
     (htS : st.store.shape[S + 1]? = some (tag, 1)) (hwS : 0 < NE.eval → wb < S)
     (hVS : 0 < NE.eval * jE.eval → Vb < S) (hhS : 0 < jE.eval → hb < S) (hu : u tag < 1) :
@@ -1425,7 +1427,7 @@ private theorem exec_cgsPass_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I
     (fun k => dec tag (Hw k))
     (fun i k => by
       obtain ⟨x, hx, hdx⟩ := hV i k
-      exact ⟨x, by rw [hrd₁ (Ne.symm hne.2)]; exact hx, hdx⟩)
+      exact ⟨x, by rw [hrd₁ (Ne.symm (hne (Fin.pos i) (Fin.pos k)).2)]; exact hx, hdx⟩)
     (fun k => ⟨Hw k, hHw k, rfl⟩) (hsh₁ ▸ hsS)
     (fun e => by by_contra h; exact absurd (hVS (Nat.pos_of_ne_zero h)) (by omega))
     (fun e => by by_contra h; exact absurd (hhS (Nat.pos_of_ne_zero h)) (by omega))
@@ -1452,8 +1454,12 @@ private theorem exec_cgsPass_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I
     (fun i hi => by
       obtain ⟨x, hx, hdx⟩ := hw ⟨i, hi⟩
       have := hwS (by omega)
-      exact ⟨x, by rw [hrd₃ (b := wb) (by omega) (by omega), hrd₁ (Ne.symm hne.1)]; exact hx,
-        by simp [hi, hdx]⟩)
+      refine ⟨x, ?_, by simp [hi, hdx]⟩
+      rw [hrd₃ (b := wb) (by omega) (by omega), hfr₁ _ _ _ fun h => by
+        rcases Nat.eq_zero_or_pos jE.eval with hj | hj
+        · omega
+        · exact (hne (by omega) hj).1 h.1.symm]
+      exact hx)
     (fun e i hi => by have := hwS (by omega); simp only at e; omega)
     (fun e i hi => by have := hwS (by omega); omega)
   refine ⟨σ₄, fun i => Wa i, Hw, hrun₄, ?_, fun i => ?_, fun k => ?_,
@@ -1463,8 +1469,11 @@ private theorem exec_cgsPass_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I
   · rw [Store.read_of_writeBlock_eq_some_of_lt hst₄ (by simp)]
     simp
   · have := hhS (Fin.pos k)
-    rw [Store.read_of_writeBlock_eq_some_of_ne hst₄ (Or.inl hne.1), hrd₃ (by omega) (by omega),
-      hHw k]
+    rw [Store.read_of_writeBlock_eq_some_of_ne hst₄ (by
+        rcases Nat.eq_zero_or_pos NE.eval with hN | hN
+        · exact Or.inr (by
+            simp only [Array.size_map, List.size_toArray, List.length_range, hN]; omega)
+        · exact Or.inl (hne hN (Fin.pos k)).1), hrd₃ (by omega) (by omega), hHw k]
   · rw [Store.read_of_writeBlock_eq_some_of_ne hst₄ (by
         by_cases h : b = wb
         · exact Or.inr (by simp only [Array.size_map, List.size_toArray, List.length_range]; omega)
@@ -1477,35 +1486,37 @@ private theorem exec_cgsPass_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I
     exact cgsPass_bounds_of_pointwise (h.nonneg trivial) hVη hM hHb hY hδ₀ hθ hδ fun i => by
       rw [hWe i, hdz]; push_cast; ring
 
-/-- The scoped part of a rounded pass of `NLAlib.cgsPass`: from the store with its two scratch
-buffers pushed, the body runs and, after both are freed, leaves the two block writes. -/
-private theorem exec_cgsPass_scoped_rel {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
+/-- One rounded pass of `NLAlib.cgsPass`, as a frame: the reduced vector at (`wb`, `wo`), the
+coefficients at (`hb`, `ho`), every other cell and the shape kept, with the bounds of the pass. -/
+private theorem exec_cgsPass_frame_rel {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem) (tag : P)
-    (NE jE : IExp ℕ) (Vb wb hb : ℕ) (wo ho : IExp ℕ) (st σ₁ σ₂ : St P K C)
+    (NE jE : IExp ℕ) (Vb wb hb : ℕ) (wo ho : IExp ℕ) (st : St P K C)
     (V : Matrix (Fin NE.eval) (Fin jE.eval) ℝ) (w : Fin NE.eval → ℝ)
     (hV : HoldsDecoded st.store dec tag Vb 0 V)
     (hw : ∀ i : Fin NE.eval, ∃ x, st.store.read tag wb (wo.eval + i) = some x ∧ dec tag x = w i)
-    (hwlen : ∀ i < NE.eval, ∃ len, st.store.shape[wb]? = some (tag, len) ∧ wo.eval + i < len)
     (hhlen : ∀ i < jE.eval, ∃ len, st.store.shape[hb]? = some (tag, len) ∧ ho.eval + i < len)
-    (hne : hb ≠ wb ∧ hb ≠ Vb ∧ wb ≠ Vb) (hu : u tag < 1)
-    (hσ₁ : σ₁.store = st.store.push (tag, Array.replicate NE.eval none))
-    (hσ₂ : σ₂.store = σ₁.store.push (tag, Array.replicate (1 : IExp ℕ).eval none)) :
-    ∃ out : St P K C, exec I ((forRange jE fun i =>
+    (hne : 0 < NE.eval → 0 < jE.eval → hb ≠ wb ∧ hb ≠ Vb) (hu : u tag < 1) :
+    ∃ (out : St P K C) (Wv : Fin NE.eval → K) (Hw : Fin jE.eval → K),
+      exec I (cgsPass tag NE jE Vb wb wo hb ho).run st = some out ∧
+      out.store.shape = st.store.shape ∧
+      (∀ i : Fin NE.eval, out.store.read tag wb (wo.eval + i) = some (Wv i)) ∧
+      (∀ k : Fin jE.eval, out.store.read tag hb (ho.eval + k) = some (Hw k)) ∧
+      (∀ q b i, ¬(b = wb ∧ wo.eval ≤ i ∧ i < wo.eval + NE.eval) →
+        ¬(b = hb ∧ ho.eval ≤ i ∧ i < ho.eval + jE.eval) →
+        out.store.read q b i = st.store.read q b i) ∧
+      ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ →
+        ((NE.eval + jE.eval + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100 →
+        ‖WithLp.toLp 2 ((fun i => dec tag (Hw i)) - Vᵀ *ᵥ w)‖ ≤
+          cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
+        ‖WithLp.toLp 2 (w - V *ᵥ (fun i => dec tag (Hw i)) - fun i => dec tag (Wv i))‖ ≤
+          cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
+        ‖WithLp.toLp 2 ((fun i => dec tag (Wv i)) - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
+          cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ := by
+  have hrun : (cgsPass (ι := ι) tag NE jE Vb wb wo hb ho).run = .seq (.alloc tag NE fun s =>
+      .alloc tag 1 fun t => ((forRange jE fun i =>
         dot tag ⟨hb, ho + .var i⟩ Vb (NE * .var i) wb wo NE) >>= fun _ =>
-        gemv tag NE jE Vb 0 hb ho st.store.size 0 >>= fun _ =>
-        ins (.lit tag ⟨st.store.size + 1, 0⟩ (-1)) >>= fun _ =>
-        axpy (ι := ι) tag ⟨st.store.size + 1, 0⟩ st.store.size 0 wb wo NE).run σ₂ = some out ∧
-      ∃ (W : Fin NE.eval → K) (Hw : Fin jE.eval → K) (mid : Store P K),
-        st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
-        mid.writeBlock tag hb ho.eval (Array.ofFn Hw) = some out.store.pop.pop ∧
-        ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ → η₀ ≤ 1 / 100 →
-          ((NE.eval + jE.eval + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100 →
-          ‖WithLp.toLp 2 ((fun i => dec tag (Hw i)) - Vᵀ *ᵥ w)‖ ≤
-            cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
-          ‖WithLp.toLp 2 (w - V *ᵥ (fun i => dec tag (Hw i)) - fun i => dec tag (W i))‖ ≤
-            cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
-          ‖WithLp.toLp 2 ((fun i => dec tag (W i)) - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
-            cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ := by
+        gemv tag NE jE Vb 0 hb ho s 0 >>= fun _ => ins (.lit tag ⟨t, 0⟩ (-1)) >>= fun _ =>
+        axpy tag ⟨t, 0⟩ s 0 wb wo NE).run) .skip := rfl
   set S := st.store.size
   have hlt : ∀ {b}, (∃ n, st.store.shape[b]? = some n) → b < S := fun ⟨n, hn⟩ => by
     simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp hn).1
@@ -1518,55 +1529,60 @@ private theorem exec_cgsPass_scoped_rel {u : P → ℝ} {dec : P → K → ℝ} 
   have hhlt : ∀ k < jE.eval, hb < S := fun k hk =>
     let ⟨len, hl, _⟩ := hhlen k hk
     hlt ⟨_, hl⟩
-  have hsz₁ : σ₁.store.size = S + 1 := by rw [hσ₁, Array.size_push]
-  have hrd₂ : ∀ {q b i}, b < S → σ₂.store.read q b i = st.store.read q b i := fun hb => by
-    rw [hσ₂, Store.read_push_of_lt (by omega), hσ₁, Store.read_push_of_lt hb]
-  have hsh₂ : ∀ {b}, b < S → σ₂.store.shape[b]? = st.store.shape[b]? := fun hb => by
-    rw [hσ₂, Store.getElem?_shape_push_of_lt _ (by omega), hσ₁,
-      Store.getElem?_shape_push_of_lt _ hb]
-  obtain ⟨σ, Wv, Hw, hrunσ, hshσ, hwσ, hhσ, hfrσ, hbndσ⟩ := exec_cgsPass_body_rel I h hz tag
-    NE jE Vb wb hb S wo ho σ₂ V w
-    (fun i k => by
-      obtain ⟨x, hx, hdx⟩ := hV i k
-      exact ⟨x, by rw [hrd₂ (hVlt i k)]; exact hx, hdx⟩)
-    (fun i => by
-      obtain ⟨x, hx, hdx⟩ := hw i
-      exact ⟨x, by rw [hrd₂ (hwlt i)]; exact hx, hdx⟩)
-    (fun i hi => by rw [hsh₂ (hhlt i hi)]; exact hhlen i hi) ⟨hne.1, hne.2.1⟩
-    (by rw [hσ₂, Store.getElem?_shape_push_of_lt _ (by omega), hσ₁,
-      Store.getElem?_shape_push_size])
-    (by rw [hσ₂, ← hsz₁, Store.getElem?_shape_push_size, IExp.eval_one])
-    (fun h => hwlt ⟨0, h⟩) (fun h => hVlt ⟨0, Nat.pos_of_mul_pos_right h⟩
-      ⟨0, Nat.pos_of_mul_pos_left h⟩) (fun h => hhlt 0 h) hu
-  refine ⟨σ, hrunσ, ?_⟩
-  have hszσ : σ.store.size = S + 2 := by
-    rw [← Store.size_shape, hshσ, Store.size_shape, hσ₂, Array.size_push, hsz₁]
-  have hpop : ∀ {q b i}, b < S → Store.read σ.store.pop.pop q b i = σ.store.read q b i :=
-    fun hb => by
-      rw [Store.read_pop_of_lt (by simp [hszσ]; omega), Store.read_pop_of_lt (by omega)]
-  obtain ⟨mid, hmid⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store)
-    (p := tag) (b := wb) (off := wo.eval) (xs := Array.ofFn Wv)
-    fun i hi => hwlen i (by simpa using hi)
-  obtain ⟨fin, hfin⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := mid) (p := tag)
-    (b := hb) (off := ho.eval) (xs := Array.ofFn Hw) fun i hi => by
-      rw [Store.shape_of_writeBlock_eq_some hmid]; exact hhlen i (by simpa using hi)
-  have heq : σ.store.pop.pop = fin := by
-    refine eq_of_read_writeBlock_writeBlock_rel (Ne.symm hne.1) ?_ (fun i hi => ?_)
-      (fun k hk => ?_) (fun q b i h₁ h₂ => ?_) hmid hfin
+  let R : Store P K → Prop := fun s => ∃ (Wv : Fin NE.eval → K) (Hw : Fin jE.eval → K),
+    s.shape = st.store.shape ∧
+    (∀ i : Fin NE.eval, s.read tag wb (wo.eval + i) = some (Wv i)) ∧
+    (∀ k : Fin jE.eval, s.read tag hb (ho.eval + k) = some (Hw k)) ∧
+    (∀ q b i, ¬(b = wb ∧ wo.eval ≤ i ∧ i < wo.eval + NE.eval) →
+      ¬(b = hb ∧ ho.eval ≤ i ∧ i < ho.eval + jE.eval) → s.read q b i = st.store.read q b i) ∧
+    ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ →
+      ((NE.eval + jE.eval + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100 →
+      ‖WithLp.toLp 2 ((fun i => dec tag (Hw i)) - Vᵀ *ᵥ w)‖ ≤
+        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
+      ‖WithLp.toLp 2 (w - V *ᵥ (fun i => dec tag (Hw i)) - fun i => dec tag (Wv i))‖ ≤
+        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
+      ‖WithLp.toLp 2 ((fun i => dec tag (Wv i)) - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
+        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖
+  obtain ⟨out, hex, Wv, Hw, hR⟩ : ∃ out : St P K C,
+      exec I (cgsPass tag NE jE Vb wb wo hb ho).run st = some out ∧ R out.store := by
+    rw [hrun, exec_seq_skip]
+    refine exists_exec_alloc_rel I tag NE _ st R fun σ₁ hσ₁ => ?_
+    refine exists_exec_alloc_rel I tag 1 _ σ₁ (fun s => R s.pop) fun σ₂ hσ₂ => ?_
+    have hsz₁ : σ₁.store.size = S + 1 := by rw [hσ₁, Array.size_push]
+    rw [hsz₁]
+    have hrd₂ : ∀ {q b i}, b < S → σ₂.store.read q b i = st.store.read q b i := fun hb => by
+      rw [hσ₂, Store.read_push_of_lt (by omega), hσ₁, Store.read_push_of_lt hb]
+    have hsh₂ : ∀ {b}, b < S → σ₂.store.shape[b]? = st.store.shape[b]? := fun hb => by
+      rw [hσ₂, Store.getElem?_shape_push_of_lt _ (by omega), hσ₁,
+        Store.getElem?_shape_push_of_lt _ hb]
+    obtain ⟨σ, Wv, Hw, hrunσ, hshσ, hwσ, hhσ, hfrσ, hbndσ⟩ := exec_cgsPass_body_rel I h hz tag
+      NE jE Vb wb hb S wo ho σ₂ V w
+      (fun i k => by
+        obtain ⟨x, hx, hdx⟩ := hV i k
+        exact ⟨x, by rw [hrd₂ (hVlt i k)]; exact hx, hdx⟩)
+      (fun i => by
+        obtain ⟨x, hx, hdx⟩ := hw i
+        exact ⟨x, by rw [hrd₂ (hwlt i)]; exact hx, hdx⟩)
+      (fun i hi => by rw [hsh₂ (hhlt i hi)]; exact hhlen i hi) hne
+      (by rw [hσ₂, Store.getElem?_shape_push_of_lt _ (by omega), hσ₁,
+        Store.getElem?_shape_push_size])
+      (by rw [hσ₂, ← hsz₁, Store.getElem?_shape_push_size, IExp.eval_one])
+      (fun h => hwlt ⟨0, h⟩) (fun h => hVlt ⟨0, Nat.pos_of_mul_pos_right h⟩
+        ⟨0, Nat.pos_of_mul_pos_left h⟩) (fun h => hhlt 0 h) hu
+    have hszσ : σ.store.size = S + 2 := by
+      rw [← Store.size_shape, hshσ, Store.size_shape, hσ₂, Array.size_push, hsz₁]
+    have hpop : ∀ {q b i}, b < S → Store.read σ.store.pop.pop q b i = σ.store.read q b i :=
+      fun hb => by
+        rw [Store.read_pop_of_lt (by simp [hszσ]; omega), Store.read_pop_of_lt (by omega)]
+    refine ⟨σ, hrunσ, Wv, Hw, ?_, fun i => (hpop (hwlt i)).trans (hwσ i),
+      fun k => (hpop (hhlt k k.2)).trans (hhσ k), fun q b i h₁ h₂ => ?_, hbndσ⟩
     · rw [Store.shape_pop, Store.shape_pop, hshσ, hσ₂, hσ₁]
       simp [Store.shape]
-    · rw [Array.size_ofFn] at hi
-      rw [hpop (hwlt ⟨i, hi⟩), hwσ ⟨i, hi⟩]
-      simp [hi]
-    · rw [Array.size_ofFn] at hk
-      rw [hpop (hhlt k hk), hhσ ⟨k, hk⟩]
-      simp [hk]
-    · simp only [Array.size_ofFn] at h₁ h₂
-      by_cases hbS : b < S
+    · by_cases hbS : b < S
       · rw [hpop hbS, hfrσ q b i (by omega) (by omega) h₁ h₂, hrd₂ hbS]
       · rw [Store.read_eq_none_of_size_le (by simp [hszσ]; omega),
           Store.read_eq_none_of_size_le (by omega)]
-  exact ⟨Wv, Hw, mid, hmid, heq ▸ hfin, fun η₀ hVη _ hM => hbndσ η₀ hVη hM⟩
+  exact ⟨out, Wv, Hw, hex, hR⟩
 
 /-- **One rounded classical Gram–Schmidt pass** (C3): under the standard model, `NLAlib.cgsPass`
 succeeds, writes only the reduced vector at (`wb`, `wo`) and the coefficients at (`hb`, `ho`),
@@ -1613,32 +1629,202 @@ theorem IsRelErrSem.exec_cgsPass {u : P → ℝ} {dec : P → K → ℝ} (I : In
         ‖WithLp.toLp 2 ((fun i => dec tag (W i)) - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
           cgsPassBound N j (u tag) η₀ * ‖WithLp.toLp 2 w‖ := by
   subst hN hj
-  have hrun : (cgsPass (ι := ι) tag NE jE Vb wb wo hb ho).run = .seq (.alloc tag NE fun s =>
-      .alloc tag 1 fun t => ((forRange jE fun i =>
-        dot tag ⟨hb, ho + .var i⟩ Vb (NE * .var i) wb wo NE) >>= fun _ =>
-        gemv tag NE jE Vb 0 hb ho s 0 >>= fun _ => ins (.lit tag ⟨t, 0⟩ (-1)) >>= fun _ =>
-        axpy tag ⟨t, 0⟩ s 0 wb wo NE).run) .skip := rfl
-  let R : Store P K → Prop := fun s => ∃ (W : Fin NE.eval → K) (Hw : Fin jE.eval → K)
-    (mid : Store P K), st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
-    mid.writeBlock tag hb ho.eval (Array.ofFn Hw) = some s ∧
-    ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ → η₀ ≤ 1 / 100 →
-      ((NE.eval + jE.eval + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100 →
-      ‖WithLp.toLp 2 ((fun i => dec tag (Hw i)) - Vᵀ *ᵥ w)‖ ≤
-        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
-      ‖WithLp.toLp 2 (w - V *ᵥ (fun i => dec tag (Hw i)) - fun i => dec tag (W i))‖ ≤
-        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
-      ‖WithLp.toLp 2 ((fun i => dec tag (W i)) - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
-        cgsPassBound NE.eval jE.eval (u tag) η₀ * ‖WithLp.toLp 2 w‖
-  obtain ⟨out, hex, W, Hw, mid, hmid, hfin, hbnd⟩ :
-      ∃ out : St P K C, exec I (cgsPass tag NE jE Vb wb wo hb ho).run st = some out ∧
-        R out.store := by
-    rw [hrun, exec_seq_skip]
-    refine exists_exec_alloc_rel I tag NE _ st R fun σ₁ hσ₁ => ?_
-    refine exists_exec_alloc_rel I tag 1 _ σ₁ (fun s => R s.pop) fun σ₂ hσ₂ => ?_
-    rw [show σ₁.store.size = st.store.size + 1 by rw [hσ₁, Array.size_push]]
-    exact exec_cgsPass_scoped_rel I h hz tag NE jE Vb wb hb wo ho st σ₁ σ₂ V w hV hw hwlen hhlen
-      hne hu hσ₁ hσ₂
-  exact ⟨out, W, Hw, mid, hex, hmid, hfin, hbnd⟩
+  obtain ⟨out, Wv, Hw, hex, hsh, hwr, hhr, hfr, hbnd⟩ := exec_cgsPass_frame_rel I h hz tag NE jE
+    Vb wb hb wo ho st V w hV hw hhlen (fun _ _ => ⟨hne.1, hne.2.1⟩) hu
+  obtain ⟨mid, hmid⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store)
+    (p := tag) (b := wb) (off := wo.eval) (xs := Array.ofFn Wv)
+    fun i hi => hwlen i (by simpa using hi)
+  obtain ⟨fin, hfin⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := mid) (p := tag)
+    (b := hb) (off := ho.eval) (xs := Array.ofFn Hw) fun i hi => by
+      rw [Store.shape_of_writeBlock_eq_some hmid]; exact hhlen i (by simpa using hi)
+  have heq : out.store = fin := by
+    refine eq_of_read_writeBlock_writeBlock_rel (Ne.symm hne.1) hsh (fun i hi => ?_)
+      (fun k hk => ?_) (fun q b i h₁ h₂ => ?_) hmid hfin
+    · rw [Array.size_ofFn] at hi
+      rw [hwr ⟨i, hi⟩]
+      simp [hi]
+    · rw [Array.size_ofFn] at hk
+      rw [hhr ⟨k, hk⟩]
+      simp [hk]
+    · simp only [Array.size_ofFn] at h₁ h₂
+      exact hfr q b i h₁ h₂
+  exact ⟨out, Wv, Hw, mid, hex, hmid, heq ▸ hfin, fun η₀ hV _ hM => hbnd η₀ hV hM⟩
+
+/-- The $j$ rounded additions of `NLAlib.cgs2` write $\mathbf{h}_1 + \mathbf{h}_2$ to relative
+error $u$ into the coefficient block and nothing else. -/
+private theorem exec_forRange_add_rel {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (tag : P) (jE : IExp ℕ) (hb T : ℕ)
+    (ho : IExp ℕ) (st : St P K C) (H₁ H₂ : Fin jE.eval → K)
+    (hh₁ : ∀ k : Fin jE.eval, st.store.read tag hb (ho.eval + k) = some (H₁ k))
+    (hh₂ : ∀ k : Fin jE.eval, st.store.read tag T k = some (H₂ k)) (hT : 0 < jE.eval → T ≠ hb) :
+    ∃ (s' : St P K C) (Hs : Fin jE.eval → K), exec I (forRange jE fun i =>
+        ins (ι := ι) (.bin tag .add ⟨hb, ho + .var i⟩ ⟨hb, ho + .var i⟩ ⟨T, .var i⟩)).run st =
+        some s' ∧ s'.store.shape = st.store.shape ∧
+      (∀ k : Fin jE.eval, s'.store.read tag hb (ho.eval + k) = some (Hs k)) ∧
+      (∀ k : Fin jE.eval, |dec tag (Hs k) - (dec tag (H₁ k) + dec tag (H₂ k))| ≤
+        u tag * |dec tag (H₁ k) + dec tag (H₂ k)|) ∧
+      ∀ q b i, ¬(b = hb ∧ ho.eval ≤ i ∧ i < ho.eval + jE.eval) →
+        s'.store.read q b i = st.store.read q b i := by
+  rw [show (forRange (ι := ι) jE fun i =>
+      ins (.bin tag .add ⟨hb, ho + .var i⟩ ⟨hb, ho + .var i⟩ ⟨T, .var i⟩)).run = .seq (.loop jE
+      fun i => (ins (.bin tag .add ⟨hb, ho + .var i⟩ ⟨hb, ho + .var i⟩ ⟨T, .var i⟩)).run) .skip
+    from rfl, exec_seq_skip]
+  obtain ⟨s', hrun, hsh, hval, hfr⟩ := exists_exec_loop_write_rel I (n := jE) (st := st)
+    tag hb ho.eval (fun k v => ∀ hk : k < jE.eval,
+      |dec tag v - (dec tag (H₁ ⟨k, hk⟩) + dec tag (H₂ ⟨k, hk⟩))| ≤
+        u tag * |dec tag (H₁ ⟨k, hk⟩) + dec tag (H₂ ⟨k, hk⟩)|)
+    fun k hk s hs hs' => by
+      obtain ⟨n, hn, hlt⟩ := Store.exists_getElem?_shape_of_read_eq_some (hh₁ ⟨k, hk⟩)
+      have hx : s.store.read tag hb (ho.eval + k) = some (H₁ ⟨k, hk⟩) := by
+        rw [hs' _ _ _ (by omega)]; exact hh₁ ⟨k, hk⟩
+      have hy : s.store.read tag T k = some (H₂ ⟨k, hk⟩) := by
+        rw [hs' _ _ _ fun h => hT (by omega) h.1]; exact hh₂ ⟨k, hk⟩
+      obtain ⟨z, hzv⟩ := h.bin_ok tag .add (H₁ ⟨k, hk⟩) (H₂ ⟨k, hk⟩) trivial
+        (fun e => by cases e) trivial
+      obtain ⟨δ, hδ, hdz⟩ := h.bin_err tag .add _ _ z trivial hzv
+      obtain ⟨s'', hs''⟩ := Store.exists_write_eq_some_of_getElem?_shape z (hs ▸ hn) hlt
+      refine ⟨{ s with store := s'', cnt := s.cnt + I.charge (.bin tag .add) }, z, ?_, hs'',
+        fun hk' => ?_⟩
+      · rw [exec_seq_instr_bin I (dst := ⟨hb, ho + .var k⟩) (x := ⟨hb, ho + .var k⟩)
+          (y := ⟨T, .var k⟩) hx hy hzv hs'', exec_skip]
+      · simp only [BinOp.realOp] at hdz
+        rw [hdz, show (dec tag (H₁ ⟨k, hk⟩) + dec tag (H₂ ⟨k, hk⟩)) * (1 + δ) -
+          (dec tag (H₁ ⟨k, hk⟩) + dec tag (H₂ ⟨k, hk⟩)) =
+          (dec tag (H₁ ⟨k, hk⟩) + dec tag (H₂ ⟨k, hk⟩)) * δ by ring, abs_mul, mul_comm]
+        exact mul_le_mul_of_nonneg_right hδ (abs_nonneg _)
+  choose Hs hHs hHb using fun k : Fin jE.eval => hval k k.2
+  exact ⟨s', Hs, hrun, hsh, hHs, fun k => hHb k k.2, hfr⟩
+
+/-- The two passes and the summed coefficients of `NLAlib.cgs2` meet `NLAlib.IsOrthErr` at the
+constants of `NLAlib.Computation.IsRelErrSem.isOrthRoutine_cgs2`. -/
+private theorem isOrthErr_cgs2_of_passes {N j : ℕ} {V : Matrix (Fin N) (Fin j) ℝ}
+    {w w₁ w₂ : Fin N → ℝ} {h₁ h₂ hs : Fin j → ℝ} {u η₀ : ℝ} (hu0 : 0 ≤ u) (hη₀ : 0 ≤ η₀)
+    (hη : η₀ ≤ 1 / 100) (hM : ((N + j + 2 : ℕ) : ℝ) * u ≤ 1 / 100)
+    (hc : cgsPassBound N j u η₀ ≤ 1 / 100)
+    (P₁ : ∀ η : ℝ, specNorm (Vᵀ * V - 1) ≤ η → ((N + j + 2 : ℕ) : ℝ) * u ≤ 1 / 100 →
+      ‖WithLp.toLp 2 (h₁ - Vᵀ *ᵥ w)‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w‖ ∧
+      ‖WithLp.toLp 2 (w - V *ᵥ h₁ - w₁)‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w‖ ∧
+      ‖WithLp.toLp 2 (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w‖)
+    (P₂ : ∀ η : ℝ, specNorm (Vᵀ * V - 1) ≤ η → ((N + j + 2 : ℕ) : ℝ) * u ≤ 1 / 100 →
+      ‖WithLp.toLp 2 (h₂ - Vᵀ *ᵥ w₁)‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w₁‖ ∧
+      ‖WithLp.toLp 2 (w₁ - V *ᵥ h₂ - w₂)‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w₁‖ ∧
+      ‖WithLp.toLp 2 (w₂ - (w₁ - V *ᵥ (Vᵀ *ᵥ w₁)))‖ ≤ cgsPassBound N j u η * ‖WithLp.toLp 2 w₁‖)
+    (hsum : ∀ k, |hs k - (h₁ k + h₂ k)| ≤ u * |h₁ k + h₂ k|) :
+    IsOrthErr η₀ (2 * cgsPassBound N j u η₀) (3 * cgsPassBound N j u η₀)
+      (2 * (η₀ + cgsPassBound N j u η₀) ^ 2) V w hs w₂ := by
+  have h4u : 4 * u ≤ cgsPassBound N j u η₀ := by
+    rw [cgsPassBound_def]
+    have hs1 : 1 ≤ Real.sqrt ((j : ℝ) + 1) := Real.one_le_sqrt.mpr (by
+      have := Nat.cast_nonneg (α := ℝ) j; linarith)
+    have hN0 := Nat.cast_nonneg (α := ℝ) N
+    have hj0 := Nat.cast_nonneg (α := ℝ) j
+    have hM2 : (2 : ℝ) ≤ ((N + j + 2 : ℕ) : ℝ) := by push_cast; linarith
+    have h1 : (1 : ℝ) ≤ (1 + η₀) * Real.sqrt ((j : ℝ) + 1) := by nlinarith
+    have h2 : 4 ≤ 2 * (1 + η₀) * Real.sqrt ((j : ℝ) + 1) * ((N + j + 2 : ℕ) : ℝ) := by nlinarith
+    exact mul_le_mul_of_nonneg_right h2 hu0
+  exact isOrthErr_of_two_passes hη hc hu0 h4u (fun hV => P₁ η₀ hV hM) (fun hV => P₂ η₀ hV hM)
+    hsum
+
+/-- The body of a rounded `NLAlib.cgs2`, on the store with the scratch buffer of the second
+coefficients pushed: popping that buffer gives the two block writes, and the guarantee holds. -/
+private theorem exec_cgs2_body_rel {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
+    (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem) (tag : P)
+    (NE jE : IExp ℕ) (Vb wb hb : ℕ) (wo ho : IExp ℕ) (st σ₀ : St P K C)
+    (V : Matrix (Fin NE.eval) (Fin jE.eval) ℝ) (w : Fin NE.eval → ℝ)
+    (hV : HoldsDecoded st.store dec tag Vb 0 V)
+    (hw : ∀ i : Fin NE.eval, ∃ x, st.store.read tag wb (wo.eval + i) = some x ∧ dec tag x = w i)
+    (hwlen : ∀ i < NE.eval, ∃ len, st.store.shape[wb]? = some (tag, len) ∧ wo.eval + i < len)
+    (hhlen : ∀ i < jE.eval, ∃ len, st.store.shape[hb]? = some (tag, len) ∧ ho.eval + i < len)
+    (hne : hb ≠ wb ∧ hb ≠ Vb ∧ wb ≠ Vb) {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100)
+    (hu : ((NE.eval + jE.eval + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
+    (hc : cgsPassBound NE.eval jE.eval (u tag) η₀ ≤ 1 / 100)
+    (hσ₀ : σ₀.store = st.store.push (tag, Array.replicate jE.eval none)) :
+    ∃ (out : St P K C) (W : Fin NE.eval → K) (Hs : Fin jE.eval → K) (mid : Store P K),
+      exec I (cgsPass tag NE jE Vb wb wo hb ho >>= fun _ =>
+        cgsPass tag NE jE Vb wb wo st.store.size 0 >>= fun _ => forRange jE fun i =>
+          ins (.bin tag .add ⟨hb, ho + .var i⟩ ⟨hb, ho + .var i⟩
+            ⟨st.store.size, .var i⟩)).run σ₀ = some out ∧
+      st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
+      mid.writeBlock tag hb ho.eval (Array.ofFn Hs) = some out.store.pop ∧
+      IsOrthErr η₀ (2 * cgsPassBound NE.eval jE.eval (u tag) η₀)
+        (3 * cgsPassBound NE.eval jE.eval (u tag) η₀)
+        (2 * (η₀ + cgsPassBound NE.eval jE.eval (u tag) η₀) ^ 2) V w
+        (fun i => dec tag (Hs i)) (fun i => dec tag (W i)) := by
+  set T := st.store.size
+  have hu1 : u tag < 1 := by
+    have : (2 : ℝ) ≤ ((NE.eval + jE.eval + 2 : ℕ) : ℝ) := by push_cast; linarith
+    nlinarith [h.nonneg (p := tag) trivial]
+  have hlt : ∀ {b}, (∃ n, st.store.shape[b]? = some n) → b < T := fun ⟨n, hn⟩ => by
+    simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp hn).1
+  have hwlt : 0 < NE.eval → wb < T := fun h => hlt ⟨_, (hwlen 0 h).choose_spec.1⟩
+  have hhlt : 0 < jE.eval → hb < T := fun h => hlt ⟨_, (hhlen 0 h).choose_spec.1⟩
+  have hVlt : 0 < NE.eval → 0 < jE.eval → Vb < T := fun h₁ h₂ =>
+    let ⟨_, hx, _⟩ := hV ⟨0, h₁⟩ ⟨0, h₂⟩
+    Store.lt_size_of_read_eq_some hx
+  have hrd₀ : ∀ {q b i}, b < T → σ₀.store.read q b i = st.store.read q b i := fun hb => by
+    rw [hσ₀, Store.read_push_of_lt hb]
+  have hsh₀ : ∀ {b}, b < T → σ₀.store.shape[b]? = st.store.shape[b]? := fun hb => by
+    rw [hσ₀, Store.getElem?_shape_push_of_lt _ hb]
+  rw [exec_run_bind I (b := cgsPass tag NE jE Vb wb wo hb ho) (fun _ => rfl)]
+  obtain ⟨o₁, W₁, H₁, hrun₁, hsh₁, hw₁, hh₁, hfr₁, hb₁⟩ := exec_cgsPass_frame_rel I h hz tag NE
+    jE Vb wb hb wo ho σ₀ V w
+    (fun i k => by
+      obtain ⟨x, hx, hdx⟩ := hV i k
+      exact ⟨x, by rw [hrd₀ (Store.lt_size_of_read_eq_some hx)]; exact hx, hdx⟩)
+    (fun i => by
+      obtain ⟨x, hx, hdx⟩ := hw i
+      exact ⟨x, by rw [hrd₀ (hwlt (Fin.pos i))]; exact hx, hdx⟩)
+    (fun i hi => by rw [hsh₀ (hhlt (by omega))]; exact hhlen i hi)
+    (fun _ _ => ⟨hne.1, hne.2.1⟩) hu1
+  rw [hrun₁, Option.bind_some, exec_run_bind I (b := cgsPass tag NE jE Vb wb wo T 0)
+    (fun _ => rfl)]
+  have hTshape : o₁.store.shape[T]? = some (tag, jE.eval) := by
+    rw [hsh₁, hσ₀, Store.getElem?_shape_push_size]
+  obtain ⟨o₂, W₂, H₂, hrun₂, hsh₂, hw₂, hh₂, hfr₂, hb₂⟩ := exec_cgsPass_frame_rel I h hz tag NE
+    jE Vb wb T wo 0 o₁ V (fun i => dec tag (W₁ i))
+    (fun i k => by
+      obtain ⟨x, hx, hdx⟩ := hV i k
+      refine ⟨x, ?_, hdx⟩
+      rw [hfr₁ _ _ _ (fun h => hne.2.2 h.1.symm) (fun h => hne.2.1 h.1.symm),
+        hrd₀ (Store.lt_size_of_read_eq_some hx)]
+      exact hx)
+    (fun i => ⟨W₁ i, hw₁ i, rfl⟩) (fun i hi => ⟨_, hTshape, by simpa using hi⟩)
+    (fun h₁ h₂ => ⟨by have := hwlt h₁; omega, by have := hVlt h₁ h₂; omega⟩) hu1
+  rw [hrun₂, Option.bind_some]
+  obtain ⟨o₃, Hs, hrun₃, hsh₃, hh₃, hs₃, hfr₃⟩ := exec_forRange_add_rel I h tag jE hb T ho o₂ H₁ H₂
+    (fun k => by
+      have := hhlt (Fin.pos k)
+      rw [hfr₂ _ _ _ (fun h => hne.1 h.1) (fun h => by omega), hh₁ k])
+    (fun k => by simpa using hh₂ k) fun h => by have := hhlt h; omega
+  obtain ⟨mid, hmid⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store)
+    (p := tag) (b := wb) (off := wo.eval) (xs := Array.ofFn W₂)
+    fun i hi => hwlen i (by simpa using hi)
+  obtain ⟨fin, hfin⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := mid) (p := tag)
+    (b := hb) (off := ho.eval) (xs := Array.ofFn Hs) fun i hi => by
+      rw [Store.shape_of_writeBlock_eq_some hmid]; exact hhlen i (by simpa using hi)
+  have hsz₃ : o₃.store.size = T + 1 := by
+    rw [← Store.size_shape, hsh₃, hsh₂, hsh₁, Store.size_shape, hσ₀, Array.size_push]
+  have hpop : ∀ {q b i}, b < T → Store.read o₃.store.pop q b i = o₃.store.read q b i :=
+    fun hb => Store.read_pop_of_lt (by omega)
+  have heq : o₃.store.pop = fin := by
+    refine eq_of_read_writeBlock_writeBlock_rel (Ne.symm hne.1) ?_ (fun i hi => ?_)
+      (fun k hk => ?_) (fun q b i h₁ h₂ => ?_) hmid hfin
+    · rw [Store.shape_pop, hsh₃, hsh₂, hsh₁, hσ₀]
+      simp [Store.shape]
+    · rw [Array.size_ofFn] at hi
+      rw [hpop (hwlt (by omega)), hfr₃ _ _ _ (fun h => hne.1 h.1.symm), hw₂ ⟨i, hi⟩]
+      simp [hi]
+    · rw [Array.size_ofFn] at hk
+      rw [hpop (hhlt (by omega)), hh₃ ⟨k, hk⟩]
+      simp [hk]
+    · simp only [Array.size_ofFn] at h₁ h₂
+      by_cases hbT : b < T
+      · rw [hpop hbT, hfr₃ q b i h₂, hfr₂ q b i h₁ (fun h => by omega), hfr₁ q b i h₁ h₂,
+          hrd₀ hbT]
+      · rw [Store.read_eq_none_of_size_le (by simp [hsz₃]; omega),
+          Store.read_eq_none_of_size_le (by omega)]
+  exact ⟨o₃, W₂, Hs, mid, hrun₃, hmid, heq ▸ hfin,
+    isOrthErr_cgs2_of_passes (h.nonneg trivial) hη₀ hη hu hc hb₁ hb₂ hs₃⟩
 
 /-- **CGS2 is a certified orthogonalization routine** (C6): under the standard model, for
 $\eta_0 \le 1/100$, $(N + j + 2)u \le 1/100$ and $c_1 =$ `NLAlib.cgsPassBound` $N\,j\,u\,\eta_0$
@@ -1667,7 +1853,28 @@ theorem IsRelErrSem.isOrthRoutine_cgs2 {u : P → ℝ} {dec : P → K → ℝ} (
     IsOrthRoutine I dec tag N j η₀ (2 * cgsPassBound N j (u tag) η₀)
       (3 * cgsPassBound N j (u tag) η₀) (2 * (η₀ + cgsPassBound N j (u tag) η₀) ^ 2)
       (fun _ => True) Vb wb hb wo ho (cgs2 tag NE jE Vb wb wo hb ho) := by
-  sorry
+  subst hN hj
+  refine ⟨executionComposable_single I (fun _ => rfl), ?_⟩
+  intro st V w _ hV hw hwlen hhlen hbw hbV hwV
+  have hrun : (cgs2 (ι := ι) tag NE jE Vb wb wo hb ho).run = .seq (.alloc tag jE fun h₂ =>
+      (cgsPass tag NE jE Vb wb wo hb ho >>= fun _ => cgsPass tag NE jE Vb wb wo h₂ 0 >>= fun _ =>
+        forRange jE fun i =>
+          ins (.bin tag .add ⟨hb, ho + .var i⟩ ⟨hb, ho + .var i⟩ ⟨h₂, .var i⟩)).run) .skip := rfl
+  let R : Store P K → Prop := fun s => ∃ (W : Fin NE.eval → K) (Hs : Fin jE.eval → K)
+    (mid : Store P K), st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
+      mid.writeBlock tag hb ho.eval (Array.ofFn Hs) = some s ∧
+      IsOrthErr η₀ (2 * cgsPassBound NE.eval jE.eval (u tag) η₀)
+        (3 * cgsPassBound NE.eval jE.eval (u tag) η₀)
+        (2 * (η₀ + cgsPassBound NE.eval jE.eval (u tag) η₀) ^ 2) V w
+        (fun i => dec tag (Hs i)) (fun i => dec tag (W i))
+  obtain ⟨out, hex, W, Hs, mid, hmid, hfin, horth⟩ : ∃ out : St P K C,
+      exec I (cgs2 tag NE jE Vb wb wo hb ho).run st = some out ∧ R out.store := by
+    rw [hrun, exec_seq_skip]
+    refine exists_exec_alloc_rel I tag jE _ st R fun σ₀ hσ₀ => ?_
+    obtain ⟨o, W, Hs, mid, hrun', hmid, hfin, horth⟩ := exec_cgs2_body_rel I h hz tag NE jE Vb wb
+      hb wo ho st σ₀ V w hV hw hwlen hhlen ⟨hbw, hbV, hwV⟩ hη₀ hη hu hc hσ₀
+    exact ⟨o, hrun', W, Hs, mid, hmid, hfin, horth⟩
+  exact ⟨out, W, Hs, mid, hex, hmid, hfin, horth⟩
 
 end Computation
 
