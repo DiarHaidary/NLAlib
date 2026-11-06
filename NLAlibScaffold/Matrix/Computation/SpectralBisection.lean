@@ -1403,6 +1403,99 @@ theorem FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le
       (k + 1) * (ℓ + 1) := by
   sorry
 
+/-- A split of `NLAlib.eighStep` has both parts nonempty. -/
+private lemma pos_and_lt_of_eighStep_eq_split {F Su Sg : Type*} [Inhabited Sg]
+    (M : FloatMachine F Su Sg) {N signFuel : ℕ} {R₀ β : F} {k : ℕ}
+    {A : Matrix (Fin k) (Fin k) (F × F)} {R ε : F} {ℓ : ℕ} {s : EighSample Su Sg N} {kp : ℕ}
+    {h : kp ≤ k} {Qp : Matrix (Fin k) (Fin kp) (F × F)}
+    {Qm : Matrix (Fin k) (Fin (k - kp)) (F × F)} {Ap : Matrix (Fin kp) (Fin kp) (F × F)}
+    {Am : Matrix (Fin (k - kp)) (Fin (k - kp)) (F × F)} {σ : F}
+    (hst : eighStep M N signFuel R₀ β A R ε ℓ s = .split kp h Qp Qm Ap Am σ) :
+    0 < kp ∧ kp < k := by
+  unfold eighStep at hst
+  dsimp only at hst
+  split_ifs at hst with h1 h2 h3 h4
+  obtain ⟨rfl, -⟩ := EighStep.split.inj hst
+  omega
+
+/-- The split paths of length less than `m` number at most $k - 1$. -/
+private lemma encard_eighNodeAt_isSplit_length_lt_le {F Su Sg : Type*} [Inhabited Sg]
+    (M : FloatMachine F Su Sg) {N signFuel : ℕ} {R₀ β : F} (m : ℕ) :
+    ∀ (x : EighNode F) (s : List Bool → EighSample Su Sg N),
+    {a : List Bool | a.length < m ∧ ∃ y, eighNodeAt M N signFuel R₀ β a x s = some y ∧
+      (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s a)).IsSplit}.encard ≤ (x.k - 1 : ℕ) := by
+  induction m with
+  | zero => intro x s; simp
+  | succ m ih =>
+    intro x s
+    have hmem : ∀ a ∈ {a : List Bool | a.length < m + 1 ∧
+        ∃ y, eighNodeAt M N signFuel R₀ β a x s = some y ∧
+          (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s a)).IsSplit},
+        (a = [] ∧ (eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (s [])).IsSplit) ∨
+        ∃ b a', a = b :: a' ∧ ∃ y', eighChild M N signFuel R₀ β x (s []) b = some y' ∧
+          a' ∈ {a : List Bool | a.length < m ∧
+            ∃ y, eighNodeAt M N signFuel R₀ β a y' (fun a' => s (b :: a')) = some y ∧
+              (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s (b :: a))).IsSplit} := by
+      rintro (_ | ⟨b, a'⟩) ⟨hlen, y, hy, hsp⟩
+      · simp only [eighNodeAt, Option.some.injEq] at hy
+        subst hy
+        exact Or.inl ⟨rfl, hsp⟩
+      · simp only [eighNodeAt, Option.bind_eq_some_iff] at hy
+        obtain ⟨y', hy', hy⟩ := hy
+        exact Or.inr ⟨b, a', rfl, y', hy', by simpa using hlen, y, hy, hsp⟩
+    rcases hst : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (s []) with
+      ⟨U, d⟩ | ⟨b, A', σ⟩ | ⟨kp, hkp, Qp, Qm, Ap, Am, σ⟩
+    · refine le_of_eq_of_le (b := 0) (Set.encard_eq_zero.mpr ?_) bot_le
+      refine Set.eq_empty_of_forall_notMem fun a ha => ?_
+      rcases hmem a ha with ⟨-, h⟩ | ⟨b, a', -, y', hy', -⟩
+      · rw [hst] at h; exact h
+      · simp [eighChild, hst] at hy'
+    · set y' : EighNode F := ⟨x.k, A', (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      refine (Set.encard_le_encard (t := List.cons b '' {a : List Bool | a.length < m ∧
+            ∃ y, eighNodeAt M N signFuel R₀ β a y' (fun a' => s (b :: a')) = some y ∧
+              (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s (b :: a))).IsSplit})
+          fun a ha => ?_).trans ?_
+      · rcases hmem a ha with ⟨-, h⟩ | ⟨b', a', rfl, z, hz, ha'⟩
+        · rw [hst] at h; exact h.elim
+        · simp only [eighChild, hst] at hz
+          split_ifs at hz with hb
+          · subst hb
+            simp only [Option.some.injEq] at hz
+            subst hz
+            exact ⟨a', ha', rfl⟩
+      · rw [(List.cons_injective).encard_image]
+        exact ih y' _
+    · obtain ⟨hkp0, hkpk⟩ := pos_and_lt_of_eighStep_eq_split M hst
+      set yp : EighNode F := ⟨kp, Ap, (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      set ym : EighNode F := ⟨x.k - kp, Am, (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      refine (Set.encard_le_encard (t := {[]} ∪ (List.cons true '' {a : List Bool |
+            a.length < m ∧ ∃ y, eighNodeAt M N signFuel R₀ β a yp (fun a' => s (true :: a')) =
+              some y ∧ (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s (true :: a))).IsSplit} ∪
+          List.cons false '' {a : List Bool | a.length < m ∧ ∃ y, eighNodeAt M N signFuel R₀ β
+            a ym (fun a' => s (false :: a')) = some y ∧
+              (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s (false :: a))).IsSplit}))
+          fun a ha => ?_).trans ?_
+      · rcases hmem a ha with ⟨rfl, -⟩ | ⟨b', a', rfl, z, hz, ha'⟩
+        · exact Or.inl rfl
+        · simp only [eighChild, hst] at hz
+          cases b'
+          · simp only [Bool.false_eq_true, ↓reduceIte, Option.some.injEq] at hz
+            subst hz
+            exact Or.inr (Or.inr ⟨a', ha', rfl⟩)
+          · simp only [↓reduceIte, Option.some.injEq] at hz
+            subst hz
+            exact Or.inr (Or.inl ⟨a', ha', rfl⟩)
+      · refine (Set.encard_union_le _ _).trans ?_
+        refine (add_le_add le_rfl (Set.encard_union_le _ _)).trans ?_
+        rw [Set.encard_singleton, (List.cons_injective).encard_image,
+          (List.cons_injective).encard_image]
+        refine (add_le_add le_rfl (add_le_add (ih yp _) (ih ym _))).trans ?_
+        have hk : 1 + (yp.k - 1 + (ym.k - 1)) ≤ x.k - 1 := by simp only [yp, ym]; omega
+        exact_mod_cast hk
+
 /-- **At most $k$ nodes split**: for every machine, root of size $k$, accuracy and samples, the set
 of paths at which `NLAlib.eighNodeAt` has a node whose step `NLAlib.eighStep` (with that path's
 sample) is a split has at most $k$ elements. [Shah2024, proof of Theorem 4.2],
@@ -1417,7 +1510,18 @@ theorem encard_eighNodeAt_isSplit_le {F Su Sg : Type*} [Inhabited Sg] (M : Float
     {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) :
     {a : List Bool | ∃ y, eighNodeAt M N signFuel R₀ β a x s = some y ∧
       (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s a)).IsSplit}.encard ≤ x.k := by
-  sorry
+  by_contra hlt
+  obtain ⟨t, hts, htc⟩ := Set.exists_subset_encard_eq (Order.add_one_le_of_lt (not_le.mp hlt))
+  have htf : t.Finite := Set.finite_of_encard_eq_coe (k := x.k + 1) (by simpa using htc)
+  obtain ⟨m, hm⟩ := (htf.image List.length).bddAbove
+  have hsub := Set.encard_le_encard (s := t) (t := {a : List Bool | a.length < m + 1 ∧
+      ∃ y, eighNodeAt M N signFuel R₀ β a x s = some y ∧
+        (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s a)).IsSplit})
+    fun a ha => ⟨Nat.lt_succ_of_le (hm ⟨a, ha, rfl⟩), hts ha⟩
+  have h := hsub.trans (encard_eighNodeAt_isSplit_length_lt_le M (m + 1) x s)
+  rw [htc] at h
+  have h' : x.k + 1 ≤ x.k - 1 := by exact_mod_cast h
+  omega
 
 /-- **Global deterministic guarantee of spectral bisection**: let the machine meet
 `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$ and
