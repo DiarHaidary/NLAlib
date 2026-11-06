@@ -691,6 +691,9 @@ admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu 
   discharged).
 * G6, G6o, G7, G8: the unused hypothesis `hc : ∀ k, I.charge k = Finsupp.single k 1` is dropped
   (the conclusions have no cost clause).
+* G7, G8 (stage review, ccbc59a9): the prefix run $L$ comes with its parameters
+  ($L.\varepsilon$, $L.\tau$, $L.\eta_0$, $L.\varepsilon_{1,2,3}$ equal to the CGS2 ones), so the
+  fixed-point premise $\sqrt{3(m+1)}\,\mu \le \eta_0$ is about known quantities (strictly stronger).
 * Unused hypotheses dropped: `IsOrthErr.norm_coef_le` (`hε₂`), `isOrthErr_of_one_pass` and
   `norm_transpose_mulVec_le_of_norm_sub_le` (`hc₁`), `LanczosReorthRun.coeff_le` (`hτ`).
 * F6 `exists_pure_backward_gauss`: the proof term `⟨0, L.k_pos⟩` in the statement (rule T9) is the
