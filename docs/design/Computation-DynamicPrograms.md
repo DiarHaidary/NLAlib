@@ -94,7 +94,12 @@ discharges the new hypothesis by `rfl`).
    `IsExactIntLit dec I.sem n` (§6.3) depends on them.
 3. No transposition or conjugation flags in `kcall` dimensions: `dims` is `[l, m, n]` for MM and
    `[m, n]` for QR; $\mathbf{Q}^{\mathsf{H}}$ is formed by the S1c conjugate-transpose kernel.
-4. `scripts/Targets.lean`'s `models` list does not yet name `MatrixFreeRoundedProb` (a check
+4. `IsTapeRounding dec p u τ Ω c ρ` has hdiag's floor $\tau$ and range $\Omega$ (as
+   `IsNormalSampler`): $\lvert x \rvert \le \Omega \Rightarrow \lvert \mathrm{dec}(\rho(d, i, x)) -
+   x \rvert \le c(d)\,u\max(\lvert x \rvert, \tau)$ (Fable S1 review, B3). Without them no rounding
+   into a bounded format meets the contract for Gaussian draws. `IsTapeRounding` is in no target's
+   closure, so the change moves no registry hash.
+5. `scripts/Targets.lean`'s `models` list does not yet name `MatrixFreeRoundedProb` (a check
    script, AGENTS.md rule 1); it needs the entry when the first target concludes it (S1d).
 
 **Re-pin.** By the documented path (CONTRIBUTING §5.5, `docs/targets.toml` header):
@@ -102,7 +107,8 @@ discharges the new hypothesis by `rfl`).
 `sha256sum docs/targets.toml > docs/targets.approved` under the approval given with the sheet
 (the S1 change re-pins every target, §4.5, §8.3). Only the nine target closure hashes changed; the
 seven tree hashes, the printed statements and normal forms, and the pins are unchanged. The lint
-then reports 0 violations. New `docs/targets.approved`:
+then reports 0 violations. The maintainer's sign-off of this diff is requested before merge (Fable
+S1 review, B1). New `docs/targets.approved`:
 `7bff66e43f9badd6b21cb2b95b3e21e8a82015d40ce23a58bb7932a9a4a0b234`.
 
 | target | old closure hash | new closure hash |
@@ -118,6 +124,16 @@ then reports 0 violations. New `docs/targets.approved`:
 | `MatrixFreeLanczos` | `359a6e147dcf49ef…` | `903a3da3d2951891…` |
 
 
+**Known limitations (non-blocking, Fable S1 review N2, N3, N5).**
+* `Stmt.substOracle` turns every kernel call into `skip` (sound under `hker`, but a `kcall` program
+  family pushed through `ProgFamily.substOracle` would lose its kernel calls); it should take a
+  kernel renaming `ι → ι'`, or fail, when S1c or S1d first substitutes oracles in a `kcall`
+  program.
+* The NumPy emitter prints `kernel([dims], [ins], [outs])` without the kernel name (the emitter is
+  generic in `ι`, which has no `ToString`); to fix when S1d emits a program.
+* A kernel does not see the tag `p`, so per-tag kernel accuracy cannot be stated; fine for EIGH
+  (one tag), to revisit in S2.
+
 **Checks.** On the language commit (main's `lakefile.toml`): `bash scripts/stage_check.sh`
 exit 0 (`--wfail` build, audit, lint, replay, programs, targets 0 violations, refs, constants,
 LaTeX, rules), `mk_all --check` for `NLAlib` and `NLAlibTools`. The second commit adds the
@@ -126,14 +142,18 @@ registry's `lakefile_sha256` pin differs (Targets lint item 4) until the scaffol
 at integration. The scaffold builds with `sorry` warnings only, and
 `bin/check-skeleton --strict` passes.
 
-**Skeleton** (`NLAlibScaffold/`, 28 statements, S 19, M 8, L 1):
+**Skeleton** (`NLAlibScaffold/`, 30 statements, S 20, M 10; revised after Fable's S1 review,
+`~/nlalib-harness/reports/Review-Fable-COMPDYN-S1.md`: the read-back of a kernel call split into
+the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 
 | id | statement | file | difficulty |
 |---|---|---|---|
 | K1 | `exec_kcall` | `Computation/Exec.lean` | S |
 | K2 | `Interp.kcallStore_eq_none_of_kernel_eq_none` | `Computation/Exec.lean` | S |
-| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/Exec.lean` | M |
-| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/Exec.lean` | L |
+| ST1 | `Store.read_of_writeBlocks_eq_some_of_forall` | `Computation/Store.lean` | M |
+| ST2 | `Store.read_of_writeBlocks_eq_some` | `Computation/Store.lean` | M |
+| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/Exec.lean` | S |
+| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/Exec.lean` | M |
 | K5 | `Interp.exists_kcallStore_eq_some` | `Computation/Exec.lean` | M |
 | K6 | `FStmt.exec_kcall` | `Computation/FirstOrder.lean` | S |
 | K7 | `implementsKernel_self` | `Computation/Subst.lean` | S |

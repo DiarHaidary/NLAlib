@@ -136,9 +136,9 @@ Proof: `obtain ⟨hk, hs⟩ := h`; `unfold Interp.kcallStore`; `simp only [hs, m
 List.zipWith]`; `rw [if_pos]` (lengths `rfl`, `List.pairwise_singleton`, the two disjointness
 hypotheses for `∀ x ∈ [_], ∀ y ∈ [_, _]`: `List.forall_mem_singleton`, `List.forall_mem_cons`);
 `simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hY, Option.bind_some, hk,
-liftMM]`; `Store.writeBlocks` of one block, `if_pos (EntryLayout.size_toArray _ _)`, and
-`Option.bind_some`-free `Option.bind_eq`-`some` simplification (`Option.bind_some'`). M, about 20
-lines. -/
+liftMM]`; `Store.writeBlocks` of one block, `if_pos (EntryLayout.size_toArray _ _)`, and the
+trailing `Store.writeBlocks … [] []` is `some`, so the bind is the block write (`cases` on the
+block write, then `Option.bind_some` and `Option.some_bind`). M, about 20 lines. -/
 theorem IsMatMulKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι}
     {L : EntryLayout K E} {mm : MatMulMap E} (h : IsMatMulKernel I o L mm) (p : P) {l m n : ℕ}
     {a b c : ℕ × ℕ} {s : Store P K} {X Y : Array K}
@@ -159,7 +159,8 @@ source.
 Proof: as `NLAlib.Computation.IsMatMulKernel.kcallStore_eq`, with `qrShape` and `liftQR`; the
 `if` needs `List.pairwise_pair` (the hypothesis `hqr`); `Store.writeBlocks` of two blocks unfolds
 twice, the sizes by `NLAlib.Computation.EntryLayout.size_toArray`, and the trailing
-`Store.writeBlocks … [] []` is `some` (`Option.bind_some'` up to eta). M, about 25 lines. -/
+`Store.writeBlocks … [] []` is `some` (`cases` on the second block write, then `Option.bind_some`
+and `Option.some_bind`). M, about 25 lines. -/
 theorem IsQRKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι}
     {L : EntryLayout K E} {qr : QRMap E} (h : IsQRKernel I o L qr) (p : P) {m n : ℕ}
     {a q r : ℕ × ℕ} {s : Store P K} {X : Array K}

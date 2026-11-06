@@ -255,15 +255,17 @@ def IsExactIntLit (dec : P → K → ℝ) (sem : ScalarSem P K) (B : ℕ) : Prop
   ∀ (p : P) (k : ℕ), k ≤ B → ∃ z, sem.lit p k = some z ∧ dec p z = k
 
 /-- **The tape-rounding contract**: the stored draws are a rounding $\rho$ of the ideal tape.
-For every distribution $d$, tape position $i$ and ideal value $x$, the stored value
-$\rho(d, i, x)$ at tag `p` decodes within relative error $c(d)\,u$ of $x$, and a uniform draw of
-$x \in [-1, 1]$ decodes into $[-1, 1]$. The rounding may depend on the position, as the state of
-a hardware sampler does; the law of the ideal tape is fixed by the model that uses the contract.
-[Shah2024, Definition 1.3], [Shah2024, Definition 1.4], the coupling of a computed and an ideal
-sample realised by the ideal tape. -/
-def IsTapeRounding (dec : P → K → ℝ) (p : P) (u : ℝ) (c : Dist → ℝ)
+For every distribution $d$, tape position $i$ and ideal value $x$ with $\lvert x \rvert \le \Omega$,
+the stored value $\rho(d, i, x)$ at tag `p` decodes to within $c(d)\,u\max(\lvert x \rvert, \tau)$
+of $x$: relative error $c(d)\,u$ above the floor $\tau$ (gradual underflow; $0$ with an unbounded
+exponent), in the range $\Omega$ (overflow). A uniform draw of $x \in [-1, 1]$ decodes into
+$[-1, 1]$. The rounding may depend on the position, as the state of a hardware sampler does; the
+law of the ideal tape is fixed by the model that uses the contract. [Shah2024, Definition 1.3],
+[Shah2024, Definition 1.4], the coupling of a computed and an ideal sample realised by the ideal
+tape. -/
+def IsTapeRounding (dec : P → K → ℝ) (p : P) (u τ Ω : ℝ) (c : Dist → ℝ)
     (ρ : Dist → ℕ → ℝ → K) : Prop :=
-  (∀ (d : Dist) (i : ℕ) (x : ℝ), |dec p (ρ d i x) - x| ≤ c d * u * |x|) ∧
+  (∀ (d : Dist) (i : ℕ) (x : ℝ), |x| ≤ Ω → |dec p (ρ d i x) - x| ≤ c d * u * max |x| τ) ∧
     ∀ (i : ℕ) (x : ℝ), x ∈ Set.Icc (-1 : ℝ) 1 → dec p (ρ .uniform i x) ∈ Set.Icc (-1 : ℝ) 1
 
 /-- **The standard model gives the arithmetic part** of the contract with the relation of

@@ -57,11 +57,12 @@ theorem Dist.measureReal_law_uniform_Icc {a b : ℝ} (ha : -1 ≤ a) (hab : a �
 `NLAlib.Computation.tapeLaw` under $\mu$, then $\mu$-almost surely every uniform draw
 $\xi(\omega)(\mathsf{uniform}, i)$, $i \in \mathbb{N}$, lies in $[-1, 1]$. No printed source.
 Proof: `ae_all_iff` (countably many positions); for one position $i$, the draw has law
-`Dist.uniform.law` (`NLAlib.Computation.hasLaw_apply_of_hasLaw_tapeLaw`, then the coordinate $i$
-of `iidSequence`: `measurePreserving_eval_infinitePi`), so
-`HasLaw.ae_iff`/`ae_map_iff` with `measurableSet_Icc` reduces it to
-`ae_iff`-mass of the complement, `prob_compl_eq_zero_iff` and
-`NLAlib.Computation.Dist.law_uniform_Icc`. M, about 20 lines. -/
+`Dist.uniform.law`: `NLAlib.Computation.hasLaw_apply_of_hasLaw_tapeLaw` gives the law
+`iidSequence Dist.uniform.law` of the uniform tape, and the coordinate $i$ of it has law
+`Dist.uniform.law` by `measurePreserving_eval_infinitePi`. Then `HasLaw.map_eq` turns the event
+into one under the law, `ae_map_iff` (with `measurableSet_Icc`) moves it there, and
+`ae_iff`, `prob_compl_eq_zero_iff` and `NLAlib.Computation.Dist.law_uniform_Icc` finish it.
+M, about 20 lines. -/
 theorem ae_forall_mem_Icc_of_hasLaw_tapeLaw {Ω : Type} {mΩ : MeasurableSpace Ω}
     {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ) :
     ∀ᵐ ω ∂μ, ∀ i, ξ ω .uniform i ∈ Set.Icc (-1 : ℝ) 1 := by
@@ -75,7 +76,8 @@ No printed source.
 Proof: `(ae_forall_mem_Icc_of_hasLaw_tapeLaw hξ).mono fun ω hω i => h.2 i _ (hω i)`. S, 1
 line. -/
 theorem IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw {P K : Type} {dec : P → K → ℝ}
-    {p : P} {u : ℝ} {c : Dist → ℝ} {ρ : Dist → ℕ → ℝ → K} (h : IsTapeRounding dec p u c ρ)
+    {p : P} {u τ Ω : ℝ} {c : Dist → ℝ} {ρ : Dist → ℕ → ℝ → K}
+    (h : IsTapeRounding dec p u τ Ω c ρ)
     {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ}
     (hξ : HasLaw ξ tapeLaw μ) :
     ∀ᵐ ω ∂μ, ∀ i, dec p (ρ .uniform i (ξ ω .uniform i)) ∈ Set.Icc (-1 : ℝ) 1 := by

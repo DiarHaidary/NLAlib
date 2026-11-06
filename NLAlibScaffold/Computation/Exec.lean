@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Exec
+public import NLAlibScaffold.Computation.Store
 
 /-!
 # Kernel calls in the run (scaffold)
@@ -56,10 +57,9 @@ theorem Interp.kcallStore_eq_none_of_kernel_eq_none {I : Interp P ι K C} {o : �
 unchanged, at every tag: if for every output block $(b', \mathit{off}, \ell)$ of the call the cell
 $(b, i)$ has $b \ne b'$, $i < \mathit{off}$ or $\mathit{off} + \ell \le i$, then it reads the same
 after the call as before. No printed source.
-Proof: unfold `Interp.kcallStore`, peel the `if` and the two binds to
-`Store.writeBlocks … = some s'`; induct on the output blocks with `Store.writeBlocks`
-(generalizing the store), each step by `Store.read_of_writeBlock_eq_some_of_ne` (the block has
-length `y.size = b.2.2` by the `if` of `writeBlocks`). M, about 30 lines. -/
+Proof: unfold `Interp.kcallStore`, peel the `if` (`split_ifs at h`) and the two binds
+(`Option.bind_eq_some_iff`) to `Store.writeBlocks … = some s'`, then
+`NLAlib.Computation.Store.read_of_writeBlocks_eq_some_of_forall`. S, about 6 lines. -/
 theorem Interp.read_of_kcallStore_eq_some_of_forall {I : Interp P ι K C} {o : ι} {p : P}
     {ds : List ℕ} {ins outs : List (ℕ × ℕ)} {s s' : Store P K}
     (h : I.kcallStore o p ds ins outs s = some s') {q : P} {b i : ℕ}
@@ -72,12 +72,13 @@ returned one array per output block, and after the call cell $j$ of output block
 $j$ of the $k$-th returned array, for every $j$ below the length of the block. The output blocks
 are pairwise disjoint (the call checks it), so a later write does not overwrite an earlier one.
 No printed source.
-Proof: unfold `Interp.kcallStore`; the `if` gives `List.Pairwise` disjointness of the output
-blocks. Induct on the output blocks and arrays through `Store.writeBlocks`: block $k$ is written by
-`Store.writeBlock`, read back by `Store.read_of_writeBlock_eq_some_of_lt`, and kept by the later
-writes by the frame argument of `NLAlib.Computation.Interp.read_of_kcallStore_eq_some_of_forall`
-(its induction, on the tail) with `blockDisjoint` unfolded (`Bool.or_eq_true`, `decide_eq_true_eq`,
-`bne_iff_ne`). L, about 70 lines. -/
+Proof: unfold `Interp.kcallStore`; `split_ifs at h` gives the call's condition, and peel the two
+binds (`Option.bind_eq_some_iff`) to the reads `xs`, the kernel's `ys` and
+`Store.writeBlocks … = some s'`. The length of `ys` is that of the output blocks (`writeBlocks`
+fails otherwise: induct on the blocks, or read it off `Store.writeBlocks` by cases), which is
+`outs.length` by the second conjunct of the condition and `List.length_zipWith`. The last clause
+is `NLAlib.Computation.Store.read_of_writeBlocks_eq_some` with the disjointness (the third
+conjunct). M, about 25 lines. -/
 theorem Interp.read_of_kcallStore_eq_some {I : Interp P ι K C} {o : ι} {p : P} {ds : List ℕ}
     {ins outs : List (ℕ × ℕ)} {s s' : Store P K} (h : I.kcallStore o p ds ins outs s = some s') :
     ∃ xs ys, s.readBlocks p (kcallBlocks ins (I.kshape o ds).1) = some xs ∧

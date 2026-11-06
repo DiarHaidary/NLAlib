@@ -67,12 +67,12 @@ theorem IsExactIntLit.exists_exec_litIdx {dec : P → K → ℝ} {sem : ScalarSe
 
 omit [DecidableEq P] in
 /-- **The exact rounding of the tape**: storing each ideal draw as itself in $\mathbb{R}$ meets
-`NLAlib.Computation.IsTapeRounding` with the identity decoding, for every unit roundoff $u$ and
-constants $c$ with $c(d)\,u \ge 0$. No printed source.
-Proof: `refine ⟨fun d i x => ?_, fun i x hx => hx⟩`; `simp only [sub_self, abs_zero]` and
-`mul_nonneg (hc d) (abs_nonneg x)`. S, about 3 lines. -/
-theorem isTapeRounding_id (p : P) (u : ℝ) (c : Dist → ℝ) (hc : ∀ d, 0 ≤ c d * u) :
-    IsTapeRounding (fun _ x => x) p u c (fun _ _ x => x) := by
+`NLAlib.Computation.IsTapeRounding` with the identity decoding, for every unit roundoff $u$,
+floor $\tau$, range $\Omega$ and constants $c$ with $c(d)\,u \ge 0$. No printed source.
+Proof: `refine ⟨fun d i x _ => ?_, fun i x hx => hx⟩`; `simp only [sub_self, abs_zero]` and
+`mul_nonneg (hc d) (le_max_of_le_left (abs_nonneg x))`. S, about 3 lines. -/
+theorem isTapeRounding_id (p : P) (u τ Ω : ℝ) (c : Dist → ℝ) (hc : ∀ d, 0 ≤ c d * u) :
+    IsTapeRounding (fun _ x => x) p u τ Ω c (fun _ _ x => x) := by
   sorry
 
 end NLAlib.Computation
