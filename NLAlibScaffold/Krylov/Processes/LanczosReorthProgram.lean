@@ -172,7 +172,9 @@ frame keeps the basis and the coefficients), then main's `nrm2`/zero test/`rscl`
 lemmas applied to $\mathbf{z}'$. The run of an admissible prefix is assembled field by field
 (`orth_eq` from the certificate, the rest as in main's `NLAlib.LanczosRun` construction,
 `abs_norm_v_sq_sub_one_le` for $j \le m + 1$ from $\beta_j > 0$). Composability of
-`mv`/`orth` from the certificates' `composable` fields; `hpre` is preserved because only
+`mv`/`orth` from the certificates' `composable` fields; `hpre` transports to every intermediate
+store, including the 11-buffer ones after `work`, `scalars`, `coef` are allocated (allocation only
+appends buffers, so the first 8 shape entries are unchanged), because only
 buffers $1..6, 8..10$ are written. H, about 1200 lines; intermediate lemmas: the store invariant
 (a `NLAlib.LanczosImplementation.StoreContext` with the basis prefix and `nu`), one step, the
 prefix induction, the
@@ -185,7 +187,7 @@ theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P 
       (tag, 1), (tag, N), (tag, q), (tag, slot)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     (pre : Store P K → Prop) (hpre : pre st.store)
-    (hpreFrame : ∀ s s' : Store P K, pre s → s'.shape = s.shape →
+    (hpreFrame : ∀ s s' : Store P K, pre s → (∀ k < 8, s'.shape[k]? = s.shape[k]?) →
       (∀ i, s'.read tag 7 i = s.read tag 7 i) → pre s')
     (mv : ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
     (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
@@ -213,7 +215,8 @@ $q$ columns, $c_1$ = `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0$
 $(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source.
 Proof: `NLAlib.lanczosReorthProg.toStmt_compiled`; the ROM load into slot $7$ as in main's
 `NLAlib/Krylov/Processes/LanczosProgramRoundedInitialization.lean` (decoded matrix `HoldsDecoded …
-7 0 A`); then
+7 0 A`, the `pre` of G5; it depends only on reads of buffer $7$, so it meets
+`hpreFrame`); then
 `NLAlib.LanczosReorthImplementation.exec_rounded_loop` with `mv` the `gemv` call, certified by
 `NLAlib.Computation.IsRelErrSem.isMatvecRoutine_gemv` (its coefficient $\gamma_N\sqrt
 N\|\mathbf{A}\|
@@ -247,7 +250,7 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled` with an oracle of accuracy
 $\eta\|\mathbf{A}\|_2$, $\eta \le \varepsilon$ (`NLAlib.Computation.IsMatvecErr`), and no ROM.
 Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
-Proof: `NLAlib.lanczosReorthOracleProg.toStmt_compiled`; the empty slot $7$; then
+Proof: `NLAlib.lanczosReorthOracleProg.toStmt_compiled`; the empty slot $7$ (`pre = True`); then
 `NLAlib.LanczosReorthImplementation.exec_rounded_loop` with `mv` the `apply` call certified by
 `NLAlib.Computation.IsMatvecErr.isMatvecRoutine` (mono to $\varepsilon\|\mathbf{A}\|$) and `orth`
 as in
