@@ -173,7 +173,81 @@ theorem card_le_card_eigenvalue_mem (hη : L.η₀ ≤ 1 / 100)
     (hres : ∀ i, L.β k * |Y L.toLanczosData.lastIndex i| <
       (g - 2 * L.backwardRadius) / Real.sqrt r) :
     r ≤ ((Finset.range n).filter fun i => eigenvalue L.H i ∈ Set.Ioo (a - g) (b + g)).card := by
-  sorry
+  obtain ⟨E, hEs, hE, hid⟩ := L.exists_backward hη hsmall hrec hτ
+  have he0 : 0 ≤ L.backwardRadius := (frobNorm_nonneg E).trans hE
+  have hgram := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+  have hsq : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) = Real.sqrt (3 * ((k : ℝ) + 1)) := by
+    push_cast; ring_nf
+  rw [hsq] at hgram
+  have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) ≤ 1 / 100 :=
+    (specNorm_le_frobNorm _).trans (by linarith)
+  have hPo := hasOrthonormalCols_polarFactor hspec (by norm_num)
+  set P := polarFactor (basisOf L.v (k + 1)) with hPdef
+  have hU : HasOrthonormalCols (P.submatrix id Fin.castSucc) :=
+    hPo.submatrix (Equiv.refl _) (Fin.castSucc_injective _)
+  have hH : L.H.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact L.transpose_H
+  have hE' : E.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hEs
+  have hA := hH.add hE'
+  have hβ : 0 ≤ L.β k := by
+    rcases Nat.eq_zero_or_pos k with h0 | h0
+    · subst h0; rw [L.β_zero]
+    · have hadm := L.admissible (k - 1) (by omega)
+      have hk : k - 1 + 1 = k := by omega
+      rw [hk] at hadm
+      have hz := L.abs_ν_sub_le (k - 1) (by omega)
+      rw [hk] at hz
+      have hz' := (abs_le.mp hz).1
+      have hnn : 0 ≤ ‖WithLp.toLp 2 (L.z k)‖ := norm_nonneg _
+      have hε := L.ε_le
+      have hε0 := L.ε_nonneg
+      have hντ : 0 ≤ L.τ * L.ν k := mul_nonneg L.τ_pos.le (by nlinarith)
+      linarith
+  set U := P.submatrix id Fin.castSucc with hUdef
+  set u : Fin n → ℝ := fun i => P i (Fin.last k) with hudef
+  have hu : ‖WithLp.toLp 2 u‖ = 1 := by
+    have h1 := hPo.norm_toLp_mulVec (Pi.single (Fin.last k) 1)
+    have h2 : P *ᵥ Pi.single (Fin.last k) 1 = u := by
+      funext i; simp [hudef]
+    rw [h2] at h1
+    rw [h1]
+    simp
+  have hres' : ∀ i, (L.H + E) *ᵥ (U *ᵥ fun c => Y c i) - θ i • (U *ᵥ fun c => Y c i) =
+      (Y L.toLanczosData.lastIndex i * L.β k) • u := by
+    intro i
+    have hmul : (L.H + E) *ᵥ (U *ᵥ fun c => Y c i) = θ i • (U *ᵥ fun c => Y c i) +
+        Matrix.vecMulVec (L.β k • u) (Pi.single L.toLanczosData.lastIndex 1) *ᵥ
+          (fun c => Y c i) := by
+      rw [Matrix.mulVec_mulVec, hid, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, hTY i,
+        Matrix.mulVec_smul]
+    rw [hmul, add_sub_cancel_left]
+    funext a
+    simp [Matrix.vecMulVec, Matrix.mulVec, dotProduct, Pi.single_apply, hudef, mul_comm,
+      mul_left_comm]
+  have hX : HasOrthonormalCols (U * Y) := by
+    change (U * Y)ᴴ * (U * Y) = 1
+    rw [Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc _ U Y,
+      hU.conjTranspose_mul_self, Matrix.one_mul]
+    exact hY
+  have hd : 0 < g - L.backwardRadius := by linarith
+  have hcard := card_le_card_eigenvalue_mem_of_hasOrthonormalCols hA hX hd hθ (fun i => by
+    change ‖WithLp.toLp 2 ((L.H + E) *ᵥ (fun c => (U * Y) c i) - θ i • fun c => (U * Y) c i)‖ <
+      (g - L.backwardRadius) / Real.sqrt r
+    have hcol : (fun c => (U * Y) c i) = U *ᵥ fun c => Y c i := rfl
+    have hle : (g - 2 * L.backwardRadius) / Real.sqrt r ≤ (g - L.backwardRadius) / Real.sqrt r := by
+      gcongr; linarith
+    rw [hcol, hres' i, WithLp.toLp_smul, norm_smul, hu, mul_one, Real.norm_eq_abs, abs_mul,
+      abs_of_nonneg hβ, mul_comm]
+    linarith [hres i])
+  refine hcard.trans (Finset.card_le_card fun i hi => ?_)
+  simp only [Finset.mem_filter, Finset.mem_range, Set.mem_Ioo] at hi ⊢
+  have hW := abs_le.mp ((Matrix.IsHermitian.abs_eigenvalue_sub_le hA hH i).trans
+    ((by rw [add_sub_cancel_left]; exact specNorm_le_frobNorm E : specNorm ((L.H + E) - L.H) ≤
+      frobNorm E).trans hE))
+  constructor
+  · exact hi.1
+  · constructor <;> linarith [hi.2.1, hi.2.2, hW.1, hW.2]
 
 /-- **Ritz-pair residuals** (F3, S4b): every unit eigenvector $\mathbf{y}$ of $\mathbf{T}_k$ with
 eigenvalue $\theta$ gives an eigenvalue of $\mathbf{H}$ within $\beta_k|y_{k-1}| + e$.
