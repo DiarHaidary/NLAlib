@@ -42,12 +42,7 @@ theorem Store.read_of_writeBlocks_eq_some_of_forall {p : P} {s s' : Store P K}
     {q : P} {b i : ℕ} (hb : ∀ x ∈ bs, b ≠ x.1 ∨ i < x.2.1 ∨ x.2.1 + x.2.2 ≤ i) :
     s'.read q b i = s.read q b i := by
   induction bs generalizing s ys with
-  | nil =>
-    cases ys with
-    | nil =>
-      simp only [Store.writeBlocks, Option.some.injEq] at h
-      rw [h]
-    | cons y ys => cases h
+  | nil => cases ys <;> cases h; rfl
   | cons x bs ih =>
     cases ys with
     | nil => cases h
@@ -55,14 +50,10 @@ theorem Store.read_of_writeBlocks_eq_some_of_forall {p : P} {s s' : Store P K}
       rw [Store.writeBlocks] at h
       split_ifs at h with hy
       obtain ⟨s₁, h₁, h₂⟩ := Option.bind_eq_some_iff.mp h
-      have hx := hb x List.mem_cons_self
-      have hrest := ih h₂ (fun z hz => hb z (List.mem_cons_of_mem _ hz))
-      rw [hrest]
+      rw [ih h₂ fun z hz => hb z (List.mem_cons_of_mem _ hz)]
       refine Store.read_of_writeBlock_eq_some_of_ne h₁ ?_
-      rcases hx with h0 | h0 | h0
-      · exact Or.inl h0
-      · exact Or.inr (by omega)
-      · exact Or.inr (by omega)
+      have := hb x List.mem_cons_self
+      omega
 
 /-- **Reading back several block writes**: if `s.writeBlocks p bs ys = some s'` and the blocks
 `bs` are pairwise disjoint (`NLAlib.Computation.blockDisjoint`), then for every position $k$ with
@@ -84,27 +75,22 @@ theorem Store.read_of_writeBlocks_eq_some {p : P} {s s' : Store P K} {bs : List 
   | nil => simp at hx
   | cons b bs ih =>
     cases ys with
-    | nil => simp [Store.writeBlocks] at h
+    | nil => cases h
     | cons y0 ys =>
       rw [Store.writeBlocks] at h
       split_ifs at h with hsz
       obtain ⟨s1, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨hpb, hpw⟩ := List.pairwise_cons.mp hpw
       cases k with
       | zero =>
-        simp only [List.getElem?_cons_zero, Option.some.injEq] at hx hy
-        rw [← hx, ← hy]
+        cases hx
+        cases hy
         refine ⟨hsz, fun j hj => ?_⟩
-        have hjb : j < b.2.2 := by omega
-        have hjy : j < y0.size := by omega
-        have hdisj : ∀ x' ∈ bs, b.1 ≠ x'.1 ∨ b.2.1 + j < x'.2.1 ∨ x'.2.1 + x'.2.2 ≤ b.2.1 + j := by
-          intro x' hx'
-          have hd := (List.pairwise_cons.mp hpw).1 x' hx'
-          simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hd
-          omega
-        rw [Store.read_of_writeBlocks_eq_some_of_forall h2 hdisj,
-          Store.read_of_writeBlock_eq_some_of_lt h1 hjy]
-      | succ k =>
-        simp only [List.getElem?_cons_succ] at hx hy
-        exact ih h2 (List.pairwise_cons.mp hpw).2 k hx hy
+        rw [Store.read_of_writeBlocks_eq_some_of_forall h2 fun x' hx' => ?_,
+          Store.read_of_writeBlock_eq_some_of_lt h1 (by omega)]
+        have hd := hpb x' hx'
+        simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hd
+        omega
+      | succ k => exact ih h2 hpw k hx hy
 
 end NLAlib.Computation
