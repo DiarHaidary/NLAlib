@@ -39,6 +39,6 @@ theorem FStmt.exec_kcall (I : Interp P ι K C) {nb ni : ℕ} (o : ι) (p : P)
           { st with
             store := s
             cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) } := by
-  sorry
+  rw [FStmt.exec]
 
 end NLAlib.Computation
