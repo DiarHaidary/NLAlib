@@ -85,6 +85,19 @@ theorem lanczosReorthProg.exec_storedInterp_compiled {P ι : Type} [DecidableEq 
         (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b ((j : ℕ) + 1)).nu) := by
   sorry
 
+private lemma sum_map_range_eq_finsetSum (f : ℕ → ℕ) (q : ℕ) :
+    (List.map f (List.range q)).sum = ∑ x ∈ Finset.range q, f x := by
+  induction q with
+  | zero => simp
+  | succ q ih =>
+    rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
+    simp
+
+private lemma two_mul_sum_range_id_add (q : ℕ) : 2 * ∑ x ∈ Finset.range q, x + q = q * q := by
+  induction q with
+  | zero => simp
+  | succ q ih => rw [Finset.sum_range_succ]; nlinarith
+
 /-- **The static count of the stored-matrix tree** (G4): every component of the static operation
 count of `NLAlib.lanczosReorthProg.compiled` is at most `NLAlib.lanczosReorthCount`.
 Proof: as main's static count of the plain tree
@@ -99,7 +112,39 @@ theorem lanczosReorthProg.staticCost_count_le {P ι : Type} [DecidableEq P] (tag
     (width : P → ℕ) (N q : ℕ) :
     ((lanczosReorthProg.compiled (ι := ι) tag).staticCost (fun k => Finsupp.single k 1)
       width N ![q]).count ≤ lanczosReorthCount tag N q := by
-  sorry
+  classical
+  intro k
+  change (FStmt.staticCost (fun k => Finsupp.single k 1) width
+    (lanczosReorthProg.compiled (ι := ι) tag) (Fin.cons N ![q])).count k ≤ _
+  change (StaticCost.seq _ _).count k ≤ _
+  simp only [FStmt.staticCost, StaticCost.seq, StaticCost.branch, StaticCost.alloc,
+    StaticCost.step, StaticCost.zero, StaticCost.sequence_count_apply, Instr.kind, Instr.subst,
+    IExp.evalIn, Finsupp.add_apply, Finsupp.sup_apply, List.map_const', List.sum_replicate,
+    List.length_range, Finsupp.zero_apply]
+  simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero, add_zero, zero_add,
+    smul_eq_mul, Matrix.Fin.cons_vecCons, Nat.succ_eq_add_one,
+    Fin.snoc_apply_zero, Matrix.cons_val_zero, Matrix.Fin.snoc_vecCons,
+    Matrix.Fin.snoc_vecEmpty, List.map_const', List.length_range, List.sum_replicate,
+    Fin.val_eq_zero, Fin.mk_one, Fin.cons_one, Matrix.cons_val_fin_one]
+  cases k <;> simp only [lanczosReorthCount, Finsupp.add_apply, Finsupp.single_apply,
+    OpKind.bin.injEq, OpKind.un.injEq, OpKind.lit.injEq, OpKind.cmp.injEq,
+    OpKind.copy.injEq, OpKind.rom.injEq, reduceCtorEq, add_zero, zero_add, mul_zero,
+    ite_false, sum_map_range_eq_finsetSum]
+  -- the loop bodies depend on the step through the CGS2 width `j + 1`: Gauss's sum
+  case bin p b =>
+    have hS := two_mul_sum_range_id_add q
+    cases b <;> by_cases hp : tag = p <;>
+      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
+  case un p u =>
+    have hS := two_mul_sum_range_id_add q
+    cases u <;> by_cases hp : tag = p <;>
+      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
+  case lit p =>
+    have hS := two_mul_sum_range_id_add q
+    by_cases hp : tag = p
+    · simp [hp, Finset.sum_add_distrib]; nlinarith
+    · simp [hp]
+  all_goals (try split_ifs) <;> norm_num <;> ring_nf <;> omega
 
 namespace LanczosReorthImplementation
 
