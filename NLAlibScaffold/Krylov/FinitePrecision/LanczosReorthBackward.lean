@@ -330,6 +330,53 @@ theorem exists_lanczosState_backward (hη : L.η₀ ≤ 1 / 100)
     split_ifs <;> rfl
   · exact lanczosState_backward_start_norm L hη hsmall
 
+/-- An orthogonal $\mathbf{Z}$ preserves dot products. -/
+private theorem dotProduct_mulVec_mulVec_of_transpose_mul_self {Z : Matrix (Fin n) (Fin n) ℝ}
+    (hZ : Zᵀ * Z = 1) (x y : Fin n → ℝ) : (Z *ᵥ x) ⬝ᵥ (Z *ᵥ y) = x ⬝ᵥ y := by
+  rw [Matrix.dotProduct_mulVec, Matrix.vecMul_mulVec, ← Matrix.mulVec_transpose, hZ,
+    Matrix.transpose_one, Matrix.one_mulVec]
+
+/-- One exact Lanczos step commutes with an orthogonal similarity. -/
+private theorem lanczosStep_mul_mul_transpose {Z : Matrix (Fin n) (Fin n) ℝ} (hZ : Zᵀ * Z = 1)
+    (M : Matrix (Fin n) (Fin n) ℝ) (s : LanczosState ℝ (Fin n)) :
+    lanczosAlpha (Z * M * Zᵀ) ⟨Z *ᵥ s.prev, Z *ᵥ s.cur, s.beta⟩ = lanczosAlpha M s ∧
+    lanczosStep (Z * M * Zᵀ) ⟨Z *ᵥ s.prev, Z *ᵥ s.cur, s.beta⟩ =
+      ⟨Z *ᵥ (lanczosStep M s).prev, Z *ᵥ (lanczosStep M s).cur, (lanczosStep M s).beta⟩ := by
+  have hZ' : HasOrthonormalCols Z := by
+    rw [hasOrthonormalCols_iff, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hZ
+  have hM : ∀ c, (Z * M * Zᵀ) *ᵥ (Z *ᵥ c) = Z *ᵥ (M *ᵥ c) := fun c => by
+    rw [Matrix.mulVec_mulVec, Matrix.mul_assoc (Z * M), hZ, Matrix.mul_one,
+      ← Matrix.mulVec_mulVec]
+  have hα : lanczosAlpha (Z * M * Zᵀ) ⟨Z *ᵥ s.prev, Z *ᵥ s.cur, s.beta⟩ = lanczosAlpha M s := by
+    simp only [lanczosAlpha, star_trivial, RCLike.re_to_real, hM]
+    rw [← Matrix.mulVec_smul, ← Matrix.mulVec_sub,
+      dotProduct_mulVec_mulVec_of_transpose_mul_self hZ]
+  refine ⟨hα, ?_⟩
+  simp only [lanczosStep, hα, hM]
+  simp only [← Matrix.mulVec_smul, ← Matrix.mulVec_sub, hZ'.norm_toLp_mulVec]
+
+/-- Exact Lanczos is equivariant under an orthogonal similarity: the states map by
+$\mathbf{Z}$. -/
+private theorem lanczosState_mul_mul_transpose {Z : Matrix (Fin n) (Fin n) ℝ} (hZ : Zᵀ * Z = 1)
+    (M : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ) (j : ℕ) :
+    lanczosState (Z * M * Zᵀ) (Z *ᵥ u) j =
+      ⟨Z *ᵥ (lanczosState M u j).prev, Z *ᵥ (lanczosState M u j).cur,
+        (lanczosState M u j).beta⟩ := by
+  induction j with
+  | zero =>
+    have hZ' : HasOrthonormalCols Z := by
+      rw [hasOrthonormalCols_iff, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hZ
+    simp only [lanczosState, Matrix.mulVec_zero, Matrix.mulVec_smul, hZ'.norm_toLp_mulVec]
+  | succ j ih => rw [lanczosState, ih, (lanczosStep_mul_mul_transpose hZ M _).2]; rfl
+
+/-- The exact Lanczos tridiagonal is invariant under an orthogonal similarity. -/
+private theorem lanczosTridiagonal_mul_mul_transpose {Z : Matrix (Fin n) (Fin n) ℝ}
+    (hZ : Zᵀ * Z = 1) (M : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ) (q : ℕ) :
+    lanczosTridiagonal (Z * M * Zᵀ) (Z *ᵥ u) q = lanczosTridiagonal M u q := by
+  ext i j
+  simp only [lanczosTridiagonal, Matrix.of_apply, lanczosState_mul_mul_transpose hZ,
+    (lanczosStep_mul_mul_transpose hZ M _).1]
+
 /-- **The backward model with the exact start vector** (E5, S5): if the computed $\mathbf{v}_1$ is
 within $\delta_b$ of $\mathbf{b}/\|\mathbf{b}\|$, some symmetric $\mathbf{H}'$ with
 $$\|\mathbf{H}' - \mathbf{H}\|_{\mathsf F} \le \text{backwardRadius} + 3\|\mathbf{H}\|_2\,
@@ -360,7 +407,64 @@ theorem exists_pure_backward (hη : L.η₀ ≤ 1 / 100)
       frobNorm (H' - L.H) ≤ L.backwardRadius +
         3 * specNorm L.H * (δb + 2 * Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel) ∧
       lanczosTridiagonal H' b k = L.toLanczosData.tridiagonal := by
-  sorry
+  obtain ⟨E, hEt, hEf, hst, hT, hu⟩ := L.exists_lanczosState_backward hη hsmall hrec hτ
+  set u := colSeq (polarFactor (basisOf L.v (k + 1))) 1 with hu_def
+  set bh := ‖WithLp.toLp 2 b‖⁻¹ • b with hbh
+  have hb0 : 0 < ‖WithLp.toLp 2 b‖ := by
+    rw [norm_pos_iff]; exact fun h => hb (by simpa using congrArg WithLp.ofLp h)
+  have hbh1 : ‖WithLp.toLp 2 bh‖ = 1 := by
+    rw [hbh, WithLp.toLp_smul, norm_smul, norm_inv, norm_norm, inv_mul_cancel₀ hb0.ne']
+  -- `u` is a unit vector: it is normalized by the first Lanczos state and close to `v 1`
+  have hu1 : ‖WithLp.toLp 2 u‖ = 1 := by
+    have hcur := congrArg LanczosState.cur (hst 0 L.k_pos)
+    simp only [lanczosState, zero_add, ← hu_def] at hcur
+    have hv1 := L.abs_norm_v_sq_sub_one_le 1 le_rfl (by omega)
+    have htri := norm_sub_norm_le (WithLp.toLp 2 (L.v 1)) (WithLp.toLp 2 u)
+    rw [norm_sub_rev, ← WithLp.toLp_sub] at htri
+    have hupos : 0 < ‖WithLp.toLp 2 u‖ := by
+      nlinarith [abs_le.mp hv1, L.ε_le, norm_nonneg (WithLp.toLp 2 (L.v 1))]
+    have h := congrArg (fun x => ‖WithLp.toLp 2 x‖) hcur
+    simp only [WithLp.toLp_smul, norm_smul, norm_inv, norm_algebraMap', norm_norm,
+      inv_mul_cancel₀ hupos.ne'] at h
+    exact h.symm
+  obtain ⟨Z, hZ, hZu, -, hZf⟩ := exists_orthogonal_mulVec_eq_specNorm_sub_one_le hu1 hbh1
+  have hZ' : HasOrthonormalCols Z := by
+    rw [hasOrthonormalCols_iff, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hZ
+  have hd : ‖WithLp.toLp 2 (u - bh)‖ ≤ δb + 2 * Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
+    have := norm_sub_le (WithLp.toLp 2 (u - L.v 1)) (WithLp.toLp 2 (bh - L.v 1))
+    rw [← WithLp.toLp_sub, sub_sub_sub_cancel_right] at this
+    linarith
+  refine ⟨Z * (L.H + E) * Zᵀ, ?_, ?_, ?_⟩
+  · simp only [Matrix.transpose_mul, Matrix.transpose_add, L.transpose_H, hEt,
+      Matrix.transpose_transpose, Matrix.mul_assoc]
+  · have hf : frobNorm (Z - 1) ≤ 3 / 2 * (δb + 2 * Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel) :=
+      hZf.trans (mul_le_mul (Real.sqrt_le_iff.mpr ⟨by norm_num, by norm_num⟩) hd
+        (norm_nonneg _) (by norm_num))
+    have hZt : Zᵀ = Zᴴ := (Matrix.conjTranspose_eq_transpose_of_trivial Z).symm
+    calc frobNorm (Z * (L.H + E) * Zᵀ - L.H)
+        = frobNorm (Z * E * Zᵀ + ((Z - 1) * L.H * Zᵀ + L.H * (Z - 1)ᵀ)) := by
+          rw [Matrix.transpose_sub, Matrix.transpose_one]; congr 1; noncomm_ring
+      _ ≤ frobNorm (Z * E * Zᵀ) + (frobNorm ((Z - 1) * L.H * Zᵀ) + frobNorm (L.H * (Z - 1)ᵀ)) :=
+          (frobNorm_add_le _ _).trans (add_le_add le_rfl (frobNorm_add_le _ _))
+      _ ≤ L.backwardRadius +
+            (frobNorm (Z - 1) * specNorm L.H + specNorm L.H * frobNorm (Z - 1)) := by
+          rw [hZt, hZ'.frobNorm_mul_conjTranspose_right, hZ'.frobNorm_mul_conjTranspose_right,
+            hZ'.frobNorm_mul_left]
+          gcongr
+          · exact frobNorm_mul_le_frobNorm_mul_specNorm _ _
+          · rw [← frobNorm_transpose (Z - 1)]
+            exact frobNorm_mul_le_specNorm_mul_frobNorm _ _
+      _ ≤ _ := by nlinarith [mul_le_mul_of_nonneg_left hf (specNorm_nonneg L.H)]
+  · have hstate : lanczosState (Z * (L.H + E) * Zᵀ) b =
+        lanczosState (Z * (L.H + E) * Zᵀ) (Z *ᵥ u) := by
+      funext j
+      induction j with
+      | zero =>
+        simp only [lanczosState, hZu, hbh1, RCLike.ofReal_real_eq_id, id, inv_one, one_smul]
+        rfl
+      | succ j ih => simp only [lanczosState, ih]
+    simp only [lanczosTridiagonal, hstate]
+    rw [← lanczosTridiagonal, lanczosTridiagonal_mul_mul_transpose hZ, hT]
 
 end LanczosReorthRun
 
