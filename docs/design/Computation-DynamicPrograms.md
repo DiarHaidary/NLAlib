@@ -160,8 +160,8 @@ the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 | K7 | `implementsKernel_self` | `Computation/Subst.lean` | S |
 | KC1 | `EntryLayout.size_toArray` | `Matrix/Computation/KernelContracts.lean` | S |
 | KC2 | `EntryLayout.toMatrix_toArray` | `Matrix/Computation/KernelContracts.lean` | M |
-| KC3 | `realLayout_get_put` | `Matrix/Computation/KernelContracts.lean` | S |
-| KC4 | `pairLayout_get_put` | `Matrix/Computation/KernelContracts.lean` | S |
+| KC3 | `realLayout.get_put` | `Matrix/Computation/KernelContracts.lean` | S |
+| KC4 | `pairLayout.get_put` | `Matrix/Computation/KernelContracts.lean` | S |
 | KC5 | `isMatMulErr_exactMM` | `Matrix/Computation/KernelContracts.lean` | S |
 | KC6 | `isQRErr_exactQR` | `Matrix/Computation/KernelContracts.lean` | S |
 | KC7 | `isMatMulKernel_withKernel` | `Matrix/Computation/KernelContracts.lean` | S |
@@ -175,7 +175,7 @@ the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 | IL5 | `isExactIntLit_binaryFloatSem` | `Computation/BinaryFloatSem.lean` | M |
 | T1 | `isTapeRounding_id` | `Computation/Contract.lean` | S |
 | T2 | `Dist.law_uniform_Icc` | `RandomMatrix/Tape.lean` | S |
-| T3 | `Dist.measureReal_law_uniform_Icc` | `RandomMatrix/Tape.lean` | M |
+| T3 | `Dist.real_law_uniform_Icc` | `RandomMatrix/Tape.lean` | M |
 | T4 | `ae_forall_mem_Icc_of_hasLaw_tapeLaw` | `RandomMatrix/Tape.lean` | M |
 | T5 | `IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw` | `RandomMatrix/Tape.lean` | S |
 | T6 | `MatrixFreeRoundedProb.mono` | `RandomMatrix/Tape.lean` | S |
@@ -190,7 +190,9 @@ defined in `Exec.lean`, so it cannot go into `Store.lean`, which `Exec.lean` imp
 `Store.lean`. `RandomMatrix/Tape.lean` now imports `Computation/Contract.lean`, for T5's
 `IsTapeRounding`. The proofs of K4 and K5 use two private `Store.writeBlocks` lemmas in
 `KernelCall.lean` (a successful write writes one array per block; the writes succeed when every
-cell can be written). No public declaration was added beyond the 30.
+cell can be written). No public declaration was added beyond the 30. Three were renamed for rule N2 (coordinator,
+2026-11-06): KC3 `realLayout_get_put` → `realLayout.get_put`, KC4 `pairLayout_get_put` →
+`pairLayout.get_put`, T3 `Dist.measureReal_law_uniform_Icc` → `Dist.real_law_uniform_Icc`.
 
 ## 0. Summary
 

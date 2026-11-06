@@ -47,7 +47,7 @@ is part of the definition, never a hypothesis of a theorem, so it cannot depend 
 * `NLAlib.Computation.ProgFamily.MatrixFreeProb.prog`: a result for a family is a result for a
   program that instantiates to it.
 * `NLAlib.Computation.Dist.law_uniform_Icc`: the uniform law gives $[-1, 1]$ mass one.
-* `NLAlib.Computation.Dist.measureReal_law_uniform_Icc`: the mass of a subinterval.
+* `NLAlib.Computation.Dist.real_law_uniform_Icc`: the mass of a subinterval.
 * `NLAlib.Computation.ae_forall_mem_Icc_of_hasLaw_tapeLaw`: ideal uniform draws lie in
   $[-1, 1]$.
 * `NLAlib.Computation.IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw`: so do stored ones.
@@ -264,7 +264,7 @@ theorem Dist.law_uniform_Icc : Dist.uniform.law (Set.Icc (-1) 1) = 1 :=
 $[a, b]$ with probability
 $$\frac{b - a}{2}.$$
 No printed source. -/
-theorem Dist.measureReal_law_uniform_Icc {a b : ℝ} (ha : -1 ≤ a) (hab : a ≤ b) (hb : b ≤ 1) :
+theorem Dist.real_law_uniform_Icc {a b : ℝ} (ha : -1 ≤ a) (hab : a ≤ b) (hb : b ≤ 1) :
     Dist.uniform.law.real (Set.Icc a b) = (b - a) / 2 := by
   have hab' : 0 ≤ b - a := by linarith
   have h2 : 0 ≤ 1 - (-1 : ℝ) := by norm_num

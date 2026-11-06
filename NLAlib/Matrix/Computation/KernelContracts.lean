@@ -56,7 +56,7 @@ None: the statements about these contracts (the exact routines meet them, an int
 the lifted kernels meets the kernel contracts) are proof obligations of the stage.
 * `NLAlib.Computation.EntryLayout.size_toArray`, `NLAlib.Computation.EntryLayout.toMatrix_toArray`:
   packed storage.
-* `NLAlib.Computation.realLayout_get_put`, `NLAlib.Computation.pairLayout_get_put`: the two
+* `NLAlib.Computation.realLayout.get_put`, `NLAlib.Computation.pairLayout.get_put`: the two
   layouts read back.
 * `NLAlib.Computation.isMatMulErr_exactMM`, `NLAlib.Computation.isQRErr_exactQR`: the exact
   witnesses.
@@ -256,13 +256,13 @@ theorem EntryLayout.toMatrix_toArray [Inhabited K] (L : EntryLayout K E)
     e1, e2, Option.getD_some]
 
 /-- The real layout reads back: one word holds a real entry. No printed source. -/
-theorem realLayout_get_put (e : K) :
+theorem realLayout.get_put (e : K) :
     (realLayout (K := K)).get ((realLayout (K := K)).put e) = e := by
   rfl
 
 /-- The interleaved layout reads back: two words hold a complex entry as a pair. No printed
 source. -/
-theorem pairLayout_get_put (e : K × K) :
+theorem pairLayout.get_put (e : K × K) :
     (pairLayout (K := K)).get ((pairLayout (K := K)).put e) = e := by
   rfl
 
