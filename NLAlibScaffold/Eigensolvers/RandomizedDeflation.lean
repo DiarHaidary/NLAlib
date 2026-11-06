@@ -31,7 +31,7 @@ open scoped Matrix
 namespace NLAlib
 
 /-- At $u = 0$ the machine contract holds with any matrix-multiplication constant. -/
-private lemma FloatMachine.IsAccurate.of_u_eq_zero_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+private lemma FloatMachine.IsAccurate.of_u_eq_zero {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec 0 τ Ω μM μQ cN)
     (μM' : ℕ → ℝ) : M.IsAccurate dec 0 τ Ω μM' μQ cN :=
   { hM with
@@ -45,7 +45,7 @@ private lemma FloatMachine.IsAccurate.of_u_eq_zero_aux {F : Type*} {M : FloatMac
 
 /-- With range $\Omega \ge 1$ the contract forces $u \ge 0$, and $\mu_{\mathrm{MM}}(n) \ge 0$ when
 $u > 0$ and $n \ge 1$ (the stored identity times itself). -/
-private lemma FloatMachine.IsAccurate.nonneg_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+private lemma FloatMachine.IsAccurate.nonneg_of_one_le {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     {n : ℕ} (hn : 0 < n) (hΩ : 1 ≤ Ω) : 0 ≤ u ∧ (0 < u → 0 ≤ μM n) := by
   have hmax : (0 : ℝ) < max 1 τ := lt_of_lt_of_le one_pos (le_max_left _ _)
@@ -134,6 +134,77 @@ private lemma measureReal_rank_deflate_le {Ω' : Type*} {mΩ' : MeasurableSpace 
     refine le_trans (measureReal_mono (fun ω hω => hω.2)) (le_trans hL ?_)
     simp
 
+/-- The deterministic step of randomized deflation: on the event
+$\|\mathbf{G}\|_2 < \sqrt2(2\sqrt n + t)$, $\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) > x$,
+some unitary $\mathbf{W}$ has
+$\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6\bar m\beta$. -/
+private lemma FloatMachine.IsAccurate.exists_specNorm_mul_sub_deflate_le_of_good
+    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)
+    {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
+    {S : Matrix (Fin r) (Fin r) ℂ} (hS : IsUnit S) {A : Matrix (Fin n) (Fin n) ℂ}
+    {A' : Matrix (Fin n) (Fin n) (F × F)} (hA : A = U * S * Vᴴ)
+    (hβ : specNorm (A - decodeMatrix dec A') ≤ β) (hβ₁ : β ≤ 1) (ht : 0 ≤ t) (hx : 0 < x)
+    (hmβ : (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x * β ≤ 1 / 5)
+    (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β) (hτ : τ ≤ specNorm S * x)
+    (hτN : τ * √(n : ℝ) ≤ x)
+    (hΩ : 2 * (specNorm S + 1) * (√2 * (2 * √(n : ℝ) + t)) ≤ Ω)
+    {Gm : Matrix (Fin n) (Fin n) ℂ} (hGB : specNorm Gm < √2 * (2 * √(n : ℝ) + t))
+    (hσ : r ≠ 0 → x < singularValues (Vᴴ * Gm.submatrix id (Fin.castLE hr)) (r - 1)) :
+    ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
+      specNorm (U * W - decodeMatrix dec (deflate M r A' Gm)) ≤
+        6 * ((specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x) * β := by
+  have hβ0 : 0 ≤ β := (specNorm_nonneg _).trans hβ
+  have hσ0 : 0 ≤ specNorm S := specNorm_nonneg S
+  have hB0 : 0 ≤ √2 * (2 * √(n : ℝ) + t) := by positivity
+  rcases eq_or_ne r 0 with h0 | h0
+  · subst h0
+    refine ⟨1, hasOrthonormalCols_one, ?_⟩
+    rw [Subsingleton.elim (U * 1 - _) 0, specNorm_zero]
+    have : 0 ≤ (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x := by
+      have := specNorm_nonneg S⁻¹
+      positivity
+    exact mul_nonneg (mul_nonneg (by norm_num) this) hβ0
+  have hn : 0 < n := by omega
+  have hΩ1 : 1 ≤ Ω := by
+    have hn1 : (1 : ℝ) ≤ √(n : ℝ) := Real.one_le_sqrt.mpr (by exact_mod_cast hn)
+    have hs2 : (1 : ℝ) ≤ √2 := Real.one_le_sqrt.mpr (by norm_num)
+    nlinarith
+  obtain ⟨hu0, hμpos⟩ := hM.nonneg_of_one_le hn hΩ1
+  obtain ⟨μ', hM', hμ', hu''⟩ : ∃ μ' : ℕ → ℝ, M.IsAccurate dec u τ Ω μ' μQ cN ∧ 0 ≤ μ' n ∧
+      (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μ' n) * u ≤ β := by
+    rcases hu0.eq_or_lt with h | h
+    · subst h
+      exact ⟨fun _ => 0, hM.of_u_eq_zero _, le_rfl, by rw [mul_zero]; exact hβ0⟩
+    · exact ⟨μM, hM, hμpos h, hu⟩
+  have hlow : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤
+      ‖WithLp.toLp 2 ((Vᴴ * Gm.submatrix id (Fin.castLE hr)) *ᵥ z)‖ := fun z =>
+    (mul_le_mul_of_nonneg_right (hσ h0).le (norm_nonneg _)).trans
+      (singularValues_last_mul_norm_le _ (k := r - 1) (by rw [Fintype.card_fin]; omega) z)
+  obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le_of_lower_bound hx hlow
+  have hMG : specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr)) ≤ specNorm Gm := by
+    have h1 : specNorm Vᴴ ≤ 1 := by rw [specNorm_conjTranspose]; exact hV.specNorm_le_one
+    have h2 := specNorm_submatrix_le Gm Function.injective_id (Fin.castLE_injective hr)
+    calc _ ≤ specNorm Vᴴ * specNorm (Gm.submatrix id (Fin.castLE hr)) := specNorm_mul_le _ _
+      _ ≤ 1 * specNorm Gm := by gcongr
+      _ = specNorm Gm := one_mul _
+  have hxG : x ≤ specNorm Gm := (hσ h0).le.trans ((singularValues_le_specNorm _ _).trans hMG)
+  have hΩ' : 2 * (specNorm S + β) * specNorm Gm ≤ Ω := by
+    have h1 : 2 * (specNorm S + β) ≤ 2 * (specNorm S + 1) := by linarith
+    nlinarith [mul_le_mul h1 hGB.le (specNorm_nonneg _) (by positivity)]
+  have hΩG : specNorm Gm ≤ Ω := by nlinarith [mul_nonneg hσ0 hB0, hGB.le]
+  have hmval : (specNorm S + β + 1) * specNorm S⁻¹ * specNorm Gm *
+      specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr))⁻¹ ≤
+      (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x := by
+    have h1 : specNorm S + β + 1 ≤ specNorm S + 2 := by linarith
+    rw [div_eq_mul_one_div]
+    gcongr
+  obtain ⟨W, hW, hWb⟩ :=
+    FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
+      hM' hμ' hu0 hr hU hV hS hA hβ hGu rfl (mul_le_mul_of_nonneg_right hmval hβ0 |>.trans hmβ)
+      hu'' (hτ.trans (mul_le_mul_of_nonneg_left hxG hσ0)) (hτN.trans hxG) hΩ' hΩG
+  exact ⟨W, hW, hWb.trans (by gcongr)⟩
+
 /-- **Randomized deflation** (Theorem 3.3): under the machine contract
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants $\mu_{\mathrm{MM}}$,
 $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$, let $r \le n$, $\mathbf{U}, \mathbf{V} \in
@@ -182,93 +253,11 @@ theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_
         6 * ((specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x) * β} ≤
       2 * Real.exp (-t ^ 2 / 2) + r ^ 2 * x ^ 2 := by
   have : IsProbabilityMeasure μ := hG.isProbabilityMeasure
-  have hβ0 : 0 ≤ β := (specNorm_nonneg _).trans hβ
-  have hσ0 : 0 ≤ specNorm S := specNorm_nonneg S
-  have hB0 : 0 ≤ √2 * (2 * √(n : ℝ) + t) := by positivity
-  -- the deterministic bound on the good event
-  have key : ∀ Gm : Matrix (Fin n) (Fin n) ℂ, specNorm Gm < √2 * (2 * √(n : ℝ) + t) →
-      (r ≠ 0 → x < singularValues (Vᴴ * Gm.submatrix id (Fin.castLE hr)) (r - 1)) →
-      ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
-        specNorm (U * W - decodeMatrix dec (deflate M r A' Gm)) ≤
-          6 * ((specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x) * β := by
-    intro Gm hGB hσ
-    rcases eq_or_ne r 0 with h0 | h0
-    · subst h0
-      refine ⟨1, hasOrthonormalCols_one, ?_⟩
-      rw [Subsingleton.elim (U * 1 - _) 0, specNorm_zero]
-      exact mul_nonneg (mul_nonneg (by norm_num) (div_nonneg (mul_nonneg (mul_nonneg
-        (by linarith) (specNorm_nonneg _)) hB0) hx.le)) hβ0
-    have hn : 0 < n := by omega
-    have hΩ1 : 1 ≤ Ω := by
-      have hn1 : (1 : ℝ) ≤ √(n : ℝ) := Real.one_le_sqrt.mpr (by exact_mod_cast hn)
-      have hs2 : (1 : ℝ) ≤ √2 := Real.one_le_sqrt.mpr (by norm_num)
-      have hb : 2 ≤ √2 * (2 * √(n : ℝ) + t) := by nlinarith
-      nlinarith
-    obtain ⟨hu0, hμpos⟩ := hM.nonneg_aux hn hΩ1
-    obtain ⟨μ', hM', hμ', hu''⟩ : ∃ μ' : ℕ → ℝ, M.IsAccurate dec u τ Ω μ' μQ cN ∧ 0 ≤ μ' n ∧
-        (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μ' n) * u ≤ β := by
-      rcases hu0.eq_or_lt with h | h
-      · subst h
-        exact ⟨fun _ => 0, hM.of_u_eq_zero_aux _, le_rfl, by rw [mul_zero]; exact hβ0⟩
-      · exact ⟨μM, hM, hμpos h, hu⟩
-    have hlow : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤
-        ‖WithLp.toLp 2 ((Vᴴ * Gm.submatrix id (Fin.castLE hr)) *ᵥ z)‖ := by
-      intro z
-      rcases eq_or_ne r 0 with h0 | h0
-      · have hz0 : ∀ v : Fin 0 → ℂ, ‖WithLp.toLp 2 v‖ = 0 := fun v => by
-          rw [Subsingleton.elim v 0]
-          simp
-        subst h0
-        simp [hz0]
-      · have h1 := singularValues_last_mul_norm_le (Vᴴ * Gm.submatrix id (Fin.castLE hr))
-          (k := r - 1) (by rw [Fintype.card_fin]; omega) z
-        exact (mul_le_mul_of_nonneg_right (hσ h0).le (norm_nonneg _)).trans h1
-    obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le_of_lower_bound hx hlow
-    have h1 : specNorm Vᴴ ≤ 1 := by rw [specNorm_conjTranspose]; exact hV.specNorm_le_one
-    have h2 : specNorm (Gm.submatrix id (Fin.castLE hr)) ≤ specNorm Gm :=
-      specNorm_submatrix_le Gm Function.injective_id (Fin.castLE_injective hr)
-    have hMG : specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr)) ≤ specNorm Gm :=
-      (specNorm_mul_le _ _).trans ((mul_le_mul h1 h2 (specNorm_nonneg _) zero_le_one).trans
-        (one_mul _).le)
-    have hxG : r ≠ 0 → x ≤ specNorm Gm := fun h0 =>
-      (hσ h0).le.trans ((singularValues_le_specNorm _ _).trans hMG)
-    have hτ0 : r = 0 → τ ≤ 0 := fun h0 => by
-      rw [specNorm_eq_zero_of_eq_zero h0 S, zero_mul] at hτ; exact hτ
-    have hτ' : τ ≤ specNorm S * specNorm Gm := by
-      rcases eq_or_ne r 0 with h0 | h0
-      · rw [specNorm_eq_zero_of_eq_zero h0 S, zero_mul]
-        exact hτ0 h0
-      · exact hτ.trans (mul_le_mul_of_nonneg_left (hxG h0) hσ0)
-    have hτN' : τ * √(n : ℝ) ≤ specNorm Gm := by
-      rcases eq_or_ne r 0 with h0 | h0
-      · nlinarith [Real.sqrt_nonneg (n : ℝ), specNorm_nonneg Gm, hτ0 h0]
-      · exact hτN.trans (hxG h0)
-    have hΩ' : 2 * (specNorm S + β) * specNorm Gm ≤ Ω := by
-      have h1 : 2 * (specNorm S + β) ≤ 2 * (specNorm S + 1) := by linarith
-      nlinarith [mul_le_mul h1 hGB.le (specNorm_nonneg _) (by positivity)]
-    have hΩG : specNorm Gm ≤ Ω := by nlinarith [mul_nonneg hσ0 hB0, hGB.le]
-    have hmval : (specNorm S + β + 1) * specNorm S⁻¹ * specNorm Gm *
-        specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr))⁻¹ ≤
-        (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x := by
-      have h1 : specNorm S + β + 1 ≤ specNorm S + 2 := by linarith
-      calc (specNorm S + β + 1) * specNorm S⁻¹ * specNorm Gm *
-            specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr))⁻¹
-          ≤ (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) * (1 / x) := by
-            gcongr
-        _ = _ := by ring
-    obtain ⟨W, hW, hWb⟩ :=
-      FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
-        hM' hμ' hu0 hr hU hV hS hA hβ hGu rfl (mul_le_mul_of_nonneg_right hmval hβ0 |>.trans hmβ)
-        hu'' hτ' hτN' hΩ' hΩG
-    exact ⟨W, hW, hWb.trans (mul_le_mul_of_nonneg_right
-      (mul_le_mul_of_nonneg_left hmval (by norm_num)) hβ0)⟩
-  -- the two bad events
   have hE1 : μ.real {ω | √2 * (2 * √(n : ℝ) + t) ≤ specNorm (G ω)} ≤ 2 * Real.exp (-t ^ 2 / 2) := by
-    refine le_trans (measureReal_mono (fun ω hω => ?_))
+    refine le_trans (measureReal_mono fun ω hω => ?_)
       (measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix hG ht)
-    simp only [Set.mem_setOf_eq, Fintype.card_fin] at hω ⊢
+    simp only [Set.mem_ofPred_eq, Fintype.card_fin] at hω ⊢
     linarith
-  have hE2 := measureReal_rank_deflate_le hr hV hG hx.le
   have hsub : {ω | ¬ ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
       specNorm (U * W - decodeMatrix dec (deflate M r A' (G ω))) ≤
         6 * ((specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x) * β} ⊆
@@ -276,9 +265,10 @@ theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_
         {ω | r ≠ 0 ∧ singularValues (Vᴴ * (G ω).submatrix id (Fin.castLE hr)) (r - 1) ≤ x} := by
     intro ω hω
     by_contra hcon
-    simp only [Set.mem_union, Set.mem_setOf_eq, not_or, not_le, not_and] at hcon hω
-    exact hω (key (G ω) hcon.1 hcon.2)
-  refine (measureReal_mono hsub).trans ((measureReal_union_le _ _).trans ?_)
-  exact add_le_add hE1 hE2
+    simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le, not_and] at hcon hω
+    exact hω (hM.exists_specNorm_mul_sub_deflate_le_of_good hr hU hV hS hA hβ hβ₁ ht hx hmβ hu
+      hτ hτN hΩ hcon.1 hcon.2)
+  exact (measureReal_mono hsub).trans ((measureReal_union_le _ _).trans
+    (add_le_add hE1 (measureReal_rank_deflate_le hr hV hG hx.le)))
 
 end NLAlib
