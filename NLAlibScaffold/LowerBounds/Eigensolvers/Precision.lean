@@ -88,6 +88,15 @@ theorem exists_mul_card_le_specNorm_add_smul (M : Matrix n n ℂ) {δ : ℝ} (h�
   · refine ⟨-1, by simp, main (-1) (le_abs.mpr (Or.inr ?_))⟩
     nlinarith [sq_nonneg c]
 
+/-- The spectral norm of the real all-ones matrix is the number of indices. -/
+private theorem specNorm_allOnes_eq_card :
+    specNorm (Matrix.of fun _ _ : n => (1 : ℝ)) = Fintype.card n := by
+  have hJ : (Matrix.of fun _ _ : n => (1 : ℝ)) =
+      Matrix.vecMulVec (fun _ : n => (1 : ℝ)) (fun _ : n => (1 : ℝ)) := by
+    ext i j; simp [Matrix.vecMulVec]
+  rw [hJ, specNorm_vecMulVec, ← sq, EuclideanSpace.norm_sq_eq]
+  simp
+
 /-- **A lower bound for diagonalization from rounded input**: let $\mathrm{fl}$ be a rounding of
 reals and $\mathcal{A}$ any method that maps the rounded input $\mathrm{fl}(\mathbf{A})$
 (entrywise) of a real symmetric $\mathbf{A}$ to $(\mathbf{U}, \mathbf{d})$, with
@@ -112,7 +121,47 @@ theorem mul_card_le_of_forall_specNorm_sub_le [DecidableEq n] {fl : ℝ → ℝ}
     {H : Matrix n n ℝ} (hH : H.IsSymm)
     (hfl : ∀ i j, ∀ s ∈ ({1, -1} : Set ℝ), fl (H i j + s * δ) = fl (H i j)) :
     δ * Fintype.card n ≤ ε * (specNorm H + δ * Fintype.card n) := by
-  sorry
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have hH : H = 0 := Subsingleton.elim _ _
+    simp [hH, specNorm_zero]
+  have hε : 0 ≤ ε := by
+    have h0 : 0 ≤ ε * specNorm (1 : Matrix n n ℝ) :=
+      (specNorm_nonneg _).trans (halg 1 Matrix.isSymm_one)
+    rw [specNorm_one] at h0
+    linarith
+  have hJs : (Matrix.of fun _ _ : n => (1 : ℝ)).IsSymm := by
+    ext i j; simp
+  obtain ⟨s, hs, hle⟩ := exists_mul_card_le_specNorm_add_smul
+    (H.map (fun x : ℝ => (x : ℂ)) - (alg (H.map fl)).1 *
+      Matrix.diagonal (fun i => ((alg (H.map fl)).2 i : ℂ)) * (alg (H.map fl)).1ᴴ) hδ
+  have hfl' : (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)).map fl = H.map fl := by
+    ext i j
+    simp only [Matrix.map_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.of_apply,
+      smul_eq_mul, mul_one]
+    exact hfl i j s hs
+  have hmain := halg (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ))
+    (hH.add (hJs.smul _))
+  rw [hfl'] at hmain
+  have hM : (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)).map (fun x : ℝ => (x : ℂ)) -
+      (alg (H.map fl)).1 * Matrix.diagonal (fun i => ((alg (H.map fl)).2 i : ℂ)) *
+        (alg (H.map fl)).1ᴴ =
+      (H.map (fun x : ℝ => (x : ℂ)) - (alg (H.map fl)).1 *
+        Matrix.diagonal (fun i => ((alg (H.map fl)).2 i : ℂ)) * (alg (H.map fl)).1ᴴ) +
+        (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ) := by
+    ext i j
+    simp [Matrix.map_apply, Matrix.add_apply, Complex.real_smul]
+    ring
+  rw [hM] at hmain
+  have hsJ : specNorm (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)) ≤
+      specNorm H + δ * Fintype.card n := by
+    refine (specNorm_add_le _ _).trans ?_
+    rw [specNorm_real_smul, specNorm_allOnes_eq_card]
+    have habs : |s * δ| = δ := by
+      rcases hs with rfl | rfl <;> simp [abs_of_nonneg hδ]
+    rw [habs]
+  calc δ * Fintype.card n ≤ specNorm _ := hle
+    _ ≤ ε * specNorm (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)) := hmain
+    _ ≤ ε * (specNorm H + δ * Fintype.card n) := mul_le_mul_of_nonneg_left hsJ hε
 
 /-- **Hermitian diagonalization needs $\log_2(1/\varepsilon) + \tfrac12\log_2 n - 2$ bits**
 (Proposition 1.1): for $t \ge 1$, $0 < \varepsilon < 1$ and $n = 2^b$, any method that maps the
