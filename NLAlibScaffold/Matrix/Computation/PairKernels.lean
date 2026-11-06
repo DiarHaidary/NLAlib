@@ -923,6 +923,112 @@ theorem read_of_exec_ztraceRe (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ} {dst :
       some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).traceRe A) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (dst.buf, dst.idx.eval, 1) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal with hM
+  have key : (ztraceRe (ι := ι) p (.const n) X xo dst).run = .seq
+      (.named "ztraceRe" [.idx (.const n), .buf X, .idx xo, .cell dst]
+        (.seq (.instr (.lit p dst 0)) (.seq (.loop (IExp.const n) fun i => .seq
+          (.instr (.bin p .add dst dst ⟨X, xo + zidx (IExp.const n) (.var i) (.var i)⟩)) .skip)
+          .skip)))
+      .skip := rfl
+  rw [key, exec_seq_skip, exec_named] at h
+  -- the literal $0$ first
+  obtain ⟨v0, hv0⟩ : ∃ v, I.sem.lit p 0 = some v := by
+    cases hl : I.sem.lit p 0 with
+    | none => simp [exec_seq, exec_instr, Instr.run, hl] at h
+    | some v => exact ⟨v, rfl⟩
+  obtain ⟨s0, hs0⟩ : ∃ s, st.store.write p dst.buf dst.idx.eval v0 = some s := by
+    cases hw : st.store.write p dst.buf dst.idx.eval v0 with
+    | none => simp [exec_seq, exec_instr, Instr.run, hv0, hw] at h
+    | some s => exact ⟨s, rfl⟩
+  rw [exec_seq_instr_lit I hv0 hs0, exec_seq_skip] at h
+  have hMz : M.zero = v0 := by
+    show (I.sem.lit p 0).getD default = v0
+    rw [hv0]; rfl
+  -- the cells of the input block read as stored
+  have hXd : ∀ i (hi : i < n), st.store.read p X (xo.eval + 2 * (i + n * i)) =
+      some (A ⟨i, hi⟩ ⟨i, hi⟩).1 := by
+    intro i hi
+    simpa [pairLayout] using hA ⟨i, hi⟩ ⟨i, hi⟩ (0 : Fin 2)
+  have hdis : ∀ i (hi : i < n), blockDisjoint (X, xo.eval + 2 * (i + n * i), 1)
+      (dst.buf, dst.idx.eval, 1) = true := by
+    intro i hi
+    have hlt : i + n * i < n * n := by nlinarith [Nat.mul_le_mul_left n (show i + 1 ≤ n from hi)]
+    by_cases hb : dst.buf = X
+    · rw [hb] at hdX ⊢
+      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+        Bool.or_eq_true] at hdX ⊢
+      omega
+    · simp [blockDisjoint, Ne.symm hb]
+  -- one step: the accumulator plus the diagonal real part
+  have bstep : ∀ (k : ℕ) (acc : K) (s₁ s₂ : St P K C),
+      s₁.store.read p dst.buf dst.idx.eval = some acc →
+      exec I (.seq (.instr (.bin p .add dst dst ⟨X, xo + zidx (IExp.const n) (.var k) (.var k)⟩))
+        .skip) s₁ = some s₂ →
+      ∃ x s, s₁.store.read p X (xo.eval + 2 * (k + n * k)) = some x ∧
+        s₁.store.write p dst.buf dst.idx.eval (M.add acc x) = some s ∧
+        s₂.store = s ∧ s₂.pos = s₁.pos := by
+    intro k acc s₁ s₂ hacc hr
+    obtain ⟨x, hx⟩ : ∃ x, s₁.store.read p X (xo.eval + 2 * (k + n * k)) = some x := by
+      cases hx : s₁.store.read p X (xo.eval + 2 * (k + n * k)) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hacc, hx, zidx, IExp.eval] at hr
+      | some x => exact ⟨x, rfl⟩
+    obtain ⟨v, hv⟩ : ∃ v, I.sem.bin p .add acc x = some v := by
+      cases hb : I.sem.bin p .add acc x with
+      | none => simp [exec_seq, exec_instr, Instr.run, hacc, hx, hb, zidx, IExp.eval] at hr
+      | some v => exact ⟨v, rfl⟩
+    obtain ⟨s, hw⟩ : ∃ s, s₁.store.write p dst.buf dst.idx.eval v = some s := by
+      cases hw : s₁.store.write p dst.buf dst.idx.eval v with
+      | none => simp [exec_seq, exec_instr, Instr.run, hacc, hx, hv, hw, zidx, IExp.eval] at hr
+      | some s => exact ⟨s, rfl⟩
+    have hMv : M.add acc x = v := by
+      show (I.sem.bin p .add acc x).getD default = v
+      rw [hv]; rfl
+    rw [exec_seq_instr_bin (dst := dst) (x := dst) (y := (⟨X, xo + zidx (IExp.const n) (IExp.var k) (IExp.var k)⟩ : Cell ℕ ℕ)) I hacc hx hv hw, exec_skip] at hr
+    cases hr
+    exact ⟨x, s, hx, hMv ▸ hw, rfl, rfl⟩
+  -- the fold over the first $k + 1$ diagonal entries is one more step
+  have hfold : ∀ k (hk : k < n), ((List.finRange n).take (k + 1)).foldl
+      (fun acc j => M.add acc (A j j).1) M.zero =
+      M.add (((List.finRange n).take k).foldl (fun acc j => M.add acc (A j j).1) M.zero)
+        (A ⟨k, hk⟩ ⟨k, hk⟩).1 := by
+    intro k hk
+    rw [List.take_succ, List.foldl_append]
+    simp [hk]
+  have hne_of : ∀ b j, blockDisjoint (b, j, 1) (dst.buf, dst.idx.eval, 1) = true →
+      b ≠ dst.buf ∨ j ≠ dst.idx.eval := by
+    intro b j hd
+    by_cases hb : b = dst.buf
+    · right
+      rw [hb] at hd
+      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+        Bool.or_eq_true] at hd
+      omega
+    · exact Or.inl hb
+  -- the loop keeps the fold of the first $k$ diagonal real parts in the cell `dst`
+  have inv := forall_of_exec_loop_eq_some (I := I) (fun k s =>
+      s.store.read p dst.buf dst.idx.eval = some (((List.finRange n).take k).foldl
+        (fun acc j => M.add acc (A j j).1) M.zero) ∧
+      (∀ q b j, blockDisjoint (b, j, 1) (dst.buf, dst.idx.eval, 1) = true →
+        s.store.read q b j = st.store.read q b j) ∧
+      s.store.shape = st.store.shape ∧ s.pos = st.pos) ?_ ?_ h
+  rotate_left
+  · refine ⟨?_, fun q b j hd => Store.read_of_write_eq_some_of_ne hs0 (hne_of b j hd),
+      Store.shape_of_write_eq_some hs0, rfl⟩
+    rw [List.take_zero, List.foldl_nil, hMz]
+    exact Store.read_of_write_eq_some hs0
+  · intro k hk s₁ s₂ ⟨hd, hout, hsh, hpos⟩ hr
+    have hk2 : k < n := hk
+    obtain ⟨x, s, hx, hw, hs, hp⟩ := bstep k _ s₁ s₂ hd hr
+    rw [hout _ _ _ (hdis k hk2), hXd k hk2] at hx
+    have hxA : x = (A ⟨k, hk2⟩ ⟨k, hk2⟩).1 := (Option.some.inj hx).symm
+    refine ⟨?_, fun q b j hdj => ?_, ?_, ?_⟩
+    · rw [hs, Store.read_of_write_eq_some hw, hfold k hk2, hxA]
+    · rw [hs, Store.read_of_write_eq_some_of_ne hw (hne_of b j hdj)]
+      exact hout q b j hdj
+    · rw [hs, Store.shape_of_write_eq_some hw, hsh]
+    · rw [hp, hpos]
+  obtain ⟨hdst, hout, -, -⟩ := inv
+  rw [List.take_of_length_le (by simp)] at hdst
+  exact ⟨hdst, hout⟩
 
 end NLAlib.Computation
