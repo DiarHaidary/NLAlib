@@ -347,7 +347,16 @@ theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ
               ∀ i < m, eigenvalue A (i + (N - m)) - L.backwardRadius ≤
                   eigenvalue L.toLanczosData.tridiagonal i ∧
                 eigenvalue L.toLanczosData.tridiagonal i ≤ eigenvalue A i + L.backwardRadius) := by
-  sorry
+  obtain ⟨out, hexec, -, hout⟩ := exec_rounded_compiled I tag hsem hz hc st N q A b values hshape
+    hb hrom hdecode hA hsmall hbnz hη₀ hη hu hc₁ hτ
+  obtain ⟨v, α, β, ν, -, -, h2, h3, h6, -, hm⟩ := hout
+  refine ⟨out, hexec, α, β, ν, h2, h3, h6, fun m hm0 hmq hadm => ?_⟩
+  obtain ⟨L, hH, -, hcoef, -, hLτ, hLη, -⟩ := hm m hm0 hmq hadm
+  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, fun hrec hsm i hi => ?_⟩
+  have hlo := L.eigenvalue_sub_le_eigenvalue_tridiagonal (hLη ▸ hη) hsm hrec (hLτ ▸ hτ1) hi
+  have hhi := L.eigenvalue_tridiagonal_le_add (hLη ▸ hη) hsm hrec (hLτ ▸ hτ1) hi
+  rw [hH] at hlo hhi
+  exact ⟨hlo, hhi⟩
 
 end LanczosReorthImplementation
 
