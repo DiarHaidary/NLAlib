@@ -262,7 +262,69 @@ theorem exists_abs_eigenvalue_sub_le_of_mulVec_eq_smul (hη : L.η₀ ≤ 1 / 10
     (hy : L.toLanczosData.tridiagonal *ᵥ y = θ • y) (hy1 : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ i < n, |eigenvalue L.H i - θ| ≤ L.β k * |y L.toLanczosData.lastIndex| +
       L.backwardRadius := by
-  sorry
+  obtain ⟨E, hEs, hE, hid⟩ := L.exists_backward hη hsmall hrec hτ
+  have hgram := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+  have hsq : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) = Real.sqrt (3 * ((k : ℝ) + 1)) := by
+    push_cast; ring_nf
+  rw [hsq] at hgram
+  have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) ≤ 1 / 100 :=
+    (specNorm_le_frobNorm _).trans (by linarith)
+  have hPo := hasOrthonormalCols_polarFactor hspec (by norm_num)
+  set P := polarFactor (basisOf L.v (k + 1)) with hPdef
+  have hU : HasOrthonormalCols (P.submatrix id Fin.castSucc) :=
+    hPo.submatrix (Equiv.refl _) (Fin.castSucc_injective _)
+  have hH : L.H.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact L.transpose_H
+  have hE' : E.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hEs
+  have hA := hH.add hE'
+  have hβ : 0 ≤ L.β k := by
+    rcases Nat.eq_zero_or_pos k with h0 | h0
+    · subst h0; rw [L.β_zero]
+    · have hadm := L.admissible (k - 1) (by omega)
+      have hk : k - 1 + 1 = k := by omega
+      rw [hk] at hadm
+      have hz := L.abs_ν_sub_le (k - 1) (by omega)
+      rw [hk] at hz
+      have hz' := (abs_le.mp hz).1
+      have hnn : 0 ≤ ‖WithLp.toLp 2 (L.z k)‖ := norm_nonneg _
+      have hε := L.ε_le
+      have hε0 := L.ε_nonneg
+      have hντ : 0 ≤ L.τ * L.ν k := mul_nonneg L.τ_pos.le (by nlinarith)
+      linarith
+  set U := P.submatrix id Fin.castSucc with hUdef
+  set u : Fin n → ℝ := fun i => P i (Fin.last k) with hudef
+  set x := U *ᵥ y with hxdef
+  have hres : (L.H + E) *ᵥ x - θ • x = (y L.toLanczosData.lastIndex * L.β k) • u := by
+    have hmul : (L.H + E) *ᵥ (U *ᵥ y) = θ • (U *ᵥ y) +
+        Matrix.vecMulVec (L.β k • u) (Pi.single L.toLanczosData.lastIndex 1) *ᵥ y := by
+      rw [Matrix.mulVec_mulVec, hid, Matrix.add_mulVec, ← Matrix.mulVec_mulVec, hy,
+        Matrix.mulVec_smul]
+    rw [hxdef, hmul, add_sub_cancel_left]
+    funext i
+    simp [Matrix.vecMulVec, Matrix.mulVec, dotProduct, Pi.single_apply, hudef, mul_comm,
+      mul_left_comm]
+  have hu : ‖WithLp.toLp 2 u‖ = 1 := by
+    have h1 := hPo.norm_toLp_mulVec (Pi.single (Fin.last k) 1)
+    have h2 : P *ᵥ Pi.single (Fin.last k) 1 = u := by
+      funext i; simp [hudef]
+    rw [h2] at h1
+    rw [h1]
+    simp
+  have hx : ‖WithLp.toLp 2 x‖ = 1 := by
+    rw [hxdef, hU.norm_toLp_mulVec]; exact hy1
+  obtain ⟨i, hi, hab⟩ := Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le hA x θ
+  refine ⟨i, by simpa using hi, ?_⟩
+  have hW := Matrix.IsHermitian.abs_eigenvalue_sub_le hA hH i
+  have hd : specNorm ((L.H + E) - L.H) ≤ frobNorm E := by
+    rw [add_sub_cancel_left]; exact specNorm_le_frobNorm E
+  have hr : ‖WithLp.toLp 2 ((L.H + E).mulVec x - θ • x)‖ ≤
+      L.β k * |y L.toLanczosData.lastIndex| := by
+    rw [hres, WithLp.toLp_smul, norm_smul, hu, mul_one, Real.norm_eq_abs, abs_mul,
+      abs_of_nonneg hβ, mul_comm]
+  rw [hx, mul_one] at hab
+  linarith [abs_sub_le (eigenvalue L.H i) (eigenvalue (L.H + E) i) θ,
+    abs_sub_comm (eigenvalue (L.H + E) i) (eigenvalue L.H i)]
 
 /-- **A small last coefficient makes the computed space nearly invariant** (F3, the
 non-admissible stop): if $\beta_k \le \rho$, every Ritz value is within $\rho + e$ of an
