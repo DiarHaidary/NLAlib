@@ -117,6 +117,45 @@ theorem Interp.exists_kcallStore_eq_some {I : Interp P ι K C} {o : ι} {p : P} 
     (hw : ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, ∀ j < x.2.2,
       ∃ (v : K) (s'' : Store P K), s.write p x.1 (x.2.1 + j) v = some s'') :
     ∃ s', I.kcallStore o p ds ins outs s = some s' := by
-  sorry
+  -- the output blocks are written one after another, each write keeping the shape of the store
+  have key : ∀ (ys : List (Array K)) (bs : List (ℕ × ℕ × ℕ)) (s₀ : Store P K),
+      List.Forall₂ (fun (y : Array K) (x : ℕ × ℕ × ℕ) => y.size = x.2.2) ys bs →
+      (∀ x ∈ bs, ∀ j < x.2.2,
+        ∃ (v : K) (s'' : Store P K), s₀.write p x.1 (x.2.1 + j) v = some s'') →
+      ∃ s', s₀.writeBlocks p bs ys = some s' := by
+    intro ys
+    induction ys with
+    | nil =>
+      intro bs s₀ hF _
+      cases bs with
+      | nil => exact ⟨s₀, rfl⟩
+      | cons => cases hF
+    | cons y ys ih =>
+      intro bs s₀ hF hw
+      cases bs with
+      | nil => cases hF
+      | cons x bs =>
+        obtain ⟨hyx, hF'⟩ := List.forall₂_cons.mp hF
+        obtain ⟨s₁, hs₁⟩ := Store.exists_writeBlock_eq_some_of_write (xs := y)
+          (fun j hj => hw x List.mem_cons_self j (by omega))
+        have hsh : s₁.shape = s₀.shape := Store.shape_of_writeBlock_eq_some hs₁
+        have hw' : ∀ x' ∈ bs, ∀ j < x'.2.2, ∃ (v : K) (s'' : Store P K),
+            s₁.write p x'.1 (x'.2.1 + j) v = some s'' := by
+          intro x' hx' j hj
+          obtain ⟨v, s'', hs''⟩ := hw x' (List.mem_cons_of_mem _ hx') j hj
+          obtain ⟨s₂, hs₂⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs'' v
+          exact ⟨v, s₂, hs₂⟩
+        obtain ⟨s', hs'⟩ := ih bs s₁ hF' hw'
+        refine ⟨s', ?_⟩
+        simp only [Store.writeBlocks, hyx, if_true, hs₁, Option.bind_some]
+        exact hs'
+  have hc : ins.length = (I.kshape o ds).1.length ∧ outs.length = (I.kshape o ds).2.length ∧
+      (kcallBlocks outs (I.kshape o ds).2).Pairwise (fun x y => blockDisjoint x y = true) ∧
+      ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, ∀ y ∈ kcallBlocks ins (I.kshape o ds).1,
+        blockDisjoint x y = true :=
+    ⟨hin, hout, hpw, hio⟩
+  unfold Interp.kcallStore
+  rw [if_pos hc, hxs, Option.bind_some, hys, Option.bind_some]
+  exact key ys _ s hsize hw
 
 end NLAlib.Computation
