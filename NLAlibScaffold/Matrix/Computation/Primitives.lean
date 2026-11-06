@@ -156,6 +156,35 @@ theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (h�
         change ‖z - z‖ ≤ _
         simp }
 
+/-- Binary rounding errs by at most $u\max(\lvert x\rvert, \tau)$ at every scale, with
+$u = 2^{-p}$ and $\tau = 2^{e_{\min} + p - 1}$ (no overflow in the quantizer). -/
+private theorem abs_sub_binaryFloatRound_le_mul_max (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
+    |x - Computation.binaryFloatRound fmt r x| ≤
+      (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
+        max |x| ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) := by
+  by_cases hn : fmt.minExponent ≤ Int.log 2 |x| + 1 - fmt.mantissaBits
+  · have h := (Computation.relErr_binaryFloatRound_of_minExponent_le fmt hr x hn).absRelErr le_rfl
+    simp only [Computation.AbsRelErr, add_zero] at h
+    exact h.trans (by gcongr; exact le_max_left _ _)
+  · set e := fmt.targetExponent (Int.log 2 |x| + 1) with he_def
+    have he : e = fmt.minExponent := by
+      rw [he_def, Float.Model.Format.targetExponent_eq]; exact max_eq_right (by omega)
+    have hpos : (0 : ℝ) < 2 ^ e := zpow_pos two_pos _
+    have hq : |x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)| ≤ 1 / 2 := by
+      simpa only [Computation.AbsRelErr, zero_mul, zero_add] using hr (x / (2 : ℝ) ^ e)
+    have heq : x - Computation.binaryFloatRound fmt r x =
+        (x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)) * 2 ^ e := by
+      dsimp only [Computation.binaryFloatRound, e]
+      field_simp
+    have hτ : (1 / 2 : ℝ) * 2 ^ e =
+        (2 : ℝ)⁻¹ ^ fmt.mantissaBits * 2 ^ (fmt.minExponent + fmt.mantissaBits - 1) := by
+      rw [he, zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, inv_pow]
+      field_simp
+    rw [heq, abs_mul, abs_of_pos hpos]
+    calc _ ≤ (1 / 2 : ℝ) * 2 ^ e := mul_le_mul_of_nonneg_right hq hpos.le
+      _ ≤ _ := by rw [hτ]; gcongr; exact le_max_right _ _
+
 /-- **A bounded-format machine meets the contract**: for a binary format `fmt` with precision
 $p$, smallest exponent $e_{\min}$ and largest finite number $\Omega$, and nonnegative constants,
 there is a `NLAlib.FloatMachine` on stored reals whose addition, subtraction, multiplication,
@@ -184,7 +213,68 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
       (∀ x y, M.sub x y = Computation.binaryFloatRound fmt r (x - y)) ∧
       (∀ x y, M.mul x y = Computation.binaryFloatRound fmt r (x * y)) ∧
       (∀ x y, y ≠ 0 → M.div x y = Computation.binaryFloatRound fmt r (x / y)) := by
-  sorry
+  have hround := abs_sub_binaryFloatRound_le_mul_max fmt hr
+  set u : ℝ := (2 : ℝ)⁻¹ ^ fmt.mantissaBits
+  set τ : ℝ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
+  have hu : 0 ≤ u := by positivity
+  have hτ : 0 < τ := by positivity
+  set R := Computation.binaryFloatRound fmt r
+  obtain ⟨M₀, hM₀⟩ := exists_floatMachine_isAccurate τ fmt.maxFinite hμM hμQ (Real.sqrt_nonneg 2)
+  have hmax : ∀ a, 0 ≤ max a τ := fun a => le_max_of_le_right hτ.le
+  refine ⟨{ M₀ with
+      ofNat := (fun k => R k), add := (fun x y => R (x + y)), sub := (fun x y => R (x - y))
+      mul := (fun x y => R (x * y)), div := (fun x y => R (x / y))
+      unif := (fun s v => max (-s) (min s (R (s * v))))
+      normal := (fun z => (R z.re, R z.im)) }, ⟨hM₀.dec_zero, hM₀.dec_one,
+    fun k _ => hround _, fun x y _ => hround _, fun x y _ => hround _, fun x y _ => hround _,
+    fun x y _ _ => hround _, hM₀.dec_neg, hM₀.le_iff, hM₀.toNat_eq, ⟨?_, ?_⟩, ?_, ?_, ?_⟩,
+    fun _ _ => rfl, fun _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl⟩
+  · intro l m n A B hAB
+    refine (hM₀.isMatMulErr.specNorm_mul_sub_le A B hAB).trans ?_
+    rw [mul_zero, zero_mul]
+    exact mul_nonneg (mul_nonneg (hμM _) hu) (hmax _)
+  · exact hM₀.isMatMulErr.isHermitian_of_map_eq_conjTranspose
+  · intro m n A hA
+    obtain ⟨h1, Q', hQ', h2, h3⟩ := hM₀.isQRErr A hA
+    refine ⟨h1, Q', hQ', h2.trans ?_, h3.trans ?_⟩
+    · rw [mul_zero]; exact mul_nonneg (hμQ _) hu
+    · rw [mul_zero, zero_mul]
+      exact mul_nonneg (mul_nonneg (hμQ _) hu) (hmax _)
+  · intro s v hs hv
+    simp only [id] at hs ⊢
+    have hsv : |s * v| ≤ s := by
+      rw [abs_mul, abs_of_nonneg hs]
+      exact mul_le_of_le_one_right hs (abs_le.mpr ⟨hv.1, hv.2⟩)
+    obtain ⟨hl, hh⟩ := abs_le.mp hsv
+    have hw := hround (s * v)
+    refine ⟨abs_le.mpr ⟨le_max_left _ _, max_le (by linarith) (min_le_left _ _)⟩, ?_⟩
+    refine le_trans ?_ (hw.trans (by gcongr))
+    rcases le_total s (R (s * v)) with h | h
+    · rw [min_eq_left h, max_eq_right (by linarith), abs_of_nonpos (by linarith),
+        abs_of_nonpos (by linarith)]
+      linarith
+    · rw [min_eq_right h]
+      rcases le_total (-s) (R (s * v)) with h' | h'
+      · rw [max_eq_right h']
+      · rw [max_eq_left h', abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
+        linarith
+  · intro z _
+    have hre := hround z.re
+    have him := hround z.im
+    have hRe : max |z.re| τ ≤ max ‖z‖ τ := by gcongr; exact Complex.abs_re_le_norm z
+    have hIm : max |z.im| τ ≤ max ‖z‖ τ := by gcongr; exact Complex.abs_im_le_norm z
+    have h0 := hmax |z.re|
+    have h0' := hmax |z.im|
+    apply le_of_pow_le_pow_left₀ two_ne_zero (by positivity)
+    rw [Complex.sq_norm, Complex.normSq_apply, mul_pow, mul_pow, Real.sq_sqrt zero_le_two]
+    have e1 : (z - decodeComplex id (R z.re, R z.im)).re = z.re - R z.re := rfl
+    have e2 : (z - decodeComplex id (R z.re, R z.im)).im = z.im - R z.im := rfl
+    rw [e1, e2, ← sq, ← sq]
+    have a1 := sq_le_sq' (abs_le.mp hre).1 (abs_le.mp hre).2
+    have a2 := sq_le_sq' (abs_le.mp him).1 (abs_le.mp him).2
+    have b1 : (u * max |z.re| τ) ^ 2 ≤ (u * max ‖z‖ τ) ^ 2 := by gcongr
+    have b2 : (u * max |z.im| τ) ^ 2 ≤ (u * max ‖z‖ τ) ^ 2 := by gcongr
+    nlinarith
 
 /-- **From a mixed absolute–relative product bound to the contract with a floor**: if a routine
 on stored entries with decoding `dec` satisfies $\|\bar{\mathbf{A}}\bar{\mathbf{B}} -
