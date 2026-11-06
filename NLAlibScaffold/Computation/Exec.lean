@@ -70,7 +70,11 @@ theorem Interp.read_of_kcallStore_eq_some_of_forall {I : Interp P ι K C} {o : �
     (h : I.kcallStore o p ds ins outs s = some s') {q : P} {b i : ℕ}
     (hb : ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, b ≠ x.1 ∨ i < x.2.1 ∨ x.2.1 + x.2.2 ≤ i) :
     s'.read q b i = s.read q b i := by
-  sorry
+  unfold Interp.kcallStore at h
+  split_ifs at h with hc
+  obtain ⟨xs, -, h1⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨ys, -, h2⟩ := Option.bind_eq_some_iff.mp h1
+  exact Store.read_of_writeBlocks_eq_some_of_forall h2 hb
 
 /-- **The output blocks of a kernel call**: a successful call read its input blocks, its kernel
 returned one array per output block, and after the call cell $j$ of output block $k$ reads entry
