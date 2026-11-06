@@ -73,7 +73,38 @@ of uniform measure at most $(2w/c)/2$ (`ProbabilityTheory.cond_apply`,
 theorem measureReal_exists_abs_sub_lt_le (Λ : Finset ℝ) {c w : ℝ} (hc : 0 < c) (hw : 0 ≤ w) :
     (ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)).real
       {v | ∃ e ∈ Λ, |e - c * v| < w} ≤ Λ.card * w / c := by
-  sorry
+  rw [measureReal_def, cond_apply measurableSet_Icc]
+  have hvol : volume (Set.Icc (-1 : ℝ) 1) = ENNReal.ofReal 2 := by
+    rw [Real.volume_Icc]; norm_num
+  have hsub : Set.Icc (-1 : ℝ) 1 ∩ {v | ∃ e ∈ Λ, |e - c * v| < w} ⊆
+      ⋃ e ∈ Λ, Set.Ioo ((e - w) / c) ((e + w) / c) := by
+    rintro v ⟨-, e, he, hv⟩
+    rw [abs_lt] at hv
+    simp only [Set.mem_iUnion, Set.mem_Ioo]
+    refine ⟨e, he, ?_, ?_⟩
+    · rw [div_lt_iff₀ hc]; linarith [hv.2]
+    · rw [lt_div_iff₀ hc]; linarith [hv.1]
+  have h1 : volume (Set.Icc (-1 : ℝ) 1 ∩ {v | ∃ e ∈ Λ, |e - c * v| < w}) ≤
+      ∑ e ∈ Λ, volume (Set.Ioo ((e - w) / c) ((e + w) / c)) :=
+    (measure_mono hsub).trans (measure_biUnion_finset_le _ _)
+  have h2 : ∀ e : ℝ, volume (Set.Ioo ((e - w) / c) ((e + w) / c)) =
+      ENNReal.ofReal (2 * w / c) := by
+    intro e
+    rw [Real.volume_Ioo]
+    congr 1
+    field_simp
+    ring
+  rw [Finset.sum_congr rfl fun e _ => h2 e, Finset.sum_const, nsmul_eq_mul] at h1
+  have hpos : (0 : ℝ) ≤ Λ.card * w / c := by positivity
+  refine ENNReal.toReal_le_of_le_ofReal hpos ?_
+  rw [hvol]
+  calc (ENNReal.ofReal 2)⁻¹ * volume (Set.Icc (-1 : ℝ) 1 ∩ {v | ∃ e ∈ Λ, |e - c * v| < w})
+      ≤ (ENNReal.ofReal 2)⁻¹ * ((Λ.card : ℝ≥0∞) * ENNReal.ofReal (2 * w / c)) := by gcongr
+    _ = ENNReal.ofReal (Λ.card * w / c) := by
+      rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_inv_of_pos two_pos, ← ENNReal.ofReal_mul
+        (by positivity), ← ENNReal.ofReal_mul (by positivity)]
+      congr 1
+      field_simp
 
 /-- **Probability of the good events of a node**: under the hypotheses of
 `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` on the
