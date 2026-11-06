@@ -186,7 +186,20 @@ theorem IsMatMulKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι
     (hcb : blockDisjoint (c.1, c.2, n * l * L.width) (b.1, b.2, n * m * L.width) = true) :
     I.kcallStore o p [l, m, n] [a, b] [c] s =
       s.writeBlock p c.1 c.2 (L.toArray (mm (L.toMatrix l m X) (L.toMatrix m n Y))) := by
-  sorry
+  obtain ⟨hk, hs⟩ := h
+  unfold Interp.kcallStore
+  simp only [hs, mmShape, kcallBlocks, List.zipWith]
+  rw [if_pos ⟨rfl, rfl, List.pairwise_singleton _ _, by
+    intro x hx y hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx hy
+    subst hx
+    rcases hy with rfl | rfl
+    · exact hca
+    · exact hcb⟩]
+  simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hY, hk, liftMM]
+  simp only [bind, Option.bind, pure]
+  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true]
+  cases s.writeBlock p c.1 c.2 (L.toArray (mm (L.toMatrix l m X) (L.toMatrix m n Y))) <;> rfl
 
 /-- **A QR kernel call writes the factors**: if kernel `o` of `I` is the routine `qr` in the layout
 `L` (`NLAlib.Computation.IsQRKernel`), a call at the dimensions $[m, n]$ with input operand $a$
