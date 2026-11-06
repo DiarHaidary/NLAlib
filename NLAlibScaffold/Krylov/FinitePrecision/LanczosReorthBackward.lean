@@ -42,6 +42,34 @@ namespace LanczosReorthRun
 
 variable {n k : ℕ} (L : LanczosReorthRun n k)
 
+/-- The Frobenius norm of a residual that reappears on the right of its own decomposition
+$\mathbf{R} = \mathbf{H}\mathbf{X}_k - \mathbf{X}\mathbf{U}^{\mathsf{T}}\mathbf{H}\mathbf{U}_k +
+\mathbf{X}\mathbf{U}^{\mathsf{T}}\mathbf{R} + \mathbf{F}$, with $\|\mathbf{U}\|_2 \le 1$ and
+$\|\mathbf{U}_k\|_2 \le 1$. -/
+private theorem frobNorm_le_of_eq_sub_add_add {n k : ℕ} {H : Matrix (Fin n) (Fin n) ℝ}
+    {U X : Matrix (Fin n) (Fin (k + 1)) ℝ} {Uk R F : Matrix (Fin n) (Fin k) ℝ}
+    (hU : specNorm Uᵀ ≤ 1) (hUk : specNorm Uk ≤ 1)
+    (h : R = H * X.submatrix id Fin.castSucc - (X * Uᵀ) * (H * Uk) + (X * Uᵀ) * R + F) :
+    frobNorm R ≤ specNorm H * frobNorm X + frobNorm X * specNorm H +
+      frobNorm X * frobNorm R + frobNorm F := by
+  have hXU : frobNorm (X * Uᵀ) ≤ frobNorm X :=
+    (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans
+      (mul_le_of_le_one_right (frobNorm_nonneg _) hU)
+  have hHUk : specNorm (H * Uk) ≤ specNorm H :=
+    (specNorm_mul_le _ _).trans (mul_le_of_le_one_right (specNorm_nonneg _) hUk)
+  have hA : frobNorm (H * X.submatrix id Fin.castSucc) ≤ specNorm H * frobNorm X :=
+    (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans <| by
+      gcongr; exact frobNorm_submatrix_le X Function.injective_id (Fin.castSucc_injective k)
+  have hB : frobNorm ((X * Uᵀ) * (H * Uk)) ≤ frobNorm X * specNorm H :=
+    (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans <| by gcongr
+  have hC : frobNorm ((X * Uᵀ) * R) ≤ frobNorm X * frobNorm R :=
+    (frobNorm_mul_le_specNorm_mul_frobNorm _ _).trans <| by
+      gcongr; exact (specNorm_le_frobNorm _).trans hXU
+  calc frobNorm R = frobNorm (H * X.submatrix id Fin.castSucc - (X * Uᵀ) * (H * Uk) +
+        (X * Uᵀ) * R + F) := congrArg frobNorm h
+    _ ≤ _ := (frobNorm_add_le _ _).trans (add_le_add_left ((frobNorm_add_le _ _).trans
+        (add_le_add ((frobNorm_sub_le _ _).trans (add_le_add hA hB)) hC)) _)
+
 /-- **The symmetric backward model** (E3, S3): with $\mathbf{U} = $ `NLAlib.polarFactor`
 $\mathbf{V}_{k+1}$ and $\mathbf{U}_k$ its first $k$ columns, some symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le$ `NLAlib.LanczosReorthRun.backwardRadius` satisfies
@@ -78,7 +106,79 @@ theorem exists_backward (hη : L.η₀ ≤ 1 / 100)
           L.toLanczosData.tridiagonal +
         Matrix.vecMulVec (L.β k • fun i => polarFactor (basisOf L.v (k + 1)) i (Fin.last k))
           (Pi.single L.toLanczosData.lastIndex 1) := by
-  sorry
+  set D := L.toLanczosData
+  set V := basisOf L.v (k + 1)
+  set U := polarFactor V
+  set Uk := U.submatrix id Fin.castSucc
+  set T := D.tridiagonalSucc
+  have hG : frobNorm (Vᵀ * V - 1) ≤ Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
+    have h := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+    push_cast at h
+    exact h
+  have hGs : specNorm (Vᵀ * V - 1) ≤ 1 / 100 :=
+    ((specNorm_le_frobNorm _).trans hG).trans (hsmall.trans hη)
+  have hU : HasOrthonormalCols U := hasOrthonormalCols_polarFactor hGs (by norm_num)
+  have hUk : HasOrthonormalCols Uk := hU.submatrix (Equiv.refl _) (Fin.castSucc_injective k)
+  have hUU : Uᵀ * U = 1 := by
+    have h := hU.conjTranspose_mul_self
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at h
+  have hUT : Ukᵀ * (U * T) = D.tridiagonal := by
+    have h : Ukᵀ * (U * T) = (Uᵀ * (U * T)).submatrix Fin.castSucc id := by
+      rw [Matrix.transpose_submatrix, Matrix.submatrix_mul _ _ _ id _ Function.bijective_id]
+      rfl
+    rw [h, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+    ext i j
+    exact D.tridiagonalSucc_castSucc i j
+  set R := L.H * Uk - U * T with hR
+  have hsym : (Ukᵀ * R)ᵀ = Ukᵀ * R := by
+    rw [hR, Matrix.mul_sub, hUT, Matrix.transpose_sub, D.transpose_tridiagonal,
+      Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose, L.transpose_H,
+      Matrix.mul_assoc]
+  obtain ⟨E, hEt, hEU, hEF, -⟩ := exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols hUk hsym
+  refine ⟨E, hEt, ?_, ?_⟩
+  · set X := U - V
+    -- `R = H Xₖ - X T + F`, and `T = Uᵀ (H Uₖ - R)`
+    have hdec : R = L.H * X.submatrix id Fin.castSucc - (X * Uᵀ) * (L.H * Uk) +
+        (X * Uᵀ) * R + D.residual := by
+      have hT : T = Uᵀ * (L.H * Uk - R) := by
+        rw [hR, sub_sub_cancel, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+      have hF : L.H * V.submatrix id Fin.castSucc = V * T + D.residual :=
+        D.mul_basis_eq_basisSucc_mul
+      calc R = L.H * X.submatrix id Fin.castSucc - X * T + D.residual := by
+            rw [show X.submatrix id Fin.castSucc = Uk - V.submatrix id Fin.castSucc from rfl,
+              hR, Matrix.mul_sub, hF, Matrix.sub_mul]; abel
+        _ = _ := by
+            rw [hT]; simp only [Matrix.mul_sub, Matrix.mul_assoc]; abel
+    have hRle := frobNorm_le_of_eq_sub_add_add
+      ((specNorm_transpose U).le.trans hU.specNorm_le_one) hUk.specNorm_le_one hdec
+    have hX : frobNorm X ≤ Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
+      refine (frobNorm_polarFactor_sub_le hGs (by norm_num)).trans
+        ((div_le_self (frobNorm_nonneg _) ?_).trans hG)
+      have : (1 / 2 : ℝ) ≤ Real.sqrt (1 - 1 / 100) :=
+        Real.le_sqrt_of_sq_le (by norm_num)
+      linarith
+    have hμ : 0 ≤ L.orthLevel := by
+      have := L.τ_pos; have := L.ε₁_nonneg; have := L.ε₃_nonneg; have := L.ε_nonneg
+      unfold orthLevel; positivity
+    have hμrec : L.orthLevel ≤ L.recLevel := by
+      unfold recLevel; linarith [L.ε_nonneg, L.ε₂_nonneg]
+    have hs : Real.sqrt (3 * ((k : ℝ) + 1)) ≤ 2 * ((k : ℝ) + 1) :=
+      Real.sqrt_le_iff.mpr ⟨by positivity, by nlinarith⟩
+    have hx2 : frobNorm X ≤ 2 * ((k : ℝ) + 1) * L.recLevel :=
+      hX.trans (mul_le_mul hs hμrec hμ (by positivity))
+    have hx1 : frobNorm X ≤ 1 / 100 := hX.trans (hsmall.trans hη)
+    have hF := L.frobNorm_residual_le hη hsmall hrec hτ
+    have h2 : Real.sqrt 2 ≤ 3 / 2 := Real.sqrt_le_iff.mpr ⟨by norm_num, by norm_num⟩
+    have hH := specNorm_nonneg L.H
+    have hr0 := frobNorm_nonneg R
+    have hK : 0 ≤ ((k : ℝ) + 1) * L.recLevel * specNorm L.H :=
+      mul_nonneg (mul_nonneg (by positivity) (hμ.trans hμrec)) hH
+    have hr : 99 / 100 * frobNorm R ≤ 34 * (((k : ℝ) + 1) * L.recLevel * specNorm L.H) := by
+      nlinarith [mul_le_mul_of_nonneg_right hx1 hr0, mul_le_mul_of_nonneg_left hx2 hH]
+    unfold backwardRadius
+    nlinarith [mul_le_mul_of_nonneg_right h2 hr0]
+  · rw [Matrix.add_mul, hEU, hR, neg_sub, add_sub_cancel]
+    exact D.mul_tridiagonalSucc U
 
 /-- **Exact Lanczos on the backward model computes the run** (E4): with $\mathbf{u}_j$ the
 columns of the polar factor (`NLAlib.LanczosReorthRun.colSeq`), the exact Lanczos recurrence on
