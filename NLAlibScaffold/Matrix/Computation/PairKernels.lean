@@ -139,7 +139,21 @@ theorem exists_exec_zzero (p : P) (m n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (m * n) ≤ len) :
     ∃ st', exec I (zzero (ι := ι) p (.const m) (.const n) Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYs, hlen⟩ := hY
+  obtain ⟨z, hz⟩ := hsem.lit_ok p 0 trivial
+  have hrun : (zzero (ι := ι) p (.const m) (.const n) Y yo).run = .seq (.named "zzero"
+      [.idx (.const m), .idx (.const n), .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.lit p ⟨Y, yo + .var w⟩ 0)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall I (fun _ s => s.store.shape = st.store.shape)
+    rfl ?_).imp fun _ h => h.1
+  rintro w hw s hsh
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape z (hsh ▸ hYs)
+    (i := yo.eval + w) (by omega)
+  exact ⟨_, (exec_seq_instr_lit I (by exact_mod_cast hz) hs').trans (exec_skip I _),
+    (Store.shape_of_write_eq_some hs').trans hsh⟩
 
 /-! ### Negation and the Hermitian completion -/
 
