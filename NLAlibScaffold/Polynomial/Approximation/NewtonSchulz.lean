@@ -163,7 +163,14 @@ Proof: unfold `NLAlib.newtonSchulzSteps`; $\min(\lvert x_0 \rvert, 1/2) \ge \min
 `inv_anti₀`, `Real.logb_le_logb_of_le`. S, about 8 lines. -/
 theorem newtonSchulzSteps_le_of_le_abs {a x₀ ε : ℝ} (ha : 0 < a) (h : a ≤ |x₀|) :
     newtonSchulzSteps x₀ ε ≤ newtonSchulzSteps a ε := by
-  sorry
+  unfold newtonSchulzSteps
+  rw [abs_of_pos ha]
+  have hm : 0 < min a (1 / 2) := lt_min ha (by norm_num)
+  have hmono : min a (1 / 2) ≤ min |x₀| (1 / 2) :=
+    le_min (le_trans (min_le_left _ _) h) (min_le_right _ _)
+  have hinv : (min |x₀| (1 / 2))⁻¹ ≤ (min a (1 / 2))⁻¹ := inv_anti₀ hm hmono
+  have hpos : 0 < (min |x₀| (1 / 2))⁻¹ := inv_pos.2 (lt_of_lt_of_le hm hmono)
+  linarith [Real.logb_le_logb_of_le (by norm_num : (1:ℝ) < 2) hpos hinv]
 
 /-- The step count decreases in the tolerance: for $0 < \varepsilon' \le \varepsilon \le 1/2$,
 $N(x_0, \varepsilon) \le N(x_0, \varepsilon')$.
