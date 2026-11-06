@@ -98,7 +98,9 @@ theorem isOrthErr_of_one_pass {n j : ℕ} {V : Matrix (Fin n) (Fin j) ℝ}
     (hw₁ : specNorm (Vᵀ * V - 1) ≤ η₀ →
       ‖WithLp.toLp 2 (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤ c₁ * ‖WithLp.toLp 2 w‖) :
     IsOrthErr η₀ 0 c₁ (Real.sqrt (1 + η₀) * (η₀ + c₁)) V w h₁ w₁ := by
-  sorry
+  refine ⟨hres, fun hV => ?_⟩
+  rw [zero_mul, zero_add]
+  exact norm_transpose_mulVec_cgsPass_le hV hc₁ (hw₁ hV)
 
 private lemma norm_toLp_sub_mulVec_transpose_mulVec_le_of_gram {n j : ℕ}
     {V : Matrix (Fin n) (Fin j) ℝ} {w : Fin n → ℝ} {η₀ : ℝ}
