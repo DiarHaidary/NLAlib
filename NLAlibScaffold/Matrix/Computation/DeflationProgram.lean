@@ -186,7 +186,7 @@ theorem deflateProg.toStmt_compiled (p : P) (mm qr : ι) (N : ℕ) (n : Fin 1 �
     (deflateProg.compiled p mm qr).toStmt N n =
       ProgFamily.inst (r := 1) (b := 2) (fun _ _ N n h =>
         (deflateProg p mm qr N (n 0) (h 0) 0 (h 1) 0).run) N n := by
-  sorry
+  rfl
 
 /-- **The registered tree computes `deflate`**: if kernels `mm` and `qr` of `I` are the routines
 `mmR` and `qrR` on interleaved pairs, a successful run of `NLAlib.deflateProg.compiled` at the
