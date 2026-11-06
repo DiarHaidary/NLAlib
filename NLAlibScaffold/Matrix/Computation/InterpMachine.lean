@@ -279,6 +279,12 @@ theorem decodeMatrix_conjTransposeMat_toFloatMachine_exactSem (p : P) {m n : ℕ
   apply Complex.ext <;> simp [ScalarSem.toFloatMachine, FloatMachine.conjTransposeMat, exactSem,
     decodeMatrix, decodeComplex, Complex.conj_re, Complex.conj_im]
 
+private lemma foldl_add_eq_add_map_sum {ι : Type*} (f : ι → ℝ) (l : List ι) (a : ℝ) :
+    l.foldl (fun s i => s + f i) a = a + (l.map f).sum := by
+  induction l generalizing a with
+  | nil => simp
+  | cons x xs ih => simp [ih, add_assoc]
+
 /-- **The exact real trace**: on exact real arithmetic, the rounded trace of the real parts of a
 stored matrix with decoding $\mathbf{A}$ is $\operatorname{Re}\operatorname{tr}\mathbf{A}$. No
 printed source.
@@ -288,7 +294,9 @@ Proof: unfold `NLAlib.FloatMachine.traceRe`; `List.foldl` of `(· + ·)` from $0
 theorem traceRe_toFloatMachine_exactSem (p : P) {n : ℕ} (A : Matrix (Fin n) (Fin n) (ℝ × ℝ)) :
     ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).traceRe A =
       (Matrix.trace (decodeMatrix id A)).re := by
-  sorry
+  simp [FloatMachine.traceRe, ScalarSem.toFloatMachine, exactSem]
+  rw [foldl_add_eq_add_map_sum, zero_add, Matrix.trace, Complex.re_sum, Fin.sum_univ_def]
+  simp [decodeMatrix, decodeComplex, Matrix.diag]
 
 /-- **The exact max-modulus test**: on exact real arithmetic, the test that every part of every
 entry of a stored $m \times n$ matrix lies in $[\mathit{lo}, \mathit{hi}]$, by the machine's
