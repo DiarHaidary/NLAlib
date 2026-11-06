@@ -46,7 +46,15 @@ quadratic form $\|\mathbf{V}\mathbf{x}\|^2 = \mathbf{x}^{\mathsf{T}}\mathbf{V}^{
 \mathbf{V}\mathbf{x}$), then `Real.le_sqrt`. S, about 15 lines. -/
 theorem specNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) : specNorm V ≤ Real.sqrt (1 + η) := by
-  sorry
+  have h1 : specNorm (Vᵀ * V) ≤ 1 + η := by
+    calc specNorm (Vᵀ * V) = specNorm ((Vᵀ * V - 1) + 1) := by rw [sub_add_cancel]
+      _ ≤ specNorm (Vᵀ * V - 1) + specNorm 1 := specNorm_add_le _ _
+      _ ≤ η + 1 := add_le_add hV specNorm_one_le
+      _ = 1 + η := add_comm _ _
+  have h2 : specNorm V ^ 2 = specNorm (Vᵀ * V) := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial, specNorm_conjTranspose_mul_self]
+  exact (Real.le_sqrt (specNorm_nonneg V) ((specNorm_nonneg _).trans h1)).2
+    (by rw [← h2] at h1; exact h1)
 
 /-- **Frobenius norm of a nearly orthonormal basis** (B8): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then $\|\mathbf{V}\|_{\mathsf F}
