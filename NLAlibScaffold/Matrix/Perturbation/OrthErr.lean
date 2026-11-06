@@ -123,7 +123,21 @@ theorem IsOrthErr.norm_transpose_mulVec_smul_le {η₀ ε₁ ε₂ ε₃ : ℝ} 
     (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hw' : w' ≠ 0) :
     ‖WithLp.toLp 2 (Vᵀ *ᵥ (‖WithLp.toLp 2 w'‖⁻¹ • w'))‖ ≤
       ε₁ + ε₃ * ‖WithLp.toLp 2 w‖ / ‖WithLp.toLp 2 w'‖ := by
-  sorry
+  have hne : WithLp.toLp 2 w' ≠ 0 := by
+    intro h
+    apply hw'
+    simpa using congrArg WithLp.ofLp h
+  have hpos : 0 < ‖WithLp.toLp 2 w'‖ := norm_pos_iff.2 hne
+  have hsmul : WithLp.toLp 2 (Vᵀ *ᵥ (‖WithLp.toLp 2 w'‖⁻¹ • w')) =
+      ‖WithLp.toLp 2 w'‖⁻¹ • WithLp.toLp 2 (Vᵀ *ᵥ w') := by
+    rw [Matrix.mulVec_smul]
+    simp
+  rw [hsmul, norm_smul, Real.norm_of_nonneg (inv_nonneg.2 hpos.le)]
+  calc ‖WithLp.toLp 2 w'‖⁻¹ * ‖WithLp.toLp 2 (Vᵀ *ᵥ w')‖
+      ≤ ‖WithLp.toLp 2 w'‖⁻¹ * (ε₁ * ‖WithLp.toLp 2 w'‖ + ε₃ * ‖WithLp.toLp 2 w‖) :=
+        mul_le_mul_of_nonneg_left (hO.orth hV) (inv_nonneg.2 hpos.le)
+    _ = ε₁ + ε₃ * ‖WithLp.toLp 2 w‖ / ‖WithLp.toLp 2 w'‖ := by
+        field_simp
 
 /-- **The Gram defect when a column is appended** (B6): for $\mathbf{V} = [\mathbf{V}',
 \mathbf{x}]$,
