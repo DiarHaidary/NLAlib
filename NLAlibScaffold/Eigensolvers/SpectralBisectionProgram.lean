@@ -1,0 +1,186 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Eigensolvers.SpectralBisection.Global
+public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
+public import NLAlibScaffold.Eigensolvers.SpectralBisectionSamples
+public import NLAlibScaffold.Matrix.Computation.SpectralBisectionProgram
+
+/-!
+# Hermitian diagonalization in linear precision, for the program (scaffold)
+
+Statements for a new file `NLAlib/Eigensolvers/SpectralBisectionProgram.lean` (stage COMPDYN S2b,
+design note `docs/design/Computation-EighProgram.md`, §7): [Shah2024, Theorem 4.2] for the
+registered tree `NLAlib.eighProg.compiled`, a program of the model of computation, by transfer of
+the shallow theorems on `NLAlib.eigh` (`NLAlib/Eigensolvers/SpectralBisection/Global.lean`) through
+the refinement: every run succeeds and writes `NLAlib.eigh` on the tape machine with the tree of
+sample positions at the slots, which is `NLAlib.eigh` on the ideal machine with the tree of ideal
+samples, independent with law `NLAlib.eighSampleLaw` on the ideal tape.
+
+## Main results
+
+* `NLAlib.matrixFreeRoundedProbEigh`: the target `NLAlib.MatrixFreeRoundedProbEigh`, from the
+  shallow Theorem 4.2.
+* `NLAlib.matrixFreeRoundedProb_eighProg_of_logb_le`: the bit count, from the shallow bit count.
+* `NLAlib.measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le`: a
+  bounded binary format, from the shallow bounded-format theorem, for the runs that succeed.
+-/
+
+@[expose] public section
+
+open MeasureTheory ProbabilityTheory
+open scoped Matrix
+
+namespace NLAlib
+
+open Computation
+
+set_option linter.style.longLine false in
+/-- **The target of randomized spectral bisection as a program holds**
+(`NLAlib.MatrixFreeRoundedProbEigh`): [Shah2024, Theorem 4.2] for the registered tree. No printed
+source.
+Proof: fix the data, an interpretation `I` meeting the contracts and a tape rounding $\rho$ meeting
+its contract, and let $M'$ be the ideal machine of the semantics, the routines and the samplers of
+$\rho$ (as in `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`, scaffold). For every $\omega$ the
+run on the tape $\rho \circ \xi_\omega$ succeeds (`NLAlib.eighProg.exists_exec_compiled`, scaffold:
+$u \le 1/30 < 1$ from $(c + 3)u \le 1/10$; $\ell \ge 1$ from `NLAlib.bisectionDepth`; the semantics
+decides flags by `NLAlib.Computation.IsRelErrSem.decidesFlags`, scaffold) and writes `NLAlib.eigh`
+on the tape machine with the tree of sample positions (`NLAlib.eighProg.holds_of_exec_compiled`,
+scaffold), which is `NLAlib.eigh` on $M'$ with the tree of ideal samples
+(`NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). So the failure event is contained in the
+event of the shallow theorem for $M'$ and the samples `NLAlib.eighIdealTree` at $\xi_\omega$
+(`MeasureTheory.measureReal_mono`); $M'$ is accurate at $u_{\mathrm M}$
+(`NLAlib.Computation.isAccurate_eighIdealMachine`, scaffold), its samplers have measurable fibres
+and countable ranges (`NLAlib.Computation.countable_range_uniformUnif`,
+`NLAlib.Computation.countable_range_gaussianNormal`, scaffold), and the samples are independent with
+law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold), so
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`
+bounds it by $\theta$ (the hypotheses of `pre` at $u_{\mathrm M}$ and $c_{\mathrm N}$, floor $0$).
+M, about 90 lines. -/
+theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
+  sorry
+
+set_option linter.style.longLine false in
+/-- **The bit count of Hermitian diagonalization, for the program**: the registered tree
+`NLAlib.eighProg.compiled` meets the rounded probabilistic model with the hypotheses of
+`NLAlib.MatrixFreeRoundedProbEigh` but the two precision conditions replaced by the bit count of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
+at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u > 0$ and normal-sampler constant
+$c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $\beta$ within a factor $2$ of its bound:
+$\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ bits.
+[Shah2024, Theorem 4.2], for the program. No printed source.
+Proof: as `NLAlib.matrixFreeRoundedProbEigh`, with the shallow bit-count theorem in place of the
+shallow Theorem 4.2. M, about 90 lines (share the reduction with `NLAlib.matrixFreeRoundedProbEigh`
+as a private lemma). -/
+theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] (p : P)
+    (mm qr : ι) (K : Type) [Inhabited K] (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ)
+    (c : Dist → ℝ) :
+    MatrixFreeRoundedProb p (eighProg.compiled p mm qr) (fun _ _ => True)
+      (fun N _ => EighData K N)
+      (fun N _ x => ![(pairLayout.toArray x.A).map some, #[some x.R₀, some x.ε, some x.β],
+        Array.replicate (2 * (N * N)) none, Array.replicate N none])
+      (fun N _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
+        IsExactIntLit dec I.sem (N + 4) ∧ IsExactToNat dec I.sem ∧ MulShrinks dec I.sem ∧
+        (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
+          IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mmR) ∧
+        ∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
+          IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qrR)
+      (fun ρ => IsTapeRounding dec p u 0 (2 * Ω) c ρ ∧
+        (∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y) ∧
+        ∀ g : Dist, (Set.range (ρ g 0)).Countable ∧ ∀ z, MeasurableSet (ρ g 0 ⁻¹' {z}))
+      (fun N n x =>
+        let uM := (c .uniform + 1) * u
+        let cN := 2 * (c .gaussian + 3)
+        let ℓ := n 0
+        let βb := dec p x.ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
+          (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))))
+        let Nst := newtonSchulzSteps (θ / (32 * N * (N + 1) * ℓ * (ℓ + 1))) (dec p x.β / (16 * N))
+        (decodeMatrix (dec p) x.A).IsHermitian ∧
+        specNorm (decodeMatrix (dec p) x.A) ≤ dec p x.R₀ ∧ 0 < dec p x.R₀ ∧
+        0 < dec p x.ε ∧ dec p x.ε ≤ 2⁻¹ ^ 15 ∧ 0 < θ ∧ θ ≤ 1 ∧ bisectionDepth (dec p x.ε) ≤ ℓ ∧
+        0 < dec p x.β ∧ dec p x.β ≤ βb ∧ βb / 2 ≤ dec p x.β ∧
+        0 < u ∧ 0 ≤ c .uniform ∧ 0 ≤ c .gaussian ∧ (c .gaussian + 3) * u ≤ 1 / 10 ∧
+        Monotone μM ∧ Monotone μQ ∧ 0 ≤ μM 0 ∧ 0 ≤ μQ 0 ∧
+        Real.logb 2 (dec p x.ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
+          Real.logb 2 (N ^ 4 * (N + 1) * (8 + μM N) +
+            N * √(N : ℝ) * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) +
+          Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
+          Real.logb 2 (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))) + 26 ≤ Real.logb 2 uM⁻¹ ∧
+        Nst ≤ n 1 ∧
+        16 * (2 * dec p x.R₀ + N + 2 * ℓ + √(Real.log (16 * N / θ))) ≤ Ω)
+      (fun N _ x st => ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
+        pairLayout.Holds st.store p 2 0 U ∧ (∀ i : Fin N, st.store.read p 3 i = some (d i)) ∧
+        IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
+          (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3))
+      (fun _ _ _ => θ) := by
+  sorry
+
+set_option linter.style.longLine false in
+/-- **Hermitian diagonalization in a bounded binary format, for the runs of the program that
+succeed**: let the kernels of `I` be routines on pairs, the semantics decide flags, with exact
+integer literals up to $N + 4$ and the exact floor conversion, and let the tape be a
+position-independent rounding $\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`. If
+the ideal machine of the semantics, the routines and the samplers of $\rho$ meets
+`NLAlib.FloatMachine.IsAccurate` with the constants of a binary format (unit roundoff $2^{-p}$,
+floor $2^{e_{\min} + p - 1}$, range the largest finite number) and its samplers have measurable
+fibres and countable ranges, then under the hypotheses of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw`
+the probability that the run succeeds and its output is not an approximate diagonalization with
+residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
+Success under a bounded format (no operation out of range) is not claimed: it needs a range analysis
+of every operation of a run (design note, decision D6). No printed source.
+Proof: on a successful run the output is `NLAlib.eigh` on the tape machine
+(`NLAlib.eighProg.holds_of_exec_compiled`, scaffold), which is `NLAlib.eigh` on the ideal machine
+with the tree of ideal samples (`NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`, scaffold), so
+the event is contained in the shallow theorem's (`MeasureTheory.measureReal_mono`), whose samples
+are independent with law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold). M,
+about 60 lines. -/
+theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le
+    {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] (p : P) (mm qr : ι)
+    {dec : P → K → ℝ} {I : Interp P ι K C} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
+    (hflag : I.sem.DecidesFlags p) {N ℓ F : ℕ} (hlit : IsExactIntLit dec I.sem (N + 4))
+    (htn : IsExactToNat dec I.sem) {ρ : Dist → ℕ → ℝ → K}
+    (hρ : ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
+    (fmt : Float.Model.Format) (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : (I.sem.toFloatMachine p (fun x => (I.sem.toNat p x).getD 0) mmR qrR
+      (I.sem.uniformUnif p (ρ .uniform 0)) (I.sem.gaussianNormal p (ρ .gaussian 0))).IsAccurate
+        (dec p) ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+        ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ cN)
+    (hcountu : ∀ g : Dist, (Set.range (ρ g 0)).Countable ∧ ∀ z, MeasurableSet (ρ g 0 ⁻¹' {z}))
+    (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
+    {A : Matrix (Fin N) (Fin N) (K × K)} (hA : (decodeMatrix (dec p) A).IsHermitian)
+    {R₀ ε β : K} {θ : ℝ} (hR₀ : specNorm (decodeMatrix (dec p) A) ≤ dec p R₀)
+    (hR₀half : 1 / 2 ≤ dec p R₀) (hR₀one : dec p R₀ ≤ 1) (hε : 0 < dec p ε)
+    (hε₁ : dec p ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hℓ : bisectionDepth (dec p ε) ≤ ℓ)
+    (hβ : 0 < dec p β)
+    (hβle : dec p β ≤ dec p ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
+      (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ)))))
+    (hβge : dec p ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
+      (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ)))) / 2 ≤ dec p β)
+    {Nst : ℝ}
+    (hN : Nst = newtonSchulzSteps (θ / (32 * N * (N + 1) * ℓ * (ℓ + 1))) (dec p β / (16 * N)))
+    (hbits : Real.logb 2 (dec p ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
+      Real.logb 2 (N ^ 4 * (N + 1) * (8 + μM N) +
+        N * √(N : ℝ) * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) +
+      Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
+      Real.logb 2 (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))) + 26 ≤ fmt.mantissaBits)
+    (hexp : Real.logb 2 (Real.logb 2 (1536 * (N + ℓ + 2) ^ 2 / (dec p ε * θ)) + 2) + 1 ≤
+      fmt.exponentBits)
+    (hfuel : Nst ≤ F) {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
+    {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ) :
+    μ.real {ω | ∃ st', (eighProg.compiled p mm qr).exec
+        { I with tape := fun d i => ρ d i (ξ ω d i) } N ![ℓ, F]
+        (inputState p [(pairLayout.toArray A).map some, #[some R₀, some ε, some β],
+          Array.replicate (2 * (N * N)) none, Array.replicate N none]) = some st' ∧
+        ¬ ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
+          pairLayout.Holds st'.store p 2 0 U ∧ (∀ i : Fin N, st'.store.read p 3 i = some (d i)) ∧
+          IsApproxDiagonalization (decodeMatrix (dec p) A) (decodeMatrix (dec p) U)
+            (fun i => dec p (d i)) (2 * dec p ε * dec p R₀) (dec p ε / 3)} ≤ θ := by
+  sorry
+
+end NLAlib

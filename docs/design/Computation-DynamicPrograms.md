@@ -207,6 +207,22 @@ correctly rounded `fl` for SIGN and DEFLATE (M3 stays for EIGH's uniform sampler
 calibration (§8 of the new note) puts S1c + S1d at about 5,300 to 6,400 lines, the upper half of
 the rows of §7.2, with the S2 rows unchanged.
 
+## S2 (design stage, 2026-11-06)
+
+Designed on `design/compdyn-s2` (from `design/compdyn-s1cd` d610ab95, with `cleanup/hdiag` merged) in
+its own note, `docs/design/Computation-EighProgram.md` (decision sheet `COMPDYN-S2.json`, RP and D1
+to D7). S2a, the bounded index binder `bindIdx` with `ScalarSem.toNat`, `IsExactToNat`,
+`OpKind.toNat` and `StaticCost.supRange`, is implemented and proved in `NLAlib/`, with the second
+re-pin (closure hashes only) pending the maintainer's sign-off; `RunsWithin.subst` gains `htoNat`
+(as §4.1 says) and `hcostToNat`. S2b, EIGH as the registered program `NLAlib.eighProg`, is defined
+and compiled; its refinement (an exact equality with `NLAlib.eigh`, and success under the standard
+model) and the transfer of EV6, EV7, EV8 and, blocked, EV7' are a 63-statement skeleton. Changes to
+this note's plan: the sign step inside EIGH keeps hdiag's step limit instead of the pilot's
+`whileFuel`, so every run succeeds (D1); M3's correctly rounded `fl` becomes the single clause
+`MulShrinks` (D4); every level draws a fixed number of samples (D3), which makes the lazy-sampling
+lemma a relabelling of static blocks. Calibration: S2a about 350 lines (below §7.2's row), S2
+projected 7,750 to 9,550 lines, in the middle of the S2 rows (§10 of the new note).
+
 ## 0. Summary
 
 | | |
