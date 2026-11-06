@@ -263,6 +263,36 @@ theorem hasLaw_submatrix_of_hasLaw_complexGaussianMatrix {G : Ω → Matrix m n 
     hG.aemeasurable]
   rfl
 
+/-- The squared Euclidean norm of a complex vector is the sum of those of its real and
+imaginary parts. -/
+private theorem norm_toLp_sq_eq_re_add_im (v : n → ℂ) : ‖WithLp.toLp 2 v‖ ^ 2 =
+    ‖WithLp.toLp 2 fun j => (v j).re‖ ^ 2 + ‖WithLp.toLp 2 fun j => (v j).im‖ ^ 2 := by
+  rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_toLp_sq_eq_sum_sq,
+    EuclideanSpace.norm_toLp_sq_eq_sum_sq, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  simp only [Complex.sq_norm, Complex.normSq_apply]
+  ring
+
+/-- The complexification of a real matrix has spectral norm at most that of the matrix. -/
+private theorem specNorm_map_ofReal_le (A : Matrix m n ℝ) :
+    specNorm (A.map fun x : ℝ => (x : ℂ)) ≤ specNorm A := by
+  refine (specNorm_le_iff (specNorm_nonneg A)).2 fun x => ?_
+  have hv : ∀ i, ((A.map fun r : ℝ => (r : ℂ)) *ᵥ x) i =
+      ((A *ᵥ fun j => (x j).re) i : ℂ) + ((A *ᵥ fun j => (x j).im) i : ℂ) * Complex.I := by
+    intro i
+    apply Complex.ext <;> simp [Matrix.mulVec, dotProduct, Complex.re_sum, Complex.im_sum]
+  have hre := norm_toLp_mulVec_le A fun j => (x j).re
+  have him := norm_toLp_mulVec_le A fun j => (x j).im
+  rw [← sq_le_sq₀ (norm_nonneg _) (by positivity), mul_pow, norm_toLp_sq_eq_re_add_im,
+    norm_toLp_sq_eq_re_add_im x]
+  simp only [hv, Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, Complex.I_im,
+    Complex.ofReal_im, Complex.add_im, Complex.mul_im, mul_zero, sub_zero, add_zero,
+    mul_one, zero_add]
+  rw [mul_add]
+  gcongr
+  · exact (sq_le_sq₀ (norm_nonneg _) (by positivity)).2 hre |>.trans_eq (mul_pow _ _ _)
+  · exact (sq_le_sq₀ (norm_nonneg _) (by positivity)).2 him |>.trans_eq (mul_pow _ _ _)
+
 /-- **Norm tail of a complex Gaussian matrix** (Lemma 3.2): for a standard complex Gaussian
 $m \times n$ matrix $\mathbf{G}$ and $t \ge 0$,
 $$\mathbb{P}\bigl[\sqrt2\,(\sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t) \le
@@ -282,7 +312,32 @@ theorem measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix {G : Ω → M
     (hG : HasLaw G (complexGaussianMatrix m n) μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ) + t) ≤ specNorm (G ω)} ≤
       2 * Real.exp (-t ^ 2 / 2) := by
-  sorry
+  have hf : Measurable fun X : Matrix (m ⊕ m) n ℝ => (√2 : ℝ)⁻¹ •
+      ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+        Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ))) :=
+    Continuous.measurable (by fun_prop)
+  rw [hG.measureReal_eq (p := fun A =>
+      √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ) + t) ≤ specNorm A)
+      (measurableSet_le measurable_const continuous_specNorm.measurable),
+    complexGaussianMatrix_eq_map_gaussianMatrix,
+    map_measureReal_apply hf (measurableSet_le measurable_const continuous_specNorm.measurable)]
+  have hX := HasLaw.id (μ := gaussianMatrix (m ⊕ m) n)
+  have h₁ := measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix
+    (hasLaw_submatrix_of_hasLaw_gaussianMatrix hX Sum.inl_injective Function.injective_id) ht
+  have h₂ := measureReal_specNorm_ge_le_of_hasLaw_gaussianMatrix
+    (hasLaw_submatrix_of_hasLaw_gaussianMatrix hX Sum.inr_injective Function.injective_id) ht
+  refine (measureReal_mono fun X hX => ?_).trans ((measureReal_union_le _ _).trans
+    ((add_le_add h₁ h₂).trans_eq (two_mul _).symm))
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_union, id] at hX ⊢
+  by_contra hcon
+  simp only [not_or, not_le] at hcon
+  rw [specNorm_real_smul, abs_inv, abs_of_pos (by positivity), ← div_eq_inv_mul,
+    le_div_iff₀ (by positivity), mul_comm, ← mul_assoc, Real.mul_self_sqrt zero_le_two] at hX
+  have hS := (specNorm_add_le _ _).trans (add_le_add
+    (specNorm_map_ofReal_le (X.submatrix Sum.inl id)) (le_refl (specNorm (Complex.I •
+      (X.submatrix Sum.inr id).map fun x : ℝ => (x : ℂ)))))
+  rw [specNorm_smul, Complex.norm_I, one_mul] at hS
+  linarith [hcon.1, hcon.2, specNorm_map_ofReal_le (X.submatrix Sum.inr id)]
 
 /-- The disk of radius $s$ has mass at most $s^2$ under a standard complex Gaussian: $\sqrt2$
 times its real and imaginary parts form a standard Gaussian vector of dimension $2$. -/
