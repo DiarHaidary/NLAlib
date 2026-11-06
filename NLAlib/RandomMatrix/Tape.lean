@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Computation.Contract
 public import NLAlib.Computation.Model
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.RandomMatrix.Gaussian.Basic
@@ -45,6 +46,12 @@ is part of the definition, never a hypothesis of a theorem, so it cannot depend 
   law of the tape.
 * `NLAlib.Computation.ProgFamily.MatrixFreeProb.prog`: a result for a family is a result for a
   program that instantiates to it.
+* `NLAlib.Computation.Dist.law_uniform_Icc`: the uniform law gives $[-1, 1]$ mass one.
+* `NLAlib.Computation.Dist.measureReal_law_uniform_Icc`: the mass of a subinterval.
+* `NLAlib.Computation.ae_forall_mem_Icc_of_hasLaw_tapeLaw`: ideal uniform draws lie in
+  $[-1, 1]$.
+* `NLAlib.Computation.IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw`: so do stored ones.
+* `NLAlib.Computation.MatrixFreeRoundedProb.mono`: a larger bound.
 -/
 
 @[expose] public section
@@ -243,6 +250,75 @@ def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
     (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
     μ.real {ω | ¬ ∃ st', prog.exec { I with tape := fun d i => ρ d i (ξ ω d i) } N n
         (inputState p (List.ofFn (inputs N n x))) = some st' ∧ good N n x st'} ≤ bound N n x
+
+/-! ### Uniform draws and the rounded model -/
+
+section Uniform
+
+/-- The uniform law lives on $[-1, 1]$: the law of a uniform draw gives the interval
+$[-1, 1]$ mass one. No printed source. -/
+theorem Dist.law_uniform_Icc : Dist.uniform.law (Set.Icc (-1) 1) = 1 :=
+  cond_apply_self (by norm_num [Real.volume_Icc]) measure_Icc_lt_top.ne
+
+/-- The uniform law of a subinterval: for $-1 \le a \le b \le 1$, a uniform draw lies in
+$[a, b]$ with probability
+$$\frac{b - a}{2}.$$
+No printed source. -/
+theorem Dist.measureReal_law_uniform_Icc {a b : ℝ} (ha : -1 ≤ a) (hab : a ≤ b) (hb : b ≤ 1) :
+    Dist.uniform.law.real (Set.Icc a b) = (b - a) / 2 := by
+  have hab' : 0 ≤ b - a := by linarith
+  have h2 : 0 ≤ 1 - (-1 : ℝ) := by norm_num
+  change ((volume[|Set.Icc (-1 : ℝ) 1]) (Set.Icc a b)).toReal = _
+  rw [cond_apply measurableSet_Icc, Set.Icc_inter_Icc, max_eq_right ha, min_eq_right hb,
+    ENNReal.toReal_mul, ENNReal.toReal_inv, Real.volume_Icc, Real.volume_Icc,
+    ENNReal.toReal_ofReal hab', ENNReal.toReal_ofReal h2]
+  ring
+
+/-- Ideal uniform draws lie in $[-1, 1]$: if the tape $\xi$ has the law of the tape
+`NLAlib.Computation.tapeLaw` under $\mu$, then $\mu$-almost surely every uniform draw
+$\xi(\omega)(d, i)$, $d$ = `NLAlib.Computation.Dist.uniform`, $i \in \mathbb{N}$, lies in
+$[-1, 1]$. No printed source. -/
+theorem ae_forall_mem_Icc_of_hasLaw_tapeLaw {Ω : Type} {mΩ : MeasurableSpace Ω}
+    {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ) :
+    ∀ᵐ ω ∂μ, ∀ i, ξ ω .uniform i ∈ Set.Icc (-1 : ℝ) 1 := by
+  rw [ae_all_iff]
+  intro i
+  have hlaw : HasLaw (fun ω => ξ ω .uniform i) Dist.uniform.law μ :=
+    (measurePreserving_eval_infinitePi (fun _ : ℕ => Dist.uniform.law) i).fun_comp_hasLaw
+      (hasLaw_apply_of_hasLaw_tapeLaw hξ .uniform)
+  have hae : ∀ᵐ x ∂(μ.map fun ω => ξ ω .uniform i), x ∈ Set.Icc (-1 : ℝ) 1 := by
+    rw [hlaw.map_eq]
+    exact ae_cond_mem measurableSet_Icc
+  exact (ae_map_iff hlaw.aemeasurable measurableSet_Icc).mp hae
+
+/-- Stored uniform draws lie in $[-1, 1]$: under the tape-rounding contract
+`NLAlib.Computation.IsTapeRounding` for $\rho$, at tag `p`, and an ideal tape $\xi$ with the law of
+the tape under $\mu$, $\mu$-almost surely every stored uniform draw
+$\rho(d, i, \xi(\omega)(d, i))$, $d$ = `NLAlib.Computation.Dist.uniform`, decodes into
+$[-1, 1]$. No printed source. -/
+theorem IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw {P K : Type} {dec : P → K → ℝ}
+    {p : P} {u τ Ω : ℝ} {c : Dist → ℝ} {ρ : Dist → ℕ → ℝ → K}
+    (h : IsTapeRounding dec p u τ Ω c ρ)
+    {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ}
+    (hξ : HasLaw ξ tapeLaw μ) :
+    ∀ᵐ ω ∂μ, ∀ i, dec p (ρ .uniform i (ξ ω .uniform i)) ∈ Set.Icc (-1 : ℝ) 1 :=
+  (NLAlib.Computation.ae_forall_mem_Icc_of_hasLaw_tapeLaw hξ).mono fun _ hω i => h.2 i _ (hω i)
+
+/-- A larger bound: a result in the rounded probabilistic model with the bound `bound` holds
+with every pointwise larger bound `bound'`. No printed source. -/
+theorem MatrixFreeRoundedProb.mono {P ι K : Type} [DecidableEq P] {r b : ℕ} {p : P}
+    {prog : Prog P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+    {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K)}
+    {Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop}
+    {ρOK : (Dist → ℕ → ℝ → K) → Prop} {pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop}
+    {good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop}
+    {bound bound' : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ}
+    (h : MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound)
+    (hb : ∀ N n x, bound N n x ≤ bound' N n x) :
+    MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound' :=
+  fun N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ => (h N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ).trans (hb N n x)
+
+end Uniform
 
 end Computation
 

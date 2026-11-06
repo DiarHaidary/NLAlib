@@ -1,7 +1,7 @@
 # Design note: programs with data-dependent sizes, black-box kernels, complex data and samplers (stage COMPDYN, proposal)
 
-Status: approved 2026-11-06 (sheet `COMPDYN.json`); stage S1 implemented, see "S1 implementation
-status" below. Proposal text, 2026-11-06: Branch `design/computation-dynamic`
+Status: approved 2026-11-06 (sheet `COMPDYN.json`); stage S1 implemented and proved, see "S1
+implementation status" below. Proposal text, 2026-11-06: Branch `design/computation-dynamic`
 (worktree `~/nlalib-design-compdyn`), rebased on `origin/main` a08339af, where Codex's
 `feat/rounded-krylov-oracles` has landed (PR #58), so stage S0 is done. Reviewed by Fable
 (`~/nlalib-harness/reports/Review-Fable-COMPDYN-Design.md`): approve with changes. Its four
@@ -24,8 +24,9 @@ specification, as for Gram–Schmidt, CG and Lanczos.
 
 Stage S1 (S1a + S1b) and M2 are implemented on `design/compdyn-s1` (from `origin/main`
 a08339af), by the harness pipeline in place of Codex (decision sheet Q9 = (c); Fable reviews).
-Language changes and the repairs they force are proved in `NLAlib/`; the new results are
-skeleton statements in `NLAlibScaffold/` (`~/nlalib-harness/pilot/compdyn-s1-targets.json`).
+Language changes and the repairs they force are proved in `NLAlib/`. The 30 new results were
+skeleton statements (`~/nlalib-harness/pilot/compdyn-s1-targets.json`); all are proved and in
+`NLAlib/` (placement below), and the scaffold library is gone.
 
 **Language (S1a).**
 * `Stmt.kcall o p dims ins outs` and `FStmt.kcall` (operands `(handle, offset)`, dimensions
@@ -136,11 +137,11 @@ S1 review, B1). New `docs/targets.approved`:
 
 **Checks.** On the language commit (main's `lakefile.toml`): `bash scripts/stage_check.sh`
 exit 0 (`--wfail` build, audit, lint, replay, programs, targets 0 violations, refs, constants,
-LaTeX, rules), `mk_all --check` for `NLAlib` and `NLAlibTools`. The second commit adds the
-`NLAlibScaffold` library to `lakefile.toml`, as the stage branches of LB-C and HDIAG do; on it the
-registry's `lakefile_sha256` pin differs (Targets lint item 4) until the scaffold library is removed
-at integration. The scaffold builds with `sorry` warnings only, and
-`bin/check-skeleton --strict` passes.
+LaTeX, rules), `mk_all --check` for `NLAlib` and `NLAlibTools`. The skeleton commit added an
+`NLAlibScaffold` library to `lakefile.toml`, as the stage branches of LB-C and HDIAG do, which moved
+the registry's `lakefile_sha256` pin (Targets lint item 4) while the skeleton was being proved. The
+clean-up (`cleanup/compdyn-s1`) removes the scaffold library and restores main's `lakefile.toml`
+byte for byte, so the pin matches again.
 
 **Skeleton** (`NLAlibScaffold/`, 30 statements, S 20, M 10; revised after Fable's S1 review,
 `~/nlalib-harness/reports/Review-Fable-COMPDYN-S1.md`: the read-back of a kernel call split into
@@ -178,6 +179,18 @@ the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 | T4 | `ae_forall_mem_Icc_of_hasLaw_tapeLaw` | `RandomMatrix/Tape.lean` | M |
 | T5 | `IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw` | `RandomMatrix/Tape.lean` | S |
 | T6 | `MatrixFreeRoundedProb.mono` | `RandomMatrix/Tape.lean` | S |
+
+**Proofs and placement** (2026-11-06, clean-up on `cleanup/compdyn-s1`). All 30 statements are
+proved (by haiku workers, one commit per proof on `integrate/compdyn-s1`), golfed, and moved into
+`NLAlib/` with the `Proof:` sketches removed (D8). Their elaborated types are unchanged. Each one is
+in the file the table names, with one amendment (2026-11-06): **K1 to K5 and ST2 are in a new file
+`NLAlib/Computation/KernelCall.lean`** (it imports `Exec.lean`). `Exec.lean` was already 1050
+lines and would have grown to about 1210 (rule F10). ST2 is stated with `blockDisjoint`, which is
+defined in `Exec.lean`, so it cannot go into `Store.lean`, which `Exec.lean` imports. ST1 is in
+`Store.lean`. `RandomMatrix/Tape.lean` now imports `Computation/Contract.lean`, for T5's
+`IsTapeRounding`. The proofs of K4 and K5 use two private `Store.writeBlocks` lemmas in
+`KernelCall.lean` (a successful write writes one array per block; the writes succeed when every
+cell can be written). No public declaration was added beyond the 30.
 
 ## 0. Summary
 

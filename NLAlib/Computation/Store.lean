@@ -46,6 +46,8 @@ the block write. Design: `docs/design/Computation.md` (D3, D11).
   are equal.
 * `NLAlib.Computation.Store.BlockFrame.pop_eq`: popping the scratch buffer from a store in the
   frame of a block write gives the block write.
+* `NLAlib.Computation.Store.read_of_writeBlocks_eq_some_of_forall`: the frame of several block
+  writes.
 -/
 
 @[expose] public section
@@ -810,5 +812,35 @@ theorem Store.BlockFrame.pop_eq {st₀ s₁ sF : Store P K} {arr : Array (Option
       Store.read_of_writeBlock_eq_some_of_ne hs₁ (by omega)]
 
 end Frame
+
+/-! ### Reads after several block writes -/
+
+section WriteBlocks
+
+variable {P K : Type} [DecidableEq P]
+
+/-- The frame of several block writes: if `s.writeBlocks p bs ys = some s'` and the cell
+$(b, i)$ lies outside every block $(b', \mathit{off}, \ell)$ of `bs` ($b \ne b'$,
+$i < \mathit{off}$ or $\mathit{off} + \ell \le i$), it reads the same after the writes as before,
+at every tag. No printed source. -/
+theorem Store.read_of_writeBlocks_eq_some_of_forall {p : P} {s s' : Store P K}
+    {bs : List (ℕ × ℕ × ℕ)} {ys : List (Array K)} (h : s.writeBlocks p bs ys = some s')
+    {q : P} {b i : ℕ} (hb : ∀ x ∈ bs, b ≠ x.1 ∨ i < x.2.1 ∨ x.2.1 + x.2.2 ≤ i) :
+    s'.read q b i = s.read q b i := by
+  induction bs generalizing s ys with
+  | nil => cases ys <;> cases h; rfl
+  | cons x bs ih =>
+    cases ys with
+    | nil => cases h
+    | cons y ys =>
+      rw [Store.writeBlocks] at h
+      split_ifs at h with hy
+      obtain ⟨s₁, h₁, h₂⟩ := Option.bind_eq_some_iff.mp h
+      rw [ih h₂ fun z hz => hb z (List.mem_cons_of_mem _ hz)]
+      refine Store.read_of_writeBlock_eq_some_of_ne h₁ ?_
+      have := hb x List.mem_cons_self
+      omega
+
+end WriteBlocks
 
 end NLAlib.Computation

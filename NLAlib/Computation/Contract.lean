@@ -53,6 +53,11 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
   arithmetic part with the relation `NLAlib.Computation.RelErr`.
 * `NLAlib.Computation.IsRelErrSem.nonneg`: the unit roundoff is nonnegative.
 * `NLAlib.Computation.addsZeroExactly_exactSem`: exact arithmetic adds zero exactly.
+* `NLAlib.Computation.isExactIntLit_exactSem`: exact arithmetic.
+* `NLAlib.Computation.IsExactIntLit.mono`: a smaller bound.
+* `NLAlib.Computation.IsExactIntLit.exists_exec_litIdx`: a size written as a literal decodes to
+  itself.
+* `NLAlib.Computation.isTapeRounding_id`: the exact rounding of the tape.
 -/
 
 @[expose] public section
@@ -362,5 +367,54 @@ def MatrixFreeRounded {r b : ℕ} (p : P) (prog : ℕ → (Fin r → ℕ) → St
       post N n x H st'
 
 end Oracle
+
+/-! ### Exact integer literals and tape roundings -/
+
+section ExactIntLit
+
+variable {P K : Type}
+
+/-- Exact arithmetic has exact integer literals: `NLAlib.Computation.exactSem` over
+$\mathbb{R}$, with the identity decoding, meets `NLAlib.Computation.IsExactIntLit` at every bound
+$B$. No printed source. -/
+theorem isExactIntLit_exactSem (B : ℕ) :
+    IsExactIntLit (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) B := by
+  intro p k _
+  exact ⟨(k : ℝ), by simp [exactSem], rfl⟩
+
+/-- A smaller bound: exact integer literals up to $B$ are exact up to every $B' \le B$.
+No printed source. -/
+theorem IsExactIntLit.mono {dec : P → K → ℝ} {sem : ScalarSem P K} {B B' : ℕ}
+    (h : IsExactIntLit dec sem B) (hB : B' ≤ B) : IsExactIntLit dec sem B' :=
+  fun p k hk => h p k (hk.trans hB)
+
+variable [DecidableEq P]
+
+/-- A size written as a literal decodes to itself: under exact integer literals up to $B$,
+if the cell $(b, i)$ can be written at tag `p` and the index expression $e$ has value at most $B$,
+the instruction `litIdx p (b, i) e` succeeds, and the cell then reads a word that decodes to the
+value of $e$. No printed source. -/
+theorem IsExactIntLit.exists_exec_litIdx {dec : P → K → ℝ} {sem : ScalarSem P K} {B : ℕ}
+    (h : IsExactIntLit dec sem B) (tape : Dist → ℕ → K) (s : Store P K) (pos : Dist → ℕ)
+    (p : P) (b i : ℕ) (e : IExp ℕ) (he : e.eval ≤ B)
+    (hw : ∀ v : K, ∃ s', s.write p b i v = some s') :
+    ∃ r z, (Instr.litIdx p ⟨b, .const i⟩ e).run sem tape s pos = some r ∧
+      r.1.read p b i = some z ∧ dec p z = e.eval ∧ r.2 = pos := by
+  obtain ⟨z, hz, hdz⟩ := h p e.eval he
+  obtain ⟨s', hs'⟩ := hw z
+  refine ⟨(s', pos), z, ?_, Store.read_of_write_eq_some hs', hdz, rfl⟩
+  simp only [Instr.run, hz, Option.bind_some, hs', Option.map_some, IExp.eval]
+
+omit [DecidableEq P] in
+/-- The exact rounding of the tape: storing each ideal draw as itself in $\mathbb{R}$ meets
+`NLAlib.Computation.IsTapeRounding` with the identity decoding, for every unit roundoff $u$,
+floor $\tau$, range $\Omega$ and constants $c$ with $c(d)\,u \ge 0$. No printed source. -/
+theorem isTapeRounding_id (p : P) (u τ Ω : ℝ) (c : Dist → ℝ) (hc : ∀ d, 0 ≤ c d * u) :
+    IsTapeRounding (fun _ x => x) p u τ Ω c (fun _ _ x => x) := by
+  refine ⟨fun d i x _ => ?_, fun i x hx => hx⟩
+  simp only [sub_self, abs_zero]
+  exact mul_nonneg (hc d) (le_max_of_le_left (abs_nonneg x))
+
+end ExactIntLit
 
 end NLAlib.Computation

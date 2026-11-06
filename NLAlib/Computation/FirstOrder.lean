@@ -52,6 +52,7 @@ statements" (F3, F7).
   and draws nothing.
 * `NLAlib.Computation.Prog.exec_eq_of_exec_eq_some_of_cnt_load_le`: a run that makes no oracle
   call is the same under any oracle.
+* `NLAlib.Computation.FStmt.exec_kcall`: the run of a first-order kernel call.
 -/
 
 @[expose] public section
@@ -308,5 +309,28 @@ theorem Prog.exec_eq_of_exec_eq_some_of_cnt_load_le (hc : ∀ k, I.charge k = Fi
   exact Computation.exec_eq_of_exec_eq_some_of_cnt_load_le hc O _ h hl
 
 end Invariants
+
+/-! ### Kernel calls -/
+
+section KernelCalls
+
+variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
+
+/-- The run of a first-order kernel call: in the environment of handles `ρB` and of index
+values `ρI`, it runs `NLAlib.Computation.Interp.kcallStore` at the values of its dimensions and
+offsets, the handles renamed by `ρB`, and charges one call of its kind at those dimensions.
+No printed source. -/
+theorem FStmt.exec_kcall (I : Interp P ι K C) {nb ni : ℕ} (o : ι) (p : P)
+    (dims : List (IExp (Fin ni))) (ins outs : List (Fin nb × IExp (Fin ni))) (ρB : Fin nb → ℕ)
+    (ρI : Fin ni → ℕ) (st : St P K C) :
+    (FStmt.kcall o p dims ins outs).exec I ρB ρI st =
+      (I.kcallStore o p (dims.map (·.evalIn ρI)) (ins.map fun x => (ρB x.1, x.2.evalIn ρI))
+        (outs.map fun x => (ρB x.1, x.2.evalIn ρI)) st.store).map fun s =>
+          { st with
+            store := s
+            cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) } := by
+  rw [FStmt.exec]
+
+end KernelCalls
 
 end NLAlib.Computation
