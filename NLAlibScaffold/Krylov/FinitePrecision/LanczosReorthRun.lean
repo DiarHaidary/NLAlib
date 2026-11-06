@@ -1039,6 +1039,168 @@ theorem norm_coef_le (hη : L.η₀ ≤ 1 / 100)
     nlinarith [mul_le_mul_of_nonneg_left hη hHn0, mul_nonneg hrec0 hs,
       mul_nonneg (Real.sqrt_nonneg ((j : ℝ) + 1)) (mul_nonneg hrec0 hs)]
 
+/-- A sum of $j + 1$ over $j < m$ is at most $(m+1)^2/2$. -/
+private lemma sum_succ_range_le (m : ℕ) :
+    ∑ i ∈ Finset.range m, ((i : ℝ) + 1) ≤ ((m : ℝ) + 1) ^ 2 / 2 := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    rw [Finset.sum_range_succ]
+    push_cast
+    nlinarith [ih, (Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
+
+/-- The Euclidean norm of a signed sum of six vectors, by the triangle inequality. -/
+private lemma norm_toLp_six_le {n : ℕ} (a b c d e f : Fin n → ℝ) :
+    ‖WithLp.toLp 2 (a + b - c - d - e - f)‖ ≤ ‖WithLp.toLp 2 a‖ + ‖WithLp.toLp 2 b‖ +
+      ‖WithLp.toLp 2 c‖ + ‖WithLp.toLp 2 d‖ + ‖WithLp.toLp 2 e‖ + ‖WithLp.toLp 2 f‖ := by
+  simp only [WithLp.toLp_sub, WithLp.toLp_add]
+  have h1 := norm_sub_le (WithLp.toLp 2 a + WithLp.toLp 2 b - WithLp.toLp 2 c -
+    WithLp.toLp 2 d - WithLp.toLp 2 e) (WithLp.toLp 2 f)
+  have h2 := norm_sub_le (WithLp.toLp 2 a + WithLp.toLp 2 b - WithLp.toLp 2 c -
+    WithLp.toLp 2 d) (WithLp.toLp 2 e)
+  have h3 := norm_sub_le (WithLp.toLp 2 a + WithLp.toLp 2 b - WithLp.toLp 2 c)
+    (WithLp.toLp 2 d)
+  have h4 := norm_sub_le (WithLp.toLp 2 a + WithLp.toLp 2 b) (WithLp.toLp 2 c)
+  have h5 := norm_add_le (WithLp.toLp 2 a) (WithLp.toLp 2 b)
+  linarith
+
+/-- **The local errors of one column** are small: $\|\mathbf{e}^w\|$ and $\|\mathbf{e}^z\|$
+are at most $3\varepsilon\|\mathbf{H}\|_2$ up to constants. -/
+private lemma local_errors_le (hη : L.η₀ ≤ 1 / 100)
+    (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
+    (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (L.ew (j + 1))‖ ≤ 257 / 100 * (L.ε * specNorm L.H) ∧
+      ‖WithLp.toLp 2 (L.ez (j + 1))‖ ≤ 43 / 10 * (L.ε * specNorm L.H) := by
+  have hε := L.ε_nonneg
+  have hεle := L.ε_le
+  have hh := specNorm_nonneg L.H
+  have hvj1 : ‖WithLp.toLp 2 (L.v (j + 1))‖ ≤ 101 / 100 := by
+    have h1 := abs_le.mp (L.abs_norm_v_sq_sub_one_le (j + 1) (by omega) (by omega))
+    nlinarith [norm_nonneg (WithLp.toLp 2 (L.v (j + 1)))]
+  have hvj : ‖WithLp.toLp 2 (L.v j)‖ ≤ 101 / 100 := by
+    rcases Nat.eq_zero_or_pos j with rfl | hpos
+    · norm_num [L.v_zero]
+    · have h1 := abs_le.mp (L.abs_norm_v_sq_sub_one_le j hpos (by omega))
+      nlinarith [norm_nonneg (WithLp.toLp 2 (L.v j))]
+  have hβnn : ∀ i < k, 0 ≤ L.β (i + 1) := by
+    intro i hi
+    have h1 := abs_le.mp (L.abs_β_sub_le i hi)
+    have h2 := norm_nonneg (WithLp.toLp 2 (L.z' (i + 1)))
+    nlinarith [mul_le_mul_of_nonneg_right hεle h2]
+  have hβabs : |L.β j| ≤ 3 / 2 * specNorm L.H := by
+    rcases Nat.eq_zero_or_pos j with rfl | hpos
+    · rw [L.β_zero, abs_zero]
+      positivity
+    · obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
+      rw [abs_le]
+      exact ⟨by linarith [hβnn i (by omega)], (coeff_le L hη hsmall hrec hτ i (by omega)).2.1⟩
+  have hu : ‖WithLp.toLp 2 (L.u (j + 1))‖ ≤ 103 / 100 * specNorm L.H := by
+    rw [L.u_eq j hj, WithLp.toLp_add]
+    refine (norm_add_le _ _).trans ?_
+    have h1 := norm_toLp_mulVec_le L.H (L.v (j + 1))
+    have h2 := L.norm_eu_le j hj
+    have h3 := mul_le_mul_of_nonneg_left hvj1 hh
+    have h4 := mul_le_mul_of_nonneg_left hvj1 (mul_nonneg hε hh)
+    have h5 := mul_le_mul_of_nonneg_right hεle hh
+    linarith
+  have hew : ‖WithLp.toLp 2 (L.ew (j + 1))‖ ≤ 257 / 100 * (L.ε * specNorm L.H) := by
+    have h1 := L.norm_ew_le j hj
+    have h2 := mul_le_mul hβabs hvj (norm_nonneg _) (by positivity)
+    have h3 := mul_le_mul_of_nonneg_left (add_le_add hu h2) hε
+    linarith [mul_nonneg hε hh]
+  have hw : ‖WithLp.toLp 2 (L.w (j + 1))‖ ≤ 27 / 10 * specNorm L.H := by
+    have hsub := norm_sub_le (WithLp.toLp 2 (L.u (j + 1))) (WithLp.toLp 2 (L.β j • L.v j))
+    have hsm : ‖WithLp.toLp 2 (L.β j • L.v j)‖ = |L.β j| * ‖WithLp.toLp 2 (L.v j)‖ := by
+      rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
+    have hadd := norm_add_le (WithLp.toLp 2 (L.u (j + 1)) - WithLp.toLp 2 (L.β j • L.v j))
+      (WithLp.toLp 2 (L.ew (j + 1)))
+    have h2 := mul_le_mul hβabs hvj (norm_nonneg _) (by positivity)
+    have h3 := mul_le_mul_of_nonneg_right hεle hh
+    have hewb := L.norm_ew_le j hj
+    have h4 := mul_le_mul_of_nonneg_left (add_le_add hu h2) hε
+    rw [L.w_eq j hj, WithLp.toLp_add, WithLp.toLp_sub]
+    linarith
+  have hez : ‖WithLp.toLp 2 (L.ez (j + 1))‖ ≤ 43 / 10 * (L.ε * specNorm L.H) := by
+    have h1 := L.norm_ez_le j hj
+    have hα := (coeff_le L hη hsmall hrec hτ j hj).1
+    have h2 := mul_le_mul hα hvj1 (norm_nonneg _) (by positivity)
+    have h3 := mul_le_mul_of_nonneg_left (add_le_add hw h2) hε
+    linarith [mul_nonneg hε hh]
+  exact ⟨hew, hez⟩
+
+/-- **One column of the residual** is at most $36\sqrt{j+1}\,\mathrm{rec}\,\|\mathbf{H}\|_2$. -/
+private lemma residual_col_le (hη : L.η₀ ≤ 1 / 100)
+    (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
+    (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {j : ℕ} (hj : j < k) :
+    ‖WithLp.toLp 2 (fun i => L.toLanczosData.residual i ⟨j, hj⟩)‖ ≤
+      36 * Real.sqrt ((j : ℝ) + 1) * L.recLevel * specNorm L.H := by
+  have hμ : 0 ≤ L.orthLevel := by
+    unfold orthLevel
+    have := L.ε₁_nonneg
+    have := L.ε₃_nonneg
+    have := L.ε_nonneg
+    have := L.τ_pos
+    positivity
+  have hε := L.ε_nonneg
+  have hεle := L.ε_le
+  have hε₂ := L.ε₂_nonneg
+  have hr0 : 0 ≤ L.recLevel := by
+    unfold recLevel
+    linarith
+  have hεr : L.ε ≤ L.recLevel := by
+    unfold recLevel
+    linarith
+  have hε₂r : L.ε₂ ≤ L.recLevel := by
+    unfold recLevel
+    linarith
+  have hh := specNorm_nonneg L.H
+  have hg1 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ 1 / 100 := hsmall.trans hη
+  have hVg : specNorm ((basisOf L.v (j + 1))ᵀ * basisOf L.v (j + 1) - 1) ≤ L.η₀ := by
+    refine (specNorm_le_frobNorm _).trans ((frobNorm_gram_sub_one_le L hη hsmall (j + 1)
+      (by omega)).trans ?_)
+    refine le_trans (mul_le_mul_of_nonneg_right (Real.sqrt_le_sqrt ?_) hμ) hsmall
+    have : (j : ℝ) + 1 ≤ k := by exact_mod_cast hj
+    push_cast
+    linarith
+  have hVn : specNorm (basisOf L.v (j + 1)) ≤ 101 / 100 := by
+    refine (specNorm_le_sqrt_of_specNorm_gram_sub_one_le (hVg.trans hη)).trans ?_
+    rw [Real.sqrt_le_iff]
+    norm_num
+  have hvj1 : ‖WithLp.toLp 2 (L.v (j + 1))‖ ≤ 101 / 100 := by
+    have h1 := abs_le.mp (L.abs_norm_v_sq_sub_one_le (j + 1) (by omega) (by omega))
+    nlinarith [norm_nonneg (WithLp.toLp 2 (L.v (j + 1)))]
+  have hz' : ‖WithLp.toLp 2 (L.z' (j + 1))‖ ≤ 152 / 100 * specNorm L.H := by
+    have h1 := abs_le.mp (L.abs_β_sub_le j hj)
+    have h2 := (coeff_le L hη hsmall hrec hτ j hj).2.1
+    have h3 := norm_nonneg (WithLp.toLp 2 (L.z' (j + 1)))
+    nlinarith [mul_le_mul_of_nonneg_right hεle h3]
+  have hlocal := local_errors_le L hη hsmall hrec hτ hj
+  obtain ⟨hew, hez⟩ := hlocal
+  have hcol : (fun i => L.toLanczosData.residual i ⟨j, hj⟩) =
+      L.toLanczosData.recurrenceError j := by
+    funext i
+    rfl
+  have hc := (L.orth_eq j hj).residual hVg
+  have hz := (coeff_le L hη hsmall hrec hτ j hj).2.2
+  have hzb := mul_le_mul_of_nonneg_left hz hε₂
+  have hδ := mul_le_mul_of_nonneg_left hz' hε
+  have hδ' := L.norm_δ_le j hj
+  have hEu2 := mul_le_mul_of_nonneg_left hvj1 (mul_nonneg hε hh)
+  have hEu := L.norm_eu_le j hj
+  have hA1 : ‖WithLp.toLp 2 (basisOf L.v (j + 1) *ᵥ (fun i => L.h (j + 1) i))‖ ≤
+      101 / 100 * (24 * Real.sqrt ((j : ℝ) + 1) * L.recLevel * specNorm L.H) :=
+    (norm_toLp_mulVec_le _ _).trans
+      (mul_le_mul hVn (norm_coef_le L hη hsmall hrec hτ j hj) (norm_nonneg _) (by norm_num))
+  have hE1 := mul_le_mul_of_nonneg_right hεr hh
+  have hE2 := mul_le_mul_of_nonneg_right hε₂r hh
+  have hs1 : 1 ≤ Real.sqrt ((j : ℝ) + 1) := by
+    nlinarith [Real.sq_sqrt (show (0 : ℝ) ≤ (j : ℝ) + 1 by positivity),
+      Real.sqrt_nonneg ((j : ℝ) + 1), (Nat.cast_nonneg j : (0 : ℝ) ≤ j)]
+  have hE3 := mul_le_mul_of_nonneg_right hs1 (mul_nonneg hr0 hh)
+  rw [hcol, recurrenceError_eq L hj]
+  refine (norm_toLp_six_le _ _ _ _ _ _).trans ?_
+  linarith [mul_nonneg (mul_nonneg (Real.sqrt_nonneg ((j : ℝ) + 1)) hr0) hh, mul_nonneg hε hh]
+
 /-- **The perturbed Lanczos relation of a reorthogonalized run** (D6, S1): with the discarded
 coefficients in the residual, $\|\mathbf{F}_k\|_{\mathsf F} \le 30(k+1)\,(\mu + \varepsilon +
 \varepsilon_2)\,\|\mathbf{H}\|_2$; the relation itself is `NLAlib.LanczosData.mul_basis`.
@@ -1058,7 +1220,43 @@ theorem frobNorm_residual_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
     frobNorm L.toLanczosData.residual ≤ 30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H := by
-  sorry
+  have hr0 : 0 ≤ L.recLevel := by
+    have hμ : 0 ≤ L.orthLevel := by
+      unfold orthLevel
+      have := L.ε₁_nonneg
+      have := L.ε₃_nonneg
+      have := L.ε_nonneg
+      have := L.τ_pos
+      positivity
+    unfold recLevel
+    linarith [L.ε_nonneg, L.ε₂_nonneg]
+  have hcolb : ∀ j : Fin k, ‖WithLp.toLp 2 (L.toLanczosData.residual.col j)‖ ^ 2 ≤
+      36 ^ 2 * (L.recLevel * specNorm L.H) ^ 2 * (((j : ℕ) : ℝ) + 1) := by
+    intro j
+    have h1 := residual_col_le L hη hsmall hrec hτ j.2
+    have h2 := norm_nonneg (WithLp.toLp 2 (L.toLanczosData.residual.col j))
+    have hs := Real.sq_sqrt (show (0 : ℝ) ≤ ((j : ℕ) : ℝ) + 1 by positivity)
+    calc _ ≤ (36 * Real.sqrt (((j : ℕ) : ℝ) + 1) * L.recLevel * specNorm L.H) ^ 2 :=
+          pow_le_pow_left₀ h2 h1 2
+      _ = _ := by linear_combination (36 : ℝ) ^ 2 * (L.recLevel * specNorm L.H) ^ 2 * hs
+  have hfin : frobNorm L.toLanczosData.residual ^ 2 ≤
+      (30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H) ^ 2 := by
+    rw [frobNorm_sq_eq_sum_col]
+    calc ∑ j : Fin k, ‖WithLp.toLp 2 (L.toLanczosData.residual.col j)‖ ^ 2
+        ≤ ∑ j : Fin k, 36 ^ 2 * (L.recLevel * specNorm L.H) ^ 2 * (((j : ℕ) : ℝ) + 1) :=
+          Finset.sum_le_sum fun j _ => by simpa only [mul_assoc] using hcolb j
+      _ = 36 ^ 2 * (L.recLevel * specNorm L.H) ^ 2 * ∑ i ∈ Finset.range k, ((i : ℝ) + 1) := by
+          rw [Finset.mul_sum]
+          exact Fin.sum_univ_eq_sum_range (fun i : ℕ => 36 ^ 2 * (L.recLevel * specNorm L.H) ^ 2 *
+            ((i : ℝ) + 1)) k
+      _ ≤ 36 ^ 2 * (L.recLevel * specNorm L.H) ^ 2 * (((k : ℝ) + 1) ^ 2 / 2) :=
+          mul_le_mul_of_nonneg_left (sum_succ_range_le k) (by positivity)
+      _ ≤ (30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H) ^ 2 := by
+          nlinarith [sq_nonneg (((k : ℝ) + 1) * (L.recLevel * specNorm L.H))]
+  have hX : 0 ≤ 30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H := by
+    have := specNorm_nonneg L.H
+    positivity
+  nlinarith [frobNorm_nonneg L.toLanczosData.residual]
 
 /-- **The projection form** (D7, S1′): $\|\mathbf{V}_k^{\mathsf{T}}\mathbf{H}\mathbf{V}_k -
 \mathbf{T}_k\|_2 \le 50(k+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{H}\|_2$.
