@@ -53,7 +53,40 @@ modulus at least $\delta\lvert n \rvert$; a quadratic form is at most the norm
 theorem exists_mul_card_le_specNorm_add_smul (M : Matrix n n ℂ) {δ : ℝ} (hδ : 0 ≤ δ) :
     ∃ s ∈ ({1, -1} : Set ℝ),
       δ * Fintype.card n ≤ specNorm (M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ)) := by
-  sorry
+  classical
+  rcases isEmpty_or_nonempty n with hn | hn
+  · exact ⟨1, by simp, by simp [specNorm_nonneg]⟩
+  set c : ℝ := (Fintype.card n : ℝ) with hc
+  have hcpos : 0 < c := Nat.cast_pos.mpr Fintype.card_pos
+  set v : n → ℂ := fun _ => 1 with hv
+  have hvn : ‖WithLp.toLp 2 v‖ * ‖WithLp.toLp 2 v‖ = c := by
+    rw [← sq, EuclideanSpace.norm_sq_eq]; simp [v, c, hc]
+  have hq : ∀ s : ℝ, star v ⬝ᵥ ((M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ)) *ᵥ v)
+      = star v ⬝ᵥ (M *ᵥ v) + ((s * δ * c ^ 2 : ℝ) : ℂ) := by
+    intro s
+    rw [Matrix.add_mulVec, dotProduct_add]
+    congr 1
+    simp [Matrix.mulVec, dotProduct, v, Complex.real_smul, Finset.sum_const, hc]
+    ring
+  set q := star v ⬝ᵥ (M *ᵥ v) with hqdef
+  have main : ∀ s : ℝ, δ * c ^ 2 ≤ |q.re + s * δ * c ^ 2| →
+      δ * c ≤ specNorm (M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ)) := by
+    intro s hs
+    set B := M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ) with hB
+    have h1 := norm_star_dotProduct_mulVec_le B v v
+    have h2 : ‖star v ⬝ᵥ (B *ᵥ v)‖ ≤ specNorm B * c :=
+      h1.trans_eq (by rw [← hvn]; ring)
+    rw [hB, hq s] at h2
+    have h3 := Complex.abs_re_le_norm (q + ((s * δ * c ^ 2 : ℝ) : ℂ))
+    simp only [Complex.add_re, Complex.ofReal_re] at h3
+    have h4 : δ * c * c ≤ specNorm B * c := by
+      linarith [h3, h2, hs]
+    exact le_of_mul_le_mul_right h4 hcpos
+  rcases le_total 0 q.re with h | h
+  · refine ⟨1, by simp, main 1 (le_abs.mpr (Or.inl ?_))⟩
+    nlinarith [sq_nonneg c]
+  · refine ⟨-1, by simp, main (-1) (le_abs.mpr (Or.inr ?_))⟩
+    nlinarith [sq_nonneg c]
 
 /-- **A lower bound for diagonalization from rounded input**: let $\mathrm{fl}$ be a rounding of
 reals and $\mathcal{A}$ any method that maps the rounded input $\mathrm{fl}(\mathbf{A})$
