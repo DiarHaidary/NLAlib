@@ -107,7 +107,7 @@ theorem measureReal_exists_abs_sub_lt_le (Λ : Finset ℝ) {c w : ℝ} (hc : 0 <
       field_simp
 
 /-- The sign of a shifted Hermitian matrix is a measurable function of the shift. -/
-private lemma measurable_cfc_sign_sub_smul_aux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+private lemma measurable_cfc_sign_sub_smul {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (a : ℝ) :
     Measurable fun v : ℝ => cfc Real.sign (A - (a * v) • (1 : Matrix (Fin k) (Fin k) ℂ)) := by
   have h : ∀ c : ℝ, cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) =
@@ -137,13 +137,13 @@ private lemma measurable_cfc_sign_sub_smul_aux {k : ℕ} {A : Matrix (Fin k) (Fi
   exact hc.measurable.comp hd
 
 /-- The trace of $\mathbf{V}\mathbf{V}^{\mathsf{H}}$ is the number of orthonormal columns. -/
-private lemma re_trace_mul_conjTranspose_aux {k m : ℕ} {V : Matrix (Fin k) (Fin m) ℂ}
+private lemma HasOrthonormalCols.re_trace_mul_conjTranspose {k m : ℕ} {V : Matrix (Fin k) (Fin m) ℂ}
     (hV : HasOrthonormalCols V) : RCLike.re (V * Vᴴ).trace = m := by
   rw [Matrix.trace_mul_comm, hV.conjTranspose_mul_self, Matrix.trace_one, Fintype.card_fin]
   simp
 
 /-- For $k \le N$ the leading block is the submatrix along `Fin.castLE`. -/
-private lemma leadingBlock_eq_submatrix_aux {k N : ℕ} (h : k ≤ N)
+private lemma leadingBlock_eq_submatrix {k N : ℕ} (h : k ≤ N)
     (G : Matrix (Fin N) (Fin N) ℂ) :
     leadingBlock k G = G.submatrix (Fin.castLE h) (Fin.castLE h) := by
   ext i j
@@ -151,7 +151,7 @@ private lemma leadingBlock_eq_submatrix_aux {k N : ℕ} (h : k ≤ N)
     show (j : ℕ) < N from j.isLt.trans_le h]
 
 /-- The leading block of either test matrix of a sample is standard complex Gaussian. -/
-private lemma hasLaw_leadingBlock_aux {k N : ℕ} (h : k ≤ N) (b : Bool) :
+private lemma hasLaw_leadingBlock_apply {k N : ℕ} (h : k ≤ N) (b : Bool) :
     HasLaw (fun G : Bool → Matrix (Fin N) (Fin N) ℂ => leadingBlock k (G b))
       (complexGaussianMatrix (Fin k) (Fin k))
       (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)) := by
@@ -163,10 +163,10 @@ private lemma hasLaw_leadingBlock_aux {k N : ℕ} (h : k ≤ N) (b : Bool) :
       (measurePreserving_eval (fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)) b).map_eq⟩
   have := hasLaw_submatrix_of_hasLaw_complexGaussianMatrix h0 (Fin.castLE_injective h)
     (Fin.castLE_injective h)
-  simpa only [leadingBlock_eq_submatrix_aux h] using this
+  simpa only [leadingBlock_eq_submatrix h] using this
 
 /-- Event II fails on one side with probability at most $\rho/2 + \rho/2$ for a fixed frame. -/
-private lemma measure_fibre_le_aux {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ : ℝ} (hρ : 0 < ρ)
+private lemma measure_not_eventII_le {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ : ℝ} (hρ : 0 < ρ)
     (hρ₁ : ρ ≤ 1) (hm : 0 < m) (hmk : m ≤ k) {V : Matrix (Fin k) (Fin m) ℂ}
     (hV : HasOrthonormalCols V) :
     (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N))
@@ -174,7 +174,7 @@ private lemma measure_fibre_le_aux {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ 
         {G | singularValues (Vᴴ * (leadingBlock k (G b)).submatrix id (Fin.castLE hmk)) (m - 1) ≤
           √(ρ / 2) / k}) ≤ ENNReal.ofReal ρ := by
   set μ := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
-  have hL := hasLaw_leadingBlock_aux hkN b
+  have hL := hasLaw_leadingBlock_apply hkN b
   have hlog : 0 ≤ Real.log (4 / ρ) :=
     Real.log_nonneg (by rw [le_div_iff₀ hρ]; linarith)
   have h1 := measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix hL
@@ -211,7 +211,7 @@ private lemma measure_fibre_le_aux {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ 
   linarith
 
 /-- Off the spectrum, each spectral projector of a shift has a frame with orthonormal columns. -/
-private lemma exists_frame_aux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian)
+private lemma exists_frame_of_forall_ne {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian)
     {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) (b : Bool) :
     ∃ m, ∃ V : Matrix (Fin k) (Fin m) ℂ, HasOrthonormalCols V ∧
       V * Vᴴ = (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) •
@@ -239,7 +239,7 @@ private lemma exists_frame_aux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (hA : 
     exact ⟨_, V, hV, by rw [hVV]; simp⟩
 
 /-- Each singular value is continuous (`NLAlib.continuous_singularValues`, not imported here). -/
-private lemma continuous_singularValues_aux {m n : Type*} [Fintype m] [Fintype n] (k : ℕ) :
+private lemma continuous_singularValues_complex {m n : Type*} [Fintype m] [Fintype n] (k : ℕ) :
     Continuous fun A : Matrix m n ℂ => singularValues A k := by
   refine continuous_iff_continuousAt.2 fun A => ?_
   rw [ContinuousAt, tendsto_iff_dist_tendsto_zero]
@@ -251,104 +251,104 @@ private lemma continuous_singularValues_aux {m n : Type*} [Fintype m] [Fintype n
   exact abs_singularValues_sub_le_specNorm B A k
 
 /-- The spectral projector of side `b` at the ideal shift $Lv$. -/
-private noncomputable def sideProjAux {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L : ℝ) (b : Bool)
+private noncomputable def sideProj {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L : ℝ) (b : Bool)
     (v : ℝ) : Matrix (Fin k) (Fin k) ℂ :=
   (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) •
     cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))
 
 /-- The seeds of Event I at which the positive projector has rank strictly between $0$ and $k$. -/
-private def splitSeedsAux {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L w : ℝ) : Set ℝ :=
+private def splitSeeds {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L w : ℝ) : Set ℝ :=
   (Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L * v|}) ∩
-    ({v | 0 < RCLike.re (sideProjAux A L true v).trace} ∩
-      {v | RCLike.re (sideProjAux A L true v).trace < k})
+    ({v | 0 < RCLike.re (sideProj A L true v).trace} ∩
+      {v | RCLike.re (sideProj A L true v).trace < k})
 
 /-- A measurable superset of the failure of Event II on side `b` at the seeds of
-`splitSeedsAux`, with the frame replaced by the projector. -/
-private def sideBadAux {k : ℕ} (N : ℕ) (A : Matrix (Fin k) (Fin k) ℂ) (L w ρ : ℝ) (b : Bool) :
+`splitSeeds`, with the frame replaced by the projector. -/
+private def sideBad {k : ℕ} (N : ℕ) (A : Matrix (Fin k) (Fin k) ℂ) (L w ρ : ℝ) (b : Bool) :
     Set (EighSample ℝ ℂ N) :=
-  {s | s.1 ∈ splitSeedsAux A L w ∧ ∃ r : Fin k, 0 < (r : ℕ) ∧
-    RCLike.re (sideProjAux A L b s.1).trace = ((r : ℕ) : ℝ) ∧
+  {s | s.1 ∈ splitSeeds A L w ∧ ∃ r : Fin k, 0 < (r : ℕ) ∧
+    RCLike.re (sideProj A L b s.1).trace = ((r : ℕ) : ℝ) ∧
     (√2 * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ))) ≤ specNorm (leadingBlock k (s.2 b)) ∨
-      singularValues (sideProjAux A L b s.1 * (leadingBlock k (s.2 b)).submatrix id
+      singularValues (sideProj A L b s.1 * (leadingBlock k (s.2 b)).submatrix id
         (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ √(ρ / 2) / k)}
 
-/-- Membership in `splitSeedsAux`. -/
-private lemma mem_splitSeedsAux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} {L w v : ℝ} :
-    v ∈ splitSeedsAux A L w ↔ (v ∈ Set.Icc (-1 : ℝ) 1 ∧ ∀ e ∈ spectrum ℝ A, w ≤ |e - L * v|) ∧
-      0 < RCLike.re (sideProjAux A L true v).trace ∧
-        RCLike.re (sideProjAux A L true v).trace < k := by
-  simp only [splitSeedsAux, Set.mem_inter_iff, Set.mem_iInter, Set.mem_ofPred_eq]
+/-- Membership in `splitSeeds`. -/
+private lemma mem_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} {L w v : ℝ} :
+    v ∈ splitSeeds A L w ↔ (v ∈ Set.Icc (-1 : ℝ) 1 ∧ ∀ e ∈ spectrum ℝ A, w ≤ |e - L * v|) ∧
+      0 < RCLike.re (sideProj A L true v).trace ∧
+        RCLike.re (sideProj A L true v).trace < k := by
+  simp only [splitSeeds, Set.mem_inter_iff, Set.mem_iInter, Set.mem_ofPred_eq]
 
 /-- The two projectors have traces adding up to $k$. -/
-private lemma re_trace_sideProjAux_add {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L v : ℝ) :
-    RCLike.re (sideProjAux A L true v).trace + RCLike.re (sideProjAux A L false v).trace = k := by
-  have : sideProjAux A L true v + sideProjAux A L false v = 1 := by
-    simp only [sideProjAux, if_true, Bool.false_eq_true, if_false, one_smul, neg_smul]
+private lemma re_trace_sideProj_add {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L v : ℝ) :
+    RCLike.re (sideProj A L true v).trace + RCLike.re (sideProj A L false v).trace = k := by
+  have : sideProj A L true v + sideProj A L false v = 1 := by
+    simp only [sideProj, if_true, Bool.false_eq_true, if_false, one_smul, neg_smul]
     module
   rw [← map_add, ← Matrix.trace_add, this, Matrix.trace_one, Fintype.card_fin]
   simp
 
 /-- The trace function of a projector is measurable in the seed. -/
-private lemma measurable_re_trace_sideProjAux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+private lemma measurable_sideProj_and_re_trace {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (L : ℝ) (b : Bool) :
-    Measurable (sideProjAux A L b) ∧ Measurable fun v => RCLike.re (sideProjAux A L b v).trace := by
-  have h : Measurable (sideProjAux A L b) :=
+    Measurable (sideProj A L b) ∧ Measurable fun v => RCLike.re (sideProj A L b v).trace := by
+  have h : Measurable (sideProj A L b) :=
     (Continuous.measurable (by fun_prop) : Measurable fun S : Matrix (Fin k) (Fin k) ℂ =>
       (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • S)).comp
-        (measurable_cfc_sign_sub_smul_aux hA L)
+        (measurable_cfc_sign_sub_smul hA L)
   exact ⟨h, (Continuous.measurable (by fun_prop : Continuous fun X : Matrix (Fin k) (Fin k) ℂ =>
     RCLike.re X.trace)).comp h⟩
 
-/-- `splitSeedsAux` is measurable. -/
-private lemma measurableSet_splitSeedsAux {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
-    (hA : A.IsHermitian) (L w : ℝ) : MeasurableSet (splitSeedsAux A L w) :=
+/-- `splitSeeds` is measurable. -/
+private lemma measurableSet_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (L w : ℝ) : MeasurableSet (splitSeeds A L w) :=
   (measurableSet_Icc.inter (A.finite_real_spectrum.measurableSet_biInter fun _ _ =>
     measurableSet_le measurable_const
       (continuous_const.sub (continuous_const.mul continuous_id)).abs.measurable)).inter
-    ((measurableSet_lt measurable_const (measurable_re_trace_sideProjAux hA L true).2).inter
-      (measurableSet_lt (measurable_re_trace_sideProjAux hA L true).2 measurable_const))
+    ((measurableSet_lt measurable_const (measurable_sideProj_and_re_trace hA L true).2).inter
+      (measurableSet_lt (measurable_sideProj_and_re_trace hA L true).2 measurable_const))
 
-/-- `sideBadAux` is measurable. -/
-private lemma measurableSet_sideBadAux {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+/-- `sideBad` is measurable. -/
+private lemma measurableSet_sideBad {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (hkN : k ≤ N) (L w ρ : ℝ) (b : Bool) :
-    MeasurableSet (sideBadAux N A L w ρ b) := by
+    MeasurableSet (sideBad N A L w ρ b) := by
   have hLB : Measurable fun G : Bool → Matrix (Fin N) (Fin N) ℂ => leadingBlock k (G b) := by
-    simp_rw [leadingBlock_eq_submatrix_aux hkN]
+    simp_rw [leadingBlock_eq_submatrix hkN]
     exact ((continuous_apply b).matrix_submatrix _ _).measurable
-  obtain ⟨hP, htr⟩ := measurable_re_trace_sideProjAux hA L b
+  obtain ⟨hP, htr⟩ := measurable_sideProj_and_re_trace hA L b
   refine measurableSet_setOfPred.2 ((measurableSet_setOfPred.1
-    (measurable_fst (measurableSet_splitSeedsAux hA L w))).and
+    (measurable_fst (measurableSet_splitSeeds hA L w))).and
     (Measurable.exists fun r => measurable_const.and
       ((measurableSet_setOfPred.1 (measurableSet_eq_fun (htr.comp measurable_fst)
         measurable_const)).and ((measurableSet_setOfPred.1 (measurableSet_le measurable_const
           (continuous_specNorm.measurable.comp (hLB.comp measurable_snd)))).or
           (measurableSet_setOfPred.1 (measurableSet_le ?_ measurable_const))))))
-  refine (continuous_singularValues_aux _).measurable.comp ?_
+  refine (continuous_singularValues_complex _).measurable.comp ?_
   exact Continuous.measurable2 (by fun_prop) (hP.comp measurable_fst)
     ((Continuous.matrix_submatrix continuous_id _ _).measurable.comp (hLB.comp measurable_snd))
 
-/-- Each side fails Event II with probability at most $\rho$ on the seeds of `splitSeedsAux`:
+/-- Each side fails Event II with probability at most $\rho$ on the seeds of `splitSeeds`:
 `MeasureTheory.Measure.prod_apply` and the fibre bound for a frame of the projector. -/
-private lemma measure_sideBadAux_le {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+private lemma measure_sideBad_le {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (hkN : k ≤ N) {L w ρ : ℝ} (hw : 0 < w) (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1)
     (μ : Measure ℝ) (b : Bool) :
     (μ.prod (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)))
-      (sideBadAux N A L w ρ b) ≤ ENNReal.ofReal ρ * μ (splitSeedsAux A L w) := by
-  rw [Measure.prod_apply (measurableSet_sideBadAux hA hkN L w ρ b),
-    ← lintegral_indicator_const (measurableSet_splitSeedsAux hA L w)]
+      (sideBad N A L w ρ b) ≤ ENNReal.ofReal ρ * μ (splitSeeds A L w) := by
+  rw [Measure.prod_apply (measurableSet_sideBad hA hkN L w ρ b),
+    ← lintegral_indicator_const (measurableSet_splitSeeds hA L w)]
   refine lintegral_mono fun v => ?_
-  by_cases hv : v ∈ splitSeedsAux A L w
+  by_cases hv : v ∈ splitSeeds A L w
   · rw [Set.indicator_of_mem hv]
-    obtain ⟨⟨-, hI⟩, -⟩ := mem_splitSeedsAux.1 hv
-    obtain ⟨m, V, hV, hVV⟩ := exists_frame_aux hA (c := L * v) (fun e he hev => by
+    obtain ⟨⟨-, hI⟩, -⟩ := mem_splitSeeds.1 hv
+    obtain ⟨m, V, hV, hVV⟩ := exists_frame_of_forall_ne hA (c := L * v) (fun e he hev => by
       have := hI e he
       rw [hev, sub_self, abs_zero] at this
       linarith) b
-    change V * Vᴴ = sideProjAux A L b v at hVV
-    have htrV := re_trace_mul_conjTranspose_aux hV
+    change V * Vᴴ = sideProj A L b v at hVV
+    have htrV := hV.re_trace_mul_conjTranspose
     rw [hVV] at htrV
     by_cases hm : 0 < m ∧ m ≤ k
-    · refine (measure_mono ?_).trans (measure_fibre_le_aux hkN b hρ hρ₁ hm.1 hm.2 hV)
+    · refine (measure_mono ?_).trans (measure_not_eventII_le hkN b hρ hρ₁ hm.1 hm.2 hV)
       intro G hG
       obtain ⟨-, ⟨r, hrk⟩, -, hrtr, hbad⟩ := hG
       have hrm : r = m := by exact_mod_cast hrtr.symm.trans htrV
@@ -394,7 +394,7 @@ private lemma measure_not_eventI_le {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (
     exact_mod_cast this
   gcongr
 
-/-- The failure of the good events lies in the failure of Event I or in `sideBadAux` on a side:
+/-- The failure of the good events lies in the failure of Event I or in `sideBad` on a side:
 on Event I a frame of a projector with $0 < r < k$ columns pins the trace to $r$, and
 `NLAlib.HasOrthonormalCols.singularValues_mul_left` replaces the frame by the projector. -/
 private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : ℝ} {y : EighNode F}
@@ -403,8 +403,8 @@ private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : 
       (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y s} ⊆
       Prod.fst ⁻¹' ({v | v ∉ Set.Icc (-1 : ℝ) 1} ∪
         {v | ∃ e ∈ spectrum ℝ (decodeMatrix dec y.A), |e - dec y.R / y.ℓ * v| < w}) ∪
-      (sideBadAux N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ true ∪
-        sideBadAux N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ false) := by
+      (sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ true ∪
+        sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ false) := by
   intro s hs
   simp only [IsEighGoodSample, Set.mem_ofPred_eq] at hs
   generalize decodeMatrix dec y.A = A at hs ⊢
@@ -414,20 +414,20 @@ private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : 
     have h2 := not_and.1 hs h1
     push Not at h2
     obtain ⟨b, r, V, hr0, hrk, hV, hVV, hbad⟩ := h2
-    change V * Vᴴ = sideProjAux A L b s.1 at hVV
-    have htrV := re_trace_mul_conjTranspose_aux hV
+    change V * Vᴴ = sideProj A L b s.1 at hVV
+    have htrV := hV.re_trace_mul_conjTranspose
     rw [hVV] at htrV
-    have hsT : s.1 ∈ splitSeedsAux A L w := by
-      refine mem_splitSeedsAux.2 ⟨h1, ?_⟩
+    have hsT : s.1 ∈ splitSeeds A L w := by
+      refine mem_splitSeeds.2 ⟨h1, ?_⟩
       have hrk' : (r : ℝ) < y.k := by exact_mod_cast hrk
       have hr0' : (0 : ℝ) < r := by exact_mod_cast hr0
-      have := re_trace_sideProjAux_add A L s.1
+      have := re_trace_sideProj_add A L s.1
       cases b
       · rw [htrV] at this
         constructor <;> linarith
       · rw [htrV]
         exact ⟨hr0', hrk'⟩
-    have hmem : s ∈ sideBadAux N A L w ρ b := by
+    have hmem : s ∈ sideBad N A L w ρ b := by
       refine ⟨hsT, ⟨r, hrk⟩, hr0, htrV, ?_⟩
       rcases le_or_gt (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ))))
         (specNorm (leadingBlock y.k (s.2 b))) with ht | ht
@@ -506,6 +506,9 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
       (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y s} ≤
       ENNReal.ofReal (y.k * w * y.ℓ / dec y.R) + ENNReal.ofReal (2 * ρ) *
         eighSampleLaw N {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
+  have _ := hμQ
+  have _ := hcN
+  have _ := hudefl
   have hRpos : 0 < dec y.R := hw.trans_le hwR
   have hℓpos : (0 : ℝ) < y.ℓ := by
     have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
@@ -513,39 +516,83 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
   have hLpos : 0 < dec y.R / y.ℓ := div_pos hRpos hℓpos
   set μ₁ := ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)
   set ν := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
-  set T := splitSeedsAux (decodeMatrix dec y.A) (dec y.R / y.ℓ) w
+  set T := splitSeeds (decodeMatrix dec y.A) (dec y.R / y.ℓ) w
   -- the seeds of `T` split the node (rank recovery on Event I)
   have hTsplit : μ₁ T ≤
       (μ₁.prod ν) {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
     calc μ₁ T = (μ₁.prod ν) (T ×ˢ Set.univ) := by rw [Measure.prod_prod, measure_univ, mul_one]
       _ ≤ _ := measure_mono fun s hs => ?_
-    obtain ⟨⟨hv, hI⟩, h0, h1⟩ := mem_splitSeedsAux.1 hs.1
+    obtain ⟨⟨hv, hI⟩, h0, h1⟩ := mem_splitSeeds.1 hs.1
     have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * s.1) fun e he hev => by
       have := hI e he
       rw [hev, sub_self, abs_zero] at this
       linarith
-    have hPt : sideProjAux (decodeMatrix dec y.A) (dec y.R / y.ℓ) true s.1 =
+    have hPt : sideProj (decodeMatrix dec y.A) (dec y.R / y.ℓ) true s.1 =
         (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
           (dec y.R / y.ℓ * s.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) := by
-      simp [sideProjAux]
+      simp [sideProj]
     rw [hPt, htr] at h0 h1
     exact (hM.eighStep_isSplit_iff_of_forall_le_abs_sub (signFuel := signFuel) (R₀ := R₀) hμM hu
       hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk hint hv hI).2
       ⟨by exact_mod_cast h0, by exact_mod_cast h1⟩
   refine (measure_mono not_isEighGoodSample_subset).trans ((measure_union_le _ _).trans ?_)
   refine (add_le_add (measure_not_eventI_le hA hLpos hw ν) ((measure_union_le _ _).trans
-    (add_le_add (measure_sideBadAux_le hA hkN hw hρ hρ₁ μ₁ true)
-      (measure_sideBadAux_le hA hkN hw hρ hρ₁ μ₁ false)))).trans ?_
+    (add_le_add (measure_sideBad_le hA hkN hw hρ hρ₁ μ₁ true)
+      (measure_sideBad_le hA hkN hw hρ hρ₁ μ₁ false)))).trans ?_
   rw [div_div_eq_mul_div, ← add_mul, ← ENNReal.ofReal_add hρ.le hρ.le, ← two_mul]
   gcongr
   exact hTsplit
 
-/-- Deflation sees the sampled block only through its normal image. -/
-private lemma deflate_eq_of_map_normal_eq {F Su Sg : Type*} (M : FloatMachine F Su Sg)
-    (r : ℕ) {n : ℕ} (P : Matrix (Fin n) (Fin n) (F × F)) {G G' : Matrix (Fin n) (Fin n) Sg}
-    (h : G.map M.normal = G'.map M.normal) : deflate M r P G = deflate M r P G' := by
-  unfold deflate
-  rw [h]
+/-- The computed shift and the computed leading blocks of a sample at the node `x`; the child of
+`x` depends on the sample only through them. -/
+private def eighSampleKey {F : Type*} (M : FloatMachine F ℝ ℂ) {N : ℕ} (x : EighNode F)
+    (s : EighSample ℝ ℂ N) : F × (Bool → Matrix (Fin x.k) (Fin x.k) (F × F)) :=
+  (M.unif (M.div x.R (M.ofNat x.ℓ)) s.1, fun b => (leadingBlock x.k (s.2 b)).map M.normal)
+
+/-- The keys of the samples at a node form a countable set. -/
+private lemma countable_range_eighSampleKey {F : Type*} {M : FloatMachine F ℝ ℂ}
+    (hunif : ∀ c, (Set.range (M.unif c)).Countable) (hnormal : (Set.range M.normal).Countable)
+    (N : ℕ) (x : EighNode F) : (Set.range (eighSampleKey M (N := N) x)).Countable := by
+  refine ((hunif (M.div x.R (M.ofNat x.ℓ))).prod (Set.countable_pi fun _ =>
+    Set.countable_pi fun _ => Set.countable_pi fun _ => hnormal)).mono ?_
+  rintro _ ⟨s, rfl⟩
+  exact ⟨⟨_, rfl⟩, fun b i j => ⟨_, rfl⟩⟩
+
+-- the proof names the size bound of `eighStep` to restate it without the sample
+set_option linter.auxLemma false in
+/-- The child of a node depends on its sample only through `eighSampleKey`. -/
+private lemma eighChild_eq_of_eighSampleKey_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) {s s' : EighSample ℝ ℂ N}
+    (h : eighSampleKey M x s = eighSampleKey M x s') (b : Bool) :
+    eighChild M N signFuel R₀ β x s b = eighChild M N signFuel R₀ β x s' b := by
+  simp only [eighSampleKey, Prod.mk.injEq] at h
+  obtain ⟨h1, h2⟩ := h
+  have hd : ∀ r P b, deflate M r P (leadingBlock x.k (s.2 b)) =
+      deflate M r P (leadingBlock x.k (s'.2 b)) := by
+    intro r P b
+    have h2b : (leadingBlock x.k (s.2 b)).map M.normal =
+        (leadingBlock x.k (s'.2 b)).map M.normal := congrFun h2 b
+    unfold deflate
+    rw [h2b]
+  have hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s =
+      eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s' := by
+    obtain ⟨v, G⟩ := s
+    obtain ⟨v', G'⟩ := s'
+    calc eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G)
+        = eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G') := by
+          unfold eighStep
+          simp only [hd]
+      _ = _ := by
+          dsimp only at h1
+          unfold eighStep
+          by_cases hk : x.k ≤ 1
+          · simp only [hk, if_true]
+          · simp (config := {zeta := false}) only [hk, if_false]
+            -- the size bound of the split mentions the sample: restate it without it
+            rw [show eighStep._proof_1 M N signFuel β x.A x.R x.ℓ (v, G') = min_le_left _ _
+              from rfl, h1]
+  unfold eighChild
+  rw [hs]
 
 /-- The child of a node has countably many values as the ideal sample varies. -/
 private lemma countable_range_eighChild {F : Type*} {M : FloatMachine F ℝ ℂ}
@@ -553,74 +600,15 @@ private lemma countable_range_eighChild {F : Type*} {M : FloatMachine F ℝ ℂ}
     (N signFuel : ℕ) (R₀ β : F) (x : EighNode F) (b : Bool) :
     (Set.range fun s : EighSample ℝ ℂ N => eighChild M N signFuel R₀ β x s b).Countable := by
   classical
-  have := hnormal.to_subtype
-  have := (hunif (M.div x.R (M.ofNat x.ℓ))).to_subtype
-  let key : EighSample ℝ ℂ N → Set.range (M.unif (M.div x.R (M.ofNat x.ℓ))) ×
-      (Fin x.k × Fin x.k → Set.range M.normal) × (Fin x.k × Fin x.k → Set.range M.normal) :=
-    fun s => (⟨M.unif (M.div x.R (M.ofNat x.ℓ)) s.1, Set.mem_range_self _⟩,
-      fun p => ⟨M.normal (leadingBlock x.k (s.2 true) p.1 p.2), Set.mem_range_self _⟩,
-      fun p => ⟨M.normal (leadingBlock x.k (s.2 false) p.1 p.2), Set.mem_range_self _⟩)
-  -- the step, written with the computed shift `a` and the normal-mapped blocks as parameters
-  let body : F → (Bool → Matrix (Fin N) (Fin N) ℂ) → EighStep F x.k := fun a G =>
-    if x.k ≤ 1 then .leaf (M.identityMat x.k) fun i => (x.A i i).1
-    else if M.le x.R (M.mul x.ε R₀) then .leaf (M.identityMat x.k) fun _ => M.zero
-    else
-      let two := M.ofNat 2
-      let half := M.div x.R two
-      let B := newtonSchulzSign M β (M.mul two x.R) signFuel (M.hermShift x.A a)
-      let Pp := M.hermScale (M.hermShift B (M.neg M.one)) two
-      let Pm := M.hermScale (M.negMat (M.hermShift B M.one)) two
-      let kp := min x.k (M.toNat (M.add (M.traceRe Pp) (M.div M.one two)))
-      if kp = x.k then .shift true (M.hermShift x.A half) half
-      else if kp = 0 then .shift false (M.hermShift x.A (M.neg half)) (M.neg half)
-      else
-        let Qp := deflate M kp Pp (leadingBlock x.k (G true))
-        let Qm := deflate M (x.k - kp) Pm (leadingBlock x.k (G false))
-        .split kp (min_le_left _ _) Qp Qm
-          (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) x.A) Qp) two) half)
-          (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) x.A) Qm) two) (M.neg half))
-          half
-  have hbody : ∀ (a : F) (G G' : Bool → Matrix (Fin N) (Fin N) ℂ),
-      (leadingBlock x.k (G true)).map M.normal = (leadingBlock x.k (G' true)).map M.normal →
-      (leadingBlock x.k (G false)).map M.normal = (leadingBlock x.k (G' false)).map M.normal →
-      body a G = body a G' := by
-    intro a G G' hT hF
-    have dT : ∀ (r : ℕ) (P : Matrix (Fin x.k) (Fin x.k) (F × F)),
-        deflate M r P (leadingBlock x.k (G true)) =
-          deflate M r P (leadingBlock x.k (G' true)) :=
-      fun r P => deflate_eq_of_map_normal_eq M r P hT
-    have dF : ∀ (r : ℕ) (P : Matrix (Fin x.k) (Fin x.k) (F × F)),
-        deflate M r P (leadingBlock x.k (G false)) =
-          deflate M r P (leadingBlock x.k (G' false)) :=
-      fun r P => deflate_eq_of_map_normal_eq M r P hF
-    simp only [body, dT, dF]
-  have hfac : ∀ s s', key s = key s' →
-      eighChild M N signFuel R₀ β x s b = eighChild M N signFuel R₀ β x s' b := by
-    intro s s' h
-    have h1 : M.unif (M.div x.R (M.ofNat x.ℓ)) s.1 = M.unif (M.div x.R (M.ofNat x.ℓ)) s'.1 :=
-      congrArg Subtype.val (congrArg Prod.fst h)
-    have hT : (leadingBlock x.k (s.2 true)).map M.normal =
-        (leadingBlock x.k (s'.2 true)).map M.normal :=
-      Matrix.ext fun i j => congrArg Subtype.val (congrFun (congrArg (fun t => t.2.1) h) (i, j))
-    have hF : (leadingBlock x.k (s.2 false)).map M.normal =
-        (leadingBlock x.k (s'.2 false)).map M.normal :=
-      Matrix.ext fun i j => congrArg Subtype.val (congrFun (congrArg (fun t => t.2.2) h) (i, j))
-    have hstep : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s =
-        eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s' := by
-      change body _ s.2 = body _ s'.2
-      rw [h1]
-      exact hbody _ _ _ hT hF
-    unfold eighChild
-    rw [hstep]
-  have hrange : Set.range (fun s : EighSample ℝ ℂ N => eighChild M N signFuel R₀ β x s b) ⊆
-      (fun t => if hs : ∃ s', key s' = t then eighChild M N signFuel R₀ β x hs.choose b
-        else none) '' Set.range key := by
-    rintro _ ⟨s, rfl⟩
-    refine ⟨key s, ⟨s, rfl⟩, ?_⟩
-    dsimp only
-    rw [dif_pos (⟨s, rfl⟩ : ∃ s', key s' = key s)]
-    exact hfac _ _ (Classical.choose_spec (⟨s, rfl⟩ : ∃ s', key s' = key s))
-  exact (((Set.countable_univ).mono (Set.subset_univ _)).image _).mono hrange
+  refine ((countable_range_eighSampleKey hunif hnormal N x).image fun t =>
+    if hs : ∃ s, eighSampleKey M x s = t then eighChild M N signFuel R₀ β x hs.choose b
+    else none).mono ?_
+  rintro _ ⟨s, rfl⟩
+  have hs : ∃ s', eighSampleKey M x s' = eighSampleKey M x s := ⟨s, rfl⟩
+  refine ⟨_, ⟨s, rfl⟩, ?_⟩
+  dsimp only
+  rw [dif_pos hs]
+  exact eighChild_eq_of_eighSampleKey_eq x hs.choose_spec b
 
 /-- **The nodes take countably many values**: if the computed samples have countably many values
 (the uniform sampler at every scale and the normal sampler have countable ranges, as the
@@ -677,41 +665,6 @@ private lemma measurableSet_preimage_of_countable_range_fibres {Ω' α : Type*}
   rw [this]
   exact MeasurableSet.biUnion (hc.mono Set.inter_subset_right) fun z _ => hf z
 
--- the proof names the size bound of `eighStep` to restate it without the sample
-set_option linter.auxLemma false in
-/-- The child of a node depends on its sample only through the computed shift and the computed
-leading blocks. -/
-private lemma eighChild_eq_of_unif_eq_of_map_normal_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
-    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) {s s' : EighSample ℝ ℂ N}
-    (h1 : M.unif (M.div x.R (M.ofNat x.ℓ)) s.1 = M.unif (M.div x.R (M.ofNat x.ℓ)) s'.1)
-    (h2 : ∀ b, (leadingBlock x.k (s.2 b)).map M.normal =
-      (leadingBlock x.k (s'.2 b)).map M.normal) (b : Bool) :
-    eighChild M N signFuel R₀ β x s b = eighChild M N signFuel R₀ β x s' b := by
-  have hd : ∀ r P b, deflate M r P (leadingBlock x.k (s.2 b)) =
-      deflate M r P (leadingBlock x.k (s'.2 b)) := by
-    intro r P b
-    unfold deflate
-    rw [h2 b]
-  have hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s =
-      eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s' := by
-    obtain ⟨v, G⟩ := s
-    obtain ⟨v', G'⟩ := s'
-    calc eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G)
-        = eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G') := by
-          unfold eighStep
-          simp only [hd]
-      _ = _ := by
-          dsimp only at h1
-          unfold eighStep
-          by_cases hk : x.k ≤ 1
-          · simp only [hk, if_true]
-          · simp (config := {zeta := false}) only [hk, if_false]
-            -- the size bound of the split mentions the sample: restate it without it
-            rw [show eighStep._proof_1 M N signFuel β x.A x.R x.ℓ (v, G') = min_le_left _ _
-              from rfl, h1]
-  unfold eighChild
-  rw [hs]
-
 /-- **The node at a path is an event of the earlier samples**: if the samplers have measurable
 fibres and countable ranges and each sample $\zeta_b$ is measurable, then for every root $x$, path
 $a$ and possible node $y$, the set of outcomes at which the node at $a$ is $y$ is measurable. No
@@ -735,25 +688,21 @@ theorem measurableSet_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     exact MeasurableSet.const _
   | cons b a ih =>
     -- the computed shift and leading blocks: countable range and measurable fibres
-    set sc := M.div x.R (M.ofNat x.ℓ)
-    let κ : EighSample ℝ ℂ N → F × (Bool → Matrix (Fin x.k) (Fin x.k) (F × F)) :=
-      fun s => (M.unif sc s.1, fun b => (leadingBlock x.k (s.2 b)).map M.normal)
-    have hκc : (Set.range fun ω => κ (ζ [] ω)).Countable := by
-      refine ((hunif sc).prod (Set.countable_pi fun _ => Set.countable_pi fun _ =>
-        Set.countable_pi fun _ => hnormal)).mono ?_
-      rintro _ ⟨ω, rfl⟩
-      exact ⟨⟨_, rfl⟩, fun b i j => ⟨_, rfl⟩⟩
-    have hκm : ∀ t, MeasurableSet ((fun ω => κ (ζ [] ω)) ⁻¹' {t}) := by
+    have hκc : (Set.range fun ω => eighSampleKey M x (ζ [] ω)).Countable :=
+      (countable_range_eighSampleKey hunif hnormal N x).mono (by
+        rintro _ ⟨ω, rfl⟩
+        exact ⟨_, rfl⟩)
+    have hκm : ∀ t, MeasurableSet ((fun ω => eighSampleKey M x (ζ [] ω)) ⁻¹' {t}) := by
       intro t
-      have : (fun ω => κ (ζ [] ω)) ⁻¹' {t} = {ω | M.unif sc (ζ [] ω).1 = t.1} ∩
-          ⋂ b, ⋂ i, ⋂ j,
+      have : (fun ω => eighSampleKey M x (ζ [] ω)) ⁻¹' {t} =
+          {ω | M.unif (M.div x.R (M.ofNat x.ℓ)) (ζ [] ω).1 = t.1} ∩ ⋂ b, ⋂ i, ⋂ j,
             {ω | M.normal (leadingBlock x.k ((ζ [] ω).2 b) i j) = t.2 b i j} := by
         ext ω
-        simp only [κ, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff,
+        simp only [eighSampleKey, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff,
           Set.mem_iInter, Set.mem_ofPred_eq, Prod.ext_iff, funext_iff (β := fun _ : Bool => _),
           ← Matrix.ext_iff, Matrix.map_apply]
       rw [this]
-      refine ((hunifm sc t.1).preimage (measurable_fst.comp (hζ []))).inter
+      refine ((hunifm _ t.1).preimage (measurable_fst.comp (hζ []))).inter
         (MeasurableSet.iInter fun b => MeasurableSet.iInter fun i =>
           MeasurableSet.iInter fun j => ?_)
       by_cases h : (i : ℕ) < N ∧ (j : ℕ) < N
@@ -766,14 +715,13 @@ theorem measurableSet_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     set C := fun ω => eighChild M N signFuel R₀ β x (ζ [] ω) b
     have hCm : ∀ z, MeasurableSet (C ⁻¹' {z}) := by
       intro z
-      have : C ⁻¹' {z} = (fun ω => κ (ζ [] ω)) ⁻¹'
-          {t | ∃ s, κ s = t ∧ eighChild M N signFuel R₀ β x s b = z} := by
+      have : C ⁻¹' {z} = (fun ω => eighSampleKey M x (ζ [] ω)) ⁻¹'
+          {t | ∃ s, eighSampleKey M x s = t ∧ eighChild M N signFuel R₀ β x s b = z} := by
         ext ω
         refine ⟨fun h => ⟨ζ [] ω, rfl, h⟩, ?_⟩
         rintro ⟨s, hs, hz⟩
         simp only [Set.mem_preimage, Set.mem_singleton_iff, C, ← hz]
-        exact eighChild_eq_of_unif_eq_of_map_normal_eq x (congrArg Prod.fst hs).symm
-          (fun b' => congrFun (congrArg Prod.snd hs).symm b') b
+        exact eighChild_eq_of_eighSampleKey_eq x hs.symm b
       rw [this]
       exact measurableSet_preimage_of_countable_range_fibres hκc hκm _
     have hCc : (Set.range C).Countable := by
@@ -871,6 +819,7 @@ theorem indepFun_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     simp only [ext, dif_pos hi']
   · rfl
 
+/-- The node at `a ++ [b]` is the child on side `b` of the node at `a`. -/
 private theorem eighNodeAt_append_singleton {F Su Sg : Type*} [Inhabited Sg]
     (M : FloatMachine F Su Sg) (N signFuel : ℕ) (R₀ β : F) (b : Bool) :
     ∀ (a : List Bool) (x : EighNode F) (s : List Bool → EighSample Su Sg N),
@@ -882,6 +831,7 @@ private theorem eighNodeAt_append_singleton {F Su Sg : Type*} [Inhabited Sg]
     congr 1; funext y
     exact eighNodeAt_append_singleton M N signFuel R₀ β b a y _
 
+/-- A node with a child is internal: $k \ge 2$ and the leaf test fails. -/
 private theorem two_le_k_and_le_eq_false_of_eighChild_eq_some {F Su Sg : Type*} [Inhabited Sg]
     {M : FloatMachine F Su Sg} {N signFuel : ℕ} {R₀ β : F} {x : EighNode F}
     {smp : EighSample Su Sg N} {b : Bool} {y : EighNode F}
@@ -898,6 +848,8 @@ private theorem two_le_k_and_le_eq_false_of_eighChild_eq_some {F Su Sg : Type*} 
   obtain ⟨U, d, hU⟩ := hleaf
   simp [eighChild, hU] at h
 
+/-- The samples at which a node splits form a measurable set: the split depends on the sample only
+through the computed shift, which has countable range and measurable fibres. -/
 private theorem measurableSet_setOf_eighStep_isSplit {F : Type*} {M : FloatMachine F ℝ ℂ}
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
     (hunifc : ∀ c, (Set.range (M.unif c)).Countable) (N signFuel : ℕ) (R₀ β : F) {k : ℕ}
@@ -935,6 +887,7 @@ private theorem measurableSet_setOf_eighStep_isSplit {F : Type*} {M : FloatMachi
   rintro _ ⟨s, rfl, -⟩
   exact ⟨s.1, rfl⟩
 
+/-- The Newton–Schulz step count is nonnegative for $x > 0$ and $0 < e \le 1/2$. -/
 private theorem newtonSchulzSteps_nonneg_of_pos {x e : ℝ} (hx : 0 < x) (he : 0 < e)
     (he₁ : e ≤ 1 / 2) : 0 ≤ newtonSchulzSteps x e := by
   rw [newtonSchulzSteps]
@@ -947,6 +900,34 @@ private theorem newtonSchulzSteps_nonneg_of_pos {x e : ℝ} (hx : 0 < x) (he : 0
       Real.logb_le_logb_of_le one_lt_two two_pos h2
   linarith [Real.logb_nonneg one_lt_two h₂]
 
+/-- The precomputed accuracy of Theorem 4.2 is positive only for $n, \ell > 0$, and it is then
+at most $1$. -/
+private theorem pos_and_le_one_of_le_div {n ℓ : ℕ} {e θ b : ℝ} (he₁ : e ≤ 2⁻¹ ^ 15)
+    (hθ₁ : θ ≤ 1) (hb : 0 < b)
+    (hble : b ≤ e * √θ / (2880 * ℓ * n * √(n : ℝ) *
+      (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))))) :
+    0 < n ∧ 0 < ℓ ∧ b ≤ 1 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hble
+    exact absurd hble hb.not_ge
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ0
+  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hble
+    exact absurd hble hb.not_ge
+  refine ⟨hn, hℓ0, hble.trans ((div_le_one (by positivity)).mpr ?_)⟩
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hl1 : (1 : ℝ) ≤ ℓ := by exact_mod_cast hℓ0
+  have hsn : 1 ≤ √(n : ℝ) := Real.one_le_sqrt.mpr hn1
+  have hS2 : 2 ≤ 2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)) := by
+    have := Real.sqrt_nonneg (2 * Real.log (16 * n / θ)); linarith
+  have h4 : 1 ≤ (ℓ : ℝ) * n * √(n : ℝ) :=
+    one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hl1 hn1) hsn
+  have hc1 : 1 ≤ 2880 * ℓ * n * √(n : ℝ) * (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) := by
+    nlinarith [mul_le_mul h4 hS2 (by norm_num) (by positivity)]
+  exact (mul_le_one₀ (he₁.trans (by norm_num)) (Real.sqrt_nonneg θ)
+    (Real.sqrt_le_one.mpr hθ₁)).trans hc1
+
+/-- The global hypotheses of Theorem 4.2 give $u \ge 0$, $n \ge 1$, $\ell \ge 20$, $N_* \ge 0$,
+$\beta \le 1$ and the contract bounds used at every node. -/
 private theorem FloatMachine.IsAccurate.nonneg_and_one_le_and_mul_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -962,28 +943,13 @@ private theorem FloatMachine.IsAccurate.nonneg_and_one_le_and_mul_le
     (hΩ : 16 * (2 * dec R₀ + n + 2 * ℓ + √(Real.log (16 * n / θ))) ≤ Ω) :
     0 ≤ u ∧ 1 ≤ n ∧ 20 ≤ ℓ ∧ 0 ≤ Nst ∧ dec β ≤ 1 ∧ 100 * (ℓ : ℝ) ^ 2 * u ≤ 1 ∧
       100 * τ ≤ dec ε * min (dec R₀) 1 ∧ 16 * (dec R₀ + ℓ) ≤ Ω := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hβle
-    exact absurd hβle hβ.not_ge
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ0
-  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hβle
-    exact absurd hβle hβ.not_ge
+  obtain ⟨hn, hℓ0, hb1⟩ := pos_and_le_one_of_le_div hε₁ hθ₁ hβ hβle
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hl1 : (1 : ℝ) ≤ ℓ := by exact_mod_cast hℓ0
   have hsn : 1 ≤ √(n : ℝ) := Real.one_le_sqrt.mpr hn1
   have hμMn : 0 ≤ μM n := hμM₀.trans (hμM (Nat.zero_le n))
-  have hlog := Real.sqrt_nonneg (Real.log (16 * n / θ))
-  have hS2 : 2 ≤ 2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)) := by
-    have := Real.sqrt_nonneg (2 * Real.log (16 * n / θ)); linarith
-  have hb1 : dec β ≤ 1 := by
-    have h4 : 1 ≤ (ℓ : ℝ) * n * √(n : ℝ) :=
-      one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hl1 hn1) hsn
-    have hc1 : 1 ≤ 2880 * ℓ * n * √(n : ℝ) * (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) := by
-      nlinarith [mul_le_mul h4 hS2 (by norm_num) (by positivity)]
-    refine hβle.trans ((div_le_one (by linarith)).mpr (le_trans ?_ hc1))
-    exact mul_le_one₀ (hε₁.trans (by norm_num)) (Real.sqrt_nonneg θ) (Real.sqrt_le_one.mpr hθ₁)
   have hNst : 0 ≤ Nst := hN ▸ newtonSchulzSteps_nonneg_of_pos (by positivity) (by positivity)
     (by rw [div_le_iff₀ (by positivity)]; linarith)
+  have hlog := Real.sqrt_nonneg (Real.log (16 * n / θ))
   have hΩ16 : 16 * (dec R₀ + ℓ) ≤ Ω := by linarith
   have hu : 0 ≤ u := by
     have h := hM.ofNat 1 (by norm_num; linarith)
@@ -1018,6 +984,7 @@ private theorem FloatMachine.IsAccurate.nonneg_and_one_le_and_mul_le
       linarith [mul_le_mul_of_nonneg_left h1 hτ₀]
     exact this.trans (hτ.trans (min_le_right _ _))
 
+/-- The precomputed accuracy is below the sign tolerance of every node. -/
 private theorem le_bisectionSignTol_of_le_div {n k L ℓ : ℕ} {e ey b θ : ℝ} (hk : 1 ≤ k)
     (hkn : k ≤ n) (hL : ℓ ≤ L) (hL₂ : L ≤ 2 * ℓ) (hl20 : 20 ≤ ℓ) (he : 0 < e) (hey : e / 3 ≤ ey)
     (hθ : 0 < θ) (hb : b ≤ e * √θ / (2880 * ℓ * n * √(n : ℝ) *
@@ -1062,6 +1029,7 @@ private theorem le_bisectionSignTol_of_le_div {n k L ℓ : ℕ} {e ey b θ : ℝ
     _ ≤ (1 - 1 / (L : ℝ)) * ey / (5 * L) * √(θ / (4 * n)) :=
         mul_le_mul_of_nonneg_right hA (Real.sqrt_nonneg _)
 
+/-- A node whose leaf test fails has a positive stored norm bound. -/
 private theorem FloatMachine.IsAccurate.pos_of_le_mul_eq_false
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : u ≤ 1 / 100)
@@ -1080,6 +1048,8 @@ private theorem FloatMachine.IsAccurate.pos_of_le_mul_eq_false
   have h3 := (abs_le.mp h2).2
   linarith [mul_le_mul_of_nonneg_right hu ha.le, lt_of_not_ge h1]
 
+/-- The global hypotheses of Theorem 4.2 give the hypotheses of the node lemmas at every internal
+node within the depth and accuracy ranges. -/
 private theorem FloatMachine.IsAccurate.pos_and_le_of_eighNode
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
@@ -1186,6 +1156,8 @@ private theorem FloatMachine.IsAccurate.pos_and_le_of_eighNode
       mul_le_mul_of_nonneg_right hεy hR₀pos.le, mul_pos hεy0 hR₀pos]
   · rw [h4ρ]; linarith
 
+/-- Good samples at the internal nodes with Hermitian, norm-bounded matrices are good samples at
+all internal nodes: the invariant propagates down the tree. -/
 private theorem FloatMachine.IsAccurate.isEighGoodSample_of_forall_isHermitian_imp
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
@@ -1251,6 +1223,8 @@ private theorem FloatMachine.IsAccurate.isEighGoodSample_of_forall_isHermitian_i
   rwa [show θ / (4 * n) / 2 = θ / (8 * n) by ring,
     show 4 / (θ / (4 * n)) = 16 * n / θ by field_simp; ring] at h
 
+/-- The bad events of an internal node have probability at most its charge
+$\theta/(2(n + 1)(\ell + 1)) + (\theta/(2n))\,\mathbb{P}[\text{split}]$. -/
 private theorem FloatMachine.IsAccurate.eighSampleLaw_not_isEighGoodSample_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
@@ -1290,7 +1264,8 @@ private theorem FloatMachine.IsAccurate.eighSampleLaw_not_isEighGoodSample_le
     linarith
   field_simp
 
-private theorem FloatMachine.IsAccurate.tsum_elim_le
+/-- The charges along every run of the tree sum to at most $\theta$. -/
+private theorem FloatMachine.IsAccurate.tsum_eighNodeAt_charge_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n : ℕ} (hn : 1 ≤ n)
     {signFuel : ℕ} {R₀ ε β : F} {θ : ℝ} (hθ : 0 < θ) (hR₀pos : 0 < dec R₀) (hε : 0 < dec ε)
@@ -1352,6 +1327,7 @@ private theorem FloatMachine.IsAccurate.tsum_elim_le
         field_simp
         ring
 
+/-- The sample law is a probability measure. -/
 private theorem isProbabilityMeasure_eighSampleLaw (N : ℕ) :
     IsProbabilityMeasure (eighSampleLaw N) := by
   unfold eighSampleLaw
@@ -1360,6 +1336,7 @@ private theorem isProbabilityMeasure_eighSampleLaw (N : ℕ) :
       (by simp [Real.volume_Icc])
   infer_instance
 
+/-- Theorem 4.2 for measurable samples. -/
 private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -1465,7 +1442,7 @@ private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
         exact hV hV'
       rw [hS, measure_empty]
       exact zero_le
-  · exact fun ω => hM.tsum_elim_le hn hθ hR₀pos hε hε₁ hℓ hu hu₁ hτ₀ hτ100 hΩ16 A V
+  · exact fun ω => hM.tsum_eighNodeAt_charge_le hn hθ hR₀pos hε hε₁ hℓ hu hu₁ hτ₀ hτ100 hΩ16 A V
       (fun b => ζ b ω)
 
 /-- **Hermitian diagonalization in linear precision** (Theorem 4.2): let the machine meet
@@ -1558,6 +1535,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
     ((iIndepFun_congr fun a => (hlaw a).aemeasurable.ae_eq_mk).1 hind)
     fun a => (hlaw a).congr (hlaw a).aemeasurable.ae_eq_mk.symm
 
+/-- Exponentiating the bit-count condition. -/
 private theorem mul_le_mul_mul_sqrt_of_logb_le {e θ P N L S u : ℝ} (he : 0 < e) (hθ : 0 < θ)
     (hP : 0 < P) (hN : 0 < N) (hL : 0 < L) (hS : 0 < S) (hu : 0 < u)
     (h : Real.logb 2 e⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ + Real.logb 2 P + Real.logb 2 N +
@@ -1580,6 +1558,7 @@ private theorem mul_le_mul_mul_sqrt_of_logb_le {e θ P N L S u : ℝ} (he : 0 < 
         mul_le_mul_of_nonneg_left hK hu.le
     _ = e * (θ * √θ) := by rw [← mul_assoc, mul_inv_cancel₀ hu.ne', one_mul]
 
+/-- The exponentiated bit count gives both precision conditions of Theorem 4.2. -/
 private theorem mul_le_mul_and_mul_le_of_mul_le_mul_sqrt {n l sn m D S N b e θ u : ℝ} (hn : 1 ≤ n)
     (hl : 1 ≤ l) (hsn : sn * sn = n) (hsn0 : 0 ≤ sn) (hm : 0 ≤ m) (hD : 0 ≤ D) (hS : 0 < S)
     (hN : 0 ≤ N) (he : 0 ≤ e) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hu : 0 ≤ u)
@@ -1676,37 +1655,15 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
       (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
       (dec ε / 3)} ≤ θ := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hβle
-    exact absurd hβle hβ.not_ge
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ0
-  · simp only [Nat.cast_zero, mul_zero, zero_mul, div_zero] at hβle
-    exact absurd hβle hβ.not_ge
+  obtain ⟨hn, hℓ0, hb1⟩ := pos_and_le_one_of_le_div hε₁ hθ₁ hβ hβle
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
   have hl1 : (1 : ℝ) ≤ ℓ := by exact_mod_cast hℓ0
-  have hsn : 1 ≤ √(n : ℝ) := Real.one_le_sqrt.mpr hn1
   have hμMn : 0 ≤ μM n := hμM₀.trans (hμM (Nat.zero_le n))
   have hμQn : 0 ≤ μQ n := hμQ₀.trans (hμQ (Nat.zero_le n))
   have hS2 : 2 ≤ 2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)) := by
-    have := Real.sqrt_nonneg (2 * Real.log (16 * n / θ)); linarith
-  have hc1 : 1 ≤ 2880 * ℓ * n * √(n : ℝ) * (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) := by
-    have h4 : 1 ≤ (ℓ : ℝ) * n * √(n : ℝ) :=
-      one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hl1 hn1) hsn
-    nlinarith [mul_le_mul h4 hS2 (by norm_num) (by positivity)]
-  have hb1 : dec β ≤ 1 := by
-    refine hβle.trans ((div_le_one (by linarith)).mpr (le_trans ?_ hc1))
-    exact mul_le_one₀ (hε₁.trans (by norm_num)) (Real.sqrt_nonneg θ) (Real.sqrt_le_one.mpr hθ₁)
-  have hNst : 0 ≤ Nst := by
-    rw [hN, newtonSchulzSteps]
-    have h₁ : 0 ≤ Real.logb 2 (min |θ / (32 * n * (n + 1) * ℓ * (ℓ + 1))| (1 / 2))⁻¹ :=
-      Real.logb_nonneg one_lt_two ((one_le_inv₀ (by positivity)).mpr
-        ((min_le_right _ _).trans (by norm_num)))
-    have h₂ : 1 ≤ Real.logb 2 (dec β / (16 * n))⁻¹ := by
-      have h2 : (2 : ℝ) ≤ (dec β / (16 * n))⁻¹ := by
-        rw [inv_div, le_div_iff₀ hβ]; linarith
-      simpa only [Real.logb_self_eq_one one_lt_two] using
-        Real.logb_le_logb_of_le one_lt_two two_pos h2
-    linarith [Real.logb_nonneg one_lt_two h₂]
+    linarith [Real.one_le_sqrt.mpr hn1, Real.sqrt_nonneg (2 * Real.log (16 * n / θ))]
+  have hNst : 0 ≤ Nst := hN ▸ newtonSchulzSteps_nonneg_of_pos (by positivity) (by positivity)
+    (by rw [div_le_iff₀ (by positivity)]; linarith)
   have hβ' : dec ε * √θ ≤ 2 * (2880 * ℓ * n * √(n : ℝ) *
       (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)))) * dec β := by
     rw [div_div, div_le_iff₀ (by positivity)] at hβge; linarith
@@ -1718,6 +1675,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
   exact hM.measureReal_not_isApproxDiagonalization_eigh_le hunifm hunifc hnormalm hnormalc hμM
     hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN h₁ h₂ hfuel hτ₀ hτ hΩ hind hlaw
 
+/-- The exponent-bit condition bounds $L$ by $2^{2^{E-1} - 2}$. -/
 private theorem le_zpow_of_logb_logb_add_two_le {L : ℝ} {E : ℕ} (hE : 2 ≤ E) (hL : 1 ≤ L)
     (h : Real.logb 2 (Real.logb 2 L + 2) + 1 ≤ E) : L ≤ (2 : ℝ) ^ ((2 : ℤ) ^ (E - 1) - 2) := by
   have h0 : 0 ≤ Real.logb 2 L := Real.logb_nonneg one_lt_two hL
@@ -1728,6 +1686,7 @@ private theorem le_zpow_of_logb_logb_add_two_le {L : ℝ} {E : ℕ} (hE : 2 ≤ 
   have h2 : Real.logb 2 L ≤ (((2 : ℤ) ^ (E - 1) - 2 : ℤ) : ℝ) := by push_cast; linarith
   rwa [Real.logb_le_iff_le_rpow one_lt_two (by linarith), Real.rpow_intCast] at h2
 
+/-- The floor and range hypotheses of Theorem 4.2 from the bounded-format bounds. -/
 private theorem mul_le_min_and_le_of_mul_le {n ℓ e θ R τ Ω : ℝ} (hn : 0 ≤ n) (hℓ : 0 ≤ ℓ)
     (he : 0 < e) (he₁ : e ≤ 1) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR : 1 / 2 ≤ R) (hR₁ : R ≤ 1)
     (hτ₀ : 0 ≤ τ) (hτ : τ * (1536 * (n + ℓ + 2) ^ 2) ≤ e * θ)
