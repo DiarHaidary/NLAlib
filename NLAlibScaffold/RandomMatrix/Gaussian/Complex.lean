@@ -157,18 +157,20 @@ theorem hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix {r : Type*} [Fi
     have := congrArg Complex.re (congrFun (congrFun hW i) j)
     simp only [Matrix.mul_apply, Complex.re_sum, Complex.mul_re, Matrix.one_apply,
       Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im] at this
-    simp only [apply_ite Complex.re, Complex.one_re, Complex.zero_re, neg_mul, mul_neg, neg_neg,
+    simp only [apply_ite Complex.re, Complex.one_re, Complex.zero_re, neg_mul, neg_neg,
       sub_eq_add_neg] at this
     simp only [Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im,
-      neg_mul, mul_neg, neg_neg, sub_eq_add_neg]
+      neg_mul, mul_neg, neg_neg]
     linarith [this]
   have him : ∀ i j : r, ∑ k, ((Vᴴ i k).im * (Vᴴ j k).re - (Vᴴ i k).re * (Vᴴ j k).im) = 0 := by
     intro i j
     have := congrArg Complex.im (congrFun (congrFun hW i) j)
-    simp [Matrix.mul_apply, Complex.im_sum, Complex.mul_im, Matrix.one_apply,
-      Complex.star_def, Finset.sum_sub_distrib, apply_ite Complex.im] at this ⊢
+    simp only [Matrix.mul_apply, Complex.im_sum, Complex.mul_im, Matrix.one_apply,
+      apply_ite Complex.im, Complex.one_im, Complex.zero_im, ite_self] at this
     rw [← this]
-    exact Finset.sum_congr rfl fun k _ => by ring
+    refine Finset.sum_congr rfl fun k _ => ?_
+    simp only [Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im]
+    ring
   set U : Matrix (r ⊕ r) (n ⊕ n) ℝ :=
     Matrix.fromBlocks (Vᴴ.map Complex.re) (-(Vᴴ.map Complex.im)) (Vᴴ.map Complex.im)
       (Vᴴ.map Complex.re) with hUdef
@@ -177,8 +179,8 @@ theorem hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix {r : Type*} [Fi
     have hre' := hre
     have him' := him
     simp only [Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im,
-      Finset.sum_add_distrib, Finset.sum_sub_distrib, neg_mul, mul_neg, neg_mul_neg, neg_neg,
-      Finset.sum_neg_distrib, sub_neg_eq_add] at hre' him'
+      Finset.sum_add_distrib, neg_mul, mul_neg, neg_neg, Finset.sum_neg_distrib,
+      sub_neg_eq_add] at hre' him'
     ext (i | i) (j | j) <;>
       simp [hUdef, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, Matrix.fromBlocks] <;>
       linarith [hre' i j, him' i j, him' j i, hre' j i]
@@ -203,8 +205,8 @@ theorem hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix {r : Type*} [Fi
       linear_combination (-((((√2 : ℝ)⁻¹ : ℝ) : ℂ) * (x1 + Complex.I * x2))) * (Complex.re_add_im w)
         + ((((√2 : ℝ)⁻¹ : ℝ) : ℂ) * (w.im : ℂ) * x2) * Complex.I_sq
     simp only [Complex.ofReal_sum, Complex.ofReal_add, Complex.ofReal_neg, Complex.ofReal_mul,
-      Complex.ofReal_sub, Finset.mul_sum, mul_add, Finset.sum_add_distrib, Finset.sum_neg_distrib,
-      Complex.star_def, Complex.conj_re, Complex.conj_im]
+      Finset.mul_sum, mul_add, Finset.sum_add_distrib, Complex.star_def, Complex.conj_re,
+      Complex.conj_im]
     simp only [← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun x _ => ?_
     have k := key ((starRingEnd ℂ) (V x i)) ((X (Sum.inl x) j : ℝ) : ℂ)
