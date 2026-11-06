@@ -321,6 +321,39 @@ theorem deflateProg.cnt_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpC
     (h : (deflateProg.compiled p mm qr).exec I N ![r] st = some st') :
     st'.cnt ≤ st.cnt + deflateCount p mm qr N r ∧
       ∀ q, st'.peak q ≤ max (st.peak q) (st.cur q + if q = p then 8 * (N * N) + 2 else 0) := by
-  sorry
+  have hb := (deflateProg.compiled p mm qr).bounds_staticCost_of_exec_eq_some I N ![r] h
+  have hcharge : I.charge = fun k => Finsupp.single k 1 := funext hc
+  have hb' := hb.mono (b := ⟨deflateCount p mm qr N r,
+    fun q => if q = p then 8 * (N * N) + 2 else 0, _⟩) ?_ ?_ le_rfl
+  · exact ⟨hb'.count, hb'.peak⟩
+  · rw [hcharge]
+    intro k
+    change (FStmt.staticCost (fun k => Finsupp.single k 1) I.width
+      (deflateProg.compiled (ι := ι) p mm qr) (Fin.cons N ![r])).count k ≤ _
+    change (StaticCost.seq _ _).count k ≤ _
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.alloc, StaticCost.step,
+      StaticCost.zero, StaticCost.sequence_count_apply, Instr.kind, Instr.subst, IExp.evalIn,
+      Finsupp.add_apply, List.map_const', List.sum_replicate, List.length_range,
+      Finsupp.zero_apply]
+    simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero, Fin.cons_one,
+      Matrix.Fin.cons_vecCons, Matrix.cons_val_fin_one, Fin.val_eq_zero, Fin.mk_one, add_zero,
+      zero_add, smul_eq_mul, List.map_cons, List.map_nil, List.reverse_cons, List.reverse_nil,
+      List.nil_append, List.cons_append, deflateCount, Nat.sub_sub_eq_min]
+    simp only [IExp.evalIn, Matrix.cons_val_zero, Finsupp.add_apply]
+    classical
+    cases k <;> simp only [Finsupp.single_apply, OpKind.bin.injEq, OpKind.un.injEq,
+      OpKind.lit.injEq, OpKind.draw.injEq, OpKind.copy.injEq, OpKind.kcall.injEq, reduceCtorEq,
+      ite_false, mul_zero, add_zero, zero_add, le_refl]
+    all_goals split_ifs <;> linarith
+  · intro q
+    change (FStmt.staticCost I.charge I.width
+      (deflateProg.compiled (ι := ι) p mm qr) (Fin.cons N ![r])).cells q ≤ _
+    change (StaticCost.seq _ _).cells q ≤ _
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.alloc, StaticCost.step,
+      StaticCost.zero, IExp.evalIn, Instr.kind, Instr.subst]
+    simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero,
+      Matrix.Fin.cons_vecCons, StaticCost.sequence_cells_mk, List.range_eq_nil, max_self,
+      add_zero, Nat.max_zero, ite_self]
+    split_ifs <;> omega
 
 end NLAlib
