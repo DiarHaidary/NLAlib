@@ -40,7 +40,18 @@ theorem forall_of_exec_loop_eq_some {n : IExp ℕ} {body : ℕ → Stmt P ι ℕ
     {st st' : St P K C} (R : ℕ → St P K C → Prop) (h0 : R 0 st)
     (hstep : ∀ i < n.eval, ∀ st₁ st₂, R i st₁ → exec I (body i) st₁ = some st₂ → R (i + 1) st₂)
     (h : exec I (.loop n body) st = some st') : R n.eval st' := by
-  sorry
+  rw [exec_loop] at h
+  generalize n.eval = m at hstep h ⊢
+  induction m generalizing st' with
+  | zero =>
+    simp only [List.range_zero, List.foldlM_nil, Option.pure_def, Option.some.injEq] at h
+    subst h
+    exact h0
+  | succ m ih =>
+    rw [List.range_succ, List.foldlM_append] at h
+    obtain ⟨s, hs, h'⟩ := Option.bind_eq_some_iff.mp h
+    have h2 : exec I (body m) s = some st' := by simpa [List.foldlM_cons] using h'
+    exact hstep m (Nat.lt_succ_self m) s st' (ih (fun i hi => hstep i (Nat.lt_succ_of_lt hi)) hs) h2
 
 /-- **`whileFuel` with no fuel fails**: a `whileFuel` loop whose fuel evaluates to $0$ fails (the
 test is never found false). No printed source.
