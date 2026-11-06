@@ -577,6 +577,56 @@ theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsAccurate dec u τ Ω μM 
         (mul_nonneg zero_le_two hτ))]
   exact specNorm_le_of_entry_norm_le_avg Z E (by linarith) hτ hE_all
 
+private lemma abs_sum_range_sub_foldl_add_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2) (x : ℕ → F) {S : ℝ}
+    (hS : ∑ i ∈ Finset.range k, |dec (x i)| ≤ S) (hΩ : 2 * (S + k * τ) ≤ Ω) :
+    ∀ n ≤ k, |∑ i ∈ Finset.range n, dec (x i) -
+      dec ((List.range n).foldl (fun s i => M.add s (x i)) M.zero)| ≤ 2 * n * u * (S + τ) := by
+  have hS0 : 0 ≤ S := le_trans (Finset.sum_nonneg fun i _ => abs_nonneg _) hS
+  intro n
+  induction n with
+  | zero => intro _; simp [hM.dec_zero]
+  | succ n ih =>
+    intro hn
+    have ih := ih (by omega)
+    set t := dec ((List.range n).foldl (fun s i => M.add s (x i)) M.zero)
+    have hfold : (List.range (n + 1)).foldl (fun s i => M.add s (x i)) M.zero =
+        M.add ((List.range n).foldl (fun s i => M.add s (x i)) M.zero) (x n) := by
+      rw [List.range_succ, List.foldl_append]; rfl
+    rw [hfold, Finset.sum_range_succ]
+    have hsum : |∑ i ∈ Finset.range (n + 1), dec (x i)| ≤ S :=
+      (Finset.abs_sum_le_sum_abs _ _).trans <| le_trans (Finset.sum_le_sum_of_subset_of_nonneg
+        (Finset.range_subset_range.mpr hn) fun i _ _ => abs_nonneg _) hS
+    rw [Finset.sum_range_succ] at hsum
+    have hnu : 2 * n * u ≤ 1 := by
+      have : (n : ℝ) + 1 ≤ k := by exact_mod_cast hn
+      nlinarith
+    have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast (show 1 ≤ k by omega)
+    have ha : |t + dec (x n)| ≤ S + 2 * n * u * (S + τ) := by
+      have := abs_sub (∑ i ∈ Finset.range n, dec (x i) + dec (x n))
+        (∑ i ∈ Finset.range n, dec (x i) - t)
+      rw [show ∑ i ∈ Finset.range n, dec (x i) + dec (x n) - (∑ i ∈ Finset.range n, dec (x i) - t)
+        = t + dec (x n) by ring] at this
+      linarith
+    have hr := hM.add _ (x n) (by nlinarith)
+    have hmax : max |t + dec (x n)| τ ≤ |t + dec (x n)| + τ :=
+      max_le (by linarith) (by linarith [abs_nonneg (t + dec (x n))])
+    have hr' : |t + dec (x n) - dec (M.add _ (x n))| ≤ u * (|t + dec (x n)| + τ) :=
+      hr.trans (mul_le_mul_of_nonneg_left hmax hu)
+    calc |∑ i ∈ Finset.range n, dec (x i) + dec (x n) - dec (M.add _ (x n))|
+        ≤ |∑ i ∈ Finset.range n, dec (x i) - t| + |t + dec (x n) - dec (M.add _ (x n))| := by
+          rw [show ∑ i ∈ Finset.range n, dec (x i) + dec (x n) - dec (M.add _ (x n)) =
+            (∑ i ∈ Finset.range n, dec (x i) - t) + (t + dec (x n) - dec (M.add _ (x n))) by
+              ring]
+          exact abs_add_le _ _
+      _ ≤ 2 * n * u * (S + τ) + u * (S + 2 * n * u * (S + τ) + τ) := by
+          gcongr
+          exact hr'.trans (by gcongr)
+      _ ≤ 2 * (n + 1 : ℕ) * u * (S + τ) := by
+          push_cast
+          nlinarith [mul_nonneg hu (add_nonneg hS0 hτ), mul_nonneg (mul_nonneg hu hu)
+            (add_nonneg hS0 hτ)]
+
 /-- **Error of the rounded trace**: under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$
 and $ku \le 1/2$, for a stored $k \times k$ $\mathbf{X}$ with real parts of the diagonal
 $x_i$ and $2(\sum_i \lvert x_i \rvert + k\tau) \le \Omega$,
@@ -590,7 +640,22 @@ theorem abs_sum_sub_traceRe_le (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 
     (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2) (X : Matrix (Fin k) (Fin k) (F × F))
     (hΩ : 2 * (∑ i, |dec (X i i).1| + k * τ) ≤ Ω) :
     |∑ i, dec (X i i).1 - dec (M.traceRe X)| ≤ 2 * k * u * (∑ i, |dec (X i i).1| + k * τ) := by
-  sorry
+  set x : ℕ → F := fun i => if h : i < k then (X ⟨i, h⟩ ⟨i, h⟩).1 else M.zero
+  have hx : ∀ a : Fin k, x a = (X a a).1 := fun a => by simp [x, a.isLt]
+  have hsum : ∀ f : F → ℝ, ∑ i, f (X i i).1 = ∑ i ∈ Finset.range k, f (x i) := fun f => by
+    rw [← Fin.sum_univ_eq_sum_range (fun i => f (x i))]
+    simp only [hx]
+  have htr : M.traceRe X = (List.range k).foldl (fun s i => M.add s (x i)) M.zero := by
+    rw [← List.map_coe_finRange_eq_range, List.foldl_map]
+    simp only [hx]
+    rfl
+  rw [hsum (fun y => dec y), hsum (fun y => |dec y|), htr] at *
+  refine (abs_sum_range_sub_foldl_add_le hM hu hτ hku x le_rfl hΩ k le_rfl).trans ?_
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · simp
+  · have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+    gcongr
+    nlinarith
 
 end FloatMachine.IsAccurate
 
