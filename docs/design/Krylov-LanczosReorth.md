@@ -679,7 +679,7 @@ kept, `RoundedSteps` for $j < t$". A step (`exec_stepBody`, `LanczosReorthProgra
 has three phases: the work phase (product, the two Paige updates, $\alpha$ and $\nu$), the
 certified orthogonalization call and $\beta$, and the commit (copy of the previous vector and
 guarded normalization). Main's normalization lemmas need unit charges; the new
-`Computation.exists_exec_eq_some_of_exec_eq_some` (`Computation/ExecCharge.lean`) transfers a
+`Computation.exists_exec_withCharge_eq_some` (`Computation/ExecCharge.lean`) transfers a
 run to any charge. The per-step witnesses are assembled into a `LanczosReorthRun` for every
 admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu \ge 0$.
 
@@ -694,6 +694,8 @@ admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu 
 * G7, G8 (stage review, ccbc59a9): the prefix run $L$ comes with its parameters
   ($L.\varepsilon$, $L.\tau$, $L.\eta_0$, $L.\varepsilon_{1,2,3}$ equal to the CGS2 ones), so the
   fixed-point premise $\sqrt{3(m+1)}\,\mu \le \eta_0$ is about known quantities (strictly stronger).
+* `Computation.exists_exec_eq_some_of_exec_eq_some` → `exists_exec_withCharge_eq_some`
+  (decision S4: the name says charge; the file `Computation/ExecCharge.lean` is kept).
 * C3 `IsRelErrSem.exec_cgsPass` (decision S3): `η₀ ≤ 1/100` and `wb ≠ Vb` dropped (unused).
 * Unused hypotheses dropped: `IsOrthErr.norm_coef_le` (`hε₂`), `isOrthErr_of_one_pass` and
   `norm_transpose_mulVec_le_of_norm_sub_le` (`hc₁`), `LanczosReorthRun.coeff_le` (`hτ`).

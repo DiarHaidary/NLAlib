@@ -19,7 +19,7 @@ guarantee `G`: the work phase (product, both Paige updates, the coefficient $\al
 the norm $\nu_{t+1}$ before orthogonalization), the orthogonalization call and the norm
 $\beta_{t+1}$ after it, and the commit (previous vector and guarded normalization). The
 guarded normalization is proved under unit charges and transferred to any charge by
-`NLAlib.Computation.exists_exec_eq_some_of_exec_eq_some`.
+`NLAlib.Computation.exists_exec_withCharge_eq_some`.
 
 ## Main definitions
 
@@ -636,11 +636,11 @@ theorem exec_commitPhase (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec
       ‖WithLp.toLp 2 (zv - bn • vn)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 zv‖ := by
   obtain ⟨c₁, hnorm'⟩ :=
-    exists_exec_eq_some_of_exec_eq_some I (fun k => Finsupp.single k 1) _ hnorm predot.cnt
+    exists_exec_withCharge_eq_some I (fun k => Finsupp.single k 1) _ hnorm predot.cnt
   obtain ⟨out, vn, bn, hr, rest⟩ := exec_commitPhase_of_charge
     { I with charge := fun k => Finsupp.single k 1 } h hz (fun _ => rfl) tag predot
     { normed with cnt := c₁ } hshape hpshape ht vc hvc zv hzp hzn hzero hnorm' hsmall
-  obtain ⟨c₂, hr'⟩ := exists_exec_eq_some_of_exec_eq_some _ I.charge _ hr normed.cnt
+  obtain ⟨c₂, hr'⟩ := exists_exec_withCharge_eq_some _ I.charge _ hr normed.cnt
   exact ⟨{ out with cnt := c₂ }, vn, bn, hr', rest⟩
 
 /-! ### One step -/

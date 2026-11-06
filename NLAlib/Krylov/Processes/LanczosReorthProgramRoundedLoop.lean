@@ -270,7 +270,7 @@ theorem exec_initPhase (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec :
   obtain ⟨out, v1, zero, w', hr, sh, fr, hv1, r3, r5, r9, hd, r4, herr, -, hb0, hunit, hres⟩ :=
     exec_initPhase_of_charge { I with charge := fun k => Finsupp.single k 1 } hsem hz
       (fun _ => rfl) tag b st hshape hb hsmall
-  obtain ⟨c₁, hr'⟩ := exists_exec_eq_some_of_exec_eq_some _ I.charge _ hr st.cnt
+  obtain ⟨c₁, hr'⟩ := exists_exec_withCharge_eq_some _ I.charge _ hr st.cnt
   exact ⟨{ out with cnt := c₁ }, v1, hr', sh, fr, hv1, ⟨zero, r3, hd⟩, fun i => ⟨zero, r5 i, hd⟩,
     ⟨zero, r9, hd⟩, hunit, fun hbne => norm_inv_norm_smul_sub_le b v1 hbne hres herr
       (hunit hbne) hwin.2.2.2.2 hγ hsmall,
