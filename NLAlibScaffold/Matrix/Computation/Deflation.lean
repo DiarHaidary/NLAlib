@@ -141,7 +141,7 @@ theorem HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le {U Q' Q
     intro x y hxy
     have h := hC (x - y)
     rw [Matrix.mulVec_sub, hxy, sub_self] at h
-    simp only [Matrix.mulVec_zero, WithLp.toLp_zero, norm_zero, mul_zero] at h
+    simp only [WithLp.toLp_zero, norm_zero, mul_zero] at h
     have h0 : ‖WithLp.toLp 2 (x - y)‖ = 0 := le_antisymm h (norm_nonneg _)
     rw [norm_eq_zero, WithLp.toLp_eq_zero] at h0
     exact sub_eq_zero.mp h0
@@ -178,19 +178,9 @@ theorem HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le {U Q' Q
     _ ≤ 5 / 2 * δ + 3 / 2 * δ := by rw [hU.specNorm_mul_left]; exact add_le_add hWB hD
     _ ≤ 6 * δ := by linarith
 
-/-- Selecting columns of a matrix with orthonormal columns keeps orthonormal columns. -/
-private theorem HasOrthonormalCols.submatrix_castLE_aux {m : Type*} [Fintype m] {n r : ℕ}
-    (hr : r ≤ n) {Q : Matrix m (Fin n) ℂ} (hQ : HasOrthonormalCols Q) :
-    HasOrthonormalCols (Q.submatrix id (Fin.castLE hr)) := by
-  rw [hasOrthonormalCols_iff]
-  ext i j
-  have h := congrFun (congrFun hQ.conjTranspose_mul_self (Fin.castLE hr i)) (Fin.castLE hr j)
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.one_apply] at h ⊢
-  simpa [(Fin.castLE_injective hr).eq_iff] using h
-
 /-- The first $r$ columns of $\mathbf{Q}\mathbf{R}$, $\mathbf{R}$ upper trapezoidal, are
 $\mathbf{Q}_1\mathbf{R}_{11}$. -/
-private theorem submatrix_mul_castLE_of_isUpperTrapezoidal_aux {n r : ℕ} (hr : r ≤ n)
+private theorem submatrix_mul_castLE_of_isUpperTrapezoidal {n r : ℕ} (hr : r ≤ n)
     (Q R : Matrix (Fin n) (Fin n) ℂ) (hR : IsUpperTrapezoidal R) :
     (Q * R).submatrix id (Fin.castLE hr) =
       Q.submatrix id (Fin.castLE hr) * R.submatrix (Fin.castLE hr) (Fin.castLE hr) := by
@@ -205,7 +195,7 @@ private theorem submatrix_mul_castLE_of_isUpperTrapezoidal_aux {n r : ℕ} (hr :
   rw [hR k (Fin.castLE hr j) (by simp; omega), mul_zero]
 
 /-- The decoded output of `NLAlib.deflate` is the first $r$ columns of the decoded $\mathbf{Q}$. -/
-private theorem decodeMatrix_deflate_aux {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+private theorem decodeMatrix_deflate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
     {n r : ℕ} (hr : r ≤ n) (A' : Matrix (Fin n) (Fin n) (F × F))
     (G : Matrix (Fin n) (Fin n) ℂ) :
     decodeMatrix dec (deflate M r A' G) =
@@ -216,7 +206,7 @@ private theorem decodeMatrix_deflate_aux {F : Type*} (M : FloatMachine F ℝ ℂ
 
 /-- The error of the stored sample: $\|\mathbf{G} - \widetilde{\mathbf{G}}\|_2 \le
 2\sqrt n\,c_{\mathrm N}u\|\mathbf{G}\|_2$. -/
-private theorem specNorm_sub_map_normal_le_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+private theorem specNorm_sub_map_normal_le {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n : ℕ}
     (G : Matrix (Fin n) (Fin n) ℂ) (hcu : 0 ≤ cN * u) (hτN : τ * √(n : ℝ) ≤ specNorm G)
     (hΩG : specNorm G ≤ Ω) :
@@ -270,7 +260,7 @@ private theorem specNorm_sub_map_normal_le_aux {F : Type*} {M : FloatMachine F �
       (sq_nonneg g)]
 
 /-- The arithmetic of the bound on $\mathbf{Z}$. -/
-private theorem z_bound_arith_aux {s β g c a q : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
+private theorem deflate_arith_error {s β g c a q : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
     (hc : 0 ≤ c) (ha : 0 ≤ a) (hq : 0 ≤ q) (hbud : 4 * q + 4 * c + 2 * a ≤ β)
     (hβ5 : β ≤ 1 / 5) :
     β * g + (s + β) * (2 * c * g) + a * ((s + β) * ((1 + 2 * c) * g)) +
@@ -285,7 +275,7 @@ private theorem z_bound_arith_aux {s β g c a q : ℝ} (hs : 0 ≤ s) (hβ0 : 0 
   nlinarith [mul_le_mul_of_nonneg_left hbr hsg]
 
 /-- The arithmetic giving $m \ge 1$ and $\beta \le 1/5$. -/
-private theorem one_le_and_le_fifth_arith_aux {s β g si kk mval : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β)
+private theorem deflate_arith_one_le {s β g si kk mval : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β)
     (hg : 0 ≤ g) (hsi : 0 ≤ si) (hkk : 0 ≤ kk) (hssi : 1 ≤ s * si) (hgk : 1 ≤ g * kk)
     (hmv : mval = (s + β + 1) * (g * kk * si)) (hmβ : mval * β ≤ 1 / 5) :
     1 ≤ s * (g * kk * si) ∧ β ≤ 1 / 5 := by
@@ -298,7 +288,7 @@ private theorem one_le_and_le_fifth_arith_aux {s β g si kk mval : ℝ} (hs : 0 
   exact ⟨hX, by nlinarith⟩
 
 /-- The arithmetic of the range conditions. -/
-private theorem range_arith_aux {s β g c a : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
+private theorem deflate_arith_range {s β g c a : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
     (hc : 0 ≤ c) (hc5 : c ≤ 1 / 20) (ha5 : a ≤ 1 / 10) :
     (1 + a) * ((s + β) * ((1 + 2 * c) * g)) ≤ 2 * (s + β) * g := by
   have h1 : (1 + a) * (1 + 2 * c) ≤ 2 := by nlinarith
@@ -307,90 +297,60 @@ private theorem range_arith_aux {s β g c a : ℝ} (hs : 0 ≤ s) (hβ0 : 0 ≤ 
 
 /-- The arithmetic of the final bound: $\delta = m\beta - q/6$ dominates the bound on
 $\|\mathbf{Z}\mathbf{K}^{-1}\mathbf{S}^{-1}\|_2$. -/
-private theorem delta_arith_aux {s β g si kk q : ℝ} (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
+private theorem deflate_arith_delta {s β g si kk q : ℝ} (hβ0 : 0 ≤ β) (hg : 0 ≤ g)
     (hsi : 0 ≤ si) (hkk : 0 ≤ kk) (hX : 1 ≤ s * (g * kk * si)) (hq4 : q ≤ β / 4) :
     g * (β + 3 / 5 * (s + β) * β) * kk * si ≤ (s + β + 1) * (g * kk * si) * β - q / 6 := by
   have hX0 : 0 ≤ g * kk * si := mul_nonneg (mul_nonneg hg hkk) hsi
   have hXβ : β ≤ (s + β) * (g * kk * si) * β := by nlinarith [mul_nonneg hβ0 hX0]
   nlinarith
 
-/-- The proof of
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`. -/
-private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_aux
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}
-    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u) (hr : r ≤ n)
-    {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
-    {S : Matrix (Fin r) (Fin r) ℂ} (hS : IsUnit S) {A G : Matrix (Fin n) (Fin n) ℂ}
-    {A' : Matrix (Fin n) (Fin n) (F × F)} (hA : A = U * S * Vᴴ)
-    (hβ : specNorm (A - decodeMatrix dec A') ≤ β)
-    (hG : IsUnit (Vᴴ * G.submatrix id (Fin.castLE hr)))
-    (hm : mval = (specNorm S + β + 1) * specNorm S⁻¹ * specNorm G *
-      specNorm (Vᴴ * G.submatrix id (Fin.castLE hr))⁻¹)
-    (hmβ : mval * β ≤ 1 / 5) (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
-    (hτ : τ ≤ specNorm S * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
-    (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) (hΩG : specNorm G ≤ Ω) :
-    ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
-      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
-  classical
-  have hβ0 : 0 ≤ β := (specNorm_nonneg _).trans hβ
-  have hm0 : 0 ≤ mval := by
-    rw [hm]
-    have := specNorm_nonneg S
-    exact mul_nonneg (mul_nonneg (mul_nonneg (by linarith) (specNorm_nonneg _))
-      (specNorm_nonneg _)) (specNorm_nonneg _)
-  rcases Nat.eq_zero_or_pos r with rfl | hr1
-  · refine ⟨1, hasOrthonormalCols_one, ?_⟩
-    rw [Subsingleton.elim (U * 1 - _) 0, specNorm_zero]
-    have := mul_nonneg hm0 hβ0
-    linarith
-  have : Nonempty (Fin r) := ⟨⟨0, hr1⟩⟩
-  set s := specNorm S with hs_def
+/-- Under the contract, $\mu_{\mathrm{QR}}(n)u \ge 0$: the QR error bound of the zero matrix. -/
+private theorem FloatMachine.IsAccurate.qrConst_mul_nonneg {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (n : ℕ)
+    (hΩ : 0 ≤ Ω) : 0 ≤ μQ n * u := by
+  have hz : (Matrix.of fun (_ : Fin n) (_ : Fin n) => (M.zero, M.zero)).map
+      (decodeComplex dec) = 0 := by
+    ext i j; apply Complex.ext <;> simp [decodeComplex, hM.dec_zero]
+  obtain ⟨_, Q0, _, hQ0, _⟩ := hM.isQRErr
+    (Matrix.of fun (_ : Fin n) (_ : Fin n) => (M.zero, M.zero))
+    (by rw [hz, specNorm_zero]; exact hΩ)
+  rw [max_self] at hQ0
+  exact (specNorm_nonneg _).trans hQ0
+
+/-- Under the contract, $c_{\mathrm N}u \ge 0$ once the normal sampler is applied to a nonzero
+entry in range. -/
+private theorem FloatMachine.IsAccurate.normalConst_mul_nonneg {F : Type*}
+    {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n : ℕ} {G : Matrix (Fin n) (Fin n) ℂ} (hG : G ≠ 0)
+    (hΩG : specNorm G ≤ Ω) : 0 ≤ cN * u := by
+  by_contra hneg
+  replace hneg := not_le.mp hneg
+  apply hG
+  ext i j
+  by_contra hij
+  have h := hM.isNormalSampler (G i j) ((norm_apply_le_specNorm G i j).trans hΩG)
+  have hpos : 0 < max ‖G i j‖ τ := lt_max_of_lt_left (norm_pos_iff.mpr hij)
+  have := mul_neg_of_neg_of_pos hneg hpos
+  linarith [norm_nonneg (G i j - decodeComplex dec (M.normal (G i j)))]
+
+/-- The computed product and QR factorization of `NLAlib.deflate`: an exact factorization
+$\mathbf{Q}'\mathbf{R}$, $\mathbf{R}$ upper trapezoidal, within
+$\|\mathbf{G}\|_2(\beta + \tfrac35(s + \beta)\beta)$ of $\mathbf{A}\mathbf{G}$, with
+$\mathbf{Q}'$ within $\mu_{\mathrm{QR}}(n)u$ of the computed $\mathbf{Q}$. -/
+private theorem FloatMachine.IsAccurate.exists_specNorm_mul_sub_mul_qr_le {F : Type*}
+    {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β s : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℂ}
+    {A' : Matrix (Fin n) (Fin n) (F × F)} (hs0 : 0 ≤ s) (hβ0 : 0 ≤ β) (hβ5 : β ≤ 1 / 5)
+    (hAle : specNorm A ≤ s) (hβ : specNorm (A - decodeMatrix dec A') ≤ β)
+    (hcu : 0 ≤ cN * u) (hq0 : 0 ≤ μQ n * u) (ha0 : 0 ≤ μM n * u)
+    (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
+    (hτ : τ ≤ s * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
+    (hΩ : 2 * (s + β) * specNorm G ≤ Ω) (hΩG : specNorm G ≤ Ω) :
+    ∃ Q' R : Matrix (Fin n) (Fin n) ℂ, HasOrthonormalCols Q' ∧ IsUpperTrapezoidal R ∧
+      specNorm (Q' - (M.qr (M.mm A' (G.map M.normal))).1.map (decodeComplex dec)) ≤ μQ n * u ∧
+      specNorm (A * G - Q' * R) ≤ specNorm G * (β + 3 / 5 * (s + β) * β) := by
   set g := specNorm G with hg_def
-  set G₁ := G.submatrix id (Fin.castLE hr) with hG₁_def
-  set K := Vᴴ * G₁ with hK_def
-  set si := specNorm S⁻¹ with hsi_def
-  set kk := specNorm K⁻¹ with hkk_def
-  have hs0 : 0 ≤ s := specNorm_nonneg _
   have hg0 : 0 ≤ g := specNorm_nonneg _
-  have hsi0 : 0 ≤ si := specNorm_nonneg _
-  have hkk0 : 0 ≤ kk := specNorm_nonneg _
-  have hSdet : IsUnit S.det := (Matrix.isUnit_iff_isUnit_det S).mp hS
-  have hKdet : IsUnit K.det := (Matrix.isUnit_iff_isUnit_det K).mp hG
-  have hssi : 1 ≤ s * si := by
-    calc (1 : ℝ) = specNorm (S * S⁻¹) := by rw [Matrix.mul_nonsing_inv S hSdet, specNorm_one]
-      _ ≤ s * si := specNorm_mul_le _ _
-  have hKG : specNorm K ≤ g := (hV.specNorm_conjTranspose_mul_le G₁).trans
-    (specNorm_submatrix_le G Function.injective_id (Fin.castLE_injective hr))
-  have hgk : 1 ≤ g * kk := by
-    calc (1 : ℝ) = specNorm (K * K⁻¹) := by rw [Matrix.mul_nonsing_inv K hKdet, specNorm_one]
-      _ ≤ specNorm K * kk := specNorm_mul_le _ _
-      _ ≤ g * kk := mul_le_mul_of_nonneg_right hKG hkk0
-  have hmv : mval = (s + β + 1) * (g * kk * si) := by rw [hm]; ring
-  obtain ⟨hX, hβ5⟩ := one_le_and_le_fifth_arith_aux hs0 hβ0 hg0 hsi0 hkk0 hssi hgk hmv hmβ
-  have hgne : g ≠ 0 := by intro h; rw [h, zero_mul] at hgk; linarith
-  -- signs of the constants
-  have hcu : 0 ≤ cN * u := by
-    by_contra hneg
-    replace hneg := not_le.mp hneg
-    apply hgne
-    have hG0 : G = 0 := by
-      ext i j
-      by_contra hij
-      have h := hM.isNormalSampler (G i j) ((norm_apply_le_specNorm G i j).trans hΩG)
-      have hpos : 0 < max ‖G i j‖ τ := lt_max_of_lt_left (norm_pos_iff.mpr hij)
-      have := mul_neg_of_neg_of_pos hneg hpos
-      linarith [norm_nonneg (G i j - decodeComplex dec (M.normal (G i j)))]
-    rw [hg_def, hG0, specNorm_zero]
-  have hq0 : 0 ≤ μQ n * u := by
-    have hz : (Matrix.of fun (_ : Fin n) (_ : Fin n) => (M.zero, M.zero)).map
-        (decodeComplex dec) = 0 := by
-      ext i j; apply Complex.ext <;> simp [decodeComplex, hM.dec_zero]
-    obtain ⟨_, Q0, _, hQ0, _⟩ := hM.isQRErr
-      (Matrix.of fun (_ : Fin n) (_ : Fin n) => (M.zero, M.zero))
-      (by rw [hz, specNorm_zero]; exact hg0.trans hΩG)
-    rw [max_self] at hQ0
-    exact (specNorm_nonneg _).trans hQ0
-  have ha0 : 0 ≤ μM n * u := mul_nonneg hμM hu₀
   set c := √(n : ℝ) * cN * u with hc_def
   set q := μQ n * u with hq_def
   set a := μM n * u with ha_def
@@ -404,13 +364,7 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_s
   set Gt := Gs.map (decodeComplex dec) with hGt_def
   have hβ' : specNorm (A - At) ≤ β := hβ
   have hEG : specNorm (G - Gt) ≤ 2 * c * g :=
-    specNorm_sub_map_normal_le_aux hM G hcu hτN hΩG
-  have hAle : specNorm A ≤ s := by
-    rw [hA]
-    calc specNorm (U * S * Vᴴ) ≤ specNorm (U * S) * specNorm Vᴴ := specNorm_mul_le _ _
-      _ = s * specNorm V := by rw [hU.specNorm_mul_left, specNorm_conjTranspose]
-      _ ≤ s * 1 := mul_le_mul_of_nonneg_left hV.specNorm_le_one hs0
-      _ = s := mul_one s
+    specNorm_sub_map_normal_le hM G hcu hτN hΩG
   have hAtle : specNorm At ≤ s + β := by
     calc specNorm At = specNorm (A - (A - At)) := by rw [sub_sub_cancel]
       _ ≤ specNorm A + specNorm (A - At) := specNorm_sub_le _ _
@@ -433,7 +387,7 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_s
         mul_le_mul_of_nonneg_right (by linarith) (hg0.trans h1)
   have hc5 : c ≤ 1 / 20 := by linarith
   have ha5 : a ≤ 1 / 10 := by linarith
-  have hP2 : (1 + a) * P ≤ 2 * (s + β) * g := range_arith_aux hs0 hβ0 hg0 hc0 hc5 ha5
+  have hP2 : (1 + a) * P ≤ 2 * (s + β) * g := deflate_arith_range hs0 hβ0 hg0 hc0 hc5 ha5
   have hPa : P ≤ (1 + a) * P := le_mul_of_one_le_left hP0 (by linarith)
   -- the product
   set Ms := M.mm A' Gs with hMs_def
@@ -463,25 +417,40 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_s
       (specNorm_mul_le _ _).trans (mul_le_mul_of_nonneg_right hβ' hg0)
     have h2 : specNorm (At * (G - Gt)) ≤ (s + β) * (2 * c * g) :=
       (specNorm_mul_le _ _).trans (mul_le_mul hAtle hEG (specNorm_nonneg _) (by linarith))
-    refine le_trans ?_ (z_bound_arith_aux hs0 hβ0 hg0 hc0 ha0 hq0 hbud hβ5)
+    refine le_trans ?_ (deflate_arith_error hs0 hβ0 hg0 hc0 ha0 hq0 hbud hβ5)
     rw [heq]
     refine (specNorm_add_le _ _).trans ?_
     refine add_le_add ((specNorm_add_le _ _).trans ?_) hQR
     exact add_le_add ((specNorm_add_le _ _).trans (add_le_add h1 h2)) hMM
-  -- the first `r` columns
+  exact ⟨Q', Rb, hQ', hR, hQQ, hT⟩
+
+/-- The first $r$ columns of an exact factorization $\mathbf{Q}'\mathbf{R}$ near
+$\mathbf{A}\mathbf{G}$, $\mathbf{A} = \mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$, are near
+$\mathbf{U}$ up to a rotation, and so are those of a matrix near $\mathbf{Q}'$. -/
+private theorem exists_hasOrthonormalCols_specNorm_mul_sub_submatrix_le {n r : ℕ} (hr : r ≤ n)
+    {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) {S : Matrix (Fin r) (Fin r) ℂ}
+    (hS : IsUnit S) {A G Q' R Q : Matrix (Fin n) (Fin n) ℂ} (hA : A = U * S * Vᴴ)
+    (hG : IsUnit (Vᴴ * G.submatrix id (Fin.castLE hr))) (hQ' : HasOrthonormalCols Q')
+    (hR : IsUpperTrapezoidal R) {q δ : ℝ} (hQ : specNorm (Q' - Q) ≤ q)
+    (hδ : specNorm (A * G - Q' * R) * specNorm (Vᴴ * G.submatrix id (Fin.castLE hr))⁻¹ *
+      specNorm S⁻¹ ≤ δ) (hδ₅ : δ ≤ 1 / 5) :
+    ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
+      specNorm (U * W - Q.submatrix id (Fin.castLE hr)) ≤ 6 * δ + q := by
   set e := Fin.castLE hr with he_def
+  set G₁ := G.submatrix id e with hG₁_def
+  set K := Vᴴ * G₁ with hK_def
+  have hSdet : IsUnit S.det := (Matrix.isUnit_iff_isUnit_det S).mp hS
+  have hKdet : IsUnit K.det := (Matrix.isUnit_iff_isUnit_det K).mp hG
+  set T := A * G - Q' * R with hT_def
   set Q'₁ := Q'.submatrix id e with hQ'₁_def
-  set R₁₁ := Rb.submatrix e e with hR₁₁_def
   set Z := T.submatrix id e with hZ_def
-  have hZ : specNorm Z ≤ specNorm T :=
-    specNorm_submatrix_le T Function.injective_id (Fin.castLE_injective hr)
-  have hAG₁ : A * G₁ = Q'₁ * R₁₁ + Z := by
-    rw [hQ'₁_def, hR₁₁_def, ← submatrix_mul_castLE_of_isUpperTrapezoidal_aux hr Q' Rb hR]
+  have hAG₁ : A * G₁ = Q'₁ * R.submatrix e e + Z := by
+    rw [hQ'₁_def, ← submatrix_mul_castLE_of_isUpperTrapezoidal hr Q' R hR]
     ext i j
     simp only [hZ_def, hT_def, hG₁_def, Matrix.add_apply, Matrix.submatrix_apply, id,
       Matrix.sub_apply, Matrix.mul_apply]
     ring
-  set C := R₁₁ * K⁻¹ * S⁻¹ with hC_def
+  set C := R.submatrix e e * K⁻¹ * S⁻¹ with hC_def
   have hUeq : U - Q'₁ * C = Z * K⁻¹ * S⁻¹ := by
     have hU' : U = A * G₁ * K⁻¹ * S⁻¹ := by
       calc U = U * S * K * K⁻¹ * S⁻¹ := by
@@ -491,30 +460,23 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_s
     rw [hU', hAG₁, hC_def]
     simp only [Matrix.add_mul, Matrix.mul_assoc]
     abel
-  set δ := mval * β - q / 6 with hδ_def
-  have hδ : specNorm (U - Q'₁ * C) ≤ δ := by
+  have hδ' : specNorm (U - Q'₁ * C) ≤ δ := by
     rw [hUeq]
-    have h1 : specNorm (Z * K⁻¹ * S⁻¹) ≤ specNorm Z * kk * si :=
-      (specNorm_mul_le _ _).trans (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _) hsi0)
-    refine h1.trans ?_
-    have h2 : specNorm Z * kk * si ≤ g * (β + 3 / 5 * (s + β) * β) * kk * si :=
-      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (hZ.trans hT) hkk0) hsi0
-    refine h2.trans ?_
-    rw [hδ_def, hmv]
-    exact delta_arith_aux hβ0 hg0 hsi0 hkk0 hX (by linarith)
-  have hδ0 : 0 ≤ δ := (specNorm_nonneg _).trans hδ
+    refine ((specNorm_mul_le _ _).trans (mul_le_mul_of_nonneg_right (specNorm_mul_le _ _)
+      (specNorm_nonneg _))).trans (le_trans ?_ hδ)
+    gcongr
+    exact specNorm_submatrix_le T Function.injective_id (Fin.castLE_injective hr)
+  have hQ'₁ : HasOrthonormalCols Q'₁ := hQ'.submatrix (Equiv.refl _) (Fin.castLE_injective hr)
   obtain ⟨W, hW, hUW⟩ := HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le hU
-    (HasOrthonormalCols.submatrix_castLE_aux hr hQ') (ν := 0) (by rw [sub_self, specNorm_zero])
-    hδ hδ0 (by rw [hδ_def]; linarith)
+    hQ'₁ (ν := 0)
+    (by rw [sub_self, specNorm_zero]) hδ' ((specNorm_nonneg _).trans hδ') hδ₅
   refine ⟨W, hW, ?_⟩
-  rw [decodeMatrix_deflate_aux M dec hr A' G]
-  have hQ₁ : specNorm (Q'₁ - Qb.submatrix id e) ≤ q := by
-    rw [hQ'₁_def, show Q'.submatrix id e - Qb.submatrix id e = (Q' - Qb).submatrix id e from rfl]
-    exact (specNorm_submatrix_le _ Function.injective_id (Fin.castLE_injective hr)).trans hQQ
-  calc specNorm (U * W - Qb.submatrix id e)
-      = specNorm ((U * W - Q'₁) + (Q'₁ - Qb.submatrix id e)) := by rw [sub_add_sub_cancel]
+  have hQ₁ : specNorm (Q'₁ - Q.submatrix id e) ≤ q := by
+    rw [hQ'₁_def, show Q'.submatrix id e - Q.submatrix id e = (Q' - Q).submatrix id e from rfl]
+    exact (specNorm_submatrix_le _ Function.injective_id (Fin.castLE_injective hr)).trans hQ
+  calc specNorm (U * W - Q.submatrix id e)
+      = specNorm ((U * W - Q'₁) + (Q'₁ - Q.submatrix id e)) := by rw [sub_add_sub_cancel]
     _ ≤ 6 * δ + q := (specNorm_add_le _ _).trans (add_le_add hUW hQ₁)
-    _ = 6 * mval * β := by rw [hδ_def]; ring
 
 /-- **Deterministic accuracy of randomized deflation** (Theorem 3.3, deterministic half): under
 the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants
@@ -566,8 +528,69 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_defla
     (hτ : τ ≤ specNorm S * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
     (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) (hΩG : specNorm G ≤ Ω) :
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
-      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β :=
-  hM.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_aux hμM hu₀ hr hU hV hS hA hβ hG hm hmβ
-    hu hτ hτN hΩ hΩG
+      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
+  classical
+  have hβ0 : 0 ≤ β := (specNorm_nonneg _).trans hβ
+  have hm0 : 0 ≤ mval := by
+    rw [hm]
+    have := specNorm_nonneg S
+    exact mul_nonneg (mul_nonneg (mul_nonneg (by linarith) (specNorm_nonneg _))
+      (specNorm_nonneg _)) (specNorm_nonneg _)
+  rcases Nat.eq_zero_or_pos r with rfl | hr1
+  · refine ⟨1, hasOrthonormalCols_one, ?_⟩
+    rw [Subsingleton.elim (U * 1 - _) 0, specNorm_zero]
+    have := mul_nonneg hm0 hβ0
+    linarith
+  have : Nonempty (Fin r) := ⟨⟨0, hr1⟩⟩
+  set s := specNorm S with hs_def
+  set g := specNorm G with hg_def
+  set K := Vᴴ * G.submatrix id (Fin.castLE hr) with hK_def
+  set si := specNorm S⁻¹ with hsi_def
+  set kk := specNorm K⁻¹ with hkk_def
+  have hs0 : 0 ≤ s := specNorm_nonneg _
+  have hg0 : 0 ≤ g := specNorm_nonneg _
+  have hsi0 : 0 ≤ si := specNorm_nonneg _
+  have hkk0 : 0 ≤ kk := specNorm_nonneg _
+  have hssi : 1 ≤ s * si := by
+    calc (1 : ℝ) = specNorm (S * S⁻¹) := by
+          rw [Matrix.mul_nonsing_inv S ((Matrix.isUnit_iff_isUnit_det S).mp hS), specNorm_one]
+      _ ≤ s * si := specNorm_mul_le _ _
+  have hKG : specNorm K ≤ g := (hV.specNorm_conjTranspose_mul_le _).trans
+    (specNorm_submatrix_le G Function.injective_id (Fin.castLE_injective hr))
+  have hgk : 1 ≤ g * kk := by
+    calc (1 : ℝ) = specNorm (K * K⁻¹) := by
+          rw [Matrix.mul_nonsing_inv K ((Matrix.isUnit_iff_isUnit_det K).mp hG), specNorm_one]
+      _ ≤ specNorm K * kk := specNorm_mul_le _ _
+      _ ≤ g * kk := mul_le_mul_of_nonneg_right hKG hkk0
+  have hmv : mval = (s + β + 1) * (g * kk * si) := by rw [hm]; ring
+  obtain ⟨hX, hβ5⟩ := deflate_arith_one_le hs0 hβ0 hg0 hsi0 hkk0 hssi hgk hmv hmβ
+  have hgne : g ≠ 0 := by intro h; rw [h, zero_mul] at hgk; linarith
+  have hcu : 0 ≤ cN * u :=
+    hM.normalConst_mul_nonneg (fun h => hgne (by rw [hg_def, h, specNorm_zero])) hΩG
+  have hq0 := hM.qrConst_mul_nonneg n (hg0.trans hΩG)
+  have ha0 : 0 ≤ μM n * u := mul_nonneg hμM hu₀
+  have hq4 : μQ n * u ≤ β / 4 := by
+    have hc0 := mul_nonneg (Real.sqrt_nonneg (n : ℝ)) hcu
+    have : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u =
+        4 * (μQ n * u) + 4 * (√(n : ℝ) * (cN * u)) + 2 * (μM n * u) := by ring
+    linarith
+  have hAle : specNorm A ≤ s := by
+    rw [hA]
+    calc specNorm (U * S * Vᴴ) ≤ specNorm (U * S) * specNorm Vᴴ := specNorm_mul_le _ _
+      _ = s * specNorm V := by rw [hU.specNorm_mul_left, specNorm_conjTranspose]
+      _ ≤ s * 1 := mul_le_mul_of_nonneg_left hV.specNorm_le_one hs0
+      _ = s := mul_one s
+  obtain ⟨Q', R, hQ', hR, hQQ, hT⟩ := hM.exists_specNorm_mul_sub_mul_qr_le hs0 hβ0 hβ5 hAle hβ
+    hcu hq0 ha0 hu hτ hτN hΩ hΩG
+  obtain ⟨W, hW, hUW⟩ := exists_hasOrthonormalCols_specNorm_mul_sub_submatrix_le hr hU hS hA hG
+    hQ' hR hQQ (δ := mval * β - μQ n * u / 6)
+    (by
+      rw [hmv]
+      exact (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hT hkk0) hsi0).trans
+        (deflate_arith_delta hβ0 hg0 hsi0 hkk0 hX hq4))
+    (by linarith)
+  refine ⟨W, hW, ?_⟩
+  rw [decodeMatrix_deflate M dec hr A' G]
+  exact hUW.trans_eq (by ring)
 
 end NLAlib

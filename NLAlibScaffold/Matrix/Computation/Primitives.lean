@@ -127,6 +127,7 @@ $\lvert sv \rvert \le s$ for $v \in [-1, 1]$, `Matrix.isHermitian_mul_conjTransp
 theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (hμM : ∀ d, 0 ≤ μM d)
     (hμQ : ∀ d, 0 ≤ μQ d) {cN : ℝ} (hcN : 0 ≤ cN) :
     ∃ M : FloatMachine ℝ ℝ ℂ, M.IsAccurate id 0 τ Ω μM μQ cN := by
+  have _ := hcN
   refine ⟨exactMachine, ?_⟩
   refine
     { dec_zero := rfl
@@ -144,14 +145,11 @@ theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (h�
       isMatMulErr := exactMachine_isMatMulErr 0 τ Ω μM le_rfl hμM
       isQRErr := exactMachine_isQRErr 0 τ Ω μQ le_rfl hμQ
       isUnifSampler := fun s v hs hv => by
-        have hv' : |v| ≤ 1 := abs_le.mpr ⟨hv.1, hv.2⟩
         have hs' : 0 ≤ s := hs
-        refine ⟨?_, ?_⟩
-        · change |s * v| ≤ s
-          rw [abs_mul, abs_of_nonneg hs']
-          exact mul_le_of_le_one_right hs' hv'
-        · change |s * v - s * v| ≤ 0 * max s τ
-          simp
+        refine ⟨?_, by change |s * v - s * v| ≤ 0 * max s τ; simp⟩
+        change |s * v| ≤ s
+        rw [abs_mul, abs_of_nonneg hs']
+        exact mul_le_of_le_one_right hs' (abs_le.mpr ⟨hv.1, hv.2⟩)
       isNormalSampler := fun z _ => by
         change ‖z - z‖ ≤ _
         simp }
@@ -263,8 +261,6 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
     have him := hround z.im
     have hRe : max |z.re| τ ≤ max ‖z‖ τ := by gcongr; exact Complex.abs_re_le_norm z
     have hIm : max |z.im| τ ≤ max ‖z‖ τ := by gcongr; exact Complex.abs_im_le_norm z
-    have h0 := hmax |z.re|
-    have h0' := hmax |z.im|
     apply le_of_pow_le_pow_left₀ two_ne_zero (by positivity)
     rw [Complex.sq_norm, Complex.normSq_apply, mul_pow, mul_pow, Real.sq_sqrt zero_le_two]
     have e1 : (z - decodeComplex id (R z.re, R z.im)).re = z.re - R z.re := rfl

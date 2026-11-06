@@ -352,7 +352,8 @@ private theorem specNorm_mul_self_sub_one_le {k : ℕ} {X : Matrix (Fin k) (Fin 
   rw [← cfc_sq_sub_one hX]
   exact hX.specNorm_cfc_le hc fun x hx => abs_sub_comm (x ^ 2) 1 ▸ h x hx
 
-private theorem specNorm_le_card_mul_of_forall_norm_apply_le' {k : ℕ}
+/-- A $k \times k$ matrix with entries of modulus at most $c$ has spectral norm at most $kc$. -/
+private theorem specNorm_le_card_mul_of_norm_apply_le {k : ℕ}
     {X : Matrix (Fin k) (Fin k) ℂ} {c : ℝ} (hc : 0 ≤ c) (h : ∀ i j, ‖X i j‖ ≤ c) :
     specNorm X ≤ k * c := by
   refine (specNorm_le_frobNorm X).trans ?_
@@ -501,9 +502,7 @@ private theorem threshold_bounds (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hu�
     hd.trans (mul_le_mul_of_nonneg_left (max_le (by linarith) (by linarith)) hu₀)
   obtain ⟨hd₁, hd₂⟩ := abs_le.mp hd'
   have hnτ : n * τ ≤ 1 / 2 := by linarith
-  constructor
-  · nlinarith [mul_nonneg hu₀ hq₀.le, mul_le_mul_of_nonneg_left hnτ hu₀]
-  · nlinarith [mul_nonneg hu₀ hq₀.le, mul_le_mul_of_nonneg_left hnτ hu₀]
+  constructor <;> nlinarith [mul_nonneg hu₀ hq₀.le, mul_le_mul_of_nonneg_left hnτ hu₀]
 
 /-- The computed test matrix $\mathrm{mm}(\mathbf{X}, \mathbf{X}) - \mathbf{I}$ is within
 $2(8 + \mu(n))u$ of $\mathbf{X}^2 - \mathbf{I}$. -/
@@ -551,6 +550,16 @@ private theorem newtonSchulzTest_eq_true_iff (hM : M.IsAccurate dec u τ Ω μ �
   simp only [newtonSchulzTest, List.all_eq_true, List.mem_finRange, forall_const,
     Bool.and_eq_true, hM.le_iff, hM.dec_neg, abs_le, and_assoc]
 
+/-- The size condition $640n(8 + \mu(n))u \le \varepsilon \le 1/2$ bounds $640nu$ by
+$\varepsilon$ and $u(8 + \mu(n))$ by $1/10$. -/
+private theorem unitRoundoff_bounds {μn u ε : ℝ} (hn : 0 < n) (hμ : 0 ≤ μn) (hu₀ : 0 ≤ u)
+    (hε₁ : ε ≤ 1 / 2) (hk : 640 * n * (8 + μn) * u ≤ ε) :
+    640 * n * u ≤ ε ∧ u * (8 + μn) ≤ 1 / 10 := by
+  have hn₁ : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  constructor
+  · nlinarith [mul_nonneg hμ hu₀, mul_nonneg hu₀ (by positivity : (0 : ℝ) ≤ n)]
+  · nlinarith [mul_nonneg hu₀ (by linarith : 0 ≤ 8 + μn)]
+
 /-- If the test passes, the iterate is within `2ε/3` of its sign. -/
 private theorem specNorm_sub_cfc_sign_le_of_newtonSchulzTest
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
@@ -561,16 +570,14 @@ private theorem specNorm_sub_cfc_sign_le_of_newtonSchulzTest
     (htest : newtonSchulzTest M (M.div ε (M.ofNat (4 * n))) X = true) :
     specNorm (decodeMatrix dec X - cfc Real.sign (decodeMatrix dec X)) ≤ 2 / 3 * dec ε := by
   have hn₁ : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hun : 640 * n * u ≤ dec ε := by nlinarith [mul_nonneg hμ hu₀, mul_nonneg hu₀ (by
-    positivity : (0 : ℝ) ≤ n)]
-  have hu : u * (8 + μ n) ≤ 1 / 10 := by nlinarith [mul_nonneg hu₀ (by linarith : 0 ≤ 8 + μ n)]
+  obtain ⟨hun, hu⟩ := unitRoundoff_bounds hn hμ hu₀ hε₁ hk
   have hη := (threshold_bounds hM hu₀ hτ₀ hτ hΩ hn hε hε₁ hun).1
   set η := dec (M.div ε (M.ofNat (4 * n)))
   have hE := specNorm_mul_self_sub_one_sub_decodeMatrix_le hM hμ hu₀ hu (by nlinarith)
     (by linarith) hX hXn
   rw [newtonSchulzTest_eq_true_iff hM] at htest
   have hη₀ : 0 ≤ η := le_trans (abs_nonneg _) (htest ⟨0, hn⟩ ⟨0, hn⟩).1
-  have hT := specNorm_le_card_mul_of_forall_norm_apply_le'
+  have hT := specNorm_le_card_mul_of_norm_apply_le
     (X := decodeMatrix dec (M.hermShift (M.mm X X) M.one)) (by positivity : 0 ≤ 2 * η)
     fun i j => (Complex.norm_le_abs_re_add_abs_im _).trans
       ((add_le_add (htest i j).1 (htest i j).2).trans_eq (two_mul η).symm)
@@ -593,9 +600,7 @@ private theorem newtonSchulzTest_of_forall_mem_spectrum
     (h : ∀ x ∈ spectrum ℝ (decodeMatrix dec X), |1 - x ^ 2| ≤ dec ε / (16 * n)) :
     newtonSchulzTest M (M.div ε (M.ofNat (4 * n))) X = true := by
   have hn₁ : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hun : 640 * n * u ≤ dec ε := by nlinarith [mul_nonneg hμ hu₀, mul_nonneg hu₀ (by
-    positivity : (0 : ℝ) ≤ n)]
-  have hu : u * (8 + μ n) ≤ 1 / 10 := by nlinarith [mul_nonneg hu₀ (by linarith : 0 ≤ 8 + μ n)]
+  obtain ⟨hun, hu⟩ := unitRoundoff_bounds hn hμ hu₀ hε₁ hk
   have hη := (threshold_bounds hM hu₀ hτ₀ hτ hΩ hn hε hε₁ hun).2
   set η := dec (M.div ε (M.ofNat (4 * n)))
   have hE := specNorm_mul_self_sub_one_sub_decodeMatrix_le hM hμ hu₀ hu (by nlinarith)
@@ -669,9 +674,8 @@ private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
         exact ht (newtonSchulzTest_of_forall_mem_spectrum hM hμ hu₀ hτ₀ hτ hΩ hn hε hε₁ hk hX
           (hXn hX hch) fun y hy =>
             (hch y hy).abs_one_sub_sq_le hs hδs hε' hδε hε'₁ (not_lt.mp hk'))
-      have hu : u * (8 + μ n) ≤ 1 / 10 := by
-        nlinarith [mul_nonneg hu₀ (by linarith : 0 ≤ 8 + μ n)]
-      obtain ⟨hchY, hstep⟩ := newtonSchulzRounded_chain_and_specNorm_le hM hμ hu₀ hu hτ₀ hτ
+      obtain ⟨hchY, hstep⟩ := newtonSchulzRounded_chain_and_specNorm_le hM hμ hu₀
+        (unitRoundoff_bounds hn hμ hu₀ hε₁ hk).2 hτ₀ hτ
         (by linarith) hs hs₁ hδs hX hch
       have hIH := ih (k + 1) (newtonSchulzRounded M X)
         (hM.isHermitian_decodeMatrix_newtonSchulzRounded X) hchY (by push_cast at hN ⊢; linarith)
@@ -788,6 +792,9 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
       obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hy
       rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), inv_mul_le_one₀ hb₀]
       exact (abs_le_specNorm_of_mem_spectrum hA hx).trans hb
+  have hrx : ∀ x ∈ spectrum ℝ Ad, r ≤ |(dec b)⁻¹ * x| := fun x hx => by
+    rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), hr, div_eq_inv_mul]
+    exact mul_le_mul_of_nonneg_left (hspec x hx) (inv_pos.mpr hb₀).le
   have he := hM.specNorm_sub_decodeMatrix_hermScale_le hu₀ hτ₀ hA hb₀.ne'
     (by rw [abs_of_pos hb₀, div_le_iff₀ hb₀]; nlinarith [specNorm_nonneg Ad])
   have he' : specNorm ((dec b)⁻¹ • Ad - decodeMatrix dec (M.hermScale A b)) ≤ δ / 16 := by
@@ -800,9 +807,7 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
     obtain ⟨w, hw, hwy⟩ := exists_mem_spectrum_abs_sub_le hAs hA₀ hy
     have hw₁ := (abs_le_specNorm_of_mem_spectrum hAs hw).trans hAs₁
     obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hw
-    have hw₂ : r ≤ |(dec b)⁻¹ * x| := by
-      rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), hr, div_eq_inv_mul]
-      exact mul_le_mul_of_nonneg_left (hspec x hx) (inv_pos.mpr hb₀).le
+    have hw₂ := hrx x hx
     have h₁ := abs_sub_abs_le_abs_sub ((dec b)⁻¹ * x) y
     have h₂ := abs_sub_abs_le_abs_sub y ((dec b)⁻¹ * x)
     rw [abs_sub_comm] at h₂
@@ -814,8 +819,7 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
   -- the first rounding moves the sign by at most `2‖A/b − A₀‖₂ / (a/b)`
   have hsign := hAs.specNorm_cfc_sign_sub_cfc_sign_le hA₀ hr₀ fun y hy => by
     obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hy
-    rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), hr, div_eq_inv_mul]
-    exact mul_le_mul_of_nonneg_left (hspec x hx) (inv_pos.mpr hb₀).le
+    exact hrx x hx
   rw [cfc_sign_smul hA (inv_pos.mpr hb₀)] at hsign
   have htri := specNorm_add_le (cfc Real.sign Ad - cfc Real.sign
     (decodeMatrix dec (M.hermScale A b))) (cfc Real.sign (decodeMatrix dec (M.hermScale A b)) -

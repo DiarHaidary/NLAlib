@@ -184,17 +184,15 @@ theorem abs_one_sub_sq_newtonSchulz_add_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x
       nlinarith [mul_le_mul_of_nonneg_left (le_abs_self η) hy0,
         mul_le_mul_of_nonneg_left (neg_abs_le η) hy0, sq_abs η,
         mul_nonneg (sq_nonneg (1 - t ^ 2)) (sq_nonneg t)]
+  rw [sq_abs]
   rcases le_total 0 x with hx0 | hx0
   · rw [abs_of_nonneg hx0] at h₁ h₂
-    rw [sq_abs]
     exact core x ξ hx0 (by linarith [Real.sqrt_nonneg (10 * |ξ|)]) h₁ h₂
   · rw [abs_of_nonpos hx0] at h₁ h₂
     have h := core (-x) (-ξ) (by linarith) (by linarith [Real.sqrt_nonneg (10 * |ξ|)])
       (by rw [abs_neg]; linarith) (by rw [abs_neg]; linarith)
-    rw [newtonSchulz_neg, show (-newtonSchulz x + -ξ) ^ 2 = (newtonSchulz x + ξ) ^ 2 by ring,
+    rwa [newtonSchulz_neg, show (-newtonSchulz x + -ξ) ^ 2 = (newtonSchulz x + ξ) ^ 2 by ring,
       neg_sq] at h
-    rw [sq_abs]
-    exact h
 
 /-- **The defect bound with an additive error** (Lemma 2.4, second part): if
 $\lvert x \rvert \le \sqrt2$ and $\lvert \xi \rvert \le 1$, then
@@ -222,10 +220,9 @@ theorem abs_one_sub_sq_newtonSchulz_add_le_add {x ξ : ℝ} (hx : |x| ≤ √2) 
     nlinarith [mul_nonneg (sq_nonneg (1 - x ^ 2)) (sq_nonneg x)]
   have hgξ : |newtonSchulz x * ξ| ≤ |ξ| := by
     rw [abs_mul]
-    nlinarith [abs_nonneg (newtonSchulz x), abs_nonneg ξ]
+    exact mul_le_of_le_one_left (abs_nonneg ξ) hg1
   have hξ2 : ξ ^ 2 ≤ |ξ| := by
-    have := sq_abs ξ
-    nlinarith [abs_nonneg ξ]
+    nlinarith [sq_abs ξ, abs_nonneg ξ]
   rw [sq_abs, abs_le]
   constructor <;>
     nlinarith [neg_abs_le (newtonSchulz x * ξ), le_abs_self (newtonSchulz x * ξ),
@@ -296,15 +293,13 @@ theorem min_abs_le_abs_of_abs_sub_newtonSchulz_le {u : ℝ} {x : ℕ → ℝ} (h
     · have h1 : 8 / 3 * u ≤ |x j| := hlow.trans ih
       have key := abs_le_abs_newtonSchulz_add (ξ := x (j + 1) - newtonSchulz (x j))
         (hstep j) h1 h
-      have e : newtonSchulz (x j) + (x (j + 1) - newtonSchulz (x j)) = x (j + 1) := by ring
-      rw [e] at key
+      rw [add_sub_cancel] at key
       exact ih.trans key
     · have h5 : 9 / 16 ≤ |newtonSchulz (x j)| :=
         nine_sixteenths_le_abs_newtonSchulz (by linarith) (hbd j)
-      have h6 := abs_sub_abs_le_abs_sub (newtonSchulz (x j)) (x (j + 1))
-      have h7 : |newtonSchulz (x j) - x (j + 1)| = |x (j + 1) - newtonSchulz (x j)| :=
-        abs_sub_comm _ _
-      linarith [min_le_right |x 0| (1 / 2), hstep j]
+      linarith [min_le_right |x 0| (1 / 2), hstep j,
+        abs_sub_abs_le_abs_sub (newtonSchulz (x j)) (x (j + 1)),
+        abs_sub_comm (newtonSchulz (x j)) (x (j + 1))]
 
 /-- One perturbed Newton–Schulz step keeps the defect $\lvert 1 - x^2 \rvert$ below
 $\varepsilon \le 3/80$ when the perturbation is at most $\varepsilon / 10$. -/
