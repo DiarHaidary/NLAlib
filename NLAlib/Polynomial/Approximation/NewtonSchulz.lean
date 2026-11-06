@@ -487,4 +487,19 @@ theorem newtonSchulzSteps_le_of_le {x₀ ε ε' : ℝ} (hε' : 0 < ε') (h : ε'
 
 end Analysis
 
+
+/-- The Newton–Schulz step count `NLAlib.newtonSchulzSteps` $s$ $\varepsilon$ is nonnegative for
+$0 < s \le 1/2$ and $0 < \varepsilon \le 1/2$. -/
+theorem newtonSchulzSteps_nonneg {s ε : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2) (hε : 0 < ε)
+    (hε₁ : ε ≤ 1 / 2) : 0 ≤ newtonSchulzSteps s ε := by
+  have h₁ : 0 ≤ Real.logb 2 (min |s| (1 / 2))⁻¹ := by
+    rw [abs_of_pos hs, min_eq_left hs₁]
+    exact Real.logb_nonneg one_lt_two (one_le_inv₀ hs |>.mpr (by linarith))
+  have h₂ : 0 ≤ Real.logb 2 (Real.logb 2 ε⁻¹) := by
+    refine Real.logb_nonneg one_lt_two ?_
+    rw [← Real.logb_self_eq_one one_lt_two]
+    exact Real.logb_le_logb_of_le one_lt_two two_pos ((le_inv_comm₀ two_pos hε).mpr (by linarith))
+  unfold newtonSchulzSteps
+  linarith
+
 end NLAlib

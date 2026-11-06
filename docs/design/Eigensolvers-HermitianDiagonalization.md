@@ -950,5 +950,5 @@ EV1–EV5), `Eigensolvers/SpectralBisection/Global.lean` (EV6–EV8, new: F10) a
 no longer imports `EntrywiseRounding` (the scaffold import made a cycle after the move). The
 deterministic analysis of Algorithm 3 (5241 scaffold lines) is split into
 `Matrix/Computation/SpectralBisection/{Projectors (EB1c, EB1b), Split (EB1d), Child (EB1a),
-Node (EB1), Tree (EB2, EB2a, EB3, EB4), Global (EB5)}.lean`; `Node` is 1111 lines (F10 warning). The folder `NLAlib/Eigensolvers/` (OQ1 (a)) still needs its `LAYER` entry in
+Node (EB1), Tree (EB2, EB2a, EB3, EB4), Global (EB5)}.lean`; `Node` is 1110 lines (F10 warning). The folder `NLAlib/Eigensolvers/` (OQ1 (a)) still needs its `LAYER` entry in
 `scripts/check_rules.py` and its CONTRIBUTING §2 line (maintainer edits).

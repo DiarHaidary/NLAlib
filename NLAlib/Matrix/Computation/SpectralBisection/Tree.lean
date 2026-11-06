@@ -207,7 +207,7 @@ private lemma invariants_of_eighChild_eq_some {F : Type*} {M : FloatMachine F �
       (ℓ + ((j + 1 : ℕ) : ℝ) + 1) * (ℓ + ((j + 1 : ℕ) : ℝ) + 2) * (ℓ + ((j + 1 : ℕ) : ℝ) + 3) /
       ((ℓ : ℝ) * (ℓ + 1) * (ℓ + 2) * (ℓ + 3))) * (1 + 22 * u) ^ (j + 1)) +
       ((j + 1 : ℕ) : ℝ) * (u * τ) := by
-  obtain ⟨hle, -, hyR, hyε, hyℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hxy
+  obtain ⟨-, hle, -, hyR, hyε, hyℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hxy
   have hℓ' : (20 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
   have hjℓ : (j : ℝ) + 1 ≤ ℓ := by exact_mod_cast hj
   have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
@@ -296,7 +296,7 @@ private lemma eighChild_eq_none_of_invariants {F : Type*} {M : FloatMachine F �
   rcases hc : eighChild M N signFuel R₀ β x smp b with _ | y
   · rfl
   exfalso
-  have hle := (le_eq_false_and_le_and_eq_of_eighChild_eq_some hc).1
+  have hle := (le_eq_false_and_le_and_eq_of_eighChild_eq_some hc).2.1
   have hℓ' : (20 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
   have hℓu : (ℓ : ℝ) * u ≤ 1 / 2000 := by
     have := mul_le_mul_of_nonneg_right hℓ' (mul_nonneg (by linarith : (0 : ℝ) ≤ ℓ) hu)
@@ -585,7 +585,7 @@ theorem FloatMachine.IsAccurate.eighNodeAt_eq_some_params
       intro x s j y hj h1 h2 h3 h4 h5 h
       simp only [eighNodeAt, Option.bind_eq_some_iff] at h
       obtain ⟨z, hz, hy⟩ := h
-      obtain ⟨hint, hzk, hzR, hzε, hzℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hz
+      obtain ⟨-, hint, hzk, hzR, hzε, hzℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hz
       simp only [List.length_cons] at hj
       have hxε := hlow x j (by omega) h2 h4
       have hx0 : 0 < dec x.ε := by linarith

@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.Matrix.Computation.SpectralBisection.Global
+public import NLAlib.Matrix.Perturbation.Continuity
 public import Mathlib.Probability.ConditionalProbability
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 
@@ -221,18 +222,6 @@ private lemma exists_frame_of_forall_ne {k : ℕ} {A : Matrix (Fin k) (Fin k) �
   · obtain ⟨V, hV, hVV, -⟩ := hA.exists_hasOrthonormalCols_mul_conjTranspose_eq hc
     exact ⟨_, V, hV, by rw [hVV]; simp⟩
 
-/-- Each singular value is continuous (`NLAlib.continuous_singularValues`, not imported here). -/
-private lemma continuous_singularValues_complex {m n : Type*} [Fintype m] [Fintype n] (k : ℕ) :
-    Continuous fun A : Matrix m n ℂ => singularValues A k := by
-  refine continuous_iff_continuousAt.2 fun A => ?_
-  rw [ContinuousAt, tendsto_iff_dist_tendsto_zero]
-  have h0 : Filter.Tendsto (fun B : Matrix m n ℂ => specNorm (B - A)) (nhds A) (nhds 0) := by
-    have := (continuous_specNorm.comp (continuous_id.sub (continuous_const (y := A)))).tendsto A
-    simpa [Function.comp_def, specNorm_zero] using this
-  refine squeeze_zero (fun _ => dist_nonneg) (fun B => ?_) h0
-  rw [Real.dist_eq]
-  exact abs_singularValues_sub_le_specNorm B A k
-
 /-- The spectral projector of side `b` at the ideal shift $Lv$. -/
 private noncomputable def sideProj {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L : ℝ) (b : Bool)
     (v : ℝ) : Matrix (Fin k) (Fin k) ℂ :=
@@ -306,7 +295,7 @@ private lemma measurableSet_sideBad {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
         measurable_const)).and ((measurableSet_setOfPred.1 (measurableSet_le measurable_const
           (continuous_specNorm.measurable.comp (hLB.comp measurable_snd)))).or
           (measurableSet_setOfPred.1 (measurableSet_le ?_ measurable_const))))))
-  refine (continuous_singularValues_complex _).measurable.comp ?_
+  refine (continuous_singularValues _).measurable.comp ?_
   exact Continuous.measurable2 (by fun_prop) (hP.comp measurable_fst)
     ((Continuous.matrix_submatrix continuous_id _ _).measurable.comp (hLB.comp measurable_snd))
 
@@ -774,23 +763,6 @@ theorem eighNodeAt_append_singleton {F Su Sg : Type*} [Inhabited Sg]
     simp only [List.cons_append, eighNodeAt, Option.bind_assoc]
     congr 1; funext y
     exact eighNodeAt_append_singleton M N signFuel R₀ β b a y _
-
-/-- A node with a child is internal: $k \ge 2$ and the leaf test fails. -/
-theorem two_le_k_and_le_eq_false_of_eighChild_eq_some {F Su Sg : Type*} [Inhabited Sg]
-    {M : FloatMachine F Su Sg} {N signFuel : ℕ} {R₀ β : F} {x : EighNode F}
-    {smp : EighSample Su Sg N} {b : Bool} {y : EighNode F}
-    (h : eighChild M N signFuel R₀ β x smp b = some y) :
-    2 ≤ x.k ∧ M.le x.R (M.mul x.ε R₀) = false := by
-  by_contra hc
-  have hleaf : ∃ U d, eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ smp = .leaf U d := by
-    unfold eighStep
-    by_cases hk : x.k ≤ 1
-    · rw [if_pos hk]; exact ⟨_, _, rfl⟩
-    · have hle : M.le x.R (M.mul x.ε R₀) = true := by
-        by_contra h'; exact hc ⟨by omega, by simpa using h'⟩
-      rw [if_neg hk, if_pos hle]; exact ⟨_, _, rfl⟩
-  obtain ⟨U, d, hU⟩ := hleaf
-  simp [eighChild, hU] at h
 
 /-- The samples at which a node splits form a measurable set: the split depends on the sample only
 through the computed shift, which has countable range and measurable fibres. -/

@@ -30,14 +30,16 @@ open scoped Matrix MatrixOrder
 namespace NLAlib
 
 /-- The parameters of a child: a child $y$ of a node $x$ (`NLAlib.eighChild`) exists only when
-the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ fails; it has size at most $x$'s, and
+$x$ is internal, $k \ge 2$ and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$
+fails; it has size at most $x$'s, and
 carries the next window and tolerance of `NLAlib.eighNextParams` and the depth counter
 $\ell + 1$. -/
 theorem le_eq_false_and_le_and_eq_of_eighChild_eq_some {F Su Sg : Type*} [Inhabited Sg]
     {M : FloatMachine F Su Sg} {N signFuel : ℕ} {R₀ β : F} {x y : EighNode F}
     {smp : EighSample Su Sg N} {b : Bool} (h : eighChild M N signFuel R₀ β x smp b = some y) :
-    M.le x.R (M.mul x.ε R₀) = false ∧ y.k ≤ x.k ∧ y.R = (eighNextParams M x.R x.ε x.ℓ).1 ∧
-      y.ε = (eighNextParams M x.R x.ε x.ℓ).2 ∧ y.ℓ = x.ℓ + 1 := by
+    2 ≤ x.k ∧ M.le x.R (M.mul x.ε R₀) = false ∧ y.k ≤ x.k ∧
+      y.R = (eighNextParams M x.R x.ε x.ℓ).1 ∧ y.ε = (eighNextParams M x.R x.ε x.ℓ).2 ∧
+      y.ℓ = x.ℓ + 1 := by
   unfold eighChild eighStep at h
   by_cases h1 : x.k ≤ 1
   · simp [h1] at h
@@ -45,7 +47,7 @@ theorem le_eq_false_and_le_and_eq_of_eighChild_eq_some {F Su Sg : Type*} [Inhabi
   · simp [h1, h2] at h
   simp only [h1, h2, if_false] at h
   split_ifs at h <;> dsimp only at h <;> (try split_ifs at h) <;> cases h <;>
-    exact ⟨by simpa using h2, by dsimp only; omega, rfl, rfl, rfl⟩
+    exact ⟨by omega, by simpa using h2, by dsimp only; omega, rfl, rfl, rfl⟩
 
 /-- The real arithmetic of the next window of `NLAlib.eighNextParams`. -/
 private lemma le_of_isRoundingOf_eighNextParams_fst {u τ Ω m t L a1 a2 c p1 r : ℝ}
@@ -515,7 +517,7 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
   have hk : 2 ≤ y.k := by
     by_contra hk
     simp [eighChild, eighStep, show y.k ≤ 1 by omega] at hy'
-  have hint := (le_eq_false_and_le_and_eq_of_eighChild_eq_some hy').1
+  have hint := (le_eq_false_and_le_and_eq_of_eighChild_eq_some hy').2.1
   obtain ⟨⟨hv, hI⟩, -⟩ := hgood hk hint
   obtain ⟨hhalf, hr, hrη, hmΩ⟩ := hM.child_numerics hμM hu hℓ hε hε₁ hR₀ hρ₁ hw hwR hβ hβtol husign
     hτ₀ hτ hΩ hk hint

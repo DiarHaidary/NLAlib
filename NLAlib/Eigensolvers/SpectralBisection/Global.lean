@@ -357,7 +357,7 @@ private theorem FloatMachine.IsAccurate.isEighGoodSample_of_forall_isHermitian_i
       rw [eighNodeAt_append_singleton] at hy
       obtain ⟨z, hz, hzy⟩ := Option.bind_eq_some_iff.1 hy
       obtain ⟨hH, hNz⟩ := ih z hz
-      obtain ⟨hk, hint⟩ := two_le_k_and_le_eq_false_of_eighChild_eq_some hzy
+      obtain ⟨hk, hint, -⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hzy
       obtain ⟨hlen, hkn, hLz, hεz, hεz₁, hRz⟩ :=
         hM.eighNodeAt_eq_some_params hε hε₁ hR₀pos hℓ hu hu₁ hτ₀ hτ100 hΩ16 A s hz
       obtain ⟨-, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15⟩ :=

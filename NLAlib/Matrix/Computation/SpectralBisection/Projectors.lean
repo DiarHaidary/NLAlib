@@ -33,20 +33,6 @@ open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
-/-- A rounding $z$ of $a$ (`NLAlib.IsRoundingOf` with $u, \tau \ge 0$ and $\lvert a\rvert \le
-\Omega$) has $\lvert a - z\rvert \le u(\lvert a\rvert + \tau)$. -/
-theorem abs_sub_le_of_isRoundingOf {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z)
-    (ha : |a| ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) : |a - z| ≤ u * (|a| + τ) :=
-  (h ha).trans (mul_le_mul_of_nonneg_left (max_le_add_of_nonneg (abs_nonneg a) hτ) hu)
-
-/-- A rounding $z$ of $0 \le a \le \Omega$ (`NLAlib.IsRoundingOf` with $u, \tau \ge 0$) has
-$a - u(a + \tau) \le z \le a + u(a + \tau)$. -/
-theorem le_and_le_of_isRoundingOf {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z) (ha0 : 0 ≤ a)
-    (ha : a ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) : a - u * (a + τ) ≤ z ∧ z ≤ a + u * (a + τ) := by
-  have h1 := abs_sub_le_of_isRoundingOf h (by rwa [abs_of_nonneg ha0]) hu hτ
-  rw [abs_of_nonneg ha0] at h1
-  constructor <;> linarith [(abs_le.mp h1).1, (abs_le.mp h1).2]
-
 /-- If the machine's leaf test $R \le \mathrm{fl}(e R_0)$ fails, then
 $eR_0 - u(eR_0 + \tau) < R$ (for $e, R_0 \ge 0$ and $eR_0 \le \Omega$). -/
 theorem FloatMachine.IsAccurate.mul_sub_lt_of_le_eq_false {F : Type*} {M : FloatMachine F ℝ ℂ}
