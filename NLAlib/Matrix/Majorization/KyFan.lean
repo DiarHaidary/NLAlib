@@ -425,6 +425,8 @@ meta def evalKyFanNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.kyFanNorm 8 do throwError "failed"
     let pf ← mkAppM ``NLAlib.kyFanNorm_nonneg #[e.appFn!.appArg!, e.appArg!]
     pure (.nonnegative pf)
 
