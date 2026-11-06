@@ -51,7 +51,12 @@ kernel's result at `xs`, and `rw [h xs]`. S, about 5 lines. -/
 theorem Interp.kcallStore_eq_none_of_kernel_eq_none {I : Interp P ι K C} {o : ι} {p : P}
     {ds : List ℕ} (h : ∀ xs, I.kernel o ds xs = none) (ins outs : List (ℕ × ℕ))
     (s : Store P K) : I.kcallStore o p ds ins outs s = none := by
-  sorry
+  unfold Interp.kcallStore
+  split_ifs
+  · rcases hr : s.readBlocks p (kcallBlocks ins (I.kshape o ds).1) with _ | xs
+    · rfl
+    · simp only [Option.bind_some, h xs, Option.bind_none]
+  · rfl
 
 /-- **The frame of a kernel call**: a successful call leaves every cell outside its output blocks
 unchanged, at every tag: if for every output block $(b', \mathit{off}, \ell)$ of the call the cell
