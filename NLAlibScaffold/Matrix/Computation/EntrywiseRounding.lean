@@ -132,7 +132,17 @@ lines. -/
 theorem isHermitian_decodeMatrix_hermFrom (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k : ℕ}
     (up : Fin k → Fin k → F × F) (dg : Fin k → F) :
     (decodeMatrix dec (M.hermFrom up dg)).IsHermitian := by
-  sorry
+  refine Matrix.IsHermitian.ext fun i j => ?_
+  unfold FloatMachine.hermFrom decodeMatrix decodeComplex
+  rcases lt_trichotomy i j with h | rfl | h
+  · have h' : ¬ j < i := not_lt.2 h.le
+    simp [h, h', hM.dec_neg]
+    all_goals apply Complex.ext <;> simp [hM.dec_neg]
+  · simp [hM.dec_zero]
+    all_goals apply Complex.ext <;> simp [hM.dec_zero]
+  · have h' : ¬ i < j := not_lt.2 h.le
+    simp [h, h', hM.dec_neg]
+    all_goals apply Complex.ext <;> simp [hM.dec_neg]
 
 /-- Entrywise negation is exact: the decoding of `NLAlib.FloatMachine.negMat` $\mathbf{X}$ is
 $-\bar{\mathbf{X}}$.
