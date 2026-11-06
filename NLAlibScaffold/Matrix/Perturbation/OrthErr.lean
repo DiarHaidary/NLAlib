@@ -193,7 +193,22 @@ Proof: if $\mathbf{V}\mathbf{x} = \mathbf{0}$ then $\mathbf{x} = -(\mathbf{V}^{\
 S, about 15 lines. -/
 theorem injective_mulVec_of_specNorm_gram_sub_one_lt_one {V : Matrix (Fin n) (Fin j) ℝ}
     (hV : specNorm (Vᵀ * V - 1) < 1) : Function.Injective V.mulVec := by
-  sorry
+  have key : ∀ z, V *ᵥ z = 0 → z = 0 := by
+    intro z hz
+    have hG : (Vᵀ * V - 1) *ᵥ z = -z := by
+      rw [Matrix.sub_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec, hz, Matrix.mulVec_zero,
+        zero_sub]
+    have hle : ‖WithLp.toLp 2 z‖ ≤ specNorm (Vᵀ * V - 1) * ‖WithLp.toLp 2 z‖ := by
+      have := norm_toLp_mulVec_le (Vᵀ * V - 1) z
+      rwa [hG, WithLp.toLp_neg, norm_neg] at this
+    have hz0 : ‖WithLp.toLp 2 z‖ = 0 :=
+      le_antisymm (by nlinarith [norm_nonneg (WithLp.toLp 2 z), specNorm_nonneg (Vᵀ * V - 1)])
+        (norm_nonneg _)
+    have : WithLp.toLp 2 z = 0 := norm_eq_zero.1 hz0
+    simpa using congrArg WithLp.ofLp this
+  intro x y hxy
+  have h0 : x - y = 0 := key _ (by rw [Matrix.mulVec_sub, hxy, sub_self])
+  exact sub_eq_zero.1 h0
 
 /-- **A nearly orthonormal $n \times j$ basis has $j \le n$** (B7). No printed source.
 Proof: `NLAlib.injective_mulVec_of_specNorm_gram_sub_one_lt_one` gives an injective linear map
