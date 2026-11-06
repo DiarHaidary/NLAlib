@@ -477,7 +477,19 @@ theorem newtonSchulzSignProg.holds_of_exec_compiled {mm : ι}
         Array.replicate (2 * (N * N)) none]) = some st') :
     pairLayout.Holds st'.store p 2 0
       (newtonSchulzSign (I.sem.toFloatMachine p toNat mmR qrR unif normal) ε b F A₀) := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, newtonSchulzSignProg.toStmt_compiled] at h
+  set bufs : List (Array (Option K)) := [(pairLayout.toArray A₀).map some, #[some ε, some b],
+    Array.replicate (2 * (N * N)) none] with hbufs
+  have hA := EntryLayout.holds_inputState (C := C) pairLayout p (bufs := bufs) (k := 0) (Y := A₀)
+    rfl
+  have hε : (inputState (C := C) p bufs).store.read p 1 0 = some ε := by
+    simp [inputState, Store.read, bufs]
+  have hb1 : (inputState (C := C) p bufs).store.read p 1 (0 + 1) = some b := by
+    simp [inputState, Store.read, bufs]
+  have h' : exec I (newtonSchulzSignProg p mm (.const N) (.const F) 0 0 1 0 2 0).run
+      (inputState p bufs) = some st' := h
+  exact (holds_of_exec_newtonSchulzSignProg hmm p hflag N F hA hε hb1
+    (by simp [blockDisjoint]) (by simp [blockDisjoint]) h').1
 
 /-- **The registered tree succeeds** under the standard model at $u$ with every value in range,
 $u(p) < 1$ and an exact literal $1$, if kernel `mm` of `I` is the routine `mmR` on interleaved
