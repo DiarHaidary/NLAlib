@@ -250,6 +250,23 @@ theorem abs_le_one_add_of_abs_sub_newtonSchulz_le {u : ℝ} {x : ℕ → ℝ} (h
     | succ n ih => linarith [hnext n (by linarith)]
   exact hnext k (by linarith [hall k])
 
+/-- On $\tfrac56 \le \lvert x \rvert \le \tfrac32$ the Newton–Schulz map has modulus
+at least $\tfrac9{16}$. -/
+private lemma nine_sixteenths_le_abs_newtonSchulz {x : ℝ} (h₁ : 5 / 6 ≤ |x|) (h₂ : |x| ≤ 3 / 2) :
+    9 / 16 ≤ |newtonSchulz x| := by
+  unfold newtonSchulz
+  rcases le_total 0 x with hx | hx
+  · rw [abs_of_nonneg hx] at h₁ h₂
+    have h : 9 / 16 ≤ x * (3 - x ^ 2) / 2 := by
+      nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ 3 / 2 - x)
+        (by nlinarith : (0 : ℝ) ≤ x ^ 2 + 3 / 2 * x - 3 / 4)]
+    exact le_abs.mpr (Or.inl h)
+  · rw [abs_of_nonpos hx] at h₁ h₂
+    have h : 9 / 16 ≤ -(x * (3 - x ^ 2) / 2) := by
+      nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ 3 / 2 + x)
+        (by nlinarith : (0 : ℝ) ≤ x ^ 2 - 3 / 2 * x - 3 / 4)]
+    exact le_abs.mpr (Or.inr h)
+
 /-- **The perturbed iteration stays away from zero**: if $20u \le \lvert x_0 \rvert \le 3/2$,
 $u \le 1/16$ and $\lvert x_{k+1} - g(x_k) \rvert \le u$ for every $k$, then
 $\min(\lvert x_0 \rvert, 1/2) \le \lvert x_k \rvert$ for every $k$. No printed source; [Shah2024,
@@ -263,7 +280,31 @@ theorem min_abs_le_abs_of_abs_sub_newtonSchulz_le {u : ℝ} {x : ℕ → ℝ} (h
     (h₂₀ : 20 * u ≤ |x 0|) (hx₀ : |x 0| ≤ 3 / 2)
     (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) (k : ℕ) :
     min |x 0| (1 / 2) ≤ |x k| := by
-  sorry
+  have hu0 : 0 ≤ u := le_trans (abs_nonneg _) (hstep 0)
+  have hbd : ∀ k, |x k| ≤ 3 / 2 := by
+    intro k
+    cases k with
+    | zero => exact hx₀
+    | succ j =>
+      exact (abs_le_one_add_of_abs_sub_newtonSchulz_le (by linarith) hx₀ hstep j).trans
+        (by linarith)
+  have hlow : 8 / 3 * u ≤ min |x 0| (1 / 2) := le_min (by linarith) (by linarith)
+  induction k with
+  | zero => exact min_le_left _ _
+  | succ j ih =>
+    rcases le_or_gt (|x j|) (1 - 8 / 3 * u) with h | h
+    · have h1 : 8 / 3 * u ≤ |x j| := hlow.trans ih
+      have key := abs_le_abs_newtonSchulz_add (ξ := x (j + 1) - newtonSchulz (x j))
+        (hstep j) h1 h
+      have e : newtonSchulz (x j) + (x (j + 1) - newtonSchulz (x j)) = x (j + 1) := by ring
+      rw [e] at key
+      exact ih.trans key
+    · have h5 : 9 / 16 ≤ |newtonSchulz (x j)| :=
+        nine_sixteenths_le_abs_newtonSchulz (by linarith) (hbd j)
+      have h6 := abs_sub_abs_le_abs_sub (newtonSchulz (x j)) (x (j + 1))
+      have h7 : |newtonSchulz (x j) - x (j + 1)| = |x (j + 1) - newtonSchulz (x j)| :=
+        abs_sub_comm _ _
+      linarith [min_le_right |x 0| (1 / 2), hstep j]
 
 /-- **Convergence of the perturbed Newton–Schulz iteration** (Lemma 2.5): if
 $0 < \varepsilon \le 3/80$, $10u \le \varepsilon$, $x_0 \ne 0$ with
