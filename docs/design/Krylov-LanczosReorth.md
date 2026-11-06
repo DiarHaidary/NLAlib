@@ -657,7 +657,7 @@ The route is not the $\gamma_N$ forward bound of §3.3 but a partial-sum trace: 
 dot and every row of the rounded `gemv` is an `IsDotTrace` (main's kernel lemmas), and
 `IsDotTrace.abs_sub_sum_le_partial`, `IsDotTrace.abs_sub_mulVec_le`
 (`ClassicalGramSchmidtRoundingError.lean`) bound the error by
-$(1+u)^n uigl((\lvert\mathbf Avert\lvert\mathbf xvert)_i + \sum_{r<n}\lvert(\mathbf A\mathbf x_{\le r})_ivertigr)$;
+$(1+u)^n u\bigl((\lvert\mathbf A\rvert\lvert\mathbf x\rvert)_i + \sum_{r<n}\lvert(\mathbf A\mathbf x_{\le r})_i\rvert\bigr)$;
 summed over rows this is $\le (100/99)\,u(\|\mathbf A\|_{\mathsf F} + n\|\mathbf A\|_2)\|\mathbf x\|$,
 with $(1+u)^n \le 100/99$ from $(N+j+2)u \le 1/100$ and $a = \sqrt{1+\eta_0} \ge \|\mathbf V\|_2$,
 $\|\mathbf V\|_{\mathsf F} \le \sqrt j\,a$. Hence the dots satisfy
@@ -676,14 +676,12 @@ instantiated with the guarantee `IsOrthErr`. The three scoped allocations give a
 workspace; `exec_initPhase` writes the zeros, the input norm and the guarded $\mathbf v_1$;
 `exec_loop` runs the $q$ steps under the invariant "`StoreContext` after $t$ steps, input norm
 kept, `RoundedSteps` for $j < t$". A step (`exec_stepBody`, `LanczosReorthProgramRoundedStep.lean`)
-has three phases: the work phase (product, the two Paige updates, $lpha$ and $
-u$), the
-certified orthogonalization call and $eta$, and the commit (copy of the previous vector and
+has three phases: the work phase (product, the two Paige updates, $\alpha$ and $\nu$), the
+certified orthogonalization call and $\beta$, and the commit (copy of the previous vector and
 guarded normalization). Main's normalization lemmas need unit charges; the new
 `Computation.exists_exec_eq_some_of_exec_eq_some` (`Computation/ExecCharge.lean`) transfers a
 run to any charge. The per-step witnesses are assembled into a `LanczosReorthRun` for every
-admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $eta > 	au
-u \ge 0$.
+admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu \ge 0$.
 
 **Statement changes during proving and clean-up** (none weakens a conclusion):
 * G5 `exec_rounded_loop`: the orthogonalization certificate is required only for the executed

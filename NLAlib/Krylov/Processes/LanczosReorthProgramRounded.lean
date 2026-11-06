@@ -211,8 +211,10 @@ is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, 
 is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
 \tau \le 1$, the stored-matrix CGS2 tree succeeds, and every admissible prefix of $m$ steps
 ($\tau\nu_j < \beta_j$) is a `NLAlib.LanczosReorthRun` $L$ whose coefficients are the decoded
-ones; if its recurrence and orthogonality levels satisfy the fixed-point condition, its computed
-tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}', \mathbf{b})$ for a symmetric
+ones and whose parameters are $\varepsilon$, $\tau$ and the CGS2 ones $(\eta_0, 2c_1, 3c_1,
+2(\eta_0 + c_1)^2)$; if its recurrence and orthogonality levels satisfy the fixed-point
+condition, its computed tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}',
+\mathbf{b})$ for a symmetric
 $\mathbf{H}'$ with $\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r +
 3\|\mathbf{A}\|_2(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)$, $r$ =
 `NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the orthogonality level. No printed source for
@@ -238,6 +240,9 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
         HoldsDecoded out.store dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
         ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
           ∃ L : LanczosReorthRun N m, L.H = A ∧ (∀ j ≤ m, L.α j = α j ∧ L.β j = β j) ∧
+            L.ε = lanczosImplementationRoundoffBound N (u tag) ∧ L.τ = τ ∧ L.η₀ = η₀ ∧
+            L.ε₁ = 2 * cgsPassBound N q (u tag) η₀ ∧ L.ε₂ = 3 * cgsPassBound N q (u tag) η₀ ∧
+            L.ε₃ = 2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2 ∧
             (L.recLevel ≤ 1 / 100 →
               Real.sqrt (3 * ((m : ℝ) + 1)) * L.orthLevel ≤ L.η₀ →
               ∃ H' : Matrix (Fin N) (Fin N) ℝ, H'ᵀ = H' ∧
@@ -249,8 +254,9 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     hb hrom hdecode hA hsmall hbnz hη₀ hη hu hc₁ hτ
   obtain ⟨v, α, β, ν, -, -, h2, h3, h6, hδ, hm⟩ := hout
   refine ⟨out, hexec, α, β, ν, h2, h3, h6, fun m hm0 hmq hadm => ?_⟩
-  obtain ⟨L, hH, hv, hcoef, -, hLτ, hLη, -⟩ := hm m hm0 hmq hadm
-  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, fun hrec hsm => ?_⟩
+  obtain ⟨L, hH, hv, hcoef, hLε, hLτ, hLη, hLε₁, hLε₂, hLε₃⟩ := hm m hm0 hmq hadm
+  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, hLε, hLτ, hLη, hLε₁, hLε₂,
+    hLε₃, fun hrec hsm => ?_⟩
   have hδL : ‖WithLp.toLp 2 (‖WithLp.toLp 2 b‖⁻¹ • b - L.v 1)‖ ≤
       3 * lanczosImplementationRoundoffBound N (u tag) := by
     rw [hv 1 le_rfl (by omega)]
@@ -266,7 +272,8 @@ is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, 
 1/100$, $(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound`, that
 is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
 \tau \le 1$, the stored-matrix CGS2 tree succeeds and on every admissible prefix of $m$ steps
-whose run $L$ satisfies the fixed-point condition the computed Ritz values $\theta_i$ interlace
+whose run $L$ (parameters $\varepsilon$, $\tau$ and the CGS2 ones) satisfies the fixed-point
+condition the computed Ritz values $\theta_i$ interlace
 the eigenvalues of $\mathbf{A}$ up to $e$ = `NLAlib.LanczosReorthRun.backwardRadius`:
 $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$ for $i < m$. No
 printed source. -/
@@ -291,6 +298,9 @@ theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ
         HoldsDecoded out.store dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
         ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
           ∃ L : LanczosReorthRun N m, L.H = A ∧ (∀ j ≤ m, L.α j = α j ∧ L.β j = β j) ∧
+            L.ε = lanczosImplementationRoundoffBound N (u tag) ∧ L.τ = τ ∧ L.η₀ = η₀ ∧
+            L.ε₁ = 2 * cgsPassBound N q (u tag) η₀ ∧ L.ε₂ = 3 * cgsPassBound N q (u tag) η₀ ∧
+            L.ε₃ = 2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2 ∧
             (L.recLevel ≤ 1 / 100 →
               Real.sqrt (3 * ((m : ℝ) + 1)) * L.orthLevel ≤ L.η₀ →
               ∀ i < m, eigenvalue A (i + (N - m)) - L.backwardRadius ≤
@@ -300,8 +310,9 @@ theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ
     hb hrom hdecode hA hsmall hbnz hη₀ hη hu hc₁ hτ
   obtain ⟨v, α, β, ν, -, -, h2, h3, h6, -, hm⟩ := hout
   refine ⟨out, hexec, α, β, ν, h2, h3, h6, fun m hm0 hmq hadm => ?_⟩
-  obtain ⟨L, hH, -, hcoef, -, hLτ, hLη, -⟩ := hm m hm0 hmq hadm
-  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, fun hrec hsm i hi => ?_⟩
+  obtain ⟨L, hH, -, hcoef, hLε, hLτ, hLη, hLε₁, hLε₂, hLε₃⟩ := hm m hm0 hmq hadm
+  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, hLε, hLτ, hLη, hLε₁, hLε₂,
+    hLε₃, fun hrec hsm i hi => ?_⟩
   have hlo := L.eigenvalue_sub_le_eigenvalue_tridiagonal (hLη ▸ hη) hsm hrec (hLτ ▸ hτ1) hi
   have hhi := L.eigenvalue_tridiagonal_le_add (hLη ▸ hη) hsm hrec (hLτ ▸ hτ1) hi
   rw [hH] at hlo hhi

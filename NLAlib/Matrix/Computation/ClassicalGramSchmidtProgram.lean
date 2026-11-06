@@ -715,8 +715,7 @@ private theorem exists_exec_cgs2 {u : P → ℝ} {dec : P → K → ℝ} (I : In
 
 /-- CGS2 is a certified orthogonalization routine: under the standard model, for $0 \le \eta_0
 \le 1/100$, $(N + j + 2)u \le 1/100$ and $c_1 =$ `NLAlib.cgsPassBound`, that
-is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$ (that
-is, <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$) $\le 1/100$,
+is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u \le 1/100$,
 `NLAlib.cgs2` meets `NLAlib.Computation.IsOrthRoutine` at $(\eta_0, 2c_1, 3c_1, 2(\eta_0 +
 c_1)^2)$ with `pre = True`. `docs/design/Krylov-LanczosReorth.md` §1.3. -/
 theorem IsRelErrSem.isOrthRoutine_cgs2 {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
