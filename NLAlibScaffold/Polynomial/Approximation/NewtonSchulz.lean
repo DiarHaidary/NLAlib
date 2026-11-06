@@ -42,7 +42,8 @@ No printed source; it gives both the range of $g$ and its quadratic convergence.
 Proof: unfold `NLAlib.newtonSchulz`; `ring`. S, about 2 lines. -/
 theorem one_sub_newtonSchulz_sq (x : ℝ) :
     1 - newtonSchulz x ^ 2 = (1 - x ^ 2) ^ 2 * (4 - x ^ 2) / 4 := by
-  sorry
+  unfold newtonSchulz
+  ring
 
 /-- The Newton–Schulz map sends $[-2, 2]$ into $[-1, 1]$: $\lvert g(x) \rvert \le 1$ for
 $\lvert x \rvert \le 2$. [Shah2024, proof of Lemma 2.5], there on $[-1.5, 1.5]$.
