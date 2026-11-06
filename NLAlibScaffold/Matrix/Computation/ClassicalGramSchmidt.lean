@@ -85,10 +85,18 @@ $\|\mathbf{V}^{\mathsf{T}}\mathbf{w}_2\| \le \eta_0\|\mathbf{V}^{\mathsf{T}}\mat
 \mathbf{V}^{\mathsf{T}}\mathbf{f}_2$), and $\|\mathbf{w}_1\| \le (\|\mathbf{w}_2\| + (1+\eta_0)
 (\eta_0 + c_1)\|\mathbf{w}\|)/(1 - c_1)$; collect into $2c_1\|\mathbf{w}_2\| +
 2(\eta_0 + c_1)^2\|\mathbf{w}\|$ (`nlinarith` on the numeric constants). Residual: sum the two
-pass residuals, $\|\mathbf{w}_1\| \le (1 + c_1)\|\mathbf{w}\|$ (since $\|\mathbf{I} -
-\mathbf{V}\mathbf{V}^{\mathsf{T}}\|_2 \le 1$ for $\eta_0 \le 1$), and the summation error
-$\|\mathbf{V}\mathbf{e}_s\| \le \sqrt{1+\eta_0}\,u\,(\|\mathbf{h}_1\| + \|\mathbf{h}_2\|)$.
-M, about 80 lines. -/
+pass residuals, $\|\mathbf{w}_1\| \le (1 + c_1)\|\mathbf{w}\|$: here $\|\mathbf{w} -
+\mathbf{V}\mathbf{V}^{\mathsf{T}}\mathbf{w}\|^2 = \|\mathbf{w}\|^2 - 2\|\mathbf{V}^{\mathsf{T}}
+\mathbf{w}\|^2 + (\mathbf{V}^{\mathsf{T}}\mathbf{w})^{\mathsf{T}}(\mathbf{V}^{\mathsf{T}}\mathbf{V})
+(\mathbf{V}^{\mathsf{T}}\mathbf{w}) \le \|\mathbf{w}\|^2$ by expanding the square
+(`EuclideanSpace.norm_sq_eq`-style, `Matrix.dotProduct_mulVec`) and $\mathbf{y}^{\mathsf{T}}
+\mathbf{V}^{\mathsf{T}}\mathbf{V}\mathbf{y} \le (1 + \eta_0)\|\mathbf{y}\|^2 \le 2\|\mathbf{y}\|^2$
+(`NLAlib.norm_toLp_mulVec_le`); the crude $\|\mathbf{w}_1\| \le (2 + \eta_0 + c_1)\|\mathbf{w}\|$ is
+not enough for $3c_1$. Then the summation error
+$\|\mathbf{V}\mathbf{e}_s\| \le \sqrt{1+\eta_0}\,u\,(\|\mathbf{h}_1\| + \|\mathbf{h}_2\|)$ with
+$\|\mathbf{h}_1\| \le (\sqrt{1+\eta_0} + c_1)\|\mathbf{w}\|$, $\|\mathbf{h}_2\| \le
+(\sqrt{1+\eta_0} + c_1)\|\mathbf{w}_1\|$; in all $\le (2.01 c_1 + 2.1u)\|\mathbf{w}\| \le
+3c_1\|\mathbf{w}\|$. M, about 80 lines. -/
 theorem isOrthErr_of_two_passes {n j : ℕ} {V : Matrix (Fin n) (Fin j) ℝ}
     {w w₁ w₂ : Fin n → ℝ} {h₁ h₂ h : Fin j → ℝ} {η₀ c₁ u : ℝ} (hη : η₀ ≤ 1 / 100)
     (hc₁ : c₁ ≤ 1 / 100) (hu : 0 ≤ u) (hu₁ : 4 * u ≤ c₁)

@@ -620,9 +620,17 @@ Changes from §4 made while writing exact statements:
 * The common hypotheses are `η₀ ≤ 1/100` (not $1/4$), the fixed-point condition
   `√(3(k+1)) * orthLevel ≤ η₀`, and for the coefficient bounds `recLevel ≤ 1/100` and `τ ≤ 1`, with
   `orthLevel = 2(ε₁ + ε₃/τ + ε)` and `recLevel = orthLevel + ε + ε₂`. The constants are generous
-  sketch values: D3 $\tfrac32$, D4 $16\sqrt{j+1}$, D6 $20(k+1)$, D7 $40(k+1)$, backward radius
+  sketch values: D3 $\tfrac32$, D4 $24\sqrt{j+1}$, D6 $30(k+1)$, D7 $50(k+1)$, backward radius
   $100(k+1)$, CGS2 $(2c_1, 3c_1, 2(\eta_0+c_1)^2)$ with
-  $c_1 = 2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$.
+  $c_1 = 2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$ (Fable outline review: D4 was $16\sqrt{j+1}$, which
+  a straightforward accounting misses by a hair at $j = 1$; D6, D7 follow).
+* E2's bound is $\|\mathbf U - \mathbf V\|_F \le \|\mathbf G - \mathbf I\|_F/(2\sqrt{1-\eta})$, the
+  Lipschitz constant of $\sqrt{\cdot}$ on $[1-\eta, 1+\eta]$ that Kittaneh gives (the
+  $1/(1+\sqrt{1-\eta})$ of §3.3 needs the eigenvalue sum directly; nothing downstream needs it).
+  The rotation lemma of E5 also returns $\|\mathbf Z - \mathbf I\|_F \le \sqrt2\|\mathbf x - \mathbf y\|$,
+  which the pure-backward bound uses (no rank lemma is on main).
+* In the drafted target of §2.3 the `nu` buffer holds `(lanczosReorthState A b (j + 1)).nu` at
+  index `j` (the norm computed at step `j` is a field of the next state); the skeleton's G3 has it.
 * E6 (terminal $\beta_k = 0$) is replaced by `LanczosReorthRun.exists_ofLE` (prefixes are runs).
   Strict admissibility of every step of the run, the last one included, makes $\beta_k > 0$, so
   the terminal case cannot occur inside a run.

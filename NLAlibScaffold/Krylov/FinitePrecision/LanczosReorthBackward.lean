@@ -50,7 +50,9 @@ $$(\mathbf{H} + \mathbf{E})\mathbf{U}_k = \mathbf{U}_k\mathbf{T}_k +
 exactly. [Paige1970] (locator to verify); [KahanParlettJiang1982] for the completion.
 Proof: $\mathbf{U}$ is orthonormal (`NLAlib.hasOrthonormalCols_polarFactor`, with
 `frobNorm_gram_sub_one_le` at $m = k+1$ and `specNorm_le_frobNorm`), so are its first $k$
-columns. Put $\mathbf{R} = \mathbf{H}\mathbf{U}_k - \mathbf{U}_k\mathbf{T}_k -
+columns (`HasOrthonormalCols.submatrix` with `Fin.castSucc_injective`), and
+$\mathbf{U}_k^{\mathsf{T}}\mathbf{u}_{k+1} = \mathbf{0}$. Put
+$\mathbf{R} = \mathbf{H}\mathbf{U}_k - \mathbf{U}_k\mathbf{T}_k -
 (\beta_k\mathbf{u}_{k+1})\mathbf{e}^{\mathsf{T}}$; $\mathbf{U}_k^{\mathsf{T}}\mathbf{R} =
 \mathbf{U}_k^{\mathsf{T}}\mathbf{H}\mathbf{U}_k - \mathbf{T}_k$ is symmetric (`transpose_H`,
 `NLAlib.LanczosData.transpose_tridiagonal`, orthonormality kills the last term). Apply
@@ -60,9 +62,11 @@ columns. Put $\mathbf{R} = \mathbf{H}\mathbf{U}_k - \mathbf{U}_k\mathbf{T}_k -
 \mathbf{e}^{\mathsf{T}} - \mathbf{F}_k$, so $\|\mathbf{R}\|_{\mathsf F} \le (\|\mathbf{H}\| +
 \|\mathbf{T}_k\| + \beta_k)\|\mathbf{U} - \mathbf{V}\|_{\mathsf F} + \|\mathbf{F}_k\|_{\mathsf F}$
 with
-`NLAlib.frobNorm_polarFactor_sub_le`, `coeff_le` ($\|\mathbf{T}_k\|_2 \le \tfrac92\|\mathbf{H}\|$),
-`frobNorm_residual_le`; numerically $\sqrt2(7 \cdot \sqrt3/1.99 +
-20)(k+1)\,\mathrm{rec}\,\|\mathbf{H}\|
+`NLAlib.frobNorm_polarFactor_sub_le` at $\eta = 1/100$ ($\|\mathbf{U} - \mathbf{V}\|_{\mathsf F}
+\le \sqrt{3(k+1)}\,\mu/1.98 \le \sqrt3(k+1)\,\mathrm{rec}/1.98$), `coeff_le`
+($\|\mathbf{T}_k\|_2 \le \tfrac92\|\mathbf{H}\|$, $\beta_k \le \tfrac32\|\mathbf{H}\|$),
+`frobNorm_residual_le`; numerically $\sqrt2(7 \cdot \sqrt3/1.98 +
+30)(k+1)\,\mathrm{rec}\,\|\mathbf{H}\| \le 51(k+1)\,\mathrm{rec}\,\|\mathbf{H}\|
 \le 100(k+1)\,\mathrm{rec}\,\|\mathbf{H}\|$. L, about 150 lines; intermediate lemmas: the
 symmetry of $\mathbf{U}_k^{\mathsf{T}}\mathbf{R}$, the decomposition of $\mathbf{R}$. -/
 theorem exists_backward (hη : L.η₀ ≤ 1 / 100)
@@ -84,10 +88,13 @@ $2\sqrt{3(k+1)}\,\mu$ of $\mathbf{v}_1$. [Paige1970] (locator to verify).
 Proof: `NLAlib.LanczosReorthRun.exists_backward`; the columnwise form of its identity is the
 three-term recurrence of `NLAlib.lanczosState_eq_of_orthonormal_recurrence` for
 `colSeq U` (orthonormal $\mathbf{u}_1, \dots, \mathbf{u}_{k+1}$, $\beta_0 = 0$, $\beta_j > 0$ for
-$1 \le j \le k$ by `admissible` and $\nu \ge 0$-type facts); $\mathbf{T}_k$ by
-`NLAlib.lanczosState_beta_eq_of_orthonormal_recurrence` and $\alpha_{j+1} =$ `NLAlib.lanczosAlpha`
-of the state (orthonormality). Start vector: $\|\mathbf{u}_1 - \mathbf{v}_1\| \le \|\mathbf{U} -
-\mathbf{V}\|_{\mathsf F}$ and `NLAlib.frobNorm_polarFactor_sub_le`. M, about 90 lines. -/
+$1 \le j \le k$ by `admissible`, since $\nu_j \ge (1 - \varepsilon)\|\mathbf{z}_j\| \ge 0$ from
+`abs_ν_sub_le`); $\mathbf{T}_k$ entrywise from the states: the off-diagonal entries are the
+`beta` fields, the diagonal ones $\alpha_{j+1} =$ `NLAlib.lanczosAlpha` of the state by
+orthonormality (this is the first conjunct of `NLAlib.lanczosStep_of_orthonormal_recurrence`).
+Start vector: $\|\mathbf{u}_1 - \mathbf{v}_1\| \le \|\mathbf{U} -
+\mathbf{V}\|_{\mathsf F}$ and `NLAlib.frobNorm_polarFactor_sub_le` ($\le \sqrt{3(k+1)}\,\mu/1.98$).
+M, about 90 lines. -/
 theorem exists_lanczosState_backward (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
@@ -114,10 +121,15 @@ Exact Lanczos is equivariant under orthogonal similarity (states map by $\mathbf
 unchanged: induction on `NLAlib.lanczosStep` with `Matrix.mulVec_mulVec`, `NLAlib.lanczosAlpha`
 and norm invariance) and `NLAlib.lanczosState` normalizes $\mathbf{b}$. Bound:
 $\mathbf{H}' - \mathbf{H} = \mathbf{Z}\mathbf{E}\mathbf{Z}^{\mathsf{T}} + (\mathbf{Z} - \mathbf{I})
-\mathbf{H}\mathbf{Z}^{\mathsf{T}} + \mathbf{H}(\mathbf{Z}^{\mathsf{T}} - \mathbf{I})$ and
-$\mathbf{Z} - \mathbf{I}$ has rank $\le 2$, so $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} \le
-\sqrt2\|\mathbf{Z} - \mathbf{I}\|_2$ and $2\sqrt2 \le 3$. M, about 100 lines; intermediate lemma:
-the equivariance of `NLAlib.lanczosState`. -/
+\mathbf{H}\mathbf{Z}^{\mathsf{T}} + \mathbf{H}(\mathbf{Z}^{\mathsf{T}} - \mathbf{I})$;
+`HasOrthonormalCols.frobNorm_mul_left`/`frobNorm_mul_conjTranspose_right` remove $\mathbf{Z}$,
+`NLAlib.frobNorm_mul_le_frobNorm_mul_specNorm` and `NLAlib.frobNorm_mul_le_specNorm_mul_frobNorm`
+give
+$\|(\mathbf{Z} - \mathbf{I})\mathbf{H}\|_{\mathsf F} \le \|\mathbf{Z} - \mathbf{I}\|_{\mathsf F}
+\|\mathbf{H}\|_2$, and the Frobenius conjunct of
+`NLAlib.exists_orthogonal_mulVec_eq_specNorm_sub_one_le` gives $\|\mathbf{Z} -
+\mathbf{I}\|_{\mathsf F} \le \sqrt2\|\mathbf{u}_1 - \hat{\mathbf{b}}\|$; $2\sqrt2 \le 3$. M, about
+100 lines; intermediate lemma: the equivariance of `NLAlib.lanczosState`. -/
 theorem exists_pure_backward (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {b : Fin n → ℝ} (hb : b ≠ 0) {δb : ℝ}

@@ -77,43 +77,65 @@ theorem hasOrthonormalCols_polarFactor {n m : ℕ} {V : Matrix (Fin n) (Fin m) �
 /-- **The polar factor is close to a nearly orthonormal basis** (E2): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
 $$\|\operatorname{polar}(\mathbf{V}) - \mathbf{V}\|_{\mathsf F} \le
-\frac{\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_{\mathsf F}}{1 + \sqrt{1 - \eta}}.$$
+\frac{\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_{\mathsf F}}{2\sqrt{1 - \eta}}.$$
 [Higham2008, Theorem 8.4] for the nearest-orthonormal property; the bound itself has no printed
-source here.
+source here. (The constant is the Lipschitz constant of $\sqrt{\cdot}$ on $[1-\eta, 1+\eta]$; the
+sharper $1/(1 + \sqrt{1-\eta})$ of the design note needs the eigenvalue sum directly and is not
+needed downstream.)
 Proof: with $\mathbf{U} = $ `NLAlib.polarFactor` $\mathbf{V}$ and $\mathbf{G} =
 \mathbf{V}^{\mathsf{T}}
-\mathbf{V}$, $\mathbf{V} = \mathbf{U}\mathbf{G}^{1/2}$, so $\mathbf{U} - \mathbf{V} =
+\mathbf{V}$, $\mathbf{V} = \mathbf{U}\mathbf{G}^{1/2}$ (`cfc_mul`, `cfc_congr`: $(\sqrt x)^{-1}
+\sqrt x = 1$ on the spectrum), so $\mathbf{U} - \mathbf{V} =
 \mathbf{U}(\mathbf{I} - \mathbf{G}^{1/2})$ and $\|\mathbf{U} - \mathbf{V}\|_{\mathsf F} =
-\|\mathbf{I} - \mathbf{G}^{1/2}\|_{\mathsf F}$ (`NLAlib.hasOrthonormalCols_polarFactor`); then
-`Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith` with $\sqrt{\cdot}$ Lipschitz with
-constant $1/(1 + \sqrt{1-\eta})$ on $[1-\eta, 1+\eta]$ (or the eigenvalue sum directly:
-$|1 - \sqrt\lambda| = |1 - \lambda|/(1 + \sqrt\lambda)$). S, about 40 lines. -/
+\|\mathbf{I} - \mathbf{G}^{1/2}\|_{\mathsf F}$ (`NLAlib.hasOrthonormalCols_polarFactor`,
+`HasOrthonormalCols.frobNorm_mul_left`). Write $\mathbf{I} = $ `cfc Real.sqrt 1`
+(`cfc_algebraMap` with `map_one`) and apply
+`Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith` to $\mathbf{G}$ and $\mathbf{I}$
+with $s = [1-\eta, 1+\eta]$: both spectra lie in $s$
+(`Matrix.IsHermitian.spectrum_eq_image_eigenvalue`, Weyl `Matrix.IsHermitian.abs_eigenvalue_sub_le`
+against $\mathbf{I}$), and $\sqrt{\cdot}$ is Lipschitz on $s$ with constant
+$1/(2\sqrt{1-\eta})$ since $|\sqrt x - \sqrt y| = |x - y|/(\sqrt x + \sqrt y)$
+(`Real.sq_sqrt`, `Real.sqrt_le_sqrt`, `LipschitzOnWith.of_dist_le_mul`). S, about 50 lines. -/
 theorem frobNorm_polarFactor_sub_le {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) :
-    frobNorm (polarFactor V - V) ≤ frobNorm (Vᵀ * V - 1) / (1 + Real.sqrt (1 - η)) := by
+    frobNorm (polarFactor V - V) ≤ frobNorm (Vᵀ * V - 1) / (2 * Real.sqrt (1 - η)) := by
   sorry
 
 /-- **A rotation taking one unit vector to another** (E5): for unit $\mathbf{x}$, $\mathbf{y}$ the
 orthogonal $\mathbf{Z} = \mathbf{H}_{\mathbf{x}+\mathbf{y}}\mathbf{H}_{\mathbf{x}}$ (two
 reflectors, `NLAlib.householder`; the identity on $\{\mathbf{x}, \mathbf{y}\}^\perp$) satisfies
-$\mathbf{Z}\mathbf{x} = \mathbf{y}$ and $\|\mathbf{Z} - \mathbf{I}\|_2 \le \|\mathbf{x} -
-\mathbf{y}\|$ (a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). No printed source.
+$\mathbf{Z}\mathbf{x} = \mathbf{y}$, $\|\mathbf{Z} - \mathbf{I}\|_2 \le \|\mathbf{x} -
+\mathbf{y}\|$ and $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} \le \sqrt2\|\mathbf{x} - \mathbf{y}\|$
+(a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). No printed source.
 Proof: $\mathbf{H}_{\mathbf{x}}\mathbf{x} = -\mathbf{x}$ (`NLAlib.householder_mulVec_self`, unit
 norm) and $\mathbf{H}_{\mathbf{x}+\mathbf{y}}(-\mathbf{x}) = \mathbf{y}$
 (`NLAlib.householder_mulVec`: $(\mathbf{x}+\mathbf{y})^{\mathsf{T}}\mathbf{x} = 1 +
 \mathbf{x}^{\mathsf{T}}\mathbf{y}$, $\|\mathbf{x}+\mathbf{y}\|^2 = 2(1 + \mathbf{x}^{\mathsf{T}}
 \mathbf{y})$; the case $\mathbf{y} = -\mathbf{x}$ by `NLAlib.householder_zero`); orthogonality by
-`NLAlib.hasOrthonormalCols_householder` twice. For the norm, $\mathbf{Z} - \mathbf{I}$ vanishes
-on $\{\mathbf{x}, \mathbf{y}\}^\perp$ (`NLAlib.householder_mulVec_of_dotProduct_eq_zero`) and is a
-rotation by the angle $\theta$ of $\mathbf{x}, \mathbf{y}$ minus the identity on their span, of
-norm $2\sin(\theta/2) = \|\mathbf{x} - \mathbf{y}\|$: bound $\|(\mathbf{Z} -
+`NLAlib.hasOrthonormalCols_householder` twice. For the spectral norm, $\mathbf{Z} - \mathbf{I}$
+vanishes on $\{\mathbf{x}, \mathbf{y}\}^\perp$ (`NLAlib.householder_mulVec_of_dotProduct_eq_zero`)
+and is a rotation by the angle $\theta$ of $\mathbf{x}, \mathbf{y}$ minus the identity on their
+span, of norm $2\sin(\theta/2) = \|\mathbf{x} - \mathbf{y}\|$: bound $\|(\mathbf{Z} -
 \mathbf{I})\mathbf{v}\|$
-for $\mathbf{v} = a\mathbf{x} + b\mathbf{x}^\perp + \mathbf{r}$ by direct computation. M, about 80
-lines. -/
+for $\mathbf{v} = a\mathbf{x} + b\mathbf{x}^\perp + \mathbf{r}$ by direct computation. For the
+Frobenius norm use the trace: for orthogonal $\mathbf{Z}$,
+$\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F}^2
+= \operatorname{tr}((\mathbf{Z}-\mathbf{I})^{\mathsf T}(\mathbf{Z}-\mathbf{I})) = 2n -
+2\operatorname{tr}\mathbf{Z}$ (`frobNorm_sq_eq_re_trace`), and with $\mathbf{p} = (\mathbf{x} +
+\mathbf{y})/\|\mathbf{x}+\mathbf{y}\|$, $\mathbf{Z} = \mathbf{I} - 2\mathbf{x}\mathbf{x}^{\mathsf T}
+- 2\mathbf{p}\mathbf{p}^{\mathsf T} +
+4(\mathbf{p}^{\mathsf T}\mathbf{x})\mathbf{p}\mathbf{x}^{\mathsf T}$
+has $\operatorname{tr}\mathbf{Z} = n - 4 + 4(\mathbf{p}^{\mathsf T}\mathbf{x})^2 = n - 2 +
+2\mathbf{x}^{\mathsf T}\mathbf{y}$, so $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F}^2 = 4 -
+4\mathbf{x}^{\mathsf T}\mathbf{y} = 2\|\mathbf{x} - \mathbf{y}\|^2$ (for $\mathbf{y} = -\mathbf{x}$:
+$\mathbf{Z} = \mathbf{H}_{\mathbf{x}}$,
+$\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} = 2 = \|\mathbf{x} -
+\mathbf{y}\|$). M, about 110 lines. -/
 theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n → ℝ}
     (hx : ‖WithLp.toLp 2 x‖ = 1) (hy : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ Z : Matrix (Fin n) (Fin n) ℝ, Zᵀ * Z = 1 ∧ Z *ᵥ x = y ∧
-      specNorm (Z - 1) ≤ ‖WithLp.toLp 2 (x - y)‖ := by
+      specNorm (Z - 1) ≤ ‖WithLp.toLp 2 (x - y)‖ ∧
+      frobNorm (Z - 1) ≤ Real.sqrt 2 * ‖WithLp.toLp 2 (x - y)‖ := by
   sorry
 
 /-- **Orthonormal approximate eigenvectors are counted by the spectrum** (F2a): for symmetric

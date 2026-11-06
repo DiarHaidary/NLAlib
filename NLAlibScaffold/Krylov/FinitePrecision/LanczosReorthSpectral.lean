@@ -179,12 +179,21 @@ theorem exists_backward_kaniel_paige_saad (hη : L.η₀ ≤ 1 / 100)
 the computed tridiagonal is the Gauss rule of the spectral measure of $(\mathbf{H}', \mathbf{b})$.
 [GolubMeurant2010, Theorem 6.6] (locator to verify).
 Proof: `NLAlib.LanczosReorthRun.exists_pure_backward` gives $\mathbf{T}_k =$
-`NLAlib.lanczosTridiagonal` $\mathbf{H}'\,\mathbf{b}\,k$; the exact moment matching for Hermitian
-$\mathbf{H}'$ is `Matrix.IsHermitian.matchesMoments_lanczosQuadrature` (with the integral form of
-the quadrature
-in `NLAlib/Krylov/Functions/Quadrature.lean` to read off $[p(\mathbf{T}_k)]_{00}$; the grade is at
-least
-$k$ because $\beta_j > 0$). S, about 40 lines. -/
+`NLAlib.lanczosTridiagonal` $\mathbf{H}'\,\mathbf{b}\,k$. With $\mathbf{Q} =$ `NLAlib.arnoldiMatrix`
+$\mathbf{H}'\,\mathbf{b}\,k$ $=$ `NLAlib.lanczosMatrix` $\mathbf{H}'\,\mathbf{b}\,k$
+(`Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix`): $\mathbf{T}_k = \mathbf{Q}^{\mathsf{T}}
+\mathbf{H}'\mathbf{Q}$ (`Matrix.IsHermitian.lanczosTridiagonal_eq`), $\operatorname{range}\mathbf{Q}
+= \mathcal K_k(\mathbf{H}', \mathbf{b})$ (`NLAlib.range_arnoldiMatrix`), and $\mathbf{Q}$ has
+orthonormal columns (`NLAlib.hasOrthonormalCols_arnoldiMatrix_iff`: the grade is at least $k$
+because the $k$ Lanczos vectors are nonzero, $\beta_j > 0$; or directly, since by the proof of
+`exists_pure_backward` the columns are $\mathbf{Z}\mathbf{u}_1, \dots, \mathbf{Z}\mathbf{u}_k$).
+Then `HasOrthonormalCols.lanczosQuadrature_eq` identifies the Lanczos rule with the spectral
+measure of $(\mathbf{T}_k, \mathbf{Q}^{\mathsf{T}}\mathbf{b})$, $\mathbf{Q}^{\mathsf{T}}\mathbf{b} =
+\|\mathbf{b}\|\mathbf{e}_0$ (the first column is $\mathbf{b}/\|\mathbf{b}\|$, the others are
+orthogonal to it), `Matrix.IsHermitian.matchesMoments_lanczosQuadrature` at $q = k$ gives the
+moment identity for $\deg p < 2k$, and `Matrix.IsHermitian.integral_eval_spectralMeasure` turns
+both integrals into quadratic forms of `Polynomial.aeval` (`quadForm` over ℝ is the dot product).
+M, about 80 lines. -/
 theorem exists_pure_backward_gauss (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {b : Fin n → ℝ} (hb : b ≠ 0) {δb : ℝ}

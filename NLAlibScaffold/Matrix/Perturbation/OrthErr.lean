@@ -54,7 +54,8 @@ $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then $\|\mathbf{
 Proof: $\|\mathbf{V}\|_{\mathsf F}^2 = \sum_c \|\mathbf{v}_c\|^2 = \operatorname{tr}
 (\mathbf{V}^{\mathsf{T}}\mathbf{V})$ and each diagonal entry of $\mathbf{V}^{\mathsf{T}}\mathbf{V}$
 is at most $1 + \eta$ (an entry of $\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}$ is bounded by
-its spectral norm). S, about 15 lines. -/
+its spectral norm, `NLAlib.norm_apply_le_specNorm`; `frobNorm_sq_eq_sum` or
+`frobNorm_sq_eq_re_trace`). S, about 15 lines. -/
 theorem frobNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) : frobNorm V ≤ Real.sqrt (j * (1 + η)) := by
   sorry

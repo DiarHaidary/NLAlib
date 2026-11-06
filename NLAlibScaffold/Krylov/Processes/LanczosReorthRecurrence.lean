@@ -39,9 +39,11 @@ every vector involved is zero. [Paige1970]; [Parlett1998, §13.1] for the exact 
 Proof: strengthen to the invariant "`vecs i` $=$ `(lanczosState A b i).cur` for $i \le j$, zero
 beyond, and the nonzero ones are orthonormal" and induct on $j$. In the step, $\mathbf{z}_j =
 \mathbf{A}\mathbf{q}_j - \beta_j\mathbf{q}_{j-1} - \alpha_j\mathbf{q}_j$ is orthogonal to
-$\mathbf{q}_0, \dots, \mathbf{q}_j$ in exact arithmetic (the Lanczos vectors are the Arnoldi
-vectors, `Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix`, and the Arnoldi residual is
-orthogonal to the basis), so `NLAlib.cgsProject` returns its argument twice
+$\mathbf{q}_0, \dots, \mathbf{q}_j$ in exact arithmetic: by `NLAlib.lanczosStep` it is
+$\beta_{j+1}\mathbf{q}_{j+1}$, and the Lanczos vectors are the columns of the canonical basis
+(`NLAlib.lanczosState_eq_lanczosC`, `Matrix.IsHermitian.lanczosMatrix_eq_arnoldiMatrix`), whose
+distinct columns are orthogonal (`NLAlib.star_arnoldiMatrix_col_last_dotProduct_of_ne`, zero
+columns included), so `NLAlib.cgsProject` returns its argument twice
 (`Finset.sum_eq_zero`); the normalization is that of `NLAlib.lanczosStep`, and
 `Function.update` extends the invariant. M, about 120 lines. -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix n n 𝕜}
