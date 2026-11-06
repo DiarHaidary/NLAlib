@@ -260,7 +260,25 @@ theorem IsMatMulKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P �
     L.Holds s' p c.1 c.2 (mm A B) ∧ ∀ q b' i,
       blockDisjoint (b', i, 1) (c.1, c.2, n * l * L.width) = true →
         s'.read q b' i = s.read q b' i := by
-  sorry
+  have hd : ∀ (x y : ℕ × ℕ × ℕ), blockDisjoint x y = true →
+      x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
+    intro x y hxy
+    simpa [blockDisjoint, or_assoc] using hxy
+  have hX := (EntryLayout.holds_iff_readBlock_eq_some L s p a.1 a.2 A).mp hA
+  have hY := (EntryLayout.holds_iff_readBlock_eq_some L s p b.1 b.2 B).mp hB
+  rw [h.kcallStore_eq p hX hY hca hcb, EntryLayout.toMatrix_toArray L hL,
+    EntryLayout.toMatrix_toArray L hL] at hs
+  have hsz := EntryLayout.size_toArray L (mm A B)
+  refine ⟨EntryLayout.holds_of_writeBlock_eq_some L hs, fun q' b' i hd' => ?_⟩
+  have hne : b' ≠ c.1 ∨ i < c.2 ∨ c.2 + (L.toArray (mm A B)).size ≤ i := by
+    rw [hsz]
+    rcases hd _ _ hd' with h1 | h1 | h1
+    · exact Or.inl h1
+    · dsimp only at h1
+      exact Or.inr (Or.inl (by omega))
+    · dsimp only at h1
+      exact Or.inr (Or.inr (by omega))
+  exact Store.read_of_writeBlock_eq_some_of_ne hs hne
 
 /-- **A QR kernel call on a held matrix holds the factors**: if kernel `o` of `I` is the routine
 `qr` in a layout `L` whose `get` inverts its `put`, the operand $a$ holds the $m \times n$ matrix
