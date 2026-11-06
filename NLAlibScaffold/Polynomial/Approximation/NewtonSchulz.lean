@@ -306,6 +306,101 @@ theorem min_abs_le_abs_of_abs_sub_newtonSchulz_le {u : ℝ} {x : ℕ → ℝ} (h
         abs_sub_comm _ _
       linarith [min_le_right |x 0| (1 / 2), hstep j]
 
+/-- One perturbed Newton–Schulz step keeps the defect $\lvert 1 - x^2 \rvert$ below
+$\varepsilon \le 3/80$ when the perturbation is at most $\varepsilon / 10$. -/
+private lemma abs_one_sub_sq_succ_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁ : 10 * u ≤ ε)
+    (hε₂ : ε ≤ 3 / 80) (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) {k : ℕ}
+    (hk : |1 - x k ^ 2| ≤ ε) : |1 - x (k + 1) ^ 2| ≤ ε := by
+  have hξ := hstep k
+  have hε0 : 0 ≤ ε := (abs_nonneg _).trans hk
+  have h := abs_one_sub_sq_newtonSchulz_add_le_add
+    (Real.abs_le_sqrt (x := x k) (by linarith [(abs_le.mp hk).1])) (hξ.trans (by linarith))
+  rw [add_sub_cancel] at h
+  nlinarith [abs_nonneg (1 - x k ^ 2), mul_le_mul hk hk (abs_nonneg _) hε0]
+
+/-- Once the defect is below $\varepsilon$ it stays below $\varepsilon$. -/
+private lemma abs_one_sub_sq_add_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁ : 10 * u ≤ ε)
+    (hε₂ : ε ≤ 3 / 80) (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) {k : ℕ}
+    (hk : |1 - x k ^ 2| ≤ ε) (j : ℕ) : |1 - x (k + j) ^ 2| ≤ ε := by
+  induction j with
+  | zero => exact hk
+  | succ j ih => exact abs_one_sub_sq_succ_le hε₁ hε₂ hstep ih
+
+/-- Two perturbed steps after the iterate leaves $[0, 1 - \sqrt\varepsilon]$ in modulus bring
+the defect below $\varepsilon$. -/
+private lemma abs_one_sub_sq_add_three_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁ : 10 * u ≤ ε)
+    (hε₂ : ε ≤ 3 / 80) (hx₀ : |x 0| ≤ 3 / 2)
+    (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) {k : ℕ}
+    (hk : 1 - √ε < |x (k + 1)|) : |1 - x (k + 3) ^ 2| ≤ ε := by
+  have hu : 0 ≤ u := (abs_nonneg _).trans (hstep 0)
+  have hs0 : 0 ≤ √ε := Real.sqrt_nonneg ε
+  have hss : √ε ^ 2 = ε := Real.sq_sqrt (by linarith)
+  have hs1 : √ε ≤ 1 / 5 := by nlinarith
+  have hup := abs_le_one_add_of_abs_sub_newtonSchulz_le (by linarith) hx₀ hstep k
+  have hsq := sq_abs (x (k + 1))
+  have h₀ : |1 - x (k + 1) ^ 2| ≤ 2 * √ε - √ε ^ 2 := by
+    rw [abs_le]
+    constructor
+    · nlinarith [pow_le_pow_left₀ (abs_nonneg _) hup 2]
+    · nlinarith [pow_le_pow_left₀ (by linarith) hk.le 2]
+  have h₁ := abs_one_sub_sq_newtonSchulz_add_le_add
+    (Real.abs_le_sqrt (x := x (k + 1)) (by nlinarith [(abs_le.mp h₀).1]))
+    ((hstep (k + 1)).trans (by linarith))
+  rw [add_sub_cancel] at h₁
+  have hm₁ : |1 - x (k + 1 + 1) ^ 2| ≤ √ε ^ 2 * ((2 - √ε) ^ 2 + 2 / 5) := by
+    nlinarith [pow_le_pow_left₀ (abs_nonneg _) h₀ 2, hstep (k + 1)]
+  have h₂ := abs_one_sub_sq_newtonSchulz_add_le_add
+    (Real.abs_le_sqrt (x := x (k + 1 + 1)) (by nlinarith [(abs_le.mp hm₁).1]))
+    ((hstep (k + 1 + 1)).trans (by linarith))
+  rw [add_sub_cancel] at h₂
+  have hq : √ε * ((2 - √ε) ^ 2 + 2 / 5) ≤ 3 / 4 := by nlinarith
+  have hm₁sq : |1 - x (k + 1 + 1) ^ 2| ^ 2 ≤ 9 / 16 * √ε ^ 2 := by
+    have := pow_le_pow_left₀ (abs_nonneg _) hm₁ 2
+    have := pow_le_pow_left₀ (by positivity) hq 2
+    nlinarith
+  change |1 - x (k + 1 + 1 + 1) ^ 2| ≤ ε
+  nlinarith [hstep (k + 1 + 1)]
+
+/-- While the iterates stay in $[0, 1 - \sqrt\varepsilon]$ in modulus, the defect squares at
+each step, starting below $1 - \min(\lvert x_0 \rvert, 1/2)^2$. -/
+private lemma exists_lt_abs_or_abs_one_sub_sq_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁ : 10 * u ≤ ε)
+    (hε₂ : ε ≤ 3 / 80) (h₂₀ : 20 * u ≤ |x 0|) (hx₀ : |x 0| ≤ 3 / 2)
+    (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) (j : ℕ) :
+    (∃ k ≤ j, 1 - √ε < |x (k + 1)|) ∨
+      |1 - x (j + 1) ^ 2| ≤ (1 - min |x 0| (1 / 2) ^ 2) ^ 2 ^ j := by
+  have hu : 0 ≤ u := (abs_nonneg _).trans (hstep 0)
+  have ha k := min_abs_le_abs_of_abs_sub_newtonSchulz_le (by linarith) h₂₀ hx₀ hstep k
+  have ha20 : 20 * u ≤ min |x 0| (1 / 2) := le_min h₂₀ (by linarith)
+  have ha0 : 0 ≤ min |x 0| (1 / 2) := le_min (abs_nonneg _) (by norm_num)
+  have hs0 : 0 ≤ √ε := Real.sqrt_nonneg ε
+  have hs1 : √ε ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
+  induction j with
+  | zero =>
+    by_cases h : 1 - √ε < |x 1|
+    · exact Or.inl ⟨0, le_rfl, h⟩
+    right
+    replace h := not_lt.mp h
+    simp only [zero_add, pow_zero, pow_one]
+    have h1 := pow_le_pow_left₀ (abs_nonneg _) h 2
+    have h2 := pow_le_pow_left₀ ha0 (ha 1) 2
+    rw [sq_abs] at h1 h2
+    rw [abs_of_nonneg (by nlinarith)]
+    linarith
+  | succ j ih =>
+    rcases ih with ⟨k, hk, h⟩ | ih
+    · exact Or.inl ⟨k, hk.trans j.le_succ, h⟩
+    by_cases h : 1 - √ε < |x (j + 1)|
+    · exact Or.inl ⟨j, j.le_succ, h⟩
+    right
+    replace h := not_lt.mp h
+    have hξ := hstep (j + 1)
+    have h' := abs_one_sub_sq_newtonSchulz_add_le
+      ((mul_le_mul_of_nonneg_left hξ (by norm_num)).trans (ha20.trans (ha (j + 1))))
+      (h.trans (sub_le_sub_left (Real.sqrt_le_sqrt (by linarith)) 1))
+    rw [add_sub_cancel] at h'
+    rw [pow_succ (2 : ℕ) j, pow_mul]
+    exact h'.trans (pow_le_pow_left₀ (abs_nonneg _) ih 2)
+
 /-- **Convergence of the perturbed Newton–Schulz iteration** (Lemma 2.5): if
 $0 < \varepsilon \le 3/80$, $10u \le \varepsilon$, $x_0 \ne 0$ with
 $20u \le \lvert x_0 \rvert \le 3/2$, and $\lvert x_{k+1} - g(x_k) \rvert \le u$ for every $k$,
@@ -331,7 +426,65 @@ theorem abs_one_sub_sq_le_of_newtonSchulzSteps_le {u ε : ℝ} {x : ℕ → ℝ}
     (hε₁ : 10 * u ≤ ε) (hε₂ : ε ≤ 3 / 80) (h₀ : 0 < |x 0|) (h₂₀ : 20 * u ≤ |x 0|)
     (hx₀ : |x 0| ≤ 3 / 2) (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) {N : ℕ}
     (hN : newtonSchulzSteps (x 0) ε ≤ N) : |1 - x N ^ 2| ≤ ε := by
-  sorry
+  set a := min |x 0| (1 / 2) with ha_def
+  have ha0 : 0 < a := lt_min h₀ (by norm_num)
+  have ha_inv : 2 ≤ a⁻¹ := by
+    rw [le_inv_comm₀ (by norm_num) ha0]; linarith [min_le_right |x 0| (1 / 2)]
+  set L := Real.logb 2 ε⁻¹ with hL
+  have hL1 : 1 ≤ L := by
+    rw [hL, Real.le_logb_iff_rpow_le (by norm_num) (by positivity), Real.rpow_one,
+      le_inv_comm₀ (by norm_num) hε]
+    linarith
+  -- the step count gives `4 L / a ^ 2 < 2 ^ N`
+  have hpow : 4 * L * a⁻¹ ^ 2 < (2 : ℝ) ^ N := by
+    rw [← Real.rpow_natCast (2 : ℝ) N, ← Real.logb_lt_iff_lt_rpow (by norm_num) (by positivity),
+      Real.logb_mul (by positivity) (by positivity), Real.logb_mul (by norm_num) (by positivity),
+      Real.logb_pow, show (4 : ℝ) = 2 ^ 2 by norm_num, Real.logb_pow,
+      Real.logb_self_eq_one (by norm_num)]
+    unfold newtonSchulzSteps at hN
+    push_cast
+    linarith
+  have hN3 : 3 ≤ N := by
+    by_contra h
+    have : (2 : ℝ) ^ N ≤ 2 ^ 2 := pow_le_pow_right₀ (by norm_num) (by omega)
+    nlinarith [pow_le_pow_left₀ (by norm_num) ha_inv 2]
+  obtain ⟨n, rfl⟩ : ∃ n, N = n + 3 := ⟨N - 3, by omega⟩
+  -- the iterates leave `[0, 1 - √ε]` in modulus by step `n + 1`
+  have hexit : ∃ k ≤ n, 1 - √ε < |x (k + 1)| := by
+    refine (exists_lt_abs_or_abs_one_sub_sq_le hε₁ hε₂ h₂₀ hx₀ hstep n).elim id fun h => ?_
+    by_contra hne
+    have hle : |x (n + 1)| ≤ 1 - √ε := not_lt.mp fun h' => hne ⟨n, le_rfl, h'⟩
+    have hss : √ε ^ 2 = ε := Real.sq_sqrt hε.le
+    have hs1 : √ε ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
+    -- inside `[0, 1 - √ε]` the defect is at least `√ε`
+    have hm : √ε ≤ |1 - x (n + 1) ^ 2| := by
+      have := pow_le_pow_left₀ (abs_nonneg _) hle 2
+      rw [sq_abs] at this
+      exact le_abs.mpr (Or.inl (by nlinarith [Real.sqrt_nonneg ε]))
+    have hεle : ε ≤ (1 - a ^ 2) ^ 2 ^ (n + 1) := by
+      rw [← hss, pow_succ (2 : ℕ) n, pow_mul]
+      exact (pow_le_pow_left₀ (Real.sqrt_nonneg ε) hm 2).trans
+        (pow_le_pow_left₀ (abs_nonneg _) h 2)
+    have hexp : (1 - a ^ 2) ^ 2 ^ (n + 1) ≤ Real.exp (((2 ^ (n + 1) : ℕ) : ℝ) * -a ^ 2) := by
+      rw [Real.exp_nat_mul]
+      exact pow_le_pow_left₀ (by nlinarith [min_le_right |x 0| (1 / 2)])
+        (by linarith [Real.add_one_le_exp (-a ^ 2)]) _
+    have hlog : Real.log ε = -(L * Real.log 2) := by
+      rw [hL, Real.logb, div_mul_cancel₀ _ (Real.log_pos one_lt_two).ne', Real.log_inv, neg_neg]
+    have h4 : 4 * L < 2 ^ (n + 3) * a ^ 2 := by
+      have := mul_lt_mul_of_pos_right hpow (pow_pos ha0 2)
+      rwa [mul_assoc, ← mul_pow, inv_mul_cancel₀ ha0.ne', one_pow, mul_one] at this
+    have hlt : Real.exp (((2 ^ (n + 1) : ℕ) : ℝ) * -a ^ 2) < ε := by
+      rw [← Real.exp_log hε, Real.exp_lt_exp, hlog]
+      have hlog2 : Real.log 2 < 1 := by linarith [Real.log_lt_sub_one_of_pos two_pos (by norm_num)]
+      have : (2 : ℝ) ^ (n + 3) = 4 * 2 ^ (n + 1) := by ring
+      push_cast
+      nlinarith [mul_lt_mul_of_pos_left hlog2 (by linarith : (0 : ℝ) < L)]
+    linarith
+  obtain ⟨k, hk, h⟩ := hexit
+  have := abs_one_sub_sq_add_le hε₁ hε₂ hstep
+    (abs_one_sub_sq_add_three_le hε₁ hε₂ hx₀ hstep h) (n - k)
+  rwa [show k + 3 + (n - k) = n + 3 by omega] at this
 
 /-- The step count decreases in the starting modulus: for $0 < a \le \lvert x_0 \rvert$,
 $N(x_0, \varepsilon) \le N(a, \varepsilon)$.
