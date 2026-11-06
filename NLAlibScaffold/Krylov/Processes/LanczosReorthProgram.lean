@@ -310,7 +310,21 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
                   (3 * lanczosImplementationRoundoffBound N (u tag) +
                     2 * Real.sqrt (3 * ((m : ℝ) + 1)) * L.orthLevel) ∧
                 lanczosTridiagonal H' b m = L.toLanczosData.tridiagonal) := by
-  sorry
+  obtain ⟨out, hexec, -, hout⟩ := exec_rounded_compiled I tag hsem hz hc st N q A b values hshape
+    hb hrom hdecode hA hsmall hbnz hη₀ hη hu hc₁ hτ
+  obtain ⟨v, α, β, ν, -, -, h2, h3, h6, hδ, hm⟩ := hout
+  refine ⟨out, hexec, α, β, ν, h2, h3, h6, fun m hm0 hmq hadm => ?_⟩
+  obtain ⟨L, hH, hv, hcoef, -, hLτ, hLη, -⟩ := hm m hm0 hmq hadm
+  refine ⟨L, hH, fun j hj => ⟨(hcoef j hj).1, (hcoef j hj).2.1⟩, fun hrec hsm => ?_⟩
+  have hδL : ‖WithLp.toLp 2 (‖WithLp.toLp 2 b‖⁻¹ • b - L.v 1)‖ ≤ 3 *
+      lanczosImplementationRoundoffBound N (u tag) := by
+    rw [hv 1 le_rfl (by omega)]
+    exact hδ
+  obtain ⟨H', h1, h2', h3'⟩ := L.exists_pure_backward (hLη ▸ hη) hsm hrec
+    (hLτ ▸ hτ1) hbnz hδL
+  refine ⟨H', h1, ?_, h3'⟩
+  rw [hH] at h2'
+  exact h2'
 
 /-- **The program-level interlacing headline** (G8): in the setting of
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled_backward`, on every admissible prefix
