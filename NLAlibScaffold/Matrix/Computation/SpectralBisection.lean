@@ -121,7 +121,11 @@ budget `NLAlib.FloatMachine.IsEighNodeBudget` and Event I (seed in $[-1, 1]$, ev
 distance at least $w$ from the ideal shift), the stored $\mathbf{P}_\pm$ are within $\beta$ of
 $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
 Lemma 4.1].
-Proof: EB1c's proof with SN4'
+Proof: Smallness facts: re-derive the conjuncts of `NLAlib.mul_le_of_le_bisectionSignTol` from the
+budget ($k\beta \le 1/57600$ is `mul_β_le`; $k^2u$, $k^{3/2}u \le \beta/20480$ and $u \le
+\beta/147456$ from `stop_tol`; $k\tau \le 1/4$ from `τ_le`; $10^6\ell u$, $10^5\ell\mu u \le
+\varepsilon$ from `defl_tol` and `stop_tol`); the conjunct $k^{3/2}uR \le w\beta/20480$ is gone
+(not derivable) and is replaced by the $\beta/64$ shift budget below. EB1c's proof with SN4'
 (`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le`)
 at modulus $a = w - 4uR \ge (1 - 2^{-8})w$ and scale $b = \mathrm{fl}(2R) \le 2R(1 + 7u)$, so
 $a/b \ge (1 - 2^{-7})w/(2R)$ (the field `sign_tol`) and $a/(2b) \ge w/(5R)$ (NS11 for the
@@ -222,7 +226,12 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget
 /-- **Local guarantee under a node budget** (EB1'): with budget, a good sample when internal and
 children that are approximate diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$,
 the node's output is one with $(\varepsilon(R + R_0), \varepsilon/3)$. [Shah2024, Lemma 4.1].
-Proof: EB1's proof (the residual budget closing through $\varepsilon' = (1 - 1/\ell)\varepsilon$
+Proof: Smallness facts: re-derive the conjuncts of `NLAlib.mul_le_of_le_bisectionSignTol` from the
+budget ($k\beta \le 1/57600$ is `mul_β_le`; $k^2u$, $k^{3/2}u \le \beta/20480$ and $u \le
+\beta/147456$ from `stop_tol`; $k\tau \le 1/4$ from `τ_le`; $10^6\ell u$, $10^5\ell\mu u \le
+\varepsilon$ from `defl_tol` and `stop_tol`); the conjunct $k^{3/2}uR \le w\beta/20480$ is gone
+(not derivable) and is replaced by the $\beta/64$ shift budget below. EB1's proof (the residual
+budget closing through $\varepsilon' = (1 - 1/\ell)\varepsilon$
 is unchanged, since the deflation error is still at most $\eta$) with EB1c', EB1b', EB1d', EB1a'.
 H, about 300 lines (EB1's private node budget reused). -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNodeBudget
@@ -271,7 +280,9 @@ $k - k_+$). [Shah2024, proof of Theorem 4.2], "$\sum_{x \in X_k} n_x \le n$".
 Proof: induction on $j$ generalizing $x$ and the samples: split a path of length $j + 1$ by its
 head (`Fin.consEquiv`, `List.ofFn_succ`, `Fintype.sum_prod_type`); `NLAlib.eighNodeAt` at
 $b :: a$ is the node at $a$ below `NLAlib.eighChild` on side $b$; the induction hypothesis bounds
-each side by its child's size; the children's sizes sum to at most $k_x$ by cases on
+each side by its child's size (for its use in EV6' over the depths $j \le \ell$:
+`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` gives $|a| \le \ell$ and $\ell_y = \ell +
+|a|$); the children's sizes sum to at most $k_x$ by cases on
 `NLAlib.eighStep` (`Nat.add_sub_cancel'`). L, about 120 lines (EB4's case analysis reused). -/
 theorem sum_k_eighNodeAt_ofFn_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
     {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) (j : ℕ) :
@@ -298,8 +309,11 @@ $x_y = \sqrt{15\rho_y/(16\min(k_y^2, e k_y))}$ and $t_y = 2\sqrt2\sqrt{k_y} +
 \sqrt{\log(16/\rho_y)}$, then `NLAlib.eigh` is an approximate diagonalization of $\mathbf{A}$
 with residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$. [Shah2024,
 Theorem 4.2], deterministic part.
-Proof: EB5's induction over the tree with EB1' and EB1a' in place of EB1 and EB1a: at each node,
-EB2a and EB2a' give $k_y \le n$, $\ell \le \ell_y \le 2\ell$, $\varepsilon_y \ge (1 - 2^{-8})(\ell -
+Proof: EB5's induction over the tree with EB1' and EB1a' in place of EB1 and EB1a (the node
+lemmas re-derive their smallness facts from the budget, not from
+`NLAlib.mul_le_of_le_bisectionSignTol`; the $k^{3/2}uR$ conjunct is gone): at each node,
+`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` (EB2a) and EB2a' give $k_y \le n$,
+$\ell \le \ell_y \le 2\ell$, $\varepsilon_y \ge (1 - 2^{-8})(\ell -
 1)\varepsilon/(2\ell - 1)$, $R_y \le R_0$; then `NLAlib.FloatMachine.IsEighNodeBudget` at
 $(w_y, x_y, t_y)$: `defl_tol` since $x_y/t_y \ge \sqrt{5\theta/(32nm\min(n, e))}/\hat T$ and
 $\eta_y \ge (1 - 2^{-8})(\ell - 1)^2\varepsilon/(10\ell^2(2\ell - 1))$; `sign_tol` from the

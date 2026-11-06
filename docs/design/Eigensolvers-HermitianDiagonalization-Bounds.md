@@ -42,6 +42,12 @@ O(1)$, with $\hat T \approx 2\sqrt{2n}$. So:
 - the $\log_2(N_*+1)$ term (the paper's $\log_2\log_2(n\log_2(1/\varepsilon)/\theta)$) is gone;
 - the constant is $13 + \log_2 20$, against 26.
 
+**Caveat on the comparison.** The paper assumes $\mu_{\mathrm{MM}} \ge 10$ (out.tex l. 226, used at
+l. 1283), so its formula at $\mu = 1$ is outside its own derivation and the $\mu = 1$ convention
+favours it. At $\mu_{\mathrm{MM}} = \mu_{\mathrm{QR}} = 10$: paper 51.1 / 66.9 / 97.8 / 127.3, EV7'
+50.5 / 59.4 / 75.1 / 105.6. At $n = 1$ the auxiliary (stopping and deflation) condition of EV7'
+is the binding one (49.1 against 49.0).
+
 **Binary64 stays out of reach.** The stated EV7' asks for 52.1 bits at $n = 2$ and 53.9 at
 $n = 3$ ($\varepsilon = 2^{-15}$, $\theta = 1$, and $\varepsilon \le 2^{-15}$ is a hypothesis).
 So $p = 53$ suffices only for $n \le 2$, and at $\theta = 1/2$ only for $n = 1$. Even with the
@@ -160,9 +166,12 @@ thresholds. EB1c/EB1/EB5 would need restating for little gain.
   $$\frac{2\delta}{1.375 a_0}\cdot\frac{1}{1 - 1/1.325} + 2.91\,\delta\,(N_0 + 1) \le
   \frac{5.93\,\delta}{a_0} + 2.91\,\delta\,(N_0+1) \,,$$
   a geometric series in place of SN4's $(N_0+1)\cdot 2\delta/s$.
+- The stated second condition carries 640, not 160, so that it implies SN4's private-lemma
+  hypothesis $640n(8+\mu)u \le \varepsilon$ for every $n$ (Fable F1); the budget's `stop_tol`
+  (2048) already covers it, so no bit count moves.
 - The stopping test spends $\tfrac23\varepsilon$ as in SN4, and the start error $2\sqrt n u$
   costs $\le \varepsilon/160$.
-- So $32\nu u \le (a/b)\varepsilon$ together with $160(n + N_0 + 1)\nu u \le \varepsilon$ suffice
+- So $32\nu u \le (a/b)\varepsilon$ together with $640(n + N_0 + 1)\nu u \le \varepsilon$ suffice
   (budget used: $0.19 + 0.006 + 0.045 \le 1/3$).
 
 The second condition carries the stopping test's $n$ and the step count; in the bisection it is
@@ -191,7 +200,7 @@ calls SN4 with $a = w/2 + 2uw$ (`:388`). With $a = w - 4uR \ge (1 - 2^{-8})w$ an
 - The stored iterate is the entrywise-rounded Hermitian part of a product near $2g(\mathbf{X})$.
 - An entrywise relative perturbation $|E_{ij}| \le u|Z_{ij}|$ of a near-unitary $\mathbf{Z}$
   can have spectral norm $u\sqrt n\|\mathbf{Z}\|_2$. Take $\mathbf{Z} = \mathbf{H}/\sqrt n$ for a
-  symmetric Hadamard $\mathbf{H}$ (unitary, a valid sign matrix) and $E_{ij} = u H_{ij}/\sqrt n$;
+  symmetric Hadamard $\mathbf{H}$ (unitary, a valid sign matrix) and $E_{ij} = u/\sqrt n = u\lvert Z_{ij}\rvert$ (all signs $+$);
   then $\mathbf{E} = (u/\sqrt n)\mathbf{J}$, of norm $u\sqrt n$.
 - Every route that applies a rounded entrywise operation to all $n^2$ entries per step pays this.
 - The halving in $g(x) = \tfrac12x(3 - x^2)$ is such an operation in the current model, which

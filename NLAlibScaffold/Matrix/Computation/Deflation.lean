@@ -66,8 +66,13 @@ Proof: DF2's proof up to the bound $\|\mathbf{U} - \mathbf{Q}'_1\mathbf{C}\|_2 \
 the perturbation of $\mathbf{M}_1 = \mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf H}\mathbf{G}_1$ is
 $\beta\|\mathbf{G}\|_2(1 + \beta)$ from $\widetilde{\mathbf{A}}$ plus the sampler, product and QR
 roundings, at most $(\|\mathbf{S}\|_2 + \beta)\beta\|\mathbf{G}\|_2/16$ by the strengthened
-condition, so $\delta \le m\beta$; then DF1' in place of DF1 ($\sqrt2\delta$) and the QR
-orthogonality error $\mu_{\mathrm{QR}}u \le \beta/64 \le m\beta/64$. L, about 200 lines (DF2's
+condition, so $\delta \le m\beta$; then DF1' in place of DF1 ($\sqrt2\delta$). DF2's helper
+`deflate_arith_one_le` ($1 \le m$) does not carry over, since now only $m \ge 1/8$: absorb the QR
+orthogonality error $\mu_{\mathrm{QR}}u \le \beta/64$ through
+$\|\mathbf S\|_2\|\mathbf S^{-1}\|_2 \ge 1$ and
+$\|\mathbf G\|_2\|(\mathbf V^{\mathsf H}\mathbf G_1)^{-1}\|_2 \ge 1$; $\beta \le 1/8$ (from
+$m\beta \le 1/64$)
+replaces DF2's $\beta \le 1/5$. L, about 200 lines (DF2's
 helpers reused). -/
 theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}

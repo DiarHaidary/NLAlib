@@ -78,7 +78,9 @@ Proof: EV6's route (UB1 with the measurability and independence of EV3–EV5) wi
 charge of a node $y$: $q_y = k_y w_y\ell_y/R_y + 2\rho_y[\text{split}] =
 4\theta k_y\ell_y/(9n\ell(\ell + 1)) + \theta k_y/(3nm)[\text{split}]$ (EV2', at
 $\rho_y = \theta k_y/(6nm)$). Surely
-$\sum_y q_y \le \theta$: by EB3' the sizes at each depth $j \le \ell$ (EB2) sum to at most $n$, so
+$\sum_y q_y \le \theta$: regroup the tsum over paths by depth (`List.ofFn` over `Fin j → Bool`);
+`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` gives $|a| \le \ell$ and
+$\ell_y = \ell + |a|$, and by EB3' the sizes at each depth sum to at most $n$, so
 the first part is at most $\tfrac{4\theta}{9\ell(\ell + 1)}\sum_{j=0}^{\ell}(\ell + j) =
 \tfrac23\theta$; the split sizes sum to at most $n\min(n, \ell + 1)$ (EB3' over the depths, and
 EB4 with $k_y \le n$), so the second part is at most $\theta/3$. L, about 250 lines (EV6's
