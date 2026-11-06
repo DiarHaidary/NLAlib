@@ -539,6 +539,10 @@ public import NLAlib.Matrix.Pseudoinverse.Pinv
 public import NLAlib.Matrix.Pseudoinverse.RegularizedLeastSquares
 public import NLAlib.Matrix.Pseudoinverse.Tikhonov
 public import NLAlib.Matrix.Pseudoinverse.TruncatedSVD
+public import NLAlib.Matrix.QRIteration.EigenvectorWeights
+public import NLAlib.Matrix.QRIteration.Ritz
+public import NLAlib.Matrix.QRIteration.ShiftedQR
+public import NLAlib.Matrix.QRIteration.Strategy
 public import NLAlib.Matrix.Spectral.BestRankApprox
 public import NLAlib.Matrix.Spectral.Congruence
 public import NLAlib.Matrix.Spectral.CourantFischer

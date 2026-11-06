@@ -1,0 +1,182 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Matrix.QRIteration.Ritz
+public import NLAlibScaffold.ForMathlib.Analysis.MeanInequalities
+public import NLAlibScaffold.Matrix.QRIteration.EigenvectorWeights
+public import NLAlibScaffold.Matrix.QRIteration.ShiftedQR
+public import NLAlibScaffold.Matrix.Spectral.Diagonalizable
+
+/-!
+# Optimal and promising Ritz values (scaffold)
+
+Statements for `NLAlib/Matrix/QRIteration/Ritz.lean` (stage SHIFTED-QR, waves W1–W2, design note
+`docs/design/Eigensolvers-ShiftedQR.md` §3.4): exact Ritz values are $1$-optimal; the moment
+comparison and almost-monotonicity for a promising Ritz value
+([BanksGarzaVargasSrivastava2021, Lemma 4.4]); the binary search `NLAlib.findRitz` returns a
+$\kappa_V^{4\log_2 k/k}$-promising Ritz value ([BanksGarzaVargasSrivastava2021, Lemma 4.5]).
+
+## Main results
+
+* `NLAlib.length_ritzValues`, `NLAlib.IsUpperHessenberg.isOptimalRitzValues_one_ritzValues`,
+  `NLAlib.norm_le_specNorm_of_mem_ritzValues`.
+* `NLAlib.IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: the moment comparison.
+* `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le`:
+  almost-monotonicity.
+* `NLAlib.sum_lastRowWeights_div_norm_eval_shiftPoly_le`, `NLAlib.findRitz_mem`,
+  `NLAlib.isPromisingRitzValue_findRitz`: the binary search.
+-/
+
+@[expose] public section
+
+open scoped Matrix
+
+namespace NLAlib
+
+variable {n : ℕ}
+
+/-! ### Exact Ritz values -/
+
+/-- **There are $k$ Ritz values**: the trailing block is $k \times k$ and its characteristic
+polynomial splits over $\mathbb{C}$, so `NLAlib.ritzValues` $k$ $\mathbf{H}$ has length $k$.
+Proof: `Multiset.length_toList`, `Polynomial.splits_iff_card_roots` with
+`IsAlgClosed.splits`, `Matrix.charpoly_natDegree_eq_dim`. S, about 8 lines. -/
+theorem length_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
+    (ritzValues k H).length = k := by
+  sorry
+
+/-- **Exact Ritz values are $1$-optimal**: for upper Hessenberg $\mathbf{H}$ and $1 \le k \le n$,
+the eigenvalues of the trailing block $\mathbf{H}_{(k)}$ satisfy
+$\|\mathbf{e}_n^{\mathsf{H}}\chi_k(\mathbf{H})\| \le \psi_k(\mathbf{H})^k$.
+[BanksGarzaVargasSrivastava2021, §1.1]: the true Ritz values are $1$-optimal.
+Proof: `NLAlib.shiftPoly` of the roots is the characteristic polynomial
+(`Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq`, `Multiset.prod_toList`,
+`Multiset.map_coe`), then `NLAlib.IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq` and
+`NLAlib.length_ritzValues`. S, about 15 lines. -/
+theorem IsUpperHessenberg.isOptimalRitzValues_one_ritzValues
+    {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
+    (hkn : k ≤ n) : IsOptimalRitzValues 1 H (ritzValues k H) := by
+  sorry
+
+/-- **Ritz values are bounded by the norm**: every Ritz value $s$ of order $k \le n + 1$ has
+$\lvert s\rvert \le \|\mathbf{H}\|_2$.
+Proof: $s$ is an eigenvalue of the principal submatrix $\mathbf{H}_{(k)}$
+(`Polynomial.mem_roots`, `Matrix.mem_spectrum_iff_isRoot_charpoly`), so
+$\lvert s\rvert \le \|\mathbf{H}_{(k)}\|_2 \le \|\mathbf{H}\|_2$ (`spectrum.norm_le_norm_of_mem`,
+`NLAlib.specNorm_submatrix_le` or the compression bound). S, about 15 lines. -/
+theorem norm_le_specNorm_of_mem_ritzValues {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {k : ℕ}
+    (hkn : k ≤ n + 1) {s : ℂ} (hs : s ∈ ritzValues k H) : ‖s‖ ≤ specNorm H := by
+  sorry
+
+/-! ### Promising Ritz values -/
+
+/-- **Moment comparison for a promising Ritz value**: let $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
+$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, let the $k$ shifts
+`ss` be $\theta$-optimal Ritz values of $\mathbf{H}$, none an eigenvalue, and $r$ an
+$\alpha$-promising one, $\alpha, \theta \ge 0$. Then
+$$1 \le \kappa\,(\alpha\theta\psi_k(\mathbf{H}))^k\sum_i\frac{w_i}{\lvert\mathbf{d}_i -
+r\rvert^k}\,,$$
+i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \ge
+\kappa^{-1}(\alpha\theta\psi_k(\mathbf{H}))^{-k}$. [BanksGarzaVargasSrivastava2021, Lemma 4.4],
+(4.2) there.
+Proof: the chain of the paper: promising, then Jensen for $1/x$ (`ConvexOn.map_sum_le` with
+`convexOn_zpow` at $-1$) and for $x^2$ (`Finset.sum_mul_sq_le_sq_mul_sq`), then
+`NLAlib.norm_mul_diagonal_mul_inv_last_sq_le` with $\mathbf{g} = p(\mathbf{d})$ and
+`NLAlib.aeval_eq_mul_diagonal_mul_inv`, then optimality. M, about 50 lines. -/
+theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} {ss : List ℂ} {r : ℂ}
+    (hss : IsOptimalRitzValues θ H ss) (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d)
+    (hd : ∀ i, ∀ s ∈ ss, d i ≠ s) (hr : IsPromisingRitzValue α V d ss r) (hα : 0 ≤ α)
+    (hθ : 0 ≤ θ) :
+    1 ≤ pseudoConditionNumber V * (α * θ * hessenbergPotential ss.length H) ^ ss.length *
+      ∑ i, lastRowWeights V i / ‖d i - r‖ ^ ss.length := by
+  sorry
+
+/-- **Almost-monotonicity of the potential**: in the setting of the moment comparison
+(upper Hessenberg $\mathbf{H}$, $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$
+with $\mathbf{V}$ invertible and $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$; $k$ shifts `ss`,
+$1 \le k \le n$, $\theta$-optimal, none an eigenvalue; $r$ an $\alpha$-promising member;
+$\alpha, \theta \ge 0$), the degree $k$ step with shift polynomial $(z - r)^k$ satisfies
+$$\psi_k(\widehat{\mathbf{H}}) \le \kappa^{2/k}\alpha\theta\,\psi_k(\mathbf{H})\,.$$
+[BanksGarzaVargasSrivastava2021, Lemma 4.4]. Not used by the convergence theorem.
+Proof: `NLAlib.IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div` and Jensen for $x^2$ give
+$\mathbb{E}\lvert Z - r\rvert^{-2k} \ge \kappa^{-2}(\alpha\theta\psi)^{-2k}$; then
+`NLAlib.sum_lastRowWeights_mul_sq_le` with $\mathbf{g} = (\mathbf{d} - r)^{-k}$
+(`NLAlib.inv_aeval_eq_mul_diagonal_mul_inv`, `NLAlib.mul_diagonal_mul_inv_pow`) and
+`NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le`; take $k$-th roots.
+M, about 45 lines. -/
+theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {θ α : ℝ}
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {d : Fin (n + 1) → ℂ}
+    {ss : List ℂ} {r : ℂ} (hss : IsOptimalRitzValues θ H ss) (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) (hd : ∀ i, ∀ s ∈ ss, d i ≠ s)
+    (hr : IsPromisingRitzValue α V d ss r) (hk : 0 < ss.length) (hkn : ss.length ≤ n)
+    (hα : 0 ≤ α) (hθ : 0 ≤ θ) :
+    hessenbergPotential ss.length (multiShiftedQRStep H (List.replicate ss.length r)) ≤
+      pseudoConditionNumber V ^ ((2 : ℝ) / ss.length) * α * θ *
+        hessenbergPotential ss.length H := by
+  sorry
+
+/-! ### The binary search -/
+
+/-- **One halving step of the binary search loses at most $\kappa^4$**: let $\mathbf{H}\mathbf{V}
+= \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
+$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$; let $a$, $b$ be lists of
+shifts, none an eigenvalue, $h \in \{a, b\}$ the one with the larger
+$\|\mathbf{e}_n^{\mathsf{H}}p_h(\mathbf{H})^{-q}\|$, and $p_c = p_ap_b$ for $c = a \mathbin{+\!+}
+b$. Then
+$$\sum_i\frac{w_i}{\lvert p_c(\mathbf{d}_i)\rvert^q} \le \kappa^4\sum_i\frac{w_i}{\lvert
+p_h(\mathbf{d}_i)\rvert^{2q}}\,.$$
+[BanksGarzaVargasSrivastava2021, proof of Lemma 4.5], one step of the induction (with the squares
+the printed chain omits; gap G5 of the design note).
+Proof: $\mathbb{E}\lvert p_h\rvert^{-2q} \ge \kappa^{-2}\|\mathbf{e}_n^{\mathsf{H}}
+p_h(\mathbf{H})^{-q}\|^2$ (`NLAlib.norm_mul_diagonal_mul_inv_last_sq_le`), which is the maximum
+over $\{a, b\}$, at least the average, and each term is $\ge \kappa^{-2}\mathbb{E}\lvert
+p_g\rvert^{-2q}$ (`NLAlib.sum_lastRowWeights_mul_sq_le`); AM–GM
+$\tfrac12(x^2 + y^2) \ge xy$ and $p_c = p_ap_b$ (`List.map_append`, `List.prod_append`,
+`Polynomial.eval_mul`). M, about 50 lines. -/
+theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) {a b h : List ℂ} (hd : ∀ i, ∀ s ∈ a ++ b, d i ≠ s)
+    (hh : h = a ∨ h = b) (q : ℕ)
+    (hmax : ∀ g ∈ [a, b],
+      ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly g))⁻¹ ^ q) (Fin.last n))‖ ≤
+        ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly h))⁻¹ ^ q) (Fin.last n))‖) :
+    ∑ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ q ≤
+      pseudoConditionNumber V ^ 4 *
+        ∑ i, lastRowWeights V i / ‖(shiftPoly h).eval (d i)‖ ^ (2 * q) := by
+  sorry
+
+/-- **The binary search returns a member**: for a list of length $2^m$,
+`NLAlib.findRitz` $\mathbf{H}$ $m$ $e$ `ss` is in `ss`.
+Proof: induction on $m$, generalising $e$ and `ss`; the halves have length $2^{m}$
+(`List.length_take`, `List.length_drop`) and are sublists (`List.mem_of_mem_take`,
+`List.mem_of_mem_drop`); for $m = 0$, `List.headD` of a singleton. S, about 15 lines. -/
+theorem findRitz_mem (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) {m e : ℕ} {ss : List ℂ}
+    (hss : ss.length = 2 ^ m) : findRitz H m e ss ∈ ss := by
+  sorry
+
+/-- **The binary search finds a promising Ritz value**: let $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
+$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$, and `ss` a list of $k = 2^m$ shifts, none an
+eigenvalue. If $\kappa^{4m} \le \alpha^k$, then `NLAlib.findRitz` $\mathbf{H}$ $m$ $1$ `ss` is an
+$\alpha$-promising member of `ss`: $\sum_i w_i/\lvert p(\mathbf{d}_i)\rvert \le
+\alpha^k\sum_i w_i/\lvert\mathbf{d}_i - r\rvert^k$. In particular
+$\alpha = \kappa^{4\log_2 k/k}$ works. [BanksGarzaVargasSrivastava2021, Lemma 4.5].
+Proof: induction on $m$ generalising the exponent: for `ss` of length $2^j$ and exponent $e$,
+$\sum_i w_i/\lvert p_{\mathrm{ss}}(\mathbf{d}_i)\rvert^e \le \kappa^{4j}\sum_i w_i/\lvert
+\mathbf{d}_i - r\rvert^{e2^j}$, each level by
+`NLAlib.sum_lastRowWeights_div_norm_eval_shiftPoly_le` (the `if` of `NLAlib.findRitz` gives
+`hmax`); membership by `NLAlib.findRitz_mem`. M, about 45 lines. -/
+theorem isPromisingRitzValue_findRitz {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {m : ℕ}
+    {ss : List ℂ} (hlen : ss.length = 2 ^ m) (hd : ∀ i, ∀ s ∈ ss, d i ≠ s) {α : ℝ}
+    (hα : pseudoConditionNumber V ^ (4 * m) ≤ α ^ 2 ^ m) :
+    IsPromisingRitzValue α V d ss (findRitz H m 1 ss) := by
+  sorry
+
+end NLAlib
