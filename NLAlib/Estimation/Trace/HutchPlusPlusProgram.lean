@@ -1117,6 +1117,32 @@ private theorem compile_substOracle_kcall (pattern : List (ℕ × ℕ)) {o : ι}
   obtain ⟨dims', -, ins', -, outs', -, rfl⟩ := h
   exact ⟨.skip, rfl, fun _ _ _ _ => rfl⟩
 
+/-- The index-binder case of the sparse compile lemma: the binder is kept, its body substituted. -/
+private theorem compile_substOracle_bindIdx (pattern : List (ℕ × ℕ)) {p : P} {x : Cell ℕ ℕ}
+    {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
+    (ih : ∀ v {nb ni : ℕ} (hni : 0 < ni) (c : FStmt P ι nb ni), (body v).compile nb ni = some c →
+      ∃ c' : FStmt P ι nb ni,
+        ((body v).subst .instr (cooImpl (.var 0) pattern) fun _ _ _ _ _ => .skip).compile nb ni =
+          some c' ∧
+        ∀ ρB σ M, σ ⟨0, hni⟩ = .const M →
+          c'.toStmt ρB σ = (c.toStmt ρB σ).subst .instr (cooImpl (.const M) pattern)
+            fun _ _ _ _ _ => .skip)
+    {nb ni : ℕ} (hni : 0 < ni) {c : FStmt P ι nb ni}
+    (h : (Stmt.bindIdx p x bound body).compile nb ni = some c) :
+    ∃ c' : FStmt P ι nb ni,
+      ((Stmt.bindIdx p x bound body).subst .instr (cooImpl (.var 0) pattern)
+        fun _ _ _ _ _ => .skip).compile nb ni = some c' ∧
+      ∀ ρB σ M, σ ⟨0, hni⟩ = .const M →
+        c'.toStmt ρB σ = (c.toStmt ρB σ).subst .instr (cooImpl (.const M) pattern)
+          fun _ _ _ _ _ => .skip := by
+  simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at h
+  obtain ⟨x', hx, n', hn, b', hb, rfl⟩ := h
+  obtain ⟨cb, hcb, hcb'⟩ := ih ni (Nat.succ_pos ni) b' hb
+  refine ⟨.bindIdx p x' n' cb, ?_, fun ρB σ M hM => ?_⟩
+  · simp [Stmt.subst, Stmt.compile, hx, hn, hcb]
+  · simp [Stmt.subst, FStmt.toStmt, hcb' _ _ M ((Fin.snoc_castSucc (i := ⟨0, hni⟩) ..).trans hM)]
+
 private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : Stmt P ι ℕ ℕ) :
     ∀ {nb ni : ℕ} (hni : 0 < ni) (c : FStmt P ι nb ni), s.compile nb ni = some c →
       ∃ c' : FStmt P ι nb ni,
@@ -1141,8 +1167,7 @@ private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : S
     exact ⟨c, h, fun _ _ _ _ => by
       simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
         Option.some.injEq] at h
-      obtain ⟨i', -, rfl⟩ := h
-      rfl⟩
+      obtain ⟨i', -, rfl⟩ := h; rfl⟩
   | apply o p d dOff s sOff cols =>
     intro nb ni hni c h
     simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
@@ -1203,15 +1228,7 @@ private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : S
     · simp [Stmt.subst, Stmt.compile, ha, hcb]
     · simp [Stmt.subst, FStmt.toStmt, hcb' ρB σ M hM]
   | kcall o p dims ins outs => exact fun hni c h => compile_substOracle_kcall pattern hni h
-  | bindIdx p x bound body ih =>
-    intro nb ni hni c h
-    simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
-      Option.some.injEq] at h
-    obtain ⟨x', hx, n', hn, b', hb, rfl⟩ := h
-    obtain ⟨cb, hcb, hcb'⟩ := ih ni (Nat.succ_pos ni) b' hb
-    refine ⟨.bindIdx p x' n' cb, ?_, fun ρB σ M hM => ?_⟩
-    · simp [Stmt.subst, Stmt.compile, hx, hn, hcb]
-    · simp [Stmt.subst, FStmt.toStmt, hcb' _ _ M ((Fin.snoc_castSucc (i := ⟨0, hni⟩) ..).trans hM)]
+  | bindIdx p x bound body ih => exact fun hni c h => compile_substOracle_bindIdx pattern ih hni h
 
 /-- The sparse family compiles, for every pattern: Hutch++ with its oracle calls served by
 `NLAlib.Computation.cooImpl`, compiled at symbolic sizes, is some first-order program, and that

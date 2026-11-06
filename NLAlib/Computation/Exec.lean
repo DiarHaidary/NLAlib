@@ -669,6 +669,17 @@ private theorem runInv_kcall (o : ι) (p : P) (dims : List (IExp ℕ))
   obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
   exact RunInv.step I (Interp.shape_of_kcallStore_eq_some hs) fun hc => hc _
 
+private theorem runInv_bindIdx (p : P) (x : Cell ℕ ℕ) (bound : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ)
+    (ih : ∀ v {st st' : St P K (OpCount P ι)}, exec I (body v) st = some st' → RunInv I st st')
+    {st st' : St P K (OpCount P ι)} (h : exec I (.bindIdx p x bound body) st = some st') :
+    RunInv I st st' := by
+  rw [exec_bindIdx] at h
+  obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+  have hstep : RunInv I st r.2 := by
+    rw [snd_of_toNatStep_eq_some hr]
+    exact RunInv.step I (pos := st.pos) rfl fun hc => hc _
+  exact hstep.trans I (ih _ h2)
+
 private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : St P K (OpCount P ι)},
     exec I s st = some st' → RunInv I st st'
   | .skip, st, st', h => by rw [exec_skip] at h; cases h; exact RunInv.refl I _
@@ -750,13 +761,8 @@ private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : S
     rw [exec_named] at h
     exact runInv_of_exec_eq_some body h
   | .kcall o p dims ins outs, st, st', h => runInv_kcall I o p dims ins outs h
-  | .bindIdx p x bound body, st, st', h => by
-    rw [exec_bindIdx] at h
-    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
-    have hstep : RunInv I st r.2 := by
-      rw [snd_of_toNatStep_eq_some hr]
-      exact RunInv.step I (pos := st.pos) rfl fun hc => hc _
-    exact hstep.trans I (runInv_of_exec_eq_some (body _) h2)
+  | .bindIdx p x bound body, st, st', h =>
+    runInv_bindIdx I p x bound body (fun v _ _ hv => runInv_of_exec_eq_some (body v) hv) h
 
 variable {I} {s : Stmt P ι ℕ ℕ} {st st' : St P K (OpCount P ι)}
 
@@ -827,6 +833,22 @@ private theorem foldlM_eq_of_cnt_load_le {σ α : Type} (μ : σ → OpCount P �
     have hb := Finsupp.le_def.mp (foldlM_cnt_le μ hmono h2)
     rw [hfg x a a' h1 (fun p o => (hb _).trans (hl p o))]
     exact foldlM_eq_of_cnt_load_le μ hmono hfg h2 fun p o => (hl p o).trans (hab _)
+
+/-- The index-binder case of `NLAlib.Computation.exec_eq_of_exec_eq_some_of_cnt_load_le`. -/
+private theorem exec_bindIdx_eq_of_cnt_load_le (O : ι → ℕ → Array K → Option (Array K)) (p : P)
+    (x : Cell ℕ ℕ) (bound : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ)
+    (ih : ∀ v {st st' : St P K (OpCount P ι)}, exec I (body v) st = some st' →
+      (∀ p o, st'.cnt (.load p o) ≤ st.cnt (.load p o)) →
+      exec { I with oracle := O } (body v) st = some st')
+    {st st' : St P K (OpCount P ι)} (h : exec I (.bindIdx p x bound body) st = some st')
+    (hl : ∀ p o, st'.cnt (.load p o) ≤ st.cnt (.load p o)) :
+    exec { I with oracle := O } (.bindIdx p x bound body) st = some st' := by
+  rw [exec_bindIdx] at h ⊢
+  obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
+  have hm : st.cnt ≤ r.2.cnt := by rw [snd_of_toNatStep_eq_some hr]; exact le_self_add
+  change (toNatStep I p x st).bind _ = _
+  rw [hr, Option.bind_some]
+  exact ih _ h2 fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
 
 /-- The oracle is used only by oracle calls: under the standard charge, a run that makes no
 oracle call (its load counts do not grow) is the same run under any other oracle. -/
@@ -909,14 +931,9 @@ theorem exec_eq_of_exec_eq_some_of_cnt_load_le (hc : ∀ k, I.charge k = Finsupp
     rw [exec_named] at h ⊢
     exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O body h hl
   | .kcall .., st, st', h, _ => h
-  | .bindIdx p x bound body, st, st', h, hl => by
-    rw [exec_bindIdx] at h ⊢
-    obtain ⟨r, hr, h2⟩ := Option.bind_eq_some_iff.mp h
-    have hm : st.cnt ≤ r.2.cnt := by rw [snd_of_toNatStep_eq_some hr]; exact le_self_add
-    change (toNatStep I p x st).bind _ = _
-    rw [hr, Option.bind_some]
-    exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O (body _) h2
-      fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
+  | .bindIdx p x bound body, st, st', h, hl =>
+    exec_bindIdx_eq_of_cnt_load_le O p x bound body
+      (fun v _ _ hv hl' => exec_eq_of_exec_eq_some_of_cnt_load_le hc O (body v) hv hl') h hl
 
 end Invariants
 
