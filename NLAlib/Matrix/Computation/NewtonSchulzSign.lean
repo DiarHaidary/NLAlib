@@ -723,7 +723,9 @@ private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
       rw [max_eq_right (by linarith)] at hIH ⊢
       linarith
 
-private theorem newtonSchulzSteps_nonneg {s ε : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2) (hε : 0 < ε)
+/-- The Newton–Schulz step count `NLAlib.newtonSchulzSteps` $s$ $\varepsilon$ is nonnegative for
+$0 < s \le 1/2$ and $0 < \varepsilon \le 1/2$. -/
+theorem newtonSchulzSteps_nonneg {s ε : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2) (hε : 0 < ε)
     (hε₁ : ε ≤ 1 / 2) : 0 ≤ newtonSchulzSteps s ε := by
   have h₁ : 0 ≤ Real.logb 2 (min |s| (1 / 2))⁻¹ := by
     rw [abs_of_pos hs, min_eq_left hs₁]

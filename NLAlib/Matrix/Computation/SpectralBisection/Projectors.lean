@@ -47,20 +47,6 @@ theorem le_and_le_of_isRoundingOf {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω 
   rw [abs_of_nonneg ha0] at h1
   constructor <;> linarith [(abs_le.mp h1).1, (abs_le.mp h1).2]
 
-/-- The Newton–Schulz step count `NLAlib.newtonSchulzSteps` $s$ $\varepsilon$ is nonnegative for
-$0 < s \le 1/2$ and $0 < \varepsilon \le 1/2$. -/
-theorem newtonSchulzSteps_nonneg {s ε : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2) (hε : 0 < ε)
-    (hε₁ : ε ≤ 1 / 2) : 0 ≤ newtonSchulzSteps s ε := by
-  have h₁ : 0 ≤ Real.logb 2 (min |s| (1 / 2))⁻¹ := by
-    rw [abs_of_pos hs, min_eq_left hs₁]
-    exact Real.logb_nonneg one_lt_two (one_le_inv₀ hs |>.mpr (by linarith))
-  have h₂ : 0 ≤ Real.logb 2 (Real.logb 2 ε⁻¹) := by
-    refine Real.logb_nonneg one_lt_two ?_
-    rw [← Real.logb_self_eq_one one_lt_two]
-    exact Real.logb_le_logb_of_le one_lt_two two_pos ((le_inv_comm₀ two_pos hε).mpr (by linarith))
-  unfold newtonSchulzSteps
-  linarith
-
 /-- If the machine's leaf test $R \le \mathrm{fl}(e R_0)$ fails, then
 $eR_0 - u(eR_0 + \tau) < R$ (for $e, R_0 \ge 0$ and $eR_0 \le \Omega$). -/
 theorem FloatMachine.IsAccurate.mul_sub_lt_of_le_eq_false {F : Type*} {M : FloatMachine F ℝ ℂ}
