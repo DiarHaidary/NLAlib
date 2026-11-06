@@ -54,7 +54,29 @@ Proof: `ProbabilityTheory.stdGaussian_eq_map_pi_orthonormalBasis` with the basis
 about 25 lines. -/
 theorem complexGaussian_eq_map_stdGaussian :
     complexGaussian = (stdGaussian ℂ).map fun z => ((√2 : ℝ)⁻¹ : ℂ) * z := by
-  sorry
+  set c : ℝ := (√2)⁻¹ with hc
+  have hc2 : (⟨c ^ 2, sq_nonneg c⟩ : NNReal) * 1 = 2⁻¹ := by
+    rw [mul_one]
+    apply NNReal.eq
+    simp [hc, inv_pow, Real.sq_sqrt]
+    rfl
+  have hν : (gaussianReal 0 1).map (fun x : ℝ => c * x) = gaussianReal 0 2⁻¹ := by
+    rw [gaussianReal_map_const_mul, mul_zero]
+    congr 1
+  have hF : (fun v : Fin 2 → ℝ => ∑ i, v i • Complex.orthonormalBasisOneI i) =
+      (fun p : ℝ × ℝ => (p.1 : ℂ) + (p.2 : ℂ) * Complex.I) ∘ MeasurableEquiv.finTwoArrow := by
+    ext v
+    simp [Fin.sum_univ_two, Complex.orthonormalBasisOneI]
+  have hpi := (measurePreserving_finTwoArrow (gaussianReal 0 1)).map_eq
+  rw [stdGaussian_eq_map_pi_orthonormalBasis Complex.orthonormalBasisOneI,
+    Measure.map_map (by fun_prop) (by fun_prop), hF, ← Function.comp_assoc,
+    ← Measure.map_map (by fun_prop) (by fun_prop), hpi, complexGaussian, ← hν,
+    Measure.map_prod_map _ _ (by fun_prop) (by fun_prop),
+    Measure.map_map (by fun_prop) (by fun_prop)]
+  congr 1
+  funext p
+  rw [← Complex.ofReal_inv, ← hc]
+  apply Complex.ext <;> simp
 
 /-- **A complex Gaussian matrix is a real Gaussian matrix in disguise**: the standard complex
 Gaussian law on $m \times n$ matrices is the law of $(\mathbf{G}_1 + i\mathbf{G}_2)/\sqrt2$,
