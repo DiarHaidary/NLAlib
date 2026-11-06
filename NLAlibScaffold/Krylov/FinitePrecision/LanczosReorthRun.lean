@@ -1258,6 +1258,56 @@ theorem frobNorm_residual_le (hη : L.η₀ ≤ 1 / 100)
     positivity
   nlinarith [frobNorm_nonneg L.toLanczosData.residual]
 
+/-- Conjugation by a nearly orthonormal basis: $\|\mathbf{V}^{\mathsf T}\mathbf{H}\mathbf{V}\|_2
+\le \tfrac{103}{100}\|\mathbf{H}\|_2$ when $\|\mathbf{V}\|_2 \le 101/100$. -/
+private lemma specNorm_conjTranspose_mul_mul_le_of_specNorm_le {m p : ℕ}
+    (V : Matrix (Fin m) (Fin p) ℝ) (H : Matrix (Fin m) (Fin m) ℝ)
+    (hVs : specNorm V ≤ 101 / 100) :
+    specNorm (Vᵀ * H * V) ≤ 103 / 100 * specNorm H := by
+  have h1 := specNorm_mul_le (Vᵀ * H) V
+  have h2 := specNorm_mul_le Vᵀ H
+  rw [specNorm_transpose] at h2
+  have h5 : specNorm (Vᵀ * H) * specNorm V ≤ (specNorm V * specNorm H) * specNorm V :=
+    mul_le_mul_of_nonneg_right h2 (specNorm_nonneg _)
+  have h6 : specNorm V * specNorm V ≤ 101 / 100 * (101 / 100) :=
+    mul_self_le_mul_self (specNorm_nonneg _) hVs
+  have h7 : specNorm V * specNorm H * specNorm V =
+      (specNorm V * specNorm V) * specNorm H := by ring
+  have h8 := mul_le_mul_of_nonneg_right h6 (specNorm_nonneg H)
+  linarith [specNorm_nonneg H]
+
+
+/-- The rank-one term of the relation: $\|\mathbf{V}_k^{\mathsf T}(\beta_k\mathbf{v}_{k+1})
+\mathbf{e}^{\mathsf T}\|_2 \le \tfrac32\|\mathbf{H}\|_2\,\mathrm{rec}$. -/
+private lemma specNorm_transpose_mul_vecMulVec_le (hη : L.η₀ ≤ 1 / 100)
+    (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
+    (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1)
+    (hG : specNorm (L.toLanczosData.basisᵀ * L.toLanczosData.basis - 1) ≤
+      Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel) :
+    specNorm (L.toLanczosData.basisᵀ * Matrix.vecMulVec (L.β k • L.v (k + 1))
+      (Pi.single L.toLanczosData.lastIndex 1)) ≤ 3 / 2 * specNorm L.H * L.recLevel := by
+  have hrμ : L.orthLevel ≤ L.recLevel := by
+    unfold recLevel
+    linarith [L.ε_nonneg, L.ε₂_nonneg]
+  have hh := specNorm_nonneg L.H
+  obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by have := L.k_pos; omega⟩
+  have hμv := norm_transpose_mulVec_v_le L (j := j) (by omega) (hG.trans hsmall) hη
+  have hβ := (coeff_le L hη hsmall hrec hτ j (by omega)).2.1
+  have hβ0 : 0 ≤ L.β (j + 1) := by
+    have := abs_le.mp (L.abs_β_sub_le j (by omega))
+    nlinarith [norm_nonneg (WithLp.toLp 2 (L.z' (j + 1))), L.ε_le, L.ε_nonneg,
+      mul_le_mul_of_nonneg_right L.ε_le (norm_nonneg (WithLp.toLp 2 (L.z' (j + 1))))]
+  have he : ‖WithLp.toLp 2 (Pi.single L.toLanczosData.lastIndex (1 : ℝ) :
+      Fin (j + 1) → ℝ)‖ = 1 := by
+    simp
+  rw [Matrix.mul_vecMulVec, specNorm_vecMulVec, Matrix.mulVec_smul, WithLp.toLp_smul,
+    norm_smul, he, Real.norm_eq_abs, abs_of_nonneg hβ0]
+  have hh := specNorm_nonneg L.H
+  have hμv' : ‖WithLp.toLp 2 (L.toLanczosData.basisᵀ *ᵥ L.v (j + 1 + 1))‖ ≤ L.orthLevel := hμv
+  have hq := mul_le_mul hβ hμv' (norm_nonneg _) (by positivity)
+  nlinarith [mul_le_mul_of_nonneg_left hrμ hh]
+
+
 /-- **The projection form** (D7, S1′): $\|\mathbf{V}_k^{\mathsf{T}}\mathbf{H}\mathbf{V}_k -
 \mathbf{T}_k\|_2 \le 50(k+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{H}\|_2$.
 [Simon1984b] (semi-orthogonality suffices).
@@ -1276,7 +1326,81 @@ theorem specNorm_transpose_mul_mul_sub_tridiagonal_le (hη : L.η₀ ≤ 1 / 100
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
     specNorm (L.toLanczosData.basisᵀ * L.H * L.toLanczosData.basis -
       L.toLanczosData.tridiagonal) ≤ 50 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H := by
-  sorry
+  have hμ : 0 ≤ L.orthLevel := by
+    unfold orthLevel
+    linarith [L.ε₁_nonneg, L.ε_nonneg, div_nonneg L.ε₃_nonneg L.τ_pos.le]
+  have hr0 : 0 ≤ L.recLevel := by
+    unfold recLevel
+    linarith [L.ε_nonneg, L.ε₂_nonneg]
+  have hrμ : L.orthLevel ≤ L.recLevel := by
+    unfold recLevel
+    linarith [L.ε_nonneg, L.ε₂_nonneg]
+  have hg1 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ 1 / 100 := hsmall.trans hη
+  have hs : Real.sqrt (3 * ((k : ℝ) + 1)) ≤ 2 * ((k : ℝ) + 1) :=
+    Real.sqrt_le_iff.mpr ⟨by positivity, by nlinarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)]⟩
+  have hG : specNorm (L.toLanczosData.basisᵀ * L.toLanczosData.basis - 1) ≤
+      Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by
+    refine (specNorm_le_frobNorm _).trans
+      ((frobNorm_gram_sub_one_le L hη hsmall k (by omega)).trans ?_)
+    exact mul_le_mul_of_nonneg_right
+      (Real.sqrt_le_sqrt (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])) hμ
+  have hVs : specNorm L.toLanczosData.basis ≤ 101 / 100 := by
+    refine (specNorm_le_sqrt_of_specNorm_gram_sub_one_le (hG.trans hg1)).trans ?_
+    rw [Real.sqrt_le_iff]
+    constructor
+    · norm_num
+    · norm_num
+  have hA := specNorm_transpose_mul_vecMulVec_le L hη hsmall hrec hτ hG
+  set V := L.toLanczosData.basis with hVd
+  set T := L.toLanczosData.tridiagonal with hTd
+  set F := L.toLanczosData.residual with hFd
+  set E := Matrix.vecMulVec (L.β k • L.v (k + 1)) (Pi.single L.toLanczosData.lastIndex 1) with hEd
+  have hmb : L.H * V = V * T + E + F := L.toLanczosData.mul_basis
+  have hid : Vᵀ * L.H * V - T = (Vᵀ * V - 1) * T + Vᵀ * E + Vᵀ * F := by
+    rw [Matrix.mul_assoc, hmb]
+    simp only [Matrix.mul_add, Matrix.sub_mul, Matrix.one_mul, ← Matrix.mul_assoc]
+    abel
+  have hM : specNorm (Vᵀ * L.H * V - T) ≤
+      Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm T + specNorm (Vᵀ * E) +
+        specNorm (Vᵀ * F) := by
+    rw [hid]
+    have h1 := specNorm_add_le ((Vᵀ * V - 1) * T + Vᵀ * E) (Vᵀ * F)
+    have h2 := specNorm_add_le ((Vᵀ * V - 1) * T) (Vᵀ * E)
+    have h3 := specNorm_mul_le (Vᵀ * V - 1) T
+    have h4 := mul_le_mul_of_nonneg_right hG (specNorm_nonneg T)
+    linarith
+  have hT : specNorm T ≤ specNorm (Vᵀ * L.H * V) + specNorm (Vᵀ * L.H * V - T) := by
+    have := specNorm_sub_le (Vᵀ * L.H * V) (Vᵀ * L.H * V - T)
+    rwa [sub_sub_cancel] at this
+  have hVH := specNorm_conjTranspose_mul_mul_le_of_specNorm_le L.toLanczosData.basis L.H hVs
+  have hB : specNorm (Vᵀ * F) ≤ 101 / 100 * (30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H) := by
+    have h1 := specNorm_mul_le Vᵀ F
+    rw [specNorm_transpose] at h1
+    have h2 := specNorm_le_frobNorm F
+    have h3 := frobNorm_residual_le L hη hsmall hrec hτ
+    have h4 : specNorm F ≤ 30 * ((k : ℝ) + 1) * L.recLevel * specNorm L.H := h2.trans h3
+    exact h1.trans (mul_le_mul hVs h4 (specNorm_nonneg _) (by norm_num))
+  have hg0 : 0 ≤ Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel := by positivity
+  have hg2 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ 2 * ((k : ℝ) + 1) * L.recLevel := by
+    calc _ ≤ 2 * ((k : ℝ) + 1) * L.orthLevel := mul_le_mul_of_nonneg_right hs hμ
+      _ ≤ 2 * ((k : ℝ) + 1) * L.recLevel := mul_le_mul_of_nonneg_left hrμ (by positivity)
+  have hK : (1 : ℝ) ≤ (k : ℝ) + 1 := by
+    have := (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
+    linarith
+  have p1 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm T ≤
+      Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm (Vᵀ * L.H * V) +
+        Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm (Vᵀ * L.H * V - T) := by
+    rw [← mul_add]
+    exact mul_le_mul_of_nonneg_left hT hg0
+  have p2 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm (Vᵀ * L.H * V - T) ≤
+      1 / 100 * specNorm (Vᵀ * L.H * V - T) :=
+    mul_le_mul_of_nonneg_right hg1 (specNorm_nonneg _)
+  have p3 : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel * specNorm (Vᵀ * L.H * V) ≤
+      2 * ((k : ℝ) + 1) * L.recLevel * (103 / 100 * specNorm L.H) :=
+    mul_le_mul hg2 hVH (specNorm_nonneg _) (by positivity)
+  have p4 : specNorm L.H * L.recLevel ≤ ((k : ℝ) + 1) * (specNorm L.H * L.recLevel) :=
+    le_mul_of_one_le_left (mul_nonneg (specNorm_nonneg _) hr0) hK
+  nlinarith [specNorm_nonneg (Vᵀ * L.H * V - T), specNorm_nonneg L.H, hr0]
 
 /-- **Full reorthogonalization stops by step $n$** (D8): the admissible prefix has
 $k + 1 \le n$ (strict admissibility makes $\mathbf{v}_{k+1}$ a genuine column). No printed
