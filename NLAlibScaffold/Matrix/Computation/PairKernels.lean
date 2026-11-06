@@ -188,7 +188,37 @@ theorem exists_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st 
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (m * n) ≤ len) :
     ∃ st', exec I (zneg (ι := ι) p (.const m) (.const n) X xo Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYs, hlen⟩ := hY
+  have hX : ∀ k < 2 * (m * n), ∃ v, st.store.read p X (xo.eval + k) = some v := by
+    intro k hk
+    have hm : 0 < m := Nat.pos_of_ne_zero (by rintro rfl; simp at hk)
+    have e : 2 * (k / 2 % m + m * (k / 2 / m)) + k % 2 = k := by rw [Nat.mod_add_div]; omega
+    exact ⟨_, e ▸ hA ⟨_, Nat.mod_lt _ hm⟩ ⟨_, Nat.div_lt_of_lt_mul (by omega)⟩
+      ⟨_, Nat.mod_lt _ two_pos⟩⟩
+  have hrun : (zneg (ι := ι) p (.const m) (.const n) X xo Y yo).run = .seq (.named "zneg"
+      [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.un p .neg ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall I
+    (fun w s => s.store.shape = st.store.shape ∧ ∀ k < 2 * (m * n), w ≤ k →
+      s.store.read p X (xo.eval + k) = st.store.read p X (xo.eval + k))
+    ⟨rfl, fun _ _ _ => rfl⟩ ?_).imp fun _ h => h.1
+  rintro w hw s ⟨hsh, hs⟩
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  obtain ⟨v, hv⟩ := hX w hw
+  obtain ⟨z, hz, -⟩ := hsem.neg p v
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape z (hsh ▸ hYs)
+    (i := yo.eval + w) (by omega)
+  refine ⟨_, (exec_seq_instr_un I (by exact (hs w hw le_rfl).trans hv) hz hs').trans
+    (exec_skip I _), (Store.shape_of_write_eq_some hs').trans hsh, fun k hk hwk => ?_⟩
+  refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans (hs k hk (by omega))
+  rcases hXY with hXY | ⟨rfl, he⟩
+  · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hXY
+    by_cases hb : X = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hb
+  · exact Or.inr (by omega)
 
 /-- **`zmirror` completes a stored Hermitian matrix**: if the block at `Y` holds the parts of the
 entries $b_{ij}$, $i \le j$, of a complex $n \times n$ matrix $\mathbf{B}$ whose diagonal
