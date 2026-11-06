@@ -87,7 +87,9 @@ theorem IsOrthErr.mono {η₀ ε₁ ε₂ ε₃ η₀' ε₁' ε₂' ε₃' : �
     {w : Fin n → ℝ} {h : Fin j → ℝ} {w' : Fin n → ℝ} (hO : IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w')
     (hη : η₀' ≤ η₀) (h₁ : ε₁ ≤ ε₁') (h₂ : ε₂ ≤ ε₂') (h₃ : ε₃ ≤ ε₃') :
     IsOrthErr η₀' ε₁' ε₂' ε₃' V w h w' := by
-  sorry
+  refine ⟨fun hV => ?_, fun hV => ?_⟩
+  · exact (hO.residual (hV.trans hη)).trans (mul_le_mul_of_nonneg_right h₂ (norm_nonneg _))
+  · exact (hO.orth (hV.trans hη)).trans (by gcongr)
 
 /-- **The coefficients of an orthogonalization step are small when the input is nearly
 orthogonal** (B4): under `NLAlib.IsOrthErr` with $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} -
