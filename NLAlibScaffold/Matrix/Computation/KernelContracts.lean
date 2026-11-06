@@ -222,6 +222,22 @@ theorem IsQRKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι}
     I.kcallStore o p [m, n] [a] [q, r] s =
       (s.writeBlock p q.1 q.2 (L.toArray (qr (L.toMatrix m n X)).1)).bind fun s' =>
         s'.writeBlock p r.1 r.2 (L.toArray (qr (L.toMatrix m n X)).2) := by
-  sorry
+  obtain ⟨hk, hs⟩ := h
+  unfold Interp.kcallStore
+  simp only [hs, qrShape, kcallBlocks, List.zipWith]
+  rw [if_pos ⟨rfl, rfl, List.pairwise_pair.mpr hqr, by
+    intro x hx y hy
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx hy
+    subst hy
+    rcases hx with rfl | rfl
+    · exact hqa
+    · exact hra⟩]
+  simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hk, liftQR, bind, Option.bind,
+    pure]
+  have key : ∀ o : Option (Store P K), o.bind (fun s' => some s') = o := by
+    intro o
+    cases o <;> rfl
+  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true, key]
+  rfl
 
 end NLAlib.Computation
