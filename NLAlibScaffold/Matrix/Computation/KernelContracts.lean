@@ -44,7 +44,7 @@ variable {K E : Type}
 Proof: `simp [EntryLayout.toArray]` (`Array.size_ofFn`). S, 1 line. -/
 theorem EntryLayout.size_toArray (L : EntryLayout K E) {l m : ℕ}
     (Y : Matrix (Fin l) (Fin m) E) : (L.toArray Y).size = m * l * L.width := by
-  sorry
+  simp [EntryLayout.toArray]
 
 /-- **Packed storage reads back**: for a layout whose `get` inverts its `put`, reading the packed
 storage of an $l \times m$ matrix as an $l \times m$ matrix gives the matrix back. No printed
