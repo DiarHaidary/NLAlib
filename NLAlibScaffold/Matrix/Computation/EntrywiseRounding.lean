@@ -166,7 +166,13 @@ theorem decodeMatrix_conjTransposeMat (hM : M.IsAccurate dec u τ Ω μM μQ cN)
 Proof: `Matrix.ext`, `dec_one`, `dec_zero`, `Matrix.one_apply`. S, about 5 lines. -/
 theorem decodeMatrix_identityMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) (k : ℕ) :
     decodeMatrix dec (M.identityMat k) = 1 := by
-  sorry
+  ext i j : 2
+  by_cases h : i = j
+  · subst h
+    simp [decodeMatrix, FloatMachine.identityMat, decodeComplex, hM.dec_one, hM.dec_zero]
+    all_goals apply Complex.ext <;> simp [hM.dec_one, hM.dec_zero]
+  · simp [decodeMatrix, FloatMachine.identityMat, decodeComplex, hM.dec_zero, h]
+    all_goals apply Complex.ext <;> simp [hM.dec_zero]
 
 /-- **Error of the stored shift**: under `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, for a
 stored $\mathbf{X}$ with Hermitian decoding $\bar{\mathbf{X}}$ and a stored $c$ with
