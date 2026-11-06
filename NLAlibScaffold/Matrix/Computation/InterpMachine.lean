@@ -111,6 +111,10 @@ end NLAlib.Computation
 
 namespace NLAlib
 
+private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 0 ≤ τ)
+    (h : IsRoundingOf u τ Ω a z) : IsRoundingOf u' τ Ω a z :=
+  fun ha => (h ha).trans (mul_le_mul_of_nonneg_right huu' (hτ.trans (le_max_right _ _)))
+
 /-- **The machine contract is monotone in the unit roundoff**: a machine meeting
 `NLAlib.FloatMachine.IsAccurate` at unit roundoff $u \ge 0$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
@@ -126,8 +130,37 @@ trapezoidal and orthonormal clauses of `NLAlib.IsQRErr`) are unchanged. S, about
 theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (hu : 0 ≤ u) (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
-    (hcN : 0 ≤ cN) : M.IsAccurate dec u' τ Ω μM μQ cN := by
-  sorry
+    (hcN : 0 ≤ cN) : M.IsAccurate dec u' τ Ω μM μQ cN :=
+  { dec_zero := hM.dec_zero
+    dec_one := hM.dec_one
+    ofNat := fun k => isRoundingOf_mono huu' hτ (hM.ofNat k)
+    add := fun x y => isRoundingOf_mono huu' hτ (hM.add x y)
+    sub := fun x y => isRoundingOf_mono huu' hτ (hM.sub x y)
+    mul := fun x y => isRoundingOf_mono huu' hτ (hM.mul x y)
+    div := fun x y hy => isRoundingOf_mono huu' hτ (hM.div x y hy)
+    dec_neg := hM.dec_neg
+    le_iff := hM.le_iff
+    toNat_eq := hM.toNat_eq
+    isMatMulErr :=
+      { specNorm_mul_sub_le := fun A B hAB =>
+          (hM.isMatMulErr.specNorm_mul_sub_le A B hAB).trans
+            (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left huu' (hμM _))
+              (hτ.trans (le_max_right _ _)))
+        isHermitian_of_map_eq_conjTranspose :=
+          hM.isMatMulErr.isHermitian_of_map_eq_conjTranspose }
+    isQRErr := fun A hA =>
+      let h := hM.isQRErr A hA
+      ⟨h.1, h.2.choose, h.2.choose_spec.1,
+        h.2.choose_spec.2.1.trans (mul_le_mul_of_nonneg_left huu' (hμQ _)),
+        h.2.choose_spec.2.2.trans (mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_left huu' (hμQ _)) (hτ.trans (le_max_right _ _)))⟩
+    isUnifSampler := fun s v hs hv =>
+      ⟨(hM.isUnifSampler s v hs hv).1,
+        (hM.isUnifSampler s v hs hv).2.trans
+          (mul_le_mul_of_nonneg_right huu' (hτ.trans (le_max_right _ _)))⟩
+    isNormalSampler := fun z hz =>
+      (hM.isNormalSampler z hz).trans (mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_left huu' hcN) (hτ.trans (le_max_right _ _))) }
 
 end NLAlib
 
