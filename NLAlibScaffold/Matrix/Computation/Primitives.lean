@@ -206,6 +206,13 @@ theorem IsMatMulErr.of_specNorm_mul_sub_le_add {K 𝕜 : Type*} [RCLike 𝕜] {d
       B.map dec = (A.map dec)ᴴ → ((mm A B).map dec).IsHermitian)
     (hμu : ∀ d, 0 ≤ μ d * u) (hη : ∀ d, η ≤ μ d * u * τ) :
     IsMatMulErr dec u τ Ω (fun d => 2 * μ d) mm := by
-  sorry
+  refine ⟨fun {l m n} A B hΩ => ?_, fun {m n} A B hB => hherm A B hB⟩
+  have h1 := hmix A B hΩ
+  have hx := mul_le_mul_of_nonneg_left
+    (le_max_left (specNorm (A.map dec) * specNorm (B.map dec)) τ) (hμu (max l (max m n)))
+  have hτ := mul_le_mul_of_nonneg_left
+    (le_max_right (specNorm (A.map dec) * specNorm (B.map dec)) τ) (hμu (max l (max m n)))
+  have hη' := hη (max l (max m n))
+  linarith
 
 end NLAlib
