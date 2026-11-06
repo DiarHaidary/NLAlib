@@ -333,7 +333,8 @@ theorem decodeMatrix_subParts_toFloatMachine_exactSem (p : P) {m n : ℕ}
     let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
     decodeMatrix id (Matrix.of fun i j => (M.sub (A i j).1 (B i j).1, M.sub (A i j).2 (B i j).2)) =
       decodeMatrix id A - decodeMatrix id B := by
-  sorry
+  ext i j
+  apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]
 
 /-- **The exact real scaling**: on exact real arithmetic, multiplying both parts of every entry of
 a stored matrix with decoding $\mathbf{A}$ by a stored real $a$ decodes to $a\mathbf{A}$. No
