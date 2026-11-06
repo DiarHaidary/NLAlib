@@ -351,6 +351,8 @@ public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Computation.BLASNegAxpy
 public import NLAlib.Matrix.Computation.ClassicalGramSchmidt
+public import NLAlib.Matrix.Computation.ClassicalGramSchmidtProgram
+public import NLAlib.Matrix.Computation.ClassicalGramSchmidtRoundingError
 public import NLAlib.Matrix.Computation.KernelContracts
 public import NLAlib.Matrix.Computation.MatvecRoutine
 public import NLAlib.Matrix.Computation.OrthRoutine
