@@ -40,8 +40,8 @@ n$ matrix. For $t \ge 0$ and $x > 0$ put
 $$\bar m = (\|\mathbf{S}\|_2 + 2)\|\mathbf{S}^{-1}\|_2\,\frac{\sqrt2\,(2\sqrt n + t)}{x} \,.$$
 If $\bar m\beta \le 1/5$,
 $(4\mu_{\mathrm{QR}}(n) + 2\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u
-\le \beta$, $\tau \le \|\mathbf{S}\|_2 x$ and $2(\|\mathbf{S}\|_2 + 1)\sqrt2(2\sqrt n + t) \le
-\Omega$, then
+\le \beta$, $\tau \le \|\mathbf{S}\|_2 x$, $\sqrt n\,\tau \le x$ and $2(\|\mathbf{S}\|_2 +
+1)\sqrt2(2\sqrt n + t) \le \Omega$, then
 $$\mathbb{P}\bigl[\text{no unitary } \mathbf{W} \text{ has }
 \|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6\bar m\beta\bigr]
 \le 2e^{-t^2/2} + r^2x^2 \,,$$
@@ -67,7 +67,8 @@ theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_
     {A' : Matrix (Fin n) (Fin n) (F × F)} (hA : A = U * S * Vᴴ)
     (hβ : specNorm (A - decodeMatrix dec A') ≤ β) (hβ₁ : β ≤ 1) (ht : 0 ≤ t) (hx : 0 < x)
     (hmβ : (specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x * β ≤ 1 / 5)
-    (hu : (4 * μQ n + 2 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β) (hτ : τ ≤ specNorm S * x)
+    (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β) (hτ : τ ≤ specNorm S * x)
+    (hτN : τ * √(n : ℝ) ≤ x)
     (hΩ : 2 * (specNorm S + 1) * (√2 * (2 * √(n : ℝ) + t)) ≤ Ω)
     {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {G : Ω' → Matrix (Fin n) (Fin n) ℂ}
     (hG : HasLaw G (complexGaussianMatrix (Fin n) (Fin n)) μ) :

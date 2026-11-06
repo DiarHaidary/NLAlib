@@ -76,7 +76,7 @@ theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub
       (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
         w / (4 * dec y.R) * dec β)
     (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
     (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
     (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
     (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
@@ -118,9 +118,9 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
     (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
       (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
         w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 2 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
+    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
     (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
     (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
     {smp : EighSample ℝ ℂ N}
     (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w (√(ρ / 2) / y.k)
@@ -138,10 +138,10 @@ $0 < w \le R$, the stored accuracy $\beta$ with $0 < \beta \le$ `NLAlib.bisectio
 $\varepsilon$ $\rho$ $\ell$, and $N_y = N(w/(8R), \beta/(16k))$ (`NLAlib.newtonSchulzSteps`).
 Suppose
 $$640\,k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_y + 1)\,u \le \frac{w}{4R}\,\beta \,, \qquad
-(4\mu_{\mathrm{QR}}(k) + 2\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)\,u \le \beta
+(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)\,u \le \beta
 \,,$$
 the sign step limit is at least $N_y$, $0 \le \tau$,
-$4k\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and
+$4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and
 $16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$; that, when $k \ge 2$ and the
 machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ fails, the
 node's sample satisfies `NLAlib.IsEighGoodSample` with $w$, $x = \sqrt{\rho/2}/k$ and
@@ -179,9 +179,9 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGo
     (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
       (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
         w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 2 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
+    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
     (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
     (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
     {f : ℕ} {s : List Bool → EighSample ℝ ℂ N}
     (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w (√(ρ / 2) / y.k)
@@ -276,9 +276,9 @@ $$0 < \beta \le \frac{\varepsilon\sqrt\theta}{2880\,\ell\, n^{3/2}\bigl(2\sqrt n
 \sqrt{2\log(16n/\theta)}\bigr)} \,, \qquad
 N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac{\beta}{16n}\Bigr) \,.$$
 Suppose $640\,n^{3/2}(8 + \mu_{\mathrm{MM}}(n))(N_* + 1)\cdot16n(n+1)\ell(\ell+1)\,u \le
-\theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 2\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
+\theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
 \le \beta$, the sign step limit is at least $N_*$, $0 \le \tau$,
-$4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$ and
+$4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$ and
 $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$. If every internal node $y$ (size at
 least $2$, and the machine's test $R_y \le \mathrm{fl}(\varepsilon_y R_0)$ fails) of the tree of
 `NLAlib.eighNodeAt` has a good sample (`NLAlib.IsEighGoodSample` with $w_y = \theta
@@ -315,9 +315,9 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoo
     (hN : Nst = newtonSchulzSteps (θ / (32 * n * (n + 1) * ℓ * (ℓ + 1))) (dec β / (16 * n)))
     (husign : 640 * n * √(n : ℝ) * (8 + μM n) * (Nst + 1) * (16 * n * (n + 1) * ℓ * (ℓ + 1)) *
       u ≤ θ * dec β)
-    (hudefl : (4 * μQ n + 2 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
+    (hudefl : (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {s : List Bool → EighSample ℝ ℂ n}
     (hgood : ∀ (a : List Bool) (y : EighNode F),
       eighNodeAt M n signFuel R₀ β a ⟨n, A, R₀, ε, ℓ⟩ s = some y → 2 ≤ y.k →

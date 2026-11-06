@@ -10,6 +10,7 @@ public import NLAlibScaffold.Matrix.Computation.SpectralBisection
 public import NLAlibScaffold.Probability.AdaptiveUnionBound
 public import Mathlib.Probability.ConditionalProbability
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+public import NLAlib.Computation.BinaryFloat
 
 /-!
 # Hermitian diagonalization in linear precision (scaffold)
@@ -40,6 +41,9 @@ probability argument needs about the algorithm's measurability.
 * `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le`: Theorem 4.2.
 * `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`:
   its bit count.
+*
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le`:
+  the bounded format, with $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits.
 -/
 
 @[expose] public section
@@ -107,9 +111,9 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
     (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
       (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
         w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 2 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
+    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
     (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
     (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω) :
     eighSampleLaw N {s | ¬ IsEighGoodSample dec w (√(ρ / 2) / y.k)
       (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y s} ≤
@@ -189,9 +193,9 @@ precomputed accuracy $$0 < \beta \le \frac{\varepsilon\sqrt\theta}{2880\,\ell\, 
 n + \sqrt{2\log(16n/\theta)}\bigr)} \,, \qquad
 N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac{\beta}{16n}\Bigr) \,.$$
 If $640\,n^{3/2}(8 + \mu_{\mathrm{MM}}(n))(N_* + 1)\cdot16n(n+1)\ell(\ell+1)\,u \le
-\theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 2\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
+\theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
 \le \beta$, the sign step limit is at least $N_*$, $0 \le \tau$,
-$4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$,
+$4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$,
 $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$, and the node samples $\zeta_a$ are
 independent, each of law `NLAlib.eighSampleLaw` $n$, then
 $$\mathbb{P}\bigl[\mathsf{eigh}(\mathbf{A}, \varepsilon, \theta) \text{ is not an approximate
@@ -230,9 +234,9 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
     (hN : Nst = newtonSchulzSteps (θ / (32 * n * (n + 1) * ℓ * (ℓ + 1))) (dec β / (16 * n)))
     (husign : 640 * n * √(n : ℝ) * (8 + μM n) * (Nst + 1) * (16 * n * (n + 1) * ℓ * (ℓ + 1)) *
       u ≤ θ * dec β)
-    (hudefl : (4 * μQ n + 2 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
+    (hudefl : (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
@@ -248,7 +252,7 @@ precision conditions replaced by $u > 0$, the accuracy within a factor $2$ of it
 $\beta_* /2 \le \beta \le \beta_*$ ($\beta_*$ the right side of that bound), and
 $$\begin{aligned}\log_2\frac1u \ge{}& \log_2\frac1\varepsilon + \frac32\log_2\frac1\theta +
 \log_2\Bigl(n^4(n + 1)(8 + \mu_{\mathrm{MM}}(n)) + n^{3/2}\bigl(4\mu_{\mathrm{QR}}(n) +
-2\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1\bigr)\Bigr) \\
+4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1\bigr)\Bigr) \\
 &+ \log_2(N_* + 1) + 3\log_2(\ell + 1) +
 \log_2\bigl(2\sqrt n + \sqrt{2\log(16n/\theta)}\bigr) + 26 \,,\end{aligned}$$
 the failure probability is at most $\theta$. Since $\ell = O(\log(1/\varepsilon))$ and
@@ -285,15 +289,71 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
     (hu : 0 < u)
     (hbits : Real.logb 2 (dec ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
       Real.logb 2 (n ^ 4 * (n + 1) * (8 + μM n) +
-        n * √(n : ℝ) * (4 * μQ n + 2 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1)) +
+        n * √(n : ℝ) * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1)) +
       Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
       Real.logb 2 (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) + 26 ≤ Real.logb 2 u⁻¹)
     {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
+    μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix dec A)
+      (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
+      (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
+      (dec ε / 3)} ≤ θ := by
+  sorry
+
+/-- **Hermitian diagonalization in a bounded binary format: $\log_2\log_2(n/(\varepsilon\theta)) +
+O(1)$ exponent bits suffice** (Theorem 4.2 for a finite exponent range): let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $u = 2^{-p}$, floor $2^{e_{\min} + p - 1}$ (the smallest
+normal number) and range the largest finite number of a binary format with $E \ge 2$ exponent
+bits, precision $p$ and smallest exponent $e_{\min}$ (as
+`NLAlib.exists_floatMachine_isAccurate_binaryFloatRound` provides), with the other hypotheses of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`, the
+input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the precision condition
+there with $\log_2(1/u) = p$, and
+$$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^2}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
+Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
+$\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
+("$\lg\lg(n/\varepsilon) + O(1)$ bits to store the exponent"), with the $\theta$ it omits.
+Proof: for a binary format, $e_{\min} + p - 1 = 2 - 2^{E - 1}$ and the largest finite number is
+at least $2^{2^{E-1} - 1}$ (`Float.Model.Format.minExponent_eq`, the bias $2^{E-1} - 1$,
+`Float.Model.Format.maxFinite`); the exponent condition gives $2^{E-1} \ge \log_2 L + 2$ for the
+displayed $L$, hence floor $\le 1/L \le \varepsilon\theta/(24n^2)$, which implies the floor
+hypothesis $4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, and range
+$\ge 2L \ge 16(R_0 + n + \ell + \sqrt{\log(16n/\theta)})$; then apply
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`. M,
+about 70 lines. -/
+theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le
+    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} (fmt : Float.Model.Format)
+    (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ cN)
+    (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
+    (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
+    (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
+    (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
+    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
+    {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀)
+    (hR₀half : 1 / 2 ≤ dec R₀) (hR₀one : dec R₀ ≤ 1) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
+    (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ} (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
+    (hβle : dec β ≤ dec ε * √θ / (2880 * ℓ * n * √(n : ℝ) *
+      (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)))))
+    (hβge : dec ε * √θ / (2880 * ℓ * n * √(n : ℝ) *
+      (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ)))) / 2 ≤ dec β)
+    {Nst : ℝ}
+    (hN : Nst = newtonSchulzSteps (θ / (32 * n * (n + 1) * ℓ * (ℓ + 1))) (dec β / (16 * n)))
+    (hbits : Real.logb 2 (dec ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
+      Real.logb 2 (n ^ 4 * (n + 1) * (8 + μM n) +
+        n * √(n : ℝ) * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1)) +
+      Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
+      Real.logb 2 (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) + 26 ≤ fmt.mantissaBits)
+    (hexp : Real.logb 2 (Real.logb 2 (1536 * (n + ℓ + 2) ^ 2 / (dec ε * θ)) + 2) + 1 ≤
+      fmt.exponentBits)
+    {signFuel : ℕ} (hfuel : Nst ≤ signFuel) {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
+    {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n} (hind : iIndepFun ζ μ)
+    (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
     μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix dec A)
       (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)

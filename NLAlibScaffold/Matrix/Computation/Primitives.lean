@@ -7,6 +7,8 @@ module
 
 public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Factorizations.QR
+public import NLAlib.Computation.BinaryFloat
+public import NLAlibScaffold.Matrix.Computation.EntrywiseRounding
 
 /-!
 # The machine contract is satisfiable, and a bridge for products (scaffold)
@@ -22,6 +24,7 @@ item (b)).
 ## Main results
 
 * `NLAlib.exists_floatMachine_isAccurate`: the exact machine.
+* `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound`: a bounded-format machine.
 * `NLAlib.IsMatMulErr.of_specNorm_mul_sub_le_add`: from a mixed bound to the floor form.
 -/
 
@@ -46,6 +49,34 @@ $\lvert sv \rvert \le s$ for $v \in [-1, 1]$, `Matrix.isHermitian_mul_conjTransp
 theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (hμM : ∀ d, 0 ≤ μM d)
     (hμQ : ∀ d, 0 ≤ μQ d) {cN : ℝ} (hcN : 0 ≤ cN) :
     ∃ M : FloatMachine ℝ ℝ ℂ, M.IsAccurate id 0 τ Ω μM μQ cN := by
+  sorry
+
+/-- **A bounded-format machine meets the contract**: for a binary format `fmt` with precision
+$p$, smallest exponent $e_{\min}$ and largest finite number $\Omega$, and nonnegative constants,
+there is a `NLAlib.FloatMachine` on stored reals whose addition, subtraction, multiplication,
+division by a nonzero and conversion round the exact result to `fmt`
+(`NLAlib.Computation.binaryFloatRound`, gradual underflow), meeting
+`NLAlib.FloatMachine.IsAccurate` with the identity decoding, $u = 2^{-p}$, floor
+$\tau = 2^{e_{\min} + p - 1}$, range $\Omega$ and $c_{\mathrm N} = \sqrt2$: the uniform sampler
+clamps the rounded $sv$ to $[-s, s]$, the normal sampler rounds both parts, and the black boxes
+are exact. The bounded model is therefore an instance of the contract, not a separate one. No
+printed source.
+Proof: as `NLAlib.exists_floatMachine_isAccurate`, with `NLAlib.isRoundingOf_binaryFloatRound` for
+each scalar operation (`binaryFloatRound` of $0$ and $1$ are exact:
+`NLAlib.Computation.binaryFloatRound_zero`, `NLAlib.Computation.binaryFloatRound_eq_self`); the
+clamped uniform sample is at least as close to $sv \in [-s, s]$; for the normal sampler
+$\max(\lvert\operatorname{Re}\rvert, \tau)^2 + \max(\lvert\operatorname{Im}\rvert, \tau)^2 \le
+2\max(\lvert z\rvert, \tau)^2$. M, about 70 lines. -/
+theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) {μM μQ : ℕ → ℝ}
+    (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d) :
+    ∃ M : FloatMachine ℝ ℝ ℂ,
+      M.IsAccurate id ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+        ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ √2 ∧
+      (∀ x y, M.add x y = Computation.binaryFloatRound fmt r (x + y)) ∧
+      (∀ x y, M.sub x y = Computation.binaryFloatRound fmt r (x - y)) ∧
+      (∀ x y, M.mul x y = Computation.binaryFloatRound fmt r (x * y)) ∧
+      (∀ x y, y ≠ 0 → M.div x y = Computation.binaryFloatRound fmt r (x / y)) := by
   sorry
 
 /-- **From a mixed absolute–relative product bound to the contract with a floor**: if a routine

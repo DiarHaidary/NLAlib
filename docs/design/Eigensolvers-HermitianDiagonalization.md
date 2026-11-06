@@ -9,10 +9,13 @@ maintainer comments on OQ2, OQ3, OQ7 and COMPDYN §8.2): every algorithm is writ
 over a `FloatMachine` (§2.0), with every scalar parameter computed by the machine, one rounding
 per primitive operation, componentwise IEEE complex rounding, the rank conversion
 $\lfloor\mathrm{fl}(t + 1/2)\rfloor_+$ clamped by $k$, $\beta$ and $\ell$ as precomputed
-thresholds, the exact machine as the satisfiability witness, and §15 on a deep-embedded version;
-61 statements. Branch
+thresholds, the exact machine as the satisfiability witness, and §15 on a deep-embedded version.
+Bounded model now (fourth commit, after rebasing onto `origin/main` a08339af, which has Codex's
+`AbsRelErr`, `binaryFloatRound`, `binaryFloatSem`): the floor/range contracts already are the
+mixed model, the samplers got floors, and three targets make the bounded format an instance and
+prove the exponent-bit count (§12, OQ14); 64 statements. Branch
 `design/hdiag` (worktree `~/nlalib-design-hdiag`, from `origin/main` 4d4e9fc9). Targets:
-`~/nlalib-harness/pilot/hdiag-targets.json` (61 statements).
+`~/nlalib-harness/pilot/hdiag-targets.json` (64 statements).
 Source read in full: R. Shah, *Fast Hermitian Diagonalization with Nearly Optimal Precision*,
 arXiv:2408.09880v1 (LaTeX source; §1.2 model, Proposition 1.1, Definitions 1.1–1.4, §2 Lemmas
 2.1–2.5 and Theorem 2.6, §3 Lemmas 3.1–3.2 and Theorem 3.3, §4 Algorithm 3, Lemma 4.1,
@@ -28,18 +31,18 @@ Matrix-SpectralProjections,Matrix-EigenvectorDeflation}.md`.
 
 Checks on the skeleton (all run on this branch, `LEAN_NUM_THREADS=2`, module targets only):
 `lake build --wfail` of the seven new `NLAlib` modules (definitions only) succeeds;
-`lake build NLAlibScaffold` gives exactly 61 `declaration uses sorry` warnings and nothing else;
+`lake build NLAlibScaffold` gives exactly 64 `declaration uses sorry` warnings and nothing else;
 `scripts/check_rules.py --files` on every touched file (0 errors; one warning, C8 on `Demmel1997`,
 predates this stage), `check_refs.py`, `check_constants.py`, `check_latex.mjs` (KaTeX 0.16.22) and
 both `lake exe mk_all --module --lib NLAlib --check` and `… --lib NLAlibScaffold --check` are
-clean; `bin/check-skeleton --strict` (rule G3): 61 targets, 0 names missing an import, 0
+clean; `bin/check-skeleton --strict` (rule G3): 64 targets, 0 names missing an import, 0
 unresolved. The extraction-based name check (N1–N18) was not run; names for review are in §9.
 
 ## Maintainer decisions already made (2026-11-05)
 
 1. **Arithmetic model: unbounded exponent, pure relative error first**, on main's contract layer,
-   with the bounded-exponent model (Codex's uncommitted `binaryFloatSem`, real only, in progress)
-   a later drop-in. Consequence here: every contract carries a floor $\tau$ (absolute error below
+   with the bounded-exponent model (Codex's `binaryFloatSem`, then uncommitted, since merged in
+   a08339af) a later drop-in — now targeted directly (§12, OQ14). Consequence here: every contract carries a floor $\tau$ (absolute error below
    $\tau$, gradual underflow) and a range $\Omega$ (overflow), $\tau = 0$ and $\Omega$ arbitrary in
    the unbounded model; every theorem carries the range hypotheses it needs, so the bridge (§12)
    rewrites no statement.
@@ -63,8 +66,8 @@ unresolved. The extraction-based name check (N1–N18) was not run; names for re
 | Headline | Theorem 4.2 (EV6): with probability at least $1 - \theta$, $\mathsf{eigh}$ returns $(\mathbf{U}, \mathbf{d})$ with $\|\mathbf{A} - \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}\|_2 \le 2\varepsilon R_0$ and $\sigma_i(\mathbf{U}) \in [1 \pm \varepsilon/3]$, under explicit precision hypotheses; in bits (EV7) $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ |
 | Other results | Lemmas 2.1, 2.3–2.5, Theorem 2.6 (SIGN, SN4), Theorem 3.3 (deterministic DF2, probabilistic DP1), Lemma 4.1 (EB1), Proposition 1.1 (LB3, OQ5); the replacements of Lemmas 2.2 (SG2) and 3.1 (CG6) |
 | Paper gaps found and fixed | G1 the iterates of SIGN and the compressions $\mathbf{C}_\pm$ are treated as Hermitian but MM does not make them so (fixed by rounded Hermitian parts, OQ8); G2 the probability of missing Event I is $nw\ell/R$, not $nw/R$ (factor $\ell$ dropped, OQ9; costs one $\log_2\log_2(1/\varepsilon)$); G3 Proposition 1.1's sign-of-entries argument bounds the Frobenius norm, not the spectral norm (fixed by choosing the sign from $\mathbf{1}^{\mathsf{T}}\mathbf{R}\mathbf{1}$, same conclusion); G4 Lemma 4.1's bound on $\|\mathbf{D}_\pm\|_2$ drops the $R_0$ part of the children's residual (absorbed by the slack $\varepsilon R_0/\ell$). Side condition (not a paper gap): Lemma 2.5 needs $\varepsilon > 0$ and $x_0 \ne 0$ explicitly because $u = 0$ is allowed. Also noted: the paper's depth check compares $R_\ell$ with $\varepsilon$, not $\varepsilon_\ell$; its Lemma 2.5 proof needs $\lvert x_k\rvert \ge 20u$ throughout (NS9) |
-| Statements | 61 sorried: S 19, M 27, L 12, H 3, in 12 scaffold files (§3.11) |
-| Staging | W1 scalar, machine operations, contracts, sign facts (29); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH (15); LB Proposition 1.1 (3); W5 bounded-exponent bridge later (§12) |
+| Statements | 64 sorried: S 19, M 30, L 12, H 3, in 12 scaffold files (§3.11) |
+| Staging | W1 scalar, machine operations, contracts, sign facts (31); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH, with the bounded-format corollary (16); LB Proposition 1.1 (3) |
 | Open questions | 13 (§10), each with a recommendation |
 
 ## 1. Scope
@@ -261,7 +264,10 @@ rounding of `gridSem`). R2: `hermFrom` decodes Hermitian. R3–R5: `negMat`, `co
 \overline{\mathrm{hermScale}}\|_2 \le u(\sqrt k\|\cdot\|_2 + 2k\tau)$; R8 the same with $3u$ for
 `hermAvg` (two roundings per part, $|\bar c| \ge 1$); R9 the rounded trace,
 $2ku(\sum\lvert x_i\rvert + k\tau)$ for $ku \le 1/2$. C1: the exact machine meets
-`IsAccurate` at $u = 0$ (so all hypotheses are consistent). **C3** the bridge (b) of §12.
+`IsAccurate` at $u = 0$ (so all hypotheses are consistent). R1b: `binaryFloatRound` (Codex's
+bounded format, gradual underflow) is an `IsRoundingOf` $2^{-p}$ rounding with floor the smallest
+normal number $2^{e_{\min}+p-1}$ and range the largest finite number; C1b: the machine with those
+scalar operations meets `IsAccurate` (bounded model as an instance). **C3** the bridge (b) of §12.
 
 ### 3.4 Algorithm 1 (SN1–SN4, `Matrix/Computation/NewtonSchulzSign.lean`)
 
@@ -375,7 +381,10 @@ for an accuracy within a factor $2$ of its bound, $\beta_*/2 \le \beta \le \beta
 than the first draft because $\beta$ is now a precomputed threshold, not the exact bound),
 i.e. $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$
 (paper: $n^{4.5}\mu$ and $2\log_2\log_2(1/\varepsilon)$; ours $n^5\mu$ and $3\log_2\ell$, from
-the Hermitian rounding, the stopping test and G2).
+the Hermitian rounding, the stopping test and G2). **EV8**: in a bounded binary format with $E$
+exponent bits, $\log_2(\log_2(1536(n+\ell+2)^2/(\varepsilon\theta)) + 2) + 1 \le E$ suffices
+(input scaled to $R_0 \in [1/2, 1]$): the paper's $\lg\lg(n/\varepsilon) + O(1)$ exponent bits
+as a theorem, with $\theta$.
 
 ### 3.10 Proposition 1.1 (LB1–LB3, `LowerBounds/Eigensolvers/Precision.lean`, OQ5)
 
@@ -422,6 +431,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | R1 | `isRoundingOf_roundNearest` | S | 0 | — |
+| R1b | `isRoundingOf_binaryFloatRound` | M | 0 | — |
 | R2 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom` | S | 0 | — |
 | R3 | `FloatMachine.IsAccurate.decodeMatrix_negMat` | S | 0 | — |
 | R4 | `FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat` | S | 0 | — |
@@ -436,6 +446,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | C1 | `exists_floatMachine_isAccurate` | M | 0 | — |
+| C1b | `exists_floatMachine_isAccurate_binaryFloatRound` | M | 1 | R1b, C1 |
 | C3 | `IsMatMulErr.of_specNorm_mul_sub_le_add` | S | 0 | — |
 
 **Matrix/Computation/NewtonSchulzSign.lean**
@@ -501,6 +512,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | EV5 | `indepFun_eighNodeAt_eq` | H | 2 | EV4 |
 | EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` | L | 10 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
 | EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 11 | EV6 |
+| EV8 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le` | M | 12 | EV7 |
 
 **LowerBounds/Eigensolvers/Precision.lean**
 
@@ -713,7 +725,7 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
 12. **Remaining modelling deviations and staging** — (a) **accept the deviations of §2.3 ($k_-
     = k - k_+$, componentwise test before stepping, step caps, one accuracy for all nodes; the
     exact-scalar-parameter deviation is gone, every scalar parameter is machine-computed) and
-    dispatch HDIAG-1 (W1 + W2 + LB, 36 targets) and HDIAG-2 (W3, 10) now, HDIAG-3 (W4, 15) after
+    dispatch HDIAG-1 (W1 + W2 + LB, 38 targets) and HDIAG-2 (W3, 10) now, HDIAG-3 (W4, 16) after
     a Fable re-check of the H/L outlines** (review items 1–3 applied); (b) approve the sub-stages
     separately.
 13. **The Hermitian-exactness clause of `IsMatMulErr`** — (a) **keep it** (classical gemm with
@@ -722,12 +734,15 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
     diagonal, at an extra $1.21\mu u$ in SN3 (Strassen-type products do not meet the clause, so
     (b) widens the bridge). Fable leans to considering (b) for the bounded bridge; the statements
     change only in SN3's constant.
+14. **Target the bounded-exponent model now?** — (a) **now (done)**: the floor/range contracts
+    are the mixed model, sampler floors added, R1b, C1b, EV8 (§12); (b) a later bridge. (a): the
+    pure-relative case is the $\tau = 0$ instance and the proof routes are unchanged.
 
 ## 11. Deferred, with what each needs
 
 * Operation counts and runtime (Theorem 4.2's flop bound): a cost semantics for shallow
   algorithms or a deep-embedded program (OQ11).
-* The bounded-exponent instance (§12): Codex's model on main and its rounding function.
+* The agreement lemma between the machine of C1b and `binaryFloatSem` on the `safe` set (§12).
 * Implementations meeting `IsMatMulErr`/`IsQRErr`: classical $O(n^3)$ complex gemm and Householder
   QR in finite precision (complex decodings in the contract layer, OQ2(b)); the fast algorithms of
   [DemmelDumitriuHoltzKleinberg2007], [DemmelDumitriuHoltz2007].
@@ -738,62 +753,58 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
   needed (the complex algorithm covers real input).
 * Named bounds for the precision conditions (OQ10(b)).
 
-## 12. Bridge to bounded exponent
+## 12. The bounded-exponent model (targeted now, OQ14)
 
-The unbounded-first statements already carry what the bounded model needs: every contract has
-the floor $\tau$ and range $\Omega$, and every theorem has explicit range hypotheses
-($4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$ and $16(R_0 + n +
-\sqrt{\log(16n/\theta)}) \le \Omega$ for EIGH; $2n\tau \le 1$, $\Omega \ge 8$ for SIGN;
-$\tau \le \|\mathbf{S}\|_2x$, $2(\|\mathbf{S}\|_2 + 1)\sqrt2(2\sqrt n + t) \le \Omega$ for
-DEFLATE). In the unbounded model ($\tau = 0$, $\Omega$ as large as needed) they are trivial. W5,
-after the bounded model is on main, adds three statements and changes none:
+Assessment after Codex's merge (`origin/main` a08339af: `Computation.AbsRelErr u η a z`,
+$|a - z| \le u|a| + \eta$; `Computation.binaryFloatRound`, gradual underflow;
+`Computation.binaryFloatSem` with `safe` $= |a| \le$ `maxFinite`; mixed-error gemm/gemv):
 
-* **(a) Semantics level.** For the bounded-exponent binary format with $t$ significant bits and
-  exponent range $[e_{\min}, e_{\max}]$: its round-to-nearest function satisfies
-  `IsRoundingOf (2⁻¹ ^ t) τ Ω` with $\tau = 2^{e_{\min}}$, the smallest normal number (gradual
-  underflow errs by at most half the subnormal spacing, $2^{e_{\min}-t} = u\tau$) and $\Omega$
-  the largest finite number, and a semantics `binaryFloatSem` meeting the mixed contract
-  on its `safe` set rounds every arithmetic result by that function (the analogue of R1 for
-  `gridSem`). Shape: `∀ a, IsRoundingOf (2⁻¹ ^ t) (2 ^ emin) (<maxFinite>) a
-  (<boundedRound> t emin emax a)`, and the machine whose `add`, `sub`, `mul`, `div`, `ofNat`
-  round with it meets the scalar part of `FloatMachine.IsAccurate`; real, as the model is, which
-  suffices since complex numbers are stored componentwise. Halving is a rounded `div` in the
-  algorithms, so subnormals need no special hypothesis.
-* **(b) Matrix multiplication.** A componentwise mixed bound $\lvert\mathbf{A}\mathbf{B} -
-  \mathrm{fl}(\mathbf{A}\mathbf{B})\rvert \le \gamma_d\lvert\mathbf{A}\rvert\lvert\mathbf{B}\rvert +
-  d\eta$ (Codex's underflow BLAS) gives the normwise mixed bound with $\mu = d\gamma_d/u$ and
-  absolute $\eta' = d^2\eta$ (Frobenius), and C3 (already in the skeleton) turns it into
-  `IsMatMulErr u τ Ω (2μ)` with $\tau = \eta'/(\mu u)$, i.e. the normwise bound holds once
-  $\|\mathbf{A}\|_2\|\mathbf{B}\|_2 \ge 2^{e_{\min}}\operatorname{poly}(d)/u$ — the condition of
-  decision 1(b), here absorbed into the floor rather than assumed per call.
-* **(c) Exponent bits.** Scale the input by a power of two (exact) so that $R_0 \in [1/2, 1]$.
-  Then the hypotheses read $\tau \le \operatorname{poly}(\varepsilon\theta/n)$ and
-  $\Omega \ge \operatorname{poly}(n/\theta)$, so $\log_2(\Omega/\tau) = O(\log(n/(\varepsilon\theta)))$
-  and $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits suffice — the paper's
-  $\lg\lg(n/\varepsilon) + O(1)$ with the $\theta$ it omits. Where the range invariants come from:
-  in SIGN every iterate has $\|\mathbf{A}_k\|_2 \le 1.1$ and every intermediate is at most $4.9$
-  (SN3's proof), and every rounding or product error is bounded through the *upper* magnitude it
-  uses, $\max(\cdot, \tau) \le$ that magnitude, so the floor only needs $\tau \le 1/(2n)$; in
-  DEFLATE the products have $\|\mathbf{G}\|_2 \in [x, \sqrt2(2\sqrt n + t)]$ on Event II; in EIGH
-  every node-scale magnitude is at most $1.1R_y \le 1.1R_0$, and every error budget of an
-  internal node is at least $\varepsilon_y R_0 \ge \varepsilon R_0/3$ (an internal node has
-  $R_y > \varepsilon_y R_0$), which is where $\tau \le \varepsilon R_0/(12n)$ comes from; tiny
-  entries are harmless because their errors are charged to the node's budget, not to their own
-  size. The statement for W5: EV6 instantiated with (a) and (b) and the scaling, concluding
-  "with $t$ significant bits as in EV7 and $e \ge \log_2\log_2(C n/(\varepsilon\theta))$ exponent
-  bits the guarantee holds".
+* **Generalization.** None is needed for the scalar operations: `IsRoundingOf u τ Ω a z`
+  ($|a| \le \Omega \Rightarrow |a - z| \le u\max(|a|, \tau)$) is the mixed model in floor form
+  ($u|a| + \eta \le 2u\max(|a|, \eta/u)$; conversely the floor form gives $\eta = u\tau$), and
+  $\Omega$ is exactly `binaryFloatSem`'s `safe` range. The pure-relative statements are the
+  $\tau = 0$ instance. Two contracts had no floor and were not satisfiable by a bounded format:
+  `IsUnifSampler` (now $|\bar sv - \bar c| \le u\max(\bar s, \tau)$) and `IsNormalSampler` (now
+  $|z - \bar z| \le c\,u\max(|z|, \tau)$ for $|z| \le \Omega$). Changed statements: DF2 and DP1
+  gain $\sqrt n\,\tau \le \|\mathbf{G}\|_2$ (resp. $\le x$) and the coefficient $4\sqrt n\,c_{\mathrm
+  N}$ (was $2$); the node and global theorems (EB1a, EB1b, EB1, EV2, EB5, EV6, EV7) get
+  $4\sqrt k(c_{\mathrm N} + 1)$ and $4k^{3/2}\tau$ (was $4k\tau$). Eleven statements changed, no
+  difficulty change: in each proof the floor is absorbed by the upper magnitude already used,
+  $\max(\cdot, \tau) \le$ that magnitude.
+* **Instantiation.** R1b: `binaryFloatRound` is an `IsRoundingOf` $2^{-p}$ rounding with
+  $\tau = 2^{e_{\min}+p-1}$ (the smallest normal number) and $\Omega$ = `maxFinite`, with no factor
+  lost (half the subnormal spacing is $2^{-p}\tau$). C1b: the machine on stored reals whose
+  operations are `binaryFloatRound` of the exact result meets `IsAccurate` (black boxes exact, normal
+  sampler $c_{\mathrm N} = \sqrt2$). The machine is total where `binaryFloatSem` fails out of range;
+  they agree on the `safe` set, which the theorems' $\Omega$ hypotheses guarantee (an equality
+  refinement in the sense of COMPDYN §7.1 needs that agreement lemma, deferred with §15).
+* **Extra hypotheses** (already present, in the floor/range form): $4n^{3/2}\tau \le
+  \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, i.e. $R_0 \ge 12n^{3/2}2^{e_{\min}}/(2u\varepsilon)$ —
+  $\|\mathbf{A}\|$ bounded below relative to $2^{e_{\min}}\operatorname{poly}(n)/u$ — and
+  $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$. The range invariants come from: SIGN's
+  normalized iterates ($\le 1.1$, intermediates $\le 4.9$); DEFLATE's $\|\mathbf{G}\|_2 \in [x,
+  t]$ on Event II; EIGH's node budgets ($\ge \varepsilon_yR_0$ at internal nodes, magnitudes $\le
+  1.1R_0$).
+* **Exponent bits.** EV8: with $E$ exponent bits, $\log_2(\log_2(1536(n+\ell+2)^2/(\varepsilon\theta))
+  + 2) + 1 \le E$ and $R_0 \in [1/2, 1]$ (an exact power-of-two scaling) imply both range
+  hypotheses, using $e_{\min} + p - 1 = 2 - 2^{E-1}$ and `maxFinite` $\ge 2^{2^{E-1}-1}$.
+* **Complex with underflow.** Fine: every complex operation is two real operations, each with
+  its own floor; a stored complex entry errs by at most $u\sqrt{\max(|\operatorname{Re}|,\tau)^2 +
+  \max(|\operatorname{Im}|,\tau)^2} \le u(|z| + 2\tau)$ (R7, R8 already carry the $2k\tau$ term).
+* **Not done**: the black boxes in the bounded format. `IsMatMulErr`/`IsQRErr` are hypotheses; C3
+  turns Codex's mixed gemm bound (real) into the floor form, and a complex gemm over pairs is
+  COMPDYN's kernel work.
 
 ## 13. Proof plan for dispatch
 
-Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 29 independent
-targets (C1, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R2, R3, R4, R5, R6, R7, R8, R9, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7,
-NS1→{NS4, NS5, NS6}, NS4→SG3, R6/R8→SN3→SN4, R7→SN4, R2→SN1→SN2, CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2},
-DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6, LB1→LB2→LB3. Difficulties: S 19,
-M 27, L 12, H 3. By group: W1 29, W2 4, W3 10, W4 15, LB 3. Model tiers: S and M
-on haiku first with sonnet escalation, L and H on opus from the start (`--hard L,H`); failed L/H
-targets get Opus continuation sessions. Dependents may start on sorried dependencies. HDIAG-1 and
-HDIAG-2 can go now; HDIAG-3 after a Fable re-check of the amended outlines of EB1, EB1a, EB1b,
-EB2, EB4, EB5, EV2, EV5, EV6 (EB2 now carries the machine's parameter roundings).
+Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 30 independent
+targets (C1, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R1b, R2, R3, R4, R5, R6, R7, R8, R9, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7→EV8,
+NS1→{NS4, NS5, NS6}, NS4→SG3, R6/R8→SN3→SN4, R7→SN4, R2→SN1→SN2, {R1b, C1}→C1b,
+CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2}, DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6,
+LB1→LB2→LB3. Difficulties: S 19, M 30, L 12, H 3. By group: W1 31, W2 4,
+W3 10, W4 16, LB 3. Model tiers: S and M on haiku first with sonnet escalation, L and H on opus from
+the start (`--hard L,H`). HDIAG-1 (W1 + W2 + LB, 38) and HDIAG-2 (W3, 10) can go now; HDIAG-3 (W4,
+16) after a Fable re-check of the amended outlines of EB1, EB1a, EB1b, EB2, EB4, EB5, EV2, EV5, EV6.
 
 ## 14. Literature
 

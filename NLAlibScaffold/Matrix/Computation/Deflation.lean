@@ -76,8 +76,9 @@ $\|\mathbf{A} - \bar{\widetilde{\mathbf{A}}}\|_2 \le \beta$, and $\mathbf{G}$ ha
 $\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ invertible, $\mathbf{G}_1$ its first $r$ columns. With
 $m = (\|\mathbf{S}\|_2 + \beta + 1)\|\mathbf{S}^{-1}\|_2\|\mathbf{G}\|_2
 \|(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1)^{-1}\|_2$, if $m\beta \le 1/5$,
-$(4\mu_{\mathrm{QR}}(n) + 2\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u \le \beta$,
-$\tau \le \|\mathbf{S}\|_2\|\mathbf{G}\|_2$ and $2(\|\mathbf{S}\|_2 + \beta)\|\mathbf{G}\|_2 \le
+$(4\mu_{\mathrm{QR}}(n) + 4\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u \le \beta$,
+$\tau \le \|\mathbf{S}\|_2\|\mathbf{G}\|_2$, $\sqrt n\,\tau \le \|\mathbf{G}\|_2$ (the floor of the
+normal sampler, absorbed into a factor $2$) and $2(\|\mathbf{S}\|_2 + \beta)\|\mathbf{G}\|_2 \le
 \Omega$, then there is a unitary $\mathbf{W}$ with
 $$\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6m\beta \,,$$
 $\mathsf{deflate}$ the decoded output of `NLAlib.deflate` with ideal sample $\mathbf{G}$. [Shah2024,
@@ -110,8 +111,9 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_defla
     (hG : IsUnit (Vᴴ * G.submatrix id (Fin.castLE hr)))
     (hm : mval = (specNorm S + β + 1) * specNorm S⁻¹ * specNorm G *
       specNorm (Vᴴ * G.submatrix id (Fin.castLE hr))⁻¹)
-    (hmβ : mval * β ≤ 1 / 5) (hu : (4 * μQ n + 2 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
-    (hτ : τ ≤ specNorm S * specNorm G) (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) :
+    (hmβ : mval * β ≤ 1 / 5) (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
+    (hτ : τ ≤ specNorm S * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
+    (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) :
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
       specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
   sorry

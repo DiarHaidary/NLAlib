@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Matrix.Computation.EntrywiseRounding
 public import NLAlib.Computation.Grid
+public import NLAlib.Computation.BinaryFloat
 public import NLAlib.Matrix.Norms.Compare
 
 /-!
@@ -21,7 +22,7 @@ have the normwise errors that the analyses use.
 
 ## Main results
 
-* `NLAlib.isRoundingOf_roundNearest`.
+* `NLAlib.isRoundingOf_roundNearest`, `NLAlib.isRoundingOf_binaryFloatRound`.
 * `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`,
   `NLAlib.FloatMachine.IsAccurate.decodeMatrix_negMat`,
   `NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat`,
@@ -48,6 +49,27 @@ Proof: `Real.abs_sub_roundNearest_le` and $\max(\lvert a \rvert, 0) = \lvert a \
 5 lines. -/
 theorem isRoundingOf_roundNearest (t : ℕ) (Ω a : ℝ) :
     IsRoundingOf (2⁻¹ ^ t) 0 Ω a (Real.roundNearest t a) := by
+  sorry
+
+/-- **Bounded-format rounding is a rounding with floor**: rounding to the binary format `fmt`
+with gradual underflow (`NLAlib.Computation.binaryFloatRound`, any nearest tie rule) returns a
+rounding of every real $a$ in the sense of `NLAlib.IsRoundingOf` with unit roundoff $2^{-p}$,
+floor $\tau = 2^{e_{\min} + p - 1}$ (the smallest normal number) and range the largest finite
+number, $p$ the precision and $e_{\min}$ the smallest exponent. In the normal range the error is
+relative; below it, half the subnormal spacing, $2^{e_{\min}}/2 = 2^{-p}\tau$, so no factor is
+lost against the mixed form `NLAlib.Computation.AbsRelErr`. [Higham2002, §2.2], with gradual
+underflow.
+Proof: if $\lvert a\rvert \ge \tau$, `NLAlib.Computation.relErr_binaryFloatRound_of_minExponent_le`
+(the normal condition is $e_{\min} \le \lfloor\log_2\lvert a\rvert\rfloor + 1 - p$, from
+`Int.zpow_le_iff_le_log`-type bounds); otherwise
+`NLAlib.Computation.absRelErr_binaryFloatRound` gives $u\lvert a\rvert + 2^{e_{\min}}/2$, and the
+proof of that lemma (subnormal branch) gives $2^{e_{\min}}/2 \le u\tau$ alone. M, about 35
+lines. -/
+theorem isRoundingOf_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (a : ℝ) :
+    IsRoundingOf ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite a
+      (Computation.binaryFloatRound fmt r a) := by
   sorry
 
 namespace FloatMachine.IsAccurate

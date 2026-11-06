@@ -112,21 +112,23 @@ def IsQRErr (dec : K → 𝕜) (u τ Ω : ℝ) (μ : ℕ → ℝ) (qr : QRMap K)
         specNorm (A.map dec - Q' * (qr A).2.map dec) ≤
           μ (max m n) * u * max (specNorm (A.map dec)) τ
 
-/-- `IsUnifSampler dec u unif`: **`unif` turns an ideal uniform seed into a computed shift**: for
-a stored scale $s$ with $\bar s \ge 0$ and a seed $v \in [-1, 1]$, the computed
+/-- `IsUnifSampler dec u τ unif`: **`unif` turns an ideal uniform seed into a computed shift**:
+for a stored scale $s$ with $\bar s \ge 0$ and a seed $v \in [-1, 1]$, the computed
 $c = \mathrm{unif}(s, v)$ has $\lvert \bar c \rvert \le \bar s$ and
-$\lvert \bar s v - \bar c \rvert \le \bar s u$. With $v$ uniform on $[-1, 1]$ this is the coupling
+$\lvert \bar s v - \bar c \rvert \le u\max(\bar s, \tau)$ (floor $\tau$ for gradual underflow,
+$0$ with an unbounded exponent). With $v$ uniform on $[-1, 1]$ this is the coupling
 of [Shah2024, Definition 1.3]. -/
-def IsUnifSampler {F : Type*} (dec : F → ℝ) (u : ℝ) (unif : F → ℝ → F) : Prop :=
+def IsUnifSampler {F : Type*} (dec : F → ℝ) (u τ : ℝ) (unif : F → ℝ → F) : Prop :=
   ∀ (s : F) (v : ℝ), 0 ≤ dec s → v ∈ Set.Icc (-1 : ℝ) 1 →
-    |dec (unif s v)| ≤ dec s ∧ |dec s * v - dec (unif s v)| ≤ dec s * u
+    |dec (unif s v)| ≤ dec s ∧ |dec s * v - dec (unif s v)| ≤ u * max (dec s) τ
 
-/-- `IsNormalSampler dec u c normal`: **`normal` turns an ideal complex Gaussian sample into a
-stored one** with relative error $c\,u$: $\lvert z - \overline{\mathrm{normal}(z)} \rvert \le c\,u
-\lvert z \rvert$ for every $z \in \mathbb{C}$. With $z$ standard complex Gaussian this is the
+/-- `IsNormalSampler dec u c τ Ω normal`: **`normal` turns an ideal complex Gaussian sample into
+a stored one** with relative error $c\,u$ above the floor $\tau$: $\lvert z -
+\overline{\mathrm{normal}(z)} \rvert \le c\,u\max(\lvert z \rvert, \tau)$ for every
+$z \in \mathbb{C}$ with $\lvert z \rvert \le \Omega$. With $z$ standard complex Gaussian this is the
 coupling of [Shah2024, Definition 1.4]. -/
-def IsNormalSampler {K : Type*} (dec : K → ℂ) (u c : ℝ) (normal : ℂ → K) : Prop :=
-  ∀ z : ℂ, ‖z - dec (normal z)‖ ≤ c * u * ‖z‖
+def IsNormalSampler {K : Type*} (dec : K → ℂ) (u c τ Ω : ℝ) (normal : ℂ → K) : Prop :=
+  ∀ z : ℂ, ‖z‖ ≤ Ω → ‖z - dec (normal z)‖ ≤ c * u * max ‖z‖ τ
 
 /-- A **floating-point machine** with stored numbers `F`, ideal seeds `Su` and ideal Gaussian
 samples `Sg`: the only operations an algorithm written over it may apply to data. Stored complex
@@ -207,8 +209,8 @@ structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec 
   /-- The QR contract. -/
   isQRErr : IsQRErr (decodeComplex dec) u τ Ω μQ M.qr
   /-- The uniform-sampler contract. -/
-  isUnifSampler : IsUnifSampler dec u M.unif
+  isUnifSampler : IsUnifSampler dec u τ M.unif
   /-- The normal-sampler contract. -/
-  isNormalSampler : IsNormalSampler (decodeComplex dec) u cN M.normal
+  isNormalSampler : IsNormalSampler (decodeComplex dec) u cN τ Ω M.normal
 
 end NLAlib
