@@ -588,3 +588,45 @@ kept for S1′ and the semi-orthogonal generalization. Minor: rounded literal $-
 admissibility and the index convention (§1.2, §3.1); S5 by two reflectors; E4 terminal case E6; `hb`
 allocation, shape and `pre` in §1.3; B8 added; the $\|\mathbf v_{k+1}\|$ factor in S4b; forward reference
 to $\tau_j$ in §1.1.
+
+## 7. Skeleton (2026-11-06)
+
+Definitions, sorry-free, in `NLAlib/` (added to `NLAlib.lean`): `IsOrthErr`
+(`Matrix/Perturbation/OrthErr.lean`, Matrix layer so that the run interface does not import
+Computation), `Computation.IsOrthRoutine` (`Matrix/Computation/OrthRoutine.lean`), `cgsPass`,
+`cgs2`, `cgsPassBound` (`Matrix/Computation/ClassicalGramSchmidt.lean`, registered in
+`docs/constants.toml`), `polarFactor` (`Matrix/Factorizations/PolarFactor.lean`), `cgsProject`,
+`LanczosReorthState`, `lanczosReorthStep`/`State`/`Matrix` (`Krylov/Processes/LanczosReorthRecurrence.lean`),
+`LanczosReorthRun` with `basisOf`, `toLanczosData`, `orthLevel`, `recLevel`, `backwardRadius`,
+`colSeq`, and `reorthSteps` (`Krylov/FinitePrecision/LanczosReorthRun.lean`), the generic
+`lanczosReorthLoop`, the CGS2 trees `lanczosReorthProg`/`lanczosReorthOracleProg` with
+`.compiled` and `toStmt_compiled` (proved by `rfl`) and the drafted count `lanczosReorthCount`
+(`Krylov/Processes/LanczosReorthProgramTree.lean`), and `LanczosReorthOutputs`
+(`Krylov/Processes/LanczosReorthProgramRounding.lean`). So A1, B1, B2, C1, D1 and G1 are definitions,
+not targets. G2 stays a draft here: no `*Targets.lean` and no registry entry (AGENTS rule 2).
+
+51 sorried statements in `NLAlibScaffold/` (S 30, M 15, L 5, H 1), targets file
+`~/nlalib-harness/pilot/lanczos-reorth-targets.json` (`bin/check-skeleton --strict`: 0 missing
+imports, 0 unresolved). Jobs: J1 Matrix layer (B3–B8, C2–C7, E1, E2, E5 rotation, F2a; 20), J2 exact
+recurrence and run analysis (A2, A3, D2–D8, prefixes; 12), J3 backward model and spectral
+consequences (E3–E5, F1–F7; 12), J4 programs (G3–G8; 7). Order: J1 → J2 → J3; J4's G3–G6 after J1,
+G7–G8 after J3.
+
+Changes from §4 made while writing exact statements:
+
+* Several rows became two declarations (B6, B7, B8, E2, F1, F3; the rotation of E5 is its own
+  Matrix lemma; the per-column lemma D5a and A2's basis corollary are separate; G6 has an oracle
+  twin). Hence 51 statements instead of 48.
+* The common hypotheses are `η₀ ≤ 1/100` (not $1/4$), the fixed-point condition
+  `√(3(k+1)) * orthLevel ≤ η₀`, and for the coefficient bounds `recLevel ≤ 1/100` and `τ ≤ 1`, with
+  `orthLevel = 2(ε₁ + ε₃/τ + ε)` and `recLevel = orthLevel + ε + ε₂`. The constants are generous
+  sketch values: D3 $\tfrac32$, D4 $16\sqrt{j+1}$, D6 $20(k+1)$, D7 $40(k+1)$, backward radius
+  $100(k+1)$, CGS2 $(2c_1, 3c_1, 2(\eta_0+c_1)^2)$ with
+  $c_1 = 2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$.
+* E6 (terminal $\beta_k = 0$) is replaced by `LanczosReorthRun.exists_ofLE` (prefixes are runs).
+  Strict admissibility of every step of the run, the last one included, makes $\beta_k > 0$, so
+  the terminal case cannot occur inside a run.
+* G3 is the exact `exec` theorem with the target's output clause, not the target proof.
+* G6 is L, not H: the generic loop G5 (H) carries the work.
+* The spectral results use the Frobenius radius `backwardRadius` ($\ge \|\mathbf E\|_2$).
+* `lakefile.toml` gains the `NLAlibScaffold` lean_lib, as the other stage branches do.

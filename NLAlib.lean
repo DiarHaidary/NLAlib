@@ -173,6 +173,7 @@ public import NLAlib.Krylov.FinitePrecision.DilationEstimates
 public import NLAlib.Krylov.FinitePrecision.LanczosData
 public import NLAlib.Krylov.FinitePrecision.LanczosDefects
 public import NLAlib.Krylov.FinitePrecision.LanczosFunctions
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthRun
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
 public import NLAlib.Krylov.FinitePrecision.LocalErrors
 public import NLAlib.Krylov.FinitePrecision.Normalized
@@ -271,6 +272,9 @@ public import NLAlib.Krylov.Processes.LanczosProgramStaticCost
 public import NLAlib.Krylov.Processes.LanczosProgramStep
 public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
+public import NLAlib.Krylov.Processes.LanczosReorthProgramRounding
+public import NLAlib.Krylov.Processes.LanczosReorthProgramTree
+public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
 public import NLAlib.Krylov.Processes.LanczosTargets
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov
@@ -343,8 +347,10 @@ public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Computation.BLASNegAxpy
+public import NLAlib.Matrix.Computation.ClassicalGramSchmidt
 public import NLAlib.Matrix.Computation.KernelContracts
 public import NLAlib.Matrix.Computation.MatvecRoutine
+public import NLAlib.Matrix.Computation.OrthRoutine
 public import NLAlib.Matrix.Computation.ResidualGap
 public import NLAlib.Matrix.Computation.Underflow
 public import NLAlib.Matrix.Factorizations.Cholesky
@@ -366,6 +372,7 @@ public import NLAlib.Matrix.Factorizations.Nystrom
 public import NLAlib.Matrix.Factorizations.NystromGram
 public import NLAlib.Matrix.Factorizations.NystromOrder
 public import NLAlib.Matrix.Factorizations.Polar
+public import NLAlib.Matrix.Factorizations.PolarFactor
 public import NLAlib.Matrix.Factorizations.PolarFrames
 public import NLAlib.Matrix.Factorizations.Procrustes
 public import NLAlib.Matrix.Factorizations.QR
@@ -426,6 +433,7 @@ public import NLAlib.Matrix.Perturbation.GramCutoff
 public import NLAlib.Matrix.Perturbation.GramSoftMin
 public import NLAlib.Matrix.Perturbation.Inverse
 public import NLAlib.Matrix.Perturbation.LeastSquares
+public import NLAlib.Matrix.Perturbation.OrthErr
 public import NLAlib.Matrix.Perturbation.Pseudoinverse
 public import NLAlib.Matrix.Perturbation.Pseudospectrum
 public import NLAlib.Matrix.Perturbation.Relative
