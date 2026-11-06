@@ -149,7 +149,8 @@ $\mathbf{x} \mapsto \mathbf{V}\mathbf{x}$, which is
 -/
 theorem hasOrthonormalCols_polarFactor {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) : HasOrthonormalCols (polarFactor V) := by
-  sorry
+  rw [hasOrthonormalCols_polarFactor_iff]
+  exact injective_mulVec_of_specNorm_gram_sub_one_lt_one (lt_of_le_of_lt hV hη)
 
 /-- **The polar factor is close to a nearly orthonormal basis** (E2): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
