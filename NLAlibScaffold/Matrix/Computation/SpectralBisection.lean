@@ -102,6 +102,132 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le
         (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β := by
   sorry
 
+private theorem abs_sub_le_of_isRoundingOf_aux {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z)
+    (ha : |a| ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) : |a - z| ≤ u * (|a| + τ) := by
+  have hmax : max |a| τ ≤ |a| + τ := max_le (by linarith) (by linarith [abs_nonneg a])
+  exact (h ha).trans (mul_le_mul_of_nonneg_left hmax hu)
+
+private theorem newtonSchulzSteps_nonneg_aux {s ε : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2)
+    (hε : 0 < ε) (hε₁ : ε ≤ 1 / 2) : 0 ≤ newtonSchulzSteps s ε := by
+  have h₁ : 0 ≤ Real.logb 2 (min |s| (1 / 2))⁻¹ := by
+    rw [abs_of_pos hs, min_eq_left hs₁]
+    exact Real.logb_nonneg one_lt_two (one_le_inv₀ hs |>.mpr (by linarith))
+  have h₂ : 0 ≤ Real.logb 2 (Real.logb 2 ε⁻¹) := by
+    refine Real.logb_nonneg one_lt_two ?_
+    rw [← Real.logb_self_eq_one one_lt_two]
+    exact Real.logb_le_logb_of_le one_lt_two two_pos ((le_inv_comm₀ two_pos hε).mpr (by linarith))
+  unfold newtonSchulzSteps
+  linarith
+
+private theorem toNat_add_traceRe_div_eq_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) (hτ₀ : 0 ≤ τ) {k : ℕ} (hk1 : (1 : ℝ) ≤ k) (hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000)
+    (hkτ : (k : ℝ) * τ ≤ 1 / 4) (hΩ : 16 * k ≤ Ω) (X : Matrix (Fin k) (Fin k) (F × F)) {r : ℕ}
+    (hrk : (r : ℝ) ≤ k) (hdiag : |∑ i, dec (X i i).1 - r| ≤ 1 / 57600)
+    (hsabs : ∑ i, |dec (X i i).1| ≤ 2 * k) :
+    M.toNat (M.add (M.traceRe X) (M.div M.one (M.ofNat 2))) = r := by
+  have hkk : (k : ℝ) ≤ k ^ 2 := by nlinarith
+  have hku : (k : ℝ) * u ≤ 1 / 100000 := by linarith [mul_le_mul_of_nonneg_right hkk hu]
+  have hu1 : u ≤ 1 / 100000 := by linarith [mul_le_mul_of_nonneg_right hk1 hu]
+  have hτ1 : τ ≤ 1 / 4 := by linarith [mul_le_mul_of_nonneg_right hk1 hτ₀]
+  have huτ := mul_le_mul_of_nonneg_left hτ1 hu
+  -- the rounded trace
+  have htrace := abs_le.mp (hM.abs_sum_sub_traceRe_le hu hτ₀ (by linarith) X (by linarith))
+  have htr2 := mul_le_mul_of_nonneg_left (by linarith : ∑ i, |dec (X i i).1| + k * τ ≤ 3 * k)
+    (by positivity : (0 : ℝ) ≤ 2 * k * u)
+  have hdiag' := abs_le.mp hdiag
+  -- the rounded half
+  have h2 := abs_le.mp (abs_sub_le_of_isRoundingOf_aux (hM.ofNat 2)
+    (by norm_num; linarith) hu hτ₀)
+  push_cast at h2
+  rw [abs_of_pos (by norm_num : (0 : ℝ) < 2)] at h2
+  have hd2 : 1.9 ≤ dec (M.ofNat 2) ∧ dec (M.ofNat 2) ≤ 2.1 := by constructor <;> linarith
+  have hd20 : 0 < dec (M.ofNat 2) := by linarith
+  have hh2 : 1 / dec (M.ofNat 2) ≤ 1 := by rw [div_le_one hd20]; linarith
+  have hh := abs_le.mp (abs_sub_le_of_isRoundingOf_aux (hM.div M.one (M.ofNat 2) hd20.ne')
+    (by rw [hM.dec_one, abs_of_pos (div_pos one_pos hd20)]; linarith) hu hτ₀)
+  rw [hM.dec_one, abs_of_pos (div_pos one_pos hd20)] at hh
+  have hh1 : |1 / dec (M.ofNat 2) - 1 / 2| ≤ u := by
+    rw [div_sub_div _ _ hd20.ne' (by norm_num), abs_div, abs_of_pos (mul_pos hd20 two_pos),
+      div_le_iff₀ (mul_pos hd20 two_pos), abs_le]
+    have := mul_le_mul_of_nonneg_left hd2.1 hu
+    constructor <;> linarith
+  have hh1' := abs_le.mp hh1
+  have := mul_le_mul_of_nonneg_left hh2 hu
+  have hdh : |dec (M.div M.one (M.ofNat 2)) - 1 / 2| ≤ 3 * u := by
+    rw [abs_le]; constructor <;> linarith
+  have hdh' := abs_le.mp hdh
+  -- their rounded sum
+  have hzabs : |dec (M.traceRe X) + dec (M.div M.one (M.ofNat 2))| ≤ k + 1 := by
+    rw [abs_le]; constructor <;> linarith
+  have hz := abs_le.mp (abs_sub_le_of_isRoundingOf_aux (hM.add (M.traceRe X)
+    (M.div M.one (M.ofNat 2))) (by linarith) hu hτ₀)
+  have hzu := mul_le_mul_of_nonneg_left hzabs hu
+  rw [hM.toNat_eq, Nat.floor_eq_iff (by linarith)]
+  constructor <;> linarith
+
+private theorem bisection_small_aux {u τ ρ w R ε β μ X : ℝ} {k ℓ : ℕ} (hk : 1 ≤ k)
+    (hℓ : 20 ≤ ℓ) (hε : 0 < ε) (hε₁ : ε ≤ 1 / 8) (hρ₁ : ρ ≤ 1) (hw : 0 < w)
+    (hwR : w ≤ R) (hβ : 0 < β) (hβtol : β ≤ bisectionSignTol k ε ρ ℓ) (hμ : 0 ≤ μ) (hu : 0 ≤ u)
+    (husign : 640 * k * √(k : ℝ) * (8 + μ) *
+      (newtonSchulzSteps (w / (8 * R)) (β / (16 * k)) + 1) * u ≤ w / (4 * R) * β)
+    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * k * √(k : ℝ)) ≤ min (√(ρ / 2)) X) :
+    (k : ℝ) * β ≤ 1 / 57600 ∧ (k : ℝ) ^ 2 * u ≤ 1 / 100000 ∧ (k : ℝ) * τ ≤ 1 / 4 := by
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hsq1 : 1 ≤ √(k : ℝ) := Real.one_le_sqrt.mpr hk1
+  have hsq := Real.mul_self_sqrt (Nat.cast_nonneg (α := ℝ) k)
+  have hkk : (k : ℝ) ≤ k * √(k : ℝ) := le_mul_of_one_le_right (by linarith) hsq1
+  have hR0 : 0 < R := hw.trans_le hwR
+  have hℓ' : (20 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
+  -- the accuracy, the roundoff and the floor are small
+  have hβk : β * (k * √(k : ℝ)) ≤ 1 / 57600 := by
+    refine (mul_le_mul_of_nonneg_right hβtol (by positivity)).trans ?_
+    unfold bisectionSignTol
+    have hX : (1 - 1 / (ℓ : ℝ)) * ε / (5 * ℓ) ≤ 1 / 800 := by
+      have : 1 / (ℓ : ℝ) ≤ 1 := by rw [div_le_one (by linarith)]; linarith
+      rw [div_le_iff₀ (by positivity)]
+      nlinarith [div_pos one_pos (by linarith : (0 : ℝ) < ℓ)]
+    have hX0 : 0 ≤ (1 - 1 / (ℓ : ℝ)) * ε / (5 * ℓ) := by
+      have : 1 / (ℓ : ℝ) ≤ 1 := by rw [div_le_one (by linarith)]; linarith
+      exact div_nonneg (mul_nonneg (by linarith) hε.le) (by positivity)
+    have hρ' : √ρ ≤ 1 := Real.sqrt_le_one.mpr hρ₁
+    have hL := Real.sqrt_nonneg (2 * Real.log (4 / ρ))
+    rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+    have h1 := mul_le_mul hX hρ' (Real.sqrt_nonneg _) (by norm_num)
+    have h2 := mul_le_mul_of_nonneg_right h1 (by positivity : (0 : ℝ) ≤ k * √(k : ℝ))
+    nlinarith [mul_nonneg (by positivity : (0 : ℝ) ≤ k) hL]
+  have hNs := newtonSchulzSteps_nonneg_aux (s := w / (8 * R)) (ε := β / (16 * k))
+    (by positivity) (by rw [div_le_iff₀ (by positivity)]; linarith) (by positivity)
+    (by rw [div_le_iff₀ (by positivity)]; nlinarith)
+  have hw4 : w / (4 * R) ≤ 1 / 4 := by rw [div_le_iff₀ (by positivity)]; linarith
+  have hku3 : k * √(k : ℝ) * u ≤ β / 20480 := by
+    have h1 : 5120 * (k * √(k : ℝ)) * u ≤ 640 * k * √(k : ℝ) * (8 + μ) *
+        (newtonSchulzSteps (w / (8 * R)) (β / (16 * k)) + 1) * u := by
+      have := mul_le_mul (by linarith : (8 : ℝ) ≤ 8 + μ) (by linarith : (1 : ℝ) ≤
+        newtonSchulzSteps (w / (8 * R)) (β / (16 * k)) + 1) zero_le_one
+        (by linarith)
+      have h0 : 0 ≤ 640 * (k * √(k : ℝ)) * u := by positivity
+      nlinarith
+    have := mul_le_mul_of_nonneg_right hw4 hβ.le
+    linarith
+  have hkk1 : (1 : ℝ) ≤ k * √(k : ℝ) := hk1.trans hkk
+  have hβ1 : β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_left hkk1 hβ.le]
+  have hku : (k : ℝ) * u ≤ 1 / 2 := by linarith [mul_le_mul_of_nonneg_right hkk hu]
+  have hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000 := by
+    have : (k : ℝ) ^ 2 * u = (k * √(k : ℝ) * u) * √(k : ℝ) := by
+      rw [pow_two]; nth_rewrite 1 [← hsq]; ring
+    rw [this]
+    have h1 := mul_le_mul_of_nonneg_right hku3 (Real.sqrt_nonneg (k : ℝ))
+    have h2 : β * √(k : ℝ) ≤ β * (k * √(k : ℝ)) :=
+      mul_le_mul_of_nonneg_left (le_mul_of_one_le_left (by positivity) hk1) hβ.le
+    linarith
+  have hkβ : (k : ℝ) * β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_left hkk hβ.le]
+  have hkτ : (k : ℝ) * τ ≤ 1 / 4 := by
+    have : √(ρ / 2) ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
+    have := hτ.trans (min_le_left _ _)
+    linarith [mul_le_mul_of_nonneg_right hkk hτ₀]
+  exact ⟨hkβ, hk2u, hkτ⟩
+
 /-- **Rank recovery on Event I**: under the node hypotheses of
 `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample`
 (contracts, precision, step limit, floor and range), for an internal node ($k \ge 2$, $R >
@@ -142,7 +268,80 @@ theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub
         (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ∧
       inertiaPos (decodeMatrix dec y.A -
         (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) < y.k := by
-  sorry
+  set r := inertiaPos (decodeMatrix dec y.A -
+    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
+  -- the accuracy, the roundoff and the floor are small
+  obtain ⟨hkβ, hk2u, hkτ⟩ := bisection_small_aux (by omega) hℓ hε hε₁ hρ₁ hw hwR hβ hβtol
+    hμM hu husign hτ₀ hτ
+  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
+  -- the computed projector is near the ideal one, whose trace is the inertia
+  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le (N := N)
+    (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
+    husign hfuel hτ₀ hτ hΩ hv hI
+  set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)
+    with hPp
+  set S := cfc Real.sign (decodeMatrix dec y.A -
+    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+  have hS : specNorm S ≤ 1 := by
+    refine Matrix.IsHermitian.specNorm_cfc_le (hA.sub ?_) zero_le_one fun x _ => ?_
+    · unfold Matrix.IsHermitian
+      simp only [Matrix.conjTranspose_smul, Matrix.conjTranspose_one, star_trivial]
+    · rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num
+  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
+    rw [specNorm_real_smul]
+    have := (specNorm_add_le 1 S).trans (add_le_add specNorm_one_le hS)
+    rw [abs_of_pos (by norm_num)]
+    linarith
+  have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * smp.1) fun x hx h => by
+    have := hI x hx
+    rw [h, sub_self, abs_zero] at this
+    linarith
+  rw [← hr] at htr
+  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ dec β := by
+    intro i
+    have h := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
+    simpa [decodeMatrix, decodeComplex] using h
+  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + dec β := by
+    intro i
+    have h1 := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
+    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
+    linarith [hentry i]
+  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ y.k * dec β := by
+    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
+  have hsabs : ∑ i, |dec (Pp i i).1| ≤ y.k * (1 + dec β) := by
+    rw [mul_add, mul_one]
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
+  have hrk : (r : ℝ) ≤ y.k := by
+    have : r ≤ y.k := by
+      rw [hr, inertiaPos]
+      exact (Finset.card_filter_le _ _).trans (by simp)
+    exact_mod_cast this
+  have hβ2 : 1 + dec β ≤ 2 := by linarith
+  have hk2 := mul_le_mul_of_nonneg_left hβ2 (Nat.cast_nonneg (α := ℝ) y.k)
+  have hfl := toNat_add_traceRe_div_eq_aux hM hu hτ₀ hk1 hk2u hkτ
+    (by linarith [Real.sqrt_nonneg (Real.log (4 / ρ))]) Pp hrk (hdiag.trans (by linarith))
+    (hsabs.trans (by linarith))
+  have hkp : min y.k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))) = r := by
+    rw [hfl]; exact min_eq_right (by exact_mod_cast hrk)
+  -- unfold the step
+  unfold eighStep
+  rw [if_neg (by omega), if_neg (by simp [hint])]
+  dsimp only
+  rw [hPp] at hkp
+  clear_value r
+  split_ifs with h1 h2
+  · rw [hkp] at h1
+    exact iff_of_false id (by rw [h1]; exact fun h => h.2.false)
+  · rw [hkp] at h2
+    exact iff_of_false id (by rw [h2]; exact fun h => h.1.false)
+  · rw [hkp] at h1 h2
+    exact iff_of_true trivial ⟨Nat.pos_of_ne_zero h2, lt_of_le_of_ne (by exact_mod_cast hrk) h1⟩
 
 /-- **The children of a good node satisfy the node invariant**: under the node hypotheses of
 `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` (without
