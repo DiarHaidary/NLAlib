@@ -664,10 +664,10 @@ $\|\mathbf V\|_{\mathsf F} \le \sqrt j\,a$. Hence the dots satisfy
 $\|\mathbf h_1 - \mathbf V^{\mathsf T}\mathbf w\| \le (100/99)\,u\,a(\sqrt j + N)\|\mathbf w\|$, the `gemv`
 $\|\mathbf y - \mathbf V\mathbf h_1\| \le (100/99)\,u\,a(\sqrt j + j)\|\mathbf h_1\|$, and the `axpy`
 with the rounded literal $-1$ adds $3.1u\|\mathbf y\| + u\|\mathbf w\|$; `cgsPass_arith` collects
-everything under $c_1 = 2a^2\sqrt{j+1}\,(N+j+2)\,u$ = `cgsPassBound`. The hypothesis
-$\eta_0 \le 1/100$ of C3 is not used by its proof (only $\eta_0 \ge 0$ through $a$), nor is the
-conjunct `wb ≠ Vb` of its distinctness hypothesis; both are kept (C6 and the programs supply
-them). C2, the exact run, is now derived from the rounded run at $u = 0$, where the bounds force
+everything under $c_1 = 2a^2\sqrt{j+1}\,(N+j+2)\,u$ = `cgsPassBound`. The proof uses
+$\eta_0 \ge 0$ only (through $a$); the hypothesis $\eta_0 \le 1/100$ and the conjunct `wb ≠ Vb`
+of the distinctness hypothesis, which it did not use, are dropped (maintainer decision S3,
+2026-11-06; C3 is strictly stronger, its callers C6 and the programs are unchanged). C2, the exact run, is now derived from the rounded run at $u = 0$, where the bounds force
 the exact values.
 
 **G5, as proved** (`LanczosReorthImplementation.exec_rounded_loop`,
@@ -694,6 +694,7 @@ admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu 
 * G7, G8 (stage review, ccbc59a9): the prefix run $L$ comes with its parameters
   ($L.\varepsilon$, $L.\tau$, $L.\eta_0$, $L.\varepsilon_{1,2,3}$ equal to the CGS2 ones), so the
   fixed-point premise $\sqrt{3(m+1)}\,\mu \le \eta_0$ is about known quantities (strictly stronger).
+* C3 `IsRelErrSem.exec_cgsPass` (decision S3): `η₀ ≤ 1/100` and `wb ≠ Vb` dropped (unused).
 * Unused hypotheses dropped: `IsOrthErr.norm_coef_le` (`hε₂`), `isOrthErr_of_one_pass` and
   `norm_transpose_mulVec_le_of_norm_sub_le` (`hc₁`), `LanczosReorthRun.coeff_le` (`hτ`).
 * F6 `exists_pure_backward_gauss`: the proof term `⟨0, L.k_pos⟩` in the statement (rule T9) is the

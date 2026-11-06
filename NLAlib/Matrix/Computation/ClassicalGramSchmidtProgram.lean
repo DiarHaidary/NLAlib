@@ -459,7 +459,7 @@ private theorem exec_cgsPass_frame {u : P → ℝ} {dec : P → K → ℝ} (I : 
 
 /-- **One rounded classical Gram–Schmidt pass**: under the standard model, `NLAlib.cgsPass`
 succeeds, writes only the reduced vector at (`wb`, `wo`) and the coefficients at (`hb`, `ho`),
-and if $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0 \le 1/100$ and
+and if $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0$ and
 $(N + j + 2)u \le 1/100$, the decoded coefficients $\mathbf{h}_1$ and vector $\mathbf{w}_1$
 satisfy, with $c_1$ =
 `NLAlib.cgsPassBound`, <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$,
@@ -475,12 +475,12 @@ theorem IsRelErrSem.exec_cgsPass {u : P → ℝ} {dec : P → K → ℝ} (I : In
     (hw : ∀ i : Fin N, ∃ x, st.store.read tag wb (wo.eval + i) = some x ∧ dec tag x = w i)
     (hwlen : ∀ i < N, ∃ len, st.store.shape[wb]? = some (tag, len) ∧ wo.eval + i < len)
     (hhlen : ∀ i < j, ∃ len, st.store.shape[hb]? = some (tag, len) ∧ ho.eval + i < len)
-    (hne : hb ≠ wb ∧ hb ≠ Vb ∧ wb ≠ Vb) (hu : u tag < 1) :
+    (hne : hb ≠ wb ∧ hb ≠ Vb) (hu : u tag < 1) :
     ∃ (out : St P K C) (W : Fin N → K) (Hw : Fin j → K) (mid : Store P K),
       exec I (cgsPass tag NE jE Vb wb wo hb ho).run st = some out ∧
       st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
       mid.writeBlock tag hb ho.eval (Array.ofFn Hw) = some out.store ∧
-      ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ → η₀ ≤ 1 / 100 →
+      ∀ η₀ : ℝ, specNorm (Vᵀ * V - 1) ≤ η₀ →
         ((N + j + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100 →
         ‖WithLp.toLp 2 ((fun i => dec tag (Hw i)) - Vᵀ *ᵥ w)‖ ≤
           cgsPassBound N j (u tag) η₀ * ‖WithLp.toLp 2 w‖ ∧
@@ -490,7 +490,7 @@ theorem IsRelErrSem.exec_cgsPass {u : P → ℝ} {dec : P → K → ℝ} (I : In
           cgsPassBound N j (u tag) η₀ * ‖WithLp.toLp 2 w‖ := by
   subst hN hj
   obtain ⟨out, Wv, Hw, hex, hsh, hwr, hhr, hfr, hbnd⟩ := exec_cgsPass_frame I h hz tag NE jE
-    Vb wb hb wo ho st V w hV hw hhlen (fun _ _ => ⟨hne.1, hne.2.1⟩) hu
+    Vb wb hb wo ho st V w hV hw hhlen (fun _ _ => hne) hu
   obtain ⟨mid, hmid⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store)
     (p := tag) (b := wb) (off := wo.eval) (xs := Array.ofFn Wv)
     fun i hi => hwlen i (by simpa using hi)
@@ -508,7 +508,7 @@ theorem IsRelErrSem.exec_cgsPass {u : P → ℝ} {dec : P → K → ℝ} (I : In
       simp [hk]
     · simp only [Array.size_ofFn] at h₁ h₂
       exact hfr q b i h₁ h₂
-  exact ⟨out, Wv, Hw, mid, hex, hmid, heq ▸ hfin, fun η₀ hV _ hM => hbnd η₀ hV hM⟩
+  exact ⟨out, Wv, Hw, mid, hex, hmid, heq ▸ hfin, fun η₀ hV hM => hbnd η₀ hV hM⟩
 
 /-- The $j$ rounded additions of `NLAlib.cgs2` write $\mathbf{h}_1 + \mathbf{h}_2$ to relative
 error $u$ into the coefficient block and nothing else. -/
