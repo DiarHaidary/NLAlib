@@ -410,7 +410,140 @@ theorem holds_of_exec_zsub (p : P) (m n : ℕ) {X Y Z : ℕ} {xo yo zo : IExp �
       (Matrix.of fun i j => (M.sub (A i j).1 (B i j).1, M.sub (A i j).2 (B i j).2)) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (Z, zo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  intro M
+  have key : (zsub (ι := ι) p (.const m) (.const n) X xo Y yo Z zo).run = .seq
+      (.named "zsub" [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo,
+        .buf Z, .idx zo] (.seq (.loop (2 * (IExp.const m * IExp.const n)) fun w => .seq
+          (.instr (.bin p .sub ⟨Z, zo + .var w⟩ ⟨X, xo + .var w⟩ ⟨Y, yo + .var w⟩)) .skip) .skip))
+      .skip := rfl
+  rw [key, exec_seq_skip, exec_named, exec_seq_skip] at h
+  -- one word of the loop: the read operands, the write and the position
+  have bstep : ∀ (k : ℕ) (s₁ s₂ : St P K C),
+      exec I (.seq (.instr (.bin p .sub ⟨Z, zo + .var k⟩ ⟨X, xo + .var k⟩ ⟨Y, yo + .var k⟩))
+        .skip) s₁ = some s₂ →
+      ∃ a c s, s₁.store.read p X (xo.eval + k) = some a ∧
+        s₁.store.read p Y (yo.eval + k) = some c ∧
+        s₁.store.write p Z (zo.eval + k) (M.sub a c) = some s ∧
+        s₂.store = s ∧ s₂.pos = s₁.pos := by
+    intro k s₁ s₂ hr
+    obtain ⟨a, ha⟩ : ∃ a, s₁.store.read p X (xo.eval + k) = some a := by
+      cases hx : s₁.store.read p X (xo.eval + k) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hx] at hr
+      | some a => exact ⟨a, rfl⟩
+    obtain ⟨c, hc⟩ : ∃ c, s₁.store.read p Y (yo.eval + k) = some c := by
+      cases hy : s₁.store.read p Y (yo.eval + k) with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hy] at hr
+      | some c => exact ⟨c, rfl⟩
+    obtain ⟨v, hv⟩ : ∃ v, I.sem.bin p .sub a c = some v := by
+      cases hb : I.sem.bin p .sub a c with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hc, hb] at hr
+      | some v => exact ⟨v, rfl⟩
+    obtain ⟨s, hw⟩ : ∃ s, s₁.store.write p Z (zo.eval + k) v = some s := by
+      cases hw : s₁.store.write p Z (zo.eval + k) v with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hc, hv, hw] at hr
+      | some s => exact ⟨s, rfl⟩
+    have hMv : M.sub a c = v := by
+      show (I.sem.bin p .sub a c).getD default = v
+      rw [hv]; rfl
+    rw [exec_seq_instr_bin (dst := ⟨Z, zo + .var k⟩) I ha hc hv hw, exec_skip] at hr
+    cases hr
+    exact ⟨a, c, s, ha, hc, hMv ▸ hw, rfl, rfl⟩
+  -- distinct words of the loop are distinct cells, of the output block and of the inputs
+  have dis : ∀ k w, k < 2 * (m * n) → w < 2 * (m * n) → w ≠ k →
+      (X ≠ Z ∨ xo.eval + w ≠ zo.eval + k) ∧ (Y ≠ Z ∨ yo.eval + w ≠ zo.eval + k) := by
+    intro k w hk hw hwk
+    refine ⟨?_, ?_⟩
+    · rcases hZX with h | ⟨h1, h2⟩
+      · by_cases hXZ : X = Z
+        · right
+          subst hXZ
+          simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+            Bool.or_eq_true] at h
+          omega
+        · exact Or.inl hXZ
+      · right; omega
+    · rcases hZY with h | ⟨h1, h2⟩
+      · by_cases hYZ : Y = Z
+        · right
+          subst hYZ
+          simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+            Bool.or_eq_true] at h
+          omega
+        · exact Or.inl hYZ
+      · right; omega
+  have inv := forall_of_exec_loop_eq_some (I := I) (fun k s₁ =>
+      (∀ w < k, ∃ a c, st.store.read p X (xo.eval + w) = some a ∧
+          st.store.read p Y (yo.eval + w) = some c ∧
+          s₁.store.read p Z (zo.eval + w) = some (M.sub a c)) ∧
+      (∀ w, k ≤ w → w < 2 * (m * n) →
+          s₁.store.read p X (xo.eval + w) = st.store.read p X (xo.eval + w)) ∧
+      (∀ w, k ≤ w → w < 2 * (m * n) →
+          s₁.store.read p Y (yo.eval + w) = st.store.read p Y (yo.eval + w)) ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Z, zo.eval, 2 * (m * n)) = true →
+          s₁.store.read q b i = st.store.read q b i) ∧
+      s₁.store.shape = st.store.shape ∧ s₁.pos = st.pos) ?_ ?_ h
+  rotate_left
+  · refine ⟨fun w hw => absurd hw (Nat.not_lt_zero _), fun w _ _ => rfl, fun w _ _ => rfl,
+      fun q b i _ => rfl, rfl, rfl⟩
+  · intro k hk s₁ s₂ ⟨hZ, hX, hY, hout, hsh, hpos⟩ hr
+    have hk2 : k < 2 * (m * n) := hk
+    obtain ⟨a, c, s, ha, hc, hw, hs, hp⟩ := bstep k s₁ s₂ hr
+    have ha' : st.store.read p X (xo.eval + k) = some a := by
+      rw [← hX k le_rfl hk]; exact ha
+    have hc' : st.store.read p Y (yo.eval + k) = some c := by
+      rw [← hY k le_rfl hk]; exact hc
+    have hXn : ∀ w, k + 1 ≤ w → w < 2 * (m * n) →
+        s₂.store.read p X (xo.eval + w) = st.store.read p X (xo.eval + w) := by
+      intro w hw1 hw2
+      rw [hs, Store.read_of_write_eq_some_of_ne hw (dis k w hk hw2 (by omega)).1,
+        hX w (by omega) hw2]
+    have hYn : ∀ w, k + 1 ≤ w → w < 2 * (m * n) →
+        s₂.store.read p Y (yo.eval + w) = st.store.read p Y (yo.eval + w) := by
+      intro w hw1 hw2
+      rw [hs, Store.read_of_write_eq_some_of_ne hw (dis k w hk hw2 (by omega)).2,
+        hY w (by omega) hw2]
+    have hZn : ∀ w < k + 1, ∃ a' c', st.store.read p X (xo.eval + w) = some a' ∧
+        st.store.read p Y (yo.eval + w) = some c' ∧
+        s₂.store.read p Z (zo.eval + w) = some (M.sub a' c') := by
+      intro w hw1
+      rcases Nat.lt_or_ge w k with hlt | hge
+      · obtain ⟨a', c', hxa, hyc, hz⟩ := hZ w hlt
+        refine ⟨a', c', hxa, hyc, ?_⟩
+        rw [hs, Store.read_of_write_eq_some_of_ne hw
+          (Or.inr (show zo.eval + w ≠ zo.eval + k by omega) : Z ≠ Z ∨ zo.eval + w ≠ zo.eval + k)]
+        exact hz
+      · have hwk : w = k := by omega
+        subst hwk
+        exact ⟨a, c, ha', hc', by rw [hs, Store.read_of_write_eq_some hw]⟩
+    have hout' : ∀ q b i, blockDisjoint (b, i, 1) (Z, zo.eval, 2 * (m * n)) = true →
+        s₂.store.read q b i = st.store.read q b i := by
+      intro q b i hd
+      have hne : b ≠ Z ∨ i ≠ zo.eval + k := by
+        by_cases hb : b = Z
+        · right
+          subst hb
+          simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+            Bool.or_eq_true] at hd
+          omega
+        · exact Or.inl hb
+      rw [hs, Store.read_of_write_eq_some_of_ne hw hne]
+      exact hout q b i hd
+    exact ⟨hZn, hXn, hYn, hout', by rw [hs, Store.shape_of_write_eq_some hw, hsh],
+      by rw [hp, hpos]⟩
+  obtain ⟨hZ, hX, hY, hout, hsh, hpos⟩ := inv
+  have hbnd : ∀ (i : Fin m) (j : Fin n) (t : Fin 2),
+      2 * ((i : ℕ) + m * j) + (t : ℕ) < 2 * (m * n) := by
+    intro i j t
+    have h1 : (i : ℕ) + m * j < m * n := by
+      nlinarith [i.isLt, j.isLt, Nat.mul_le_mul_left m (show (j : ℕ) + 1 ≤ n from j.isLt)]
+    have := t.isLt
+    omega
+  refine ⟨fun i j (t : Fin 2) => ?_, hout⟩
+  obtain ⟨a, c, hxa, hyc, hz⟩ := hZ _ (hbnd i j t)
+  have ha : a = pairLayout.put (A i j) t := Option.some.inj (hxa.symm.trans (hA i j t))
+  have hc : c = pairLayout.put (B i j) t := Option.some.inj (hyc.symm.trans (hB i j t))
+  rw [ha, hc] at hz
+  convert hz using 2 <;> fin_cases t <;> simp [pairLayout]
 
 /-- **`zscal` scales the parts**: a successful run of `NLAlib.Computation.zscal` from a block at
 `X` holding $\mathbf{A}$ and a cell `a` holding $a$, into a block at `Y` disjoint from `a` and
