@@ -380,6 +380,151 @@ theorem FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length
     eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = none := by
   sorry
 
+private theorem eighChild_eq_some_params_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {N signFuel : ℕ} {R₀ β : F} {x y : EighNode F} {s : EighSample ℝ ℂ N} {b : Bool}
+    (h : eighChild M N signFuel R₀ β x s b = some y) :
+    y.k ≤ x.k ∧ y.ℓ = x.ℓ + 1 ∧ y.R = (eighNextParams M x.R x.ε x.ℓ).1 ∧
+      y.ε = (eighNextParams M x.R x.ε x.ℓ).2 ∧ M.le x.R (M.mul x.ε R₀) = false := by
+  unfold eighChild eighStep at h
+  by_cases h1 : x.k ≤ 1
+  · simp [h1] at h
+  by_cases h2 : M.le x.R (M.mul x.ε R₀) = true
+  · simp [h1, h2] at h
+  simp only [h1, h2, if_false] at h
+  split_ifs at h <;> dsimp only at h <;> (try split_ifs at h) <;> cases h <;>
+    exact ⟨by dsimp only; omega, rfl, rfl, rfl, by simpa using h2⟩
+
+private theorem rnd_aux_of_nonneg {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z) (ha0 : 0 ≤ a)
+    (ha : a ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) :
+    a - u * (a + τ) ≤ z ∧ z ≤ a + u * (a + τ) := by
+  have hmax : max |a| τ ≤ a + τ := max_le (by rw [abs_of_nonneg ha0]; linarith) (by linarith)
+  have := abs_le.mp ((h (by rwa [abs_of_nonneg ha0])).trans (mul_le_mul_of_nonneg_left hmax hu))
+  constructor <;> linarith [this.1, this.2]
+
+private theorem eighNextParams_snd_aux {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
+    {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (r e : F)
+    {L : ℕ} (hu : 0 ≤ u) (huL : u * L ≤ 1 / 1000) (hτ₀ : 0 ≤ τ) (hτ1 : τ ≤ 1 / 100)
+    (he0 : 0 < dec e) (hτe : 30 * τ ≤ dec e) (he1 : dec e ≤ 1) (hL : 5 ≤ L)
+    (hΩ : 2 + L ≤ Ω) :
+    dec (eighNextParams M r e L).2 ≤ dec e ∧
+      dec e * (L - 1) - 3 * u * L * dec e ≤ dec (eighNextParams M r e L).2 * L := by
+  have hL' : (5 : ℝ) ≤ L := by exact_mod_cast hL
+  have hL0 : (0 : ℝ) < L := by linarith
+  have hu5 : u ≤ 1 / 5000 := by nlinarith
+  simp only [eighNextParams]
+  obtain ⟨hla, hlb⟩ := rnd_aux_of_nonneg (hM.ofNat L) hL0.le (by linarith) hu hτ₀
+  have huτ := mul_le_mul_of_nonneg_left hτ1 hu
+  have hdl : L - 0.002 ≤ dec (M.ofNat L) ∧ dec (M.ofNat L) ≤ L + 0.002 := by
+    constructor <;> linarith
+  have hdl0 : 0 < dec (M.ofNat L) := by linarith
+  have hiL1 : 1 / (L : ℝ) * L = 1 := by field_simp
+  have hiL5 : 1 / (L : ℝ) ≤ 1 / 5 := by
+    rw [div_le_div_iff₀ hL0 (by norm_num)]; linarith
+  have huiL : u ≤ 1 / (L : ℝ) / 1000 := by
+    rw [le_div_iff₀ (by norm_num), le_div_iff₀ hL0]; linarith
+  -- the reciprocal of the depth counter
+  have hq0 : |1 / dec (M.ofNat L) - 1 / L| ≤ u / 4 := by
+    rw [div_sub_div _ _ hdl0.ne' hL0.ne', abs_div, abs_of_pos (mul_pos hdl0 hL0),
+      div_le_iff₀ (mul_pos hdl0 hL0), abs_le]
+    have h1 : L + τ ≤ dec (M.ofNat L) * L / 4 := by
+      nlinarith [mul_nonneg (by linarith : 0 ≤ dec (M.ofNat L) - 4.99) hL0.le]
+    have h2 := mul_le_mul_of_nonneg_left h1 hu
+    constructor <;> linarith
+  have hq0' := abs_le.mp hq0
+  obtain ⟨hqa, hqb⟩ := rnd_aux_of_nonneg (hM.div M.one (M.ofNat L) hdl0.ne')
+    (by rw [hM.dec_one]; positivity) (by rw [hM.dec_one]; linarith) hu hτ₀
+  rw [hM.dec_one] at hqa hqb
+  have hq021 : 1 / dec (M.ofNat L) ≤ 0.21 := by linarith
+  have hdq : 1 / L - u / 2 ≤ dec (M.div M.one (M.ofNat L)) ∧
+      dec (M.div M.one (M.ofNat L)) ≤ 1 / L + u / 2 := by
+    have := mul_le_mul_of_nonneg_left hq021 hu
+    constructor <;> linarith
+  obtain ⟨hsa, hsb⟩ := rnd_aux_of_nonneg (hM.sub M.one (M.div M.one (M.ofNat L)))
+    (by rw [hM.dec_one]; linarith) (by rw [hM.dec_one]; linarith) hu hτ₀
+  rw [hM.dec_one] at hsa hsb
+  have hds : 1 - 1 / L - 1.6 * u ≤ dec (M.sub M.one (M.div M.one (M.ofNat L))) ∧
+      dec (M.sub M.one (M.div M.one (M.ofNat L))) ≤ 1 - 1 / L + 1.6 * u := by
+    have := mul_le_mul_of_nonneg_left (show 1 - dec (M.div M.one (M.ofNat L)) ≤ 1 by linarith) hu
+    constructor <;> linarith
+  have hds0 : 0 ≤ dec (M.sub M.one (M.div M.one (M.ofNat L))) := by linarith
+  have hds1 : dec (M.sub M.one (M.div M.one (M.ofNat L))) ≤ 1 := by linarith
+  have hdse := mul_le_of_le_one_left he0.le hds1
+  obtain ⟨hea, heb⟩ := rnd_aux_of_nonneg (hM.mul (M.sub M.one (M.div M.one (M.ofNat L))) e)
+    (mul_nonneg hds0 he0.le) (by linarith) hu hτ₀
+  have hde : (1 - 1 / L) * dec e - 3 * u * dec e ≤
+      dec (M.mul (M.sub M.one (M.div M.one (M.ofNat L))) e) ∧
+      dec (M.mul (M.sub M.one (M.div M.one (M.ofNat L))) e) ≤
+        (1 - 1 / L) * dec e + 3 * u * dec e := by
+    have h1 := mul_le_mul_of_nonneg_right hds.1 he0.le
+    have h2 := mul_le_mul_of_nonneg_right hds.2 he0.le
+    have h3 := mul_le_mul_of_nonneg_left hdse hu
+    have h4 := mul_le_mul_of_nonneg_left hτe hu
+    constructor <;> linarith
+  have hue := mul_le_mul_of_nonneg_right huiL he0.le
+  refine ⟨by linarith, ?_⟩
+  have := mul_le_mul_of_nonneg_right hde.1 hL0.le
+  linear_combination this + dec e * hiL1
+
+private theorem eighNextParams_fst_aux {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
+    {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {R₀ r : F} (e : F)
+    {L : ℕ} (hu : 0 ≤ u) (huL : u * L ≤ 1 / 1000) (hτ₀ : 0 ≤ τ) (hτ1 : τ ≤ 1 / 100)
+    (he0 : 0 < dec e) (hτeR : 30 * τ ≤ dec e * dec R₀) (he1 : dec e ≤ 1) (hL : 5 ≤ L)
+    (hΩ : 2 + L + dec R₀ ≤ Ω) (hR₀ : 0 < dec R₀) (hr : dec r ≤ dec R₀)
+    (hint : M.le r (M.mul e R₀) = false) :
+    dec (eighNextParams M r e L).1 ≤ dec r := by
+  have hL' : (5 : ℝ) ≤ L := by exact_mod_cast hL
+  have hu5 : u ≤ 1 / 5000 := by nlinarith
+  simp only [eighNextParams]
+  have huτ := mul_le_mul_of_nonneg_left hτ1 hu
+  obtain ⟨h2a, h2b⟩ := rnd_aux_of_nonneg (hM.ofNat 2) (by norm_num) (by push_cast; linarith)
+    hu hτ₀
+  obtain ⟨hla, hlb⟩ := rnd_aux_of_nonneg (hM.ofNat L) (by positivity) (by linarith) hu hτ₀
+  push_cast at h2a h2b
+  have hd2 : 1.99 ≤ dec (M.ofNat 2) ∧ dec (M.ofNat 2) ≤ 2.01 := by constructor <;> linarith
+  have hdl : L - 0.002 ≤ dec (M.ofNat L) := by linarith
+  have hdl0 : 0 < dec (M.ofNat L) := by linarith
+  -- the factor is at most `0.95`
+  have hh1 : 1 / dec (M.ofNat 2) ≤ 0.51 := by rw [div_le_iff₀ (by linarith)]; linarith
+  have hh2 : 0.49 ≤ 1 / dec (M.ofNat 2) := by rw [le_div_iff₀ (by linarith)]; linarith
+  obtain ⟨hha, hhb⟩ := rnd_aux_of_nonneg (hM.div M.one (M.ofNat 2) (by linarith))
+    (by rw [hM.dec_one]; positivity) (by rw [hM.dec_one]; linarith) hu hτ₀
+  rw [hM.dec_one] at hha hhb
+  have ht1 : dec (M.ofNat 2) / dec (M.ofNat L) ≤ 0.41 := by rw [div_le_iff₀ hdl0]; linarith
+  have ht0 : 0 ≤ dec (M.ofNat 2) / dec (M.ofNat L) := div_nonneg (by linarith) hdl0.le
+  obtain ⟨hta, htb⟩ := rnd_aux_of_nonneg (hM.div (M.ofNat 2) (M.ofNat L) hdl0.ne') ht0
+    (by linarith) hu hτ₀
+  have := mul_le_mul_of_nonneg_left hh1 hu
+  have := mul_le_mul_of_nonneg_left ht1 hu
+  have hdh : 0.48 ≤ dec (M.div M.one (M.ofNat 2)) ∧ dec (M.div M.one (M.ofNat 2)) ≤ 0.52 := by
+    constructor <;> linarith
+  have hdt : -0.01 ≤ dec (M.div (M.ofNat 2) (M.ofNat L)) ∧
+      dec (M.div (M.ofNat 2) (M.ofNat L)) ≤ 0.42 := by
+    constructor <;> linarith
+  obtain ⟨haa, hab⟩ := rnd_aux_of_nonneg (hM.add (M.div M.one (M.ofNat 2))
+    (M.div (M.ofNat 2) (M.ofNat L))) (by linarith) (by linarith) hu hτ₀
+  have := mul_le_mul_of_nonneg_left (show dec (M.div M.one (M.ofNat 2)) +
+    dec (M.div (M.ofNat 2) (M.ofNat L)) ≤ 0.94 by linarith) hu
+  have hda : 0 ≤ dec (M.add (M.div M.one (M.ofNat 2)) (M.div (M.ofNat 2) (M.ofNat L))) ∧
+      dec (M.add (M.div M.one (M.ofNat 2)) (M.div (M.ofNat 2) (M.ofNat L))) ≤ 0.95 := by
+    constructor <;> linarith
+  -- the window is above the floor
+  have heR := mul_le_of_le_one_left hR₀.le he1
+  have hm := rnd_aux_of_nonneg (hM.mul e R₀) (mul_pos he0 hR₀).le (by linarith) hu hτ₀
+  have hrm : dec (M.mul e R₀) < dec r := by
+    rw [← not_le, ← hM.le_iff]; simp [hint]
+  have := mul_le_mul_of_nonneg_left heR hu
+  have := mul_le_mul_of_nonneg_right hu5 (mul_pos he0 hR₀).le
+  have := mul_le_mul_of_nonneg_right hu5 hτ₀
+  have hr0 : 29 * τ ≤ dec r := by linarith [hm.1]
+  have hdar := mul_le_of_le_one_left (by linarith : 0 ≤ dec r) (by linarith : dec (M.add
+    (M.div M.one (M.ofNat 2)) (M.div (M.ofNat 2) (M.ofNat L))) ≤ 1)
+  obtain ⟨hra, hrb⟩ := rnd_aux_of_nonneg (hM.mul (M.add (M.div M.one (M.ofNat 2))
+    (M.div (M.ofNat 2) (M.ofNat L))) r) (mul_nonneg hda.1 (by linarith)) (by linarith) hu hτ₀
+  have := mul_le_mul_of_nonneg_left hdar hu
+  have := mul_le_mul_of_nonneg_right hda.2 (by linarith : 0 ≤ dec r)
+  have := mul_le_mul_of_nonneg_right hu5 (by linarith : 0 ≤ dec r)
+  linarith
+
 /-- **The parameters of the nodes**: under the hypotheses of
 `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`, every node $y$ of the tree at a
 path $a$ has $\lvert a \rvert \le \ell$, size at most the root's, depth counter $\ell +
@@ -403,7 +548,80 @@ theorem FloatMachine.IsAccurate.eighNodeAt_eq_some_params
     (h : eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = some y) :
     a.length ≤ ℓ ∧ y.k ≤ k ∧ y.ℓ = ℓ + a.length ∧ dec ε / 3 ≤ dec y.ε ∧ dec y.ε ≤ dec ε ∧
       dec y.R ≤ dec R₀ := by
-  sorry
+  have hℓ20 : (20 : ℝ) ≤ ℓ := by
+    have h15 : (15 : ℝ) ≤ Real.logb 2 (dec ε)⁻¹ := by
+      rw [Real.le_logb_iff_rpow_le (by norm_num) (by positivity), show (15 : ℝ) = (15 : ℕ) by
+        norm_num, Real.rpow_natCast, ← inv_inv ((2 : ℝ) ^ 15), ← inv_pow]
+      exact inv_anti₀ hε (by simpa using hε₁)
+    have := (h15.trans (Nat.le_ceil _))
+    have : (bisectionDepth (dec ε) : ℝ) ≤ ℓ := by exact_mod_cast hℓ
+    simp only [bisectionDepth, Nat.cast_add] at this
+    push_cast at this
+    linarith
+  have hε1 : dec ε ≤ 1 := hε₁.trans (by norm_num)
+  have hτε : 100 * τ ≤ dec ε := hτ.trans (mul_le_of_le_one_right hε.le (min_le_right _ _))
+  have hτR : 100 * τ ≤ dec ε * dec R₀ := hτ.trans (by gcongr; exact min_le_left _ _)
+  have huℓ : u * ℓ ≤ 1 / 2000 := by nlinarith
+  -- the tolerance stays above a third of the root's
+  have hlow : ∀ (x : EighNode F) (j : ℕ), j ≤ ℓ → x.ℓ = ℓ + j →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) → dec ε / 3 ≤ dec x.ε := by
+    intro x j hj hxℓ hx
+    have hj' : (j : ℝ) ≤ ℓ := by exact_mod_cast hj
+    rw [hxℓ] at hx
+    push_cast at hx
+    have h1 := mul_le_mul_of_nonneg_left hj' (by positivity : 0 ≤ u * ℓ)
+    have h2 := mul_le_mul_of_nonneg_right h1 hε.le
+    by_contra hlt
+    have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
+    nlinarith [mul_lt_mul_of_pos_right (not_le.mp hlt) (by linarith : (0 : ℝ) < ℓ + j - 1)]
+  have key : ∀ (a : List Bool) (x : EighNode F) (s : List Bool → EighSample ℝ ℂ N) (j : ℕ)
+      (y : EighNode F), j + a.length ≤ ℓ → x.k ≤ k → x.ℓ = ℓ + j → dec x.ε ≤ dec ε →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) → dec x.R ≤ dec R₀ →
+      eighNodeAt M N signFuel R₀ β a x s = some y →
+      y.k ≤ k ∧ y.ℓ = ℓ + (j + a.length) ∧ dec y.ε ≤ dec ε ∧
+        dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * (j + a.length : ℕ) ≤ dec y.ε * (y.ℓ - 1) ∧
+        dec y.R ≤ dec R₀ := by
+    intro a
+    induction a with
+    | nil =>
+      intro x s j y _ h1 h2 h3 h4 h5 h
+      cases Option.some.inj h
+      exact ⟨h1, h2, h3, by simpa using h4, h5⟩
+    | cons b a ih =>
+      intro x s j y hj h1 h2 h3 h4 h5 h
+      simp only [eighNodeAt, Option.bind_eq_some_iff] at h
+      obtain ⟨z, hz, hy⟩ := h
+      obtain ⟨hzk, hzℓ, hzR, hzε, hint⟩ := eighChild_eq_some_params_aux hz
+      simp only [List.length_cons] at hj
+      have hxε := hlow x j (by omega) h2 h4
+      have hx0 : 0 < dec x.ε := by linarith
+      have hxℓ : (x.ℓ : ℝ) ≤ 2 * ℓ := by
+        rw [h2]; push_cast; linarith [(by exact_mod_cast (by omega : j ≤ ℓ) : (j : ℝ) ≤ ℓ)]
+      have hxℓ5 : 5 ≤ x.ℓ := by
+        have : (5 : ℝ) ≤ x.ℓ := by rw [h2]; push_cast; linarith [(j.cast_nonneg : (0 : ℝ) ≤ j)]
+        exact_mod_cast this
+      have huL : u * x.ℓ ≤ 1 / 1000 := by nlinarith
+      have hR := mul_le_mul_of_nonneg_right hxε hR₀.le
+      obtain ⟨hs1, hs2⟩ := eighNextParams_snd_aux hM x.R x.ε hu huL hτ₀ (by linarith) hx0
+        (by linarith) (by linarith) hxℓ5 (by linarith)
+      have hf := eighNextParams_fst_aux hM x.ε hu huL hτ₀ (by linarith) hx0 (by linarith)
+        (by linarith) hxℓ5 (by linarith) hR₀ h5 hint
+      have hloss := mul_le_mul_of_nonneg_left
+        (mul_le_mul hxℓ h3 hx0.le (by positivity)) (by positivity : (0 : ℝ) ≤ 3 * u)
+      obtain ⟨r1, r2, r3, r4, r5⟩ := ih z (fun a' => s (b :: a')) (j + 1) y (by omega)
+        (by omega) (by omega) (by rw [hzε]; linarith) (by
+          rw [hzε, hzℓ]; push_cast at hs2 ⊢; nlinarith) (by rw [hzR]; linarith) hy
+      rw [show j + (b :: a).length = j + 1 + a.length by simp only [List.length_cons]; omega]
+      exact ⟨r1, r2, r3, r4, r5⟩
+  have hlen : a.length ≤ ℓ := by
+    by_contra hlt
+    rw [eighNodeAt_eq_none_of_lt_length hM hε hε₁ hR₀ hℓ hu hu₁ hτ₀ hτ hΩ A s
+      (not_le.mp hlt)] at h
+    cases h
+  obtain ⟨r1, r2, r3, r4, r5⟩ := key a ⟨k, A, R₀, ε, ℓ⟩ s 0 y (by omega) le_rfl rfl le_rfl
+    (by simp) le_rfl h
+  rw [zero_add] at r2 r4
+  exact ⟨hlen, r1, r2, hlow y _ hlen r2 r4, r3, r5⟩
 
 /-- **The recursion tree has at most $(k + 1)(\ell + 1)$ nodes**: under the hypotheses of
 `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`, the set of paths at which
