@@ -104,7 +104,31 @@ $[0, 1]$ (concavity, chords through $0$, $1/2$, $1$; `nlinarith`), which is at l
 range, so $g(x) + \xi \ge g(x) - u \ge x \ge 0$. S, about 20 lines. -/
 theorem abs_le_abs_newtonSchulz_add {u x ξ : ℝ} (hξ : |ξ| ≤ u) (h₁ : 8 / 3 * u ≤ |x|)
     (h₂ : |x| ≤ 1 - 8 / 3 * u) : |x| ≤ |newtonSchulz x + ξ| := by
-  sorry
+  have hξ' := abs_le.mp hξ
+  have hK : ∀ a t : ℝ, 0 ≤ a → a ≤ t → t ≤ 1 - a → 3 / 4 * a ≤ t * (1 - t ^ 2) := by
+    intro a t ha hat htb
+    have ha2 : a ≤ 1 / 2 := by linarith
+    have ht0 : 0 ≤ t := by linarith
+    have hc : t ^ 2 + t * a + a ^ 2 ≤ 1 := by
+      nlinarith [mul_nonneg ht0 (show 0 ≤ 1 - a - t by linarith),
+        mul_nonneg ha (show 0 ≤ 1 - a by linarith)]
+    have h1 := mul_nonneg (sub_nonneg.2 hat) (sub_nonneg.2 hc)
+    have h2 := mul_nonneg ha (show 0 ≤ 1 / 4 - a ^ 2 by nlinarith)
+    nlinarith [h1, h2]
+  have key : ∀ t : ℝ, 8 / 3 * u ≤ t → t ≤ 1 - 8 / 3 * u → t + u ≤ newtonSchulz t := by
+    intro t ht1 ht2
+    have hu : 0 ≤ u := le_trans (abs_nonneg _) hξ
+    have := hK (8 / 3 * u) t (by positivity) ht1 ht2
+    unfold newtonSchulz
+    nlinarith
+  rcases le_or_gt 0 x with hx0 | hx0
+  · rw [abs_of_nonneg hx0] at h₁ h₂ ⊢
+    have := key x h₁ h₂
+    exact le_trans (show x ≤ newtonSchulz x + ξ by linarith [hξ'.1]) (le_abs_self _)
+  · rw [abs_of_neg hx0] at h₁ h₂ ⊢
+    have h := key (-x) h₁ h₂
+    rw [newtonSchulz_neg] at h
+    exact le_trans (show -x ≤ -(newtonSchulz x + ξ) by linarith [hξ'.2]) (neg_le_abs _)
 
 /-- **Quadratic decrease of the defect under perturbation** (Lemma 2.4, first part): if
 $20\lvert \xi \rvert \le \lvert x \rvert \le 1 - \sqrt{10\lvert \xi \rvert}$, then
