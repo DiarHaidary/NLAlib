@@ -625,7 +625,7 @@ theorem exists_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
   have hidx1 : ∀ a b : ℕ, (yo + zidx (.const n) (.var a) (.var b) + 1).eval =
       yo.eval + 2 * (a + n * b) + 1 := by
     intro a b; simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
-      IExp.eval_ofNat, IExp.eval_one]
+      IExp.eval_ofNat]
   have r1 : s.store.read p Y (yo + zidx (.const n) (.var i) (.var j)).eval =
       some (B ⟨i, hi'⟩ ⟨j, hj⟩).1 := by rw [hidx, e1, hb1]
   have w1 : s.store.write p Y (yo + zidx (.const n) (.var j) (.var i)).eval
@@ -652,6 +652,202 @@ theorem exists_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
 
 /-! ### The Hermitian kernels -/
 
+/-- The invariant of the loops of the Hermitian kernels: the shape and the tape positions of
+`st`, every cell outside the block at `Y` as in `st`, and both parts of every entry in `S`
+written with the parts of $\mathbf{B}$. -/
+private def ZInv (p : P) (n Y yo : ℕ) (st : St P K C) (B : Fin n → Fin n → K × K)
+    (S : Fin n → Fin n → Prop) (σ : St P K C) : Prop :=
+  σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
+    (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, 2 * (n * n)) = true →
+      σ.store.read q b i = st.store.read q b i) ∧
+    ∀ a b : Fin n, S a b → σ.store.read p Y (yo + 2 * (a + n * b)) = some (B a b).1 ∧
+      σ.store.read p Y (yo + 2 * (a + n * b) + 1) = some (B a b).2
+
+omit [Inhabited K] [AddMonoid C] in
+private theorem ZInv.mono {p : P} {n Y yo : ℕ} {st σ : St P K C} {B : Fin n → Fin n → K × K}
+    {S S' : Fin n → Fin n → Prop} (h : ZInv p n Y yo st B S σ) (hS : ∀ a b, S' a b → S a b) :
+    ZInv p n Y yo st B S' σ :=
+  ⟨h.1, h.2.1, h.2.2.1, fun a b hab => h.2.2.2 a b (hS a b hab)⟩
+
+private theorem zherm_lt {n a b : ℕ} (ha : a < n) (hb : b < n) :
+    2 * (a + n * b) + 1 < 2 * (n * n) := by
+  nlinarith
+
+omit [Inhabited K] in
+/-- A write inside the block at `Y` keeps the cells outside it. -/
+private theorem zherm_write_frame {s s' s₀ : Store P K} {p : P} {Y yo N k : ℕ} {v : K}
+    (hw : s.write p Y (yo + k) v = some s') (hk : k < N)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s.read q b i = s₀.read q b i) :
+    ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = s₀.read q b i := by
+  intro q b i hb
+  refine (Store.read_of_write_eq_some_of_ne hw ?_).trans (hfr q b i hb)
+  simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hb
+  by_cases hbY : b = Y
+  · exact Or.inr (by omega)
+  · exact Or.inl hbY
+
+omit [Inhabited K] [AddMonoid C] in
+/-- **The step of the invariant**: writing both parts of the entry $(i_0, j_0)$ of
+$\mathbf{B}$. -/
+private theorem ZInv.step {p : P} {n Y yo : ℕ} {st s σ : St P K C}
+    {B : Fin n → Fin n → K × K} {S : Fin n → Fin n → Prop} (h : ZInv p n Y yo st B S s)
+    (i₀ j₀ : Fin n) {s' s'' : Store P K}
+    (hw1 : s.store.write p Y (yo + 2 * (i₀ + n * j₀)) (B i₀ j₀).1 = some s')
+    (hw2 : s'.write p Y (yo + 2 * (i₀ + n * j₀) + 1) (B i₀ j₀).2 = some s'')
+    (hσ : σ.store = s'') (hpos : σ.pos = s.pos) :
+    ZInv p n Y yo st B (fun a b => S a b ∨ (a = i₀ ∧ b = j₀)) σ := by
+  obtain ⟨sh, ps, fr, hS⟩ := h
+  have hk := zherm_lt i₀.2 j₀.2
+  subst hσ
+  refine ⟨(Store.shape_of_write_eq_some hw2).trans ((Store.shape_of_write_eq_some hw1).trans sh),
+    hpos.trans ps, zherm_write_frame (k := 2 * (i₀ + n * j₀) + 1) hw2 hk
+      (zherm_write_frame (k := 2 * (i₀ + n * j₀)) hw1 (by omega) fr), fun a b hab => ?_⟩
+  by_cases he : a = i₀ ∧ b = j₀
+  · obtain ⟨rfl, rfl⟩ := he
+    exact ⟨(Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega))).trans
+      (Store.read_of_write_eq_some hw1), Store.read_of_write_eq_some hw2⟩
+  · have hab' : S a b := hab.resolve_right he
+    have hne : a.1 + n * b.1 ≠ i₀.1 + n * j₀.1 := fun e => he
+      (by have := zmirror_index_inj a.2 i₀.2 e; exact ⟨Fin.ext this.1, Fin.ext this.2⟩)
+    obtain ⟨h1, h2⟩ := hS a b hab'
+    exact ⟨(Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega))).trans
+        ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (by omega))).trans h1),
+      (Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega))).trans
+        ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (by omega))).trans h2)⟩
+
+omit [Inhabited K] in
+private theorem zherm_inv_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
+    (h : exec I (.seq (.instr (.copy p dst src)) t) s = some s₂) :
+    ∃ v s', s.store.read p src.buf src.idx.eval = some v ∧
+      s.store.write p dst.buf dst.idx.eval v = some s' ∧
+      exec I t { s with store := s', cnt := s.cnt + I.charge (.copy p) } = some s₂ := by
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
+  exact ⟨v, s', hv, hw, h⟩
+
+omit [Inhabited K] in
+private theorem zherm_inv_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {s s₂ : St P K C} (h : exec I (.seq (.instr (.bin p op dst x y)) t) s = some s₂) :
+    ∃ a c v s', s.store.read p x.buf x.idx.eval = some a ∧
+      s.store.read p y.buf y.idx.eval = some c ∧ I.sem.bin p op a c = some v ∧
+      s.store.write p dst.buf dst.idx.eval v = some s' ∧
+      exec I t { s with store := s', cnt := s.cnt + I.charge (.bin p op) } = some s₂ := by
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨a, ha, c, hc, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
+  exact ⟨a, c, v, s', ha, hc, hv, hw, h⟩
+
+omit [Inhabited K] in
+private theorem zherm_inv_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
+    {s s₂ : St P K C} (h : exec I (.seq (.instr (.lit p dst q)) t) s = some s₂) :
+    ∃ v s', I.sem.lit p q = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
+      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
+  exact ⟨v, s', hv, hw, h⟩
+
+omit [Inhabited K] [AddMonoid C] in
+/-- The parts of $\mathbf{A}$ survive in every store framed outside the block at `Y`. -/
+private theorem zherm_readX {p : P} {n X Y xo yo : ℕ} {st σ : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo A)
+    (hXY : blockDisjoint (Y, yo, 2 * (n * n)) (X, xo, 2 * (n * n)) = true)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, 2 * (n * n)) = true →
+      σ.store.read q b i = st.store.read q b i) (a b : Fin n) :
+    σ.store.read p X (xo + 2 * (a + n * b)) = some (A a b).1 ∧
+      σ.store.read p X (xo + 2 * (a + n * b) + 1) = some (A a b).2 := by
+  have hk := zherm_lt a.2 b.2
+  have hd : ∀ k < 2 * (n * n), blockDisjoint (X, xo + k, 1) (Y, yo, 2 * (n * n)) = true := by
+    intro k hk
+    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hXY ⊢
+    omega
+  exact ⟨(hfr _ _ _ (hd _ (by omega))).trans (hA a b ⟨0, Nat.zero_lt_two⟩),
+    (hfr _ _ _ (hd _ hk)).trans (hA a b ⟨1, Nat.one_lt_two⟩)⟩
+
+omit [Inhabited K] in
+/-- **The two loops of a Hermitian kernel**: if each step of the upper loop writes the entry
+$(i, j)$, $i < j$, of $\mathbf{B}$ and each step of the diagonal loop the entry $(i, i)$, keeping
+the invariant, the run ends the loops with the upper triangle and the diagonal of $\mathbf{B}$
+written. -/
+private theorem zherm_loops {p : P} {n Y yo : ℕ} {st st' : St P K C}
+    {B : Fin n → Fin n → K × K} {bodyU : ℕ → ℕ → Stmt P ι ℕ ℕ} {bodyD : ℕ → Stmt P ι ℕ ℕ}
+    {rest : Stmt P ι ℕ ℕ}
+    (hup : ∀ (i j : Fin n), i < j → ∀ S (s s₂ : St P K C), ZInv p n Y yo st B S s →
+      exec I (bodyU j i) s = some s₂ → ZInv p n Y yo st B (fun a b => S a b ∨ (a = i ∧ b = j)) s₂)
+    (hdg : ∀ (i : Fin n), ∀ S (s s₂ : St P K C), ZInv p n Y yo st B S s →
+      exec I (bodyD i) s = some s₂ → ZInv p n Y yo st B (fun a b => S a b ∨ (a = i ∧ b = i)) s₂)
+    (h : exec I (.seq (.loop (.const n) fun j => .seq (.loop (.var j) fun i => bodyU j i) .skip)
+      (.seq (.loop (.const n) bodyD) rest)) st = some st') :
+    ∃ σ, ZInv p n Y yo st B (fun a b => a ≤ b) σ ∧ exec I rest σ = some st' := by
+  rw [exec_seq, Option.bind_eq_some_iff] at h
+  obtain ⟨σ₁, h₁, h⟩ := h
+  rw [exec_seq, Option.bind_eq_some_iff] at h
+  obtain ⟨σ₂, h₂, h₃⟩ := h
+  have hU := forall_of_exec_loop_eq_some I
+    (fun j s => ZInv p n Y yo st B (fun a b => a < b ∧ b.1 < j) s)
+    ⟨rfl, rfl, fun _ _ _ _ => rfl, fun _ b h => absurd h.2 (Nat.not_lt_zero _)⟩ (by
+      intro j hj s₁ s₂ hR hex
+      simp only [IExp.eval_const] at hj
+      rw [exec_seq_skip] at hex
+      refine (forall_of_exec_loop_eq_some I
+        (fun i s => ZInv p n Y yo st B (fun a b => a < b ∧ (b.1 < j ∨ b.1 = j ∧ a.1 < i)) s)
+        (hR.mono fun a b h => ⟨h.1, h.2.elim id fun h => absurd h.2 (Nat.not_lt_zero _)⟩)
+        ?_ hex).mono fun a b h => ⟨h.1, by
+          have : a.1 < b.1 := h.1
+          have h2 := h.2
+          simp only [IExp.eval_var]
+          omega⟩
+      · intro i hi s₁ s₂ hR hex
+        simp only [IExp.eval_var] at hi
+        have hab : (⟨i, by omega⟩ : Fin n) < ⟨j, hj⟩ := Fin.mk_lt_mk.mpr hi
+        refine (hup ⟨i, by omega⟩ ⟨j, hj⟩ hab _ s₁ s₂ hR hex).mono fun a b h => ?_
+        by_cases he : a.1 = i ∧ b.1 = j
+        · exact Or.inr ⟨Fin.ext he.1, Fin.ext he.2⟩
+        · have : a.1 < b.1 := h.1
+          refine Or.inl ⟨h.1, ?_⟩
+          omega) h₁
+  have hD := forall_of_exec_loop_eq_some I
+    (fun i s => ZInv p n Y yo st B (fun a b => a < b ∨ (a = b ∧ a.1 < i)) s)
+    (hU.mono fun a b h => h.elim (fun h => ⟨h, b.2⟩) fun h => absurd h.2 (Nat.not_lt_zero _))
+    (by
+      intro i hi s₁ s₂ hR hex
+      simp only [IExp.eval_const] at hi
+      refine (hdg ⟨i, hi⟩ _ s₁ s₂ hR hex).mono fun a b h => ?_
+      by_cases he : a.1 = i ∧ b.1 = i
+      · exact Or.inr ⟨Fin.ext he.1, Fin.ext he.2⟩
+      · refine Or.inl (h.imp id fun h => ⟨h.1, ?_⟩)
+        have := congrArg Fin.val h.1
+        omega) h₂
+  refine ⟨σ₂, hD.mono fun a b h => ?_, h₃⟩
+  rcases lt_or_eq_of_le h with h | h
+  · exact Or.inl h
+  · exact Or.inr ⟨h, a.2⟩
+
+/-- **The mirror ends a Hermitian kernel.** -/
+private theorem zherm_finish {p : P} {n Y : ℕ} {yo : IExp ℕ} {st σ st' : St P K C}
+    {B : Fin n → Fin n → K × K} (h : ZInv p n Y yo.eval st B (fun a b => a ≤ b) σ)
+    (hdiag : ∀ i, (B i i).2 = (I.sem.toFloatMachine p toNat mmR qrR unif normal).zero)
+    (h₃ : exec I (zmirror (ι := ι) p (.const n) Y yo).run σ = some st') :
+    pairLayout.Holds st'.store p Y yo.eval
+      ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermFrom (fun i j => B i j)
+        fun i => (B i i).1) ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  obtain ⟨sh, ps, fr, hS⟩ := h
+  obtain ⟨h1, h2, h3, h4⟩ := holds_of_exec_zmirror (toNat := toNat) (mmR := mmR) (qrR := qrR)
+    (unif := unif) (normal := normal) p n (B := B) hS hdiag h₃
+  exact ⟨h1, fun q b i hb => (h2 q b i hb).trans (fr q b i hb), h3.trans sh, h4.trans ps⟩
+
+omit [Inhabited K] in
+private theorem zherm_hermFrom_ite {Su Sg : Type} {n : ℕ} (M : FloatMachine K Su Sg)
+    (up : Fin n → Fin n → K × K) (dg : Fin n → K) :
+    M.hermFrom (fun i j => if i < j then up i j else (dg i, M.zero))
+      (fun i => (if i < i then up i i else (dg i, M.zero)).1) = M.hermFrom up dg := by
+  ext i j <;> simp only [FloatMachine.hermFrom, Matrix.of_apply, lt_irrefl, if_false] <;>
+    split_ifs <;> rfl
+
 /-- **`zhermShift` computes the machine's shift**: a successful run of
 `NLAlib.Computation.zhermShift` from a state whose block at `X` holds the complex $n \times n$
 matrix $\mathbf{A}$ and whose cell `c` holds $c$, into a block at `Y` disjoint from the block at
@@ -676,7 +872,62 @@ theorem holds_of_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hprog : (zhermShift (ι := ι) p (.const n) X xo c Y yo).run = .seq (.named "zhermShift"
+      [.idx (.const n), .buf X, .idx xo, .cell c, .buf Y, .idx yo]
+      (.seq (.loop (.const n) fun j => .seq (.loop (.var j) fun i =>
+        .seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var j)⟩))
+          (.seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩
+            ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩)) .skip)) .skip)
+      (.seq (.loop (.const n) fun i =>
+        .seq (.instr (.bin p .sub ⟨Y, yo + zidx (.const n) (.var i) (.var i)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩ c))
+          (.seq (.instr (.lit p ⟨Y, yo + zidx (.const n) (.var i) (.var i) + 1⟩ 0)) .skip))
+        (zmirror (ι := ι) p (.const n) Y yo).run))) .skip := rfl
+  rw [hprog, exec_seq_skip, exec_named] at h
+  let B : Fin n → Fin n → K × K := fun i j =>
+    if i < j then A i j else (M.sub (A i i).1 cv, M.zero)
+  refine (fun hL => ?_) (zherm_loops (p := p) (Y := Y) (yo := yo.eval) (B := B)
+    (fun i j hij S s s₂ hR hex => ?_)
+    (fun i S s s₂ hR hex => ?_) h)
+  · obtain ⟨σ, hσ, h₃⟩ := hL
+    have hfin := zherm_finish (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
+    rwa [show M.hermShift A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
+      (zherm_hermFrom_ite M _ _).symm]
+  · obtain ⟨v1, s', hr1, hw1, hex⟩ := zherm_inv_copy hex
+    obtain ⟨v2, s'', hr2, hw2, hex⟩ := zherm_inv_copy hex
+    rw [exec_skip, Option.some_inj] at hex
+    subst hex
+    have fr := hR.2.2.1
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat] at hr1 hw1 hr2 hw2
+    rw [(zherm_readX hA hXY fr i j).1, Option.some_inj] at hr1
+    subst hr1
+    have fr' := zherm_write_frame (k := 2 * (i + n * j)) hw1
+      (by have := zherm_lt i.2 j.2; omega) fr
+    rw [(zherm_readX hA hXY (σ := { s with store := s' }) fr' i j).2, Option.some_inj] at hr2
+    subst hr2
+    have hB : B i j = A i j := if_pos hij
+    exact ZInv.step hR i j (by rw [hB]; exact hw1) (by rw [hB]; exact hw2) rfl rfl
+  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := zherm_inv_bin hex
+    obtain ⟨z, s'', hz, hw2, hex⟩ := zherm_inv_lit hex
+    rw [exec_skip, Option.some_inj] at hex
+    subst hex
+    have fr := hR.2.2.1
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat] at ha hw1 hw2
+    rw [(zherm_readX hA hXY fr i i).1, Option.some_inj] at ha
+    subst ha
+    rw [fr _ _ _ hcY, hc, Option.some_inj] at hc'
+    subst hc'
+    have hB1 : (B i i).1 = v := by
+      simp only [B, lt_irrefl, if_false, M, ScalarSem.toFloatMachine, hv, Option.getD_some]
+    have hB2 : (B i i).2 = z := by
+      simp only [B, lt_irrefl, if_false, M, ScalarSem.toFloatMachine]
+      rw [show ((0 : ℚ)) = (0 : ℚ) from rfl, hz, Option.getD_some]
+    exact ZInv.step hR i i (by rw [hB1]; exact hw1) (by rw [hB2]; exact hw2) rfl rfl
 
 /-- **`zhermShift` succeeds** under the standard model with every value in range, when the buffer
 `Y` at tag `p` is long enough. No printed source.
