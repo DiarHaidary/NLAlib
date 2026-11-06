@@ -177,7 +177,60 @@ $1/(2\sqrt{1-\eta})$ since $|\sqrt x - \sqrt y| = |x - y|/(\sqrt x + \sqrt y)$
 theorem frobNorm_polarFactor_sub_le {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) :
     frobNorm (polarFactor V - V) ≤ frobNorm (Vᵀ * V - 1) / (2 * Real.sqrt (1 - η)) := by
-  sorry
+  open scoped MatrixOrder in
+  have hη0 : 0 ≤ η := le_trans (specNorm_nonneg _) hV
+  have hs : 0 < 1 - η := by linarith
+  have hspos : 0 < Real.sqrt (1 - η) := Real.sqrt_pos.2 hs
+  have hGH : (Vᵀ * V).IsHermitian := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
+    exact Matrix.isHermitian_conjTranspose_mul_self V
+  have hGnn : 0 ≤ Vᵀ * V := by
+    refine Matrix.nonneg_iff_posSemidef.mpr ?_
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
+    exact Matrix.posSemidef_conjTranspose_mul_self V
+  have hI : (1 : Matrix (Fin m) (Fin m) ℝ).IsHermitian := Matrix.isHermitian_one
+  have hU := hasOrthonormalCols_polarFactor hV hη
+  have hsq : polarFactor V * CFC.sqrt (Vᵀ * V) = V := by
+    have h := polarFactor_mul_sqrt V
+    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at h
+  have hdiff : polarFactor V - V = polarFactor V * (1 - CFC.sqrt (Vᵀ * V)) := by
+    rw [Matrix.mul_sub, Matrix.mul_one, hsq]
+  have hsqrt : CFC.sqrt (Vᵀ * V) = cfc Real.sqrt (Vᵀ * V) := by
+    rw [CFC.sqrt_eq_real_sqrt _ hGnn, cfcₙ_eq_cfc]
+  have hcfc1 : cfc Real.sqrt (1 : Matrix (Fin m) (Fin m) ℝ) = 1 := by
+    simp
+  have hspecG : spectrum ℝ (Vᵀ * V) ⊆ Set.Icc (1 - η) (1 + η) := by
+    rw [hGH.spectrum_subset_iff]
+    intro i hi
+    have h1 := abs_le.mp ((hGH.abs_eigenvalue_sub_le hI i).trans hV)
+    rw [eigenvalue_one hi] at h1
+    exact Set.mem_Icc.2 ⟨by linarith [h1.1, h1.2], by linarith [h1.1, h1.2]⟩
+  have hspecI : spectrum ℝ (1 : Matrix (Fin m) (Fin m) ℝ) ⊆ Set.Icc (1 - η) (1 + η) := by
+    rw [hI.spectrum_subset_iff]
+    intro i hi
+    rw [eigenvalue_one hi]
+    exact Set.mem_Icc.2 ⟨by linarith, by linarith⟩
+  have hc : 0 ≤ 1 / (2 * Real.sqrt (1 - η)) := by positivity
+  have hlip : LipschitzOnWith (Real.toNNReal (1 / (2 * Real.sqrt (1 - η)))) Real.sqrt
+      (Set.Icc (1 - η) (1 + η)) := by
+    refine LipschitzOnWith.of_dist_le_mul fun x hx y hy => ?_
+    rw [Real.coe_toNNReal _ hc, Real.dist_eq, Real.dist_eq]
+    have ha : Real.sqrt (1 - η) ≤ Real.sqrt x := Real.sqrt_le_sqrt hx.1
+    have hb : Real.sqrt (1 - η) ≤ Real.sqrt y := Real.sqrt_le_sqrt hy.1
+    have hax : Real.sqrt x ^ 2 = x := Real.sq_sqrt (by linarith [hx.1])
+    have hby : Real.sqrt y ^ 2 = y := Real.sq_sqrt (by linarith [hy.1])
+    have e : x - y = (Real.sqrt x - Real.sqrt y) * (Real.sqrt x + Real.sqrt y) := by
+      linear_combination hby - hax
+    have h1 : 1 ≤ 1 / (2 * Real.sqrt (1 - η)) * (Real.sqrt x + Real.sqrt y) := by
+      rw [one_div_mul_eq_div, le_div_iff₀ (by linarith)]
+      linarith
+    rw [e, abs_mul, abs_of_nonneg (by linarith : 0 ≤ Real.sqrt x + Real.sqrt y)]
+    nlinarith [mul_le_mul_of_nonneg_left h1 (abs_nonneg (Real.sqrt x - Real.sqrt y))]
+  have key := hGH.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith hI hspecG hspecI hlip
+  rw [Real.coe_toNNReal _ hc, hcfc1] at key
+  rw [hdiff, hU.frobNorm_mul_left, hsqrt, frobNorm_sub_comm 1 (cfc Real.sqrt (Vᵀ * V)),
+    div_eq_mul_one_div]
+  exact key.trans_eq (mul_comm _ _)
 
 /-- **A rotation taking one unit vector to another** (E5): for unit $\mathbf{x}$, $\mathbf{y}$ the
 orthogonal $\mathbf{Z} = \mathbf{H}_{\mathbf{x}+\mathbf{y}}\mathbf{H}_{\mathbf{x}}$ (two
