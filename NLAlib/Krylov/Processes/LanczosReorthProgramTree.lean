@@ -22,15 +22,13 @@ the registered trees instantiate it with `gemv` on the matrix read from ROM
 `NLAlib.cgs2`. Buffers: `b` ($N$), `V` ($N(q+1)$), `alpha` ($q$), `beta` ($q+1$), `inputNorm`
 ($1$), `prev` ($N$), `nu` ($q$). Scoped: the matrix (stored tree) or an empty slot (oracle tree),
 then `work` ($N$, handle $8$ at run time), `scalars` ($2$, handle $9$), `coef` ($q + 1$, handle
-$10$). The targets are drafted in the design note only (AGENTS rule 2).
+$10$). The targets are in `LanczosReorthTargets.lean` and `LanczosReorthOracleTargets.lean`.
 
 ## Main definitions
 
 * `NLAlib.lanczosReorthLoop`: the generic builder.
 * `NLAlib.lanczosReorthProg`, `NLAlib.lanczosReorthOracleProg`: the CGS2 instances.
 * `NLAlib.lanczosReorthProg.compiled`, `NLAlib.lanczosReorthOracleProg.compiled`: their trees.
-* `NLAlib.lanczosReorthCount`: the drafted componentwise count bound (moves to the targets file
-  at registration).
 
 ## Main results
 
@@ -118,22 +116,5 @@ def lanczosReorthOracleProg.compiled {P ι : Type} (tag : P) (o : ι) : Prog P �
 theorem lanczosReorthOracleProg.toStmt_compiled {P ι : Type} (tag : P) (o : ι) (N q : ℕ) :
     (lanczosReorthOracleProg.compiled tag o).toStmt N ![q] =
       (lanczosReorthOracleProg tag o (.const N) (.const q) 0 1 2 3 4 5 6).run := rfl
-
-/-- **Drafted componentwise count bound** of the stored-matrix tree: `NLAlib.lanczosCount`'s
-components plus, per step $j < q$, the two CGS2 passes against $j + 1$ columns ($2(j+1)$ dots and
-two `gemv` of width $j + 1$, two `axpy`, one literal each) and the $j + 1$ coefficient additions,
-and one extra `nrm2`. Each component is an upper bound; the exact values are fixed by the static
-cost proof. Moves to `LanczosReorthTargets.lean` when the maintainer registers the target. -/
-noncomputable def lanczosReorthCount {P ι : Type} (tag : P) (N q : ℕ) : OpCount P ι :=
-  Finsupp.single (.rom tag) (N ^ 2) +
-  Finsupp.single (.bin tag .mul) (N + q * (N ^ 2 + 5 * N) + 4 * N * q * (q + 1)) +
-  Finsupp.single (.bin tag .add) (N + q * (N ^ 2 + 5 * N) + (4 * N + 1) * q * (q + 1)) +
-  Finsupp.single (.un tag .conj) (N + 3 * q * N + 2 * N * q * (q + 1)) +
-  Finsupp.single (.bin tag .div) (N * (q + 1)) +
-  Finsupp.single (.un tag .sqrt) (2 * q + 1) +
-  Finsupp.single (.un tag .neg) (2 * q) +
-  Finsupp.single (.lit tag) (2 * N + 3 + q * (2 * N + 2) + 2 * q * (N + q + 2)) +
-  Finsupp.single (.cmp tag) (q + 1) +
-  Finsupp.single (.copy tag) (N + 2 * q * N)
 
 end NLAlib

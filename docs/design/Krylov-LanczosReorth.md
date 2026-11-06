@@ -278,7 +278,7 @@ $q(1+\delta)$, $|\delta|\le u$, for every rational literal, and only $0$ is exac
 Negating a cell does not avoid this, since $\mathbf w\leftarrow\mathbf w-\mathbf s$ needs a scalar $\pm1$ in
 `axpy`. C3 accounts for it: the extra term is $u\|\mathbf s\|\le u(1+\eta_0)(1+c_1)\|\mathbf w\|$, absorbed in $c_1$.
 
-### 2.3 Programs, trees, targets (G1–G5; draft statements only, AGENTS rule 2)
+### 2.3 Programs, trees, targets (G1–G5; registered 2026-11-06, see §8)
 
 Names follow main's Lanczos pair (`lanczosProg`/`StoredEntriesLanczos`,
 `lanczosOracleProg`/`MatrixFreeLanczos`): **`lanczosReorthProg`** (stored matrix from ROM, `gemv`),
@@ -706,6 +706,19 @@ admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $\beta > \tau\nu 
   (N4, C4), `exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols` →
   `HasOrthonormalCols.exists_transpose_eq_mul_eq_neg` and
   `card_le_card_eigenvalue_mem_of_hasOrthonormalCols` → `Matrix.IsHermitian.…` (N18: E1, F2a).
+
+**Registration (decision S1, approved by the maintainer 2026-11-06).** The targets
+`StoredEntriesLanczosReorth` (`Processes/LanczosReorthTargets.lean`, with `lanczosReorthCount`,
+moved from the tree file) and `MatrixFreeLanczosReorth` (`Processes/LanczosReorthOracleTargets.lean`,
+with `lanczosReorthOracleCount`) are registered in `docs/targets.toml` with their trees. Against
+the draft above: the $\alpha$ clause is `lanczosAlpha A (lanczosReorthState A b j).toLanczosState`
+and the $\nu$ clause is indexed $j + 1$ (`Fin q`), as proved; the memory is the static workspace
+bound, $2N^2 + N(q+5) + 5q + 7$ (ROM included) stored and $N(q+5) + 5q + 7$ matrix-free (declared
+inputs $N(q+3) + 3q + 2$, scoped matrix $N^2$, `work` $N$, `scalars` 2, `coef` $q+1$, CGS2
+scratch $\le N + q + 2$). The proofs `storedEntriesLanczosReorth`, `matrixFreeLanczosReorth`
+(`LanczosReorthProgram.lean`) compose the exact runs, `Prog.bounds_staticCost_of_exec_eq_some`
+and the static count and workspace bounds; the exact matrix-free run reuses the $u = 0$ route of
+the stored one with the exact oracle (`IsMatvecErr` at accuracy $0$).
 
 **Layout** (lines):
 * Matrix layer: `Matrix/Perturbation/OrthErr.lean` 271 (B1, B3–B8),

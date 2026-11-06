@@ -277,6 +277,7 @@ public import NLAlib.Krylov.Processes.LanczosProgramStaticCost
 public import NLAlib.Krylov.Processes.LanczosProgramStep
 public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
+public import NLAlib.Krylov.Processes.LanczosReorthOracleTargets
 public import NLAlib.Krylov.Processes.LanczosReorthProgram
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRounded
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedLoop
@@ -284,6 +285,7 @@ public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedStep
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRounding
 public import NLAlib.Krylov.Processes.LanczosReorthProgramTree
 public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
+public import NLAlib.Krylov.Processes.LanczosReorthTargets
 public import NLAlib.Krylov.Processes.LanczosTargets
 public import NLAlib.Krylov.Processes.PreconditionedLanczos
 public import NLAlib.LowRank.Gaussian.BlockKrylov
