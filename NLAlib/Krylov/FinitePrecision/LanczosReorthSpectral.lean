@@ -242,7 +242,8 @@ $\eta_0 \le 1/100$, the fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$,
 $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and $\tau \le 1$, for $n$ nonempty, if
 $\beta_k \le \rho$, every Ritz value is within $\rho + e$ of an eigenvalue of $\mathbf{H}$,
 $e$ = `NLAlib.LanczosReorthRun.backwardRadius` (with $\rho = \tau\nu_{k+1}$-type bounds when the
-next step fails the criterion). [Paige1971, §6.1] (the stopping criterion (6.10) and its eigenvalue bound). -/
+next step fails the criterion). [Paige1971, §6.1] (the stopping criterion (6.10) and its
+eigenvalue bound). -/
 theorem exists_abs_eigenvalue_sub_le_of_β_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) [NeZero n] {ρ : ℝ} (hρ : L.β k ≤ ρ)
