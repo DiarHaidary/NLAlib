@@ -149,7 +149,9 @@ $-\bar{\mathbf{X}}$.
 Proof: `Matrix.ext`, `dec_neg`, `Complex.ext`. S, about 5 lines. -/
 theorem decodeMatrix_negMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
     (X : Matrix m n (F × F)) : decodeMatrix dec (M.negMat X) = -decodeMatrix dec X := by
-  sorry
+  ext i j
+  apply Complex.ext <;>
+    simp [decodeMatrix, FloatMachine.negMat, decodeComplex, hM.dec_neg]
 
 /-- The stored conjugate transpose is exact: the decoding of
 `NLAlib.FloatMachine.conjTransposeMat` $\mathbf{X}$ is $\bar{\mathbf{X}}^{\mathsf{H}}$.
