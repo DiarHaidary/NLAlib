@@ -23,6 +23,11 @@ $\mathbf{b}/\|\mathbf{b}\|$; and every admissible prefix ($\tau\nu_j < \beta_j$ 
 ## Main definitions
 
 * `NLAlib.LanczosReorthOutputs`: the decoded-output predicate.
+
+## Main results
+
+* `NLAlib.roundingFactor_succ_le_lanczosImplementationRoundoffBound`: the factor of a norm of
+  length $N$ fits the budget.
 -/
 
 @[expose] public section
@@ -51,5 +56,19 @@ def LanczosReorthOutputs {P K : Type} [DecidableEq P] (s : Store P K) (dec : P �
       ∃ L : LanczosReorthRun N m, L.H = A ∧ (∀ j, 1 ≤ j → j ≤ m + 1 → L.v j = v j) ∧
         (∀ j ≤ m, L.α j = α j ∧ L.β j = β j ∧ L.ν j = ν j) ∧
         L.ε = ε ∧ L.τ = τ ∧ L.η₀ = η₀ ∧ L.ε₁ = ε₁ ∧ L.ε₂ = ε₂ ∧ L.ε₃ = ε₃
+
+/-- The rounding factor $\gamma_{N+1}(u)$ of a norm of length $N$ is at most the Lanczos
+implementation budget `NLAlib.lanczosImplementationRoundoffBound` $N\,u$, which
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, when $u \ge 0$ and the
+budget is at most $1/100$. -/
+theorem roundingFactor_succ_le_lanczosImplementationRoundoffBound (N : ℕ) {u : ℝ} (hu : 0 ≤ u)
+    (hsmall : lanczosImplementationRoundoffBound N u ≤ 1 / 100) :
+    roundingFactor (N + 1) u ≤ lanczosImplementationRoundoffBound N u := by
+  have hγ := roundingFactor_le_two_mul_of_lanczosImplementationRoundoffBound_le
+    (N := N) (m := N + 1) (by omega) hu hsmall
+  rw [lanczosImplementationRoundoffBound_def] at hsmall ⊢
+  push_cast at hγ
+  have hN : 0 ≤ (N : ℝ) := Nat.cast_nonneg N
+  nlinarith [mul_nonneg (mul_nonneg hN hN) hu, mul_nonneg hN hu]
 
 end NLAlib

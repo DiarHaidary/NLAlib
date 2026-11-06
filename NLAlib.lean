@@ -18,6 +18,7 @@ public import NLAlib.Computation.Contract
 public import NLAlib.Computation.Dense
 public import NLAlib.Computation.Exact
 public import NLAlib.Computation.Exec
+public import NLAlib.Computation.ExecCharge
 public import NLAlib.Computation.FirstOrder
 public import NLAlib.Computation.FixedPoint
 public import NLAlib.Computation.Float
@@ -277,6 +278,9 @@ public import NLAlib.Krylov.Processes.LanczosProgramStep
 public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.Krylov.Processes.LanczosReorthProgram
+public import NLAlib.Krylov.Processes.LanczosReorthProgramRounded
+public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedLoop
+public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedStep
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRounding
 public import NLAlib.Krylov.Processes.LanczosReorthProgramTree
 public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
