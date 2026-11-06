@@ -39,6 +39,18 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- Frobenius norms add in square when the cross term has zero trace. -/
+private lemma frobNorm_add_sq_of_trace_transpose_mul_eq_zero {n k : ℕ}
+    {A B : Matrix (Fin n) (Fin k) ℝ} (h : (Aᵀ * B).trace = 0) :
+    frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
+  have h' : (Bᵀ * A).trace = 0 := by
+    rw [← Matrix.trace_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
+    exact h
+  simp only [frobNorm_sq_eq_re_trace, Matrix.conjTranspose_eq_transpose_of_trivial,
+    Matrix.transpose_add, Matrix.add_mul, Matrix.mul_add, Matrix.trace_add, h, h',
+    RCLike.re_to_real]
+  ring
+
 /-- **The symmetric completion of a residual** (E1): for $\mathbf{U}$ with orthonormal columns
 and $\mathbf{R}$ with $\mathbf{U}^{\mathsf{T}}\mathbf{R}$ symmetric, the symmetric
 $\mathbf{E} = -\mathbf{R}\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}^{\mathsf{T}} +
@@ -64,7 +76,65 @@ theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
     (hR : (Uᵀ * R)ᵀ = Uᵀ * R) :
     ∃ E : Matrix (Fin n) (Fin n) ℝ, Eᵀ = E ∧ E * U = -R ∧
       frobNorm E ≤ Real.sqrt 2 * frobNorm R ∧ specNorm E ≤ 2 * specNorm R := by
-  sorry
+  have hUU : Uᵀ * U = 1 := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
+    exact hU
+  have hRU : Rᵀ * U = Uᵀ * R := by
+    rw [← hR, Matrix.transpose_mul, Matrix.transpose_transpose]
+  have hQU : (1 - U * Uᵀ) * U = 0 := by
+    rw [Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc, hUU, Matrix.mul_one, sub_self]
+  have hP : IsStarProjection (1 - U * Uᵀ) := by
+    have h := isStarProjection_rangeProjector U
+    rw [hU.rangeProjector_eq, Matrix.conjTranspose_eq_transpose_of_trivial] at h
+    exact h.one_sub
+  have hQn : specNorm (1 - U * Uᵀ) ≤ 1 := hP.specNorm_le_one
+  have hUn : specNorm Uᵀ ≤ 1 := by
+    rw [specNorm_transpose]
+    exact hU.specNorm_le_one
+  refine ⟨-(R * Uᵀ + U * Rᵀ * (1 - U * Uᵀ)), ?_, ?_, ?_, ?_⟩
+  · have hX : U * Rᵀ * (U * Uᵀ) = U * (Uᵀ * R) * Uᵀ := by
+      rw [Matrix.mul_assoc, ← Matrix.mul_assoc Rᵀ, hRU]
+      simp only [Matrix.mul_assoc]
+    simp only [Matrix.transpose_neg, Matrix.transpose_add, Matrix.transpose_mul,
+      Matrix.transpose_sub, Matrix.transpose_one, Matrix.transpose_transpose]
+    congr 1
+    simp only [Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_one,
+      Matrix.mul_assoc] at hX ⊢
+    rw [hX]
+    abel
+  · rw [Matrix.neg_mul, Matrix.add_mul]
+    simp only [Matrix.mul_assoc, hUU, hQU, Matrix.mul_one, Matrix.mul_zero, add_zero]
+  · rw [frobNorm_neg]
+    have htr : ((R * Uᵀ)ᵀ * (U * Rᵀ * (1 - U * Uᵀ))).trace = 0 := by
+      rw [Matrix.transpose_mul, Matrix.transpose_transpose,
+        show U * Rᵀ * (U * Rᵀ * (1 - U * Uᵀ)) = (U * Rᵀ * (U * Rᵀ)) * (1 - U * Uᵀ) by
+          simp only [Matrix.mul_assoc], Matrix.trace_mul_comm]
+      simp only [← Matrix.mul_assoc, hQU, Matrix.zero_mul, Matrix.trace_zero]
+    have hfA : frobNorm (R * Uᵀ) ≤ frobNorm R :=
+      (frobNorm_mul_le_frobNorm_mul_specNorm R Uᵀ).trans
+        (mul_le_of_le_one_right (frobNorm_nonneg R) hUn)
+    have hfB : frobNorm (U * Rᵀ * (1 - U * Uᵀ)) ≤ frobNorm R := by
+      rw [Matrix.mul_assoc, hU.frobNorm_mul_left]
+      refine (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans ?_
+      rw [frobNorm_transpose]
+      exact mul_le_of_le_one_right (frobNorm_nonneg R) hQn
+    have hsq := frobNorm_add_sq_of_trace_transpose_mul_eq_zero htr
+    have h1 : frobNorm (R * Uᵀ) ^ 2 ≤ frobNorm R ^ 2 := pow_le_pow_left₀ (frobNorm_nonneg _) hfA 2
+    have h2 : frobNorm (U * Rᵀ * (1 - U * Uᵀ)) ^ 2 ≤ frobNorm R ^ 2 :=
+      pow_le_pow_left₀ (frobNorm_nonneg _) hfB 2
+    have hs2 : (Real.sqrt 2 * frobNorm R) ^ 2 = 2 * frobNorm R ^ 2 := by
+      rw [mul_pow, Real.sq_sqrt (by norm_num)]
+    have hR0 : 0 ≤ Real.sqrt 2 * frobNorm R := by positivity
+    nlinarith [frobNorm_nonneg (R * Uᵀ + U * Rᵀ * (1 - U * Uᵀ))]
+  · rw [specNorm_neg]
+    have hA : specNorm (R * Uᵀ) ≤ specNorm R :=
+      (specNorm_mul_le R Uᵀ).trans (mul_le_of_le_one_right (specNorm_nonneg R) hUn)
+    have hB : specNorm (U * Rᵀ * (1 - U * Uᵀ)) ≤ specNorm R := by
+      rw [Matrix.mul_assoc, hU.specNorm_mul_left]
+      refine (specNorm_mul_le _ _).trans ?_
+      rw [specNorm_transpose]
+      exact mul_le_of_le_one_right (specNorm_nonneg R) hQn
+    linarith [specNorm_add_le (R * Uᵀ) (U * Rᵀ * (1 - U * Uᵀ))]
 
 /-- **The polar factor of a nearly orthonormal basis is orthonormal** (E2): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
