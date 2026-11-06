@@ -302,7 +302,7 @@ theorem newtonSchulzSignProg.toStmt_compiled (p : P) (mm : ι) (N : ℕ) (n : Fi
     (newtonSchulzSignProg.compiled p mm).toStmt N n =
       ProgFamily.inst (r := 1) (b := 3) (fun _ _ N n h =>
         (newtonSchulzSignProg p mm N (n 0) (h 0) 0 (h 1) 0 (h 2) 0).run) N n := by
-  sorry
+  rfl
 
 /-- **The registered tree computes `newtonSchulzSign`**: if kernel `mm` of `I` is the routine
 `mmR` on interleaved pairs and the semantics decides flags at `p`, a successful run of the tree
