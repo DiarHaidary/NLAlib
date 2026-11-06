@@ -91,7 +91,68 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
       (∀ q b i, b ≠ W → b ≠ V → blockDisjoint (b, i, 1) (f.buf, f.idx.eval, 1) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  intro M
+  obtain ⟨hoW, hoV⟩ := hcells one (by simp)
+  obtain ⟨hlW, hlV⟩ := hcells lo (by simp)
+  obtain ⟨hhW, hhV⟩ := hcells hi (by simp)
+  obtain ⟨hfW, hfV⟩ := hcells f (by simp)
+  unfold newtonSchulzTestBlock at h
+  rw [exec_run_bind I (b := stmt (.kcall mm p [.const n, .const n, .const n]
+    [(X, xo), (X, xo)] [(W, 0)])) (fun _ => rfl)] at h
+  have hk : (stmt (.kcall mm p [.const n, .const n, .const n] [(X, xo), (X, xo)] [(W, 0)]) :
+      Builder P ι ℕ ℕ Unit).run = .seq (.kcall mm p [.const n, .const n, .const n]
+        [(X, xo), (X, xo)] [(W, 0)]) .skip := rfl
+  rw [hk, exec_seq_skip, exec_kcall] at h
+  obtain ⟨σ1, hσ1, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨s1, hs1, hσ1⟩ := Option.map_eq_some_iff.mp hσ1
+  have hst1 : σ1.store = s1 := by rw [← hσ1]
+  have hpos1 : σ1.pos = st.pos := by rw [← hσ1]
+  rw [exec_run_bind I (b := zhermShift (ι := ι) p (.const n) W 0 one V 0) (fun _ => rfl)] at h
+  obtain ⟨σ2, h2, h⟩ := Option.bind_eq_some_iff.mp h
+  have hs1' : I.kcallStore mm p [n, n, n] [(X, xo.eval), (X, xo.eval)] [(W, 0)] st.store =
+      some s1 := by
+    simpa using hs1
+  have hca : blockDisjoint (W, 0, n * n * 2) (X, xo.eval, n * n * 2) = true := by
+    simp [blockDisjoint, hWX]
+  obtain ⟨hWmm, hfr1⟩ := IsMatMulKernel.holds_of_kcallStore_eq_some hmm pairLayout.get_put p
+    hA hA hca hca hs1'
+  have hsh1 : s1.shape = st.store.shape := Interp.shape_of_kcallStore_eq_some hs1'
+  have hread1 : ∀ q b i, b ≠ W → σ1.store.read q b i = st.store.read q b i := fun q b i hb => by
+    rw [hst1]
+    exact hfr1 q b i (by simp [blockDisjoint, hb])
+  have hA1 : pairLayout.Holds σ1.store p W 0 (mmR A A) := by rw [hst1]; exact hWmm
+  have hc1 : σ1.store.read p one.buf one.idx.eval = some M.one := by
+    rw [hread1 _ _ _ hoW]; exact hone
+  obtain ⟨hVmm, hfr2, hsh2, hpos2⟩ := holds_of_exec_zhermShift p n hA1 hc1
+    (by simp [blockDisjoint, Ne.symm hWV]) (by simp [blockDisjoint, hoV]) h2
+  have hread2 : ∀ q b i, b ≠ V → σ2.store.read q b i = σ1.store.read q b i :=
+    fun q b i hb => hfr2 q b i (by simp [blockDisjoint, hb])
+  have hread : ∀ q b i, b ≠ W → b ≠ V → σ2.store.read q b i = st.store.read q b i :=
+    fun q b i hbW hbV => (hread2 q b i hbV).trans (hread1 q b i hbW)
+  have hlo2 : σ2.store.read p lo.buf lo.idx.eval = some (M.neg η) := by
+    rw [hread _ _ _ hlW hlV]; exact hlo
+  have hhi2 : σ2.store.read p hi.buf hi.idx.eval = some η := by
+    rw [hread _ _ _ hhW hhV]; exact hhi
+  obtain ⟨hflag, hfr3, hsh3, hpos3⟩ := read_of_exec_zboxTest p n n hVmm hlo2 hhi2
+    (by simp [blockDisjoint, hfV]) hflo hfhi h
+  have hWst : pairLayout.Holds st'.store p W 0 (mmR A A) :=
+    EntryLayout.Holds.of_forall_read_eq hA1 fun i _ _ =>
+      (hfr3 p W i (by simp [blockDisjoint, Ne.symm hfW])).trans
+        (hfr2 p W i (by simp [blockDisjoint, hWV]))
+  have hVst : pairLayout.Holds st'.store p V 0 (M.hermShift (mmR A A) M.one) :=
+    EntryLayout.Holds.of_forall_read_eq hVmm fun i _ _ =>
+      hfr3 p V i (by simp [blockDisjoint, Ne.symm hfV])
+  have hflag' : st'.store.read p f.buf f.idx.eval =
+      some (if newtonSchulzTest M η A = true then M.zero else M.one) := by
+    unfold newtonSchulzTest
+    exact hflag
+  have hfrm : ∀ q b i, b ≠ W → b ≠ V → blockDisjoint (b, i, 1) (f.buf, f.idx.eval, 1) = true →
+      st'.store.read q b i = st.store.read q b i := fun q b i hbW hbV hbf =>
+    (hfr3 q b i hbf).trans ((hfr2 q b i (by simp [blockDisjoint, hbV])).trans
+      (hread1 q b i hbW))
+  have hshT : st'.store.shape = st.store.shape :=
+    hsh3.trans (hsh2.trans (by rw [hst1]; exact hsh1))
+  exact ⟨hWst, hVst, hflag', hfrm, hshT, hpos3.trans (hpos2.trans hpos1)⟩
 
 /-- **The test block succeeds** under the standard model with every value in range, when the
 buffers `W` and `V` at tag `p` have $2n^2$ cells and the flag can be written (hypotheses as
