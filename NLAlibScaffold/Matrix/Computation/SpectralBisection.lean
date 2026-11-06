@@ -1,0 +1,341 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Matrix.Computation.SpectralBisection.Global
+public import NLAlibScaffold.Matrix.Computation.Deflation
+public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSign
+
+/-!
+# Spectral bisection with sharper precision budgets (scaffold, stage HDIAG-BOUNDS)
+
+Statements for `NLAlib/Matrix/Computation/SpectralBisection/` (design note
+`docs/design/Eigensolvers-HermitianDiagonalization-Bounds.md`, items I2, I3, I7–I10). The node
+lemmas of [Shah2024, Lemma 4.1] are restated generically in the parameters $(w, x, t)$ of the good
+event (shift distance, smallest singular value and norm thresholds of the Gaussian blocks), with
+their precision hypotheses bundled in `NLAlib.FloatMachine.IsEighNodeBudget`: the probabilistic
+choice of $(x, t)$ moves to the probability files, and the deflation tolerance becomes the single
+condition $2t\beta/x \le \eta$. The global theorem EB5' uses a size-weighted union bound (each
+node charged in proportion to its size, item I3), the sharp tolerance at the deepest node (EB2a',
+item I2), and the sign theorem SN4' and deflation theorem DF2'.
+
+## Main definitions
+
+* `NLAlib.FloatMachine.IsEighNodeBudget`: the precision hypotheses of one node.
+
+## Main results
+
+* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget`
+  (EB1c'), `NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget` (EB1b'),
+  `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget`
+  (EB1d'), `NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget`
+  (EB1a'), `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNodeBudget`
+  (EB1').
+* `NLAlib.FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some` (EB2a'),
+  `NLAlib.sum_k_eighNodeAt_ofFn_le` (EB3').
+* `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample'` (EB5').
+-/
+
+@[expose] public section
+
+open scoped Matrix MatrixOrder
+
+namespace NLAlib
+
+/-- `M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y`: the **precision budget of the
+node $y$** of spectral bisection for a good event with shift distance $w$, smallest singular value
+threshold $x$ and norm threshold $t$: the node's matrix is Hermitian with norm at most its window
+$R$, its depth counter is at least $20$, $0 < \varepsilon \le 1/8$, $0 < w \le R$, $0 < x \le 1$,
+$t \ge 2\sqrt2\sqrt k$, and, with $\nu = 4\mu_{\mathrm{MM}}(k) + 10 + 10\sqrt k$ and
+$N_0 = N(w/(5R), \beta/(16k))$: the deflation tolerance $2t\beta/x \le
+(1 - 1/\ell)\varepsilon/(5\ell)$, the sign condition $32\nu u \le (1 - 2^{-7})\,w\beta/(2R)$, the
+stopping condition $2048(k + N_0 + 1)\nu u \le \beta$, the deflation rounding condition
+$16(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)u \le \beta$,
+$k\beta \le 1/57600$, at least $N_0$ sign steps, and the floor and range conditions
+$4k^{3/2}\tau \le \min(x, \varepsilon R_0)$, $16(R_0 + R + k + \ell + t) \le \Omega$. The
+hypotheses of [Shah2024, Lemma 4.1] with the constants of SN4' and DF2'. -/
+structure FloatMachine.IsEighNodeBudget {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) (R₀ β : F) (signFuel : ℕ) (w x t : ℝ)
+    (y : EighNode F) : Prop where
+  /-- The product constant is nonnegative. -/
+  nonneg_μM : 0 ≤ μM y.k
+  /-- The QR constant is nonnegative. -/
+  nonneg_μQ : 0 ≤ μQ y.k
+  /-- The sampler constant is nonnegative. -/
+  nonneg_cN : 0 ≤ cN
+  /-- The unit roundoff is nonnegative. -/
+  nonneg_u : 0 ≤ u
+  /-- The node's matrix is Hermitian. -/
+  isHermitian : (decodeMatrix dec y.A).IsHermitian
+  /-- The node's matrix lies in its window. -/
+  specNorm_le : specNorm (decodeMatrix dec y.A) ≤ dec y.R
+  /-- The depth counter is at least $20$. -/
+  twenty_le : 20 ≤ y.ℓ
+  /-- The tolerance is positive. -/
+  pos_ε : 0 < dec y.ε
+  /-- The tolerance is at most $1/8$. -/
+  ε_le : dec y.ε ≤ 1 / 8
+  /-- The root scale is positive. -/
+  pos_R₀ : 0 < dec R₀
+  /-- The shift distance is positive. -/
+  pos_w : 0 < w
+  /-- The shift distance is at most the window. -/
+  w_le : w ≤ dec y.R
+  /-- The singular value threshold is positive. -/
+  pos_x : 0 < x
+  /-- The singular value threshold is at most $1$. -/
+  x_le : x ≤ 1
+  /-- The norm threshold is at least $2\sqrt2\sqrt k$. -/
+  le_t : 2 * √2 * √(y.k : ℝ) ≤ t
+  /-- The accuracy is positive. -/
+  pos_β : 0 < dec β
+  /-- The deflation tolerance. -/
+  defl_tol : 2 * t / x * dec β ≤ (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)
+  /-- The sign condition. -/
+  sign_tol : 32 * (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤
+    (1 - 2⁻¹ ^ 7) * w / (2 * dec y.R) * dec β
+  /-- The stopping condition. -/
+  stop_tol : 2048 * (y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1) *
+    (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤ dec β
+  /-- The deflation rounding condition. -/
+  defl_u : 16 * (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β
+  /-- The accuracy is small against the size. -/
+  mul_β_le : (y.k : ℝ) * dec β ≤ 1 / 57600
+  /-- Enough sign steps. -/
+  fuel : newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel
+  /-- The floor is nonnegative. -/
+  nonneg_τ : 0 ≤ τ
+  /-- The floor condition. -/
+  τ_le : τ * (4 * y.k * √(y.k : ℝ)) ≤ min x (dec y.ε * dec R₀)
+  /-- The range condition. -/
+  Ω_le : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + t) ≤ Ω
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+  {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
+
+/-- **Computed spectral projectors under a node budget** (EB1'c): at an internal node with
+budget `NLAlib.FloatMachine.IsEighNodeBudget` and Event I (seed in $[-1, 1]$, every eigenvalue at
+distance at least $w$ from the ideal shift), the stored $\mathbf{P}_\pm$ are within $\beta$ of
+$\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
+Lemma 4.1].
+Proof: EB1c's proof with SN4'
+(`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le`)
+at modulus $a = w - 4uR \ge (1 - 2^{-8})w$ and scale $b = \mathrm{fl}(2R) \le 2R(1 + 7u)$, so
+$a/b \ge (1 - 2^{-7})w/(2R)$ (the field `sign_tol`) and $a/(2b) \ge w/(5R)$ (NS11 for the
+step count and `stop_tol`); the shift error $4uR$ moves the sign by at most $8uR/w \le \beta/64$
+(`Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le`), the rounded halving by at most
+$u(\sqrt k + 2k\tau) \le \beta/64$. M, about 150 lines. -/
+theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    (hint : M.le y.R (M.mul y.ε R₀) = false)
+    {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    specNorm (decodeMatrix dec (M.hermScale (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)) -
+      (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β ∧
+    specNorm (decodeMatrix dec (M.hermScale (M.negMat (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) M.one)) (M.ofNat 2)) -
+      (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β := by
+  sorry
+
+/-- **Rank recovery under a node budget** (EB1b'): at an internal node of size $k \ge 2$ with
+budget and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$. [Shah2024,
+proof of Lemma 4.1].
+Proof: EB1b's proof with EB1c' in place of EB1c: the rounded trace of $\mathbf{P}_+$ is within
+$k\beta + 2ku(k + k\tau) < 1/2$ of the inertia (`mul_β_le`, `stop_tol`). M, about 80 lines. -/
+theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
+    (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ smp).IsSplit ↔
+      0 < inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ∧
+      inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) < y.k := by
+  sorry
+
+/-- **A split node under a node budget** (EB1d'): with budget and a good sample
+(`NLAlib.IsEighGoodSample` with parameters $(w, x, t)$), a split gives frames $\mathbf{V}_\pm$,
+unitaries $\mathbf{W}_\pm$ with $\|\mathbf{V}_\pm\mathbf{W}_\pm - \mathbf{Q}_\pm\|_2 \le \eta =
+(1 - 1/\ell)\varepsilon/(5\ell)$ and children within $(2 + 2\eta)R\eta$ of the shifted
+compressions, as EB1d. [Shah2024, proof of Lemma 4.1].
+Proof: EB1d's proof with EB1c', EB1b' and DF2'
+(`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le`)
+for $\mathbf{A} = \mathbf{V}\mathbf{V}^{\mathsf H}$, $\mathbf{S} = \mathbf{I}$: on Event II
+$\|\mathbf{G}\|_2 < t$ and $\sigma_{\min}(\mathbf{V}^{\mathsf H}\mathbf{G}_1) > x$, so
+$m \le (1 + 2\beta + 1/8)t/x$ and $\tfrac32 m\beta \le 2t\beta/x \le \eta$ (`defl_tol`). L, about
+250 lines (EB1d's assembly reused). -/
+theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    {smp : EighSample ℝ ℂ N}
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y smp)
+    {kp : ℕ} {hkp : kp ≤ y.k} {Qp : Matrix (Fin y.k) (Fin kp) (F × F)}
+    {Qm : Matrix (Fin y.k) (Fin (y.k - kp)) (F × F)} {Ap : Matrix (Fin kp) (Fin kp) (F × F)}
+    {Am : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) (F × F)} {σ : F}
+    (hsplit : eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ smp = .split kp hkp Qp Qm Ap Am σ) :
+    |dec σ - dec y.R / 2| ≤ 3 * u * (dec y.R / 2) ∧
+    (∃ V : Matrix (Fin y.k) (Fin kp) ℂ, HasOrthonormalCols V ∧
+      V * Vᴴ = (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
+          (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) ∧
+      spectrum ℝ (Vᴴ * decodeMatrix dec y.A * V) ⊆ Set.Icc (dec y.R / y.ℓ * smp.1) (dec y.R) ∧
+      ∃ W : Matrix (Fin kp) (Fin kp) ℂ, HasOrthonormalCols W ∧
+        specNorm (V * W - decodeMatrix dec Qp) ≤ ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) ∧
+        specNorm (decodeMatrix dec Ap - (Wᴴ * (Vᴴ * decodeMatrix dec y.A * V) * W -
+          dec σ • (1 : Matrix (Fin kp) (Fin kp) ℂ))) ≤
+            (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
+              ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) ∧
+    (∃ V : Matrix (Fin y.k) (Fin (y.k - kp)) ℂ, HasOrthonormalCols V ∧
+      V * Vᴴ = (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
+          (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) ∧
+      spectrum ℝ (Vᴴ * decodeMatrix dec y.A * V) ⊆ Set.Icc (-dec y.R) (dec y.R / y.ℓ * smp.1) ∧
+      ∃ W : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) ℂ, HasOrthonormalCols W ∧
+        specNorm (V * W - decodeMatrix dec Qm) ≤ ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) ∧
+        specNorm (decodeMatrix dec Am - (Wᴴ * (Vᴴ * decodeMatrix dec y.A * V) * W +
+          dec σ • (1 : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) ℂ))) ≤
+            (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
+              ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) := by
+  sorry
+
+/-- **Child invariant under a node budget** (EB1a'): with budget and a good sample, every child
+has a Hermitian matrix of norm at most its window. [Shah2024, proof of Lemma 4.1].
+Proof: EB1a's proof with EB1d' and EB1b' in place of EB1d and EB1b. M, about 120 lines. -/
+theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    {smp : EighSample ℝ ℂ N}
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y smp)
+    {b : Bool} {y' : EighNode F} (hy' : eighChild M N signFuel R₀ β y smp b = some y') :
+    (decodeMatrix dec y'.A).IsHermitian ∧ specNorm (decodeMatrix dec y'.A) ≤ dec y'.R := by
+  sorry
+
+/-- **Local guarantee under a node budget** (EB1'): with budget, a good sample when internal and
+children that are approximate diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$,
+the node's output is one with $(\varepsilon(R + R_0), \varepsilon/3)$. [Shah2024, Lemma 4.1].
+Proof: EB1's proof (the residual budget closing through $\varepsilon' = (1 - 1/\ell)\varepsilon$
+is unchanged, since the deflation error is still at most $\eta$) with EB1c', EB1b', EB1d', EB1a'.
+H, about 300 lines (EB1's private node budget reused). -/
+theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    {f : ℕ} {s : List Bool → EighSample ℝ ℂ N}
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y (s []))
+    (hchild : ∀ (b : Bool) (y' : EighNode F), eighChild M N signFuel R₀ β y (s []) b = some y' →
+      IsApproxDiagonalization (decodeMatrix dec y'.A)
+        (decodeMatrix dec (eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).1)
+        (fun i => dec ((eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).2 i))
+        (dec y'.ε * (dec y'.R + dec R₀)) (dec y'.ε / 3)) :
+    IsApproxDiagonalization (decodeMatrix dec y.A)
+      (decodeMatrix dec (eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).1)
+      (fun i => dec ((eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).2 i))
+      (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
+  sorry
+
+/-- **The tolerance at a node, telescoped** (EB2a'): under the hypotheses of
+`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`, every node $y$ below the root has
+$$\varepsilon_y \ge (1 - 2^{-8})\,\frac{\ell - 1}{\ell_y - 1}\,\varepsilon \,,$$
+in particular $\varepsilon_y \ge (1 - 2^{-8})(\ell - 1)\varepsilon/(2\ell - 1)$ since
+$\ell_y \le 2\ell$; EB2a has $\varepsilon/3$. [Shah2024, proof of Theorem 4.2].
+Proof: induction on the path as in EB2a: each level multiplies by $\mathrm{fl}(1 -
+\mathrm{fl}(1/\ell_j)) \ge (1 - 1/\ell_j)(1 - 5u)$
+(`NLAlib.FloatMachine.IsAccurate.dec_eighNextParams_le` and its lower companion), the exact
+factors telescope to $(\ell - 1)/(\ell_y - 1)$, and
+$(1 - 5u)^{\ell} \ge 1 - 5\ell u \ge 1 - 2^{-8}$ from $100\ell^2u \le 1$, $\ell \ge 20$. M, about
+120 lines. -/
+theorem FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {ε : F} (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
+    (hR₀ : 0 < dec R₀) {ℓ : ℕ}
+    (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hu : 0 ≤ u) (hu₁ : 100 * ℓ ^ 2 * u ≤ 1) (hτ₀ : 0 ≤ τ)
+    (hτ : 100 * τ ≤ dec ε * min (dec R₀) 1)
+    (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
+    (A : Matrix (Fin k) (Fin k) (F × F)) (s : List Bool → EighSample ℝ ℂ N)
+    {a : List Bool} {y : EighNode F}
+    (h : eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = some y) :
+    (1 - 2⁻¹ ^ 8) * (((ℓ : ℝ) - 1) / ((y.ℓ : ℝ) - 1)) * dec ε ≤ dec y.ε := by
+  sorry
+
+/-- **The sizes at one depth sum to at most the root size** (EB3'): for every machine, node
+$x$, tree of samples and depth $j$, the sizes of the nodes at the paths of length $j$ sum to at
+most $k_x$ (a node has no child, one child of its size, or two children of sizes $k_+$ and
+$k - k_+$). [Shah2024, proof of Theorem 4.2], "$\sum_{x \in X_k} n_x \le n$".
+Proof: induction on $j$ generalizing $x$ and the samples: split a path of length $j + 1$ by its
+head (`Fin.consEquiv`, `List.ofFn_succ`, `Fintype.sum_prod_type`); `NLAlib.eighNodeAt` at
+$b :: a$ is the node at $a$ below `NLAlib.eighChild` on side $b$; the induction hypothesis bounds
+each side by its child's size; the children's sizes sum to at most $k_x$ by cases on
+`NLAlib.eighStep` (`Nat.add_sub_cancel'`). L, about 120 lines (EB4's case analysis reused). -/
+theorem sum_k_eighNodeAt_ofFn_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) (j : ℕ) :
+    ∑ a : Fin j → Bool,
+      ((eighNodeAt M N signFuel R₀ β (List.ofFn a) x s).elim 0 EighNode.k) ≤ x.k := by
+  sorry
+
+/-- **Global deterministic guarantee of spectral bisection, sharp budget** (EB5'): let the
+machine meet `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$ monotone and nonnegative and $c_{\mathrm N} \ge 0$; let the stored
+$\mathbf{A}$ have Hermitian decoding with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $\ell \ge$ `NLAlib.bisectionDepth`
+$\varepsilon$, $m = \min(n, \ell + 1)$, $\hat T = 2\sqrt2\sqrt n + \sqrt{\log(96nm/\theta)}$,
+$\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$, the accuracy
+$$0 < \beta \le \frac{(\ell - 1)^2\,\varepsilon\sqrt\theta}{52\,\ell^2(2\ell - 1)
+\sqrt{n m \min(n, e)}\;\hat T} \,, \qquad
+N_* = N\Bigl(\frac{\theta}{12n\ell(\ell + 1)}, \frac{\beta}{16n}\Bigr) \,,$$
+$146\,n\ell(\ell + 1)\,\nu u \le \theta\beta$, $2048(n + N_* + 1)\nu u \le \beta$,
+$16(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u \le \beta$,
+at least $N_*$ sign steps, $0 \le \tau$, $100n^{3/2}\tau \le \min(\sqrt{\theta/(8nm)},
+\varepsilon\min(R_0, 1))$ and $16(2R_0 + n + 2\ell + \hat T) \le \Omega$. If every internal node
+$y$ has a good sample with $w_y = 4\theta R_y/(9n\ell(\ell + 1))$, $\rho_y = \theta k_y/(6nm)$,
+$x_y = \sqrt{15\rho_y/(16\min(k_y^2, e k_y))}$ and $t_y = 2\sqrt2\sqrt{k_y} +
+\sqrt{\log(16/\rho_y)}$, then `NLAlib.eigh` is an approximate diagonalization of $\mathbf{A}$
+with residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$. [Shah2024,
+Theorem 4.2], deterministic part.
+Proof: EB5's induction over the tree with EB1' and EB1a' in place of EB1 and EB1a: at each node,
+EB2a and EB2a' give $k_y \le n$, $\ell \le \ell_y \le 2\ell$, $\varepsilon_y \ge (1 - 2^{-8})(\ell -
+1)\varepsilon/(2\ell - 1)$, $R_y \le R_0$; then `NLAlib.FloatMachine.IsEighNodeBudget` at
+$(w_y, x_y, t_y)$: `defl_tol` since $x_y/t_y \ge \sqrt{5\theta/(32nm\min(n, e))}/\hat T$ and
+$\eta_y \ge (1 - 2^{-8})(\ell - 1)^2\varepsilon/(10\ell^2(2\ell - 1))$; `sign_tol` from the
+$146$-condition and monotone $\mu_{\mathrm{MM}}$; `fuel`, `stop_tol` by NS11/NS12 since
+$w_y/(5R_y) \ge \theta/(12n\ell(\ell + 1))$; floor and range from the global ones. H, about 300
+lines (EB5's skeleton reused). -/
+theorem FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample'
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hμM : Monotone μM) (hμQ : Monotone μQ)
+    (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN) {n : ℕ}
+    {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian) {ε : F}
+    {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀) (hR₀pos : 0 < dec R₀)
+    (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ}
+    (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
+    (hβle : dec β ≤ ((ℓ : ℝ) - 1) ^ 2 * dec ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+      √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
+      (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))))) {Nst : ℝ}
+    (hN : Nst = newtonSchulzSteps (θ / (12 * n * ℓ * (ℓ + 1))) (dec β / (16 * n)))
+    (husign : 146 * n * ℓ * (ℓ + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) * u ≤ θ * dec β)
+    (hustop : 2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) * u ≤ dec β)
+    (hudefl : 16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β)
+    (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
+    (hτ : τ * (100 * n * √(n : ℝ)) ≤
+      min (√(θ / (8 * n * min (n : ℝ) (ℓ + 1)))) (dec ε * min (dec R₀) 1))
+    (hΩ : 16 * (2 * dec R₀ + n + 2 * ℓ + 2 * √2 * √(n : ℝ) +
+      √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))) ≤ Ω)
+    {s : List Bool → EighSample ℝ ℂ n}
+    (hgood : ∀ (a : List Bool) (y : EighNode F),
+      eighNodeAt M n signFuel R₀ β a ⟨n, A, R₀, ε, ℓ⟩ s = some y → 2 ≤ y.k →
+        M.le y.R (M.mul y.ε R₀) = false →
+        IsEighGoodSample dec (4 * θ * dec y.R / (9 * n * ℓ * (ℓ + 1)))
+          (√(15 * (θ * y.k / (6 * n * min (n : ℝ) (ℓ + 1))) /
+            (16 * min ((y.k : ℝ) ^ 2) (Real.exp 1 * y.k))))
+          (2 * √2 * √(y.k : ℝ) + √(Real.log (16 / (θ * y.k / (6 * n * min (n : ℝ) (ℓ + 1))))))
+          y (s a)) :
+    IsApproxDiagonalization (decodeMatrix dec A) (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β s).1)
+      (fun i => dec ((eigh M signFuel ℓ A R₀ ε β s).2 i)) (2 * dec ε * dec R₀) (dec ε / 3) := by
+  sorry
+
+end NLAlib
