@@ -45,8 +45,8 @@ theorem isExactIntLit_exactSem (B : ℕ) :
 No printed source.
 Proof: `fun p k hk => h p k (hk.trans hB)`. S, 1 line. -/
 theorem IsExactIntLit.mono {dec : P → K → ℝ} {sem : ScalarSem P K} {B B' : ℕ}
-    (h : IsExactIntLit dec sem B) (hB : B' ≤ B) : IsExactIntLit dec sem B' := by
-  sorry
+    (h : IsExactIntLit dec sem B) (hB : B' ≤ B) : IsExactIntLit dec sem B' :=
+  fun p k hk => h p k (hk.trans hB)
 
 variable [DecidableEq P]
 
