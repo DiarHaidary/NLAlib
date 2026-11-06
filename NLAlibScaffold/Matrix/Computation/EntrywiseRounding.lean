@@ -53,6 +53,23 @@ theorem isRoundingOf_roundNearest (t : ℕ) (Ω a : ℝ) :
   rw [max_eq_left (abs_nonneg a)]
   exact Real.abs_sub_roundNearest_le t a
 
+/-- The local error of binary rounding: at most half the spacing $2^{e}$ of the target exponent
+(private helper; the proof of `NLAlib.Computation.local_error`). -/
+private theorem local_error_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
+    |x - Computation.binaryFloatRound fmt r x| ≤
+      (1 / 2 : ℝ) * 2 ^ fmt.targetExponent (Int.log 2 |x| + 1) := by
+  set e := fmt.targetExponent (Int.log 2 |x| + 1)
+  have he : (0 : ℝ) < 2 ^ e := zpow_pos two_pos _
+  have hq : |x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)| ≤ 1 / 2 := by
+    simpa only [Computation.AbsRelErr, zero_mul, zero_add] using hr (x / (2 : ℝ) ^ e)
+  have heq : x - Computation.binaryFloatRound fmt r x =
+      (x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)) * 2 ^ e := by
+    dsimp only [Computation.binaryFloatRound, e]
+    field_simp
+  rw [heq, abs_mul, abs_of_pos he]
+  exact mul_le_mul_of_nonneg_right hq he.le
+
 /-- **Bounded-format rounding is a rounding with floor**: rounding to the binary format `fmt`
 with gradual underflow (`NLAlib.Computation.binaryFloatRound`, any nearest tie rule) returns a
 rounding of every real $a$ in the sense of `NLAlib.IsRoundingOf` with unit roundoff $2^{-p}$,
@@ -73,7 +90,35 @@ theorem isRoundingOf_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → �
     IsRoundingOf ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
       ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite a
       (Computation.binaryFloatRound fmt r a) := by
-  sorry
+  intro _
+  have hut : (2 : ℝ)⁻¹ ^ fmt.mantissaBits * (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) =
+      1 / 2 * (2 : ℝ) ^ fmt.minExponent := by
+    rw [zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, zpow_one, inv_pow]
+    field_simp
+  rcases eq_or_ne a 0 with rfl | ha
+  · rw [Computation.binaryFloatRound_zero fmt hr]
+    simp
+  rcases le_total ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) |a| with h | h
+  · obtain ⟨δ, hδ, hz⟩ := Computation.relErr_binaryFloatRound_of_minExponent_le fmt hr a
+      (by
+        have := (Int.zpow_le_iff_le_log one_lt_two (abs_pos.2 ha)).1 h
+        omega)
+    rw [max_eq_left h, hz, show a - a * (1 + δ) = -(a * δ) by ring, abs_neg, abs_mul,
+      mul_comm]
+    exact mul_le_mul_of_nonneg_right hδ (abs_nonneg a)
+  · rw [max_eq_right h]
+    have hlog : (2 : ℝ) ^ Int.log 2 |a| ≤ |a| := by
+      exact_mod_cast Int.zpow_log_le_self (b := 2) one_lt_two (abs_pos.mpr ha)
+    have hL : Int.log 2 |a| ≤ fmt.minExponent + fmt.mantissaBits - 1 :=
+      (zpow_le_zpow_iff_right₀ one_lt_two).1 (hlog.trans h)
+    have he : fmt.targetExponent (Int.log 2 |a| + 1) = fmt.minExponent := by
+      apply max_eq_right
+      omega
+    have herr := local_error_binaryFloatRound fmt hr a
+    rw [he] at herr
+    rw [← hut] at herr
+    rw [mul_comm] at hut
+    linarith
 
 namespace FloatMachine.IsAccurate
 
