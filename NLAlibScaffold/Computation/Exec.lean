@@ -76,6 +76,18 @@ theorem Interp.read_of_kcallStore_eq_some_of_forall {I : Interp P ι K C} {o : �
   obtain ⟨ys, -, h2⟩ := Option.bind_eq_some_iff.mp h1
   exact Store.read_of_writeBlocks_eq_some_of_forall h2 hb
 
+private theorem length_eq_of_writeBlocks_eq_some {p : P} :
+    ∀ {s s' : Store P K} {bs : List (ℕ × ℕ × ℕ)} {ys : List (Array K)},
+      s.writeBlocks p bs ys = some s' → bs.length = ys.length
+  | _, _, [], [], _ => rfl
+  | _, _, [], _ :: _, h => by cases h
+  | _, _, _ :: _, [], h => by cases h
+  | _, _, _ :: _, _ :: _, h => by
+    rw [Store.writeBlocks] at h
+    split_ifs at h
+    obtain ⟨_, -, h₂⟩ := Option.bind_eq_some_iff.mp h
+    simp only [List.length_cons, length_eq_of_writeBlocks_eq_some h₂]
+
 /-- **The output blocks of a kernel call**: a successful call read its input blocks, its kernel
 returned one array per output block, and after the call cell $j$ of output block $k$ reads entry
 $j$ of the $k$-th returned array, for every $j$ below the length of the block. The output blocks
@@ -95,35 +107,26 @@ theorem Interp.read_of_kcallStore_eq_some {I : Interp P ι K C} {o : ι} {p : P}
       ∀ (k : ℕ) (x : ℕ × ℕ × ℕ) (y : Array K),
         (kcallBlocks outs (I.kshape o ds).2)[k]? = some x → ys[k]? = some y →
         y.size = x.2.2 ∧ ∀ j < x.2.2, s'.read p x.1 (x.2.1 + j) = y[j]? := by
-  have hlen : ∀ (bs : List (ℕ × ℕ × ℕ)) (ys : List (Array K)) (s₀ s₁ : Store P K),
-      s₀.writeBlocks p bs ys = some s₁ → bs.length = ys.length := by
-    intro bs
-    induction bs with
-    | nil =>
-      intro ys s₀ s₁ h
-      cases ys with
-      | nil => rfl
-      | cons _ _ => simp [Store.writeBlocks] at h
-    | cons b bs ih =>
-      intro ys s₀ s₁ h
-      cases ys with
-      | nil => simp [Store.writeBlocks] at h
-      | cons y ys =>
-        rw [Store.writeBlocks] at h
-        split_ifs at h with hsz
-        obtain ⟨s', -, h2⟩ := Option.bind_eq_some_iff.mp h
-        simp only [List.length_cons]
-        exact congrArg (· + 1) (ih ys s' s₁ h2)
   unfold Interp.kcallStore at h
   split_ifs at h with hc
   obtain ⟨xs, hxs, h'⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨ys, hys, hw⟩ := Option.bind_eq_some_iff.mp h'
-  have hlen' : (kcallBlocks outs (I.kshape o ds).2).length = outs.length := by
-    unfold kcallBlocks
-    rw [List.length_zipWith, hc.2.1, min_self]
-  refine ⟨xs, ys, hxs, hys, (hlen _ _ _ _ hw).symm.trans hlen', ?_⟩
-  intro k x y hx hy
-  exact Store.read_of_writeBlocks_eq_some hw hc.2.2.1 k x y hx hy
+  refine ⟨xs, ys, hxs, hys, ?_, Store.read_of_writeBlocks_eq_some hw hc.2.2.1⟩
+  rw [← length_eq_of_writeBlocks_eq_some hw, kcallBlocks, List.length_zipWith, hc.2.1, min_self]
+
+private theorem exists_writeBlocks_eq_some {p : P} :
+    ∀ {ys : List (Array K)} {bs : List (ℕ × ℕ × ℕ)} {s : Store P K},
+      List.Forall₂ (fun (y : Array K) (x : ℕ × ℕ × ℕ) => y.size = x.2.2) ys bs →
+      (∀ x ∈ bs, ∀ j < x.2.2, ∃ (v : K) (s' : Store P K), s.write p x.1 (x.2.1 + j) v = some s') →
+      ∃ s', s.writeBlocks p bs ys = some s'
+  | [], [], s, _, _ => ⟨s, rfl⟩
+  | y :: _, x :: _, _, .cons hyx hF, hw => by
+    obtain ⟨s₁, hs₁⟩ := Store.exists_writeBlock_eq_some_of_write (xs := y)
+      fun j hj => hw x List.mem_cons_self j (hyx ▸ hj)
+    obtain ⟨s', hs'⟩ := exists_writeBlocks_eq_some hF fun x' hx' j hj => by
+      obtain ⟨v, _, hv⟩ := hw x' (List.mem_cons_of_mem _ hx') j hj
+      exact ⟨v, Store.exists_write_eq_some_of_shape_eq (Store.shape_of_writeBlock_eq_some hs₁) hv v⟩
+    exact ⟨s', by rw [Store.writeBlocks, if_pos hyx, hs₁, Option.bind_some, hs']⟩
 
 /-- **When a kernel call succeeds**: if the numbers of operands are those of the shape of kernel
 `o` at `ds`, the output blocks are pairwise disjoint and disjoint from the input blocks, the input
@@ -149,45 +152,8 @@ theorem Interp.exists_kcallStore_eq_some {I : Interp P ι K C} {o : ι} {p : P} 
     (hw : ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, ∀ j < x.2.2,
       ∃ (v : K) (s'' : Store P K), s.write p x.1 (x.2.1 + j) v = some s'') :
     ∃ s', I.kcallStore o p ds ins outs s = some s' := by
-  -- the output blocks are written one after another, each write keeping the shape of the store
-  have key : ∀ (ys : List (Array K)) (bs : List (ℕ × ℕ × ℕ)) (s₀ : Store P K),
-      List.Forall₂ (fun (y : Array K) (x : ℕ × ℕ × ℕ) => y.size = x.2.2) ys bs →
-      (∀ x ∈ bs, ∀ j < x.2.2,
-        ∃ (v : K) (s'' : Store P K), s₀.write p x.1 (x.2.1 + j) v = some s'') →
-      ∃ s', s₀.writeBlocks p bs ys = some s' := by
-    intro ys
-    induction ys with
-    | nil =>
-      intro bs s₀ hF _
-      cases bs with
-      | nil => exact ⟨s₀, rfl⟩
-      | cons => cases hF
-    | cons y ys ih =>
-      intro bs s₀ hF hw
-      cases bs with
-      | nil => cases hF
-      | cons x bs =>
-        obtain ⟨hyx, hF'⟩ := List.forall₂_cons.mp hF
-        obtain ⟨s₁, hs₁⟩ := Store.exists_writeBlock_eq_some_of_write (xs := y)
-          (fun j hj => hw x List.mem_cons_self j (by omega))
-        have hsh : s₁.shape = s₀.shape := Store.shape_of_writeBlock_eq_some hs₁
-        have hw' : ∀ x' ∈ bs, ∀ j < x'.2.2, ∃ (v : K) (s'' : Store P K),
-            s₁.write p x'.1 (x'.2.1 + j) v = some s'' := by
-          intro x' hx' j hj
-          obtain ⟨v, s'', hs''⟩ := hw x' (List.mem_cons_of_mem _ hx') j hj
-          obtain ⟨s₂, hs₂⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs'' v
-          exact ⟨v, s₂, hs₂⟩
-        obtain ⟨s', hs'⟩ := ih bs s₁ hF' hw'
-        refine ⟨s', ?_⟩
-        simp only [Store.writeBlocks, hyx, if_true, hs₁, Option.bind_some]
-        exact hs'
-  have hc : ins.length = (I.kshape o ds).1.length ∧ outs.length = (I.kshape o ds).2.length ∧
-      (kcallBlocks outs (I.kshape o ds).2).Pairwise (fun x y => blockDisjoint x y = true) ∧
-      ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, ∀ y ∈ kcallBlocks ins (I.kshape o ds).1,
-        blockDisjoint x y = true :=
-    ⟨hin, hout, hpw, hio⟩
   unfold Interp.kcallStore
-  rw [if_pos hc, hxs, Option.bind_some, hys, Option.bind_some]
-  exact key ys _ s hsize hw
+  rw [if_pos ⟨hin, hout, hpw, hio⟩, hxs, Option.bind_some, hys, Option.bind_some]
+  exact exists_writeBlocks_eq_some hsize hw
 
 end NLAlib.Computation
