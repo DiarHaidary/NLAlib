@@ -78,6 +78,34 @@ theorem complexGaussian_eq_map_stdGaussian :
   rw [← Complex.ofReal_inv, ← hc]
   apply Complex.ext <;> simp
 
+/-- A product of images of product measures is the image of the product of the two products. -/
+private lemma pi_map_prod_eq_map_prod_pi {ι α β γ : Type*} [Fintype ι] [MeasurableSpace α]
+    [MeasurableSpace β] [MeasurableSpace γ] (μ₁ : Measure α) (μ₂ : Measure β)
+    [IsProbabilityMeasure μ₁] [IsProbabilityMeasure μ₂] {h : α × β → γ} (hh : Measurable h) :
+    Measure.pi (fun _ : ι => (μ₁.prod μ₂).map h) =
+      ((Measure.pi fun _ : ι => μ₁).prod (Measure.pi fun _ : ι => μ₂)).map
+        fun p i => h (p.1 i, p.2 i) := by
+  have := Measure.isProbabilityMeasure_map (μ := μ₁.prod μ₂) hh.aemeasurable
+  rw [← Measure.pi_map_pi fun _ => hh.aemeasurable,
+    ← (measurePreserving_arrowProdEquivProdArrow α β ι (fun _ => μ₁) (fun _ => μ₂)).map_eq,
+    Measure.map_map (by fun_prop) (MeasurableEquiv.measurable _)]
+  rfl
+
+/-- One entry: $(x + iy)/\sqrt2$ with $x, y \sim \mathcal{N}(0, 1)$ independent. -/
+private lemma complexGaussian_eq_map_prod_gaussianReal :
+    complexGaussian = ((gaussianReal 0 1).prod (gaussianReal 0 1)).map
+      fun p : ℝ × ℝ => (√2 : ℝ)⁻¹ • ((p.1 : ℂ) + Complex.I * p.2) := by
+  have h : gaussianReal 0 2⁻¹ = (gaussianReal 0 1).map ((√2 : ℝ)⁻¹ * ·) := by
+    rw [gaussianReal_map_const_mul]
+    congr 1
+    · simp
+    · ext; simp
+  rw [complexGaussian, h, Measure.map_prod_map _ _ (by fun_prop) (by fun_prop),
+    Measure.map_map (MeasurableEquiv.measurable _) (by fun_prop)]
+  congr 1
+  ext p
+  apply Complex.ext <;> simp [-Complex.ofReal_inv]
+
 /-- **A complex Gaussian matrix is a real Gaussian matrix in disguise**: the standard complex
 Gaussian law on $m \times n$ matrices is the law of $(\mathbf{G}_1 + i\mathbf{G}_2)/\sqrt2$,
 where $\begin{bmatrix} \mathbf{G}_1 \\ \mathbf{G}_2 \end{bmatrix}$ is a $2m \times n$ standard
@@ -92,7 +120,19 @@ theorem complexGaussianMatrix_eq_map_gaussianMatrix :
     complexGaussianMatrix m n = (gaussianMatrix (m ⊕ m) n).map fun X =>
       (√2 : ℝ)⁻¹ • ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
         Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ))) := by
-  sorry
+  have hg : Measurable fun p : ℝ × ℝ => (√2 : ℝ)⁻¹ • ((p.1 : ℂ) + Complex.I * p.2) := by
+    fun_prop
+  have hrow : complexGaussianVector n = ((gaussianVector n).prod (gaussianVector n)).map
+      fun p j => (√2 : ℝ)⁻¹ • ((p.1 j : ℂ) + Complex.I * p.2 j) := by
+    rw [complexGaussianVector, complexGaussian_eq_map_prod_gaussianReal]
+    exact pi_map_prod_eq_map_prod_pi _ _ hg
+  have hrowm : Measurable fun (p : (n → ℝ) × (n → ℝ)) (j : n) =>
+      (√2 : ℝ)⁻¹ • ((p.1 j : ℂ) + Complex.I * p.2 j) := by
+    fun_prop
+  rw [complexGaussianMatrix, hrow, pi_map_prod_eq_map_prod_pi _ _ hrowm, gaussianMatrix,
+    ← (measurePreserving_sumPiEquivProdPi fun _ : m ⊕ m => gaussianVector n).map_eq,
+    Measure.map_map (by fun_prop) (MeasurableEquiv.measurable _)]
+  rfl
 
 /-- **Unitary invariance of a complex Gaussian matrix**: if $\mathbf{G}$ is a standard complex
 Gaussian $n \times k$ matrix and $\mathbf{V} \in \mathbb{C}^{n \times r}$ has orthonormal
