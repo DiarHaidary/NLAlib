@@ -421,7 +421,40 @@ theorem exists_backward_kaniel_paige_saad (hη : L.η₀ ≤ 1 / 100)
             ((Real.sqrt (eigenvalue (L.H + E) 0 - a) - Real.sqrt (eigenvalue (L.H + E) 0 - c)) /
               (Real.sqrt (eigenvalue (L.H + E) 0 - a) +
                 Real.sqrt (eigenvalue (L.H + E) 0 - c))) ^ (2 * (k - 1)) := by
-  sorry
+  obtain ⟨E, hEt, hEf, hst, hT, -⟩ := L.exists_lanczosState_backward hη hsmall hrec hτ
+  set U := polarFactor (basisOf L.v (k + 1))
+  have hM : (L.H + E).IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, Matrix.transpose_add,
+      L.transpose_H, hEt]
+  -- the polar factor is orthonormal, so are the first `k` Lanczos vectors
+  have hU : HasOrthonormalCols U := by
+    refine hasOrthonormalCols_polarFactor_iff.mpr
+      (injective_mulVec_of_specNorm_gram_sub_one_lt_one ((specNorm_le_frobNorm _).trans_lt
+        ((L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl).trans_lt ?_)))
+    push_cast
+    linarith
+  have hQ : HasOrthonormalCols (arnoldiMatrix (L.H + E) (colSeq U 1) k) := by
+    rw [← hM.lanczosMatrix_eq_arnoldiMatrix]
+    have hQU : lanczosMatrix (L.H + E) (colSeq U 1) k =
+        U.submatrix (Equiv.refl _) Fin.castSucc := by
+      ext i j
+      simp only [lanczosMatrix, Matrix.of_apply, hst j j.isLt, colSeq, Matrix.submatrix_apply,
+        Equiv.refl_apply]
+      rw [dif_pos (by omega)]
+      rfl
+    rw [hQU]
+    exact hU.submatrix _ (Fin.castSucc_injective _)
+  refine ⟨E, hEt, hEf, ?_, fun {a c} hac hc hs hb => ?_⟩
+  · have hH : L.H.IsHermitian := by
+      rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, L.transpose_H]
+    refine (hM.abs_eigenvalue_sub_le hH 0).trans ?_
+    rw [add_sub_cancel_left]
+    exact (specNorm_le_frobNorm E).trans hEf
+  · have hK : LinearMap.range (arnoldiMatrix (L.H + E) (colSeq U 1) k).mulVecLin =
+        krylovSpace (L.H + E) (colSeq U 1) (k - 1 + 1) := by
+      rw [range_arnoldiMatrix, Nat.sub_add_cancel L.k_pos]
+    have h := hM.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le hac hc hs hb hQ hK
+    rwa [← hM.lanczosTridiagonal_eq, hT] at h
 
 /-- **Gauss quadrature on the backward model** (F6, S4d): with $\mathbf{H}'$ from
 `NLAlib.LanczosReorthRun.exists_pure_backward`, $\|\mathbf{b}\|^2\,[p(\mathbf{T}_k)]_{00} =
