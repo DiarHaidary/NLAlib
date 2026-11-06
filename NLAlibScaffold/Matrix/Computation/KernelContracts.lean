@@ -63,14 +63,9 @@ theorem EntryLayout.toMatrix_toArray [Inhabited K] (L : EntryLayout K E)
   simp only [EntryLayout.toMatrix, Matrix.of_apply]
   convert hL (Y i j)
   rename_i t
-  have hi : i + l * j + 1 ≤ m * l := by
-    have := i.isLt
-    have := j.isLt
-    nlinarith
+  have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
   have hlt : L.width * (i + l * j) + t < m * l * L.width := by
-    have h3 : L.width * (i + l * j + 1) ≤ L.width * (m * l) := Nat.mul_le_mul_left _ hi
-    have := t.isLt
-    nlinarith
+    nlinarith [Nat.mul_le_mul_left L.width hi, t.isLt]
   have e1 : (finProdFinEquiv.symm ⟨L.width * (i + l * j) + t, hlt⟩ : Fin (m * l) × Fin L.width)
       = (⟨i + l * j, by omega⟩, t) := by
     rw [Equiv.symm_apply_eq]
@@ -196,10 +191,9 @@ theorem IsMatMulKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι
     rcases hy with rfl | rfl
     · exact hca
     · exact hcb⟩]
-  simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hY, hk, liftMM]
-  simp only [bind, Option.bind, pure]
-  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true]
-  cases s.writeBlock p c.1 c.2 (L.toArray (mm (L.toMatrix l m X) (L.toMatrix m n Y))) <;> rfl
+  simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hY, hk, liftMM, bind,
+    Option.bind, pure]
+  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true, Option.bind_fun_some]
 
 /-- **A QR kernel call writes the factors**: if kernel `o` of `I` is the routine `qr` in the layout
 `L` (`NLAlib.Computation.IsQRKernel`), a call at the dimensions $[m, n]$ with input operand $a$
@@ -234,10 +228,7 @@ theorem IsQRKernel.kcallStore_eq [Inhabited K] {I : Interp P ι K C} {o : ι}
     · exact hra⟩]
   simp only [Store.readBlocks, List.mapM_cons, List.mapM_nil, hX, hk, liftQR, bind, Option.bind,
     pure]
-  have key : ∀ o : Option (Store P K), o.bind (fun s' => some s') = o := by
-    intro o
-    cases o <;> rfl
-  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true, key]
+  simp only [Store.writeBlocks, EntryLayout.size_toArray, if_true, Option.bind_fun_some]
   rfl
 
 end NLAlib.Computation
