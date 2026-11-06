@@ -178,6 +178,13 @@ Proof: unfold `NLAlib.newtonSchulzSteps`; $\log_2(1/\varepsilon) \ge 1 > 0$, so 
 are monotone (`Real.logb_le_logb_of_le`, `Real.one_le_logb_iff` or direct). S, about 10 lines. -/
 theorem newtonSchulzSteps_le_of_le {x₀ ε ε' : ℝ} (hε' : 0 < ε') (h : ε' ≤ ε) (hε : ε ≤ 1 / 2) :
     newtonSchulzSteps x₀ ε ≤ newtonSchulzSteps x₀ ε' := by
-  sorry
+  unfold newtonSchulzSteps
+  have hεpos : 0 < ε := lt_of_lt_of_le hε' h
+  have hinv : ε⁻¹ ≤ ε'⁻¹ := inv_anti₀ hε' h
+  have hgt1 : 1 < ε⁻¹ := by rw [one_lt_inv₀ hεpos]; linarith
+  have hpos : 0 < Real.logb 2 ε⁻¹ := Real.logb_pos (by norm_num) hgt1
+  have hin : Real.logb 2 ε⁻¹ ≤ Real.logb 2 ε'⁻¹ :=
+    Real.logb_le_logb_of_le (by norm_num) (inv_pos.2 hεpos) hinv
+  linarith [Real.logb_le_logb_of_le (by norm_num : (1:ℝ) < 2) hpos hin]
 
 end NLAlib
