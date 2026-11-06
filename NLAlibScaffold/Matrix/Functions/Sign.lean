@@ -258,7 +258,20 @@ S, about 15 lines. -/
 theorem _root_.Matrix.IsHermitian.specNorm_sub_cfc_sign_le {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {δ : ℝ} (hδ : 0 ≤ δ) (h : ∀ x ∈ spectrum ℝ A, |1 - x ^ 2| ≤ δ) :
     specNorm (A - cfc Real.sign A) ≤ δ := by
-  sorry
+  have hfin : (spectrum ℝ A).Finite := Matrix.finite_real_spectrum
+  have hsub : A - cfc Real.sign A = cfc (fun x => x - Real.sign x) A := by
+    rw [cfc_sub (fun x => x) Real.sign A (hf := continuousOn_id)
+      (hg := hfin.continuousOn _), cfc_id' ℝ A]
+  rw [hsub]
+  refine hA.specNorm_cfc_le hδ fun x hx => (?_ : _ ≤ |1 - x ^ 2|).trans (h x hx)
+  rcases lt_trichotomy x 0 with hx0 | rfl | hx0
+  · rw [Real.sign_of_neg hx0]
+    rw [abs_le]; constructor <;> nlinarith [abs_nonneg (1 - x ^ 2), le_abs_self (1 - x ^ 2),
+      neg_abs_le (1 - x ^ 2)]
+  · simp [Real.sign_zero]
+  · rw [Real.sign_of_pos hx0]
+    rw [abs_le]; constructor <;> nlinarith [abs_nonneg (1 - x ^ 2), le_abs_self (1 - x ^ 2),
+      neg_abs_le (1 - x ^ 2)]
 
 /-- **Frames of the spectral projectors**: for Hermitian $\mathbf{A}$ and $c$ not an eigenvalue,
 with $k = i_+(\mathbf{A} - c\mathbf{I})$ (`NLAlib.inertiaPos`), there is
