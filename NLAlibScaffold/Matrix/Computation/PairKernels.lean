@@ -428,7 +428,62 @@ theorem exists_exec_zboxTest (p : P) (m n : ℕ) {X : ℕ} {xo : IExp ℕ} {lo h
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hf : ∃ s, st.store.write p f.buf f.idx.eval default = some s) :
     ∃ st', exec I (zboxTest (ι := ι) p (.const m) (.const n) X xo lo hi f).run st = some st' := by
-  sorry
+  obtain ⟨s₀, hs₀⟩ := hf
+  obtain ⟨z₀, hz₀⟩ := hsem.lit_ok p 0 trivial
+  obtain ⟨z₁, hz₁⟩ := hsem.lit_ok p 1 trivial
+  have hX : ∀ k < 2 * (m * n), ∃ v, st.store.read p X (xo.eval + k) = some v := by
+    intro k hk
+    have hm : 0 < m := Nat.pos_of_ne_zero (by rintro rfl; simp at hk)
+    have e : 2 * (k / 2 % m + m * (k / 2 / m)) + k % 2 = k := by rw [Nat.mod_add_div]; omega
+    exact ⟨_, e ▸ hA ⟨_, Nat.mod_lt _ hm⟩ ⟨_, Nat.div_lt_of_lt_mul (by omega)⟩
+      ⟨_, Nat.mod_lt _ two_pos⟩⟩
+  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hfX hflo hfhi
+  let R : St P K C → Prop := fun s => s.store.shape = st.store.shape ∧
+    (∀ k < 2 * (m * n), s.store.read p X (xo.eval + k) = st.store.read p X (xo.eval + k)) ∧
+    s.store.read p lo.buf lo.idx.eval = some ℓ ∧ s.store.read p hi.buf hi.idx.eval = some h
+  have hR : ∀ (s : St P K C) (q : ℚ) (z : K), R s → I.sem.lit p q = some z →
+      ∃ s', exec I (.seq (.instr (.lit p f q)) .skip) s = some s' ∧ R s' := by
+    rintro s q z ⟨hsh, hsX, hslo, hshi⟩ hz
+    obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_shape_eq hsh hs₀ z
+    refine ⟨_, (exec_seq_instr_lit I hz hs').trans (exec_skip I _),
+      (Store.shape_of_write_eq_some hs').trans hsh, fun k hk => ?_, ?_, ?_⟩
+    · refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans (hsX k hk)
+      by_cases hb : X = f.buf
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+    · refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans hslo
+      by_cases hb : lo.buf = f.buf
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+    · refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans hshi
+      by_cases hb : hi.buf = f.buf
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+  have hrun : (zboxTest (ι := ι) p (.const m) (.const n) X xo lo hi f).run = .seq (.named
+      "zboxTest" [.idx (.const m), .idx (.const n), .buf X, .idx xo, .cell lo, .cell hi, .cell f]
+      (.seq (.instr (.lit p f 0)) (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.ite p .le lo ⟨X, xo + .var w⟩
+          (.seq (.ite p .le ⟨X, xo + .var w⟩ hi .skip (.seq (.instr (.lit p f 1)) .skip)) .skip)
+          (.seq (.instr (.lit p f 1)) .skip)) .skip) .skip))) .skip := rfl
+  obtain ⟨s₁, h₁, hR₁⟩ := hR st 0 z₀ ⟨rfl, fun _ _ => rfl, hlo, hhi⟩ (by exact_mod_cast hz₀)
+  rw [hrun, exec_seq_skip, exec_named, exec_seq, ← exec_seq_skip, h₁, Option.bind_some,
+    exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall I (fun _ s => R s) hR₁ ?_).imp fun _ h => h.1
+  rintro w hw s hs
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  obtain ⟨v, hv⟩ := hX w hw
+  have hxv : s.store.read p X (xo.eval + w) = some v := (hs.2.1 w hw).trans hv
+  rw [exec_seq_skip, exec_ite]
+  simp only [cmpStep, hs.2.2.1, IExp.eval_add, IExp.eval_var, hxv, hsem.cmp_le,
+    Option.bind_some, Option.map_some]
+  split_ifs
+  · rw [exec_seq_skip, exec_ite]
+    simp only [cmpStep, hs.2.2.2, IExp.eval_add, IExp.eval_var, hxv, hsem.cmp_le,
+      Option.bind_some, Option.map_some]
+    split_ifs
+    · exact ⟨_, exec_skip I _, hs⟩
+    · exact hR _ 1 z₁ hs (by exact_mod_cast hz₁)
+  · exact hR _ 1 z₁ hs (by exact_mod_cast hz₁)
 
 /-! ### Kernels for later stages: identity, sums, scaling, conjugate transpose, trace -/
 
