@@ -512,7 +512,22 @@ theorem newtonSchulzSignProg.exists_exec_compiled {mm : ι}
     ∃ st' : St P K C, (newtonSchulzSignProg.compiled p mm).exec I N ![F]
       (inputState p [(pairLayout.toArray A₀).map some, #[some ε, some b],
         Array.replicate (2 * (N * N)) none]) = some st' := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, newtonSchulzSignProg.toStmt_compiled]
+  have hA := EntryLayout.holds_inputState (C := C) pairLayout p (k := 0) (Y := A₀)
+    (bufs := [(pairLayout.toArray A₀).map some, #[some ε, some b],
+      Array.replicate (2 * (N * N)) none]) rfl
+  have hε : (inputState (C := C) p [(pairLayout.toArray A₀).map some, #[some ε, some b],
+      Array.replicate (2 * (N * N)) none]).store.read p 1 0 = some ε := by
+    simp [inputState, Store.read]
+  have hb : (inputState (C := C) p [(pairLayout.toArray A₀).map some, #[some ε, some b],
+      Array.replicate (2 * (N * N)) none]).store.read p 1 (0 + 1) = some b := by
+    simp [inputState, Store.read]
+  obtain ⟨st', h⟩ := exists_exec_newtonSchulzSignProg hmm hsem hlit p hu N F hN
+    (A := 0) (par := 1) (X := 2) (ao := .const 0) (po := .const 0) (xo := .const 0)
+    (A₀ := A₀) (ε := ε) (b := b) hA hε hb hb0
+    (by simp [blockDisjoint]) (by simp [blockDisjoint])
+    ⟨2 * (N * N), by simp [inputState, Store.shape], by simp⟩ htest
+  exact ⟨st', h⟩
 
 /-- Twice the sum of the indices below $N$ is at most $N^2$. -/
 private theorem two_mul_sum_range_le (N : ℕ) : 2 * (List.range N).sum ≤ N * N := by
