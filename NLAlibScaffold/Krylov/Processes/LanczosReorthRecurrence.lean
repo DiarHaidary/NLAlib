@@ -227,7 +227,9 @@ Proof: entrywise from `Matrix.IsHermitian.lanczosReorthState_toLanczosState` (th
 `NLAlib.lanczosMatrix`, `NLAlib.lanczosReorthMatrix`. S, about 5 lines. -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthMatrix_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (q : ℕ) : lanczosReorthMatrix A b q = lanczosMatrix A b q := by
-  sorry
+  ext i j
+  exact congrFun (congrArg LanczosState.cur
+    (hA.lanczosReorthState_toLanczosState b (j : ℕ)).1) i
 
 /-- **The stored norm before orthogonalization is $\beta$** (A3): for Hermitian $\mathbf{A}$,
 $\nu_{j+1} = \beta_{j+1}$ in exact arithmetic (nothing is subtracted).
