@@ -52,8 +52,6 @@ witnesses that the contracts are satisfiable.
 
 ## Main results
 
-None: the statements about these contracts (the exact routines meet them, an interpretation with
-the lifted kernels meets the kernel contracts) are proof obligations of the stage.
 * `NLAlib.Computation.EntryLayout.size_toArray`, `NLAlib.Computation.EntryLayout.toMatrix_toArray`:
   packed storage.
 * `NLAlib.Computation.realLayout.get_put`, `NLAlib.Computation.pairLayout.get_put`: the two
