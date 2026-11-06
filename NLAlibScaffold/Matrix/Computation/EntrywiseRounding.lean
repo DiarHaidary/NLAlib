@@ -378,6 +378,114 @@ theorem specNorm_sub_decodeMatrix_hermScale_le (hM : M.IsAccurate dec u τ Ω μ
       exact hE_le j i h
   exact specNorm_le_of_norm_entry_le Z E hu hτ hE_all
 
+/-- Entrywise moduli are dominated in Frobenius norm (private helper for `hermAvg`). -/
+private theorem frobNorm_le_of_entry_norm_le_avg {m n : Type*} [Fintype m] [Fintype n]
+    {A B : Matrix m n ℂ} (h : ∀ i j, ‖A i j‖ ≤ ‖B i j‖) : frobNorm A ≤ frobNorm B := by
+  unfold frobNorm
+  exact Real.sqrt_le_sqrt (Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ =>
+    pow_le_pow_left₀ (norm_nonneg _) (h i j) 2)
+
+/-- Spectral norm from entrywise moduli, via the Frobenius norm (private helper for `hermAvg`). -/
+private theorem specNorm_le_of_entry_norm_le_avg {k : ℕ} (Z E : Matrix (Fin k) (Fin k) ℂ)
+    {u τ : ℝ} (hu : 0 ≤ u) (hτ : 0 ≤ τ) (h : ∀ i j, ‖E i j‖ ≤ u * (‖Z i j‖ + 2 * τ)) :
+    specNorm E ≤ u * (√(k : ℝ) * specNorm Z + 2 * k * τ) := by
+  have hW : frobNorm (Matrix.of fun i j => ((‖Z i j‖ : ℝ) : ℂ)) = frobNorm Z := by
+    unfold frobNorm; simp
+  have hJ : frobNorm (Matrix.of fun (_ _ : Fin k) => (1 : ℂ)) = k := by
+    have h2 : frobNorm (Matrix.of fun (_ _ : Fin k) => (1 : ℂ)) ^ 2 = (k : ℝ) ^ 2 := by
+      rw [frobNorm_sq_eq_sum]; simp; ring
+    exact (pow_left_inj₀ (frobNorm_nonneg _) (Nat.cast_nonneg _) two_ne_zero).1 h2
+  have hE : frobNorm E ≤ u * frobNorm Z + 2 * u * τ * k := by
+    calc frobNorm E ≤ frobNorm (u • (Matrix.of fun i j => ((‖Z i j‖ : ℝ) : ℂ)) +
+          (2 * u * τ) • (Matrix.of fun (_ _ : Fin k) => (1 : ℂ))) := by
+          refine frobNorm_le_of_entry_norm_le_avg fun i j => ?_
+          have hc : (u • (Matrix.of fun i j => ((‖Z i j‖ : ℝ) : ℂ)) +
+              (2 * u * τ) • (Matrix.of fun (_ _ : Fin k) => (1 : ℂ))) i j =
+              (((u * ‖Z i j‖ + 2 * u * τ : ℝ)) : ℂ) := by
+            simp
+          rw [hc, Complex.norm_real, Real.norm_of_nonneg (by positivity)]
+          nlinarith [h i j]
+      _ ≤ frobNorm (u • (Matrix.of fun i j => ((‖Z i j‖ : ℝ) : ℂ))) +
+          frobNorm ((2 * u * τ) • (Matrix.of fun (_ _ : Fin k) => (1 : ℂ))) :=
+          frobNorm_add_le _ _
+      _ = u * frobNorm Z + 2 * u * τ * k := by
+          rw [frobNorm_real_smul, frobNorm_real_smul, hW, hJ, abs_of_nonneg hu,
+            abs_of_nonneg (by positivity)]
+  have hZ := frobNorm_le_sqrt_card_mul_specNorm Z
+  rw [Fintype.card_fin] at hZ
+  calc specNorm E ≤ frobNorm E := specNorm_le_frobNorm E
+    _ ≤ u * frobNorm Z + 2 * u * τ * k := hE
+    _ ≤ u * (√(k : ℝ) * specNorm Z + 2 * k * τ) := by
+        nlinarith [mul_le_mul_of_nonneg_left hZ hu]
+
+/-- One part of the scaled Hermitian part: a rounded sum then a rounded division by $c$ errs by
+$\frac52u(\lvert a/c\rvert+\tau)$ (private helper). -/
+private theorem part_err_le (a c s s' S u τ Ω : ℝ) (hc : 1 ≤ |c|) (hu : 0 ≤ u)
+    (hu1 : u ≤ 1 / 2) (hτ : 0 ≤ τ) (ha : |a| ≤ 2 * S) (hΩ : 3 * S + τ ≤ Ω)
+    (hadd : |a| ≤ Ω → |a - s| ≤ u * max |a| τ)
+    (hdiv : |s / c| ≤ Ω → |s / c - s'| ≤ u * max |s / c| τ) :
+    |a / c - s'| ≤ 5 / 2 * u * (|a / c| + τ) := by
+  have hc0 : 0 < |c| := by linarith
+  have hc0' : c ≠ 0 := fun h => by simp [h] at hc; linarith
+  have hS : 0 ≤ S := by linarith [abs_nonneg a]
+  have hA := hadd (ha.trans (by linarith))
+  have hmax : max |a| τ ≤ |a| + τ :=
+    max_le (le_add_of_nonneg_right hτ) (le_add_of_nonneg_left (abs_nonneg a))
+  have hs : |s| ≤ 3 * S + τ := by
+    have h2 : |s| ≤ |a| + |a - s| := by simpa using abs_sub a (a - s)
+    have h3 : u * max |a| τ ≤ 1 / 2 * (2 * S + τ) := by
+      nlinarith [mul_le_mul_of_nonneg_right hu1 (by positivity : (0 : ℝ) ≤ |a| + τ)]
+    linarith
+  have hB := hdiv (by rw [abs_div]; exact (div_le_self (abs_nonneg _) hc).trans (by linarith))
+  have hτc : τ ≤ τ * |c| := le_mul_of_one_le_right hτ hc
+  have e1 : |(a - s) / c| ≤ u * (|a / c| + τ) := by
+    rw [abs_div, div_le_iff₀ hc0]
+    have hq : |a / c| * |c| = |a| := by rw [abs_div, div_mul_cancel₀ _ hc0.ne']
+    nlinarith [mul_le_mul_of_nonneg_left hmax hu, mul_le_mul_of_nonneg_left hτc hu]
+  have ht : |s / c| ≤ |a / c| + u * (|a / c| + τ) := by
+    have h := abs_sub (a / c) ((a - s) / c)
+    have hh : a / c - (a - s) / c = s / c := by ring
+    rw [hh] at h
+    linarith
+  have e2 : |s / c - s'| ≤ u * (|s / c| + τ) :=
+    hB.trans (mul_le_mul_of_nonneg_left (max_le (le_add_of_nonneg_right hτ)
+      (le_add_of_nonneg_left (abs_nonneg _))) hu)
+  calc |a / c - s'| = |(a - s) / c + (s / c - s')| := by ring_nf
+    _ ≤ |(a - s) / c| + |s / c - s'| := abs_add_le _ _
+    _ ≤ u * (|a / c| + τ) + u * (|s / c| + τ) := add_le_add e1 e2
+    _ ≤ 5 / 2 * u * (|a / c| + τ) := by
+        nlinarith [mul_nonneg (mul_nonneg hu (add_nonneg (abs_nonneg (a / c)) hτ))
+          (sub_nonneg.2 hu1)]
+
+/-- The modulus of a complex entry whose real and imaginary errors are at most
+$U(\lvert p\rvert+\tau)$, $U(\lvert q\rvert+\tau)$ (private helper). -/
+private theorem norm_entry_le_of_sum_errors (U τ p q e₁ e₂ : ℝ) (hU : 0 ≤ U) (hτ : 0 ≤ τ)
+    (h₁ : |e₁| ≤ U * (|p| + τ)) (h₂ : |e₂| ≤ U * (|q| + τ)) :
+    √(e₁ ^ 2 + e₂ ^ 2) ≤ U * (√(p ^ 2 + q ^ 2) + 2 * τ) := by
+  have hr := Real.sq_sqrt (add_nonneg (sq_nonneg p) (sq_nonneg q))
+  have hr0 := Real.sqrt_nonneg (p ^ 2 + q ^ 2)
+  have hp : |p| ≤ √(p ^ 2 + q ^ 2) := Real.abs_le_sqrt (by nlinarith [sq_nonneg q])
+  have hq : |q| ≤ √(p ^ 2 + q ^ 2) := Real.abs_le_sqrt (by nlinarith [sq_nonneg p])
+  have hsq : ∀ e x : ℝ, |e| ≤ U * x → e ^ 2 ≤ (U * x) ^ 2 := fun e x h => by
+    calc e ^ 2 = |e| ^ 2 := (sq_abs e).symm
+      _ ≤ (U * x) ^ 2 := pow_le_pow_left₀ (abs_nonneg _) h 2
+  have a1 := hsq e₁ _ h₁
+  have a2 := hsq e₂ _ h₂
+  have hcr : (|p| + τ) ^ 2 + (|q| + τ) ^ 2 ≤ (√(p ^ 2 + q ^ 2) + 2 * τ) ^ 2 := by
+    nlinarith [mul_le_mul_of_nonneg_left (add_le_add hp hq) hτ, sq_abs p, sq_abs q]
+  have hcr' := mul_le_mul_of_nonneg_left hcr (sq_nonneg U)
+  have hkey : e₁ ^ 2 + e₂ ^ 2 ≤ (U * (√(p ^ 2 + q ^ 2) + 2 * τ)) ^ 2 := by
+    nlinarith
+  calc √(e₁ ^ 2 + e₂ ^ 2) ≤ √((U * (√(p ^ 2 + q ^ 2) + 2 * τ)) ^ 2) := Real.sqrt_le_sqrt hkey
+    _ = U * (√(p ^ 2 + q ^ 2) + 2 * τ) := Real.sqrt_sq (mul_nonneg hU (by positivity))
+
+/-- Complex entry errors bounded by $U(\lvert p\rvert+\tau)$ in parts (private helper). -/
+private theorem norm_sub_le_of_sum_errors (z w : ℂ) {U τ : ℝ} (hU : 0 ≤ U) (hτ : 0 ≤ τ)
+    (h₁ : |(z - w).re| ≤ U * (|z.re| + τ)) (h₂ : |(z - w).im| ≤ U * (|z.im| + τ)) :
+    ‖z - w‖ ≤ U * (‖z‖ + 2 * τ) := by
+  have := norm_entry_le_of_sum_errors U τ z.re z.im (z - w).re (z - w).im hU hτ h₁ h₂
+  simpa [Complex.norm_def, Complex.normSq_apply, sq] using this
+
 /-- **Error of the stored scaled Hermitian part**: under `NLAlib.FloatMachine.IsAccurate` with
 $0 \le u \le 1/2$, $\tau \ge 0$, for a stored $\mathbf{X}$ and a stored $c$ with
 $\lvert \bar c \rvert \ge 1$ and $3\|\bar{\mathbf{X}}\|_2 + \tau \le \Omega$, with
@@ -395,7 +503,77 @@ theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsAccurate dec u τ Ω μM 
       decodeMatrix dec (M.hermAvg X c)) ≤
         3 * u * (√(k : ℝ) * specNorm ((dec c)⁻¹ • (decodeMatrix dec X + (decodeMatrix dec X)ᴴ)) +
           2 * k * τ) := by
-  sorry
+  have hc0 : dec c ≠ 0 := fun h => by simp [h] at hc; linarith
+  have hxS : ∀ i j, |dec (X i j).1| ≤ specNorm (decodeMatrix dec X) ∧
+      |dec (X i j).2| ≤ specNorm (decodeMatrix dec X) := fun i j =>
+    ⟨(Complex.abs_re_le_norm (decodeMatrix dec X i j)).trans
+        (norm_apply_le_specNorm (decodeMatrix dec X) i j),
+     (Complex.abs_im_le_norm (decodeMatrix dec X i j)).trans
+        (norm_apply_le_specNorm (decodeMatrix dec X) i j)⟩
+  set Z : Matrix (Fin k) (Fin k) ℂ :=
+    (dec c)⁻¹ • (decodeMatrix dec X + (decodeMatrix dec X)ᴴ) with hZdef
+  set E : Matrix (Fin k) (Fin k) ℂ := Z - decodeMatrix dec (M.hermAvg X c) with hEdef
+  have hZre : ∀ i j, (Z i j).re = (dec (X i j).1 + dec (X j i).1) / dec c := fun i j => by
+    rw [hZdef, Matrix.smul_apply, Complex.smul_re, smul_eq_mul, div_eq_inv_mul]
+    simp [Matrix.add_apply, Matrix.conjTranspose_apply, decodeMatrix, decodeComplex]
+  have hZim : ∀ i j, (Z i j).im = (dec (X i j).2 - dec (X j i).2) / dec c := fun i j => by
+    rw [hZdef, Matrix.smul_apply, Complex.smul_im, smul_eq_mul, div_eq_inv_mul]
+    simp [Matrix.add_apply, Matrix.conjTranspose_apply, decodeMatrix, decodeComplex, sub_eq_add_neg]
+  have hWre : ∀ i j, i ≤ j →
+      (decodeMatrix dec (M.hermAvg X c) i j).re = dec (M.div (M.add (X i j).1 (X j i).1) c) := by
+    intro i j h
+    rcases eq_or_lt_of_le h with rfl | hlt
+    · simp [FloatMachine.hermAvg, FloatMachine.hermFrom, decodeMatrix, decodeComplex]
+    · simp [FloatMachine.hermAvg, FloatMachine.hermFrom, decodeMatrix, decodeComplex, hlt]
+  have hWim : ∀ i j, i < j →
+      (decodeMatrix dec (M.hermAvg X c) i j).im = dec (M.div (M.sub (X i j).2 (X j i).2) c) := by
+    intro i j hlt
+    simp [FloatMachine.hermAvg, FloatMachine.hermFrom, decodeMatrix, decodeComplex, hlt]
+  have hWim_diag : ∀ i, (decodeMatrix dec (M.hermAvg X c) i i).im = 0 := fun i => by
+    simp [FloatMachine.hermAvg, FloatMachine.hermFrom, decodeMatrix, decodeComplex, hM.dec_zero]
+  have hU0 : 0 ≤ 5 / 2 * u := by linarith
+  have hE_le : ∀ i j, i ≤ j → ‖E i j‖ ≤ 5 / 2 * u * (‖Z i j‖ + 2 * τ) := by
+    intro i j hij
+    refine norm_sub_le_of_sum_errors (Z i j) (decodeMatrix dec (M.hermAvg X c) i j) hU0 hτ ?_ ?_
+    · rw [Complex.sub_re, hZre, hWre i j hij]
+      have ha : |dec (X i j).1 + dec (X j i).1| ≤ 2 * specNorm (decodeMatrix dec X) :=
+        (abs_add_le _ _).trans (by linarith [(hxS i j).1, (hxS j i).1])
+      exact part_err_le (dec (X i j).1 + dec (X j i).1) (dec c)
+        (dec (M.add (X i j).1 (X j i).1)) (dec (M.div (M.add (X i j).1 (X j i).1) c))
+        (specNorm (decodeMatrix dec X)) u τ Ω hc hu hu₁ hτ ha hΩ (hM.add _ _) (hM.div _ _ hc0)
+    · rcases eq_or_lt_of_le hij with rfl | hlt
+      · rw [Complex.sub_im, hWim_diag, sub_zero, hZim]
+        simp only [sub_self, zero_div, abs_zero, zero_add]
+        exact mul_nonneg hU0 hτ
+      · rw [Complex.sub_im, hZim, hWim i j hlt]
+        have ha : |dec (X i j).2 - dec (X j i).2| ≤ 2 * specNorm (decodeMatrix dec X) :=
+          (abs_sub _ _).trans (by linarith [(hxS i j).2, (hxS j i).2])
+        exact part_err_le (dec (X i j).2 - dec (X j i).2) (dec c)
+          (dec (M.sub (X i j).2 (X j i).2)) (dec (M.div (M.sub (X i j).2 (X j i).2) c))
+          (specNorm (decodeMatrix dec X)) u τ Ω hc hu hu₁ hτ ha hΩ (hM.sub _ _) (hM.div _ _ hc0)
+  have hH : (decodeMatrix dec X + (decodeMatrix dec X)ᴴ).IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_add, Matrix.conjTranspose_conjTranspose, add_comm]
+  have hZH : Z.IsHermitian := by
+    rw [hZdef]
+    exact hH.smul (star_trivial _)
+  have hEH : (decodeMatrix dec (M.hermAvg X c)).IsHermitian :=
+    isHermitian_decodeMatrix_hermFrom hM
+      (fun i j => (M.div (M.add (X i j).1 (X j i).1) c, M.div (M.sub (X i j).2 (X j i).2) c))
+      (fun i => M.div (M.add (X i i).1 (X i i).1) c)
+  have hEH' : E.IsHermitian := hZH.sub hEH
+  have hE_all : ∀ i j, ‖E i j‖ ≤ 3 * u * (‖Z i j‖ + 2 * τ) := by
+    intro i j
+    rcases le_total i j with h | h
+    · nlinarith [hE_le i j h, mul_nonneg hu (add_nonneg (norm_nonneg (Z i j))
+        (mul_nonneg zero_le_two hτ))]
+    · have hEsym : ‖E i j‖ = ‖E j i‖ := by
+        rw [← hEH'.apply i j, norm_star]
+      have hZsym : ‖Z i j‖ = ‖Z j i‖ := by
+        rw [← hZH.apply i j, norm_star]
+      rw [hEsym, hZsym]
+      nlinarith [hE_le j i h, mul_nonneg hu (add_nonneg (norm_nonneg (Z j i))
+        (mul_nonneg zero_le_two hτ))]
+  exact specNorm_le_of_entry_norm_le_avg Z E (by linarith) hτ hE_all
 
 /-- **Error of the rounded trace**: under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$
 and $ku \le 1/2$, for a stored $k \times k$ $\mathbf{X}$ with real parts of the diagonal
