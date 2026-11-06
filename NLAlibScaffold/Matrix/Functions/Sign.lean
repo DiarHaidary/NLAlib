@@ -49,7 +49,17 @@ functional calculus) after rewriting
 `Matrix.IsHermitian.cfc_eq` and a diagonal computation. M, about 12 lines. -/
 theorem _root_.Matrix.IsHermitian.cfc_newtonSchulz {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     cfc newtonSchulz A = (2⁻¹ : ℝ) • (A * ((3 : ℝ) • (1 : Matrix n n 𝕜) - A * A)) := by
-  sorry
+  have hf : newtonSchulz = fun x : ℝ => (2⁻¹ : ℝ) * (x * ((3 : ℝ) - x * x)) :=
+    funext fun x => by simp only [newtonSchulz]; ring
+  have hA' : IsSelfAdjoint A := hA.isSelfAdjoint
+  have hid : cfc (fun x : ℝ => x) A = A := cfc_id' ℝ A
+  have hsq : cfc (fun x : ℝ => x * x) A = A * A := by
+    rw [cfc_mul (fun x : ℝ => x) (fun x : ℝ => x) A, hid]
+  have h3 : cfc (fun _ : ℝ => (3 : ℝ)) A = (3 : ℝ) • (1 : Matrix n n 𝕜) := by
+    rw [cfc_const (3 : ℝ) A, Algebra.algebraMap_eq_smul_one]
+  rw [hf, cfc_const_mul (2⁻¹ : ℝ) (fun x : ℝ => x * ((3 : ℝ) - x * x)) A,
+    cfc_mul (fun x : ℝ => x) (fun x : ℝ => (3 : ℝ) - x * x) A,
+    cfc_sub (fun _ : ℝ => (3 : ℝ)) (fun x : ℝ => x * x) A, hid, hsq, h3]
 
 /-- **Perturbation of the sign of a Hermitian matrix**: for Hermitian $\mathbf{A}, \mathbf{B}$
 and $a > 0$ with $\lvert \lambda \rvert \ge a$ for every eigenvalue $\lambda$ of $\mathbf{A}$,
