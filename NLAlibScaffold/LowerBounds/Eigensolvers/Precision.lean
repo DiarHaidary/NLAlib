@@ -53,6 +53,7 @@ modulus at least $\delta\lvert n \rvert$; a quadratic form is at most the norm
 theorem exists_mul_card_le_specNorm_add_smul (M : Matrix n n ℂ) {δ : ℝ} (hδ : 0 ≤ δ) :
     ∃ s ∈ ({1, -1} : Set ℝ),
       δ * Fintype.card n ≤ specNorm (M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ)) := by
+  have _ := hδ
   classical
   rcases isEmpty_or_nonempty n with hn | hn
   · exact ⟨1, by simp, by simp [specNorm_nonneg]⟩
