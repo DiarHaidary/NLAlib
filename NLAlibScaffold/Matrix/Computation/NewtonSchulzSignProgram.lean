@@ -351,6 +351,34 @@ theorem holds_of_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm
   · exact hsh6.trans (hsh5.trans (by rw [hst4]; exact hsh4.trans (hsh3.trans (hsh2.trans hsh1))))
   · exact hp6.trans (hp5.trans (hp4.trans (hp3.trans (hp2.trans hp1))))
 
+omit [AddMonoid C] [Inhabited K] in
+private theorem stepBlock_shape {s : Store P K} {p : P} {b off n : ℕ}
+    {Y : Matrix (Fin n) (Fin n) (K × K)} (hY : pairLayout.Holds s p b off Y) (hn : 0 < n) :
+    ∃ len, s.shape[b]? = some (p, len) ∧ off + 2 * (n * n) ≤ len := by
+  obtain ⟨arr, hr⟩ : ∃ arr, s.readBlock p b off (n * n * 2) = some arr :=
+    ⟨_, (EntryLayout.holds_iff_readBlock_eq_some pairLayout s p b off Y).1 hY⟩
+  have hN : 0 < n * n := Nat.mul_pos hn hn
+  have h₁ := Store.read_of_readBlock_eq_some_of_lt hr (m := n * n * 2 - 1) (by omega)
+  rw [Array.getElem?_eq_getElem (by rw [Store.size_of_readBlock_eq_some hr]; omega)] at h₁
+  obtain ⟨len, hsh, hlt⟩ := Store.exists_getElem?_shape_of_read_eq_some h₁
+  exact ⟨len, hsh, by omega⟩
+
+omit [AddMonoid C] [Inhabited K] in
+private theorem stepBlock_holds_write {s s' : Store P K} {p : P} {b off n cb ci : ℕ} {v : K}
+    {Y : Matrix (Fin n) (Fin n) (K × K)} (hY : pairLayout.Holds s p b off Y)
+    (hw : s.write p cb ci v = some s')
+    (hd : blockDisjoint (cb, ci, 1) (b, off, 2 * (n * n)) = true) :
+    pairLayout.Holds s' p b off Y := by
+  intro i j t
+  have hij : 2 * (i + n * j) + t < 2 * (n * n) := by
+    have ht : (t : ℕ) < 2 := t.2
+    nlinarith [i.2, j.2]
+  rw [Store.read_of_write_eq_some_of_ne hw ?_]
+  · exact hY i j t
+  · simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hd
+    change b ≠ cb ∨ off + (2 * (i + n * j) + t) ≠ ci
+    omega
+
 /-- **The step block succeeds** under the standard model at $u$ with every value in range and
 $u(p) < 1$, when the buffers `W` and `V` at tag `p` have $2n^2$ cells and the cell `c` can be
 written (hypotheses as `NLAlib.holds_of_exec_newtonSchulzStepBlock`). No printed source.
@@ -368,7 +396,81 @@ theorem exists_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm p
     (hV : ∃ len, st.store.shape[V]? = some (p, len) ∧ 2 * (n * n) ≤ len)
     (hc : ∃ s, st.store.write p c.buf c.idx.eval default = some s) :
     ∃ st', exec I (newtonSchulzStepBlock p mm (.const n) X xo W V c).run st = some st' := by
-  sorry
+  have hd : ∀ {b b' : ℕ} (o o' l l' : ℕ), b ≠ b' → blockDisjoint (b, o, l) (b', o', l') = true :=
+    fun _ _ _ _ h => by simp [blockDisjoint, h]
+  change ∃ st', exec I (.seq (.instr (.litIdx p c 3)) (.seq (.named _ _ _) (.seq (.named _ _ _)
+    (.seq (.kcall mm p [.const n, .const n, .const n] [(X, xo), (V, 0)] [(W, 0)])
+    (.seq (.instr (.litIdx p c 4)) (zhermAvg (ι := ι) p (.const n) W 0 c X xo).run))))) st =
+    some st'
+  -- the literal `3`
+  obtain ⟨v₃, hv₃⟩ := hsem.lit_ok p ((3 : IExp ℕ).eval : ℚ) trivial
+  obtain ⟨s₀, hs₀⟩ := hc
+  obtain ⟨s₁, hs₁⟩ := Store.exists_write_eq_some_of_shape_eq rfl hs₀ v₃
+  rw [exec_seq_instr_litIdx I hv₃ hs₁, exec_seq]
+  have hsh₁ : s₁.shape = st.store.shape := Store.shape_of_write_eq_some hs₁
+  have hW₁ := stepBlock_holds_write hW hs₁ (hd _ _ _ _ hcW)
+  -- the shift by `3`
+  obtain ⟨st₂, h₂⟩ := exists_exec_zhermShift (I := I) (ι := ι) p n (X := W) (xo := 0) (c := c)
+    (Y := V) (yo := 0) (st := { st with store := s₁, cnt := _ }) hW₁
+    (Store.read_of_write_eq_some hs₁) (hd _ _ _ _ hWV.symm) (hd _ _ _ _ hcV) hsem
+    (by rw [hsh₁, IExp.eval_zero]; simpa only [zero_add] using hV)
+  obtain ⟨hV₂, hfr₂, hsh₂, -⟩ := holds_of_exec_zhermShift (toNat := fun _ => 0) (mmR := mmR)
+    (qrR := fun {_ _} B => (fun _ _ => default, B)) (unif := fun k (_ : Unit) => k)
+    (normal := fun (_ : Unit) => default) p n hW₁ (Store.read_of_write_eq_some hs₁)
+    (hd _ _ _ _ hWV.symm) (hd _ _ _ _ hcV) h₂
+  change exec I (.seq (.named _ _ _) .skip) _ = some st₂ at h₂
+  rw [exec_seq_skip] at h₂
+  rw [h₂, Option.bind_some, exec_seq]
+  -- the negation in place
+  obtain ⟨st₃, h₃⟩ := exists_exec_zneg (I := I) (ι := ι) p n n (X := V) (xo := 0) (Y := V)
+    (yo := 0) hV₂ (Or.inr ⟨rfl, rfl⟩) hsem
+    (by rw [hsh₂, hsh₁, IExp.eval_zero]; simpa only [zero_add] using hV)
+  obtain ⟨hV₃, hfr₃, hsh₃, -⟩ := holds_of_exec_zneg (toNat := fun _ => 0) (mmR := mmR)
+    (qrR := fun {_ _} B => (fun _ _ => default, B)) (unif := fun k (_ : Unit) => k)
+    (normal := fun (_ : Unit) => default) p n n hV₂ (Or.inr ⟨rfl, rfl⟩) h₃
+  change exec I (.seq (.named _ _ _) .skip) _ = some st₃ at h₃
+  rw [exec_seq_skip] at h₃
+  rw [h₃, Option.bind_some, exec_seq, exec_kcall]
+  -- the product
+  have hA₃ : pairLayout.Holds st₃.store p X xo.eval A :=
+    (stepBlock_holds_write hA hs₁ hcX).of_forall_read_eq fun i _ _ =>
+      (hfr₃ _ _ _ (hd _ _ _ _ hVX.symm)).trans (hfr₂ _ _ _ (hd _ _ _ _ hVX.symm))
+  have hsh : st₃.store.shape = st.store.shape := hsh₃.trans (hsh₂.trans hsh₁)
+  have hpos : ∀ i, i < n * n * 2 → 0 < n := fun i hi =>
+    Nat.pos_of_ne_zero (by rintro rfl; simp at hi)
+  obtain ⟨s₄, hk, hsh₄⟩ : ∃ s₄, I.kcallStore mm p [n, n, n] [(X, xo.eval), (V, 0)] [(W, 0)]
+      st₃.store = some s₄ ∧ s₄.shape = st.store.shape := by
+    rw [hmm.kcallStore_eq p ((EntryLayout.holds_iff_readBlock_eq_some _ _ _ _ _ _).1 hA₃)
+      ((EntryLayout.holds_iff_readBlock_eq_some _ _ _ _ _ _).1 hV₃) (hd _ _ _ _ hWX)
+      (hd _ _ _ _ hWV)]
+    refine (Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi => ?_).elim
+      fun s₄ hs₄ => ⟨s₄, hs₄, (Store.shape_of_writeBlock_eq_some hs₄).trans hsh⟩
+    · rw [EntryLayout.size_toArray] at hi
+      obtain ⟨len, hl, hle⟩ := stepBlock_shape hW (hpos i hi)
+      refine ⟨len, by rw [hsh]; exact hl, ?_⟩
+      change i < n * n * 2 at hi
+      omega
+  obtain ⟨hW₄, -⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p (a := (X, xo.eval))
+    (b := (V, 0)) (c := (W, 0)) hA₃ hV₃ (hd _ _ _ _ hWX) (hd _ _ _ _ hWV) hk
+  erw [hk]
+  rw [Option.map_some, Option.bind_some]
+  -- the literal `4`
+  obtain ⟨v₄, hv₄⟩ := hsem.lit_ok p ((4 : IExp ℕ).eval : ℚ) trivial
+  obtain ⟨s₅, hs₅⟩ := Store.exists_write_eq_some_of_shape_eq hsh₄ hs₀ v₄
+  rw [exec_seq_instr_litIdx I hv₄ hs₅]
+  have hv₄0 : dec p v₄ ≠ 0 := by
+    obtain ⟨δ, hδ, hdec⟩ := hsem.lit_err p _ v₄ hv₄
+    rw [hdec]
+    refine mul_ne_zero (by simp) ?_
+    linarith [(abs_lt.mp (hδ.trans_lt hu)).1]
+  -- the Hermitian average
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · exact ⟨_, rfl⟩
+  obtain ⟨len, hl, hle⟩ := stepBlock_shape hA hn
+  exact exists_exec_zhermAvg (I := I) (ι := ι) p n (X := W) (xo := 0) (c := c) (Y := X)
+    (yo := xo) hsem hv₄0 (stepBlock_holds_write hW₄ hs₅ (hd _ _ _ _ hcW))
+    (Store.read_of_write_eq_some hs₅) (hd _ _ _ _ hWX.symm) hcX
+    ⟨len, by rw [Store.shape_of_write_eq_some hs₅, hsh₄]; exact hl, hle⟩
 
 /-- **The Newton–Schulz loop of the program computes `NLAlib.newtonSchulzLoop`**: if kernel `mm`
 of `I` is the routine `mmR` on interleaved pairs and the semantics decides flags at `p`, a
