@@ -529,7 +529,10 @@ theorem deflateProg.holds_of_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I 
     pairLayout.Holds st'.store p 1 0
       (deflate (I.sem.toFloatMachine p toNat mmR qrR unif
         (I.sem.tapeNormal p (I.tape .gaussian))) r P₀ (tapeIndexMatrix N)) := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, deflateProg.toStmt_compiled] at h
+  simpa [inputState] using (holds_of_exec_deflateProg (toNat := toNat) (unif := unif) hmm hqr p N
+    r (Pm := 0) (Q := 1) (po := 0) (qo := 0) (pairLayout.holds_inputState p (k := 0) rfl)
+    (by simp [blockDisjoint]) h).1
 
 /-- **The registered tree always succeeds** under the standard model at $u$ with every value in
 range, $u(p) \le 1$ and exact literals up to $2$, if kernels `mm` and `qr` of `I` are routines on
