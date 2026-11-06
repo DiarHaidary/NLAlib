@@ -44,7 +44,8 @@ Proof: it is a `NLAlib.FloatMachine.hermAvg`, a `NLAlib.FloatMachine.hermFrom`;
 theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (A : Matrix (Fin n) (Fin n) (F × F)) :
     (decodeMatrix dec (newtonSchulzRounded M A)).IsHermitian := by
-  sorry
+  unfold newtonSchulzRounded FloatMachine.hermAvg
+  exact hM.isHermitian_decodeMatrix_hermFrom _ _
 
 /-- The Newton–Schulz sign algorithm returns a matrix with Hermitian decoding, for every input and
 step limit, under `NLAlib.FloatMachine.IsAccurate`.
