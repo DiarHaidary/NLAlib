@@ -1160,7 +1160,7 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
       (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
       (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
     (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
-    (horth : ∀ t : ℕ, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
+    (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
       (orth 8 10 (IExp.var t)))
     (st : St P K (OpCount P ι)) (v1 : Fin N → ℝ)
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
@@ -1292,7 +1292,7 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
       intro t ht s ⟨v, α, β, ν, hsh, hpr, hbs, hV, hα, hβ, hp, hν, hzs, hv0, hb0, hv1s, hpf⟩
       obtain ⟨out, uv, wv, zv, z', hv, an, bn, nn, vn, hr, sho, hpro, hbo, hVo, hαo, hβo, hpo,
           hνo, hzo, e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit⟩ :=
-        reorth_exec_step I h hz tag b pre hpreFrame mv (hmv t) orth (horth t) s v α β ν
+        reorth_exec_step I h hz tag b pre hpreFrame mv (hmv t) orth (horth t (by simpa using ht)) s v α β ν
           (hsh.trans hshape) hpr hbs hV hα hβ hp hν hzs (by simpa using ht) hsmall
       have ev : ∀ k, k < t + 2 → Function.update v (t + 2) vn k = v k :=
         fun k hk => Function.update_of_ne (by omega) _ _
@@ -1340,36 +1340,8 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
   rw [exec_seq_skip]
   exact hr
 
-/-- **Rounded run of the generic loop** (G5): for any product routine family certified by
-`NLAlib.Computation.IsMatvecRoutine` (coefficient $\varepsilon\|\mathbf{A}\|_2$,
-$\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`,
-that is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$) and any
-orthogonalization routine family certified by `NLAlib.Computation.IsOrthRoutine` at $(\eta_0,
-\varepsilon_1, \varepsilon_2,
-\varepsilon_3)$, the loop `NLAlib.lanczosReorthLoop` succeeds from a state with the seven
-declared buffers and the matrix slot $7$, keeps the shape, and its outputs satisfy
-`NLAlib.LanczosReorthOutputs` for every $\tau > 0$. The scheme enters only through its
-certificate. No printed source; `docs/design/Krylov-LanczosReorth.md` §1.4.
-Proof: follow `NLAlib.LanczosImplementation.exec_rounded_compiled` (files
-`NLAlib/Krylov/Processes/LanczosProgramRounded*.lean` on main: initialization, step, prefix, run,
-commit) with a
-step that has two more phases: after the second `axpy`, the `nrm2` of $\nu$
-(`NLAlib.Computation.IsRelErrSem.exec_nrm2_abs_norm_sub_le`
-type bound $|\nu - \|\mathbf{z}\|| \le \varepsilon\|\mathbf{z}\|$), then `horth t`
-(`IsOrthRoutine.run`
-with the basis columns $0..t$ as $\mathbf{V}$, `work` as $\mathbf{w}$, `coef` as $\mathbf{h}$; its
-frame keeps the basis and the coefficients), then main's `nrm2`/zero test/`rscl` normalization
-lemmas applied to $\mathbf{z}'$. The run of an admissible prefix is assembled field by field
-(`orth_eq` from the certificate, the rest as in main's `NLAlib.LanczosRun` construction,
-`abs_norm_v_sq_sub_one_le` for $j \le m + 1$ from $\beta_j > 0$). Composability of
-`mv`/`orth` from the certificates' `composable` fields; `hpre` transports to every intermediate
-store, including the 11-buffer ones after `work`, `scalars`, `coef` are allocated (allocation only
-appends buffers, so the first 8 shape entries are unchanged), because only
-buffers $1..6, 8..10$ are written. H, about 1200 lines; intermediate lemmas: the store invariant
-(a `NLAlib.LanczosImplementation.StoreContext` with the basis prefix and `nu`), one step, the
-prefix induction, the
-initialization (reused), and the assembly of `NLAlib.LanczosReorthRun`. -/
-theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
+/-- G5 with the orthogonalization certificate needed only at the executed steps. -/
+private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (st : St P K (OpCount P ι)) (N q : ℕ) (slot : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
@@ -1385,7 +1357,7 @@ theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P 
       (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
     (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
     (hε : 0 ≤ ε₁ ∧ 0 ≤ ε₂ ∧ 0 ≤ ε₃)
-    (horth : ∀ t : ℕ, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
+    (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
       (orth 8 10 (IExp.var t)))
     (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     {τ : ℝ} (hτ : 0 < τ) :
@@ -1621,6 +1593,110 @@ theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P 
         τ_pos := hτ }, rfl, fun _ _ _ => rfl, fun _ _ => ⟨rfl, rfl, rfl⟩, rfl, rfl, rfl, rfl, rfl,
         rfl⟩
 
+/-- **Rounded run of the generic loop** (G5): for any product routine family certified by
+`NLAlib.Computation.IsMatvecRoutine` (coefficient $\varepsilon\|\mathbf{A}\|_2$,
+$\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`,
+that is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$) and any
+orthogonalization routine family certified by `NLAlib.Computation.IsOrthRoutine` at $(\eta_0,
+\varepsilon_1, \varepsilon_2,
+\varepsilon_3)$, the loop `NLAlib.lanczosReorthLoop` succeeds from a state with the seven
+declared buffers and the matrix slot $7$, keeps the shape, and its outputs satisfy
+`NLAlib.LanczosReorthOutputs` for every $\tau > 0$. The scheme enters only through its
+certificate. No printed source; `docs/design/Krylov-LanczosReorth.md` §1.4.
+Proof: follow `NLAlib.LanczosImplementation.exec_rounded_compiled` (files
+`NLAlib/Krylov/Processes/LanczosProgramRounded*.lean` on main: initialization, step, prefix, run,
+commit) with a
+step that has two more phases: after the second `axpy`, the `nrm2` of $\nu$
+(`NLAlib.Computation.IsRelErrSem.exec_nrm2_abs_norm_sub_le`
+type bound $|\nu - \|\mathbf{z}\|| \le \varepsilon\|\mathbf{z}\|$), then `horth t`
+(`IsOrthRoutine.run`
+with the basis columns $0..t$ as $\mathbf{V}$, `work` as $\mathbf{w}$, `coef` as $\mathbf{h}$; its
+frame keeps the basis and the coefficients), then main's `nrm2`/zero test/`rscl` normalization
+lemmas applied to $\mathbf{z}'$. The run of an admissible prefix is assembled field by field
+(`orth_eq` from the certificate, the rest as in main's `NLAlib.LanczosRun` construction,
+`abs_norm_v_sq_sub_one_le` for $j \le m + 1$ from $\beta_j > 0$). Composability of
+`mv`/`orth` from the certificates' `composable` fields; `hpre` transports to every intermediate
+store, including the 11-buffer ones after `work`, `scalars`, `coef` are allocated (allocation only
+appends buffers, so the first 8 shape entries are unchanged), because only
+buffers $1..6, 8..10$ are written. H, about 1200 lines; intermediate lemmas: the store invariant
+(a `NLAlib.LanczosImplementation.StoreContext` with the basis prefix and `nu`), one step, the
+prefix induction, the
+initialization (reused), and the assembly of `NLAlib.LanczosReorthRun`. -/
+theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
+    (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (st : St P K (OpCount P ι)) (N q : ℕ) (slot : ℕ)
+    (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, slot)])
+    (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
+    (pre : Store P K → Prop) (hpre : pre st.store)
+    (hpreFrame : ∀ s s' : Store P K, pre s → (∀ k < 8, s'.shape[k]? = s.shape[k]?) →
+      (∀ i, s'.read tag 7 i = s.read tag 7 i) → pre s')
+    (mv : ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
+      (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
+    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
+    (hε : 0 ≤ ε₁ ∧ 0 ≤ ε₂ ∧ 0 ≤ ε₃)
+    (horth : ∀ t : ℕ, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
+      (orth 8 10 (IExp.var t)))
+    (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    {τ : ℝ} (hτ : 0 < τ) :
+    ∃ out : St P K (OpCount P ι),
+      exec I (lanczosReorthLoop tag (IExp.const N) (IExp.const q) 0 1 2 3 4 5 6 mv orth).run
+        st = some out ∧
+      out.store.shape = st.store.shape ∧
+      (b ≠ 0 → LanczosReorthOutputs out.store dec tag N q A b
+        (lanczosImplementationRoundoffBound N (u tag)) τ η₀ ε₁ ε₂ ε₃) := by
+  exact reorth_exec_rounded_loop_aux I tag hsem hz st N q slot A b hshape hb pre hpre hpreFrame
+    mv hmv orth hε (fun t _ => horth t) hA hsmall hτ
+
+private theorem reorth_cgsPassBound_mono (N : ℕ) {j k : ℕ} (hjk : j ≤ k) {u η₀ : ℝ}
+    (hu : 0 ≤ u) (hη₀ : 0 ≤ η₀) : cgsPassBound N j u η₀ ≤ cgsPassBound N k u η₀ := by
+  rw [cgsPassBound_def, cgsPassBound_def]
+  have hjk' : (j : ℝ) ≤ k := by exact_mod_cast hjk
+  have hs : Real.sqrt ((j : ℝ) + 1) ≤ Real.sqrt ((k : ℝ) + 1) :=
+    Real.sqrt_le_sqrt (by linarith)
+  have hn : ((N + j + 2 : ℕ) : ℝ) ≤ ((N + k + 2 : ℕ) : ℝ) := by exact_mod_cast (by omega)
+  have h1 : 0 ≤ 2 * (1 + η₀) := by linarith
+  have h2 : 0 ≤ Real.sqrt ((j : ℝ) + 1) := Real.sqrt_nonneg _
+  have h3 : (0 : ℝ) ≤ ((N + j + 2 : ℕ) : ℝ) := Nat.cast_nonneg _
+  have := mul_le_mul (mul_le_mul_of_nonneg_left hs h1) hn h3
+    (mul_nonneg h1 (Real.sqrt_nonneg _))
+  exact mul_le_mul_of_nonneg_right this hu
+
+/-- The CGS2 call at step $t < q$ ($t + 1$ columns), certified at the parameters of $q$
+columns. -/
+private theorem reorth_isOrthRoutine_cgs2 {C : Type} [AddMonoid C] {u : P → ℝ}
+    {dec : P → K → ℝ} (I : Interp P ι K C)
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
+    (tag : P) {N q t : ℕ} (ht : t < q) {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100)
+    (hu : ((N + q + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
+    (hc₁ : cgsPassBound N q (u tag) η₀ ≤ 1 / 100) :
+    IsOrthRoutine I dec tag N (t + 1) η₀ (2 * cgsPassBound N q (u tag) η₀)
+      (3 * cgsPassBound N q (u tag) η₀) (2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2)
+      (fun _ => True) 1 8 10 0 0 (cgs2 tag (IExp.const N) (IExp.var t + 1) 1 8 0 10 0) := by
+  have hu0 := hsem.nonneg (p := tag) trivial
+  have hmono := reorth_cgsPassBound_mono N (show t + 1 ≤ q by omega) hu0 hη₀
+  have hc0 : 0 ≤ cgsPassBound N (t + 1) (u tag) η₀ := by
+    rw [cgsPassBound_def]; positivity
+  have hO := hsem.isOrthRoutine_cgs2 I hz tag (N := N) (j := t + 1) (IExp.const N)
+    (IExp.var t + 1) rfl rfl 1 8 10 0 0 hη₀ hη
+    ((mul_le_mul_of_nonneg_right (by exact_mod_cast (by omega)) hu0).trans hu)
+    (hmono.trans hc₁)
+  refine ⟨hO.composable, fun st V w hp hV hw hwc hhc h1 h2 h3 => ?_⟩
+  obtain ⟨out, W, Hw, mid, hr, hw1, hw2, he⟩ := hO.run st V w hp hV hw hwc hhc h1 h2 h3
+  have h₃ : 2 * (η₀ + cgsPassBound N (t + 1) (u tag) η₀) ^ 2 ≤
+      2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2 := by
+    have : η₀ + cgsPassBound N (t + 1) (u tag) η₀ ≤ η₀ + cgsPassBound N q (u tag) η₀ := by
+      linarith
+    have h0 : 0 ≤ η₀ + cgsPassBound N (t + 1) (u tag) η₀ := by linarith
+    nlinarith
+  refine ⟨out, W, Hw, mid, hr, hw1, hw2, fun hV => (he.residual hV).trans
+    (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _)), fun hV => (he.orth hV).trans
+    (add_le_add (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _))
+      (mul_le_mul_of_nonneg_right h₃ (norm_nonneg _)))⟩
+
 /-- **Rounded run of the stored-matrix CGS2 tree** (G6): under the standard model, for symmetric
 decoded $\mathbf{A}$ (ROM words) and $\mathbf{b} \ne \mathbf{0}$, the compiled tree succeeds,
 keeps the shape and its outputs satisfy `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at
@@ -1658,7 +1734,92 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
       LanczosReorthOutputs out.store dec tag N q A b
         (lanczosImplementationRoundoffBound N (u tag)) τ η₀ (2 * cgsPassBound N q (u tag) η₀)
         (3 * cgsPassBound N q (u tag) η₀) (2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2) := by
-  sorry
+  classical
+  have hu0 := hsem.nonneg (p := tag) trivial
+  have hsize : st.store.size = 7 := by
+    simpa [Store.shape] using congrArg Array.size hshape
+  let st₁ := st.allocate tag (IExp.const N * IExp.const N).eval (I.width tag)
+  have sh₁ : st₁.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, N * N)] := by
+    simp only [st₁, St.shape_allocate, hshape, IExp.eval_mul, IExp.eval_const]
+    rfl
+  obtain ⟨loaded, erom, shrom, reads, frame⟩ :=
+    exec_forRange_rom I tag st₁ (IExp.const N * IExp.const N) 7 values
+      (by rw [sh₁]; rfl) (by simpa only [IExp.eval_mul, IExp.eval_const] using hrom)
+  let mid : St P K (OpCount P ι) :=
+    { st₁ with store := loaded, cnt := st₁.cnt + (N * N) • I.charge (.rom tag) }
+  have shm : mid.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, N * N)] := shrom.trans sh₁
+  have hbm (i : Fin N) : ∃ w, mid.store.read tag 0 i = some w ∧ dec tag w = b i := by
+    change ∃ w, loaded.read tag 0 i = some w ∧ dec tag w = b i
+    rw [frame tag 0 i (by omega), St.read_allocate_of_lt _ _ _ _ _ _ _ (by omega)]
+    exact hb i
+  have hmA : HoldsDecoded mid.store dec tag 7 0 A := by
+    intro i j
+    refine ⟨values (N * j + i), ?_, hdecode i j⟩
+    simpa only [zero_add, Nat.add_comm] using reads (N * j + i) (by
+      change N * (j : ℕ) + (i : ℕ) < N * N
+      calc
+        N * (j : ℕ) + (i : ℕ) < N * (j : ℕ) + N := Nat.add_lt_add_left i.isLt _
+        _ = N * ((j : ℕ) + 1) := by ring
+        _ ≤ N * N := Nat.mul_le_mul_left N j.isLt)
+  have hwin := lanczosImplementationRoundoffBound_kernel_bounds N hu0 hsmall
+  have hn : (N : ℝ) * u tag < 1 := by
+    have hs := hwin.1
+    push_cast at hs
+    nlinarith
+  have hc0 : 0 ≤ cgsPassBound N q (u tag) η₀ := by
+    rw [cgsPassBound_def]; positivity
+  obtain ⟨out₁, hrun, shout, hout⟩ := reorth_exec_rounded_loop_aux I tag hsem hz mid N q (N * N)
+    A b shm hbm (fun s => HoldsDecoded s dec tag 7 0 A) hmA
+    (fun s s' hs _ h7 i j => by rw [h7]; exact hs i j)
+    (fun work j => gemv tag (IExp.const N) (IExp.const N) 7 0 1 (IExp.const N * j) work 0)
+    (fun t => (hsem.isMatvecRoutine_gemv I tag hz N A 7 1 8 0 (IExp.const N * IExp.var t) 0
+      hn (by omega) (by omega)).mono (mul_le_mul_of_nonneg_right
+        (roundingFactor_mul_sqrt_le_lanczosImplementationRoundoffBound N hu0 hsmall)
+        (specNorm_nonneg A)))
+    (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0)
+    ⟨by linarith, by linarith, by positivity⟩
+    (fun t ht => reorth_isOrthRoutine_cgs2 I hsem hz tag ht hη₀ hη hu hc₁) hA hsmall hτ
+  have hsize₁ : out₁.store.size = 8 := by
+    simpa [Store.shape] using congrArg Array.size (shout.trans shm)
+  let out := out₁.release tag (IExp.const N * IExp.const N).eval (I.width tag)
+  have rdo : ∀ p k i, k < 7 → out.store.read p k i = out₁.store.read p k i := by
+    intro p k i hk
+    change Store.read out₁.store.pop p k i = _
+    rw [Store.read_pop_of_lt (by rw [hsize₁]; omega)]
+  refine ⟨out, ?_, ?_, ?_⟩
+  · rw [Prog.exec_eq_exec_toStmt, lanczosReorthProg.toStmt_compiled]
+    show exec I (.seq (.alloc tag (IExp.const N * IExp.const N) _) .skip) st = _
+    rw [exec_seq_skip]
+    apply exec_alloc_of_exec_eq_some
+    rw [hsize]
+    have erom' : exec I (forRange (IExp.const N * IExp.const N) fun i =>
+        stmt (.rom tag ⟨7, .var i⟩ (.var i)) : Builder P ι ℕ ℕ Unit).run st₁ = some mid := by
+      change exec I (.seq (.loop (IExp.const N * IExp.const N)
+        (fun i => .seq (.rom tag ⟨7, .var i⟩ (.var i)) .skip)) .skip) st₁ = _
+      rw [exec_seq_skip]
+      simpa only [IExp.eval_mul, IExp.eval_const] using erom
+    change exec I (do
+      forRange (IExp.const N * IExp.const N) fun i => stmt (.rom tag ⟨7, .var i⟩ (.var i))
+      lanczosReorthLoop tag (IExp.const N) (IExp.const q) 0 1 2 3 4 5 6
+        (fun work j => gemv tag (IExp.const N) (IExp.const N) 7 0 1 (IExp.const N * j) work 0)
+        (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0) :
+          Builder P ι ℕ ℕ Unit).run st₁ = some out₁
+    rw [exec_run_bind I (b := forRange (IExp.const N * IExp.const N) fun i =>
+      stmt (.rom tag ⟨7, .var i⟩ (.var i))) (fun _ => rfl), erom', Option.bind_some]
+    exact hrun
+  · change Store.shape out₁.store.pop = _
+    rw [Store.shape_pop, shout, shm, hshape]
+    rfl
+  · obtain ⟨v, α, β, ν, h0, h1, h2, h3, h6, hδ, hm⟩ := hout hbnz
+    refine ⟨v, α, β, ν, fun i j => ?_, fun i j => ?_, fun i j => ?_, fun i j => ?_,
+      fun i j => ?_, hδ, hm⟩
+    · rw [rdo tag 0 _ (by omega)]; exact h0 i j
+    · rw [rdo tag 1 _ (by omega)]; exact h1 i j
+    · rw [rdo tag 2 _ (by omega)]; exact h2 i j
+    · rw [rdo tag 3 _ (by omega)]; exact h3 i j
+    · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
 /-- **Rounded run of the matrix-free CGS2 tree** (G6o): as
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled` with an oracle of accuracy
