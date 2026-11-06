@@ -360,6 +360,145 @@ theorem exists_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st 
     · exact Or.inl hb
   · exact Or.inr (by omega)
 
+private theorem zmirror_index_inj {n a b a' b' : ℕ} (ha : a < n) (ha' : a' < n)
+    (he : a + n * b = a' + n * b') : a = a' ∧ b = b' := by
+  have hn : 0 < n := by omega
+  have h1 := congrArg (· % n) he
+  have h2 := congrArg (· / n) he
+  simp only [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt ha, Nat.mod_eq_of_lt ha'] at h1
+  simp only [Nat.add_mul_div_left _ _ hn, Nat.div_eq_of_lt ha, Nat.div_eq_of_lt ha',
+    zero_add] at h2
+  exact ⟨h1, h2⟩
+
+omit [Inhabited K] in
+private theorem zmirror_holds_hermFrom {Su Sg : Type} {p : P} {n Y off : ℕ} {s s' : Store P K}
+    {B : Matrix (Fin n) (Fin n) (K × K)} (M : FloatMachine K Su Sg)
+    (hB : ∀ i j : Fin n, i ≤ j → s.read p Y (off + 2 * (i + n * j)) = some (B i j).1 ∧
+      s.read p Y (off + 2 * (i + n * j) + 1) = some (B i j).2)
+    (hdiag : ∀ i, (B i i).2 = M.zero)
+    (hw : ∀ a b : Fin n, b < a → s'.read p Y (off + 2 * (a + n * b)) = some (B b a).1 ∧
+      s'.read p Y (off + 2 * (a + n * b) + 1) = some (M.neg (B b a).2))
+    (hfr : ∀ q c k, (c ≠ Y ∨ ∀ a b : Fin n, b < a →
+      k ≠ off + 2 * (a + n * b) ∧ k ≠ off + 2 * (a + n * b) + 1) → s'.read q c k = s.read q c k) :
+    pairLayout.Holds s' p Y off (M.hermFrom (fun i j => B i j) fun i => (B i i).1) ∧
+      ∀ q c k, blockDisjoint (c, k, 1) (Y, off, 2 * (n * n)) = true →
+        s'.read q c k = s.read q c k := by
+  have hU : ∀ (a b : Fin n) (t : ℕ), a ≤ b → t < 2 →
+      s'.read p Y (off + (2 * (a + n * b) + t)) = s.read p Y (off + (2 * (a + n * b) + t)) := by
+    intro a b t hab ht
+    refine hfr _ _ _ (Or.inr fun a' b' hab' => ?_)
+    have h1 : a.1 ≤ b.1 := hab
+    have h2 : b'.1 < a'.1 := hab'
+    constructor <;> intro he
+    · have := zmirror_index_inj a.2 a'.2 (show a.1 + n * b = a' + n * b' by omega)
+      omega
+    · have := zmirror_index_inj a.2 a'.2 (show a.1 + n * b = a' + n * b' by omega)
+      omega
+  refine ⟨fun a b t => ?_, fun q c k hk => hfr q c k ?_⟩
+  · obtain ⟨t, ht⟩ := t
+    change t < 2 at ht
+    change s'.read p Y (off + (2 * (a.1 + n * b.1) + t)) = some (pairLayout.put _ _)
+    rcases lt_trichotomy a b with hab | rfl | hab
+    · rw [hU a b t hab.le ht]
+      simp only [FloatMachine.hermFrom, Matrix.of_apply, if_pos hab]
+      rcases t with _ | _ | t
+      exacts [(hB a b hab.le).1, (hB a b hab.le).2, by omega]
+    · rw [hU a a t le_rfl ht]
+      simp only [FloatMachine.hermFrom, Matrix.of_apply, lt_irrefl, if_false]
+      rcases t with _ | _ | t
+      exacts [(hB a a le_rfl).1, (hB a a le_rfl).2.trans (congrArg some (hdiag a)), by omega]
+    · simp only [FloatMachine.hermFrom, Matrix.of_apply, if_neg (not_lt.mpr hab.le), if_pos hab]
+      rcases t with _ | _ | t
+      exacts [(hw a b hab).1, (hw a b hab).2, by omega]
+  · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hk
+    by_cases hc : c = Y
+    · refine Or.inr fun a b _ => ?_
+      have hb := Nat.mul_le_mul_left n (show b.1 + 1 ≤ n from b.2)
+      have ha := a.2
+      rw [Nat.mul_succ] at hb
+      omega
+    · exact Or.inl hc
+
+omit [Inhabited K] in
+private theorem zmirror_step {n Y i j : ℕ} {p : P} {yo : IExp ℕ} {st s₁ s₂ : St P K C}
+    {B : Matrix (Fin n) (Fin n) (K × K)} (M : FloatMachine K Su Sg)
+    (hneg : ∀ x z, I.sem.un p .neg x = some z → M.neg x = z)
+    (hB : ∀ i j : Fin n, i ≤ j → st.store.read p Y (yo.eval + 2 * (i + n * j)) = some (B i j).1 ∧
+      st.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some (B i j).2)
+    (hi : i < (IExp.var j).eval) (hj : j < n)
+    (hR : s₁.store.shape = st.store.shape ∧ s₁.pos = st.pos ∧
+      (∀ a b : Fin n, b < a → (a.1 < j ∨ a.1 = j ∧ b.1 < i) →
+        s₁.store.read p Y (yo.eval + 2 * (a + n * b)) = some (B b a).1 ∧
+        s₁.store.read p Y (yo.eval + 2 * (a + n * b) + 1) = some (M.neg (B b a).2)) ∧
+      ∀ q c k, (c ≠ Y ∨ ∀ a b : Fin n, b < a → (a.1 < j ∨ a.1 = j ∧ b.1 < i) →
+        k ≠ yo.eval + 2 * (a + n * b) ∧ k ≠ yo.eval + 2 * (a + n * b) + 1) →
+        s₁.store.read q c k = st.store.read q c k)
+    (hex : exec I (.seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var j) (.var i)⟩
+      ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩))
+      (.seq (.instr (.un p .neg ⟨Y, yo + zidx (.const n) (.var j) (.var i) + 1⟩
+        ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩)) .skip)) s₁ = some s₂) :
+    s₂.store.shape = st.store.shape ∧ s₂.pos = st.pos ∧
+      (∀ a b : Fin n, b < a → (a.1 < j ∨ a.1 = j ∧ b.1 < i + 1) →
+        s₂.store.read p Y (yo.eval + 2 * (a + n * b)) = some (B b a).1 ∧
+        s₂.store.read p Y (yo.eval + 2 * (a + n * b) + 1) = some (M.neg (B b a).2)) ∧
+      ∀ q c k, (c ≠ Y ∨ ∀ a b : Fin n, b < a → (a.1 < j ∨ a.1 = j ∧ b.1 < i + 1) →
+        k ≠ yo.eval + 2 * (a + n * b) ∧ k ≠ yo.eval + 2 * (a + n * b) + 1) →
+        s₂.store.read q c k = st.store.read q c k := by
+  obtain ⟨sh, ps, hw, hfr⟩ := hR
+  simp only [IExp.eval_var] at hi
+  simp only [exec_seq, exec_instr, exec_skip, Instr.run, Option.bind_eq_some_iff,
+    Option.map_eq_some_iff, zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+    IExp.eval_ofNat] at hex
+  obtain ⟨_, ⟨_, ⟨v, hv, s', hw1, rfl⟩, rfl⟩, _, ⟨_, ⟨u, hu, z, hz, s'', hw2, rfl⟩, rfl⟩, hs₂⟩ :=
+    hex
+  obtain rfl := Option.some_inj.mp hs₂
+  have hi' : i < n := by omega
+  have hU : ∀ t < 2, s₁.store.read p Y (yo.eval + 2 * (i + n * j) + t) =
+      st.store.read p Y (yo.eval + 2 * (i + n * j) + t) := by
+    intro t ht
+    refine hfr _ _ _ (Or.inr fun a b hab _ => ?_)
+    have hab' : b.1 < a.1 := hab
+    constructor <;> intro he
+    · have := zmirror_index_inj hi' a.2 (show i + n * j = a + n * b by omega)
+      omega
+    · have := zmirror_index_inj hi' a.2 (show i + n * j = a + n * b by omega)
+      omega
+  obtain ⟨hB1, hB2⟩ := hB ⟨i, hi'⟩ ⟨j, hj⟩ (Fin.mk_le_mk.mpr hi.le)
+  obtain rfl : v = (B ⟨i, hi'⟩ ⟨j, hj⟩).1 :=
+    Option.some_inj.mp (hv.symm.trans ((hU 0 (by omega)).trans hB1))
+  obtain rfl : u = (B ⟨i, hi'⟩ ⟨j, hj⟩).2 := Option.some_inj.mp
+    (((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (by omega))).symm.trans hu).symm.trans
+      ((hU 1 (by omega)).trans hB2))
+  have hz' := hneg _ _ hz
+  refine ⟨(Store.shape_of_write_eq_some hw2).trans ((Store.shape_of_write_eq_some hw1).trans sh),
+    ps, fun a b hab hd => ?_, fun q c k hk => ?_⟩
+  · have hab' : b.1 < a.1 := hab
+    by_cases hab'' : a.1 = j ∧ b.1 = i
+    · obtain ⟨ha, hb⟩ := hab''
+      obtain rfl : a = ⟨j, hj⟩ := Fin.ext ha
+      obtain rfl : b = ⟨i, hi'⟩ := Fin.ext hb
+      refine ⟨?_, ?_⟩
+      · rw [Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega)),
+          Store.read_of_write_eq_some hw1]
+      · rw [Store.read_of_write_eq_some hw2, hz']
+    · have hd' : a.1 < j ∨ (a.1 = j ∧ b.1 < i) := by omega
+      have hne : ∀ t < 2, ∀ t' < 2, yo.eval + 2 * (a + n * b) + t ≠
+          yo.eval + 2 * (j + n * i) + t' := by
+        intro t ht t' ht' he
+        have := zmirror_index_inj a.2 hj (show a.1 + n * b = j + n * i by omega)
+        omega
+      exact ⟨(Store.read_of_write_eq_some_of_ne hw2 (Or.inr (hne 0 (by omega) 1 (by omega)))).trans
+        ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (hne 0 (by omega) 0 (by omega)))).trans
+          (hw a b hab hd').1),
+        (Store.read_of_write_eq_some_of_ne hw2 (Or.inr (hne 1 (by omega) 1 (by omega)))).trans
+        ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (hne 1 (by omega) 0 (by omega)))).trans
+          (hw a b hab hd').2)⟩
+  · have hk' : c ≠ Y ∨ (k ≠ yo.eval + 2 * (j + n * i) ∧ k ≠ yo.eval + 2 * (j + n * i) + 1) :=
+      hk.imp_right fun H => H ⟨j, hj⟩ ⟨i, hi'⟩ hi (Or.inr ⟨rfl, Nat.lt_succ_self _⟩)
+    rw [Store.read_of_write_eq_some_of_ne hw2 (hk'.imp_right And.right),
+      Store.read_of_write_eq_some_of_ne hw1 (hk'.imp_right And.left)]
+    exact hfr q c k (hk.imp_right fun H a b hab hd => H a b hab (by omega))
+
 /-- **`zmirror` completes a stored Hermitian matrix**: if the block at `Y` holds the parts of the
 entries $b_{ij}$, $i \le j$, of a complex $n \times n$ matrix $\mathbf{B}$ whose diagonal
 imaginary parts are the machine's zero, a successful run of `NLAlib.Computation.zmirror` ends
@@ -384,7 +523,48 @@ theorem holds_of_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st st
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hprog : (zmirror (ι := ι) p (.const n) Y yo).run = .seq (.named "zmirror"
+      [.idx (.const n), .buf Y, .idx yo] (.seq (.loop (.const n) fun j =>
+        .seq (.loop (.var j) fun i =>
+          .seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var j) (.var i)⟩
+            ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩))
+          (.seq (.instr (.un p .neg ⟨Y, yo + zidx (.const n) (.var j) (.var i) + 1⟩
+            ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩)) .skip)) .skip) .skip)) .skip := rfl
+  rw [hprog, exec_seq_skip, exec_named, exec_seq_skip] at h
+  let Inv : (ℕ → ℕ → Prop) → St P K C → Prop := fun d s =>
+    s.store.shape = st.store.shape ∧ s.pos = st.pos ∧
+    (∀ a b : Fin n, b < a → d a b →
+      s.store.read p Y (yo.eval + 2 * (a + n * b)) = some (B b a).1 ∧
+      s.store.read p Y (yo.eval + 2 * (a + n * b) + 1) = some (M.neg (B b a).2)) ∧
+    ∀ q c k, (c ≠ Y ∨ ∀ a b : Fin n, b < a → d a b →
+      k ≠ yo.eval + 2 * (a + n * b) ∧ k ≠ yo.eval + 2 * (a + n * b) + 1) →
+      s.store.read q c k = st.store.read q c k
+  have hconv : ∀ (d d' : ℕ → ℕ → Prop) s, (∀ a b : Fin n, b < a → (d a b ↔ d' a b)) →
+      Inv d s → Inv d' s := by
+    rintro d d' s H ⟨sh, ps, hw, hfr⟩
+    exact ⟨sh, ps, fun a b hab hd => hw a b hab ((H a b hab).2 hd), fun q c k hk =>
+      hfr q c k (hk.imp_right fun H' a b hab hd => H' a b hab ((H a b hab).1 hd))⟩
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I (fun j s => Inv (fun a _ => a < j) s)
+    ⟨rfl, rfl, fun _ _ _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
+  · obtain ⟨sh, ps, hw, hfr⟩ := hR
+    obtain ⟨h1, h2⟩ := zmirror_holds_hermFrom M hB hdiag (fun a b hab => hw a b hab a.2)
+      fun q c k hk => hfr q c k (hk.imp_right fun H a b hab _ => H a b hab)
+    exact ⟨h1, h2, sh, ps⟩
+  rintro j hj s₁ s₂ hR₁ hex
+  simp only [IExp.eval_const] at hj
+  rw [exec_seq_skip] at hex
+  refine hconv (fun a b => a < j ∨ (a = j ∧ b < (IExp.var j).eval)) (fun a _ => a < j + 1) s₂
+    (fun a b hab => ?_) (forall_of_exec_loop_eq_some I
+    (fun i s => Inv (fun a b => a < j ∨ (a = j ∧ b < i)) s)
+    (hconv (fun a _ => a < j) (fun a b => a < j ∨ (a = j ∧ b < 0)) s₁
+      (fun a b _ => ⟨Or.inl, fun h => h.elim id fun h => absurd h.2 (Nat.not_lt_zero _)⟩) hR₁)
+    ?_ hex)
+  · simp only [IExp.eval_var]
+    omega
+  rintro i hi s₁ s₂ hR hex
+  exact zmirror_step M (fun x z hz => by simp only [M, ScalarSem.toFloatMachine, hz,
+    Option.getD_some]) hB hi hj hR hex
 
 /-- **`zmirror` succeeds** under the standard model with every value in range, when the block at
 `Y` holds the upper triangle of $\mathbf{B}$ and the buffer `Y` at tag `p` is long enough. No
