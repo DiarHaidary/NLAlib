@@ -58,7 +58,20 @@ theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (ε b : F) (N : ℕ)
     (A : Matrix (Fin n) (Fin n) (F × F)) :
     (decodeMatrix dec (newtonSchulzSign M ε b N A)).IsHermitian := by
-  sorry
+  have key : ∀ (η : F) (N : ℕ) (B : Matrix (Fin n) (Fin n) (F × F)),
+      (decodeMatrix dec B).IsHermitian →
+        (decodeMatrix dec (newtonSchulzLoop M η N B)).IsHermitian := by
+    intro η N
+    induction N with
+    | zero => intro B hB; exact hB
+    | succ N ih =>
+      intro B hB
+      unfold newtonSchulzLoop
+      split
+      · exact hB
+      · exact ih _ (hM.isHermitian_decodeMatrix_newtonSchulzRounded B)
+  unfold newtonSchulzSign FloatMachine.hermScale
+  exact key _ N _ (hM.isHermitian_decodeMatrix_hermFrom _ _)
 
 /-- **One rounded Newton–Schulz step** (Lemma 2.1): under the machine contract
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
