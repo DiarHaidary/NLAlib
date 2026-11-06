@@ -126,7 +126,14 @@ one decoding to $1$; `cmp_eq` at both pairs, `decide_eq_false` (`zero_ne_one`) a
 theorem IsRelErrSem.decidesFlags {sem : ScalarSem P K} {dec : P → K → ℝ} {u : P → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 1) (p : P) :
     sem.DecidesFlags p := by
-  sorry
+  obtain ⟨z, hz, hdz⟩ := hlit p 0 (Nat.zero_le _)
+  obtain ⟨o, ho, hdo⟩ := hlit p 1 le_rfl
+  simp only [Nat.cast_zero, Nat.cast_one] at hz hdz ho hdo
+  refine ⟨z, o, hz, ho, ?_, ?_⟩
+  · rw [hsem.cmp_eq p z o, hdz, hdo]
+    norm_num
+  · rw [hsem.cmp_eq p o o]
+    simp
 
 /-- **The normal sampler of a tape rounding meets the normal-sampler contract**: if `sem` meets
 the standard model at $u \ge 0$ with every value in range and exact literals up to $2$, and the
