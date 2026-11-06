@@ -1,6 +1,6 @@
 # Design note: Hermitian diagonalization in linear precision — Newton–Schulz sign, randomized deflation and spectral bisection under black-box multiplication and QR (stage HDIAG)
 
-Status: reviewed (Fable, `~/nlalib-harness/reports/Review-Fable-HDIAG-Design.md`: approve with
+Status: proved and moved into `NLAlib` (end of stage, §16, 2026-11-06). Earlier: reviewed (Fable, `~/nlalib-harness/reports/Review-Fable-HDIAG-Design.md`: approve with
 changes) and amended twice; APPROVE and OQ1–OQ13 pending with the maintainer (decision sheet
 `~/nlalib-harness/state/decisions/HDIAG.json`). Review changes (second commit): Fable's items 1–3
 (public EB1a child invariant and EB1b rank recovery; projectors stored Hermitian), Event I with
@@ -890,3 +890,64 @@ What `Computation.Prog` would need to express Algorithms 1–3 so that a refinem
    negation and comparison.
 7. **Precomputed thresholds** $\beta$, $\ell$ as inputs (or the bit-length routine of COMPDYN
    §4.7) and the step limits as sizes.
+
+## 16. End of stage (2026-11-06)
+
+**Proved.** All 67 statements (the 64 of HDIAG-1/2 with the 19 of the W4 file, which superseded
+16 of them) are proved and in `NLAlib`; the scaffold library is gone and `lakefile.toml` is
+main's again. `#print axioms` of EB5, EV6, EV7, EV8, EB1, DP1, SN4 and LB3 gives `propext`,
+`Classical.choice` and `Quot.sound` only. 61 statements were proved by the harness (35 by haiku,
+11 by haiku then opus, 15 by opus) and six (DF2, EB1c, EB1d, EB1a, EB1, EV2) by dedicated Opus
+provers after their harness batches timed out (branches `prove/hdiag-core`, `prove/hdiag-ev2`).
+
+**Statement corrections.** Besides those made before dispatch (EB1's seed in $[-1, 1]$; DF2's
+$\|\mathbf{G}\|_2 \le \Omega$; EB2/EB3's absolute floor; the global range of EB5/EV6/EV7), the
+provers found DF2 and EB1c false as written and proved them with the extra hypotheses of §3.12;
+no caller's statement changed. Unused hypotheses, kept until the maintainer decides: EV2
+`FloatMachine.IsAccurate.measure_not_isEighGoodSample_le` (`hμQ`, `hcN`, `hudefl`), C1
+`exists_floatMachine_isAccurate` (`hcN`), LB1 `exists_mul_card_le_specNorm_add_smul` (`hδ`); each
+proof references them with `have _ := …`.
+
+**Deviations from the paper** (§0, §4), all now theorems: G1 the iterates of SIGN and the
+compressions are stored as rounded Hermitian parts (SN1–SN3, EB1d); G2 the probability of missing
+Event I is $nw\ell/R$ (EV1, EV2), which costs the third power of $\ell$ in EV7; G3 Proposition
+1.1 chooses the sign of $\pm\delta\mathbf{J}$ from $\mathbf{1}^{\mathsf{T}}\mathbf{R}\mathbf{1}$
+(LB1); G4 the $R_0$ part of the children's residual is absorbed by the slack $\varepsilon R_0/\ell$
+(EB1). Lemma 2.2 is replaced by Davis–Kahan (SG2) and Edelman's law by the elementary $r^2x^2$
+(CG6). Final bit count (EV7): $\log_2(1/u) \ge \log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
+\log_2(n^4(n+1)(8 + \mu_{\mathrm{MM}}) + n^{3/2}(4\mu_{\mathrm{QR}} + 4\sqrt n(c_{\mathrm N} + 1) +
+2\mu_{\mathrm{MM}} + 1)) + \log_2(N_* + 1) + 3\log_2(\ell + 1) + \log_2(2\sqrt n +
+\sqrt{2\log(16n/\theta)}) + 26$, against the paper's $\log_2\max(n^{1.5}\mu_{\mathrm{QR}},
+n^2c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varepsilon) + \log_2\log_2(n
+\log_2(1/\varepsilon)/\theta) + 23$ with the same leading $\log_2(1/\varepsilon) +
+1.5\log_2(1/\theta)$.
+
+**Bounded model** (§12): R1b (`binaryFloatRound` is an `IsRoundingOf` with floor the smallest
+normal and range the largest finite number), C1b (a bounded-format machine meets `IsAccurate`) and
+EV8 ($\log_2(\log_2(1536(n+\ell+2)^2/(\varepsilon\theta)) + 2) + 1 \le E$ exponent bits suffice
+for $R_0 \in [1/2, 1]$) are proved. Still deferred: the agreement lemma between C1b's machine and
+`binaryFloatSem` on the `safe` set, and the black boxes in the bounded format.
+
+**Bridge to the deep embedding.** COMPDYN S1c/S1d (`design/compdyn-s1cd`,
+`docs/design/Computation-SignDeflatePrograms.md`) writes SIGN and DEFLATE as registered `Prog`
+trees and proves that every successful run computes exactly `newtonSchulzSign` and `deflate` on
+the machine `ScalarSem.toFloatMachine` read off the program's semantics; its targets
+`MatrixFreeRoundedProbNewtonSchulzSign` and `MatrixFreeRoundedProbDeflate` transfer SN4 and DP1.
+Its three HDIAG-blocked statements (TR1–TR3) can be dispatched once this stage is on main; TR1
+(the stopping test passes within $N_0 + 1$ steps, shown inside SN4's proof but not stated) is
+owned by HDIAG. Landing note: COMPDYN S1's `Matrix/Computation/KernelContracts.lean` also defines
+`MatMulMap`, `QRMap`, `IsMatMulErr` and `IsQRErr` (in this note's shape); whichever lands second
+deduplicates them (S1cd plans to use this stage's). Further suggestions from S1cd: split
+`IsAccurate` into a scalar-and-`mm` part (SIGN uses no QR or sampler), and restate C1 for every
+$u \ge 0$. EIGH itself needs S2 (`bindIdx`, recursion), §15.
+
+**Files** (amendment to §6, D8 move at clean-up): the statements are in the files of §6, with
+these changes. `Matrix/Functions/Sign.lean`, `Probability/AdaptiveUnionBound.lean`,
+`Eigensolvers/RandomizedDeflation.lean`, `Eigensolvers/SpectralBisection.lean` (sample law,
+EV1–EV5), `Eigensolvers/SpectralBisection/Global.lean` (EV6–EV8, new: F10) and
+`LowerBounds/Eigensolvers/Precision.lean` are new; C1, C1b and C3 are in `Primitives.lean`, which
+no longer imports `EntrywiseRounding` (the scaffold import made a cycle after the move). The
+deterministic analysis of Algorithm 3 (5241 scaffold lines) is split into
+`Matrix/Computation/SpectralBisection/{Projectors (EB1c, EB1b), Split (EB1d), Child (EB1a),
+Node (EB1), Tree (EB2, EB2a, EB3, EB4), Global (EB5)}.lean`; `Node` is 1111 lines (F10 warning). The folder `NLAlib/Eigensolvers/` (OQ1 (a)) still needs its `LAYER` entry in
+`scripts/check_rules.py` and its CONTRIBUTING §2 line (maintainer edits).
