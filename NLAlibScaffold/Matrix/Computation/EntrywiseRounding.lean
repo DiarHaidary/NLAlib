@@ -49,7 +49,9 @@ Proof: `Real.abs_sub_roundNearest_le` and $\max(\lvert a \rvert, 0) = \lvert a \
 5 lines. -/
 theorem isRoundingOf_roundNearest (t : ℕ) (Ω a : ℝ) :
     IsRoundingOf (2⁻¹ ^ t) 0 Ω a (Real.roundNearest t a) := by
-  sorry
+  intro _
+  rw [max_eq_left (abs_nonneg a)]
+  exact Real.abs_sub_roundNearest_le t a
 
 /-- **Bounded-format rounding is a rounding with floor**: rounding to the binary format `fmt`
 with gradual underflow (`NLAlib.Computation.binaryFloatRound`, any nearest tie rule) returns a
