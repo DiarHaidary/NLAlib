@@ -39,7 +39,12 @@ Proof: `Dist.law` at `.uniform` is `volume[|Set.Icc (-1) 1]`; `ProbabilityTheory
 with `volume (Set.Icc (-1 : ℝ) 1) ≠ 0` (`Real.volume_Icc`, `ENNReal.ofReal_eq_zero`, `norm_num`) and
 `≠ ∞` (`measure_Icc_lt_top`). S, about 4 lines. -/
 theorem Dist.law_uniform_Icc : Dist.uniform.law (Set.Icc (-1) 1) = 1 := by
-  sorry
+  have h0 : volume (Set.Icc (-1 : ℝ) 1) ≠ 0 := by
+    rw [Real.volume_Icc]
+    norm_num
+  have htop : volume (Set.Icc (-1 : ℝ) 1) ≠ ⊤ := measure_Icc_lt_top.ne
+  change (volume[|Set.Icc (-1 : ℝ) 1]) (Set.Icc (-1) 1) = 1
+  rw [cond_apply measurableSet_Icc, Set.inter_self, ENNReal.inv_mul_cancel h0 htop]
 
 /-- **The uniform law of a subinterval**: for $-1 \le a \le b \le 1$, a uniform draw lies in
 $[a, b]$ with probability
