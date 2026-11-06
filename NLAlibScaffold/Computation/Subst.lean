@@ -43,6 +43,12 @@ theorem implementsKernel_self {I I' : Interp P ι K (OpCount P ι)} (hker : I'.k
     (cost : OpKind P ι → OpCount P ι)
     (hcost : ∀ p o ds, cost (.kcall p o ds) = Finsupp.single (.kcall p o ds) 1) :
     ImplementsKernel I I' .kcall cost (fun _ => 0) 0 := by
-  sorry
+  intro o p dims ins outs st s₁ hs₁
+  have hk : ∀ o p ds ins outs s, I'.kcallStore o p ds ins outs s = I.kcallStore o p ds ins outs s :=
+    fun o p ds ins outs s => by simp only [Interp.kcallStore, hker, hksh]
+  refine ⟨{ st with store := s₁, cnt := st.cnt + I'.charge (.kcall p o (dims.map IExp.eval)) },
+    ?_, rfl, rfl, rfl, rfl, ?_, fun q => le_max_left _ _, le_max_left _ _⟩
+  · simp only [exec, hk, hs₁, Option.map_some]
+  · simp only [hc', hcost, le_refl]
 
 end NLAlib.Computation
