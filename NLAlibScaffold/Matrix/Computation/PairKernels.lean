@@ -169,7 +169,51 @@ theorem holds_of_exec_zzero (p : P) (m n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st st
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hrun : (zzero (ι := ι) p (.const m) (.const n) Y yo).run = .seq (.named "zzero"
+      [.idx (.const m), .idx (.const n), .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.lit p ⟨Y, yo + .var w⟩ 0)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip] at h
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+    (fun w s => s.store.shape = st.store.shape ∧ s.pos = st.pos ∧
+      (∀ k < w, s.store.read p Y (yo.eval + k) = some M.zero) ∧
+      ∀ q b i, (b ≠ Y ∨ i < yo.eval ∨ yo.eval + w ≤ i) →
+        s.store.read q b i = st.store.read q b i)
+    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
+  · obtain ⟨hsh, hpos, hY, hfr⟩ := hR
+    simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hY hfr
+    refine ⟨fun i j t => ?_, fun q b i hb => hfr q b i ?_, hsh, hpos⟩
+    · have hj := Nat.mul_le_mul_left m (show j.1 + 1 ≤ n from j.2)
+      obtain ⟨t, ht⟩ := t
+      change t < 2 at ht
+      rw [Nat.mul_succ] at hj
+      have hk : 2 * (i.1 + m * j.1) + t < 2 * (m * n) := by omega
+      refine (hY _ hk).trans ?_
+      rcases t with _ | _ | t
+      · rfl
+      · rfl
+      · omega
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hb
+      by_cases hbY : b = Y
+      · exact Or.inr (by omega)
+      · exact Or.inl hbY
+  rintro w hw s₁ s₂ ⟨hsh, hpos, hY, hfr⟩ hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
+  simp only [IExp.eval_add, IExp.eval_var] at hw'
+  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hpos, fun k hk => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans (hfr q b i ?_)⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY k hk)
+    · refine (Store.read_of_write_eq_some hw').trans ?_
+      have hv' : I.sem.lit p 0 = some v := by exact_mod_cast hv
+      simp only [M, ScalarSem.toFloatMachine, hv', Option.getD_some]
+  · by_cases hbY : b = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hbY
+  · omega
 
 /-- **`zzero` succeeds** under the standard model with every value in range, when the buffer `Y`
 at tag `p` is long enough. No printed source.
