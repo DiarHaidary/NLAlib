@@ -46,11 +46,9 @@ theorem isExactIntLit_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     IsExactIntLit (fun _ x => x.val) (binaryFloatSem (P := P) fmt he r hr) B := by
   intro q k hk
   have hrep : IsBinaryRep fmt (k : ℝ) := by
-    refine ⟨k, 0, ?_, hmin, hmax, ?_⟩
-    · have h1 : k < 2 ^ fmt.mantissaBits := lt_of_le_of_lt hk hB
-      have h2 : (k : ℤ) < 2 ^ fmt.mantissaBits := by exact_mod_cast h1
-      simpa [abs_of_nonneg (Int.natCast_nonneg k)] using h2
-    · simp
+    refine ⟨k, 0, ?_, hmin, hmax, by simp⟩
+    simpa [abs_of_nonneg (Int.natCast_nonneg k)] using
+      (by exact_mod_cast hk.trans_lt hB : (k : ℤ) < 2 ^ fmt.mantissaBits)
   have hq : binaryFloatQuantize fmt he r hr ((k : ℚ) : ℝ) = some ⟨(k : ℝ), hrep⟩ := by
     rw [Rat.cast_natCast, binaryFloatQuantize, dif_pos hrep.abs_le]
     congr 1

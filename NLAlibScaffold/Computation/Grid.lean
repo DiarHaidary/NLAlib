@@ -37,10 +37,10 @@ theorem isExactIntLit_gridSem (t : P → ℕ) (B : ℕ) (hB : ∀ p, B < 2 ^ t p
     IsExactIntLit (fun _ x => x) (gridSem t) B := by
   intro p k hk
   refine ⟨Real.roundNearest (t p) ((k : ℚ) : ℝ), rfl, ?_⟩
-  have hmem : ((k : ℝ)) ∈ Real.floatGrid (t p) := by
+  have hmem : (k : ℝ) ∈ Real.floatGrid (t p) := by
     refine ⟨k, 0, ?_, by simp⟩
-    have h1 : k < 2 ^ t p := lt_of_le_of_lt hk (hB p)
-    simpa [abs_of_nonneg (Int.natCast_nonneg k)] using (by exact_mod_cast h1 : (k : ℤ) < 2 ^ t p)
+    simpa [abs_of_nonneg (Int.natCast_nonneg k)] using
+      (by exact_mod_cast hk.trans_lt (hB p) : (k : ℤ) < 2 ^ t p)
   change Real.roundNearest (t p) (((k : ℚ)) : ℝ) = (k : ℝ)
   rw [Rat.cast_natCast]
   exact Real.roundNearest_eq_self_of_mem_floatGrid hmem
