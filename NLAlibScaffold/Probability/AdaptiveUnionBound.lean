@@ -48,10 +48,11 @@ $\mathbb{P}[\exists i, \cdot] \le \sum_i \mathbb{P}[\zeta_i \in S_i(X_i)]$
 (`MeasureTheory.measure_iUnion_le`); split each by the countably many values $y$ of $X_i$
 (`MeasureTheory.measure_biUnion_le` or `tsum` over `Set.Countable.toEncodable`), use
 independence of $\{X_i = y\}$ and $\zeta_i$
-(`ProbabilityTheory.IndepFun.measure_inter_preimage_eq_mul`)
+(`ProbabilityTheory.IndepFun.measure_inter_preimage_eq_mul` with $\{\mathrm{True}\}$, measurable
+in `Prop.instMeasurableSpace` $= \top$)
 and the law, bound $\nu(S_i(y))$ by the mean of $q_i(y, \cdot)$, reassemble with independence
 again into $\int q_i(X_i, \zeta_i)\,d\mu$ (`MeasureTheory.lintegral_tsum`,
-`ProbabilityTheory.IndepFun.lintegral_mul_eq_mul_lintegral`-type factorisation on each fibre),
+`ProbabilityTheory.lintegral_mul_eq_lintegral_mul_lintegral_of_indepFun` on each fibre),
 exchange sum and integral, and bound by $\theta$ (`MeasureTheory.lintegral_mono`,
 `MeasureTheory.measureReal_def`). L, about 80 lines. -/
 theorem measureReal_exists_mem_le_of_forall_measure_le_lintegral {ι γ β Ω : Type*} [Countable ι]

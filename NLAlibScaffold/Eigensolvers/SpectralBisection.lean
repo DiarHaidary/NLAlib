@@ -97,8 +97,23 @@ the leading block fails Event II with probability at most $2e^{-\log(4/\rho)} + 
 (`NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le`'s two tails:
 `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix`,
 `NLAlib.measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix`,
-`NLAlib.hasLaw_submatrix_of_hasLaw_complexGaussianMatrix` for the leading block). Fubini over the
-seed. L, about 120 lines. -/
+`NLAlib.hasLaw_submatrix_of_hasLaw_complexGaussianMatrix` for the leading block,
+`NLAlib.leadingBlock` $k$ $\mathbf{G}$ the submatrix along `Fin.castLE`). The sets of split seeds
+and of samples failing Event II depend on the seed through the machine and need not be measurable,
+so do not apply `MeasureTheory.Measure.prod_apply` to them; use a measurable superset:
+$\lnot\mathrm{good} \subseteq \lnot\mathrm{I} \cup (\mathrm{I} \cap J \cap B)$ with $J = \{v \mid 0
+< i_+(\mathbf{A} - (R/\ell)v\mathbf{I}) < k\}$ (an open interval between extreme eigenvalues) and
+$B = \bigcup_b\{(v, \mathbf{G}) \mid \|\mathbf{G}_b\|_2 \ge t \lor
+\sigma_{r(v)-1}(\mathbf{\Pi}_b(v)\mathbf{G}_{b,1}) \le x\}$, measurable since $r(v)$ and
+$\mathbf{\Pi}_b(v)$ are piecewise constant in $v$ (finitely many values) and norms and singular
+values are continuous; `NLAlib.HasOrthonormalCols.singularValues_mul_left` gives
+$\sigma(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) = \sigma(\mathbf{\Pi}\mathbf{G}_1)$, so the bad event
+does not depend on the frame $\mathbf{V}$ quantified in `NLAlib.IsEighGoodSample`. Then
+`MeasureTheory.Measure.prod_apply` with the tails gives fibre measure $\le \rho$ per side, and
+$\mathrm{I} \cap J \subseteq \{\text{split seeds}\}$ (the forward direction of rank recovery) with
+`MeasureTheory.Measure.prod_prod` (valid for arbitrary sets) gives $\le
+2\rho\,\mathbb{P}[\text{split}]$; $k_+$ depends on the sample only through the seed. H, about 150
+lines. -/
 theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
@@ -170,7 +185,11 @@ Proof: the event is measurable with respect to $\sigma(\zeta_b : b \text{ a prop
 a)$ (the decomposition of `NLAlib.measurableSet_eighNodeAt_eq`, with each computed sample a
 function of one $\zeta_b$), and $a$ is not a proper prefix of itself;
 `ProbabilityTheory.iIndepFun.indepFun_finset` (disjoint finite index sets $\{a\}$ and the proper
-prefixes) and `ProbabilityTheory.IndepFun.comp`. H, about 90 lines (the decomposition through the
+prefixes) and `ProbabilityTheory.IndepFun.comp`; cleanest as a prefix-dependence lemma (the node
+at $a$ agrees for samples agreeing on the proper prefixes of $a$, induction on $a$) and the
+measurability lemma on the product over the proper prefixes, with
+`ProbabilityTheory.iIndepFun.indepFun_finset`, `ProbabilityTheory.IndepFun.comp` and
+`measurableSet_setOf`. H, about 90 lines (the decomposition through the
 prefixes, shared with `NLAlib.measurableSet_eighNodeAt_eq`, is the work). -/
 theorem indepFun_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
@@ -196,7 +215,7 @@ If $640\,n^{3/2}(8 + \mu_{\mathrm{MM}}(n))(N_* + 1)\cdot16n(n+1)\ell(\ell+1)\,u 
 \theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
 \le \beta$, the sign step limit is at least $N_*$, $0 \le \tau$,
 $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$,
-$16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$, and the node samples $\zeta_a$ are
+$16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)}) \le \Omega$, and the node samples $\zeta_a$ are
 independent, each of law `NLAlib.eighSampleLaw` $n$, then
 $$\mathbb{P}\bigl[\mathsf{eigh}(\mathbf{A}, \varepsilon, \theta) \text{ is not an approximate
 diagonalization with residual } 2\varepsilon R_0 \text{ and } \mathbf{U} \text{ within }
@@ -216,8 +235,15 @@ nodes (empty elsewhere) and charge $k w \ell/R + 2\rho\,[\text{split}]$ = $\thet
 the charges sum to at most $\theta/2 + \theta/2$ by
 `NLAlib.FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le` and
 `NLAlib.encard_eighNodeAt_isSplit_le`. The node hypotheses come from the global ones as in the
-proof of `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample`
-(factor out that parameter lemma). L, about 120 lines. -/
+proof of `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample`,
+with `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` ($\ell_y \le 2\ell$,
+$\varepsilon_y \ge \varepsilon/3$, $R_y \le R_0$). Two side obligations: the charge contains the
+indicator of the split seeds, which UB1's `hq` needs measurable: it is the countable union over
+the range of `unif` of its fibres (`hunifc`, `hunifm`), about 20 lines; and
+`MeasureTheory.IsProbabilityMeasure` $\mu$ comes from `hlaw`
+(`ProbabilityTheory.HasLaw.isProbabilityMeasure_iff`, `NLAlib.eighSampleLaw` being a probability
+measure: `ProbabilityTheory.cond` of `Set.Icc` with positive finite volume, `Measure.pi`,
+`Measure.prod`). L, about 140 lines. -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -237,7 +263,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
     (hudefl : (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (100 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * min (dec R₀) 1))
-    (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
+    (hΩ : 16 * (2 * dec R₀ + n + 2 * ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
     μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix dec A)
@@ -265,10 +291,10 @@ the third power of $\ell$ (from the corrected shift-avoidance probability) diffe
 Proof: exponentiate (`Real.logb_le_logb`, `Real.rpow_logb`, `Real.logb_mul`, `Real.logb_rpow`)
 to get both precision conditions of
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` for $n \ge 1$ (at
-$n = 0$ the condition on $\beta = 0$ is unreachable, so handle $n = 0$ directly: the empty matrices
-are an approximate diagonalization and the event is empty) ($2 \cdot 640 \cdot 16 \cdot 2880 \le
-2^{26}$, the factor $2$ from $\beta \ge \beta_*/2$, $\ell^2(\ell + 1) \le (\ell + 1)^3$,
-$\log_2(N_* + 1) \ge 0$), and apply it. M, about 50 lines. -/
+$n = 0$ `hβle` reads $\beta \le 0$ (as $x/0 = 0$), contradicting `hβ`: `hβ.not_le hβle`) ($2 \cdot
+640 \cdot 16 \cdot 2880 \le 2^{26}$, the factor $2$ from $\beta \ge \beta_*/2$, $\ell^2(\ell + 1)
+\le (\ell + 1)^3$, $\log_2(N_* + 1) \ge 0$), and apply it. L, about 50 lines (seven-term
+`Real.logb` exponentiation). -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -295,7 +321,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
     {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (100 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * min (dec R₀) 1))
-    (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
+    (hΩ : 16 * (2 * dec R₀ + n + 2 * ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
     μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix dec A)
@@ -322,9 +348,10 @@ at least $2^{2^{E-1} - 1}$ (`Float.Model.Format.minExponent_eq`, the bias $2^{E-
 `Float.Model.Format.maxFinite`); the exponent condition gives $2^{E-1} \ge \log_2 L + 2$ for the
 displayed $L$, hence floor $\le 1/L \le \varepsilon\theta/(24n^2)$, which implies the floor
 hypothesis $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$, and range
-$\ge 2L \ge 16(R_0 + n + \ell + \sqrt{\log(16n/\theta)})$; then apply
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`. M,
-about 70 lines. -/
+$\ge 2L \ge 16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)})$ (as $2L \ge 3072 \cdot 2^{15}(n +
+\ell + 2)^2/\theta$); then apply
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`. L,
+about 70 lines (`Float.Model.Format` arithmetic). -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} (fmt : Float.Model.Format)
     (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}

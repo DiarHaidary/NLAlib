@@ -17,9 +17,17 @@ prove the exponent-bit count (§12, OQ14); 64 statements. Fable delta fixes (fif
 DP1 and EB1a/EB1 supply it), SN3 needs $\Omega \ge 9$ (SN4 $9(n+1) \le \Omega$), EB2/EB3 take the
 absolute floor bound $100\tau \le \varepsilon\min(R_0, 1)$ (false before) and EB5/EV6/EV7 the
 global $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$; EB1/EB5 outlines cover the
-rounded `eighNextParams`. Branch
+rounded `eighNextParams`. W4 outline check (sixth commit,
+`~/nlalib-harness/reports/Review-Fable-HDIAG-W4.md`): EB5/EV6/EV7 take
+$16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)}) \le \Omega$ (the old range did not give the node
+lemmas' at the root or at $\ell_y = 2\ell$); new targets EB1c (computed projectors), EB1d (a split
+node), EB2a (node parameters); EB1b outline with modulus $w - 1.4uR$; EB1 with an explicit residual
+budget closing through $\varepsilon' = (1 - 1/\ell)\varepsilon$; EV2 by a measurable superset (H);
+EB2, EV7, EV8 relabelled L. HDIAG-1/2 statements unchanged; the W4 targets (67 statements in
+all) are in `~/nlalib-harness/pilot/hdiag3-targets.json`. Branch
 `design/hdiag` (worktree `~/nlalib-design-hdiag`, from `origin/main` 4d4e9fc9). Targets:
-`~/nlalib-harness/pilot/hdiag-targets.json` (64 statements).
+`~/nlalib-harness/pilot/hdiag-targets.json` (64 statements, the file of the HDIAG-1/2 dispatch;
+its W4 entries are superseded by `~/nlalib-harness/pilot/hdiag3-targets.json`, 19 statements).
 Source read in full: R. Shah, *Fast Hermitian Diagonalization with Nearly Optimal Precision*,
 arXiv:2408.09880v1 (LaTeX source; §1.2 model, Proposition 1.1, Definitions 1.1–1.4, §2 Lemmas
 2.1–2.5 and Theorem 2.6, §3 Lemmas 3.1–3.2 and Theorem 3.3, §4 Algorithm 3, Lemma 4.1,
@@ -337,8 +345,16 @@ so no measurable space on the (dependent-type) node states is needed.
 
 ### 3.8 Algorithm 3, deterministic (EB1–EB5, `Matrix/Computation/SpectralBisection.lean`)
 
+**EB1c** (computed projectors, W4 outline check): on Event I the stored $\mathbf{P}_\pm$ are
+within $\beta$ of $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$ (SN4
+applied once, with modulus $w - 1.4uR$; $w/2$ is not covered by `husign`).
 **EB1b** (rank recovery on Event I, public so that EV2 can use it): for an internal node with
 seed in $[-1, 1]$ and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$.
+**EB1d** (a split node): frames $\mathbf{V}_\pm$, unitaries $\mathbf{W}_\pm$ with
+$\|\mathbf{V}_\pm\mathbf{W}_\pm - \mathbf{Q}_\pm\|_2 \le \eta$ and the stored children within
+$(2 + 2\eta)R\eta$ of the shifted compressions (DF2 applied once); EB1a and EB1 use it.
+**EB2a** (node parameters): $\lvert a\rvert \le \ell$, $k_y \le k$, $\ell_y = \ell + \lvert a\rvert$,
+$\varepsilon_y \in [\varepsilon/3, \varepsilon]$, $R_y \le R_0$, shared by EB5 and EV6.
 **EB1a** (child invariant): under EB1's hypotheses without the children's guarantee, every child
 has a Hermitian matrix of norm at most its window — what EB5's induction needs at each child.
 **EB1** (Lemma 4.1): node contracts and precision hypotheses (written in §3.11's table and the
@@ -358,8 +374,9 @@ $$0 < \beta \le \frac{\varepsilon\sqrt\theta}{2880\,\ell n^{3/2}(2\sqrt n + \sqr
 ,\quad N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac\beta{16n}\Bigr),$$
 $640n^{3/2}(8 + \mu_{\mathrm{MM}})(N_* + 1)\cdot16n(n+1)\ell(\ell+1)u \le \theta\beta$,
 $(4\mu_{\mathrm{QR}} + 2\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}} + 1)u \le \beta$, step cap
-$\ge N_*$, $4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, $16(R_0 + n + \ell +
-\sqrt{\log(16n/\theta)}) \le \Omega$. All quantities are decodings of stored values; the
+$\ge N_*$, $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$,
+$16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)}) \le \Omega$ (the factors $2$: the node lemmas
+need $R_y + R_0$ and $\ell_y \le 2\ell$; W4 outline check item 1). All quantities are decodings of stored values; the
 machine-computed node parameters differ from the exact ones by factors $(1 \pm u)^{4j}$ at
 depth $j$, absorbed in the slack of the constants (2880 against the 2274 Fable derived). Node parameters: $w_y = \theta R_y/(2k_y\ell_y(n+1)(\ell+1))$
 (the corrected Event I budget, G2), $x_y = \sqrt{\rho/2}/k_y$, $t_y = \sqrt2(2\sqrt{k_y} +
@@ -497,26 +514,29 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| EB1b | `FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` | M | 6 | SN4, SG2, SG6, R6, R7, R9 |
-| EB1a | `FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some` | M | 7 | EB1b, SG5, DF2, R2, R4, R6, R8 |
-| EB1 | `FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 8 | EB1a, EB1b, SG5, DF1, DF2, R4, R5, R8 |
-| EB2 | `FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length` | M | 0 | — |
+| EB1c | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le` | M | 6 | SN4, SG2, R3, R6, R7 |
+| EB1b | `FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` | M | 7 | EB1c, SG6, R9 |
+| EB1a | `FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some` | M | 9 | EB1d, EB1b, R2, R6 |
+| EB1d | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split` | L | 8 | EB1c, EB1b, SG5, DF2, R2, R4, R6, R8 |
+| EB1 | `FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 10 | EB1c, EB1d, EB1a, EB1b, R4, R5, R8 |
+| EB2 | `FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length` | L | 0 | — |
+| EB2a | `FloatMachine.IsAccurate.eighNodeAt_eq_some_params` | M | 1 | EB2 |
 | EB3 | `FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le` | L | 1 | EB2 |
 | EB4 | `encard_eighNodeAt_isSplit_le` | L | 0 | — |
-| EB5 | `FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 9 | EB1, EB1a, EB2, NS11, NS12 |
+| EB5 | `FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 11 | EB1, EB1a, EB2, EB2a, NS11, NS12 |
 
 **Eigensolvers/SpectralBisection.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | EV1 | `measureReal_exists_abs_sub_lt_le` | M | 0 | — |
-| EV2 | `FloatMachine.IsAccurate.measure_not_isEighGoodSample_le` | L | 7 | EV1, EB1b, CG2, CG3, CG4, CG6, SG5 |
+| EV2 | `FloatMachine.IsAccurate.measure_not_isEighGoodSample_le` | H | 8 | EV1, EB1b, CG2, CG3, CG4, CG6, SG5 |
 | EV3 | `countable_range_eighNodeAt` | M | 0 | — |
 | EV4 | `measurableSet_eighNodeAt_eq` | L | 1 | EV3 |
 | EV5 | `indepFun_eighNodeAt_eq` | H | 2 | EV4 |
-| EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` | L | 10 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
-| EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 11 | EV6 |
-| EV8 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le` | M | 12 | EV7 |
+| EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` | L | 12 | EB5, UB1, EV2, EV3, EV4, EV5, EB2, EB2a, EB3, EB4 |
+| EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | L | 13 | EV6 |
+| EV8 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le` | L | 14 | EV7 |
 
 **LowerBounds/Eigensolvers/Precision.lean**
 
@@ -785,7 +805,7 @@ $|a - z| \le u|a| + \eta$; `Computation.binaryFloatRound`, gradual underflow;
 * **Extra hypotheses** (already present, in the floor/range form): $100n^{3/2}\tau \le
   \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$, i.e. $R_0 \ge 12n^{3/2}2^{e_{\min}}/(2u\varepsilon)$ —
   $\|\mathbf{A}\|$ bounded below relative to $2^{e_{\min}}\operatorname{poly}(n)/u$ — and
-  $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$. The range invariants come from: SIGN's
+  $16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)}) \le \Omega$. The range invariants come from: SIGN's
   normalized iterates ($\le 1.1$, intermediates $\le 4.9$); DEFLATE's $\|\mathbf{G}\|_2 \in [x,
   t]$ on Event II; EIGH's node budgets ($\ge \varepsilon_yR_0$ at internal nodes, magnitudes $\le
   1.1R_0$).
@@ -802,13 +822,14 @@ $|a - z| \le u|a| + \eta$; `Computation.binaryFloatRound`, gradual underflow;
 ## 13. Proof plan for dispatch
 
 Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 30 independent
-targets (C1, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R1b, R2, R3, R4, R5, R6, R7, R8, R9, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7→EV8,
+targets (C1, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R1b, R2, R3, R4, R5, R6, R7, R8, R9, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1c→EB1b→EB1d→EB1a→EB1→EB5→EV6→EV7→EV8,
 NS1→{NS4, NS5, NS6}, NS4→SG3, R6/R8→SN3→SN4, R7→SN4, R2→SN1→SN2, {R1b, C1}→C1b,
-CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2}, DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6,
-LB1→LB2→LB3. Difficulties: S 19, M 30, L 12, H 3. By group: W1 31, W2 4,
-W3 10, W4 16, LB 3. Model tiers: S and M on haiku first with sonnet escalation, L and H on opus from
+CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2}, DF1→DF2→{DP1, EB1d}, EB1b→EV2, EB2→{EB3, EB2a}, EB2a→{EB5, EV6}, EV3→EV4→EV5→EV6,
+LB1→LB2→LB3. Difficulties (67 statements): S 19, M 29, L 15, H 4. By group: W1 31, W2 4,
+W3 10, W4 19 (M 6, L 9, H 4), LB 3. Model tiers: S and M on haiku first with sonnet escalation, L and H on opus from
 the start (`--hard L,H`). HDIAG-1 (W1 + W2 + LB, 38) and HDIAG-2 (W3, 10) can go now; HDIAG-3 (W4,
-16) after a Fable re-check of the amended outlines of EB1, EB1a, EB1b, EB2, EB4, EB5, EV2, EV5, EV6.
+19, `~/nlalib-harness/pilot/hdiag3-targets.json`, kept apart from the running HDIAG-1/2 file)
+after the W4 outline check's items 1–7 (applied in the sixth commit).
 
 ## 14. Literature
 
