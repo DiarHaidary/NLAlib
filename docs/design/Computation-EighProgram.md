@@ -271,7 +271,10 @@ its lemmas ET1 to ET6.
   `countable_range_eighNodeAt`, `measurableSet_eighNodeAt_eq` give the measurability.
 * **The ideal machine is accurate** (`isAccurate_eighIdealMachine`): the pilot's IM1 and IM3 with
   `isUnifSampler_uniformUnif` (from `MulShrinks`), at the machine roundoff
-  $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ and $c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$.
+  $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ and $c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, when
+  the tape range covers the seeds, $1 \le 2\Omega$ (Fable review: without it the tape contract does
+  not constrain the rounding of a seed, and the statement fails at $\Omega = 0$); the targets' `pre`
+  gives $\Omega \ge 160$.
 
 ## 7. Transfer: Theorem 4.2 for the program
 
@@ -286,7 +289,11 @@ $u_{\mathrm M}$ and $c_{\mathrm N}$: the probability that the run fails or retur
 diagonalization with residual $2\varepsilon R_0$ and $\mathbf{U}$ within $\varepsilon/3$ of unitary is
 at most $\theta$. Proof `matrixFreeRoundedProbEigh` (M): (b), (a), §6, EV6. Its contracts are
 satisfiable: `gridSem` meets the four semantic contracts (`isRelErrSem_gridSem`,
-`isExactIntLit_gridSem`, BI5, BI8).
+`isExactIntLit_gridSem`, BI5, BI8), up to one bridge: `isExactIntLit_gridSem` is stated at the
+identity decoding, the others at $x \mapsto \mathrm{fl}_p(x)$, so a two-line restatement at the grid
+decoding is needed before a non-vacuity witness of the whole hypothesis set (with `exactMM`,
+`exactQR`, `isTapeRounding_id`) can be a theorem (Fable review, later). The S2 statements cite the
+pilot's S1c/S1d statements, sorried here; the S2 merge waits for S1cd to land.
 
 ### 7.2 EV7: the bit count
 
@@ -371,7 +378,7 @@ The statements move into `NLAlib/` with their docstrings minus the `Proof:` line
   `eighSlotTree`, `EighArenas`) is definitions that make the invariant a statement, and because D3
   makes the samples static: the "hardest part" becomes six M lemmas about `eighLoc` and four L level
   lemmas.
-* **Lazy sampling stays the risk**: one H statement (about 400 lines realistic, possibly more);
+* **Lazy sampling stays the risk**: one H statement (600+ lines realistic, Fable review);
   without D3 it would have followed the draw counter through the whole run.
 * S1 (S1a to S1d) plus S2: about 1,200 + 5,300 to 6,400 + 7,750 to 9,550 = **14,000 to 17,000
   lines**, inside the 12,000 to 20,000 of §7.2.

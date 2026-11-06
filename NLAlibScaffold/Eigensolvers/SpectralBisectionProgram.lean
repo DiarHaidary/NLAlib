@@ -54,8 +54,10 @@ scaffold), which is `NLAlib.eigh` on $M'$ with the tree of ideal samples
 (`NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). So the failure event is contained in the
 event of the shallow theorem for $M'$ and the samples `NLAlib.eighIdealTree` at $\xi_\omega$
 (`MeasureTheory.measureReal_mono`); $M'$ is accurate at $u_{\mathrm M}$
-(`NLAlib.Computation.isAccurate_eighIdealMachine`, scaffold), its samplers have measurable fibres
-and countable ranges (`NLAlib.Computation.countable_range_uniformUnif`,
+(`NLAlib.Computation.isAccurate_eighIdealMachine`, scaffold; its range hypothesis $1 \le 2\Omega$
+from `pre`, where $16(2\bar R_0 + N + 2\ell + \cdots) \le \Omega$ and $\ell \ge 5$ give
+$\Omega \ge 160$), its samplers have measurable fibres and countable ranges
+(`NLAlib.Computation.countable_range_uniformUnif`,
 `NLAlib.Computation.countable_range_gaussianNormal`, scaffold), and the samples are independent with
 law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold), so
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`

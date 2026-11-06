@@ -143,7 +143,7 @@ positions, independent of the shorter paths' positions (`ProbabilityTheory.iInde
 product structure of `NLAlib.Computation.tapeLaw`, `MeasureTheory.Measure.infinitePi`), so their
 conditional law is the product of `NLAlib.eighSampleLaw` (the uniform seed
 `NLAlib.Computation.Dist.law_uniform_Icc`, the complex Gaussian entries as the pilot's
-`NLAlib.Computation.hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw`). H, about 400 lines (a general
+`NLAlib.Computation.hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw`). H, about 600+ lines (a general
 lemma "adaptively chosen disjoint blocks of an i.i.d. sequence are i.i.d." first, then this
 instance). -/
 theorem iIndepFun_eighIdealTree {F : Type*} (M : FloatMachine F ℝ ℂ)
@@ -186,8 +186,9 @@ theorem isUnifSampler_uniformUnif {sem : ScalarSem P K} {dec : P → K → ℝ} 
 value in range, exact literals up to $2$, the exact floor conversion and
 `NLAlib.Computation.MulShrinks`, the routines meet `NLAlib.IsMatMulErr` and `NLAlib.IsQRErr` at $u$,
 floor $0$, range $\Omega$, and the tape rounding $\rho$ meets `NLAlib.Computation.IsTapeRounding` at
-$u$, floor $0$, range $2\Omega$, constants $c(d) \ge 0$, with
-$(c(\mathrm{gaussian}) + 3)u \le 1/10$, then the machine of the semantics with the conversion of the
+$u$, floor $0$, range $2\Omega$, constants $c(d) \ge 0$, with $(c(\mathrm{gaussian}) + 3)u \le 1/10$
+and the tape range covering the seeds ($1 \le 2\Omega$; without it the tape contract does not
+constrain the rounding of a seed), then the machine of the semantics with the conversion of the
 semantics, the routines and the samplers of $\rho$ at position $0$ meets
 `NLAlib.FloatMachine.IsAccurate` at the unit roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$,
 floor $0$, range $\Omega$ and normal-sampler constant $2(c(\mathrm{gaussian}) + 3)$. No printed
@@ -195,16 +196,18 @@ source.
 Proof: the conversion is the floor of the decoding (`funext`, `htn`, `Option.getD_some`); the
 pilot's `NLAlib.Computation.isAccurate_toFloatMachine` (scaffold) at $u_{\mathrm M} \ge u$
 (`NLAlib.Computation.IsRelErrSem.mono`; the kernel contracts at $u_{\mathrm M}$, monotone in $u$ by
-their definitions), with the uniform sampler by `NLAlib.Computation.isUnifSampler_uniformUnif` and
-the normal sampler by the pilot's `NLAlib.Computation.isNormalSampler_gaussianNormal` (scaffold),
-raised from $u$ to $u_{\mathrm M}$ (`mul_le_mul_of_nonneg_left`). M, about 60 lines. -/
+their definitions), with the uniform sampler by `NLAlib.Computation.isUnifSampler_uniformUnif` (its
+error hypothesis from the first clause of `hρ` at $\lvert v \rvert \le 1 \le 2\Omega$, `hΩ`,
+`max_eq_left`) and the normal sampler by the pilot's
+`NLAlib.Computation.isNormalSampler_gaussianNormal` (scaffold), raised from $u$ to $u_{\mathrm M}$
+(`mul_le_mul_of_nonneg_left`). M, about 60 lines. -/
 theorem isAccurate_eighIdealMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u Ω : ℝ}
     {μM μQ : ℕ → ℝ} {c : Dist → ℝ} (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem)
     (hlit : IsExactIntLit dec sem 2) (htn : IsExactToNat dec sem) (hmul : MulShrinks dec sem)
     (p : P) {mm : MatMulMap (K × K)} {qr : QRMap (K × K)}
     (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm)
     (hqr : IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qr) {ρ : Dist → ℕ → ℝ → K}
-    (hρ : IsTapeRounding dec p u 0 (2 * Ω) c ρ) (hu : 0 ≤ u) (hcu : 0 ≤ c .uniform)
+    (hρ : IsTapeRounding dec p u 0 (2 * Ω) c ρ) (hΩ : 1 ≤ 2 * Ω) (hu : 0 ≤ u) (hcu : 0 ≤ c .uniform)
     (hcg : 0 ≤ c .gaussian) (hcgu : (c .gaussian + 3) * u ≤ 1 / 10) (hμM : ∀ d, 0 ≤ μM d)
     (hμQ : ∀ d, 0 ≤ μQ d) :
     (sem.toFloatMachine p (fun x => (sem.toNat p x).getD 0) mm qr
