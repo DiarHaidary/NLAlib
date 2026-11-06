@@ -13,7 +13,11 @@ thresholds, the exact machine as the satisfiability witness, and §15 on a deep-
 Bounded model now (fourth commit, after rebasing onto `origin/main` a08339af, which has Codex's
 `AbsRelErr`, `binaryFloatRound`, `binaryFloatSem`): the floor/range contracts already are the
 mixed model, the samplers got floors, and three targets make the bounded format an instance and
-prove the exponent-bit count (§12, OQ14); 64 statements. Branch
+prove the exponent-bit count (§12, OQ14); 64 statements. Fable delta fixes (fifth commit): DF2 gains $\|\mathbf{G}\|_2 \le \Omega$ (it was false without it;
+DP1 and EB1a/EB1 supply it), SN3 needs $\Omega \ge 9$ (SN4 $9(n+1) \le \Omega$), EB2/EB3 take the
+absolute floor bound $100\tau \le \varepsilon\min(R_0, 1)$ (false before) and EB5/EV6/EV7 the
+global $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$; EB1/EB5 outlines cover the
+rounded `eighNextParams`. Branch
 `design/hdiag` (worktree `~/nlalib-design-hdiag`, from `origin/main` 4d4e9fc9). Targets:
 `~/nlalib-harness/pilot/hdiag-targets.json` (64 statements).
 Source read in full: R. Shah, *Fast Hermitian Diagonalization with Nearly Optimal Precision*,
@@ -778,8 +782,8 @@ $|a - z| \le u|a| + \eta$; `Computation.binaryFloatRound`, gradual underflow;
   sampler $c_{\mathrm N} = \sqrt2$). The machine is total where `binaryFloatSem` fails out of range;
   they agree on the `safe` set, which the theorems' $\Omega$ hypotheses guarantee (an equality
   refinement in the sense of COMPDYN §7.1 needs that agreement lemma, deferred with §15).
-* **Extra hypotheses** (already present, in the floor/range form): $4n^{3/2}\tau \le
-  \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, i.e. $R_0 \ge 12n^{3/2}2^{e_{\min}}/(2u\varepsilon)$ —
+* **Extra hypotheses** (already present, in the floor/range form): $100n^{3/2}\tau \le
+  \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$, i.e. $R_0 \ge 12n^{3/2}2^{e_{\min}}/(2u\varepsilon)$ —
   $\|\mathbf{A}\|$ bounded below relative to $2^{e_{\min}}\operatorname{poly}(n)/u$ — and
   $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$. The range invariants come from: SIGN's
   normalized iterates ($\le 1.1$, intermediates $\le 4.9$); DEFLATE's $\|\mathbf{G}\|_2 \in [x,

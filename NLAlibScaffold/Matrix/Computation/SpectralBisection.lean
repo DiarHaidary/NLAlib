@@ -50,7 +50,7 @@ namespace NLAlib
 least $w$ from every eigenvalue (Event I), the node's step splits exactly when $0 < i_+(\mathbf{A}
 - c'\mathbf{I}) < k$; moreover then $k_+ = i_+(\mathbf{A} - c'\mathbf{I})$. [Shah2024, proof of
 Lemma 4.1], "the estimates $k_\pm$ are the exact ranks".
-Proof: the rounded shift is within $1.1Ru$ of $\mathbf{A} - c'\mathbf{I}$
+Proof: the rounded shift is within $1.3Ru$ of $\mathbf{A} - c'\mathbf{I}$
 (`NLAlib.IsUnifSampler`, the machine-computed scale $\mathrm{fl}(R/\mathrm{fl}(\ell))$,
 `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le`), so its eigenvalues have
 modulus $\ge w/2$;
@@ -163,7 +163,12 @@ $\|\mathbf{P}_\pm - \mathbf{\Pi}_\pm\|_2 \le \beta$); the children satisfy the n
 the frames $\mathbf{V}_\pm$ and
 `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` with Event
 II gives $\|\mathbf{Q}_\pm - \mathbf{V}_\pm\mathbf{W}_\pm\|_2 \le \eta$; replace $\mathbf{V}_\pm$ by
-$\mathbf{V}_\pm\mathbf{W}_\pm$. Then the source's estimates (4.14)–(4.20): the singular
+$\mathbf{V}_\pm\mathbf{W}_\pm$. The children's window and tolerance are the machine's
+`NLAlib.eighNextParams`: $R' \le (1/2 + 2/\ell)R(1 + \delta)$ and
+$(1 - 1/\ell)\varepsilon(1 - \delta) \le \varepsilon' \le (1 - 1/\ell)\varepsilon(1 + \delta)$ with
+$\delta \le 4u + u\tau/\varepsilon$ (each `ofNat`, `div`, `add`/`sub`, `mul` one rounding,
+`IsRoundingOf`); the accounting below uses these, the slack $\varepsilon R_0/\ell$ absorbing
+$\delta$. Then the source's estimates (4.14)–(4.20): the singular
 values of $[\mathbf{W}_+\ \mathbf{W}_-]$, and the residual split into five terms, with
 $\|\mathbf{D}_\pm\|_2$ bounded from the children's residual $\varepsilon'(R' + R_0)$ (its $R_0$
 part, dropped by the source, is absorbed by the slack $\varepsilon R_0/\ell$). Split into private
@@ -198,10 +203,11 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGo
   sorry
 
 /-- **The recursion stops by depth $\ell$**: under `NLAlib.FloatMachine.IsAccurate` with
-$0 \le u$, $100\ell^2u \le 1$, $0 \le 100\tau \le \varepsilon R_0$ and
-$16(R_0 + \ell) \le \Omega$, for stored $\varepsilon$, $R_0$ with $0 < \varepsilon \le 2^{-15}$,
-$R_0 > 0$ and a depth counter $\ell \ge \lceil \log_2(1/\varepsilon) \rceil + 5$
-(`NLAlib.bisectionDepth`), the tree of `NLAlib.eighNodeAt` from the root
+$0 \le u$, $100\ell^2u \le 1$, $0 \le \tau$, $100\tau \le \varepsilon\min(R_0, 1)$ (an absolute
+floor bound: the rounded parameters $\mathrm{fl}(2/\ell)$, $\mathrm{fl}((1 - 1/\ell)\varepsilon_j)$
+have floor errors $u\tau$) and $16(R_0 + \ell) \le \Omega$, for stored $\varepsilon$, $R_0$ with $0
+< \varepsilon \le 2^{-15}$, $R_0 > 0$ and a depth counter $\ell \ge \lceil \log_2(1/\varepsilon)
+\rceil + 5$ (`NLAlib.bisectionDepth`), the tree of `NLAlib.eighNodeAt` from the root
 $(\mathbf{A}, R_0, \varepsilon, \ell)$ has no node at a path longer than $\ell$, for every
 accuracy and samples. [Shah2024, proof of Theorem 4.2], "the
 depth of the tree $d$ is no more than $\ell$".
@@ -223,7 +229,8 @@ theorem FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ}
     {R₀ β ε : F} (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hR₀ : 0 < dec R₀) {ℓ : ℕ}
     (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hu : 0 ≤ u) (hu₁ : 100 * ℓ ^ 2 * u ≤ 1) (hτ₀ : 0 ≤ τ)
-    (hτ : 100 * τ ≤ dec ε * dec R₀) (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
+    (hτ : 100 * τ ≤ dec ε * min (dec R₀) 1)
+    (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
     (A : Matrix (Fin k) (Fin k) (F × F)) (s : List Bool → EighSample ℝ ℂ N)
     {a : List Bool} (ha : ℓ < a.length) :
     eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = none := by
@@ -243,7 +250,8 @@ theorem FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ}
     {R₀ β ε : F} (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hR₀ : 0 < dec R₀) {ℓ : ℕ}
     (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hu : 0 ≤ u) (hu₁ : 100 * ℓ ^ 2 * u ≤ 1) (hτ₀ : 0 ≤ τ)
-    (hτ : 100 * τ ≤ dec ε * dec R₀) (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
+    (hτ : 100 * τ ≤ dec ε * min (dec R₀) 1)
+    (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
     (A : Matrix (Fin k) (Fin k) (F × F)) (s : List Bool → EighSample ℝ ℂ N) :
     {a : List Bool | eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none}.encard ≤
       (k + 1) * (ℓ + 1) := by
@@ -278,7 +286,7 @@ N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac{\beta}{16n}\Bigr) \,.$$
 Suppose $640\,n^{3/2}(8 + \mu_{\mathrm{MM}}(n))(N_* + 1)\cdot16n(n+1)\ell(\ell+1)\,u \le
 \theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
 \le \beta$, the sign step limit is at least $N_*$, $0 \le \tau$,
-$4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$ and
+$100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$ and
 $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$. If every internal node $y$ (size at
 least $2$, and the machine's test $R_y \le \mathrm{fl}(\varepsilon_y R_0)$ fails) of the tree of
 `NLAlib.eighNodeAt` has a good sample (`NLAlib.IsEighGoodSample` with $w_y = \theta
@@ -300,7 +308,11 @@ matrix hypotheses coming from the parent through
 2\ell$, $\varepsilon_y \ge \varepsilon/3$, $R_y \le R_0$, hence `NLAlib.bisectionSignTol` at $y$ is
 at least $\beta$, $w_y/(4R_y) \ge \theta/(16n(n+1)\ell(\ell+1))$ and $N_y \le N_*$
 (`NLAlib.newtonSchulzSteps_le_of_le_abs`, `NLAlib.newtonSchulzSteps_le_of_le`, monotone $\mu$), all
-up to the factors $(1 \pm u)^{4j}$ of the machine-computed parameters. At the root $R = R_0$ gives
+up to the factors $(1 \pm u)^{4j}$ of the machine-computed parameters: `husign` forces
+$u \le 10^{-11}\varepsilon$ and `hτ` bounds the floor absolutely, so the floor error $u\tau$ in each
+$\varepsilon_j$ is negligible; the node floor condition ($4k^{3/2}\tau \le \min(\sqrt{\rho/2},
+\varepsilon_yR_0)$) and the depth lemmas' ($100\tau \le \varepsilon\min(R_0, 1)$) follow from `hτ`
+since $\varepsilon_y \ge \varepsilon/3$. At the root $R = R_0$ gives
 residual $2\varepsilon R_0$. H, about 200 lines. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
@@ -317,7 +329,7 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoo
       u ≤ θ * dec β)
     (hudefl : (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (100 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * min (dec R₀) 1))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {s : List Bool → EighSample ℝ ℂ n}
     (hgood : ∀ (a : List Bool) (y : EighNode F),
       eighNodeAt M n signFuel R₀ β a ⟨n, A, R₀, ε, ℓ⟩ s = some y → 2 ≤ y.k →

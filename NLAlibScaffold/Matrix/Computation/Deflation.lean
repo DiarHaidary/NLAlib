@@ -79,11 +79,11 @@ $m = (\|\mathbf{S}\|_2 + \beta + 1)\|\mathbf{S}^{-1}\|_2\|\mathbf{G}\|_2
 $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u \le \beta$,
 $\tau \le \|\mathbf{S}\|_2\|\mathbf{G}\|_2$, $\sqrt n\,\tau \le \|\mathbf{G}\|_2$ (the floor of the
 normal sampler, absorbed into a factor $2$) and $2(\|\mathbf{S}\|_2 + \beta)\|\mathbf{G}\|_2 \le
-\Omega$, then there is a unitary $\mathbf{W}$ with
-$$\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6m\beta \,,$$
-$\mathsf{deflate}$ the decoded output of `NLAlib.deflate` with ideal sample $\mathbf{G}$. [Shah2024,
-Theorem 3.3], there for $\mathbf{S}$ the diagonal of singular values and with the probability
-folded in.
+\Omega$, $\|\mathbf{G}\|_2 \le \Omega$ (so the normal sampler's contract covers every entry), then
+there is a unitary $\mathbf{W}$ with $$\|\mathbf{U}\mathbf{W} -
+\mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6m\beta \,,$$ $\mathsf{deflate}$ the decoded
+output of `NLAlib.deflate` with ideal sample $\mathbf{G}$. [Shah2024, Theorem 3.3], there for
+$\mathbf{S}$ the diagonal of singular values and with the probability folded in.
 Proof: [Shah2024, proof of Theorem 3.3], (3.1) there: write $\widetilde{\mathbf{G}} =
 \mathbf{G} + \mathbf{E}_{\mathbf{G}}$ with $\|\mathbf{E}_{\mathbf{G}}\|_2 \le \sqrt n\,c_{\mathrm N}
 u\|\mathbf{G}\|_2$ (entrywise, `NLAlib.specNorm_le_frobNorm`,
@@ -113,7 +113,7 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_defla
       specNorm (Vᴴ * G.submatrix id (Fin.castLE hr))⁻¹)
     (hmβ : mval * β ≤ 1 / 5) (hu : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
     (hτ : τ ≤ specNorm S * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
-    (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) :
+    (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) (hΩG : specNorm G ≤ Ω) :
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
       specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
   sorry

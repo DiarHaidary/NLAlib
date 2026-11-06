@@ -39,7 +39,7 @@ within $\beta \le 1$ of $\mathbf{A}$, and let $\mathbf{G}$ be a standard complex
 n$ matrix. For $t \ge 0$ and $x > 0$ put
 $$\bar m = (\|\mathbf{S}\|_2 + 2)\|\mathbf{S}^{-1}\|_2\,\frac{\sqrt2\,(2\sqrt n + t)}{x} \,.$$
 If $\bar m\beta \le 1/5$,
-$(4\mu_{\mathrm{QR}}(n) + 2\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u
+$(4\mu_{\mathrm{QR}}(n) + 4\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u
 \le \beta$, $\tau \le \|\mathbf{S}\|_2 x$, $\sqrt n\,\tau \le x$ and $2(\|\mathbf{S}\|_2 +
 1)\sqrt2(2\sqrt n + t) \le \Omega$, then
 $$\mathbb{P}\bigl[\text{no unitary } \mathbf{W} \text{ has }
@@ -55,7 +55,8 @@ $\{\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) \le x\}$
 `NLAlib.hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix`,
 `NLAlib.measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix`), the matrix
 $\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ is invertible with inverse of norm below $1/x$
-(`NLAlib.singularValues_last_mul_norm_le`), $\|\mathbf{G}\|_2 \ge x$, so $m \le \bar m$ and
+(`NLAlib.singularValues_last_mul_norm_le`), $\|\mathbf{G}\|_2 \ge x$, so $m \le \bar m$,
+$\|\mathbf{G}\|_2 < \sqrt2(2\sqrt n + t) \le \Omega$ (from `hΩ`), and
 `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` applies;
 union bound (`MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_mono`). Case $r = 0$
 trivial. M, about 60 lines. -/

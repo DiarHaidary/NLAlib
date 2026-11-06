@@ -195,7 +195,7 @@ N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac{\beta}{16n}\Bigr) \,.$$
 If $640\,n^{3/2}(8 + \mu_{\mathrm{MM}}(n))(N_* + 1)\cdot16n(n+1)\ell(\ell+1)\,u \le
 \theta\beta$, $(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1)u
 \le \beta$, the sign step limit is at least $N_*$, $0 \le \tau$,
-$4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$,
+$100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$,
 $16(R_0 + n + \ell + \sqrt{\log(16n/\theta)}) \le \Omega$, and the node samples $\zeta_a$ are
 independent, each of law `NLAlib.eighSampleLaw` $n$, then
 $$\mathbb{P}\bigl[\mathsf{eigh}(\mathbf{A}, \varepsilon, \theta) \text{ is not an approximate
@@ -236,7 +236,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
       u ≤ θ * dec β)
     (hudefl : (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) * u ≤ dec β) {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (100 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * min (dec R₀) 1))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
@@ -294,7 +294,7 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
       Real.logb 2 (2 * √(n : ℝ) + √(2 * Real.log (16 * n / θ))) + 26 ≤ Real.logb 2 u⁻¹)
     {signFuel : ℕ}
     (hfuel : Nst ≤ signFuel) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (4 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * dec R₀ / 3))
+    (hτ : τ * (100 * n * √(n : ℝ)) ≤ min (√(θ / (8 * n))) (dec ε * min (dec R₀) 1))
     (hΩ : 16 * (dec R₀ + n + ℓ + √(Real.log (16 * n / θ))) ≤ Ω) {Ω' : Type*}
     {mΩ' : MeasurableSpace Ω'} {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n}
     (hind : iIndepFun ζ μ) (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
@@ -321,7 +321,7 @@ Proof: for a binary format, $e_{\min} + p - 1 = 2 - 2^{E - 1}$ and the largest f
 at least $2^{2^{E-1} - 1}$ (`Float.Model.Format.minExponent_eq`, the bias $2^{E-1} - 1$,
 `Float.Model.Format.maxFinite`); the exponent condition gives $2^{E-1} \ge \log_2 L + 2$ for the
 displayed $L$, hence floor $\le 1/L \le \varepsilon\theta/(24n^2)$, which implies the floor
-hypothesis $4n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, and range
+hypothesis $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$, and range
 $\ge 2L \ge 16(R_0 + n + \ell + \sqrt{\log(16n/\theta)})$; then apply
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`. M,
 about 70 lines. -/

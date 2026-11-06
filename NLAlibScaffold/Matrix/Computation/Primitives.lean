@@ -43,7 +43,8 @@ sampler, exact products and an exact QR factorization. No printed source.
 Proof: build the machine field by field; products decode, multiply and re-encode
 (`Complex.re`, `Complex.im`, `Complex.ext`); for QR choose the factors of
 `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal` (`Classical.choose`, so the witness is
-noncomputable, which the contract allows); every error is $0$, `Nat.floor`,
+noncomputable, which the contract allows; `le` is `decide (x ≤ y)` by classical decidability);
+every error is $0$, `Nat.floor`,
 $\lvert sv \rvert \le s$ for $v \in [-1, 1]$, `Matrix.isHermitian_mul_conjTranspose_self`. M, about
 60 lines. -/
 theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (hμM : ∀ d, 0 ≤ μM d)
@@ -64,7 +65,9 @@ printed source.
 Proof: as `NLAlib.exists_floatMachine_isAccurate`, with `NLAlib.isRoundingOf_binaryFloatRound` for
 each scalar operation (`binaryFloatRound` of $0$ and $1$ are exact:
 `NLAlib.Computation.binaryFloatRound_zero`, `NLAlib.Computation.binaryFloatRound_eq_self`); the
-clamped uniform sample is at least as close to $sv \in [-s, s]$; for the normal sampler
+clamped uniform sample is at least as close to $sv \in [-s, s]$ (for every scale, beyond the range
+too: use the unrestricted mixed bound `NLAlib.Computation.absRelErr_binaryFloatRound`, whose proof
+has no range condition, with $u|sv| + 2^{e_{\min}}/2 \le u\max(s, \tau)$); for the normal sampler
 $\max(\lvert\operatorname{Re}\rvert, \tau)^2 + \max(\lvert\operatorname{Im}\rvert, \tau)^2 \le
 2\max(\lvert z\rvert, \tau)^2$. M, about 70 lines. -/
 theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → ℤ}

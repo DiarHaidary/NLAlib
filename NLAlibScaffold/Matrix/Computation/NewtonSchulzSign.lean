@@ -62,7 +62,7 @@ theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign
 /-- **One rounded Newton–Schulz step** (Lemma 2.1): under the machine contract
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
 $\mu(n) \ge 0$, $u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and
-$\Omega \ge 8$, every stored $\mathbf{A}$ whose decoding (still written $\mathbf{A}$) is
+$\Omega \ge 9$, every stored $\mathbf{A}$ whose decoding (still written $\mathbf{A}$) is
 Hermitian with $\|\mathbf{A}\|_2 \le 11/10$ satisfies
 $$\Bigl\|\tfrac12\mathbf{A}(3\mathbf{I} - \mathbf{A}^2) - \tilde g(\mathbf{A})\Bigr\|_2 \le
 4\sqrt n\,(8 + \mu(n))\,u \,,$$
@@ -84,11 +84,12 @@ $2g(\mathbf{A})$, `NLAlib.specNorm_conjTranspose`), the stored $4$ costs a relat
 stored average errs by at most $3u(1.34\sqrt n + 1)$
 (`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le`, $\lvert g \rvert \le 1$ on
 $[-1.1, 1.1]$). Sum: $\le \sqrt n\,u(3.1\mu + 13)$, within $4\sqrt n(8 + \mu)u$. Check each
-$\Omega$ and $\tau$ side condition (all magnitudes are at most $4.9$). Split into private lemmas
-per step. M, about 80 lines. -/
+$\Omega$ and $\tau$ side condition (all magnitudes are at most $4.9$, except the input of the
+stored average: $3\|\mathbf{Y}\|_2 + \tau \le 8.35$, whence $\Omega \ge 9$). Split into private
+lemmas per step. M, about 80 lines. -/
 theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
-    (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 8 ≤ Ω)
+    (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 ≤ Ω)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
     specNorm ((2⁻¹ : ℝ) • (decodeMatrix dec A * ((3 : ℝ) • (1 : Matrix (Fin n) (Fin n) ℂ) -
@@ -98,7 +99,7 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
 
 /-- **Accuracy of the Newton–Schulz sign algorithm** (Theorem 2.6): under the machine contract
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
-$\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $8(n + 1) \le \Omega$, let the
+$\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $9(n + 1) \le \Omega$, let the
 stored $\mathbf{A}$ have Hermitian decoding (written $\mathbf{A}$) with
 $\|\mathbf{A}\|_2 \le b$ and every eigenvalue of modulus at least $a > 0$, for stored $b$ and
 $\varepsilon$ with $0 < \varepsilon \le 1/2$ (decoded values). With $N_0 = N(a/(2b),
@@ -140,7 +141,7 @@ $4b\nu u/a$, and the start by $4\sqrt n\,b u/a$; the total is $\le 8(N_0 + 1)\nu
 `NLAlib.newtonSchulzLoop`. L, about 200 lines. -/
 theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
-    (hτ : τ * (2 * n) ≤ 1) (hΩ : 8 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
     (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b ε : F} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)
     (hb : specNorm (decodeMatrix dec A) ≤ dec b) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 1 / 2)

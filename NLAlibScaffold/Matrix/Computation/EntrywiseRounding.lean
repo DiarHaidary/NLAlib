@@ -63,7 +63,8 @@ Proof: if $\lvert a\rvert \ge \tau$, `NLAlib.Computation.relErr_binaryFloatRound
 (the normal condition is $e_{\min} \le \lfloor\log_2\lvert a\rvert\rfloor + 1 - p$, from
 `Int.zpow_le_iff_le_log`-type bounds); otherwise
 `NLAlib.Computation.absRelErr_binaryFloatRound` gives $u\lvert a\rvert + 2^{e_{\min}}/2$, and the
-proof of that lemma (subnormal branch) gives $2^{e_{\min}}/2 \le u\tau$ alone. M, about 35
+subnormal branch needs only half the subnormal spacing, $2^{e_{\min}}/2 = u\tau$ (main's
+private lemma local_error; re-derive, about 10 lines). M, about 35
 lines. -/
 theorem isRoundingOf_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → ℤ}
     (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (a : ℝ) :
