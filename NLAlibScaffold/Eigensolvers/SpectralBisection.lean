@@ -167,6 +167,88 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
         eighSampleLaw N {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
   sorry
 
+/-- Deflation sees the sampled block only through its normal image. -/
+private lemma deflate_eq_of_map_normal_eq {F Su Sg : Type*} (M : FloatMachine F Su Sg)
+    (r : ℕ) {n : ℕ} (P : Matrix (Fin n) (Fin n) (F × F)) {G G' : Matrix (Fin n) (Fin n) Sg}
+    (h : G.map M.normal = G'.map M.normal) : deflate M r P G = deflate M r P G' := by
+  unfold deflate
+  rw [h]
+
+/-- The child of a node has countably many values as the ideal sample varies. -/
+private lemma countable_range_eighChild {F : Type*} {M : FloatMachine F ℝ ℂ}
+    (hunif : ∀ c, (Set.range (M.unif c)).Countable) (hnormal : (Set.range M.normal).Countable)
+    (N signFuel : ℕ) (R₀ β : F) (x : EighNode F) (b : Bool) :
+    (Set.range fun s : EighSample ℝ ℂ N => eighChild M N signFuel R₀ β x s b).Countable := by
+  classical
+  have := hnormal.to_subtype
+  have := (hunif (M.div x.R (M.ofNat x.ℓ))).to_subtype
+  let key : EighSample ℝ ℂ N → Set.range (M.unif (M.div x.R (M.ofNat x.ℓ))) ×
+      (Fin x.k × Fin x.k → Set.range M.normal) × (Fin x.k × Fin x.k → Set.range M.normal) :=
+    fun s => (⟨M.unif (M.div x.R (M.ofNat x.ℓ)) s.1, Set.mem_range_self _⟩,
+      fun p => ⟨M.normal (leadingBlock x.k (s.2 true) p.1 p.2), Set.mem_range_self _⟩,
+      fun p => ⟨M.normal (leadingBlock x.k (s.2 false) p.1 p.2), Set.mem_range_self _⟩)
+  -- the step, written with the computed shift `a` and the normal-mapped blocks as parameters
+  let body : F → (Bool → Matrix (Fin N) (Fin N) ℂ) → EighStep F x.k := fun a G =>
+    if x.k ≤ 1 then .leaf (M.identityMat x.k) fun i => (x.A i i).1
+    else if M.le x.R (M.mul x.ε R₀) then .leaf (M.identityMat x.k) fun _ => M.zero
+    else
+      let two := M.ofNat 2
+      let half := M.div x.R two
+      let B := newtonSchulzSign M β (M.mul two x.R) signFuel (M.hermShift x.A a)
+      let Pp := M.hermScale (M.hermShift B (M.neg M.one)) two
+      let Pm := M.hermScale (M.negMat (M.hermShift B M.one)) two
+      let kp := min x.k (M.toNat (M.add (M.traceRe Pp) (M.div M.one two)))
+      if kp = x.k then .shift true (M.hermShift x.A half) half
+      else if kp = 0 then .shift false (M.hermShift x.A (M.neg half)) (M.neg half)
+      else
+        let Qp := deflate M kp Pp (leadingBlock x.k (G true))
+        let Qm := deflate M (x.k - kp) Pm (leadingBlock x.k (G false))
+        .split kp (min_le_left _ _) Qp Qm
+          (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) x.A) Qp) two) half)
+          (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) x.A) Qm) two) (M.neg half))
+          half
+  have hbody : ∀ (a : F) (G G' : Bool → Matrix (Fin N) (Fin N) ℂ),
+      (leadingBlock x.k (G true)).map M.normal = (leadingBlock x.k (G' true)).map M.normal →
+      (leadingBlock x.k (G false)).map M.normal = (leadingBlock x.k (G' false)).map M.normal →
+      body a G = body a G' := by
+    intro a G G' hT hF
+    have dT : ∀ (r : ℕ) (P : Matrix (Fin x.k) (Fin x.k) (F × F)),
+        deflate M r P (leadingBlock x.k (G true)) =
+          deflate M r P (leadingBlock x.k (G' true)) :=
+      fun r P => deflate_eq_of_map_normal_eq M r P hT
+    have dF : ∀ (r : ℕ) (P : Matrix (Fin x.k) (Fin x.k) (F × F)),
+        deflate M r P (leadingBlock x.k (G false)) =
+          deflate M r P (leadingBlock x.k (G' false)) :=
+      fun r P => deflate_eq_of_map_normal_eq M r P hF
+    simp only [body, dT, dF]
+  have hfac : ∀ s s', key s = key s' →
+      eighChild M N signFuel R₀ β x s b = eighChild M N signFuel R₀ β x s' b := by
+    intro s s' h
+    have h1 : M.unif (M.div x.R (M.ofNat x.ℓ)) s.1 = M.unif (M.div x.R (M.ofNat x.ℓ)) s'.1 :=
+      congrArg Subtype.val (congrArg Prod.fst h)
+    have hT : (leadingBlock x.k (s.2 true)).map M.normal =
+        (leadingBlock x.k (s'.2 true)).map M.normal :=
+      Matrix.ext fun i j => congrArg Subtype.val (congrFun (congrArg (fun t => t.2.1) h) (i, j))
+    have hF : (leadingBlock x.k (s.2 false)).map M.normal =
+        (leadingBlock x.k (s'.2 false)).map M.normal :=
+      Matrix.ext fun i j => congrArg Subtype.val (congrFun (congrArg (fun t => t.2.2) h) (i, j))
+    have hstep : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s =
+        eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s' := by
+      change body _ s.2 = body _ s'.2
+      rw [h1]
+      exact hbody _ _ _ hT hF
+    unfold eighChild
+    rw [hstep]
+  have hrange : Set.range (fun s : EighSample ℝ ℂ N => eighChild M N signFuel R₀ β x s b) ⊆
+      (fun t => if hs : ∃ s', key s' = t then eighChild M N signFuel R₀ β x hs.choose b
+        else none) '' Set.range key := by
+    rintro _ ⟨s, rfl⟩
+    refine ⟨key s, ⟨s, rfl⟩, ?_⟩
+    dsimp only
+    rw [dif_pos (⟨s, rfl⟩ : ∃ s', key s' = key s)]
+    exact hfac _ _ (Classical.choose_spec (⟨s, rfl⟩ : ∃ s', key s' = key s))
+  exact (((Set.countable_univ).mono (Set.subset_univ _)).image _).mono hrange
+
 /-- **The nodes take countably many values**: if the computed samples have countably many values
 (the uniform sampler at every scale and the normal sampler have countable ranges, as the
 floating-point numbers do), then for every root and path the node `NLAlib.eighNodeAt` ranges over
@@ -186,7 +268,32 @@ theorem countable_range_eighNodeAt {F : Type*} {M : FloatMachine F ℝ ℂ}
     (N signFuel : ℕ) (R₀ β : F) (a : List Bool) (x : EighNode F) :
     (Set.range fun s : List Bool → EighSample ℝ ℂ N =>
       eighNodeAt M N signFuel R₀ β a x s).Countable := by
-  sorry
+  induction a generalizing x with
+  | nil =>
+    refine (Set.countable_singleton (some x)).mono ?_
+    rintro _ ⟨s, rfl⟩
+    exact Set.mem_singleton _
+  | cons b a ih =>
+    let S : Option (EighNode F) → Set (Option (EighNode F)) := fun y => match y with
+      | none => {none}
+      | some y' => Set.range fun s => eighNodeAt M N signFuel R₀ β a y' s
+    have hS : ∀ y, (S y).Countable := by
+      intro y
+      cases y with
+      | none => exact Set.countable_singleton _
+      | some y' => exact ih y'
+    have hY : (Set.range fun s : List Bool → EighSample ℝ ℂ N =>
+        eighChild M N signFuel R₀ β x (s []) b).Countable :=
+      (countable_range_eighChild hunif hnormal N signFuel R₀ β x b).mono (by
+        rintro _ ⟨s, rfl⟩
+        exact ⟨s [], rfl⟩)
+    refine (hY.biUnion fun y _ => hS y).mono ?_
+    rintro _ ⟨s, rfl⟩
+    simp only [Set.mem_iUnion]
+    refine ⟨eighChild M N signFuel R₀ β x (s []) b, ⟨s, rfl⟩, ?_⟩
+    rcases hy : eighChild M N signFuel R₀ β x (s []) b with _ | y'
+    · simp [S, eighNodeAt, hy]
+    · exact ⟨fun a' => s (b :: a'), by simp [eighNodeAt, hy]⟩
 
 /-- **The node at a path is an event of the earlier samples**: if the samplers have measurable
 fibres and countable ranges and each sample $\zeta_b$ is measurable, then for every root $x$, path
