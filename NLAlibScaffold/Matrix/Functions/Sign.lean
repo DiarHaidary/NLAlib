@@ -143,6 +143,36 @@ theorem _root_.Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign {A : Matrix n n
     (hA : A.IsHermitian) {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) :
     RCLike.re ((2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix n n 𝕜)))).trace =
       inertiaPos (A - c • (1 : Matrix n n 𝕜)) := by
-  sorry
+  have hB : (A - c • (1 : Matrix n n 𝕜)).IsHermitian := by
+    refine hA.sub ?_
+    unfold Matrix.IsHermitian
+    simp only [Matrix.conjTranspose_smul, Matrix.conjTranspose_one, star_trivial]
+  have hsp : ∀ x ∈ spectrum ℝ (A - c • (1 : Matrix n n 𝕜)), x ≠ 0 := by
+    intro x hx hx0
+    rw [← Algebra.algebraMap_eq_smul_one, ← spectrum.sub_singleton_eq] at hx
+    obtain ⟨y, hy, z, hz, rfl⟩ := Set.mem_sub.mp hx
+    rw [Set.mem_singleton_iff] at hz
+    subst hz
+    exact hc y hy (sub_eq_zero.mp hx0)
+  have hcont : ∀ y : ℝ, y ≠ 0 → ContinuousAt Real.sign y := fun y hy => by
+    rcases hy.lt_or_gt with hneg | hpos
+    · exact (continuousAt_const : ContinuousAt (fun _ : ℝ => (-1 : ℝ)) y).congr
+        (Filter.eventually_of_mem (Iio_mem_nhds hneg) fun z hz => (Real.sign_of_neg hz).symm)
+    · exact (continuousAt_const : ContinuousAt (fun _ : ℝ => (1 : ℝ)) y).congr
+        (Filter.eventually_of_mem (Ioi_mem_nhds hpos) fun z hz => (Real.sign_of_pos hz).symm)
+  have hsign : ContinuousOn Real.sign (spectrum ℝ (A - c • (1 : Matrix n n 𝕜))) :=
+    fun x hx => (hcont x (hsp x hx)).continuousWithinAt
+  have hcg : cfc (fun y : ℝ => (2⁻¹ : ℝ) * (1 + Real.sign y)) (A - c • (1 : Matrix n n 𝕜)) =
+      (2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix n n 𝕜))) := by
+    rw [cfc_const_mul (2⁻¹ : ℝ) (fun y : ℝ => 1 + Real.sign y) (A - c • (1 : Matrix n n 𝕜)),
+      cfc_add (A - c • (1 : Matrix n n 𝕜)) (fun _ : ℝ => (1 : ℝ)) Real.sign
+        continuousOn_const hsign,
+      cfc_const (1 : ℝ) (A - c • (1 : Matrix n n 𝕜)), map_one]
+  rw [← hcg, hB.re_trace_cfc, inertiaPos, Finset.natCast_card_filter]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have he := hsp _ (hB.eigenvalue_mem_spectrum (Finset.mem_range.mp hi))
+  rcases he.lt_or_gt with hneg | hpos
+  · rw [Real.sign_of_neg hneg, if_neg (not_lt.mpr hneg.le)]; norm_num
+  · rw [Real.sign_of_pos hpos, if_pos hpos]; norm_num
 
 end NLAlib
