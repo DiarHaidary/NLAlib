@@ -3433,7 +3433,230 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGo
       (decodeMatrix dec (eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).1)
       (fun i => dec ((eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).2 i))
       (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
-  sorry
+  have hR0 : 0 ≤ dec y.R := (specNorm_nonneg _).trans hR
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
+  obtain ⟨hux, hvx, hτ4, hτR⟩ := node_small_eb1 (k := y.k) (R₀ := dec R₀) (by
+    rcases Nat.eq_zero_or_pos y.k with h | h
+    · exfalso
+      have := hβtol
+      rw [h] at this
+      simp [bisectionSignTol] at this
+      linarith
+    · exact h) hℓ hε hρ₁ hw hwR hβ hβtol
+    hμM hu husign hτ₀ hτ hε₁
+  have hlu : 20 * u ≤ y.ℓ * u := mul_le_mul_of_nonneg_right hℓ' hu
+  have hΩ' : 16 * (dec R₀ + dec y.R + y.k + y.ℓ) ≤ Ω := by
+    have := Real.sqrt_nonneg (Real.log (4 / ρ)); linarith
+  have hk0 : (0 : ℝ) ≤ y.k := Nat.cast_nonneg _
+  obtain ⟨hp1, hp2, hp3⟩ := dec_eighNextParams_le_eb1 hM (R := y.R) (ε := y.ε) (m := y.ℓ) hu
+    (by linarith) hτ₀ (by linarith) hℓ (by linarith) hR0 (by linarith) hε.le (by linarith)
+  have hhalf := abs_dec_half_le_eb1 hM (R := y.R) hu (by linarith) hτ₀ hτ4 hR0 (by linarith)
+    (by linarith)
+  have budget := fun hr'₀ => node_budget_eb1 (x := (y.ℓ : ℝ)) (R := dec y.R) (R₀ := dec R₀)
+    (v := μM y.k * u) (e' := dec (eighNextParams M y.R y.ε y.ℓ).2)
+    (r' := dec (eighNextParams M y.R y.ε y.ℓ).1) hε hε₁ hℓ' hR0 hR₀.le hu hux
+    (mul_nonneg hμM hu) hvx hτ₀ hτ4 hτR hp2 hp3 hr'₀ hp1 rfl rfl rfl rfl rfl rfl rfl rfl rfl
+  have hεR : 0 ≤ dec y.ε * (dec y.R + dec R₀) := by positivity
+  by_cases hk : y.k ≤ 1
+  · exact isApproxDiagonalization_eighAux_succ_of_leaf_eb1 hM hA (by positivity) (by linarith)
+      (Or.inl ⟨hk, hεR⟩)
+  by_cases ht : M.le y.R (M.mul y.ε R₀) = true
+  · refine isApproxDiagonalization_eighAux_succ_of_leaf_eb1 hM hA (by positivity) (by linarith)
+      (Or.inr ⟨ht, hR.trans ?_⟩)
+    have hle := (hM.le_iff _ _).mp ht
+    have hεR₀ : dec y.ε * dec R₀ ≤ dec R₀ / 8 := by
+      have := mul_le_mul_of_nonneg_right hε₁ hR₀.le; linarith
+    have hm := abs_sub_le_of_isRoundingOf_le_eb1 (hM.mul y.ε R₀) (c := dec y.ε * dec R₀)
+      (by rw [abs_of_nonneg (by positivity)]) (by linarith) hu hτ₀
+    rw [abs_le] at hm
+    have h1 : u * (dec y.ε * dec R₀ + τ) ≤ dec y.ε * dec y.ε * dec R₀ := by
+      have h3 : u ≤ dec y.ε / 1000 := by linarith
+      have h4 := mul_le_mul_of_nonneg_right h3 (by positivity : 0 ≤ dec y.ε * dec R₀ + τ)
+      have h5 := mul_le_mul_of_nonneg_left (by linarith : dec y.ε * dec R₀ + τ ≤
+        5 / 4 * (dec y.ε * dec R₀)) (by positivity : 0 ≤ dec y.ε / 1000)
+      have h6 : 0 ≤ dec y.ε * dec y.ε * dec R₀ := by positivity
+      linarith
+    have hεR0 := mul_nonneg hε.le hR0
+    rcases le_or_gt (dec y.R) (dec y.ε * dec R₀) with h | h
+    · linarith
+    · have := mul_le_mul_of_nonneg_left h.le hε.le
+      linarith
+  have hint : M.le y.R (M.mul y.ε R₀) = false := by simpa using ht
+  rcases hst : eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s []) with
+    ⟨U, d⟩ | ⟨b, A', σ⟩ | ⟨kp, hkp, Qp, Qm, Ap, Am, σ⟩
+  · exact absurd hst (eighStep_ne_leaf_eb1 hk hint U d)
+  · obtain ⟨hA'eq, hσ⟩ := eighStep_eq_shift_eb1 hst
+    have hy' : eighChild M N signFuel R₀ β y (s []) b = some ⟨y.k, A',
+        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+      simp [eighChild, hst]
+    have hc := hchild b _ hy'
+    obtain ⟨-, hA'R⟩ := hM.isHermitian_and_specNorm_le_of_eighChild_eq_some hμM hμQ hcN hu hA
+      hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hy'
+    dsimp only at hc hA'R
+    simp only [eighAux, hst]
+    obtain ⟨he'0, hκ0, hκ1, hξ0, hθ0, hρ0, hη0, hDn0, hs0, hDs, hsing, -, hshift⟩ :=
+      budget ((specNorm_nonneg _).trans hA'R)
+    have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
+      rcases hσ with rfl | rfl
+      · exact hhalf
+      · rw [hM.dec_neg, abs_neg]; exact hhalf
+    have hn : specNorm (decodeMatrix dec y.A - dec σ • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ≤
+        dec y.R + (dec y.R / 2 + 2 * u * dec y.R + u * τ) := by
+      refine (specNorm_sub_le _ _).trans (add_le_add hR ?_)
+      rw [specNorm_real_smul]
+      exact (mul_le_mul_of_nonneg_left specNorm_one_le (abs_nonneg _)).trans (by linarith)
+    have hA'err := hM.specNorm_sub_decodeMatrix_hermShift_le hu hA σ (hn.trans (by linarith))
+    rw [← hA'eq] at hA'err
+    have hA'err' := hA'err.trans (mul_le_mul_of_nonneg_left (max_le
+      (c := dec y.R + (dec y.R / 2 + 2 * u * dec y.R + u * τ) + τ) (hn.trans (by linarith))
+      (by linarith)) hu)
+    have hd := abs_le_of_isApproxDiagonalization_eb1 hc hA'R hκ0 hκ1
+    have he : ∀ i, |dec (M.add ((eighAux M N signFuel R₀ β f A' (eighNextParams M y.R y.ε y.ℓ).1
+        (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (b :: a)).2 i) σ) -
+        (dec ((eighAux M N signFuel R₀ β f A' (eighNextParams M y.R y.ε y.ℓ).1
+        (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (b :: a)).2 i) + dec σ)| ≤
+        u * ((dec (eighNextParams M y.R y.ε y.ℓ).1 +
+          dec (eighNextParams M y.R y.ε y.ℓ).2 * (dec (eighNextParams M y.R y.ε y.ℓ).1 +
+            dec R₀)) / (1 - dec (eighNextParams M y.R y.ε y.ℓ).2 / 3) ^ 2 +
+          (dec y.R / 2 + 2 * u * dec y.R + u * τ) + τ) := fun i =>
+      abs_sub_le_of_isRoundingOf_le_eb1 (hM.add _ _)
+        ((abs_add_le _ _).trans (add_le_add (hd i) hσabs)) (by linarith) hu hτ₀
+    have hκε : dec (eighNextParams M y.R y.ε y.ℓ).2 / 3 ≤ dec y.ε / 3 := by
+      have := mul_nonneg (Real.sqrt_nonneg 2) hξ0; linarith
+    obtain ⟨hlo, hhi⟩ := loewner_mono_eb1 hc.smul_one_le hc.le_smul_one hκ0 hκε (by linarith)
+    exact ⟨(specNorm_sub_mul_diagonal_shift_le_eb1 hσabs hκ0 hθ0 hc.smul_one_le hc.le_smul_one
+      hA'err' hc.specNorm_sub_le he).trans hshift, hlo, hhi⟩
+  · obtain ⟨hσR, ⟨Vp, hVp, hVpP, -, Wp, hWp, hQp, hAp⟩, ⟨Vm, hVm, hVmP, -, Wm, hWm, hQm, hAm⟩⟩ :=
+      hM.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split hμM hμQ hcN hu hA hR hℓ
+        hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hst
+    have hyp : eighChild M N signFuel R₀ β y (s []) true = some ⟨kp, Ap,
+        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+      simp [eighChild, hst]
+    have hym : eighChild M N signFuel R₀ β y (s []) false = some ⟨y.k - kp, Am,
+        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+      simp [eighChild, hst]
+    have hcp := hchild true _ hyp
+    have hcm := hchild false _ hym
+    obtain ⟨-, hApR⟩ := hM.isHermitian_and_specNorm_le_of_eighChild_eq_some hμM hμQ hcN hu hA
+      hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hyp
+    obtain ⟨-, hAmR⟩ := hM.isHermitian_and_specNorm_le_of_eighChild_eq_some hμM hμQ hcN hu hA
+      hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hym
+    dsimp only at hcp hcm hApR hAmR
+    simp only [eighAux, hst]
+    obtain ⟨he'0, hκ0, hκ1, hξ0, hθ0, hρ0, hη0, hDn0, hs0, hDs, hsing, hsplit, -⟩ :=
+      budget ((specNorm_nonneg _).trans hApR)
+    have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
+      rw [abs_le] at hσR ⊢
+      have := mul_nonneg hu hR0
+      have := mul_nonneg hu hτ₀
+      constructor <;> linarith
+    -- the rotated frames
+    set Ā := decodeMatrix dec y.A with hĀ
+    set Zp := Vp * Wp with hZpdef
+    set Zm := Vm * Wm with hZmdef
+    have hZp : HasOrthonormalCols Zp := hVp.mul hWp
+    have hZm : HasOrthonormalCols Zm := hVm.mul hWm
+    have hWWp : Wp * Wpᴴ = 1 := mul_eq_one_comm.mp hWp
+    have hWWm : Wm * Wmᴴ = 1 := mul_eq_one_comm.mp hWm
+    have hPp : Zp * Zpᴴ = Vp * Vpᴴ := by
+      rw [hZpdef, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Wp, hWWp,
+        Matrix.one_mul]
+    have hPm : Zm * Zmᴴ = Vm * Vmᴴ := by
+      rw [hZmdef, Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc Wm, hWWm,
+        Matrix.one_mul]
+    set S := cfc Real.sign (Ā - (dec y.R / y.ℓ * (s []).1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+      with hS
+    have hPQ : Zp * Zpᴴ + Zm * Zmᴴ = 1 := by
+      rw [hPp, hPm, hVpP, hVmP, ← smul_add, add_add_sub_cancel, ← two_smul ℝ, smul_smul]
+      norm_num
+    have hZpm : Zpᴴ * Zm = 0 := by
+      have h : Zpᴴ * Zm = Zpᴴ * Zm + Zpᴴ * Zm := by
+        calc Zpᴴ * Zm = Zpᴴ * (Zp * Zpᴴ + Zm * Zmᴴ) * Zm := by rw [hPQ, Matrix.mul_one]
+          _ = (Zpᴴ * Zp) * (Zpᴴ * Zm) + (Zpᴴ * Zm) * (Zmᴴ * Zm) := by
+            simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_assoc]
+          _ = _ := by rw [hZp, hZm, Matrix.one_mul, Matrix.mul_one]
+      simpa using h
+    have hZmp : Zmᴴ * Zp = 0 := by
+      rw [← Matrix.conjTranspose_conjTranspose Zp, ← Matrix.conjTranspose_mul, hZpm,
+        Matrix.conjTranspose_zero]
+    have hcomm : Commute S Ā := Commute.cfc_real
+      ((Commute.refl Ā).sub_left ((Commute.one_left Ā).smul_left _)) Real.sign
+    have hPc : Commute (Zp * Zpᴴ) Ā := by
+      rw [hPp, hVpP]; exact ((Commute.one_left Ā).add_left hcomm).smul_left _
+    have hQc : Commute (Zm * Zmᴴ) Ā := by
+      rw [show Zm * Zmᴴ = 1 - Zp * Zpᴴ by rw [← hPQ]; abel]
+      exact (Commute.one_left Ā).sub_left hPc
+    have hAdec : Ā = Zp * (Zpᴴ * Ā * Zp) * Zpᴴ + Zm * (Zmᴴ * Ā * Zm) * Zmᴴ := by
+      have h1 : Zp * Zpᴴ * Ā * (Zm * Zmᴴ) = 0 := by
+        rw [hPc.eq, Matrix.mul_assoc, Matrix.mul_assoc Zp, ← Matrix.mul_assoc Zpᴴ, hZpm,
+          Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_zero]
+      have h2 : Zm * Zmᴴ * Ā * (Zp * Zpᴴ) = 0 := by
+        rw [hQc.eq, Matrix.mul_assoc, Matrix.mul_assoc Zm, ← Matrix.mul_assoc Zmᴴ, hZmp,
+          Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_zero]
+      calc Ā = (Zp * Zpᴴ + Zm * Zmᴴ) * Ā * (Zp * Zpᴴ + Zm * Zmᴴ) := by
+            rw [hPQ, Matrix.one_mul, Matrix.mul_one]
+        _ = Zp * Zpᴴ * Ā * (Zp * Zpᴴ) + Zm * Zmᴴ * Ā * (Zm * Zmᴴ) +
+            (Zp * Zpᴴ * Ā * (Zm * Zmᴴ) + Zm * Zmᴴ * Ā * (Zp * Zpᴴ)) := by
+          simp only [Matrix.mul_add, Matrix.add_mul]; abel
+        _ = _ := by rw [h1, h2, add_zero, add_zero]; simp only [Matrix.mul_assoc]
+    have hCp : specNorm (decodeMatrix dec Ap - (Zpᴴ * Ā * Zp -
+        dec σ • (1 : Matrix (Fin kp) (Fin kp) ℂ))) ≤
+          (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
+            ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) := by
+      convert hAp using 4; rw [hZpdef]; simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
+    have hCm : specNorm (decodeMatrix dec Am - (Zmᴴ * Ā * Zm -
+        (-dec σ) • (1 : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) ℂ))) ≤
+          (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
+            ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) := by
+      rw [neg_smul, sub_neg_eq_add]
+      convert hAm using 4; rw [hZmdef]; simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
+    -- the computed bases
+    have hΩq : (1 + (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) *
+        (1 + dec (eighNextParams M y.R y.ε y.ℓ).2 / 3) ≤ Ω := by
+      have h1 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ 1 := by
+        rw [div_le_one (by positivity)]
+        have := mul_nonneg (by positivity : (0 : ℝ) ≤ 1 / (y.ℓ : ℝ)) hε.le
+        linarith
+      have h2 : (1 + (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) *
+          (1 + dec (eighNextParams M y.R y.ε y.ℓ).2 / 3) ≤ 2 * 2 :=
+        mul_le_mul (by linarith) (by linarith) (by linarith) (by norm_num)
+      linarith
+    have hVoutp := specNorm_mm_sub_le_eb1 hM hkp hZp (by rw [hZpdef]; exact hQp)
+      (specNorm_le_of_conjTranspose_mul_self_le_eb1 hκ0 hcp.le_smul_one) hκ0 hΩq hμM hu hτ₀
+      (X := (eighAux M N signFuel R₀ β f Ap (eighNextParams M y.R y.ε y.ℓ).1
+        (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (true :: a)).1)
+    have hVoutm := specNorm_mm_sub_le_eb1 hM (Nat.sub_le _ _) hZm (by rw [hZmdef]; exact hQm)
+      (specNorm_le_of_conjTranspose_mul_self_le_eb1 hκ0 hcm.le_smul_one) hκ0 hΩq hμM hu hτ₀
+      (X := (eighAux M N signFuel R₀ β f Am (eighNextParams M y.R y.ε y.ℓ).1
+        (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (false :: a)).1)
+    -- the eigenvalues
+    have hdp := abs_le_of_isApproxDiagonalization_eb1 hcp hApR hκ0 hκ1
+    have hdm := abs_le_of_isApproxDiagonalization_eb1 hcm hAmR hκ0 hκ1
+    have hep := fun i => abs_sub_le_of_isRoundingOf_le_eb1 (hM.add
+        ((eighAux M N signFuel R₀ β f Ap (eighNextParams M y.R y.ε y.ℓ).1
+          (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (true :: a)).2 i) σ)
+        ((abs_add_le _ _).trans (add_le_add (hdp i) hσabs)) (by linarith) hu hτ₀
+    have hem := fun i => abs_sub_le_of_isRoundingOf_le_eb1 (hM.sub
+        ((eighAux M N signFuel R₀ β f Am (eighNextParams M y.R y.ε y.ℓ).1
+          (eighNextParams M y.R y.ε y.ℓ).2 (y.ℓ + 1) fun a => s (false :: a)).2 i) σ)
+        ((abs_sub _ _).trans (add_le_add (hdm i) hσabs)) (by linarith) hu hτ₀
+    have hres := specNorm_sub_fromCols_mul_diagonal_le_aux_eb1c hZp hZm hZpm hAdec hκ0 hξ0 hθ0
+      hσabs (by rwa [abs_neg]) hDn0 hCp hCm hcp.specNorm_sub_le hcm.specNorm_sub_le
+      hcp.smul_one_le hcp.le_smul_one hcm.smul_one_le hcm.le_smul_one hVoutp hVoutm hdp hdm
+      hep (fun i => by rw [← sub_eq_add_neg]; exact hem i)
+    have hsq := mul_nonneg (Real.sqrt_nonneg 2) hξ0
+    obtain ⟨hlo, hhi⟩ := loewner_fromCols_eb1 hZp hZm hZpm hκ0 hξ0 (by linarith)
+      hcp.smul_one_le hcp.le_smul_one hcm.smul_one_le hcm.le_smul_one hVoutp hVoutm
+    obtain ⟨hlo', hhi'⟩ := loewner_mono_eb1 hlo hhi (by linarith) hsing (by linarith)
+    have key := isApproxDiagonalization_submatrix_eb1
+      ((finCongr (Nat.add_sub_of_le hkp).symm).trans finSumFinEquiv.symm)
+      (hres.trans hsplit) hlo' hhi'
+    convert key using 2
+    · simp only [decodeMatrix, ← Matrix.submatrix_map, Matrix.fromCols_map]
+    · rename_i i
+      generalize ((finCongr (Nat.add_sub_of_le hkp).symm).trans finSumFinEquiv.symm) i = j
+      cases j <;> rfl
+
 /-- A rounding of a nonnegative number in range, with the floor as an absolute term. -/
 private lemma le_and_le_of_isRoundingOf {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z)
     (ha0 : 0 ≤ a) (ha : a ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) :
