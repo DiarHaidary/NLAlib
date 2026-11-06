@@ -2,6 +2,7 @@ module  -- shake: keep-all --deprecated_module: ignore
 
 public import NLAlibScaffold.Eigensolvers.RandomizedDeflation
 public import NLAlibScaffold.Eigensolvers.SpectralBisection
+public import NLAlibScaffold.Eigensolvers.SpectralBisection.Global
 public import NLAlibScaffold.LowerBounds.Eigensolvers.Precision
 public import NLAlibScaffold.Matrix.Computation.Deflation
 public import NLAlibScaffold.Matrix.Computation.EntrywiseRounding
