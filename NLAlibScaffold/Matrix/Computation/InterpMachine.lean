@@ -346,6 +346,7 @@ theorem decodeMatrix_mulParts_toFloatMachine_exactSem (p : P) {m n : ℕ} (a : �
     let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
     decodeMatrix id (Matrix.of fun i j => (M.mul a (A i j).1, M.mul a (A i j).2)) =
       a • decodeMatrix id A := by
-  sorry
+  ext i j
+  apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]
 
 end NLAlib.Computation
