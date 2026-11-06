@@ -41,7 +41,28 @@ theorem Store.read_of_writeBlocks_eq_some_of_forall {p : P} {s s' : Store P K}
     {bs : List (ℕ × ℕ × ℕ)} {ys : List (Array K)} (h : s.writeBlocks p bs ys = some s')
     {q : P} {b i : ℕ} (hb : ∀ x ∈ bs, b ≠ x.1 ∨ i < x.2.1 ∨ x.2.1 + x.2.2 ≤ i) :
     s'.read q b i = s.read q b i := by
-  sorry
+  induction bs generalizing s ys with
+  | nil =>
+    cases ys with
+    | nil =>
+      simp only [Store.writeBlocks, Option.some.injEq] at h
+      rw [h]
+    | cons y ys => cases h
+  | cons x bs ih =>
+    cases ys with
+    | nil => cases h
+    | cons y ys =>
+      rw [Store.writeBlocks] at h
+      split_ifs at h with hy
+      obtain ⟨s₁, h₁, h₂⟩ := Option.bind_eq_some_iff.mp h
+      have hx := hb x List.mem_cons_self
+      have hrest := ih h₂ (fun z hz => hb z (List.mem_cons_of_mem _ hz))
+      rw [hrest]
+      refine Store.read_of_writeBlock_eq_some_of_ne h₁ ?_
+      rcases hx with h0 | h0 | h0
+      · exact Or.inl h0
+      · exact Or.inr (by omega)
+      · exact Or.inr (by omega)
 
 /-- **Reading back several block writes**: if `s.writeBlocks p bs ys = some s'` and the blocks
 `bs` are pairwise disjoint (`NLAlib.Computation.blockDisjoint`), then for every position $k$ with
