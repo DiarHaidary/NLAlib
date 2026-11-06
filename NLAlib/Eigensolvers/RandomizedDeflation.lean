@@ -18,7 +18,7 @@ holds with $m$ replaced by its high-probability bound ([Shah2024, Theorem 3.3]).
 
 ## Main results
 
-* `NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le`.
+* [The Gaussian tail of deflation](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix).
 -/
 
 @[expose] public section
@@ -203,6 +203,8 @@ private lemma FloatMachine.IsAccurate.exists_specNorm_mul_sub_deflate_le_of_good
       hu'' (hτ.trans (mul_le_mul_of_nonneg_left hxG hσ0)) (hτN.trans hxG) hΩ' hΩG
   exact ⟨W, hW, hWb.trans (by gcongr)⟩
 
+-- The declaration name exceeds 100 characters.
+set_option linter.style.longLine false in
 /-- **Randomized deflation** (Theorem 3.3): under the machine contract
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants $\mu_{\mathrm{MM}}$,
 $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$, let $r \le n$, $\mathbf{U}, \mathbf{V} \in
@@ -221,7 +223,8 @@ $$\mathbb{P}\bigl[\text{no unitary } \mathbf{W} \text{ has }
 $\mathsf{deflate}$ the algorithm `NLAlib.deflate` with sample $\mathbf{G}$. [Shah2024, Theorem 3.3],
 there with $(2\sqrt2 + t)\sqrt n$, failure $2e^{-nt^2} + (r/2)x^2$ and the requirement on $\beta$
 written out; the constants differ through Lemmas 3.1 and 3.2. -/
-theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le
+theorem
+    FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)
     {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)

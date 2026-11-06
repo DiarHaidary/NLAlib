@@ -429,8 +429,8 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | NS3 | `abs_newtonSchulz_le_one` | S | 1 | NS2 |
 | NS4 | `mul_newtonSchulz_add_pos` | M | 1 | NS1 |
 | NS5 | `abs_le_abs_newtonSchulz_add` | S | 1 | NS1 |
-| NS6 | `abs_one_sub_sq_newtonSchulz_add_le` | M | 1 | NS1, NS2 |
-| NS7 | `abs_one_sub_sq_newtonSchulz_add_le_add` | S | 2 | NS2, NS3 |
+| NS6 | `abs_one_sub_newtonSchulz_add_sq_le` | M | 1 | NS1, NS2 |
+| NS7 | `abs_one_sub_newtonSchulz_add_sq_le_add` | S | 2 | NS2, NS3 |
 | NS8 | `abs_le_one_add_of_abs_sub_newtonSchulz_le` | S | 2 | NS3 |
 | NS9 | `min_abs_le_abs_of_abs_sub_newtonSchulz_le` | M | 3 | NS5, NS8 |
 | NS10 | `abs_one_sub_sq_le_of_newtonSchulzSteps_le` | L | 4 | NS5, NS6, NS7, NS8, NS9 |
@@ -503,7 +503,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| DP1 | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
+| DP1 | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
 
 **Probability/AdaptiveUnionBound.lean**
 
@@ -535,9 +535,9 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | EV3 | `countable_range_eighNodeAt` | M | 0 | — |
 | EV4 | `measurableSet_eighNodeAt_eq` | L | 1 | EV3 |
 | EV5 | `indepFun_eighNodeAt_eq` | H | 2 | EV4 |
-| EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` | L | 12 | EB5, UB1, EV2, EV3, EV4, EV5, EB2, EB2a, EB3, EB4 |
-| EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | L | 13 | EV6 |
-| EV8 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le` | L | 14 | EV7 |
+| EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw` | L | 12 | EB5, UB1, EV2, EV3, EV4, EV5, EB2, EB2a, EB3, EB4 |
+| EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw` | L | 13 | EV6 |
+| EV8 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw` | L | 14 | EV7 |
 
 **LowerBounds/Eigensolvers/Precision.lean**
 

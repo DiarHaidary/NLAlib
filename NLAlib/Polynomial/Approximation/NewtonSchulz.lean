@@ -29,8 +29,8 @@ sign function.
 
 * `NLAlib.one_sub_newtonSchulz_sq`: $1 - g(x)^2 = (1 - x^2)^2(4 - x^2)/4$.
 * `NLAlib.mul_newtonSchulz_add_pos`, `NLAlib.abs_le_abs_newtonSchulz_add`: Lemma 2.3.
-* `NLAlib.abs_one_sub_sq_newtonSchulz_add_le`,
-  `NLAlib.abs_one_sub_sq_newtonSchulz_add_le_add`: Lemma 2.4.
+* `NLAlib.abs_one_sub_newtonSchulz_add_sq_le`,
+  `NLAlib.abs_one_sub_newtonSchulz_add_sq_le_add`: Lemma 2.4.
 * `NLAlib.abs_one_sub_sq_le_of_newtonSchulzSteps_le`: Lemma 2.5.
 -/
 
@@ -147,7 +147,7 @@ theorem abs_le_abs_newtonSchulz_add {u x ξ : ℝ} (hξ : |ξ| ≤ u) (h₁ : 8 
 $20\lvert \xi \rvert \le \lvert x \rvert \le 1 - \sqrt{10\lvert \xi \rvert}$, then
 $$\lvert 1 - (g(x) + \xi)^2 \rvert \le \lvert 1 - x^2 \rvert^2 \,.$$
 [Shah2024, Lemma 2.4]. -/
-theorem abs_one_sub_sq_newtonSchulz_add_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x|)
+theorem abs_one_sub_newtonSchulz_add_sq_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x|)
     (h₂ : |x| ≤ 1 - √(10 * |ξ|)) : |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 := by
   -- core: for `0 ≤ t ≤ 1` and the error bounds, with `y = g t`, `e = |η|`:
   -- `2 y e + e^2 ≤ (1 - t^2)^2 t^2 / 4`, then `|1 - (y + η)^2| ≤ (1 - t^2)^2`.
@@ -203,7 +203,7 @@ theorem abs_one_sub_sq_newtonSchulz_add_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x
 $\lvert x \rvert \le \sqrt2$ and $\lvert \xi \rvert \le 1$, then
 $$\lvert 1 - (g(x) + \xi)^2 \rvert \le \lvert 1 - x^2 \rvert^2 + 4\lvert \xi \rvert \,.$$
 [Shah2024, Lemma 2.4]. -/
-theorem abs_one_sub_sq_newtonSchulz_add_le_add {x ξ : ℝ} (hx : |x| ≤ √2) (hξ : |ξ| ≤ 1) :
+theorem abs_one_sub_newtonSchulz_add_sq_le_add {x ξ : ℝ} (hx : |x| ≤ √2) (hξ : |ξ| ≤ 1) :
     |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 + 4 * |ξ| := by
   have hx2 : x ^ 2 ≤ 2 := by
     have := pow_le_pow_left₀ (abs_nonneg x) hx 2
@@ -301,7 +301,7 @@ private lemma abs_one_sub_sq_succ_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁ : 10
     (hk : |1 - x k ^ 2| ≤ ε) : |1 - x (k + 1) ^ 2| ≤ ε := by
   have hξ := hstep k
   have hε0 : 0 ≤ ε := (abs_nonneg _).trans hk
-  have h := abs_one_sub_sq_newtonSchulz_add_le_add
+  have h := abs_one_sub_newtonSchulz_add_sq_le_add
     (Real.abs_le_sqrt (x := x k) (by linarith [(abs_le.mp hk).1])) (hξ.trans (by linarith))
   rw [add_sub_cancel] at h
   nlinarith [abs_nonneg (1 - x k ^ 2), mul_le_mul hk hk (abs_nonneg _) hε0]
@@ -331,13 +331,13 @@ private lemma abs_one_sub_sq_add_three_le {u ε : ℝ} {x : ℕ → ℝ} (hε₁
     constructor
     · nlinarith [pow_le_pow_left₀ (abs_nonneg _) hup 2]
     · nlinarith [pow_le_pow_left₀ (by linarith) hk.le 2]
-  have h₁ := abs_one_sub_sq_newtonSchulz_add_le_add
+  have h₁ := abs_one_sub_newtonSchulz_add_sq_le_add
     (Real.abs_le_sqrt (x := x (k + 1)) (by nlinarith [(abs_le.mp h₀).1]))
     ((hstep (k + 1)).trans (by linarith))
   rw [add_sub_cancel] at h₁
   have hm₁ : |1 - x (k + 1 + 1) ^ 2| ≤ √ε ^ 2 * ((2 - √ε) ^ 2 + 2 / 5) := by
     nlinarith [pow_le_pow_left₀ (abs_nonneg _) h₀ 2, hstep (k + 1)]
-  have h₂ := abs_one_sub_sq_newtonSchulz_add_le_add
+  have h₂ := abs_one_sub_newtonSchulz_add_sq_le_add
     (Real.abs_le_sqrt (x := x (k + 1 + 1)) (by nlinarith [(abs_le.mp hm₁).1]))
     ((hstep (k + 1 + 1)).trans (by linarith))
   rw [add_sub_cancel] at h₂
@@ -382,7 +382,7 @@ private lemma exists_lt_abs_or_abs_one_sub_sq_le {u ε : ℝ} {x : ℕ → ℝ} 
     right
     replace h := not_lt.mp h
     have hξ := hstep (j + 1)
-    have h' := abs_one_sub_sq_newtonSchulz_add_le
+    have h' := abs_one_sub_newtonSchulz_add_sq_le
       ((mul_le_mul_of_nonneg_left hξ (by norm_num)).trans (ha20.trans (ha (j + 1))))
       (h.trans (sub_le_sub_left (Real.sqrt_le_sqrt (by linarith)) 1))
     rw [add_sub_cancel] at h'

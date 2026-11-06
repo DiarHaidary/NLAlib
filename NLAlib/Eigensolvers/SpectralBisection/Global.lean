@@ -25,12 +25,9 @@ tree is `NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral`.
 
 ## Main results
 
-* `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le`: Theorem 4.2.
-* `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`:
-  its bit count.
-*
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le`:
-  the bounded format, with $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits.
+* [Theorem 4.2](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw).
+* [Its bit count](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw).
+* [The bounded format](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw),, with $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits.
 -/
 
 @[expose] public section
@@ -598,6 +595,8 @@ private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
   · exact fun ω => hM.tsum_eighNodeAt_charge_le hn hθ hR₀pos hε hε₁ hℓ hu hu₁ hτ₀ hτ100 hΩ16 A V
       (fun b => ζ b ω)
 
+-- The declaration name and a docstring line exceed 100 characters.
+set_option linter.style.longLine false in
 /-- **Hermitian diagonalization in linear precision** (Theorem 4.2): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ (constants $\mu_{\mathrm{MM}}$,
 $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$), with $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}}$ monotone
@@ -619,9 +618,11 @@ diagonalization with residual } 2\varepsilon R_0 \text{ and } \mathbf{U} \text{ 
 \varepsilon/3 \text{ of unitary}\bigr] \le \theta \,,$$
 $\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. [Shah2024, Theorem 4.2], there with
 $R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies, the bit count of
-`NLAlib.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` with other constants, and an
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
+with other constants, and an
 operation count (not formalized). -/
-theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
+theorem
+    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
@@ -723,6 +724,8 @@ private theorem mul_le_mul_and_mul_le_of_mul_le_mul_sqrt {n l sn m D S N b e θ 
       _ ≤ e * √θ := mul_le_mul_of_nonneg_left (mul_le_of_le_one_left hsθ.le hθ₁) he
       _ ≤ b * (2 * (2880 * l * n * sn * S)) := by linarith
 
+-- The declaration name and a docstring line exceed 100 characters.
+set_option linter.style.longLine false in
 /-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` with $u > 0$, monotone $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}} \ge
 0$,
@@ -751,7 +754,8 @@ $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/
 n^{1.5}\sqrt n c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varepsilon) +
 1.5\log_2(1/\theta) + \log_2\log_2(n\log_2(1/\varepsilon)/\theta) + 23$; the exponent of $n$ and
 the third power of $\ell$ (from the corrected shift-avoidance probability) differ. -/
-theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le
+theorem
+    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
@@ -801,8 +805,9 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
     hNst hε.le hθ hθ₁ hu.le
     (mul_le_mul_mul_sqrt_of_logb_le hε hθ (by positivity) (by linarith) (by positivity)
       (by linarith) hu hbits) hβ'
-  exact hM.measureReal_not_isApproxDiagonalization_eigh_le hunifm hunifc hnormalm hnormalc hμM
-    hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN h₁ h₂ hfuel hτ₀ hτ hΩ hind hlaw
+  exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
+    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN
+    h₁ h₂ hfuel hτ₀ hτ hΩ hind hlaw
 
 /-- The exponent-bit condition bounds $L$ by $2^{2^{E-1} - 2}$. -/
 private theorem le_zpow_of_logb_logb_add_two_le {L : ℝ} {E : ℕ} (hE : 2 ≤ E) (hL : 1 ≤ L)
@@ -871,21 +876,25 @@ private theorem mul_le_min_and_le_of_mul_le {n ℓ e θ R τ Ω : ℝ} (hn : 0 �
       _ ≤ 3072 * (n + ℓ + 2) ^ 2 := by nlinarith
       _ ≤ Ω * (e * θ) := hΩ
 
+-- The declaration name and a docstring line exceed 100 characters.
+set_option linter.style.longLine false in
 /-- **Hermitian diagonalization in a bounded binary format: $\log_2\log_2(n/(\varepsilon\theta)) +
 O(1)$ exponent bits suffice** (Theorem 4.2 for a finite exponent range): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` with $u = 2^{-p}$, floor $2^{e_{\min} + p - 1}$ (the smallest
 normal number) and range the largest finite number of a binary format with $E \ge 2$ exponent
 bits, precision $p$ and smallest exponent $e_{\min}$ (as
 `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound` provides), with the other hypotheses of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`, the
-input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the precision condition
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`,
+the input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the precision
+condition
 there with $\log_2(1/u) = p$, the ideal samples of the nodes independent, each with law
 `NLAlib.eighSampleLaw` $n$, and
 $$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^2}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
 Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
 $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
 ("$\lg\lg(n/\varepsilon) + O(1)$ bits to store the exponent"), with the $\theta$ it omits. -/
-theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le
+theorem
+    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} (fmt : Float.Model.Format)
     (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
@@ -963,8 +972,9 @@ theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_
     nlinarith [mul_le_mul_of_nonneg_right hmax (by positivity : 0 ≤ dec ε * θ)]
   obtain ⟨h₁, h₂⟩ := mul_le_min_and_le_of_mul_le (Nat.cast_nonneg n) (Nat.cast_nonneg ℓ) hε he₁
     hθ hθ₁ hR₀half hR₀one (by positivity) hτ hΩ
-  refine hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le hunifm hunifc hnormalm
-    hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN
+  refine hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
+    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ hβ
+    hβle hβge hN
     (by positivity) ?_ hfuel (by positivity) h₁ h₂ hind hlaw
   rwa [inv_pow, inv_inv, Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
 
