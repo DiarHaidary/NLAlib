@@ -1,0 +1,372 @@
+/-
+Copyright (c) 2026 NLAlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: NLAlib contributors
+-/
+module
+
+public import NLAlib.Computation.KernelCall
+public import NLAlib.Computation.StaticCost
+public import NLAlib.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.NewtonSchulzSignProgramTree
+public import NLAlibScaffold.Computation.Exec
+public import NLAlibScaffold.Matrix.Computation.KernelContracts
+public import NLAlibScaffold.Matrix.Computation.PairKernels
+
+/-!
+# The Newton–Schulz sign program computes `newtonSchulzSign` (scaffold)
+
+Statements for a new file `NLAlib/Matrix/Computation/NewtonSchulzSignProgram.lean` (stage
+COMPDYN S1d, design note `docs/design/Computation-SignDeflatePrograms.md`, §3): the refinement of
+the program `NLAlib.newtonSchulzSignProg` to the shallow `NLAlib.newtonSchulzSign`. Under any
+interpretation whose kernel `mm` is a routine on interleaved pairs
+(`NLAlib.Computation.IsMatMulKernel`) and whose semantics decides flags, **every successful run
+computes exactly `NLAlib.newtonSchulzSign` on the machine of the semantics and the routine**
+(`NLAlib.Computation.ScalarSem.toFloatMachine`; the machine's other black boxes are arbitrary,
+since the algorithm does not use them), and under the standard model with every value in range
+the run succeeds when the machine's test passes within the step limit. The counts are bounded by
+`NLAlib.newtonSchulzSignCount`.
+
+## Main results
+
+* `NLAlib.holds_of_exec_newtonSchulzTestBlock`, `NLAlib.exists_exec_newtonSchulzTestBlock`,
+  `NLAlib.holds_of_exec_newtonSchulzStepBlock`, `NLAlib.exists_exec_newtonSchulzStepBlock`: the
+  test and the step.
+* `NLAlib.holds_of_exec_whileFuel_newtonSchulz`: the loop computes `NLAlib.newtonSchulzLoop`.
+* `NLAlib.holds_of_exec_newtonSchulzSignProg`, `NLAlib.exists_exec_newtonSchulzSignProg`: the
+  refinement (partial equality, success) for the builder from any state.
+* `NLAlib.newtonSchulzSignProg.toStmt_compiled`,
+  `NLAlib.newtonSchulzSignProg.holds_of_exec_compiled`,
+  `NLAlib.newtonSchulzSignProg.exists_exec_compiled`,
+  `NLAlib.newtonSchulzSignProg.cnt_le_of_exec_compiled`: the registered tree.
+-/
+
+@[expose] public section
+
+open scoped Matrix
+
+namespace NLAlib
+
+open Computation Computation.Builder
+
+variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Interp P ι K C}
+  {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
+  {unif : K → Su → K} {normal : Sg → K × K}
+
+/-- **The test block computes the machine's test**: if kernel `mm` of `I` is the routine `mmR` on
+interleaved pairs, a successful run of `NLAlib.newtonSchulzTestBlock` from a state whose block at
+`X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose cells `one`, `lo`, `hi` hold the
+machine's one, $-\eta$ and $\eta$ (`M` the machine of the semantics at `p` with product `mmR`),
+with the scratch buffers `W`, `V` distinct from `X` and from each other, the cells outside them
+and the flag cell outside the block at `X` and distinct from `lo` and `hi`, ends with `W` holding
+$\mathrm{mm}(\mathbf{A}, \mathbf{A})$, `V` holding the shift `M.hermShift (mmR A A) M.one`, and
+the flag holding the machine's zero if `NLAlib.newtonSchulzTest M η A` and its one otherwise;
+every cell outside `W`, `V` and the flag is unchanged, the store shape and the tape positions
+too. No printed source.
+Proof: `NLAlib.Computation.exec_run_bind` splits the block into the kernel call
+(`NLAlib.Computation.exec_kcall`,
+`NLAlib.Computation.IsMatMulKernel.holds_of_kcallStore_eq_some` with
+`NLAlib.Computation.pairLayout.get_put`), `NLAlib.Computation.holds_of_exec_zhermShift` and
+`NLAlib.Computation.read_of_exec_zboxTest`, the frames carrying the hypotheses from one to the
+next; unfold `NLAlib.newtonSchulzTest`. M, about 50 lines. -/
+theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n : ℕ) {X W V : ℕ} {xo : IExp ℕ} {one lo hi f : Cell ℕ ℕ} {η : K}
+    {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hone : st.store.read p one.buf one.idx.eval =
+      some (I.sem.toFloatMachine p toNat mmR qrR unif normal).one)
+    (hlo : st.store.read p lo.buf lo.idx.eval =
+      some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η))
+    (hhi : st.store.read p hi.buf hi.idx.eval = some η)
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
+    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
+    (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
+    (h : exec I (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f).run st = some st') :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    pairLayout.Holds st'.store p W 0 (mmR A A) ∧
+      pairLayout.Holds st'.store p V 0 (M.hermShift (mmR A A) M.one) ∧
+      st'.store.read p f.buf f.idx.eval = some (if newtonSchulzTest M η A then M.zero else M.one) ∧
+      (∀ q b i, b ≠ W → b ≠ V → blockDisjoint (b, i, 1) (f.buf, f.idx.eval, 1) = true →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  sorry
+
+/-- **The test block succeeds** under the standard model with every value in range, when the
+buffers `W` and `V` at tag `p` have $2n^2$ cells and the flag can be written (hypotheses as
+`NLAlib.holds_of_exec_newtonSchulzTestBlock`). No printed source.
+Proof: `NLAlib.Computation.exec_run_bind`; the kernel call succeeds
+(`NLAlib.Computation.IsMatMulKernel.kcallStore_eq`, the reads by
+`NLAlib.Computation.EntryLayout.holds_iff_readBlock_eq_some`, the write by
+`NLAlib.Computation.Store.exists_writeBlock_eq_some_of_getElem?_shape`), then
+`NLAlib.Computation.exists_exec_zhermShift` and `NLAlib.Computation.exists_exec_zboxTest` on the
+states the value lemmas describe. M, about 40 lines. -/
+theorem exists_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (p : P) (n : ℕ) {X W V : ℕ} {xo : IExp ℕ} {one lo hi f : Cell ℕ ℕ} {cone ℓ η : K}
+    {st : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hone : st.store.read p one.buf one.idx.eval = some cone)
+    (hlo : st.store.read p lo.buf lo.idx.eval = some ℓ)
+    (hhi : st.store.read p hi.buf hi.idx.eval = some η)
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
+    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
+    (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
+    (hW : ∃ len, st.store.shape[W]? = some (p, len) ∧ 2 * (n * n) ≤ len)
+    (hV : ∃ len, st.store.shape[V]? = some (p, len) ∧ 2 * (n * n) ≤ len)
+    (hf : ∃ s, st.store.write p f.buf f.idx.eval default = some s) :
+    ∃ st', exec I (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f).run st =
+      some st' := by
+  sorry
+
+/-- **The step block computes the machine's rounded step**: if kernel `mm` of `I` is the routine
+`mmR` on interleaved pairs, a successful run of `NLAlib.newtonSchulzStepBlock` from a state whose
+block at `X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose scratch buffer `W`
+holds $\mathrm{mm}(\mathbf{A}, \mathbf{A})$, with `W`, `V` distinct from `X` and from each other
+and the cell `c` outside `W`, `V` and the block at `X`, ends with the block at `X` holding
+`NLAlib.newtonSchulzRounded M A` (`M` the machine of the semantics at `p` with product `mmR`);
+every cell outside the block at `X`, the buffers `W`, `V` and the cell `c` is unchanged, the store
+shape and the tape positions too. No printed source.
+Proof: `NLAlib.Computation.exec_run_bind` splits the block:
+`NLAlib.Computation.exec_seq_instr_litIdx` (the literal $3$ is the machine's `ofNat 3`),
+`NLAlib.Computation.holds_of_exec_zhermShift`,
+`NLAlib.Computation.holds_of_exec_zneg` in place, the kernel call
+(`NLAlib.Computation.IsMatMulKernel.holds_of_kcallStore_eq_some`), the literal $4$, and
+`NLAlib.Computation.holds_of_exec_zhermAvg`; unfold `NLAlib.newtonSchulzRounded`. M, about 50
+lines. -/
+theorem holds_of_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n : ℕ) {X W V : ℕ} {xo : IExp ℕ} {c : Cell ℕ ℕ} {st st' : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hW : pairLayout.Holds st.store p W 0 (mmR A A)) (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hcW : c.buf ≠ W) (hcV : c.buf ≠ V)
+    (hcX : blockDisjoint (c.buf, c.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (h : exec I (newtonSchulzStepBlock p mm (.const n) X xo W V c).run st = some st') :
+    pairLayout.Holds st'.store p X xo.eval
+        (newtonSchulzRounded (I.sem.toFloatMachine p toNat mmR qrR unif normal) A) ∧
+      (∀ q b i, b ≠ W → b ≠ V → blockDisjoint (b, i, 1) (X, xo.eval, 2 * (n * n)) = true →
+        blockDisjoint (b, i, 1) (c.buf, c.idx.eval, 1) = true →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  sorry
+
+/-- **The step block succeeds** under the standard model at $u$ with every value in range and
+$u(p) < 1$, when the buffers `W` and `V` at tag `p` have $2n^2$ cells and the cell `c` can be
+written (hypotheses as `NLAlib.holds_of_exec_newtonSchulzStepBlock`). No printed source.
+Proof: as `NLAlib.exists_exec_newtonSchulzTestBlock`, with
+`NLAlib.Computation.exists_exec_zhermShift`, `NLAlib.Computation.exists_exec_zneg`,
+`NLAlib.Computation.exists_exec_zhermAvg`; the literal $4$ decodes to $4(1 + \delta)$ with
+$\lvert\delta\rvert \le u(p) < 1$ (`lit_err`), so it is nonzero. M, about 40 lines. -/
+theorem exists_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (p : P) (hu : u p < 1) (n : ℕ) {X W V : ℕ} {xo : IExp ℕ} {c : Cell ℕ ℕ} {st : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hW : pairLayout.Holds st.store p W 0 (mmR A A)) (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hcW : c.buf ≠ W) (hcV : c.buf ≠ V)
+    (hcX : blockDisjoint (c.buf, c.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (hV : ∃ len, st.store.shape[V]? = some (p, len) ∧ 2 * (n * n) ≤ len)
+    (hc : ∃ s, st.store.write p c.buf c.idx.eval default = some s) :
+    ∃ st', exec I (newtonSchulzStepBlock p mm (.const n) X xo W V c).run st = some st' := by
+  sorry
+
+/-- **The Newton–Schulz loop of the program computes `NLAlib.newtonSchulzLoop`**: if kernel `mm`
+of `I` is the routine `mmR` on interleaved pairs and the semantics decides flags at `p`, a
+successful run of the `whileFuel` loop of `NLAlib.newtonSchulzSignProg` with fuel $j + 1$, from a
+state whose block at `X` holds $\mathbf{A}$, whose scratch buffer `W` holds
+$\mathrm{mm}(\mathbf{A}, \mathbf{A})$, whose cells $0$, $3$, $4$ of the scratch buffer `t` hold
+$\eta$, the machine's one and $-\eta$, and whose cell $1$ holds the flag of the test of
+$\mathbf{A}$, ends with the block at `X` holding `NLAlib.newtonSchulzLoop M η j A`; every cell
+outside the block at `X` and the scratch buffers `t`, `W`, `V` is unchanged, the store shape and
+the tape positions too. No printed source.
+Proof: induction on $j$ generalizing the state and $\mathbf{A}$, with
+`NLAlib.Computation.exec_whileFuel_of_eval_eq_succ` (scaffold). The comparison reads the flag and
+the stored one: by `hflag`, it is false exactly when the flag is the machine's zero, that is when
+the test passes, and the loop stops with $\mathbf{A}$ (`NLAlib.newtonSchulzLoop` returns
+$\mathbf{A}$ when the test passes); otherwise the body runs:
+`NLAlib.holds_of_exec_newtonSchulzStepBlock`, then `NLAlib.holds_of_exec_newtonSchulzTestBlock`
+re-establish the hypotheses for `NLAlib.newtonSchulzRounded M A`, and the induction hypothesis
+at fuel $j$ applies. At $j = 0$ a true comparison runs the body and then
+`NLAlib.Computation.exec_whileFuel_of_eval_eq_zero` (scaffold) fails, contradicting `h`. M, about
+70 lines. -/
+theorem holds_of_exec_whileFuel_newtonSchulz {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n : ℕ) {X W V t : ℕ} {xo fuel : IExp ℕ} {j : ℕ}
+    (hfuel : fuel.eval = j + 1) {η : K} {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hW : pairLayout.Holds st.store p W 0 (mmR A A))
+    (hη : st.store.read p t 0 = some η)
+    (hone : st.store.read p t 3 = some (I.sem.toFloatMachine p toNat mmR qrR unif normal).one)
+    (hlo : st.store.read p t 4 =
+      some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η))
+    (hf : st.store.read p t 1 = some (if newtonSchulzTest
+      (I.sem.toFloatMachine p toNat mmR qrR unif normal) η A then
+        (I.sem.toFloatMachine p toNat mmR qrR unif normal).zero else
+        (I.sem.toFloatMachine p toNat mmR qrR unif normal).one))
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V) (htX : t ≠ X) (htW : t ≠ W) (htV : t ≠ V)
+    (h : exec I (.whileFuel fuel p .eq ⟨t, 1⟩ ⟨t, 3⟩ (Builder.run do
+      newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩
+      newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩ ⟨t, 0⟩ ⟨t, 1⟩)) st =
+        some st') :
+    pairLayout.Holds st'.store p X xo.eval
+        (newtonSchulzLoop (I.sem.toFloatMachine p toNat mmR qrR unif normal) η j A) ∧
+      (∀ q b i, b ≠ t → b ≠ W → b ≠ V →
+        blockDisjoint (b, i, 1) (X, xo.eval, 2 * (n * n)) = true →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  sorry
+
+/-- **The refinement of the Newton–Schulz sign program, partial equality**: if kernel `mm` of `I`
+is the routine `mmR` on interleaved pairs and the semantics decides flags at `p`, a successful
+run of `NLAlib.newtonSchulzSignProg` at size $n$ and step limit $F$, from a state whose block at
+`A` holds the stored $\mathbf{A}$ and whose cells `po`, `po + 1` of `par` hold $\varepsilon$ and
+$b$, with the output block at `X` disjoint from both, ends with the output block holding
+$$\mathsf{newtonSchulzSign}(\mathbf{A}, \varepsilon, b)$$
+computed by `NLAlib.newtonSchulzSign` with step limit $F$ on the machine `M` of the semantics at
+`p` with product `mmR` (for every choice of the machine's other black boxes, which the algorithm
+does not use); every cell outside the output block is unchanged, the store shape and the tape
+positions too. No printed source.
+Proof: unfold `NLAlib.newtonSchulzSignProg`; `NLAlib.Computation.exec_seq`, the `scope` and the
+three `NLAlib.Computation.exec_alloc`s push the scratch buffers $t$, $W$, $V$ at handles
+`st.store.size`, $+1$, $+2$ (distinct from every existing handle); the four instructions give
+$\eta = \mathrm{fl}(\bar\varepsilon/\mathrm{fl}(4n))$ in cell $0$, $-\eta$ in cell $4$ and the
+machine's one in
+cell $3$ (each value read off its successful run, `Option.getD_some`);
+`NLAlib.Computation.holds_of_exec_zhermScale` gives the machine's scaling of $\mathbf{A}$ by $b$
+(`NLAlib.FloatMachine.hermScale`) at `X`;
+`NLAlib.holds_of_exec_newtonSchulzTestBlock` gives the hypotheses of
+`NLAlib.holds_of_exec_whileFuel_newtonSchulz` at $j = F$ (fuel `F + 1`, `IExp.eval_add`), whose
+conclusion is `NLAlib.newtonSchulzSign` by definition; the pops
+(`NLAlib.Computation.Store.read_pop_of_lt`, `NLAlib.Computation.Store.shape_pop`) keep the output
+block and the frame. M, about 80 lines (split the set-up into a private lemma). -/
+theorem holds_of_exec_newtonSchulzSignProg {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X : ℕ} {ao po xo : IExp ℕ}
+    {st st' : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {ε b : K}
+    (hA : pairLayout.Holds st.store p A ao.eval A₀)
+    (hε : st.store.read p par po.eval = some ε) (hb : st.store.read p par (po.eval + 1) = some b)
+    (hXA : blockDisjoint (X, xo.eval, 2 * (n * n)) (A, ao.eval, 2 * (n * n)) = true)
+    (hXp : blockDisjoint (X, xo.eval, 2 * (n * n)) (par, po.eval, 2) = true)
+    (h : exec I (newtonSchulzSignProg p mm (.const n) (.const F) A ao par po X xo).run st =
+      some st') :
+    pairLayout.Holds st'.store p X xo.eval
+        (newtonSchulzSign (I.sem.toFloatMachine p toNat mmR qrR unif normal) ε b F A₀) ∧
+      (∀ q b' i, blockDisjoint (b', i, 1) (X, xo.eval, 2 * (n * n)) = true →
+        st'.store.read q b' i = st.store.read q b' i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  sorry
+
+/-- **The refinement of the Newton–Schulz sign program, success**: under the standard model at
+$u$ with every value in range, $u(p) < 1$ and an exact literal $1$, if kernel `mm` of `I` is the
+routine `mmR` on interleaved pairs, $n \ge 1$, $b$ decodes to a nonzero value, the output block at
+`X` (tag `p`) has $2n^2$ cells, and the machine's test passes at some iterate $k \le F$ of the
+rounded step from `M.hermScale A b`, then the run of `NLAlib.newtonSchulzSignProg` at step limit
+$F$ succeeds (hypotheses on the inputs as `NLAlib.holds_of_exec_newtonSchulzSignProg`). No
+printed source.
+Proof: the set-up succeeds (`lit_ok`, `bin_ok`: the literal $4n$ decodes to $4n(1 + \delta) \ne 0$
+for $n \ge 1$, $\lvert\delta\rvert < 1$; `NLAlib.Computation.exists_exec_zhermScale` with `hb0`;
+`NLAlib.exists_exec_newtonSchulzTestBlock`); then induction on the fuel with
+`NLAlib.Computation.exec_whileFuel_of_eval_eq_succ` (scaffold): while the iterate index is below
+$k$ the test of the current iterate may fail and the body succeeds
+(`NLAlib.exists_exec_newtonSchulzStepBlock`, `NLAlib.exists_exec_newtonSchulzTestBlock`, the
+value lemmas giving their hypotheses); at the first passing iterate (at most $k \le F$, so within
+the fuel $F + 1$) the comparison is false (`NLAlib.Computation.IsRelErrSem.decidesFlags`,
+scaffold) and the loop stops; the pops succeed. M, about 80 lines. -/
+theorem exists_exec_newtonSchulzSignProg {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hlit : IsExactIntLit dec I.sem 1) (p : P) (hu : u p < 1) (n F : ℕ) (hn : 0 < n)
+    {A par X : ℕ} {ao po xo : IExp ℕ} {st : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
+    {ε b : K} (hA : pairLayout.Holds st.store p A ao.eval A₀)
+    (hε : st.store.read p par po.eval = some ε) (hb : st.store.read p par (po.eval + 1) = some b)
+    (hb0 : dec p b ≠ 0)
+    (hXA : blockDisjoint (X, xo.eval, 2 * (n * n)) (A, ao.eval, 2 * (n * n)) = true)
+    (hXp : blockDisjoint (X, xo.eval, 2 * (n * n)) (par, po.eval, 2) = true)
+    (hX : ∃ len, st.store.shape[X]? = some (p, len) ∧ xo.eval + 2 * (n * n) ≤ len)
+    (htest : ∃ k ≤ F, newtonSchulzTest (I.sem.toFloatMachine p toNat mmR qrR unif normal)
+      ((I.sem.toFloatMachine p toNat mmR qrR unif normal).div ε
+        ((I.sem.toFloatMachine p toNat mmR qrR unif normal).ofNat (4 * n)))
+      ((newtonSchulzRounded (I.sem.toFloatMachine p toNat mmR qrR unif normal))^[k]
+        ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermScale A₀ b)) = true) :
+    ∃ st', exec I (newtonSchulzSignProg p mm (.const n) (.const F) A ao par po X xo).run st =
+      some st' := by
+  sorry
+
+/-! ### The registered tree -/
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- **The registered tree instantiates to the builder**: at the sizes $N$ and $(F)$ the tree
+`NLAlib.newtonSchulzSignProg.compiled` is `NLAlib.newtonSchulzSignProg` on the declared buffers
+$0$, $1$, $2$ from offset $0$. No printed source.
+Proof: `rfl`, the instantiation equation of a compiled family (as for the Gram–Schmidt
+tree). S, 1 line. -/
+theorem newtonSchulzSignProg.toStmt_compiled (p : P) (mm : ι) (N : ℕ) (n : Fin 1 → ℕ) :
+    (newtonSchulzSignProg.compiled p mm).toStmt N n =
+      ProgFamily.inst (r := 1) (b := 3) (fun _ _ N n h =>
+        (newtonSchulzSignProg p mm N (n 0) (h 0) 0 (h 1) 0 (h 2) 0).run) N n := by
+  sorry
+
+/-- **The registered tree computes `newtonSchulzSign`**: if kernel `mm` of `I` is the routine
+`mmR` on interleaved pairs and the semantics decides flags at `p`, a successful run of the tree
+`NLAlib.newtonSchulzSignProg.compiled` at the sizes $N$ and $(F)$ from the initial state with the
+stored $\mathbf{A}$, the stored $\varepsilon$, $b$ and $2N^2$ empty cells as declared buffers
+ends with declared buffer $2$ holding $\mathsf{newtonSchulzSign}(\mathbf{A}, \varepsilon, b)$ on
+the machine of the semantics with product `mmR`, step limit $F$. No printed source.
+Proof: `NLAlib.Computation.Prog.exec_eq_exec_toStmt`, `NLAlib.newtonSchulzSignProg.toStmt_compiled`,
+then `NLAlib.holds_of_exec_newtonSchulzSignProg` with
+`NLAlib.Computation.EntryLayout.holds_inputState` (scaffold) and the reads of declared buffer $1$
+(`NLAlib.Computation.inputState`); the disjointness hypotheses hold between distinct buffers
+(`blockDisjoint`, `bne_iff_ne`). S, about 15 lines. -/
+theorem newtonSchulzSignProg.holds_of_exec_compiled {mm : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (hflag : I.sem.DecidesFlags p) (N F : ℕ)
+    (A₀ : Matrix (Fin N) (Fin N) (K × K)) (ε b : K) {st' : St P K C}
+    (h : (newtonSchulzSignProg.compiled p mm).exec I N ![F]
+      (inputState p [(pairLayout.toArray A₀).map some, #[some ε, some b],
+        Array.replicate (2 * (N * N)) none]) = some st') :
+    pairLayout.Holds st'.store p 2 0
+      (newtonSchulzSign (I.sem.toFloatMachine p toNat mmR qrR unif normal) ε b F A₀) := by
+  sorry
+
+/-- **The registered tree succeeds** under the standard model at $u$ with every value in range,
+$u(p) < 1$ and an exact literal $1$, if kernel `mm` of `I` is the routine `mmR` on interleaved
+pairs, $N \ge 1$, $b$ decodes to a nonzero value and the machine's test passes at some iterate
+$k \le F$ (as `NLAlib.exists_exec_newtonSchulzSignProg`), from the initial state of
+`NLAlib.newtonSchulzSignProg.holds_of_exec_compiled`. No printed source.
+Proof: as `NLAlib.newtonSchulzSignProg.holds_of_exec_compiled`, with
+`NLAlib.exists_exec_newtonSchulzSignProg`; declared buffer $2$ has $2N^2$ cells at tag `p`
+(`NLAlib.Computation.inputState`, `Array.size_replicate`). S, about 15 lines. -/
+theorem newtonSchulzSignProg.exists_exec_compiled {mm : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 1)
+    (p : P) (hu : u p < 1) (N F : ℕ) (hN : 0 < N) (A₀ : Matrix (Fin N) (Fin N) (K × K))
+    (ε b : K) (hb0 : dec p b ≠ 0)
+    (htest : ∃ k ≤ F, newtonSchulzTest (I.sem.toFloatMachine p toNat mmR qrR unif normal)
+      ((I.sem.toFloatMachine p toNat mmR qrR unif normal).div ε
+        ((I.sem.toFloatMachine p toNat mmR qrR unif normal).ofNat (4 * N)))
+      ((newtonSchulzRounded (I.sem.toFloatMachine p toNat mmR qrR unif normal))^[k]
+        ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermScale A₀ b)) = true) :
+    ∃ st' : St P K C, (newtonSchulzSignProg.compiled p mm).exec I N ![F]
+      (inputState p [(pairLayout.toArray A₀).map some, #[some ε, some b],
+        Array.replicate (2 * (N * N)) none]) = some st' := by
+  sorry
+
+/-- **The counts and the memory of the registered tree**: under the standard charge (one per
+operation), every successful run of `NLAlib.newtonSchulzSignProg.compiled` at the sizes $N$ and
+$(F)$ adds at most `NLAlib.newtonSchulzSignCount p mm N F` to the counts and raises the peak
+memory at tag `p` by at most the $4N^2 + 5$ scratch cells above the current memory (by nothing at
+any other tag). No printed source.
+Proof: `NLAlib.Computation.Prog.bounds_staticCost_of_exec_eq_some`; the static cost of the tree
+is computed by `NLAlib.Computation.FStmt.staticCost` (`simp` with
+`NLAlib.Computation.StaticCost.seq`, `NLAlib.Computation.StaticCost.repetitions`,
+`NLAlib.Computation.StaticCost.sequence`, `NLAlib.Computation.StaticCost.branch`): one set-up and
+test plus $F + 1$ repetitions of a comparison, a step and a test, each kind at most
+$4N^2 + 4N + 4$ times per term (the strict triangle has $N(N - 1)/2$ entries,
+`Finset.sum_range_id_mul_two`) and two kernel calls; compare kind by kind
+(`Finsupp.le_def`). M, about 70 lines. -/
+theorem newtonSchulzSignProg.cnt_le_of_exec_compiled {mm : ι} {I : Interp P ι K (OpCount P ι)}
+    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) (N F : ℕ)
+    {st st' : St P K (OpCount P ι)}
+    (h : (newtonSchulzSignProg.compiled p mm).exec I N ![F] st = some st') :
+    st'.cnt ≤ st.cnt + newtonSchulzSignCount p mm N F ∧
+      ∀ q, st'.peak q ≤ max (st.peak q) (st.cur q + if q = p then 4 * (N * N) + 5 else 0) := by
+  sorry
+
+end NLAlib

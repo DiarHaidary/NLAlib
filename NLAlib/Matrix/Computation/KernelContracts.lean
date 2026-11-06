@@ -6,11 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Exec
-public import NLAlib.Matrix.Basic.Orthonormal
+public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Factorizations.QR
-public import NLAlib.Matrix.Factorizations.Triangular
-public import NLAlib.Matrix.Norms.Spectral
-public import Mathlib.LinearAlgebra.Matrix.Hermitian
 public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -31,8 +28,9 @@ parts.
   as a pair (`NLAlib.Computation.pairLayout`). The operands are contiguous blocks, with no
   leading dimension.
 * **How accurate the routine is**, normwise through a decoding of stored entries:
-  `NLAlib.Computation.IsMatMulErr` and `NLAlib.Computation.IsQRErr`, the shape of the
-  floating-point machine contracts of the shallow eigensolver analysis.
+  `NLAlib.IsMatMulErr` and `NLAlib.IsQRErr`, the contracts of the floating-point machine
+  `NLAlib.FloatMachine` (`NLAlib/Matrix/Computation/Primitives.lean`), on the routine types
+  `NLAlib.MatMulMap` and `NLAlib.QRMap` defined there.
 
 The exact routines `NLAlib.Computation.exactMM` (the product) and `NLAlib.Computation.exactQR` (a
 QR factorization chosen from `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`) are the
@@ -40,11 +38,10 @@ witnesses that the contracts are satisfiable.
 
 ## Main definitions
 
-* `NLAlib.Computation.MatMulMap`, `NLAlib.Computation.QRMap`: routines on matrices.
-* `NLAlib.Computation.IsMatMulErr`, `NLAlib.Computation.IsQRErr`: their normwise contracts.
 * `NLAlib.Computation.EntryLayout`, `NLAlib.Computation.realLayout`,
   `NLAlib.Computation.pairLayout`, `NLAlib.Computation.EntryLayout.toMatrix`,
-  `NLAlib.Computation.EntryLayout.toArray`: packed column-major storage of a matrix.
+  `NLAlib.Computation.EntryLayout.toArray`, `NLAlib.Computation.EntryLayout.Holds`: packed
+  column-major storage of a matrix.
 * `NLAlib.Computation.mmShape`, `NLAlib.Computation.qrShape`, `NLAlib.Computation.liftMM`,
   `NLAlib.Computation.liftQR`: a routine as a kernel on blocks.
 * `NLAlib.Computation.IsMatMulKernel`, `NLAlib.Computation.IsQRKernel`: the kernel contracts.
@@ -70,63 +67,17 @@ open scoped Matrix
 
 namespace NLAlib.Computation
 
-/-! ### Routines on matrices and their normwise contracts -/
+/-! ### Exact routines -/
 
-/-- A **matrix-multiplication routine** on matrices with entries in `E`, indexed by `Fin`, of
-compatible shapes. -/
-abbrev MatMulMap (E : Type) : Type :=
-  ∀ {l m n : ℕ}, Matrix (Fin l) (Fin m) E → Matrix (Fin m) (Fin n) E → Matrix (Fin l) (Fin n) E
+variable {𝕜 : Type} [RCLike 𝕜]
 
-/-- A **QR routine** on matrices with entries in `E`: an $m \times n$ matrix to a square
-$m \times m$ factor and an $m \times n$ factor. -/
-abbrev QRMap (E : Type) : Type :=
-  ∀ {m n : ℕ}, Matrix (Fin m) (Fin n) E → Matrix (Fin m) (Fin m) E × Matrix (Fin m) (Fin n) E
-
-variable {E : Type} {𝕜 : Type} [RCLike 𝕜]
-
-/-- `IsMatMulErr dec u τ Ω μ mm`: **the routine `mm` multiplies with normwise error
-$\mu(d)\,u$**, read through the decoding `dec` of stored entries: for stored $\mathbf{A}$,
-$\mathbf{B}$ with decodings $\bar{\mathbf{A}}$, $\bar{\mathbf{B}}$,
-$\|\bar{\mathbf{A}}\|_2\|\bar{\mathbf{B}}\|_2 \le \Omega$ and $d$ the largest dimension,
-$$\|\bar{\mathbf{A}}\bar{\mathbf{B}} - \overline{\mathrm{mm}(\mathbf{A}, \mathbf{B})}\|_2 \le
-\mu(d)\,u\max(\|\bar{\mathbf{A}}\|_2\|\bar{\mathbf{B}}\|_2, \tau) \,,$$
-and when $\bar{\mathbf{B}} = \bar{\mathbf{A}}^{\mathsf{H}}$ the decoded product is exactly
-Hermitian. [Shah2024, Definition 1.1], with the identity decoding, $\tau = 0$ and no range
-there. -/
-structure IsMatMulErr (dec : E → 𝕜) (u τ Ω : ℝ) (μ : ℕ → ℝ) (mm : MatMulMap E) : Prop where
-  /-- The normwise error bound in range. -/
-  specNorm_mul_sub_le : ∀ {l m n : ℕ} (A : Matrix (Fin l) (Fin m) E)
-    (B : Matrix (Fin m) (Fin n) E), specNorm (A.map dec) * specNorm (B.map dec) ≤ Ω →
-      specNorm (A.map dec * B.map dec - (mm A B).map dec) ≤
-        μ (max l (max m n)) * u * max (specNorm (A.map dec) * specNorm (B.map dec)) τ
-  /-- A product with its own conjugate transpose is computed exactly Hermitian. -/
-  isHermitian_of_map_eq_conjTranspose : ∀ {m n : ℕ} (A : Matrix (Fin m) (Fin n) E)
-    (B : Matrix (Fin n) (Fin m) E), B.map dec = (A.map dec)ᴴ → ((mm A B).map dec).IsHermitian
-
-/-- `IsQRErr dec u τ Ω μ qr`: **the routine `qr` computes a backward-stable QR factorization**,
-read through the decoding `dec`: for stored $\mathbf{A}$ with decoding $\bar{\mathbf{A}}$,
-$\|\bar{\mathbf{A}}\|_2 \le \Omega$, $(\mathbf{Q}, \mathbf{R}) = \mathrm{qr}(\mathbf{A})$ and
-$d = \max(m, n)$, the decoded $\bar{\mathbf{R}}$ is upper trapezoidal and there is a unitary
-$\mathbf{Q}'$ with
-$$\|\mathbf{Q}' - \bar{\mathbf{Q}}\|_2 \le \mu(d)\,u \,, \qquad
-\|\bar{\mathbf{A}} - \mathbf{Q}'\bar{\mathbf{R}}\|_2 \le \mu(d)\,u\max(\|\bar{\mathbf{A}}\|_2,
-\tau) \,.$$
-[Shah2024, Definition 1.2], with the identity decoding, $\tau = 0$ and no range there. -/
-def IsQRErr (dec : E → 𝕜) (u τ Ω : ℝ) (μ : ℕ → ℝ) (qr : QRMap E) : Prop :=
-  ∀ {m n : ℕ} (A : Matrix (Fin m) (Fin n) E), specNorm (A.map dec) ≤ Ω →
-    IsUpperTrapezoidal ((qr A).2.map dec) ∧
-      ∃ Q' : Matrix (Fin m) (Fin m) 𝕜, HasOrthonormalCols Q' ∧
-        specNorm (Q' - (qr A).1.map dec) ≤ μ (max m n) * u ∧
-        specNorm (A.map dec - Q' * (qr A).2.map dec) ≤
-          μ (max m n) * u * max (specNorm (A.map dec)) τ
-
-/-- The **exact product**, the witness that `NLAlib.Computation.IsMatMulErr` is satisfiable. -/
+/-- The **exact product**, the witness that `NLAlib.IsMatMulErr` is satisfiable. -/
 def exactMM : MatMulMap 𝕜 := fun A B => A * B
 
 /-- An **exact QR factorization**: $\mathbf{A} = \mathbf{Q}\mathbf{R}$ with $\mathbf{Q}$ unitary
 and $\mathbf{R}$ upper trapezoidal, chosen from
 `NLAlib.exists_hasOrthonormalCols_mul_isUpperTrapezoidal`; the witness that
-`NLAlib.Computation.IsQRErr` is satisfiable. -/
+`NLAlib.IsQRErr` is satisfiable. -/
 noncomputable def exactQR : QRMap 𝕜 := fun A =>
   ((exists_hasOrthonormalCols_mul_isUpperTrapezoidal A).choose,
     (exists_hasOrthonormalCols_mul_isUpperTrapezoidal A).choose_spec.choose)
@@ -143,7 +94,7 @@ structure EntryLayout (K E : Type) where
   /-- The words of an entry. -/
   put : E → Fin width → K
 
-variable {K : Type}
+variable {K E : Type}
 
 /-- A real entry in one word. -/
 def realLayout : EntryLayout K K := ⟨1, fun f => f 0, fun x _ => x⟩
@@ -166,6 +117,17 @@ def EntryLayout.toArray (L : EntryLayout K E) {l m : ℕ} (Y : Matrix (Fin l) (F
     let et := finProdFinEquiv.symm k
     let ji := finProdFinEquiv.symm et.1
     L.put (Y ji.2 ji.1) et.2
+
+variable {P : Type} [DecidableEq P] in
+/-- Buffer `b` of the store `s` **holds the $l \times m$ matrix `Y`** at tag `p`, packed and
+column-major in the layout `L` from offset `off`: word `t` of entry $(i, j)$ is at
+`off + (L.width * (i + l * j) + t)` and holds word `t` of `L.put (Y i j)`. For the interleaved
+layout `NLAlib.Computation.pairLayout`, the real part of entry $(i, j)$ is at $2(i + lj)$ from the
+offset and the imaginary part at the next word. -/
+def EntryLayout.Holds (L : EntryLayout K E) {l m : ℕ} (s : Store P K) (p : P) (b off : ℕ)
+    (Y : Matrix (Fin l) (Fin m) E) : Prop :=
+  ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+    s.read p b (off + (L.width * (i + l * j) + t)) = some (L.put (Y i j) t)
 
 /-! ### Routines as kernels on blocks -/
 
@@ -202,14 +164,14 @@ variable {P ι C : Type}
 
 /-- **Kernel `o` of `I` is the routine `mm`**, functionally on stored entries in the layout `L`:
 its kernel is `NLAlib.Computation.liftMM L mm` and its shape `NLAlib.Computation.mmShape L`. A
-contract on `mm` (such as `NLAlib.Computation.IsMatMulErr`) then bounds the kernel's error. -/
+contract on `mm` (such as `NLAlib.IsMatMulErr`) then bounds the kernel's error. -/
 def IsMatMulKernel [Inhabited K] (I : Interp P ι K C) (o : ι) (L : EntryLayout K E)
     (mm : MatMulMap E) : Prop :=
   I.kernel o = liftMM L mm ∧ I.kshape o = mmShape L
 
 /-- **Kernel `o` of `I` is the routine `qr`**, functionally on stored entries in the layout `L`:
 its kernel is `NLAlib.Computation.liftQR L qr` and its shape `NLAlib.Computation.qrShape L`. A
-contract on `qr` (such as `NLAlib.Computation.IsQRErr`) then bounds the kernel's error. -/
+contract on `qr` (such as `NLAlib.IsQRErr`) then bounds the kernel's error. -/
 def IsQRKernel [Inhabited K] (I : Interp P ι K C) (o : ι) (L : EntryLayout K E)
     (qr : QRMap E) : Prop :=
   I.kernel o = liftQR L qr ∧ I.kshape o = qrShape L
@@ -268,7 +230,7 @@ variable {𝕜 : Type} [RCLike 𝕜]
 
 /-- The exact product meets the product contract: for every unit roundoff $u \ge 0$, floor
 $\tau$, range $\Omega$ and constants $\mu \ge 0$, the exact product
-`NLAlib.Computation.exactMM` meets `NLAlib.Computation.IsMatMulErr` with the identity decoding.
+`NLAlib.Computation.exactMM` meets `NLAlib.IsMatMulErr` with the identity decoding.
 No printed source. -/
 theorem isMatMulErr_exactMM {u : ℝ} (hu : 0 ≤ u) (τ Ω : ℝ) {μ : ℕ → ℝ} (hμ : ∀ d, 0 ≤ μ d) :
     IsMatMulErr (fun x : 𝕜 => x) u τ Ω μ exactMM := by
@@ -282,7 +244,7 @@ theorem isMatMulErr_exactMM {u : ℝ} (hu : 0 ≤ u) (τ Ω : ℝ) {μ : ℕ →
 
 /-- The exact QR factorization meets the QR contract: for every unit roundoff $u \ge 0$,
 floor $\tau$, range $\Omega$ and constants $\mu \ge 0$, the exact factorization
-`NLAlib.Computation.exactQR` meets `NLAlib.Computation.IsQRErr` with the identity decoding.
+`NLAlib.Computation.exactQR` meets `NLAlib.IsQRErr` with the identity decoding.
 No printed source. -/
 theorem isQRErr_exactQR {u : ℝ} (hu : 0 ≤ u) (τ Ω : ℝ) {μ : ℕ → ℝ} (hμ : ∀ d, 0 ≤ μ d) :
     IsQRErr (fun x : 𝕜 => x) u τ Ω μ exactQR := by

@@ -25,3 +25,8 @@ name = "NLAlib"
 # plain (non-`module`) files so that `#eval` runs the library's programs, and may contain `sorry`.
 [[lean_lib]]
 name = "NLAlibTools"
+
+# Statements whose proofs are deferred (stage COMPDYN S1c/S1d skeleton). May contain `sorry`.
+# Never imported by NLAlib. A declaration moves from here into NLAlib when it is proved.
+[[lean_lib]]
+name = "NLAlibScaffold"

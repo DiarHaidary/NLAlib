@@ -194,6 +194,19 @@ cell can be written). No public declaration was added beyond the 30. Three were 
 2026-11-06): KC3 `realLayout_get_put` → `realLayout.get_put`, KC4 `pairLayout_get_put` →
 `pairLayout.get_put`, T3 `Dist.measureReal_law_uniform_Icc` → `Dist.real_law_uniform_Icc`.
 
+## S1c/S1d pilot (design stage, 2026-11-06)
+
+Designed on `design/compdyn-s1cd` in its own note, `docs/design/Computation-SignDeflatePrograms.md`
+(decision sheet `COMPDYN-S1cd.json`, D1 to D7): the complex-pair kernels (S1c) and SIGN and
+DEFLATE as registered programs (S1d), `NLAlib.newtonSchulzSignProg` and `NLAlib.deflateProg`, with
+an equality refinement to hdiag's `newtonSchulzSign` and `deflate` on the floating-point machine of
+the program's semantics (`NLAlib.Computation.ScalarSem.toFloatMachine`), success and count
+statements, and the proposed targets `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` and
+`NLAlib.MatrixFreeRoundedProbDeflate`. Two findings change this note's text: the equality needs no
+correctly rounded `fl` for SIGN and DEFLATE (M3 stays for EIGH's uniform sampler), and the S1c/S1d
+calibration (§8 of the new note) puts S1c + S1d at about 5,300 to 6,400 lines, the upper half of
+the rows of §7.2, with the S2 rows unchanged.
+
 ## 0. Summary
 
 | | |
