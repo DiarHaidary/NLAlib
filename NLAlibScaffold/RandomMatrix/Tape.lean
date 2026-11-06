@@ -56,7 +56,13 @@ Proof: `Measure.real`, `ProbabilityTheory.cond_apply` (`measurableSet_Icc`),
 lines. -/
 theorem Dist.measureReal_law_uniform_Icc {a b : ℝ} (ha : -1 ≤ a) (hab : a ≤ b) (hb : b ≤ 1) :
     Dist.uniform.law.real (Set.Icc a b) = (b - a) / 2 := by
-  sorry
+  have hab' : 0 ≤ b - a := by linarith
+  have h2 : 0 ≤ 1 - (-1 : ℝ) := by norm_num
+  change ((volume[|Set.Icc (-1 : ℝ) 1]) (Set.Icc a b)).toReal = _
+  rw [cond_apply measurableSet_Icc, Set.Icc_inter_Icc, max_eq_right ha, min_eq_right hb,
+    ENNReal.toReal_mul, ENNReal.toReal_inv, Real.volume_Icc, Real.volume_Icc,
+    ENNReal.toReal_ofReal hab', ENNReal.toReal_ofReal h2]
+  ring
 
 /-- **Ideal uniform draws lie in $[-1, 1]$**: if the tape $\xi$ has the law of the tape
 `NLAlib.Computation.tapeLaw` under $\mu$, then $\mu$-almost surely every uniform draw
