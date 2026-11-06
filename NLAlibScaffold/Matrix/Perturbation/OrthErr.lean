@@ -109,7 +109,31 @@ theorem IsOrthErr.norm_coef_le {η₀ ε₁ ε₂ ε₃ : ℝ} {V : Matrix (Fin 
     (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hη : η₀ < 1) (hε₂ : 0 ≤ ε₂) :
     ‖WithLp.toLp 2 h‖ ≤ (‖WithLp.toLp 2 (Vᵀ *ᵥ w)‖ + ‖WithLp.toLp 2 (Vᵀ *ᵥ w')‖ +
       Real.sqrt (1 + η₀) * ε₂ * ‖WithLp.toLp 2 w‖) / (1 - η₀) := by
-  sorry
+  have hpos : 0 < 1 - η₀ := by linarith
+  have hsq := specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV
+  have hid : h = Vᵀ *ᵥ w - Vᵀ *ᵥ w' - Vᵀ *ᵥ (w - V *ᵥ h - w') - (Vᵀ * V - 1) *ᵥ h := by
+    simp only [Matrix.mulVec_sub, Matrix.sub_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec]
+    abel
+  have hn : ‖WithLp.toLp 2 h‖ ≤ ‖WithLp.toLp 2 (Vᵀ *ᵥ w)‖ + ‖WithLp.toLp 2 (Vᵀ *ᵥ w')‖ +
+      ‖WithLp.toLp 2 (Vᵀ *ᵥ (w - V *ᵥ h - w'))‖ + ‖WithLp.toLp 2 ((Vᵀ * V - 1) *ᵥ h)‖ := by
+    calc ‖WithLp.toLp 2 h‖
+        = ‖WithLp.toLp 2 (Vᵀ *ᵥ w - Vᵀ *ᵥ w' - Vᵀ *ᵥ (w - V *ᵥ h - w') - (Vᵀ * V - 1) *ᵥ h)‖ := by
+          rw [← hid]
+      _ ≤ _ := by
+          simp only [WithLp.toLp_sub]
+          linarith [norm_sub_le (WithLp.toLp 2 (Vᵀ *ᵥ w) - WithLp.toLp 2 (Vᵀ *ᵥ w') -
+              WithLp.toLp 2 (Vᵀ *ᵥ (w - V *ᵥ h - w'))) (WithLp.toLp 2 ((Vᵀ * V - 1) *ᵥ h)),
+            norm_sub_le (WithLp.toLp 2 (Vᵀ *ᵥ w) - WithLp.toLp 2 (Vᵀ *ᵥ w'))
+              (WithLp.toLp 2 (Vᵀ *ᵥ (w - V *ᵥ h - w'))),
+            norm_sub_le (WithLp.toLp 2 (Vᵀ *ᵥ w)) (WithLp.toLp 2 (Vᵀ *ᵥ w'))]
+  have hG : ‖WithLp.toLp 2 ((Vᵀ * V - 1) *ᵥ h)‖ ≤ η₀ * ‖WithLp.toLp 2 h‖ :=
+    (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_right hV (norm_nonneg _))
+  have hF : ‖WithLp.toLp 2 (Vᵀ *ᵥ (w - V *ᵥ h - w'))‖ ≤
+      Real.sqrt (1 + η₀) * (ε₂ * ‖WithLp.toLp 2 w‖) :=
+    (norm_toLp_mulVec_le _ _).trans (mul_le_mul (by rw [specNorm_transpose]; exact hsq)
+      (hO.residual hV) (norm_nonneg _) (Real.sqrt_nonneg _))
+  rw [le_div_iff₀ hpos]
+  nlinarith [hn, hG, hF]
 
 /-- **Orthogonality of the normalized output** (B5): under `NLAlib.IsOrthErr` and the
 precondition, for $\mathbf{w}' \ne \mathbf{0}$,
