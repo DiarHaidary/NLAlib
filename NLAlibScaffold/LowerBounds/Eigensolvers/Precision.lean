@@ -163,6 +163,81 @@ theorem mul_card_le_of_forall_specNorm_sub_le [DecidableEq n] {fl : ℝ → ℝ}
     _ ≤ ε * specNorm (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)) := hmain
     _ ≤ ε * (specNorm H + δ * Fintype.card n) := mul_le_mul_of_nonneg_left hsJ hε
 
+/-- Rounding near `±1` (helper): for `|y - 1| ≤ 2^{-(s+1)}/4`, rounding to `s+1` bits
+sends `y` to `1` and `-y` to `-1`. -/
+private theorem roundNearest_near_one {s : ℕ} {y : ℝ} (hy : |y - 1| ≤ 2⁻¹ ^ (s + 1) / 4) :
+    Real.roundNearest (s + 1) y = 1 ∧ Real.roundNearest (s + 1) (-y) = -1 := by
+  have hy' := abs_le.mp hy
+  have hsm : (2 : ℝ)⁻¹ ^ (s + 1) ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
+  have hy0 : y ≠ 0 := by intro h; rw [h] at hy'; linarith [hy'.1, hy'.2]
+  rcases le_or_gt 1 y with h1 | h1
+  · have hlog : Int.log 2 |y| = 0 := by
+      apply le_antisymm
+      · have := (Int.lt_zpow_iff_log_lt one_lt_two (x := 1) (r := |y|)
+          (abs_pos.mpr hy0)).mp (by rw [abs_of_nonneg (by linarith)]; norm_num; linarith)
+        omega
+      · have := (Int.zpow_le_iff_le_log one_lt_two (x := 0) (r := |y|)
+          (abs_pos.mpr hy0)).mp (by rw [abs_of_nonneg (by linarith)]; norm_num; linarith)
+        omega
+    have hQ : (0 : ℝ) < 2 ^ s := by positivity
+    have hE : (2 : ℝ) ^ ((0 : ℤ) + 1 - ((s + 1 : ℕ) : ℤ)) = ((2 : ℝ) ^ s)⁻¹ := by
+      rw [show (0 : ℤ) + 1 - ((s + 1 : ℕ) : ℤ) = -(s : ℤ) by push_cast; ring, zpow_neg,
+        zpow_natCast]
+    have hqQ : (2 : ℝ)⁻¹ ^ (s + 1) * 2 ^ s = 1 / 2 := by
+      rw [pow_succ, inv_pow]; field_simp
+    have hdev : |(y - 1) * 2 ^ s| ≤ 1 / 8 := by
+      have := mul_le_mul_of_nonneg_right hy hQ.le
+      rw [show (2 : ℝ)⁻¹ ^ (s + 1) / 4 * 2 ^ s = ((2 : ℝ)⁻¹ ^ (s + 1) * 2 ^ s) / 4 by ring,
+        hqQ] at this
+      rw [abs_mul, abs_of_pos hQ]
+      linarith
+    have hd := abs_le.mp hdev
+    unfold Real.roundNearest
+    have hlog' : Int.log 2 |-y| = 0 := by rw [abs_neg, hlog]
+    rw [hlog, hlog', hE]
+    constructor
+    · have hr : round (y / ((2 : ℝ) ^ s)⁻¹) = (2 : ℤ) ^ s := by
+        rw [round_eq_iff, div_inv_eq_mul]; push_cast
+        constructor <;> nlinarith [hd.1, hd.2]
+      rw [hr]; push_cast; field_simp
+    · have hr : round (-y / ((2 : ℝ) ^ s)⁻¹) = -(2 : ℤ) ^ s := by
+        rw [round_eq_iff, div_inv_eq_mul]; push_cast
+        constructor <;> nlinarith [hd.1, hd.2]
+      rw [hr]; push_cast; field_simp
+  · have hlog : Int.log 2 |y| = -1 := by
+      apply le_antisymm
+      · have := (Int.lt_zpow_iff_log_lt one_lt_two (x := 0) (r := |y|)
+          (abs_pos.mpr (by linarith))).mp (by rw [abs_of_pos (by linarith)]; norm_num; linarith)
+        omega
+      · have := (Int.zpow_le_iff_le_log one_lt_two (x := -1) (r := |y|)
+          (abs_pos.mpr (by linarith))).mp (by rw [abs_of_pos (by linarith)]; norm_num; linarith)
+        omega
+    have hQ : (0 : ℝ) < 2 ^ (s + 1) := by positivity
+    have hE : (2 : ℝ) ^ ((-1 : ℤ) + 1 - ((s + 1 : ℕ) : ℤ)) = ((2 : ℝ) ^ (s + 1))⁻¹ := by
+      rw [show (-1 : ℤ) + 1 - ((s + 1 : ℕ) : ℤ) = -((s + 1 : ℕ) : ℤ) by ring, zpow_neg,
+        zpow_natCast]
+    have hqQ : (2 : ℝ)⁻¹ ^ (s + 1) * 2 ^ (s + 1) = 1 := by
+      rw [← mul_pow]; norm_num
+    have hdev : |(y - 1) * 2 ^ (s + 1)| ≤ 1 / 4 := by
+      have := mul_le_mul_of_nonneg_right hy hQ.le
+      rw [show (2 : ℝ)⁻¹ ^ (s + 1) / 4 * 2 ^ (s + 1) = ((2 : ℝ)⁻¹ ^ (s + 1) * 2 ^ (s + 1)) / 4 by
+        ring, hqQ] at this
+      rw [abs_mul, abs_of_pos hQ]
+      linarith
+    have hd := abs_le.mp hdev
+    unfold Real.roundNearest
+    have hlog' : Int.log 2 |-y| = -1 := by rw [abs_neg, hlog]
+    rw [hlog, hlog', hE]
+    constructor
+    · have hr : round (y / ((2 : ℝ) ^ (s + 1))⁻¹) = (2 : ℤ) ^ (s + 1) := by
+        rw [round_eq_iff, div_inv_eq_mul]; push_cast
+        constructor <;> nlinarith [hd.1, hd.2]
+      rw [hr]; push_cast; field_simp
+    · have hr : round (-y / ((2 : ℝ) ^ (s + 1))⁻¹) = -(2 : ℤ) ^ (s + 1) := by
+        rw [round_eq_iff, div_inv_eq_mul]; push_cast
+        constructor <;> nlinarith [hd.1, hd.2]
+      rw [hr]; push_cast; field_simp
+
 /-- **Hermitian diagonalization needs $\log_2(1/\varepsilon) + \tfrac12\log_2 n - 2$ bits**
 (Proposition 1.1): for $t \ge 1$, $0 < \varepsilon < 1$ and $n = 2^b$, any method that maps the
 input rounded to nearest with $t$ significant bits (`Real.roundNearest`) of every real symmetric
@@ -189,6 +264,65 @@ theorem logb_inv_add_le_of_forall_specNorm_sub_le {t b : ℕ} (ht : 1 ≤ t) {ε
         Matrix.diagonal (fun i => ((alg (A.map (Real.roundNearest t))).2 i : ℂ)) *
           (alg (A.map (Real.roundNearest t))).1ᴴ) ≤ ε * specNorm A) :
     Real.logb 2 ε⁻¹ + b / 2 - 2 + Real.logb 2 (1 - ε) ≤ t := by
-  sorry
+  obtain ⟨s, rfl⟩ : ∃ s, t = s + 1 := ⟨t - 1, by omega⟩
+  obtain ⟨δ, hδdef⟩ : ∃ δ : ℝ, δ = 2⁻¹ ^ (s + 1) / 4 := ⟨_, rfl⟩
+  have hδpos : 0 < δ := by rw [hδdef]; positivity
+  have hsym : (walshHadamard ℝ b).IsSymm := transpose_walshHadamard b
+  have hone : Real.roundNearest (s + 1) 1 = 1 ∧ Real.roundNearest (s + 1) (-1) = -1 :=
+    roundNearest_near_one (y := 1) (by simp only [sub_self, abs_zero]; positivity)
+  have hfl : ∀ i j, ∀ σ ∈ ({1, -1} : Set ℝ),
+      Real.roundNearest (s + 1) (walshHadamard ℝ b i j + σ * δ) =
+        Real.roundNearest (s + 1) (walshHadamard ℝ b i j) := by
+    intro i j σ hσ
+    have hσδ : |σ * δ| ≤ δ := by rcases hσ with rfl | rfl <;> simp [abs_of_pos hδpos]
+    have hpm : walshHadamard ℝ b i j = 1 ∨ walshHadamard ℝ b i j = -1 := by
+      rw [walshHadamard_apply]; split_ifs <;> simp
+    rcases hpm with h | h <;> rw [h]
+    · have hy : |(1 + σ * δ) - 1| ≤ 2⁻¹ ^ (s + 1) / 4 := by
+        rw [add_sub_cancel_left, ← hδdef]; exact hσδ
+      rw [(roundNearest_near_one hy).1, hone.1]
+    · have hy : |(1 + -(σ * δ)) - 1| ≤ 2⁻¹ ^ (s + 1) / 4 := by
+        rw [add_sub_cancel_left, abs_neg, ← hδdef]; exact hσδ
+      rw [show -1 + σ * δ = -(1 + -(σ * δ)) by ring, (roundNearest_near_one hy).2, hone.2]
+  have hmain := mul_card_le_of_forall_specNorm_sub_le hδpos.le alg halg hsym hfl
+  have hcard : (Fintype.card (Fin b → ZMod 2) : ℝ) = 2 ^ b := by
+    simp [ZMod.card]
+  rw [hcard] at hmain
+  have hS2 : specNorm (walshHadamard ℝ b) ^ 2 = 2 ^ b := by
+    have h1 := specNorm_conjTranspose_mul_self (walshHadamard ℝ b)
+    rw [conjTranspose_walshHadamard, walshHadamard_mul_self, specNorm_real_smul, specNorm_one,
+      abs_of_pos (by positivity : (0 : ℝ) < 2 ^ b), mul_one] at h1
+    exact h1.symm
+  have hSpos : 0 < specNorm (walshHadamard ℝ b) := by
+    have h2b : (0 : ℝ) < 2 ^ b := by positivity
+    nlinarith [specNorm_nonneg (walshHadamard ℝ b)]
+  have h1 : δ * 2 ^ b * (1 - ε) ≤ ε * specNorm (walshHadamard ℝ b) := by
+    nlinarith [hmain]
+  have hP1 : 0 < δ * 2 ^ b * (1 - ε) := mul_pos (by positivity) (sub_pos.2 hε₁)
+  have hlog := Real.log_le_log hP1 h1
+  have hL : 0 < Real.log 2 := Real.log_pos one_lt_two
+  have hδlog : Real.log δ = -((s : ℝ) + 1) * Real.log 2 - 2 * Real.log 2 := by
+    rw [hδdef, Real.log_div (by positivity) (by norm_num), Real.log_pow, Real.log_inv,
+      show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    push_cast; ring
+  have hSlog : 2 * Real.log (specNorm (walshHadamard ℝ b)) = b * Real.log 2 := by
+    have h := congrArg Real.log hS2
+    rw [Real.log_pow, Real.log_pow] at h
+    push_cast at h
+    linarith
+  rw [Real.log_mul (mul_pos hδpos (by positivity)).ne' (sub_pos.2 hε₁).ne',
+    Real.log_mul hδpos.ne' (by positivity), Real.log_pow, hδlog,
+    Real.log_mul hε.ne' hSpos.ne'] at hlog
+  unfold Real.logb
+  rw [Real.log_inv]
+  have key : (-Real.log ε + Real.log (1 - ε)) / Real.log 2 ≤
+      ((s : ℝ) + 1) - b / 2 + 2 := by
+    rw [div_le_iff₀ hL]
+    nlinarith [hlog, hSlog]
+  have e : -Real.log ε / Real.log 2 + b / 2 - 2 + Real.log (1 - ε) / Real.log 2 =
+      (-Real.log ε + Real.log (1 - ε)) / Real.log 2 + b / 2 - 2 := by ring
+  rw [e]
+  push_cast
+  linarith [key]
 
 end NLAlib
