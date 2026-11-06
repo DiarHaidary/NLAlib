@@ -226,7 +226,31 @@ theorem exists_ofLE {m : ℕ} (hm : 0 < m) (hmk : m ≤ k) :
     ∃ L' : LanczosReorthRun n m, L'.H = L.H ∧ L'.v = L.v ∧ L'.α = L.α ∧ L'.β = L.β ∧
       L'.ν = L.ν ∧ L'.h = L.h ∧ L'.ε = L.ε ∧ L'.τ = L.τ ∧ L'.η₀ = L.η₀ ∧ L'.ε₁ = L.ε₁ ∧
       L'.ε₂ = L.ε₂ ∧ L'.ε₃ = L.ε₃ := by
-  sorry
+  refine ⟨{
+    H := L.H, v := L.v, u := L.u, w := L.w, z := L.z, z' := L.z', α := L.α, β := L.β,
+    ν := L.ν, h := L.h, eu := L.eu, ew := L.ew, ez := L.ez, eα := L.eα, δ := L.δ, ε := L.ε,
+    τ := L.τ, η₀ := L.η₀, ε₁ := L.ε₁, ε₂ := L.ε₂, ε₃ := L.ε₃,
+    transpose_H := L.transpose_H, ε_nonneg := L.ε_nonneg, ε_le := L.ε_le,
+    ε₁_nonneg := L.ε₁_nonneg, ε₂_nonneg := L.ε₂_nonneg, ε₃_nonneg := L.ε₃_nonneg,
+    k_pos := hm, v_zero := L.v_zero, β_zero := L.β_zero,
+    u_eq := fun j hj => L.u_eq j (by omega),
+    norm_eu_le := fun j hj => L.norm_eu_le j (by omega),
+    w_eq := fun j hj => L.w_eq j (by omega),
+    norm_ew_le := fun j hj => L.norm_ew_le j (by omega),
+    α_eq := fun j hj => L.α_eq j (by omega),
+    abs_eα_le := fun j hj => L.abs_eα_le j (by omega),
+    z_eq := fun j hj => L.z_eq j (by omega),
+    norm_ez_le := fun j hj => L.norm_ez_le j (by omega),
+    abs_ν_sub_le := fun j hj => L.abs_ν_sub_le j (by omega),
+    orth_eq := fun j hj => L.orth_eq j (by omega),
+    abs_β_sub_le := fun j hj => L.abs_β_sub_le j (by omega),
+    smul_v_eq := fun j hj => L.smul_v_eq j (by omega),
+    norm_δ_le := fun j hj => L.norm_δ_le j (by omega),
+    abs_norm_v_sq_sub_one_le := fun j h1 h2 => L.abs_norm_v_sq_sub_one_le j h1 (by omega),
+    admissible := fun j hj => L.admissible j (by omega),
+    τ_pos := L.τ_pos
+  },
+    rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 end LanczosReorthRun
 
