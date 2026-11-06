@@ -314,7 +314,8 @@ private theorem delta_arith_aux {s β g si kk q : ℝ} (hβ0 : 0 ≤ β) (hg : 0
   have hXβ : β ≤ (s + β) * (g * kk * si) * β := by nlinarith [mul_nonneg hβ0 hX0]
   nlinarith
 
-/-- Corrected DF2: the deterministic bound, with `0 ≤ μM n` and `0 ≤ u` added. -/
+/-- The proof of
+`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`. -/
 private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_aux
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u) (hr : r ≤ n)
@@ -518,7 +519,8 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_s
 /-- **Deterministic accuracy of randomized deflation** (Theorem 3.3, deterministic half): under
 the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$, let
-$r \le n$, $\mathbf{U}, \mathbf{V} \in \mathbb{C}^{n \times r}$ have orthonormal columns,
+$\mu_{\mathrm{MM}}(n) \ge 0$, $u \ge 0$, $r \le n$, $\mathbf{U}, \mathbf{V} \in
+\mathbb{C}^{n \times r}$ have orthonormal columns,
 $\mathbf{S} \in \mathbb{C}^{r \times r}$ be invertible, $\mathbf{A} =
 \mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$, $\widetilde{\mathbf{A}}$ stored with
 $\|\mathbf{A} - \bar{\widetilde{\mathbf{A}}}\|_2 \le \beta$, and $\mathbf{G}$ have
@@ -552,7 +554,7 @@ used. Split into private lemmas for $\mathbf{E}_{\mathbf{G}}$, the identity for 
 the bound on $\mathbf{Z}$. L, about 140 lines. -/
 theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}
-    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u) (hr : r ≤ n)
     {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
     {S : Matrix (Fin r) (Fin r) ℂ} (hS : IsUnit S) {A G : Matrix (Fin n) (Fin n) ℂ}
     {A' : Matrix (Fin n) (Fin n) (F × F)} (hA : A = U * S * Vᴴ)
@@ -564,7 +566,8 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_defla
     (hτ : τ ≤ specNorm S * specNorm G) (hτN : τ * √(n : ℝ) ≤ specNorm G)
     (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) (hΩG : specNorm G ≤ Ω) :
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
-      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
-  sorry
+      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β :=
+  hM.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_aux hμM hu₀ hr hU hV hS hA hβ hG hm hmβ
+    hu hτ hτN hΩ hΩG
 
 end NLAlib

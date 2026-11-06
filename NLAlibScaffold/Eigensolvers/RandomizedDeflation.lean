@@ -30,6 +30,52 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- At $u = 0$ the machine contract holds with any matrix-multiplication constant. -/
+private lemma FloatMachine.IsAccurate.of_u_eq_zero_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {dec : F → ℝ} {τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec 0 τ Ω μM μQ cN)
+    (μM' : ℕ → ℝ) : M.IsAccurate dec 0 τ Ω μM' μQ cN :=
+  { hM with
+    isMatMulErr :=
+      { specNorm_mul_sub_le := fun A B h => by
+          have := hM.isMatMulErr.specNorm_mul_sub_le A B h
+          rw [mul_zero, zero_mul] at this ⊢
+          exact this
+        isHermitian_of_map_eq_conjTranspose :=
+          hM.isMatMulErr.isHermitian_of_map_eq_conjTranspose } }
+
+/-- With range $\Omega \ge 1$ the contract forces $u \ge 0$, and $\mu_{\mathrm{MM}}(n) \ge 0$ when
+$u > 0$ and $n \ge 1$ (the stored identity times itself). -/
+private lemma FloatMachine.IsAccurate.nonneg_aux {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    {n : ℕ} (hn : 0 < n) (hΩ : 1 ≤ Ω) : 0 ≤ u ∧ (0 < u → 0 ≤ μM n) := by
+  have hmax : (0 : ℝ) < max 1 τ := lt_of_lt_of_le one_pos (le_max_left _ _)
+  have hu : 0 ≤ u := by
+    have h := hM.ofNat 1
+    simp only [IsRoundingOf, Nat.cast_one, abs_one] at h
+    have h0 := (abs_nonneg _).trans (h hΩ)
+    by_contra hneg
+    push Not at hneg
+    linarith [mul_neg_of_neg_of_pos hneg hmax]
+  refine ⟨hu, fun hpos => ?_⟩
+  classical
+  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  let I' : Matrix (Fin n) (Fin n) (F × F) :=
+    Matrix.of fun i j => (if i = j then M.one else M.zero, M.zero)
+  have hI : I'.map (decodeComplex dec) = 1 := by
+    ext i j
+    by_cases hij : i = j
+    · subst hij
+      simp [I', decodeComplex, hM.dec_one, hM.dec_zero]
+      rfl
+    · simp [I', decodeComplex, hM.dec_zero, hij, Matrix.one_apply_ne hij]
+      rfl
+  have h := hM.isMatMulErr.specNorm_mul_sub_le I' I' (by rw [hI, specNorm_one, mul_one]; exact hΩ)
+  rw [hI, specNorm_one, mul_one, mul_one, max_self, max_self] at h
+  by_contra hneg
+  push Not at hneg
+  linarith [specNorm_nonneg (1 - (M.mm I' I').map (decodeComplex dec)),
+    mul_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hneg hpos) hmax]
+
 /-- A square matrix whose action is bounded below by `x` is a unit with inverse of norm `≤ 1/x`. -/
 private lemma isUnit_and_specNorm_inv_le_of_lower_bound {r : ℕ} {M : Matrix (Fin r) (Fin r) ℂ}
     {x : ℝ} (hx : 0 < x)
@@ -146,6 +192,25 @@ theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_
         specNorm (U * W - decodeMatrix dec (deflate M r A' Gm)) ≤
           6 * ((specNorm S + 2) * specNorm S⁻¹ * (√2 * (2 * √(n : ℝ) + t)) / x) * β := by
     intro Gm hGB hσ
+    rcases eq_or_ne r 0 with h0 | h0
+    · subst h0
+      refine ⟨1, hasOrthonormalCols_one, ?_⟩
+      rw [Subsingleton.elim (U * 1 - _) 0, specNorm_zero]
+      exact mul_nonneg (mul_nonneg (by norm_num) (div_nonneg (mul_nonneg (mul_nonneg
+        (by linarith) (specNorm_nonneg _)) hB0) hx.le)) hβ0
+    have hn : 0 < n := by omega
+    have hΩ1 : 1 ≤ Ω := by
+      have hn1 : (1 : ℝ) ≤ √(n : ℝ) := Real.one_le_sqrt.mpr (by exact_mod_cast hn)
+      have hs2 : (1 : ℝ) ≤ √2 := Real.one_le_sqrt.mpr (by norm_num)
+      have hb : 2 ≤ √2 * (2 * √(n : ℝ) + t) := by nlinarith
+      nlinarith
+    obtain ⟨hu0, hμpos⟩ := hM.nonneg_aux hn hΩ1
+    obtain ⟨μ', hM', hμ', hu''⟩ : ∃ μ' : ℕ → ℝ, M.IsAccurate dec u τ Ω μ' μQ cN ∧ 0 ≤ μ' n ∧
+        (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μ' n) * u ≤ β := by
+      rcases hu0.eq_or_lt with h | h
+      · subst h
+        exact ⟨fun _ => 0, hM.of_u_eq_zero_aux _, le_rfl, by rw [mul_zero]; exact hβ0⟩
+      · exact ⟨μM, hM, hμpos h, hu⟩
     have hlow : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤
         ‖WithLp.toLp 2 ((Vᴴ * Gm.submatrix id (Fin.castLE hr)) *ᵥ z)‖ := by
       intro z
@@ -193,8 +258,8 @@ theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_
         _ = _ := by ring
     obtain ⟨W, hW, hWb⟩ :=
       FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
-        hM hr hU hV hS hA hβ hGu rfl (mul_le_mul_of_nonneg_right hmval hβ0 |>.trans hmβ)
-        hu hτ' hτN' hΩ' hΩG
+        hM' hμ' hu0 hr hU hV hS hA hβ hGu rfl (mul_le_mul_of_nonneg_right hmval hβ0 |>.trans hmβ)
+        hu'' hτ' hτN' hΩ' hΩG
     exact ⟨W, hW, hWb.trans (mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_left hmval (by norm_num)) hβ0)⟩
   -- the two bad events

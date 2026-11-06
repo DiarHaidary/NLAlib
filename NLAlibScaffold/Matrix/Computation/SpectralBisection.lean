@@ -609,13 +609,15 @@ private theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors
     exact (scale_eb1c hM hu hu1 hτ₀ hk1 hkτ hΩ4 hZ hY2 hZY hδ1).trans hfin
 
 /-- **The computed spectral projectors are accurate on Event I**: under the node hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` (without the leaf test
-and the size condition), for a seed $v \in [-1, 1]$ whose ideal shift $c' = (R/\ell)v$ is at
-distance at least $w$ from every eigenvalue of $\mathbf{A}$, the stored projectors of
-`NLAlib.eighStep`, $\mathbf{P}_+ = (\mathbf{B} + \mathbf{I})/2$ and $\mathbf{P}_- =
--(\mathbf{B} - \mathbf{I})/2$ with $\mathbf{B}$ the Newton–Schulz sign of the stored shifted
-matrix, are within $\beta$ of $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} -
-c'\mathbf{I}))$. [Shah2024, proof of Lemma 4.1], (4.4)–(4.9).
+`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` (without the size
+condition), including that the node is not a leaf ($\mathrm{fl}(R) > \mathrm{fl}(\varepsilon R_0)$,
+`hint`; without it the window $R$ can lie far below $u\tau$ and the bound fails), for a seed
+$v \in [-1, 1]$ whose ideal shift $c' = (R/\ell)v$ is at distance at least $w$ from every
+eigenvalue of $\mathbf{A}$, the stored projectors of `NLAlib.eighStep`, $\mathbf{P}_+ =
+(\mathbf{B} + \mathbf{I})/2$ and $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/2$ with $\mathbf{B}$
+the Newton–Schulz sign of the stored shifted matrix, are within $\beta$ of
+$\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
+Lemma 4.1], (4.4)–(4.9).
 Proof: the stored shift $c = \mathrm{unif}(\mathrm{fl}(R/\mathrm{fl}(\ell)), v)$ has
 $|c - c'| \le 0.15uR + 2u\tau \le 0.33uR$ ($\tau \le \sqrt{\rho/2}/(4k^{3/2}) \le 1/16$ and
 $\tau \le \varepsilon R_0/(4k^{3/2})$, so $\mathrm{fl}(\ell)$ is a relative rounding), and
@@ -648,6 +650,7 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le
     (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
     (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
     (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
+    (hint : M.le y.R (M.mul y.ε R₀) = false)
     {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
     (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
     specNorm (decodeMatrix dec (M.hermScale (M.hermShift
@@ -659,8 +662,9 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le
         (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
           (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) M.one)) (M.ofNat 2)) -
       (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β := by
-  sorry
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β :=
+  hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_le_eq_false hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw
+    hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hint hv hI
 
 private theorem abs_sub_le_of_isRoundingOf_aux {u τ Ω a z : ℝ} (h : IsRoundingOf u τ Ω a z)
     (ha : |a| ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) : |a - z| ≤ u * (|a| + τ) := by
@@ -836,7 +840,7 @@ theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub
     hμM hu husign hτ₀ hτ
   have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
   -- the computed projector is near the ideal one, whose trace is the inertia
-  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_le_eq_false (N := N)
+  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le (N := N)
     (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
     husign hfuel hτ₀ hτ hΩ hint hv hI
   set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
@@ -936,7 +940,7 @@ private theorem FloatMachine.IsAccurate.min_toNat_eighProjector_eq_inertiaPos
     hμM hu husign hτ₀ hτ
   have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
   -- the computed projector is near the ideal one, whose trace is the inertia
-  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_le_eq_false (N := N)
+  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le (N := N)
     (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
     husign hfuel hτ₀ hτ hΩ hint hv hI
   set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
@@ -1124,6 +1128,7 @@ private lemma isUnit_and_specNorm_inv_le_eighSplit_aux {r : ℕ} {M : Matrix (Fi
 private theorem exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x η : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr0 : 0 < r) (hr : r ≤ n)
+    (hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u)
     {V : Matrix (Fin n) (Fin r) ℂ} (hV : HasOrthonormalCols V) {P : Matrix (Fin n) (Fin n) (F × F)}
     (hP : specNorm (V * Vᴴ - decodeMatrix dec P) ≤ β) (hβ0 : 0 ≤ β) (hβ1 : β ≤ 1)
     {G : Matrix (Fin n) (Fin n) ℂ} (hGt : specNorm G < t) (hx : 0 < x)
@@ -1174,7 +1179,7 @@ private theorem exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux {F 
   have hu' : (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β := hu
   obtain ⟨W, hW, hWb⟩ :=
     FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
-      hM hr hV hV isUnit_one hA hP hGu rfl
+      hM hμM hu₀ hr hV hV isUnit_one hA hP hGu rfl
       ((mul_le_mul_of_nonneg_right hmval hβ0).trans (hmβ.trans (by nlinarith))) hu' hτ' hτN' hΩ' hΩG
   refine ⟨W, hW, hWb.trans ?_⟩
   have := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hmval (by norm_num : (0:ℝ) ≤ 6)) hβ0
@@ -1711,7 +1716,7 @@ private theorem FloatMachine.IsAccurate.exists_frames_of_eighStep_eq_split_aux
   have hkpr := hM.min_toNat_eighProjector_eq_inertiaPos (N := N) (signFuel := signFuel)
     (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk2 hint
     hv hI
-  obtain ⟨hPp, hPm⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_le_eq_false (N := N)
+  obtain ⟨hPp, hPm⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le (N := N)
     (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
     husign hfuel hτ₀ hτ hΩ hint hv hI
   have hk1 : 1 ≤ y.k := by omega
@@ -1737,7 +1742,8 @@ private theorem FloatMachine.IsAccurate.exists_frames_of_eighStep_eq_split_aux
     have hP' := hPp
     rw [specNorm_sub_comm, ← hVV] at hP'
     obtain ⟨W, hW, hWb⟩ := exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux hM hr0
-      hrk.le hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀ hτx hΩt
+      hrk.le hμM hu hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀
+      hτx hΩt
     refine ⟨V, hV, hVV, hsp, W, hW, hWb.trans hη3, ?_⟩
     exact specNorm_decodeMatrix_compress_sub_le_eighSplit_aux hM hk1 hrk.le hu huβ hμM hμ hsk
       hβ.le hβη hη0 hη1 hR0 hτ₀ hkτR hΩ4 hA hR hV hW hWb htwo hhalf
@@ -1758,7 +1764,8 @@ private theorem FloatMachine.IsAccurate.exists_frames_of_eighStep_eq_split_aux
     have hP' := hPm
     rw [specNorm_sub_comm, ← hVV] at hP'
     obtain ⟨W, hW, hWb⟩ := exists_hasOrthonormalCols_specNorm_sub_deflate_eighSplit_aux hM hr0
-      hrk.le hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀ hτx hΩt
+      hrk.le hμM hu hV hP' hβ.le (by linarith) hGt hx0 (hσG hrk.le) htx (by linarith) hdefl hτ₀
+      hτx hΩt
     refine ⟨V, hV, hVV, hsp, W, hW, hWb.trans hη3, ?_⟩
     have hC := specNorm_decodeMatrix_compress_sub_le_eighSplit_aux hM hk1 hrk.le hu huβ hμM hμ hsk
       hβ.le hβη hη0 hη1 hR0 hτ₀ hkτR hΩ4 hA hR hV hW hWb htwo hhalf'
