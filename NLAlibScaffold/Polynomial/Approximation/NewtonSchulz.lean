@@ -144,7 +144,57 @@ $\lvert \xi \rvert(2g(x) + \lvert \xi \rvert) \le (1 - x^2)^2x^2/4$ on both rang
 after case split at $1/2$; tight near $x = 1/2$, so keep the exact $g$). M, about 50 lines. -/
 theorem abs_one_sub_sq_newtonSchulz_add_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x|)
     (h₂ : |x| ≤ 1 - √(10 * |ξ|)) : |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 := by
-  sorry
+  -- core: for `0 ≤ t ≤ 1` and the error bounds, with `y = g t`, `e = |η|`:
+  -- `2 y e + e^2 ≤ (1 - t^2)^2 t^2 / 4`, then `|1 - (y + η)^2| ≤ (1 - t^2)^2`.
+  have core : ∀ t η : ℝ, 0 ≤ t → t ≤ 1 → 20 * |η| ≤ t → t ≤ 1 - √(10 * |η|) →
+      |1 - (newtonSchulz t + η) ^ 2| ≤ (1 - t ^ 2) ^ 2 := by
+    intro t η ht0 ht1 hη1 hη2
+    have he0 : 0 ≤ |η| := abs_nonneg η
+    have hsq := Real.sq_sqrt (show (0:ℝ) ≤ 10 * |η| by positivity)
+    have hη2' : 10 * |η| ≤ (1 - t) ^ 2 := by
+      nlinarith [Real.sqrt_nonneg (10 * |η|)]
+    have hy0 : 0 ≤ newtonSchulz t := by
+      unfold newtonSchulz
+      nlinarith [mul_nonneg ht0 (show (0:ℝ) ≤ 3 - t ^ 2 by nlinarith)]
+    have hkey : 2 * newtonSchulz t * |η| + |η| ^ 2 ≤ (1 - t ^ 2) ^ 2 * t ^ 2 / 4 := by
+      unfold newtonSchulz at *
+      rcases le_total t (1 / 2) with h | h
+      · have e1 : |η| ≤ t / 20 := by linarith
+        have ht2 : t ^ 2 ≤ 1 / 4 := by nlinarith
+        have poly : 3 - t ^ 2 + 1 / 20 ≤ 5 * (1 - t ^ 2) ^ 2 := by
+          nlinarith [mul_nonneg (sub_nonneg.2 ht2) (sq_nonneg t)]
+        nlinarith [mul_le_mul_of_nonneg_right e1 (show (0:ℝ) ≤ 2 * (t * (3 - t ^ 2) / 2) + t / 20 by
+            nlinarith [mul_nonneg ht0 (show (0:ℝ) ≤ 3 - t ^ 2 by nlinarith)]),
+          mul_le_mul_of_nonneg_left e1 he0, mul_nonneg (sq_nonneg t) (sub_nonneg.2 poly)]
+      · have e1 : |η| ≤ (1 - t) ^ 2 / 10 := by linarith
+        have e2 : |η| ≤ 1 / 40 := by nlinarith
+        have poly2 : 8 * (t * (3 - t ^ 2) / 2) + 1 / 10 ≤ 10 * t ^ 2 * (1 + t) ^ 2 := by
+          nlinarith [mul_nonneg (sub_nonneg.2 h) (sub_nonneg.2 ht1)]
+        nlinarith [mul_le_mul_of_nonneg_right e1 (show (0:ℝ) ≤ 2 * (t * (3 - t ^ 2) / 2) + 1 / 40 by
+            nlinarith [mul_nonneg ht0 (show (0:ℝ) ≤ 3 - t ^ 2 by nlinarith)]),
+          mul_le_mul_of_nonneg_left e2 he0, mul_nonneg (sq_nonneg (1 - t)) (sub_nonneg.2 poly2)]
+    have h1 := one_sub_newtonSchulz_sq t
+    have ht4 : t ^ 2 ≤ 4 := by nlinarith
+    have hd0 : 0 ≤ (1 - t ^ 2) ^ 2 * (4 - t ^ 2) / 4 :=
+      div_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by norm_num)
+    have hd1 : (1 - t ^ 2) ^ 2 * (4 - t ^ 2) / 4 ≤ (1 - t ^ 2) ^ 2 := by
+      nlinarith [mul_nonneg (sq_nonneg (1 - t ^ 2)) (sq_nonneg t)]
+    rw [abs_le]
+    constructor <;>
+      nlinarith [mul_le_mul_of_nonneg_left (le_abs_self η) hy0,
+        mul_le_mul_of_nonneg_left (neg_abs_le η) hy0, sq_abs η,
+        mul_nonneg (sq_nonneg (1 - t ^ 2)) (sq_nonneg t)]
+  rcases le_total 0 x with hx0 | hx0
+  · rw [abs_of_nonneg hx0] at h₁ h₂
+    rw [sq_abs]
+    exact core x ξ hx0 (by linarith [Real.sqrt_nonneg (10 * |ξ|)]) h₁ h₂
+  · rw [abs_of_nonpos hx0] at h₁ h₂
+    have h := core (-x) (-ξ) (by linarith) (by linarith [Real.sqrt_nonneg (10 * |ξ|)])
+      (by rw [abs_neg]; linarith) (by rw [abs_neg]; linarith)
+    rw [newtonSchulz_neg, show (-newtonSchulz x + -ξ) ^ 2 = (newtonSchulz x + ξ) ^ 2 by ring,
+      neg_sq] at h
+    rw [sq_abs]
+    exact h
 
 /-- **The defect bound with an additive error** (Lemma 2.4, second part): if
 $\lvert x \rvert \le \sqrt2$ and $\lvert \xi \rvert \le 1$, then
