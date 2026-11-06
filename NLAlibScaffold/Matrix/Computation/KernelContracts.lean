@@ -96,7 +96,7 @@ source.
 Proof: `rfl` (or `Prod.ext rfl rfl` after `simp [pairLayout]`). S, 1 line. -/
 theorem pairLayout_get_put (e : K × K) :
     (pairLayout (K := K)).get ((pairLayout (K := K)).put e) = e := by
-  sorry
+  rfl
 
 variable {𝕜 : Type} [RCLike 𝕜]
 
