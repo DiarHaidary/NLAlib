@@ -206,7 +206,31 @@ theorem frobNorm_gram_sub_one_le_of_columns (v : ℕ → Fin n → ℝ) (m : ℕ
     (hd : ∀ c < m, |‖WithLp.toLp 2 (v (c + 1))‖ ^ 2 - 1| ≤ μ) :
     frobNorm ((Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i)ᵀ *
       (Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i) - 1) ≤ Real.sqrt (3 * m) * μ := by
-  sorry
+  have key : ∀ k, k ≤ m → frobNorm ((Matrix.of fun i (d : Fin k) => v ((d : ℕ) + 1) i)ᵀ *
+      (Matrix.of fun i (d : Fin k) => v ((d : ℕ) + 1) i) - 1) ^ 2 ≤ 3 * k * μ ^ 2 := by
+    intro k
+    induction k with
+    | zero => intro _; rw [frobNorm_sq_eq_sum]; simp
+    | succ k ih =>
+      intro hk
+      have hsub : (Matrix.of fun i (d : Fin (k + 1)) => v ((d : ℕ) + 1) i).submatrix id
+          Fin.castSucc = Matrix.of fun i (d : Fin k) => v ((d : ℕ) + 1) i := by
+        ext i d; simp
+      have hcol := frobNorm_gram_sub_one_sq_eq
+        (Matrix.of fun i (d : Fin (k + 1)) => v ((d : ℕ) + 1) i)
+      simp only [hsub, Matrix.of_apply, Fin.val_last] at hcol
+      have hA := pow_le_pow_left₀ (norm_nonneg _) (hg k (by omega)) 2
+      have hB := pow_le_pow_left₀ (abs_nonneg _) (hd k (by omega)) 2
+      rw [sq_abs] at hB
+      rw [hcol]
+      push_cast
+      linarith [ih (by omega)]
+  have hfin := key m le_rfl
+  have hb2 : (Real.sqrt (3 * m) * μ) ^ 2 = 3 * m * μ ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt (by positivity)]
+  have hb0 : 0 ≤ Real.sqrt (3 * m) * μ := by positivity
+  nlinarith [frobNorm_nonneg ((Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i)ᵀ *
+    (Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i) - 1)]
 
 /-- **A nearly orthonormal basis has independent columns** (B7): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 < 1$ then $\mathbf{x} \mapsto
