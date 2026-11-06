@@ -174,6 +174,8 @@ public import NLAlib.Krylov.FinitePrecision.LanczosData
 public import NLAlib.Krylov.FinitePrecision.LanczosDefects
 public import NLAlib.Krylov.FinitePrecision.LanczosFunctions
 public import NLAlib.Krylov.FinitePrecision.LanczosReorthBackward
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthCoefficients
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthResidual
 public import NLAlib.Krylov.FinitePrecision.LanczosReorthRun
 public import NLAlib.Krylov.FinitePrecision.LanczosReorthSpectral
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
