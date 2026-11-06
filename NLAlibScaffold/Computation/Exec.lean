@@ -62,6 +62,14 @@ theorem exec_whileFuel_of_eval_eq_zero {fuel : IExp ℕ} (hf : fuel.eval = 0) (p
   rw [exec, hf, List.range_zero, List.foldlM_nil]
   simp only [Option.pure_def, Option.bind_some, if_true]
 
+/-- A fold whose step fixes every state with flag `false` leaves such a state unchanged. -/
+private theorem foldlM_false_eq {α : Type} (f : α × Bool → ℕ → Option (α × Bool))
+    (hf : ∀ s i, f (s, false) i = some (s, false)) (a : α) (l : List ℕ) :
+    l.foldlM f (a, false) = some (a, false) := by
+  induction l with
+  | nil => rfl
+  | cons i l ih => rw [List.foldlM_cons, hf]; exact ih
+
 /-- **`whileFuel` unrolled by one test**: with fuel $j + 1$, the loop compares; if the comparison
 is true it runs the body and continues with fuel $j$, and otherwise it stops in the charged
 state. No printed source.
@@ -75,6 +83,17 @@ theorem exec_whileFuel_of_eval_eq_succ {fuel : IExp ℕ} {j : ℕ} (hf : fuel.ev
     exec I (.whileFuel fuel p c x y body) st = (cmpStep I p c x y st).bind fun r =>
       if r.1 then (exec I body r.2).bind (exec I (.whileFuel (.const j) p c x y body))
       else some r.2 := by
-  sorry
+  rw [exec, hf, List.range_succ_eq_map, List.foldlM_cons]
+  simp only [List.foldlM_map, ↓reduceIte]
+  rcases hc : cmpStep I p c x y st with _ | ⟨b, s⟩
+  · simp
+  · cases b
+    · simp only [Option.bind_some, Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind]
+      rw [foldlM_false_eq]
+      · rfl
+      · intro s i
+        simp
+    · simp only [Option.bind_some, ↓reduceIte, Option.bind_eq_bind]
+      rcases h : exec I body s with _ | s' <;> simp [exec, IExp.eval_const]
 
 end NLAlib.Computation
