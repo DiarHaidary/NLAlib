@@ -5,18 +5,17 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Node
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Tree
+public import NLAlib.Matrix.Computation.SpectralBisection.Node
+public import NLAlib.Matrix.Computation.SpectralBisection.Tree
 
 /-!
-# Global deterministic guarantee of spectral bisection (scaffold)
+# Global deterministic guarantee of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Global.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): if every internal node
+If every internal node
 of the recursion tree of `NLAlib.eigh` has a good sample, the output is an approximate
 diagonalization with residual $2\varepsilon R_0$ and singular values of $\mathbf{U}$ in
 $[1 - \varepsilon/3, 1 + \varepsilon/3]$ ([Shah2024, Theorem 4.2], deterministic part). The
-probability is in `NLAlibScaffold/Eigensolvers/SpectralBisection.lean`.
+probability is in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
 
 ## Main results
 
@@ -347,28 +346,7 @@ least $2$, and the machine's test $R_y \le \mathrm{fl}(\varepsilon_y R_0)$ fails
 R_y/(2k_y\ell_y(n+1)(\ell+1))$, $x_y = \sqrt{\theta/(8n)}/k_y$, $t_y = \sqrt2(2\sqrt{k_y} +
 \sqrt{2\log(16n/\theta)})$), then the decoded output of $\mathsf{eigh}(\mathbf{A}, \varepsilon)$
 (`NLAlib.eigh`) is an approximate diagonalization of $\mathbf{A}$ with residual $2\varepsilon R_0$
-and singular values within $\varepsilon/3$ of $1$. [Shah2024, Theorem 4.2], deterministic part.
-Proof: induct on the fuel with the node-level hypotheses as a predicate over paths (the
-children's trees are `eighNodeAt a y' (fun a' => s (b :: a'))` definitionally, so no snoc lemma
-is needed); the depth is at most $\ell$
-(`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`), so the budget $\ell + 1$ of
-`NLAlib.eigh` is never exhausted. Treat leaves directly ($k \le 1$ exact; $R \le \varepsilon_y R_0$
-residual $\le \varepsilon_y R_0$; the local lemma's $0 < w$ fails at a leaf with $R_y = 0$). At an
-internal node apply
-`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample`, its
-matrix hypotheses coming from the parent through
-`NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some` (at the root from
-`hA`, `hR₀`), and its parameter hypotheses from the depth $j$: $k_y \le n$, $\ell \le \ell_y \le
-2\ell$, $\varepsilon_y \ge \varepsilon/3$, $R_y \le R_0$, hence `NLAlib.bisectionSignTol` at $y$ is
-at least $\beta$
-(`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`), $w_y/(4R_y) \ge
-\theta/(16n(n+1)\ell(\ell+1))$ and $N_y \le N_*$ (`NLAlib.newtonSchulzSteps_le_of_le_abs`,
-`NLAlib.newtonSchulzSteps_le_of_le`, monotone $\mu$), all up to the factors $(1 \pm u)^{4j}$ of the
-machine-computed parameters: `husign` forces $u \le 10^{-11}\varepsilon$ and `hτ` bounds the floor
-absolutely, so the floor error $u\tau$ in each $\varepsilon_j$ is negligible; the node floor
-condition ($4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon_yR_0)$) and the depth lemmas'
-($100\tau \le \varepsilon\min(R_0, 1)$) follow from `hτ` since $\varepsilon_y \ge \varepsilon/3$.
-At the root $R = R_0$ gives residual $2\varepsilon R_0$. H, about 200 lines. -/
+and singular values within $\varepsilon/3$ of $1$. [Shah2024, Theorem 4.2], deterministic part. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hμM : Monotone μM) (hμQ : Monotone μQ)

@@ -9,14 +9,13 @@ public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Perturbation.DavisKahanGap
 public import NLAlib.Matrix.Spectral.Inertia
 public import NLAlib.Matrix.Spectral.Weyl
-public import NLAlibScaffold.Polynomial.Approximation.NewtonSchulz
+public import NLAlib.Polynomial.Approximation.NewtonSchulz
 public import Mathlib.Data.Real.Sign
 
 /-!
-# The sign of a Hermitian matrix (scaffold)
+# The sign of a Hermitian matrix
 
-Statements for a new file `NLAlib/Matrix/Functions/Sign.lean` (stage HDIAG, wave W1, design note
-`docs/design/Eigensolvers-HermitianDiagonalization.md` §3.2). The sign of a Hermitian matrix is
+The sign of a Hermitian matrix is
 Mathlib's `cfc Real.sign A`; no new definition. The headline is a dimension-free perturbation
 bound, $\|\operatorname{sign}(\mathbf{A}) - \operatorname{sign}(\mathbf{B})\|_2 \le
 2\|\mathbf{A} - \mathbf{B}\|_2/a$ when every eigenvalue of $\mathbf{A}$ has modulus at least $a$,
@@ -42,11 +41,7 @@ namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
 /-- The Newton–Schulz map of a Hermitian matrix is the polynomial
-$g(\mathbf{A}) = \tfrac12\mathbf{A}(3\mathbf{I} - \mathbf{A}^2)$.
-Proof: `cfc_mul`, `cfc_sub`, `cfc_const`, `cfc_id`, `cfc_pow` (Mathlib's unital continuous
-functional calculus) after rewriting
-`NLAlib.newtonSchulz` as `fun x => (2⁻¹ : ℝ) * (x * (3 - x * x))`; or
-`Matrix.IsHermitian.cfc_eq` and a diagonal computation. M, about 12 lines. -/
+$g(\mathbf{A}) = \tfrac12\mathbf{A}(3\mathbf{I} - \mathbf{A}^2)$. -/
 theorem _root_.Matrix.IsHermitian.cfc_newtonSchulz {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
     cfc newtonSchulz A = (2⁻¹ : ℝ) • (A * ((3 : ℝ) • (1 : Matrix n n 𝕜) - A * A)) := by
   have hf : newtonSchulz = fun x : ℝ => (2⁻¹ : ℝ) * (x * ((3 : ℝ) - x * x)) :=
@@ -135,19 +130,7 @@ $$\|\operatorname{sign}(\mathbf{A}) - \operatorname{sign}(\mathbf{B})\|_2 \le
 \frac{2\|\mathbf{A} - \mathbf{B}\|_2}{a} \,.$$
 [Shah2024, Lemma 2.2], there $n\|\mathbf{A} - \mathbf{B}\|_2/(a - \|\mathbf{A} - \mathbf{B}\|_2)$
 for $\|\mathbf{A} - \mathbf{B}\|_2 < a$ and any matrices, by a contour integral; for Hermitian
-matrices the bound is dimension-free and needs no size condition.
-Proof: if $\|\mathbf{E}\|_2 \ge a$, $\mathbf{E} = \mathbf{B} - \mathbf{A}$, the left side is at
-most $2$ (`Matrix.IsHermitian.specNorm_cfc_le` with $\lvert\operatorname{sign}\rvert \le 1$). Else
-$\mathbf{A}$ has $p$ eigenvalues $\ge a$ and $\mathbf{B}$ exactly $p$ eigenvalues
-$\ge a - \|\mathbf{E}\|_2 > 0$ and none in $(-(a - \|\mathbf{E}\|_2), a - \|\mathbf{E}\|_2)$
-(`Matrix.IsHermitian.abs_eigenvalue_sub_le`); $\operatorname{sign} = 2\mathbf{P} - \mathbf{I}$
-for the top-$p$ eigenprojectors (`HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`);
-`Matrix.IsHermitian.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap` with
-$\lambda_{p-1}(\mathbf{A}) - \lambda_p(\mathbf{A}) \ge 2a$ gives
-$\|(\mathbf{I} - \mathbf{P})\mathbf{P}'\|_2 \le \|\mathbf{E}\|_2/a$, and for projectors of equal
-rank $\|\mathbf{P} - \mathbf{P}'\|_2 = \|(\mathbf{I} - \mathbf{P})\mathbf{P}'\|_2$
-(`IsStarProjection.singularValues_one_sub_mul_eq_of_rank_eq`). Cases $p = 0$ and
-$p = \lvert n \rvert$ separately (then the sign is $\mp\mathbf{I}$ for both). M, about 70 lines. -/
+matrices the bound is dimension-free and needs no size condition. -/
 theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) {a : ℝ} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ A, a ≤ |x|) :
@@ -226,10 +209,7 @@ theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le {A B : Matri
 /-- The Newton–Schulz map does not change the sign: for Hermitian $\mathbf{A}$ with
 $0 < \lvert \lambda \rvert < \sqrt3$ for every eigenvalue,
 $\operatorname{sign}(g(\mathbf{A})) = \operatorname{sign}(\mathbf{A})$. [Shah2024, proof of
-Theorem 2.6].
-Proof: `cfc_comp` (Mathlib `cfc_comp'`), and $\operatorname{sign} \circ g = \operatorname{sign}$
-on the spectrum (`NLAlib.mul_newtonSchulz_add_pos` at $\xi = u = 0$, or directly:
-$g(x) = x(3 - x^2)/2$ has the sign of $x$), `cfc_congr`. M, about 12 lines. -/
+Theorem 2.6]. -/
 theorem _root_.Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : ∀ x ∈ spectrum ℝ A, 0 < |x| ∧ |x| < √3) :
     cfc Real.sign (cfc newtonSchulz A) = cfc Real.sign A := by
@@ -258,12 +238,7 @@ theorem _root_.Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz {A : Matrix n n 𝕜
 /-- A Hermitian matrix with nearly unimodular eigenvalues is near its sign: if
 $\lvert 1 - \lambda^2 \rvert \le \delta$ for every eigenvalue $\lambda$, then
 $\|\mathbf{A} - \operatorname{sign}(\mathbf{A})\|_2 \le \delta$. [Shah2024, proof of
-Theorem 2.6].
-Proof: $\mathbf{A} - \operatorname{sign}(\mathbf{A}) = f(\mathbf{A})$ with
-$f(x) = x - \operatorname{sign}(x)$ (`cfc_sub`, `cfc_id'`), and
-$\lvert x - \operatorname{sign} x \rvert = \lvert \lvert x \rvert - 1 \rvert \le
-\lvert 1 - x^2 \rvert$ for $x \ne 0$ and $0 \le 1$ at $x = 0$; `Matrix.IsHermitian.specNorm_cfc_le`.
-S, about 15 lines. -/
+Theorem 2.6]. -/
 theorem _root_.Matrix.IsHermitian.specNorm_sub_cfc_sign_le {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     {δ : ℝ} (hδ : 0 ≤ δ) (h : ∀ x ∈ spectrum ℝ A, |1 - x ^ 2| ≤ δ) :
     specNorm (A - cfc Real.sign A) ≤ δ := by
@@ -287,12 +262,7 @@ $\mathbf{V}\mathbf{V}^{\mathsf{H}} = \tfrac12(\mathbf{I} + \operatorname{sign}(\
 c\mathbf{I}))$, $\mathbf{A}\mathbf{V} = \mathbf{V}(\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V})$,
 and the spectrum of $\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V}$ lies in the spectrum of
 $\mathbf{A}$ above $c$. The negative side is this lemma for $-\mathbf{A}$ and $-c$.
-[Shah2024, proof of Lemma 4.1].
-Proof: take the eigenvectors of `Matrix.IsHermitian.eigenvectorBasis` with eigenvalue $> c$,
-reindexed by `Fin k` (`Matrix.IsHermitian.lt_inertiaPos_iff` counts them);
-`HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose` for the projector,
-`Matrix.IsHermitian.cfc_mul_eq_mul_diagonal_of_mul_eq` for the invariance; the compression is
-diagonal with those eigenvalues. M, about 60 lines. -/
+[Shah2024, proof of Lemma 4.1]. -/
 theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_mul_conjTranspose_eq
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) :
     ∃ V : Matrix n (Fin (inertiaPos (A - c • (1 : Matrix n n 𝕜)))) 𝕜, HasOrthonormalCols V ∧
@@ -359,11 +329,7 @@ theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_mul_conjTranspose_eq
 
 /-- **The trace of a spectral projector is the inertia**: for Hermitian $\mathbf{A}$ and $c$ not an
 eigenvalue, $\operatorname{Re}\operatorname{tr}\tfrac12(\mathbf{I} + \operatorname{sign}(\mathbf{A}
-- c\mathbf{I})) = i_+(\mathbf{A} - c\mathbf{I})$. [Shah2024, proof of Lemma 4.1].
-Proof: `Matrix.IsHermitian.re_trace_cfc` for $f(x) = \tfrac12(1 + \operatorname{sign}(x - c))$
-(the left side is $\operatorname{tr}$ of `cfc` of it, `cfc_add`, `cfc_const`), which is the
-indicator of $(c, \infty)$ on the spectrum; count with `NLAlib.inertiaPos` and
-`Matrix.IsHermitian.lt_inertiaPos_iff`. M, about 20 lines. -/
+- c\mathbf{I})) = i_+(\mathbf{A} - c\mathbf{I})$. [Shah2024, proof of Lemma 4.1]. -/
 theorem _root_.Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) :
     RCLike.re ((2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix n n 𝕜)))).trace =

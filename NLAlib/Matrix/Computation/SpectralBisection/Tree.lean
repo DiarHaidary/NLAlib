@@ -5,13 +5,12 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Child
+public import NLAlib.Matrix.Computation.SpectralBisection.Child
 
 /-!
-# The recursion tree of spectral bisection (scaffold)
+# The recursion tree of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Tree.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): the tree of
+The tree of
 `NLAlib.eighNodeAt` from a root with depth counter $\ell \ge$ `NLAlib.bisectionDepth`
 $\varepsilon$ has depth at most $\ell$, its nodes have size at most the root's, depth counter
 $\ell + \lvert a\rvert$, tolerance in $[\varepsilon/3, \varepsilon]$ and window at most $R_0$,
@@ -327,24 +326,7 @@ have floor errors $u\tau$) and $16(R_0 + \ell) \le \Omega$, for stored $\varepsi
 \rceil + 5$ (`NLAlib.bisectionDepth`), the tree of `NLAlib.eighNodeAt` from the root
 $(\mathbf{A}, R_0, \varepsilon, \ell)$ has no node at a path longer than $\ell$, for every
 accuracy and samples. [Shah2024, proof of Theorem 4.2], "the
-depth of the tree $d$ is no more than $\ell$".
-Proof: a node at depth $j$ has window $R_j$ within a factor $(1 + u)^{4j}$ of
-$R_0\prod_{i<j}(1/2 + 2/(\ell + i))$ and tolerance $\varepsilon_j$ within $(1 - u)^{4j}$ of
-$\varepsilon(\ell - 1)/(\ell + j - 1)$ (the machine's rounded parameters, `NLAlib.eighNextParams`)
-and depth parameter $\ell + j$ (induction on the path, unfolding `NLAlib.eighChild`); the products
-telescope: $\prod_{i<\ell}(\ell + i + 4)/(\ell + i) = \frac{2\ell(2\ell+1)(2\ell+2)(2\ell+3)}
-{\ell(\ell+1)(\ell+2)(\ell+3)} =: P_\ell$; with $2^{-\ell} \le \varepsilon/32$ (`Nat.le_ceil`,
-`Real.rpow_logb`) it suffices that $P_\ell/32 \le (\ell - 1)/(2\ell - 1)$, i.e.
-$(2\ell+1)(2\ell+3)(2\ell-1) \le 8(\ell-1)(\ell+2)(\ell+3)$, whose difference is
-$20\ell^2 + 10\ell - 45 > 0$ for $\ell \ge 2$ (at $\ell = 20$: $0.4355 \le 0.487$), so
-$R_\ell \le \varepsilon_\ell R_0$ with a relative margin of order $1/\ell$, which absorbs
-$(1 + u)^{8\ell} \le 1 + 1/(10\ell)$ and the rounding of the test $\mathrm{fl}(\varepsilon_\ell
-R_0)$ (floor: $\tau \le \varepsilon R_0/100$), and
-the node at depth $\ell$ is a leaf of `NLAlib.eighStep`. Since $\ell$ is any number $\ge$
-`NLAlib.bisectionDepth`, $R_j$ may drop below $\tau$: state the invariant with the additive floor
-term, $R_{j+1} \le (\tfrac12 + \tfrac2{\ell_j})R_j(1 + u)^4 + u\tau$, summed $\le 2\ell u\tau \le
-\varepsilon R_0/(5000\ell)$, far inside the margin. L, about 60 lines (path induction with four
-roundings per level, the telescoping identity over $\mathbb{N}$, `Real.logb`). -/
+depth of the tree $d$ is no more than $\ell$". -/
 theorem FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ}
@@ -538,17 +520,16 @@ private theorem FloatMachine.IsAccurate.dec_eighNextParams_fst_le {F : Type*}
   have := mul_le_mul_of_nonneg_right hu5 (by linarith : 0 ≤ dec r)
   linarith
 
-/-- **The parameters of the nodes**: under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`, every node $y$ of the tree at a
+/-- **The parameters of the nodes**: let the machine meet `NLAlib.FloatMachine.IsAccurate` with $0
+\le u$, $100\ell^2u \le 1$, floor
+$0 \le \tau$ with $100\tau \le \varepsilon\min(R_0, 1)$ and range $16(R_0 + \ell) \le \Omega$, and
+let
+the root $(k, \mathbf{A}, R_0, \varepsilon, \ell)$ have $0 < \varepsilon \le 2^{-15}$, $R_0 > 0$ and
+$\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$. Then every node $y$ of the tree at a
 path $a$ has $\lvert a \rvert \le \ell$, size at most the root's, depth counter $\ell +
 \lvert a\rvert$, tolerance in $[\varepsilon/3, \varepsilon]$ and window at most $R_0$. (Not
 $R_y \ge 0$: a rounded product can be $-u\tau$; such a node is a leaf.) [Shah2024, proof of
-Theorem 4.2].
-Proof: induction on the path with the invariants of
-`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`'s proof (sizes do not grow: a
-split partitions, a shift keeps; $\varepsilon_j \ge \tfrac{19}{39}(1 - \delta)^\ell\varepsilon$;
-$R_j \le R_0$ since $(1/2 + 2/\ell)(1 + u)^4 \le 1$ plus the summed floor term). M, about 80
-lines. -/
+Theorem 4.2]. -/
 theorem FloatMachine.IsAccurate.eighNodeAt_eq_some_params
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ}
@@ -721,15 +702,14 @@ private lemma encard_eighNodeAt_length_eq_le {F Su Sg : Type*} [Inhabited Sg]
         have hk : max yp.k 1 + max ym.k 1 ≤ max x.k 1 := by simp only [yp, ym]; omega
         exact_mod_cast hk
 
-/-- **The recursion tree has at most $(k + 1)(\ell + 1)$ nodes**: under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`, the set of paths at which
+/-- **The recursion tree has at most $(k + 1)(\ell + 1)$ nodes**: let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $0 \le u$, $100\ell^2u \le 1$, floor
+$0 \le \tau$ with $100\tau \le \varepsilon\min(R_0, 1)$ and range $16(R_0 + \ell) \le \Omega$, and
+let
+the root $(k, \mathbf{A}, R_0, \varepsilon, \ell)$ have $0 < \varepsilon \le 2^{-15}$, $R_0 > 0$ and
+$\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$. Then the set of paths at which
 `NLAlib.eighNodeAt` has a node has at most $(k + 1)(\ell + 1)$ elements, $k$ the size of the root.
-[Shah2024, proof of Theorem 4.2], $\lvert X \rvert \le nd$ there.
-Proof: below the root every node has size at least $1$, and the sizes of the nodes at one depth
-sum to at most $k$ (a split partitions its size, a shift keeps it, a leaf has no child: unfold
-`NLAlib.eighChild`, `NLAlib.eighStep`); with the depth bound, at most $k + 1$ nodes at each of the
-depths $0, \dots, \ell$ (`Set.encard_le_card`-type counting over `List Bool` of bounded length,
-`Set.encard_iUnion_le`). L, about 70 lines. -/
+[Shah2024, proof of Theorem 4.2], $\lvert X \rvert \le nd$ there. -/
 theorem FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ}
@@ -847,13 +827,7 @@ private lemma encard_eighNodeAt_isSplit_length_lt_le {F Su Sg : Type*} [Inhabite
 /-- **At most $k$ nodes split**: for every machine, root of size $k$, accuracy and samples, the set
 of paths at which `NLAlib.eighNodeAt` has a node whose step `NLAlib.eighStep` (with that path's
 sample) is a split has at most $k$ elements. [Shah2024, proof of Theorem 4.2],
-$\lvert X_D \rvert = n - 1$ there.
-Proof: the tree may be infinite (chains of shifts), so do not induct on the size alone: prove
-$S_m(x) \le \max(k - 1, 0)$ for the splits at paths of length at most $m$, by induction on $m$
-uniformly in $x$ (a shift: $S_m(x) = S_{m-1}(x')$ with the same size; a split: children of sizes
-$k_+, k - k_+ \ge 1$ and $\max(k_+ - 1, 0) + \max(k - k_+ - 1, 0) + 1 \le k - 1$; a leaf: $0$;
-count with `Set.encard_union_le` over the paths starting with `true` and `false`), then pass to
-the union over $m$ (`Set.encard_iUnion_le`-type monotone limit). L, about 80 lines. -/
+$\lvert X_D \rvert = n - 1$ there. -/
 theorem encard_eighNodeAt_isSplit_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
     {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) :
     {a : List Bool | ∃ y, eighNodeAt M N signFuel R₀ β a x s = some y ∧

@@ -5,23 +5,21 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Eigensolvers.RandomizedDeflation
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Global
+public import NLAlib.Eigensolvers.RandomizedDeflation
+public import NLAlib.Matrix.Computation.SpectralBisection.Global
 public import Mathlib.Probability.ConditionalProbability
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 
 /-!
-# Hermitian diagonalization in linear precision: the nodes (scaffold)
+# Hermitian diagonalization in linear precision: the nodes
 
-Statements for a new file `NLAlib/Eigensolvers/SpectralBisection.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.9; the folder
-`NLAlib/Eigensolvers` is open question OQ1). Randomized spectral bisection (`NLAlib.eigh`) draws
+Randomized spectral bisection (`NLAlib.eigh`) draws
 at each node of its tree an ideal sample of law `NLAlib.eighSampleLaw` (a uniform seed on
 $[-1, 1]$ and two independent standard complex Gaussian matrices). This file bounds the
 probability that the sample of one node is bad ([Shah2024, Lemma 4.1]) and shows that the node
 at a path is a countably-valued, measurable function of the earlier samples, independent of its
 own sample: all the probability argument needs about the algorithm's measurability. The global
-bound, [Shah2024, Theorem 4.2], is in `NLAlibScaffold.Eigensolvers.SpectralBisection.Global`.
+bound, [Shah2024, Theorem 4.2], is in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
 
 ## Main definitions
 
@@ -54,11 +52,7 @@ $c > 0$, $w \ge 0$ and $v$ uniform on $[-1, 1]$,
 $$\mathbb{P}[\exists \lambda \in \Lambda,\ \lvert \lambda - cv \rvert < w] \le
 \frac{\lvert\Lambda\rvert\,w}{c} \,.$$
 [Shah2024, proof of Lemma 4.1], there with the density $\ell/(2R)$ of the shift and the bound
-$nw/R$, which drops the factor $\ell$; here $c = R/\ell$ gives $nw\ell/R$.
-Proof: the event is the union over $\lambda$ of $\{v : \lvert v - \lambda/c \rvert < w/c\}$, each
-of uniform measure at most $(2w/c)/2$ (`ProbabilityTheory.cond_apply`,
-`Real.volume_Ioo`, `MeasureTheory.measure_mono` to the interval, `Real.volume_Icc`);
-`MeasureTheory.measure_biUnion_finset_le`. M, about 25 lines. -/
+$nw/R$, which drops the factor $\ell$; here $c = R/\ell$ gives $nw\ell/R$. -/
 theorem measureReal_exists_abs_sub_lt_le (Λ : Finset ℝ) {c w : ℝ} (hc : 0 < c) (hw : 0 ≤ w) :
     (ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)).real
       {v | ∃ e ∈ Λ, |e - c * v| < w} ≤ Λ.card * w / c := by
@@ -436,45 +430,27 @@ private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : 
       exact h1 hv
     · exact Or.inl hv
 
-/-- **Probability of the good events of a node**: under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` on the
-node $y$ (contracts, precision, step limit, floor and range) with $2 \le k \le N$ and the machine's
-leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ failing, the
+/-- **Probability of the good events of a node**: let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $u \ge 0$ and
+$\mu_{\mathrm{MM}}(k), \mu_{\mathrm{QR}}(k), c_{\mathrm N} \ge 0$, and let the node $(k, \mathbf{A},
+R, \varepsilon, \ell)$ have $\mathbf{A}$
+Hermitian with $\|\mathbf{A}\|_2 \le R$, $2 \le k \le N$, $\ell \ge 20$, $0 < \varepsilon \le 1/8$,
+$R_0 > 0$
+and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ failing. Let $0 < \rho \le 1$,
+$0 < w \le R$, $0 < \beta \le$ `NLAlib.bisectionSignTol` $k\,\varepsilon\,\rho\,\ell$, the sign
+precision
+$640k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_w + 1)u \le (w/(4R))\beta$ with
+$N_w =$ `NLAlib.newtonSchulzSteps` $(w/(8R))\,(\beta/(16k))$ at most the step limit, the floor
+$0 \le \tau$ with $4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and the range
+$16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$. Let also the deflation precision
+$(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)u \le \beta$ hold.
+Then the
 sample law `NLAlib.eighSampleLaw` $N$ gives the bad events (`NLAlib.IsEighGoodSample` with $w$,
 $x = \sqrt{\rho/2}/k$, $t = \sqrt2(2\sqrt k + \sqrt{2\log(4/\rho)})$ failing) probability at most
 $$\frac{kw\ell}{R} + 2\rho\,\mathbb{P}[\text{the node splits}] \,,$$
 the node splitting when `NLAlib.eighStep` is `NLAlib.EighStep.split`. [Shah2024, Lemma 4.1],
 "Event I occurs with probability at least $1 - wn/R$ and Event II with probability at least
-$1 - 2\rho$".
-Proof: Event I fails with probability at most $kw\ell/R$
-(`NLAlib.measureReal_exists_abs_sub_lt_le` with $\Lambda$ the eigenvalues, $c = R/\ell$; the
-first marginal of `NLAlib.eighSampleLaw`; the seed lies in $[-1, 1]$ almost surely). On Event I
-the node splits exactly when the true projector has rank strictly between $0$ and $k$
-(`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub`), and the split depends
-on the seed only. Given the seed, the two Gaussian matrices are independent with the complex
-Gaussian law (`MeasureTheory.Measure.prod_apply`, `MeasureTheory.Measure.pi_pi`), and for each side
-the leading block fails Event II with probability at most $2e^{-\log(4/\rho)} + k^2 \cdot
-\rho/(2k^2) = \rho$
-(`NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le`'s two tails:
-`NLAlib.measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix`,
-`NLAlib.measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix`,
-`NLAlib.hasLaw_submatrix_of_hasLaw_complexGaussianMatrix` for the leading block,
-`NLAlib.leadingBlock` $k$ $\mathbf{G}$ the submatrix along `Fin.castLE`). The sets of split seeds
-and of samples failing Event II depend on the seed through the machine and need not be measurable,
-so do not apply `MeasureTheory.Measure.prod_apply` to them; use a measurable superset:
-$\lnot\mathrm{good} \subseteq \lnot\mathrm{I} \cup (\mathrm{I} \cap J \cap B)$ with $J = \{v \mid 0
-< i_+(\mathbf{A} - (R/\ell)v\mathbf{I}) < k\}$ (an open interval between extreme eigenvalues) and
-$B = \bigcup_b\{(v, \mathbf{G}) \mid \|\mathbf{G}_b\|_2 \ge t \lor
-\sigma_{r(v)-1}(\mathbf{\Pi}_b(v)\mathbf{G}_{b,1}) \le x\}$, measurable since $r(v)$ and
-$\mathbf{\Pi}_b(v)$ are piecewise constant in $v$ (finitely many values) and norms and singular
-values are continuous; `NLAlib.HasOrthonormalCols.singularValues_mul_left` gives
-$\sigma(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) = \sigma(\mathbf{\Pi}\mathbf{G}_1)$, so the bad event
-does not depend on the frame $\mathbf{V}$ quantified in `NLAlib.IsEighGoodSample`. Then
-`MeasureTheory.Measure.prod_apply` with the tails gives fibre measure $\le \rho$ per side, and
-$\mathrm{I} \cap J \subseteq \{\text{split seeds}\}$ (the forward direction of rank recovery) with
-`MeasureTheory.Measure.prod_prod` (valid for arbitrary sets) gives $\le
-2\rho\,\mathbb{P}[\text{split}]$; $k_+$ depends on the sample only through the seed. H, about 150
-lines. -/
+$1 - 2\rho$". -/
 theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
@@ -599,20 +575,12 @@ private lemma countable_range_eighChild {F : Type*} {M : FloatMachine F ℝ ℂ}
   rw [dif_pos hs]
   exact eighChild_eq_of_eighSampleKey_eq x hs.choose_spec b
 
-/-- **The nodes take countably many values**: if the computed samples have countably many values
+/-- The nodes take countably many values: if the computed samples have countably many values
 (the uniform sampler at every scale and the normal sampler have countable ranges, as the
 floating-point numbers do), then for every root and path the node `NLAlib.eighNodeAt` ranges over
 a countable set as the samples vary. No printed source.
 The algorithm can reach its ideal samples only through the samplers, since their types are
-abstract in `NLAlib.eighStep` (§2.0 of the note).
-Proof: induction on the path: the node at `b :: a` is a function of the root, of the computed
-shift $\mathrm{unif}(\mathrm{fl}(R/\ell), v)$ (countable range for each stored scale; the
-stored scales of the nodes form a countable set because they are computed from the root and
-earlier countably-valued samples) and of
-the computed leading blocks $(\mathrm{normal}(\mathbf{G}_{i,j}))$ of the root's sample (countably
-many for each of countably many sizes; `Set.Countable.image`, `Set.countable_iUnion`,
-`Set.Countable.prod`, `Set.countable_setOf_finite_subset`-type lemmas for finite tuples), and of
-the node at `a` in the subtree. M, about 50 lines. -/
+abstract in `NLAlib.eighStep` (§2.0 of the note). -/
 theorem countable_range_eighNodeAt {F : Type*} {M : FloatMachine F ℝ ℂ}
     (hunif : ∀ c, (Set.range (M.unif c)).Countable) (hnormal : (Set.range M.normal).Countable)
     (N signFuel : ℕ) (R₀ β : F) (a : List Bool) (x : EighNode F) :
@@ -654,15 +622,10 @@ private lemma measurableSet_preimage_of_countable_range_fibres {Ω' α : Type*}
   rw [this]
   exact MeasurableSet.biUnion (hc.mono Set.inter_subset_right) fun z _ => hf z
 
-/-- **The node at a path is an event of the earlier samples**: if the samplers have measurable
+/-- The node at a path is an event of the earlier samples: if the samplers have measurable
 fibres and countable ranges and each sample $\zeta_b$ is measurable, then for every root $x$, path
 $a$ and possible node $y$, the set of outcomes at which the node at $a$ is $y$ is measurable. No
-printed source.
-Proof: the node at $a$ is a function of the computed samples at the proper prefixes of $a$, a
-finite tuple of measurable maps into countable sets
-(`NLAlib.countable_range_eighNodeAt`'s decomposition); its fibre at $y$ is a countable union of
-fibres of that tuple (`MeasurableSet.iUnion`, `measurableSet_eq_fun`-type lemmas,
-`Measurable.comp`). L, about 60 lines. -/
+printed source. -/
 theorem measurableSet_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
     (hunif : ∀ c, (Set.range (M.unif c)).Countable)
@@ -750,21 +713,13 @@ private lemma eighNodeAt_eq_of_forall_lt_length {F : Type*} {M : FloatMachine F 
     funext y
     exact ih y fun i hi => h (i + 1) (by simpa using hi)
 
-/-- **The node at a path is independent of its own sample**: under the hypotheses of
-`NLAlib.measurableSet_eighNodeAt_eq` and independence of the samples
-($(\zeta_b)_b$ mutually independent), the event that the node at the path $a$ is $y$ is
+/-- **The node at a path is independent of its own sample**: let the machine's samplers have
+measurable
+fibres and countable ranges (`M.unif c` for every stored scale $c$, and `M.normal`), and let the
+ideal samples $(\zeta_b)_b$ be measurable and mutually independent. Then for every path $a$, root
+and value $y$ the event that the node at the path $a$ is $y$ is
 independent of $\zeta_a$. No printed source; [Shah2024, proof of Theorem 4.2] uses it implicitly
-("Event I ... $c'$ is sampled from a density bounded by $\ell/2R$").
-Proof: the event is measurable with respect to $\sigma(\zeta_b : b \text{ a proper prefix of }
-a)$ (the decomposition of `NLAlib.measurableSet_eighNodeAt_eq`, with each computed sample a
-function of one $\zeta_b$), and $a$ is not a proper prefix of itself;
-`ProbabilityTheory.iIndepFun.indepFun_finset` (disjoint finite index sets $\{a\}$ and the proper
-prefixes) and `ProbabilityTheory.IndepFun.comp`; cleanest as a prefix-dependence lemma (the node
-at $a$ agrees for samples agreeing on the proper prefixes of $a$, induction on $a$) and the
-measurability lemma on the product over the proper prefixes, with
-`ProbabilityTheory.iIndepFun.indepFun_finset`, `ProbabilityTheory.IndepFun.comp` and
-`measurableSet_setOf`. H, about 90 lines (the decomposition through the
-prefixes, shared with `NLAlib.measurableSet_eighNodeAt_eq`, is the work). -/
+("Event I ... $c'$ is sampled from a density bounded by $\ell/2R$"). -/
 theorem indepFun_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
     (hunif : ∀ c, (Set.range (M.unif c)).Countable)

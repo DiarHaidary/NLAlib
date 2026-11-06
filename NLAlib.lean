@@ -37,6 +37,9 @@ public import NLAlib.Computation.Subst
 public import NLAlib.Computation.Syntax
 public import NLAlib.Computation.Underflow
 public import NLAlib.Computation.VectorErrors
+public import NLAlib.Eigensolvers.RandomizedDeflation
+public import NLAlib.Eigensolvers.SpectralBisection
+public import NLAlib.Eigensolvers.SpectralBisection.Global
 public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Spectral.SpectralDensity
 public import NLAlib.Estimation.Spectral.SpectralDensitySphere
@@ -310,6 +313,7 @@ public import NLAlib.LowRank.Structural.EarlyTruncation
 public import NLAlib.LowRank.Structural.Filter
 public import NLAlib.LowRank.Structural.RangeFinder
 public import NLAlib.LowRank.Structural.Truncation
+public import NLAlib.LowerBounds.Eigensolvers.Precision
 public import NLAlib.LowerBounds.Krylov.LinearSystems
 public import NLAlib.LowerBounds.LowRank.EarlyTruncation
 public import NLAlib.LowerBounds.LowRank.EarlyTruncationBlock
@@ -349,6 +353,12 @@ public import NLAlib.Matrix.Computation.NewtonSchulzSign
 public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Computation.ResidualGap
 public import NLAlib.Matrix.Computation.SpectralBisection
+public import NLAlib.Matrix.Computation.SpectralBisection.Child
+public import NLAlib.Matrix.Computation.SpectralBisection.Global
+public import NLAlib.Matrix.Computation.SpectralBisection.Node
+public import NLAlib.Matrix.Computation.SpectralBisection.Projectors
+public import NLAlib.Matrix.Computation.SpectralBisection.Split
+public import NLAlib.Matrix.Computation.SpectralBisection.Tree
 public import NLAlib.Matrix.Computation.Underflow
 public import NLAlib.Matrix.Factorizations.Cholesky
 public import NLAlib.Matrix.Factorizations.ColumnVolume
@@ -388,6 +398,7 @@ public import NLAlib.Matrix.Functions.OperatorMonotone
 public import NLAlib.Matrix.Functions.Perspective
 public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositivePart
+public import NLAlib.Matrix.Functions.Sign
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
 public import NLAlib.Matrix.Inequalities.Block
@@ -534,6 +545,7 @@ public import NLAlib.Polynomial.Orthogonal.Radau
 public import NLAlib.Polynomial.Orthogonal.RadauJacobi
 public import NLAlib.Polynomial.Orthogonal.Recurrence
 public import NLAlib.Polynomial.Orthogonal.Zeros
+public import NLAlib.Probability.AdaptiveUnionBound
 public import NLAlib.Probability.BoundedDifferences
 public import NLAlib.Probability.ConvexOrder
 public import NLAlib.Probability.Distributions.ChiSquare

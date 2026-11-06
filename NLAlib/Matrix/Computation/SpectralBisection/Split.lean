@@ -5,14 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.Deflation
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Projectors
+public import NLAlib.Matrix.Computation.Deflation
+public import NLAlib.Matrix.Computation.SpectralBisection.Projectors
 
 /-!
-# Frames, deflated bases and compressions at a split of spectral bisection (scaffold)
+# Frames, deflated bases and compressions at a split of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Split.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): when the step of a node
+When the step of a node
 of `NLAlib.eighStep` with a good sample is a split, each side has an orthonormal frame of the
 true spectral projector, the computed basis is within $\eta = (1 - 1/\ell)\varepsilon/(5\ell)$ of
 a rotation of that frame (deflation, Event II), and the stored child is within $(2 + 2\eta)R\eta$
@@ -616,20 +615,7 @@ spectrum in $[c', R]$ (resp. $[-R, c']$), a unitary $\mathbf{W}$ with
 $\|\mathbf{V}\mathbf{W} - \mathbf{Q}_\pm\|_2 \le \eta$, and
 $\|\mathbf{A}_\pm - (\mathbf{W}^{\mathsf{H}}\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V}\mathbf{W}
 \mp \sigma\mathbf{I})\|_2 \le (2 + 2\eta)R\eta$. [Shah2024, proof of Lemma 4.1], (4.10)–(4.13).
-(The shift bound is $3u$ rather than $u$: $\mathrm{fl}(2)$ is a rounded conversion.)
-Proof: the split and the ranks come from
-`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub`'s argument, here via
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le` and the inertia;
-the frames from `Matrix.IsHermitian.exists_hasOrthonormalCols_mul_conjTranspose_eq` (for the minus
-side applied to $-\mathbf{A}$, $-c'$, with `NLAlib.inertiaNeg_eq_inertiaPos_neg` and
-`Matrix.IsHermitian.inertiaPos_add_inertiaNeg` to identify $k - k_+$); deflation by
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` with
-$\mathbf{S} = \mathbf{I}_r$ ($6m\beta \le (2 + \beta)\eta/3 \le 0.67\eta$; its floor and range
-hypotheses from `hτ` and `hΩ`, $\tau\sqrt k \le x/4$, $2(1 + \beta)t \le \Omega$); the compressions
-through `NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat`, the product contract,
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le`,
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le` and
-`NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`. L, about 150 lines. -/
+(The shift bound is $3u$ rather than $u$: $\mathrm{fl}(2)$ is a rounded conversion.) -/
 theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}

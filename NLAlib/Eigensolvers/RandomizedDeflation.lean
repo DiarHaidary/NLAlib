@@ -5,15 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.Deflation
-public import NLAlibScaffold.RandomMatrix.Gaussian.Complex
+public import NLAlib.Matrix.Computation.Deflation
+public import NLAlib.RandomMatrix.Gaussian.Complex
 
 /-!
-# Randomized deflation with a complex Gaussian test matrix (scaffold)
+# Randomized deflation with a complex Gaussian test matrix
 
-Statement for a new file `NLAlib/Eigensolvers/RandomizedDeflation.lean` (stage HDIAG, wave W3,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.6; the folder
-`NLAlib/Eigensolvers` is open question OQ1 of the note). With a standard complex Gaussian sample,
+With a standard complex Gaussian sample,
 the deterministic bound of
 `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`
 holds with $m$ replaced by its high-probability bound ([Shah2024, Theorem 3.3]).
@@ -222,19 +220,7 @@ $$\mathbb{P}\bigl[\text{no unitary } \mathbf{W} \text{ has }
 \le 2e^{-t^2/2} + r^2x^2 \,,$$
 $\mathsf{deflate}$ the algorithm `NLAlib.deflate` with sample $\mathbf{G}$. [Shah2024, Theorem 3.3],
 there with $(2\sqrt2 + t)\sqrt n$, failure $2e^{-nt^2} + (r/2)x^2$ and the requirement on $\beta$
-written out; the constants differ through Lemmas 3.1 and 3.2.
-Proof: outside the events $\{\|\mathbf{G}\|_2 \ge \sqrt2(2\sqrt n + t)\}$
-(`NLAlib.measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix`) and
-$\{\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) \le x\}$
-(`NLAlib.hasLaw_submatrix_of_hasLaw_complexGaussianMatrix`,
-`NLAlib.hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix`,
-`NLAlib.measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix`), the matrix
-$\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ is invertible with inverse of norm below $1/x$
-(`NLAlib.singularValues_last_mul_norm_le`), $\|\mathbf{G}\|_2 \ge x$, so $m \le \bar m$,
-$\|\mathbf{G}\|_2 < \sqrt2(2\sqrt n + t) \le \Omega$ (from `hΩ`), and
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` applies;
-union bound (`MeasureTheory.measureReal_union_le`, `MeasureTheory.measureReal_mono`). Case $r = 0$
-trivial. M, about 60 lines. -/
+written out; the constants differ through Lemmas 3.1 and 3.2. -/
 theorem FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)

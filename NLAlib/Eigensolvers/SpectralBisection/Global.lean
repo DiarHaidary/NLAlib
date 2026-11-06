@@ -5,16 +5,14 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Eigensolvers.SpectralBisection
-public import NLAlibScaffold.Probability.AdaptiveUnionBound
+public import NLAlib.Eigensolvers.SpectralBisection
+public import NLAlib.Probability.AdaptiveUnionBound
 public import NLAlib.Computation.BinaryFloat
 
 /-!
-# Hermitian diagonalization in linear precision (scaffold)
+# Hermitian diagonalization in linear precision
 
-Statements for a new file `NLAlib/Eigensolvers/SpectralBisection/Global.lean` (stage HDIAG, wave
-W4, design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.9; the folder
-`NLAlib/Eigensolvers` is open question OQ1). The main theorem ([Shah2024, Theorem 4.2]):
+The main theorem ([Shah2024, Theorem 4.2]):
 randomized spectral bisection (`NLAlib.eigh`) on a floating-point machine with black-box
 multiplication and QR returns, with
 probability at least $1 - \theta$, an approximate diagonalization with residual
@@ -22,7 +20,7 @@ $2\varepsilon R_0$ and $\mathbf{U}$ within $\varepsilon/3$ of unitary, using
 $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ bits of
 precision. The samples of the nodes are independent, each with the law `NLAlib.eighSampleLaw`;
 the node bounds and the measurability of the nodes are in
-`NLAlibScaffold.Eigensolvers.SpectralBisection`, and the union bound over the adaptively grown
+`NLAlib/Eigensolvers/SpectralBisection.lean`, and the union bound over the adaptively grown
 tree is `NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral`.
 
 ## Main results
@@ -622,27 +620,7 @@ diagonalization with residual } 2\varepsilon R_0 \text{ and } \mathbf{U} \text{ 
 $\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. [Shah2024, Theorem 4.2], there with
 $R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies, the bit count of
 `NLAlib.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` with other constants, and an
-operation count (not formalized).
-Proof: the bad event is contained in "some internal node of the tree has a bad sample"
-(contrapositive of
-`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample`). Apply
-`NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral` with index the paths, state $X_a$
-the node at $a$ (`NLAlib.countable_range_eighNodeAt`, `NLAlib.measurableSet_eighNodeAt_eq`,
-`NLAlib.indepFun_eighNodeAt_eq`), bad set the complement of `NLAlib.IsEighGoodSample` at internal
-nodes (empty elsewhere) and charge $k w \ell/R + 2\rho\,[\text{split}]$ = $\theta/(2(n+1)(\ell+1))
-+ (\theta/(2n))[\text{split}]$ (`NLAlib.FloatMachine.IsAccurate.measure_not_isEighGoodSample_le`);
-the charges sum to at most $\theta/2 + \theta/2$ by
-`NLAlib.FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le` and
-`NLAlib.encard_eighNodeAt_isSplit_le`. The node hypotheses come from the global ones as in the
-proof of `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample`,
-with `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` ($\ell_y \le 2\ell$,
-$\varepsilon_y \ge \varepsilon/3$, $R_y \le R_0$). Two side obligations: the charge contains the
-indicator of the split seeds, which UB1's `hq` needs measurable: it is the countable union over
-the range of `unif` of its fibres (`hunifc`, `hunifm`), about 20 lines; and
-`MeasureTheory.IsProbabilityMeasure` $\mu$ comes from `hlaw`
-(`ProbabilityTheory.HasLaw.isProbabilityMeasure_iff`, `NLAlib.eighSampleLaw` being a probability
-measure: `ProbabilityTheory.cond` of `Set.Icc` with positive finite volume, `Measure.pi`,
-`Measure.prod`). L, about 140 lines. -/
+operation count (not formalized). -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -745,29 +723,34 @@ private theorem mul_le_mul_and_mul_le_of_mul_le_mul_sqrt {n l sn m D S N b e θ 
       _ ≤ e * √θ := mul_le_mul_of_nonneg_left (mul_le_of_le_one_left hsθ.le hθ₁) he
       _ ≤ b * (2 * (2880 * l * n * sn * S)) := by linarith
 
-/-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): under the hypotheses
-of `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` with the two
-precision conditions replaced by $u > 0$, the accuracy within a factor $2$ of its bound,
-$\beta_* /2 \le \beta \le \beta_*$ ($\beta_*$ the right side of that bound), and
+/-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $u > 0$, monotone $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}} \ge
+0$,
+$c_{\mathrm N} \ge 0$ and samplers with measurable fibres and countable ranges; let the stored
+$n \times n$ input $\mathbf{A}$ be Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$ and $\ell \ge$ `NLAlib.bisectionDepth`
+$\varepsilon$;
+let the accuracy be within a factor $2$ of its bound, $\beta_*/2 \le \beta \le \beta_*$ with
+$\beta_* = \varepsilon\sqrt\theta/(2880\ell n^{3/2}(2\sqrt n + \sqrt{2\log(16n/\theta)}))$, let
+$N_* =$ `NLAlib.newtonSchulzSteps` $(\theta/(32n(n+1)\ell(\ell+1)))\,(\beta/(16n))$ be at most the
+step limit, the floor $0 \le \tau$ with $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)},
+\varepsilon\min(R_0,
+1))$, the range $16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)}) \le \Omega$, the ideal samples of
+the nodes independent with law `NLAlib.eighSampleLaw` $n$, and
 $$\begin{aligned}\log_2\frac1u \ge{}& \log_2\frac1\varepsilon + \frac32\log_2\frac1\theta +
 \log_2\Bigl(n^4(n + 1)(8 + \mu_{\mathrm{MM}}(n)) + n^{3/2}\bigl(4\mu_{\mathrm{QR}}(n) +
 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1\bigr)\Bigr) \\
 &+ \log_2(N_* + 1) + 3\log_2(\ell + 1) +
 \log_2\bigl(2\sqrt n + \sqrt{2\log(16n/\theta)}\bigr) + 26 \,,\end{aligned}$$
-the failure probability is at most $\theta$. Since $\ell = O(\log(1/\varepsilon))$ and
+the probability that `NLAlib.eigh` is not an approximate diagonalization with residual
+$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$. Since
+$\ell = O(\log(1/\varepsilon))$ and
 $N_* = O(\log(n\ell/\theta) + \log\log(n/(\varepsilon\theta)))$, this is
 $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ bits.
 [Shah2024, Theorem 4.2], there $\log_2(1/\varepsilon) + \log_2\max(n^{1.5}\mu_{\mathrm{QR}},
 n^{1.5}\sqrt n c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varepsilon) +
 1.5\log_2(1/\theta) + \log_2\log_2(n\log_2(1/\varepsilon)/\theta) + 23$; the exponent of $n$ and
-the third power of $\ell$ (from the corrected shift-avoidance probability) differ.
-Proof: exponentiate (`Real.logb_le_logb`, `Real.rpow_logb`, `Real.logb_mul`, `Real.logb_rpow`)
-to get both precision conditions of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` for $n \ge 1$ (at
-$n = 0$ `hβle` reads $\beta \le 0$ (as $x/0 = 0$), contradicting `hβ`: `hβ.not_le hβle`) ($2 \cdot
-640 \cdot 16 \cdot 2880 \le 2^{26}$, the factor $2$ from $\beta \ge \beta_*/2$, $\ell^2(\ell + 1)
-\le (\ell + 1)^3$, $\log_2(N_* + 1) \ge 0$), and apply it. L, about 50 lines (seven-term
-`Real.logb` exponentiation). -/
+the third power of $\ell$ (from the corrected shift-avoidance probability) differ. -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -900,16 +883,7 @@ there with $\log_2(1/u) = p$, and
 $$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^2}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
 Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
 $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
-("$\lg\lg(n/\varepsilon) + O(1)$ bits to store the exponent"), with the $\theta$ it omits.
-Proof: for a binary format, $e_{\min} + p - 1 = 2 - 2^{E - 1}$ and the largest finite number is
-at least $2^{2^{E-1} - 1}$ (`Float.Model.Format.minExponent_eq`, the bias $2^{E-1} - 1$,
-`Float.Model.Format.maxFinite`); the exponent condition gives $2^{E-1} \ge \log_2 L + 2$ for the
-displayed $L$, hence floor $\le 1/L \le \varepsilon\theta/(24n^2)$, which implies the floor
-hypothesis $100n^{3/2}\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon\min(R_0, 1))$, and range
-$\ge 2L \ge 16(2R_0 + n + 2\ell + \sqrt{\log(16n/\theta)})$ (as $2L \ge 3072 \cdot 2^{15}(n +
-\ell + 2)^2/\theta$); then apply
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le`. L,
-about 70 lines (`Float.Model.Format` arithmetic). -/
+("$\lg\lg(n/\varepsilon) + O(1)$ bits to store the exponent"), with the $\theta$ it omits. -/
 theorem FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} (fmt : Float.Model.Format)
     (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}

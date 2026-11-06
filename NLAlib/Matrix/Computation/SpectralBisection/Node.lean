@@ -5,13 +5,12 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Child
+public import NLAlib.Matrix.Computation.SpectralBisection.Child
 
 /-!
-# Local guarantee of a node of spectral bisection (scaffold)
+# Local guarantee of a node of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Node.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): a node of the machine
+A node of the machine
 algorithm `NLAlib.eighAux` with a good sample whose children return approximate
 diagonalizations returns one itself, with residual $\varepsilon(R + R_0)$ and singular values
 within $\varepsilon/3$ of $1$ ([Shah2024, Lemma 4.1]); leaves are treated directly.
@@ -692,7 +691,7 @@ private theorem FloatMachine.IsAccurate.specNorm_decodeMatrix_mm_sub_le {F : Typ
       have := mul_nonneg (by linarith : (0 : ℝ) ≤ 1 + η) (by linarith : (0 : ℝ) ≤ 1 + κ)
       linarith)) (mul_nonneg hμ hu)
   linarith
-/-- **A leaf of `NLAlib.eighAux` is an approximate diagonalization**: for a stored $\mathbf{A}$
+/-- A leaf of `NLAlib.eighAux` is an approximate diagonalization: for a stored $\mathbf{A}$
 with Hermitian decoding, $0 \le \kappa \le 1$ and a recursion budget $f + 1$, if the node has size
 at most one (and $\eta \ge 0$) or the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$
 holds (and $\|\mathbf{A}\|_2 \le \eta$), the output of `NLAlib.eighAux` is an approximate
@@ -999,42 +998,7 @@ approximate diagonalization (`NLAlib.IsApproxDiagonalization`) of $\mathbf{A}$ w
 $\varepsilon(R + R_0)$ and singular values within $\varepsilon/3$ of $1$. [Shah2024, Lemma 4.1],
 there with the probabilities of the events folded in, $R_0$-free bounds on the children's
 $\|\mathbf{D}_\pm\|_2$ (the $R_0$ part is absorbed by the slack $\varepsilon R_0/\ell$), and
-Events I–III as conditions.
-Proof: unfold `NLAlib.eighAux` and `NLAlib.eighStep`. Leaves: $k \le 1$ is exact; on the
-test-true leaf $R \le \mathrm{fl}(\varepsilon R_0)$ the residual is $\|\mathbf{A}\|_2 \le R \le
-\varepsilon R_0(1 + u)$, and $uR_0 \le R$ when $R > \varepsilon R_0$ since $u < \varepsilon$. Note
-$\tau \le \sqrt{\rho/2}/(4k^{3/2}) \le 1/16$ (SN4's $2k\tau \le 1$; $\mathrm{fl}(\ell)$ relative).
-Otherwise follow [Shah2024, proof of Lemma 4.1]: the branch is the true one
-(`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub`), with
-$\|\mathbf{P}_\pm - \mathbf{\Pi}_\pm\|_2 \le \beta$ from
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le`; the children satisfy
-the node invariant
-(`NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some`); on a split,
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split`
-gives the frames $\mathbf{V}_\pm$, unitaries $\mathbf{W}_\pm$ with
-$\|\mathbf{Q}_\pm - \mathbf{V}_\pm\mathbf{W}_\pm\|_2 \le \eta$ and the compressions; replace
-$\mathbf{V}_\pm$ by $\mathbf{V}_\pm\mathbf{W}_\pm$ (assembly through
-`NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat`,
-`NLAlib.FloatMachine.IsAccurate.decodeMatrix_identityMat`,
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le` and the product contract).
-The children's window and tolerance are the machine's `NLAlib.eighNextParams`: $R' \le (1/2 +
-2/\ell)R(1 + \delta)$ and $(1 - 1/\ell)\varepsilon(1 - \delta) \le \varepsilon' \le (1 -
-1/\ell)\varepsilon(1 + \delta)$ with $\delta \le 4u + u\tau/\varepsilon$ (each `ofNat`, `div`,
-`add`/`sub`, `mul` one rounding, `IsRoundingOf`). The source's estimates are too loose at
-$\varepsilon' = 1/8$; use this budget ($\eta = \varepsilon'/(5\ell)$; `husign` gives $u \le
-10^{-13}\varepsilon\theta^{3/2}$, so every $u$-term is $< 0.01R\varepsilon'$):
-$\|\mathbf{X}_\pm\|_2 \le \eta(1 + \varepsilon'/3)(1 + \mu u/\eta) \le 1.044\eta$ (not the source's
-$(1 + 2\varepsilon')$), $\|\mathbf{D}_\pm\|_2 \le (R'(1 + \varepsilon') + \varepsilon'R_0)/(1 -
-\varepsilon'/3)^2$, the term (4.21) on both sides $\le 5.4R\eta + 4.8\varepsilon'R_0\eta$ (the
-source undercounts it), (4.20) $\le 2R\eta$, (4.18) $\le 0.334R\varepsilon'$; the residual is at
-most $$\varepsilon'\Bigl[\Bigl(\frac12 + \frac2\ell\Bigr)(1 + \delta)^2 + 0.334 +
-\frac{1.48}{\ell}\Bigr]R + \varepsilon'\Bigl(1 + \delta + \frac{0.12}{\ell}\Bigr)R_0 \le
-\varepsilon(R + R_0) \,,$$
-which closes only **using $\varepsilon' = (1 - 1/\ell)\varepsilon$** (the source never needs the
-factor): $(1 - 1/\ell)(0.834 + 3.48/\ell) \le 0.958$ at $\ell = 20$, decreasing in $\ell$ (a
-margin of 4.3 %). Singular values: $\varepsilon'/3 + \sqrt2 \cdot 1.044\eta \le (1 +
-0.89/\ell)\varepsilon'/3$ and $(1 + 0.89/\ell)(1 - 1/\ell)(1 + \delta) \le 1$. Split into private
-lemmas: assembly of $\mathbf{U}$, singular values, residual. H, about 150 lines. -/
+Events I–III as conditions. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}

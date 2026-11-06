@@ -55,8 +55,11 @@ node-dependent $\delta$ is larger); explicit step limits.
 
 ## Main results
 
-The local and global guarantees are in the design note
-`docs/design/Eigensolvers-HermitianDiagonalization.md` (stage HDIAG).
+The analysis is in `NLAlib/Matrix/Computation/SpectralBisection/`: `Projectors` (the computed
+projectors and rank recovery at a node), `Split` (frames and compressions at a split), `Child`
+(the children's parameters and invariant), `Node` ([Shah2024, Lemma 4.1]), `Tree` (depth, node
+parameters and counts) and `Global` (the deterministic part of [Shah2024, Theorem 4.2]); the
+probability is in `NLAlib/Eigensolvers/SpectralBisection.lean` and its `Global` file.
 -/
 
 @[expose] public section

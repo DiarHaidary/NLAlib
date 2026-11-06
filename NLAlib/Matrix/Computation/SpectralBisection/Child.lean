@@ -5,13 +5,12 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection.Split
+public import NLAlib.Matrix.Computation.SpectralBisection.Split
 
 /-!
-# The children of a node of spectral bisection (scaffold)
+# The children of a node of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Child.lean` (stage HDIAG, wave W4,
-design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): a child of a node of
+A child of a node of
 `NLAlib.eighChild` carries the machine's next window and tolerance (`NLAlib.eighNextParams`),
 whose rounding is bounded here, and the children of a node with a good sample keep the node
 invariant: a Hermitian matrix with $\|\mathbf{A}'\|_2 \le R'$ ([Shah2024, proof of Lemma 4.1]).
@@ -30,7 +29,7 @@ open scoped Matrix MatrixOrder
 
 namespace NLAlib
 
-/-- **The parameters of a child**: a child $y$ of a node $x$ (`NLAlib.eighChild`) exists only when
+/-- The parameters of a child: a child $y$ of a node $x$ (`NLAlib.eighChild`) exists only when
 the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ fails; it has size at most $x$'s, and
 carries the next window and tolerance of `NLAlib.eighNextParams` and the depth counter
 $\ell + 1$. -/
@@ -211,7 +210,7 @@ private lemma le_and_le_of_isRoundingOf_eighNextParams_snd {u τ Ω m L e1 d p2 
     rw [← hw_def]
     linarith
 
-/-- **The rounded next window and tolerance**: for stored $0 \le R \le \Omega$ and
+/-- The rounded next window and tolerance: for stored $0 \le R \le \Omega$ and
 $0 \le \varepsilon \le 1$, a depth counter $m \ge 20$ with $500mu \le 1$, $2m \le \Omega$ and
 $0 \le \tau \le 1$, the machine's next window and tolerance (`NLAlib.eighNextParams`) satisfy
 $R' \le (1/2 + 2/m)(1 + 22u)R + u\tau$ and
@@ -492,21 +491,7 @@ private theorem FloatMachine.IsAccurate.child_numerics {F : Type*} {M : FloatMac
 /-- **The children of a good node satisfy the node invariant**: under the node hypotheses of
 `NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` (without
 the children's guarantee), every child $y'$ of the node (`NLAlib.eighChild`) has a Hermitian matrix
-with $\|\mathbf{A}'\|_2 \le R'$, its own window. [Shah2024, proof of Lemma 4.1], (4.10)–(4.13).
-Proof: leaves have no child. A shift child (all eigenvalues on one side of $c'$, by
-`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` and the inertia) has
-spectrum of $\mathbf{A} \mp (R/2)\mathbf{I}$ in $[-(1/2 + 1/\ell)R, (1/2 + 1/\ell)R]$ since $\lvert
-c'\rvert \le R/\ell$; the diagonal rounding
-(`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le`,
-`NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`) gives $\|\mathbf{A}'\|_2 \le
-(1/2 + 1/\ell)R + 1.06uR$ against $R' \ge (1/2 + 2/\ell)R - 2.5uR$ (`NLAlib.eighNextParams`). A
-split child: Hermitian by `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`; for
-the norm,
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split`
-gives the compression
-$\mathbf{W}^{\mathsf{H}}\mathbf{V}^{\mathsf{H}}\mathbf{A}\mathbf{V}\mathbf{W}$ with spectrum in
-$[c', R]$ (resp. $[-R, c']$), so its shift by $\mp\sigma$ has norm at most $(1/2 + 1/\ell)R + 3uR$,
-and the child within $(2 + 2\eta)R\eta \le 0.06R/\ell$ of it. M, about 60 lines. -/
+with $\|\mathbf{A}'\|_2 \le R'$, its own window. [Shah2024, proof of Lemma 4.1], (4.10)–(4.13). -/
 theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}

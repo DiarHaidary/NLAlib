@@ -6,13 +6,12 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisection
-public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.NewtonSchulzSign
 
 /-!
-# Spectral projectors and rank recovery at a node of spectral bisection (scaffold)
+# Spectral projectors and rank recovery at a node of spectral bisection
 
-Statements for `NLAlib/Matrix/Computation/SpectralBisection/Projectors.lean` (stage HDIAG, wave
-W4, design note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.8): on Event I (the
+On Event I (the
 ideal shift $c' = (R/\ell)v$ is at distance at least $w$ from every eigenvalue), the stored
 spectral projectors of one node of `NLAlib.eighStep` are within $\beta$ of the true ones, and the
 rounded rank estimate is the inertia $i_+(\mathbf{A} - c'\mathbf{I})$, so the node splits exactly
@@ -101,7 +100,7 @@ private theorem mul_le_of_le_bisectionSignTol_aux {β ε ρ : ℝ} {k ℓ : ℕ}
   refine ⟨by linarith, ?_⟩
   linarith [mul_le_mul_of_nonneg_right hβη (by linarith : (0 : ℝ) ≤ ℓ)]
 
-/-- **The scalar budget of a node**: under the accuracy bound $0 < \beta \le$
+/-- The scalar budget of a node: under the accuracy bound $0 < \beta \le$
 `NLAlib.bisectionSignTol` $k$ $\varepsilon$ $\rho$ $\ell$ (with $\ell \ge 20$,
 $0 < \varepsilon \le 1/8$, $\rho \le 1$), the sign-step roundoff condition
 $640k^{3/2}(8 + \mu)(N(w/(8R), \beta/(16k)) + 1)u \le (w/(4R))\beta$ (with $0 < w \le R$,
@@ -467,25 +466,7 @@ eigenvalue of $\mathbf{A}$, the stored projectors of `NLAlib.eighStep`, $\mathbf
 (\mathbf{B} + \mathbf{I})/2$ and $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/2$ with $\mathbf{B}$
 the Newton–Schulz sign of the stored shifted matrix, are within $\beta$ of
 $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
-Lemma 4.1], (4.4)–(4.9).
-Proof: the stored shift $c = \mathrm{unif}(\mathrm{fl}(R/\mathrm{fl}(\ell)), v)$ has
-$|c - c'| \le 0.15uR + 2u\tau \le 0.33uR$ ($\tau \le \sqrt{\rho/2}/(4k^{3/2}) \le 1/16$ and
-$\tau \le \varepsilon R_0/(4k^{3/2})$, so $\mathrm{fl}(\ell)$ is a relative rounding), and
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le` adds $1.051uR$: the stored
-shifted matrix is within $1.4uR$ of $\mathbf{A} - c'\mathbf{I}$, whose eigenvalues have modulus
-$\ge w$; by Weyl (`Matrix.IsHermitian.abs_eigenvalue_sub_le`) its eigenvalues have modulus
-$\ge a := w - 1.4uR$. Apply
-`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le` with this
-$a$ and $b' = \mathrm{fl}(2R) \in [2R(1 - u), 2R(1 + u)]$: $a/b' \ge w/(4R)$ and
-$N(a/(2b'), \beta/(16k)) \le N(w/(8R), \beta/(16k))$ (`NLAlib.newtonSchulzSteps_le_of_le_abs`), so
-`husign` and `hfuel` give its hypotheses with a factor-2 margin; the modulus $w/2$ would not.
-`Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le` moves the sign from the stored to the ideal
-shift ($2.8uR/w$); the shift by $\mp1$ and the division by $\mathrm{fl}(2)$ cost
-$1.05u + 1.01u\sqrt k + 2ku\tau$
-(`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le`,
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le`,
-`NLAlib.FloatMachine.IsAccurate.decodeMatrix_negMat`). Total $\le \beta/2 + 2.8uR/w + 1.05u +
-1.01u\sqrt k + 2ku\tau \le 0.51\beta$. M, about 100 lines. -/
+Lemma 4.1], (4.4)–(4.9). -/
 theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
@@ -623,8 +604,21 @@ private theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
   rw [hM.toNat_eq, Nat.floor_eq_iff (by linarith)]
   constructor <;> linarith
 
-/-- **The rounded rank estimate is the inertia on Event I**: under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub`, the rank estimate
+/-- **The rounded rank estimate is the inertia on Event I**: let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $u \ge 0$ and
+$\mu_{\mathrm{MM}}(k) \ge 0$, and let the node $(k, \mathbf{A}, R, \varepsilon, \ell)$ have
+$\mathbf{A}$
+Hermitian with $\|\mathbf{A}\|_2 \le R$, $k \ge 2$, $\ell \ge 20$, $0 < \varepsilon \le 1/8$, $R_0 >
+0$
+and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ failing. Let $0 < \rho \le 1$,
+$0 < w \le R$, $0 < \beta \le$ `NLAlib.bisectionSignTol` $k\,\varepsilon\,\rho\,\ell$, the sign
+precision
+$640k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_w + 1)u \le (w/(4R))\beta$ with
+$N_w =$ `NLAlib.newtonSchulzSteps` $(w/(8R))\,(\beta/(16k))$ at most the step limit, the floor
+$0 \le \tau$ with $4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and the range
+$16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$. On Event I for a seed $v \in [-1, 1]$
+(every eigenvalue $e$ of
+$\mathbf{A}$ has $\lvert e - (R/\ell)v\rvert \ge w$), the rank estimate
 $k_+ = \min(k, \lfloor\mathrm{fl}(\operatorname{tr}\mathbf{P}_+ + \mathrm{fl}(1/2))\rfloor)$ of
 the node's step (`NLAlib.eighStep`) is the inertia $i_+(\mathbf{A} - c'\mathbf{I})$ of the ideal
 shift $c' = (R/\ell)v$. [Shah2024, proof of Lemma 4.1], "the estimates $k_\pm$ are the exact
@@ -710,18 +704,7 @@ theorem FloatMachine.IsAccurate.min_toNat_eighProjector_eq_inertiaPos
 \varepsilon R_0$) and a seed $v \in [-1, 1]$ whose ideal shift $c' = (R/\ell)v$ is at distance at
 least $w$ from every eigenvalue (Event I), the node's step splits exactly when $0 < i_+(\mathbf{A}
 - c'\mathbf{I}) < k$; moreover then $k_+ = i_+(\mathbf{A} - c'\mathbf{I})$. [Shah2024, proof of
-Lemma 4.1], "the estimates $k_\pm$ are the exact ranks".
-Proof: `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le` puts the
-stored $\mathbf{P}_+$ within $\beta$ of the true projector (there the rounded shift is within
-$1.4uR$ of $\mathbf{A} - c'\mathbf{I}$ and the sign is applied with modulus $a = w - 1.4uR$, not
-$w/2$, which `husign` would not cover; $\tau \le \sqrt{\rho/2}/(4k^{3/2}) \le 1/16$); its
-diagonal sum is within $k\beta$ of the trace
-(`NLAlib.norm_apply_le_specNorm`), which is the inertia
-(`Matrix.IsHermitian.re_trace_smul_one_add_cfc_sign`); with the rounded sum
-(`NLAlib.FloatMachine.IsAccurate.abs_sum_sub_traceRe_le`) the rounded trace is within
-$k\beta + 2.2k^2u + (k + 1.5)u < 1/4$ of the inertia, so $\mathrm{fl}(t +
-\mathrm{fl}(1/2))$ lies in $(r + 1/4, r + 3/4)$ for the inertia $r$ and its floor (`toNat_eq`,
-`Nat.floor_eq_iff`) is $r$; unfold `NLAlib.eighStep`. M, about 60 lines. -/
+Lemma 4.1], "the estimates $k_\pm$ are the exact ranks". -/
 theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
