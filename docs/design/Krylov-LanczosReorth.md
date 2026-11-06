@@ -1,6 +1,6 @@
 # Lanczos with full reorthogonalization in finite precision
 
-2026-11-06. Design note, no proofs yet. Branch `design/lanczos-reorth` from `origin/main` @
+2026-11-06. Design note; **status: all 51 statements proved and in `NLAlib` (§8)**. Branch `design/lanczos-reorth` from `origin/main` @
 `a08339af` (PR #58). Decision sheet: harness `state/decisions/LANCZOS-REORTH.json`
 (ids FR1–FR9 below).
 
@@ -645,3 +645,81 @@ duplicate is deleted. E2–E4 use main's definition, which for full column rank 
 $\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$. E2's orthonormality is now
 `hasOrthonormalCols_polarFactor_iff` plus the injectivity lemma B7, and its bound starts from
 `polarFactor_mul_sqrt`. The statements are unchanged.
+
+## 8. End of stage (2026-11-06): status, proof routes, statement changes, layout
+
+**Status.** All 51 statements of §7 are proved, sorry-free, and live in `NLAlib`;
+`NLAlibScaffold` is removed and `lakefile.toml` is main's again. `#print axioms` of all 51:
+`propext`, `Classical.choice`, `Quot.sound`. Branch `cleanup/reorth`.
+
+**C3, as proved** (`Computation.IsRelErrSem.exec_cgsPass`, `ClassicalGramSchmidtProgram.lean`).
+The route is not the $\gamma_N$ forward bound of §3.3 but a partial-sum trace: every rounded
+dot and every row of the rounded `gemv` is an `IsDotTrace` (main's kernel lemmas), and
+`IsDotTrace.abs_sub_sum_le_partial`, `IsDotTrace.abs_sub_mulVec_le`
+(`ClassicalGramSchmidtRoundingError.lean`) bound the error by
+$(1+u)^n uigl((\lvert\mathbf Avert\lvert\mathbf xvert)_i + \sum_{r<n}\lvert(\mathbf A\mathbf x_{\le r})_ivertigr)$;
+summed over rows this is $\le (100/99)\,u(\|\mathbf A\|_{\mathsf F} + n\|\mathbf A\|_2)\|\mathbf x\|$,
+with $(1+u)^n \le 100/99$ from $(N+j+2)u \le 1/100$ and $a = \sqrt{1+\eta_0} \ge \|\mathbf V\|_2$,
+$\|\mathbf V\|_{\mathsf F} \le \sqrt j\,a$. Hence the dots satisfy
+$\|\mathbf h_1 - \mathbf V^{\mathsf T}\mathbf w\| \le (100/99)\,u\,a(\sqrt j + N)\|\mathbf w\|$, the `gemv`
+$\|\mathbf y - \mathbf V\mathbf h_1\| \le (100/99)\,u\,a(\sqrt j + j)\|\mathbf h_1\|$, and the `axpy`
+with the rounded literal $-1$ adds $3.1u\|\mathbf y\| + u\|\mathbf w\|$; `cgsPass_arith` collects
+everything under $c_1 = 2a^2\sqrt{j+1}\,(N+j+2)\,u$ = `cgsPassBound`. The hypothesis
+$\eta_0 \le 1/100$ of C3 is not used by its proof (only $\eta_0 \ge 0$ through $a$), nor is the
+conjunct `wb ≠ Vb` of its distinctness hypothesis; both are kept (C6 and the programs supply
+them). C2, the exact run, is now derived from the rounded run at $u = 0$, where the bounds force
+the exact values.
+
+**G5, as proved** (`LanczosReorthImplementation.exec_rounded_loop`,
+`LanczosReorthProgramRoundedLoop.lean`). The scoped lemma `exec_lanczosReorthLoop` is
+instantiated with the guarantee `IsOrthErr`. The three scoped allocations give an 11-buffer
+workspace; `exec_initPhase` writes the zeros, the input norm and the guarded $\mathbf v_1$;
+`exec_loop` runs the $q$ steps under the invariant "`StoreContext` after $t$ steps, input norm
+kept, `RoundedSteps` for $j < t$". A step (`exec_stepBody`, `LanczosReorthProgramRoundedStep.lean`)
+has three phases: the work phase (product, the two Paige updates, $lpha$ and $
+u$), the
+certified orthogonalization call and $eta$, and the commit (copy of the previous vector and
+guarded normalization). Main's normalization lemmas need unit charges; the new
+`Computation.exists_exec_eq_some_of_exec_eq_some` (`Computation/ExecCharge.lean`) transfers a
+run to any charge. The per-step witnesses are assembled into a `LanczosReorthRun` for every
+admissible prefix; $\|\mathbf v_{j+2}\|$ near $1$ follows from $eta > 	au
+u \ge 0$.
+
+**Statement changes during proving and clean-up** (none weakens a conclusion):
+* G5 `exec_rounded_loop`: the orthogonalization certificate is required only for the executed
+  steps, `∀ t < q` instead of `∀ t` (strictly stronger; replaces the provers' private variant).
+  Earlier, during proving (08aa72a5): `hpreFrame` transports `pre` along the first 8 shape entries
+  instead of equal shapes, because `mv` runs in the 11-buffer workspace (the old form could not be
+  discharged).
+* G6, G6o, G7, G8: the unused hypothesis `hc : ∀ k, I.charge k = Finsupp.single k 1` is dropped
+  (the conclusions have no cost clause).
+* Unused hypotheses dropped: `IsOrthErr.norm_coef_le` (`hε₂`), `isOrthErr_of_one_pass` and
+  `norm_transpose_mulVec_le_of_norm_sub_le` (`hc₁`), `LanczosReorthRun.coeff_le` (`hτ`).
+* F6 `exists_pure_backward_gauss`: the proof term `⟨0, L.k_pos⟩` in the statement (rule T9) is the
+  new definition `LanczosReorthRun.firstIndex`; definitionally the same statement.
+* Renames for the name checker: `…_gram_sub_one_…` → `…_transpose_mul_self_sub_one_…` (N5: B6,
+  B7, B8, D5), `norm_transpose_mulVec_cgsPass_le` → `norm_transpose_mulVec_le_of_norm_sub_le`
+  (N4, C4), `exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols` →
+  `HasOrthonormalCols.exists_transpose_eq_mul_eq_neg` and
+  `card_le_card_eigenvalue_mem_of_hasOrthonormalCols` → `Matrix.IsHermitian.…` (N18: E1, F2a).
+
+**Layout** (lines):
+* Matrix layer: `Matrix/Perturbation/OrthErr.lean` 271 (B1, B3–B8),
+  `Matrix/Perturbation/SymmetricBackward.lean` 391 (E1, E2, the rotation of E5, F2a),
+  `Matrix/Computation/ClassicalGramSchmidt.lean` 307 (C1, `cgsPassBound`, C4, C5, C7),
+  `ClassicalGramSchmidtRoundingError.lean` 475 (the norm analysis of one rounded pass),
+  `ClassicalGramSchmidtProgram.lean` 787 (C2, C3, C6), `OrthRoutine.lean` (B2).
+* Computation: `Computation/ExecCharge.lean` 173 (runs that differ only in their charges).
+* Krylov: `Processes/LanczosReorthRecurrence.lean` 305 (A1–A3);
+  `FinitePrecision/LanczosReorthRun.lean` 460 (D1, D2, D5, D8, prefixes),
+  `LanczosReorthCoefficients.lean` 743 (D3, D4), `LanczosReorthResidual.lean` 315 (D6, D7),
+  `LanczosReorthBackward.lean` 403 (E3–E5), `LanczosReorthSpectral.lean` 479 (F1–F7);
+  `Processes/LanczosReorthProgramTree.lean` (G1), `…Rounding.lean` (outputs),
+  `…RoundedStep.lean` 815 (one step), `…RoundedLoop.lean` 641 (G5),
+  `LanczosReorthProgram.lean` 430 (G3, G4), `…Rounded.lean` 308 (G6, G6o, G7, G8).
+
+**Open.** The fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$ stays a hypothesis of the
+run-level and program-level results (G7, G8 assume it for the prefix); a theorem that discharges
+it from explicit bounds on $u$, $N$, $k$, $	au$ for CGS2 (§3.4) is not part of this stage. G2
+(targets, registration) is the maintainer's.
+
