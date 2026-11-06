@@ -64,7 +64,10 @@ theorem IsExactIntLit.exists_exec_litIdx {dec : P → K → ℝ} {sem : ScalarSe
     (hw : ∀ v : K, ∃ s', s.write p b i v = some s') :
     ∃ r z, (Instr.litIdx p ⟨b, .const i⟩ e).run sem tape s pos = some r ∧
       r.1.read p b i = some z ∧ dec p z = e.eval ∧ r.2 = pos := by
-  sorry
+  obtain ⟨z, hz, hdz⟩ := h p e.eval he
+  obtain ⟨s', hs'⟩ := hw z
+  refine ⟨(s', pos), z, ?_, Store.read_of_write_eq_some hs', hdz, rfl⟩
+  simp only [Instr.run, hz, Option.bind_some, hs', Option.map_some, IExp.eval]
 
 omit [DecidableEq P] in
 /-- **The exact rounding of the tape**: storing each ideal draw as itself in $\mathbb{R}$ meets
