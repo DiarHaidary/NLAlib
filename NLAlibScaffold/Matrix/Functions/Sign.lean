@@ -61,6 +61,50 @@ theorem _root_.Matrix.IsHermitian.cfc_newtonSchulz {A : Matrix n n 𝕜} (hA : A
     cfc_mul (fun x : ℝ => x) (fun x : ℝ => (3 : ℝ) - x * x) A,
     cfc_sub (fun _ : ℝ => (3 : ℝ)) (fun x : ℝ => x * x) A, hid, hsq, h3]
 
+/-- The sign of a Hermitian matrix whose first $p$ sorted eigenvalues are positive and the others
+negative is $2\mathbf{W}\mathbf{W}^{\mathsf{H}} - \mathbf{I}$, for the frame $\mathbf{W}$ of the
+top $p$ eigenvectors. -/
+private theorem exists_hasOrthonormalCols_cfc_sign_eq_two_smul_sub_one {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {p : ℕ} (hp : p ≤ Fintype.card n)
+    (h : ∀ i : Fin (Fintype.card n), (i : ℕ) < p ↔ 0 < eigenvalue A i)
+    (h0 : ∀ i : Fin (Fintype.card n), eigenvalue A i ≠ 0) :
+    ∃ W : Matrix n (Fin p) 𝕜, HasOrthonormalCols W ∧
+      A * W = W * Matrix.diagonal (fun i : Fin p => ((eigenvalue A i : ℝ) : 𝕜)) ∧
+      cfc Real.sign A = (2 : ℝ) • (W * Wᴴ) - 1 := by
+  classical
+  obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
+  have hUU : U * Uᴴ = 1 := hU.mul_conjTranspose_self_of_card_eq (Fintype.card_fin _).symm
+  set W := U.submatrix id (Fin.castLE hp)
+  have hAU' : A * U =
+      U * Matrix.diagonal fun i : Fin (Fintype.card n) => ((eigenvalue A i : ℝ) : 𝕜) := by
+    nth_rw 1 [hAU]
+    rw [Matrix.mul_assoc, Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
+  refine ⟨W, hU.submatrix (Equiv.refl _) (Fin.castLE_injective hp), ?_, ?_⟩
+  · ext x j
+    have h := congrFun (congrFun hAU' x) (Fin.castLE hp j)
+    simp only [Matrix.mul_diagonal] at h ⊢
+    exact h
+  set I := Matrix.diagonal fun i : Fin (Fintype.card n) => if (i : ℕ) < p then (1 : 𝕜) else 0
+  have hD : (Matrix.diagonal fun i : Fin (Fintype.card n) =>
+      ((Real.sign (eigenvalue A i) : ℝ) : 𝕜)) = (2 : ℝ) • I - 1 := by
+    ext i j
+    by_cases hij : i = j
+    · subst hij
+      by_cases hi : (i : ℕ) < p
+      · simp [I, hi, Real.sign_of_pos ((h i).mp hi), two_smul]
+      · simp [I, hi, Real.sign_of_neg (lt_of_le_of_ne (not_lt.mp ((h i).not.mp hi)) (h0 i))]
+    · simp [I, hij]
+  have hWW : W * Wᴴ = U * I * Uᴴ := by
+    ext r s
+    simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, W, Matrix.submatrix_apply, id]
+    refine Fintype.sum_of_injective (Fin.castLE hp) (Fin.castLE_injective hp) _ _
+      (fun i hi => ?_) (fun j => ?_)
+    · have h : ¬ (i : ℕ) < p := fun h => hi ⟨⟨i, h⟩, rfl⟩
+      simp [I, Matrix.diagonal_apply, h]
+    · simp [I, Matrix.diagonal_apply, j.2]
+  rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU (Fintype.card_fin _) hAU, hD,
+    hWW, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, hUU, Matrix.mul_smul, Matrix.smul_mul]
+
 /-- **Perturbation of the sign of a Hermitian matrix**: for Hermitian $\mathbf{A}, \mathbf{B}$
 and $a > 0$ with $\lvert \lambda \rvert \ge a$ for every eigenvalue $\lambda$ of $\mathbf{A}$,
 $$\|\operatorname{sign}(\mathbf{A}) - \operatorname{sign}(\mathbf{B})\|_2 \le
@@ -84,7 +128,83 @@ theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le {A B : Matri
     (hA : A.IsHermitian) (hB : B.IsHermitian) {a : ℝ} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ A, a ≤ |x|) :
     specNorm (cfc Real.sign A - cfc Real.sign B) ≤ 2 * specNorm (A - B) / a := by
-  sorry
+  classical
+  have hε := specNorm_nonneg (A - B)
+  rcases le_or_gt a (specNorm (A - B)) with hεa | hεa
+  · have hsgn : ∀ x : ℝ, |Real.sign x| ≤ 1 := fun x => by
+      rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num
+    calc specNorm (cfc Real.sign A - cfc Real.sign B) ≤ 1 + 1 :=
+          (specNorm_sub_le _ _).trans (add_le_add (hA.specNorm_cfc_le zero_le_one fun x _ => hsgn x)
+            (hB.specNorm_cfc_le zero_le_one fun x _ => hsgn x))
+      _ ≤ 2 * specNorm (A - B) / a := by rw [le_div_iff₀ ha]; linarith
+  have hAi : ∀ i : Fin (Fintype.card n), a ≤ |eigenvalue A i| := fun i =>
+    hspec _ (hA.eigenvalue_mem_spectrum i.isLt)
+  have hBi := hA.abs_eigenvalue_sub_le hB
+  obtain ⟨p, hp⟩ : ∃ p, p = inertiaPos A := ⟨_, rfl⟩
+  have hpA : ∀ i : Fin (Fintype.card n), (i : ℕ) < p ↔ 0 < eigenvalue A i := fun i => by
+    rw [hp, hA.lt_inertiaPos_iff]
+    simp [i.isLt]
+  have hpB : ∀ i : Fin (Fintype.card n), (i : ℕ) < p ↔ 0 < eigenvalue B i := fun i => by
+    rw [hpA]
+    have h2 := abs_le.mp (hBi i)
+    rcases le_abs'.mp (hAi i) with h3 | h3 <;> constructor <;> intro h4 <;> linarith
+  have hA0 : ∀ i : Fin (Fintype.card n), eigenvalue A i ≠ 0 := fun i h => by
+    have := hAi i
+    rw [h, abs_zero] at this
+    linarith
+  have hB0 : ∀ i : Fin (Fintype.card n), eigenvalue B i ≠ 0 := fun i h => by
+    have := hBi i
+    rw [h, sub_zero] at this
+    linarith [hAi i]
+  have hpN : p ≤ Fintype.card n :=
+    hp ▸ (Finset.card_filter_le _ _).trans (Finset.card_range _).le
+  obtain ⟨W, hW, hAW, hsA⟩ := exists_hasOrthonormalCols_cfc_sign_eq_two_smul_sub_one hA hpN hpA hA0
+  obtain ⟨W', hW', hBW', hsB⟩ :=
+    exists_hasOrthonormalCols_cfc_sign_eq_two_smul_sub_one hB hpN hpB hB0
+  rw [hsA, hsB, show (2 : ℝ) • (W * Wᴴ) - 1 - ((2 : ℝ) • (W' * W'ᴴ) - 1) =
+    (2 : ℝ) • (W * Wᴴ - W' * W'ᴴ) by rw [smul_sub]; abel, specNorm_real_smul, abs_two,
+    mul_div_assoc]
+  gcongr
+  rcases Nat.eq_zero_or_pos p with h0 | hpos
+  · subst h0
+    rw [show W * Wᴴ = 0 by ext; simp [Matrix.mul_apply],
+      show W' * W'ᴴ = 0 by ext; simp [Matrix.mul_apply], sub_self, specNorm_zero]
+    positivity
+  rcases eq_or_lt_of_le hpN with hN | hN
+  · have hc : Fintype.card n = Fintype.card (Fin p) := by rw [Fintype.card_fin, hN]
+    rw [hW.mul_conjTranspose_self_of_card_eq hc, hW'.mul_conjTranspose_self_of_card_eq hc,
+      sub_self, specNorm_zero]
+    positivity
+  obtain ⟨j, rfl⟩ : ∃ j, p = j + 1 := ⟨p - 1, by omega⟩
+  have hlj : a ≤ eigenvalue A j := by
+    have h := (hpA ⟨j, by omega⟩).mp (by simp)
+    have h' := hAi ⟨j, by omega⟩
+    rw [abs_of_pos h] at h'
+    exact h'
+  have hlj1 : eigenvalue A (j + 1) ≤ -a := by
+    have h := (hpA ⟨j + 1, hN⟩).not.mp (by simp)
+    rcases le_abs'.mp (hAi ⟨j + 1, hN⟩) with h' | h'
+    · exact h'
+    · exact absurd (ha.trans_le h') h
+  have hgap : 2 * a ≤ eigengap A (j + 1) := by rw [eigengap_succ]; linarith
+  have hDK := hA.specNorm_one_sub_mul_le_two_mul_specNorm_div_eigengap (hB.sub hA) hW hW' hAW
+    (by rw [add_sub_cancel]; exact hBW') (by linarith)
+  have hrank : (W' * W'ᴴ).rank = (W * Wᴴ).rank := by
+    rw [← hW.rangeProjector_eq, ← hW'.rangeProjector_eq, rank_rangeProjector,
+      rank_rangeProjector, hW.rank_eq, hW'.rank_eq]
+  calc specNorm (W * Wᴴ - W' * W'ᴴ)
+      = specNorm ((1 - W * Wᴴ) * W' * W'ᴴ) := by
+        rw [specNorm_sub_comm, hW'.isStarProjection_mul_conjTranspose.specNorm_sub_eq_of_rank_eq
+          hW.isStarProjection_mul_conjTranspose hrank, Matrix.mul_assoc]
+    _ ≤ specNorm ((1 - W * Wᴴ) * W') * specNorm W'ᴴ := specNorm_mul_le _ _
+    _ ≤ specNorm ((1 - W * Wᴴ) * W') * 1 := by
+        gcongr
+        rw [specNorm_conjTranspose]
+        exact hW'.specNorm_le_one
+    _ ≤ 2 * specNorm (B - A) / eigengap A (j + 1) := by rw [mul_one]; exact hDK
+    _ ≤ specNorm (A - B) / a := by
+        rw [specNorm_sub_comm, div_le_div_iff₀ (by linarith) ha]
+        nlinarith [mul_le_mul_of_nonneg_left hgap hε]
 
 /-- The Newton–Schulz map does not change the sign: for Hermitian $\mathbf{A}$ with
 $0 < \lvert \lambda \rvert < \sqrt3$ for every eigenvalue,
