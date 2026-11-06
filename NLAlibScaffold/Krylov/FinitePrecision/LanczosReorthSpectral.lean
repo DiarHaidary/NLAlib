@@ -58,7 +58,45 @@ theorem eigenvalue_tridiagonal_le_add (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {i : ℕ} (hi : i < k) :
     eigenvalue L.toLanczosData.tridiagonal i ≤ eigenvalue L.H i + L.backwardRadius := by
-  sorry
+  obtain ⟨E, hEs, hE, hid⟩ := L.exists_backward hη hsmall hrec hτ
+  have hgram := L.frobNorm_gram_sub_one_le hη hsmall (k + 1) le_rfl
+  have hsq : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) = Real.sqrt (3 * ((k : ℝ) + 1)) := by
+    push_cast; ring_nf
+  rw [hsq] at hgram
+  have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) ≤ 1 / 100 :=
+    (specNorm_le_frobNorm _).trans (by linarith)
+  have hPo := hasOrthonormalCols_polarFactor hspec (by norm_num)
+  set P := polarFactor (basisOf L.v (k + 1)) with hPdef
+  have hU : HasOrthonormalCols (P.submatrix id Fin.castSucc) :=
+    hPo.submatrix (Equiv.refl _) (Fin.castSucc_injective _)
+  have hH : L.H.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact L.transpose_H
+  have hE' : E.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact hEs
+  have hA := hH.add hE'
+  have hz : ∀ j : Fin k, ∑ x, P x (Fin.castSucc j) * P x (Fin.last k) = 0 := fun j => by
+    have h := congrFun (congrFun (hPo.conjTranspose_mul_self) (Fin.castSucc j)) (Fin.last k)
+    rw [Matrix.one_apply_ne (Fin.castSucc_lt_last j).ne] at h
+    simpa [Matrix.mul_apply, Matrix.conjTranspose_apply] using h
+  have hc : (P.submatrix id Fin.castSucc)ᴴ *ᵥ (L.β k • fun i => P i (Fin.last k)) = 0 := by
+    funext j
+    have hj : ((P.submatrix id Fin.castSucc)ᴴ *ᵥ (L.β k • fun i => P i (Fin.last k))) j =
+        L.β k * ∑ x, P x (Fin.castSucc j) * P x (Fin.last k) := by
+      simp [Matrix.mulVec, dotProduct, Finset.mul_sum, mul_assoc, mul_comm]
+    rw [hj, hz j, mul_zero]; rfl
+  have hT : (P.submatrix id Fin.castSucc)ᴴ * (L.H + E) * P.submatrix id Fin.castSucc =
+      L.toLanczosData.tridiagonal := by
+    rw [Matrix.mul_assoc, hid, Matrix.mul_add, ← Matrix.mul_assoc,
+      hU.conjTranspose_mul_self, Matrix.one_mul, Matrix.mul_vecMulVec, hc]
+    ext a b; simp [Matrix.vecMulVec]
+  have hPoin := Matrix.IsHermitian.eigenvalue_conjTranspose_mul_mul_le hA hU
+    (k := i) (by simpa using hi)
+  rw [hT] at hPoin
+  have hW := Matrix.IsHermitian.abs_eigenvalue_sub_le hA hH i
+  have hd : specNorm ((L.H + E) - L.H) ≤ frobNorm E := by
+    rw [add_sub_cancel_left]; exact specNorm_le_frobNorm E
+  have := le_abs_self (eigenvalue (L.H + E) i - eigenvalue L.H i)
+  linarith
 
 /-- **Ritz values interlace from below up to $e$** (F1):
 $\lambda_{i + n - k}(\mathbf{H}) - e \le \theta_i$ for $i < k$ (and $k \le n$ by
