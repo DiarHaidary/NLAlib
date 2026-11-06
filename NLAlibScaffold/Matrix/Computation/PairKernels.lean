@@ -929,6 +929,98 @@ theorem holds_of_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
       rw [show ((0 : ℚ)) = (0 : ℚ) from rfl, hz, Option.getD_some]
     exact ZInv.step hR i i (by rw [hB1]; exact hw1) (by rw [hB2]; exact hw2) rfl rfl
 
+omit [DecidableEq P] [Inhabited K] in
+private theorem zshift_bind {α β : Type} {o : Option α} {f : α → Option β} (R : α → Prop)
+    (h₁ : ∃ a, o = some a ∧ R a) (h₂ : ∀ a, R a → ∃ b, f a = some b) :
+    ∃ b, o.bind f = some b := by
+  obtain ⟨a, rfl, ha⟩ := h₁
+  exact h₂ a ha
+
+omit [Inhabited K] in
+private theorem zshift_write {s₀ s : Store P K} {p : P} {Y yo len k N : ℕ}
+    (hY : s₀.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len) (hk : k < N)
+    (hsh : s.shape = s₀.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s.read q b i = s₀.read q b i)
+    (v : K) :
+    ∃ s', s.write p Y (yo + k) v = some s' ∧ s'.shape = s₀.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = s₀.read q b i) ∧
+      (∃ w, s'.read p Y (yo + k) = some w) ∧
+      (∀ k', (∃ w, s.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w) := by
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape v (hsh ▸ hY)
+    (show yo + k < len by omega)
+  refine ⟨s', hs', (Store.shape_of_write_eq_some hs').trans hsh,
+    zherm_write_frame hs' hk hfr, ⟨v, Store.read_of_write_eq_some hs'⟩, fun k' ⟨w, hw⟩ => ?_⟩
+  by_cases hkk : k' = yo + k
+  · exact ⟨v, hkk ▸ Store.read_of_write_eq_some hs'⟩
+  · exact ⟨w, (Store.read_of_write_eq_some_of_ne hs' (Or.inr hkk)).trans hw⟩
+
+omit [Inhabited K] in
+private theorem zshift_copy {p : P} {st σ : St P K C} {X Y xo yo len N : ℕ}
+    (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len)
+    (hXY : blockDisjoint (Y, yo, N) (X, xo, N) = true) (hsh : σ.store.shape = st.store.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true →
+      σ.store.read q b i = st.store.read q b i)
+    (dk xk : IExp ℕ) (k : ℕ) (t : Stmt P ι ℕ ℕ) (hk : k < N) (hdk : dk.eval = yo + k)
+    (hxk : xk.eval = xo + k) (ha : ∃ a, st.store.read p X (xo + k) = some a) :
+    ∃ s', exec I (.seq (.instr (.copy p ⟨Y, dk⟩ ⟨X, xk⟩)) t) σ =
+        exec I t { σ with store := s', cnt := σ.cnt + I.charge (.copy p) } ∧
+      s'.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = st.store.read q b i) ∧
+      (∃ w, s'.read p Y (yo + k) = some w) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w := by
+  obtain ⟨a, ha⟩ := ha
+  obtain ⟨s', hw, hrest⟩ := zshift_write hYsh hlen hk hsh hfr a
+  refine ⟨s', exec_seq_instr_copy I (s := s') ?_ (by rw [hdk]; exact hw), hrest⟩
+  rw [hxk, hfr _ _ _ ?_]
+  · exact ha
+  · simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hXY ⊢
+    omega
+
+omit [Inhabited K] in
+private theorem zshift_sub {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) {p : P} {c : Cell ℕ ℕ} {cv : K}
+    {st σ : St P K C} {X Y xo yo len N : ℕ}
+    (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len)
+    (hXY : blockDisjoint (Y, yo, N) (X, xo, N) = true)
+    (hcY : blockDisjoint (c.buf, c.idx.eval, 1) (Y, yo, N) = true)
+    (hc : st.store.read p c.buf c.idx.eval = some cv) (hsh : σ.store.shape = st.store.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true →
+      σ.store.read q b i = st.store.read q b i)
+    (dk xk : IExp ℕ) (k : ℕ) (t : Stmt P ι ℕ ℕ) (hk : k < N) (hdk : dk.eval = yo + k)
+    (hxk : xk.eval = xo + k) (ha : ∃ a, st.store.read p X (xo + k) = some a) :
+    ∃ s', exec I (.seq (.instr (.bin p .sub ⟨Y, dk⟩ ⟨X, xk⟩ c)) t) σ =
+        exec I t { σ with store := s', cnt := σ.cnt + I.charge (.bin p .sub) } ∧
+      s'.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = st.store.read q b i) ∧
+      (∃ w, s'.read p Y (yo + k) = some w) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w := by
+  obtain ⟨a, ha⟩ := ha
+  obtain ⟨v, hv⟩ := hsem.bin_ok p .sub a cv trivial nofun trivial
+  obtain ⟨s', hw, hrest⟩ := zshift_write hYsh hlen hk hsh hfr v
+  refine ⟨s', exec_seq_instr_bin I (s := s') ?_ ?_ hv (by rw [hdk]; exact hw), hrest⟩
+  · rw [hxk, hfr _ _ _ ?_]
+    · exact ha
+    · simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hXY ⊢
+      omega
+  · rw [hfr _ _ _ hcY]; exact hc
+
+omit [Inhabited K] in
+private theorem zshift_lit {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) {p : P} {st σ : St P K C}
+    {Y yo len N : ℕ} (hYsh : st.store.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len)
+    (hsh : σ.store.shape = st.store.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true →
+      σ.store.read q b i = st.store.read q b i)
+    (dk : IExp ℕ) (k : ℕ) (t : Stmt P ι ℕ ℕ) (hk : k < N) (hdk : dk.eval = yo + k) :
+    ∃ s', exec I (.seq (.instr (.lit p ⟨Y, dk⟩ 0)) t) σ =
+        exec I t { σ with store := s', cnt := σ.cnt + I.charge (.lit p) } ∧
+      s'.shape = st.store.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = st.store.read q b i) ∧
+      ∀ k', (∃ w, σ.store.read p Y k' = some w) → ∃ w, s'.read p Y k' = some w := by
+  obtain ⟨v, hv⟩ := hsem.lit_ok p 0 trivial
+  obtain ⟨s', hw, hsh', hfr', -, hmono⟩ := zshift_write hYsh hlen hk hsh hfr v
+  exact ⟨s', exec_seq_instr_lit I hv (by rw [hdk]; exact hw), hsh', hfr', hmono⟩
+
 /-- **`zhermShift` succeeds** under the standard model with every value in range, when the buffer
 `Y` at tag `p` is long enough. No printed source.
 Proof: `NLAlib.Computation.exists_exec_zcopy`-style loops for the copy and the diagonal, then
@@ -944,7 +1036,82 @@ theorem exists_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len) :
     ∃ st', exec I (zhermShift (ι := ι) p (.const n) X xo c Y yo).run st = some st' := by
-  sorry
+  obtain ⟨len, hYsh, hlen⟩ := hY
+  have hn : ∀ i j : ℕ, i < n → j < n → 2 * (i + n * j) + 1 < 2 * (n * n) := by
+    intro i j hi hj; nlinarith
+  -- `Fr σ`: the shape of `st` and every cell outside the block at `Y` kept
+  let Fr : St P K C → Prop := fun σ => σ.store.shape = st.store.shape ∧
+    ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      σ.store.read q b i = st.store.read q b i
+  -- `Up σ S`: both parts of every upper entry in `S` initialised
+  let Up : St P K C → (ℕ → ℕ → Prop) → Prop := fun σ S => ∀ i j, S i j →
+    (∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+      ∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v
+  have hX : ∀ i j, i < n → j < n → (∃ a, st.store.read p X (xo.eval + 2 * (i + n * j)) = some a) ∧
+      ∃ a, st.store.read p X (xo.eval + (2 * (i + n * j) + 1)) = some a :=
+    fun i j hi hj => ⟨⟨_, hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨0, Nat.zero_lt_two⟩⟩,
+      ⟨_, hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨1, Nat.one_lt_two⟩⟩⟩
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) _))) .skip) st =
+    some st'
+  rw [exec_seq_skip, exec_named, exec_seq]
+  -- the strict upper triangle
+  refine zshift_bind (fun σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n)
+    ((exists_exec_loop_eq_some_of_forall I
+    (fun j σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < j) ⟨⟨rfl, fun _ _ _ _ => rfl⟩,
+      fun _ _ h => absurd h.2 (Nat.not_lt_zero _)⟩ (fun j hj σ ⟨hσ, hup⟩ => by
+        have hj : j < n := hj
+        change ∃ st', exec I (.seq (.loop _ _) .skip) σ = some st' ∧ _
+        rw [exec_seq_skip]
+        -- column `j`, rows `i < j`
+        refine (exists_exec_loop_eq_some_of_forall I
+          (fun i σ' => Fr σ' ∧ Up σ' fun i' j' => i' < j' ∧ (j' < j ∨ j' = j ∧ i' < i))
+          ⟨hσ, fun i' j' h => hup i' j' ⟨h.1, by omega⟩⟩ (fun i hi σ' ⟨hσ', hup'⟩ => by
+            have hi : i < j := hi
+            have hk := hn i j (by omega) hj
+            obtain ⟨s₁, he₁, hs₁, hf₁, hr₁, hm₁⟩ := zshift_copy hYsh hlen hXY
+              hσ'.1 hσ'.2 (yo + zidx (.const n) (.var i) (.var j))
+              (xo + zidx (.const n) (.var i) (.var j)) (2 * (i + n * j))
+              (.seq (.instr (.copy p ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩
+                ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩)) .skip) (by omega)
+              rfl rfl (hX i j (by omega) hj).1
+            obtain ⟨s₂, he₂, hs₂, hf₂, hr₂, hm₂⟩ := zshift_copy hYsh hlen hXY
+              (σ := { σ' with store := s₁, cnt := _ }) hs₁ hf₁
+              (yo + zidx (.const n) (.var i) (.var j) + 1)
+              (xo + zidx (.const n) (.var i) (.var j) + 1) (2 * (i + n * j) + 1) .skip hk
+              rfl rfl (hX i j (by omega) hj).2
+            refine ⟨_, he₁.trans (he₂.trans (exec_skip I _)), ⟨hs₂, hf₂⟩, fun i' j' h => ?_⟩
+            by_cases hij : i' = i ∧ j' = j
+            · obtain ⟨rfl, rfl⟩ := hij
+              exact ⟨hm₂ _ hr₁, hr₂⟩
+            · have := hup' i' j' ⟨h.1, by omega⟩
+              exact ⟨hm₂ _ (hm₁ _ this.1), hm₂ _ (hm₁ _ this.2)⟩)).imp
+          fun σ' ⟨h', hF', hup'⟩ => ⟨h', hF', fun i' j' h => hup' i' j' ⟨h.1, by
+            simp only [IExp.eval_var]; omega⟩⟩))) fun σ₁ ⟨hσ₁, hup₁⟩ => ?_
+  rw [exec_seq]
+  -- the diagonal
+  refine zshift_bind (fun σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n)
+    (exists_exec_loop_eq_some_of_forall I
+    (fun _ σ => Fr σ ∧ Up σ fun i' j' => i' < j' ∧ j' < n) ⟨hσ₁, hup₁⟩ (fun i hi σ ⟨hσ, hup⟩ => by
+        have hi : i < n := hi
+        have hk := hn i i hi hi
+        obtain ⟨s₁, he₁, hs₁, hf₁, -, hm₁⟩ := zshift_sub hsem hYsh hlen hXY hcY hc hσ.1 hσ.2
+          (yo + zidx (.const n) (.var i) (.var i))
+          (xo + zidx (.const n) (.var i) (.var i)) (2 * (i + n * i))
+          (.seq (.instr (.lit p ⟨Y, yo + zidx (.const n) (.var i) (.var i) + 1⟩ 0)) .skip)
+          (by omega) rfl rfl (hX i i hi hi).1
+        obtain ⟨s₂, he₂, hs₂, hf₂, hm₂⟩ := zshift_lit hsem hYsh hlen
+          (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
+          (yo + zidx (.const n) (.var i) (.var i) + 1) (2 * (i + n * i) + 1) .skip hk rfl
+        exact ⟨_, he₁.trans (he₂.trans (exec_skip I _)), ⟨hs₂, hf₂⟩,
+          fun i' j' h => ⟨hm₂ _ (hm₁ _ (hup i' j' h).1), hm₂ _ (hm₁ _ (hup i' j' h).2)⟩⟩))
+    fun σ₂ ⟨hσ₂, hup₂⟩ => ?_
+  -- the mirror
+  refine exists_exec_zmirror p n (B := fun i j =>
+    ((σ₂.store.read p Y (yo.eval + 2 * (i + n * j))).getD default,
+      (σ₂.store.read p Y (yo.eval + 2 * (i + n * j) + 1)).getD default))
+    (fun i j hij => ?_) hsem ⟨len, hσ₂.1 ▸ hYsh, hlen⟩
+  obtain ⟨⟨v, hv⟩, ⟨w, hw⟩⟩ := hup₂ i j ⟨hij, j.2⟩
+  simp only [hv, hw, Option.getD_some, and_self]
 
 /-- **`zhermScale` computes the machine's scaling**: as
 `NLAlib.Computation.holds_of_exec_zhermShift`, the block at `Y` ends holding `M.hermScale A c`.
