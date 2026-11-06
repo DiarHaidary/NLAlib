@@ -45,13 +45,16 @@ leading-order forms given here are proof-sketch values, not claims.
   $\|\mathbf V_{k+1}^{\mathsf T}\mathbf V_{k+1}-\mathbf I\|_F\le\sqrt{3(k+1)}\,\mu$ on the admissible
   prefix; (S3) an **$n\times n$ symmetric backward model**: $\mathbf T_k$ is exactly the Lanczos
   tridiagonal of $(\mathbf A+\mathbf E,\tilde{\mathbf b})$ with $\|\mathbf E\|_F=O(k\mu\|\mathbf A\|)$,
-  so no dilation is needed; (S4) consequences: interlacing up to $\|\mathbf E\|$ and therefore no
-  ghost Ritz values, Ritz residuals, transfer of Kaniel–Paige–Saad and of Gauss quadrature. All are
-  known in substance (Simon 1984; Giraud–Langou–Rozložník–van den Eshof 2005; Kahan–Parlett–Jiang
-  1982). The explicit theorems with constants, in this contract form, are planned. Forward
+  so no dilation is needed; (S4) consequences: interlacing up to $\|\mathbf E\|$, converged Ritz
+  values are not duplicated (a residual-gated count, not a consequence of interlacing alone), Ritz
+  residuals, transfer of Kaniel–Paige–Saad and of Gauss quadrature. All are known in substance
+  (Paige 1970, the original analysis of Lanczos with reorthogonalization; Simon 1984;
+  Giraud–Langou–Rozložník–van den Eshof 2005; Kahan–Parlett–Jiang 1982). The explicit theorems with constants, in this contract form, are planned. Forward
   statements about $\mathcal K_k(\mathbf A,\mathbf b)$ or about the exact $\mathbf T_k(\mathbf A,\mathbf b)$
   are out of reach because they are false in general (§3.6).
-* **First stage**: 46 statements (S 24, M 15, L 5, H 2), §4.
+* **First stage**: 48 statements (S 27, M 14, L 5, H 2), §4.
+* **Review.** Fable review 2026-11-06 (`reports/Review-Fable-LanczosReorth-Design.md`), approve with
+  fixes; all findings applied (§6).
 
 ## 0. What main already has (reused, not re-derived)
 
@@ -64,7 +67,7 @@ leading-order forms given here are proof-sketch values, not claims.
 | `LanczosData` (generic symmetric three-term data): `mul_basis`, `residual`, `mulVec_basis_mulVec_sub_smul` | `Krylov/FinitePrecision/LanczosData.lean` | the perturbed relation (S1), Ritz residual identity |
 | `LanczosRun`, Paige, dilation backward model `400q³ε‖A‖`/`1000q²ε‖A‖` | `Krylov/FinitePrecision/*` | the baseline the FRO results are compared with; not consumed |
 | `lanczosState_eq_of_orthonormal_recurrence` | `Krylov/Processes/LanczosRecurrence.lean` | exact Lanczos on the backward model (E4) |
-| `gramSchmidtQ`, `gramSchmidtR`, `IsQR`, `orthAgainst`, `mgsSweep`, `gramSchmidtProg` | `Matrix/Factorizations/GramSchmidt*.lean`, `QR.lean` | orthonormalization of the computed basis (E2); MGS2 instance later |
+| `gramSchmidtQ`, `gramSchmidtR`, `IsQR`, `orthAgainst`, `mgsSweep`, `gramSchmidtProg` | `Matrix/Factorizations/GramSchmidt*.lean`, `QR.lean` | MGS2 instance later (`orthAgainst`); `gramSchmidtQ` only for the alternative QR route of E2 (§3.3) |
 | `arnoldiState`, `mgsArnoldiHessenberg` | `Krylov/Processes/ArnoldiRecurrence.lean` | the exact FRO recurrence for non-symmetric input (A1) |
 | Weyl `IsHermitian.abs_eigenvalue_sub_le`, Poincaré `eigenvalue_conjTranspose_mul_mul_le`, `eigenvalue_le_eigenvalue_conjTranspose_mul_mul`, residual `exists_abs_eigenvalue_sub_mul_norm_le`, Kaniel–Paige–Saad `eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le`, Kittaneh `frobNorm_cfc_sub_cfc_le`, Gauss quadrature (`Polynomial/Orthogonal/Gauss.lean`) | `Matrix/Spectral`, `Matrix/Perturbation`, `Krylov/Eigenvalues/Ritz.lean`, `Krylov/FinitePrecision` | the spectral consequences (S4) |
 
@@ -114,7 +117,7 @@ Why this shape (FR2):
 
 | scheme | $\varepsilon_1$ | $\varepsilon_3$ | consequence over $k$ steps | literature |
 |---|---|---|---|---|
-| CGS (one pass) | $c_1$ | $\approx\eta_0+c_1$ (first order) | $\mu_j\lesssim c_1+(\eta_j+c_1)/\tau_j$: orthogonality decays with the cancellation $1/\tau$, $O(u\kappa^2)$ for QR | Giraud–Langou–Rozložník–van den Eshof 2005 Thm 1; Smoktunowicz–Barlow–Langou 2006 |
+| CGS (one pass) | $c_1$ | $\approx\eta_0+c_1$ (first order) | $\mu_j\lesssim c_1+(\eta_j+c_1)/\tau_j$: orthogonality decays with the cancellation $1/\tau$ ($\tau_j$, the admissibility ratio of §1.2), $O(u\kappa^2)$ for QR | Giraud–Langou–Rozložník–van den Eshof 2005 Thm 1; Smoktunowicz–Barlow–Langou 2006 |
 | **CGS2** | $\approx c_1$ | $\approx(\eta_0+c_1)^2$ | $O(c_1)$ per column whenever $\tau\gtrsim k c_1$ | Giraud et al. 2005 Thm 2 ($\|\mathbf I-\mathbf Q^{\mathsf T}\mathbf Q\|\le c\,mn^{3/2}u$ under $c'\,m^2n^3u\kappa<1$); Daniel–Gragg–Kaufman–Stewart 1976; Parlett 1998 §6.9 (Kahan's "twice is enough") |
 | MGS2 | $\approx c_1$ | second order | as CGS2 | Giraud–Langou–Rozložník 2005 (CAMWA); Björck 1994 |
 | Householder (implicit $\mathbf Q$) | $O(nu)$, any input | $0$ | $O(knu)$, no admissibility | Walker 1988; Drkošová–Greenbaum–Rozložník–Strakoš 1995; Higham 2002 Ch. 19 |
@@ -138,20 +141,30 @@ first-order $\varepsilon_3$ (one CGS pass) does not close without a $\tau$-depen
 
 **Admissible prefix.** Let the program store $\nu_j=\mathrm{nrm2}(\mathbf z_j)$, the norm *before*
 orthogonalization, next to $\beta_j=\mathrm{nrm2}(\mathbf z_j')$. Step $j$ is **$\tau$-admissible** if
-$\tau\nu_j\le\beta_j$, a comparison of two stored outputs. The analysis covers the steps up to the first
-non-admissible one, $k=$ `reorthSteps τ ν β q` (the analogue of `lanczosSteps` in the earlier design).
-Two facts justify reading $k$ off the outputs:
+$\tau\nu_j<\beta_j$ (strict, so $\beta_j\ne0$: exact breakdown $\nu_j=\beta_j=0$ is never admissible,
+matching main's "the run ends at the first zero $\beta$"), a comparison of two stored outputs. The
+analysis covers the steps up to the first non-admissible one, $k=$ `reorthSteps τ ν β q`. Steps are
+numbered $j=1,\dots,k$ and produce $\mathbf v_2,\dots,\mathbf v_{k+1}$; Lean statements use the 0-based
+`j < k`. This is Paige's stopping criterion in substance: Paige 1970 shows that Lanczos with
+reorthogonalization needs a stopping criterion to obtain a priori error bounds (Paige 1970, locator
+to verify); our $\tau$-test is that criterion in contract form. We state and prove our own version;
+we do not follow his proof. Two facts justify reading $k$ off the outputs:
 
 * (B7/D8, planned, S) if $\eta<1$ then $\mathbf V_{k+1}$ has full column rank, so the admissible
-  prefix has $k+1\le n$ whenever $\beta_k\ne0$. Full reorthogonalization "terminates" by step $n$
+  prefix has $k+1\le n$ (with strict admissibility no extra hypothesis is needed). Full reorthogonalization "terminates" by step $n$
   for this reason alone.
 * (F3) if the prefix stops at a non-admissible step, then $\beta_k<\tau\nu_k\le\tau c\|\mathbf A\|$.
   The computed space is then nearly invariant: every Ritz value is within $\tau c\|\mathbf A\|+\|\mathbf E\|$
   of an eigenvalue. This is the numerical form of a lucky breakdown.
 
-For CGS2, $\eta_0=2\sqrt{3k}\,c_1$ and $\tau\ge 50\,k\,c_1$ make $\varepsilon_3/\tau\le c_1$ and close the
-induction with $\mu\le 3c_1+\gamma_{N+4}$ (sketch values). So the threshold is a tiny multiple of $u$
-($\approx 50k^{3/2}(N+k)u$). Steps that fail it are the ones where $\mathbf z_j$ is numerically in the
+**Closure as a fixed-point condition.** $\eta_0$ and $\tau$ are free parameters of the theorems. Put
+$\mu(\eta_0,\tau):=\varepsilon_1(\eta_0)+\varepsilon_3(\eta_0)/\tau+c\,\gamma_{N+1}$; the hypothesis `hsmall` is
+$$\sqrt{3(k+1)}\;\mu(\eta_0,\tau)\le\eta_0\le1/4 .$$
+The induction closes because $\varepsilon_3$ takes the fixed certificate parameter $\eta_0$, not the running
+$\eta_m$. A consistent CGS2 instance (sketch values, Fable review finding 2): allowing $\varepsilon_1\le1.1c_1$,
+$\gamma_{N+4}\le c_1$, $\varepsilon_3/\tau\le c_1$ gives $\mu\le4c_1$; take $\eta_0:=4\sqrt{3(k+1)}\,c_1$ (so $\eta_0\le1/4$ iff
+$c_1\le1/(16\sqrt{3(k+1)})$) and $\tau\ge(4\sqrt{3(k+1)}+1)^2c_1\approx60(k+1)c_1$. So the threshold is a tiny
+multiple of $u$ ($\approx60(k+1)^{3/2}(N+k)u$). Steps that fail it are the ones where $\mathbf z_j$ is numerically in the
 span of the basis. Without admissibility, orthogonality can be lost entirely. **Known**: for
 $\mathbf w\in\operatorname{range}\mathbf V$ up to rounding, $\mathbf w'$ is rounding noise with
 $\|\mathbf V^{\mathsf T}\mathbf w'\|/\|\mathbf w'\|=O(1)$ (Björck 1994; Giraud et al. 2005, the full-rank
@@ -168,17 +181,22 @@ structure IsOrthRoutine (I : Interp P ι K C) (dec : P → K → ℝ) (tag : P) 
     (routine : Builder P ι ℕ ℕ Unit) : Prop where
   composable : ExecutionComposable I routine
   run : ∀ (st : St P K C) (V : Matrix (Fin N) (Fin j) ℝ) (w : Fin N → ℝ), pre st.store →
-    HoldsDecoded st.store dec tag Vb 0 V → (decoded w at wb, wo) → (hb writable for j cells) →
+    HoldsDecoded st.store dec tag Vb 0 V → (decoded w at wb, wo) →
+    (hb allocated with ≥ ho + j cells, disjoint from Vb and wb) →
     ∃ (out : St P K C) (W : Fin N → K) (Hw : Fin j → K),
       exec I routine.run st = some out ∧
-      (out.store = the two block writes of W at (wb, wo) and Hw at (hb, ho), nothing else) ∧
+      (out.store = the two block writes of W at (wb, wo) and Hw at (hb, ho), nothing else;
+       in particular out.store.shape = st.store.shape: scratch is scoped) ∧
       IsOrthErr η₀ ε₁ ε₂ ε₃ V w (dec tag ∘ Hw) (dec tag ∘ W)
 ```
 
 The Lanczos proofs take `orth : ℕ → Builder P ι ℕ ℕ Unit` and
 `horth : ∀ t, IsOrthRoutine I dec tag N (t+1) (η₀ t) (ε₁ t) (ε₂ t) (ε₃ t) pre 1 7 hb 0 (·) (orth t)`.
 This is the same pattern as `hmv : ∀ t, IsMatvecRoutine … (mv t)` in
-`LanczosImplementation.exec_rounded_work`.
+`LanczosImplementation.exec_rounded_work`. The coefficient buffer `hb` ($q+1$ cells) is allocated once,
+outside the loop, like `work`; the routine's own scratch (`s`, `h₂`, one cell) is fresh under `scope`,
+which the `gemv`/`axpy` frames on main require. For CGS2 `pre` is `True` (the basis is an explicit
+premise); the stored-matrix tree's `pre` for the matvec stays `HoldsDecoded store dec tag 6 0 A`.
 
 ### 1.4 How the parameterization is expressed in `Prog` (FR1)
 
@@ -255,9 +273,10 @@ def cgs2 (p) (N j) (V w wo h ho) : Builder P ι VB VI Unit := scope do
   forRange j fun i => ins (.bin p .add ⟨h, ho + .var i⟩ ⟨h, ho + .var i⟩ ⟨h₂, .var i⟩)
 ```
 
-It uses only kernels on main. The literal $-1$ is exact (`lit_err` with integer literal; or use `un
-.neg` on a copied cell as main's `lanczosProg` does, which avoids any literal rounding question).
-An exact negation is preferred, so that the proof reuses the plain-Lanczos `roundedUpdate` pattern.
+It uses only kernels on main. The literal $-1$ is **not** exact under main's contract: `lit_err` gives
+$q(1+\delta)$, $|\delta|\le u$, for every rational literal, and only $0$ is exact (`AddsZeroExactly`).
+Negating a cell does not avoid this, since $\mathbf w\leftarrow\mathbf w-\mathbf s$ needs a scalar $\pm1$ in
+`axpy`. C3 accounts for it: the extra term is $u\|\mathbf s\|\le u(1+\eta_0)(1+c_1)\|\mathbf w\|$, absorbed in $c_1$.
 
 ### 2.3 Programs, trees, targets (G1–G5; draft statements only, AGENTS rule 2)
 
@@ -304,8 +323,8 @@ decoded outputs.
 
 ### 2.4 Exact real arithmetic is used only in specifications and analysis
 
-Every data operation of the trees is a rounded kernel instruction. Mathematical objects ($\mathbf U$ from
-`gramSchmidtQ` of the decoded basis, $\mathbf E$, $\mathbf G$) appear only in theorem statements and
+Every data operation of the trees is a rounded kernel instruction. Mathematical objects ($\mathbf U$, the polar factor of
+the decoded basis, $\mathbf E$, $\mathbf G$) appear only in theorem statements and
 proofs. The one value that is "exact" in the program is the zero test `cmp .eq`, which main already
 uses. $\tau$ never enters a tree (FR4 (a)).
 
@@ -332,7 +351,7 @@ on main), and it replaces `smul_v_eq`/`norm_δ_le` with:
 * `nu_eq`: $\nu_j=\|\mathbf z_j\|(1+\theta)$, with $|\theta|\le\gamma_{N+1}$;
 * `orth_eq`: `IsOrthErr (η₀ j) (ε₁ j) (ε₂ j) (ε₃ j) (basis j) (z j) (h j) (z' j)`;
 * `smul_v_eq`: $\beta_j\mathbf v_{j+1}=\mathbf z_j'+\boldsymbol\delta_j$, with $\|\boldsymbol\delta_j\|\le\varepsilon\|\mathbf z_j'\|$ and nearly unit $\mathbf v_{j+1}$ when $\beta_j\ne0$;
-* `admissible`: $\tau\nu_j\le\beta_j$ for $j<k$ (true by the definition of $k$);
+* `admissible`: $\tau\nu_j<\beta_j$ for $j<k$ (0-based; true by the definition of $k$);
 * the horizon is **not** a field: theorems take `hsmall`, as on main after
   `Krylov-FinitePrecision-Runs.md`.
 
@@ -346,22 +365,24 @@ Main's Paige/dilation analysis therefore does not apply verbatim, and it is not 
 
 | # | Result | Hypotheses | Bound (sketch) | Status | Size | Reuses |
 |---|---|---|---|---|---|---|
-| S2 | **Orthogonality of the admissible prefix** $\|\mathbf V_{k+1}^{\mathsf T}\mathbf V_{k+1}-\mathbf I\|_F\le\sqrt{3(k+1)}\,\mu$, $\mu=\max_j(\varepsilon_1+\varepsilon_3/\tau+\gamma_{N+4})$ | contract, admissibility, $\sqrt{3(k+1)}\mu\le\eta_0$ | for CGS2: $\mu\approx 3c_1$ | known for CGS2 as a QR statement (Giraud et al. 2005 Thm 2); planned here from the contract | M | B6 |
-| S1 | **Perturbed Lanczos relation** $\mathbf A\mathbf V_k=\mathbf V_k\mathbf T_k+\beta_k\mathbf v_{k+1}\mathbf e_k^{\mathsf T}+\mathbf F_k$, $\|\mathbf F_k\|_F\le c_F\,k(\mu+\varepsilon)\|\mathbf A\|$, including the discarded coefficients | S2, $\mathbf A$ symmetric | $\|\mathbf h_j\|\lesssim\sqrt j(5\mu+2\varepsilon)\|\mathbf A\|$ (D4) | known in substance (Paige 1976 for the rounding part; Simon 1984b for reorthogonalized variants); planned | L | `LanczosData.mul_basis`, `LocalErrors`-style coefficient bounds |
+| S2 | **Orthogonality of the admissible prefix** $\|\mathbf V_{k+1}^{\mathsf T}\mathbf V_{k+1}-\mathbf I\|_F\le\sqrt{3(k+1)}\,\mu$, $\mu=\max_j(\varepsilon_1+\varepsilon_3/\tau+\gamma_{N+4})$ | contract, admissibility, $\sqrt{3(k+1)}\mu\le\eta_0$ | for CGS2: $\mu\le4c_1$ (§1.2) | known: Paige 1970 for Lanczos with reorthogonalization under a stopping criterion (locator to verify); Giraud et al. 2005 Thm 2 for the CGS2 kernel constants; planned here from the contract | M | B5, B6, B8 |
+| S1 | **Perturbed Lanczos relation** $\mathbf A\mathbf V_k=\mathbf V_k\mathbf T_k+\beta_k\mathbf v_{k+1}\mathbf e_k^{\mathsf T}+\mathbf F_k$, $\|\mathbf F_k\|_F\le c_F\,k(\mu+\varepsilon)\|\mathbf A\|$, including the discarded coefficients | S2, $\mathbf A$ symmetric | $\|\mathbf h_j\|\lesssim\sqrt j(5\mu+2\varepsilon)\|\mathbf A\|$ (D4) | known in substance: Paige 1970 (the reorthogonalized relation; Paige 1976 for the plain rounding part); Simon 1984b is the semi-orthogonal generalization; planned | L | `LanczosData.mul_basis`, `LocalErrors`-style coefficient bounds |
 | S1′ | **Projection form** $\|\mathbf V_k^{\mathsf T}\mathbf A\mathbf V_k-\mathbf T_k\|\le c(\mu\|\mathbf A\|+\|\mathbf F_k\|)$ | S1, S2 | — | known (Simon 1984b, semi-orthogonality suffices) | S | — |
-| S3 | **$n\times n$ symmetric backward model.** With $\mathbf U=$ `gramSchmidtQ` $\mathbf V_{k+1}$ (orthonormal, $\mathbf u_1=\mathbf v_1/\|\mathbf v_1\|$), some symmetric $\mathbf E$ satisfies $(\mathbf A+\mathbf E)\mathbf U_k=\mathbf U_k\mathbf T_k+\beta_k\mathbf u_{k+1}\mathbf e_k^{\mathsf T}$ exactly, and $\|\mathbf E\|_F\le\sqrt2\bigl((\|\mathbf A\|+\|\underline{\mathbf T}_k\|)\|\mathbf U-\mathbf V\|_F+\|\mathbf F_k\|_F\bigr)$; hence $\mathbf T_k=$ `lanczosTridiagonal` $(\mathbf A+\mathbf E)$ $\mathbf u_1$ | S1, S2, $\beta_j>0$ for $j<k$ | $\|\mathbf E\|_F=O(k\mu\|\mathbf A\|)$ | known in substance (Simon 1984b; Stewart 2002 for Krylov decompositions; Paige 2010 for the plain case, by augmentation); this statement planned | L | E1, E2, `lanczosState_eq_of_orthonormal_recurrence` |
-| S4a | **Interlacing up to $\|\mathbf E\|$, no ghosts**: $\lambda_{i+n-k}(\mathbf A)-e\le\theta_i\le\lambda_i(\mathbf A)+e$; for an eigenvalue with gap $>2e$, at most its multiplicity of Ritz values in the gap window | S3 | $e=\|\mathbf E\|_2$ | follows from S3 + Poincaré + Weyl (proved on main); the qualitative statement is known (Simon 1984b; Parlett 1998 Ch. 13) | S | Interlacing, Weyl |
-| S4b | **Ritz pairs**: each Ritz value has an eigenvalue of $\mathbf A$ within $(\beta_k|s_k|+\|\mathbf F_k\|)/\|\mathbf V_k\mathbf s\|$, and within $\beta_k|s_k|+e$ | S1 or S3 | — | known (Paige 1980 for plain; standard) | S | `exists_abs_eigenvalue_sub_mul_norm_le` |
+| S3 | **$n\times n$ symmetric backward model.** With $\mathbf U=\mathbf V_{k+1}(\mathbf V_{k+1}^{\mathsf T}\mathbf V_{k+1})^{-1/2}$ (polar factor, orthonormal; $\|\mathbf u_1-\mathbf v_1\|\le\|\mathbf U-\mathbf V\|_2$), some symmetric $\mathbf E$ satisfies $(\mathbf A+\mathbf E)\mathbf U_k=\mathbf U_k\mathbf T_k+\beta_k\mathbf u_{k+1}\mathbf e_k^{\mathsf T}$ exactly, and $\|\mathbf E\|_F\le\sqrt2\bigl((\|\mathbf A\|+\|\underline{\mathbf T}_k\|)\|\mathbf U-\mathbf V\|_F+\|\mathbf F_k\|_F\bigr)$; hence $\mathbf T_k=$ `lanczosTridiagonal` $(\mathbf A+\mathbf E)$ $\mathbf u_1$ | S1, S2, admissible prefix ($\beta_j>0$, $j\le k$); terminal $\beta_k=0$ separately (E6) | $\|\mathbf E\|_F=O(k\mu\|\mathbf A\|)$ | known in substance: Paige 1970 (primary: the computed tridiagonal is close to that of a nearby matrix under the criterion; locator to verify); Simon 1984b; Stewart 2002 for Krylov decompositions; Paige 2010 for the plain case, by augmentation; this statement planned | L | E1, E2, `lanczosState_eq_of_orthonormal_recurrence` |
+| S4a | **Interlacing up to $\|\mathbf E\|$** (F1): $\lambda_{i+n-k}(\mathbf A)-e\le\theta_i\le\lambda_i(\mathbf A)+e$ | S3 | $e=\|\mathbf E\|_2$ | follows from S3 + Poincaré + Weyl (proved on main) | S | Interlacing, Weyl |
+| S4a′ | **Converged Ritz values are not duplicated** (F2): if $\lambda$ has multiplicity $m$ and gap $g>2e$, with $r_i=\beta_k|\mathbf e_k^{\mathsf T}\mathbf y_i|$, then $\#\{i:\theta_i\in(\lambda-e,\lambda+e),\ r_i<(g-2e)/\sqrt{m+1}\}\le m$. Interlacing alone does **not** give a count: $\mathbf A=\operatorname{diag}(1,0,-1)$, $\mathbf E=\mathbf 0$, $k=2$, $\mathbf u_1=(\delta,\sqrt{1-2\delta^2},\delta)$ gives Ritz values $\pm\sqrt2\delta$, two within $e$ of the simple eigenvalue $0$ (Fable review finding 1) | S3 | — | the phenomenon is known (Paige 1971; Parlett 1998 Ch. 13); this statement planned: $\mathbf A+\mathbf E$ has exactly $m$ eigenvalues in the window (Weyl), $\|(\mathbf I-\mathbf P)\mathbf x_i\|\le r_i/(g-2e)$ for orthonormal $\mathbf x_i=\mathbf U_k\mathbf y_i$ (F2a), and $\sum_i\|\mathbf P\mathbf x_i\|^2\le m$ | M | F2a, Weyl |
+| S4b | **Ritz pairs**: each Ritz value has an eigenvalue of $\mathbf A$ within $(\beta_k|s_k|\,\|\mathbf v_{k+1}\|+\|\mathbf F_k\|)/\|\mathbf V_k\mathbf s\|$, and within $\beta_k|s_k|+e$ | S1 or S3 | — | known (Paige 1980 for plain; standard) | S | `exists_abs_eigenvalue_sub_mul_norm_le` |
 | S4c | **Kaniel–Paige–Saad transfer**: the proved KPS bound for $(\mathbf A+\mathbf E,\mathbf u_1)$, with the hypothesis intervals widened by $e$ | S3, gap $>2e$ | the bound of `eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le` for $\mathbf A+\mathbf E$, plus $e$ | planned (direct); stating the tangent in $\mathbf A$'s data needs Davis–Kahan, later | M | Ritz.lean, Weyl |
 | S4d | **Gauss quadrature / SLQ transfer**: $\|\tilde{\mathbf b}\|^2\mathbf e_1^{\mathsf T}p(\mathbf T_k)\mathbf e_1=\tilde{\mathbf b}^{\mathsf T}p(\mathbf A+\mathbf E)\tilde{\mathbf b}$ for $\deg p\le2k-1$, and for $L$-Lipschitz $f$, $|\tilde{\mathbf b}^{\mathsf T}f(\mathbf A+\mathbf E)\tilde{\mathbf b}-\mathbf b^{\mathsf T}f(\mathbf A)\mathbf b|\le L\|\mathbf E\|_F\|\mathbf b\|^2+2\|f\|_\infty\|\mathbf b\|\|\tilde{\mathbf b}-\mathbf b\|$ | S3 | — | exactness is classical (Golub–Meurant 2010); the transfer is planned via Kittaneh (proved) | M | Gauss.lean, `frobNorm_cfc_sub_cfc_le` |
-| S5 | **Pure backward form** (exact $\mathbf b$): an orthogonal $\mathbf Z$ with $\mathbf Z\mathbf u_1=\mathbf b/\|\mathbf b\|$, $\|\mathbf Z-\mathbf I\|\le2\|\mathbf u_1-\mathbf b/\|\mathbf b\|\|$; $\mathbf A'=\mathbf Z(\mathbf A+\mathbf E)\mathbf Z^{\mathsf T}$, $\|\mathbf A'-\mathbf A\|\le e+4\|\mathbf A\|\cdot O(u)$ | S3 + start-vector bound | — | standard construction; planned | M | Householder.lean |
+| S5 | **Pure backward form** (exact $\mathbf b$): an orthogonal $\mathbf Z=$ `householder (u₁ + b̂) * householder u₁` (two reflectors; a rotation in $\operatorname{span}\{\mathbf u_1,\hat{\mathbf b}\}$, the identity on its complement; a single reflector has $\|\mathbf Z-\mathbf I\|_2=2$) with $\mathbf Z\mathbf u_1=\hat{\mathbf b}=\mathbf b/\|\mathbf b\|$, $\|\mathbf Z-\mathbf I\|_2=\|\mathbf u_1-\hat{\mathbf b}\|$; $\mathbf A'=\mathbf Z(\mathbf A+\mathbf E)\mathbf Z^{\mathsf T}$, $\|\mathbf A'-\mathbf A\|\le e+4\|\mathbf A\|\cdot O(u)$ | S3 + start-vector bound | — | standard construction; planned | M | Householder.lean |
 | S6 | Ritz vector angles via Davis–Kahan | S3/S4b, gap | — | known (standard); later | M | DK |
 
-The **payoff over plain Lanczos** is S3 and S4a. Main's plain-Lanczos model is a dilation of size
+The **payoff over plain Lanczos** is S3, S4a and S4a′. Main's plain-Lanczos model is a dilation of size
 $n(k+1)$ with $400q^3\varepsilon\|\mathbf A\|$ (or $1000q^2\varepsilon$). It cannot give interlacing
 with the spectrum of $\mathbf A$: ghost copies are real in plain finite-precision Lanczos (Paige 1971;
-Greenbaum 1989). With full reorthogonalization the model has size $n\times n$ and the Ritz values
-interlace $\mathbf A$'s eigenvalues up to $e$. The dimension count $k+1\le n$ is automatic.
+Greenbaum 1989). With full reorthogonalization the model has size $n\times n$, the Ritz values
+interlace $\mathbf A$'s eigenvalues up to $e$, and converged Ritz values are not duplicated, because the
+Ritz vectors $\mathbf U_k\mathbf y_i$ are orthonormal (for plain Lanczos $\mathbf V_k\mathbf y_i$ are not). The dimension count $k+1\le n$ is automatic.
 
 ### 3.3 Proof sketches
 
@@ -369,13 +390,15 @@ interlace $\mathbf A$'s eigenvalues up to $e$. The dimension count $k+1\le n$ is
 $\mathbf A\mathbf v_j=\beta_{j-1}\mathbf v_{j-1}+\alpha_j\mathbf v_j+\mathbf V_j\mathbf h_j+\beta_j\mathbf v_{j+1}+\mathbf f_j$.
 By B4, $\|\mathbf h_j\|$ is controlled by $\|\mathbf V_j^{\mathsf T}\mathbf z_j\|$, so bound each component $\mathbf v_i^{\mathsf T}\mathbf z_j$:
 
-* $i\le j-2$: $\mathbf v_i^{\mathsf T}\mathbf A\mathbf v_j=(\mathbf A\mathbf v_i)^{\mathsf T}\mathbf v_j$ by symmetry. Expand $\mathbf A\mathbf v_i$ by the relation at step $i$. Every resulting inner product with $\mathbf v_j$ is an off-diagonal Gram entry ($\le\mu$), apart from $\mathbf h_i^{\mathsf T}\mathbf V_i^{\mathsf T}\mathbf v_j$ ($\le\|\mathbf h_i\|\sqrt i\,\mu$, second order) and $\mathbf f_i^{\mathsf T}\mathbf v_j$. So $|\cdot|\le 5\|\mathbf A\|\mu+\sqrt i\,\mu\|\mathbf h_i\|+\|\mathbf f_i\|$.
-* $i=j-1$: the $\beta_{j-1}$ terms cancel up to $\beta_{j-1}(\|\mathbf v_j\|^2-\|\mathbf v_{j-1}\|^2)=O(\varepsilon\|\mathbf A\|)$.
+* $i\le j-2$: $\mathbf v_i^{\mathsf T}\mathbf A\mathbf v_j=(\mathbf A\mathbf v_i)^{\mathsf T}\mathbf v_j$ by symmetry. Expand $\mathbf A\mathbf v_i$ by the relation at step $i$. Every resulting inner product with $\mathbf v_j$ is an off-diagonal Gram entry ($\le\mu$), apart from $\mathbf h_i^{\mathsf T}\mathbf V_i^{\mathsf T}\mathbf v_j$ ($\le\|\mathbf h_i\|\,\|\mathbf g_{j-1}\|\le\|\mathbf h_i\|\mu$, second order) and $\mathbf f_i^{\mathsf T}\mathbf v_j$. So $|\cdot|\le 5\|\mathbf A\|\mu+\mu\|\mathbf h_i\|+\|\mathbf f_i\|$.
+* $i=j-1$: the $\beta_{j-1}$ terms cancel up to $\beta_{j-1}(\|\mathbf v_j\|^2-\|\mathbf v_{j-1}\|^2)=O(\varepsilon\|\mathbf A\|)$, plus the same $O(\|\mathbf A\|\mu+\mu\|\mathbf h_{j-1}\|+\|\mathbf f_{j-1}\|)$ terms as for $i\le j-2$.
 * $i=j$: $\mathbf v_j^{\mathsf T}\mathbf z_j=\alpha_j(1-\|\mathbf v_j\|^2)+O(\varepsilon)=O(\varepsilon|\alpha_j|)$.
 
-Induction on $j$ under $j\mu\le1/4$ gives $\|\mathbf h_j\|\le c_h\sqrt j(\mu+\varepsilon)\|\mathbf A\|$. The
-coefficient bounds $|\alpha_j|,\beta_j\le(1+O(\eta))\|\mathbf A\|+\ldots$ first come out crude ($\tfrac54 j$-type, as
-in main's `LocalErrors`) and are then sharpened through S1′. Without symmetry the components
+Induction on $j$ under $j\mu\le1/4$ gives $\|\mathbf h_j\|\le c_h\sqrt j(5\mu+2\varepsilon)\|\mathbf A\|$. Order of proof:
+**D5 → D3 → D4 → D6 → D7.** S2 (D5) needs only the contract, admissibility, B5/B6/B8 and the `nrm2`
+lemma, never $\|\mathbf A\|$ or the coefficients. With S2 in hand, expanding
+$\|\mathbf z_j'\|^2=\mathbf z_j'^{\mathsf T}(\mathbf z_j-\mathbf V\mathbf h_j-\mathbf f_j)$ gives the coefficient bounds directly,
+$|\alpha_j|,\beta_j\le(1+cj\mu)\|\mathbf A\|+\ldots$ (D3), with no $j$-growth and no later sharpening step. Without symmetry the components
 $i\le j-2$ are $O(1)$: that is Arnoldi, and the coefficients cannot be discarded.
 
 **S3, the symmetric completion (E1, planned, S; Kahan–Parlett–Jiang 1982, locator to verify).** Let
@@ -388,20 +411,27 @@ so $\|\mathbf E\|_F^2=\|\mathbf S\|_F^2+2\|\mathbf R_\perp\|_F^2\le2\|\mathbf R\
 $\mathbf R=\mathbf A\mathbf U_k-\mathbf U_{k+1}\underline{\mathbf T}_k$. Then
 $\mathbf U_k^{\mathsf T}\mathbf R=\mathbf U_k^{\mathsf T}\mathbf A\mathbf U_k-\mathbf T_k$ is symmetric because $\mathbf A$ and
 $\mathbf T_k$ are, and $\mathbf R=\mathbf A(\mathbf U-\mathbf V)_k-(\mathbf U-\mathbf V)_{k+1}\underline{\mathbf T}_k+\mathbf F_k$.
-For E2 (planned, M; Sun 1991, Chang–Paige–Stewart 1997, locators to verify): $\mathbf V=\mathbf U\mathbf R_{\rm GS}$ with
-$\mathbf R_{\rm GS}^{\mathsf T}\mathbf R_{\rm GS}=\mathbf G$ and $\mathbf R_{\rm GS}$ upper triangular with positive diagonal. Writing
-$\mathbf R_{\rm GS}=\mathbf I+\boldsymbol\Delta$ gives
-$\|\mathbf U-\mathbf V\|_F=\|\boldsymbol\Delta\|_F\le\|\mathbf G-\mathbf I\|_F/(1-\|\mathbf G-\mathbf I\|_2)$
-(the upper part of $\boldsymbol\Delta+\boldsymbol\Delta^{\mathsf T}+\boldsymbol\Delta^{\mathsf T}\boldsymbol\Delta$).
-QR is used instead of the polar factor because it keeps $\mathbf u_1\parallel\mathbf v_1$, i.e. the start
-vector. E4: `lanczosState_eq_of_orthonormal_recurrence` on $(\mathbf A+\mathbf E,\mathbf u_1)$ with $\beta_j>0$
-($j<k$, from admissibility) gives the exact Lanczos tridiagonal.
+For E2 (planned, S): take the **polar factor** $\mathbf U=\mathbf V\mathbf G^{-1/2}$, $\mathbf G=\mathbf V^{\mathsf T}\mathbf V$,
+$\|\mathbf G-\mathbf I\|_2\le\eta<1$. Then $\mathbf U$ has orthonormal columns and
+$\|\mathbf U-\mathbf V\|_F=\|\mathbf G^{1/2}-\mathbf I\|_F\le\|\mathbf G-\mathbf I\|_F/(1+\sqrt{1-\eta})$, from main's
+`frobNorm_cfc_sub_cfc_le` (Kittaneh) with $\sqrt{\cdot}$ Lipschitz on $[1-\eta,1+\eta]$, or directly from the
+spectral decomposition. The QR route ($\mathbf U=$ `gramSchmidtQ` $\mathbf V$, which keeps $\mathbf u_1\parallel\mathbf v_1$)
+was dropped: the bound $\|\boldsymbol\Delta\|_F\le\|\mathbf G-\mathbf I\|_F/(1-\|\mathbf G-\mathbf I\|_2)$ for the
+Cholesky factor $\mathbf I+\boldsymbol\Delta$ only yields $x\le(g+x^2)/\sqrt2$, which needs an a-priori bound to
+select the small root. A rigorous proof is a column-by-column Cholesky induction, M–L (Sun 1991;
+Chang–Paige–Stewart 1997). The price of the polar factor is $\mathbf u_1\not\parallel\mathbf v_1$, but
+$\|\mathbf u_1-\mathbf v_1\|\le\|\mathbf U-\mathbf V\|_2=O(\sqrt k\mu)$, which is dominated by $e/\|\mathbf A\|=O(k\mu)$
+in S4d and S5, so no result loses order. E4: `lanczosState_eq_of_orthonormal_recurrence` on
+$(\mathbf A+\mathbf E,\mathbf u_1)$ with $\beta_j>0$ for $j\le k$ (strict admissibility) and $k+1$ orthonormal
+$\mathbf u_1,\dots,\mathbf u_{k+1}$ gives the exact Lanczos tridiagonal. The terminal case $\beta_k=0$
+($\mathbf v_{k+1}=\mathbf 0$) is a separate statement E6: either an orthonormal completion ($k<n$) or a variant
+of the lemma that never reads $\mathbf u_{k+1}$.
 
 **C3–C5, CGS2 meets the contract (planned, M each).** One pass, from main's kernel lemmas:
 $\mathbf h_1=\mathbf V^{\mathsf T}\mathbf w+\mathbf e_h$ with $|\mathbf e_h|\le\gamma_N|\mathbf V|^{\mathsf T}|\mathbf w|$, and
 $\mathbf w'=\mathbf w-\mathbf V\mathbf h_1+\mathbf e$ with $|\mathbf e|\le\gamma_{j+1}(|\mathbf w|+|\mathbf V||\mathbf h_1|)$. Using
 $\|\mathbf V\|_F\le\sqrt{j(1+\eta_0)}$ this gives $\mathbf w'=(\mathbf I-\mathbf V\mathbf V^{\mathsf T})\mathbf w+\mathbf f_1$ with
-$\|\mathbf f_1\|\le c_1\|\mathbf w\|$, $c_1\approx\sqrt j(N+j+2)u$. Then
+$\|\mathbf f_1\|\le c_1\|\mathbf w\|$, $c_1\approx\sqrt j(N+j+2)u$ (including the rounded literal $-1$, §2.2). Then
 $\mathbf V^{\mathsf T}\mathbf w'=(\mathbf I-\mathbf V^{\mathsf T}\mathbf V)\mathbf V^{\mathsf T}\mathbf w+\mathbf V^{\mathsf T}\mathbf f_1$, so
 $\|\mathbf V^{\mathsf T}\mathbf w'\|\le\sqrt{1+\eta_0}(\eta_0+c_1)\|\mathbf w\|$: one pass meets the contract with
 first-order $\varepsilon_3$ (C7). A second pass on $\mathbf w'$ gives
@@ -413,15 +443,15 @@ except the algebra are on main.
 
 ### 3.4 Constants, to first order (sketch; fixed by proofs)
 
-$c_1\approx\sqrt k(N+k)u$, $\mu\approx3c_1$, $\|\mathbf V^{\mathsf T}\mathbf V-\mathbf I\|_F\lesssim 5k(N+k)u$,
+$c_1\approx\sqrt k(N+k)u$, $\mu\le4c_1$, $\eta_0=4\sqrt{3(k+1)}c_1$, $\|\mathbf V^{\mathsf T}\mathbf V-\mathbf I\|_F\lesssim 4\sqrt3\,k(N+k)u$,
 $\|\mathbf F_k\|_F\lesssim c\,k^{3/2}(N+k)u\|\mathbf A\|$, $\|\mathbf E\|_F\lesssim c\,k^{3/2}(N+k)u\|\mathbf A\|$, with
-admissibility threshold $\tau\approx50k^{3/2}(N+k)u$. For comparison, Giraud et al. (2005) prove
+admissibility threshold $\tau\approx60(k+1)^{3/2}(N+k)u$. For comparison, Giraud et al. (2005) prove
 $O(mn^{3/2})u$ loss for CGS2 QR. Practical FRO behaves like $O(\sqrt k\,u)$ (conjectured; we do not
 claim it).
 
 ### 3.5 Dependencies of hypotheses
 
-* `hsmall`: $\sqrt{3(k+1)}\mu\le\eta_0\le1/4$ and $k(\mu+\varepsilon)\le1/100$-type. These are
+* `hsmall`: the fixed-point condition $\sqrt{3(k+1)}\,\mu(\eta_0,\tau)\le\eta_0\le1/4$ of §1.2, and $k(\mu+\varepsilon)\le1/100$-type. These are
   explicit in $N$, $k$, $u$, $\tau$, like main's horizons.
 * $\mathbf A=\mathbf A^{\mathsf T}$ (decoded): needed for D4, A2 and S3.
 * Unbounded-range standard model (`IsRelErrSem`). Main's bounded-format and mixed-error guarantees
@@ -443,7 +473,7 @@ claim it).
 
 ## 4. Recommended first stage
 
-46 statements in 8 groups. Files in brackets. A: Krylov layer. B, C: Computation/Matrix layer.
+48 statements in 8 groups. Files in brackets. A: Krylov layer. B, C: Computation/Matrix layer.
 D–F: `Krylov/FinitePrecision`. G: `Krylov/Processes`.
 
 | id | statement sketch | size | deps |
@@ -458,6 +488,7 @@ D–F: `Krylov/FinitePrecision`. G: `Krylov/Processes`.
 | B5 | `IsOrthErr.norm_transpose_mulVec_normalize_le`: $\|\mathbf V^{\mathsf T}\mathbf w'/\|\mathbf w'\|\|\le\varepsilon_1+\varepsilon_3\|\mathbf w\|/\|\mathbf w'\|$ | S | B1 |
 | B6 | `frobNorm_gram_sub_one_sq_eq`: the column-append identity, and `frobNorm_gram_sub_one_le` ($\sqrt{3m}\mu$) | S | — |
 | B7 | `injective_of_specNorm_gram_sub_one_lt_one` and the corollary $m\le n$ | S | — |
+| B8 | `specNorm_le_sqrt_one_add`, `frobNorm_le_sqrt_mul_one_add`: $\|\mathbf V\|_2\le\sqrt{1+\eta_0}$, $\|\mathbf V\|_F\le\sqrt{j(1+\eta_0)}$ from $\|\mathbf V^{\mathsf T}\mathbf V-\mathbf I\|_2\le\eta_0$ | S | — |
 | **C1** | `cgsPass`, `cgs2` builders (§2.2) [`Matrix/Computation/CGS2.lean`] | S | — |
 | C2 | `exec_cgs2_exactInterp`: in exact arithmetic, the two passes compute $(\mathbf I-\mathbf V\mathbf V^{\mathsf T})$ twice and $\mathbf h=\mathbf V^{\mathsf T}\mathbf w+\mathbf V^{\mathsf T}(\mathbf I-\mathbf V\mathbf V^{\mathsf T})\mathbf w$ (any $\mathbf V$) | M | C1 |
 | C3 | `IsRelErrSem.exec_cgsPass`: decoded $\mathbf w'=(\mathbf I-\mathbf V\mathbf V^{\mathsf T})\mathbf w+\mathbf f_1$, $\mathbf h_1=\mathbf V^{\mathsf T}\mathbf w+\mathbf e_h$, explicit $c_1$ (`cgsPassBound N j u η₀`) | M | C1, kernel lemmas |
@@ -467,20 +498,21 @@ D–F: `Krylov/FinitePrecision`. G: `Krylov/Processes`.
 | C7 | `isOrthErr_cgsPass`: one pass meets the contract with first-order $\varepsilon_3$ (documents why one pass is not enough) | S | C4 |
 | **D1** | `LanczosReorthRun n k` (def, §3.1), `reorthSteps τ ν β q` (def) [`LanczosReorthRun.lean`] | S | B1 |
 | D2 | `LanczosReorthRun.toLanczosData`; `recurrenceError_eq`: $\mathbf f_j+\mathbf V_j\mathbf h_j$ | S | D1 |
-| D3 | coefficient bounds `abs_α_le`, `β_le`, `norm_z_le` (crude, $j$-growth) | M | D1 |
-| D4 | `norm_coef_le`: $\|\mathbf h_j\|\le c_h\sqrt j(\mu+\varepsilon)\|\mathbf H\|$ (symmetric $\mathbf H$, induction) | L | B4, D3, D5 |
-| D5 | `frobNorm_gram_sub_one_le`: S2 on the admissible prefix | M | B5, B6 |
+| D5 | `frobNorm_gram_sub_one_le`: S2 on the admissible prefix (first: needs no coefficient bound) | M | B5, B6, B8 |
+| D3 | coefficient bounds `abs_α_le`, `β_le`, `norm_z_le`: $(1+cj\mu)\|\mathbf H\|+\ldots$, no $j$-growth | M | D1, D5 |
+| D4 | `norm_coef_le`: $\|\mathbf h_j\|\le c_h\sqrt j(5\mu+2\varepsilon)\|\mathbf H\|$ (symmetric $\mathbf H$, induction) | L | B4, D3, D5 |
 | D6 | `frobNorm_residual_le`: S1 | M | D2, D4 |
 | D7 | `specNorm_transpose_mul_mul_sub_tridiagonal_le`: S1′ | S | D5, D6 |
 | D8 | `steps_succ_le_card`: $k+1\le n$ when $\beta_k\ne0$ | S | B7, D5 |
-| D9 | sharpened coefficient bounds $|\alpha_j|,\beta_j\le(1+c\,\eta)\|\mathbf H\|+c\|\mathbf F\|$ | M | D7 |
 | **E1** | `exists_symm_mul_eq_neg`: the symmetric completion, $\|\mathbf E\|_F\le\sqrt2\|\mathbf R\|_F$ [`Matrix/Perturbation/SymmetricBackward.lean`] | S | — |
-| E2 | `frobNorm_gramSchmidtQ_sub_le`: $\|\mathbf U-\mathbf V\|_F\le\|\mathbf G-\mathbf I\|_F/(1-\|\mathbf G-\mathbf I\|_2)$ | M | `GramSchmidt`, `QR` |
+| E2 | `frobNorm_polar_sub_le`: polar factor $\mathbf U=\mathbf V\mathbf G^{-1/2}$ is orthonormal and $\|\mathbf U-\mathbf V\|_F\le\|\mathbf G-\mathbf I\|_F/(1+\sqrt{1-\eta})$ | S | `frobNorm_cfc_sub_cfc_le` |
 | E3 | `LanczosReorthRun.exists_backward`: S3's identity and bound [`LanczosReorthBackward.lean`] | L | D6, D5, E1, E2 |
-| E4 | `lanczosTridiagonal_backward`: $\mathbf T_k=$ exact Lanczos of $(\mathbf H+\mathbf E,\mathbf u_1)$ | M | E3, `lanczosState_eq_of_orthonormal_recurrence` |
-| E5 | `exists_orthogonal_mulVec_eq` + pure-backward corollary (S5) | M | E3, `Householder` |
+| E4 | `lanczosTridiagonal_backward`: $\mathbf T_k=$ exact Lanczos of $(\mathbf H+\mathbf E,\mathbf u_1)$, $\beta_j>0$ for $j\le k$ | M | E3, `lanczosState_eq_of_orthonormal_recurrence` |
+| E5 | `exists_orthogonal_mulVec_eq` (two reflectors, $\|\mathbf Z-\mathbf I\|_2=\|\mathbf u_1-\hat{\mathbf b}\|$) + pure-backward corollary (S5) | M | E3, `Householder` |
+| E6 | `lanczosTridiagonal_backward_of_beta_eq_zero`: the terminal case $\beta_k=0$ | S | E4 |
 | **F1** | `eigenvalue_tridiagonal_le_add`, `le_eigenvalue_tridiagonal_add`: interlacing up to $e$ [`LanczosReorthSpectral.lean`] | S | E4, Interlacing, Weyl |
-| F2 | `card_ritz_gt_le`: no ghosts (count in a gap window) | S | F1 |
+| F2a | `norm_sub_spectralProjector_mulVec_le`: for Hermitian $\mathbf M$, unit $\mathbf x$, $\|(\mathbf I-\mathbf P)\mathbf x\|\le\|\mathbf M\mathbf x-\theta\mathbf x\|/d$, $\mathbf P$ the spectral projector of the eigenvalues within distance $<d$ of $\theta$ (not on main: `Residual.lean` has no residual-to-projector lemma) [`Matrix/Perturbation/Residual.lean`] | S | — |
+| F2 | `card_ritz_mem_window_le`: residual-gated count, converged Ritz values not duplicated (S4a′) | M | F2a, E3, Weyl |
 | F3 | `exists_abs_eigenvalue_sub_le_of_mulVec_eq_smul`: Ritz-pair residual, and the non-admissible-stop corollary | S | D6 or E3 |
 | F4 | `ritz_mem_Icc`: containment $[\lambda_{\min}-e,\lambda_{\max}+e]$ | S | F1 |
 | F5 | `eigenvalue_zero_sub_eigenvalue_tridiagonal_le`: KPS transfer for $\mathbf H+\mathbf E$ (S4c) | M | E4, Ritz.lean |
@@ -495,8 +527,8 @@ D–F: `Krylov/FinitePrecision`. G: `Krylov/Processes`.
 | G7 | `exec_rounded_compiled_backward`: G6 composed with E3/E4 and the start-vector bound | L | G6, E4 |
 | G8 | `exec_rounded_compiled_interlacing`: G7 composed with F1/F2 (the program-level headline) | S | G7, F1, F2 |
 
-Totals: S 24, M 15, L 5, H 2 (46). The two H items are the program bridges, as for plain Lanczos
-on main, where the rounded bridge was the largest item. Critical path: B1 → C3–C5 → D5/D4 → E3 →
+Totals: S 27, M 14, L 5, H 2 (48). The two H items are the program bridges, as for plain Lanczos
+on main, where the rounded bridge was the largest item. Critical path: B1 → C3–C5 → D5 → D3 → D4 → E3 →
 F1 (the mathematics, independent of programs), in parallel with A1 → G1 → G3 and C6 → G5 → G6 → G7.
 
 **Later stages**: MGS2 (rounded `orthAgainst`), DGKS conditional pass, threshold-stopping program
@@ -514,8 +546,8 @@ semi-orthogonality (Simon 1984b).
   with admissibility inside the contract; (c) a $k$-step basis-level contract.
 * **FR3, first instance.** (a) CGS2 (dots + `gemv` + `axpy`) [rec.]; (b) MGS2 via `orthAgainst`;
   (c) DGKS conditional.
-* **FR4, breakdown/admissibility.** (a) exact zero test, store $\nu_j$, admissible prefix read off
-  outputs [rec.]; (b) threshold stop in the tree; (c) hypothesis.
+* **FR4, breakdown/admissibility.** (a) exact zero test, store $\nu_j$, strictly admissible prefix
+  ($\tau\nu_j<\beta_j$) read off outputs; the criterion is Paige 1970's stopping criterion in substance [rec.]; (b) threshold stop in the tree; (c) hypothesis.
 * **FR5, outputs.** (a) $\alpha,\beta,\mathbf V,\nu$ + main's other outputs; coefficients discarded
   and analysed [rec.]; (b) also return the coefficient columns; (c) fold $h_{jj}$ into $\alpha_j$.
 * **FR6, exact spec.** (a) exact FRO recurrence, no premise, equality with `lanczosState` for
@@ -523,13 +555,16 @@ semi-orthogonality (Simon 1984b).
 * **FR7, names.** (a) `lanczosReorthProg`/`lanczosReorthOracleProg`, `StoredEntriesLanczosReorth`/
   `MatrixFreeLanczosReorth`, `LanczosReorthRun`, `IsOrthErr`/`IsOrthRoutine`, algorithm tag
   `lanczos-reorth` [rec.]; (b) `…FullReorth…`.
-* **FR8, backward form.** (a) mixed: $n\times n$ symmetric $\mathbf E$ and $\tilde{\mathbf b}=\|\mathbf b\|\mathbf u_1$,
-  plus the pure-backward corollary E5 [rec.]; (b) Simon's projection form only.
-* **FR9, scope.** (a) the 46 statements of §4 [rec.]; (b) mathematics only (A–F + C), programs later.
+* **FR8, backward form.** (a) mixed: $n\times n$ symmetric $\mathbf E$, $\mathbf U$ the polar factor of the
+  computed basis, $\tilde{\mathbf b}=\|\mathbf b\|\mathbf u_1$, plus the pure-backward corollary E5; headline:
+  interlacing up to $e$ and converged Ritz values not duplicated [rec.]; (b) Simon's projection form only.
+* **FR9, scope.** (a) the 48 statements of §4 [rec.]; (b) mathematics only (A–F + C), programs later.
 
 ## References
 
-In `docs/references.bib`: Paige1976, Paige1980, Paige2010, Greenbaum1989, Parlett1998, Higham2002,
+In `docs/references.bib`: Paige1970 (added on this branch: C. C. Paige, "Practical use of the
+symmetric Lanczos process with re-orthogonalization", BIT 10 (1970) 183–195,
+doi:10.1007/BF01936866), Paige1976, Paige1980, Paige2010, Greenbaum1989, Parlett1998, Higham2002,
 GolubMeurant2010, GolubVanLoan2013, MeurantStrakos2006, Kittaneh1985, DavisKahan1970, Saad2011.
 To add at implementation (verify locators then): Simon 1984a (Math. Comp. 42, 115–142) and 1984b (LAA
 61, 101–131); Parlett–Scott 1979 (Math. Comp. 33); Daniel–Gragg–Kaufman–Stewart 1976 (Math. Comp. 30,
@@ -540,3 +575,16 @@ Giraud–Langou–Rozložník–van den Eshof 2005 (Numer. Math. 101, 87–100);
 Drkošová–Greenbaum–Rozložník–Strakoš 1995 (BIT 35); Paige–Rozložník–Strakoš 2006 (SIMAX 28);
 Kahan–Parlett–Jiang 1982 (SINUM 19); Stewart 2002 (LAA 340); Sun 1991 (BIT 31); Chang–Paige–Stewart
 1997 (SIMAX 18); Carpraux–Godunov–Kuznetsov 1996 (LAA 248); Kaniel 1966 (Math. Comp. 20).
+
+## 6. Review changes (Fable review 2026-11-06, applied)
+
+1 (blocker) The "no ghosts from interlacing" claim was false (counterexample in S4a′). It is replaced
+by the residual-gated count F2, with the new lemma F2a; Summary, S4a and FR8 reworded. 2 Closure
+constants: $\eta_0=4\sqrt{3(k+1)}c_1$, $\tau\gtrsim60(k+1)c_1$; `hsmall` is a fixed-point condition in
+$(\eta_0,\tau)$ (§1.2, §3.4, §3.5). 3 E2 now uses the polar factor through Kittaneh (S); the QR route
+and its size are recorded in §3.3. 4 Proof order D5 → D3 → D4; D9 dropped; the D4 $\mathbf h_i$ term
+fixed. 5 Paige 1970 credited at §1.2/FR4, S1, S2, S3 and added to `docs/references.bib`; Simon 1984b
+kept for S1′ and the semi-orthogonal generalization. Minor: rounded literal $-1$ (§2.2, C3); strict
+admissibility and the index convention (§1.2, §3.1); S5 by two reflectors; E4 terminal case E6; `hb`
+allocation, shape and `pre` in §1.3; B8 added; the $\|\mathbf v_{k+1}\|$ factor in S4b; forward reference
+to $\tau_j$ in §1.1.
