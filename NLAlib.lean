@@ -372,7 +372,6 @@ public import NLAlib.Matrix.Factorizations.Nystrom
 public import NLAlib.Matrix.Factorizations.NystromGram
 public import NLAlib.Matrix.Factorizations.NystromOrder
 public import NLAlib.Matrix.Factorizations.Polar
-public import NLAlib.Matrix.Factorizations.PolarFactor
 public import NLAlib.Matrix.Factorizations.PolarFrames
 public import NLAlib.Matrix.Factorizations.Procrustes
 public import NLAlib.Matrix.Factorizations.QR

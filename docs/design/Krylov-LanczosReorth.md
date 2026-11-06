@@ -595,7 +595,7 @@ Definitions, sorry-free, in `NLAlib/` (added to `NLAlib.lean`): `IsOrthErr`
 (`Matrix/Perturbation/OrthErr.lean`, Matrix layer so that the run interface does not import
 Computation), `Computation.IsOrthRoutine` (`Matrix/Computation/OrthRoutine.lean`), `cgsPass`,
 `cgs2`, `cgsPassBound` (`Matrix/Computation/ClassicalGramSchmidt.lean`, registered in
-`docs/constants.toml`), `polarFactor` (`Matrix/Factorizations/PolarFactor.lean`), `cgsProject`,
+`docs/constants.toml`), `cgsProject`,
 `LanczosReorthState`, `lanczosReorthStep`/`State`/`Matrix` (`Krylov/Processes/LanczosReorthRecurrence.lean`),
 `LanczosReorthRun` with `basisOf`, `toLanczosData`, `orthLevel`, `recLevel`, `backwardRadius`,
 `colSeq`, and `reorthSteps` (`Krylov/FinitePrecision/LanczosReorthRun.lean`), the generic
@@ -638,3 +638,10 @@ Changes from §4 made while writing exact statements:
 * G6 is L, not H: the generic loop G5 (H) carries the work.
 * The spectral results use the Frobenius radius `backwardRadius` ($\ge \|\mathbf E\|_2$).
 * `lakefile.toml` gains the `NLAlibScaffold` lean_lib, as the other stage branches do.
+
+**Update (full build).** The skeleton first added its own `polarFactor`, which clashed with main's
+`NLAlib.polarFactor A = A * pinv (CFC.sqrt (Aᴴ * A))` (`Matrix/Factorizations/Polar.lean`). The
+duplicate is deleted. E2–E4 use main's definition, which for full column rank is
+$\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$. E2's orthonormality is now
+`hasOrthonormalCols_polarFactor_iff` plus the injectivity lemma B7, and its bound starts from
+`polarFactor_mul_sqrt`. The statements are unchanged.

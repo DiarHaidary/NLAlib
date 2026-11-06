@@ -5,11 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Matrix.Factorizations.PolarFactor
+public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Matrix.Factorizations.Householder
 public import NLAlib.Matrix.Spectral.Weyl
 public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Norms.Frobenius
+public import NLAlib.Matrix.Functions.HermitianCalculus
+public import NLAlibScaffold.Matrix.Perturbation.OrthErr
 
 /-!
 # Symmetric backward perturbations from orthonormal bases (scaffold)
@@ -17,14 +19,16 @@ public import NLAlib.Matrix.Norms.Frobenius
 Statements for the backward model of Lanczos with full reorthogonalization (stage
 LANCZOS-REORTH, design note `docs/design/Krylov-LanczosReorth.md` §3.3, ids E1, E2, E5, F2a), all
 in the Matrix layer: the symmetric completion of a residual against an orthonormal basis
-[KahanParlettJiang1982], the polar factor of a nearly orthonormal basis, an orthogonal map
+[KahanParlettJiang1982], main's polar factor (`NLAlib/Matrix/Factorizations/Polar.lean`) of a
+nearly orthonormal basis, an orthogonal map
 sending one unit vector to another and close to the identity (two reflectors), and the count of
 orthonormal approximate eigenvectors with small residuals.
 
 ## Main results
 
 * `NLAlib.exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols`: the symmetric completion.
-* `NLAlib.hasOrthonormalCols_polarFactor`, `NLAlib.frobNorm_polarFactor_sub_le`.
+* `NLAlib.hasOrthonormalCols_polarFactor`, `NLAlib.frobNorm_polarFactor_sub_le`: main's polar factor
+  of a nearly orthonormal basis.
 * `NLAlib.exists_orthogonal_mulVec_eq_specNorm_sub_one_le`: the rotation.
 * `NLAlib.card_le_card_eigenvalue_mem_of_hasOrthonormalCols`: the residual-gated count.
 -/
@@ -64,12 +68,15 @@ theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
 
 /-- **The polar factor of a nearly orthonormal basis is orthonormal** (E2): if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
-`NLAlib.polarFactor` $\mathbf{V}$ has orthonormal columns. [Higham2008, Theorem 8.1].
-Proof: $\mathbf{G} = \mathbf{V}^{\mathsf{T}}\mathbf{V}$ is symmetric positive definite (its
-eigenvalues lie in $[1-\eta, 1+\eta]$ by `Matrix.IsHermitian.abs_eigenvalue_sub_le` against
-$\mathbf{I}$); with $\mathbf{K} = $ `cfc (√·)⁻¹` $\mathbf{G}$, symmetric and commuting with
-$\mathbf{G}$, $\mathbf{K}\mathbf{G}\mathbf{K} = $ `cfc` of $x \mapsto x/x = 1$ on the spectrum
-(`cfc_mul`, `cfc_congr`, `cfc_one`). S, about 30 lines. -/
+`NLAlib.polarFactor` $\mathbf{V}$ (main's
+$\mathbf{V}((\mathbf{V}^{\mathsf{H}}\mathbf{V})^{1/2})^{+}$, which for full column rank is
+$\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$) has orthonormal columns. [Higham2008,
+Theorem 8.1].
+Proof: `NLAlib.hasOrthonormalCols_polarFactor_iff` reduces it to injectivity of
+$\mathbf{x} \mapsto \mathbf{V}\mathbf{x}$, which is
+`NLAlib.injective_mulVec_of_specNorm_gram_sub_one_lt_one` ($\mathbf{V}^{\mathsf{H}} =
+\mathbf{V}^{\mathsf{T}}$ over ℝ, `Matrix.conjTranspose_eq_transpose_of_trivial`). S, about 8 lines.
+-/
 theorem hasOrthonormalCols_polarFactor {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) : HasOrthonormalCols (polarFactor V) := by
   sorry
@@ -83,9 +90,9 @@ source here. (The constant is the Lipschitz constant of $\sqrt{\cdot}$ on $[1-\e
 sharper $1/(1 + \sqrt{1-\eta})$ of the design note needs the eigenvalue sum directly and is not
 needed downstream.)
 Proof: with $\mathbf{U} = $ `NLAlib.polarFactor` $\mathbf{V}$ and $\mathbf{G} =
-\mathbf{V}^{\mathsf{T}}
-\mathbf{V}$, $\mathbf{V} = \mathbf{U}\mathbf{G}^{1/2}$ (`cfc_mul`, `cfc_congr`: $(\sqrt x)^{-1}
-\sqrt x = 1$ on the spectrum), so $\mathbf{U} - \mathbf{V} =
+\mathbf{V}^{\mathsf{T}}\mathbf{V}$, $\mathbf{V} = \mathbf{U}\mathbf{G}^{1/2}$
+(`NLAlib.polarFactor_mul_sqrt`, with `CFC.sqrt` $\mathbf{G}$ = `cfc Real.sqrt` $\mathbf{G}$), so
+$\mathbf{U} - \mathbf{V} =
 \mathbf{U}(\mathbf{I} - \mathbf{G}^{1/2})$ and $\|\mathbf{U} - \mathbf{V}\|_{\mathsf F} =
 \|\mathbf{I} - \mathbf{G}^{1/2}\|_{\mathsf F}$ (`NLAlib.hasOrthonormalCols_polarFactor`,
 `HasOrthonormalCols.frobNorm_mul_left`). Write $\mathbf{I} = $ `cfc Real.sqrt 1`
