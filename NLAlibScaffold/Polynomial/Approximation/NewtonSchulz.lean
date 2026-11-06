@@ -68,7 +68,33 @@ with `Real.sq_sqrt`, `Real.sqrt_lt_sqrt`); both exceed $u \ge \lvert \xi \rvert$
 M, about 25 lines. -/
 theorem mul_newtonSchulz_add_pos {u x ξ : ℝ} (hξ : |ξ| ≤ u) (hux : u < |x|)
     (hx : |x| < √3 - (√3 - 1) * u) : 0 < x * (newtonSchulz x + ξ) := by
-  sorry
+  have hs : √3 ^ 2 = 3 := Real.sq_sqrt (by norm_num)
+  have hs1 : 1 < √3 := by nlinarith [Real.sqrt_nonneg 3]
+  have hu0 : 0 ≤ u := le_trans (abs_nonneg _) hξ
+  have key : ∀ y η : ℝ, 0 < y → |η| ≤ u → u < y → y < √3 - (√3 - 1) * u →
+      0 < y * (newtonSchulz y + η) := by
+    intro y η hy hη huy hyu
+    have hys : y < √3 := by nlinarith
+    have hgu : u < newtonSchulz y := by
+      unfold newtonSchulz
+      rcases le_total y 1 with h1 | h1
+      · nlinarith [mul_nonneg (mul_nonneg hy.le (sub_nonneg.2 h1)) (show (0:ℝ) ≤ 1 + y by linarith)]
+      · have hG : 0 ≤ (√3 - y) * (√3 - 1) * (y - 1) * (y + √3 + 1) :=
+          mul_nonneg (mul_nonneg (mul_nonneg (by linarith) (by linarith)) (by linarith))
+            (by linarith)
+        have hc : ((√3 - y) / 2 - (√3 - 1) * y / 2) * (√3 ^ 2 - 3) = 0 := by rw [hs]; ring
+        have hg : √3 - y ≤ (√3 - 1) * (y * (3 - y ^ 2) / 2) := by nlinarith [hG, hc]
+        nlinarith [hg]
+    exact mul_pos hy (by linarith [neg_abs_le η])
+  rcases lt_trichotomy x 0 with hneg | rfl | hpos
+  · rw [abs_of_neg hneg] at hux hx
+    have h := key (-x) (-ξ) (by linarith) (by rwa [abs_neg]) (by linarith) (by linarith)
+    rw [newtonSchulz_neg] at h
+    linarith [h, show -x * (-newtonSchulz x + -ξ) = x * (newtonSchulz x + ξ) by ring]
+  · rw [abs_zero] at hux
+    linarith
+  · rw [abs_of_pos hpos] at hux hx
+    exact key x ξ hpos hξ hux hx
 
 /-- **The perturbed Newton–Schulz step does not decrease the modulus** (Lemma 2.3, second part):
 if $\lvert \xi \rvert \le u$ and $\tfrac83 u \le \lvert x \rvert \le 1 - \tfrac83 u$, then
