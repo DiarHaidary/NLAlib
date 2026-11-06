@@ -259,7 +259,62 @@ theorem holds_of_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {s
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hrun : (zneg (ι := ι) p (.const m) (.const n) X xo Y yo).run = .seq (.named "zneg"
+      [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.un p .neg ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip] at h
+  have hXw : ∀ w < 2 * (m * n), X ≠ Y ∨ xo.eval + w < yo.eval ∨ yo.eval + w ≤ xo.eval + w := by
+    intro w hw
+    rcases hXY with hXY | ⟨rfl, he⟩
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hXY
+      by_cases hb : X = Y
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+    · exact Or.inr (by omega)
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+    (fun w s => s.store.shape = st.store.shape ∧ s.pos = st.pos ∧
+      (∀ k < w, s.store.read p Y (yo.eval + k) = (st.store.read p X (xo.eval + k)).map M.neg) ∧
+      ∀ q b i, (b ≠ Y ∨ i < yo.eval ∨ yo.eval + w ≤ i) →
+        s.store.read q b i = st.store.read q b i)
+    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
+  · obtain ⟨hsh, hpos, hY, hfr⟩ := hR
+    simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hY hfr
+    refine ⟨fun i j t => ?_, fun q b i hb => hfr q b i ?_, hsh, hpos⟩
+    · have hj := Nat.mul_le_mul_left m (show j.1 + 1 ≤ n from j.2)
+      have ht : t.1 < 2 := t.2
+      rw [Nat.mul_succ] at hj
+      have hk : 2 * (i.1 + m * j.1) + t.1 < 2 * (m * n) := by omega
+      refine (hY _ hk).trans ?_
+      rw [show st.store.read p X (xo.eval + (2 * (i.1 + m * j.1) + t.1)) = _ from hA i j t,
+        Option.map_some]
+      obtain ⟨t, ht⟩ := t
+      change t < 2 at ht
+      rcases t with _ | _ | t
+      · rfl
+      · rfl
+      · omega
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hb
+      by_cases hbY : b = Y
+      · exact Or.inr (by omega)
+      · exact Or.inl hbY
+  rintro w hw s₁ s₂ ⟨hsh, hpos, hY, hfr⟩ hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+  obtain ⟨_, ⟨a, ha, v, hv, s', hw', rfl⟩, rfl⟩ := hex
+  simp only [IExp.eval_add, IExp.eval_var] at ha hw'
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hpos, fun k hk => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans (hfr q b i ?_)⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY k hk)
+    · rw [Store.read_of_write_eq_some hw', ← hfr _ _ _ (hXw k hw), ha, Option.map_some]
+      simp only [M, ScalarSem.toFloatMachine, hv, Option.getD_some]
+  · by_cases hbY : b = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hbY
+  · omega
 
 /-- **`zneg` succeeds** under the standard model with every value in range, when the buffer `Y` at
 tag `p` is long enough. No printed source.
