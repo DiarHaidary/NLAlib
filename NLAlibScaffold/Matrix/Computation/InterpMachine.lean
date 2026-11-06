@@ -25,6 +25,7 @@ exact specifications of the complex kernels).
 * `NLAlib.Computation.isAccurate_toFloatMachine`: the machine contract.
 * `NLAlib.Computation.IsRelErrSem.decidesFlags`.
 * `NLAlib.Computation.isNormalSampler_gaussianNormal`: the normal sampler of a tape rounding.
+* `NLAlib.FloatMachine.IsAccurate.mono`: the contract is monotone in the unit roundoff.
 * `NLAlib.Computation.decodeMatrix_hermShift_toFloatMachine_exactSem`,
   `NLAlib.Computation.decodeMatrix_hermScale_toFloatMachine_exactSem`,
   `NLAlib.Computation.decodeMatrix_hermAvg_toFloatMachine_exactSem`,
@@ -105,6 +106,34 @@ theorem isNormalSampler_gaussianNormal {sem : ScalarSem P K} {dec : P → K → 
     (hc : 0 ≤ c) (hu : 0 ≤ u) (hcu : (c + 3) * u ≤ 1 / 10) :
     IsNormalSampler (decodeComplex (dec p)) u (2 * (c + 3)) 0 Ω (sem.gaussianNormal p ρ) := by
   sorry
+
+end NLAlib.Computation
+
+namespace NLAlib
+
+/-- **The machine contract is monotone in the unit roundoff**: a machine meeting
+`NLAlib.FloatMachine.IsAccurate` at unit roundoff $u \ge 0$, with nonnegative constants
+$\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
+$u' \ge u$. With the exact machine at $u = 0$ (the HDIAG witness) this makes the hypothesis
+"the carrier admits an accurate machine" of the SIGN and DEFLATE targets satisfiable at every
+$u \ge 0$. No printed source.
+Proof: field by field; every error bound has the form $u \cdot X$ or $\mu u \cdot X$ or
+$c u \cdot X$ with $X \ge 0$ (a `max` with $\tau \ge 0$, `specNorm_nonneg`, `norm_nonneg`), so
+`mul_le_mul_of_nonneg_right` and `mul_le_mul_of_nonneg_left` raise $u$ to $u'$; the exact fields
+(`dec_zero`, `dec_one`, `dec_neg`, `le_iff`, `toNat_eq`, the Hermitian clause of
+`NLAlib.IsMatMulErr`, the bound $\lvert \bar c \rvert \le \bar s$ of `NLAlib.IsUnifSampler`, the
+trapezoidal and orthonormal clauses of `NLAlib.IsQRErr`) are unchanged. S, about 30 lines. -/
+theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
+    (hcN : 0 ≤ cN) : M.IsAccurate dec u' τ Ω μM μQ cN := by
+  sorry
+
+end NLAlib
+
+namespace NLAlib.Computation
+
+variable {P K : Type} [Inhabited K]
 
 /-! ### Exact specifications: the machine of exact real arithmetic -/
 

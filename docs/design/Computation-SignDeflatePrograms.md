@@ -4,7 +4,7 @@ Status: design stage, 2026-11-06. Branch `design/compdyn-s1cd` (worktree
 `~/nlalib-design-compdyn-s1cd`), from `cleanup/compdyn-s1` fa5b1bc1 (S1 merge-ready; main
 a08339af). Parent note: `docs/design/Computation-DynamicPrograms.md` (approved, sheet
 `COMPDYN.json`): §4.4 complex pairs, §6 EIGH, §7.1 refinement shape, §7.2 effort, §8.2 hdiag.
-Shallow specifications: `design/hdiag` 1db0c258 (read only). Skeleton: 64 statements in
+Shallow specifications: `design/hdiag` 1db0c258 (read only). Skeleton: 65 statements in
 `NLAlibScaffold/` (targets `~/nlalib-harness/pilot/compdyn-s1cd-targets.json`) and 3 more blocked
 on HDIAG (§5). Decision sheet: `~/nlalib-harness/state/decisions/COMPDYN-S1cd.json` (D1 to D7).
 
@@ -207,6 +207,12 @@ Two further consequences for hdiag (D3, D7):
   the uniform sampler from DEFLATE).
 * hdiag's `deflate` uses one sampler for every entry; the program's rounding may depend on the
   tape position.
+* hdiag's witness `exists_floatMachine_isAccurate` is stated at $u = 0$, so on its own it makes the
+  $M_0$ hypothesis non-vacuous only there. This branch adds the monotonicity
+  `FloatMachine.IsAccurate.mono` (IM4, S), which with that witness covers every $u \ge 0$;
+  follow-up for HDIAG: restate the witness for $u \ge 0$ directly.
+* **TR1 has an owner: the HDIAG stage.** It is proved on `integrate/hdiag` with Theorem 2.6, or
+  Theorem 2.6 is restated to return the pass index; COMPDYN does not dispatch it.
 
 ## 6. Registration
 
@@ -252,7 +258,8 @@ the clean-up removes it. Until registration, `scripts/Programs.lean` reports E4 
 | S1d SIGN, DEFLATE, targets | 2,000 – 3,500 | 217 (programs) + 207 (targets) | 647 (SG, DF, CT) + 123 (TR) | 836 + 190 (TR); 1,500 – 2,000 |
 | **S1c + S1d** | **4,000 – 6,500** | **about 720** | **about 1,620** (scaffold, docstrings included) | **2,270 outlined; 3,400 – 4,500** |
 
-Statements move into `NLAlib/` with their docstrings minus the `Proof:` lines (D8), about 1,200
+Statements move into `NLAlib/` with their docstrings minus the `Proof:` lines (rule D8 of
+`docs/rules/DIGEST.md`: no `Proof:` sentence in a library docstring), about 1,200
 lines; so the stage lands at about 720 + 1,200 + 3,400 to 4,500 = **5,300 to 6,400 lines**, plus
 576 lines of hdiag definitions that count to HDIAG. The realistic proof range is the outline sum
 times 1.5 to 2, the ratio of the Lanczos and CG bridges' final size to their plans.
@@ -280,7 +287,7 @@ Findings for S2:
 
 ## 9. Skeleton
 
-64 statements in 7 files (S 27, M 37, no L; waves 0 to 6), in
+65 statements in 7 files (S 28, M 37, no L; waves 0 to 6), in
 `~/nlalib-harness/pilot/compdyn-s1cd-targets.json`, plus TR1 (L, hdiag share), TR2, TR3 (M) in
 the HDIAG-blocked file. Note ids: LP (loops, `Computation/Exec.lean`, to a new
 `Computation/Loops.lean` since `Exec.lean` is at F10), PP (pair patterns, `KernelContracts.lean`),
@@ -293,7 +300,8 @@ IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKer
 | LP1–LP3 | `forall_of_exec_loop_eq_some`, `exec_whileFuel_of_eval_eq_zero`, `exec_whileFuel_of_eval_eq_succ` | S, S, M |
 | PP1–PP7 | `EntryLayout.holds_iff_readBlock_eq_some`, `pairLayout.holds_iff`, `EntryLayout.holds_of_writeBlock_eq_some`, `EntryLayout.holds_inputState`, `EntryLayout.Holds.of_forall_read_eq`, `IsMatMulKernel.holds_of_kcallStore_eq_some`, `IsQRKernel.holds_of_kcallStore_eq_some` | M, S, M, S, S, M, M |
 | IM1–IM3 | `isAccurate_toFloatMachine`, `IsRelErrSem.decidesFlags`, `isNormalSampler_gaussianNormal` | M, S, M |
-| IM4–IM12 | exact specifications: `decodeMatrix_{hermShift,hermScale,hermAvg,conjTransposeMat}_toFloatMachine_exactSem`, `traceRe_toFloatMachine_exactSem`, `boxTest_toFloatMachine_exactSem_iff`, `decodeMatrix_{add,sub,mul}Parts_toFloatMachine_exactSem` | S each |
+| IM4 | `FloatMachine.IsAccurate.mono` | S |
+| IM5–IM13 | exact specifications: `decodeMatrix_{hermShift,hermScale,hermAvg,conjTransposeMat}_toFloatMachine_exactSem`, `traceRe_toFloatMachine_exactSem`, `boxTest_toFloatMachine_exactSem_iff`, `decodeMatrix_{add,sub,mul}Parts_toFloatMachine_exactSem` | S each |
 | PK1–PK16 | value and success of `zcopy`, `zzero`, `zneg`, `zmirror`, `zhermShift`, `zhermScale`, `zhermAvg`, `zboxTest` | M/S pairs |
 | PK17–PK22 | values of `zidentity`, `zadd`, `zsub`, `zscal`, `zconjTranspose`, `ztraceRe` | M each |
 | SG1–SG11 | test block, step block (value, success), loop, (a), (b), tree (`toStmt_compiled`, value, success), counts | M ×7, S ×3, M |

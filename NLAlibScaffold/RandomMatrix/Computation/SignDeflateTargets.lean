@@ -58,6 +58,8 @@ $640\,n^{3/2}(8 + \mu(n))(N_0 + 1)u \le (a/\bar b)\bar\varepsilon$ for
 $N_0 = N(a/(2\bar b), \bar\varepsilon/(16n))$), the stopping test at the computed threshold
 $\mathrm{fl}(\bar\varepsilon/\mathrm{fl}(4n))$ passes at some iterate $k \le N_0 + 1$ of the
 rounded step from the stored $\mathbf{A}/b$. [Shah2024, proof of Theorem 2.6].
+Owner: the HDIAG stage (`integrate/hdiag`), which proves it with Theorem 2.6, or restates that
+theorem to return the pass index; not dispatched from COMPDYN.
 Proof: step (2) of the proof of the accuracy theorem on `design/hdiag` (the scalar chains of the
 eigenvalues reach $\lvert 1 - x^2\rvert \le \varepsilon/(16n)$ within $\lceil N_0 \rceil$ steps,
 `NLAlib.newtonSchulzSteps`; the computed test matrix is within $1.21\mu u + u(\cdots)$ of

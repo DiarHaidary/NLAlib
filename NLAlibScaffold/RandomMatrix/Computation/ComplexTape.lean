@@ -36,7 +36,8 @@ printed source.
 Proof: `NLAlib.Computation.hasLaw_apply_of_hasLaw_tapeLaw` gives the Gaussian tape as an i.i.d.
 sequence of standard Gaussians; the positions $(i, j, t) \mapsto 2(i + nj) + t$ are injective
 (the injectivity argument of `NLAlib.hasLaw_tapeMatrix_of_hasLaw_iidSequence`), so
-`HasLaw.comp_of_injective` gives an i.i.d. family indexed by `Fin n × Fin n × Fin 2`; scaling by
+`ProbabilityTheory.HasLaw.comp_of_injective` (`NLAlib/Probability/Law.lean`) gives an i.i.d.
+family indexed by `Fin n × Fin n × Fin 2`; scaling by
 $1/\sqrt2$ maps `gaussianReal 0 1` to `gaussianReal 0 2⁻¹` (`gaussianReal_map_const_mul`); a
 product of copies of that pair law mapped by `Complex.measurableEquivRealProd.symm` is
 `NLAlib.complexGaussian`, and regrouping the product by rows

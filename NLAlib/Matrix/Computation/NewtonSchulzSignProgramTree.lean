@@ -81,7 +81,7 @@ matrix $\mathbf{A}$ (interleaved pairs at `A` from `ao`) and the stored $\vareps
 (`NLAlib.newtonSchulzTestBlock`), and while the test fails, at most $F + 1$ times, takes the
 rounded step $\mathbf{X} \leftarrow (\mathbf{Y} + \mathbf{Y}^{\mathsf{H}})/\mathrm{fl}(4)$,
 $\mathbf{Y} = \mathrm{mm}(\mathbf{X}, -(\mathrm{mm}(\mathbf{X}, \mathbf{X}) - \mathrm{fl}(3)
-\mathbf{I}))$, and tests again. It fails if the test still fails after $F$ steps. Scratch: six
+\mathbf{I}))$, and tests again. It fails if the test still fails after $F$ steps. Scratch: five
 cells and two $n \times n$ complex matrices, freed at the end (`scope`). [Shah2024, Algorithm 1],
 as `NLAlib.newtonSchulzSign` with step limit $F$.
 Algorithm: newton-schulz-sign -/
