@@ -1849,7 +1849,52 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
       LanczosReorthOutputs out.store dec tag N q A b
         (lanczosImplementationRoundoffBound N (u tag)) τ η₀ (2 * cgsPassBound N q (u tag) η₀)
         (3 * cgsPassBound N q (u tag) η₀) (2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2) := by
-  sorry
+  classical
+  have hu0 := hsem.nonneg (p := tag) trivial
+  have hsize : st.store.size = 7 := by
+    simpa [Store.shape] using congrArg Array.size hshape
+  let st₁ := st.allocate tag (0 : IExp ℕ).eval (I.width tag)
+  have sh₁ : st₁.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, 0)] := by
+    simp only [st₁, St.shape_allocate, hshape, IExp.eval_ofNat]
+    rfl
+  have hb₁ (i : Fin N) : ∃ w, st₁.store.read tag 0 i = some w ∧ dec tag w = b i := by
+    rw [St.read_allocate_of_lt _ _ _ _ _ _ _ (by omega)]
+    exact hb i
+  have hc0 : 0 ≤ cgsPassBound N q (u tag) η₀ := by
+    rw [cgsPassBound_def]; positivity
+  obtain ⟨out₁, hrun, shout, hout⟩ := reorth_exec_rounded_loop_aux I tag hsem hz st₁ N q 0
+    A b sh₁ hb₁ (fun _ => True) trivial (fun _ _ _ _ _ => trivial)
+    (fun work j => stmt (.apply o tag work 0 1 (IExp.const N * j) 1))
+    (fun t => (hmv.isMatvecRoutine 1 8 (IExp.const N * IExp.var t) 0 (by omega)).mono
+      (mul_le_mul_of_nonneg_right hηmv (specNorm_nonneg A)))
+    (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0)
+    ⟨by linarith, by linarith, by positivity⟩
+    (fun t ht => reorth_isOrthRoutine_cgs2 I hsem hz tag ht hη₀ hη hu hc₁) hA hsmall hτ
+  have hsize₁ : out₁.store.size = 8 := by
+    simpa [Store.shape] using congrArg Array.size (shout.trans sh₁)
+  let out := out₁.release tag (0 : IExp ℕ).eval (I.width tag)
+  have rdo : ∀ p k i, k < 7 → out.store.read p k i = out₁.store.read p k i := by
+    intro p k i hk
+    change Store.read out₁.store.pop p k i = _
+    rw [Store.read_pop_of_lt (by rw [hsize₁]; omega)]
+  refine ⟨out, ?_, ?_, ?_⟩
+  · rw [Prog.exec_eq_exec_toStmt, lanczosReorthOracleProg.toStmt_compiled]
+    show exec I (.seq (.alloc tag (0 : IExp ℕ) _) .skip) st = _
+    rw [exec_seq_skip]
+    apply exec_alloc_of_exec_eq_some
+    exact hrun
+  · change Store.shape out₁.store.pop = _
+    rw [Store.shape_pop, shout, sh₁, hshape]
+    rfl
+  · obtain ⟨v, α, β, ν, h0, h1, h2, h3, h6, hδ, hm⟩ := hout hbnz
+    refine ⟨v, α, β, ν, fun i j => ?_, fun i j => ?_, fun i j => ?_, fun i j => ?_,
+      fun i j => ?_, hδ, hm⟩
+    · rw [rdo tag 0 _ (by omega)]; exact h0 i j
+    · rw [rdo tag 1 _ (by omega)]; exact h1 i j
+    · rw [rdo tag 2 _ (by omega)]; exact h2 i j
+    · rw [rdo tag 3 _ (by omega)]; exact h3 i j
+    · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
 /-- **The program-level backward model** (G7): in the setting of
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled`, every admissible prefix of $m$ steps
