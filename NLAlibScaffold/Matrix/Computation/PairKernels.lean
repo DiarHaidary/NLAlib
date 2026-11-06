@@ -962,7 +962,69 @@ theorem holds_of_exec_zadd (p : P) (m n : ℕ) {X Y Z : ℕ} {xo yo zo : IExp �
       (Matrix.of fun i j => (M.add (A i j).1 (B i j).1, M.add (A i j).2 (B i j).2)) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (Z, zo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  intro M
+  have hrun : (zadd (ι := ι) p (.const m) (.const n) X xo Y yo Z zo).run = .seq (.named "zadd"
+      [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo, .buf Z, .idx zo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.bin p .add ⟨Z, zo + .var w⟩ ⟨X, xo + .var w⟩ ⟨Y, yo + .var w⟩)) .skip)
+        .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip] at h
+  have hdis : ∀ {W : ℕ} {wo : IExp ℕ},
+      (blockDisjoint (Z, zo.eval, 2 * (m * n)) (W, wo.eval, 2 * (m * n)) = true ∨
+        (Z = W ∧ zo.eval = wo.eval)) →
+      ∀ w < 2 * (m * n), W ≠ Z ∨ wo.eval + w < zo.eval ∨ zo.eval + w ≤ wo.eval + w := by
+    intro W wo hW w hw
+    rcases hW with hW | ⟨rfl, he⟩
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hW
+      by_cases hb : W = Z
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+    · exact Or.inr (by omega)
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+    (fun w s => (∀ k < w, s.store.read p Z (zo.eval + k) =
+        (st.store.read p X (xo.eval + k)).bind fun a =>
+          (st.store.read p Y (yo.eval + k)).map (M.add a)) ∧
+      ∀ q b i, (b ≠ Z ∨ i < zo.eval ∨ zo.eval + w ≤ i) →
+        s.store.read q b i = st.store.read q b i)
+    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
+  · obtain ⟨hZ, hfr⟩ := hR
+    simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hZ hfr
+    refine ⟨fun i j t => ?_, fun q b i hb => hfr q b i ?_⟩
+    · have hj := Nat.mul_le_mul_left m (show j.1 + 1 ≤ n from j.2)
+      have ht : t.1 < 2 := t.2
+      rw [Nat.mul_succ] at hj
+      have hk : 2 * (i.1 + m * j.1) + t.1 < 2 * (m * n) := by omega
+      refine (hZ _ hk).trans ?_
+      rw [show st.store.read p X (xo.eval + (2 * (i.1 + m * j.1) + t.1)) = _ from hA i j t,
+        show st.store.read p Y (yo.eval + (2 * (i.1 + m * j.1) + t.1)) = _ from hB i j t,
+        Option.bind_some, Option.map_some]
+      obtain ⟨t, ht⟩ := t
+      change t < 2 at ht
+      rcases t with _ | _ | t
+      · rfl
+      · rfl
+      · omega
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hb
+      by_cases hbZ : b = Z
+      · exact Or.inr (by omega)
+      · exact Or.inl hbZ
+  rintro w hw s₁ s₂ ⟨hZ, hfr⟩ hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+  obtain ⟨_, ⟨a, ha, c, hc, v, hv, s', hw', rfl⟩, rfl⟩ := hex
+  simp only [IExp.eval_add, IExp.eval_var] at ha hc hw'
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  refine ⟨fun k hk => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans (hfr q b i ?_)⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hZ k hk)
+    · rw [Store.read_of_write_eq_some hw', ← hfr _ _ _ (hdis hZX k hw), ha, Option.bind_some,
+        ← hfr _ _ _ (hdis hZY k hw), hc, Option.map_some]
+      simp only [M, ScalarSem.toFloatMachine, hv, Option.getD_some]
+  · by_cases hbZ : b = Z
+    · exact Or.inr (by omega)
+    · exact Or.inl hbZ
+  · omega
 
 /-- **`zsub` subtracts the parts**: as `NLAlib.Computation.holds_of_exec_zadd`, with the
 machine's subtraction. No printed source.
