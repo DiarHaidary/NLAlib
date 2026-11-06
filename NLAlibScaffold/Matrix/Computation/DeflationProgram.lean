@@ -78,7 +78,90 @@ theorem holds_of_exec_forRange_drawMul (p : P) (n : ℕ) {G : ℕ} {s : Cell ℕ
       st'.pos = Function.update st.pos .gaussian (st.pos .gaussian + 2 * (n * n)) ∧
       (∀ q b i, b ≠ G → st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape := by
-  sorry
+  have key : (forRange (ι := ι) (2 * (IExp.const n * IExp.const n)) fun w => do
+      ins (.draw p .gaussian ⟨G, .var w⟩)
+      ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ s)).run = .seq
+      (.loop (2 * (IExp.const n * IExp.const n)) fun w => .seq
+        (.instr (.draw p .gaussian ⟨G, .var w⟩)) (.seq
+          (.instr (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ s)) .skip)) .skip := rfl
+  rw [key, exec_seq_skip] at h
+  -- one word: the draw, then the product with $\sqrt{1/2}$
+  have bstep : ∀ (k : ℕ) (t₁ t₂ : St P K C), t₁.store.read p s.buf s.idx.eval =
+      some (I.sem.sqrtHalf p) →
+      exec I (.seq (.instr (.draw p .gaussian ⟨G, IExp.var k⟩)) (.seq
+        (.instr (.bin p .mul ⟨G, IExp.var k⟩ ⟨G, IExp.var k⟩ s)) .skip)) t₁ = some t₂ →
+      ∃ (s' s'' : Store P K) (v : K), t₁.store.write p G k (I.tape .gaussian (t₁.pos .gaussian)) =
+          some s' ∧
+        I.sem.bin p .mul (I.tape .gaussian (t₁.pos .gaussian)) (I.sem.sqrtHalf p) = some v ∧
+        s'.write p G k v = some s'' ∧ t₂.store = s'' ∧
+        t₂.pos = Function.update t₁.pos .gaussian (t₁.pos .gaussian + 1) := by
+    intro k t₁ t₂ hsc hr
+    obtain ⟨s', hw⟩ : ∃ s', t₁.store.write p G k (I.tape .gaussian (t₁.pos .gaussian)) = some s' := by
+      cases hw : t₁.store.write p G k (I.tape .gaussian (t₁.pos .gaussian)) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hw, IExp.eval] at hr
+      | some s' => exact ⟨s', rfl⟩
+    have hsc' : s'.read p s.buf s.idx.eval = some (I.sem.sqrtHalf p) := by
+      rw [Store.read_of_write_eq_some_of_ne hw (Or.inl hsG)]; exact hsc
+    obtain ⟨v, hv⟩ : ∃ v, I.sem.bin p .mul (I.tape .gaussian (t₁.pos .gaussian))
+        (I.sem.sqrtHalf p) = some v := by
+      cases hb : I.sem.bin p .mul (I.tape .gaussian (t₁.pos .gaussian)) (I.sem.sqrtHalf p) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hw, hsc', hb, IExp.eval,
+          Store.read_of_write_eq_some hw] at hr
+      | some v => exact ⟨v, rfl⟩
+    obtain ⟨s'', hw2⟩ : ∃ s'', s'.write p G k v = some s'' := by
+      cases hw2 : s'.write p G k v with
+      | none => simp [exec_seq, exec_instr, Instr.run, hw, hsc', hv, hw2, IExp.eval,
+          Store.read_of_write_eq_some hw] at hr
+      | some s'' => exact ⟨s'', rfl⟩
+    rw [exec_seq_instr_draw (dst := (⟨G, IExp.var k⟩ : Cell ℕ ℕ)) I hw,
+      exec_seq_instr_bin (dst := (⟨G, IExp.var k⟩ : Cell ℕ ℕ)) (x := (⟨G, IExp.var k⟩ : Cell ℕ ℕ))
+        (y := s) I (Store.read_of_write_eq_some hw) hsc' hv hw2, exec_skip] at hr
+    cases hr
+    exact ⟨s', s'', v, hw, hv, hw2, rfl, rfl⟩
+  -- the loop keeps the drawn products below $k$, the other cells, the shape and the position
+  have inv := forall_of_exec_loop_eq_some (I := I) (fun k t =>
+      (∀ w < k, t.store.read p G w = some ((I.sem.bin p .mul
+        (I.tape .gaussian (st.pos .gaussian + w)) (I.sem.sqrtHalf p)).getD default)) ∧
+      (∀ q b i, b ≠ G → t.store.read q b i = st.store.read q b i) ∧
+      t.store.shape = st.store.shape ∧
+      t.pos = Function.update st.pos .gaussian (st.pos .gaussian + k)) ?_ ?_ h
+  rotate_left
+  · refine ⟨fun w hw => absurd hw (Nat.not_lt_zero _), fun q b i _ => rfl, rfl, ?_⟩
+    simp
+  · intro k hk t₁ t₂ ⟨hW, hOUT, hsh, hpos⟩ hr
+    have hsc : t₁.store.read p s.buf s.idx.eval = some (I.sem.sqrtHalf p) := by
+      rw [hOUT p s.buf s.idx.eval hsG]; exact hs
+    have hpk : t₁.pos .gaussian = st.pos .gaussian + k := by rw [hpos]; simp
+    obtain ⟨s', s'', v, hw, hv, hw2, hs2, hp2⟩ := bstep k t₁ t₂ hsc hr
+    refine ⟨fun w hw' => ?_, fun q b i hb => ?_, ?_, ?_⟩
+    · rcases Nat.lt_or_ge w k with hlt | hge
+      · rw [hs2, Store.read_of_write_eq_some_of_ne hw2 (Or.inr (show w ≠ k by omega)),
+          Store.read_of_write_eq_some_of_ne hw (Or.inr (show w ≠ k by omega))]
+        exact hW w hlt
+      · have hwk : w = k := by omega
+        subst hwk
+        rw [hpk] at hv
+        rw [hs2, Store.read_of_write_eq_some hw2]
+        simp [hv]
+    · rw [hs2, Store.read_of_write_eq_some_of_ne hw2 (Or.inl hb),
+        Store.read_of_write_eq_some_of_ne hw (Or.inl hb), hOUT q b i hb]
+    · rw [hs2, Store.shape_of_write_eq_some hw2, Store.shape_of_write_eq_some hw, hsh]
+    · rw [hp2, hpos]
+      simp [Function.update_idem, add_assoc]
+  obtain ⟨hW, hOUT, hsh, hpos⟩ := inv
+  refine ⟨fun i j (t : Fin 2) => ?_, hpos, fun q b i hb => hOUT q b i hb, hsh⟩
+  have hij : (i : ℕ) + n * (j : ℕ) < n * n := by
+    have e := Nat.mul_le_mul_left n (show (j : ℕ) + 1 ≤ n from j.isLt)
+    rw [Nat.mul_add, Nat.mul_one] at e
+    have := i.isLt
+    omega
+  have hn2 : (2 * (IExp.const n * IExp.const n)).eval = 2 * (n * n) := rfl
+  have hw := hW (2 * ((i : ℕ) + n * (j : ℕ)) + t) (by have := t.isLt; omega)
+  fin_cases t
+  · simpa [pairLayout, tapeIndexMatrix, ScalarSem.tapeNormal, Matrix.map_apply,
+      Matrix.of_apply] using hw
+  · simpa [pairLayout, tapeIndexMatrix, ScalarSem.tapeNormal, Matrix.map_apply,
+      Matrix.of_apply] using hw
 
 /-- **The refinement of the deflation program, partial equality**: if kernels `mm` and `qr` of
 `I` are the routines `mmR` and `qrR` on interleaved pairs, a successful run of
