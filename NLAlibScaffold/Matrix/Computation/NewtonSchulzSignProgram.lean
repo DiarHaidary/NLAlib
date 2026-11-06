@@ -183,6 +183,29 @@ theorem exists_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm p
       some st' := by
   sorry
 
+/-- A literal-index instruction writes the machine's value of its index and changes no other
+cell, the shape or the tape positions. No printed source. -/
+private theorem exec_litIdx_read (p : P) (e : IExp ℕ) (c' : Cell ℕ ℕ) (σ₀ σ : St P K C)
+    (hσ : exec I (ins (.litIdx p c' e) : Builder P ι ℕ ℕ Unit).run σ₀ = some σ) :
+    σ.store.read p c'.buf c'.idx.eval =
+        some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).ofNat e.eval) ∧
+      (∀ q b i, ¬(b = c'.buf ∧ i = c'.idx.eval) → σ.store.read q b i = σ₀.store.read q b i) ∧
+      σ.store.shape = σ₀.store.shape ∧ σ.pos = σ₀.pos := by
+  change exec I (.seq (.instr (.litIdx p c' e)) .skip) σ₀ = some σ at hσ
+  rcases hv : I.sem.lit p (e.eval : ℚ) with _ | v
+  · simp [exec_seq, exec_instr, Instr.run, hv] at hσ
+  rcases hw : σ₀.store.write p c'.buf c'.idx.eval v with _ | s
+  · simp [exec_seq, exec_instr, Instr.run, hv, hw] at hσ
+  rw [exec_seq_instr_litIdx I hv hw, exec_skip] at hσ
+  injection hσ with hσ
+  subst hσ
+  have hofn : (I.sem.toFloatMachine p toNat mmR qrR unif normal).ofNat e.eval = v := by
+    show ((I.sem.lit p ((e.eval : ℕ) : ℚ)).getD default) = v
+    rw [hv]; rfl
+  refine ⟨?_, fun q b i hne => ?_, Store.shape_of_write_eq_some hw, rfl⟩
+  · rw [hofn]; exact Store.read_of_write_eq_some hw
+  · exact Store.read_of_write_eq_some_of_ne hw (not_and_or.mp hne)
+
 /-- **The step block computes the machine's rounded step**: if kernel `mm` of `I` is the routine
 `mmR` on interleaved pairs, a successful run of `NLAlib.newtonSchulzStepBlock` from a state whose
 block at `X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose scratch buffer `W`
@@ -211,7 +234,77 @@ theorem holds_of_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm
         blockDisjoint (b, i, 1) (c.buf, c.idx.eval, 1) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  have hsep : ∀ b i, blockDisjoint (b, i, 1) (c.buf, c.idx.eval, 1) = true →
+      ¬(b = c.buf ∧ i = c.idx.eval) := by
+    intro b i hbi ⟨hb, hi⟩
+    rw [hb, hi] at hbi
+    simp [blockDisjoint] at hbi
+  unfold newtonSchulzStepBlock at h
+  rw [exec_run_bind I (b := ins (.litIdx p c 3)) (fun _ => rfl)] at h
+  obtain ⟨σ1, h1, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hc1, hf1, hsh1, hp1⟩ := exec_litIdx_read p _ _ _ _ h1
+  rw [exec_run_bind I (b := zhermShift (ι := ι) p (.const n) W 0 c V 0) (fun _ => rfl)] at h
+  obtain ⟨σ2, h2, h⟩ := Option.bind_eq_some_iff.mp h
+  have hW1 : pairLayout.Holds σ1.store p W 0 (mmR A A) :=
+    EntryLayout.Holds.of_forall_read_eq hW fun i _ _ => hf1 p W i fun hh => hcW hh.1.symm
+  obtain ⟨hV2, hf2, hsh2, hp2⟩ := holds_of_exec_zhermShift p n hW1 hc1
+    (by simp [blockDisjoint, Ne.symm hWV]) (by simp [blockDisjoint, hcV]) h2
+  rw [exec_run_bind I (b := zneg (ι := ι) p (.const n) (.const n) V 0 V 0) (fun _ => rfl)] at h
+  obtain ⟨σ3, h3, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hV3, hf3, hsh3, hp3⟩ := holds_of_exec_zneg p n n hV2 (Or.inr ⟨rfl, rfl⟩) h3
+  rw [exec_run_bind I (b := stmt (.kcall mm p [.const n, .const n, .const n]
+    [(X, xo), (V, 0)] [(W, 0)])) (fun _ => rfl)] at h
+  have hk : (stmt (.kcall mm p [.const n, .const n, .const n] [(X, xo), (V, 0)] [(W, 0)]) :
+      Builder P ι ℕ ℕ Unit).run = .seq (.kcall mm p [.const n, .const n, .const n]
+        [(X, xo), (V, 0)] [(W, 0)]) .skip := rfl
+  obtain ⟨σ4, h4, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [hk, exec_seq_skip, exec_kcall] at h4
+  obtain ⟨s4, hs4, hσ4⟩ := Option.map_eq_some_iff.mp h4
+  have hs4' : I.kcallStore mm p [n, n, n] [(X, xo.eval), (V, 0)] [(W, 0)] σ3.store = some s4 := by
+    simpa using hs4
+  have hst4 : σ4.store = s4 := by rw [← hσ4]
+  have hp4 : σ4.pos = σ3.pos := by rw [← hσ4]
+  have hsh4 : s4.shape = σ3.store.shape := Interp.shape_of_kcallStore_eq_some hs4'
+  have hXc : ∀ i, xo.eval ≤ i → i < xo.eval + n * n * 2 →
+      ¬(X = c.buf ∧ i = c.idx.eval) := by
+    intro i h1 h2 hh
+    have := hcX
+    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at this
+    rcases this with (h | h) | h
+    · exact h hh.1.symm
+    · omega
+    · omega
+  have hX1 : pairLayout.Holds σ1.store p X xo.eval A :=
+    EntryLayout.Holds.of_forall_read_eq hA fun i h1 h2 => hf1 p X i (hXc i h1 h2)
+  have hX3 : pairLayout.Holds σ3.store p X xo.eval A :=
+    EntryLayout.Holds.of_forall_read_eq hX1 fun i _ _ =>
+      (hf3 p X i (by simp [blockDisjoint, hVX.symm])).trans
+        (hf2 p X i (by simp [blockDisjoint, hVX.symm]))
+  have hca : blockDisjoint (W, 0, n * n * 2) (X, xo.eval, n * n * 2) = true := by
+    simp [blockDisjoint, hWX]
+  have hcb : blockDisjoint (W, 0, n * n * 2) (V, 0, n * n * 2) = true := by
+    simp [blockDisjoint, hWV]
+  obtain ⟨hW4, hfr4⟩ := IsMatMulKernel.holds_of_kcallStore_eq_some hmm pairLayout.get_put p
+    hX3 hV3 hca hcb hs4'
+  have hW4s := hW4
+  rw [← hst4] at hW4s
+  rw [exec_run_bind I (b := ins (.litIdx p c 4)) (fun _ => rfl)] at h
+  obtain ⟨σ5, h5, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hc5, hf5, hsh5, hp5⟩ := exec_litIdx_read p _ _ _ _ h5
+  have hW5 := EntryLayout.Holds.of_forall_read_eq hW4s fun i _ _ =>
+    hf5 p W i fun hh => hcW hh.1.symm
+  obtain ⟨hX6, hf6, hsh6, hp6⟩ := holds_of_exec_zhermAvg p n hW5 hc5
+    (by simp [blockDisjoint, Ne.symm hWX]) hcX h
+  have hfr4' : ∀ q b i, blockDisjoint (b, i, 1) (W, 0, n * n * 2) = true →
+      σ4.store.read q b i = σ3.store.read q b i := fun q b i h => by
+    rw [hst4]; exact hfr4 q b i h
+  refine ⟨hX6, fun q b i hbW hbV hbX hbc => ?_, ?_, ?_⟩
+  · exact (hf6 q b i hbX).trans ((hf5 q b i (hsep b i hbc)).trans
+      ((hfr4' q b i (by simp [blockDisjoint, hbW])).trans
+        ((hf3 q b i (by simp [blockDisjoint, hbV])).trans
+          ((hf2 q b i (by simp [blockDisjoint, hbV])).trans (hf1 q b i (hsep b i hbc))))))
+  · exact hsh6.trans (hsh5.trans (by rw [hst4]; exact hsh4.trans (hsh3.trans (hsh2.trans hsh1))))
+  · exact hp6.trans (hp5.trans (hp4.trans (hp3.trans (hp2.trans hp1))))
 
 /-- **The step block succeeds** under the standard model at $u$ with every value in range and
 $u(p) < 1$, when the buffers `W` and `V` at tag `p` have $2n^2$ cells and the cell `c` can be
