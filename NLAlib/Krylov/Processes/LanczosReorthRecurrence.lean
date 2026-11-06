@@ -40,7 +40,7 @@ open scoped Matrix
 
 namespace NLAlib
 
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
+variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
 /-- **One exact classical Gram–Schmidt pass** of $\mathbf{w}$ against $\mathbf{q}_0, \dots,
 \mathbf{q}_{m-1}$: $\mathbf{w} - \sum_{i<m} (\mathbf{q}_i^{\mathsf{H}}\mathbf{w})\mathbf{q}_i$.
@@ -95,13 +95,6 @@ noncomputable def lanczosReorthMatrix (A : Matrix n n 𝕜) (b : n → 𝕜) (q 
     Matrix n (Fin q) 𝕜 :=
   Matrix.of fun i j => (lanczosReorthState A b j).cur i
 
-end NLAlib
-
-
-namespace NLAlib
-
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
-
 /-- The current Lanczos vector is the canonical column. -/
 private theorem lanczosState_cur_eq_col [DecidableEq n] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
@@ -148,9 +141,8 @@ private theorem star_cur_dotProduct_mulVec_cur_succ {A : Matrix n n 𝕜} (hA : 
     arnoldiMatrix_col_eq_col_last A b (⟨k + 1, by omega⟩ : Fin (k + 2))] at T
   have hT : lanczosTridiagonal A b (k + 2) ⟨k, by omega⟩ ⟨k + 1, by omega⟩ =
       ((lanczosState A b (k + 1)).beta : 𝕜) := by
-    simp [lanczosTridiagonal, Fin.ext_iff]
-    intro h
-    omega
+    have hk : ¬k = k + 1 + 1 := by omega
+    simp [lanczosTridiagonal, Fin.ext_iff, hk]
   rw [hT] at T
   rw [lanczosState_cur_eq_col hA, lanczosState_cur_eq_col hA]
   exact T.symm
@@ -236,13 +228,6 @@ theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix 
     obtain ⟨hs, hv⟩ := ih
     have hcur : (lanczosReorthState A b j).cur = (lanczosState A b j).cur :=
       congrArg LanczosState.cur hs
-    have hprev : (lanczosReorthState A b j).prev = (lanczosState A b j).prev :=
-      congrArg LanczosState.prev hs
-    have hbeta : (lanczosReorthState A b j).beta = (lanczosState A b j).beta :=
-      congrArg LanczosState.beta hs
-    have hal : lanczosAlpha A (lanczosReorthState A b j).toLanczosState =
-        lanczosAlpha A (lanczosState A b j) := by
-      rw [hs]
     have hz : A *ᵥ (lanczosReorthState A b j).cur -
         ((lanczosReorthState A b j).beta : 𝕜) • (lanczosReorthState A b j).prev -
         (lanczosAlpha A (lanczosReorthState A b j).toLanczosState : 𝕜) •
@@ -250,7 +235,8 @@ theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix 
         A *ᵥ (lanczosState A b j).cur -
           ((lanczosState A b j).beta : 𝕜) • (lanczosState A b j).prev -
           (lanczosAlpha A (lanczosState A b j) : 𝕜) • (lanczosState A b j).cur := by
-      rw [hal, hcur, hbeta, hprev]
+      rw [← hs]
+      rfl
     have horth : ∀ i ≤ j, star ((lanczosReorthState A b j).vecs i) ⬝ᵥ
         (A *ᵥ (lanczosState A b j).cur - ((lanczosState A b j).beta : 𝕜) •
           (lanczosState A b j).prev - (lanczosAlpha A (lanczosState A b j) : 𝕜) •
@@ -283,28 +269,20 @@ theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix 
         · rw [if_pos hle, if_pos (by omega)]
         · rw [if_neg hle, if_neg (by omega)]
 
-/-- **The reorthogonalized basis is the Lanczos basis** for Hermitian $\mathbf{A}$. -/
+/-- The reorthogonalized basis is the Lanczos basis for Hermitian $\mathbf{A}$, for every
+$\mathbf{b}$ and every number of steps. -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthMatrix_eq {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (q : ℕ) : lanczosReorthMatrix A b q = lanczosMatrix A b q := by
   ext i j
   exact congrFun (congrArg LanczosState.cur
     (hA.lanczosReorthState_toLanczosState b (j : ℕ)).1) i
 
-/-- **The stored norm before orthogonalization is $\beta$**: for Hermitian $\mathbf{A}$,
+/-- The stored norm before orthogonalization is $\beta$: for Hermitian $\mathbf{A}$,
 $\nu_{j+1} = \beta_{j+1}$ in exact arithmetic (nothing is subtracted). -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthState_nu {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (j : ℕ) :
     (lanczosReorthState A b (j + 1)).nu = (lanczosReorthState A b (j + 1)).beta := by
   have hs := (hA.lanczosReorthState_toLanczosState b j).1
-  have hcur : (lanczosReorthState A b j).cur = (lanczosState A b j).cur :=
-    congrArg LanczosState.cur hs
-  have hprev : (lanczosReorthState A b j).prev = (lanczosState A b j).prev :=
-    congrArg LanczosState.prev hs
-  have hbeta0 : (lanczosReorthState A b j).beta = (lanczosState A b j).beta :=
-    congrArg LanczosState.beta hs
-  have hal : lanczosAlpha A (lanczosReorthState A b j).toLanczosState =
-      lanczosAlpha A (lanczosState A b j) := by
-    rw [hs]
   have hz : A *ᵥ (lanczosReorthState A b j).cur -
       ((lanczosReorthState A b j).beta : 𝕜) • (lanczosReorthState A b j).prev -
       (lanczosAlpha A (lanczosReorthState A b j).toLanczosState : 𝕜) •
@@ -312,7 +290,8 @@ theorem _root_.Matrix.IsHermitian.lanczosReorthState_nu {A : Matrix n n 𝕜} (h
       A *ᵥ (lanczosState A b j).cur - ((lanczosState A b j).beta : 𝕜) •
         (lanczosState A b j).prev - (lanczosAlpha A (lanczosState A b j) : 𝕜) •
         (lanczosState A b j).cur := by
-    rw [hal, hcur, hbeta0, hprev]
+    rw [← hs]
+    rfl
   have hb : (lanczosReorthState A b (j + 1)).beta = (lanczosState A b (j + 1)).beta :=
     congrArg LanczosState.beta (hA.lanczosReorthState_toLanczosState b (j + 1)).1
   rw [hb]
