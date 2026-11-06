@@ -314,7 +314,13 @@ Proof: `frobNorm_gram_sub_one_le` at $m = k + 1$ gives $\|\cdot\|_2 \le \eta_0 <
 (`specNorm_le_frobNorm`); apply `NLAlib.le_of_specNorm_gram_sub_one_lt_one`. S, about 8 lines. -/
 theorem succ_le_card (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) : k + 1 ≤ n := by
-  sorry
+  have hfrob := frobNorm_gram_sub_one_le L hη hsmall (k + 1) le_rfl
+  have hbound : Real.sqrt (3 * (((k + 1 : ℕ)) : ℝ)) * L.orthLevel ≤ L.η₀ := by
+    push_cast
+    exact hsmall
+  have hspec : specNorm ((basisOf L.v (k + 1))ᵀ * basisOf L.v (k + 1) - 1) < 1 :=
+    lt_of_le_of_lt (specNorm_le_frobNorm _ |>.trans (hfrob.trans hbound)) (by linarith)
+  exact le_of_specNorm_gram_sub_one_lt_one hspec
 
 /-- **Prefixes of a run are runs** (replaces E6, whose terminal case $\beta_k = 0$ cannot occur
 under strict admissibility): for $0 < m \le k$ there is a run of $m$ steps with the same data and
