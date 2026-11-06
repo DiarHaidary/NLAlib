@@ -40,6 +40,62 @@ namespace NLAlib
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m r : Type*} [Fintype m] [Fintype r] [DecidableEq r]
 
+/-- The reverse triangle inequality for two matrices at one vector. -/
+private theorem abs_norm_mulVec_sub_norm_mulVec_le {p q : Type*} [Fintype p] [Fintype q]
+    (X Y : Matrix p q 𝕜) (x : q → 𝕜) :
+    |‖WithLp.toLp 2 (X *ᵥ x)‖ - ‖WithLp.toLp 2 (Y *ᵥ x)‖| ≤
+      specNorm (X - Y) * ‖WithLp.toLp 2 x‖ :=
+  (abs_norm_sub_norm_le _ _).trans <| by
+    rw [← WithLp.toLp_sub, ← Matrix.sub_mulVec]; exact norm_toLp_mulVec_le _ _
+
+open scoped MatrixOrder in
+/-- A square matrix that is an $a$-near isometry, $a < 1$, is within $a$ of its polar factor. -/
+private theorem exists_hasOrthonormalCols_specNorm_sub_le_of_abs_norm_mulVec_sub_le
+    {B : Matrix r r 𝕜} {a : ℝ} (ha0 : 0 ≤ a) (ha : a < 1)
+    (hB : ∀ x, |‖WithLp.toLp 2 (B *ᵥ x)‖ - ‖WithLp.toLp 2 x‖| ≤ a * ‖WithLp.toLp 2 x‖) :
+    ∃ W : Matrix r r 𝕜, HasOrthonormalCols W ∧ specNorm (W - B) ≤ a := by
+  have hlo : ∀ x, (1 - a) * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (B *ᵥ x)‖ := fun x => by
+    have := (abs_le.mp (hB x)).1; linarith
+  have hinj : Function.Injective B.mulVec := by
+    intro x y hxy
+    have h := hlo (x - y)
+    rw [Matrix.mulVec_sub, hxy, sub_self, WithLp.toLp_zero, norm_zero] at h
+    have h0 : ‖WithLp.toLp 2 (x - y)‖ = 0 :=
+      le_antisymm (nonpos_of_mul_nonpos_right h (by linarith)) (norm_nonneg _)
+    rw [norm_eq_zero, WithLp.toLp_eq_zero] at h0
+    exact sub_eq_zero.mp h0
+  have hB1 : specNorm B ≤ 1 + a := by
+    rw [specNorm_le_iff (by linarith)]
+    intro x; have := (abs_le.mp (hB x)).2; linarith
+  set H := CFC.sqrt (Bᴴ * B)
+  have hS : H.IsHermitian := (CFC.sqrt_nonneg _).isSelfAdjoint
+  have hW := hasOrthonormalCols_polarFactor_iff.mpr hinj
+  refine ⟨polarFactor B, hW, ?_⟩
+  have heq : polarFactor B - B = polarFactor B * -(H - 1) := by
+    rw [neg_sub, Matrix.mul_sub, Matrix.mul_one,
+      show polarFactor B * H = B from polarFactor_mul_sqrt B]
+  have hH : specNorm (H - 1) ≤ a := by
+    rcases isEmpty_or_nonempty r with hr | hr
+    · rw [Subsingleton.elim (H - 1) 0, specNorm_zero]
+      exact ha0
+    obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero (Fintype.card_ne_zero (α := r))
+    have hsub : H - 1 = H + (-1 : ℝ) • (1 : Matrix r r 𝕜) := by
+      rw [neg_one_smul, sub_eq_add_neg]
+    have hσ : ∀ i ≤ k, |eigenvalue (H - 1) i| ≤ a := fun i hi => by
+      rw [hsub, hS.eigenvalue_add_smul_one (-1) (by omega),
+        eigenvalue_sqrt_conjTranspose_mul_self B (by omega)]
+      have h1 := (singularValues_le_specNorm B i).trans hB1
+      have h2 := (le_singularValues_last B hk.symm hlo).trans (singularValues_antitone B hi)
+      rw [abs_le]; constructor <;> linarith
+    rw [(hS.sub Matrix.isHermitian_one).specNorm_eq_max hk.symm]
+    exact max_le (hσ 0 (Nat.zero_le _)) (hσ k le_rfl)
+  rw [heq]
+  calc _ ≤ specNorm (polarFactor B) * specNorm (-(H - 1)) := specNorm_mul_le _ _
+    _ ≤ 1 * a := by
+      rw [specNorm_neg]
+      exact mul_le_mul hW.specNorm_le_one hH (specNorm_nonneg _) zero_le_one
+    _ = a := one_mul a
+
 /-- **A near-basis close to a frame up to a change of basis is close to a rotation of it**: let
 $\mathbf{U}, \mathbf{Q}' \in \Bbbk^{m \times r}$ have orthonormal columns, and
 $\mathbf{Q}_1 \in \Bbbk^{m \times r}$, $\mathbf{C} \in \Bbbk^{r \times r}$ satisfy
@@ -64,7 +120,63 @@ theorem HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le {U Q' Q
     (hν : specNorm (Q₁ - Q') ≤ ν) (hδ : specNorm (U - Q₁ * C) ≤ δ) (hνδ : ν ≤ δ)
     (hδ₅ : δ ≤ 1 / 5) :
     ∃ W : Matrix r r 𝕜, HasOrthonormalCols W ∧ specNorm (U * W - Q₁) ≤ 6 * δ := by
-  sorry
+  classical
+  have hδ0 : 0 ≤ δ := (specNorm_nonneg _).trans hδ
+  have hQ₁ : ∀ x, |‖WithLp.toLp 2 (Q₁ *ᵥ x)‖ - ‖WithLp.toLp 2 x‖| ≤
+      ν * ‖WithLp.toLp 2 x‖ := fun x => by
+    have h := abs_norm_mulVec_sub_norm_mulVec_le Q₁ Q' x
+    rw [hQ'.norm_toLp_mulVec] at h
+    exact h.trans (by gcongr)
+  have hC : ∀ x, ‖WithLp.toLp 2 x‖ ≤ 3 / 2 * ‖WithLp.toLp 2 (C *ᵥ x)‖ := fun x => by
+    have h := abs_norm_mulVec_sub_norm_mulVec_le U (Q₁ * C) x
+    rw [hU.norm_toLp_mulVec, ← Matrix.mulVec_mulVec] at h
+    have h1 := (abs_le.mp h).2
+    have h2 := (abs_le.mp (hQ₁ (C *ᵥ x))).2
+    have hx := norm_nonneg (WithLp.toLp 2 x)
+    have hCx := norm_nonneg (WithLp.toLp 2 (C *ᵥ x))
+    nlinarith [mul_le_mul_of_nonneg_right hδ hx, mul_le_mul_of_nonneg_right hνδ hCx,
+      mul_nonneg (sub_nonneg.mpr hδ₅) hx, mul_nonneg (sub_nonneg.mpr hδ₅) hCx]
+  have hCsurj : Function.Surjective C.mulVec := by
+    refine Matrix.mulVec_surjective_iff_isUnit.mpr (Matrix.mulVec_injective_iff_isUnit.mp ?_)
+    intro x y hxy
+    have h := hC (x - y)
+    rw [Matrix.mulVec_sub, hxy, sub_self] at h
+    simp only [Matrix.mulVec_zero, WithLp.toLp_zero, norm_zero, mul_zero] at h
+    have h0 : ‖WithLp.toLp 2 (x - y)‖ = 0 := le_antisymm h (norm_nonneg _)
+    rw [norm_eq_zero, WithLp.toLp_eq_zero] at h0
+    exact sub_eq_zero.mp h0
+  set D := Q₁ - U * (Uᴴ * Q₁)
+  have hDC : D * C = (1 - U * Uᴴ) * (Q₁ * C - U) := by
+    simp only [D, Matrix.sub_mul, Matrix.mul_sub, Matrix.one_mul, Matrix.mul_assoc,
+      hU.conjTranspose_mul_self, Matrix.mul_one]
+    abel
+  have hD : specNorm D ≤ 3 / 2 * δ := by
+    rw [specNorm_le_iff (by positivity)]
+    intro y
+    obtain ⟨x, rfl⟩ := hCsurj y
+    rw [Matrix.mulVec_mulVec, hDC, ← Matrix.mulVec_mulVec]
+    refine (hU.isStarProjection_mul_conjTranspose.one_sub.norm_toLp_mulVec_le _).trans ?_
+    refine (norm_toLp_mulVec_le _ _).trans ?_
+    rw [specNorm_sub_comm]
+    have := hC x
+    calc _ ≤ δ * ‖WithLp.toLp 2 x‖ := by gcongr
+      _ ≤ _ := by nlinarith
+  obtain ⟨W, hW, hWB⟩ := exists_hasOrthonormalCols_specNorm_sub_le_of_abs_norm_mulVec_sub_le
+    (B := Uᴴ * Q₁) (a := 5 / 2 * δ) (by positivity) (by linarith) fun x => by
+      have h := abs_norm_mulVec_sub_norm_mulVec_le Q₁ (U * (Uᴴ * Q₁)) x
+      rw [← Matrix.mulVec_mulVec, hU.norm_toLp_mulVec] at h
+      have h1 := h.trans (mul_le_mul_of_nonneg_right hD (norm_nonneg _))
+      have h2 := hQ₁ x
+      have hx := norm_nonneg (WithLp.toLp 2 x)
+      rw [abs_le] at h1 h2 ⊢
+      constructor <;> nlinarith
+  refine ⟨W, hW, ?_⟩
+  have heq : U * W - Q₁ = U * (W - Uᴴ * Q₁) - D := by
+    simp only [D, Matrix.mul_sub]; abel
+  rw [heq]
+  calc _ ≤ specNorm (U * (W - Uᴴ * Q₁)) + specNorm D := specNorm_sub_le _ _
+    _ ≤ 5 / 2 * δ + 3 / 2 * δ := by rw [hU.specNorm_mul_left]; exact add_le_add hWB hD
+    _ ≤ 6 * δ := by linarith
 
 /-- **Deterministic accuracy of randomized deflation** (Theorem 3.3, deterministic half): under
 the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants
