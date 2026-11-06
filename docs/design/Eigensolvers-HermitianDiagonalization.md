@@ -327,8 +327,8 @@ $\mathbf{A} = \mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$ (general invertible $
 paper's $\mathbf{\Sigma}$), $\|\mathbf{A} - \widetilde{\mathbf{A}}\|_2 \le \beta$,
 $\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ invertible, $m = (\|\mathbf{S}\|_2 + \beta +
 1)\|\mathbf{S}^{-1}\|_2\|\mathbf{G}\|_2\|(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1)^{-1}\|_2$, $m\beta \le
-1/5$, $(4\mu_{\mathrm{QR}} + 2\sqrt nc_{\mathrm N} + 2\mu_{\mathrm{MM}})u \le \beta$, floor/range
-conditions ⟹ $\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le
+1/5$, $(4\mu_{\mathrm{QR}} + 2\sqrt nc_{\mathrm N} + 2\mu_{\mathrm{MM}})u \le \beta$,
+$\mu_{\mathrm{MM}}(n), u \ge 0$ (§3.12), floor/range conditions ⟹ $\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le
 6m\beta$. **DP1**: with $\mathbf{G}$ standard complex Gaussian, $\bar m = (\|\mathbf{S}\|_2 +
 2)\|\mathbf{S}^{-1}\|_2\sqrt2(2\sqrt n + t)/x$, failure $\le 2e^{-t^2/2} + r^2x^2$.
 
@@ -347,7 +347,8 @@ so no measurable space on the (dependent-type) node states is needed.
 
 **EB1c** (computed projectors, W4 outline check): on Event I the stored $\mathbf{P}_\pm$ are
 within $\beta$ of $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$ (SN4
-applied once, with modulus $w - 1.4uR$; $w/2$ is not covered by `husign`).
+applied once, with modulus $w - 1.4uR$; $w/2$ is not covered by `husign`), at a node that is not
+a leaf (§3.12).
 **EB1b** (rank recovery on Event I, public so that EV2 can use it): for an internal node with
 seed in $[-1, 1]$ and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$.
 **EB1d** (a split node): frames $\mathbf{V}_\pm$, unitaries $\mathbf{W}_\pm$ with
@@ -545,6 +546,29 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | LB1 | `exists_mul_card_le_specNorm_add_smul` | S | 0 | — |
 | LB2 | `mul_card_le_of_forall_specNorm_sub_le` | S | 1 | LB1 |
 | LB3 | `logb_inv_add_le_of_forall_specNorm_sub_le` | M | 2 | LB2 |
+
+### 3.12 Statement corrections found while proving
+
+Two scaffold statements were false as written; the provers proved corrected versions and the
+public statements now carry the extra hypotheses (integration of `prove/hdiag-core`, 2026-11-06).
+No caller's statement changed.
+
+* **DF2** (`FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`) gains
+  `(hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u)`. Counterexample without them: $u = 1$, $\mu_{\mathrm{MM}} \equiv
+  -4$, $n = r = 1$ (the size condition on $u$ then holds for small $\beta$; since the product
+  contract on the stored identity forces $\mu_{\mathrm{MM}}(n) \ge 0$ when $u > 0$ and
+  $\Omega \ge 1$, the counterexample lives at a small range $\Omega$). Callers: EB1d supplies
+  its own `hμM`, `hu` through its private deflation helper. DP1 derives them: its range
+  $\Omega \ge 4\sqrt2$ ($n \ge 1$) and the conversion contract give $u \ge 0$, and the product
+  contract on the stored identity gives $\mu_{\mathrm{MM}}(n) \ge 0$ when $u > 0$; at $u = 0$ the
+  contract holds with $\mu_{\mathrm{MM}} \equiv 0$ and DF2 is applied with that constant; $r = 0$
+  is trivial.
+* **EB1c** (`FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le`) gains the
+  non-leaf condition `(hint : M.le y.R (M.mul y.ε R₀) = false)`, i.e. $\mathrm{fl}(R) >
+  \mathrm{fl}(\varepsilon R_0)$. Without it the window $R$ can lie far below $u\tau$, the
+  roundings of the shift are no longer relative to $R$, and the bound fails; with it the floor
+  $\tau$ is below $R/2$ and every rounding is relative. Its callers (EB1b and the private
+  helpers of EB1d) sit at an internal node and already have `hint`.
 
 ## 4. Map to the source
 
