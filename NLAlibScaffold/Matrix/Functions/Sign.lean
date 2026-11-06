@@ -291,7 +291,82 @@ theorem _root_.Matrix.IsHermitian.exists_hasOrthonormalCols_mul_conjTranspose_eq
     ∃ V : Matrix n (Fin (inertiaPos (A - c • (1 : Matrix n n 𝕜)))) 𝕜, HasOrthonormalCols V ∧
       V * Vᴴ = (2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix n n 𝕜))) ∧
       A * V = V * (Vᴴ * A * V) ∧ spectrum ℝ (Vᴴ * A * V) ⊆ spectrum ℝ A ∩ Set.Ioi c := by
-  sorry
+  classical
+  obtain ⟨U, hU, hAU⟩ := hA.exists_eq_mul_diagonal_mul_conjTranspose
+  set k := inertiaPos (A - c • (1 : Matrix n n 𝕜))
+  have hAc : (A - c • (1 : Matrix n n 𝕜)).IsHermitian :=
+    hA.sub (by simp [Matrix.IsHermitian, Matrix.conjTranspose_smul])
+  have hk : ∀ i : Fin (Fintype.card n), (i : ℕ) < k ↔ c < eigenvalue A i := fun i => by
+    rw [hAc.lt_inertiaPos_iff, sub_eq_add_neg, ← neg_smul, hA.eigenvalue_add_smul_one _ i.isLt]
+    simp [i.isLt]
+  have hkN : k ≤ Fintype.card n := (Finset.card_filter_le _ _).trans (Finset.card_range _).le
+  have hUU : U * Uᴴ = 1 := hU.mul_conjTranspose_self_of_card_eq (Fintype.card_fin _).symm
+  set V := U.submatrix id (Fin.castLE hkN)
+  have hV : HasOrthonormalCols V := hU.submatrix (Equiv.refl _) (Fin.castLE_injective hkN)
+  have hAU' : A * U =
+      U * Matrix.diagonal fun i : Fin (Fintype.card n) => ((eigenvalue A i : ℝ) : 𝕜) := by
+    nth_rw 1 [hAU]
+    rw [Matrix.mul_assoc, Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
+  have hAV : A * V = V * Matrix.diagonal fun j => ((eigenvalue A (Fin.castLE hkN j) : ℝ) : 𝕜) := by
+    ext x j
+    have h := congrFun (congrFun hAU' x) (Fin.castLE hkN j)
+    simp only [Matrix.mul_diagonal] at h ⊢
+    exact h
+  have hC : Vᴴ * A * V = Matrix.diagonal fun j => ((eigenvalue A (Fin.castLE hkN j) : ℝ) : 𝕜) := by
+    rw [Matrix.mul_assoc, hAV, ← Matrix.mul_assoc, hV.conjTranspose_mul_self, Matrix.one_mul]
+  refine ⟨V, hV, ?_, by rw [hC, hAV], ?_⟩
+  · have hAcU : A - c • (1 : Matrix n n 𝕜) = U * Matrix.diagonal
+        (fun i : Fin (Fintype.card n) => ((eigenvalue A i - c : ℝ) : 𝕜)) * Uᴴ := by
+      have h : Matrix.diagonal (fun i : Fin (Fintype.card n) => ((eigenvalue A i - c : ℝ) : 𝕜)) =
+          Matrix.diagonal (fun i : Fin (Fintype.card n) => ((eigenvalue A i : ℝ) : 𝕜)) -
+            c • 1 := by
+        ext i j
+        by_cases hij : i = j <;>
+          simp [hij, Algebra.algebraMap_eq_smul_one, sub_smul]
+      rw [h, Matrix.mul_sub, Matrix.sub_mul, ← hAU, Matrix.mul_smul, Matrix.smul_mul,
+        Matrix.mul_one, hUU]
+    rw [HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose hU (Fintype.card_fin _) hAcU]
+    set D := Matrix.diagonal fun i : Fin (Fintype.card n) =>
+      ((Real.sign (eigenvalue A i - c) : ℝ) : 𝕜)
+    have hP : (2⁻¹ : ℝ) • (1 + D) = Matrix.diagonal fun i : Fin (Fintype.card n) =>
+        if (i : ℕ) < k then 1 else 0 := by
+      ext i j
+      by_cases hij : i = j
+      · subst hij
+        by_cases h : (i : ℕ) < k
+        · simp only [D, Matrix.smul_apply, Matrix.add_apply, Matrix.one_apply_eq,
+            Matrix.diagonal_apply_eq, Real.sign_of_pos (sub_pos.mpr ((hk i).mp h)),
+            RCLike.ofReal_one, h, if_true, ← one_add_one_eq_two, smul_add]
+          rw [← add_smul]
+          norm_num
+        · have hlt : eigenvalue A i < c := lt_of_le_of_ne (not_lt.mp ((hk i).not.mp h))
+            (hc _ (hA.eigenvalue_mem_spectrum i.isLt))
+          simp [D, h, Real.sign_of_neg (sub_neg.mpr hlt)]
+      · simp [D, hij]
+    rw [← hUU, show U * Uᴴ + U * D * Uᴴ = U * (1 + D) * Uᴴ by
+      rw [Matrix.mul_add, Matrix.add_mul, Matrix.mul_one], ← Matrix.smul_mul, ← Matrix.mul_smul, hP]
+    ext r s
+    simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, V, Matrix.submatrix_apply, id]
+    refine Fintype.sum_of_injective (Fin.castLE hkN) (Fin.castLE_injective hkN) _ _
+      (fun i hi => ?_) (fun j => ?_)
+    · have h : ¬ (i : ℕ) < k := fun h => hi ⟨⟨i, h⟩, rfl⟩
+      simp [Matrix.diagonal_apply, h]
+    · simp [Matrix.diagonal_apply, j.2]
+  · rw [hC]
+    set d := fun j : Fin k => eigenvalue A (Fin.castLE hkN j)
+    obtain ⟨e, he⟩ :=
+      hasOrthonormalCols_one.exists_equiv_eq_eigenvalue_of_eq_mul_diagonal_mul_conjTranspose
+        (A := Matrix.diagonal fun j => ((d j : ℝ) : 𝕜)) (d := d) rfl
+        (by rw [Matrix.one_mul, Matrix.conjTranspose_one, Matrix.mul_one])
+    have hD : (Matrix.diagonal fun j => ((d j : ℝ) : 𝕜)).IsHermitian :=
+      Matrix.isHermitian_diagonal_iff.mpr fun j => RCLike.conj_ofReal _
+    rw [hD.spectrum_subset_iff]
+    intro i hi
+    obtain ⟨j, hj⟩ := e.surjective ⟨i, hi⟩
+    have h := he j
+    rw [hj] at h
+    rw [show eigenvalue _ i = d j from h.symm]
+    exact ⟨hA.eigenvalue_mem_spectrum (Fin.castLE hkN j).isLt, (hk _).mp j.2⟩
 
 /-- **The trace of a spectral projector is the inertia**: for Hermitian $\mathbf{A}$ and $c$ not an
 eigenvalue, $\operatorname{Re}\operatorname{tr}\tfrac12(\mathbf{I} + \operatorname{sign}(\mathbf{A}
