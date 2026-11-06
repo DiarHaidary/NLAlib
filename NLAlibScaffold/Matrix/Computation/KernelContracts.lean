@@ -137,7 +137,9 @@ theorem pairLayout.holds_iff {l m : ℕ} (s : Store P K) (p : P) (b off : ℕ)
     pairLayout.Holds s p b off Y ↔ ∀ (i : Fin l) (j : Fin m),
       s.read p b (off + 2 * (i + l * j)) = some (Y i j).1 ∧
         s.read p b (off + 2 * (i + l * j) + 1) = some (Y i j).2 := by
-  sorry
+  unfold EntryLayout.Holds pairLayout
+  simp only [Fin.forall_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one, add_assoc, add_zero,
+    Fin.val_zero, Fin.val_one]
 
 /-- **A block write of the packed storage holds the matrix**: if writing the packed storage of
 $\mathbf{Y}$ into buffer `b` from offset `off` succeeds, the result holds $\mathbf{Y}$ there. No
