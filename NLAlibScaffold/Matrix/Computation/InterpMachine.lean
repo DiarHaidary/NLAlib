@@ -69,7 +69,52 @@ theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} 
     (hnormal : IsNormalSampler (decodeComplex (dec p)) u cN 0 Ω normal) :
     (sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mm qr unif normal).IsAccurate (dec p) u 0 Ω μM μQ
       cN := by
-  sorry
+  -- a value `z` decoding to `a (1 + δ)` with `|δ| ≤ u` is a rounding of `a`
+  have rnd : ∀ (a : ℝ) (z : K) (δ : ℝ), |δ| ≤ u → dec p z = a * (1 + δ) →
+      IsRoundingOf u 0 Ω a (dec p z) := by
+    intro a z δ hδ hz
+    unfold IsRoundingOf
+    intro _
+    rw [hz, max_eq_left (abs_nonneg a)]
+    have e : a - a * (1 + δ) = -(a * δ) := by ring
+    rw [e, abs_neg, abs_mul]
+    exact (mul_le_mul_of_nonneg_left hδ (abs_nonneg a)).trans_eq (mul_comm _ _)
+  have hbin : ∀ (b : BinOp) (x y : K), b.IsArith → (b = .div → dec p y ≠ 0) →
+      IsRoundingOf u 0 Ω (b.realOp (dec p x) (dec p y))
+        (dec p ((sem.bin p b x y).getD default)) := by
+    intro b x y ha hy
+    obtain ⟨z, hz⟩ := hsem.bin_ok p b x y ha hy trivial
+    obtain ⟨δ, hδ, hd⟩ := hsem.bin_err p b x y z ha hz
+    rw [hz, Option.getD_some]
+    exact rnd _ z δ hδ hd
+  have hofNat : ∀ k : ℕ, IsRoundingOf u 0 Ω (k : ℝ) (dec p ((sem.lit p (k : ℚ)).getD default)) := by
+    intro k
+    obtain ⟨z, hz⟩ := hsem.lit_ok p (k : ℚ) trivial
+    obtain ⟨δ, hδ, hd⟩ := hsem.lit_err p (k : ℚ) z hz
+    rw [hz, Option.getD_some]
+    exact rnd _ z δ hδ (by rw [hd]; simp)
+  refine ⟨?_, ?_, hofNat, fun x y => hbin .add x y trivial (fun h => nomatch h),
+    fun x y => hbin .sub x y trivial (fun h => nomatch h),
+    fun x y => hbin .mul x y trivial (fun h => nomatch h),
+    fun x y hy => hbin .div x y trivial (fun _ => hy), ?_, ?_, ?_, hmm, hqr, hunif, hnormal⟩
+  · obtain ⟨z, hz, hd⟩ := hlit p 0 (Nat.zero_le _)
+    simp only [Nat.cast_zero] at hz hd
+    change dec p ((sem.lit p 0).getD default) = 0
+    rw [hz, Option.getD_some, hd]
+  · obtain ⟨z, hz, hd⟩ := hlit p 1 le_rfl
+    simp only [Nat.cast_one] at hz hd
+    change dec p ((sem.lit p 1).getD default) = 1
+    rw [hz, Option.getD_some, hd]
+  · intro x
+    obtain ⟨z, hz, hd⟩ := hsem.neg p x
+    change dec p ((sem.un p .neg x).getD default) = -dec p x
+    rw [hz, Option.getD_some, hd]
+  · intro x y
+    change (sem.cmp p .le x y).getD false = true ↔ dec p x ≤ dec p y
+    rw [hsem.cmp_le p x y]
+    simp
+  · intro x
+    rfl
 
 /-- **The standard model decides flags**: a value semantics meeting the standard model with
 every value in range and an exact literal $1$ decides flags at every tag
