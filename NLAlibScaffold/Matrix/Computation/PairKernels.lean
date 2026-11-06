@@ -700,7 +700,211 @@ theorem holds_of_exec_zconjTranspose (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IE
       ((I.sem.toFloatMachine p toNat mmR qrR unif normal).conjTransposeMat A) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * m)) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal with hM
+  have key : (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run = .seq
+      (.named "zconjTranspose" [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y,
+        .idx yo] (.seq (.loop (IExp.const m) fun j => .seq (.loop (IExp.const n) fun i =>
+          .seq (.instr (.copy p ⟨Y, yo + zidx (IExp.const n) (.var i) (.var j)⟩
+            ⟨X, xo + zidx (IExp.const m) (.var j) (.var i)⟩))
+          (.seq (.instr (.un p .neg ⟨Y, yo + zidx (IExp.const n) (.var i) (.var j) + 1⟩
+            ⟨X, xo + zidx (IExp.const m) (.var j) (.var i) + 1⟩)) .skip)) .skip) .skip))
+      .skip := rfl
+  rw [key, exec_seq_skip, exec_named, exec_seq_skip] at h
+  have hnm : n * m = m * n := Nat.mul_comm n m
+  -- the input words lie outside the output block
+  have hXout : ∀ x, xo.eval ≤ x → x < xo.eval + 2 * (m * n) →
+      blockDisjoint (X, x, 1) (Y, yo.eval, 2 * (n * m)) = true := by
+    intro x h1 h2
+    by_cases hXY' : X = Y
+    · subst hXY'
+      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+        Bool.or_eq_true] at hXY ⊢
+      omega
+    · simp [blockDisjoint, hXY']
+  -- an input word and an output word are different cells
+  have hsep : ∀ x y, xo.eval ≤ x → x < xo.eval + 2 * (m * n) → yo.eval ≤ y →
+      y < yo.eval + 2 * (n * m) → (X ≠ Y ∨ x ≠ y) := by
+    intro x y h1 h2 h3 h4
+    by_cases hXY' : X = Y
+    · right
+      subst hXY'
+      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+        Bool.or_eq_true] at hXY
+      omega
+    · exact Or.inl hXY'
+  -- an output word is outside every cell of another block
+  have hne_of : ∀ b c x, blockDisjoint (b, c, 1) (Y, yo.eval, 2 * (n * m)) = true →
+      yo.eval ≤ x → x < yo.eval + 2 * (n * m) → (b ≠ Y ∨ c ≠ x) := by
+    intro b c x hd h1 h2
+    by_cases hb : b = Y
+    · right
+      subst hb
+      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, decide_eq_true_eq,
+        Bool.or_eq_true] at hd
+      omega
+    · exact Or.inl hb
+  -- distinct flat indices $i + nj$ give distinct entries
+  have hinj : ∀ i i' j j' : ℕ, i < n → i' < n → i + n * j = i' + n * j' → i = i' ∧ j = j' := by
+    intro i i' j j' hi hi' h
+    have hn : 0 < n := by omega
+    have e1 : i = i' := by
+      have := congrArg (· % n) h
+      simp only [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hi'] at this
+      exact this
+    subst e1
+    exact ⟨rfl, Nat.eq_of_mul_eq_mul_left hn (Nat.add_left_cancel h)⟩
+  -- the input entries as stored
+  have hXw : ∀ (j : ℕ) (hj : j < m) (i : ℕ) (hi : i < n),
+      st.store.read p X (xo.eval + 2 * (j + m * i)) = some (A ⟨j, hj⟩ ⟨i, hi⟩).1 ∧
+      st.store.read p X (xo.eval + 2 * (j + m * i) + 1) = some (A ⟨j, hj⟩ ⟨i, hi⟩).2 := by
+    intro j hj i hi
+    exact ⟨by simpa [pairLayout] using hA ⟨j, hj⟩ ⟨i, hi⟩ (0 : Fin 2),
+      by simpa [pairLayout, Nat.add_assoc] using hA ⟨j, hj⟩ ⟨i, hi⟩ (1 : Fin 2)⟩
+  -- one entry: the copy of the real part and the negated imaginary part
+  have bstep : ∀ (j i : ℕ) (t₁ t₂ : St P K C),
+      exec I (.seq (.instr (.copy p ⟨Y, yo + zidx (IExp.const n) (IExp.var i) (IExp.var j)⟩
+        ⟨X, xo + zidx (IExp.const m) (IExp.var j) (IExp.var i)⟩))
+        (.seq (.instr (.un p .neg ⟨Y, yo + zidx (IExp.const n) (IExp.var i) (IExp.var j) + 1⟩
+          ⟨X, xo + zidx (IExp.const m) (IExp.var j) (IExp.var i) + 1⟩)) .skip)) t₁ = some t₂ →
+      ∃ (a b : K) (u u' : Store P K), t₁.store.read p X (xo.eval + 2 * (j + m * i)) = some a ∧
+        u.read p X (xo.eval + 2 * (j + m * i) + 1) = some b ∧
+        t₁.store.write p Y (yo.eval + 2 * (i + n * j)) a = some u ∧
+        u.write p Y (yo.eval + 2 * (i + n * j) + 1) (M.neg b) = some u' ∧
+        t₂.store = u' ∧ t₂.pos = t₁.pos := by
+    intro j i t₁ t₂ hr
+    obtain ⟨a, ha⟩ : ∃ a, t₁.store.read p X (xo.eval + 2 * (j + m * i)) = some a := by
+      cases hx : t₁.store.read p X (xo.eval + 2 * (j + m * i)) with
+      | none => simp [exec_seq, exec_instr, Instr.run, hx, zidx, IExp.eval] at hr
+      | some a => exact ⟨a, rfl⟩
+    obtain ⟨u, hu⟩ : ∃ u, t₁.store.write p Y (yo.eval + 2 * (i + n * j)) a = some u := by
+      cases hw : t₁.store.write p Y (yo.eval + 2 * (i + n * j)) a with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hw, zidx, IExp.eval] at hr
+      | some u => exact ⟨u, rfl⟩
+    obtain ⟨b, hb⟩ : ∃ b, u.read p X (xo.eval + 2 * (j + m * i) + 1) = some b := by
+      cases hx : u.read p X (xo.eval + 2 * (j + m * i) + 1) with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hu, hx, zidx, IExp.eval] at hr
+      | some b => exact ⟨b, rfl⟩
+    obtain ⟨v, hv⟩ : ∃ v, I.sem.un p .neg b = some v := by
+      cases hn : I.sem.un p .neg b with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hu, hb, hn, zidx, IExp.eval] at hr
+      | some v => exact ⟨v, rfl⟩
+    obtain ⟨u', hu'⟩ : ∃ u', u.write p Y (yo.eval + 2 * (i + n * j) + 1) v = some u' := by
+      cases hw : u.write p Y (yo.eval + 2 * (i + n * j) + 1) v with
+      | none => simp [exec_seq, exec_instr, Instr.run, ha, hu, hb, hv, hw, zidx, IExp.eval] at hr
+      | some u' => exact ⟨u', rfl⟩
+    have hMn : M.neg b = v := by
+      show (I.sem.un p .neg b).getD default = v
+      rw [hv]; rfl
+    rw [exec_seq_instr_copy (dst := (⟨Y, yo + zidx (IExp.const n) (IExp.var i) (IExp.var j)⟩ :
+      Cell ℕ ℕ)) (src := (⟨X, xo + zidx (IExp.const m) (IExp.var j) (IExp.var i)⟩ : Cell ℕ ℕ))
+      (t := _) I ha hu, exec_seq_instr_un (dst := (⟨Y, yo + zidx (IExp.const n) (IExp.var i)
+        (IExp.var j) + 1⟩ : Cell ℕ ℕ)) (x := (⟨X, xo + zidx (IExp.const m) (IExp.var j)
+        (IExp.var i) + 1⟩ : Cell ℕ ℕ)) I hb hv hu', exec_skip] at hr
+    cases hr
+    exact ⟨a, b, u, u', ha, hb, hu, by rw [hMn]; exact hu', rfl, rfl⟩
+  -- the outer loop over the columns $j$; the inner loop over the rows $i$
+  have inv := forall_of_exec_loop_eq_some (I := I) (fun j s =>
+      (∀ (i : Fin n) (j' : Fin m), (i : ℕ) + n * (j' : ℕ) < n * j →
+        s.store.read p Y (yo.eval + 2 * ((i : ℕ) + n * (j' : ℕ))) =
+            some ((M.conjTransposeMat A) i j').1 ∧
+          s.store.read p Y (yo.eval + 2 * ((i : ℕ) + n * (j' : ℕ)) + 1) =
+            some ((M.conjTransposeMat A) i j').2) ∧
+      (∀ q b c, blockDisjoint (b, c, 1) (Y, yo.eval, 2 * (n * m)) = true →
+        s.store.read q b c = st.store.read q b c) ∧
+      s.store.shape = st.store.shape ∧ s.pos = st.pos) ?_ ?_ h
+  rotate_left
+  · exact ⟨fun i j' hlt => absurd hlt (Nat.not_lt_zero _), fun q b c _ => rfl, rfl, rfl⟩
+  · intro j hj s₁ s₂ ⟨hG, hOUT, hsh, hpos⟩ hr
+    have hj2 : j < m := hj
+    rw [exec_seq_skip] at hr
+    have inner := forall_of_exec_loop_eq_some (I := I) (fun i t =>
+        (∀ (i' : Fin n) (j' : Fin m), (i' : ℕ) + n * (j' : ℕ) < n * j + i →
+          t.store.read p Y (yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ))) =
+              some ((M.conjTransposeMat A) i' j').1 ∧
+            t.store.read p Y (yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ)) + 1) =
+              some ((M.conjTransposeMat A) i' j').2) ∧
+        (∀ q b c, blockDisjoint (b, c, 1) (Y, yo.eval, 2 * (n * m)) = true →
+          t.store.read q b c = st.store.read q b c) ∧
+        t.store.shape = s₁.store.shape ∧ t.pos = s₁.pos) ?_ ?_ hr
+    rotate_left
+    · refine ⟨fun i' j' hlt => ?_, hOUT, rfl, rfl⟩
+      obtain ⟨g1, g2⟩ := hG i' j' (by simpa using hlt)
+      exact ⟨g1, g2⟩
+    · intro i hi t₁ t₂ ⟨hG', hOUT', hsh', hpos'⟩ hr'
+      have hi2 : i < n := hi
+      obtain ⟨a, b, u, u', ha, hb, hu, hu', hs2, hp2⟩ := bstep j i t₁ t₂ hr'
+      have hm1 : m * i + m ≤ m * n := by
+        have := Nat.mul_le_mul_left m (show i + 1 ≤ n from hi2)
+        rw [Nat.mul_add, Nat.mul_one] at this
+        exact this
+      have hn1 : n * j + n ≤ n * m := by
+        have := Nat.mul_le_mul_left n (show j + 1 ≤ m from hj2)
+        rw [Nat.mul_add, Nat.mul_one] at this
+        exact this
+      have hc2 : 2 * (j + m * i) + 1 < 2 * (m * n) := by omega
+      have hw2 : 2 * (i + n * j) + 1 < 2 * (n * m) := by omega
+      -- the input entry $(j, i)$ read off the stored matrix
+      have ea : t₁.store.read p X (xo.eval + 2 * (j + m * i)) =
+          some (A ⟨j, hj2⟩ ⟨i, hi2⟩).1 := by
+        rw [hOUT' p X _ (hXout _ (by omega) (by omega))]
+        exact (hXw j hj2 i hi2).1
+      have ea' : a = (A ⟨j, hj2⟩ ⟨i, hi2⟩).1 := Option.some.inj (ha.symm.trans ea)
+      have eb : u.read p X (xo.eval + 2 * (j + m * i) + 1) = some (A ⟨j, hj2⟩ ⟨i, hi2⟩).2 := by
+        rw [Store.read_of_write_eq_some_of_ne hu
+          (hsep _ _ (by omega) (by omega) (by omega) (by omega)), hOUT' p X _ (hXout _ (by omega) (by omega))]
+        exact (hXw j hj2 i hi2).2
+      have eb' : b = (A ⟨j, hj2⟩ ⟨i, hi2⟩).2 := Option.some.inj (hb.symm.trans eb)
+      -- the cells written by this step
+      have r1 : t₂.store.read p Y (yo.eval + 2 * (i + n * j)) = some a := by
+        rw [hs2, Store.read_of_write_eq_some_of_ne hu' (Or.inr (show yo.eval + 2 * (i + n * j) ≠
+          yo.eval + 2 * (i + n * j) + 1 by omega) : Y ≠ Y ∨ _)]
+        exact Store.read_of_write_eq_some hu
+      have r2 : t₂.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some ((M.neg b)) := by
+        rw [hs2]
+        exact Store.read_of_write_eq_some hu'
+      refine ⟨fun i' j' hlt => ?_, fun q c d hd => ?_, ?_, ?_⟩
+      · rcases Nat.lt_or_ge ((i' : ℕ) + n * (j' : ℕ)) (n * j + i) with hl | hge
+        · obtain ⟨g1, g2⟩ := hG' i' j' hl
+          constructor
+          · rw [hs2, Store.read_of_write_eq_some_of_ne hu' (Or.inr (show
+              yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ)) ≠ yo.eval + 2 * (i + n * j) + 1 by omega) :
+              Y ≠ Y ∨ _), Store.read_of_write_eq_some_of_ne hu (Or.inr (show
+              yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ)) ≠ yo.eval + 2 * (i + n * j) by omega) :
+              Y ≠ Y ∨ _)]
+            exact g1
+          · rw [hs2, Store.read_of_write_eq_some_of_ne hu' (Or.inr (show
+              yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ)) + 1 ≠ yo.eval + 2 * (i + n * j) + 1 by omega) :
+              Y ≠ Y ∨ _), Store.read_of_write_eq_some_of_ne hu (Or.inr (show
+              yo.eval + 2 * ((i' : ℕ) + n * (j' : ℕ)) + 1 ≠ yo.eval + 2 * (i + n * j) by omega) :
+              Y ≠ Y ∨ _)]
+            exact g2
+        · obtain ⟨e1, e2⟩ := hinj i (i' : ℕ) j (j' : ℕ) hi2 i'.isLt (by omega)
+          have hi'eq : i' = ⟨i, hi2⟩ := Fin.ext e1.symm
+          have hj'eq : j' = ⟨j, hj2⟩ := Fin.ext e2.symm
+          subst hi'eq hj'eq
+          exact ⟨r1.trans (congrArg some ea'), r2.trans (congrArg some (congrArg M.neg eb'))⟩
+      · rw [hs2, Store.read_of_write_eq_some_of_ne hu' (hne_of _ _ (yo.eval + 2 * (i + n * j) + 1)
+          hd (by omega) (by omega)), Store.read_of_write_eq_some_of_ne hu
+          (hne_of _ _ (yo.eval + 2 * (i + n * j)) hd (by omega) (by omega)), hOUT' q c d hd]
+      · rw [hs2, Store.shape_of_write_eq_some hu', Store.shape_of_write_eq_some hu, hsh']
+      · rw [hp2, hpos']
+    obtain ⟨hG'', hOUT'', hsh'', hpos''⟩ := inner
+    refine ⟨fun i' j' hlt => hG'' i' j' ?_, fun q b c hd => hOUT'' q b c hd,
+      hsh''.trans hsh, hpos''.trans hpos⟩
+    have e : n * (j + 1) = n * j + n := by ring
+    have hn : (IExp.const n).eval = n := rfl
+    omega
+  obtain ⟨hG, hOUT, -, -⟩ := inv
+  refine ⟨fun i j (t : Fin 2) => ?_, hOUT⟩
+  have hij : (i : ℕ) + n * (j : ℕ) < n * m := by
+    have e := Nat.mul_le_mul_left n (show (j : ℕ) + 1 ≤ m from j.isLt)
+    rw [Nat.mul_add, Nat.mul_one] at e
+    have := i.isLt
+    omega
+  obtain ⟨g1, g2⟩ := hG i j hij
+  fin_cases t
+  · simpa [pairLayout] using g1
+  · simpa [pairLayout, Nat.add_assoc] using g2
 
 /-- **`ztraceRe` computes the machine's real trace**: a successful run of
 `NLAlib.Computation.ztraceRe` from a block at `X` holding the complex $n \times n$ matrix
