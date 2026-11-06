@@ -469,7 +469,7 @@ theorem ProgFamily.MatrixFree.storedEntries_substOracle_cooImpl {r b : ℕ} {p :
   rintro N n ⟨hv, hpat⟩ x vals ξ
   exact RunsWithin.substOracle (I := exactInterp (fun _ => cooMatrix (N := N) pattern vals) ξ)
     (I' := cooInterp pattern vals ξ p) rfl rfl (fun _ => rfl) (fun _ => rfl) rfl (fun _ => rfl)
-    (implementsOracle_cooImpl pattern hpat vals ξ p) rfl (fun _ => le_rfl) le_rfl
+    (fun _ _ _ => rfl) (implementsOracle_cooImpl pattern hpat vals ξ p) rfl (fun _ => le_rfl) le_rfl
     (h N n hv x _ ξ)
 
 end NLAlib.Computation

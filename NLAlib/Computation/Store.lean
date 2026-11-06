@@ -31,6 +31,8 @@ the block write. Design: `docs/design/Computation.md` (D3, D11).
 * `NLAlib.Computation.Store`: the store; `NLAlib.Computation.Store.read`,
   `NLAlib.Computation.Store.write`, `NLAlib.Computation.Store.readBlock`,
   `NLAlib.Computation.Store.writeBlock`, `NLAlib.Computation.Store.shape`.
+* `NLAlib.Computation.Store.readBlocks`, `NLAlib.Computation.Store.writeBlocks`: the reads and
+  writes of several blocks, `(handle, offset, length)`, of a kernel call.
 * `NLAlib.Computation.Store.BlockFrame`: the frame invariant of a block write with a scratch
   buffer.
 
@@ -83,6 +85,20 @@ def Store.writeBlock (s : Store P K) (p : P) (b off : ℕ) (xs : Array K) : Opti
 /-- The shape of a store: the tag and the length of each buffer. Two stores of the same shape
 accept the same writes. -/
 def Store.shape (s : Store P K) : Array (P × ℕ) := s.map fun x => (x.1, x.2.size)
+
+/-- The blocks `bs`, each `(handle, offset, length)`, read in order at tag `p`. -/
+def Store.readBlocks (s : Store P K) (p : P) (bs : List (ℕ × ℕ × ℕ)) : Option (List (Array K)) :=
+  bs.mapM fun b => s.readBlock p b.1 b.2.1 b.2.2
+
+/-- The arrays `ys` written in order into the blocks `bs`, each `(handle, offset, length)`, at tag
+`p`; `none` if the numbers of blocks and arrays differ or an array does not have the length of
+its block. -/
+def Store.writeBlocks (s : Store P K) (p : P) :
+    List (ℕ × ℕ × ℕ) → List (Array K) → Option (Store P K)
+  | [], [] => some s
+  | b :: bs, y :: ys => if y.size = b.2.2 then
+      (s.writeBlock p b.1 b.2.1 y).bind fun s' => s'.writeBlocks p bs ys else none
+  | _, _ => none
 
 /-- Read after write, at the written cell. -/
 theorem Store.read_of_write_eq_some {s s' : Store P K} {p : P} {b i : ℕ} {v : K}
@@ -384,6 +400,19 @@ theorem Store.shape_of_writeBlock_eq_some {s s' : Store P K} {p : P} {b off : �
       obtain ⟨v, -, hw⟩ := Option.bind_eq_some_iff.mp h₂
       rw [ih s₂ h₃, Store.shape_of_write_eq_some hw]
   exact key _ s h
+
+/-- Block writes keep the shape of the store. -/
+theorem Store.shape_of_writeBlocks_eq_some {p : P} :
+    ∀ {s s' : Store P K} {bs : List (ℕ × ℕ × ℕ)} {ys : List (Array K)},
+      s.writeBlocks p bs ys = some s' → s'.shape = s.shape
+  | _, _, [], [], h => by cases h; rfl
+  | _, _, [], _ :: _, h => by cases h
+  | _, _, _ :: _, [], h => by cases h
+  | s, s', b :: bs, y :: ys, h => by
+    rw [Store.writeBlocks] at h
+    split_ifs at h
+    obtain ⟨s₁, h₁, h₂⟩ := Option.bind_eq_some_iff.mp h
+    rw [Store.shape_of_writeBlocks_eq_some h₂, Store.shape_of_writeBlock_eq_some h₁]
 
 /-- A block write succeeds where every cell of the block can be written. -/
 theorem Store.exists_writeBlock_eq_some_of_write {s : Store P K} {p : P} {b off : ℕ}

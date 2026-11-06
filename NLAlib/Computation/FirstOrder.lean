@@ -64,9 +64,9 @@ section Run
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] (I : Interp P ι K C)
 
-/-- **The run of a first-order statement** under `I`, in an environment of handles `ρB` and of
-index values `ρI`. The leaves (instructions, oracle calls, read-only reads, comparisons) run by
-the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the environment;
+/-- **The run of a first-order statement** under `I`, in an environment of handles `ρB` and of index
+values `ρI`. The leaves (instructions, oracle calls, kernel calls, read-only reads, comparisons) run
+by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the environment;
 `alloc` binds the new handle `st.store.size` and `loop` the iteration index. A `whileFuel` loop
 tests its comparison at most `fuel` times and fails if every test it makes holds. -/
 def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → ℕ) →
@@ -115,6 +115,10 @@ def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fi
       (cmpStep I p c (x.subst ρB fun v => .const (ρI v)) (y.subst ρB fun v => .const (ρI v))
         st).bind fun r => if r.1 then t.exec ρB ρI r.2 else e.exec ρB ρI r.2
   | _, _, .named _ _ body, ρB, ρI, st => body.exec ρB ρI st
+  | _, _, .kcall o p dims ins outs, ρB, ρI, st =>
+      (I.kcallStore o p (dims.map (·.evalIn ρI)) (ins.map fun x => (ρB x.1, x.2.evalIn ρI))
+        (outs.map fun x => (ρB x.1, x.2.evalIn ρI)) st.store).map fun s =>
+          { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) }
 
 /-- **The run of a program** at the sizes $N$ and $n$: declared buffer $j$ at handle $j$, the
 oracle dimension $N$ as index variable $0$ and size $i$ as index variable $i + 1$. -/
@@ -205,6 +209,9 @@ theorem FStmt.exec_eq_exec_toStmt : ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ
       rw [t.exec_eq_exec_toStmt, e.exec_eq_exec_toStmt]
   | _, _, .named _ _ body, ρB, σ, st => by
       rw [FStmt.exec, FStmt.toStmt, Computation.exec, body.exec_eq_exec_toStmt]
+  | _, _, .kcall o p dims ins outs, ρB, σ, st => by
+      rw [FStmt.exec, FStmt.toStmt, Computation.exec]
+      simp only [List.map_map, Function.comp_def, IExp.eval_subst]
 
 /-- The bridge for programs: the run of a program at the sizes $N$ and $n$ is the current
 run of its instantiation at these sizes. -/

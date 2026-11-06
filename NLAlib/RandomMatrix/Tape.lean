@@ -8,6 +8,7 @@ module
 public import NLAlib.Computation.Model
 public import NLAlib.Probability.Distributions.Rademacher
 public import NLAlib.RandomMatrix.Gaussian.Basic
+public import Mathlib.Probability.ConditionalProbability
 
 /-!
 # Test matrices drawn from a random tape
@@ -21,11 +22,11 @@ laws the probabilistic theorems about programs need, so that a program that draw
 matrices inherits the tail bounds of its specification with no new probability.
 
 The law of the tape is fixed once, here: `NLAlib.Computation.tapeLaw` makes the tapes of the
-distributions independent, the tape of `d` an i.i.d. sequence with law `d.law` (a standard
-Gaussian, a Rademacher sign). The probabilistic companion of the matrix-free model,
-`NLAlib.Computation.MatrixFreeProb`, bounds the probability that a program fails to run within
-its counts and memory and to satisfy its postcondition, when the tape has this law; the law is
-part of the definition, never a hypothesis of a theorem, so it cannot depend on the matrix.
+distributions independent, the tape of `d` an i.i.d. sequence with law `d.law` (a standard Gaussian,
+a Rademacher sign, a uniform draw on $[-1, 1]$). The probabilistic companion of the matrix-free
+model, `NLAlib.Computation.MatrixFreeProb`, bounds the probability that a program fails to run
+within its counts and memory and to satisfy its postcondition, when the tape has this law; the law
+is part of the definition, never a hypothesis of a theorem, so it cannot depend on the matrix.
 
 ## Main definitions
 
@@ -33,6 +34,8 @@ part of the definition, never a hypothesis of a theorem, so it cannot depend on 
 * `NLAlib.Computation.MatrixFreeProb`: the probabilistic matrix-free model, on a first-order
   program; `NLAlib.Computation.ProgFamily.MatrixFreeProb`, the same model on a program family
   (proof infrastructure).
+* `NLAlib.Computation.MatrixFreeRoundedProb`: the rounded probabilistic model, quantified over
+  the interpretations meeting contracts and the roundings of the tape.
 
 ## Main results
 
@@ -112,17 +115,20 @@ theorem indepFun_tapeMatrix_of_hasLaw_iidSequence {ν : Measure ℝ} [IsProbabil
 
 namespace Computation
 
-/-- The law of one draw from each distribution: the standard Gaussian, and the Rademacher law
-(a random sign). -/
+/-- The law of one draw from each distribution: the standard Gaussian, the Rademacher law
+(a random sign), and the uniform law on $[-1, 1]$ (Lebesgue measure conditioned on the
+interval). -/
 noncomputable def Dist.law : Dist → Measure ℝ
   | .gaussian => gaussianReal 0 1
   | .rademacher => rademacherMeasure
+  | .uniform => volume[|Set.Icc (-1) 1]
 
 /-- The law of a draw is a probability measure. -/
 instance isProbabilityMeasure_law (d : Dist) : IsProbabilityMeasure d.law := by
   cases d
   · exact inferInstanceAs (IsProbabilityMeasure (gaussianReal 0 1))
   · exact inferInstanceAs (IsProbabilityMeasure rademacherMeasure)
+  · exact cond_isProbabilityMeasure_of_finite (by simp) (by simp)
 
 /-- **The law of the tape**: the tapes of the distributions are independent, and the tape of `d`
 is an i.i.d. sequence with law `d.law`. -/
@@ -208,6 +214,35 @@ theorem ProgFamily.MatrixFreeProb.prog {r b : ℕ} {p : P} {F : ProgFamily P ι 
   refine (le_of_eq (congrArg μ.real (Set.ext fun ω => not_congr ?_))).trans
     (h N n hv x A Ω _ μ ξ hξ)
   rw [Prog.runsWithin_iff, hc]
+
+/-- **The rounded probabilistic model.** For all sizes $N$, $n$ satisfying `valid` and every
+declared input $x$ satisfying `pre N n x`, under **every** interpretation $I$ meeting the
+contracts `Contracts N n` (on its value semantics, literals and kernels) and every rounding
+$\rho$ of the tape meeting `ρOK` (a tape-rounding contract such as
+`NLAlib.Computation.IsTapeRounding`), and every ideal tape $\xi$ on any probability space whose
+law is the law of the tape `tapeLaw` (fixed by this definition: the tapes independent, the tape
+of `d` i.i.d. with law `d.law`), the probability that the program `prog`, run under $I$ with the
+stored tape $\rho(d, i, \xi(\omega)(d, i))$ from the initial state that holds the declared
+buffers `inputs N n x` at tag `p` and nothing else, fails or ends in a state not satisfying
+`good N n x` is at most `bound N n x`.
+
+The program, one first-order tree for all sizes, is bound before the sizes, the inputs, the
+interpretation, the rounding and the tape. The arithmetic, the kernels and the rounding of the
+draws are quantified over everything meeting the contracts, and the law of the ideal tape is part
+of the definition, so it cannot depend on the data. No counts: the charge of $I$ is arbitrary,
+and counts come from a separate statement about the tree. -/
+def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
+    (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
+    (Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop)
+    (ρOK : (Dist → ℕ → ℝ → K) → Prop) (pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop)
+    (good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop)
+    (bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ) : Prop :=
+  ∀ N n, valid N n → ∀ x : X N n, pre N n x → ∀ (I : Interp P ι K (OpCount P ι))
+    (ρ : Dist → ℕ → ℝ → K), Contracts N n I → ρOK ρ → ∀ (Ω : Type) (_ : MeasurableSpace Ω)
+    (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
+    μ.real {ω | ¬ ∃ st', prog.exec { I with tape := fun d i => ρ d i (ξ ω d i) } N n
+        (inputState p (List.ofFn (inputs N n x))) = some st' ∧ good N n x st'} ≤ bound N n x
 
 end Computation
 

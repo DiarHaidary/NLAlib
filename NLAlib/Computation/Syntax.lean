@@ -13,7 +13,8 @@ public import Mathlib.Data.Rat.Defs
 
 Algorithms are small imperative programs that work on buffers as BLAS code does: they allocate
 scoped buffers, overwrite cells in place, call kernels, draw random numbers from a tape, and
-multiply blocks of vectors by a matrix through an oracle. A program is a value of
+multiply blocks of vectors by a matrix through an oracle, and call black-box kernels (a matrix
+product, a QR factorization) on contiguous blocks. A program is a value of
 `NLAlib.Computation.Stmt P ι VB VI`, a two-sorted parametric higher-order abstract syntax: `P` is
 the type of precision tags, `ι` the type of oracle names, `VB` the sort of buffer handles (bound
 by `alloc`) and `VI` the sort of index variables (bound by `loop`). A program is generic in `VB`
@@ -167,6 +168,8 @@ inductive Dist where
   | gaussian
   /-- Rademacher (random signs). -/
   | rademacher
+  /-- Uniform on $[-1, 1]$. -/
+  | uniform
   deriving DecidableEq
 
 /-- The arguments of a named kernel call, recorded for the emitter. -/
@@ -246,6 +249,10 @@ inductive Stmt (P ι VB VI : Type) where
   | ite (p : P) (c : CmpOp) (x y : Cell VB VI) (t e : Stmt P ι VB VI)
   /-- A named kernel: runs as its body; the emitter may print it as a call. -/
   | named (name : String) (args : List (Arg VB VI)) (body : Stmt P ι VB VI)
+  /-- A black-box kernel call: kernel `o` at the dimensions `dims` reads the contiguous input
+  blocks starting at the cells `ins` and writes the contiguous output blocks starting at the
+  cells `outs`, all at tag `p`; the block lengths are the kernel's shape at `dims`. -/
+  | kcall (o : ι) (p : P) (dims : List (IExp VI)) (ins outs : List (VB × IExp VI))
 
 /-! ### First-order statements and programs -/
 
@@ -284,6 +291,11 @@ inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
   /-- A named kernel: a label for the emitter; runs as its body. -/
   | named {nb ni : ℕ} (name : String) (args : List (Arg (Fin nb) (Fin ni)))
       (body : FStmt P ι nb ni) : FStmt P ι nb ni
+  /-- A black-box kernel call: kernel `o` at the dimensions `dims` reads the contiguous input
+  blocks starting at the cells `ins` and writes the contiguous output blocks starting at the
+  cells `outs`, all at tag `p`; the block lengths are the kernel's shape at `dims`. -/
+  | kcall {nb ni : ℕ} (o : ι) (p : P) (dims : List (IExp (Fin ni)))
+      (ins outs : List (Fin nb × IExp (Fin ni))) : FStmt P ι nb ni
 
 /-- **A program**: a first-order statement with `b` declared buffers (handles `0`, …, `b - 1`),
 the oracle dimension `N` (index variable `0`) and `r` further sizes (index variables `1`, …,

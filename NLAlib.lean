@@ -342,6 +342,7 @@ public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Computation.BLASNegAxpy
+public import NLAlib.Matrix.Computation.KernelContracts
 public import NLAlib.Matrix.Computation.MatvecRoutine
 public import NLAlib.Matrix.Computation.ResidualGap
 public import NLAlib.Matrix.Computation.Underflow

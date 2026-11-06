@@ -79,7 +79,9 @@ def emitInstr {P : Type} {nb ni : ℕ} : Instr P (Fin nb) (Fin ni) → String
   | .copy _ dst src => s!"{emitCell dst} = {emitCell src}"
   | .convert _ _ dst src => s!"{emitCell dst} = {emitCell src}"
   | .draw _ dist dst =>
-      let f := match dist with | .gaussian => "draw_gaussian()" | .rademacher => "draw_rademacher()"
+      let f := match dist with
+        | .gaussian => "draw_gaussian()" | .rademacher => "draw_rademacher()"
+        | .uniform => "draw_uniform()"
       s!"{emitCell dst} = {f}"
 
 /-- A first-order statement as Python lines at depth `d`. -/
@@ -114,6 +116,11 @@ def emitF {P ι : Type} (inline : Bool) : {nb ni : ℕ} → FStmt P ι nb ni →
   | _, _, .named name args body, d =>
       if inline then emitF inline body d
       else [pad d ++ s!"{name}({", ".intercalate (args.map emitArg)})"]
+  | _, _, .kcall _ _ dims ins outs, d =>
+      let ins' := ins.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
+      let outs' := outs.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
+      [pad d ++ s!"kernel([{", ".intercalate (dims.map emitIExp)}], " ++
+        s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
 
 /-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`. -/
 def emitProg {P ι : Type} {r b : ℕ} (inline : Bool) (name : String) (prog : Prog P ι r b) :

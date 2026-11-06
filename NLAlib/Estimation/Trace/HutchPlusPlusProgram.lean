@@ -1102,6 +1102,21 @@ private theorem compile_cooImpl {nb ni : ℕ} (hni : 0 < ni) (pattern : List (�
     IExp.subst, subst_castSucc_snoc, Fin.snoc_castSucc, Fin.snoc_last, hM]
   rfl
 
+/-- The kernel-call case of the sparse compile lemma: a kernel call becomes `skip`. -/
+private theorem compile_substOracle_kcall (pattern : List (ℕ × ℕ)) {o : ι} {p : P}
+    {dims : List (IExp ℕ)} {ins outs : List (ℕ × IExp ℕ)} {nb ni : ℕ} (hni : 0 < ni)
+    {c : FStmt P ι nb ni} (h : (Stmt.kcall o p dims ins outs).compile nb ni = some c) :
+    ∃ c' : FStmt P ι nb ni,
+      ((Stmt.kcall o p dims ins outs).subst .instr (cooImpl (.var 0) pattern)
+        fun _ _ _ _ _ => .skip).compile nb ni = some c' ∧
+      ∀ ρB σ M, σ ⟨0, hni⟩ = .const M →
+        c'.toStmt ρB σ = (c.toStmt ρB σ).subst .instr (cooImpl (.const M) pattern)
+          fun _ _ _ _ _ => .skip := by
+  simp only [Stmt.compile, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+    Option.some.injEq] at h
+  obtain ⟨dims', -, ins', -, outs', -, rfl⟩ := h
+  exact ⟨.skip, rfl, fun _ _ _ _ => rfl⟩
+
 private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : Stmt P ι ℕ ℕ) :
     ∀ {nb ni : ℕ} (hni : 0 < ni) (c : FStmt P ι nb ni), s.compile nb ni = some c →
       ∃ c' : FStmt P ι nb ni,
@@ -1187,6 +1202,7 @@ private theorem compile_substOracle_cooImpl (pattern : List (ℕ × ℕ)) (s : S
     refine ⟨FStmt.named name args' cb, ?_, fun ρB σ M hM => ?_⟩
     · simp [Stmt.subst, Stmt.compile, ha, hcb]
     · simp [Stmt.subst, FStmt.toStmt, hcb' ρB σ M hM]
+  | kcall o p dims ins outs => exact fun hni c h => compile_substOracle_kcall pattern hni h
 
 /-- The sparse family compiles, for every pattern: Hutch++ with its oracle calls served by
 `NLAlib.Computation.cooImpl`, compiled at symbolic sizes, is some first-order program, and that

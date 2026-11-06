@@ -21,7 +21,8 @@ failure (an operation outside its domain, an uninitialised read, an index out of
 mismatch, an invalid or aliased oracle call, running out of fuel). The interpretation holds the
 value semantics of the scalar operations (`NLAlib.Computation.ScalarSem`), the charge of each
 operation kind, the random tape of each distribution, the oracles, the read-only data and its
-size, and the width in bits of a cell of each tag. The state holds the store
+size, the width in bits of a cell of each tag, and the black-box kernels and their block shapes.
+The state holds the store
 (`NLAlib.Computation.Store`, a stack of tagged buffers of possibly uninitialised cells), the tape
 positions, the counts, and the current and peak memory in cells per tag and in bits.
 
@@ -37,6 +38,8 @@ of the access models rest on (`docs/design/Computation.md`, "Guarantees"). Desig
   interpretation.
 * `NLAlib.Computation.St`: the state; `NLAlib.Computation.St.usage`: its tape positions, counts
   and memory.
+* `NLAlib.Computation.Interp.kcallStore`: a black-box kernel call on contiguous blocks;
+  `NLAlib.Computation.Interp.withKernel`: an interpretation with one kernel replaced.
 * `NLAlib.Computation.exec`: the run.
 * `NLAlib.Computation.Stmt.StraightLine`: no `ite` and no `whileFuel`.
 
@@ -66,8 +69,9 @@ namespace NLAlib.Computation
 /-! ### Counts and semantics -/
 
 /-- The kinds of operations a run counts: binary and unary operations, literals, comparisons,
-copies and conversions per tag, draws per tag and distribution, read-only reads per tag, and the
-loads and matrix-vector products of each oracle per tag. -/
+copies and conversions per tag, draws per tag and distribution, read-only reads per tag, the
+loads and matrix-vector products of each oracle per tag, and the calls of each kernel per tag and
+dimensions. -/
 inductive OpKind (P ι : Type) where
   /-- A binary operation at a tag. -/
   | bin (p : P) (b : BinOp)
@@ -89,6 +93,10 @@ inductive OpKind (P ι : Type) where
   | load (p : P) (o : ι)
   /-- One matrix-vector product of an oracle call at a tag. -/
   | matvec (p : P) (o : ι)
+  /-- One call of kernel `o` at a tag, at the dimensions `dims`: calls of different dimensions
+  are different kinds, so a weighted total (flops) is `Finsupp.weight` of a function of the
+  dimensions. -/
+  | kcall (p : P) (o : ι) (dims : List ℕ)
 
 /-- Counts of operations: finitely supported functions on the kinds. A weighted total (flops, bit
 operations) is Mathlib's `Finsupp.weight`. -/
@@ -172,8 +180,9 @@ structure St (P K C : Type) where
   peakW : ℕ
 
 /-- An interpretation: the value semantics, the charge of each kind, the tapes, the oracles
-(partial: `none` marks an invalid query), their heights, the read-only data, its size per tag, and
-the width in bits of a cell of each tag. -/
+(partial: `none` marks an invalid query), their heights, the read-only data, its size per tag, the
+width in bits of a cell of each tag, and the black-box kernels with their block shapes (by default
+none: every kernel call fails). -/
 structure Interp (P ι K C : Type) where
   /-- The value semantics. -/
   sem : ScalarSem P K
@@ -191,6 +200,12 @@ structure Interp (P ι K C : Type) where
   romSize : P → ℕ
   /-- Bits per cell at each tag (for memory in bits). -/
   width : P → ℕ
+  /-- The kernels: at the dimensions, the input blocks to the output blocks (partial: `none`
+  marks an invalid call). -/
+  kernel : ι → List ℕ → List (Array K) → Option (List (Array K)) := fun _ _ _ => none
+  /-- The shape of each kernel at the dimensions: the lengths of its input blocks and of its
+  output blocks. -/
+  kshape : ι → List ℕ → List ℕ × List ℕ := fun _ _ => ([], [])
 
 section Exec
 
@@ -226,6 +241,39 @@ def Instr.run (sem : ScalarSem P K) (tape : Dist → ℕ → K) (s : Store P K) 
       (sem.convert p q a).bind fun v =>
         (s.write q dst.buf dst.idx.eval v).map fun s' => (s', pos)
 
+/-- Two blocks `(handle, offset, length)` are disjoint: they lie in different buffers or their
+ranges of cells do not overlap. -/
+def blockDisjoint (x y : ℕ × ℕ × ℕ) : Bool :=
+  x.1 != y.1 || decide (x.2.1 + x.2.2 ≤ y.2.1) || decide (y.2.1 + y.2.2 ≤ x.2.1)
+
+/-- The blocks of the operands `(handle, offset)` of a kernel call with the lengths `lens`. -/
+def kcallBlocks (bs : List (ℕ × ℕ)) (lens : List ℕ) : List (ℕ × ℕ × ℕ) :=
+  List.zipWith (fun b l => (b.1, b.2, l)) bs lens
+
+/-- **A kernel call on the store**: kernel `o` of `I` at the dimensions `ds` reads the input
+blocks at the operands `ins` and writes its output blocks at the operands `outs`, each operand a
+`(handle, offset)` and each block as long as the shape `I.kshape o ds` says, all at tag `p`. It
+fails if the numbers of operands are not those of the shape, if two output blocks overlap or an
+output block overlaps an input block (an aliased call), if a read or a write fails, if the kernel
+fails, or if it returns blocks of other lengths. -/
+def Interp.kcallStore (I : Interp P ι K C) (o : ι) (p : P) (ds : List ℕ)
+    (ins outs : List (ℕ × ℕ)) (s : Store P K) : Option (Store P K) :=
+  if ins.length = (I.kshape o ds).1.length ∧ outs.length = (I.kshape o ds).2.length ∧
+      (kcallBlocks outs (I.kshape o ds).2).Pairwise (fun x y => blockDisjoint x y = true) ∧
+      ∀ x ∈ kcallBlocks outs (I.kshape o ds).2, ∀ y ∈ kcallBlocks ins (I.kshape o ds).1,
+        blockDisjoint x y = true then
+    (s.readBlocks p (kcallBlocks ins (I.kshape o ds).1)).bind fun xs =>
+      (I.kernel o ds xs).bind fun ys => s.writeBlocks p (kcallBlocks outs (I.kshape o ds).2) ys
+  else none
+
+omit [DecidableEq P] in
+/-- The interpretation `I` with kernel `o` replaced by `k`, of block shape `sh`; every other field
+of `I` and every other kernel kept. -/
+def Interp.withKernel [DecidableEq ι] (I : Interp P ι K C) (o : ι)
+    (k : List ℕ → List (Array K) → Option (List (Array K))) (sh : List ℕ → List ℕ × List ℕ) :
+    Interp P ι K C :=
+  { I with kernel := Function.update I.kernel o k, kshape := Function.update I.kshape o sh }
+
 variable [AddMonoid C] (I : Interp P ι K C)
 
 /-- One comparison: the outcome and the charged state. -/
@@ -238,7 +286,8 @@ uninitialised cells, raises the current and peak memory, runs the body with the 
 handle (its position in the stack) and pops the buffer. An oracle call reads the source block,
 charges one load and one matrix-vector product per column, and writes the product; it fails if
 the source and destination blocks overlap (an aliased call, which no implementation with bounded
-scratch can serve). -/
+scratch can serve). A kernel call runs `NLAlib.Computation.Interp.kcallStore` and charges one call
+of its kind at its dimensions. -/
 def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
   | .skip, st => some st
   | .seq s t, st => (exec s st).bind (exec t)
@@ -278,6 +327,10 @@ def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
   | .ite p c x y t e, st => (cmpStep I p c x y st).bind fun r =>
       if r.1 then exec t r.2 else exec e r.2
   | .named _ _ body, st => exec body st
+  | .kcall o p dims ins outs, st =>
+      (I.kcallStore o p (dims.map IExp.eval) (ins.map fun x => (x.1, x.2.eval))
+        (outs.map fun x => (x.1, x.2.eval)) st.store).map fun s =>
+          { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map IExp.eval)) }
 
 /-! ### Run lemmas -/
 
@@ -508,6 +561,16 @@ theorem snd_of_cmpStep_eq_some {C : Type} [AddMonoid C] {I : Interp P ι K C} {p
   obtain ⟨_, -, _, -, _, -, rfl⟩ := h
   rfl
 
+/-- A kernel call keeps the shape of the store. -/
+theorem Interp.shape_of_kcallStore_eq_some {C : Type} {I : Interp P ι K C} {o : ι} {p : P}
+    {ds : List ℕ} {ins outs : List (ℕ × ℕ)} {s s' : Store P K}
+    (h : I.kcallStore o p ds ins outs s = some s') : s'.shape = s.shape := by
+  unfold Interp.kcallStore at h
+  split_ifs at h
+  obtain ⟨_, -, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨_, -, h⟩ := Option.bind_eq_some_iff.mp h
+  exact Store.shape_of_writeBlocks_eq_some h
+
 variable (I : Interp P ι K (OpCount P ι))
 
 /-- What a run keeps or raises (the proof of the invariants). -/
@@ -563,6 +626,14 @@ private theorem RunInv.foldlM {σ α : Type} (π : σ → St P K (OpCount P ι))
     obtain ⟨a', h1, h2⟩ := Option.bind_eq_some_iff.mp h
     exact (hf x List.mem_cons_self a a' h1).trans I
       (RunInv.foldlM π (fun y hy => hf y (List.mem_cons_of_mem x hy)) h2)
+
+private theorem runInv_kcall (o : ι) (p : P) (dims : List (IExp ℕ))
+    (ins outs : List (ℕ × IExp ℕ)) {st st' : St P K (OpCount P ι)}
+    (h : exec I (.kcall o p dims ins outs) st = some st') :
+    RunInv I st st' := by
+  rw [exec] at h
+  obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
+  exact RunInv.step I (Interp.shape_of_kcallStore_eq_some hs) fun hc => hc _
 
 private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : St P K (OpCount P ι)},
     exec I s st = some st' → RunInv I st st'
@@ -644,6 +715,7 @@ private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : S
   | .named _ _ body, st, st', h => by
     rw [exec_named] at h
     exact runInv_of_exec_eq_some body h
+  | .kcall o p dims ins outs, st, st', h => runInv_kcall I o p dims ins outs h
 
 variable {I} {s : Stmt P ι ℕ ℕ} {st st' : St P K (OpCount P ι)}
 
@@ -795,6 +867,7 @@ theorem exec_eq_of_exec_eq_some_of_cnt_load_le (hc : ∀ k, I.charge k = Finsupp
   | .named _ _ body, st, st', h, hl => by
     rw [exec_named] at h ⊢
     exact exec_eq_of_exec_eq_some_of_cnt_load_le hc O body h hl
+  | .kcall .., st, st', h, _ => h
 
 end Invariants
 
@@ -811,7 +884,8 @@ variable {P ι VB VI : Type}
 
 /-- A statement is **straight-line** if it has no conditional (`ite`) and no loop on a comparison
 (`whileFuel`), in any loop or allocation body: which instructions it runs is fixed by its syntax
-and its index values, not by the stored values. -/
+and its index values, not by the stored values. A kernel call is one charged step whose kind is
+fixed by its dimensions, so it is straight-line. -/
 def Stmt.StraightLine : Stmt P ι VB VI → Prop
   | .skip => True
   | .seq s t => s.StraightLine ∧ t.StraightLine
@@ -823,6 +897,7 @@ def Stmt.StraightLine : Stmt P ι VB VI → Prop
   | .whileFuel .. => False
   | .ite .. => False
   | .named _ _ body => body.StraightLine
+  | .kcall .. => True
 
 /-- The **usage** of a state: the tape positions, the counts, and the current and peak memory,
 in cells per tag and in bits; the state without its store. -/
@@ -853,6 +928,24 @@ private theorem foldlM_rel {α σ σ' : Type} (R : σ → σ' → Prop) {f : σ 
     obtain ⟨c, h1, h2⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨c', h1', h2'⟩ := Option.bind_eq_some_iff.mp h'
     exact foldlM_rel R hfg (hfg x _ _ _ _ hR h1 h1') h2 h2'
+
+/-- The kernel-call case of `NLAlib.Computation.usage_eq_of_exec_eq_some_of_straightLine`. -/
+private theorem shape_usage_eq_of_exec_kcall (I : Interp P ι K C) (I' : Interp P ι K' C)
+    (hc : I.charge = I'.charge) (o : ι) (p : P) (dims : List (IExp ℕ))
+    (ins outs : List (ℕ × IExp ℕ)) {st₀ st₁ : St P K C} {st₀' st₁' : St P K' C}
+    (hsh : st₀.store.shape = st₀'.store.shape) (hu : st₀.usage = st₀'.usage)
+    (h : exec I (.kcall o p dims ins outs) st₀ = some st₁)
+    (h' : exec I' (.kcall o p dims ins outs) st₀' = some st₁') :
+    st₁.store.shape = st₁'.store.shape ∧ st₁.usage = st₁'.usage := by
+  simp only [St.usage, Prod.mk.injEq] at hu
+  obtain ⟨hpos, hcnt, hcur, hpeak, hcurW, hpeakW⟩ := hu
+  rw [exec] at h h'
+  obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
+  obtain ⟨s', hs', rfl⟩ := Option.map_eq_some_iff.mp h'
+  refine ⟨(Interp.shape_of_kcallStore_eq_some hs).trans
+    (hsh.trans (Interp.shape_of_kcallStore_eq_some hs').symm), ?_⟩
+  simp only [St.usage, Prod.mk.injEq]
+  exact ⟨hpos, by rw [hcnt, hc], hcur, hpeak, hcurW, hpeakW⟩
 
 /-- The induction behind `NLAlib.Computation.usage_eq_of_exec_eq_some_of_straightLine`: the
 shape of the store and the usage are carried together. -/
@@ -934,6 +1027,8 @@ private theorem shape_usage_eq_of_exec (I : Interp P ι K C) (I' : Interp P ι K
   | .named _ _ body, hst, _, _, _, _, hsh, hu, h, h' => by
     rw [exec_named] at h h'
     exact shape_usage_eq_of_exec I I' hc hw body hst hsh hu h h'
+  | .kcall o p dims ins outs, _, _, _, _, _, hsh, hu, h, h' =>
+    shape_usage_eq_of_exec_kcall I I' hc o p dims ins outs hsh hu h h'
 
 /-- The costs of a straight-line run do not depend on the value semantics: for interpretations
 `I` and `I'` (over any carriers) with the same charge and the same widths, and a straight-line

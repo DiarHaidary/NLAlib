@@ -104,6 +104,10 @@ def Stmt.compile {P ι : Type} : Stmt P ι ℕ ℕ → (nb ni : ℕ) → Option 
         (← e.compile nb ni)
   | .named name args body, nb, ni =>
       return .named name (← args.mapM (Arg.scope? nb ni)) (← body.compile nb ni)
+  | .kcall o p dims ins outs, nb, ni =>
+      return .kcall o p (← dims.mapM (IExp.scope? ni))
+        (← ins.mapM fun x => return (← finScope? nb x.1, ← x.2.scope? ni))
+        (← outs.mapM fun x => return (← finScope? nb x.1, ← x.2.scope? ni))
 
 /-! ### Instantiation -/
 
@@ -128,6 +132,9 @@ def FStmt.toStmt {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb 
       .ite p c (x.subst ρB σ) (y.subst ρB σ) (t.toStmt ρB σ) (e.toStmt ρB σ)
   | _, _, .named name args body, ρB, σ =>
       .named name (args.map (Arg.subst ρB σ)) (body.toStmt ρB σ)
+  | _, _, .kcall o p dims ins outs, ρB, σ =>
+      .kcall o p (dims.map (IExp.subst σ)) (ins.map fun x => (ρB x.1, x.2.subst σ))
+        (outs.map fun x => (ρB x.1, x.2.subst σ))
 
 /-- The statement a program instantiates to at the sizes $N$ and $n$, as
 `NLAlib.Computation.ProgFamily.inst` builds it: declared buffer $j$ at handle $j$, the sizes

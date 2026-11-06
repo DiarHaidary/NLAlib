@@ -34,6 +34,7 @@ def opcode : OpKind Unit Unit → Nat
   | .lit _ => 14 | .cmp _ => 15 | .copy _ => 16
   | .draw _ .gaussian => 17 | .draw _ .rademacher => 18
   | .convert _ _ => 19 | .rom _ => 20 | .load _ _ => 21 | .matvec _ _ => 22
+  | .draw _ .uniform => 23 | .kcall _ _ _ => 24
 
 /-- All operation kinds, including those whose approved bound is zero. -/
 def kinds : List (OpKind Unit Unit) :=
@@ -41,10 +42,11 @@ def kinds : List (OpKind Unit Unit) :=
     .bin () .shl, .bin () .shr, .bin () .band, .bin () .bor, .bin () .bxor,
     .un () .neg, .un () .conj, .un () .re, .un () .sqrt, .un () .bnot,
     .lit (), .cmp (), .copy (), .draw () .gaussian, .draw () .rademacher,
-    .convert () (), .rom (), .load () (), .matvec () ()]
+    .convert () (), .rom (), .load () (), .matvec () (), .draw () .uniform]
 
-/-- The runtime bound check visits every possible operation kind. -/
-theorem mem_kinds (k : OpKind Unit Unit) : k ∈ kinds := by
+/-- The runtime bound check visits every possible operation kind except kernel calls (a kind per
+dimension list, so infinitely many; the smoke programs make none). -/
+theorem mem_kinds (k : OpKind Unit Unit) (hk : ∀ ds, k ≠ .kcall () () ds) : k ∈ kinds := by
   cases k with
   | bin p b => cases p; cases b <;> simp [kinds]
   | un p u => cases p; cases u <;> simp [kinds]
@@ -52,6 +54,7 @@ theorem mem_kinds (k : OpKind Unit Unit) : k ∈ kinds := by
   | convert p q => cases p; cases q; simp [kinds]
   | lit p | cmp p | copy p | rom p => cases p; simp [kinds]
   | load p o | matvec p o => cases p; cases o; simp [kinds]
+  | kcall p o ds => cases p; cases o; exact absurd rfl (hk ds)
 
 /-- The test instrumentation uses pointwise natural counts, without changing scalar arithmetic. -/
 abbrev Counts := OpKind Unit Unit → Nat
@@ -103,6 +106,7 @@ theorem cgBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | convert p q => cases p; cases q; simp [cgBudget, cgCount]
   | lit p | cmp p | copy p | rom p => cases p; simp [cgBudget, cgCount]
   | load p o | matvec p o => cases p; cases o; simp [cgBudget, cgCount]
+  | kcall p o ds => cases p; cases o; simp [cgBudget, cgCount]
 
 /-- The executable Lanczos bound is exactly the bound in the registered target. -/
 theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
@@ -115,6 +119,7 @@ theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | convert p q => cases p; cases q; simp [lanczosBudget, lanczosCount]
   | lit p | cmp p | copy p | rom p => cases p; simp [lanczosBudget, lanczosCount]
   | load p o | matvec p o => cases p; cases o; simp [lanczosBudget, lanczosCount]
+  | kcall p o ds => cases p; cases o; simp [lanczosBudget, lanczosCount]
 
 /-- Read a whole buffer without replacing absent or uninitialized cells by zero. -/
 def readBuffer (st : St Unit Float Counts) (buf : Nat) : Option (Array Float) := do
