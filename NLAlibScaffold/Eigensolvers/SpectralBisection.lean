@@ -295,6 +295,50 @@ theorem countable_range_eighNodeAt {F : Type*} {M : FloatMachine F ℝ ℂ}
     · simp [S, eighNodeAt, hy]
     · exact ⟨fun a' => s (b :: a'), by simp [eighNodeAt, hy]⟩
 
+/-- A map with countable range and measurable fibres has measurable preimages. -/
+private lemma measurableSet_preimage_of_countable_range_fibres {Ω' α : Type*}
+    {mΩ' : MeasurableSpace Ω'} {f : Ω' → α} (hc : (Set.range f).Countable)
+    (hf : ∀ z, MeasurableSet (f ⁻¹' {z})) (T : Set α) : MeasurableSet (f ⁻¹' T) := by
+  have : f ⁻¹' T = ⋃ z ∈ T ∩ Set.range f, f ⁻¹' {z} := by
+    ext ω; simp
+  rw [this]
+  exact MeasurableSet.biUnion (hc.mono Set.inter_subset_right) fun z _ => hf z
+
+-- the proof names the size bound of `eighStep` to restate it without the sample
+set_option linter.auxLemma false in
+/-- The child of a node depends on its sample only through the computed shift and the computed
+leading blocks. -/
+private lemma eighChild_eq_of_unif_eq_of_map_normal_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) {s s' : EighSample ℝ ℂ N}
+    (h1 : M.unif (M.div x.R (M.ofNat x.ℓ)) s.1 = M.unif (M.div x.R (M.ofNat x.ℓ)) s'.1)
+    (h2 : ∀ b, (leadingBlock x.k (s.2 b)).map M.normal =
+      (leadingBlock x.k (s'.2 b)).map M.normal) (b : Bool) :
+    eighChild M N signFuel R₀ β x s b = eighChild M N signFuel R₀ β x s' b := by
+  have hd : ∀ r P b, deflate M r P (leadingBlock x.k (s.2 b)) =
+      deflate M r P (leadingBlock x.k (s'.2 b)) := by
+    intro r P b
+    unfold deflate
+    rw [h2 b]
+  have hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s =
+      eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ s' := by
+    obtain ⟨v, G⟩ := s
+    obtain ⟨v', G'⟩ := s'
+    calc eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G)
+        = eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (v, G') := by
+          unfold eighStep
+          simp only [hd]
+      _ = _ := by
+          dsimp only at h1
+          unfold eighStep
+          by_cases hk : x.k ≤ 1
+          · simp only [hk, if_true]
+          · simp (config := {zeta := false}) only [hk, if_false]
+            -- the size bound of the split mentions the sample: restate it without it
+            rw [show eighStep._proof_1 M N signFuel β x.A x.R x.ℓ (v, G') = min_le_left _ _
+              from rfl, h1]
+  unfold eighChild
+  rw [hs]
+
 /-- **The node at a path is an event of the earlier samples**: if the samplers have measurable
 fibres and countable ranges and each sample $\zeta_b$ is measurable, then for every root $x$, path
 $a$ and possible node $y$, the set of outcomes at which the node at $a$ is $y$ is measurable. No
@@ -312,7 +356,74 @@ theorem measurableSet_eighNodeAt_eq {F : Type*} {M : FloatMachine F ℝ ℂ}
     {ζ : List Bool → Ω' → EighSample ℝ ℂ N} (hζ : ∀ b, Measurable (ζ b)) (a : List Bool)
     (x : EighNode F) (y : Option (EighNode F)) :
     MeasurableSet {ω | eighNodeAt M N signFuel R₀ β a x (fun b => ζ b ω) = y} := by
-  sorry
+  induction a generalizing x ζ with
+  | nil =>
+    simp only [eighNodeAt]
+    exact MeasurableSet.const _
+  | cons b a ih =>
+    -- the computed shift and leading blocks: countable range and measurable fibres
+    set sc := M.div x.R (M.ofNat x.ℓ)
+    let κ : EighSample ℝ ℂ N → F × (Bool → Matrix (Fin x.k) (Fin x.k) (F × F)) :=
+      fun s => (M.unif sc s.1, fun b => (leadingBlock x.k (s.2 b)).map M.normal)
+    have hκc : (Set.range fun ω => κ (ζ [] ω)).Countable := by
+      refine ((hunif sc).prod (Set.countable_pi fun _ => Set.countable_pi fun _ =>
+        Set.countable_pi fun _ => hnormal)).mono ?_
+      rintro _ ⟨ω, rfl⟩
+      exact ⟨⟨_, rfl⟩, fun b i j => ⟨_, rfl⟩⟩
+    have hκm : ∀ t, MeasurableSet ((fun ω => κ (ζ [] ω)) ⁻¹' {t}) := by
+      intro t
+      have : (fun ω => κ (ζ [] ω)) ⁻¹' {t} = {ω | M.unif sc (ζ [] ω).1 = t.1} ∩
+          ⋂ b, ⋂ i, ⋂ j,
+            {ω | M.normal (leadingBlock x.k ((ζ [] ω).2 b) i j) = t.2 b i j} := by
+        ext ω
+        simp only [κ, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff,
+          Set.mem_iInter, Set.mem_ofPred_eq, Prod.ext_iff, funext_iff (β := fun _ : Bool => _),
+          ← Matrix.ext_iff, Matrix.map_apply]
+      rw [this]
+      refine ((hunifm sc t.1).preimage (measurable_fst.comp (hζ []))).inter
+        (MeasurableSet.iInter fun b => MeasurableSet.iInter fun i =>
+          MeasurableSet.iInter fun j => ?_)
+      by_cases h : (i : ℕ) < N ∧ (j : ℕ) < N
+      · simp only [leadingBlock, Matrix.of_apply, dif_pos h]
+        have := hζ []
+        exact (hnormalm _).preimage (by fun_prop)
+      · simp only [leadingBlock, Matrix.of_apply, dif_neg h]
+        exact MeasurableSet.const _
+    -- the child: countable range and measurable fibres
+    set C := fun ω => eighChild M N signFuel R₀ β x (ζ [] ω) b
+    have hCm : ∀ z, MeasurableSet (C ⁻¹' {z}) := by
+      intro z
+      have : C ⁻¹' {z} = (fun ω => κ (ζ [] ω)) ⁻¹'
+          {t | ∃ s, κ s = t ∧ eighChild M N signFuel R₀ β x s b = z} := by
+        ext ω
+        refine ⟨fun h => ⟨ζ [] ω, rfl, h⟩, ?_⟩
+        rintro ⟨s, hs, hz⟩
+        simp only [Set.mem_preimage, Set.mem_singleton_iff, C, ← hz]
+        exact eighChild_eq_of_unif_eq_of_map_normal_eq x (congrArg Prod.fst hs).symm
+          (fun b' => congrFun (congrArg Prod.snd hs).symm b') b
+      rw [this]
+      exact measurableSet_preimage_of_countable_range_fibres hκc hκm _
+    have hCc : (Set.range C).Countable := by
+      refine (countable_range_eighNodeAt hunif hnormal N signFuel R₀ β [b] x).mono ?_
+      rintro _ ⟨ω, rfl⟩
+      exact ⟨fun _ => ζ [] ω, by simp [eighNodeAt, C]⟩
+    -- the node below the child
+    have : {ω | eighNodeAt M N signFuel R₀ β (b :: a) x (fun b => ζ b ω) = y} =
+        ⋃ z ∈ Set.range C, C ⁻¹' {z} ∩ {ω | z.bind (fun y' =>
+          eighNodeAt M N signFuel R₀ β a y' fun a' => ζ (b :: a') ω) = y} := by
+      ext ω
+      simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Set.mem_inter_iff, Set.mem_preimage,
+        Set.mem_singleton_iff, Set.mem_range, exists_prop]
+      constructor
+      · exact fun h => ⟨C ω, ⟨ω, rfl⟩, rfl, h⟩
+      · rintro ⟨z, -, hz, h⟩
+        rw [← hz] at h
+        exact h
+    rw [this]
+    refine MeasurableSet.biUnion hCc fun z _ => (hCm z).inter ?_
+    cases z with
+    | none => exact MeasurableSet.const (none = y)
+    | some y' => exact ih (fun a' => hζ _) y'
 
 /-- **The node at a path is independent of its own sample**: under the hypotheses of
 `NLAlib.measurableSet_eighNodeAt_eq` and independence of the samples
