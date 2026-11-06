@@ -73,7 +73,48 @@ theorem holds_of_exec_zcopy (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (m * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  have hrun : (zcopy (ι := ι) p (.const m) (.const n) X xo Y yo).run = .seq (.named "zcopy"
+      [.idx (.const m), .idx (.const n), .buf X, .idx xo, .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const m * .const n)) fun w =>
+        .seq (.instr (.copy p ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)) .skip) .skip)) .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq_skip] at h
+  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hXY
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+    (fun w s => s.store.shape = st.store.shape ∧ s.pos = st.pos ∧
+      (∀ k < w, s.store.read p Y (yo.eval + k) = st.store.read p X (xo.eval + k)) ∧
+      ∀ q b i, (b ≠ Y ∨ i < yo.eval ∨ yo.eval + w ≤ i) →
+        s.store.read q b i = st.store.read q b i)
+    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
+  · obtain ⟨hsh, hpos, hY, hfr⟩ := hR
+    simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hY hfr
+    refine ⟨fun i j t => ?_, fun q b i hb => hfr q b i ?_, hsh, hpos⟩
+    · have hj := Nat.mul_le_mul_left m (show j.1 + 1 ≤ n from j.2)
+      have ht : t.1 < 2 := t.2
+      rw [Nat.mul_succ] at hj
+      have hk : 2 * (i.1 + m * j.1) + t.1 < 2 * (m * n) := by omega
+      exact (hY _ hk).trans (hA i j t)
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hb
+      by_cases hbY : b = Y
+      · exact Or.inr (by omega)
+      · exact Or.inl hbY
+  rintro w hw s₁ s₂ ⟨hsh, hpos, hY, hfr⟩ hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
+  simp only [IExp.eval_add, IExp.eval_var] at hv hw'
+  simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hpos, fun k hk => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans (hfr q b i ?_)⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY k hk)
+    · refine (Store.read_of_write_eq_some hw').trans (hv.symm.trans (hfr _ _ _ ?_))
+      by_cases hb : X = Y
+      · exact Or.inr (by omega)
+      · exact Or.inl hb
+  · by_cases hbY : b = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hbY
+  · omega
 
 /-- **`zcopy` succeeds** from a state whose block at `X` holds a complex $m \times n$ matrix and
 whose buffer `Y` at tag `p` is long enough. No printed source.
