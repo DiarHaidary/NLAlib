@@ -249,7 +249,22 @@ theorem decodeMatrix_hermAvg_toFloatMachine_exactSem (p : P) {n : ℕ}
     (A : Matrix (Fin n) (Fin n) (ℝ × ℝ)) (c : ℝ) :
     decodeMatrix id (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif
       normal).hermAvg A c) = c⁻¹ • (decodeMatrix id A + (decodeMatrix id A)ᴴ) := by
-  sorry
+  by_cases hc : c = 0
+  · subst hc
+    have hd : (default : ℝ) = 0 := rfl
+    ext i j
+    simp [FloatMachine.hermAvg, FloatMachine.hermFrom, ScalarSem.toFloatMachine, exactSem,
+      decodeMatrix, decodeComplex, Complex.ext_iff, hd]
+  ext i j
+  simp only [FloatMachine.hermAvg, FloatMachine.hermFrom, decodeMatrix, Matrix.map_apply,
+    Matrix.of_apply, Matrix.smul_apply, Matrix.add_apply, Matrix.conjTranspose_apply]
+  rcases lt_trichotomy i j with h | rfl | h
+  · apply Complex.ext <;> simp [h, hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
+      div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
+  · apply Complex.ext <;> simp [hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
+      div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
+  · apply Complex.ext <;> simp [h, not_lt.2 h.le, hc, ScalarSem.toFloatMachine, exactSem,
+      decodeComplex, div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
 
 /-- **The exact conjugate transpose**: on exact real arithmetic, the stored conjugate transpose
 of a stored matrix with decoding $\mathbf{A}$ decodes to $\mathbf{A}^{\mathsf{H}}$. No printed
