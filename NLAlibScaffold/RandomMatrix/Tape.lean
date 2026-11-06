@@ -77,7 +77,15 @@ M, about 20 lines. -/
 theorem ae_forall_mem_Icc_of_hasLaw_tapeLaw {Ω : Type} {mΩ : MeasurableSpace Ω}
     {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ) :
     ∀ᵐ ω ∂μ, ∀ i, ξ ω .uniform i ∈ Set.Icc (-1 : ℝ) 1 := by
-  sorry
+  rw [ae_all_iff]
+  intro i
+  have hlaw : HasLaw (fun ω => ξ ω .uniform i) Dist.uniform.law μ :=
+    (measurePreserving_eval_infinitePi (fun _ : ℕ => Dist.uniform.law) i).fun_comp_hasLaw
+      (hasLaw_apply_of_hasLaw_tapeLaw hξ .uniform)
+  have hae : ∀ᵐ x ∂(μ.map fun ω => ξ ω .uniform i), x ∈ Set.Icc (-1 : ℝ) 1 := by
+    rw [hlaw.map_eq]
+    exact ae_cond_mem measurableSet_Icc
+  exact (ae_map_iff hlaw.aemeasurable measurableSet_Icc).mp hae
 
 /-- **Stored uniform draws lie in $[-1, 1]$**: under the tape-rounding contract
 `NLAlib.Computation.IsTapeRounding` for $\rho$, at tag `p`, and an ideal tape $\xi$ with the law of
