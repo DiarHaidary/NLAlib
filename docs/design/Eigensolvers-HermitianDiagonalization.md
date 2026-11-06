@@ -905,7 +905,8 @@ $\|\mathbf{G}\|_2 \le \Omega$; EB2/EB3's absolute floor; the global range of EB5
 provers found DF2 and EB1c false as written and proved them with the extra hypotheses of §3.12;
 no caller's statement changed. Unused hypotheses, kept until the maintainer decides: EV2
 `FloatMachine.IsAccurate.measure_not_isEighGoodSample_le` (`hμQ`, `hcN`, `hudefl`), C1
-`exists_floatMachine_isAccurate` (`hcN`), LB1 `exists_mul_card_le_specNorm_add_smul` (`hδ`); each
+`exists_floatMachine_isAccurate` (`hcN`), LB1 `exists_mul_card_le_specNorm_add_smul` (`hδ`), EB1c
+`FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le` (`hρ`); each
 proof references them with `have _ := …`.
 
 **Deviations from the paper** (§0, §4), all now theorems: G1 the iterates of SIGN and the
