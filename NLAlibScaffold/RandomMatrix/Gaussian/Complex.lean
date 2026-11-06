@@ -149,7 +149,81 @@ theorem hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix {r : Type*} [Fi
     [DecidableEq r] {G : Ω → Matrix n q ℂ} (hG : HasLaw G (complexGaussianMatrix n q) μ)
     {V : Matrix n r ℂ} (hV : HasOrthonormalCols V) :
     HasLaw (fun ω => Vᴴ * G ω) (complexGaussianMatrix r q) μ := by
-  sorry
+  classical
+  have hW : Vᴴ * Vᴴᴴ = 1 := by rw [Matrix.conjTranspose_conjTranspose]; exact hV
+  have hre : ∀ i j : r, ∑ k, ((Vᴴ i k).re * (Vᴴ j k).re + (Vᴴ i k).im * (Vᴴ j k).im) =
+      (if i = j then 1 else 0) := by
+    intro i j
+    have := congrArg Complex.re (congrFun (congrFun hW i) j)
+    simp only [Matrix.mul_apply, Complex.re_sum, Complex.mul_re, Matrix.one_apply,
+      Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im] at this
+    simp only [apply_ite Complex.re, Complex.one_re, Complex.zero_re, neg_mul, mul_neg, neg_neg,
+      sub_eq_add_neg] at this
+    simp only [Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im,
+      neg_mul, mul_neg, neg_neg, sub_eq_add_neg]
+    linarith [this]
+  have him : ∀ i j : r, ∑ k, ((Vᴴ i k).im * (Vᴴ j k).re - (Vᴴ i k).re * (Vᴴ j k).im) = 0 := by
+    intro i j
+    have := congrArg Complex.im (congrFun (congrFun hW i) j)
+    simp [Matrix.mul_apply, Complex.im_sum, Complex.mul_im, Matrix.one_apply,
+      Complex.star_def, Finset.sum_sub_distrib, apply_ite Complex.im] at this ⊢
+    rw [← this]
+    exact Finset.sum_congr rfl fun k _ => by ring
+  set U : Matrix (r ⊕ r) (n ⊕ n) ℝ :=
+    Matrix.fromBlocks (Vᴴ.map Complex.re) (-(Vᴴ.map Complex.im)) (Vᴴ.map Complex.im)
+      (Vᴴ.map Complex.re) with hUdef
+  have hU : HasOrthonormalCols Uᴴ := by
+    rw [hasOrthonormalCols_iff, Matrix.conjTranspose_conjTranspose]
+    have hre' := hre
+    have him' := him
+    simp only [Matrix.conjTranspose_apply, Complex.star_def, Complex.conj_re, Complex.conj_im,
+      Finset.sum_add_distrib, Finset.sum_sub_distrib, neg_mul, mul_neg, neg_mul_neg, neg_neg,
+      Finset.sum_neg_distrib, sub_neg_eq_add] at hre' him'
+    ext (i | i) (j | j) <;>
+      simp [hUdef, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.one_apply, Matrix.fromBlocks] <;>
+      linarith [hre' i j, him' i j, him' j i, hre' j i]
+  have hkey : ∀ X : Matrix (n ⊕ n) q ℝ,
+      Vᴴ * ((√2 : ℝ)⁻¹ • ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+        Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ)))) =
+      (√2 : ℝ)⁻¹ • (((U * X).submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+        Complex.I • ((U * X).submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ))) := by
+    intro X
+    have hc : ∀ z : ℂ, (starRingEnd ℂ) z = (z.re : ℂ) - (z.im : ℂ) * Complex.I := fun z => by
+      apply Complex.ext <;> simp
+    ext i j
+    simp only [hUdef, Matrix.mul_apply, Fintype.sum_sum_type, Matrix.submatrix_apply,
+      Matrix.add_apply, Matrix.smul_apply, Matrix.map_apply, Matrix.fromBlocks_apply₁₁,
+      Matrix.fromBlocks_apply₁₂, Matrix.fromBlocks_apply₂₁, Matrix.fromBlocks_apply₂₂,
+      Matrix.neg_apply, Matrix.conjTranspose_apply, id, Matrix.mul_apply, Complex.real_smul,
+      smul_eq_mul]
+    have key : ∀ (w x1 x2 : ℂ), w * ((((√2 : ℝ)⁻¹ : ℝ) : ℂ) * (x1 + Complex.I * x2)) =
+        ((((√2 : ℝ)⁻¹ : ℝ) : ℂ)) * ((w.re : ℂ) * x1 + -(w.im : ℂ) * x2 +
+          Complex.I * ((w.im : ℂ) * x1 + (w.re : ℂ) * x2)) := by
+      intro w x1 x2
+      linear_combination (-((((√2 : ℝ)⁻¹ : ℝ) : ℂ) * (x1 + Complex.I * x2))) * (Complex.re_add_im w)
+        + ((((√2 : ℝ)⁻¹ : ℝ) : ℂ) * (w.im : ℂ) * x2) * Complex.I_sq
+    simp only [Complex.ofReal_sum, Complex.ofReal_add, Complex.ofReal_neg, Complex.ofReal_mul,
+      Complex.ofReal_sub, Finset.mul_sum, mul_add, Finset.sum_add_distrib, Finset.sum_neg_distrib,
+      Complex.star_def, Complex.conj_re, Complex.conj_im]
+    simp only [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    have k := key ((starRingEnd ℂ) (V x i)) ((X (Sum.inl x) j : ℝ) : ℂ)
+      ((X (Sum.inr x) j : ℝ) : ℂ)
+    simp only [Complex.conj_re, Complex.conj_im, Complex.ofReal_neg] at k
+    linear_combination k
+  have hUlaw : (gaussianMatrix (n ⊕ n) q).map (fun X => U * X) = gaussianMatrix (r ⊕ r) q :=
+    (hasLaw_const_mul_of_hasLaw_gaussianMatrix
+      (HasLaw.id (μ := gaussianMatrix (n ⊕ n) q)) hU).map_eq
+  have hmeas : Measurable (fun Z : Matrix n q ℂ => Vᴴ * Z) :=
+    measurable_const.matrix_mul measurable_id
+  have hA : (fun ω => Vᴴ * G ω) = (fun Z : Matrix n q ℂ => Vᴴ * Z) ∘ G := rfl
+  refine ⟨(hmeas.comp_aemeasurable hG.aemeasurable), ?_⟩
+  rw [hA, ← AEMeasurable.map_map_of_aemeasurable hmeas.aemeasurable hG.aemeasurable, hG.map_eq,
+    complexGaussianMatrix_eq_map_gaussianMatrix, complexGaussianMatrix_eq_map_gaussianMatrix,
+    Measure.map_map hmeas (by fun_prop), ← hUlaw, Measure.map_map (by fun_prop) (by fun_prop)]
+  congr 1
+  funext X
+  exact hkey X
 
 /-- A submatrix of a standard complex Gaussian matrix on injective row and column maps is a
 standard complex Gaussian matrix.
