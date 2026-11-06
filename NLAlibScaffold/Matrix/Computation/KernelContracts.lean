@@ -130,7 +130,15 @@ against nonnegative right sides (`mul_nonneg`, `le_max_of_le_left`, `specNorm_no
 10 lines. -/
 theorem isQRErr_exactQR {u : ℝ} (hu : 0 ≤ u) (τ Ω : ℝ) {μ : ℕ → ℝ} (hμ : ∀ d, 0 ≤ μ d) :
     IsQRErr (fun x : 𝕜 => x) u τ Ω μ exactQR := by
-  sorry
+  intro m n A _
+  obtain ⟨hQ, hR, hA⟩ :=
+    (exists_hasOrthonormalCols_mul_isUpperTrapezoidal A).choose_spec.choose_spec
+  simp only [exactQR, Matrix.map_id']
+  refine ⟨hR, (exists_hasOrthonormalCols_mul_isUpperTrapezoidal A).choose, hQ, ?_, ?_⟩
+  · rw [sub_self, specNorm_zero]
+    exact mul_nonneg (hμ _) hu
+  · rw [sub_eq_zero.mpr hA, specNorm_zero]
+    exact mul_nonneg (mul_nonneg (hμ _) hu) (le_max_of_le_left (specNorm_nonneg _))
 
 variable {P ι C : Type}
 
