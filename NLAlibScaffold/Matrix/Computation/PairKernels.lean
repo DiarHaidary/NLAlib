@@ -1950,7 +1950,114 @@ theorem holds_of_exec_zidentity (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st 
       ((I.sem.toFloatMachine p toNat mmR qrR unif normal).identityMat n) ∧
       ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
         st'.store.read q b i = st.store.read q b i := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hrun : (zidentity (ι := ι) p (.const n) Y yo).run = .seq (.named "zidentity"
+      [.idx (.const n), .buf Y, .idx yo]
+      (.seq (.loop (2 * (.const n * .const n)) fun w =>
+          .seq (.instr (.lit p ⟨Y, yo + .var w⟩ 0)) .skip)
+        (.seq (.loop (.const n) fun i =>
+          .seq (.instr (.lit p ⟨Y, yo + zidx (.const n) (.var i) (.var i)⟩ 1)) .skip) .skip)))
+      .skip := rfl
+  rw [hrun, exec_seq_skip, exec_named, exec_seq, Option.bind_eq_some_iff] at h
+  obtain ⟨σ, h₁, h₂⟩ := h
+  rw [exec_seq_skip] at h₂
+  have hN : (2 * (IExp.const n * IExp.const n)).eval = 2 * (n * n) := by
+    simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat]
+  -- the zero loop
+  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+    (fun w s => (∀ k < w, s.store.read p Y (yo.eval + k) = some M.zero) ∧
+      ∀ q b i, (b ≠ Y ∨ i < yo.eval ∨ yo.eval + w ≤ i) →
+        s.store.read q b i = st.store.read q b i)
+    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h₁)
+  · rw [hN] at hR
+    obtain ⟨hZ, hfr⟩ := hR
+    -- the diagonal loop
+    let D : ℕ → ℕ → Prop := fun i k => ∃ d < i, k = 2 * (d + n * d)
+    refine (fun hR => ?_) (forall_of_exec_loop_eq_some I
+      (fun i s => (∀ k < 2 * (n * n), (D i k → s.store.read p Y (yo.eval + k) = some M.one) ∧
+          (¬ D i k → s.store.read p Y (yo.eval + k) = some M.zero)) ∧
+        ∀ q b j, (b ≠ Y ∨ j < yo.eval ∨ yo.eval + 2 * (n * n) ≤ j) →
+          s.store.read q b j = st.store.read q b j)
+      ⟨fun k hk => ⟨fun ⟨_, hd, _⟩ => absurd hd (Nat.not_lt_zero _), fun _ => hZ k hk⟩, hfr⟩
+      ?_ h₂)
+    · obtain ⟨hI, hfr'⟩ := hR
+      simp only [IExp.eval_const] at hI
+      refine ⟨fun a b t => ?_, fun q c k hk => hfr' q c k ?_⟩
+      · obtain ⟨t, ht⟩ := t
+        change t < 2 at ht
+        have hk : 2 * (a.1 + n * b.1) + t < 2 * (n * n) := by
+          have := zherm_lt a.2 b.2; omega
+        change st'.store.read p Y (yo.eval + (2 * (a.1 + n * b.1) + t)) = some (pairLayout.put _ _)
+        by_cases hab : a = b ∧ t = 0
+        · obtain ⟨rfl, rfl⟩ := hab
+          rw [(hI _ hk).1 ⟨a.1, a.2, rfl⟩]
+          simp only [FloatMachine.identityMat, Matrix.of_apply, if_true]
+          rfl
+        · rw [(hI _ hk).2 ?_]
+          · rcases t with _ | _ | t
+            · simp only [FloatMachine.identityMat, Matrix.of_apply]
+              split_ifs with he
+              · exact absurd ⟨he, rfl⟩ hab
+              · rfl
+            · simp only [FloatMachine.identityMat, Matrix.of_apply]
+              split_ifs <;> rfl
+            · omega
+          · rintro ⟨d, hd, he⟩
+            have ht0 : t = 0 := by omega
+            subst ht0
+            have := zmirror_index_inj a.2 hd (show a.1 + n * b.1 = d + n * d by omega)
+            exact hab ⟨Fin.ext (this.1.trans this.2.symm), rfl⟩
+      · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hk
+        by_cases hcY : c = Y
+        · exact Or.inr (by omega)
+        · exact Or.inl hcY
+    rintro i hi s₁ s₂ ⟨hI, hfr₁⟩ hex
+    simp only [IExp.eval_const] at hi
+    rw [exec_seq_skip, exec_instr] at hex
+    simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+    obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat] at hw'
+    have hik := zherm_lt hi hi
+    have hv' : M.one = v := by
+      have hv' : I.sem.lit p 1 = some v := by exact_mod_cast hv
+      simp only [M, ScalarSem.toFloatMachine, hv', Option.getD_some]
+    refine ⟨fun k hk => ?_, fun q b j hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans
+      (hfr₁ q b j hb)⟩
+    · by_cases hki : k = 2 * (i + n * i)
+      · subst hki
+        refine ⟨fun _ => (Store.read_of_write_eq_some hw').trans (congrArg some hv'.symm),
+          fun hD => absurd ⟨i, Nat.lt_succ_self _, rfl⟩ hD⟩
+      · rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))]
+        have hD : D (i + 1) k ↔ D i k := by
+          constructor
+          · rintro ⟨d, hd, he⟩
+            rcases Nat.lt_succ_iff_lt_or_eq.mp hd with hd | rfl
+            · exact ⟨d, hd, he⟩
+            · exact absurd he hki
+          · rintro ⟨d, hd, he⟩
+            exact ⟨d, Nat.lt_succ_of_lt hd, he⟩
+        rw [hD]
+        exact hI k hk
+    · rcases hb with hb | hb
+      · exact Or.inl hb
+      · exact Or.inr (by omega)
+  rintro w hw s₁ s₂ ⟨hY, hfr⟩ hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
+  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
+  simp only [IExp.eval_add, IExp.eval_var] at hw'
+  refine ⟨fun k hk => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' ?_).trans (hfr q b i ?_)⟩
+  · rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
+    · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY k hk)
+    · refine (Store.read_of_write_eq_some hw').trans ?_
+      have hv' : I.sem.lit p 0 = some v := by exact_mod_cast hv
+      simp only [M, ScalarSem.toFloatMachine, hv', Option.getD_some]
+  · by_cases hbY : b = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hbY
+  · omega
 
 /-- **`zadd` adds the parts**: a successful run of `NLAlib.Computation.zadd` from blocks at `X`,
 `Y` holding $\mathbf{A}$, $\mathbf{B}$, into a block at `Z` disjoint from both or equal to one of
