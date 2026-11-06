@@ -963,7 +963,69 @@ theorem holds_of_exec_zhermScale (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
       (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+  have hprog : (zhermScale (ι := ι) p (.const n) X xo c Y yo).run = .seq (.named "zhermScale"
+      [.idx (.const n), .buf X, .idx xo, .cell c, .buf Y, .idx yo]
+      (.seq (.loop (.const n) fun j => .seq (.loop (.var j) fun i =>
+        .seq (.instr (.bin p .div ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var j)⟩ c))
+          (.seq (.instr (.bin p .div ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩
+            ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩ c)) .skip)) .skip)
+      (.seq (.loop (.const n) fun i =>
+        .seq (.instr (.bin p .div ⟨Y, yo + zidx (.const n) (.var i) (.var i)⟩
+          ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩ c))
+          (.seq (.instr (.lit p ⟨Y, yo + zidx (.const n) (.var i) (.var i) + 1⟩ 0)) .skip))
+        (zmirror (ι := ι) p (.const n) Y yo).run))) .skip := rfl
+  rw [hprog, exec_seq_skip, exec_named] at h
+  let B : Fin n → Fin n → K × K := fun i j =>
+    if i < j then (M.div (A i j).1 cv, M.div (A i j).2 cv) else (M.div (A i i).1 cv, M.zero)
+  refine (fun hL => ?_) (zherm_loops (p := p) (Y := Y) (yo := yo.eval) (B := B)
+    (fun i j hij S s s₂ hR hex => ?_)
+    (fun i S s s₂ hR hex => ?_) h)
+  · obtain ⟨σ, hσ, h₃⟩ := hL
+    have hfin := zherm_finish (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
+    rwa [show M.hermScale A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
+      (zherm_hermFrom_ite M _ _).symm]
+  · obtain ⟨a1, c1, v1, s', hr1, hc1, hv1, hw1, hex⟩ := zherm_inv_bin hex
+    obtain ⟨a2, c2, v2, s'', hr2, hc2, hv2, hw2, hex⟩ := zherm_inv_bin hex
+    rw [exec_skip, Option.some_inj] at hex
+    subst hex
+    have fr := hR.2.2.1
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat] at hr1 hw1 hr2 hw2
+    rw [(zherm_readX hA hXY fr i j).1, Option.some_inj] at hr1
+    subst hr1
+    rw [fr _ _ _ hcY, hc, Option.some_inj] at hc1
+    subst hc1
+    have fr' := zherm_write_frame (k := 2 * (i + n * j)) hw1
+      (by have := zherm_lt i.2 j.2; omega) fr
+    rw [(zherm_readX hA hXY (σ := { s with store := s' }) fr' i j).2, Option.some_inj] at hr2
+    subst hr2
+    rw [fr' _ _ _ hcY, hc, Option.some_inj] at hc2
+    subst hc2
+    have hB1 : (B i j).1 = v1 := by
+      simp only [B, if_pos hij, M, ScalarSem.toFloatMachine, hv1, Option.getD_some]
+    have hB2 : (B i j).2 = v2 := by
+      simp only [B, if_pos hij, M, ScalarSem.toFloatMachine, hv2, Option.getD_some]
+    exact ZInv.step hR i j (by rw [hB1]; exact hw1) (by rw [hB2]; exact hw2) rfl rfl
+  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := zherm_inv_bin hex
+    obtain ⟨z, s'', hz, hw2, hex⟩ := zherm_inv_lit hex
+    rw [exec_skip, Option.some_inj] at hex
+    subst hex
+    have fr := hR.2.2.1
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+      IExp.eval_ofNat] at ha hw1 hw2
+    rw [(zherm_readX hA hXY fr i i).1, Option.some_inj] at ha
+    subst ha
+    rw [fr _ _ _ hcY, hc, Option.some_inj] at hc'
+    subst hc'
+    have hB1 : (B i i).1 = v := by
+      simp only [B, lt_irrefl, if_false, M, ScalarSem.toFloatMachine, hv, Option.getD_some]
+    have hB2 : (B i i).2 = z := by
+      simp only [B, lt_irrefl, if_false, M, ScalarSem.toFloatMachine]
+      rw [show ((0 : ℚ)) = (0 : ℚ) from rfl, hz, Option.getD_some]
+    exact ZInv.step hR i i (by rw [hB1]; exact hw1) (by rw [hB2]; exact hw2) rfl rfl
 
 omit [DecidableEq P] in
 private theorem zhermScale_disj {X Y xo yo N k : ℕ}
