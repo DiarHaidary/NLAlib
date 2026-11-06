@@ -181,7 +181,52 @@ theorem exists_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm p
     (hf : ∃ s, st.store.write p f.buf f.idx.eval default = some s) :
     ∃ st', exec I (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f).run st =
       some st' := by
-  sorry
+  have hw2 : (pairLayout (K := K)).width = 2 := rfl
+  simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hcells
+  obtain ⟨⟨honeW, honeV⟩, ⟨hloW, hloV⟩, ⟨hhiW, hhiV⟩, ⟨hfW, hfV⟩⟩ := hcells
+  have hd : ∀ {b b' : ℕ} (o o' l l' : ℕ), b ≠ b' → blockDisjoint (b, o, l) (b', o', l') = true :=
+    fun _ _ _ _ h => by simp [blockDisjoint, h]
+  -- the kernel call
+  have hrA := (EntryLayout.holds_iff_readBlock_eq_some pairLayout st.store p X xo.eval A).1 hA
+  obtain ⟨len, hWsh, hWlen⟩ := hW
+  obtain ⟨s₁, hs₁⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := st.store) (p := p)
+    (b := W) (off := 0) (xs := pairLayout.toArray (mmR (pairLayout.toMatrix n n
+      (pairLayout.toArray A)) (pairLayout.toMatrix n n (pairLayout.toArray A))))
+    fun i hi => ⟨len, hWsh, by
+      rw [EntryLayout.size_toArray, hw2] at hi; rw [Nat.mul_comm (n * n)] at hi; omega⟩
+  have hk : I.kcallStore mm p [n, n, n] [(X, xo.eval), (X, xo.eval)] [(W, 0)] st.store =
+      some s₁ := by
+    rw [hmm.kcallStore_eq p hrA hrA (hd _ _ _ _ hWX) (hd _ _ _ _ hWX), hs₁]
+  obtain ⟨hW₁, hfr₁⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p (a := (X, xo.eval))
+    (b := (X, xo.eval)) (c := (W, 0)) hA hA (hd _ _ _ _ hWX) (hd _ _ _ _ hWX) hk
+  change ∃ st', exec I (.seq (.kcall mm p [.const n, .const n, .const n] [(X, xo), (X, xo)]
+    [(W, 0)]) (.seq (.named _ _ _) (zboxTest (ι := ι) p (.const n) (.const n) V 0 lo hi f).run))
+    st = some st'
+  rw [exec_seq, exec_kcall]
+  erw [hk]
+  rw [Option.map_some, Option.bind_some, exec_seq]
+  set st₁ : St P K C := { st with store := s₁, cnt := _ }
+  have hsh₁ : st₁.store.shape = st.store.shape := Store.shape_of_writeBlock_eq_some hs₁
+  -- the shift
+  obtain ⟨st₂, h₂⟩ := exists_exec_zhermShift (I := I) (ι := ι) p n (X := W) (xo := 0) (c := one)
+    (Y := V) (yo := 0) (st := st₁) hW₁ ((hfr₁ _ _ _ (hd _ _ _ _ honeW)).trans hone)
+    (hd _ _ _ _ hWV.symm) (hd _ _ _ _ honeV) hsem
+    (by rw [hsh₁, IExp.eval_zero]; simpa only [zero_add] using hV)
+  obtain ⟨hV₂, hfr₂, hsh₂, -⟩ := holds_of_exec_zhermShift (toNat := fun _ => 0) (mmR := mmR)
+    (qrR := fun {_ _} B => (fun _ _ => default, B)) (unif := fun k (_ : Unit) => k)
+    (normal := fun (_ : Unit) => default) p n hW₁ ((hfr₁ _ _ _ (hd _ _ _ _ honeW)).trans hone)
+    (hd _ _ _ _ hWV.symm) (hd _ _ _ _ honeV) h₂
+  change exec I (.seq (.named _ _ _) .skip) st₁ = some st₂ at h₂
+  rw [exec_seq_skip] at h₂
+  rw [h₂, Option.bind_some]
+  -- the test
+  have hrd : ∀ c : Cell ℕ ℕ, c.buf ≠ W → c.buf ≠ V →
+      st₂.store.read p c.buf c.idx.eval = st.store.read p c.buf c.idx.eval := fun c h₁ h₂ =>
+    (hfr₂ _ _ _ (hd _ _ _ _ h₂)).trans (hfr₁ _ _ _ (hd _ _ _ _ h₁))
+  obtain ⟨sf, hsf⟩ := hf
+  exact exists_exec_zboxTest p n n (X := V) (xo := 0) hV₂ ((hrd lo hloW hloV).trans hlo)
+    ((hrd hi hhiW hhiV).trans hhi) (hd _ _ _ _ hfV) hflo hfhi hsem
+    (Store.exists_write_eq_some_of_shape_eq (hsh₂.trans hsh₁) hsf default)
 
 /-- A literal-index instruction writes the machine's value of its index and changes no other
 cell, the shape or the tape positions. No printed source. -/
