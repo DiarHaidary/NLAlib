@@ -127,7 +127,8 @@ private theorem mulVec_sub_smul_eq {E : Matrix (Fin n) (Fin n) ℝ}
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and
 $\tau \le 1$, $\theta_i \le \lambda_i(\mathbf{H}) + e$ for $i < k$, with $\theta_i$ the
 eigenvalues of $\mathbf{T}_k$ and $e$ = `NLAlib.LanczosReorthRun.backwardRadius`.
-[HornJohnson2013, Corollary 4.3.37] for the exact case. -/
+[HornJohnson2013, Corollary 4.3.37] for the exact case.
+Result: lanczos-reorth-interlacing -/
 theorem eigenvalue_tridiagonal_le_add (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {i : ℕ} (hi : i < k) :
@@ -146,7 +147,8 @@ theorem eigenvalue_tridiagonal_le_add (hη : L.η₀ ≤ 1 / 100)
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and
 $\tau \le 1$, $\lambda_{i + n - k}(\mathbf{H}) - e \le \theta_i$ for $i < k$ (and $k \le n$ by
 `NLAlib.LanczosReorthRun.succ_le_card`), with $e$ = `NLAlib.LanczosReorthRun.backwardRadius`.
-[HornJohnson2013, Corollary 4.3.37] for the exact case. -/
+[HornJohnson2013, Corollary 4.3.37] for the exact case.
+Result: lanczos-reorth-interlacing -/
 theorem eigenvalue_sub_le_eigenvalue_tridiagonal (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {i : ℕ} (hi : i < k) :
@@ -171,7 +173,8 @@ $\beta_k\lvert\mathbf{e}_{k-1}^{\mathsf{T}}\mathbf{y}_i\rvert < (g - 2e)/\sqrt r
 eigenvalues in $(a - g, b + g)$. With $[a, b]$ a window around a simple isolated eigenvalue this
 forbids two converged copies; the residual condition cannot be dropped
 (`docs/design/Krylov-LanczosReorth.md` §3.2, counterexample $\operatorname{diag}(1,0,-1)$).
-The phenomenon: [Paige1971, §9.2], [Parlett1998, Ch. 13]; this statement: no printed source. -/
+The phenomenon: [Paige1971, §9.2], [Parlett1998, Ch. 13]; this statement: no printed source.
+Result: lanczos-reorth-ritz-value-count -/
 theorem card_le_card_eigenvalue_mem (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {r : ℕ} {Y : Matrix (Fin k) (Fin r) ℝ}
@@ -289,7 +292,8 @@ $\tau \le 1$, some symmetric $\mathbf{E}$ with $\|\mathbf{E}\|_{\mathsf F} \le e
 `Matrix.IsHermitian.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le` holds for
 $(\mathbf{H} + \mathbf{E}, \mathbf{u}_1)$, $\mathbf{u}_1$ the first column of the polar factor of
 $\mathbf{V}_{k+1}$, with $\mathbf{T}_k$ in place of the compression. The tangent is that of
-$\mathbf{H} + \mathbf{E}$. [Saad2011, Theorem 6.4] for the exact bound. -/
+$\mathbf{H} + \mathbf{E}$. [Saad2011, Theorem 6.4] for the exact bound.
+Result: lanczos-reorth-kaniel-paige-saad -/
 theorem exists_backward_kaniel_paige_saad (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
@@ -382,7 +386,8 @@ $$\|\mathbf{H}' - \mathbf{H}\|_{\mathsf F} \le e + 3\|\mathbf{H}\|_2\,
 \mathbf{b}^{\mathsf{T}}p(\mathbf{H}')\mathbf{b}$ for every polynomial $p$ of degree at most
 $2k - 1$ (the entry at `NLAlib.LanczosReorthRun.firstIndex`): the computed tridiagonal is the
 Gauss rule of the spectral measure of $(\mathbf{H}', \mathbf{b})$.
-[GolubMeurant2010, Theorem 6.6] (locator to verify). -/
+[GolubMeurant2010, Theorem 6.6] (locator to verify).
+Result: lanczos-reorth-gauss-quadrature -/
 theorem exists_pure_backward_gauss (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {b : Fin n → ℝ} (hb : b ≠ 0) {δb : ℝ}
@@ -437,7 +442,8 @@ $\mathbf{b}$ and, for every $1$-Lipschitz $f$,
 $\lvert\mathbf{b}^{\mathsf{T}}f(\mathbf{H}')\mathbf{b} -
 \mathbf{b}^{\mathsf{T}}f(\mathbf{H})\mathbf{b}\rvert \le
 \|\mathbf{b}\|^2\|\mathbf{H}' - \mathbf{H}\|_{\mathsf F}$, so the exact quadrature error theory
-for $(\mathbf{H}', \mathbf{b})$ transfers with that additive term. [Kittaneh1985, abstract]. -/
+for $(\mathbf{H}', \mathbf{b})$ transfers with that additive term. [Kittaneh1985, abstract].
+Result: lanczos-reorth-gauss-quadrature -/
 theorem exists_pure_backward_abs_quadForm_cfc_sub_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {b : Fin n → ℝ} (hb : b ≠ 0) {δb : ℝ}

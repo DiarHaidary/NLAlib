@@ -214,7 +214,8 @@ private lemma two_passes_orth_arith {η₀ c₁ s a b₁ b₂ t X : ℝ} (hη0 :
 (the second on $\mathbf{w}_1$) and coefficients summed with relative error $u$ meet
 `NLAlib.IsOrthErr` with $\varepsilon_1 = 2c_1$, $\varepsilon_2 = 3c_1$,
 $\varepsilon_3 = 2(\eta_0 + c_1)^2$, for $\eta_0 \le 1/100$, $c_1 \le 1/100$, $4u \le c_1$.
-[GiraudLangouRozloznikVandenEshof2005, Theorem 2]; [Parlett1998, §6.9]. -/
+[GiraudLangouRozloznikVandenEshof2005, Theorem 2]; [Parlett1998, §6.9].
+Result: gram-schmidt-cgs2-twice-is-enough -/
 theorem isOrthErr_of_two_passes {n j : ℕ} {V : Matrix (Fin n) (Fin j) ℝ}
     {w w₁ w₂ : Fin n → ℝ} {h₁ h₂ h : Fin j → ℝ} {η₀ c₁ u : ℝ} (hη : η₀ ≤ 1 / 100)
     (hc₁ : c₁ ≤ 1 / 100) (hu : 0 ≤ u) (hu₁ : 4 * u ≤ c₁)

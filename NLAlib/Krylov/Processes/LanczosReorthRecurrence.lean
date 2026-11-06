@@ -212,7 +212,8 @@ $\mathbf{A}$, every $\mathbf{b}$ and every $j$, the state of the reorthogonalize
 restricts to the Lanczos state, and its stored vectors are the Lanczos vectors
 $\mathbf{q}_0, \dots, \mathbf{q}_j$ (zero beyond $j$). No breakdown hypothesis: after breakdown
 every vector involved is zero. [Paige1970, §2, (2.1)–(2.7)]; [Parlett1998, §13.1] for the exact
-orthogonality. -/
+orthogonality.
+Result: lanczos-reorth-exact-arithmetic -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     (lanczosReorthState A b j).toLanczosState = lanczosState A b j ∧

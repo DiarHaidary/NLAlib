@@ -370,7 +370,8 @@ condition $\sqrt{3(k+1)}\,\mu \le \eta_0 \le 1/100$, for every $m \le k + 1$,
 $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$.
 [Paige1971, §6.1, (6.9)] for Lanczos with reorthogonalization;
 [GiraudLangouRozloznikVandenEshof2005,
-Theorem 2] for the CGS2 kernel constants. -/
+Theorem 2] for the CGS2 kernel constants.
+Result: lanczos-reorth-orthogonality -/
 theorem frobNorm_transpose_mul_self_sub_one_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) :
     ∀ m ≤ k + 1, frobNorm ((basisOf L.v m)ᵀ * basisOf L.v m - 1) ≤

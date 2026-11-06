@@ -317,13 +317,14 @@ private theorem exec_lanczosReorthLoop_exactSem {P ι : Type} [DecidableEq P]
   · obtain ⟨w, hw, rfl⟩ := hνl c hc
     rw [hw, ((hst (c + 1) (by omega)).2.2.2.2 (by omega))]
 
-/-- The exact run of the stored-matrix tree: under `NLAlib.Computation.storedInterp` (exact
+/-- **The exact run of the stored-matrix tree**: under `NLAlib.Computation.storedInterp` (exact
 arithmetic, the matrix as ROM, column-major), from the declared inputs, the compiled tree
 succeeds and its buffers hold $\mathbf{b}$, the basis `NLAlib.lanczosReorthMatrix`, the
 coefficients $\alpha_j$, $\beta_j$, the input norm, the last previous vector and the norms
 $\nu_{j+1}$ of `NLAlib.lanczosReorthState`, for every real matrix (no symmetry or breakdown
 premise). The output clause of the drafted target `StoredEntriesLanczosReorth`
-(design note §2.3). No printed source. -/
+(design note §2.3). No printed source.
+Result: lanczos-reorth-program -/
 theorem lanczosReorthProg.exec_storedInterp_compiled {P ι : Type} [DecidableEq P] (tag : P)
     (N q : ℕ) (b : Fin N → ℝ) (vals : ℕ → ℝ) (ξ : Dist → ℕ → ℝ) :
     ∃ out : St P ℝ (OpCount P ι),

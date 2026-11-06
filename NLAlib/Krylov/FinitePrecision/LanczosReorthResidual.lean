@@ -161,7 +161,8 @@ and $\tau \le 1$, with the discarded coefficients in the residual,
 $\|\mathbf{F}_k\|_{\mathsf F} \le 30(k+1)\,(\mu + \varepsilon +
 \varepsilon_2)\,\|\mathbf{H}\|_2$; the relation itself is `NLAlib.LanczosData.mul_basis`.
 [Paige1971, §6.1, (6.8)] for the reorthogonalized relation; [Paige1976, §2, (15)–(19)] for
-the rounding part. -/
+the rounding part.
+Result: lanczos-reorth-perturbed-relation -/
 theorem frobNorm_residual_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
@@ -234,7 +235,8 @@ private lemma specNorm_transpose_mul_vecMulVec_le (hη : L.η₀ ≤ 1 / 100)
 fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$
 and $\tau \le 1$, $\|\mathbf{V}_k^{\mathsf{T}}\mathbf{H}\mathbf{V}_k -
 \mathbf{T}_k\|_2 \le 50(k+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{H}\|_2$.
-[Simon1984b, Theorem 5] (semi-orthogonality suffices; locator from a secondary source). -/
+[Simon1984b, Theorem 5] (semi-orthogonality suffices; locator from a secondary source).
+Result: lanczos-reorth-perturbed-relation -/
 theorem specNorm_transpose_mul_mul_sub_tridiagonal_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
