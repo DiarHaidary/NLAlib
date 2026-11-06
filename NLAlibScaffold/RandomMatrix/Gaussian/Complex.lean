@@ -176,6 +176,49 @@ theorem measureReal_le_normSq_le_of_hasLaw_complexGaussian {z : Ω → ℂ}
       (measurableSet_le measurable_const (measurable_norm.pow_const 2)),
       complexGaussian_real_eq_integral, integral_tail_polar hs]
 
+/-- The squared Euclidean norm of a complex vector is the sum of those of its real and
+imaginary parts. -/
+private theorem norm_toLp_sq_eq_re_add_im' (v : n → ℂ) : ‖WithLp.toLp 2 v‖ ^ 2 =
+    ‖WithLp.toLp 2 fun j => (v j).re‖ ^ 2 + ‖WithLp.toLp 2 fun j => (v j).im‖ ^ 2 := by
+  rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_toLp_sq_eq_sum_sq,
+    EuclideanSpace.norm_toLp_sq_eq_sum_sq, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  simp only [Complex.sq_norm, Complex.normSq_apply]
+  ring
+
+/-- The complexification of a real matrix has spectral norm at most that of the matrix. -/
+private theorem specNorm_map_ofReal_le' (A : Matrix m n ℝ) :
+    specNorm (A.map fun x : ℝ => (x : ℂ)) ≤ specNorm A := by
+  refine (specNorm_le_iff (specNorm_nonneg A)).2 fun x => ?_
+  have hv : ∀ i, ((A.map fun r : ℝ => (r : ℂ)) *ᵥ x) i =
+      ((A *ᵥ fun j => (x j).re) i : ℂ) + ((A *ᵥ fun j => (x j).im) i : ℂ) * Complex.I := by
+    intro i
+    apply Complex.ext <;> simp [Matrix.mulVec, dotProduct, Complex.re_sum, Complex.im_sum]
+  have hre := norm_toLp_mulVec_le A fun j => (x j).re
+  have him := norm_toLp_mulVec_le A fun j => (x j).im
+  rw [← sq_le_sq₀ (norm_nonneg _) (by positivity), mul_pow, norm_toLp_sq_eq_re_add_im',
+    norm_toLp_sq_eq_re_add_im' x]
+  simp only [hv, Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, Complex.I_im,
+    Complex.ofReal_im, Complex.add_im, Complex.mul_im, mul_zero, sub_zero, add_zero,
+    mul_one, zero_add]
+  rw [mul_add]
+  gcongr
+  · exact (sq_le_sq₀ (norm_nonneg _) (by positivity)).2 hre |>.trans_eq (mul_pow _ _ _)
+  · exact (sq_le_sq₀ (norm_nonneg _) (by positivity)).2 him |>.trans_eq (mul_pow _ _ _)
+
+/-- The complex matrix $\mathbf{X}_1 + i\mathbf{X}_2$ built from the two halves of a real
+$2m \times n$ matrix $\mathbf{X}$ has the Frobenius norm of $\mathbf{X}$. -/
+private theorem frobNorm_map_ofReal_add_I_smul (X : Matrix (m ⊕ m) n ℝ) :
+    frobNorm ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+      Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ))) = frobNorm X := by
+  rw [← sq_eq_sq₀ (frobNorm_nonneg _) (frobNorm_nonneg _), frobNorm_sq_eq_sum,
+    frobNorm_sq_eq_sum_sq, Fintype.sum_sum_type, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  simp [Complex.sq_norm, Complex.normSq_apply]
+  ring
+
 /-- **Norm tail of a complex Gaussian matrix with the full exponent** (CG4'): for
 $\mathbf{G}$ an $m \times n$ standard complex Gaussian matrix and $t \ge 0$,
 $\mathbb{P}[\sqrt2(\sqrt m + \sqrt n) + t \le \|\mathbf{G}\|_2] \le e^{-t^2}$. Compared with
@@ -192,7 +235,62 @@ theorem measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix {G : Ω �
     (hG : HasLaw G (complexGaussianMatrix m n) μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ)) + t ≤ specNorm (G ω)} ≤
       Real.exp (-t ^ 2) := by
-  sorry
+  set φ : Matrix (m ⊕ m) n ℝ → Matrix m n ℂ := fun X => (√2 : ℝ)⁻¹ •
+      ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+        Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ))) with hφ
+  have hf : Measurable φ := Continuous.measurable (by fun_prop)
+  have hS : MeasurableSet {A : Matrix m n ℂ |
+      √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ)) + t ≤ specNorm A} :=
+    measurableSet_le measurable_const continuous_specNorm.measurable
+  rw [hG.measureReal_eq hS, complexGaussianMatrix_eq_map_gaussianMatrix,
+    map_measureReal_apply hf hS]
+  have hX := HasLaw.id (μ := gaussianMatrix (m ⊕ m) n)
+  have hlip : ∀ A B, |specNorm (φ A) - specNorm (φ B)| ≤
+      ((‖(√2 : ℝ)⁻¹‖₊ : ℝ)) * frobNorm (A - B) := by
+    intro A B
+    have hsub : φ A - φ B = φ (A - B) := by
+      ext i j
+      simp only [hφ, Matrix.sub_apply, Matrix.smul_apply, Matrix.add_apply, Matrix.map_apply,
+        Matrix.submatrix_apply, id, Complex.ofReal_sub, Complex.real_smul, smul_eq_mul]
+      ring
+    refine (abs_specNorm_sub_specNorm_le _ _).trans ?_
+    rw [hsub, hφ, specNorm_real_smul, coe_nnnorm, Real.norm_eq_abs]
+    gcongr
+    exact (specNorm_le_frobNorm _).trans (frobNorm_map_ofReal_add_I_smul _).le
+  have hmean : ∫ X, specNorm (φ X) ∂(gaussianMatrix (m ⊕ m) n) ≤
+      √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ)) := by
+    have h₁ : HasLaw (fun X : Matrix (m ⊕ m) n ℝ => X.submatrix Sum.inl id) _ _ :=
+      hasLaw_submatrix_of_hasLaw_gaussianMatrix hX Sum.inl_injective Function.injective_id
+    have h₂ : HasLaw (fun X : Matrix (m ⊕ m) n ℝ => X.submatrix Sum.inr id) _ _ :=
+      hasLaw_submatrix_of_hasLaw_gaussianMatrix hX Sum.inr_injective Function.injective_id
+    have hle : ∀ X : Matrix (m ⊕ m) n ℝ, specNorm (φ X) ≤
+        (√2)⁻¹ * (specNorm (X.submatrix Sum.inl id) + specNorm (X.submatrix Sum.inr id)) := by
+      intro X
+      rw [hφ, specNorm_real_smul, abs_of_pos (by positivity)]
+      gcongr
+      refine (specNorm_add_le _ _).trans (add_le_add (specNorm_map_ofReal_le' _) ?_)
+      rw [specNorm_smul, Complex.norm_I, one_mul]
+      exact specNorm_map_ofReal_le' _
+    calc ∫ X, specNorm (φ X) ∂(gaussianMatrix (m ⊕ m) n)
+        ≤ ∫ X, (√2)⁻¹ * (specNorm (X.submatrix Sum.inl id) +
+            specNorm (X.submatrix Sum.inr id)) ∂(gaussianMatrix (m ⊕ m) n) :=
+          integral_mono (integrable_comp_of_hasLaw_gaussianMatrix hX hlip)
+            (((integrable_specNorm_of_hasLaw_gaussianMatrix h₁).add
+              (integrable_specNorm_of_hasLaw_gaussianMatrix h₂)).const_mul _) hle
+      _ ≤ (√2)⁻¹ * (2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ))) := by
+          rw [integral_const_mul, integral_add (integrable_specNorm_of_hasLaw_gaussianMatrix h₁)
+            (integrable_specNorm_of_hasLaw_gaussianMatrix h₂)]
+          gcongr
+          linarith [integral_specNorm_le_of_hasLaw_gaussianMatrix h₁,
+            integral_specNorm_le_of_hasLaw_gaussianMatrix h₂]
+      _ = √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ)) := by
+          field_simp; rw [Real.sq_sqrt zero_le_two]
+  have h := measureReal_ge_integral_add_le_of_hasLaw_gaussianMatrix hX hlip ht
+  rw [coe_nnnorm, Real.norm_of_nonneg (by positivity), inv_pow, Real.sq_sqrt zero_le_two,
+    mul_inv_cancel₀ two_ne_zero, div_one] at h
+  refine (measureReal_mono fun X hX => ?_).trans h
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq, id] at hX ⊢
+  linarith
 
 /-- **Smallest singular value of a square complex Gaussian matrix, linear in the size** (CG6'):
 for $\mathbf{G}$ an $r \times r$ standard complex Gaussian matrix and $x \ge 0$,
