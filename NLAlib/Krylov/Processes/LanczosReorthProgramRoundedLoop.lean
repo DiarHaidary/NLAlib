@@ -77,7 +77,7 @@ $\lvert \|\mathbf{b}\| - s \rvert \le \gamma\|\mathbf{b}\|$ and
 $\lvert \|\mathbf{v}_1\|^2 - 1 \rvert \le \varepsilon$ with $u', \gamma \le \varepsilon \le 1/100$,
 then $\|\mathbf{b}/\|\mathbf{b}\| - \mathbf{v}_1\| \le 3\varepsilon$ for
 $\mathbf{b} \ne \mathbf{0}$. -/
-theorem norm_inv_norm_smul_sub_le {N : ℕ} (b v1 : Fin N → ℝ) {s uu γ ε : ℝ}
+private theorem norm_inv_norm_smul_sub_le {N : ℕ} (b v1 : Fin N → ℝ) {s uu γ ε : ℝ}
     (hb : b ≠ 0) (hres : ‖WithLp.toLp 2 (b - s • v1)‖ ≤ uu * ‖WithLp.toLp 2 b‖)
     (herr : |‖WithLp.toLp 2 b‖ - s| ≤ γ * ‖WithLp.toLp 2 b‖)
     (hunit : |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤ ε) (hu : uu ≤ ε) (hγ : γ ≤ ε)
