@@ -59,7 +59,31 @@ entry of `Array.ofFn` there (`Array.getD_eq_getD_getElem?`, `Array.getElem?_ofFn
 theorem EntryLayout.toMatrix_toArray [Inhabited K] (L : EntryLayout K E)
     (hL : ∀ e, L.get (L.put e) = e) {l m : ℕ} (Y : Matrix (Fin l) (Fin m) E) :
     L.toMatrix l m (L.toArray Y) = Y := by
-  sorry
+  ext i j
+  simp only [EntryLayout.toMatrix, Matrix.of_apply]
+  convert hL (Y i j)
+  rename_i t
+  have hi : i + l * j + 1 ≤ m * l := by
+    have := i.isLt
+    have := j.isLt
+    nlinarith
+  have hlt : L.width * (i + l * j) + t < m * l * L.width := by
+    have h3 : L.width * (i + l * j + 1) ≤ L.width * (m * l) := Nat.mul_le_mul_left _ hi
+    have := t.isLt
+    nlinarith
+  have e1 : (finProdFinEquiv.symm ⟨L.width * (i + l * j) + t, hlt⟩ : Fin (m * l) × Fin L.width)
+      = (⟨i + l * j, by omega⟩, t) := by
+    rw [Equiv.symm_apply_eq]
+    apply Fin.ext
+    simp [finProdFinEquiv]
+    ring
+  have e2 : (finProdFinEquiv.symm (⟨i + l * j, by omega⟩ : Fin (m * l))
+      : Fin m × Fin l) = (j, i) := by
+    rw [Equiv.symm_apply_eq]
+    apply Fin.ext
+    simp [finProdFinEquiv]
+  simp only [EntryLayout.toArray, Array.getD_eq_getD_getElem?, Array.getElem?_ofFn, hlt, dif_pos,
+    e1, e2, Option.getD_some]
 
 /-- **The real layout reads back**: one word holds a real entry. No printed source.
 Proof: `rfl`. S, 1 line. -/
