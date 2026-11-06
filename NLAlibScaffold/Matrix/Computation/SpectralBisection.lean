@@ -1382,6 +1382,91 @@ theorem FloatMachine.IsAccurate.eighNodeAt_eq_some_params
   rw [zero_add] at r2 r4
   exact ⟨hlen, r1, r2, hlow y _ hlen r2 r4, r3, r5⟩
 
+/-- A split of `NLAlib.eighStep` has both parts nonempty. -/
+private lemma pos_and_lt_of_eighStep_eq_split_of_ne_none {F Su Sg : Type*} [Inhabited Sg]
+    (M : FloatMachine F Su Sg) {N signFuel : ℕ} {R₀ β : F} {k : ℕ}
+    {A : Matrix (Fin k) (Fin k) (F × F)} {R ε : F} {ℓ : ℕ} {s : EighSample Su Sg N} {kp : ℕ}
+    {h : kp ≤ k} {Qp : Matrix (Fin k) (Fin kp) (F × F)}
+    {Qm : Matrix (Fin k) (Fin (k - kp)) (F × F)} {Ap : Matrix (Fin kp) (Fin kp) (F × F)}
+    {Am : Matrix (Fin (k - kp)) (Fin (k - kp)) (F × F)} {σ : F}
+    (hst : eighStep M N signFuel R₀ β A R ε ℓ s = .split kp h Qp Qm Ap Am σ) :
+    0 < kp ∧ kp < k := by
+  unfold eighStep at hst
+  dsimp only at hst
+  split_ifs at hst with h1 h2 h3 h4
+  obtain ⟨rfl, -⟩ := EighStep.split.inj hst
+  omega
+
+/-- The nodes at one depth number at most $\max(k, 1)$. -/
+private lemma encard_eighNodeAt_length_eq_le {F Su Sg : Type*} [Inhabited Sg]
+    (M : FloatMachine F Su Sg) {N signFuel : ℕ} {R₀ β : F} (j : ℕ) :
+    ∀ (x : EighNode F) (s : List Bool → EighSample Su Sg N),
+    {a : List Bool | a.length = j ∧ eighNodeAt M N signFuel R₀ β a x s ≠ none}.encard ≤
+      (max x.k 1 : ℕ) := by
+  induction j with
+  | zero =>
+    intro x s
+    refine (Set.encard_le_encard (t := {[]}) fun a ha => ?_).trans ?_
+    · exact List.eq_nil_of_length_eq_zero ha.1
+    · rw [Set.encard_singleton]; exact_mod_cast le_max_right _ _
+  | succ j ih =>
+    intro x s
+    have hmem : ∀ a ∈ {a : List Bool | a.length = j + 1 ∧
+        eighNodeAt M N signFuel R₀ β a x s ≠ none},
+        ∃ b a', a = b :: a' ∧ ∃ y', eighChild M N signFuel R₀ β x (s []) b = some y' ∧
+          a' ∈ {a : List Bool | a.length = j ∧
+            eighNodeAt M N signFuel R₀ β a y' (fun a' => s (b :: a')) ≠ none} := by
+      rintro (_ | ⟨b, a'⟩) ⟨hlen, hy⟩
+      · simp at hlen
+      · obtain ⟨y, hy⟩ := Option.ne_none_iff_exists'.mp hy
+        simp only [eighNodeAt, Option.bind_eq_some_iff] at hy
+        obtain ⟨y', hy', hy⟩ := hy
+        exact ⟨b, a', rfl, y', hy', by simpa using hlen, by simp [hy]⟩
+    rcases hst : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (s []) with
+      ⟨U, d⟩ | ⟨b, A', σ⟩ | ⟨kp, hkp, Qp, Qm, Ap, Am, σ⟩
+    · refine le_of_eq_of_le (b := 0) (Set.encard_eq_zero.mpr ?_) bot_le
+      refine Set.eq_empty_of_forall_notMem fun a ha => ?_
+      obtain ⟨b, a', -, y', hy', -⟩ := hmem a ha
+      simp [eighChild, hst] at hy'
+    · set y' : EighNode F := ⟨x.k, A', (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      refine (Set.encard_le_encard (t := List.cons b '' {a : List Bool | a.length = j ∧
+            eighNodeAt M N signFuel R₀ β a y' (fun a' => s (b :: a')) ≠ none})
+          fun a ha => ?_).trans ?_
+      · obtain ⟨b', a', rfl, z, hz, ha'⟩ := hmem a ha
+        simp only [eighChild, hst] at hz
+        split_ifs at hz with hb
+        subst hb
+        simp only [Option.some.injEq] at hz
+        subst hz
+        exact ⟨a', ha', rfl⟩
+      · rw [(List.cons_injective).encard_image]
+        exact ih y' _
+    · obtain ⟨hkp0, hkpk⟩ := pos_and_lt_of_eighStep_eq_split_of_ne_none M hst
+      set yp : EighNode F := ⟨kp, Ap, (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      set ym : EighNode F := ⟨x.k - kp, Am, (eighNextParams M x.R x.ε x.ℓ).1,
+        (eighNextParams M x.R x.ε x.ℓ).2, x.ℓ + 1⟩
+      refine (Set.encard_le_encard (t := List.cons true '' {a : List Bool | a.length = j ∧
+            eighNodeAt M N signFuel R₀ β a yp (fun a' => s (true :: a')) ≠ none} ∪
+          List.cons false '' {a : List Bool | a.length = j ∧
+            eighNodeAt M N signFuel R₀ β a ym (fun a' => s (false :: a')) ≠ none})
+          fun a ha => ?_).trans ?_
+      · obtain ⟨b', a', rfl, z, hz, ha'⟩ := hmem a ha
+        simp only [eighChild, hst] at hz
+        cases b'
+        · simp only [Bool.false_eq_true, ↓reduceIte, Option.some.injEq] at hz
+          subst hz
+          exact Or.inr ⟨a', ha', rfl⟩
+        · simp only [↓reduceIte, Option.some.injEq] at hz
+          subst hz
+          exact Or.inl ⟨a', ha', rfl⟩
+      · refine (Set.encard_union_le _ _).trans ?_
+        rw [(List.cons_injective).encard_image, (List.cons_injective).encard_image]
+        refine (add_le_add (ih yp _) (ih ym _)).trans ?_
+        have hk : max yp.k 1 + max ym.k 1 ≤ max x.k 1 := by simp only [yp, ym]; omega
+        exact_mod_cast hk
+
 /-- **The recursion tree has at most $(k + 1)(\ell + 1)$ nodes**: under the hypotheses of
 `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`, the set of paths at which
 `NLAlib.eighNodeAt` has a node has at most $(k + 1)(\ell + 1)$ elements, $k$ the size of the root.
@@ -1401,7 +1486,31 @@ theorem FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le
     (A : Matrix (Fin k) (Fin k) (F × F)) (s : List Bool → EighSample ℝ ℂ N) :
     {a : List Bool | eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none}.encard ≤
       (k + 1) * (ℓ + 1) := by
-  sorry
+  have hU : ∀ n : ℕ, {a : List Bool | a.length < n ∧
+      eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none}.encard ≤ (n * max k 1 : ℕ) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      refine (Set.encard_le_encard (t := {a : List Bool | a.length < n ∧
+          eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none} ∪
+          {a : List Bool | a.length = n ∧
+          eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none}) fun a ha => ?_).trans ?_
+      · rcases Nat.lt_succ_iff_lt_or_eq.mp ha.1 with h | h
+        · exact Or.inl ⟨h, ha.2⟩
+        · exact Or.inr ⟨h, ha.2⟩
+      · refine (Set.encard_union_le _ _).trans ?_
+        refine (add_le_add ih (encard_eighNodeAt_length_eq_le M n ⟨k, A, R₀, ε, ℓ⟩ s)).trans ?_
+        rw [Nat.succ_mul]
+        exact_mod_cast le_rfl
+  refine (Set.encard_le_encard (t := {a : List Bool | a.length < ℓ + 1 ∧
+      eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s ≠ none}) fun a ha => ?_).trans
+    ((hU (ℓ + 1)).trans ?_)
+  · refine ⟨Nat.lt_succ_of_le (not_lt.mp fun hlt => ha ?_), ha⟩
+    exact hM.eighNodeAt_eq_none_of_lt_length hε hε₁ hR₀ hℓ hu hu₁ hτ₀ hτ hΩ A s hlt
+  · have hk : (ℓ + 1) * max k 1 ≤ (k + 1) * (ℓ + 1) := by
+      rw [mul_comm]; exact Nat.mul_le_mul_right _ (by omega)
+    exact_mod_cast hk
 
 /-- A split of `NLAlib.eighStep` has both parts nonempty. -/
 private lemma pos_and_lt_of_eighStep_eq_split {F Su Sg : Type*} [Inhabited Sg]
