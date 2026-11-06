@@ -161,7 +161,18 @@ theorem deflate_tapeNormal_eq_deflate_gaussianNormal (sem : ScalarSem P K) (p : 
         (tapeIndexMatrix n) =
       deflate (sem.toFloatMachine p toNat mmR qrR unif (sem.gaussianNormal p ρ)) r P₀
         (tapeComplexMatrix ξ n) := by
-  sorry
+  have hsq : (√2 : ℝ) ≠ 0 := by positivity
+  have hcancel : ∀ x : ℝ, √2 * (x / √2) = x := fun x => by field_simp
+  have hmat : (tapeIndexMatrix n).map
+      (sem.toFloatMachine p toNat mmR qrR unif (sem.tapeNormal p fun i => ρ (ξ i))).normal =
+      (tapeComplexMatrix ξ n).map
+      (sem.toFloatMachine p toNat mmR qrR unif (sem.gaussianNormal p ρ)).normal := by
+    ext i j <;>
+    simp only [Matrix.map_apply, tapeIndexMatrix, tapeComplexMatrix, Matrix.of_apply,
+      ScalarSem.toFloatMachine, ScalarSem.tapeNormal, ScalarSem.gaussianNormal, hcancel]
+  unfold deflate
+  rw [hmat]
+  rfl
 
 /-! ### The registered tree -/
 
