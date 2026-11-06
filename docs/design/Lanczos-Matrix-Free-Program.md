@@ -1,6 +1,6 @@
-# Matrix-free Lanczos program proposal
+# Matrix-free Lanczos program
 
-Proposed 2026-11-04; registration and library program definitions await user approval. The
+Approved and integrated 2026-11-04; rounded oracle execution completed 2026-11-05. The
 stored Lanczos program, compiled tree, targets and closed count formulas remain unchanged.
 
 ## Concrete program
@@ -84,3 +84,15 @@ The canonical resource analysis proves the approved operation counts, additional
 at the program tag (zero at other tags), and additional bits `(N+3)*width tag`, conditional only
 on actual successful execution and standard charges. Initial declared storage is added once;
 there is no ROM storage in the oracle model.
+
+## Shared rounded implementation, 2026-11-05
+
+`LanczosOracleProgramRounded.lean` proves actual compiled execution, all six declared decoded
+outputs, input norm/direction errors, the active `LanczosRun` and original static resources.
+Scalar roundoff u and oracle accuracy eta are separate contracts; a chosen allowance v >= u
+makes the common local run budget cover eta. No accumulated horizon is needed for completion.
+The zero-input/dimension/budget and terminal continuation cases remain covered. Dense and
+oracle products supply the same `IsMatvecRoutine` certificate to one Paige-step, normalization
+and prefix/loop proof; the prior dense backward statements are preserved. Every mathematical
+`LanczosRun` theorem also applies to the extracted oracle run.
+See [the common design](Krylov-Rounded-Oracles.md).

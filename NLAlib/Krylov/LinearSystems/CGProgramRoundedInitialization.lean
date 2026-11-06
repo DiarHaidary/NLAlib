@@ -27,7 +27,7 @@ open Computation Computation.Builder
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- The scalar contract supplies the actual zero, positive and negative flag words.
@@ -362,9 +362,9 @@ theorem exec_rounded_initial_pairing (I : Interp P ι K C) (tag : P)
 /-- The actual initial cache write turns the initialized words into the existing storage
 context. Matrix and right-hand-side inputs are the decodings of the retained raw words. -/
 theorem storeContext_of_pairing_write (tag : P) (N : ℕ) (old next : Store P K)
-    (b : Fin N → K) (vals : ℕ → K) (zero one negative word : K)
-    (hshape : old.shape = workspaceShape tag N)
-    (hmat : Holds old tag 5 0 (fun i j : Fin N => vals (i + N * j)))
+    (b : Fin N → K) (A : Matrix (Fin N) (Fin N) ℝ) (zero one negative word : K)
+    (hshape : old.shape = workspaceShape tag N storedMatrix)
+    (hmat : if storedMatrix then HoldsDecoded old dec tag 5 0 A else True)
     (hb : ∀ i : Fin N, old.read tag 0 i = some (b i))
     (hx : ∀ i : Fin N, old.read tag 1 i = some zero)
     (hr : ∀ i : Fin N, old.read tag 2 i = some (b i))
@@ -373,16 +373,20 @@ theorem storeContext_of_pairing_write (tag : P) (N : ℕ) (old next : Store P K)
     (hn : old.read tag 7 8 = some negative) (hs : old.read tag 4 0 = some zero)
     (hdz : dec tag zero = 0) (hdn : dec tag negative = -dec tag one)
     (hw : old.write tag 7 0 word = some next) :
-    StoreContext tag dec N (fun i j => dec tag (vals (i + N * j))) (fun i => dec tag (b i))
+    StoreContext tag dec N A (fun i => dec tag (b i))
       ⟨0, fun i => dec tag (b i), fun i => dec tag (b i)⟩
-      (dec tag word) 0 (dec tag one) next := by
+      (dec tag word) 0 (dec tag one) next storedMatrix := by
   have frame (buf idx : ℕ) (h : buf ≠ 7 ∨ idx ≠ 0) :
       next.read tag buf idx = old.read tag buf idx :=
     Store.read_of_write_eq_some_of_ne hw h
   refine ⟨(Store.shape_of_write_eq_some hw).trans hshape, ?_, ?_, ?_, ?_, ?_,
     ⟨word, Store.read_of_write_eq_some hw, rfl⟩, ?_, ?_, ?_, ?_⟩
-  · intro i j
-    exact ⟨vals (i + N * j), (frame 5 _ (Or.inl (by norm_num))).trans (hmat i j), rfl⟩
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i j
+      rw [frame 5 _ (Or.inl (by norm_num))]
+      exact hmat i j
   · intro i
     exact ⟨b i, (frame 0 _ (Or.inl (by norm_num))).trans (hb i), rfl⟩
   · intro i
@@ -444,8 +448,9 @@ theorem exec_rounded_initialization (I : Interp P ι K (OpCount P ι)) (tag : P)
   obtain ⟨cached, w, θ, edot, write, heq, hθ, hnonneg, hzero⟩ :=
     exec_rounded_initial_pairing I tag hsem hz predot N (fun i => dec tag (b i)) hsmall
       hread ⟨zero, scratch, hw⟩
-  have ctx := storeContext_of_pairing_write tag N predot.store cached.store b vals
-    zero one negative w sh mat rb rx rr rp rz ro rn rs hd0 hdn write
+  have ctx := storeContext_of_pairing_write tag N predot.store cached.store b
+    (fun i j => dec tag (vals (i + N * j))) zero one negative w sh
+    (by intro i j; exact ⟨vals (i + N * j), mat i j, rfl⟩) rb rx rr rp rz ro rn rs hd0 hdn write
   obtain ⟨header, estop, hout, frame⟩ := exec_rounded_stop_guard I tag hsem cached N
     (fun i j => dec tag (vals (i + N * j))) (fun i => dec tag (b i))
     ⟨0, fun i => dec tag (b i), fun i => dec tag (b i)⟩ (dec tag w) 0 (dec tag one) ctx

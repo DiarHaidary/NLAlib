@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Krylov.FinitePrecision.CGRun
+public import NLAlib.Matrix.Computation.ResidualGap
 
 /-!
 # Local orthogonality and the a posteriori backward model of a conjugate gradient run
@@ -1149,19 +1150,10 @@ theorem norm_sub_mulVec_x_sub_r_succ_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1))‖ ≤
       ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ + C.ε * (specNorm C.A *
         (‖WithLp.toLp 2 (C.x j)‖ + 4 * C.γ j * ‖WithLp.toLp 2 (C.p j)‖) + C.ρ j) := by
-  have hid : C.b - C.A *ᵥ C.x (j + 1) - C.r (j + 1) =
-      (C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j - C.A *ᵥ C.ex j - C.er j := by
-    rw [C.x_succ j hj, C.r_succ j hj, C.s_eq j hj, Matrix.mulVec_add, Matrix.mulVec_add,
-      Matrix.mulVec_smul, smul_add]
-    abel
-  rw [hid]
-  have h1 := norm_toLp_sub_le ((C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j - C.A *ᵥ C.ex j)
-    (C.er j)
-  have h2 := norm_toLp_sub_le ((C.b - C.A *ᵥ C.x j - C.r j) + C.γ j • C.es j) (C.A *ᵥ C.ex j)
-  have h3 := norm_toLp_add_le (C.b - C.A *ᵥ C.x j - C.r j) (C.γ j • C.es j)
+  have hstep := norm_sub_mulVec_sub_succ_le C.A C.b C.x C.p C.ex C.r C.s C.es C.er C.γ j
+    (C.s_eq j hj) (C.x_succ j hj) (C.r_succ j hj)
   have hγ := C.γ_pos hj
-  rw [norm_toLp_smul, abs_of_pos hγ] at h3
-  have h4 := norm_toLp_mulVec_le C.A (C.ex j)
+  rw [Real.norm_eq_abs, abs_of_pos hγ] at hstep
   have h5 := C.norm_ex_le j hj
   have h6 := C.norm_er_le j hj
   have h7 := C.norm_es_le j hj

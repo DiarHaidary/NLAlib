@@ -1,3 +1,4 @@
+import NLAlibTools.FinitePrecisionSmoke
 import NLAlibTools.FixedPoint
 import NLAlibTools.Float
 import NLAlibTools.KrylovOracleSmoke

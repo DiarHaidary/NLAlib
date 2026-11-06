@@ -30,20 +30,20 @@ namespace NLAlib.LanczosImplementation
 
 open Computation
 
-variable {P K : Type} [DecidableEq P]
+variable {P K : Type} [DecidableEq P] {storedMatrix : Bool}
 
 /-- Actual decoded words after initialization and `j` rounded Lanczos steps. The basis
 column `c` stores `v (c+1)`, while the previous-vector buffer stores `v j`. The scalar and
 vector prefixes have no assumed arithmetic relation. -/
 structure StoreContext (tag : P) (dec : P → K → ℝ) (N q j : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : ℕ → Fin N → ℝ)
-    (α β : ℕ → ℝ) (s : ℝ) (store : Store P K) : Prop where
+    (α β : ℕ → ℝ) (s : ℝ) (store : Store P K) (storedMatrix : Bool := true) : Prop where
   /-- The canonical dense nine-buffer shape. -/
-  shape : store.shape = workspaceShape tag N q
+  shape : store.shape = workspaceShape tag N q storedMatrix
   /-- The declared input words are retained. -/
   input : ∀ i : Fin N, ∃ w, store.read tag 0 i = some w ∧ dec tag w = b i
   /-- The matrix entries are loaded in the canonical column-major layout. -/
-  matrix : HoldsDecoded store dec tag 6 0 A
+  matrix : if storedMatrix then HoldsDecoded store dec tag 6 0 A else True
   /-- Completed basis columns, including the initialized first column. -/
   basis : ∀ c ≤ j, ∀ i : Fin N,
     ∃ w, store.read tag 1 (N * c + i) = some w ∧ dec tag w = v (c + 1) i
@@ -64,18 +64,21 @@ variable {tag : P} {dec : P → K → ℝ} {N q j : ℕ}
 
 /-- Local work-vector, current diagonal, next off-diagonal and negation-scratch writes
 preserve every already completed decoded prefix. The premise concerns actual raw reads. -/
-theorem StoreContext.of_frame (h : StoreContext tag dec N q j A b v α β s old)
+theorem StoreContext.of_frame (h : StoreContext tag dec N q j A b v α β s old storedMatrix)
     (hshape : next.shape = old.shape)
     (hf : ∀ p k i, k ≠ 7 → (k = 2 → i ≠ j) → (k = 3 → i ≠ j + 1) →
       (k = 8 → i ≠ 1) → next.read p k i = old.read p k i) :
-    StoreContext tag dec N q j A b v α β s next := by
+    StoreContext tag dec N q j A b v α β s next storedMatrix := by
   refine ⟨hshape.trans h.shape, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i
     rw [hf tag 0 i (by omega) (by omega) (by omega) (by omega)]
     exact h.input i
-  · intro i k
-    rw [hf tag 6 _ (by omega) (by omega) (by omega) (by omega)]
-    exact h.matrix i k
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i k
+      rw [hf tag 6 _ (by omega) (by omega) (by omega) (by omega)]
+      exact h.matrix i k
   · intro c hc i
     rw [hf tag 1 _ (by omega) (by omega) (by omega) (by omega)]
     exact h.basis c hc i
@@ -96,7 +99,7 @@ theorem StoreContext.of_frame (h : StoreContext tag dec N q j A b v α β s old)
 /-- Commit the actual next basis column, previous vector and two coefficients. Old
 prefixes are retained through a raw frame outside the new column and previous-vector
 buffer. No numerical property of the supplied decoded outputs is assumed. -/
-theorem StoreContext.succ_of_commit (h : StoreContext tag dec N q j A b v α β s old)
+theorem StoreContext.succ_of_commit (h : StoreContext tag dec N q j A b v α β s old storedMatrix)
     (vn : Fin N → ℝ) (an bn : ℝ) (hshape : next.shape = old.shape)
     (hf : ∀ p k i, k ≠ 5 → (k = 1 → i < N * (j + 1) ∨ N * (j + 2) ≤ i) →
       next.read p k i = old.read p k i)
@@ -106,14 +109,17 @@ theorem StoreContext.succ_of_commit (h : StoreContext tag dec N q j A b v α β 
     (hbn : ∃ w, next.read tag 3 (j + 1) = some w ∧ dec tag w = bn)
     (hp : ∀ i : Fin N, ∃ w, next.read tag 5 i = some w ∧ dec tag w = v (j + 1) i) :
     StoreContext tag dec N q (j + 1) A b (Function.update v (j + 2) vn)
-      (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s next := by
+      (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s next storedMatrix := by
   refine ⟨hshape.trans h.shape, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i
     rw [hf tag 0 i (by omega) (by omega)]
     exact h.input i
-  · intro i k
-    rw [hf tag 6 _ (by omega) (by omega)]
-    exact h.matrix i k
+  · cases storedMatrix with
+    | false => trivial
+    | true =>
+      intro i k
+      rw [hf tag 6 _ (by omega) (by omega)]
+      exact h.matrix i k
   · intro c hc i
     by_cases he : c = j + 1
     · subst c

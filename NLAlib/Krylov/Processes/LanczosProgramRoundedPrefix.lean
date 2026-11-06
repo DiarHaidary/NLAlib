@@ -29,11 +29,11 @@ namespace NLAlib.LanczosImplementation
 open Computation Builder
 open scoped Matrix
 
-variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ}
+variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+    {mv : ℕ → Builder P ι ℕ ℕ Unit}
 
-local macro "prefixStep(" tag:term "," N:term "," j:term ")" : term => `(do
-  gemv $tag (IExp.const ($N)) (IExp.const ($N)) 6 0 1
-    (IExp.const ($N) * IExp.var ($j)) 7 0
+local macro "prefixStep(" tag:term "," N:term "," j:term "," mv:term ")" : term => `(do
+  ($mv ($j))
   ins (.un $tag .neg ⟨8, 1⟩ ⟨3, IExp.var ($j)⟩)
   axpy $tag ⟨8, 1⟩ 5 0 7 0 (IExp.const ($N))
   dot $tag ⟨2, IExp.var ($j)⟩ 1 (IExp.const ($N) * IExp.var ($j)) 7 0 (IExp.const ($N))
@@ -55,15 +55,19 @@ private theorem exec_prefix_one (I : Interp P ι K (OpCount P ι))
     {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (st : St P K (OpCount P ι))
     (hs : StoreContext tag dec N q 0 A b (Function.update (0 : ℕ → Fin N → ℝ) 1 v1)
-      (fun _ => 0) (fun _ => 0) s st.store)
+      (fun _ => 0) (fun _ => 0) s st.store storedMatrix)
     (hq : 0 < q) (hA : Aᵀ = A)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
-    (hunit : |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤ lanczosImplementationRoundoffBound N (u tag)) :
-    ∃ out, exec I (prefixStep(tag,N,0) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+    (hunit : |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤ lanczosImplementationRoundoffBound N (u tag))
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (prefixStep(tag,N,0,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       RoundedPrefix tag dec N q 1 A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   obtain ⟨out, uv, wv, zv, an, bn, vn, hr, hctx, hu, hw, ha, hez, hd,
-      hbn, _, hvzero, hvunit⟩ := exec_rounded_step I h hz hc tag st hs hq hsmall
+      hbn, _, hvzero, hvunit⟩ := exec_rounded_step (hmv := hmv) I h hz hc tag st hs hq hsmall
   simp only [Nat.zero_add, Function.update_self] at hu ha hez
   simp only [zero_smul, sub_zero, abs_zero, zero_mul, add_zero] at hw
   obtain ⟨R, hH, hε, hv, hα, hβ⟩ := exists_lanczosRun_one A hA
@@ -89,14 +93,19 @@ private theorem exec_prefix_zero (I : Interp P ι K (OpCount P ι))
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (st : St P K (OpCount P ι))
     (hs : StoreContext tag dec N q j A b (Function.update (0 : ℕ → Fin N → ℝ) 1 v1)
-      (fun _ => 0) (fun _ => 0) s st.store)
+      (fun _ => 0) (fun _ => 0) s st.store storedMatrix)
     (hj : j < q) (hb : b = 0) (hv1 : v1 = 0)
-    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
-    ∃ out, exec I (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       RoundedPrefix tag dec N q (j + 1) A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   have hv : (Function.update (0 : ℕ → Fin N → ℝ) 1 v1) (j + 1) = 0 := by simp [hv1]
-  obtain ⟨out, hr, hs⟩ := exec_rounded_step_of_zero I h hz hc tag st hs hj hsmall hv rfl
+  obtain ⟨out, hr, hs⟩ := exec_rounded_step_of_zero (hmv := hmv) I h hz hc tag st hs hj hsmall
+    hv rfl
   refine ⟨out, hr, Or.inl ⟨Or.inr hb, ?_⟩⟩
   simpa [hv1] using hs
 
@@ -105,16 +114,20 @@ private theorem exec_prefix_terminal (I : Interp P ι K (OpCount P ι))
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j m : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (R : LanczosRun N m) (st : St P K (OpCount P ι))
-    (hs : StoreContext tag dec N q j A b R.v R.α R.β s st.store)
+    (hs : StoreContext tag dec N q j A b R.v R.α R.β s st.store storedMatrix)
     (hj : j < q) (hm : m ≤ j) (hH : R.H = A)
     (hε : R.ε = lanczosImplementationRoundoffBound N (u tag)) (hv1 : R.v 1 = v1)
     (hv : ∀ i, m + 1 < i → R.v i = 0)
     (hab : ∀ i, m < i → R.α i = 0 ∧ R.β i = 0)
     (hterm : R.β m = 0 → R.v (m + 1) = 0) (hzero : R.β m = 0)
-    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
-    ∃ out, exec I (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       RoundedPrefix tag dec N q (j + 1) A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   have hvcur : R.v (j + 1) = 0 := by
     rcases Nat.eq_or_lt_of_le hm with rfl | hlt
     · exact hterm hzero
@@ -124,7 +137,7 @@ private theorem exec_prefix_terminal (I : Interp P ι K (OpCount P ι))
     · exact hzero
     · exact (hab j hlt).2
   obtain ⟨out, hr, hs⟩ :=
-    exec_rounded_step_of_zero I h hz hc tag st hs hj hsmall hvcur hβcur
+    exec_rounded_step_of_zero (hmv := hmv) I h hz hc tag st hs hj hsmall hvcur hβcur
   have hvn := hv (j + 2) (by omega)
   have han := (hab (j + 1) (by omega)).1
   have hbn := (hab (j + 1) (by omega)).2
@@ -143,17 +156,21 @@ private theorem exec_prefix_extend (I : Interp P ι K (OpCount P ι))
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (R : LanczosRun N j) (st : St P K (OpCount P ι))
-    (hs : StoreContext tag dec N q j A b R.v R.α R.β s st.store)
+    (hs : StoreContext tag dec N q j A b R.v R.α R.β s st.store storedMatrix)
     (hj : j < q) (hH : R.H = A)
     (hε : R.ε = lanczosImplementationRoundoffBound N (u tag)) (hv1 : R.v 1 = v1)
     (hv : ∀ i, j + 1 < i → R.v i = 0)
     (hab : ∀ i, j < i → R.α i = 0 ∧ R.β i = 0) (hactive : R.β j ≠ 0)
-    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
-    ∃ out, exec I (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       RoundedPrefix tag dec N q (j + 1) A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   obtain ⟨out, uv, wv, zv, an, bn, vn, hr, hctx, hu, hw, ha, hez, hd,
-      hbn, _, hvzero, hvunit⟩ := exec_rounded_step I h hz hc tag st hs hj hsmall
+      hbn, _, hvzero, hvunit⟩ := exec_rounded_step (hmv := hmv) I h hz hc tag st hs hj hsmall
   rw [← hH, ← hε] at hu
   rw [← hε] at hw ha hez hd hvunit
   obtain ⟨S, hSH, hSε, hsv, hsα, hsβ⟩ :=
@@ -183,28 +200,33 @@ theorem exec_rounded_prefix_step (I : Interp P ι K (OpCount P ι))
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (st : St P K (OpCount P ι))
     (hs : RoundedPrefix tag dec N q j A b v1
-      (lanczosImplementationRoundoffBound N (u tag)) s st.store)
+      (lanczosImplementationRoundoffBound N (u tag)) s st.store storedMatrix)
     (hj : j < q) (hA : Aᵀ = A)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hzero : b = 0 → v1 = 0)
     (hunit : b ≠ 0 → |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤
-      lanczosImplementationRoundoffBound N (u tag)) :
-    ∃ out, exec I (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+      lanczosImplementationRoundoffBound N (u tag))
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       RoundedPrefix tag dec N q (j + 1) A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   rcases hs with ⟨hj0, hs⟩ | ⟨m, R, hm, hH, hε, hv1, hs, hv, hab, ht, hearly⟩
   · by_cases hb : b = 0
-    · exact exec_prefix_zero I h hz hc tag st hs hj hb (hzero hb) hsmall
+    · exact exec_prefix_zero (hmv := hmv) I h hz hc tag st hs hj hb (hzero hb) hsmall
     · have : j = 0 := hj0.resolve_right hb
       subst j
-      exact exec_prefix_one I h hz hc tag st hs hj hA hsmall (hunit hb)
+      exact exec_prefix_one (hmv := hmv) I h hz hc tag st hs hj hA hsmall (hunit hb)
   · by_cases hterm : R.β m = 0
-    · exact exec_prefix_terminal I h hz hc tag R st hs hj hm hH hε hv1 hv hab ht hterm hsmall
+    · exact exec_prefix_terminal (hmv := hmv) I h hz hc tag R st hs hj hm hH hε hv1 hv hab ht
+        hterm hsmall
     · have : m = j := by
         by_contra hmj
         exact hterm (hearly (by omega))
       subst m
-      exact exec_prefix_extend I h hz hc tag R st hs hj hH hε hv1 hv hab hterm hsmall
+      exact exec_prefix_extend (hmv := hmv) I h hz hc tag R st hs hj hH hε hv1 hv hab hterm hsmall
 
 /-- Execute every requested rounded step from a certified decoded prefix. No accumulated
 roundoff horizon is required for execution or for extraction of the active LanczosRun. -/
@@ -214,23 +236,28 @@ theorem exec_rounded_loop (I : Interp P ι K (OpCount P ι))
     {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b v1 : Fin N → ℝ} {s : ℝ}
     (st : St P K (OpCount P ι))
     (hs : RoundedPrefix tag dec N q 0 A b v1
-      (lanczosImplementationRoundoffBound N (u tag)) s st.store)
+      (lanczosImplementationRoundoffBound N (u tag)) s st.store storedMatrix)
     (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hzero : b = 0 → v1 = 0)
     (hunit : b ≠ 0 → |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤
-      lanczosImplementationRoundoffBound N (u tag)) :
+      lanczosImplementationRoundoffBound N (u tag))
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
     ∃ out, exec I (forRange (.const q) fun j =>
-      (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit)).run st = some out ∧
+      (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit)).run st = some out ∧
       RoundedPrefix tag dec N q q A b v1
-        (lanczosImplementationRoundoffBound N (u tag)) s out.store := by
+        (lanczosImplementationRoundoffBound N (u tag)) s out.store storedMatrix := by
   obtain ⟨out, hr, hctx⟩ := exists_exec_loop_eq_some_of_forall I (n := IExp.const q)
-    (body := fun j => (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run)
+    (body := fun j => (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run)
     (fun j st => RoundedPrefix tag dec N q j A b v1
-      (lanczosImplementationRoundoffBound N (u tag)) s st.store) hs
-    (fun j hj st hs => exec_rounded_prefix_step I h hz hc tag st hs hj hA hsmall hzero hunit)
+      (lanczosImplementationRoundoffBound N (u tag)) s st.store storedMatrix) hs
+    (fun j hj st hs => exec_rounded_prefix_step (hmv := hmv) I h hz hc tag st hs hj hA hsmall
+      hzero hunit)
   refine ⟨out, ?_, hctx⟩
   change exec I (.seq (.loop (.const q)
-    (fun j => (prefixStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run)) .skip) st = _
+    (fun j => (prefixStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run)) .skip) st = _
   rw [exec_seq_skip]
   exact hr
 

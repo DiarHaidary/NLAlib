@@ -9,6 +9,7 @@ public import NLAlib.Krylov.Processes.LanczosProgramRoundedState
 public import NLAlib.Krylov.Processes.LanczosProgramRounding
 public import NLAlib.Matrix.Computation.BLASNegAxpy
 public import NLAlib.Computation.BLAS.NormalizationFrames
+public import NLAlib.Matrix.Computation.MatvecRoutine
 
 /-!
 # Actual rounded kernels of a stored Lanczos step
@@ -30,59 +31,58 @@ open Computation Builder
 open scoped Matrix
 
 variable {P ι K : Type} [DecidableEq P]
-    {u : P → ℝ} {dec : P → K → ℝ}
+    {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+    {mv : ℕ → Builder P ι ℕ ℕ Unit}
 
-/-- The actual dense matrix-vector kernel initializes the work buffer and preserves the
-completed decoded prefix. Its spectral norm error follows from the input-only implementation
-precision window and the ordered rounded kernel bound [Higham2002, (3.12)]. Empty dimension
-and a zero current vector are included. -/
-theorem exec_rounded_matvec (I : Interp P ι K (OpCount P ι))
+/-- Primitive scalar rounding certifies the dense backend at the existing Lanczos
+implementation budget, for every basis-column offset and including empty dimension. -/
+theorem isMatvecRoutine_dense (I : Interp P ι K (OpCount P ι)) (tag : P)
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (tag : P) {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
-    {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
-    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
-    ∃ (out : St P K (OpCount P ι)) (uv : Fin N → ℝ),
-      exec I (gemv tag (IExp.const N) (IExp.const N) 6 0 1
-        (IExp.const N * IExp.var j) 7 0).run st = some out ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
-      (∀ i : Fin N, ∃ w, out.store.read tag 7 i = some w ∧ dec tag w = uv i) ∧
-      ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤
-        lanczosImplementationRoundoffBound N (u tag) * specNorm A *
-          ‖WithLp.toLp 2 (v (j + 1))‖ := by
-  have hwin := lanczosImplementationRoundoffBound_kernel_bounds N (h.nonneg trivial) hsmall
+    (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
+    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) (j : ℕ) :
+    IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => HoldsDecoded store dec tag 6 0 A)
+      1 7 (IExp.const N * IExp.var j) 0
+      (gemv tag (.const N) (.const N) 6 0 1 (IExp.const N * IExp.var j) 7 0) := by
+  have hu := h.nonneg (p := tag) trivial
+  have hwin := lanczosImplementationRoundoffBound_kernel_bounds N hu hsmall
   have hn : (N : ℝ) * u tag < 1 := by
-    have hu := h.nonneg (p := tag) trivial
-    have hsucc := hwin.1
-    push_cast at hsucc
+    have hs := hwin.1
+    push_cast at hs
     nlinarith
-  have hx (i : Fin N) : ∃ w,
-      st.store.read tag 1 ((IExp.const N * IExp.var j).eval + i) = some w ∧
-        dec tag w = v (j + 1) i := by
-    simpa only [IExp.eval_mul, IExp.eval_const, IExp.eval_var] using hs.basis j le_rfl i
-  have hy (i : ℕ) (hi : i < N) :
-      ∃ w store, st.store.write tag 7 i w = some store := by
-    obtain ⟨w, _, _⟩ := hs.input ⟨i, hi⟩
-    exact ⟨w, Store.exists_write_eq_some_of_getElem?_shape w
-      (by rw [hs.shape]; rfl) hi⟩
-  obtain ⟨out, W, hr, hw, herr⟩ := h.exec_gemv_norm_sub_le_specNorm_mul I tag st hz
-    (IExp.const N) (IExp.const N) 6 0 1 (IExp.const N * IExp.var j) 7 0 A (v (j + 1))
-    hn hs.matrix hx (by omega) (by omega) (by simpa using hy)
-  have hctx : StoreContext tag dec N q j A b v α β s out.store :=
-    hs.of_frame (Store.shape_of_writeBlock_eq_some hw) (by
+  exact (h.isMatvecRoutine_gemv I tag hz N A 6 1 7 0 (IExp.const N * IExp.var j) 0
+    hn (by omega) (by omega)).mono (mul_le_mul_of_nonneg_right
+      (roundingFactor_mul_sqrt_le_lanczosImplementationRoundoffBound N hu hsmall)
+      (specNorm_nonneg A))
+
+/-- A certified backend executes the current Lanczos product, preserving the completed
+prefix through its actual block-write frame. Scalar rounding is a separate hypothesis of
+the subsequent Paige phases. -/
+theorem exec_rounded_matvec (I : Interp P ι K (OpCount P ι)) (tag : P)
+    {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
+    {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
+    (st : St P K (OpCount P ι))
+    (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
+    {c : ℝ} (hmv : IsMatvecRoutine I dec tag A c
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var j) 0 (mv j)) :
+    ∃ (out : St P K (OpCount P ι)) (uv : Fin N → ℝ),
+      exec I (mv j).run st = some out ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
+      (∀ i : Fin N, ∃ w, out.store.read tag 7 i = some w ∧ dec tag w = uv i) ∧
+      ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤ c * ‖WithLp.toLp 2 (v (j + 1))‖ := by
+  obtain ⟨out, W, hr, hw, he⟩ := hmv.run st (v (j + 1)) hs.matrix
+    (by simpa only [IExp.eval_mul, IExp.eval_const, IExp.eval_var] using hs.basis j le_rfl)
+    (fun i hi => ⟨N, by simp [hs.shape, workspaceShape], by simpa using hi⟩)
+  refine ⟨out, fun i => dec tag (W i), hr, ?_, ?_, he⟩
+  · exact hs.of_frame (Store.shape_of_writeBlock_eq_some hw) (by
       intro p k i hk _ _ _
       exact Store.read_of_writeBlock_eq_some_of_ne hw (Or.inl hk))
-  refine ⟨out, (fun i => dec tag (W i)), hr, hctx, ?_, ?_⟩
   · intro i
     refine ⟨W i, ?_, rfl⟩
-    have hread := Store.read_of_writeBlock_eq_some_of_lt hw
+    simpa using Store.read_of_writeBlock_eq_some_of_lt hw
       (j := (i : ℕ)) (by simp)
-    simpa using hread
-  · refine herr.trans ?_
-    exact mul_le_mul_of_nonneg_right
-      (mul_le_mul_of_nonneg_right
-        (roundingFactor_mul_sqrt_le_lanczosImplementationRoundoffBound N
-          (h.nonneg trivial) hsmall) (specNorm_nonneg A)) (norm_nonneg _)
 
 /-- The actual previous-vector subtraction executes the scalar negation before axpy.
 The returned work vector and its complete prefix invariant are derived from actual reads;
@@ -91,7 +91,7 @@ theorem exec_rounded_previous_update (I : Interp P ι K (OpCount P ι))
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
     (uv : Fin N → ℝ)
     (huv : ∀ i : Fin N, ∃ w, st.store.read tag 7 i = some w ∧ dec tag w = uv i)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
@@ -99,7 +99,7 @@ theorem exec_rounded_previous_update (I : Interp P ι K (OpCount P ι))
       exec I (do
         ins (.un tag .neg ⟨8, 1⟩ ⟨3, IExp.var j⟩)
         axpy tag ⟨8, 1⟩ 5 0 7 0 (IExp.const N)).run st = some out ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 7 i = some w ∧ dec tag w = wv i) ∧
       ‖WithLp.toLp 2 (uv - β j • v j - wv)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) *
@@ -139,14 +139,14 @@ theorem exec_rounded_dot (I : Interp P ι K (OpCount P ι))
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
     (hj : j < q) (wv : Fin N → ℝ)
     (hwv : ∀ i : Fin N, ∃ w, st.store.read tag 7 i = some w ∧ dec tag w = wv i)
     (hn : (N : ℝ) * u tag < 1) :
     ∃ (out : St P K (OpCount P ι)) (an : ℝ),
       exec I (dot tag ⟨2, IExp.var j⟩ 1 (IExp.const N * IExp.var j)
         7 0 (IExp.const N)).run st = some out ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
       (∃ w, out.store.read tag 2 j = some w ∧ dec tag w = an) ∧
       |v (j + 1) ⬝ᵥ wv - an| ≤
         roundingFactor N (u tag) * ‖WithLp.toLp 2 (v (j + 1))‖ * ‖WithLp.toLp 2 wv‖ ∧
@@ -186,7 +186,7 @@ theorem exec_rounded_projection_update (I : Interp P ι K (OpCount P ι))
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
     (an : ℝ) (han : ∃ w, st.store.read tag 2 j = some w ∧ dec tag w = an)
     (wv : Fin N → ℝ)
     (hwv : ∀ i : Fin N, ∃ w, st.store.read tag 7 i = some w ∧ dec tag w = wv i)
@@ -195,7 +195,7 @@ theorem exec_rounded_projection_update (I : Interp P ι K (OpCount P ι))
       exec I (do
         ins (.un tag .neg ⟨8, 1⟩ ⟨2, IExp.var j⟩)
         axpy tag ⟨8, 1⟩ 1 (IExp.const N * IExp.var j) 7 0 (IExp.const N)).run st = some out ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 7 i = some w ∧ dec tag w = zv i) ∧
       ‖WithLp.toLp 2 (wv - an • v (j + 1) - zv)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) *
@@ -238,13 +238,13 @@ theorem exec_rounded_next_norm (I : Interp P ι K (OpCount P ι))
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
     (hj : j < q) (zv : Fin N → ℝ)
     (hzv : ∀ i : Fin N, ∃ w, st.store.read tag 7 i = some w ∧ dec tag w = zv i)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K (OpCount P ι)) (bn : ℝ),
       exec I (nrm2 tag ⟨3, IExp.var j + 1⟩ 7 0 (IExp.const N)).run st = some out ∧
-      StoreContext tag dec N q j A b v α β s out.store ∧
+      StoreContext tag dec N q j A b v α β s out.store storedMatrix ∧
       (∃ w, out.store.read tag 3 (j + 1) = some w ∧ dec tag w = bn) ∧
       0 ≤ bn ∧ (bn = 0 ↔ zv = 0) ∧
       |‖WithLp.toLp 2 zv‖ - bn| ≤

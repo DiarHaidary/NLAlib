@@ -32,6 +32,8 @@ open Computation Computation.Builder
 /-- The oracle CG variant from zero, with cached squared residuals and guarded divisions.
 Its matrix access is a one-column oracle application; there is no stored matrix or ROM read.
 The empty scratch slot keeps the canonical vector/scalar buffer addresses.
+Rounded execution with separate scalar and oracle accuracy contracts is proved by
+`NLAlib.CGOracleImplementation.exec_rounded_compiled`.
 Algorithm: cg -/
 def cgOracleProg {P ι VB VI : Type} (tag : P) (o : ι) (N q : IExp VI)
     (b x r p status : VB) : Builder P ι VB VI Unit := scope do

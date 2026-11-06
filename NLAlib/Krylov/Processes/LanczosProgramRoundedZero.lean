@@ -27,11 +27,11 @@ namespace NLAlib.LanczosImplementation
 open Computation Builder
 
 variable {P ι K : Type} [DecidableEq P]
-    {u : P → ℝ} {dec : P → K → ℝ}
+    {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+    {mv : ℕ → Builder P ι ℕ ℕ Unit}
 
-local macro "zeroStep(" tag:term "," N:term "," j:term ")" : term => `(do
-  gemv $tag (IExp.const ($N)) (IExp.const ($N)) 6 0 1
-    (IExp.const ($N) * IExp.var ($j)) 7 0
+local macro "zeroStep(" tag:term "," N:term "," j:term "," mv:term ")" : term => `(do
+  ($mv ($j))
   ins (.un $tag .neg ⟨8, 1⟩ ⟨3, IExp.var ($j)⟩)
   axpy $tag ⟨8, 1⟩ 5 0 7 0 (IExp.const ($N))
   dot $tag ⟨2, IExp.var ($j)⟩ 1 (IExp.const ($N) * IExp.var ($j)) 7 0 (IExp.const ($N))
@@ -57,14 +57,18 @@ theorem exec_rounded_step_of_zero (I : Interp P ι K (OpCount P ι))
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store)
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store storedMatrix)
     (hj : j < q) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
-    (hv : v (j + 1) = 0) (hβ : β j = 0) :
-    ∃ out, exec I (zeroStep(tag,N,j) : Builder P ι ℕ ℕ Unit).run st = some out ∧
+    (hv : v (j + 1) = 0) (hβ : β j = 0)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A)
+      (fun store => if storedMatrix then HoldsDecoded store dec tag 6 0 A else True)
+      1 7 (IExp.const N * IExp.var t) 0 (mv t)) :
+    ∃ out, exec I (zeroStep(tag,N,j,mv) : Builder P ι ℕ ℕ Unit).run st = some out ∧
       StoreContext tag dec N q (j + 1) A b (Function.update v (j + 2) 0)
-        (Function.update α (j + 1) 0) (Function.update β (j + 1) 0) s out.store := by
+        (Function.update α (j + 1) 0) (Function.update β (j + 1) 0) s out.store storedMatrix := by
   obtain ⟨out, uv, wv, zv, an, bn, vn, hr, hctx, heu, hew, hea, hez, _, _, hbzero,
-      hvzero, _⟩ := exec_rounded_step I h hz hc tag st hs hj hsmall
+      hvzero, _⟩ := exec_rounded_step (hmv := hmv) I h hz hc tag st hs hj hsmall
   have hu0 : uv = 0 := by
     have hn : ‖WithLp.toLp 2 uv‖ ≤ 0 := by simpa [hv] using heu
     exact (WithLp.toLp_eq_zero 2).mp (norm_le_zero_iff.mp hn)

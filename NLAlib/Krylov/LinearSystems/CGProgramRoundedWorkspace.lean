@@ -28,6 +28,7 @@ open Computation Computation.Builder
 open scoped Matrix
 
 variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ}
+    {storedMatrix : Bool} {mv : Builder P ι ℕ ℕ Unit}
 
 /-- The actual initializer emits a certified composable prefix. This follows solely from
 its existing statement-emitting atoms and certified composition, not arbitrary builders. -/
@@ -65,20 +66,24 @@ theorem exec_rounded_initialized_loop (I : Interp P ι K (OpCount P ι)) (tag : 
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (predot cached header : St P K (OpCount P ι)) (N q : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (ν flag : ℝ)
-    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag header.store)
+    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag
+      header.store storedMatrix)
     (horigin : header.store.read tag 7 0 = cached.store.read tag 7 0)
-    (hpreShape : predot.store.shape = workspaceShape tag N)
+    (hpreShape : predot.store.shape = workspaceShape tag N storedMatrix)
     (hpreR : ∀ i : Fin N, ∃ w, predot.store.read tag 2 i = some w ∧ dec tag w = b i)
     (hinit : exec I (dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)).run predot = some cached)
     (hflag : 0 < flag) (hzero : ν = 0 ↔ b = 0)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
     (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+      (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ out,
       exec I (Builder.forRange (.const q) fun _ => Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -96,7 +101,7 @@ theorem exec_rounded_initialized_loop (I : Interp P ι K (OpCount P ι)) (tag : 
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))) : Builder P ι ℕ ℕ Unit)
       (pure ())).run header = some out ∧
       RoundedHeader tag dec N A b (cgImplementationRoundoffBound N (u tag)) ν flag
-        (cached.store.read tag 7 0) q out.store := by
+        (cached.store.read tag 7 0) q out.store storedMatrix := by
   classical
   by_cases hq : q = 0
   · subst q
@@ -108,7 +113,7 @@ theorem exec_rounded_initialized_loop (I : Interp P ι K (OpCount P ι)) (tag : 
   · subst N
     have hb : b = 0 := by funext i; exact Fin.elim0 i
     have hν : ν = 0 := hzero.mpr hb
-    have hc : StoreContext tag dec 0 A b ⟨0, b, b⟩ ν flag flag header.store := by
+    have hc : StoreContext tag dec 0 A b ⟨0, b, b⟩ ν flag flag header.store storedMatrix := by
       simpa only [if_pos hν] using hctx
     refine ⟨{ header with cnt := header.cnt + q • I.charge (.cmp tag) }, ?_,
       Or.inl ⟨hctx, horigin, Or.inr hν⟩⟩
@@ -118,7 +123,8 @@ theorem exec_rounded_initialized_loop (I : Interp P ι K (OpCount P ι)) (tag : 
     have hprec := hherm.three_mul_mul_le_of_sq_mul_sqrt_mul_mul_sq_le
       (Nat.pos_of_ne_zero hN) (Nat.pos_of_ne_zero hq)
       (cgImplementationRoundoffBound_nonneg N (hsem.nonneg trivial)) ha hspec horizon
-    exact exec_rounded_loop I tag hsem hz predot cached header N q A b ν flag hctx horigin
+    exact exec_rounded_loop (hmv := hmv) I tag hsem hz predot cached header N q A b ν flag
+      hctx horigin
       hpreShape hpreR hinit hflag (Nat.pos_of_ne_zero hN) hsmall hA ha hspec hprec horizon
 
 /-- Complete actual preallocated execution follows from scalar arithmetic and input-only
@@ -190,7 +196,8 @@ theorem exec_rounded_preallocated (I : Interp P ι K (OpCount P ι)) (tag : P)
   have ctx' : StoreContext tag dec N A (fun i => dec tag (b i))
       ⟨0, fun i => dec tag (b i), fun i => dec tag (b i)⟩ ν
       (if ν = 0 then flag else 0) flag header.store := by simpa only [hzero] using ctx
-  obtain ⟨out, eloop, hout⟩ := exec_rounded_initialized_loop I tag hsem hz predot cached header
+  obtain ⟨out, eloop, hout⟩ := exec_rounded_initialized_loop
+    (hmv := isMatvecRoutine_dense I tag hsem hz N A hsmall) I tag hsem hz predot cached header
     N q A (fun i => dec tag (b i)) ν flag ctx' origin sh hr edot hflag hzero
       hsmall hA ha hspec horizon
   refine ⟨out, ν, flag, ?_, hflag, herr, ?_⟩

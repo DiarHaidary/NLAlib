@@ -26,7 +26,8 @@ namespace NLAlib.LanczosImplementation
 open Computation Builder
 
 variable {P ι K : Type} [DecidableEq P]
-    {u : P → ℝ} {dec : P → K → ℝ}
+    {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+    {mv : ℕ → Builder P ι ℕ ℕ Unit}
 
 /-- The actual copy into the previous-vector buffer keeps all other raw words, including
 the norm and work words. Source words are copied exactly, without a numerical assumption
@@ -35,7 +36,8 @@ theorem exec_rounded_previous_copy (I : Interp P ι K (OpCount P ι))
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (tag : P)
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
-    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store) :
+    (st : St P K (OpCount P ι)) (hs : StoreContext tag dec N q j A b v α β s st.store
+      storedMatrix) :
     ∃ out, exec I (copyv tag 1 (IExp.const N * IExp.var j) 5 0 (IExp.const N)).run st =
         some out ∧
       out.store.shape = st.store.shape ∧
@@ -69,8 +71,8 @@ theorem exec_rounded_commit (I : Interp P ι K (OpCount P ι))
     {N q j : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ}
     (predot normed : St P K (OpCount P ι))
-    (hp : StoreContext tag dec N q j A b v α β s predot.store)
-    (hs : StoreContext tag dec N q j A b v α β s normed.store)
+    (hp : StoreContext tag dec N q j A b v α β s predot.store storedMatrix)
+    (hs : StoreContext tag dec N q j A b v α β s normed.store storedMatrix)
     (hj : j < q) (an : ℝ)
     (han : ∃ w, normed.store.read tag 2 j = some w ∧ dec tag w = an)
     (zv : Fin N → ℝ)
@@ -89,7 +91,7 @@ theorem exec_rounded_commit (I : Interp P ι K (OpCount P ι))
             rscl tag ⟨3, IExp.var j + 1⟩ 1
               (IExp.const N * (IExp.var j + 1)) (IExp.const N))).run normed = some out ∧
       StoreContext tag dec N q (j + 1) A b (Function.update v (j + 2) vn)
-        (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s out.store ∧
+        (Function.update α (j + 1) an) (Function.update β (j + 1) bn) s out.store storedMatrix ∧
       0 ≤ bn ∧ (bn = 0 ↔ zv = 0) ∧ (bn = 0 → vn = 0) ∧
       (bn ≠ 0 → |‖WithLp.toLp 2 vn‖ ^ 2 - 1| ≤
         lanczosImplementationRoundoffBound N (u tag)) ∧

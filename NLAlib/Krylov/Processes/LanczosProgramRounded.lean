@@ -60,10 +60,10 @@ local macro "roundedBody(" tag:term "," N:term "," q:term ")" : term => `(do
 /-- Releasing the three actual dense Lanczos workspace buffers retains every decoded input,
 basis column, coefficient, computed input norm and final previous vector. -/
 theorem StoreContext.holdsDecoded_releaseWorkspace {tag : P} {dec : P → K → ℝ}
-    {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
+    {N q : ℕ} {storedMatrix : Bool} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ} {out : St P K (OpCount P ι)}
-    (h : StoreContext tag dec N q q A b v α β s out.store) (width : ℕ) :
-    let final := releaseWorkspace tag (N * N) N width out
+    (h : StoreContext tag dec N q q A b v α β s out.store storedMatrix) (width : ℕ) :
+    let final := releaseWorkspace tag (if storedMatrix then N * N else 0) N width out
     final.store.shape =
       #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1), (tag, 1), (tag, N)] ∧
     HoldsDecoded final.store dec tag 0 0 (fun i (_ : Fin 1) => b i) ∧
@@ -74,8 +74,9 @@ theorem StoreContext.holdsDecoded_releaseWorkspace {tag : P} {dec : P → K → 
     HoldsDecoded final.store dec tag 5 0 (fun i (_ : Fin 1) => v q i) := by
   have hs : out.store.size = 9 := by
     simpa [workspaceShape, Store.shape] using congrArg Array.size h.shape
-  have hf := read_releaseWorkspace tag (N * N) N width out hs
-  refine ⟨shape_releaseWorkspace tag (N * N) N q width out ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  have hf := read_releaseWorkspace tag (if storedMatrix then N * N else 0) N width out hs
+  refine ⟨shape_releaseWorkspace tag (if storedMatrix then N * N else 0) N q width out
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa [workspaceShape] using h.shape
   · intro i j
     rw [hf tag 0 _ (by omega)]
@@ -156,7 +157,8 @@ private theorem exec_compiled_outputs_of_prefix
       · simp [hvzero hb]
     refine ⟨out, erun, shape, input, norm, hcost, Or.inl ⟨hzero, basis, alpha, beta, ?_⟩⟩
     intro i j
-    simpa only [hvq, Pi.zero_apply, Matrix.zero_apply] using prev i j
+    simpa only [hvq, Pi.zero_apply, Matrix.zero_apply, Bool.true_eq, ↓reduceIte, out]
+      using prev i j
   · obtain ⟨shape, input, basis, alpha, beta, norm, prev⟩ :=
       hctx.holdsDecoded_releaseWorkspace (I.width tag)
     exact ⟨out, erun, shape, input, norm, hcost, Or.inr

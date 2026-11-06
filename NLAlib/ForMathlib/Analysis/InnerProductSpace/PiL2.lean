@@ -169,4 +169,36 @@ theorem lipschitzWith_ofLp_iff {f : (n → ℝ) → ℝ} {L : ℝ≥0} :
   · intro h x y
     simpa only [WithLp.toLp_sub, WithLp.toLp_ofLp] using h (WithLp.ofLp x) (WithLp.ofLp y)
 
+/-- Taking the real norm of each coordinate preserves the Euclidean norm. -/
+theorem norm_toLp_norm (x : n → 𝕜) :
+    ‖WithLp.toLp 2 (fun i => ‖x i‖)‖ = ‖WithLp.toLp 2 x‖ := by
+  simp [EuclideanSpace.norm_eq]
+
+/-- A constant coordinate vector has norm equal to the coordinate norm times the square root
+of the dimension, including dimension zero. This is the Euclidean specialization of
+`PiLp.norm_toLp_const`. -/
+theorem norm_toLp_const (c : 𝕜) :
+    ‖WithLp.toLp 2 (fun _ : n => c)‖ = Real.sqrt (Fintype.card n) * ‖c‖ := by
+  rw [EuclideanSpace.norm_eq]
+  simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  rw [Real.sqrt_mul (Nat.cast_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+
+/-- A coordinatewise relative and absolute envelope gives a Euclidean envelope. The absolute
+term grows with the square root of the dimension; both coefficients are nonnegative. -/
+theorem norm_toLp_le_mul_add_of_forall_abs_le {u η : ℝ} {x e : n → ℝ}
+    (hu : 0 ≤ u) (hη : 0 ≤ η) (h : ∀ i, |e i| ≤ u * |x i| + η) :
+    ‖WithLp.toLp 2 e‖ ≤ u * ‖WithLp.toLp 2 x‖ + Real.sqrt (Fintype.card n) * η := by
+  have hdom := norm_toLp_le_norm_toLp (x := e)
+    (y := u • (fun i => |x i|) + fun _ => η) fun i => by
+      change |e i| ≤ |u * |x i| + η|
+      rw [abs_of_nonneg (add_nonneg (mul_nonneg hu (abs_nonneg (x i))) hη)]
+      exact h i
+  refine hdom.trans ?_
+  rw [WithLp.toLp_add]
+  refine (norm_add_le _ _).trans_eq ?_
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg hu,
+    norm_toLp_const, Real.norm_eq_abs, abs_of_nonneg hη]
+  congr 2
+  simpa only [Real.norm_eq_abs] using norm_toLp_norm x
+
 end EuclideanSpace

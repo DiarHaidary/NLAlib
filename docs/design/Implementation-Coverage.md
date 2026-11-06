@@ -5,7 +5,7 @@ This is a source/interface audit, not a new kernel replay or a machine-execution
 The baseline audit did not approve or register targets. The current integration below records
 subsequent maintainer approval and complete implementation proofs.
 
-## Current implementation coverage, 2026-11-04
+## Current implementation coverage, 2026-11-05
 
 The stored and oracle variants now have complete exact execution proofs:
 
@@ -34,11 +34,52 @@ Stored Lanczos now has the corresponding complete execution-to-`LanczosRun` theo
 [compiled backward corollary](../../NLAlib/Krylov/Processes/LanczosProgramRoundedBackward.lean).
 Local precision suffices for completion; geometric growth and the sharper horizon-dependent
 backward radii are explicit. Actual zero continuation is separate from the active run.
-Matrix-function postprocessing, preconditioning, external rounded oracles and IEEE endpoints
-remain separate obligations.
+The compiled oracle variants now construct the same rounded run models in
+[CGOracleProgramRounded.lean](../../NLAlib/Krylov/LinearSystems/CGOracleProgramRounded.lean) and
+[LanczosOracleProgramRounded.lean](../../NLAlib/Krylov/Processes/LanczosOracleProgramRounded.lean).
+Their accuracy is supplied through `IsMatvecErr`, separately from scalar roundoff. Dense
+numerical execution instantiates the shared backend-parametric analysis with its proved
+floating-point product bound. Certifying an external backend's accuracy, matrix-function
+postprocessing, preconditioning and IEEE endpoints remain separate obligations.
 The [integration record](Krylov-Implementation-Integration.md) gives the current source map.
 Twenty-eight Float cases execute the actual stored/oracle trees and check outputs and
 resources. They do not certify the Float arithmetic contract.
+
+The finite-format prototype is described in
+[Finite-Precision-Arithmetic.md](Finite-Precision-Arithmetic.md). It adds the mixed
+absolute-relative error relation `AbsRelErr` to the existing arithmetic interface and
+analyzes the actual CG self-dot kernel with absolute underflow errors. A computed zero
+cache certifies a small decoded recursive residual, rather than an exactly zero vector.
+The checked Float backend proves finite binary64 representation, an injective 64-bit
+encoding and correspondence to core's logical model. Its finite-word carrier now has a
+proved [mixed-error accuracy and forward range-success contract](../../NLAlib/Computation/IEEE.lean).
+The [bounded binary model](../../NLAlib/Computation/BinaryFloatSem.lean) independently
+supports variable normal spacing, uniform subnormals and conservative checked overflow.
+The [general CG residual-kernel theorem](../../NLAlib/Krylov/LinearSystems/CGProgramUnderflow.lean)
+discharges every intermediate range condition from the input norm, dimension and format
+parameters. Concrete specializations cover the bounded binary model and actual Lean Float;
+they prove successful execution, the final store write/read and an explicit zero-cache bound.
+This is a residual-kernel guarantee; whole-program IEEE CG, true-residual accuracy and
+native backend runtime remain separate obligations. Fixed point remains a secondary
+interface example. Exact-word regression tests execute the registered CG tree under Float
+and bounded fixed-point arithmetic. Existing approved targets and static resource bounds
+are unchanged.
+
+The [mixed-error extension](Mixed-Error-Krylov.md) now adds successful, input-range-certified
+axpy, gemv and gemm execution with relative-plus-absolute vector/matrix error bounds, actual
+CG division and direction-update certificates, and actual checked Float square-root accuracy
+and success. Norm estimation and normalization retain explicit absolute contributions.
+Generic residual-gap and direct quadratic-update bounds allow arbitrary local defects,
+including zero step lengths. Existing relative CG and Lanczos identities now consume these
+shared algebraic results.
+
+`CGRun.ofAbsRelErr` transfers an actual-data prefix to the existing relative run theory when
+every absolute defect fits its explicit local scale margin. Cache/curvature positivity is
+separate, and a terminal zero cache with nonzero residual does not satisfy this transfer.
+Measured mixed Lanczos defects feed the existing recurrence and adjacent-inner-product API;
+normalization and nonzero-column certificates remain explicit. These are kernel, defect and
+conditional prefix results. They do not yet derive a complete bounded-format CG/Lanczos run,
+its full no-overflow invariant, or all underflow/zero-continuation behavior from program inputs.
 
 The tables and review history below describe the explicitly identified audit baseline;
 they are historical evidence, not current coverage totals.

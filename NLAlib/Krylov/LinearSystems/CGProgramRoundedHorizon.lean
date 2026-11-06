@@ -29,19 +29,20 @@ open Computation
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+  {mv : Builder P ι ℕ ℕ Unit}
 
 /-- A loop-header induction predicate, using only the existing stored context and CGRun.
 The initial branch includes cached-word provenance; the other branch counts actual active
 steps. A strictly shorter active prefix has already reached a zero terminal cache. -/
 def RoundedHeader (tag : P) (dec : P → K → ℝ) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (ε ν flag : ℝ) (cache : Option K)
-    (j : ℕ) (store : Store P K) : Prop :=
-  (StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag store ∧
+    (j : ℕ) (store : Store P K) (storedMatrix : Bool := true) : Prop :=
+  (StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag store storedMatrix ∧
     store.read tag 7 0 = cache ∧ (j = 0 ∨ ν = 0)) ∨
   ∃ (m : ℕ) (R : CGRun N m), m ≤ j ∧ R.A = A ∧ R.b = b ∧ R.ε = ε ∧
     StoreContext tag dec N A b ⟨R.x m, R.r m, R.p m⟩ (R.ν m)
-      (if R.ν m = 0 then flag else 0) flag store ∧ (m < j → R.ν m = 0)
+      (if R.ν m = 0 then flag else 0) flag store storedMatrix ∧ (m < j → R.ν m = 0)
 
 /-- A stopped header actually executes its skip branch. It preserves every stored word;
 only the comparison charge changes. The skipped body is arbitrary and is never executed. -/
@@ -49,7 +50,8 @@ theorem exec_rounded_inactive_header (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C)
     (body : Builder P ι ℕ ℕ Unit) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store) (hne : status ≠ 0) :
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix) (hne : status ≠ 0) :
     exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩ body (pure ())).run st =
       some { st with cnt := st.cnt + I.charge (.cmp tag) } := by
   classical
@@ -73,17 +75,21 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
     (hRA : R.A = A) (hRb : R.b = b) (hRε : R.ε = cgImplementationRoundoffBound N (u tag))
     (hmj : m ≤ j) (hjq : j < q)
     (hctx : StoreContext tag dec N A b ⟨R.x m, R.r m, R.p m⟩ (R.ν m)
-      (if R.ν m = 0 then flag else 0) flag st.store)
+      (if R.ν m = 0 then flag else 0) flag
+      st.store storedMatrix)
     (hfreeze : m < j → R.ν m = 0) (hflag : 0 < flag)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
     (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a)
     (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+      (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ out,
       exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -101,11 +107,11 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))) : Builder P ι ℕ ℕ Unit)
       (pure ())).run st = some out ∧
       RoundedHeader tag dec N A b (cgImplementationRoundoffBound N (u tag)) ν flag cache
-        (j + 1) out.store := by
+        (j + 1) out.store storedMatrix := by
   classical
   by_cases hzero : R.ν m = 0
   · have hcflag : StoreContext tag dec N A b ⟨R.x m, R.r m, R.p m⟩ (R.ν m) flag flag
-        st.store := by simpa only [if_pos hzero] using hctx
+        st.store storedMatrix := by simpa only [if_pos hzero] using hctx
     refine ⟨{ st with cnt := st.cnt + I.charge (.cmp tag) }, ?_, Or.inr ?_⟩
     · exact exec_rounded_inactive_header I tag hsem st _ N A b _ _ flag flag hcflag hflag.ne'
     · exact ⟨m, R, by omega, hRA, hRb, hRε, hctx, fun _ => hzero⟩
@@ -126,9 +132,11 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
       exact mul_nonneg (sq_nonneg _) (R.one_add_θ_pos le_rfl).le
     have hνpos : 0 < R.ν m := lt_of_le_of_ne hn (Ne.symm hzero)
     have hc : StoreContext tag dec N R.A R.b ⟨R.x m, R.r m, R.p m⟩ (R.ν m) 0 flag
-        st.store := by simpa only [hRA, hRb, if_neg hzero] using hctx
+        st.store storedMatrix := by simpa only [hRA, hRb, if_neg hzero] using hctx
     obtain ⟨prestate, out, S, hrun, hSA, hSb, hSε, hnext, _⟩ :=
-      cgRun_succ_of_active_header I tag hsem hz st R flag hc hRε hνpos hN hsmall ha hs hprec hp
+      cgRun_succ_of_active_header (hmv := by simpa only [hRA] using hmv) I tag hsem hz st R
+        flag hc hRε
+        hνpos hN hsmall ha hs hprec hp
     refine ⟨out, hrun, Or.inr ⟨m + 1, S, by omega, hSA.trans hRA, hSb.trans hRb,
       hSε.trans hRε, ?_, ?_⟩⟩
     · simpa only [hSA, hSb, hRA, hRb] using hnext
@@ -141,19 +149,23 @@ theorem exec_rounded_initial_header (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (predot cached st : St P K C) (N j : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (ν flag : ℝ)
-    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag st.store)
+    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag
+      st.store storedMatrix)
     (horigin : st.store.read tag 7 0 = cached.store.read tag 7 0) (hfreeze : j = 0 ∨ ν = 0)
-    (hpreShape : predot.store.shape = workspaceShape tag N)
+    (hpreShape : predot.store.shape = workspaceShape tag N storedMatrix)
     (hpreR : ∀ i : Fin N, ∃ w, predot.store.read tag 2 i = some w ∧ dec tag w = b i)
     (hinit : exec I (dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)).run predot = some cached)
     (hflag : 0 < flag) (hN : 0 < N)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) :
+    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ out,
       exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -171,21 +183,21 @@ theorem exec_rounded_initial_header (I : Interp P ι K C) (tag : P)
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))) : Builder P ι ℕ ℕ Unit)
       (pure ())).run st = some out ∧
       RoundedHeader tag dec N A b (cgImplementationRoundoffBound N (u tag)) ν flag
-        (cached.store.read tag 7 0) (j + 1) out.store := by
+        (cached.store.read tag 7 0) (j + 1) out.store storedMatrix := by
   classical
   by_cases hzero : ν = 0
-  · have hcflag : StoreContext tag dec N A b ⟨0, b, b⟩ ν flag flag st.store := by
+  · have hcflag : StoreContext tag dec N A b ⟨0, b, b⟩ ν flag flag st.store storedMatrix := by
       simpa only [if_pos hzero] using hctx
     refine ⟨{ st with cnt := st.cnt + I.charge (.cmp tag) }, ?_, Or.inl ?_⟩
     · exact exec_rounded_inactive_header I tag hsem st _ N A b _ _ flag flag hcflag hflag.ne'
     · exact ⟨hctx, horigin, Or.inr hzero⟩
-  · have hc : StoreContext tag dec N A b ⟨0, b, b⟩ ν 0 flag st.store := by
+  · have hc : StoreContext tag dec N A b ⟨0, b, b⟩ ν 0 flag st.store storedMatrix := by
       simpa only [if_neg hzero] using hctx
     obtain ⟨_, _, _, _, hzeroiff⟩ := initial_cache_of_self_dot_execution I tag hsem hz
       predot cached st N b ν hN hsmall hpreShape hpreR hinit horigin hctx.squaredResidual
     have hb : b ≠ 0 := fun hb => hzero (hzeroiff.mpr hb)
     obtain ⟨prestate, out, R, _, hrun, hRA, hRb, hRε, _, hnext, _⟩ :=
-      cgRun_one_of_initial_dot_execution I tag hsem hz predot cached st N A b ν flag hc
+      cgRun_one_of_initial_dot_execution (hmv := hmv) I tag hsem hz predot cached st N A b ν flag hc
         hpreShape hpreR hinit horigin hN hsmall hA ha hspec hprec hb
     refine ⟨out, hrun, Or.inr ⟨1, R, by omega, hRA, hRb, hRε, hnext, ?_⟩⟩
     intro hlt
@@ -200,9 +212,10 @@ theorem exec_rounded_loop (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (predot cached header : St P K C) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (ν flag : ℝ)
-    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag header.store)
+    (hctx : StoreContext tag dec N A b ⟨0, b, b⟩ ν (if ν = 0 then flag else 0) flag
+      header.store storedMatrix)
     (horigin : header.store.read tag 7 0 = cached.store.read tag 7 0)
-    (hpreShape : predot.store.shape = workspaceShape tag N)
+    (hpreShape : predot.store.shape = workspaceShape tag N storedMatrix)
     (hpreR : ∀ i : Fin N, ∃ w, predot.store.read tag 2 i = some w ∧ dec tag w = b i)
     (hinit : exec I (dot tag ⟨7, 0⟩ 2 0 2 0 (.const N)).run predot = some cached)
     (hflag : 0 < flag) (hN : 0 < N)
@@ -210,11 +223,14 @@ theorem exec_rounded_loop (I : Interp P ι K C) (tag : P)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
     (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a)
     (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+      (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ out,
       exec I (Builder.forRange (.const q) fun _ => Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -232,14 +248,15 @@ theorem exec_rounded_loop (I : Interp P ι K C) (tag : P)
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))) : Builder P ι ℕ ℕ Unit)
       (pure ())).run header = some out ∧
       RoundedHeader tag dec N A b (cgImplementationRoundoffBound N (u tag)) ν flag
-        (cached.store.read tag 7 0) q out.store := by
+        (cached.store.read tag 7 0) q out.store storedMatrix := by
   let Inv (j : ℕ) (st : St P K C) : Prop := RoundedHeader tag dec N A b
-    (cgImplementationRoundoffBound N (u tag)) ν flag (cached.store.read tag 7 0) j st.store
+    (cgImplementationRoundoffBound N (u tag)) ν flag (cached.store.read tag 7 0) j
+      st.store storedMatrix
   have h0 : Inv 0 header := Or.inl ⟨hctx, horigin, Or.inl rfl⟩
   have hstep : ∀ i < q, ∀ st, Inv i st → ∃ out,
       exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -258,9 +275,11 @@ theorem exec_rounded_loop (I : Interp P ι K C) (tag : P)
       (pure ())).run st = some out ∧ Inv (i + 1) out := by
     intro i hi st hinv
     rcases hinv with ⟨hctx, horigin, hfreeze⟩ | ⟨m, R, hm, hRA, hRb, hRε, hctx, hfreeze⟩
-    · exact exec_rounded_initial_header I tag hsem hz predot cached st N i A b ν flag hctx
+    · exact exec_rounded_initial_header (hmv := hmv) I tag hsem hz predot cached st N i A b ν flag
+        hctx
         horigin hfreeze hpreShape hpreR hinit hflag hN hsmall hA ha hspec hprec
-    · exact exec_rounded_run_header I tag hsem hz st q i A b ν flag _ R hRA hRb hRε hm hi
+    · exact exec_rounded_run_header (hmv := hmv) I tag hsem hz st q i A b ν flag _ R hRA hRb hRε
+        hm hi
         hctx hfreeze hflag hN hsmall ha hspec hprec horizon
   obtain ⟨out, hrun, hout⟩ := exists_exec_loop_eq_some_of_forall I (n := .const q) Inv h0 hstep
   refine ⟨out, ?_, hout⟩
@@ -274,7 +293,8 @@ theorem exec_rounded_stopped_loop (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C)
     (body : Builder P ι ℕ ℕ Unit) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store) (hne : status ≠ 0) :
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix) (hne : status ≠ 0) :
     exec I (Builder.forRange (.const q) fun _ => Builder.ifThenElse tag .eq
       ⟨4, 0⟩ ⟨7, 6⟩ body (pure ())).run st =
       some { st with cnt := st.cnt + q • I.charge (.cmp tag) } := by

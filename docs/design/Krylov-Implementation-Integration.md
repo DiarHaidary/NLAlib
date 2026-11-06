@@ -1,8 +1,9 @@
 # Concrete Krylov implementations and their guarantees
 
-2026-11-04. Both stored-entry and matrix-free CG and Lanczos have approved exact targets and
-complete program proofs. The stored CG and Lanczos programs also construct their
-finite-precision runs and backward models from primitive execution.
+2026-11-05. Both stored-entry and matrix-free CG and Lanczos have approved exact targets and
+complete program proofs. All four programs construct their finite-precision runs from primitive execution. Stored CG
+and Lanczos also expose packaged backward-model corollaries; the same mathematical run
+theorems apply to the oracle outputs.
 
 ## Programs and targets
 
@@ -41,6 +42,23 @@ allocations, arbitrary word widths and cleanup. Shared declared-state constructo
 Lanczos output-preservation lemmas avoid duplicating initialization/cleanup proofs.
 Backend-specific matrix-vector prefixes reuse the same scalar and vector phases.
 No replacement arithmetic semantics, recurrence or local-error run model is introduced.
+
+## Shared rounded analysis and oracle guarantees
+
+`Computation.IsMatvecRoutine` is the common execution certificate: success, decoded product
+accuracy, the actual block-write frame and composition with the following program.
+`IsMatvecErr.isMatvecRoutine` supplies it for external oracle access;
+`IsRelErrSem.isMatvecRoutine_gemv` supplies it for the existing dense kernel from scalar
+floating-point accuracy. The latter has operator-error coefficient
+`roundingFactor N u * sqrt N * specNorm A`.
+
+`CGOracleProgramRounded.lean` and `LanczosOracleProgramRounded.lean` prove actual compiled
+oracle execution, all declared decoded outputs and their existing static resource bounds.
+They take scalar roundoff u and oracle accuracy eta separately, plus an analysis allowance
+v >= u whose run budget covers eta. The common CG and Lanczos phase, prefix and loop proofs
+are instantiated by both backends. Dense completion and backward theorem statements are
+unchanged; their numerical analysis now follows by supplying the dense backend certificate.
+See [the design and allowance selection](Krylov-Rounded-Oracles.md).
 
 ## Complete rounded CG bridge
 

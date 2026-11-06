@@ -475,6 +475,37 @@ None of these was approved by the maintainer when it was made. Status is given p
 - **Status: proposed**, 2026-10-15; not
   approved by the maintainer.
 
+## 20. Binary rounding with gradual underflow and a finite exponent range
+
+- **Mathlib.** `Real.floatGrid` and `Real.roundNearest` use an unbounded exponent range.
+  Lean core supplies `Float.Model.Format`, unpacked words and logical rounding/packing
+  operations. Searched the pinned Mathlib and NLAlib: no real-valued bridge with a lower
+  exponent clamp and no certified finite-format scalar arithmetic contract was found.
+- **NLAlib.** The upstream candidates `Float.Model.BinaryRounding.IsBinaryFloat` and
+  `Float.Model.BinaryRounding.IsNearestFloat` express the lower-clamped grid and nearest
+  rounding. `Float.Model.UnpackedFloat.toReal`, `Float.Model.UnpackedFloat.IsFinite`,
+  `Float.Model.UnpackedFloat.IsCanonical` and `Float.Model.UnpackedFloat.Sign.toReal`
+  connect the existing core words to real arithmetic. The proof-level predicates
+  `Float.Model.UnpackedFloat.ExtendedMantissa.Approximates` and `Float.Model.UnpackedFloat.FitsExponentRange`
+  express the core extended mantissa's real interval and the packer's finite exponent domain.
+  Format parameters use the shared
+  core namespace: `Float.Model.Format.unitRoundoff`, `Float.Model.Format.underflowBound`,
+  `Float.Model.Format.maxExponentBound` and `Float.Model.Format.maxFinite`.
+- **Bridge.** `Float.Model.BinaryRounding.IsBinaryFloat.mem_floatGrid` embeds the lower-clamped
+  grid in Mathlib's grid. `Float.Model.UnpackedFloat.isBinaryFloat_toReal` connects canonical
+  words to that grid. `Computation.isBinaryRep_floatDecode` records the full bounded
+  representation, and `Computation.isArithErrSem_finiteFloatSem` supplies the existing
+  arithmetic contract for the actual checked binary64 operations.
+- **Why.** A pure relative-error model cannot account for a nonzero subnormal result
+  rounding to zero. Finite exponent limits are also needed to prove successful checked
+  execution rather than only conditional accuracy after success.
+- **Cost.** Additional upstream-candidate real decoding and lower-grid facts; they use the
+  existing core layout and operations. The mathematical bounded selector model is separate
+  from native Float's ties-to-even semantics. No second bit layout, private dependency or
+  toolchain change is introduced. Native runtime and machine-cost certification remain open.
+- **Status.** Implemented locally, 2026-11-05. Adapted proof provenance and redistribution
+  status are recorded in [Finite-Precision-Arithmetic.md](Finite-Precision-Arithmetic.md).
+
 ## Small spelling choices
 
 - `principalMinor A s` for `(A.submatrix (↑) (↑)).det` with `s : Finset n`

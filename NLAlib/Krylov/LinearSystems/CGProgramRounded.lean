@@ -35,24 +35,6 @@ open scoped Matrix
 
 variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ}
 
-private theorem allocated_workspace_shape (I : Interp P ι K (OpCount P ι)) (tag : P)
-    (st : St P K (OpCount P ι)) (N : ℕ)
-    (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)]) :
-    (((st.allocate tag (N * N) (I.width tag)).allocate tag N (I.width tag)).allocate
-      tag 9 (I.width tag)).store.shape = workspaceShape tag N := by
-  simp only [St.allocate, Store.shape, Array.map_push, Array.size_replicate]
-  change ((st.store.shape.push (tag, N * N)).push (tag, N)).push (tag, 9) = _
-  rw [hshape]
-  rfl
-
-private theorem allocated_workspace_input (I : Interp P ι K (OpCount P ι)) (tag : P)
-    (st : St P K (OpCount P ι)) (N : ℕ) (hsize : st.store.size = 5) (i : Fin N) :
-    (((st.allocate tag (N * N) (I.width tag)).allocate tag N (I.width tag)).allocate
-      tag 9 (I.width tag)).store.read tag 0 i = st.store.read tag 0 i := by
-  change Store.read (((st.store.push _).push _).push _) tag 0 i = _
-  rw [Store.read_push_of_lt (by simp [hsize]), Store.read_push_of_lt (by simp [hsize]),
-    Store.read_push_of_lt (by omega)]
-
 /-- The actual registered tree executes and returns the release of an explicitly witnessed
 workspace state. The witness contains either zero active steps or an existing positive-length
 CGRun tied to the actual decoded final vectors, residual cache and termination status. -/
@@ -86,8 +68,11 @@ theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P)
   let workspace := (((st.allocate tag (N * N) (I.width tag)).allocate tag N
     (I.width tag)).allocate tag 9 (I.width tag))
   obtain ⟨workout, ν, flag, hpre, hflag, herr, hpost⟩ := exec_rounded_preallocated I tag
-    hsem hz hu hc workspace N q A b vals (allocated_workspace_shape I tag st N hshape)
-      (fun i => (allocated_workspace_input I tag st N hsize i).trans (hb i))
+    hsem hz hu hc workspace N q A b vals (by simp only [workspace, St.shape_allocate, hshape]; rfl)
+      (fun i => by
+        rw [St.read_allocate_of_lt, St.read_allocate_of_lt, St.read_allocate_of_lt]
+        · exact hb i
+        all_goals simp [St.allocate, hsize])
       hrom hdecode hsmall hA ha hspec horizon
   let body (A s scalars : ℕ) : Builder P ι ℕ ℕ Unit := do
     forRange ((.const N) * (.const N)) fun i => stmt (.rom tag ⟨A, .var i⟩ (.var i))
@@ -127,11 +112,11 @@ theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P)
   exact exec_scope_of_exec_eq_some I tag (IExp.const N * IExp.const N) N st workout hsize body hbody
 
 /-- Releasing workspace preserves the actual declared decoded vectors and status. -/
-private theorem decoded_release_context (tag : P) (N width : ℕ)
+theorem decoded_release_context (tag : P) (N width : ℕ) {storedMatrix : Bool}
     (workout : St P K (OpCount P ι)) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag workout.store) :
-    let out := releaseWorkspace tag (N * N) N width workout
+    (h : StoreContext tag dec N A b v ν status flag workout.store storedMatrix) :
+    let out := releaseWorkspace tag (if storedMatrix then N * N else 0) N width workout
     out.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)] ∧
     (∀ i : Fin N, ∃ w, out.store.read tag 0 i = some w ∧ dec tag w = b i) ∧
     (∀ i : Fin N, ∃ wx wr wp, out.store.read tag 1 i = some wx ∧ dec tag wx = v.x i ∧
@@ -140,9 +125,10 @@ private theorem decoded_release_context (tag : P) (N width : ℕ)
     (∃ w, out.store.read tag 4 0 = some w ∧ dec tag w = status) := by
   have hsize : workout.store.size = 8 := by
     simpa [Store.shape, workspaceShape] using congrArg Array.size h.shape
+  let matrixLen := if storedMatrix then N * N else 0
   have frame (buf idx : ℕ) (hb : buf < 5) :=
-    read_releaseWorkspace tag (N * N) N width workout hsize tag buf idx hb
-  refine ⟨shape_releaseWorkspace tag (N * N) N width workout h.shape, ?_, ?_, ?_⟩
+    read_releaseWorkspace tag matrixLen N width workout hsize tag buf idx hb
+  refine ⟨shape_releaseWorkspace tag matrixLen N width workout h.shape, ?_, ?_, ?_⟩
   · intro i
     obtain ⟨w, hw, hd⟩ := h.input i
     exact ⟨w, (frame 0 i (by norm_num)).trans hw, hd⟩

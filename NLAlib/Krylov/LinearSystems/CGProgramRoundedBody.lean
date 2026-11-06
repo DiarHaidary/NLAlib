@@ -27,7 +27,8 @@ open Computation
 open scoped Matrix
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
-  {u : P → ℝ} {dec : P → K → ℝ}
+  {u : P → ℝ} {dec : P → K → ℝ} {storedMatrix : Bool}
+  {mv : Builder P ι ℕ ℕ Unit}
 
 /-- The actual division, iterate axpy, negation and residual axpy return physical next x/r
 and their CG defects, with the actual decoded step length retained in scalar cell 3. -/
@@ -35,7 +36,8 @@ theorem exec_rounded_primal (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
     (ν status flag μ : ℝ) (sv : Fin N → ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hμ : ∃ w, st.store.read tag 7 2 = some w ∧ dec tag w = μ)
     (hs : ∀ i : Fin N, ∃ w, st.store.read tag 6 i = some w ∧ dec tag w = sv i)
     (hνpos : 0 < ν) (hμpos : 0 < μ) (hN : 0 < N)
@@ -45,7 +47,8 @@ theorem exec_rounded_primal (I : Interp P ι K C) (tag : P)
       axpy tag ⟨7, 3⟩ 3 0 1 0 (.const N)
       Builder.ins (.un tag .neg ⟨7, 5⟩ ⟨7, 3⟩)
       axpy tag ⟨7, 5⟩ 6 0 2 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
-      StoreContext tag dec N A b ⟨xnext, rnext, v.p⟩ ν status flag out.store ∧
+      StoreContext tag dec N A b ⟨xnext, rnext, v.p⟩ ν status flag
+        out.store storedMatrix ∧
       γ = ν / μ * (1 + eγ) ∧ |eγ| ≤ cgImplementationRoundoffBound N (u tag) ∧ 0 < γ ∧
       ‖WithLp.toLp 2 (v.x + γ • v.p - xnext)‖ ≤ cgImplementationRoundoffBound N (u tag) *
         (‖WithLp.toLp 2 v.x‖ + |γ| * ‖WithLp.toLp 2 v.p‖) ∧
@@ -80,7 +83,8 @@ theorem exec_rounded_search (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store) (hνpos : 0 < ν)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix) (hνpos : 0 < ν)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
     ∃ (out : St P K C) (νnext θnext δ eδ : ℝ) (pnext : Fin N → ℝ), exec I (do
       dot tag ⟨7, 1⟩ 2 0 2 0 (.const N)
@@ -92,7 +96,8 @@ theorem exec_rounded_search (I : Interp P ι K C) (tag : P)
       Builder.ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag dec N A b ⟨v.x, v.r, pnext⟩ νnext
-        (if νnext = 0 then flag else status) flag out.store ∧
+        (if νnext = 0 then flag else status) flag
+        out.store storedMatrix ∧
       νnext = ‖WithLp.toLp 2 v.r‖ ^ 2 * (1 + θnext) ∧
       |θnext| ≤ cgImplementationRoundoffBound N (u tag) ∧ 0 ≤ νnext ∧
       (νnext = 0 ↔ v.r = 0) ∧ δ = νnext / ν * (1 + eδ) ∧
@@ -139,7 +144,8 @@ theorem exec_rounded_positive_body (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag μ : ℝ) (sv : Fin N → ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hμ : ∃ w, st.store.read tag 7 2 = some w ∧ dec tag w = μ)
     (hs : ∀ i : Fin N, ∃ w, st.store.read tag 6 i = some w ∧ dec tag w = sv i)
     (hνpos : 0 < ν) (hμpos : 0 < μ) (hN : 0 < N)
@@ -158,7 +164,8 @@ theorem exec_rounded_positive_body (I : Interp P ι K C) (tag : P)
       Builder.ifThenElse tag .eq ⟨7, 0⟩ ⟨7, 6⟩
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()) : Builder P ι ℕ ℕ Unit).run st =
       some out ∧ StoreContext tag dec N A b next νnext
-        (if νnext = 0 then flag else status) flag out.store ∧
+        (if νnext = 0 then flag else status) flag
+        out.store storedMatrix ∧
       νnext = ‖WithLp.toLp 2 next.r‖ ^ 2 * (1 + θnext) ∧
       |θnext| ≤ cgImplementationRoundoffBound N (u tag) ∧ 0 ≤ νnext ∧
       (νnext = 0 ↔ next.r = 0) ∧ γ = ν / μ * (1 + eγ) ∧
@@ -205,25 +212,28 @@ theorem exec_rounded_curvature_prefix (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
-    (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
+    (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ (out : St P K C) (sv : Fin N → ℝ) (μ : ℝ), exec I (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 6 i = some w ∧ dec tag w = sv i) ∧
       (∃ w, out.store.read tag 7 2 = some w ∧ dec tag w = μ) ∧
       ‖WithLp.toLp 2 (A *ᵥ v.p - sv)‖ ≤ cgImplementationRoundoffBound N (u tag) *
         specNorm A * ‖WithLp.toLp 2 v.p‖ ∧
       |v.p ⬝ᵥ sv - μ| ≤ cgImplementationRoundoffBound N (u tag) *
         ‖WithLp.toLp 2 v.p‖ * ‖WithLp.toLp 2 sv‖ := by
-  obtain ⟨mid, sv, hrun, hctx, hs, hes⟩ := exec_rounded_matvec I tag hsem hz st N A b v
-    ν status flag h hN hsmall
+  obtain ⟨mid, sv, hrun, hctx, hs, hes⟩ := exec_rounded_matvec I tag st N A b v ν status flag h hmv
   obtain ⟨out, μ, hout, hctx', hμ, hs', heμ⟩ := exec_rounded_curvature I tag hsem hz mid N
     A b v ν status flag sv hctx hs hN hsmall
   refine ⟨out, sv, μ, ?_, hctx', hs', hμ, hes, heμ⟩
-  rw [exec_run_bind I (b := gemv tag (.const N) (.const N) 5 0 3 0 6 0)
-    (fun _ => rfl), hrun, Option.bind_some]
+  rw [hmv.composable, hrun, Option.bind_some]
   exact hout
 
 /-- The actual computed curvature is positive under the explicit spectral/precision window
@@ -232,14 +242,19 @@ theorem exec_rounded_curvature_prefix_pos (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν status flag : ℝ)
-    (h : StoreContext tag dec N A b v ν status flag st.store)
+    (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hp : v.p ≠ 0) :
+    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hp : v.p ≠ 0)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ (out : St P K C) (sv : Fin N → ℝ) (μ : ℝ), exec I (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N) : Builder P ι ℕ ℕ Unit).run st = some out ∧
-      StoreContext tag dec N A b v ν status flag out.store ∧
+      StoreContext tag dec N A b v ν status flag
+        out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, out.store.read tag 6 i = some w ∧ dec tag w = sv i) ∧
       (∃ w, out.store.read tag 7 2 = some w ∧ dec tag w = μ) ∧ 0 < μ ∧
       ‖WithLp.toLp 2 (A *ᵥ v.p - sv)‖ ≤ cgImplementationRoundoffBound N (u tag) *
@@ -247,7 +262,7 @@ theorem exec_rounded_curvature_prefix_pos (I : Interp P ι K C) (tag : P)
       |v.p ⬝ᵥ sv - μ| ≤ cgImplementationRoundoffBound N (u tag) *
         ‖WithLp.toLp 2 v.p‖ * ‖WithLp.toLp 2 sv‖ := by
   obtain ⟨out, sv, μ, hrun, hctx, hs, hμ, hes, heμ⟩ :=
-    exec_rounded_curvature_prefix I tag hsem hz st N A b v ν status flag h hN hsmall
+    exec_rounded_curvature_prefix (hmv := hmv) I tag hsem hz st N A b v ν status flag h hN hsmall
   have heq : A *ᵥ v.p + (sv - A *ᵥ v.p) = sv := by abel
   have hes' : ‖WithLp.toLp 2 (sv - A *ᵥ v.p)‖ ≤
       cgImplementationRoundoffBound N (u tag) * specNorm A * ‖WithLp.toLp 2 v.p‖ := by
@@ -265,7 +280,8 @@ theorem exec_rounded_curvature_prefix_pos (I : Interp P ι K C) (tag : P)
 private theorem cmp_status_zero (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N)) (ν flag : ℝ)
-    (h : StoreContext tag dec N A b v ν 0 flag st.store) :
+    (h : StoreContext tag dec N A b v ν 0 flag
+      st.store storedMatrix) :
     cmpStep I tag .eq ⟨4, 0⟩ ⟨7, 6⟩ st =
       some (true, { st with cnt := st.cnt + I.charge (.cmp tag) }) := by
   obtain ⟨ws, hs, hds⟩ := h.statusValue
@@ -277,7 +293,8 @@ private theorem cmp_status_zero (I : Interp P ι K C) (tag : P)
 private theorem cmp_curvature_positive (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St P K C) (N : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : CGState ℝ (Fin N))
-    (ν status flag μ : ℝ) (h : StoreContext tag dec N A b v ν status flag st.store)
+    (ν status flag μ : ℝ) (h : StoreContext tag dec N A b v ν status flag
+      st.store storedMatrix)
     (hμ : ∃ w, st.store.read tag 7 2 = some w ∧ dec tag w = μ) (hμpos : 0 < μ) :
     cmpStep I tag .lt ⟨7, 6⟩ ⟨7, 2⟩ st =
       some (true, { st with cnt := st.cnt + I.charge (.cmp tag) }) := by
@@ -294,19 +311,24 @@ theorem exec_rounded_positive_step (I : Interp P ι K C) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (st : St P K C) (N : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (v : CGState ℝ (Fin N)) (ν flag : ℝ)
-    (h : StoreContext tag dec N A b v ν 0 flag st.store) (hνpos : 0 < ν)
+    (h : StoreContext tag dec N A b v ν 0 flag
+      st.store storedMatrix)
+    (hνpos : 0 < ν)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hp : v.p ≠ 0) :
+    (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a) (hp : v.p ≠ 0)
+    (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
+      specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
+      else True) 3 6 0 0 mv) :
     ∃ (prestate out : St P K C) (next : CGState ℝ (Fin N)) (sv : Fin N → ℝ)
         (μ νnext θnext γ eγ δ eδ : ℝ),
       exec I (do
-        gemv tag (.const N) (.const N) 5 0 3 0 6 0
+        mv
         dot tag ⟨7, 2⟩ 3 0 6 0 (.const N) : Builder P ι ℕ ℕ Unit).run
           { st with cnt := st.cnt + I.charge (.cmp tag) } = some prestate ∧
       exec I (Builder.ifThenElse tag .eq ⟨4, 0⟩ ⟨7, 6⟩
       (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)
       (Builder.ifThenElse tag .lt ⟨7, 6⟩ ⟨7, 2⟩ (do
       Builder.ins (.bin tag .div ⟨7, 3⟩ ⟨7, 0⟩ ⟨7, 2⟩)
@@ -323,7 +345,8 @@ theorem exec_rounded_positive_step (I : Interp P ι K C) (tag : P)
         (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 7⟩)) (pure ()))
       (Builder.ins (.copy tag ⟨4, 0⟩ ⟨7, 8⟩))) : Builder P ι ℕ ℕ Unit)
       (pure ())).run st = some out ∧
-      StoreContext tag dec N A b next νnext (if νnext = 0 then flag else 0) flag out.store ∧
+      StoreContext tag dec N A b next νnext (if νnext = 0 then flag else 0) flag
+        out.store storedMatrix ∧
       (∀ i : Fin N, ∃ w, prestate.store.read tag 6 i = some w ∧ dec tag w = sv i) ∧
       (∃ w, prestate.store.read tag 7 2 = some w ∧ dec tag w = μ) ∧ 0 < μ ∧
       ‖WithLp.toLp 2 (A *ᵥ v.p - sv)‖ ≤ cgImplementationRoundoffBound N (u tag) *
@@ -345,7 +368,7 @@ theorem exec_rounded_positive_step (I : Interp P ι K C) (tag : P)
       (∃ w, out.store.read tag 7 4 = some w ∧ dec tag w = δ) := by
   let active : St P K C := { st with cnt := st.cnt + I.charge (.cmp tag) }
   obtain ⟨prestate, sv, μ, hprefix, hcpre, hs, hμ, hμpos, hes, heμ⟩ :=
-    exec_rounded_curvature_prefix_pos I tag hsem hz active N A b v ν 0 flag h
+    exec_rounded_curvature_prefix_pos (hmv := hmv) I tag hsem hz active N A b v ν 0 flag h
       hN hsmall hA ha hspec hprec hp
   let guarded : St P K C := { prestate with cnt := prestate.cnt + I.charge (.cmp tag) }
   obtain ⟨out, next, νnext, θnext, γ, eγ, δ, eδ, hbody, hctx, hνeq, hθ, hnonneg, hzero,
@@ -355,17 +378,16 @@ theorem exec_rounded_positive_step (I : Interp P ι K C) (tag : P)
   have hstatus := cmp_status_zero I tag hsem st N A b v ν flag h
   have hcurvature := cmp_curvature_positive I tag hsem prestate N A b v ν 0 flag μ hcpre hμ hμpos
   have hcompose : ExecutionComposable I (do
-      gemv tag (.const N) (.const N) 5 0 3 0 6 0
+      mv
       dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)) :=
-    (executionComposable_single I (fun _ => rfl)).bind
-      (executionComposable_single I (fun _ => rfl))
+    hmv.composable.bind (executionComposable_single I (fun _ => rfl))
   refine ⟨prestate, out, next, sv, μ, νnext, θnext, γ, eγ, δ, eδ, hprefix, ?_, hctx,
     hs, hμ, hμpos, hes, heμ, hνeq, hθ, hnonneg, hzero, hγeq, heγ, hγpos,
     hδeq, heδ, hex, her, hep, hγ, hδ⟩
   change exec I (.seq (.ite tag .eq ⟨4, 0⟩ ⟨7, 6⟩ _ _) .skip) st = _
   rw [exec_seq_skip, exec_ite, hstatus, Option.bind_some]
   change exec I ((do
-    gemv tag (.const N) (.const N) 5 0 3 0 6 0
+    mv
     dot tag ⟨7, 2⟩ 3 0 6 0 (.const N)) >>= fun _ => _).run active = _
   rw [hcompose, hprefix, Option.bind_some]
   change exec I (.seq (.ite tag .lt ⟨7, 6⟩ ⟨7, 2⟩ _ _) .skip) prestate = _

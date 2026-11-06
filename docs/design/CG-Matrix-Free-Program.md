@@ -38,19 +38,20 @@ rounded scalar correctness. It counts the actual `.apply` as one load plus one m
 
 ## Reusing correctness
 
-Reuse the existing `CGState`, scalar-frame and BLAS execution lemmas. The current store context
-additionally requires a physically loaded matrix; it cannot be assumed for an oracle program.
-A reviewed generalization can distinguish a stored matrix from the zero-length reserved slot,
-with the existing dense specialization definitionally retaining all its old conditions.
-Common vector/scalar update phases then apply to both backends. Curvature execution is the
+Reuse the existing `CGState`, scalar-frame and BLAS execution lemmas. The shared store context distinguishes a stored matrix from the zero-length reserved slot,
+with the existing dense specialization retaining all its old conditions.
+Common vector/scalar update phases apply to both backends. Curvature execution is the
 backend-specific component: existing dense gemv versus the certified actual oracle application.
 Loop invariants and mathematical guard facts are shared. No alternative CG recurrence or
 arithmetic-error/run interface is introduced.
 
-The full rounded oracle theorem will use the existing scalar contract and `IsMatvecErr`
-separately. Its oracle-accuracy allowance is explicit and is not identified with unit roundoff.
-The stored-entry rounded bridge remains the first complete prototype; this oracle variant
-reuses its extraction and horizon mathematics after proving the appropriate primitive phases.
+The rounded oracle theorem is now in `CGOracleProgramRounded.lean`. It takes the existing
+scalar contract, an independent `IsMatvecErr` accuracy eta, and a chosen allowance v >= u
+whose CG run budget covers eta. It proves actual compiled execution, all three decoded
+vectors, status/input preservation, terminal skipping and original resources. Dense CG uses
+the same phase/prefix/horizon proof with the dense kernel certificate; its prior full
+execution and backward statements remain unchanged.
+See [the common design](Krylov-Rounded-Oracles.md) for the precise allowance selection.
 
 ## Approval and validation
 

@@ -701,3 +701,21 @@ args = ["N", "u"]
 latex = '16(#1+1)^2#2'
 lean_body = 'lanczosImplementationRoundoffBound (N : ℕ) (u : ℝ) : ℝ := 16 * ((N : ℝ) + 1) ^ 2 * u'
 body_hash = "763d00193801ec18"
+
+[[constant]]
+name = "Float.Model.Format.underflowBound"
+kind = "format parameter"
+file = "NLAlib/ForMathlib/Data/Float/Basic.lean"
+args = ["spec"]
+latex = '2^{\operatorname{emin}(#1)}/2'
+lean_body = "underflowBound (spec : Format) : ℝ := 2 ^ spec.minExponent / 2"
+body_hash = "2a7b7c92d3b12e9a"
+
+[[constant]]
+name = "Float.Model.Format.maxExponentBound"
+kind = "format parameter"
+file = "NLAlib/ForMathlib/Data/Float/Basic.lean"
+args = ["spec"]
+latex = '2^{\operatorname{ebits}(#1)}-2-\operatorname{bias}(#1)-(\operatorname{prec}(#1)-1)'
+lean_body = "maxExponentBound (spec : Format) : ℤ := ((2 ^ spec.exponentBits : ℕ) : ℤ) - 2 - spec.exponentBias - spec.mantissaBitsWithoutImplicit"
+body_hash = "1d8f95afc9c5f876"

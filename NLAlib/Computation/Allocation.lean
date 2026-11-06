@@ -42,6 +42,20 @@ def St.release (st : St P K C) (tag : P) (len width : ℕ) : St P K C :=
     cur := Function.update st.cur tag (st.cur tag - len)
     curW := st.curW - len * width }
 
+omit [AddMonoid C] in
+/-- Allocating a buffer appends exactly its tag and capacity to the store shape. -/
+theorem St.shape_allocate (st : St P K C) (tag : P) (len width : ℕ) :
+    (st.allocate tag len width).store.shape = st.store.shape.push (tag, len) := by
+  simp only [St.allocate, Store.shape, Array.map_push, Array.size_replicate]
+
+omit [AddMonoid C] in
+/-- Allocation preserves every read in an existing buffer, independently of word width
+and of the new buffer's tag and capacity. -/
+theorem St.read_allocate_of_lt (st : St P K C) (tag : P) (len width : ℕ)
+    (p : P) (buf idx : ℕ) (hbuf : buf < st.store.size) :
+    (st.allocate tag len width).store.read p buf idx = st.store.read p buf idx :=
+  Store.read_push_of_lt hbuf
+
 /-- An actual body execution lifts through the corresponding allocation and scope release.
 No scalar correctness, zero-width, initialization or numerical output premise is needed. -/
 theorem exec_alloc_of_exec_eq_some (I : Interp P ι K C) (tag : P) (len : IExp ℕ)
