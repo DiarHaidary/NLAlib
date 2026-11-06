@@ -163,10 +163,258 @@ theorem holds_of_exec_forRange_drawMul (p : P) (n : ℕ) {G : ℕ} {s : Cell ℕ
   · simpa [pairLayout, tapeIndexMatrix, ScalarSem.tapeNormal, Matrix.map_apply,
       Matrix.of_apply] using hw
 
+omit [Inhabited K] in
+private theorem dfH_zcopy_congr (p : P) {m₁ m₂ n₁ n₂ : IExp ℕ} (hm : m₁.eval = m₂.eval)
+    (hn : n₁.eval = n₂.eval) (X : ℕ) (xo : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) (st : St P K C) :
+    exec I (zcopy (ι := ι) p m₁ n₁ X xo Y yo).run st =
+      exec I (zcopy (ι := ι) p m₂ n₂ X xo Y yo).run st := by
+  change exec I (.seq (.named "zcopy" _ (.seq (.loop (2 * (m₁ * n₁)) _) .skip)) .skip) st =
+    exec I (.seq (.named "zcopy" _ (.seq (.loop (2 * (m₂ * n₂)) _) .skip)) .skip) st
+  rw [exec_seq_skip, exec_seq_skip, exec_named, exec_named, exec_seq_skip, exec_seq_skip,
+    exec_loop, exec_loop]
+  simp only [IExp.eval_mul, IExp.eval_ofNat, hm, hn]
+
+omit [Inhabited K] in
+private theorem dfH_zzero_congr (p : P) {m₁ m₂ n₁ n₂ : IExp ℕ} (hm : m₁.eval = m₂.eval)
+    (hn : n₁.eval = n₂.eval) (Y : ℕ) (yo : IExp ℕ) (st : St P K C) :
+    exec I (zzero (ι := ι) p m₁ n₁ Y yo).run st = exec I (zzero (ι := ι) p m₂ n₂ Y yo).run st := by
+  change exec I (.seq (.named "zzero" _ (.seq (.loop (2 * (m₁ * n₁)) _) .skip)) .skip) st =
+    exec I (.seq (.named "zzero" _ (.seq (.loop (2 * (m₂ * n₂)) _) .skip)) .skip) st
+  rw [exec_seq_skip, exec_seq_skip, exec_named, exec_named, exec_seq_skip, exec_seq_skip,
+    exec_loop, exec_loop]
+  simp only [IExp.eval_mul, IExp.eval_ofNat, hm, hn]
+
+/-- The kernel calls and the output copies of `NLAlib.deflateProg`. -/
+private theorem holds_kcalls_deflateProg {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR) (p : P)
+    (n r : ℕ) {Pm Q G Yb Qf Rf : ℕ} {po qo : IExp ℕ} {s s' : St P K C}
+    {P₀ Gm : Matrix (Fin n) (Fin n) (K × K)}
+    (hP : pairLayout.Holds s.store p Pm po.eval P₀) (hG : pairLayout.Holds s.store p G 0 Gm)
+    (hne : (Yb ≠ Pm ∨ n = 0) ∧ Yb ≠ G ∧ Qf ≠ Yb ∧ Rf ≠ Yb ∧ Qf ≠ Rf ∧ Q ≠ Qf)
+    (h : exec I (do
+      stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+      stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+      zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+      zzero p (.const n) (.const r - .const n) Q
+        (qo + 2 * (.const n * (.const r - (.const r - .const n)))) :
+        Builder P ι ℕ ℕ Unit).run s = some s') :
+    pairLayout.Holds s'.store p Q qo.eval (Matrix.of fun i (j : Fin r) =>
+        if hj : (j : ℕ) < n then (qrR (mmR P₀ Gm)).1 i ⟨j, hj⟩ else
+          ((I.sem.lit p 0).getD default, (I.sem.lit p 0).getD default)) ∧
+      (∀ q b i, b ≠ Yb → b ≠ Qf → b ≠ Rf →
+        blockDisjoint (b, i, 1) (Q, qo.eval, 2 * (n * r)) = true →
+        s'.store.read q b i = s.store.read q b i) ∧
+      s'.store.shape = s.store.shape ∧ s'.pos = s.pos := by
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hne
+  have hca : blockDisjoint (Yb, 0, n * n * 2) (Pm, po.eval,
+      n * n * 2) = true := by rcases h1 with h1 | rfl <;> simp [blockDisjoint, *]
+  have hcb : blockDisjoint (Yb, 0, n * n * 2) (G, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h2]
+  have hd₁ : blockDisjoint (Qf, 0, n * n * 2) (Rf, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h5]
+  have hd₂ : blockDisjoint (Qf, 0, n * n * 2) (Yb, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h3]
+  have hd₃ : blockDisjoint (Rf, 0, n * n * 2) (Yb, 0,
+      n * n * 2) = true := by simp [blockDisjoint, h4]
+  -- the product
+  rw [exec_run_bind I (b := stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)]
+    [(Yb, 0)])) (fun _ => rfl)] at h
+  obtain ⟨σ₁, hσ₁, h⟩ := Option.bind_eq_some_iff.mp h
+  change exec I (.seq (.kcall mm p _ _ _) .skip) s = some σ₁ at hσ₁
+  rw [exec_seq_skip, exec_kcall] at hσ₁
+  obtain ⟨s₁, hs₁, rfl⟩ := Option.map_eq_some_iff.mp hσ₁
+  have hk₁ : I.kcallStore mm p [n, n, n] [(Pm, po.eval), (G, 0)] [(Yb, 0)] s.store = some s₁ := by
+    simpa using hs₁
+  obtain ⟨hY, hfr₁⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hP hG hca hcb hk₁
+  have hsh₁ := Interp.shape_of_kcallStore_eq_some hk₁
+  -- the factorization
+  rw [exec_run_bind I (b := stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)]))
+    (fun _ => rfl)] at h
+  obtain ⟨σ₂, hσ₂, h⟩ := Option.bind_eq_some_iff.mp h
+  change exec I (.seq (.kcall qr p _ _ _) .skip) _ = some σ₂ at hσ₂
+  rw [exec_seq_skip, exec_kcall] at hσ₂
+  obtain ⟨s₂, hs₂, rfl⟩ := Option.map_eq_some_iff.mp hσ₂
+  have hk₂ : I.kcallStore qr p [n, n] [(Yb, 0)] [(Qf, 0), (Rf, 0)] s₁ = some s₂ := by
+    simpa using hs₂
+  obtain ⟨hQm, -, hfr₂⟩ := hqr.holds_of_kcallStore_eq_some pairLayout.get_put p hY hd₁ hd₂ hd₃ hk₂
+  have hsh₂ := Interp.shape_of_kcallStore_eq_some hk₂
+  -- the copy of the first columns
+  have hm : r - (r - n) ≤ n ∧ r - (r - n) ≤ r := ⟨by omega, by omega⟩
+  have hnr : n * (r - (r - n)) + n * (r - n) = n * r := by
+    rw [← Nat.mul_add, Nat.sub_add_cancel (Nat.sub_le r n)]
+  rw [exec_run_bind I (b := zcopy (ι := ι) p (.const n) (.const r - (.const r - .const n)) Qf 0 Q
+    qo) (fun _ => rfl)] at h
+  obtain ⟨σ₃, hσ₃, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [dfH_zcopy_congr p (m₁ := .const n) (n₁ := .const r - (.const r - .const n))
+    (m₂ := .const n) (n₂ := .const (r - (r - n))) rfl rfl] at hσ₃
+  have hA : pairLayout.Holds s₂ p Qf (IExp.eval 0)
+      (Matrix.of fun i (j : Fin (r - (r - n))) => (qrR (mmR P₀ Gm)).1 i ⟨j, by omega⟩) :=
+    fun i j t => hQm i ⟨j, by omega⟩ t
+  have hXY : blockDisjoint (Q, qo.eval, 2 * (n * (r - (r - n)))) (Qf, IExp.eval 0,
+      2 * (n * (r - (r - n)))) = true := by simp [blockDisjoint, h6]
+  obtain ⟨hC, hfr₃, hsh₃, hpos₃⟩ := holds_of_exec_zcopy p n (r - (r - n)) hA hXY hσ₃
+  -- the zero columns
+  rw [dfH_zzero_congr p (m₁ := .const n) (n₁ := .const r - .const n) (m₂ := .const n)
+    (n₂ := .const (r - n)) rfl rfl] at h
+  obtain ⟨hZ, hfr₄, hsh₄, hpos₄⟩ := holds_of_exec_zzero (toNat := fun _ => 0) (mmR := mmR)
+    (qrR := qrR) (unif := fun k (_ : Unit) => k) (normal := fun (_ : Unit) => ((default : K),
+      (default : K))) p n (r - n) h
+  have hyo : (qo + 2 * (IExp.const n * (IExp.const r - (IExp.const r - IExp.const n)))).eval =
+      qo.eval + 2 * (n * (r - (r - n))) := by
+    simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_sub, IExp.eval_const, IExp.eval_ofNat]
+  rw [hyo] at hZ hfr₄
+  refine ⟨fun i j t => ?_, fun q b i hbY hbQ hbR hb => ?_, ?_, hpos₄.trans hpos₃⟩
+  · obtain ⟨t, ht⟩ := t
+    change t < 2 at ht
+    change s'.store.read p Q (qo.eval + (2 * (i.1 + n * j.1) + t)) = _
+    have hj := Nat.mul_le_mul_left n (show j.1 + 1 ≤ r from j.2)
+    rw [Nat.mul_succ] at hj
+    have hi := i.2
+    by_cases hjn : (j : ℕ) < n
+    · have hjm : (j : ℕ) < r - (r - n) := by omega
+      have hjm' := Nat.mul_le_mul_left n (show j.1 + 1 ≤ r - (r - n) by omega)
+      rw [Nat.mul_succ] at hjm'
+      rw [hfr₄ _ _ _ (by
+        simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq]
+        omega)]
+      have := hC i ⟨j, hjm⟩ ⟨t, ht⟩
+      simp only [Matrix.of_apply] at this ⊢
+      rw [dif_pos hjn]
+      exact this
+    · have hrn : r - (r - n) = n := by omega
+      have hj' : (j : ℕ) - n < r - n := by omega
+      have e : n * ((j : ℕ) - n) + n * n = n * j := by
+        rw [← Nat.mul_add, Nat.sub_add_cancel (by omega)]
+      have := hZ i ⟨j - n, hj'⟩ (⟨t, ht⟩ : Fin 2)
+      change s'.store.read p Q (qo.eval + 2 * (n * (r - (r - n))) +
+        (2 * (i.1 + n * (j.1 - n)) + t)) = _ at this
+      rw [hrn] at this
+      simp only [Matrix.of_apply, dif_neg hjn]
+      have e2 : qo.eval + 2 * (n * n) + (2 * (i.1 + n * (j.1 - n)) + t) =
+          qo.eval + (2 * (i.1 + n * j.1) + t) := by omega
+      rw [e2] at this
+      rw [this]
+      rcases t with _ | _ | t
+      · rfl
+      · rfl
+      · omega
+  · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hb
+    have hd : ∀ {o l : ℕ}, (b ≠ Q ∨ i + 1 ≤ o ∨ o + l ≤ i) →
+        blockDisjoint (b, i, 1) (Q, o, l) = true := fun h => by
+      simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq]
+      rcases h with h | h | h
+      · exact Or.inl (Or.inl h)
+      · exact Or.inl (Or.inr h)
+      · exact Or.inr h
+    rw [hfr₄ _ _ _ (hd (by omega)), hfr₃ _ _ _ (hd (by omega)),
+      hfr₂ _ _ _ (by simp [blockDisjoint, hbQ]) (by simp [blockDisjoint, hbR]),
+      hfr₁ _ _ _ (by simp [blockDisjoint, hbY])]
+  · exact hsh₄.trans (hsh₃.trans (hsh₂.trans hsh₁))
+
+/-- The body of `NLAlib.deflateProg` inside its allocations. -/
+private theorem holds_body_deflateProg {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR) (p : P)
+    (n r : ℕ) {Pm Q t G Yb Qf Rf : ℕ} {po qo : IExp ℕ} {s s' : St P K C}
+    {P₀ : Matrix (Fin n) (Fin n) (K × K)} (hP : pairLayout.Holds s.store p Pm po.eval P₀)
+    (hPm : n = 0 ∨ (t ≠ Pm ∧ G ≠ Pm ∧ Yb ≠ Pm))
+    (hne : t ≠ G ∧ Yb ≠ G ∧ Qf ≠ Yb ∧ Rf ≠ Yb ∧ Qf ≠ Rf ∧ Q ≠ Qf)
+    (h : exec I (do
+      ins (.lit p ⟨t, 0⟩ 1)
+      ins (.litIdx p ⟨t, 1⟩ 2)
+      ins (.bin p .div ⟨t, 0⟩ ⟨t, 0⟩ ⟨t, 1⟩)
+      ins (.un p .sqrt ⟨t, 0⟩ ⟨t, 0⟩)
+      forRange (2 * (.const n * .const n)) fun w => do
+        ins (.draw p .gaussian ⟨G, .var w⟩)
+        ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩)
+      stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+      stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+      zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+      zzero p (.const n) (.const r - .const n) Q
+        (qo + 2 * (.const n * (.const r - (.const r - .const n)))) :
+        Builder P ι ℕ ℕ Unit).run s = some s') :
+    pairLayout.Holds s'.store p Q qo.eval
+        (deflate (I.sem.toFloatMachine p toNat mmR qrR unif
+          (I.sem.tapeNormal p fun i => I.tape .gaussian (s.pos .gaussian + i))) r P₀
+          (tapeIndexMatrix n)) ∧
+      (∀ q b i, b ≠ t → b ≠ G → b ≠ Yb → b ≠ Qf → b ≠ Rf →
+        blockDisjoint (b, i, 1) (Q, qo.eval, 2 * (n * r)) = true →
+        s'.store.read q b i = s.store.read q b i) ∧
+      s'.store.shape = s.store.shape ∧
+      s'.pos = Function.update s.pos .gaussian (s.pos .gaussian + 2 * (n * n)) := by
+  obtain ⟨htG, hrest⟩ := hne
+  change exec I (.seq (.instr (.lit p ⟨t, 0⟩ 1)) (.seq (.instr (.litIdx p ⟨t, 1⟩ 2))
+    (.seq (.instr (.bin p .div ⟨t, 0⟩ ⟨t, 0⟩ ⟨t, 1⟩)) (.seq (.instr (.un p .sqrt ⟨t, 0⟩ ⟨t, 0⟩))
+    (Builder.run do
+      forRange (2 * (.const n * .const n)) fun w => do
+        ins (ι := ι) (.draw p .gaussian ⟨G, .var w⟩)
+        ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩)
+      stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+      stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+      zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+      zzero p (.const n) (.const r - .const n) Q
+        (qo + 2 * (.const n * (.const r - (.const r - .const n))))))))) s = some s' at h
+  -- the four instructions
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨v₁, hv₁, s₁, hw₁, rfl⟩, rfl⟩, h⟩ := h
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨z₂, hz₂, s₂, hw₂, rfl⟩, rfl⟩, h⟩ := h
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨a, ha, c, hc, v₃, hv₃, s₃, hw₃, rfl⟩, rfl⟩, h⟩ := h
+  rw [exec_seq, exec_instr] at h
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+  obtain ⟨_, ⟨_, ⟨a', ha', v₄, hv₄, s₄, hw₄, rfl⟩, rfl⟩, h⟩ := h
+  change s.store.write p t 0 v₁ = some s₁ at hw₁
+  change s₁.write p t 1 z₂ = some s₂ at hw₂
+  change s₂.read p t 0 = some a at ha
+  change s₂.read p t 1 = some c at hc
+  change s₂.write p t 0 v₃ = some s₃ at hw₃
+  change s₃.read p t 0 = some a' at ha'
+  change s₃.write p t 0 v₄ = some s₄ at hw₄
+  rw [Store.read_of_write_eq_some_of_ne hw₂ (Or.inr (by norm_num)),
+    Store.read_of_write_eq_some hw₁, Option.some_inj] at ha
+  rw [Store.read_of_write_eq_some hw₂, Option.some_inj] at hc
+  rw [Store.read_of_write_eq_some hw₃, Option.some_inj] at ha'
+  subst ha hc ha'
+  have hz₂' : I.sem.lit p 2 = some z₂ := by simpa using hz₂
+  have hsq : v₄ = I.sem.sqrtHalf p := by simp [ScalarSem.sqrtHalf, hv₁, hz₂', hv₃, hv₄]
+  have hfr₄ : ∀ q b i, b ≠ t → s₄.read q b i = s.store.read q b i := fun q b i h => by
+    rw [Store.read_of_write_eq_some_of_ne hw₄ (Or.inl h), Store.read_of_write_eq_some_of_ne hw₃
+      (Or.inl h), Store.read_of_write_eq_some_of_ne hw₂ (Or.inl h),
+      Store.read_of_write_eq_some_of_ne hw₁ (Or.inl h)]
+  have hsh₄ : s₄.shape = s.store.shape := by
+    rw [Store.shape_of_write_eq_some hw₄, Store.shape_of_write_eq_some hw₃,
+      Store.shape_of_write_eq_some hw₂, Store.shape_of_write_eq_some hw₁]
+  -- the draws
+  rw [exec_run_bind I (b := forRange (ι := ι) (2 * (.const n * .const n)) fun w => do
+    ins (.draw p .gaussian ⟨G, .var w⟩)
+    ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩)) (fun _ => rfl)] at h
+  obtain ⟨σ₅, h₅, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hGm, hpos₅, hfr₅, hsh₅⟩ := holds_of_exec_forRange_drawMul (I := I) (ι := ι) p n
+    (s := ⟨t, 0⟩) (st := { s with store := s₄, cnt := _ })
+    (hsq ▸ Store.read_of_write_eq_some hw₄) htG h₅
+  -- the kernel calls and the copies
+  obtain ⟨hQ, hfr, hsh, hpos⟩ := holds_kcalls_deflateProg hmm hqr p n r (P₀ := P₀) (s := σ₅)
+    (by
+      rcases hPm with rfl | ⟨h1, h2, -⟩
+      · exact fun i => i.elim0
+      intro i j k
+      rw [hfr₅ p Pm _ h2.symm]
+      change s₄.read p Pm _ = _
+      rw [hfr₄ _ _ _ h1.symm]
+      exact hP i j k) hGm ⟨hPm.elim Or.inr fun h => Or.inl h.2.2, hrest⟩ h
+  refine ⟨hQ, fun q b i hbt hbG hbY hbQ hbR hb => ?_, hsh.trans (hsh₅.trans hsh₄),
+    hpos.trans hpos₅⟩
+  rw [hfr q b i hbY hbQ hbR hb, hfr₅ q b i hbG]
+  exact hfr₄ q b i hbt
+
 /-- **The refinement of the deflation program, partial equality**: if kernels `mm` and `qr` of
 `I` are the routines `mmR` and `qrR` on interleaved pairs, a successful run of
 `NLAlib.deflateProg` at size $n$ and rank $r$, from a state whose block at `Pm` holds the stored
-$n \times n$ matrix $\mathbf{P}$, with the output block at `Q` of $2nr$ words disjoint from it,
+$n \times n$ matrix $\mathbf{P}$, with the output block at `Q` of $2nr$ words (in an existing
+buffer at tag `p`, so not one of the program's scratch buffers) disjoint from it,
 ends with the output block holding
 $$\mathsf{deflate}(\mathbf{P}, r)$$
 computed by `NLAlib.deflate` on the machine `M` of the semantics at `p` with product `mmR`, QR
@@ -192,6 +440,7 @@ theorem holds_of_exec_deflateProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     {st st' : St P K C} {P₀ : Matrix (Fin n) (Fin n) (K × K)}
     (hP : pairLayout.Holds st.store p Pm po.eval P₀)
     (hQP : blockDisjoint (Q, qo.eval, 2 * (n * r)) (Pm, po.eval, 2 * (n * n)) = true)
+    (hQ : ∃ len, st.store.shape[Q]? = some (p, len) ∧ qo.eval + 2 * (n * r) ≤ len)
     (h : exec I (deflateProg p mm qr (.const n) (.const r) Pm po Q qo).run st = some st') :
     pairLayout.Holds st'.store p Q qo.eval
         (deflate (I.sem.toFloatMachine p toNat mmR qrR unif
@@ -201,7 +450,79 @@ theorem holds_of_exec_deflateProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧
       st'.pos = Function.update st.pos .gaussian (st.pos .gaussian + 2 * (n * n)) := by
-  sorry
+  obtain ⟨len, hQs, -⟩ := hQ
+  have hQS : Q < st.store.size := by
+    rw [← Store.size_shape]
+    exact (Array.getElem?_eq_some_iff.mp hQs).1
+  have hprog : (deflateProg p mm qr (.const n) (.const r) Pm po Q qo).run =
+      .seq (.alloc p 2 fun t => .alloc p (2 * (.const n * .const n)) fun G =>
+        .alloc p (2 * (.const n * .const n)) fun Yb =>
+        .alloc p (2 * (.const n * .const n)) fun Qf =>
+        .alloc p (2 * (.const n * .const n)) fun Rf => (do
+          ins (.lit p ⟨t, 0⟩ 1)
+          ins (.litIdx p ⟨t, 1⟩ 2)
+          ins (.bin p .div ⟨t, 0⟩ ⟨t, 0⟩ ⟨t, 1⟩)
+          ins (.un p .sqrt ⟨t, 0⟩ ⟨t, 0⟩)
+          forRange (2 * (.const n * .const n)) fun w => do
+            ins (.draw p .gaussian ⟨G, .var w⟩)
+            ins (.bin p .mul ⟨G, .var w⟩ ⟨G, .var w⟩ ⟨t, 0⟩)
+          stmt (.kcall mm p [.const n, .const n, .const n] [(Pm, po), (G, 0)] [(Yb, 0)])
+          stmt (.kcall qr p [.const n, .const n] [(Yb, 0)] [(Qf, 0), (Rf, 0)])
+          zcopy p (.const n) (.const r - (.const r - .const n)) Qf 0 Q qo
+          zzero p (.const n) (.const r - .const n) Q
+            (qo + 2 * (.const n * (.const r - (.const r - .const n)))) :
+            Builder P ι ℕ ℕ Unit).run) .skip := rfl
+  rw [hprog, exec_seq_skip, exec_alloc] at h
+  obtain ⟨st₁, h₁, e₁⟩ := Option.map_eq_some_iff.mp h
+  clear h
+  rw [exec_alloc] at h₁
+  obtain ⟨st₂, h₂, e₂⟩ := Option.map_eq_some_iff.mp h₁
+  clear h₁
+  rw [exec_alloc] at h₂
+  obtain ⟨st₃, h₃, e₃⟩ := Option.map_eq_some_iff.mp h₂
+  clear h₂
+  rw [exec_alloc] at h₃
+  obtain ⟨st₄, h₄, e₄⟩ := Option.map_eq_some_iff.mp h₃
+  clear h₃
+  rw [exec_alloc] at h₄
+  obtain ⟨st₅, h₅, e₅⟩ := Option.map_eq_some_iff.mp h₄
+  clear h₄
+  subst e₁ e₂ e₃ e₄ e₅
+  have hPm : n = 0 ∨ Pm < st.store.size := by
+    rcases Nat.eq_zero_or_pos n with h | h
+    · exact Or.inl h
+    · exact Or.inr (Store.lt_size_of_read_eq_some (hP ⟨0, h⟩ ⟨0, h⟩ (0 : Fin 2)))
+  obtain ⟨hQ', hfr', hsh', hpos'⟩ := holds_body_deflateProg (toNat := toNat) (unif := unif)
+    hmm hqr p n r (P₀ := P₀) (h := h₅) (by
+      rcases hPm with rfl | hPm
+      · exact fun i => i.elim0
+      intro i j k
+      dsimp only
+      repeat rw [Store.read_push_of_lt
+        (by first | omega | (simp only [Array.size_push]; omega))]
+      exact hP i j k)
+    (by
+      rcases hPm with h | h
+      · exact Or.inl h
+      · exact Or.inr (by simp only [Array.size_push]; omega))
+    (by simp only [Array.size_push]; omega)
+  have hsz : st₅.store.size = st.store.size + 5 := by
+    rw [Store.size_eq_of_shape_eq hsh']; simp
+  have hpop : ∀ {q : P} {b i : ℕ}, b < st.store.size → Store.read (Array.pop (Array.pop
+      (Array.pop (Array.pop (Array.pop st₅.store))))) q b i = st₅.store.read q b i := by
+    intro q b i hb
+    repeat rw [Store.read_pop_of_lt (by first | omega | (simp only [Array.size_pop]; omega))]
+  refine ⟨hQ'.of_forall_read_eq fun i _ _ => hpop hQS, fun q b' i hb' => ?_, ?_, hpos'⟩
+  · rcases Nat.lt_or_ge b' st.store.size with hb'' | hb''
+    · rw [hpop hb'', hfr' q b' i (by omega) (by simp only [Array.size_push]; omega)
+        (by simp only [Array.size_push]; omega) (by simp only [Array.size_push]; omega)
+        (by simp only [Array.size_push]; omega) hb']
+      repeat rw [Store.read_push_of_lt
+        (by first | omega | (simp only [Array.size_push]; omega))]
+    · rw [Store.read_eq_none_of_size_le (by simp; omega), Store.read_eq_none_of_size_le hb'']
+  · change Store.shape (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop st₅.store))))) = _
+    rw [Store.shape_pop, Store.shape_pop, Store.shape_pop, Store.shape_pop, Store.shape_pop, hsh']
+    simp [Store.shape]
 
 private theorem exists_exec_kcalls_deflateProg {mm qr : ι}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
@@ -532,7 +853,8 @@ theorem deflateProg.holds_of_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I 
   rw [Prog.exec_eq_exec_toStmt, deflateProg.toStmt_compiled] at h
   simpa [inputState] using (holds_of_exec_deflateProg (toNat := toNat) (unif := unif) hmm hqr p N
     r (Pm := 0) (Q := 1) (po := 0) (qo := 0) (pairLayout.holds_inputState p (k := 0) rfl)
-    (by simp [blockDisjoint]) h).1
+    (by simp [blockDisjoint])
+    ⟨2 * (N * r), by simp [inputState, Store.getElem?_shape], by simp⟩ h).1
 
 /-- **The registered tree always succeeds** under the standard model at $u$ with every value in
 range, $u(p) \le 1$ and exact literals up to $2$, if kernels `mm` and `qr` of `I` are routines on
