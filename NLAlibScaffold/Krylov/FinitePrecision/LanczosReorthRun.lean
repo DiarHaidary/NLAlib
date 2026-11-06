@@ -77,7 +77,78 @@ theorem norm_transpose_mulVec_v_le {j : ℕ} (hj : j < k)
     (hV : specNorm ((basisOf L.v (j + 1))ᵀ * basisOf L.v (j + 1) - 1) ≤ L.η₀)
     (hη : L.η₀ ≤ 1 / 100) :
     ‖WithLp.toLp 2 ((basisOf L.v (j + 1))ᵀ *ᵥ L.v (j + 2))‖ ≤ L.orthLevel := by
-  sorry
+  have hord := (L.orth_eq j hj).orth hV
+  have hs : Real.sqrt (1 + L.η₀) ≤ 3 / 2 := by
+    rw [Real.sqrt_le_iff]
+    constructor <;> nlinarith
+  have hsq : specNorm (basisOf L.v (j + 1))ᵀ ≤ Real.sqrt (1 + L.η₀) := by
+    rw [specNorm_transpose]
+    exact specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV
+  have hδ := (norm_toLp_mulVec_le (basisOf L.v (j + 1))ᵀ (L.δ (j + 1))).trans
+    (mul_le_mul hsq (L.norm_δ_le j hj) (norm_nonneg _) (Real.sqrt_nonneg _))
+  have hvec : L.β (j + 1) • ((basisOf L.v (j + 1))ᵀ *ᵥ L.v (j + 2)) =
+      (basisOf L.v (j + 1))ᵀ *ᵥ L.z' (j + 1) + (basisOf L.v (j + 1))ᵀ *ᵥ L.δ (j + 1) := by
+    rw [← Matrix.mulVec_add, ← L.smul_v_eq j hj, Matrix.mulVec_smul]
+  have hν := abs_le.mp (L.abs_ν_sub_le j hj)
+  have hβ := abs_le.mp (L.abs_β_sub_le j hj)
+  have hadm := L.admissible j hj
+  have hτ := L.τ_pos
+  have he0 := L.ε_nonneg
+  have he1 := L.ε_le
+  have hε₁ := L.ε₁_nonneg
+  have hε₃ := L.ε₃_nonneg
+  have hq0 := norm_nonneg (WithLp.toLp 2 (L.z (j + 1)))
+  have hp0 := norm_nonneg (WithLp.toLp 2 (L.z' (j + 1)))
+  set a := ‖WithLp.toLp 2 ((basisOf L.v (j + 1))ᵀ *ᵥ L.v (j + 2))‖ with ha
+  set p := ‖WithLp.toLp 2 (L.z' (j + 1))‖ with hp
+  set q := ‖WithLp.toLp 2 (L.z (j + 1))‖ with hq
+  set s := Real.sqrt (1 + L.η₀) with hsdef
+  set ε := L.ε with hεdef
+  set τ := L.τ with hτdef
+  set β := L.β (j + 1) with hβdef
+  set ε₁ := L.ε₁ with hε₁def
+  set ε₃ := L.ε₃ with hε₃def
+  set T := ε₃ / τ with hT
+  have hτν : τ * ((1 - ε) * q) ≤ τ * L.ν (j + 1) :=
+    mul_le_mul_of_nonneg_left (by linarith) hτ.le
+  have hτq : 0 ≤ τ * ((1 - ε) * q) :=
+    mul_nonneg hτ.le (mul_nonneg (by linarith) hq0)
+  have hβpos : 0 < β := by linarith
+  have hnorm : β * a = ‖WithLp.toLp 2 (β • ((basisOf L.v (j + 1))ᵀ *ᵥ L.v (j + 2)))‖ := by
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_of_nonneg hβpos.le]
+  have hb : β * a ≤ ε₁ * p + ε₃ * q + s * (ε * p) := by
+    rw [hnorm, hvec, WithLp.toLp_add]
+    exact (norm_add_le _ _).trans (by linarith)
+  have hF2 : τ * ((1 - ε) * q) ≤ (1 + ε) * p := by linarith
+  have hq2 : ε₃ * q * (1 - ε) ≤ T * (1 + ε) * p := by
+    have h := mul_le_mul_of_nonneg_left hF2 (div_nonneg hε₃ hτ.le)
+    calc ε₃ * q * (1 - ε) = T * (τ * ((1 - ε) * q)) := by
+          rw [hT]; field_simp
+      _ ≤ T * ((1 + ε) * p) := h
+      _ = T * (1 + ε) * p := by ring
+  have hT0 : 0 ≤ T := div_nonneg hε₃ hτ.le
+  have hβlow : (1 - ε) * p ≤ β := by linarith [hβ.1]
+  have h1 : a * β * (1 - ε) ≤ ((1 - ε) * (ε₁ + s * ε) + T * (1 + ε)) * p := by
+    nlinarith [mul_le_mul_of_nonneg_right hb (by linarith : (0:ℝ) ≤ 1 - ε)]
+  have hpoly : (1 - ε) * (ε₁ + s * ε) + T * (1 + ε) ≤ 2 * (ε₁ + T + ε) * (1 - ε) ^ 2 := by
+    have c1 : 0 ≤ ε₁ * (1 - ε) * (1 - 2 * ε) :=
+      mul_nonneg (mul_nonneg hε₁ (by linarith)) (by linarith)
+    have c2 : 0 ≤ T * (1 - 5 * ε + 2 * ε ^ 2) :=
+      mul_nonneg hT0 (by nlinarith)
+    have c3 : 0 ≤ ε * (1 - ε) * (2 * (1 - ε) - s) :=
+      mul_nonneg (mul_nonneg he0 (by linarith)) (by linarith)
+    nlinarith [c1, c2, c3]
+  have h2 : ((1 - ε) * (ε₁ + s * ε) + T * (1 + ε)) * p ≤ 2 * (ε₁ + T + ε) * (1 - ε) * β := by
+    have hK : 0 ≤ 2 * (ε₁ + T + ε) * (1 - ε) := by
+      have : 0 ≤ ε₁ + T + ε := by linarith
+      have : 0 ≤ 1 - ε := by linarith
+      positivity
+    linarith [mul_le_mul_of_nonneg_right hpoly hp0, mul_le_mul_of_nonneg_left hβlow hK]
+  have hpos : 0 < β * (1 - ε) := mul_pos hβpos (by linarith)
+  unfold LanczosReorthRun.orthLevel
+  by_contra hcon
+  push_neg at hcon
+  linarith [mul_lt_mul_of_pos_right hcon hpos]
 
 /-- **Orthogonality of the computed basis on the admissible prefix** (D5, S2): under the
 fixed-point condition, for every $m \le k + 1$,
