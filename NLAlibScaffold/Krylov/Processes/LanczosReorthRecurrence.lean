@@ -240,6 +240,30 @@ $\|\mathbf{z}_j\|$. S, about 15 lines. -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthState_nu {A : Matrix n n 𝕜} (hA : A.IsHermitian)
     (b : n → 𝕜) (j : ℕ) :
     (lanczosReorthState A b (j + 1)).nu = (lanczosReorthState A b (j + 1)).beta := by
-  sorry
+  have hs := (hA.lanczosReorthState_toLanczosState b j).1
+  have hcur : (lanczosReorthState A b j).cur = (lanczosState A b j).cur :=
+    congrArg LanczosState.cur hs
+  have hprev : (lanczosReorthState A b j).prev = (lanczosState A b j).prev :=
+    congrArg LanczosState.prev hs
+  have hbeta0 : (lanczosReorthState A b j).beta = (lanczosState A b j).beta :=
+    congrArg LanczosState.beta hs
+  have hal : lanczosAlpha A (lanczosReorthState A b j).toLanczosState =
+      lanczosAlpha A (lanczosState A b j) := by
+    rw [hs]
+  have hz : A *ᵥ (lanczosReorthState A b j).cur -
+      ((lanczosReorthState A b j).beta : 𝕜) • (lanczosReorthState A b j).prev -
+      (lanczosAlpha A (lanczosReorthState A b j).toLanczosState : 𝕜) •
+        (lanczosReorthState A b j).cur =
+      A *ᵥ (lanczosState A b j).cur - ((lanczosState A b j).beta : 𝕜) •
+        (lanczosState A b j).prev - (lanczosAlpha A (lanczosState A b j) : 𝕜) •
+        (lanczosState A b j).cur := by
+    rw [hal, hcur, hbeta0, hprev]
+  have hb : (lanczosReorthState A b (j + 1)).beta = (lanczosState A b (j + 1)).beta :=
+    congrArg LanczosState.beta (hA.lanczosReorthState_toLanczosState b (j + 1)).1
+  rw [hb]
+  change (lanczosReorthStep A j (lanczosReorthState A b j)).nu =
+    (lanczosStep A (lanczosState A b j)).beta
+  dsimp only [lanczosReorthStep, lanczosStep]
+  rw [hz]
 
 end NLAlib
