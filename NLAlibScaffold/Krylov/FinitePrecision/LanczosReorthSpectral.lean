@@ -380,7 +380,18 @@ theorem eigenvalue_tridiagonal_mem_Icc (hη : L.η₀ ≤ 1 / 100)
     eigenvalue L.toLanczosData.tridiagonal i ∈
       Set.Icc (eigenvalue L.H (n - 1) - L.backwardRadius)
         (eigenvalue L.H 0 + L.backwardRadius) := by
-  sorry
+  have hkn := L.succ_le_card hη hsmall
+  have hH : L.H.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]; exact L.transpose_H
+  have hup := L.eigenvalue_tridiagonal_le_add hη hsmall hrec hτ hi
+  have hlo := L.eigenvalue_sub_le_eigenvalue_tridiagonal hη hsmall hrec hτ hi
+  have h0 := Matrix.IsHermitian.eigenvalue_le_eigenvalue hH (i := 0) (j := i)
+    (Nat.zero_le _) (by simp; omega)
+  have hn := Matrix.IsHermitian.eigenvalue_le_eigenvalue hH (i := i + (n - k)) (j := n - 1)
+    (by omega) (by simp; omega)
+  constructor
+  · linarith
+  · linarith
 
 /-- **Kaniel–Paige–Saad for the backward model** (F5, S4c): the proved bound
 `Matrix.IsHermitian.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le` holds for
