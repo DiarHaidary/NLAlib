@@ -348,6 +348,14 @@ theorem newtonSchulzSignProg.exists_exec_compiled {mm : ι}
         Array.replicate (2 * (N * N)) none]) = some st' := by
   sorry
 
+/-- Twice the sum of the indices below $N$ is at most $N^2$. -/
+private theorem two_mul_sum_range_le (N : ℕ) : 2 * (List.range N).sum ≤ N * N := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    rw [List.range_succ, List.sum_append, List.sum_singleton]
+    nlinarith
+
 /-- **The counts and the memory of the registered tree**: under the standard charge (one per
 operation), every successful run of `NLAlib.newtonSchulzSignProg.compiled` at the sizes $N$ and
 $(F)$ adds at most `NLAlib.newtonSchulzSignCount p mm N F` to the counts and raises the peak
@@ -367,6 +375,48 @@ theorem newtonSchulzSignProg.cnt_le_of_exec_compiled {mm : ι} {I : Interp P ι 
     (h : (newtonSchulzSignProg.compiled p mm).exec I N ![F] st = some st') :
     st'.cnt ≤ st.cnt + newtonSchulzSignCount p mm N F ∧
       ∀ q, st'.peak q ≤ max (st.peak q) (st.cur q + if q = p then 4 * (N * N) + 5 else 0) := by
-  sorry
+  have hb := (newtonSchulzSignProg.compiled p mm).bounds_staticCost_of_exec_eq_some I N ![F] h
+  have hcharge : I.charge = fun k => Finsupp.single k 1 := funext hc
+  have hb' := hb.mono (b := ⟨newtonSchulzSignCount p mm N F,
+    fun q => if q = p then 4 * (N * N) + 5 else 0, _⟩) ?_ ?_ le_rfl
+  · exact ⟨hb'.count, hb'.peak⟩
+  · rw [hcharge]
+    intro k
+    change (FStmt.staticCost (fun k => Finsupp.single k 1) I.width
+      (newtonSchulzSignProg.compiled (ι := ι) p mm) (Fin.cons N ![F])).count k ≤ _
+    change (StaticCost.seq _ _).count k ≤ _
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.branch, StaticCost.alloc,
+      StaticCost.step, StaticCost.zero, StaticCost.repetitions, StaticCost.sequence_count_apply,
+      Instr.kind, Instr.subst, IExp.evalIn, Finsupp.add_apply, Finsupp.sup_apply,
+      Finsupp.smul_apply, List.map_const', List.sum_replicate, List.length_range,
+      Finsupp.zero_apply]
+    simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero, Fin.cons_one,
+      Matrix.Fin.cons_vecCons, Matrix.Fin.snoc_vecCons, Matrix.Fin.snoc_vecEmpty,
+      Matrix.cons_val_fin_one, Fin.val_eq_zero, Fin.mk_one, add_zero, zero_add, smul_eq_mul,
+      List.map_cons, List.map_nil,
+      List.reverse_cons, List.reverse_nil, List.nil_append, List.cons_append]
+    have h2 : ∀ x : ℕ, ![N, F, x] ⟨2, by omega⟩ = x := fun _ => rfl
+    simp only [h2, IExp.evalIn, Matrix.cons_val_zero, newtonSchulzSignCount, Finsupp.smul_apply,
+      Finsupp.add_apply, smul_eq_mul, List.sum_map_mul_right, List.map_id']
+    have hS := two_mul_sum_range_le N
+    generalize (List.range N).sum = S at hS ⊢
+    have hFS := Nat.mul_le_mul_left F hS
+    classical
+    cases k <;> simp only [Finsupp.single_apply, OpKind.bin.injEq, OpKind.un.injEq,
+      OpKind.lit.injEq, OpKind.cmp.injEq, OpKind.copy.injEq, OpKind.kcall.injEq, reduceCtorEq,
+      ite_false, mul_zero, add_zero, zero_add, max_self, Nat.zero_max, Nat.max_zero, le_refl]
+    all_goals split_ifs <;> nlinarith [hS, hFS]
+  · intro q
+    change (FStmt.staticCost I.charge I.width
+      (newtonSchulzSignProg.compiled (ι := ι) p mm) (Fin.cons N ![F])).cells q ≤ _
+    change (StaticCost.seq _ _).cells q ≤ _
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.alloc, StaticCost.branch,
+      StaticCost.step, StaticCost.zero, StaticCost.repetitions, IExp.evalIn, Instr.kind,
+      Instr.subst]
+    simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero,
+      Matrix.Fin.cons_vecCons, Matrix.Fin.snoc_vecCons, Matrix.Fin.snoc_vecEmpty,
+      StaticCost.sequence_cells_mk, List.range_eq_nil, max_self, add_zero, Nat.max_zero,
+      ite_self]
+    split_ifs <;> omega
 
 end NLAlib
