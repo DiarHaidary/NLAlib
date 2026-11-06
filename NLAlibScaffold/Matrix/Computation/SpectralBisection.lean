@@ -409,6 +409,20 @@ theorem FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some
   have h2 : 6 * u * ℓ * dec ε * ℓ ≤ 6 / 100 * dec ε := by nlinarith
   nlinarith
 
+/-- The sizes of the two children of a node sum to at most its size. -/
+private lemma sum_k_eighChild_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (smp : EighSample Su Sg N) :
+    (eighChild M N signFuel R₀ β x smp true).elim 0 EighNode.k +
+      (eighChild M N signFuel R₀ β x smp false).elim 0 EighNode.k ≤ x.k := by
+  unfold eighChild
+  split
+  · simp
+  · rename_i b' _ _ _
+    cases b' <;> simp
+  · rename_i kp hkp _ _ _ _ _ _
+    simp only [if_true, Option.elim_some, Bool.false_eq_true, if_false]
+    omega
+
 /-- **The sizes at one depth sum to at most the root size** (EB3'): for every machine, node
 $x$, tree of samples and depth $j$, the sizes of the nodes at the paths of length $j$ sum to at
 most $k_x$ (a node has no child, one child of its size, or two children of sizes $k_+$ and
@@ -424,7 +438,23 @@ theorem sum_k_eighNodeAt_ofFn_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMach
     {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) (j : ℕ) :
     ∑ a : Fin j → Bool,
       ((eighNodeAt M N signFuel R₀ β (List.ofFn a) x s).elim 0 EighNode.k) ≤ x.k := by
-  sorry
+  induction j generalizing x s with
+  | zero => simp [eighNodeAt]
+  | succ j ih =>
+    rw [← (Fin.consEquiv fun _ : Fin (j + 1) => Bool).sum_comp, Fintype.sum_prod_type,
+      Fintype.sum_bool]
+    simp only [Fin.consEquiv_apply, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ,
+      eighNodeAt]
+    have hb : ∀ b : Bool, ∑ a : Fin j → Bool,
+        ((eighChild M N signFuel R₀ β x (s []) b).bind fun y =>
+          eighNodeAt M N signFuel R₀ β (List.ofFn fun i => a i) y
+            fun a' => s (b :: a')).elim 0 EighNode.k ≤
+        (eighChild M N signFuel R₀ β x (s []) b).elim 0 EighNode.k := by
+      intro b
+      rcases eighChild M N signFuel R₀ β x (s []) b with _ | y
+      · simp
+      · exact ih y _
+    exact (add_le_add (hb true) (hb false)).trans (sum_k_eighChild_le M x (s []))
 
 /-- **Global deterministic guarantee of spectral bisection, sharp budget** (EB5'): let the
 machine meet `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, $\mu_{\mathrm{MM}}$,
