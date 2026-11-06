@@ -384,7 +384,7 @@ private lemma norm_w_succ_le (hη : L.η₀ ≤ 1 / 100)
 /-- **Coefficient bounds without growth in $j$**: under $\eta_0 \le 1/100$, the fixed-point
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0$ and $\mu + \varepsilon + \varepsilon_2 \le 1/100$, for
 $j < k$, $\lvert\alpha_{j+1}\rvert$, $\beta_{j+1}$ and $\|\mathbf{z}_{j+1}\|$ are at most
-$\tfrac32\|\mathbf{H}\|_2$. [Paige1976] for the plain case
+$\tfrac32\|\mathbf{H}\|_2$. [Paige1976, (28), (30), (34)] for plain Lanczos
 (there with growth); here orthogonality is available first. -/
 theorem coeff_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
@@ -675,8 +675,8 @@ private lemma abs_v_dotProduct_z_self_le (hη : L.η₀ ≤ 1 / 100)
 a run, under $\eta_0 \le 1/100$, the fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu +
 \varepsilon + \varepsilon_2 \le 1/100$ and $\tau \le 1$, every $j < k$ has $\|\mathbf{h}_{j+1}\| \le
 24\sqrt{j+1}\,(\mu + \varepsilon + \varepsilon_2) \|\mathbf{H}\|_2$. The one place symmetry is
-needed: without it the coefficients are $O(1)$ (Arnoldi). [Paige1970] in substance; [Simon1984b] for
-semi-orthogonal variants. -/
+needed: without it the coefficients are $O(1)$ (Arnoldi). [Paige1971, §6.1, (6.8)] in substance (the
+coefficient matrix $\mathbf{B}$ there). -/
 theorem norm_coef_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :

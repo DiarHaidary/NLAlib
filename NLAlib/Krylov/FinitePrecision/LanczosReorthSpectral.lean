@@ -127,7 +127,7 @@ private theorem mulVec_sub_smul_eq {E : Matrix (Fin n) (Fin n) ℝ}
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and
 $\tau \le 1$, $\theta_i \le \lambda_i(\mathbf{H}) + e$ for $i < k$, with $\theta_i$ the
 eigenvalues of $\mathbf{T}_k$ and $e$ = `NLAlib.LanczosReorthRun.backwardRadius`.
-[Simon1984b] in substance; [HornJohnson2013, Corollary 4.3.37] for the exact case. -/
+[HornJohnson2013, Corollary 4.3.37] for the exact case. -/
 theorem eigenvalue_tridiagonal_le_add (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {i : ℕ} (hi : i < k) :
@@ -146,7 +146,7 @@ theorem eigenvalue_tridiagonal_le_add (hη : L.η₀ ≤ 1 / 100)
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and
 $\tau \le 1$, $\lambda_{i + n - k}(\mathbf{H}) - e \le \theta_i$ for $i < k$ (and $k \le n$ by
 `NLAlib.LanczosReorthRun.succ_le_card`), with $e$ = `NLAlib.LanczosReorthRun.backwardRadius`.
-[Simon1984b] in substance. -/
+[HornJohnson2013, Corollary 4.3.37] for the exact case. -/
 theorem eigenvalue_sub_le_eigenvalue_tridiagonal (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {i : ℕ} (hi : i < k) :
@@ -171,7 +171,7 @@ $\beta_k\lvert\mathbf{e}_{k-1}^{\mathsf{T}}\mathbf{y}_i\rvert < (g - 2e)/\sqrt r
 eigenvalues in $(a - g, b + g)$. With $[a, b]$ a window around a simple isolated eigenvalue this
 forbids two converged copies; the residual condition cannot be dropped
 (`docs/design/Krylov-LanczosReorth.md` §3.2, counterexample $\operatorname{diag}(1,0,-1)$).
-The phenomenon: [Paige1971], [Parlett1998, Ch. 13]; this statement: no printed source. -/
+The phenomenon: [Paige1971, §9.2], [Parlett1998, Ch. 13]; this statement: no printed source. -/
 theorem card_le_card_eigenvalue_mem (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {r : ℕ} {Y : Matrix (Fin k) (Fin r) ℝ}
@@ -213,7 +213,7 @@ $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ a
 $\tau \le 1$, for $n$ nonempty, every unit eigenvector $\mathbf{y}$ of $\mathbf{T}_k$ with
 eigenvalue $\theta$ gives an eigenvalue of $\mathbf{H}$ within
 $\beta_k\lvert y_{k-1}\rvert + e$, $e$ = `NLAlib.LanczosReorthRun.backwardRadius`.
-[Paige1980] for plain Lanczos; standard. -/
+[Paige1980, (3.14)–(3.15)] for plain Lanczos. -/
 theorem exists_abs_eigenvalue_sub_le_of_mulVec_eq_smul (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) [NeZero n] {y : Fin k → ℝ} {θ : ℝ}
@@ -242,7 +242,7 @@ $\eta_0 \le 1/100$, the fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$,
 $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and $\tau \le 1$, for $n$ nonempty, if
 $\beta_k \le \rho$, every Ritz value is within $\rho + e$ of an eigenvalue of $\mathbf{H}$,
 $e$ = `NLAlib.LanczosReorthRun.backwardRadius` (with $\rho = \tau\nu_{k+1}$-type bounds when the
-next step fails the criterion). [Paige1970] (the stopping criterion). -/
+next step fails the criterion). [Paige1971, §6.1] (the stopping criterion (6.10) and its eigenvalue bound). -/
 theorem exists_abs_eigenvalue_sub_le_of_β_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) [NeZero n] {ρ : ℝ} (hρ : L.β k ≤ ρ)
@@ -263,7 +263,7 @@ theorem exists_abs_eigenvalue_sub_le_of_β_le (hη : L.η₀ ≤ 1 / 100)
 /-- **Containment**: under $\eta_0 \le 1/100$, the fixed-point condition
 $\sqrt{3(k+1)}\,\mu \le \eta_0$, $\mu + \varepsilon + \varepsilon_2 \le 1/100$ and
 $\tau \le 1$, every Ritz value lies in $[\lambda_{n-1}(\mathbf{H}) - e,
-\lambda_0(\mathbf{H}) + e]$, $e$ = `NLAlib.LanczosReorthRun.backwardRadius`. [Paige1980] for
+\lambda_0(\mathbf{H}) + e]$, $e$ = `NLAlib.LanczosReorthRun.backwardRadius`. [Paige1980, (3.48)] for
 plain Lanczos. -/
 theorem eigenvalue_tridiagonal_mem_Icc (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
@@ -436,7 +436,7 @@ $\mathbf{b}$ and, for every $1$-Lipschitz $f$,
 $\lvert\mathbf{b}^{\mathsf{T}}f(\mathbf{H}')\mathbf{b} -
 \mathbf{b}^{\mathsf{T}}f(\mathbf{H})\mathbf{b}\rvert \le
 \|\mathbf{b}\|^2\|\mathbf{H}' - \mathbf{H}\|_{\mathsf F}$, so the exact quadrature error theory
-for $(\mathbf{H}', \mathbf{b})$ transfers with that additive term. [Kittaneh1985]. -/
+for $(\mathbf{H}', \mathbf{b})$ transfers with that additive term. [Kittaneh1985, abstract]. -/
 theorem exists_pure_backward_abs_quadForm_cfc_sub_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) {b : Fin n → ℝ} (hb : b ≠ 0) {δb : ℝ}

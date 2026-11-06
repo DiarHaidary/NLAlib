@@ -211,7 +211,8 @@ private theorem star_cur_dotProduct_lanczosW {A : Matrix n n 𝕜} (hA : A.IsHer
 $\mathbf{A}$, every $\mathbf{b}$ and every $j$, the state of the reorthogonalized recurrence
 restricts to the Lanczos state, and its stored vectors are the Lanczos vectors
 $\mathbf{q}_0, \dots, \mathbf{q}_j$ (zero beyond $j$). No breakdown hypothesis: after breakdown
-every vector involved is zero. [Paige1970]; [Parlett1998, §13.1] for the exact orthogonality. -/
+every vector involved is zero. [Paige1970, §2, (2.1)–(2.7)]; [Parlett1998, §13.1] for the exact
+orthogonality. -/
 theorem _root_.Matrix.IsHermitian.lanczosReorthState_toLanczosState {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (b : n → 𝕜) (j : ℕ) :
     (lanczosReorthState A b j).toLanczosState = lanczosState A b j ∧

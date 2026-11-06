@@ -41,13 +41,14 @@ open scoped Matrix
 
 namespace NLAlib
 
-/-- **The symmetric completion of a residual**: for $\mathbf{U}$ with orthonormal columns
+/-- The symmetric completion of a residual: for $\mathbf{U}$ with orthonormal columns
 and $\mathbf{R}$ with $\mathbf{U}^{\mathsf{T}}\mathbf{R}$ symmetric, the symmetric
 $\mathbf{E} = -\mathbf{R}\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}^{\mathsf{T}} +
 \mathbf{U}(\mathbf{U}^{\mathsf{T}}\mathbf{R})\mathbf{U}^{\mathsf{T}}$ satisfies
 $\mathbf{E}\mathbf{U} = -\mathbf{R}$, $\|\mathbf{E}\|_{\mathsf F} \le
 \sqrt2\,\|\mathbf{R}\|_{\mathsf F}$
-and $\|\mathbf{E}\|_2 \le 2\|\mathbf{R}\|_2$. [KahanParlettJiang1982] (locator to verify). -/
+and $\|\mathbf{E}\|_2 \le 2\|\mathbf{R}\|_2$. The construction is that of Kahan, Parlett and
+Jiang (1982) (module docstring); the published theorem number is not verified here. -/
 theorem HasOrthonormalCols.exists_transpose_eq_mul_eq_neg {n k : ℕ}
     {U : Matrix (Fin n) (Fin k) ℝ} (hU : HasOrthonormalCols U) {R : Matrix (Fin n) (Fin k) ℝ}
     (hR : (Uᵀ * R)ᵀ = Uᵀ * R) :

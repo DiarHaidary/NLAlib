@@ -288,7 +288,7 @@ theorem recurrenceError_eq {j : ℕ} (hj : j < k) :
 /-- **One admissible column is nearly orthogonal to the previous ones**: if
 $\|\mathbf{V}_{j+1}^{\mathsf{T}}\mathbf{V}_{j+1} - \mathbf{I}\|_2 \le \eta_0 \le 1/100$ then
 $\|\mathbf{V}_{j+1}^{\mathsf{T}}\mathbf{v}_{j+2}\| \le \mu$ = `NLAlib.LanczosReorthRun.orthLevel`.
-[Paige1970] (the criterion in substance). -/
+[Paige1971, §6.1, (6.9)–(6.10)] (the criterion in substance). -/
 theorem norm_transpose_mulVec_v_le {j : ℕ} (hj : j < k)
     (hV : specNorm ((basisOf L.v (j + 1))ᵀ * basisOf L.v (j + 1) - 1) ≤ L.η₀)
     (hη : L.η₀ ≤ 1 / 100) :
@@ -368,7 +368,8 @@ theorem norm_transpose_mulVec_v_le {j : ℕ} (hj : j < k)
 /-- **Orthogonality of the computed basis on the admissible prefix**: under the fixed-point
 condition $\sqrt{3(k+1)}\,\mu \le \eta_0 \le 1/100$, for every $m \le k + 1$,
 $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$.
-[Paige1970] for Lanczos with reorthogonalization; [GiraudLangouRozloznikVandenEshof2005,
+[Paige1971, §6.1, (6.9)] for Lanczos with reorthogonalization;
+[GiraudLangouRozloznikVandenEshof2005,
 Theorem 2] for the CGS2 kernel constants. -/
 theorem frobNorm_transpose_mul_self_sub_one_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) :

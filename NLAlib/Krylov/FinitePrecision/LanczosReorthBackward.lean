@@ -91,7 +91,8 @@ columns, some symmetric $\mathbf{E}$ with $\|\mathbf{E}\|_{\mathsf F} \le$
 `NLAlib.LanczosReorthRun.backwardRadius` satisfies
 $$(\mathbf{H} + \mathbf{E})\mathbf{U}_k = \mathbf{U}_k\mathbf{T}_k +
 (\beta_k\mathbf{u}_{k+1})\mathbf{e}_{k-1}^{\mathsf{T}}$$
-exactly. [Paige1970] (locator to verify); [KahanParlettJiang1982] for the completion. -/
+exactly. [Paige1971, §6.1] (the backward form $(\mathbf{A} + \delta\mathbf{P})\mathbf{V} =
+\mathbf{V}\mathbf{T}$ there); the completion is that of Kahan, Parlett and Jiang (1982). -/
 theorem exists_backward (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
@@ -240,7 +241,7 @@ and $\tau \le 1$, some symmetric $\mathbf{E}$ with $\|\mathbf{E}\|_{\mathsf F} \
 of the polar factor of $\mathbf{V}_{k+1}$ (`NLAlib.LanczosReorthRun.colSeq`), the exact Lanczos
 recurrence on $(\mathbf{H} + \mathbf{E}, \mathbf{u}_1)$ has states $(\mathbf{u}_j, \mathbf{u}_{j+1},
 \beta_j)$ for $j < k$ and tridiagonal $\mathbf{T}_k$; the start vector is within
-$2\sqrt{3(k+1)}\,\mu$ of $\mathbf{v}_1$. [Paige1970] (locator to verify). -/
+$2\sqrt{3(k+1)}\,\mu$ of $\mathbf{v}_1$. [Paige1971, §6.1] in substance. -/
 theorem exists_lanczosState_backward (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀)
     (hrec : L.recLevel ≤ 1 / 100) (hτ : L.τ ≤ 1) :
