@@ -477,7 +477,25 @@ theorem exists_pure_backward_abs_quadForm_cfc_sub_le (hη : L.η₀ ≤ 1 / 100)
       ∀ f : ℝ → ℝ, LipschitzWith 1 f →
         |b ⬝ᵥ (cfc f H' *ᵥ b) - b ⬝ᵥ (cfc f L.H *ᵥ b)| ≤
           ‖WithLp.toLp 2 b‖ ^ 2 * frobNorm (H' - L.H) := by
-  sorry
+  obtain ⟨H', hH'T, hfrob, htri⟩ := L.exists_pure_backward hη hsmall hrec hτ hb hδ
+  have hH' : H'.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, hH'T]
+  refine ⟨H', hH'T, hfrob, htri, fun f hf => ?_⟩
+  have hH : L.H.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, L.transpose_H]
+  have h := norm_star_dotProduct_mulVec_le (cfc f H' - cfc f L.H) b b
+  have hc := hH'.frobNorm_cfc_sub_cfc_le hH hf
+  have e : b ⬝ᵥ (cfc f H' *ᵥ b) - b ⬝ᵥ (cfc f L.H *ᵥ b) =
+      b ⬝ᵥ ((cfc f H' - cfc f L.H) *ᵥ b) := by
+    rw [Matrix.sub_mulVec, dotProduct_sub]
+  rw [e, ← Real.norm_eq_abs]
+  rw [star_trivial] at h
+  calc ‖b ⬝ᵥ ((cfc f H' - cfc f L.H) *ᵥ b)‖
+      ≤ ‖WithLp.toLp 2 b‖ * specNorm (cfc f H' - cfc f L.H) * ‖WithLp.toLp 2 b‖ := h
+    _ ≤ ‖WithLp.toLp 2 b‖ * frobNorm (cfc f H' - cfc f L.H) * ‖WithLp.toLp 2 b‖ := by
+        gcongr; exact specNorm_le_frobNorm _
+    _ ≤ ‖WithLp.toLp 2 b‖ * frobNorm (H' - L.H) * ‖WithLp.toLp 2 b‖ := by gcongr
+    _ = ‖WithLp.toLp 2 b‖ ^ 2 * frobNorm (H' - L.H) := by ring
 
 end LanczosReorthRun
 
