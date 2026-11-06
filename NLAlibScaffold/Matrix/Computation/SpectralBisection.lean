@@ -250,6 +250,73 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNo
       (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
   sorry
 
+/-- The rounded next tolerance of a node: $\varepsilon' \le \varepsilon$ and
+$\varepsilon(L - 1) - 3uL\varepsilon \le \varepsilon' L$. -/
+private theorem FloatMachine.IsAccurate.le_dec_eighNextParams_snd_mul {F : Type*}
+    {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
+    {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (r e : F)
+    {L : ℕ} (hu : 0 ≤ u) (huL : u * L ≤ 1 / 1000) (hτ₀ : 0 ≤ τ) (hτ1 : τ ≤ 1 / 100)
+    (he0 : 0 < dec e) (hτe : 30 * τ ≤ dec e) (he1 : dec e ≤ 1) (hL : 5 ≤ L)
+    (hΩ : 2 + L ≤ Ω) :
+    dec (eighNextParams M r e L).2 ≤ dec e ∧
+      dec e * (L - 1) - 3 * u * L * dec e ≤ dec (eighNextParams M r e L).2 * L := by
+  have hL' : (5 : ℝ) ≤ L := by exact_mod_cast hL
+  have hL0 : (0 : ℝ) < L := by linarith
+  have hu5 : u ≤ 1 / 5000 := by nlinarith
+  simp only [eighNextParams]
+  obtain ⟨hla, hlb⟩ := le_and_le_of_isRoundingOf (hM.ofNat L) hL0.le (by linarith) hu hτ₀
+  have huτ := mul_le_mul_of_nonneg_left hτ1 hu
+  have hdl : L - 0.002 ≤ dec (M.ofNat L) ∧ dec (M.ofNat L) ≤ L + 0.002 := by
+    constructor <;> linarith
+  have hdl0 : 0 < dec (M.ofNat L) := by linarith
+  have hiL1 : 1 / (L : ℝ) * L = 1 := by field_simp
+  have hiL5 : 1 / (L : ℝ) ≤ 1 / 5 := by
+    rw [div_le_div_iff₀ hL0 (by norm_num)]; linarith
+  have huiL : u ≤ 1 / (L : ℝ) / 1000 := by
+    rw [le_div_iff₀ (by norm_num), le_div_iff₀ hL0]; linarith
+  -- the reciprocal of the depth counter
+  have hq0 : |1 / dec (M.ofNat L) - 1 / L| ≤ u / 4 := by
+    rw [div_sub_div _ _ hdl0.ne' hL0.ne', abs_div, abs_of_pos (mul_pos hdl0 hL0),
+      div_le_iff₀ (mul_pos hdl0 hL0), abs_le]
+    have h1 : L + τ ≤ dec (M.ofNat L) * L / 4 := by
+      nlinarith [mul_nonneg (by linarith : 0 ≤ dec (M.ofNat L) - 4.99) hL0.le]
+    have h2 := mul_le_mul_of_nonneg_left h1 hu
+    constructor <;> linarith
+  have hq0' := abs_le.mp hq0
+  obtain ⟨hqa, hqb⟩ := le_and_le_of_isRoundingOf (hM.div M.one (M.ofNat L) hdl0.ne')
+    (by rw [hM.dec_one]; positivity) (by rw [hM.dec_one]; linarith) hu hτ₀
+  rw [hM.dec_one] at hqa hqb
+  have hq021 : 1 / dec (M.ofNat L) ≤ 0.21 := by linarith
+  have hdq : 1 / L - u / 2 ≤ dec (M.div M.one (M.ofNat L)) ∧
+      dec (M.div M.one (M.ofNat L)) ≤ 1 / L + u / 2 := by
+    have := mul_le_mul_of_nonneg_left hq021 hu
+    constructor <;> linarith
+  obtain ⟨hsa, hsb⟩ := le_and_le_of_isRoundingOf (hM.sub M.one (M.div M.one (M.ofNat L)))
+    (by rw [hM.dec_one]; linarith) (by rw [hM.dec_one]; linarith) hu hτ₀
+  rw [hM.dec_one] at hsa hsb
+  have hds : 1 - 1 / L - 1.6 * u ≤ dec (M.sub M.one (M.div M.one (M.ofNat L))) ∧
+      dec (M.sub M.one (M.div M.one (M.ofNat L))) ≤ 1 - 1 / L + 1.6 * u := by
+    have := mul_le_mul_of_nonneg_left (show 1 - dec (M.div M.one (M.ofNat L)) ≤ 1 by linarith) hu
+    constructor <;> linarith
+  have hds0 : 0 ≤ dec (M.sub M.one (M.div M.one (M.ofNat L))) := by linarith
+  have hds1 : dec (M.sub M.one (M.div M.one (M.ofNat L))) ≤ 1 := by linarith
+  have hdse := mul_le_of_le_one_left he0.le hds1
+  obtain ⟨hea, heb⟩ := le_and_le_of_isRoundingOf (hM.mul (M.sub M.one (M.div M.one (M.ofNat L))) e)
+    (mul_nonneg hds0 he0.le) (by linarith) hu hτ₀
+  have hde : (1 - 1 / L) * dec e - 3 * u * dec e ≤
+      dec (M.mul (M.sub M.one (M.div M.one (M.ofNat L))) e) ∧
+      dec (M.mul (M.sub M.one (M.div M.one (M.ofNat L))) e) ≤
+        (1 - 1 / L) * dec e + 3 * u * dec e := by
+    have h1 := mul_le_mul_of_nonneg_right hds.1 he0.le
+    have h2 := mul_le_mul_of_nonneg_right hds.2 he0.le
+    have h3 := mul_le_mul_of_nonneg_left hdse hu
+    have h4 := mul_le_mul_of_nonneg_left hτe hu
+    constructor <;> linarith
+  have hue := mul_le_mul_of_nonneg_right huiL he0.le
+  refine ⟨by linarith, ?_⟩
+  have := mul_le_mul_of_nonneg_right hde.1 hL0.le
+  linear_combination this + dec e * hiL1
+
 /-- **The tolerance at a node, telescoped** (EB2a'): under the hypotheses of
 `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`, every node $y$ below the root has
 $$\varepsilon_y \ge (1 - 2^{-8})\,\frac{\ell - 1}{\ell_y - 1}\,\varepsilon \,,$$
@@ -271,7 +338,76 @@ theorem FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some
     {a : List Bool} {y : EighNode F}
     (h : eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = some y) :
     (1 - 2⁻¹ ^ 8) * (((ℓ : ℝ) - 1) / ((y.ℓ : ℝ) - 1)) * dec ε ≤ dec y.ε := by
-  sorry
+  obtain ⟨hlen, -, hyℓ, -⟩ := hM.eighNodeAt_eq_some_params hε hε₁ hR₀ hℓ hu hu₁ hτ₀ hτ hΩ A s h
+  have hℓ20 : (20 : ℝ) ≤ ℓ := by
+    have h15 : (15 : ℝ) ≤ Real.logb 2 (dec ε)⁻¹ := by
+      rw [Real.le_logb_iff_rpow_le (by norm_num) (by positivity), show (15 : ℝ) = (15 : ℕ) by
+        norm_num, Real.rpow_natCast, ← inv_inv ((2 : ℝ) ^ 15), ← inv_pow]
+      exact inv_anti₀ hε (by simpa using hε₁)
+    have := (h15.trans (Nat.le_ceil _))
+    have : (bisectionDepth (dec ε) : ℝ) ≤ ℓ := by exact_mod_cast hℓ
+    simp only [bisectionDepth, Nat.cast_add] at this
+    push_cast at this
+    linarith
+  have hε1 : dec ε ≤ 1 := hε₁.trans (by norm_num)
+  have hτε : 100 * τ ≤ dec ε := hτ.trans (mul_le_of_le_one_right hε.le (min_le_right _ _))
+  have huℓ : u * ℓ ≤ 1 / 2000 := by nlinarith
+  -- the tolerance stays above a third of the root's
+  have hlow : ∀ (x : EighNode F) (j : ℕ), j ≤ ℓ → x.ℓ = ℓ + j →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) → dec ε / 3 ≤ dec x.ε := by
+    intro x j hj hxℓ hx
+    have hj' : (j : ℝ) ≤ ℓ := by exact_mod_cast hj
+    rw [hxℓ] at hx
+    push_cast at hx
+    have h1 := mul_le_mul_of_nonneg_left hj' (by positivity : 0 ≤ u * ℓ)
+    have h2 := mul_le_mul_of_nonneg_right h1 hε.le
+    by_contra hlt
+    have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
+    nlinarith [mul_lt_mul_of_pos_right (not_le.mp hlt) (by linarith : (0 : ℝ) < ℓ + j - 1)]
+  -- each level loses at most `3 u ℓ_x ε_x ≤ 6 u ℓ ε` of `ε_x (ℓ_x - 1)`
+  have key : ∀ (a : List Bool) (x : EighNode F) (s : List Bool → EighSample ℝ ℂ N) (j : ℕ)
+      (y : EighNode F), j + a.length ≤ ℓ → x.ℓ = ℓ + j → dec x.ε ≤ dec ε →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) →
+      eighNodeAt M N signFuel R₀ β a x s = some y →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * (j + a.length : ℕ) ≤ dec y.ε * (y.ℓ - 1) := by
+    intro a
+    induction a with
+    | nil =>
+      intro x s j y _ h2 _ h4 h
+      cases Option.some.inj h
+      simpa using h4
+    | cons b a ih =>
+      intro x s j y hj h2 h3 h4 h
+      simp only [eighNodeAt, Option.bind_eq_some_iff] at h
+      obtain ⟨z, hz, hy⟩ := h
+      obtain ⟨-, -, -, -, hzε, hzℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hz
+      simp only [List.length_cons] at hj
+      have hxε := hlow x j (by omega) h2 h4
+      have hx0 : 0 < dec x.ε := by linarith
+      have hxℓ : (x.ℓ : ℝ) ≤ 2 * ℓ := by
+        rw [h2]; push_cast; linarith [(by exact_mod_cast (by omega : j ≤ ℓ) : (j : ℝ) ≤ ℓ)]
+      have hxℓ5 : 5 ≤ x.ℓ := by
+        have : (5 : ℝ) ≤ x.ℓ := by rw [h2]; push_cast; linarith [(j.cast_nonneg : (0 : ℝ) ≤ j)]
+        exact_mod_cast this
+      have huL : u * x.ℓ ≤ 1 / 1000 := by nlinarith
+      obtain ⟨hs1, hs2⟩ := hM.le_dec_eighNextParams_snd_mul x.R x.ε hu huL hτ₀ (by linarith) hx0
+        (by linarith) (by linarith) hxℓ5 (by linarith)
+      have hloss := mul_le_mul_of_nonneg_left
+        (mul_le_mul hxℓ h3 hx0.le (by positivity)) (by positivity : (0 : ℝ) ≤ 3 * u)
+      have r := ih z (fun a' => s (b :: a')) (j + 1) y (by omega) (by omega)
+        (by rw [hzε]; linarith) (by
+          rw [hzε, hzℓ]; push_cast at hs2 ⊢; nlinarith) hy
+      rwa [show j + (b :: a).length = j + 1 + a.length by simp only [List.length_cons]; omega]
+  have r := key a ⟨k, A, R₀, ε, ℓ⟩ s 0 y (by omega) rfl le_rfl (by simp) h
+  rw [zero_add, hyℓ] at r
+  rw [hyℓ]
+  push_cast at r ⊢
+  have hlen' : (a.length : ℝ) ≤ ℓ := by exact_mod_cast hlen
+  have hd : (0 : ℝ) < ℓ + a.length - 1 := by linarith [(a.length.cast_nonneg : (0 : ℝ) ≤ _)]
+  rw [mul_div_assoc', div_mul_eq_mul_div, div_le_iff₀ hd]
+  have h1 := mul_le_mul_of_nonneg_left hlen' (by positivity : 0 ≤ 6 * u * ℓ * dec ε)
+  have h2 : 6 * u * ℓ * dec ε * ℓ ≤ 6 / 100 * dec ε := by nlinarith
+  nlinarith
 
 /-- **The sizes at one depth sum to at most the root size** (EB3'): for every machine, node
 $x$, tree of samples and depth $j$, the sizes of the nodes at the paths of length $j$ sum to at
