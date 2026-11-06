@@ -33,7 +33,8 @@ namespace NLAlib
 /-- The Newton–Schulz map is odd: $g(-x) = -g(x)$.
 Proof: unfold `NLAlib.newtonSchulz`; `ring`. S, about 2 lines. -/
 theorem newtonSchulz_neg (x : ℝ) : newtonSchulz (-x) = -newtonSchulz x := by
-  sorry
+  unfold newtonSchulz
+  ring
 
 /-- **The defect identity of the Newton–Schulz map**: for every real $x$,
 $$1 - g(x)^2 = \frac{(1 - x^2)^2(4 - x^2)}{4} \,.$$
