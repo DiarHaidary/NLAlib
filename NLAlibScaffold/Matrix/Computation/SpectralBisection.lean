@@ -2094,7 +2094,145 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
         (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y smp)
     {b : Bool} {y' : EighNode F} (hy' : eighChild M N signFuel R₀ β y smp b = some y') :
     (decodeMatrix dec y'.A).IsHermitian ∧ specNorm (decodeMatrix dec y'.A) ≤ dec y'.R := by
-  sorry
+  have hk : 2 ≤ y.k := by
+    by_contra hk
+    simp [eighChild, eighStep, show y.k ≤ 1 by omega] at hy'
+  obtain ⟨hint, -, -, -⟩ := le_eq_false_and_eq_of_eighChild_eq_some_eb1a M hy'
+  obtain ⟨⟨hv, hI⟩, -⟩ := hgood hk hint
+  have hk1 : 1 ≤ y.k := by omega
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
+  have huℓ := u_mul_le_eb1a hk1 hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign
+  obtain ⟨hη0, hηℓ⟩ := eta_mul_le_eb1a hℓ hε hε₁
+  obtain ⟨-, -, hkτ⟩ := bisection_small_aux hk1 hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign hτ₀ hτ
+  have hk2 : (2 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hu1 : u ≤ 1 / 1000 := by linarith [mul_le_mul_of_nonneg_left hℓ' hu]
+  have hτ1 : τ ≤ 1 / 8 := by linarith [mul_le_mul_of_nonneg_right hk2 hτ₀]
+  have hsqL := Real.sqrt_nonneg (Real.log (4 / ρ))
+  have hRτ : 7 * τ ≤ dec y.R := seven_mul_le_of_le_eq_false_eb1a hM hu hu1 hτ₀ hk
+    (hτ.trans (min_le_right _ _)) hε (by linarith) hR₀ (by linarith) hint
+  have hR0 : 0 < dec y.R := hw.trans_le hwR
+  have hR' := le_dec_eighNextParams_fst_eb1a hM y.R y.ε hu (by linarith) hτ₀ hτ1 hℓ hRτ
+    (by linarith)
+  have hhalf := abs_dec_div_ofNat_two_sub_le_eb1a hM hu hu1 hτ₀ hτ1 hRτ (by linarith)
+  have hkp := hM.min_toNat_eighProjector_eq_inertiaPos (N := N) (signFuel := signFuel)
+    (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk hint
+    hv hI
+  -- the ideal shift, the window, the floor and the roundoff
+  set X := decodeMatrix dec y.A with hX
+  set D := dec y.R / y.ℓ with hD
+  set h := dec (M.div y.R (M.ofNat 2)) with hh
+  have hD0 : 0 ≤ D := by positivity
+  have hDℓ : D * y.ℓ = dec y.R := by rw [hD]; field_simp
+  have hD20 : D ≤ dec y.R / 20 := by linarith [mul_le_mul_of_nonneg_left hℓ' hD0]
+  have hc'1 : -D ≤ D * smp.1 := by linarith [mul_le_mul_of_nonneg_left hv.1 hD0]
+  have hc'2 : D * smp.1 ≤ D := by linarith [mul_le_mul_of_nonneg_left hv.2 hD0]
+  have huR : u * dec y.R ≤ D / 100000 := by
+    have := mul_le_mul_of_nonneg_right huℓ hD0
+    rw [mul_assoc, mul_comm (y.ℓ : ℝ) D, hDℓ] at this
+    linarith
+  have huR0 : 0 ≤ u * dec y.R := mul_nonneg hu hR0.le
+  have huτR := mul_le_mul_of_nonneg_left hRτ hu
+  have e2 : (1 / 2 + 2 / (y.ℓ : ℝ)) * dec y.R = dec y.R / 2 + 2 * D := by rw [hD]; ring
+  rw [e2] at hR'
+  obtain ⟨hh1, hh2⟩ := abs_le.mp hhalf
+  set m := dec y.R / 2 + D + 1.5 * (u * dec y.R) with hm
+  have hm0 : 0 ≤ m := by positivity
+  have hm1 : m ≤ 0.6 * dec y.R := by linarith
+  have hum := mul_le_mul_of_nonneg_left hm1 hu
+  set η := (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) with hη
+  have hηR : (2 + 2 * η) * dec y.R * η ≤ D / 19 := by
+    have hη1 : η ≤ 1 / 800 := by linarith [mul_le_mul_of_nonneg_left hℓ' hη0]
+    have e : (2 + 2 * η) * dec y.R * η = (2 + 2 * η) * (η * y.ℓ) * D := by rw [← hDℓ]; ring
+    rw [e]
+    have := mul_le_mul (by linarith : 2 + 2 * η ≤ 2.0025) hηℓ (by positivity) (by norm_num)
+    have := mul_le_mul_of_nonneg_right this hD0
+    linarith
+  have hB : (X - (D * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)).IsHermitian :=
+    hA.sub (isHermitian_real_smul_one _)
+  have hXR : X ≤ dec y.R • (1 : Matrix (Fin y.k) (Fin y.k) ℂ) := hA.le_smul_one_of_specNorm_le hR
+  have hXR' : (-dec y.R) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ) ≤ X := by
+    rw [neg_smul]; exact hA.neg_smul_one_le_of_specNorm_le hR
+  -- a shift child: the rounded diagonal shift
+  have hshift : ∀ s : F, specNorm (X - dec s • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ≤ m →
+      (decodeMatrix dec (M.hermShift y.A s)).IsHermitian ∧
+        specNorm (decodeMatrix dec (M.hermShift y.A s)) ≤ dec (eighNextParams M y.R y.ε y.ℓ).1 := by
+    intro s hs
+    refine ⟨hM.isHermitian_decodeMatrix_hermFrom _ _, ?_⟩
+    have hS := hM.specNorm_sub_decodeMatrix_hermShift_le hu hA s (by linarith)
+    have hmax : max (specNorm (X - dec s • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) τ ≤ m + τ :=
+      max_le (by linarith) (by linarith)
+    have := mul_le_mul_of_nonneg_left hmax hu
+    have htri := specNorm_sub_le (X - dec s • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+      ((X - dec s • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) - decodeMatrix dec (M.hermShift y.A s))
+    rw [sub_sub_cancel] at htri
+    linarith
+  unfold eighChild eighStep at hy'
+  rw [if_neg (by omega), if_neg (by simp [hint])] at hy'
+  dsimp only at hy'
+  split_ifs at hy' with h1 h2 h3 h4
+  · -- the shift child on the positive side
+    simp only [h2, if_true, Option.some.injEq] at hy'
+    subst hy'
+    rw [hkp] at h1
+    have hlo := smul_one_le_of_inertiaPos_eq_card_eb1a hA (by rw [Fintype.card_fin]; exact h1)
+    exact hshift _ (specNorm_sub_smul_one_le_of_le_eb1a hA hlo hXR (by linarith) (by linarith) hm0)
+  · simp [h2] at hy'
+  · simp [h4] at hy'
+  · -- the shift child on the negative side
+    simp only [show b = false by simpa using h4, if_true, Option.some.injEq] at hy'
+    subst hy'
+    rw [hkp] at h3
+    have hhi := le_smul_one_of_inertiaPos_eq_zero_eb1a hA (by rw [Fintype.card_fin]; omega) h3
+    refine hshift _ (specNorm_sub_smul_one_le_of_le_eb1a hA hXR' hhi ?_ ?_ hm0)
+    · rw [hM.dec_neg]; linarith
+    · rw [hM.dec_neg]; linarith
+  all_goals
+    obtain ⟨-, hP, hQ⟩ := hM.exists_frames_of_eighStep_eq_split_aux hμM hμQ
+      hcN hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood
+      (by
+        unfold eighStep
+        rw [if_neg (by omega), if_neg (by simp [hint])]
+        dsimp only
+        rw [if_neg h1, if_neg h3])
+    rw [← hη, ← hX, ← hD, ← hh] at hP hQ
+    simp only [Option.some.injEq] at hy'
+    subst hy'
+  · -- the split child on the positive side
+    obtain ⟨V, hV, -, hspec, W, hW, -, hAp⟩ := hP
+    have hC : (Vᴴ * X * V).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul V hA
+    obtain ⟨hlo, hhi⟩ := smul_one_le_and_le_smul_one_of_spectrum_subset_eb1a hC hspec
+    have hCn := specNorm_sub_smul_one_le_of_le_eb1a hC hlo hhi (c := h) (m := m)
+      (by linarith) (by linarith) hm0
+    have hWC : specNorm (Wᴴ * (Vᴴ * X * V) * W - h • (1 : Matrix _ _ ℂ)) ≤ m := by
+      have e : Wᴴ * (Vᴴ * X * V) * W - h • (1 : Matrix _ _ ℂ) =
+          Wᴴ * (Vᴴ * X * V - h • (1 : Matrix _ _ ℂ)) * W := by
+        rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
+          show Wᴴ * W = 1 from hW]
+      rw [e]; exact (hW.specNorm_conjTranspose_mul_mul_le _).trans hCn
+    refine ⟨?_, ?_⟩
+    · unfold FloatMachine.hermShift; exact hM.isHermitian_decodeMatrix_hermFrom _ _
+    · refine ((specNorm_le_add_specNorm_sub_eb1a _ _).trans (add_le_add hWC hAp)).trans ?_
+      show m + (2 + 2 * η) * dec y.R * η ≤ dec (eighNextParams M y.R y.ε y.ℓ).1
+      linarith
+  · -- the split child on the negative side
+    obtain ⟨V, hV, -, hspec, W, hW, -, hAm⟩ := hQ
+    dsimp only
+    have hC : (Vᴴ * X * V).IsHermitian := Matrix.isHermitian_conjTranspose_mul_mul V hA
+    obtain ⟨hlo, hhi⟩ := smul_one_le_and_le_smul_one_of_spectrum_subset_eb1a hC hspec
+    have hCn := specNorm_sub_smul_one_le_of_le_eb1a hC hlo hhi (c := -h) (m := m)
+      (by linarith) (by linarith) hm0
+    have hWC : specNorm (Wᴴ * (Vᴴ * X * V) * W + h • (1 : Matrix _ _ ℂ)) ≤ m := by
+      have e : Wᴴ * (Vᴴ * X * V) * W + h • (1 : Matrix _ _ ℂ) =
+          Wᴴ * (Vᴴ * X * V - (-h) • (1 : Matrix _ _ ℂ)) * W := by
+        rw [neg_smul, sub_neg_eq_add, Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul,
+          Matrix.smul_mul, Matrix.mul_one, show Wᴴ * W = 1 from hW]
+      rw [e]; exact (hW.specNorm_conjTranspose_mul_mul_le _).trans hCn
+    refine ⟨?_, ?_⟩
+    · unfold FloatMachine.hermShift; exact hM.isHermitian_decodeMatrix_hermFrom _ _
+    · refine ((specNorm_le_add_specNorm_sub_eb1a _ _).trans (add_le_add hWC hAm)).trans ?_
+      show m + (2 + 2 * η) * dec y.R * η ≤ dec (eighNextParams M y.R y.ε y.ℓ).1
+      linarith
+
 /-- **A split node: frames, deflated bases and compressions**: under the node hypotheses of
 `NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some`, if the node's
 step (`NLAlib.eighStep`) is a split with sizes $k_+$, $k - k_+$, bases $\mathbf{Q}_\pm$, stored
