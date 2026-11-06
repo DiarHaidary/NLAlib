@@ -239,7 +239,16 @@ Proof: induction on $k$ with the invariant $\lvert x_k \rvert \le 3/2$:
 theorem abs_le_one_add_of_abs_sub_newtonSchulz_le {u : ℝ} {x : ℕ → ℝ} (hu : u ≤ 1 / 2)
     (hx₀ : |x 0| ≤ 3 / 2) (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) (k : ℕ) :
     |x (k + 1)| ≤ 1 + u := by
-  sorry
+  have hnext : ∀ k, |x k| ≤ 2 → |x (k + 1)| ≤ 1 + u := fun k hk => by
+    have h1 := abs_sub_abs_le_abs_sub (x (k + 1)) (newtonSchulz (x k))
+    have h2 := abs_newtonSchulz_le_one hk
+    linarith [hstep k]
+  have hall : ∀ k, |x k| ≤ 3 / 2 := by
+    intro k
+    induction k with
+    | zero => exact hx₀
+    | succ n ih => linarith [hnext n (by linarith)]
+  exact hnext k (by linarith [hall k])
 
 /-- **The perturbed iteration stays away from zero**: if $20u \le \lvert x_0 \rvert \le 3/2$,
 $u \le 1/16$ and $\lvert x_{k+1} - g(x_k) \rvert \le u$ for every $k$, then
