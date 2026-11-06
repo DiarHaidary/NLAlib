@@ -303,6 +303,48 @@ theorem IsQRKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P ι K 
       blockDisjoint (b', i, 1) (q.1, q.2, m * m * L.width) = true →
       blockDisjoint (b', i, 1) (r.1, r.2, n * m * L.width) = true →
         s'.read q' b' i = s.read q' b' i := by
-  sorry
+  have hd : ∀ (x y : ℕ × ℕ × ℕ), blockDisjoint x y = true →
+      x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
+    intro x y hxy
+    simpa [blockDisjoint, or_assoc] using hxy
+  have hX := (EntryLayout.holds_iff_readBlock_eq_some L s p a.1 a.2 A).mp hA
+  rw [h.kcallStore_eq p hX hqr hqa hra, EntryLayout.toMatrix_toArray L hL] at hs
+  obtain ⟨s₁, h1, h2⟩ := Option.bind_eq_some_iff.mp hs
+  have hsq := EntryLayout.size_toArray L (qr A).1
+  have hsr := EntryLayout.size_toArray L (qr A).2
+  have hne : ∀ (b' i : ℕ) (c : ℕ × ℕ) (N : ℕ), blockDisjoint (b', i, 1) (c.1, c.2, N) = true →
+      b' ≠ c.1 ∨ i < c.2 ∨ c.2 + N ≤ i := by
+    intro b' i c N hbd
+    rcases hd _ _ hbd with h3 | h3 | h3
+    · exact Or.inl h3
+    · dsimp only at h3
+      exact Or.inr (Or.inl (by omega))
+    · dsimp only at h3
+      exact Or.inr (Or.inr (by omega))
+  -- the write at `r` leaves reads outside its block unchanged
+  have hr_frame : ∀ (q' : P) (b' i : ℕ), (b' ≠ r.1 ∨ i < r.2 ∨ r.2 + n * m * L.width ≤ i) →
+      s'.read q' b' i = s₁.read q' b' i := by
+    intro q' b' i hne'
+    apply Store.read_of_writeBlock_eq_some_of_ne h2
+    rw [hsr]
+    exact hne'
+  -- the write at `q` leaves reads outside its block unchanged
+  have hq_frame : ∀ (q' : P) (b' i : ℕ), (b' ≠ q.1 ∨ i < q.2 ∨ q.2 + m * m * L.width ≤ i) →
+      s₁.read q' b' i = s.read q' b' i := by
+    intro q' b' i hne'
+    apply Store.read_of_writeBlock_eq_some_of_ne h1
+    rw [hsq]
+    exact hne'
+  have hfq : L.Holds s₁ p q.1 q.2 (qr A).1 := EntryLayout.holds_of_writeBlock_eq_some L h1
+  have hfr : L.Holds s' p r.1 r.2 (qr A).2 := EntryLayout.holds_of_writeBlock_eq_some L h2
+  refine ⟨EntryLayout.Holds.of_forall_read_eq hfq (fun i hi1 hi2 => hr_frame p q.1 i ?_), hfr,
+    fun q' b' i hdq hdr => ?_⟩
+  · rcases hd _ _ hqr with h3 | h3 | h3
+    · exact Or.inl h3
+    · dsimp only at h3
+      exact Or.inr (Or.inl (by omega))
+    · dsimp only at h3
+      exact Or.inr (Or.inr (by omega))
+  · rw [hr_frame q' b' i (hne _ _ r _ hdr), hq_frame q' b' i (hne _ _ q _ hdq)]
 
 end NLAlib.Computation
