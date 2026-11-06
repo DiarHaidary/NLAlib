@@ -51,7 +51,11 @@ Proof: by `NLAlib.one_sub_newtonSchulz_sq` the defect $1 - g(x)^2$ is a square t
 $(4 - x^2)/4 \ge 0$ (`sq_abs`, `abs_le_of_sq_le_sq'` or `abs_le_one_iff_mul_self_le_one`,
 `nlinarith`). S, about 8 lines. -/
 theorem abs_newtonSchulz_le_one {x : ℝ} (hx : |x| ≤ 2) : |newtonSchulz x| ≤ 1 := by
-  sorry
+  have hx2 : x ^ 2 ≤ 4 := by nlinarith [sq_abs x, abs_nonneg x]
+  have h1 := one_sub_newtonSchulz_sq x
+  have h2 : 0 ≤ (1 - x ^ 2) ^ 2 * (4 - x ^ 2) / 4 :=
+    div_nonneg (mul_nonneg (sq_nonneg _) (by linarith)) (by norm_num)
+  nlinarith [sq_abs (newtonSchulz x), abs_nonneg (newtonSchulz x)]
 
 /-- **The perturbed Newton–Schulz step keeps the sign** (Lemma 2.3, first part): if
 $\lvert \xi \rvert \le u$ and $u < \lvert x \rvert < \sqrt3 - (\sqrt3 - 1)u$, then $g(x) + \xi$
