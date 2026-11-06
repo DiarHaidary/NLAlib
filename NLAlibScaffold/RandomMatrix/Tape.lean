@@ -99,8 +99,8 @@ theorem IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw {P K : Type} {dec : P
     (h : IsTapeRounding dec p u τ Ω c ρ)
     {Ω : Type} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {ξ : Ω → Dist → ℕ → ℝ}
     (hξ : HasLaw ξ tapeLaw μ) :
-    ∀ᵐ ω ∂μ, ∀ i, dec p (ρ .uniform i (ξ ω .uniform i)) ∈ Set.Icc (-1 : ℝ) 1 := by
-  sorry
+    ∀ᵐ ω ∂μ, ∀ i, dec p (ρ .uniform i (ξ ω .uniform i)) ∈ Set.Icc (-1 : ℝ) 1 :=
+  (NLAlib.Computation.ae_forall_mem_Icc_of_hasLaw_tapeLaw hξ).mono fun _ hω i => h.2 i _ (hω i)
 
 /-- **A larger bound**: a result in the rounded probabilistic model with the bound `bound` holds
 with every pointwise larger bound `bound'`. No printed source.
