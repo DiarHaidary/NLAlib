@@ -187,7 +187,22 @@ theorem decodeMatrix_hermShift_toFloatMachine_exactSem (p : P) {n : ℕ}
     {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)} (hA : (decodeMatrix id A).IsHermitian) (c : ℝ) :
     decodeMatrix id (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif
       normal).hermShift A c) = decodeMatrix id A - c • (1 : Matrix (Fin n) (Fin n) ℂ) := by
-  sorry
+  have hre : ∀ i j, (A i j).1 = (A j i).1 := fun i j => by
+    have h := congrArg Complex.re (hA.apply j i)
+    simpa [decodeMatrix, decodeComplex] using h
+  have him : ∀ i j, (A i j).2 = -(A j i).2 := fun i j => by
+    have h := congrArg Complex.im (hA.apply j i)
+    simp [decodeMatrix, decodeComplex] at h
+    linarith
+  ext i j
+  simp only [FloatMachine.hermShift, FloatMachine.hermFrom, decodeMatrix, Matrix.map_apply,
+    Matrix.of_apply, Matrix.sub_apply, Matrix.smul_apply, Matrix.one_apply]
+  rcases lt_trichotomy i j with h | rfl | h
+  · simp [h, h.ne, decodeComplex]
+  · have h0 : (A i i).2 = 0 := by linarith [him i i]
+    apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeComplex, h0]
+  · simp [h, h.ne', not_lt.2 h.le, ScalarSem.toFloatMachine, exactSem, decodeComplex, hre i j,
+      him i j]
 
 /-- **The exact scaling**: on exact real arithmetic, the stored Hermitian scaling of a stored
 matrix with Hermitian decoding $\mathbf{A}$ by $c$ decodes to $c^{-1}\mathbf{A}$ (at $c = 0$ both
