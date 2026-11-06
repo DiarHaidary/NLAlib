@@ -449,6 +449,7 @@ theorem ProgFamily.MatrixFree.storedEntries_substOracle_denseImpl {r b : ℕ} {p
   exact RunsWithin.substOracle
     (I := exactInterp (fun _ => Matrix.of fun (i j : Fin N) => vals (i + N * j)) ξ)
     (I' := denseInterp _ ξ p) rfl rfl (fun _ => rfl) (fun _ => rfl) rfl (fun _ => rfl)
-    (implementsOracle_denseImpl _ ξ p) rfl (fun _ => le_rfl) le_rfl (h N n hv x _ ξ)
+    (fun _ _ _ => rfl) (implementsOracle_denseImpl _ ξ p) rfl (fun _ => le_rfl) le_rfl
+    (h N n hv x _ ξ)
 
 end NLAlib.Computation

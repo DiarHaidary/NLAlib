@@ -37,6 +37,7 @@ mixed precision through `convert` too.
 * `NLAlib.Computation.isRelErrSem_gridSem`: it meets the standard-model contract with
   $u_p = 2^{-t_p}$.
 * `NLAlib.Computation.addsZeroExactly_gridSem`: it adds zero exactly.
+* `NLAlib.Computation.isExactIntLit_gridSem`: exact integer literals of the grid semantics.
 -/
 
 @[expose] public section
@@ -145,5 +146,29 @@ theorem addsZeroExactly_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) :
   simp only [gridSem, exactSem, hx, zero_add, Option.map_some, Option.some.injEq] at h
   subst h
   simp only [Real.roundNearest_roundNearest (ht p)]
+
+/-! ### Exact integer literals -/
+
+section ExactIntLit
+
+variable {P : Type}
+
+/-- The grid semantics has exact integer literals: if every natural number up to $B$ is below
+$2^{t(p)}$ at every tag $p$, then `NLAlib.Computation.gridSem t`, with the identity decoding,
+meets `NLAlib.Computation.IsExactIntLit` at $B$: the literal of $k \le B$ rounds to itself.
+No printed source. -/
+theorem isExactIntLit_gridSem (t : P → ℕ) (B : ℕ) (hB : ∀ p, B < 2 ^ t p) :
+    IsExactIntLit (fun _ x => x) (gridSem t) B := by
+  intro p k hk
+  refine ⟨Real.roundNearest (t p) ((k : ℚ) : ℝ), rfl, ?_⟩
+  have hmem : (k : ℝ) ∈ Real.floatGrid (t p) := by
+    refine ⟨k, 0, ?_, by simp⟩
+    simpa [abs_of_nonneg (Int.natCast_nonneg k)] using
+      (by exact_mod_cast hk.trans_lt (hB p) : (k : ℤ) < 2 ^ t p)
+  change Real.roundNearest (t p) (((k : ℚ)) : ℝ) = (k : ℝ)
+  rw [Rat.cast_natCast]
+  exact Real.roundNearest_eq_self_of_mem_floatGrid hmem
+
+end ExactIntLit
 
 end NLAlib.Computation

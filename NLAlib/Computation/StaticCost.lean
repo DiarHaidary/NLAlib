@@ -303,6 +303,7 @@ noncomputable def FStmt.staticCost (charge : OpKind P ι → OpCount P ι) (widt
       ((t.staticCost charge width ρI).branch (e.staticCost charge width ρI))
   -- Eliminate the first-order label; no named program node is constructed by the analysis.
   | _, _, FStmt.named _ _ body, ρI => body.staticCost charge width ρI
+  | _, _, .kcall o p dims _ _, ρI => StaticCost.step (charge (.kcall p o (dims.map (·.evalIn ρI))))
 
 /-- The static resource summary of a program at its declared sizes. -/
 noncomputable def Prog.staticCost {r b : ℕ} (prog : Prog P ι r b)
@@ -405,6 +406,9 @@ theorem FStmt.bounds_staticCost_of_exec_eq_some :
       (fun _ _ ht => t.bounds_staticCost_of_exec_eq_some ρB ρI ht)
       (fun _ _ he => e.bounds_staticCost_of_exec_eq_some ρB ρI he) h
   | _, _, .named _ _ body, ρB, ρI, _, _, h => body.bounds_staticCost_of_exec_eq_some ρB ρI h
+  | _, _, .kcall o p dims ins outs, ρB, ρI, st, _, h => by
+    obtain ⟨out, -, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact StaticCost.Bounds.step st out st.pos _
 
 /-- A successful execution of a program satisfies the count, cell-peak and bit-peak summary
 obtained from its fixed first-order tree at the declared sizes. -/
