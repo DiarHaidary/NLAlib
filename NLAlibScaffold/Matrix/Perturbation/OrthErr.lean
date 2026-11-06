@@ -66,7 +66,18 @@ its spectral norm, `NLAlib.norm_apply_le_specNorm`; `frobNorm_sq_eq_sum` or
 `frobNorm_sq_eq_re_trace`). S, about 15 lines. -/
 theorem frobNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) : frobNorm V ≤ Real.sqrt (j * (1 + η)) := by
-  sorry
+  have hdiag : ∀ i, (Vᵀ * V) i i ≤ 1 + η := fun i => by
+    have h := norm_apply_le_specNorm (Vᵀ * V - 1) i i
+    rw [Matrix.sub_apply, Matrix.one_apply_eq, Real.norm_eq_abs] at h
+    linarith [le_abs_self ((Vᵀ * V) i i - 1)]
+  have htr : (Vᵀ * V).trace ≤ j * (1 + η) := by
+    rw [Matrix.trace]
+    calc ∑ i, (Vᵀ * V) i i ≤ ∑ _i : Fin j, (1 + η) := Finset.sum_le_sum fun i _ => hdiag i
+      _ = j * (1 + η) := by simp; ring
+  have h2 : frobNorm V ^ 2 ≤ j * (1 + η) := by
+    rw [frobNorm_sq_eq_re_trace, Matrix.conjTranspose_eq_transpose_of_trivial, RCLike.re_to_real]
+    exact htr
+  exact (Real.le_sqrt (frobNorm_nonneg V) (le_trans (sq_nonneg _) h2)).2 h2
 
 /-- **Monotonicity of the orthogonalization guarantee** (B3): a smaller precondition $\eta_0$ and
 larger parameters $\varepsilon_1, \varepsilon_2, \varepsilon_3$ keep `NLAlib.IsOrthErr`.
