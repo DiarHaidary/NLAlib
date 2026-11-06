@@ -160,7 +160,7 @@ Proof: `⟨Function.update_self .., Function.update_self ..⟩` after unfolding
 theorem isQRKernel_withKernel [DecidableEq ι] [Inhabited K] (I : Interp P ι K C) (o : ι)
     (L : EntryLayout K E) (qr : QRMap E) :
     IsQRKernel (I.withKernel o (liftQR L qr) (qrShape L)) o L qr := by
-  sorry
+  exact ⟨Function.update_self .., Function.update_self ..⟩
 
 variable [DecidableEq P]
 
