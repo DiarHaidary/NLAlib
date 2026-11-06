@@ -275,7 +275,9 @@ theorem decodeMatrix_conjTransposeMat_toFloatMachine_exactSem (p : P) {m n : ℕ
     (A : Matrix (Fin m) (Fin n) (ℝ × ℝ)) :
     decodeMatrix id (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif
       normal).conjTransposeMat A) = (decodeMatrix id A)ᴴ := by
-  sorry
+  ext i j
+  apply Complex.ext <;> simp [ScalarSem.toFloatMachine, FloatMachine.conjTransposeMat, exactSem,
+    decodeMatrix, decodeComplex, Complex.conj_re, Complex.conj_im]
 
 /-- **The exact real trace**: on exact real arithmetic, the rounded trace of the real parts of a
 stored matrix with decoding $\mathbf{A}$ is $\operatorname{Re}\operatorname{tr}\mathbf{A}$. No
