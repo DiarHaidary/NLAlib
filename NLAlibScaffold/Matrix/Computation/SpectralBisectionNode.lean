@@ -98,8 +98,9 @@ theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
 `mmR` on interleaved pairs and the semantics decides flags at `p`, a successful run of
 `NLAlib.eighSignBlock` at size $n$ and step limit $F$, from a state whose block at `A` holds the
 stored $\mathbf{A}$ and whose cells `po`, `po + 1` of `par` hold $\varepsilon$ and $b$, with the
-output block at `X` disjoint from both, ends with the output block holding
-`NLAlib.newtonSchulzSign M ε b F A` (the machine of the semantics at `p` with product `mmR`, for
+output block at `X` disjoint from both and in an existing buffer at tag `p` of at least $2n^2$
+cells from `xo` (so not one of the block's scratch buffers, which are popped at the end), ends
+with the output block holding `NLAlib.newtonSchulzSign M ε b F A` (the machine of the semantics at `p` with product `mmR`, for
 every choice of its other black boxes); every cell outside the output block is unchanged, the store
 shape and the tape positions too. No printed source.
 Proof: as the pilot's `NLAlib.holds_of_exec_newtonSchulzSignProg` (scaffold), with the loop by
@@ -117,6 +118,7 @@ theorem holds_of_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLay
     (hε : st.store.read p par po.eval = some ε) (hb : st.store.read p par (po.eval + 1) = some b)
     (hXA : blockDisjoint (X, xo.eval, 2 * (n * n)) (A, ao.eval, 2 * (n * n)) = true)
     (hXp : blockDisjoint (X, xo.eval, 2 * (n * n)) (par, po.eval, 2) = true)
+    (hX : ∃ len, st.store.shape[X]? = some (p, len) ∧ xo.eval + 2 * (n * n) ≤ len)
     (h : exec I (eighSignBlock p mm (.const n) (.const F) A ao par po X xo).run st = some st') :
     pairLayout.Holds st'.store p X xo.eval
         (newtonSchulzSign (I.sem.toFloatMachine p toNat mmR qrR unif normal) ε b F A₀) ∧
@@ -442,7 +444,8 @@ Proof: `NLAlib.Computation.exec_alloc` seven times, the instructions computing $
 $\ell$, $R/\ell$ and the shift $c$ (`NLAlib.Computation.ScalarSem.tapeUnif`), then
 `NLAlib.Computation.exec_zhermShift_congr` with the pilot's
 `NLAlib.Computation.holds_of_exec_zhermShift`, `NLAlib.holds_of_exec_eighSignBlock` at
-$(\beta, \mathrm{fl}(2R))$, the projectors and the trace (the pilot's
+$(\beta, \mathrm{fl}(2R))$ (its `hX` from the allocation of `B`, $2k^2$ cells at tag `p`, the
+shape kept by every earlier write), the projectors and the trace (the pilot's
 `NLAlib.Computation.holds_of_exec_zhermScale`, `NLAlib.Computation.holds_of_exec_zneg`,
 `NLAlib.Computation.read_of_exec_ztraceRe` after the congruences); the index binder by
 `NLAlib.Computation.exec_bindIdx` reads $k_+ = \min(\lfloor\cdot\rfloor, k)$, the machine's `toNat`

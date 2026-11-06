@@ -350,6 +350,12 @@ the maintainer once the proof exists.
 | TT1–TT3 | `matrixFreeRoundedProbEigh`, `matrixFreeRoundedProb_eighProg_of_logb_le`, the bounded format | `Eigensolvers/SpectralBisectionProgram.lean` | M |
 | TT4 (blocked) | `matrixFreeRoundedProb_eighProg_of_logb_le'` (EV7') | `Eigensolvers/SpectralBisectionProgramSharp.lean` | M |
 
+**Statement fix (SB2).** `holds_of_exec_eighSignBlock` now takes `hX : ∃ len, st.store.shape[X]? =
+some (p, len) ∧ xo.eval + 2 * (n * n) ≤ len`, as SB3 and the pilot's SG6/SG7 (the pilot's SG6
+and DF2 were false without it: the output block could be one of the scratch buffers that the
+`scope` pops). Its one caller, EN9 `holds_of_exec_eighNodeBlock`, supplies it from the allocation
+of `B` ($2k^2$ cells at tag `p`); EN9's statement is unchanged.
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip

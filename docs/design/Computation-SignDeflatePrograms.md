@@ -131,10 +131,13 @@ Choices, each kept exact:
 ### 3.2 Statements (SG1 to SG11)
 
 * (a) SG6 `holds_of_exec_newtonSchulzSignProg`: from any state (inputs at any offsets, output block
-  disjoint), a successful run ends with the output block holding
+  disjoint and in an existing buffer at tag `p` of at least $2n^2$ cells, `hX` as in SG7), a
+  successful run ends with the output block holding
   `newtonSchulzSign (I.sem.toFloatMachine p toNat mmR qrR unif normal) ε b F A₀`, for every choice
   of the unused black boxes, and every other cell unchanged. Hypotheses: `IsMatMulKernel I mm
-  pairLayout mmR` and `DecidesFlags`. The builder-level form is what EIGH will call.
+  pairLayout mmR` and `DecidesFlags`. The builder-level form is what EIGH will call. (Statement fix after the pilot: without
+  `hX` the output block may be one of the scratch buffers, which the `scope` pops, so a successful
+  run leaves it unreadable; the same holds for DF2 and `hQ`.)
 * (b) SG7 `exists_exec_newtonSchulzSignProg`: under `IsRelErrSem` (every value in range),
   $u(p) < 1$, an exact $1$, $n \ge 1$, $\bar b \ne 0$, and a passing test at an iterate $k \le F$.
 * Steps: the test block SG1/SG2, the step block SG3/SG4, the loop SG5 (induction on the fuel with
@@ -178,7 +181,8 @@ Position independence is a hypothesis of the target (D7): `IsTapeRounding` allow
 
 ### 4.3 Statements (DF1 to DF8) and target
 
-(a) DF2 from any state; (b) DF3: always succeeds under `IsRelErrSem` (every value in range),
+(a) DF2 from any state, the output block in an existing buffer at tag `p` (`hQ` as in DF3);
+(b) DF3: always succeeds under `IsRelErrSem` (every value in range),
 $u(p) \le 1$ and exact literals up to $2$; DF1 the draw loop; DF5 to DF7 the tree; DF8 the counts
 `deflateCount` (exact formula, $2n^2$ draws and products, one call of each kernel, $2n\min(r, n)$
 copies) and peak $+8N^2 + 2$. The target `MatrixFreeRoundedProbDeflate`: under the contracts
