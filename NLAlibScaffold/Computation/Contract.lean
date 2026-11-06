@@ -38,7 +38,8 @@ Proof: `intro p k _; exact ⟨(k : ℝ), by simp [exactSem], rfl⟩` (the litera
 `Rat.cast_natCast`). S, about 2 lines. -/
 theorem isExactIntLit_exactSem (B : ℕ) :
     IsExactIntLit (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) B := by
-  sorry
+  intro p k _
+  exact ⟨(k : ℝ), by simp [exactSem], rfl⟩
 
 /-- **A smaller bound**: exact integer literals up to $B$ are exact up to every $B' \le B$.
 No printed source.
