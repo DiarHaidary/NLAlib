@@ -214,7 +214,30 @@ theorem decodeMatrix_hermScale_toFloatMachine_exactSem (p : P) {n : ℕ}
     {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)} (hA : (decodeMatrix id A).IsHermitian) (c : ℝ) :
     decodeMatrix id (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif
       normal).hermScale A c) = c⁻¹ • decodeMatrix id A := by
-  sorry
+  have hre : ∀ i j, (A i j).1 = (A j i).1 := fun i j => by
+    have h := congrArg Complex.re (hA.apply j i)
+    simpa [decodeMatrix, decodeComplex] using h
+  have him : ∀ i j, (A i j).2 = -(A j i).2 := fun i j => by
+    have h := congrArg Complex.im (hA.apply j i)
+    simp [decodeMatrix, decodeComplex] at h
+    linarith
+  by_cases hc : c = 0
+  · subst hc
+    have hd : (default : ℝ) = 0 := rfl
+    ext i j
+    simp [FloatMachine.hermScale, FloatMachine.hermFrom, ScalarSem.toFloatMachine, exactSem,
+      decodeMatrix, decodeComplex, Complex.ext_iff, hd]
+  ext i j
+  simp only [FloatMachine.hermScale, FloatMachine.hermFrom, decodeMatrix, Matrix.map_apply,
+    Matrix.of_apply, Matrix.smul_apply]
+  rcases lt_trichotomy i j with h | rfl | h
+  · apply Complex.ext <;> simp [h, hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
+      div_eq_inv_mul]
+  · have h0 : (A i i).2 = 0 := by linarith [him i i]
+    apply Complex.ext <;> simp [hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
+      div_eq_inv_mul, h0]
+  · apply Complex.ext <;> simp [h, not_lt.2 h.le, hc, ScalarSem.toFloatMachine, exactSem,
+      decodeComplex, div_eq_inv_mul, hre i j, him i j]
 
 /-- **The exact Hermitian part**: on exact real arithmetic, the scaled Hermitian part of a stored
 matrix with decoding $\mathbf{A}$ by $c$ decodes to $c^{-1}(\mathbf{A} + \mathbf{A}^{\mathsf{H}})$,
