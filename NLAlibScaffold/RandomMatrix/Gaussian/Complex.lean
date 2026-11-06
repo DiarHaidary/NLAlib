@@ -235,7 +235,33 @@ theorem hasLaw_submatrix_of_hasLaw_complexGaussianMatrix {G : Ω → Matrix m n 
     (hG : HasLaw G (complexGaussianMatrix m n) μ) {f : p → m} (hf : Function.Injective f)
     {e : q → n} (he : Function.Injective e) :
     HasLaw (fun ω => (G ω).submatrix f e) (complexGaussianMatrix p q) μ := by
-  sorry
+  classical
+  have hsub : Function.Injective (Sum.map f f) := Sum.map_injective.mpr ⟨hf, hf⟩
+  have hreal : (gaussianMatrix (m ⊕ m) n).map
+      (fun X : Matrix (m ⊕ m) n ℝ => X.submatrix (Sum.map f f) e) = gaussianMatrix (p ⊕ p) q :=
+    (hasLaw_submatrix_of_hasLaw_gaussianMatrix (HasLaw.id) hsub he).map_eq
+  have hcomm : ∀ X : Matrix (m ⊕ m) n ℝ,
+      (√2 : ℝ)⁻¹ • (((X.submatrix (Sum.map f f) e).submatrix Sum.inl id).map
+          (fun x : ℝ => (x : ℂ)) +
+        Complex.I • ((X.submatrix (Sum.map f f) e).submatrix Sum.inr id).map
+          (fun x : ℝ => (x : ℂ))) =
+      ((√2 : ℝ)⁻¹ • ((X.submatrix Sum.inl id).map (fun x : ℝ => (x : ℂ)) +
+        Complex.I • (X.submatrix Sum.inr id).map (fun x : ℝ => (x : ℂ)))).submatrix f e := by
+    intro X
+    ext i j
+    simp [Matrix.submatrix_apply]
+  have hmeasSub : Measurable (fun Z : Matrix m n ℂ => Z.submatrix f e) := by fun_prop
+  have hmeasSubR : Measurable (fun X : Matrix (m ⊕ m) n ℝ => X.submatrix (Sum.map f f) e) := by
+    fun_prop
+  have heq : (complexGaussianMatrix m n).map (fun Z : Matrix m n ℂ => Z.submatrix f e) =
+      complexGaussianMatrix p q := by
+    rw [complexGaussianMatrix_eq_map_gaussianMatrix, complexGaussianMatrix_eq_map_gaussianMatrix,
+      Measure.map_map hmeasSub (by fun_prop), ← hreal, Measure.map_map (by fun_prop) hmeasSubR]
+    congr 1
+  refine ⟨hmeasSub.comp_aemeasurable hG.aemeasurable, ?_⟩
+  rw [← heq, ← hG.map_eq, AEMeasurable.map_map_of_aemeasurable hmeasSub.aemeasurable
+    hG.aemeasurable]
+  rfl
 
 /-- **Norm tail of a complex Gaussian matrix** (Lemma 3.2): for a standard complex Gaussian
 $m \times n$ matrix $\mathbf{G}$ and $t \ge 0$,
