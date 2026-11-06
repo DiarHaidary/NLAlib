@@ -95,7 +95,35 @@ theorem Interp.read_of_kcallStore_eq_some {I : Interp P ι K C} {o : ι} {p : P}
       ∀ (k : ℕ) (x : ℕ × ℕ × ℕ) (y : Array K),
         (kcallBlocks outs (I.kshape o ds).2)[k]? = some x → ys[k]? = some y →
         y.size = x.2.2 ∧ ∀ j < x.2.2, s'.read p x.1 (x.2.1 + j) = y[j]? := by
-  sorry
+  have hlen : ∀ (bs : List (ℕ × ℕ × ℕ)) (ys : List (Array K)) (s₀ s₁ : Store P K),
+      s₀.writeBlocks p bs ys = some s₁ → bs.length = ys.length := by
+    intro bs
+    induction bs with
+    | nil =>
+      intro ys s₀ s₁ h
+      cases ys with
+      | nil => rfl
+      | cons _ _ => simp [Store.writeBlocks] at h
+    | cons b bs ih =>
+      intro ys s₀ s₁ h
+      cases ys with
+      | nil => simp [Store.writeBlocks] at h
+      | cons y ys =>
+        rw [Store.writeBlocks] at h
+        split_ifs at h with hsz
+        obtain ⟨s', -, h2⟩ := Option.bind_eq_some_iff.mp h
+        simp only [List.length_cons]
+        exact congrArg (· + 1) (ih ys s' s₁ h2)
+  unfold Interp.kcallStore at h
+  split_ifs at h with hc
+  obtain ⟨xs, hxs, h'⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨ys, hys, hw⟩ := Option.bind_eq_some_iff.mp h'
+  have hlen' : (kcallBlocks outs (I.kshape o ds).2).length = outs.length := by
+    unfold kcallBlocks
+    rw [List.length_zipWith, hc.2.1, min_self]
+  refine ⟨xs, ys, hxs, hys, (hlen _ _ _ _ hw).symm.trans hlen', ?_⟩
+  intro k x y hx hy
+  exact Store.read_of_writeBlocks_eq_some hw hc.2.2.1 k x y hx hy
 
 /-- **When a kernel call succeeds**: if the numbers of operands are those of the shape of kernel
 `o` at `ds`, the output blocks are pairwise disjoint and disjoint from the input blocks, the input
