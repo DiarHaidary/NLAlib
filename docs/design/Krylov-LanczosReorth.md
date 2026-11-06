@@ -486,19 +486,19 @@ D–F: `Krylov/FinitePrecision`. G: `Krylov/Processes`.
 | B3 | `IsOrthRoutine.mono`, `IsOrthErr.mono` in all four parameters | S | B1, B2 |
 | B4 | `IsOrthErr.norm_coef_le`: the coefficient bound of §1.1 | S | B1 |
 | B5 | `IsOrthErr.norm_transpose_mulVec_normalize_le`: $\|\mathbf V^{\mathsf T}\mathbf w'/\|\mathbf w'\|\|\le\varepsilon_1+\varepsilon_3\|\mathbf w\|/\|\mathbf w'\|$ | S | B1 |
-| B6 | `frobNorm_gram_sub_one_sq_eq`: the column-append identity, and `frobNorm_gram_sub_one_le` ($\sqrt{3m}\mu$) | S | — |
+| B6 | `frobNorm_transpose_mul_self_sub_one_sq`: the column-append identity, and `frobNorm_transpose_mul_self_sub_one_le` ($\sqrt{3m}\mu$) | S | — |
 | B7 | `injective_of_specNorm_gram_sub_one_lt_one` and the corollary $m\le n$ | S | — |
 | B8 | `specNorm_le_sqrt_one_add`, `frobNorm_le_sqrt_mul_one_add`: $\|\mathbf V\|_2\le\sqrt{1+\eta_0}$, $\|\mathbf V\|_F\le\sqrt{j(1+\eta_0)}$ from $\|\mathbf V^{\mathsf T}\mathbf V-\mathbf I\|_2\le\eta_0$ | S | — |
 | **C1** | `cgsPass`, `cgs2` builders (§2.2) [`Matrix/Computation/CGS2.lean`] | S | — |
 | C2 | `exec_cgs2_exactInterp`: in exact arithmetic, the two passes compute $(\mathbf I-\mathbf V\mathbf V^{\mathsf T})$ twice and $\mathbf h=\mathbf V^{\mathsf T}\mathbf w+\mathbf V^{\mathsf T}(\mathbf I-\mathbf V\mathbf V^{\mathsf T})\mathbf w$ (any $\mathbf V$) | M | C1 |
 | C3 | `IsRelErrSem.exec_cgsPass`: decoded $\mathbf w'=(\mathbf I-\mathbf V\mathbf V^{\mathsf T})\mathbf w+\mathbf f_1$, $\mathbf h_1=\mathbf V^{\mathsf T}\mathbf w+\mathbf e_h$, explicit $c_1$ (`cgsPassBound N j u η₀`) | M | C1, kernel lemmas |
-| C4 | `norm_transpose_mulVec_cgsPass_le`: $\|\mathbf V^{\mathsf T}\mathbf w'\|\le\sqrt{1+\eta_0}(\eta_0+c_1)\|\mathbf w\|$ | S | C3 |
+| C4 | `norm_transpose_mulVec_le_of_norm_sub_le`: $\|\mathbf V^{\mathsf T}\mathbf w'\|\le\sqrt{1+\eta_0}(\eta_0+c_1)\|\mathbf w\|$ | S | C3 |
 | C5 | `isOrthErr_cgs2`: CGS2 meets `IsOrthErr` with $(\varepsilon_1,\varepsilon_2,\varepsilon_3)$ explicit | M | C3, C4 |
 | C6 | `IsRelErrSem.isOrthRoutine_cgs2`: the certificate (success, frames, composable) | L | C5, `ScalarFrames` |
 | C7 | `isOrthErr_cgsPass`: one pass meets the contract with first-order $\varepsilon_3$ (documents why one pass is not enough) | S | C4 |
 | **D1** | `LanczosReorthRun n k` (def, §3.1), `reorthSteps τ ν β q` (def) [`LanczosReorthRun.lean`] | S | B1 |
 | D2 | `LanczosReorthRun.toLanczosData`; `recurrenceError_eq`: $\mathbf f_j+\mathbf V_j\mathbf h_j$ | S | D1 |
-| D5 | `frobNorm_gram_sub_one_le`: S2 on the admissible prefix (first: needs no coefficient bound) | M | B5, B6, B8 |
+| D5 | `frobNorm_transpose_mul_self_sub_one_le`: S2 on the admissible prefix (first: needs no coefficient bound) | M | B5, B6, B8 |
 | D3 | coefficient bounds `abs_α_le`, `β_le`, `norm_z_le`: $(1+cj\mu)\|\mathbf H\|+\ldots$, no $j$-growth | M | D1, D5 |
 | D4 | `norm_coef_le`: $\|\mathbf h_j\|\le c_h\sqrt j(5\mu+2\varepsilon)\|\mathbf H\|$ (symmetric $\mathbf H$, induction) | L | B4, D3, D5 |
 | D6 | `frobNorm_residual_le`: S1 | M | D2, D4 |

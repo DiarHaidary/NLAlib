@@ -299,7 +299,7 @@ theorem norm_transpose_mulVec_v_le {j : ℕ} (hj : j < k)
     constructor <;> nlinarith
   have hsq : specNorm (basisOf L.v (j + 1))ᵀ ≤ Real.sqrt (1 + L.η₀) := by
     rw [specNorm_transpose]
-    exact specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV
+    exact specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le hV
   have hδ := (norm_toLp_mulVec_le (basisOf L.v (j + 1))ᵀ (L.δ (j + 1))).trans
     (mul_le_mul hsq (L.norm_δ_le j hj) (norm_nonneg _) (Real.sqrt_nonneg _))
   have hvec : L.β (j + 1) • ((basisOf L.v (j + 1))ᵀ *ᵥ L.v (j + 2)) =
@@ -379,7 +379,7 @@ theorem frobNorm_transpose_mul_self_sub_one_le (hη : L.η₀ ≤ 1 / 100)
   induction m using Nat.strong_induction_on with
   | _ m ih =>
   intro hm
-  apply frobNorm_gram_sub_one_le_of_columns L.v m hμ
+  apply frobNorm_transpose_mul_self_sub_one_le_of_columns L.v m hμ
   · intro c hc
     rcases Nat.eq_zero_or_pos c with rfl | hc0
     · simp [hμ, EuclideanSpace.norm_eq]
@@ -418,7 +418,7 @@ $\sqrt{3(k+1)}\,\mu \le \eta_0 \le 1/100$, the admissible prefix has $k + 1 \le 
 admissibility makes $\mathbf{v}_{k+1}$ a genuine column). No printed source. -/
 theorem succ_le_card (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) : k + 1 ≤ n :=
-  le_of_specNorm_gram_sub_one_lt_one
+  le_of_specNorm_transpose_mul_self_sub_one_lt_one
     ((L.specNorm_transpose_mul_self_sub_one_le hη hsmall le_rfl).trans_lt (by linarith))
 
 /-- Prefixes of a run are runs: for $0 < m \le k$ there is a run of $m$ steps with the same

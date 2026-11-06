@@ -193,7 +193,7 @@ theorem card_le_card_eigenvalue_mem (hη : L.η₀ ≤ 1 / 100)
     rw [Matrix.conjTranspose_mul, Matrix.mul_assoc, ← Matrix.mul_assoc _ U Y,
       hU.conjTranspose_mul_self, Matrix.one_mul]
     exact hY
-  have hcard := card_le_card_eigenvalue_mem_of_hasOrthonormalCols (L.isHermitian_add hEs) hX
+  have hcard := (L.isHermitian_add hEs).card_le_card_eigenvalue_mem_of_hasOrthonormalCols hX
     (d := g - L.backwardRadius) (by linarith) hθ (fun i => by
     change ‖WithLp.toLp 2 ((L.H + E) *ᵥ (U *ᵥ fun c => Y c i) - θ i • (U *ᵥ fun c => Y c i))‖ <
       (g - L.backwardRadius) / Real.sqrt r

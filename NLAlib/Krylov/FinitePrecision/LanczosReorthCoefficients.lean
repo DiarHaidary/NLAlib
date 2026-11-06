@@ -86,12 +86,12 @@ private lemma norm_z'_le_and_norm_coef_le (hη : L.η₀ ≤ 1 / 100)
   have hHn0 : 0 ≤ Hn := norm_nonneg _
   have hsq : Real.sqrt (1 + L.η₀) ≤ 101 / 100 := Real.sqrt_le_iff.mpr ⟨by norm_num, by nlinarith⟩
   have hsq0 : 0 ≤ Real.sqrt (1 + L.η₀) := Real.sqrt_nonneg _
-  have hA := hO.norm_coef_le hV (by linarith) L.ε₂_nonneg
+  have hA := hO.norm_coef_le hV (by linarith)
   have hVz : ‖WithLp.toLp 2 (Vᵀ *ᵥ z)‖ ≤ 101 / 100 * Z := by
     refine (norm_toLp_mulVec_le _ _).trans ?_
     rw [specNorm_transpose]
     gcongr
-    exact (specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV).trans hsq
+    exact (specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le hV).trans hsq
   have hT : T ≤ L.ε₁ * Z' + L.ε₃ * Z := hO.orth hV
   have hres : ‖WithLp.toLp 2 (z - V *ᵥ hv - z')‖ ≤ L.ε₂ * Z := hO.residual hV
   -- admissibility: `τ‖z‖ ≤ 1.01 ‖z'‖`
@@ -693,7 +693,7 @@ theorem norm_coef_le (hη : L.η₀ ≤ 1 / 100)
     have hV := L.specNorm_transpose_mul_self_sub_one_le hη hsmall (m := j + 1) (by omega)
     have hη0 : 0 ≤ L.η₀ := (specNorm_nonneg _).trans hV
     have hO := L.orth_eq j hj
-    have hA := hO.norm_coef_le hV (by linarith) L.ε₂_nonneg
+    have hA := hO.norm_coef_le hV (by linarith)
     obtain ⟨-, hβ, hz⟩ := L.coeff_le hη hsmall hrec j hj
     have hsq1 : 1 ≤ Real.sqrt ((j : ℝ) + 1) := by
       exact Real.one_le_sqrt.mpr (by simp)

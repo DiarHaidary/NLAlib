@@ -127,7 +127,7 @@ theorem exists_backward (hη : L.η₀ ≤ 1 / 100)
     rw [hR, Matrix.mul_sub, hUT, Matrix.transpose_sub, D.transpose_tridiagonal,
       Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose, L.transpose_H,
       Matrix.mul_assoc]
-  obtain ⟨E, hEt, hEU, hEF, -⟩ := exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols hUk hsym
+  obtain ⟨E, hEt, hEU, hEF, -⟩ := HasOrthonormalCols.exists_transpose_eq_mul_eq_neg hUk hsym
   refine ⟨E, hEt, ?_, ?_⟩
   · set X := U - V
     -- `R = H Xₖ - X T + F`, and `T = Uᵀ (H Uₖ - R)`

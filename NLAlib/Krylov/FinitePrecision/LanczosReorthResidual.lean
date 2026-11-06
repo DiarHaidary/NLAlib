@@ -123,7 +123,7 @@ private lemma norm_residual_col_le (hη : L.η₀ ≤ 1 / 100)
   have hh := specNorm_nonneg L.H
   have hVg := L.specNorm_transpose_mul_self_sub_one_le hη hsmall (m := j + 1) (by omega)
   have hVn : specNorm (basisOf L.v (j + 1)) ≤ 101 / 100 := by
-    refine (specNorm_le_sqrt_of_specNorm_gram_sub_one_le (hVg.trans hη)).trans ?_
+    refine (specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le (hVg.trans hη)).trans ?_
     rw [Real.sqrt_le_iff]
     norm_num
   have hvj1 := L.norm_v_le (i := j + 1) (by omega)
@@ -252,7 +252,7 @@ theorem specNorm_transpose_mul_mul_sub_tridiagonal_le (hη : L.η₀ ≤ 1 / 100
     exact mul_le_mul_of_nonneg_right
       (Real.sqrt_le_sqrt (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])) hμ
   have hVs : specNorm L.toLanczosData.basis ≤ 101 / 100 := by
-    refine (specNorm_le_sqrt_of_specNorm_gram_sub_one_le (hG.trans hg1)).trans ?_
+    refine (specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le (hG.trans hg1)).trans ?_
     rw [Real.sqrt_le_iff]
     norm_num
   have hA := specNorm_transpose_mul_vecMulVec_le L hη hsmall hrec hG
