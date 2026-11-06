@@ -17,20 +17,22 @@ public import NLAlib.Matrix.Perturbation.OrthErr
 # Symmetric backward perturbations from orthonormal bases
 
 The matrix facts behind the backward model of Lanczos with full reorthogonalization: the
-symmetric completion of a residual against an orthonormal basis
-[KahanParlettJiang1982], main's polar factor (`NLAlib/Matrix/Factorizations/Polar.lean`) of a
-nearly orthonormal basis, an orthogonal map
-sending one unit vector to another and close to the identity (two reflectors), and the count of
-orthonormal approximate eigenvectors with small residuals. Design:
+symmetric completion of a residual against an orthonormal basis [KahanParlettJiang1982], the
+polar factor `NLAlib.polarFactor` of a nearly orthonormal basis, an orthogonal map close to the
+identity sending one unit vector to another (a product of two reflectors), and the count of
+eigenvalues near orthonormal approximate eigenvectors with small residuals. Design:
 `docs/design/Krylov-LanczosReorth.md` §3.3.
 
 ## Main results
 
-* `NLAlib.exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols`: the symmetric completion.
-* `NLAlib.hasOrthonormalCols_polarFactor`, `NLAlib.frobNorm_polarFactor_sub_le`: main's polar factor
-  of a nearly orthonormal basis.
-* `NLAlib.exists_orthogonal_mulVec_eq_specNorm_sub_one_le`: the rotation.
-* `NLAlib.card_le_card_eigenvalue_mem_of_hasOrthonormalCols`: the residual-gated count.
+* `NLAlib.HasOrthonormalCols.exists_transpose_eq_mul_eq_neg`: the symmetric completion of a
+  residual.
+* `NLAlib.hasOrthonormalCols_polarFactor`, `NLAlib.frobNorm_polarFactor_sub_le`: the polar
+  factor of a nearly orthonormal basis.
+* `NLAlib.exists_orthogonal_mulVec_eq_specNorm_sub_one_le`: a rotation taking one unit vector to
+  another.
+* `Matrix.IsHermitian.card_le_card_eigenvalue_mem_of_hasOrthonormalCols`: orthonormal approximate
+  eigenvectors are counted by the spectrum.
 -/
 
 @[expose] public section
@@ -39,18 +41,6 @@ open scoped Matrix
 
 namespace NLAlib
 
-/-- Frobenius norms add in square when the cross term has zero trace. -/
-private lemma frobNorm_add_sq_of_trace_transpose_mul_eq_zero {n k : ℕ}
-    {A B : Matrix (Fin n) (Fin k) ℝ} (h : (Aᵀ * B).trace = 0) :
-    frobNorm (A + B) ^ 2 = frobNorm A ^ 2 + frobNorm B ^ 2 := by
-  have h' : (Bᵀ * A).trace = 0 := by
-    rw [← Matrix.trace_transpose, Matrix.transpose_mul, Matrix.transpose_transpose]
-    exact h
-  simp only [frobNorm_sq_eq_re_trace, Matrix.conjTranspose_eq_transpose_of_trivial,
-    Matrix.transpose_add, Matrix.add_mul, Matrix.mul_add, Matrix.trace_add, h, h',
-    RCLike.re_to_real]
-  ring
-
 /-- **The symmetric completion of a residual**: for $\mathbf{U}$ with orthonormal columns
 and $\mathbf{R}$ with $\mathbf{U}^{\mathsf{T}}\mathbf{R}$ symmetric, the symmetric
 $\mathbf{E} = -\mathbf{R}\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}^{\mathsf{T}} +
@@ -58,7 +48,7 @@ $\mathbf{E} = -\mathbf{R}\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}^{\mathsf
 $\mathbf{E}\mathbf{U} = -\mathbf{R}$, $\|\mathbf{E}\|_{\mathsf F} \le
 \sqrt2\,\|\mathbf{R}\|_{\mathsf F}$
 and $\|\mathbf{E}\|_2 \le 2\|\mathbf{R}\|_2$. [KahanParlettJiang1982] (locator to verify). -/
-theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
+theorem HasOrthonormalCols.exists_transpose_eq_mul_eq_neg {n k : ℕ}
     {U : Matrix (Fin n) (Fin k) ℝ} (hU : HasOrthonormalCols U) {R : Matrix (Fin n) (Fin k) ℝ}
     (hR : (Uᵀ * R)ᵀ = Uᵀ * R) :
     ∃ E : Matrix (Fin n) (Fin n) ℝ, Eᵀ = E ∧ E * U = -R ∧
@@ -105,7 +95,9 @@ theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
       refine (frobNorm_mul_le_frobNorm_mul_specNorm _ _).trans ?_
       rw [frobNorm_transpose]
       exact mul_le_of_le_one_right (frobNorm_nonneg R) hQn
-    have hsq := frobNorm_add_sq_of_trace_transpose_mul_eq_zero htr
+    have hsq := frobNorm_add_sq_of_frobInner_eq_zero (A := R * Uᵀ)
+      (B := U * Rᵀ * (1 - U * Uᵀ)) (by
+      rw [frobInner_eq_re_trace, Matrix.conjTranspose_eq_transpose_of_trivial, htr, map_zero])
     have h1 : frobNorm (R * Uᵀ) ^ 2 ≤ frobNorm R ^ 2 := pow_le_pow_left₀ (frobNorm_nonneg _) hfA 2
     have h2 : frobNorm (U * Rᵀ * (1 - U * Uᵀ)) ^ 2 ≤ frobNorm R ^ 2 :=
       pow_le_pow_left₀ (frobNorm_nonneg _) hfB 2
@@ -124,24 +116,21 @@ theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
     linarith [specNorm_add_le (R * Uᵀ) (U * Rᵀ * (1 - U * Uᵀ))]
 
 /-- **The polar factor of a nearly orthonormal basis is orthonormal**: if
-$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
-`NLAlib.polarFactor` $\mathbf{V}$ (main's
-$\mathbf{V}((\mathbf{V}^{\mathsf{H}}\mathbf{V})^{1/2})^{+}$, which for full column rank is
-$\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$) has orthonormal columns. [Higham2008,
+$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then the polar factor
+`NLAlib.polarFactor` $\mathbf{V}$, which for full column rank is
+$\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$, has orthonormal columns. [Higham2008,
 Theorem 8.1]. -/
 theorem hasOrthonormalCols_polarFactor {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) : HasOrthonormalCols (polarFactor V) := by
   rw [hasOrthonormalCols_polarFactor_iff]
-  exact injective_mulVec_of_specNorm_gram_sub_one_lt_one (lt_of_le_of_lt hV hη)
+  exact injective_mulVec_of_specNorm_transpose_mul_self_sub_one_lt_one (lt_of_le_of_lt hV hη)
 
 /-- **The polar factor is close to a nearly orthonormal basis**: if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
 $$\|\operatorname{polar}(\mathbf{V}) - \mathbf{V}\|_{\mathsf F} \le
 \frac{\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_{\mathsf F}}{2\sqrt{1 - \eta}}.$$
-[Higham2008, Theorem 8.4] for the nearest-orthonormal property; the bound itself has no printed
-source here. (The constant is the Lipschitz constant of $\sqrt{\cdot}$ on $[1-\eta, 1+\eta]$; the
-sharper $1/(1 + \sqrt{1-\eta})$ of the design note needs the eigenvalue sum directly and is not
-needed downstream.) -/
+The constant is the Lipschitz constant of $\sqrt{\cdot}$ on $[1 - \eta, 1 + \eta]$.
+[Higham2008, Theorem 8.4] for the nearest-orthonormal property of the polar factor. -/
 theorem frobNorm_polarFactor_sub_le {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) :
     frobNorm (polarFactor V - V) ≤ frobNorm (Vᵀ * V - 1) / (2 * Real.sqrt (1 - η)) := by
@@ -229,12 +218,12 @@ private theorem norm_householder_sub_householder_add_mulVec_sq {n : ℕ} {x y : 
   field_simp
   ring
 
-/-- **A rotation taking one unit vector to another**: for unit $\mathbf{x}$, $\mathbf{y}$ the
+/-- A rotation taking one unit vector to another: for unit vectors $\mathbf{x}$, $\mathbf{y}$ the
 orthogonal $\mathbf{Z} = \mathbf{H}_{\mathbf{x}+\mathbf{y}}\mathbf{H}_{\mathbf{x}}$ (two
 reflectors, `NLAlib.householder`; the identity on $\{\mathbf{x}, \mathbf{y}\}^\perp$) satisfies
 $\mathbf{Z}\mathbf{x} = \mathbf{y}$, $\|\mathbf{Z} - \mathbf{I}\|_2 \le \|\mathbf{x} -
 \mathbf{y}\|$ and $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} \le \sqrt2\|\mathbf{x} - \mathbf{y}\|$
-(a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). No printed source. -/
+(a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). -/
 theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n → ℝ}
     (hx : ‖WithLp.toLp 2 x‖ = 1) (hy : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ Z : Matrix (Fin n) (Fin n) ℝ, Zᵀ * Z = 1 ∧ Z *ᵥ x = y ∧
@@ -303,14 +292,35 @@ theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n �
     rw [hs, hxx, hyy]
     nlinarith
 
+/-- Rows of unit length whose columns have squared norms at most one, each with mass less than
+$1/r$ outside `S`, force $r \le \lvert S\rvert$. -/
+private theorem le_card_of_sum_sq_compl_lt {ι : Type*} [Fintype ι] [DecidableEq ι] {r : ℕ}
+    (hr : 0 < r) (z : Fin r → ι → ℝ) (S : Finset ι) (hnorm : ∀ i, ∑ j, z i j ^ 2 = 1)
+    (hcol : ∀ j, ∑ i, z i j ^ 2 ≤ 1) (hout : ∀ i, ∑ j ∈ Sᶜ, z i j ^ 2 < 1 / r) :
+    r ≤ S.card := by
+  have hin (i : Fin r) : 1 - 1 / r < ∑ j ∈ S, z i j ^ 2 := by
+    have h := hnorm i
+    rw [← Finset.sum_add_sum_compl S] at h
+    linarith [hout i]
+  have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
+  have hlt : (r : ℝ) - 1 < S.card :=
+    calc (r : ℝ) - 1 = ∑ _i : Fin r, (1 - 1 / (r : ℝ)) := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          field_simp
+      _ < ∑ i, ∑ j ∈ S, z i j ^ 2 :=
+          Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty fun i _ => hin i
+      _ = ∑ j ∈ S, ∑ i, z i j ^ 2 := Finset.sum_comm
+      _ ≤ ∑ _j ∈ S, (1 : ℝ) := Finset.sum_le_sum fun j _ => hcol j
+      _ = S.card := by rw [Finset.sum_const, nsmul_one]
+  have : r < S.card + 1 := by exact_mod_cast (by linarith : (r : ℝ) < S.card + 1)
+  omega
 
-/-- **Orthonormal approximate eigenvectors are counted by the spectrum**: for symmetric
+/-- Orthonormal approximate eigenvectors are counted by the spectrum: for symmetric
 $\mathbf{M}$, $r$ orthonormal vectors $\mathbf{x}_i$ and values $\theta_i \in [a, b]$ with
 residuals $\|\mathbf{M}\mathbf{x}_i - \theta_i\mathbf{x}_i\| < d/\sqrt r$, $d > 0$, the number of
-eigenvalues of $\mathbf{M}$ in $(a - d, b + d)$ is at least $r$. The finite-dimensional
-core of "converged Ritz values are not duplicated". No printed source; Fable review of
-`docs/design/Krylov-LanczosReorth.md`, finding 1. -/
-theorem card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
+eigenvalues of $\mathbf{M}$ in $(a - d, b + d)$ is at least $r$: the finite-dimensional core of
+"converged Ritz values are not duplicated". `docs/design/Krylov-LanczosReorth.md` §3.3. -/
+theorem _root_.Matrix.IsHermitian.card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
     {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsHermitian) {X : Matrix (Fin n) (Fin r) ℝ}
     (hX : HasOrthonormalCols X) {θ : Fin r → ℝ} {a b d : ℝ} (hd : 0 < d)
     (hθ : ∀ i, θ i ∈ Set.Icc a b)
@@ -354,7 +364,7 @@ theorem card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
   set S := Finset.univ.filter fun j : Fin (Fintype.card (Fin n)) =>
     eigenvalue M j ∈ Set.Ioo (a - d) (b + d) with hS
   have hr' : (0 : ℝ) < r := Nat.cast_pos.mpr hr
-  have hin (i : Fin r) : 1 - 1 / r < ∑ j ∈ S, z i j ^ 2 := by
+  have hout (i : Fin r) : ∑ j ∈ Sᶜ, z i j ^ 2 < 1 / r := by
     have hlt :
         ‖WithLp.toLp 2 (M *ᵥ (fun k => X k i) - θ i • fun k => X k i)‖ ^ 2 < d ^ 2 / r := by
       rw [← Real.sq_sqrt hr'.le, ← div_pow]
@@ -369,29 +379,12 @@ theorem card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
       obtain ⟨h1, h2⟩ := hθ i
       refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
       rcases hj with hj | hj <;> nlinarith
-    have h := hnorm i
-    rw [← Finset.sum_add_sum_compl S] at h
-    have : ∑ j ∈ Sᶜ, z i j ^ 2 < 1 / r := by
-      rw [lt_div_iff₀ hr']
-      nlinarith [hres2 i, mul_div_cancel₀ (d ^ 2) hr'.ne']
-    linarith
-  have hlt : (r : ℝ) - 1 < S.card := by
-    have : Nonempty (Fin r) := ⟨⟨0, hr⟩⟩
-    calc (r : ℝ) - 1 = ∑ _i : Fin r, (1 - 1 / (r : ℝ)) := by
-          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-          field_simp
-      _ < ∑ i, ∑ j ∈ S, z i j ^ 2 :=
-          Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty fun i _ => hin i
-      _ = ∑ j ∈ S, ∑ i, z i j ^ 2 := Finset.sum_comm
-      _ ≤ ∑ _j ∈ S, (1 : ℝ) := Finset.sum_le_sum fun j _ => hbessel j
-      _ = S.card := by rw [Finset.sum_const, nsmul_one]
-  have hcard : S.card =
-      ((Finset.range n).filter fun i => eigenvalue M i ∈ Set.Ioo (a - d) (b + d)).card := by
-    rw [hS, Finset.card_filter, Finset.card_filter,
-      Fin.sum_univ_eq_sum_range
-        (fun k => if eigenvalue M k ∈ Set.Ioo (a - d) (b + d) then 1 else 0),
-      Fintype.card_fin]
-  have : r < S.card + 1 := by exact_mod_cast (by linarith : (r : ℝ) < S.card + 1)
-  omega
+    rw [lt_div_iff₀ hr']
+    nlinarith [hres2 i, mul_div_cancel₀ (d ^ 2) hr'.ne']
+  refine (le_card_of_sum_sq_compl_lt hr z S hnorm hbessel hout).trans_eq ?_
+  rw [hS, Finset.card_filter, Finset.card_filter,
+    Fin.sum_univ_eq_sum_range
+      (fun k => if eigenvalue M k ∈ Set.Ioo (a - d) (b + d) then 1 else 0),
+    Fintype.card_fin]
 
 end NLAlib

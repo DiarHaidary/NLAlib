@@ -28,13 +28,18 @@ order for two ("twice is enough"). Design: `docs/design/Krylov-LanczosReorth.md`
 
 ## Main results
 
-* `NLAlib.IsOrthErr.mono`, `NLAlib.IsOrthErr.norm_coef_le`,
-  `NLAlib.IsOrthErr.norm_transpose_mulVec_smul_le`.
-* `NLAlib.frobNorm_gram_sub_one_sq_eq`, `NLAlib.frobNorm_gram_sub_one_le_of_columns`.
-* `NLAlib.injective_mulVec_of_specNorm_gram_sub_one_lt_one`,
-  `NLAlib.le_of_specNorm_gram_sub_one_lt_one`.
-* `NLAlib.specNorm_le_sqrt_of_specNorm_gram_sub_one_le`,
-  `NLAlib.frobNorm_le_sqrt_of_specNorm_gram_sub_one_le`.
+* `NLAlib.IsOrthErr.mono`: monotonicity in the four parameters.
+* `NLAlib.IsOrthErr.norm_coef_le`: the coefficients are small for a nearly orthogonal input.
+* `NLAlib.IsOrthErr.norm_transpose_mulVec_smul_le`: orthogonality of the normalized output.
+* `NLAlib.specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le`,
+  `NLAlib.frobNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le`: norms of a nearly
+  orthonormal basis.
+* `NLAlib.frobNorm_transpose_mul_self_sub_one_sq`,
+  `NLAlib.frobNorm_transpose_mul_self_sub_one_le_of_columns`: the loss of orthogonality column by
+  column.
+* `NLAlib.injective_mulVec_of_specNorm_transpose_mul_self_sub_one_lt_one`,
+  `NLAlib.le_of_specNorm_transpose_mul_self_sub_one_lt_one`: a nearly orthonormal basis has
+  independent columns.
 -/
 
 @[expose] public section
@@ -49,8 +54,7 @@ $\mathbf{h}$ and the reduced vector $\mathbf{w}'$ represent $\mathbf{w}$ up to
 $\varepsilon_2\|\mathbf{w}\|$, and $\mathbf{w}'$ is orthogonal to the basis up to
 $\varepsilon_1\|\mathbf{w}'\| + \varepsilon_3\|\mathbf{w}\|$. No admissibility condition on
 $\mathbf{w}$; [GiraudLangouRozloznikVandenEshof2005, Theorems 1–2] for classical Gram–Schmidt with
-one and two
-passes in this sense. -/
+one and two passes in this sense. -/
 structure IsOrthErr {n j : ℕ} (η₀ ε₁ ε₂ ε₃ : ℝ) (V : Matrix (Fin n) (Fin j) ℝ)
     (w : Fin n → ℝ) (h : Fin j → ℝ) (w' : Fin n → ℝ) : Prop where
   /-- The representation of the input. -/
@@ -60,17 +64,13 @@ structure IsOrthErr {n j : ℕ} (η₀ ε₁ ε₂ ε₃ : ℝ) (V : Matrix (Fin
   orth : specNorm (Vᵀ * V - 1) ≤ η₀ →
     ‖WithLp.toLp 2 (Vᵀ *ᵥ w')‖ ≤ ε₁ * ‖WithLp.toLp 2 w'‖ + ε₃ * ‖WithLp.toLp 2 w‖
 
-end NLAlib
-
-
-namespace NLAlib
-
 variable {n j : ℕ}
 
-/-- **Norm bound of a nearly orthonormal basis**: if
-$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then $\|\mathbf{V}\|_2 \le
-\sqrt{1 + \eta}$. No printed source. -/
-theorem specNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
+/-- A nearly orthonormal basis has spectral norm close to one: if
+$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then
+$\|\mathbf{V}\|_2 \le \sqrt{1 + \eta}$. -/
+theorem specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le
+    {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) : specNorm V ≤ Real.sqrt (1 + η) := by
   have h1 : specNorm (Vᵀ * V) ≤ 1 + η := by
     calc specNorm (Vᵀ * V) = specNorm ((Vᵀ * V - 1) + 1) := by rw [sub_add_cancel]
@@ -82,10 +82,11 @@ theorem specNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j)
   exact (Real.le_sqrt (specNorm_nonneg V) ((specNorm_nonneg _).trans h1)).2
     (by rw [← h2] at h1; exact h1)
 
-/-- **Frobenius norm of a nearly orthonormal basis**: if
-$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then $\|\mathbf{V}\|_{\mathsf F}
-\le \sqrt{j(1 + \eta)}$ for $j$ columns. No printed source. -/
-theorem frobNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
+/-- The Frobenius norm of a nearly orthonormal basis: if the $j$ columns of $\mathbf{V}$
+satisfy $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta$ then
+$\|\mathbf{V}\|_{\mathsf{F}} \le \sqrt{j(1 + \eta)}$. -/
+theorem frobNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le
+    {V : Matrix (Fin n) (Fin j) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) : frobNorm V ≤ Real.sqrt (j * (1 + η)) := by
   have hdiag : ∀ i, (Vᵀ * V) i i ≤ 1 + η := fun i => by
     have h := norm_apply_le_specNorm (Vᵀ * V - 1) i i
@@ -100,8 +101,8 @@ theorem frobNorm_le_sqrt_of_specNorm_gram_sub_one_le {V : Matrix (Fin n) (Fin j)
     exact htr
   exact (Real.le_sqrt (frobNorm_nonneg V) (le_trans (sq_nonneg _) h2)).2 h2
 
-/-- **Monotonicity of the orthogonalization guarantee**: a smaller precondition $\eta_0$ and
-larger parameters $\varepsilon_1, \varepsilon_2, \varepsilon_3$ keep `NLAlib.IsOrthErr`. -/
+/-- `NLAlib.IsOrthErr` is monotone: it survives a smaller precondition $\eta_0' \le \eta_0$ and
+larger parameters $\varepsilon_i \le \varepsilon_i'$. -/
 theorem IsOrthErr.mono {η₀ ε₁ ε₂ ε₃ η₀' ε₁' ε₂' ε₃' : ℝ} {V : Matrix (Fin n) (Fin j) ℝ}
     {w : Fin n → ℝ} {h : Fin j → ℝ} {w' : Fin n → ℝ} (hO : IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w')
     (hη : η₀' ≤ η₀) (h₁ : ε₁ ≤ ε₁') (h₂ : ε₂ ≤ ε₂') (h₃ : ε₃ ≤ ε₃') :
@@ -110,19 +111,19 @@ theorem IsOrthErr.mono {η₀ ε₁ ε₂ ε₃ η₀' ε₁' ε₂' ε₃' : �
   · exact (hO.residual (hV.trans hη)).trans (mul_le_mul_of_nonneg_right h₂ (norm_nonneg _))
   · exact (hO.orth (hV.trans hη)).trans (by gcongr)
 
-/-- **The coefficients of an orthogonalization step are small when the input is nearly
-orthogonal**: under `NLAlib.IsOrthErr` with $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} -
-\mathbf{I}\|_2 \le \eta_0 < 1$,
+/-- The coefficients of an orthogonalization step are small when the input is nearly orthogonal
+to the basis: if $(\mathbf{h}, \mathbf{w}')$ meets `NLAlib.IsOrthErr` for $\mathbf{w}$ and
+$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0 < 1$, then
 $$\|\mathbf{h}\| \le \frac{\|\mathbf{V}^{\mathsf{T}}\mathbf{w}\| + \|\mathbf{V}^{\mathsf{T}}
 \mathbf{w}'\| + \sqrt{1 + \eta_0}\,\varepsilon_2\|\mathbf{w}\|}{1 - \eta_0}.$$
 No printed source; `docs/design/Krylov-LanczosReorth.md` §1.1. -/
 theorem IsOrthErr.norm_coef_le {η₀ ε₁ ε₂ ε₃ : ℝ} {V : Matrix (Fin n) (Fin j) ℝ}
     {w : Fin n → ℝ} {h : Fin j → ℝ} {w' : Fin n → ℝ} (hO : IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w')
-    (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hη : η₀ < 1) (hε₂ : 0 ≤ ε₂) :
+    (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hη : η₀ < 1) :
     ‖WithLp.toLp 2 h‖ ≤ (‖WithLp.toLp 2 (Vᵀ *ᵥ w)‖ + ‖WithLp.toLp 2 (Vᵀ *ᵥ w')‖ +
       Real.sqrt (1 + η₀) * ε₂ * ‖WithLp.toLp 2 w‖) / (1 - η₀) := by
   have hpos : 0 < 1 - η₀ := by linarith
-  have hsq := specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV
+  have hsq := specNorm_le_sqrt_of_specNorm_transpose_mul_self_sub_one_le hV
   have hid : h = Vᵀ *ᵥ w - Vᵀ *ᵥ w' - Vᵀ *ᵥ (w - V *ᵥ h - w') - (Vᵀ * V - 1) *ᵥ h := by
     simp only [Matrix.mulVec_sub, Matrix.sub_mulVec, Matrix.one_mulVec, ← Matrix.mulVec_mulVec]
     abel
@@ -147,11 +148,12 @@ theorem IsOrthErr.norm_coef_le {η₀ ε₁ ε₂ ε₃ : ℝ} {V : Matrix (Fin 
   rw [le_div_iff₀ hpos]
   nlinarith [hn, hG, hF]
 
-/-- **Orthogonality of the normalized output**: under `NLAlib.IsOrthErr` and the
-precondition, for $\mathbf{w}' \ne \mathbf{0}$,
+/-- The orthogonality of the normalized output: if $(\mathbf{h}, \mathbf{w}')$ meets
+`NLAlib.IsOrthErr` for $\mathbf{w}$, $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2
+\le \eta_0$ and $\mathbf{w}' \ne \mathbf{0}$, then
 $\|\mathbf{V}^{\mathsf{T}}(\mathbf{w}'/\|\mathbf{w}'\|)\| \le \varepsilon_1 + \varepsilon_3
 \|\mathbf{w}\|/\|\mathbf{w}'\|$. The ratio $\|\mathbf{w}\|/\|\mathbf{w}'\|$ is what
-admissibility controls. No printed source. -/
+admissibility controls. -/
 theorem IsOrthErr.norm_transpose_mulVec_smul_le {η₀ ε₁ ε₂ ε₃ : ℝ} {V : Matrix (Fin n) (Fin j) ℝ}
     {w : Fin n → ℝ} {h : Fin j → ℝ} {w' : Fin n → ℝ} (hO : IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w')
     (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hw' : w' ≠ 0) :
@@ -173,13 +175,12 @@ theorem IsOrthErr.norm_transpose_mulVec_smul_le {η₀ ε₁ ε₂ ε₃ : ℝ} 
     _ = ε₁ + ε₃ * ‖WithLp.toLp 2 w‖ / ‖WithLp.toLp 2 w'‖ := by
         field_simp
 
-/-- **The Gram defect when a column is appended**: for $\mathbf{V} = [\mathbf{V}',
-\mathbf{x}]$,
+/-- The loss of orthogonality when a column is appended: for
+$\mathbf{V} = [\mathbf{V}', \mathbf{x}]$,
 $$\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_{\mathsf F}^2 =
 \|\mathbf{V}'^{\mathsf{T}}\mathbf{V}' - \mathbf{I}\|_{\mathsf F}^2 +
-2\|\mathbf{V}'^{\mathsf{T}}\mathbf{x}\|^2 + (\|\mathbf{x}\|^2 - 1)^2.$$
-No printed source. -/
-theorem frobNorm_gram_sub_one_sq_eq {m : ℕ} (V : Matrix (Fin n) (Fin (m + 1)) ℝ) :
+2\|\mathbf{V}'^{\mathsf{T}}\mathbf{x}\|^2 + (\|\mathbf{x}\|^2 - 1)^2.$$ -/
+theorem frobNorm_transpose_mul_self_sub_one_sq {m : ℕ} (V : Matrix (Fin n) (Fin (m + 1)) ℝ) :
     frobNorm (Vᵀ * V - 1) ^ 2 =
       frobNorm ((V.submatrix id Fin.castSucc)ᵀ * V.submatrix id Fin.castSucc - 1) ^ 2 +
       2 * ‖WithLp.toLp 2 ((V.submatrix id Fin.castSucc)ᵀ *ᵥ fun i => V i (Fin.last m))‖ ^ 2 +
@@ -197,13 +198,14 @@ theorem frobNorm_gram_sub_one_sq_eq {m : ℕ} (V : Matrix (Fin n) (Fin (m + 1)) 
   simp only [two_mul, Finset.sum_add_distrib]
   ring
 
-/-- **Column-wise orthogonality accumulates as $\sqrt{3m}$**: if each vector
-$\mathbf{v}_{c+1}$ of a sequence satisfies $\|\mathbf{V}_c^{\mathsf{T}}\mathbf{v}_{c+1}\| \le \mu$
-and $|\|\mathbf{v}_{c+1}\|^2 - 1| \le \mu$ ($\mathbf{V}_c$ the first $c$ vectors), then the first
-$m$ vectors satisfy $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le
-\sqrt{3m}\,\mu$. No printed source; `docs/design/Krylov-LanczosReorth.md` §1.2. -/
-theorem frobNorm_gram_sub_one_le_of_columns (v : ℕ → Fin n → ℝ) (m : ℕ) {μ : ℝ} (hμ : 0 ≤ μ)
-    (hg : ∀ c < m, ‖WithLp.toLp 2
+/-- Column-wise orthogonality accumulates as $\sqrt{3m}$: if, for $c < m$, the vector
+$\mathbf{v}_{c+1}$ of a sequence satisfies $\|\mathbf{V}_c^{\mathsf{T}}\mathbf{v}_{c+1}\| \le
+\mu$ and $\lvert\|\mathbf{v}_{c+1}\|^2 - 1\rvert \le \mu$, where $\mathbf{V}_c =
+[\mathbf{v}_1, \dots, \mathbf{v}_c]$, and $\mu \ge 0$, then
+$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$.
+`docs/design/Krylov-LanczosReorth.md` §1.2. -/
+theorem frobNorm_transpose_mul_self_sub_one_le_of_columns (v : ℕ → Fin n → ℝ) (m : ℕ) {μ : ℝ}
+    (hμ : 0 ≤ μ) (hg : ∀ c < m, ‖WithLp.toLp 2
       ((Matrix.of fun i (d : Fin c) => v ((d : ℕ) + 1) i)ᵀ *ᵥ v (c + 1))‖ ≤ μ)
     (hd : ∀ c < m, |‖WithLp.toLp 2 (v (c + 1))‖ ^ 2 - 1| ≤ μ) :
     frobNorm ((Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i)ᵀ *
@@ -218,7 +220,7 @@ theorem frobNorm_gram_sub_one_le_of_columns (v : ℕ → Fin n → ℝ) (m : ℕ
       have hsub : (Matrix.of fun i (d : Fin (k + 1)) => v ((d : ℕ) + 1) i).submatrix id
           Fin.castSucc = Matrix.of fun i (d : Fin k) => v ((d : ℕ) + 1) i := by
         ext i d; simp
-      have hcol := frobNorm_gram_sub_one_sq_eq
+      have hcol := frobNorm_transpose_mul_self_sub_one_sq
         (Matrix.of fun i (d : Fin (k + 1)) => v ((d : ℕ) + 1) i)
       simp only [hsub, Matrix.of_apply, Fin.val_last] at hcol
       have hA := pow_le_pow_left₀ (norm_nonneg _) (hg k (by omega)) 2
@@ -234,11 +236,12 @@ theorem frobNorm_gram_sub_one_le_of_columns (v : ℕ → Fin n → ℝ) (m : ℕ
   nlinarith [frobNorm_nonneg ((Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i)ᵀ *
     (Matrix.of fun i (d : Fin m) => v ((d : ℕ) + 1) i) - 1)]
 
-/-- **A nearly orthonormal basis has independent columns**: if
+/-- A nearly orthonormal basis has independent columns: if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 < 1$ then $\mathbf{x} \mapsto
-\mathbf{V}\mathbf{x}$ is injective. No printed source. -/
-theorem injective_mulVec_of_specNorm_gram_sub_one_lt_one {V : Matrix (Fin n) (Fin j) ℝ}
-    (hV : specNorm (Vᵀ * V - 1) < 1) : Function.Injective V.mulVec := by
+\mathbf{V}\mathbf{x}$ is injective. -/
+theorem injective_mulVec_of_specNorm_transpose_mul_self_sub_one_lt_one
+    {V : Matrix (Fin n) (Fin j) ℝ} (hV : specNorm (Vᵀ * V - 1) < 1) :
+    Function.Injective V.mulVec := by
   have key : ∀ z, V *ᵥ z = 0 → z = 0 := by
     intro z hz
     have hG : (Vᵀ * V - 1) *ᵥ z = -z := by
@@ -256,11 +259,13 @@ theorem injective_mulVec_of_specNorm_gram_sub_one_lt_one {V : Matrix (Fin n) (Fi
   have h0 : x - y = 0 := key _ (by rw [Matrix.mulVec_sub, hxy, sub_self])
   exact sub_eq_zero.1 h0
 
-/-- **A nearly orthonormal $n \times j$ basis has $j \le n$**. No printed source. -/
-theorem le_of_specNorm_gram_sub_one_lt_one {V : Matrix (Fin n) (Fin j) ℝ}
+/-- A nearly orthonormal basis has at most as many columns as rows: if the $n \times j$ matrix
+$\mathbf{V}$ satisfies $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 < 1$ then
+$j \le n$. -/
+theorem le_of_specNorm_transpose_mul_self_sub_one_lt_one {V : Matrix (Fin n) (Fin j) ℝ}
     (hV : specNorm (Vᵀ * V - 1) < 1) : j ≤ n := by
   have hinj : Function.Injective (Matrix.mulVecLin V) :=
-    injective_mulVec_of_specNorm_gram_sub_one_lt_one hV
+    injective_mulVec_of_specNorm_transpose_mul_self_sub_one_lt_one hV
   simpa using LinearMap.finrank_le_finrank_of_injective hinj
 
 end NLAlib
