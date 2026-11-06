@@ -42,8 +42,10 @@ variable {P ι K : Type} [DecidableEq P]
 
 /-- The CGS2 call at step $t < q$ ($t + 1$ columns) is certified at the parameters of $q$
 columns: under the standard model with $0 \le \eta_0 \le 1/100$, $(N + q + 2)u \le 1/100$ and
-$c_1$ = `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0 \le 1/100$, `NLAlib.cgs2` meets
-`NLAlib.Computation.IsOrthRoutine` at $(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. -/
+$c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$,
+`NLAlib.cgs2` meets `NLAlib.Computation.IsOrthRoutine` at $(\eta_0, 2c_1, 3c_1, 2(\eta_0 +
+c_1)^2)$. -/
 private theorem isOrthRoutine_cgs2_of_lt {C : Type} [AddMonoid C] {u : P → ℝ}
     {dec : P → K → ℝ} (I : Interp P ι K C)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
@@ -144,11 +146,14 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
 
 /-- The rounded run of the matrix-free CGS2 tree: under the standard model, for symmetric
 $\mathbf{A}$, an oracle of accuracy $\eta\|\mathbf{A}\|_2$ (`NLAlib.Computation.IsMatvecErr`)
-with $\eta \le \varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$ and
-$\mathbf{b} \ne \mathbf{0}$, the compiled tree succeeds, keeps the shape and its outputs satisfy
+with $\eta \le \varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$ and $\mathbf{b}
+\ne \mathbf{0}$, the compiled tree succeeds, keeps the shape and its outputs satisfy
 `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at $q$ columns, $c_1$ =
-`NLAlib.cgsPassBound` $N\,q\,u\,\eta_0$: $(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$.
-Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`. No printed source. -/
+`NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$: $(\eta_0, 2c_1,
+3c_1, 2(\eta_0 + c_1)^2)$. Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
+No printed source. -/
 theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
@@ -200,17 +205,18 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
 
 /-- **The program-level backward model**: under the standard model, for symmetric decoded
 $\mathbf{A}$ (ROM words), $\mathbf{b} \ne \mathbf{0}$, $\varepsilon$ =
-`NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$, $0 \le \eta_0 \le 1/100$,
-$(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0 \le 1/100$ and
-$0 < \tau \le 1$, the stored-matrix CGS2 tree succeeds, and every admissible prefix of $m$
-steps ($\tau\nu_j < \beta_j$) is a `NLAlib.LanczosReorthRun` $L$ whose coefficients are the
-decoded ones; if its recurrence and orthogonality levels satisfy the fixed-point condition, its
-computed tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}', \mathbf{b})$ for a
-symmetric $\mathbf{H}'$ with
-$\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r + 3\|\mathbf{A}\|_2(3\varepsilon +
-2\sqrt{3(m+1)}\,\mu)$, $r$ = `NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the
-orthogonality level. No printed source for the program statement; [Paige1971, §6.1] in
-substance. -/
+`NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, $0 \le \eta_0 \le
+1/100$, $(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
+\tau \le 1$, the stored-matrix CGS2 tree succeeds, and every admissible prefix of $m$ steps
+($\tau\nu_j < \beta_j$) is a `NLAlib.LanczosReorthRun` $L$ whose coefficients are the decoded
+ones; if its recurrence and orthogonality levels satisfy the fixed-point condition, its computed
+tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}', \mathbf{b})$ for a symmetric
+$\mathbf{H}'$ with $\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r +
+3\|\mathbf{A}\|_2(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)$, $r$ =
+`NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the orthogonality level. No printed source for
+the program statement; [Paige1971, §6.1] in substance. -/
 theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)
@@ -255,13 +261,15 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
 
 /-- Interlacing at the program level: under the standard model, for symmetric decoded
 $\mathbf{A}$ (ROM words), $\mathbf{b} \ne \mathbf{0}$, $\varepsilon$ =
-`NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$, $0 \le \eta_0 \le 1/100$,
-$(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0 \le 1/100$ and
-$0 < \tau \le 1$, the stored-matrix CGS2 tree succeeds and on every admissible prefix of $m$
-steps whose run $L$ satisfies the fixed-point condition the computed Ritz values $\theta_i$
-interlace the eigenvalues of $\mathbf{A}$ up to $e$ = `NLAlib.LanczosReorthRun.backwardRadius`:
-$\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$ for $i < m$.
-No printed source. -/
+`NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, $0 \le \eta_0 \le
+1/100$, $(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
+\tau \le 1$, the stored-matrix CGS2 tree succeeds and on every admissible prefix of $m$ steps
+whose run $L$ satisfies the fixed-point condition the computed Ritz values $\theta_i$ interlace
+the eigenvalues of $\mathbf{A}$ up to $e$ = `NLAlib.LanczosReorthRun.backwardRadius`:
+$\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$ for $i < m$. No
+printed source. -/
 theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)

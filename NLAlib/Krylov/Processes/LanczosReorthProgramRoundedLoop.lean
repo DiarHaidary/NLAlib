@@ -235,11 +235,12 @@ private theorem exec_initPhase_of_charge (I : Interp P ι K (OpCount P ι)) {u :
   exact (exec_normalize_branch_var_eq I tag normed (.const N) 0 1 0 ⟨4, 0⟩ ⟨9, 0⟩).trans eg
 
 /-- The initialization (`NLAlib.LanczosReorthImplementation.initPhase`) under the relative-error
-model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$,
-any charge: from a store of the workspace shape holding $\mathbf{b}$, it succeeds, writes the
-first column $\mathbf{v}_1$, $\beta_0 = 0$, the zero previous vector, the zero scalar and the
-input norm $s$ with $\lvert \|\mathbf{b}\| - s \rvert \le \varepsilon\|\mathbf{b}\|$; for
-$\mathbf{b} \ne \mathbf{0}$, $\lvert \|\mathbf{v}_1\|^2 - 1 \rvert \le \varepsilon$ and
+model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, any charge: from
+a store of the workspace shape holding $\mathbf{b}$, it succeeds, writes the first column
+$\mathbf{v}_1$, $\beta_0 = 0$, the zero previous vector, the zero scalar and the input norm $s$
+with $\lvert \|\mathbf{b}\| - s \rvert \le \varepsilon\|\mathbf{b}\|$; for $\mathbf{b} \ne
+\mathbf{0}$, $\lvert \|\mathbf{v}_1\|^2 - 1 \rvert \le \varepsilon$ and
 $\|\mathbf{b}/\|\mathbf{b}\| - \mathbf{v}_1\| \le 3\varepsilon$, and $\mathbf{v}_1 = \mathbf{0}$
 for $\mathbf{b} = \mathbf{0}$. -/
 theorem exec_initPhase (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
@@ -319,12 +320,12 @@ theorem RoundedSteps.update {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {ε : ℝ
   · exact ⟨0, 0, 0, 0, 0, fun hj => absurd hj (by omega)⟩
 
 /-- The loop of $q$ steps of the reorthogonalized program at the run-time handles, under the
-relative-error model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`
-$N\,u \le 1/100$, product routines certified with coefficient $\varepsilon\|\mathbf{A}\|_2$ and
-certified orthogonalization calls with guarantees `G`: from the decoded store after no step,
-every step executes, the final store is the decoded store after $q$ steps of sequences that
-keep $\mathbf{v}_0$, $\mathbf{v}_1$ and $\beta_0$, the input norm is kept and every step meets
-its guarantees. -/
+relative-error model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`,
+that is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, product
+routines certified with coefficient $\varepsilon\|\mathbf{A}\|_2$ and certified orthogonalization
+calls with guarantees `G`: from the decoded store after no step, every step executes, the final
+store is the decoded store after $q$ steps of sequences that keep $\mathbf{v}_0$, $\mathbf{v}_1$
+and $\beta_0$, the input norm is kept and every step meets its guarantees. -/
 theorem exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q slot : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} (b : Fin N → ℝ)
@@ -411,14 +412,15 @@ private theorem exec_lanczosReorthLoop_eq (I : Interp P ι K (OpCount P ι)) (ta
 
 /-- The scoped run of `NLAlib.lanczosReorthLoop` for a generic orthogonalization guarantee `G`,
 under the relative-error model with accuracy $\varepsilon$ =
-`NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$, product routines certified with
-coefficient $\varepsilon\|\mathbf{A}\|_2$ (precondition `pre`, kept by the frame of the matrix
-slot) and certified orthogonalization calls: from a store with the seven declared buffers and
-the matrix slot holding $\mathbf{b}$, the three scoped allocations, the initialization and every
-step execute; after the release the declared buffers hold the decoded basis, coefficients,
-stored norms and previous vector, the input norm meets its bound, $\mathbf{v}_1$ is close to
-$\mathbf{b}/\|\mathbf{b}\|$ for $\mathbf{b} \ne \mathbf{0}$, and every step meets its local
-guarantees. -/
+`NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, product routines
+certified with coefficient $\varepsilon\|\mathbf{A}\|_2$ (precondition `pre`, kept by the frame
+of the matrix slot) and certified orthogonalization calls: from a store with the seven declared
+buffers and the matrix slot holding $\mathbf{b}$, the three scoped allocations, the
+initialization and every step execute; after the release the declared buffers hold the decoded
+basis, coefficients, stored norms and previous vector, the input norm meets its bound,
+$\mathbf{v}_1$ is close to $\mathbf{b}/\|\mathbf{b}\|$ for $\mathbf{b} \ne \mathbf{0}$, and every
+step meets its local guarantees. -/
 theorem exec_lanczosReorthLoop {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)

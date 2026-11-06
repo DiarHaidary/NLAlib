@@ -176,9 +176,10 @@ structure RoundedStep {N m : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) (ε : ℝ)
 
 /-- The norm of the decoded work vector $\mathbf{z}$ stored into the cell $(k, e)$, $k \ne 8$,
 under the relative-error model with accuracy $\varepsilon$ =
-`NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$: the norm $\nu \ge 0$ vanishes iff
-$\mathbf{z} = \mathbf{0}$ and $\lvert \nu - \|\mathbf{z}\| \rvert \le \varepsilon \|\mathbf{z}\|$;
-only the cell is written. -/
+`NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$: the norm $\nu \ge
+0$ vanishes iff $\mathbf{z} = \mathbf{0}$ and $\lvert \nu - \|\mathbf{z}\| \rvert \le \varepsilon
+\|\mathbf{z}\|$; only the cell is written. -/
 theorem exec_nrm2_work (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N : ℕ} (k : ℕ) (e : IExp ℕ) (hk : k ≠ 8) (st : St P K (OpCount P ι))
@@ -376,12 +377,13 @@ theorem exec_dot_projection_update (I : Interp P ι K (OpCount P ι)) {u : P →
     rwa [heq, hxs, hys] at he
 
 /-- The work phase of step $t < q$ (`NLAlib.LanczosReorthImplementation.workPhase`) under the
-relative-error model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`
-$N\,u \le 1/100$ and a product routine certified with coefficient $\varepsilon\|\mathbf{A}\|_2$:
-from a store with the current column $\mathbf{v}_c$, the previous vector $\mathbf{v}_p$ and
-$\beta_t$, it succeeds; the product $\mathbf{u}$, the updates $\mathbf{w}$, $\mathbf{z}$ (left in
-`work`), the coefficient $\alpha$ (cell $(2, t)$) and the norm $\nu$ of $\mathbf{z}$ (cell
-$(6, t)$) meet their kernel error bounds, and nothing else but the scratch scalar is written. -/
+relative-error model with accuracy $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`,
+that is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$ and a product
+routine certified with coefficient $\varepsilon\|\mathbf{A}\|_2$: from a store with the current
+column $\mathbf{v}_c$, the previous vector $\mathbf{v}_p$ and $\beta_t$, it succeeds; the product
+$\mathbf{u}$, the updates $\mathbf{w}$, $\mathbf{z}$ (left in `work`), the coefficient $\alpha$
+(cell $(2, t)$) and the norm $\nu$ of $\mathbf{z}$ (cell $(6, t)$) meet their kernel error
+bounds, and nothing else but the scratch scalar is written. -/
 theorem exec_workPhase (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q t slot : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
@@ -727,13 +729,13 @@ private theorem exec_stepBody_eq (I : Interp P ι K (OpCount P ι)) (tag : P) (N
 
 /-- One rounded step $t < q$ of the reorthogonalized loop
 (`NLAlib.LanczosReorthImplementation.stepBody`) under the relative-error model with accuracy
-$\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound` $N\,u \le 1/100$, a product
-routine certified with coefficient $\varepsilon\|\mathbf{A}\|_2$ (precondition `pre`, kept by
-the frame of the matrix slot) and a certified orthogonalization call with guarantee `G`:
-from the decoded store after $t$ steps, the step succeeds, the store is the decoded store after
-$t + 1$ steps of the sequences updated by the new $\mathbf{v}_{t+2}$, $\alpha_{t+1}$,
-$\beta_{t+1}$, $\nu_{t+1}$, the input norm is kept, and the step meets
-`NLAlib.LanczosReorthImplementation.RoundedStep`. -/
+$\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, a product routine
+certified with coefficient $\varepsilon\|\mathbf{A}\|_2$ (precondition `pre`, kept by the frame
+of the matrix slot) and a certified orthogonalization call with guarantee `G`: from the decoded
+store after $t$ steps, the step succeeds, the store is the decoded store after $t + 1$ steps of
+the sequences updated by the new $\mathbf{v}_{t+2}$, $\alpha_{t+1}$, $\beta_{t+1}$, $\nu_{t+1}$,
+the input norm is kept, and the step meets `NLAlib.LanczosReorthImplementation.RoundedStep`. -/
 theorem exec_stepBody (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q t slot : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} (b : Fin N → ℝ)

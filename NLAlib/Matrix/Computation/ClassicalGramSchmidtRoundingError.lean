@@ -18,7 +18,9 @@ the partial products, which gives a Euclidean bound $(1 + u)^n u\,(\|\mathbf{A}\
 n\|\mathbf{A}\|_2)\|\mathbf{x}\|$ for the dots and for the `gemv` of a pass. For
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0$ and $(N + j + 2)u \le 1/100$,
 the dots, the product, the rounded literal $-1$ and the update together stay within
-`NLAlib.cgsPassBound` $N\,j\,u\,\eta_0$. Design: `docs/design/Krylov-LanczosReorth.md` §2.2.
+`NLAlib.cgsPassBound`,
+that is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$.
+Design: `docs/design/Krylov-LanczosReorth.md` §2.2.
 
 ## Main results
 
@@ -202,7 +204,8 @@ private theorem norm_toLp_sub_mulVec_le_of_partial {m n : ℕ} (A : Matrix (Fin 
         mul_le_mul_of_nonneg_left (add_le_add h2 h3) hc
     _ = _ := by ring
 
-/-- The constant inequality behind `NLAlib.cgsPassBound`. -/
+/-- The constant inequality behind `NLAlib.cgsPassBound`,
+that is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$. -/
 private theorem cgsPass_const_le {t s J Nr : ℝ} (hN : 1 ≤ Nr) (hJ : J = 0 ∨ 1 ≤ J)
     (ht0 : 0 ≤ t) (hs0 : 0 ≤ s) (ht : t ^ 2 = J) (hs : s ^ 2 = J + 1) :
     10000 / 9801 * (t + J) + 4181 / 1000 + 100 / 99 * (t + Nr) ≤ 2 * s * (Nr + J + 2) := by
@@ -403,15 +406,16 @@ private theorem cgsPass_update_norms {N j : ℕ} {V : Matrix (Fin N) (Fin j) ℝ
     exact norm_toLp_mulVec_le _ _
 
 /-- The three error bounds of one rounded classical Gram–Schmidt pass from the entrywise errors
-of its phases: if $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0$,
-$(N + j + 2)u \le 1/100$, $u \ge 0$, the coefficients $\mathbf{h}$ and the product $\mathbf{y}$
-satisfy the partial-product bounds of `NLAlib.Computation.IsDotTrace.abs_sub_mulVec_le` against
-$\mathbf{V}^{\mathsf{T}}\mathbf{w}$ and $\mathbf{V}\mathbf{h}$, and the update is
-$w'_i = -(1 + \delta_0)y_i(1 + \theta_i) + w_i(1 + \delta_i)$ with $\lvert\delta_0\rvert \le u$
-(the rounded literal $-1$), $\lvert\theta_i\rvert \le \gamma_2$ and $\lvert\delta_i\rvert \le u$,
-then $\|\mathbf{h} - \mathbf{V}^{\mathsf{T}}\mathbf{w}\|$, $\|\mathbf{w} - \mathbf{V}\mathbf{h} -
+of its phases: if $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta_0$, $(N + j +
+2)u \le 1/100$, $u \ge 0$, the coefficients $\mathbf{h}$ and the product $\mathbf{y}$ satisfy the
+partial-product bounds of `NLAlib.Computation.IsDotTrace.abs_sub_mulVec_le` against
+$\mathbf{V}^{\mathsf{T}}\mathbf{w}$ and $\mathbf{V}\mathbf{h}$, and the update is $w'_i = -(1 +
+\delta_0)y_i(1 + \theta_i) + w_i(1 + \delta_i)$ with $\lvert\delta_0\rvert \le u$ (the rounded
+literal $-1$), $\lvert\theta_i\rvert \le \gamma_2$ and $\lvert\delta_i\rvert \le u$, then
+$\|\mathbf{h} - \mathbf{V}^{\mathsf{T}}\mathbf{w}\|$, $\|\mathbf{w} - \mathbf{V}\mathbf{h} -
 \mathbf{w}'\|$ and $\|\mathbf{w}' - (\mathbf{w} - \mathbf{V}\mathbf{V}^{\mathsf{T}}\mathbf{w})\|$
-are at most $c_1\|\mathbf{w}\|$, $c_1$ = `NLAlib.cgsPassBound` $N\,j\,u\,\eta_0$. -/
+are at most $c_1\|\mathbf{w}\|$, $c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$. -/
 theorem norm_sub_le_cgsPassBound_mul_norm_of_abs_sub_le {N j : ℕ} {V : Matrix (Fin N) (Fin j) ℝ}
     {w y Wd : Fin N → ℝ} {hh : Fin j → ℝ} {u η₀ δ₀ : ℝ} {θ δ : Fin N → ℝ} (hu : 0 ≤ u)
     (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hM : ((N + j + 2 : ℕ) : ℝ) * u ≤ 1 / 100)

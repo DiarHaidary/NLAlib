@@ -16,7 +16,8 @@ public import NLAlib.Matrix.Computation.OrthRoutine
 The runs of `NLAlib.cgsPass` and `NLAlib.cgs2` under the standard model of rounded arithmetic
 (`NLAlib.Computation.IsRelErrSem`, adding zero exact). One pass succeeds, writes only the reduced
 vector and the coefficients, and its decoded results satisfy the three error bounds of
-`NLAlib.norm_sub_le_cgsPassBound_mul_norm_of_abs_sub_le` with $c_1 =$ `NLAlib.cgsPassBound`.
+`NLAlib.norm_sub_le_cgsPassBound_mul_norm_of_abs_sub_le` with `NLAlib.cgsPassBound`,
+that is <!-- value cgsPassBound N j u \eta_0 -->$c_1 = 2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$.
 Two passes with the coefficients summed meet `NLAlib.IsOrthErr` at
 $(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$ (`NLAlib.isOrthErr_of_two_passes`), which makes
 `NLAlib.cgs2` an orthogonalization routine (`NLAlib.Computation.IsOrthRoutine`). Exact real
@@ -712,13 +713,12 @@ private theorem exists_exec_cgs2 {u : P → ℝ} {dec : P → K → ℝ} (I : In
     exact ⟨o, hrun', W₁, W₂, H₁, H₂, Hs, mid, hR⟩
   exact ⟨out, W₁, W₂, H₁, H₂, Hs, mid, hex, hR⟩
 
-/-- CGS2 is a certified orthogonalization routine: under the standard model, for
-$0 \le \eta_0 \le 1/100$, $(N + j + 2)u \le 1/100$ and $c_1 =$ `NLAlib.cgsPassBound`
-$N\,j\,u\,\eta_0$ (that is,
-<!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$)
-$\le 1/100$, `NLAlib.cgs2` meets `NLAlib.Computation.IsOrthRoutine` at
-$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$ with `pre = True`.
-`docs/design/Krylov-LanczosReorth.md` §1.3. -/
+/-- CGS2 is a certified orthogonalization routine: under the standard model, for $0 \le \eta_0
+\le 1/100$, $(N + j + 2)u \le 1/100$ and $c_1 =$ `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$ (that
+is, <!-- value cgsPassBound N j u \eta_0 -->$2(1+\eta_0)\sqrt{j+1}\,(N+j+2)\,u$) $\le 1/100$,
+`NLAlib.cgs2` meets `NLAlib.Computation.IsOrthRoutine` at $(\eta_0, 2c_1, 3c_1, 2(\eta_0 +
+c_1)^2)$ with `pre = True`. `docs/design/Krylov-LanczosReorth.md` §1.3. -/
 theorem IsRelErrSem.isOrthRoutine_cgs2 {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K C)
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem) (tag : P)
     {N j : ℕ} (NE jE : IExp ℕ) (hN : NE.eval = N) (hj : jE.eval = j) (Vb wb hb : ℕ)
