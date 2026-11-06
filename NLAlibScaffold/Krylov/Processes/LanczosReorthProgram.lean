@@ -46,106 +46,6 @@ namespace NLAlib
 
 open Computation Computation.Builder
 
-/-- **The exact run of the stored-matrix tree** (G3): under `NLAlib.Computation.storedInterp` (exact
-arithmetic, the matrix as ROM, column-major), from the declared inputs, the compiled tree
-succeeds and its buffers hold $\mathbf{b}$, the basis `NLAlib.lanczosReorthMatrix`, the
-coefficients $\alpha_j$, $\beta_j$, the input norm, the last previous vector and the norms
-$\nu_{j+1}$ of `NLAlib.lanczosReorthState`, for every real matrix (no symmetry or breakdown
-premise). The output clause of the drafted target `StoredEntriesLanczosReorth`
-(design note §2.3); counts are G4. No printed source.
-Proof: `NLAlib.lanczosReorthProg.toStmt_compiled`; then the proof of main's stored-entries
-Lanczos target (in `NLAlib/Krylov/Processes/LanczosProgram.lean`) step for step, with the loop
-invariant
-extended by the basis columns $0..j$ and `nu`, and one more phase per step: the extra `nrm2` and
-`NLAlib.Computation.exec_cgs2_exactSem` at $j + 1$ columns, matching `NLAlib.cgsProject` twice
-(sums over `Finset.range (j + 1)` against `Matrix.mulVec` of the stored columns); zero branch and
-zero continuation as in the plain proof (after breakdown every later vector, coefficient and
-correction is $0$). L, about 700 lines; intermediate lemmas: the loop invariant, one step, the
-initialization (reuse `NLAlib/Krylov/Processes/LanczosProgramInitialization.lean`). -/
-theorem lanczosReorthProg.exec_storedInterp_compiled {P ι : Type} [DecidableEq P] (tag : P)
-    (N q : ℕ) (b : Fin N → ℝ) (vals : ℕ → ℝ) (ξ : Dist → ℕ → ℝ) :
-    ∃ out : St P ℝ (OpCount P ι),
-      (lanczosReorthProg.compiled (ι := ι) tag).exec (storedInterp (N ^ 2) vals ξ tag) N ![q]
-          (inputState tag (List.ofFn ![(Array.ofFn b).map some,
-            Array.replicate (N * (q + 1)) none, Array.replicate q none,
-            Array.replicate (q + 1) none, Array.replicate 1 none, Array.replicate N none,
-            Array.replicate q none])) = some out ∧
-      Holds out.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
-      Holds out.store tag 1 0
-        (lanczosReorthMatrix (fun i j : Fin N => vals (i + N * j)) b (q + 1)) ∧
-      Holds out.store tag 2 0 (fun (j : Fin q) (_ : Fin 1) =>
-        lanczosAlpha (fun i j : Fin N => vals (i + N * j))
-          (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b j).toLanczosState) ∧
-      Holds out.store tag 3 0 (fun (j : Fin (q + 1)) (_ : Fin 1) =>
-        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b j).beta) ∧
-      out.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
-      Holds out.store tag 5 0 (fun i (_ : Fin 1) =>
-        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b q).prev i) ∧
-      Holds out.store tag 6 0 (fun (j : Fin q) (_ : Fin 1) =>
-        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b ((j : ℕ) + 1)).nu) := by
-  sorry
-
-private lemma sum_map_range_eq_finsetSum (f : ℕ → ℕ) (q : ℕ) :
-    (List.map f (List.range q)).sum = ∑ x ∈ Finset.range q, f x := by
-  induction q with
-  | zero => simp
-  | succ q ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
-    simp
-
-private lemma two_mul_sum_range_id_add (q : ℕ) : 2 * ∑ x ∈ Finset.range q, x + q = q * q := by
-  induction q with
-  | zero => simp
-  | succ q ih => rw [Finset.sum_range_succ]; nlinarith
-
-/-- **The static count of the stored-matrix tree** (G4): every component of the static operation
-count of `NLAlib.lanczosReorthProg.compiled` is at most `NLAlib.lanczosReorthCount`.
-Proof: as main's static count of the plain tree
-(`NLAlib/Krylov/Processes/LanczosProgramStaticCost.lean`): unfold the static cost of the compiled
-tree
-(`FStmt.staticCost`, `StaticCost.seq`, `StaticCost.branch`, `StaticCost.alloc`), evaluate the
-nested loops (the inner loop bounds $j + 1$ give $\sum_{j<q}(j+1) = q(q+1)/2$), and compare
-componentwise (`Finsupp.single_apply`, `omega`/`nlinarith` per kind). If a component of the
-drafted formula is too small, enlarge it in the design note (it is a draft) and record the change.
-M, about 80 lines. -/
-theorem lanczosReorthProg.staticCost_count_le {P ι : Type} [DecidableEq P] (tag : P)
-    (width : P → ℕ) (N q : ℕ) :
-    ((lanczosReorthProg.compiled (ι := ι) tag).staticCost (fun k => Finsupp.single k 1)
-      width N ![q]).count ≤ lanczosReorthCount tag N q := by
-  classical
-  intro k
-  change (FStmt.staticCost (fun k => Finsupp.single k 1) width
-    (lanczosReorthProg.compiled (ι := ι) tag) (Fin.cons N ![q])).count k ≤ _
-  change (StaticCost.seq _ _).count k ≤ _
-  simp only [FStmt.staticCost, StaticCost.seq, StaticCost.branch, StaticCost.alloc,
-    StaticCost.step, StaticCost.zero, StaticCost.sequence_count_apply, Instr.kind, Instr.subst,
-    IExp.evalIn, Finsupp.add_apply, Finsupp.sup_apply, List.map_const', List.sum_replicate,
-    List.length_range, Finsupp.zero_apply]
-  simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero, add_zero, zero_add,
-    smul_eq_mul, Matrix.Fin.cons_vecCons, Nat.succ_eq_add_one,
-    Fin.snoc_apply_zero, Matrix.cons_val_zero, Matrix.Fin.snoc_vecCons,
-    Matrix.Fin.snoc_vecEmpty, List.map_const', List.length_range, List.sum_replicate,
-    Fin.val_eq_zero, Fin.mk_one, Fin.cons_one, Matrix.cons_val_fin_one]
-  cases k <;> simp only [lanczosReorthCount, Finsupp.add_apply, Finsupp.single_apply,
-    OpKind.bin.injEq, OpKind.un.injEq, OpKind.lit.injEq, OpKind.cmp.injEq,
-    OpKind.copy.injEq, OpKind.rom.injEq, reduceCtorEq, add_zero, zero_add, mul_zero,
-    ite_false, sum_map_range_eq_finsetSum]
-  -- the loop bodies depend on the step through the CGS2 width `j + 1`: Gauss's sum
-  case bin p b =>
-    have hS := two_mul_sum_range_id_add q
-    cases b <;> by_cases hp : tag = p <;>
-      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
-  case un p u =>
-    have hS := two_mul_sum_range_id_add q
-    cases u <;> by_cases hp : tag = p <;>
-      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
-  case lit p =>
-    have hS := two_mul_sum_range_id_add q
-    by_cases hp : tag = p
-    · simp [hp, Finset.sum_add_distrib]; nlinarith
-    · simp [hp]
-  all_goals (try split_ifs) <;> norm_num <;> ring_nf <;> omega
-
 namespace LanczosReorthImplementation
 
 variable {P ι K : Type} [DecidableEq P]
@@ -557,9 +457,17 @@ private theorem reorth_exec_work (I : Interp P ι K (OpCount P ι)) {u : P → �
 private theorem reorth_exec_orth (I : Interp P ι K (OpCount P ι)) {u : P → ℝ} {dec : P → K → ℝ}
     (h : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (tag : P) {N q t slot : ℕ} (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
-    {η₀ ε₁ ε₂ ε₃ : ℝ}
-    (horth : IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
-      (orth 8 10 (IExp.var t)))
+    (G : Matrix (Fin N) (Fin (t + 1)) ℝ → (Fin N → ℝ) → (Fin (t + 1) → ℝ) → (Fin N → ℝ) → Prop)
+    (horth : ∀ (s : St P K (OpCount P ι)) (V : Matrix (Fin N) (Fin (t + 1)) ℝ) (w : Fin N → ℝ),
+      s.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+        (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)] →
+      HoldsDecoded s.store dec tag 1 0 V →
+      (∀ i : Fin N, ∃ x, s.store.read tag 8 i = some x ∧ dec tag x = w i) →
+      ∃ (out : St P K (OpCount P ι)) (W : Fin N → K) (Hw : Fin (t + 1) → K) (mid : Store P K),
+        exec I (orth 8 10 (IExp.var t)).run s = some out ∧
+        s.store.writeBlock tag 8 0 (Array.ofFn W) = some mid ∧
+        mid.writeBlock tag 10 0 (Array.ofFn Hw) = some out.store ∧
+        G V w (fun i => dec tag (Hw i)) (fun i => dec tag (W i)))
     (st : St P K (OpCount P ι))
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
       (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)])
@@ -575,18 +483,14 @@ private theorem reorth_exec_orth (I : Interp P ι K (OpCount P ι)) {u : P → �
       (∀ p k i, (k ≠ 3 ∨ i ≠ t + 1) → out.store.read p k i = mid.store.read p k i) ∧
       (∀ i : Fin N, ∃ w, mid.store.read tag 8 i = some w ∧ dec tag w = z' i) ∧
       (∃ w, out.store.read tag 3 (t + 1) = some w ∧ dec tag w = bn) ∧
-      IsOrthErr η₀ ε₁ ε₂ ε₃ V zv hv z' ∧
+      G V zv hv z' ∧
       0 ≤ bn ∧ (bn = 0 ↔ z' = 0) ∧
       |bn - ‖WithLp.toLp 2 z'‖| ≤
         lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ := by
   have hu := h.nonneg (p := tag) trivial
   have hwin := lanczosImplementationRoundoffBound_kernel_bounds N hu hsmall
   have hγ := reorth_roundingFactor_succ_le N hu hsmall
-  obtain ⟨mid, W, Hw, mid₀, hr, hw₁, hw₂, herr⟩ := horth.run st V zv trivial hV
-    (by simpa using hzv)
-    (fun i hi => ⟨N, by simp [hshape], by simpa using hi⟩)
-    (fun i hi => ⟨q + 1, by simp [hshape], by simp; omega⟩)
-    (by omega) (by omega) (by omega)
+  obtain ⟨mid, W, Hw, mid₀, hr, hw₁, hw₂, herr⟩ := horth st V zv hshape hV hzv
   have shm : mid.store.shape = st.store.shape :=
     (Store.shape_of_writeBlock_eq_some hw₂).trans (Store.shape_of_writeBlock_eq_some hw₁)
   have fm : ∀ p k i, k ≠ 8 → k ≠ 10 → mid.store.read p k i = st.store.read p k i :=
@@ -804,7 +708,10 @@ private theorem reorth_exec_initialize (I : Interp P ι K (OpCount P ι)) {u : P
       (∃ w, out.store.read tag 9 0 = some w ∧ dec tag w = 0) ∧
       (b ≠ 0 → |‖WithLp.toLp 2 v1‖ ^ 2 - 1| ≤ lanczosImplementationRoundoffBound N (u tag)) ∧
       (b ≠ 0 → ‖WithLp.toLp 2 (‖WithLp.toLp 2 b‖⁻¹ • b - v1)‖ ≤
-        3 * lanczosImplementationRoundoffBound N (u tag)) := by
+        3 * lanczosImplementationRoundoffBound N (u tag)) ∧
+      (∃ w, out.store.read tag 4 0 = some w ∧ |‖WithLp.toLp 2 b‖ - dec tag w| ≤
+        lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 b‖) ∧
+      (b = 0 → v1 = 0) := by
   have hu := hsem.nonneg (p := tag) trivial
   have hwin := lanczosImplementationRoundoffBound_kernel_bounds N hu hsmall
   -- zeros
@@ -887,7 +794,9 @@ private theorem reorth_exec_initialize (I : Interp P ι K (OpCount P ι)) {u : P
     (hunit (fun he => hbne (hiff.mp he))).trans
       (normalizationRoundingFactor_le_lanczosImplementationRoundoffBound N hu hsmall)
   refine ⟨out, fun i => dec tag (W i), ?_, shape.trans (shn.trans shp), ?_, ?_, ?_, ?_, ?_,
-    hunit', ?_⟩
+    hunit', ?_, ⟨w', rnorm, herr.trans (mul_le_mul_of_nonneg_right
+      (reorth_roundingFactor_succ_le N hu hsmall) (norm_nonneg _))⟩,
+    fun hb0 => hzv (hiff.mpr hb0)⟩
   · have hcomp : ExecutionComposable I (do
         ins (.lit tag ⟨9, 0⟩ 0); ins (.lit tag ⟨3, 0⟩ 0)
         forRange (IExp.const N) fun i => ins (.lit tag ⟨5, .var i⟩ 0) : Builder P ι ℕ ℕ Unit) :=
@@ -929,9 +838,19 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
     (hmv : IsMatvecRoutine I dec tag A
       (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
       (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
-    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
-    (horth : IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
-      (orth 8 10 (IExp.var t)))
+    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
+    (G : Matrix (Fin N) (Fin (t + 1)) ℝ → (Fin N → ℝ) → (Fin (t + 1) → ℝ) → (Fin N → ℝ) → Prop)
+    (hoc : ExecutionComposable I (orth 8 10 (IExp.var t)))
+    (horth : ∀ (s : St P K (OpCount P ι)) (V : Matrix (Fin N) (Fin (t + 1)) ℝ) (w : Fin N → ℝ),
+      s.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+          (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)] →
+      HoldsDecoded s.store dec tag 1 0 V →
+      (∀ i : Fin N, ∃ x, s.store.read tag 8 i = some x ∧ dec tag x = w i) →
+      ∃ (out : St P K (OpCount P ι)) (W : Fin N → K) (Hw : Fin (t + 1) → K) (mid : Store P K),
+        exec I (orth 8 10 (IExp.var t)).run s = some out ∧
+        s.store.writeBlock tag 8 0 (Array.ofFn W) = some mid ∧
+        mid.writeBlock tag 10 0 (Array.ofFn Hw) = some out.store ∧
+        G V w (fun i => dec tag (Hw i)) (fun i => dec tag (W i)))
     (st : St P K (OpCount P ι)) (v : ℕ → Fin N → ℝ) (α β ν : ℕ → ℝ)
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
       (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)])
@@ -977,6 +896,7 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
       (∀ c < t + 1, ∃ w, out.store.read tag 6 c = some w ∧
         dec tag w = Function.update ν (t + 1) nn (c + 1)) ∧
       (∃ w, out.store.read tag 9 0 = some w ∧ dec tag w = 0) ∧
+      out.store.read tag 4 0 = st.store.read tag 4 0 ∧
       ‖WithLp.toLp 2 (A *ᵥ v (t + 1) - uv)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) * specNorm A *
           ‖WithLp.toLp 2 (v (t + 1))‖ ∧
@@ -991,13 +911,13 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
           (‖WithLp.toLp 2 wv‖ + |an| * ‖WithLp.toLp 2 (v (t + 1))‖) ∧
       0 ≤ nn ∧ |nn - ‖WithLp.toLp 2 zv‖| ≤
         lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 zv‖ ∧
-      IsOrthErr η₀ ε₁ ε₂ ε₃ (LanczosReorthRun.basisOf v (t + 1)) zv hv z' ∧
+      G (LanczosReorthRun.basisOf v (t + 1)) zv hv z' ∧
       |bn - ‖WithLp.toLp 2 z'‖| ≤
         lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
       ‖WithLp.toLp 2 (z' - bn • vn)‖ ≤
         lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
       (bn ≠ 0 → |‖WithLp.toLp 2 vn‖ ^ 2 - 1| ≤
-        lanczosImplementationRoundoffBound N (u tag)) := by
+        lanczosImplementationRoundoffBound N (u tag)) ∧ (bn = 0 → vn = 0) := by
   obtain ⟨w0, hw0, hd0⟩ := hzero
   obtain ⟨s₁, uv, wv, zv, an, nn, hr₁, sh₁, f₁, hz₁, ha₁, hn₁, e₁, e₂, e₃, e₄, hnn, e₅⟩ :=
     reorth_exec_work I h hz tag pre mv hmv st hshape hpre ht (v (t + 1)) (v t) (β t)
@@ -1008,12 +928,13 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
       (by omega) (by omega)]
     exact hV c (by omega) i
   obtain ⟨mid, normed, z', hv, bn, hr₂, hr₃, shm, shn, fm, fn, hzm, hbn, eorth, -, -, e₆⟩ :=
-    reorth_exec_orth I h hz tag orth horth s₁ (sh₁.trans hshape) ht w0 _ hVs₁ zv hz₁ hsmall
+    reorth_exec_orth I h hz tag orth G horth s₁ (sh₁.trans hshape) ht w0 _ hVs₁ zv hz₁ hsmall
   have fpre : ∀ p k i, k ≠ 8 → k ≠ 10 → (k = 9 → i ≠ 1) → (k = 2 → i ≠ t) →
       (k = 6 → i ≠ t) → (k = 3 → i ≠ t + 1) →
       normed.store.read p k i = st.store.read p k i := by
     intro p k i h8 h10 h9 h2 h6 h3
-    rw [fn p k i (by by_cases hk : k = 3; exacts [Or.inr (h3 hk), Or.inl hk]), fm p k i h8 h10, f₁ p k i h8 h9 h2 h6]
+    rw [fn p k i (by by_cases hk : k = 3; exacts [Or.inr (h3 hk), Or.inl hk]), fm p k i h8 h10,
+      f₁ p k i h8 h9 h2 h6]
   let I' : Interp P ι K (OpCount P ι) := { I with charge := fun k => Finsupp.single k 1 }
   obtain ⟨normed', hr₃', n1, n2, n3, n4, n5, n6⟩ := reorth_exec_transfer I I' rfl rfl rfl rfl rfl
     rfl (nrm2 tag ⟨3, IExp.var t + 1⟩ 8 0 (IExp.const N)).run (a' := mid) rfl rfl rfl rfl rfl rfl
@@ -1062,7 +983,8 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
     intro p k i h5 h1 h8 h10 h3
     rw [f₄ p k i h5 (fun h => absurd h h1), fn p k i (Or.inl h3), fm p k i h8 h10]
   refine ⟨out, uv, wv, zv, z', hv, an, bn', nn, vn, ?_, shout, ?_, ?_, ?_, ?_, ?_, hp₄, ?_, ?_,
-    e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit⟩
+    fall tag 4 0 (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+      (by omega), e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit, hvzero⟩
   · change exec I (do
       (do
         mv 8 (IExp.var t)
@@ -1097,7 +1019,7 @@ private theorem reorth_exec_step (I : Interp P ι K (OpCount P ι)) {u : P → �
             ((executionComposable_single I (fun _ => rfl)).bind
               ((executionComposable_single I (fun _ => rfl)).bind
                 (executionComposable_single I (fun _ => rfl)))))))
-    rw [cw, hr₁, Option.bind_some, horth.composable, hr₂, Option.bind_some,
+    rw [cw, hr₁, Option.bind_some, hoc, hr₂, Option.bind_some,
       exec_run_bind I (b := nrm2 tag ⟨3, IExp.var t + 1⟩ 8 0 (IExp.const N)) (fun _ => rfl),
       hr₃, Option.bind_some]
     exact hr₄
@@ -1159,9 +1081,20 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
     (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
       (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
       (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
-    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
-    (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
-      (orth 8 10 (IExp.var t)))
+    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
+    (G : (t : ℕ) → Matrix (Fin N) (Fin (t + 1)) ℝ → (Fin N → ℝ) → (Fin (t + 1) → ℝ) →
+      (Fin N → ℝ) → Prop)
+    (hoc : ∀ t < q, ExecutionComposable I (orth 8 10 (IExp.var t)))
+    (horth : ∀ t < q, ∀ (s : St P K (OpCount P ι)) (V : Matrix (Fin N) (Fin (t + 1)) ℝ)
+      (w : Fin N → ℝ), s.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+          (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)] →
+      HoldsDecoded s.store dec tag 1 0 V →
+      (∀ i : Fin N, ∃ x, s.store.read tag 8 i = some x ∧ dec tag x = w i) →
+      ∃ (out : St P K (OpCount P ι)) (W : Fin N → K) (Hw : Fin (t + 1) → K) (mid : Store P K),
+        exec I (orth 8 10 (IExp.var t)).run s = some out ∧
+        s.store.writeBlock tag 8 0 (Array.ofFn W) = some mid ∧
+        mid.writeBlock tag 10 0 (Array.ofFn Hw) = some out.store ∧
+        G t V w (fun i => dec tag (Hw i)) (fun i => dec tag (W i)))
     (st : St P K (OpCount P ι)) (v1 : Fin N → ℝ)
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
       (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)])
@@ -1198,6 +1131,8 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
       (∀ c < q, ∃ w, out.store.read tag 2 c = some w ∧ dec tag w = α (c + 1)) ∧
       (∀ c ≤ q, ∃ w, out.store.read tag 3 c = some w ∧ dec tag w = β c) ∧
       (∀ c < q, ∃ w, out.store.read tag 6 c = some w ∧ dec tag w = ν (c + 1)) ∧
+      (∀ i : Fin N, ∃ w, out.store.read tag 5 i = some w ∧ dec tag w = v q i) ∧
+      out.store.read tag 4 0 = st.store.read tag 4 0 ∧
       v 0 = 0 ∧ β 0 = 0 ∧ v 1 = v1 ∧
       ∀ j, ∃ (uv wv zv z' : Fin N → ℝ) (hv : ℕ → ℝ), j < q →
         ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤
@@ -1214,15 +1149,15 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
             (‖WithLp.toLp 2 wv‖ + |α (j + 1)| * ‖WithLp.toLp 2 (v (j + 1))‖) ∧
         0 ≤ ν (j + 1) ∧ |ν (j + 1) - ‖WithLp.toLp 2 zv‖| ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 zv‖ ∧
-        IsOrthErr η₀ ε₁ ε₂ ε₃ (LanczosReorthRun.basisOf v (j + 1)) zv
-          (fun i : Fin (j + 1) => hv i) z' ∧
+        G j (LanczosReorthRun.basisOf v (j + 1)) zv (fun i : Fin (j + 1) => hv i) z' ∧
         |β (j + 1) - ‖WithLp.toLp 2 z'‖| ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
         ‖WithLp.toLp 2 (z' - β (j + 1) • v (j + 2))‖ ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
         (β (j + 1) ≠ 0 → |‖WithLp.toLp 2 (v (j + 2))‖ ^ 2 - 1| ≤
-          lanczosImplementationRoundoffBound N (u tag)) := by
-  obtain ⟨out, hr, ⟨v, α, β, ν, hsh, hpr, hbo, hV, hα, hβ, -, hν, -, hv0, hb0, hv1o, hpf⟩⟩ :=
+          lanczosImplementationRoundoffBound N (u tag)) ∧ (β (j + 1) = 0 → v (j + 2) = 0) := by
+  obtain ⟨out, hr, ⟨v, α, β, ν, hsh, hpr, hbo, hV, hα, hβ, hpo, hν, -, h4o, hv0, hb0, hv1o,
+      hpf⟩⟩ :=
     exists_exec_loop_eq_some_of_forall I (n := IExp.const q)
     (body := fun j => (do
         mv 8 (IExp.var j)
@@ -1252,6 +1187,7 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
       (∀ i : Fin N, ∃ w, s.store.read tag 5 i = some w ∧ dec tag w = v t i) ∧
       (∀ c < t, ∃ w, s.store.read tag 6 c = some w ∧ dec tag w = ν (c + 1)) ∧
       (∃ w, s.store.read tag 9 0 = some w ∧ dec tag w = 0) ∧
+      s.store.read tag 4 0 = st.store.read tag 4 0 ∧
       v 0 = 0 ∧ β 0 = 0 ∧ v 1 = v1 ∧
       ∀ j, ∃ (uv wv zv z' : Fin N → ℝ) (hv : ℕ → ℝ), j < t →
         ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤
@@ -1268,14 +1204,13 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
             (‖WithLp.toLp 2 wv‖ + |α (j + 1)| * ‖WithLp.toLp 2 (v (j + 1))‖) ∧
         0 ≤ ν (j + 1) ∧ |ν (j + 1) - ‖WithLp.toLp 2 zv‖| ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 zv‖ ∧
-        IsOrthErr η₀ ε₁ ε₂ ε₃ (LanczosReorthRun.basisOf v (j + 1)) zv
-          (fun i : Fin (j + 1) => hv i) z' ∧
+        G j (LanczosReorthRun.basisOf v (j + 1)) zv (fun i : Fin (j + 1) => hv i) z' ∧
         |β (j + 1) - ‖WithLp.toLp 2 z'‖| ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
         ‖WithLp.toLp 2 (z' - β (j + 1) • v (j + 2))‖ ≤
           lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
         (β (j + 1) ≠ 0 → |‖WithLp.toLp 2 (v (j + 2))‖ ^ 2 - 1| ≤
-          lanczosImplementationRoundoffBound N (u tag)))
+          lanczosImplementationRoundoffBound N (u tag)) ∧ (β (j + 1) = 0 → v (j + 2) = 0))
     ⟨Function.update 0 1 v1, 0, 0, 0, rfl, hpre, hb,
       fun c hc i => by
         obtain rfl : c = 0 := by omega
@@ -1285,15 +1220,17 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
         obtain rfl : c = 0 := by omega
         simpa using hβ0,
       fun i => by simpa using hp i,
-      fun c hc => absurd hc (by omega), hzero,
+      fun c hc => absurd hc (by omega), hzero, rfl,
       by simp, rfl, by simp,
       fun j => ⟨0, 0, 0, 0, 0, fun hj => absurd hj (by omega)⟩⟩
     (by
-      intro t ht s ⟨v, α, β, ν, hsh, hpr, hbs, hV, hα, hβ, hp, hν, hzs, hv0, hb0, hv1s, hpf⟩
+      intro t ht s ⟨v, α, β, ν, hsh, hpr, hbs, hV, hα, hβ, hp, hν, hzs, h4s, hv0, hb0, hv1s,
+        hpf⟩
+      have htq : t < q := by simpa using ht
       obtain ⟨out, uv, wv, zv, z', hv, an, bn, nn, vn, hr, sho, hpro, hbo, hVo, hαo, hβo, hpo,
-          hνo, hzo, e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit⟩ :=
-        reorth_exec_step I h hz tag b pre hpreFrame mv (hmv t) orth (horth t (by simpa using ht)) s v α β ν
-          (hsh.trans hshape) hpr hbs hV hα hβ hp hν hzs (by simpa using ht) hsmall
+          hνo, hzo, h4o, e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit, hvzero⟩ :=
+        reorth_exec_step I h hz tag b pre hpreFrame mv (hmv t) orth (G t) (hoc t htq)
+          (horth t htq) s v α β ν (hsh.trans hshape) hpr hbs hV hα hβ hp hν hzs htq hsmall
       have ev : ∀ k, k < t + 2 → Function.update v (t + 2) vn k = v k :=
         fun k hk => Function.update_of_ne (by omega) _ _
       have ea : ∀ k, k < t + 1 → Function.update α (t + 1) an k = α k :=
@@ -1310,7 +1247,8 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
         rw [ev _ (by omega)]
       refine ⟨out, hr, Function.update v (t + 2) vn, Function.update α (t + 1) an,
         Function.update β (t + 1) bn, Function.update ν (t + 1) nn, sho.trans hsh, hpro, hbo,
-        hVo, hαo, hβo, ?_, hνo, hzo, by rw [ev 0 (by omega), hv0], by rw [eb 0 (by omega), hb0],
+        hVo, hαo, hβo, ?_, hνo, hzo, h4o.trans h4s, by rw [ev 0 (by omega), hv0],
+        by rw [eb 0 (by omega), hb0],
         by rw [ev 1 (by omega), hv1s], ?_⟩
       · intro i
         simpa only [ev (t + 1) (by omega)] using hpo i
@@ -1333,15 +1271,20 @@ private theorem reorth_exec_loop (I : Interp P ι K (OpCount P ι)) {u : P → �
             rw [ev t (by omega), ev (t + 1) (by omega), eb t (by omega), hbasis (t + 1) le_rfl,
               hhv]
             simp only [Function.update_self]
-            exact ⟨e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit⟩
+            exact ⟨e₁, e₂, e₃, e₄, hnn, e₅, eorth, e₆, e₇, hunit, hvzero⟩
           · exact ⟨0, 0, 0, 0, 0, fun hj => absurd hj (by omega)⟩)
-  refine ⟨out, v, α, β, ν, ?_, hsh, hbo, hV, hα, hβ, hν, hv0, hb0, hv1o, hpf⟩
+  refine ⟨out, v, α, β, ν, ?_, hsh, hbo, hV, hα, hβ, hν, by simpa using hpo, h4o, hv0, hb0,
+    hv1o, hpf⟩
   change exec I (.seq (.loop (IExp.const q) _) .skip) st = _
   rw [exec_seq_skip]
   exact hr
 
-/-- G5 with the orthogonalization certificate needed only at the executed steps. -/
-private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
+/-- **The scoped loop** for a generic orthogonalization guarantee `G`: the three scoped
+allocations, the initialization and every step execute; after the release the declared
+buffers hold the decoded basis, coefficients, stored norms and previous vector, and every
+step meets its local guarantees. -/
+private theorem reorth_exec_scoped {u : P → ℝ} {dec : P → K → ℝ}
+    (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (st : St P K (OpCount P ι)) (N q : ℕ) (slot : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
@@ -1355,21 +1298,62 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
     (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
       (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
       (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
-    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
-    (hε : 0 ≤ ε₁ ∧ 0 ≤ ε₂ ∧ 0 ≤ ε₃)
-    (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
-      (orth 8 10 (IExp.var t)))
-    (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
-    {τ : ℝ} (hτ : 0 < τ) :
-    ∃ out : St P K (OpCount P ι),
+    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
+    (G : (t : ℕ) → Matrix (Fin N) (Fin (t + 1)) ℝ → (Fin N → ℝ) → (Fin (t + 1) → ℝ) →
+      (Fin N → ℝ) → Prop)
+    (hoc : ∀ t < q, ExecutionComposable I (orth 8 10 (IExp.var t)))
+    (horth : ∀ t < q, ∀ (s : St P K (OpCount P ι)) (V : Matrix (Fin N) (Fin (t + 1)) ℝ)
+      (w : Fin N → ℝ), s.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+          (tag, 1), (tag, N), (tag, q), (tag, slot), (tag, N), (tag, 2), (tag, q + 1)] →
+      HoldsDecoded s.store dec tag 1 0 V →
+      (∀ i : Fin N, ∃ x, s.store.read tag 8 i = some x ∧ dec tag x = w i) →
+      ∃ (out : St P K (OpCount P ι)) (W : Fin N → K) (Hw : Fin (t + 1) → K) (mid : Store P K),
+        exec I (orth 8 10 (IExp.var t)).run s = some out ∧
+        s.store.writeBlock tag 8 0 (Array.ofFn W) = some mid ∧
+        mid.writeBlock tag 10 0 (Array.ofFn Hw) = some out.store ∧
+        G t V w (fun i => dec tag (Hw i)) (fun i => dec tag (W i)))
+    (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) :
+    ∃ (out : St P K (OpCount P ι)) (v : ℕ → Fin N → ℝ) (α β ν : ℕ → ℝ),
       exec I (lanczosReorthLoop tag (IExp.const N) (IExp.const q) 0 1 2 3 4 5 6 mv orth).run
         st = some out ∧
       out.store.shape = st.store.shape ∧
-      (b ≠ 0 → LanczosReorthOutputs out.store dec tag N q A b
-        (lanczosImplementationRoundoffBound N (u tag)) τ η₀ ε₁ ε₂ ε₃) := by
+      (∀ i : Fin N, ∃ w, out.store.read tag 0 i = some w ∧ dec tag w = b i) ∧
+      (∀ c ≤ q, ∀ i : Fin N, ∃ w, out.store.read tag 1 (N * c + i) = some w ∧
+        dec tag w = v (c + 1) i) ∧
+      (∀ c < q, ∃ w, out.store.read tag 2 c = some w ∧ dec tag w = α (c + 1)) ∧
+      (∀ c ≤ q, ∃ w, out.store.read tag 3 c = some w ∧ dec tag w = β c) ∧
+      (∀ c < q, ∃ w, out.store.read tag 6 c = some w ∧ dec tag w = ν (c + 1)) ∧
+      (∀ i : Fin N, ∃ w, out.store.read tag 5 i = some w ∧ dec tag w = v q i) ∧
+      (∃ w, out.store.read tag 4 0 = some w ∧ |‖WithLp.toLp 2 b‖ - dec tag w| ≤
+        lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 b‖) ∧
+      v 0 = 0 ∧ β 0 = 0 ∧
+      (b ≠ 0 → |‖WithLp.toLp 2 (v 1)‖ ^ 2 - 1| ≤ lanczosImplementationRoundoffBound N (u tag)) ∧
+      (b ≠ 0 → ‖WithLp.toLp 2 (‖WithLp.toLp 2 b‖⁻¹ • b - v 1)‖ ≤
+        3 * lanczosImplementationRoundoffBound N (u tag)) ∧
+      (b = 0 → v 1 = 0) ∧
+      ∀ j, ∃ (uv wv zv z' : Fin N → ℝ) (hv : ℕ → ℝ), j < q →
+        ‖WithLp.toLp 2 (A *ᵥ v (j + 1) - uv)‖ ≤
+          lanczosImplementationRoundoffBound N (u tag) * specNorm A *
+            ‖WithLp.toLp 2 (v (j + 1))‖ ∧
+        ‖WithLp.toLp 2 (uv - β j • v j - wv)‖ ≤
+          lanczosImplementationRoundoffBound N (u tag) *
+            (‖WithLp.toLp 2 uv‖ + |β j| * ‖WithLp.toLp 2 (v j)‖) ∧
+        |v (j + 1) ⬝ᵥ wv - α (j + 1)| ≤
+          lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 (v (j + 1))‖ *
+            ‖WithLp.toLp 2 wv‖ ∧
+        ‖WithLp.toLp 2 (wv - α (j + 1) • v (j + 1) - zv)‖ ≤
+          lanczosImplementationRoundoffBound N (u tag) *
+            (‖WithLp.toLp 2 wv‖ + |α (j + 1)| * ‖WithLp.toLp 2 (v (j + 1))‖) ∧
+        0 ≤ ν (j + 1) ∧ |ν (j + 1) - ‖WithLp.toLp 2 zv‖| ≤
+          lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 zv‖ ∧
+        G j (LanczosReorthRun.basisOf v (j + 1)) zv (fun i : Fin (j + 1) => hv i) z' ∧
+        |β (j + 1) - ‖WithLp.toLp 2 z'‖| ≤
+          lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
+        ‖WithLp.toLp 2 (z' - β (j + 1) • v (j + 2))‖ ≤
+          lanczosImplementationRoundoffBound N (u tag) * ‖WithLp.toLp 2 z'‖ ∧
+        (β (j + 1) ≠ 0 → |‖WithLp.toLp 2 (v (j + 2))‖ ^ 2 - 1| ≤
+          lanczosImplementationRoundoffBound N (u tag)) ∧ (β (j + 1) = 0 → v (j + 2) = 0) := by
   classical
-  have hu := hsem.nonneg (p := tag) trivial
-  have hε0 := lanczosImplementationRoundoffBound_nonneg N hu
   have hsize : st.store.size = 8 := by
     simpa [Store.shape] using congrArg Array.size hshape
   -- the three scoped allocations
@@ -1395,9 +1379,9 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
     intro i
     rw [rd₃ tag 0 i (by omega)]
     exact hb i
-  -- initialization
+  -- initialization (charge-independent)
   let I' : Interp P ι K (OpCount P ι) := { I with charge := fun k => Finsupp.single k 1 }
-  obtain ⟨init', v1, hri', shi, fi, hv1, hβ0, hp0, hz0, hunit1, hdir⟩ :=
+  obtain ⟨init', v1, hri', shi, fi, hv1, hβ0, hp0, hz0, hunit1, hdir, h41, hb01⟩ :=
     reorth_exec_initialize I' hsem hz (fun _ => rfl) tag b st₃ sh₃ hb₃ hsmall
   obtain ⟨init, hri, i1, -, -, -, -, -⟩ := reorth_exec_transfer I' I rfl rfl rfl rfl rfl rfl
     (do
@@ -1409,12 +1393,12 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
         (forRange (IExp.const N) fun i => ins (.lit tag ⟨1, .var i⟩ 0))
         (do copyv tag 0 0 1 0 (IExp.const N); rscl tag ⟨4, 0⟩ 1 0 (IExp.const N)) :
           Builder P ι ℕ ℕ Unit).run (a' := st₃) rfl rfl rfl rfl rfl rfl hri'
-  rw [i1] at shi fi hv1 hβ0 hp0 hz0
+  rw [i1] at shi fi hv1 hβ0 hp0 hz0 h41
   have hprei : pre init.store := hpreFrame st₃.store init.store hpre₃
     (fun k _ => by rw [shi]) (fun i => fi tag 7 i (by omega) (by omega) (by omega) (by omega)
       (by omega))
-  obtain ⟨out₃, v, α, β, ν, hrl, shl, hbl, hVl, hαl, hβl, hνl, hv0, hb0, hv1l, hpf⟩ :=
-    reorth_exec_loop I hsem hz tag b pre hpreFrame mv hmv orth horth init v1
+  obtain ⟨out₃, v, α, β, ν, hrl, shl, hbl, hVl, hαl, hβl, hνl, hpl, h4l, hv0, hb0, hv1l, hpf⟩ :=
+    reorth_exec_loop I hsem hz tag b pre hpreFrame mv hmv orth G hoc horth init v1
       (shi.trans sh₃) hprei
       (fun i => by
         rw [fi tag 0 i (by omega) (by omega) (by omega) (by omega) (by omega)]
@@ -1434,7 +1418,14 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
     rw [Store.read_pop_of_lt (by simp only [Array.size_pop, hsize₃]; omega),
       Store.read_pop_of_lt (by simp only [Array.size_pop, hsize₃]; omega),
       Store.read_pop_of_lt (by rw [hsize₃]; omega)]
-  refine ⟨out, ?_, ?_, ?_⟩
+  refine ⟨out, v, α, β, ν, ?_, ?_, fun i => by rw [rdo tag 0 _ (by omega)]; exact hbl i,
+    fun c hc i => by rw [rdo tag 1 _ (by omega)]; exact hVl c hc i,
+    fun c hc => by rw [rdo tag 2 _ (by omega)]; exact hαl c hc,
+    fun c hc => by rw [rdo tag 3 _ (by omega)]; exact hβl c hc,
+    fun c hc => by rw [rdo tag 6 _ (by omega)]; exact hνl c hc,
+    fun i => by rw [rdo tag 5 _ (by omega)]; exact hpl i,
+    by rw [rdo tag 4 _ (by omega), h4l]; exact h41, hv0, hb0,
+    by rw [hv1l]; exact hunit1, by rw [hv1l]; exact hdir, by rw [hv1l]; exact hb01, hpf⟩
   · -- the scoped program
     have hinit : ExecutionComposable I (do
         ins (.lit tag ⟨9, 0⟩ 0)
@@ -1483,115 +1474,509 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
   · change Store.shape out₃.store.pop.pop.pop = _
     rw [Store.shape_pop, Store.shape_pop, Store.shape_pop, shl', hshape]
     rfl
-  · intro hbne
-    choose U W Z Z' Hh hpf' using hpf
-    refine ⟨v, α, β, ν, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · intro i j
-      rw [rdo tag 0 _ (by omega), show 0 + (i : ℕ) + N * j = i by
-        rw [Fin.val_eq_zero j]; ring]
-      exact hbl i
-    · intro i j
-      rw [rdo tag 1 _ (by omega), show 0 + (i : ℕ) + N * j = N * j + i by ring]
-      exact hVl j (by omega) i
-    · intro j c
-      rw [rdo tag 2 _ (by omega), show 0 + (j : ℕ) + q * c = j by
-        rw [Fin.val_eq_zero c]; ring]
-      exact hαl j j.isLt
-    · intro j c
-      rw [rdo tag 3 _ (by omega), show 0 + (j : ℕ) + (q + 1) * c = j by
-        rw [Fin.val_eq_zero c]; ring]
-      exact hβl j (by omega)
-    · intro j c
-      rw [rdo tag 6 _ (by omega), show 0 + (j : ℕ) + q * c = j by
-        rw [Fin.val_eq_zero c]; ring]
-      exact hνl j j.isLt
-    · rw [hv1l]
-      exact hdir hbne
-    · intro m hm0 hmq hadm
-      have nsr : ∀ x y : Fin N → ℝ, ‖WithLp.toLp 2 (x - y)‖ = ‖WithLp.toLp 2 (y - x)‖ :=
-        fun x y => by rw [WithLp.toLp_sub, WithLp.toLp_sub, norm_sub_rev]
-      refine ⟨{
-        H := A
-        v := v
-        u := fun n => U (n - 1)
-        w := fun n => W (n - 1)
-        z := fun n => Z (n - 1)
-        z' := fun n => Z' (n - 1)
-        α := α
-        β := β
-        ν := ν
-        h := fun n => Hh (n - 1)
-        eu := fun n => U (n - 1) - A *ᵥ v n
-        ew := fun n => W (n - 1) - (U (n - 1) - β (n - 1) • v (n - 1))
-        ez := fun n => Z (n - 1) - (W (n - 1) - α n • v n)
-        eα := fun n => α n - v n ⬝ᵥ W (n - 1)
-        δ := fun n => β n • v (n + 1) - Z' (n - 1)
-        ε := lanczosImplementationRoundoffBound N (u tag)
-        τ := τ
-        η₀ := η₀
-        ε₁ := ε₁
-        ε₂ := ε₂
-        ε₃ := ε₃
-        transpose_H := hA
-        ε_nonneg := hε0
-        ε_le := hsmall
-        ε₁_nonneg := hε.1
-        ε₂_nonneg := hε.2.1
-        ε₃_nonneg := hε.2.2
-        k_pos := hm0
-        v_zero := hv0
-        β_zero := hb0
-        u_eq := fun j _ => by
-          show U j = A *ᵥ v (j + 1) + (U j - A *ᵥ v (j + 1))
-          abel
-        norm_eu_le := fun j hj => by
-          show ‖WithLp.toLp 2 (U j - A *ᵥ v (j + 1))‖ ≤ _
-          rw [nsr]
-          exact (hpf' j (by omega)).1
-        w_eq := fun j _ => by
-          show W j = U j - β j • v j + (W j - (U j - β j • v j))
-          abel
-        norm_ew_le := fun j hj => by
-          show ‖WithLp.toLp 2 (W j - (U j - β j • v j))‖ ≤ _
-          rw [nsr]
-          exact (hpf' j (by omega)).2.1
-        α_eq := fun j _ => by
-          show α (j + 1) = v (j + 1) ⬝ᵥ W j + (α (j + 1) - v (j + 1) ⬝ᵥ W j)
-          ring
-        abs_eα_le := fun j hj => by
-          show |α (j + 1) - v (j + 1) ⬝ᵥ W j| ≤ _
-          rw [abs_sub_comm]
-          exact (hpf' j (by omega)).2.2.1
-        z_eq := fun j _ => by
-          show Z j = W j - α (j + 1) • v (j + 1) + (Z j - (W j - α (j + 1) • v (j + 1)))
-          abel
-        norm_ez_le := fun j hj => by
-          show ‖WithLp.toLp 2 (Z j - (W j - α (j + 1) • v (j + 1)))‖ ≤ _
-          rw [nsr]
-          exact (hpf' j (by omega)).2.2.2.1
-        abs_ν_sub_le := fun j hj => (hpf' j (by omega)).2.2.2.2.2.1
-        orth_eq := fun j hj => (hpf' j (by omega)).2.2.2.2.2.2.1
-        abs_β_sub_le := fun j hj => (hpf' j (by omega)).2.2.2.2.2.2.2.1
-        smul_v_eq := fun j _ => by
-          show β (j + 1) • v (j + 2) = Z' j + (β (j + 1) • v (j + 1 + 1) - Z' j)
-          abel
-        norm_δ_le := fun j hj => by
-          show ‖WithLp.toLp 2 (β (j + 1) • v (j + 2) - Z' j)‖ ≤ _
-          rw [nsr]
-          exact (hpf' j (by omega)).2.2.2.2.2.2.2.2.1
-        abs_norm_v_sq_sub_one_le := fun j hj1 hj2 => by
-          rcases Nat.lt_or_ge j 2 with hj | hj
-          · obtain rfl : j = 1 := by omega
-            rw [hv1l]
-            exact hunit1 hbne
-          · obtain ⟨i, rfl⟩ : ∃ i, j = i + 2 := ⟨j - 2, by omega⟩
-            have hi : i < m := by omega
-            have hf := hpf' i (by omega)
-            refine hf.2.2.2.2.2.2.2.2.2 (ne_of_gt ?_)
-            exact lt_of_le_of_lt (mul_nonneg hτ.le hf.2.2.2.2.1) (hadm i hi)
-        admissible := hadm
-        τ_pos := hτ }, rfl, fun _ _ _ => rfl, fun _ _ => ⟨rfl, rfl, rfl⟩, rfl, rfl, rfl, rfl, rfl,
-        rfl⟩
+
+end LanczosReorthImplementation
+
+/-- One exact Gram–Schmidt pass against the stored columns as a matrix product. -/
+private theorem reorth_cgsProject_eq {N c : ℕ} (Q v : ℕ → Fin N → ℝ)
+    (hQ : ∀ k ≤ c, Q k = v (k + 1)) (w : Fin N → ℝ) :
+    cgsProject Q (c + 1) w = w - LanczosReorthRun.basisOf v (c + 1) *ᵥ
+      ((LanczosReorthRun.basisOf v (c + 1))ᵀ *ᵥ w) := by
+  ext r
+  simp only [cgsProject, Pi.sub_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul,
+    Matrix.mulVec, dotProduct, Matrix.transpose_apply, LanczosReorthRun.basisOf,
+    Matrix.of_apply, star_trivial]
+  congr 1
+  rw [← Fin.sum_univ_eq_sum_range (fun i => (∑ x, Q i x * w x) * Q i r) (c + 1)]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [hQ k (by omega)]
+  ring
+
+/-- **The exact recurrence read off the stored sequences**: sequences satisfying the exact
+step relations of the program are the states of `NLAlib.lanczosReorthState`. -/
+private theorem reorth_exact_state {N q : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+    (v : ℕ → Fin N → ℝ) (β ν : ℕ → ℝ) (hv0 : v 0 = 0) (hb0 : β 0 = 0)
+    (hv1 : v 1 = ‖WithLp.toLp 2 b‖⁻¹ • b)
+    (hstep : ∀ j < q, ∃ zv z' : Fin N → ℝ,
+      zv = A *ᵥ v (j + 1) - β j • v j - (v (j + 1) ⬝ᵥ (A *ᵥ v (j + 1) - β j • v j)) •
+        v (j + 1) ∧
+      ν (j + 1) = ‖WithLp.toLp 2 zv‖ ∧
+      z' = (zv - LanczosReorthRun.basisOf v (j + 1) *ᵥ
+          ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ zv)) -
+        LanczosReorthRun.basisOf v (j + 1) *ᵥ ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ
+          (zv - LanczosReorthRun.basisOf v (j + 1) *ᵥ
+            ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ zv))) ∧
+      β (j + 1) = ‖WithLp.toLp 2 z'‖ ∧ v (j + 2) = ‖WithLp.toLp 2 z'‖⁻¹ • z') :
+    ∀ c ≤ q, (lanczosReorthState A b c).cur = v (c + 1) ∧
+      (lanczosReorthState A b c).prev = v c ∧ (lanczosReorthState A b c).beta = β c ∧
+      (∀ k ≤ c, (lanczosReorthState A b c).vecs k = v (k + 1)) ∧
+      (0 < c → (lanczosReorthState A b c).nu = ν c) := by
+  intro c
+  induction c with
+  | zero =>
+    intro _
+    refine ⟨?_, ?_, ?_, ?_, fun h => absurd h (lt_irrefl 0)⟩
+    · simp only [lanczosReorthState, zero_add, hv1]
+      rfl
+    · simp only [lanczosReorthState, hv0]
+    · simp only [lanczosReorthState, hb0]
+    · intro k hk
+      obtain rfl : k = 0 := by omega
+      simp only [lanczosReorthState, Function.update_self, zero_add, hv1]
+      rfl
+  | succ c ih =>
+    intro hc
+    obtain ⟨hcur, hprev, hbeta, hvecs, -⟩ := ih (by omega)
+    obtain ⟨zv, z', hzv, hν, hz', hβ, hvn⟩ := hstep c (by omega)
+    have hz : A *ᵥ (lanczosReorthState A b c).cur -
+        ((lanczosReorthState A b c).beta : ℝ) • (lanczosReorthState A b c).prev -
+        (lanczosAlpha A (lanczosReorthState A b c).toLanczosState : ℝ) •
+          (lanczosReorthState A b c).cur = zv := by
+      rw [hzv, lanczosAlpha]
+      simp only [LanczosReorthState.toLanczosState, hcur, hprev, hbeta, RCLike.re_to_real,
+        star_trivial, RCLike.ofReal_real_eq_id, id]
+    have hz'' : cgsProject (lanczosReorthState A b c).vecs (c + 1)
+        (cgsProject (lanczosReorthState A b c).vecs (c + 1) zv) = z' := by
+      rw [reorth_cgsProject_eq _ v hvecs, reorth_cgsProject_eq _ v hvecs, hz']
+    have hst : lanczosReorthState A b (c + 1) =
+        ⟨Function.update (lanczosReorthState A b c).vecs (c + 1)
+          ((‖WithLp.toLp 2 z'‖⁻¹ : ℝ) • z'), (lanczosReorthState A b c).cur,
+          (‖WithLp.toLp 2 z'‖⁻¹ : ℝ) • z', ‖WithLp.toLp 2 z'‖, ‖WithLp.toLp 2 zv‖⟩ := by
+      change lanczosReorthStep A c (lanczosReorthState A b c) = _
+      simp only [lanczosReorthStep, hz, hz'', RCLike.ofReal_real_eq_id, id]
+    rw [hst]
+    refine ⟨hvn.symm, hcur, hβ.symm, ?_, fun _ => hν.symm⟩
+    intro k hk
+    by_cases hkc : k = c + 1
+    · subst k
+      simp only [Function.update_self]
+      exact hvn.symm
+    · simp only [Function.update_of_ne hkc]
+      exact hvecs k (by omega)
+
+/-- **The exact run of the stored-matrix tree** (G3): under `NLAlib.Computation.storedInterp` (exact
+arithmetic, the matrix as ROM, column-major), from the declared inputs, the compiled tree
+succeeds and its buffers hold $\mathbf{b}$, the basis `NLAlib.lanczosReorthMatrix`, the
+coefficients $\alpha_j$, $\beta_j$, the input norm, the last previous vector and the norms
+$\nu_{j+1}$ of `NLAlib.lanczosReorthState`, for every real matrix (no symmetry or breakdown
+premise). The output clause of the drafted target `StoredEntriesLanczosReorth`
+(design note §2.3); counts are G4. No printed source.
+Proof: `NLAlib.lanczosReorthProg.toStmt_compiled`; then the proof of main's stored-entries
+Lanczos target (in `NLAlib/Krylov/Processes/LanczosProgram.lean`) step for step, with the loop
+invariant
+extended by the basis columns $0..j$ and `nu`, and one more phase per step: the extra `nrm2` and
+`NLAlib.Computation.exec_cgs2_exactSem` at $j + 1$ columns, matching `NLAlib.cgsProject` twice
+(sums over `Finset.range (j + 1)` against `Matrix.mulVec` of the stored columns); zero branch and
+zero continuation as in the plain proof (after breakdown every later vector, coefficient and
+correction is $0$). L, about 700 lines; intermediate lemmas: the loop invariant, one step, the
+initialization (reuse `NLAlib/Krylov/Processes/LanczosProgramInitialization.lean`). -/
+theorem lanczosReorthProg.exec_storedInterp_compiled {P ι : Type} [DecidableEq P] (tag : P)
+    (N q : ℕ) (b : Fin N → ℝ) (vals : ℕ → ℝ) (ξ : Dist → ℕ → ℝ) :
+    ∃ out : St P ℝ (OpCount P ι),
+      (lanczosReorthProg.compiled (ι := ι) tag).exec (storedInterp (N ^ 2) vals ξ tag) N ![q]
+          (inputState tag (List.ofFn ![(Array.ofFn b).map some,
+            Array.replicate (N * (q + 1)) none, Array.replicate q none,
+            Array.replicate (q + 1) none, Array.replicate 1 none, Array.replicate N none,
+            Array.replicate q none])) = some out ∧
+      Holds out.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+      Holds out.store tag 1 0
+        (lanczosReorthMatrix (fun i j : Fin N => vals (i + N * j)) b (q + 1)) ∧
+      Holds out.store tag 2 0 (fun (j : Fin q) (_ : Fin 1) =>
+        lanczosAlpha (fun i j : Fin N => vals (i + N * j))
+          (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b j).toLanczosState) ∧
+      Holds out.store tag 3 0 (fun (j : Fin (q + 1)) (_ : Fin 1) =>
+        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b j).beta) ∧
+      out.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+      Holds out.store tag 5 0 (fun i (_ : Fin 1) =>
+        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b q).prev i) ∧
+      Holds out.store tag 6 0 (fun (j : Fin q) (_ : Fin 1) =>
+        (lanczosReorthState (fun i j : Fin N => vals (i + N * j)) b ((j : ℕ) + 1)).nu) := by
+  classical
+  set A : Matrix (Fin N) (Fin N) ℝ := fun i j => vals (i + N * j) with hAdef
+  let I : Interp P ι ℝ (OpCount P ι) := storedInterp (N ^ 2) vals ξ tag
+  have hsem : IsRelErrSem (fun _ => (0 : ℝ)) (fun _ (x : ℝ) => x) (fun _ _ => True) I.sem :=
+    isRelErrSem_exactSem
+  have hz : AddsZeroExactly (fun _ (x : ℝ) => x) I.sem := addsZeroExactly_exactSem
+  have hε : lanczosImplementationRoundoffBound N 0 = 0 := by
+    rw [lanczosImplementationRoundoffBound_def]; ring
+  have hsmall : lanczosImplementationRoundoffBound N 0 ≤ 1 / 100 := by rw [hε]; norm_num
+  have z0 : ∀ x : Fin N → ℝ, ‖WithLp.toLp 2 x‖ ≤ 0 → x = 0 := fun x h =>
+    (WithLp.toLp_eq_zero 2).mp (norm_le_zero_iff.mp h)
+  -- the declared state
+  let st : St P ℝ (OpCount P ι) := inputState tag (List.ofFn ![(Array.ofFn b).map some,
+    Array.replicate (N * (q + 1)) none, Array.replicate q none,
+    Array.replicate (q + 1) none, Array.replicate 1 none, Array.replicate N none,
+    Array.replicate q none])
+  have hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q)] := by
+    simp [st, inputState, Store.shape]
+  have hsize : st.store.size = 7 := by
+    simpa [Store.shape] using congrArg Array.size hshape
+  -- the matrix slot and the ROM load
+  let st₁ := st.allocate tag (IExp.const N * IExp.const N).eval (I.width tag)
+  have sh₁ : st₁.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, N * N)] := by
+    simp only [st₁, St.shape_allocate, hshape, IExp.eval_mul, IExp.eval_const]
+    rfl
+  obtain ⟨loaded, erom, shrom, reads, frame⟩ :=
+    exec_forRange_rom I tag st₁ (IExp.const N * IExp.const N) 7 vals (by rw [sh₁]; rfl)
+      (fun i hi => if_pos (by simpa only [Nat.pow_two, IExp.eval_mul, IExp.eval_const] using hi))
+  let mid : St P ℝ (OpCount P ι) :=
+    { st₁ with store := loaded, cnt := st₁.cnt + (N * N) • I.charge (.rom tag) }
+  have shm : mid.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, N * N)] := shrom.trans sh₁
+  have hbm (i : Fin N) : ∃ w, mid.store.read tag 0 i = some w ∧ w = b i := by
+    refine ⟨b i, ?_, rfl⟩
+    change loaded.read tag 0 i = some (b i)
+    rw [frame tag 0 i (by omega), St.read_allocate_of_lt _ _ _ _ _ _ _ (by omega)]
+    simp [st, inputState, Store.read, i.isLt]
+  have hmA : HoldsDecoded mid.store (fun _ (x : ℝ) => x) tag 7 0 A := by
+    intro i j
+    refine ⟨_, ?_, rfl⟩
+    change loaded.read tag 7 (0 + i + N * j) = _
+    rw [zero_add]
+    exact reads (i + N * j) (Nat.add_mul_lt_mul_of_lt_of_lt i.isLt j.isLt)
+  obtain ⟨out₁, v, α, β, ν, hrun, shout, hbl, hVl, hαl, hβl, hνl, hpl, ⟨w4, h4, e4⟩, hv0, hb0,
+      -, hdir, hb01, hpf⟩ := LanczosReorthImplementation.reorth_exec_scoped I tag hsem hz mid
+    N q (N * N) A b shm hbm (fun s => HoldsDecoded s (fun _ (x : ℝ) => x) tag 7 0 A) hmA
+    (fun s s' hs _ h7 i j => by rw [h7]; exact hs i j)
+    (fun work j => gemv tag (IExp.const N) (IExp.const N) 7 0 1 (IExp.const N * j) work 0)
+    (fun t => (hsem.isMatvecRoutine_gemv I tag hz N A 7 1 8 0 (IExp.const N * IExp.var t) 0
+      (by simp) (by omega) (by omega)).mono (mul_le_mul_of_nonneg_right
+        (roundingFactor_mul_sqrt_le_lanczosImplementationRoundoffBound N le_rfl hsmall)
+        (specNorm_nonneg A)))
+    (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0)
+    (fun _ V w _ w' => w' = (w - V *ᵥ (Vᵀ *ᵥ w)) - V *ᵥ (Vᵀ *ᵥ (w - V *ᵥ (Vᵀ *ᵥ w))))
+    (fun _ _ => executionComposable_single I (fun _ => rfl))
+    (fun t ht s V w hs hV hw => by
+      obtain ⟨out, mid, hr, hw1, hw2⟩ := exec_cgs2_exactSem I rfl tag (IExp.const N)
+        (IExp.var t + 1) rfl rfl 1 8 10 0 0 s V w
+        (fun i j => by
+          obtain ⟨x, hx, hxe⟩ := hV i j
+          change s.store.read tag 1 (0 + i + N * j) = _
+          rw [hx]
+          exact congrArg some hxe)
+        (fun i => by
+          obtain ⟨x, hx, hxe⟩ := hw i
+          rw [IExp.eval_zero, zero_add, hx]
+          exact congrArg some hxe)
+        (fun i hi => ⟨N, by simp [hs], by simpa using hi⟩)
+        (fun i hi => ⟨q + 1, by simp [hs], by simp at hi ⊢; omega⟩)
+        ⟨by omega, by omega, by omega⟩
+      exact ⟨out, _, _, mid, hr, hw1, hw2, rfl⟩) hsmall
+  -- exact arithmetic: every local defect vanishes
+  have hv1 : v 1 = ‖WithLp.toLp 2 b‖⁻¹ • b := by
+    by_cases hb0' : b = 0
+    · rw [hb01 hb0', hb0', smul_zero]
+    · have := hdir hb0'
+      rw [hε, mul_zero] at this
+      exact (sub_eq_zero.mp (z0 _ this)).symm
+  have hw4 : w4 = ‖WithLp.toLp 2 b‖ := by
+    rw [hε, zero_mul] at e4
+    linarith [abs_nonneg (‖WithLp.toLp 2 b‖ - w4), abs_le.mp e4]
+  have hstep : ∀ j < q, ∃ zv z' : Fin N → ℝ,
+      zv = A *ᵥ v (j + 1) - β j • v j - (v (j + 1) ⬝ᵥ (A *ᵥ v (j + 1) - β j • v j)) •
+        v (j + 1) ∧
+      ν (j + 1) = ‖WithLp.toLp 2 zv‖ ∧
+      z' = (zv - LanczosReorthRun.basisOf v (j + 1) *ᵥ
+          ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ zv)) -
+        LanczosReorthRun.basisOf v (j + 1) *ᵥ ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ
+          (zv - LanczosReorthRun.basisOf v (j + 1) *ᵥ
+            ((LanczosReorthRun.basisOf v (j + 1))ᵀ *ᵥ zv))) ∧
+      β (j + 1) = ‖WithLp.toLp 2 z'‖ ∧ v (j + 2) = ‖WithLp.toLp 2 z'‖⁻¹ • z' ∧
+      α (j + 1) = v (j + 1) ⬝ᵥ (A *ᵥ v (j + 1) - β j • v j) := by
+    intro j hj
+    obtain ⟨uv, wv, zv, z', -, hf⟩ := hpf j
+    obtain ⟨e₁, e₂, e₃, e₄, -, e₅, eG, e₆, e₇, -, hvz⟩ := hf hj
+    simp only [hε, zero_mul] at e₁ e₂ e₃ e₄ e₅ e₆ e₇
+    have hu : uv = A *ᵥ v (j + 1) := (sub_eq_zero.mp (z0 _ e₁)).symm
+    have hw : wv = uv - β j • v j := (sub_eq_zero.mp (z0 _ e₂)).symm
+    have ha : α (j + 1) = v (j + 1) ⬝ᵥ wv :=
+      (sub_eq_zero.mp (abs_nonpos_iff.mp e₃)).symm
+    have hzv : zv = wv - α (j + 1) • v (j + 1) := (sub_eq_zero.mp (z0 _ e₄)).symm
+    have hν : ν (j + 1) = ‖WithLp.toLp 2 zv‖ := sub_eq_zero.mp (abs_nonpos_iff.mp e₅)
+    have hβ : β (j + 1) = ‖WithLp.toLp 2 z'‖ := sub_eq_zero.mp (abs_nonpos_iff.mp e₆)
+    have hz' : z' = β (j + 1) • v (j + 2) := sub_eq_zero.mp (z0 _ e₇)
+    refine ⟨zv, z', by rw [hzv, ha, hw, hu], hν, eG, hβ, ?_, by rw [ha, hw, hu]⟩
+    by_cases h0 : β (j + 1) = 0
+    · rw [hvz h0, ← hβ, h0, inv_zero, zero_smul]
+    · rw [← hβ, hz', smul_smul, inv_mul_cancel₀ h0, one_smul]
+  have hst := reorth_exact_state A b v β ν hv0 hb0 hv1
+    (fun j hj => by
+      obtain ⟨zv, z', h1, h2, h3, h4, h5, -⟩ := hstep j hj
+      exact ⟨zv, z', h1, h2, h3, h4, h5⟩)
+  -- release of the matrix slot
+  have hsize₁ : out₁.store.size = 8 := by
+    simpa [Store.shape] using congrArg Array.size (shout.trans shm)
+  let out := out₁.release tag (IExp.const N * IExp.const N).eval (I.width tag)
+  have rdo : ∀ p k i, k < 7 → out.store.read p k i = out₁.store.read p k i := by
+    intro p k i hk
+    change Store.read out₁.store.pop p k i = _
+    rw [Store.read_pop_of_lt (by rw [hsize₁]; omega)]
+  refine ⟨out, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [Prog.exec_eq_exec_toStmt, lanczosReorthProg.toStmt_compiled]
+    show exec I (.seq (.alloc tag (IExp.const N * IExp.const N) _) .skip) st = _
+    rw [exec_seq_skip]
+    apply exec_alloc_of_exec_eq_some
+    rw [hsize]
+    have erom' : exec I (forRange (IExp.const N * IExp.const N) fun i =>
+        stmt (.rom tag ⟨7, .var i⟩ (.var i)) : Builder P ι ℕ ℕ Unit).run st₁ = some mid := by
+      change exec I (.seq (.loop (IExp.const N * IExp.const N)
+        (fun i => .seq (.rom tag ⟨7, .var i⟩ (.var i)) .skip)) .skip) st₁ = _
+      rw [exec_seq_skip]
+      simpa only [IExp.eval_mul, IExp.eval_const] using erom
+    change exec I (do
+      forRange (IExp.const N * IExp.const N) fun i => stmt (.rom tag ⟨7, .var i⟩ (.var i))
+      lanczosReorthLoop tag (IExp.const N) (IExp.const q) 0 1 2 3 4 5 6
+        (fun work j => gemv tag (IExp.const N) (IExp.const N) 7 0 1 (IExp.const N * j) work 0)
+        (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0) :
+          Builder P ι ℕ ℕ Unit).run st₁ = some out₁
+    rw [exec_run_bind I (b := forRange (IExp.const N * IExp.const N) fun i =>
+      stmt (.rom tag ⟨7, .var i⟩ (.var i))) (fun _ => rfl), erom', Option.bind_some]
+    exact hrun
+  · intro i c
+    rw [rdo tag 0 _ (by omega), show 0 + (i : ℕ) + N * c = i by rw [Fin.val_eq_zero c]; ring]
+    obtain ⟨w, hw, hdw⟩ := hbl i
+    rw [hw, hdw]
+  · intro i j
+    rw [rdo tag 1 _ (by omega), show 0 + (i : ℕ) + N * j = N * j + i by ring]
+    obtain ⟨w, hw, hdw⟩ := hVl j (by omega) i
+    rw [hw, hdw]
+    simp only [lanczosReorthMatrix, Matrix.of_apply, (hst j (by omega)).1]
+  · intro j c
+    rw [rdo tag 2 _ (by omega), show 0 + (j : ℕ) + q * c = j by rw [Fin.val_eq_zero c]; ring]
+    obtain ⟨w, hw, hdw⟩ := hαl j j.isLt
+    obtain ⟨-, -, -, -, -, -, -, hαj⟩ := hstep j j.isLt
+    rw [hw, hdw, hαj]
+    obtain ⟨hcur, hprev, hbeta, -, -⟩ := hst j (by omega)
+    simp only [lanczosAlpha, LanczosReorthState.toLanczosState, hcur, hprev, hbeta,
+      RCLike.re_to_real, star_trivial, RCLike.ofReal_real_eq_id, id]
+  · intro j c
+    rw [rdo tag 3 _ (by omega), show 0 + (j : ℕ) + (q + 1) * c = j by
+      rw [Fin.val_eq_zero c]; ring]
+    obtain ⟨w, hw, hdw⟩ := hβl j (by omega)
+    rw [hw, hdw]
+    exact congrArg some (hst j (by omega)).2.2.1.symm
+  · rw [rdo tag 4 _ (by omega), h4, hw4]
+  · intro i c
+    rw [rdo tag 5 _ (by omega), show 0 + (i : ℕ) + N * c = i by rw [Fin.val_eq_zero c]; ring]
+    obtain ⟨w, hw, hdw⟩ := hpl i
+    rw [hw, hdw, (hst q le_rfl).2.1]
+  · intro j c
+    rw [rdo tag 6 _ (by omega), show 0 + (j : ℕ) + q * c = j by rw [Fin.val_eq_zero c]; ring]
+    obtain ⟨w, hw, hdw⟩ := hνl j j.isLt
+    rw [hw, hdw]
+    exact congrArg some ((hst (j + 1) (by omega)).2.2.2.2 (by omega)).symm
+
+private lemma sum_map_range_eq_finsetSum (f : ℕ → ℕ) (q : ℕ) :
+    (List.map f (List.range q)).sum = ∑ x ∈ Finset.range q, f x := by
+  induction q with
+  | zero => simp
+  | succ q ih =>
+    rw [List.range_succ, List.map_append, List.sum_append, ih, Finset.sum_range_succ]
+    simp
+
+private lemma two_mul_sum_range_id_add (q : ℕ) : 2 * ∑ x ∈ Finset.range q, x + q = q * q := by
+  induction q with
+  | zero => simp
+  | succ q ih => rw [Finset.sum_range_succ]; nlinarith
+
+/-- **The static count of the stored-matrix tree** (G4): every component of the static operation
+count of `NLAlib.lanczosReorthProg.compiled` is at most `NLAlib.lanczosReorthCount`.
+Proof: as main's static count of the plain tree
+(`NLAlib/Krylov/Processes/LanczosProgramStaticCost.lean`): unfold the static cost of the compiled
+tree
+(`FStmt.staticCost`, `StaticCost.seq`, `StaticCost.branch`, `StaticCost.alloc`), evaluate the
+nested loops (the inner loop bounds $j + 1$ give $\sum_{j<q}(j+1) = q(q+1)/2$), and compare
+componentwise (`Finsupp.single_apply`, `omega`/`nlinarith` per kind). If a component of the
+drafted formula is too small, enlarge it in the design note (it is a draft) and record the change.
+M, about 80 lines. -/
+theorem lanczosReorthProg.staticCost_count_le {P ι : Type} [DecidableEq P] (tag : P)
+    (width : P → ℕ) (N q : ℕ) :
+    ((lanczosReorthProg.compiled (ι := ι) tag).staticCost (fun k => Finsupp.single k 1)
+      width N ![q]).count ≤ lanczosReorthCount tag N q := by
+  classical
+  intro k
+  change (FStmt.staticCost (fun k => Finsupp.single k 1) width
+    (lanczosReorthProg.compiled (ι := ι) tag) (Fin.cons N ![q])).count k ≤ _
+  change (StaticCost.seq _ _).count k ≤ _
+  simp only [FStmt.staticCost, StaticCost.seq, StaticCost.branch, StaticCost.alloc,
+    StaticCost.step, StaticCost.zero, StaticCost.sequence_count_apply, Instr.kind, Instr.subst,
+    IExp.evalIn, Finsupp.add_apply, Finsupp.sup_apply, List.map_const', List.sum_replicate,
+    List.length_range, Finsupp.zero_apply]
+  simp only [Nat.reduceAdd, Fin.zero_eta, Fin.isValue, Fin.cons_zero, add_zero, zero_add,
+    smul_eq_mul, Matrix.Fin.cons_vecCons, Nat.succ_eq_add_one,
+    Fin.snoc_apply_zero, Matrix.cons_val_zero, Matrix.Fin.snoc_vecCons,
+    Matrix.Fin.snoc_vecEmpty, List.map_const', List.length_range, List.sum_replicate,
+    Fin.val_eq_zero, Fin.mk_one, Fin.cons_one, Matrix.cons_val_fin_one]
+  cases k <;> simp only [lanczosReorthCount, Finsupp.add_apply, Finsupp.single_apply,
+    OpKind.bin.injEq, OpKind.un.injEq, OpKind.lit.injEq, OpKind.cmp.injEq,
+    OpKind.copy.injEq, OpKind.rom.injEq, reduceCtorEq, add_zero, zero_add, mul_zero,
+    ite_false, sum_map_range_eq_finsetSum]
+  -- the loop bodies depend on the step through the CGS2 width `j + 1`: Gauss's sum
+  case bin p b =>
+    have hS := two_mul_sum_range_id_add q
+    cases b <;> by_cases hp : tag = p <;>
+      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
+  case un p u =>
+    have hS := two_mul_sum_range_id_add q
+    cases u <;> by_cases hp : tag = p <;>
+      simp [hp, Finset.sum_add_distrib, add_mul, ← Finset.sum_mul] <;> nlinarith
+  case lit p =>
+    have hS := two_mul_sum_range_id_add q
+    by_cases hp : tag = p
+    · simp [hp, Finset.sum_add_distrib]; nlinarith
+    · simp [hp]
+  all_goals (try split_ifs) <;> norm_num <;> ring_nf <;> omega
+
+namespace LanczosReorthImplementation
+
+variable {P ι K : Type} [DecidableEq P]
+
+/-- G5 with the orthogonalization certificate needed only at the executed steps. -/
+private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → ℝ}
+    (I : Interp P ι K (OpCount P ι))
+    (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+    (hz : AddsZeroExactly dec I.sem) (st : St P K (OpCount P ι)) (N q : ℕ) (slot : ℕ)
+    (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
+    (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
+      (tag, 1), (tag, N), (tag, q), (tag, slot)])
+    (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
+    (pre : Store P K → Prop) (hpre : pre st.store)
+    (hpreFrame : ∀ s s' : Store P K, pre s → (∀ k < 8, s'.shape[k]? = s.shape[k]?) →
+      (∀ i, s'.read tag 7 i = s.read tag 7 i) → pre s')
+    (mv : ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit)
+    (hmv : ∀ t : ℕ, IsMatvecRoutine I dec tag A
+      (lanczosImplementationRoundoffBound N (u tag) * specNorm A) pre 1 8
+      (IExp.const N * IExp.var t) 0 (mv 8 (IExp.var t)))
+    (orth : ℕ → ℕ → IExp ℕ → Builder P ι ℕ ℕ Unit) {η₀ ε₁ ε₂ ε₃ : ℝ}
+    (hε : 0 ≤ ε₁ ∧ 0 ≤ ε₂ ∧ 0 ≤ ε₃)
+    (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
+      (orth 8 10 (IExp.var t)))
+    (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    {τ : ℝ} (hτ : 0 < τ) :
+    ∃ out : St P K (OpCount P ι),
+      exec I (lanczosReorthLoop tag (IExp.const N) (IExp.const q) 0 1 2 3 4 5 6 mv orth).run
+        st = some out ∧
+      out.store.shape = st.store.shape ∧
+      (b ≠ 0 → LanczosReorthOutputs out.store dec tag N q A b
+        (lanczosImplementationRoundoffBound N (u tag)) τ η₀ ε₁ ε₂ ε₃) := by
+  classical
+  have hu := hsem.nonneg (p := tag) trivial
+  have hε0 := lanczosImplementationRoundoffBound_nonneg N hu
+  obtain ⟨out, v, α, β, ν, hrun, shout, hbl, hVl, hαl, hβl, hνl, -, -, hv0, hb0, hunit1, hdir,
+      -, hpf⟩ := reorth_exec_scoped I tag hsem hz st N q slot A b hshape hb pre hpre hpreFrame
+    mv hmv orth (fun _ V w h w' => IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w')
+    (fun t ht => (horth t ht).composable)
+    (fun t ht s V w hs hV hw => by
+      obtain ⟨out, W, Hw, mid, hr, hw1, hw2, he⟩ := (horth t ht).run s V w trivial hV
+        (by simpa using hw)
+        (fun i hi => ⟨N, by simp [hs], by simpa using hi⟩)
+        (fun i hi => ⟨q + 1, by simp [hs], by simp; omega⟩)
+        (by omega) (by omega) (by omega)
+      exact ⟨out, W, Hw, mid, hr, hw1, hw2, he⟩) hsmall
+  refine ⟨out, hrun, shout, fun hbne => ?_⟩
+  choose U W Z Z' Hh hpf' using hpf
+  refine ⟨v, α, β, ν, ?_, ?_, ?_, ?_, ?_, hdir hbne, ?_⟩
+  · intro i j
+    rw [show 0 + (i : ℕ) + N * j = i by rw [Fin.val_eq_zero j]; ring]
+    exact hbl i
+  · intro i j
+    rw [show 0 + (i : ℕ) + N * j = N * j + i by ring]
+    exact hVl j (by omega) i
+  · intro j c
+    rw [show 0 + (j : ℕ) + q * c = j by rw [Fin.val_eq_zero c]; ring]
+    exact hαl j j.isLt
+  · intro j c
+    rw [show 0 + (j : ℕ) + (q + 1) * c = j by rw [Fin.val_eq_zero c]; ring]
+    exact hβl j (by omega)
+  · intro j c
+    rw [show 0 + (j : ℕ) + q * c = j by rw [Fin.val_eq_zero c]; ring]
+    exact hνl j j.isLt
+  · intro m hm0 hmq hadm
+    have nsr : ∀ x y : Fin N → ℝ, ‖WithLp.toLp 2 (x - y)‖ = ‖WithLp.toLp 2 (y - x)‖ :=
+      fun x y => by rw [WithLp.toLp_sub, WithLp.toLp_sub, norm_sub_rev]
+    refine ⟨{
+      H := A
+      v := v
+      u := fun n => U (n - 1)
+      w := fun n => W (n - 1)
+      z := fun n => Z (n - 1)
+      z' := fun n => Z' (n - 1)
+      α := α
+      β := β
+      ν := ν
+      h := fun n => Hh (n - 1)
+      eu := fun n => U (n - 1) - A *ᵥ v n
+      ew := fun n => W (n - 1) - (U (n - 1) - β (n - 1) • v (n - 1))
+      ez := fun n => Z (n - 1) - (W (n - 1) - α n • v n)
+      eα := fun n => α n - v n ⬝ᵥ W (n - 1)
+      δ := fun n => β n • v (n + 1) - Z' (n - 1)
+      ε := lanczosImplementationRoundoffBound N (u tag)
+      τ := τ
+      η₀ := η₀
+      ε₁ := ε₁
+      ε₂ := ε₂
+      ε₃ := ε₃
+      transpose_H := hA
+      ε_nonneg := hε0
+      ε_le := hsmall
+      ε₁_nonneg := hε.1
+      ε₂_nonneg := hε.2.1
+      ε₃_nonneg := hε.2.2
+      k_pos := hm0
+      v_zero := hv0
+      β_zero := hb0
+      u_eq := fun j _ => by
+        show U j = A *ᵥ v (j + 1) + (U j - A *ᵥ v (j + 1))
+        abel
+      norm_eu_le := fun j hj => by
+        show ‖WithLp.toLp 2 (U j - A *ᵥ v (j + 1))‖ ≤ _
+        rw [nsr]
+        exact (hpf' j (by omega)).1
+      w_eq := fun j _ => by
+        show W j = U j - β j • v j + (W j - (U j - β j • v j))
+        abel
+      norm_ew_le := fun j hj => by
+        show ‖WithLp.toLp 2 (W j - (U j - β j • v j))‖ ≤ _
+        rw [nsr]
+        exact (hpf' j (by omega)).2.1
+      α_eq := fun j _ => by
+        show α (j + 1) = v (j + 1) ⬝ᵥ W j + (α (j + 1) - v (j + 1) ⬝ᵥ W j)
+        ring
+      abs_eα_le := fun j hj => by
+        show |α (j + 1) - v (j + 1) ⬝ᵥ W j| ≤ _
+        rw [abs_sub_comm]
+        exact (hpf' j (by omega)).2.2.1
+      z_eq := fun j _ => by
+        show Z j = W j - α (j + 1) • v (j + 1) + (Z j - (W j - α (j + 1) • v (j + 1)))
+        abel
+      norm_ez_le := fun j hj => by
+        show ‖WithLp.toLp 2 (Z j - (W j - α (j + 1) • v (j + 1)))‖ ≤ _
+        rw [nsr]
+        exact (hpf' j (by omega)).2.2.2.1
+      abs_ν_sub_le := fun j hj => (hpf' j (by omega)).2.2.2.2.2.1
+      orth_eq := fun j hj => (hpf' j (by omega)).2.2.2.2.2.2.1
+      abs_β_sub_le := fun j hj => (hpf' j (by omega)).2.2.2.2.2.2.2.1
+      smul_v_eq := fun j _ => by
+        show β (j + 1) • v (j + 2) = Z' j + (β (j + 1) • v (j + 1 + 1) - Z' j)
+        abel
+      norm_δ_le := fun j hj => by
+        show ‖WithLp.toLp 2 (β (j + 1) • v (j + 2) - Z' j)‖ ≤ _
+        rw [nsr]
+        exact (hpf' j (by omega)).2.2.2.2.2.2.2.2.1
+      abs_norm_v_sq_sub_one_le := fun j hj1 hj2 => by
+        rcases Nat.lt_or_ge j 2 with hj | hj
+        · obtain rfl : j = 1 := by omega
+          exact hunit1 hbne
+        · obtain ⟨i, rfl⟩ : ∃ i, j = i + 2 := ⟨j - 2, by omega⟩
+          have hi : i < m := by omega
+          have hf := hpf' i (by omega)
+          refine hf.2.2.2.2.2.2.2.2.2.1 (ne_of_gt ?_)
+          exact lt_of_le_of_lt (mul_nonneg hτ.le hf.2.2.2.2.1) (hadm i hi)
+      admissible := hadm
+      τ_pos := hτ }, rfl, fun _ _ _ => rfl, fun _ _ => ⟨rfl, rfl, rfl⟩, rfl, rfl, rfl, rfl, rfl,
+      rfl⟩
 
 /-- **Rounded run of the generic loop** (G5): for any product routine family certified by
 `NLAlib.Computation.IsMatvecRoutine` (coefficient $\varepsilon\|\mathbf{A}\|_2$,
