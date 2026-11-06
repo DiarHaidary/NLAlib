@@ -169,5 +169,12 @@ theorem exists_exec_withCharge_eq_some :
   | .named _ _ body, _, _, h, c₀ => by
     rw [exec_named] at h ⊢
     exact exists_exec_withCharge_eq_some body h c₀
+  | .kcall o p dims ins outs, a, _, h, c₀ => by
+    rw [exec] at h ⊢
+    obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact ⟨c₀ + ch (.kcall p o (dims.map IExp.eval)), by
+      change (I.kcallStore o p _ _ _ a.store).map _ = _
+      rw [hs]
+      rfl⟩
 
 end NLAlib.Computation
