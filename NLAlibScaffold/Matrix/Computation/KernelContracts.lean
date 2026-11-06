@@ -51,7 +51,81 @@ $mlw$ is of this form (`finProdFinEquiv.symm`). M, about 40 lines. -/
 theorem EntryLayout.holds_iff_readBlock_eq_some (L : EntryLayout K E) {l m : ℕ} (s : Store P K)
     (p : P) (b off : ℕ) (Y : Matrix (Fin l) (Fin m) E) :
     L.Holds s p b off Y ↔ s.readBlock p b off (m * l * L.width) = some (L.toArray Y) := by
-  sorry
+  have hlt : ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      L.width * (i + l * j) + t < m * l * L.width := by
+    intro i j t
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    nlinarith [Nat.mul_le_mul_left L.width hi, t.isLt]
+  have hget : ∀ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      (L.toArray Y)[L.width * (i + l * j) + t]? = some (L.put (Y i j) t) := by
+    intro i j t
+    have hi : i + l * j + 1 ≤ m * l := by nlinarith [i.isLt, j.isLt]
+    have hl := hlt i j t
+    have e1 : (finProdFinEquiv.symm ⟨L.width * (i + l * j) + t, hl⟩ : Fin (m * l) × Fin L.width)
+        = (⟨i + l * j, by omega⟩, t) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+      ring
+    have e2 : (finProdFinEquiv.symm (⟨i + l * j, by omega⟩ : Fin (m * l))
+        : Fin m × Fin l) = (j, i) := by
+      rw [Equiv.symm_apply_eq]
+      apply Fin.ext
+      simp [finProdFinEquiv]
+    simp only [EntryLayout.toArray, Array.getElem?_ofFn, hl, dif_pos, e1, e2]
+  have hdec : ∀ k (hk : k < m * l * L.width), ∃ (i : Fin l) (j : Fin m) (t : Fin L.width),
+      k = L.width * (i + l * j) + t := by
+    intro k hk
+    have hw : 0 < L.width := by
+      rcases Nat.eq_zero_or_pos L.width with h0 | h0
+      · simp [h0] at hk
+      · exact h0
+    have hl : 0 < l := by
+      rcases Nat.eq_zero_or_pos l with h0 | h0
+      · simp [h0] at hk
+      · exact h0
+    refine ⟨⟨k / L.width % l, Nat.mod_lt _ hl⟩, ⟨k / L.width / l, ?_⟩,
+      ⟨k % L.width, Nat.mod_lt _ hw⟩, ?_⟩
+    · apply Nat.div_lt_of_lt_mul
+      apply Nat.div_lt_of_lt_mul
+      linarith [hk, show L.width * (l * m) = m * l * L.width by ring]
+    · change k = L.width * (k / L.width % l + l * (k / L.width / l)) + k % L.width
+      rw [Nat.mod_add_div]
+      exact (Nat.div_add_mod k L.width).symm
+  unfold EntryLayout.Holds
+  constructor
+  · intro h
+    by_cases hz : m * l * L.width = 0
+    · have hY : L.toArray Y = #[] :=
+        Array.eq_empty_of_size_eq_zero (by rw [EntryLayout.size_toArray, hz])
+      rw [hY, hz]
+      simp [Store.readBlock]
+    · have hl : 0 < l := by
+        rcases Nat.eq_zero_or_pos l with h0 | h0
+        · simp [h0] at hz
+        · exact h0
+      have hm : 0 < m := by
+        rcases Nat.eq_zero_or_pos m with h0 | h0
+        · simp [h0] at hz
+        · exact h0
+      have hw : 0 < L.width := by
+        rcases Nat.eq_zero_or_pos L.width with h0 | h0
+        · simp [h0] at hz
+        · exact h0
+      have hr : ∀ k, k < m * l * L.width → s.read p b (off + k)
+          = some (((L.toArray Y)[k]?).getD (L.put (Y ⟨0, hl⟩ ⟨0, hm⟩) ⟨0, hw⟩)) := by
+        intro k hk
+        obtain ⟨i, j, t, rfl⟩ := hdec k hk
+        rw [h i j t, hget i j t]
+        rfl
+      rw [Store.readBlock_eq_some_map_range _ hr]
+      congr 1
+      apply Array.ext
+      · simp [EntryLayout.size_toArray]
+      · intro k h1 h2
+        simp [Array.getElem?_eq_getElem h2]
+  · intro h i j t
+    rw [Store.read_of_readBlock_eq_some_of_lt h (hlt i j t), hget i j t]
 
 /-- **The interleaved layout holds a complex matrix** in buffer `b` from offset `off` exactly
 when the real part of entry $(i, j)$ reads at word $2(i + lj)$ and the imaginary part at the
