@@ -96,7 +96,35 @@ $g(x) = x(3 - x^2)/2$ has the sign of $x$), `cfc_congr`. M, about 12 lines. -/
 theorem _root_.Matrix.IsHermitian.cfc_sign_cfc_newtonSchulz {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (h : ∀ x ∈ spectrum ℝ A, 0 < |x| ∧ |x| < √3) :
     cfc Real.sign (cfc newtonSchulz A) = cfc Real.sign A := by
-  sorry
+  have hsq : ∀ x ∈ spectrum ℝ A, x ^ 2 < 3 := fun x hx => by
+    have h1 := (h x hx).2
+    have h2 := Real.sq_sqrt (show (0 : ℝ) ≤ 3 by norm_num)
+    have h3 : |x| ^ 2 < 3 := by nlinarith [abs_nonneg x, Real.sqrt_nonneg 3]
+    rwa [sq_abs] at h3
+  have hfac : ∀ x : ℝ, newtonSchulz x = x * ((3 - x ^ 2) / 2) := fun x => by
+    unfold newtonSchulz; ring
+  have hcont : ∀ y : ℝ, y ≠ 0 → ContinuousAt Real.sign y := fun y hy => by
+    rcases hy.lt_or_gt with hneg | hpos
+    · exact (continuousAt_const : ContinuousAt (fun _ : ℝ => (-1 : ℝ)) y).congr
+        (Filter.eventually_of_mem (Iio_mem_nhds hneg) fun z hz => (Real.sign_of_neg hz).symm)
+    · exact (continuousAt_const : ContinuousAt (fun _ : ℝ => (1 : ℝ)) y).congr
+        (Filter.eventually_of_mem (Ioi_mem_nhds hpos) fun z hz => (Real.sign_of_pos hz).symm)
+  calc cfc Real.sign (cfc newtonSchulz A) = cfc (Real.sign ∘ newtonSchulz) A := by
+        refine (cfc_comp' Real.sign newtonSchulz A ?_ ?_).symm
+        · rintro _ ⟨x, hx, rfl⟩
+          have hne : newtonSchulz x ≠ 0 := by
+            rw [hfac]
+            exact mul_ne_zero (abs_pos.mp (h x hx).1)
+              (by have := hsq x hx; exact (by linarith : (0 : ℝ) < (3 - x ^ 2) / 2).ne')
+          exact (hcont _ hne).continuousWithinAt
+        · exact (Continuous.continuousOn (by unfold newtonSchulz; fun_prop))
+    _ = cfc Real.sign A := cfc_congr fun x hx => by
+        have hx0 : x ≠ 0 := abs_pos.mp (h x hx).1
+        have hq : 0 < (3 - x ^ 2) / 2 := by linarith [hsq x hx]
+        simp only [Function.comp_apply, hfac]
+        rcases hx0.lt_or_gt with hneg | hpos
+        · rw [Real.sign_of_neg hneg, Real.sign_of_neg (mul_neg_of_neg_of_pos hneg hq)]
+        · rw [Real.sign_of_pos hpos, Real.sign_of_pos (mul_pos hpos hq)]
 
 /-- A Hermitian matrix with nearly unimodular eigenvalues is near its sign: if
 $\lvert 1 - \lambda^2 \rvert \le \delta$ for every eigenvalue $\lambda$, then
