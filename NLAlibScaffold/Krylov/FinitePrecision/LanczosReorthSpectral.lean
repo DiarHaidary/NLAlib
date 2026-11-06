@@ -456,6 +456,51 @@ theorem exists_backward_kaniel_paige_saad (hη : L.η₀ ≤ 1 / 100)
     have h := hM.eigenvalue_sub_eigenvalue_conjTranspose_mul_mul_le hac hc hs hb hQ hK
     rwa [← hM.lanczosTridiagonal_eq, hT] at h
 
+/-- Powers of degree below $2m$ pass to the compression onto an orthonormal basis of
+$\mathcal K_m(\mathbf{A}, \mathbf{b})$, for symmetric $\mathbf{A}$. -/
+private theorem dotProduct_pow_mulVec_eq_compression {m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+    (hA : Aᵀ = A) {b : Fin n → ℝ} {Q : Matrix (Fin n) (Fin m) ℝ} (hQ : HasOrthonormalCols Q)
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b m) {j : ℕ} (hj : j < 2 * m) :
+    b ⬝ᵥ (A ^ j *ᵥ b) = (Qᵀ *ᵥ b) ⬝ᵥ ((Qᵀ * A * Q) ^ j *ᵥ (Qᵀ *ᵥ b)) := by
+  have hQQ : Qᵀ * Q = 1 := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial]; exact hQ
+  have hproj : ∀ i < m, Q *ᵥ (Qᵀ *ᵥ (A ^ i *ᵥ b)) = A ^ i *ᵥ b := fun i hi => by
+    obtain ⟨y, hy⟩ := LinearMap.mem_range.mp (hK ▸ pow_mulVec_mem_krylovSpace A b hi)
+    rw [Matrix.mulVecLin_apply] at hy
+    rw [← hy, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, Matrix.mul_assoc, hQQ, Matrix.mul_one]
+  have hpow : ∀ i ≤ m, Qᵀ *ᵥ (A ^ i *ᵥ b) = (Qᵀ * A * Q) ^ i *ᵥ (Qᵀ *ᵥ b) := by
+    intro i hi
+    induction i with
+    | zero => simp
+    | succ i ih =>
+      rw [pow_succ', ← Matrix.mulVec_mulVec, ← hproj i (by omega), ih (by omega), pow_succ',
+        ← Matrix.mulVec_mulVec (Qᵀ *ᵥ b)]
+      simp only [Matrix.mulVec_mulVec, Matrix.mul_assoc]
+  have hdot : ∀ {l : ℕ} (M : Matrix (Fin l) (Fin l) ℝ), Mᵀ = M → ∀ a c (x : Fin l → ℝ),
+      x ⬝ᵥ (M ^ (a + c) *ᵥ x) = (M ^ a *ᵥ x) ⬝ᵥ (M ^ c *ᵥ x) := fun M hM a c x => by
+    rw [pow_add, ← Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose,
+      Matrix.transpose_pow, hM]
+  have hC : (Qᵀ * A * Q)ᵀ = Qᵀ * A * Q := by
+    simp only [Matrix.transpose_mul, hA, Matrix.transpose_transpose, Matrix.mul_assoc]
+  obtain ⟨a, c, rfl, ha, hc⟩ : ∃ a c, j = a + c ∧ a < m ∧ c ≤ m :=
+    ⟨j - min j m, min j m, by omega, by omega, by omega⟩
+  rw [hdot A hA, hdot _ hC, ← hproj a ha, dotProduct_comm, Matrix.dotProduct_mulVec,
+    ← Matrix.mulVec_transpose, dotProduct_comm, hpow a ha.le, hpow c hc]
+
+/-- Polynomials of degree below $2m$ pass to the compression onto an orthonormal basis of
+$\mathcal K_m(\mathbf{A}, \mathbf{b})$, for symmetric $\mathbf{A}$. -/
+private theorem dotProduct_aeval_mulVec_eq_compression {m : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+    (hA : Aᵀ = A) {b : Fin n → ℝ} {Q : Matrix (Fin n) (Fin m) ℝ} (hQ : HasOrthonormalCols Q)
+    (hK : LinearMap.range Q.mulVecLin = krylovSpace A b m) {p : Polynomial ℝ}
+    (hp : p.natDegree < 2 * m) :
+    b ⬝ᵥ (Polynomial.aeval A p *ᵥ b) =
+      (Qᵀ *ᵥ b) ⬝ᵥ (Polynomial.aeval (Qᵀ * A * Q) p *ᵥ (Qᵀ *ᵥ b)) := by
+  rw [Polynomial.aeval_eq_sum_range, Polynomial.aeval_eq_sum_range, Matrix.sum_mulVec,
+    Matrix.sum_mulVec, dotProduct_sum, dotProduct_sum]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [Matrix.smul_mulVec, Matrix.smul_mulVec, dotProduct_smul, dotProduct_smul,
+    dotProduct_pow_mulVec_eq_compression hA hQ hK (by have := Finset.mem_range.mp hi; omega)]
+
 /-- **Gauss quadrature on the backward model** (F6, S4d): with $\mathbf{H}'$ from
 `NLAlib.LanczosReorthRun.exists_pure_backward`, $\|\mathbf{b}\|^2\,[p(\mathbf{T}_k)]_{00} =
 \mathbf{b}^{\mathsf{T}}p(\mathbf{H}')\mathbf{b}$ for every polynomial of degree at most $2k - 1$:
@@ -488,7 +533,41 @@ theorem exists_pure_backward_gauss (hη : L.η₀ ≤ 1 / 100)
         ‖WithLp.toLp 2 b‖ ^ 2 *
             (Polynomial.aeval L.toLanczosData.tridiagonal p) ⟨0, L.k_pos⟩ ⟨0, L.k_pos⟩ =
           b ⬝ᵥ (Polynomial.aeval H' p *ᵥ b) := by
-  sorry
+  obtain ⟨H', hH't, hbd, hT⟩ := L.exists_pure_backward hη hsmall hrec hτ hb hδ
+  refine ⟨H', hH't, hbd, fun p hp => ?_⟩
+  have hA : H'.IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial, hH't]
+  obtain ⟨q, hq⟩ : ∃ q, k = q + 1 := ⟨k - 1, (Nat.succ_pred_eq_of_pos L.k_pos).symm⟩
+  subst hq
+  -- the grade is at least `k`: `b ≠ 0`, and `β_j > 0` is an entry of the tridiagonal
+  have hgr : q + 1 ≤ krylovGrade H' b := by
+    rcases q with _ | q
+    · by_contra h
+      have h0 := krylovGrade_le_iff.mp (by omega : krylovGrade H' b ≤ 0)
+      rw [krylovSpace_zero, pow_zero, Matrix.one_mulVec, Submodule.mem_bot] at h0
+      exact hb h0
+    · have hβ : (lanczosState H' b (q + 1)).beta = L.β (q + 1) := by
+        have h := congrFun (congrFun hT ⟨q + 1, by omega⟩) ⟨q, by omega⟩
+        simpa [lanczosTridiagonal, LanczosData.tridiagonal, toLanczosData] using h
+      have hν : 0 ≤ L.ν (q + 1) := by
+        have h2 := L.abs_ν_sub_le q (by omega)
+        nlinarith [abs_le.mp h2, L.ε_le, norm_nonneg (WithLp.toLp 2 (L.z (q + 1)))]
+      have hpos : 0 < L.β (q + 1) := by
+        nlinarith [L.admissible q (by omega), mul_nonneg L.τ_pos.le hν]
+      by_contra h
+      exact hpos.ne' (hβ ▸ (hA.lanczosState_beta_eq_zero_iff b q).mpr (by omega))
+  set Q := arnoldiMatrix H' b (q + 1)
+  have hTQ : L.toLanczosData.tridiagonal = Qᵀ * H' * Q := by
+    rw [← hT, hA.lanczosTridiagonal_eq, Matrix.conjTranspose_eq_transpose_of_trivial]
+  have hQb : Qᵀ *ᵥ b = ‖WithLp.toLp 2 b‖ • Pi.single 0 1 := by
+    rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
+    simpa using conjTranspose_arnoldiMatrix_mulVec_self H' b q
+  -- both sides are quadratic forms of the compression `T = Qᵀ H' Q`
+  rw [dotProduct_aeval_mulVec_eq_compression hH't (hasOrthonormalCols_arnoldiMatrix_iff.mpr hgr)
+    (range_arnoldiMatrix _ _ _) (by omega), ← hTQ, hQb]
+  simp only [Matrix.mulVec_smul, dotProduct_smul, smul_dotProduct, Matrix.mulVec_single_one,
+    single_one_dotProduct, Matrix.col_apply, smul_eq_mul, Fin.zero_eta]
+  ring
 
 /-- **Transfer to $\mathbf{b}^{\mathsf{T}}f(\mathbf{H})\mathbf{b}$** (F7, S4d): with $\mathbf{H}'$
 as
