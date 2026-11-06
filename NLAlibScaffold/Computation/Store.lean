@@ -80,6 +80,31 @@ theorem Store.read_of_writeBlocks_eq_some {p : P} {s s' : Store P K} {bs : List 
     (hpw : bs.Pairwise fun x y => blockDisjoint x y = true) (k : ℕ) (x : ℕ × ℕ × ℕ)
     (y : Array K) (hx : bs[k]? = some x) (hy : ys[k]? = some y) :
     y.size = x.2.2 ∧ ∀ j < x.2.2, s'.read p x.1 (x.2.1 + j) = y[j]? := by
-  sorry
+  induction bs generalizing s ys k with
+  | nil => simp at hx
+  | cons b bs ih =>
+    cases ys with
+    | nil => simp [Store.writeBlocks] at h
+    | cons y0 ys =>
+      rw [Store.writeBlocks] at h
+      split_ifs at h with hsz
+      obtain ⟨s1, h1, h2⟩ := Option.bind_eq_some_iff.mp h
+      cases k with
+      | zero =>
+        simp only [List.getElem?_cons_zero, Option.some.injEq] at hx hy
+        rw [← hx, ← hy]
+        refine ⟨hsz, fun j hj => ?_⟩
+        have hjb : j < b.2.2 := by omega
+        have hjy : j < y0.size := by omega
+        have hdisj : ∀ x' ∈ bs, b.1 ≠ x'.1 ∨ b.2.1 + j < x'.2.1 ∨ x'.2.1 + x'.2.2 ≤ b.2.1 + j := by
+          intro x' hx'
+          have hd := (List.pairwise_cons.mp hpw).1 x' hx'
+          simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hd
+          omega
+        rw [Store.read_of_writeBlocks_eq_some_of_forall h2 hdisj,
+          Store.read_of_writeBlock_eq_some_of_lt h1 hjy]
+      | succ k =>
+        simp only [List.getElem?_cons_succ] at hx hy
+        exact ih h2 (List.pairwise_cons.mp hpw).2 k hx hy
 
 end NLAlib.Computation
