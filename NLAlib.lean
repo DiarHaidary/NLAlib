@@ -173,7 +173,9 @@ public import NLAlib.Krylov.FinitePrecision.DilationEstimates
 public import NLAlib.Krylov.FinitePrecision.LanczosData
 public import NLAlib.Krylov.FinitePrecision.LanczosDefects
 public import NLAlib.Krylov.FinitePrecision.LanczosFunctions
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthBackward
 public import NLAlib.Krylov.FinitePrecision.LanczosReorthRun
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthSpectral
 public import NLAlib.Krylov.FinitePrecision.LanczosRun
 public import NLAlib.Krylov.FinitePrecision.LocalErrors
 public import NLAlib.Krylov.FinitePrecision.Normalized
@@ -272,6 +274,7 @@ public import NLAlib.Krylov.Processes.LanczosProgramStaticCost
 public import NLAlib.Krylov.Processes.LanczosProgramStep
 public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
+public import NLAlib.Krylov.Processes.LanczosReorthProgram
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRounding
 public import NLAlib.Krylov.Processes.LanczosReorthProgramTree
 public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
@@ -439,6 +442,7 @@ public import NLAlib.Matrix.Perturbation.Relative
 public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Perturbation.SimpleEigenvalue
 public import NLAlib.Matrix.Perturbation.Sylvester
+public import NLAlib.Matrix.Perturbation.SymmetricBackward
 public import NLAlib.Matrix.Perturbation.TruncationWindow
 public import NLAlib.Matrix.Perturbation.TruncationWindowFrobenius
 public import NLAlib.Matrix.Perturbation.TruncationWindowNuclear

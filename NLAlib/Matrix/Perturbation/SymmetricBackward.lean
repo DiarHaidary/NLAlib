@@ -11,18 +11,18 @@ public import NLAlib.Matrix.Spectral.Weyl
 public import NLAlib.Matrix.Perturbation.Residual
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Matrix.Functions.HermitianCalculus
-public import NLAlibScaffold.Matrix.Perturbation.OrthErr
+public import NLAlib.Matrix.Perturbation.OrthErr
 
 /-!
-# Symmetric backward perturbations from orthonormal bases (scaffold)
+# Symmetric backward perturbations from orthonormal bases
 
-Statements for the backward model of Lanczos with full reorthogonalization (stage
-LANCZOS-REORTH, design note `docs/design/Krylov-LanczosReorth.md` §3.3, ids E1, E2, E5, F2a), all
-in the Matrix layer: the symmetric completion of a residual against an orthonormal basis
+The matrix facts behind the backward model of Lanczos with full reorthogonalization: the
+symmetric completion of a residual against an orthonormal basis
 [KahanParlettJiang1982], main's polar factor (`NLAlib/Matrix/Factorizations/Polar.lean`) of a
 nearly orthonormal basis, an orthogonal map
 sending one unit vector to another and close to the identity (two reflectors), and the count of
-orthonormal approximate eigenvectors with small residuals.
+orthonormal approximate eigenvectors with small residuals. Design:
+`docs/design/Krylov-LanczosReorth.md` §3.3.
 
 ## Main results
 
@@ -51,26 +51,13 @@ private lemma frobNorm_add_sq_of_trace_transpose_mul_eq_zero {n k : ℕ}
     RCLike.re_to_real]
   ring
 
-/-- **The symmetric completion of a residual** (E1): for $\mathbf{U}$ with orthonormal columns
+/-- **The symmetric completion of a residual**: for $\mathbf{U}$ with orthonormal columns
 and $\mathbf{R}$ with $\mathbf{U}^{\mathsf{T}}\mathbf{R}$ symmetric, the symmetric
 $\mathbf{E} = -\mathbf{R}\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}^{\mathsf{T}} +
 \mathbf{U}(\mathbf{U}^{\mathsf{T}}\mathbf{R})\mathbf{U}^{\mathsf{T}}$ satisfies
 $\mathbf{E}\mathbf{U} = -\mathbf{R}$, $\|\mathbf{E}\|_{\mathsf F} \le
 \sqrt2\,\|\mathbf{R}\|_{\mathsf F}$
-and $\|\mathbf{E}\|_2 \le 2\|\mathbf{R}\|_2$. [KahanParlettJiang1982] (locator to verify).
-Proof: take that $\mathbf{E}$; symmetry from $(\mathbf{U}^{\mathsf{T}}\mathbf{R})^{\mathsf{T}} =
-\mathbf{U}^{\mathsf{T}}\mathbf{R}$ (`Matrix.transpose_mul`, `Matrix.transpose_add`), and
-$\mathbf{E}\mathbf{U} = -\mathbf{R}$ from $\mathbf{U}^{\mathsf{T}}\mathbf{U} = \mathbf{I}$
-(`Matrix.mul_assoc`, `HasOrthonormalCols` unfolds to it over ℝ). For the norms write
-$\mathbf{R} = \mathbf{U}\mathbf{S} + \mathbf{R}_\perp$, $\mathbf{R}_\perp = (\mathbf{I} -
-\mathbf{U}\mathbf{U}^{\mathsf{T}})\mathbf{R}$, so $\mathbf{E} =
--\mathbf{U}\mathbf{S}\mathbf{U}^{\mathsf{T}}
-- \mathbf{R}_\perp\mathbf{U}^{\mathsf{T}} - \mathbf{U}\mathbf{R}_\perp^{\mathsf{T}}$, three mutually
-Frobenius-orthogonal terms: $\|\mathbf{E}\|_{\mathsf F}^2 = \|\mathbf{S}\|_{\mathsf F}^2 +
-2\|\mathbf{R}_\perp\|_{\mathsf F}^2 \le 2\|\mathbf{R}\|_{\mathsf F}^2$; spectral: $\|\mathbf{E}\|_2
-\le
-\|\mathbf{U}\mathbf{S}\mathbf{U}^{\mathsf{T}} + \mathbf{R}_\perp\mathbf{U}^{\mathsf{T}}\|_2 +
-\|\mathbf{U}\mathbf{R}_\perp^{\mathsf{T}}\|_2 \le 2\|\mathbf{R}\|_2$. S, about 60 lines. -/
+and $\|\mathbf{E}\|_2 \le 2\|\mathbf{R}\|_2$. [KahanParlettJiang1982] (locator to verify). -/
 theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
     {U : Matrix (Fin n) (Fin k) ℝ} (hU : HasOrthonormalCols U) {R : Matrix (Fin n) (Fin k) ℝ}
     (hR : (Uᵀ * R)ᵀ = Uᵀ * R) :
@@ -136,44 +123,25 @@ theorem exists_transpose_eq_mul_eq_neg_of_hasOrthonormalCols {n k : ℕ}
       exact mul_le_of_le_one_right (specNorm_nonneg R) hQn
     linarith [specNorm_add_le (R * Uᵀ) (U * Rᵀ * (1 - U * Uᵀ))]
 
-/-- **The polar factor of a nearly orthonormal basis is orthonormal** (E2): if
+/-- **The polar factor of a nearly orthonormal basis is orthonormal**: if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
 `NLAlib.polarFactor` $\mathbf{V}$ (main's
 $\mathbf{V}((\mathbf{V}^{\mathsf{H}}\mathbf{V})^{1/2})^{+}$, which for full column rank is
 $\mathbf{V}(\mathbf{V}^{\mathsf{T}}\mathbf{V})^{-1/2}$) has orthonormal columns. [Higham2008,
-Theorem 8.1].
-Proof: `NLAlib.hasOrthonormalCols_polarFactor_iff` reduces it to injectivity of
-$\mathbf{x} \mapsto \mathbf{V}\mathbf{x}$, which is
-`NLAlib.injective_mulVec_of_specNorm_gram_sub_one_lt_one` ($\mathbf{V}^{\mathsf{H}} =
-\mathbf{V}^{\mathsf{T}}$ over ℝ, `Matrix.conjTranspose_eq_transpose_of_trivial`). S, about 8 lines.
--/
+Theorem 8.1]. -/
 theorem hasOrthonormalCols_polarFactor {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) : HasOrthonormalCols (polarFactor V) := by
   rw [hasOrthonormalCols_polarFactor_iff]
   exact injective_mulVec_of_specNorm_gram_sub_one_lt_one (lt_of_le_of_lt hV hη)
 
-/-- **The polar factor is close to a nearly orthonormal basis** (E2): if
+/-- **The polar factor is close to a nearly orthonormal basis**: if
 $\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_2 \le \eta < 1$ then
 $$\|\operatorname{polar}(\mathbf{V}) - \mathbf{V}\|_{\mathsf F} \le
 \frac{\|\mathbf{V}^{\mathsf{T}}\mathbf{V} - \mathbf{I}\|_{\mathsf F}}{2\sqrt{1 - \eta}}.$$
 [Higham2008, Theorem 8.4] for the nearest-orthonormal property; the bound itself has no printed
 source here. (The constant is the Lipschitz constant of $\sqrt{\cdot}$ on $[1-\eta, 1+\eta]$; the
 sharper $1/(1 + \sqrt{1-\eta})$ of the design note needs the eigenvalue sum directly and is not
-needed downstream.)
-Proof: with $\mathbf{U} = $ `NLAlib.polarFactor` $\mathbf{V}$ and $\mathbf{G} =
-\mathbf{V}^{\mathsf{T}}\mathbf{V}$, $\mathbf{V} = \mathbf{U}\mathbf{G}^{1/2}$
-(`NLAlib.polarFactor_mul_sqrt`, with `CFC.sqrt` $\mathbf{G}$ = `cfc Real.sqrt` $\mathbf{G}$), so
-$\mathbf{U} - \mathbf{V} =
-\mathbf{U}(\mathbf{I} - \mathbf{G}^{1/2})$ and $\|\mathbf{U} - \mathbf{V}\|_{\mathsf F} =
-\|\mathbf{I} - \mathbf{G}^{1/2}\|_{\mathsf F}$ (`NLAlib.hasOrthonormalCols_polarFactor`,
-`HasOrthonormalCols.frobNorm_mul_left`). Write $\mathbf{I} = $ `cfc Real.sqrt 1`
-(`cfc_algebraMap` with `map_one`) and apply
-`Matrix.IsHermitian.frobNorm_cfc_sub_cfc_le_of_lipschitzOnWith` to $\mathbf{G}$ and $\mathbf{I}$
-with $s = [1-\eta, 1+\eta]$: both spectra lie in $s$
-(`Matrix.IsHermitian.spectrum_eq_image_eigenvalue`, Weyl `Matrix.IsHermitian.abs_eigenvalue_sub_le`
-against $\mathbf{I}$), and $\sqrt{\cdot}$ is Lipschitz on $s$ with constant
-$1/(2\sqrt{1-\eta})$ since $|\sqrt x - \sqrt y| = |x - y|/(\sqrt x + \sqrt y)$
-(`Real.sq_sqrt`, `Real.sqrt_le_sqrt`, `LipschitzOnWith.of_dist_le_mul`). S, about 50 lines. -/
+needed downstream.) -/
 theorem frobNorm_polarFactor_sub_le {n m : ℕ} {V : Matrix (Fin n) (Fin m) ℝ} {η : ℝ}
     (hV : specNorm (Vᵀ * V - 1) ≤ η) (hη : η < 1) :
     frobNorm (polarFactor V - V) ≤ frobNorm (Vᵀ * V - 1) / (2 * Real.sqrt (1 - η)) := by
@@ -261,36 +229,12 @@ private theorem norm_householder_sub_householder_add_mulVec_sq {n : ℕ} {x y : 
   field_simp
   ring
 
-/-- **A rotation taking one unit vector to another** (E5): for unit $\mathbf{x}$, $\mathbf{y}$ the
+/-- **A rotation taking one unit vector to another**: for unit $\mathbf{x}$, $\mathbf{y}$ the
 orthogonal $\mathbf{Z} = \mathbf{H}_{\mathbf{x}+\mathbf{y}}\mathbf{H}_{\mathbf{x}}$ (two
 reflectors, `NLAlib.householder`; the identity on $\{\mathbf{x}, \mathbf{y}\}^\perp$) satisfies
 $\mathbf{Z}\mathbf{x} = \mathbf{y}$, $\|\mathbf{Z} - \mathbf{I}\|_2 \le \|\mathbf{x} -
 \mathbf{y}\|$ and $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} \le \sqrt2\|\mathbf{x} - \mathbf{y}\|$
-(a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). No printed source.
-Proof: $\mathbf{H}_{\mathbf{x}}\mathbf{x} = -\mathbf{x}$ (`NLAlib.householder_mulVec_self`, unit
-norm) and $\mathbf{H}_{\mathbf{x}+\mathbf{y}}(-\mathbf{x}) = \mathbf{y}$
-(`NLAlib.householder_mulVec`: $(\mathbf{x}+\mathbf{y})^{\mathsf{T}}\mathbf{x} = 1 +
-\mathbf{x}^{\mathsf{T}}\mathbf{y}$, $\|\mathbf{x}+\mathbf{y}\|^2 = 2(1 + \mathbf{x}^{\mathsf{T}}
-\mathbf{y})$; the case $\mathbf{y} = -\mathbf{x}$ by `NLAlib.householder_zero`); orthogonality by
-`NLAlib.hasOrthonormalCols_householder` twice. For the spectral norm, $\mathbf{Z} - \mathbf{I}$
-vanishes on $\{\mathbf{x}, \mathbf{y}\}^\perp$ (`NLAlib.householder_mulVec_of_dotProduct_eq_zero`)
-and is a rotation by the angle $\theta$ of $\mathbf{x}, \mathbf{y}$ minus the identity on their
-span, of norm $2\sin(\theta/2) = \|\mathbf{x} - \mathbf{y}\|$: bound $\|(\mathbf{Z} -
-\mathbf{I})\mathbf{v}\|$
-for $\mathbf{v} = a\mathbf{x} + b\mathbf{x}^\perp + \mathbf{r}$ by direct computation. For the
-Frobenius norm use the trace: for orthogonal $\mathbf{Z}$,
-$\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F}^2
-= \operatorname{tr}((\mathbf{Z}-\mathbf{I})^{\mathsf T}(\mathbf{Z}-\mathbf{I})) = 2n -
-2\operatorname{tr}\mathbf{Z}$ (`frobNorm_sq_eq_re_trace`), and with $\mathbf{p} = (\mathbf{x} +
-\mathbf{y})/\|\mathbf{x}+\mathbf{y}\|$, $\mathbf{Z} = \mathbf{I} - 2\mathbf{x}\mathbf{x}^{\mathsf T}
-- 2\mathbf{p}\mathbf{p}^{\mathsf T} +
-4(\mathbf{p}^{\mathsf T}\mathbf{x})\mathbf{p}\mathbf{x}^{\mathsf T}$
-has $\operatorname{tr}\mathbf{Z} = n - 4 + 4(\mathbf{p}^{\mathsf T}\mathbf{x})^2 = n - 2 +
-2\mathbf{x}^{\mathsf T}\mathbf{y}$, so $\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F}^2 = 4 -
-4\mathbf{x}^{\mathsf T}\mathbf{y} = 2\|\mathbf{x} - \mathbf{y}\|^2$ (for $\mathbf{y} = -\mathbf{x}$:
-$\mathbf{Z} = \mathbf{H}_{\mathbf{x}}$,
-$\|\mathbf{Z} - \mathbf{I}\|_{\mathsf F} = 2 = \|\mathbf{x} -
-\mathbf{y}\|$). M, about 110 lines. -/
+(a single reflector has $\|\mathbf{H} - \mathbf{I}\|_2 = 2$). No printed source. -/
 theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n → ℝ}
     (hx : ‖WithLp.toLp 2 x‖ = 1) (hy : ‖WithLp.toLp 2 y‖ = 1) :
     ∃ Z : Matrix (Fin n) (Fin n) ℝ, Zᵀ * Z = 1 ∧ Z *ᵥ x = y ∧
@@ -360,22 +304,12 @@ theorem exists_orthogonal_mulVec_eq_specNorm_sub_one_le {n : ℕ} {x y : Fin n �
     nlinarith
 
 
-/-- **Orthonormal approximate eigenvectors are counted by the spectrum** (F2a): for symmetric
+/-- **Orthonormal approximate eigenvectors are counted by the spectrum**: for symmetric
 $\mathbf{M}$, $r$ orthonormal vectors $\mathbf{x}_i$ and values $\theta_i \in [a, b]$ with
 residuals $\|\mathbf{M}\mathbf{x}_i - \theta_i\mathbf{x}_i\| < d/\sqrt r$, $d > 0$, the number of
 eigenvalues of $\mathbf{M}$ in $(a - d, b + d)$ is at least $r$. The finite-dimensional
 core of "converged Ritz values are not duplicated". No printed source; Fable review of
-`docs/design/Krylov-LanczosReorth.md`, finding 1.
-Proof: let $\mathbf{P}$ be the orthogonal projector onto the eigenvectors with eigenvalues in
-$(a - d, b + d)$ (from the spectral decomposition, `Matrix.IsHermitian.eigenvectorBasis`); its
-rank is the count $c$. Every other eigenvalue is at distance $\ge d$ from $\theta_i$, so
-$\|(\mathbf{I} - \mathbf{P})\mathbf{x}_i\| \le \|\mathbf{M}\mathbf{x}_i - \theta_i\mathbf{x}_i\|/d
-< 1/\sqrt r$ (expand in eigencoordinates as in
-`Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le`). Hence
-$\sum_i\|\mathbf{P}\mathbf{x}_i\|^2
-> r - 1$, while $\sum_i\|\mathbf{P}\mathbf{x}_i\|^2 = \operatorname{tr}(\mathbf{X}^{\mathsf{T}}
-\mathbf{P}\mathbf{X}) \le \operatorname{tr}\mathbf{P} = c$ ($\mathbf{X}\mathbf{X}^{\mathsf{T}}
-\preceq \mathbf{I}$). So $c > r - 1$. M, about 90 lines. -/
+`docs/design/Krylov-LanczosReorth.md`, finding 1. -/
 theorem card_le_card_eigenvalue_mem_of_hasOrthonormalCols {n r : ℕ}
     {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.IsHermitian) {X : Matrix (Fin n) (Fin r) ℝ}
     (hX : HasOrthonormalCols X) {θ : Fin r → ℝ} {a b d : ℝ} (hd : 0 < d)

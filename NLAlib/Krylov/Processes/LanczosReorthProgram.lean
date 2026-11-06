@@ -9,22 +9,22 @@ public import NLAlib.Krylov.Processes.LanczosReorthProgramRounding
 public import NLAlib.Krylov.Processes.LanczosReorthRecurrence
 public import NLAlib.Computation.StaticCost
 public import NLAlib.Matrix.Computation.MatvecRoutine
-public import NLAlibScaffold.Matrix.Computation.ClassicalGramSchmidt
-public import NLAlibScaffold.Krylov.FinitePrecision.LanczosReorthSpectral
+public import NLAlib.Matrix.Computation.ClassicalGramSchmidt
+public import NLAlib.Krylov.FinitePrecision.LanczosReorthSpectral
 public import NLAlib.Krylov.Processes.LanczosProgramRounded
 public import NLAlib.Krylov.Processes.LanczosOracleProgramRounded
 
 /-!
-# Lanczos with full reorthogonalization as a program: exact and rounded runs (scaffold)
+# Lanczos with full reorthogonalization as a program: exact and rounded runs
 
-Statements for the programs of `NLAlib/Krylov/Processes/LanczosReorthProgramTree.lean` (stage
-LANCZOS-REORTH, design note `docs/design/Krylov-LanczosReorth.md` §2, ids G3–G8): the exact run
+For the programs of `NLAlib/Krylov/Processes/LanczosReorthProgramTree.lean`: the exact run
 of the stored-matrix tree (the drafted target's output clause; the target itself is registered by
 the maintainer), its static count, the rounded run of the generic loop for any certified product
 and orthogonalization routine families, the CGS2 trees (stored and oracle), and their composition
 with the backward model and interlacing. Patterned on
 `NLAlib.LanczosImplementation.exec_rounded_compiled`
-and `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`; the run-time handles are
+and `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`. Design:
+`docs/design/Krylov-LanczosReorth.md` §2. The run-time handles are
 `work` $= 8$, `scalars` $= 9$, `coef` $= 10$, the matrix slot $7$.
 
 ## Main results
@@ -1554,22 +1554,13 @@ private theorem reorth_exact_state {N q : ℕ} (A : Matrix (Fin N) (Fin N) ℝ) 
     · simp only [Function.update_of_ne hkc]
       exact hvecs k (by omega)
 
-/-- **The exact run of the stored-matrix tree** (G3): under `NLAlib.Computation.storedInterp` (exact
+/-- **The exact run of the stored-matrix tree**: under `NLAlib.Computation.storedInterp` (exact
 arithmetic, the matrix as ROM, column-major), from the declared inputs, the compiled tree
 succeeds and its buffers hold $\mathbf{b}$, the basis `NLAlib.lanczosReorthMatrix`, the
 coefficients $\alpha_j$, $\beta_j$, the input norm, the last previous vector and the norms
 $\nu_{j+1}$ of `NLAlib.lanczosReorthState`, for every real matrix (no symmetry or breakdown
 premise). The output clause of the drafted target `StoredEntriesLanczosReorth`
-(design note §2.3); counts are G4. No printed source.
-Proof: `NLAlib.lanczosReorthProg.toStmt_compiled`; then the proof of main's stored-entries
-Lanczos target (in `NLAlib/Krylov/Processes/LanczosProgram.lean`) step for step, with the loop
-invariant
-extended by the basis columns $0..j$ and `nu`, and one more phase per step: the extra `nrm2` and
-`NLAlib.Computation.exec_cgs2_exactSem` at $j + 1$ columns, matching `NLAlib.cgsProject` twice
-(sums over `Finset.range (j + 1)` against `Matrix.mulVec` of the stored columns); zero branch and
-zero continuation as in the plain proof (after breakdown every later vector, coefficient and
-correction is $0$). L, about 700 lines; intermediate lemmas: the loop invariant, one step, the
-initialization (reuse `NLAlib/Krylov/Processes/LanczosProgramInitialization.lean`). -/
+(design note §2.3); counts are G4. No printed source. -/
 theorem lanczosReorthProg.exec_storedInterp_compiled {P ι : Type} [DecidableEq P] (tag : P)
     (N q : ℕ) (b : Fin N → ℝ) (vals : ℕ → ℝ) (ξ : Dist → ℕ → ℝ) :
     ∃ out : St P ℝ (OpCount P ι),
@@ -1781,16 +1772,8 @@ private lemma two_mul_sum_range_id_add (q : ℕ) : 2 * ∑ x ∈ Finset.range q,
   | zero => simp
   | succ q ih => rw [Finset.sum_range_succ]; nlinarith
 
-/-- **The static count of the stored-matrix tree** (G4): every component of the static operation
-count of `NLAlib.lanczosReorthProg.compiled` is at most `NLAlib.lanczosReorthCount`.
-Proof: as main's static count of the plain tree
-(`NLAlib/Krylov/Processes/LanczosProgramStaticCost.lean`): unfold the static cost of the compiled
-tree
-(`FStmt.staticCost`, `StaticCost.seq`, `StaticCost.branch`, `StaticCost.alloc`), evaluate the
-nested loops (the inner loop bounds $j + 1$ give $\sum_{j<q}(j+1) = q(q+1)/2$), and compare
-componentwise (`Finsupp.single_apply`, `omega`/`nlinarith` per kind). If a component of the
-drafted formula is too small, enlarge it in the design note (it is a draft) and record the change.
-M, about 80 lines. -/
+/-- **The static count of the stored-matrix tree**: every component of the static operation
+count of `NLAlib.lanczosReorthProg.compiled` is at most `NLAlib.lanczosReorthCount`. -/
 theorem lanczosReorthProg.staticCost_count_le {P ι : Type} [DecidableEq P] (tag : P)
     (width : P → ℕ) (N q : ℕ) :
     ((lanczosReorthProg.compiled (ι := ι) tag).staticCost (fun k => Finsupp.single k 1)
@@ -1978,7 +1961,7 @@ private theorem reorth_exec_rounded_loop_aux {u : P → ℝ} {dec : P → K → 
       τ_pos := hτ }, rfl, fun _ _ _ => rfl, fun _ _ => ⟨rfl, rfl, rfl⟩, rfl, rfl, rfl, rfl, rfl,
       rfl⟩
 
-/-- **Rounded run of the generic loop** (G5): for any product routine family certified by
+/-- **Rounded run of the generic loop**: for any product routine family certified by
 `NLAlib.Computation.IsMatvecRoutine` (coefficient $\varepsilon\|\mathbf{A}\|_2$,
 $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`,
 that is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$) and any
@@ -1987,26 +1970,7 @@ orthogonalization routine family certified by `NLAlib.Computation.IsOrthRoutine`
 \varepsilon_3)$, the loop `NLAlib.lanczosReorthLoop` succeeds from a state with the seven
 declared buffers and the matrix slot $7$, keeps the shape, and its outputs satisfy
 `NLAlib.LanczosReorthOutputs` for every $\tau > 0$. The scheme enters only through its
-certificate. No printed source; `docs/design/Krylov-LanczosReorth.md` §1.4.
-Proof: follow `NLAlib.LanczosImplementation.exec_rounded_compiled` (files
-`NLAlib/Krylov/Processes/LanczosProgramRounded*.lean` on main: initialization, step, prefix, run,
-commit) with a
-step that has two more phases: after the second `axpy`, the `nrm2` of $\nu$
-(`NLAlib.Computation.IsRelErrSem.exec_nrm2_abs_norm_sub_le`
-type bound $|\nu - \|\mathbf{z}\|| \le \varepsilon\|\mathbf{z}\|$), then `horth t`
-(`IsOrthRoutine.run`
-with the basis columns $0..t$ as $\mathbf{V}$, `work` as $\mathbf{w}$, `coef` as $\mathbf{h}$; its
-frame keeps the basis and the coefficients), then main's `nrm2`/zero test/`rscl` normalization
-lemmas applied to $\mathbf{z}'$. The run of an admissible prefix is assembled field by field
-(`orth_eq` from the certificate, the rest as in main's `NLAlib.LanczosRun` construction,
-`abs_norm_v_sq_sub_one_le` for $j \le m + 1$ from $\beta_j > 0$). Composability of
-`mv`/`orth` from the certificates' `composable` fields; `hpre` transports to every intermediate
-store, including the 11-buffer ones after `work`, `scalars`, `coef` are allocated (allocation only
-appends buffers, so the first 8 shape entries are unchanged), because only
-buffers $1..6, 8..10$ are written. H, about 1200 lines; intermediate lemmas: the store invariant
-(a `NLAlib.LanczosImplementation.StoreContext` with the basis prefix and `nu`), one step, the
-prefix induction, the
-initialization (reused), and the assembly of `NLAlib.LanczosReorthRun`. -/
+certificate. No printed source; `docs/design/Krylov-LanczosReorth.md` §1.4. -/
 theorem exec_rounded_loop {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (st : St P K (OpCount P ι)) (N q : ℕ) (slot : ℕ)
@@ -2082,24 +2046,12 @@ private theorem reorth_isOrthRoutine_cgs2 {C : Type} [AddMonoid C] {u : P → �
     (add_le_add (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _))
       (mul_le_mul_of_nonneg_right h₃ (norm_nonneg _)))⟩
 
-/-- **Rounded run of the stored-matrix CGS2 tree** (G6): under the standard model, for symmetric
+/-- **Rounded run of the stored-matrix CGS2 tree**: under the standard model, for symmetric
 decoded $\mathbf{A}$ (ROM words) and $\mathbf{b} \ne \mathbf{0}$, the compiled tree succeeds,
 keeps the shape and its outputs satisfy `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at
 $q$ columns, $c_1$ = `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0$
 = <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$:
-$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source.
-Proof: `NLAlib.lanczosReorthProg.toStmt_compiled`; the ROM load into slot $7$ as in main's
-`NLAlib/Krylov/Processes/LanczosProgramRoundedInitialization.lean` (decoded matrix `HoldsDecoded …
-7 0 A`, the `pre` of G5; it depends only on reads of buffer $7$, so it meets
-`hpreFrame`); then
-`NLAlib.LanczosReorthImplementation.exec_rounded_loop` with `mv` the `gemv` call, certified by
-`NLAlib.Computation.IsRelErrSem.isMatvecRoutine_gemv` (its coefficient $\gamma_N\sqrt
-N\|\mathbf{A}\|
-\le \varepsilon\|\mathbf{A}\|$, `IsMatvecRoutine.mono`), and `orth` the `NLAlib.cgs2` call at
-$t + 1$ columns, certified by `NLAlib.Computation.IsRelErrSem.isOrthRoutine_cgs2` and made uniform
-in
-$t$ by monotonicity of `NLAlib.cgsPassBound` in $j$ (`IsOrthRoutine` parameters enlarged with
-`NLAlib.IsOrthErr.mono` inside the certificate). L, about 200 lines. -/
+$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source. -/
 theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
@@ -2206,15 +2158,10 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
     · rw [rdo tag 3 _ (by omega)]; exact h3 i j
     · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
-/-- **Rounded run of the matrix-free CGS2 tree** (G6o): as
+/-- **Rounded run of the matrix-free CGS2 tree**: as
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled` with an oracle of accuracy
 $\eta\|\mathbf{A}\|_2$, $\eta \le \varepsilon$ (`NLAlib.Computation.IsMatvecErr`), and no ROM.
-Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
-Proof: `NLAlib.lanczosReorthOracleProg.toStmt_compiled`; the empty slot $7$ (`pre = True`); then
-`NLAlib.LanczosReorthImplementation.exec_rounded_loop` with `mv` the `apply` call certified by
-`NLAlib.Computation.IsMatvecErr.isMatvecRoutine` (mono to $\varepsilon\|\mathbf{A}\|$) and `orth`
-as in
-G6. M, about 100 lines. -/
+Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`. -/
 theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
@@ -2281,15 +2228,12 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     · rw [rdo tag 3 _ (by omega)]; exact h3 i j
     · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
-/-- **The program-level backward model** (G7): in the setting of
+/-- **The program-level backward model**: in the setting of
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled`, every admissible prefix of $m$ steps
 whose run satisfies the fixed-point condition has computed tridiagonal equal to the exact Lanczos
 tridiagonal of $(\mathbf{H}', \mathbf{b})$ for a symmetric $\mathbf{H}'$ within
 backwardRadius $+ 3\|\mathbf{A}\|_2(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)$ of $\mathbf{A}$ in
-Frobenius norm. No printed source; [Paige1970] in substance.
-Proof: `NLAlib.LanczosReorthImplementation.exec_rounded_compiled`, unfold
-`NLAlib.LanczosReorthOutputs` at $m$, then `NLAlib.LanczosReorthRun.exists_pure_backward` with
-$\delta_b = 3\varepsilon$. S, about 30 lines. -/
+Frobenius norm. No printed source; [Paige1970] in substance. -/
 theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
@@ -2334,15 +2278,11 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
   rw [hH] at h2'
   exact h2'
 
-/-- **The program-level interlacing headline** (G8): in the setting of
+/-- **The program-level interlacing headline**: in the setting of
 `NLAlib.LanczosReorthImplementation.exec_rounded_compiled_backward`, on every admissible prefix
 with the fixed-point condition the computed Ritz values interlace the eigenvalues of
 $\mathbf{A}$ up to backwardRadius:
-$\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$. No printed source.
-Proof: `NLAlib.LanczosReorthImplementation.exec_rounded_compiled`, unfold the outputs at $m$, then
-`NLAlib.LanczosReorthRun.eigenvalue_tridiagonal_le_add` and
-`NLAlib.LanczosReorthRun.eigenvalue_sub_le_eigenvalue_tridiagonal` (the run's parameters satisfy
-$\eta_0 \le 1/100$ and $\tau \le 1$ by the hypotheses). S, about 30 lines. -/
+$\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$. No printed source. -/
 theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
