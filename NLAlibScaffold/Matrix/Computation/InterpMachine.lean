@@ -135,6 +135,101 @@ theorem IsRelErrSem.decidesFlags {sem : ScalarSem P K} {dec : P → K → ℝ} {
   · rw [hsem.cmp_eq p o o]
     simp
 
+/-- The stored $\sqrt{1/2}$ decodes to $\sigma/\sqrt2\,(1 + \delta)$ with $\lvert\sigma - 1\rvert
+\le u$ and $\lvert\delta\rvert \le u$ (helper of `isNormalSampler_gaussianNormal`). -/
+private theorem gaussianNormal_sqrtHalf {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ}
+    (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 2)
+    (p : P) (hu : 0 ≤ u) (hu1 : u ≤ 1 / 10) :
+    ∃ σ : ℝ, 0 ≤ σ ∧ |σ - 1| ≤ u ∧ ∃ δ : ℝ, |δ| ≤ u ∧
+      dec p (sem.sqrtHalf p) = σ / √2 * (1 + δ) := by
+  obtain ⟨z1, hz1, hd1⟩ := hlit p 1 (by norm_num)
+  obtain ⟨z2, hz2, hd2⟩ := hlit p 2 le_rfl
+  simp only [Nat.cast_one] at hz1 hd1
+  obtain ⟨z3, hz3⟩ := hsem.bin_ok p .div z1 z2 trivial (fun _ => by rw [hd2]; norm_num) trivial
+  obtain ⟨δ2, hδ2, hd3⟩ := hsem.bin_err p .div z1 z2 z3 trivial hz3
+  have hz3' : dec p z3 = (1 + δ2) / 2 := by
+    rw [hd3, hd1, hd2]
+    simp only [BinOp.realOp]
+    push_cast
+    ring
+  have hb := abs_le.mp hδ2
+  have hpos : 0 ≤ 1 + δ2 := by linarith [hb.1]
+  obtain ⟨z4, hz4⟩ := hsem.sqrt_ok p z3 (by rw [hz3']; exact div_nonneg hpos (by norm_num))
+  obtain ⟨δ3, hδ3, hd4⟩ := hsem.sqrt_err p z3 z4 hz4
+  have hs : dec p (sem.sqrtHalf p) = dec p z4 := by
+    unfold ScalarSem.sqrtHalf
+    simp only [hz1, hz2, hz3, hz4, Option.getD_some]
+  have h2 := Real.sq_sqrt hpos
+  have hs0 := Real.sqrt_nonneg (1 + δ2)
+  refine ⟨√(1 + δ2), hs0, ?_, δ3, hδ3, ?_⟩
+  · rw [abs_le]
+    constructor <;> nlinarith
+  · rw [hs, hd4, hz3', Real.sqrt_div hpos]
+
+/-- The real part (or imaginary part) of the normal sampler of a tape rounding (helper of
+`isNormalSampler_gaussianNormal`): the stored product of the rounded draw $\rho(\sqrt2 w)$ and
+the stored $\sqrt{1/2}$ is within $2(c + 3)u\lvert w\rvert$ of $w$. -/
+private theorem gaussianNormal_part {sem : ScalarSem P K} {dec : P → K → ℝ} {u c Ω : ℝ}
+    (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (p : P) {ρ : ℝ → K}
+    (hρ : ∀ x : ℝ, |x| ≤ 2 * Ω → |dec p (ρ x) - x| ≤ c * u * |x|) (hc : 0 ≤ c) (hu : 0 ≤ u)
+    (hcu : (c + 3) * u ≤ 1 / 10) {σ δ3 : ℝ} (hσ1 : |σ - 1| ≤ u) (hδ3 : |δ3| ≤ u)
+    (hs : dec p (sem.sqrtHalf p) = σ / √2 * (1 + δ3)) (w : ℝ) (hw : |√2 * w| ≤ 2 * Ω) :
+    ∃ r : K, sem.bin p .mul (ρ (√2 * w)) (sem.sqrtHalf p) = some r ∧
+      |dec p r - w| ≤ 2 * ((c + 3) * u) * |w| := by
+  have hu1 : u ≤ 1 / 10 := by nlinarith
+  obtain ⟨r, hr⟩ :=
+    hsem.bin_ok p .mul (ρ (√2 * w)) (sem.sqrtHalf p) trivial (fun h => nomatch h) trivial
+  refine ⟨r, hr, ?_⟩
+  obtain ⟨δ4, hδ4, hd⟩ := hsem.bin_err p .mul _ _ r trivial hr
+  simp only [BinOp.realOp] at hd
+  have h2 : (√2 : ℝ) ≠ 0 := by positivity
+  have hX0 := hρ (√2 * w) hw
+  obtain ⟨θ, hθ, hX⟩ : ∃ θ : ℝ, |θ| ≤ c * u ∧ dec p (ρ (√2 * w)) = √2 * w * (1 + θ) := by
+    by_cases h0 : w = 0
+    · subst h0
+      refine ⟨0, by simp [mul_nonneg hc hu], ?_⟩
+      have h00 : dec p (ρ (√2 * 0)) = 0 := by simpa [abs_nonpos_iff] using hX0
+      rw [h00]
+      ring
+    · have hne : √2 * w ≠ 0 := mul_ne_zero h2 h0
+      refine ⟨(dec p (ρ (√2 * w)) - √2 * w) / (√2 * w), ?_, ?_⟩
+      · rw [abs_div, div_le_iff₀ (abs_pos.mpr hne)]
+        exact hX0
+      · field_simp
+        ring
+  have hrw : dec p r = w * ((1 + θ) * σ * (1 + δ3) * (1 + δ4)) := by
+    rw [hd, hX, hs]
+    field_simp
+  -- a product of factors `1 + a_i` with `|a_i| ≤ α_i` stays within `(1 + M)(1 + α) - 1`
+  have chain : ∀ (P f M α : ℝ), 0 ≤ M → 0 ≤ α → |P - 1| ≤ M → |f - 1| ≤ α →
+      |P * f - 1| ≤ (1 + M) * (1 + α) - 1 := by
+    intro P f M α hM hα hP hf
+    have hfa : |f| ≤ 1 + α := by
+      rw [abs_le] at hf ⊢
+      constructor <;> linarith [hf.1, hf.2]
+    have e : P * f - 1 = (P - 1) * f + (f - 1) := by ring
+    rw [e]
+    calc |(P - 1) * f + (f - 1)| ≤ |(P - 1) * f| + |f - 1| := abs_add_le _ _
+      _ = |P - 1| * |f| + |f - 1| := by rw [abs_mul]
+      _ ≤ M * (1 + α) + α := add_le_add (mul_le_mul hP hfa (abs_nonneg _) hM) hf
+      _ = (1 + M) * (1 + α) - 1 := by ring
+  have hQ : |(1 + θ) * σ * (1 + δ3) * (1 + δ4) - 1| ≤ 2 * ((c + 3) * u) := by
+    have s1 := chain (1 + θ) σ (c * u) u (mul_nonneg hc hu) hu (by simpa using hθ) hσ1
+    have s2 := chain ((1 + θ) * σ) (1 + δ3) ((1 + c * u) * (1 + u) - 1) u
+      (by nlinarith [mul_nonneg hc hu]) hu s1 (by simpa using hδ3)
+    have s3 := chain ((1 + θ) * σ * (1 + δ3)) (1 + δ4) _ u
+      (by nlinarith [mul_nonneg hc hu, mul_nonneg (mul_nonneg hc hu) hu, mul_nonneg hu hu])
+      hu s2 (by simpa using hδ4)
+    refine s3.trans ?_
+    have hq : 0 ≤ c * u * (1 - 3 * u - 3 * u ^ 2 - u ^ 3) :=
+      mul_nonneg (mul_nonneg hc hu) (by nlinarith)
+    nlinarith [mul_nonneg hu (show (0 : ℝ) ≤ 3 - 3 * u - u ^ 2 by nlinarith)]
+  rw [hrw]
+  have e : w * ((1 + θ) * σ * (1 + δ3) * (1 + δ4)) - w
+      = w * ((1 + θ) * σ * (1 + δ3) * (1 + δ4) - 1) := by ring
+  rw [e, abs_mul]
+  exact (mul_le_mul_of_nonneg_left hQ (abs_nonneg w)).trans_eq (mul_comm _ _)
+
 /-- **The normal sampler of a tape rounding meets the normal-sampler contract**: if `sem` meets
 the standard model at $u \ge 0$ with every value in range and exact literals up to $2$, and the
 rounding $\rho$ of an ideal real Gaussian draw $x$ with $\lvert x\rvert \le 2\Omega$ errs by at most
@@ -157,7 +252,48 @@ theorem isNormalSampler_gaussianNormal {sem : ScalarSem P K} {dec : P → K → 
     (p : P) {ρ : ℝ → K} (hρ : ∀ x : ℝ, |x| ≤ 2 * Ω → |dec p (ρ x) - x| ≤ c * u * |x|)
     (hc : 0 ≤ c) (hu : 0 ≤ u) (hcu : (c + 3) * u ≤ 1 / 10) :
     IsNormalSampler (decodeComplex (dec p)) u (2 * (c + 3)) 0 Ω (sem.gaussianNormal p ρ) := by
-  sorry
+  have hu1 : u ≤ 1 / 10 := by nlinarith
+  obtain ⟨σ, hσ0, hσ1, δ3, hδ3, hs⟩ := gaussianNormal_sqrtHalf hsem hlit p hu hu1
+  unfold IsNormalSampler
+  intro z hz
+  have hΩ : 0 ≤ Ω := (norm_nonneg z).trans hz
+  have hsq : ∀ x : ℝ, |x| ≤ ‖z‖ → |√2 * x| ≤ 2 * Ω := by
+    intro x hx
+    rw [abs_mul, abs_of_nonneg (Real.sqrt_nonneg 2)]
+    have h2 : √2 ≤ 2 := by
+      nlinarith [Real.sq_sqrt (show (0 : ℝ) ≤ 2 by norm_num), Real.sqrt_nonneg 2]
+    nlinarith [mul_le_mul_of_nonneg_left (hx.trans hz) (Real.sqrt_nonneg 2)]
+  obtain ⟨r1, h1, e1⟩ := gaussianNormal_part hsem p hρ hc hu hcu hσ1 hδ3 hs z.re
+    (hsq _ (Complex.abs_re_le_norm z))
+  obtain ⟨r2, h2, e2⟩ := gaussianNormal_part hsem p hρ hc hu hcu hσ1 hδ3 hs z.im
+    (hsq _ (Complex.abs_im_le_norm z))
+  simp only [ScalarSem.gaussianNormal, h1, h2, Option.getD_some]
+  rw [max_eq_left (norm_nonneg z)]
+  have hA : 0 ≤ 2 * ((c + 3) * u) := by nlinarith
+  have hn : ‖z‖ ^ 2 = z.re * z.re + z.im * z.im := by
+    rw [Complex.sq_norm, Complex.normSq_apply]
+  have hd : ‖z - decodeComplex (dec p) (r1, r2)‖ ^ 2
+      = (z.re - dec p r1) ^ 2 + (z.im - dec p r2) ^ 2 := by
+    rw [Complex.sq_norm, Complex.normSq_apply]
+    simp [decodeComplex]
+    ring
+  have q1 : (z.re - dec p r1) ^ 2 ≤ (2 * ((c + 3) * u) * z.re) ^ 2 := by
+    rw [sq_le_sq, abs_mul, abs_of_nonneg hA, abs_sub_comm]
+    exact e1
+  have q2 : (z.im - dec p r2) ^ 2 ≤ (2 * ((c + 3) * u) * z.im) ^ 2 := by
+    rw [sq_le_sq, abs_mul, abs_of_nonneg hA, abs_sub_comm]
+    exact e2
+  have key : ‖z - decodeComplex (dec p) (r1, r2)‖ ^ 2 ≤ (2 * ((c + 3) * u) * ‖z‖) ^ 2 := by
+    rw [hd]
+    have e : (2 * ((c + 3) * u) * ‖z‖) ^ 2
+        = (2 * ((c + 3) * u) * z.re) ^ 2 + (2 * ((c + 3) * u) * z.im) ^ 2 := by
+      rw [mul_pow (2 * ((c + 3) * u)) ‖z‖, hn]
+      ring
+    rw [e]
+    linarith [q1, q2]
+  have hb : 0 ≤ 2 * ((c + 3) * u) * ‖z‖ := mul_nonneg hA (norm_nonneg z)
+  have final := (pow_le_pow_iff_left₀ (norm_nonneg _) hb two_ne_zero).mp key
+  linarith [final]
 
 end NLAlib.Computation
 
