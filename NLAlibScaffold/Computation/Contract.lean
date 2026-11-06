@@ -77,6 +77,8 @@ Proof: `refine ⟨fun d i x _ => ?_, fun i x hx => hx⟩`; `simp only [sub_self,
 `mul_nonneg (hc d) (le_max_of_le_left (abs_nonneg x))`. S, about 3 lines. -/
 theorem isTapeRounding_id (p : P) (u τ Ω : ℝ) (c : Dist → ℝ) (hc : ∀ d, 0 ≤ c d * u) :
     IsTapeRounding (fun _ x => x) p u τ Ω c (fun _ _ x => x) := by
-  sorry
+  refine ⟨fun d i x _ => ?_, fun i x hx => hx⟩
+  simp only [sub_self, abs_zero]
+  exact mul_nonneg (hc d) (le_max_of_le_left (abs_nonneg x))
 
 end NLAlib.Computation
