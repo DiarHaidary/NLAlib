@@ -54,7 +54,35 @@ theorem norm_transpose_mulVec_cgsPass_le {n j : ℕ} {V : Matrix (Fin n) (Fin j)
     {w w₁ : Fin n → ℝ} {η₀ c₁ : ℝ} (hV : specNorm (Vᵀ * V - 1) ≤ η₀) (hc₁ : 0 ≤ c₁)
     (hw₁ : ‖WithLp.toLp 2 (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤ c₁ * ‖WithLp.toLp 2 w‖) :
     ‖WithLp.toLp 2 (Vᵀ *ᵥ w₁)‖ ≤ Real.sqrt (1 + η₀) * (η₀ + c₁) * ‖WithLp.toLp 2 w‖ := by
-  sorry
+  have hs : specNorm Vᵀ ≤ Real.sqrt (1 + η₀) := by
+    rw [specNorm_transpose]
+    exact specNorm_le_sqrt_of_specNorm_gram_sub_one_le hV
+  have hη : 0 ≤ η₀ := (specNorm_nonneg _).trans hV
+  have hy : ‖WithLp.toLp 2 (Vᵀ *ᵥ w)‖ ≤ Real.sqrt (1 + η₀) * ‖WithLp.toLp 2 w‖ :=
+    (norm_toLp_mulVec_le Vᵀ w).trans (mul_le_mul_of_nonneg_right hs (norm_nonneg _))
+  have key : ∀ x : Fin n → ℝ, Vᵀ *ᵥ (x + (w - V *ᵥ (Vᵀ *ᵥ w))) =
+      Vᵀ *ᵥ x - (Vᵀ * V - 1) *ᵥ (Vᵀ *ᵥ w) := by
+    intro x
+    rw [Matrix.mulVec_add, Matrix.mulVec_sub, Matrix.mulVec_mulVec, Matrix.sub_mulVec,
+      Matrix.one_mulVec]
+    abel
+  have hkey := key (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))
+  rw [sub_add_cancel] at hkey
+  have hsx : specNorm Vᵀ * ‖WithLp.toLp 2 (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))‖ ≤
+      Real.sqrt (1 + η₀) * (c₁ * ‖WithLp.toLp 2 w‖) :=
+    mul_le_mul hs hw₁ (norm_nonneg _) (Real.sqrt_nonneg _)
+  have hsy : specNorm (Vᵀ * V - 1) * ‖WithLp.toLp 2 (Vᵀ *ᵥ w)‖ ≤
+      η₀ * (Real.sqrt (1 + η₀) * ‖WithLp.toLp 2 w‖) :=
+    mul_le_mul hV hy (norm_nonneg _) hη
+  rw [hkey, WithLp.toLp_sub]
+  have h1 := norm_toLp_mulVec_le Vᵀ (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))
+  have h2 := norm_toLp_mulVec_le (Vᵀ * V - 1) (Vᵀ *ᵥ w)
+  have htri := norm_sub_le (WithLp.toLp 2 (Vᵀ *ᵥ (w₁ - (w - V *ᵥ (Vᵀ *ᵥ w)))))
+    (WithLp.toLp 2 ((Vᵀ * V - 1) *ᵥ (Vᵀ *ᵥ w)))
+  have hfin : Real.sqrt (1 + η₀) * (c₁ * ‖WithLp.toLp 2 w‖) +
+      η₀ * (Real.sqrt (1 + η₀) * ‖WithLp.toLp 2 w‖) =
+      Real.sqrt (1 + η₀) * (η₀ + c₁) * ‖WithLp.toLp 2 w‖ := by ring
+  linarith
 
 /-- **One classical Gram–Schmidt pass meets the guarantee with a first-order input term** (C7):
 from the bounds of `NLAlib.Computation.IsRelErrSem.exec_cgsPass`, `NLAlib.IsOrthErr` holds with
