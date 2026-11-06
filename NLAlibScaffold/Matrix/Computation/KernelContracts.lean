@@ -89,7 +89,7 @@ theorem EntryLayout.toMatrix_toArray [Inhabited K] (L : EntryLayout K E)
 Proof: `rfl`. S, 1 line. -/
 theorem realLayout_get_put (e : K) :
     (realLayout (K := K)).get ((realLayout (K := K)).put e) = e := by
-  sorry
+  rfl
 
 /-- **The interleaved layout reads back**: two words hold a complex entry as a pair. No printed
 source.
