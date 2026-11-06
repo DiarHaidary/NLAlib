@@ -264,6 +264,8 @@ Proof: `NLAlib.injective_mulVec_of_specNorm_gram_sub_one_lt_one` gives an inject
 (`LinearMap.finrank_le_finrank_of_injective`, `Module.finrank_fin_fun`). S, about 10 lines. -/
 theorem le_of_specNorm_gram_sub_one_lt_one {V : Matrix (Fin n) (Fin j) ℝ}
     (hV : specNorm (Vᵀ * V - 1) < 1) : j ≤ n := by
-  sorry
+  have hinj : Function.Injective (Matrix.mulVecLin V) :=
+    injective_mulVec_of_specNorm_gram_sub_one_lt_one hV
+  simpa using LinearMap.finrank_le_finrank_of_injective hinj
 
 end NLAlib
