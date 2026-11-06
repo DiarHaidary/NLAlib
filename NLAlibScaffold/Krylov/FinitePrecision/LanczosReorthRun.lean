@@ -166,7 +166,35 @@ theorem frobNorm_gram_sub_one_le (hη : L.η₀ ≤ 1 / 100)
     (hsmall : Real.sqrt (3 * ((k : ℝ) + 1)) * L.orthLevel ≤ L.η₀) :
     ∀ m ≤ k + 1, frobNorm ((basisOf L.v m)ᵀ * basisOf L.v m - 1) ≤
       Real.sqrt (3 * m) * L.orthLevel := by
-  sorry
+  have hμ : 0 ≤ L.orthLevel := by
+    unfold LanczosReorthRun.orthLevel
+    have := div_nonneg L.ε₃_nonneg L.τ_pos.le
+    linarith [L.ε₁_nonneg, L.ε_nonneg]
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+  intro hm
+  apply frobNorm_gram_sub_one_le_of_columns L.v m hμ
+  · intro c hc
+    rcases Nat.eq_zero_or_pos c with rfl | hc0
+    · simp [hμ, EuclideanSpace.norm_eq]
+    · obtain ⟨j, rfl⟩ : ∃ j, c = j + 1 := ⟨c - 1, by omega⟩
+      have hj : j < k := by omega
+      have hIH := ih (j + 1) hc (by omega)
+      have hc' : ((j + 1 : ℕ) : ℝ) ≤ (k : ℝ) + 1 := by
+        have : j + 1 ≤ k + 1 := by omega
+        exact_mod_cast this
+      have h1 : Real.sqrt (3 * ((j + 1 : ℕ) : ℝ)) ≤ Real.sqrt (3 * ((k : ℝ) + 1)) :=
+        Real.sqrt_le_sqrt (by linarith)
+      have hV : specNorm ((basisOf L.v (j + 1))ᵀ * basisOf L.v (j + 1) - 1) ≤ L.η₀ :=
+        (specNorm_le_frobNorm _).trans
+          (hIH.trans ((mul_le_mul_of_nonneg_right h1 hμ).trans hsmall))
+      exact norm_transpose_mulVec_v_le L hj hV hη
+  · intro c hc
+    have := L.abs_norm_v_sq_sub_one_le (c + 1) (by omega) (by omega)
+    have hdiv := div_nonneg L.ε₃_nonneg L.τ_pos.le
+    unfold LanczosReorthRun.orthLevel
+    linarith [L.ε₁_nonneg, L.ε_nonneg]
 
 /-- **Coefficient bounds without growth in $j$** (D3): $|\alpha_{j+1}|$, $\beta_{j+1}$ and
 $\|\mathbf{z}_{j+1}\|$ are at most $\tfrac32\|\mathbf{H}\|_2$. [Paige1976] for the plain case
