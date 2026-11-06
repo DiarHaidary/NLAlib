@@ -158,7 +158,9 @@ Proof: `Matrix.ext`, `dec_neg`, `Complex.ext`, `Complex.conj_re`, `Complex.conj_
 theorem decodeMatrix_conjTransposeMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
     (X : Matrix m n (F × F)) :
     decodeMatrix dec (M.conjTransposeMat X) = (decodeMatrix dec X)ᴴ := by
-  sorry
+  ext i j : 2
+  simp [decodeMatrix, FloatMachine.conjTransposeMat, decodeComplex, hM.dec_neg]
+  all_goals apply Complex.ext <;> simp [hM.dec_neg]
 
 /-- The stored identity decodes to the identity.
 Proof: `Matrix.ext`, `dec_one`, `dec_zero`, `Matrix.one_apply`. S, about 5 lines. -/
