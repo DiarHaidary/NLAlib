@@ -107,7 +107,7 @@ theorem MatrixFreeRoundedProb.mono {P ι K : Type} [DecidableEq P] {r b : ℕ} {
     {bound bound' : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ}
     (h : MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound)
     (hb : ∀ N n x, bound N n x ≤ bound' N n x) :
-    MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound' := by
-  sorry
+    MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound' :=
+  fun N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ => (h N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ).trans (hb N n x)
 
 end NLAlib.Computation
