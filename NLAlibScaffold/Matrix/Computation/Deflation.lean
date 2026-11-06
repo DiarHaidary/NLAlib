@@ -28,8 +28,8 @@ $\mathbf{W}$, where $m = (\|\mathbf{S}\|_2 + \beta + 1)\|\mathbf{S}^{-1}\|_2\|\m
 
 * `NLAlib.HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le`: a basis that spans
   nearly the range of a frame is near a rotation of the frame.
-* `NLAlib.IsMatMulErr.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`: the deterministic
-  bound.
+* `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`: the
+  deterministic bound.
 -/
 
 @[expose] public section
@@ -67,20 +67,20 @@ theorem HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le {U Q' Q
   sorry
 
 /-- **Deterministic accuracy of randomized deflation** (Theorem 3.3, deterministic half): under
-`NLAlib.IsMatMulErr` $u$ $\tau$ $\Omega$ $\mu_{\mathrm{MM}}$, `NLAlib.IsQRErr` $u$ $\tau$
-$\Omega$ $\mu_{\mathrm{QR}}$ and `NLAlib.IsNormalSampler` $u$ $c_{\mathrm N}$, let
+the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with constants
+$\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$, let
 $r \le n$, $\mathbf{U}, \mathbf{V} \in \mathbb{C}^{n \times r}$ have orthonormal columns,
 $\mathbf{S} \in \mathbb{C}^{r \times r}$ be invertible, $\mathbf{A} =
-\mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$, $\|\mathbf{A} - \widetilde{\mathbf{A}}\|_2 \le
-\beta$, and $\mathbf{G}$ have $\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ invertible,
-$\mathbf{G}_1$ its first $r$ columns. With
+\mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$, $\widetilde{\mathbf{A}}$ stored with
+$\|\mathbf{A} - \bar{\widetilde{\mathbf{A}}}\|_2 \le \beta$, and $\mathbf{G}$ have
+$\mathbf{V}^{\mathsf{H}}\mathbf{G}_1$ invertible, $\mathbf{G}_1$ its first $r$ columns. With
 $m = (\|\mathbf{S}\|_2 + \beta + 1)\|\mathbf{S}^{-1}\|_2\|\mathbf{G}\|_2
 \|(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1)^{-1}\|_2$, if $m\beta \le 1/5$,
 $(4\mu_{\mathrm{QR}}(n) + 2\sqrt n\,c_{\mathrm N} + 2\mu_{\mathrm{MM}}(n))u \le \beta$,
 $\tau \le \|\mathbf{S}\|_2\|\mathbf{G}\|_2$ and $2(\|\mathbf{S}\|_2 + \beta)\|\mathbf{G}\|_2 \le
 \Omega$, then there is a unitary $\mathbf{W}$ with
 $$\|\mathbf{U}\mathbf{W} - \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6m\beta \,,$$
-$\mathsf{deflate}$ the algorithm `NLAlib.deflate` with sample $\mathbf{G}$. [Shah2024,
+$\mathsf{deflate}$ the decoded output of `NLAlib.deflate` with ideal sample $\mathbf{G}$. [Shah2024,
 Theorem 3.3], there for $\mathbf{S}$ the diagonal of singular values and with the probability
 folded in.
 Proof: [Shah2024, proof of Theorem 3.3], (3.1) there: write $\widetilde{\mathbf{G}} =
@@ -100,20 +100,20 @@ $\|\mathbf{U} - \mathbf{Q}_1\mathbf{C}\|_2 \le m\beta$; conclude with
 trivial). The floor and range conditions make each contract applicable with the upper bounds
 used. Split into private lemmas for $\mathbf{E}_{\mathbf{G}}$, the identity for $\mathbf{U}$ and
 the bound on $\mathbf{Z}$. L, about 140 lines. -/
-theorem IsMatMulErr.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le {u τ Ω cN β mval : ℝ}
-    {μM μQ : ℕ → ℝ} {mm : MatMulMap ℂ} {qr : QRMap ℂ} {normal : ℂ → ℂ}
-    (hmm : IsMatMulErr u τ Ω μM mm) (hqr : IsQRErr u τ Ω μQ qr)
-    (hN : IsNormalSampler u cN normal) {n r : ℕ} (hr : r ≤ n)
+theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
+    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)
     {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
-    {S : Matrix (Fin r) (Fin r) ℂ} (hS : IsUnit S) {A A' G : Matrix (Fin n) (Fin n) ℂ}
-    (hA : A = U * S * Vᴴ) (hβ : specNorm (A - A') ≤ β)
+    {S : Matrix (Fin r) (Fin r) ℂ} (hS : IsUnit S) {A G : Matrix (Fin n) (Fin n) ℂ}
+    {A' : Matrix (Fin n) (Fin n) (F × F)} (hA : A = U * S * Vᴴ)
+    (hβ : specNorm (A - decodeMatrix dec A') ≤ β)
     (hG : IsUnit (Vᴴ * G.submatrix id (Fin.castLE hr)))
     (hm : mval = (specNorm S + β + 1) * specNorm S⁻¹ * specNorm G *
       specNorm (Vᴴ * G.submatrix id (Fin.castLE hr))⁻¹)
     (hmβ : mval * β ≤ 1 / 5) (hu : (4 * μQ n + 2 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β)
     (hτ : τ ≤ specNorm S * specNorm G) (hΩ : 2 * (specNorm S + β) * specNorm G ≤ Ω) :
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
-      specNorm (U * W - deflate mm qr normal r A' G) ≤ 6 * mval * β := by
+      specNorm (U * W - decodeMatrix dec (deflate M r A' G)) ≤ 6 * mval * β := by
   sorry
 
 end NLAlib

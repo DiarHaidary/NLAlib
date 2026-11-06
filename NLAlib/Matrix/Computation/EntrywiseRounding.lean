@@ -5,33 +5,28 @@ Authors: NLAlib contributors
 -/
 module
 
-public import Mathlib.Analysis.RCLike.Basic
-public import Mathlib.LinearAlgebra.Matrix.Hermitian
+public import NLAlib.Matrix.Computation.Primitives
 
 /-!
-# Entrywise rounding of Hermitian matrices
+# Entrywise operations on stored Hermitian matrices
 
 The cheap steps of a dense eigensolver (a diagonal shift, a scaling, the Hermitian part of a
-computed product) touch every entry once and round it. This file models them by a **rounding
-function** $\mathrm{fl} : \mathbb{R} \to \mathbb{R}$ applied to the exact result, real and
-imaginary parts separately: `NLAlib.IsRoundingFn u τ Ω fl` says that
-$\lvert \mathrm{fl}(x) - x \rvert \le u \max(\lvert x \rvert, \tau)$ for
-$\lvert x \rvert \le \Omega$. With $\tau = 0$ and no range limit this is the standard model with
-unbounded exponent [Higham2002, (2.4)]; the floor $\tau$ (gradual underflow) and the range
-$\Omega$ (overflow) are kept so that a bounded-exponent model satisfies the same predicate on
-its normal range (design note `docs/design/Eigensolvers-HermitianDiagonalization.md`, §12).
-
-Hermitian structure is kept by construction: `NLAlib.roundHermitian` rounds the upper triangle
-and the real diagonal and mirrors the rest, so its output is exactly Hermitian whatever the
-rounding does with signs; `NLAlib.roundDiag` rounds only the real parts of the diagonal, the
-model of $\mathbf{X} - c\mathbf{I}$ and $\mathbf{I} \pm \mathbf{X}$ computed in place.
+computed product, a trace) touch every entry once. Here they are **built from the scalar
+operations of a `NLAlib.FloatMachine`**, real and imaginary parts separately, as IEEE complex
+arithmetic does, so their error bounds follow from the machine's contract rather than being
+assumed. Hermitian structure is kept by construction: `NLAlib.FloatMachine.hermFrom` computes
+the strict upper triangle and the real diagonal and mirrors the rest with the machine's exact
+negation, so its decoding is exactly Hermitian whatever the rounding does with signs.
 
 ## Main definitions
 
-* `NLAlib.IsRoundingFn`: the error contract of a rounding function.
-* `NLAlib.roundScalar`: rounding of the real and imaginary parts.
-* `NLAlib.roundDiag`, `NLAlib.roundHermitian`: rounded Hermitian matrices.
-* `NLAlib.roundedSum`: left-to-right rounded summation.
+* `NLAlib.FloatMachine.hermFrom`: a stored Hermitian matrix from its upper triangle and diagonal.
+* `NLAlib.FloatMachine.hermShift`, `NLAlib.FloatMachine.hermScale`,
+  `NLAlib.FloatMachine.hermAvg`: $\mathbf{X} - c\mathbf{I}$, $\mathbf{X}/c$,
+  $(\mathbf{X} + \mathbf{X}^{\mathsf{H}})/c$, stored Hermitian.
+* `NLAlib.FloatMachine.negMat`, `NLAlib.FloatMachine.conjTransposeMat`,
+  `NLAlib.FloatMachine.identityMat`, `NLAlib.FloatMachine.zeroMat`: exact operations.
+* `NLAlib.FloatMachine.traceRe`: the rounded sum of the real parts of the diagonal.
 
 ## Main results
 
@@ -41,50 +36,63 @@ Bounds on these operations are in the design note
 
 @[expose] public section
 
-open scoped Matrix
-
 namespace NLAlib
 
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*}
+namespace FloatMachine
 
-/-- `IsRoundingFn u τ Ω fl`: **the rounding function `fl` has relative error at most $u$ above
-the floor $\tau$ on the range $[-\Omega, \Omega]$**: for every real $x$ with
-$\lvert x \rvert \le \Omega$,
-$\lvert \mathrm{fl}(x) - x \rvert \le u \max(\lvert x \rvert, \tau)$. At $\tau = 0$ this is the
-standard model [Higham2002, (2.4)] for a function of the exact result; $\tau > 0$ is an absolute
-error below $\tau$, as gradual underflow gives, and $\Omega$ the overflow threshold. -/
-def IsRoundingFn (u τ Ω : ℝ) (fl : ℝ → ℝ) : Prop :=
-  ∀ x : ℝ, |x| ≤ Ω → |fl x - x| ≤ u * max |x| τ
+variable {F Su Sg : Type*} (M : FloatMachine F Su Sg)
 
-/-- **Rounding of a scalar**: the real and imaginary parts of $z$ rounded by $\mathrm{fl}$,
-$\mathrm{fl}(\operatorname{Re} z) + \mathrm{fl}(\operatorname{Im} z)\,i$; over $\mathbb{R}$ this
-is $\mathrm{fl}(z) + \mathrm{fl}(0) \cdot 0 = \mathrm{fl}(z)$. -/
-noncomputable def roundScalar (fl : ℝ → ℝ) (z : 𝕜) : 𝕜 :=
-  (fl (RCLike.re z) : 𝕜) + (fl (RCLike.im z) : 𝕜) * RCLike.I
-
-/-- **Rounding of the diagonal**: the matrix with diagonal entries
-$\mathrm{fl}(\operatorname{Re} \mathbf{X}_{i,i})$ and off-diagonal entries those of
-$\mathbf{X}$. For Hermitian $\mathbf{X}$ it is Hermitian; it is how $\mathbf{X} - c\mathbf{I}$,
-$3\mathbf{I} - \mathbf{X}$ and $\tfrac12(\mathbf{I} \pm \mathbf{X})$ are stored when only the
-diagonal is computed. -/
-noncomputable def roundDiag [DecidableEq n] (fl : ℝ → ℝ) (X : Matrix n n 𝕜) : Matrix n n 𝕜 :=
-  Matrix.of fun i j => if i = j then (fl (RCLike.re (X i i)) : 𝕜) else X i j
-
-/-- **Rounding to a Hermitian matrix**: the entries above the diagonal rounded by
-`NLAlib.roundScalar`, the diagonal entries $\mathrm{fl}(\operatorname{Re} \mathbf{X}_{i,i})$, and
-the entries below the diagonal the conjugates of those above. It is exactly Hermitian for every
-$\mathbf{X}$ and every rounding function, and for Hermitian $\mathbf{X}$ it is the entrywise
-rounding of $\mathbf{X}$ with its symmetry kept. -/
-noncomputable def roundHermitian [LinearOrder n] (fl : ℝ → ℝ) (X : Matrix n n 𝕜) :
-    Matrix n n 𝕜 :=
+/-- **A stored Hermitian matrix from its upper triangle and diagonal**: the entry $(i, j)$ is
+`up i j` for $i < j$, the conjugate (exact negation of the imaginary part) of `up j i` for
+$i > j$, and $(\mathrm{dg}(i), 0)$ on the diagonal. -/
+def hermFrom {k : ℕ} (up : Fin k → Fin k → F × F) (dg : Fin k → F) :
+    Matrix (Fin k) (Fin k) (F × F) :=
   Matrix.of fun i j =>
-    if i < j then roundScalar fl (X i j)
-    else if j < i then star (roundScalar fl (X j i))
-    else (fl (RCLike.re (X i i)) : 𝕜)
+    if i < j then up i j else if j < i then ((up j i).1, M.neg (up j i).2) else (dg i, M.zero)
 
-/-- **Rounded summation** of $x_0, \dots, x_{k-1}$ from the left:
-$s_0 = 0$, $s_{i+1} = \mathrm{fl}(s_i + x_i)$, and the result is $s_k$. -/
-noncomputable def roundedSum (fl : ℝ → ℝ) {k : ℕ} (x : Fin k → ℝ) : ℝ :=
-  (List.ofFn x).foldl (fun s y => fl (s + y)) 0
+/-- **Shift by a stored scalar**, $\mathbf{X} - c\mathbf{I}$ stored Hermitian: the diagonal real
+parts are $\mathrm{fl}(\operatorname{Re}\mathbf{X}_{i,i} - c)$, the upper triangle is copied. -/
+def hermShift {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F)) (c : F) :
+    Matrix (Fin k) (Fin k) (F × F) :=
+  M.hermFrom (fun i j => X i j) fun i => M.sub (X i i).1 c
+
+/-- **Division by a stored scalar**, $\mathbf{X}/c$ stored Hermitian: every part of the upper
+triangle and every diagonal real part divided by $c$ and rounded. -/
+def hermScale {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F)) (c : F) :
+    Matrix (Fin k) (Fin k) (F × F) :=
+  M.hermFrom (fun i j => (M.div (X i j).1 c, M.div (X i j).2 c)) fun i => M.div (X i i).1 c
+
+/-- **The scaled Hermitian part**, $(\mathbf{X} + \mathbf{X}^{\mathsf{H}})/c$ stored Hermitian:
+on the upper triangle the parts of $\mathbf{X}_{i,j} + \overline{\mathbf{X}_{j,i}}$ are computed,
+rounded, then divided by $c$ and rounded; on the diagonal $2\operatorname{Re}\mathbf{X}_{i,i}/c$
+likewise. -/
+def hermAvg {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F)) (c : F) :
+    Matrix (Fin k) (Fin k) (F × F) :=
+  M.hermFrom
+    (fun i j => (M.div (M.add (X i j).1 (X j i).1) c, M.div (M.sub (X i j).2 (X j i).2) c))
+    fun i => M.div (M.add (X i i).1 (X i i).1) c
+
+/-- **Entrywise negation** of a stored matrix (exact). -/
+def negMat {m n : Type*} (X : Matrix m n (F × F)) : Matrix m n (F × F) :=
+  X.map fun z => (M.neg z.1, M.neg z.2)
+
+/-- **The conjugate transpose** of a stored matrix (exact: a transpose and a negation). -/
+def conjTransposeMat {m n : Type*} (X : Matrix m n (F × F)) : Matrix n m (F × F) :=
+  Matrix.of fun i j => ((X j i).1, M.neg (X j i).2)
+
+/-- **The stored identity matrix.** -/
+def identityMat (k : ℕ) : Matrix (Fin k) (Fin k) (F × F) :=
+  Matrix.of fun i j => if i = j then (M.one, M.zero) else (M.zero, M.zero)
+
+/-- **The stored zero matrix.** -/
+def zeroMat (m n : Type*) : Matrix m n (F × F) :=
+  Matrix.of fun _ _ => (M.zero, M.zero)
+
+/-- **The rounded trace of the real parts**: $s_0 = 0$, $s_{i+1} =
+\mathrm{fl}(s_i + \operatorname{Re}\mathbf{X}_{i,i})$, from the left. -/
+def traceRe {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F)) : F :=
+  (List.finRange k).foldl (fun s i => M.add s (X i i).1) M.zero
+
+end FloatMachine
 
 end NLAlib

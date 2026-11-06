@@ -1,15 +1,18 @@
 # Design note: Hermitian diagonalization in linear precision — Newton–Schulz sign, randomized deflation and spectral bisection under black-box multiplication and QR (stage HDIAG)
 
 Status: reviewed (Fable, `~/nlalib-harness/reports/Review-Fable-HDIAG-Design.md`: approve with
-changes); APPROVE and OQ1–OQ13 pending with the maintainer (decision sheet
-`~/nlalib-harness/state/decisions/HDIAG.json`). Review changes (second commit): items 1–3 applied
-(new public EB1a child invariant and EB1b rank recovery; $\mathbf{P}_\pm$ stored by
-`roundHermitian`), Event I now includes "seed in $[-1, 1]$" (without it EB1 was false: the sampler
-contract says nothing outside $[-1, 1]$), and the non-blocking items 4–10 (EB4 route and label, UB1
-without measurability of the bad sets, EB2 outline, R2 route and `0 ≤ u` on R2/R5/R6, EV7 at
-$n = 0$, relabels, N10 orientation of `IsQRErr`/`IsUnifSampler`); 60 statements. Branch
+changes) and amended twice; APPROVE and OQ1–OQ13 pending with the maintainer (decision sheet
+`~/nlalib-harness/state/decisions/HDIAG.json`). Review changes (second commit): Fable's items 1–3
+(public EB1a child invariant and EB1b rank recovery; projectors stored Hermitian), Event I with
+"seed in $[-1, 1]$" (without it EB1 was false), items 4–10. Machine changes (third commit,
+maintainer comments on OQ2, OQ3, OQ7 and COMPDYN §8.2): every algorithm is written generically
+over a `FloatMachine` (§2.0), with every scalar parameter computed by the machine, one rounding
+per primitive operation, componentwise IEEE complex rounding, the rank conversion
+$\lfloor\mathrm{fl}(t + 1/2)\rfloor_+$ clamped by $k$, $\beta$ and $\ell$ as precomputed
+thresholds, the exact machine as the satisfiability witness, and §15 on a deep-embedded version;
+61 statements. Branch
 `design/hdiag` (worktree `~/nlalib-design-hdiag`, from `origin/main` 4d4e9fc9). Targets:
-`~/nlalib-harness/pilot/hdiag-targets.json` (60 statements).
+`~/nlalib-harness/pilot/hdiag-targets.json` (61 statements).
 Source read in full: R. Shah, *Fast Hermitian Diagonalization with Nearly Optimal Precision*,
 arXiv:2408.09880v1 (LaTeX source; §1.2 model, Proposition 1.1, Definitions 1.1–1.4, §2 Lemmas
 2.1–2.5 and Theorem 2.6, §3 Lemmas 3.1–3.2 and Theorem 3.3, §4 Algorithm 3, Lemma 4.1,
@@ -25,11 +28,11 @@ Matrix-SpectralProjections,Matrix-EigenvectorDeflation}.md`.
 
 Checks on the skeleton (all run on this branch, `LEAN_NUM_THREADS=2`, module targets only):
 `lake build --wfail` of the seven new `NLAlib` modules (definitions only) succeeds;
-`lake build NLAlibScaffold` gives exactly 60 `declaration uses sorry` warnings and nothing else;
+`lake build NLAlibScaffold` gives exactly 61 `declaration uses sorry` warnings and nothing else;
 `scripts/check_rules.py --files` on every touched file (0 errors; one warning, C8 on `Demmel1997`,
 predates this stage), `check_refs.py`, `check_constants.py`, `check_latex.mjs` (KaTeX 0.16.22) and
 both `lake exe mk_all --module --lib NLAlib --check` and `… --lib NLAlibScaffold --check` are
-clean; `bin/check-skeleton --strict` (rule G3): 60 targets, 0 names missing an import, 0
+clean; `bin/check-skeleton --strict` (rule G3): 61 targets, 0 names missing an import, 0
 unresolved. The extraction-based name check (N1–N18) was not run; names for review are in §9.
 
 ## Maintainer decisions already made (2026-11-05)
@@ -46,18 +49,22 @@ unresolved. The extraction-based name check (N1–N18) was not run; names for re
 3. **Black-box MM and QR are hypotheses** (normwise predicates with $\mu_{\mathrm{MM}}$,
    $\mu_{\mathrm{QR}}$, $\mathrm{MM}(\mathbf{A}, \mathbf{A}^{\mathsf{H}})$ exactly Hermitian), not
    implementations; runtime is out of scope (OQ11 on static counts).
+4. **Machine interface (2026-11-06, comments on OQ2, OQ3, OQ7)**: keep shallow total functions
+   and fuel recursion, but write every algorithm against a `FloatMachine` so that it cannot
+   compute outside the model (§2.0); complex rounding componentwise as IEEE; σ_min constant
+   marked as improvable by Edelman's law; a note on what a deep-embedded version needs (§15).
 
 ## 0. Summary
 
 | | |
 |---|---|
-| Model (new) | a rounding function $\mathrm{fl} : \mathbb{R} \to \mathbb{R}$ with `IsRoundingFn u τ Ω fl` ($\lvert \mathrm{fl}(x) - x \rvert \le u\max(\lvert x \rvert, \tau)$ for $\lvert x \rvert \le \Omega$), applied to real and imaginary parts; Hermitian-preserving roundings `roundDiag`, `roundHermitian`, `roundedSum`; black-box contracts `IsMatMulErr u τ Ω μ mm`, `IsQRErr u τ Ω μ qr`, sampler couplings `IsUnifSampler`, `IsNormalSampler`; the witness `isRoundingFn_roundNearest` ties the model to `Computation.gridSem`, which meets `IsRelErrSem` |
-| Algorithms (new definitions, `NLAlib`, build `--wfail`) | `newtonSchulz` and `newtonSchulzSteps` (scalar); `newtonSchulzRounded`, `IsNewtonSchulzConverged`, `newtonSchulzLoop`, `newtonSchulzSign` (Algorithm 1); `deflate` (Algorithm 2); `EighPrimitives`, `EighSample`, `leadingBlock`, `bisectionSignTol`, `bisectionDepth`, `EighStep`, `EighStep.IsSplit`, `eighStep`, `eighAux`, `eigh` (Algorithm 3), `EighNode`, `eighChild`, `eighNodeAt` (the recursion tree), `IsApproxDiagonalization` (output guarantee), `IsEighGoodSample` (Events I, II); `complexGaussian`, `complexGaussianVector`, `complexGaussianMatrix` |
+| Model (new) | `FloatMachine F Su Sg`: the only operations an algorithm may apply to stored numbers (rounded $+,-,\times,/$, `ofNat`; exact `neg`, `le`, floor `toNat`, $0$, $1$; black-box `mm`, `qr` on `F × F` matrices; samplers from abstract ideal samples), its contract `FloatMachine.IsAccurate` (`IsRoundingOf` per operation with floor $\tau$ and range $\Omega$; `IsMatMulErr`, `IsQRErr`, `IsUnifSampler`, `IsNormalSampler` through the decoding); entrywise Hermitian operations built from the scalar ones; witnesses: the exact machine (C1) and `Real.roundNearest` of `gridSem` (R1) |
+| Algorithms (new definitions, `NLAlib`, build `--wfail`) | `newtonSchulz`, `newtonSchulzSteps` (scalar); `FloatMachine.hermFrom`, `hermShift`, `hermScale`, `hermAvg`, `negMat`, `conjTransposeMat`, `identityMat`, `zeroMat`, `traceRe`; `newtonSchulzRounded`, `newtonSchulzTest`, `newtonSchulzLoop`, `newtonSchulzSign` (Algorithm 1); `deflate` (Algorithm 2); `EighSample`, `leadingBlock`, `EighStep`, `EighStep.IsSplit`, `eighNextParams`, `eighStep`, `eighAux`, `eigh` (Algorithm 3), `EighNode`, `eighChild`, `eighNodeAt`; analysis-side `bisectionSignTol`, `bisectionDepth`, `IsApproxDiagonalization`, `IsEighGoodSample`; `complexGaussian`, `complexGaussianVector`, `complexGaussianMatrix`. All algorithm definitions are computable and generic over the machine |
 | Headline | Theorem 4.2 (EV6): with probability at least $1 - \theta$, $\mathsf{eigh}$ returns $(\mathbf{U}, \mathbf{d})$ with $\|\mathbf{A} - \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}\|_2 \le 2\varepsilon R_0$ and $\sigma_i(\mathbf{U}) \in [1 \pm \varepsilon/3]$, under explicit precision hypotheses; in bits (EV7) $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ |
 | Other results | Lemmas 2.1, 2.3–2.5, Theorem 2.6 (SIGN, SN4), Theorem 3.3 (deterministic DF2, probabilistic DP1), Lemma 4.1 (EB1), Proposition 1.1 (LB3, OQ5); the replacements of Lemmas 2.2 (SG2) and 3.1 (CG6) |
 | Paper gaps found and fixed | G1 the iterates of SIGN and the compressions $\mathbf{C}_\pm$ are treated as Hermitian but MM does not make them so (fixed by rounded Hermitian parts, OQ8); G2 the probability of missing Event I is $nw\ell/R$, not $nw/R$ (factor $\ell$ dropped, OQ9; costs one $\log_2\log_2(1/\varepsilon)$); G3 Proposition 1.1's sign-of-entries argument bounds the Frobenius norm, not the spectral norm (fixed by choosing the sign from $\mathbf{1}^{\mathsf{T}}\mathbf{R}\mathbf{1}$, same conclusion); G4 Lemma 4.1's bound on $\|\mathbf{D}_\pm\|_2$ drops the $R_0$ part of the children's residual (absorbed by the slack $\varepsilon R_0/\ell$). Side condition (not a paper gap): Lemma 2.5 needs $\varepsilon > 0$ and $x_0 \ne 0$ explicitly because $u = 0$ is allowed. Also noted: the paper's depth check compares $R_\ell$ with $\varepsilon$, not $\varepsilon_\ell$; its Lemma 2.5 proof needs $\lvert x_k\rvert \ge 20u$ throughout (NS9) |
-| Statements | 60 sorried: S 19, M 26, L 12, H 3, in 12 scaffold files (§3.11) |
-| Staging | W1 scalar, rounding, contracts, sign facts (28); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH (15); LB Proposition 1.1 (3); W5 bounded-exponent bridge later (§12) |
+| Statements | 61 sorried: S 19, M 27, L 12, H 3, in 12 scaffold files (§3.11) |
+| Staging | W1 scalar, machine operations, contracts, sign facts (29); W2 SIGN (4); W3 complex Gaussian and DEFLATE (10); W4 union bound and EIGH (15); LB Proposition 1.1 (3); W5 bounded-exponent bridge later (§12) |
 | Open questions | 13 (§10), each with a recommendation |
 
 ## 1. Scope
@@ -85,91 +92,117 @@ start (the complex algorithm already covers it by embedding).
 
 ## 2. Objects
 
-### 2.1 Rounding (`NLAlib/Matrix/Computation/EntrywiseRounding.lean`, written)
+### 2.0 The machine interface, and what typing enforces (amendment 2, maintainer comment on OQ3)
+
+The maintainer's requirement: the shallow recursion must not cheat outside the model of
+computation, since it is an example for future code. The algorithms stay shallow total functions
+with fuel recursion, but they are written against an interface that makes cheating impossible by
+construction:
 
 ```lean
-def IsRoundingFn (u τ Ω : ℝ) (fl : ℝ → ℝ) : Prop :=
-  ∀ x : ℝ, |x| ≤ Ω → |fl x - x| ≤ u * max |x| τ
-noncomputable def roundScalar (fl : ℝ → ℝ) (z : 𝕜) : 𝕜          -- fl(Re z) + fl(Im z) i
-noncomputable def roundDiag [DecidableEq n] (fl) (X : Matrix n n 𝕜) : Matrix n n 𝕜
-noncomputable def roundHermitian [LinearOrder n] (fl) (X : Matrix n n 𝕜) : Matrix n n 𝕜
-noncomputable def roundedSum (fl : ℝ → ℝ) {k : ℕ} (x : Fin k → ℝ) : ℝ   -- left to right
+structure FloatMachine (F Su Sg : Type*) where           -- NLAlib/Matrix/Computation/Primitives.lean
+  zero one : F
+  ofNat : ℕ → F                                           -- rounded conversion of a natural
+  add sub mul div : F → F → F                             -- one rounding each
+  neg : F → F                                             -- exact
+  le : F → F → Bool                                       -- exact comparison
+  toNat : F → ℕ                                           -- exact floor ⌊x⌋₊ (IEEE truncation)
+  mm : MatMulMap (F × F)                                  -- black box on stored complex matrices
+  qr : QRMap (F × F)                                      -- black box
+  unif : F → Su → F                                       -- stored scale, ideal seed ↦ stored shift
+  normal : Sg → F × F                                     -- ideal sample ↦ stored complex number
 ```
 
-The paper's model is $\lvert \mathrm{fl}(z) - z \rvert \le u\lvert z \rvert$ for complex $z$, every
-operation rounding its exact result. Here a rounding *function* of the exact real value is applied
-to real and imaginary parts separately (componentwise complex storage, as hardware does), which
-gives the paper's bound for $\tau = 0$ (R2) and keeps Hermitian structure exact by construction:
-`roundHermitian` rounds the strict upper triangle and the real diagonal and mirrors, so it is
-Hermitian for every rounding (R3), with no oddness assumption on $\mathrm{fl}$ (round-half-up
-is not odd). The relation to main's contract layer (decision 1) is the witness R1:
-`Real.roundNearest t`, the rounding of `Computation.gridSem t`, which meets
-`Computation.IsRelErrSem` (`Computation.isRelErrSem_gridSem`), satisfies
-`IsRoundingFn (2⁻¹ ^ t) 0 Ω` for every $\Omega$. Contract.lean is not modified (OQ2).
+Stored complex numbers are pairs `F × F`, and every complex entrywise operation
+(`hermShift`, `hermScale`, `hermAvg`, `negMat`, `conjTransposeMat`, `identityMat`, `traceRe`, in
+`EntrywiseRounding.lean`) is *defined* from the real scalar operations, real and imaginary parts
+separately: the rounding is componentwise IEEE, as the maintainer asked (OQ2), and one rounding
+happens per primitive operation (no fused roundings; $(\mathbf{I} \pm \mathbf{B})/2$ is a shift
+then a rounded division, $(\mathbf{Y} + \mathbf{Y}^{\mathsf{H}})/4$ an addition then a rounded
+division), so a bounded-exponent model needs no exact-halving hypothesis (review item 3). The
+analysis decodes by `dec : F → ℝ`; the contract `FloatMachine.IsAccurate dec u τ Ω μM μQ cN`
+gives each operation's error relation (`IsRoundingOf u τ Ω a z`, $|a| \le \Omega \Rightarrow
+|a - z| \le u\max(|a|, \tau)$, for $+, -, \times, /$, `ofNat`; exactness of $0$, $1$, `neg`,
+`le`, `toNat`) and the black-box and sampler contracts `IsMatMulErr`, `IsQRErr`,
+`IsUnifSampler`, `IsNormalSampler`, now stated through the decoding (so they are the functional
+contracts that the planned `KernelContracts.lean` of COMPDYN lifts). C1 shows the contract is
+satisfiable (the exact machine at $u = 0$); R1 shows `Real.roundNearest`, the rounding of
+`Computation.gridSem`, is an `IsRoundingOf` rounding, so the machine whose scalar operations
+round with it meets the scalar part of the contract.
 
-### 2.2 Black boxes (`NLAlib/Matrix/Computation/Primitives.lean`, written)
+**Enforced by typing.** `newtonSchulzRounded`, `newtonSchulzTest`, `newtonSchulzLoop`,
+`newtonSchulzSign`, `deflate`, `eighStep`, `eighNextParams`, `eighAux`, `eigh`, `eighChild`,
+`eighNodeAt` are generic in `F`, `Su`, `Sg`. `F` has no instances, so an exact operation on a
+stored number (or on the ideal samples, of abstract types `Su`, `Sg`) does not typecheck: data
+flows only through the machine's fields. The definitions are computable `def`s (no
+`noncomputable`), so Lean would reject any data that depends on classical choice, such as an
+`if` on an undecidable proposition about stored values; all branching is on the machine's `le`
+or on natural numbers. Every scalar parameter is computed by the machine: $\mathrm{fl}(R/\ell)$,
+$\mathrm{fl}(R/2)$, $\mathrm{fl}(2R)$, the next window and tolerance (`eighNextParams`), the
+leaf test $R \le \mathrm{fl}(\varepsilon R_0)$, the sign threshold
+$\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$, and the rank
+$k_+ = \min(k, \lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+)$, which is the clamped
+conversion `bindIdx` of COMPDYN's programs. The exact-scalar-parameter deviation of the first
+draft is gone.
+
+**Not enforced by typing.** (i) Natural-number bookkeeping is exact and free: sizes $k$, $k_+$,
+the depth counter $\ell$, the step limits, `List Bool` paths, as the integer side of the paper's
+model also assumes; an algorithm could in principle extract digits of a stored number through
+`toNat` and repeated rounded scalings and compute with them exactly in ℕ — legal in this model,
+and visible in the code. (ii) Nothing counts operations (OQ11). (iii) The *theorems* are free to
+use exact real arithmetic on decodings, as analyses must. (iv) Two inputs are precomputed
+thresholds rather than computed: the depth counter $\ell \ge \lceil\log_2(1/\varepsilon)\rceil + 5$
+and the accuracy $\beta$ (any stored number at most the analysis bound; a lower bound suffices,
+so no square root or logarithm is computed). This is the "abstract routine" choice of COMPDYN
+§8.2(2): the argument carries exactly the inequalities the proofs use (`hβle`, `hℓ`), and a
+bit-length routine (COMPDYN §4.7) can supply them later without changing a statement (OQ10).
+
+### 2.1 Entrywise operations (`NLAlib/Matrix/Computation/EntrywiseRounding.lean`, written)
+
+`hermFrom up dg` builds a stored Hermitian matrix from its strict upper triangle and real
+diagonal, mirroring with the exact negation (decoding exactly Hermitian, R2, whatever the
+rounding does with signs). `hermShift X c` ($\mathbf{X} - c\mathbf{I}$: one `sub` per diagonal
+entry), `hermScale X c` ($\mathbf{X}/c$: one `div` per part), `hermAvg X c`
+($(\mathbf{X} + \mathbf{X}^{\mathsf{H}})/c$: an `add` or `sub`, then a `div`, per part),
+`traceRe` (left-to-right `add`), and the exact `negMat`, `conjTransposeMat`, `identityMat`,
+`zeroMat`.
+
+### 2.2 Contracts (`NLAlib/Matrix/Computation/Primitives.lean`, written)
 
 ```lean
-abbrev MatMulMap (𝕜) := ∀ {l m n : ℕ}, Matrix (Fin l) (Fin m) 𝕜 → Matrix (Fin m) (Fin n) 𝕜 → Matrix (Fin l) (Fin n) 𝕜
-abbrev QRMap (𝕜) := ∀ {m n : ℕ}, Matrix (Fin m) (Fin n) 𝕜 → Matrix (Fin m) (Fin m) 𝕜 × Matrix (Fin m) (Fin n) 𝕜
-structure IsMatMulErr (u τ Ω : ℝ) (μ : ℕ → ℝ) (mm : MatMulMap 𝕜) : Prop where
-  specNorm_mul_sub_le : ∀ {l m n} (A) (B), specNorm A * specNorm B ≤ Ω →
-    specNorm (A * B - mm A B) ≤ μ (max l (max m n)) * u * max (specNorm A * specNorm B) τ
-  isHermitian_conjTranspose : ∀ {m n} (A : Matrix (Fin m) (Fin n) 𝕜), Matrix.IsHermitian (mm A Aᴴ)
-def IsQRErr (u τ Ω) (μ) (qr : QRMap 𝕜) : Prop :=
-  ∀ {m n} (A), specNorm A ≤ Ω → IsUpperTrapezoidal (qr A).2 ∧ ∃ Q', HasOrthonormalCols Q' ∧
-    specNorm (Q' - (qr A).1) ≤ μ (max m n) * u ∧ specNorm (A - Q' * (qr A).2) ≤ μ (max m n) * u * max (specNorm A) τ
-def IsUnifSampler (u) (unif : ℝ → ℝ → ℝ) : Prop :=        -- scale s, ideal seed v ∈ [-1, 1]
-  ∀ s v, 0 ≤ s → v ∈ Set.Icc (-1) 1 → |unif s v| ≤ s ∧ |s * v - unif s v| ≤ s * u
-def IsNormalSampler (u c) (normal : ℂ → ℂ) : Prop := ∀ z, ‖z - normal z‖ ≤ c * u * ‖z‖
+structure IsMatMulErr (dec : K → 𝕜) (u τ Ω : ℝ) (μ : ℕ → ℝ) (mm : MatMulMap K) : Prop where
+  specNorm_mul_sub_le : ∀ A B, ‖Ā‖‖B̄‖ ≤ Ω → ‖Ā B̄ - (mm A B)‾‖ ≤ μ d * u * max (‖Ā‖‖B̄‖) τ
+  isHermitian_of_map_eq_conjTranspose : ∀ A B, B̄ = Āᴴ → ((mm A B)‾).IsHermitian
+def IsQRErr (dec) (u τ Ω) (μ) (qr : QRMap K) : Prop :=   -- R̄ upper trapezoidal, unitary Q' with
+  ... specNorm (Q' - Q̄) ≤ μ d * u ∧ specNorm (Ā - Q' * R̄) ≤ μ d * u * max ‖Ā‖ τ
+def IsUnifSampler (dec) (u) (unif : F → ℝ → F) : Prop := ∀ s v, 0 ≤ s̄ → v ∈ [-1, 1] →
+  |unif s v|‾ ≤ s̄ ∧ |s̄ * v - (unif s v)‾| ≤ s̄ * u
+def IsNormalSampler (dec : K → ℂ) (u c) (normal : ℂ → K) : Prop := ∀ z, ‖z - (normal z)‾‖ ≤ c*u*‖z‖
 ```
 
-Routines are total functions on `Fin`-indexed matrices of every shape (the recursion changes sizes,
-so `Fin` carries content, T6); $\mu$ is a function of the largest dimension. The samplers are
-deterministic perturbations of ideal samples: the paper's "there is a coupling" is realised by the
-ideal sample itself, which is what the probability argument conditions on. Witnesses: exact
-multiplication (C1) and an exact QR (C2) meet the contracts for every $u \ge 0$, so they are
-satisfiable. Errors are written exact minus computed (N10).
+Errors are exact minus computed (N10). The Hermitian clause is OQ13.
 
 ### 2.3 Algorithms (`NLAlib/Matrix/Computation/{NewtonSchulzSign,Deflation,SpectralBisection}.lean`, written)
 
-* `newtonSchulzRounded mm fl A` $= \mathrm{roundHermitian}\bigl(\tfrac12\operatorname{herm}\,
-  \mathrm{mm}(\mathbf{A}, \mathrm{roundDiag}(3\mathbf{I} - \mathrm{mm}(\mathbf{A},\mathbf{A})))\bigr)$;
-  `newtonSchulzLoop mm fl η N` tests (`IsNewtonSchulzConverged`: every entry of the computed
-  $\mathbf{I} - \mathrm{mm}(\mathbf{A},\mathbf{A})$ has $\lvert\operatorname{Re}\rvert,
-  \lvert\operatorname{Im}\rvert \le \eta$) and steps at most $N$ times; `newtonSchulzSign mm fl ε b N A`
-  starts from the rounded $\mathbf{A}/b$ with $\eta = \varepsilon/(4n)$.
-* `deflate mm qr normal r P G`: the first $r$ columns of $\mathrm{qr}(\mathrm{mm}(\mathbf{P},
-  \mathbf{G}.\mathrm{map}\ \mathrm{normal}))$.
-* `eighStep P N signFuel R₀ ρ A R ε ℓ s : EighStep k` is one node: leaf
-  ($k \le 1$: $(\mathbf{I}, \operatorname{Re}\operatorname{diag}\mathbf{A})$; $R \le \varepsilon R_0$:
-  $(\mathbf{I}, \mathbf{0})$), one child (`shift b A' σ`, all eigenvalues on one side), or a split
-  (`split kp h Qp Qm Ap Am σ`). `eighAux` recurses on a budget and assembles
-  $[\mathrm{mm}(\mathbf{Q}_+, \mathbf{U}_+)\ \mathrm{mm}(\mathbf{Q}_-, \mathbf{U}_-)]$ with
-  $\mathrm{fl}(d_\pm \pm R/2)$; `eigh` is the root call ($\rho = \theta/(4n)$, $\ell$ =
-  `bisectionDepth ε` $= \lceil\log_2(1/\varepsilon)\rceil + 5$, budget $\ell + 1$). The scale $R_0$ is
-  an input with $\|\mathbf{A}\|_2 \le R_0$ (the paper's $R_0 = \|\mathbf{A}\|_2$, not a floating-point
-  primitive; $R_0 = \|\mathbf{A}\|_{\mathsf F}$ is a computable choice).
-* Randomness: a tree of ideal samples `s : List Bool → EighSample N`,
-  `EighSample N = ℝ × (Bool → Matrix (Fin N) (Fin N) ℂ)` (seed, two Gaussian matrices); the node at
-  path `a` uses `s a` and its children the subtrees `fun a' => s (b :: a')`; a node of size $k$
-  uses the leading $k \times k$ blocks. `eighNodeAt` computes the node at a path; the probability
-  argument works with it (OQ3).
-* `IsApproxDiagonalization A U d η κ` (structure): residual $\le \eta$ and
-  $(1-\kappa)^2\mathbf{I} \preceq \mathbf{U}^{\mathsf{H}}\mathbf{U} \preceq (1+\kappa)^2\mathbf{I}$
-  (vocabulary: spectral bound on a factor in Loewner form). `IsEighGoodSample w x t y s`: Event I
-  ($\lvert\lambda - c'\rvert \ge w$ for all eigenvalues, $c' = (R/\ell)v$) and Event II (for each
-  side with true projector of rank $0 < r < k$ and every orthonormal basis $\mathbf{V}$ of it,
-  $\|\mathbf{G}\|_2 < t$ and $\sigma_{r-1}(\mathbf{V}^{\mathsf{H}}\mathbf{G}_1) > x$).
+* `newtonSchulzRounded M A = hermAvg (mm A (negMat (hermShift (mm A A) (ofNat 3)))) (ofNat 4)`;
+  `newtonSchulzTest M η A`: every part of every entry of `hermShift (mm A A) one` in
+  $[-\eta, \eta]$ by the machine's `le`; `newtonSchulzLoop` (tests, then steps, at most $N$
+  times); `newtonSchulzSign M ε b N A` starts from `hermScale A b` with threshold
+  `div ε (ofNat (4 n))`.
+* `deflate M r P G`: the first $r$ columns of `(qr (mm P (G.map normal))).1`.
+* `eighStep M N signFuel R₀ β A R ε ℓ s : EighStep F k`: leaf ($k \le 1$, or the machine's test
+  $R \le \mathrm{fl}(\varepsilon R_0)$), one child, or a split; `eighAux` recurses on a budget with
+  `eighNextParams`; `eigh M signFuel ℓ A R₀ ε β s` is the root call (budget $\ell + 1$). $R_0$,
+  $\varepsilon$, $\beta$ are stored inputs, $\ell$ a natural input.
+* Randomness: `s : List Bool → EighSample Su Sg N`, `EighSample Su Sg N = Su × (Bool → Matrix
+  (Fin N) (Fin N) Sg)`; the node at path `a` uses `s a`, its children the subtrees.
+* `IsApproxDiagonalization A U d η κ` (on ℂ; theorems apply it to decodings), `IsEighGoodSample
+  dec w x t y s` (Event I with the seed in $[-1, 1]$, Event II).
 
-Modelling deviations from Algorithms 1 and 3 (OQ12): scalar parameters $R$, $\varepsilon$,
-$\ell$, $\beta$ exact; $k_- = k - k_+$ with $k_+$ capped at $k$; stopping test componentwise and
-applied before each step (the paper's repeat–until steps first; harmless: a passing start is
-already accurate); explicit step caps (`signFuel`, recursion budget) whose sufficiency is a
-hypothesis/theorem; rounded Hermitian parts of the iterates and compressions (OQ8); the projectors
-$\mathbf{P}_\pm = \tfrac12(\mathbf{I} \pm \mathbf{B})$ stored by `roundHermitian` (every entry
-rounded), so a bounded-exponent model never needs exact halving of subnormals (review item 3);
-Event I of `IsEighGoodSample` includes "seed in $[-1, 1]$" (a null event under the law).
+Remaining modelling deviations from Algorithms 1 and 3 (OQ12): $k_- = k - k_+$; the test is
+componentwise and applied before each step; explicit step caps; one accuracy $\beta$ for all
+nodes (a node-wise accuracy would be larger, so this only lengthens the sign iterations); stored
+Hermitian iterates, projectors and compressions (OQ8); Event I includes "seed in $[-1, 1]$".
 
 ### 2.4 Complex Gaussian (`NLAlib/RandomMatrix/Gaussian/Complex.lean`, written)
 
@@ -218,19 +251,22 @@ ranks by Weyl. SG1 ($g$ of a Hermitian matrix is the polynomial), SG3 ($\operato
 \operatorname{sign}\mathbf{A}\|_2 \le \max\lvert 1 - \lambda^2\rvert$), SG5 (frames of the spectral
 projectors, invariance, spectrum of the compression), SG6 (trace of the projector = inertia).
 
-### 3.3 Rounding and contracts (R1–R7, C1–C3)
+### 3.3 Machine operations and contracts (R1–R9, C1, C3)
 
-R1 the grid witness; R2 scalar error $u(\lvert z\rvert + 2\tau)$; R3, R4 Hermitian; R5
-$\|\mathbf{X} - \mathrm{roundHermitian}\,\mathbf{X}\|_2 \le u(\sqrt n\|\mathbf{X}\|_2 + 2n\tau)$;
-R6 $\|\mathbf{X} - \mathrm{roundDiag}\,\mathbf{X}\|_2 \le u\max(\|\mathbf{X}\|_2, \tau)$ (diagonal
-error, as the paper notes in Lemma 2.1); R7 rounded summation $2ku(\sum\lvert x_i\rvert + k\tau)$
-for $ku \le 1/2$. C1, C2 witnesses; **C3** the bridge (b) of §12: a mixed bound
-$\mu u\|\mathbf{A}\|\|\mathbf{B}\| + \eta$ with $\eta \le \mu u\tau$ gives `IsMatMulErr` with $2\mu$.
+R1: `Real.roundNearest t` returns an `IsRoundingOf` $2^{-t}$ $0$ $\Omega$ rounding (the grid
+rounding of `gridSem`). R2: `hermFrom` decodes Hermitian. R3–R5: `negMat`, `conjTransposeMat`,
+`identityMat` decode exactly. R6 $\|(\bar{\mathbf{X}} - \bar c\mathbf{I}) -
+\overline{\mathrm{hermShift}}\|_2 \le u\max(\|\bar{\mathbf{X}} - \bar c\mathbf{I}\|_2, \tau)$
+(diagonal error, as the paper notes in Lemma 2.1); R7 $\|\bar{\mathbf{X}}/\bar c -
+\overline{\mathrm{hermScale}}\|_2 \le u(\sqrt k\|\cdot\|_2 + 2k\tau)$; R8 the same with $3u$ for
+`hermAvg` (two roundings per part, $|\bar c| \ge 1$); R9 the rounded trace,
+$2ku(\sum\lvert x_i\rvert + k\tau)$ for $ku \le 1/2$. C1: the exact machine meets
+`IsAccurate` at $u = 0$ (so all hypotheses are consistent). **C3** the bridge (b) of §12.
 
 ### 3.4 Algorithm 1 (SN1–SN4, `Matrix/Computation/NewtonSchulzSign.lean`)
 
 **SN3** (Lemma 2.1): for Hermitian $\|\mathbf{A}\|_2 \le 11/10$, $u(8 + \mu(n)) \le 1/10$,
-$2n\tau \le 1$, $\Omega \ge 8$: $\|g(\mathbf{A}) - \tilde g(\mathbf{A})\|_2 \le 4\sqrt n(8 +
+$2n\tau \le 1$, $\Omega \ge 8$ (stored constants $3$, $4$ by `ofNat`): $\|g(\mathbf{A}) - \tilde g(\mathbf{A})\|_2 \le 4\sqrt n(8 +
 \mu(n))u$. Stated in the iteration's regime rather than for every $a$: with floors, a general-$a$
 statement needs $a$-dependent floor conditions, and the only consumer is SN4. The $\sqrt n$ is the
 price of storing the step Hermitian (G1/OQ8).
@@ -258,7 +294,9 @@ $\mathbb{P}[\sigma_{\min}(\mathbf{G}) \le x] \le r^2x^2$ for $r \times r$, via t
 $\sqrt r\,x$ of the span of the others) and **CG5**: $\mathbb{P}[\|\mathbf{\Pi}\mathbf{g}\| \le s]
 \le s^2$ for a nonzero projector $\mathbf{\Pi}$ (two real degrees of freedom per complex
 coordinate: $\lvert z\rvert^2 \sim \mathrm{Exp}(1)$). Edelman: $(r/2)x^2$ (paper) or $1 -
-e^{-rx^2}$; the loss $2r$ costs $\le \log_2 n + 1$ bits.
+e^{-rx^2}$; the loss $2r$ costs $\le \log_2 n + 1$ bits. Per the maintainer's comment on OQ7,
+this can be improved when the proof is written: Edelman's sharp law would improve the constant
+(a follow-up; CG6's docstring says so).
 
 ### 3.6 Algorithm 2 (DF1, DF2 `Matrix/Computation/Deflation.lean`; DP1 `Eigensolvers/RandomizedDeflation.lean`)
 
@@ -294,25 +332,30 @@ seed in $[-1, 1]$ and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\math
 **EB1a** (child invariant): under EB1's hypotheses without the children's guarantee, every child
 has a Hermitian matrix of norm at most its window — what EB5's induction needs at each child.
 **EB1** (Lemma 4.1): node contracts and precision hypotheses (written in §3.11's table and the
-docstring), good sample when internal ($k \ge 2$, $R > \varepsilon R_0$), children approximate
+docstring), good sample when internal ($k \ge 2$ and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$
+fails), children approximate
 diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$ ⟹ node output with
-$(\varepsilon(R + R_0), \varepsilon/3)$, using EB1a and EB1b. EB2 depth $\le \ell$ (exact telescoping
+$(\varepsilon(R + R_0), \varepsilon/3)$, using EB1a and EB1b. EB2 depth $\le \ell$ for any counter $\ell \ge \lceil\log_2(1/\varepsilon)\rceil + 5$ (telescoping, now
+with the machine's rounded parameters, absorbed for $100\ell^2u \le 1$:
 $\prod_{i<\ell}\frac{\ell+i+4}{\ell+i} = \frac{2\ell(2\ell+1)(2\ell+2)(2\ell+3)}{\ell(\ell+1)(\ell+2)(\ell+3)}$
 against $\varepsilon_\ell = \varepsilon(\ell-1)/(2\ell-1)$; the paper compares with $\varepsilon$
 instead of $\varepsilon_\ell$, which is also fine but by a margin of order $1/\ell$). EB3 at most
 $(n+1)(\ell+1)$ nodes, EB4 at most $n$ splits (by induction on the path length, since the tree
 may be infinite without depth hypotheses). **EB5**: every internal node good ⟹
 $\mathsf{eigh}$ is an approximate diagonalization with $(2\varepsilon R_0, \varepsilon/3)$, under
-the global hypotheses with
-$$\beta = \frac{\varepsilon\sqrt\theta}{2880\,\ell n^{3/2}(2\sqrt n + \sqrt{2\log(16n/\theta)})}
+the global hypotheses with the stored accuracy (a precomputed threshold)
+$$0 < \beta \le \frac{\varepsilon\sqrt\theta}{2880\,\ell n^{3/2}(2\sqrt n + \sqrt{2\log(16n/\theta)})}
 ,\quad N_* = N\Bigl(\frac{\theta}{32n(n+1)\ell(\ell+1)}, \frac\beta{16n}\Bigr),$$
 $640n^{3/2}(8 + \mu_{\mathrm{MM}})(N_* + 1)\cdot16n(n+1)\ell(\ell+1)u \le \theta\beta$,
 $(4\mu_{\mathrm{QR}} + 2\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}} + 1)u \le \beta$, step cap
-$\ge N_*$, $4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, $16(R_0 + n +
-\sqrt{\log(16n/\theta)}) \le \Omega$. Node parameters: $w_y = \theta R_y/(2k_y\ell_y(n+1)(\ell+1))$
+$\ge N_*$, $4n\tau \le \min(\sqrt{\theta/(8n)}, \varepsilon R_0/3)$, $16(R_0 + n + \ell +
+\sqrt{\log(16n/\theta)}) \le \Omega$. All quantities are decodings of stored values; the
+machine-computed node parameters differ from the exact ones by factors $(1 \pm u)^{4j}$ at
+depth $j$, absorbed in the slack of the constants (2880 against the 2274 Fable derived). Node parameters: $w_y = \theta R_y/(2k_y\ell_y(n+1)(\ell+1))$
 (the corrected Event I budget, G2), $x_y = \sqrt{\rho/2}/k_y$, $t_y = \sqrt2(2\sqrt{k_y} +
 \sqrt{2\log(4/\rho)})$, $\rho = \theta/(4n)$; with these the deflation tolerance
-`bisectionSignTol` gives output error exactly $\eta = \varepsilon'/(5\ell)$ and $m\beta = \eta/6$.
+`bisectionSignTol` (an analysis-side bound, with $\beta$ below it) gives output error at most
+$\eta = \varepsilon'/(5\ell)$ and $m\beta \le \eta/6$.
 
 ### 3.9 Algorithm 3, probability (EV1–EV7, `Eigensolvers/SpectralBisection.lean`)
 
@@ -322,12 +365,14 @@ a path has countably many values, measurable fibres, and is independent of its o
 **without any measurability assumption on MM, QR or fl**: the computed samples are measurable maps
 of the ideal ones into countable sets (floating-point numbers are countable), and every node is a
 function of finitely many of them (OQ3). **EV6** (Theorem 4.2): the global hypotheses of EB5,
-samplers measurable with countable ranges, $(\zeta_a)$ independent with law `eighSampleLaw n` ⟹
+samplers with measurable fibres and countable ranges, $(\zeta_a)$ independent with law `eighSampleLaw n` ⟹
 failure probability $\le \theta$. **EV7**: the same with the precision conditions replaced by
 $$\log_2\tfrac1u \ge \log_2\tfrac1\varepsilon + \tfrac32\log_2\tfrac1\theta +
 \log_2\bigl(n^4(n+1)(8 + \mu_{\mathrm{MM}}) + n^{3/2}(4\mu_{\mathrm{QR}} + 2\sqrt n(c_{\mathrm N}+1)
 + 2\mu_{\mathrm{MM}} + 1)\bigr) + \log_2(N_* + 1) + 3\log_2(\ell + 1) + \log_2(2\sqrt n +
-\sqrt{2\log(16n/\theta)}) + 25,$$
+\sqrt{2\log(16n/\theta)}) + 26,$$
+for an accuracy within a factor $2$ of its bound, $\beta_*/2 \le \beta \le \beta_*$ (one more bit
+than the first draft because $\beta$ is now a precomputed threshold, not the exact bound),
 i.e. $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$
 (paper: $n^{4.5}\mu$ and $2\log_2\log_2(1/\varepsilon)$; ours $n^5\mu$ and $3\log_2\ell$, from
 the Hermitian rounding, the stopping test and G2).
@@ -376,30 +421,31 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| R1 | `isRoundingFn_roundNearest` | S | 0 | — |
-| R2 | `IsRoundingFn.norm_sub_roundScalar_le` | M | 0 | — |
-| R3 | `isHermitian_roundHermitian` | S | 0 | — |
-| R4 | `Matrix.IsHermitian.isHermitian_roundDiag` | S | 0 | — |
-| R5 | `IsRoundingFn.specNorm_sub_roundHermitian_le` | M | 1 | R2 |
-| R6 | `IsRoundingFn.specNorm_sub_roundDiag_le` | M | 0 | — |
-| R7 | `IsRoundingFn.abs_sum_sub_roundedSum_le` | M | 0 | — |
+| R1 | `isRoundingOf_roundNearest` | S | 0 | — |
+| R2 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom` | S | 0 | — |
+| R3 | `FloatMachine.IsAccurate.decodeMatrix_negMat` | S | 0 | — |
+| R4 | `FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat` | S | 0 | — |
+| R5 | `FloatMachine.IsAccurate.decodeMatrix_identityMat` | S | 0 | — |
+| R6 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le` | M | 0 | — |
+| R7 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le` | M | 0 | — |
+| R8 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le` | M | 0 | — |
+| R9 | `FloatMachine.IsAccurate.abs_sum_sub_traceRe_le` | M | 0 | — |
 
 **Matrix/Computation/Primitives.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| C1 | `isMatMulErr_mul` | S | 0 | — |
-| C2 | `exists_isQRErr` | S | 0 | — |
+| C1 | `exists_floatMachine_isAccurate` | M | 0 | — |
 | C3 | `IsMatMulErr.of_specNorm_mul_sub_le_add` | S | 0 | — |
 
 **Matrix/Computation/NewtonSchulzSign.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| SN1 | `isHermitian_newtonSchulzRounded` | S | 1 | R3 |
-| SN2 | `isHermitian_newtonSchulzSign` | S | 2 | R3, SN1 |
-| SN3 | `IsMatMulErr.specNorm_sub_newtonSchulzRounded_le` | M | 2 | R5, R6 |
-| SN4 | `IsMatMulErr.specNorm_cfc_sign_sub_newtonSchulzSign_le` | L | 5 | SN3, SG1, SG2, SG3, SG4, NS9, NS10, NS11, NS12, R5, R6 |
+| SN1 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded` | S | 1 | R2 |
+| SN2 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign` | S | 2 | R2, SN1 |
+| SN3 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le` | M | 1 | R3, R6, R8 |
+| SN4 | `FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le` | L | 5 | SN3, R7, SG1, SG2, SG3, SG4, NS9, NS10, NS11, NS12 |
 
 **RandomMatrix/Gaussian/Complex.lean**
 
@@ -418,13 +464,13 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | DF1 | `HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le` | M | 0 | — |
-| DF2 | `IsMatMulErr.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` | L | 1 | DF1 |
+| DF2 | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` | L | 1 | DF1 |
 
 **Eigensolvers/RandomizedDeflation.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| DP1 | `IsMatMulErr.measureReal_not_exists_specNorm_mul_sub_deflate_le_le` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
+| DP1 | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
 
 **Probability/AdaptiveUnionBound.lean**
 
@@ -436,25 +482,25 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| EB1b | `eighStep_isSplit_iff_of_forall_le_abs_sub` | M | 6 | SN4, SG2, SG6, R5, R6, R7 |
-| EB1a | `isHermitian_and_specNorm_le_of_eighChild_eq_some` | M | 7 | EB1b, SG5, DF2, R3, R4, R5, R6 |
-| EB1 | `isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 8 | EB1a, EB1b, SG5, DF1, DF2, R5 |
-| EB2 | `eighNodeAt_eq_none_of_bisectionDepth_lt_length` | M | 0 | — |
-| EB3 | `encard_eighNodeAt_ne_none_le` | L | 1 | EB2 |
+| EB1b | `FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` | M | 6 | SN4, SG2, SG6, R6, R7, R9 |
+| EB1a | `FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some` | M | 7 | EB1b, SG5, DF2, R2, R4, R6, R8 |
+| EB1 | `FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` | H | 8 | EB1a, EB1b, SG5, DF1, DF2, R4, R5, R8 |
+| EB2 | `FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length` | M | 0 | — |
+| EB3 | `FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le` | L | 1 | EB2 |
 | EB4 | `encard_eighNodeAt_isSplit_le` | L | 0 | — |
-| EB5 | `isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 9 | EB1, EB1a, EB2, NS11, NS12 |
+| EB5 | `FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample` | H | 9 | EB1, EB1a, EB2, NS11, NS12 |
 
 **Eigensolvers/SpectralBisection.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | EV1 | `measureReal_exists_abs_sub_lt_le` | M | 0 | — |
-| EV2 | `measure_not_isEighGoodSample_le` | L | 7 | EV1, EB1b, CG2, CG3, CG4, CG6, SG5 |
+| EV2 | `FloatMachine.IsAccurate.measure_not_isEighGoodSample_le` | L | 7 | EV1, EB1b, CG2, CG3, CG4, CG6, SG5 |
 | EV3 | `countable_range_eighNodeAt` | M | 0 | — |
 | EV4 | `measurableSet_eighNodeAt_eq` | L | 1 | EV3 |
 | EV5 | `indepFun_eighNodeAt_eq` | H | 2 | EV4 |
-| EV6 | `measureReal_not_isApproxDiagonalization_eigh_le` | L | 10 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
-| EV7 | `measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 11 | EV6 |
+| EV6 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le` | L | 10 | EB5, UB1, EV2, EV3, EV4, EV5, EB3, EB4 |
+| EV7 | `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le` | M | 11 | EV6 |
 
 **LowerBounds/Eigensolvers/Precision.lean**
 
@@ -468,7 +514,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | [Shah2024] | here | deviation |
 |---|---|---|
-| §1.2 model $\lvert\mathrm{fl}(z) - z\rvert \le u\lvert z\rvert$ | `IsRoundingFn` on parts, `roundScalar`, R1–R2 | componentwise; floor $\tau$, range $\Omega$ |
+| §1.2 model $\lvert\mathrm{fl}(z) - z\rvert \le u\lvert z\rvert$ | `FloatMachine`, `IsAccurate` (`IsRoundingOf` per operation), complex as pairs, R1 | componentwise IEEE complex; floor $\tau$, range $\Omega$; one rounding per operation |
 | Prop 1.1 | LB1–LB3 | spectral-norm argument corrected (G3); $+\log_2(1-\varepsilon)$ |
 | Def 1.1 MM, Def 1.2 QR | `IsMatMulErr`, `IsQRErr`, C1–C3 | floor/range; rectangular shapes |
 | Def 1.3 Unif, Def 1.4 Normal | `IsUnifSampler`, `IsNormalSampler` | coupling = deterministic map of the ideal sample |
@@ -489,7 +535,7 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 ## 5. Consumers
 
-* `IsMatMulErr`, `IsQRErr`, `IsRoundingFn`, the Hermitian roundings: every later analysis of a
+* `FloatMachine` and its contract, `IsMatMulErr`, `IsQRErr`, the entrywise operations: every later analysis of a
   dense algorithm against black boxes (QDWH/Zolo-pd polar iterations, Banks et al.'s general
   diagonalization, randomized rank-revealing QR, the Hermitian pencil case, fast inversion); the
   bounded-exponent instance (§12) supplies them.
@@ -514,8 +560,8 @@ New `NLAlib` files (definitions, written, `--wfail`):
 | file | declarations | reason |
 |---|---|---|
 | `Polynomial/Approximation/NewtonSchulz.lean` | `newtonSchulz`, `newtonSchulzSteps` | scalar approximation of sign by a polynomial iteration; P11 holds (imports Mathlib only) |
-| `Matrix/Computation/EntrywiseRounding.lean` | `IsRoundingFn`, `roundScalar`, `roundDiag`, `roundHermitian`, `roundedSum` | finite-precision matrix computation, with the rounded BLAS of `Matrix/Computation/BLAS.lean` |
-| `Matrix/Computation/Primitives.lean` | `MatMulMap`, `QRMap`, `IsMatMulErr`, `IsQRErr`, `IsUnifSampler`, `IsNormalSampler` | black-box contracts at matrix level (not `Computation/`, whose files may not import Matrix, E5) |
+| `Matrix/Computation/EntrywiseRounding.lean` | `FloatMachine.hermFrom`, `hermShift`, `hermScale`, `hermAvg`, `negMat`, `conjTransposeMat`, `identityMat`, `zeroMat`, `traceRe` | entrywise operations built from the machine's scalar operations |
+| `Matrix/Computation/Primitives.lean` | `MatMulMap`, `QRMap`, `IsRoundingOf`, `IsMatMulErr`, `IsQRErr`, `IsUnifSampler`, `IsNormalSampler`, `FloatMachine`, `decodeComplex`, `decodeMatrix`, `FloatMachine.IsAccurate` | the machine and its contract at matrix level (not `Computation/`, whose files may not import Matrix, E5; COMPDYN's `KernelContracts.lean` lifts these contracts) |
 | `Matrix/Computation/NewtonSchulzSign.lean` | Algorithm 1 | deterministic, Matrix layer |
 | `Matrix/Computation/Deflation.lean` | `deflate` | deterministic given the sample |
 | `Matrix/Computation/SpectralBisection.lean` | Algorithm 3, the tree, `IsApproxDiagonalization`, `IsEighGoodSample` | deterministic given the samples; the probability needs layer 2 |
@@ -587,11 +633,11 @@ Static costs: `Computation.StaticCost` applies to deep-embedded `Prog`s only (OQ
 
 ## 9. Names for review
 
-`IsRoundingFn` (alternatives `IsRelRoundingFn`, `IsFloorRelErr`), `roundScalar`, `roundDiag`,
-`roundHermitian`, `roundedSum`; `MatMulMap`, `QRMap`, `IsMatMulErr` (parallel to
+`FloatMachine` (alternatives `RoundingMachine`, `FloatOps`), `IsRoundingOf`, `decodeComplex`,
+`decodeMatrix`, `hermFrom`, `hermShift`, `hermScale`, `hermAvg`, `negMat`, `traceRe`; `MatMulMap`, `QRMap`, `IsMatMulErr` (parallel to
 `Computation.IsMatvecErr`), `IsQRErr`, `IsUnifSampler`, `IsNormalSampler`; `newtonSchulz`,
 `newtonSchulzSteps`, `newtonSchulzRounded`, `IsNewtonSchulzConverged`, `newtonSchulzLoop`,
-`newtonSchulzSign`; `deflate`; `EighPrimitives`, `EighSample`, `EighStep`, `EighNode`, `eighStep`,
+`newtonSchulzSign`, `newtonSchulzTest`; `deflate`; `EighSample`, `eighNextParams`, `EighStep`, `EighNode`, `eighStep`,
 `eighAux`, `eigh`, `eighChild`, `eighNodeAt`, `bisectionSignTol`, `bisectionDepth`, `leadingBlock`
 (the "Eigh" prefix follows the paper's EIGH; `spectralBisection*` is the alternative);
 `IsApproxDiagonalization`, `IsEighGoodSample`; `complexGaussian*`; `eighSampleLaw`. Theorem names
@@ -611,19 +657,21 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
    later randomized eigensolvers (randomized block Krylov with Gaussian starts, shattering) have a
    home.
 2. **Complex rounding model** — (a) **a real rounding function applied to real and imaginary
-   parts (`IsRoundingFn`), tied to the contract layer by the witness R1**; (b) generalize
+   parts, through the machine's scalar operations (componentwise IEEE), tied to the contract
+   layer by the witness R1** — confirmed by the maintainer ("the same way IEEE works"); (b) generalize
    `IsRelErrSem` to `RCLike` decodings in `Computation/Contract.lean` (collides with the current
    bounded-model work; can follow later and would give (a) as a corollary); (c) the paper's
    complex model $\lvert\mathrm{fl}(z) - z\rvert \le u\lvert z\rvert$ for a complex rounding
    function. (a) is what hardware does, keeps Hermitian structure exact without an oddness
    assumption, and implies (c) at $\tau = 0$ (R2).
-3. **Representation of the randomized recursion** — (a) **total Lean functions of the black boxes
-   and a tree of ideal samples `List Bool → sample`; samplers with countable ranges make every
-   node a measurable, countably-valued function of earlier samples, so no measurability of MM, QR
-   or fl is assumed**; (b) a deep-embedded `Prog` with random tapes (the program layer has no
-   recursion with data-dependent sizes and no QR oracle); (c) relational run structures
-   (`PCGRun`-style) quantified over measurable selections. (a) keeps every statement about a
-   concrete function; (b) is a program-layer project of its own.
+3. **Representation of the randomized recursion** — decided by the maintainer: shallow total
+   functions with fuel recursion, made non-cheating by construction. (a) **chosen: every
+   algorithm generic over a `FloatMachine F Su Sg` (§2.0)** — stored numbers and ideal samples of
+   abstract types, only the machine's operations on them, computable definitions, natural-number
+   bookkeeping exact; samplers with countable ranges make every node a measurable,
+   countably-valued function of earlier samples, so no measurability of MM, QR or the scalar
+   operations is assumed; (b) a deep-embedded `Prog` (COMPDYN; §15 lists what it needs, and the
+   intended refinement is an equality with these definitions); (c) relational run structures.
 4. **Complex Gaussian law** — (a) **build the minimal one now** (`complexGaussian` =
    $\mathcal{N}_{\mathbb C}(0,1)$ as a product law, bridges to Mathlib's `stdGaussian ℂ` and to the
    real `gaussianMatrix`, invariance, tails; Mathlib-deviations entry with the PR); (b) wait for a
@@ -636,9 +684,11 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
    no size condition), shorter, and uses the library's Davis–Kahan.
 7. **Lemma 3.1 (Edelman)** — (a) **elementary $r^2x^2$ via distance to the span and the complex
    small ball (CG5, CG6)**; (b) Edelman's exact law ($1 - e^{-rx^2}$, Wishart densities). (a)
-   loses a factor $2r$, i.e. at most $\log_2 n + 1$ bits.
+   loses a factor $2r$, i.e. at most $\log_2 n + 1$ bits. Maintainer: "indicate that this can be
+   improved when writing the proof" — CG6's docstring and §3.5 now say that Edelman's sharp law
+   would improve the constant, as a follow-up.
 8. **Hermitian symmetry of the iterates and compressions (gap G1)** — (a) **store the rounded
-   Hermitian part (`roundHermitian ∘ hermitianPart`) after each sign step and for
+   Hermitian part (`hermAvg`, one rounding per operation) after each sign step and for
    $\mathbf{C}_\pm$** ($n^2$ flops, error factor $\sqrt n$); (b) strengthen the MM contract to
    "Hermitian output whenever the exact product is Hermitian" (no fast algorithm guarantees it);
    (c) mirror the upper triangle without averaging (exact, but the error grows by
@@ -648,22 +698,27 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
    ($\ell^3$ in place of $\ell^2$); (b) draw the shift on $[-R/2, R/2]$ instead (density
    $1/R$, no $\ell$) and re-derive the window recursion (changes Algorithm 3). (a) keeps the
    algorithm.
-10. **Form of the precision conditions** — (a) **explicit formulas with auxiliary variables
-    (`hβ : β = …`, `hN : N = …`) and the bits corollary EV7 with additive constant 25**;
-    (b) named bounds (`…Bound`) in `docs/constants.toml` (a shared file under concurrent edit;
-    can be done at clean-up without changing any statement's content). The constants are this
-    note's derivation (§3.4, §3.8): a prover who needs more slack reports it as an amendment.
+10. **Form of the precision conditions and of the thresholds** — (a) **explicit formulas with
+    auxiliary variables (`hN : N = …`), the accuracy $\beta$ and the depth counter $\ell$ as
+    precomputed inputs carrying exactly the inequalities the proofs use (`hβle`, `hℓ`), and the
+    bits corollary EV7 with constant 26** (a lower bound suffices for $\beta$, so the algorithm
+    computes no square root or logarithm; COMPDYN §8.2(2), "routine left abstract"); (b) compute
+    $\beta$ and $\ell$ in the algorithm with COMPDYN §4.7's bit-length routine (no statement
+    change, a lemma that its output meets `hβle`, `hℓ`); (c) named bounds in
+    `docs/constants.toml` (a shared file under concurrent edit; at clean-up).
 11. **Operation counts** — (a) **out of scope now**; count the black-box calls later with a
     shallow counter (2 MM per sign step, one MM and one QR per deflation) if wanted; (b) state
     `Computation.StaticCost` bounds (only for deep-embedded programs, OQ3(b)). (a): decision 3
     puts runtime out of scope.
-12. **Modelling deviations and staging** — (a) **accept the deviations of §2.3 and dispatch
-    HDIAG-1 (W1 + W2 + LB, 35 targets) and HDIAG-2 (W3, 10) now, HDIAG-3 (W4, 15) after a Fable
-    re-check of the H/L outlines** (review items 1–3 are already applied); (b) round the scalar
-    parameters too and approve the sub-stages separately.
+12. **Remaining modelling deviations and staging** — (a) **accept the deviations of §2.3 ($k_-
+    = k - k_+$, componentwise test before stepping, step caps, one accuracy for all nodes; the
+    exact-scalar-parameter deviation is gone, every scalar parameter is machine-computed) and
+    dispatch HDIAG-1 (W1 + W2 + LB, 36 targets) and HDIAG-2 (W3, 10) now, HDIAG-3 (W4, 15) after
+    a Fable re-check of the H/L outlines** (review items 1–3 applied); (b) approve the sub-stages
+    separately.
 13. **The Hermitian-exactness clause of `IsMatMulErr`** — (a) **keep it** (classical gemm with
     round-to-nearest-even meets it; SN3 uses it so that the diagonal of $\mathrm{mm}(\mathbf{A},
-    \mathbf{A})$ is real); (b) drop it and let `roundDiag` discard the imaginary part of that
+    \mathbf{A})$ is real); (b) drop it and let `hermShift` discard the imaginary part of that
     diagonal, at an extra $1.21\mu u$ in SN3 (Strassen-type products do not meet the clause, so
     (b) widens the bridge). Fable leans to considering (b) for the bounded bridge; the statements
     change only in SN3's constant.
@@ -695,13 +750,15 @@ after the bounded model is on main, adds three statements and changes none:
 
 * **(a) Semantics level.** For the bounded-exponent binary format with $t$ significant bits and
   exponent range $[e_{\min}, e_{\max}]$: its round-to-nearest function satisfies
-  `IsRoundingFn (2⁻¹ ^ t) τ Ω` with $\tau = 2^{e_{\min}}$, the smallest normal number (gradual
+  `IsRoundingOf (2⁻¹ ^ t) τ Ω` with $\tau = 2^{e_{\min}}$, the smallest normal number (gradual
   underflow errs by at most half the subnormal spacing, $2^{e_{\min}-t} = u\tau$) and $\Omega$
   the largest finite number, and a semantics `binaryFloatSem` meeting the mixed contract
   on its `safe` set rounds every arithmetic result by that function (the analogue of R1 for
-  `gridSem`). Shape: `isRoundingFn_<boundedRound> (t emin emax) : IsRoundingFn (2⁻¹ ^ t)
-  (2 ^ emin) (<maxFinite>) (<boundedRound> t emin emax)`; real, as the model is, which suffices
-  since our complex numbers are stored componentwise.
+  `gridSem`). Shape: `∀ a, IsRoundingOf (2⁻¹ ^ t) (2 ^ emin) (<maxFinite>) a
+  (<boundedRound> t emin emax a)`, and the machine whose `add`, `sub`, `mul`, `div`, `ofNat`
+  round with it meets the scalar part of `FloatMachine.IsAccurate`; real, as the model is, which
+  suffices since complex numbers are stored componentwise. Halving is a rounded `div` in the
+  algorithms, so subnormals need no special hypothesis.
 * **(b) Matrix multiplication.** A componentwise mixed bound $\lvert\mathbf{A}\mathbf{B} -
   \mathrm{fl}(\mathbf{A}\mathbf{B})\rvert \le \gamma_d\lvert\mathbf{A}\rvert\lvert\mathbf{B}\rvert +
   d\eta$ (Codex's underflow BLAS) gives the normwise mixed bound with $\mu = d\gamma_d/u$ and
@@ -728,15 +785,15 @@ after the bounded model is on main, adds three statements and changes none:
 
 ## 13. Proof plan for dispatch
 
-Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 27 independent
-targets (C1, C2, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R2, R3, R4, R6, R7, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7,
-NS1→{NS4, NS5, NS6}, NS4→SG3, R2→R5→SN3→SN4, R3→SN1→SN2, CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2},
-DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6, LB1→LB2→LB3. Difficulties (after the
-review's relabels): S 19, M 26, L 12, H 3. By group: W1 28, W2 4, W3 10,
-W4 15, LB 3. Model tiers: S and M on haiku first with sonnet escalation, L and H on opus from the
-start (`--hard L,H`); failed L/H targets get Opus continuation sessions. Dependents may start on
-sorried dependencies. HDIAG-1 and HDIAG-2 can go now; HDIAG-3 after a Fable re-check of the
-amended outlines of EB1, EB1a, EB1b, EB4, EB5, EV2, EV5, EV6.
+Waves (from `hdiag-targets.json`, the longest dependency chain): wave 0, 29 independent
+targets (C1, C3, CG0, CG1, DF1, EB2, EB4, EV1, EV3, LB1, NS1, NS11, NS12, NS2, R1, R2, R3, R4, R5, R6, R7, R8, R9, SG1, SG2, SG4, SG5, SG6, UB1); then the chains NS2→NS3→{NS7, NS8}→NS9→NS10→SN4→EB1b→EB1a→EB1→EB5→EV6→EV7,
+NS1→{NS4, NS5, NS6}, NS4→SG3, R6/R8→SN3→SN4, R7→SN4, R2→SN1→SN2, CG1→{CG2, CG3, CG4}→CG5→CG6→{DP1, EV2},
+DF1→DF2→{DP1, EB1a}, EB1b→EV2, EB2→EB3, EV3→EV4→EV5→EV6, LB1→LB2→LB3. Difficulties: S 19,
+M 27, L 12, H 3. By group: W1 29, W2 4, W3 10, W4 15, LB 3. Model tiers: S and M
+on haiku first with sonnet escalation, L and H on opus from the start (`--hard L,H`); failed L/H
+targets get Opus continuation sessions. Dependents may start on sorried dependencies. HDIAG-1 and
+HDIAG-2 can go now; HDIAG-3 after a Fable re-check of the amended outlines of EB1, EB1a, EB1b,
+EB2, EB4, EB5, EV2, EV5, EV6 (EB2 now carries the machine's parameter roundings).
 
 ## 14. Literature
 
@@ -748,3 +805,28 @@ cited in module docstrings only); [Edelman1988, Theorem 3.2] and
 not read); [Higham2002, (2.4), Theorem 2.2, (4.4)] (standard model, rounding to nearest, recursive
 summation; (4.4) locator to verify); [RudelsonVershynin2008, Lemma 3.5] (the distance step, via the
 library). New bibliography entries: the six of §6.
+
+## 15. Toward a deep-embedded version
+
+What `Computation.Prog` would need to express Algorithms 1–3 so that a refinement theorem is an
+*equality* with these shallow definitions (COMPDYN, `design/computation-dynamic` eb0c135d,
+§§4, 7.1; that track owns the details):
+
+1. **Data-dependent sizes**: a bounded index binder (`bindIdx`, reading a cell, converting by
+   the floor, clamping by a bound) for $k_+ = \min(k, \lfloor\mathrm{fl}(t + 1/2)\rfloor_+)$ and
+   sized allocation from it; the shallow code already uses exactly this conversion.
+2. **Recursion** over the binary tree of nodes with a depth budget ($\ell + 1$), or an explicit
+   work stack, with sizes per node.
+3. **Black-box kernel calls** for MM and QR with contracts at matrix level that lift
+   `IsMatMulErr`/`IsQRErr` functionally on decodings, with a conjugate-transpose flag (here an
+   exact `conjTransposeMat` before the call).
+4. **Complex data as interleaved real pairs** with named kernels for the entrywise operations of
+   §2.1 (one real instruction per rounding, as here).
+5. **Samplers** reading a uniform and a Gaussian tape, with the computed sample a deterministic
+   function of the tape value (`unif`, `normal`), and a lazy-sampling lemma mapping the program's
+   tape reads onto the path-indexed tree `List Bool → EighSample N` (kept here).
+6. **Correctly rounded semantics as a function** (`IsCorrectlyRounded fl dec enc sem`), so that
+   the machine built from `fl` is the program's arithmetic; exact floor conversion; exact
+   negation and comparison.
+7. **Precomputed thresholds** $\beta$, $\ell$ as inputs (or the bit-length routine of COMPDYN
+   §4.7) and the step limits as sizes.

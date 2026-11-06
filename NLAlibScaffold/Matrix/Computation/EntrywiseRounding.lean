@@ -10,22 +10,26 @@ public import NLAlib.Computation.Grid
 public import NLAlib.Matrix.Norms.Compare
 
 /-!
-# Bounds for entrywise rounding (scaffold)
+# Bounds for the entrywise operations of a floating-point machine (scaffold)
 
 Statements for `NLAlib/Matrix/Computation/EntrywiseRounding.lean` (stage HDIAG, wave W1, design
 note `docs/design/Eigensolvers-HermitianDiagonalization.md` §3.3): rounding to nearest on a
-$t$-bit grid meets `NLAlib.IsRoundingFn` (the bridge to the contract layer, whose
-`NLAlib.Computation.gridSem` rounds with the same function), and the normwise errors of the
-Hermitian rounding operations and of rounded summation.
+$t$-bit grid is a rounding in the sense of `NLAlib.IsRoundingOf` (the bridge to the contract
+layer, whose `NLAlib.Computation.gridSem` rounds with the same function); the exact operations
+decode exactly; the rounded entrywise operations, built from the machine's scalar operations,
+have the normwise errors that the analyses use.
 
 ## Main results
 
-* `NLAlib.isRoundingFn_roundNearest`: the witness from `Real.roundNearest`.
-* `NLAlib.IsRoundingFn.norm_sub_roundScalar_le`.
-* `NLAlib.isHermitian_roundHermitian`, `Matrix.IsHermitian.isHermitian_roundDiag`.
-* `NLAlib.IsRoundingFn.specNorm_sub_roundHermitian_le`,
-  `NLAlib.IsRoundingFn.specNorm_sub_roundDiag_le`.
-* `NLAlib.IsRoundingFn.abs_sum_sub_roundedSum_le`.
+* `NLAlib.isRoundingOf_roundNearest`.
+* `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`,
+  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_negMat`,
+  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat`,
+  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_identityMat`.
+* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le`,
+  `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le`,
+  `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le`,
+  `NLAlib.FloatMachine.IsAccurate.abs_sum_sub_traceRe_le`.
 -/
 
 @[expose] public section
@@ -34,101 +38,127 @@ open scoped Matrix
 
 namespace NLAlib
 
-variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*}
-
-/-- **Rounding to nearest meets the rounding contract**: rounding to nearest on the grid of
-$t$-bit binary numbers with unbounded exponent (`Real.roundNearest`) satisfies
-`NLAlib.IsRoundingFn` with unit roundoff $2^{-t}$, floor $0$ and every range $\Omega$. It is the
-rounding of `NLAlib.Computation.gridSem`, which meets the standard-model contract
-`NLAlib.Computation.IsRelErrSem`. [Higham2002, Theorem 2.2].
-Proof: `Real.abs_sub_roundNearest_le`, `abs_sub_comm`, and $\max(\lvert x \rvert, 0) =
-\lvert x \rvert$. S, about 5 lines. -/
-theorem isRoundingFn_roundNearest (t : ℕ) (Ω : ℝ) :
-    IsRoundingFn (2⁻¹ ^ t) 0 Ω (Real.roundNearest t) := by
+/-- **Rounding to nearest is a rounding**: rounding to nearest on the grid of $t$-bit binary
+numbers with unbounded exponent (`Real.roundNearest`) returns a rounding of every real $a$ in the
+sense of `NLAlib.IsRoundingOf`, with unit roundoff $2^{-t}$, floor $0$ and every range $\Omega$.
+It is the rounding of `NLAlib.Computation.gridSem`, which meets the standard-model contract
+`NLAlib.Computation.IsRelErrSem`, applied to real and imaginary parts as IEEE complex arithmetic
+does. [Higham2002, Theorem 2.2].
+Proof: `Real.abs_sub_roundNearest_le` and $\max(\lvert a \rvert, 0) = \lvert a \rvert$. S, about
+5 lines. -/
+theorem isRoundingOf_roundNearest (t : ℕ) (Ω a : ℝ) :
+    IsRoundingOf (2⁻¹ ^ t) 0 Ω a (Real.roundNearest t a) := by
   sorry
 
-/-- **Error of scalar rounding**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$u, \tau \ge 0$, every $z$ with $\lvert z \rvert \le \Omega$ satisfies
-$\lvert z - \mathrm{fl}(z) \rvert \le u(\lvert z \rvert + 2\tau)$, $\mathrm{fl}(z)$ its rounded
-real and imaginary parts (`NLAlib.roundScalar`).
-Proof: `RCLike.re_add_im` for $z$; the two part errors are at most $u\max(\lvert \operatorname{Re}
-z \rvert, \tau)$ and $u\max(\lvert \operatorname{Im} z \rvert, \tau)$ (`RCLike.abs_re_le_norm`,
-`RCLike.abs_im_le_norm`); then $\lvert z - \mathrm{fl}(z)\rvert^2 \le u^2(\max(\lvert
-\operatorname{Re} z\rvert, \tau)^2 + \max(\lvert \operatorname{Im} z\rvert, \tau)^2) \le
-u^2(\lvert z\rvert^2 + 2\tau^2) \le u^2(\lvert z\rvert + 2\tau)^2$ (`RCLike.norm_sq_eq_def`;
-the route through $\lvert a\rvert + \lvert b\rvert$ loses $\sqrt2$). Careful over $\mathbb{R}$
-($\operatorname{Im} = 0$, `RCLike.I = 0`). M, about 20 lines. -/
-theorem IsRoundingFn.norm_sub_roundScalar_le {u τ Ω : ℝ} {fl : ℝ → ℝ} (h : IsRoundingFn u τ Ω fl)
-    (hu : 0 ≤ u) (hτ : 0 ≤ τ) {z : 𝕜} (hz : ‖z‖ ≤ Ω) :
-    ‖z - roundScalar fl z‖ ≤ u * (‖z‖ + 2 * τ) := by
+namespace FloatMachine.IsAccurate
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+
+/-- A matrix built by `NLAlib.FloatMachine.hermFrom` decodes to a Hermitian matrix, under the
+contract `NLAlib.FloatMachine.IsAccurate` (zero and negation exact).
+Proof: `Matrix.IsHermitian.ext`; unfold `NLAlib.FloatMachine.hermFrom`, `NLAlib.decodeMatrix`,
+`NLAlib.decodeComplex`, split by `lt_trichotomy`, and use `dec_zero`, `dec_neg`. S, about 15
+lines. -/
+theorem isHermitian_decodeMatrix_hermFrom (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k : ℕ}
+    (up : Fin k → Fin k → F × F) (dg : Fin k → F) :
+    (decodeMatrix dec (M.hermFrom up dg)).IsHermitian := by
   sorry
 
-/-- The rounded Hermitian matrix is Hermitian, for every matrix and every rounding function.
-Proof: `Matrix.IsHermitian.ext`; unfold `NLAlib.roundHermitian` and split the three cases of
-`lt_trichotomy`; the diagonal is the coercion of a real, fixed by `star`. S, about 12 lines. -/
-theorem isHermitian_roundHermitian [LinearOrder n] (fl : ℝ → ℝ) (X : Matrix n n 𝕜) :
-    (roundHermitian fl X).IsHermitian := by
+/-- Entrywise negation is exact: the decoding of `NLAlib.FloatMachine.negMat` $\mathbf{X}$ is
+$-\bar{\mathbf{X}}$.
+Proof: `Matrix.ext`, `dec_neg`, `Complex.ext`. S, about 5 lines. -/
+theorem decodeMatrix_negMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
+    (X : Matrix m n (F × F)) : decodeMatrix dec (M.negMat X) = -decodeMatrix dec X := by
   sorry
 
-/-- Rounding the diagonal of a Hermitian matrix keeps it Hermitian.
-Proof: `Matrix.IsHermitian.ext`; off the diagonal the entries are those of $\mathbf{X}$, on it the
-coercion of a real. S, about 8 lines. -/
-theorem _root_.Matrix.IsHermitian.isHermitian_roundDiag [DecidableEq n] {X : Matrix n n 𝕜}
-    (hX : X.IsHermitian) (fl : ℝ → ℝ) : (roundDiag fl X).IsHermitian := by
+/-- The stored conjugate transpose is exact: the decoding of
+`NLAlib.FloatMachine.conjTransposeMat` $\mathbf{X}$ is $\bar{\mathbf{X}}^{\mathsf{H}}$.
+Proof: `Matrix.ext`, `dec_neg`, `Complex.ext`, `Complex.conj_re`, `Complex.conj_im`. S, about
+6 lines. -/
+theorem decodeMatrix_conjTransposeMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
+    (X : Matrix m n (F × F)) :
+    decodeMatrix dec (M.conjTransposeMat X) = (decodeMatrix dec X)ᴴ := by
   sorry
 
-/-- **Error of the rounded Hermitian matrix**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$u, \tau \ge 0$, a Hermitian $\mathbf{X}$ with $\|\mathbf{X}\|_2 \le \Omega$ satisfies
-$$\|\mathbf{X} - \mathrm{fl}_{\mathrm{H}}(\mathbf{X})\|_2 \le
-u\bigl(\sqrt{\lvert n \rvert}\,\|\mathbf{X}\|_2 + 2\lvert n \rvert\tau\bigr) \,,$$
-$\mathrm{fl}_{\mathrm{H}}$ the rounding `NLAlib.roundHermitian`; the entrywise errors are
-summed in Frobenius norm.
-Proof: each entry error is at most $u(\lvert \mathbf{X}_{i,j} \rvert + 2\tau)$
-(`NLAlib.IsRoundingFn.norm_sub_roundScalar_le` above the diagonal and its conjugate below; on the
-diagonal $\mathbf{X}_{i,i}$ is real since $\mathbf{X}$ is Hermitian), entries are at most
-$\|\mathbf{X}\|_2 \le \Omega$ (`NLAlib.norm_apply_le_specNorm`);
-`NLAlib.specNorm_le_frobNorm`, the triangle inequality in Frobenius norm and
-$\|\mathbf{X}\|_{\mathsf{F}} \le \sqrt{\lvert n \rvert}\|\mathbf{X}\|_2$
-(`NLAlib.frobNorm_le_sqrt_card_mul_specNorm`). M, about 45 lines. -/
-theorem IsRoundingFn.specNorm_sub_roundHermitian_le [Fintype n] [LinearOrder n] {u τ Ω : ℝ}
-    {fl : ℝ → ℝ} (h : IsRoundingFn u τ Ω fl) (hu : 0 ≤ u) (hτ : 0 ≤ τ) {X : Matrix n n 𝕜}
-    (hX : X.IsHermitian)
-    (hXΩ : specNorm X ≤ Ω) :
-    specNorm (X - roundHermitian fl X) ≤
-      u * (√(Fintype.card n : ℝ) * specNorm X + 2 * Fintype.card n * τ) := by
+/-- The stored identity decodes to the identity.
+Proof: `Matrix.ext`, `dec_one`, `dec_zero`, `Matrix.one_apply`. S, about 5 lines. -/
+theorem decodeMatrix_identityMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) (k : ℕ) :
+    decodeMatrix dec (M.identityMat k) = 1 := by
   sorry
 
-/-- **Error of rounding the diagonal**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$u \ge 0$, a
-Hermitian $\mathbf{X}$ with $\|\mathbf{X}\|_2 \le \Omega$ satisfies
-$\|\mathbf{X} - \mathrm{fl}_{\mathrm{D}}(\mathbf{X})\|_2 \le u\max(\|\mathbf{X}\|_2, \tau)$,
-$\mathrm{fl}_{\mathrm{D}}$ the rounding of the diagonal `NLAlib.roundDiag`. The error is
-diagonal, so its norm is its largest entry, as [Shah2024, proof of Lemma 2.1] notes.
-Proof: the difference is `Matrix.diagonal` of the diagonal errors (real since $\mathbf{X}$ is
-Hermitian), each at most $u\max(\lvert \mathbf{X}_{i,i} \rvert, \tau) \le
-u\max(\|\mathbf{X}\|_2, \tau)$; the spectral norm of a diagonal matrix is its largest modulus
-(`NLAlib.specNorm_diagonal_le`). M, about 25 lines. -/
-theorem IsRoundingFn.specNorm_sub_roundDiag_le [Fintype n] [DecidableEq n] {u τ Ω : ℝ} {fl : ℝ → ℝ}
-    (h : IsRoundingFn u τ Ω fl) (hu : 0 ≤ u) {X : Matrix n n 𝕜} (hX : X.IsHermitian)
-    (hXΩ : specNorm X ≤ Ω) : specNorm (X - roundDiag fl X) ≤ u * max (specNorm X) τ := by
+/-- **Error of the stored shift**: under `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, for a
+stored $\mathbf{X}$ with Hermitian decoding $\bar{\mathbf{X}}$ and a stored $c$ with
+$\|\bar{\mathbf{X}} - \bar c\mathbf{I}\|_2 \le \Omega$,
+$$\|(\bar{\mathbf{X}} - \bar c\mathbf{I}) - \overline{\mathrm{hermShift}(\mathbf{X}, c)}\|_2 \le
+u\max(\|\bar{\mathbf{X}} - \bar c\mathbf{I}\|_2, \tau) \,.$$
+The error is diagonal, so its norm is its largest entry, as [Shah2024, proof of Lemma 2.1]
+notes; the mirrored entries are exact because $\bar{\mathbf{X}}$ is Hermitian.
+Proof: the difference is `Matrix.diagonal` of the diagonal errors of `sub` (the diagonal of
+$\bar{\mathbf{X}}$ is real), each a rounding of an entry of modulus at most the norm
+(`NLAlib.norm_apply_le_specNorm`); `NLAlib.specNorm_diagonal_le`. M, about 30 lines. -/
+theorem specNorm_sub_decodeMatrix_hermShift_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) {k : ℕ} {X : Matrix (Fin k) (Fin k) (F × F)}
+    (hX : (decodeMatrix dec X).IsHermitian) (c : F)
+    (hΩ : specNorm (decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ)) ≤ Ω) :
+    specNorm ((decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ)) -
+      decodeMatrix dec (M.hermShift X c)) ≤
+        u * max (specNorm (decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ))) τ := by
   sorry
 
-/-- **Error of rounded summation**: under `NLAlib.IsRoundingFn` $u$ $\tau$ $\Omega$ with
-$0 \le u$, $0 \le \tau$ and $ku \le 1/2$, for $x \in \mathbb{R}^k$ with
-$2(\sum_i \lvert x_i \rvert + k\tau) \le \Omega$,
-$$\Bigl\lvert \sum_i x_i - \hat s \Bigr\rvert \le 2ku\Bigl(\sum_i \lvert x_i \rvert + k\tau\Bigr)
-\,,$$
-$\hat s$ the left-to-right rounded sum (`NLAlib.roundedSum`). [Higham2002, (4.4)], there with
-$\gamma_{k-1}$ and $\tau = 0$.
-Proof: induction over the prefix sums with the invariant $E_i \le ((1 + u)^i - 1)(S + \tau)$ for
-the accumulated error $E_i$ and $S = \sum_i \lvert x_i \rvert$ (each step errs by at most
-$u(\lvert \hat s_i + x_i \rvert + \tau)$, and the partial sums stay below $2(S + k\tau) \le
-\Omega$); then $(1 + u)^k - 1 \le e^{ku} - 1 \le 2ku$ for $ku \le 1/2$ (`Real.add_one_le_exp`,
-`Real.exp_le_one_add_mul`-type bound or `Real.exp_bound`). M, about 50 lines. -/
-theorem IsRoundingFn.abs_sum_sub_roundedSum_le {u τ Ω : ℝ} {fl : ℝ → ℝ}
-    (h : IsRoundingFn u τ Ω fl) (hu : 0 ≤ u) (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2)
-    {x : Fin k → ℝ} (hΩ : 2 * (∑ i, |x i| + k * τ) ≤ Ω) :
-    |∑ i, x i - roundedSum fl x| ≤ 2 * k * u * (∑ i, |x i| + k * τ) := by
+/-- **Error of the stored division by a scalar**: under `NLAlib.FloatMachine.IsAccurate` with
+$u, \tau \ge 0$, for a stored $\mathbf{X}$ with Hermitian decoding and a stored $c$ with
+$\bar c \ne 0$ and $\|\bar{\mathbf{X}}\|_2/\lvert\bar c\rvert \le \Omega$, with
+$\mathbf{Z} = \bar{\mathbf{X}}/\bar c$,
+$$\|\mathbf{Z} - \overline{\mathrm{hermScale}(\mathbf{X}, c)}\|_2 \le
+u\bigl(\sqrt k\,\|\mathbf{Z}\|_2 + 2k\tau\bigr) \,.$$
+Proof: each part errs by $u\max(\lvert\cdot\rvert, \tau)$ (`div`), so each entry by
+$u\sqrt{\lvert z \rvert^2 + 2\tau^2} \le u(\lvert z \rvert + 2\tau)$ (compare squares; the route
+through $\lvert \operatorname{Re} \rvert + \lvert \operatorname{Im} \rvert$ loses $\sqrt2$); the
+mirrored entries are conjugates; sum in Frobenius norm (`NLAlib.specNorm_le_frobNorm`, triangle
+inequality, `NLAlib.frobNorm_le_sqrt_card_mul_specNorm`, `NLAlib.norm_apply_le_specNorm`). M,
+about 50 lines. -/
+theorem specNorm_sub_decodeMatrix_hermScale_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) (hτ : 0 ≤ τ) {k : ℕ} {X : Matrix (Fin k) (Fin k) (F × F)}
+    (hX : (decodeMatrix dec X).IsHermitian) {c : F} (hc : dec c ≠ 0)
+    (hΩ : specNorm (decodeMatrix dec X) / |dec c| ≤ Ω) :
+    specNorm ((dec c)⁻¹ • decodeMatrix dec X - decodeMatrix dec (M.hermScale X c)) ≤
+      u * (√(k : ℝ) * specNorm ((dec c)⁻¹ • decodeMatrix dec X) + 2 * k * τ) := by
   sorry
+
+/-- **Error of the stored scaled Hermitian part**: under `NLAlib.FloatMachine.IsAccurate` with
+$0 \le u \le 1/2$, $\tau \ge 0$, for a stored $\mathbf{X}$ and a stored $c$ with
+$\lvert \bar c \rvert \ge 1$ and $3\|\bar{\mathbf{X}}\|_2 + \tau \le \Omega$, with
+$\mathbf{Z} = (\bar{\mathbf{X}} + \bar{\mathbf{X}}^{\mathsf{H}})/\bar c$,
+$$\|\mathbf{Z} - \overline{\mathrm{hermAvg}(\mathbf{X}, c)}\|_2 \le
+3u\bigl(\sqrt k\,\|\mathbf{Z}\|_2 + 2k\tau\bigr) \,.$$
+Proof: per part, the sum errs by $u(\lvert s \rvert + \tau)$ and the division by
+$u(\lvert \tilde s/c \rvert + \tau)$; with $\lvert c \rvert \ge 1$ the total is at most
+$u(2 + u)(\lvert s/c \rvert + \tau) \le \tfrac52u(\lvert s/c \rvert + \tau)$; then as
+`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le`. M, about 60 lines. -/
+theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hu : 0 ≤ u) (hu₁ : u ≤ 1 / 2) (hτ : 0 ≤ τ) {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F))
+    {c : F} (hc : 1 ≤ |dec c|) (hΩ : 3 * specNorm (decodeMatrix dec X) + τ ≤ Ω) :
+    specNorm ((dec c)⁻¹ • (decodeMatrix dec X + (decodeMatrix dec X)ᴴ) -
+      decodeMatrix dec (M.hermAvg X c)) ≤
+        3 * u * (√(k : ℝ) * specNorm ((dec c)⁻¹ • (decodeMatrix dec X + (decodeMatrix dec X)ᴴ)) +
+          2 * k * τ) := by
+  sorry
+
+/-- **Error of the rounded trace**: under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$
+and $ku \le 1/2$, for a stored $k \times k$ $\mathbf{X}$ with real parts of the diagonal
+$x_i$ and $2(\sum_i \lvert x_i \rvert + k\tau) \le \Omega$,
+$$\Bigl\lvert \sum_i x_i - \overline{\mathrm{traceRe}(\mathbf{X})} \Bigr\rvert \le
+2ku\Bigl(\sum_i \lvert x_i \rvert + k\tau\Bigr) \,.$$
+[Higham2002, (4.4)], there with $\gamma_{k-1}$ and $\tau = 0$.
+Proof: induction over `List.finRange` with the invariant $E_i \le ((1 + u)^i - 1)(S + \tau)$
+(`add` errs by $u(\lvert \hat s_i + x_i \rvert + \tau)$, partial sums below $2(S + k\tau)$),
+then $(1 + u)^k - 1 \le 2ku$ for $ku \le 1/2$ (`Real.add_one_le_exp`). M, about 50 lines. -/
+theorem abs_sum_sub_traceRe_le (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
+    (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2) (X : Matrix (Fin k) (Fin k) (F × F))
+    (hΩ : 2 * (∑ i, |dec (X i i).1| + k * τ) ≤ Ω) :
+    |∑ i, dec (X i i).1 - dec (M.traceRe X)| ≤ 2 * k * u * (∑ i, |dec (X i i).1| + k * τ) := by
+  sorry
+
+end FloatMachine.IsAccurate
 
 end NLAlib

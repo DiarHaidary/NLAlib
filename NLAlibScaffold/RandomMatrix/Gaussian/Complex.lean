@@ -146,7 +146,9 @@ complex Gaussian $r \times r$ matrix $\mathbf{G}$, $k + 1 = \lvert r \rvert$ and
 $$\mathbb{P}[\sigma_k(\mathbf{G}) \le x] \le \lvert r \rvert^2 x^2 \,.$$
 [Shah2024, Lemma 3.1], citing [Edelman1988, Theorem 3.2]: there $(\lvert r \rvert/2)x^2$ (the exact
 law of $\sigma_{\min}$); this elementary bound loses a factor $2\lvert r \rvert$, which costs
-$O(\log n)$ bits in the precision of the eigensolver.
+$O(\log n)$ bits in the precision of the eigensolver. This can be improved when the proof is
+written: Edelman's sharp law, $\mathbb{P}[\sigma_{\min} \le x] = 1 - e^{-\lvert r \rvert x^2}$,
+would improve the constant (a follow-up, not needed for the stage).
 Proof: by `NLAlib.exists_iInf_norm_mulVec_le_of_singularValues_le`, $\sigma_k \le x$ puts some
 column $\mathbf{g}_j$ within $\sqrt{\lvert r \rvert}\,x$ of the span of the others, that is
 $\|(\mathbf{I} - \mathbf{P}_j)\mathbf{g}_j\| \le \sqrt{\lvert r \rvert}\,x$ with $\mathbf{P}_j$ the
