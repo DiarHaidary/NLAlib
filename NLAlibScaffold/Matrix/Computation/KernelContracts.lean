@@ -111,7 +111,13 @@ identity); the error is `specNorm 0 = 0` (`sub_self`, `NLAlib.specNorm_zero`) ag
 after rewriting `B` by the hypothesis. S, about 10 lines. -/
 theorem isMatMulErr_exactMM {u : ℝ} (hu : 0 ≤ u) (τ Ω : ℝ) {μ : ℕ → ℝ} (hμ : ∀ d, 0 ≤ μ d) :
     IsMatMulErr (fun x : 𝕜 => x) u τ Ω μ exactMM := by
-  sorry
+  refine ⟨fun A B _ => ?_, fun A B hB => ?_⟩
+  · simp only [exactMM, Matrix.map_id', sub_self, specNorm_zero]
+    exact mul_nonneg (mul_nonneg (hμ _) hu)
+      (le_max_of_le_left (mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)))
+  · simp only [exactMM, Matrix.map_id'] at hB ⊢
+    rw [hB]
+    exact Matrix.isHermitian_mul_conjTranspose_self _
 
 /-- **The exact QR factorization meets the QR contract**: for every unit roundoff $u \ge 0$,
 floor $\tau$, range $\Omega$ and constants $\mu \ge 0$, the exact factorization
