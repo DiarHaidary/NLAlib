@@ -371,6 +371,19 @@ The proof also needed a finer frame of the node step: the helper (not a target)
 range only the children's slots ($lo$, and $lo + k_+$ for a split) may change; EN9's statement is
 unchanged.
 
+### Hypotheses strengthened for proof convenience (statement believed true as originally written)
+
+**EL2 `exists_exec_eighDownLevel`** now takes the constants as EL1 does (cell $2$ of `c` holds
+$\mathrm{fl}(1/\mathrm{fl}(2))$ of the machine and cell $3$ holds $-1$, instead of some value each)
+and EL1's tape positions `hpos` ($nd$ uniform, $4n^2 d$ Gaussian). The weaker version is believed
+true, but its proof needs a frame of each node step (the later slots read sizes and blocks of
+depth $d$ that an earlier node step must not change), and the only frame available,
+`holds_of_exec_eighNodeBlock_frame`, comes with the value statement and needs the exact constants
+and the samples at their tape positions; a frame-only node lemma would duplicate the node-step
+proof. EP2 `exists_exec_eighProg` supplies both without a change of statement: `eighProg`
+computes cell $2$ as $\mathrm{fl}(1/\mathrm{fl}(2))$ and cell $3$ as $-1$ from the literals $1$ and
+$2$, and every level advances the tape positions by $n$ and $4n^2$ (EL1).
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
