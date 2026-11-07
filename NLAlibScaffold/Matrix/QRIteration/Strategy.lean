@@ -422,7 +422,9 @@ theorem IsUpperHessenberg.isUpperHessenberg_shqrIterate {H₀ : Matrix (Fin (n +
     (hH : IsUpperHessenberg H₀) (B θ α γ : ℝ) (m : ℕ)
     (ritz : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ → List ℂ) (t : ℕ) :
     IsUpperHessenberg (shqrIterate B θ α γ m ritz H₀ t) := by
-  sorry
+  induction t with
+  | zero => exact hH
+  | succ t ih => exact isUpperHessenberg_multiShiftedQRStep ih _
 
 /-- **The iterates of $\mathrm{Sh}_{k,B}$ have the norm of $\mathbf{H}_0$**:
 $\|\mathbf{H}_t\|_2 = \|\mathbf{H}_0\|_2$ for every $t$ and every Ritz-value oracle.
