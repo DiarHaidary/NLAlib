@@ -20,6 +20,11 @@ with full reorthogonalization consumes only its parameters. Design:
 ## Main definitions
 
 * `NLAlib.Computation.IsOrthRoutine`: the execution certificate of an orthogonalization routine.
+
+## Main results
+
+* `NLAlib.Computation.IsOrthRoutine.mono`: larger parameters.
+* `NLAlib.Computation.IsOrthRoutine.toBlockRoutine`: the footprint of the certificate.
 -/
 
 @[expose] public section
@@ -54,5 +59,37 @@ structure IsOrthRoutine (I : Interp P ι K C) (dec : P → K → ℝ) (tag : P) 
       st.store.writeBlock tag wb wo.eval (Array.ofFn W) = some mid ∧
       mid.writeBlock tag hb ho.eval (Array.ofFn Hw) = some out.store ∧
       IsOrthErr η₀ ε₁ ε₂ ε₃ V w (fun i => dec tag (Hw i)) (fun i => dec tag (W i))
+
+/-- A certified orthogonalization routine remains certified for a smaller precondition
+$\eta_0' \le \eta_0$ and larger parameters $\varepsilon_i \le \varepsilon_i'$. -/
+theorem IsOrthRoutine.mono {I : Interp P ι K C} {dec : P → K → ℝ} {tag : P} {N j : ℕ}
+    {η₀ ε₁ ε₂ ε₃ η₀' ε₁' ε₂' ε₃' : ℝ} {pre : Store P K → Prop} {Vb wb hb : ℕ} {wo ho : IExp ℕ}
+    {routine : Builder P ι ℕ ℕ Unit}
+    (h : IsOrthRoutine I dec tag N j η₀ ε₁ ε₂ ε₃ pre Vb wb hb wo ho routine) (hη : η₀' ≤ η₀)
+    (h₁ : ε₁ ≤ ε₁') (h₂ : ε₂ ≤ ε₂') (h₃ : ε₃ ≤ ε₃') :
+    IsOrthRoutine I dec tag N j η₀' ε₁' ε₂' ε₃' pre Vb wb hb wo ho routine where
+  composable := h.composable
+  run st V w hp hV hw hwl hhl hbw hbV hwV := by
+    obtain ⟨out, W, Hw, mid, hr, hm, hf, he⟩ := h.run st V w hp hV hw hwl hhl hbw hbV hwV
+    exact ⟨out, W, Hw, mid, hr, hm, hf, he.mono hη h₁ h₂ h₃⟩
+
+/-- The footprint of a certified orthogonalization routine with distinct buffers: from a state
+satisfying `pre` that holds a basis in `Vb` and a vector at (`wb`, `wo`), it writes exactly the
+reduced vector block and then the coefficient block (`NLAlib.Computation.IsBlockRoutine`). -/
+theorem IsOrthRoutine.toBlockRoutine {I : Interp P ι K C} {dec : P → K → ℝ} {tag : P}
+    {N j : ℕ} {η₀ ε₁ ε₂ ε₃ : ℝ} {pre : Store P K → Prop} {Vb wb hb : ℕ} {wo ho : IExp ℕ}
+    {routine : Builder P ι ℕ ℕ Unit}
+    (h : IsOrthRoutine I dec tag N j η₀ ε₁ ε₂ ε₃ pre Vb wb hb wo ho routine)
+    (hbw : hb ≠ wb) (hbV : hb ≠ Vb) (hwV : wb ≠ Vb) :
+    IsBlockRoutine I tag (fun s => pre s ∧ ∃ (V : Matrix (Fin N) (Fin j) ℝ) (w : Fin N → ℝ),
+      HoldsDecoded s dec tag Vb 0 V ∧ ReadsDecoded s dec tag wb wo.eval w)
+      [(wb, wo.eval, N), (hb, ho.eval, j)] routine where
+  composable := h.composable
+  run st hp hw := by
+    obtain ⟨hp, V, w, hV, hwd⟩ := hp
+    obtain ⟨out, W, Hw, mid, hr, h₁, h₂, -⟩ := h.run st V w hp hV hwd
+      (hw _ List.mem_cons_self) (hw (hb, ho.eval, j) (by simp)) hbw hbV hwV
+    exact ⟨out, [Array.ofFn W, Array.ofFn Hw], hr,
+      Store.writeBlocks_pair_eq_some_iff.mpr ⟨by simp, by simp, mid, h₁, h₂⟩⟩
 
 end NLAlib.Computation

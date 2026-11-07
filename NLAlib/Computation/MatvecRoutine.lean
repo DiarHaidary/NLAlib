@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Computation.Contract
-public import NLAlib.Computation.ScalarFrames
+public import NLAlib.Computation.RoutineFrames
 
 /-!
 # Certified matrix-vector routines
@@ -20,6 +20,7 @@ different error; no fixed perturbed matrix is assumed.
 
 * `NLAlib.Computation.IsMatvecErr.exec_apply`: an accurate oracle executes on stored words.
 * `NLAlib.Computation.IsMatvecErr.isMatvecRoutine`: the oracle supplies a routine certificate.
+* `NLAlib.Computation.IsMatvecRoutine.toBlockRoutine`: the footprint of the certificate.
 -/
 
 @[expose] public section
@@ -61,6 +62,21 @@ theorem IsMatvecRoutine.mono {I : Interp P ι K C} {dec : P → K → ℝ} {tag 
   run st x hp hx hy := by
     obtain ⟨out, W, hr, hw, he⟩ := h.run st x hp hx hy
     exact ⟨out, W, hr, hw, he.trans (mul_le_mul_of_nonneg_right hc (norm_nonneg _))⟩
+
+/-- The footprint of a certified matrix-vector routine: from a state satisfying `pre` whose
+source block is decoded, it writes exactly the destination block
+(`NLAlib.Computation.IsBlockRoutine`). -/
+theorem IsMatvecRoutine.toBlockRoutine {I : Interp P ι K C} {dec : P → K → ℝ} {tag : P}
+    {N : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {c : ℝ} {pre : Store P K → Prop}
+    {src dst : ℕ} {sOff dOff : IExp ℕ} {routine : Builder P ι ℕ ℕ Unit}
+    (h : IsMatvecRoutine I dec tag A c pre src dst sOff dOff routine) :
+    IsBlockRoutine I tag (fun s => pre s ∧ ∃ x : Fin N → ℝ, ReadsDecoded s dec tag src sOff.eval x)
+      [(dst, dOff.eval, N)] routine where
+  composable := h.composable
+  run st hp hw := by
+    obtain ⟨hp, x, hx⟩ := hp
+    obtain ⟨out, W, hr, hwr, -⟩ := h.run st x hp hx (hw _ List.mem_cons_self)
+    exact ⟨out, [Array.ofFn W], hr, Store.writeBlocks_singleton_eq_some_iff.mpr ⟨by simp, hwr⟩⟩
 
 /-- An oracle satisfying the normwise accuracy and success contract executes one actual
 column from any readable source block into a disjoint writable destination buffer. The
