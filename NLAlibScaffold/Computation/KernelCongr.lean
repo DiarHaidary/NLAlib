@@ -144,6 +144,7 @@ theorem exec_newtonSchulzStepBlock_congr (n : IExp ℕ) (X : ℕ) (xo : IExp ℕ
     (c : Cell ℕ ℕ) :
     exec I (newtonSchulzStepBlock p mm n X xo W V c).run st =
       exec I (newtonSchulzStepBlock p mm (.const n.eval) X xo W V c).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I
+    (by unfold newtonSchulzStepBlock zhermShift zmirror zneg zhermAvg; rfl) st
 
 end NLAlib
