@@ -6,8 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Eigensolvers.SpectralBisection.Global
-public import NLAlib.Eigensolvers.RandomizedDeflation
-public import NLAlibScaffold.Matrix.Computation.SpectralBisection
+public import NLAlibScaffold.Eigensolvers.RandomizedDeflation
+public import NLAlib.Matrix.Computation.SpectralBisection.Global
 
 /-!
 # Hermitian diagonalization with a sharper precision bound (scaffold, stage HDIAG-BOUNDS)

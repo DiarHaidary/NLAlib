@@ -14,15 +14,18 @@ The tree of
 `NLAlib.eighNodeAt` from a root with depth counter $\ell \ge$ `NLAlib.bisectionDepth`
 $\varepsilon$ has depth at most $\ell$, its nodes have size at most the root's, depth counter
 $\ell + \lvert a\rvert$, tolerance in $[\varepsilon/3, \varepsilon]$ and window at most $R_0$,
-it has at most $(k + 1)(\ell + 1)$ nodes and at most $k$ of them split ([Shah2024, proof of
-Theorem 4.2]).
+it has at most $(k + 1)(\ell + 1)$ nodes and at most $k$ of them split, and the sizes of the
+nodes at one depth sum to at most $k$ ([Shah2024, proof of Theorem 4.2]).
 
 ## Main results
 
 * `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`: the depth.
 * `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`: the parameters of the nodes.
+* `NLAlib.FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some`: the tolerance at a node,
+  telescoped.
 * `NLAlib.FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le`,
   `NLAlib.encard_eighNodeAt_isSplit_le`: the counts.
+* `NLAlib.sum_k_eighNodeAt_ofFn_le`: the sizes at one depth sum to at most the root's.
 -/
 
 @[expose] public section
@@ -844,5 +847,139 @@ theorem encard_eighNodeAt_isSplit_le {F Su Sg : Type*} [Inhabited Sg] (M : Float
   rw [htc] at h
   have h' : x.k + 1 ≤ x.k - 1 := by exact_mod_cast h
   omega
+
+/-! ### Generic node lemmas for a precision budget -/
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+  {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
+
+/-- **The tolerance at a node, telescoped**: let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $0 \le u$, $100\ell^2u \le 1$, floor $0 \le \tau$ with
+$100\tau \le \varepsilon\min(R_0, 1)$ and range $16(R_0 + \ell) \le \Omega$, and let the root
+$(k, \mathbf{A}, R_0, \varepsilon, \ell)$ have $0 < \varepsilon \le 2^{-15}$, $R_0 > 0$ and
+$\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$. Then every node $y$ of the tree has
+$$\varepsilon_y \ge (1 - 2^{-8})\,\frac{\ell - 1}{\ell_y - 1}\,\varepsilon \,,$$
+in particular $\varepsilon_y \ge (1 - 2^{-8})(\ell - 1)\varepsilon/(2\ell - 1)$ since
+$\ell_y \le 2\ell$. [Shah2024, proof of Theorem 4.2]. -/
+theorem FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) {ε : F} (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
+    (hR₀ : 0 < dec R₀) {ℓ : ℕ}
+    (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hu : 0 ≤ u) (hu₁ : 100 * ℓ ^ 2 * u ≤ 1) (hτ₀ : 0 ≤ τ)
+    (hτ : 100 * τ ≤ dec ε * min (dec R₀) 1)
+    (hΩ : 16 * (dec R₀ + ℓ) ≤ Ω) {k : ℕ}
+    (A : Matrix (Fin k) (Fin k) (F × F)) (s : List Bool → EighSample ℝ ℂ N)
+    {a : List Bool} {y : EighNode F}
+    (h : eighNodeAt M N signFuel R₀ β a ⟨k, A, R₀, ε, ℓ⟩ s = some y) :
+    (1 - 2⁻¹ ^ 8) * (((ℓ : ℝ) - 1) / ((y.ℓ : ℝ) - 1)) * dec ε ≤ dec y.ε := by
+  obtain ⟨hlen, -, hyℓ, -⟩ := hM.eighNodeAt_eq_some_params hε hε₁ hR₀ hℓ hu hu₁ hτ₀ hτ hΩ A s h
+  have hℓ20 : (20 : ℝ) ≤ ℓ := by
+    have h15 : (15 : ℝ) ≤ Real.logb 2 (dec ε)⁻¹ := by
+      rw [Real.le_logb_iff_rpow_le (by norm_num) (by positivity), show (15 : ℝ) = (15 : ℕ) by
+        norm_num, Real.rpow_natCast, ← inv_inv ((2 : ℝ) ^ 15), ← inv_pow]
+      exact inv_anti₀ hε (by simpa using hε₁)
+    have := (h15.trans (Nat.le_ceil _))
+    have : (bisectionDepth (dec ε) : ℝ) ≤ ℓ := by exact_mod_cast hℓ
+    simp only [bisectionDepth, Nat.cast_add] at this
+    push_cast at this
+    linarith
+  have hε1 : dec ε ≤ 1 := hε₁.trans (by norm_num)
+  have hτε : 100 * τ ≤ dec ε := hτ.trans (mul_le_of_le_one_right hε.le (min_le_right _ _))
+  have huℓ : u * ℓ ≤ 1 / 2000 := by nlinarith
+  -- the tolerance stays above a third of the root's
+  have hlow : ∀ (x : EighNode F) (j : ℕ), j ≤ ℓ → x.ℓ = ℓ + j →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) → dec ε / 3 ≤ dec x.ε := by
+    intro x j hj hxℓ hx
+    have hj' : (j : ℝ) ≤ ℓ := by exact_mod_cast hj
+    rw [hxℓ] at hx
+    push_cast at hx
+    have h1 := mul_le_mul_of_nonneg_left hj' (by positivity : 0 ≤ u * ℓ)
+    have h2 := mul_le_mul_of_nonneg_right h1 hε.le
+    by_contra hlt
+    have hj0 : (0 : ℝ) ≤ j := j.cast_nonneg
+    nlinarith [mul_lt_mul_of_pos_right (not_le.mp hlt) (by linarith : (0 : ℝ) < ℓ + j - 1)]
+  -- each level loses at most `3 u ℓ_x ε_x ≤ 6 u ℓ ε` of `ε_x (ℓ_x - 1)`
+  have key : ∀ (a : List Bool) (x : EighNode F) (s : List Bool → EighSample ℝ ℂ N) (j : ℕ)
+      (y : EighNode F), j + a.length ≤ ℓ → x.ℓ = ℓ + j → dec x.ε ≤ dec ε →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * j ≤ dec x.ε * (x.ℓ - 1) →
+      eighNodeAt M N signFuel R₀ β a x s = some y →
+      dec ε * (ℓ - 1) - 6 * u * ℓ * dec ε * (j + a.length : ℕ) ≤ dec y.ε * (y.ℓ - 1) := by
+    intro a
+    induction a with
+    | nil =>
+      intro x s j y _ h2 _ h4 h
+      cases Option.some.inj h
+      simpa using h4
+    | cons b a ih =>
+      intro x s j y hj h2 h3 h4 h
+      simp only [eighNodeAt, Option.bind_eq_some_iff] at h
+      obtain ⟨z, hz, hy⟩ := h
+      obtain ⟨-, -, -, -, hzε, hzℓ⟩ := le_eq_false_and_le_and_eq_of_eighChild_eq_some hz
+      simp only [List.length_cons] at hj
+      have hxε := hlow x j (by omega) h2 h4
+      have hx0 : 0 < dec x.ε := by linarith
+      have hxℓ : (x.ℓ : ℝ) ≤ 2 * ℓ := by
+        rw [h2]; push_cast; linarith [(by exact_mod_cast (by omega : j ≤ ℓ) : (j : ℝ) ≤ ℓ)]
+      have hxℓ5 : 5 ≤ x.ℓ := by
+        have : (5 : ℝ) ≤ x.ℓ := by rw [h2]; push_cast; linarith [(j.cast_nonneg : (0 : ℝ) ≤ j)]
+        exact_mod_cast this
+      have huL : u * x.ℓ ≤ 1 / 1000 := by nlinarith
+      obtain ⟨hs1, hs2⟩ := hM.dec_eighNextParams_snd_le x.R x.ε hu huL hτ₀ (by linarith) hx0
+        (by linarith) (by linarith) hxℓ5 (by linarith)
+      have hloss := mul_le_mul_of_nonneg_left
+        (mul_le_mul hxℓ h3 hx0.le (by positivity)) (by positivity : (0 : ℝ) ≤ 3 * u)
+      have r := ih z (fun a' => s (b :: a')) (j + 1) y (by omega) (by omega)
+        (by rw [hzε]; linarith) (by
+          rw [hzε, hzℓ]; push_cast at hs2 ⊢; nlinarith) hy
+      rwa [show j + (b :: a).length = j + 1 + a.length by simp only [List.length_cons]; omega]
+  have r := key a ⟨k, A, R₀, ε, ℓ⟩ s 0 y (by omega) rfl le_rfl (by simp) h
+  rw [zero_add, hyℓ] at r
+  rw [hyℓ]
+  push_cast at r ⊢
+  have hlen' : (a.length : ℝ) ≤ ℓ := by exact_mod_cast hlen
+  have hd : (0 : ℝ) < ℓ + a.length - 1 := by linarith [(a.length.cast_nonneg : (0 : ℝ) ≤ _)]
+  rw [mul_div_assoc', div_mul_eq_mul_div, div_le_iff₀ hd]
+  have h1 := mul_le_mul_of_nonneg_left hlen' (by positivity : 0 ≤ 6 * u * ℓ * dec ε)
+  have h2 : 6 * u * ℓ * dec ε * ℓ ≤ 6 / 100 * dec ε := by nlinarith
+  nlinarith
+
+/-- The sizes of the two children of a node sum to at most its size. -/
+private lemma sum_k_eighChild_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (smp : EighSample Su Sg N) :
+    (eighChild M N signFuel R₀ β x smp true).elim 0 EighNode.k +
+      (eighChild M N signFuel R₀ β x smp false).elim 0 EighNode.k ≤ x.k := by
+  unfold eighChild
+  split
+  · simp
+  · rename_i b' _ _ _
+    cases b' <;> simp
+  · rename_i kp hkp _ _ _ _ _ _
+    simp only [if_true, Option.elim_some, Bool.false_eq_true, if_false]
+    omega
+
+/-- **The sizes at one depth sum to at most the root size**: for every machine, node
+$x$, tree of samples and depth $j$, the sizes of the nodes at the paths of length $j$ sum to at
+most $k_x$ (a node has no child, one child of its size, or two children of sizes $k_+$ and
+$k - k_+$). [Shah2024, proof of Theorem 4.2], "$\sum_{x \in X_k} n_x \le n$". -/
+theorem sum_k_eighNodeAt_ofFn_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    {N signFuel : ℕ} {R₀ β : F} (x : EighNode F) (s : List Bool → EighSample Su Sg N) (j : ℕ) :
+    ∑ a : Fin j → Bool,
+      ((eighNodeAt M N signFuel R₀ β (List.ofFn a) x s).elim 0 EighNode.k) ≤ x.k := by
+  induction j generalizing x s with
+  | zero => simp [eighNodeAt]
+  | succ j ih =>
+    rw [← (Fin.consEquiv fun _ : Fin (j + 1) => Bool).sum_comp, Fintype.sum_prod_type,
+      Fintype.sum_bool]
+    simp only [Fin.consEquiv_apply, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ,
+      eighNodeAt]
+    have hb : ∀ b : Bool, ∑ a : Fin j → Bool,
+        ((eighChild M N signFuel R₀ β x (s []) b).bind fun y =>
+          eighNodeAt M N signFuel R₀ β (List.ofFn fun i => a i) y
+            fun a' => s (b :: a')).elim 0 EighNode.k ≤
+        (eighChild M N signFuel R₀ β x (s []) b).elim 0 EighNode.k := by
+      intro b
+      rcases eighChild M N signFuel R₀ β x (s []) b with _ | y
+      · simp
+      · exact ih y _
+    exact (add_le_add (hb true) (hb false)).trans (sum_k_eighChild_le M x (s []))
 
 end NLAlib

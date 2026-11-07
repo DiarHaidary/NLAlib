@@ -354,6 +354,7 @@ public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Computation.ResidualGap
 public import NLAlib.Matrix.Computation.SpectralBisection
+public import NLAlib.Matrix.Computation.SpectralBisection.Assembly
 public import NLAlib.Matrix.Computation.SpectralBisection.Child
 public import NLAlib.Matrix.Computation.SpectralBisection.Global
 public import NLAlib.Matrix.Computation.SpectralBisection.Node
