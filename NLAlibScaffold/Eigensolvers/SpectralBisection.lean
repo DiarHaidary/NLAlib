@@ -442,7 +442,7 @@ $2 \le k \le N$ with budget `NLAlib.FloatMachine.IsEighNodeBudget` at $x = \sqrt
 law gives the complement of the good event mass at most $kw\ell/R + 2\rho\,\mathbb{P}[\text{the
 step splits}]$. [Shah2024, Lemma 4.1], the probabilities of Events I and II.
 Proof: EV2's proof with EB1b' for the split criterion and DP1'
-(`NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix'`)
+(`NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix`)
 in place of DP1, or directly its two tails: the norm event fails with probability at most
 $e^{-\log(16/\rho)} = \rho/16$
 (`NLAlib.measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix` on the leading block),

@@ -19,7 +19,7 @@ $\min(r^2, e r)x^2$ (CG6 and CG6').
 
 ## Main results
 
-* [DP1'](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix').
+* [DP1'](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix).
 -/
 
 @[expose] public section
@@ -219,7 +219,7 @@ $e\,r x^2$ (`NLAlib.measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_compl
 $u \ge 0$ and $\mu_{\mathrm{MM}}(n) \ge 0$ are derived as in DP1. M, about 100 lines (DP1's
 proof with the two tails swapped). -/
 theorem
-    FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix'
+    FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {n r : ℕ} (hr : r ≤ n)
     {U V : Matrix (Fin n) (Fin r) ℂ} (hU : HasOrthonormalCols U) (hV : HasOrthonormalCols V)
