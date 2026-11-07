@@ -399,6 +399,27 @@ theorem IsUpperHessenberg.isUpperHessenberg_multiShiftedQRStep
     rw [List.foldl_cons]
     exact ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
 
+/-- Evaluation of a polynomial commutes with a unitary similarity. -/
+private theorem aeval_unitary_conj (A Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
+    (hQ : Qᴴ * Q = 1) (hQ' : Q * Qᴴ = 1) (p : Polynomial ℂ) :
+    Polynomial.aeval (Q * A * Qᴴ) p = Q * Polynomial.aeval A p * Qᴴ := by
+  refine Polynomial.induction_on p (fun a => ?_) (fun p q hp hq => ?_) (fun k a ih => ?_)
+  · simp [Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one, hQ']
+  · simp only [map_add, hp, hq, Matrix.mul_add, Matrix.add_mul]
+  · have hX : ∀ (B : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (q : Polynomial ℂ),
+        Polynomial.aeval B (q * Polynomial.X) = Polynomial.aeval B q * B := fun B q => by
+      rw [map_mul, Polynomial.aeval_X]
+    rw [pow_succ, ← mul_assoc, hX, ih, hX]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc Qᴴ Q, hQ, Matrix.one_mul]
+
+/-- A square matrix with a Givens QR factorization in the square form. -/
+private theorem isQR_givensHessenberg_sq {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hH : IsUpperHessenberg H) :
+    IsQR H (givensHessenbergQ H) (givensHessenbergR H) := by
+  have h := isQR_givensHessenberg hH (le_refl (n + 1))
+  rwa [Fin.castLE_rfl, Matrix.submatrix_id_id] at h
+
 /-- **The multi-shift QR step is a QR step of the shift polynomial**: for upper Hessenberg
 $\mathbf{H}$ and shifts $s_1, \dots, s_k$, there are $\mathbf{Q}$ unitary and $\mathbf{R}$
 upper triangular with $p(\mathbf{H}) = \mathbf{Q}\mathbf{R}$, $p(z) = \prod_i (z - s_i)$, and
@@ -418,7 +439,50 @@ theorem IsUpperHessenberg.exists_isQR_aeval_shiftPoly {H : Matrix (Fin (n + 1)) 
     (hH : IsUpperHessenberg H) (ss : List ℂ) :
     ∃ Q R : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ,
       IsQR (Polynomial.aeval H (shiftPoly ss)) Q R ∧ multiShiftedQRStep H ss = Qᴴ * H * Q := by
-  sorry
+  induction ss generalizing H with
+  | nil =>
+    refine ⟨1, 1, ⟨?_, ?_, ?_⟩, ?_⟩
+    · simp [shiftPoly]
+    · simp [HasOrthonormalCols]
+    · exact Matrix.blockTriangular_one
+    · simp [multiShiftedQRStep]
+  | cons s ss ih =>
+    obtain ⟨Q', R', hQ', hstep'⟩ := ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
+    have hQR := isQR_givensHessenberg_sq (IsUpperHessenberg.sub_smul_one hH s)
+    have hstep : multiShiftedQRStep H (s :: ss) = multiShiftedQRStep (shiftedQRStep H s) ss := rfl
+    have hpoly : shiftPoly (s :: ss) = shiftPoly ss * (Polynomial.X - Polynomial.C s) := by
+      simp only [shiftPoly, List.map_cons, List.prod_cons]
+      exact mul_comm _ _
+    have hP : Polynomial.aeval H (shiftPoly (s :: ss)) =
+        Polynomial.aeval H (shiftPoly ss) * (H - s • 1) := by
+      rw [hpoly, map_mul, map_sub, Polynomial.aeval_X, Polynomial.aeval_C,
+        Algebra.algebraMap_eq_smul_one]
+    have hH1 : shiftedQRStep H s =
+        (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)))ᴴ * H *
+          givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) := rfl
+    generalize givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) = Q1
+      at hQR hH1
+    generalize givensHessenbergR (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) = R1
+      at hQR
+    generalize hHs : shiftedQRStep H s = H1 at hQ' hstep' hH1
+    have hQ1 : Q1ᴴ * Q1 = 1 := hQR.hasOrthonormalCols
+    have hQ1' : Q1 * Q1ᴴ = 1 := hQR.hasOrthonormalCols.mul_conjTranspose_self
+    have hHconj : Q1 * H1 * Q1ᴴ = H := by
+      calc Q1 * H1 * Q1ᴴ = (Q1 * Q1ᴴ) * H * (Q1 * Q1ᴴ) := by
+            rw [hH1]; simp only [Matrix.mul_assoc]
+        _ = H := by simp [hQ1']
+    have hconj : ∀ p : Polynomial ℂ,
+        Polynomial.aeval H p = Q1 * Polynomial.aeval H1 p * Q1ᴴ := by
+      intro p
+      rw [← aeval_unitary_conj H1 Q1 hQ1 hQ1' p, hHconj]
+    refine ⟨Q1 * Q', R' * R1, ⟨?_, ?_, ?_⟩, ?_⟩
+    · rw [hP, hconj (shiftPoly ss), hQ'.eq_mul, hQR.eq_mul]
+      simp only [Matrix.mul_assoc]
+      rw [← Matrix.mul_assoc Q1ᴴ Q1 R1, hQ1, Matrix.one_mul]
+    · exact hQR.hasOrthonormalCols.mul hQ'.hasOrthonormalCols
+    · exact hQ'.isUpperTriangular.mul hQR.isUpperTriangular
+    · rw [hstep, hHs, hstep', hH1, Matrix.conjTranspose_mul]
+      simp only [Matrix.mul_assoc]
 
 /-- Helper: a single shifted QR step is a unitary similarity, so it preserves the spectral norm. -/
 private theorem specNorm_shiftedQRStep_aux (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (s : ℂ) :
