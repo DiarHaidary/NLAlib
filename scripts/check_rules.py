@@ -861,7 +861,7 @@ def v_forbidden(c):
 KEYWORDS = {'native_decide', 'mk_all', 'set_option', 'snake_case', 'irreducible_def', 'previous_latex',
             'previous_display', 'lean_body', 'exists_forall_', 'explorer_role', 'simp_all',
             'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0',
-            'implemented_by'}
+            'implemented_by', 'exempt_while', 'exempt_reason'}
 
 
 def mathlib_names(c):

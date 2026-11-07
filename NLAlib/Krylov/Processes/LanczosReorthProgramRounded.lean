@@ -90,12 +90,13 @@ private theorem lanczosReorthOutputs_pop {s : Store P K} (hsize : s.size = 8) {d
   · rw [rdo tag 3 _ (by omega)]; exact h3 i j
   · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
-/-- The rounded run of the stored-matrix CGS2 tree: under the standard model, for symmetric
+/-- **The rounded run of the stored-matrix CGS2 tree**: under the standard model, for symmetric
 decoded $\mathbf{A}$ (ROM words) and $\mathbf{b} \ne \mathbf{0}$, the compiled tree succeeds,
 keeps the shape and its outputs satisfy `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at
 $q$ columns, $c_1$ = `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0$
 = <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$:
-$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source. -/
+$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source.
+Result: lanczos-reorth-cgs2-rounded-run -/
 theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)
@@ -144,7 +145,7 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
   rw [Store.shape_pop, shout, shm, hshape]
   rfl
 
-/-- The rounded run of the matrix-free CGS2 tree: under the standard model, for symmetric
+/-- **The rounded run of the matrix-free CGS2 tree**: under the standard model, for symmetric
 $\mathbf{A}$, an oracle of accuracy $\eta\|\mathbf{A}\|_2$ (`NLAlib.Computation.IsMatvecErr`)
 with $\eta \le \varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
 is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$ and $\mathbf{b}
@@ -153,7 +154,8 @@ is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$ a
 `NLAlib.cgsPassBound`, that
 is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$: $(\eta_0, 2c_1,
 3c_1, 2(\eta_0 + c_1)^2)$. Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
-No printed source. -/
+No printed source.
+Result: lanczos-reorth-cgs2-oracle-rounded-run -/
 theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
@@ -218,7 +220,8 @@ condition, its computed tridiagonal is the exact Lanczos tridiagonal of $(\mathb
 $\mathbf{H}'$ with $\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r +
 3\|\mathbf{A}\|_2(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)$, $r$ =
 `NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the orthogonality level. No printed source for
-the program statement; [Paige1971, §6.1] in substance. -/
+the program statement; [Paige1971, §6.1] in substance.
+Result: lanczos-reorth-cgs2-program-backward -/
 theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)
@@ -265,7 +268,7 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
   rw [hH] at h2'
   exact ⟨H', h1, h2', h3'⟩
 
-/-- Interlacing at the program level: under the standard model, for symmetric decoded
+/-- **Interlacing at the program level**: under the standard model, for symmetric decoded
 $\mathbf{A}$ (ROM words), $\mathbf{b} \ne \mathbf{0}$, $\varepsilon$ =
 `NLAlib.lanczosImplementationRoundoffBound`, that
 is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, $0 \le \eta_0 \le
@@ -276,7 +279,8 @@ whose run $L$ (parameters $\varepsilon$, $\tau$ and the CGS2 ones) satisfies the
 condition the computed Ritz values $\theta_i$ interlace
 the eigenvalues of $\mathbf{A}$ up to $e$ = `NLAlib.LanczosReorthRun.backwardRadius`:
 $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$ for $i < m$. No
-printed source. -/
+printed source.
+Result: lanczos-reorth-cgs2-program-interlacing -/
 theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem)
