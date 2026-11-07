@@ -228,7 +228,83 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
     hessenbergPotential ss.length (multiShiftedQRStep H (List.replicate ss.length r)) ≤
       pseudoConditionNumber V ^ ((2 : ℝ) / ss.length) * α * θ *
         hessenbergPotential ss.length H := by
-  sorry
+  set k := ss.length with hkdef
+  set κ := pseudoConditionNumber V with hκdef
+  set ψ := hessenbergPotential k H with hψdef
+  set p : Polynomial ℂ := shiftPoly (List.replicate k r) with hpdef
+  have hpeval : ∀ i, p.eval (d i) = (d i - r) ^ k := by
+    intro i; simp [hpdef, shiftPoly, List.map_replicate, List.prod_replicate]
+  have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
+    rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hd i r hr.1))
+  have hunit : IsUnit (Polynomial.aeval H p) := by
+    rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
+    exact (hV.mul (Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun i =>
+      isUnit_iff_ne_zero.mpr (hnz i)))).mul
+      ((Matrix.isUnit_iff_isUnit_det _).mpr (by
+        rw [Matrix.det_nonsing_inv]; exact ((Matrix.isUnit_iff_isUnit_det V).mp hV).ringInverse))
+  have hN := IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le hH
+    (ss := List.replicate k r) (by rw [List.length_replicate]; exact hk)
+    (by rw [List.length_replicate]; exact hkn) hunit
+  rw [List.length_replicate] at hN
+  have hinv := inv_aeval_eq_mul_diagonal_mul_inv hV hHV hnz
+  have hsq := sum_lastRowWeights_mul_sq_le hV (fun i => (p.eval (d i))⁻¹)
+  rw [← hinv] at hsq
+  set N := ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ with hNdef
+  set x : Fin (n + 1) → ℝ := fun i => 1 / ‖d i - r‖ ^ k with hxdef
+  have hx0 : ∀ i, 0 ≤ x i := fun i => by simp only [hxdef]; positivity
+  have hgx : ∀ i, ‖(p.eval (d i))⁻¹‖ ^ 2 = (x i) ^ 2 := fun i => by
+    simp only [hxdef]; rw [hpeval, norm_inv, norm_pow, one_div]
+  have hS : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k = ∑ i, lastRowWeights V i * x i :=
+    Finset.sum_congr rfl fun i _ => by simp only [hxdef]; ring
+  have hjen : (∑ i, lastRowWeights V i * x i) ^ 2 ≤ ∑ i, lastRowWeights V i * (x i) ^ 2 := by
+    have := (convexOn_pow 2).map_sum_le (t := Finset.univ) (w := lastRowWeights V) (p := x)
+      (fun i _ => lastRowWeights_nonneg V i) (sum_lastRowWeights hV)
+      (fun i _ => Set.mem_Ici.mpr (hx0 i))
+    simpa [smul_eq_mul] using this
+  have hsqsum : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 := by
+    simp only [hgx] at hsq; exact hsq
+  have hκ0 : 0 ≤ κ := mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
+  have hSN : ∑ i, lastRowWeights V i * x i ≤ κ * N := by
+    refine (sq_le_sq₀ (Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (hx0 i))
+      (mul_nonneg hκ0 (norm_nonneg _))).mp ?_
+    calc (∑ i, lastRowWeights V i * x i) ^ 2 ≤ ∑ i, lastRowWeights V i * (x i) ^ 2 := hjen
+      _ ≤ κ ^ 2 * N ^ 2 := hsqsum
+      _ = (κ * N) ^ 2 := by ring
+  have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hα hθ
+  rw [hS] at hone
+  have hkey : 1 ≤ κ * (α * θ * ψ) ^ k * (κ * N) :=
+    le_trans hone (mul_le_mul_of_nonneg_left hSN (mul_nonneg hκ0 (pow_nonneg
+      (mul_nonneg (mul_nonneg hα hθ)
+        (Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _))
+      _)))
+  have hN0 : 0 < N := by
+    rcases (norm_nonneg (WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n)))).eq_or_lt with h | h
+    · exfalso
+      have hN' : N = 0 := hNdef.trans h.symm
+      rw [hN', mul_zero] at hkey; linarith
+    · exact h
+  have hmain : hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k ≤
+      κ ^ 2 * (α * θ * ψ) ^ k := by
+    have h1 : hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k * N ≤
+        (κ ^ 2 * (α * θ * ψ) ^ k) * N := by
+      nlinarith [hN, hkey]
+    exact le_of_mul_le_mul_right h1 hN0
+  have hψ0 : 0 ≤ ψ := Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  have hψ'0 : 0 ≤ hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) :=
+    Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
+  have hκk : (κ ^ ((2 : ℝ) / k)) ^ k = κ ^ 2 := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul hκ0]
+    have h2 : (2 : ℝ) / k * (k : ℝ) = 2 := by field_simp
+    rw [h2]; norm_num
+  have hb : 0 ≤ κ ^ ((2 : ℝ) / k) * (α * θ * ψ) :=
+    mul_nonneg (Real.rpow_nonneg hκ0 _) (mul_nonneg (mul_nonneg hα hθ) hψ0)
+  have hfin : hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k ≤
+      (κ ^ ((2 : ℝ) / k) * (α * θ * ψ)) ^ k := by
+    rw [mul_pow, hκk]; exact hmain
+  have hle := (pow_le_pow_iff_left₀ hψ'0 hb hk.ne').mp hfin
+  calc _ ≤ κ ^ ((2 : ℝ) / k) * (α * θ * ψ) := hle
+    _ = κ ^ ((2 : ℝ) / k) * α * θ * ψ := by ring
 
 /-! ### The binary search -/
 
