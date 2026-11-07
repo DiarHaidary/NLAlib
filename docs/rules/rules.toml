@@ -354,8 +354,8 @@ check = "lean"
 scope = "library"
 home = ["NLAlib/Computation"]
 section = "programs"
-statement = '''A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry'''
-fix = '''Prove the registered target itself; a `Result:` theorem about runs that proves no registered target loses its id, and a new or changed target needs the maintainer's approval (agents never edit `*Targets.lean` or the registry)'''
+statement = '''A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem`, or a rounded access model) may carry a `Result:` id'''
+fix = '''Prove the registered target itself; a `Result:` theorem about exact runs that proves no registered target loses its id (a rounded program theorem keeps it), and a new or changed target needs the maintainer's approval (agents never edit `*Targets.lean` or the registry)'''
 
 [[rule]]
 id = "E4"

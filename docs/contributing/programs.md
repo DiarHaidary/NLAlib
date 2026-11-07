@@ -30,7 +30,13 @@ library's, not the prover's: it is a **target**.
   with no hypothesis, parameter or postcondition of the prover's, and each registered target has
   exactly one such proof. A `Result:` theorem whose statement reaches a run or a budget proves a
   registered target; a lemma about a program family is proof infrastructure and has no result id
-  [E3].
+  [E3]. The exception is a **rounded program theorem** (approved by the maintainer 2026-11-07): a
+  theorem about the runs of a program under every semantics meeting the standard model, recognised
+  by a leading hypothesis (a binder of its `∀` telescope) `Computation.IsRelErrSem …`, or by a
+  rounded access model (`Computation.MatrixFreeRounded`, `Computation.MatrixFreeRoundedProb`) in
+  its type; it may carry a result id, so finite-precision guarantees of a registered tree reach
+  the algorithm pages. The model in a conclusion only does not count, and exact program theorems
+  keep the rule [E3].
 - The registry records each target's closure hash (every library constant its statement reaches,
   proofs erased and hygienic names numbered, the registered trees as leaves hashed by their
   constructor normal forms, which the kernel checks are the trees), its printed statement, each

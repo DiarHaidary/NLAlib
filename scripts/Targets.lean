@@ -15,7 +15,12 @@ target statements", F1 and F12). This script checks, on the library built by `la
    `exec`, `Stmt`, `ProgFamily.inst`), through the library constants it unfolds to (the values of
    definitions and opaques, the constructors of structures, classes and inductive types), is a
    registered target or its proof: a theorem, an instance of a `Prop` class, any constant whose
-   type is a proposition, or a definition of type `Prop`;
+   type is a proposition, or a definition of type `Prop`; except a **rounded program theorem**
+   (approved by the maintainer 2026-11-07), a claim whose statement is about rounded execution:
+   one of its leading hypotheses (the binders of its `∀` telescope, instances included) is an
+   application of the standard model `NLAlib.Computation.IsRelErrSem`, or its type names a
+   rounded access model (`MatrixFreeRounded`, `MatrixFreeRoundedProb`). Exact program theorems
+   (under `exactInterp`, `storedInterp`, or the exact models) keep the rule;
 3. the **closure hash** of each target matches the registry: SHA-256 of a canonical serialisation
    of every library constant the target's statement reaches (a constant is a library constant if
    its module is an `NLAlib` module), of every kind: definitions and opaques (type and value),
@@ -331,6 +336,20 @@ def runConsts : List Name :=
    ``NLAlib.Computation.ProgFamily.inst, ``NLAlib.Computation.ProgFamily.MatrixFree,
    ``NLAlib.Computation.ProgFamily.StoredEntries, ``NLAlib.Computation.ProgFamily.MatrixFreeProb]
 
+/-- The rounded access models: a statement that names one is about rounded execution. -/
+def roundedModels : List Name :=
+  [``NLAlib.Computation.MatrixFreeRounded, ``NLAlib.Computation.MatrixFreeRoundedProb]
+
+/-- Whether a claim is a **rounded program theorem** (lint item 2's exception, approved by the
+maintainer 2026-11-07): its type names a rounded access model, or one of the binders of its
+leading `∀` telescope has type an application of `NLAlib.Computation.IsRelErrSem` (the claim
+holds for every semantics meeting the standard model). A mention of the model elsewhere (in a
+conclusion, under a connective) does not count. -/
+def isRoundedClaim (type : Expr) : MetaM Bool := do
+  if type.getUsedConstants.any (roundedModels.contains ·) then return true
+  forallTelescope type fun xs _ => xs.anyM fun x => do
+    return (← inferType x).getAppFn.isConstOf ``NLAlib.Computation.IsRelErrSem
+
 /-- Whether a constant reaches a run or a budget through the library constants it unfolds to:
 the type of every constant, the value of definitions and opaques, and the mutual block and the
 constructors of inductive types, so that a statement wrapped in a structure, a class or an
@@ -356,7 +375,8 @@ partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name
 
 /-- Lint item 2: the constants in `scope` outside `NLAlib/Computation` with a `Result:` id that
 make a claim about a program's runs or budget and are neither a registered target nor its proof
-(`exempt`). A claim is a constant whose type is a proposition (a theorem, an instance of a `Prop`
+(`exempt`) nor a rounded program theorem (`isRoundedClaim`, approved by the maintainer
+2026-11-07). A claim is a constant whose type is a proposition (a theorem, an instance of a `Prop`
 class, a definition or an axiom of a proposition), when its type reaches a run or a budget, or a
 definition of type `Prop` (a target of the prover's), when its value does (final audit,
 2026-10-24). -/
@@ -375,7 +395,7 @@ def unregisteredResults (env : Environment) (scope : Array (Name × ConstantInfo
     let consts := if propDef then #[c] else info.type.getUsedConstants
     let (r, m) := (consts.anyM (reachesRun env)).run memo
     memo := m
-    if r then out := out.push c
+    if r && (propDef || !(← isRoundedClaim info.type)) then out := out.push c
   return out
 
 /-- The models on `Prog` a target concludes. -/
@@ -829,6 +849,26 @@ theorem exec_copyTrace (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → �
       (inputState () [#[some A.trace]]) =
       some (inputState () [#[some A.trace]]) := rfl
 
+/-- A rounded program theorem (approved by the maintainer 2026-11-07): a claim about `exec` for
+every semantics meeting the standard model. Not flagged.
+
+Result: fixture-rounded-run -/
+theorem exec_skip_of_isRelErrSem {u : Unit → ℝ} {dec : Unit → ℝ → ℝ}
+    (I : Interp Unit Unit ℝ (OpCount Unit Unit))
+    (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St Unit ℝ (OpCount Unit Unit)) :
+    exec I .skip st = some st := rfl
+
+/-- The standard model in a conclusion only, not as a hypothesis: an exact claim about `exec`,
+flagged.
+
+Result: fixture-model-in-conclusion -/
+theorem exec_copyTrace_and (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) ∧
+      ∀ u : Unit → ℝ, IsRelErrSem u (fun _ x => x) (fun _ _ => True)
+        (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ).sem → True :=
+  ⟨rfl, fun _ _ => trivial⟩
+
 /-- A target of the prover's: a `Prop` that unfolds to a model, not in the registry. -/
 def FixUnregistered : Prop := FixHutchpp
 
@@ -905,10 +945,13 @@ run_cmd do
     unregisteredResults env here (NameSet.empty.insert ``TargetFixtures.fixHutchpp)
   let expected := [``TargetFixtures.matrixFree_sizeTraceProg, ``TargetFixtures.exec_copyTrace,
       ``TargetFixtures.fixUnregistered, ``TargetFixtures.wrapped, ``TargetFixtures.viaNonempty,
-      ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef]
+      ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef,
+      ``TargetFixtures.exec_copyTrace_and]
   for c in expected do
     unless flagged.contains c do fail m!"{c} is not flagged"
   if flagged.size != expected.length then fail m!"item 2 flags {flagged}"
+  if flagged.contains ``TargetFixtures.exec_skip_of_isRelErrSem then
+    fail m!"a rounded program theorem is flagged"
   logInfo m!"item 2: {flagged} flagged"
   -- item 3: the registered tree is a leaf, and the kernel checks that it is its normal form
   let (nf, defs) ← liftTermElabM <| treeNF ``TargetFixtures.hppC
