@@ -570,6 +570,52 @@ theorem exists_isUnit_mul_eq_mul_diagonal_multiShiftedQRStep
     obtain ⟨V2, h2, e2, p2⟩ := ih h1 e1
     exact ⟨V2, h2, e2, p2.trans p1⟩
 
+/-- The shift polynomial of a list is monic of degree the length of the list. -/
+private theorem shiftPoly_monic_natDegree (ss : List ℂ) :
+    (shiftPoly ss).Monic ∧ (shiftPoly ss).natDegree = ss.length := by
+  induction ss with
+  | nil => simp [shiftPoly]
+  | cons s ss ih =>
+    have h : shiftPoly (s :: ss) = (Polynomial.X - Polynomial.C s) * shiftPoly ss := by
+      simp [shiftPoly]
+    have hm : (Polynomial.X - Polynomial.C s : Polynomial ℂ).Monic := Polynomial.monic_X_sub_C s
+    rw [h]
+    refine ⟨hm.mul ih.1, ?_⟩
+    rw [hm.natDegree_mul ih.1, Polynomial.natDegree_X_sub_C, ih.2, List.length_cons]
+    ring
+
+/-- A unitary conjugation commutes with polynomial evaluation: `aeval (Qᴴ H Q) p = Qᴴ p(H) Q`. -/
+private theorem aeval_conjTranspose_mul_mul {H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hQ : Qᴴ * Q = 1) (p : Polynomial ℂ) :
+    Polynomial.aeval (Qᴴ * H * Q) p = Qᴴ * Polynomial.aeval H p * Q := by
+  have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ
+  let f : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ →ₐ[ℂ] Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ :=
+    { toFun := fun M => Qᴴ * M * Q
+      map_one' := by simp only [Matrix.mul_one, hQ]
+      map_mul' := fun A B => by
+        show Qᴴ * (A * B) * Q = Qᴴ * A * Q * (Qᴴ * B * Q)
+        calc Qᴴ * (A * B) * Q = Qᴴ * A * (1 * B) * Q := by simp [Matrix.mul_assoc]
+          _ = Qᴴ * A * (Q * Qᴴ) * B * Q := by rw [hQQ]; simp
+          _ = _ := by simp only [Matrix.mul_assoc]
+      map_zero' := by simp
+      map_add' := fun A B => by simp [Matrix.mul_add, Matrix.add_mul]
+      commutes' := fun c => by
+        simp [Algebra.algebraMap_eq_smul_one, Matrix.mul_smul, Matrix.smul_mul, hQ] }
+  exact Polynomial.aeval_algHom_apply f H p
+
+/-- A row of a matrix with `M Mᴴ = 1` has Euclidean norm one. -/
+private theorem norm_toLp_row_eq_one {M : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hM : M * Mᴴ = 1)
+    (i : Fin (n + 1)) : ‖WithLp.toLp 2 (fun j => M i j)‖ = 1 := by
+  have h := congrFun (congrFun hM i) i
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.one_apply_eq] at h
+  have h2 : ∀ z : ℂ, z * star z = ((‖z‖ ^ 2 : ℝ) : ℂ) := fun z => by
+    rw [Complex.star_def, Complex.mul_conj, Complex.normSq_eq_norm_sq]
+  simp only [h2] at h
+  rw [← Complex.ofReal_sum, Complex.ofReal_eq_one] at h
+  rw [EuclideanSpace.norm_eq]
+  simp only [PiLp.toLp_apply]
+  rw [h, Real.sqrt_one]
+
 /-- **The potential after a QR step is at most $\tau_p$**: for upper Hessenberg $\mathbf{H}$,
 shifts $s_1, \dots, s_k$ with $1 \le k \le n$ and $p(\mathbf{H})$ invertible,
 $p(z) = \prod_i (z - s_i)$,
@@ -595,7 +641,60 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
     (hk : 0 < ss.length) (hkn : ss.length ≤ n) (hp : IsUnit (Polynomial.aeval H (shiftPoly ss))) :
     hessenbergPotential ss.length (multiShiftedQRStep H ss) ^ ss.length *
       ‖WithLp.toLp 2 ((Polynomial.aeval H (shiftPoly ss))⁻¹ (Fin.last n))‖ ≤ 1 := by
-  sorry
+  obtain ⟨Q, R, hQR, hHs⟩ := exists_isQR_aeval_shiftPoly hH ss
+  obtain ⟨hmon, hdeg⟩ := shiftPoly_monic_natDegree ss
+  have hpot := hessenbergPotential_pow_le_norm_aeval
+    (isUpperHessenberg_multiShiftedQRStep hH ss) hmon hk hkn hdeg
+  have hQ : Qᴴ * Q = 1 := hQR.hasOrthonormalCols
+  have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ
+  have hRt : R.IsUpperTriangular := hQR.isUpperTriangular
+  have hPQ := hQR.eq_mul
+  set P := Polynomial.aeval H (shiftPoly ss) with hPdef
+  have hdetP : P.det ≠ 0 := ((Matrix.isUnit_iff_isUnit_det P).mp hp).ne_zero
+  have hRnn : R (Fin.last n) (Fin.last n) ≠ 0 := by
+    have hdetR : R.det ≠ 0 := by
+      intro h0; apply hdetP; rw [hPQ, Matrix.det_mul, h0, mul_zero]
+    rw [Matrix.det_of_upperTriangular hRt] at hdetR
+    exact Finset.prod_ne_zero_iff.mp hdetR _ (Finset.mem_univ _)
+  set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he
+  have hrowe : ∀ M : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ,
+      M (Fin.last n) = e ᵥ* M := by
+    intro M; ext j; simp [he, Matrix.vecMul, dotProduct, Pi.single_apply]
+  have hRrow : e ᵥ* R = R (Fin.last n) (Fin.last n) • e := by
+    ext j
+    by_cases hj : j = Fin.last n
+    · subst hj; simp [he, Matrix.vecMul, dotProduct, Pi.single_apply]
+    · have hlt : j < Fin.last n := lt_of_le_of_ne (Fin.le_last j) hj
+      have h0 : R (Fin.last n) j = 0 := hRt hlt
+      simp [he, Matrix.vecMul, dotProduct, Pi.single_apply, hj, h0]
+  have hPR : Qᴴ * P * Q = R * Q := by
+    rw [hPQ, ← Matrix.mul_assoc, hQ, Matrix.one_mul]
+  -- the potential bound, rewritten along the step
+  rw [hHs, aeval_conjTranspose_mul_mul hQ, hPR] at hpot
+  rw [hHs]
+  have hRQrow : (R * Q) (Fin.last n) = R (Fin.last n) (Fin.last n) • (e ᵥ* Q) := by
+    rw [hrowe (R * Q), ← Matrix.vecMul_vecMul, hRrow, Matrix.smul_vecMul]
+  have hxw : e ᵥ* P⁻¹ = (R (Fin.last n) (Fin.last n))⁻¹ • (e ᵥ* Qᴴ) := by
+    have hPinv : P * P⁻¹ = 1 := Matrix.mul_nonsing_inv P ((Matrix.isUnit_iff_isUnit_det P).mp hp)
+    have key : ((R (Fin.last n) (Fin.last n))⁻¹ • (e ᵥ* Qᴴ)) ᵥ* P = e := by
+      rw [Matrix.smul_vecMul, Matrix.vecMul_vecMul, hPQ, ← Matrix.mul_assoc, hQ, Matrix.one_mul,
+        hRrow, smul_smul, inv_mul_cancel₀ hRnn, one_smul]
+    calc e ᵥ* P⁻¹ = (((R (Fin.last n) (Fin.last n))⁻¹ • (e ᵥ* Qᴴ)) ᵥ* P) ᵥ* P⁻¹ := by rw [key]
+      _ = ((R (Fin.last n) (Fin.last n))⁻¹ • (e ᵥ* Qᴴ)) ᵥ* (P * P⁻¹) := by
+          rw [Matrix.vecMul_vecMul]
+      _ = _ := by rw [hPinv, Matrix.vecMul_one]
+  have hn1 : ‖WithLp.toLp 2 (e ᵥ* Q)‖ = 1 := by
+    rw [← hrowe Q]; exact norm_toLp_row_eq_one hQQ (Fin.last n)
+  have hn2 : ‖WithLp.toLp 2 (e ᵥ* Qᴴ)‖ = 1 := by
+    rw [← hrowe Qᴴ]
+    exact norm_toLp_row_eq_one (by rw [Matrix.conjTranspose_conjTranspose]; exact hQ) (Fin.last n)
+  rw [hRQrow, WithLp.toLp_smul, norm_smul, hn1, mul_one] at hpot
+  rw [hrowe P⁻¹, hxw, WithLp.toLp_smul, norm_smul, hn2, norm_inv, mul_one]
+  have hinv : ‖R (Fin.last n) (Fin.last n)‖ * ‖R (Fin.last n) (Fin.last n)‖⁻¹ = 1 :=
+    mul_inv_cancel₀ (norm_ne_zero_iff.mpr hRnn)
+  have hψ := mul_le_mul_of_nonneg_right hpot
+    (inv_nonneg.mpr (norm_nonneg (R (Fin.last n) (Fin.last n))))
+  linarith [hψ, hinv]
 
 /-- The first $j \le i$ steps of Givens QR leave row $i + 1$ alone. -/
 private theorem givensHessenbergState_snd_apply_of_eq_add_one {m p : ℕ}
