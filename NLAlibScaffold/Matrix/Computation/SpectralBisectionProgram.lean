@@ -4611,6 +4611,1199 @@ theorem eighProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm pa
     ⟨2 * (N * N), by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
     ⟨N, by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
 
+/-! ### EP6 helpers -/
+
+/-- Polynomials in $(N, \ell_0, F)$ with natural coefficients, as unnormalized lists of terms
+(coefficient, exponents). -/
+private abbrev ep6_Poly := List (ℕ × ℕ × ℕ × ℕ)
+
+/-- The value of a polynomial. -/
+private def ep6_ev (N L F : ℕ) (p : ep6_Poly) : ℕ :=
+  (p.map fun e => e.1 * (N ^ e.2.1 * L ^ e.2.2.1 * F ^ e.2.2.2)).sum
+
+/-- The product of two polynomials. -/
+private def ep6_pmul (p q : ep6_Poly) : ep6_Poly :=
+  p.flatMap fun a => q.map fun b => (a.1 * b.1, a.2.1 + b.2.1, a.2.2.1 + b.2.2.1, a.2.2.2 + b.2.2.2)
+
+private theorem ep6_ev_append (N L F : ℕ) (p q : ep6_Poly) :
+    ep6_ev N L F (p ++ q) = ep6_ev N L F p + ep6_ev N L F q := by
+  simp [ep6_ev]
+
+private theorem ep6_ev_pmul (N L F : ℕ) (p q : ep6_Poly) :
+    ep6_ev N L F (ep6_pmul p q) = ep6_ev N L F p * ep6_ev N L F q := by
+  induction p with
+  | nil => simp [ep6_pmul, ep6_ev]
+  | cons a p ih =>
+    have ih' : ep6_ev N L F (p.flatMap fun a => q.map fun b =>
+        (a.1 * b.1, a.2.1 + b.2.1, a.2.2.1 + b.2.2.1, a.2.2.2 + b.2.2.2)) =
+        ep6_ev N L F p * ep6_ev N L F q := ih
+    simp only [ep6_pmul, List.flatMap_cons, ep6_ev_append, ih']
+    simp only [ep6_ev, List.map_cons, List.sum_cons, List.map_map, add_mul]
+    congr 1
+    rw [← List.sum_map_mul_left]
+    congr 1
+    apply List.map_congr_left
+    intro b _
+    simp only [Function.comp, pow_add]
+    ring
+
+/-- An upper bound of an index expression by a polynomial: truncated subtraction and the
+remainder by their first argument. -/
+private def ep6_up {ni : ℕ} (σ : Fin ni → ep6_Poly) : IExp (Fin ni) → ep6_Poly
+  | .var v => σ v
+  | .const n => [(n, 0, 0, 0)]
+  | .add a b => ep6_up σ a ++ ep6_up σ b
+  | .sub a _ => ep6_up σ a
+  | .mul a b => ep6_pmul (ep6_up σ a) (ep6_up σ b)
+  | .mod a _ => ep6_up σ a
+
+private theorem ep6_evalIn_le_up {N L F ni : ℕ} {ρ : Fin ni → ℕ} {σ : Fin ni → ep6_Poly}
+    (h : ∀ v, ρ v ≤ ep6_ev N L F (σ v)) :
+    ∀ e : IExp (Fin ni), e.evalIn ρ ≤ ep6_ev N L F (ep6_up σ e)
+  | .var v => h v
+  | .const n => by simp [ep6_up, ep6_ev, IExp.evalIn]
+  | .add a b => by
+    simp only [IExp.evalIn, ep6_up, ep6_ev_append]
+    exact Nat.add_le_add (ep6_evalIn_le_up h a) (ep6_evalIn_le_up h b)
+  | .sub a _ => (Nat.sub_le _ _).trans (ep6_evalIn_le_up h a)
+  | .mul a b => by
+    simp only [IExp.evalIn, ep6_up, ep6_ev_pmul]
+    exact Nat.mul_le_mul (ep6_evalIn_le_up h a) (ep6_evalIn_le_up h b)
+  | .mod a _ => (Nat.mod_le _ _).trans (ep6_evalIn_le_up h a)
+
+/-- Extension of a polynomial environment by a last entry. -/
+private def ep6_snoc {n : ℕ} (σ : Fin n → ep6_Poly) (x : ep6_Poly) : Fin (n + 1) → ep6_Poly :=
+  fun i => if h : (i : ℕ) < n then σ ⟨i, h⟩ else x
+
+private theorem ep6_snoc_le {N L F n : ℕ} {ρ : Fin n → ℕ} {σ : Fin n → ep6_Poly}
+    (h : ∀ v, ρ v ≤ ep6_ev N L F (σ v)) {i : ℕ} {x : ep6_Poly} (hi : i ≤ ep6_ev N L F x) :
+    ∀ v, Fin.snoc (α := fun _ => ℕ) ρ i v ≤ ep6_ev N L F (ep6_snoc σ x v) := by
+  intro v
+  by_cases hv : (v : ℕ) < n
+  · simp only [Fin.snoc, hv, dif_pos, ep6_snoc, cast_eq]
+    exact h _
+  · simp only [Fin.snoc, hv, dif_neg, not_false_eq_true, ep6_snoc, cast_eq]
+    exact hi
+
+/-- A class of operation kinds, forgetting tags, oracle names and dimensions. -/
+private def ep6_cls {P ι : Type} : OpKind P ι → ℕ
+  | .bin _ b => match b with
+    | .add => 10 | .sub => 11 | .mul => 12 | .div => 13 | _ => 14
+  | .un _ u => match u with
+    | .neg => 20 | .sqrt => 23 | _ => 21
+  | .lit _ => 1
+  | .cmp _ => 6
+  | .copy _ => 2
+  | .draw _ d => match d with
+    | .gaussian => 30 | .uniform => 32 | _ => 31
+  | .convert _ _ => 3
+  | .rom _ => 5
+  | .load _ _ => 4
+  | .matvec _ _ => 8
+  | .kcall _ _ _ => 9
+  | .toNat _ => 7
+
+/-- The tag of an operation kind. -/
+private def ep6_ktag {P ι : Type} : OpKind P ι → P
+  | .bin p _ => p | .un p _ => p | .lit p => p | .cmp p => p | .copy p => p | .draw p _ => p
+  | .convert p _ => p | .rom p => p | .load p _ => p | .matvec p _ => p | .kcall p _ _ => p
+  | .toNat p => p
+
+/-- The constant polynomial $1$ if the classes agree, $0$ otherwise. -/
+private def ep6_ind (c d : ℕ) : ep6_Poly := if d = c then [(1, 0, 0, 0)] else []
+
+private theorem ep6_ev_ind (N L F c d : ℕ) :
+    ep6_ev N L F (ep6_ind c d) = if d = c then 1 else 0 := by
+  unfold ep6_ind; split_ifs <;> simp [ep6_ev]
+
+/-- **A crude count of the operations of class `c`**: loops by their trip-count bound times the
+body at the largest index, index binders by the body at the bound, branches by their sum. -/
+private def ep6_C {P ι : Type} (c : ℕ) :
+    {nb ni : ℕ} → FStmt P ι nb ni → (Fin ni → ep6_Poly) → ep6_Poly
+  | _, _, .skip, _ => []
+  | _, _, .seq s t, σ => ep6_C c s σ ++ ep6_C c t σ
+  | _, _, .instr i, _ =>
+      ep6_ind c (ep6_cls ((i.subst (fun _ => 0) (fun _ => .const 0)).kind (ι := ι)))
+  | _, _, .apply _ _ _ _ _ _ cols, σ => ep6_ind c 4 ++ ep6_pmul (ep6_up σ cols) (ep6_ind c 8)
+  | _, _, .rom _ _ _, _ => ep6_ind c 5
+  | _, _, .alloc _ _ b, σ => ep6_C c b σ
+  | _, _, .loop n b, σ => ep6_pmul (ep6_up σ n) (ep6_C c b (ep6_snoc σ (ep6_up σ n)))
+  | _, _, .whileFuel f _ _ _ _ b, σ => ep6_pmul (ep6_up σ f) (ep6_ind c 6 ++ ep6_C c b σ)
+  | _, _, .ite _ _ _ _ t e, σ => ep6_ind c 6 ++ (ep6_C c t σ ++ ep6_C c e σ)
+  | _, _, .named _ _ b, σ => ep6_C c b σ
+  | _, _, .kcall _ _ _ _ _, _ => ep6_ind c 9
+  | _, _, .bindIdx _ _ bd b, σ => ep6_ind c 7 ++ ep6_C c b (ep6_snoc σ (ep6_up σ bd))
+
+/-- A crude bound on the additional live cells (sums for maxima). -/
+private def ep6_Cc {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → (Fin ni → ep6_Poly) → ep6_Poly
+  | _, _, .seq s t, σ => ep6_Cc s σ ++ ep6_Cc t σ
+  | _, _, .alloc _ len b, σ => ep6_up σ len ++ ep6_Cc b σ
+  | _, _, .loop n b, σ => ep6_Cc b (ep6_snoc σ (ep6_up σ n))
+  | _, _, .whileFuel _ _ _ _ _ b, σ => ep6_Cc b σ
+  | _, _, .ite _ _ _ _ t e, σ => ep6_Cc t σ ++ ep6_Cc e σ
+  | _, _, .named _ _ b, σ => ep6_Cc b σ
+  | _, _, .bindIdx _ _ bd b, σ => ep6_Cc b (ep6_snoc σ (ep6_up σ bd))
+  | _, _, _, _ => []
+
+/-- The tags of a tree. -/
+private def ep6_tags {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → List P
+  | _, _, .skip => []
+  | _, _, .seq s t => ep6_tags s ++ ep6_tags t
+  | _, _, .instr i => [ep6_ktag ((i.subst (fun _ => 0) (fun _ => .const 0)).kind (ι := ι))]
+  | _, _, .apply _ p _ _ _ _ _ => [p]
+  | _, _, .rom p _ _ => [p]
+  | _, _, .alloc p _ b => p :: ep6_tags b
+  | _, _, .loop _ b => ep6_tags b
+  | _, _, .whileFuel _ p _ _ _ b => p :: ep6_tags b
+  | _, _, .ite p _ _ _ t e => p :: (ep6_tags t ++ ep6_tags e)
+  | _, _, .named _ _ b => ep6_tags b
+  | _, _, .kcall _ p _ _ _ => [p]
+  | _, _, .bindIdx p _ _ b => p :: ep6_tags b
+
+
+private theorem ep6_sum_le {α : Type} [AddCommMonoid α] [PartialOrder α] [IsOrderedAddMonoid α]
+    (l : List ℕ) (f : ℕ → α) (B : α) (h : ∀ i ∈ l, f i ≤ B) :
+    (l.map f).sum ≤ l.length • B := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    simp only [List.map_cons, List.sum_cons, List.length_cons, succ_nsmul']
+    exact add_le_add (h a List.mem_cons_self) (ih fun i hi => h i (List.mem_cons_of_mem a hi))
+
+omit [DecidableEq P] in
+private theorem ep6_supRange_count_le {f : ℕ → StaticCost P ι} {m B : ℕ} {κ : OpKind P ι}
+    (h : ∀ k < m, (f k).count κ ≤ B) : (StaticCost.supRange m f).count κ ≤ B := by
+  unfold StaticCost.supRange
+  suffices ∀ l : List ℕ, (∀ k ∈ l, k < m) →
+      (l.foldr (fun k c => (f k).branch c) StaticCost.zero).count κ ≤ B from
+    this _ fun k hk => List.mem_range.mp hk
+  intro l hl
+  induction l with
+  | nil => simp [StaticCost.zero]
+  | cons a l ih =>
+    simp only [List.foldr_cons, StaticCost.branch, Finsupp.sup_apply]
+    exact max_le (h a (hl a List.mem_cons_self)) (ih fun k hk => hl k (List.mem_cons_of_mem a hk))
+
+omit [DecidableEq P] in
+private theorem ep6_supRange_cells_le {f : ℕ → StaticCost P ι} {m B : ℕ} {q : P}
+    (h : ∀ k < m, (f k).cells q ≤ B) : (StaticCost.supRange m f).cells q ≤ B := by
+  unfold StaticCost.supRange
+  suffices ∀ l : List ℕ, (∀ k ∈ l, k < m) →
+      (l.foldr (fun k c => (f k).branch c) StaticCost.zero).cells q ≤ B from
+    this _ fun k hk => List.mem_range.mp hk
+  intro l hl
+  induction l with
+  | nil => simp [StaticCost.zero]
+  | cons a l ih =>
+    simp only [List.foldr_cons, StaticCost.branch]
+    exact max_le (h a (hl a List.mem_cons_self)) (ih fun k hk => hl k (List.mem_cons_of_mem a hk))
+
+omit [DecidableEq P] in
+private theorem ep6_single_le (k κ : OpKind P ι) :
+    (Finsupp.single k 1 : OpCount P ι) κ ≤ if ep6_cls k = ep6_cls κ then 1 else 0 := by
+  classical
+  rw [Finsupp.single_apply]
+  split_ifs with h1 h2 <;> simp_all
+
+/-- **The crude count bounds the static count** of every kind by its class. -/
+private theorem ep6_count_le (w : P → ℕ) (κ : OpKind P ι) (N L F : ℕ) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ : Fin ni → ℕ) (σ : Fin ni → ep6_Poly),
+      (∀ v, ρ v ≤ ep6_ev N L F (σ v)) →
+      (s.staticCost (fun k => Finsupp.single k 1) w ρ).count κ ≤
+        ep6_ev N L F (ep6_C (ep6_cls κ) s σ) := by
+  intro nb ni s
+  induction s with
+  | skip => intro ρ σ _; simp [FStmt.staticCost, StaticCost.zero]
+  | seq s t ihs iht =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.seq, Finsupp.add_apply, ep6_C, ep6_ev_append]
+    exact Nat.add_le_add (ihs ρ σ h) (iht ρ σ h)
+  | instr i =>
+    intro ρ σ _
+    simp only [FStmt.staticCost, StaticCost.step, ep6_C, ep6_ev_ind]
+    exact ep6_single_le _ _
+  | apply o p d dOff s sOff cols =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.step, ep6_C, ep6_ev_append, ep6_ev_pmul, ep6_ev_ind,
+      Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+    exact Nat.add_le_add (ep6_single_le _ _)
+      (Nat.mul_le_mul (ep6_evalIn_le_up h cols) (ep6_single_le _ _))
+  | rom p d i =>
+    intro ρ σ _
+    simp only [FStmt.staticCost, StaticCost.step, ep6_C, ep6_ev_ind]
+    exact ep6_single_le _ _
+  | alloc p len body ih =>
+    intro ρ σ h
+    exact ih ρ σ h
+  | loop n body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.sequence_count_apply, ep6_C, ep6_ev_pmul]
+    have hn := ep6_evalIn_le_up h n
+    refine (ep6_sum_le _ _ (ep6_ev N L F (ep6_C (ep6_cls κ) body
+      (ep6_snoc σ (ep6_up σ n)))) ?_).trans ?_
+    · intro i hi
+      exact ih _ _ (ep6_snoc_le h ((List.mem_range.mp hi).le.trans hn))
+    · rw [List.length_range, smul_eq_mul]
+      exact Nat.mul_le_mul_right _ hn
+  | whileFuel fuel p c x y body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step,
+      Finsupp.smul_apply, Finsupp.add_apply, smul_eq_mul, ep6_C, ep6_ev_pmul, ep6_ev_append,
+      ep6_ev_ind]
+    exact Nat.mul_le_mul (ep6_evalIn_le_up h fuel) (Nat.add_le_add (ep6_single_le _ _) (ih ρ σ h))
+  | ite p c x y t e iht ihe =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.branch, StaticCost.seq, StaticCost.step,
+      Finsupp.add_apply, Finsupp.sup_apply, ep6_C, ep6_ev_append, ep6_ev_ind]
+    exact Nat.add_le_add (ep6_single_le _ _) (max_le ((iht ρ σ h).trans (Nat.le_add_right _ _))
+      ((ihe ρ σ h).trans (Nat.le_add_left _ _)))
+  | named name args body ih =>
+    intro ρ σ h
+    exact ih ρ σ h
+  | kcall o p dims ins outs =>
+    intro ρ σ _
+    simp only [FStmt.staticCost, StaticCost.step, ep6_C, ep6_ev_ind]
+    exact ep6_single_le _ _
+  | bindIdx p x bound body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, Finsupp.add_apply, ep6_C,
+      ep6_ev_append, ep6_ev_ind]
+    exact Nat.add_le_add (ep6_single_le _ _) (ep6_supRange_count_le fun k hk => ih _ _
+      (ep6_snoc_le h ((Nat.lt_succ_iff.mp hk).trans (ep6_evalIn_le_up h bound))))
+
+/-- **The crude cell bound bounds the static workspace.** -/
+private theorem ep6_cells_le (charge : OpKind P ι → OpCount P ι) (w : P → ℕ) (q : P)
+    (N L F : ℕ) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ : Fin ni → ℕ) (σ : Fin ni → ep6_Poly),
+      (∀ v, ρ v ≤ ep6_ev N L F (σ v)) →
+      (s.staticCost charge w ρ).cells q ≤ ep6_ev N L F (ep6_Cc s σ) := by
+  intro nb ni s
+  induction s with
+  | seq s t ihs iht =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.seq, ep6_Cc, ep6_ev_append]
+    exact max_le ((ihs ρ σ h).trans (Nat.le_add_right _ _))
+      ((iht ρ σ h).trans (Nat.le_add_left _ _))
+  | alloc p len body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.alloc, ep6_Cc, ep6_ev_append]
+    refine Nat.add_le_add ?_ (ih ρ σ h)
+    split_ifs
+    · exact ep6_evalIn_le_up h len
+    · exact Nat.zero_le _
+  | loop n body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, ep6_Cc]
+    exact StaticCost.sequence_cells_le _ _ _ _ fun i hi => ih _ _ (ep6_snoc_le h
+      ((List.mem_range.mp hi).le.trans (ep6_evalIn_le_up h n)))
+  | whileFuel fuel p c x y body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step, ep6_Cc]
+    exact max_le (Nat.zero_le _) (ih ρ σ h)
+  | ite p c x y t e iht ihe =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, StaticCost.branch, ep6_Cc,
+      ep6_ev_append]
+    exact max_le (Nat.zero_le _) (max_le ((iht ρ σ h).trans (Nat.le_add_right _ _))
+      ((ihe ρ σ h).trans (Nat.le_add_left _ _)))
+  | named name args body ih =>
+    intro ρ σ h
+    exact ih ρ σ h
+  | bindIdx p x bound body ih =>
+    intro ρ σ h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, ep6_Cc]
+    exact max_le (Nat.zero_le _) (ep6_supRange_cells_le fun k hk => ih _ _
+      (ep6_snoc_le h ((Nat.lt_succ_iff.mp hk).trans (ep6_evalIn_le_up h bound))))
+  | _ => intro ρ σ _; simp [FStmt.staticCost, StaticCost.step, StaticCost.zero]
+
+/-- A kind whose tag is not a tag of the tree is not counted. -/
+private theorem ep6_count_tag (w : P → ℕ) (κ : OpKind P ι) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ : Fin ni → ℕ), ep6_ktag κ ∉ ep6_tags s →
+      (s.staticCost (fun k => Finsupp.single k 1) w ρ).count κ ≤ 0 := by
+  classical
+  have hs : ∀ k : OpKind P ι, ep6_ktag κ ≠ ep6_ktag k →
+      (Finsupp.single k 1 : OpCount P ι) κ ≤ 0 := by
+    intro k hk
+    rw [Finsupp.single_apply, if_neg]
+    rintro rfl
+    exact hk rfl
+  intro nb ni s
+  induction s with
+  | skip => intro ρ _; simp [FStmt.staticCost, StaticCost.zero]
+  | seq s t ihs iht =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_append, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.seq, Finsupp.add_apply]
+    exact Nat.add_le_add (ihs ρ h.1) (iht ρ h.2)
+  | instr i =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_singleton] at h
+    exact hs _ h
+  | apply o p d dOff s sOff cols =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_singleton] at h
+    simp only [FStmt.staticCost, StaticCost.step, Finsupp.add_apply, Finsupp.smul_apply,
+      smul_eq_mul]
+    rw [Nat.le_zero.mp (hs (.load p o) h), Nat.le_zero.mp (hs (.matvec p o) h)]
+    simp
+  | rom p d i =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_singleton] at h
+    exact hs _ h
+  | alloc p len body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    exact ih ρ h.2
+  | loop n body ih =>
+    intro ρ h
+    simp only [ep6_tags] at h
+    simp only [FStmt.staticCost, StaticCost.sequence_count_apply]
+    refine (ep6_sum_le _ _ 0 fun i _ => ih _ h).trans ?_
+    simp
+  | whileFuel fuel p c x y body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step,
+      Finsupp.smul_apply, Finsupp.add_apply, smul_eq_mul]
+    have h1 := hs (.cmp p) h.1
+    have h2 := ih ρ h.2
+    simp_all
+  | ite p c x y t e iht ihe =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, List.mem_append, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.branch, StaticCost.seq, StaticCost.step,
+      Finsupp.add_apply, Finsupp.sup_apply]
+    have h1 := hs (.cmp p) h.1
+    have h2 := iht ρ h.2.1
+    have h3 := ihe ρ h.2.2
+    omega
+  | named name args body ih =>
+    intro ρ h
+    exact ih ρ h
+  | kcall o p dims ins outs =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_singleton] at h
+    exact hs _ h
+  | bindIdx p x bound body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, Finsupp.add_apply]
+    exact Nat.add_le_add (hs (.toNat p) h.1) (ep6_supRange_count_le fun k _ => ih _ h.2)
+
+/-- A tag that is not a tag of the tree has no workspace. -/
+private theorem ep6_cells_tag (charge : OpKind P ι → OpCount P ι) (w : P → ℕ) (q : P) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ : Fin ni → ℕ), q ∉ ep6_tags s →
+      (s.staticCost charge w ρ).cells q ≤ 0 := by
+  intro nb ni s
+  induction s with
+  | seq s t ihs iht =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_append, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.seq]
+    exact max_le (ihs ρ h.1) (iht ρ h.2)
+  | alloc p len body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.alloc, if_neg h.1, zero_add]
+    exact ih ρ h.2
+  | loop n body ih =>
+    intro ρ h
+    simp only [ep6_tags] at h
+    simp only [FStmt.staticCost]
+    exact StaticCost.sequence_cells_le _ _ _ _ fun i _ => ih _ h
+  | whileFuel fuel p c x y body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step]
+    exact max_le (Nat.zero_le _) (ih ρ h.2)
+  | ite p c x y t e iht ihe =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, List.mem_append, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, StaticCost.branch]
+    exact max_le (Nat.zero_le _) (max_le (iht ρ h.2.1) (ihe ρ h.2.2))
+  | named name args body ih =>
+    intro ρ h
+    exact ih ρ h
+  | bindIdx p x bound body ih =>
+    intro ρ h
+    simp only [ep6_tags, List.mem_cons, not_or] at h
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step]
+    exact max_le (Nat.zero_le _) (ep6_supRange_cells_le fun k _ => ih _ h.2)
+  | _ => intro ρ _; simp [FStmt.staticCost, StaticCost.step, StaticCost.zero]
+
+/-- The polynomial environment of the sizes $(N, \ell_0, F)$. -/
+private def ep6_σ0 : Fin 3 → ep6_Poly :=
+  fun v =>
+    if v.val = 0 then [(1, 1, 0, 0)] else if v.val = 1 then [(1, 0, 1, 0)] else [(1, 0, 0, 1)]
+
+/-- The check of a scalar class: degrees at most $(3, 1, 1)$ and coefficients summing to at most
+$1024$. -/
+private def ep6_okS (p : ep6_Poly) : Bool :=
+  p.all (fun e => e.2.1 ≤ 3 && e.2.2.1 ≤ 1 && e.2.2.2 ≤ 1) && decide ((p.map (·.1)).sum ≤ 1024)
+
+/-- The check of the workspace: degrees at most $(2, 1, 0)$, coefficients of the terms without
+$\ell_0$ summing to at most $192$, with $\ell_0$ to at most $64$. -/
+private def ep6_okC (p : ep6_Poly) : Bool :=
+  p.all (fun e => e.2.1 ≤ 2 && e.2.2.1 ≤ 1 && e.2.2.2 = 0) &&
+    decide ((p.map fun e => if e.2.2.1 = 0 then e.1 else 0).sum ≤ 192) &&
+    decide ((p.map fun e => if e.2.2.1 = 0 then 0 else e.1).sum ≤ 64)
+
+private def ep6_mI {P P' VB VI : Type} (f : P → P') : Instr P VB VI → Instr P' VB VI
+  | .lit p d q => .lit (f p) d q
+  | .litIdx p d e => .litIdx (f p) d e
+  | .bin p b d x y => .bin (f p) b d x y
+  | .un p u d x => .un (f p) u d x
+  | .copy p d s => .copy (f p) d s
+  | .draw p dist d => .draw (f p) dist d
+  | .convert p q d s => .convert (f p) (f q) d s
+
+/-- A tree with its tags and oracle names renamed. -/
+private def ep6_map {P P' ι ι' : Type} (f : P → P') (g : ι → ι') :
+    {nb ni : ℕ} → FStmt P ι nb ni → FStmt P' ι' nb ni
+  | _, _, .skip => .skip
+  | _, _, .seq s t => .seq (ep6_map f g s) (ep6_map f g t)
+  | _, _, .instr i => .instr (ep6_mI f i)
+  | _, _, .apply o p d dOff s sOff cols => .apply (g o) (f p) d dOff s sOff cols
+  | _, _, .rom p d i => .rom (f p) d i
+  | _, _, .alloc p len b => .alloc (f p) len (ep6_map f g b)
+  | _, _, .loop n b => .loop n (ep6_map f g b)
+  | _, _, .whileFuel fu p c x y b => .whileFuel fu (f p) c x y (ep6_map f g b)
+  | _, _, .ite p c x y t e => .ite (f p) c x y (ep6_map f g t) (ep6_map f g e)
+  | _, _, .named n a b => .named n a (ep6_map f g b)
+  | _, _, .kcall o p d i o' => .kcall (g o) (f p) d i o'
+  | _, _, .bindIdx p x bd b => .bindIdx (f p) x bd (ep6_map f g b)
+
+omit [DecidableEq P] in
+set_option maxRecDepth 100000 in
+/-- The registered tree is the tree at the tags `Unit` and oracle names `Bool`, renamed. -/
+private theorem ep6_compiled_map (p : P) (mm qr : ι) : eighProg.compiled p mm qr =
+    ep6_map (fun _ => p) (fun b => bif b then mm else qr) (eighProg.compiled () true false) := rfl
+
+/-- A tree of kernel calls: the skeleton of a first-order tree that carries its kernel counts. -/
+private inductive ep6_KT (P ι : Type) : ℕ → Type
+  | skip {ni : ℕ} : ep6_KT P ι ni
+  | seq {ni : ℕ} (a b : ep6_KT P ι ni) : ep6_KT P ι ni
+  | loop {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι (ni + 1)) : ep6_KT P ι ni
+  | rep {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι ni) : ep6_KT P ι ni
+  | br {ni : ℕ} (a b : ep6_KT P ι ni) : ep6_KT P ι ni
+  | bind {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι (ni + 1)) : ep6_KT P ι ni
+  | call {ni : ℕ} (o : ι) (p : P) (d : List (IExp (Fin ni))) : ep6_KT P ι ni
+
+private def ep6_sseq {P ι : Type} {ni : ℕ} : ep6_KT P ι ni → ep6_KT P ι ni → ep6_KT P ι ni
+  | .skip, b => b
+  | a, .skip => a
+  | a, b => .seq a b
+
+private def ep6_sloop {P ι : Type} {ni : ℕ} (n : IExp (Fin ni)) :
+    ep6_KT P ι (ni + 1) → ep6_KT P ι ni
+  | .skip => .skip
+  | b => .loop n b
+
+private def ep6_srep {P ι : Type} {ni : ℕ} (n : IExp (Fin ni)) : ep6_KT P ι ni → ep6_KT P ι ni
+  | .skip => .skip
+  | b => .rep n b
+
+private def ep6_sbr {P ι : Type} {ni : ℕ} : ep6_KT P ι ni → ep6_KT P ι ni → ep6_KT P ι ni
+  | .skip, b => b
+  | a, .skip => a
+  | a, b => .br a b
+
+private def ep6_sbind {P ι : Type} {ni : ℕ} (n : IExp (Fin ni)) :
+    ep6_KT P ι (ni + 1) → ep6_KT P ι ni
+  | .skip => .skip
+  | b => .bind n b
+
+/-- The kernel calls of a tree. -/
+private def ep6_prune {P ι : Type} : {nb ni : ℕ} → FStmt P ι nb ni → ep6_KT P ι ni
+  | _, _, .seq s t => ep6_sseq (ep6_prune s) (ep6_prune t)
+  | _, _, .alloc _ _ b => ep6_prune b
+  | _, _, .loop n b => ep6_sloop n (ep6_prune b)
+  | _, _, .whileFuel f _ _ _ _ b => ep6_srep f (ep6_prune b)
+  | _, _, .ite _ _ _ _ t e => ep6_sbr (ep6_prune t) (ep6_prune e)
+  | _, _, .named _ _ b => ep6_prune b
+  | _, _, .kcall o p d _ _ => .call o p d
+  | _, _, .bindIdx _ _ bd b => ep6_sbind bd (ep6_prune b)
+  | _, _, _ => .skip
+
+private def ep6_v {ni : ℕ} (i : ℕ) (h : i < ni := by decide) : IExp (Fin ni) := .var ⟨i, h⟩
+
+/-- The split of a node (depth $10$ variables). -/
+private def ep6_Dsplit {P ι : Type} (p : P) (mm qr : ι) : ep6_KT P ι 10 :=
+  .seq (.call mm p [ep6_v 5, ep6_v 5, ep6_v 5]) (.seq (.call qr p [ep6_v 5, ep6_v 5])
+    (.seq (.call mm p [ep6_v 5, ep6_v 5, ep6_v 5]) (.seq (.call qr p [ep6_v 5, ep6_v 5])
+    (.seq (.call mm p [ep6_v 8, ep6_v 5, ep6_v 5]) (.seq (.call mm p [ep6_v 8, ep6_v 5, ep6_v 8])
+    (.seq (.call mm p [.sub (ep6_v 5) (ep6_v 8), ep6_v 5, ep6_v 5])
+      (.call mm p [.sub (ep6_v 5) (ep6_v 8), ep6_v 5, .sub (ep6_v 5) (ep6_v 8)])))))))
+
+private def ep6_D9 {P ι : Type} (p : P) (mm qr : ι) : ep6_KT P ι 9 :=
+  .loop (.sub (.const 1) (.sub (.const 1) (.mul (ep6_v 8) (.sub (ep6_v 5) (ep6_v 8)))))
+    (ep6_Dsplit p mm qr)
+
+private def ep6_D8 {P ι : Type} (p : P) (mm qr : ι) : ep6_KT P ι 8 :=
+  .seq (.seq (.call mm p [ep6_v 5, ep6_v 5, ep6_v 5])
+      (.loop (ep6_v 2) (.seq (.call mm p [ep6_v 5, ep6_v 5, ep6_v 5])
+        (.call mm p [ep6_v 5, ep6_v 5, ep6_v 5]))))
+    (.bind (ep6_v 5) (ep6_D9 p mm qr))
+
+private def ep6_D6 {P ι : Type} (p : P) (mm qr : ι) : ep6_KT P ι 6 :=
+  .loop (.sub (.const 1) (.sub (.const 1) (ep6_v 5)))
+    (.loop (.sub (.const 1) (.sub (.const 1) (.sub (ep6_v 5) (.const 1)))) (ep6_D8 p mm qr))
+
+private def ep6_U10 {P ι : Type} (p : P) (mm : ι) : ep6_KT P ι 10 :=
+  .seq (.call mm p [ep6_v 5, ep6_v 9, ep6_v 9])
+    (.call mm p [ep6_v 5, .sub (ep6_v 5) (ep6_v 9), .sub (ep6_v 5) (ep6_v 9)])
+
+private def ep6_U9 {P ι : Type} (p : P) (mm : ι) : ep6_KT P ι 9 :=
+  .bind (ep6_v 5) (ep6_U10 p mm)
+
+private def ep6_U8 {P ι : Type} (p : P) (mm : ι) : ep6_KT P ι 8 :=
+  .loop (.sub (.const 1) (.sub (.const 1)
+    (.mul (.sub (.const 1) (.sub (ep6_v 7) (.const 4)))
+      (.sub (.const 1) (.sub (.const 4) (ep6_v 7))))))
+    (ep6_U9 p mm)
+
+private def ep6_U6 {P ι : Type} (p : P) (mm : ι) : ep6_KT P ι 6 :=
+  .loop (.sub (.const 1) (.sub (.const 1) (ep6_v 5))) (.bind (.const 4) (ep6_U8 p mm))
+
+/-- The kernel calls of `NLAlib.eighProg.compiled`. -/
+private def ep6_T {P ι : Type} (p : P) (mm qr : ι) : ep6_KT P ι 3 :=
+  .seq (.loop (.add (ep6_v 1) (.const 1)) (.loop (ep6_v 0) (.bind (.sub (ep6_v 0) (ep6_v 4))
+      (ep6_D6 p mm qr))))
+    (.loop (.add (ep6_v 1) (.const 1)) (.loop (ep6_v 0) (.bind (.sub (ep6_v 0) (ep6_v 4))
+      (ep6_U6 p mm))))
+
+set_option maxRecDepth 100000 in
+private theorem ep6_prune_compiled0 :
+    ep6_prune (eighProg.compiled () true false) = ep6_T () true false := rfl
+
+private theorem ep6_okC_compiled0 :
+    ep6_okC (ep6_Cc (eighProg.compiled () true false) ep6_σ0) = true := by decide +kernel
+
+private theorem ep6_okS_compiled0 : ∀ c ∈ [1, 2, 6, 7, 10, 11, 12, 13, 20, 23, 30, 32],
+    ep6_okS (ep6_C c (eighProg.compiled () true false) ep6_σ0) = true := by decide +kernel
+
+private theorem ep6_zero_compiled0 : ∀ c ∈ [3, 4, 5, 8, 14, 21, 31],
+    ep6_C c (eighProg.compiled () true false) ep6_σ0 = [] := by decide +kernel
+
+/-! #### Renaming -/
+
+private theorem ep6_C_map {P P' ι ι' : Type} (f : P → P') (g : ι → ι') (c : ℕ) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (σ : Fin ni → ep6_Poly),
+      ep6_C c (ep6_map f g s) σ = ep6_C c s σ := by
+  intro nb ni s
+  induction s with
+  | instr i => intro σ; cases i <;> rfl
+  | _ => intro σ; simp only [ep6_map, ep6_C, *]
+
+private theorem ep6_Cc_map {P P' ι ι' : Type} (f : P → P') (g : ι → ι') :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (σ : Fin ni → ep6_Poly),
+      ep6_Cc (ep6_map f g s) σ = ep6_Cc s σ := by
+  intro nb ni s
+  induction s with
+  | _ => intro σ; simp only [ep6_map, ep6_Cc, *]
+
+private theorem ep6_tags_map {P P' ι ι' : Type} (f : P → P') (g : ι → ι') :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni), ep6_tags (ep6_map f g s) = (ep6_tags s).map f := by
+  intro nb ni s
+  induction s with
+  | instr i => cases i <;> rfl
+  | _ => simp only [ep6_map, ep6_tags, List.map_append, List.map_cons, List.map_nil, *]
+
+/-- Renaming a tree of kernel calls. -/
+private def ep6_KTmap {P P' ι ι' : Type} (f : P → P') (g : ι → ι') :
+    {ni : ℕ} → ep6_KT P ι ni → ep6_KT P' ι' ni
+  | _, .skip => .skip
+  | _, .seq a b => .seq (ep6_KTmap f g a) (ep6_KTmap f g b)
+  | _, .loop n b => .loop n (ep6_KTmap f g b)
+  | _, .rep n b => .rep n (ep6_KTmap f g b)
+  | _, .br a b => .br (ep6_KTmap f g a) (ep6_KTmap f g b)
+  | _, .bind n b => .bind n (ep6_KTmap f g b)
+  | _, .call o p d => .call (g o) (f p) d
+
+private theorem ep6_prune_map {P P' ι ι' : Type} (f : P → P') (g : ι → ι') :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni),
+      ep6_prune (ep6_map f g s) = ep6_KTmap f g (ep6_prune s) := by
+  intro nb ni s
+  induction s with
+  | seq s t ihs iht =>
+    simp only [ep6_map, ep6_prune, ihs, iht]
+    cases ep6_prune s <;> cases ep6_prune t <;> rfl
+  | loop n b ih =>
+    simp only [ep6_map, ep6_prune, ih]
+    cases ep6_prune b <;> rfl
+  | whileFuel fu p c x y b ih =>
+    simp only [ep6_map, ep6_prune, ih]
+    cases ep6_prune b <;> rfl
+  | ite p c x y t e iht ihe =>
+    simp only [ep6_map, ep6_prune, iht, ihe]
+    cases ep6_prune t <;> cases ep6_prune e <;> rfl
+  | bindIdx p x bd b ih =>
+    simp only [ep6_map, ep6_prune, ih]
+    cases ep6_prune b <;> rfl
+  | alloc p len b ih => simp only [ep6_map, ep6_prune, ih]
+  | named n a b ih => simp only [ep6_map, ep6_prune, ih]
+  | _ => rfl
+
+omit [DecidableEq P] in
+private theorem ep6_prune_compiled (p : P) (mm qr : ι) :
+    ep6_prune (eighProg.compiled p mm qr) = ep6_T p mm qr := by
+  rw [ep6_compiled_map, ep6_prune_map, ep6_prune_compiled0]
+  rfl
+
+
+/-! #### The kernel counts of a tree of kernel calls -/
+
+/-- The static kernel count of a tree of kernel calls, as `NLAlib.Computation.FStmt.staticCost`
+counts it. -/
+private noncomputable def ep6_kc {P ι : Type} : {ni : ℕ} → ep6_KT P ι ni → (Fin ni → ℕ) →
+    OpCount P ι
+  | _, .skip, _ => 0
+  | _, .seq a b, ρ => ep6_kc a ρ + ep6_kc b ρ
+  | _, .loop n b, ρ =>
+      ((List.range (n.evalIn ρ)).map fun i => ep6_kc b (Fin.snoc (α := fun _ => ℕ) ρ i)).sum
+  | _, .rep n b, ρ => n.evalIn ρ • ep6_kc b ρ
+  | _, .br a b, ρ => ep6_kc a ρ ⊔ ep6_kc b ρ
+  | _, .bind n b, ρ => (List.range (n.evalIn ρ + 1)).foldr
+      (fun k c => ep6_kc b (Fin.snoc (α := fun _ => ℕ) ρ k) ⊔ c) 0
+  | _, .call o p d, ρ => Finsupp.single (.kcall p o (d.map (·.evalIn ρ))) 1
+
+omit [DecidableEq P] in
+private theorem ep6_foldr_zero (l : List ℕ) :
+    l.foldr (fun _ c => (0 : OpCount P ι) ⊔ c) 0 = 0 := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp
+
+omit [DecidableEq P] in
+private theorem ep6_kc_sseq {ni : ℕ} (a b : ep6_KT P ι ni) (ρ : Fin ni → ℕ) :
+    ep6_kc (ep6_sseq a b) ρ = ep6_kc a ρ + ep6_kc b ρ := by
+  unfold ep6_sseq
+  split <;> simp [ep6_kc]
+
+omit [DecidableEq P] in
+private theorem ep6_kc_sbr {ni : ℕ} (a b : ep6_KT P ι ni) (ρ : Fin ni → ℕ) :
+    ep6_kc (ep6_sbr a b) ρ = ep6_kc a ρ ⊔ ep6_kc b ρ := by
+  unfold ep6_sbr
+  split <;> simp [ep6_kc]
+
+omit [DecidableEq P] in
+private theorem ep6_kc_sloop {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι (ni + 1))
+    (ρ : Fin ni → ℕ) : ep6_kc (ep6_sloop n b) ρ = ep6_kc (.loop n b) ρ := by
+  unfold ep6_sloop
+  split <;> simp [ep6_kc]
+
+omit [DecidableEq P] in
+private theorem ep6_kc_srep {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι ni)
+    (ρ : Fin ni → ℕ) : ep6_kc (ep6_srep n b) ρ = ep6_kc (.rep n b) ρ := by
+  unfold ep6_srep
+  split <;> simp [ep6_kc]
+
+omit [DecidableEq P] in
+private theorem ep6_kc_sbind {ni : ℕ} (n : IExp (Fin ni)) (b : ep6_KT P ι (ni + 1))
+    (ρ : Fin ni → ℕ) : ep6_kc (ep6_sbind n b) ρ = ep6_kc (.bind n b) ρ := by
+  unfold ep6_sbind
+  split
+  · simp only [ep6_kc]; exact (ep6_foldr_zero _).symm
+  · rfl
+
+omit [DecidableEq P] in
+private theorem ep6_lsum_apply (l : List ℕ) (f : ℕ → OpCount P ι) (κ : OpKind P ι) :
+    (l.map f).sum κ = (l.map fun i => f i κ).sum := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [ih]
+
+omit [DecidableEq P] in
+private theorem ep6_supRange_count_eq {f : ℕ → StaticCost P ι} {g : ℕ → OpCount P ι} {m : ℕ}
+    {κ : OpKind P ι} (h : ∀ k, (f k).count κ = g k κ) :
+    (StaticCost.supRange m f).count κ = (List.range m).foldr (fun k c => g k ⊔ c) 0 κ := by
+  unfold StaticCost.supRange
+  induction List.range m with
+  | nil => rfl
+  | cons a l ih =>
+    change ((f a).count ⊔ (l.foldr (fun k c => (f k).branch c) StaticCost.zero).count) κ =
+      (g a ⊔ l.foldr (fun k c => g k ⊔ c) 0) κ
+    rw [Finsupp.sup_apply, Finsupp.sup_apply, h, ih]
+
+omit [DecidableEq P] in
+private theorem ep6_single_zero {k κ : OpKind P ι} (h : ep6_cls k ≠ ep6_cls κ) :
+    (Finsupp.single k 1 : OpCount P ι) κ = 0 := by
+  classical
+  rw [Finsupp.single_apply, if_neg]
+  rintro rfl
+  exact h rfl
+
+omit [DecidableEq P] in
+private theorem ep6_cls_instr (i : Instr P ℕ ℕ) : ep6_cls (i.kind (ι := ι)) ≠ 9 := by
+  cases i <;> simp only [Instr.kind, ep6_cls] <;> first | decide | (split <;> decide)
+
+/-- **The kernel counts are those of the tree of kernel calls.** -/
+private theorem ep6_count_prune (w : P → ℕ) (κ : OpKind P ι) (h9 : ep6_cls κ = 9) :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ : Fin ni → ℕ),
+      (s.staticCost (fun k => Finsupp.single k 1) w ρ).count κ = ep6_kc (ep6_prune s) ρ κ := by
+  have hz : ∀ k : OpKind P ι, ep6_cls k ≠ 9 → (Finsupp.single k 1 : OpCount P ι) κ = 0 :=
+    fun k hk => ep6_single_zero (h9 ▸ hk)
+  intro nb ni s
+  induction s with
+  | skip => intro ρ; rfl
+  | seq s t ihs iht =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.seq, Finsupp.add_apply, ep6_prune, ep6_kc_sseq, ihs,
+      iht]
+  | instr i =>
+    intro ρ
+    exact hz _ (ep6_cls_instr _)
+  | apply o p d dOff s sOff cols =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.step, Finsupp.add_apply, Finsupp.smul_apply,
+      smul_eq_mul, ep6_prune, ep6_kc, Finsupp.zero_apply]
+    rw [hz _ (by simp [ep6_cls]), hz _ (by simp [ep6_cls])]
+    simp
+  | rom p d i =>
+    intro ρ
+    exact hz _ (by simp [ep6_cls])
+  | alloc p len body ih =>
+    intro ρ
+    exact ih ρ
+  | loop n body ih =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.sequence_count_apply, ep6_prune, ep6_kc_sloop,
+      ep6_kc, ep6_lsum_apply, ih]
+  | whileFuel fuel p c x y body ih =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step,
+      Finsupp.smul_apply, Finsupp.add_apply, smul_eq_mul, ep6_prune, ep6_kc_srep, ep6_kc, ih,
+      hz (.cmp p) (by simp [ep6_cls]), zero_add]
+  | ite p c x y t e iht ihe =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.branch, StaticCost.seq, StaticCost.step,
+      Finsupp.add_apply, Finsupp.sup_apply, ep6_prune, ep6_kc_sbr, iht, ihe,
+      hz (.cmp p) (by simp [ep6_cls]), zero_add]
+  | named name args body ih =>
+    intro ρ
+    exact ih ρ
+  | kcall o p dims ins outs =>
+    intro ρ
+    rfl
+  | bindIdx p x bound body ih =>
+    intro ρ
+    simp only [FStmt.staticCost, StaticCost.seq, StaticCost.step, Finsupp.add_apply,
+      hz (.toNat p) (by simp [ep6_cls]), zero_add, ep6_prune, ep6_kc_sbind, ep6_kc]
+    exact ep6_supRange_count_eq fun k => ih _
+
+/-! #### The polynomial checks -/
+
+private theorem ep6_ev_le_mul (N L F M : ℕ) (p : ep6_Poly)
+    (h : ∀ e ∈ p, N ^ e.2.1 * L ^ e.2.2.1 * F ^ e.2.2.2 ≤ M) :
+    ep6_ev N L F p ≤ (p.map (·.1)).sum * M := by
+  induction p with
+  | nil => simp [ep6_ev]
+  | cons a p ih =>
+    have ih' := ih fun e he => h e (List.mem_cons_of_mem a he)
+    simp only [ep6_ev, List.map_cons, List.sum_cons, add_mul] at ih' ⊢
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ (h a List.mem_cons_self)) ih'
+
+private theorem ep6_pow_le_succ (L b : ℕ) (hb : b ≤ 1) : L ^ b ≤ L + 1 := by
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hb with rfl | rfl <;> simp
+
+private theorem ep6_okS_le (N L F : ℕ) (p : ep6_Poly) (h : ep6_okS p = true) :
+    ep6_ev N L F p ≤ 1024 * (F + 2) * (L + 2) * (N + 1) ^ 3 := by
+  simp only [ep6_okS, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at h
+  obtain ⟨hall, hsum⟩ := h
+  refine (ep6_ev_le_mul N L F ((N + 1) ^ 3 * (L + 1) * (F + 1)) p fun e he => ?_).trans ?_
+  · obtain ⟨⟨ha, hb⟩, hc⟩ := hall e he
+    refine Nat.mul_le_mul (Nat.mul_le_mul ?_ (ep6_pow_le_succ L _ hb)) (ep6_pow_le_succ F _ hc)
+    exact (Nat.pow_le_pow_left (Nat.le_succ N) _).trans (Nat.pow_le_pow_right (by omega) ha)
+  · calc (p.map (·.1)).sum * ((N + 1) ^ 3 * (L + 1) * (F + 1))
+        ≤ 1024 * ((N + 1) ^ 3 * (L + 1) * (F + 1)) := Nat.mul_le_mul_right _ hsum
+      _ ≤ 1024 * (F + 2) * (L + 2) * (N + 1) ^ 3 := by
+        have h1 : (L + 1) * (F + 1) ≤ (L + 2) * (F + 2) := Nat.mul_le_mul (by omega) (by omega)
+        have h2 := Nat.mul_le_mul_left (1024 * (N + 1) ^ 3) h1
+        calc 1024 * ((N + 1) ^ 3 * (L + 1) * (F + 1))
+            = 1024 * (N + 1) ^ 3 * ((L + 1) * (F + 1)) := by ring
+          _ ≤ 1024 * (N + 1) ^ 3 * ((L + 2) * (F + 2)) := h2
+          _ = 1024 * (F + 2) * (L + 2) * (N + 1) ^ 3 := by ring
+
+private theorem ep6_okC_le (N L F : ℕ) (p : ep6_Poly) (h : ep6_okC p = true) :
+    ep6_ev N L F p ≤ 64 * (N + 1) ^ 2 * (L + 3) := by
+  simp only [ep6_okC, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at h
+  obtain ⟨⟨hall, h0⟩, h1⟩ := h
+  have key : ep6_ev N L F p ≤ (N + 1) ^ 2 * ((p.map fun e => if e.2.2.1 = 0 then e.1 else 0).sum +
+      (p.map fun e => if e.2.2.1 = 0 then 0 else e.1).sum * L) := by
+    clear h0 h1
+    induction p with
+    | nil => simp [ep6_ev]
+    | cons a p ih =>
+      have ih' := ih fun e he => hall e (List.mem_cons_of_mem a he)
+      obtain ⟨⟨ha, hb⟩, hc⟩ := hall a List.mem_cons_self
+      simp only [ep6_ev, List.map_cons, List.sum_cons] at ih' ⊢
+      have hN : N ^ a.2.1 ≤ (N + 1) ^ 2 :=
+        (Nat.pow_le_pow_left (Nat.le_succ N) _).trans (Nat.pow_le_pow_right (by omega) ha)
+      have hterm : a.1 * (N ^ a.2.1 * L ^ a.2.2.1 * F ^ a.2.2.2) ≤
+          (N + 1) ^ 2 * ((if a.2.2.1 = 0 then a.1 else 0) +
+            (if a.2.2.1 = 0 then 0 else a.1) * L) := by
+        rw [hc, pow_zero, mul_one]
+        rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hb with hb0 | hb1
+        · simp only [hb0, pow_zero, mul_one, if_true, zero_mul, add_zero]
+          calc a.1 * N ^ a.2.1 ≤ a.1 * (N + 1) ^ 2 := Nat.mul_le_mul_left _ hN
+            _ = (N + 1) ^ 2 * a.1 := Nat.mul_comm _ _
+        · simp only [hb1, pow_one, one_ne_zero, if_false, zero_add]
+          calc a.1 * (N ^ a.2.1 * L) ≤ a.1 * ((N + 1) ^ 2 * L) :=
+                Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hN)
+            _ = (N + 1) ^ 2 * (a.1 * L) := by ring
+      calc a.1 * (N ^ a.2.1 * L ^ a.2.2.1 * F ^ a.2.2.2) + ep6_ev N L F p
+          ≤ _ + _ := Nat.add_le_add hterm ih'
+        _ = _ := by ring
+  refine key.trans ?_
+  calc (N + 1) ^ 2 * (_ + _ * L) ≤ (N + 1) ^ 2 * (192 + 64 * L) :=
+        Nat.mul_le_mul_left _ (Nat.add_le_add h0 (Nat.mul_le_mul_right _ h1))
+    _ = 64 * (N + 1) ^ 2 * (L + 3) := by ring
+
+/-! #### The kernel bound -/
+
+/-- The kernel calls charged by `NLAlib.eighCount` for a node of size $k$ split at $k_+$. -/
+private noncomputable def ep6_G (p : P) (mm qr : ι) (F k kp : ℕ) : OpCount P ι :=
+  (2 * F + 8) • Finsupp.single (.kcall p mm [k, k, k]) 1 +
+    Finsupp.single (.kcall p qr [k, k]) 2 +
+    Finsupp.single (.kcall p mm [kp, k, k]) 1 + Finsupp.single (.kcall p mm [kp, k, kp]) 1 +
+    Finsupp.single (.kcall p mm [k - kp, k, k]) 1 +
+    Finsupp.single (.kcall p mm [k - kp, k, k - kp]) 1 +
+    Finsupp.single (.kcall p mm [k, kp, kp]) 1 +
+    Finsupp.single (.kcall p mm [k, k - kp, k - kp]) 1
+
+/-- The kernel calls charged for a node of size $k$, every split. -/
+private noncomputable def ep6_Gk (p : P) (mm qr : ι) (F k : ℕ) : OpCount P ι :=
+  ∑ kp ∈ Finset.range (k + 1), ep6_G p mm qr F k kp
+
+omit [DecidableEq P] in
+private theorem ep6_eighCount_eq (p : P) (mm qr : ι) (n L F : ℕ) :
+    eighCount p mm qr n L F = ((eighScalarKinds (ι := ι) p).map fun κ =>
+      Finsupp.single κ (1024 * (F + 2) * (L + 2) * (n + 1) ^ 3)).sum +
+      (2 * (L + 1) * n) • ∑ k ∈ Finset.range (n + 1), ep6_Gk p mm qr F k := rfl
+
+omit [DecidableEq P] in
+private theorem ep6_lsum_le (m : ℕ) (f : ℕ → OpCount P ι) (B : OpCount P ι)
+    (h : ∀ i < m, f i ≤ B) : ((List.range m).map f).sum ≤ m • B := by
+  simpa using ep6_sum_le (List.range m) f B fun i hi => h i (List.mem_range.mp hi)
+
+omit [DecidableEq P] in
+private theorem ep6_trip_le {m : ℕ} (hm : m ≤ 1) (f : ℕ → OpCount P ι) :
+    ((List.range m).map f).sum ≤ f 0 := by
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hm with rfl | rfl <;> simp
+
+omit [DecidableEq P] in
+private theorem ep6_fsup_le (l : List ℕ) (f : ℕ → OpCount P ι) (B : OpCount P ι)
+    (h : ∀ k ∈ l, f k ≤ B) : l.foldr (fun k c => f k ⊔ c) 0 ≤ B := by
+  induction l with
+  | nil => exact zero_le
+  | cons a l ih =>
+    exact sup_le (h a List.mem_cons_self) (ih fun k hk => h k (List.mem_cons_of_mem a hk))
+
+omit [DecidableEq P] in
+private theorem ep6_fsup_le_sum (m : ℕ) (f : ℕ → OpCount P ι) :
+    (List.range m).foldr (fun k c => f k ⊔ c) 0 ≤ ∑ k ∈ Finset.range m, f k :=
+  ep6_fsup_le _ _ _ fun _ hk => Finset.single_le_sum (fun _ _ => zero_le)
+    (Finset.mem_range.mpr (List.mem_range.mp hk))
+
+omit [DecidableEq P] in
+private theorem ep6_Dsplit_le (p : P) (mm qr : ι) (ρ : Fin 10 → ℕ) :
+    (2 * ρ ⟨2, by decide⟩ + 6) • Finsupp.single (OpKind.kcall p mm
+      [ρ ⟨5, by decide⟩, ρ ⟨5, by decide⟩, ρ ⟨5, by decide⟩]) 1 +
+      ep6_kc (ep6_Dsplit p mm qr) ρ ≤
+      ep6_G p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) (ρ ⟨8, by decide⟩) := by
+  simp only [ep6_Dsplit, ep6_kc, ep6_v, IExp.evalIn, List.map_cons, List.map_nil, ep6_G]
+  generalize ρ ⟨2, by decide⟩ = F
+  generalize ρ ⟨5, by decide⟩ = k
+  generalize ρ ⟨8, by decide⟩ = kp
+  have e2 : Finsupp.single (OpKind.kcall p qr [k, k]) 2 =
+      Finsupp.single (OpKind.kcall p qr [k, k]) 1 +
+        Finsupp.single (OpKind.kcall p qr [k, k]) 1 := by
+    rw [← Finsupp.single_add]
+  rw [e2]
+  refine (le_self_add (b := Finsupp.single (OpKind.kcall p mm [k, kp, kp]) 1 +
+    Finsupp.single (OpKind.kcall p mm [k, k - kp, k - kp]) 1)).trans_eq ?_
+  ext κ
+  simp only [Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
+  ring
+
+omit [DecidableEq P] in
+private theorem ep6_D9_le (p : P) (mm qr : ι) (ρ : Fin 9 → ℕ) :
+    (2 * ρ ⟨2, by decide⟩ + 6) • Finsupp.single (OpKind.kcall p mm
+      [ρ ⟨5, by decide⟩, ρ ⟨5, by decide⟩, ρ ⟨5, by decide⟩]) 1 +
+      ep6_kc (ep6_D9 p mm qr) ρ ≤
+      ep6_G p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) (ρ ⟨8, by decide⟩) := by
+  simp only [ep6_D9, ep6_kc]
+  refine (add_le_add le_rfl (ep6_trip_le (Nat.sub_le _ _) _)).trans ?_
+  exact ep6_Dsplit_le p mm qr (Fin.snoc ρ 0)
+
+omit [DecidableEq P] in
+private theorem ep6_D8_le (p : P) (mm qr : ι) (ρ : Fin 8 → ℕ) :
+    ep6_kc (ep6_D8 p mm qr) ρ ≤ ep6_Gk p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) := by
+  simp only [ep6_D8, ep6_kc, ep6_v, IExp.evalIn, List.map_cons, List.map_nil]
+  set F := ρ ⟨2, by decide⟩
+  set k := ρ ⟨5, by decide⟩
+  set s := Finsupp.single (OpKind.kcall p mm [k, k, k]) (1 : ℕ)
+  have h1 : s + ((List.range F).map fun _ => s + s).sum ≤ (2 * F + 6) • s := by
+    rw [List.map_const', List.sum_replicate, List.length_range]
+    have : s + F • (s + s) = (2 * F + 1) • s := by
+      ext κ; simp only [Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]; ring
+    rw [this]
+    exact nsmul_le_nsmul_left zero_le (by omega)
+  refine (add_le_add h1 le_rfl).trans ?_
+  have hX : ∀ kp, (2 * F + 6) • s + ep6_kc (ep6_D9 p mm qr) (Fin.snoc (α := fun _ => ℕ) ρ kp) ≤
+      ep6_G p mm qr F k kp := fun kp => ep6_D9_le p mm qr (Fin.snoc ρ kp)
+  refine (add_le_add le_rfl (ep6_fsup_le_sum _ _)).trans ?_
+  unfold ep6_Gk
+  rw [Finset.sum_range_succ', Finset.sum_range_succ']
+  calc (2 * F + 6) • s + (∑ i ∈ Finset.range k, ep6_kc (ep6_D9 p mm qr)
+        (Fin.snoc (α := fun _ => ℕ) ρ (i + 1)) +
+        ep6_kc (ep6_D9 p mm qr) (Fin.snoc (α := fun _ => ℕ) ρ 0))
+      = (∑ i ∈ Finset.range k, ep6_kc (ep6_D9 p mm qr) (Fin.snoc (α := fun _ => ℕ) ρ (i + 1))) +
+        ((2 * F + 6) • s + ep6_kc (ep6_D9 p mm qr) (Fin.snoc (α := fun _ => ℕ) ρ 0)) := by abel
+    _ ≤ _ := add_le_add (Finset.sum_le_sum fun i _ => le_add_self.trans (hX (i + 1))) (hX 0)
+
+omit [DecidableEq P] in
+private theorem ep6_D6_le (p : P) (mm qr : ι) (ρ : Fin 6 → ℕ) :
+    ep6_kc (ep6_D6 p mm qr) ρ ≤ ep6_Gk p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) := by
+  simp only [ep6_D6, ep6_kc]
+  refine (ep6_trip_le (Nat.sub_le _ _) _).trans ?_
+  refine (ep6_trip_le (Nat.sub_le _ _) _).trans ?_
+  exact ep6_D8_le p mm qr _
+
+omit [DecidableEq P] in
+private theorem ep6_U10_le (p : P) (mm qr : ι) (ρ : Fin 10 → ℕ) :
+    ep6_kc (ep6_U10 p mm) ρ ≤
+      ep6_G p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) (ρ ⟨9, by decide⟩) := by
+  simp only [ep6_U10, ep6_kc, ep6_v, IExp.evalIn, List.map_cons, List.map_nil, ep6_G]
+  rw [add_assoc _ (Finsupp.single _ 1) (Finsupp.single _ 1)]
+  exact le_add_self
+
+omit [DecidableEq P] in
+private theorem ep6_U6_le (p : P) (mm qr : ι) (ρ : Fin 6 → ℕ) :
+    ep6_kc (ep6_U6 p mm) ρ ≤ ep6_Gk p mm qr (ρ ⟨2, by decide⟩) (ρ ⟨5, by decide⟩) := by
+  simp only [ep6_U6, ep6_kc]
+  refine (ep6_trip_le (Nat.sub_le _ _) _).trans ?_
+  refine ep6_fsup_le _ _ _ fun c _ => ?_
+  simp only [ep6_U8, ep6_kc]
+  refine (ep6_trip_le (Nat.sub_le _ _) _).trans ?_
+  simp only [ep6_U9, ep6_kc]
+  refine ep6_fsup_le _ _ _ fun kp hkp => ?_
+  refine (ep6_U10_le p mm qr _).trans ?_
+  exact Finset.single_le_sum (f := fun kp => ep6_G p mm qr _ _ kp) (fun _ _ => zero_le)
+    (Finset.mem_range.mpr (List.mem_range.mp hkp))
+
+omit [DecidableEq P] in
+/-- **The kernel calls of the registered tree** are at most those of `NLAlib.eighCount`. -/
+private theorem ep6_T_le (p : P) (mm qr : ι) (N L F : ℕ) :
+    ep6_kc (ep6_T p mm qr) (Fin.cons N ![L, F]) ≤
+      (2 * (L + 1) * N) • ∑ k ∈ Finset.range (N + 1), ep6_Gk p mm qr F k := by
+  set Gs := ∑ k ∈ Finset.range (N + 1), ep6_Gk p mm qr F k
+  have hG : ∀ k ≤ N, ep6_Gk p mm qr F k ≤ Gs := fun k hk =>
+    Finset.single_le_sum (f := fun k => ep6_Gk p mm qr F k) (fun _ _ => zero_le)
+      (Finset.mem_range.mpr (by omega))
+  have hlev : ∀ (X : ep6_KT P ι 6), (∀ ρ : Fin 6 → ℕ, ρ ⟨2, by decide⟩ = F → ρ ⟨5, by decide⟩ ≤ N →
+      ep6_kc X ρ ≤ Gs) →
+      ep6_kc (ep6_KT.loop (.add (ep6_v 1) (.const 1)) (.loop (ep6_v 0)
+        (.bind (.sub (ep6_v 0) (ep6_v 4)) X))) (Fin.cons N ![L, F]) ≤ (L + 1) • N • Gs := by
+    intro X hX
+    simp only [ep6_kc]
+    refine ep6_lsum_le _ _ _ fun d _ => ?_
+    refine ep6_lsum_le _ _ _ fun lo _ => ?_
+    refine ep6_fsup_le _ _ _ fun k hk => hX _ rfl ?_
+    have := List.mem_range.mp hk
+    simp only [IExp.evalIn, ep6_v] at this
+    change k ≤ N
+    have h0 : (Fin.snoc (α := fun _ => ℕ) (Fin.snoc (α := fun _ => ℕ)
+        (Fin.cons N ![L, F] : Fin 3 → ℕ) d) lo) ⟨0, by decide⟩ = N := rfl
+    rw [h0] at this
+    omega
+  simp only [ep6_T, ep6_kc]
+  refine (add_le_add (hlev _ fun ρ hF hk => (ep6_D6_le p mm qr ρ).trans (hF ▸ hG _ hk))
+    (hlev _ fun ρ hF hk => (ep6_U6_le p mm qr ρ).trans (hF ▸ hG _ hk))).trans_eq ?_
+  rw [smul_smul, ← add_nsmul]
+  congr 1
+  ring
+
+/-! #### Assembly -/
+
+private theorem ep6_ρ0 (N L F : ℕ) :
+    ∀ v, (Fin.cons N ![L, F] : Fin 3 → ℕ) v ≤ ep6_ev N L F (ep6_σ0 v) := by
+  intro v
+  fin_cases v <;> simp [ep6_σ0, ep6_ev]
+
+omit [DecidableEq P] in
+private theorem ep6_scalar_ge (p : P) (mm qr : ι) (n L F : ℕ) {κ : OpKind P ι}
+    (hκ : κ ∈ eighScalarKinds (ι := ι) p) :
+    1024 * (F + 2) * (L + 2) * (n + 1) ^ 3 ≤ eighCount p mm qr n L F κ := by
+  rw [ep6_eighCount_eq, Finsupp.add_apply]
+  refine le_trans ?_ (Nat.le_add_right _ _)
+  have h := List.single_le_sum (fun _ _ => zero_le) _
+    (List.mem_map_of_mem (f := fun κ : OpKind P ι =>
+      Finsupp.single κ (1024 * (F + 2) * (L + 2) * (n + 1) ^ 3)) hκ)
+  simpa using h κ
+
+set_option linter.unusedTactic false in
+set_option linter.unreachableTactic false in
+omit [DecidableEq P] in
+private theorem ep6_scalar_bound (p : P) (mm qr : ι) (N L F : ℕ) (κ : OpKind P ι)
+    (h9 : ep6_cls κ ≠ 9) (ht : ep6_ktag κ = p) :
+    ep6_ev N L F (ep6_C (ep6_cls κ) (eighProg.compiled () true false) ep6_σ0) ≤
+      eighCount p mm qr N L F κ := by
+  have hz : ∀ c ∈ [3, 4, 5, 8, 14, 21, 31], c = ep6_cls κ →
+      ep6_ev N L F (ep6_C (ep6_cls κ) (eighProg.compiled () true false) ep6_σ0) ≤
+        eighCount p mm qr N L F κ := by
+    intro c hc he
+    rw [← he, ep6_zero_compiled0 c hc]
+    simp [ep6_ev]
+  have hs : ∀ c ∈ [1, 2, 6, 7, 10, 11, 12, 13, 20, 23, 30, 32], c = ep6_cls κ →
+      κ ∈ eighScalarKinds (ι := ι) p →
+      ep6_ev N L F (ep6_C (ep6_cls κ) (eighProg.compiled () true false) ep6_σ0) ≤
+        eighCount p mm qr N L F κ := by
+    intro c hc he hk
+    rw [← he]
+    exact (ep6_okS_le N L F _ (ep6_okS_compiled0 c hc)).trans (ep6_scalar_ge p mm qr N L F hk)
+  cases κ with
+  | bin q b =>
+    simp only [ep6_ktag] at ht; subst ht
+    cases b <;> first
+      | exact hz 3 (by simp) rfl
+      | exact hz 4 (by simp) rfl
+      | exact hz 5 (by simp) rfl
+      | exact hz 8 (by simp) rfl
+      | exact hz 14 (by simp) rfl
+      | exact hz 21 (by simp) rfl
+      | exact hz 31 (by simp) rfl
+      | exact hs 1 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 2 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 6 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 7 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 10 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 11 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 12 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 13 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 20 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 23 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 30 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 32 (by simp) rfl (by simp [eighScalarKinds])
+  | un q u =>
+    simp only [ep6_ktag] at ht; subst ht
+    cases u <;> first
+      | exact hz 3 (by simp) rfl
+      | exact hz 4 (by simp) rfl
+      | exact hz 5 (by simp) rfl
+      | exact hz 8 (by simp) rfl
+      | exact hz 14 (by simp) rfl
+      | exact hz 21 (by simp) rfl
+      | exact hz 31 (by simp) rfl
+      | exact hs 1 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 2 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 6 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 7 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 10 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 11 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 12 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 13 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 20 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 23 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 30 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 32 (by simp) rfl (by simp [eighScalarKinds])
+  | draw q d =>
+    simp only [ep6_ktag] at ht; subst ht
+    cases d <;> first
+      | exact hz 3 (by simp) rfl
+      | exact hz 4 (by simp) rfl
+      | exact hz 5 (by simp) rfl
+      | exact hz 8 (by simp) rfl
+      | exact hz 14 (by simp) rfl
+      | exact hz 21 (by simp) rfl
+      | exact hz 31 (by simp) rfl
+      | exact hs 1 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 2 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 6 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 7 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 10 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 11 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 12 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 13 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 20 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 23 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 30 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 32 (by simp) rfl (by simp [eighScalarKinds])
+  | kcall q o d => exact absurd rfl h9
+  | _ =>
+    simp only [ep6_ktag] at ht; subst ht
+    first
+      | exact hz 3 (by simp) rfl
+      | exact hz 4 (by simp) rfl
+      | exact hz 5 (by simp) rfl
+      | exact hz 8 (by simp) rfl
+      | exact hz 14 (by simp) rfl
+      | exact hz 21 (by simp) rfl
+      | exact hz 31 (by simp) rfl
+      | exact hs 1 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 2 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 6 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 7 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 10 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 11 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 12 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 13 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 20 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 23 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 30 (by simp) rfl (by simp [eighScalarKinds])
+      | exact hs 32 (by simp) rfl (by simp [eighScalarKinds])
+
+omit [DecidableEq P] in
+set_option maxRecDepth 100000 in
+private theorem ep6_tags_compiled (p : P) (mm qr : ι) :
+    ∀ q ∈ ep6_tags (eighProg.compiled p mm qr), q = p := by
+  rw [ep6_compiled_map, ep6_tags_map]
+  intro q hq
+  obtain ⟨_, _, rfl⟩ := List.mem_map.mp hq
+  rfl
+
+omit [DecidableEq P] in
+set_option maxRecDepth 100000 in
+private theorem ep6_C_compiled (p : P) (mm qr : ι) (c : ℕ) :
+    ep6_C c (eighProg.compiled p mm qr) ep6_σ0 =
+      ep6_C c (eighProg.compiled () true false) ep6_σ0 := by
+  rw [ep6_compiled_map, ep6_C_map]
+
+omit [DecidableEq P] in
+set_option maxRecDepth 100000 in
+private theorem ep6_Cc_compiled (p : P) (mm qr : ι) :
+    ep6_Cc (eighProg.compiled p mm qr) ep6_σ0 =
+      ep6_Cc (eighProg.compiled () true false) ep6_σ0 := by
+  rw [ep6_compiled_map, ep6_Cc_map]
+
+private theorem ep6_count_bound (w : P → ℕ) (p : P) (mm qr : ι) (N L F : ℕ)
+    (T : FStmt P ι 4 3) (hpr : ep6_prune T = ep6_T p mm qr)
+    (hC : ∀ c, ep6_C c T ep6_σ0 = ep6_C c (eighProg.compiled () true false) ep6_σ0)
+    (htag : ∀ q ∈ ep6_tags T, q = p) (κ : OpKind P ι) :
+    (FStmt.staticCost (fun k => Finsupp.single k 1) w T (Fin.cons N ![L, F])).count κ ≤
+      eighCount p mm qr N L F κ := by
+  by_cases h9 : ep6_cls κ = 9
+  · rw [ep6_count_prune w κ h9, hpr, ep6_eighCount_eq, Finsupp.add_apply]
+    exact (ep6_T_le p mm qr N L F κ).trans (Nat.le_add_left _ _)
+  · by_cases ht : ep6_ktag κ = p
+    · refine (ep6_count_le w κ N L F T _ ep6_σ0 (ep6_ρ0 N L F)).trans ?_
+      rw [hC]
+      exact ep6_scalar_bound p mm qr N L F κ h9 ht
+    · have := ep6_count_tag w κ T (Fin.cons N ![L, F]) fun hm => ht (htag _ hm)
+      omega
+
+private theorem ep6_cells_bound (charge : OpKind P ι → OpCount P ι) (w : P → ℕ) (p : P)
+    (N L F : ℕ) (T : FStmt P ι 4 3)
+    (hC : ep6_Cc T ep6_σ0 = ep6_Cc (eighProg.compiled () true false) ep6_σ0)
+    (htag : ∀ q ∈ ep6_tags T, q = p) (q : P) :
+    (FStmt.staticCost charge w T (Fin.cons N ![L, F])).cells q ≤
+      if q = p then 64 * (N + 1) ^ 2 * (L + 3) else 0 := by
+  split_ifs with hq
+  · refine (ep6_cells_le charge w q N L F T _ ep6_σ0 (ep6_ρ0 N L F)).trans ?_
+    rw [hC]
+    exact ep6_okC_le N L F _ ep6_okC_compiled0
+  · exact ep6_cells_tag charge w q _ _ fun hm => hq (htag _ hm)
+
 /-- **The counts and the memory of the registered tree**: under the standard charge (one per
 operation), every successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$
 adds at most `NLAlib.eighCount p mm qr N ℓ₀ F` to the counts and raises the peak memory at tag `p`
@@ -4633,7 +5826,18 @@ theorem eighProg.cnt_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpCoun
     st'.cnt ≤ st.cnt + eighCount p mm qr N ℓ₀ F ∧
       ∀ q, st'.peak q ≤ max (st.peak q)
         (st.cur q + if q = p then 64 * (N + 1) ^ 2 * (ℓ₀ + 3) else 0) := by
-  sorry
+  have hb := (eighProg.compiled p mm qr).bounds_staticCost_of_exec_eq_some I N ![ℓ₀, F] h
+  have hpr := ep6_prune_compiled p mm qr
+  have hC := ep6_C_compiled p mm qr
+  have hCc := ep6_Cc_compiled p mm qr
+  have htag := ep6_tags_compiled p mm qr
+  generalize eighProg.compiled p mm qr = T at hb hpr hC hCc htag
+  have hcharge : I.charge = fun k => Finsupp.single k 1 := funext hc
+  have hcount := ep6_count_bound I.width p mm qr N ℓ₀ F T hpr hC htag
+  rw [← hcharge] at hcount
+  exact ⟨hb.count.trans (add_le_add le_rfl fun κ => hcount κ), fun q => (hb.peak q).trans
+    (max_le_max le_rfl
+      (add_le_add le_rfl (ep6_cells_bound I.charge I.width p N ℓ₀ F T hCc htag q)))⟩
 
 /-- **The kernel cost of the registered tree, weighted** ([Shah2024, Section 4], the operation count
 of Theorem 4.2): for a cost $T$ of a kernel call by its largest dimension that is monotone and
