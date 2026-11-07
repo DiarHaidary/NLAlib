@@ -98,6 +98,14 @@ theorem length_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
     Matrix.charpoly_natDegree_eq_dim]
   simp
 
+/-- The shift polynomial of the Ritz values is the characteristic polynomial $\chi_k$ of the
+trailing block. -/
+theorem shiftPoly_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
+    shiftPoly (ritzValues k H) = (trailingBlock k H).charpoly := by
+  rw [shiftPoly, ritzValues, ← Multiset.prod_coe, ← Multiset.map_coe, Multiset.coe_toList]
+  exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq (Matrix.charpoly_monic _)
+    IsAlgClosed.card_roots_eq_natDegree
+
 /-- **Exact Ritz values are $1$-optimal**: for upper Hessenberg $\mathbf{H}$ and $1 \le k \le n$,
 the eigenvalues of the trailing block $\mathbf{H}_{(k)}$ satisfy
 $\|\mathbf{e}_n^{\mathsf{H}}\chi_k(\mathbf{H})\| \le \psi_k(\mathbf{H})^k$.
@@ -105,18 +113,8 @@ $\|\mathbf{e}_n^{\mathsf{H}}\chi_k(\mathbf{H})\| \le \psi_k(\mathbf{H})^k$.
 theorem IsUpperHessenberg.isOptimalRitzValues_one_ritzValues
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
     (hkn : k ≤ n) : IsOptimalRitzValues 1 H (ritzValues k H) := by
-  have hcard : (trailingBlock k H).charpoly.roots.card =
-      (trailingBlock k H).charpoly.natDegree := by
-    simpa using IsAlgClosed.card_roots_map_eq_natDegree_of_injective
-      (f := RingHom.id ℂ) (trailingBlock k H).charpoly Function.injective_id
-  have hL : shiftPoly (ritzValues k H) = (trailingBlock k H).charpoly := by
-    unfold ritzValues shiftPoly
-    rw [← Multiset.prod_coe, ← Multiset.map_coe, Multiset.coe_toList]
-    exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
-      (Matrix.charpoly_monic _) hcard
-  unfold IsOptimalRitzValues
-  rw [hL, length_ritzValues,
-    NLAlib.IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq hH hk hkn, one_mul]
+  rw [IsOptimalRitzValues, shiftPoly_ritzValues, length_ritzValues,
+    hH.norm_aeval_charpoly_trailingBlock_eq hk hkn, one_mul]
 
 /-- **Ritz values are bounded by the norm**: every Ritz value $s$ of order $k \le n + 1$ has
 $\lvert s\rvert \le \|\mathbf{H}\|_2$. -/
@@ -171,19 +169,14 @@ theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
     (hθ : 0 ≤ θ) :
     1 ≤ pseudoConditionNumber V * (α * θ * hessenbergPotential ss.length H) ^ ss.length *
       ∑ i, lastRowWeights V i / ‖d i - r‖ ^ ss.length := by
+  -- `hα` is not used by the proof; kept in the statement until the maintainer decides
+  have _ := hα
   obtain ⟨-, hr2⟩ := hr
   have hW : ∑ i, lastRowWeights V i = 1 := sum_lastRowWeights hV
-  have hκ0 : 0 ≤ pseudoConditionNumber V := by unfold pseudoConditionNumber; positivity
-  have hψ0 : 0 ≤ hessenbergPotential ss.length H := by unfold hessenbergPotential; positivity
-  have hne : ∀ i, (shiftPoly ss).eval (d i) ≠ 0 := by
-    intro i
-    unfold shiftPoly
-    rw [Polynomial.eval_list_prod, List.map_map]
-    apply List.prod_ne_zero
-    simp only [List.mem_map, Function.comp_apply, Polynomial.eval_sub, Polynomial.eval_X,
-      Polynomial.eval_C, not_exists, not_and]
-    intro s hs
-    exact sub_ne_zero.mpr (hd i s hs)
+  have hκ0 : 0 ≤ pseudoConditionNumber V := pseudoConditionNumber_nonneg V
+  have hψ0 : 0 ≤ hessenbergPotential ss.length H :=
+    hessenbergPotential_nonneg _ _
+  have hne : ∀ i, (shiftPoly ss).eval (d i) ≠ 0 := fun i => eval_shiftPoly_ne_zero (hd i)
   -- the second moment of `p(d)` is at most `(κ (θ ψ)^k)^2`
   have hA := hss
   unfold IsOptimalRitzValues at hA
@@ -264,12 +257,7 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
     intro i; simp [hpdef, shiftPoly, List.map_replicate, List.prod_replicate]
   have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
     rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hd i r hr.1))
-  have hunit : IsUnit (Polynomial.aeval H p) := by
-    rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
-    exact (hV.mul (Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun i =>
-      isUnit_iff_ne_zero.mpr (hnz i)))).mul
-      ((Matrix.isUnit_iff_isUnit_det _).mpr (by
-        rw [Matrix.det_nonsing_inv]; exact ((Matrix.isUnit_iff_isUnit_det V).mp hV).ringInverse))
+  have hunit := isUnit_aeval_of_forall_eval_ne_zero hV hHV hnz
   have hN := IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le hH
     (ss := List.replicate k r) (by rw [List.length_replicate]; exact hk)
     (by rw [List.length_replicate]; exact hkn) hunit
@@ -291,7 +279,7 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
     simpa [smul_eq_mul] using this
   have hsqsum : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 := by
     simp only [hgx] at hsq; exact hsq
-  have hκ0 : 0 ≤ κ := mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
+  have hκ0 : 0 ≤ κ := pseudoConditionNumber_nonneg V
   have hSN : ∑ i, lastRowWeights V i * x i ≤ κ * N := by
     refine (sq_le_sq₀ (Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (hx0 i))
       (mul_nonneg hκ0 (norm_nonneg _))).mp ?_
@@ -303,7 +291,7 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
   have hkey : 1 ≤ κ * (α * θ * ψ) ^ k * (κ * N) :=
     le_trans hone (mul_le_mul_of_nonneg_left hSN (mul_nonneg hκ0 (pow_nonneg
       (mul_nonneg (mul_nonneg hα hθ)
-        (Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _))
+        (hessenbergPotential_nonneg _ _))
       _)))
   have hN0 : 0 < N := by
     rcases (norm_nonneg (WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n)))).eq_or_lt with h | h
@@ -317,9 +305,9 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
         (κ ^ 2 * (α * θ * ψ) ^ k) * N := by
       nlinarith [hN, hkey]
     exact le_of_mul_le_mul_right h1 hN0
-  have hψ0 : 0 ≤ ψ := Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  have hψ0 : 0 ≤ ψ := hessenbergPotential_nonneg _ _
   have hψ'0 : 0 ≤ hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) :=
-    Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+    hessenbergPotential_nonneg _ _
   have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
   have hκk : (κ ^ ((2 : ℝ) / k)) ^ k = κ ^ 2 := by
     rw [← Real.rpow_natCast, ← Real.rpow_mul hκ0]
@@ -394,15 +382,8 @@ theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
     ∑ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ q ≤
       pseudoConditionNumber V ^ 4 *
         ∑ i, lastRowWeights V i / ‖(shiftPoly h).eval (d i)‖ ^ (2 * q) := by
-  have hne : ∀ l : List ℂ, (∀ i, ∀ s ∈ l, d i ≠ s) → ∀ i, (shiftPoly l).eval (d i) ≠ 0 := by
-    intro l hl i
-    unfold shiftPoly
-    rw [Polynomial.eval_list_prod, List.map_map]
-    apply List.prod_ne_zero
-    simp only [List.mem_map, Function.comp_apply, Polynomial.eval_sub, Polynomial.eval_X,
-      Polynomial.eval_C, not_exists, not_and]
-    intro s hs
-    exact sub_ne_zero.mpr (hl i s hs)
+  have hne : ∀ l : List ℂ, (∀ i, ∀ s ∈ l, d i ≠ s) → ∀ i, (shiftPoly l).eval (d i) ≠ 0 :=
+    fun _ hl i => eval_shiftPoly_ne_zero (hl i)
   have hna : ∀ i, (shiftPoly a).eval (d i) ≠ 0 :=
     hne a fun i s hs => hd i s (List.mem_append_left _ hs)
   have hnb : ∀ i, (shiftPoly b).eval (d i) ≠ 0 :=
@@ -411,8 +392,6 @@ theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
     rcases hh with rfl | rfl
     · exact hna
     · exact hnb
-  have hpc : shiftPoly (a ++ b) = shiftPoly a * shiftPoly b := by
-    simp [shiftPoly, List.map_append, List.prod_append]
   have hsa := moment_sandwich_shiftPoly hV hHV q hna
   have hsb := moment_sandwich_shiftPoly hV hHV q hnb
   have hsh := moment_sandwich_shiftPoly hV hHV q hnh
@@ -421,7 +400,7 @@ theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
       lastRowWeights V i * (‖((shiftPoly a).eval (d i))⁻¹ ^ q‖ ^ 2 +
         ‖((shiftPoly b).eval (d i))⁻¹ ^ q‖ ^ 2) / 2 := by
     intro i
-    rw [hpc, Polynomial.eval_mul, norm_mul]
+    rw [shiftPoly_append, Polynomial.eval_mul, norm_mul]
     simp only [norm_pow, norm_inv]
     exact inv_pow_mul_le _ _ _ _ (lastRowWeights_nonneg V i)
   have hsumh : ∑ i, lastRowWeights V i / ‖(shiftPoly h).eval (d i)‖ ^ (2 * q) =
@@ -483,65 +462,40 @@ private theorem sum_lastRowWeights_div_le_findRitz {H V : Matrix (Fin (n + 1)) (
     simp [shiftPoly, findRitz]
   | succ j ih =>
     intro e ss hlen hd
+    set a := ss.take (ss.length / 2)
+    set b := ss.drop (ss.length / 2)
     have hhalf : ss.length / 2 = 2 ^ j := by
       rw [hlen, pow_succ, Nat.mul_div_cancel _ (by norm_num)]
-    have hta : (ss.take (ss.length / 2)).length = 2 ^ j := by
+    have ha : a.length = 2 ^ j := by
       rw [List.length_take, hhalf, hlen]
       exact Nat.min_eq_left (Nat.pow_le_pow_right (by norm_num) (by omega))
-    have htd : (ss.drop (ss.length / 2)).length = 2 ^ j := by
+    have hb : b.length = 2 ^ j := by
       rw [List.length_drop, hhalf, hlen, pow_succ]
       omega
-    have hdis : ∀ i, ∀ s ∈ ss.take (ss.length / 2) ++ ss.drop (ss.length / 2), d i ≠ s := by
-      simpa only [List.take_append_drop] using hd
-    have hdis_a : ∀ i, ∀ s ∈ ss.take (ss.length / 2), d i ≠ s :=
-      fun i s hs => hd i s (List.mem_of_mem_take hs)
-    have hdis_b : ∀ i, ∀ s ∈ ss.drop (ss.length / 2), d i ≠ s :=
-      fun i s hs => hd i s (List.mem_of_mem_drop hs)
-    have hpow : e * 2 ^ (j + 1) = 2 * e * 2 ^ j := by ring
-    have hsplit : ∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖ ^ e =
-        ∑ i, lastRowWeights V i /
-          ‖(shiftPoly (ss.take (ss.length / 2) ++ ss.drop (ss.length / 2))).eval (d i)‖ ^ e := by
-      rw [List.take_append_drop]
-    by_cases hc : ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.drop (ss.length / 2))))⁻¹ ^ e)
-          (Fin.last n))‖ ≤
-        ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.take (ss.length / 2))))⁻¹ ^ e)
-          (Fin.last n))‖
-    · have hfr : findRitz H (j + 1) e ss = findRitz H j (2 * e) (ss.take (ss.length / 2)) := by
-        rw [findRitz, if_pos hc]
-      have hmax : ∀ g ∈ [ss.take (ss.length / 2), ss.drop (ss.length / 2)],
+    have hdis : ∀ i, ∀ s ∈ a ++ b, d i ≠ s := by simpa only [a, b, List.take_append_drop] using hd
+    -- the half `h` that the search keeps
+    obtain ⟨h, hh, hlh, hfr, hmax⟩ : ∃ h : List ℂ, (h = a ∨ h = b) ∧ h.length = 2 ^ j ∧
+        findRitz H (j + 1) e ss = findRitz H j (2 * e) h ∧ ∀ g ∈ [a, b],
           ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly g))⁻¹ ^ e) (Fin.last n))‖ ≤
-            ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.take (ss.length / 2))))⁻¹ ^ e)
-              (Fin.last n))‖ := by
-        intro g hg
-        rcases List.mem_cons.mp hg with rfl | hg
-        · exact le_refl _
-        · rw [List.mem_singleton.mp hg]; exact hc
-      have hmain := sum_lastRowWeights_div_norm_eval_shiftPoly_le hV hHV hdis (Or.inl rfl) e hmax
-      have hih := ih (2 * e) _ hta hdis_a
-      rw [hsplit, hfr, hpow]
-      calc _ ≤ _ := hmain
-        _ ≤ pseudoConditionNumber V ^ 4 * (pseudoConditionNumber V ^ (4 * j) *
-            ∑ i, lastRowWeights V i / ‖d i - findRitz H j (2 * e) (ss.take (ss.length / 2))‖ ^
-              (2 * e * 2 ^ j)) := mul_le_mul_of_nonneg_left hih (by positivity)
-        _ = _ := by ring
-    · have hfr : findRitz H (j + 1) e ss = findRitz H j (2 * e) (ss.drop (ss.length / 2)) := by
-        rw [findRitz, if_neg hc]
-      have hmax : ∀ g ∈ [ss.take (ss.length / 2), ss.drop (ss.length / 2)],
-          ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly g))⁻¹ ^ e) (Fin.last n))‖ ≤
-            ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.drop (ss.length / 2))))⁻¹ ^ e)
-              (Fin.last n))‖ := by
-        intro g hg
-        rcases List.mem_cons.mp hg with rfl | hg
-        · exact (not_le.mp hc).le
-        · rw [List.mem_singleton.mp hg]
-      have hmain := sum_lastRowWeights_div_norm_eval_shiftPoly_le hV hHV hdis (Or.inr rfl) e hmax
-      have hih := ih (2 * e) _ htd hdis_b
-      rw [hsplit, hfr, hpow]
-      calc _ ≤ _ := hmain
-        _ ≤ pseudoConditionNumber V ^ 4 * (pseudoConditionNumber V ^ (4 * j) *
-            ∑ i, lastRowWeights V i / ‖d i - findRitz H j (2 * e) (ss.drop (ss.length / 2))‖ ^
-              (2 * e * 2 ^ j)) := mul_le_mul_of_nonneg_left hih (by positivity)
-        _ = _ := by ring
+            ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly h))⁻¹ ^ e) (Fin.last n))‖ := by
+      by_cases hc : ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly b))⁻¹ ^ e) (Fin.last n))‖ ≤
+          ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly a))⁻¹ ^ e) (Fin.last n))‖
+      · refine ⟨a, Or.inl rfl, ha, by rw [findRitz, if_pos hc], fun g hg => ?_⟩
+        rcases List.mem_pair.mp hg with rfl | rfl
+        exacts [le_rfl, hc]
+      · refine ⟨b, Or.inr rfl, hb, by rw [findRitz, if_neg hc], fun g hg => ?_⟩
+        rcases List.mem_pair.mp hg with rfl | rfl
+        exacts [(not_le.mp hc).le, le_rfl]
+    have hih := ih (2 * e) h hlh fun i s hs =>
+      hdis i s (by rcases hh with rfl | rfl <;> simp [hs])
+    rw [show ∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖ ^ e =
+        ∑ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ e by
+      rw [List.take_append_drop], hfr, show e * 2 ^ (j + 1) = 2 * e * 2 ^ j by ring]
+    calc _ ≤ _ := sum_lastRowWeights_div_norm_eval_shiftPoly_le hV hHV hdis hh e hmax
+      _ ≤ pseudoConditionNumber V ^ 4 * (pseudoConditionNumber V ^ (4 * j) *
+          ∑ i, lastRowWeights V i / ‖d i - findRitz H j (2 * e) h‖ ^ (2 * e * 2 ^ j)) :=
+        mul_le_mul_of_nonneg_left hih (by positivity)
+      _ = _ := by ring
 
 /-- **The binary search finds a promising Ritz value**: let $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with

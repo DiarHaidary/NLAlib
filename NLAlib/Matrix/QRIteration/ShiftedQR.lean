@@ -121,7 +121,12 @@ theorem hessenbergPotential_pow {k : ℕ} (hk : 0 < k) (H : Matrix (Fin (n + 1))
   unfold hessenbergPotential
   exact Real.rpow_inv_natCast_pow (Finset.prod_nonneg fun i _ => norm_nonneg _) hk.ne'
 
-/-- Helper: the last row of $\mathbf{H}^i$ vanishes at columns $j$ with $j + i < n$. -/
+/-- The potential is nonnegative. -/
+theorem hessenbergPotential_nonneg (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
+    0 ≤ hessenbergPotential k H :=
+  Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+
+/-- The last row of $\mathbf{H}^i$ vanishes at columns $j$ with $j + i < n$. -/
 private theorem pow_apply_last_eq_zero {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H) (i : ℕ) :
     ∀ j : Fin (n + 1), (j : ℕ) + i < n → (H ^ i) (Fin.last n) j = 0 := by
@@ -152,27 +157,6 @@ theorem IsUpperHessenberg.aeval_apply_last_eq_zero {H : Matrix (Fin (n + 1)) (Fi
   refine Finset.sum_eq_zero fun i hi => ?_
   rw [Finset.mem_range] at hi
   rw [Matrix.smul_apply, pow_apply_last_eq_zero hH i j (by omega), smul_zero]
-
-/-- Helper: the last row of $\mathbf{H}^i$ vanishes at columns $j$ with $j + i < n$ (a copy for
-`aeval_apply_last_eq_prod`). -/
-private theorem pow_apply_last_eq_zero_of_add_lt {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
-    (hH : IsUpperHessenberg H) (i : ℕ) :
-    ∀ j : Fin (n + 1), (j : ℕ) + i < n → (H ^ i) (Fin.last n) j = 0 := by
-  induction i with
-  | zero =>
-    intro j hj
-    rw [pow_zero, Matrix.one_apply_ne]
-    intro h
-    have := congrArg Fin.val h
-    simp only [Fin.val_last] at this
-    omega
-  | succ i ih =>
-    intro j hj
-    rw [pow_succ, Matrix.mul_apply]
-    refine Finset.sum_eq_zero fun m _ => ?_
-    by_cases hm : (j : ℕ) + 1 < (m : ℕ)
-    · rw [hH m j hm, mul_zero]
-    · rw [ih m (by omega), zero_mul]
 
 /-- Helper: the corner entries of the last row of $\mathbf{H}^i$ are the products of the last $i$
 subdiagonal entries. -/
@@ -211,7 +195,7 @@ private theorem pow_apply_last_eq_prod {H : Matrix (Fin (n + 1)) (Fin (n + 1)) �
       have hmv : (m : ℕ) ≠ j + 1 := fun h => hm (Fin.ext h)
       by_cases hc : (j : ℕ) + 1 < m
       · rw [hH m j hc, mul_zero]
-      · rw [pow_apply_last_eq_zero_of_add_lt hH i m (by omega), zero_mul]
+      · rw [pow_apply_last_eq_zero hH i m (by omega), zero_mul]
     · intro h
       exact absurd (Finset.mem_univ _) h
 
@@ -230,7 +214,7 @@ theorem IsUpperHessenberg.aeval_apply_last_eq_prod {H : Matrix (Fin (n + 1)) (Fi
     rw [Matrix.smul_apply, hc, one_smul]
     exact pow_apply_last_eq_prod hH k j hj
   · rw [Finset.mem_range] at hi
-    rw [Matrix.smul_apply, pow_apply_last_eq_zero_of_add_lt hH i j (by omega), smul_zero]
+    rw [Matrix.smul_apply, pow_apply_last_eq_zero hH i j (by omega), smul_zero]
 
 /-- **The potential bounds every monic polynomial's last row from below**: for upper Hessenberg
 $\mathbf{H}$, $1 \le k \le n$ and monic $p$ of degree $k$,
@@ -323,24 +307,26 @@ theorem IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq
     hH.aeval_apply_last_eq_prod (Matrix.charpoly_monic T) hdeg (by simp only [c₀]; omega),
     norm_prod, hessenbergPotential_pow hk]
 
+/-- The last $k \le n$ subdiagonal indices are $k$ in number. -/
+private theorem card_filter_le_add {k : ℕ} (hkn : k ≤ n) :
+    (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).card = k := by
+  rw [← Finset.card_map Fin.valEmbedding,
+    show (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).map Fin.valEmbedding =
+      Finset.Ico (n - k) n by
+        ext m
+        simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and,
+          Fin.valEmbedding_apply, Finset.mem_Ico]
+        exact ⟨by rintro ⟨i, hi, rfl⟩; exact ⟨by omega, i.isLt⟩,
+          fun ⟨h1, h2⟩ => ⟨⟨m, h2⟩, by change n ≤ m + k; omega, rfl⟩⟩,
+    Nat.card_Ico]
+  omega
+
 /-- **The potential is at most the norm**: for $1 \le k \le n$,
 $\psi_k(\mathbf{H}) \le \|\mathbf{H}\|_2$. [BanksGarzaVargasSrivastava2021, proof of
 Theorem 1.6]. -/
 theorem hessenbergPotential_le_specNorm {k : ℕ} (hk : 0 < k) (hkn : k ≤ n)
     (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) : hessenbergPotential k H ≤ specNorm H := by
-  have hcard : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).card = k := by
-    have hmap : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).map Fin.valEmbedding =
-        Finset.Ico (n - k) n := by
-      ext m
-      simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and,
-        Fin.valEmbedding_apply, Finset.mem_Ico]
-      constructor
-      · rintro ⟨i, hi, rfl⟩
-        exact ⟨by omega, i.isLt⟩
-      · rintro ⟨h1, h2⟩
-        exact ⟨⟨m, h2⟩, by change n ≤ m + k; omega, rfl⟩
-    rw [← Finset.card_map Fin.valEmbedding, hmap, Nat.card_Ico]
-    omega
+  have hcard := card_filter_le_add hkn
   have hS : 0 ≤ specNorm H := specNorm_nonneg H
   have hP : ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i.succ i.castSucc‖ ≤
       specNorm H ^ k := by
@@ -359,19 +345,7 @@ proof of Theorem 1.6]. -/
 theorem isDecoupled_of_hessenbergPotential_le {k : ℕ} (hk : 0 < k) (hkn : k ≤ n) {δ : ℝ}
     (hδ : 0 ≤ δ) {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (h : hessenbergPotential k H ≤ δ * specNorm H) : IsDecoupled δ H := by
-  have hcard : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).card = k := by
-    have hmap : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).map Fin.valEmbedding =
-        Finset.Ico (n - k) n := by
-      ext m
-      simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and,
-        Fin.valEmbedding_apply, Finset.mem_Ico]
-      constructor
-      · rintro ⟨i, hi, rfl⟩
-        exact ⟨by omega, i.isLt⟩
-      · rintro ⟨h1, h2⟩
-        exact ⟨⟨m, h2⟩, by change n ≤ m + k; omega, rfl⟩
-    rw [← Finset.card_map Fin.valEmbedding, hmap, Nat.card_Ico]
-    omega
+  have hcard := card_filter_le_add hkn
   have hne : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).Nonempty :=
     ⟨⟨n - k, by omega⟩, by
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
@@ -379,9 +353,8 @@ theorem isDecoupled_of_hessenbergPotential_le {k : ℕ} (hk : 0 < k) (hkn : k �
   obtain ⟨i0, hi0, hmin⟩ :=
     Finset.exists_min_image _ (fun i : Fin n => ‖H i.succ i.castSucc‖) hne
   have hδS : 0 ≤ δ * specNorm H := mul_nonneg hδ (specNorm_nonneg H)
-  have hψ0 : 0 ≤ hessenbergPotential k H := by
-    unfold hessenbergPotential
-    positivity
+  have hψ0 : 0 ≤ hessenbergPotential k H :=
+    hessenbergPotential_nonneg _ _
   have hmk : ∏ _i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i0.succ i0.castSucc‖ ≤
       ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i.succ i.castSucc‖ :=
     Finset.prod_le_prod (fun i _ => norm_nonneg _) fun i hi => hmin i hi
@@ -390,30 +363,88 @@ theorem isDecoupled_of_hessenbergPotential_le {k : ℕ} (hk : 0 < k) (hkn : k �
     hmk.trans ((hessenbergPotential_pow hk H).symm ▸ pow_le_pow_left₀ hψ0 h k)
   exact ⟨i0, (pow_le_pow_iff_left₀ (norm_nonneg _) hδS hk.ne').mp h3⟩
 
+/-! ### The shift polynomial -/
+
+/-- The shift polynomial of $k$ shifts is monic of degree $k$. -/
+theorem shiftPoly_monic_and_natDegree (ss : List ℂ) :
+    (shiftPoly ss).Monic ∧ (shiftPoly ss).natDegree = ss.length := by
+  induction ss with
+  | nil => simp [shiftPoly]
+  | cons s ss ih =>
+    have hm := Polynomial.monic_X_sub_C s
+    rw [show shiftPoly (s :: ss) = (Polynomial.X - Polynomial.C s) * shiftPoly ss by
+      simp [shiftPoly]]
+    refine ⟨hm.mul ih.1, ?_⟩
+    rw [hm.natDegree_mul ih.1, Polynomial.natDegree_X_sub_C, ih.2, List.length_cons, add_comm]
+
+/-- The modulus of the shift polynomial is the product of the distances to the shifts:
+$\lvert\prod_{s}(z - s)\rvert = \prod_s \lvert z - s\rvert$. -/
+theorem norm_eval_shiftPoly (ss : List ℂ) (z : ℂ) :
+    ‖(shiftPoly ss).eval z‖ = (ss.map fun s => ‖z - s‖).prod := by
+  induction ss with
+  | nil => simp [shiftPoly]
+  | cons a l ih =>
+    simp only [shiftPoly, List.map_cons, List.prod_cons, Polynomial.eval_mul,
+      Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, norm_mul] at ih ⊢
+    rw [ih]
+
+/-- The shift polynomial does not vanish at a point that is no shift. -/
+theorem eval_shiftPoly_ne_zero {ss : List ℂ} {z : ℂ} (h : ∀ s ∈ ss, z ≠ s) :
+    (shiftPoly ss).eval z ≠ 0 := by
+  rw [shiftPoly, Polynomial.eval_list_prod, List.map_map]
+  refine List.prod_ne_zero fun h0 => ?_
+  obtain ⟨s, hs, hs0⟩ := List.mem_map.mp h0
+  exact h s hs (sub_eq_zero.mp (by simpa using hs0))
+
+/-- The shift polynomial of a concatenation is the product: $p_{a +\!+ b} = p_a\,p_b$. -/
+theorem shiftPoly_append (a b : List ℂ) : shiftPoly (a ++ b) = shiftPoly a * shiftPoly b := by
+  simp [shiftPoly, List.map_append, List.prod_append]
+
+/-- The shift polynomial of a repeated shift is a power: $p(\mathbf{H}) = (\mathbf{H} -
+r\mathbf{I})^k$ for the list of $k$ copies of $r$. -/
+theorem aeval_shiftPoly_replicate (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (k : ℕ) (r : ℂ) :
+    Polynomial.aeval H (shiftPoly (List.replicate k r)) =
+      (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) ^ k := by
+  simp [shiftPoly, List.map_replicate, List.prod_replicate, Algebra.algebraMap_eq_smul_one]
+
 /-! ### The shifted QR step -/
+
+/-- The unitary factor of the Givens step has orthonormal columns. -/
+private theorem hasOrthonormalCols_givensHessenbergQ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
+    HasOrthonormalCols (givensHessenbergQ A) :=
+  hasOrthonormalCols_givensHessenbergState_fst _ _
+
+/-- The shifted QR step is $\mathbf{R}\mathbf{Q} + s\mathbf{I}$ for the Givens factors of
+$\mathbf{H} - s\mathbf{I}$, for every $\mathbf{H}$. -/
+private theorem shiftedQRStep_eq_mul_add_smul_one (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
+    (s : ℂ) :
+    shiftedQRStep H s =
+      givensHessenbergR (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) *
+        givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) + s • 1 := by
+  set A := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hA
+  set Q := givensHessenbergQ A
+  set R := givensHessenbergR A
+  have hQR : Q * R = A := givensHessenbergState_fst_mul_snd A _
+  have hQQ : Qᴴ * Q = 1 := (hasOrthonormalCols_givensHessenbergQ A).conjTranspose_mul_self
+  change Qᴴ * H * Q = _
+  calc Qᴴ * H * Q = Qᴴ * (A + s • 1) * Q := by rw [hA, sub_add_cancel]
+    _ = (Qᴴ * Q) * R * Q + s • (Qᴴ * Q) := by
+      rw [← hQR]
+      simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
+        Matrix.mul_one, Matrix.mul_assoc]
+    _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
 
 /-- **The shifted QR step keeps the Hessenberg form**: for upper Hessenberg $\mathbf{H}$ and any
 shift $s$, `NLAlib.shiftedQRStep` $\mathbf{H}$ $s$ is upper Hessenberg, also when
 $\mathbf{H} - s\mathbf{I}$ is singular. -/
 theorem IsUpperHessenberg.isUpperHessenberg_shiftedQRStep {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H) (s : ℂ) : IsUpperHessenberg (shiftedQRStep H s) := by
-  unfold shiftedQRStep
-  set M := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hMdef
-  have hM : IsUpperHessenberg M := by
-    intro i j hij
-    rw [hMdef, Matrix.sub_apply, hH i j hij, Matrix.smul_apply,
-      Matrix.one_apply_ne (fun h => by subst h; omega), smul_zero, sub_zero]
-  have hQR : IsQR M (givensHessenbergQ M) (givensHessenbergR M) := by
-    have h := isQR_givensHessenberg hM le_rfl
-    have e : Fin.castLE (le_refl (n + 1)) = id := funext fun i => Fin.ext rfl
-    rw [e, Matrix.submatrix_id_id, Matrix.submatrix_id_id] at h
-    exact h
-  rw [← hQR.mul_add_smul_one_eq]
-  have h1 : IsUpperHessenberg (givensHessenbergR M * givensHessenbergQ M) :=
-    IsUpperHessenberg.isUpperTriangular_mul hQR.isUpperTriangular
-      (isUpperHessenberg_givensHessenbergQ M)
+  have h1 : IsUpperHessenberg (givensHessenbergR (H - s • 1) * givensHessenbergQ (H - s • 1)) :=
+    IsUpperHessenberg.isUpperTriangular_mul
+      (isUpperTrapezoidal_givensHessenbergR (hH.sub_smul_one s))
+      (isUpperHessenberg_givensHessenbergQ _)
   intro i j hij
-  rw [Matrix.add_apply, h1 i j hij, Matrix.smul_apply,
+  rw [shiftedQRStep_eq_mul_add_smul_one, Matrix.add_apply, h1 i j hij, Matrix.smul_apply,
     Matrix.one_apply_ne (fun h => by subst h; omega), smul_zero, add_zero]
 
 /-- **The multi-shift QR step keeps the Hessenberg form**: for upper Hessenberg $\mathbf{H}$
@@ -423,26 +454,27 @@ theorem IsUpperHessenberg.isUpperHessenberg_multiShiftedQRStep
     IsUpperHessenberg (multiShiftedQRStep H ss) := by
   induction ss generalizing H with
   | nil => exact hH
-  | cons s ss ih =>
-    unfold multiShiftedQRStep at *
-    rw [List.foldl_cons]
-    exact ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
+  | cons s ss ih => exact ih (hH.isUpperHessenberg_shiftedQRStep s)
 
-/-- Evaluation of a polynomial commutes with a unitary similarity. -/
-private theorem aeval_unitary_conj (A Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
-    (hQ : Qᴴ * Q = 1) (hQ' : Q * Qᴴ = 1) (p : Polynomial ℂ) :
-    Polynomial.aeval (Q * A * Qᴴ) p = Q * Polynomial.aeval A p * Qᴴ := by
-  refine Polynomial.induction_on p (fun a => ?_) (fun p q hp hq => ?_) (fun k a ih => ?_)
-  · simp [Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one, hQ']
-  · simp only [map_add, hp, hq, Matrix.mul_add, Matrix.add_mul]
-  · have hX : ∀ (B : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (q : Polynomial ℂ),
-        Polynomial.aeval B (q * Polynomial.X) = Polynomial.aeval B q * B := fun B q => by
-      rw [map_mul, Polynomial.aeval_X]
-    rw [pow_succ, ← mul_assoc, hX, ih, hX]
-    simp only [Matrix.mul_assoc]
-    rw [← Matrix.mul_assoc Qᴴ Q, hQ, Matrix.one_mul]
+/-- A unitary conjugation commutes with polynomial evaluation:
+$p(\mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q}) =
+\mathbf{Q}^{\mathsf{H}}p(\mathbf{H})\mathbf{Q}$. -/
+private theorem aeval_conjTranspose_mul_mul
+    {H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hQ : Qᴴ * Q = 1) (p : Polynomial ℂ) :
+    Polynomial.aeval (Qᴴ * H * Q) p = Qᴴ * Polynomial.aeval H p * Q := by
+  have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ
+  let f : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ →ₐ[ℂ] Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ :=
+    { toFun := fun M => Qᴴ * M * Q
+      map_one' := by simp only [Matrix.mul_one, hQ]
+      map_mul' := fun A B => by
+        simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Q Qᴴ, hQQ, Matrix.one_mul]
+      map_zero' := by simp
+      map_add' := fun A B => by simp [Matrix.mul_add, Matrix.add_mul]
+      commutes' := fun c => by
+        simp [Algebra.algebraMap_eq_smul_one, hQ] }
+  exact Polynomial.aeval_algHom_apply f H p
 
-/-- A square matrix with a Givens QR factorization in the square form. -/
+/-- A square Hessenberg matrix has a Givens QR factorization in the square form. -/
 private theorem isQR_givensHessenberg_sq {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H) :
     IsQR H (givensHessenbergQ H) (givensHessenbergR H) := by
@@ -461,22 +493,17 @@ theorem IsUpperHessenberg.exists_isQR_aeval_shiftPoly {H : Matrix (Fin (n + 1)) 
       IsQR (Polynomial.aeval H (shiftPoly ss)) Q R ∧ multiShiftedQRStep H ss = Qᴴ * H * Q := by
   induction ss generalizing H with
   | nil =>
-    refine ⟨1, 1, ⟨?_, ?_, ?_⟩, ?_⟩
+    refine ⟨1, 1, ⟨?_, ?_, Matrix.blockTriangular_one⟩, ?_⟩
     · simp [shiftPoly]
     · simp [HasOrthonormalCols]
-    · exact Matrix.blockTriangular_one
     · simp [multiShiftedQRStep]
   | cons s ss ih =>
-    obtain ⟨Q', R', hQ', hstep'⟩ := ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
-    have hQR := isQR_givensHessenberg_sq (IsUpperHessenberg.sub_smul_one hH s)
-    have hstep : multiShiftedQRStep H (s :: ss) = multiShiftedQRStep (shiftedQRStep H s) ss := rfl
-    have hpoly : shiftPoly (s :: ss) = shiftPoly ss * (Polynomial.X - Polynomial.C s) := by
-      simp only [shiftPoly, List.map_cons, List.prod_cons]
-      exact mul_comm _ _
+    obtain ⟨Q', R', hQ', hstep'⟩ := ih (hH.isUpperHessenberg_shiftedQRStep s)
+    have hQR := isQR_givensHessenberg_sq (hH.sub_smul_one s)
     have hP : Polynomial.aeval H (shiftPoly (s :: ss)) =
         Polynomial.aeval H (shiftPoly ss) * (H - s • 1) := by
-      rw [hpoly, map_mul, map_sub, Polynomial.aeval_X, Polynomial.aeval_C,
-        Algebra.algebraMap_eq_smul_one]
+      rw [show s :: ss = [s] ++ ss from rfl, shiftPoly_append, mul_comm, map_mul]
+      simp [shiftPoly, Algebra.algebraMap_eq_smul_one]
     have hH1 : shiftedQRStep H s =
         (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)))ᴴ * H *
           givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) := rfl
@@ -484,34 +511,27 @@ theorem IsUpperHessenberg.exists_isQR_aeval_shiftPoly {H : Matrix (Fin (n + 1)) 
       at hQR hH1
     generalize givensHessenbergR (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) = R1
       at hQR
-    generalize hHs : shiftedQRStep H s = H1 at hQ' hstep' hH1
     have hQ1 : Q1ᴴ * Q1 = 1 := hQR.hasOrthonormalCols
     have hQ1' : Q1 * Q1ᴴ = 1 := hQR.hasOrthonormalCols.mul_conjTranspose_self
-    have hHconj : Q1 * H1 * Q1ᴴ = H := by
-      calc Q1 * H1 * Q1ᴴ = (Q1 * Q1ᴴ) * H * (Q1 * Q1ᴴ) := by
-            rw [hH1]; simp only [Matrix.mul_assoc]
-        _ = H := by simp [hQ1']
+    -- `p(H) = Q₁ q(H₁) Q₁ᴴ` for `H₁ = Q₁ᴴ H Q₁`
     have hconj : ∀ p : Polynomial ℂ,
-        Polynomial.aeval H p = Q1 * Polynomial.aeval H1 p * Q1ᴴ := by
-      intro p
-      rw [← aeval_unitary_conj H1 Q1 hQ1 hQ1' p, hHconj]
-    refine ⟨Q1 * Q', R' * R1, ⟨?_, ?_, ?_⟩, ?_⟩
+        Polynomial.aeval H p = Q1 * Polynomial.aeval (shiftedQRStep H s) p * Q1ᴴ := fun p => by
+      rw [hH1, aeval_conjTranspose_mul_mul hQ1]
+      simp only [← Matrix.mul_assoc, hQ1', Matrix.one_mul]
+      rw [Matrix.mul_assoc, hQ1', Matrix.mul_one]
+    refine ⟨Q1 * Q', R' * R1, ⟨?_, hQR.hasOrthonormalCols.mul hQ'.hasOrthonormalCols,
+      hQ'.isUpperTriangular.mul hQR.isUpperTriangular⟩, ?_⟩
     · rw [hP, hconj (shiftPoly ss), hQ'.eq_mul, hQR.eq_mul]
       simp only [Matrix.mul_assoc]
       rw [← Matrix.mul_assoc Q1ᴴ Q1 R1, hQ1, Matrix.one_mul]
-    · exact hQR.hasOrthonormalCols.mul hQ'.hasOrthonormalCols
-    · exact hQ'.isUpperTriangular.mul hQR.isUpperTriangular
-    · rw [hstep, hHs, hstep', hH1, Matrix.conjTranspose_mul]
+    · rw [show multiShiftedQRStep H (s :: ss) = multiShiftedQRStep (shiftedQRStep H s) ss
+        from rfl, hstep', hH1, Matrix.conjTranspose_mul]
       simp only [Matrix.mul_assoc]
 
-/-- Helper: a single shifted QR step is a unitary similarity, so it preserves the spectral norm. -/
-private theorem specNorm_shiftedQRStep_aux (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (s : ℂ) :
-    specNorm (shiftedQRStep H s) = specNorm H := by
-  unfold shiftedQRStep
-  have hQ : HasOrthonormalCols (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1))
-      (Fin (n + 1)) ℂ))) := by
-    unfold givensHessenbergQ
-    exact hasOrthonormalCols_givensHessenbergState_fst _ _
+/-- A unitary similarity $\mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q}$ has the norm of
+$\mathbf{H}$. -/
+private theorem specNorm_conjTranspose_mul_mul {H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hQ : HasOrthonormalCols Q) : specNorm (Qᴴ * H * Q) = specNorm H := by
   rw [hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
     Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
 
@@ -522,47 +542,31 @@ theorem specNorm_multiShiftedQRStep (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
   induction ss generalizing H with
   | nil => rfl
   | cons s ss ih =>
-    change specNorm (ss.foldl shiftedQRStep (shiftedQRStep H s)) = specNorm H
-    exact (ih (shiftedQRStep H s)).trans (specNorm_shiftedQRStep_aux H s)
+    exact (ih (shiftedQRStep H s)).trans
+      (specNorm_conjTranspose_mul_mul (hasOrthonormalCols_givensHessenbergQ _))
 
-/-- Helper: the pseudo-condition number is invariant under a left unitary factor. -/
-private theorem pseudoConditionNumber_conjTranspose_mul_aux
-    {Q V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hQ : HasOrthonormalCols Q) (hV : IsUnit V) :
-    pseudoConditionNumber (Qᴴ * V) = pseudoConditionNumber V := by
-  classical
-  have hVdet : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ.conjTranspose_mul_self
-  have hU : IsUnit Qᴴ := ⟨⟨Qᴴ, Q, hQ.conjTranspose_mul_self, hQQ⟩, rfl⟩
-  have hinv : (Qᴴ * V)⁻¹ = V⁻¹ * Q := by
-    refine Matrix.inv_eq_right_inv ?_
-    calc Qᴴ * V * (V⁻¹ * Q) = Qᴴ * (V * V⁻¹) * Q := by simp only [Matrix.mul_assoc]
-      _ = 1 := by rw [Matrix.mul_nonsing_inv V hVdet, Matrix.mul_one, hQ.conjTranspose_mul_self]
-  have hn1 : specNorm (Qᴴ * V) = specNorm V := by
-    rw [← specNorm_conjTranspose, Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose,
-      hQ.specNorm_mul_right, specNorm_conjTranspose]
-  rw [pseudoConditionNumber_of_isUnit (hU.mul hV), pseudoConditionNumber_of_isUnit hV, hinv,
-    hn1, hQ.specNorm_mul_right]
-
-/-- Helper: one shifted QR step carries an eigenvector matrix, with the same pseudo-condition
-number. -/
-private theorem exists_isUnit_mul_eq_mul_diagonal_shiftedQRStep_aux
+/-- One shifted QR step carries an eigenvector matrix $\mathbf{V}$ to
+$\mathbf{Q}^{\mathsf{H}}\mathbf{V}$, with the same pseudo-condition number. -/
+private theorem exists_isUnit_mul_eq_mul_diagonal_shiftedQRStep
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
     (hHV : H * V = V * Matrix.diagonal d) (s : ℂ) :
     ∃ V' : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ, IsUnit V' ∧
       shiftedQRStep H s * V' = V' * Matrix.diagonal d ∧
       pseudoConditionNumber V' = pseudoConditionNumber V := by
-  have hQ : HasOrthonormalCols (givensHessenbergQ
-      (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))) := by
-    unfold givensHessenbergQ
-    exact hasOrthonormalCols_givensHessenbergState_fst _ _
-  unfold shiftedQRStep
-  set Q := givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) with hQdef
+  set Q := givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))
+  have hQ : HasOrthonormalCols Q := hasOrthonormalCols_givensHessenbergQ _
   have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ.conjTranspose_mul_self
   have hU : IsUnit Qᴴ := ⟨⟨Qᴴ, Q, hQ.conjTranspose_mul_self, hQQ⟩, rfl⟩
-  refine ⟨Qᴴ * V, hU.mul hV, ?_, pseudoConditionNumber_conjTranspose_mul_aux hQ hV⟩
-  calc Qᴴ * H * Q * (Qᴴ * V) = Qᴴ * H * (Q * Qᴴ) * V := by simp only [Matrix.mul_assoc]
-    _ = Qᴴ * (H * V) := by rw [hQQ]; simp only [Matrix.mul_one, Matrix.mul_assoc]
-    _ = Qᴴ * V * Matrix.diagonal d := by rw [hHV, Matrix.mul_assoc]
+  have hinv : (Qᴴ * V)⁻¹ = V⁻¹ * Q := by
+    refine Matrix.inv_eq_right_inv ?_
+    rw [Matrix.mul_assoc, Matrix.mul_nonsing_inv_cancel_left _ _
+      ((Matrix.isUnit_iff_isUnit_det V).mp hV), hQ.conjTranspose_mul_self]
+  refine ⟨Qᴴ * V, hU.mul hV, ?_, ?_⟩
+  · change Qᴴ * H * Q * (Qᴴ * V) = _
+    simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Q, hQQ, Matrix.one_mul, hHV]
+  · rw [pseudoConditionNumber_of_isUnit (hU.mul hV), pseudoConditionNumber_of_isUnit hV, hinv,
+      hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
+      Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
 
 /-- **The multi-shift QR step carries the eigenvector matrix**: if
 $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
@@ -580,55 +584,19 @@ theorem exists_isUnit_mul_eq_mul_diagonal_multiShiftedQRStep
   induction ss generalizing H V with
   | nil => exact ⟨V, hV, hHV, rfl⟩
   | cons s ss ih =>
-    obtain ⟨V1, h1, e1, p1⟩ := exists_isUnit_mul_eq_mul_diagonal_shiftedQRStep_aux hV hHV s
+    obtain ⟨V1, h1, e1, p1⟩ := exists_isUnit_mul_eq_mul_diagonal_shiftedQRStep hV hHV s
     obtain ⟨V2, h2, e2, p2⟩ := ih h1 e1
     exact ⟨V2, h2, e2, p2.trans p1⟩
 
-/-- The shift polynomial of a list is monic of degree the length of the list. -/
-private theorem shiftPoly_monic_natDegree (ss : List ℂ) :
-    (shiftPoly ss).Monic ∧ (shiftPoly ss).natDegree = ss.length := by
-  induction ss with
-  | nil => simp [shiftPoly]
-  | cons s ss ih =>
-    have h : shiftPoly (s :: ss) = (Polynomial.X - Polynomial.C s) * shiftPoly ss := by
-      simp [shiftPoly]
-    have hm : (Polynomial.X - Polynomial.C s : Polynomial ℂ).Monic := Polynomial.monic_X_sub_C s
-    rw [h]
-    refine ⟨hm.mul ih.1, ?_⟩
-    rw [hm.natDegree_mul ih.1, Polynomial.natDegree_X_sub_C, ih.2, List.length_cons]
-    ring
-
-/-- A unitary conjugation commutes with polynomial evaluation: `aeval (Qᴴ H Q) p = Qᴴ p(H) Q`. -/
-private theorem aeval_conjTranspose_mul_mul {H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
-    (hQ : Qᴴ * Q = 1) (p : Polynomial ℂ) :
-    Polynomial.aeval (Qᴴ * H * Q) p = Qᴴ * Polynomial.aeval H p * Q := by
-  have hQQ : Q * Qᴴ = 1 := mul_eq_one_comm.mp hQ
-  let f : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ →ₐ[ℂ] Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ :=
-    { toFun := fun M => Qᴴ * M * Q
-      map_one' := by simp only [Matrix.mul_one, hQ]
-      map_mul' := fun A B => by
-        show Qᴴ * (A * B) * Q = Qᴴ * A * Q * (Qᴴ * B * Q)
-        calc Qᴴ * (A * B) * Q = Qᴴ * A * (1 * B) * Q := by simp [Matrix.mul_assoc]
-          _ = Qᴴ * A * (Q * Qᴴ) * B * Q := by rw [hQQ]; simp
-          _ = _ := by simp only [Matrix.mul_assoc]
-      map_zero' := by simp
-      map_add' := fun A B => by simp [Matrix.mul_add, Matrix.add_mul]
-      commutes' := fun c => by
-        simp [Algebra.algebraMap_eq_smul_one, Matrix.mul_smul, Matrix.smul_mul, hQ] }
-  exact Polynomial.aeval_algHom_apply f H p
-
-/-- A row of a matrix with `M Mᴴ = 1` has Euclidean norm one. -/
+/-- A row of a matrix with $\mathbf{M}\mathbf{M}^{\mathsf{H}} = \mathbf{I}$ has Euclidean norm
+one. -/
 private theorem norm_toLp_row_eq_one {M : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hM : M * Mᴴ = 1)
     (i : Fin (n + 1)) : ‖WithLp.toLp 2 (fun j => M i j)‖ = 1 := by
   have h := congrFun (congrFun hM i) i
-  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.one_apply_eq] at h
-  have h2 : ∀ z : ℂ, z * star z = ((‖z‖ ^ 2 : ℝ) : ℂ) := fun z => by
-    rw [Complex.star_def, Complex.mul_conj, Complex.normSq_eq_norm_sq]
-  simp only [h2] at h
+  simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.one_apply_eq,
+    Complex.star_def, Complex.mul_conj, Complex.normSq_eq_norm_sq] at h
   rw [← Complex.ofReal_sum, Complex.ofReal_eq_one] at h
-  rw [EuclideanSpace.norm_eq]
-  simp only [PiLp.toLp_apply]
-  rw [h, Real.sqrt_one]
+  rw [EuclideanSpace.norm_eq, h, Real.sqrt_one]
 
 /-- **The potential after a QR step is at most $\tau_p$**: for upper Hessenberg $\mathbf{H}$,
 shifts $s_1, \dots, s_k$ with $1 \le k \le n$ and $p(\mathbf{H})$ invertible,
@@ -644,7 +612,7 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
     hessenbergPotential ss.length (multiShiftedQRStep H ss) ^ ss.length *
       ‖WithLp.toLp 2 ((Polynomial.aeval H (shiftPoly ss))⁻¹ (Fin.last n))‖ ≤ 1 := by
   obtain ⟨Q, R, hQR, hHs⟩ := exists_isQR_aeval_shiftPoly hH ss
-  obtain ⟨hmon, hdeg⟩ := shiftPoly_monic_natDegree ss
+  obtain ⟨hmon, hdeg⟩ := shiftPoly_monic_and_natDegree ss
   have hpot := hessenbergPotential_pow_le_norm_aeval
     (isUpperHessenberg_multiShiftedQRStep hH ss) hmon hk hkn hdeg
   have hQ : Qᴴ * Q = 1 := hQR.hasOrthonormalCols
@@ -656,7 +624,7 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
   have hRnn : R (Fin.last n) (Fin.last n) ≠ 0 := by
     have hdetR : R.det ≠ 0 := by
       intro h0; apply hdetP; rw [hPQ, Matrix.det_mul, h0, mul_zero]
-    rw [Matrix.det_of_upperTriangular hRt] at hdetR
+    rw [Matrix.det_of_isUpperTriangular hRt] at hdetR
     exact Finset.prod_ne_zero_iff.mp hdetR _ (Finset.mem_univ _)
   set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he
   have hrowe : ∀ M : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ,
@@ -731,26 +699,10 @@ theorem IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {i : Fin n}
     (hi : H i.succ i.castSucc = 0) (s : ℂ) : shiftedQRStep H s i.succ i.castSucc = 0 := by
   set A := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hA
-  have hAH : IsUpperHessenberg A := fun a b hab => by
-    rw [hA, Matrix.sub_apply, Matrix.smul_apply,
-      Matrix.one_apply_ne (fun h => by rw [h] at hab; omega), smul_zero, sub_zero]
-    exact hH a b hab
   have hAi : A i.succ i.castSucc = 0 := by
     rw [hA, Matrix.sub_apply, Matrix.smul_apply,
       Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, sub_zero, hi]
-  set Q := givensHessenbergQ A
-  set R := givensHessenbergR A
-  have hQR : Q * R = A := givensHessenbergState_fst_mul_snd A (n + 1)
-  have hQQ : Qᴴ * Q = 1 :=
-    (hasOrthonormalCols_givensHessenbergState_fst A (n + 1)).conjTranspose_mul_self
-  have hstep : shiftedQRStep H s = R * Q + s • 1 := by
-    change Qᴴ * H * Q = _
-    calc Qᴴ * H * Q = Qᴴ * (A + s • 1) * Q := by rw [hA, sub_add_cancel]
-      _ = (Qᴴ * Q) * R * Q + s • (Qᴴ * Q) := by
-        rw [← hQR]
-        simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
-          Matrix.mul_one, Matrix.mul_assoc]
-      _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
+  -- row `i + 1` is untouched before step `i`, so rotation `i` is diagonal and `Q (i+1) i = 0`
   have key : ((givensHessenbergState A (n + 1)).1ᴴ *ᵥ Pi.single i.succ 1) i.castSucc = 0 := by
     rw [(givensHessenbergState_apply_of_lt A _ (k := i + 1) (j := n + 1) (by omega)
       (a := i.castSucc) (by simp)).2, conjTranspose_givensHessenbergState_succ_fst_mulVec,
@@ -762,20 +714,19 @@ theorem IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero
       givensHessenbergState_fst_mulVec_apply_eq_zero_of_le A (i := i)
         (fun a ha => Pi.single_eq_of_ne (Fin.ne_of_val_ne (by simp; omega)) _) le_rfl _ (by simp)]
     ring
-  have hQ0 : Q i.succ i.castSucc = 0 := by
-    rw [Matrix.mulVec_single_one, Matrix.col_apply, Matrix.conjTranspose_apply,
+  have hQ0 : givensHessenbergQ A i.succ i.castSucc = 0 := by
+    rwa [Matrix.mulVec_single_one, Matrix.col_apply, Matrix.conjTranspose_apply,
       star_eq_zero] at key
-    exact key
-  rw [hstep, Matrix.add_apply, Matrix.smul_apply,
+  rw [shiftedQRStep_eq_mul_add_smul_one, Matrix.add_apply, Matrix.smul_apply,
     Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, add_zero,
     Matrix.mul_apply]
   refine Finset.sum_eq_zero fun l _ => ?_
   rcases lt_trichotomy (l : ℕ) (i + 1) with h | h | h
-  · rw [show R i.succ l = 0 from isUpperTrapezoidal_givensHessenbergR hAH i.succ l
-      (by simp; omega), zero_mul]
-  · rw [show l = i.succ from Fin.ext (by simp; omega), hQ0, mul_zero]
-  · rw [show Q l i.castSucc = 0 from isUpperHessenberg_givensHessenbergQ A l i.castSucc
-      (by simp; omega), mul_zero]
+  · rw [show givensHessenbergR A i.succ l = 0 from
+      isUpperTrapezoidal_givensHessenbergR (hH.sub_smul_one s) i.succ l (by simp; omega), zero_mul]
+  · rw [show l = i.succ from Fin.ext (by simp; omega), ← hA, hQ0, mul_zero]
+  · rw [show givensHessenbergQ A l i.castSucc = 0 from
+      isUpperHessenberg_givensHessenbergQ A l i.castSucc (by simp; omega), mul_zero]
 
 /-- **A reduced Hessenberg matrix stays reduced under multi-shift QR steps**: for upper
 Hessenberg $\mathbf{H}$ with a zero subdiagonal entry, every
@@ -787,27 +738,15 @@ theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep
   | nil => exact h
   | cons s ss ih =>
     obtain ⟨i, hi⟩ := h
-    have hz : H i.succ i.castSucc = 0 := by simpa using hi
-    have hs : shiftedQRStep H s i.succ i.castSucc = 0 :=
-      IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero hH hz s
-    exact ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s) ⟨i, by simp [hs]⟩
-
-/-- Row $i + 1$ of the state of Givens QR is the original one for the first $j \le i$ steps. -/
-private theorem givensHessenbergState_snd_apply_eq_of_le_of_eq_succ {m p : ℕ}
-    (A : Matrix (Fin m) (Fin p) ℂ) {i j : ℕ} (hj : j ≤ i) {a : Fin m} (ha : (a : ℕ) = i + 1)
-    (b : Fin p) : (givensHessenbergState A j).2 a b = A a b := by
-  induction j with
-  | zero => rfl
-  | succ j ih =>
-    rw [givensHessenbergState_succ_snd, givensHessenbergStep_mul_apply_of_ne _ _ (by omega)
-      (by omega)]
-    exact ih (by omega)
+    have hs := hH.shiftedQRStep_apply_succ_castSucc_eq_zero (by simpa using hi) s
+    exact ih (hH.isUpperHessenberg_shiftedQRStep s) ⟨i, by simp [hs]⟩
 
 /-- **A singular shift decouples exactly**: for upper Hessenberg $\mathbf{H}$ of size at least
 $2$ and a shift $s$ with $\det(\mathbf{H} - s\mathbf{I}) = 0$, the step
-$\mathsf{shiftedQRStep}(\mathbf{H}, s)$ has a zero subdiagonal entry.
-[BanksGarzaVargasSrivastava2021, proof of Lemma 2.5], where the claim that $\mathbf{R}_{n,n} = 0$
-for every QR factorization is used without the unreduced hypothesis it needs. -/
+$\mathsf{shiftedQRStep}(\mathbf{H}, s)$ has a zero subdiagonal entry, at $(n, n - 1)$ when
+$\mathbf{H}$ is unreduced. [BanksGarzaVargasSrivastava2021, proof of Lemma 2.5], where the claim
+that $\mathbf{R}_{n,n} = 0$ for every QR factorization is used without the unreduced hypothesis
+it needs. -/
 theorem IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n) {s : ℂ}
     (hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0) :
@@ -817,84 +756,59 @@ theorem IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero
     exact ⟨i, by rw [hH.shiftedQRStep_apply_succ_castSucc_eq_zero hi s]; simp⟩
   push Not at hred
   set A := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hA
-  have hAH : IsUpperHessenberg A := fun a b hab => by
-    rw [hA, Matrix.sub_apply, Matrix.smul_apply,
-      Matrix.one_apply_ne (fun h => by rw [h] at hab; omega), smul_zero, sub_zero]
-    exact hH a b hab
   set Q := givensHessenbergQ A
   set R := givensHessenbergR A
-  have hQR : Q * R = A := givensHessenbergState_fst_mul_snd A (n + 1)
-  have hQQ : Qᴴ * Q = 1 :=
-    (hasOrthonormalCols_givensHessenbergState_fst A (n + 1)).conjTranspose_mul_self
-  have hR := isUpperTrapezoidal_givensHessenbergR hAH
-  -- the pivots before the last are nonzero
+  have hR := isUpperTrapezoidal_givensHessenbergR (hH.sub_smul_one s)
+  -- the pivots before the last are nonzero, as the subdiagonal is
   have hpiv : ∀ j : Fin (n + 1), (j : ℕ) < n → R j j ≠ 0 := by
     intro j hj
     have hv : A ⟨j + 1, by omega⟩ j ≠ 0 := by
-      have h := hred ⟨j, hj⟩
       rw [hA, Matrix.sub_apply, Matrix.smul_apply,
         Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, sub_zero]
-      exact h
+      exact hred ⟨j, hj⟩
     rw [show R j j = (givensHessenbergState A (j + 1)).2 j j from
       (givensHessenbergState_apply_of_lt A 0 (k := j + 1) (j := n + 1) (by omega) (a := j)
         (by omega)).1 j, givensHessenbergState_succ_snd,
       givensHessenbergStep_of_lt _ (by omega) (by omega) (by omega)]
     simp only [Fin.eta]
     rw [givens_mul_apply_left (Fin.ne_of_val_ne (by simp)), givensCoeffs_fst_mul_add,
-      givensHessenbergState_snd_apply_eq_of_le_of_eq_succ A le_rfl (a := ⟨j + 1, by omega⟩) rfl]
+      givensHessenbergState_snd_apply_of_eq_add_one A le_rfl (a := ⟨j + 1, by omega⟩) rfl]
     have := norm_pos_iff.mpr hv
     exact Complex.ofReal_ne_zero.mpr (Real.sqrt_pos.mpr (by positivity)).ne'
   -- so the last pivot vanishes
   have hlast : R (Fin.last n) (Fin.last n) = 0 := by
-    have hdet : Q.det * R.det = 0 := by rw [← Matrix.det_mul, hQR, hA, hs]
-    rw [mul_eq_zero, or_iff_right (Matrix.det_ne_zero_of_left_inverse hQQ),
+    have hdet : Q.det * R.det = 0 := by
+      rw [← Matrix.det_mul, show Q * R = A from givensHessenbergState_fst_mul_snd A (n + 1), hA, hs]
+    rw [mul_eq_zero, or_iff_right (Matrix.det_ne_zero_of_left_inverse
+      (hasOrthonormalCols_givensHessenbergQ A).conjTranspose_mul_self),
       Matrix.det_of_isUpperTriangular (fun i j h => hR i j h), Finset.prod_eq_zero_iff] at hdet
     obtain ⟨j, -, hj⟩ := hdet
     by_cases hjn : (j : ℕ) < n
     · exact absurd hj (hpiv j hjn)
     · rwa [show j = Fin.last n from Fin.ext (by simp; omega)] at hj
-  have hstep : shiftedQRStep H s = R * Q + s • 1 := by
-    change Qᴴ * H * Q = _
-    calc Qᴴ * H * Q = Qᴴ * (A + s • 1) * Q := by rw [hA, sub_add_cancel]
-      _ = (Qᴴ * Q) * R * Q + s • (Qᴴ * Q) := by
-        rw [← hQR]
-        simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
-          Matrix.mul_one, Matrix.mul_assoc]
-      _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
   refine ⟨⟨n - 1, by omega⟩, ?_⟩
-  rw [show (⟨n - 1, by omega⟩ : Fin n).succ = Fin.last n from Fin.ext (by simp; omega), hstep,
-    Matrix.add_apply, Matrix.smul_apply,
+  rw [show (⟨n - 1, by omega⟩ : Fin n).succ = Fin.last n from Fin.ext (by simp; omega),
+    shiftedQRStep_eq_mul_add_smul_one, Matrix.add_apply, Matrix.smul_apply,
     Matrix.one_apply_ne (fun h => by have := congrArg Fin.val h; simp at this; omega), smul_zero,
     add_zero, Matrix.mul_apply, Finset.sum_eq_zero fun l _ => ?_]
   · simp
   rcases lt_or_ge (l : ℕ) n with h | h
-  · rw [show R (Fin.last n) l = 0 from hR _ l (by simpa using h), zero_mul]
-  · rw [show l = Fin.last n from Fin.ext (by simp; omega), hlast, zero_mul]
+  · exact mul_eq_zero_of_left (hR _ l (by simpa using h)) _
+  · rw [show l = Fin.last n from Fin.ext (by simp; omega)]
+    exact mul_eq_zero_of_left hlast _
 
-/-- A unitary conjugation keeps the determinant of a shifted matrix. -/
-private theorem det_conj_sub_smul_eq (H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
-    (hQ : Qᴴ * Q = 1) (t : ℂ) :
-    (Qᴴ * H * Q - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det =
-      (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det := by
-  have hdet : Qᴴ.det * Q.det = 1 := by
-    rw [← Matrix.det_mul, hQ, Matrix.det_one]
-  have key : Qᴴ * H * Q - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) =
-      Qᴴ * (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * Q := by
-    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ]
-  rw [key, Matrix.det_mul, Matrix.det_mul]
-  calc Qᴴ.det * (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det * Q.det
-      = (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det * (Qᴴ.det * Q.det) := by ring
-    _ = _ := by rw [hdet, mul_one]
-
-/-- The determinant of a shifted single-shift step is that of the original matrix. -/
+/-- A unitary similarity keeps the determinant of a shifted matrix:
+$\det(\mathsf{shiftedQRStep}(\mathbf{H}, s) - t\mathbf{I}) = \det(\mathbf{H} - t\mathbf{I})$. -/
 private theorem det_shiftedQRStep_sub_smul (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (s t : ℂ) :
     (shiftedQRStep H s - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det =
       (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det := by
-  have hQ : (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)))ᴴ *
-      givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) = 1 :=
-    hasOrthonormalCols_givensHessenbergState_fst _ _
-  unfold shiftedQRStep
-  exact det_conj_sub_smul_eq H _ hQ t
+  set Q := givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))
+  have hQ : Qᴴ * Q = 1 := (hasOrthonormalCols_givensHessenbergQ _).conjTranspose_mul_self
+  change (Qᴴ * H * Q - t • 1).det = _
+  rw [show Qᴴ * H * Q - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) =
+      Qᴴ * (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * Q by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ],
+    Matrix.det_mul, Matrix.det_mul, mul_right_comm, ← Matrix.det_mul, hQ, Matrix.det_one, one_mul]
 
 /-- If the shift polynomial of a list of shifts is singular, one of its shifts is an eigenvalue. -/
 private theorem exists_mem_det_sub_smul_eq_zero_of_det_aeval
@@ -902,35 +816,13 @@ private theorem exists_mem_det_sub_smul_eq_zero_of_det_aeval
     (ss : List ℂ) (h : (Polynomial.aeval H (shiftPoly ss)).det = 0) :
     ∃ s ∈ ss, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 := by
   induction ss with
-  | nil =>
-    simp [shiftPoly] at h
+  | nil => simp [shiftPoly] at h
   | cons s ss ih =>
-    have hcons : Polynomial.aeval H (shiftPoly (s :: ss)) =
-        (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) *
-          Polynomial.aeval H (shiftPoly ss) := by
-      simp [shiftPoly, Algebra.algebraMap_eq_smul_one]
-    rw [hcons, Matrix.det_mul] at h
+    rw [show s :: ss = [s] ++ ss from rfl, shiftPoly_append, map_mul, Matrix.det_mul] at h
     rcases mul_eq_zero.mp h with h1 | h1
-    · exact ⟨s, List.mem_cons_self, h1⟩
+    · exact ⟨s, List.mem_cons_self, by simpa [shiftPoly, Algebra.algebraMap_eq_smul_one] using h1⟩
     · obtain ⟨t, ht, h2⟩ := ih h1
       exact ⟨t, List.mem_cons_of_mem _ ht, h2⟩
-
-/-- A singular shift in a list of shifts decouples the multi-shift step (induction on the list). -/
-private theorem isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero
-    {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n) :
-    ∀ ss : List ℂ, (∃ s ∈ ss, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0) →
-      IsDecoupled 0 (multiShiftedQRStep H ss)
-  | [], ⟨s, hs, _⟩ => by simp at hs
-  | s :: ss, ⟨t, ht, hdet⟩ => by
-    by_cases hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
-    · exact IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep
-        (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
-        (IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero hH hn hs) ss
-    · rcases List.mem_cons.mp ht with rfl | ht'
-      · exact absurd hdet hs
-      · exact isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero
-          (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s) hn ss
-          ⟨t, ht', by rw [det_shiftedQRStep_sub_smul]; exact hdet⟩
 
 /-- **A singular shift polynomial decouples exactly**: for upper Hessenberg $\mathbf{H}$ of size
 at least $2$ and shifts with $\det p(\mathbf{H}) = 0$, $p(z) = \prod_i (z - s_i)$, the step
@@ -941,7 +833,34 @@ theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n)
     {ss : List ℂ} (h : (Polynomial.aeval H (shiftPoly ss)).det = 0) :
     IsDecoupled 0 (multiShiftedQRStep H ss) := by
-  refine isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero hH hn ss
-    (exists_mem_det_sub_smul_eq_zero_of_det_aeval H ss h)
+  obtain ⟨t, ht, hdet⟩ := exists_mem_det_sub_smul_eq_zero_of_det_aeval H ss h
+  clear h
+  induction ss generalizing H with
+  | nil => simp at ht
+  | cons s ss ih =>
+    have hH' := hH.isUpperHessenberg_shiftedQRStep s
+    by_cases hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
+    · exact hH'.isDecoupled_zero_multiShiftedQRStep
+        (hH.isDecoupled_zero_shiftedQRStep_of_det_eq_zero hn hs) ss
+    · rcases List.mem_cons.mp ht with rfl | ht'
+      · exact absurd hdet hs
+      · exact ih hH' ht' (by rw [det_shiftedQRStep_sub_smul]; exact hdet)
+
+/-- **The potential after a degree $k$ step with one repeated shift**: for upper Hessenberg
+$\mathbf{H}$, $1 \le k \le n$ and a shift $r$ that is no eigenvalue,
+$$\psi_k(\widehat{\mathbf{H}})^k\,\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|
+\le 1\,,\qquad \widehat{\mathbf{H}} = \mathsf{multiShiftedQRStep}(\mathbf{H}, [r, \dots, r])\,.$$
+[BanksGarzaVargasSrivastava2021, Lemma 2.5], for $p(z) = (z - r)^k$. -/
+theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le
+    {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
+    (hkn : k ≤ n) {r : ℂ} (hr : (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det ≠ 0) :
+    hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k *
+      ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+        (Fin.last n))‖ ≤ 1 := by
+  have h := hH.hessenbergPotential_multiShiftedQRStep_pow_mul_le (ss := List.replicate k r)
+    (by simpa using hk) (by simpa using hkn) (by
+      rw [aeval_shiftPoly_replicate]
+      exact ((Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hr)).pow _)
+  rwa [List.length_replicate, aeval_shiftPoly_replicate, ← Matrix.inv_pow'] at h
 
 end NLAlib

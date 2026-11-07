@@ -34,39 +34,6 @@ namespace NLAlib
 
 variable {n : ℕ}
 
-/-- An eigenvalue of the diagonalization is at most the spectral norm. -/
-private theorem norm_le_specNorm_of_mul_eq_mul_diagonal
-    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
-    (hHV : H * V = V * Matrix.diagonal d) (i : Fin (n + 1)) : ‖d i‖ ≤ specNorm H := by
-  set x := V *ᵥ Pi.single i 1
-  have hx : H *ᵥ x = d i • x := by
-    rw [Matrix.mulVec_mulVec, hHV, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_smul]
-    congr 1
-    ext j
-    by_cases h : j = i
-    · subst h; simp [Matrix.mulVec_diagonal]
-    · simp [Matrix.mulVec_diagonal, Pi.single_eq_of_ne h]
-  have hx0 : WithLp.toLp 2 x ≠ 0 := by
-    intro h0
-    have h1 : x = V *ᵥ 0 := by
-      rw [Matrix.mulVec_zero]
-      exact congrArg WithLp.ofLp h0
-    have := congrFun (Matrix.mulVec_injective_iff_isUnit.mpr hV h1) i
-    simp at this
-  have h := norm_toLp_mulVec_le H x
-  rw [hx, WithLp.toLp_smul, norm_smul] at h
-  exact le_of_mul_le_mul_right h (norm_pos_iff.mpr hx0)
-
-/-- The modulus of the shift polynomial is the product of the distances to the shifts. -/
-private theorem norm_eval_shiftPoly (ss : List ℂ) (z : ℂ) :
-    ‖(shiftPoly ss).eval z‖ = (ss.map fun s => ‖z - s‖).prod := by
-  induction ss with
-  | nil => simp [shiftPoly]
-  | cons a l ih =>
-    simp only [shiftPoly, List.map_cons, List.prod_cons, Polynomial.eval_mul,
-      Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, norm_mul] at ih ⊢
-    rw [ih]
-
 /-- Perturbing the shifts one by one: if each perturbed factor is at most $C f(s)$, the perturbed
 shift polynomial is at most $C^k\prod f(s)$. -/
 private theorem norm_eval_shiftPoly_le_of_forall₂ {β C : ℝ} (hC : 0 ≤ C) {f : ℂ → ℝ}
@@ -111,6 +78,9 @@ theorem sum_lastRowWeights_mul_norm_eval_sq_sub_le {H V : Matrix (Fin (n + 1)) (
       (2 * (specNorm H + β) * (1 + 2 * c)) ^ (2 * ss.length) *
         ∑ i ∈ Finset.univ.filter (fun i => ∃ s ∈ ss, ‖d i - s‖ ≤ β / (2 * c)),
           lastRowWeights V i := by
+  -- `hgap` and `hβc` are not used by the proof; kept until the maintainer decides
+  have _ := hgap
+  have _ := hβc
   set K := ss.length
   set M := 2 * (specNorm H + β)
   have hc1 : 1 ≤ (1 + 2 * c) ^ (2 * K) := one_le_pow₀ (by linarith)
@@ -171,75 +141,6 @@ theorem sum_lastRowWeights_mul_norm_eval_sq_sub_le {H V : Matrix (Fin (n + 1)) (
         exact Finset.sum_le_sum fun i _ => (hpt i).trans_eq (add_comm _ _)
     _ = _ := by rw [← Finset.sum_filter, Finset.mul_sum]
 
-/-- A polynomial in a diagonalized matrix: $p(\mathbf{H}) = \mathbf{V}\operatorname{diag}(
-p(\mathbf{d}))\mathbf{V}^{-1}$. -/
-private theorem aeval_eq_mul_diagonal_mul_inv_of_mul_eq
-    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
-    (hHV : H * V = V * Matrix.diagonal d) (p : Polynomial ℂ) :
-    Polynomial.aeval H p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
-  have hpow : ∀ m : ℕ, H ^ m * V = V * Matrix.diagonal (fun i => d i ^ m) := by
-    intro m
-    induction m with
-    | zero => simp
-    | succ m ih =>
-      rw [pow_succ, Matrix.mul_assoc, hHV, ← Matrix.mul_assoc, ih, Matrix.mul_assoc,
-        Matrix.diagonal_mul_diagonal]
-      simp only [pow_succ]
-  have hmul : Polynomial.aeval H p * V = V * Matrix.diagonal (fun i => p.eval (d i)) := by
-    induction p using Polynomial.induction_on' with
-    | add p q hp hq =>
-      simp only [map_add, Matrix.add_mul, hp, hq, Polynomial.eval_add, ← Matrix.mul_add,
-        Matrix.diagonal_add]
-    | monomial m a =>
-      rw [Polynomial.aeval_monomial, Matrix.mul_assoc, hpow, ← Matrix.mul_assoc,
-        Algebra.commutes, Matrix.mul_assoc, Matrix.algebraMap_eq_diagonal,
-        Matrix.diagonal_mul_diagonal]
-      simp only [Polynomial.eval_monomial]
-      rfl
-  have hV' : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  rw [← hmul, Matrix.mul_assoc, Matrix.mul_nonsing_inv V hV', Matrix.mul_one]
-
-/-- The negative powers of a shifted diagonalized matrix, for a shift that is no eigenvalue. -/
-private theorem inv_sub_smul_one_pow_eq {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
-    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
-    (hr : ∀ i, d i ≠ r) (k : ℕ) :
-    (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k =
-      V * Matrix.diagonal (fun i => ((d i - r) ^ k)⁻¹) * V⁻¹ := by
-  have hV' : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hsub : H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) =
-      V * Matrix.diagonal (fun i => d i - r) * V⁻¹ := by
-    have := aeval_eq_mul_diagonal_mul_inv_of_mul_eq hV hHV (Polynomial.X - Polynomial.C r)
-    simpa [Algebra.algebraMap_eq_smul_one] using this
-  have hinv : (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ =
-      V * Matrix.diagonal (fun i => (d i - r)⁻¹) * V⁻¹ := by
-    refine Matrix.inv_eq_left_inv ?_
-    rw [hsub]
-    simp only [Matrix.mul_assoc]
-    rw [Matrix.nonsing_inv_mul_cancel_left _ _ hV', ← Matrix.mul_assoc (Matrix.diagonal _),
-      Matrix.diagonal_mul_diagonal]
-    rw [show (fun i => (d i - r)⁻¹ * (d i - r)) = fun _ => (1 : ℂ) from
-      funext fun i => inv_mul_cancel₀ (sub_ne_zero.mpr (hr i)), Matrix.diagonal_one,
-      Matrix.one_mul, Matrix.mul_nonsing_inv V hV']
-  rw [hinv]
-  induction k with
-  | zero => simp [Matrix.mul_nonsing_inv V hV']
-  | succ k ih =>
-    rw [pow_succ, ih]
-    simp only [Matrix.mul_assoc]
-    rw [Matrix.nonsing_inv_mul_cancel_left _ _ hV', ← Matrix.mul_assoc (Matrix.diagonal _),
-      Matrix.diagonal_mul_diagonal]
-    congr 3
-    funext i
-    rw [pow_succ, mul_inv]
-
-/-- The shift polynomial of the Ritz values is the characteristic polynomial of the trailing
-block. -/
-private theorem shiftPoly_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
-    shiftPoly (ritzValues k H) = (trailingBlock k H).charpoly := by
-  rw [shiftPoly, ritzValues, ← Multiset.prod_coe, ← Multiset.map_coe, Multiset.coe_toList]
-  exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq (Matrix.charpoly_monic _)
-    (IsAlgClosed.card_roots_eq_natDegree)
-
 /-- A member of the first list of `List.Forall₂` has a partner in the second. -/
 private theorem exists_mem_of_forall₂ {R : ℂ → ℂ → Prop} {l₁ l₂ : List ℂ}
     (h : List.Forall₂ R l₁ l₂) {a : ℂ} (ha : a ∈ l₁) : ∃ b ∈ l₂, R a b := by
@@ -280,13 +181,13 @@ private theorem sq_mul_pow_lt_mul_sum_lastRowWeights_filter
   set κ := pseudoConditionNumber V
   set ψ := hessenbergPotential k H
   set w := lastRowWeights V
-  have hψ0 : 0 ≤ ψ := Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  have hψ0 : 0 ≤ ψ := hessenbergPotential_nonneg _ _
   have hlenρ : (ritzValues k H).length = k := length_ritzValues k H
   have hlenr : rs.length = k := hclose.length_eq ▸ hlenρ
   have hA : θ ^ (2 * k) * ψ ^ (2 * k) <
       κ ^ 2 * ∑ i, w i * ‖(shiftPoly rs).eval (d i)‖ ^ 2 := by
     have h1 := norm_mul_diagonal_mul_inv_last_sq_le hV (fun i => (shiftPoly rs).eval (d i))
-    rw [← aeval_eq_mul_diagonal_mul_inv_of_mul_eq hV hHV] at h1
+    rw [← aeval_eq_mul_diagonal_mul_inv hV hHV] at h1
     have h2 : (θ * ψ) ^ k < ‖WithLp.toLp 2 (Polynomial.aeval H (shiftPoly rs) (Fin.last n))‖ := by
       unfold IsOptimalRitzValues at hopt
       push Not at hopt
@@ -298,18 +199,19 @@ private theorem sq_mul_pow_lt_mul_sum_lastRowWeights_filter
       κ ^ 2 * ψ ^ (2 * k) := by
     have h1 := sum_lastRowWeights_mul_sq_le hV
       (fun i => (shiftPoly (ritzValues k H)).eval (d i))
-    rw [← aeval_eq_mul_diagonal_mul_inv_of_mul_eq hV hHV, shiftPoly_ritzValues,
+    rw [← aeval_eq_mul_diagonal_mul_inv hV hHV, shiftPoly_ritzValues,
       hH.norm_aeval_charpoly_trailingBlock_eq hk hkn] at h1
     rw [shiftPoly_ritzValues]
     calc _ ≤ κ ^ 2 * (ψ ^ k) ^ 2 := h1
       _ = κ ^ 2 * ψ ^ (2 * k) := by rw [← pow_mul, mul_comm k 2]
   have hC := sum_lastRowWeights_mul_norm_eval_sq_sub_le hV hHV hgap hc hβ hβc hclose
     (fun s hs => norm_le_specNorm_of_mem_ritzValues (by omega) hs)
-  have hK : 0 < 2 * κ ^ 4 := by positivity
+  have hK : 0 < 2 * κ ^ 4 := mul_pos two_pos (pow_pos (by linarith) 4)
   rw [hlenρ, h2c, mul_pow, div_pow, hx2k, div_mul_eq_mul_div, mul_div_assoc',
     div_mul_eq_mul_div, sub_le_iff_le_add, ← add_div, le_div_iff₀ hK] at hC
   have h3 := mul_le_mul_of_nonneg_left hB (by positivity : (0 : ℝ) ≤ θ ^ (2 * k))
-  have h4 := mul_lt_mul_of_pos_left hA (by positivity : (0 : ℝ) < 2 * κ ^ 2)
+  have h4 := mul_lt_mul_of_pos_left hA (mul_pos two_pos (pow_pos (by linarith) 2) :
+    (0 : ℝ) < 2 * κ ^ 2)
   have h5 : κ ^ 2 * θ ^ (2 * k) * ψ ^ (2 * k) < (2 * (specNorm H + β)) ^ (2 * k) *
       θ ^ (2 * k) * ∑ i ∈ Finset.univ.filter
         (fun i => ∃ s ∈ ritzValues k H, ‖d i - s‖ ≤ β / (2 * c)), w i := by
@@ -437,12 +339,12 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
   have hx2k : x ^ (2 * k) = 2 * κ ^ 4 := by
     rw [hx_def, show (2 * k : ℝ) = ((2 * k : ℕ) : ℝ) by push_cast; ring]
     exact Real.rpow_inv_natCast_pow (by positivity) (by omega)
-  have hψ0 : 0 ≤ ψ := Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  have hψ0 : 0 ≤ ψ := hessenbergPotential_nonneg _ _
   -- the shifts `rs` are no eigenvalues
   have hdr : ∀ r ∈ rs, ∀ i, d i ≠ r := by
     intro r hr i hi
     apply hdet r hr
-    have := aeval_eq_mul_diagonal_mul_inv_of_mul_eq hV hHV (Polynomial.X - Polynomial.C r)
+    have := aeval_eq_mul_diagonal_mul_inv hV hHV (Polynomial.X - Polynomial.C r)
     simp only [map_sub, Polynomial.aeval_X, Polynomial.aeval_C,
       Algebra.algebraMap_eq_smul_one] at this
     rw [this, Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
@@ -469,8 +371,9 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
     linarith only [this, hjρ, hρr]
   -- the weight of `d j` is at most `κ² N² δ^{2k}`
   have hwj : lastRowWeights V j ≤ κ ^ 2 * N ^ 2 * δ ^ (2 * k) := by
-    have h1 := sum_lastRowWeights_mul_sq_le hV (fun i => ((d i - r) ^ k)⁻¹)
-    rw [← inv_sub_smul_one_pow_eq hV hHV (fun i => hdr r hr i)] at h1
+    have h1 := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - r)⁻¹ ^ k)
+    rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV (fun i => hdr r hr i)] at h1
+    simp only [inv_pow] at h1
     have h2 := (Finset.single_le_sum (fun i _ => mul_nonneg (lastRowWeights_nonneg V i)
       (sq_nonneg ‖((d i - r) ^ k)⁻¹‖)) (Finset.mem_univ j)).trans h1
     rw [norm_inv, norm_pow, inv_pow, ← pow_mul, ← div_eq_mul_inv,

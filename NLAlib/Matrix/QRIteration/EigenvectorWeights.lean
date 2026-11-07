@@ -15,13 +15,22 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 For an invertible eigenvector matrix $\mathbf{V}$ of a diagonalizable $\mathbf{H}$, the weights
 $$w_i = \frac{\lvert\mathbf{V}_{n,i}\rvert^2}{\|\mathbf{e}_n^{\mathsf{H}}\mathbf{V}\|^2}$$
 form a probability vector on the eigenvalues. Sums against them are the "approximate functional
-calculus" of [BanksGarzaVargasSrivastava2021, Definition 4.1]: the law of the random variable
-$Z_{\mathbf{H}}$ there, written as finite weighted sums here. For normal $\mathbf{H}$ and unitary
-$\mathbf{V}$ it is the spectral measure of $\mathbf{H}$ at $\mathbf{e}_n$.
+calculus" of [BanksGarzaVargasSrivastava2021]: the law of the random variable $Z_{\mathbf{H}}$
+there, written as finite weighted sums here. For every $\mathbf{g}$, the last row of
+$\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1}$ and the weighted second moment of
+$\mathbf{g}$ agree up to the factor $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ in each direction.
+For normal $\mathbf{H}$ and unitary $\mathbf{V}$ the weights are the spectral measure of
+$\mathbf{H}$ at $\mathbf{e}_n$.
 
 ## Main definitions
 
 * `NLAlib.lastRowWeights`.
+
+## Main results
+
+* `NLAlib.lastRowWeights_nonneg`, `NLAlib.sum_lastRowWeights`: a probability vector.
+* `NLAlib.sum_lastRowWeights_mul_sq_le`, `NLAlib.norm_mul_diagonal_mul_inv_last_sq_le`: the two
+  sides of the approximate functional calculus.
 -/
 
 @[expose] public section
@@ -49,26 +58,46 @@ theorem lastRowWeights_nonneg (V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (i : 
   unfold lastRowWeights
   positivity
 
+/-- The last row of an invertible matrix is not zero. -/
+private theorem norm_toLp_last_ne_zero {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hV : IsUnit V) : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≠ 0 := by
+  refine norm_ne_zero_iff.mpr fun h => not_isUnit_zero (M₀ := ℂ) ?_
+  rw [← Matrix.det_eq_zero_of_row_eq_zero (Fin.last n)
+    (fun j => by simpa using congrFun (congrArg WithLp.ofLp h) j)]
+  exact (Matrix.isUnit_iff_isUnit_det V).mp hV
+
 /-- **The last-row weights of an invertible matrix sum to one**: for invertible $\mathbf{V}$,
 $\sum_i \lvert\mathbf{V}_{n,i}\rvert^2 / \|\mathbf{e}_n^{\mathsf{H}}\mathbf{V}\|^2 = 1$. -/
 theorem sum_lastRowWeights {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hV : IsUnit V) :
     ∑ i, lastRowWeights V i = 1 := by
-  have hrow : V (Fin.last n) ≠ 0 := by
-    intro h
-    have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
-    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
-    exact not_isUnit_zero hdet
-  have hne : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
-    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
-      intro h
-      apply hrow
-      simpa using congrArg WithLp.ofLp h
-    have := norm_ne_zero_iff.mpr this
-    positivity
   unfold lastRowWeights
-  have hsum : ∑ i, ‖V (Fin.last n) i‖ ^ 2 = ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 := by
-    rw [EuclideanSpace.norm_sq_eq]
-  rw [← Finset.sum_div, hsum, div_self hne]
+  rw [← Finset.sum_div, div_eq_one_iff_eq (pow_ne_zero 2 (norm_toLp_last_ne_zero hV)),
+    EuclideanSpace.norm_sq_eq]
+
+/-- A row vector times a matrix: $\|\mathbf{u}^{\mathsf{T}}\mathbf{A}\| \le
+\|\mathbf{A}\|_2\|\mathbf{u}\|$. -/
+private theorem norm_toLp_vecMul_le (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
+    (u : Fin (n + 1) → ℂ) :
+    ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
+  simpa [specNorm_transpose, Matrix.mulVec_transpose] using norm_toLp_mulVec_le Aᵀ u
+
+/-- The last row of $\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1}$ is
+$\mathbf{y}^{\mathsf{T}}\mathbf{V}^{-1}$ with $\mathbf{y}_k = \mathbf{V}_{n,k}\mathbf{g}_k$,
+and $\|\mathbf{y}\|^2 =
+\|\mathbf{e}_n^{\mathsf{H}}\mathbf{V}\|^2\sum_i w_i\lvert\mathbf{g}_i\rvert^2$. -/
+private theorem lastRow_mul_diagonal_mul_inv {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hV : IsUnit V) (g : Fin (n + 1) → ℂ) :
+    (V * Matrix.diagonal g * V⁻¹) (Fin.last n) = (fun k => V (Fin.last n) k * g k) ᵥ* V⁻¹ ∧
+      ‖WithLp.toLp 2 (fun k => V (Fin.last n) k * g k)‖ ^ 2 =
+        ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 * ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 := by
+  refine ⟨by
+    ext j; simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Matrix.diagonal_apply, mul_assoc], ?_⟩
+  have hn := norm_toLp_last_ne_zero hV
+  rw [EuclideanSpace.norm_sq_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  unfold lastRowWeights
+  simp only [norm_mul, mul_pow]
+  field_simp
 
 /-- **Approximate functional calculus, upper bound on the moment**: for invertible $\mathbf{V}$
 with last-row weights $w$ and every $\mathbf{g}$,
@@ -77,65 +106,32 @@ $$\sum_i w_i\lvert\mathbf{g}_i\rvert^2 \le \bigl(\|\mathbf{V}\|_2\|\mathbf{V}^{-
 With $\mathbf{H} = \mathbf{V}\operatorname{diag}(\mathbf{d})\mathbf{V}^{-1}$ and
 $\mathbf{g} = f(\mathbf{d})$: $\mathbb{E}\lvert f(Z_{\mathbf{H}})\rvert^2 \le
 \kappa_V^2\|\mathbf{e}_n^{\mathsf{H}}f(\mathbf{H})\|^2$. [BanksGarzaVargasSrivastava2021,
-Lemma 4.2], the right inequality. -/
+Lemma 4.2], the right inequality; there $\mathbf{V}$ is normalised and $f$ arbitrary. -/
 theorem sum_lastRowWeights_mul_sq_le {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hV : IsUnit V)
     (g : Fin (n + 1) → ℂ) :
     ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 ≤
       pseudoConditionNumber V ^ 2 *
         ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 := by
-  have vm : ∀ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (u : Fin (n + 1) → ℂ),
-      ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
-    intro A u
-    have h := norm_toLp_mulVec_le Aᵀ u
-    rwa [specNorm_transpose, Matrix.mulVec_transpose] at h
   have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hinv : V⁻¹ * V = 1 := Matrix.nonsing_inv_mul V hdet
-  have hinv' : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
-  have hrow : V (Fin.last n) ≠ 0 := by
-    intro h
-    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
-    exact not_isUnit_zero hdet
-  have hD : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
-    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
-      intro h; apply hrow; simpa using congrArg WithLp.ofLp h
-    have := norm_ne_zero_iff.mpr this
-    positivity
-  set D := ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 with hDdef
-  set T := ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 with hTdef
-  have hT : 0 ≤ T :=
+  obtain ⟨hrow, hS⟩ := lastRow_mul_diagonal_mul_inv hV g
+  set y : Fin (n + 1) → ℂ := fun k => V (Fin.last n) k * g k
+  have hT : 0 ≤ ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 :=
     Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (sq_nonneg _)
-  -- the last row of `V` is `e ᵥ* V`
-  set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he_def
-  have hr : e ᵥ* V = V (Fin.last n) := by
-    ext j; simp [he_def, Matrix.vecMul, dotProduct, Pi.single_apply]
-  have he1 : ‖WithLp.toLp 2 e‖ = 1 := by simp [he_def]
-  set y : Fin (n + 1) → ℂ := fun k => V (Fin.last n) k * g k with hy_def
-  have hrowW : (V * Matrix.diagonal g * V⁻¹) (Fin.last n) = y ᵥ* V⁻¹ := by
-    ext j
-    simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Matrix.diagonal_apply, hy_def,
-      mul_assoc]
-  have hS : ‖WithLp.toLp 2 y‖ ^ 2 = D * T := by
-    rw [EuclideanSpace.norm_sq_eq, hDdef, hTdef, Finset.mul_sum]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    unfold lastRowWeights
-    have hn : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≠ 0 := fun h => hD (by rw [hDdef, h]; ring)
-    simp [hy_def, mul_pow]
-    field_simp
-  have hyV : (y ᵥ* V⁻¹) ᵥ* V = y := by rw [Matrix.vecMul_vecMul, hinv, Matrix.vecMul_one]
+  -- `‖y‖ ≤ ‖V‖₂ ‖yᵀV⁻¹‖`, and `1 = ‖e_nᴴ V V⁻¹‖ ≤ ‖V⁻¹‖₂ ‖e_nᴴ V‖`
   have hsq : ‖WithLp.toLp 2 y‖ ^ 2 ≤
       specNorm V ^ 2 * ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 := by
-    rw [hrowW, ← mul_pow]
+    rw [hrow, ← mul_pow]
     refine pow_le_pow_left₀ (norm_nonneg _) ?_ 2
-    have := vm V (y ᵥ* V⁻¹)
-    rwa [hyV] at this
-  have hone : (1 : ℝ) ≤ specNorm V⁻¹ ^ 2 * D := by
-    have h := vm V⁻¹ (V (Fin.last n))
-    have hrV : (V (Fin.last n)) ᵥ* V⁻¹ = e := by
-      rw [← hr, Matrix.vecMul_vecMul, hinv', Matrix.vecMul_one]
-    rw [hrV, he1] at h
-    have := pow_le_pow_left₀ zero_le_one h 2
-    rw [mul_pow, one_pow] at this
-    exact this
+    simpa [Matrix.vecMul_vecMul, Matrix.nonsing_inv_mul V hdet] using
+      norm_toLp_vecMul_le V (y ᵥ* V⁻¹)
+  have hone : (1 : ℝ) ≤ specNorm V⁻¹ ^ 2 * ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 := by
+    have h := norm_toLp_vecMul_le V⁻¹ (V (Fin.last n))
+    have hr : V (Fin.last n) ᵥ* V⁻¹ = Pi.single (Fin.last n) 1 := by
+      rw [show V (Fin.last n) = Pi.single (Fin.last n) 1 ᵥ* V from
+          (Matrix.single_one_vecMul (Fin.last n) V).symm, Matrix.vecMul_vecMul,
+        Matrix.mul_nonsing_inv V hdet, Matrix.vecMul_one]
+    rw [hr, PiLp.toLp_single, PiLp.norm_single, norm_one] at h
+    simpa [mul_pow] using pow_le_pow_left₀ zero_le_one h 2
   rw [pseudoConditionNumber_of_isUnit hV, mul_pow]
   nlinarith [mul_le_mul_of_nonneg_left hone hT,
     mul_le_mul_of_nonneg_left hsq (sq_nonneg (specNorm V⁻¹))]
@@ -149,49 +145,18 @@ theorem norm_mul_diagonal_mul_inv_last_sq_le {V : Matrix (Fin (n + 1)) (Fin (n +
     (hV : IsUnit V) (g : Fin (n + 1) → ℂ) :
     ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 ≤
       pseudoConditionNumber V ^ 2 * ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 := by
-  have vm : ∀ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (u : Fin (n + 1) → ℂ),
-      ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
-    intro A u
-    have h := norm_toLp_mulVec_le Aᵀ u
-    rwa [specNorm_transpose, Matrix.mulVec_transpose] at h
-  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hrow : V (Fin.last n) ≠ 0 := by
-    intro h
-    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
-    exact not_isUnit_zero hdet
-  have hD : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
-    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
-      intro h; apply hrow; simpa using congrArg WithLp.ofLp h
-    have := norm_ne_zero_iff.mpr this
-    positivity
-  set D := ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 with hDdef
-  set T := ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 with hTdef
-  have hT : 0 ≤ T :=
+  obtain ⟨hrow, hS⟩ := lastRow_mul_diagonal_mul_inv hV g
+  have hT : 0 ≤ ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 :=
     Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (sq_nonneg _)
-  set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he_def
-  have hr : e ᵥ* V = V (Fin.last n) := by
-    ext j; simp [he_def, Matrix.vecMul, dotProduct, Pi.single_apply]
-  have he1 : ‖WithLp.toLp 2 e‖ = 1 := by simp [he_def]
-  have hrowle : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≤ specNorm V := by
-    have h := vm V e
-    rwa [hr, he1, mul_one] at h
-  have hDle : D ≤ specNorm V ^ 2 := pow_le_pow_left₀ (norm_nonneg _) hrowle 2
-  set y : Fin (n + 1) → ℂ := fun k => V (Fin.last n) k * g k with hy_def
-  have hrowW : (V * Matrix.diagonal g * V⁻¹) (Fin.last n) = y ᵥ* V⁻¹ := by
-    ext j
-    simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Matrix.diagonal_apply, hy_def,
-      mul_assoc]
-  have hS : ‖WithLp.toLp 2 y‖ ^ 2 = D * T := by
-    rw [EuclideanSpace.norm_sq_eq, hDdef, hTdef, Finset.mul_sum]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    unfold lastRowWeights
-    have hn : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≠ 0 := fun h => hD (by rw [hDdef, h]; ring)
-    simp [hy_def, mul_pow]
-    field_simp
-  have hL := vm V⁻¹ y
-  rw [← hrowW] at hL
-  have hL2 := pow_le_pow_left₀ (norm_nonneg _) hL 2
-  rw [mul_pow, hS] at hL2
+  -- `‖e_nᴴ V‖ ≤ ‖V‖₂`
+  have hDle : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≤ specNorm V ^ 2 := by
+    refine pow_le_pow_left₀ (norm_nonneg _) ?_ 2
+    have h := norm_toLp_vecMul_le V (Pi.single (Fin.last n) 1)
+    rw [Matrix.single_one_vecMul, PiLp.toLp_single, PiLp.norm_single, norm_one, mul_one] at h
+    exact h
+  have hL := pow_le_pow_left₀ (norm_nonneg _)
+    (norm_toLp_vecMul_le V⁻¹ (fun k => V (Fin.last n) k * g k)) 2
+  rw [← hrow, mul_pow, hS] at hL
   rw [pseudoConditionNumber_of_isUnit hV, mul_pow]
   nlinarith [mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hDle hT)
     (sq_nonneg (specNorm V⁻¹))]

@@ -208,18 +208,12 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
   set p : Polynomial ℂ := (Polynomial.X - Polynomial.C r) ^ k with hpdef
   have hkpos : 0 < k := List.length_pos_of_mem hr.1
   have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hkpos.ne'
-  have hκ0 : 0 ≤ κ := mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
+  have hκ0 : 0 ≤ κ := pseudoConditionNumber_nonneg V
   have hdr : ∀ i, d i ≠ r := fun i => hd i r hr.1
   have hpeval : ∀ i, p.eval (d i) = (d i - r) ^ k := fun i => by
     simp [hpdef]
   have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
     rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hdr i))
-  have hunit : IsUnit (Polynomial.aeval H p) := by
-    rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
-    exact (hV.mul (Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun i =>
-      isUnit_iff_ne_zero.mpr (hnz i)))).mul
-      ((Matrix.isUnit_iff_isUnit_det _).mpr (by
-        rw [Matrix.det_nonsing_inv]; exact ((Matrix.isUnit_iff_isUnit_det V).mp hV).ringInverse))
   have hinv := inv_aeval_eq_mul_diagonal_mul_inv hV hHV hnz
   have hsq := sum_lastRowWeights_mul_sq_le hV (fun i => (p.eval (d i))⁻¹)
   rw [← hinv] at hsq
@@ -250,7 +244,7 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
     refine lt_of_le_of_ne (mul_nonneg hκ0 hM0) fun h0 => ?_
     rw [← h0, zero_mul] at hone; norm_num at hone
   have hE : 0 < E := by
-    by_contra h; push_neg at h; nlinarith [hone, hκM]
+    by_contra! h; nlinarith [hone, hκM]
   have hsub : Finset.univ.filter (fun i => t * E < x i) ⊆
       Finset.univ.filter (fun i => ‖d i - r‖ ≤ α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ) := by
     intro i hi
@@ -401,37 +395,9 @@ theorem norm_sub_le_of_mem_squareGrid {c s : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (h
   rw [add_sub_cancel_left, norm_mul, Complex.norm_real, Real.norm_of_nonneg hR]
   nlinarith [mul_le_mul_of_nonneg_left hnorm hR]
 
-private theorem sub_smul_one_mul_eq_mul_diagonal_sub
-    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ}
-    (hHV : H * V = V * Matrix.diagonal d) (s : ℂ) :
-    (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * V =
-      V * Matrix.diagonal (fun j => d j - s) := by
-  rw [Matrix.sub_mul, hHV, Matrix.smul_mul, Matrix.one_mul]
-  ext a b
-  by_cases hab : a = b <;> simp [hab, mul_sub, mul_comm]
-
-private theorem inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv
-    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
-    (hHV : H * V = V * Matrix.diagonal d) {s : ℂ} (hs : ∀ i, d i ≠ s) (k : ℕ) :
-    (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k =
-      V * Matrix.diagonal (fun i => (d i - s)⁻¹ ^ k) * V⁻¹ := by
-  have hVd : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
-  have hinv : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ =
-      V * Matrix.diagonal (fun i => (d i - s)⁻¹) * V⁻¹ := by
-    apply Matrix.inv_eq_right_inv
-    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, sub_smul_one_mul_eq_mul_diagonal_sub hHV,
-      Matrix.mul_assoc V, Matrix.diagonal_mul_diagonal]
-    rw [show (fun i => (d i - s) * (d i - s)⁻¹) = fun _ => (1 : ℂ) from
-      funext fun i => mul_inv_cancel₀ (sub_ne_zero.mpr (hs i)), Matrix.diagonal_one,
-      Matrix.mul_one, Matrix.mul_nonsing_inv _ hVd]
-  induction k with
-  | zero => simp [Matrix.mul_nonsing_inv _ hVd]
-  | succ k ih =>
-    rw [pow_succ, ih, hinv]
-    simp only [Matrix.mul_assoc, Matrix.nonsing_inv_mul_cancel_left _ _ hVd]
-    rw [← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
-    simp only [pow_succ]
-
+/-- Averaging over a finite set $G$ of shifts covering the eigenvalues indexed by $S$ within
+$\rho$: some $s \in G$ has
+$\sum_{i \in S} w_i/\rho^k \le \lvert G\rvert\sum_i w_i/\lvert\mathbf{d}_i - s\rvert^k$. -/
 private theorem exists_mem_sum_div_pow_le_card_mul_sum {G : Finset ℂ}
     {S : Finset (Fin (n + 1))} {w : Fin (n + 1) → ℝ} {d : Fin (n + 1) → ℂ} {ρ : ℝ} {k : ℕ}
     (hw : ∀ i, 0 ≤ w i) (hG : G.Nonempty) (hd : ∀ i, ∀ s ∈ G, d i ≠ s)
@@ -458,6 +424,8 @@ private theorem exists_mem_sum_div_pow_le_card_mul_sum {G : Finset ℂ}
       exact h1)
   exact ⟨s, hs, (div_le_iff₀' hc).mp hle⟩
 
+/-- The exceptional spacing $\varepsilon$ lies in $(0, 1]$ and satisfies
+$\varepsilon^{2k} = \varepsilon^2\bigl((\xi(1-\gamma))^k/(14B^4(\alpha\theta)^{2k})\bigr)^2$. -/
 private theorem exceptionalSpacing_pos_and_le_one_and_pow {k : ℕ} {B θ α γ ξ : ℝ}
     (hk : 2 ≤ k) (hB1 : 1 ≤ B) (hθ : 1 ≤ θ) (hα : 1 ≤ α) (hγ0 : 0 < γ) (hγ1 : γ < 1)
     (hξ0 : 0 < ξ) (hξ1 : ξ ≤ 1) :
@@ -491,6 +459,9 @@ private theorem exceptionalSpacing_pos_and_le_one_and_pow {k : ℕ} {B θ α γ 
   congr 1
   omega
 
+/-- The arithmetic of the averaging step of the exceptional shifts: the weight bound, the
+averaging over at most $12/\varepsilon^2$ grid points and the moment bound at the chosen
+point give $1 \le ((1 - \gamma)\psi)^k x$. -/
 private theorem one_le_pow_mul_of_le_card_mul_sum {k : ℕ} {B θ α ξ γ ψ ε x P N f : ℝ}
     (hk : 0 < k) (hB : 0 < B) (hθ : 0 < θ) (hα : 0 < α) (hξ : 0 < ξ) (hγ1 : γ < 1)
     (hψ : 0 < ψ) (hx : 0 ≤ x) (hε0 : 0 < ε)
@@ -557,18 +528,13 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
   set ψ := hessenbergPotential k H with hψ_def
   set R := exceptionalRadius k B θ α ψ with hR_def
   set ε := exceptionalSpacing k B θ α (ξ * (1 - γ)) with hε_def
-  have hVd : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
   by_cases hG : ∃ s ∈ squareGrid r R ε,
       (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
   · obtain ⟨s, hs, h⟩ := hG
     exact ⟨s, hs, Or.inl h⟩
   have hdG : ∀ i, ∀ s ∈ squareGrid r R ε, d i ≠ s := by
     rintro i s hs rfl
-    refine hG ⟨d i, hs, ?_⟩
-    have h := congrArg Matrix.det (sub_smul_one_mul_eq_mul_diagonal_sub hHV (d i))
-    rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
-      Finset.prod_eq_zero (Finset.mem_univ i) (sub_self _), mul_zero] at h
-    exact (mul_eq_zero.mp h).resolve_right hVd.ne_zero
+    exact hG ⟨d i, hs, det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal hV hHV i⟩
   have hB1 : 1 ≤ B := (one_le_pseudoConditionNumber hV.ne_zero).trans hB
   obtain ⟨hε0, hε1, hε2k⟩ := exceptionalSpacing_pos_and_le_one_and_pow hk hB1 hθ hα hγ0 hγ1 hξ0 hξ1
   have hR0 : 0 < R := by rw [hR_def, exceptionalRadius]; positivity
@@ -629,20 +595,6 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
 
 /-! ### One iteration and the decoupling theorem -/
 
-private theorem det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal
-    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
-    (hHV : H * V = V * Matrix.diagonal d) (i : Fin (n + 1)) :
-    (H - d i • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 := by
-  have h : (H - d i • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * V =
-      V * Matrix.diagonal (fun j => d j - d i) := by
-    rw [Matrix.sub_mul, hHV, Matrix.smul_mul, Matrix.one_mul]
-    ext a b
-    by_cases hab : a = b <;> simp [hab, mul_sub, mul_comm]
-  have hdet := congrArg Matrix.det h
-  rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
-    Finset.prod_eq_zero (Finset.mem_univ i) (sub_self _), mul_zero] at hdet
-  exact (mul_eq_zero.mp hdet).resolve_right ((Matrix.isUnit_iff_isUnit_det V).mp hV).ne_zero
-
 /-- **One iteration of $\mathrm{Sh}_{k,B}$ decouples or reduces the potential**: let
 $\mathbf{H}$ be upper Hessenberg with $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$, $\mathbf{V}$ invertible and $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$; let
@@ -663,10 +615,6 @@ theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
         (1 - γ) * hessenbergPotential (2 ^ m) H := by
   have hk0 : 0 < 2 ^ m := by positivity
   have hn : 0 < n := hk0.trans_le hmn
-  have haeval : ∀ s : ℂ, Polynomial.aeval H (shiftPoly (List.replicate (2 ^ m) s)) =
-      (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) ^ (2 ^ m) := by
-    intro s
-    simp [shiftPoly, List.map_replicate, List.prod_replicate, Algebra.algebraMap_eq_smul_one]
   change IsShiftSuccess γ (2 ^ m) H (shqrShift B θ α γ m H ss)
   by_cases hdec : IsDecoupled 0 H
   · exact Or.inl (hH.isDecoupled_zero_multiShiftedQRStep hdec _)
@@ -674,17 +622,8 @@ theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
     by_contra h
     exact hdec (isDecoupled_of_hessenbergPotential_le hk0 hmn le_rfl (by simpa using not_lt.mp h))
   -- the potential after the step with shift `s` is at most `τ`
-  have hτ : ∀ s : ℂ, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det ≠ 0 →
-      hessenbergPotential (2 ^ m) (multiShiftedQRStep H (List.replicate (2 ^ m) s)) ^ (2 ^ m) *
-        ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ (2 ^ m))
-          (Fin.last n))‖ ≤ 1 := by
-    intro s hs
-    have hu : IsUnit (Polynomial.aeval H (shiftPoly (List.replicate (2 ^ m) s))) := by
-      rw [haeval]
-      exact ((Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hs)).pow _
-    have := hH.hessenbergPotential_multiShiftedQRStep_pow_mul_le (by simp [hk0])
-      (by simpa using hmn) hu
-    rwa [List.length_replicate, haeval, ← Matrix.inv_pow'] at this
+  have hτ := fun (s : ℂ) (hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det ≠ 0) =>
+    hH.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le hk0 hmn hs
   have hsucc : ∀ s : ℂ, ((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 ∨
       1 ≤ ((1 - γ) * hessenbergPotential (2 ^ m) H) ^ (2 ^ m) *
         ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ (2 ^ m))
@@ -693,14 +632,14 @@ theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
     by_cases hdet : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
     · left
       apply hH.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero hn
-      rw [haeval, Matrix.det_pow, hdet, zero_pow hk0.ne']
+      rw [aeval_shiftPoly_replicate, Matrix.det_pow, hdet, zero_pow hk0.ne']
     right
     have h1 := hs.resolve_left hdet
     have hx : 0 < ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^
         (2 ^ m)) (Fin.last n))‖ :=
       (norm_nonneg _).lt_of_ne fun h => by rw [← h, mul_zero] at h1; linarith
     have h0 : 0 ≤ hessenbergPotential (2 ^ m) (multiShiftedQRStep H (List.replicate (2 ^ m) s)) :=
-      Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+    hessenbergPotential_nonneg _ _
     exact (pow_le_pow_iff_left₀ h0 (mul_nonneg (by linarith) hψ.le) hk0.ne').mp
       (le_of_mul_le_mul_right ((hτ s hdet).trans h1) hx)
   by_cases hdet : ∃ r ∈ ss, (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
@@ -803,7 +742,7 @@ theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
       IsDecoupled δ (shqrIterate B θ α γ m ritz H₀ t) := by
   have hk0 : 0 < 2 ^ m := by positivity
   have hψ0 : 0 ≤ hessenbergPotential (2 ^ m) H₀ :=
-    Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+    hessenbergPotential_nonneg _ _
   -- until an iterate is reduced, the potential decays geometrically
   have key : ∀ t, (∃ t' ≤ t, IsDecoupled 0 (shqrIterate B θ α γ m ritz H₀ t')) ∨
       hessenbergPotential (2 ^ m) (shqrIterate B θ α γ m ritz H₀ t) ≤
