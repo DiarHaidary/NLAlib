@@ -159,7 +159,27 @@ theorem eighLoc_append_singleton :
       eighLoc M N signFuel R₀ β d lo x (a ++ [b]) =
         (eighLoc M N signFuel R₀ β d lo x a).bind fun z =>
           eighLoc M N signFuel R₀ β (d + a.length) z.1 z.2 [b] := by
-  sorry
+  intro a
+  induction a with
+  | nil => intro b d lo x; simp [eighLoc]
+  | cons c a ih =>
+    intro b d lo x
+    cases hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) with
+    | leaf U e => simp [eighLoc, hs]
+    | shift b' A' σ =>
+      by_cases hc : c = b'
+      · subst hc
+        simp only [List.cons_append, eighLoc, hs, eq_self_iff_true, if_true, ite_true, ih,
+          List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
+      · simp [eighLoc, hs, hc]
+    | split kp h' Qp Qm Ap Am σ =>
+      cases c
+      · simp only [List.cons_append, eighLoc, hs, Bool.false_eq_true, if_false, ih,
+          List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
+      · simp only [List.cons_append, eighLoc, hs, if_true, ih, List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
 
 /-- **The nodes at a depth lie in $[0, N)$ and are not empty**: a node that `NLAlib.eighLoc` reaches
 from a root of size $N \ge 1$ at slot $0$ has size at least $1$ and its range $[lo, lo + k)$ inside
