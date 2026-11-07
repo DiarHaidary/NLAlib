@@ -2133,62 +2133,6 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
   rw [exec_seq_skip] at h₅
   exact ⟨s₅, h₅⟩
 
-/-- **A split writes the outcome of `NLAlib.eighStep`'s split**: if the kernels of `I` are the
-routines `mmR`, `qrR` on interleaved pairs, a successful run of `NLAlib.eighSplitBlock` at the slot
-$lo$ of depth $d$ for a node of size $k$ (with $lo + k \le n$) whose matrix $\mathbf{A}$ is held at
-its block of `Ma`, with $0 < k_+ < k$, the projectors $\mathbf{P}_\pm$ at offset $0$ of `Pp`, `Pm`,
-the level's Gaussian words in `Sg`, and the cells `one`, `two`, `sg`, `nsg` holding the machine's
-one, $\mathrm{fl}(2)$, $\sigma$ and $-\sigma$, ends with: $\mathbf{Q}_+ =$
-`NLAlib.deflate M kp Pp G₊` and $\mathbf{Q}_-$ packed at the node's block of `Qa`, the compressions
-of `NLAlib.eighStep` at the blocks of the slots $lo$ and $lo + k_+$ of depth $d + 1$ in `Ma`, the
-sizes $k_+$ and $k - k_+$ in their cells of `Sz`, the kind $4$ and $k_+$ in the node's cells of `Kd`
-and `Kp`; every other cell of the arenas is unchanged ($M$ = `NLAlib.eighTapeMachine I p mmR qrR`,
-the test matrices those of the node's samples, `NLAlib.eighTapeSample`). No printed source.
-Proof: `NLAlib.Computation.exec_alloc` eight times and `NLAlib.Computation.exec_run_bind`; the
-stored $\sqrt{1/2}$ by two instructions (`NLAlib.Computation.ScalarSem.sqrtHalf`, read off their
-successful runs, `Option.getD_some`); `NLAlib.holds_of_exec_eighDeflateBlock` twice,
-`NLAlib.holds_of_exec_eighCompressBlock` twice (the blocks of the slots $lo$, $lo + k_+$ of depth
-$d + 1$ are disjoint from each other and from depth $d$, `NLAlib.eighBlockOff`, since
-$k_+^2 \le k_+ n$), four `NLAlib.Computation.exec_seq_instr_litIdx`; the pops keep the frame. M,
-about 90 lines. -/
-theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k kp : ℕ) (hk : lo + k ≤ n)
-    (hkp : 0 < kp) (hkpk : kp < k) (H : EighArenas) {Sg Pp Pm : ℕ} {one two sg nsg sq : Cell ℕ ℕ}
-    {σ : K} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
-    {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
-    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D)
-    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
-    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
-    (hone : st.store.read p one.buf one.idx.eval = I.sem.lit p 1)
-    (htwo : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
-    (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
-    (hnσ : st.store.read p nsg.buf nsg.idx.eval =
-      some ((eighTapeMachine I p mmR qrR).neg σ))
-    (hcells : ∀ c ∈ [one, two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
-    (h : exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.const kp) Sg
-      Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp one two sg nsg sq).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    let s := eighTapeSample n d lo
-    let Qp := deflate M kp Ppm (leadingBlock k (s.2 true))
-    let Qm := deflate M (k - kp) Pmm (leadingBlock k (s.2 false))
-    pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) σ) ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
-          (M.neg σ)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      (∀ q b i, ¬ H.LevelCell n d b i → ¬ H.LevelCell n (d + 1) b i →
-        st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
-
 omit [Inhabited K] in
 /-- An allocation succeeds when its body succeeds on the allocated state. -/
 private theorem exists_exec_alloc_of_exists_split {p : P} {len : IExp ℕ}
@@ -3362,8 +3306,7 @@ private theorem alloc_inv_skip_node {p : P} {len : IExp ℕ} {body : ℕ → Stm
 set_option maxHeartbeats 4000000 in
 /-- **A split writes the outcome of `NLAlib.eighStep`'s split**, with its precise frame: the values
 of `NLAlib.holds_of_exec_eighSplitBlock`, and every cell outside the cell `sq` and the node's window
-(`nodeWin`) unchanged. (The frame of `NLAlib.holds_of_exec_eighSplitBlock` omits the cell `sq`,
-which the split writes.) -/
+(`nodeWin`) unchanged; `NLAlib.holds_of_exec_eighSplitBlock` is its coarse form. -/
 private theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR) (p : P)
     (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k) (kpe : IExp ℕ)
@@ -3469,6 +3412,89 @@ private theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
       (Array.pop (Array.pop s₈.store)))))))) = _
     simp only [Store.shape_pop, hsh]
     simp [Store.shape, x]
+
+-- The corrected frame lemma is applied to a large run.
+set_option maxHeartbeats 1000000 in
+/-- **A split writes the outcome of `NLAlib.eighStep`'s split**: if the kernels of `I` are the
+routines `mmR`, `qrR` on interleaved pairs, a successful run of `NLAlib.eighSplitBlock` at the slot
+$lo$ of depth $d$ for a node of size $k$ (with $lo + k \le n$) whose matrix $\mathbf{A}$ is held at
+its block of `Ma`, with $0 < k_+ < k$, the projectors $\mathbf{P}_\pm$ at offset $0$ of `Pp`, `Pm`,
+the level's Gaussian words in `Sg`, and the cells `one`, `two`, `sg`, `nsg` holding the machine's
+one, $\mathrm{fl}(2)$, $\sigma$ and $-\sigma$ (cells of existing buffers, each distinct from the
+cell `sq` that receives the stored $\sqrt{1/2}$), ends with: $\mathbf{Q}_+ =$
+`NLAlib.deflate M kp Pp G₊` and $\mathbf{Q}_-$ packed at the node's block of `Qa`, the compressions
+of `NLAlib.eighStep` at the blocks of the slots $lo$ and $lo + k_+$ of depth $d + 1$ in `Ma`, the
+sizes $k_+$ and $k - k_+$ in their cells of `Sz`, the kind $4$ and $k_+$ in the node's cells of `Kd`
+and `Kp`; every other cell of the arenas, and every cell outside them but the cell `sq`, is
+unchanged ($M$ = `NLAlib.eighTapeMachine I p mmR qrR`, the test matrices those of the node's
+samples, `NLAlib.eighTapeSample`). No printed source.
+(Statement corrected, design note §8: the split writes `sq`, so the frame exempts it, and `sq`
+must differ from the cells it reads.)
+Proof: the private `holds_of_exec_eighSplitBlock_frame`, whose window of the node lies in the
+cells of depths $d$ and $d + 1$. -/
+theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k kp : ℕ) (hk : lo + k ≤ n)
+    (hkp : 0 < kp) (hkpk : kp < k) (H : EighArenas) {Sg Pp Pm : ℕ} {one two sg nsg sq : Cell ℕ ℕ}
+    {σ : K} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
+    {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
+    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D)
+    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
+    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
+    (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
+    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
+    (hone : st.store.read p one.buf one.idx.eval = I.sem.lit p 1)
+    (htwo : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
+    (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
+    (hnσ : st.store.read p nsg.buf nsg.idx.eval =
+      some ((eighTapeMachine I p mmR qrR).neg σ))
+    (hcells : ∀ c ∈ [one, two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
+    (hcl : ∀ c ∈ [one, two, sg, nsg, sq], c.buf < st.store.size)
+    (hsqc : ∀ c ∈ [one, two, sg, nsg], c.buf ≠ sq.buf ∨ c.idx.eval ≠ sq.idx.eval)
+    (h : exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.const kp) Sg
+      Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp one two sg nsg sq).run st = some st') :
+    let M := eighTapeMachine I p mmR qrR
+    let s := eighTapeSample n d lo
+    let Qp := deflate M kp Ppm (leadingBlock k (s.2 true))
+    let Qm := deflate M (k - kp) Pmm (leadingBlock k (s.2 false))
+    pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
+      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
+      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) σ) ∧
+      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
+        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
+          (M.neg σ)) ∧
+      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
+      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
+      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
+      (∀ q b i, ¬ (b = sq.buf ∧ i = sq.idx.eval) → ¬ H.LevelCell n d b i →
+        ¬ H.LevelCell n (d + 1) b i → st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  intro M s Qp Qm
+  have key := holds_of_exec_eighSplitBlock_frame (Sg := Sg) (Pp := Pp) (Pm := Pm) (one := one)
+    (two := two) (sg := sg) (nsg := nsg) (sq := sq) (σ := σ) (st := st) (st' := st') (A := A)
+    (Ppm := Ppm) (Pmm := Pmm) hmm hqr p n d lo k kp hk hkp hkpk (.const kp) rfl H hd hH
+    hbufs hA hPp hPm hSg hone htwo hσ hnσ hcells hcl hsqc h
+  refine ⟨key.1.1, key.1.2.1, key.1.2.2.1, key.1.2.2.2.1, key.1.2.2.2.2.1, key.1.2.2.2.2.2.1,
+    key.1.2.2.2.2.2.2.1, key.1.2.2.2.2.2.2.2, fun q b i hsq h0 h1' => key.2.1 q b i hsq ?_,
+    key.2.2.1, key.2.2.2⟩
+  intro hw
+  have hnk : n * lo + n * k ≤ n * n := by rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ hk
+  have e1 : 2 * (n * n) * d + 2 * n * (lo + k) ≤ 2 * (n * n) * (d + 1) := by nlinarith
+  have e2 : 2 * (n * n) * (d + 1) + 2 * n * (lo + k) ≤ 2 * (n * n) * (d + 1 + 1) := by nlinarith
+  have e3 : n * (d + 1) + lo + k ≤ n * (d + 1 + 1) := by nlinarith
+  have e4 : n * d + lo < n * (d + 1) := by nlinarith
+  unfold nodeWin at hw
+  unfold EighArenas.LevelCell at h0 h1'
+  rcases hw with ⟨rfl, a, b'⟩ | ⟨rfl, a, b'⟩ | ⟨rfl, a, b'⟩ | ⟨hb, rfl⟩
+  · exact h0 (Or.inl ⟨Or.inr (Or.inr rfl), by omega, by omega⟩)
+  · exact h1' (Or.inl ⟨Or.inl rfl, by omega, by omega⟩)
+  · exact h1' (Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by omega, by omega⟩))
+  · refine h0 (Or.inr (Or.inl ⟨?_, by omega, by omega⟩))
+    rcases hb with hb | hb
+    · exact Or.inr (Or.inr (Or.inl hb))
+    · exact Or.inr (Or.inr (Or.inr hb))
+
 
 omit [Inhabited K] in
 private theorem node_inv_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}

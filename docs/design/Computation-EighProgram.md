@@ -356,6 +356,18 @@ and DF2 were false without it: the output block could be one of the scratch buff
 `scope` pops). Its one caller, EN9 `holds_of_exec_eighNodeBlock`, supplies it from the allocation
 of `B` ($2k^2$ cells at tag `p`); EN9's statement is unchanged.
 
+**Statement fix (EN7).** `holds_of_exec_eighSplitBlock` was false: the split writes the cell `sq`
+(the stored $\sqrt{1/2}$, a division then a square root), which lies outside the arenas, while the
+frame claimed every cell outside depths $d$, $d + 1$ unchanged. Counterexample: any successful run
+(they exist, EN8) from a state where the cell `sq` is uninitialised (`none`, e.g. a freshly
+allocated scratch cell, as at its one use in `eighNodeBlock`) ends with `sq` holding
+$\mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$. A second defect: if `sq` is the cell `two` (or `one`,
+`sg`, `nsg`), the compressions use $\sqrt{1/2}$ in place of $\mathrm{fl}(2)$ and the value claims
+fail. Fix: the frame exempts the cell `sq`; new hypotheses `hsqc` (the cells `one`, `two`, `sg`,
+`nsg` differ from `sq`) and `hcl` (the five cells lie in existing buffers, so that the split's
+scratch allocations cannot alias them). EN7 has no callers (EN9 uses the private precise form), so
+nothing downstream changes.
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
