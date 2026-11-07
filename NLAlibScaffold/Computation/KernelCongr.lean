@@ -132,7 +132,8 @@ theorem exec_newtonSchulzTestBlock_congr (n : IExp ℕ) (X : ℕ) (xo : IExp ℕ
     (one lo hi f : Cell ℕ ℕ) :
     exec I (newtonSchulzTestBlock p mm n X xo W V one lo hi f).run st =
       exec I (newtonSchulzTestBlock p mm (.const n.eval) X xo W V one lo hi f).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I
+    (by unfold newtonSchulzTestBlock zhermShift zmirror zboxTest; rfl) st
 
 /-- **The Newton–Schulz step block at an index expression** runs as at the constant of its value.
 No printed source.
