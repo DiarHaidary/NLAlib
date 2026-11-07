@@ -186,7 +186,12 @@ theorem IsUpperHessenberg.hessenbergPotential_pow_le_norm_aeval
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {p : Polynomial ℂ}
     (hp : p.Monic) {k : ℕ} (hk : 0 < k) (hkn : k ≤ n) (hpk : p.natDegree = k) :
     hessenbergPotential k H ^ k ≤ ‖WithLp.toLp 2 (Polynomial.aeval H p (Fin.last n))‖ := by
-  sorry
+  have h1 := PiLp.norm_apply_le (WithLp.toLp 2 (Polynomial.aeval H p (Fin.last n)))
+    ⟨n - k, by omega⟩
+  have h2 := IsUpperHessenberg.aeval_apply_last_eq_prod hH hp hpk (j := ⟨n - k, by omega⟩)
+    (by change n - k + k = n; omega)
+  rw [hessenbergPotential_pow hk H, ← norm_prod, ← h2]
+  exact h1
 
 /-- **The variational formula for the potential**: for upper Hessenberg $\mathbf{H}$ and
 $1 \le k \le n$, the characteristic polynomial $\chi_k$ of the trailing block
