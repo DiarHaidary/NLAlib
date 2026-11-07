@@ -34,7 +34,8 @@ namespace NLAlib
 variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
   {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
 
-/-- The global numeric consequences of the hypotheses of EB5': the depth counter is at least
+/-- The global numeric consequences of the hypotheses of the global guarantee: the depth counter is
+at least
 $20$, the conditions of `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` hold, and
 $n\beta \le \varepsilon/4000$. -/
 private lemma eigh_global_bounds {u τ Ω : ℝ} {μM : ℕ → ℝ} (hu : 0 ≤ u) (hμM : Monotone μM)
@@ -119,7 +120,8 @@ private lemma eigh_global_bounds {u τ Ω : ℝ} {μM : ℕ → ℝ} (hu : 0 ≤
       mul_nonneg (Real.sqrt_nonneg 2) (Real.sqrt_nonneg (n : ℝ))]
   exact ⟨hℓ20, hu₁, hτ', hΩ', hnβ⟩
 
-/-- The arithmetic core of the deflation tolerance of EB5': if $52Q\ell^2(2\ell - 1) \le
+/-- The arithmetic core of the deflation tolerance of the global guarantee: if
+$52Q\ell^2(2\ell - 1) \le
 (\ell - 1)^2\varepsilon r$ then $2Q \le (1 - 2^{-8})(\ell - 1)\varepsilon s r/(20\ell^2)$ for
 $s \ge 0.39$. -/
 private lemma two_mul_le_of_mul_le {Q s r ℓ ε : ℝ} (hℓ : 20 ≤ ℓ) (hs : 39 / 100 ≤ s)
@@ -134,7 +136,8 @@ private lemma two_mul_le_of_mul_le {Q s r ℓ ε : ℝ} (hℓ : 20 ≤ ℓ) (hs 
   refine le_of_mul_le_mul_right ?_ h5
   nlinarith [h4, hQ]
 
-/-- The singular value threshold of EB5' at a node of size $K$: with $\rho = \theta K/(6nm)$,
+/-- The singular value threshold of the global guarantee at a node of size $K$: with
+$\rho = \theta K/(6nm)$,
 $5\theta/(32nm\min(n, e)) \le 15\rho/(16\min(K^2, eK)) \le 1$. -/
 private lemma node_threshold_bounds {K n m e θ : ℝ} (hK2 : 2 ≤ K) (hKn : K ≤ n) (hm1 : 1 ≤ m)
     (he2 : 2 ≤ e) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) :
@@ -162,7 +165,8 @@ private lemma node_threshold_bounds {K n m e θ : ℝ} (hK2 : 2 ≤ K) (hKn : K 
         rw [div_le_one (by positivity)]
         nlinarith [mul_le_mul (show (1 : ℝ) ≤ n by linarith) hm1 zero_le_one (by positivity)]
 
-/-- The shift distance of EB5' at a node of window $R$: $w = 4\theta R/(9n\ell(\ell + 1)) \le R$,
+/-- The shift distance of the global guarantee at a node of window $R$:
+$w = 4\theta R/(9n\ell(\ell + 1)) \le R$,
 and $w/(5R)$, $w/(2R)$ in closed form. -/
 private lemma node_shift_bounds {θ R n ℓ : ℝ} (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR : 0 < R)
     (hn : 1 ≤ n) (hℓ : 20 ≤ ℓ) :
@@ -182,7 +186,8 @@ private lemma node_shift_bounds {θ R n ℓ : ℝ} (hθ : 0 < θ) (hθ₁ : θ �
     have : 0 < θ * (n * ℓ * (ℓ + 1)) := by positivity
     linarith
 
-/-- The deflation tolerance of EB5' at a node: with $t \le \hat T$, $x \ge \sqrt{5\theta/(32P)}$
+/-- The deflation tolerance of the global guarantee at a node: with $t \le \hat T$,
+$x \ge \sqrt{5\theta/(32P)}$
 and the accuracy bound on $\beta$, $2t\beta/x \le (1 - 1/L)\varepsilon_y/(5L)$. -/
 private lemma node_defl_tol {ℓ L ε εy θ P T t x β : ℝ} (hℓ : 20 ≤ ℓ) (hL : ℓ ≤ L)
     (hL₂ : L ≤ 2 * ℓ) (hε : 0 < ε) (hεy : (1 - 2⁻¹ ^ 8) * ((ℓ - 1) / (L - 1)) * ε ≤ εy)
@@ -219,7 +224,7 @@ private lemma node_defl_tol {ℓ L ε εy θ P T t x β : ℝ} (hℓ : 20 ≤ �
       linarith
     _ = (1 - 1 / L) * εy / (5 * L) := by ring
 
-/-- The floor condition of EB5' at a node of size $K \le n$:
+/-- The floor condition of the global guarantee at a node of size $K \le n$:
 $4K^{3/2}\tau \le \min(x, \varepsilon_y R_0)$. -/
 private lemma node_τ_le {τ K n m e θ x ε εy R₀ : ℝ} (hτ₀ : 0 ≤ τ) (hK : 1 ≤ K) (hKn : K ≤ n)
     (hm : 1 ≤ m) (he : 0 < e) (he4 : e ≤ 4) (hθ : 0 < θ)
@@ -250,7 +255,8 @@ private lemma node_τ_le {τ K n m e θ x ε εy R₀ : ℝ} (hτ₀ : 0 ≤ τ)
   have h6 := hτ.trans (min_le_right _ _)
   exact le_min (by linarith) (by linarith [mul_pos hε hR₀])
 
-/-- The Newton–Schulz step count of a node of EB5' is at most the global $N_*$, which is
+/-- The Newton–Schulz step count of a node of the global guarantee is at most the global $N_*$,
+which is
 nonnegative. -/
 private lemma node_newtonSchulzSteps_le {n K ℓ θ R β ε : ℝ} (hn : 1 ≤ n) (hK2 : 2 ≤ K)
     (hKn : K ≤ n) (hℓ : 20 ≤ ℓ) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR : 0 < R) (hβ : 0 < β)
@@ -281,7 +287,7 @@ private lemma exp_one_le_four : Real.exp 1 ≤ 4 := by
   nlinarith [mul_le_mul_of_nonneg_left h4 (Real.exp_pos 1).le]
 
 /-- The precision budget `NLAlib.FloatMachine.IsEighNodeBudget` at an internal node of the tree
-of `NLAlib.eigh`, with the parameters of EB5'. -/
+of `NLAlib.eigh`, with the parameters of the global guarantee. -/
 private lemma isEighNodeBudget_of_node (hu : 0 ≤ u) (hμM : Monotone μM) (hμQ : Monotone μQ)
     (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN) {n : ℕ} {ε : F} {θ : ℝ}
     (hR₀pos : 0 < dec R₀) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1)
@@ -399,7 +405,7 @@ private lemma eighNodeAt_append_singleton_eq_some {F Su Sg : Type*} [Inhabited S
     simp only [List.cons_append, eighNodeAt, hz, Option.bind_some]
     exact eighNodeAt_append_singleton_eq_some a z _ hza h'
 
-/-- **Global deterministic guarantee of spectral bisection, sharp budget** (EB5'): let the
+/-- **Global deterministic guarantee of spectral bisection**: let the
 machine meet `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, $\mu_{\mathrm{MM}}$,
 $\mu_{\mathrm{QR}}$ monotone and nonnegative and $c_{\mathrm N} \ge 0$; let the stored
 $\mathbf{A}$ have Hermitian decoding with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,

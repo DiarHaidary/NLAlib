@@ -423,57 +423,6 @@ private theorem FloatMachine.IsAccurate.specNorm_decodeMatrix_compress_sub_le {F
   have huR0 : 0 ≤ u * R := mul_nonneg hu0 hR0.le
   nlinarith
 
-/-- The rounded rank estimate of a stored projector within $\beta$ of the ideal spectral
-projector $\tfrac12(\mathbf{I} + \operatorname{sign}(\mathbf{A} - c\mathbf{I}))$ is the
-inertia, for $k\beta \le 1/57600$. -/
-private theorem FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_specNorm_sub_le {F : Type*}
-    {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
-    (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hτ₀ : 0 ≤ τ) {k : ℕ}
-    (hk1 : (1 : ℝ) ≤ k) (hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000) (hkτ : (k : ℝ) * τ ≤ 1 / 4)
-    (hΩ : 16 * k ≤ Ω) {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian) {c : ℝ}
-    (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) {β : ℝ} (hβ0 : 0 ≤ β) (hkβ : k * β ≤ 1 / 57600)
-    {Pp : Matrix (Fin k) (Fin k) (F × F)}
-    (hP : specNorm (decodeMatrix dec Pp -
-      (2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)))) ≤ β) :
-    min k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))) =
-      inertiaPos (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) := by
-  set r := inertiaPos (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) with hr
-  have hβ1 : β ≤ 1 / 57600 := by nlinarith
-  set S := cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))
-  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
-    rw [specNorm_real_smul, abs_of_pos (by norm_num)]
-    linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
-      (hA.specNorm_cfc_sign_sub_smul_one_le _))]
-  have htr := hA.re_trace_smul_one_add_cfc_sign (c := c) fun x hx h => hc x hx h
-  rw [← hr] at htr
-  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ β := by
-    intro i
-    have h := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
-    simpa [decodeMatrix, decodeComplex] using h
-  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + β := by
-    intro i
-    have h1 := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
-    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
-    linarith [hentry i]
-  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ k * β := by
-    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
-    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
-  have hsabs : ∑ i, |dec (Pp i i).1| ≤ k * (1 + β) := by
-    rw [mul_add, mul_one]
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
-  have hrk : (r : ℝ) ≤ k := by
-    have : r ≤ k := by
-      rw [hr, inertiaPos]
-      exact (Finset.card_filter_le _ _).trans (by simp)
-    exact_mod_cast this
-  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + β ≤ 2) (Nat.cast_nonneg (α := ℝ) k)
-  rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ hΩ Pp hrk (hdiag.trans hkβ)
-    (hsabs.trans (by linarith))]
-  exact min_eq_right (by exact_mod_cast hrk)
-
 /-- Deflation of a true spectral projector `V Vᴴ` through a stored approximation, on Event II:
 `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le`
 with $\mathbf{S} = \mathbf{I}_r$, for $2t\beta/x \le \eta \le 1/800$. -/
@@ -685,11 +634,12 @@ private theorem FloatMachine.IsEighNodeBudget.split_numerics
     hη1, hk2u, hkτ, by linarith, by linarith, ?_, by linarith⟩
   linarith [mul_nonneg (Real.sqrt_nonneg (y.k : ℝ)) hu]
 
-/-- **A split node under a node budget** (EB1d'): with budget and a good sample
+/-- **A split node under a node budget**: with budget `NLAlib.FloatMachine.IsEighNodeBudget` and a
+good sample
 (`NLAlib.IsEighGoodSample` with parameters $(w, x, t)$), a split gives frames $\mathbf{V}_\pm$,
 unitaries $\mathbf{W}_\pm$ with $\|\mathbf{V}_\pm\mathbf{W}_\pm - \mathbf{Q}_\pm\|_2 \le \eta =
 (1 - 1/\ell)\varepsilon/(5\ell)$ and children within $(2 + 2\eta)R\eta$ of the shifted
-compressions, as EB1d. [Shah2024, proof of Lemma 4.1]. -/
+compressions. [Shah2024, proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget
     (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
@@ -745,8 +695,7 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isE
     fun x hx hxc => by have := hI x hx; rw [hxc, sub_self, abs_zero] at this; linarith [hB.pos_w]
   obtain ⟨hPp, hPm⟩ :=
     hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint hv hI
-  have hkpr := hM.min_toNat_eq_inertiaPos_of_specNorm_sub_le hu hτ₀ hk1 hk2u hkτ hΩk
-    hB.isHermitian hc hB.pos_β.le hB.mul_β_le hPp
+  have hkpr := hM.min_toNat_eq_inertiaPos_of_isEighNodeBudget hB hk2 hint hv hI
   -- unfold the step
   unfold eighStep at hsplit
   rw [if_neg (by omega), if_neg (by simp [hint])] at hsplit

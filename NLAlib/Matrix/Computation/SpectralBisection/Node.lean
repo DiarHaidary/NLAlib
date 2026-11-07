@@ -1150,7 +1150,8 @@ private theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_
     (by linarith) (by linarith) rfl rfl rfl
   exact isApproxDiagonalization_of_le key hsplit (by linarith) (by linarith) (by linarith)
 
-/-- **Local guarantee under a node budget** (EB1'): with budget, a good sample when internal and
+/-- **Local guarantee under a node budget**: with budget `NLAlib.FloatMachine.IsEighNodeBudget`, a
+good sample (`NLAlib.IsEighGoodSample` with parameters $(w, x, t)$) when internal and
 children that are approximate diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$,
 the node's output is one with $(\varepsilon(R + R_0), \varepsilon/3)$. [Shah2024, Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNodeBudget

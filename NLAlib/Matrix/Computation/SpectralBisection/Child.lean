@@ -535,76 +535,8 @@ private theorem FloatMachine.IsAccurate.child_numerics_of_isEighNodeBudget
     linarith [mul_le_mul_of_nonneg_right this hD0]
   exact ⟨hhalf, hr, by linarith, by linarith⟩
 
-/-- The rounded rank estimate of an internal node with a node budget and Event I is the inertia
-$i_+(\mathbf{A} - c'\mathbf{I})$ of the ideal shift. -/
-private theorem FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_isEighNodeBudget
-    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
-    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
-    (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
-    (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
-    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
-    min y.k (M.toNat (M.add (M.traceRe (M.hermScale (M.hermShift
-        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)))
-        (M.div M.one (M.ofNat 2)))) =
-      inertiaPos (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) := by
-  set r := inertiaPos (decodeMatrix dec y.A -
-    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
-  have hA := hB.isHermitian
-  have hu := hB.nonneg_u
-  have hτ₀ := hB.nonneg_τ
-  have hβ := hB.pos_β
-  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
-  have hkβ := hB.mul_β_le
-  obtain ⟨hk2u, hkτ, -, ht2⟩ := hB.scalars (by omega)
-  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
-  -- the computed projector is near the ideal one, whose trace is the inertia
-  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint hv hI
-  set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)
-  set S := cfc Real.sign (decodeMatrix dec y.A -
-    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
-  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
-    rw [specNorm_real_smul, abs_of_pos (by norm_num)]
-    linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
-      (hA.specNorm_cfc_sign_sub_smul_one_le _))]
-  have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * smp.1) fun e he h => by
-    have := hI e he
-    rw [h, sub_self, abs_zero] at this
-    linarith [hB.pos_w]
-  rw [← hr] at htr
-  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ dec β := by
-    intro i
-    have h := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
-    simpa [decodeMatrix, decodeComplex] using h
-  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + dec β := by
-    intro i
-    have h1 := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
-    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
-    linarith [hentry i]
-  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ y.k * dec β := by
-    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
-    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
-  have hsabs : ∑ i, |dec (Pp i i).1| ≤ y.k * (1 + dec β) := by
-    rw [mul_add, mul_one]
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
-  have hrk : (r : ℝ) ≤ y.k := by
-    have : r ≤ y.k := by
-      rw [hr, inertiaPos]
-      exact (Finset.card_filter_le _ _).trans (by simp)
-    exact_mod_cast this
-  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + dec β ≤ 2) (Nat.cast_nonneg (α := ℝ) y.k)
-  rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ
-    (by linarith [hB.Ω_le, hB.pos_R₀, hB.pos_w.trans_le hB.w_le,
-      (Nat.cast_nonneg y.ℓ : (0 : ℝ) ≤ y.ℓ)]) Pp hrk (hdiag.trans (by linarith))
-    (hsabs.trans (by linarith))]
-  exact min_eq_right (by exact_mod_cast hrk)
-
-/-- **Child invariant under a node budget** (EB1a'): with budget and a good sample, every child
+/-- **Child invariant under a node budget**: with budget `NLAlib.FloatMachine.IsEighNodeBudget` and
+a good sample (`NLAlib.IsEighGoodSample` with parameters $(w, x, t)$), every child
 has a Hermitian matrix of norm at most its window. [Shah2024, proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget
     (hM : M.IsAccurate dec u τ Ω μM μQ cN)

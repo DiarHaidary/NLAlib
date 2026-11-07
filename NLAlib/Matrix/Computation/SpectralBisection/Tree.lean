@@ -917,11 +917,14 @@ private theorem FloatMachine.IsAccurate.le_dec_eighNextParams_snd_mul {F : Type*
   have := mul_le_mul_of_nonneg_right hde.1 hL0.le
   linear_combination this + dec e * hiL1
 
-/-- **The tolerance at a node, telescoped** (EB2a'): under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`, every node $y$ below the root has
+/-- **The tolerance at a node, telescoped**: let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $0 \le u$, $100\ell^2u \le 1$, floor $0 \le \tau$ with
+$100\tau \le \varepsilon\min(R_0, 1)$ and range $16(R_0 + \ell) \le \Omega$, and let the root
+$(k, \mathbf{A}, R_0, \varepsilon, \ell)$ have $0 < \varepsilon \le 2^{-15}$, $R_0 > 0$ and
+$\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$. Then every node $y$ of the tree has
 $$\varepsilon_y \ge (1 - 2^{-8})\,\frac{\ell - 1}{\ell_y - 1}\,\varepsilon \,,$$
 in particular $\varepsilon_y \ge (1 - 2^{-8})(\ell - 1)\varepsilon/(2\ell - 1)$ since
-$\ell_y \le 2\ell$; EB2a has $\varepsilon/3$. [Shah2024, proof of Theorem 4.2]. -/
+$\ell_y \le 2\ell$. [Shah2024, proof of Theorem 4.2]. -/
 theorem FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {ε : F} (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
     (hR₀ : 0 < dec R₀) {ℓ : ℕ}
@@ -1017,7 +1020,7 @@ private lemma sum_k_eighChild_le {F Su Sg : Type*} [Inhabited Sg] (M : FloatMach
     simp only [if_true, Option.elim_some, Bool.false_eq_true, if_false]
     omega
 
-/-- **The sizes at one depth sum to at most the root size** (EB3'): for every machine, node
+/-- **The sizes at one depth sum to at most the root size**: for every machine, node
 $x$, tree of samples and depth $j$, the sizes of the nodes at the paths of length $j$ sum to at
 most $k_x$ (a node has no child, one child of its size, or two children of sizes $k_+$ and
 $k - k_+$). [Shah2024, proof of Theorem 4.2], "$\sum_{x \in X_k} n_x \le n$". -/

@@ -244,21 +244,16 @@ private theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_eigh
     have := abs_sub_abs_le_abs_sub (eigenvalue (Ad - c' • I) j) (eigenvalue Xd j)
     linarith
 
-/-- The sign of a shifted Hermitian matrix has norm at most $1$:
-$\|\operatorname{sign}(\mathbf{A} - c\mathbf{I})\|_2 \le 1$ for Hermitian $\mathbf{A}$ and real
-$c$. -/
-theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_smul_one_le {k : ℕ}
-    {A : Matrix (Fin k) (Fin k) ℂ}
+/-- The sign of a shifted Hermitian matrix has norm at most $1$. -/
+private theorem specNorm_cfc_sign_sub_smul_one_le {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (c : ℝ) :
     specNorm (cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))) ≤ 1 :=
   (hA.sub (isHermitian_real_smul_one c)).specNorm_cfc_le zero_le_one fun x _ => by
     rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num
 
 /-- The rounded trace $\mathrm{fl}(t + \mathrm{fl}(1/2))$ of a stored $\mathbf{X}$ whose diagonal
-sum is within $1/57600$ of $r \le k$ (with $\sum_i \lvert x_{ii}\rvert \le 2k$) has floor $r$,
-under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$, $k \ge 1$, $k^2u \le 10^{-5}$,
-$k\tau \le 1/4$ and $16k \le \Omega$: the rank count of [Shah2024, Algorithm 3]. -/
-theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
+sum is within $1/57600$ of $r \le k$ (with $\sum_i \lvert x_{ii}\rvert \le 2k$) has floor $r$. -/
+private theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hτ₀ : 0 ≤ τ) {k : ℕ}
     (hk1 : (1 : ℝ) ≤ k) (hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000) (hkτ : (k : ℝ) * τ ≤ 1 / 4)
@@ -302,6 +297,57 @@ theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
   rw [hM.toNat_eq, Nat.floor_eq_iff (by linarith)]
   constructor <;> linarith
 
+/-- The rounded rank estimate of a stored projector within $\beta$ of the ideal spectral
+projector $\tfrac12(\mathbf{I} + \operatorname{sign}(\mathbf{A} - c\mathbf{I}))$ is the
+inertia, for $k\beta \le 1/57600$. -/
+private theorem FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_specNorm_sub_le {F : Type*}
+    {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hτ₀ : 0 ≤ τ) {k : ℕ}
+    (hk1 : (1 : ℝ) ≤ k) (hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000) (hkτ : (k : ℝ) * τ ≤ 1 / 4)
+    (hΩ : 16 * k ≤ Ω) {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian) {c : ℝ}
+    (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) {β : ℝ} (hβ0 : 0 ≤ β) (hkβ : k * β ≤ 1 / 57600)
+    {Pp : Matrix (Fin k) (Fin k) (F × F)}
+    (hP : specNorm (decodeMatrix dec Pp -
+      (2⁻¹ : ℝ) • (1 + cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)))) ≤ β) :
+    min k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))) =
+      inertiaPos (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) := by
+  set r := inertiaPos (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) with hr
+  have hβ1 : β ≤ 1 / 57600 := by nlinarith
+  set S := cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))
+  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
+    rw [specNorm_real_smul, abs_of_pos (by norm_num)]
+    linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
+      (specNorm_cfc_sign_sub_smul_one_le hA _))]
+  have htr := hA.re_trace_smul_one_add_cfc_sign (c := c) fun x hx h => hc x hx h
+  rw [← hr] at htr
+  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ β := by
+    intro i
+    have h := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
+    simpa [decodeMatrix, decodeComplex] using h
+  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + β := by
+    intro i
+    have h1 := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
+    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
+    linarith [hentry i]
+  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ k * β := by
+    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
+  have hsabs : ∑ i, |dec (Pp i i).1| ≤ k * (1 + β) := by
+    rw [mul_add, mul_one]
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
+  have hrk : (r : ℝ) ≤ k := by
+    have : r ≤ k := by
+      rw [hr, inertiaPos]
+      exact (Finset.card_filter_le _ _).trans (by simp)
+    exact_mod_cast this
+  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + β ≤ 2) (Nat.cast_nonneg (α := ℝ) k)
+  rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ hΩ Pp hrk (hdiag.trans hkβ)
+    (hsabs.trans (by linarith))]
+  exact min_eq_right (by exact_mod_cast hrk)
+
 /-! ### Generic node lemmas for a precision budget -/
 
 variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
@@ -318,7 +364,11 @@ stopping condition $2048(k + N_0 + 1)\nu u \le \beta$, the deflation rounding co
 $16(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)u \le \beta$,
 $k\beta \le 1/57600$, at least $N_0$ sign steps, and the floor and range conditions
 $4k^{3/2}\tau \le \min(x, \varepsilon R_0)$, $16(R_0 + R + k + \ell + t) \le \Omega$. The
-hypotheses of [Shah2024, Lemma 4.1] with the constants of SN4' and DF2'. -/
+hypotheses of [Shah2024, Lemma 4.1] with the constants of
+`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le`
+(sign) and
+`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le`
+(deflation). -/
 structure FloatMachine.IsEighNodeBudget {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
     (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) (R₀ β : F) (signFuel : ℕ) (w x t : ℝ)
     (y : EighNode F) : Prop where
@@ -521,7 +571,7 @@ private theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_eighS
   rw [sub_add_sub_cancel] at this
   linarith
 
-/-- **Computed spectral projectors under a node budget** (EB1'c): at an internal node with
+/-- **Computed spectral projectors under a node budget**: at an internal node with
 budget `NLAlib.FloatMachine.IsEighNodeBudget` and Event I (seed in $[-1, 1]$, every eigenvalue at
 distance at least $w$ from the ideal shift), the stored $\mathbf{P}_\pm$ are within $\beta$ of
 $\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
@@ -564,7 +614,7 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_i
   set S := cfc Real.sign (decodeMatrix dec y.A -
     (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
   set Bd := decodeMatrix dec B
-  have hS : specNorm S ≤ 1 := hB.isHermitian.specNorm_cfc_sign_sub_smul_one_le _
+  have hS : specNorm S ≤ 1 := specNorm_cfc_sign_sub_smul_one_le hB.isHermitian _
   have hBn : specNorm Bd ≤ 2 := by
     have := specNorm_sub_le S (S - Bd)
     rw [sub_sub_cancel] at this
@@ -638,12 +688,39 @@ private theorem FloatMachine.IsEighNodeBudget.sq_mul_le
   have hΩ : 16 * (y.k : ℝ) ≤ Ω := by
     have := hB.Ω_le
     have : (0 : ℝ) ≤ y.ℓ := by positivity
-    linarith [hB.pos_R₀, hB.pos_w.trans_le hB.w_le, hB.le_t, 
+    linarith [hB.pos_R₀, hB.pos_w.trans_le hB.w_le, hB.le_t,
       (by positivity : (0 : ℝ) ≤ 2 * √2 * √(y.k : ℝ))]
   exact ⟨hk2u, hkτ, hΩ⟩
 
-/-- **Rank recovery under a node budget** (EB1b'): at an internal node of size $k \ge 2$ with
-budget and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$. [Shah2024,
+/-- **The rank estimate under a node budget**: at an internal node of size $k \ge 2$ with budget
+`NLAlib.FloatMachine.IsEighNodeBudget`, not a leaf
+($\mathrm{fl}(R) > \mathrm{fl}(\varepsilon R_0)$), and Event I (seed $v \in [-1, 1]$, every
+eigenvalue at distance at least $w$ from the ideal shift $c' = (R/\ell)v$), the rounded trace of
+the stored projector $\mathbf{P}_+$ of `NLAlib.eighStep`, capped at $k$, is the inertia
+$i_+(\mathbf{A} - c'\mathbf{I})$. [Shah2024, proof of Lemma 4.1]. -/
+theorem FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
+    (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    min y.k (M.toNat (M.add (M.traceRe (M.hermScale (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)))
+        (M.div M.one (M.ofNat 2)))) =
+      inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) := by
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
+  obtain ⟨hk2u, hkτ, hΩ⟩ := hB.sq_mul_le hk1
+  exact hM.min_toNat_eq_inertiaPos_of_specNorm_sub_le hB.nonneg_u hB.nonneg_τ hk1 hk2u hkτ hΩ
+    hB.isHermitian (fun e he h => by
+      have := hI e he; rw [h, sub_self, abs_zero] at this; linarith [hB.pos_w]) hB.pos_β.le
+    hB.mul_β_le (hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint hv hI).1
+
+/-- **Rank recovery under a node budget**: at an internal node of size $k \ge 2$ with budget
+`NLAlib.FloatMachine.IsEighNodeBudget` and Event I (seed in $[-1, 1]$, every eigenvalue at distance
+at least $w$ from the ideal shift $c'$), the step splits iff
+$0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$. [Shah2024,
 proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget
     (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -656,59 +733,13 @@ theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget
         (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ∧
       inertiaPos (decodeMatrix dec y.A -
         (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) < y.k := by
-  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
-  have hu := hB.nonneg_u
-  have hτ₀ := hB.nonneg_τ
-  have hβ := hB.pos_β
-  have hkβ := hB.mul_β_le
-  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
-  obtain ⟨hk2u, hkτ, hΩ⟩ := hB.sq_mul_le hk1
-  -- the computed projector is near the ideal one, whose trace is the inertia
-  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint
-    (smp := smp) hv hI
   set r := inertiaPos (decodeMatrix dec y.A -
     (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
-  set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)
-  set S := cfc Real.sign (decodeMatrix dec y.A -
-    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
-  have hA := hB.isHermitian
-  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
-    rw [specNorm_real_smul, abs_of_pos (by norm_num)]
-    linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
-      ((hA.sub (isHermitian_real_smul_one _)).specNorm_cfc_le zero_le_one fun x _ => by
-        rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num))]
-  have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * smp.1) fun x hx h => by
-    have := hI x hx
-    rw [h, sub_self, abs_zero] at this
-    linarith [hB.pos_w]
-  rw [← hr] at htr
-  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ dec β := by
-    intro i
-    have h := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
-    simpa [decodeMatrix, decodeComplex] using h
-  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + dec β := by
-    intro i
-    have h1 := (RCLike.abs_re_le_norm _).trans
-      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
-    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
-    linarith [hentry i]
-  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ y.k * dec β := by
-    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
-    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
-  have hsabs : ∑ i, |dec (Pp i i).1| ≤ y.k * (1 + dec β) := by
-    rw [mul_add, mul_one]
-    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
   have hrk : r ≤ y.k := by
     rw [hr, inertiaPos]
     exact (Finset.card_filter_le _ _).trans (by simp)
-  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + dec β ≤ 2) (Nat.cast_nonneg (α := ℝ) y.k)
-  have hkp : min y.k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))) = r := by
-    rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ hΩ Pp (by exact_mod_cast hrk)
-      (hdiag.trans (by linarith)) (hsabs.trans (by linarith))]
-    exact min_eq_right hrk
+  have hkp := hM.min_toNat_eq_inertiaPos_of_isEighNodeBudget hB hk hint hv hI
+  rw [← hr] at hkp
   unfold eighStep
   rw [if_neg (by omega), if_neg (by simp [hint])]
   dsimp only
