@@ -39,6 +39,7 @@ public import NLAlib.Computation.Underflow
 public import NLAlib.Computation.VectorErrors
 public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.Eigensolvers.SpectralBisection
+public import NLAlib.Eigensolvers.SpectralBisection.BoundedFormat
 public import NLAlib.Eigensolvers.SpectralBisection.Global
 public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Spectral.SpectralDensity
