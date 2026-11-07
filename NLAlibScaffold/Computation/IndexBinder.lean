@@ -118,7 +118,12 @@ Proof: unfold `NLAlib.Computation.exactSem`; the product is $xy$ (`Option.some.i
 $\lvert xy \rvert = \lvert x \rvert\lvert y \rvert \le \lvert x \rvert$ (`abs_mul`,
 `mul_le_of_le_one_right`, `abs_nonneg`). S, 4 lines. -/
 theorem mulShrinks_exactSem : MulShrinks (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) := by
-  sorry
+  intro p x y z h hy
+  have hz : x * y = z := Option.some.inj h
+  subst hz
+  change |x * y| ≤ |x|
+  rw [abs_mul]
+  exact mul_le_of_le_one_right (abs_nonneg x) hy
 
 omit [DecidableEq P] in
 /-- **Rounding to nearest on a grid does not enlarge a product by a factor of modulus at most
