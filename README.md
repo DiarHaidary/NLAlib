@@ -12,7 +12,7 @@ Website: https://nla-lib.org.
 
 ```
 lake exe cache get
-LEAN_NUM_THREADS=4 lake build NLAlib
+lake build NLAlib
 ```
 
 Pinned: Lean `v4.33.1`, Mathlib `v4.33.1`.
@@ -26,7 +26,7 @@ It distinguishes exact arithmetic, rounding contracts and verified machine imple
 ## Contributing
 
 [CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide: setup, the ground rules, the checks
-(`bash scripts/stage_check.sh` before every PR) and how to build without exhausting memory. It
+(`bash scripts/stage_check.sh` before every PR). It
 links the topic guides in [`docs/contributing/`](docs/contributing/): layout, names, statements,
 vocabulary, programs, docstrings, proofs, design notes and the checks.
 AI agents also follow [AGENTS.md](AGENTS.md).

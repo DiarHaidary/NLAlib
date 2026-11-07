@@ -20,15 +20,13 @@ that do much of the work alike. Everything in them is enforced by CI, by review,
 ```
 git clone https://github.com/NLA-lib/nlalib.git && cd nlalib
 lake exe cache get                                  # Mathlib's .olean files; never build Mathlib
-LEAN_NUM_THREADS=4 lake build NLAlib > /tmp/build.log 2>&1
+lake build NLAlib
 ```
 
 The toolchain is pinned in `lean-toolchain` (Lean and Mathlib `v4.33.1`); `elan` installs it.
 The checks also need Python 3.11 or later and, for the LaTeX check, Node 20 with
-`npm install --no-save --no-package-lock katex@0.16.22`. Read
-[Building without running out of memory](#building-without-running-out-of-memory) before your
-first build: an unbounded `lake build` can exhaust the memory of a laptop. Before opening a PR,
-run `bash scripts/stage_check.sh` ([Pull requests and checks](#pull-requests-and-checks)).
+`npm install --no-save --no-package-lock katex@0.16.22`. Before opening a PR, run
+`bash scripts/stage_check.sh` ([Pull requests and checks](#pull-requests-and-checks)).
 
 ## Ground rules
 
@@ -139,11 +137,12 @@ every push and PR, and in addition the unit tests of the checks
 `node --test scripts/test_check_latex.mjs`, also on Windows) and `mk_all --check` for
 `NLAlibTools`; run the unit tests too if you touched `scripts/`.
 
-While working, the fast checks are `lake lean <file> -- -M 8000`
-([below](#building-without-running-out-of-memory)) and
+While working, the fast checks are `lake lean <file>` and
 `python3 scripts/check_rules.py --files <the files you changed>`, which checks the source-text
 rules (P1, P3, P11, P12, E5, the docstring, citation and notation rules) in seconds without a
-build.
+build. Check a file with `lake lean`, not `lake env lean`, which ignores the options in
+`lakefile.toml`: `autoImplicit` is then on (a typo becomes a variable) and the Mathlib linters
+are off.
 
 **When a step fails.** A build or linter failure is fixed in the source; `--wfail` makes every
 warning fatal. An Audit or Replay failure means an axiom, `sorry`, `unsafe` or `partial` constant
@@ -169,31 +168,6 @@ starts with the file or topic it changes and says what changed (`Krylov/CG: …`
 
 Mathlib bumps are their own PRs and are tagged. Releases are tagged with the Lean version they
 build against (`v4.33.1-nlalib.1`).
-
-## Building without running out of memory
-
-Heavy files on top of Mathlib take 3 to 6 GB each, and a default `lake build` runs one Lean
-worker per core.
-
-- **Never run a bare `lake build`.** Use `LEAN_NUM_THREADS=4 lake build <targets>` (on a machine
-  with 8 cores and about 32 GB; scale to yours), and `LEAN_NUM_THREADS=2` when another build, a
-  Lean language server with files open, or another agent is running on the machine. Lake has no
-  `-j` flag; `LEAN_NUM_THREADS=N` caps the Lean processes it runs at once at `N`.
-- **One build per checkout at a time.** If `lake build` is running, wait for it.
-- **Run long builds in the background with a log**:
-  `LEAN_NUM_THREADS=4 lake build NLAlib > /tmp/build.log 2>&1`, then read the log. Do not stream
-  a full build into a terminal or an agent's context.
-- **Check a single file** with
-  `LEAN_NUM_THREADS=2 lake lean NLAlib/Matrix/Spectral/Weyl.lean -- -M 8000` (`-M` caps the
-  process at 8000 MB); it builds missing imports first. Use `lake lean`, not `lake env lean`,
-  which ignores the options in `lakefile.toml`: `autoImplicit` is then on (a typo becomes a
-  variable) and the Mathlib linters are off.
-- **Split large elaborations.** Memory and heartbeat blowups come from single huge elaborations: a
-  `simp` with hundreds of lemmas, an `nlinarith` on a goal with many atoms, a `decide` on a finite
-  type. The limits on files (ground rule 8) and proofs ([proofs](docs/contributing/proofs.md))
-  keep them rare.
-- **Never `import Mathlib` or `import Mathlib.Tactic`** ([layout](docs/contributing/layout.md)
-  §2), even in a scratch file inside the repository; both load far more than needed.
 
 ## AI agents
 

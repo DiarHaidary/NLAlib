@@ -17,9 +17,7 @@ code, and read `docs/rules/DIGEST.md` and the `NLAlib/<Topic>/RULES.md` of each 
 3. **Do not push**, and do not commit unless you are asked to.
 4. **Run the checks before you report.** `python3 scripts/check_rules.py --files <files>` while
    working; `bash scripts/stage_check.sh` (exit 0) before you call the work finished
-   (CONTRIBUTING, "Pull requests and checks"). Never run a bare `lake build`; build with
-   `LEAN_NUM_THREADS=2` and a log file, one build per checkout at a time (CONTRIBUTING, "Building
-   without running out of memory").
+   (CONTRIBUTING, "Pull requests and checks").
 5. **Stay in scope.** Search Mathlib, then `NLAlib/`, before proving anything. Do not weaken a
    statement to make it provable, and do not add theorems, interfaces or vocabulary rows beyond your
    task; note what you saw in your report instead.

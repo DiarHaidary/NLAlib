@@ -19,8 +19,7 @@
 # rule files (scripts/gen_rules_md.py --check), the rules check
 # (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
 # modules) and the duplicate-statement report (which never fails the script). Logs go to $TMPDIR
-# (default /tmp). Run from the repository root; never while another build is running
-# (CONTRIBUTING, "Building without running out of memory").
+# (default /tmp). Run from the repository root; never while another build is running.
 set -euo pipefail
 tmp="${TMPDIR:-/tmp}/nlalib-stage-check"
 mkdir -p "$tmp"
