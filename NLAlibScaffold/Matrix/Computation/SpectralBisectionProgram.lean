@@ -236,7 +236,40 @@ theorem eighLoc_bounds {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
     {a : List Bool} {lo : ℕ} {y : EighNode F}
     (h : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y)) :
     1 ≤ y.k ∧ lo + y.k ≤ N := by
-  sorry
+  have key : ∀ (a : List Bool) (d lo : ℕ) (x y : EighNode F) (lo' : ℕ), 1 ≤ x.k →
+      lo + x.k ≤ N → eighLoc M N signFuel R₀ β d lo x a = some (lo', y) →
+      1 ≤ y.k ∧ lo' + y.k ≤ N := by
+    intro a
+    induction a with
+    | nil =>
+      intro d lo x y lo' hk hN' h
+      simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      exact ⟨hk, hN'⟩
+    | cons b a ih =>
+      intro d lo x y lo' hk hN' h
+      cases hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) with
+      | leaf U e => simp [eighLoc, hs] at h
+      | shift b' A' σ =>
+        by_cases hb : b = b'
+        · subst hb
+          simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
+          exact ih (d + 1) lo _ y lo' (by show 1 ≤ x.k; exact hk)
+            (by show lo + x.k ≤ N; exact hN') h
+        · simp [eighLoc, hs, hb] at h
+      | split kp h' Qp Qm Ap Am σ =>
+        have hb : 0 < kp ∧ kp < x.k := by
+          unfold eighStep at hs
+          dsimp only at hs
+          split_ifs at hs <;> (try cases hs) <;> omega
+        cases b
+        · simp only [eighLoc, hs, Bool.false_eq_true, if_false] at h
+          exact ih (d + 1) (lo + kp) _ y lo' (by show 1 ≤ x.k - kp; omega)
+            (by show lo + kp + (x.k - kp) ≤ N; omega) h
+        · simp only [eighLoc, hs, if_true] at h
+          exact ih (d + 1) lo _ y lo' (by show 1 ≤ kp; omega)
+            (by show lo + kp ≤ N; omega) h
+  exact key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo hN (by show 0 + N ≤ N; omega) h
 
 /-- **The nodes at one depth have disjoint ranges**: two distinct paths of the same length that
 `NLAlib.eighLoc` follows from the root reach nodes whose ranges $[lo, lo + k)$ do not meet. So the
