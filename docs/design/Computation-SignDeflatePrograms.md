@@ -194,13 +194,13 @@ $2e^{-t^2/2} + r^2x^2$, hdiag's bound unchanged (the run never fails).
 
 ## 5. Dependencies on HDIAG (separate scaffold file)
 
-`NLAlibScaffold/RandomMatrix/Computation/SignDeflateTargets.lean` holds three statements whose
-proofs need hdiag theorems that are statements of hdiag's scaffold (being proved on
-`integrate/hdiag`): TR1 the shallow test passes within $N_0 + 1$ steps (new for hdiag: its
-Theorem 2.6 proof shows it in step (2) but does not state it; the program's success needs it),
-TR2 and TR3 the target proofs (hdiag Theorem 2.6 and Theorem 3.3). They are not in the targets
-file of this stage and are dispatched when HDIAG lands; their `Proof:` lines name the hdiag
-theorems in prose so that `check-skeleton --strict` does not resolve them here.
+`NLAlibScaffold/RandomMatrix/Computation/SignDeflateTargets.lean` holds the two target proofs
+TR2 and TR3, which use hdiag's Theorem 2.6 and Theorem 3.3. TR1, that the shallow test passes
+within $N_0 + 1$ steps (shown in step (2) of the proof of Theorem 2.6 but not stated there; the
+program's success needs it), is now an HDIAG lemma:
+`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate` in
+`NLAlib/Matrix/Computation/NewtonSchulzSign.lean` (cleanup/hdiag, with the chain helpers of the
+Theorem 2.6 proof made public). TR2 and TR3 are proved; both use only the standard axioms.
 
 Two further consequences for hdiag (D3, D7):
 * hdiag's SIGN theorem asks for the full `FloatMachine.IsAccurate`, QR and samplers included,
@@ -215,8 +215,8 @@ Two further consequences for hdiag (D3, D7):
   $M_0$ hypothesis non-vacuous only there. This branch adds the monotonicity
   `FloatMachine.IsAccurate.mono` (IM4, S), which with that witness covers every $u \ge 0$;
   follow-up for HDIAG: restate the witness for $u \ge 0$ directly.
-* **TR1 has an owner: the HDIAG stage.** It is proved on `integrate/hdiag` with Theorem 2.6, or
-  Theorem 2.6 is restated to return the pass index; COMPDYN does not dispatch it.
+* **TR1 is an HDIAG lemma** (`exists_le_newtonSchulzTest_iterate`, proved on `cleanup/hdiag`
+  next to Theorem 2.6); COMPDYN does not dispatch it.
 
 ## 6. Registration
 
@@ -292,8 +292,8 @@ Findings for S2:
 ## 9. Skeleton
 
 65 statements in 7 files (S 28, M 37, no L; waves 0 to 6), in
-`~/nlalib-harness/pilot/compdyn-s1cd-targets.json`, plus TR1 (L, hdiag share), TR2, TR3 (M) in
-the HDIAG-blocked file. Note ids: LP (loops, `Computation/Exec.lean`, to a new
+`~/nlalib-harness/pilot/compdyn-s1cd-targets.json`, plus TR2, TR3 (M) in
+`SignDeflateTargets.lean` (proved; TR1 moved to HDIAG). Note ids: LP (loops, `Computation/Exec.lean`, to a new
 `Computation/Loops.lean` since `Exec.lean` is at F10), PP (pair patterns, `KernelContracts.lean`),
 IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKernels.lean`), SG
 (new `NewtonSchulzSignProgram.lean`), DF (new `DeflationProgram.lean`), CT (new
@@ -311,7 +311,7 @@ IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKer
 | SG1–SG11 | test block, step block (value, success), loop, (a), (b), tree (`toStmt_compiled`, value, success), counts | M ×7, S ×3, M |
 | DF1–DF8 | draw loop, (a), (b), sampler rewrite, tree ×3, counts | M, M, M, S, S, S, S, M |
 | CT1 | `hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw` | M |
-| TR1–TR3 (blocked) | `FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`, `matrixFreeRoundedProbNewtonSchulzSign`, `matrixFreeRoundedProbDeflate` | L, M, M |
+| TR1–TR3 (proved) | `FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate` (HDIAG), `matrixFreeRoundedProbNewtonSchulzSign`, `matrixFreeRoundedProbDeflate` | L, M, M |
 
 ## 10. Deviations from the brief
 

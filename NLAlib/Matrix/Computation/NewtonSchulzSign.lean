@@ -37,6 +37,8 @@ in absolute value, or after $N$ steps. The definitions are computable: they use 
 * `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le`: one step.
 * `NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`: the
   algorithm.
+* `NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`: the stopping test passes
+  within $N_0 + 1$ steps.
 -/
 
 @[expose] public section
@@ -335,20 +337,28 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
 
 /-! ### Spectral helpers for the accuracy proof -/
 
-private theorem abs_le_specNorm_of_mem_spectrum {k : ℕ} {X : Matrix (Fin k) (Fin k) ℂ}
+/-- An eigenvalue $x$ of a Hermitian $\mathbf{X}$ has $\lvert x \rvert \le \|\mathbf{X}\|_2$. -/
+theorem _root_.Matrix.IsHermitian.abs_le_specNorm_of_mem_spectrum {k : ℕ}
+    {X : Matrix (Fin k) (Fin k) ℂ}
     (hX : X.IsHermitian) {x : ℝ} (hx : x ∈ spectrum ℝ X) : |x| ≤ specNorm X := by
   rw [hX.spectrum_eq_image_eigenvalue] at hx
   obtain ⟨j, -, rfl⟩ := hx
   exact hX.abs_eigenvalue_le_specNorm j
 
-private theorem exists_mem_spectrum_abs_sub_le {k : ℕ} {X Y : Matrix (Fin k) (Fin k) ℂ}
+/-- For Hermitian $\mathbf{X}$, $\mathbf{Y}$, every eigenvalue $y$ of $\mathbf{Y}$ is within
+$\|\mathbf{X} - \mathbf{Y}\|_2$ of some eigenvalue of $\mathbf{X}$. -/
+theorem _root_.Matrix.IsHermitian.exists_mem_spectrum_abs_sub_le {k : ℕ}
+    {X Y : Matrix (Fin k) (Fin k) ℂ}
     (hX : X.IsHermitian) (hY : Y.IsHermitian) {y : ℝ} (hy : y ∈ spectrum ℝ Y) :
     ∃ x ∈ spectrum ℝ X, |x - y| ≤ specNorm (X - Y) := by
   rw [hY.spectrum_eq_image_eigenvalue] at hy
   obtain ⟨j, hj, rfl⟩ := hy
   exact ⟨_, hX.eigenvalue_mem_spectrum hj, hX.abs_eigenvalue_sub_le hY j⟩
 
-private theorem exists_mem_spectrum_eq_mul {k : ℕ} {X : Matrix (Fin k) (Fin k) ℂ}
+/-- For Hermitian $\mathbf{X}$ and real $c$, every eigenvalue of $c\mathbf{X}$ is $c x$ for an
+eigenvalue $x$ of $\mathbf{X}$. -/
+theorem _root_.Matrix.IsHermitian.exists_mem_spectrum_eq_mul {k : ℕ}
+    {X : Matrix (Fin k) (Fin k) ℂ}
     (hX : X.IsHermitian) (c : ℝ) {y : ℝ} (hy : y ∈ spectrum ℝ (c • X)) :
     ∃ x ∈ spectrum ℝ X, y = c * x := by
   rw [← cfc_const_mul_id c X hX.isSelfAdjoint, cfc_map_spectrum _ _ hX.isSelfAdjoint] at hy
@@ -376,7 +386,7 @@ private theorem abs_one_sub_sq_le_specNorm {k : ℕ} {X : Matrix (Fin k) (Fin k)
   rw [← cfc_sq_sub_one hX]
   have hH : (cfc (fun x : ℝ => x ^ 2 - 1) X).IsHermitian := cfc_predicate _ X
   rw [abs_sub_comm]
-  refine abs_le_specNorm_of_mem_spectrum hH ?_
+  refine hH.abs_le_specNorm_of_mem_spectrum ?_
   rw [cfc_map_spectrum (fun x : ℝ => x ^ 2 - 1) X hX.isSelfAdjoint]
   exact ⟨x, hx, rfl⟩
 
@@ -402,13 +412,18 @@ private theorem specNorm_le_card_mul_of_norm_apply_le {k : ℕ}
 
 /-! ### Scalar chains of the perturbed iteration -/
 
-/-- `y` is reached at step `k` by a perturbed Newton–Schulz chain with errors at most `δ` from a
-start of modulus in `[s, 11/10]`. -/
-private def IsNewtonSchulzChain (s δ y : ℝ) (k : ℕ) : Prop :=
+/-- **A perturbed Newton–Schulz chain**: $y$ is reached at step $k$ by a sequence
+$x_0, x_1, \dots$ with $s \le \lvert x_0 \rvert \le 11/10$ and
+$\lvert x_{j+1} - g(x_j) \rvert \le \delta$ for every $j$, $g(x) = \tfrac12 x(3 - x^2)$ the
+Newton–Schulz map (`NLAlib.newtonSchulz`). The eigenvalues of the rounded iterates of
+`NLAlib.newtonSchulzSign` lie on such chains. -/
+def IsNewtonSchulzChain (s δ y : ℝ) (k : ℕ) : Prop :=
   ∃ x : ℕ → ℝ, x k = y ∧ s ≤ |x 0| ∧ |x 0| ≤ 11 / 10 ∧
     ∀ j, |x (j + 1) - newtonSchulz (x j)| ≤ δ
 
-private theorem isNewtonSchulzChain_zero {s δ y : ℝ} (hδ : 0 ≤ δ) (h₁ : s ≤ |y|)
+/-- A start $y$ with $s \le \lvert y \rvert \le 11/10$ is reached at step $0$ by a perturbed
+Newton–Schulz chain with errors at most $\delta \ge 0$ (`NLAlib.IsNewtonSchulzChain`). -/
+theorem isNewtonSchulzChain_zero {s δ y : ℝ} (hδ : 0 ≤ δ) (h₁ : s ≤ |y|)
     (h₂ : |y| ≤ 11 / 10) : IsNewtonSchulzChain s δ y 0 :=
   ⟨fun j => newtonSchulz^[j] y, rfl, h₁, h₂, fun j => by
     simp only [Function.iterate_succ_apply', sub_self, abs_zero]; exact hδ⟩
@@ -440,7 +455,9 @@ private theorem IsNewtonSchulzChain.le_abs {s δ y : ℝ} {k : ℕ}
     hstep k
   exact le_trans (le_min h₁ hs) this
 
-private theorem IsNewtonSchulzChain.abs_le {s δ y : ℝ} {k : ℕ}
+/-- A point of a perturbed Newton–Schulz chain (`NLAlib.IsNewtonSchulzChain`) with errors
+$\delta \le 1/10$ has modulus at most $11/10$. -/
+theorem IsNewtonSchulzChain.abs_le {s δ y : ℝ} {k : ℕ}
     (h : IsNewtonSchulzChain s δ y k) (hδ : δ ≤ 1 / 10) : |y| ≤ 11 / 10 := by
   obtain ⟨x, rfl, h₁, h₂, hstep⟩ := h
   rcases k with _ | k
@@ -448,7 +465,12 @@ private theorem IsNewtonSchulzChain.abs_le {s δ y : ℝ} {k : ℕ}
   · have := abs_le_one_add_of_abs_sub_newtonSchulz_le (by linarith) (by linarith) hstep k
     linarith
 
-private theorem IsNewtonSchulzChain.abs_one_sub_sq_le {s δ y ε : ℝ} {k : ℕ}
+/-- A point $y$ reached at step $k$ by a perturbed Newton–Schulz chain
+(`NLAlib.IsNewtonSchulzChain`) from a start of modulus at least $s > 0$, with errors $\delta$,
+$20\delta \le s$, $10\delta \le \varepsilon \le 3/80$, $\varepsilon > 0$ and
+$N(s, \varepsilon) \le k$ (`NLAlib.newtonSchulzSteps`), has
+$\lvert 1 - y^2 \rvert \le \varepsilon$. -/
+theorem IsNewtonSchulzChain.abs_one_sub_sq_le {s δ y ε : ℝ} {k : ℕ}
     (h : IsNewtonSchulzChain s δ y k) (hs : 0 < s) (hδ : 20 * δ ≤ s) (hε : 0 < ε)
     (hε₁ : 10 * δ ≤ ε) (hε₂ : ε ≤ 3 / 80) (hk : newtonSchulzSteps s ε ≤ k) :
     |1 - y ^ 2| ≤ ε := by
@@ -458,15 +480,24 @@ private theorem IsNewtonSchulzChain.abs_one_sub_sq_le {s δ y ε : ℝ} {k : ℕ
 
 /-! ### One step of the matrix iteration -/
 
-private theorem specNorm_le_of_forall_mem_spectrum_abs_le {k : ℕ}
+/-- A Hermitian $\mathbf{X}$ whose eigenvalues all have modulus at most $c \ge 0$ has
+$\|\mathbf{X}\|_2 \le c$. -/
+theorem _root_.Matrix.IsHermitian.specNorm_le_of_forall_mem_spectrum_abs_le {k : ℕ}
     {X : Matrix (Fin k) (Fin k) ℂ} (hX : X.IsHermitian) {c : ℝ} (hc : 0 ≤ c)
     (h : ∀ x ∈ spectrum ℝ X, |x| ≤ c) : specNorm X ≤ c := by
   have := hX.specNorm_cfc_le (f := id) hc h
   rwa [cfc_id ℝ X hX.isSelfAdjoint] at this
 
-/-- One rounded step keeps every eigenvalue on a perturbed scalar chain, and moves the sign by at
-most `2δ/s`. -/
-private theorem newtonSchulzRounded_chain_and_specNorm_le
+/-- One rounded Newton–Schulz step keeps the eigenvalues on perturbed chains: under
+`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$,
+$u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and $9 \le \Omega$, let
+$\delta = 4\sqrt n\,(8 + \mu(n))\,u$ and $0 < s \le 1/2$ with $20\delta \le s$. If every eigenvalue
+of the stored $\mathbf{X}$ with Hermitian decoding is reached at step $k$ by a perturbed
+Newton–Schulz chain from a start of modulus at least $s$ with errors $\delta$
+(`NLAlib.IsNewtonSchulzChain`), then every eigenvalue of the rounded step
+`NLAlib.newtonSchulzRounded` is reached at step $k + 1$, and the step moves the sign by at most
+$2\delta/s$ in the spectral norm. -/
+theorem FloatMachine.IsAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n)
     (hu₀ : 0 ≤ u) (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1)
     (hΩ : 9 ≤ Ω) {s : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2)
@@ -484,7 +515,7 @@ private theorem newtonSchulzRounded_chain_and_specNorm_le
   have hY := hM.isHermitian_decodeMatrix_newtonSchulzRounded X
   have hgX : (cfc newtonSchulz (decodeMatrix dec X)).IsHermitian := cfc_predicate _ _
   have hXn : specNorm (decodeMatrix dec X) ≤ 11 / 10 :=
-    specNorm_le_of_forall_mem_spectrum_abs_le hX (by norm_num) fun y hy =>
+    hX.specNorm_le_of_forall_mem_spectrum_abs_le (by norm_num) fun y hy =>
       (hch y hy).abs_le (by linarith)
   have herr : specNorm (cfc newtonSchulz (decodeMatrix dec X) -
       decodeMatrix dec (newtonSchulzRounded M X)) ≤ δ := by
@@ -493,7 +524,7 @@ private theorem newtonSchulzRounded_chain_and_specNorm_le
   have hchY : ∀ z ∈ spectrum ℝ (decodeMatrix dec (newtonSchulzRounded M X)),
       IsNewtonSchulzChain s δ z (k + 1) := by
     intro z hz
-    obtain ⟨w, hw, hwz⟩ := exists_mem_spectrum_abs_sub_le hgX hY hz
+    obtain ⟨w, hw, hwz⟩ := hgX.exists_mem_spectrum_abs_sub_le hY hz
     rw [cfc_map_spectrum newtonSchulz (decodeMatrix dec X) hX.isSelfAdjoint
       ((decodeMatrix dec X).finite_real_spectrum.continuousOn _)] at hw
     obtain ⟨y, hy, rfl⟩ := hw
@@ -558,7 +589,7 @@ private theorem specNorm_mul_self_sub_one_sub_decodeMatrix_le
   have hPH : P.IsHermitian := hM.isMatMulErr.isHermitian_of_map_eq_conjTranspose X X hX.symm
   have hX₁ : specNorm (Xd * Xd - 1) ≤ 1 :=
     specNorm_mul_self_sub_one_le hX zero_le_one fun x hx => by
-      have := (abs_le_specNorm_of_mem_spectrum hX hx).trans hXn
+      have := (hX.abs_le_specNorm_of_mem_spectrum hx).trans hXn
       rw [abs_le]; constructor <;> nlinarith [abs_nonneg x, sq_abs x]
   have hP₁ : specNorm (P - 1) ≤ 2 := by
     have : P - 1 = (Xd * Xd - 1) - (Xd * Xd - P) := by abel
@@ -624,8 +655,15 @@ private theorem specNorm_sub_cfc_sign_le_of_newtonSchulzTest
   exact hX.specNorm_sub_cfc_sign_le (by positivity) fun x hx =>
     (abs_one_sub_sq_le_specNorm hX hx).trans hS
 
-/-- If every eigenvalue is close to `±1`, the test passes. -/
-private theorem newtonSchulzTest_of_forall_mem_spectrum
+/-- The Newton–Schulz test passes near $\pm 1$: under `NLAlib.FloatMachine.IsAccurate` $u$
+$\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$,
+$2n\tau \le 1$, $9(n + 1) \le \Omega$ and $n > 0$, for a stored $\varepsilon$ with
+$0 < \varepsilon \le 1/2$ and $640n(8 + \mu(n))u \le \varepsilon$ (decoded values), and a stored
+$\mathbf{X}$ with Hermitian decoding, $\|\mathbf{X}\|_2 \le 11/10$ and
+$\lvert 1 - x^2 \rvert \le \varepsilon/(16n)$ for every eigenvalue $x$, the stopping test
+`NLAlib.newtonSchulzTest` at the computed threshold $\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$
+passes. -/
+theorem FloatMachine.IsAccurate.newtonSchulzTest_of_forall_mem_spectrum
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F} (hε : 0 < dec ε)
     (hε₁ : dec ε ≤ 1 / 2) (hk : 640 * n * (8 + μ n) * u ≤ dec ε)
@@ -685,7 +723,7 @@ private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
   have hXn : ∀ {j : ℕ} {Y : Matrix (Fin n) (Fin n) (F × F)}, (decodeMatrix dec Y).IsHermitian →
       (∀ y ∈ spectrum ℝ (decodeMatrix dec Y), IsNewtonSchulzChain s δ y j) →
         specNorm (decodeMatrix dec Y) ≤ 11 / 10 := fun hY hchY =>
-    specNorm_le_of_forall_mem_spectrum_abs_le hY (by norm_num) fun y hy =>
+    hY.specNorm_le_of_forall_mem_spectrum_abs_le (by norm_num) fun y hy =>
       (hchY y hy).abs_le (by linarith)
   induction N generalizing k X with
   | zero =>
@@ -705,10 +743,11 @@ private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
     · rw [if_neg ht]
       have hkN : (k : ℝ) < N₀ := by
         by_contra hk'
-        exact ht (newtonSchulzTest_of_forall_mem_spectrum hM hμ hu₀ hτ₀ hτ hΩ hn hε hε₁ hk hX
+        exact ht (hM.newtonSchulzTest_of_forall_mem_spectrum hμ hu₀ hτ₀ hτ hΩ hn hε hε₁ hk hX
           (hXn hX hch) fun y hy =>
             (hch y hy).abs_one_sub_sq_le hs hδs hε' hδε hε'₁ (not_lt.mp hk'))
-      obtain ⟨hchY, hstep⟩ := newtonSchulzRounded_chain_and_specNorm_le hM hμ hu₀
+      obtain ⟨hchY, hstep⟩ :=
+        hM.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le hμ hu₀
         (unitRoundoff_bounds hn hμ hu₀ hε₁ hk).2 hτ₀ hτ
         (by linarith) hs hs₁ hδs hX hch
       have hIH := ih (k + 1) (newtonSchulzRounded M X)
@@ -759,7 +798,7 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
   -- the scale `b` is positive and at least `a`
   have hab : a ≤ dec b := by
     have hx := hA.eigenvalue_mem_spectrum (k := 0) (by simpa using hn)
-    exact ((hspec _ hx).trans (abs_le_specNorm_of_mem_spectrum hA hx)).trans hb
+    exact ((hspec _ hx).trans (hA.abs_le_specNorm_of_mem_spectrum hx)).trans hb
   have hb₀ : 0 < dec b := ha.trans_le hab
   set r := a / dec b with hr
   have hr₀ : 0 < r := div_pos ha hb₀
@@ -784,10 +823,10 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
     hM.isHermitian_decodeMatrix_hermFrom _ _
   have hAs : ((dec b)⁻¹ • Ad).IsHermitian := hA.smul (IsSelfAdjoint.all _)
   have hAs₁ : specNorm ((dec b)⁻¹ • Ad) ≤ 1 :=
-    specNorm_le_of_forall_mem_spectrum_abs_le hAs zero_le_one fun y hy => by
-      obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hy
+    hAs.specNorm_le_of_forall_mem_spectrum_abs_le zero_le_one fun y hy => by
+      obtain ⟨x, hx, rfl⟩ := hA.exists_mem_spectrum_eq_mul _ hy
       rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), inv_mul_le_one₀ hb₀]
-      exact (abs_le_specNorm_of_mem_spectrum hA hx).trans hb
+      exact (hA.abs_le_specNorm_of_mem_spectrum hx).trans hb
   have hrx : ∀ x ∈ spectrum ℝ Ad, r ≤ |(dec b)⁻¹ * x| := fun x hx => by
     rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), hr, div_eq_inv_mul]
     exact mul_le_mul_of_nonneg_left (hspec x hx) (inv_pos.mpr hb₀).le
@@ -800,9 +839,9 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
   have hch₀ : ∀ y ∈ spectrum ℝ (decodeMatrix dec (M.hermScale A b)),
       IsNewtonSchulzChain (r / 2) δ y 0 := by
     intro y hy
-    obtain ⟨w, hw, hwy⟩ := exists_mem_spectrum_abs_sub_le hAs hA₀ hy
-    have hw₁ := (abs_le_specNorm_of_mem_spectrum hAs hw).trans hAs₁
-    obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hw
+    obtain ⟨w, hw, hwy⟩ := hAs.exists_mem_spectrum_abs_sub_le hA₀ hy
+    have hw₁ := (hAs.abs_le_specNorm_of_mem_spectrum hw).trans hAs₁
+    obtain ⟨x, hx, rfl⟩ := hA.exists_mem_spectrum_eq_mul _ hw
     have hw₂ := hrx x hx
     have h₁ := abs_sub_abs_le_abs_sub ((dec b)⁻¹ * x) y
     have h₂ := abs_sub_abs_le_abs_sub y ((dec b)⁻¹ * x)
@@ -814,7 +853,7 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
   change _ ≤ 2 / 3 * dec ε + (N₀ + 1) * (2 * δ / (r / 2)) at hloop
   -- the first rounding moves the sign by at most `2‖A/b − A₀‖₂ / (a/b)`
   have hsign := hAs.specNorm_cfc_sign_sub_cfc_sign_le hA₀ hr₀ fun y hy => by
-    obtain ⟨x, hx, rfl⟩ := exists_mem_spectrum_eq_mul hA _ hy
+    obtain ⟨x, hx, rfl⟩ := hA.exists_mem_spectrum_eq_mul _ hy
     exact hrx x hx
   rw [cfc_sign_smul hA (inv_pos.mpr hb₀)] at hsign
   have htri := specNorm_add_le (cfc Real.sign Ad - cfc Real.sign
@@ -829,6 +868,119 @@ theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzS
     have := mul_nonneg (mul_nonneg (sub_nonneg.mpr hn₁) hδ₀) (by linarith : 0 ≤ N₀ + 1)
     rw [mul_div_assoc', div_le_iff₀ (by positivity)]; linarith
   exact htri.trans (by linarith [hsign.trans h₁])
+
+/-- The step count $N(x, 0)$ is nonnegative (the logarithms of `0` are `0`). -/
+private theorem newtonSchulzSteps_zero_nonneg (x : ℝ) : 0 ≤ newtonSchulzSteps x 0 := by
+  have h : 0 ≤ Real.logb 2 (min |x| (1 / 2))⁻¹ := by
+    rcases (le_min (abs_nonneg _) (by norm_num : (0 : ℝ) ≤ 1 / 2)).eq_or_lt with h | h
+    · rw [← h, inv_zero, Real.logb_zero]
+    · exact Real.logb_nonneg one_lt_two
+        ((one_le_inv₀ h).mpr ((min_le_right _ _).trans (by norm_num)))
+  simp only [newtonSchulzSteps, inv_zero, Real.logb_zero, add_zero]
+  linarith
+
+/-- **The Newton–Schulz test passes within the step count**: under the machine contract
+`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$,
+$u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $9(n + 1) \le \Omega$, let the stored $\mathbf{A}$
+have Hermitian decoding (written $\mathbf{A}$) with $\|\mathbf{A}\|_2 \le b$ and every eigenvalue
+of modulus at least $a > 0$, for stored $b$ and $\varepsilon$ with $0 < \varepsilon \le 1/2$
+(decoded values). With $N_0 = N(a/(2b), \varepsilon/(16n))$ (`NLAlib.newtonSchulzSteps`), if
+$$640\, n^{3/2}\,(8 + \mu(n))\,(N_0 + 1)\,u \le \frac{a}{b}\,\varepsilon \,,$$
+then the stopping test `NLAlib.newtonSchulzTest` at the computed threshold
+$\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$ passes at some iterate $k \le N_0 + 1$ of the rounded
+step `NLAlib.newtonSchulzRounded` from the stored $\mathbf{A}/b$. [Shah2024, proof of
+Theorem 2.6], where the iteration count is shown but not stated. -/
+theorem FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate
+    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+    (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b ε : F} (ha : 0 < a)
+    (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)
+    (hb : specNorm (decodeMatrix dec A) ≤ dec b) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 1 / 2)
+    (hu : 640 * n * √(n : ℝ) * (8 + μ n) *
+      (newtonSchulzSteps (a / (2 * dec b)) (dec ε / (16 * n)) + 1) * u ≤ a / dec b * dec ε) :
+    ∃ k : ℕ, (k : ℝ) ≤ newtonSchulzSteps (a / (2 * dec b)) (dec ε / (16 * n)) + 1 ∧
+      newtonSchulzTest M (M.div ε (M.ofNat (4 * n)))
+        ((newtonSchulzRounded M)^[k] (M.hermScale A b)) = true := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · refine ⟨0, ?_, by simp [newtonSchulzTest]⟩
+    rw [Nat.cast_zero, mul_zero, div_zero]
+    linarith [newtonSchulzSteps_zero_nonneg (a / (2 * dec b))]
+  set Ad := decodeMatrix dec A
+  have hn₁ : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hsqn : 1 ≤ √(n : ℝ) := Real.one_le_sqrt.mpr hn₁
+  have hab : a ≤ dec b := by
+    have hx := hA.eigenvalue_mem_spectrum (k := 0) (by simpa using hn)
+    exact ((hspec _ hx).trans (hA.abs_le_specNorm_of_mem_spectrum hx)).trans hb
+  have hb₀ : 0 < dec b := ha.trans_le hab
+  set r := a / dec b with hr
+  have hr₀ : 0 < r := div_pos ha hb₀
+  have hr₁ : r ≤ 1 := (div_le_one hb₀).mpr hab
+  have hs : a / (2 * dec b) = r / 2 := by rw [hr]; field_simp
+  rw [hs] at hu ⊢
+  set N₀ := newtonSchulzSteps (r / 2) (dec ε / (16 * n))
+  have hN₀ : 0 ≤ N₀ := newtonSchulzSteps_nonneg (by positivity) (by linarith) (by positivity)
+    (by rw [div_le_iff₀ (by positivity)]; nlinarith)
+  set δ := 4 * √(n : ℝ) * (8 + μ n) * u
+  have hδ₀ : 0 ≤ δ := by positivity
+  have hK : 160 * n * δ * (N₀ + 1) ≤ r * dec ε := by linarith
+  have hK₁ : 160 * n * δ ≤ r * dec ε := by nlinarith [mul_nonneg (by positivity : (0 : ℝ) ≤ n) hδ₀]
+  have hk : 640 * n * (8 + μ n) * u ≤ dec ε := by
+    nlinarith [mul_nonneg (mul_nonneg (by positivity : (0 : ℝ) ≤ n)
+      (by linarith : (0 : ℝ) ≤ 8 + μ n)) hu₀]
+  have hu₁ : u * (8 + μ n) ≤ 1 / 10 := by
+    nlinarith [mul_nonneg hu₀ (by linarith : 0 ≤ 8 + μ n)]
+  have hδs : 20 * δ ≤ r / 2 := by nlinarith
+  have hδε : 10 * δ ≤ dec ε / (16 * n) := by
+    rw [le_div_iff₀ (by positivity)]; nlinarith
+  have hε' : 0 < dec ε / (16 * n) := by positivity
+  have hε'₁ : dec ε / (16 * n) ≤ 3 / 80 := by
+    rw [div_le_iff₀ (by positivity)]; nlinarith
+  -- the start `A₀ = fl(A / b)` lies on chains
+  have hA₀ : (decodeMatrix dec (M.hermScale A b)).IsHermitian :=
+    hM.isHermitian_decodeMatrix_hermFrom _ _
+  have hAs : ((dec b)⁻¹ • Ad).IsHermitian := hA.smul (IsSelfAdjoint.all _)
+  have hAs₁ : specNorm ((dec b)⁻¹ • Ad) ≤ 1 :=
+    hAs.specNorm_le_of_forall_mem_spectrum_abs_le zero_le_one fun y hy => by
+      obtain ⟨x, hx, rfl⟩ := hA.exists_mem_spectrum_eq_mul _ hy
+      rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), inv_mul_le_one₀ hb₀]
+      exact (hA.abs_le_specNorm_of_mem_spectrum hx).trans hb
+  have he := hM.specNorm_sub_decodeMatrix_hermScale_le hu₀ hτ₀ hA hb₀.ne'
+    (by rw [abs_of_pos hb₀, div_le_iff₀ hb₀]; nlinarith [specNorm_nonneg Ad])
+  have he' : specNorm ((dec b)⁻¹ • Ad - decodeMatrix dec (M.hermScale A b)) ≤ δ / 16 := by
+    refine he.trans ?_
+    nlinarith [mul_le_mul_of_nonneg_left hAs₁ (by positivity : (0 : ℝ) ≤ u * √(n : ℝ)),
+      mul_nonneg hu₀ hμ, mul_nonneg hu₀ (by positivity : (0 : ℝ) ≤ √(n : ℝ))]
+  have hch₀ : ∀ y ∈ spectrum ℝ (decodeMatrix dec (M.hermScale A b)),
+      IsNewtonSchulzChain (r / 2) δ y 0 := by
+    intro y hy
+    obtain ⟨w, hw, hwy⟩ := hAs.exists_mem_spectrum_abs_sub_le hA₀ hy
+    have hw₁ := (hAs.abs_le_specNorm_of_mem_spectrum hw).trans hAs₁
+    obtain ⟨x, hx, rfl⟩ := hA.exists_mem_spectrum_eq_mul _ hw
+    have hw₂ : r ≤ |(dec b)⁻¹ * x| := by
+      rw [abs_mul, abs_of_pos (inv_pos.mpr hb₀), hr, div_eq_inv_mul]
+      exact mul_le_mul_of_nonneg_left (hspec x hx) (inv_pos.mpr hb₀).le
+    have h₁ := abs_sub_abs_le_abs_sub ((dec b)⁻¹ * x) y
+    have h₂ := abs_sub_abs_le_abs_sub y ((dec b)⁻¹ * x)
+    rw [abs_sub_comm] at h₂
+    exact isNewtonSchulzChain_zero hδ₀ (by linarith) (by linarith)
+  -- every iterate lies on chains, and the test passes at `⌈N₀⌉`
+  have hit : ∀ j, (decodeMatrix dec ((newtonSchulzRounded M)^[j] (M.hermScale A b))).IsHermitian ∧
+      ∀ y ∈ spectrum ℝ (decodeMatrix dec ((newtonSchulzRounded M)^[j] (M.hermScale A b))),
+        IsNewtonSchulzChain (r / 2) δ y j := by
+    intro j
+    induction j with
+    | zero => exact ⟨hA₀, hch₀⟩
+    | succ j ih =>
+      rw [Function.iterate_succ_apply']
+      exact ⟨hM.isHermitian_decodeMatrix_newtonSchulzRounded _,
+        (hM.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le hμ hu₀ hu₁ hτ₀ hτ
+          (by linarith) (by positivity) (by linarith) hδs ih.1 ih.2).1⟩
+  obtain ⟨hX, hch⟩ := hit ⌈N₀⌉₊
+  refine ⟨⌈N₀⌉₊, (Nat.ceil_lt_add_one hN₀).le, ?_⟩
+  exact hM.newtonSchulzTest_of_forall_mem_spectrum hμ hu₀ hτ₀ hτ hΩ hn hε hε₁ hk hX
+    (hX.specNorm_le_of_forall_mem_spectrum_abs_le (by norm_num) fun y hy =>
+      (hch y hy).abs_le (by linarith))
+    fun y hy => (hch y hy).abs_one_sub_sq_le (by positivity) hδs hε' hδε hε'₁ (Nat.le_ceil _)
 
 end Accuracy
 
