@@ -41,17 +41,29 @@ variable {P ι K C : Type} [DecidableEq P]
 
 /-! ### The run of a binder -/
 
-/-- **The run of an index binder on a stored value**: if the cell `x` holds $v$ at tag `p` and
-the semantics converts $v$ to $k$, the binder runs its body at $\min(k, \mathit{bound})$ after one
-charged conversion. No printed source.
+/-- **The run of an index binder on a stored value**: if the cell `x` holds $v$ at tag `p`, the
+semantics converts $v$ to $k$ and $k$ is at most the bound, the binder runs its body at $k$ after
+one charged conversion. No printed source.
 Proof: `NLAlib.Computation.exec_bindIdx`, then unfold `NLAlib.Computation.toNatStep` and rewrite
-with `hx`, `hk` (`Option.bind_some`, `Option.map_some`). S, 3 lines. -/
+with `hx`, `hk`, `hkb` (`Option.bind_some`, `Option.map_some`, `if_pos`). S, 3 lines. -/
 theorem exec_bindIdx_of_read [AddMonoid C] (I : Interp P ι K C) {p : P} {x : Cell ℕ ℕ}
     {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C} {v : K} {k : ℕ}
-    (hx : st.store.read p x.buf x.idx.eval = some v) (hk : I.sem.toNat p v = some k) :
+    (hx : st.store.read p x.buf x.idx.eval = some v) (hk : I.sem.toNat p v = some k)
+    (hkb : k ≤ bound.eval) :
     exec I (.bindIdx p x bound body) st =
-      exec I (body (min k bound.eval)) { st with cnt := st.cnt + I.charge (.toNat p) } := by
-  simp only [exec_bindIdx, toNatStep, hx, hk, Option.bind_some, Option.map_some]
+      exec I (body k) { st with cnt := st.cnt + I.charge (.toNat p) } := by
+  simp only [exec_bindIdx, toNatStep, hx, hk, Option.bind_some, Option.map_some, if_pos hkb]
+
+/-- **An index binder fails above its bound**: if the cell `x` holds $v$ and the semantics
+converts $v$ to $k$ greater than the bound, the binder fails, whatever its body. No printed
+source. -/
+theorem exec_bindIdx_eq_none_of_lt [AddMonoid C] (I : Interp P ι K C) {p : P} {x : Cell ℕ ℕ}
+    {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C} {v : K} {k : ℕ}
+    (hx : st.store.read p x.buf x.idx.eval = some v) (hk : I.sem.toNat p v = some k)
+    (hkb : bound.eval < k) :
+    exec I (.bindIdx p x bound body) st = none := by
+  simp only [exec_bindIdx, toNatStep, hx, hk, Option.bind_some, Option.map_some,
+    if_neg (not_le.mpr hkb)]
 
 /-- **An index binder fails when the conversion fails**: if the cell `x` holds $v$ and the
 semantics does not convert $v$, the binder fails, whatever its body (the default conversion of a
@@ -77,6 +89,7 @@ theorem IsExactIntLit.toNat_eq_of_lit_eq_some {dec : P → K → ℝ} {sem : Sca
   have hzz : z = z' := Option.some_injective _ (hz.symm.trans hz')
   subst hzz
   rw [htn p z, hdec, Nat.floor_natCast]
+  simp
 
 /-! ### Witnesses -/
 

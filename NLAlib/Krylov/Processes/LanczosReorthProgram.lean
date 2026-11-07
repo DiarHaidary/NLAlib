@@ -684,7 +684,7 @@ theorem storedEntriesLanczosReorth : StoredEntriesLanczosReorth := by
   have hb := (lanczosReorthProg.compiled (ι := ι) tag).bounds_staticCost_of_exec_eq_some I N
     ![q] hrun
   have hcount := lanczosReorthProg.staticCost_count_le (ι := ι) tag I.width N q
-  refine ⟨out, hrun, hb.count.trans ?_, fun p => ?_, h0, h1, h2, h3, h4, h5, h6⟩
+  refine ⟨by simp, out, hrun, hb.count.trans ?_, fun p => ?_, h0, h1, h2, h3, h4, h5, h6⟩
   · rw [show I.charge = (fun k => Finsupp.single k 1) from rfl]
     change (0 : OpCount P ι) + _ ≤ 0 + _
     rw [zero_add, zero_add]
@@ -714,7 +714,7 @@ theorem matrixFreeLanczosReorth : MatrixFreeLanczosReorth := by
   have hb := (lanczosReorthOracleProg.compiled tag o).bounds_staticCost_of_exec_eq_some I N
     ![q] hrun
   have hcount := lanczosReorthOracleProg.staticCost_count_le tag o I.width N q
-  refine ⟨out, hrun, hb.count.trans ?_, fun p => ?_, h0, h1, h2, h3, h4, h5, h6⟩
+  refine ⟨by simp, out, hrun, hb.count.trans ?_, fun p => ?_, h0, h1, h2, h3, h4, h5, h6⟩
   · rw [show I.charge = (fun k => Finsupp.single k 1) from rfl]
     change (0 : OpCount P ι) + _ ≤ 0 + _
     rw [zero_add, zero_add]

@@ -256,7 +256,7 @@ theorem matrixFreeConjugateGradient : MatrixFreeConjugateGradient := by
     rw [Prog.exec_eq_exec_toStmt, cgOracleProg.toStmt_compiled]
     exact erun
   have hcost := cgOracleProg.bounds_of_exec_eq_some I tag o N (n 0) (fun _ => rfl) ecompiled
-  refine ⟨out, ?_, ?_, ?_, hpost⟩
+  refine ⟨by simp, out, ?_, ?_, ?_, hpost⟩
   · rw [hn]
     change (cgOracleProg.compiled tag o).exec I N ![n 0]
       (inputState tag [(Array.ofFn b).map some, Array.replicate N none,

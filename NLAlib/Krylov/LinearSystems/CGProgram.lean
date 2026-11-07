@@ -410,7 +410,7 @@ theorem storedEntriesConjugateGradient : StoredEntriesConjugateGradient := by
       (fun i hi => by
         change (if i < N ^ 2 then some (vals i) else none) = some (vals i)
         exact if_pos (by simpa only [pow_two] using hi))
-  refine ⟨out, ?_, ?_, ?_, hpost⟩
+  refine ⟨by simp, out, ?_, ?_, ?_, hpost⟩
   · rw [Prog.exec_eq_exec_toStmt, hn, cgProg.toStmt_compiled]
     exact hrun
   · simpa only [inputState, zero_add] using hcnt

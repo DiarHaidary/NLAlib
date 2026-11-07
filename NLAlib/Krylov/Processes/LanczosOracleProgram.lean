@@ -183,7 +183,7 @@ theorem matrixFreeLanczos : MatrixFreeLanczos := by
     rw [Prog.exec_eq_exec_toStmt, lanczosOracleProg.toStmt_compiled]
     exact erun
   have hcost := lanczosOracleProg.bounds_of_exec_eq_some I tag o N (n 0) (fun _ => rfl) ecompiled
-  refine ⟨out, ?_, ?_, ?_, hpost⟩
+  refine ⟨by simp, out, ?_, ?_, ?_, hpost⟩
   · rw [hn]
     change (lanczosOracleProg.compiled tag o).exec I N ![n 0]
       (inputState tag [(Array.ofFn b).map some, Array.replicate (N * (n 0 + 1)) none,
