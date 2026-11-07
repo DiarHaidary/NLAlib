@@ -733,10 +733,86 @@ the stored one with the exact oracle (`IsMatvecErr` at accuracy $0$).
   `LanczosReorthBackward.lean` 403 (E3–E5), `LanczosReorthSpectral.lean` 479 (F1–F7);
   `Processes/LanczosReorthProgramTree.lean` (G1), `…Rounding.lean` (outputs),
   `…RoundedStep.lean` 815 (one step), `…RoundedLoop.lean` 641 (G5),
-  `LanczosReorthProgram.lean` 430 (G3, G4), `…Rounded.lean` 308 (G6, G6o, G7, G8).
+  `LanczosReorthProgram.lean` 430 (G3, G4), `…Rounded.lean` 308 (G6, G6o, G7, G8),
+  `…Guarantees.lean` (§9).
 
-**Open.** The fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$ stays a hypothesis of the
-run-level and program-level results (G7, G8 assume it for the prefix); a theorem that discharges
-it from explicit bounds on $u$, $N$, $k$, $	au$ for CGS2 (§3.4) is not part of this stage. G2
-(targets, registration) is the maintainer's.
+**Open (at the end of the stage).** The fixed-point condition $\sqrt{3(k+1)}\,\mu \le \eta_0$
+stayed a hypothesis of G7 and G8 (about the run's own levels). Closed by §9.
 
+## 9. Full-program guarantees (follow-up, 2026-11-07)
+
+The maintainer asked for statements of the form "if we use Lanczos with CGS2 then X", with X about
+the whole program and its decoded outputs, and for the certified subroutines to compose so that
+other contributors can add schemes. File `Processes/LanczosReorthProgramGuarantees.lean`, two
+layers.
+
+**Generic layer.** `LanczosReorthRegime q ε τ η₀ ε₁ ε₂ ε₃` is the parameter condition, in the
+certificate's parameters only: with $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$,
+$\eta_0 \le 1/100$, $\tau \le 1$, $\sqrt{3(q+1)}\,\mu \le \eta_0$ and
+$\mu + \varepsilon + \varepsilon_2 \le 1/100$ (one condition at $q$ covers every prefix $m \le q$).
+`LanczosReorthGuarantees` is the conclusion on the decoded outputs: for every $m$, $0 < m \le q$,
+whose computed test $\tau\nu_j < \beta_j$ ($j \le m$) passes, $m < N$;
+$\|\mathbf V_m^{\mathsf T}\mathbf V_m - \mathbf I\|_{\mathsf F} \le \sqrt{3m}\,\mu$; a symmetric
+$\mathbf E$ with $\|\mathbf E\|_{\mathsf F} \le (100(m+1)(\mu+\varepsilon+\varepsilon_2) +
+3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))\|\mathbf A\|_2$ and
+`lanczosTridiagonal (A + E) b m = lanczosCoeffTridiagonal α β m` (the tridiagonal of the decoded
+coefficients); interlacing up to $e = 100(m+1)(\mu+\varepsilon+\varepsilon_2)\|\mathbf A\|_2$.
+`lanczosReorthGuarantees_of_lanczosReorthOutputs` (outputs + regime ⇒ guarantees) and
+`LanczosReorthImplementation.exec_rounded_loop_guarantees` (the loop `lanczosReorthLoop` with any
+`IsMatvecRoutine` product and any `IsOrthRoutine` family, in the regime, finishes and its outputs
+satisfy the guarantees).
+
+**CGS2 layer.** Budget $\rho$ = `lanczosReorthRoundoffBound N q u`
+$= (101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u$ ($= 2\,$`cgsPassBound N q u (1/100)` $+$
+`lanczosImplementationRoundoffBound N u`; registered in `docs/constants.toml`). Regime:
+$(q+1)\rho \le 1/1000$ and $132(q+1)\rho \le \tau \le 1$, $\tau > 0$.
+`lanczosReorthRegime_cgsPassBound`: the CGS2 parameters at $\eta_0 = 4\sqrt{3(q+1)}\,\rho$ are in
+`LanczosReorthRegime` ($c_1 \le \rho/2$, $\varepsilon \le \rho$, $(\eta_0+c_1)^2 \le 57(q+1)\rho^2$,
+so $\varepsilon_3/\tau \le \rho$, $\mu \le 4\rho$, $\sqrt{3(q+1)}\,\mu \le \eta_0$, recurrence level
+$\le 5.5\rho$). Headline theorems, hypotheses only on the model ($u$, exact zero addition, unit
+charges; for matrix-free one oracle `IsMatvecErr` of accuracy $\eta\|\mathbf A\|_2$,
+$\eta \le 16(N+1)^2u$), symmetric $\mathbf A$, $\mathbf b \ne \mathbf 0$, the regime:
+`LanczosReorthImplementation.exec_rounded_compiled_guarantees` (stored, `lanczosReorthProg.compiled`)
+and `…exec_rounded_oracle_compiled_guarantees` (`lanczosReorthOracleProg.compiled`): the tree
+finishes; counts $\le$ `lanczosReorthCount` / `lanczosReorthOracleCount` (the static count bound
+holds for every interpretation: `Prog.bounds_staticCost_of_exec_eq_some` needs only a successful
+run, and the charge is the unit charge); additional live cells $\le N^2 + 2N + 2q + 5$ /
+$2N + 2q + 5$; and for every admissible $m$: $m < N$,
+$\|\mathbf V_m^{\mathsf T}\mathbf V_m - \mathbf I\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$,
+$\mathbf T_m$ exact Lanczos tridiagonal of $(\mathbf A + \mathbf E, \mathbf b)$ with
+$\mathbf E^{\mathsf T} = \mathbf E$, $\|\mathbf E\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf A\|_2$,
+and $\lambda_{i+N-m}(\mathbf A) - e \le \theta_i \le \lambda_i(\mathbf A) + e$,
+$e = 600(m+1)\rho\|\mathbf A\|_2$ (actual constants: $550 + 30 + 4.5$; the radius alone $550$).
+In double precision ($u \approx 1.1\cdot10^{-16}$), $N = 10^3$, $q = 10^2$:
+$\rho \approx 1.8\cdot10^{-9}$, $(q+1)\rho \approx 1.8\cdot10^{-7}$, $\tau \ge 2.4\cdot10^{-5}$.
+The $\varepsilon = 16(N+1)^2u$ part of $\rho$ dominates for $N \gg \sqrt q$; it enters $\mu$
+linearly, so the lower bound on $\tau$ is $\Theta((q+1)\rho)$ for any choice of $\eta_0$.
+
+### 9.1 Adding an orthogonalization scheme
+
+A contributor adding MGS2, Householder or a QR kernel gets every Lanczos result above by:
+
+(a) writing the builder `orth work coef j` (reduce `work` against columns $0,\dots,j$ of `V`,
+coefficients in `coef`, the calling convention of `lanczosReorthLoop`);
+(b) proving `Computation.IsOrthRoutine` at its parameters $(\eta_0, \varepsilon_1, \varepsilon_2,
+\varepsilon_3)$ for every step $t < q$ (the CGS2 proof: `IsRelErrSem.isOrthRoutine_cgs2`, made
+uniform in $t$ in `LanczosReorthProgramRounded.lean`);
+(c) checking `LanczosReorthRegime` for those parameters (CGS2: `lanczosReorthRegime_cgsPassBound`).
+
+Then `exec_rounded_loop_guarantees` gives the run and the guarantees for `lanczosReorthLoop` with
+that builder. A registered stored-matrix or matrix-free program around the loop needs the ROM load
+and scope plumbing of `exec_rounded_compiled` (≈40 lines, `exec_rom_load`,
+`exec_compiled_eq_some` are specific to the CGS2 tree) and its static count; a target is the
+maintainer's (CONTRIBUTING §5.5).
+
+### 9.2 Explorer
+
+Algorithm pages attach results by `Result:` id only (explorer `algorithms.py`, rules 1–4), and
+rule E3 forbids a `Result:` id on a theorem about runs that is not the proof of a registered target
+(`scripts/Targets.lean`, `unregisteredResults`). So, like CG's rounded program theorems
+(`CGProgramRoundedBackward.lean`, no id), the headline theorems appear only on their module and
+declaration pages, not on the `lanczos-reorth` page. Showing them needs either (i) rounded
+targets registered by the maintainer (e.g. on `Computation.MatrixFreeRounded`, which has no count
+clause, or a new rounded stored-entries model with counts), proved by these theorems and given
+ids, or (ii) an explorer rule listing untagged program theorems whose statements reach a tagged
+program (a "Program guarantees" section). Neither is done here.

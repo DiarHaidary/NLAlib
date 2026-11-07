@@ -283,6 +283,7 @@ public import NLAlib.Krylov.Processes.LanczosProgramTree
 public import NLAlib.Krylov.Processes.LanczosRecurrence
 public import NLAlib.Krylov.Processes.LanczosReorthOracleTargets
 public import NLAlib.Krylov.Processes.LanczosReorthProgram
+public import NLAlib.Krylov.Processes.LanczosReorthProgramGuarantees
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRounded
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedLoop
 public import NLAlib.Krylov.Processes.LanczosReorthProgramRoundedStep

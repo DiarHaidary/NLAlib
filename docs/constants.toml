@@ -728,3 +728,12 @@ args = ["N", "j", "u", "η₀"]
 latex = '2(1+#4)\sqrt{#2+1}\,(#1+#2+2)\,#3'
 lean_body = 'cgsPassBound (N j : ℕ) (u η₀ : ℝ) : ℝ := 2 * (1 + η₀) * Real.sqrt ((j : ℝ) + 1) * ((N + j + 2 : ℕ) : ℝ) * u'
 body_hash = "1e5747665140a317"
+
+[[constant]]
+name = "NLAlib.lanczosReorthRoundoffBound"
+kind = "bound"
+file = "NLAlib/Krylov/Processes/LanczosReorthProgramGuarantees.lean"
+args = ["N", "q", "u"]
+latex = '(101/25)\sqrt{#2+1}\,(#1+#2+2)\,#3 + 16(#1+1)^2#3'
+lean_body = 'lanczosReorthRoundoffBound (N q : ℕ) (u : ℝ) : ℝ := 101 / 25 * Real.sqrt ((q : ℝ) + 1) * ((N + q + 2 : ℕ) : ℝ) * u + 16 * ((N : ℝ) + 1) ^ 2 * u'
+body_hash = "a9c73eda61d3fa8c"
