@@ -73,7 +73,7 @@ and `NLAlib.Computation.zidx` (two nested loops). S, 5 lines. -/
 theorem exec_zconjTranspose_congr (m n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) :
     exec I (zconjTranspose (ι := ι) p m n X xo Y yo).run st =
       exec I (zconjTranspose (ι := ι) p (.const m.eval) (.const n.eval) X xo Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zconjTranspose; rfl) st
 
 /-- **`zhermShift` at an index expression** runs as at the constant of its value. No printed
 source.
