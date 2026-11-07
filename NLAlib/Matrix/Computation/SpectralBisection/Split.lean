@@ -134,7 +134,8 @@ private theorem exists_frame_neg {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     rw [Set.mem_Ioi] at h2
     exact ⟨(neg_abs_le x).trans' (by linarith), by linarith⟩
 
-/-- A square matrix whose action is bounded below by `x` is a unit with inverse of norm `≤ 1/x`. -/
+/-- A square matrix whose action is bounded below by $x$ is a unit with inverse of norm at most
+$1/x$. -/
 private lemma isUnit_and_specNorm_inv_le {r : ℕ} {M : Matrix (Fin r) (Fin r) ℂ}
     {x : ℝ} (hx : 0 < x)
     (h : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤ ‖WithLp.toLp 2 (M *ᵥ z)‖) :

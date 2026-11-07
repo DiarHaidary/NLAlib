@@ -121,7 +121,8 @@ private theorem specNorm_le_of_conjTranspose_mul_self_le {m n : Type*} [Fintype 
   have h' := (specNorm_sq_le_iff_conjTranspose_mul_self_le (by positivity)).2 h
   exact (sq_le_sq₀ (specNorm_nonneg _) (by positivity)).1 h'
 
-/-- (B) Near-unitary square matrix: `‖1 - U Uᴴ‖ ≤ 2κ + κ²`. -/
+/-- (B) Near-unitary square matrix:
+$\|\mathbf{I} - \mathbf{U}\mathbf{U}^{\mathsf H}\|_2 \le 2\kappa + \kappa^2$. -/
 private theorem specNorm_one_sub_mul_conjTranspose_le {n : Type*} [Fintype n]
     [DecidableEq n] {U : Matrix n n ℂ} {κ : ℝ} (hκ : 0 ≤ κ)
     (h₁ : (1 - κ) ^ 2 • (1 : Matrix n n ℂ) ≤ Uᴴ * U)
@@ -486,7 +487,7 @@ $\mathrm{fl}(\mathbf{A} - \sigma\mathbf{I})$ (residual $\rho$, window $\kappa < 
 $r'$), with its eigenvalues shifted back by the stored $\sigma$, $\lvert\sigma\rvert \le s$, is one
 of $\mathbf{A}$ ($\|\mathbf{A}\|_2 \le R$) with residual
 $u(R + s + \tau) + \rho + s(2\kappa + \kappa^2) + (1 + \kappa)^2\theta$,
-$\theta = u(D + s + \tau)$, $D = (r' + \rho)/(1 - \kappa)^2$. -/
+$\theta = u(D + s + \tau)$, $D = (r' + \rho)/(1 - \kappa)^2$. [Shah2024, proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_add_of_hermShift {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k : ℕ} {A U : Matrix (Fin k) (Fin k) (F × F)}
@@ -579,7 +580,7 @@ approximate diagonalizations (residual $\rho$, window
 $\kappa < 1$, norms at most $r'$), through the computed bases $\mathrm{mm}(\mathbf{Q}_\pm,
 \mathbf{U}_\pm)$ (with $\mathbf{Q}_\pm$ within $\eta$ of orthonormal, mutually orthogonal frames
 $\mathbf{Z}_\pm$ that block-diagonalize $\mathbf{A}$) and the stored shift $\pm\sigma$, assemble
-into one of $\mathbf{A}$. -/
+into one of $\mathbf{A}$. [Shah2024, proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_submatrix_fromCols_mm {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k kp : ℕ} (hkp : kp ≤ k)
