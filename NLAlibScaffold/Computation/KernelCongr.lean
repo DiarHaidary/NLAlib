@@ -56,7 +56,7 @@ Proof: as `NLAlib.Computation.exec_zcopy_congr`, unfolding `NLAlib.Computation.z
 theorem exec_zidentity_congr (n : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) :
     exec I (zidentity (ι := ι) p n Y yo).run st =
       exec I (zidentity (ι := ι) p (.const n.eval) Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zidentity; rfl) st
 
 /-- **`zneg` at index expressions** runs as at the constants of their values. No printed source.
 Proof: as `NLAlib.Computation.exec_zcopy_congr`, unfolding `NLAlib.Computation.zneg`. S, 4
