@@ -159,7 +159,24 @@ $(\sqrt2/\varepsilon + 2)^2 \le (\sqrt2 + 2)^2/\varepsilon^2 \le 12/\varepsilon^
 S, about 20 lines. -/
 theorem length_squareGrid_le (c : ℂ) (R : ℝ) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
     ((squareGrid c R ε).length : ℝ) ≤ 12 / ε ^ 2 := by
-  sorry
+  have hlen :
+      (squareGrid c R ε).length = (⌈Real.sqrt 2 / ε⌉₊ + 1) * (⌈Real.sqrt 2 / ε⌉₊ + 1) := by
+    simp [squareGrid, List.length_flatMap, List.length_map, List.length_range]
+  rw [hlen]
+  push_cast
+  have hs0 : 0 ≤ Real.sqrt 2 / ε := by positivity
+  have hmlt : (⌈Real.sqrt 2 / ε⌉₊ : ℝ) < Real.sqrt 2 / ε + 1 := Nat.ceil_lt_add_one hs0
+  have hmε : (⌈Real.sqrt 2 / ε⌉₊ : ℝ) * ε < Real.sqrt 2 + ε := by
+    have := mul_lt_mul_of_pos_right hmlt hε
+    rwa [add_mul, div_mul_cancel₀ _ hε.ne', one_mul] at this
+  have hsq : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
+  have hs15 : Real.sqrt 2 ≤ 3 / 2 := by nlinarith [Real.sqrt_nonneg 2]
+  have hu : ((⌈Real.sqrt 2 / ε⌉₊ : ℝ) + 1) * ε ≤ Real.sqrt 2 + 2 * ε := by linarith
+  have hu0 : 0 ≤ ((⌈Real.sqrt 2 / ε⌉₊ : ℝ) + 1) * ε := by positivity
+  have hsq2 := pow_le_pow_left₀ hu0 hu 2
+  rw [le_div_iff₀ (by positivity)]
+  nlinarith [mul_le_mul_of_nonneg_left hε1 (Real.sqrt_nonneg 2),
+    mul_le_mul_of_nonneg_left hε1 hε.le]
 
 /-- **The grid stays near its centre**: every point $s$ of `NLAlib.squareGrid` $c$ $R$
 $\varepsilon$, $R \ge 0$, $\varepsilon > 0$, has $\lvert s - c\rvert \le \sqrt2R$.
