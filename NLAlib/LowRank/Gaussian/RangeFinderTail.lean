@@ -23,7 +23,8 @@ $$\mathbf{E} = \mathbf{A} - \llbracket\mathbf{A}\rrbracket_k,\qquad
 the last written `hd : k + d = Fintype.card l + 1` (singular values are indexed from $0$).
 
 Every statement bounds the probability of the failure event, written positively
-(CONTRIBUTING §4 N15), `μ.real {ω | bound < error ω}`. The primary tail is Tropp and Webber's
+(docs/contributing/naming.md N15), `μ.real {ω | bound < error ω}`. The primary tail is Tropp and
+Webber's
 (RSVD1): in Gram form for every unitarily invariant norm, with its Schatten, Frobenius and spectral
 corollaries and
 the truncated outputs. Its noise term is

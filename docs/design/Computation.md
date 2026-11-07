@@ -1203,7 +1203,7 @@ The change of section "Guarantees", approved by the maintainer the same day, on
   `hutchpp-program-sparse`); new: `matrix-free-dense-substitution`, `matrix-free-coo-substitution`.
   The old names were never released (no `v0.1` tag), so there are no aliases.
 * **Checks.** E3 is the lint of G52 and E4 asks for a result in a model (`docs/rules/rules.toml`,
-  CONTRIBUTING §5.5); E1 accepts `ProgFamily` definitions and `Fin`-families of handles and index
+  docs/contributing/programs.md); E1 accepts `ProgFamily` definitions and `Fin`-families of handles and index
   expressions; the E3 allowlist (the COO pattern) is gone, since the pattern is a parameter of the
   instance. New fixtures in `scripts/Programs.lean` for the three gaps, and the new
   `scripts/AccessModelFixtures.lean`, which proves the instance forms of the cheating realisations
@@ -1772,7 +1772,7 @@ the tags, the oracle name, the distribution and (sparse only) the pattern.
 | E9 (a callee closes its allocations) | error, hygiene | **warning**. Memory is the target's `mem`, so a leaking callee makes a proof fail or a target larger, never a claim false |
 | E2, E5, E6, E8 | hygiene | unchanged; E2 matters for the emitter and the `Float` runner only |
 
-CONTRIBUTING §5.5 is rewritten accordingly, and §11 gains one rule: an agent does not edit a
+docs/contributing/programs.md is rewritten accordingly, and §11 gains one rule: an agent does not edit a
 `*Targets.lean` file or `docs/targets.toml`. Enforcement is in F12, Q3.
 
 ### F10. Guarantees, re-classified
@@ -1955,7 +1955,7 @@ deleted):
    builder for convenience, with a `#guard` that it agrees with `Prog.exec` under a `Float`
    interpretation on the §6 rows.
 6. `docs/rules/rules.toml` (E1 retired, E3 and E4 rewritten, E9 a warning), the generated
-   DIGEST and RULES files, CONTRIBUTING §5.5 and §11, `scripts/stage_check.sh` (runs
+   DIGEST and RULES files, docs/contributing/programs.md and §11, `scripts/stage_check.sh` (runs
    `scripts/Targets.lean`), and this note's changes sections.
 7. Bookkeeping for the five moved result ids (`gram-schmidt-program`, `hutchpp-program`,
    `hutchpp-program-tail`, `hutchpp-program-dense`, `hutchpp-program-sparse`):
@@ -2009,7 +2009,7 @@ beyond the two changes. The maintainer decided all five the same day.
     branch and in `scripts/stage_check.sh`, fails if the registry's hash differs from it, and the
     closure hashes already fail on any edit of a target or of what it unfolds to. So an
     unapproved edit fails the checks on the branch where an agent made it, before any review;
-  * CONTRIBUTING §11 states the rule for agents, and agent briefs list the protected paths.
+  * CONTRIBUTING ("AI agents") states the rule for agents, and agent briefs list the protected paths.
   A toolchain or Mathlib bump that changes every hash is one registry diff, approved the same way,
   with the printed statements showing that no statement changed.
 * **Q4. Complex comparisons** (changes `exactSem`, D2). **Decided: `lt` and `le` fail on
@@ -2050,7 +2050,7 @@ or the checks:
   meantime); `scripts/AccessModelFixtures.lean` (the four `not_` fixtures and `matrixFreeProb_iff`
   are stated with the `ProgFamily` models, their meaning unchanged); `scripts/check_rules.py`
   (E8 exempts `Compile.lean` and `FirstOrder.lean`, whose matches on `named` are the core's, as
-  in `Exec.lean` and `Subst.lean`); CONTRIBUTING §5.3, the access-model row, cites the renamed
+  in `Exec.lean` and `Subst.lean`); docs/contributing/vocabulary.md, the access-model row, cites the renamed
   composition theorems (rule V6).
 * **Q4 made**: `exactSem` fails on `lt` and `le` unless both arguments have imaginary part $0$;
   `isRelErrSem_exactSem` keeps its statement, its two comparison clauses proved by

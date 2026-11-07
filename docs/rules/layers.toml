@@ -1,0 +1,70 @@
+# The layers of NLAlib, one entry per top-level folder of NLAlib/ (docs/contributing/layout.md §1).
+# scripts/check_rules.py reads it: a module imports only modules of its own layer number or lower
+# (P1), and a folder missing here is a P1 error, so a new folder gets its entry before it gets
+# files. scripts/gen_rules_md.py shows each folder's entry in its NLAlib/<Topic>/RULES.md.
+#
+# folder   the top-level folder
+# layer    its number; a half layer sits between two whole ones and imports the one below it
+# imports  optional: the only NLAlib folders its files may import besides itself (Mathlib is
+#          always allowed), narrower than its layer allows; checked as `rule`, for `reason`
+
+[[layer]]
+folder = "ForMathlib"
+layer = -1
+imports = []
+rule = "P1"
+reason = "general facts headed upstream to Mathlib depend on nothing else in NLAlib"
+
+[[layer]]
+folder = "Computation"
+layer = 0
+imports = ["ForMathlib"]
+rule = "E5"
+reason = "a program over the library's objects lives in its topic file, not in Computation"
+
+[[layer]]
+folder = "Matrix"
+layer = 0
+
+[[layer]]
+folder = "Polynomial"
+layer = 0
+imports = ["ForMathlib"]
+rule = "P11"
+reason = "the layer stays easy to upstream to Mathlib as a whole"
+
+[[layer]]
+folder = "Krylov"
+layer = 1
+
+[[layer]]
+folder = "Probability"
+layer = 1.5
+
+[[layer]]
+folder = "RandomMatrix"
+layer = 2
+
+[[layer]]
+folder = "Sketching"
+layer = 3
+
+[[layer]]
+folder = "Eigensolvers"
+layer = 3
+
+[[layer]]
+folder = "Regression"
+layer = 3.5
+
+[[layer]]
+folder = "LowRank"
+layer = 4
+
+[[layer]]
+folder = "Estimation"
+layer = 4.5
+
+[[layer]]
+folder = "LowerBounds"
+layer = 5

@@ -657,8 +657,8 @@ Scaffold files (paths mirror the homes) and imports (G3, `check-skeleton --stric
 Placement decisions (P10): deterministic algorithms and analyses in `Matrix/Computation/`
 (Matrix is layer 0 and may import Polynomial); the probabilistic guarantees need RandomMatrix
 (layer 2) and are about an algorithm, not a random matrix, hence the new folder
-`NLAlib/Eigensolvers/` (OQ1; it needs a `LAYER` entry in `scripts/check_rules.py` and a §2 line,
-maintainer edits, so it holds scaffold files only here); UB1 is general probability (layer 1.5);
+`NLAlib/Eigensolvers/` (OQ1; it needs an entry in `docs/rules/layers.toml` and a line in
+`docs/contributing/layout.md` §1, maintainer edits, so it holds scaffold files only here); UB1 is general probability (layer 1.5);
 EV1 stays with its only consumer (a uniform shift against a spectrum). Expected sizes: NewtonSchulz
 ≈ 450 lines, NewtonSchulzSign ≈ 450, Deflation ≈ 350, SpectralBisection (Matrix) ≈ 900 (split
 `SpectralBisectionLocal.lean` off if EB1 exceeds 400 lines; amendment then), Complex ≈ 500.
@@ -709,7 +709,8 @@ follow N2/N3/N10/N14/N15 by hand; the extraction check (N1–N18) runs at clean-
 ## 10. Open questions (recommendations in bold; the decision sheet has them one line each)
 
 1. **Folder for the randomized layer** — (a) **new top-level `NLAlib/Eigensolvers/` at layer 3**
-   (one `LAYER` entry in `scripts/check_rules.py` and a §2 line, both maintainer edits; until
+   (one entry in `docs/rules/layers.toml` and a line in `docs/contributing/layout.md` §1, both
+   maintainer edits; until
    then its files stay in the scaffold); (b) the probabilistic theorems in `RandomMatrix/`
    (they are about an algorithm, not a random matrix); (c) `LowRank/Random/` next to the range
    finder (deflation fits, Hermitian diagonalization does not). (a): the deterministic parts are
@@ -950,5 +951,5 @@ EV1–EV5), `Eigensolvers/SpectralBisection/Global.lean` (EV6–EV8, new: F10) a
 no longer imports `EntrywiseRounding` (the scaffold import made a cycle after the move). The
 deterministic analysis of Algorithm 3 (5241 scaffold lines) is split into
 `Matrix/Computation/SpectralBisection/{Projectors (EB1c, EB1b), Split (EB1d), Child (EB1a),
-Node (EB1), Tree (EB2, EB2a, EB3, EB4), Global (EB5)}.lean`; `Node` is 1110 lines (F10 warning). The folder `NLAlib/Eigensolvers/` (OQ1 (a)) still needs its `LAYER` entry in
-`scripts/check_rules.py` and its CONTRIBUTING §2 line (maintainer edits).
+Node (EB1), Tree (EB2, EB2a, EB3, EB4), Global (EB5)}.lean`; `Node` is 1110 lines (F10 warning). The folder `NLAlib/Eigensolvers/` (OQ1 (a)) has its entry in `docs/rules/layers.toml` (layer 3)
+and its line in `docs/contributing/layout.md` §1.

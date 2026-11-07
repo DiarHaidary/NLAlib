@@ -14,7 +14,7 @@ The Hankel constructor `hankelMatrix h` takes anti-diagonal parameters `h : ℕ 
 Both use ordinary integer differences or natural sums of zero-based row and column indices,
 so `Fin` carries mathematical content. Both work for any entry type and rectangular shape.
 Mathlib has no Toeplitz or Hankel constructor (searched). Their entry formulas are the
-definitional bridge to `Matrix.of`. The structured matrices row in CONTRIBUTING §5.3
+definitional bridge to `Matrix.of`. The structured matrices row in docs/contributing/vocabulary.md
 registers both constructors. Use Mathlib's `Matrix.circulant` and
 `Matrix.circulant (Pi.single 1 1)` for the circulant constructor and cyclic shift.
 The latter is the spelling already used in the existing commutation theorem.

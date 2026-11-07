@@ -1,4 +1,4 @@
-# Allowlist of scripts/check_names.py (CONTRIBUTING §4.5). One entry per (declaration, rule) the
+# Allowlist of scripts/check_names.py (docs/contributing/naming.md §5). One entry per (declaration, rule) the
 # checker misreads, with a one-line reason saying why the grammar has no readable form for the
 # statement or why the checker's reading is wrong. Reviewed like code; never the fix for a real
 # violation. The checker fails on a stale entry.
@@ -92,24 +92,24 @@ reason = "the statement is `D.dilatedBasisᵀ * (D.dilatedBasisSucc * D.tridiago
 [[allow]]
 name = "Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ"
 rule = "N10"
-reason = "a difference of two errors, each `exact − computed` (`quadForm_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+reason = "a difference of two errors, each `exact − computed` (`quadForm_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error"
 
 [[allow]]
 name = "NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate"
 rule = "N10"
-reason = "a difference of two errors, each `exact − computed` (`backwardH_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error (maintainer, 2026-10-31)"
+reason = "a difference of two errors, each `exact − computed` (`backwardH_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error"
 
 [[allow]]
 name = "NLAlib.CGRun.abs_quadForm_backwardH_sub_cgIterate_sub_le"
 rule = "N10"
-reason = "the gap between the model's error `quadForm (x⋆ − cgIterate)` (exact − computed) and the computed estimate; `cgIterate_sub` joins the error to the estimate (maintainer, 2026-10-31)"
+reason = "the gap between the model's error `quadForm (x⋆ − cgIterate)` (exact − computed) and the computed estimate; `cgIterate_sub` joins the error to the estimate"
 
 [[allow]]
 name = "NLAlib.EighSample"
 rule = "N1"
-reason = "a type abbreviation (`abbrev … : Type _`), not a theorem: N1's statement grammar does not apply (maintainer, 2026-11-07)"
+reason = "a type abbreviation (`abbrev … : Type _`), not a theorem: N1's statement grammar does not apply"
 
 [[allow]]
 name = "NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral"
 rule = "N9"
-reason = "N9 reads the index `i` in `HasLaw (ζ i) ν μ` as the law; the law is ν and the name already has the grammar's form (maintainer, 2026-11-07)"
+reason = "N9 reads the index `i` in `HasLaw (ζ i) ν μ` as the law; the law is ν and the name already has the grammar's form"

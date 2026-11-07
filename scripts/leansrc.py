@@ -1,5 +1,5 @@
 """Textual parser for NLAlib Lean sources (column-0 commands, Mathlib style), used by
-`scripts/check_rules.py`. It is not a Lean parser: it relies on the file template of CONTRIBUTING §3
+`scripts/check_rules.py`. It is not a Lean parser: it relies on the file template of docs/contributing/layout.md §2
 (declarations, docstrings and commands start in column 0).
 
 parse(text) -> dict with

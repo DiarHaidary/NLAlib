@@ -3,7 +3,7 @@
 # git commit, date, presentation roles and source fingerprints into the JSON.
 #
 # Usage: scripts/explore_data.sh [OUT]   (default explore-data.json; run from the repository root
-# after `lake build NLAlib`). Never while another build is running (CONTRIBUTING §10).
+# after `lake build NLAlib`). Never while another build is running.
 set -euo pipefail
 out="${1:-explore-data.json}"
 EXPLORE_OUT="$out" LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-2}" \

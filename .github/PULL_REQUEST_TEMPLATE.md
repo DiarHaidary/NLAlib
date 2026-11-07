@@ -9,7 +9,7 @@
 
 ## Checklist
 
-- [ ] `bash scripts/stage_check.sh` exits 0 (CONTRIBUTING §9)
+- [ ] `bash scripts/stage_check.sh` exits 0 (CONTRIBUTING, "Pull requests and checks")
 - [ ] If `scripts/` changed: `python3 -m unittest discover -s scripts -p 'test_*.py'` and
       `node --test scripts/test_check_latex.mjs` pass
 - [ ] Every public declaration has a docstring with source and label; new sources are in

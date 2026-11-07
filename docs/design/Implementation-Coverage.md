@@ -309,7 +309,7 @@ concrete scalar semantics producing that error pattern.
 ## Prioritized follow-up and target proposals
 
 These are proposals for maintainer review, not declarations, approvals, registrations or claims
-that a new implementation is already verified. New/changed targets need CONTRIBUTING §5.5
+that a new implementation is already verified. New/changed targets need docs/contributing/programs.md
 review of their exact statements, trees, closures, counts, memory and pins.
 
 | Priority | Concrete work | Acceptance evidence |

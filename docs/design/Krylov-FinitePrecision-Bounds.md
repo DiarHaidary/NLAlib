@@ -269,7 +269,7 @@ assumes `k² ε ≤ 1/1000` and bounds the same backward model by `1000 k² ε �
 The current `k ε ≤ 1/100` run hypothesis does not imply this stronger condition.
 
 A new `lanczosSmallRoundoffBackwardFactor k := 1000 k²` is registered in `docs/constants.toml`,
-following CONTRIBUTING §5.2; its condition-specific name permits later numerical improvements.
+following docs/contributing/statements.md §2; its condition-specific name permits later numerical improvements.
 The main theorem in new `FinitePrecision/BackwardBounds.lean`, importing `NormalizedBackward`, is:
 
 ```lean

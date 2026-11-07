@@ -375,11 +375,11 @@ evaluator.
 | $3\log_2\ell$ | stays (§1.5) |
 | $+5$ in $\ell$ | $+4$ would save 0.2 bits; not pursued |
 
-## 2. Objects and interfaces (CONTRIBUTING §8 items 1–2)
+## 2. Objects and interfaces (docs/contributing/design.md items 1–2)
 
-One new definition, `NLAlib.FloatMachine.IsEighNodeBudget` (a `Prop` structure, §5.4): the
-precision hypotheses of one node of [Shah2024, Lemma 4.1], **generic in the good-event parameters
-$(w, x, t)$**.
+One new definition, `NLAlib.FloatMachine.IsEighNodeBudget` (a `Prop` structure,
+docs/contributing/statements.md §3): the precision hypotheses of one node of
+[Shah2024, Lemma 4.1], **generic in the good-event parameters $(w, x, t)$**.
 - The node lemmas EB1c–EB1 repeat the same 17-hypothesis block, which hard-wires $x =
   \sqrt{\rho/2}/k$ and $t = \sqrt2(2\sqrt k + \sqrt{2\log(4/\rho)})$ through `bisectionSignTol`.
 - The structure decouples the deterministic node analysis from the probabilistic choice of

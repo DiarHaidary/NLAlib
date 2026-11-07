@@ -34,7 +34,7 @@ constants $1 \mp \varepsilon$ and failure probability $2 d\, e^{-\varepsilon^2 k
 $0 \le \varepsilon \le 1$, $d = \operatorname{rank}\mathbf{U}$ and $k$ the number of samples
 (matrix Chernoff). Exact leverage sampling is $L = \operatorname{rank}\mathbf{U}$, uniform
 sampling $L = \operatorname{coh}\mathbf{U}$, the coherence. The sample sizes are named quantities
-(CONTRIBUTING §5.2, rule 2), with their inversions
+(docs/contributing/statements.md §2, rule 2), with their inversions
 `NLAlib.two_mul_mul_exp_le_of_samplingEmbeddingDim_le`
 and `NLAlib.mul_exp_le_of_samplingInjectionDim_le`; the "$k \ge \ldots$ suffices" forms are
 corollaries of the tails.

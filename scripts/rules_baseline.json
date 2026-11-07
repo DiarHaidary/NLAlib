@@ -1,5 +1,5 @@
 {
- "_comment": "Ratchet of scripts/check_rules.py (CONTRIBUTING §9): per error rule and file, the violations that existed when the rule became checked. Counts may only fall; regenerate with `python3 scripts/check_rules.py DATA.json --update-baseline`.",
+ "_comment": "Ratchet of scripts/check_rules.py (docs/contributing/checks.md §1): per error rule and file, the violations that existed when the rule became checked. Counts may only fall; regenerate with `python3 scripts/check_rules.py DATA.json --update-baseline`.",
  "rules": {
   "C1": {
    "NLAlib/ForMathlib/Probability/Martingale/OptionalStopping.lean": 1,

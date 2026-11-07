@@ -13,7 +13,7 @@ public import Mathlib.Probability.Moments.Variance
 Under a probability measure the mean of a square-integrable real function is at most the square
 root of its second moment, $\mathbb{E} f \le (\mathbb{E} f^2)^{1/2}$. This is the step that turns a
 second-moment bound into a first-moment one; the library states the second moment and leaves the
-first to this lemma (CONTRIBUTING §5.2, T15). Upstream candidate for
+first to this lemma (docs/contributing/statements.md §2, T15). Upstream candidate for
 `Mathlib.Probability.Moments.Variance`.
 
 ## Main results

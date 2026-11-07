@@ -10,9 +10,9 @@ some 'per section' rules if that will help. The CI seems important. It is a big 
 contributing rules are broken, because it suggests that the LLMs are not able to keep the rules
 in context well."
 
-The grammar itself is CONTRIBUTING §4 (rules N1–N18); this note keeps the evidence, the
+The grammar itself is docs/contributing/naming.md (rules N1–N18); this note keeps the evidence, the
 decisions and what was renamed. The renames landed in one branch before `v0.1`, with the rename
-map `docs/renames/2026-10-naming.json` and no `@[deprecated]` aliases (CONTRIBUTING §4 N12 asks
+map `docs/renames/2026-10-naming.json` and no `@[deprecated]` aliases (docs/contributing/naming.md N12 asks
 for aliases only after the `v0.1` tag; no such tag exists). `scripts/check_names.py` enforces
 the checkable rules in CI.
 
@@ -29,7 +29,7 @@ the checkable rules in CI.
 | 7 | CI | `scripts/check_names.py` with tests (`scripts/test_check_names.py`) and an allowlist (`scripts/names_allow.toml`), in `.github/workflows/ci.yml` and `scripts/stage_check.sh`; error mode once the renames landed. | §4.5, §4.6 | |
 | 8 | timing | One branch, before `v0.1`, with a rename map for the explorer's `#d/` redirects. | N12 | |
 
-"Per section" rules (maintainer: allowed) are subsections of CONTRIBUTING §4.4 rather than a
+"Per section" rules (maintainer: allowed) are subsections of docs/contributing/naming.md §4 rather than a
 separate file: an author is told to read CONTRIBUTING in full (AGENTS.md, §11) and is most likely
 to see a rule there, next to the general ones it refines. Each topic rule has its own id, and
 the checker knows the ones it can check (tails, statistics, sample sizes, algorithm tokens,
@@ -99,7 +99,7 @@ follow it too; an upstreaming PR renames them anyway.
 
 The rules audit of 2026-10-19 (scratchpad `rules-audit/`, check SHAPE-DOT) found 138 root-namespace
 theorems whose first explicit argument is a hypothesis `hA : A.IsHermitian`, `A.PosSemidef`,
-`A.PosDef`, `IsSVD …` or `HasOrthonormalCols U`, against CONTRIBUTING §5.2 ("lives in
+`A.PosDef`, `IsSVD …` or `HasOrthonormalCols U`, against docs/contributing/statements.md §2 ("lives in
 `Matrix.IsHermitian`"). The maintainer: enforce §5.2, not relax it ("go for it"). This reverses
 the audit's D7 ("allowed, not required"); the grammar's rule is N18, checked.
 
@@ -190,7 +190,7 @@ commit and is in error mode from the commit after the renames.
 | N17 | asymptotic names against the derivation from the explicit name | 61 of 61 |
 | N18 | a root theorem with a first explicit `IsHermitian`/`PosSemidef`/`PosDef`/`IsSVD`/`HasOrthonormalCols` hypothesis is in that namespace | 120 found, all renamed |
 
-What it cannot verify is listed in CONTRIBUTING §4.6. New notation (`Var[`, `cov[`, `μ[·|m]`)
+What it cannot verify is listed in docs/contributing/naming.md §6. New notation (`Var[`, `cov[`, `μ[·|m]`)
 must be mapped once in `leanexpr.py` before the checker can read statements that use it.
 
 The audit's scripts (`naming_audit.py`, `rename_cost.py`, with `leanexpr.py`) were one-off
@@ -223,7 +223,7 @@ numbers below are from those scripts at a4f8773, before the renames.
 
 ## 5. The audit
 
-The audit report follows, adapted: its §3 grammar is now CONTRIBUTING §4, its decisions are §1
+The audit report follows, adapted: its §3 grammar is now docs/contributing/naming.md, its decisions are §1
 above, and its rename-cost estimate is superseded by §2.
 
 ### Summary (at a4f8773)
@@ -302,7 +302,7 @@ module, pretty-printed signature, docstring and value/type dependencies.
   - `norm_sub_sq` / `norm_add_sq_real` for `‖x − y‖ ^ 2` (sq after the argument), but `sq_abs`,
     `sq_sqrt` for `|a| ^ 2`, `√a ^ 2`;
   - `fromBlocks_diagonal` (diagonal blocks), `ker_mulVecLin_conjTranspose_mul_self`.
-- CONTRIBUTING §4 (names), §5.2 (shape, numerical bounds, asymptotic forms, dot notation), §5.3
+- docs/contributing/naming.md (names), §5.2 (shape, numerical bounds, asymptotic forms, dot notation), §5.3
   (vocabulary).
 - explorer-redesign Appendix B and its parser `explore-audit/audit.py`.
 
@@ -352,7 +352,7 @@ All 188 tails are stated in `μ.real`; none uses `μ` in `ℝ≥0∞`.
 **Prefix.** 109 root names use `measureReal_`. Among namespaced names, 64 use `measure_` and 15 use
 `measureReal_`.
 
-- CONTRIBUTING §4 (2026-10-14) says namespaced → `measure_`, root → `measureReal_`. That copies
+- docs/contributing/naming.md (2026-10-14) says namespaced → `measure_`, root → `measureReal_`. That copies
   Mathlib's `HasSubgaussianMGF.measure_ge_le`.
 - The rule is broken 15 times by namespaced `measureReal_` names, e.g.
   `Matrix.PosSemidef.measureReal_not_specNorm_sub_nystrom_le_le_of_hasLaw_gaussianMatrix`,
@@ -487,7 +487,7 @@ No synonym exists for `specNorm`, `frobNorm`, `pinv`, `rsvd`, `eigenvalue`, `ran
 #### 5.2.8 Asymptotic forms
 
 There are 67 `exists_forall_` names; 61 carry an `Asymptotic:` line, and the other 6 are ordinary
-∃∀ statements. All 61 follow one rule that CONTRIBUTING §5.2 states only as "followed by the
+∃∀ statements. All 61 follow one rule that docs/contributing/statements.md §2 states only as "followed by the
 explicit theorem's conclusion":
 
 - start with `exists_forall_`;

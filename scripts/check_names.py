@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Check declaration names against the naming grammar of CONTRIBUTING §4 (rules N1–N18).
+"""Check declaration names against the naming grammar of docs/contributing/naming.md (rules N1–N18).
 
     python3 scripts/check_names.py DATA.json [--allow scripts/names_allow.toml] [--warn]
                                    [--partial] [--only N3,N15] [--list]
 
 DATA.json is the extraction that `scripts/explore_data.sh` writes after `lake build NLAlib`
 (name, kind, module, pretty-printed signature, docstring of every public declaration). Each
-violation prints as `N<k> <full name>: <message>`; the rule ids are those of CONTRIBUTING §4.
+violation prints as `N<k> <full name>: <message>`; the rule ids are those of docs/contributing/naming.md.
 Exit status 1 when a violation is not on the allowlist, or when an allowlist entry is stale (its
 declaration is gone or no longer breaks its rule); `--warn` reports and exits 0.
 
 The checks read Lean's pretty-printed statements with `scripts/leanexpr.py`, a bracket-depth
 splitter, not a Lean parser. They are those of the 2026-10 naming audit
 (`docs/design/Naming.md`), made strict. What they verify and what they cannot is listed there
-and in CONTRIBUTING §4.6. A false positive goes on the allowlist with a one-line reason;
+and in docs/contributing/naming.md §6. A false positive goes on the allowlist with a one-line reason;
 an allowlist entry is never the fix for a real violation.
 """
 import argparse
@@ -30,7 +30,7 @@ from leanexpr import (head_candidates, idents, lc_first, peel, split_signature, 
 ROOT = Path(__file__).resolve().parent.parent
 
 # The rule statements are in docs/rules/rules.toml, the single source of the rule data
-# (CONTRIBUTING §9.1); here the checked naming rules N1–N18.
+# (docs/contributing/checks.md §1); here the checked naming rules N1–N18.
 RULES = {r['id']: r['statement'] for r in
          tomllib.loads((ROOT / 'docs' / 'rules' / 'rules.toml').read_text())['rule']
          if r['id'].startswith('N') and r['check'] != 'none'}
@@ -44,7 +44,7 @@ REL_NAME = {'le': {'le', 'nonneg', 'ge', 'antitone', 'monotone', 'mono', 'anti',
             'notMem': {'notMem', 'not'}}
 ALLOWED_FIRST_EXTRA = {'exists', 'forall', 'ae', 'not', 'abs', 'norm', 're', 'coe', 'cast', 'natCast',
                        'ofReal', 'eq', 'le', 'lt', 'tendsto', 'isBigO', 'one', 'zero', 'two'}
-# N10: outputs of algorithms; an error is `exact − <alg>` (§4.3)
+# N10: outputs of algorithms; an error is `exact − <alg>` (naming §3)
 ALGORITHMS = ['earlyTruncatedGeneralizedNystrom', 'earlyTruncatedNystromBKI', 'earlyTruncatedRBKI',
               'earlyTruncatedRSVD', 'generalizedNystrom', 'nystromBKI', 'nystrom', 'rsvd', 'rbki',
               'sketchAndSolve', 'hutchpp', 'girardHutchinson', 'cgIterate', 'pcgIterate', 'gmresIterate',
@@ -263,7 +263,7 @@ def check(decls, registered=()):
         r = e['rel']
         asym = is_asymptotic(e)
 
-        # N5 synonyms (the spellings of §4.3)
+        # N5 synonyms (the spellings of naming §3)
         if 'intrinsicDim' in t:
             bad('N5', e, '`intrinsicDim` is spelt `intrinsicDimension`')
         if 'gram' in t and 'gram' not in idents(e['signature']):
@@ -407,7 +407,7 @@ def check(decls, registered=()):
                 elif ev == 'exists' and tok != 'exists':
                     bad('N15', e, 'an event `∃ …` is named `exists_…`')
 
-    # N18 dot notation (§5.2)
+    # N18 dot notation (statements §2)
     for e in thms:
         ns = dot_namespace(e)
         # only for a root name: an interface namespace (N9) or another predicate's namespace stands
