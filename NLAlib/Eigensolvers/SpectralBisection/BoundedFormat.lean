@@ -151,9 +151,9 @@ bits, precision $p$ and smallest exponent $e_{\min}$ (as
 `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound` provides), with the other hypotheses of
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
 (the samplers, the input, $\varepsilon$, $\theta$, $\ell$, the accuracy window for $\beta$, the
-step limit), the input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the
-two precision conditions there with $\log_2(1/u) = p$, the ideal samples of the nodes
-independent, each with law `NLAlib.eighSampleLaw` $n$, and
+step limit), the $n \times n$ input, $n \ge 1$, scaled so that $1/2 \le R_0 \le 1$ (an exact
+power-of-two scaling), the two precision conditions there with $\log_2(1/u) = p$, the ideal
+samples of the nodes independent, each with law `NLAlib.eighSampleLaw` $n$, and
 $$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^3}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
 Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
 $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
@@ -168,7 +168,8 @@ theorem
     (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
     (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
     (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
+    {n : ℕ} (hn : 1 ≤ n) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hA : (decodeMatrix dec A).IsHermitian)
     {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀)
     (hR₀half : 1 / 2 ≤ dec R₀) (hR₀one : dec R₀ ≤ 1) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
     (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ} (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
@@ -244,8 +245,8 @@ theorem
   obtain ⟨h₁, h₂⟩ := mul_le_min_and_le_of_mul_le (Nat.cast_nonneg n) (Nat.cast_nonneg ℓ) hε he₁
     hθ hθ₁ hR₀half hR₀one (by positivity) hτ hΩ
   refine hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
-    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ hβ
-    hβle hβge hN (by positivity) ?_ ?_ hfuel (by positivity) h₁ h₂ hind hlaw <;>
+    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ
+    hβ hβle hβge hN (by positivity) ?_ ?_ hfuel (by positivity) h₁ h₂ hind hlaw <;>
   rwa [inv_pow, inv_inv, Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
 
 end NLAlib

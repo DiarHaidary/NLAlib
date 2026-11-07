@@ -768,7 +768,8 @@ private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
     (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
     (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
     (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
+    {n : ℕ} (hn : 1 ≤ n) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hA : (decodeMatrix dec A).IsHermitian)
     {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀) (hR₀pos : 0 < dec R₀)
     (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ}
     (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
@@ -792,7 +793,7 @@ private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
       (dec ε / 3)} ≤ θ := by
   classical
-  obtain ⟨hu, hn, hl20, hnβ, hu₁, hτ100, hΩ16⟩ := hM.nonneg_and_one_le_and_mul_le hμM hμM₀
+  obtain ⟨hu, -, hl20, hnβ, hu₁, hτ100, hΩ16⟩ := hM.nonneg_and_one_le_and_mul_le hμM hμM₀
     hR₀pos hε hε₁ hθ₁ hℓ hβ hβle husign hτ₀ hτ hΩ
   have := isProbabilityMeasure_eighSampleLaw n
   have : IsProbabilityMeasure μ := (hlaw []).isProbabilityMeasure_iff.2 this
@@ -878,11 +879,11 @@ set_option linter.style.longLine false in
 `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ (constants $\mu_{\mathrm{MM}}$,
 $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$), with $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}}$ monotone
 and nonnegative, $c_{\mathrm N} \ge 0$, and the samplers with measurable fibres and countable
-ranges. Let the stored $\mathbf{A}$ have Hermitian decoding with $\|\mathbf{A}\|_2 \le R_0$, for
-stored $R_0 > 0$, $\varepsilon$, $\beta$ (decoded values) with $0 < \varepsilon \le 2^{-15}$,
-$0 < \theta \le 1$, a depth counter $\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$,
-$m = \min(n, \ell + 1)$, $\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$, and the precomputed
-accuracy
+ranges. Let the stored $n \times n$ input $\mathbf{A}$, $n \ge 1$, have Hermitian decoding
+with $\|\mathbf{A}\|_2 \le R_0$, for stored $R_0 > 0$, $\varepsilon$, $\beta$ (decoded values)
+with $0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, a depth counter
+$\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$, $m = \min(n, \ell + 1)$,
+$\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$, and the precomputed accuracy
 $$0 < \beta \le \hat\beta = \frac{(\ell - 1)^2\,\varepsilon\sqrt\theta}{52\,\ell^2(2\ell - 1)
 \sqrt{n m \min(n, e)}\,\hat T} \,, \qquad \hat T = 2\sqrt2\sqrt n +
 \sqrt{\log(96nm/\theta)} \,,$$
@@ -910,7 +911,8 @@ theorem
     (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
     (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
     (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
+    {n : ℕ} (hn : 1 ≤ n) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hA : (decodeMatrix dec A).IsHermitian)
     {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀) (hR₀pos : 0 < dec R₀)
     (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ}
     (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
@@ -936,7 +938,7 @@ theorem
     ae_all_iff.2 fun a => (hlaw a).aemeasurable.ae_eq_mk
   refine le_of_eq_of_le (measureReal_congr (Filter.eventuallyEq_set.2 ?_))
     (hM.measureReal_eigh_le_of_measurable hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN
-      hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN husign hustop hudefl hfuel hτ₀ hτ hΩ
+      hn hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN husign hustop hudefl hfuel hτ₀ hτ hΩ
       (fun a => (hlaw a).aemeasurable.measurable_mk)
       ((iIndepFun_congr fun a => (hlaw a).aemeasurable.ae_eq_mk).1 hind)
       fun a => (hlaw a).congr (hlaw a).aemeasurable.ae_eq_mk.symm)
@@ -999,7 +1001,7 @@ set_option linter.style.longLine false in
 /-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): let the machine meet
 `NLAlib.FloatMachine.IsAccurate` with $u > 0$, monotone $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}} \ge
 0$, $c_{\mathrm N} \ge 0$ and samplers with measurable fibres and countable ranges; let the stored
-$n \times n$ input $\mathbf{A}$ be Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,
+$n \times n$ input $\mathbf{A}$, $n \ge 1$, be Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,
 $0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$ and $\ell \ge$ `NLAlib.bisectionDepth`
 $\varepsilon$; let $m = \min(n, \ell + 1)$, $\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$,
 $N_* =$ `NLAlib.newtonSchulzSteps` $(\theta/(12n\ell(\ell + 1)))\,(\beta/(16n))$ be at most the
@@ -1035,7 +1037,8 @@ theorem
     (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
     (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
     (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
+    {n : ℕ} (hn : 1 ≤ n) {A : Matrix (Fin n) (Fin n) (F × F)}
+    (hA : (decodeMatrix dec A).IsHermitian)
     {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀) (hR₀pos : 0 < dec R₀)
     (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ}
     (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
@@ -1068,9 +1071,6 @@ theorem
       (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
       (dec ε / 3)} ≤ θ := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp only [Nat.cast_zero, zero_mul, Real.sqrt_zero, mul_zero, div_zero] at hβle
-    exact absurd hβle hβ.not_ge
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
   have hℓ5 : (5 : ℝ) ≤ ℓ := by
     have : 5 ≤ ℓ := le_trans (Nat.le_add_left 5 _) hℓ
@@ -1134,8 +1134,8 @@ theorem
   have ha0 : 0 ≤ 2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) := by positivity
   have hb0 : 0 ≤ 16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) := by positivity
   exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
-    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN
-    (by linarith [husign]) (by linarith [mul_nonneg hb0 hu.le])
+    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle
+    hN (by linarith [husign]) (by linarith [mul_nonneg hb0 hu.le])
     (by linarith [mul_nonneg ha0 hu.le]) hfuel hτ₀ hτ hΩ hind hlaw
 
 end NLAlib

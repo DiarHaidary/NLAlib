@@ -477,9 +477,8 @@ example (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.expon
   rw [← hlogu] at hbits hbits'
   exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
     hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num) (Real.sqrt_nonneg 2)
-    hA hR₀ one_pos (pow_pos (by norm_num) _) le_rfl (by norm_num) (by norm_num) hℓ hβ hβle hβge rfl
-    hu
-    hbits hbits' (Nat.le_ceil _) (by positivity) hτ hΩ hind hlaw
+    hn1 hA hR₀ one_pos (pow_pos (by norm_num) _) le_rfl (by norm_num) (by norm_num) hℓ hβ hβle
+    hβge rfl hu hbits hbits' (Nat.le_ceil _) (by positivity) hτ hΩ hind hlaw
 
 /-- Theorem 4.2 in a bounded format applies to the binary128 instance: the failure probability
 of `NLAlib.eigh` is at most $\theta = 1/2$ on a probability space that exists. -/
@@ -503,8 +502,8 @@ example (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.expon
   exact
     hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
     fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
-    (Real.sqrt_nonneg 2) hA hR₀ (by norm_num) le_rfl (pow_pos (by norm_num) _) le_rfl (by norm_num)
-    (by norm_num) hℓ hβ hβle hβge rfl hbits hbits' hexp (Nat.le_ceil _) hind hlaw
+    (Real.sqrt_nonneg 2) hn1 hA hR₀ (by norm_num) le_rfl (pow_pos (by norm_num) _) le_rfl
+    (by norm_num) (by norm_num) hℓ hβ hβle hβge rfl hbits hbits' hexp (Nat.le_ceil _) hind hlaw
 
 /-! ### Every parameter, in a wide enough format -/
 
@@ -730,7 +729,7 @@ example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε 
   rw [← hlogu] at hbits hbits'
   exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
     hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num) (Real.sqrt_nonneg 2)
-    hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hu hbits hbits' (Nat.le_ceil _)
+    hn hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hu hbits hbits' (Nat.le_ceil _)
     (by positivity) hτ hΩ hind hlaw
 
 /-- Theorem 4.2 in a bounded format applies at every parameter: for $n \ge 1$,
@@ -757,7 +756,7 @@ example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε 
   exact
     hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
     fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
-    (Real.sqrt_nonneg 2) hA hR₀ hR₀half hR₀one hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hbits hbits'
+    (Real.sqrt_nonneg 2) hn hA hR₀ hR₀half hR₀one hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hbits hbits'
     hexp (Nat.le_ceil _) hind hlaw
 
 end NLAlib
