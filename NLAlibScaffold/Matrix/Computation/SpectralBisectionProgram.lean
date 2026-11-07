@@ -99,7 +99,41 @@ theorem eighSlotTree_append_of_eighLoc :
       eighLoc M N signFuel R₀ β d lo x a = some (lo', y) →
         (fun a' => eighSlotTree M N signFuel R₀ β d lo x (a ++ a')) =
           eighSlotTree M N signFuel R₀ β (d + a.length) lo' y := by
-  sorry
+  intro a
+  induction a with
+  | nil =>
+    intro d lo lo' x y h
+    simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    funext a'
+    simp [eighSlotTree]
+  | cons b a ih =>
+    intro d lo lo' x y h
+    funext a'
+    cases hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) with
+    | leaf U e => simp [eighLoc, hs] at h
+    | shift b' A' σ =>
+      by_cases hb : b = b'
+      · subst hb
+        simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
+        have h2 := congrFun (ih h) a'
+        simp only [List.cons_append, eighSlotTree, hs, List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
+        exact h2
+      · simp [eighLoc, hs, hb] at h
+    | split kp h' Qp Qm Ap Am σ =>
+      cases b
+      · simp only [eighLoc, hs, Bool.false_eq_true, if_false] at h
+        have h2 := congrFun (ih h) a'
+        simp only [List.cons_append, eighSlotTree, hs, Bool.false_eq_true, if_false,
+          List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
+        exact h2
+      · simp only [eighLoc, hs, if_true] at h
+        have h2 := congrFun (ih h) a'
+        simp only [List.cons_append, eighSlotTree, hs, if_true, List.length_cons]
+        rw [show d + (a.length + 1) = d + 1 + a.length by omega]
+        exact h2
 
 /-- **The nodes at a depth have the parameters of the depth**: a node that `NLAlib.eighLoc` reaches
 from the root $(N, \mathbf{A}, R_0, \varepsilon, \ell_0)$ at a path of length $d$ has the window and
