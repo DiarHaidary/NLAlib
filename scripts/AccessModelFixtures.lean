@@ -257,7 +257,8 @@ theorem not_matrixFreeRoundedProb_kcallTree :
 /-- K2: an aliased (in-place) kernel call fails, so a target that relies on it is false. -/
 theorem not_matrixFreeRoundedProb_kcallAliasTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallAliasTree (fun _ _ => True)
-      (fun _ _ => ℝ) (fun _ _ x => ![#[some x]]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
+      (fun _ _ => ℝ) (fun _ _ x => ![#[some x]])
+      (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsCopyKernel I) (fun _ => True) (fun _ _ _ => True)
       (fun _ _ x st => st.store.read () 0 0 = some x) (fun _ _ _ => 0) := by
   intro h
@@ -425,7 +426,8 @@ def thirdTree : Prog Unit Unit 0 1 := .instr (.lit () ⟨0, .const 0⟩ (1 / 3))
 quantifies over every semantics meeting the contract. -/
 theorem not_matrixFreeRoundedProb_thirdTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () thirdTree (fun _ _ => True)
-      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsRelErrSem (fun _ => (1 / 2 : ℝ)) (fun _ x => x) (fun _ _ => True) I.sem)
       (fun _ => True) (fun _ _ _ => True)
       (fun _ _ _ st => st.store.read () 0 0 = some (1 / 3)) (fun _ _ _ => 0) := by

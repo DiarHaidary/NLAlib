@@ -35,7 +35,7 @@ $\mathit{off} + i + Nj$. Realisations are stated at `Fin N` (D9). Design:
 
 ## Main results
 
-* `NLAlib.Computation.inputState_store_size`: the initial state holds exactly its buffers.
+* `NLAlib.Computation.size_store_inputState`: the initial state holds exactly its buffers.
 * `NLAlib.Computation.Holds.write`: a write outside the block keeps `Holds`.
 * `NLAlib.Computation.getElem?_flatten`, `NLAlib.Computation.unflatten_flatten`: the layout.
 * `NLAlib.Computation.exec_apply_exactInterp`: an oracle call under exact arithmetic.
@@ -118,7 +118,7 @@ def inputState {K C : Type} [Zero C] (p : P) (bufs : List (Array (Option K))) : 
 
 /-- The initial state holds exactly the given buffers. -/
 @[simp]
-theorem inputState_store_size {K C : Type} [Zero C] (p : P) (bufs : List (Array (Option K))) :
+theorem size_store_inputState {K C : Type} [Zero C] (p : P) (bufs : List (Array (Option K))) :
     (inputState (C := C) p bufs).store.size = bufs.length := by
   simp [inputState]
 

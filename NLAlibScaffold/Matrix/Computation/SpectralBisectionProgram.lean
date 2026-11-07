@@ -1104,8 +1104,8 @@ private theorem el1_slot_node {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout
       obtain ⟨hSu1, hSu2⟩ := hSu hk
       obtain ⟨hSg1, hSg2⟩ := hSg hk
       obtain ⟨hres, hfr, hsh, hps⟩ := holds_of_exec_eighNodeBlock_frame hmm hqr p hflag hcmp n ℓ₀ F
-        d lo y.k (fun q m hm => hlit q m (by omega)) htn hkn hk H (A := y.A) (R := y.R) (R₀ := R₀) (ε := y.ε) (β := β) (st := { s with
-          store := s₂, cnt := _ }) hd
+        d lo y.k (fun q m hm => hlit q m (by omega)) htn hkn hk H (A := y.A) (R := y.R) (R₀ := R₀)
+        (ε := y.ε) (β := β) (st := { s with store := s₂, cnt := _ }) hd
         (el1_shaped_of_eq (fun b _ => by change s₂.shape[b]? = _; rw [hsh2]) hH) hbufs hA2
         ((hr2 _ _ _ fun h => dtLv h.1).trans hR) hcmpM
         ((hr2 _ _ _ fun h => dtpar h.1).trans hpar.2)
@@ -1710,8 +1710,8 @@ Proof: the parameters of depth $d + 1$ by seven instructions (`NLAlib.eighNextPa
 $\ell_0 + d$, `NLAlib.eighLevelParams`); the draws by `NLAlib.Computation.exec_forRange_draw` (cell
 $i$ of `Su` is the tape at $nd + i$, cell $w$ of `Sg` at $4n^2 d + w$); then the loop over the slots
 by `NLAlib.Computation.forall_of_exec_loop_eq_some` (pilot) with the invariant "the slots below $lo$
-are done": at slot $lo$ the binder reads the stored size (`hlev`, `NLAlib.ReadsIdx`, within the bound
-$n - lo$ by `NLAlib.eighLoc_bounds`), a slot that starts no node reads $0$ and skips
+are done": at slot $lo$ the binder reads the stored size (`hlev`, `NLAlib.ReadsIdx`, within the
+bound $n - lo$ by `NLAlib.eighLoc_bounds`), a slot that starts no node reads $0$ and skips
 (`NLAlib.eighWhen`), and a node of size $k$ runs a leaf (`NLAlib.holds_of_exec_eighLeafBlock`, for
 $k \le 1$ or $R \le \mathrm{fl}(\varepsilon R_0)$, one comparison) or
 `NLAlib.holds_of_exec_eighNodeBlock`, whose window, tolerance and depth counter are the depth's

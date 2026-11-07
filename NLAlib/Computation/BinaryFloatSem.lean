@@ -220,10 +220,12 @@ theorem isExactToNat_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     IsExactToNat (P := P) (fun _ x => x.val) (binaryFloatSem fmt he r hr) :=
   fun _ _ => rfl
 
-/-- A bounded binary format is index exact: under the hypotheses of
-`NLAlib.Computation.isExactIntLit_binaryFloatSem`, `NLAlib.Computation.binaryFloatSem fmt he r hr`,
-decoding a word to its value, meets `NLAlib.Computation.IsIndexExactSem` at $B$. No printed
-source. -/
+/-- A bounded binary format is index exact: if $B < 2^p$, $p$ the precision of `fmt`
+(`fmt.mantissaBits`), and the exponent $0$ lies in the range of the format (at least its minimum
+exponent and at most its largest significand exponent), then the bounded binary semantics
+`NLAlib.Computation.binaryFloatSem fmt he r hr`, decoding a word to its value, meets
+`NLAlib.Computation.IsIndexExactSem` at $B$: its integer literals up to $B$ are exact and its
+conversion to an index is the floor of the value, failing below zero. No printed source. -/
 theorem isIndexExactSem_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) (B : ℕ)
     (hB : B < 2 ^ fmt.mantissaBits) (hmin : fmt.minExponent ≤ 0)

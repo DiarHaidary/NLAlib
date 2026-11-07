@@ -266,10 +266,13 @@ def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
         (good N n x)} ≤ bound N n x
 
 /-- **A rounded probabilistic result from success, correctness and a count bound**: if, under
-every interpretation with the standard charge meeting the index exactness and the contracts,
-the probability that the run fails or ends outside `good` is at most `bound`, and every successful
-run under the standard charge from the declared inputs stays within `cost` and `mem`, then the
-model holds, provided the contracts do not depend on the charge. No printed source. -/
+every interpretation with the standard charge meeting the index exactness and the contracts, every
+rounding of the tape meeting `ρOK` and every ideal tape $\xi$ whose law is the law of the tape
+`NLAlib.Computation.tapeLaw` (the `HasLaw` hypothesis: the tapes of the distributions independent,
+each an i.i.d. sequence), the probability that the run fails or ends outside `good` is at most
+`bound`, and every successful run under the standard charge from the declared inputs stays within
+`cost` and `mem`, then the model holds, provided the contracts do not depend on the charge. No
+printed source. -/
 theorem MatrixFreeRoundedProb.of_exec {K : Type} {r b : ℕ} {p : P} {prog : Prog P ι r b}
     {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
     {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K)}

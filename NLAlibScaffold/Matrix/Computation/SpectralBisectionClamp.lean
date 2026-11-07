@@ -44,6 +44,48 @@ theorem eighClampBlock_bind_run (p : P) (k t : ℕ) (f : Unit → Builder P ι �
             (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 2⟩)) .skip))
           (f ()).run)) := rfl
 
+/-- The two literals of the clamp: from a state whose cell $6$ of `t` holds $w$, the literals
+$0$ and $k$ are written to the cells $2$ and $3$ of `t`, and the clamp then the rest runs as its
+comparisons then the rest. No printed source. -/
+private theorem exec_eighClampBlock_lits {p : P} {k t : ℕ} {st : St P K C} {w z0 zk : K}
+    (hz0 : I.sem.lit p 0 = some z0) (hzk : I.sem.lit p (k : ℚ) = some zk)
+    (hw : st.store.read p t 6 = some w) :
+    ∃ s2 : Store P K, s2.shape = st.store.shape ∧ s2.read p t 2 = some z0 ∧
+      s2.read p t 3 = some zk ∧ s2.read p t 6 = some w ∧
+      (∀ q b i, (b = t → i ≠ 2 ∧ i ≠ 3 ∧ i ≠ 6) → s2.read q b i = st.store.read q b i) ∧
+      ∀ f : Unit → Builder P ι ℕ ℕ Unit,
+        exec I (eighClampBlock p (.const k) ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩ >>= f).run st =
+          exec I (.seq (.ite p .le ⟨t, 2⟩ ⟨t, 6⟩
+            (.seq (.ite p .le ⟨t, 3⟩ ⟨t, 6⟩ (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 3⟩)) .skip) .skip)
+              .skip)
+            (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 2⟩)) .skip))
+          (f ()).run)
+            { st with store := s2, cnt := st.cnt + I.charge (.lit p) + I.charge (.lit p) } := by
+  obtain ⟨m, hshm, h6m⟩ := Store.exists_getElem?_shape_of_read_eq_some hw
+  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape z0 hshm (i := 2) (by omega)
+  have hsh1 : s1.shape = st.store.shape := Store.shape_of_write_eq_some hs1
+  obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_getElem?_shape zk (hsh1 ▸ hshm) (i := 3)
+    (by omega)
+  refine ⟨s2, (Store.shape_of_write_eq_some hs2).trans hsh1, ?_, Store.read_of_write_eq_some hs2,
+    ?_, fun q b i hbi => ?_, fun f => ?_⟩
+  · rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide))]
+    exact Store.read_of_write_eq_some hs1
+  · rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide)),
+      Store.read_of_write_eq_some_of_ne hs1 (Or.inr (by decide))]
+    exact hw
+  · have hne : ∀ j, j = 2 ∨ j = 3 → b ≠ t ∨ i ≠ j := fun j hj => by
+      by_cases hb : b = t
+      · obtain ⟨h2, h3, -⟩ := hbi hb
+        rcases hj with rfl | rfl
+        exacts [Or.inr h2, Or.inr h3]
+      · exact Or.inl hb
+    rw [Store.read_of_write_eq_some_of_ne hs2 (hne 3 (Or.inr rfl)),
+      Store.read_of_write_eq_some_of_ne hs1 (hne 2 (Or.inl rfl))]
+  · rw [eighClampBlock_bind_run, exec_seq, exec_instr]
+    simp only [Instr.run, hz0, Option.bind_some, IExp.eval, hs1, Option.map_some, Instr.kind]
+    rw [exec_seq, exec_instr]
+    simp only [Instr.run, IExp.eval, hzk, Option.bind_some, hs2, Option.map_some, Instr.kind]
+
 /-- **The run of the clamp of the split index**: with exact comparisons at `p`, exact integer
 literals up to $k$ and the exact floor conversion, from a state whose cell $6$ of `t` holds $w$, the
 clamp (`NLAlib.eighClampBlock`, literals in the cells $2$ and $3$ of `t`) then the rest runs as the
@@ -64,48 +106,12 @@ theorem exec_eighClampBlock_bind {dec : P → K → ℝ} {p : P}
       σ.curW = st.curW ∧ σ.peakW = st.peakW := by
   obtain ⟨z0, hz0, hd0⟩ := hlit p 0 (Nat.zero_le _)
   obtain ⟨zk, hzk, hdk⟩ := hlit p k le_rfl
-  have hz0' : I.sem.lit p 0 = some z0 := by simpa using hz0
+  obtain ⟨s2, hsh2, r2, r3, r6, fr2, hrun2⟩ :=
+    exec_eighClampBlock_lits (I := I) (by simpa using hz0) hzk hw
   obtain ⟨m, hshm, h6m⟩ := Store.exists_getElem?_shape_of_read_eq_some hw
-  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape z0 hshm (i := 2) (by omega)
-  have hsh1 : s1.shape = st.store.shape := Store.shape_of_write_eq_some hs1
-  obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_getElem?_shape zk (hsh1 ▸ hshm) (i := 3)
-    (by omega)
-  have hsh2 : s2.shape = st.store.shape := (Store.shape_of_write_eq_some hs2).trans hsh1
-  have r2 : s2.read p t 2 = some z0 := by
-    rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide))]
-    exact Store.read_of_write_eq_some hs1
-  have r3 : s2.read p t 3 = some zk := Store.read_of_write_eq_some hs2
-  have r6 : s2.read p t 6 = some w := by
-    rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide)),
-      Store.read_of_write_eq_some_of_ne hs1 (Or.inr (by decide))]
-    exact hw
-  have fr2 : ∀ q b i, (b = t → i ≠ 2 ∧ i ≠ 3 ∧ i ≠ 6) → s2.read q b i = st.store.read q b i := by
-    intro q b i hbi
-    have hne : ∀ j, j = 2 ∨ j = 3 → b ≠ t ∨ i ≠ j := fun j hj => by
-      by_cases hb : b = t
-      · obtain ⟨h2, h3, -⟩ := hbi hb
-        rcases hj with rfl | rfl
-        exacts [Or.inr h2, Or.inr h3]
-      · exact Or.inl hb
-    rw [Store.read_of_write_eq_some_of_ne hs2 (hne 3 (Or.inr rfl)),
-      Store.read_of_write_eq_some_of_ne hs1 (hne 2 (Or.inl rfl))]
   -- the state after the two literals
   let c₂ : C := st.cnt + I.charge (.lit p) + I.charge (.lit p)
   let σ₂ : St P K C := { st with store := s2, cnt := c₂ }
-  have hrun2 : ∀ f : Unit → Builder P ι ℕ ℕ Unit,
-      exec I (eighClampBlock p (.const k) ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩ >>= f).run st =
-        exec I (.seq (.ite p .le ⟨t, 2⟩ ⟨t, 6⟩
-            (.seq (.ite p .le ⟨t, 3⟩ ⟨t, 6⟩ (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 3⟩)) .skip) .skip)
-              .skip)
-            (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 2⟩)) .skip))
-          (f ()).run) σ₂ := by
-    intro f
-    rw [eighClampBlock_bind_run, exec_seq, exec_instr]
-    simp only [Instr.run, hz0', Option.bind_some, IExp.eval, hs1,
-      Option.map_some, Instr.kind]
-    rw [exec_seq, exec_instr]
-    simp only [Instr.run, IExp.eval, hzk, Option.bind_some, hs2, Option.map_some, Instr.kind]
-    rfl
   by_cases h0 : 0 ≤ dec p w
   · by_cases hkw : (k : ℝ) ≤ dec p w
     · -- the cell gets the literal k

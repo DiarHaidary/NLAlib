@@ -4819,7 +4819,8 @@ private theorem node_branch_exists {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
   have nPp : Pp ≠ t := fun h => htS (by simp [h])
   have nPm : Pm ≠ t := fun h => htS (by simp [h])
   have hH' : H.Shaped σ.store p n D := by unfold EighArenas.Shaped; rw [hsh]; exact hH
-  exact node_branch_exists_core hmm hqr hsem hlit htn p hu n d lo k hk hk2 H (st := σ) (A := A) hd hH' hbufs hcS htS
+  exact node_branch_exists_core hmm hqr hsem hlit htn p hu n d lo k hk hk2 H (st := σ) (A := A) hd
+    hH' hbufs hcS htS
     (fun i j t' => (rd _ _ _ nMa).trans (hA i j t'))
     (fun i j t' => (rd _ _ _ nPp).trans (hPp i j t'))
     (fun i j t' => (rd _ _ _ nPm).trans (hPm i j t'))
