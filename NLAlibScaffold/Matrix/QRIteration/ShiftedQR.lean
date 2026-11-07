@@ -218,7 +218,29 @@ bound); the product of $k$ such factors is at most $\|\mathbf{H}\|_2^k$ (`Finset
 with the filter of card $k$), and take $k$-th roots (`Real.rpow_le_rpow`). S, about 20 lines. -/
 theorem hessenbergPotential_le_specNorm {k : ℕ} (hk : 0 < k) (hkn : k ≤ n)
     (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) : hessenbergPotential k H ≤ specNorm H := by
-  sorry
+  have hcard : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).card = k := by
+    have hmap : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).map Fin.valEmbedding =
+        Finset.Ico (n - k) n := by
+      ext m
+      simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and,
+        Fin.valEmbedding_apply, Finset.mem_Ico]
+      constructor
+      · rintro ⟨i, hi, rfl⟩
+        exact ⟨by omega, i.isLt⟩
+      · rintro ⟨h1, h2⟩
+        exact ⟨⟨m, h2⟩, by change n ≤ m + k; omega, rfl⟩
+    rw [← Finset.card_map Fin.valEmbedding, hmap, Nat.card_Ico]
+    omega
+  have hS : 0 ≤ specNorm H := specNorm_nonneg H
+  have hP : ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i.succ i.castSucc‖ ≤
+      specNorm H ^ k := by
+    calc _ ≤ ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), specNorm H :=
+          Finset.prod_le_prod (fun i _ => norm_nonneg _) fun i _ => norm_apply_le_specNorm _ _ _
+      _ = specNorm H ^ k := by rw [Finset.prod_const, hcard]
+  unfold hessenbergPotential
+  calc _ ≤ (specNorm H ^ k) ^ ((k : ℝ)⁻¹) :=
+        Real.rpow_le_rpow (Finset.prod_nonneg fun i _ => norm_nonneg _) hP (by positivity)
+    _ = specNorm H := Real.pow_rpow_inv_natCast hS hk.ne'
 
 /-- **A small potential means decoupling**: for $1 \le k \le n$ and $\delta \ge 0$, if
 $\psi_k(\mathbf{H}) \le \delta\|\mathbf{H}\|_2$ then some subdiagonal entry has
