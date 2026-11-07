@@ -1,0 +1,33 @@
+name: Approval
+# The registry approval is the maintainer's own commit (docs/design/Computation-Hardening.md §2.5).
+# Sound only after the maintainer's token is off the agent host: a commit made through the API
+# with his token is also verified and authored by him.
+on:
+  pull_request:
+jobs:
+  registry-approval:
+    name: Registry approval is the maintainer's
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit that changes docs/targets.approved is a verified commit by tchen01
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          fail=0
+          for c in $(git rev-list "$BASE..$HEAD" -- docs/targets.approved); do
+            read -r login verified < <(gh api "repos/$REPO/commits/$c" \
+              --jq '"\(.author.login) \(.commit.verification.verified)"')
+            if [ "$login" != "tchen01" ] || [ "$verified" != "true" ]; then
+              echo "::error::$c changes docs/targets.approved but is not a verified commit by tchen01 (author $login, verified $verified)"
+              fail=1
+            fi
+          done
+          exit $fail
