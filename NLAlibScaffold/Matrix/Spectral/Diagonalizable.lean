@@ -44,7 +44,36 @@ S, about 15 lines. -/
 theorem aeval_eq_mul_diagonal_mul_inv {H V : Matrix ι ι ℂ} {d : ι → ℂ} (hV : IsUnit V)
     (hHV : H * V = V * Matrix.diagonal d) (p : Polynomial ℂ) :
     Polynomial.aeval H p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
-  sorry
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have hiV : V⁻¹ * V = 1 := Matrix.nonsing_inv_mul V hdet
+  have key : ∀ X : Matrix ι ι ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, hiV, one_mul]
+  have hH : H = V * Matrix.diagonal d * V⁻¹ := by
+    calc H = H * (V * V⁻¹) := by rw [hVi, mul_one]
+      _ = (H * V) * V⁻¹ := by simp only [mul_assoc]
+      _ = _ := by rw [hHV]
+  have hpow : ∀ e : ℕ, (V * Matrix.diagonal d * V⁻¹) ^ e
+      = V * Matrix.diagonal (d ^ e) * V⁻¹ := by
+    intro e
+    induction e with
+    | zero => rw [pow_zero, pow_zero, Pi.one_def, Matrix.diagonal_one, mul_one, hVi]
+    | succ n ih =>
+      rw [pow_succ, ih]
+      simp only [mul_assoc]
+      rw [key, ← mul_assoc (Matrix.diagonal (d ^ n)), Matrix.diagonal_mul_diagonal, pow_succ]
+      rfl
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq =>
+    have hf : (fun i => (p + q).eval (d i))
+        = fun i => p.eval (d i) + q.eval (d i) := by
+      funext i; simp
+    rw [map_add, hp, hq, hf, ← Matrix.diagonal_add, Matrix.mul_add, Matrix.add_mul]
+  | monomial n a =>
+    have hf : (fun i => (Polynomial.monomial n a).eval (d i)) = a • (d ^ n) := by
+      funext i; simp [Polynomial.eval_monomial]
+    rw [Polynomial.aeval_monomial, hH, Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, one_mul,
+      hpow, hf, Matrix.diagonal_smul, Matrix.mul_smul, Matrix.smul_mul]
 
 /-- **The inverse of a polynomial of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and $p(\mathbf{d}_i) \ne
