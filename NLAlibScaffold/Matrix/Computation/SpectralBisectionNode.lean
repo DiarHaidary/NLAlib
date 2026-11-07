@@ -1239,6 +1239,117 @@ theorem holds_of_exec_eighChildBlock (p : P) (k : ℕ) {Ma : ℕ} {mo mo' : IExp
   · rw [hsh3, hsh2, hsh1]
   · rw [hp3, hp2, hp1]
 
+/-- One entry of the test-matrix loop of a deflation: the two products of the words of `Sg` by the
+stored $\sqrt{1/2}$ land in the words $2(i + kj)$ and $2(i + kj) + 1$ of `G`; the earlier entries,
+every other buffer, the shape and the positions are kept. -/
+private theorem deflate_testEntry (p : P) (n k lo s i j : ℕ) {Sg G : ℕ} {sq : Cell ℕ ℕ}
+    {sv : K} {st s₁ s₂ : St P K C} (hi : i < k) (hsqG : sq.buf ≠ G) (hSgG : Sg ≠ G)
+    (hsq : st.store.read p sq.buf sq.idx.eval = some sv)
+    (hsh : s₁.store.shape = st.store.shape) (hps : s₁.pos = st.pos)
+    (hfr : ∀ q b x, b ≠ G → s₁.store.read q b x = st.store.read q b x)
+    (hent : ∀ i' j', i' < k → j' < k → i' + k * j' < i + k * j → ∃ a a',
+      st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i')) = some a ∧
+      st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i') + 1) = some a' ∧
+      s₁.store.read p G (2 * (i' + k * j')) = some ((I.sem.bin p .mul a sv).getD default) ∧
+      s₁.store.read p G (2 * (i' + k * j') + 1) = some ((I.sem.bin p .mul a' sv).getD default))
+    (hex : exec I (.seq (.instr (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j)⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i)⟩ sq))
+        (.seq (.instr (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j) + 1⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i) + 1⟩ sq))
+        .skip)) s₁ = some s₂) :
+    s₂.store.shape = st.store.shape ∧ s₂.pos = st.pos ∧
+      (∀ q b x, b ≠ G → s₂.store.read q b x = st.store.read q b x) ∧
+      ∀ i' j', i' < k → j' < k → i' + k * j' < i + k * j + 1 → ∃ a a',
+        st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i')) = some a ∧
+        st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i') + 1) = some a' ∧
+        s₂.store.read p G (2 * (i' + k * j')) = some ((I.sem.bin p .mul a sv).getD default) ∧
+        s₂.store.read p G (2 * (i' + k * j') + 1) =
+          some ((I.sem.bin p .mul a' sv).getD default) := by
+  rw [exec_seq, exec_instr] at hex
+  obtain ⟨s₃, h₃, hex⟩ := Option.bind_eq_some_iff.mp hex
+  rw [exec_seq_skip, exec_instr] at hex
+  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h₃ hex
+  obtain ⟨_, ⟨a, ha, c, hc, v, hv, w₁, hw₁, rfl⟩, rfl⟩ := h₃
+  obtain ⟨_, ⟨a', ha', c', hc', v', hv', w₂, hw₂, rfl⟩, rfl⟩ := hex
+  simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+    IExp.eval_ofNat] at ha hc hv hw₁ ha' hc' hv' hw₂
+  have hsq₁ : s₁.store.read p sq.buf sq.idx.eval = some sv := (hfr _ _ _ hsqG).trans hsq
+  rw [hsq₁, Option.some.injEq] at hc
+  subst hc
+  rw [Store.read_of_write_eq_some_of_ne hw₁ (Or.inl hsqG), hsq₁, Option.some.injEq] at hc'
+  subst hc'
+  rw [Store.read_of_write_eq_some_of_ne hw₁ (Or.inl hSgG)] at ha'
+  have hfr₂ : ∀ q b x, b ≠ G → w₂.read q b x = st.store.read q b x := fun q b x hb => by
+    rw [Store.read_of_write_eq_some_of_ne hw₂ (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne hw₁ (Or.inl hb), hfr q b x hb]
+  refine ⟨(Store.shape_of_write_eq_some hw₂).trans ((Store.shape_of_write_eq_some hw₁).trans hsh),
+    hps, hfr₂, fun i' j' hi' hj' hlt => ?_⟩
+  rcases Nat.lt_succ_iff_lt_or_eq.mp hlt with hlt | he
+  · obtain ⟨b₁, b₂, hb₁, hb₂, hg₁, hg₂⟩ := hent i' j' hi' hj' hlt
+    refine ⟨b₁, b₂, hb₁, hb₂, ?_, ?_⟩
+    · rw [Store.read_of_write_eq_some_of_ne hw₂ (Or.inr (by omega)),
+        Store.read_of_write_eq_some_of_ne hw₁ (Or.inr (by omega)), hg₁]
+    · rw [Store.read_of_write_eq_some_of_ne hw₂ (Or.inr (by omega)),
+        Store.read_of_write_eq_some_of_ne hw₁ (Or.inr (by omega)), hg₂]
+  · obtain ⟨rfl, rfl⟩ : i' = i ∧ j' = j := by
+      have hk : 0 < k := by omega
+      have h1 : (i' + k * j') % k = (i + k * j) % k := by rw [he]
+      simp only [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hi'] at h1
+      subst h1
+      exact ⟨rfl, Nat.eq_of_mul_eq_mul_left hk (by omega)⟩
+    refine ⟨a, a', (hfr _ _ _ hSgG).symm.trans ha, (hfr _ _ _ hSgG).symm.trans ha', ?_, ?_⟩
+    · rw [Store.read_of_write_eq_some_of_ne hw₂ (Or.inr (by omega)),
+        Store.read_of_write_eq_some hw₁, hv]
+      rfl
+    · rw [Store.read_of_write_eq_some hw₂, hv']
+      rfl
+
+/-- The test-matrix loop of a deflation: entry $(i, j)$ of the block `G` is the pair of products of
+the words $2(n(2(lo + j) + s) + i)$ and the next of `Sg` by the stored $\sqrt{1/2}$; every other
+buffer, the shape and the positions are kept. -/
+private theorem deflate_testLoop (p : P) (n k lo s : ℕ) {Sg G : ℕ} {sq : Cell ℕ ℕ}
+    {sv : K} {st st' : St P K C} (hsqG : sq.buf ≠ G) (hSgG : Sg ≠ G)
+    (hsq : st.store.read p sq.buf sq.idx.eval = some sv)
+    (h : exec I (.loop (.const k) fun j => (forRange (ι := ι) (.const k) fun i => do
+        ins (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j)⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i)⟩ sq)
+        ins (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j) + 1⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i) + 1⟩ sq)).run)
+      st = some st') :
+    st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
+      (∀ q b x, b ≠ G → st'.store.read q b x = st.store.read q b x) ∧
+      ∀ i j, i < k → j < k → ∃ a a',
+        st.store.read p Sg (2 * (n * (2 * (lo + j) + s) + i)) = some a ∧
+        st.store.read p Sg (2 * (n * (2 * (lo + j) + s) + i) + 1) = some a' ∧
+        st'.store.read p G (2 * (i + k * j)) = some ((I.sem.bin p .mul a sv).getD default) ∧
+        st'.store.read p G (2 * (i + k * j) + 1) =
+          some ((I.sem.bin p .mul a' sv).getD default) := by
+  let Ent : ℕ → St P K C → Prop := fun c s₁ => ∀ i' j', i' < k → j' < k → i' + k * j' < c →
+    ∃ a a', st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i')) = some a ∧
+      st.store.read p Sg (2 * (n * (2 * (lo + j') + s) + i') + 1) = some a' ∧
+      s₁.store.read p G (2 * (i' + k * j')) = some ((I.sem.bin p .mul a sv).getD default) ∧
+      s₁.store.read p G (2 * (i' + k * j') + 1) = some ((I.sem.bin p .mul a' sv).getD default)
+  have hR := forall_of_exec_loop_eq_some I (n := .const k) (fun j s₁ => s₁.store.shape =
+      st.store.shape ∧ s₁.pos = st.pos ∧
+      (∀ q b x, b ≠ G → s₁.store.read q b x = st.store.read q b x) ∧ Ent (k * j) s₁)
+    ⟨rfl, rfl, fun _ _ _ _ => rfl, fun _ _ _ _ h => absurd h (by omega)⟩ ?_ h
+  · obtain ⟨hsh, hps, hfr, hent⟩ := hR
+    exact ⟨hsh, hps, hfr, fun i j hi hj => hent i j hi hj (by
+      simp only [IExp.eval_const]; nlinarith)⟩
+  rintro j hj s₁ s₂ ⟨hsh, hps, hfr, hent⟩ hex
+  change exec I (.seq (.loop _ _) .skip) s₁ = some s₂ at hex
+  rw [exec_seq_skip] at hex
+  have hR' := forall_of_exec_loop_eq_some I (n := .const k) (fun i s₃ => s₃.store.shape =
+      st.store.shape ∧ s₃.pos = st.pos ∧
+      (∀ q b x, b ≠ G → s₃.store.read q b x = st.store.read q b x) ∧ Ent (i + k * j) s₃)
+    ⟨hsh, hps, hfr, by rwa [zero_add]⟩ (fun i hi s₃ s₄ ⟨hsh, hps, hfr, hent⟩ hex => by
+      rw [show i + 1 + k * j = i + k * j + 1 by ring]
+      exact deflate_testEntry p n k lo s i j hi hsqG hSgG hsq hsh hps hfr hent hex) hex
+  obtain ⟨hsh, hps, hfr, hent⟩ := hR'
+  refine ⟨hsh, hps, hfr, ?_⟩
+  simp only [IExp.eval_const] at hent
+  rwa [show k * (j + 1) = k + k * j by ring]
+
 /-- **Randomized deflation on stored samples computes `NLAlib.deflate`**: if kernels `mm`, `qr` of
 `I` are the routines `mmR`, `qrR` on interleaved pairs, a successful run of
 `NLAlib.eighDeflateBlock` for a node of size $k \le n$ at slot $lo$ of depth $d$ with rank
@@ -1277,7 +1388,84 @@ theorem holds_of_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm p
       (∀ q b' i, b' ∉ [G, Y, Qf, Rf] → blockDisjoint (b', i, 1) (Qa, qo.eval, 2 * (k * r)) = true →
         st'.store.read q b' i = st.store.read q b' i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  set M := eighTapeMachine I p mmR qrR
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hbufs hsqb
+  obtain ⟨⟨-, hSgG, -, -, -, -⟩, ⟨hPmG, hPmY, -, -, -⟩, ⟨hGY, -, -, -⟩, ⟨hYQf, hYRf, -⟩,
+    ⟨hQfRf, hQfQa⟩, -, -⟩ := hbufs
+  obtain ⟨hsG, -, -, -, -⟩ := hsqb
+  have hne : ∀ {b b' i i' l l' : ℕ}, b ≠ b' → blockDisjoint (b, i, l) (b', i', l') = true :=
+    fun h => by simp [blockDisjoint, h]
+  change exec I (.seq (.loop _ _) (.seq (.kcall _ _ _ _ _) (.seq (.kcall _ _ _ _ _)
+    (.seq (.named _ _ _) .skip)))) st = some st' at h
+  rw [exec_seq] at h
+  obtain ⟨s₁, h₁, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [exec_seq, exec_kcall] at h
+  obtain ⟨s₂, h₂, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [exec_seq, exec_kcall] at h
+  obtain ⟨s₃, h₃, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨c₂, hc₂, rfl⟩ := Option.map_eq_some_iff.mp h₂
+  obtain ⟨c₃, hc₃, rfl⟩ := Option.map_eq_some_iff.mp h₃
+  -- the stored test matrix
+  obtain ⟨hsh₁, hps₁, hfr₁, hent⟩ := deflate_testLoop p n k lo (if b then 0 else 1) hsG hSgG
+    hsq h₁
+  have hG : pairLayout.Holds s₁.store p G 0
+      ((leadingBlock k ((eighTapeSample n d lo).2 b)).map M.normal) := by
+    intro i j t
+    obtain ⟨a, a', ha, ha', hg, hg'⟩ := hent i j i.isLt j.isLt
+    have hw : 2 * (n * (2 * (lo + j) + (if b then 0 else 1)) + i) + 1 < 4 * (n * n) := by
+      have h1 : 2 * (lo + j) + (if b then 0 else 1) + 1 ≤ 2 * n := by split <;> omega
+      have h2 := Nat.mul_le_mul_left n h1
+      have h3 : (i : ℕ) < n := by omega
+      rw [Nat.mul_add, Nat.mul_one] at h2
+      nlinarith
+    rw [hSg _ (by omega)] at ha
+    rw [hSg _ hw] at ha'
+    cases ha
+    cases ha'
+    have hidx : 4 * (n * n) * d + 2 * (n * (2 * (lo + j) + (if b then 0 else 1)) + i) =
+        2 * (2 * (n * n) * d + n * (2 * (lo + j) + (if b then 0 else 1)) + i) := by ring
+    have hidx' : 4 * (n * n) * d + (2 * (n * (2 * (lo + j) + (if b then 0 else 1)) + i) + 1) =
+        2 * (2 * (n * n) * d + (n * (2 * (lo + j) + (if b then 0 else 1)) + i)) + 1 := by ring
+    have hi : (i : ℕ) < n ∧ (j : ℕ) < n := ⟨by omega, by omega⟩
+    obtain ⟨t, ht⟩ := t
+    change t < 2 at ht
+    change s₁.store.read p G (0 + (2 * ((i : ℕ) + k * j) + t)) = _
+    interval_cases t
+    · rw [zero_add, add_zero, hg]
+      simp [pairLayout, leadingBlock, hi, eighTapeSample, M, eighTapeMachine,
+        ScalarSem.toFloatMachine, ScalarSem.tapeNormal, hidx]
+    · rw [zero_add, hg']
+      simp [pairLayout, leadingBlock, hi, eighTapeSample, M, eighTapeMachine,
+        ScalarSem.toFloatMachine, ScalarSem.tapeNormal, hidx', add_assoc]
+  -- the two kernel calls
+  obtain ⟨hY, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p (l := k) (m := k)
+    (n := k) (a := (Pm, 0)) (b := (G, 0)) (c := (Y, 0))
+    (hP.of_forall_read_eq fun i _ _ => hfr₁ p Pm i hPmG) hG (hne (Ne.symm hPmY))
+    (hne (Ne.symm hGY)) hc₂
+  obtain ⟨hQf, -, hfr₃⟩ := hqr.holds_of_kcallStore_eq_some (fun _ => rfl) p (m := k) (n := k)
+    (a := (Y, 0)) (q := (Qf, 0)) (r := (Rf, 0)) hY (hne hQfRf) (hne (Ne.symm hYQf))
+    (hne (Ne.symm hYRf)) hc₃
+  -- the copy of the first `r` columns
+  rw [exec_seq_skip] at h
+  obtain ⟨hQa, hfr₄, hsh₄, hps₄⟩ := holds_of_exec_zcopy (I := I) p k r
+    (A := Matrix.of fun i (j : Fin r) => (qrR (mmR Pmat
+      ((leadingBlock k ((eighTapeSample n d lo).2 b)).map M.normal))).1 i
+        ⟨j, lt_of_lt_of_le j.isLt hr⟩)
+    (fun i j t => hQf i ⟨j, lt_of_lt_of_le j.isLt hr⟩ t) (hne (Ne.symm hQfQa))
+    ((exec_seq_skip I _ _).trans h)
+  refine ⟨?_, fun q b' i hb' hbd => ?_, ?_, ?_⟩
+  · convert hQa using 1
+    refine Matrix.ext fun i j => ?_
+    simp only [deflate, dif_pos (lt_of_lt_of_le j.isLt hr), Matrix.of_apply]
+    rfl
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hb'
+    rw [hfr₄ q b' i hbd, hfr₃ q b' i (hne hb'.2.2.1) (hne hb'.2.2.2), hfr₂ q b' i (hne hb'.2.1),
+      hfr₁ q b' i hb'.1]
+  · rw [hsh₄]
+    change c₃.shape = _
+    rw [Interp.shape_of_kcallStore_eq_some hc₃, Interp.shape_of_kcallStore_eq_some hc₂, hsh₁]
+  · rw [hps₄]
+    exact hps₁
 
 /-- **Deflation on stored samples succeeds** under the standard model with every value in range,
 if the kernels are routines on pairs and the buffers `G`, `Y`, `Qf`, `Rf` have $2n^2$ cells and the
