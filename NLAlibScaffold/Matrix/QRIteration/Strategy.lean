@@ -391,7 +391,40 @@ L, about 60 lines (three monotonicity steps in `Real.rpow`). -/
 theorem exceptionalSpacing_ge {B : ℝ} (hB : 1 ≤ B) {m : ℕ} (hm : 1 ≤ m) :
     0.0018 * B ^ (-(8 * m + 4 : ℝ) / ((2 : ℝ) ^ m - 1)) ≤
       exceptionalSpacing (2 ^ m) B 2 (B ^ ((4 * m : ℝ) / (2 : ℝ) ^ m)) ((1 - 0.2) ^ 2) := by
-  sorry
+  unfold exceptionalSpacing
+  push_cast
+  set k : ℝ := (2 : ℝ) ^ m with hk_def
+  have hk : 2 ≤ k := by
+    calc (2 : ℝ) = 2 ^ 1 := by norm_num
+      _ ≤ k := pow_le_pow_right₀ (by norm_num) hm
+  have hk1 : 0 < k - 1 := by linarith
+  have hB0 : 0 < B := by linarith
+  set c : ℝ := 0.16 / (14 : ℝ) ^ k⁻¹ with hc_def
+  have h14 : (14 : ℝ) ^ k⁻¹ ≤ 3.75 := by
+    have hk2 : k⁻¹ ≤ 1 / 2 := by rw [inv_le_comm₀ (by linarith) (by norm_num)]; norm_num; linarith
+    refine (Real.rpow_le_rpow_of_exponent_le (by norm_num) hk2).trans ?_
+    rw [← Real.sqrt_eq_rpow, Real.sqrt_le_left (by norm_num)]
+    norm_num
+  have hc0 : 0.0425 ≤ c := by
+    rw [hc_def, le_div_iff₀ (by positivity)]; nlinarith
+  have hc1 : c ≤ 1 := by
+    rw [hc_def, div_le_one (by positivity)]
+    linarith [Real.one_le_rpow (by norm_num : (1 : ℝ) ≤ 14) (inv_nonneg.mpr (by linarith : 0 ≤ k))]
+  have hbase : (1 - 0.2 : ℝ) ^ 2 / ((14 * B ^ 4) ^ k⁻¹ * (B ^ ((4 * m : ℝ) / k)) ^ 2 * 2 ^ 2) =
+      c * B ^ (-(8 * m + 4 : ℝ) / k) := by
+    have e : (8 * m + 4 : ℝ) / k = (4 : ℕ) * k⁻¹ + 4 * m / k * (2 : ℕ) := by push_cast; ring
+    rw [Real.mul_rpow (by norm_num) (by positivity), ← Real.rpow_natCast B 4,
+      ← Real.rpow_mul hB0.le, ← Real.rpow_natCast (B ^ _) 2, ← Real.rpow_mul hB0.le, neg_div,
+      Real.rpow_neg hB0.le, hc_def, e, Real.rpow_add hB0]
+    field_simp
+    norm_num
+  have hexp : (-(8 * m + 4 : ℝ) / k) * (k / (k - 1)) = -(8 * m + 4 : ℝ) / (k - 1) := by
+    field_simp
+  rw [hbase, Real.mul_rpow (by positivity) (by positivity), ← Real.rpow_mul hB0.le, hexp]
+  gcongr
+  calc (0.0018 : ℝ) ≤ c ^ (2 : ℝ) := by rw [Real.rpow_two]; nlinarith
+    _ ≤ c ^ (k / (k - 1)) := Real.rpow_le_rpow_of_exponent_ge (by linarith) hc1
+        (by rw [div_le_iff₀ hk1]; linarith)
 
 /-- **Rapid decoupling for normal Hessenberg matrices**: let $\mathbf{H}_0$ be normal and upper
 Hessenberg, $k = 2^m$ with $m \ge 1$ and $k \le n$, and $0 < \gamma < 1$. With the exact Ritz
