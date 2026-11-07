@@ -692,7 +692,14 @@ S, about 12 lines. -/
 theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (h : IsDecoupled 0 H)
     (ss : List ℂ) : IsDecoupled 0 (multiShiftedQRStep H ss) := by
-  sorry
+  induction ss generalizing H with
+  | nil => exact h
+  | cons s ss ih =>
+    obtain ⟨i, hi⟩ := h
+    have hz : H i.succ i.castSucc = 0 := by simpa using hi
+    have hs : shiftedQRStep H s i.succ i.castSucc = 0 :=
+      IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero hH hz s
+    exact ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s) ⟨i, by simp [hs]⟩
 
 /-- Row $i + 1$ of the state of Givens QR is the original one for the first $j \le i$ steps. -/
 private theorem givensHessenbergState_snd_apply_eq_of_le_of_eq_succ {m p : ℕ}
