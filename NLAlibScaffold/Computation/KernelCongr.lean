@@ -94,7 +94,7 @@ theorem exec_zhermScale_congr (n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (c : Cell
     (yo : IExp ℕ) :
     exec I (zhermScale (ι := ι) p n X xo c Y yo).run st =
       exec I (zhermScale (ι := ι) p (.const n.eval) X xo c Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zhermScale zmirror; rfl) st
 
 /-- **`zhermAvg` at an index expression** runs as at the constant of its value. No printed source.
 Proof: as `NLAlib.Computation.exec_zhermShift_congr`, unfolding `NLAlib.Computation.zhermAvg`.
