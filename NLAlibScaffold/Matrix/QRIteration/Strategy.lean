@@ -385,7 +385,40 @@ theorem length_shqrCandidates_le {B θ α γ : ℝ} (hB : 1 ≤ B) (hθ : 1 ≤ 
     (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (ss : List ℂ) :
     ((shqrCandidates B θ α γ m H ss).length : ℝ) ≤
       1 + 12 / exceptionalSpacing (2 ^ m) B θ α ((1 - γ) ^ 2) ^ 2 := by
-  sorry
+  have hB0 : 0 < B := by linarith
+  have hθ0 : 0 < θ := by linarith
+  have hα0 : 0 < α := by linarith
+  have hγ' : 0 < 1 - γ := by linarith
+  have hρ0 : 0 < (1 - γ) ^ 2 := pow_pos hγ' 2
+  have hρ1 : (1 - γ) ^ 2 ≤ 1 := pow_le_one₀ hγ'.le (by linarith)
+  have hB4 : 1 ≤ 14 * B ^ 4 := by have := one_le_pow₀ (n := 4) hB; linarith
+  have hden : 1 ≤ (14 * B ^ 4) ^ (((2 ^ m : ℕ) : ℝ)⁻¹) * α ^ 2 * θ ^ 2 :=
+    one_le_mul_of_one_le_of_one_le
+      (one_le_mul_of_one_le_of_one_le (Real.one_le_rpow hB4 (by positivity))
+        (one_le_pow₀ hα))
+      (one_le_pow₀ hθ)
+  have hden0 : 0 < (14 * B ^ 4) ^ (((2 ^ m : ℕ) : ℝ)⁻¹) * α ^ 2 * θ ^ 2 := by linarith
+  have hk2 : (2 : ℝ) ≤ ((2 ^ m : ℕ) : ℝ) := by
+    have : 2 ≤ 2 ^ m := by
+      calc 2 = 2 ^ 1 := by norm_num
+        _ ≤ 2 ^ m := Nat.pow_le_pow_right (by norm_num) hm
+    exact_mod_cast this
+  have hexp : (0 : ℝ) ≤ ((2 ^ m : ℕ) : ℝ) / (((2 ^ m : ℕ) : ℝ) - 1) :=
+    div_nonneg (by linarith) (by linarith)
+  have hbase1 : (1 - γ) ^ 2 / ((14 * B ^ 4) ^ (((2 ^ m : ℕ) : ℝ)⁻¹) * α ^ 2 * θ ^ 2) ≤ 1 :=
+    div_le_one_of_le₀ (by linarith) hden0.le
+  have hε0 : 0 < exceptionalSpacing (2 ^ m) B θ α ((1 - γ) ^ 2) := by
+    unfold exceptionalSpacing
+    exact Real.rpow_pos_of_pos (div_pos hρ0 hden0) _
+  have hε1 : exceptionalSpacing (2 ^ m) B θ α ((1 - γ) ^ 2) ≤ 1 := by
+    unfold exceptionalSpacing
+    exact Real.rpow_le_one (div_nonneg hρ0.le hden0.le) hbase1 hexp
+  have hgrid := length_squareGrid_le (findRitz H m 1 ss)
+    (exceptionalRadius (2 ^ m) B θ α (hessenbergPotential (2 ^ m) H)) hε0 hε1
+  unfold shqrCandidates
+  rw [List.length_cons]
+  push_cast
+  linarith
 
 /-- **The spacing at the paper's parameters**: for $m \ge 1$, $B \ge 1$, $\theta = 2$,
 $\gamma = 0.2$ and $\alpha = B^{4m/2^m}$,
