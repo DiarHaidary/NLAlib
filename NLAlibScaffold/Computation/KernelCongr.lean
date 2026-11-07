@@ -111,7 +111,7 @@ lines. -/
 theorem exec_ztraceRe_congr (n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (dst : Cell ℕ ℕ) :
     exec I (ztraceRe (ι := ι) p n X xo dst).run st =
       exec I (ztraceRe (ι := ι) p (.const n.eval) X xo dst).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold ztraceRe; rfl) st
 
 end NLAlib.Computation
 
