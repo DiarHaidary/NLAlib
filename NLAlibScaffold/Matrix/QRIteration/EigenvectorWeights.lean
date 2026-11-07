@@ -85,7 +85,62 @@ theorem sum_lastRowWeights_mul_sq_le {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ
     ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 ≤
       pseudoConditionNumber V ^ 2 *
         ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 := by
-  sorry
+  have vm : ∀ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (u : Fin (n + 1) → ℂ),
+      ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
+    intro A u
+    have h := norm_toLp_mulVec_le Aᵀ u
+    rwa [specNorm_transpose, Matrix.mulVec_transpose] at h
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hinv : V⁻¹ * V = 1 := Matrix.nonsing_inv_mul V hdet
+  have hinv' : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have hrow : V (Fin.last n) ≠ 0 := by
+    intro h
+    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
+    exact not_isUnit_zero hdet
+  have hD : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
+    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
+      intro h; apply hrow; simpa using congrArg WithLp.ofLp h
+    have := norm_ne_zero_iff.mpr this
+    positivity
+  set D := ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 with hDdef
+  set T := ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 with hTdef
+  have hT : 0 ≤ T :=
+    Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (sq_nonneg _)
+  -- the last row of `V` is `e ᵥ* V`
+  set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he_def
+  have hr : e ᵥ* V = V (Fin.last n) := by
+    ext j; simp [he_def, Matrix.vecMul, dotProduct, Pi.single_apply]
+  have he1 : ‖WithLp.toLp 2 e‖ = 1 := by simp [he_def]
+  set y : Fin (n + 1) → ℂ := fun k => V (Fin.last n) k * g k with hy_def
+  have hrowW : (V * Matrix.diagonal g * V⁻¹) (Fin.last n) = y ᵥ* V⁻¹ := by
+    ext j
+    simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Matrix.diagonal_apply, hy_def,
+      mul_assoc]
+  have hS : ‖WithLp.toLp 2 y‖ ^ 2 = D * T := by
+    rw [EuclideanSpace.norm_sq_eq, hDdef, hTdef, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    unfold lastRowWeights
+    have hn : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≠ 0 := fun h => hD (by rw [hDdef, h]; ring)
+    simp [hy_def, mul_pow]
+    field_simp
+  have hyV : (y ᵥ* V⁻¹) ᵥ* V = y := by rw [Matrix.vecMul_vecMul, hinv, Matrix.vecMul_one]
+  have hsq : ‖WithLp.toLp 2 y‖ ^ 2 ≤
+      specNorm V ^ 2 * ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 := by
+    rw [hrowW, ← mul_pow]
+    refine pow_le_pow_left₀ (norm_nonneg _) ?_ 2
+    have := vm V (y ᵥ* V⁻¹)
+    rwa [hyV] at this
+  have hone : (1 : ℝ) ≤ specNorm V⁻¹ ^ 2 * D := by
+    have h := vm V⁻¹ (V (Fin.last n))
+    have hrV : (V (Fin.last n)) ᵥ* V⁻¹ = e := by
+      rw [← hr, Matrix.vecMul_vecMul, hinv', Matrix.vecMul_one]
+    rw [hrV, he1] at h
+    have := pow_le_pow_left₀ zero_le_one h 2
+    rw [mul_pow, one_pow] at this
+    exact this
+  rw [pseudoConditionNumber_of_isUnit hV, mul_pow]
+  nlinarith [mul_le_mul_of_nonneg_left hone hT,
+    mul_le_mul_of_nonneg_left hsq (sq_nonneg (specNorm V⁻¹))]
 
 /-- **Approximate functional calculus, lower bound on the moment**: for invertible $\mathbf{V}$
 with last-row weights $w$ and every $\mathbf{g}$,
