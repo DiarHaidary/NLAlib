@@ -232,6 +232,44 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
 
 /-! ### The binary search -/
 
+/-- The two-sided moment bound for the inverse power `(p(H))⁻¹ ^ q` of a shift polynomial, from
+`NLAlib.norm_mul_diagonal_mul_inv_last_sq_le` and `NLAlib.sum_lastRowWeights_mul_sq_le`. -/
+private theorem moment_sandwich_shiftPoly {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) (q : ℕ)
+    {l : List ℂ} (hl : ∀ i, (shiftPoly l).eval (d i) ≠ 0) :
+    ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly l))⁻¹ ^ q) (Fin.last n))‖ ^ 2 ≤
+        pseudoConditionNumber V ^ 2 *
+          ∑ i, lastRowWeights V i * ‖((shiftPoly l).eval (d i))⁻¹ ^ q‖ ^ 2 ∧
+      ∑ i, lastRowWeights V i * ‖((shiftPoly l).eval (d i))⁻¹ ^ q‖ ^ 2 ≤
+        pseudoConditionNumber V ^ 2 *
+          ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly l))⁻¹ ^ q) (Fin.last n))‖ ^ 2 := by
+  have hA : (Polynomial.aeval H (shiftPoly l))⁻¹ ^ q =
+      V * Matrix.diagonal (fun i => ((shiftPoly l).eval (d i))⁻¹ ^ q) * V⁻¹ := by
+    rw [inv_aeval_eq_mul_diagonal_mul_inv hV hHV hl, mul_diagonal_mul_inv_pow hV]
+    rfl
+  rw [hA]
+  exact ⟨norm_mul_diagonal_mul_inv_last_sq_le hV _, sum_lastRowWeights_mul_sq_le hV _⟩
+
+/-- Reciprocals of a product of powers: `1 / (x y)^q` is at most the mean of the squared inverse
+powers `(x⁻¹)^q` and `(y⁻¹)^q`, weighted by `w ≥ 0`. -/
+private theorem inv_pow_mul_le (x y w : ℝ) (q : ℕ) (hw : 0 ≤ w) :
+    w / (x * y) ^ q ≤ w * (((x⁻¹) ^ q) ^ 2 + ((y⁻¹) ^ q) ^ 2) / 2 := by
+  have huv : ((x * y) ^ q)⁻¹ = (x⁻¹) ^ q * (y⁻¹) ^ q := by
+    rw [mul_pow, mul_inv, inv_pow, inv_pow]
+  have ham : (x⁻¹) ^ q * (y⁻¹) ^ q ≤ (((x⁻¹) ^ q) ^ 2 + ((y⁻¹) ^ q) ^ 2) / 2 := by
+    nlinarith [sq_nonneg ((x⁻¹) ^ q - (y⁻¹) ^ q)]
+  rw [div_eq_mul_inv, huv]
+  nlinarith [mul_le_mul_of_nonneg_left ham hw]
+
+/-- A two-sided moment bound transfers along a maximum: `Xg ≤ κ² Kg²`, `Kg ≤ Kh` and
+`Kh² ≤ κ² Xh` give `Xg ≤ κ⁴ Xh`. -/
+private theorem moment_le_of_sandwich {κ Kg Kh Xg Xh : ℝ} (hKg0 : 0 ≤ Kg) (hKg : Kg ≤ Kh)
+    (hg : Xg ≤ κ ^ 2 * Kg ^ 2) (hh : Kh ^ 2 ≤ κ ^ 2 * Xh) : Xg ≤ κ ^ 4 * Xh :=
+  calc Xg ≤ κ ^ 2 * Kg ^ 2 := hg
+    _ ≤ κ ^ 2 * Kh ^ 2 := mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hKg0 hKg 2) (sq_nonneg _)
+    _ ≤ κ ^ 2 * (κ ^ 2 * Xh) := mul_le_mul_of_nonneg_left hh (sq_nonneg _)
+    _ = κ ^ 4 * Xh := by ring
+
 /-- **One halving step of the binary search loses at most $\kappa^4$**: let $\mathbf{H}\mathbf{V}
 = \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
 $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$; let $a$, $b$ be lists of
@@ -258,7 +296,63 @@ theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
     ∑ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ q ≤
       pseudoConditionNumber V ^ 4 *
         ∑ i, lastRowWeights V i / ‖(shiftPoly h).eval (d i)‖ ^ (2 * q) := by
-  sorry
+  have hne : ∀ l : List ℂ, (∀ i, ∀ s ∈ l, d i ≠ s) → ∀ i, (shiftPoly l).eval (d i) ≠ 0 := by
+    intro l hl i
+    unfold shiftPoly
+    rw [Polynomial.eval_list_prod, List.map_map]
+    apply List.prod_ne_zero
+    simp only [List.mem_map, Function.comp_apply, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, not_exists, not_and]
+    intro s hs
+    exact sub_ne_zero.mpr (hl i s hs)
+  have hna : ∀ i, (shiftPoly a).eval (d i) ≠ 0 :=
+    hne a fun i s hs => hd i s (List.mem_append_left _ hs)
+  have hnb : ∀ i, (shiftPoly b).eval (d i) ≠ 0 :=
+    hne b fun i s hs => hd i s (List.mem_append_right _ hs)
+  have hnh : ∀ i, (shiftPoly h).eval (d i) ≠ 0 := by
+    rcases hh with rfl | rfl
+    · exact hna
+    · exact hnb
+  have hpc : shiftPoly (a ++ b) = shiftPoly a * shiftPoly b := by
+    simp [shiftPoly, List.map_append, List.prod_append]
+  have hsa := moment_sandwich_shiftPoly hV hHV q hna
+  have hsb := moment_sandwich_shiftPoly hV hHV q hnb
+  have hsh := moment_sandwich_shiftPoly hV hHV q hnh
+  -- pointwise: the reciprocal of `|p_a p_b|^q` is at most the mean of the squared inverse powers
+  have hpt : ∀ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ q ≤
+      lastRowWeights V i * (‖((shiftPoly a).eval (d i))⁻¹ ^ q‖ ^ 2 +
+        ‖((shiftPoly b).eval (d i))⁻¹ ^ q‖ ^ 2) / 2 := by
+    intro i
+    rw [hpc, Polynomial.eval_mul, norm_mul]
+    simp only [norm_pow, norm_inv]
+    exact inv_pow_mul_le _ _ _ _ (lastRowWeights_nonneg V i)
+  have hsumh : ∑ i, lastRowWeights V i / ‖(shiftPoly h).eval (d i)‖ ^ (2 * q) =
+      ∑ i, lastRowWeights V i * ‖((shiftPoly h).eval (d i))⁻¹ ^ q‖ ^ 2 := by
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [norm_pow, norm_inv, ← pow_mul, inv_pow, div_eq_mul_inv, mul_comm 2 q]
+  rw [hsumh]
+  obtain ⟨hKa, hXa⟩ := hsa
+  obtain ⟨hKb, hXb⟩ := hsb
+  obtain ⟨hKh, hXh⟩ := hsh
+  have hmaxa : ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly a))⁻¹ ^ q) (Fin.last n))‖ ≤
+      ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly h))⁻¹ ^ q) (Fin.last n))‖ :=
+    hmax a (by simp)
+  have hmaxb : ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly b))⁻¹ ^ q) (Fin.last n))‖ ≤
+      ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly h))⁻¹ ^ q) (Fin.last n))‖ :=
+    hmax b (by simp)
+  -- the moment of `a` and `b` is at most `κ⁴` times the moment of `h`
+  have hXa' := moment_le_of_sandwich (norm_nonneg _) hmaxa hXa hKh
+  have hXb' := moment_le_of_sandwich (norm_nonneg _) hmaxb hXb hKh
+  calc ∑ i, lastRowWeights V i / ‖(shiftPoly (a ++ b)).eval (d i)‖ ^ q
+      ≤ ∑ i, lastRowWeights V i * (‖((shiftPoly a).eval (d i))⁻¹ ^ q‖ ^ 2 +
+          ‖((shiftPoly b).eval (d i))⁻¹ ^ q‖ ^ 2) / 2 := Finset.sum_le_sum fun i _ => hpt i
+    _ = (∑ i, lastRowWeights V i * ‖((shiftPoly a).eval (d i))⁻¹ ^ q‖ ^ 2 +
+          ∑ i, lastRowWeights V i * ‖((shiftPoly b).eval (d i))⁻¹ ^ q‖ ^ 2) / 2 := by
+        rw [← Finset.sum_add_distrib, Finset.sum_div]
+        exact Finset.sum_congr rfl fun i _ => by ring
+    _ ≤ pseudoConditionNumber V ^ 4 *
+          ∑ i, lastRowWeights V i * ‖((shiftPoly h).eval (d i))⁻¹ ^ q‖ ^ 2 := by
+        linarith
 
 /-- **The binary search returns a member**: for a list of length $2^m$,
 `NLAlib.findRitz` $\mathbf{H}$ $m$ $e$ `ss` is in `ss`.
