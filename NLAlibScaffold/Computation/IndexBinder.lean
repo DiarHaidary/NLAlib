@@ -73,7 +73,10 @@ Proof: `hlit p k hk` gives a literal $z'$ with decoding $k$; `hz` makes $z = z'$
 theorem IsExactIntLit.toNat_eq_of_lit_eq_some {dec : P → K → ℝ} {sem : ScalarSem P K} {B : ℕ}
     (hlit : IsExactIntLit dec sem B) (htn : IsExactToNat dec sem) {p : P} {k : ℕ} (hk : k ≤ B)
     {z : K} (hz : sem.lit p k = some z) : sem.toNat p z = some k := by
-  sorry
+  obtain ⟨z', hz', hdec⟩ := hlit p k hk
+  have hzz : z = z' := Option.some_injective _ (hz.symm.trans hz')
+  subst hzz
+  rw [htn p z, hdec, Nat.floor_natCast]
 
 /-! ### Witnesses -/
 
