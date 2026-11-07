@@ -103,7 +103,7 @@ theorem exec_zhermAvg_congr (n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (c : Cell �
     (yo : IExp ℕ) :
     exec I (zhermAvg (ι := ι) p n X xo c Y yo).run st =
       exec I (zhermAvg (ι := ι) p (.const n.eval) X xo c Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zhermAvg zmirror; rfl) st
 
 /-- **`ztraceRe` at an index expression** runs as at the constant of its value. No printed source.
 Proof: as `NLAlib.Computation.exec_zcopy_congr`, unfolding `NLAlib.Computation.ztraceRe`. S, 4
