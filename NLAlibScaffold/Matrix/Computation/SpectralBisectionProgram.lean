@@ -950,7 +950,17 @@ theorem eighProg.holds_of_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm 
     let M := eighTapeMachine I p mmR qrR
     let r := eigh M F ℓ₀ A₀ R₀ ε β (eighSlotTree M N F R₀ β 0 0 ⟨N, A₀, R₀, ε, ℓ₀⟩)
     pairLayout.Holds st'.store p 2 0 r.1 ∧ ∀ i : Fin N, st'.store.read p 3 i = some (r.2 i) := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, eighProg.toStmt_compiled] at h
+  set bufs : List (Array (Option K)) := [(pairLayout.toArray A₀).map some,
+    #[some R₀, some ε, some β], Array.replicate (2 * (N * N)) none, Array.replicate N none]
+    with hbufs
+  have hA := EntryLayout.holds_inputState (C := C) pairLayout p (bufs := bufs) (k := 0) (Y := A₀)
+    rfl
+  have h' : exec I (eighProg p mm qr (.const N) (.const ℓ₀) (.const F) 0 1 2 3).run
+      (inputState p bufs) = some st' := h
+  exact holds_of_exec_eighProg hmm hqr p hflag N ℓ₀ F hlit htn (by simp)
+    (by simp [inputState, bufs, Store.shape]) hA (by simp [inputState, bufs, Store.read])
+    (by simp [inputState]) h'
 
 /-- **The registered tree succeeds** under the hypotheses of `NLAlib.exists_exec_eighProg`, from the
 initial state of `NLAlib.eighProg.holds_of_exec_compiled`. No printed source.
