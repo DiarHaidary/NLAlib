@@ -719,3 +719,12 @@ args = ["spec"]
 latex = '2^{\operatorname{ebits}(#1)}-2-\operatorname{bias}(#1)-(\operatorname{prec}(#1)-1)'
 lean_body = "maxExponentBound (spec : Format) : ℤ := ((2 ^ spec.exponentBits : ℕ) : ℤ) - 2 - spec.exponentBias - spec.mantissaBitsWithoutImplicit"
 body_hash = "1d8f95afc9c5f876"
+
+[[constant]]
+name = "NLAlib.cgsPassBound"
+kind = "bound"
+file = "NLAlib/Matrix/Computation/ClassicalGramSchmidt.lean"
+args = ["N", "j", "u", "η₀"]
+latex = '2(1+#4)\sqrt{#2+1}\,(#1+#2+2)\,#3'
+lean_body = 'cgsPassBound (N j : ℕ) (u η₀ : ℝ) : ℝ := 2 * (1 + η₀) * Real.sqrt ((j : ℝ) + 1) * ((N + j + 2 : ℕ) : ℝ) * u'
+body_hash = "1e5747665140a317"
