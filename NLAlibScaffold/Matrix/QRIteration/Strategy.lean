@@ -92,7 +92,64 @@ at most $1/m$, so $\lvert z - s\rvert \le \sqrt2R/m \le \varepsilon R$ (`Complex
 `Nat.le_ceil`); the case $R = 0$ is the centre. M, about 50 lines. -/
 theorem exists_mem_squareGrid_norm_sub_le {c z : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (hε : 0 < ε)
     (hz : ‖z - c‖ ≤ R) : ∃ s ∈ squareGrid c R ε, ‖z - s‖ ≤ ε * R := by
-  sorry
+  rcases hR.eq_or_lt with h0 | hpos
+  · subst h0
+    refine ⟨c, ?_, by simpa using hz⟩
+    unfold squareGrid
+    simp only [List.mem_flatMap, List.mem_map, List.mem_range]
+    exact ⟨0, Nat.succ_pos _, 0, Nat.succ_pos _, by simp⟩
+  set m : ℕ := ⌈Real.sqrt 2 / ε⌉₊ with hm_def
+  have hs0 : 0 < Real.sqrt 2 / ε := by positivity
+  have hmR : Real.sqrt 2 / ε ≤ (m : ℝ) := Nat.le_ceil _
+  have hm_pos : (0 : ℝ) < m := lt_of_lt_of_le hs0 hmR
+  have hsε : Real.sqrt 2 ≤ (m : ℝ) * ε := by rwa [div_le_iff₀ hε] at hmR
+  have hRc : (R : ℂ) ≠ 0 := by exact_mod_cast hpos.ne'
+  have hsq : Real.sqrt 2 ^ 2 = 2 := Real.sq_sqrt (by norm_num)
+  -- rounding one coordinate of a point of the disk to the grid
+  have hround : ∀ x : ℝ, -1 ≤ x → x ≤ 1 →
+      ∃ i : ℕ, i < m + 1 ∧ |2 * (i : ℝ) / m - 1 - x| ≤ 1 / m := by
+    intro x hx1 hx2
+    have hnn : 0 ≤ (x + 1) * m / 2 + 1 / 2 := by nlinarith
+    have h1 := Nat.floor_le hnn
+    have h2 := Nat.lt_floor_add_one ((x + 1) * m / 2 + 1 / 2)
+    refine ⟨⌊(x + 1) * m / 2 + 1 / 2⌋₊, ?_, ?_⟩
+    · have h3 : ((⌊(x + 1) * m / 2 + 1 / 2⌋₊ : ℕ) : ℝ) < m + 1 := by nlinarith
+      exact_mod_cast h3
+    · set i : ℝ := (⌊(x + 1) * m / 2 + 1 / 2⌋₊ : ℝ)
+      have e : 2 * i / m - 1 - x = (2 * i - (x + 1) * m) / m := by field_simp; ring
+      rw [e, abs_div, abs_of_pos hm_pos, div_le_div_iff_of_pos_right hm_pos, abs_le]
+      constructor <;> linarith
+  -- the normalised point and its coordinates lie in the square
+  set w : ℂ := (z - c) / R with hw_def
+  have hwn : ‖w‖ ≤ 1 := by
+    rw [hw_def, norm_div, Complex.norm_real, Real.norm_of_nonneg hR, div_le_one hpos]
+    exact hz
+  have hwre := abs_le.mp ((Complex.abs_re_le_norm w).trans hwn)
+  have hwim := abs_le.mp ((Complex.abs_im_le_norm w).trans hwn)
+  obtain ⟨i, hi, hia⟩ := hround w.re hwre.1 hwre.2
+  obtain ⟨j, hj, hjb⟩ := hround w.im hwim.1 hwim.2
+  refine ⟨c + (R : ℂ) * ⟨2 * (i : ℝ) / m - 1, 2 * (j : ℝ) / m - 1⟩, ?_, ?_⟩
+  · unfold squareGrid
+    simp only [List.mem_flatMap, List.mem_map, List.mem_range]
+    exact ⟨i, hi, j, hj, rfl⟩
+  have hdiff : z - (c + (R : ℂ) * ⟨2 * (i : ℝ) / m - 1, 2 * (j : ℝ) / m - 1⟩) =
+      (R : ℂ) * (w - ⟨2 * (i : ℝ) / m - 1, 2 * (j : ℝ) / m - 1⟩) := by
+    rw [hw_def]; field_simp; ring
+  have hu : ‖w - ⟨2 * (i : ℝ) / m - 1, 2 * (j : ℝ) / m - 1⟩‖ ≤ Real.sqrt 2 * (1 / m) := by
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).mp ?_
+    have hA := abs_le.mp hia
+    have hB := abs_le.mp hjb
+    have ha2 : (w.re - (2 * (i : ℝ) / m - 1)) ^ 2 ≤ (1 / (m : ℝ)) ^ 2 :=
+      sq_le_sq' (by linarith [hA.1, hA.2]) (by linarith [hA.1, hA.2])
+    have hb2 : (w.im - (2 * (j : ℝ) / m - 1)) ^ 2 ≤ (1 / (m : ℝ)) ^ 2 :=
+      sq_le_sq' (by linarith [hB.1, hB.2]) (by linarith [hB.1, hB.2])
+    have hR2 : (Real.sqrt 2 * (1 / m)) ^ 2 = 2 * (1 / m) ^ 2 := by rw [mul_pow, hsq]
+    simp only [Complex.sq_norm, Complex.normSq_apply, Complex.sub_re, Complex.sub_im]
+    nlinarith [ha2, hb2, hR2]
+  have hεm : Real.sqrt 2 * (1 / m) ≤ ε := by
+    rw [mul_one_div, div_le_iff₀ hm_pos]; linarith
+  rw [hdiff, norm_mul, Complex.norm_real, Real.norm_of_nonneg hR]
+  nlinarith [mul_le_mul_of_nonneg_left hu hR, mul_le_mul_of_nonneg_left hεm hR]
 
 /-- **The size of the square grid**: for $0 < \varepsilon \le 1$, `NLAlib.squareGrid` $c$ $R$
 $\varepsilon$ has at most $12/\varepsilon^2$ points.
