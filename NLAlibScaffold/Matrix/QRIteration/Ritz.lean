@@ -47,7 +47,10 @@ Proof: `Multiset.length_toList`, `Polynomial.splits_iff_card_roots` with
 `IsAlgClosed.splits`, `Matrix.charpoly_natDegree_eq_dim`. S, about 8 lines. -/
 theorem length_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
     (ritzValues k H).length = k := by
-  sorry
+  unfold ritzValues
+  rw [Multiset.length_toList, Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits _),
+    Matrix.charpoly_natDegree_eq_dim]
+  simp
 
 /-- **Exact Ritz values are $1$-optimal**: for upper Hessenberg $\mathbf{H}$ and $1 \le k \le n$,
 the eigenvalues of the trailing block $\mathbf{H}_{(k)}$ satisfy
