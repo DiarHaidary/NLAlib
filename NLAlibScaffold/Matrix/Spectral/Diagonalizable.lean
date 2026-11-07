@@ -117,6 +117,11 @@ theorem _root_.IsStarNormal.exists_isUnit_mul_eq_mul_diagonal_and_pseudoConditio
     [Nonempty ι] {H : Matrix ι ι ℂ} (hH : IsStarNormal H) :
     ∃ (V : Matrix ι ι ℂ) (d : ι → ℂ), IsUnit V ∧ H * V = V * Matrix.diagonal d ∧
       pseudoConditionNumber V = 1 := by
-  sorry
+  obtain ⟨U, d, hU, rfl⟩ := isStarNormal_iff_exists_eq_mul_diagonal_mul_conjTranspose.mp hH
+  have hUi : U⁻¹ = Uᴴ := Matrix.inv_eq_left_inv hU.conjTranspose_mul_self
+  refine ⟨U, d, hU.isUnit, ?_, ?_⟩
+  · rw [Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
+  · rw [pseudoConditionNumber_of_isUnit hU.isUnit, hUi, specNorm_conjTranspose,
+      hU.specNorm_eq_one, mul_one]
 
 end NLAlib
