@@ -323,6 +323,8 @@ private theorem FloatMachine.IsAccurate.isEighNodeBudget_of_le
     (hε₁.trans (by norm_num)) hεy hεy₁ hτ100
     (by linarith [(by positivity : (0 : ℝ) ≤ 2 * √2 * √(n : ℝ)), hR₀pos.le])
   have hD : 0 < (9 * n * ℓ * (ℓ + 1) : ℝ) := by positivity
+  have h12 : (1 : ℝ) ≤ n * ℓ * (ℓ + 1) :=
+    one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hn1 (by linarith)) (by linarith)
   have hw5 : 4 * θ * dec y.R / (9 * n * ℓ * (ℓ + 1)) / (5 * dec y.R) =
       4 * θ / (45 * n * ℓ * (ℓ + 1)) := by field_simp; ring
   have hw2 : 4 * θ * dec y.R / (9 * n * ℓ * (ℓ + 1)) / (2 * dec y.R) =
@@ -341,10 +343,7 @@ private theorem FloatMachine.IsAccurate.isEighNodeBudget_of_le
   have hNy0 : 0 ≤ newtonSchulzSteps (4 * θ * dec y.R / (9 * n * ℓ * (ℓ + 1)) / (5 * dec y.R))
       (dec β / (16 * y.k)) :=
     newtonSchulzSteps_nonneg (by rw [hw5]; positivity)
-      (by
-        rw [hw5, div_le_iff₀ (by positivity)]
-        linarith [one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hn1
-          (by linarith : (1 : ℝ) ≤ ℓ)) (by linarith : (1 : ℝ) ≤ ℓ + 1)]) (by positivity)
+      (by rw [hw5, div_le_iff₀ (by positivity)]; linarith) (by positivity)
       (by rw [div_le_iff₀ (by positivity)]
           linarith [hε₁.trans (by norm_num : (2⁻¹ : ℝ) ^ 15 ≤ 1), le_mul_of_one_le_left hβ.le hn1])
   have hsk : √(y.k : ℝ) ≤ √n := Real.sqrt_le_sqrt hkn'
@@ -360,10 +359,7 @@ private theorem FloatMachine.IsAccurate.isEighNodeBudget_of_le
     mul_div_mul_le_of_le_div hk hkn hℓy hℓy₂ hl20 hε hθ hm1 hβ hεy' hβle ht hx.1, ?_, ?_,
     ?_, by linarith [hε₁.trans (by norm_num : (2⁻¹ : ℝ) ^ 15 ≤ 104 / 57600)], hNst.trans hfuel,
     hτ₀, ?_, ?_⟩
-  · have h9 : (4 : ℝ) ≤ 9 * n * ℓ * (ℓ + 1) := by
-      have : (1 : ℝ) ≤ n * ℓ * (ℓ + 1) := one_le_mul_of_one_le_of_one_le
-        (one_le_mul_of_one_le_of_one_le hn1 (by linarith)) (by linarith)
-      linarith
+  · have h9 : (4 : ℝ) ≤ 9 * n * ℓ * (ℓ + 1) := by linarith
     rw [div_le_iff₀ hD]
     linarith [mul_le_mul_of_nonneg_left hθ₁ hRpos.le, mul_le_mul_of_nonneg_left h9 hRpos.le]
   · have hX : (0 : ℝ) < n * ℓ * (ℓ + 1) := by positivity
@@ -904,7 +900,8 @@ $\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. [Shah2024, Theorem 4.2], th
 $R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies, other constants (here the Event I charge of
 a node is proportional to its size and Event II uses the smallest-singular-value tail
 $\min(r^2, e r)x^2$), and an operation count (not formalized); the bit count is
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`. -/
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
+. -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
@@ -999,12 +996,18 @@ private theorem mul_le_mul_of_mul_le_mul_sqrt {P D T L l e θ b u : ℝ} (hP : 0
 
 -- The declaration name and a docstring line exceed 100 characters.
 set_option linter.style.longLine false in
-/-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): under the
-hypotheses of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`
-(the machine and its samplers, the input, $\varepsilon$, $\theta$, $\ell$, the step limit, the
-floor, the range and the samples), with its three precision conditions replaced by $u > 0$, the
-accuracy within $1 + 2^{-6}$ of its bound, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$, and
+/-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): let the machine meet
+`NLAlib.FloatMachine.IsAccurate` with $u > 0$, monotone $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}} \ge
+0$, $c_{\mathrm N} \ge 0$ and samplers with measurable fibres and countable ranges; let the stored
+$n \times n$ input $\mathbf{A}$ be Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$ and $\ell \ge$ `NLAlib.bisectionDepth`
+$\varepsilon$; let $m = \min(n, \ell + 1)$, $\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$,
+$N_* =$ `NLAlib.newtonSchulzSteps` $(\theta/(12n\ell(\ell + 1)))\,(\beta/(16n))$ be at most the
+step limit, the floor $0 \le \tau$ with $100n^{3/2}\tau \le \min(\sqrt{\theta/(8nm)},
+\varepsilon\min(R_0, 1))$, the range $16(2R_0 + n + 2\ell + \hat T) \le \Omega$, the ideal samples
+of the nodes independent with law `NLAlib.eighSampleLaw` $n$, the accuracy within $1 + 2^{-6}$
+of its bound, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta = (\ell - 1)^2\varepsilon\sqrt\theta/
+(52\ell^2(2\ell - 1)\sqrt{nm\min(n, e)}\,\hat T)$, and
 $$\begin{aligned}\log_2\frac1u \ge{}& \log_2\frac1\varepsilon + \frac32\log_2\frac1\theta +
 \log_2\bigl(n(4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n)\bigr) +
 \tfrac12\log_2\bigl(n\min(n, \ell + 1)\min(n, e)\bigr) \\ &+ \log_2\hat T + \log_2(\ell(\ell + 1)) +

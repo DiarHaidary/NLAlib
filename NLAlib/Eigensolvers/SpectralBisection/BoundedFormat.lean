@@ -152,8 +152,8 @@ bits, precision $p$ and smallest exponent $e_{\min}$ (as
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
 (the samplers, the input, $\varepsilon$, $\theta$, $\ell$, the accuracy window for $\beta$, the
 step limit), the input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the
-two precision conditions there with $\log_2(1/u) = p$, the ideal samples of the nodes independent, each with law
-`NLAlib.eighSampleLaw` $n$, and
+two precision conditions there with $\log_2(1/u) = p$, the ideal samples of the nodes
+independent, each with law `NLAlib.eighSampleLaw` $n$, and
 $$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^3}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
 Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
 $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
