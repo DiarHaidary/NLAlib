@@ -74,7 +74,19 @@ theorem eighNodeAt_eighSlotTree :
     ∀ (a : List Bool) (d lo : ℕ) (x : EighNode F),
       eighNodeAt M N signFuel R₀ β a x (eighSlotTree M N signFuel R₀ β d lo x) =
         (eighLoc M N signFuel R₀ β d lo x a).map Prod.snd := by
-  sorry
+  intro a
+  induction a with
+  | nil => intro d lo x; rfl
+  | cons b a ih =>
+    intro d lo x
+    cases hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) with
+    | leaf U e => simp [eighNodeAt, eighChild, eighLoc, eighSlotTree, hs]
+    | shift b' A' σ =>
+      by_cases hb : b = b'
+      · subst hb; simp [eighNodeAt, eighChild, eighLoc, eighSlotTree, hs, ih]
+      · simp [eighNodeAt, eighChild, eighLoc, eighSlotTree, hs, hb]
+    | split kp h Qp Qm Ap Am σ =>
+      cases b <;> simp [eighNodeAt, eighChild, eighLoc, eighSlotTree, hs, ih]
 
 /-- **The tree of samples at the slots restricts to subtrees**: below a path that reaches the node
 $y$ at slot $lo'$, the tree of samples is the tree from $y$ at slot $lo'$ of the depth of the path.
