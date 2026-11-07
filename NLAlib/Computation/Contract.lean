@@ -41,6 +41,7 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 * `NLAlib.Computation.AddsZeroExactly`: adding a decoded zero is exact.
 * `NLAlib.Computation.IsExactIntLit`: integer literals up to a bound are exact.
 * `NLAlib.Computation.IsExactToNat`: the conversion to an index is the exact floor.
+* `NLAlib.Computation.IsIndexExactSem`: exact integer literals and conversion, at one decoding.
 * `NLAlib.Computation.MulShrinks`: multiplication by a value of modulus at most one does not
   increase the modulus.
 * `NLAlib.Computation.IsTapeRounding`: the stored draws are a rounding of the ideal tape.
@@ -58,6 +59,8 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 * `NLAlib.Computation.addsZeroExactly_exactSem`: exact arithmetic adds zero exactly.
 * `NLAlib.Computation.isExactIntLit_exactSem`: exact arithmetic.
 * `NLAlib.Computation.IsExactIntLit.mono`: a smaller bound.
+* `NLAlib.Computation.isExactToNat_exactSem`, `NLAlib.Computation.isIndexExactSem_exactSem`,
+  `NLAlib.Computation.IsIndexExactSem.mono`: index exactness of exact arithmetic.
 * `NLAlib.Computation.IsExactIntLit.exists_exec_litIdx`: a size written as a literal decodes to
   itself.
 * `NLAlib.Computation.isTapeRounding_id`: the exact rounding of the tape.
@@ -273,6 +276,18 @@ is the size. No printed source. -/
 def IsExactToNat (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
   ∀ (p : P) (x : K), sem.toNat p x = if 0 ≤ dec p x then some ⌊dec p x⌋₊ else none
 
+/-- **Index exactness of a semantics** at the decoding `dec`: integer literals up to $B$ are exact
+(`NLAlib.Computation.IsExactIntLit`) and the conversion to an index is the exact floor, failing
+below zero (`NLAlib.Computation.IsExactToNat`), both at the one decoding `dec`. A size written by
+`litIdx` up to $B$ and read back by an index binder is the size. Every rounded probabilistic
+target assumes it (`NLAlib.Computation.MatrixFreeRoundedProb`), at the decoding of its other
+contracts. No printed source. -/
+structure IsIndexExactSem (dec : P → K → ℝ) (B : ℕ) (sem : ScalarSem P K) : Prop where
+  /-- Integer literals up to `B` are exact. -/
+  intLit : IsExactIntLit dec sem B
+  /-- The conversion to an index is the exact floor. -/
+  toNat : IsExactToNat dec sem
+
 /-- **Multiplication by a value of modulus at most one does not increase the modulus**: whenever
 a product at tag `p` succeeds and its second factor decodes into $[-1, 1]$, the result decodes to
 at most the modulus of the first factor. True of every monotone rounding that is exact on the
@@ -411,6 +426,25 @@ No printed source. -/
 theorem IsExactIntLit.mono {dec : P → K → ℝ} {sem : ScalarSem P K} {B B' : ℕ}
     (h : IsExactIntLit dec sem B) (hB : B' ≤ B) : IsExactIntLit dec sem B' :=
   fun p k hk => h p k (hk.trans hB)
+
+/-- Exact real arithmetic converts exactly: `NLAlib.Computation.exactSem` over $\mathbb{R}$, with
+the identity decoding, meets `NLAlib.Computation.IsExactToNat`. No printed source. -/
+theorem isExactToNat_exactSem : IsExactToNat (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) := by
+  intro p x
+  simp [exactSem]
+
+/-- Exact real arithmetic is index exact at every bound: `NLAlib.Computation.exactSem` over
+$\mathbb{R}$, with the identity decoding, meets `NLAlib.Computation.IsIndexExactSem` at $B$.
+No printed source. -/
+theorem isIndexExactSem_exactSem (B : ℕ) :
+    IsIndexExactSem (P := P) (fun _ x => x) B (exactSem (𝕜 := ℝ)) :=
+  ⟨isExactIntLit_exactSem B, isExactToNat_exactSem⟩
+
+/-- A smaller bound: index exactness up to $B$ holds up to every $B' \le B$. No printed
+source. -/
+theorem IsIndexExactSem.mono {dec : P → K → ℝ} {sem : ScalarSem P K} {B B' : ℕ}
+    (h : IsIndexExactSem dec B sem) (hB : B' ≤ B) : IsIndexExactSem dec B' sem :=
+  ⟨h.intLit.mono hB, h.toNat⟩
 
 variable [DecidableEq P]
 

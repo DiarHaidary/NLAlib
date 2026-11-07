@@ -170,6 +170,35 @@ theorem isExactIntLit_gridSem (t : P → ℕ) (B : ℕ) (hB : ∀ p, B < 2 ^ t p
   rw [Rat.cast_natCast]
   exact Real.roundNearest_eq_self_of_mem_floatGrid hmem
 
+/-- The grid semantics has exact integer literals at its own decoding: if $t(p) \ge 1$ and every
+natural number up to $B$ is below $2^{t(p)}$ at every tag $p$, then `NLAlib.Computation.gridSem t`,
+with the decoding $x \mapsto \mathrm{fl}_p(x)$ of `NLAlib.Computation.isRelErrSem_gridSem`, meets
+`NLAlib.Computation.IsExactIntLit` at $B$. No printed source. -/
+theorem isExactIntLit_gridSem' (t : P → ℕ) (ht : ∀ p, 0 < t p) (B : ℕ) (hB : ∀ p, B < 2 ^ t p) :
+    IsExactIntLit (fun p => Real.roundNearest (t p)) (gridSem t) B := by
+  intro p k hk
+  obtain ⟨z, hz, hdz⟩ := isExactIntLit_gridSem t B hB p k hk
+  refine ⟨z, hz, ?_⟩
+  simp only at hdz ⊢
+  simp only [gridSem, Option.some.injEq] at hz
+  have hk' : (((k : ℚ)) : ℝ) = (k : ℝ) := by simp
+  rw [hk'] at hz
+  rw [← hdz, ← hz, Real.roundNearest_roundNearest (ht p)]
+
+/-- Floating-point arithmetic on a grid converts exactly: `NLAlib.Computation.gridSem t`, with the
+decoding $x \mapsto \mathrm{fl}_p(x)$, meets `NLAlib.Computation.IsExactToNat` (the conversion is
+the floor of the decoding, failing below zero). No printed source. -/
+theorem isExactToNat_gridSem (t : P → ℕ) :
+    IsExactToNat (fun p => Real.roundNearest (t p)) (gridSem t) :=
+  fun _ _ => rfl
+
+/-- The grid semantics is index exact at its own decoding: for $t(p) \ge 1$ and $B < 2^{t(p)}$ at
+every tag, `NLAlib.Computation.gridSem t` meets `NLAlib.Computation.IsIndexExactSem` at $B$ with the
+decoding $x \mapsto \mathrm{fl}_p(x)$. No printed source. -/
+theorem isIndexExactSem_gridSem (t : P → ℕ) (ht : ∀ p, 0 < t p) (B : ℕ) (hB : ∀ p, B < 2 ^ t p) :
+    IsIndexExactSem (fun p => Real.roundNearest (t p)) B (gridSem t) :=
+  ⟨isExactIntLit_gridSem' t ht B hB, isExactToNat_gridSem t⟩
+
 end ExactIntLit
 
 end NLAlib.Computation

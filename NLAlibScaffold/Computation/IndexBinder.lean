@@ -27,9 +27,10 @@ at constant sizes applies at sizes bound by a loop or a binder.
 * `NLAlib.Computation.exec_bindIdx_of_read`, `NLAlib.Computation.exec_bindIdx_eq_none`: the run of
   a binder.
 * `NLAlib.Computation.IsExactIntLit.toNat_eq_of_lit_eq_some`: the round trip of a size.
-* `NLAlib.Computation.isExactToNat_exactSem`, `NLAlib.Computation.isExactToNat_gridSem`,
-  `NLAlib.Computation.isExactToNat_binaryFloatSem`, `NLAlib.Computation.mulShrinks_exactSem`,
-  `NLAlib.Computation.mulShrinks_gridSem`: witnesses.
+* `NLAlib.Computation.mulShrinks_exactSem`, `NLAlib.Computation.mulShrinks_gridSem`: witnesses
+  (the conversion witnesses `NLAlib.Computation.isExactToNat_exactSem`,
+  `NLAlib.Computation.isExactToNat_gridSem` and `NLAlib.Computation.isExactToNat_binaryFloatSem`
+  are in the library).
 * `NLAlib.Computation.exec_normIdx`: a statement runs as its index normal form.
 -/
 
@@ -92,36 +93,6 @@ theorem IsExactIntLit.toNat_eq_of_lit_eq_some {dec : P → K → ℝ} {sem : Sca
   simp
 
 /-! ### Witnesses -/
-
-omit [DecidableEq P] in
-/-- **Exact real arithmetic converts exactly**: `NLAlib.Computation.exactSem` over $\mathbb{R}$,
-with the identity decoding, meets `NLAlib.Computation.IsExactToNat`. No printed source.
-Proof: `intro p x`; unfold `NLAlib.Computation.exactSem`; the imaginary part of a real is $0$
-(`RCLike.im_to_real`, `RCLike.re_to_real`), so `if_pos rfl`. S, 3 lines. -/
-theorem isExactToNat_exactSem : IsExactToNat (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) := by
-  intro p x
-  simp [exactSem]
-
-omit [DecidableEq P] in
-/-- **Floating-point arithmetic on a grid converts exactly**: `NLAlib.Computation.gridSem t`, with
-the decoding $x \mapsto \mathrm{fl}_p(x)$ of `NLAlib.Computation.isRelErrSem_gridSem`, meets
-`NLAlib.Computation.IsExactToNat`. No printed source.
-Proof: `rfl` (the conversion of `NLAlib.Computation.gridSem` is the floor of the decoding). S,
-1 line. -/
-theorem isExactToNat_gridSem (t : P → ℕ) :
-    IsExactToNat (fun p => Real.roundNearest (t p)) (gridSem t) := by
-  intro p x
-  rfl
-
-omit [DecidableEq P] in
-/-- **Bounded binary arithmetic converts exactly**: `NLAlib.Computation.binaryFloatSem`, with the
-decoding by the value, meets `NLAlib.Computation.IsExactToNat`. No printed source.
-Proof: `rfl`. S, 1 line. -/
-theorem isExactToNat_binaryFloatSem (fmt : Float.Model.Format) (he : 2 ≤ fmt.exponentBits)
-    (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
-    IsExactToNat (P := P) (fun _ x => x.val) (binaryFloatSem fmt he r hr) := by
-  intro p x
-  rfl
 
 omit [DecidableEq P] in
 /-- **Exact real multiplication by a factor of modulus at most one does not enlarge**:
