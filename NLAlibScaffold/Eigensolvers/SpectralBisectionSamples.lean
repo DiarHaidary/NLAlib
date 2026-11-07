@@ -52,6 +52,66 @@ open Computation
 
 /-! ### From positions to ideal samples -/
 
+/-- The Newton–Schulz loop on two machines of one semantics that differ only in their samplers
+(private helper of `NLAlib.eigh_toFloatMachine_map_samples`). -/
+private theorem newtonSchulzSign_toFloatMachine_samplers {P K : Type} [Inhabited K]
+    {Su Sg Su' Sg' : Type} (sem : ScalarSem P K) (p : P)
+    (toNat : K → ℕ) (mm : MatMulMap (K × K)) (qr : QRMap (K × K)) (unif : K → Su → K)
+    (normal : Sg → K × K) (unif' : K → Su' → K) (normal' : Sg' → K × K) {k : ℕ}
+    (b x : K) (N : ℕ) (B : Matrix (Fin k) (Fin k) (K × K)) :
+    newtonSchulzSign (sem.toFloatMachine p toNat mm qr unif normal) b x N B =
+      newtonSchulzSign (sem.toFloatMachine p toNat mm qr unif' normal') b x N B := by
+  suffices h : ∀ η N (B' : Matrix (Fin k) (Fin k) (K × K)),
+      newtonSchulzLoop (sem.toFloatMachine p toNat mm qr unif normal) η N B' =
+        newtonSchulzLoop (sem.toFloatMachine p toNat mm qr unif' normal') η N B' from h _ N _
+  intro η N
+  induction N with
+  | zero => intro B'; rfl
+  | succ N ih => intro B'; simp only [newtonSchulzLoop, ih]; rfl
+
+/-- The deflation of a leading block on two machines of one semantics whose normal samplers agree
+along $g$ (private helper of `NLAlib.eigh_toFloatMachine_map_samples`). -/
+private theorem deflate_leadingBlock_toFloatMachine_map {P K : Type} [Inhabited K]
+    {Su Sg Su' Sg' : Type} [Inhabited Sg] [Inhabited Sg'] (sem : ScalarSem P K) (p : P)
+    (toNat : K → ℕ) (mm : MatMulMap (K × K)) (qr : QRMap (K × K)) (unif : K → Su → K)
+    (normal : Sg → K × K) (unif' : K → Su' → K) (normal' : Sg' → K × K) (g : Sg → Sg')
+    (hn : ∀ z, normal z = normal' (g z)) {n k : ℕ} (hk : k ≤ n) (r : ℕ)
+    (Pm : Matrix (Fin k) (Fin k) (K × K)) (G : Matrix (Fin n) (Fin n) Sg) :
+    deflate (sem.toFloatMachine p toNat mm qr unif normal) r Pm (leadingBlock k G) =
+      deflate (sem.toFloatMachine p toNat mm qr unif' normal') r Pm
+        (leadingBlock k (G.map g)) := by
+  have hG : (leadingBlock k G).map normal = (leadingBlock k (G.map g)).map normal' := by
+    refine Matrix.ext fun i j => ?_
+    have hi : (i : ℕ) < n ∧ (j : ℕ) < n := ⟨i.2.trans_le hk, j.2.trans_le hk⟩
+    simp only [leadingBlock, Matrix.map_apply, Matrix.of_apply, dif_pos hi, hn]
+  simp only [deflate]
+  exact congrArg _ (by rw [show (leadingBlock k G).map
+    (sem.toFloatMachine p toNat mm qr unif normal).normal = _ from hG]; rfl)
+
+/-- One step on two machines of one semantics whose samplers agree along $f$ and $g$ (private
+helper of `NLAlib.eigh_toFloatMachine_map_samples`). -/
+private theorem eighStep_toFloatMachine_map {P K : Type} [Inhabited K]
+    {Su Sg Su' Sg' : Type} [Inhabited Sg] [Inhabited Sg'] (sem : ScalarSem P K) (p : P)
+    (toNat : K → ℕ) (mm : MatMulMap (K × K)) (qr : QRMap (K × K)) (unif : K → Su → K)
+    (normal : Sg → K × K) (unif' : K → Su' → K) (normal' : Sg' → K × K) (f : Su → Su')
+    (g : Sg → Sg') (hu : ∀ c v, unif c v = unif' c (f v)) (hn : ∀ z, normal z = normal' (g z))
+    (n signFuel : ℕ) (R₀ β : K) {k : ℕ} (hk : k ≤ n) (A : Matrix (Fin k) (Fin k) (K × K))
+    (R ε : K) (ℓ : ℕ) (s : EighSample Su Sg n) :
+    eighStep (sem.toFloatMachine p toNat mm qr unif normal) n signFuel R₀ β A R ε ℓ s =
+      eighStep (sem.toFloatMachine p toNat mm qr unif' normal') n signFuel R₀ β A R ε ℓ
+        (f s.1, fun b => (s.2 b).map g) := by
+  obtain rfl : unif = fun c v => unif' c (f v) := funext fun c => funext (hu c)
+  obtain rfl : normal = fun z => normal' (g z) := funext hn
+  by_cases hk1 : k ≤ 1
+  · simp only [eighStep, if_pos hk1]; rfl
+  simp only [eighStep, if_neg hk1]
+  generalize_proofs h₁ h₂
+  revert h₁ h₂
+  rw [newtonSchulzSign_toFloatMachine_samplers sem p toNat mm qr _ _ unif' normal']
+  intro h₁ h₂
+  simp only [deflate_leadingBlock_toFloatMachine_map sem p toNat mm qr _ _ unif' normal' g hn hk]
+  rfl
+
 /-- **`NLAlib.eigh` sees its samples only through the samplers**: on two machines of the same
 semantics, conversion and black boxes whose samplers agree along maps $f$ of seeds and $g$ of
 Gaussian samples ($\mathrm{unif}(c, v) = \mathrm{unif}'(c, f(v))$,
@@ -74,7 +134,28 @@ theorem eigh_toFloatMachine_map_samples {P K : Type} [Inhabited K] {Su Sg Su' Sg
     eigh (sem.toFloatMachine p toNat mm qr unif normal) signFuel ℓ A R₀ ε β s =
       eigh (sem.toFloatMachine p toNat mm qr unif' normal') signFuel ℓ A R₀ ε β
         (fun a => (f (s a).1, fun b => ((s a).2 b).map g)) := by
-  sorry
+  suffices h : ∀ (fuel k : ℕ) (A : Matrix (Fin k) (Fin k) (K × K)) (R ε : K) (ℓ : ℕ)
+      (s : List Bool → EighSample Su Sg n), k ≤ n →
+      eighAux (sem.toFloatMachine p toNat mm qr unif normal) n signFuel R₀ β fuel A R ε ℓ s =
+        eighAux (sem.toFloatMachine p toNat mm qr unif' normal') n signFuel R₀ β fuel A R ε ℓ
+          (fun a => (f (s a).1, fun b => ((s a).2 b).map g)) from h _ n A R₀ ε ℓ s le_rfl
+  intro fuel
+  induction fuel with
+  | zero => intros; rfl
+  | succ fuel ih =>
+    intro k A R ε ℓ s hk
+    simp only [eighAux]
+    rw [eighStep_toFloatMachine_map sem p toNat mm qr unif normal unif' normal' f g hu hn n signFuel
+      R₀ β hk]
+    generalize eighStep (sem.toFloatMachine p toNat mm qr unif' normal') n signFuel R₀ β A R ε ℓ
+      (f (s []).1, fun b => ((s []).2 b).map g) = st
+    cases st with
+    | leaf U d => rfl
+    | shift b A' σ => dsimp only; rw [ih _ A' _ _ _ _ hk]; rfl
+    | split kp h Qp Qm Ap Am σ =>
+      dsimp only
+      rw [ih _ Ap _ _ _ _ (h.trans hk), ih _ Am _ _ _ _ ((Nat.sub_le _ _).trans hk)]
+      rfl
 
 /-- A step of `NLAlib.eighStep` reads its sample only through the seed and the leading blocks of
 the test matrices of its size. -/
