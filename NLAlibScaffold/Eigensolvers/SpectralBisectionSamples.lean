@@ -76,6 +76,76 @@ theorem eigh_toFloatMachine_map_samples {P K : Type} [Inhabited K] {Su Sg Su' Sg
         (fun a => (f (s a).1, fun b => ((s a).2 b).map g)) := by
   sorry
 
+/-- A step of `NLAlib.eighStep` reads its sample only through the seed and the leading blocks of
+the test matrices of its size. -/
+private lemma eighStep_congr_sample {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    (N signFuel : ℕ) (R₀ β : F) {k : ℕ} (A : Matrix (Fin k) (Fin k) (F × F)) (R ε : F) (ℓ : ℕ)
+    {t t' : EighSample Su Sg N} (h1 : t.1 = t'.1)
+    (h2 : ∀ b, leadingBlock k (t.2 b) = leadingBlock k (t'.2 b)) :
+    eighStep M N signFuel R₀ β A R ε ℓ t = eighStep M N signFuel R₀ β A R ε ℓ t' := by
+  obtain ⟨v, G⟩ := t
+  obtain ⟨v', G'⟩ := t'
+  simp only at h1 h2
+  subst h1
+  unfold eighStep
+  simp only [h2]
+
+/-- The sample of a child is the sample below its side: the node at `b :: a` is the node at `a`
+below the child on side `b`. -/
+private lemma eighNodeAt_cons_of_eighChild {F Su Sg : Type*} [Inhabited Sg]
+    (M : FloatMachine F Su Sg) (N signFuel : ℕ) (R₀ β : F) (x c : EighNode F) (b : Bool)
+    (a : List Bool) (s : List Bool → EighSample Su Sg N)
+    (hc : eighChild M N signFuel R₀ β x (s []) b = some c) :
+    eighNodeAt M N signFuel R₀ β (b :: a) x s =
+      eighNodeAt M N signFuel R₀ β a c (fun a' => s (b :: a')) := by
+  simp [eighNodeAt, hc]
+
+/-- The budget-$f$ recursion `NLAlib.eighAux` from a node reads its samples only at the paths of
+length below $f$ that the node reaches. Induction on the budget. -/
+private lemma eighAux_congr_samples {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F Su Sg)
+    (signFuel : ℕ) {n : ℕ} (R₀ β : F) (f : ℕ) :
+    ∀ {k : ℕ} (A : Matrix (Fin k) (Fin k) (F × F)) (R ε : F) (ℓ : ℕ)
+      {s s' : List Bool → EighSample Su Sg n},
+      (∀ (a : List Bool) (y : EighNode F), a.length < f →
+        eighNodeAt M n signFuel R₀ β a ⟨k, A, R, ε, ℓ⟩ s = some y →
+          (s a).1 = (s' a).1 ∧ ∀ b, leadingBlock y.k ((s a).2 b) = leadingBlock y.k ((s' a).2 b)) →
+      eighAux M n signFuel R₀ β f A R ε ℓ s = eighAux M n signFuel R₀ β f A R ε ℓ s' := by
+  induction f with
+  | zero => intro k A R ε ℓ s s' _; rfl
+  | succ f ih =>
+    intro k A R ε ℓ s s' H
+    have H0 := H [] ⟨k, A, R, ε, ℓ⟩ (by simp) rfl
+    have hstep := eighStep_congr_sample M n signFuel R₀ β A R ε ℓ (t := s []) (t' := s' [])
+      H0.1 (fun b => H0.2 b)
+    have hchild : ∀ (b : Bool) (c : EighNode F),
+        eighChild M n signFuel R₀ β ⟨k, A, R, ε, ℓ⟩ (s []) b = some c →
+        ∀ (a : List Bool) (y : EighNode F), a.length < f →
+          eighNodeAt M n signFuel R₀ β a c (fun a' => s (b :: a')) = some y →
+            (s (b :: a)).1 = (s' (b :: a)).1 ∧
+              ∀ d, leadingBlock y.k ((s (b :: a)).2 d) = leadingBlock y.k ((s' (b :: a)).2 d) := by
+      intro b c hc a y hl hy
+      exact H (b :: a) y (by simp only [List.length_cons]; omega)
+        ((eighNodeAt_cons_of_eighChild M n signFuel R₀ β _ c b a s hc).trans hy)
+    simp only [eighAux]
+    rw [hstep]
+    cases hT : eighStep M n signFuel R₀ β A R ε ℓ (s' []) with
+    | leaf U d => rfl
+    | shift b A' σ =>
+      have hc : eighChild M n signFuel R₀ β ⟨k, A, R, ε, ℓ⟩ (s []) b =
+          some ⟨k, A', (eighNextParams M R ε ℓ).1, (eighNextParams M R ε ℓ).2, ℓ + 1⟩ := by
+        simp [eighChild, hstep.trans hT]
+      dsimp only
+      rw [ih A' _ _ (ℓ + 1) (hchild b _ hc)]
+    | split kp h Qp Qm Ap Am σ =>
+      have hcT : eighChild M n signFuel R₀ β ⟨k, A, R, ε, ℓ⟩ (s []) true =
+          some ⟨kp, Ap, (eighNextParams M R ε ℓ).1, (eighNextParams M R ε ℓ).2, ℓ + 1⟩ := by
+        simp [eighChild, hstep.trans hT]
+      have hcF : eighChild M n signFuel R₀ β ⟨k, A, R, ε, ℓ⟩ (s []) false =
+          some ⟨k - kp, Am, (eighNextParams M R ε ℓ).1, (eighNextParams M R ε ℓ).2, ℓ + 1⟩ := by
+        simp [eighChild, hstep.trans hT]
+      dsimp only
+      rw [ih Ap _ _ (ℓ + 1) (hchild true _ hcT), ih Am _ _ (ℓ + 1) (hchild false _ hcF)]
+
 /-- **`NLAlib.eigh` reads only the samples of the nodes it reaches**: two trees of samples that
 agree, at every path of length at most $\ell$ (the nodes with a positive budget) that
 `NLAlib.eighNodeAt` follows, on the seed and on the leading $k \times k$ blocks of the test matrices
@@ -92,7 +162,8 @@ theorem eigh_congr_samples {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F 
       eighNodeAt M n signFuel R₀ β a ⟨n, A, R₀, ε, ℓ⟩ s = some y →
         (s a).1 = (s' a).1 ∧ ∀ b, leadingBlock y.k ((s a).2 b) = leadingBlock y.k ((s' a).2 b)) :
     eigh M signFuel ℓ A R₀ ε β s = eigh M signFuel ℓ A R₀ ε β s' := by
-  sorry
+  exact eighAux_congr_samples M signFuel R₀ β (ℓ + 1) A R₀ ε ℓ
+    (fun a y hl hy => h a y (Nat.lt_succ_iff.mp hl) hy)
 
 /-- **The run's output on positions is the output on ideal samples**: for an interpretation whose
 tape is a rounding $\rho \circ \xi$ of an ideal tape $\xi$, with $\rho$ independent of the position,
