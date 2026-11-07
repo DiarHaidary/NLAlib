@@ -91,6 +91,7 @@ NLAlib/
   Probability/     scalar and vector probability, concentration                  (layer 1.5)
   RandomMatrix/    Gaussian, sub-Gaussian, Haar random matrices                     (layer 2)
   Sketching/       sketch distributions and their embedding guarantees             (layer 3)
+  Eigensolvers/    randomized eigensolvers and their precision guarantees          (layer 3)
   Regression/      randomized least squares and linear-system solvers
                    (sketch-and-solve, sketch-and-precondition, iterative
                    sketching, Kaczmarz, sketch-and-project)                      (layer 3.5)

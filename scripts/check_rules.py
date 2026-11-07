@@ -63,7 +63,7 @@ DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 # top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
 # it gets files.
 LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
-         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
+         'RandomMatrix': 2, 'Sketching': 3, 'Eigensolvers': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
          'LowerBounds': 5}
 
 # ------------------------------------------------------------------ the rule registry
