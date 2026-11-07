@@ -86,7 +86,8 @@ with the identity decoding, meets `NLAlib.Computation.IsExactToNat`. No printed 
 Proof: `intro p x`; unfold `NLAlib.Computation.exactSem`; the imaginary part of a real is $0$
 (`RCLike.im_to_real`, `RCLike.re_to_real`), so `if_pos rfl`. S, 3 lines. -/
 theorem isExactToNat_exactSem : IsExactToNat (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) := by
-  sorry
+  intro p x
+  simp [exactSem]
 
 omit [DecidableEq P] in
 /-- **Floating-point arithmetic on a grid converts exactly**: `NLAlib.Computation.gridSem t`, with
