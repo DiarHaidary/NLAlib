@@ -446,6 +446,16 @@ survive to the upward pass, whose level $d$ reads them (`NLAlib.EighArenas.Level
 That is the private `ep2_holds_of_exec_eighDownLevel` (EL1's proof, with the frame stated finer),
 of which EL1 is now a corollary; EL1's statement is unchanged.
 
+**EP1 `holds_of_exec_eighProg`**: proved with its statement unchanged (no hypothesis added). It
+supplies EL1's `hnext` and the five constants of `hc` from the initialisation, as the outline says
+(the downward loop's invariant carries "the size cells of every depth $e > d$ read $0$"), and it
+uses EP2's private `ep2_holds_of_exec_eighDownLevel` (EL1's proof with the finer frame) for the
+same reason as EP2: the upward level $d$ reads `NLAlib.EighArenas.LevelHolds` at $d$, which
+EL1's stated frame does not keep through level $d$ itself. The private `ep1_` helpers split the
+proof into the downward pass, the spent level with the upward pass, and the body after the eleven
+allocations (`ep1_prog_eq` states the tree of the scope by `rfl`), so that each piece elaborates
+within the 4 GB worker limit.
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
