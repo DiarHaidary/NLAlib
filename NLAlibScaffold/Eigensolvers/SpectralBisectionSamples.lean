@@ -313,7 +313,44 @@ theorem isAccurate_eighIdealMachine {sem : ScalarSem P K} {dec : P → K → ℝ
     (sem.toFloatMachine p (fun x => (sem.toNat p x).getD 0) mm qr
       (sem.uniformUnif p (ρ .uniform 0)) (sem.gaussianNormal p (ρ .gaussian 0))).IsAccurate
         (dec p) ((c .uniform + 1) * u) 0 Ω μM μQ (2 * (c .gaussian + 3)) := by
-  sorry
+  have huM : u ≤ (c .uniform + 1) * u := by nlinarith [mul_nonneg hcu hu]
+  have hu' : 0 ≤ (c .uniform + 1) * u := mul_nonneg (by linarith) hu
+  have hconv : (fun x => (sem.toNat p x).getD 0) = fun x => ⌊dec p x⌋₊ :=
+    funext fun x => by rw [htn p x]; rfl
+  have hsem' : IsRelErrSem (fun _ => (c .uniform + 1) * u) dec (fun _ _ => True) sem :=
+    hsem.mono fun _ => huM
+  have hlit' : IsExactIntLit dec sem 1 := fun p k hk => hlit p k (hk.trans (by norm_num))
+  have hmm' : IsMatMulErr (decodeComplex (dec p)) ((c .uniform + 1) * u) 0 Ω μM mm :=
+    { specNorm_mul_sub_le := fun A B hAB =>
+        (hmm.specNorm_mul_sub_le A B hAB).trans
+          (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left huM (hμM _))
+            (le_max_right _ _))
+      isHermitian_of_map_eq_conjTranspose := hmm.isHermitian_of_map_eq_conjTranspose }
+  have hqr' : IsQRErr (decodeComplex (dec p)) ((c .uniform + 1) * u) 0 Ω μQ qr := fun A hA =>
+    let h := hqr A hA
+    ⟨h.1, h.2.choose, h.2.choose_spec.1,
+      h.2.choose_spec.2.1.trans (mul_le_mul_of_nonneg_left huM (hμQ _)),
+      h.2.choose_spec.2.2.trans (mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_left huM (hμQ _)) (le_max_right _ _))⟩
+  have hρU : ∀ v : ℝ, |v| ≤ 1 → |dec p (ρ .uniform 0 v) - v| ≤ c .uniform * u * |v| := by
+    intro v hv
+    have h := hρ.1 .uniform 0 v (hv.trans hΩ)
+    rwa [max_eq_left (abs_nonneg v)] at h
+  have hunif : IsUnifSampler (dec p) ((c .uniform + 1) * u) 0 (sem.uniformUnif p (ρ .uniform 0)) :=
+    isUnifSampler_uniformUnif hsem hmul p hρU (fun v hv => hρ.2 0 v hv) hu hcu
+  have hρG : ∀ x : ℝ, |x| ≤ 2 * Ω → |dec p (ρ .gaussian 0 x) - x| ≤ c .gaussian * u * |x| := by
+    intro x hx
+    have h := hρ.1 .gaussian 0 x hx
+    rwa [max_eq_left (abs_nonneg x)] at h
+  have hnorm : IsNormalSampler (decodeComplex (dec p)) u (2 * (c .gaussian + 3)) 0 Ω
+      (sem.gaussianNormal p (ρ .gaussian 0)) :=
+    isNormalSampler_gaussianNormal hsem hlit p hρG hcg hu hcgu
+  have hnorm' : IsNormalSampler (decodeComplex (dec p)) ((c .uniform + 1) * u)
+      (2 * (c .gaussian + 3)) 0 Ω (sem.gaussianNormal p (ρ .gaussian 0)) := fun z hz =>
+    (hnorm z hz).trans (mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_left huM (by linarith)) (le_max_right _ _))
+  rw [hconv]
+  exact isAccurate_toFloatMachine Ω hsem' hlit' hu' p hmm' hqr' hunif hnorm'
 
 set_option linter.style.longLine false in
 /-- **The uniform shift of a rounding with countable range has countable ranges and measurable
