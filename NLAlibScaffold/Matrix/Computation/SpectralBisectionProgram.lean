@@ -1193,37 +1193,38 @@ private theorem el1_slot_node {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout
       · obtain ⟨b1, b2, b3⟩ := el1_leaf_bd hkn hW
         exact (hfr q b i b1 b2 b3).trans (hr2 q b i ht4)
 
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- EP2: the window of a slot lies in the records of depth $d$ (bases, outputs, eigenvalues, kinds,
+splits) and the cells of depth $d + 1$; the sizes, node matrices and parameters of depth $d$ are
+outside it. -/
+private theorem ep2_win_cell {H : EighArenas} {n d lo k : ℕ} {cs : ℕ → Prop} {b i : ℕ}
+    (hk1 : 1 ≤ k) (hk : lo + k ≤ n) (h : el1_win H n d lo k cs b i) :
+    ((b = H.Qa ∨ b = H.Ua ∨ b = H.Ea ∨ b = H.Kd ∨ b = H.Kp) ∧ H.LevelCell n d b i) ∨
+      H.LevelCell n (d + 1) b i := by
+  have e1 : 2 * n * (lo + k) ≤ 2 * (n * n) := by
+    rw [show 2 * (n * n) = 2 * n * n by ring]; exact Nat.mul_le_mul_left _ hk
+  have e2 : 2 * (n * n) * (d + 1) = 2 * (n * n) * d + 2 * (n * n) := by ring
+  have e3 : 2 * (n * n) * (d + 1 + 1) = 2 * (n * n) * (d + 1) + 2 * (n * n) := by ring
+  have e4 : n * (d + 1) = n * d + n := by ring
+  have e5 : n * (d + 1 + 1) = n * (d + 1) + n := by ring
+  unfold el1_win at h
+  unfold EighArenas.LevelCell
+  rcases h with ⟨hb, h1, h2⟩ | ⟨hb, h1, h2⟩ | ⟨hb, h1, h2⟩ | ⟨hb, h1⟩ | ⟨hb, j, hj1, hj2, -, hj⟩
+  · refine Or.inl ⟨by rcases hb with h | h <;> simp [h],
+      Or.inl ⟨by rcases hb with h | h <;> simp [h], by omega, by omega⟩⟩
+  · exact Or.inr (Or.inl ⟨Or.inl hb, by omega, by omega⟩)
+  · exact Or.inl ⟨Or.inr (Or.inr (Or.inl hb)), Or.inr (Or.inl ⟨Or.inl hb, by omega, by omega⟩)⟩
+  · refine Or.inl ⟨by rcases hb with h | h <;> simp [h],
+      Or.inr (Or.inl ⟨by rcases hb with h | h <;> simp [h], by omega, by omega⟩)⟩
+  · exact Or.inr (Or.inr (Or.inl ⟨Or.inr (Or.inl hb), by omega, by omega⟩))
+
 set_option maxHeartbeats 1600000 in
 -- The run unfolds the scope, seven instructions, two draw loops and the loop over the slots.
-/-- **One level of the downward pass**: let the kernels of `I` be the routines `mmR`, `qrR` on
-interleaved pairs, the semantics decide flags, with exact integer literals up to $n + 4$ and the
-exact floor conversion; $M$ = `NLAlib.eighTapeMachine I p mmR qrR` and the root
-$(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$. A successful run of `NLAlib.eighDownLevel` at depth
-$d < D$ from a state whose arenas hold the nodes of depth $d$ (`NLAlib.EighArenas.LevelHolds`) and
-whose size cells of depth $d + 1$ all read $0$, with the tape positions $nd$ (uniform) and
-$4n^2 d$ (Gaussian), the stored $R_0$, $\varepsilon$, $\beta$ in `par` and the constants in `c`
-(cells $0$ to $4$: one, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2)$, $-1$, the stored $\sqrt{1/2}$),
-ends with the arenas holding the nodes of depth $d + 1$ and the
-records of depth $d$ (`NLAlib.EighArenas.RecordHolds`); every cell outside depths $d$ and $d + 1$ of
-the arenas and the sample buffers `Su`, `Sg` is unchanged, the store shape too, and the tape
-positions advance by $n$ and $4n^2$. No printed source.
-Proof: the parameters of depth $d + 1$ by seven instructions (`NLAlib.eighNextParams` at
-$\ell_0 + d$, `NLAlib.eighLevelParams`); the draws by `NLAlib.Computation.exec_forRange_draw` (cell
-$i$ of `Su` is the tape at $nd + i$, cell $w$ of `Sg` at $4n^2 d + w$); then the loop over the slots
-by `NLAlib.Computation.forall_of_exec_loop_eq_some` (pilot) with the invariant "the slots below $lo$
-are done": at slot $lo$ the binder reads the stored size (`hlev`, `NLAlib.ReadsIdx`, the clamp to
-$n - lo$ is harmless by `NLAlib.eighLoc_bounds`), a slot that starts no node reads $0$ and skips
-(`NLAlib.eighWhen`), and a node of size $k$ runs a leaf (`NLAlib.holds_of_exec_eighLeafBlock`, for
-$k \le 1$ or $R \le \mathrm{fl}(\varepsilon R_0)$, one comparison) or
-`NLAlib.holds_of_exec_eighNodeBlock`, whose window, tolerance and depth counter are the depth's
-(`NLAlib.eighLoc_params`); its writes stay in its own range of depths $d$ and $d + 1$
-(`NLAlib.eighLoc_disjoint`), so the other nodes' cells are kept, and the children of the nodes of
-depth $d$ are the nodes of depth $d + 1$ (`NLAlib.eighLoc_append_singleton`); the sizes of the
-children read back by `NLAlib.Computation.IsExactIntLit.toNat_eq_of_lit_eq_some` (scaffold,
-$k \le n$), and every other slot of depth $d + 1$ keeps its $0$. L, about 200 lines (split the
-per-slot step into a private lemma). -/
-theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
+/-- EP2: `NLAlib.holds_of_exec_eighDownLevel` with the finer frame of its proof: of the cells of
+depth $d$ only the records (bases, outputs, eigenvalues, kinds, splits) may change. -/
+private theorem ep2_holds_of_exec_eighDownLevel {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
+    {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
     (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c : ℕ} {st st' : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
@@ -1244,8 +1245,9 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
     H.LevelHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
         ⟨n, A, R₀, ε, ℓ₀⟩ (d + 1) ∧
       H.RecordHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d ∧
-      (∀ q b i, b ≠ Su → b ≠ Sg → ¬ H.LevelCell n d b i → ¬ H.LevelCell n (d + 1) b i →
-        st'.store.read q b i = st.store.read q b i) ∧
+      (∀ q b i, b ≠ Su → b ≠ Sg →
+        ¬ ((b = H.Qa ∨ b = H.Ua ∨ b = H.Ea ∨ b = H.Kd ∨ b = H.Kp) ∧ H.LevelCell n d b i) →
+        ¬ H.LevelCell n (d + 1) b i → st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos .uniform = st.pos .uniform + n ∧
       st'.pos .gaussian = st.pos .gaussian + 4 * (n * n) := by
   set M := eighTapeMachine I p mmR qrR with hM
@@ -1668,7 +1670,7 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
       · intro lo y hlo ⟨a, ha, hl⟩ hwin
         change lo < n at hlo
         have hn1 : 1 ≤ n := by omega
-        rcases el1_win_levelCell (eighLoc_bounds hn1 hl).1 (eighLoc_bounds hn1 hl).2 hwin with
+        rcases ep2_win_cell (eighLoc_bounds hn1 hl).1 (eighLoc_bounds hn1 hl).2 hwin with
           h | h
         · exact h1 h
         · exact h2 h
@@ -1684,6 +1686,63 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
   · change σe.pos .gaussian = _
     rw [hpse, hgpos, hupos]
     simp
+
+/-- **One level of the downward pass**: let the kernels of `I` be the routines `mmR`, `qrR` on
+interleaved pairs, the semantics decide flags, with exact integer literals up to $n + 4$ and the
+exact floor conversion; $M$ = `NLAlib.eighTapeMachine I p mmR qrR` and the root
+$(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$. A successful run of `NLAlib.eighDownLevel` at depth
+$d < D$ from a state whose arenas hold the nodes of depth $d$ (`NLAlib.EighArenas.LevelHolds`) and
+whose size cells of depth $d + 1$ all read $0$, with the tape positions $nd$ (uniform) and
+$4n^2 d$ (Gaussian), the stored $R_0$, $\varepsilon$, $\beta$ in `par` and the constants in `c`
+(cells $0$ to $4$: one, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2)$, $-1$, the stored $\sqrt{1/2}$),
+ends with the arenas holding the nodes of depth $d + 1$ and the
+records of depth $d$ (`NLAlib.EighArenas.RecordHolds`); every cell outside depths $d$ and $d + 1$ of
+the arenas and the sample buffers `Su`, `Sg` is unchanged, the store shape too, and the tape
+positions advance by $n$ and $4n^2$. No printed source.
+Proof: the parameters of depth $d + 1$ by seven instructions (`NLAlib.eighNextParams` at
+$\ell_0 + d$, `NLAlib.eighLevelParams`); the draws by `NLAlib.Computation.exec_forRange_draw` (cell
+$i$ of `Su` is the tape at $nd + i$, cell $w$ of `Sg` at $4n^2 d + w$); then the loop over the slots
+by `NLAlib.Computation.forall_of_exec_loop_eq_some` (pilot) with the invariant "the slots below $lo$
+are done": at slot $lo$ the binder reads the stored size (`hlev`, `NLAlib.ReadsIdx`, the clamp to
+$n - lo$ is harmless by `NLAlib.eighLoc_bounds`), a slot that starts no node reads $0$ and skips
+(`NLAlib.eighWhen`), and a node of size $k$ runs a leaf (`NLAlib.holds_of_exec_eighLeafBlock`, for
+$k \le 1$ or $R \le \mathrm{fl}(\varepsilon R_0)$, one comparison) or
+`NLAlib.holds_of_exec_eighNodeBlock`, whose window, tolerance and depth counter are the depth's
+(`NLAlib.eighLoc_params`); its writes stay in its own range of depths $d$ and $d + 1$
+(`NLAlib.eighLoc_disjoint`), so the other nodes' cells are kept, and the children of the nodes of
+depth $d$ are the nodes of depth $d + 1$ (`NLAlib.eighLoc_append_singleton`); the sizes of the
+children read back by `NLAlib.Computation.IsExactIntLit.toNat_eq_of_lit_eq_some` (scaffold,
+$k \le n$), and every other slot of depth $d + 1$ keeps its $0$. L, about 200 lines (split the
+per-slot step into a private lemma). -/
+theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
+    (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
+    (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c : ℕ} {st st' : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
+    (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+      ⟨n, A, R₀, ε, ℓ₀⟩ d)
+    (hnext : ∀ lo < n, ReadsIdx I.sem st.store p H.Sz (n * (d + 1) + lo) 0)
+    (hpos : st.pos .uniform = n * d ∧ st.pos .gaussian = 4 * (n * n) * d)
+    (hpar : st.store.read p par 0 = some R₀ ∧ st.store.read p par 2 = some β)
+    (hc : st.store.read p c 0 = I.sem.lit p 1 ∧ st.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) ∧
+      st.store.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
+        (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
+      st.store.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg
+        (eighTapeMachine I p mmR qrR).one) ∧
+      st.store.read p c 4 = some (I.sem.sqrtHalf p))
+    (h : exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) par H.Lv Su Sg
+      H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st = some st') :
+    H.LevelHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+        ⟨n, A, R₀, ε, ℓ₀⟩ (d + 1) ∧
+      H.RecordHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d ∧
+      (∀ q b i, b ≠ Su → b ≠ Sg → ¬ H.LevelCell n d b i → ¬ H.LevelCell n (d + 1) b i →
+        st'.store.read q b i = st.store.read q b i) ∧
+      st'.store.shape = st.store.shape ∧ st'.pos .uniform = st.pos .uniform + n ∧
+      st'.pos .gaussian = st.pos .gaussian + 4 * (n * n) := by
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := ep2_holds_of_exec_eighDownLevel hmm hqr p hflag n ℓ₀ F d D hd
+    hlit htn H hH hbufs hlev hnext hpos hpar hc h
+  exact ⟨h1, h2, fun q b i hSu hSg hd1 hd2 => h3 q b i hSu hSg (fun h => hd1 h.2) hd2, h4, h5, h6⟩
 
 /-! #### Helpers of `NLAlib.exists_exec_eighDownLevel` -/
 
@@ -4532,12 +4591,840 @@ theorem holds_of_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayou
     pairLayout.Holds st'.store p U 0 r.1 ∧ ∀ i : Fin n, st'.store.read p dv i = some (r.2 i) := by
   sorry
 
+/-! #### Helpers of `NLAlib.exists_exec_eighProg` -/
+
+omit [Inhabited K] in
+/-- EP2: builders that run the same under continuations that run the same run the same. -/
+private theorem ep2_run_eq {X Y : Builder P ι ℕ ℕ Unit} (h : el1_Equiv I X Y) (st : St P K C) :
+    exec I X.run st = exec I Y.run st :=
+  h (fun _ => .skip) (fun _ => .skip) (fun _ => rfl) st
+
+set_option maxHeartbeats 8000000 in
+-- The walk goes through every statement of the level, its leaves and its node step.
+omit [Inhabited K] in
+/-- EP2: a level of the downward pass at an index variable runs as at the constant of its value. -/
+private theorem ep2_down_congr (p : P) (mm qr : ι) (n ℓ₀ F d par Lv Su Sg Ma Ua Qa Ea Sz Kd Kp
+    c : ℕ) (st : St P K C) :
+    exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.var d) par Lv Su Sg Ma Ua
+      Qa Ea Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st =
+    exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) par Lv Su Sg Ma Ua
+      Qa Ea Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st := by
+  refine ep2_run_eq ?_ st
+  unfold eighDownLevel
+  repeat' first
+    | rfl
+    | exact el1E_pure
+    | apply el1E_ins
+    | apply el1E_kcall
+    | apply el1E_forRange
+    | apply el1E_bindIdx
+    | apply el1E_ite
+    | apply el1E_named
+    | apply el1E_scope
+    | apply el1E_allocBind
+    | apply el1E_bind
+    | intro _
+
+set_option maxHeartbeats 4000000 in
+-- The walk goes through every statement of the level.
+omit [Inhabited K] in
+/-- EP2: a level of the upward pass at $\ell_0 - j$ runs as at the constant of its value. -/
+private theorem ep2_up_congr (p : P) (mm : ι) (n ℓ₀ j Lv Ua Qa Ea Sz Kd Kp c : ℕ)
+    (st : St P K C) :
+    exec I (eighUpLevel p mm (.const n) (.const ℓ₀ - .var j) Lv Ua Qa Ea Sz Kd Kp ⟨c, 1⟩).run st =
+      exec I (eighUpLevel p mm (.const n) (.const (ℓ₀ - j)) Lv Ua Qa Ea Sz Kd Kp ⟨c, 1⟩).run
+        st := by
+  refine ep2_run_eq ?_ st
+  unfold eighUpLevel
+  repeat' first
+    | rfl
+    | exact el1E_pure
+    | apply el1E_ins
+    | apply el1E_kcall
+    | apply el1E_forRange
+    | apply el1E_bindIdx
+    | apply el1E_ite
+    | apply el1E_named
+    | apply el1E_scope
+    | apply el1E_allocBind
+    | apply el1E_bind
+    | intro _
+
+omit [Inhabited K] in
+/-- EP2: the spent level at depth $\ell_0 + 1$ runs as at the constant of its value. -/
+private theorem ep2_bot_congr (p : P) (n ℓ₀ Ua Ea Sz : ℕ) (st : St P K C) :
+    exec I (eighBottomLevel (ι := ι) p (.const n) (.const ℓ₀ + 1) Ua Ea Sz).run st =
+      exec I (eighBottomLevel (ι := ι) p (.const n) (.const (ℓ₀ + 1)) Ua Ea Sz).run st := by
+  refine ep2_run_eq ?_ st
+  unfold eighBottomLevel
+  repeat' first
+    | rfl
+    | exact el1E_pure
+    | apply el1E_ins
+    | apply el1E_kcall
+    | apply el1E_forRange
+    | apply el1E_bindIdx
+    | apply el1E_ite
+    | apply el1E_named
+    | apply el1E_scope
+    | apply el1E_allocBind
+    | apply el1E_bind
+    | intro _
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- EP2: the slots of the nodes lie in $[0, n]$ (also for $n = 0$), and the nodes are not empty
+when $n \ge 1$. -/
+private theorem ep2_bnd {M : FloatMachine K ℕ ℕ} {n F : ℕ} {R₀ β ε : K} {ℓ₀ : ℕ}
+    {A : Matrix (Fin n) (Fin n) (K × K)} {a : List Bool} {lo : ℕ} {y : EighNode K}
+    (h : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (lo, y)) :
+    lo + y.k ≤ n ∧ (1 ≤ n → 1 ≤ y.k) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · refine ⟨?_, fun h => absurd h (by omega)⟩
+    cases a with
+    | nil => cases h; rfl
+    | cons b a => simp [eighLoc, eighStep] at h
+  · exact ⟨(eighLoc_bounds hn h).2, fun _ => (eighLoc_bounds hn h).1⟩
+
+/-- EP2: a cell of a depth lies in one of the arenas. -/
+private theorem ep2_lc_mem {H : EighArenas} {n e b i : ℕ} (h : H.LevelCell n e b i) :
+    b ∈ H.handles := by
+  unfold EighArenas.LevelCell at h
+  simp only [EighArenas.handles, List.mem_cons, List.not_mem_nil, or_false]
+  rcases h with ⟨h | h | h, -⟩ | ⟨h | h | h | h, -⟩ | ⟨h, -⟩ <;> simp [h]
+
+/-- EP2: two intervals of one length at distinct multiples are disjoint. -/
+private theorem ep2_iv {m e e' i : ℕ} (h1 : m * e ≤ i) (h2 : i < m * (e + 1)) (h3 : m * e' ≤ i)
+    (h4 : i < m * (e' + 1)) : e = e' := by
+  by_contra hne
+  rcases Nat.lt_or_gt_of_ne hne with h | h
+  · have := Nat.mul_le_mul_left m (show e + 1 ≤ e' by omega); omega
+  · have := Nat.mul_le_mul_left m (show e' + 1 ≤ e by omega); omega
+
+/-- EP2: the cells of distinct depths are distinct. -/
+private theorem ep2_lc_ne {H : EighArenas} (hnd : H.handles.Nodup) {n e e' b i : ℕ} (hne : e ≠ e')
+    (h : H.LevelCell n e b i) : ¬ H.LevelCell n e' b i := by
+  intro h'
+  unfold EighArenas.LevelCell at h h'
+  rcases h with ⟨hb, h1, h2⟩ | ⟨hb, h1, h2⟩ | ⟨hb, h1⟩ <;>
+    rcases h' with ⟨hb', h1', h2'⟩ | ⟨hb', h1', h2'⟩ | ⟨hb', h1'⟩
+  · exact hne (ep2_iv (m := 2 * (n * n)) h1 h2 h1' h2')
+  · rcases hb with rfl | rfl | rfl <;> rcases hb' with h | h | h | h <;>
+      simp [EighArenas.handles, h] at hnd
+  · rcases hb with rfl | rfl | rfl <;> simp [EighArenas.handles, hb'] at hnd
+  · rcases hb with rfl | rfl | rfl | rfl <;> rcases hb' with h | h | h <;>
+      simp [EighArenas.handles, h] at hnd
+  · exact hne (ep2_iv (m := n) h1 h2 h1' h2')
+  · rcases hb with rfl | rfl | rfl | rfl <;> simp [EighArenas.handles, hb'] at hnd
+  · subst hb; rcases hb' with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · subst hb; rcases hb' with h | h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · omega
+
+/-- EP2: a block of a node of depth $e$ lies in the block of depth $e$. -/
+private theorem ep2_blk {n e lo k i : ℕ} (hk : lo + k ≤ n) (h1 : 2 * (n * n) * e + 2 * n * lo ≤ i)
+    (h2 : i < 2 * (n * n) * e + 2 * n * lo + 2 * (k * k)) :
+    2 * (n * n) * e ≤ i ∧ i < 2 * (n * n) * (e + 1) := by
+  have e1 : 2 * n * lo + 2 * (k * k) ≤ 2 * (n * n) := by nlinarith
+  have e2 : 2 * (n * n) * (e + 1) = 2 * (n * n) * e + 2 * (n * n) := by ring
+  omega
+
+omit [AddMonoid C] [Inhabited K] in
+/-- EP2: the nodes of a depth transfer to a store that reads the same on the sizes, node matrices
+and parameters of that depth (and on the size cell $ne$, the root's when $n = 0$). -/
+private theorem ep2_lev_tr {H : EighArenas} {s s' : Store P K} {p : P} {sem : ScalarSem P K}
+    {M : FloatMachine K ℕ ℕ} {n F ℓ₀ e : ℕ} {R₀ β ε : K} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hs : ∀ q b i, (b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) →
+      (H.LevelCell n e b i ∨ (b = H.Sz ∧ i = n * e)) → s'.read q b i = s.read q b i)
+    (h : H.LevelHolds sem s p M n F ℓ₀ R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ e) :
+    H.LevelHolds sem s' p M n F ℓ₀ R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ e := by
+  have e4 : n * (e + 1) = n * e + n := by ring
+  refine ⟨fun a lo y ha hay => ?_, fun lo hlo hno => ?_, ?_, ?_⟩
+  · obtain ⟨h1, h2⟩ := h.1 a lo y ha hay
+    obtain ⟨hb, hb1⟩ := ep2_bnd hay
+    refine ⟨el1_readsIdx_congr (hs p _ _ (Or.inr (Or.inl rfl)) ?_) h1,
+      el1_holds_keep h2 fun i h1' h2' => hs p _ _ (Or.inl rfl) ?_⟩
+    · by_cases hlo : lo = 0
+      · exact Or.inr ⟨rfl, by omega⟩
+      · have := hb1 (by omega)
+        exact Or.inl (Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by omega, by omega⟩))
+    · exact Or.inl (Or.inl ⟨Or.inl rfl, ep2_blk hb h1' h2'⟩)
+  · exact el1_readsIdx_congr (hs p _ _ (Or.inr (Or.inl rfl))
+      (Or.inl (Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by omega, by omega⟩)))) (h.2.1 lo hlo hno)
+  · rw [hs p _ _ (Or.inr (Or.inr rfl)) (Or.inl (Or.inr (Or.inr ⟨rfl, Or.inl rfl⟩)))]
+    exact h.2.2.1
+  · rw [hs p _ _ (Or.inr (Or.inr rfl)) (Or.inl (Or.inr (Or.inr ⟨rfl, Or.inr rfl⟩)))]
+    exact h.2.2.2
+
+omit [AddMonoid C] [Inhabited K] in
+/-- EP2: the records of a depth transfer to a store that reads the same on the cells of that
+depth. -/
+private theorem ep2_rec_tr {H : EighArenas} {s s' : Store P K} {p : P} {sem : ScalarSem P K}
+    {M : FloatMachine K ℕ ℕ} {n F ℓ₀ e : ℕ} {R₀ β ε : K} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hs : ∀ q b i, H.LevelCell n e b i → s'.read q b i = s.read q b i)
+    (h : H.RecordHolds sem s p M n F R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ e) :
+    H.RecordHolds sem s' p M n F R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ e := by
+  have e4 : n * (e + 1) = n * e + n := by ring
+  intro a lo y ha hay hk
+  have h0 := h a lo y ha hay hk
+  have hb := (ep2_bnd hay).1
+  have hlo1 : n * e ≤ n * e + lo := by omega
+  have hlo2 : n * e + lo < n * (e + 1) := by omega
+  have hK : ∀ {b k}, (b = H.Ea ∨ b = H.Sz ∨ b = H.Kd ∨ b = H.Kp) →
+      ReadsIdx sem s p b (n * e + lo) k → ReadsIdx sem s' p b (n * e + lo) k := fun hb' hr =>
+    el1_readsIdx_congr (hs p _ _ (Or.inr (Or.inl ⟨hb', hlo1, hlo2⟩))) hr
+  rcases hst : eighStep M n F R₀ β y.A y.R y.ε y.ℓ (eighTapeSample n e lo) with
+    ⟨U, ee⟩ | ⟨b, A', σ⟩ | ⟨kp, hkp, Qp, Qm, Ap, Am, σ⟩ <;> rw [hst] at h0 <;> dsimp only at h0 ⊢
+  · obtain ⟨h1, h2, h3⟩ := h0
+    refine ⟨hK (Or.inr (Or.inr (Or.inl rfl))) h1, el1_holds_keep h2 fun i h1' h2' => hs p _ _
+      (Or.inl ⟨Or.inr (Or.inl rfl), ep2_blk hb h1' h2'⟩), fun i => ?_⟩
+    have := i.isLt
+    rw [hs p _ _ (Or.inr (Or.inl ⟨Or.inl rfl, by omega, by omega⟩))]
+    exact h3 i
+  · exact hK (Or.inr (Or.inr (Or.inl rfl))) h0
+  · obtain ⟨h1, h2, h3, h4⟩ := h0
+    have hkk : y.k * kp + y.k * (y.k - kp) = y.k * y.k := by
+      rw [← Nat.mul_add, Nat.add_sub_cancel' hkp]
+    have hkk' : y.k * kp ≤ y.k * y.k := Nat.mul_le_mul_left _ hkp
+    refine ⟨hK (Or.inr (Or.inr (Or.inl rfl))) h1, hK (Or.inr (Or.inr (Or.inr rfl))) h2,
+      el1_holds_keep h3 fun i h1' h2' => hs p _ _
+        (Or.inl ⟨Or.inr (Or.inr rfl), ep2_blk hb h1' (by omega)⟩),
+      el1_holds_keep h4 fun i h1' h2' => hs p _ _
+        (Or.inl ⟨Or.inr (Or.inr rfl), ep2_blk hb (by omega) (by omega)⟩)⟩
+
+/-- EP2: the cells $0$ to $4$ of `c` hold the constants of `NLAlib.eighProg` (one, $\mathrm{fl}(2)$,
+$\mathrm{fl}(1/2)$, $-1$, the stored $\sqrt{1/2}$). -/
+private def ep2_cst (I : Interp P ι K C) (mmR : MatMulMap (K × K)) (qrR : QRMap (K × K))
+    (s : Store P K) (p : P) (c : ℕ) : Prop :=
+  s.read p c 0 = I.sem.lit p 1 ∧ s.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) ∧
+    s.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
+      (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
+    s.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg (eighTapeMachine I p mmR qrR).one) ∧
+    s.read p c 4 = some (I.sem.sqrtHalf p)
+
+omit [AddMonoid C] in
+/-- EP2: the constants are kept by a store that reads as `s` on `c`. -/
+private theorem ep2_cst_congr {s s' : Store P K} {p : P} {c : ℕ}
+    (hs : ∀ i, s'.read p c i = s.read p c i) (h : ep2_cst I mmR qrR s p c) :
+    ep2_cst I mmR qrR s' p c := by
+  obtain ⟨h0, h1, h2, h3, h4⟩ := h
+  exact ⟨(hs 0).trans h0, (hs 1).trans h1, (hs 2).trans h2, (hs 3).trans h3, (hs 4).trans h4⟩
+
+/-- EP2: a buffer outside the arenas is not one of them. -/
+private theorem ep2_out {H : EighArenas} {l : List ℕ} (h : (H.handles ++ l).Nodup) {x : ℕ}
+    (hx : x ∈ l) : x ∉ H.handles := fun hm => List.disjoint_of_nodup_append h hm hx
+
+/-- EP2: the sizes, node matrices and parameters are not records. -/
+private theorem ep2_msl {H : EighArenas} (hnd : H.handles.Nodup) {b : ℕ}
+    (hb : b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) :
+    ¬ (b = H.Qa ∨ b = H.Ua ∨ b = H.Ea ∨ b = H.Kd ∨ b = H.Kp) := by
+  intro h
+  rcases hb with rfl | rfl | rfl <;> rcases h with h | h | h | h | h <;>
+    simp [EighArenas.handles, h] at hnd
+
+/-- EP2: the size cell $ne$ is not a cell of a deeper depth. -/
+private theorem ep2_sz_lc {H : EighArenas} (hnd : H.handles.Nodup) {n e d : ℕ} (he : e < d) :
+    ¬ H.LevelCell n d H.Sz (n * e) := by
+  unfold EighArenas.LevelCell
+  rintro (⟨hb, -⟩ | ⟨-, h1, h2⟩ | ⟨hb, -⟩)
+  · rcases hb with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at h2
+    · have := Nat.mul_le_mul_left n (show e + 1 ≤ d by omega)
+      have : n * (e + 1) = n * e + n := by ring
+      omega
+  · simp [EighArenas.handles, hb] at hnd
+
+/-- EP2: a size cell at or past depth $d + 1$ is not a cell of depth $d$. -/
+private theorem ep2_sz_ge {H : EighArenas} (hnd : H.handles.Nodup) {n d j : ℕ}
+    (hj : n * (d + 1) ≤ j) : ¬ H.LevelCell n d H.Sz j := by
+  unfold EighArenas.LevelCell
+  rintro (⟨hb, -⟩ | ⟨-, h1, h2⟩ | ⟨hb, -⟩)
+  · rcases hb with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · omega
+  · simp [EighArenas.handles, hb] at hnd
+
+/-- EP2: a cell the node transfer reads is not a cell of a deeper depth. -/
+private theorem ep2_msl_lc {H : EighArenas} (hnd : H.handles.Nodup) {n e d b i : ℕ} (he : e < d)
+    (hi : H.LevelCell n e b i ∨ (b = H.Sz ∧ i = n * e)) : ¬ H.LevelCell n d b i := by
+  rcases hi with hi | ⟨rfl, rfl⟩
+  · exact ep2_lc_ne hnd (by omega) hi
+  · exact ep2_sz_lc hnd he
+
+omit [Inhabited K] in
+/-- EP2: a builder that emits one statement, then the rest, succeeds when both parts do. -/
+private theorem ep2_ex_bind {b : Builder P ι ℕ ℕ Unit} {X : Stmt P ι ℕ ℕ}
+    {f : Unit → Builder P ι ℕ ℕ Unit} {st s₁ : St P K C} (h₁ : exec I b.run st = some s₁)
+    (h₂ : ∃ st', exec I (f ()).run s₁ = some st') (hb : ∀ k, ContT.run b k = .seq X (k ())) :
+    ∃ st', exec I (b >>= f).run st = some st' := by
+  rw [exec_run_bind I hb f st, h₁, Option.bind_some]
+  exact h₂
+
+set_option maxHeartbeats 1600000 in
+-- The invariant of the downward pass has seven parts.
+/-- EP2: the downward pass succeeds and ends with the nodes of every depth $\le \ell_0 + 1$ and the
+records of every depth $\le \ell_0$; the shape and every cell outside the arenas and the sample
+buffers are kept. -/
+private theorem ep2_down {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
+    (H : EighArenas) {par Su Sg c : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
+    {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hlev : H.LevelHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+      ⟨n, A₀, R₀, ε, ℓ₀⟩ 0)
+    (hz : ∀ j, n ≤ j → j < n * (ℓ₀ + 1 + 1) → ReadsIdx I.sem σ.store p H.Sz j 0)
+    (hpos : σ.pos .uniform = 0 ∧ σ.pos .gaussian = 0)
+    (hpar : σ.store.read p par 0 = some R₀ ∧ σ.store.read p par 2 = some β)
+    (hSu : ∃ len, σ.store.shape[Su]? = some (p, len) ∧ n ≤ len)
+    (hSg : ∃ len, σ.store.shape[Sg]? = some (p, len) ∧ 4 * (n * n) ≤ len)
+    (hc : ep2_cst I mmR qrR σ.store p c) :
+    ∃ σ' : St P K C, exec I (.loop (IExp.const ℓ₀ + 1) fun d => (eighDownLevel p mm qr (.const n)
+        (.const ℓ₀) (.const F) (.var d) par H.Lv Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩
+        ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run) σ = some σ' ∧
+      σ'.store.shape = σ.store.shape ∧
+      (∀ q b i, b ∉ H.handles → b ≠ Su → b ≠ Sg → σ'.store.read q b i = σ.store.read q b i) ∧
+      (∀ e ≤ ℓ₀ + 1, H.LevelHolds I.sem σ'.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) ∧
+      (∀ e < ℓ₀ + 1, H.RecordHolds I.sem σ'.store p (eighTapeMachine I p mmR qrR) n F R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) := by
+  have hnd := hH.1
+  have hflag : I.sem.DecidesFlags p := el2_flags hsem hlit (by omega) p
+  have hpo := ep2_out hbufs (x := par) (by simp)
+  have hco := ep2_out hbufs (x := c) (by simp)
+  have dSuSg : Su ≠ Sg := fun h => by simp [EighArenas.handles, h] at hbufs
+  have dparSu : par ≠ Su := fun h => by simp [EighArenas.handles, h] at hbufs
+  have dparSg : par ≠ Sg := fun h => by simp [EighArenas.handles, h] at hbufs
+  have dcSu : c ≠ Su := fun h => by simp [EighArenas.handles, h] at hbufs
+  have dcSg : c ≠ Sg := fun h => by simp [EighArenas.handles, h] at hbufs
+  have hSuo := ep2_out hbufs (x := Su) (by simp)
+  have hSgo := ep2_out hbufs (x := Sg) (by simp)
+  have hhS : ∀ {b}, b ∈ H.handles → b ≠ Su ∧ b ≠ Sg := fun hb =>
+    ⟨fun h => hSuo (h ▸ hb), fun h => hSgo (h ▸ hb)⟩
+  have hmsl : ∀ {b}, (b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) → b ∈ H.handles := fun hb => by
+    rcases hb with rfl | rfl | rfl <;> simp [EighArenas.handles]
+  refine (exists_exec_loop_eq_some_of_forall (I := I) (n := IExp.const ℓ₀ + 1)
+    (fun d (s : St P K C) => s.store.shape = σ.store.shape ∧ s.pos .uniform = n * d ∧
+      s.pos .gaussian = 4 * (n * n) * d ∧
+      (∀ q b i, b ∉ H.handles → b ≠ Su → b ≠ Sg → s.store.read q b i = σ.store.read q b i) ∧
+      (∀ e ≤ d, H.LevelHolds I.sem s.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) ∧
+      (∀ e < d, H.RecordHolds I.sem s.store p (eighTapeMachine I p mmR qrR) n F R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) ∧
+      ∀ j, n * (d + 1) ≤ j → j < n * (ℓ₀ + 1 + 1) → ReadsIdx I.sem s.store p H.Sz j 0)
+    ⟨rfl, by rw [hpos.1]; ring, by rw [hpos.2]; ring, fun _ _ _ _ _ _ => rfl,
+      fun e he => by obtain rfl : e = 0 := (by omega); exact hlev,
+      fun e he => absurd he (Nat.not_lt_zero _), fun j hj => hz j (by simpa using hj)⟩ ?_).elim
+    fun σ' h => ⟨σ', h.1, h.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1, h.2.2.2.2.2.2.1⟩
+  rintro d hd s ⟨hsh, hpu, hpg, hfr, hlv, hrc, hzs⟩
+  change d < ℓ₀ + 1 at hd
+  have hHs : H.Shaped s.store p n (ℓ₀ + 1) :=
+    el1_shaped_of_eq (fun b _ => by rw [hsh]) hH
+  have hpar' : s.store.read p par 0 = some R₀ ∧ s.store.read p par 2 = some β :=
+    ⟨(hfr _ _ _ hpo dparSu dparSg).trans hpar.1, (hfr _ _ _ hpo dparSu dparSg).trans hpar.2⟩
+  have hcs : ep2_cst I mmR qrR s.store p c :=
+    ep2_cst_congr (fun i => hfr _ _ _ hco dcSu dcSg) hc
+  have hSu' : ∃ len, s.store.shape[Su]? = some (p, len) ∧ n ≤ len := by rw [hsh]; exact hSu
+  have hSg' : ∃ len, s.store.shape[Sg]? = some (p, len) ∧ 4 * (n * n) ≤ len := by
+    rw [hsh]; exact hSg
+  obtain ⟨s', hs'⟩ := exists_exec_eighDownLevel hmm hqr hsem p hu n ℓ₀ F d (ℓ₀ + 1) hd hℓ hlit
+    htn H hε hR₀ hHs hbufs (hlv d le_rfl) hpar' hSu' hSg' ⟨hpu, hpg⟩ hcs
+  have hnext : ∀ lo < n, ReadsIdx I.sem s.store p H.Sz (n * (d + 1) + lo) 0 := fun lo hlo =>
+    hzs _ (by omega) (by
+      have := Nat.mul_le_mul_left n (show d + 1 + 1 ≤ ℓ₀ + 1 + 1 by omega)
+      have : n * (d + 1 + 1) = n * (d + 1) + n := by ring
+      omega)
+  obtain ⟨L1, R1, F1, S1, P1, P2⟩ := ep2_holds_of_exec_eighDownLevel hmm hqr p hflag n ℓ₀ F d
+    (ℓ₀ + 1) hd hlit htn H hHs hbufs (hlv d le_rfl) hnext ⟨hpu, hpg⟩ hpar' hcs hs'
+  refine ⟨s', (ep2_down_congr p mm qr n ℓ₀ F d par H.Lv Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp c
+    s).trans hs', S1.trans hsh, by rw [P1, hpu]; ring, by rw [P2, hpg]; ring,
+    fun q b i hb h1 h2 => ?_, fun e he => ?_, fun e he => ?_, fun j hj1 hj2 => ?_⟩
+  · exact (F1 q b i h1 h2 (fun h => hb (ep2_lc_mem h.2)) (fun h => hb (ep2_lc_mem h))).trans
+      (hfr q b i hb h1 h2)
+  · rcases Nat.lt_or_ge e (d + 1) with he' | he'
+    · refine ep2_lev_tr (fun q b i hb hi => F1 q b i (hhS (hmsl hb)).1 (hhS (hmsl hb)).2
+        (fun h => ep2_msl hnd hb h.1) (ep2_msl_lc hnd he' hi)) (hlv e (by omega))
+    · obtain rfl : e = d + 1 := by omega
+      exact L1
+  · rcases Nat.lt_or_ge e d with he' | he'
+    · refine ep2_rec_tr (fun q b i hi => F1 q b i (hhS (ep2_lc_mem hi)).1
+        (hhS (ep2_lc_mem hi)).2 (fun h => ep2_lc_ne hnd (by omega) hi h.2)
+        (ep2_lc_ne hnd (by omega) hi)) (hrc e he')
+    · obtain rfl : e = d := by omega
+      exact R1
+  · have hSzh : H.Sz ∈ H.handles := hmsl (Or.inr (Or.inl rfl))
+    refine el1_readsIdx_congr (F1 p H.Sz j (hhS hSzh).1 (hhS hSzh).2
+      (fun h => ep2_msl hnd (Or.inr (Or.inl rfl)) h.1) (ep2_sz_ge hnd hj1)) (hzs j ?_ hj2)
+    have := Nat.mul_le_mul_left n (show d + 1 ≤ d + 1 + 1 by omega)
+    omega
+
+set_option maxHeartbeats 800000 in
+-- The invariant of the upward pass has five parts.
+/-- EP2: the upward pass succeeds and ends with the outputs of depth $0$; the shape and every
+cell outside the arenas are kept. -/
+private theorem ep2_up {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ}
+    {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n ℓ₀ F : ℕ)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
+    {c : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
+    (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hco : c ∉ H.handles)
+    (htwov : σ.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ))
+    (hlev : ∀ e < ℓ₀ + 1, H.LevelHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+      ⟨n, A₀, R₀, ε, ℓ₀⟩ e)
+    (hrec : ∀ e < ℓ₀ + 1, H.RecordHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F R₀ β
+      ⟨n, A₀, R₀, ε, ℓ₀⟩ e)
+    (hout : H.OutHolds σ.store p (eighTapeMachine I p mmR qrR) n F (ℓ₀ + 1) R₀ β
+      ⟨n, A₀, R₀, ε, ℓ₀⟩ (ℓ₀ + 1)) :
+    ∃ σ' : St P K C, exec I (.loop (IExp.const ℓ₀ + 1) fun j => (eighUpLevel p mm (.const n)
+        (.const ℓ₀ - .var j) H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 1⟩).run) σ = some σ' ∧
+      σ'.store.shape = σ.store.shape ∧
+      (∀ q b i, b ∉ H.handles → σ'.store.read q b i = σ.store.read q b i) ∧
+      H.OutHolds σ'.store p (eighTapeMachine I p mmR qrR) n F (ℓ₀ + 1) R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ 0 := by
+  have hnd := hH.1
+  have hmsl : ∀ {b}, (b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) → ¬ (b = H.Ua ∨ b = H.Ea) :=
+    fun hb h => ep2_msl hnd hb (h.elim (fun h => Or.inr (Or.inl h))
+      (fun h => Or.inr (Or.inr (Or.inl h))))
+  refine (exists_exec_loop_eq_some_of_forall (I := I) (n := IExp.const ℓ₀ + 1)
+    (fun j (s : St P K C) => s.store.shape = σ.store.shape ∧
+      (∀ q b i, b ∉ H.handles → s.store.read q b i = σ.store.read q b i) ∧
+      (∀ e < ℓ₀ + 1 - j, H.LevelHolds I.sem s.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) ∧
+      (∀ e < ℓ₀ + 1 - j, H.RecordHolds I.sem s.store p (eighTapeMachine I p mmR qrR) n F R₀ β
+        ⟨n, A₀, R₀, ε, ℓ₀⟩ e) ∧
+      H.OutHolds s.store p (eighTapeMachine I p mmR qrR) n F (ℓ₀ + 1) R₀ β ⟨n, A₀, R₀, ε, ℓ₀⟩
+        (ℓ₀ + 1 - j))
+    ⟨rfl, fun _ _ _ _ => rfl, hlev, hrec, hout⟩ ?_).elim
+    fun σ' h => ⟨σ', h.1, h.2.1, h.2.2.1, by
+      have h5 := h.2.2.2.2.2
+      rwa [show (IExp.const ℓ₀ + 1 : IExp ℕ).eval = ℓ₀ + 1 from rfl, Nat.sub_self] at h5⟩
+  rintro j hj s ⟨hsh, hfr, hlv, hrc, hot⟩
+  change j < ℓ₀ + 1 at hj
+  have e1 : ℓ₀ + 1 - j = ℓ₀ - j + 1 := by omega
+  have e2 : ℓ₀ + 1 - (j + 1) = ℓ₀ - j := by omega
+  rw [e1] at hlv hrc hot
+  rw [e2]
+  have hHs : H.Shaped s.store p n (ℓ₀ + 1) := el1_shaped_of_eq (fun b _ => by rw [hsh]) hH
+  have htw : s.store.read p (⟨c, 1⟩ : Cell ℕ ℕ).buf (⟨c, 1⟩ : Cell ℕ ℕ).idx.eval =
+      I.sem.lit p ((2 : ℕ) : ℚ) := (hfr p c 1 hco).trans htwov
+  obtain ⟨s', hs'⟩ := exists_exec_eighUpLevel hmm hsem p n ℓ₀ F (ℓ₀ - j) (ℓ₀ + 1) (by omega)
+    hlit htn H (two := ⟨c, 1⟩) hHs hco htw (hlv _ (by omega)) (hrc _ (by omega)) hot
+  obtain ⟨O1, F1, S1, -⟩ := holds_of_exec_eighUpLevel hmm p n ℓ₀ F (ℓ₀ - j) (ℓ₀ + 1) (by omega)
+    hlit htn H (two := ⟨c, 1⟩) hHs hco htw (hlv _ (by omega)) (hrc _ (by omega)) hot hs'
+  refine ⟨s', (ep2_up_congr p mm n ℓ₀ j H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp c s).trans hs',
+    S1.trans hsh, fun q b i hb => (F1 q b i fun h => hb (ep2_lc_mem h.2)).trans (hfr q b i hb),
+    fun e he => ep2_lev_tr (fun q b i hb _ => F1 q b i fun h => hmsl hb h.1) (hlv e (by omega)),
+    fun e he => ep2_rec_tr (fun q b i hi => F1 q b i fun h => ep2_lc_ne hnd (by omega) hi h.2)
+      (hrc e (by omega)), O1⟩
+
+set_option maxHeartbeats 1600000 in
+-- The tail runs the two passes, the spent level and the final copies.
+/-- EP2: from the initialised arenas, the two passes, the spent level and the final copies of
+`NLAlib.eighProg` succeed. -/
+private theorem ep2_tail {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
+    (H : EighArenas) {par Su Sg c U dv : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
+    {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hUo : U ∉ H.handles) (hdvo : dv ∉ H.handles)
+    (hlev : H.LevelHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
+      ⟨n, A₀, R₀, ε, ℓ₀⟩ 0)
+    (hz : ∀ j, n ≤ j → j < n * (ℓ₀ + 1 + 1) → ReadsIdx I.sem σ.store p H.Sz j 0)
+    (hpos : σ.pos .uniform = 0 ∧ σ.pos .gaussian = 0)
+    (hpar : σ.store.read p par 0 = some R₀ ∧ σ.store.read p par 2 = some β)
+    (hSu : ∃ len, σ.store.shape[Su]? = some (p, len) ∧ n ≤ len)
+    (hSg : ∃ len, σ.store.shape[Sg]? = some (p, len) ∧ 4 * (n * n) ≤ len)
+    (hc : ep2_cst I mmR qrR σ.store p c)
+    (hU : ∃ len, σ.store.shape[U]? = some (p, len) ∧ 2 * (n * n) ≤ len)
+    (hdv : ∃ len, σ.store.shape[dv]? = some (p, len) ∧ n ≤ len) :
+    ∃ st', exec I (Builder.run (ι := ι) (do
+      forRange (IExp.const ℓ₀ + 1) fun d =>
+        eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.var d) par H.Lv Su Sg H.Ma H.Ua
+          H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩
+      eighBottomLevel p (.const n) (IExp.const ℓ₀ + 1) H.Ua H.Ea H.Sz
+      forRange (IExp.const ℓ₀ + 1) fun d' =>
+        eighUpLevel p mm (.const n) (.const ℓ₀ - .var d') H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 1⟩
+      zcopy p (.const n) (.const n) H.Ua 0 U 0
+      forRange (.const n) fun i => ins (.copy p ⟨dv, .var i⟩ ⟨H.Ea, .var i⟩))) σ = some st' := by
+  have hnd := hH.1
+  have hco := ep2_out hbufs (x := c) (by simp)
+  have dcSu : c ≠ Su := fun h => by simp [EighArenas.handles, h] at hbufs
+  have dcSg : c ≠ Sg := fun h => by simp [EighArenas.handles, h] at hbufs
+  have hmsl : ∀ {b}, (b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) → ¬ (b = H.Ua ∨ b = H.Ea) :=
+    fun hb h => ep2_msl hnd hb (h.elim (fun h => Or.inr (Or.inl h))
+      (fun h => Or.inr (Or.inr (Or.inl h))))
+  have hUUa : U ≠ H.Ua := fun h => hUo (h ▸ by simp [EighArenas.handles])
+  have hEaU : H.Ea ≠ U := fun h => hUo (h ▸ by simp [EighArenas.handles])
+  have hEadv : H.Ea ≠ dv := fun h => hdvo (h ▸ by simp [EighArenas.handles])
+  -- the downward pass
+  obtain ⟨σ2, h2, hsh2, hfr2, hlv2, hrc2⟩ := ep2_down hmm hqr hsem p hu n ℓ₀ F hlit htn hℓ H hε
+    hR₀ hH hbufs hlev hz hpos hpar hSu hSg hc
+  refine ep2_ex_bind (by exact (exec_seq_skip I _ _).trans h2) ?_ (by intro _; rfl)
+  -- the spent level
+  have hH2 : H.Shaped σ2.store p n (ℓ₀ + 1) := el1_shaped_of_eq (fun b _ => by rw [hsh2]) hH
+  obtain ⟨σb, hb⟩ := exists_exec_eighBottomLevel (ι := ι) hsem htn p n ℓ₀ F (ℓ₀ + 1) H hH2
+    (hlv2 _ le_rfl)
+  obtain ⟨Ob, Fb, Sb, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit htn H hH2
+    (hlv2 _ le_rfl) hb
+  refine ep2_ex_bind (by exact (ep2_bot_congr p n ℓ₀ H.Ua H.Ea H.Sz σ2).trans hb) ?_
+    (by intro _; rfl)
+  -- the upward pass
+  have hHb : H.Shaped σb.store p n (ℓ₀ + 1) := el1_shaped_of_eq (fun b _ => by rw [Sb]) hH2
+  obtain ⟨σ3, h3, hsh3, -, hout3⟩ := ep2_up hmm hsem p n ℓ₀ F hlit htn H hHb hco
+    ((Fb p c 1 fun h => hco (ep2_lc_mem h.2)).trans ((hfr2 p c 1 hco dcSu dcSg).trans hc.2.1))
+    (fun e he => ep2_lev_tr (fun q b i hb _ => Fb q b i fun h => hmsl hb h.1) (hlv2 e (by omega)))
+    (fun e he => ep2_rec_tr (fun q b i hi => Fb q b i fun h => ep2_lc_ne hnd (by omega) hi h.2)
+      (hrc2 e he)) Ob
+  refine ep2_ex_bind (by exact (exec_seq_skip I _ _).trans h3) ?_ (by intro _; rfl)
+  -- the copies of the root's output
+  have hroot := hout3 [] 0 ⟨n, A₀, R₀, ε, ℓ₀⟩ rfl rfl
+  have hU0 := hroot.1
+  simp only [Nat.mul_zero, Nat.add_zero] at hU0
+  have hsh3' : σ3.store.shape = σ.store.shape := hsh3.trans (Sb.trans hsh2)
+  obtain ⟨len, hUs, hUlen⟩ := hU
+  obtain ⟨σ4, h4⟩ := exists_exec_zcopy (ι := ι) p n n (X := H.Ua) (xo := 0) (Y := U) (yo := 0)
+    hU0 (el1_bd_ne hUUa) ⟨len, by rw [hsh3']; exact hUs, by change 0 + 2 * (n * n) ≤ len; omega⟩
+  obtain ⟨-, F4, S4, -⟩ := holds_of_exec_zcopy p n n hU0 (el1_bd_ne hUUa) h4
+  refine ep2_ex_bind (by exact h4) ?_ (by intro _; rfl)
+  obtain ⟨ldv, hdvs, hdvlen⟩ := hdv
+  have hstep : ∀ i < (IExp.const n).eval, ∀ s : St P K C,
+      (s.store.shape = σ4.store.shape ∧
+        ∀ i, s.store.read p H.Ea i = σ4.store.read p H.Ea i) →
+      ∃ s', exec I (Builder.ins (ι := ι) (.copy p ⟨dv, .var i⟩ ⟨H.Ea, .var i⟩)).run s = some s' ∧
+        (s'.store.shape = σ4.store.shape ∧
+          ∀ i, s'.store.read p H.Ea i = σ4.store.read p H.Ea i) := by
+    rintro i hi s ⟨hsh, hE⟩
+    change i < n at hi
+    obtain ⟨v, hv⟩ : ∃ v, s.store.read p H.Ea i = some v := by
+      have := hroot.2 ⟨i, hi⟩
+      simp only [Nat.mul_zero, Nat.zero_add] at this
+      exact ⟨_, (hE i).trans ((F4 p H.Ea i (el1_bd_ne hEaU)).trans this)⟩
+    obtain ⟨s', hw⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := i) v
+      (by rw [hsh, S4, hsh3']; exact hdvs) (by omega)
+    refine ⟨_, (exec_seq_instr_copy I (dst := ⟨dv, .var i⟩) (src := ⟨H.Ea, .var i⟩) hv hw).trans
+      (exec_skip I _), (Store.shape_of_write_eq_some hw).trans hsh, fun j => ?_⟩
+    exact (Store.read_of_write_eq_some_of_ne hw (Or.inl hEadv)).trans (hE j)
+  obtain ⟨σ5, h5, -⟩ := exists_exec_loop_eq_some_of_forall (I := I) _ ⟨rfl, fun _ => rfl⟩ hstep
+  exact ⟨σ5, (exec_seq_skip I _ _).trans h5⟩
+
+omit [Inhabited K] in
+/-- EP2: a literal, then the rest. -/
+private theorem ep2_ex_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
+    {s : St P K C} {v : K} {s' : Store P K} (hv : I.sem.lit p q = some v)
+    (hw : s.store.write p dst.buf dst.idx.eval v = some s')
+    (h : ∃ st', exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some st') :
+    ∃ st', exec I (.seq (.instr (.lit p dst q)) t) s = some st' := by
+  rw [exec_seq_instr_lit I hv hw]
+  exact h
+
+omit [Inhabited K] in
+/-- EP2: a unary operation, then the rest. -/
+private theorem ep2_ex_un {p : P} {o : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {s : St P K C} {a v : K} {s' : Store P K} (hx : s.store.read p x.buf x.idx.eval = some a)
+    (hv : I.sem.un p o a = some v) (hw : s.store.write p dst.buf dst.idx.eval v = some s')
+    (h : ∃ st', exec I t { s with store := s', cnt := s.cnt + I.charge (.un p o) } = some st') :
+    ∃ st', exec I (.seq (.instr (.un p o dst x)) t) s = some st' := by
+  rw [exec_seq_instr_un I hx hv hw]
+  exact h
+
+omit [Inhabited K] in
+/-- EP2: a copy, then the rest. -/
+private theorem ep2_ex_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+    {s : St P K C} {v : K} {s' : Store P K} (hx : s.store.read p src.buf src.idx.eval = some v)
+    (hw : s.store.write p dst.buf dst.idx.eval v = some s')
+    (h : ∃ st', exec I t { s with store := s', cnt := s.cnt + I.charge (.copy p) } = some st') :
+    ∃ st', exec I (.seq (.instr (.copy p dst src)) t) s = some st' := by
+  rw [exec_seq_instr_copy I hx hw]
+  exact h
+
+omit [Inhabited K] in
+/-- EP2: a loop writing the index literal $0$ into the first cells of a buffer succeeds; those
+cells hold it, and the shape, the tape positions and the other buffers are kept. -/
+private theorem ep2_lits {p : P} {m : IExp ℕ} {Y len : ℕ} {z : K} {st : St P K C}
+    (hz : I.sem.lit p (((0 : IExp ℕ).eval : ℕ) : ℚ) = some z)
+    (hY : st.store.shape[Y]? = some (p, len)) (hm : m.eval ≤ len) :
+    ∃ st' : St P K C, exec I (.loop m fun w =>
+        (Builder.ins (ι := ι) (.litIdx p ⟨Y, .var w⟩ 0)).run) st = some st' ∧
+      st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
+      (∀ j < m.eval, st'.store.read p Y j = some z) ∧
+      ∀ q b i, b ≠ Y → st'.store.read q b i = st.store.read q b i := by
+  refine (exists_exec_loop_eq_some_of_forall (I := I) (n := m)
+    (fun w (s : St P K C) => s.store.shape = st.store.shape ∧ s.pos = st.pos ∧
+      (∀ j < w, s.store.read p Y j = some z) ∧
+      ∀ q b i, b ≠ Y → s.store.read q b i = st.store.read q b i)
+    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_).elim
+    fun σ' h => ⟨σ', h.1, h.2⟩
+  rintro w hw s ⟨hsh, hps, hY', hfr⟩
+  obtain ⟨s', hw'⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := w) z (hsh ▸ hY)
+    (by omega)
+  refine ⟨_, (exec_seq_instr_litIdx I (dst := ⟨Y, .var w⟩) (e := 0) hz hw').trans
+    (exec_skip I _), (Store.shape_of_write_eq_some hw').trans hsh, hps, fun j hj => ?_,
+    fun q b i hb => (Store.read_of_write_eq_some_of_ne hw' (Or.inl hb)).trans (hfr q b i hb)⟩
+  rcases Nat.lt_succ_iff_lt_or_eq.mp hj with hj | rfl
+  · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY' j hj)
+  · exact Store.read_of_write_eq_some hw'
+
+set_option maxHeartbeats 3200000 in
+-- The initialisation runs eleven instructions, a loop and a copy kernel before the tail.
+/-- EP2: after the allocations, the run of `NLAlib.eighProg` succeeds: the initialisation writes
+the constants, the sizes ($n$ at slot $0$ and $0$ elsewhere), $\mathbf{A}$, $R_0$ and
+$\varepsilon$ at depth $0$, which are the hypotheses of `ep2_tail`. -/
+private theorem ep2_body {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
+    {A par U dv c Ma Ua Qa Ea Sz Kd Kp Lv Su Sg : ℕ} {σ : St P K C}
+    {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    (hMa : Ma = c + 1) (hUa : Ua = c + 2) (hQa : Qa = c + 3) (hEa : Ea = c + 4) (hSz : Sz = c + 5)
+    (hKd : Kd = c + 6) (hKp : Kp = c + 7) (hLv : Lv = c + 8) (hSu : Su = c + 9)
+    (hSg : Sg = c + 10) (hlt : ∀ j ∈ [A, par, U, dv], j < c)
+    (hsc : σ.store.shape[c]? = some (p, 5))
+    (hsMa : σ.store.shape[Ma]? = some (p, 2 * (n * n) * (ℓ₀ + 1 + 1)))
+    (hsUa : σ.store.shape[Ua]? = some (p, 2 * (n * n) * (ℓ₀ + 1 + 1)))
+    (hsQa : σ.store.shape[Qa]? = some (p, 2 * (n * n) * (ℓ₀ + 1)))
+    (hsEa : σ.store.shape[Ea]? = some (p, n * (ℓ₀ + 1 + 1)))
+    (hsSz : σ.store.shape[Sz]? = some (p, n * (ℓ₀ + 1 + 1) + 1))
+    (hsKd : σ.store.shape[Kd]? = some (p, n * (ℓ₀ + 1)))
+    (hsKp : σ.store.shape[Kp]? = some (p, n * (ℓ₀ + 1)))
+    (hsLv : σ.store.shape[Lv]? = some (p, 2 * (ℓ₀ + 1 + 1)))
+    (hsSu : σ.store.shape[Su]? = some (p, n)) (hsSg : σ.store.shape[Sg]? = some (p, 4 * (n * n)))
+    (hA : pairLayout.Holds σ.store p A 0 A₀)
+    (hpar : σ.store.read p par 0 = some R₀ ∧ σ.store.read p par 1 = some ε ∧
+      σ.store.read p par 2 = some β)
+    (hU : ∃ len, σ.store.shape[U]? = some (p, len) ∧ 2 * (n * n) ≤ len)
+    (hdv : ∃ len, σ.store.shape[dv]? = some (p, len) ∧ n ≤ len)
+    (hpos : σ.pos .uniform = 0 ∧ σ.pos .gaussian = 0) :
+    ∃ st', exec I (Builder.run (ι := ι) (do
+      ins (.lit p ⟨c, 0⟩ 1)
+      ins (.litIdx p ⟨c, 1⟩ 2)
+      ins (.bin p .div ⟨c, 2⟩ ⟨c, 0⟩ ⟨c, 1⟩)
+      ins (.un p .neg ⟨c, 3⟩ ⟨c, 0⟩)
+      ins (.un p .sqrt ⟨c, 4⟩ ⟨c, 2⟩)
+      forRange (IExp.const n * (IExp.const ℓ₀ + 1 + 1) + 1) fun w =>
+        ins (.litIdx p ⟨Sz, .var w⟩ 0)
+      ins (.litIdx p ⟨Sz, 0⟩ (.const n))
+      zcopy p (.const n) (.const n) A 0 Ma 0
+      ins (.copy p ⟨Lv, 0⟩ ⟨par, 0⟩)
+      ins (.copy p ⟨Lv, 1⟩ ⟨par, 1⟩)
+      forRange (IExp.const ℓ₀ + 1) fun d =>
+        eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.var d) par Lv Su Sg Ma Ua Qa Ea
+          Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩
+      eighBottomLevel p (.const n) (IExp.const ℓ₀ + 1) Ua Ea Sz
+      forRange (IExp.const ℓ₀ + 1) fun d' =>
+        eighUpLevel p mm (.const n) (.const ℓ₀ - .var d') Lv Ua Qa Ea Sz Kd Kp ⟨c, 1⟩
+      zcopy p (.const n) (.const n) Ua 0 U 0
+      forRange (.const n) fun i => ins (.copy p ⟨dv, .var i⟩ ⟨Ea, .var i⟩))) σ = some st' := by
+  subst hMa hUa hQa hEa hSz hKd hKp hLv hSu hSg
+  have lA : A < c := hlt A (by simp)
+  have lpar : par < c := hlt par (by simp)
+  have lU : U < c := hlt U (by simp)
+  have ldv : dv < c := hlt dv (by simp)
+  -- the values of the constants
+  obtain ⟨o, ho, ho1⟩ := hlit p 1 (by omega)
+  have ho' : I.sem.lit p 1 = some o := by simpa using ho
+  obtain ⟨tw, htw, htw2⟩ := hlit p 2 (by omega)
+  obtain ⟨hf, hfh, δ, hδ, hfd⟩ := el2_bin hsem p (b := .div) trivial (x := o) (y := tw)
+    (fun _ => by rw [htw2]; norm_num)
+  obtain ⟨ng, hng, -⟩ := hsem.neg p o
+  have hf0 : 0 ≤ dec p hf := by
+    rw [hfd, ho1, htw2]
+    have := (abs_le.mp hδ).1
+    simp only [BinOp.realOp]
+    apply mul_nonneg (by positivity)
+    linarith
+  obtain ⟨sq, hsq⟩ := hsem.sqrt_ok p hf hf0
+  obtain ⟨z0, hz0, -⟩ := hlit p 0 (by omega)
+  obtain ⟨zn, hzn, -⟩ := hlit p n (by omega)
+  -- the constants
+  obtain ⟨S1, w1⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 0) o hsc (by norm_num)
+  have sh1 := Store.shape_of_write_eq_some w1
+  obtain ⟨S2, w2⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 1) tw
+    (by rw [sh1]; exact hsc) (by norm_num)
+  have sh2 := (Store.shape_of_write_eq_some w2).trans sh1
+  obtain ⟨S3, w3⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 2) hf
+    (by rw [sh2]; exact hsc) (by norm_num)
+  have sh3 := (Store.shape_of_write_eq_some w3).trans sh2
+  obtain ⟨S4, w4⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 3) ng
+    (by rw [sh3]; exact hsc) (by norm_num)
+  have sh4 := (Store.shape_of_write_eq_some w4).trans sh3
+  obtain ⟨S5, w5⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 4) sq
+    (by rw [sh4]; exact hsc) (by norm_num)
+  have sh5 := (Store.shape_of_write_eq_some w5).trans sh4
+  have r20 : S2.read p c 0 = some o :=
+    (Store.read_of_write_eq_some_of_ne w2 (Or.inr (by omega))).trans
+      (Store.read_of_write_eq_some w1)
+  have r30 : S3.read p c 0 = some o :=
+    (Store.read_of_write_eq_some_of_ne w3 (Or.inr (by omega))).trans r20
+  have r21 : S2.read p c 1 = some tw := Store.read_of_write_eq_some w2
+  have r42 : S4.read p c 2 = some hf :=
+    (Store.read_of_write_eq_some_of_ne w4 (Or.inr (by omega))).trans
+      (Store.read_of_write_eq_some w3)
+  have fr5 : ∀ q b i, b ≠ c → S5.read q b i = σ.store.read q b i := fun q b i hb => by
+    rw [Store.read_of_write_eq_some_of_ne w5 (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne w4 (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne w3 (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne w2 (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne w1 (Or.inl hb)]
+  have c5 : S5.read p c 0 = some o ∧ S5.read p c 1 = some tw ∧ S5.read p c 2 = some hf ∧
+      S5.read p c 3 = some ng ∧ S5.read p c 4 = some sq := by
+    refine ⟨?_, ?_, ?_, ?_, Store.read_of_write_eq_some w5⟩
+    · rw [Store.read_of_write_eq_some_of_ne w5 (Or.inr (by omega)),
+        Store.read_of_write_eq_some_of_ne w4 (Or.inr (by omega)), r30]
+    · rw [Store.read_of_write_eq_some_of_ne w5 (Or.inr (by omega)),
+        Store.read_of_write_eq_some_of_ne w4 (Or.inr (by omega)),
+        Store.read_of_write_eq_some_of_ne w3 (Or.inr (by omega)), r21]
+    · rw [Store.read_of_write_eq_some_of_ne w5 (Or.inr (by omega)), r42]
+    · rw [Store.read_of_write_eq_some_of_ne w5 (Or.inr (by omega)), Store.read_of_write_eq_some w4]
+  refine ep2_ex_lit (by exact ho') (by exact w1) ?_
+  refine el2_ex_litIdx (by exact htw) (by exact w2) ?_
+  refine el2_ex_bin (by exact r20) (by exact r21) hfh (by exact w3) ?_
+  refine ep2_ex_un (by exact r30) hng (by exact w4) ?_
+  refine ep2_ex_un (by exact r42) hsq (by exact w5) ?_
+  refine el2_name fun σ5 hσ5 => ?_
+  have h5s : σ5.store = S5 := by rw [hσ5]
+  have h5p : σ5.pos = σ.pos := by rw [hσ5]
+  -- the sizes
+  obtain ⟨σ6, h6, sh6, p6, r6, fr6⟩ := ep2_lits (ι := ι) (st := σ5)
+    (m := IExp.const n * (IExp.const ℓ₀ + 1 + 1) + 1) (by exact hz0)
+    (by rw [h5s, sh5]; exact hsSz) le_rfl
+  refine ep2_ex_bind (by exact (exec_seq_skip I _ _).trans h6) ?_ (by intro _; rfl)
+  obtain ⟨S7, w7⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 0) zn
+    (by rw [sh6, h5s, sh5]; exact hsSz) (by positivity)
+  refine el2_ex_litIdx (by exact hzn) (by exact w7) ?_
+  refine el2_name fun σ7 hσ7 => ?_
+  have h7s : σ7.store = S7 := by rw [hσ7]
+  have h7p : σ7.pos = σ.pos := by rw [hσ7]; exact p6.trans h5p
+  have sh7 : σ7.store.shape = σ.store.shape := by
+    rw [h7s, Store.shape_of_write_eq_some w7, sh6, h5s, sh5]
+  have fr7 : ∀ q b i, b ≠ c → b ≠ c + 5 → σ7.store.read q b i = σ.store.read q b i :=
+    fun q b i h1 h2 => by
+      rw [h7s, Store.read_of_write_eq_some_of_ne w7 (Or.inl h2), fr6 q b i h2, h5s, fr5 q b i h1]
+  -- the root's matrix
+  have hA7 : pairLayout.Holds σ7.store p A 0 A₀ :=
+    hA.of_forall_read_eq fun i _ _ => fr7 _ _ _ (by omega) (by omega)
+  have hMa7 : σ7.store.shape[c + 1]? = some (p, 2 * (n * n) * (ℓ₀ + 1 + 1)) := by
+    rw [sh7]; exact hsMa
+  obtain ⟨σ8, h8⟩ := exists_exec_zcopy (ι := ι) p n n (X := A) (xo := 0) (Y := c + 1) (yo := 0)
+    hA7 (el1_bd_ne (by omega)) ⟨_, hMa7, by
+      change 0 + 2 * (n * n) ≤ 2 * (n * n) * (ℓ₀ + 1 + 1)
+      nlinarith⟩
+  obtain ⟨HMa, F8, S8, P8⟩ := holds_of_exec_zcopy p n n hA7 (el1_bd_ne (by omega)) h8
+  refine ep2_ex_bind (by exact h8) ?_ (by intro _; rfl)
+  have fr8 : ∀ q b i, b ≠ c → b ≠ c + 5 → b ≠ c + 1 → σ8.store.read q b i = σ.store.read q b i :=
+    fun q b i h1 h2 h3 => (F8 q b i (el1_bd_ne h3)).trans (fr7 q b i h1 h2)
+  -- the window and tolerance of the root
+  obtain ⟨S9, w9⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 0) R₀
+    (by rw [S8, sh7]; exact hsLv) (by omega)
+  refine ep2_ex_copy (by exact (fr8 p par 0 (by omega) (by omega) (by omega)).trans hpar.1)
+    (by exact w9) ?_
+  obtain ⟨S10, w10⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 1) ε
+    (by rw [Store.shape_of_write_eq_some w9, S8, sh7]; exact hsLv) (by omega)
+  have r9 : S9.read p par 1 = some ε :=
+    (Store.read_of_write_eq_some_of_ne w9 (Or.inl (by omega))).trans
+      ((fr8 p par 1 (by omega) (by omega) (by omega)).trans hpar.2.1)
+  refine ep2_ex_copy (by exact r9) (by exact w10) ?_
+  refine el2_name fun σ10 hσ10 => ?_
+  have h10s : σ10.store = S10 := by rw [hσ10]
+  have sh10 : σ10.store.shape = σ.store.shape := by
+    rw [h10s, Store.shape_of_write_eq_some w10, Store.shape_of_write_eq_some w9, S8, sh7]
+  have fr10 : ∀ q b i, b ≠ c + 8 → σ10.store.read q b i = σ8.store.read q b i :=
+    fun q b i h => by
+      rw [h10s, Store.read_of_write_eq_some_of_ne w10 (Or.inl h),
+        Store.read_of_write_eq_some_of_ne w9 (Or.inl h)]
+  have frσ : ∀ q b i, b ≠ c → b ≠ c + 5 → b ≠ c + 1 → b ≠ c + 8 →
+      σ10.store.read q b i = σ.store.read q b i :=
+    fun q b i h1 h2 h3 h4 => (fr10 q b i h4).trans (fr8 q b i h1 h2 h3)
+  have hSz10 : ∀ i, σ10.store.read p (c + 5) i = σ7.store.read p (c + 5) i := fun i =>
+    (fr10 p _ i (by omega)).trans (F8 p _ i (el1_bd_ne (by omega)))
+  have hSz0 : σ10.store.read p (c + 5) 0 = some zn := (hSz10 0).trans (by
+    rw [h7s]; exact Store.read_of_write_eq_some w7)
+  have hSzj : ∀ j, j ≠ 0 → j < n * (ℓ₀ + 1 + 1) + 1 → σ10.store.read p (c + 5) j = some z0 :=
+    fun j hj0 hj => (hSz10 j).trans (by
+      rw [h7s, Store.read_of_write_eq_some_of_ne w7 (Or.inr hj0)]
+      exact r6 j hj)
+  let H : EighArenas := ⟨c + 1, c + 2, c + 3, c + 4, c + 5, c + 6, c + 7, c + 8⟩
+  have hc10 : σ10.store.read p c 0 = some o ∧ σ10.store.read p c 1 = some tw ∧
+      σ10.store.read p c 2 = some hf ∧ σ10.store.read p c 3 = some ng ∧
+      σ10.store.read p c 4 = some sq := by
+    have e : ∀ i, σ10.store.read p c i = S5.read p c i := fun i => by
+      rw [fr10 p c i (by omega), F8 p c i (el1_bd_ne (by omega)), h7s,
+        Store.read_of_write_eq_some_of_ne w7 (Or.inl (by omega)), fr6 p c i (by omega), h5s]
+    rw [e, e, e, e, e]
+    exact c5
+  refine ep2_tail hmm hqr hsem p hu n ℓ₀ F hlit htn hℓ H (par := par) (Su := c + 9) (Sg := c + 10)
+    (c := c) (U := U) (dv := dv) (A₀ := A₀) (σ := σ10) (R₀ := R₀) (ε := ε) (β := β) hε hR₀
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · refine ⟨by simp [H, EighArenas.handles], ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      rw [sh10] <;> assumption
+  · simp [H, EighArenas.handles]; omega
+  · simp [H, EighArenas.handles]; omega
+  · simp [H, EighArenas.handles]; omega
+  · -- the root at depth 0
+    refine ⟨fun a lo y ha hay => ?_, fun lo hlo hno => ?_, ?_, ?_⟩
+    · rw [List.length_eq_zero_iff.mp ha] at hay
+      cases hay
+      refine ⟨el1_readsIdx hlit htn (k := n) (by omega) ?_, ?_⟩
+      · simp only [Nat.mul_zero, Nat.add_zero]
+        rw [hSz0]; exact hzn.symm
+      · simp only [Nat.mul_zero, Nat.add_zero]
+        exact HMa.of_forall_read_eq fun i _ _ => fr10 p _ i (by omega)
+    · have hlo0 : lo ≠ 0 := by
+        rintro rfl
+        exact hno [] _ rfl rfl
+      refine el1_readsIdx hlit htn (k := 0) (by omega) ?_
+      simp only [Nat.mul_zero, Nat.zero_add]
+      rw [hSzj lo hlo0 (by nlinarith)]
+      exact hz0.symm
+    · change σ10.store.read p (c + 8) 0 = some R₀
+      rw [h10s, Store.read_of_write_eq_some_of_ne w10 (Or.inr (by omega))]
+      exact Store.read_of_write_eq_some w9
+    · change σ10.store.read p (c + 8) 1 = some ε
+      rw [h10s]
+      exact Store.read_of_write_eq_some w10
+  · intro j hj1 hj2
+    by_cases hj0 : j = 0
+    · subst hj0
+      have hn0 : n = 0 := by omega
+      have := el1_readsIdx hlit htn (k := n) (s := σ10.store) (p := p) (b := c + 5) (i := 0)
+        (by omega) (by rw [hSz0]; exact hzn.symm)
+      rwa [hn0] at this
+    · exact el1_readsIdx hlit htn (k := 0) (by omega)
+        (by rw [hSzj j hj0 (by omega)]; exact hz0.symm)
+  · rw [hσ10]; exact (P8.trans h7p) ▸ hpos
+  · exact ⟨(frσ p par 0 (by omega) (by omega) (by omega) (by omega)).trans hpar.1,
+      (frσ p par 2 (by omega) (by omega) (by omega) (by omega)).trans hpar.2.2⟩
+  · exact ⟨n, by rw [sh10]; exact hsSu, le_rfl⟩
+  · exact ⟨4 * (n * n), by rw [sh10]; exact hsSg, le_rfl⟩
+  · refine ⟨by rw [hc10.1]; exact ho'.symm, by rw [hc10.2.1]; exact htw.symm, ?_, ?_, ?_⟩
+    · rw [hc10.2.2.1]
+      change some hf = some ((I.sem.bin p .div ((I.sem.lit p 1).getD default)
+        ((I.sem.lit p ((2 : ℕ) : ℚ)).getD default)).getD default)
+      rw [ho', htw]
+      simp [hfh]
+    · rw [hc10.2.2.2.1]
+      change some ng = some ((I.sem.un p .neg ((I.sem.lit p 1).getD default)).getD default)
+      rw [ho']
+      simp [hng]
+    · rw [hc10.2.2.2.2]
+      change some sq = some ((I.sem.un p .sqrt ((I.sem.bin p .div ((I.sem.lit p 1).getD default)
+        ((I.sem.lit p ((2 : ℕ) : ℚ)).getD default)).getD default)).getD default)
+      rw [ho', htw]
+      simp [hfh, hsq]
+  · rw [sh10]; exact hU
+  · rw [sh10]; exact hdv
+
+omit [DecidableEq P] [Inhabited K] in
+/-- EP2: the shape of a pushed store below or above its top. -/
+private theorem ep2_sh {s : Store P K} {b : ℕ} (x : P × Array (Option K)) (hb : b ≠ s.size) :
+    (Store.shape (s.push x))[b]? = s.shape[b]? := by
+  simp [Store.shape, Array.getElem?_push, hb]
+
 /-- **The refinement of the spectral bisection program, success**: under the standard model at $u$
 with every value in range, $u(p) < 1$, exact integer literals up to $n + 4$ and the exact floor
 conversion, if the kernels `mm`, `qr` of `I` are routines on interleaved pairs, $\ell_0 \ge 1$,
 $\varepsilon$ and $R_0$ decode to nonnegative values, and the buffers `U`, `dv` at tag `p` have
-$2n^2$ and $n$ cells (hypotheses on the inputs as `NLAlib.holds_of_exec_eighProg`), then every run
-of `NLAlib.eighProg` succeeds. No printed source.
+$2n^2$ and $n$ cells (hypotheses on the inputs and the tape positions at $0$ as
+`NLAlib.holds_of_exec_eighProg`), then every run of `NLAlib.eighProg` succeeds. No printed source.
 Proof: the allocations succeed; the initialisation (`lit_ok`, copies of initialised cells, the
 pilot's `NLAlib.Computation.exists_exec_zcopy`); the downward loop by
 `NLAlib.Computation.exists_exec_loop_eq_some_of_forall` with `NLAlib.exists_exec_eighDownLevel` and
@@ -4558,11 +5445,41 @@ theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout 
     (hA : pairLayout.Holds st.store p A 0 A₀)
     (hpar : st.store.read p par 0 = some R₀ ∧ st.store.read p par 1 = some ε ∧
       st.store.read p par 2 = some β)
+    (hpos : st.pos .uniform = 0 ∧ st.pos .gaussian = 0)
     (hU : ∃ len, st.store.shape[U]? = some (p, len) ∧ 2 * (n * n) ≤ len)
     (hdv : ∃ len, st.store.shape[dv]? = some (p, len) ∧ n ≤ len) :
     ∃ st', exec I (eighProg p mm qr (.const n) (.const ℓ₀) (.const F) A par U dv).run st =
       some st' := by
-  sorry
+  have lA := hsize A (by simp)
+  have lpar := hsize par (by simp)
+  have lU := hsize U (by simp)
+  have ldv := hsize dv (by simp)
+  change ∃ st', exec I (.seq (.alloc p 5 _) .skip) st = some st'
+  rw [exec_seq_skip, exec_alloc]
+  refine el2_map_ex ?_
+  iterate 10
+    change ∃ a, exec I (.alloc p _ _) _ = some a
+    rw [exec_alloc]
+    refine el2_map_ex ?_
+  refine ep2_body hmm hqr hsem p hu n ℓ₀ F hlit htn hℓ (A := A) (par := par) (U := U) (dv := dv)
+    (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hε hR₀ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ hsize
+    ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  all_goals first
+    | (simp only [Array.size_push]; done)
+    | (simp (disch := ((try simp only [Array.size_push]); omega)) only [ep2_sh,
+        Store.getElem?_shape_push_size]; done)
+    | (simp (disch := ((try simp only [Array.size_push]); omega)) only [ep2_sh,
+        Store.getElem?_shape_push_size]; rfl)
+    | skip
+  · exact hA.of_forall_read_eq fun i _ _ => by
+      simp (disch := ((try simp only [Array.size_push]); omega)) only [Store.read_push_of_ne]
+  · simp (disch := ((try simp only [Array.size_push]); omega)) only [Store.read_push_of_ne]
+    exact hpar
+  · simp (disch := ((try simp only [Array.size_push]); omega)) only [ep2_sh]
+    exact hU
+  · simp (disch := ((try simp only [Array.size_push]); omega)) only [ep2_sh]
+    exact hdv
+  · exact hpos
 
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
 /-- **The registered tree instantiates to the builder**: at the sizes $N$ and $(\ell_0, F)$ the tree
@@ -4631,7 +5548,7 @@ theorem eighProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm pa
   exact exists_exec_eighProg hmm hqr hsem p hu N ℓ₀ F hlit htn hℓ (A := 0) (par := 1) (U := 2)
     (dv := 3) (st := inputState p bufs) (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hε hR₀
     (by simp) (by simp [inputState, bufs, Store.shape]) hA (by simp [inputState, bufs, Store.read])
-    ⟨2 * (N * N), by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
+    (by simp [inputState]) ⟨2 * (N * N), by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
     ⟨N, by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
 
 /-! ### EP6 helpers -/
