@@ -625,6 +625,17 @@ theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep
     (ss : List ℂ) : IsDecoupled 0 (multiShiftedQRStep H ss) := by
   sorry
 
+/-- Row $i + 1$ of the state of Givens QR is the original one for the first $j \le i$ steps. -/
+private theorem givensHessenbergState_snd_apply_eq_of_le_of_eq_succ {m p : ℕ}
+    (A : Matrix (Fin m) (Fin p) ℂ) {i j : ℕ} (hj : j ≤ i) {a : Fin m} (ha : (a : ℕ) = i + 1)
+    (b : Fin p) : (givensHessenbergState A j).2 a b = A a b := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [givensHessenbergState_succ_snd, givensHessenbergStep_mul_apply_of_ne _ _ (by omega)
+      (by omega)]
+    exact ih (by omega)
+
 /-- **A singular shift decouples exactly**: for upper Hessenberg $\mathbf{H}$ of size at least
 $2$ and a shift $s$ with $\det(\mathbf{H} - s\mathbf{I}) = 0$, the step
 $\mathsf{shiftedQRStep}(\mathbf{H}, s)$ has a zero subdiagonal entry.
@@ -642,7 +653,64 @@ theorem IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n) {s : ℂ}
     (hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0) :
     IsDecoupled 0 (shiftedQRStep H s) := by
-  sorry
+  by_cases hred : ∃ i : Fin n, H i.succ i.castSucc = 0
+  · obtain ⟨i, hi⟩ := hred
+    exact ⟨i, by rw [hH.shiftedQRStep_apply_succ_castSucc_eq_zero hi s]; simp⟩
+  push Not at hred
+  set A := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hA
+  have hAH : IsUpperHessenberg A := fun a b hab => by
+    rw [hA, Matrix.sub_apply, Matrix.smul_apply,
+      Matrix.one_apply_ne (fun h => by rw [h] at hab; omega), smul_zero, sub_zero]
+    exact hH a b hab
+  set Q := givensHessenbergQ A
+  set R := givensHessenbergR A
+  have hQR : Q * R = A := givensHessenbergState_fst_mul_snd A (n + 1)
+  have hQQ : Qᴴ * Q = 1 :=
+    (hasOrthonormalCols_givensHessenbergState_fst A (n + 1)).conjTranspose_mul_self
+  have hR := isUpperTrapezoidal_givensHessenbergR hAH
+  -- the pivots before the last are nonzero
+  have hpiv : ∀ j : Fin (n + 1), (j : ℕ) < n → R j j ≠ 0 := by
+    intro j hj
+    have hv : A ⟨j + 1, by omega⟩ j ≠ 0 := by
+      have h := hred ⟨j, hj⟩
+      rw [hA, Matrix.sub_apply, Matrix.smul_apply,
+        Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, sub_zero]
+      exact h
+    rw [show R j j = (givensHessenbergState A (j + 1)).2 j j from
+      (givensHessenbergState_apply_of_lt A 0 (k := j + 1) (j := n + 1) (by omega) (a := j)
+        (by omega)).1 j, givensHessenbergState_succ_snd,
+      givensHessenbergStep_of_lt _ (by omega) (by omega) (by omega)]
+    simp only [Fin.eta]
+    rw [givens_mul_apply_left (Fin.ne_of_val_ne (by simp)), givensCoeffs_fst_mul_add,
+      givensHessenbergState_snd_apply_eq_of_le_of_eq_succ A le_rfl (a := ⟨j + 1, by omega⟩) rfl]
+    have := norm_pos_iff.mpr hv
+    exact Complex.ofReal_ne_zero.mpr (Real.sqrt_pos.mpr (by positivity)).ne'
+  -- so the last pivot vanishes
+  have hlast : R (Fin.last n) (Fin.last n) = 0 := by
+    have hdet : Q.det * R.det = 0 := by rw [← Matrix.det_mul, hQR, hA, hs]
+    rw [mul_eq_zero, or_iff_right (Matrix.det_ne_zero_of_left_inverse hQQ),
+      Matrix.det_of_isUpperTriangular (fun i j h => hR i j h), Finset.prod_eq_zero_iff] at hdet
+    obtain ⟨j, -, hj⟩ := hdet
+    by_cases hjn : (j : ℕ) < n
+    · exact absurd hj (hpiv j hjn)
+    · rwa [show j = Fin.last n from Fin.ext (by simp; omega)] at hj
+  have hstep : shiftedQRStep H s = R * Q + s • 1 := by
+    change Qᴴ * H * Q = _
+    calc Qᴴ * H * Q = Qᴴ * (A + s • 1) * Q := by rw [hA, sub_add_cancel]
+      _ = (Qᴴ * Q) * R * Q + s • (Qᴴ * Q) := by
+        rw [← hQR]
+        simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
+          Matrix.mul_one, Matrix.mul_assoc]
+      _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
+  refine ⟨⟨n - 1, by omega⟩, ?_⟩
+  rw [show (⟨n - 1, by omega⟩ : Fin n).succ = Fin.last n from Fin.ext (by simp; omega), hstep,
+    Matrix.add_apply, Matrix.smul_apply,
+    Matrix.one_apply_ne (fun h => by have := congrArg Fin.val h; simp at this; omega), smul_zero,
+    add_zero, Matrix.mul_apply, Finset.sum_eq_zero fun l _ => ?_]
+  · simp
+  rcases lt_or_ge (l : ℕ) n with h | h
+  · rw [show R (Fin.last n) l = 0 from hR _ l (by simpa using h), zero_mul]
+  · rw [show l = Fin.last n from Fin.ext (by simp; omega), hlast, zero_mul]
 
 /-- **A singular shift polynomial decouples exactly**: for upper Hessenberg $\mathbf{H}$ of size
 at least $2$ and shifts with $\det p(\mathbf{H}) = 0$, $p(z) = \prod_i (z - s_i)$, the step
