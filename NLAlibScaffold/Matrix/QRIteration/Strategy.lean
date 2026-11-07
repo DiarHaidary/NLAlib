@@ -341,6 +341,130 @@ theorem norm_sub_le_of_mem_squareGrid {c s : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (h
   rw [add_sub_cancel_left, norm_mul, Complex.norm_real, Real.norm_of_nonneg hR]
   nlinarith [mul_le_mul_of_nonneg_left hnorm hR]
 
+private theorem sub_smul_one_mul_eq_mul_diagonal_sub
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ}
+    (hHV : H * V = V * Matrix.diagonal d) (s : ℂ) :
+    (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * V =
+      V * Matrix.diagonal (fun j => d j - s) := by
+  rw [Matrix.sub_mul, hHV, Matrix.smul_mul, Matrix.one_mul]
+  ext a b
+  by_cases hab : a = b <;> simp [hab, mul_sub, mul_comm]
+
+private theorem inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) {s : ℂ} (hs : ∀ i, d i ≠ s) (k : ℕ) :
+    (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k =
+      V * Matrix.diagonal (fun i => (d i - s)⁻¹ ^ k) * V⁻¹ := by
+  have hVd : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hinv : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ =
+      V * Matrix.diagonal (fun i => (d i - s)⁻¹) * V⁻¹ := by
+    apply Matrix.inv_eq_right_inv
+    rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, sub_smul_one_mul_eq_mul_diagonal_sub hHV,
+      Matrix.mul_assoc V, Matrix.diagonal_mul_diagonal]
+    rw [show (fun i => (d i - s) * (d i - s)⁻¹) = fun _ => (1 : ℂ) from
+      funext fun i => mul_inv_cancel₀ (sub_ne_zero.mpr (hs i)), Matrix.diagonal_one,
+      Matrix.mul_one, Matrix.mul_nonsing_inv _ hVd]
+  induction k with
+  | zero => simp [Matrix.mul_nonsing_inv _ hVd]
+  | succ k ih =>
+    rw [pow_succ, ih, hinv]
+    simp only [Matrix.mul_assoc, Matrix.nonsing_inv_mul_cancel_left _ _ hVd]
+    rw [← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
+    simp only [pow_succ]
+
+private theorem exists_mem_sum_div_pow_le_card_mul_sum {G : Finset ℂ}
+    {S : Finset (Fin (n + 1))} {w : Fin (n + 1) → ℝ} {d : Fin (n + 1) → ℂ} {ρ : ℝ} {k : ℕ}
+    (hw : ∀ i, 0 ≤ w i) (hG : G.Nonempty) (hd : ∀ i, ∀ s ∈ G, d i ≠ s)
+    (hcov : ∀ i ∈ S, ∃ s ∈ G, ‖d i - s‖ ≤ ρ) :
+    ∃ s ∈ G, (∑ i ∈ S, w i) / ρ ^ k ≤ G.card * ∑ i, w i / ‖d i - s‖ ^ k := by
+  have h1 : (∑ i ∈ S, w i) / ρ ^ k ≤ ∑ s ∈ G, ∑ i, w i / ‖d i - s‖ ^ k := by
+    rw [Finset.sum_div, Finset.sum_comm]
+    calc ∑ i ∈ S, w i / ρ ^ k ≤ ∑ i ∈ S, ∑ s ∈ G, w i / ‖d i - s‖ ^ k :=
+          Finset.sum_le_sum fun i hi => by
+            obtain ⟨s, hs, hle⟩ := hcov i hi
+            calc w i / ρ ^ k ≤ w i / ‖d i - s‖ ^ k :=
+                  div_le_div_of_nonneg_left (hw i)
+                    (pow_pos (norm_pos_iff.mpr (sub_ne_zero.mpr (hd i s hs))) _)
+                    (pow_le_pow_left₀ (norm_nonneg _) hle _)
+              _ ≤ _ := Finset.single_le_sum (f := fun s => w i / ‖d i - s‖ ^ k)
+                  (fun s _ => div_nonneg (hw i) (by positivity)) hs
+      _ ≤ _ := Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
+          fun i _ _ => Finset.sum_nonneg fun s _ => div_nonneg (hw i) (by positivity)
+  have hc : (0 : ℝ) < G.card := Nat.cast_pos.mpr hG.card_pos
+  obtain ⟨s, hs, hle⟩ := Finset.exists_le_of_sum_le hG
+    (f := fun _ => (∑ i ∈ S, w i) / ρ ^ k / G.card)
+    (g := fun s => ∑ i, w i / ‖d i - s‖ ^ k) (by
+      rw [Finset.sum_const, nsmul_eq_mul, mul_div_cancel₀ _ hc.ne']
+      exact h1)
+  exact ⟨s, hs, (div_le_iff₀' hc).mp hle⟩
+
+private theorem exceptionalSpacing_pos_and_le_one_and_pow {k : ℕ} {B θ α γ ξ : ℝ}
+    (hk : 2 ≤ k) (hB1 : 1 ≤ B) (hθ : 1 ≤ θ) (hα : 1 ≤ α) (hγ0 : 0 < γ) (hγ1 : γ < 1)
+    (hξ0 : 0 < ξ) (hξ1 : ξ ≤ 1) :
+    0 < exceptionalSpacing k B θ α (ξ * (1 - γ)) ∧ exceptionalSpacing k B θ α (ξ * (1 - γ)) ≤ 1 ∧
+      exceptionalSpacing k B θ α (ξ * (1 - γ)) ^ (2 * k) =
+        exceptionalSpacing k B θ α (ξ * (1 - γ)) ^ 2 *
+          ((ξ * (1 - γ)) ^ k / (14 * B ^ 4 * (α * θ) ^ (2 * k))) ^ 2 := by
+  have hk1 : (1 : ℝ) < k := by exact_mod_cast hk
+  have hk0 : (0 : ℝ) < k := by linarith
+  have hc : ((14 * B ^ 4) ^ ((k : ℝ)⁻¹)) ^ k = 14 * B ^ 4 := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul (by positivity), inv_mul_cancel₀ hk0.ne',
+      Real.rpow_one]
+  set b := ξ * (1 - γ) / ((14 * B ^ 4) ^ ((k : ℝ)⁻¹) * α ^ 2 * θ ^ 2) with hb_def
+  have hγ' : 0 < 1 - γ := by linarith
+  have hb0 : 0 < b := by positivity
+  have hb1 : b ≤ 1 := by
+    rw [hb_def, div_le_one (by positivity)]
+    have : 1 ≤ (14 * B ^ 4) ^ ((k : ℝ)⁻¹) :=
+      Real.one_le_rpow (by nlinarith [one_le_pow₀ (n := 4) hB1]) (by positivity)
+    calc ξ * (1 - γ) ≤ 1 * 1 * 1 := by nlinarith
+      _ ≤ _ := by gcongr <;> nlinarith
+  have hεk : exceptionalSpacing k B θ α (ξ * (1 - γ)) ^ (k - 1) = b ^ k := by
+    rw [exceptionalSpacing, ← hb_def, ← Real.rpow_natCast, ← Real.rpow_mul hb0.le,
+      Nat.cast_sub (by omega), Nat.cast_one, div_mul_cancel₀ _ (by linarith), Real.rpow_natCast]
+  refine ⟨Real.rpow_pos_of_pos hb0 _, Real.rpow_le_one hb0.le hb1 (div_nonneg hk0.le
+    (by linarith)), ?_⟩
+  have hbk : b ^ k = (ξ * (1 - γ)) ^ k / (14 * B ^ 4 * (α * θ) ^ (2 * k)) := by
+    simp only [hb_def, div_pow, mul_pow, hc]
+    ring
+  rw [← hbk, ← hεk, ← pow_mul, ← pow_add]
+  congr 1
+  omega
+
+private theorem one_le_pow_mul_of_le_card_mul_sum {k : ℕ} {B θ α ξ γ ψ ε x P N f : ℝ}
+    (hk : 0 < k) (hB : 0 < B) (hθ : 0 < θ) (hα : 0 < α) (hξ : 0 < ξ) (hγ1 : γ < 1)
+    (hψ : 0 < ψ) (hx : 0 ≤ x) (hε0 : 0 < ε)
+    (hε : ε ^ (2 * k) = ε ^ 2 * ((ξ * (1 - γ)) ^ k / (14 * B ^ 4 * (α * θ) ^ (2 * k))) ^ 2)
+    (hP : (1 / 2) ^ 2 * ξ ^ (2 * k) ≤ B ^ 4 * (α * θ) ^ (2 * k) * P)
+    (hsle : P / (ε * exceptionalRadius k B θ α ψ) ^ (2 * k) ≤ N * f) (hN : N ≤ 12 / ε ^ 2)
+    (hf0 : 0 ≤ f) (hf : f ≤ B ^ 2 * x ^ 2) :
+    1 ≤ ((1 - γ) * ψ) ^ k * x := by
+  set R := exceptionalRadius k B θ α ψ with hR_def
+  have hR0 : 0 < R := by rw [hR_def, exceptionalRadius]; positivity
+  have h1 : P ≤ (12 / ε ^ 2) * (B ^ 2 * x ^ 2) * (ε * R) ^ (2 * k) := by
+    calc P ≤ _ := (div_le_iff₀ (by positivity)).mp hsle
+      _ ≤ _ := by gcongr
+  have hRk : R ^ k = 2 * B * (θ * α * ψ) ^ k := by
+    rw [hR_def, exceptionalRadius, mul_pow, mul_pow, mul_pow, ← Real.rpow_natCast,
+      ← Real.rpow_mul (by positivity), inv_mul_cancel₀ (by exact_mod_cast hk.ne'), Real.rpow_one]
+    ring
+  have h2 : ξ ^ (2 * k) ≤ 48 / 49 * ξ ^ (2 * k) * (((1 - γ) * ψ) ^ k * x) ^ 2 := by
+    calc ξ ^ (2 * k) ≤ 4 * (B ^ 4 * (α * θ) ^ (2 * k) * P) := by linarith
+      _ ≤ 4 * (B ^ 4 * (α * θ) ^ (2 * k) *
+          ((12 / ε ^ 2) * (B ^ 2 * x ^ 2) * (ε * R) ^ (2 * k))) := by gcongr
+      _ = _ := by
+          rw [mul_pow ε R, hε, mul_comm 2 k, pow_mul R, hRk]
+          simp only [mul_pow]
+          field_simp
+          ring
+  have hy : 0 ≤ ((1 - γ) * ψ) ^ k * x := mul_nonneg (pow_nonneg (by nlinarith) _) hx
+  have h3 : 1 ≤ 48 / 49 * (((1 - γ) * ψ) ^ k * x) ^ 2 :=
+    le_of_mul_le_mul_left (by rw [mul_one, ← mul_assoc, mul_comm _ (48 / 49)]; exact h2)
+      (by positivity : 0 < ξ ^ (2 * k))
+  by_contra h
+  have := pow_lt_one₀ hy (not_le.mp h) two_ne_zero
+  linarith
+
 /-- **An exceptional shift succeeds**: let $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$ with $\mathbf{V}$ invertible and $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$; let
 the $k \ge 2$ shifts `ss` be $\theta$-optimal Ritz values of $\mathbf{H}$, $\theta \ge 1$, none
@@ -378,7 +502,79 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
         1 ≤ ((1 - γ) * hessenbergPotential ss.length H) ^ ss.length *
           ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^
             ss.length) (Fin.last n))‖ := by
-  sorry
+  set k := ss.length with hk_def
+  set ψ := hessenbergPotential k H with hψ_def
+  set R := exceptionalRadius k B θ α ψ with hR_def
+  set ε := exceptionalSpacing k B θ α (ξ * (1 - γ)) with hε_def
+  have hVd : IsUnit V.det := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  by_cases hG : ∃ s ∈ squareGrid r R ε,
+      (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
+  · obtain ⟨s, hs, h⟩ := hG
+    exact ⟨s, hs, Or.inl h⟩
+  have hdG : ∀ i, ∀ s ∈ squareGrid r R ε, d i ≠ s := by
+    rintro i s hs rfl
+    refine hG ⟨d i, hs, ?_⟩
+    have h := congrArg Matrix.det (sub_smul_one_mul_eq_mul_diagonal_sub hHV (d i))
+    rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
+      Finset.prod_eq_zero (Finset.mem_univ i) (sub_self _), mul_zero] at h
+    exact (mul_eq_zero.mp h).resolve_right hVd.ne_zero
+  have hB1 : 1 ≤ B := (one_le_pseudoConditionNumber hV.ne_zero).trans hB
+  obtain ⟨hε0, hε1, hε2k⟩ := exceptionalSpacing_pos_and_le_one_and_pow hk hB1 hθ hα hγ0 hγ1 hξ0 hξ1
+  have hR0 : 0 < R := by rw [hR_def, exceptionalRadius]; positivity
+  -- weight on the disk
+  set S := Finset.univ.filter (fun i => ‖d i - r‖ ≤ R) with hS_def
+  have hP : (1 / 2) ^ 2 * ξ ^ (2 * k) ≤
+      B ^ 4 * (α * θ) ^ (2 * k) * ∑ i ∈ S, lastRowWeights V i := by
+    have h := hss.sq_mul_pow_le_mul_sum_lastRowWeights_filter hV hHV hd hr (by linarith)
+      (by linarith) hξ0 (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num) hψ hstag
+    norm_num only at h ⊢
+    refine h.trans ?_
+    gcongr ?_ * _ * ?_
+    · exact Finset.sum_nonneg fun i _ => lastRowWeights_nonneg V i
+    · exact pow_le_pow_left₀ (pseudoConditionNumber_nonneg V) hB 4
+    · refine Finset.sum_le_sum_of_subset_of_nonneg (fun i => ?_)
+        fun i _ _ => lastRowWeights_nonneg V i
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, hS_def]
+      intro hi
+      refine hi.trans ?_
+      rw [hR_def, exceptionalRadius, show α * θ * (pseudoConditionNumber V / (1 / 2)) ^
+        (k : ℝ)⁻¹ * ψ = (2 * pseudoConditionNumber V) ^ (k : ℝ)⁻¹ * θ * α * ψ by ring_nf]
+      gcongr
+  -- average over the grid
+  have hSne : S.Nonempty := by
+    by_contra h
+    rw [Finset.not_nonempty_iff_eq_empty.mp h, Finset.sum_empty, mul_zero] at hP
+    have : 0 < (1 / 2 : ℝ) ^ 2 * ξ ^ (2 * k) := by positivity
+    linarith
+  have hcov : ∀ i ∈ S, ∃ s ∈ (squareGrid r R ε).toFinset, ‖d i - s‖ ≤ ε * R := by
+    intro i hi
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, hS_def] at hi
+    obtain ⟨s, hs, h⟩ := exists_mem_squareGrid_norm_sub_le hR0.le hε0 hi
+    exact ⟨s, List.mem_toFinset.mpr hs, h⟩
+  obtain ⟨i₀, hi₀⟩ := hSne
+  obtain ⟨s, hs, hsle⟩ := exists_mem_sum_div_pow_le_card_mul_sum (k := 2 * k)
+    (lastRowWeights_nonneg V) ⟨_, (hcov i₀ hi₀).choose_spec.1⟩
+    (fun i s hs => hdG i s (List.mem_toFinset.mp hs)) hcov
+  rw [List.mem_toFinset] at hs
+  have hN : ((squareGrid r R ε).toFinset.card : ℝ) ≤ 12 / ε ^ 2 :=
+    (Nat.cast_le.mpr (List.toFinset_card_le _)).trans (length_squareGrid_le r R hε0 hε1)
+  -- the moment at `s`
+  have hmom := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - s)⁻¹ ^ k)
+  rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV (fun i => hdG i s hs) k] at hmom
+  refine ⟨s, hs, Or.inr ?_⟩
+  set x := ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+    (Fin.last n))‖ with hx_def
+  set P := ∑ i ∈ S, lastRowWeights V i with hP_def
+  have hf0 : 0 ≤ ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) :=
+    Finset.sum_nonneg fun i _ => div_nonneg (lastRowWeights_nonneg V i) (by positivity)
+  have hf : ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) ≤ B ^ 2 * x ^ 2 := by
+    calc _ = ∑ i, lastRowWeights V i * ‖(d i - s)⁻¹ ^ k‖ ^ 2 := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
+      _ ≤ _ := hmom
+      _ ≤ _ := by gcongr
+  exact one_le_pow_mul_of_le_card_mul_sum (by omega) (by positivity) (by positivity)
+    (by positivity) hξ0 hγ1 hψ (norm_nonneg _) hε0 hε2k hP hsle hN hf0 hf
 
 /-! ### One iteration and the decoupling theorem -/
 
