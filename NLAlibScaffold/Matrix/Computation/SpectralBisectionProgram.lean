@@ -271,6 +271,74 @@ theorem eighLoc_bounds {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
             (by show lo + kp ≤ N; omega) h
   exact key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo hN (by show 0 + N ≤ N; omega) h
 
+/-- The slot ranges of the nodes that `NLAlib.eighLoc` reaches lie inside the range of their
+start. -/
+private theorem eighLoc_range_aux :
+    ∀ (a : List Bool) (d lo : ℕ) (x : EighNode F) {l : ℕ} {y : EighNode F},
+      eighLoc M N signFuel R₀ β d lo x a = some (l, y) → lo ≤ l ∧ l + y.k ≤ lo + x.k
+  | [], d, lo, x, l, y, h => by
+    simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨le_rfl, le_rfl⟩
+  | b :: a, d, lo, x, l, y, h => by
+    simp only [eighLoc] at h
+    split at h
+    · simp at h
+    · rename_i b' A' σ
+      split_ifs at h with hb
+      · obtain ⟨h1, h2⟩ := eighLoc_range_aux a (d + 1) lo _ h
+        exact ⟨h1, by simpa using h2⟩
+    · rename_i kp hkp _ _ _ Ap Am _
+      split_ifs at h with hb
+      · obtain ⟨h1, h2⟩ := eighLoc_range_aux a (d + 1) lo _ h
+        exact ⟨h1, by simp only at h2; omega⟩
+      · obtain ⟨h1, h2⟩ := eighLoc_range_aux a (d + 1) (lo + kp) _ h
+        exact ⟨by omega, by simp only at h2; omega⟩
+
+/-- Two distinct paths of one length from one node reach nodes with disjoint slot ranges. -/
+private theorem eighLoc_disjoint_aux :
+    ∀ (a a' : List Bool) (d lo : ℕ) (x : EighNode F) (l l' : ℕ) (y y' : EighNode F),
+      a.length = a'.length → a ≠ a' →
+      eighLoc M N signFuel R₀ β d lo x a = some (l, y) →
+      eighLoc M N signFuel R₀ β d lo x a' = some (l', y') →
+      l + y.k ≤ l' ∨ l' + y'.k ≤ l
+  | [], a', _, _, _, _, _, _, _, hlen, hne, _, _ => by
+    cases a' with
+    | nil => exact absurd rfl hne
+    | cons _ _ => simp at hlen
+  | b :: a, a', d, lo, x, l, l', y, y', hlen, hne, h, h' => by
+    cases a' with
+    | nil => simp at hlen
+    | cons b' a' =>
+    simp only [eighLoc] at h h'
+    generalize eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) = s at h h'
+    cases s with
+    | leaf U dd => simp at h
+    | shift c A' σ =>
+      by_cases hb : b = c <;> by_cases hb' : b' = c
+      · subst hb; subst hb'
+        have hne' : a ≠ a' := fun e => hne (by rw [e])
+        simp only [if_true] at h h'
+        exact eighLoc_disjoint_aux a a' (d + 1) lo _ l l' y y' (by simpa using hlen) hne' h h'
+      all_goals simp only [if_pos, if_neg, *] at h h' <;> simp at h h'
+    | split kp hkp Qp Qm Ap Am σ =>
+      cases b <;> cases b' <;>
+        simp only [Bool.false_eq_true, Bool.true_eq_false, if_true, if_false, ite_true,
+          ite_false] at h h'
+      · have hne' : a ≠ a' := fun e => hne (by rw [e])
+        exact eighLoc_disjoint_aux a a' (d + 1) (lo + kp) _ l l' y y' (by simpa using hlen) hne'
+          h h'
+      · have h1 := eighLoc_range_aux a (d + 1) (lo + kp) _ h
+        have h2 := eighLoc_range_aux a' (d + 1) lo _ h'
+        dsimp only at h1 h2
+        omega
+      · have h1 := eighLoc_range_aux a (d + 1) lo _ h
+        have h2 := eighLoc_range_aux a' (d + 1) (lo + kp) _ h'
+        dsimp only at h1 h2
+        omega
+      · have hne' : a ≠ a' := fun e => hne (by rw [e])
+        exact eighLoc_disjoint_aux a a' (d + 1) lo _ l l' y y' (by simpa using hlen) hne' h h'
+
 /-- **The nodes at one depth have disjoint ranges**: two distinct paths of the same length that
 `NLAlib.eighLoc` follows from the root reach nodes whose ranges $[lo, lo + k)$ do not meet. So the
 nodes of one level partition a part of $[0, N)$, and their packed blocks in the arenas are disjoint.
@@ -283,8 +351,8 @@ theorem eighLoc_disjoint {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ 
     {a a' : List Bool} (hlen : a.length = a'.length) (hne : a ≠ a') {lo lo' : ℕ}
     {y y' : EighNode F} (h : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y))
     (h' : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a' = some (lo', y')) :
-    lo + y.k ≤ lo' ∨ lo' + y'.k ≤ lo := by
-  sorry
+    lo + y.k ≤ lo' ∨ lo' + y'.k ≤ lo :=
+  eighLoc_disjoint_aux a a' 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ lo lo' y y' hlen hne h h'
 
 end Levels
 
