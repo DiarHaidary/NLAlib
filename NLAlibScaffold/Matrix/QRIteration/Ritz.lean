@@ -372,6 +372,82 @@ theorem findRitz_mem (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) {m e : ℕ} {s
     · exact List.mem_of_mem_take (ih (by rw [List.length_take, hlen, hss, pow_succ]; omega))
     · exact List.mem_of_mem_drop (ih (by rw [List.length_drop, hss, pow_succ]; omega))
 
+/-- The binary search keeps the moment bound: for a list of length $2^m$ and exponent $e$, the
+weighted sum of $\lvert p_{\mathrm{ss}}(\mathbf{d}_i)\rvert^{-e}$ is at most $\kappa^{4m}$ times
+the one at the Ritz value `findRitz H m e ss`, with exponent $e2^m$. -/
+private theorem sum_lastRowWeights_div_le_findRitz {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) (m : ℕ) :
+    ∀ (e : ℕ) (ss : List ℂ), ss.length = 2 ^ m → (∀ i, ∀ s ∈ ss, d i ≠ s) →
+      ∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖ ^ e ≤
+        pseudoConditionNumber V ^ (4 * m) *
+          ∑ i, lastRowWeights V i / ‖d i - findRitz H m e ss‖ ^ (e * 2 ^ m) := by
+  induction m with
+  | zero =>
+    intro e ss hlen hd
+    obtain ⟨s, rfl⟩ := List.length_eq_one_iff.mp (by simpa using hlen)
+    simp [shiftPoly, findRitz]
+  | succ j ih =>
+    intro e ss hlen hd
+    have hhalf : ss.length / 2 = 2 ^ j := by
+      rw [hlen, pow_succ, Nat.mul_div_cancel _ (by norm_num)]
+    have hta : (ss.take (ss.length / 2)).length = 2 ^ j := by
+      rw [List.length_take, hhalf, hlen]
+      exact Nat.min_eq_left (Nat.pow_le_pow_right (by norm_num) (by omega))
+    have htd : (ss.drop (ss.length / 2)).length = 2 ^ j := by
+      rw [List.length_drop, hhalf, hlen, pow_succ]
+      omega
+    have hdis : ∀ i, ∀ s ∈ ss.take (ss.length / 2) ++ ss.drop (ss.length / 2), d i ≠ s := by
+      simpa only [List.take_append_drop] using hd
+    have hdis_a : ∀ i, ∀ s ∈ ss.take (ss.length / 2), d i ≠ s :=
+      fun i s hs => hd i s (List.mem_of_mem_take hs)
+    have hdis_b : ∀ i, ∀ s ∈ ss.drop (ss.length / 2), d i ≠ s :=
+      fun i s hs => hd i s (List.mem_of_mem_drop hs)
+    have hpow : e * 2 ^ (j + 1) = 2 * e * 2 ^ j := by ring
+    have hsplit : ∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖ ^ e =
+        ∑ i, lastRowWeights V i /
+          ‖(shiftPoly (ss.take (ss.length / 2) ++ ss.drop (ss.length / 2))).eval (d i)‖ ^ e := by
+      rw [List.take_append_drop]
+    by_cases hc : ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.drop (ss.length / 2))))⁻¹ ^ e)
+          (Fin.last n))‖ ≤
+        ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.take (ss.length / 2))))⁻¹ ^ e)
+          (Fin.last n))‖
+    · have hfr : findRitz H (j + 1) e ss = findRitz H j (2 * e) (ss.take (ss.length / 2)) := by
+        rw [findRitz, if_pos hc]
+      have hmax : ∀ g ∈ [ss.take (ss.length / 2), ss.drop (ss.length / 2)],
+          ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly g))⁻¹ ^ e) (Fin.last n))‖ ≤
+            ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.take (ss.length / 2))))⁻¹ ^ e)
+              (Fin.last n))‖ := by
+        intro g hg
+        rcases List.mem_cons.mp hg with rfl | hg
+        · exact le_refl _
+        · rw [List.mem_singleton.mp hg]; exact hc
+      have hmain := sum_lastRowWeights_div_norm_eval_shiftPoly_le hV hHV hdis (Or.inl rfl) e hmax
+      have hih := ih (2 * e) _ hta hdis_a
+      rw [hsplit, hfr, hpow]
+      calc _ ≤ _ := hmain
+        _ ≤ pseudoConditionNumber V ^ 4 * (pseudoConditionNumber V ^ (4 * j) *
+            ∑ i, lastRowWeights V i / ‖d i - findRitz H j (2 * e) (ss.take (ss.length / 2))‖ ^
+              (2 * e * 2 ^ j)) := mul_le_mul_of_nonneg_left hih (by positivity)
+        _ = _ := by ring
+    · have hfr : findRitz H (j + 1) e ss = findRitz H j (2 * e) (ss.drop (ss.length / 2)) := by
+        rw [findRitz, if_neg hc]
+      have hmax : ∀ g ∈ [ss.take (ss.length / 2), ss.drop (ss.length / 2)],
+          ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly g))⁻¹ ^ e) (Fin.last n))‖ ≤
+            ‖WithLp.toLp 2 (((Polynomial.aeval H (shiftPoly (ss.drop (ss.length / 2))))⁻¹ ^ e)
+              (Fin.last n))‖ := by
+        intro g hg
+        rcases List.mem_cons.mp hg with rfl | hg
+        · exact (not_le.mp hc).le
+        · rw [List.mem_singleton.mp hg]
+      have hmain := sum_lastRowWeights_div_norm_eval_shiftPoly_le hV hHV hdis (Or.inr rfl) e hmax
+      have hih := ih (2 * e) _ htd hdis_b
+      rw [hsplit, hfr, hpow]
+      calc _ ≤ _ := hmain
+        _ ≤ pseudoConditionNumber V ^ 4 * (pseudoConditionNumber V ^ (4 * j) *
+            ∑ i, lastRowWeights V i / ‖d i - findRitz H j (2 * e) (ss.drop (ss.length / 2))‖ ^
+              (2 * e * 2 ^ j)) := mul_le_mul_of_nonneg_left hih (by positivity)
+        _ = _ := by ring
+
 /-- **The binary search finds a promising Ritz value**: let $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
 $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$, and `ss` a list of $k = 2^m$ shifts, none an
@@ -389,6 +465,15 @@ theorem isPromisingRitzValue_findRitz {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) 
     {ss : List ℂ} (hlen : ss.length = 2 ^ m) (hd : ∀ i, ∀ s ∈ ss, d i ≠ s) {α : ℝ}
     (hα : pseudoConditionNumber V ^ (4 * m) ≤ α ^ 2 ^ m) :
     IsPromisingRitzValue α V d ss (findRitz H m 1 ss) := by
-  sorry
+  have hcard := sum_lastRowWeights_div_le_findRitz hV hHV m 1 ss hlen hd
+  simp only [pow_one, one_mul] at hcard
+  have hS0 : 0 ≤ ∑ i, lastRowWeights V i / ‖d i - findRitz H m 1 ss‖ ^ 2 ^ m :=
+    Finset.sum_nonneg fun i _ => div_nonneg (lastRowWeights_nonneg V i) (by positivity)
+  unfold IsPromisingRitzValue
+  refine ⟨findRitz_mem H hlen, ?_⟩
+  rw [hlen]
+  calc _ ≤ _ := hcard
+    _ ≤ α ^ 2 ^ m * ∑ i, lastRowWeights V i / ‖d i - findRitz H m 1 ss‖ ^ 2 ^ m :=
+        mul_le_mul_of_nonneg_right hα hS0
 
 end NLAlib
