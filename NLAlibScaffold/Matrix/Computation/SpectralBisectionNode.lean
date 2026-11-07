@@ -3486,10 +3486,11 @@ theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
   have e4 : n * d + lo < n * (d + 1) := by nlinarith
   unfold nodeWin at hw
   unfold EighArenas.LevelCell at h0 h1'
-  rcases hw with ⟨rfl, a, b'⟩ | ⟨rfl, a, b'⟩ | ⟨rfl, a, b'⟩ | ⟨hb, rfl⟩
+  rcases hw with ⟨rfl, a, b'⟩ | ⟨rfl, a, b'⟩ | ⟨rfl, hi⟩ | ⟨hb, rfl⟩
   · exact h0 (Or.inl ⟨Or.inr (Or.inr rfl), by omega, by omega⟩)
   · exact h1' (Or.inl ⟨Or.inl rfl, by omega, by omega⟩)
-  · exact h1' (Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by omega, by omega⟩))
+  · exact h1' (Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by rcases hi with rfl | rfl <;> omega,
+      by rcases hi with rfl | rfl <;> omega⟩))
   · refine h0 (Or.inr (Or.inl ⟨?_, by omega, by omega⟩))
     rcases hb with hb | hb
     · exact Or.inr (Or.inr (Or.inl hb))
