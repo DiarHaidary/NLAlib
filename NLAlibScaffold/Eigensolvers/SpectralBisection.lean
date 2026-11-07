@@ -36,6 +36,404 @@ open scoped Matrix MatrixOrder ENNReal
 
 namespace NLAlib
 
+/-- The sign of a shifted Hermitian matrix is a measurable function of the shift. -/
+private lemma measurable_cfc_sign_sub_smul {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (a : ℝ) :
+    Measurable fun v : ℝ => cfc Real.sign (A - (a * v) • (1 : Matrix (Fin k) (Fin k) ℂ)) := by
+  have h : ∀ c : ℝ, cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) =
+      hA.cfc fun x => Real.sign (x + -c) := by
+    intro c
+    have hAc : A - c • (1 : Matrix (Fin k) (Fin k) ℂ) = cfc (fun x : ℝ => x + -c) A := by
+      rw [cfc_add_const (-c) (fun x : ℝ => x) A, cfc_id' ℝ A, Algebra.algebraMap_eq_smul_one,
+        neg_smul, sub_eq_add_neg]
+    rw [hAc, ← cfc_comp' Real.sign (fun x : ℝ => x + -c) A
+      ((A.finite_real_spectrum.image _).continuousOn _), ← hA.cfc_eq]
+  simp_rw [h]
+  unfold Matrix.IsHermitian.cfc
+  simp only [Unitary.conjStarAlgAut_apply]
+  have hs : Measurable Real.sign := by
+    unfold Real.sign
+    exact Measurable.ite measurableSet_Iio measurable_const
+      (Measurable.ite measurableSet_Ioi measurable_const measurable_const)
+  have hd : Measurable fun v : ℝ => Matrix.diagonal
+      (RCLike.ofReal ∘ (fun x => Real.sign (x + -(a * v))) ∘ hA.eigenvalues : Fin k → ℂ) := by
+    refine (continuous_id.matrix_diagonal).measurable.comp ?_
+    refine measurable_pi_lambda _ fun i => ?_
+    exact Complex.measurable_ofReal.comp (hs.comp (measurable_const.add
+      (measurable_const.mul measurable_id).neg))
+  have hc : Continuous fun X : Matrix (Fin k) (Fin k) ℂ =>
+      (hA.eigenvectorUnitary : Matrix (Fin k) (Fin k) ℂ) * X *
+        star (hA.eigenvectorUnitary : Matrix (Fin k) (Fin k) ℂ) := by fun_prop
+  exact hc.measurable.comp hd
+
+/-- The trace of $\mathbf{V}\mathbf{V}^{\mathsf{H}}$ is the number of orthonormal columns. -/
+private lemma HasOrthonormalCols.re_trace_mul_conjTranspose {k m : ℕ} {V : Matrix (Fin k) (Fin m) ℂ}
+    (hV : HasOrthonormalCols V) : RCLike.re (V * Vᴴ).trace = m := by
+  rw [Matrix.trace_mul_comm, hV.conjTranspose_mul_self, Matrix.trace_one, Fintype.card_fin]
+  simp
+
+/-- For $k \le N$ the leading block is the submatrix along `Fin.castLE`. -/
+private lemma leadingBlock_eq_submatrix {k N : ℕ} (h : k ≤ N)
+    (G : Matrix (Fin N) (Fin N) ℂ) :
+    leadingBlock k G = G.submatrix (Fin.castLE h) (Fin.castLE h) := by
+  ext i j
+  simp [leadingBlock, Fin.castLE, show (i : ℕ) < N from i.isLt.trans_le h,
+    show (j : ℕ) < N from j.isLt.trans_le h]
+
+/-- The leading block of either test matrix of a sample is standard complex Gaussian. -/
+private lemma hasLaw_leadingBlock_apply {k N : ℕ} (h : k ≤ N) (b : Bool) :
+    HasLaw (fun G : Bool → Matrix (Fin N) (Fin N) ℂ => leadingBlock k (G b))
+      (complexGaussianMatrix (Fin k) (Fin k))
+      (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)) := by
+  have h0 : HasLaw (fun G : Bool → Matrix (Fin N) (Fin N) ℂ => G b)
+      (complexGaussianMatrix (Fin N) (Fin N))
+      (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)) :=
+    ⟨(measurePreserving_eval (fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N))
+        b).measurable.aemeasurable,
+      (measurePreserving_eval (fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)) b).map_eq⟩
+  have := hasLaw_submatrix_of_hasLaw_complexGaussianMatrix h0 (Fin.castLE_injective h)
+    (Fin.castLE_injective h)
+  simpa only [leadingBlock_eq_submatrix h] using this
+
+/-- Event II fails on one side with probability at most $\rho/16 + 15\rho/16$ for a fixed frame:
+the norm tail CG4' and the smaller of the singular value tails CG6 and CG6'. -/
+private lemma measure_not_eventII_le {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ : ℝ} (hρ : 0 < ρ)
+    (hρ₁ : ρ ≤ 1) (hm : 0 < m) (hmk : m ≤ k) {V : Matrix (Fin k) (Fin m) ℂ}
+    (hV : HasOrthonormalCols V) :
+    (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N))
+      ({G | 2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ)) ≤ specNorm (leadingBlock k (G b))} ∪
+        {G | singularValues (Vᴴ * (leadingBlock k (G b)).submatrix id (Fin.castLE hmk)) (m - 1) ≤
+          √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)))}) ≤ ENNReal.ofReal ρ := by
+  set μ := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
+  have hL := hasLaw_leadingBlock_apply hkN b
+  have hlog : 0 ≤ Real.log (16 / ρ) :=
+    Real.log_nonneg (by rw [le_div_iff₀ hρ]; linarith)
+  have h1 := measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix hL
+    (Real.sqrt_nonneg (Real.log (16 / ρ)))
+  simp only [Fintype.card_fin] at h1
+  rw [Real.sq_sqrt hlog, Real.exp_neg, Real.exp_log (by positivity), inv_div] at h1
+  have hK := hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix
+    (hasLaw_submatrix_of_hasLaw_complexGaussianMatrix hL Function.injective_id
+      (Fin.castLE_injective hmk)) hV
+  have hk0 : (0 : ℝ) < k := by exact_mod_cast hm.trans_le hmk
+  have hmk' : (m : ℝ) ≤ k := by exact_mod_cast hmk
+  have hD : 0 < min ((k : ℝ) ^ 2) (Real.exp 1 * k) := by positivity
+  have hx : √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k))) ^ 2 =
+      15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)) := Real.sq_sqrt (by positivity)
+  have h2 : μ.real {G | singularValues (Vᴴ * (leadingBlock k (G b)).submatrix id
+      (Fin.castLE hmk)) (m - 1) ≤ √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)))} ≤
+      15 * ρ / 16 := by
+    rcases min_choice ((k : ℝ) ^ 2) (Real.exp 1 * k) with hmin | hmin
+    · refine (measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix hK
+        (k := m - 1) (by simp; omega) (Real.sqrt_nonneg _)).trans ?_
+      simp only [Fintype.card_fin]
+      rw [hx, hmin, mul_div_assoc', div_le_iff₀ (by positivity)]
+      have : (m : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 := pow_le_pow_left₀ (by positivity) hmk' 2
+      nlinarith
+    · refine (measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_complexGaussianMatrix hK
+        (k := m - 1) (by simp; omega) (Real.sqrt_nonneg _)).trans ?_
+      simp only [Fintype.card_fin]
+      rw [hx, hmin, mul_div_assoc', div_le_iff₀ (by positivity)]
+      have := Real.exp_pos 1
+      nlinarith [mul_le_mul_of_nonneg_left hmk' (by positivity : (0 : ℝ) ≤ Real.exp 1 * k * ρ)]
+  refine (measure_union_le _ _).trans ?_
+  rw [← ofReal_measureReal (measure_ne_top _ _), ← ofReal_measureReal (measure_ne_top _ _),
+    ← ENNReal.ofReal_add measureReal_nonneg measureReal_nonneg]
+  refine ENNReal.ofReal_le_ofReal ?_
+  have e1 : {G : Bool → Matrix (Fin N) (Fin N) ℂ |
+      2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ)) ≤ specNorm (leadingBlock k (G b))} =
+      {G | √2 * (√(k : ℝ) + √(k : ℝ)) + √(Real.log (16 / ρ)) ≤
+        specNorm (leadingBlock k (G b))} := by
+    ext G; simp only [Set.mem_ofPred_eq]; ring_nf
+  rw [e1]
+  linarith
+
+/-- Off the spectrum, each spectral projector of a shift has a frame with orthonormal columns. -/
+private lemma exists_frame_of_forall_ne {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian)
+    {c : ℝ} (hc : ∀ x ∈ spectrum ℝ A, x ≠ c) (b : Bool) :
+    ∃ m, ∃ V : Matrix (Fin k) (Fin m) ℂ, HasOrthonormalCols V ∧
+      V * Vᴴ = (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) •
+        cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))) := by
+  cases b
+  · have hc' : ∀ x ∈ spectrum ℝ (-A), x ≠ -c := by
+      intro x hx hxc
+      rw [← spectrum.neg_eq] at hx
+      exact hc (-x) hx (by rw [hxc, neg_neg])
+    obtain ⟨V, hV, hVV, -⟩ := hA.neg.exists_hasOrthonormalCols_mul_conjTranspose_eq hc'
+    refine ⟨_, V, hV, ?_⟩
+    have hX : (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)).IsHermitian :=
+      hA.sub (by simp [Matrix.IsHermitian, Matrix.conjTranspose_smul])
+    have h1 : -A - (-c) • (1 : Matrix (Fin k) (Fin k) ℂ) = -(A - c • 1) := by
+      rw [neg_smul, sub_neg_eq_add, neg_sub', sub_neg_eq_add]
+    have h2 : cfc Real.sign (-(A - c • (1 : Matrix (Fin k) (Fin k) ℂ))) =
+        -cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ)) := by
+      rw [← cfc_comp_neg Real.sign (A - c • 1)
+        (((A - c • 1).finite_real_spectrum.image _).continuousOn _) hX.isSelfAdjoint,
+        ← cfc_neg]
+      simp only [Real.sign_neg]
+    rw [hVV, h1, h2]
+    simp
+  · obtain ⟨V, hV, hVV, -⟩ := hA.exists_hasOrthonormalCols_mul_conjTranspose_eq hc
+    exact ⟨_, V, hV, by rw [hVV]; simp⟩
+
+/-- Membership in `splitSeeds`. -/
+private lemma mem_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} {L w v : ℝ} :
+    v ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L * v|}) ∩ ({v | 0 < RCLike.re
+        ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 :
+        Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 :
+        ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace < k}))
+        ↔ (v ∈ Set.Icc (-1 : ℝ) 1 ∧ ∀ e ∈ spectrum ℝ A, w ≤ |e - L * v|) ∧
+      0 < RCLike.re (((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v)
+          • (1 : Matrix (Fin k) (Fin k) ℂ))))).trace ∧
+        RCLike.re (((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) •
+            (1 : Matrix (Fin k) (Fin k) ℂ))))).trace < k := by
+  simp only [Set.mem_inter_iff, Set.mem_iInter, Set.mem_ofPred_eq]
+
+/-- The two projectors have traces adding up to $k$. -/
+private lemma re_trace_sideProj_add {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L v : ℝ) :
+    RCLike.re (((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1
+        : Matrix (Fin k) (Fin k) ℂ))))).trace + RCLike.re (((2⁻¹ : ℝ) • (1 + (if false then (1 :
+        ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ))))).trace = k :=
+        by
+  have : ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 :
+      Matrix (Fin k) (Fin k) ℂ)))) + ((2⁻¹ : ℝ) • (1 + (if false then (1 : ℝ) else -1) • cfc
+      Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))) = 1 := by
+    simp only [if_true, Bool.false_eq_true, if_false, one_smul, neg_smul]
+    module
+  rw [← map_add, ← Matrix.trace_add, this, Matrix.trace_one, Fintype.card_fin]
+  simp
+
+/-- The trace function of a projector is measurable in the seed. -/
+private lemma measurable_sideProj_and_re_trace {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (L : ℝ) (b : Bool) :
+    Measurable ((fun v : ℝ => ((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A -
+        (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))))) ∧ Measurable fun v => RCLike.re (((2⁻¹ : ℝ)
+        • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin
+        k) ℂ))))).trace := by
+  have h : Measurable ((fun v : ℝ => ((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign
+      (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))))) :=
+    (Continuous.measurable (by fun_prop) : Measurable fun S : Matrix (Fin k) (Fin k) ℂ =>
+      (2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • S)).comp
+        (measurable_cfc_sign_sub_smul hA L)
+  exact ⟨h, (Continuous.measurable (by fun_prop : Continuous fun X : Matrix (Fin k) (Fin k) ℂ =>
+    RCLike.re X.trace)).comp h⟩
+
+/-- `splitSeeds` is measurable. -/
+private lemma measurableSet_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (L w : ℝ) : MeasurableSet (((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v
+        | w ≤ |e - L * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1)
+        • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re
+        ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 :
+        Matrix (Fin k) (Fin k) ℂ)))).trace < k}))) :=
+  (measurableSet_Icc.inter (A.finite_real_spectrum.measurableSet_biInter fun _ _ =>
+    measurableSet_le measurable_const
+      (continuous_const.sub (continuous_const.mul continuous_id)).abs.measurable)).inter
+    ((measurableSet_lt measurable_const (measurable_sideProj_and_re_trace hA L true).2).inter
+      (measurableSet_lt (measurable_sideProj_and_re_trace hA L true).2 measurable_const))
+
+/-- `sideBad` is measurable. -/
+private lemma measurableSet_sideBad {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (hkN : k ≤ N) (L w x t : ℝ) (b : Bool) :
+    MeasurableSet (({s : EighSample ℝ ℂ N | s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v |
+        w ≤ |e - L * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) •
+        cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re
+        ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 :
+        Matrix (Fin k) (Fin k) ℂ)))).trace < k})) ∧ ∃ r : Fin k, 0 < (r : ℕ) ∧ RCLike.re ((2⁻¹ :
+        ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * s.1) • (1 : Matrix (Fin k)
+        (Fin k) ℂ)))).trace = ((r : ℕ) : ℝ) ∧ (t ≤ specNorm (leadingBlock k (s.2 b)) ∨
+        singularValues (((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L *
+        s.1) • (1 : Matrix (Fin k) (Fin k) ℂ)))) * (leadingBlock k (s.2 b)).submatrix id
+        (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ x)})) := by
+  have hLB : Measurable fun G : Bool → Matrix (Fin N) (Fin N) ℂ => leadingBlock k (G b) := by
+    simp_rw [leadingBlock_eq_submatrix hkN]
+    exact ((continuous_apply b).matrix_submatrix _ _).measurable
+  obtain ⟨hP, htr⟩ := measurable_sideProj_and_re_trace hA L b
+  refine measurableSet_setOfPred.2 ((measurableSet_setOfPred.1
+    (measurable_fst (measurableSet_splitSeeds hA L w))).and
+    (Measurable.exists fun r => measurable_const.and
+      ((measurableSet_setOfPred.1 (measurableSet_eq_fun (htr.comp measurable_fst)
+        measurable_const)).and ((measurableSet_setOfPred.1 (measurableSet_le measurable_const
+          (continuous_specNorm.measurable.comp (hLB.comp measurable_snd)))).or
+          (measurableSet_setOfPred.1 (measurableSet_le ?_ measurable_const))))))
+  refine (continuous_singularValues _).measurable.comp ?_
+  exact Continuous.measurable2 (by fun_prop) (hP.comp measurable_fst)
+    ((Continuous.matrix_submatrix continuous_id _ _).measurable.comp (hLB.comp measurable_snd))
+
+/-- Each side fails Event II with probability at most $\rho$ on the seeds of `splitSeeds`:
+`MeasureTheory.Measure.prod_apply` and the fibre bound for a frame of the projector. -/
+private lemma measure_sideBad_le {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+    (hA : A.IsHermitian) (hkN : k ≤ N) {L w ρ : ℝ} (hw : 0 < w) (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1)
+    (μ : Measure ℝ) (b : Bool) :
+    (μ.prod (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)))
+      ({s : EighSample ℝ ℂ N | s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L *
+          v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc
+          Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹
+          : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix
+          (Fin k) (Fin k) ℂ)))).trace < k})) ∧ ∃ r : Fin k, 0 < (r : ℕ) ∧ RCLike.re ((2⁻¹ : ℝ) •
+          (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * s.1) • (1 : Matrix (Fin k)
+          (Fin k) ℂ)))).trace = ((r : ℕ) : ℝ) ∧ ((2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ))) ≤
+          specNorm (leadingBlock k (s.2 b)) ∨ singularValues (((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ)
+          else -1) • cfc Real.sign (A - (L * s.1) • (1 : Matrix (Fin k) (Fin k) ℂ)))) *
+          (leadingBlock k (s.2 b)).submatrix id (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ (√(15 * ρ
+          / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)))))}) ≤
+        ENNReal.ofReal ρ * μ (((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L * v|}) ∩
+            ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign
+            (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) •
+            (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k)
+            (Fin k) ℂ)))).trace < k}))) := by
+  rw [Measure.prod_apply (measurableSet_sideBad hA hkN L w _ _ b),
+    ← lintegral_indicator_const (measurableSet_splitSeeds hA L w)]
+  refine lintegral_mono fun v => ?_
+  by_cases hv : v ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L * v|}) ∩ ({v | 0 <
+      RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1
+      : Matrix (Fin k) (Fin k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 :
+      ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin k) (Fin k) ℂ)))).trace < k}))
+  · rw [Set.indicator_of_mem hv]
+    obtain ⟨⟨-, hI⟩, -⟩ := mem_splitSeeds.1 hv
+    obtain ⟨m, V, hV, hVV⟩ := exists_frame_of_forall_ne hA (c := L * v) (fun e he hev => by
+      have := hI e he
+      rw [hev, sub_self, abs_zero] at this
+      linarith) b
+    change V * Vᴴ = ((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) •
+        (1 : Matrix (Fin k) (Fin k) ℂ)))) at hVV
+    have htrV := hV.re_trace_mul_conjTranspose
+    rw [hVV] at htrV
+    by_cases hm : 0 < m ∧ m ≤ k
+    · refine (measure_mono ?_).trans (measure_not_eventII_le hkN b hρ hρ₁ hm.1 hm.2 hV)
+      intro G hG
+      obtain ⟨-, ⟨r, hrk⟩, -, hrtr, hbad⟩ := hG
+      have hrm : r = m := by exact_mod_cast hrtr.symm.trans htrV
+      subst hrm
+      rcases hbad with h | h
+      · exact Or.inl h
+      · right
+        rw [Set.mem_ofPred_eq, ← hV.singularValues_mul_left, ← Matrix.mul_assoc, hVV]
+        exact h
+    · refine le_of_eq_of_le (measure_mono_null (fun G hG => ?_) measure_empty) zero_le
+      obtain ⟨-, ⟨r, hrk⟩, hr0, hrtr, -⟩ := hG
+      have hrm : r = m := by exact_mod_cast hrtr.symm.trans htrV
+      exact hm ⟨hrm ▸ hr0, hrm ▸ hrk.le⟩
+  · rw [Set.indicator_of_notMem hv]
+    exact le_of_eq (measure_mono_null (fun G hG => hv hG.1) measure_empty)
+
+/-- Event I fails with probability at most $kw/L$ (`NLAlib.measureReal_exists_abs_sub_lt_le`; the
+seed lies in $[-1, 1]$ almost surely). -/
+private lemma measure_not_eventI_le {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (hA : A.IsHermitian)
+    {L w : ℝ} (hL : 0 < L) (hw : 0 < w) {β : Type*} [MeasurableSpace β] (ν : Measure β)
+    [IsProbabilityMeasure ν] :
+    ((ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)).prod ν)
+      (Prod.fst ⁻¹' ({v | v ∉ Set.Icc (-1 : ℝ) 1} ∪
+        {v | ∃ e ∈ spectrum ℝ A, |e - L * v| < w})) ≤ ENNReal.ofReal (k * w / L) := by
+  classical
+  rw [← Set.prod_univ, Measure.prod_prod, measure_univ, mul_one]
+  refine (measure_union_le _ _).trans ?_
+  have h0 : ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)
+      {v | v ∉ Set.Icc (-1 : ℝ) 1} = 0 := by
+    rw [cond_apply measurableSet_Icc]
+    have : Set.Icc (-1 : ℝ) 1 ∩ {v | v ∉ Set.Icc (-1 : ℝ) 1} = ∅ := by
+      ext v; simp
+    rw [this, measure_empty, mul_zero]
+  have hΛ : {v : ℝ | ∃ e ∈ spectrum ℝ A, |e - L * v| < w} =
+      {v | ∃ e ∈ Finset.univ.image hA.eigenvalues, |e - L * v| < w} := by
+    ext v
+    simp [hA.spectrum_real_eq_range_eigenvalues]
+  rw [h0, zero_add, hΛ, ← ofReal_measureReal (measure_ne_top _ _)]
+  refine ENNReal.ofReal_le_ofReal ((measureReal_exists_abs_sub_lt_le _ hL hw.le).trans ?_)
+  have hΛk : ((Finset.univ.image hA.eigenvalues).card : ℝ) ≤ k := by
+    have := Finset.card_image_le (s := Finset.univ) (f := hA.eigenvalues)
+    rw [Finset.card_univ, Fintype.card_fin] at this
+    exact_mod_cast this
+  gcongr
+
+/-- The failure of the good events lies in the failure of Event I or in `sideBad` on a side:
+on Event I a frame of a projector with $0 < r < k$ columns pins the trace to $r$, and
+`NLAlib.HasOrthonormalCols.singularValues_mul_left` replaces the frame by the projector. -/
+private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w x t : ℝ}
+    {y : EighNode F} {N : ℕ} :
+    {s : EighSample ℝ ℂ N | ¬ IsEighGoodSample dec w x t y s} ⊆
+      Prod.fst ⁻¹' ({v | v ∉ Set.Icc (-1 : ℝ) 1} ∪
+        {v | ∃ e ∈ spectrum ℝ (decodeMatrix dec y.A), |e - dec y.R / y.ℓ * v| < w}) ∪
+      ({s : EighSample ℝ ℂ N | s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ (decodeMatrix dec
+          y.A), {v | w ≤ |e - (dec y.R / y.ℓ) * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if
+          true then (1 : ℝ) else -1) • cfc Real.sign ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) *
+          v) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 + (if
+          true then (1 : ℝ) else -1) • cfc Real.sign ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) *
+          v) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace < y.k})) ∧ ∃ r : Fin y.k, 0 < (r : ℕ) ∧
+          RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign
+          ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * s.1) • (1 : Matrix (Fin y.k) (Fin y.k)
+          ℂ)))).trace = ((r : ℕ) : ℝ) ∧ (t ≤ specNorm (leadingBlock y.k (s.2 true)) ∨
+          singularValues (((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign
+          ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * s.1) • (1 : Matrix (Fin y.k) (Fin y.k)
+          ℂ)))) * (leadingBlock y.k (s.2 true)).submatrix id (Fin.castLE r.isLt.le)) ((r : ℕ) - 1)
+          ≤ x)} ∪
+        {s : EighSample ℝ ℂ N | s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ (decodeMatrix dec
+            y.A), {v | w ≤ |e - (dec y.R / y.ℓ) * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if
+            true then (1 : ℝ) else -1) • cfc Real.sign ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ)
+            * v) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 +
+            (if true then (1 : ℝ) else -1) • cfc Real.sign ((decodeMatrix dec y.A) - ((dec y.R /
+            y.ℓ) * v) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace < y.k})) ∧ ∃ r : Fin y.k, 0 <
+            (r : ℕ) ∧ RCLike.re ((2⁻¹ : ℝ) • (1 + (if false then (1 : ℝ) else -1) • cfc Real.sign
+            ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * s.1) • (1 : Matrix (Fin y.k) (Fin y.k)
+            ℂ)))).trace = ((r : ℕ) : ℝ) ∧ (t ≤ specNorm (leadingBlock y.k (s.2 false)) ∨
+            singularValues (((2⁻¹ : ℝ) • (1 + (if false then (1 : ℝ) else -1) • cfc Real.sign
+            ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * s.1) • (1 : Matrix (Fin y.k) (Fin y.k)
+            ℂ)))) * (leadingBlock y.k (s.2 false)).submatrix id (Fin.castLE r.isLt.le)) ((r : ℕ) -
+            1) ≤ x)}) := by
+  intro s hs
+  simp only [IsEighGoodSample, Set.mem_ofPred_eq] at hs
+  generalize decodeMatrix dec y.A = A at hs ⊢
+  generalize dec y.R / (y.ℓ : ℝ) = L at hs ⊢
+  by_cases h1 : s.1 ∈ Set.Icc (-1 : ℝ) 1 ∧ ∀ e ∈ spectrum ℝ A, w ≤ |e - L * s.1|
+  · right
+    have h2 := not_and.1 hs h1
+    push Not at h2
+    obtain ⟨b, r, V, hr0, hrk, hV, hVV, hbad⟩ := h2
+    change V * Vᴴ = ((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * s.1) •
+        (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) at hVV
+    have htrV := hV.re_trace_mul_conjTranspose
+    rw [hVV] at htrV
+    have hsT : s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v | w ≤ |e - L * v|}) ∩ ({v | 0 <
+        RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) •
+        (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 + (if true
+        then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 : Matrix (Fin y.k) (Fin y.k)
+        ℂ)))).trace < y.k})) := by
+      refine mem_splitSeeds.2 ⟨h1, ?_⟩
+      have hrk' : (r : ℝ) < y.k := by exact_mod_cast hrk
+      have hr0' : (0 : ℝ) < r := by exact_mod_cast hr0
+      have := re_trace_sideProj_add A L s.1
+      cases b
+      · rw [htrV] at this
+        constructor <;> linarith
+      · rw [htrV]
+        exact ⟨hr0', hrk'⟩
+    have hmem : s ∈ ({s : EighSample ℝ ℂ N | s.1 ∈ ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ A, {v |
+        w ≤ |e - L * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) •
+        cfc Real.sign (A - (L * v) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))).trace} ∩ {v | RCLike.re
+        ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign (A - (L * v) • (1 :
+        Matrix (Fin y.k) (Fin y.k) ℂ)))).trace < y.k})) ∧ ∃ r : Fin y.k, 0 < (r : ℕ) ∧ RCLike.re
+        ((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L * s.1) • (1 : Matrix
+        (Fin y.k) (Fin y.k) ℂ)))).trace = ((r : ℕ) : ℝ) ∧ (t ≤ specNorm (leadingBlock y.k (s.2 b))
+        ∨ singularValues (((2⁻¹ : ℝ) • (1 + (if b then (1 : ℝ) else -1) • cfc Real.sign (A - (L *
+        s.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) * (leadingBlock y.k (s.2 b)).submatrix id
+        (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ x)}) := by
+      refine ⟨hsT, ⟨r, hrk⟩, hr0, htrV, ?_⟩
+      rcases le_or_gt t (specNorm (leadingBlock y.k (s.2 b))) with ht | ht
+      · exact Or.inl ht
+      · obtain ⟨h, hσ⟩ := hbad ht
+        right
+        rw [← hVV, Matrix.mul_assoc, hV.singularValues_mul_left]
+        exact hσ
+    cases b
+    · exact Or.inr hmem
+    · exact Or.inl hmem
+  · left
+    simp only [Set.mem_preimage, Set.mem_union, Set.mem_ofPred_eq]
+    by_cases hv : s.1 ∈ Set.Icc (-1 : ℝ) 1
+    · right
+      push Not at h1
+      exact h1 hv
+    · exact Or.inl hv
+
 -- A docstring line exceeds 100 characters.
 set_option linter.style.longLine false in
 /-- **Bad events of one node under a node budget** (EV2'): at an internal node of size
@@ -66,7 +464,45 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le_of_isEighNodeBud
       (2 * √2 * √(y.k : ℝ) + √(Real.log (16 / ρ))) y s} ≤
       ENNReal.ofReal (y.k * w * y.ℓ / dec y.R) + ENNReal.ofReal (2 * ρ) *
         eighSampleLaw N {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
-  sorry
+  have hA := hB.isHermitian
+  have hRpos : 0 < dec y.R := hB.pos_w.trans_le hB.w_le
+  have hℓpos : (0 : ℝ) < y.ℓ := by
+    have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+    linarith
+  have hLpos : 0 < dec y.R / y.ℓ := div_pos hRpos hℓpos
+  set μ₁ := ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)
+  set ν := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
+  set T := ((Set.Icc (-1 : ℝ) 1 ∩ ⋂ e ∈ spectrum ℝ (decodeMatrix dec y.A), {v | w ≤ |e - (dec y.R
+      / y.ℓ) * v|}) ∩ ({v | 0 < RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc
+      Real.sign ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * v) • (1 : Matrix (Fin y.k) (Fin y.k)
+      ℂ)))).trace} ∩ {v | RCLike.re ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc
+      Real.sign ((decodeMatrix dec y.A) - ((dec y.R / y.ℓ) * v) • (1 : Matrix (Fin y.k) (Fin y.k)
+      ℂ)))).trace < y.k}))
+  -- the seeds of `T` split the node (rank recovery on Event I, EB1b')
+  have hTsplit : μ₁ T ≤
+      (μ₁.prod ν) {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
+    calc μ₁ T = (μ₁.prod ν) (T ×ˢ Set.univ) := by rw [Measure.prod_prod, measure_univ, mul_one]
+      _ ≤ _ := measure_mono fun s hs => ?_
+    obtain ⟨⟨hv, hI⟩, h0, h1⟩ := mem_splitSeeds.1 hs.1
+    have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * s.1) fun e he hev => by
+      have := hI e he
+      rw [hev, sub_self, abs_zero] at this
+      linarith [hB.pos_w]
+    have hPt : ((2⁻¹ : ℝ) • (1 + (if true then (1 : ℝ) else -1) • cfc Real.sign ((decodeMatrix dec
+        y.A) - ((dec y.R / y.ℓ) * s.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) =
+        (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
+          (dec y.R / y.ℓ * s.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) := by
+      simp
+    rw [hPt, htr] at h0 h1
+    exact (hM.eighStep_isSplit_iff_of_isEighNodeBudget hB hk hint hv hI).2
+      ⟨by exact_mod_cast h0, by exact_mod_cast h1⟩
+  refine (measure_mono not_isEighGoodSample_subset).trans ((measure_union_le _ _).trans ?_)
+  refine (add_le_add (measure_not_eventI_le hA hLpos hB.pos_w ν) ((measure_union_le _ _).trans
+    (add_le_add (measure_sideBad_le hA hkN hB.pos_w hρ hρ₁ μ₁ true)
+      (measure_sideBad_le hA hkN hB.pos_w hρ hρ₁ μ₁ false)))).trans ?_
+  rw [div_div_eq_mul_div, ← add_mul, ← ENNReal.ofReal_add hρ.le hρ.le, ← two_mul]
+  gcongr
+  exact hTsplit
 
 /-- The global hypotheses of EV6' give $u \ge 0$, $n \ge 1$, $\ell \ge 20$,
 $n\beta \le \varepsilon/104$ and the contract bounds of
