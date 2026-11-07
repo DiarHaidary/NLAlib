@@ -62,7 +62,7 @@ theorem exec_bindIdx_eq_none [AddMonoid C] (I : Interp P ι K C) {p : P} {x : Ce
     {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C} {v : K}
     (hx : st.store.read p x.buf x.idx.eval = some v) (hk : I.sem.toNat p v = none) :
     exec I (.bindIdx p x bound body) st = none := by
-  sorry
+  simp only [exec_bindIdx, toNatStep, hx, hk, Option.bind_some, Option.map_none, Option.bind_none]
 
 omit [DecidableEq P] in
 /-- **The round trip of a size**: under exact integer literals up to $B$ and the exact floor
