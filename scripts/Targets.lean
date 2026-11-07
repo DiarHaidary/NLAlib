@@ -17,10 +17,12 @@ target statements", F1 and F12). This script checks, on the library built by `la
    registered target or its proof: a theorem, an instance of a `Prop` class, any constant whose
    type is a proposition, or a definition of type `Prop`; except a **rounded program theorem**
    (approved by the maintainer 2026-11-07), a claim whose statement is about rounded execution:
-   one of its leading hypotheses (the binders of its `∀` telescope, instances included) is an
-   application of the standard model `NLAlib.Computation.IsRelErrSem`, or its type names a
-   rounded access model (`MatrixFreeRounded`, `MatrixFreeRoundedProb`). Exact program theorems
-   (under `exactInterp`, `storedInterp`, or the exact models) keep the rule;
+   one of its leading hypotheses (the binders of its `∀` telescope, instances included) is the
+   standard model `NLAlib.Computation.IsRelErrSem … I.sem` on the semantics of an interpretation
+   `I` bound in the telescope and mentioned by the conclusion, or its type names a rounded
+   access model (`MatrixFreeRounded`, `MatrixFreeRoundedProb`). Exact program theorems (under
+   `exactInterp`, `storedInterp`, or the exact models) keep the rule, a vacuous model hypothesis
+   on another semantics notwithstanding;
 3. the **closure hash** of each target matches the registry: SHA-256 of a canonical serialisation
    of every library constant the target's statement reaches (a constant is a library constant if
    its module is an `NLAlib` module), of every kind: definitions and opaques (type and value),
@@ -342,13 +344,25 @@ def roundedModels : List Name :=
 
 /-- Whether a claim is a **rounded program theorem** (lint item 2's exception, approved by the
 maintainer 2026-11-07): its type names a rounded access model, or one of the binders of its
-leading `∀` telescope has type an application of `NLAlib.Computation.IsRelErrSem` (the claim
-holds for every semantics meeting the standard model). A mention of the model elsewhere (in a
-conclusion, under a connective) does not count. -/
+leading `∀` telescope has type `NLAlib.Computation.IsRelErrSem u dec safe I.sem` for an
+interpretation `I` bound in the telescope and mentioned by the conclusion (the claim holds for
+every semantics meeting the standard model, and the conclusion runs under that semantics). A
+mention of the model elsewhere (in a conclusion, under a connective) does not count, nor does a
+vacuous model hypothesis on a semantics the conclusion does not run under (an unrelated
+interpretation, or a fixed one such as `exactInterp`). -/
 def isRoundedClaim (type : Expr) : MetaM Bool := do
   if type.getUsedConstants.any (roundedModels.contains ·) then return true
-  forallTelescope type fun xs _ => xs.anyM fun x => do
-    return (← inferType x).getAppFn.isConstOf ``NLAlib.Computation.IsRelErrSem
+  forallTelescope type fun xs body => xs.anyM fun x => do
+    let t ← inferType x
+    unless t.getAppFn.isConstOf ``NLAlib.Computation.IsRelErrSem do return false
+    -- `IsRelErrSem u dec safe sem`: the semantics must be `I.sem` (or `I`) for an interpretation
+    -- `I` bound in the telescope that the conclusion mentions
+    let some sem := t.getAppArgs.back? | return false
+    let interp := if sem.getAppFn.isConstOf ``NLAlib.Computation.Interp.sem then sem.appArg! else
+      match sem with
+      | .proj ``NLAlib.Computation.Interp 0 e => e
+      | _ => sem
+    return interp.isFVar && xs.contains interp && body.containsFVar interp.fvarId!
 
 /-- Whether a constant reaches a run or a budget through the library constants it unfolds to:
 the type of every constant, the value of definitions and opaques, and the mutual block and the
@@ -869,6 +883,26 @@ theorem exec_copyTrace_and (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ �
         (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ).sem → True :=
   ⟨rfl, fun _ _ => trivial⟩
 
+/-- A vacuous standard-model hypothesis on the semantics of an interpretation the conclusion does
+not run under: an exact claim about `exec`, flagged.
+
+Result: fixture-vacuous-model -/
+theorem exec_copyTrace_vacuous (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ) {u : Unit → ℝ}
+    (J : Interp Unit Unit ℝ (OpCount Unit Unit))
+    (_ : IsRelErrSem u (fun _ x => x) (fun _ _ => True) J.sem) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) := rfl
+
+/-- The standard model on a fixed semantics (`exactInterp`), not on a bound interpretation: an
+exact claim about `exec`, flagged.
+
+Result: fixture-fixed-model -/
+theorem exec_copyTrace_fixedModel (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ)
+    {u : Unit → ℝ} (_ : IsRelErrSem u (fun _ x => x) (fun _ _ => True)
+      (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ).sem) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) := rfl
+
 /-- A target of the prover's: a `Prop` that unfolds to a model, not in the registry. -/
 def FixUnregistered : Prop := FixHutchpp
 
@@ -946,7 +980,8 @@ run_cmd do
   let expected := [``TargetFixtures.matrixFree_sizeTraceProg, ``TargetFixtures.exec_copyTrace,
       ``TargetFixtures.fixUnregistered, ``TargetFixtures.wrapped, ``TargetFixtures.viaNonempty,
       ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef,
-      ``TargetFixtures.exec_copyTrace_and]
+      ``TargetFixtures.exec_copyTrace_and, ``TargetFixtures.exec_copyTrace_vacuous,
+      ``TargetFixtures.exec_copyTrace_fixedModel]
   for c in expected do
     unless flagged.contains c do fail m!"{c} is not flagged"
   if flagged.size != expected.length then fail m!"item 2 flags {flagged}"

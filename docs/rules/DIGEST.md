@@ -88,7 +88,7 @@ rules are in the topic files; the reasons are in the contributor guide.
 - A3 A declaration carries at most one `Algorithm:` tag.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - E2 Programs, kernels and implementations are computable.
-- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem`, or a rounded access model) may carry a `Result:` id.
+- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem … I.sem` on the interpretation `I` its conclusion runs under, or a rounded access model) may carry a `Result:` id.
 - E4 Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it.
 - E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
 - E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.

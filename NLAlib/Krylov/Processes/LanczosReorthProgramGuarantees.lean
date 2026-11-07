@@ -103,7 +103,9 @@ $\mathbf{v}_1, \dots, \mathbf{v}_{q+1}$ (buffer $1$), coefficients $\alpha_j$ (b
 $\beta_j$ (buffer $3$) and norms $\nu_j$ (buffer $6$) are such that, with
 $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$ and
 $e = 100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$, every prefix of $m$ steps,
-$0 < m \le q$, that passes the computed test $\tau\nu_j < \beta_j$ for $j \le m$ has $m < N$;
+$0 < m \le q$, that passes the test $\tau\nu_j < \beta_j$ on the computed $\nu_j$, $\beta_j$ for
+$j \le m$ (the program does not take $\tau$; the admissible prefix is read off the stored norms
+with any $\tau$) has $m < N$;
 $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$;
 a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le e + 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)\|\mathbf{A}\|_2$
@@ -221,10 +223,11 @@ $t < q$, a threshold $\tau > 0$ and parameters satisfying `NLAlib.LanczosReorthR
 $\mu + \varepsilon + \varepsilon_2 \le 1/100$ for
 $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$), the loop
 `NLAlib.lanczosReorthLoop` succeeds, keeps the shape, and its decoded outputs satisfy
-`NLAlib.LanczosReorthGuarantees`: on every prefix of $m$ steps passing the computed test
-$\tau\nu_j < \beta_j$, $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le
-\sqrt{3m}\,\mu$; the computed $\mathbf{T}_m$ is the Lanczos tridiagonal of
-$(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
+`NLAlib.LanczosReorthGuarantees`: on every prefix of $m$ steps passing the test
+$\tau\nu_j < \beta_j$ on the computed $\nu_j$, $\beta_j$,
+$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$; the
+computed $\mathbf{T}_m$ is the Lanczos tridiagonal of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for
+a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le (100(m+1)(\mu + \varepsilon + \varepsilon_2) +
 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))\|\mathbf{A}\|_2$; and its eigenvalues interlace those of
 $\mathbf{A}$ up to $100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$. The scheme
@@ -465,8 +468,9 @@ $$\rho = (101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$
 If $(q+1)\rho \le 1/1000$ and $0 < \tau$, $132(q+1)\rho \le \tau \le 1$, the
 registered tree `NLAlib.lanczosReorthProg.compiled` finishes, keeps the shape, uses at most
 `NLAlib.lanczosReorthCount` operations of each kind and at most $N^2 + 2N + 2q + 5$ additional
-live cells at its tag, and on every prefix of $m$ steps, $0 < m \le q$, that passes the computed
-test $\tau\nu_j < \beta_j$ ($j \le m$), the decoded outputs satisfy: $m < N$;
+live cells at its tag, and on every prefix of $m$ steps, $0 < m \le q$, that passes the test
+$\tau\nu_j < \beta_j$ ($j \le m$) on the computed $\nu_j$, $\beta_j$ (the program does not take
+$\tau$: any $\tau$ in the range may be chosen after the run), the decoded outputs satisfy: $m < N$;
 $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
 the tridiagonal $\mathbf{T}_m$ of the computed $\alpha$, $\beta$ is the exact Lanczos tridiagonal
 of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
@@ -548,7 +552,9 @@ If $(q+1)\rho \le 1/1000$ and $0 < \tau$, $132(q+1)\rho \le \tau \le 1$, the
 registered tree `NLAlib.lanczosReorthOracleProg.compiled` finishes, keeps the shape, uses at
 most `NLAlib.lanczosReorthOracleCount` operations of each kind and at most $2N + 2q + 5$
 additional live cells at its tag, and on every prefix of $m$ steps, $0 < m \le q$, that passes
-the computed test $\tau\nu_j < \beta_j$ ($j \le m$), the decoded outputs satisfy: $m < N$;
+the test $\tau\nu_j < \beta_j$ ($j \le m$) on the computed $\nu_j$, $\beta_j$ (the program does not
+take $\tau$: any $\tau$ in the range may be chosen after the run), the decoded outputs satisfy:
+$m < N$;
 $\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
 the tridiagonal $\mathbf{T}_m$ of the computed $\alpha$, $\beta$ is the exact Lanczos tridiagonal
 of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with

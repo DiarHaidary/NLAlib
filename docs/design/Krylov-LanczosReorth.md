@@ -803,15 +803,16 @@ Then `exec_rounded_loop_guarantees` gives the run and the guarantees for `lanczo
 that builder. A registered stored-matrix or matrix-free program around the loop needs the ROM load
 and scope plumbing of `exec_rounded_compiled` (≈40 lines, `exec_rom_load`,
 `exec_compiled_eq_some` are specific to the CGS2 tree) and its static count; a target is the
-maintainer's (CONTRIBUTING §5.5).
+maintainer's ([programs](../contributing/programs.md)).
 
 ### 9.2 Explorer
 
 Algorithm pages attach results by `Result:` id (explorer `algorithms.py`, rules 1–4; an id
 `lanczos-reorth-…` attaches to the `lanczos-reorth` page by prefix). Rule E3 used to forbid an id
 on a theorem about runs that is not the proof of a registered target; the maintainer relaxed it
-on 2026-11-07 for **rounded program theorems** (a leading `IsRelErrSem` hypothesis, or a rounded
-access model; `scripts/Targets.lean`, `isRoundedClaim`). Ids given: G6
+on 2026-11-07 for **rounded program theorems** (a leading `IsRelErrSem … I.sem` hypothesis on the
+interpretation `I` the conclusion runs under, or a rounded access model; `scripts/Targets.lean`,
+`isRoundedClaim`). Ids given: G6
 `lanczos-reorth-cgs2-rounded-run`, G6o `lanczos-reorth-cgs2-oracle-rounded-run`, G7
 `lanczos-reorth-cgs2-program-backward`, G8 `lanczos-reorth-cgs2-program-interlacing`, the generic
 loop `lanczos-reorth-certified-scheme`, the headline theorems

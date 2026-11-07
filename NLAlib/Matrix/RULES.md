@@ -165,7 +165,7 @@ Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each 
 ### Programs
 
 - **E2** Programs, kernels and implementations are computable. [programs]
-- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem`, or a rounded access model) may carry a `Result:` id. [programs]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem … I.sem` on the interpretation `I` its conclusion runs under, or a rounded access model) may carry a `Result:` id. [programs]
 - **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [programs]
 - **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [programs]
 - **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [programs]
