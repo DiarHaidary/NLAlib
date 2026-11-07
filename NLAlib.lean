@@ -350,6 +350,7 @@ public import NLAlib.Matrix.Computation.Deflation
 public import NLAlib.Matrix.Computation.EntrywiseRounding
 public import NLAlib.Matrix.Computation.MatvecRoutine
 public import NLAlib.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Computation.ResidualGap
 public import NLAlib.Matrix.Computation.SpectralBisection

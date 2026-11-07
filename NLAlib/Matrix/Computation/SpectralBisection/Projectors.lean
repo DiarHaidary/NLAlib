@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisection
-public import NLAlib.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 
 /-!
 # Spectral projectors and rank recovery at a node of spectral bisection
