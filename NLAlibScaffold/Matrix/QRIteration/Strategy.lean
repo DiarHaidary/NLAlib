@@ -184,7 +184,32 @@ Proof: both coordinates of $(s - c)/R$ are in $[-1, 1]$ (`List.mem_flatMap`, `Li
 `List.mem_range`). S, about 15 lines. -/
 theorem norm_sub_le_of_mem_squareGrid {c s : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (hε : 0 < ε)
     (hs : s ∈ squareGrid c R ε) : ‖s - c‖ ≤ Real.sqrt 2 * R := by
-  sorry
+  have hbd : ∀ i : ℕ, i < ⌈Real.sqrt 2 / ε⌉₊ + 1 →
+      -1 ≤ 2 * (i : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) - 1 ∧
+        2 * (i : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) - 1 ≤ 1 := by
+    intro i hi
+    rcases Nat.eq_zero_or_pos ⌈Real.sqrt 2 / ε⌉₊ with h0 | hpos
+    · have : i = 0 := by omega
+      subst this
+      simp [h0]
+    · have hm : (0 : ℝ) < (⌈Real.sqrt 2 / ε⌉₊ : ℝ) := by exact_mod_cast hpos
+      have hi' : (i : ℝ) ≤ (⌈Real.sqrt 2 / ε⌉₊ : ℝ) := by exact_mod_cast (by omega : i ≤ _)
+      have h0' : 0 ≤ 2 * (i : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) := by positivity
+      have h1' : 2 * (i : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) ≤ 2 := by
+        rw [div_le_iff₀ hm]; linarith
+      constructor <;> linarith
+  unfold squareGrid at hs
+  simp only [List.mem_flatMap, List.mem_map, List.mem_range] at hs
+  obtain ⟨i, hi, j, hj, rfl⟩ := hs
+  obtain ⟨ha1, ha2⟩ := hbd i hi
+  obtain ⟨hb1, hb2⟩ := hbd j hj
+  have hnorm : ‖(⟨2 * (i : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) - 1,
+      2 * (j : ℝ) / (⌈Real.sqrt 2 / ε⌉₊ : ℝ) - 1⟩ : ℂ)‖ ≤ Real.sqrt 2 := by
+    refine Real.le_sqrt_of_sq_le ?_
+    rw [Complex.sq_norm, Complex.normSq_mk]
+    nlinarith
+  rw [add_sub_cancel_left, norm_mul, Complex.norm_real, Real.norm_of_nonneg hR]
+  nlinarith [mul_le_mul_of_nonneg_left hnorm hR]
 
 /-- **An exceptional shift succeeds**: let $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$ with $\mathbf{V}$ invertible and $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$; let
