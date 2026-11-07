@@ -392,7 +392,12 @@ S, about 6 lines. -/
 theorem IsUpperHessenberg.isUpperHessenberg_multiShiftedQRStep
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (ss : List ℂ) :
     IsUpperHessenberg (multiShiftedQRStep H ss) := by
-  sorry
+  induction ss generalizing H with
+  | nil => exact hH
+  | cons s ss ih =>
+    unfold multiShiftedQRStep at *
+    rw [List.foldl_cons]
+    exact ih (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
 
 /-- **The multi-shift QR step is a QR step of the shift polynomial**: for upper Hessenberg
 $\mathbf{H}$ and shifts $s_1, \dots, s_k$, there are $\mathbf{Q}$ unitary and $\mathbf{R}$
