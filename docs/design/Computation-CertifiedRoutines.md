@@ -1,7 +1,8 @@
 # Certified routines: one shape for subroutines that other algorithms consume
 
-2026-11-07. Design note; **status: proposal, nothing implemented; Fable review 2026-11-07
-(`reports/Review-Fable-CertRoutines-Design.md`): approve with fixes, all 12 findings applied (§7)**. Branch `design/certified-routines`
+2026-11-07. Design note; **status: approved by the maintainer (all recommended options); Fable
+review 2026-11-07 (`reports/Review-Fable-CertRoutines-Design.md`): approve with fixes, all 12
+findings applied (§7); pilot implemented, results and design changes in §8**. Branch `design/certified-routines`
 from `origin/main` @ `2c0d1ec8` (PR #60, Lanczos with full reorthogonalization, merged). Decision
 sheet: harness `state/decisions/CERT-ROUTINES.json` (ids CR1–CR10 below).
 
@@ -494,3 +495,92 @@ sites (D9, CR2); (5) operator map and rectangular matvec (D1, §2.3, CR11, refer
 (9) inventory counts (about 340, 33, 13 files) and the CGS2 estimate corrected; (10) L18–L20 and
 `MatvecRoutine.lean` as the worked example; (11) verified claims, no change; (12) decision
 sheet: CR4/CR7 restated, CR11/CR12 added.
+
+## 8. Pilot results (2026-11-07)
+
+Branch `feat/certified-routines`, on `origin/main` @ `5cce6739` (PR #66, Lanczos-reorth
+guarantees). The pilot (CR10 a) added `NLAlib/Computation/RoutineFrames.lean`, re-proved the
+CGS2 runs on it and replaced the per-step CGS2 certificate in Lanczos-FRO by
+`IsOrthRoutine.mono`. No public statement changed; no registered target is touched.
+
+### 8.1 Measurements
+
+| item | before | after | note |
+|---|---|---|---|
+| CGS2 run proofs (`exec_cgsPass_*`, `exec_cgs2_body`, `exists_exec_cgs2` and their private helpers) | 600 lines | 424 lines | **−29%**: the §3 gate (at least 25%) is passed, so L8, L9 and L11 stay as designed |
+| `ClassicalGramSchmidtProgram.lean` | 785 lines | 603 lines | −23% for the whole file; the remainder is rounding composition, which the layer does not touch |
+| `RoutineFrames.lean` (L1–L13, L18–L20) | estimate ~950 | 563 lines | the estimate counted L14–L17 and API lemmas that turned out to be unnecessary |
+| `isOrthRoutine_cgs2_of_lt` (Lanczos-FRO) | 10-line re-proof of `run` | one line, `hO.mono …` | `IsOrthRoutine.mono` in `OrthRoutine.lean` |
+
+L14–L17 were not needed by the pilot. They stay deferred to their first users (CR10): L14 with
+a routine proved under unit charges, L15/L16 with the rectangular matvec (CR11), L17 with the
+`IsOrthRoutine` migration (§8.3).
+
+### 8.2 Design changes the pilot showed
+
+(a) **Empty blocks and `blockDisjoint`.** `blockDisjoint` (`Exec.lean`) is an interval test,
+so an empty block that lies inside another block is reported as overlapping. A write of an
+empty array is a no-op, so CR4-style hypotheses must not require disjointness for it. Rule:
+every disjointness hypothesis between a written block and another block is guarded by
+nonemptiness, `0 < n₁ → 0 < n₂ → blockDisjoint (b₁, o₁, n₁) (b₂, o₂, n₂) = true`, or compares
+only nonempty blocks. Implemented in this form in `RoutineFrames.lean`: `Store.writeBlock_comm`,
+`ReadsDecoded.of_writeBlock`, `HoldsDecoded.of_writeBlock` (and `Store.writeBlock_pop_of_lt`
+guards its bound by `0 < y.size`). The guarded form is what call sites can discharge: CGS2's
+`hb ≠ wb` style facts give the guarded goal by `blockDisjoint_iff` and `omega` without a case
+split on $j = 0$. L17 must use the same form. The `List.Pairwise` hypotheses of L4/L5
+(`Store.writeBlocks_eq_some_of_read`, `Store.frame_of_writeBlocks_eq_some`) keep the unguarded
+form, because they mirror `kcall`'s own side condition in `Exec.lean`.
+
+(b) **L8 needs pop rules for block writes.** `exists_exec_alloc` is stated with a predicate
+`Q` on the popped store (`Q out.store.pop`), not with a `writeBlocks` equation on it, and the
+body discharges `Q` with two rules: a block write below the top buffer commutes with `pop`
+(`Store.writeBlock_pop_of_lt`), and a write to the top buffer is undone by `pop`
+(`Store.pop_of_writeBlock_top`, `Store.pop_of_write_top`). This replaces the §3 L8 statement,
+which fixed the effect as `writeBlocks p bs ys` inside the lemma; the predicate form is shorter
+at both CGS2 call sites and makes the iterated `…_alloc₂` unnecessary (two nested applications).
+
+(c) **L9 in its one-block form.** Every pilot loop writes one contiguous block, one word per
+iteration. L9 is therefore `exists_exec_loop_writeBlock`: the effect is
+`st.store.writeBlock p b o (Array.ofFn W)` with `∀ k, Q k (W k)`, built from
+`Store.writeBlock_push_eq_some`. The list-of-blocks form of §3 is not needed until a loop
+writes one block per iteration into different places (none on main).
+
+(d) **`Store.writeBlock_comm` belongs in L12.** Reordering two disjoint block writes (with the
+guard of (a)) is a normal-form lemma on the equation, next to `writeBlocks_append` and
+`writeBlock_writeBlock_self`. CGS2's two-pass composition needs it to move the `hb` write past
+the `wb` rewrite.
+
+(e) **L6, L7 and L11 pay off only after the CR2 statement migration.** `IsFramed`
+(L6), `IsFramed.of_writeBlocks` (L7) and `IsBlockRoutine.bind` (L11) are proved, but no pilot
+proof uses them yet: the consumers still take a hand-written `hpreFrame`, the `IsOrthCall`
+adapter and buffer inequalities inside `IsOrthRoutine.run`, so there is nothing for them to
+replace until those statements change.
+
+### 8.3 Next step: the CR2 statement migration (Lanczos-FRO)
+
+The migration changes statements of proven consumer theorems (additive at the certificate
+level, CR2 a, but not at the consumer level):
+
+1. `IsOrthRoutine` to block-level disjointness (L17, CR4 a): remove `hb ≠ wb → hb ≠ Vb →
+   wb ≠ Vb →` from `run`; `IsRelErrSem.isOrthRoutine_cgs2` assumes instead that
+   `(Vb, 0, N*j)`, `(wb, wo, N)`, `(hb, ho, j)` are pairwise `blockDisjoint` in the guarded form
+   of §8.2 (a). Delete the adapter `IsOrthCall` (`LanczosReorthProgramRoundedStep.lean`) and pass
+   `IsOrthRoutine` directly.
+2. `hpreFrame` to `IsFramed pre ro` (L6/L7, CR3 b): the hypothesis
+   `hpreFrame : ∀ s s', pre s → (∀ k < 8, s'.shape[k]? = s.shape[k]?) → … → pre s'` becomes
+   `hpre : IsFramed pre ro` with `ro ⊆ [0, …, 7]`, in `exec_stepBody`, `StoreContext.succ`
+   (`LanczosReorthProgramRoundedStep.lean`), `exec_loop`, `exec_lanczosReorthLoop`,
+   `exec_rounded_loop` (`LanczosReorthProgramRoundedLoop.lean`), `exec_rounded_loop_guarantees`
+   (`LanczosReorthProgramGuarantees.lean`, from PR #66) and the private
+   `exec_lanczosReorthLoop_exact` (`LanczosReorthProgram.lean`). `StoreContext.succ`'s 8-way
+   frame then follows from L5/L7.
+3. `hmv : ∀ t` to `∀ t < q` at the four sites listed under CR2.
+
+Registered targets: none is affected. `docs/targets.toml` mentions none of `IsOrthRoutine`,
+`IsMatvecRoutine`, `IsRelErrSem`, `StoreContext` or the CGS2 routines; the Lanczos-reorth
+targets (`StoredEntriesLanczosReorth`, `MatrixFreeLanczosReorth`, the `compiled` trees) are
+stated on compiled trees and cost counts, whose closures do not reach the certificates. The
+changed theorems are rounded program theorems (lint item 2's exception) or private, so no
+re-pinning or target approval is needed; the closure-hash check in `stage_check.sh` confirms
+this when the migration lands.
+
