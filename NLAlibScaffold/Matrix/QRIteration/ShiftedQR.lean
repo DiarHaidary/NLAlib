@@ -55,6 +55,26 @@ theorem hessenbergPotential_pow {k : ℕ} (hk : 0 < k) (H : Matrix (Fin (n + 1))
   unfold hessenbergPotential
   exact Real.rpow_inv_natCast_pow (Finset.prod_nonneg fun i _ => norm_nonneg _) hk.ne'
 
+/-- Helper: the last row of $\mathbf{H}^i$ vanishes at columns $j$ with $j + i < n$. -/
+private theorem pow_apply_last_eq_zero {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hH : IsUpperHessenberg H) (i : ℕ) :
+    ∀ j : Fin (n + 1), (j : ℕ) + i < n → (H ^ i) (Fin.last n) j = 0 := by
+  induction i with
+  | zero =>
+    intro j hj
+    rw [pow_zero, Matrix.one_apply_ne]
+    intro h
+    have := congrArg Fin.val h
+    simp only [Fin.val_last] at this
+    omega
+  | succ i ih =>
+    intro j hj
+    rw [pow_succ, Matrix.mul_apply]
+    refine Finset.sum_eq_zero fun m _ => ?_
+    by_cases hm : (j : ℕ) + 1 < (m : ℕ)
+    · rw [hH m j hm, mul_zero]
+    · rw [ih m (by omega), zero_mul]
+
 /-- **The last row of $p(\mathbf{H})$ is supported on the last $k + 1$ columns**: for upper
 Hessenberg $\mathbf{H}$ and a polynomial $p$ of degree at most $k$,
 $p(\mathbf{H})_{n,j} = 0$ for $j + k < n$. [BanksGarzaVargasSrivastava2021, proof of
@@ -66,7 +86,10 @@ M, about 35 lines. -/
 theorem IsUpperHessenberg.aeval_apply_last_eq_zero {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H) {p : Polynomial ℂ} {k : ℕ} (hp : p.natDegree ≤ k)
     {j : Fin (n + 1)} (hj : (j : ℕ) + k < n) : Polynomial.aeval H p (Fin.last n) j = 0 := by
-  sorry
+  rw [Polynomial.aeval_eq_sum_range, Matrix.sum_apply]
+  refine Finset.sum_eq_zero fun i hi => ?_
+  rw [Finset.mem_range] at hi
+  rw [Matrix.smul_apply, pow_apply_last_eq_zero hH i j (by omega), smul_zero]
 
 /-- **The corner entry of the last row of $p(\mathbf{H})$ is the product of subdiagonals**: for
 upper Hessenberg $\mathbf{H}$, monic $p$ of degree $k$ and the column $j$ with $j + k = n$,
