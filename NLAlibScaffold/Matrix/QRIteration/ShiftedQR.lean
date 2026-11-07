@@ -528,6 +528,32 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
       ‖WithLp.toLp 2 ((Polynomial.aeval H (shiftPoly ss))⁻¹ (Fin.last n))‖ ≤ 1 := by
   sorry
 
+/-- The first $j \le i$ steps of Givens QR leave row $i + 1$ alone. -/
+private theorem givensHessenbergState_snd_apply_of_eq_add_one {m p : ℕ}
+    (A : Matrix (Fin m) (Fin p) ℂ) {i j : ℕ} (hj : j ≤ i) {a : Fin m} (ha : (a : ℕ) = i + 1)
+    (b : Fin p) : (givensHessenbergState A j).2 a b = A a b := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [givensHessenbergState_succ_snd, givensHessenbergStep_mul_apply_of_ne _ _ (by omega)
+      (by omega)]
+    exact ih (by omega)
+
+/-- The first $j \le i$ steps of Givens QR keep the coordinates up to $i$ of a vector zero. -/
+private theorem givensHessenbergState_fst_mulVec_apply_eq_zero_of_le {m p : ℕ}
+    (A : Matrix (Fin m) (Fin p) ℂ) {v : Fin m → ℂ} {i : ℕ} (hv : ∀ a : Fin m, (a : ℕ) ≤ i → v a = 0)
+    {j : ℕ} (hj : j ≤ i) (a : Fin m) (ha : (a : ℕ) ≤ i) :
+    ((givensHessenbergState A j).1ᴴ *ᵥ v) a = 0 := by
+  induction j generalizing a with
+  | zero =>
+    simp only [givensHessenbergState, Matrix.conjTranspose_one, Matrix.one_mulVec]
+    exact hv a ha
+  | succ j ih =>
+    rw [conjTranspose_givensHessenbergState_succ_fst_mulVec]
+    exact (givensHessenbergStep_mul_apply_of_apply_eq_zero _
+      (Matrix.of fun i (_ : Unit) => ((givensHessenbergState A j).1ᴴ *ᵥ v) i) (b := ())
+      (fun a' ha' => ih (by omega) a' (by omega)) a).trans (ih (by omega) a ha)
+
 /-- **A zero subdiagonal entry persists under a shifted QR step**: for upper Hessenberg
 $\mathbf{H}$ with $\mathbf{H}_{i+1,i} = 0$ and any shift $s$, the step has
 $(\mathsf{shiftedQRStep}(\mathbf{H}, s))_{i+1,i} = 0$.
@@ -539,7 +565,52 @@ M, about 50 lines. -/
 theorem IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {i : Fin n}
     (hi : H i.succ i.castSucc = 0) (s : ℂ) : shiftedQRStep H s i.succ i.castSucc = 0 := by
-  sorry
+  set A := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hA
+  have hAH : IsUpperHessenberg A := fun a b hab => by
+    rw [hA, Matrix.sub_apply, Matrix.smul_apply,
+      Matrix.one_apply_ne (fun h => by rw [h] at hab; omega), smul_zero, sub_zero]
+    exact hH a b hab
+  have hAi : A i.succ i.castSucc = 0 := by
+    rw [hA, Matrix.sub_apply, Matrix.smul_apply,
+      Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, sub_zero, hi]
+  set Q := givensHessenbergQ A
+  set R := givensHessenbergR A
+  have hQR : Q * R = A := givensHessenbergState_fst_mul_snd A (n + 1)
+  have hQQ : Qᴴ * Q = 1 :=
+    (hasOrthonormalCols_givensHessenbergState_fst A (n + 1)).conjTranspose_mul_self
+  have hstep : shiftedQRStep H s = R * Q + s • 1 := by
+    change Qᴴ * H * Q = _
+    calc Qᴴ * H * Q = Qᴴ * (A + s • 1) * Q := by rw [hA, sub_add_cancel]
+      _ = (Qᴴ * Q) * R * Q + s • (Qᴴ * Q) := by
+        rw [← hQR]
+        simp only [Matrix.mul_add, Matrix.add_mul, Matrix.mul_smul, Matrix.smul_mul,
+          Matrix.mul_one, Matrix.mul_assoc]
+      _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
+  have key : ((givensHessenbergState A (n + 1)).1ᴴ *ᵥ Pi.single i.succ 1) i.castSucc = 0 := by
+    rw [(givensHessenbergState_apply_of_lt A _ (k := i + 1) (j := n + 1) (by omega)
+      (a := i.castSucc) (by simp)).2, conjTranspose_givensHessenbergState_succ_fst_mulVec,
+      givensHessenbergStep_of_lt _ (by omega) (by omega) (by omega),
+      givensHessenbergState_snd_apply_of_eq_add_one A le_rfl (a := ⟨i + 1, by omega⟩) rfl,
+      show (⟨i + 1, by omega⟩ : Fin (n + 1)) = i.succ from rfl,
+      show (⟨i, by omega⟩ : Fin (n + 1)) = i.castSucc from rfl, hAi, givensCoeffs_snd_zero,
+      givens_mulVec_apply_left (Fin.ne_of_val_ne (by simp)),
+      givensHessenbergState_fst_mulVec_apply_eq_zero_of_le A (i := i)
+        (fun a ha => Pi.single_eq_of_ne (Fin.ne_of_val_ne (by simp; omega)) _) le_rfl _ (by simp)]
+    ring
+  have hQ0 : Q i.succ i.castSucc = 0 := by
+    rw [Matrix.mulVec_single_one, Matrix.col_apply, Matrix.conjTranspose_apply,
+      star_eq_zero] at key
+    exact key
+  rw [hstep, Matrix.add_apply, Matrix.smul_apply,
+    Matrix.one_apply_ne (fun h => by simpa using congrArg Fin.val h), smul_zero, add_zero,
+    Matrix.mul_apply]
+  refine Finset.sum_eq_zero fun l _ => ?_
+  rcases lt_trichotomy (l : ℕ) (i + 1) with h | h | h
+  · rw [show R i.succ l = 0 from isUpperTrapezoidal_givensHessenbergR hAH i.succ l
+      (by simp; omega), zero_mul]
+  · rw [show l = i.succ from Fin.ext (by simp; omega), hQ0, mul_zero]
+  · rw [show Q l i.castSucc = 0 from isUpperHessenberg_givensHessenbergQ A l i.castSucc
+      (by simp; omega), mul_zero]
 
 /-- **A reduced Hessenberg matrix stays reduced under multi-shift QR steps**: for upper
 Hessenberg $\mathbf{H}$ with a zero subdiagonal entry, every
