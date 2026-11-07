@@ -43,6 +43,42 @@ theorem sq_mul_sq_sum_le_sum_mul_sq_mul_sum_filter {ι : Type*} (s : Finset ι) 
     (1 - t) ^ 2 * (∑ i ∈ s, w i * x i) ^ 2 ≤
       (∑ i ∈ s, w i * x i ^ 2) *
         ∑ i ∈ s.filter (fun i => t * ∑ j ∈ s, w j * x j < x i), w i := by
-  sorry
+  set m := ∑ j ∈ s, w j * x j with hm_def
+  have hm : 0 ≤ m := sum_nonneg fun i hi => mul_nonneg (hw i hi) (hx i hi)
+  set A := s.filter (fun i => t * m < x i) with hA_def
+  have hsplit : ∑ i ∈ s.filter (fun i => ¬ t * m < x i), w i * x i
+      + ∑ i ∈ A, w i * x i = m := by
+    rw [add_comm]
+    exact Finset.sum_filter_add_sum_filter_not s (fun i => t * m < x i) (fun i => w i * x i)
+  have hlow : ∑ i ∈ s.filter (fun i => ¬ t * m < x i), w i * x i ≤ t * m := by
+    have h1 : ∑ i ∈ s.filter (fun i => ¬ t * m < x i), w i * x i
+        ≤ ∑ i ∈ s.filter (fun i => ¬ t * m < x i), t * m * w i :=
+      Finset.sum_le_sum fun i hi => by
+        rw [Finset.mem_filter, not_lt] at hi
+        rw [mul_comm (w i)]
+        exact mul_le_mul_of_nonneg_right hi.2 (hw i hi.1)
+    rw [← Finset.mul_sum] at h1
+    have h2 : ∑ i ∈ s.filter (fun i => ¬ t * m < x i), w i ≤ 1 := by
+      have := Finset.sum_le_sum_of_subset_of_nonneg
+        (Finset.filter_subset (fun i => ¬ t * m < x i) s) (fun i hi _ => hw i hi)
+      linarith
+    nlinarith [mul_le_mul_of_nonneg_left h2 (mul_nonneg ht0 hm)]
+  have hlow' : (1 - t) * m ≤ ∑ i ∈ A, w i * x i := by linarith
+  have hCS : (∑ i ∈ A, w i * x i) ^ 2 ≤ (∑ i ∈ A, w i) * ∑ i ∈ A, w i * x i ^ 2 := by
+    refine Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul A
+      (fun i hi => hw i (Finset.mem_filter.1 hi).1)
+      (fun i hi => mul_nonneg (hw i (Finset.mem_filter.1 hi).1) (sq_nonneg _))
+      (fun i _ => le_of_eq (by ring))
+  have hsub : ∑ i ∈ A, w i * x i ^ 2 ≤ ∑ i ∈ s, w i * x i ^ 2 :=
+    Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
+      (fun i hi _ => mul_nonneg (hw i hi) (sq_nonneg _))
+  have hAw : 0 ≤ ∑ i ∈ A, w i := sum_nonneg fun i hi => hw i (Finset.mem_filter.1 hi).1
+  have hfin : (∑ i ∈ A, w i) * ∑ i ∈ A, w i * x i ^ 2
+      ≤ (∑ i ∈ A, w i) * ∑ i ∈ s, w i * x i ^ 2 :=
+    mul_le_mul_of_nonneg_left hsub hAw
+  have hsq := pow_le_pow_left₀ (mul_nonneg (by linarith) hm) hlow' 2
+  rw [mul_pow] at hsq
+  rw [mul_comm]
+  linarith
 
 end Finset
