@@ -483,6 +483,8 @@ meta def evalSchattenNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.schattenNorm 8 do throwError "failed"
     let pf ← mkAppM ``NLAlib.schattenNorm_nonneg #[e.appFn!.appArg!, e.appArg!]
     pure (.nonnegative pf)
 

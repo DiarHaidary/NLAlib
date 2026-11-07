@@ -448,6 +448,8 @@ meta def evalPseudoConditionNumber : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.pseudoConditionNumber 7 do throwError "failed"
     let pf ← mkAppM ``NLAlib.pseudoConditionNumber_nonneg #[e.appArg!]
     pure (.nonnegative pf)
 

@@ -525,8 +525,16 @@ meta def evalFrobNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.frobNorm 7 do throwError "failed"
     let pf ← mkAppM ``NLAlib.frobNorm_nonneg #[e.appArg!]
     pure (.nonnegative pf)
+
+/-! Regression: the extension must not panic on a let-bound variable. -/
+example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (G : Matrix m n 𝕜) :
+    0 ≤ NLAlib.frobNorm G := by
+  set g := NLAlib.frobNorm G
+  positivity
 
 end Mathlib.Meta.Positivity
 

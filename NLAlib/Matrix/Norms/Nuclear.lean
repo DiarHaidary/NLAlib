@@ -360,6 +360,8 @@ meta def evalNuclearNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.nuclearNorm 7 do throwError "failed"
     let pf ← mkAppM ``NLAlib.nuclearNorm_nonneg #[e.appArg!]
     pure (.nonnegative pf)
 
