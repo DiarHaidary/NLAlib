@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisection.Global
-public import NLAlibScaffold.Matrix.Computation.Deflation
+public import NLAlib.Matrix.Computation.Deflation
 public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 
 /-!
