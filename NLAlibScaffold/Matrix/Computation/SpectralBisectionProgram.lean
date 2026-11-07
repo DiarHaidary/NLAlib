@@ -147,7 +147,51 @@ theorem eighLoc_params {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
     (h : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y)) :
     y.R = (eighLevelParams M R₀ ε ℓ₀ a.length).1 ∧ y.ε = (eighLevelParams M R₀ ε ℓ₀ a.length).2 ∧
       y.ℓ = ℓ₀ + a.length := by
-  sorry
+  have key : ∀ (a : List Bool) (d lo : ℕ) (x y : EighNode F) (lo' : ℕ),
+      x.R = (eighLevelParams M R₀ ε ℓ₀ d).1 → x.ε = (eighLevelParams M R₀ ε ℓ₀ d).2 →
+      x.ℓ = ℓ₀ + d → eighLoc M N signFuel R₀ β d lo x a = some (lo', y) →
+      y.R = (eighLevelParams M R₀ ε ℓ₀ (d + a.length)).1 ∧
+        y.ε = (eighLevelParams M R₀ ε ℓ₀ (d + a.length)).2 ∧
+        y.ℓ = ℓ₀ + (d + a.length) := by
+    intro a
+    induction a with
+    | nil =>
+      intro d lo x y lo' hR hε hℓ h
+      simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, rfl⟩ := h
+      simp only [List.length_nil, Nat.add_zero]
+      exact ⟨hR, hε, hℓ⟩
+    | cons b a ih =>
+      intro d lo x y lo' hR hε hℓ h
+      have e : d + (b :: a).length = d + 1 + a.length := by simp only [List.length_cons]; omega
+      have hq : eighNextParams M x.R x.ε x.ℓ = eighLevelParams M R₀ ε ℓ₀ (d + 1) := by
+        rw [eighLevelParams, hR, hε, hℓ]
+      cases hs : eighStep M N signFuel R₀ β x.A x.R x.ε x.ℓ (eighTapeSample N d lo) with
+      | leaf U e' => simp [eighLoc, hs] at h
+      | shift b' A' σ =>
+        by_cases hb : b = b'
+        · subst hb
+          simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
+          obtain ⟨h1, h2, h3⟩ := ih (d + 1) lo _ y lo'
+            (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
+            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+          rw [e]; exact ⟨h1, h2, h3⟩
+        · simp [eighLoc, hs, hb] at h
+      | split kp h' Qp Qm Ap Am σ =>
+        cases b
+        · simp only [eighLoc, hs, Bool.false_eq_true, if_false] at h
+          obtain ⟨h1, h2, h3⟩ := ih (d + 1) (lo + kp) _ y lo'
+            (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
+            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+          rw [e]; exact ⟨h1, h2, h3⟩
+        · simp only [eighLoc, hs, if_true] at h
+          obtain ⟨h1, h2, h3⟩ := ih (d + 1) lo _ y lo'
+            (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
+            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+          rw [e]; exact ⟨h1, h2, h3⟩
+  obtain ⟨h1, h2, h3⟩ := key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo rfl rfl rfl h
+  rw [Nat.zero_add] at h1 h2 h3
+  exact ⟨h1, h2, h3⟩
 
 /-- **A child's slot**: the slot and node at the path $a ++ [b]$ are those of the child on side $b$
 of the node at $a$, at the slot $lo$ (one child, or the positive side of a split) or $lo + k_+$
