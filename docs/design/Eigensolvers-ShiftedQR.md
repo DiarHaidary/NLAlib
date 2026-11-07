@@ -1,6 +1,6 @@
 # Design note: global convergence of the Hessenberg shifted QR algorithm — potential, promising Ritz values, exceptional shifts (stage SHIFTED-QR)
 
-Status: design, no proofs; Fable review applied (second commit, §13). Branch `design/shifted-qr` (worktree `~/nlalib-design-sqr`, from
+Status: proved and moved into `NLAlib` (end of stage, §16, 2026-11-07). Earlier: design; Fable review applied (second commit, §13). Branch `design/shifted-qr` (worktree `~/nlalib-design-sqr`, from
 `origin/main` 0e9d7d6c). Decision sheet `~/nlalib-harness/state/decisions/SHIFTED-QR.json`
 (APPROVE, OQ1–OQ10; reviewer fields empty for Fable). Targets
 `~/nlalib-harness/pilot/shifted-qr-targets.json` (stage SQR-1, 50 statements). Board card T109.
@@ -596,3 +596,38 @@ succeeds with exactly 50 `declaration uses 'sorry'` warnings and nothing else; `
 `bin/check-skeleton --strict`: 50 targets, 0 names missing an import, 0 unresolved. Not run:
 `scripts/stage_check.sh` (the full suite; the machine was memory-bound by other jobs) and the
 extraction-based name check (N1–N18).
+
+## 16. End of stage (2026-11-07)
+
+**Proved.** All 50 SQR-1 statements are proved and in `NLAlib`. The scaffold library is gone, and
+`lakefile.toml` is main's again. `#print axioms` of M3, N1, D2, M1, E1, Q9, D1 and M5 gives
+`propext`, `Classical.choice` and `Quot.sound` only. 41 statements were proved by haiku, Q8 by
+opus after a haiku batch miss, and the eight L statements (D1, D2, E1, M1, M3, M5, P4, Q7) by
+opus. The elaborated types of the 112 public constants are unchanged by the clean-up. No
+statement was found false.
+
+**Files.** Statements sit after the definitions in `Matrix/QRIteration/{ShiftedQR,
+EigenvectorWeights, Ritz, Strategy}.lean`, in the new `Matrix/QRIteration/Dichotomy.lean` (D1,
+D2) and `ForMathlib/Analysis/MeanInequalities.lean` (W1). Q0 is in
+`Matrix/Factorizations/GivensHessenberg.lean`, and F1, F2, F2b, F6 are in
+`Matrix/Spectral/Diagonalizable.lean`. Strategy stayed under 1000 lines, so no
+`ExceptionalShifts.lean` split was needed (§6).
+
+**Unused hypotheses**, kept until the maintainer decides (each proof references them with
+`have _ := …`):
+- D1 `sum_lastRowWeights_mul_norm_eval_sq_sub_le`: `hgap` and `hβc`. The proof is pointwise, so
+  D1 holds without an eigenvalue gap.
+- R3 `IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: `hα` (Fable's note 10).
+
+**New public helpers** from the clean-up (14), which replace private copies:
+`isUnit_aeval_of_forall_eval_ne_zero`, `inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv`,
+`det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal`, `det_sub_smul_one_ne_zero_of_forall_ne`,
+`norm_le_specNorm_of_mul_eq_mul_diagonal` (Diagonalizable); `hessenbergPotential_nonneg`,
+`shiftPoly_monic_and_natDegree`, `norm_eval_shiftPoly`, `eval_shiftPoly_ne_zero`,
+`shiftPoly_append`, `aeval_shiftPoly_replicate`,
+`IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le` (ShiftedQR);
+`shiftPoly_ritzValues`, `sum_lastRowWeights_div_pow_le` (Ritz).
+
+**Model of computation.** As OQ2 decided: the `shqr*`, `shiftedQRStep` and `findRitz`
+definitions are specifications with no `Prog` and no cost claim, so there is no registry entry.
+SQR-2 proves the refinement (§9).

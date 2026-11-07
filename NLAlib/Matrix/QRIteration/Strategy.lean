@@ -791,9 +791,9 @@ theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
 /-- **The number of shifts tried per iteration**: for $B, \theta, \alpha \ge 1$,
 $0 < \gamma < 1$ and $m \ge 1$, the candidate list `NLAlib.shqrCandidates` has at most
 $1 + 12/\varepsilon^2$ entries, $\varepsilon$ = `NLAlib.exceptionalSpacing` $2^m$ $B$ $\theta$
-$\alpha$ $(1 - \gamma)^2$. Each candidate costs one degree $k$ QR step, besides the
-$2\log_2 k$ degree $k/2$ steps of `NLAlib.findRitz`. [BanksGarzaVargasSrivastava2021,
-Theorem 1.6, item 2], in count form. -/
+$\alpha$ $(1 - \gamma)^2$; each candidate is tested by one degree $k$ QR step
+(`NLAlib.IsShiftSuccess`). [BanksGarzaVargasSrivastava2021, Theorem 1.6, item 2], as a count of
+candidate shifts instead of arithmetic operations. -/
 theorem length_shqrCandidates_le {B θ α γ : ℝ} (hB : 1 ≤ B) (hθ : 1 ≤ θ) (hα : 1 ≤ α)
     (hγ0 : 0 < γ) (hγ1 : γ < 1) {m : ℕ} (hm : 1 ≤ m)
     (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (ss : List ℂ) :
@@ -884,11 +884,12 @@ Hessenberg, $k = 2^m$ with $m \ge 1$ and $k \le n$, and $0 < \gamma < 1$. With t
 values and $B = \theta = \alpha = 1$, the iteration $\mathrm{Sh}_{k,1}$ is $\delta$-decoupled
 at some
 $$t \le \Bigl\lceil\frac{\log(1/\delta)}{\log(1/(1 - \gamma))}\Bigr\rceil$$
-for every $\delta > 0$, trying at most $1 + 12/\varepsilon^2$ shifts per iteration with
-$\varepsilon = ((1 - \gamma)^2/14^{1/k})^{k/(k-1)}$. [BanksGarzaVargasSrivastava2021,
-Theorem 1.2] (Theorem 3.3 there for $k = 2$), which uses the separate strategy $\mathrm{Sh}_{2,1}$
-with a quadratic shift $(z - r)^2$ and whose exceptional-shift count does not reduce the
-potential as printed (gap G1); here as the case $B = 1$ of the general strategy.
+for every $\delta > 0$; by `NLAlib.length_shqrCandidates_le` each iteration tries at most
+$1 + 12/\varepsilon^2$ shifts, $\varepsilon = ((1 - \gamma)^2/14^{1/k})^{k/(k-1)}$.
+[BanksGarzaVargasSrivastava2021, Theorem 1.2] (Theorem 3.3 there for $k = 2$), which uses the
+separate strategy $\mathrm{Sh}_{2,1}$ with a quadratic shift $(z - r)^2$ and whose
+exceptional-shift count does not reduce the potential as printed (gap G1); here as the case
+$B = 1$ of the general strategy.
 Result: shifted-qr-normal-decoupling -/
 theorem _root_.IsStarNormal.exists_le_isDecoupled_shqrIterate_ritzValues
     {H₀ : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hN : IsStarNormal H₀)
