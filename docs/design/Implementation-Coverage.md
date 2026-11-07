@@ -439,6 +439,9 @@ columns or returns a certified matrix-function vector.
 
 ## Proposal review, 2026-11-04
 
+The `proposals/krylov/` drafts named here were removed once the library held their
+counterparts; `git log -- proposals` finds them.
+
 `proposals/krylov/ConjugateGradient.lean` fixes a guarded, square-root-free,
 stored-matrix CG tree and defines `StoredEntriesConjugateGradient`.
 `proposals/krylov/Lanczos.lean` fixes Paige-order stored-matrix Lanczos and defines
