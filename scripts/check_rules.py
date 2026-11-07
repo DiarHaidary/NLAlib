@@ -1446,7 +1446,7 @@ COMPUTATION = 'NLAlib/Computation'
 # kernels and the implementations.
 NAMED_FILES = tuple(f'{COMPUTATION}/{f}.lean' for f in
                     ('Syntax', 'Exec', 'Subst', 'Compile', 'FirstOrder', 'BLAS', 'Dense',
-                     'Sparse'))
+                     'Sparse', 'NonInterference'))
 NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.named\b|'
                       r'(?<![\w.])named\s+"')
 
