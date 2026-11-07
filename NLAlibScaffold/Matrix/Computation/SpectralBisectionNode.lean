@@ -2921,11 +2921,11 @@ private theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk :
 
 /-- The cells a node step at the slot $lo$ of depth $d$ for a node of size $k$ may write in the
 arenas. -/
-private def nodeWin (H : EighArenas) (n d lo k b i : ℕ) : Prop :=
+private def nodeWin (H : EighArenas) (n d lo k j b i : ℕ) : Prop :=
   (b = H.Qa ∧ 2 * (n * n) * d + 2 * n * lo ≤ i ∧ i < 2 * (n * n) * d + 2 * n * (lo + k)) ∨
     (b = H.Ma ∧ 2 * (n * n) * (d + 1) + 2 * n * lo ≤ i ∧
       i < 2 * (n * n) * (d + 1) + 2 * n * (lo + k)) ∨
-    (b = H.Sz ∧ n * (d + 1) + lo ≤ i ∧ i < n * (d + 1) + lo + k) ∨
+    (b = H.Sz ∧ (i = n * (d + 1) + lo ∨ i = n * (d + 1) + j)) ∨
     ((b = H.Kd ∨ b = H.Kp) ∧ i = n * d + lo)
 
 omit [Inhabited K] in
@@ -2999,7 +2999,7 @@ private theorem split_body_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLay
       st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
       st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
       st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
-      (∀ q b i, b < s₀ → ¬ (b = sq.buf ∧ i = sq.idx.eval) → ¬ nodeWin H n d lo k b i →
+      (∀ q b i, b < s₀ → ¬ (b = sq.buf ∧ i = sq.idx.eval) → ¬ nodeWin H n d lo k (lo + kp) b i →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M s Qp Qm
@@ -3400,7 +3400,7 @@ private theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
       st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
       st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
       st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
-      (∀ q b i, ¬ (b = sq.buf ∧ i = sq.idx.eval) → ¬ nodeWin H n d lo k b i →
+      (∀ q b i, ¬ (b = sq.buf ∧ i = sq.idx.eval) → ¬ nodeWin H n d lo k (lo + kp) b i →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M s Qp Qm
@@ -3985,7 +3985,8 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
       st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
       st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
-    (∀ q b i, b < s₀ → ¬ nodeWin H n d lo k b i → st'.store.read q b i = st.store.read q b i) ∧
+    (∀ q b i, b < s₀ → ¬ nodeWin H n d lo k (if 0 < kp ∧ kp < k then lo + kp else lo) b i →
+      st'.store.read q b i = st.store.read q b i) ∧
     st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M kp
   simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
@@ -4034,7 +4035,7 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       pairLayout.Holds σ₂.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo) (M.hermShift A sv) ∧
         σ₂.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
         σ₂.store.read p H.Kd (n * d + lo) = I.sem.lit p ((code : ℕ) : ℚ) ∧
-        (∀ q b i, b < s₀ → ¬ nodeWin H n d lo k b i →
+        (∀ j q b i, b < s₀ → ¬ nodeWin H n d lo k j b i →
           σ₂.store.read q b i = st.store.read q b i) ∧
         σ₂.store.shape = st.store.shape ∧ σ₂.pos = σ₁.pos := by
     intro sg code σ₁ σ₂ sv hs hsg hsv hex
@@ -4059,7 +4060,7 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     rw [hbo1] at hM
     rw [hso1] at hsz
     rw [hso] at hkd
-    refine ⟨hM, hsz, hkd, fun q b i hb hW => ?_, hsh.trans (by rw [hs]), hps⟩
+    refine ⟨hM, hsz, hkd, fun j q b i hb hW => ?_, hsh.trans (by rw [hs]), hps⟩
     simp only [nodeWin, not_or, not_and, not_lt] at hW
     obtain ⟨-, hWM, hWS, hWK⟩ := hW
     rw [hfr q b i ?_ ?_ ?_, hs]
@@ -4091,8 +4092,8 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     have e3' := loop_zero_node (by rw [E3, hkk, Nat.sub_self, Nat.mul_zero]) h'
     subst e2' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := hchild ⟨t, 0⟩ 2 e1 rfl (by rw [e1]; exact ht0) h1
-    refine ⟨fun _ => ⟨hM, hsz, hkd⟩, fun h0 => by omega, fun _ h' => by omega, hfr, hsh,
-      hps.trans e2⟩
+    refine ⟨fun _ => ⟨hM, hsz, hkd⟩, fun h0 => by omega, fun _ h' => by omega,
+      fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   rcases Nat.eq_zero_or_pos (min v k) with hz | hpos
   · -- one child on the negative side
     have e1' := loop_zero_node (by rw [E1]; omega) ha
@@ -4100,8 +4101,8 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     have e3' := loop_zero_node (by rw [E3, hz, Nat.zero_mul]) h'
     subst e1' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := hchild ⟨t, 1⟩ 3 e1 rfl (by rw [e1]; exact ht1) h2
-    refine ⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega, hfr, hsh,
-      hps.trans e2⟩
+    refine ⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega,
+      fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   · -- a split
     have e1' := loop_zero_node (by rw [E1]; omega) ha
     have e2' := loop_zero_node (by rw [E2]; omega) hb
@@ -4154,7 +4155,8 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       hsh.trans (by rw [e1]), hps.trans e2⟩
     · rw [hkp]
       exact ⟨q1, q2, q3, q4, q5, q6, q7, q8⟩
-    · rw [hfr q b i (fun h' => by have := h'.1; simp only at this; omega) hW, e1]
+    · rw [if_pos (by rw [hkp]; exact ⟨hpos, hlt'⟩), hkp] at hW
+      rw [hfr q b i (fun h' => by have := h'.1; simp only at this; omega) hW, e1]
 
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
 /-- The arenas stay allocated under a push. -/
@@ -4242,7 +4244,11 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
             i < 2 * (n * n) * d + 2 * n * (lo + k)) ∨
           (b = H.Ma ∧ 2 * (n * n) * (d + 1) + 2 * n * lo ≤ i ∧
             i < 2 * (n * n) * (d + 1) + 2 * n * (lo + k)) ∨
-          (b = H.Sz ∧ n * (d + 1) + lo ≤ i ∧ i < n * (d + 1) + lo + k) ∨
+          (b = H.Sz ∧ n * (d + 1) + lo ≤ i ∧ i < n * (d + 1) + lo + k ∧
+            (i = n * (d + 1) + lo ∨
+              match eighStep M n F R₀ β A R ε (ℓ₀ + d) (eighTapeSample n d lo) with
+              | .split kp _ _ _ _ _ _ => i = n * (d + 1) + (lo + kp)
+              | _ => False)) ∨
           ((b = H.Kd ∨ b = H.Kp) ∧ i = n * d + lo)) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
@@ -4354,7 +4360,29 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
         (hpop (hsz hSz)).trans x5, (hpop (hsz hSz)).trans x6, (hpop (hsz hKd)).trans x7,
         (hpop (hsz hKp)).trans x8⟩
   · by_cases hb : b < st.store.size
-    · exact (hpop hb).trans ((Bfr q b i hb hW).trans ((hlo q b i hb).trans (hrd hb)))
+    · refine (hpop hb).trans ((Bfr q b i hb ?_).trans ((hlo q b i hb).trans (hrd hb)))
+      have hRt : M.le R (M.mul ε R₀) = false := hRtest
+      intro hN
+      apply hW
+      unfold nodeWin at hN
+      rcases hN with h1 | h1 | ⟨hbS, hi⟩ | h1
+      · exact Or.inl h1
+      · exact Or.inr (Or.inl h1)
+      · refine Or.inr (Or.inr (Or.inl ⟨hbS, ?_⟩))
+        split_ifs at hi with hc
+        · rcases hi with rfl | rfl
+          · exact ⟨by omega, by omega, Or.inl rfl⟩
+          · refine ⟨by omega, by omega, Or.inr ?_⟩
+            unfold eighStep
+            dsimp only
+            split_ifs with h0 hle h1 h2
+            · omega
+            · exact absurd hle (by rw [hRt]; decide)
+            · exact absurd h1 (Nat.ne_of_lt hc.2)
+            · exact absurd h2 (Nat.pos_iff_ne_zero.mp hc.1)
+            · rfl
+        · rcases hi with rfl | rfl <;> exact ⟨by omega, by omega, Or.inl rfl⟩
+      · exact Or.inr (Or.inr (Or.inr h1))
     · have hsz'' : (Array.pop^[7] s₇.store).size = st.store.size := by
         simp only [Function.iterate_succ_apply', Function.iterate_zero_apply, Array.size_pop,
           hs7]
@@ -4439,7 +4467,7 @@ theorem holds_of_exec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pair
     k hk hk2 H hd hH hbufs hA hR hRtest hpar hSu hSg hc h
   refine ⟨hstep, fun q b i h1 h2 => hfr q b i fun hW => ?_, hsh, hps⟩
   have hlok : n * (lo + k) ≤ n * n := Nat.mul_le_mul_left _ hk
-  rcases hW with ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2⟩ | ⟨hb, rfl⟩
+  rcases hW with ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2, -⟩ | ⟨hb, rfl⟩
   · exact h1 (Or.inl ⟨Or.inr (Or.inr rfl), by linarith [Nat.zero_le (n * lo)],
       by linarith⟩)
   · exact h2 (Or.inl ⟨Or.inl rfl, by linarith [Nat.zero_le (n * lo)], by linarith⟩)
