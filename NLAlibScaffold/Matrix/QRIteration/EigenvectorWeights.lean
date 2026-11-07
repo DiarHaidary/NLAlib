@@ -155,6 +155,51 @@ theorem norm_mul_diagonal_mul_inv_last_sq_le {V : Matrix (Fin (n + 1)) (Fin (n +
     (hV : IsUnit V) (g : Fin (n + 1) → ℂ) :
     ‖WithLp.toLp 2 ((V * Matrix.diagonal g * V⁻¹) (Fin.last n))‖ ^ 2 ≤
       pseudoConditionNumber V ^ 2 * ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 := by
-  sorry
+  have vm : ∀ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (u : Fin (n + 1) → ℂ),
+      ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
+    intro A u
+    have h := norm_toLp_mulVec_le Aᵀ u
+    rwa [specNorm_transpose, Matrix.mulVec_transpose] at h
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hrow : V (Fin.last n) ≠ 0 := by
+    intro h
+    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
+    exact not_isUnit_zero hdet
+  have hD : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
+    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
+      intro h; apply hrow; simpa using congrArg WithLp.ofLp h
+    have := norm_ne_zero_iff.mpr this
+    positivity
+  set D := ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 with hDdef
+  set T := ∑ i, lastRowWeights V i * ‖g i‖ ^ 2 with hTdef
+  have hT : 0 ≤ T :=
+    Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (sq_nonneg _)
+  set e : Fin (n + 1) → ℂ := Pi.single (Fin.last n) 1 with he_def
+  have hr : e ᵥ* V = V (Fin.last n) := by
+    ext j; simp [he_def, Matrix.vecMul, dotProduct, Pi.single_apply]
+  have he1 : ‖WithLp.toLp 2 e‖ = 1 := by simp [he_def]
+  have hrowle : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≤ specNorm V := by
+    have h := vm V e
+    rwa [hr, he1, mul_one] at h
+  have hDle : D ≤ specNorm V ^ 2 := pow_le_pow_left₀ (norm_nonneg _) hrowle 2
+  set y : Fin (n + 1) → ℂ := fun k => V (Fin.last n) k * g k with hy_def
+  have hrowW : (V * Matrix.diagonal g * V⁻¹) (Fin.last n) = y ᵥ* V⁻¹ := by
+    ext j
+    simp [Matrix.mul_apply, Matrix.vecMul, dotProduct, Matrix.diagonal_apply, hy_def,
+      mul_assoc]
+  have hS : ‖WithLp.toLp 2 y‖ ^ 2 = D * T := by
+    rw [EuclideanSpace.norm_sq_eq, hDdef, hTdef, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    unfold lastRowWeights
+    have hn : ‖WithLp.toLp 2 (V (Fin.last n))‖ ≠ 0 := fun h => hD (by rw [hDdef, h]; ring)
+    simp [hy_def, mul_pow]
+    field_simp
+  have hL := vm V⁻¹ y
+  rw [← hrowW] at hL
+  have hL2 := pow_le_pow_left₀ (norm_nonneg _) hL 2
+  rw [mul_pow, hS] at hL2
+  rw [pseudoConditionNumber_of_isUnit hV, mul_pow]
+  nlinarith [mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hDle hT)
+    (sq_nonneg (specNorm V⁻¹))]
 
 end NLAlib
