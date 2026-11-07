@@ -986,6 +986,24 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   sorry
 
+/-- A successful index-literal instruction writes the literal and changes only its cell. -/
+private theorem exec_ins_litIdx_read (p : P) (e : IExp ℕ) (c' : Cell ℕ ℕ) {σ₀ σ : St P K C}
+    (hσ : exec I (ins (.litIdx p c' e) : Builder P ι ℕ ℕ Unit).run σ₀ = some σ) :
+    σ.store.read p c'.buf c'.idx.eval = I.sem.lit p (e.eval : ℚ) ∧
+      (∀ q b i, ¬(b = c'.buf ∧ i = c'.idx.eval) → σ.store.read q b i = σ₀.store.read q b i) ∧
+      σ.store.shape = σ₀.store.shape ∧ σ.pos = σ₀.pos := by
+  change exec I (.seq (.instr (.litIdx p c' e)) .skip) σ₀ = some σ at hσ
+  rcases hv : I.sem.lit p (e.eval : ℚ) with _ | v
+  · simp [exec_seq, exec_instr, Instr.run, hv] at hσ
+  rcases hw : σ₀.store.write p c'.buf c'.idx.eval v with _ | s
+  · simp [exec_seq, exec_instr, Instr.run, hv, hw] at hσ
+  rw [exec_seq_instr_litIdx I hv hw, exec_skip] at hσ
+  injection hσ with hσ
+  subst hσ
+  refine ⟨?_, fun q b i hne => ?_, Store.shape_of_write_eq_some hw, rfl⟩
+  · exact Store.read_of_write_eq_some hw
+  · exact Store.read_of_write_eq_some_of_ne hw (not_and_or.mp hne)
+
 /-- **One child on the same slot**: a successful run of `NLAlib.eighChildBlock` for a node of size
 $k$ whose matrix $\mathbf{A}$ is held at `mo` of `Ma`, the cell `sg` holding $\sigma$, ends with the
 block at `mo'` of `Ma` (disjoint from the one at `mo`) holding `M.hermShift A σ`, the size cell the
@@ -1014,7 +1032,40 @@ theorem holds_of_exec_eighChildBlock (p : P) (k : ℕ) {Ma : ℕ} {mo mo' : IExp
         blockDisjoint (b, i, 1) (kd.buf, kd.idx.eval, 1) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  unfold eighChildBlock at h
+  rw [exec_run_bind I (b := zhermShift (ι := ι) p (.const k) Ma mo sg Ma mo') (fun _ => rfl)] at h
+  obtain ⟨σ1, h1, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hM, hf1, hsh1, hp1⟩ := holds_of_exec_zhermShift p k hA hσ hAA hsg h1
+  rw [exec_run_bind I (b := ins (.litIdx p sz (.const k))) (fun _ => rfl)] at h
+  obtain ⟨σ2, h2, h⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨rsz, hf2, hsh2, hp2⟩ := exec_ins_litIdx_read p _ _ h2
+  obtain ⟨rkd, hf3, hsh3, hp3⟩ := exec_ins_litIdx_read p _ _ h
+  have hszb : ∀ {b i : ℕ}, blockDisjoint (b, i, 1) (sz.buf, sz.idx.eval, 1) = true →
+      ¬(b = sz.buf ∧ i = sz.idx.eval) := by
+    intro b i hbs ⟨hb, hi⟩
+    subst hb; subst hi
+    simp [blockDisjoint] at hbs
+  have hkdb : ∀ {b i : ℕ}, blockDisjoint (b, i, 1) (kd.buf, kd.idx.eval, 1) = true →
+      ¬(b = kd.buf ∧ i = kd.idx.eval) := by
+    intro b i hbs ⟨hb, hi⟩
+    subst hb; subst hi
+    simp [blockDisjoint] at hbs
+  have hszkd' : ¬(sz.buf = kd.buf ∧ sz.idx.eval = kd.idx.eval) := fun ⟨h1, h2⟩ => by
+    simp [blockDisjoint, h1, h2] at hszkd
+  have hw : (pairLayout : EntryLayout K (K × K)).width = 2 := rfl
+  have hMst : pairLayout.Holds st'.store p Ma mo'.eval
+      ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift A σ) :=
+    EntryLayout.Holds.of_forall_read_eq hM fun i _ h2 => by
+      rw [hw] at h2
+      rw [hf3 _ _ _ (fun ⟨hb, hi⟩ => by subst hb; subst hi; simp [blockDisjoint] at hkd; omega),
+        hf2 _ _ _ (fun ⟨hb, hi⟩ => by subst hb; subst hi; simp [blockDisjoint] at hsz; omega)]
+  refine ⟨hMst, ?_, ?_, fun q b i hb1 hb2 hb3 => ?_, ?_, ?_⟩
+  · rw [hf3 _ _ _ hszkd']
+    simpa using rsz
+  · simpa using rkd
+  · rw [hf3 q b i (hkdb hb3), hf2 q b i (hszb hb2), hf1 q b i hb1]
+  · rw [hsh3, hsh2, hsh1]
+  · rw [hp3, hp2, hp1]
 
 /-- **Randomized deflation on stored samples computes `NLAlib.deflate`**: if kernels `mm`, `qr` of
 `I` are the routines `mmR`, `qrR` on interleaved pairs, a successful run of
