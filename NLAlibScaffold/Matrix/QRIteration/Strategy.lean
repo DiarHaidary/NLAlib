@@ -301,7 +301,10 @@ theorem specNorm_shqrIterate (B θ α γ : ℝ) (m : ℕ)
     (ritz : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ → List ℂ)
     (H₀ : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (t : ℕ) :
     specNorm (shqrIterate B θ α γ m ritz H₀ t) = specNorm H₀ := by
-  sorry
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    simp only [shqrIterate, shqrStep, specNorm_multiShiftedQRStep, ih]
 
 /-- **The iterates of $\mathrm{Sh}_{k,B}$ keep the eigenvector condition number**: if
 $\mathbf{H}_0\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$
