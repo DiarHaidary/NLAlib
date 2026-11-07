@@ -329,14 +329,16 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
     exact ⟨r, hr, Or.inl h⟩
   push Not at hdet
   have hκ1 : 1 ≤ κ := one_le_pseudoConditionNumber hV.ne_zero
-  have hx0 : 0 < x := by positivity
+  -- explicit terms: `positivity` on the `set` atom `κ` trips the norm extensions
+  have hK : 0 < 2 * κ ^ 4 := mul_pos two_pos (pow_pos (by linarith) 4)
+  have hx0 : 0 < x := Real.rpow_pos_of_pos hK _
   have hθ0 : 0 < θ := hx0.trans hθ
   have hc : 0 < c := by
     have := (one_lt_div hx0).mpr hθ
     rw [hc_def]; linarith
   have hx2k : x ^ (2 * k) = 2 * κ ^ 4 := by
     rw [hx_def, show (2 * k : ℝ) = ((2 * k : ℕ) : ℝ) by push_cast; ring]
-    exact Real.rpow_inv_natCast_pow (by positivity) (by omega)
+    exact Real.rpow_inv_natCast_pow hK.le (by omega)
   have hψ0 : 0 ≤ ψ := hessenbergPotential_nonneg _ _
   -- the shifts `rs` are no eigenvalues
   have hdr : ∀ r ∈ rs, ∀ i, d i ≠ r := by
