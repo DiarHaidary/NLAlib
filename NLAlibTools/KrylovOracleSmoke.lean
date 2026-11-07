@@ -68,6 +68,7 @@ theorem cgBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | convert p q => cases p; cases q; simp [cgBudget, cgOracleCount]
   | lit p | cmp p | copy p | rom p => cases p; simp [cgBudget, cgOracleCount]
   | load p o | matvec p o => cases p; cases o; simp [cgBudget, cgOracleCount]
+  | kcall p o ds => cases p; cases o; simp [cgBudget, cgOracleCount]
 
 /-- The executable Lanczos budget equals the formula in the approved target. -/
 theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
@@ -80,6 +81,7 @@ theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | convert p q => cases p; cases q; simp [lanczosBudget, lanczosOracleCount]
   | lit p | cmp p | copy p | rom p => cases p; simp [lanczosBudget, lanczosOracleCount]
   | load p o | matvec p o => cases p; cases o; simp [lanczosBudget, lanczosOracleCount]
+  | kcall p o ds => cases p; cases o; simp [lanczosBudget, lanczosOracleCount]
 
 /-- Execute the compiled CG tree and check all five declared buffers and the approved budgets. -/
 def cgCase (rom b : Array Float) (q : Nat) (x r p : Array Float) (status : Float) : Bool :=

@@ -160,7 +160,8 @@ the counts and the bit peak. -/
 def fxRuns :
     Option ((Option ℤ × (ℕ × ℕ × ℕ × ℕ) × ℕ) × (Option ℤ × (ℕ × ℕ × ℕ × ℕ) × ℕ)) := do
   let a ← exec (fxInterp fxSem) fxDot (fxState fxBufs)
-  let w ← exec (fxInterp wordSem) (fxDot.subst fxImpl fun _ _ _ _ _ _ _ => .skip)
+  let w ← exec (fxInterp wordSem) (fxDot.subst fxImpl (fun _ _ _ _ _ _ _ => .skip)
+      fun _ _ _ _ _ => .skip)
     (fxState fxBufs)
   some ((a.store.read .fx 2 0, a.cnt, a.peakW), (w.store.read .fx 2 0, w.cnt, w.peakW))
 
@@ -186,7 +187,8 @@ def fxOpsRuns : Option ((List (Option ℤ) × (ℕ × ℕ × ℕ × ℕ) × ℕ)
   let out (st : St FxTag ℤ (ℕ × ℕ × ℕ × ℕ)) := [st.store.read .fx 2 0, st.store.read .fx 2 1,
     st.store.read .fx 2 2, st.store.read .fx 0 0]
   let a ← exec (fxInterp fxSem) fxOps (fxState fxOpsBufs)
-  let w ← exec (fxInterp wordSem) (fxOps.subst fxImpl fun _ _ _ _ _ _ _ => .skip)
+  let w ← exec (fxInterp wordSem) (fxOps.subst fxImpl (fun _ _ _ _ _ _ _ => .skip)
+      fun _ _ _ _ _ => .skip)
     (fxState fxOpsBufs)
   some ((out a, a.cnt, a.peakW), (out w, w.cnt, w.peakW))
 
