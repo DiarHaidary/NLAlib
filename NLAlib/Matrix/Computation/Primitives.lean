@@ -50,6 +50,7 @@ $\tau > 0$ (§12 of the note).
 
 * `NLAlib.exists_floatMachine_isAccurate`: the exact machine.
 * `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound`: a bounded-format machine.
+* `NLAlib.abs_sub_binaryFloatRound_le_mul_max`: binary rounding with a floor, at every scale.
 * `NLAlib.IsMatMulErr.of_specNorm_mul_sub_le_add`: from a mixed bound to the floor form.
 -/
 
@@ -334,7 +335,7 @@ theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (h�
 
 /-- Binary rounding errs by at most $u\max(\lvert x\rvert, \tau)$ at every scale, with
 $u = 2^{-p}$ and $\tau = 2^{e_{\min} + p - 1}$ (no overflow in the quantizer). -/
-private theorem abs_sub_binaryFloatRound_le_mul_max (fmt : Float.Model.Format) {r : ℝ → ℤ}
+theorem abs_sub_binaryFloatRound_le_mul_max (fmt : Float.Model.Format) {r : ℝ → ℤ}
     (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
     |x - Computation.binaryFloatRound fmt r x| ≤
       (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
