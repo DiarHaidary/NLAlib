@@ -21,6 +21,27 @@ program, written as a tree, is false, so it cannot be built.
   an entry of the matrix with probability $1/2$ at least. A tail whose conclusion is not
   `RunsWithin` (gap 1) is not a registered target, and the target lint flags it.
 
+Model-hardening fixtures (`docs/design/Computation-Hardening.md`, §2.1), on the kernel calls, the
+uniform tape and the rounded models:
+
+* `not_matrixFreeRoundedProb_kcallTree` (K1): a kernel sees only its declared input blocks; a
+  copy kernel on the first cell cannot return the second.
+* `not_matrixFreeRoundedProb_kcallAliasTree` (K2): an aliased kernel call (output block overlapping
+  an input block) fails, so a target that relies on an in-place call is false.
+* `not_matrixFreeRoundedProb_kcallTree_exactKernel` (K3): the model quantifies over every kernel
+  meeting the contract, so a program correct only for the exact kernel fails the target.
+* `not_runsWithin_kcallTree_zero` (K4): a kernel call is charged at its kind and dimensions; a
+  budget without it is false.
+* `not_matrixFreeProb_uniformTree` (U1), `not_matrixFreeRoundedProb_uniformTree` (U2): a uniform draw
+  cannot leak a declared input, in the exact model (the law of the tape is fixed) and in the
+  rounded model (neither `ρOK` nor `Contracts` can mention the input, even with the strongest tape
+  contract).
+* `not_matrixFreeRoundedProb_thirdTree` (R1): the rounded model quantifies over every semantics
+  meeting the standard model, so a program correct only under exact arithmetic is false.
+* `runsWithin_scratchTree_emptySt` (H1, the trap, true today): from a state without its declared
+  buffer a program's scratch takes the output's handle and the run succeeds with the output gone.
+  It becomes `¬ …` with the `Prog.RunsWithin` change of Stage 2b.
+
 Run with `lake env lean scripts/AccessModelFixtures.lean` after `lake build NLAlib`. -/
 
 namespace AccessModelFixtures
@@ -176,5 +197,251 @@ theorem not_matrixFreeProb_drawTree :
     simp [hω] at hpost
   rw [measureReal_rademacher_eq_one] at key
   norm_num at key
+
+
+/-! ### Kernel calls, uniform draws and the rounded models -/
+
+/-- An interpretation with one kernel `k` of shape `sh` (every kernel name), exact arithmetic. -/
+noncomputable def kInterp (k : List ℕ → List (Array ℝ) → Option (List (Array ℝ)))
+    (sh : List ℕ → List ℕ × List ℕ) : Interp Unit Unit ℝ (OpCount Unit Unit) :=
+  { exactInterp (P := Unit) (ι := Unit) (fun _ => (0 : Matrix (Fin 0) (Fin 0) ℝ)) (fun _ _ => 0) with
+    kernel := fun _ => k, kshape := fun _ => sh }
+
+/-- The copy kernel on one cell. -/
+def copyKernel : List ℕ → List (Array ℝ) → Option (List (Array ℝ))
+  | _, [xs] => some [xs]
+  | _, _ => none
+
+/-- A kernel call that reads the first cell of buffer 0 and writes the first cell of buffer 1. -/
+def kcallTree : Prog Unit Unit 0 2 := .kcall () () [] [(0, .const 0)] [(1, .const 0)]
+
+/-- An in-place kernel call: output block = input block. -/
+def kcallAliasTree : Prog Unit Unit 0 1 := .kcall () () [] [(0, .const 0)] [(0, .const 0)]
+
+/-- A probability measure gives the whole space measure one, so a bound $0$ on the measure of a
+set that contains every point is false. -/
+theorem false_of_forall_mem {Ω : Type} [MeasurableSpace Ω] {μ : Measure Ω} [IsProbabilityMeasure μ]
+    {S : Set Ω} (hS : ∀ ω, ω ∈ S) (h : μ.real S ≤ 0) : False := by
+  rw [Set.eq_univ_of_forall hS] at h
+  simp [measureReal_def] at h
+  exact absurd h (by norm_num)
+
+/-- The copy-kernel contract on one cell. -/
+def IsCopyKernel (I : Interp Unit Unit ℝ (OpCount Unit Unit)) : Prop :=
+  I.kshape () [] = ([1], [1]) ∧ ∀ xs, I.kernel () [] [xs] = some [xs]
+
+/-- K1: a kernel sees only its declared input block. -/
+theorem not_matrixFreeRoundedProb_kcallTree :
+    ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallTree (fun _ _ => True)
+      (fun _ _ => ℝ × ℝ) (fun _ _ x => ![#[some x.1, some x.2], Array.replicate 1 none])
+      (fun _ _ I => IsCopyKernel I) (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ x st => st.store.read () 1 0 = some x.2) (fun _ _ _ => 0) := by
+  intro h
+  refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial ((0 : ℝ), (1 : ℝ)) trivial
+    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) ⟨rfl, fun _ => rfl⟩ trivial
+    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨st, hrun, hgood⟩
+  simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
+    blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
+    Store.write, copyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList, Array.toList_range,
+    List.range_one] at hrun
+  subst hrun
+  simp [Store.read] at hgood
+
+/-- K2: an aliased (in-place) kernel call fails, so a target that relies on it is false. -/
+theorem not_matrixFreeRoundedProb_kcallAliasTree :
+    ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallAliasTree (fun _ _ => True)
+      (fun _ _ => ℝ) (fun _ _ x => ![#[some x]])
+      (fun _ _ I => IsCopyKernel I) (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ x st => st.store.read () 0 0 = some x) (fun _ _ _ => 0) := by
+  intro h
+  refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial (0 : ℝ) trivial
+    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) ⟨rfl, fun _ => rfl⟩ trivial
+    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨st, hrun, -⟩
+  exact absurd hrun (by
+    simp [kcallAliasTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, kcallBlocks,
+      blockDisjoint, IExp.evalIn])
+
+/-- A doubling kernel with relative error at most `1/4`. -/
+def IsDoublingKernel (I : Interp Unit Unit ℝ (OpCount Unit Unit)) : Prop :=
+  I.kshape () [] = ([1], [1]) ∧
+    ∀ v : ℝ, ∃ w, I.kernel () [] [#[v]] = some [#[w]] ∧ |w - 2 * v| ≤ |2 * v| / 4
+
+/-- A doubling kernel that errs by `+1/4` relatively. -/
+noncomputable def sloppyKernel : List ℕ → List (Array ℝ) → Option (List (Array ℝ))
+  | _, [xs] => some [xs.map fun v => 2 * v * (5 / 4)]
+  | _, _ => none
+
+/-- K3: a program correct only for the exact kernel fails a target that quantifies over every
+kernel meeting the contract. -/
+theorem not_matrixFreeRoundedProb_kcallTree_exactKernel :
+    ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallTree (fun _ _ => True)
+      (fun _ _ => ℝ) (fun _ _ x => ![#[some x], Array.replicate 1 none])
+      (fun _ _ I => IsDoublingKernel I) (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ x st => st.store.read () 1 0 = some (2 * x)) (fun _ _ _ => 0) := by
+  intro h
+  have hK : IsDoublingKernel (kInterp sloppyKernel (fun _ => ([1], [1]))) := by
+    refine ⟨rfl, fun v => ⟨2 * v * (5 / 4), by simp [kInterp, sloppyKernel], ?_⟩⟩
+    rw [show 2 * v * (5 / 4) - 2 * v = (2 * v) / 4 by ring, abs_div]
+    norm_num
+  refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial (1 : ℝ) trivial
+    _ (fun _ _ x => x) hK trivial (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨st, hrun, hgood⟩
+  simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
+    blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
+    Store.write, sloppyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList,
+    Array.toList_range, List.range_one] at hrun
+  subst hrun
+  simp [Store.read] at hgood
+  norm_num at hgood
+
+/-- K4: a kernel call is charged, once, at its kind and dimensions: a budget of no operations is
+false. -/
+theorem not_runsWithin_kcallTree_zero (m : Unit → ℕ) (Q : St Unit ℝ (OpCount Unit Unit) → Prop) :
+    ¬ kcallTree.RunsWithin (kInterp copyKernel (fun _ => ([1], [1]))) 1 (fun _ => 0)
+      (inputState () [#[some (0 : ℝ), some 1], Array.replicate 1 none]) 0 m Q := by
+  rintro ⟨st, hrun, hcnt, -, -⟩
+  simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
+    blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
+    Store.write, copyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList,
+    Array.toList_range, List.range_one] at hrun
+  subst hrun
+  have := hcnt (OpKind.kcall () () [])
+  simp [exactInterp, inputState] at this
+
+/-- Under the law of the tape, the first uniform draw equals a given value with probability `0`. -/
+theorem measureReal_uniform_eq (a : ℝ) :
+    tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 = a} = 0 := by
+  have hm : Measurable fun ω : Dist → ℕ → ℝ => ω .uniform 0 :=
+    (measurable_pi_apply 0).comp (measurable_pi_apply Dist.uniform)
+  have hmap : tapeLaw.map (fun ω : Dist → ℕ → ℝ => ω .uniform 0) = Dist.uniform.law := by
+    have h1 := (measurePreserving_eval_infinitePi (fun d : Dist => NLAlib.iidSequence d.law)
+      Dist.uniform).map_eq
+    have h2 := (measurePreserving_eval_infinitePi (fun _ : ℕ => Dist.uniform.law) 0).map_eq
+    rw [show (fun ω : Dist → ℕ → ℝ => ω .uniform 0) =
+        ((Function.eval 0 ∘ Function.eval Dist.uniform : (Dist → ℕ → ℝ) → ℝ)) from rfl,
+      ← Measure.map_map (measurable_pi_apply 0) (measurable_pi_apply Dist.uniform), tapeLaw, h1]
+    exact h2
+  have : {ω : Dist → ℕ → ℝ | ω .uniform 0 = a} = (fun ω : Dist → ℕ → ℝ => ω .uniform 0) ⁻¹' {a} :=
+    rfl
+  rw [this, measureReal_def, ← Measure.map_apply hm (measurableSet_singleton a), hmap]
+  change ((volume[|Set.Icc (-1 : ℝ) 1]) {a}).toReal = 0
+  rw [cond_apply measurableSet_Icc, measure_mono_null Set.inter_subset_right (measure_singleton a)]
+  simp
+
+/-- A tree that draws a uniform value into the cell of declared buffer 1. -/
+def uniformTree : Prog Unit Unit 0 2 := .instr (.draw () .uniform ⟨1, .const 0⟩)
+
+/-- U1: a uniform draw cannot leak a declared input: under the law of the tape the drawn value
+equals the input `0` with probability `0`. -/
+theorem not_matrixFreeProb_uniformTree :
+    ¬ MatrixFreeProb (𝕜 := ℝ) () uniformTree (fun _ _ => True) (fun _ _ => ℝ)
+      (fun _ _ x => ![#[some x], Array.replicate 1 none])
+      (fun _ _ => Finsupp.single (.draw () .uniform) 1) (fun _ _ _ => 2)
+      (fun _ _ x _ st => st.store.read () 1 0 = some x) (fun _ _ _ _ => 0) := by
+  intro h
+  have h0 := h 1 (fun _ => 0) trivial (0 : ℝ) 0 (Dist → ℕ → ℝ) _ tapeLaw id
+    ⟨aemeasurable_id, Measure.map_id⟩
+  have key : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} ≤ 0 := by
+    refine le_trans (measureReal_mono ?_) h0
+    rintro ω hω ⟨st, hrun, -, -, hpost⟩
+    simp [uniformTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
+      Instr.run, exactInterp, inputState, Store.write] at hrun
+    subst hrun
+    simp [Store.read] at hpost
+    exact hω hpost
+  have hc : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} = 1 := by
+    have hms : MeasurableSet {ω : Dist → ℕ → ℝ | ω .uniform 0 = 0} :=
+      (measurableSet_singleton 0).preimage
+        ((measurable_pi_apply 0).comp (measurable_pi_apply Dist.uniform))
+    rw [show {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} = {ω | ω .uniform 0 = 0}ᶜ from rfl,
+      measureReal_compl hms, measureReal_uniform_eq]
+    simp [measureReal_def]
+  rw [hc] at key
+  norm_num at key
+
+/-- U2: the rounded model. Even the strongest tape contract (the stored draw is the ideal one)
+does not let a draw equal the declared input: `ρOK` and `Contracts` cannot mention the input. -/
+theorem not_matrixFreeRoundedProb_uniformTree :
+    ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () uniformTree (fun _ _ => True)
+      (fun _ _ => ℝ) (fun _ _ x => ![#[some x], Array.replicate 1 none])
+      (fun _ _ I => I.sem = exactSem) (fun ρ => ρ = fun _ _ x => x) (fun _ _ _ => True)
+      (fun _ _ x st => st.store.read () 1 0 = some x) (fun _ _ _ => 0) := by
+  intro h
+  have h0 := h 1 (fun _ => 0) trivial (0 : ℝ) trivial
+    (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0)) (fun _ _ x => x) rfl rfl
+    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩
+  have key : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} ≤ 0 := by
+    refine le_trans (measureReal_mono ?_) h0
+    rintro ω hω ⟨st, hrun, hpost⟩
+    simp [uniformTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
+      Instr.run, exactInterp, inputState, Store.write] at hrun
+    subst hrun
+    simp [Store.read] at hpost
+    exact hω hpost
+  have hms : MeasurableSet {ω : Dist → ℕ → ℝ | ω .uniform 0 = 0} :=
+    (measurableSet_singleton 0).preimage
+      ((measurable_pi_apply 0).comp (measurable_pi_apply Dist.uniform))
+  rw [show {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} = {ω | ω .uniform 0 = 0}ᶜ from rfl,
+    measureReal_compl hms, measureReal_uniform_eq] at key
+  simp [measureReal_def] at key
+  norm_num at key
+
+/-- A semantics that meets the standard model at `u = 1/2` and rounds every literal up by half. -/
+noncomputable def upLitSem : ScalarSem Unit ℝ :=
+  { (exactSem (𝕜 := ℝ) : ScalarSem Unit ℝ) with lit := fun _ q => some ((q : ℝ) * (3 / 2)) }
+
+theorem isRelErrSem_upLitSem :
+    IsRelErrSem (fun _ => (1 / 2 : ℝ)) (fun _ x => x) (fun _ _ => True) upLitSem := by
+  have h := (isRelErrSem_exactSem (P := Unit)).mono (v := fun _ => (1 / 2 : ℝ))
+    (fun _ => by norm_num)
+  exact ⟨h.bin_err, h.bin_ok, fun _ q z hz => ⟨1 / 2, by norm_num, by
+      simp only [upLitSem, Option.some.injEq] at hz; rw [← hz]; ring⟩,
+    fun _ q _ => ⟨_, rfl⟩, h.neg, h.conj, h.re, h.sqrt_err, h.sqrt_ok, h.cmp_eq, h.cmp_lt,
+    h.cmp_le, h.convert_err, h.convert_ok⟩
+
+/-- A tree that writes the literal `1/3` into the one declared cell. -/
+def thirdTree : Prog Unit Unit 0 1 := .instr (.lit () ⟨0, .const 0⟩ (1 / 3))
+
+/-- R1: a program correct only under exact arithmetic is false in the rounded model, which
+quantifies over every semantics meeting the contract. -/
+theorem not_matrixFreeRoundedProb_thirdTree :
+    ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () thirdTree (fun _ _ => True)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun _ _ I => IsRelErrSem (fun _ => (1 / 2 : ℝ)) (fun _ x => x) (fun _ _ => True) I.sem)
+      (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ _ st => st.store.read () 0 0 = some (1 / 3)) (fun _ _ _ => 0) := by
+  intro h
+  refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial () trivial
+    { exactInterp (P := Unit) (ι := Unit) (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ))
+        (fun _ _ => 0) with sem := upLitSem } (fun _ _ x => x) isRelErrSem_upLitSem trivial
+    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨st, hrun, hgood⟩
+  simp [thirdTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
+    Instr.run, upLitSem, inputState, Store.write] at hrun
+  subst hrun
+  simp [Store.read] at hgood
+  norm_num at hgood
+
+/-- A tree that allocates one scratch cell and writes its declared output. -/
+def scratchTree : Prog Unit Unit 0 1 :=
+  .alloc () (.const 1) (.instr (.lit () ⟨0, .const 0⟩ 1))
+
+/-- The empty state. -/
+def emptySt : St Unit ℝ (OpCount Unit Unit) := inputState () []
+
+/-- **The handle-reuse trap** (H1; a positive theorem today, flipped to `¬` when
+`st₀.store.size = b` is added to `Prog.RunsWithin`, `Computation-Hardening.md` §2.6): run from a
+state without its declared buffer, the program's scratch buffer gets handle `0`, the declared
+output's handle; the write lands in scratch, the pop discards it, and the run succeeds with the
+output unreadable. -/
+theorem runsWithin_scratchTree_emptySt :
+    scratchTree.RunsWithin (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0))
+      1 (fun _ => 0) emptySt (Finsupp.single (.lit ()) 1) (fun _ => 1)
+      (fun st => st.store.read () 0 0 = none) := by
+  refine ⟨_, rfl, ?_, ?_, ?_⟩ <;>
+    simp [scratchTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
+      IExp.evalIn, Instr.run, exactInterp, emptySt, inputState, Store.write, Store.read, Instr.kind]
 
 end AccessModelFixtures
