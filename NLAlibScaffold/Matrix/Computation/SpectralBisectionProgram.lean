@@ -975,7 +975,17 @@ theorem eighProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm pa
     ∃ st' : St P K C, (eighProg.compiled p mm qr).exec I N ![ℓ₀, F]
       (inputState p [(pairLayout.toArray A₀).map some, #[some R₀, some ε, some β],
         Array.replicate (2 * (N * N)) none, Array.replicate N none]) = some st' := by
-  sorry
+  rw [Prog.exec_eq_exec_toStmt, eighProg.toStmt_compiled]
+  set bufs : List (Array (Option K)) := [(pairLayout.toArray A₀).map some,
+    #[some R₀, some ε, some β], Array.replicate (2 * (N * N)) none, Array.replicate N none]
+    with hbufs
+  have hA := EntryLayout.holds_inputState (C := C) pairLayout p (bufs := bufs) (k := 0) (Y := A₀)
+    rfl
+  exact exists_exec_eighProg hmm hqr hsem p hu N ℓ₀ F hlit htn hℓ (A := 0) (par := 1) (U := 2)
+    (dv := 3) (st := inputState p bufs) (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hε hR₀
+    (by simp) (by simp [inputState, bufs, Store.shape]) hA (by simp [inputState, bufs, Store.read])
+    ⟨2 * (N * N), by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
+    ⟨N, by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
 
 /-- **The counts and the memory of the registered tree**: under the standard charge (one per
 operation), every successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$
