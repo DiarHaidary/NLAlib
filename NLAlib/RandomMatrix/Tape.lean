@@ -246,7 +246,17 @@ draws are quantified over everything meeting the contracts, and the law of the i
 of the definition, so it cannot depend on the data. The index exactness is part of the model, at
 the decoding `dec` of the target, so a target cannot drop it or state it at another decoding. The
 counts are those of the run itself, so the cost bound holds on the same event as the
-postcondition. -/
+postcondition.
+
+The read-only data of $I$ is counted **on top of** `mem`: the run is checked against the memory
+`mem N n q + I.romSize q`, so `mem` bounds the peak alone (declared buffers and scratch), whereas
+in the exact models (`NLAlib.Computation.MatrixFree`, `NLAlib.Computation.StoredEntries`,
+`NLAlib.Computation.MatrixFreeProb`) `mem` includes the read-only data. So `mem` means different
+things in the exact and the rounded model. The program cannot allocate read-only data, and
+`I.romSize` is otherwise unbounded here, so a target whose program reads it (an
+`NLAlib.Computation.FStmt.rom`) must bound `I.romSize` in its `Contracts`
+(`docs/design/Computation-Hardening.md` §2.4); the trees of the current rounded targets read
+none. -/
 def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
     (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
     (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
