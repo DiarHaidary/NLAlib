@@ -780,7 +780,54 @@ theorem IsUpperHessenberg.exists_le_isDecoupled_shqrIterate
     {δ : ℝ} (hδ : 0 < δ) :
     ∃ t ≤ ⌈Real.log (1 / δ) / Real.log (1 / (1 - γ))⌉₊,
       IsDecoupled δ (shqrIterate B θ α γ m ritz H₀ t) := by
-  sorry
+  have hk0 : 0 < 2 ^ m := by positivity
+  have hψ0 : 0 ≤ hessenbergPotential (2 ^ m) H₀ :=
+    Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+  -- until an iterate is reduced, the potential decays geometrically
+  have key : ∀ t, (∃ t' ≤ t, IsDecoupled 0 (shqrIterate B θ α γ m ritz H₀ t')) ∨
+      hessenbergPotential (2 ^ m) (shqrIterate B θ α γ m ritz H₀ t) ≤
+        (1 - γ) ^ t * hessenbergPotential (2 ^ m) H₀ := by
+    intro t
+    induction t with
+    | zero => exact Or.inr (by simp [shqrIterate])
+    | succ t ih =>
+      rcases ih with ⟨t', ht', h⟩ | ih
+      · exact Or.inl ⟨t', by omega, h⟩
+      by_cases hdec : IsDecoupled 0 (shqrIterate B θ α γ m ritz H₀ t)
+      · exact Or.inl ⟨t, by omega, hdec⟩
+      have hHt := hH.isUpperHessenberg_shqrIterate B θ α γ m ritz t
+      have hψ : 0 < hessenbergPotential (2 ^ m) (shqrIterate B θ α γ m ritz H₀ t) := by
+        by_contra h
+        exact hdec (isDecoupled_of_hessenbergPotential_le hk0 hmn le_rfl
+          (by simpa using not_lt.mp h))
+      obtain ⟨hlen, hss⟩ := hritz _ hHt hψ
+      obtain ⟨V', hV', hHV', hκ⟩ := exists_isUnit_mul_eq_mul_diagonal_shqrIterate hV hHV B θ α γ m
+        ritz t
+      rcases hHt.isDecoupled_zero_shqrStep_or_hessenbergPotential_le hV' hHV' (hκ ▸ hB) hm hmn
+        hlen hss hθ hα1 hα hγ0 hγ1 with h | h
+      · exact Or.inl ⟨t + 1, le_rfl, h⟩
+      right
+      refine h.trans ?_
+      rw [pow_succ, mul_comm _ (1 - γ), mul_assoc]
+      gcongr
+  set T := ⌈Real.log (1 / δ) / Real.log (1 / (1 - γ))⌉₊
+  have hL : 0 < Real.log (1 / (1 - γ)) :=
+    Real.log_pos (by rw [one_div, one_lt_inv₀ (by linarith)]; linarith)
+  have hT : (1 - γ) ^ T ≤ δ := by
+    have h : Real.log (1 / δ) ≤ (T : ℝ) * Real.log (1 / (1 - γ)) :=
+      (div_le_iff₀ hL).mp (Nat.le_ceil _)
+    rw [one_div, one_div, Real.log_inv, Real.log_inv] at h
+    rw [← Real.log_le_log_iff (pow_pos (by linarith) _) hδ, Real.log_pow]
+    linarith
+  rcases key T with ⟨t, ht, h⟩ | h
+  · obtain ⟨i, hi⟩ := h
+    exact ⟨t, ht, i, hi.trans (by gcongr)⟩
+  refine ⟨T, le_rfl, isDecoupled_of_hessenbergPotential_le hk0 hmn hδ.le ?_⟩
+  rw [specNorm_shqrIterate]
+  calc _ ≤ (1 - γ) ^ T * hessenbergPotential (2 ^ m) H₀ := h
+    _ ≤ δ * specNorm H₀ := by
+      gcongr
+      exact hessenbergPotential_le_specNorm hk0 hmn H₀
 
 /-- **The number of shifts tried per iteration**: for $B, \theta, \alpha \ge 1$,
 $0 < \gamma < 1$ and $m \ge 1$, the candidate list `NLAlib.shqrCandidates` has at most
