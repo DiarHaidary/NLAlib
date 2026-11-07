@@ -5,8 +5,13 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.MeasureTheory.Measure.Real
+public import Mathlib.LinearAlgebra.Matrix.Trace
+public import Mathlib.MeasureTheory.MeasurableSpace.Constructions
 public import NLAlib.Computation.Compile
 public import NLAlib.Computation.FirstOrder
+public import NLAlib.Computation.Model
+public import NLAlib.Computation.RunsWithin
 
 /-!
 # Non-interference: a run depends on the data only through its queries
@@ -33,7 +38,12 @@ so does running within a budget. The no-query end of the theorem, for the oracle
 `NLAlib.Computation.exec_eq_of_exec_eq_some_of_cnt_load_le`, which this file generalises to runs
 that make queries, and to the kernels, the tapes and the read-only data.
 
-Design:
+Corollaries: in the matrix-free model a postcondition holds of one final state for any two
+matrices whose oracle answers agree on the queries of the run
+(`NLAlib.Computation.MatrixFree.post_of_agreeOn`), so a tree that queries no oracle computes no
+non-constant function of the matrix (`NLAlib.Computation.MatrixFree.post_of_noQuery`); two tape
+laws that agree on the positions a run can read give the run the same law
+(`NLAlib.Computation.map_exec_eq_of_map_restrict_eq`). Design:
 `docs/design/Computation-Hardening.md` (§1.1, GEN).
 
 ## Main definitions
@@ -50,9 +60,17 @@ Design:
 * `NLAlib.Computation.FStmt.exec_eq_of_agreeOn`, `NLAlib.Computation.Prog.exec_eq_of_agreeOn`:
   for first-order statements and programs.
 * `NLAlib.Computation.Prog.runsWithin_iff_of_agreeOn`: running within a budget.
+* `NLAlib.Computation.measureReal_not_runsWithin_eq_of_agreeOn`: the failure events of random
+  interpretations that agree on the queries have the same probability.
+* `NLAlib.Computation.map_exec_eq_of_map_restrict_eq`: tape laws that agree on the positions read
+  give the same law of the output.
+* `NLAlib.Computation.MatrixFree.post_of_agreeOn`, `NLAlib.Computation.MatrixFree.post_of_noQuery`:
+  the matrix-free model.
 -/
 
 @[expose] public section
+
+open MeasureTheory
 
 namespace NLAlib.Computation
 
@@ -384,5 +402,167 @@ theorem Prog.runsWithin_iff_of_agreeOn [Preorder C] (hI : I.SameShape I') {r b :
   simp only [Prog.RunsWithin, Prog.exec_eq_of_agreeOn hI prog N n st₀ h, hI.romSize]
 
 end FirstOrder
+
+/-! ### Random interpretations and tape laws -/
+
+section Probability
+
+variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
+
+/-- Random interpretations that agree on the queries: if for every $\omega$ the
+interpretations $I(\omega)$ and $I'(\omega)$ have the same shape and agree on the queries of the
+run of `prog` under $I(\omega)$, the events that the program fails to run within a budget have
+the same probability. No printed source. -/
+theorem measureReal_not_runsWithin_eq_of_agreeOn [Preorder C] {Ω : Type} {mΩ : MeasurableSpace Ω}
+    (μ : Measure Ω) {I I' : Ω → Interp P ι K C} {r b : ℕ} {prog : Prog P ι r b} {N : ℕ}
+    {n : Fin r → ℕ} {st₀ : St P K C} {c : C} {m : P → ℕ} {Q : St P K C → Prop}
+    (hI : ∀ ω, (I ω).SameShape (I' ω))
+    (h : ∀ ω, (I ω).AgreeOn (I' ω) (prog.queries (I ω) N n st₀)) :
+    μ.real {ω | ¬ prog.RunsWithin (I' ω) N n st₀ c m Q} =
+      μ.real {ω | ¬ prog.RunsWithin (I ω) N n st₀ c m Q} := by
+  congr 1
+  ext ω
+  simp only [Set.mem_ofPred_eq, Prog.runsWithin_iff_of_agreeOn (hI ω) prog N n st₀ c m Q (h ω)]
+
+/-- The restriction of a tape to a set of positions. -/
+def tapeRestrict (S : Set (Dist × ℕ)) (ξ : Dist → ℕ → K) : S → K := fun q => ξ q.1.1 q.1.2
+
+open Classical in
+/-- The tape equal to `r` on the positions `S` and to `ξ₀` elsewhere. -/
+noncomputable def tapeExtend (S : Set (Dist × ℕ)) (ξ₀ : Dist → ℕ → K) (r : S → K) :
+    Dist → ℕ → K := fun d i => if h : (d, i) ∈ S then r ⟨(d, i), h⟩ else ξ₀ d i
+
+/-- The restriction of a tape is measurable. -/
+theorem measurable_tapeRestrict [MeasurableSpace K] (S : Set (Dist × ℕ)) :
+    Measurable (tapeRestrict (K := K) S) :=
+  measurable_pi_lambda _ fun q => (measurable_pi_apply q.1.2).comp (measurable_pi_apply q.1.1)
+
+/-- The extension of a restricted tape is measurable. -/
+theorem measurable_tapeExtend [MeasurableSpace K] (S : Set (Dist × ℕ)) (ξ₀ : Dist → ℕ → K) :
+    Measurable (tapeExtend S ξ₀) := by
+  refine measurable_pi_lambda _ fun d => measurable_pi_lambda _ fun i => ?_
+  by_cases h : (d, i) ∈ S
+  · simp only [tapeExtend, h, dif_pos]
+    exact measurable_pi_apply _
+  · simp only [tapeExtend, h, dif_neg, not_false_eq_true]
+    exact measurable_const
+
+/-- Tape laws that agree on the positions read give the same output law. Let every run of `s`
+from `st`, under `I` with any tape $\xi$, draw only at positions in `S`. If two laws $\nu$, $\nu'$
+of the tape have the same law of the restriction to `S`, then any measurable function `out` of the
+run has the same law under both:
+$$\nu \circ (\xi \mapsto \mathit{out}(\mathrm{run}_\xi))^{-1} =
+  \nu' \circ (\xi \mapsto \mathit{out}(\mathrm{run}_\xi))^{-1}\,.$$
+No printed source. -/
+theorem map_exec_eq_of_map_restrict_eq [MeasurableSpace K] {β : Type} [MeasurableSpace β]
+    (I : Interp P ι K C) (s : Stmt P ι ℕ ℕ) (st : St P K C) (out : Option (St P K C) → β)
+    (S : Set (Dist × ℕ))
+    (hS : ∀ ξ d i, Query.draw d i ∈ s.queries { I with tape := ξ } st → (d, i) ∈ S)
+    (hm : Measurable fun ξ => out (exec { I with tape := ξ } s st))
+    {ν ν' : Measure (Dist → ℕ → K)} (hν : ν.map (tapeRestrict S) = ν'.map (tapeRestrict S)) :
+    ν.map (fun ξ => out (exec { I with tape := ξ } s st)) =
+      ν'.map (fun ξ => out (exec { I with tape := ξ } s st)) := by
+  rcases isEmpty_or_nonempty (Dist → ℕ → K) with hK | hK
+  · simp only [Measure.eq_zero_of_isEmpty ν, Measure.eq_zero_of_isEmpty ν', Measure.map_zero]
+  obtain ⟨ξ₀⟩ := hK
+  have key : (fun ξ => out (exec { I with tape := ξ } s st)) =
+      (fun ξ => out (exec { I with tape := ξ } s st)) ∘ tapeExtend S ξ₀ ∘ tapeRestrict S := by
+    funext ξ
+    simp only [Function.comp_apply]
+    congr 1
+    refine (exec_eq_of_agreeOn (I := { I with tape := ξ })
+      (I' := { I with tape := tapeExtend S ξ₀ (tapeRestrict S ξ) })
+      ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩ s st
+      ⟨fun _ _ _ _ => rfl, fun _ _ _ _ => rfl, fun d i hq => ?_, fun _ _ => rfl⟩).symm
+    simp [tapeExtend, tapeRestrict, hS ξ d i hq]
+  have hG := hm.comp (measurable_tapeExtend S ξ₀)
+  rw [key, ← Function.comp_assoc, ← Measure.map_map hG (measurable_tapeRestrict S), hν,
+    Measure.map_map hG (measurable_tapeRestrict S)]
+
+end Probability
+
+/-! ### The matrix-free model -/
+
+section MatrixFree
+
+variable {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P] {r b : ℕ} {p : P}
+  {prog : Prog P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+  {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜)}
+  {cost : ℕ → (Fin r → ℕ) → OpCount P ι} {mem : ℕ → (Fin r → ℕ) → P → ℕ}
+  {post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → (Dist → ℕ → ℝ) →
+    St P 𝕜 (OpCount P ι) → Prop}
+
+omit [DecidableEq P] in
+/-- The exact interpretations of two matrices of the same size have the same shape. -/
+theorem sameShape_exactInterp {N : ℕ} (A A' : ι → Matrix (Fin N) (Fin N) 𝕜)
+    (ξ : Dist → ℕ → ℝ) : (exactInterp (P := P) A ξ).SameShape (exactInterp A' ξ) :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- The matrix-free model sees the matrix only through its queries: if the oracle answers of
+two matrices $\mathbf{A}$, $\mathbf{A}'$ agree on the queries of the run under $\mathbf{A}$, one
+final state satisfies the postcondition for both. No printed source. -/
+theorem MatrixFree.post_of_agreeOn (h : MatrixFree p prog valid X inputs cost mem post)
+    {N : ℕ} {n : Fin r → ℕ} (hv : valid N n) (x : X N n) (A A' : Matrix (Fin N) (Fin N) 𝕜)
+    (ξ : Dist → ℕ → ℝ)
+    (hA : (exactInterp (P := P) (fun _ => A) ξ).AgreeOn (exactInterp (fun _ => A') ξ)
+      (prog.queries (exactInterp (fun _ => A) ξ) N n (inputState p (List.ofFn (inputs N n x))))) :
+    ∃ st, post N n x A ξ st ∧ post N n x A' ξ st := by
+  obtain ⟨st, hrun, -, -, hpost⟩ := h N n hv x A ξ
+  obtain ⟨st', hrun', -, -, hpost'⟩ := h N n hv x A' ξ
+  rw [Prog.exec_eq_of_agreeOn (sameShape_exactInterp _ _ ξ) prog N n _ hA, hrun] at hrun'
+  cases hrun'
+  exact ⟨st, hpost, hpost'⟩
+
+/-- A run with no oracle query does not see the matrix: if the run under $\mathbf{A}$ makes no
+oracle query, one final state satisfies the postcondition for $\mathbf{A}$ and for every other
+matrix $\mathbf{A}'$. So a tree that queries no oracle computes no non-constant function of the
+matrix. No printed source. -/
+theorem MatrixFree.post_of_noQuery (h : MatrixFree p prog valid X inputs cost mem post)
+    {N : ℕ} {n : Fin r → ℕ} (hv : valid N n) (x : X N n) (A A' : Matrix (Fin N) (Fin N) 𝕜)
+    (ξ : Dist → ℕ → ℝ)
+    (hq : ∀ o c Y, Query.oracle o c Y ∉
+      prog.queries (exactInterp (fun _ => A) ξ) N n (inputState p (List.ofFn (inputs N n x)))) :
+    ∃ st, post N n x A ξ st ∧ post N n x A' ξ st :=
+  h.post_of_agreeOn hv x A A' ξ
+    ⟨fun o c Y hY => (hq o c Y hY).elim, fun _ _ _ _ => rfl, fun _ _ _ => rfl, fun _ _ => rfl⟩
+
+/-- The fixture `not_matrixFree_drawTree` (`scripts/AccessModelFixtures.lean`) as an instance of
+`NLAlib.Computation.MatrixFree.post_of_noQuery`: a tree that draws its output makes no oracle
+query, so it does not compute the trace of every matrix. -/
+example : ¬ MatrixFree (𝕜 := ℝ) () (.instr (.draw () .gaussian ⟨0, .const 0⟩) : Prog Unit Unit 0 1)
+    (fun _ _ => True) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+    (fun _ _ => Finsupp.single (.draw () .gaussian) 1) (fun _ _ _ => 1)
+    (fun _ _ _ A _ st => st.store.read () 0 0 = some A.trace) := fun h => by
+  obtain ⟨st, h0, h1⟩ := h.post_of_noQuery (N := 1) (n := fun _ => 0) trivial () 0 1 (fun _ _ => 0)
+    (by simp [Prog.queries, FStmt.queries, FStmt.toStmt, Stmt.queries, Instr.subst, Instr.queries])
+  rw [h0] at h1
+  simp at h1
+
+/-- The fixture `not_matrixFree_copyTree` (`scripts/AccessModelFixtures.lean`) as an instance of
+`NLAlib.Computation.MatrixFree.post_of_noQuery`: a tree that copies its declared input makes no
+oracle query, so it does not compute the trace of every matrix. -/
+example : ¬ MatrixFree (𝕜 := ℝ) ()
+    (.instr (.copy () ⟨1, .const 0⟩ ⟨0, .const 0⟩) : Prog Unit Unit 0 2) (fun _ _ => True)
+    (fun _ _ => ℝ) (fun _ _ x => ![#[some x], Array.replicate 1 none])
+    (fun _ _ => Finsupp.single (.copy ()) 1) (fun _ _ _ => 2)
+    (fun _ _ _ A _ st => st.store.read () 1 0 = some A.trace) := fun h => by
+  obtain ⟨st, h0, h1⟩ := h.post_of_noQuery (N := 1) (n := fun _ => 0) trivial 0 0 1 (fun _ _ => 0)
+    (by simp [Prog.queries, FStmt.queries, FStmt.toStmt, Stmt.queries, Instr.subst, Instr.queries])
+  rw [h0] at h1
+  simp at h1
+
+/-- The fixture `not_matrixFree_leakTree` (`scripts/AccessModelFixtures.lean`) as an instance of
+`NLAlib.Computation.MatrixFree.post_of_noQuery`: a tree with a literal fixed before the matrix
+makes no oracle query, so it does not compute the trace of every matrix. -/
+example (q : ℚ) : ¬ MatrixFree (𝕜 := ℝ) () (.instr (.lit () ⟨0, .const 0⟩ q) : Prog Unit Unit 0 1)
+    (fun _ _ => True) (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+    (fun _ _ => Finsupp.single (.lit ()) 1) (fun _ _ _ => 1)
+    (fun _ _ _ A _ st => st.store.read () 0 0 = some A.trace) := fun h => by
+  obtain ⟨st, h0, h1⟩ := h.post_of_noQuery (N := 1) (n := fun _ => 0) trivial () 0 1 (fun _ _ => 0)
+    (by simp [Prog.queries, FStmt.queries, FStmt.toStmt, Stmt.queries, Instr.subst, Instr.queries])
+  rw [h0] at h1
+  simp at h1
+
+end MatrixFree
 
 end NLAlib.Computation
