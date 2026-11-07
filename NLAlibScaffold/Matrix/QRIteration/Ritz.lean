@@ -73,7 +73,35 @@ $\lvert s\rvert \le \|\mathbf{H}_{(k)}\|_2 \le \|\mathbf{H}\|_2$ (`spectrum.norm
 `NLAlib.specNorm_submatrix_le` or the compression bound). S, about 15 lines. -/
 theorem norm_le_specNorm_of_mem_ritzValues {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {k : ℕ}
     (hkn : k ≤ n + 1) {s : ℂ} (hs : s ∈ ritzValues k H) : ‖s‖ ≤ specNorm H := by
-  sorry
+  have hroot : (trailingBlock k H).charpoly.IsRoot s := by
+    unfold ritzValues at hs
+    exact (Polynomial.mem_roots (Matrix.charpoly_monic _).ne_zero).mp (Multiset.mem_toList.mp hs)
+  have hspec : s ∈ spectrum ℂ (trailingBlock k H) := Matrix.mem_spectrum_of_isRoot_charpoly hroot
+  rw [spectrum.mem_iff, Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, not_not] at hspec
+  obtain ⟨v, hv0, hv⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hspec
+  have hBv : trailingBlock k H *ᵥ v = s • v := by
+    rw [Algebra.algebraMap_eq_smul_one, Matrix.sub_mulVec, Matrix.smul_mulVec,
+      Matrix.one_mulVec] at hv
+    exact (sub_eq_zero.mp hv).symm
+  have hN : 0 < ‖WithLp.toLp 2 v‖ := by
+    refine norm_pos_iff.mpr fun h => hv0 ?_
+    simpa using h
+  have hle : ‖s‖ * ‖WithLp.toLp 2 v‖ ≤ specNorm (trailingBlock k H) * ‖WithLp.toLp 2 v‖ := by
+    have h1 := norm_toLp_mulVec_le (trailingBlock k H) v
+    rw [hBv] at h1
+    simpa [norm_smul] using h1
+  have hsub : specNorm (trailingBlock k H) ≤ specNorm H := by
+    unfold trailingBlock
+    refine specNorm_submatrix_le H (fun a b hab => ?_) (fun a b hab => ?_)
+    · simp only [Fin.mk.injEq] at hab
+      have ha := a.isLt
+      have hb := b.isLt
+      exact Fin.ext (by omega)
+    · simp only [Fin.mk.injEq] at hab
+      have ha := a.isLt
+      have hb := b.isLt
+      exact Fin.ext (by omega)
+  exact (le_of_mul_le_mul_right hle hN).trans hsub
 
 /-! ### Promising Ritz values -/
 
