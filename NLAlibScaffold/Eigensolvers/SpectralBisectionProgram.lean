@@ -183,6 +183,25 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
           pairLayout.Holds st'.store p 2 0 U ∧ (∀ i : Fin N, st'.store.read p 3 i = some (d i)) ∧
           IsApproxDiagonalization (decodeMatrix (dec p) A) (decodeMatrix (dec p) U)
             (fun i => dec p (d i)) (2 * dec p ε * dec p R₀) (dec p ε / 3)} ≤ θ := by
-  sorry
+  have hunif := countable_range_uniformUnif I.sem p (hcountu .uniform).1 (hcountu .uniform).2
+  have hgauss := countable_range_gaussianNormal I.sem p (hcountu .gaussian).1 (hcountu .gaussian).2
+  obtain ⟨hind, hlaw⟩ := iIndepFun_eighIdealTree (I.sem.toFloatMachine p
+    (fun x => (I.sem.toNat p x).getD 0) mmR qrR (I.sem.uniformUnif p (ρ .uniform 0))
+    (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1) R₀ β
+    ⟨N, A, R₀, ε, ℓ⟩ le_rfl hξ
+  have key :=
+    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
+      fmt hE hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀half hR₀one hε
+      hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hexp hfuel hind hlaw
+  have := hξ.isProbabilityMeasure
+  refine le_trans (measureReal_mono (μ := μ) (fun ω hω => ?_) (measure_ne_top μ _)) key
+  obtain ⟨st', hexec, hbad⟩ := hω
+  have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
+    hmm hqr p hflag N ℓ F hlit htn A R₀ ε β hexec
+  have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρ (ξ ω) F ℓ A R₀ ε β
+  dsimp only at hH he
+  rw [he] at hH
+  intro hAD
+  exact hbad ⟨_, _, hH.1, hH.2, hAD⟩
 
 end NLAlib
