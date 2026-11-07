@@ -153,7 +153,8 @@ private lemma hasLaw_leadingBlock_apply {k N : ℕ} (h : k ≤ N) (b : Bool) :
   simpa only [leadingBlock_eq_submatrix h] using this
 
 /-- Event II fails on one side with probability at most $\rho/16 + 15\rho/16$ for a fixed frame:
-the norm tail CG4' and the smaller of the singular value tails CG6 and CG6'. -/
+the norm tail $e^{-s^2}$ and the smaller of the tails $r^2x^2$, $e\,r x^2$ of the smallest
+singular value. -/
 private lemma measure_not_eventII_le {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ : ℝ} (hρ : 0 < ρ)
     (hρ₁ : ρ ≤ 1) (hm : 0 < m) (hmk : m ≤ k) {V : Matrix (Fin k) (Fin m) ℂ}
     (hV : HasOrthonormalCols V) :
@@ -467,7 +468,7 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le_of_isEighNodeBud
   set μ₁ := ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)
   set ν := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
   set T := splitSeeds (decodeMatrix dec y.A) (dec y.R / y.ℓ) w
-  -- the seeds of `T` split the node (rank recovery on Event I, EB1b')
+  -- the seeds of `T` split the node (rank recovery on Event I)
   have hTsplit : μ₁ T ≤
       (μ₁.prod ν) {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
     calc μ₁ T = (μ₁.prod ν) (T ×ˢ Set.univ) := by rw [Measure.prod_prod, measure_univ, mul_one]

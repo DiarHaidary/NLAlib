@@ -7,7 +7,6 @@ module
 
 public import NLAlib.Eigensolvers.SpectralBisection
 public import NLAlib.Probability.AdaptiveUnionBound
-public import NLAlib.Computation.BinaryFloat
 
 /-!
 # Hermitian diagonalization in linear precision
@@ -21,13 +20,13 @@ $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/
 precision. The samples of the nodes are independent, each with the law `NLAlib.eighSampleLaw`;
 the node bounds and the measurability of the nodes are in
 `NLAlib/Eigensolvers/SpectralBisection.lean`, and the union bound over the adaptively grown
-tree is `NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral`.
+tree is `NLAlib.measureReal_exists_mem_le_of_forall_measure_le_lintegral`. The theorem for a
+bounded binary format is in `NLAlib/Eigensolvers/SpectralBisection/BoundedFormat.lean`.
 
 ## Main results
 
 * [Theorem 4.2](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw).
 * [Its bit count](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw).
-* [The bounded format](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw),, with $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits.
 -/
 
 @[expose] public section
@@ -37,7 +36,7 @@ open scoped Matrix MatrixOrder ENNReal
 
 namespace NLAlib
 
-/-- The global hypotheses of EV6' give $u \ge 0$, $n \ge 1$, $\ell \ge 20$,
+/-- The global hypotheses of Theorem 4.2 give $u \ge 0$, $n \ge 1$, $\ell \ge 20$,
 $n\beta \le \varepsilon/104$ and the contract bounds of
 `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`. -/
 private theorem FloatMachine.IsAccurate.nonneg_and_one_le_and_mul_le
@@ -152,19 +151,6 @@ private theorem FloatMachine.IsAccurate.pos_of_le_mul_eq_false
   rw [abs_of_pos ha, max_eq_left hτa] at h2
   have h3 := (abs_le.mp h2).2
   linarith [mul_le_mul_of_nonneg_right hu ha.le, lt_of_not_ge h1]
-
-/-- The Newton–Schulz step count is nonnegative for $x > 0$ and $0 < e \le 1/2$. -/
-private theorem newtonSchulzSteps_nonneg_of_pos {x e : ℝ} (hx : 0 < x) (he : 0 < e)
-    (he₁ : e ≤ 1 / 2) : 0 ≤ newtonSchulzSteps x e := by
-  rw [newtonSchulzSteps]
-  have h₁ : 0 ≤ Real.logb 2 (min |x| (1 / 2))⁻¹ :=
-    Real.logb_nonneg one_lt_two ((one_le_inv₀ (by positivity)).mpr
-      ((min_le_right _ _).trans (by norm_num)))
-  have h₂ : 1 ≤ Real.logb 2 e⁻¹ := by
-    have h2 : (2 : ℝ) ≤ e⁻¹ := by rw [le_inv_comm₀ two_pos he]; linarith
-    simpa only [Real.logb_self_eq_one one_lt_two] using
-      Real.logb_le_logb_of_le one_lt_two two_pos h2
-  linarith [Real.logb_nonneg one_lt_two h₂]
 
 /-- The norm threshold of a node of size $k \le n$ is at most $\hat T$. -/
 private theorem add_sqrt_log_le {n k : ℕ} {θ m : ℝ} (hk : 1 ≤ k) (hkn : k ≤ n) (hθ : 0 < θ)
@@ -288,8 +274,8 @@ private theorem mul_div_mul_le_of_le_div {n k L ℓ : ℕ} {e ey b θ m t x : �
         gcongr
     _ ≤ _ := h4.trans (h5.trans h6)
 
-/-- The global hypotheses of EV6' give the node budget at every internal node within the depth
-and accuracy ranges. -/
+/-- The global hypotheses of Theorem 4.2 give the node budget at every internal node within the
+depth and accuracy ranges. -/
 private theorem FloatMachine.IsAccurate.isEighNodeBudget_of_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
@@ -354,7 +340,11 @@ private theorem FloatMachine.IsAccurate.isEighNodeBudget_of_le
       linarith [hε₁.trans (by norm_num : (2⁻¹ : ℝ) ^ 15 ≤ 1), le_mul_of_one_le_left hβ.le hn1]
   have hNy0 : 0 ≤ newtonSchulzSteps (4 * θ * dec y.R / (9 * n * ℓ * (ℓ + 1)) / (5 * dec y.R))
       (dec β / (16 * y.k)) :=
-    newtonSchulzSteps_nonneg_of_pos (by rw [hw5]; positivity) (by positivity)
+    newtonSchulzSteps_nonneg (by rw [hw5]; positivity)
+      (by
+        rw [hw5, div_le_iff₀ (by positivity)]
+        linarith [one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hn1
+          (by linarith : (1 : ℝ) ≤ ℓ)) (by linarith : (1 : ℝ) ≤ ℓ + 1)]) (by positivity)
       (by rw [div_le_iff₀ (by positivity)]
           linarith [hε₁.trans (by norm_num : (2⁻¹ : ℝ) ^ 15 ≤ 1), le_mul_of_one_le_left hβ.le hn1])
   have hsk : √(y.k : ℝ) ≤ √n := Real.sqrt_le_sqrt hkn'
@@ -738,7 +728,7 @@ private theorem isProbabilityMeasure_eighSampleLaw (N : ℕ) :
       (by simp [Real.volume_Icc])
   infer_instance
 
-/-- EV2' at the charge of EV6', in integral form. -/
+/-- The node bound at the charge of Theorem 4.2, in integral form. -/
 private theorem FloatMachine.IsAccurate.eighSampleLaw_not_isEighGoodSample_le_lintegral
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -774,7 +764,7 @@ private theorem FloatMachine.IsAccurate.eighSampleLaw_not_isEighGoodSample_le_li
   have := mul_le_mul hθ₁ hkn' (by positivity) zero_le_one
   nlinarith
 
-/-- EV6' for measurable samples. -/
+/-- Theorem 4.2 for measurable samples. -/
 private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
     {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
@@ -886,23 +876,35 @@ private theorem FloatMachine.IsAccurate.measureReal_eigh_le_of_measurable
   · exact fun ω => hM.tsum_eighNodeAt_charge_le hn hθ hR₀pos hε hε₁ (by omega) hℓ hu hu₁ hτ₀
       hτ100 hΩ16 A V (fun b => ζ b ω)
 
-/-- **Hermitian diagonalization in linear precision, sharp budget** (EV6'): under the hypotheses
-of EB5' (`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eigh_of_forall_isEighGoodSample'`)
-without its good-sample hypothesis, with samplers with measurable fibres and countable ranges and
-independent node samples, each of law `NLAlib.eighSampleLaw` $n$, the probability that
-`NLAlib.eigh` is not an approximate diagonalization with residual $2\varepsilon R_0$ and singular
-values within $\varepsilon/3$ of $1$ is at most $\theta$. [Shah2024, Theorem 4.2].
-Proof: EV6's route (UB1 with the measurability and independence of EV3–EV5) with EB5' and the
-charge of a node $y$: $q_y = k_y w_y\ell_y/R_y + 2\rho_y[\text{split}] =
-4\theta k_y\ell_y/(9n\ell(\ell + 1)) + \theta k_y/(3nm)[\text{split}]$ (EV2', at
-$\rho_y = \theta k_y/(6nm)$). Surely
-$\sum_y q_y \le \theta$: regroup the tsum over paths by depth (`List.ofFn` over `Fin j → Bool`);
-`NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params` gives $|a| \le \ell$ and
-$\ell_y = \ell + |a|$, and by EB3' the sizes at each depth sum to at most $n$, so
-the first part is at most $\tfrac{4\theta}{9\ell(\ell + 1)}\sum_{j=0}^{\ell}(\ell + j) =
-\tfrac23\theta$; the split sizes sum to at most $n\min(n, \ell + 1)$ (EB3' over the depths, and
-EB4 with $k_y \le n$), so the second part is at most $\theta/3$. L, about 250 lines (EV6's
-assembly reused; the charge sum replaces `tsum_eighNodeAt_charge_le`). -/
+-- A docstring line exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- **Hermitian diagonalization in linear precision** (Theorem 4.2): let the machine meet
+`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ (constants $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$, $c_{\mathrm N}$), with $\mu_{\mathrm{MM}}, \mu_{\mathrm{QR}}$ monotone
+and nonnegative, $c_{\mathrm N} \ge 0$, and the samplers with measurable fibres and countable
+ranges. Let the stored $\mathbf{A}$ have Hermitian decoding with $\|\mathbf{A}\|_2 \le R_0$, for
+stored $R_0 > 0$, $\varepsilon$, $\beta$ (decoded values) with $0 < \varepsilon \le 2^{-15}$,
+$0 < \theta \le 1$, a depth counter $\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$,
+$m = \min(n, \ell + 1)$, $\nu = 4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n$, and the precomputed
+accuracy
+$$0 < \beta \le \hat\beta = \frac{(\ell - 1)^2\,\varepsilon\sqrt\theta}{52\,\ell^2(2\ell - 1)
+\sqrt{n m \min(n, e)}\,\hat T} \,, \qquad \hat T = 2\sqrt2\sqrt n +
+\sqrt{\log(96nm/\theta)} \,,$$
+$N_* = N(\theta/(12n\ell(\ell + 1)), \beta/(16n))$ (`NLAlib.newtonSchulzSteps`). If
+$146n\ell(\ell + 1)\nu u \le \theta\beta$ (the sign function), $2048(n + N_* + 1)\nu u \le \beta$
+(the stopping test), $16(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) +
+2\mu_{\mathrm{MM}}(n) + 1)u \le \beta$ (deflation), the sign step limit is at least $N_*$,
+$0 \le \tau$, $100n^{3/2}\tau \le \min(\sqrt{\theta/(8nm)}, \varepsilon\min(R_0, 1))$,
+$16(2R_0 + n + 2\ell + \hat T) \le \Omega$, and the node samples $\zeta_a$ are independent, each
+of law `NLAlib.eighSampleLaw` $n$, then
+$$\mathbb{P}\bigl[\mathsf{eigh}(\mathbf{A}, \varepsilon, \theta) \text{ is not an approximate
+diagonalization with residual } 2\varepsilon R_0 \text{ and } \mathbf{U} \text{ within }
+\varepsilon/3 \text{ of unitary}\bigr] \le \theta \,,$$
+$\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. [Shah2024, Theorem 4.2], there with
+$R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies, other constants (here the Event I charge of
+a node is proportional to its size and Event II uses the smallest-singular-value tail
+$\min(r^2, e r)x^2$), and an operation count (not formalized); the bit count is
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`. -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
@@ -945,7 +947,7 @@ theorem
   have h2 : (fun a => ζ a ω) = fun a => (hlaw a).aemeasurable.mk (ζ a) ω := funext hω
   simp only [h2]
 
-/-- Exponentiating the first bit-count condition of EV7'. -/
+/-- Exponentiating the first bit-count condition of Theorem 4.2. -/
 private theorem mul_le_mul_mul_sqrt_mul_of_logb_le {e θ P X T L Q u : ℝ} (he : 0 < e)
     (hθ : 0 < θ) (hP : 0 < P) (hX : 0 < X) (hT : 0 < T) (hL : 0 < L) (hQ : 0 < Q) (hu : 0 < u)
     (h : Real.logb 2 e⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ + Real.logb 2 P + 1 / 2 * Real.logb 2 X +
@@ -970,7 +972,7 @@ private theorem mul_le_mul_mul_sqrt_mul_of_logb_le {e θ P X T L Q u : ℝ} (he 
     _ = e * (θ * √θ) := by rw [← mul_assoc, mul_inv_cancel₀ hu.ne', one_mul]
 
 /-- The exponentiated first bit-count condition and the lower bound on $\beta$ give the
-sign-function condition of EV6'. -/
+sign-function condition of Theorem 4.2. -/
 private theorem mul_le_mul_of_mul_le_mul_sqrt {P D T L l e θ b u : ℝ} (hP : 0 ≤ P) (hD : 0 ≤ D)
     (hT : 0 ≤ T) (hL : 0 ≤ L) (hl : 0 < l - 1) (hθ : 0 < θ) (hu : 0 ≤ u)
     (hc : 0 < 52 * l ^ 2 * (2 * l - 1) * D * T)
@@ -997,25 +999,31 @@ private theorem mul_le_mul_of_mul_le_mul_sqrt {P D T L l e θ b u : ℝ} (hP : 0
 
 -- The declaration name and a docstring line exceed 100 characters.
 set_option linter.style.longLine false in
-/-- **The bit count of Hermitian diagonalization, sharp budget** (EV7'): under the hypotheses of
-EV6' with the precision conditions replaced by $u > 0$, the accuracy within $1 + 2^{-6}$ of its
-bound, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$, and
+/-- **The bit count of Hermitian diagonalization** (Theorem 4.2, in bits): under the
+hypotheses of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`
+(the machine and its samplers, the input, $\varepsilon$, $\theta$, $\ell$, the step limit, the
+floor, the range and the samples), with its three precision conditions replaced by $u > 0$, the
+accuracy within $1 + 2^{-6}$ of its bound, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$, and
 $$\begin{aligned}\log_2\frac1u \ge{}& \log_2\frac1\varepsilon + \frac32\log_2\frac1\theta +
 \log_2\bigl(n(4\mu_{\mathrm{MM}}(n) + 10 + 10\sqrt n)\bigr) +
 \tfrac12\log_2\bigl(n\min(n, \ell + 1)\min(n, e)\bigr) \\ &+ \log_2\hat T + \log_2(\ell(\ell + 1)) +
 \log_2\frac{\ell^2(2\ell - 1)}{(\ell - 1)^2} + 13 \,,\end{aligned}$$
 $\hat T = 2\sqrt2\sqrt n + \sqrt{\log(96n\min(n, \ell + 1)/\theta)}$, together with the
-non-binding condition $\log_2(1/u) \ge \log_2(1/\beta) + \log_2(2048(n + N_* + 1)\nu +
-16(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1))$, the failure
-probability is at most $\theta$. This is $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
-O(\log n + \log\log(1/\varepsilon))$ with $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ in place of
-EV7's $n^5\mu_{\mathrm{MM}}$ and no $\log_2(N_* + 1)$ term. [Shah2024, Theorem 4.2], there
-$\log_2\max(n^{1.5}\mu_{\mathrm{QR}}, n^2c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) +
-2\log_2\log_2(1/\varepsilon) + \log_2\log_2(n\log_2(1/\varepsilon)/\theta) + 23$.
-Proof: exponentiate the first condition as in EV7 (`mul_le_mul_mul_sqrt_of_logb_le`'s pattern):
-with $\beta \ge \hat\beta/(1 + 2^{-6})$ it gives $146n\ell(\ell + 1)\nu u \le \theta\beta$, since
-$146 \cdot 52 \cdot (1 + 2^{-6}) \le 2^{13}$; the second gives the stopping and deflation
-conditions of EV6'; then EV6'. M, about 120 lines. -/
+condition $\log_2(1/u) \ge \log_2(1/\beta) + \log_2(2048(n + N_* + 1)\nu +
+16(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1))$, the
+probability that `NLAlib.eigh` is not an approximate diagonalization with residual
+$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$. This is
+$\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n + \log\log(1/\varepsilon))$ bits,
+with the polynomial factor $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ for $n \le \ell$; at
+$\mu_{\mathrm{MM}} = \mu_{\mathrm{QR}} = 1$, $c_{\mathrm N} = \sqrt2$,
+$\ell = \lceil\log_2(1/\varepsilon)\rceil + 5$ it asks for 49.1, 58.6, 74.9 and 105.4 bits at
+$(n, \varepsilon, \theta) = (1, 2^{-15}, 1)$, $(10, 2^{-15}, 1)$, $(1000, 2^{-15}, 1)$,
+$(1000, 2^{-40}, 1/2)$. [Shah2024, Theorem 4.2], there
+$\log_2(1/\varepsilon) + \log_2\max(n^{1.5}\mu_{\mathrm{QR}}, n^2c_{\mathrm N},
+n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varepsilon) + 1.5\log_2(1/\theta) +
+\log_2\log_2(n\log_2(1/\varepsilon)/\theta) + 23$ (48.3, 63.6, 94.5, 124.0 bits at the same
+points); the third power of $\ell$ comes from the corrected shift-avoidance probability. -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
@@ -1126,227 +1134,5 @@ theorem
     hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN
     (by linarith [husign]) (by linarith [mul_nonneg hb0 hu.le])
     (by linarith [mul_nonneg ha0 hu.le]) hfuel hτ₀ hτ hΩ hind hlaw
-
-
-/-- The exponent-bit condition bounds $L$ by $2^{2^{E-1} - 2}$. -/
-private theorem le_zpow_of_logb_logb_add_two_le {L : ℝ} {E : ℕ} (hE : 2 ≤ E) (hL : 1 ≤ L)
-    (h : Real.logb 2 (Real.logb 2 L + 2) + 1 ≤ E) : L ≤ (2 : ℝ) ^ ((2 : ℤ) ^ (E - 1) - 2) := by
-  have h0 : 0 ≤ Real.logb 2 L := Real.logb_nonneg one_lt_two hL
-  have h1 : Real.logb 2 L + 2 ≤ (2 : ℝ) ^ (E - 1) := by
-    have : Real.logb 2 (Real.logb 2 L + 2) ≤ ((E - 1 : ℕ) : ℝ) := by
-      push_cast [Nat.cast_sub (by omega : 1 ≤ E)]; linarith
-    rwa [Real.logb_le_iff_le_rpow one_lt_two (by linarith), Real.rpow_natCast] at this
-  have h2 : Real.logb 2 L ≤ (((2 : ℤ) ^ (E - 1) - 2 : ℤ) : ℝ) := by push_cast; linarith
-  rwa [Real.logb_le_iff_le_rpow one_lt_two (by linarith), Real.rpow_intCast] at h2
-
-/-- $\sqrt y \le (y + 1)/2$ for $y \ge 0$. -/
-private theorem sqrt_le_add_one_div_two {y : ℝ} (hy : 0 ≤ y) : √y ≤ (y + 1) / 2 := by
-  nlinarith [Real.sq_sqrt hy, sq_nonneg (√y - 1)]
-
-/-- The range hypothesis of Theorem 4.2 from the bounded-format bound on the largest number. -/
-private theorem le_of_mul_le_of_le_one {n ℓ e θ R Ω : ℝ} (hn : 0 ≤ n) (hℓ : 0 ≤ ℓ) (he : 0 < e)
-    (he₁ : e ≤ 1) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR₁ : R ≤ 1)
-    (hΩ : 3072 * (n + ℓ + 2) ^ 3 ≤ Ω * (e * θ)) :
-    16 * (2 * R + n + 2 * ℓ + 2 * √2 * √n + √(Real.log (96 * n * min n (ℓ + 1) / θ))) ≤ Ω := by
-  set m := min n (ℓ + 1)
-  set M := n + ℓ + 2
-  have hm0 : 0 ≤ m := le_min hn (by linarith)
-  have hmM : n * m ≤ M ^ 2 := by
-    have : n * m ≤ M * M :=
-      mul_le_mul (by linarith) ((min_le_right _ _).trans (by linarith)) hm0 (by linarith)
-    nlinarith
-  have hy : 0 ≤ 96 * n * m / θ := by positivity
-  have h1 : √(Real.log (96 * n * m / θ)) ≤ 96 * n * m / θ + 1 := by
-    have := (Real.sqrt_le_sqrt (Real.log_le_self hy)).trans (sqrt_le_add_one_div_two hy)
-    linarith
-  have h2 : (96 * n * m / θ) * θ = 96 * n * m := div_mul_cancel₀ _ hθ.ne'
-  have h3 : 2 * √2 * √n ≤ 3 * (n + 1) := by
-    have h2 : √2 ≤ 3 / 2 := by
-      rw [Real.sqrt_le_left (by norm_num)]; norm_num
-    calc 2 * √2 * √n ≤ 2 * (3 / 2) * ((n + 1) / 2) := by
-          gcongr; exact sqrt_le_add_one_div_two hn
-      _ ≤ 3 * (n + 1) := by linarith
-  have hM1 : 1 ≤ M := by linarith
-  have hM3 : M ^ 2 ≤ M ^ 3 := pow_le_pow_right₀ hM1 (by norm_num)
-  have hM13 : M ≤ M ^ 3 := by nlinarith
-  refine le_of_mul_le_mul_right ?_ (mul_pos he hθ)
-  calc 16 * (2 * R + n + 2 * ℓ + 2 * √2 * √n + √(Real.log (96 * n * m / θ))) * (e * θ)
-      ≤ 16 * (2 + n + 2 * ℓ + 3 * (n + 1) + (96 * n * m / θ + 1)) * (e * θ) := by
-        gcongr; linarith
-    _ = 16 * (6 + 4 * n + 2 * ℓ) * (e * θ) + 1536 * (n * m) * e := by
-        linear_combination 16 * e * h2
-    _ ≤ 16 * (6 + 4 * n + 2 * ℓ) + 1536 * (n * m) := by
-        have := mul_le_mul_of_nonneg_left (mul_le_one₀ he₁ hθ.le hθ₁)
-          (by positivity : (0 : ℝ) ≤ 16 * (6 + 4 * n + 2 * ℓ))
-        have := mul_le_mul_of_nonneg_left he₁ (by positivity : (0 : ℝ) ≤ 1536 * (n * m))
-        linarith
-    _ ≤ 3072 * M ^ 3 := by linarith
-    _ ≤ Ω * (e * θ) := hΩ
-
-/-- The floor and range hypotheses of Theorem 4.2 from the bounded-format bounds. -/
-private theorem mul_le_min_and_le_of_mul_le {n ℓ e θ R τ Ω : ℝ} (hn : 0 ≤ n) (hℓ : 0 ≤ ℓ)
-    (he : 0 < e) (he₁ : e ≤ 1) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hR : 1 / 2 ≤ R) (hR₁ : R ≤ 1)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (1536 * (n + ℓ + 2) ^ 3) ≤ e * θ)
-    (hΩ : 3072 * (n + ℓ + 2) ^ 3 ≤ Ω * (e * θ)) :
-    τ * (100 * n * √n) ≤ min (√(θ / (8 * n * min n (ℓ + 1)))) (e * min R 1) ∧
-      16 * (2 * R + n + 2 * ℓ + 2 * √2 * √n + √(Real.log (96 * n * min n (ℓ + 1) / θ))) ≤ Ω := by
-  set M := n + ℓ + 2 with hM
-  set m := min n (ℓ + 1) with hm_def
-  have hM2 : 2 ≤ M := by linarith
-  have hm0 : 0 ≤ m := le_min hn (by linarith)
-  have hmn : m ≤ n := min_le_left _ _
-  have hmM : m ≤ M := by linarith
-  have hc : 0 < 1536 * M ^ 3 := by positivity
-  have hs : √n ^ 2 = n := Real.sq_sqrt hn
-  have hsn : √n ≤ M := by nlinarith [Real.sqrt_nonneg n]
-  have hnsn : n * √n ≤ M ^ 3 := by
-    have : n * √n ≤ M * M := mul_le_mul (by linarith) hsn (Real.sqrt_nonneg n) (by linarith)
-    nlinarith
-  have heθ : e * θ ≤ θ := mul_le_of_le_one_left hθ.le he₁
-  have hX0 : 0 ≤ τ * (100 * n * √n) := by positivity
-  have hX : τ * (100 * n * √n) * (1536 * M ^ 3) ≤ 100 * n * √n * (e * θ) := by
-    have := mul_le_mul_of_nonneg_left hτ (by positivity : (0 : ℝ) ≤ 100 * n * √n)
-    linarith
-  refine ⟨le_min ?_ ?_, ?_⟩
-  · rcases hn.eq_or_lt with h0 | hn0
-    · simp [← h0]
-    have hm1 : 0 < m := lt_min hn0 (by linarith)
-    rw [← Real.sqrt_sq hX0]
-    refine Real.sqrt_le_sqrt ?_
-    rw [le_div_iff₀ (by positivity)]
-    refine le_of_mul_le_mul_right ?_ (pow_pos hc 2)
-    have h1 := pow_le_pow_left₀ (by positivity) hX 2
-    have h2 : (100 * n * √n * (e * θ)) ^ 2 = 10000 * n ^ 3 * (e * θ) ^ 2 := by
-      linear_combination (10000 * n ^ 2 * (e * θ) ^ 2) * hs
-    have h3 : n ^ 4 * m ≤ M ^ 6 := by
-      have h4 : n ^ 4 ≤ M ^ 4 := pow_le_pow_left₀ hn (by linarith) 4
-      have h5 : m ≤ M ^ 2 := hmM.trans (by nlinarith)
-      calc n ^ 4 * m ≤ M ^ 4 * M ^ 2 := mul_le_mul h4 h5 hm0 (by positivity)
-        _ = M ^ 6 := by ring
-    have h4 : (e * θ) ^ 2 ≤ θ := by nlinarith [mul_pos he hθ]
-    calc (τ * (100 * n * √n)) ^ 2 * (8 * n * m) * (1536 * M ^ 3) ^ 2
-        = 8 * n * m * (τ * (100 * n * √n) * (1536 * M ^ 3)) ^ 2 := by ring
-      _ ≤ 8 * n * m * (10000 * n ^ 3 * (e * θ) ^ 2) := by
-          rw [← h2]; exact mul_le_mul_of_nonneg_left h1 (by positivity)
-      _ = 80000 * (n ^ 4 * m) * (e * θ) ^ 2 := by ring
-      _ ≤ 80000 * M ^ 6 * θ := by gcongr
-      _ ≤ θ * (1536 * M ^ 3) ^ 2 := by
-          have : 0 ≤ M ^ 6 * θ := by positivity
-          linarith
-  · have h1 : 1 / 2 ≤ min R 1 := le_min hR (by norm_num)
-    refine le_trans ?_ (mul_le_mul_of_nonneg_left h1 he.le)
-    refine le_of_mul_le_mul_right ?_ hc
-    have := mul_le_mul_of_nonneg_left hnsn (by positivity : (0 : ℝ) ≤ 100 * (e * θ))
-    have := mul_le_mul_of_nonneg_right (mul_le_of_le_one_right he.le hθ₁)
-      (by positivity : (0 : ℝ) ≤ M ^ 3)
-    nlinarith [mul_nonneg he.le (pow_nonneg (by linarith : (0 : ℝ) ≤ M) 3)]
-  · exact le_of_mul_le_of_le_one hn hℓ he he₁ hθ hθ₁ hR₁ hΩ
-
--- The declaration name and a docstring line exceed 100 characters.
-set_option linter.style.longLine false in
-/-- **Hermitian diagonalization in a bounded binary format: $\log_2\log_2(n/(\varepsilon\theta)) +
-O(1)$ exponent bits suffice** (Theorem 4.2 for a finite exponent range): let the machine meet
-`NLAlib.FloatMachine.IsAccurate` with $u = 2^{-p}$, floor $2^{e_{\min} + p - 1}$ (the smallest
-normal number) and range the largest finite number of a binary format with $E \ge 2$ exponent
-bits, precision $p$ and smallest exponent $e_{\min}$ (as
-`NLAlib.exists_floatMachine_isAccurate_binaryFloatRound` provides), with the other hypotheses of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`,
-the input scaled so that $1/2 \le R_0 \le 1$ (an exact power-of-two scaling), the precision
-condition
-there with $\log_2(1/u) = p$, the ideal samples of the nodes independent, each with law
-`NLAlib.eighSampleLaw` $n$, and
-$$\log_2\Bigl(\log_2\frac{1536\,(n + \ell + 2)^3}{\varepsilon\theta} + 2\Bigr) + 1 \le E \,.$$
-Then the failure probability is at most $\theta$. With $\ell = O(\log(1/\varepsilon))$ this is
-$\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ exponent bits, the claim of [Shah2024, Section 1.2]
-("$\lg\lg(n/\varepsilon) + O(1)$ bits to store the exponent"), with the $\theta$ it omits. -/
-theorem
-    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} (fmt : Float.Model.Format)
-    (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
-    (hM : M.IsAccurate dec ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
-      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ cN)
-    (hunifm : ∀ c z, MeasurableSet (M.unif c ⁻¹' {z}))
-    (hunifc : ∀ c, (Set.range (M.unif c)).Countable)
-    (hnormalm : ∀ z, MeasurableSet (M.normal ⁻¹' {z})) (hnormalc : (Set.range M.normal).Countable)
-    (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {n : ℕ} {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
-    {R₀ ε β : F} {θ : ℝ} (hR₀ : specNorm (decodeMatrix dec A) ≤ dec R₀)
-    (hR₀half : 1 / 2 ≤ dec R₀) (hR₀one : dec R₀ ≤ 1) (hε : 0 < dec ε) (hε₁ : dec ε ≤ 2⁻¹ ^ 15)
-    (hθ : 0 < θ) (hθ₁ : θ ≤ 1) {ℓ : ℕ} (hℓ : bisectionDepth (dec ε) ≤ ℓ) (hβ : 0 < dec β)
-    (hβle : dec β ≤ ((ℓ : ℝ) - 1) ^ 2 * dec ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
-      √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
-      (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))))
-    (hβge : ((ℓ : ℝ) - 1) ^ 2 * dec ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
-        √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
-        (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))) /
-      (1 + 2⁻¹ ^ 6) ≤ dec β) {Nst : ℝ}
-    (hN : Nst = newtonSchulzSteps (θ / (12 * n * ℓ * (ℓ + 1))) (dec β / (16 * n)))
-    (hbits : Real.logb 2 (dec ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
-      Real.logb 2 (n * (4 * μM n + 10 + 10 * √(n : ℝ))) +
-      1 / 2 * Real.logb 2 (n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) +
-      Real.logb 2 (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))) +
-      Real.logb 2 (ℓ * (ℓ + 1)) + Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) +
-      13 ≤ fmt.mantissaBits)
-    (hbits' : Real.logb 2 (dec β)⁻¹ +
-      Real.logb 2 (2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) +
-      16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1)) ≤ fmt.mantissaBits)
-    (hexp : Real.logb 2 (Real.logb 2 (1536 * (n + ℓ + 2) ^ 3 / (dec ε * θ)) + 2) + 1 ≤
-      fmt.exponentBits)
-    {signFuel : ℕ} (hfuel : Nst ≤ signFuel) {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
-    {μ : Measure Ω'} {ζ : List Bool → Ω' → EighSample ℝ ℂ n} (hind : iIndepFun ζ μ)
-    (hlaw : ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) :
-    μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix dec A)
-      (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
-      (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
-      (dec ε / 3)} ≤ θ := by
-  have hτeq : fmt.minExponent + (fmt.mantissaBits : ℤ) - 1 =
-      -((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) := by
-    simp only [Float.Model.Format.minExponent]; ring
-  have hB : fmt.maxExponentBound = (2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits := by
-    have h1 : 1 ≤ 2 ^ (fmt.exponentBits - 1) := Nat.one_le_two_pow
-    have h2 : (2 : ℤ) ^ fmt.exponentBits = 2 * 2 ^ (fmt.exponentBits - 1) := by
-      rw [← pow_succ']; congr 1; omega
-    simp only [Float.Model.Format.maxExponentBound, Float.Model.Format.exponentBias,
-      Float.Model.Format.mantissaBits]
-    rw [Nat.cast_sub h1]
-    push_cast
-    rw [h2]
-    ring
-  have hp : 1 ≤ fmt.mantissaBits := by simp only [Float.Model.Format.mantissaBits]; omega
-  have hmax : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) ≤ fmt.maxFinite := by
-    rw [Float.Model.Format.maxFinite, hB]
-    have h2p : (2 : ℝ) ≤ 2 ^ fmt.mantissaBits := by
-      simpa using pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 2) hp
-    have : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) =
-        (2 ^ fmt.mantissaBits / 2) * 2 ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits) := by
-      rw [← zpow_natCast, div_eq_mul_inv, ← zpow_neg_one, ← zpow_add₀ two_ne_zero,
-        ← zpow_add₀ two_ne_zero, mul_comm (2 : ℝ), ← zpow_add_one₀ two_ne_zero]
-      congr 1; ring
-    rw [this]
-    gcongr
-    linarith
-  set m : ℝ := (n : ℝ) + ℓ + 2 with hm_def
-  have hm : 2 ≤ m := by
-    have := (Nat.cast_nonneg n : (0 : ℝ) ≤ n); have := (Nat.cast_nonneg ℓ : (0 : ℝ) ≤ ℓ)
-    linarith
-  have he₁ : dec ε ≤ 1 := hε₁.trans (by norm_num)
-  have hL1 : 1 ≤ 1536 * m ^ 3 / (dec ε * θ) := by
-    rw [le_div_iff₀ (by positivity), one_mul]
-    linarith [mul_le_one₀ he₁ hθ.le hθ₁, one_le_pow₀ (n := 3) (by linarith : (1 : ℝ) ≤ m)]
-  have hL := le_zpow_of_logb_logb_add_two_le hE hL1 (by simpa only [m] using hexp)
-  have hτ : (2 : ℝ) ^ (fmt.minExponent + (fmt.mantissaBits : ℤ) - 1) *
-      (1536 * m ^ 3) ≤ dec ε * θ := by
-    rw [hτeq, zpow_neg, ← div_eq_inv_mul, div_le_iff₀ (by positivity)]
-    rw [div_le_iff₀ (by positivity)] at hL
-    linarith
-  have hΩ : 3072 * m ^ 3 ≤ fmt.maxFinite * (dec ε * θ) := by
-    rw [div_le_iff₀ (by positivity)] at hL
-    nlinarith [mul_le_mul_of_nonneg_right hmax (by positivity : 0 ≤ dec ε * θ)]
-  obtain ⟨h₁, h₂⟩ := mul_le_min_and_le_of_mul_le (Nat.cast_nonneg n) (Nat.cast_nonneg ℓ) hε he₁
-    hθ hθ₁ hR₀half hR₀one (by positivity) hτ hΩ
-  refine hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
-    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ (by linarith) hε hε₁ hθ hθ₁ hℓ hβ
-    hβle hβge hN (by positivity) ?_ ?_ hfuel (by positivity) h₁ h₂ hind hlaw <;>
-  rwa [inv_pow, inv_inv, Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
 
 end NLAlib
