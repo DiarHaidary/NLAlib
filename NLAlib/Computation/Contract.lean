@@ -263,13 +263,15 @@ literal decides equality of sizes. No printed source. -/
 def IsExactIntLit (dec : P → K → ℝ) (sem : ScalarSem P K) (B : ℕ) : Prop :=
   ∀ (p : P) (k : ℕ), k ≤ B → ∃ z, sem.lit p k = some z ∧ dec p z = k
 
-/-- **The conversion to an index is the exact floor**: at every tag `p`, the conversion of every
-stored value succeeds and is the floor of its decoding, $0$ below zero (`Nat.floor`). True of IEEE
-truncation of a float to an unsigned integer (clamped at $0$), and of `NLAlib.Computation.exactSem`
-on real values. With `NLAlib.Computation.IsExactIntLit`, a size written by `litIdx` and read back
-by an index binder is the size. No printed source. -/
+/-- **The conversion to an index is the exact floor**: at every tag `p`, the conversion of a
+stored value with nonnegative decoding succeeds and is the floor of its decoding, and the
+conversion of a stored value with negative decoding fails (no clamping at $0$: a negative size is
+a failure of the run). True of IEEE truncation of a float to an unsigned integer with an invalid
+operation below zero, and of `NLAlib.Computation.exactSem` on real values. With
+`NLAlib.Computation.IsExactIntLit`, a size written by `litIdx` and read back by an index binder
+is the size. No printed source. -/
 def IsExactToNat (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
-  ∀ (p : P) (x : K), sem.toNat p x = some ⌊dec p x⌋₊
+  ∀ (p : P) (x : K), sem.toNat p x = if 0 ≤ dec p x then some ⌊dec p x⌋₊ else none
 
 /-- **Multiplication by a value of modulus at most one does not increase the modulus**: whenever
 a product at tag `p` succeeds and its second factor decodes into $[-1, 1]$, the result decodes to

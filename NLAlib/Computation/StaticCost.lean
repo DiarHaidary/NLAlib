@@ -438,7 +438,8 @@ theorem FStmt.bounds_staticCost_of_exec_eq_some :
     have hc : (StaticCost.step (I.charge (.toNat p))).Bounds st r.2 := by
       rw [snd_of_toNatStep_eq_some hr]
       exact StaticCost.Bounds.step st st.store st.pos _
-    exact hc.trans (StaticCost.Bounds.supRange (Nat.lt_succ_of_le (min_le_right _ _))
+    split_ifs at hb with hle
+    exact hc.trans (StaticCost.Bounds.supRange (Nat.lt_succ_of_le hle)
       (body.bounds_staticCost_of_exec_eq_some ρB _ hb))
 
 /-- A successful execution of a program satisfies the count, cell-peak and bit-peak summary
@@ -451,15 +452,16 @@ theorem Prog.bounds_staticCost_of_exec_eq_some {r b : ℕ} (prog : Prog P ι r b
 
 /-- Successful execution supplies the existing program budget interface using the static
 count and workspace bounds. Constant read-only storage is added once to each cell peak;
-the postcondition retains the actual final state. This theorem does not establish success. -/
+the postcondition retains the actual final state. The start state holds exactly the declared
+buffers. This theorem does not establish success. -/
 theorem Prog.runsWithin_staticCost_of_exec_eq_some {r b : ℕ} (prog : Prog P ι r b)
-    (N : ℕ) (n : Fin r → ℕ) {st st' : St P K (OpCount P ι)}
+    (N : ℕ) (n : Fin r → ℕ) {st st' : St P K (OpCount P ι)} (hsize : st.store.size = b)
     (h : prog.exec I N n st = some st') :
     prog.RunsWithin I N n st (prog.staticCost I.charge I.width N n).count
       (fun p => max (st.peak p) (st.cur p +
         (prog.staticCost I.charge I.width N n).cells p) + I.romSize p)
       (fun out => out = st') := by
   have hb := prog.bounds_staticCost_of_exec_eq_some I N n h
-  exact ⟨st', h, hb.count, fun p => Nat.add_le_add_right (hb.peak p) _, rfl⟩
+  exact ⟨hsize, st', h, hb.count, fun p => Nat.add_le_add_right (hb.peak p) _, rfl⟩
 
 end NLAlib.Computation

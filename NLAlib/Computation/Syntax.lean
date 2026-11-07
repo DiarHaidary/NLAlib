@@ -14,7 +14,7 @@ public import Mathlib.Data.Rat.Defs
 Algorithms are small imperative programs that work on buffers as BLAS code does: they allocate
 scoped buffers, overwrite cells in place, call kernels, draw random numbers from a tape, and
 multiply blocks of vectors by a matrix through an oracle, and call black-box kernels (a matrix
-product, a QR factorization) on contiguous blocks, and turn a stored value into a clamped index
+product, a QR factorization) on contiguous blocks, and turn a stored value into a bounded index
 (`bindIdx`, for sizes that depend on the data). A program is a value of
 `NLAlib.Computation.Stmt P ι VB VI`, a two-sorted parametric higher-order abstract syntax: `P` is
 the type of precision tags, `ι` the type of oracle names, `VB` the sort of buffer handles (bound
@@ -255,9 +255,9 @@ inductive Stmt (P ι VB VI : Type) where
   cells `outs`, all at tag `p`; the block lengths are the kernel's shape at `dims`. -/
   | kcall (o : ι) (p : P) (dims : List (IExp VI)) (ins outs : List (VB × IExp VI))
   /-- A bounded index binder: read the cell `x` at tag `p` once, convert the value to a natural
-  number $k$, and run the body with the index variable bound to $\min(k, \mathit{bound})$. The
-  value is clamped, not checked; the bound is an index expression, so the resources of the body
-  stay functions of the sizes. -/
+  number $k$, and run the body with the index variable bound to $k$; the run fails if
+  $k > \mathit{bound}$ (the value is checked, not clamped). The bound is an index expression, so
+  the resources of the body stay functions of the sizes. -/
   | bindIdx (p : P) (x : Cell VB VI) (bound : IExp VI) (body : VI → Stmt P ι VB VI)
 
 /-! ### First-order statements and programs -/
@@ -339,7 +339,7 @@ def forRange (n : IExp VI) (body : VI → Builder P ι VB VI Unit) : Builder P �
   .mk fun k => .seq (.loop n fun i => (body i).run) (k ())
 
 /-- A bounded index binder: the value of the cell `x` at tag `p`, converted to a natural number
-and clamped to `bound`, bound as an index variable for the body. -/
+and checked against `bound` (the run fails above it), bound as an index variable for the body. -/
 def bindIdx (p : P) (x : Cell VB VI) (bound : IExp VI) (body : VI → Builder P ι VB VI Unit) :
     Builder P ι VB VI Unit :=
   .mk fun k => .seq (.bindIdx p x bound fun i => (body i).run) (k ())

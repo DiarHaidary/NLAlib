@@ -221,7 +221,7 @@ theorem MatrixFree.prog {post : (N : ℕ) → (n : Fin r → ℕ) → X N n →
     (hc : ∀ N n, c.toStmt N n = F.inst N n) :
     Computation.MatrixFree p c valid X inputs cost mem post := by
   intro N n hv x A ξ
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
   exact h N n hv x A ξ
 
 /-- From a family to a program, stored entries: a stored-entries result for the program
@@ -235,7 +235,7 @@ theorem StoredEntries.prog {len : ℕ → (Fin r → ℕ) → ℕ}
     (hc : ∀ N n, c.toStmt N n = F.inst N n) :
     Computation.StoredEntries p c valid X inputs len cost mem post := by
   intro N n hv x vals ξ
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
   exact h N n hv x vals ξ
 
 end ProgFamily

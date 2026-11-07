@@ -60,7 +60,7 @@ noncomputable def gridSem (t : P → ℕ) : ScalarSem P ℝ where
   cmp p c x y := (exactSem (𝕜 := ℝ)).cmp p c (Real.roundNearest (t p) x)
     (Real.roundNearest (t p) y)
   convert p q x := some (Real.roundNearest (t q) (Real.roundNearest (t p) x))
-  toNat p x := some ⌊Real.roundNearest (t p) x⌋₊
+  toNat p x := if 0 ≤ Real.roundNearest (t p) x then some ⌊Real.roundNearest (t p) x⌋₊ else none
 
 /-- **Rounding to nearest has relative error at most $2^{-t}$**: $\mathrm{fl}(x) = x(1 + \delta)$
 for some $\lvert \delta \rvert \le 2^{-t}$. [Higham2002, Theorem 2.2]. -/

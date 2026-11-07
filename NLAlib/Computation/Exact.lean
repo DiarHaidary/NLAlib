@@ -35,6 +35,7 @@ $\mathit{off} + i + Nj$. Realisations are stated at `Fin N` (D9). Design:
 
 ## Main results
 
+* `NLAlib.Computation.inputState_store_size`: the initial state holds exactly its buffers.
 * `NLAlib.Computation.Holds.write`: a write outside the block keeps `Holds`.
 * `NLAlib.Computation.getElem?_flatten`, `NLAlib.Computation.unflatten_flatten`: the layout.
 * `NLAlib.Computation.exec_apply_exactInterp`: an oracle call under exact arithmetic.
@@ -54,8 +55,8 @@ open Classical in
 $\Bbbk$, so of a real number) and failing otherwise; equality tests exact; the comparisons
 `lt` and `le` in the order of $\Bbbk$ when both arguments are real (imaginary part $0$) and
 failing otherwise, so that a branch on two incomparable complex numbers fails, as a division by
-zero does; conversions the identity; the conversion to an index the floor of a real value, $0$
-below zero, and failing on a non-real one; integer and bitwise operations failing. -/
+zero does; conversions the identity; the conversion to an index the floor of a nonnegative real
+value, failing on a negative or non-real one; integer and bitwise operations failing. -/
 noncomputable def exactSem : ScalarSem P 𝕜 where
   lit _ q := some (q : 𝕜)
   bin _ b x y := match b with
@@ -71,7 +72,7 @@ noncomputable def exactSem : ScalarSem P 𝕜 where
     | .lt => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x < y)) else none
     | .le => if RCLike.im x = 0 ∧ RCLike.im y = 0 then some (decide (x ≤ y)) else none
   convert _ _ x := some x
-  toNat _ x := if RCLike.im x = 0 then some ⌊RCLike.re x⌋₊ else none
+  toNat _ x := if RCLike.im x = 0 ∧ 0 ≤ RCLike.re x then some ⌊RCLike.re x⌋₊ else none
 
 /-- An $N \times \ell$ matrix as a column-major array of length $N\ell$: entry $(i, j)$ at
 $i + Nj$. -/
@@ -114,6 +115,12 @@ def inputState {K C : Type} [Zero C] (p : P) (bufs : List (Array (Option K))) : 
   peak q := if q = p then (bufs.map Array.size).sum else 0
   curW := 0
   peakW := 0
+
+/-- The initial state holds exactly the given buffers. -/
+@[simp]
+theorem inputState_store_size {K C : Type} [Zero C] (p : P) (bufs : List (Array (Option K))) :
+    (inputState (C := C) p bufs).store.size = bufs.length := by
+  simp [inputState]
 
 /-- The $N \times k$ matrix drawn from the tape `x` from position `off`, column-major: entry
 $(i, j)$ is the tape value at $\mathit{off} + i + Nj$. -/

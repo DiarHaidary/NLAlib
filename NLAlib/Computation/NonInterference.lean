@@ -24,9 +24,9 @@ the current position, and a read-only read reads the data at its index. These ar
 of the run (`NLAlib.Computation.Query`), and `NLAlib.Computation.Stmt.queries` collects them along
 the run: a sequence adds the queries of its second part from the state after the first, a loop
 and a `whileFuel` loop add those of each iteration from the state it starts in, and an index
-binder those of its body at the clamped value it binds. Every other field of an interpretation
-(the value semantics, the charge, the oracle heights, the widths, the kernel shapes and the size
-of the read-only data) is its shape (`NLAlib.Computation.Interp.SameShape`).
+binder those of its body at the value it binds (none if the value exceeds the bound). Every other
+field of an interpretation (the value semantics, the charge, the oracle heights, the widths, the
+kernel shapes and the size of the read-only data) is its shape (`NLAlib.Computation.Interp.SameShape`).
 
 The theorem (`NLAlib.Computation.exec_eq_of_agreeOn`): two interpretations of the same shape that
 give the same answers on every query the run under the first makes give the same run, so the
@@ -195,8 +195,8 @@ draw queries the tape at the current position, an oracle call the oracle on the 
 kernel call the kernel on the blocks it read, a read-only read the data at its index. A sequence
 adds the queries of its second part from the state after the first, an allocation, a named
 kernel and a conditional those of the body or branch run, a loop and a `whileFuel` loop those of
-each iteration from the state it starts in, and an index binder those of its body at the clamped
-value. -/
+each iteration from the state it starts in, and an index binder those of its body at the value it
+binds, if that is at most the bound. -/
 def Stmt.queries : Stmt P ι ℕ ℕ → St P K C → Set (Query ι K)
   | .skip, _ => ∅
   | .seq s t, st => s.queries st ∪ (exec I s st).elim ∅ t.queries
@@ -235,7 +235,7 @@ def Stmt.queries : Stmt P ι ℕ ℕ → St P K C → Set (Query ι K)
         (outs.map fun x => (x.1, x.2.eval)) st.store).elim ∅ fun xs =>
           {.kernel o (dims.map IExp.eval) xs}
   | .bindIdx p x bound body, st => (toNatStep I p x st).elim ∅ fun r =>
-      (body (min r.1 bound.eval)).queries r.2
+      if r.1 ≤ bound.eval then (body r.1).queries r.2 else ∅
 
 /-! ### Non-interference -/
 
@@ -353,7 +353,11 @@ theorem exec_eq_of_agreeOn (hI : I.SameShape I') :
     rcases hr : toNatStep I p x st with _ | r
     · rfl
     · rw [hr] at h
-      exact exec_eq_of_agreeOn hI (body (min r.1 bound.eval)) r.2 h
+      simp only [Option.bind_some]
+      split_ifs with hle
+      · simp only [Option.elim_some, if_pos hle] at h
+        exact exec_eq_of_agreeOn hI (body r.1) r.2 h
+      · rfl
 
 end Exec
 
@@ -507,8 +511,8 @@ theorem MatrixFree.post_of_agreeOn (h : MatrixFree p prog valid X inputs cost me
     (hA : (exactInterp (P := P) (fun _ => A) ξ).AgreeOn (exactInterp (fun _ => A') ξ)
       (prog.queries (exactInterp (fun _ => A) ξ) N n (inputState p (List.ofFn (inputs N n x))))) :
     ∃ st, post N n x A ξ st ∧ post N n x A' ξ st := by
-  obtain ⟨st, hrun, -, -, hpost⟩ := h N n hv x A ξ
-  obtain ⟨st', hrun', -, -, hpost'⟩ := h N n hv x A' ξ
+  obtain ⟨-, st, hrun, -, -, hpost⟩ := h N n hv x A ξ
+  obtain ⟨-, st', hrun', -, -, hpost'⟩ := h N n hv x A' ξ
   rw [Prog.exec_eq_of_agreeOn (sameShape_exactInterp _ _ ξ) prog N n _ hA, hrun] at hrun'
   cases hrun'
   exact ⟨st, hpost, hpost'⟩

@@ -104,7 +104,7 @@ noncomputable def binaryFloatSem {P : Type} (fmt : Float.Model.Format)
         | .lt => decide (x.val < y.val)
         | .le => decide (x.val ≤ y.val)
       convert := fun _ _ x => some x
-      toNat := fun _ x => some ⌊x.val⌋₊ }
+      toNat := fun _ x => if 0 ≤ x.val then some ⌊x.val⌋₊ else none }
 
 /-- Bounded binary arithmetic satisfies the existing arithmetic interface with relative
 allowance $2^{-p}$ and absolute allowance $2^{e_{\min}}/2$. Every exact result in the
