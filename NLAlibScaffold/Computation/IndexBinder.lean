@@ -290,6 +290,6 @@ theorem exec_normIdx [AddMonoid C] (I : Interp P ι K C) :
 Proof: `NLAlib.Computation.exec_normIdx` twice. S, 1 line. -/
 theorem exec_eq_of_normIdx_eq [AddMonoid C] (I : Interp P ι K C) {s s' : Stmt P ι ℕ ℕ}
     (h : s.normIdx = s'.normIdx) (st : St P K C) : exec I s st = exec I s' st := by
-  sorry
+  rw [← exec_normIdx I s st, h, exec_normIdx I s' st]
 
 end NLAlib.Computation
