@@ -887,6 +887,67 @@ theorem IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero
   · rw [show R (Fin.last n) l = 0 from hR _ l (by simpa using h), zero_mul]
   · rw [show l = Fin.last n from Fin.ext (by simp; omega), hlast, zero_mul]
 
+/-- A unitary conjugation keeps the determinant of a shifted matrix. -/
+private theorem det_conj_sub_smul_eq (H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
+    (hQ : Qᴴ * Q = 1) (t : ℂ) :
+    (Qᴴ * H * Q - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det =
+      (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det := by
+  have hdet : Qᴴ.det * Q.det = 1 := by
+    rw [← Matrix.det_mul, hQ, Matrix.det_one]
+  have key : Qᴴ * H * Q - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) =
+      Qᴴ * (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * Q := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.mul_one, Matrix.smul_mul, hQ]
+  rw [key, Matrix.det_mul, Matrix.det_mul]
+  calc Qᴴ.det * (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det * Q.det
+      = (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det * (Qᴴ.det * Q.det) := by ring
+    _ = _ := by rw [hdet, mul_one]
+
+/-- The determinant of a shifted single-shift step is that of the original matrix. -/
+private theorem det_shiftedQRStep_sub_smul (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (s t : ℂ) :
+    (shiftedQRStep H s - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det =
+      (H - t • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det := by
+  have hQ : (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)))ᴴ *
+      givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) = 1 :=
+    hasOrthonormalCols_givensHessenbergState_fst _ _
+  unfold shiftedQRStep
+  exact det_conj_sub_smul_eq H _ hQ t
+
+/-- If the shift polynomial of a list of shifts is singular, one of its shifts is an eigenvalue. -/
+private theorem exists_mem_det_sub_smul_eq_zero_of_det_aeval
+    (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
+    (ss : List ℂ) (h : (Polynomial.aeval H (shiftPoly ss)).det = 0) :
+    ∃ s ∈ ss, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 := by
+  induction ss with
+  | nil =>
+    simp [shiftPoly] at h
+  | cons s ss ih =>
+    have hcons : Polynomial.aeval H (shiftPoly (s :: ss)) =
+        (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) *
+          Polynomial.aeval H (shiftPoly ss) := by
+      simp [shiftPoly, Algebra.algebraMap_eq_smul_one]
+    rw [hcons, Matrix.det_mul] at h
+    rcases mul_eq_zero.mp h with h1 | h1
+    · exact ⟨s, List.mem_cons_self, h1⟩
+    · obtain ⟨t, ht, h2⟩ := ih h1
+      exact ⟨t, List.mem_cons_of_mem _ ht, h2⟩
+
+/-- A singular shift in a list of shifts decouples the multi-shift step (induction on the list). -/
+private theorem isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero
+    {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n) :
+    ∀ ss : List ℂ, (∃ s ∈ ss, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0) →
+      IsDecoupled 0 (multiShiftedQRStep H ss)
+  | [], ⟨s, hs, _⟩ => by simp at hs
+  | s :: ss, ⟨t, ht, hdet⟩ => by
+    by_cases hs : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
+    · exact IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep
+        (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s)
+        (IsUpperHessenberg.isDecoupled_zero_shiftedQRStep_of_det_eq_zero hH hn hs) ss
+    · rcases List.mem_cons.mp ht with rfl | ht'
+      · exact absurd hdet hs
+      · exact isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero
+          (IsUpperHessenberg.isUpperHessenberg_shiftedQRStep hH s) hn ss
+          ⟨t, ht', by rw [det_shiftedQRStep_sub_smul]; exact hdet⟩
+
 /-- **A singular shift polynomial decouples exactly**: for upper Hessenberg $\mathbf{H}$ of size
 at least $2$ and shifts with $\det p(\mathbf{H}) = 0$, $p(z) = \prod_i (z - s_i)$, the step
 $\mathsf{multiShiftedQRStep}(\mathbf{H}, \mathrm{ss})$ has a zero subdiagonal entry. This is the
@@ -902,6 +963,7 @@ theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (hn : 0 < n)
     {ss : List ℂ} (h : (Polynomial.aeval H (shiftPoly ss)).det = 0) :
     IsDecoupled 0 (multiShiftedQRStep H ss) := by
-  sorry
+  refine isDecoupled_zero_multiShiftedQRStep_of_exists_det_eq_zero hH hn ss
+    (exists_mem_det_sub_smul_eq_zero_of_det_aeval H ss h)
 
 end NLAlib
