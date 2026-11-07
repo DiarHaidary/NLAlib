@@ -18,7 +18,7 @@ $\varepsilon/(16n)$ of $\pm 1$, and an iterate that passes is within $2\varepsil
 sign. Two accuracy theorems: one charges every step the error $2\delta/s$ of the first
 (the precision condition carries the step count), the other sums the step errors as a geometric
 series while the least eigenvalue modulus grows by the factor $11/8$ of
-`NLAlib.mul_abs_le_abs_newtonSchulz_of_abs_le`, so that the step count and the dimension factor
+`NLAlib.div_mul_abs_le_abs_newtonSchulz_of_abs_le`, so that the step count and the dimension factor
 of the stopping test leave the binding condition.
 
 ## Main results
@@ -744,8 +744,9 @@ $\operatorname{sign}\mathbf{A}$ in the spectral norm. Compared with
 `NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`
 ($640n^{3/2}(8 + \mu(n))(N_0 + 1)u \le (a/b)\varepsilon$), the step count and the dimension
 factor of the stopping test leave the binding condition: while the least eigenvalue modulus is at
-most $1/2$ it grows by the factor $11/8$ (`NLAlib.mul_abs_le_abs_newtonSchulz_of_abs_le`), so the
-step errors form a geometric series. [Shah2024, Theorem 2.6]. -/
+most $1/2$ it grows by the factor $11/8$
+(`NLAlib.div_mul_abs_le_abs_newtonSchulz_of_abs_le`), so the step errors form a geometric series.
+[Shah2024, Theorem 2.6]. -/
 theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le
     (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}

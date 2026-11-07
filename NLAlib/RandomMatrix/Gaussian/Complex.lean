@@ -40,7 +40,7 @@ value [Edelman1988], an elementary small-ball bound.
 * `NLAlib.complexGaussianMatrix_eq_map_gaussianMatrix`: the realification.
 * `NLAlib.hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix`,
   `NLAlib.hasLaw_submatrix_of_hasLaw_complexGaussianMatrix`.
-* `NLAlib.measureReal_le_normSq_le_of_hasLaw_complexGaussian`: the exponential tail of
+* `NLAlib.measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian`: the exponential tail of
   $\lvert z \rvert^2$.
 * `NLAlib.measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix`,
   `NLAlib.measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix`: Lemma 3.2, and the norm
@@ -483,11 +483,12 @@ private lemma complexGaussian_real_eq_integral (s : ℝ) :
   congr 2
   funext p
   exact hpt p
+
 /-- The exponential upper tail of a standard complex Gaussian: for $z \sim
 \mathcal{N}_{\mathbb C}(0, 1)$ and every real $s$, $\mathbb{P}[s \le \lvert z \rvert^2] \le
 e^{-s}$ ($\lvert z\rvert^2$ is exponential of mean $1$). No printed source needed: the closed
 form of the $\chi^2_2$ tail, in polar coordinates. -/
-theorem measureReal_le_normSq_le_of_hasLaw_complexGaussian {z : Ω → ℂ}
+theorem measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian {z : Ω → ℂ}
     (hz : HasLaw z complexGaussian μ) (s : ℝ) :
     μ.real {ω | s ≤ ‖z ω‖ ^ 2} ≤ Real.exp (-s) := by
   have : IsProbabilityMeasure μ := hz.isProbabilityMeasure_iff.2 inferInstance

@@ -28,7 +28,7 @@ sign function.
 ## Main results
 
 * `NLAlib.one_sub_newtonSchulz_sq`: $1 - g(x)^2 = (1 - x^2)^2(4 - x^2)/4$.
-* `NLAlib.mul_abs_le_abs_newtonSchulz_of_abs_le`: $g$ grows the modulus by $11/8$ below $1/2$.
+* `NLAlib.div_mul_abs_le_abs_newtonSchulz_of_abs_le`: $g$ grows the modulus by $11/8$ below $1/2$.
 * `NLAlib.mul_newtonSchulz_add_pos`, `NLAlib.abs_le_abs_newtonSchulz_add`: Lemma 2.3.
 * `NLAlib.abs_one_sub_newtonSchulz_add_sq_le`,
   `NLAlib.abs_one_sub_newtonSchulz_add_sq_le_add`: Lemma 2.4.
@@ -82,7 +82,7 @@ theorem abs_newtonSchulz_le_one {x : ℝ} (hx : |x| ≤ 2) : |newtonSchulz x| �
 /-- The Newton–Schulz map grows the modulus near zero: for $\lvert x \rvert \le 1/2$,
 $\tfrac{11}{8}\lvert x \rvert \le \lvert g(x) \rvert$, since $g(x)/x = (3 - x^2)/2 \ge 11/8$.
 No printed source; it makes the errors of the perturbed matrix iteration a geometric series. -/
-theorem mul_abs_le_abs_newtonSchulz_of_abs_le {x : ℝ} (hx : |x| ≤ 1 / 2) :
+theorem div_mul_abs_le_abs_newtonSchulz_of_abs_le {x : ℝ} (hx : |x| ≤ 1 / 2) :
     11 / 8 * |x| ≤ |newtonSchulz x| := by
   have hsq : x ^ 2 ≤ 1 / 4 := by nlinarith [sq_abs x, abs_nonneg x]
   unfold newtonSchulz

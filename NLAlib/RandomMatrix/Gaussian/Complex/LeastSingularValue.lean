@@ -19,7 +19,7 @@ has $\mathbb{P}[\sigma_{\min} \le x] \le \min(r^2, e\,r)\,x^2$, against Edelman'
 $1 - e^{-r x^2}$ [Edelman1988]. The bound $e\,r x^2$ is the probe argument of
 [SankarSpielmanTeng2006, Lemma 3.2]: an independent Gaussian probe $\mathbf{g}$ sees
 $\|\mathbf{G}^{-1}\|_2$ in $\|\mathbf{G}^{-1}\mathbf{g}\|$ with probability at least $e^{-1}$
-(`NLAlib.measureReal_le_normSq_le_of_hasLaw_complexGaussian`).
+(`NLAlib.measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian`).
 
 ## Main results
 

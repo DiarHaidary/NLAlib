@@ -584,6 +584,7 @@ into one of $\mathbf{A}$. [Shah2024, proof of Lemma 4.1]. -/
 theorem FloatMachine.IsAccurate.isApproxDiagonalization_submatrix_fromCols_mm {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k kp : ℕ} (hkp : kp ≤ k)
+    (hk : k = kp + (k - kp))
     {A : Matrix (Fin k) (Fin k) (F × F)} {Qp : Matrix (Fin k) (Fin kp) (F × F)}
     {Qm : Matrix (Fin k) (Fin (k - kp)) (F × F)} {Ap Up : Matrix (Fin kp) (Fin kp) (F × F)}
     {Am Um : Matrix (Fin (k - kp)) (Fin (k - kp)) (F × F)} {dp : Fin kp → F}
@@ -613,9 +614,9 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_submatrix_fromCols_mm {F
     (hθ : θ = u * (Dn + s + τ)) :
     IsApproxDiagonalization (decodeMatrix dec A)
       (decodeMatrix dec ((Matrix.fromCols (M.mm Qp Up) (M.mm Qm Um)).submatrix id
-        ((finCongr (Nat.add_sub_of_le hkp).symm).trans finSumFinEquiv.symm)))
+        ((finCongr hk).trans finSumFinEquiv.symm)))
       (fun i => dec (Sum.elim (fun j => M.add (dp j) σ) (fun j => M.sub (dm j) σ)
-        (((finCongr (Nat.add_sub_of_le hkp).symm).trans finSumFinEquiv.symm) i)))
+        (((finCongr hk).trans finSumFinEquiv.symm) i)))
       (γ + ρ + s * (2 * κ + κ ^ 2) + 2 * ((1 + κ) ^ 2 * θ + ξ * (2 * (1 + κ) + ξ) * (Dn + s + θ)))
       (κ + √2 * ξ) := by
   have hη0 : 0 ≤ η := (specNorm_nonneg _).trans hQp

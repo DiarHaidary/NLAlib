@@ -507,7 +507,8 @@ private theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_
   have hη1 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ 1 := div_le_one_of_le₀
     ((mul_le_of_le_one_left hε.le (sub_le_self _ (by positivity))).trans
       (by linarith [hB.ε_le])) (by positivity)
-  have key := hM.isApproxDiagonalization_submatrix_fromCols_mm hkp hB.nonneg_μM hu hτ₀ hVp hVm
+  have key := hM.isApproxDiagonalization_submatrix_fromCols_mm hkp
+    (Nat.add_sub_of_le hkp).symm hB.nonneg_μM hu hτ₀ hVp hVm
     hWp hWm hVpP hVmP hQp hQm hAp hAm hcp hcm hApR hAmR hσabs hκ0 hκ1 (by linarith) hη1
     (by linarith) (by linarith) rfl rfl rfl
   exact IsApproxDiagonalization.mono key hsplit (by linarith) (by linarith) (by linarith)
