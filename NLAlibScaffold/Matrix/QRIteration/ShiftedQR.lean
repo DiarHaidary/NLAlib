@@ -301,6 +301,17 @@ theorem IsUpperHessenberg.exists_isQR_aeval_shiftPoly {H : Matrix (Fin (n + 1)) 
       IsQR (Polynomial.aeval H (shiftPoly ss)) Q R ∧ multiShiftedQRStep H ss = Qᴴ * H * Q := by
   sorry
 
+/-- Helper: a single shifted QR step is a unitary similarity, so it preserves the spectral norm. -/
+private theorem specNorm_shiftedQRStep_aux (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (s : ℂ) :
+    specNorm (shiftedQRStep H s) = specNorm H := by
+  unfold shiftedQRStep
+  have hQ : HasOrthonormalCols (givensHessenbergQ (H - s • (1 : Matrix (Fin (n + 1))
+      (Fin (n + 1)) ℂ))) := by
+    unfold givensHessenbergQ
+    exact hasOrthonormalCols_givensHessenbergState_fst _ _
+  rw [hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
+
 /-- **The multi-shift QR step preserves the norm**:
 $\|\mathsf{multiShiftedQRStep}(\mathbf{H}, \mathrm{ss})\|_2 = \|\mathbf{H}\|_2$.
 Proof: each single step is a unitary similarity
@@ -308,7 +319,11 @@ Proof: each single step is a unitary similarity
 induction on the list. S, about 12 lines. -/
 theorem specNorm_multiShiftedQRStep (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (ss : List ℂ) :
     specNorm (multiShiftedQRStep H ss) = specNorm H := by
-  sorry
+  induction ss generalizing H with
+  | nil => rfl
+  | cons s ss ih =>
+    change specNorm (ss.foldl shiftedQRStep (shiftedQRStep H s)) = specNorm H
+    exact (ih (shiftedQRStep H s)).trans (specNorm_shiftedQRStep_aux H s)
 
 /-- **The multi-shift QR step carries the eigenvector matrix**: if
 $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
