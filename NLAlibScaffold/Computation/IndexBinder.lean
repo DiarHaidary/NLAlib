@@ -51,7 +51,7 @@ theorem exec_bindIdx_of_read [AddMonoid C] (I : Interp P ι K C) {p : P} {x : Ce
     (hx : st.store.read p x.buf x.idx.eval = some v) (hk : I.sem.toNat p v = some k) :
     exec I (.bindIdx p x bound body) st =
       exec I (body (min k bound.eval)) { st with cnt := st.cnt + I.charge (.toNat p) } := by
-  sorry
+  simp only [exec_bindIdx, toNatStep, hx, hk, Option.bind_some, Option.map_some]
 
 /-- **An index binder fails when the conversion fails**: if the cell `x` holds $v$ and the
 semantics does not convert $v$, the binder fails, whatever its body (the default conversion of a
