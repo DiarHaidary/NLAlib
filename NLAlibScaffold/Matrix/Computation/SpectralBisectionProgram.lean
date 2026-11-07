@@ -522,7 +522,8 @@ theorem eighProg.toStmt_compiled (p : P) (mm qr : ι) (N : ℕ) (n : Fin 2 → �
     (eighProg.compiled p mm qr).toStmt N n =
       ProgFamily.inst (r := 2) (b := 4) (fun _ _ N n h =>
         (eighProg p mm qr N (n 0) (n 1) (h 0) (h 1) (h 2) (h 3)).run) N n := by
-  sorry
+  -- the unfolding of the four buffers is deeper than the default recursion limit
+  set_option maxRecDepth 10000 in rfl
 
 /-- **The registered tree computes `NLAlib.eigh`**: under the hypotheses of
 `NLAlib.holds_of_exec_eighProg`, a successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and
