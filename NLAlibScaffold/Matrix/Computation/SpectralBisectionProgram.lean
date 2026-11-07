@@ -466,6 +466,25 @@ theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ 
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   sorry
 
+omit [Inhabited K] in
+/-- A loop of literals into cells of one buffer inside its shape succeeds and keeps the shape and
+every other buffer. -/
+private theorem exists_exec_loop_lit_of_lt {p : P} {m : IExp ℕ} {Y len : ℕ} {f : ℕ → IExp ℕ}
+    {c : ℚ} {st : St P K C} (hc : ∃ z, I.sem.lit p c = some z)
+    (hY : st.store.shape[Y]? = some (p, len)) (hf : ∀ w < m.eval, (f w).eval < len) :
+    ∃ st', exec I (.loop m fun w => .seq (.instr (.lit p ⟨Y, f w⟩ c)) .skip) st = some st' ∧
+      st'.store.shape = st.store.shape ∧
+      ∀ q b i, b ≠ Y → st'.store.read q b i = st.store.read q b i := by
+  obtain ⟨z, hz⟩ := hc
+  refine exists_exec_loop_eq_some_of_forall (I := I) (fun _ s => s.store.shape = st.store.shape ∧
+      ∀ q b i, b ≠ Y → s.store.read q b i = st.store.read q b i) ⟨rfl, fun _ _ _ _ => rfl⟩ ?_
+  rintro w hw s ⟨hsh, hrd⟩
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := s.store) z
+    (hsh ▸ hY) (hf w hw)
+  refine ⟨_, (exec_seq_instr_lit I hz hs').trans (exec_skip I _), ?_, fun q b i hb => ?_⟩
+  · exact (Store.shape_of_write_eq_some hs').trans hsh
+  · exact (Store.read_of_write_eq_some_of_ne hs' (Or.inl hb)).trans (hrd q b i hb)
+
 /-- **The spent level succeeds** under the standard model with every value in range and the exact
 floor conversion, when the arenas are allocated and their size cells of depth $D$ are initialised.
 No printed source.
@@ -480,7 +499,83 @@ theorem exists_exec_eighBottomLevel {u : P → ℝ} {dec : P → K → ℝ}
       ⟨n, A, R₀, ε, ℓ₀⟩ D) :
     ∃ st', exec I (eighBottomLevel (ι := ι) p (.const n) (.const D) H.Ua H.Ea H.Sz).run st =
       some st' := by
-  sorry
+  obtain ⟨hnd, -, hUa, -, hEa, hSz, -⟩ := hH
+  simp only [EighArenas.handles, List.nodup_cons, List.mem_cons, List.not_mem_nil,
+    or_false, not_or] at hnd
+  change ∃ st', exec I (.seq (.loop (.const n) _) .skip) st = some st'
+  simp only [exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall (I := I)
+    (fun _ s => s.store.shape = st.store.shape ∧
+      ∀ q i, s.store.read q H.Sz i = st.store.read q H.Sz i) ⟨rfl, fun _ _ => rfl⟩ ?_).imp
+    fun _ h => h.1
+  rintro lo hlo s ⟨hsh, hrd⟩
+  simp only [IExp.eval_const] at hlo
+  -- the size cell of the slot reads an index
+  obtain ⟨v, hv, k, hk⟩ : ∃ v, st.store.read p H.Sz (n * D + lo) = some v ∧
+      ∃ k, I.sem.toNat p v = some k := by
+    have : ∃ k, ReadsIdx I.sem st.store p H.Sz (n * D + lo) k := by
+      by_cases hy : ∃ (a : List Bool) (y : EighNode K), a.length = D ∧
+          eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (lo, y)
+      · obtain ⟨a, y, ha, hy⟩ := hy
+        exact ⟨_, (hlev.1 a lo y ha hy).1⟩
+      · push Not at hy
+        exact ⟨0, hlev.2.1 lo hlo fun a y ha => hy a y ha⟩
+    obtain ⟨k, hk⟩ := this
+    unfold ReadsIdx at hk
+    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp hk
+    exact ⟨v, hv, k, hk⟩
+  have hx : s.store.read p H.Sz (n * D + lo) = some v := (hrd p _).trans hv
+  change ∃ st', exec I (.seq (.bindIdx p ⟨H.Sz, eighSlotOff (.const n) (.const D) (.var lo)⟩
+    (.const n - .var lo) _) .skip) s = some st' ∧ _
+  rw [exec_seq_skip, exec_bindIdx_of_read I hx hk]
+  simp only [IExp.eval_sub, IExp.eval_const, IExp.eval_var]
+  have hk' : min k (n - lo) ≤ n - lo := min_le_right _ _
+  generalize min k (n - lo) = k' at hk' ⊢
+  change ∃ st', exec I (.seq (.loop _ fun _ => _) .skip) _ = some st' ∧ _
+  rw [exec_seq_skip]
+  refine exists_exec_loop_eq_some_of_forall (I := I)
+    (fun _ s => s.store.shape = st.store.shape ∧
+      ∀ q i, s.store.read q H.Sz i = st.store.read q H.Sz i) ⟨hsh, hrd⟩ ?_
+  rintro - - s₁ ⟨hsh₁, hrd₁⟩
+  have hlit : ∀ c : ℚ, ∃ z, I.sem.lit p c = some z := fun c => hsem.lit_ok p c trivial
+  have hblk : 2 * n * lo + 2 * (k' * k') ≤ 2 * (n * n) := by
+    have := Nat.mul_le_mul hk' hk'
+    have h2 : n - lo + lo = n := Nat.sub_add_cancel hlo.le
+    nlinarith
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) .skip)))
+    (.seq (.loop _ _) .skip)) s₁ = some st' ∧ _
+  obtain ⟨s₂, h₂, hsh₂, hrd₂⟩ := exists_exec_loop_lit_of_lt (I := I)
+    (m := 2 * (.var k' * .var k')) (Y := H.Ua)
+    (f := fun w => eighBlockOff (.const n) (.const D) (.var lo) + .var w) (hlit 0)
+    (hsh₁ ▸ hUa) (by
+      intro w hw
+      simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+        IExp.eval_var] at hw ⊢
+      nlinarith)
+  obtain ⟨s₃, h₃, hsh₃, hrd₃⟩ := exists_exec_loop_lit_of_lt (I := I) (st := s₂)
+    (m := .var k') (Y := H.Ua)
+    (f := fun i => eighBlockOff (.const n) (.const D) (.var lo) + zidx (.var k') (.var i) (.var i))
+    (hlit 1) ((hsh₂.trans hsh₁) ▸ hUa) (by
+      intro i hi
+      simp only [eighBlockOff, zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat,
+        IExp.eval_const, IExp.eval_var] at hi ⊢
+      nlinarith)
+  obtain ⟨s₄, h₄, hsh₄, hrd₄⟩ := exists_exec_loop_lit_of_lt (I := I) (st := s₃)
+    (m := .var k') (Y := H.Ea)
+    (f := fun i => eighSlotOff (.const n) (.const D) (.var lo) + .var i)
+    (hlit 0) ((hsh₃.trans (hsh₂.trans hsh₁)) ▸ hEa) (by
+      intro i hi
+      simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+        IExp.eval_var] at hi ⊢
+      rw [Nat.mul_succ]
+      omega)
+  refine ⟨s₄, ?_, hsh₄.trans (hsh₃.trans (hsh₂.trans hsh₁)), fun q i => ?_⟩
+  · rw [exec_seq, exec_named, exec_seq]
+    exact Option.bind_eq_some_iff.mpr ⟨s₃, Option.bind_eq_some_iff.mpr ⟨s₂, h₂, by
+      rw [exec_seq_skip]; exact h₃⟩, by rw [exec_seq_skip]; exact h₄⟩
+  · rw [hrd₄ q _ i (Ne.symm hnd.2.2.2.1.1), hrd₃ q _ i (Ne.symm hnd.2.1.2.2.1),
+      hrd₂ q _ i (Ne.symm hnd.2.1.2.2.1)]
+    exact hrd₁ q i
 
 /-- **One level of the upward pass**: if kernel `mm` of `I` is the routine `mmR` on interleaved
 pairs, under exact integer literals up to $n + 4$ and the exact floor conversion, a successful run
