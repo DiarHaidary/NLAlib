@@ -93,7 +93,17 @@ Proof: induction on $e$ (`pow_succ`, `Matrix.nonsing_inv_mul`, `Matrix.diagonal_
 S, about 10 lines. -/
 theorem mul_diagonal_mul_inv_pow {V : Matrix ι ι ℂ} (hV : IsUnit V) (g : ι → ℂ) (e : ℕ) :
     (V * Matrix.diagonal g * V⁻¹) ^ e = V * Matrix.diagonal (g ^ e) * V⁻¹ := by
-  sorry
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have key : ∀ X : Matrix ι ι ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, Matrix.nonsing_inv_mul V hdet, one_mul]
+  induction e with
+  | zero => rw [pow_zero, pow_zero, Pi.one_def, Matrix.diagonal_one, mul_one, hVi]
+  | succ n ih =>
+    rw [pow_succ, ih]
+    simp only [mul_assoc]
+    rw [key, ← mul_assoc (Matrix.diagonal (g ^ n)), Matrix.diagonal_mul_diagonal, pow_succ]
+    rfl
 
 /-- **A normal matrix has a perfectly conditioned eigenvector matrix**: a normal complex matrix
 $\mathbf{H}$ has $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with
