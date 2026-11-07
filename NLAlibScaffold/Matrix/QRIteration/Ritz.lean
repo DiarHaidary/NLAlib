@@ -63,7 +63,18 @@ Proof: `NLAlib.shiftPoly` of the roots is the characteristic polynomial
 theorem IsUpperHessenberg.isOptimalRitzValues_one_ritzValues
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
     (hkn : k ≤ n) : IsOptimalRitzValues 1 H (ritzValues k H) := by
-  sorry
+  have hcard : (trailingBlock k H).charpoly.roots.card =
+      (trailingBlock k H).charpoly.natDegree := by
+    simpa using IsAlgClosed.card_roots_map_eq_natDegree_of_injective
+      (f := RingHom.id ℂ) (trailingBlock k H).charpoly Function.injective_id
+  have hL : shiftPoly (ritzValues k H) = (trailingBlock k H).charpoly := by
+    unfold ritzValues shiftPoly
+    rw [← Multiset.prod_coe, ← Multiset.map_coe, Multiset.coe_toList]
+    exact Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq
+      (Matrix.charpoly_monic _) hcard
+  unfold IsOptimalRitzValues
+  rw [hL, length_ritzValues,
+    NLAlib.IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq hH hk hkn, one_mul]
 
 /-- **Ritz values are bounded by the norm**: every Ritz value $s$ of order $k \le n + 1$ has
 $\lvert s\rvert \le \|\mathbf{H}\|_2$.
