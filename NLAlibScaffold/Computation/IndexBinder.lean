@@ -97,7 +97,8 @@ Proof: `rfl` (the conversion of `NLAlib.Computation.gridSem` is the floor of the
 1 line. -/
 theorem isExactToNat_gridSem (t : P → ℕ) :
     IsExactToNat (fun p => Real.roundNearest (t p)) (gridSem t) := by
-  sorry
+  intro p x
+  rfl
 
 omit [DecidableEq P] in
 /-- **Bounded binary arithmetic converts exactly**: `NLAlib.Computation.binaryFloatSem`, with the
