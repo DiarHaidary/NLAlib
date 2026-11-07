@@ -22,7 +22,7 @@ Lemma 4.1]).
 ## Main results
 
 * `NLAlib.FloatMachine.IsAccurate.abs_dec_div_ofNat_two_sub_le`: the stored half window.
-* `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split`:
+* `NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget`:
   frames, deflated bases and compressions at a split.
 -/
 
@@ -524,15 +524,7 @@ private theorem FloatMachine.IsEighNodeBudget.le_of_stop_tol
   have hνu : 0 ≤ ν * u := mul_nonneg (by positivity) hu
   have hkβ := hB.mul_β_le
   have hβ1 : dec β ≤ 1 / 115200 := by nlinarith
-  have hN := newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
-    (div_pos hB.pos_w (by positivity))
-    (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]) (by positivity)
-    (by rw [div_le_iff₀ (by positivity)]; linarith)
-  have hstop : 2048 * (y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1) *
-      ν * u ≤ dec β := hB.stop_tol
-  have hX : (y.k + 1) * (ν * u) ≤
-      (y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1) * (ν * u) :=
-    mul_le_mul_of_nonneg_right (by linarith) hνu
+  have hstop := hB.mul_le_dec_β (by omega)
   have hkνu : 2048 * (y.k * (ν * u)) ≤ dec β := by linarith
   have hνu3 : 2048 * 3 * (ν * u) ≤ dec β := by
     linarith [mul_le_mul_of_nonneg_right (by linarith : (3 : ℝ) ≤ y.k + 1) hνu]

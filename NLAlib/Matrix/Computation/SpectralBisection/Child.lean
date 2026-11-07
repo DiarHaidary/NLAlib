@@ -19,7 +19,7 @@ invariant: a Hermitian matrix with $\|\mathbf{A}'\|_2 \le R'$ ([Shah2024, proof 
 
 * `NLAlib.le_eq_false_and_le_and_eq_of_eighChild_eq_some`: the parameters of a child.
 * `NLAlib.FloatMachine.IsAccurate.dec_eighNextParams_le`: the rounded next window and tolerance.
-* `NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some`: the child
+* `NLAlib.FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget`: the child
   invariant.
 -/
 
@@ -445,17 +445,10 @@ private theorem FloatMachine.IsEighNodeBudget.scalars
   have hβ := hB.pos_β
   -- `2048 k ⋅ 20 u ≤ β` from the stopping condition
   have hku : 40960 * (y.k * u) ≤ dec β := by
-    have hR := hB.pos_w.trans_le hB.w_le
-    have hN := newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
-      (by have := hB.pos_w; positivity)
-      (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]) (by positivity)
-      (by rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le])
-    have hS : (y.k : ℝ) ≤ y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 :=
-      by linarith
-    have hν : (20 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ) := by linarith [hB.nonneg_μM]
-    have := mul_le_mul (mul_le_mul_of_nonneg_left hS (by norm_num : (0 : ℝ) ≤ 2048)) hν
-      (by norm_num) (by positivity)
-    nlinarith [hB.stop_tol]
+    have := mul_le_mul_of_nonneg_right (by linarith [hB.nonneg_μM] :
+      (20 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ))
+      (mul_nonneg (by linarith : (0 : ℝ) ≤ y.k + 1) hu)
+    linarith [hB.mul_le_dec_β hk]
   have hkβ := hB.mul_β_le
   refine ⟨by nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ y.k) hu], ?_, ?_, ht⟩
   · have := hB.τ_le.trans ((min_le_left _ _).trans hB.x_le)

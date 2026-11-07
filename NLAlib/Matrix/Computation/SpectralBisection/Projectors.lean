@@ -16,16 +16,22 @@ On Event I (the
 ideal shift $c' = (R/\ell)v$ is at distance at least $w$ from every eigenvalue), the stored
 spectral projectors of one node of `NLAlib.eighStep` are within $\beta$ of the true ones, and the
 rounded rank estimate is the inertia $i_+(\mathbf{A} - c'\mathbf{I})$, so the node splits exactly
-when the true projectors are both nontrivial ([Shah2024, proof of Lemma 4.1]). The file also
-holds the scalar consequences of the node hypotheses used by the whole analysis
-(`NLAlib.mul_le_of_le_bisectionSignTol`) and two facts on roundings.
+when the true projectors are both nontrivial ([Shah2024, proof of Lemma 4.1]). The precision
+hypotheses of a node are bundled in `NLAlib.FloatMachine.IsEighNodeBudget`, generic in the
+parameters $(w, x, t)$ of the good event (shift distance, smallest singular value and norm
+thresholds of the Gaussian blocks), so that the probabilistic choice of $(x, t)$ is made in the
+probability files. The file also holds two facts on roundings.
+
+## Main definitions
+
+* `NLAlib.FloatMachine.IsEighNodeBudget`: the precision hypotheses of one node.
 
 ## Main results
 
-* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le`: the computed
-  projectors.
-* `NLAlib.FloatMachine.IsAccurate.min_toNat_eighProjector_eq_inertiaPos`: the rank estimate.
-* `NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub`: rank recovery.
+* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget`:
+  the computed projectors.
+* `NLAlib.FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_isEighNodeBudget`: the rank estimate.
+* `NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget`: rank recovery.
 -/
 
 @[expose] public section
@@ -425,6 +431,22 @@ structure FloatMachine.IsEighNodeBudget {F : Type*} (M : FloatMachine F ℝ ℂ)
   /-- The range condition. -/
   Ω_le : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + t) ≤ Ω
 
+/-- The stopping condition of a node budget without the step count: for $k \ge 1$,
+$2048(k + 1)\nu u \le \beta$ with $\nu = 4\mu_{\mathrm{MM}}(k) + 10 + 10\sqrt k$. -/
+theorem FloatMachine.IsEighNodeBudget.mul_le_dec_β
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 1 ≤ y.k) :
+    2048 * (y.k + 1) * (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤ dec β := by
+  refine le_trans ?_ hB.stop_tol
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hR := hB.pos_w.trans_le hB.w_le
+  have hN := newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
+    (div_pos hB.pos_w (by positivity)) (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le])
+    (div_pos hB.pos_β (by positivity))
+    (by rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le, hB.pos_β])
+  have hν : 0 ≤ (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u :=
+    mul_nonneg (by linarith [hB.nonneg_μM, Real.sqrt_nonneg (y.k : ℝ)]) hB.nonneg_u
+  nlinarith
+
 /-- The scalar smallness facts of a node budget of positive size: $\beta \le 1/57600$,
 $20480u(1 + \sqrt k) \le \beta$, $4k\tau \le 1$, $80\ell\beta \le 1$ and $640uR \le w\beta$. -/
 private theorem FloatMachine.IsEighNodeBudget.le_of_one_le
@@ -439,16 +461,7 @@ private theorem FloatMachine.IsEighNodeBudget.le_of_one_le
   set ν := 4 * μM y.k + 10 + 10 * √(y.k : ℝ) with hν
   have hν10 : 10 + 10 * √(y.k : ℝ) ≤ ν := by linarith [hB.nonneg_μM]
   have hνu : 0 ≤ ν * u := mul_nonneg (by linarith) hu
-  have hstop : 2048 * (ν * u) ≤ dec β := by
-    have h := hB.stop_tol
-    have hN : (1 : ℝ) ≤ y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 := by
-      have hw5 : w / (5 * dec y.R) ≤ 1 / 2 := by
-        rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]
-      have hβk : dec β / (16 * y.k) ≤ 1 / 2 := by
-        rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le]
-      linarith [newtonSchulzSteps_nonneg (by have := hB.pos_w; positivity) hw5
-        (by positivity) hβk]
-    nlinarith [mul_le_mul_of_nonneg_right hN hνu]
+  have hstop : 2048 * (ν * u) ≤ dec β := by nlinarith [hB.mul_le_dec_β hk]
   have hsign : 32 * (ν * u) ≤ w / (2 * dec y.R) * dec β := by
     have h := hB.sign_tol
     have : 0 ≤ w / (2 * dec y.R) * dec β := by have := hB.pos_w; positivity
@@ -666,18 +679,10 @@ private theorem FloatMachine.IsEighNodeBudget.sq_mul_le
   have hsk : 1 ≤ √(y.k : ℝ) := Real.one_le_sqrt.mpr hk1
   -- smallness of `k u` and `k τ`
   have hku : (y.k : ℝ) * u ≤ dec β / 20480 := by
-    have hN : (y.k : ℝ) ≤
-        y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 := by
-      have hR := hB.pos_w.trans_le hB.w_le
-      linarith [newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
-        (by have := hB.pos_w; positivity)
-        (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]) (by positivity)
-        (by rw [div_le_iff₀ (by positivity)]; linarith)]
-    have hν : (10 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ) := by
-      linarith [hB.nonneg_μM, Real.sqrt_nonneg (y.k : ℝ)]
-    have := mul_le_mul hN hν (by norm_num) (by linarith)
-    have := mul_le_mul_of_nonneg_right this hu
-    linarith [hB.stop_tol]
+    have := mul_le_mul_of_nonneg_right (by linarith [hB.nonneg_μM, Real.sqrt_nonneg (y.k : ℝ)] :
+      (10 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ))
+      (mul_nonneg (by linarith : (0 : ℝ) ≤ y.k + 1) hu)
+    linarith [hB.mul_le_dec_β (by exact_mod_cast hk1)]
   have hk2u : (y.k : ℝ) ^ 2 * u ≤ 1 / 100000 := by
     have := mul_le_mul_of_nonneg_left hku (by linarith : (0 : ℝ) ≤ y.k)
     nlinarith

@@ -14,8 +14,11 @@ public import NLAlib.Matrix.Computation.SpectralBisection.Tree
 If every internal node
 of the recursion tree of `NLAlib.eigh` has a good sample, the output is an approximate
 diagonalization with residual $2\varepsilon R_0$ and singular values of $\mathbf{U}$ in
-$[1 - \varepsilon/3, 1 + \varepsilon/3]$ ([Shah2024, Theorem 4.2], deterministic part). The
-probability is in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
+$[1 - \varepsilon/3, 1 + \varepsilon/3]$ ([Shah2024, Theorem 4.2], deterministic part). The good
+event of a node $y$ is charged in proportion to its size $k_y$ (shift distance
+$w_y = 4\theta R_y/(9n\ell(\ell + 1))$, Gaussian failure
+$\rho_y = \theta k_y/(6n\min(n, \ell + 1))$), and the accuracy uses the tolerance at the
+deepest node. The probability is in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
 
 ## Main results
 
@@ -28,8 +31,6 @@ probability is in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
 open scoped Matrix MatrixOrder
 
 namespace NLAlib
-
-/-! ### The global guarantee for a precision budget -/
 
 variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
   {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}

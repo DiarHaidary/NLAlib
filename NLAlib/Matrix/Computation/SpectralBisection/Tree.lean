@@ -14,15 +14,18 @@ The tree of
 `NLAlib.eighNodeAt` from a root with depth counter $\ell \ge$ `NLAlib.bisectionDepth`
 $\varepsilon$ has depth at most $\ell$, its nodes have size at most the root's, depth counter
 $\ell + \lvert a\rvert$, tolerance in $[\varepsilon/3, \varepsilon]$ and window at most $R_0$,
-it has at most $(k + 1)(\ell + 1)$ nodes and at most $k$ of them split ([Shah2024, proof of
-Theorem 4.2]).
+it has at most $(k + 1)(\ell + 1)$ nodes and at most $k$ of them split, and the sizes of the
+nodes at one depth sum to at most $k$ ([Shah2024, proof of Theorem 4.2]).
 
 ## Main results
 
 * `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_none_of_lt_length`: the depth.
 * `NLAlib.FloatMachine.IsAccurate.eighNodeAt_eq_some_params`: the parameters of the nodes.
+* `NLAlib.FloatMachine.IsAccurate.mul_le_dec_ε_of_eighNodeAt_eq_some`: the tolerance at a node,
+  telescoped.
 * `NLAlib.FloatMachine.IsAccurate.encard_eighNodeAt_ne_none_le`,
   `NLAlib.encard_eighNodeAt_isSplit_le`: the counts.
+* `NLAlib.sum_k_eighNodeAt_ofFn_le`: the sizes at one depth sum to at most the root's.
 -/
 
 @[expose] public section
