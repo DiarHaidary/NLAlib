@@ -1644,6 +1644,53 @@ theorem exists_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
     (fun i j t => hQf i ⟨j, lt_of_lt_of_le j.isLt hr⟩ t) (hne (Ne.symm hQfQa))
     ⟨lA, hsh₃ ▸ hQas, hlA⟩
 
+omit [Inhabited K] in
+/-- A conjugate transpose keeps the shape of the store and the tape positions. -/
+private theorem shape_pos_of_exec_zconjTranspose_compress (p : P) (m n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {st st' : St P K C}
+    (h : exec I (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run st = some st') :
+    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  have hins : ∀ {i : Instr P ℕ ℕ} {s s' : St P K C}, (∀ q d x, i ≠ .draw q d x) →
+      exec I (.instr i) s = some s' → s'.store.shape = s.store.shape ∧ s'.pos = s.pos := by
+    intro i s s' hi hs
+    rw [exec_instr] at hs
+    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp hs
+    refine ⟨Instr.shape_of_run_eq_some hr, ?_⟩
+    cases i with
+    | draw q d x => exact absurd rfl (hi q d x)
+    | _ => simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hr; aesop
+  change exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st' at h
+  rw [exec_seq_skip, exec_named, exec_seq_skip] at h
+  refine forall_of_exec_loop_eq_some I
+    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨rfl, rfl⟩ ?_ h
+  rintro j - s₁ s₂ ⟨hsh, hps⟩ hex
+  change exec I (.seq (.loop _ _) .skip) s₁ = some s₂ at hex
+  rw [exec_seq_skip] at hex
+  refine forall_of_exec_loop_eq_some I
+    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨hsh, hps⟩ ?_ hex
+  rintro i - s₃ s₄ ⟨hsh, hps⟩ hex
+  change exec I (.seq (.instr (.copy _ _ _)) (.seq (.instr (.un _ _ _ _)) .skip)) s₃ =
+    some s₄ at hex
+  rw [exec_seq] at hex
+  obtain ⟨s₅, h₅, hex⟩ := Option.bind_eq_some_iff.mp hex
+  rw [exec_seq_skip] at hex
+  obtain ⟨hsh₅, hps₅⟩ := hins (by intro _ _ _ h; cases h) h₅
+  obtain ⟨hsh₄, hps₄⟩ := hins (by intro _ _ _ h; cases h) hex
+  exact ⟨hsh₄.trans (hsh₅.trans hsh), hps₄.trans (hps₅.trans hps)⟩
+
+omit [Inhabited K] in
+/-- Blocks of distinct buffers are disjoint. -/
+private theorem blockDisjoint_of_ne_compress {b b' i i' l l' : ℕ} (h : b ≠ b') :
+    blockDisjoint (b, i, l) (b', i', l') = true := by
+  simp [blockDisjoint, h]
+
+omit [Inhabited K] in
+/-- Disjointness of blocks is symmetric. -/
+private theorem blockDisjoint_comm_compress {x y : ℕ × ℕ × ℕ} (h : blockDisjoint x y = true) :
+    blockDisjoint y x = true := by
+  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h ⊢
+  omega
+
 /-- **A compression computes the machine's compression**: if kernel `mm` of `I` is the routine `mmR`
 on interleaved pairs, a successful run of `NLAlib.eighCompressBlock` for the stored $k \times r$
 basis $\mathbf{Q}$ at `qo` of `Qa`, the node matrix $\mathbf{A}$ at `mo` of `Ma`, the cells `two`
@@ -1676,7 +1723,67 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
       (∀ q b i, b ∉ [Qh, C1, C2, C3] → blockDisjoint (b, i, 1) (Ma, co.eval, 2 * (r * r)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  intro M
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hbufs hcells
+  obtain ⟨⟨hQaMa, hQaQh, hQaC1, hQaC2, hQaC3⟩, ⟨hMaQh, hMaC1, hMaC2, hMaC3⟩, ⟨hQhC1, hQhC2, hQhC3⟩,
+    ⟨hC1C2, hC1C3⟩, hC2C3, -⟩ := hbufs
+  obtain ⟨⟨htQh, htC1, htC2, htC3⟩, hsQh, hsC1, hsC2, hsC3⟩ := hcells
+  have hne := @blockDisjoint_of_ne_compress
+  change exec I (.seq (.named _ _ _) (.seq (.kcall _ _ _ _ _) (.seq (.kcall _ _ _ _ _)
+    (.seq (.named _ _ _) (.seq (.named _ _ _) .skip))))) st = some st' at h
+  rw [exec_seq] at h
+  obtain ⟨s₁, h₁, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [exec_seq] at h
+  obtain ⟨s₂, h₂, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [exec_seq] at h
+  obtain ⟨s₃, h₃, h⟩ := Option.bind_eq_some_iff.mp h
+  rw [exec_seq] at h
+  obtain ⟨s₄, h₄, h⟩ := Option.bind_eq_some_iff.mp h
+  -- the conjugate transpose
+  have h₁' := (exec_seq_skip I _ st).trans h₁
+  obtain ⟨hQh, hfr₁⟩ := holds_of_exec_zconjTranspose (I := I) (toNat := toNat) (mmR := mmR)
+    (qrR := qrR) (unif := unif) (normal := normal) p k r hQ (hne (Ne.symm hQaQh)) h₁'
+  obtain ⟨hsh₁, hps₁⟩ := shape_pos_of_exec_zconjTranspose_compress p k r h₁'
+  -- the two products
+  rw [exec_kcall] at h₂ h₃
+  obtain ⟨c₁, hc₁, hs₂⟩ := Option.map_eq_some_iff.mp h₂
+  obtain ⟨c₂', hc₂, hs₃⟩ := Option.map_eq_some_iff.mp h₃
+  have e₂ : s₂.store = c₁ := by rw [← hs₂]
+  have e₃ : s₃.store = c₂' := by rw [← hs₃]
+  have p₂ : s₂.pos = s₁.pos := by rw [← hs₂]
+  have p₃ : s₃.pos = s₂.pos := by rw [← hs₃]
+  rw [← e₂] at hc₁
+  rw [← e₃] at hc₂
+  obtain ⟨hC1, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p (l := r) (m := k)
+    (n := k) (a := (Qh, 0)) (b := (Ma, mo.eval)) (c := (C1, 0)) hQh
+    (hA.of_forall_read_eq fun i _ _ => hfr₁ p Ma i (hne hMaQh)) (hne (Ne.symm hQhC1))
+    (hne (Ne.symm hMaC1)) hc₁
+  obtain ⟨hC2, hfr₃⟩ := hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p (l := r) (m := k)
+    (n := r) (a := (C1, 0)) (b := (Qa, qo.eval)) (c := (C2, 0)) hC1
+    (hQ.of_forall_read_eq fun i _ _ => (hfr₂ p Qa i (hne hQaC1)).trans
+      (hfr₁ p Qa i (hne hQaQh))) (hne (Ne.symm hC1C2)) (hne (Ne.symm hQaC2)) hc₂
+  -- the cells `two` and `sg` are kept so far
+  have hkeep : ∀ c : Cell ℕ ℕ, c.buf ≠ Qh → c.buf ≠ C1 → c.buf ≠ C2 →
+      s₃.store.read p c.buf c.idx.eval = st.store.read p c.buf c.idx.eval := fun c h1 h2 h3 =>
+    (hfr₃ p _ _ (hne h3)).trans ((hfr₂ p _ _ (hne h2)).trans (hfr₁ p _ _ (hne h1)))
+  -- the average and the shift
+  have h₄' := (exec_seq_skip I _ s₃).trans h₄
+  obtain ⟨hC3, hfr₄, hsh₄, hps₄⟩ := holds_of_exec_zhermAvg (I := I) (toNat := toNat)
+    (mmR := mmR) (qrR := qrR) (unif := unif) (normal := normal) p r hC2
+    ((hkeep two htQh htC1 htC2).trans htwo) (hne (Ne.symm hC2C3)) (hne htC3) h₄'
+  rw [exec_seq_skip] at h
+  have h' := (exec_seq_skip I _ s₄).trans h
+  obtain ⟨hMa, hfr₅, hsh₅, hps₅⟩ := holds_of_exec_zhermShift (I := I) (toNat := toNat)
+    (mmR := mmR) (qrR := qrR) (unif := unif) (normal := normal) p r hC3
+    ((hfr₄ p _ _ (hne hsC3)).trans ((hkeep sg hsQh hsC1 hsC2).trans hσ)) (hne hMaC3)
+    (blockDisjoint_comm_compress hcocells.2) h'
+  refine ⟨hMa, fun q b i hb hbd => ?_, ?_, ?_⟩
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hb
+    rw [hfr₅ q b i hbd, hfr₄ q b i (hne hb.2.2.2), hfr₃ q b i (hne hb.2.2.1),
+      hfr₂ q b i (hne hb.2.1), hfr₁ q b i (hne hb.1)]
+  · rw [hsh₅, hsh₄, Interp.shape_of_kcallStore_eq_some hc₂,
+      Interp.shape_of_kcallStore_eq_some hc₁, hsh₁]
+  · rw [hps₅, hps₄, p₃, p₂, hps₁]
 
 /-- **A compression succeeds** under the standard model at $u$ with every value in range, the
 cell `two` decoding to a nonzero value, if kernel `mm` is a routine on pairs and the scratch buffers
