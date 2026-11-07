@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Matrix.Computation.SpectralBisection
 public import NLAlib.Matrix.Computation.NewtonSchulzSign
+public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSign
 
 /-!
 # Spectral projectors and rank recovery at a node of spectral bisection
@@ -43,94 +44,6 @@ theorem FloatMachine.IsAccurate.mul_sub_lt_of_le_eq_false {F : Type*} {M : Float
   have hlt : dec (M.mul e R₀) < dec R :=
     not_le.mp fun h => by simp [(hM.le_iff _ _).mpr h] at hint
   linarith [(le_and_le_of_isRoundingOf (hM.mul e R₀) (mul_nonneg he hR₀) hΩ hu hτ₀).1]
-
-/-- The accuracy bound `NLAlib.bisectionSignTol` gives $\beta k^{3/2} \le 1/57600$ and
-$\beta\ell \le \varepsilon/360$. -/
-private theorem mul_le_of_le_bisectionSignTol_aux {β ε ρ : ℝ} {k ℓ : ℕ} (hk : 1 ≤ k)
-    (hℓ : 20 ≤ ℓ) (hε : 0 < ε) (hε₁ : ε ≤ 1 / 8) (hρ₁ : ρ ≤ 1) (hβ : 0 < β)
-    (hβtol : β ≤ bisectionSignTol k ε ρ ℓ) :
-    β * (k * √(k : ℝ)) ≤ 1 / 57600 ∧ β * ℓ ≤ ε / 360 := by
-  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
-  have hℓ' : (20 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
-  have hkk : (1 : ℝ) ≤ k * √(k : ℝ) :=
-    one_le_mul_of_one_le_of_one_le hk1 (Real.one_le_sqrt.mpr hk1)
-  have hℓi : 0 < 1 / (ℓ : ℝ) := by positivity
-  have hℓi1 : 1 / (ℓ : ℝ) ≤ 1 := by rw [div_le_one (by linarith)]; linarith
-  set η := (1 - 1 / (ℓ : ℝ)) * ε / (5 * ℓ) with hη
-  have hη0 : 0 ≤ η := div_nonneg (mul_nonneg (by linarith) hε.le) (by positivity)
-  have hηℓ : η * ℓ = (1 - 1 / (ℓ : ℝ)) * ε / 5 := by rw [hη]; field_simp
-  have hηℓ' : η * ℓ ≤ ε / 5 := by rw [hηℓ]; nlinarith [mul_pos hℓi hε]
-  have hη1 : η ≤ 1 / 800 := by nlinarith [mul_le_mul_of_nonneg_left hℓ' hη0]
-  have hD : 72 * (k * √(k : ℝ)) ≤ 36 * k * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ))) := by
-    linarith [mul_nonneg (by linarith : (0 : ℝ) ≤ k) (Real.sqrt_nonneg (2 * Real.log (4 / ρ)))]
-  have hβD : β * (36 * k * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ)))) ≤ η := by
-    have h := hβtol
-    rw [bisectionSignTol, ← hη, le_div_iff₀ (by linarith)] at h
-    exact h.trans (mul_le_of_le_one_right hη0 (Real.sqrt_le_one.mpr hρ₁))
-  have h72 : 72 * β * (k * √(k : ℝ)) ≤ η := by linarith [mul_le_mul_of_nonneg_left hD hβ.le]
-  have hβη : 72 * β ≤ η := by linarith [mul_le_mul_of_nonneg_left hkk hβ.le]
-  refine ⟨by linarith, ?_⟩
-  linarith [mul_le_mul_of_nonneg_right hβη (by linarith : (0 : ℝ) ≤ ℓ)]
-
-/-- The scalar budget of a node: under the accuracy bound $0 < \beta \le$
-`NLAlib.bisectionSignTol` $k$ $\varepsilon$ $\rho$ $\ell$ (with $\ell \ge 20$,
-$0 < \varepsilon \le 1/8$, $\rho \le 1$), the sign-step roundoff condition
-$640k^{3/2}(8 + \mu)(N(w/(8R), \beta/(16k)) + 1)u \le (w/(4R))\beta$ (with $0 < w \le R$,
-$\mu, u \ge 0$) and the floor condition $4k^{3/2}\tau \le \min(\sqrt{\rho/2}, X)$ (with
-$\tau \ge 0$), the node is nonempty and $k\beta \le 1/57600$, $k^2u \le 10^{-5}$,
-$k\tau \le 1/4$, $k^{3/2}uR \le w\beta/20480$, $k^{3/2}u \le \beta/20480$,
-$10^6\ell u \le \varepsilon$, $10^5\ell\mu u \le \varepsilon$ and $4\tau \le X$. -/
-theorem mul_le_of_le_bisectionSignTol {u τ ρ w R ε β μ X : ℝ} {k ℓ : ℕ} (hℓ : 20 ≤ ℓ)
-    (hε : 0 < ε) (hε₁ : ε ≤ 1 / 8) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ R) (hβ : 0 < β)
-    (hβtol : β ≤ bisectionSignTol k ε ρ ℓ) (hμ : 0 ≤ μ) (hu : 0 ≤ u)
-    (husign : 640 * k * √(k : ℝ) * (8 + μ) *
-      (newtonSchulzSteps (w / (8 * R)) (β / (16 * k)) + 1) * u ≤ w / (4 * R) * β)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * k * √(k : ℝ)) ≤ min (√(ρ / 2)) X) :
-    1 ≤ k ∧ (k : ℝ) * β ≤ 1 / 57600 ∧ (k : ℝ) ^ 2 * u ≤ 1 / 100000 ∧ (k : ℝ) * τ ≤ 1 / 4 ∧
-      k * √(k : ℝ) * u * R ≤ w * β / 20480 ∧ k * √(k : ℝ) * u ≤ β / 20480 ∧
-      (ℓ : ℝ) * u * 1000000 ≤ ε ∧ (ℓ : ℝ) * (μ * u) * 100000 ≤ ε ∧ 4 * τ ≤ X := by
-  have hk : 1 ≤ k := Nat.pos_of_ne_zero fun h => by
-    simp only [h, bisectionSignTol, Nat.cast_zero, mul_zero, zero_mul, div_zero] at hβtol
-    linarith
-  obtain ⟨hβk, hβℓ⟩ := mul_le_of_le_bisectionSignTol_aux hk hℓ hε hε₁ hρ₁ hβ hβtol
-  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
-  have hsq1 : 1 ≤ √(k : ℝ) := Real.one_le_sqrt.mpr hk1
-  have hkk : (k : ℝ) ≤ k * √(k : ℝ) := le_mul_of_one_le_right (by linarith) hsq1
-  have hR0 : 0 < R := hw.trans_le hwR
-  have hℓ0 : (0 : ℝ) ≤ ℓ := by positivity
-  have hkk1 : (1 : ℝ) ≤ k * √(k : ℝ) := hk1.trans hkk
-  have hβ1 : β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_left hkk1 hβ.le]
-  have hNs := newtonSchulzSteps_nonneg (s := w / (8 * R)) (ε := β / (16 * k))
-    (by positivity) (by rw [div_le_iff₀ (by positivity)]; linarith) (by positivity)
-    (by rw [div_le_iff₀ (by positivity)]; linarith)
-  have hw4 : w / (4 * R) ≤ 1 / 4 := by rw [div_le_iff₀ (by positivity)]; linarith
-  have hKu : 0 ≤ k * √(k : ℝ) * u := by positivity
-  have h0 : 0 ≤ 640 * (8 + μ) * (k * √(k : ℝ) * u) := by positivity
-  have hmain : 640 * (8 + μ) * (k * √(k : ℝ) * u) ≤ w / (4 * R) * β :=
-    le_trans (by linarith [mul_nonneg h0 hNs]) husign
-  have hwβ := mul_le_mul_of_nonneg_right hw4 hβ.le
-  have hku : k * √(k : ℝ) * u ≤ β / 20480 := by linarith [mul_nonneg hμ hKu]
-  have hμu : μ * u * 2560 ≤ β := by linarith [mul_nonneg (mul_nonneg hμ hu) (by linarith :
-    (0 : ℝ) ≤ k * √(k : ℝ) - 1), mul_nonneg hμ hKu]
-  have hkuR : k * √(k : ℝ) * u * R ≤ w * β / 20480 := by
-    have h := mul_le_mul_of_nonneg_right hmain hR0.le
-    rw [show w / (4 * R) * β * R = w * β / 4 by field_simp] at h
-    linarith [mul_nonneg (mul_nonneg hμ hKu) hR0.le]
-  have hu1 : u ≤ β / 20480 := by linarith [mul_le_mul_of_nonneg_right hkk1 hu]
-  have hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000 := by
-    have e : (k : ℝ) ^ 2 * u = (k * √(k : ℝ) * u) * √(k : ℝ) := by
-      rw [pow_two]; nth_rewrite 1 [← Real.mul_self_sqrt (Nat.cast_nonneg (α := ℝ) k)]; ring
-    rw [e]
-    have h1 := mul_le_mul_of_nonneg_right hku (Real.sqrt_nonneg (k : ℝ))
-    have h2 : β * √(k : ℝ) ≤ β * (k * √(k : ℝ)) :=
-      mul_le_mul_of_nonneg_left (le_mul_of_one_le_left (by positivity) hk1) hβ.le
-    linarith
-  have hsρ : √(ρ / 2) ≤ 1 := Real.sqrt_le_one.mpr (by linarith)
-  refine ⟨hk, by linarith [mul_le_mul_of_nonneg_left hkk hβ.le], hk2u, ?_, hkuR, hku, ?_, ?_, ?_⟩
-  · linarith [hτ.trans (min_le_left _ _), mul_le_mul_of_nonneg_right hkk hτ₀]
-  · linarith [mul_le_mul_of_nonneg_left hu1 hℓ0]
-  · linarith [mul_le_mul_of_nonneg_left (by linarith : μ * u ≤ β / 2560) hℓ0]
-  · linarith [hτ.trans (min_le_right _ _), mul_le_mul_of_nonneg_right hkk1 hτ₀]
 
 /-- The stored $\mathrm{fl}(2)$ is within $3u$ of $2$ (for $u \ge 0$, $0 \le \tau \le 1/4$ and
 $2 \le \Omega$). -/
@@ -331,208 +244,21 @@ private theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_eigh
     have := abs_sub_abs_le_abs_sub (eigenvalue (Ad - c' • I) j) (eigenvalue Xd j)
     linarith
 
-/-- The Newton–Schulz sign of the stored shifted matrix of a node is within
-$\beta + \beta/2000$ of $\operatorname{sign}(\mathbf{A} - c'\mathbf{I})$ on Event I, when the
-leaf test fails. -/
-private theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_eighSign_le
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
-    (hint : M.le y.R (M.mul y.ε R₀) = false)
-    {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
-    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
-    specNorm (cfc Real.sign (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) -
-      decodeMatrix dec (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-        (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1)))) ≤
-      dec β + dec β / 2000 := by
-  obtain ⟨hk, hkβ, -, hkτ, hkuR, hku, hℓu, -, h4τ⟩ :=
-    mul_le_of_le_bisectionSignTol hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign hτ₀ hτ
-  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
-  have hkk : (1 : ℝ) ≤ y.k * √(y.k : ℝ) :=
-    one_le_mul_of_one_le_of_one_le hk1 (Real.one_le_sqrt.mpr hk1)
-  have hR0 : 0 < dec y.R := hw.trans_le hwR
-  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
-  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
-  have huR : u * dec y.R ≤ w * dec β / 20480 := by
-    linarith [mul_le_mul_of_nonneg_right hkk (mul_nonneg hu hR0.le)]
-  have hu1 : u ≤ 1 / 1000000 := by linarith [mul_le_mul_of_nonneg_right hkk hu]
-  have hτ1 : τ ≤ 1 / 4 := by linarith [mul_le_mul_of_nonneg_right hk1 hτ₀]
-  have hsqL := Real.sqrt_nonneg (Real.log (4 / ρ))
-  have hε8 := mul_le_mul_of_nonneg_right hε₁ hR₀.le
-  have hτR : τ ≤ dec y.R / 2 := by
-    have := hM.mul_sub_lt_of_le_eq_false hu hτ₀ hε.le hR₀.le (by linarith) hint
-    linarith [mul_le_mul_of_nonneg_right hu1 (mul_pos hε hR₀).le,
-      mul_le_mul_of_nonneg_right hu1 hτ₀]
-  obtain ⟨hcc, hcR, hcpR⟩ := hM.abs_dec_unif_sub_le (R := y.R) (ℓ := y.ℓ) hu hτ₀ (by linarith)
-    hR0 hℓ' (by linarith) hτR (by linarith) hv
-  obtain ⟨hb1, hb2⟩ := hM.dec_mul_ofNat_two_le (R := y.R) hu (by linarith) hτ₀ hτ1 hτR
-    (by linarith)
-  obtain ⟨hXh, he, hXn, hspecA, hspecX⟩ := hM.specNorm_sub_decodeMatrix_hermShift_eighShift_le hu
-    hA hR hτR (by linarith) hcc hcR hcpR hI
-  set b := dec (M.mul (M.ofNat 2) y.R)
-  set Ad := decodeMatrix dec y.A
-  set I := (1 : Matrix (Fin y.k) (Fin y.k) ℂ)
-  set cp := dec y.R / y.ℓ * smp.1
-  set X := M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1)
-  set a := w / 2 + 2 * u * w with ha
-  have huw : u * w ≤ u * dec y.R := mul_le_mul_of_nonneg_left hwR hu
-  have hwβ : w * dec β ≤ w * (1 / 57600) := mul_le_mul_of_nonneg_left hβ1 hw.le
-  have huwR : 0 ≤ u * w * dec y.R := by positivity
-  have hb0 : 0 < b := by linarith [mul_le_mul_of_nonneg_right hu1 hR0.le]
-  have hwb := mul_le_mul_of_nonneg_left hb2 hw.le
-  have hN : newtonSchulzSteps (a / (2 * b)) (dec β / (16 * y.k)) ≤
-      newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) := by
-    refine newtonSchulzSteps_le_of_le_abs (by positivity) ?_
-    rw [abs_of_pos (by positivity), div_le_div_iff₀ (by positivity) (by positivity), ha]
-    linarith
-  have hab : w / (4 * dec y.R) ≤ a / b := by
-    rw [div_le_div_iff₀ (by positivity) hb0, ha]
-    linarith
-  have hC : 0 ≤ 640 * (y.k : ℝ) * √(y.k : ℝ) * (8 + μM y.k) := by positivity
-  have huSN : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (a / (2 * b)) (dec β / (16 * y.k)) + 1) * u ≤ a / b * dec β :=
-    calc _ ≤ 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-          (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u :=
-          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (by linarith) hC) hu
-      _ ≤ w / (4 * dec y.R) * dec β := husign
-      _ ≤ a / b * dec β := mul_le_mul_of_nonneg_right hab hβ.le
-  have hSN := hM.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le hμM hu hτ₀
-    (by linarith) (by linarith) hXh (by positivity) (fun x hx => by linarith [hspecX x hx])
-    (by linarith [mul_le_mul_of_nonneg_right hu1 hR0.le]) hβ (by linarith) huSN (N := signFuel)
-    (hN.trans hfuel)
-  have hAcp : (Ad - cp • I).IsHermitian := hA.sub (isHermitian_real_smul_one cp)
-  have hmove := hAcp.specNorm_cfc_sign_sub_cfc_sign_le hXh hw hspecA
-  have hmove' : 2 * specNorm ((Ad - cp • I) - decodeMatrix dec X) / w ≤ dec β / 2000 := by
-    rw [div_le_iff₀ hw]
-    linarith
-  have := specNorm_add_le (cfc Real.sign (Ad - cp • I) - cfc Real.sign (decodeMatrix dec X))
-    (cfc Real.sign (decodeMatrix dec X) - decodeMatrix dec (newtonSchulzSign M β
-      (M.mul (M.ofNat 2) y.R) signFuel X))
-  rw [sub_add_sub_cancel] at this
-  linarith
-
-/-- The sign of a shifted Hermitian matrix has norm at most $1$. -/
-private theorem specNorm_cfc_sign_sub_smul_one_le {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
+/-- The sign of a shifted Hermitian matrix has norm at most $1$:
+$\|\operatorname{sign}(\mathbf{A} - c\mathbf{I})\|_2 \le 1$ for Hermitian $\mathbf{A}$ and real
+$c$. -/
+theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_smul_one_le {k : ℕ}
+    {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (c : ℝ) :
     specNorm (cfc Real.sign (A - c • (1 : Matrix (Fin k) (Fin k) ℂ))) ≤ 1 :=
   (hA.sub (isHermitian_real_smul_one c)).specNorm_cfc_le zero_le_one fun x _ => by
     rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num
 
-/-- **The computed spectral projectors are accurate on Event I**: under the node hypotheses of
-`NLAlib.FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub` (without the size
-condition), including that the node is not a leaf ($\mathrm{fl}(R) > \mathrm{fl}(\varepsilon R_0)$,
-`hint`; without it the window $R$ can lie far below $u\tau$ and the bound fails), for a seed
-$v \in [-1, 1]$ whose ideal shift $c' = (R/\ell)v$ is at distance at least $w$ from every
-eigenvalue of $\mathbf{A}$, the stored projectors of `NLAlib.eighStep`, $\mathbf{P}_+ =
-(\mathbf{B} + \mathbf{I})/2$ and $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/2$ with $\mathbf{B}$
-the Newton–Schulz sign of the stored shifted matrix, are within $\beta$ of
-$\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
-Lemma 4.1], (4.4)–(4.9). -/
-theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
-    (hint : M.le y.R (M.mul y.ε R₀) = false)
-    {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
-    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
-    specNorm (decodeMatrix dec (M.hermScale (M.hermShift
-        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)) -
-      (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β ∧
-    specNorm (decodeMatrix dec (M.hermScale (M.negMat (M.hermShift
-        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) M.one)) (M.ofNat 2)) -
-      (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β := by
-  have _ := hρ
-  obtain ⟨hk, hkβ, -, hkτ, -, hku3, -, -, -⟩ :=
-    mul_le_of_le_bisectionSignTol hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign hτ₀ hτ
-  have hSB := hM.specNorm_cfc_sign_sub_decodeMatrix_eighSign_le hμM hu hA hR hℓ hε hε₁ hR₀ hρ₁ hw
-    hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hint hv hI
-  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
-  have hksq : √(y.k : ℝ) ≤ y.k * √(y.k : ℝ) := le_mul_of_one_le_left (by positivity) hk1
-  have huk : u * √(y.k : ℝ) ≤ dec β / 20480 := by
-    linarith [mul_le_mul_of_nonneg_left hksq hu]
-  have huβ : u ≤ dec β / 20480 := by
-    linarith [mul_le_mul_of_nonneg_left (Real.one_le_sqrt.mpr hk1) hu]
-  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
-  have hτ1 : τ ≤ 1 / 4 := by linarith [mul_le_mul_of_nonneg_right hk1 hτ₀]
-  have hΩ4 : 4 ≤ Ω := by
-    have := Real.sqrt_nonneg (Real.log (4 / ρ))
-    have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
-    linarith [hw.trans_le hwR]
-  have hBh := hM.isHermitian_decodeMatrix_newtonSchulzSign β (M.mul (M.ofNat 2) y.R) signFuel
-    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))
-  set B := newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))
-  set S := cfc Real.sign (decodeMatrix dec y.A -
-    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
-  set Bd := decodeMatrix dec B
-  have hS : specNorm S ≤ 1 := specNorm_cfc_sign_sub_smul_one_le hA _
-  have hBn : specNorm Bd ≤ 2 := by
-    have := specNorm_sub_le S (S - Bd)
-    rw [sub_sub_cancel] at this
-    linarith
-  have hBS : specNorm (Bd - S) ≤ dec β + dec β / 2000 := by rw [specNorm_sub_comm]; exact hSB
-  have hI1 : specNorm (1 : Matrix (Fin y.k) (Fin y.k) ℂ) ≤ 1 := specNorm_one_le
-  have hfin : (dec β + dec β / 2000 + 3 * u) / 2 + u * (2 * √(y.k : ℝ) + 4) ≤ dec β := by
-    linarith
-  have hsc : ∀ {Z : Matrix (Fin y.k) (Fin y.k) (F × F)} {Y : Matrix (Fin y.k) (Fin y.k) ℂ},
-      (decodeMatrix dec Z).IsHermitian → specNorm Y ≤ 2 →
-      specNorm (decodeMatrix dec Z - Y) ≤ dec β + dec β / 2000 + 3 * u →
-      specNorm (decodeMatrix dec (M.hermScale Z (M.ofNat 2)) - (2⁻¹ : ℝ) • Y) ≤ dec β :=
-    fun hZ hY hZY => (hM.specNorm_decodeMatrix_hermScale_two_sub_le hu (by linarith) hτ₀ hk1 hkτ
-      hΩ4 hZ hY hZY (by linarith)).trans hfin
-  have hshift : ∀ s : F, |dec s| = 1 → specNorm ((Bd - dec s • 1) -
-      decodeMatrix dec (M.hermShift B s)) ≤ 3 * u := fun s hs => by
-    have hBs : specNorm (Bd - dec s • 1) ≤ 3 := by
-      refine (specNorm_sub_le _ _).trans ?_
-      rw [specNorm_real_smul, hs, one_mul]
-      linarith
-    exact (hM.specNorm_sub_decodeMatrix_hermShift_le hu hBh s (by linarith)).trans
-      (by linarith [mul_le_mul_of_nonneg_left (max_le hBs (by linarith : τ ≤ 3)) hu])
-  have hW : ∀ s : F, (decodeMatrix dec (M.hermShift B s)).IsHermitian := fun s =>
-    hM.isHermitian_decodeMatrix_hermFrom _ _
-  constructor
-  · have hsh := hshift (M.neg M.one) (by rw [hM.dec_neg, hM.dec_one]; norm_num)
-    rw [hM.dec_neg, hM.dec_one, neg_one_smul, sub_neg_eq_add] at hsh
-    refine hsc (hW _) ((specNorm_add_le _ _).trans (by linarith)) ?_
-    rw [show decodeMatrix dec (M.hermShift B (M.neg M.one)) - (1 + S) =
-      (Bd - S) - ((Bd + 1) - decodeMatrix dec (M.hermShift B (M.neg M.one))) by abel]
-    exact (specNorm_sub_le _ _).trans (by linarith)
-  · have hsh := hshift M.one (by rw [hM.dec_one]; norm_num)
-    rw [hM.dec_one, one_smul] at hsh
-    refine hsc (by rw [hM.decodeMatrix_negMat]; exact (hW _).neg)
-      ((specNorm_sub_le _ _).trans (by linarith)) ?_
-    rw [hM.decodeMatrix_negMat, show -decodeMatrix dec (M.hermShift B M.one) - (1 - S) =
-      ((Bd - 1) - decodeMatrix dec (M.hermShift B M.one)) - (Bd - S) by abel]
-    exact (specNorm_sub_le _ _).trans (by linarith)
-
 /-- The rounded trace $\mathrm{fl}(t + \mathrm{fl}(1/2))$ of a stored $\mathbf{X}$ whose diagonal
-sum is within $1/57600$ of $r \le k$ (with $\sum_i \lvert x_{ii}\rvert \le 2k$) has floor $r$. -/
-private theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
+sum is within $1/57600$ of $r \le k$ (with $\sum_i \lvert x_{ii}\rvert \le 2k$) has floor $r$,
+under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$, $k \ge 1$, $k^2u \le 10^{-5}$,
+$k\tau \le 1/4$ and $16k \le \Omega$: the rank count of [Shah2024, Algorithm 3]. -/
+theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u) (hτ₀ : 0 ≤ τ) {k : ℕ}
     (hk1 : (1 : ℝ) ≤ k) (hk2u : (k : ℝ) ^ 2 * u ≤ 1 / 100000) (hkτ : (k : ℝ) * τ ≤ 1 / 4)
@@ -576,70 +302,386 @@ private theorem FloatMachine.IsAccurate.toNat_add_traceRe_div_eq {F : Type*}
   rw [hM.toNat_eq, Nat.floor_eq_iff (by linarith)]
   constructor <;> linarith
 
-/-- **The rounded rank estimate is the inertia on Event I**: let the machine meet
-`NLAlib.FloatMachine.IsAccurate` with $u \ge 0$ and
-$\mu_{\mathrm{MM}}(k) \ge 0$, and let the node $(k, \mathbf{A}, R, \varepsilon, \ell)$ have
-$\mathbf{A}$
-Hermitian with $\|\mathbf{A}\|_2 \le R$, $k \ge 2$, $\ell \ge 20$, $0 < \varepsilon \le 1/8$, $R_0 >
-0$
-and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ failing. Let $0 < \rho \le 1$,
-$0 < w \le R$, $0 < \beta \le$ `NLAlib.bisectionSignTol` $k\,\varepsilon\,\rho\,\ell$, the sign
-precision
-$640k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_w + 1)u \le (w/(4R))\beta$ with
-$N_w =$ `NLAlib.newtonSchulzSteps` $(w/(8R))\,(\beta/(16k))$ at most the step limit, the floor
-$0 \le \tau$ with $4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and the range
-$16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$. On Event I for a seed $v \in [-1, 1]$
-(every eigenvalue $e$ of
-$\mathbf{A}$ has $\lvert e - (R/\ell)v\rvert \ge w$), the rank estimate
-$k_+ = \min(k, \lfloor\mathrm{fl}(\operatorname{tr}\mathbf{P}_+ + \mathrm{fl}(1/2))\rfloor)$ of
-the node's step (`NLAlib.eighStep`) is the inertia $i_+(\mathbf{A} - c'\mathbf{I})$ of the ideal
-shift $c' = (R/\ell)v$. [Shah2024, proof of Lemma 4.1], "the estimates $k_\pm$ are the exact
-ranks". -/
-theorem FloatMachine.IsAccurate.min_toNat_eighProjector_eq_inertiaPos
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
+/-! ### Generic node lemmas for a precision budget -/
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+  {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
+
+/-- `M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y`: the **precision budget of the
+node $y$** of spectral bisection for a good event with shift distance $w$, smallest singular value
+threshold $x$ and norm threshold $t$: the node's matrix is Hermitian with norm at most its window
+$R$, its depth counter is at least $20$, $0 < \varepsilon \le 1/8$, $0 < w \le R$, $0 < x \le 1$,
+$t \ge 2\sqrt2\sqrt k$, and, with $\nu = 4\mu_{\mathrm{MM}}(k) + 10 + 10\sqrt k$ and
+$N_0 = N(w/(5R), \beta/(16k))$: the deflation tolerance $2t\beta/x \le
+(1 - 1/\ell)\varepsilon/(5\ell)$, the sign condition $32\nu u \le (1 - 2^{-7})\,w\beta/(2R)$, the
+stopping condition $2048(k + N_0 + 1)\nu u \le \beta$, the deflation rounding condition
+$16(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)u \le \beta$,
+$k\beta \le 1/57600$, at least $N_0$ sign steps, and the floor and range conditions
+$4k^{3/2}\tau \le \min(x, \varepsilon R_0)$, $16(R_0 + R + k + \ell + t) \le \Omega$. The
+hypotheses of [Shah2024, Lemma 4.1] with the constants of SN4' and DF2'. -/
+structure FloatMachine.IsEighNodeBudget {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) (R₀ β : F) (signFuel : ℕ) (w x t : ℝ)
+    (y : EighNode F) : Prop where
+  /-- The product constant is nonnegative. -/
+  nonneg_μM : 0 ≤ μM y.k
+  /-- The QR constant is nonnegative. -/
+  nonneg_μQ : 0 ≤ μQ y.k
+  /-- The sampler constant is nonnegative. -/
+  nonneg_cN : 0 ≤ cN
+  /-- The unit roundoff is nonnegative. -/
+  nonneg_u : 0 ≤ u
+  /-- The node's matrix is Hermitian. -/
+  isHermitian : (decodeMatrix dec y.A).IsHermitian
+  /-- The node's matrix lies in its window. -/
+  specNorm_le : specNorm (decodeMatrix dec y.A) ≤ dec y.R
+  /-- The depth counter is at least $20$. -/
+  twenty_le : 20 ≤ y.ℓ
+  /-- The tolerance is positive. -/
+  pos_ε : 0 < dec y.ε
+  /-- The tolerance is at most $1/8$. -/
+  ε_le : dec y.ε ≤ 1 / 8
+  /-- The root scale is positive. -/
+  pos_R₀ : 0 < dec R₀
+  /-- The shift distance is positive. -/
+  pos_w : 0 < w
+  /-- The shift distance is at most the window. -/
+  w_le : w ≤ dec y.R
+  /-- The singular value threshold is positive. -/
+  pos_x : 0 < x
+  /-- The singular value threshold is at most $1$. -/
+  x_le : x ≤ 1
+  /-- The norm threshold is at least $2\sqrt2\sqrt k$. -/
+  le_t : 2 * √2 * √(y.k : ℝ) ≤ t
+  /-- The accuracy is positive. -/
+  pos_β : 0 < dec β
+  /-- The deflation tolerance. -/
+  defl_tol : 2 * t / x * dec β ≤ (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)
+  /-- The sign condition. -/
+  sign_tol : 32 * (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤
+    (1 - 2⁻¹ ^ 7) * w / (2 * dec y.R) * dec β
+  /-- The stopping condition. -/
+  stop_tol : 2048 * (y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1) *
+    (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤ dec β
+  /-- The deflation rounding condition. -/
+  defl_u : 16 * (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β
+  /-- The accuracy is small against the size. -/
+  mul_β_le : (y.k : ℝ) * dec β ≤ 1 / 57600
+  /-- Enough sign steps. -/
+  fuel : newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel
+  /-- The floor is nonnegative. -/
+  nonneg_τ : 0 ≤ τ
+  /-- The floor condition. -/
+  τ_le : τ * (4 * y.k * √(y.k : ℝ)) ≤ min x (dec y.ε * dec R₀)
+  /-- The range condition. -/
+  Ω_le : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + t) ≤ Ω
+
+/-- The scalar smallness facts of a node budget of positive size: $\beta \le 1/57600$,
+$20480u(1 + \sqrt k) \le \beta$, $4k\tau \le 1$, $80\ell\beta \le 1$ and $640uR \le w\beta$. -/
+private theorem FloatMachine.IsEighNodeBudget.le_of_one_le
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 1 ≤ y.k) :
+    dec β ≤ 1 / 57600 ∧ 20480 * u + 20480 * (u * √(y.k : ℝ)) ≤ dec β ∧
+      4 * (y.k * τ) ≤ 1 ∧ 80 * (y.ℓ * dec β) ≤ 1 ∧ 640 * (u * dec y.R) ≤ w * dec β := by
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hsq1 : 1 ≤ √(y.k : ℝ) := Real.one_le_sqrt.mpr hk1
+  have hu := hB.nonneg_u
+  have hβ := hB.pos_β
+  have hR0 : 0 < dec y.R := hB.pos_w.trans_le hB.w_le
+  set ν := 4 * μM y.k + 10 + 10 * √(y.k : ℝ) with hν
+  have hν10 : 10 + 10 * √(y.k : ℝ) ≤ ν := by linarith [hB.nonneg_μM]
+  have hνu : 0 ≤ ν * u := mul_nonneg (by linarith) hu
+  have hstop : 2048 * (ν * u) ≤ dec β := by
+    have h := hB.stop_tol
+    have hN : (1 : ℝ) ≤ y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 := by
+      have hw5 : w / (5 * dec y.R) ≤ 1 / 2 := by
+        rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]
+      have hβk : dec β / (16 * y.k) ≤ 1 / 2 := by
+        rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le]
+      linarith [newtonSchulzSteps_nonneg (by have := hB.pos_w; positivity) hw5
+        (by positivity) hβk]
+    nlinarith [mul_le_mul_of_nonneg_right hN hνu]
+  have hsign : 32 * (ν * u) ≤ w / (2 * dec y.R) * dec β := by
+    have h := hB.sign_tol
+    have : 0 ≤ w / (2 * dec y.R) * dec β := by have := hB.pos_w; positivity
+    rw [show (1 - 2⁻¹ ^ 7) * w / (2 * dec y.R) * dec β =
+      (1 - 2⁻¹ ^ 7) * (w / (2 * dec y.R) * dec β) by ring] at h
+    nlinarith
+  have hνu' := mul_le_mul_of_nonneg_right hν10 hu
+  have hxk : τ * (4 * y.k * √(y.k : ℝ)) ≤ 1 := hB.τ_le.trans ((min_le_left _ _).trans hB.x_le)
+  have hkτ := mul_le_mul_of_nonneg_left hsq1 (mul_nonneg (by positivity : (0 : ℝ) ≤ y.k)
+    hB.nonneg_τ)
+  refine ⟨by nlinarith [hB.mul_β_le], by nlinarith, by nlinarith, ?_, ?_⟩
+  · have hℓ : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+    have ht : 1 ≤ t := by
+      have : (1 : ℝ) ≤ √2 := Real.one_le_sqrt.mpr (by norm_num)
+      nlinarith [hB.le_t]
+    have h2 : 2 * dec β ≤ 2 * t / x * dec β := by
+      gcongr
+      rw [le_div_iff₀ hB.pos_x]; nlinarith [hB.x_le]
+    have h3 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ 1 / (40 * y.ℓ) := by
+      rw [div_le_div_iff₀ (by positivity) (by positivity)]
+      have : 0 ≤ 1 / (y.ℓ : ℝ) := by positivity
+      nlinarith [hB.ε_le, hB.pos_ε, mul_nonneg this hB.pos_ε.le]
+    have h4 := (h2.trans hB.defl_tol).trans h3
+    rw [le_div_iff₀ (by positivity)] at h4
+    nlinarith
+  · rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)] at hsign
+    nlinarith [mul_le_mul_of_nonneg_right hνu' hR0.le,
+      mul_nonneg (mul_nonneg (Real.sqrt_nonneg (y.k : ℝ)) hu) hR0.le]
+
+/-- The Newton–Schulz sign of the stored shifted matrix of a node with budget is within
+$\beta + \beta/64$ of $\operatorname{sign}(\mathbf{A} - c'\mathbf{I})$ on Event I, when the leaf
+test fails. -/
+private theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_eighSign_le_of_budget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 1 ≤ y.k)
+    (hint : M.le y.R (M.mul y.ε R₀) = false)
+    {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    specNorm (cfc Real.sign (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) -
+      decodeMatrix dec (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+        (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1)))) ≤
+      dec β + dec β / 64 := by
+  obtain ⟨hβ1, hu20, hkτ, hℓβ, huR⟩ := hB.le_of_one_le hk
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hw := hB.pos_w
+  have hβ := hB.pos_β
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hR0 : 0 < dec y.R := hw.trans_le hB.w_le
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+  have hR₀ := hB.pos_R₀
+  have hΩ := hB.Ω_le
+  have ht0 : 0 ≤ t := le_trans (by positivity) hB.le_t
+  have hsk := mul_nonneg hu (Real.sqrt_nonneg (y.k : ℝ))
+  have hu1 : u ≤ 1 / 1000000 := by linarith
+  have hτ1 : τ ≤ 1 / 4 := by nlinarith
+  have hkk : (1 : ℝ) ≤ y.k * √(y.k : ℝ) :=
+    one_le_mul_of_one_le_of_one_le hk1 (Real.one_le_sqrt.mpr hk1)
+  have h4τ : 4 * τ ≤ dec y.ε * dec R₀ := by
+    nlinarith [hB.τ_le.trans (min_le_right _ _), mul_le_mul_of_nonneg_right hkk hτ₀]
+  have hε8 := mul_le_mul_of_nonneg_right hB.ε_le hR₀.le
+  have hτR : τ ≤ dec y.R / 2 := by
+    have := hM.mul_sub_lt_of_le_eq_false hu hτ₀ hB.pos_ε.le hR₀.le (by linarith) hint
+    nlinarith [mul_le_mul_of_nonneg_right hu1 (mul_pos hB.pos_ε hR₀).le,
+      mul_le_mul_of_nonneg_right hu1 hτ₀]
+  obtain ⟨hcc, hcR, hcpR⟩ := hM.abs_dec_unif_sub_le (R := y.R) (ℓ := y.ℓ) hu hτ₀ (by linarith)
+    hR0 hℓ' (by nlinarith) hτR (by linarith) hv
+  obtain ⟨hb1, hb2⟩ := hM.dec_mul_ofNat_two_le (R := y.R) hu (by linarith) hτ₀ hτ1 hτR
+    (by linarith)
+  obtain ⟨hXh, he, hXn, hspecA, hspecX⟩ := hM.specNorm_sub_decodeMatrix_hermShift_eighShift_le hu
+    hB.isHermitian hB.specNorm_le hτR (by linarith) hcc hcR hcpR hI
+  set b := dec (M.mul (M.ofNat 2) y.R)
+  set X := M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1)
+  set a := w - 4 * u * dec y.R with ha
+  have hwβ : w * dec β ≤ w * (1 / 57600) := mul_le_mul_of_nonneg_left hβ1 hw.le
+  have huR1 : u * dec y.R ≤ w / 36864000 := by linarith
+  have huRR := mul_le_mul_of_nonneg_right huR1 hR0.le
+  have huwR := mul_le_mul_of_nonneg_right hu1 (mul_pos hw hR0).le
+  have hb0 : 0 < b := by nlinarith [mul_le_mul_of_nonneg_right hu1 hR0.le]
+  have hwb := mul_le_mul_of_nonneg_left hb2 hw.le
+  have ha0 : 0 < a := by rw [ha]; linarith
+  have hab : (1 - 2⁻¹ ^ 7) * w / (2 * dec y.R) ≤ a / b := by
+    rw [div_le_div_iff₀ (by positivity) hb0, ha]
+    nlinarith
+  have hN : newtonSchulzSteps (a / (2 * b)) (dec β / (16 * y.k)) ≤
+      newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) := by
+    refine newtonSchulzSteps_le_of_le_abs (by positivity) ?_
+    rw [abs_of_pos (by positivity), div_le_div_iff₀ (by positivity) (by positivity), ha]
+    linarith [mul_pos hw hR0]
+  have hνu : 0 ≤ (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u :=
+    mul_nonneg (by linarith [hB.nonneg_μM, Real.sqrt_nonneg (y.k : ℝ)]) hu
+  have hstop : 640 * (y.k + newtonSchulzSteps (a / (2 * b)) (dec β / (16 * y.k)) + 1) *
+      (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤ dec β := by
+    refine le_trans ?_ hB.stop_tol
+    have h : 640 * (y.k + newtonSchulzSteps (a / (2 * b)) (dec β / (16 * y.k)) + 1) ≤
+        2048 * (y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1) := by
+      have hw5 : w / (5 * dec y.R) ≤ 1 / 2 := by
+        rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]
+      have hβk : dec β / (16 * y.k) ≤ 1 / 2 := by
+        rw [div_le_iff₀ (by positivity)]; linarith
+      linarith [newtonSchulzSteps_nonneg (by positivity) hw5 (by positivity) hβk]
+    have := mul_le_mul_of_nonneg_right h hνu
+    linarith
+  have hSN := hM.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le hB.nonneg_μM hu
+    hτ₀ (by linarith) (by linarith) hXh ha0 hspecX (b := M.mul (M.ofNat 2) y.R)
+    (by linarith [mul_le_mul_of_nonneg_right hu1 hR0.le]) hβ (by linarith)
+    (hB.sign_tol.trans (mul_le_mul_of_nonneg_right hab hβ.le)) hstop (N := signFuel)
+    (by exact_mod_cast hN.trans hB.fuel)
+  have hAcp := hB.isHermitian.sub (isHermitian_real_smul_one (dec y.R / y.ℓ * smp.1))
+  have hmove := hAcp.specNorm_cfc_sign_sub_cfc_sign_le hXh hw hspecA
+  have hmove' : 2 * specNorm ((decodeMatrix dec y.A - (dec y.R / y.ℓ * smp.1) •
+      (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) - decodeMatrix dec X) / w ≤ dec β / 64 := by
+    rw [div_le_iff₀ hw]
+    linarith
+  have := specNorm_add_le (cfc Real.sign (decodeMatrix dec y.A - (dec y.R / y.ℓ * smp.1) •
+      (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) - cfc Real.sign (decodeMatrix dec X))
+    (cfc Real.sign (decodeMatrix dec X) - decodeMatrix dec (newtonSchulzSign M β
+      (M.mul (M.ofNat 2) y.R) signFuel X))
+  rw [sub_add_sub_cancel] at this
+  linarith
+
+/-- **Computed spectral projectors under a node budget** (EB1'c): at an internal node with
+budget `NLAlib.FloatMachine.IsEighNodeBudget` and Event I (seed in $[-1, 1]$, every eigenvalue at
+distance at least $w$ from the ideal shift), the stored $\mathbf{P}_\pm$ are within $\beta$ of
+$\tfrac12(\mathbf{I} \pm \operatorname{sign}(\mathbf{A} - c'\mathbf{I}))$. [Shah2024, proof of
+Lemma 4.1]. -/
+theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    (hint : M.le y.R (M.mul y.ε R₀) = false)
+    {smp : EighSample ℝ ℂ N} (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    specNorm (decodeMatrix dec (M.hermScale (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)) -
+      (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β ∧
+    specNorm (decodeMatrix dec (M.hermScale (M.negMat (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) M.one)) (M.ofNat 2)) -
+      (2⁻¹ : ℝ) • (1 - cfc Real.sign (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)))) ≤ dec β := by
+  rcases Nat.eq_zero_or_pos y.k with hk0 | hk
+  · have : IsEmpty (Fin y.k) := by rw [hk0]; infer_instance
+    simp only [Subsingleton.elim _ (0 : Matrix (Fin y.k) (Fin y.k) ℂ), specNorm_zero]
+    exact ⟨hB.pos_β.le, hB.pos_β.le⟩
+  obtain ⟨hβ1, hu20, hkτ, -, -⟩ := hB.le_of_one_le hk
+  have hSB := hM.specNorm_cfc_sign_sub_decodeMatrix_eighSign_le_of_budget hB hk hint hv hI
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hβ := hB.pos_β
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hsk := mul_nonneg hu (Real.sqrt_nonneg (y.k : ℝ))
+  have hΩ4 : 4 ≤ Ω := by
+    have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+    linarith [hB.Ω_le, hB.pos_R₀, hB.pos_w.trans_le hB.w_le,
+      le_trans (by positivity) hB.le_t]
+  have hBh := hM.isHermitian_decodeMatrix_newtonSchulzSign β (M.mul (M.ofNat 2) y.R) signFuel
+    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))
+  set B := newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))
+  set S := cfc Real.sign (decodeMatrix dec y.A -
+    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+  set Bd := decodeMatrix dec B
+  have hS : specNorm S ≤ 1 := hB.isHermitian.specNorm_cfc_sign_sub_smul_one_le _
+  have hBn : specNorm Bd ≤ 2 := by
+    have := specNorm_sub_le S (S - Bd)
+    rw [sub_sub_cancel] at this
+    linarith
+  have hBS : specNorm (Bd - S) ≤ dec β + dec β / 64 := by rw [specNorm_sub_comm]; exact hSB
+  have hI1 : specNorm (1 : Matrix (Fin y.k) (Fin y.k) ℂ) ≤ 1 := specNorm_one_le
+  have hsc : ∀ {Z : Matrix (Fin y.k) (Fin y.k) (F × F)} {Y : Matrix (Fin y.k) (Fin y.k) ℂ},
+      (decodeMatrix dec Z).IsHermitian → specNorm Y ≤ 2 →
+      specNorm (decodeMatrix dec Z - Y) ≤ dec β + dec β / 64 + 3 * u →
+      specNorm (decodeMatrix dec (M.hermScale Z (M.ofNat 2)) - (2⁻¹ : ℝ) • Y) ≤ dec β :=
+    fun hZ hY hZY => (hM.specNorm_decodeMatrix_hermScale_two_sub_le hu (by linarith) hτ₀ hk1
+      (by linarith) hΩ4 hZ hY hZY (by linarith)).trans (by linarith)
+  have hshift : ∀ s : F, |dec s| = 1 → specNorm ((Bd - dec s • 1) -
+      decodeMatrix dec (M.hermShift B s)) ≤ 3 * u := fun s hs => by
+    have hBs : specNorm (Bd - dec s • 1) ≤ 3 := by
+      refine (specNorm_sub_le _ _).trans ?_
+      rw [specNorm_real_smul, hs, one_mul]
+      linarith
+    have hτ3 : τ ≤ 3 := by nlinarith
+    exact (hM.specNorm_sub_decodeMatrix_hermShift_le hu hBh s (by linarith)).trans
+      (by linarith [mul_le_mul_of_nonneg_left (max_le hBs hτ3) hu])
+  have hW : ∀ s : F, (decodeMatrix dec (M.hermShift B s)).IsHermitian := fun s =>
+    hM.isHermitian_decodeMatrix_hermFrom _ _
+  constructor
+  · have hsh := hshift (M.neg M.one) (by rw [hM.dec_neg, hM.dec_one]; norm_num)
+    rw [hM.dec_neg, hM.dec_one, neg_one_smul, sub_neg_eq_add] at hsh
+    refine hsc (hW _) ((specNorm_add_le _ _).trans (by linarith)) ?_
+    rw [show decodeMatrix dec (M.hermShift B (M.neg M.one)) - (1 + S) =
+      (Bd - S) - ((Bd + 1) - decodeMatrix dec (M.hermShift B (M.neg M.one))) by abel]
+    exact (specNorm_sub_le _ _).trans (by linarith)
+  · have hsh := hshift M.one (by rw [hM.dec_one]; norm_num)
+    rw [hM.dec_one, one_smul] at hsh
+    refine hsc (by rw [hM.decodeMatrix_negMat]; exact (hW _).neg)
+      ((specNorm_sub_le _ _).trans (by linarith)) ?_
+    rw [hM.decodeMatrix_negMat, show -decodeMatrix dec (M.hermShift B M.one) - (1 - S) =
+      ((Bd - 1) - decodeMatrix dec (M.hermShift B M.one)) - (Bd - S) by abel]
+    exact (specNorm_sub_le _ _).trans (by linarith)
+
+/-- The smallness facts of a node budget used for the rounded trace: $k^2u \le 10^{-5}$,
+$k\tau \le 1/4$ and $16k \le \Omega$. -/
+private theorem FloatMachine.IsEighNodeBudget.sq_mul_le
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk1 : (1 : ℝ) ≤ y.k) :
+    (y.k : ℝ) ^ 2 * u ≤ 1 / 100000 ∧ (y.k : ℝ) * τ ≤ 1 / 4 ∧ 16 * (y.k : ℝ) ≤ Ω := by
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hβ := hB.pos_β
+  have hkβ := hB.mul_β_le
+  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
+  have hsk : 1 ≤ √(y.k : ℝ) := Real.one_le_sqrt.mpr hk1
+  -- smallness of `k u` and `k τ`
+  have hku : (y.k : ℝ) * u ≤ dec β / 20480 := by
+    have hN : (y.k : ℝ) ≤
+        y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 := by
+      have hR := hB.pos_w.trans_le hB.w_le
+      linarith [newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
+        (by have := hB.pos_w; positivity)
+        (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]) (by positivity)
+        (by rw [div_le_iff₀ (by positivity)]; linarith)]
+    have hν : (10 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ) := by
+      linarith [hB.nonneg_μM, Real.sqrt_nonneg (y.k : ℝ)]
+    have := mul_le_mul hN hν (by norm_num) (by linarith)
+    have := mul_le_mul_of_nonneg_right this hu
+    linarith [hB.stop_tol]
+  have hk2u : (y.k : ℝ) ^ 2 * u ≤ 1 / 100000 := by
+    have := mul_le_mul_of_nonneg_left hku (by linarith : (0 : ℝ) ≤ y.k)
+    nlinarith
+  have hkτ : (y.k : ℝ) * τ ≤ 1 / 4 := by
+    have h1 := hB.τ_le.trans ((min_le_left _ _).trans hB.x_le)
+    have := mul_le_mul_of_nonneg_left hsk (by positivity : (0 : ℝ) ≤ y.k * τ)
+    nlinarith
+  have hΩ : 16 * (y.k : ℝ) ≤ Ω := by
+    have := hB.Ω_le
+    have : (0 : ℝ) ≤ y.ℓ := by positivity
+    linarith [hB.pos_R₀, hB.pos_w.trans_le hB.w_le, hB.le_t, 
+      (by positivity : (0 : ℝ) ≤ 2 * √2 * √(y.k : ℝ))]
+  exact ⟨hk2u, hkτ, hΩ⟩
+
+/-- **Rank recovery under a node budget** (EB1b'): at an internal node of size $k \ge 2$ with
+budget and Event I, the step splits iff $0 < i_+(\mathbf{A} - c'\mathbf{I}) < k$. [Shah2024,
+proof of Lemma 4.1]. -/
+theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
     (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
     (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
     (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
-    min y.k (M.toNat (M.add (M.traceRe (M.hermScale (M.hermShift
-        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
-          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)))
-        (M.div M.one (M.ofNat 2)))) =
+    (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ smp).IsSplit ↔
+      0 < inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ∧
       inertiaPos (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) := by
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) < y.k := by
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hβ := hB.pos_β
+  have hkβ := hB.mul_β_le
+  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
+  obtain ⟨hk2u, hkτ, hΩ⟩ := hB.sq_mul_le hk1
+  -- the computed projector is near the ideal one, whose trace is the inertia
+  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint
+    (smp := smp) hv hI
   set r := inertiaPos (decodeMatrix dec y.A -
     (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
-  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
-  obtain ⟨-, hkβ, hk2u, hkτ, -⟩ :=
-    mul_le_of_le_bisectionSignTol hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign hτ₀ hτ
-  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
-  -- the computed projector is near the ideal one, whose trace is the inertia
-  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le (N := N)
-    (signFuel := signFuel) (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol
-    husign hfuel hτ₀ hτ hΩ hint hv hI
   set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
     (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)
   set S := cfc Real.sign (decodeMatrix dec y.A -
     (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+  have hA := hB.isHermitian
   have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
     rw [specNorm_real_smul, abs_of_pos (by norm_num)]
     linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
-      (specNorm_cfc_sign_sub_smul_one_le hA _))]
+      ((hA.sub (isHermitian_real_smul_one _)).specNorm_cfc_le zero_le_one fun x _ => by
+        rcases Real.sign_apply_eq x with h | h | h <;> rw [h] <;> norm_num))]
   have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * smp.1) fun x hx h => by
     have := hI x hx
     rw [h, sub_self, abs_zero] at this
-    linarith
+    linarith [hB.pos_w]
   rw [← hr] at htr
   have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ dec β := by
     intro i
@@ -659,54 +701,14 @@ theorem FloatMachine.IsAccurate.min_toNat_eighProjector_eq_inertiaPos
   have hsabs : ∑ i, |dec (Pp i i).1| ≤ y.k * (1 + dec β) := by
     rw [mul_add, mul_one]
     simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
-  have hrk : (r : ℝ) ≤ y.k := by
-    have : r ≤ y.k := by
-      rw [hr, inertiaPos]
-      exact (Finset.card_filter_le _ _).trans (by simp)
-    exact_mod_cast this
-  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + dec β ≤ 2) (Nat.cast_nonneg (α := ℝ) y.k)
-  rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ
-    (by linarith [Real.sqrt_nonneg (Real.log (4 / ρ))]) Pp hrk (hdiag.trans (by linarith))
-    (hsabs.trans (by linarith))]
-  exact min_eq_right (by exact_mod_cast hrk)
-
-/-- **Rank recovery on Event I**: under the node hypotheses of
-`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample`
-(contracts, precision, step limit, floor and range), for an internal node ($k \ge 2$, $R >
-\varepsilon R_0$) and a seed $v \in [-1, 1]$ whose ideal shift $c' = (R/\ell)v$ is at distance at
-least $w$ from every eigenvalue (Event I), the node's step splits exactly when $0 < i_+(\mathbf{A}
-- c'\mathbf{I}) < k$; moreover then $k_+ = i_+(\mathbf{A} - c'\mathbf{I})$. [Shah2024, proof of
-Lemma 4.1], "the estimates $k_\pm$ are the exact ranks". -/
-theorem FloatMachine.IsAccurate.eighStep_isSplit_iff_of_forall_le_abs_sub
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
-    (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
-    (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
-    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
-    (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ smp).IsSplit ↔
-      0 < inertiaPos (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) ∧
-      inertiaPos (decodeMatrix dec y.A -
-        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) < y.k := by
-  have hkp := hM.min_toNat_eighProjector_eq_inertiaPos (N := N) (signFuel := signFuel)
-    (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk hint
-    hv hI
-  set r := inertiaPos (decodeMatrix dec y.A -
-    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
   have hrk : r ≤ y.k := by
     rw [hr, inertiaPos]
     exact (Finset.card_filter_le _ _).trans (by simp)
+  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + dec β ≤ 2) (Nat.cast_nonneg (α := ℝ) y.k)
+  have hkp : min y.k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))) = r := by
+    rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ hΩ Pp (by exact_mod_cast hrk)
+      (hdiag.trans (by linarith)) (hsabs.trans (by linarith))]
+    exact min_eq_right hrk
   unfold eighStep
   rw [if_neg (by omega), if_neg (by simp [hint])]
   dsimp only

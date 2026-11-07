@@ -633,7 +633,6 @@ private theorem smul_one_le_and_le_smul_one_fromCols {m p q : Type*} [Fintype m]
   rw [hGX]
   convert this using 3 <;> ring
 
-
 /-- A rounding of a bounded number. -/
 private theorem abs_sub_le_of_isRoundingOf_of_abs_le {u τ Ω a z c : ℝ} (h : IsRoundingOf u τ Ω a z)
     (ha : |a| ≤ c) (hc : c ≤ Ω) (hu : 0 ≤ u) (hτ : 0 ≤ τ) : |z - a| ≤ u * (c + τ) := by
@@ -691,6 +690,7 @@ private theorem FloatMachine.IsAccurate.specNorm_decodeMatrix_mm_sub_le {F : Typ
       have := mul_nonneg (by linarith : (0 : ℝ) ≤ 1 + η) (by linarith : (0 : ℝ) ≤ 1 + κ)
       linarith)) (mul_nonneg hμ hu)
   linarith
+
 /-- A leaf of `NLAlib.eighAux` is an approximate diagonalization: for a stored $\mathbf{A}$
 with Hermitian decoding, $0 \le \kappa \le 1$ and a recursion budget $f + 1$, if the node has size
 at most one (and $\eta \ge 0$) or the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$
@@ -734,7 +734,6 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_leaf {F 
       hM.dec_zero]
     refine ⟨?_, h1, h2⟩
     simpa using ht.2
-
 
 /-- The one-child outcomes of `NLAlib.eighStep`. -/
 private theorem eq_hermShift_and_of_eighStep_eq_shift {F Su Sg : Type*} [Inhabited Sg]
@@ -975,48 +974,190 @@ private theorem FloatMachine.IsAccurate.isApproxDiagonalization_submatrix_fromCo
     generalize ((finCongr (Nat.add_sub_of_le hkp).symm).trans finSumFinEquiv.symm) i = j
     cases j <;> rfl
 
-/-- **Local guarantee of a node of spectral bisection** (Lemma 4.1): let the machine meet
-`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with $u \ge 0$ and constants
-$\mu_{\mathrm{MM}}(k), \mu_{\mathrm{QR}}(k), c_{\mathrm N} \ge 0$. Let the node $y$ have a stored
-matrix with Hermitian decoding $\mathbf{A}$ of size $k$, $\|\mathbf{A}\|_2 \le R$, $\ell \ge 20$,
-$0 < \varepsilon \le 1/8$ (decoded stored values), let $R_0 > 0$, $0 < \rho \le 1$,
-$0 < w \le R$, the stored accuracy $\beta$ with $0 < \beta \le$ `NLAlib.bisectionSignTol` $k$
-$\varepsilon$ $\rho$ $\ell$, and $N_y = N(w/(8R), \beta/(16k))$ (`NLAlib.newtonSchulzSteps`).
-Suppose
-$$640\,k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_y + 1)\,u \le \frac{w}{4R}\,\beta \,, \qquad
-(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)\,u \le \beta
-\,,$$
-the sign step limit is at least $N_y$, $0 \le \tau$,
-$4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and
-$16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$; that, when $k \ge 2$ and the
-machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ fails, the
-node's sample satisfies `NLAlib.IsEighGoodSample` with $w$, $x = \sqrt{\rho/2}/k$ and
-$t = \sqrt2(2\sqrt k + \sqrt{2\log(4/\rho)})$; and that every child $y'$ of the node returns an
-approximate diagonalization of its matrix with residual $\varepsilon'(R' + R_0)$ and singular
-values within $\varepsilon'/3$ of $1$ (its own tolerance and window). Then the node returns an
-approximate diagonalization (`NLAlib.IsApproxDiagonalization`) of $\mathbf{A}$ with residual
-$\varepsilon(R + R_0)$ and singular values within $\varepsilon/3$ of $1$. [Shah2024, Lemma 4.1],
-there with the probabilities of the events folded in, $R_0$-free bounds on the children's
-$\|\mathbf{D}_\pm\|_2$ (the $R_0$ part is absorbed by the slack $\varepsilon R_0/\ell$), and
-Events I–III as conditions. -/
-theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hμQ : 0 ≤ μQ y.k) (hcN : 0 ≤ cN) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
+/-! ### Generic node lemmas for a precision budget -/
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+  {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
+
+/-- The smallness facts of a node budget at a node of size at least $2$: $10^6\ell u$,
+$10^5\ell\mu_{\mathrm{MM}}(k)u$ and $2 \cdot 10^7u$ are at most $\varepsilon$, $\tau \le 1/4$,
+$4\tau \le \varepsilon R_0$ and $16(R_0 + R + k + \ell) \le \Omega$. -/
+private theorem FloatMachine.IsEighNodeBudget.mul_le_dec_ε
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 2 ≤ y.k) :
+    (y.ℓ : ℝ) * u * 1000000 ≤ dec y.ε ∧ (y.ℓ : ℝ) * (μM y.k * u) * 100000 ≤ dec y.ε ∧
+      u * 20000000 ≤ dec y.ε ∧ τ ≤ 1 / 4 ∧ τ * 4 ≤ dec y.ε * dec R₀ ∧
+      16 * (dec R₀ + dec y.R + y.k + y.ℓ) ≤ Ω := by
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hε := hB.pos_ε
+  have hμM := hB.nonneg_μM
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+  have hk2 : (2 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hsk : √2 ≤ √(y.k : ℝ) := Real.sqrt_le_sqrt hk2
+  have hsk1 : 1 ≤ √(y.k : ℝ) := Real.one_le_sqrt.mpr (by linarith)
+  have hs22 : √2 * √2 = 2 := Real.mul_self_sqrt (by norm_num)
+  have ht4 : 4 ≤ t := by nlinarith [hB.le_t, Real.sqrt_nonneg 2]
+  -- the stopping condition bounds $u$ and $\mu_{\mathrm{MM}}(k)u$ by multiples of $\beta$
+  have hβu : 2048 * 3 * (4 * μM y.k + 10 + 10 * √(y.k : ℝ)) * u ≤ dec β := by
+    refine le_trans ?_ hB.stop_tol
+    have hRw := hB.pos_w.trans_le hB.w_le
+    have hN := newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
+      (by positivity [hB.pos_w]) (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le])
+      (by positivity [hB.pos_β])
+      (by rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le, hB.pos_β])
+    refine mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right ?_ (by positivity)) hu
+    linarith
+  have hu1 : u * 122880 ≤ dec β := by
+    nlinarith [mul_nonneg hμM hu, mul_le_mul_of_nonneg_right hsk1 hu]
+  have hμu : μM y.k * u * 24576 ≤ dec β := by
+    nlinarith [mul_nonneg hμM hu, mul_nonneg (Real.sqrt_nonneg (y.k : ℝ)) hu]
+  -- the deflation tolerance bounds $40\ell\beta$ by $\varepsilon$ (as $t \ge 4$, $x \le 1$)
+  have hℓβ : (y.ℓ : ℝ) * dec β * 40 ≤ dec y.ε := by
+    have hx := hB.pos_x
+    have h1 : 8 * dec β ≤ 2 * t / x * dec β := by
+      refine mul_le_mul_of_nonneg_right ?_ hB.pos_β.le
+      rw [le_div_iff₀ hx]; nlinarith [hB.x_le]
+    have h2 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ dec y.ε / (5 * y.ℓ) :=
+      div_le_div_of_nonneg_right (mul_le_of_le_one_left hε.le (sub_le_self _ (by positivity)))
+        (by positivity)
+    have h3 := (h1.trans hB.defl_tol).trans h2
+    rw [le_div_iff₀ (by positivity)] at h3
+    linarith
+  have hux : (y.ℓ : ℝ) * u * 1000000 ≤ dec y.ε := by
+    nlinarith [mul_le_mul_of_nonneg_left hu1 (by linarith : (0 : ℝ) ≤ y.ℓ)]
+  have hkk : (1 : ℝ) ≤ y.k * √(y.k : ℝ) := by nlinarith
+  have hτk : τ * 4 ≤ τ * (4 * y.k * √(y.k : ℝ)) := by nlinarith
+  refine ⟨hux, ?_, by nlinarith, ?_, ?_, ?_⟩
+  · nlinarith [mul_le_mul_of_nonneg_left hμu (by linarith : (0 : ℝ) ≤ y.ℓ)]
+  · linarith [hB.τ_le.trans (min_le_left _ _), hB.x_le]
+  · linarith [hB.τ_le.trans (min_le_right _ _)]
+  · linarith [hB.Ω_le]
+
+/-- **A shift node under a node budget**: the output of a node whose step is a shift is an
+approximate diagonalization with $(\varepsilon(R + R_0), \varepsilon/3)$, given the child's. -/
+private theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_eighStep_eq_shift
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
     {f : ℕ} {s : List Bool → EighSample ℝ ℂ N}
-    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w (√(ρ / 2) / y.k)
-        (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y (s []))
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y (s []))
+    (hchild : ∀ (b : Bool) (y' : EighNode F), eighChild M N signFuel R₀ β y (s []) b = some y' →
+      IsApproxDiagonalization (decodeMatrix dec y'.A)
+        (decodeMatrix dec (eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).1)
+        (fun i => dec ((eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).2 i))
+        (dec y'.ε * (dec y'.R + dec R₀)) (dec y'.ε / 3))
+    (hk : 2 ≤ y.k) {b : Bool} {A' : Matrix (Fin y.k) (Fin y.k) (F × F)} {σ : F}
+    (hst : eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s []) = .shift b A' σ) :
+    IsApproxDiagonalization (decodeMatrix dec y.A)
+      (decodeMatrix dec (eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).1)
+      (fun i => dec ((eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).2 i))
+      (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hε := hB.pos_ε
+  have hε₁ := hB.ε_le
+  have hR₀ := hB.pos_R₀
+  have hR0 : 0 ≤ dec y.R := (specNorm_nonneg _).trans hB.specNorm_le
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+  have hk0 : (0 : ℝ) ≤ y.k := Nat.cast_nonneg _
+  obtain ⟨hux, hvx, huε, hτ4, h4τ, hΩ'⟩ := hB.mul_le_dec_ε hk
+  obtain ⟨hp1, hp2, hp3⟩ := hM.dec_eighNextParams_le (R := y.R) (ε := y.ε) (m := y.ℓ) hu
+    (by linarith) hτ₀ (by linarith) hB.twenty_le (by linarith) hR0 (by linarith) hε.le
+    (by linarith [hB.ε_le])
+  have hhalf := hM.abs_dec_div_ofNat_two_le (R := y.R) hu (by linarith [hB.ε_le]) hτ₀ hτ4 hR0
+    (by linarith [hB.pos_R₀]) (by linarith [hB.pos_R₀])
+  obtain ⟨rfl, hσ⟩ := eq_hermShift_and_of_eighStep_eq_shift hst
+  have hy' : eighChild M N signFuel R₀ β y (s []) b = some ⟨y.k, M.hermShift y.A σ,
+      (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+    simp [eighChild, hst]
+  have hc := hchild b _ hy'
+  obtain ⟨-, hA'R⟩ := hM.isHermitian_and_specNorm_le_of_isEighNodeBudget hB hgood hy'
+  dsimp only at hc hA'R
+  simp only [eighAux, hst]
+  obtain ⟨hκ0, hκ1, hξ0, -, -, -, -, hDs, hsing, -, hshift⟩ := node_budget (x := (y.ℓ : ℝ))
+    (R := dec y.R) (R₀ := dec R₀) (v := μM y.k * u) hε hB.ε_le hℓ' hR0 hB.pos_R₀.le hu hux
+    (mul_nonneg hB.nonneg_μM hu) hvx hτ₀ hτ4 (by linarith) hp2 hp3
+    ((specNorm_nonneg _).trans hA'R) hp1 rfl rfl rfl rfl rfl rfl rfl rfl rfl
+  have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
+    rcases hσ with rfl | rfl
+    · exact hhalf
+    · rw [hM.dec_neg, abs_neg]; exact hhalf
+  have huR := mul_le_mul_of_nonneg_right (by linarith : u ≤ 1) hR0
+  have huτ := mul_le_mul_of_nonneg_right (by linarith : u ≤ 1) hτ₀
+  exact isApproxDiagonalization_of_le (hM.isApproxDiagonalization_add_of_hermShift hu hτ₀
+    hB.isHermitian hB.specNorm_le hσabs hκ0 hκ1 hc hA'R (by linarith) (by linarith)) hshift hκ0
+    (by linarith [mul_nonneg (Real.sqrt_nonneg 2) hξ0]) (by linarith)
+
+/-- **A split node under a node budget**: the output of a node whose step is a split is an
+approximate diagonalization with $(\varepsilon(R + R_0), \varepsilon/3)$, given the
+children's. -/
+private theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_eighStep_eq_split
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    {f : ℕ} {s : List Bool → EighSample ℝ ℂ N}
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y (s []))
+    (hchild : ∀ (b : Bool) (y' : EighNode F), eighChild M N signFuel R₀ β y (s []) b = some y' →
+      IsApproxDiagonalization (decodeMatrix dec y'.A)
+        (decodeMatrix dec (eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).1)
+        (fun i => dec ((eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).2 i))
+        (dec y'.ε * (dec y'.R + dec R₀)) (dec y'.ε / 3))
+    (hk : 2 ≤ y.k) {kp : ℕ} {hkp : kp ≤ y.k} {Qp : Matrix (Fin y.k) (Fin kp) (F × F)}
+    {Qm : Matrix (Fin y.k) (Fin (y.k - kp)) (F × F)} {Ap : Matrix (Fin kp) (Fin kp) (F × F)}
+    {Am : Matrix (Fin (y.k - kp)) (Fin (y.k - kp)) (F × F)} {σ : F}
+    (hst : eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s []) = .split kp hkp Qp Qm Ap Am σ) :
+    IsApproxDiagonalization (decodeMatrix dec y.A)
+      (decodeMatrix dec (eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).1)
+      (fun i => dec ((eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).2 i))
+      (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hε := hB.pos_ε
+  have hε₁ := hB.ε_le
+  have hR₀ := hB.pos_R₀
+  have hR0 : 0 ≤ dec y.R := (specNorm_nonneg _).trans hB.specNorm_le
+  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+  have hk0 : (0 : ℝ) ≤ y.k := Nat.cast_nonneg _
+  obtain ⟨hux, hvx, huε, hτ4, h4τ, hΩ'⟩ := hB.mul_le_dec_ε hk
+  obtain ⟨hp1, hp2, hp3⟩ := hM.dec_eighNextParams_le (R := y.R) (ε := y.ε) (m := y.ℓ) hu
+    (by linarith) hτ₀ (by linarith) hB.twenty_le (by linarith) hR0 (by linarith) hε.le
+    (by linarith [hB.ε_le])
+  obtain ⟨hσR, ⟨Vp, hVp, hVpP, -, Wp, hWp, hQp, hAp⟩, ⟨Vm, hVm, hVmP, -, Wm, hWm, hQm, hAm⟩⟩ :=
+    hM.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget hB hgood hst
+  have hyp : eighChild M N signFuel R₀ β y (s []) true = some ⟨kp, Ap,
+      (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+    simp [eighChild, hst]
+  have hym : eighChild M N signFuel R₀ β y (s []) false = some ⟨y.k - kp, Am,
+      (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
+    simp [eighChild, hst]
+  obtain ⟨-, hApR⟩ := hM.isHermitian_and_specNorm_le_of_isEighNodeBudget hB hgood hyp
+  obtain ⟨-, hAmR⟩ := hM.isHermitian_and_specNorm_le_of_isEighNodeBudget hB hgood hym
+  have hcp := hchild true _ hyp
+  have hcm := hchild false _ hym
+  dsimp only at hcp hcm hApR hAmR
+  simp only [eighAux, hst]
+  obtain ⟨hκ0, hκ1, hξ0, -, -, -, -, hDs, hsing, hsplit, -⟩ := node_budget (x := (y.ℓ : ℝ))
+    (R := dec y.R) (R₀ := dec R₀) (v := μM y.k * u) hε hB.ε_le hℓ' hR0 hB.pos_R₀.le hu hux
+    (mul_nonneg hB.nonneg_μM hu) hvx hτ₀ hτ4 (by linarith) hp2 hp3
+    ((specNorm_nonneg _).trans hApR) hp1 rfl rfl rfl rfl rfl rfl rfl rfl rfl
+  have hsξ := mul_nonneg (Real.sqrt_nonneg 2) hξ0
+  have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
+    rw [abs_le] at hσR ⊢
+    constructor <;> linarith [mul_nonneg hu hR0, mul_nonneg hu hτ₀]
+  have hη1 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ 1 := div_le_one_of_le₀
+    ((mul_le_of_le_one_left hε.le (sub_le_self _ (by positivity))).trans
+      (by linarith [hB.ε_le])) (by positivity)
+  have key := hM.isApproxDiagonalization_submatrix_fromCols_mm hkp hB.nonneg_μM hu hτ₀ hVp hVm
+    hWp hWm hVpP hVmP hQp hQm hAp hAm hcp hcm hApR hAmR hσabs hκ0 hκ1 (by linarith) hη1
+    (by linarith) (by linarith) rfl rfl rfl
+  exact isApproxDiagonalization_of_le key hsplit (by linarith) (by linarith) (by linarith)
+
+/-- **Local guarantee under a node budget** (EB1'): with budget, a good sample when internal and
+children that are approximate diagonalizations with $(\varepsilon'(R' + R_0), \varepsilon'/3)$,
+the node's output is one with $(\varepsilon(R + R_0), \varepsilon/3)$. [Shah2024, Lemma 4.1]. -/
+theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    {f : ℕ} {s : List Bool → EighSample ℝ ℂ N}
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y (s []))
     (hchild : ∀ (b : Bool) (y' : EighNode F), eighChild M N signFuel R₀ β y (s []) b = some y' →
       IsApproxDiagonalization (decodeMatrix dec y'.A)
         (decodeMatrix dec (eighAux M N signFuel R₀ β f y'.A y'.R y'.ε y'.ℓ fun a => s (b :: a)).1)
@@ -1026,85 +1167,27 @@ theorem FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGo
       (decodeMatrix dec (eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).1)
       (fun i => dec ((eighAux M N signFuel R₀ β (f + 1) y.A y.R y.ε y.ℓ s).2 i))
       (dec y.ε * (dec y.R + dec R₀)) (dec y.ε / 3) := by
-  have hR0 : 0 ≤ dec y.R := (specNorm_nonneg _).trans hR
-  have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
-  obtain ⟨hk1, -, -, hkτ, -, -, hux, hvx, h4τ⟩ := mul_le_of_le_bisectionSignTol hℓ hε hε₁ hρ₁ hw
-    hwR hβ hβtol hμM hu husign hτ₀ hτ
-  have hk1' : (1 : ℝ) ≤ y.k := by exact_mod_cast hk1
-  have hτ4 : τ ≤ 1 / 4 := by linarith [mul_le_mul_of_nonneg_right hk1' hτ₀]
-  have hlu : 20 * u ≤ y.ℓ * u := mul_le_mul_of_nonneg_right hℓ' hu
-  have hΩ' : 16 * (dec R₀ + dec y.R + y.k + y.ℓ) ≤ Ω := by
-    have := Real.sqrt_nonneg (Real.log (4 / ρ)); linarith
-  have hk0 : (0 : ℝ) ≤ y.k := Nat.cast_nonneg _
-  obtain ⟨hp1, hp2, hp3⟩ := hM.dec_eighNextParams_le (R := y.R) (ε := y.ε) (m := y.ℓ) hu
-    (by linarith) hτ₀ (by linarith) hℓ (by linarith) hR0 (by linarith) hε.le (by linarith)
-  have hhalf := hM.abs_dec_div_ofNat_two_le (R := y.R) hu (by linarith) hτ₀ hτ4 hR0 (by linarith)
-    (by linarith)
-  have budget := fun hr'₀ => node_budget (x := (y.ℓ : ℝ)) (R := dec y.R) (R₀ := dec R₀)
-    (v := μM y.k * u) (e' := dec (eighNextParams M y.R y.ε y.ℓ).2)
-    (r' := dec (eighNextParams M y.R y.ε y.ℓ).1) hε hε₁ hℓ' hR0 hR₀.le hu hux
-    (mul_nonneg hμM hu) hvx hτ₀ hτ4 (by linarith) hp2 hp3 hr'₀ hp1 rfl rfl rfl rfl rfl rfl rfl rfl
-    rfl
-  have huR := mul_le_mul_of_nonneg_right (by linarith : u ≤ 1) hR0
-  have huτ := mul_le_mul_of_nonneg_right (by linarith : u ≤ 1) hτ₀
+  have hA := hB.isHermitian
+  have hε := hB.pos_ε
+  have hR₀ := hB.pos_R₀
+  have hR0 : 0 ≤ dec y.R := (specNorm_nonneg _).trans hB.specNorm_le
   by_cases hk : y.k ≤ 1
-  · exact hM.isApproxDiagonalization_eighAux_succ_of_leaf hA (by positivity) (by linarith)
-      (Or.inl ⟨hk, by positivity⟩)
+  · exact hM.isApproxDiagonalization_eighAux_succ_of_leaf hA (by positivity)
+      (by linarith [hB.ε_le]) (Or.inl ⟨hk, mul_nonneg hε.le (by linarith)⟩)
+  have hk2 : 2 ≤ y.k := by omega
+  obtain ⟨-, -, huε, -, h4τ, hΩ'⟩ := hB.mul_le_dec_ε hk2
+  have hk0 : (0 : ℝ) ≤ y.k := Nat.cast_nonneg _
+  have hℓ0 : (0 : ℝ) ≤ y.ℓ := Nat.cast_nonneg _
   by_cases ht : M.le y.R (M.mul y.ε R₀) = true
-  · exact hM.isApproxDiagonalization_eighAux_succ_of_leaf hA (by positivity) (by linarith)
-      (Or.inr ⟨ht, hR.trans (hM.le_mul_add_of_le_eq_true hu hτ₀ hε hε₁ hR₀ hR0 (by linarith)
-        (by linarith) (by linarith) ht)⟩)
+  · exact hM.isApproxDiagonalization_eighAux_succ_of_leaf hA (by positivity)
+      (by linarith [hB.ε_le]) (Or.inr ⟨ht, hB.specNorm_le.trans
+        (hM.le_mul_add_of_le_eq_true hB.nonneg_u hB.nonneg_τ hε hB.ε_le hR₀ hR0
+          (by linarith) h4τ (by linarith) ht)⟩)
   have hint : M.le y.R (M.mul y.ε R₀) = false := by simpa using ht
-  have hinv := fun {b : Bool} {y' : EighNode F} (h : eighChild M N signFuel R₀ β y (s []) b =
-    some y') => hM.isHermitian_and_specNorm_le_of_eighChild_eq_some hμM hμQ hcN hu hA hR hℓ hε hε₁
-      hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood h
   rcases hst : eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ (s []) with
     ⟨U, d⟩ | ⟨b, A', σ⟩ | ⟨kp, hkp, Qp, Qm, Ap, Am, σ⟩
   · exact absurd hst (eighStep_ne_leaf hk hint U d)
-  · obtain ⟨rfl, hσ⟩ := eq_hermShift_and_of_eighStep_eq_shift hst
-    have hy' : eighChild M N signFuel R₀ β y (s []) b = some ⟨y.k, M.hermShift y.A σ,
-        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
-      simp [eighChild, hst]
-    have hc := hchild b _ hy'
-    obtain ⟨-, hA'R⟩ := hinv hy'
-    dsimp only at hc hA'R
-    simp only [eighAux, hst]
-    obtain ⟨hκ0, hκ1, hξ0, -, -, -, -, hDs, hsing, -, hshift⟩ :=
-      budget ((specNorm_nonneg _).trans hA'R)
-    have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
-      rcases hσ with rfl | rfl
-      · exact hhalf
-      · rw [hM.dec_neg, abs_neg]; exact hhalf
-    exact isApproxDiagonalization_of_le (hM.isApproxDiagonalization_add_of_hermShift hu hτ₀ hA hR
-      hσabs hκ0 hκ1 hc hA'R (by linarith) (by linarith)) hshift hκ0
-      (by linarith [mul_nonneg (Real.sqrt_nonneg 2) hξ0]) (by linarith)
-  · obtain ⟨hσR, ⟨Vp, hVp, hVpP, -, Wp, hWp, hQp, hAp⟩, ⟨Vm, hVm, hVmP, -, Wm, hWm, hQm, hAm⟩⟩ :=
-      hM.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split hμM hμQ hcN hu hA hR hℓ
-        hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood hst
-    have hyp : eighChild M N signFuel R₀ β y (s []) true = some ⟨kp, Ap,
-        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
-      simp [eighChild, hst]
-    have hym : eighChild M N signFuel R₀ β y (s []) false = some ⟨y.k - kp, Am,
-        (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2, y.ℓ + 1⟩ := by
-      simp [eighChild, hst]
-    obtain ⟨-, hApR⟩ := hinv hyp
-    obtain ⟨-, hAmR⟩ := hinv hym
-    have hcp := hchild true _ hyp
-    have hcm := hchild false _ hym
-    dsimp only at hcp hcm hApR hAmR
-    simp only [eighAux, hst]
-    obtain ⟨hκ0, hκ1, hξ0, -, -, -, -, hDs, hsing, hsplit, -⟩ :=
-      budget ((specNorm_nonneg _).trans hApR)
-    have hsξ := mul_nonneg (Real.sqrt_nonneg 2) hξ0
-    have hσabs : |dec σ| ≤ dec y.R / 2 + 2 * u * dec y.R + u * τ := by
-      rw [abs_le] at hσR ⊢
-      constructor <;> linarith [mul_nonneg hu hR0, mul_nonneg hu hτ₀]
-    have hη1 : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) ≤ 1 := div_le_one_of_le₀
-      ((mul_le_of_le_one_left hε.le (sub_le_self _ (by positivity))).trans (by linarith))
-      (by positivity)
-    have key := hM.isApproxDiagonalization_submatrix_fromCols_mm hkp hμM hu hτ₀ hVp hVm hWp hWm
-      hVpP hVmP hQp hQm hAp hAm hcp hcm hApR hAmR hσabs hκ0 hκ1 (by linarith) hη1 (by linarith)
-      (by linarith) rfl rfl rfl
-    exact isApproxDiagonalization_of_le key hsplit (by linarith) (by linarith) (by linarith)
+  · exact hM.isApproxDiagonalization_eighAux_succ_of_eighStep_eq_shift hB hgood hchild hk2 hst
+  · exact hM.isApproxDiagonalization_eighAux_succ_of_eighStep_eq_split hB hgood hchild hk2 hst
 
 end NLAlib

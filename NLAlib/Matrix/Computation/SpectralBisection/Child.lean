@@ -426,20 +426,58 @@ private theorem specNorm_le_of_spectrum_subset_of_specNorm_sub_le {k r : ℕ}
   rw [add_sub_cancel] at h
   linarith
 
-/-- The scalar budget of a child: with $D = R/\ell$, the stored half window
+/-! ### Generic node lemmas for a precision budget -/
+
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+  {N signFuel : ℕ} {R₀ β : F} {w x t : ℝ} {y : EighNode F}
+
+/-- The scalar facts of a node budget: $k^2u \le 10^{-5}$, $k\tau \le 1/4$, $u\ell \le 10^{-5}$
+and $t \ge 2$, for $k \ge 1$. -/
+private theorem FloatMachine.IsEighNodeBudget.scalars
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 1 ≤ y.k) :
+    (y.k : ℝ) ^ 2 * u ≤ 1 / 100000 ∧ (y.k : ℝ) * τ ≤ 1 / 4 ∧ u * y.ℓ ≤ 1 / 100000 ∧
+      2 ≤ t := by
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast hk
+  have hsk : 1 ≤ √(y.k : ℝ) := Real.one_le_sqrt.mpr hk1
+  have hs2 : 1 ≤ √(2 : ℝ) := Real.one_le_sqrt.mpr (by norm_num)
+  have ht : 2 ≤ t := by nlinarith [hB.le_t]
+  have hu := hB.nonneg_u
+  have hβ := hB.pos_β
+  -- `2048 k ⋅ 20 u ≤ β` from the stopping condition
+  have hku : 40960 * (y.k * u) ≤ dec β := by
+    have hR := hB.pos_w.trans_le hB.w_le
+    have hN := newtonSchulzSteps_nonneg (s := w / (5 * dec y.R)) (ε := dec β / (16 * y.k))
+      (by have := hB.pos_w; positivity)
+      (by rw [div_le_iff₀ (by positivity)]; linarith [hB.w_le]) (by positivity)
+      (by rw [div_le_iff₀ (by positivity)]; nlinarith [hB.mul_β_le])
+    have hS : (y.k : ℝ) ≤ y.k + newtonSchulzSteps (w / (5 * dec y.R)) (dec β / (16 * y.k)) + 1 :=
+      by linarith
+    have hν : (20 : ℝ) ≤ 4 * μM y.k + 10 + 10 * √(y.k : ℝ) := by linarith [hB.nonneg_μM]
+    have := mul_le_mul (mul_le_mul_of_nonneg_left hS (by norm_num : (0 : ℝ) ≤ 2048)) hν
+      (by norm_num) (by positivity)
+    nlinarith [hB.stop_tol]
+  have hkβ := hB.mul_β_le
+  refine ⟨by nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ y.k) hu], ?_, ?_, ht⟩
+  · have := hB.τ_le.trans ((min_le_left _ _).trans hB.x_le)
+    nlinarith [mul_le_mul_of_nonneg_left hsk (mul_nonneg (by linarith : (0 : ℝ) ≤ y.k) hB.nonneg_τ)]
+  · have hℓ : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
+    have h4 : 4 ≤ 2 * t / x := by rw [le_div_iff₀ hB.pos_x]; nlinarith [hB.x_le, hB.pos_x]
+    have hη : (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) * y.ℓ ≤ 1 / 40 := by
+      rw [show (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ) * y.ℓ =
+        (1 - 1 / (y.ℓ : ℝ)) * dec y.ε / 5 by field_simp]
+      have : 0 ≤ 1 / (y.ℓ : ℝ) := by positivity
+      nlinarith [hB.ε_le, hB.pos_ε]
+    have h1 := mul_le_mul_of_nonneg_right (le_trans (mul_le_mul_of_nonneg_right h4 hβ.le)
+      hB.defl_tol) (by linarith : (0 : ℝ) ≤ y.ℓ)
+    nlinarith [mul_le_mul_of_nonneg_right hk1 (mul_nonneg hu (by linarith : (0 : ℝ) ≤ y.ℓ))]
+
+/-- The scalar budget of a child under a node budget: with $D = R/\ell$, the stored half window
 $h = \mathrm{fl}(R/\mathrm{fl}(2))$ and $m = R/2 + D + 1.5uR$, $\lvert h - R/2\rvert \le 1.5uR$
 and the next window $R'$ is at least $m + u(m + \tau)$ and $m + (2 + 2\eta)R\eta$, and
-$m \le \Omega$, under the node hypotheses when the leaf test fails. -/
-private theorem FloatMachine.IsAccurate.child_numerics {F : Type*} {M : FloatMachine F ℝ ℂ}
-    {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
-    {R₀ β : F} {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hu : 0 ≤ u) (hℓ : 20 ≤ y.ℓ)
-    (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀) (hρ₁ : ρ ≤ 1) (hw : 0 < w)
-    (hwR : w ≤ dec y.R) (hβ : 0 < dec β) (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω) (hk : 2 ≤ y.k)
+$m \le \Omega$, when $k \ge 2$ and the leaf test fails. -/
+private theorem FloatMachine.IsAccurate.child_numerics_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y) (hk : 2 ≤ y.k)
     (hint : M.le y.R (M.mul y.ε R₀) = false) :
     |dec (M.div y.R (M.ofNat 2)) - dec y.R / 2| ≤ 3 * u * (dec y.R / 2) ∧
       dec y.R / 2 + dec y.R / y.ℓ + 1.5 * (u * dec y.R) + u * (dec y.R / 2 + dec y.R / y.ℓ +
@@ -448,15 +486,22 @@ private theorem FloatMachine.IsAccurate.child_numerics {F : Type*} {M : FloatMac
         (2 + 2 * ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ))) * dec y.R *
           ((1 - 1 / (y.ℓ : ℝ)) * dec y.ε / (5 * y.ℓ)) ≤ dec (eighNextParams M y.R y.ε y.ℓ).1 ∧
       dec y.R / 2 + dec y.R / y.ℓ + 1.5 * (u * dec y.R) ≤ Ω := by
+  have hℓ := hB.twenty_le
+  have hε := hB.pos_ε
+  have hε₁ := hB.ε_le
+  have hR₀ := hB.pos_R₀
+  have hw := hB.pos_w
+  have hwR := hB.w_le
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hτ := hB.τ_le
+  have hΩ := hB.Ω_le
   have hℓ' : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
-  obtain ⟨-, -, -, hkτ, -, -, hℓu, -⟩ :=
-    mul_le_of_le_bisectionSignTol hℓ hε hε₁ hρ₁ hw hwR hβ hβtol hμM hu husign hτ₀ hτ
-  have huℓ : u * y.ℓ ≤ 1 / 100000 := by linarith
+  obtain ⟨-, hkτ, huℓ, ht2⟩ := hB.scalars (by omega)
   obtain ⟨hη0, hηℓ⟩ := eta_mul_le hℓ hε hε₁
   have hk2 : (2 : ℝ) ≤ y.k := by exact_mod_cast hk
   have hu1 : u ≤ 1 / 1000 := by linarith [mul_le_mul_of_nonneg_left hℓ' hu]
   have hτ1 : τ ≤ 1 / 8 := by linarith [mul_le_mul_of_nonneg_right hk2 hτ₀]
-  have hsqL := Real.sqrt_nonneg (Real.log (4 / ρ))
   have hR0 : 0 < dec y.R := hw.trans_le hwR
   have hRτ : 7 * τ ≤ dec y.R := by
     have h2 := mul_le_mul hk2 (Real.one_le_sqrt.mpr (by linarith : (1 : ℝ) ≤ y.k)) zero_le_one
@@ -490,28 +535,82 @@ private theorem FloatMachine.IsAccurate.child_numerics {F : Type*} {M : FloatMac
     linarith [mul_le_mul_of_nonneg_right this hD0]
   exact ⟨hhalf, hr, by linarith, by linarith⟩
 
-/-- **The children of a good node satisfy the node invariant**: under the node hypotheses of
-`NLAlib.FloatMachine.IsAccurate.isApproxDiagonalization_eighAux_succ_of_isEighGoodSample` (without
-the children's guarantee), every child $y'$ of the node (`NLAlib.eighChild`) has a Hermitian matrix
-with $\|\mathbf{A}'\|_2 \le R'$, its own window. [Shah2024, proof of Lemma 4.1], (4.10)–(4.13). -/
-theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
-    {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
-    {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hμQ : 0 ≤ μQ y.k) (hcN : 0 ≤ cN) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8) (hR₀ : 0 < dec R₀)
-    (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1) (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω)
+/-- The rounded rank estimate of an internal node with a node budget and Event I is the inertia
+$i_+(\mathbf{A} - c'\mathbf{I})$ of the ideal shift. -/
+private theorem FloatMachine.IsAccurate.min_toNat_eq_inertiaPos_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
+    (hk : 2 ≤ y.k) (hint : M.le y.R (M.mul y.ε R₀) = false) {smp : EighSample ℝ ℂ N}
+    (hv : smp.1 ∈ Set.Icc (-1 : ℝ) 1)
+    (hI : ∀ e ∈ spectrum ℝ (decodeMatrix dec y.A), w ≤ |e - dec y.R / y.ℓ * smp.1|) :
+    min y.k (M.toNat (M.add (M.traceRe (M.hermScale (M.hermShift
+        (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+          (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)))
+        (M.div M.one (M.ofNat 2)))) =
+      inertiaPos (decodeMatrix dec y.A -
+        (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) := by
+  set r := inertiaPos (decodeMatrix dec y.A -
+    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ)) with hr
+  have hA := hB.isHermitian
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
+  have hβ := hB.pos_β
+  have hk1 : (1 : ℝ) ≤ y.k := by exact_mod_cast (by omega : 1 ≤ y.k)
+  have hkβ := hB.mul_β_le
+  obtain ⟨hk2u, hkτ, -, ht2⟩ := hB.scalars (by omega)
+  have hβ1 : dec β ≤ 1 / 57600 := by linarith [mul_le_mul_of_nonneg_right hk1 hβ.le]
+  -- the computed projector is near the ideal one, whose trace is the inertia
+  obtain ⟨hP, -⟩ := hM.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget hB hint hv hI
+  set Pp := M.hermScale (M.hermShift (newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) signFuel
+    (M.hermShift y.A (M.unif (M.div y.R (M.ofNat y.ℓ)) smp.1))) (M.neg M.one)) (M.ofNat 2)
+  set S := cfc Real.sign (decodeMatrix dec y.A -
+    (dec y.R / y.ℓ * smp.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))
+  have hPid : specNorm ((2⁻¹ : ℝ) • (1 + S)) ≤ 1 := by
+    rw [specNorm_real_smul, abs_of_pos (by norm_num)]
+    linarith [(specNorm_add_le 1 S).trans (add_le_add specNorm_one_le
+      (hA.specNorm_cfc_sign_sub_smul_one_le _))]
+  have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * smp.1) fun e he h => by
+    have := hI e he
+    rw [h, sub_self, abs_zero] at this
+    linarith [hB.pos_w]
+  rw [← hr] at htr
+  have hentry : ∀ i, |dec (Pp i i).1 - RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i)| ≤ dec β := by
+    intro i
+    have h := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm (decodeMatrix dec Pp - (2⁻¹ : ℝ) • (1 + S)) i i).trans hP)
+    simpa [decodeMatrix, decodeComplex] using h
+  have hentry' : ∀ i, |dec (Pp i i).1| ≤ 1 + dec β := by
+    intro i
+    have h1 := (RCLike.abs_re_le_norm _).trans
+      ((norm_apply_le_specNorm ((2⁻¹ : ℝ) • (1 + S)) i i).trans hPid)
+    have h2 := abs_sub_abs_le_abs_sub (dec (Pp i i).1) (RCLike.re (((2⁻¹ : ℝ) • (1 + S)) i i))
+    linarith [hentry i]
+  have hdiag : |∑ i, dec (Pp i i).1 - r| ≤ y.k * dec β := by
+    rw [← htr, Matrix.trace, map_sum, ← Finset.sum_sub_distrib]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry i
+  have hsabs : ∑ i, |dec (Pp i i).1| ≤ y.k * (1 + dec β) := by
+    rw [mul_add, mul_one]
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hentry' i
+  have hrk : (r : ℝ) ≤ y.k := by
+    have : r ≤ y.k := by
+      rw [hr, inertiaPos]
+      exact (Finset.card_filter_le _ _).trans (by simp)
+    exact_mod_cast this
+  have hk2 := mul_le_mul_of_nonneg_left (by linarith : 1 + dec β ≤ 2) (Nat.cast_nonneg (α := ℝ) y.k)
+  rw [hM.toNat_add_traceRe_div_eq hu hτ₀ hk1 hk2u hkτ
+    (by linarith [hB.Ω_le, hB.pos_R₀, hB.pos_w.trans_le hB.w_le,
+      (Nat.cast_nonneg y.ℓ : (0 : ℝ) ≤ y.ℓ)]) Pp hrk (hdiag.trans (by linarith))
+    (hsabs.trans (by linarith))]
+  exact min_eq_right (by exact_mod_cast hrk)
+
+/-- **Child invariant under a node budget** (EB1a'): with budget and a good sample, every child
+has a Hermitian matrix of norm at most its window. [Shah2024, proof of Lemma 4.1]. -/
+theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_isEighNodeBudget
+    (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w x t y)
     {smp : EighSample ℝ ℂ N}
-    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w (√(ρ / 2) / y.k)
-        (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y smp)
+    (hgood : 2 ≤ y.k → M.le y.R (M.mul y.ε R₀) = false → IsEighGoodSample dec w x t y smp)
     {b : Bool} {y' : EighNode F} (hy' : eighChild M N signFuel R₀ β y smp b = some y') :
     (decodeMatrix dec y'.A).IsHermitian ∧ specNorm (decodeMatrix dec y'.A) ≤ dec y'.R := by
   have hk : 2 ≤ y.k := by
@@ -519,11 +618,12 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
     simp [eighChild, eighStep, show y.k ≤ 1 by omega] at hy'
   have hint := (le_eq_false_and_le_and_eq_of_eighChild_eq_some hy').2.1
   obtain ⟨⟨hv, hI⟩, -⟩ := hgood hk hint
-  obtain ⟨hhalf, hr, hrη, hmΩ⟩ := hM.child_numerics hμM hu hℓ hε hε₁ hR₀ hρ₁ hw hwR hβ hβtol husign
-    hτ₀ hτ hΩ hk hint
-  have hkp := hM.min_toNat_eighProjector_eq_inertiaPos (N := N) (signFuel := signFuel)
-    (R₀ := R₀) hμM hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk hint
-    hv hI
+  obtain ⟨hhalf, hr, hrη, hmΩ⟩ := hM.child_numerics_of_isEighNodeBudget hB hk hint
+  have hkp := hM.min_toNat_eq_inertiaPos_of_isEighNodeBudget hB hk hint hv hI
+  have hA := hB.isHermitian
+  have hR := hB.specNorm_le
+  have hu := hB.nonneg_u
+  have hτ₀ := hB.nonneg_τ
   set X := decodeMatrix dec y.A with hX
   set D := dec y.R / y.ℓ with hD
   set h := dec (M.div y.R (M.ofNat 2)) with hh
@@ -562,8 +662,7 @@ theorem FloatMachine.IsAccurate.isHermitian_and_specNorm_le_of_eighChild_eq_some
       (le_smul_one_of_inertiaPos_eq_zero hA (by rw [Fintype.card_fin]; omega) h3) ?_ ?_ hm0) <;>
       rw [hM.dec_neg] <;> linarith
   all_goals
-    obtain ⟨-, hP, hQ⟩ := hM.exists_hasOrthonormalCols_specNorm_sub_le_of_eighStep_eq_split hμM
-      hμQ hcN hu hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hudefl hfuel hτ₀ hτ hΩ hgood
+    obtain ⟨-, hP, hQ⟩ := hM.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget hB hgood
       (by
         unfold eighStep
         rw [if_neg (by omega), if_neg (by simp [hint])]
