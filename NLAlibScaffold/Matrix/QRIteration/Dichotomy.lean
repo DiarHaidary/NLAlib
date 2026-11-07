@@ -34,6 +34,63 @@ namespace NLAlib
 
 variable {n : ℕ}
 
+/-- An eigenvalue of the diagonalization is at most the spectral norm. -/
+private theorem norm_le_specNorm_of_mul_eq_mul_diagonal
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) (i : Fin (n + 1)) : ‖d i‖ ≤ specNorm H := by
+  set x := V *ᵥ Pi.single i 1
+  have hx : H *ᵥ x = d i • x := by
+    rw [Matrix.mulVec_mulVec, hHV, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_smul]
+    congr 1
+    ext j
+    by_cases h : j = i
+    · subst h; simp [Matrix.mulVec_diagonal]
+    · simp [Matrix.mulVec_diagonal, Pi.single_eq_of_ne h]
+  have hx0 : WithLp.toLp 2 x ≠ 0 := by
+    intro h0
+    have h1 : x = V *ᵥ 0 := by
+      rw [Matrix.mulVec_zero]
+      exact congrArg WithLp.ofLp h0
+    have := congrFun (Matrix.mulVec_injective_iff_isUnit.mpr hV h1) i
+    simp at this
+  have h := norm_toLp_mulVec_le H x
+  rw [hx, WithLp.toLp_smul, norm_smul] at h
+  exact le_of_mul_le_mul_right h (norm_pos_iff.mpr hx0)
+
+/-- The modulus of the shift polynomial is the product of the distances to the shifts. -/
+private theorem norm_eval_shiftPoly (ss : List ℂ) (z : ℂ) :
+    ‖(shiftPoly ss).eval z‖ = (ss.map fun s => ‖z - s‖).prod := by
+  induction ss with
+  | nil => simp [shiftPoly]
+  | cons a l ih =>
+    simp only [shiftPoly, List.map_cons, List.prod_cons, Polynomial.eval_mul,
+      Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, norm_mul] at ih ⊢
+    rw [ih]
+
+/-- Perturbing the shifts one by one: if each perturbed factor is at most $C f(s)$, the perturbed
+shift polynomial is at most $C^k\prod f(s)$. -/
+private theorem norm_eval_shiftPoly_le_of_forall₂ {β C : ℝ} (hC : 0 ≤ C) {f : ℂ → ℝ}
+    (hf : ∀ s, 0 ≤ f s) {z : ℂ} {ss ss' : List ℂ}
+    (h : List.Forall₂ (fun s s' => ‖s - s'‖ ≤ β) ss ss')
+    (hpt : ∀ s ∈ ss, ∀ s', ‖s - s'‖ ≤ β → ‖z - s'‖ ≤ C * f s) :
+    ‖(shiftPoly ss').eval z‖ ≤ C ^ ss.length * (ss.map f).prod := by
+  induction h with
+  | nil => simp [shiftPoly]
+  | @cons a b l₁ l₂ hab _ ih =>
+    have ih' := ih (fun s hs => hpt s (List.mem_cons_of_mem _ hs))
+    have hp : 0 ≤ (l₁.map f).prod :=
+      List.prod_nonneg fun x hx => by
+        obtain ⟨s, -, rfl⟩ := List.mem_map.mp hx
+        exact hf s
+    simp only [shiftPoly, List.map_cons, List.prod_cons, Polynomial.eval_mul,
+      Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, norm_mul,
+      List.length_cons] at ih' ⊢
+    calc ‖z - b‖ * ‖Polynomial.eval z (l₂.map fun s => Polynomial.X - Polynomial.C s).prod‖
+        ≤ (C * f a) * (C ^ l₁.length * (l₁.map f).prod) :=
+          mul_le_mul (hpt a List.mem_cons_self b hab) ih' (norm_nonneg _)
+            (mul_nonneg hC (hf a))
+      _ = C ^ (l₁.length + 1) * (f a * (l₁.map f).prod) := by ring
+
 /-- **Instability implies support**: let $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$ with $\mathbf{V}$ invertible and last-row weights $w$, the eigenvalues separated by
 $\lvert\mathbf{d}_i - \mathbf{d}_j\rvert \ge \Gamma$ for $i \ne j$; let $c > 0$,
@@ -62,7 +119,65 @@ theorem sum_lastRowWeights_mul_norm_eval_sq_sub_le {H V : Matrix (Fin (n + 1)) (
       (2 * (specNorm H + β) * (1 + 2 * c)) ^ (2 * ss.length) *
         ∑ i ∈ Finset.univ.filter (fun i => ∃ s ∈ ss, ‖d i - s‖ ≤ β / (2 * c)),
           lastRowWeights V i := by
-  sorry
+  set K := ss.length
+  set M := 2 * (specNorm H + β)
+  have hc1 : 1 ≤ (1 + 2 * c) ^ (2 * K) := one_le_pow₀ (by linarith)
+  have hM : 0 ≤ M := by have := specNorm_nonneg H; positivity
+  have hpt : ∀ i, lastRowWeights V i * ‖(shiftPoly ss').eval (d i)‖ ^ 2 ≤
+      (1 + 2 * c) ^ (2 * K) * (lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2) +
+        if ∃ s ∈ ss, ‖d i - s‖ ≤ β / (2 * c) then
+          (M * (1 + 2 * c)) ^ (2 * K) * lastRowWeights V i else 0 := by
+    intro i
+    have hw := lastRowWeights_nonneg V i
+    split_ifs with hS
+    · have hle := norm_eval_shiftPoly_le_of_forall₂ hM (f := fun _ => 1) (fun _ => zero_le_one)
+        (z := d i) hclose fun s hs s' hss' => by
+          have h1 := norm_le_specNorm_of_mul_eq_mul_diagonal hV hHV i
+          have h2 := hss s hs
+          have h3 : ‖s'‖ ≤ ‖s‖ + β := by
+            have := norm_sub_norm_le s' s
+            rw [norm_sub_rev] at this
+            linarith
+          have h4 := norm_sub_le (d i) s'
+          simp only [M, mul_one]
+          linarith
+      simp only [List.map_const', List.prod_replicate, one_pow, mul_one] at hle
+      have hsq : ‖(shiftPoly ss').eval (d i)‖ ^ 2 ≤ M ^ (2 * K) := by
+        rw [pow_mul']
+        exact pow_le_pow_left₀ (norm_nonneg _) hle 2
+      have hMc : M ^ (2 * K) ≤ (M * (1 + 2 * c)) ^ (2 * K) := by
+        rw [mul_pow M (1 + 2 * c)]
+        exact le_mul_of_one_le_right (by positivity) hc1
+      have := mul_le_mul_of_nonneg_left (hsq.trans hMc) hw
+      have : 0 ≤ (1 + 2 * c) ^ (2 * K) * (lastRowWeights V i *
+          ‖(shiftPoly ss).eval (d i)‖ ^ 2) := by positivity
+      linarith
+    · push Not at hS
+      have hle := norm_eval_shiftPoly_le_of_forall₂ (by linarith : (0 : ℝ) ≤ 1 + 2 * c)
+        (f := fun s => ‖d i - s‖) (fun _ => norm_nonneg _) (z := d i) hclose
+        fun s hs s' hss' => by
+          have h1 := hS s hs
+          have h2 : β ≤ 2 * c * ‖d i - s‖ := by
+            rw [div_lt_iff₀ (by positivity)] at h1
+            linarith
+          have h3 : ‖d i - s'‖ ≤ ‖d i - s‖ + ‖s - s'‖ := by
+            rw [← sub_add_sub_cancel (d i) s s']
+            exact norm_add_le _ _
+          nlinarith
+      rw [← norm_eval_shiftPoly] at hle
+      have hsq : ‖(shiftPoly ss').eval (d i)‖ ^ 2 ≤
+          (1 + 2 * c) ^ (2 * K) * ‖(shiftPoly ss).eval (d i)‖ ^ 2 := by
+        rw [pow_mul', ← mul_pow]
+        exact pow_le_pow_left₀ (norm_nonneg _) hle 2
+      have := mul_le_mul_of_nonneg_left hsq hw
+      linarith
+  calc ∑ i, lastRowWeights V i * ‖(shiftPoly ss').eval (d i)‖ ^ 2 -
+        (1 + 2 * c) ^ (2 * K) * ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2
+      ≤ ∑ i, (if ∃ s ∈ ss, ‖d i - s‖ ≤ β / (2 * c) then
+          (M * (1 + 2 * c)) ^ (2 * K) * lastRowWeights V i else 0) := by
+        rw [Finset.mul_sum, sub_le_iff_le_add, ← Finset.sum_add_distrib]
+        exact Finset.sum_le_sum fun i _ => (hpt i).trans_eq (add_comm _ _)
+    _ = _ := by rw [← Finset.sum_filter, Finset.mul_sum]
 
 /-- **The dichotomy for forward-approximate Ritz values**: let $\mathbf{H}$ be upper Hessenberg
 with $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible,
