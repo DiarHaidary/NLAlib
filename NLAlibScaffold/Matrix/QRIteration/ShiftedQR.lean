@@ -52,7 +52,8 @@ S, about 5 lines. -/
 theorem hessenbergPotential_pow {k : ℕ} (hk : 0 < k) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
     hessenbergPotential k H ^ k =
       ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i.succ i.castSucc‖ := by
-  sorry
+  unfold hessenbergPotential
+  exact Real.rpow_inv_natCast_pow (Finset.prod_nonneg fun i _ => norm_nonneg _) hk.ne'
 
 /-- **The last row of $p(\mathbf{H})$ is supported on the last $k + 1$ columns**: for upper
 Hessenberg $\mathbf{H}$ and a polynomial $p$ of degree at most $k$,
