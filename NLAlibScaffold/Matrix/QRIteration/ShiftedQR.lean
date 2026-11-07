@@ -302,7 +302,24 @@ upper triangular
 S, about 20 lines. -/
 theorem IsUpperHessenberg.isUpperHessenberg_shiftedQRStep {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H) (s : ℂ) : IsUpperHessenberg (shiftedQRStep H s) := by
-  sorry
+  unfold shiftedQRStep
+  set M := H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) with hMdef
+  have hM : IsUpperHessenberg M := by
+    intro i j hij
+    rw [hMdef, Matrix.sub_apply, hH i j hij, Matrix.smul_apply,
+      Matrix.one_apply_ne (fun h => by subst h; omega), smul_zero, sub_zero]
+  have hQR : IsQR M (givensHessenbergQ M) (givensHessenbergR M) := by
+    have h := isQR_givensHessenberg hM le_rfl
+    have e : Fin.castLE (le_refl (n + 1)) = id := funext fun i => Fin.ext rfl
+    rw [e, Matrix.submatrix_id_id, Matrix.submatrix_id_id] at h
+    exact h
+  rw [← hQR.mul_add_smul_one_eq]
+  have h1 : IsUpperHessenberg (givensHessenbergR M * givensHessenbergQ M) :=
+    IsUpperHessenberg.isUpperTriangular_mul hQR.isUpperTriangular
+      (isUpperHessenberg_givensHessenbergQ M)
+  intro i j hij
+  rw [Matrix.add_apply, h1 i j hij, Matrix.smul_apply,
+    Matrix.one_apply_ne (fun h => by subst h; omega), smul_zero, add_zero]
 
 /-- **The multi-shift QR step keeps the Hessenberg form**: for upper Hessenberg $\mathbf{H}$
 and any list of shifts, `NLAlib.multiShiftedQRStep` $\mathbf{H}$ `ss` is upper Hessenberg.
