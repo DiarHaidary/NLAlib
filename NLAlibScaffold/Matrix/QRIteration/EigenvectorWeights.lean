@@ -37,7 +37,8 @@ variable {n : ℕ}
 (`div_nonneg`, `sq_nonneg`). S, about 2 lines. -/
 theorem lastRowWeights_nonneg (V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (i : Fin (n + 1)) :
     0 ≤ lastRowWeights V i := by
-  sorry
+  unfold lastRowWeights
+  positivity
 
 /-- **The last-row weights of an invertible matrix sum to one**: for invertible $\mathbf{V}$,
 $\sum_i \lvert\mathbf{V}_{n,i}\rvert^2 / \|\mathbf{e}_n^{\mathsf{H}}\mathbf{V}\|^2 = 1$.
