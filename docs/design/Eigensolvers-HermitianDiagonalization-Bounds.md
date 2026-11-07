@@ -1,9 +1,9 @@
 # Design note: a sharper precision bound for Hermitian diagonalization (stage HDIAG-BOUNDS)
 
-Status: research and design. Skeleton written (20 sorried statements, `NLAlibScaffold/`); nothing
-dispatched, nothing pushed. No proved statement is changed: every improvement is a **new** theorem
-next to the old one. Branch `research/hdiag-bounds` (worktree `~/nlalib-research-hdiag-bounds`),
-stacked on `cleanup/hdiag` bd81bd1d (pushed as `feat/hdiag`, merge pending). Parent note:
+Status: done (2026-11-07). All 20 statements are proved; at the clean-up the improved statements
+replaced the old ones (OQ3(a)), see §8. The text below is the design as approved. Branch
+`research/hdiag-bounds` (worktree `~/nlalib-research-hdiag-bounds`), stacked on `cleanup/hdiag`
+bd81bd1d (pushed as `feat/hdiag`, merge pending). Parent note:
 `docs/design/Eigensolvers-HermitianDiagonalization.md` (§3.12 corrections, §16 status). Decision
 sheet `~/nlalib-harness/state/decisions/HDIAG-BOUNDS.json`; targets
 `~/nlalib-harness/pilot/hdiag-bounds-targets.json` (20: S 1, M 10, L 7, H 2). The closed-form
@@ -410,13 +410,13 @@ difficulty.
 
 | id | declaration | diff | depends on |
 |---|---|---|---|
-| CG7 | `measureReal_le_normSq_le_of_hasLaw_complexGaussian` | M | — |
+| CG7 | `measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian` | M | — |
 | CG4' | `measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix` | M | — |
 | CG6' | `measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_complexGaussianMatrix` | L | CG7 |
 | DF1' | `HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le_sqrt_two_mul` | M | — |
 | DF2' | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le` | L | DF1' |
 | DP1' | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix'` | M | DF2', CG4', CG6' |
-| NS13 | `mul_abs_le_abs_newtonSchulz_of_abs_le` | S | — |
+| NS13 | `div_mul_abs_le_abs_newtonSchulz_of_abs_le` | S | — |
 | SN3' | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add` | M | — |
 | SN4' | `FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le` | L | SN3', NS13 |
 | EB1c' | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget` | M | SN4' |
@@ -558,3 +558,40 @@ Searched, none:
    - **(a) after `feat/hdiag` is on main, from a fresh run worktree, at `--parallel 2`; EB1' and
      EB5' straight to dedicated Opus provers** (as last time);
    - (b) now, stacked on `cleanup/hdiag`.
+
+## 8. End-of-stage status (2026-11-07)
+
+- **Proved.** All 20 statements, sorry-free (integration `integrate/hdiag-bounds` 95a30c87); 12 in
+  the dispatch, the other 8 salvaged from the dispatch's candidate proofs, which the policy checks
+  had blocked (reading the proofs being improved, helper placement). EV6, EV7 and EV8 use only
+  `propext`, `Classical.choice`, `Quot.sound`.
+- **OQ3(a) applied.** EV6', EV7' and EB5' now carry the names of EV6, EV7 and EB5. EV8 is
+  re-proved from the new EV7. Its exponent condition is $\log_2(\log_2(1536(n + \ell +
+  2)^3/(\varepsilon\theta)) + 2) + 1 \le E$, a cube in place of the square: EV7's floor condition
+  has $\sqrt{\theta/(8n\min(n, \ell + 1))}$, and its range condition gains $2\sqrt2\sqrt n$ and the
+  larger logarithm. This is still $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ bits.
+
+  Deleted: EB1c, EB1b, EB1d, EB1a, EB1, the old EB5, EV2, the old EV6 and EV7, and the helpers
+  that only they used, `min_toNat_eighProjector_eq_inertiaPos` and `mul_le_of_le_bisectionSignTol`
+  among them. Kept as general lemmas: SN3, SN4, DF1, DF2, DP1, CG4, CG5, CG6, EB2–EB4. `bisectionSignTol`
+  is no longer used by any theorem.
+- **Names.** DP1' is
+  `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix`,
+  since DP1 stays. For the name checker, NS13 is `div_mul_abs_le_abs_newtonSchulz_of_abs_le` (N2)
+  and CG7 is `measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian` (N15).
+- **Files** (D8 move). New files:
+  - `Matrix/Computation/NewtonSchulzSign/Accuracy.lean`: the stopping test, SN4, TR1, SN4';
+  - `RandomMatrix/Gaussian/Complex/LeastSingularValue.lean`: CG5, CG6, CG6';
+  - `Matrix/Computation/SpectralBisection/Assembly.lean`: the shift- and split-node assembly,
+    split from `Node`;
+  - `Eigensolvers/SpectralBisection/BoundedFormat.lean`: EV8.
+
+  `IsEighNodeBudget`, EB1c' and EB1b' are in `Projectors`, EB1d' in `Split`, EB1a' in `Child`, EB1'
+  in `Node`, EB2a' and EB3' in `Tree`, EB5 in `Global`, EV2' in `Eigensolvers/SpectralBisection`,
+  and EV6 and EV7 in its `Global`.
+- **Consumers.** COMPDYN S2's TT1–TT3 were stated with the old hypotheses of EV6–EV8 and must be
+  restated with the new ones (stage report). A file that imports
+  `Matrix/Computation/NewtonSchulzSign` for SN4 or TR1 now imports its `Accuracy`.
+- **Open** (unchanged): G2 by a fixed-width shift (OQ6), exact halving (I12, OQ4), the sign scale
+  (I11, OQ5), Edelman's exact $\sigma_{\min}$ law.
+
