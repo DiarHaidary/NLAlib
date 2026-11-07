@@ -77,7 +77,7 @@ and `docs/rules/DIGEST.md`.
 - **V4** A squared Frobenius norm is `frobNorm A ^ 2`, never `frobNorm A * frobNorm A`. [§5.3]
 - **V5** No forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, `lambdaMax`, `conditionNumber`). [§5.3]
 - **V6** Every Lean name cited in CONTRIBUTING (outside §4) or Mathlib-deviations.md exists. [§5.3]
-- **V7** (warning) A public definition has a §5.3 row or a Mathlib-deviations entry. [§5.3], §8
+- **V7** (warning) A public definition has a §5.3 row, a Mathlib-deviations entry or a `docs/targets.toml` entry. [§5.3], §8
 
 ### Bounds
 

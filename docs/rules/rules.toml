@@ -1362,5 +1362,5 @@ severity = "warning"
 check = "extraction"
 scope = "library"
 section = "§5.3, §8"
-statement = '''A public definition has a §5.3 row or a Mathlib-deviations entry'''
+statement = '''A public definition has a §5.3 row, a Mathlib-deviations entry or a `docs/targets.toml` entry'''
 fix = '''A new concept gets a §5.3 row through its design note'''

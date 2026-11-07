@@ -182,6 +182,7 @@ class Ctx:
         self.deviations = (root / DEVIATIONS).read_text()
         self.registry = tomllib.loads((root / 'docs/constants.toml').read_text())['constant']
         self.reg_names = {c['name'] for c in self.registry}
+        self.target_names = target_registry_names(root)
         self.explore_repo = explore_repo
         self.mathlib = mathlib
         self._mlnames = None
@@ -215,6 +216,17 @@ class Ctx:
 
     def code(self, p):
         return leansrc.strip_comments(self.files[p][0]).split('\n')
+
+
+def target_registry_names(root):
+    """The definitions `docs/targets.toml` records (§5.5): its targets and trees, and the program
+    each tree compiles (`cgProg` for `cgProg.compiled`)."""
+    path = root / 'docs/targets.toml'
+    if not path.exists():
+        return set()
+    reg = tomllib.loads(path.read_text())
+    names = {e['name'] for e in reg.get('target', []) + reg.get('tree', [])}
+    return names | {n.rsplit('.', 1)[0] for e in reg.get('tree', []) for n in [e['name']]}
 
 
 def short_mathsf_names(contrib):
@@ -873,7 +885,10 @@ def v_unrecorded(c):
     out = []
     for d in c.decls:
         if d['kind'] in ('def', 'structure', 'class', 'abbrev') and c.topic(d) != 'ForMathlib' \
-                and d['name'] not in c.reg_names and d.get('explorerRole') != 'support':
+                and d['name'] not in c.reg_names and d['name'] not in c.target_names \
+                and not c.path_of(d).endswith('Targets.lean') and d.get('explorerRole') != 'support':
+            # a target, a registered tree and its program are recorded by docs/targets.toml, and so
+            # is a definition of a targets file (a target's count)
             short = d['name'].split('.')[-1]
             if not re.search(r'\b' + re.escape(short) + r'\b', text):
                 out.append(V('V7', c.path_of(d), d['line'], d['name']))

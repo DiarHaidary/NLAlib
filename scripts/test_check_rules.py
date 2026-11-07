@@ -350,6 +350,20 @@ class RuleTests(unittest.TestCase):
                 self.assertTrue(violations(rid, bad), f'{rid}: the bad fixture passes')
                 self.assertEqual([v.text() for v in violations(rid, good)], [], f'{rid}: the good fixture fails')
 
+    def test_v7_target_registry_records(self):
+        # a registered target, a registered tree and its program, and a targets file's count
+        # need no vocabulary row (§5.5)
+        reg = ('[[tree]]\nname = "NLAlib.fooProg.compiled"\n\n'
+               '[[target]]\nname = "NLAlib.MatrixFreeFoo"\n')
+        ds = [decl('NLAlib.fooProg', ': ℕ', kind='def'), decl('NLAlib.MatrixFreeFoo', ': Prop', kind='def'),
+              decl('NLAlib.fooCount', ': ℕ', kind='def', module='NLAlib.Matrix.FooTargets')]
+        def v7(registry):
+            with tempfile.TemporaryDirectory() as tmp:
+                root, ml = make_root(tmp, docs={'docs/targets.toml': registry})
+                return [v.text() for v in RULES['V7']['fn'](Ctx(root, data(*ds), None, ml))]
+        self.assertEqual(v7(reg), [])
+        self.assertEqual(len(v7(None)), 2)  # the count is recorded by its file, not the registry
+
     def test_layer_table_matches_contributing(self):
         # CONTRIBUTING §2's layout block and check_rules.LAYER give each top-level folder one layer
         import re
