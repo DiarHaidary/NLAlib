@@ -1412,6 +1412,56 @@ theorem
   have h2 : (fun a => ζ a ω) = fun a => (hlaw a).aemeasurable.mk (ζ a) ω := funext hω
   simp only [h2]
 
+/-- Exponentiating the first bit-count condition of EV7'. -/
+private theorem mul_le_mul_mul_sqrt_mul_of_logb_le {e θ P X T L Q u : ℝ} (he : 0 < e)
+    (hθ : 0 < θ) (hP : 0 < P) (hX : 0 < X) (hT : 0 < T) (hL : 0 < L) (hQ : 0 < Q) (hu : 0 < u)
+    (h : Real.logb 2 e⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ + Real.logb 2 P + 1 / 2 * Real.logb 2 X +
+      Real.logb 2 T + Real.logb 2 L + Real.logb 2 Q + 13 ≤ Real.logb 2 u⁻¹) :
+    u * (2 ^ 13 * P * √X * T * L * Q) ≤ e * (θ * √θ) := by
+  have hsθ : 0 < √θ := Real.sqrt_pos.mpr hθ
+  have hsX : 0 < √X := Real.sqrt_pos.mpr hX
+  have hK : 2 ^ 13 * P * √X * T * L * Q / (e * (θ * √θ)) ≤ u⁻¹ := by
+    rw [← Real.logb_le_logb one_lt_two (by positivity) (by positivity), Real.logb_div
+      (by positivity) (by positivity), Real.logb_mul (by positivity) hQ.ne',
+      Real.logb_mul (by positivity) hL.ne', Real.logb_mul (by positivity) hT.ne',
+      Real.logb_mul (by positivity) hsX.ne', Real.logb_mul (by positivity) hP.ne',
+      Real.logb_mul he.ne' (by positivity), Real.logb_mul hθ.ne' hsθ.ne', Real.logb_pow,
+      Real.sqrt_eq_rpow, Real.sqrt_eq_rpow, Real.logb_rpow_eq_mul_logb_of_pos hθ,
+      Real.logb_rpow_eq_mul_logb_of_pos hX, Real.logb_self_eq_one one_lt_two]
+    rw [Real.logb_inv, Real.logb_inv] at h
+    push_cast
+    linarith
+  rw [div_le_iff₀ (by positivity)] at hK
+  calc u * (2 ^ 13 * P * √X * T * L * Q) ≤ u * (u⁻¹ * (e * (θ * √θ))) :=
+        mul_le_mul_of_nonneg_left hK hu.le
+    _ = e * (θ * √θ) := by rw [← mul_assoc, mul_inv_cancel₀ hu.ne', one_mul]
+
+/-- The exponentiated first bit-count condition and the lower bound on $\beta$ give the
+sign-function condition of EV6'. -/
+private theorem mul_le_mul_of_mul_le_mul_sqrt {P D T L l e θ b u : ℝ} (hP : 0 ≤ P) (hD : 0 ≤ D)
+    (hT : 0 ≤ T) (hL : 0 ≤ L) (hl : 0 < l - 1) (hθ : 0 < θ) (hu : 0 ≤ u)
+    (hc : 0 < 52 * l ^ 2 * (2 * l - 1) * D * T)
+    (key : u * (2 ^ 13 * P * D * T * L * (l ^ 2 * (2 * l - 1) / (l - 1) ^ 2)) ≤ e * (θ * √θ))
+    (hβge : (l - 1) ^ 2 * e * √θ / (52 * l ^ 2 * (2 * l - 1) * D * T) / (1 + 2⁻¹ ^ 6) ≤ b) :
+    146 * P * L * u ≤ θ * b := by
+  have hQ : l ^ 2 * (2 * l - 1) / (l - 1) ^ 2 * (l - 1) ^ 2 = l ^ 2 * (2 * l - 1) :=
+    div_mul_cancel₀ _ (by positivity)
+  have hl1 : 0 ≤ 2 * l - 1 := by linarith
+  rw [div_div, div_le_iff₀ (by positivity)] at hβge
+  refine le_of_mul_le_mul_right ?_ (mul_pos hc (by norm_num : (0 : ℝ) < 1 + 2⁻¹ ^ 6))
+  have k2 := mul_le_mul_of_nonneg_right key (sq_nonneg (l - 1))
+  have k3 := mul_le_mul_of_nonneg_left hβge hθ.le
+  have hν : 0 ≤ P * D * T * L * (l ^ 2 * (2 * l - 1)) * u := by positivity
+  calc 146 * P * L * u * (52 * l ^ 2 * (2 * l - 1) * D * T * (1 + 2⁻¹ ^ 6))
+      = 146 * 52 * (1 + 2⁻¹ ^ 6) * (P * D * T * L * (l ^ 2 * (2 * l - 1)) * u) := by ring
+    _ ≤ 2 ^ 13 * (P * D * T * L * (l ^ 2 * (2 * l - 1)) * u) :=
+        mul_le_mul_of_nonneg_right (by norm_num) hν
+    _ = u * (2 ^ 13 * P * D * T * L * (l ^ 2 * (2 * l - 1) / (l - 1) ^ 2)) * (l - 1) ^ 2 := by
+        linear_combination (-(u * 2 ^ 13 * P * D * T * L)) * hQ
+    _ ≤ e * (θ * √θ) * (l - 1) ^ 2 := k2
+    _ = θ * ((l - 1) ^ 2 * e * √θ) := by ring
+    _ ≤ _ := by linarith
+
 -- The declaration name and a docstring line exceed 100 characters.
 set_option linter.style.longLine false in
 /-- **The bit count of Hermitian diagonalization, sharp budget** (EV7'): under the hypotheses of
@@ -1474,6 +1524,74 @@ theorem
       (decodeMatrix dec (eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).1)
       (fun i => dec ((eigh M signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)) (2 * dec ε * dec R₀)
       (dec ε / 3)} ≤ θ := by
-  sorry
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.cast_zero, zero_mul, Real.sqrt_zero, mul_zero, div_zero] at hβle
+    exact absurd hβle hβ.not_ge
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hℓ5 : (5 : ℝ) ≤ ℓ := by
+    have : 5 ≤ ℓ := le_trans (Nat.le_add_left 5 _) hℓ
+    exact_mod_cast this
+  have hμMn : 0 ≤ μM n := hμM₀.trans (hμM (Nat.zero_le n))
+  have hμQn : 0 ≤ μQ n := hμQ₀.trans (hμQ (Nat.zero_le n))
+  have hsn : 1 ≤ √(n : ℝ) := Real.one_le_sqrt.mpr hn1
+  have hX1 : 1 ≤ n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1) := by
+    have h1 : 1 ≤ min (n : ℝ) (ℓ + 1) := le_min hn1 (by linarith)
+    have h2 : 1 ≤ min (n : ℝ) (Real.exp 1) := le_min hn1 (Real.one_le_exp zero_le_one)
+    nlinarith [mul_le_mul h1 h2 zero_le_one (by linarith)]
+  have hD1 : 1 ≤ √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) :=
+    Real.one_le_sqrt.mpr hX1
+  have hT1 : 1 ≤ 2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)) := by
+    have : 1 ≤ √(2 : ℝ) := Real.one_le_sqrt.mpr one_le_two
+    nlinarith [Real.sqrt_nonneg (Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))]
+  have hsθ : 0 < √θ := Real.sqrt_pos.mpr hθ
+  have hsθ1 : √θ ≤ 1 := Real.sqrt_le_one.mpr hθ₁
+  have hε1 : dec ε ≤ 1 := hε₁.trans (by norm_num)
+  set D := √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) with hDdef
+  set T := 2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)) with hTdef
+  have hc : 0 < 52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) * D * T := by
+    have : 0 < 2 * (ℓ : ℝ) - 1 := by linarith
+    positivity
+  have hβ1 : dec β ≤ 1 := by
+    refine hβle.trans ((div_le_one hc).mpr ?_)
+    have h1 : ((ℓ : ℝ) - 1) ^ 2 * dec ε * √θ ≤ (ℓ : ℝ) ^ 2 := by
+      rw [mul_assoc]
+      calc _ ≤ ((ℓ : ℝ) - 1) ^ 2 := mul_le_of_le_one_right (sq_nonneg _)
+            (mul_le_one₀ hε1 hsθ.le hsθ1)
+        _ ≤ (ℓ : ℝ) ^ 2 := by gcongr <;> linarith
+    have h2 : 1 ≤ 52 * (2 * (ℓ : ℝ) - 1) * D * T :=
+      one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le (by linarith) hD1) hT1
+    calc _ ≤ (ℓ : ℝ) ^ 2 := h1
+      _ ≤ (ℓ : ℝ) ^ 2 * (52 * (2 * (ℓ : ℝ) - 1) * D * T) := le_mul_of_one_le_right (sq_nonneg _) h2
+      _ = _ := by ring
+  have hNst : 0 ≤ Nst := by
+    have h12 : 1 ≤ (n : ℝ) * ℓ * (ℓ + 1) :=
+      one_le_mul_of_one_le_of_one_le (one_le_mul_of_one_le_of_one_le hn1 (by linarith))
+        (by linarith)
+    rw [hN]
+    refine newtonSchulzSteps_nonneg (by positivity) ?_ (by positivity) ?_
+    · rw [div_le_iff₀ (by positivity)]; linarith
+    · rw [div_le_iff₀ (by positivity)]; linarith
+  -- the second condition: `S * u ≤ β` with `S` the sum of the stopping and deflation terms
+  have hS : (2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) +
+      16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1)) * u ≤ dec β := by
+    have hS0 : 0 < 2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) +
+        16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) := by positivity
+    rw [Real.logb_inv, ← sub_eq_neg_add, ← Real.logb_div hS0.ne' hβ.ne',
+      Real.logb_le_logb one_lt_two (by positivity) (by positivity), div_le_iff₀ hβ] at hbits'
+    calc _ ≤ (u⁻¹ * dec β) * u := mul_le_mul_of_nonneg_right hbits' hu.le
+      _ = dec β := by field_simp
+  have hl1 : 0 < 2 * (ℓ : ℝ) - 1 := by linarith
+  have hl2 : 0 < (ℓ : ℝ) - 1 := by linarith
+  -- the first condition: `146 n ℓ (ℓ + 1) ν u ≤ θ β`
+  have husign := mul_le_mul_of_mul_le_mul_sqrt (by positivity) (by positivity) (by positivity)
+    (by positivity) hl2 hθ hu.le hc
+    (mul_le_mul_mul_sqrt_mul_of_logb_le hε hθ (by positivity) (by linarith) (by linarith)
+      (by positivity) (by positivity) hu hbits) hβge
+  have ha0 : 0 ≤ 2048 * (n + Nst + 1) * (4 * μM n + 10 + 10 * √(n : ℝ)) := by positivity
+  have hb0 : 0 ≤ 16 * (4 * μQ n + 4 * √(n : ℝ) * (cN + 1) + 2 * μM n + 1) := by positivity
+  exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw'
+    hunifm hunifc hnormalm hnormalc hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hN
+    (by linarith [husign]) (by linarith [mul_nonneg hb0 hu.le])
+    (by linarith [mul_nonneg ha0 hu.le]) hfuel hτ₀ hτ hΩ hind hlaw
 
 end NLAlib
