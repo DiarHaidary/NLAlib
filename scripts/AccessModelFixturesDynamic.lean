@@ -13,6 +13,10 @@ false, or that a cheating semantics is outside the model.
 * `not_matrixFree_idxCopyTree` (B2): a value above the binder's static bound fails the run (the
   binder does not clamp), so copying every natural input through an index is false; false by
   failure.
+* `exec_idxCopyTree_eq_none` (B2, run level): the same run is `none`; a clamping binder would
+  make this statement false, not only break a proof.
+* `exec_negIdxTree_eq_none` (`toNat` below 0, run level): a binder on a stored `-1` fails the run
+  under the exact interpretation; a conversion flooring negatives to `0` makes it false.
 * `not_isExactToNat_lowToNatSem` (B3b): a conversion that is one too small is outside the model,
   whose `IsIndexExactSem` clause requires the exact floor. This replaces B3 (a rounded target
   without the exactness clauses, false by failure), which the model's bundled clause made true.
@@ -58,6 +62,17 @@ theorem not_matrixFree_prodTree :
 def idxCopyTree : Prog Unit Unit 1 2 :=
   .bindIdx () ⟨0, .const 0⟩ (.var 1) (.instr (.litIdx () ⟨1, .const 0⟩ (.var 2)))
 
+/-- B2, at the run level: the binder of `idxCopyTree` at bound $0$ on a stored $1$ fails the run.
+A clamping binder would run it (writing $0$), so this statement, not only its proof, is false if the
+clamp came back. -/
+theorem exec_idxCopyTree_eq_none :
+    idxCopyTree.exec (exactInterp (P := Unit) (ι := Unit)
+        (fun _ => (0 : Matrix (Fin 0) (Fin 0) ℝ)) (fun _ _ => 0)) 0 (fun _ => 0)
+      (inputState () [#[some (1 : ℝ)], Array.replicate 1 none]) = none := by
+  simp [idxCopyTree, Prog.exec, FStmt.exec, toNatStep, Instr.subst, Cell.subst, IExp.subst,
+    IExp.eval, IExp.evalIn, Instr.run, exactInterp, exactSem, inputState, Store.write,
+    Store.read, Fin.snoc]
+
 /-- B2: a value above the binder's static bound fails the run (no clamping), so a copy of every
 natural input through an index is false: at input $1$ and bound $0$ the run fails. -/
 theorem not_matrixFree_idxCopyTree :
@@ -70,6 +85,21 @@ theorem not_matrixFree_idxCopyTree :
   simp [idxCopyTree, Prog.exec, FStmt.exec, toNatStep, Instr.subst, Cell.subst, IExp.subst,
     IExp.eval, IExp.evalIn, Instr.run, exactInterp, exactSem, inputState, Store.write,
     Store.read, Fin.snoc] at hrun
+
+/-- A stored value used as an index under a generous bound. -/
+def negIdxTree : Prog Unit Unit 1 1 :=
+  .bindIdx () ⟨0, .const 0⟩ (.const 5) .skip
+
+/-- `toNat` below $0$, at the run level: the binder on a stored $-1$ fails the run under the
+exact interpretation, though $\lfloor -1 \rfloor_+ = 0$ is within the bound. A semantics or a
+binder that floored negative values to $0$ would run it, so this statement is false if the
+conversion stopped failing below zero. -/
+theorem exec_negIdxTree_eq_none :
+    negIdxTree.exec (exactInterp (P := Unit) (ι := Unit)
+        (fun _ => (0 : Matrix (Fin 0) (Fin 0) ℝ)) (fun _ _ => 0)) 0 (fun _ => 0)
+      (inputState () [#[some (-1 : ℝ)]]) = none := by
+  simp [negIdxTree, Prog.exec, FStmt.exec, toNatStep, Cell.subst, IExp.subst,
+    IExp.evalIn, exactInterp, exactSem, inputState, Store.read]
 
 /-- A semantics exact on arithmetic whose conversion to an index is one too small. -/
 noncomputable def lowToNatSem : ScalarSem Unit ℝ :=
