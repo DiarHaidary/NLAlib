@@ -440,6 +440,8 @@ meta def evalSymmetricGaugeMatrixNorm : PositivityExt where eval {_ _} _ pα? e 
   match pα? with
   | none => pure .none
   | some _ => do
+    let e ← whnfR e
+    unless e.isAppOfArity ``NLAlib.SymmetricGauge.matrixNorm 8 do throwError "failed"
     let pf ← mkAppM ``NLAlib.SymmetricGauge.matrixNorm_nonneg #[e.appFn!.appArg!, e.appArg!]
     pure (.nonnegative pf)
 

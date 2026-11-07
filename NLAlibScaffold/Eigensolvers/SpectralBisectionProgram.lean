@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Eigensolvers.SpectralBisection.BoundedFormat
 public import NLAlib.Eigensolvers.SpectralBisection.Global
 public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
 public import NLAlibScaffold.Eigensolvers.SpectralBisectionSamples
@@ -69,12 +70,13 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
   obtain ⟨hsem, hlit, htn, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
   obtain ⟨hρT, hρs, hρc⟩ := hρO
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hpre
-  obtain ⟨hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hu0, hcu, hcg, hcgu, hμM, hμQ,
-    hμM0, hμQ0, husign, hudefl, hfuel, hΩ⟩ := hpre
+  obtain ⟨hn, hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hu0, hcu, hcg, hcgu, hμM, hμQ,
+    hμM0, hμQ0, husign, hustop, hudefl, hfuel, hΩ⟩ := hpre
   have hℓ5n : 5 ≤ ℓ := by unfold bisectionDepth at hℓ; omega
   have hℓ5 : (5 : ℝ) ≤ ℓ := by exact_mod_cast hℓ5n
   have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg N
-  have hs0 := Real.sqrt_nonneg (Real.log (16 * (N : ℝ) / θ))
+  have hs0 := Real.sqrt_nonneg (Real.log (96 * (N : ℝ) * min (N : ℝ) (ℓ + 1) / θ))
+  have hs2 : 0 ≤ 2 * √2 * √(N : ℝ) := by positivity
   have hM := isAccurate_eighIdealMachine hsem (fun q k hk => hlit q k (by omega)) htn hmul p
     hmmE hqrE hρT (by linarith) hu0 hcu hcg hcgu (fun d => hμM0.trans (hμM (Nat.zero_le d)))
     (fun d => hμQ0.trans (hμQ (Nat.zero_le d)))
@@ -85,13 +87,13 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
     (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1)
     x.R₀ x.β ⟨N, x.A, x.R₀, x.ε, ℓ⟩ le_rfl hξ
   have hτ : (0 : ℝ) * (100 * N * √(N : ℝ)) ≤
-      min (√(θ / (8 * N))) (dec p x.ε * min (dec p x.R₀) 1) := by
+      min (√(θ / (8 * N * min (N : ℝ) (ℓ + 1)))) (dec p x.ε * min (dec p x.R₀) 1) := by
     rw [zero_mul]
     exact le_min (Real.sqrt_nonneg _) (mul_nonneg hε.le (le_min hR₀pos.le zero_le_one))
   have key :=
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
-    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hH hR₀ hR₀pos hε hε₁
-    hθ hθ₁ hℓ hβ hβle rfl husign hudefl hfuel le_rfl hτ hΩ hind hlaw
+    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hn hH hR₀ hR₀pos hε
+    hε₁ hθ hθ₁ hℓ hβ hβle rfl husign hustop hudefl hfuel le_rfl hτ hΩ hind hlaw
   have := hξ.isProbabilityMeasure
   refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top μ _)) key
   intro hAD
@@ -113,8 +115,9 @@ set_option linter.style.longLine false in
 `NLAlib.MatrixFreeRoundedProbEigh` but the two precision conditions replaced by the bit count of
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
 at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u > 0$ and normal-sampler constant
-$c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $\beta$ within a factor $2$ of its bound:
-$\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) + \tfrac32\log_2(1/\theta)$ bits.
+$c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $\beta$ within a factor $1 + 2^{-6}$ of its
+bound $\hat\beta$: $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n +
+\log\log(1/\varepsilon))$ bits, with the polynomial factor $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$.
 [Shah2024, Theorem 4.2], for the program. No printed source.
 Proof: as `NLAlib.matrixFreeRoundedProbEigh`, with the shallow bit-count theorem in place of the
 shallow Theorem 4.2. M, about 90 lines (share the reduction with `NLAlib.matrixFreeRoundedProbEigh`
@@ -139,22 +142,29 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
         let uM := (c .uniform + 1) * u
         let cN := 2 * (c .gaussian + 3)
         let ℓ := n 0
-        let βb := dec p x.ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
-          (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))))
-        let Nst := newtonSchulzSteps (θ / (32 * N * (N + 1) * ℓ * (ℓ + 1))) (dec p x.β / (16 * N))
-        (decodeMatrix (dec p) x.A).IsHermitian ∧
+        let βb := ((ℓ : ℝ) - 1) ^ 2 * dec p x.ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+          √(N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) *
+          (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))))
+        let Nst := newtonSchulzSteps (θ / (12 * N * ℓ * (ℓ + 1))) (dec p x.β / (16 * N))
+        1 ≤ N ∧ (decodeMatrix (dec p) x.A).IsHermitian ∧
         specNorm (decodeMatrix (dec p) x.A) ≤ dec p x.R₀ ∧ 0 < dec p x.R₀ ∧
         0 < dec p x.ε ∧ dec p x.ε ≤ 2⁻¹ ^ 15 ∧ 0 < θ ∧ θ ≤ 1 ∧ bisectionDepth (dec p x.ε) ≤ ℓ ∧
-        0 < dec p x.β ∧ dec p x.β ≤ βb ∧ βb / 2 ≤ dec p x.β ∧
+        0 < dec p x.β ∧ dec p x.β ≤ βb ∧ βb / (1 + 2⁻¹ ^ 6) ≤ dec p x.β ∧
         0 < u ∧ 0 ≤ c .uniform ∧ 0 ≤ c .gaussian ∧ (c .gaussian + 3) * u ≤ 1 / 10 ∧
         Monotone μM ∧ Monotone μQ ∧ 0 ≤ μM 0 ∧ 0 ≤ μQ 0 ∧
         Real.logb 2 (dec p x.ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
-          Real.logb 2 (N ^ 4 * (N + 1) * (8 + μM N) +
-            N * √(N : ℝ) * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) +
-          Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
-          Real.logb 2 (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))) + 26 ≤ Real.logb 2 uM⁻¹ ∧
+          Real.logb 2 (N * (4 * μM N + 10 + 10 * √(N : ℝ))) +
+          1 / 2 * Real.logb 2 (N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) +
+          Real.logb 2 (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) +
+          Real.logb 2 (ℓ * (ℓ + 1)) +
+          Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) + 13 ≤
+            Real.logb 2 uM⁻¹ ∧
+        Real.logb 2 (dec p x.β)⁻¹ +
+          Real.logb 2 (2048 * (N + Nst + 1) * (4 * μM N + 10 + 10 * √(N : ℝ)) +
+            16 * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) ≤ Real.logb 2 uM⁻¹ ∧
         Nst ≤ n 1 ∧
-        16 * (2 * dec p x.R₀ + N + 2 * ℓ + √(Real.log (16 * N / θ))) ≤ Ω)
+        16 * (2 * dec p x.R₀ + N + 2 * ℓ + 2 * √2 * √(N : ℝ) +
+          √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) ≤ Ω)
       (fun N _ x st => ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
         pairLayout.Holds st.store p 2 0 U ∧ (∀ i : Fin N, st.store.read p 3 i = some (d i)) ∧
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
@@ -165,12 +175,13 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
   obtain ⟨hsem, hlit, htn, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
   obtain ⟨hρT, hρs, hρc⟩ := hρO
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hpre
-  obtain ⟨hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hβge, hu0, hcu, hcg, hcgu, hμM, hμQ,
-    hμM0, hμQ0, hbits, hfuel, hΩ⟩ := hpre
+  obtain ⟨hn, hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hβge, hu0, hcu, hcg, hcgu, hμM,
+    hμQ, hμM0, hμQ0, hbits, hbits', hfuel, hΩ⟩ := hpre
   have hℓ5n : 5 ≤ ℓ := by unfold bisectionDepth at hℓ; omega
   have hℓ5 : (5 : ℝ) ≤ ℓ := by exact_mod_cast hℓ5n
   have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg N
-  have hs0 := Real.sqrt_nonneg (Real.log (16 * (N : ℝ) / θ))
+  have hs0 := Real.sqrt_nonneg (Real.log (96 * (N : ℝ) * min (N : ℝ) (ℓ + 1) / θ))
+  have hs2 : 0 ≤ 2 * √2 * √(N : ℝ) := by positivity
   have hM := isAccurate_eighIdealMachine hsem (fun q k hk => hlit q k (by omega)) htn hmul p
     hmmE hqrE hρT (by linarith) hu0.le hcu hcg hcgu (fun d => hμM0.trans (hμM (Nat.zero_le d)))
     (fun d => hμQ0.trans (hμQ (Nat.zero_le d)))
@@ -181,13 +192,14 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
     (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1)
     x.R₀ x.β ⟨N, x.A, x.R₀, x.ε, ℓ⟩ le_rfl hξ
   have hτ : (0 : ℝ) * (100 * N * √(N : ℝ)) ≤
-      min (√(θ / (8 * N))) (dec p x.ε * min (dec p x.R₀) 1) := by
+      min (√(θ / (8 * N * min (N : ℝ) (ℓ + 1)))) (dec p x.ε * min (dec p x.R₀) 1) := by
     rw [zero_mul]
     exact le_min (Real.sqrt_nonneg _) (mul_nonneg hε.le (le_min hR₀pos.le zero_le_one))
   have key :=
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
-    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hH hR₀ hR₀pos hε hε₁
-    hθ hθ₁ hℓ hβ hβle hβge rfl (mul_pos (by linarith) hu0) hbits hfuel le_rfl hτ hΩ hind hlaw
+    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hn hH hR₀ hR₀pos hε
+    hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl (mul_pos (by linarith) hu0) hbits hbits' hfuel le_rfl hτ hΩ
+    hind hlaw
   have := hξ.isProbabilityMeasure
   refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top μ _)) key
   intro hAD
@@ -237,23 +249,29 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
         ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ cN)
     (hcountu : ∀ g : Dist, (Set.range (ρ g 0)).Countable ∧ ∀ z, MeasurableSet (ρ g 0 ⁻¹' {z}))
     (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
-    {A : Matrix (Fin N) (Fin N) (K × K)} (hA : (decodeMatrix (dec p) A).IsHermitian)
+    (hn : 1 ≤ N) {A : Matrix (Fin N) (Fin N) (K × K)} (hA : (decodeMatrix (dec p) A).IsHermitian)
     {R₀ ε β : K} {θ : ℝ} (hR₀ : specNorm (decodeMatrix (dec p) A) ≤ dec p R₀)
     (hR₀half : 1 / 2 ≤ dec p R₀) (hR₀one : dec p R₀ ≤ 1) (hε : 0 < dec p ε)
     (hε₁ : dec p ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1) (hℓ : bisectionDepth (dec p ε) ≤ ℓ)
     (hβ : 0 < dec p β)
-    (hβle : dec p β ≤ dec p ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
-      (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ)))))
-    (hβge : dec p ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
-      (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ)))) / 2 ≤ dec p β)
-    {Nst : ℝ}
-    (hN : Nst = newtonSchulzSteps (θ / (32 * N * (N + 1) * ℓ * (ℓ + 1))) (dec p β / (16 * N)))
+    (hβle : dec p β ≤ ((ℓ : ℝ) - 1) ^ 2 * dec p ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+      √(N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) *
+      (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ)))))
+    (hβge : ((ℓ : ℝ) - 1) ^ 2 * dec p ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+        √(N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) *
+        (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ)))) /
+      (1 + 2⁻¹ ^ 6) ≤ dec p β) {Nst : ℝ}
+    (hN : Nst = newtonSchulzSteps (θ / (12 * N * ℓ * (ℓ + 1))) (dec p β / (16 * N)))
     (hbits : Real.logb 2 (dec p ε)⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
-      Real.logb 2 (N ^ 4 * (N + 1) * (8 + μM N) +
-        N * √(N : ℝ) * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) +
-      Real.logb 2 (Nst + 1) + 3 * Real.logb 2 (ℓ + 1) +
-      Real.logb 2 (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ))) + 26 ≤ fmt.mantissaBits)
-    (hexp : Real.logb 2 (Real.logb 2 (1536 * (N + ℓ + 2) ^ 2 / (dec p ε * θ)) + 2) + 1 ≤
+      Real.logb 2 (N * (4 * μM N + 10 + 10 * √(N : ℝ))) +
+      1 / 2 * Real.logb 2 (N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) +
+      Real.logb 2 (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) +
+      Real.logb 2 (ℓ * (ℓ + 1)) + Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) +
+      13 ≤ fmt.mantissaBits)
+    (hbits' : Real.logb 2 (dec p β)⁻¹ +
+      Real.logb 2 (2048 * (N + Nst + 1) * (4 * μM N + 10 + 10 * √(N : ℝ)) +
+      16 * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) ≤ fmt.mantissaBits)
+    (hexp : Real.logb 2 (Real.logb 2 (1536 * (N + ℓ + 2) ^ 3 / (dec p ε * θ)) + 2) + 1 ≤
       fmt.exponentBits)
     (hfuel : Nst ≤ F) {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
     {ξ : Ω → Dist → ℕ → ℝ} (hξ : HasLaw ξ tapeLaw μ) :
@@ -273,8 +291,8 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
     ⟨N, A, R₀, ε, ℓ⟩ le_rfl hξ
   have key :=
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
-      fmt hE hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hA hR₀ hR₀half hR₀one hε
-      hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hexp hfuel hind hlaw
+      fmt hE hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ hR₀half hR₀one
+      hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hbits' hexp hfuel hind hlaw
   have := hξ.isProbabilityMeasure
   refine le_trans (measureReal_mono (μ := μ) (fun ω hω => ?_) (measure_ne_top μ _)) key
   obtain ⟨st', hexec, hbad⟩ := hω

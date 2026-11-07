@@ -20,7 +20,7 @@ $\|\mathbf{H} - \llbracket\mathbf{H}\rrbracket_k\|_* = \sum_{i \ge k}\lambda_i(\
 $\sigma_k(\mathbf{H}) = \lambda_k(\mathbf{H})$, indexed from $0$.
 
 Every statement bounds the probability of the failure event, written positively
-(CONTRIBUTING §4 N15), `μ.real {ω | bound < error ω}`; the failure probability
+(docs/contributing/naming.md N15), `μ.real {ω | bound < error ω}`; the failure probability
 is <!-- value gaussianPinvFrobTail k d t -->
 $e^{-s^2/2} + 2\sqrt{k}\,(d/(2t))^{d/2}/\Gamma(d/2 + 1)$, whose second term
 (`NLAlib.gaussianPinvFrobTail k d t`) is smaller than Tropp and Webber's

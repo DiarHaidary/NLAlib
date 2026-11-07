@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regressions for scripts/check_names.py (CONTRIBUTING §4): one passing and one failing name per
+"""Regressions for scripts/check_names.py (docs/contributing/naming.md): one passing and one failing name per
 checked rule, on hand-written declarations in the extraction format."""
 import json
 import tempfile

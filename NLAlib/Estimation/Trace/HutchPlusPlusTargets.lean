@@ -24,7 +24,8 @@ The target statements of Hutch++ as a program, each about a tree of
   pattern, in the stored-entries model.
 
 The statements are the library's, reviewed and registered in `docs/targets.toml`; a change to
-one, or to a definition it unfolds to, needs the maintainer's approval (CONTRIBUTING §11). Their
+one, or to a definition it unfolds to, needs a maintainer's approval
+(`docs/contributing/programs.md`). Their
 proofs are in `NLAlib/Estimation/Trace/HutchPlusPlusProgram.lean`. Design:
 `docs/design/Computation.md` (F1, F8).
 

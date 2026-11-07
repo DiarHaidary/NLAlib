@@ -103,7 +103,7 @@ discharges the new hypothesis by `rfl`).
 5. `scripts/Targets.lean`'s `models` list does not yet name `MatrixFreeRoundedProb` (a check
    script, AGENTS.md rule 1); it needs the entry when the first target concludes it (S1d).
 
-**Re-pin.** By the documented path (CONTRIBUTING §5.5, `docs/targets.toml` header):
+**Re-pin.** By the documented path (docs/contributing/programs.md, `docs/targets.toml` header):
 `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean` rewrote the closure hashes, then
 `sha256sum docs/targets.toml > docs/targets.approved` under the approval given with the sheet
 (the S1 change re-pins every target, §4.5, §8.3). Only the nine target closure hashes changed; the
@@ -216,7 +216,7 @@ to D7). S2a, the bounded index binder `bindIdx` with `ScalarSem.toNat`, `IsExact
 re-pin (closure hashes only) pending the maintainer's sign-off; `RunsWithin.subst` gains `htoNat`
 (as §4.1 says) and `hcostToNat`. S2b, EIGH as the registered program `NLAlib.eighProg`, is defined
 and compiled; its refinement (an exact equality with `NLAlib.eigh`, and success under the standard
-model) and the transfer of EV6, EV7, EV8 and, blocked, EV7' are a 63-statement skeleton. Changes to
+model) and the transfer of EV6, EV7, EV8 (as tightened by HDIAG-BOUNDS) are a 63-statement skeleton. Changes to
 this note's plan: the sign step inside EIGH keeps hdiag's step limit instead of the pilot's
 `whileFuel`, so every run succeeds (D1); M3's correctly rounded `fl` becomes the single clause
 `MulShrinks` (D4); every level draws a fixed number of samples (D3), which makes the lazy-sampling

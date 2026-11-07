@@ -19,7 +19,8 @@ unweighted, and its tails. Chernoff's bound with the exact Laplace transform at
 $\theta = (1 - 1/\beta)/2$ gives $\mathbb{P}[\|\mathbf{g}\|^2 \ge \beta d]$ and
 $\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d]$ at most $e^{(d/2)(1 - \beta + \log \beta)}$, on either
 side of $\beta = 1$, with the exponent of Dasgupta and Gupta (2003). The lower tail gives
-Laurent and Massart's lower tail as a corollary (CONTRIBUTING §5.2, rule 6). The exact small ball
+Laurent and Massart's lower tail as a corollary
+(docs/contributing/statements.md §2, rule 6). The exact small ball
 $\mathbb{P}[\|\mathbf{g}\|^2 \le u] \le (u/2)^{d/2} / \Gamma(d/2 + 1)$ comes from the
 $\chi^2_d$ density in `NLAlib/Probability/Distributions/ChiSquareMoments.lean`, and the Chernoff
 small ball $(e u / d)^{d/2}$ is its corollary. The relative deviation
@@ -176,7 +177,7 @@ $d = \lvert n \rvert$ and $0 < \beta \le 1$,
 $$\mathbb{P}[\|\mathbf{g}\|^2 \le \beta d] \le e^{\frac{d}{2}(1 - \beta + \log \beta)}\,,$$
 Chernoff's bound
 with the exact Laplace transform at $\theta = (1 - 1/\beta)/2$. It dominates
-(CONTRIBUTING §5.2 rule 6) Laurent and Massart's
+(docs/contributing/statements.md §2 rule 6) Laurent and Massart's
 `NLAlib.measureReal_norm_sq_le_le_of_hasLaw_gaussianVector` (at $\beta = 1 - 2\sqrt{t/d}$, with
 $\log(1 - u) \le -u - u^2/2$), which is proved from it, and the small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` (at $\beta = u/d$, after dropping
@@ -286,7 +287,7 @@ from the $\chi^2_d$ density (`NLAlib.integral_comp_norm_of_hasLaw_gaussianVector
 $e^{-u/2} \le 1$; for $d = 0$ both sides are $1$. It dominates the Chernoff small ball
 `NLAlib.measureReal_norm_sq_le_le_rpow_of_hasLaw_gaussianVector` by
 $\Gamma(x + 1) \ge (x/e)^x$ (`Real.rpow_mul_exp_neg_le_Gamma_add_one`), which is proved from it
-(CONTRIBUTING §5.2, rule 6); asymptotically it is smaller by the Stirling factor
+(docs/contributing/statements.md §2, rule 6); asymptotically it is smaller by the Stirling factor
 $\sqrt{\pi d}$.
 Result: chi-square-small-ball -/
 theorem measureReal_norm_sq_le_le_rpow_div_Gamma_of_hasLaw_gaussianVector

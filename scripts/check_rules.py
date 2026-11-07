@@ -6,12 +6,13 @@
     python3 scripts/check_rules.py [DATA.json] --update-baseline [--force]
 
 Every rule has a stable id: a letter for its area and a number, as the naming rules N1–N18
-(`scripts/check_names.py`, CONTRIBUTING §4). Areas: F file template (§3), P placement and layers
-(§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
-vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
-notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9), E programs (§5.5; E2–E4 and E9 are checked on the built library by
-`scripts/Programs.lean` and `scripts/Targets.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
+(`scripts/check_names.py`). Areas, with the guide of docs/contributing that states them: F file
+template (layout), P placement and layers (layout, design), S source and proof style (proofs),
+T types and statement shape (statements), V vocabulary (vocabulary), B bounds and asymptotic
+forms (statements), D docstrings, M mathematical notation, C citations, R `Result:` ids and
+A algorithm tags (docstrings), G design records (design), E programs (programs; E2–E4 and E9 are
+checked on the built library by `scripts/Programs.lean` and `scripts/Targets.lean`,
+`check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
@@ -23,7 +24,7 @@ allowlist), so one command reports everything.
 
 Each violation prints as one line, `<ID> <file>:<line> <decl>: <message and fix>`.
 
-Levels. An *error* fails the check. Existing debt is ratcheted (maintainer, 2026-10-19):
+Levels. An *error* fails the check. Existing debt is ratcheted:
 `scripts/rules_baseline.json` holds, per error rule and file, the number of violations that
 existed when the rule became checked, and only violations above that count fail (all of a file's
 violations of the rule are then printed). A rule with no baseline entry is clean, so every
@@ -57,14 +58,19 @@ ALLOW = ROOT / 'scripts' / 'rules_allow.toml'
 LIBS = ('NLAlib', 'NLAlibScaffold')
 BIB = 'docs/references.bib'
 DEVIATIONS = 'docs/design/Mathlib-deviations.md'
+GUIDES = 'docs/contributing'  # the topic guides; CONTRIBUTING.md is their hub
 
-# CONTRIBUTING §2's layer table (amended 2026-10-25 to match the import graph): Probability imports
-# Krylov, Regression imports Sketching, Estimation imports LowRank; LowerBounds (2026-10-25) is the
-# top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
-# it gets files.
-LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
-         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
-         'LowerBounds': 5}
+LAYERS_TOML = ROOT / 'docs' / 'rules' / 'layers.toml'
+
+
+def load_layers(path=LAYERS_TOML):
+    """{folder: entry of layers.toml}: each top-level folder's layer and, optionally, the only
+    folders it may import (docs/contributing/layout.md §1). A folder missing here is a P1 error."""
+    return {e['folder']: e for e in tomllib.loads(path.read_text())['layer']}
+
+
+LAYERS = load_layers()
+LAYER = {f: e['layer'] for f, e in LAYERS.items()}
 
 # ------------------------------------------------------------------ the rule registry
 # The rule data (severity, statement, fix, scope, section) is in docs/rules/rules.toml, the single
@@ -178,10 +184,12 @@ class Ctx:
                 self.files[rel] = (text, leansrc.parse(text))
         self.lib_files = {p: v for p, v in self.files.items() if p.startswith('NLAlib/')}
         self.bib = (root / BIB).read_text()
-        self.contrib = (root / 'CONTRIBUTING.md').read_text()
+        self.guides = guide_texts(root)
+        self.contrib = '\n'.join(self.guides.values())
         self.deviations = (root / DEVIATIONS).read_text()
         self.registry = tomllib.loads((root / 'docs/constants.toml').read_text())['constant']
         self.reg_names = {c['name'] for c in self.registry}
+        self.target_names = target_registry_names(root)
         self.explore_repo = explore_repo
         self.mathlib = mathlib
         self._mlnames = None
@@ -217,8 +225,25 @@ class Ctx:
         return leansrc.strip_comments(self.files[p][0]).split('\n')
 
 
+def guide_texts(root):
+    """{path: text} of the contributor guide: `CONTRIBUTING.md` and `docs/contributing/*.md`."""
+    paths = [root / 'CONTRIBUTING.md'] + sorted((root / GUIDES).glob('*.md'))
+    return {p.relative_to(root).as_posix(): p.read_text() for p in paths if p.exists()}
+
+
+def target_registry_names(root):
+    """The definitions `docs/targets.toml` records (programs): its targets and trees, and the program
+    each tree compiles (`cgProg` for `cgProg.compiled`)."""
+    path = root / 'docs/targets.toml'
+    if not path.exists():
+        return set()
+    reg = tomllib.loads(path.read_text())
+    names = {e['name'] for e in reg.get('target', []) + reg.get('tree', [])}
+    return names | {n.rsplit('.', 1)[0] for e in reg.get('tree', []) for n in [e['name']]}
+
+
 def short_mathsf_names(contrib):
-    """Registered short `\\mathsf` names (CONTRIBUTING §5.3 row "short algorithm names"):
+    """Registered short `\\mathsf` names (the vocabulary row "short algorithm names"):
     {short: Lean name}. The row lists pairs `` `\\mathsf{gn}` for `generalizedNystrom` ``."""
     out = {}
     for row in contrib.split('\n'):
@@ -232,7 +257,7 @@ def public_src(c):
     return [(p, d) for p, d in c.src_decls if not d['private'] and d['full']]
 
 
-# ================================================================== F: file template (§3)
+# ================================================================== F: file template (layout §2)
 HEADER = re.compile(r'^/-\nCopyright \(c\) \d{4} [^\n]+\. All rights reserved\.\n'
                     r'Released under Apache 2\.0 license as described in the file LICENSE\.\n'
                     r'Authors: \S[^\n]*\n-/$')
@@ -347,10 +372,28 @@ def p_layer(c):
                 continue
             if me not in LAYER or th not in LAYER:
                 unknown = me if me not in LAYER else th
-                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in LAYER (§2)'))
+                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in docs/rules/layers.toml'))
                 continue
-            if LAYER[th] > LAYER[me] or (me == 'ForMathlib' and th != 'ForMathlib'):
+            if LAYER[th] > LAYER[me]:
                 out.append(V('P1', p, ln, '(file)', f'{me} imports {mod}'))
+    return out + restricted_imports(c, 'P1')
+
+
+def restricted_imports(c, rid):
+    """Imports outside Mathlib and the folders a layers.toml entry checked as `rid` allows."""
+    out = []
+    for p, (t, x) in c.lib_files.items():
+        me = topic_of_path(p)
+        e = LAYERS.get(me, {})
+        if e.get('rule') != rid:
+            continue
+        ok = tuple(f'NLAlib.{f}.' for f in [me] + e['imports'])
+        for ln, pub, mod in x['imports']:
+            if mod == 'Mathlib' or mod.startswith(('Mathlib.',) + ok):
+                continue
+            if rid == 'P1' and not mod.startswith('NLAlib.'):
+                continue  # P1 is about the layers of NLAlib
+            out.append(V(rid, p, ln, '(file)', f'{me} imports {mod}' if rid == 'P1' else mod))
     return out
 
 
@@ -454,10 +497,7 @@ def p_package_libs(c):
 
 @rule('P11')
 def p_poly_imports(c):
-    return [V('P11', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
-            if topic_of_path(p) == 'Polynomial' for ln, pub, mod in x['imports']
-            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
-                                                        'NLAlib.Polynomial.')))]
+    return restricted_imports(c, 'P11')
 
 
 @rule('P9')
@@ -546,13 +586,13 @@ def s_instance(c):
         if d['kind'] != 'instance':
             continue
         _, concl = split_sig(d['signature'])
-        if not nl_deps(d) and 'instMeasurableSpace' not in d['name']:
+        if not nl_deps(d):
             out.append(V('S6', c.path_of(d), d['line'], d['name'], concl.strip()[:100]))
     return out
 
 
 def long_line_exempt(line):
-    """Decision 8 (maintainer, 2026-10-19): a line over 100 characters is allowed only when a single
+    """S7: a line over 100 characters is allowed only when a single
     identifier or a URL makes it long: the line, after its indentation, an optional list marker
     and trailing punctuation (`name :`, `name :=`), is one token, or it contains a URL."""
     if 'http://' in line or 'https://' in line:
@@ -785,7 +825,7 @@ def t_jensen_corollary(c):
     return out
 
 
-# ================================================================== V: vocabulary (§5.3)
+# ================================================================== V: vocabulary (vocabulary)
 @rule('V1')
 def v_raw_ortho(c):
     return [V('V1', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
@@ -821,7 +861,7 @@ def v_forbidden(c):
 KEYWORDS = {'native_decide', 'mk_all', 'set_option', 'snake_case', 'irreducible_def', 'previous_latex',
             'previous_display', 'lean_body', 'exists_forall_', 'explorer_role', 'simp_all',
             'with_reducible_and_instances', 'eigenvalues₀_congr', 'body_hash', 'x_k', 'x_0',
-            'implemented_by'}
+            'implemented_by', 'exempt_while', 'exempt_reason'}
 
 
 def mathlib_names(c):
@@ -838,11 +878,6 @@ def mathlib_names(c):
     return c._mlnames
 
 
-def contrib_without_names_section(text):
-    """CONTRIBUTING without §4, whose name examples are patterns, not declarations."""
-    return re.sub(r'^## 4\. Names\n.*?(?=^## 5\.)', '', text, flags=re.S | re.M)
-
-
 @rule('V6')
 def v_stale_names(c):
     if not c.mathlib or not c.mathlib.exists():
@@ -851,10 +886,10 @@ def v_stale_names(c):
     local = set(c.src_short) | {d['name'].split('.')[-1] for p, (t, x) in c.files.items()
                                 for d in x['decls'] if d['name']}
     out = []
-    for path, text in (('CONTRIBUTING.md', contrib_without_names_section(c.contrib)),
-                       (DEVIATIONS, c.deviations)):
-        full = c.contrib if path == 'CONTRIBUTING.md' else c.deviations
-        for row in text.split('\n'):
+    # the naming guide's examples are patterns, not declarations
+    texts = [(p, t) for p, t in c.guides.items() if p != f'{GUIDES}/naming.md']
+    for path, full in texts + [(DEVIATIONS, c.deviations)]:
+        for row in full.split('\n'):
             for tok in re.findall(r'`([^`]+)`', row):
                 if re.search(r'/|\.(py|lean|toml|md|json|mjs|sh|bib)\b', tok):
                     continue  # a path or a file name, not a declaration
@@ -873,14 +908,17 @@ def v_unrecorded(c):
     out = []
     for d in c.decls:
         if d['kind'] in ('def', 'structure', 'class', 'abbrev') and c.topic(d) != 'ForMathlib' \
-                and d['name'] not in c.reg_names and d.get('explorerRole') != 'support':
+                and d['name'] not in c.reg_names and d['name'] not in c.target_names \
+                and not c.path_of(d).endswith('Targets.lean') and d.get('explorerRole') != 'support':
+            # a target, a registered tree and its program are recorded by docs/targets.toml, and so
+            # is a definition of a targets file (a target's count)
             short = d['name'].split('.')[-1]
             if not re.search(r'\b' + re.escape(short) + r'\b', text):
                 out.append(V('V7', c.path_of(d), d['line'], d['name']))
     return out
 
 
-# ================================================================== B: bounds (§5.2)
+# ================================================================== B: bounds (statements §2)
 BOUND_NAME = re.compile(r'(Constant|Bound|Tail|Dim|Factor|Size|Rows|Rate|Exponent|Threshold)$')
 
 
@@ -941,7 +979,7 @@ def b_asym_missing(c):
     return out
 
 
-# ================================================================== D: docstrings (§6)
+# ================================================================== D: docstrings (docstrings)
 @rule('D1')
 def d_bold(c):
     return [V('D1', p, d['line'], d['full']) for p, d in public_src(c)
@@ -1103,7 +1141,7 @@ def d_nonempty_omitted(c):
     return out
 
 
-# ================================================================== M: notation (§6 item 5)
+# ================================================================== M: notation (docstrings item 5)
 def math_rule(rid, pat):
     rx = re.compile(pat)
 
@@ -1228,7 +1266,7 @@ def m_bare_matrix(c):
     return out
 
 
-# ================================================================== C: citations (§6)
+# ================================================================== C: citations (docstrings)
 @rule('C1')
 def c_result_cited(c):
     return [V('C1', p, d['line'], d['full']) for p, d in public_src(c)
@@ -1309,7 +1347,7 @@ def c_headline(c):
             and not CITE.search(d['doc']) and not has_result(d['doc'])]
 
 
-# ================================================================== R: result ids (§6)
+# ================================================================== R: result ids (docstrings)
 def prop_instance(d):
     """An instance of a Prop-valued class (`isLeftUnitarilyInvariant_haarFrame`) states a result."""
     return d['kind'] == 'instance' and re.match(r'(is|has)[A-Z]', d['full'].split('.')[-1])
@@ -1392,7 +1430,7 @@ def r_orphan(c):
     return out
 
 
-# ================================================================== A: algorithm tags (§6 item 4b)
+# ================================================================== A: algorithm tags (docstrings item 4b)
 def algorithm_tag_violations(c, rid):
     """The `Algorithm:` tag problems of rule `rid`, by scripts/check_refs.py's check."""
     from check_refs import algorithm_tag_problems
@@ -1438,7 +1476,7 @@ def g_deviation_fields(c):
     return out
 
 
-# ================================================================== E: programs (§5.5)
+# ================================================================== E: programs (programs)
 # E2–E4 and E9 need Lean's types and are checked by scripts/Programs.lean and scripts/Targets.lean
 # (`check = "lean"`); E1 is retired (docs/design/Computation.md, F9).
 COMPUTATION = 'NLAlib/Computation'
@@ -1453,10 +1491,7 @@ NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.name
 
 @rule('E5')
 def e_computation_imports(c):
-    return [V('E5', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
-            if topic_of_path(p) == 'Computation' for ln, pub, mod in x['imports']
-            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
-                                                        'NLAlib.Computation.')))]
+    return restricted_imports(c, 'E5')
 
 
 def declared_type(stmt):
@@ -1529,7 +1564,7 @@ def load_baseline(path):
 
 
 def write_baseline(path, counts):
-    data = {'_comment': 'Ratchet of scripts/check_rules.py (CONTRIBUTING §9): per error rule and file, '
+    data = {'_comment': 'Ratchet of scripts/check_rules.py (docs/contributing/checks.md §1): per error rule and file, '
                         'the violations that existed when the rule became checked. Counts may only '
                         'fall; regenerate with `python3 scripts/check_rules.py DATA.json '
                         '--update-baseline`.',
@@ -1591,7 +1626,7 @@ def run(argv=None):
     ap.add_argument('--force', action='store_true', help='with --update-baseline: allow raising counts')
     ap.add_argument('--baseline', type=Path, default=BASELINE)
     ap.add_argument('--allow', type=Path, default=ALLOW)
-    ap.add_argument('--explore-repo', type=Path, default=None, help='the explore repository (R3)')
+    ap.add_argument('--explore-repo', type=Path, default=None, help="the explorer's folder, explore/ of a NLA-lib/NLA-lib.github.io checkout (R3)")
     ap.add_argument('--mathlib', type=Path, default=ROOT / '.lake/packages/mathlib/Mathlib')
     ap.add_argument('--root', type=Path, default=ROOT)
     ap.add_argument('--list', action='store_true', help='print the rules and exit')

@@ -17,7 +17,7 @@ projection-cost-preserving sketches with constants $1 \mp \varepsilon$, through 
 constructor `NLAlib.IsObliviousSubspaceEmbedding.hasProjectionCostPreserving_of_hasJLMoment`: the
 family's OSE at $(\varepsilon/2, \delta/2)$ for the head and its JL moment property at the budget
 $\varepsilon/(8\sqrt{d+1})$ for the three tail events. Each family has two incomparable explicit
-forms (CONTRIBUTING §5.2 rule 4): the JL moment at $p = 2$, whose second size
+forms (docs/contributing/statements.md §2 rule 4): the JL moment at $p = 2$, whose second size
 `NLAlib.projectionCostTailDim` is <!-- value projectionCostTailDim v d \varepsilon \delta -->
 $384 \cdot v (d + 1)/(\varepsilon^2 \delta)$ for a family with JL variance $v/\lvert k\rvert$,
 and the JL moment at

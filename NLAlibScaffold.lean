@@ -4,7 +4,6 @@ public import NLAlibScaffold.Computation.Exec
 public import NLAlibScaffold.Computation.IndexBinder
 public import NLAlibScaffold.Computation.KernelCongr
 public import NLAlibScaffold.Eigensolvers.SpectralBisectionProgram
-public import NLAlibScaffold.Eigensolvers.SpectralBisectionProgramSharp
 public import NLAlibScaffold.Eigensolvers.SpectralBisectionSamples
 public import NLAlibScaffold.Matrix.Computation.DeflationProgram
 public import NLAlibScaffold.Matrix.Computation.InterpMachine

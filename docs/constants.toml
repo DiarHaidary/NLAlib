@@ -1,4 +1,4 @@
-# Named bounds of NLAlib (CONTRIBUTING §5.2 rule 2): every constant, tail function and sample size
+# Named bounds of NLAlib (docs/contributing/statements.md §2 rule 2): every constant, tail function and sample size
 # that a statement uses by name. A docstring that uses one writes its current value inside the
 # equation, in place of the constant, and annotates that math span with a marker just before it,
 #   <!-- value NAME ARG1 ARG2 … -->
@@ -14,10 +14,10 @@
 #   file       the file that defines it.
 #   args       its explicit arguments, in Lean order; `#i` in `latex` is the i-th. The letters here
 #              are the definition's; each docstring passes its own (`k \ell`, `(\varepsilon/2)`).
-#   latex      template of the current value: inline LaTeX in CONTRIBUTING §6 notation (`/` rather
+#   latex      template of the current value: inline LaTeX in docs/contributing/docstrings.md notation (`/` rather
 #              than `\frac`), placeholders `#1`…`#9` never followed by a letter. `C` in a sample
 #              size is the constant it uses, whose value the same docstring shows (`$C = 1/36$`,
-#              the one symbol CONTRIBUTING §5.2 rule 2 allows).
+#              the one symbol docs/contributing/statements.md §2 rule 2 allows).
 #   display    optional: the same value with `\frac`, accepted (besides `latex`) in a `$$…$$`
 #              display.
 #   lean_body  the definition from its name to its end, whitespace-normalised: the text `latex`
@@ -719,3 +719,21 @@ args = ["spec"]
 latex = '2^{\operatorname{ebits}(#1)}-2-\operatorname{bias}(#1)-(\operatorname{prec}(#1)-1)'
 lean_body = "maxExponentBound (spec : Format) : ℤ := ((2 ^ spec.exponentBits : ℕ) : ℤ) - 2 - spec.exponentBias - spec.mantissaBitsWithoutImplicit"
 body_hash = "1d8f95afc9c5f876"
+
+[[constant]]
+name = "NLAlib.cgsPassBound"
+kind = "bound"
+file = "NLAlib/Matrix/Computation/ClassicalGramSchmidt.lean"
+args = ["N", "j", "u", "η₀"]
+latex = '2(1+#4)\sqrt{#2+1}\,(#1+#2+2)\,#3'
+lean_body = 'cgsPassBound (N j : ℕ) (u η₀ : ℝ) : ℝ := 2 * (1 + η₀) * Real.sqrt ((j : ℝ) + 1) * ((N + j + 2 : ℕ) : ℝ) * u'
+body_hash = "1e5747665140a317"
+
+[[constant]]
+name = "NLAlib.lanczosReorthRoundoffBound"
+kind = "bound"
+file = "NLAlib/Krylov/Processes/LanczosReorthProgramGuarantees.lean"
+args = ["N", "q", "u"]
+latex = '(101/25)\sqrt{#2+1}\,(#1+#2+2)\,#3 + 16(#1+1)^2#3'
+lean_body = 'lanczosReorthRoundoffBound (N q : ℕ) (u : ℝ) : ℝ := 101 / 25 * Real.sqrt ((q : ℝ) + 1) * ((N + q + 2 : ℕ) : ℝ) * u + 16 * ((N : ℝ) + 1) ^ 2 * u'
+body_hash = "a9c73eda61d3fa8c"

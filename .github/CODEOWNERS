@@ -25,7 +25,7 @@
 /lake-manifest.json @tchen01
 /lean-toolchain @tchen01
 # The contribution rules and their enforcement: the rule data, the rule and reference checks,
-# their allowlists and the ratchet baseline (CONTRIBUTING §9.1; AGENTS.md rule 1).
+# their allowlists and the ratchet baseline (docs/contributing/checks.md §1; AGENTS.md rule 1).
 /docs/rules/rules.toml @tchen01
 /scripts/check_*.py @tchen01
 /scripts/check_latex.mjs @tchen01

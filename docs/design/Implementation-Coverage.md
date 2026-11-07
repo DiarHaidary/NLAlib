@@ -309,7 +309,7 @@ concrete scalar semantics producing that error pattern.
 ## Prioritized follow-up and target proposals
 
 These are proposals for maintainer review, not declarations, approvals, registrations or claims
-that a new implementation is already verified. New/changed targets need CONTRIBUTING §5.5
+that a new implementation is already verified. New/changed targets need docs/contributing/programs.md
 review of their exact statements, trees, closures, counts, memory and pins.
 
 | Priority | Concrete work | Acceptance evidence |
@@ -438,6 +438,9 @@ proposed Lanczos tree constructs a `LanczosRun` with those particular initial
 columns or returns a certified matrix-function vector.
 
 ## Proposal review, 2026-11-04
+
+The `proposals/krylov/` drafts named here were removed once the library held their
+counterparts; `git log -- proposals` finds them.
 
 `proposals/krylov/ConjugateGradient.lean` fixes a guarded, square-root-free,
 stored-matrix CG tree and defines `StoredEntriesConjugateGradient`.

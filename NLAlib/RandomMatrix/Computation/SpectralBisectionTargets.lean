@@ -64,15 +64,16 @@ standard model at $u$ with every value in range (`IsRelErrSem`), exact integer l
 $N + 4$ (`IsExactIntLit`), the exact floor conversion (`IsExactToNat`) and `MulShrinks`, whose
 kernels are routines on pairs meeting `IsMatMulErr` and `IsQRErr` at $u$, floor $0$, range $\Omega$,
 and every rounding $\rho$ of the tape meeting `IsTapeRounding` at range $2\Omega$, independent of
-the position and with countable range and measurable fibres in each distribution: if the decoded
-matrix is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, and the hypotheses of the shallow [Shah2024,
-Theorem 4.2] for `NLAlib.eigh` (`NLAlib/Eigensolvers/SpectralBisection/Global.lean`) hold at the
-machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ (the rounded shift adds the tape
-rounding of the seed) and normal-sampler constant $c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$,
-with $(c(\mathrm{gaussian}) + 3)u \le 1/10$, then the probability that the run fails or ends with
-stored $\mathbf{U}$, $\mathbf{d}$ in declared buffers $2$, $3$ that are not an approximate
-diagonalization of $\mathbf{A}$ with residual $2\varepsilon R_0$ and singular values within
-$\varepsilon/3$ of $1$ is at most $\theta$. [Shah2024, Theorem 4.2], for the program. -/
+the position and with countable range and measurable fibres in each distribution: if $N \ge 1$, the
+decoded matrix is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, and the hypotheses of the shallow
+[Shah2024, Theorem 4.2] for `NLAlib.eigh` (`NLAlib/Eigensolvers/SpectralBisection/Global.lean`)
+hold at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ (the rounded shift adds
+the tape rounding of the seed) and normal-sampler constant
+$c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $(c(\mathrm{gaussian}) + 3)u \le 1/10$, then the
+probability that the run fails or ends with stored $\mathbf{U}$, $\mathbf{d}$ in declared buffers
+$2$, $3$ that are not an approximate diagonalization of $\mathbf{A}$ with residual
+$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
+[Shah2024, Theorem 4.2], for the program. -/
 def MatrixFreeRoundedProbEigh : Prop :=
   ∀ (P ι : Type) [DecidableEq P] (p : P) (mm qr : ι) (K : Type) [Inhabited K]
     (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ) (c : Dist → ℝ),
@@ -93,20 +94,22 @@ def MatrixFreeRoundedProbEigh : Prop :=
         let uM := (c .uniform + 1) * u
         let cN := 2 * (c .gaussian + 3)
         let ℓ := n 0
-        let Nst := newtonSchulzSteps (θ / (32 * N * (N + 1) * ℓ * (ℓ + 1))) (dec p x.β / (16 * N))
-        (decodeMatrix (dec p) x.A).IsHermitian ∧
+        let βb := ((ℓ : ℝ) - 1) ^ 2 * dec p x.ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+          √(N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) *
+          (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))))
+        let Nst := newtonSchulzSteps (θ / (12 * N * ℓ * (ℓ + 1))) (dec p x.β / (16 * N))
+        1 ≤ N ∧ (decodeMatrix (dec p) x.A).IsHermitian ∧
         specNorm (decodeMatrix (dec p) x.A) ≤ dec p x.R₀ ∧ 0 < dec p x.R₀ ∧
         0 < dec p x.ε ∧ dec p x.ε ≤ 2⁻¹ ^ 15 ∧ 0 < θ ∧ θ ≤ 1 ∧ bisectionDepth (dec p x.ε) ≤ ℓ ∧
-        0 < dec p x.β ∧
-        dec p x.β ≤ dec p x.ε * √θ / (2880 * ℓ * N * √(N : ℝ) *
-          (2 * √(N : ℝ) + √(2 * Real.log (16 * N / θ)))) ∧
+        0 < dec p x.β ∧ dec p x.β ≤ βb ∧
         0 ≤ u ∧ 0 ≤ c .uniform ∧ 0 ≤ c .gaussian ∧ (c .gaussian + 3) * u ≤ 1 / 10 ∧
         Monotone μM ∧ Monotone μQ ∧ 0 ≤ μM 0 ∧ 0 ≤ μQ 0 ∧
-        640 * N * √(N : ℝ) * (8 + μM N) * (Nst + 1) * (16 * N * (N + 1) * ℓ * (ℓ + 1)) * uM ≤
-          θ * dec p x.β ∧
-        (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1) * uM ≤ dec p x.β ∧
+        146 * N * ℓ * (ℓ + 1) * (4 * μM N + 10 + 10 * √(N : ℝ)) * uM ≤ θ * dec p x.β ∧
+        2048 * (N + Nst + 1) * (4 * μM N + 10 + 10 * √(N : ℝ)) * uM ≤ dec p x.β ∧
+        16 * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1) * uM ≤ dec p x.β ∧
         Nst ≤ n 1 ∧
-        16 * (2 * dec p x.R₀ + N + 2 * ℓ + √(Real.log (16 * N / θ))) ≤ Ω)
+        16 * (2 * dec p x.R₀ + N + 2 * ℓ + 2 * √2 * √(N : ℝ) +
+          √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) ≤ Ω)
       (fun N _ x st => ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
         pairLayout.Holds st.store p 2 0 U ∧ (∀ i : Fin N, st.store.read p 3 i = some (d i)) ∧
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)

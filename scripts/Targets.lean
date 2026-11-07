@@ -15,7 +15,14 @@ target statements", F1 and F12). This script checks, on the library built by `la
    `exec`, `Stmt`, `ProgFamily.inst`), through the library constants it unfolds to (the values of
    definitions and opaques, the constructors of structures, classes and inductive types), is a
    registered target or its proof: a theorem, an instance of a `Prop` class, any constant whose
-   type is a proposition, or a definition of type `Prop`;
+   type is a proposition, or a definition of type `Prop`; except a **rounded program theorem**
+   (approved by the maintainer 2026-11-07), a claim whose statement is about rounded execution:
+   one of its leading hypotheses (the binders of its `∀` telescope, instances included) is the
+   standard model `NLAlib.Computation.IsRelErrSem … I.sem` on the semantics of an interpretation
+   `I` bound in the telescope and mentioned by the conclusion, or its type names a rounded
+   access model (`MatrixFreeRounded`, `MatrixFreeRoundedProb`). Exact program theorems (under
+   `exactInterp`, `storedInterp`, or the exact models) keep the rule, a vacuous model hypothesis
+   on another semantics notwithstanding;
 3. the **closure hash** of each target matches the registry: SHA-256 of a canonical serialisation
    of every library constant the target's statement reaches (a constant is a library constant if
    its module is an `NLAlib` module), of every kind: definitions and opaques (type and value),
@@ -44,7 +51,7 @@ Run with `lake env lean scripts/Targets.lean` after `lake build NLAlib`; a nonze
 means a violation. `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean` (the `--update` mode)
 rewrites the hashes, the printed statements and normal forms, the pins and the leading comment
 of the registry for review; it never writes `docs/targets.approved`. Agents never edit the registry or a `*Targets.lean` file
-(CONTRIBUTING §11). `TARGETS_REGISTRY` and `TARGETS_APPROVED` name other files (for tests). -/
+(`AGENTS.md`). `TARGETS_REGISTRY` and `TARGETS_APPROVED` name other files (for tests). -/
 
 namespace TargetChecks
 
@@ -331,6 +338,32 @@ def runConsts : List Name :=
    ``NLAlib.Computation.ProgFamily.inst, ``NLAlib.Computation.ProgFamily.MatrixFree,
    ``NLAlib.Computation.ProgFamily.StoredEntries, ``NLAlib.Computation.ProgFamily.MatrixFreeProb]
 
+/-- The rounded access models: a statement that names one is about rounded execution. -/
+def roundedModels : List Name :=
+  [``NLAlib.Computation.MatrixFreeRounded, ``NLAlib.Computation.MatrixFreeRoundedProb]
+
+/-- Whether a claim is a **rounded program theorem** (lint item 2's exception, approved by the
+maintainer 2026-11-07): its type names a rounded access model, or one of the binders of its
+leading `∀` telescope has type `NLAlib.Computation.IsRelErrSem u dec safe I.sem` for an
+interpretation `I` bound in the telescope and mentioned by the conclusion (the claim holds for
+every semantics meeting the standard model, and the conclusion runs under that semantics). A
+mention of the model elsewhere (in a conclusion, under a connective) does not count, nor does a
+vacuous model hypothesis on a semantics the conclusion does not run under (an unrelated
+interpretation, or a fixed one such as `exactInterp`). -/
+def isRoundedClaim (type : Expr) : MetaM Bool := do
+  if type.getUsedConstants.any (roundedModels.contains ·) then return true
+  forallTelescope type fun xs body => xs.anyM fun x => do
+    let t ← inferType x
+    unless t.getAppFn.isConstOf ``NLAlib.Computation.IsRelErrSem do return false
+    -- `IsRelErrSem u dec safe sem`: the semantics must be `I.sem` (or `I`) for an interpretation
+    -- `I` bound in the telescope that the conclusion mentions
+    let some sem := t.getAppArgs.back? | return false
+    let interp := if sem.getAppFn.isConstOf ``NLAlib.Computation.Interp.sem then sem.appArg! else
+      match sem with
+      | .proj ``NLAlib.Computation.Interp 0 e => e
+      | _ => sem
+    return interp.isFVar && xs.contains interp && body.containsFVar interp.fvarId!
+
 /-- Whether a constant reaches a run or a budget through the library constants it unfolds to:
 the type of every constant, the value of definitions and opaques, and the mutual block and the
 constructors of inductive types, so that a statement wrapped in a structure, a class or an
@@ -356,7 +389,8 @@ partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name
 
 /-- Lint item 2: the constants in `scope` outside `NLAlib/Computation` with a `Result:` id that
 make a claim about a program's runs or budget and are neither a registered target nor its proof
-(`exempt`). A claim is a constant whose type is a proposition (a theorem, an instance of a `Prop`
+(`exempt`) nor a rounded program theorem (`isRoundedClaim`, approved by the maintainer
+2026-11-07). A claim is a constant whose type is a proposition (a theorem, an instance of a `Prop`
 class, a definition or an axiom of a proposition), when its type reaches a run or a budget, or a
 definition of type `Prop` (a target of the prover's), when its value does (final audit,
 2026-10-24). -/
@@ -375,7 +409,7 @@ def unregisteredResults (env : Environment) (scope : Array (Name × ConstantInfo
     let consts := if propDef then #[c] else info.type.getUsedConstants
     let (r, m) := (consts.anyM (reachesRun env)).run memo
     memo := m
-    if r then out := out.push c
+    if r && (propDef || !(← isRoundedClaim info.type)) then out := out.push c
   return out
 
 /-- The models on `Prog` a target concludes. -/
@@ -735,7 +769,7 @@ run_cmd do
     catch _ => pure false
   unless ok do
     logError m!"E3 {path} (SHA-256 {sha}) is not the approved registry: {approved} differs; {""
-      }only the maintainer approves a registry change (CONTRIBUTING §11)"
+      }only a maintainer approves a registry change (docs/contributing/programs.md)"
   let targets := reg'.tables.filter (·.kind == "target")
   logInfo m!"targets: {targets.size} registered targets, {reg'.tables.size - targets.size} {""
     }registered trees; {errs.size + (if ok then 0 else 1)} violations"
@@ -829,6 +863,46 @@ theorem exec_copyTrace (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → �
       (inputState () [#[some A.trace]]) =
       some (inputState () [#[some A.trace]]) := rfl
 
+/-- A rounded program theorem (approved by the maintainer 2026-11-07): a claim about `exec` for
+every semantics meeting the standard model. Not flagged.
+
+Result: fixture-rounded-run -/
+theorem exec_skip_of_isRelErrSem {u : Unit → ℝ} {dec : Unit → ℝ → ℝ}
+    (I : Interp Unit Unit ℝ (OpCount Unit Unit))
+    (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) (st : St Unit ℝ (OpCount Unit Unit)) :
+    exec I .skip st = some st := rfl
+
+/-- The standard model in a conclusion only, not as a hypothesis: an exact claim about `exec`,
+flagged.
+
+Result: fixture-model-in-conclusion -/
+theorem exec_copyTrace_and (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) ∧
+      ∀ u : Unit → ℝ, IsRelErrSem u (fun _ x => x) (fun _ _ => True)
+        (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ).sem → True :=
+  ⟨rfl, fun _ _ => trivial⟩
+
+/-- A vacuous standard-model hypothesis on the semantics of an interpretation the conclusion does
+not run under: an exact claim about `exec`, flagged.
+
+Result: fixture-vacuous-model -/
+theorem exec_copyTrace_vacuous (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ) {u : Unit → ℝ}
+    (J : Interp Unit Unit ℝ (OpCount Unit Unit))
+    (_ : IsRelErrSem u (fun _ x => x) (fun _ _ => True) J.sem) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) := rfl
+
+/-- The standard model on a fixed semantics (`exactInterp`), not on a bound interpretation: an
+exact claim about `exec`, flagged.
+
+Result: fixture-fixed-model -/
+theorem exec_copyTrace_fixedModel (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist → ℕ → ℝ)
+    {u : Unit → ℝ} (_ : IsRelErrSem u (fun _ x => x) (fun _ _ => True)
+      (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ).sem) :
+    exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
+      (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) := rfl
+
 /-- A target of the prover's: a `Prop` that unfolds to a model, not in the registry. -/
 def FixUnregistered : Prop := FixHutchpp
 
@@ -905,10 +979,14 @@ run_cmd do
     unregisteredResults env here (NameSet.empty.insert ``TargetFixtures.fixHutchpp)
   let expected := [``TargetFixtures.matrixFree_sizeTraceProg, ``TargetFixtures.exec_copyTrace,
       ``TargetFixtures.fixUnregistered, ``TargetFixtures.wrapped, ``TargetFixtures.viaNonempty,
-      ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef]
+      ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef,
+      ``TargetFixtures.exec_copyTrace_and, ``TargetFixtures.exec_copyTrace_vacuous,
+      ``TargetFixtures.exec_copyTrace_fixedModel]
   for c in expected do
     unless flagged.contains c do fail m!"{c} is not flagged"
   if flagged.size != expected.length then fail m!"item 2 flags {flagged}"
+  if flagged.contains ``TargetFixtures.exec_skip_of_isRelErrSem then
+    fail m!"a rounded program theorem is flagged"
   logInfo m!"item 2: {flagged} flagged"
   -- item 3: the registered tree is a leaf, and the kernel checks that it is its normal form
   let (nf, defs) ← liftTermElabM <| treeNF ``TargetFixtures.hppC

@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.RandomMatrix.Computation.DeflationTargets
+public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 public import NLAlib.RandomMatrix.Computation.NewtonSchulzSignTargets
 public import NLAlibScaffold.Matrix.Computation.DeflationProgram
 public import NLAlibScaffold.Matrix.Computation.InterpMachine

@@ -8,9 +8,9 @@ EIGH sketch (M4 packed blocks, M5 inputs), §7 refinement shape and effort. Pilo
 `docs/design/Computation-SignDeflatePrograms.md` (its 65 targets are being proved in a separate
 dispatch; this stage cites them). Shallow specification: hdiag's `NLAlib.eigh`
 (`NLAlib/Matrix/Computation/SpectralBisection.lean`) and its theorems EV6, EV7, EV8
-(`NLAlib/Eigensolvers/SpectralBisection/Global.lean`), and EV7' (HDIAG-BOUNDS,
-`research/hdiag-bounds`, being proved). Skeleton: 63 statements in `NLAlibScaffold/`
-(`~/nlalib-harness/pilot/compdyn-s2-targets.json`) and one blocked on HDIAG-BOUNDS (§7.4). Decision
+(`NLAlib/Eigensolvers/SpectralBisection/Global.lean`, EV8 in `…/BoundedFormat.lean`), as tightened
+by HDIAG-BOUNDS (EV7' absorbed into EV7). Skeleton: 63 statements in `NLAlibScaffold/`
+(`~/nlalib-harness/pilot/compdyn-s2-targets.json`) (TT1–TT3 restated against the tightened bounds, §7.4). Decision
 sheet: `~/nlalib-harness/state/decisions/COMPDYN-S2.json` (RP, D1 to D7).
 
 This stage finishes what the maintainer asked for on 2026-11-05: [Shah2024]'s Hermitian eigensolver
@@ -26,7 +26,7 @@ program.
 | Re-pin | the second approved re-pin (Q9 (c)): the nine closure hashes change, nothing else (§2.5). Needs the maintainer's sign-off before merge (RP). |
 | `eighProg` | One builder, compiled by `rfl` into `NLAlib.eighProg.compiled : Prog P ι 2 4` (sizes $N$; $\ell_0$, $F$). Level arenas for $D + 1 = \ell_0 + 2$ depths, a downward pass of $D$ levels, the spent level, an upward pass of $D$ levels; every node a packed block at word offset $2n^2 d + 2n\,lo$ (M4); sizes, kinds and $k_+$ stored as integer literals and read back by `bindIdx`; tests on sizes by trip counts $0$/$1$ of loops (D2); the sign step inlined from the pilot's test and step blocks with the shallow step limit, so a run never fails for want of steps (D1); static sample positions per level (D3). About 430 lines (`SpectralBisectionProgramTree.lean`), with 300 lines of vocabulary (`SpectralBisectionTape.lean`). No Lean function of data in the tree (F2). |
 | Refinement | (a) **partial equality**: under kernels that are routines on pairs, a semantics that decides flags, `IsExactIntLit` up to $N + 4$ and `IsExactToNat`, every successful run writes exactly `NLAlib.eigh (eighTapeMachine I p mmR qrR) F ℓ₀ A R₀ ε β (eighSlotTree …)`; no correctly rounded `fl` is needed (the pilot's finding, §4). (b) **success**: under the standard model with every value in range, $u < 1$, $\ell_0 \ge 1$ and $\varepsilon, R_0 \ge 0$, every run succeeds. |
-| Transfer | `NLAlib.MatrixFreeRoundedProbEigh` (proposed target, `NLAlib/RandomMatrix/Computation/SpectralBisectionTargets.lean`): EV6 for the registered tree, via the sampler rewrite and a lazy-sampling lemma (§6); the program forms of EV7 (bits) and EV8 (a bounded binary format, for the runs that succeed, D6); EV7' in a blocked file (§7.4). Shah's Theorem 4.2 for a program of the model. |
+| Transfer | `NLAlib.MatrixFreeRoundedProbEigh` (proposed target, `NLAlib/RandomMatrix/Computation/SpectralBisectionTargets.lean`): EV6 for the registered tree, via the sampler rewrite and a lazy-sampling lemma (§6); the program forms of EV7 (bits) and EV8 (a bounded binary format, for the runs that succeed, D6), against the tightened bounds (§7.4). Shah's Theorem 4.2 for a program of the model. |
 | Skeleton | 63 statements: S 25, M 29, L 8, H 1 (§8). |
 | Calibration | S2a: about 350 lines (353 insertions, 56 deletions), proved (estimate 900 – 1,500: below); S2b definitions about 880 lines, statements about 1,850 scaffold lines; S2 projected 7,750 – 9,550 lines, the middle of §7.2's 6,400 – 11,000 for the S2 rows (§10). |
 
@@ -300,9 +300,11 @@ pilot's S1c/S1d statements, sorried here; the S2 merge waits for S1cd to land.
 
 ### 7.2 EV7: the bit count
 
-`matrixFreeRoundedProb_eighProg_of_logb_le` (M): the same model with EV7's precision condition at
-$u_{\mathrm M}$: $\log_2(1/\varepsilon) + O(\log n + \log\log(1/\varepsilon)) +
-\tfrac32\log_2(1/\theta)$ bits for the program.
+`matrixFreeRoundedProb_eighProg_of_logb_le` (M): the same model with EV7's two precision
+conditions (`hbits`, `hbits'`) at $u_{\mathrm M}$ and $\beta$ in EV7's window
+$\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$: $\log_2(1/\varepsilon) +
+\tfrac32\log_2(1/\theta) + O(\log n + \log\log(1/\varepsilon))$ bits for the program, with
+$n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ in place of the earlier $n^5\mu_{\mathrm{MM}}$.
 
 ### 7.3 EV8: a bounded binary format (D6)
 
@@ -314,13 +316,15 @@ hypotheses. Success is not claimed: `binaryFloatSem` fails out of range, and hdi
 that every operation of a run stays in range (its contract `IsRoundingOf` constrains nothing out of
 range). The full form needs that range analysis (D6).
 
-### 7.4 EV7' (blocked on HDIAG-BOUNDS)
+### 7.4 Restatement against the tightened HDIAG bounds
 
-`NLAlibScaffold/Eigensolvers/SpectralBisectionProgramSharp.lean`:
-`matrixFreeRoundedProb_eighProg_of_logb_le'`, the transfer of EV7' (stated on `research/hdiag-bounds`
-as `FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw'`,
-being proved). Not in the targets file; dispatched when EV7' lands, after re-checking its hypotheses
-against the merged EV7'. Same reduction as §7.2.
+On merging main (HDIAG with the tightened EV6/EV7/EV8, PR #67's $n \ge 1$), TT1–TT3 were restated
+as listed in `Review-Fable-HDIAG-Bounds-Stage.md` ("S2 restatements"): TT1 takes $\beta \le
+\hat\beta$, $N_*$ at $\theta/(12n\ell(\ell + 1))$, $146n\ell(\ell + 1)\nu u_{\mathrm M} \le
+\theta\beta$, the stopping condition $2048(n + N_* + 1)\nu u_{\mathrm M} \le \beta$, deflation
+with the factor $16$ and the new range; TT2 takes the former TT4's hypotheses (EV7 verbatim), and
+TT4 with its file `SpectralBisectionProgramSharp.lean` is deleted; TT3 takes EV8's window, $N_*$,
+`hbits`, `hbits'` and the cube in `hexp`; all three take $1 \le N$.
 
 ### 7.5 Placement
 
@@ -351,7 +355,6 @@ the maintainer once the proof exists.
 | ES1–ES4 | `eigh_toFloatMachine_map_samples`, `eigh_congr_samples`, `eigh_eighTapeMachine_eq_eigh_eighIdealTree`, `iIndepFun_eighIdealTree` | `Eigensolvers/SpectralBisectionSamples.lean` | M, M, L, H |
 | IA1–IA4 | `isUnifSampler_uniformUnif`, `isAccurate_eighIdealMachine`, `countable_range_uniformUnif`, `countable_range_gaussianNormal` | same | M, M, S, S |
 | TT1–TT3 | `matrixFreeRoundedProbEigh`, `matrixFreeRoundedProb_eighProg_of_logb_le`, the bounded format | `Eigensolvers/SpectralBisectionProgram.lean` | M |
-| TT4 (blocked) | `matrixFreeRoundedProb_eighProg_of_logb_le'` (EV7') | `Eigensolvers/SpectralBisectionProgramSharp.lean` | M |
 
 **Statement fix (SB2).** `holds_of_exec_eighSignBlock` now takes `hX : ∃ len, st.store.shape[X]? =
 some (p, len) ∧ xo.eval + 2 * (n * n) ≤ len`, as SB3 and the pilot's SG6/SG7 (the pilot's SG6

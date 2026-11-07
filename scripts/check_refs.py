@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Every `[Key]` or `[Key, label]` citation in a docstring names an entry of docs/references.bib,
-every `Result: id` line is a well-formed slug, and every asymptotic form (CONTRIBUTING §5.2,
+every `Result: id` line is a well-formed slug, and every asymptotic form (docs/contributing/statements.md §2,
 rule 3) is tagged consistently. Exit 1 on any failure.
 
 Asymptotic forms. A docstring line `Asymptotic: NAME` (or `Asymptotic:` alone with `NAME` on the
@@ -13,7 +13,7 @@ backticks in a sentence besides the tag, and `NAME`'s docstring names the asympt
 backticks (full name or `NLAlib`-relative). A docstring
 saying "Asymptotic form: `X`" must name a declaration whose `Asymptotic:` tag points back.
 
-Algorithm tags (CONTRIBUTING §6 item 4b). A docstring line `Algorithm: <id>` or
+Algorithm tags (docs/contributing/docstrings.md item 4b). A docstring line `Algorithm: <id>` or
 `Algorithm: <id> (<role>)` marks a definition or program as part of the algorithm `<id>` (the
 explorer's algorithm pages): the id is a slug like a result id, the role one of `ROLES`, the line
 standalone and the docstring's last [A1]; the declaration is a `def`, `abbrev`, `structure` or

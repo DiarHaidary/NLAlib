@@ -3,8 +3,8 @@
 # Rules digest
 
 Every error rule of `docs/rules/rules.toml` in one line; an agent brief includes this file
-whole, with the topic's `NLAlib/<Topic>/RULES.md` (CONTRIBUTING §11). Warnings and review
-rules are in the topic files; the reasons are in CONTRIBUTING.
+whole, with the topic's `NLAlib/<Topic>/RULES.md` (CONTRIBUTING.md, AI agents). Warnings and review
+rules are in the topic files; the reasons are in the contributor guide.
 
 - F1 Every file starts with the copyright header of the template.
 - F2 A file is `module`, its imports, the module docstring, then `@[expose] public section`.
@@ -15,7 +15,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - F7 No file-level `open Classical` or `open scoped Classical`.
 - F8 No file-level `noncomputable section`.
 - F9 No file-level `attribute [instance]`.
-- P1 A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation.
+- P1 A module imports only its own layer and lower (the layer table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation.
 - P2 No file with imports only (no per-directory aggregator).
 - P3 An `NLAlib` file never imports `NLAlibScaffold`.
 - P4 A ForMathlib statement uses no NLAlib vocabulary [ForMathlib only].
@@ -45,7 +45,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - V3 A singular-value ratio is `singularGapRatio`, never spelled out.
 - V4 A squared Frobenius norm is `frobNorm A ^ 2`, never `frobNorm A * frobNorm A`.
 - V5 No forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, `lambdaMax`, `conditionNumber`).
-- V6 Every Lean name cited in CONTRIBUTING (outside §4) or Mathlib-deviations.md exists.
+- V6 Every Lean name cited in the contributor guides (except the naming guide) or Mathlib-deviations.md exists.
 - B1 A named bound (`…Constant`, `…Bound`, `…Tail`, `…Dim`, `…Factor`) is in docs/constants.toml.
 - B2 No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form.
 - B3 An asymptotic form says "$O(\ldots)$ suffices" in its docstring.
@@ -62,7 +62,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - D12 A docstring says when summands are independent; a headline theorem names its laws.
 - M1 A probability is `\mathbb{P}[E]`, never with round or brace delimiters, never `\Pr`.
 - M2 A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`.
-- M4 `\mathsf{x}` is a declaration name or a short name registered in §5.3.
+- M4 `\mathsf{x}` is a declaration name or a short name registered in the vocabulary.
 - M6 The Frobenius norm is `\|\mathbf{A}\|_{\mathsf{F}}`.
 - M7 Adjoint and transpose are `^{\mathsf{H}}` and `^{\mathsf{T}}`.
 - M8 `\varepsilon` and `\varphi`, never `\epsilon` or `\phi`.
@@ -88,7 +88,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - A3 A declaration carries at most one `Algorithm:` tag.
 - G1 A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status.
 - E2 Programs, kernels and implementations are computable.
-- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry.
+- E3 A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry; a rounded program theorem (a leading hypothesis `IsRelErrSem … I.sem` on the interpretation `I` its conclusion runs under, or a rounded access model) may carry a `Result:` id.
 - E4 Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it.
 - E5 A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation` [Computation only].
 - E6 In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`.
@@ -97,7 +97,7 @@ rules are in the topic files; the reasons are in CONTRIBUTING.
 - N2 The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`).
 - N3 The conclusion part ends at the first `_of_` and names the main relation.
 - N4 Every library-function token in a name occurs in the statement.
-- N5 One token per concept: the spellings of §4.3, never a synonym.
+- N5 One token per concept: the spellings of the naming guide, never a synonym.
 - N6 A power comes after its argument: `f_sq`, `f_pow`, `f_rpow`.
 - N7 No source, author, project, quality or role word in a name (`_sharp`, `aux`, `main`).
 - N9 A law hypothesis is `_of_hasLaw_<law>`; an interface hypothesis is the namespace.

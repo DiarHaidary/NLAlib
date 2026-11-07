@@ -265,7 +265,7 @@ $\mathbf{M} = \mathbf{E}\mathbf{\Omega}(\mathbf{Z}^{\mathsf{H}}\mathbf{\Omega})^
 $$\|\mathbf{A} - \mathsf{rsvd}(\mathbf{A}, \mathbf{\Omega})\|_2 \le
 \|\mathbf{E}\|_2 + \|\mathbf{M}\|_2\,.$$
 Dominated by `NLAlib.HasOrthonormalCols.specNorm_sub_rsvd_sq_le`, kept because HMT 10.6 uses this
-simpler form (CONTRIBUTING §5.2, numerical bounds, rule 6).
+simpler form (docs/contributing/statements.md §2, numerical bounds, rule 6).
 [MartinssonTropp2020, Theorem 11.4]; [HalkoMartinssonTropp2011, proof of Theorem 10.6]; there for a
 top-$k$ frame.
 Result: range-finder-structural-bound -/

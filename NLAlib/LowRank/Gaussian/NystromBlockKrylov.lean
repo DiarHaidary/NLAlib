@@ -125,7 +125,8 @@ $\gamma_{1/2}$ is at least $\gamma/2$; its Chebyshev filter gives the factor
 $\operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma_{1/2}}) \le
 \operatorname{sech}^2(2\sqrt{2}(q-1)\sqrt{\gamma}) =
 4e^{-4\sqrt{2}(q-1)\sqrt{\gamma}}/(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2$, and the statement
-drops $(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+drops $(1 + e^{-4\sqrt{2}(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$
+(docs/contributing/statements.md §2
 rule 7). [TroppWebber2023, Theorem 9.2 (NysBKI)]; there for
 $\mathbb{E}\|\mathbf{H} - \hat{\mathbf{H}}\|_p^2$ with a squared Frobenius tail and exponent
 $4(m - 3/2)\sqrt{2\gamma}$ for $m = q$ products; this statement is the Nyström-native shape of TW
