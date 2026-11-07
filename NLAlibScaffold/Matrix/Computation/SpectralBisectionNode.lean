@@ -1467,6 +1467,85 @@ theorem holds_of_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm p
   · rw [hps₄]
     exact hps₁
 
+omit [Inhabited K] in
+/-- The test-matrix loop of a deflation succeeds when the words of `Sg` it reads and the cell `sq`
+are initialised and `G` is long enough; it keeps the shape and every other buffer, and initialises
+the first $2k^2$ words of `G`. -/
+private theorem exists_exec_deflate_testLoop {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n k lo s : ℕ) {Sg G lenG : ℕ}
+    {sq : Cell ℕ ℕ} {sv : K} {st : St P K C} (hsqG : sq.buf ≠ G) (hSgG : Sg ≠ G)
+    (hsq : st.store.read p sq.buf sq.idx.eval = some sv)
+    (hSg : ∀ i j, i < k → j < k → ∀ t < 2, ∃ a,
+      st.store.read p Sg (2 * (n * (2 * (lo + j) + s) + i) + t) = some a)
+    (hG : st.store.shape[G]? = some (p, lenG)) (hlen : 2 * (k * k) ≤ lenG) :
+    ∃ st', exec I (.loop (.const k) fun j => (forRange (ι := ι) (.const k) fun i => do
+        ins (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j)⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i)⟩ sq)
+        ins (.bin p .mul ⟨G, zidx (.const k) (.var i) (.var j) + 1⟩
+          ⟨Sg, 2 * (.const n * (2 * (.const lo + .var j) + .const s) + .var i) + 1⟩ sq)).run)
+      st = some st' ∧ st'.store.shape = st.store.shape ∧
+      (∀ q b x, b ≠ G → st'.store.read q b x = st.store.read q b x) ∧
+      ∀ w < 2 * (k * k), ∃ v, st'.store.read p G w = some v := by
+  let R : ℕ → St P K C → Prop := fun c s₁ => s₁.store.shape = st.store.shape ∧
+    (∀ q b x, b ≠ G → s₁.store.read q b x = st.store.read q b x) ∧
+    ∀ w < 2 * c, ∃ v, s₁.store.read p G w = some v
+  have hkeep : ∀ {s s' : Store P K} {x : ℕ} {z : K}, s.write p G x z = some s' →
+      ∀ w, (∃ v, s.read p G w = some v) → ∃ v, s'.read p G w = some v := by
+    intro s s' x z hw w ⟨v, hv⟩
+    by_cases hwx : w = x
+    · subst hwx; exact ⟨z, Store.read_of_write_eq_some hw⟩
+    · exact ⟨v, (Store.read_of_write_eq_some_of_ne hw (Or.inr hwx)).trans hv⟩
+  refine (exists_exec_loop_eq_some_of_forall (I := I) (n := .const k) (fun j s₁ => R (k * j) s₁)
+    ⟨rfl, fun _ _ _ _ => rfl, fun w hw => absurd hw (by simp)⟩ ?_).imp
+    fun st' h => ⟨h.1, h.2⟩
+  intro j hj s₁ ⟨hsh₁, hfr₁, hw₁⟩
+  simp only [IExp.eval_const] at hj
+  change ∃ st', exec I (.seq (.loop (.const k) _) .skip) s₁ = some st' ∧ _
+  simp only [exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall (I := I) (n := .const k)
+    (fun i s₂ => R (i + k * j) s₂) ⟨hsh₁, hfr₁, by simpa using hw₁⟩ ?_).imp
+    fun st' h => ⟨h.1, by
+      have := h.2
+      rwa [IExp.eval_const, show k + k * j = k * (j + 1) by ring] at this⟩
+  intro i hi s₂ ⟨hsh₂, hfr₂, hw₂⟩
+  simp only [IExp.eval_const] at hi
+  obtain ⟨a, ha⟩ := hSg i j hi hj 0 (by norm_num)
+  obtain ⟨a', ha'⟩ := hSg i j hi hj 1 (by norm_num)
+  obtain ⟨z, hz⟩ := hsem.bin_ok p .mul a sv trivial (fun h => nomatch h) trivial
+  obtain ⟨z', hz'⟩ := hsem.bin_ok p .mul a' sv trivial (fun h => nomatch h) trivial
+  have hidx : 2 * (i + k * j) + 1 < lenG := by nlinarith
+  obtain ⟨w₁, hw₁'⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := s₂.store) z
+    (hsh₂ ▸ hG) (show 2 * (i + k * j) < lenG by omega)
+  obtain ⟨w₂, hw₂'⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := w₁) z'
+    ((Store.shape_of_write_eq_some hw₁').trans hsh₂ ▸ hG) hidx
+  have hsq₂ : s₂.store.read p sq.buf sq.idx.eval = some sv := (hfr₂ _ _ _ hsqG).trans hsq
+  change ∃ st', exec I (.seq (.instr _) (.seq (.instr _) .skip)) s₂ = some st' ∧ R _ st'
+  rw [exec_seq_instr_bin I (a := a) (c := sv) (by
+        simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
+          IExp.eval_ofNat]
+        rw [hfr₂ _ _ _ hSgG]; simpa using ha) hsq₂ hz (by
+        simpa [zidx] using hw₁'),
+      exec_seq_instr_bin I (a := a') (c := sv) (by
+        simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
+          IExp.eval_ofNat]
+        rw [Store.read_of_write_eq_some_of_ne hw₁' (Or.inl hSgG), hfr₂ _ _ _ hSgG]
+        exact ha')
+        ((Store.read_of_write_eq_some_of_ne hw₁' (Or.inl hsqG)).trans hsq₂) hz' (by
+        simpa [zidx] using hw₂'), exec_skip]
+  refine ⟨_, rfl, ?_, ?_, ?_⟩
+  · exact (Store.shape_of_write_eq_some hw₂').trans ((Store.shape_of_write_eq_some hw₁').trans hsh₂)
+  · intro q b x hb
+    rw [Store.read_of_write_eq_some_of_ne hw₂' (Or.inl hb),
+      Store.read_of_write_eq_some_of_ne hw₁' (Or.inl hb), hfr₂ q b x hb]
+  · intro w hw
+    by_cases hw' : w < 2 * (i + k * j)
+    · exact hkeep hw₂' w (hkeep hw₁' w (hw₂ w hw'))
+    · by_cases he : w = 2 * (i + k * j) + 1
+      · subst he; exact ⟨z', Store.read_of_write_eq_some hw₂'⟩
+      · have he' : w = 2 * (i + k * j) := by omega
+        subst he'
+        exact hkeep hw₂' _ ⟨z, Store.read_of_write_eq_some hw₁'⟩
+
 /-- **Deflation on stored samples succeeds** under the standard model with every value in range,
 if the kernels are routines on pairs and the buffers `G`, `Y`, `Qf`, `Rf` have $2n^2$ cells and the
 block at `qo` of `Qa` fits (hypotheses on the inputs as `NLAlib.holds_of_exec_eighDeflateBlock`).
@@ -1489,7 +1568,81 @@ theorem exists_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
     (hQa : ∃ len, st.store.shape[Qa]? = some (p, len) ∧ qo.eval + 2 * (k * r) ≤ len) :
     ∃ st', exec I (eighDeflateBlock p mm qr (.const n) (.const k) (.const r) (.const lo)
       (if b then 0 else 1) Sg sq Pm G Y Qf Rf Qa qo).run st = some st' := by
-  sorry
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hbufs hsqb
+  obtain ⟨⟨-, hSgG, -, -, -, -⟩, ⟨hPmG, hPmY, -, -, -⟩, ⟨hGY, -, -, -⟩, ⟨hYQf, hYRf, -⟩,
+    ⟨hQfRf, hQfQa⟩, -, -⟩ := hbufs
+  obtain ⟨hsG, -, -, -, -⟩ := hsqb
+  have hne : ∀ {b b' i i' l l' : ℕ}, b ≠ b' → blockDisjoint (b, i, l) (b', i', l') = true :=
+    fun h => by simp [blockDisjoint, h]
+  simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hscr
+  obtain ⟨⟨lG, hG, hlG⟩, ⟨lY, hYs, hlY⟩, ⟨lQ, hQs, hlQ⟩, ⟨lR, hRs, hlR⟩⟩ := hscr
+  obtain ⟨lA, hQas, hlA⟩ := hQa
+  have hkk : k * k ≤ n * n := Nat.mul_le_mul (by omega) (by omega)
+  -- the test loop
+  obtain ⟨s₁, h₁, hsh₁, hfr₁, hG₁⟩ := exists_exec_deflate_testLoop (I := I) hsem p n k lo
+    (if b then 0 else 1) hsG hSgG hsq (fun i j hi hj t ht => ⟨_, hSg _ (by
+      have h1 : 2 * (lo + j) + (if b then 0 else 1) + 1 ≤ 2 * n := by split <;> omega
+      have h2 := Nat.mul_le_mul_left n h1
+      rw [Nat.mul_add, Nat.mul_one] at h2
+      nlinarith)⟩) hG (by omega)
+  have hXG : s₁.store.readBlock p G 0 (k * k * 2) = some ((List.range (k * k * 2)).toArray.map
+      fun w => (s₁.store.read p G (0 + w)).getD default) :=
+    Store.readBlock_eq_some_map_range _ fun w hw => by
+      obtain ⟨v, hv⟩ := hG₁ w (by omega)
+      rw [zero_add, hv]
+      rfl
+  have hXP := (EntryLayout.holds_iff_readBlock_eq_some pairLayout s₁.store p Pm 0 Pmat).mp
+    (hP.of_forall_read_eq fun i _ _ => hfr₁ p Pm i hPmG)
+  -- the product
+  have hk₁ := hmm.kcallStore_eq p (l := k) (m := k) (n := k) (a := (Pm, 0)) (b := (G, 0))
+    (c := (Y, 0)) hXP hXG (hne (Ne.symm hPmY)) (hne (Ne.symm hGY))
+  obtain ⟨c₂, hc₂⟩ : ∃ c₂, I.kcallStore mm p [k, k, k] [(Pm, 0), (G, 0)] [(Y, 0)] s₁.store =
+      some c₂ := by
+    rw [hk₁]
+    exact Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi => ⟨lY, hsh₁ ▸ hYs, by
+      rw [EntryLayout.size_toArray] at hi
+      change i < k * k * 2 at hi
+      omega⟩
+  have hYh := EntryLayout.holds_of_writeBlock_eq_some pairLayout (hk₁.symm.trans hc₂)
+  have hsh₂ := (Interp.shape_of_kcallStore_eq_some hc₂).trans hsh₁
+  -- the QR factorization
+  have hk₂ := hqr.kcallStore_eq p (m := k) (n := k) (a := (Y, 0)) (q := (Qf, 0)) (r := (Rf, 0))
+    ((EntryLayout.holds_iff_readBlock_eq_some pairLayout c₂ p Y 0 _).mp hYh) (hne hQfRf)
+    (hne (Ne.symm hYQf)) (hne (Ne.symm hYRf))
+  obtain ⟨c₃, hc₃⟩ : ∃ c₃, I.kcallStore qr p [k, k] [(Y, 0)] [(Qf, 0), (Rf, 0)] c₂ =
+      some c₃ := by
+    rw [hk₂]
+    obtain ⟨c, hc⟩ := Store.exists_writeBlock_eq_some_of_getElem?_shape (s := c₂) (b := Qf)
+      (off := 0) (xs := pairLayout.toArray (qrR (pairLayout.toMatrix k k
+        (pairLayout.toArray (mmR (pairLayout.toMatrix k k (pairLayout.toArray Pmat))
+          (pairLayout.toMatrix k k ((List.range (k * k * 2)).toArray.map
+            fun w => (s₁.store.read p G (0 + w)).getD default)))))).1)
+      fun i hi => ⟨lQ, hsh₂ ▸ hQs, by
+        rw [EntryLayout.size_toArray] at hi
+        change i < k * k * 2 at hi
+        omega⟩
+    rw [hc, Option.bind_some]
+    exact Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi =>
+      ⟨lR, (Store.shape_of_writeBlock_eq_some hc).trans hsh₂ ▸ hRs, by
+        rw [EntryLayout.size_toArray] at hi
+        change i < k * k * 2 at hi
+        omega⟩
+  obtain ⟨hQf, -, -⟩ := hqr.holds_of_kcallStore_eq_some (fun _ => rfl) p (m := k) (n := k)
+    (a := (Y, 0)) (q := (Qf, 0)) (r := (Rf, 0)) hYh (hne hQfRf) (hne (Ne.symm hYQf))
+    (hne (Ne.symm hYRf)) hc₃
+  have hsh₃ := (Interp.shape_of_kcallStore_eq_some hc₃).trans hsh₂
+  -- the run
+  change ∃ st', exec I (.seq (.loop _ _) (.seq (.kcall _ _ _ _ _) (.seq (.kcall _ _ _ _ _)
+    (.seq (.named _ _ _) .skip)))) st = some st'
+  rw [exec_seq, h₁, Option.bind_some, exec_seq, exec_kcall]
+  simp only [List.map_cons, List.map_nil, IExp.eval_const, IExp.eval_zero]
+  rw [hc₂, Option.map_some, Option.bind_some, exec_seq, exec_kcall]
+  simp only [List.map_cons, List.map_nil, IExp.eval_const, IExp.eval_zero]
+  rw [hc₃, Option.map_some, Option.bind_some]
+  exact exists_exec_zcopy (I := I) p k r
+    (A := Matrix.of fun i (j : Fin r) => (qrR _).1 i ⟨j, lt_of_lt_of_le j.isLt hr⟩)
+    (fun i j t => hQf i ⟨j, lt_of_lt_of_le j.isLt hr⟩ t) (hne (Ne.symm hQfQa))
+    ⟨lA, hsh₃ ▸ hQas, hlA⟩
 
 /-- **A compression computes the machine's compression**: if kernel `mm` of `I` is the routine `mmR`
 on interleaved pairs, a successful run of `NLAlib.eighCompressBlock` for the stored $k \times r$
