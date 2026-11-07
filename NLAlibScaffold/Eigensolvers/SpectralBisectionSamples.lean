@@ -1646,7 +1646,11 @@ theorem isAccurate_eighIdealMachine {sem : ScalarSem P K} {dec : P → K → ℝ
   have huM : u ≤ (c .uniform + 1) * u := by nlinarith [mul_nonneg hcu hu]
   have hu' : 0 ≤ (c .uniform + 1) * u := mul_nonneg (by linarith) hu
   have hconv : (fun x => (sem.toNat p x).getD 0) = fun x => ⌊dec p x⌋₊ :=
-    funext fun x => by rw [htn p x]; rfl
+    funext fun x => by
+      rw [htn p x]
+      split_ifs with h0
+      · rfl
+      · exact (Nat.floor_eq_zero.mpr (by linarith [not_le.mp h0])).symm
   have hsem' : IsRelErrSem (fun _ => (c .uniform + 1) * u) dec (fun _ _ => True) sem :=
     hsem.mono fun _ => huM
   have hlit' : IsExactIntLit dec sem 1 := fun p k hk => hlit p k (hk.trans (by norm_num))

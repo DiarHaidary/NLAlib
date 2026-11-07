@@ -10,6 +10,7 @@ public import NLAlibScaffold.Matrix.Computation.InterpMachine
 public import NLAlibScaffold.Matrix.Computation.KernelContracts
 public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSignProgram
 public import NLAlibScaffold.Matrix.Computation.PairKernels
+public import NLAlibScaffold.Matrix.Computation.SpectralBisectionClamp
 public import NLAlibScaffold.Matrix.Computation.SpectralBisectionNode
 public import NLAlibScaffold.Matrix.Computation.SpectralBisectionProgram
 public import NLAlibScaffold.RandomMatrix.Computation.ComplexTape

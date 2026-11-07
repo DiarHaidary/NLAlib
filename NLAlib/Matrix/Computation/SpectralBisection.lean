@@ -134,7 +134,9 @@ Newton–Schulz sign of $\mathbf{A} - c\mathbf{I}$ at accuracy $\beta$ and scale
 $\mathrm{fl}(2R)$, the stored projectors $\mathbf{P}_+ = (\mathbf{B} + \mathbf{I})/2$ and
 $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/2$ (each a shift, then a rounded division by $2$:
 one rounding per operation), $k_+ = \min(k, \lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+)$
-for $t$ the rounded trace of $\mathbf{P}_+$ (the clamped conversion of a program's index binder);
+for $t$ the rounded trace of $\mathbf{P}_+$ (the machine's floor, $0$ below zero; the program
+`NLAlib.eighProg` clamps $\mathrm{fl}(t + \mathrm{fl}(1/2))$ to $[0, k]$ by two counted comparisons
+before its index binder, which computes the same $k_+$ under exact comparisons and conversion);
 one child on $\mathbf{A} \mp \mathrm{fl}(R/2)\mathbf{I}$ when $k_+ \in \{k, 0\}$, and otherwise the
 deflated bases $\mathbf{Q}_{\pm}$ and the stored
 $(\mathbf{C}_\pm + \mathbf{C}_\pm^{\mathsf{H}})/2 \mp \mathrm{fl}(R/2)\mathbf{I}$,

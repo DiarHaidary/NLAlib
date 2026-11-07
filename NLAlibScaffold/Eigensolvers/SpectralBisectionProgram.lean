@@ -101,8 +101,8 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
     (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmm hqr hsem p (by nlinarith) N ℓ F
     (by omega) hlit htn x.A x.R₀ x.ε x.β hε.le hR₀pos.le
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
-    hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) N ℓ F hlit htn x.A
-    x.R₀ x.ε x.β hexec
+    hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) (hsem.cmp_le p) N ℓ F hlit
+    htn x.A x.R₀ x.ε x.β hexec
   have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρs (ξ ω) F ℓ x.A x.R₀
     x.ε x.β
   dsimp only at hH he
@@ -207,8 +207,8 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
     (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmm hqr hsem p (by nlinarith) N ℓ F
     (by omega) hlit htn x.A x.R₀ x.ε x.β hε.le hR₀pos.le
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
-    hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) N ℓ F hlit htn x.A
-    x.R₀ x.ε x.β hexec
+    hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) (hsem.cmp_le p) N ℓ F hlit
+    htn x.A x.R₀ x.ε x.β hexec
   have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρs (ξ ω) F ℓ x.A x.R₀
     x.ε x.β
   dsimp only at hH he
@@ -239,7 +239,9 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
     {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] (p : P) (mm qr : ι)
     {dec : P → K → ℝ} {I : Interp P ι K C} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
-    (hflag : I.sem.DecidesFlags p) {N ℓ F : ℕ} (hlit : IsExactIntLit dec I.sem (N + 4))
+    (hflag : I.sem.DecidesFlags p)
+    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
+    {N ℓ F : ℕ} (hlit : IsExactIntLit dec I.sem (N + 4))
     (htn : IsExactToNat dec I.sem) {ρ : Dist → ℕ → ℝ → K}
     (hρ : ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
     (fmt : Float.Model.Format) (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
@@ -297,7 +299,7 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
   refine le_trans (measureReal_mono (μ := μ) (fun ω hω => ?_) (measure_ne_top μ _)) key
   obtain ⟨st', hexec, hbad⟩ := hω
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
-    hmm hqr p hflag N ℓ F hlit htn A R₀ ε β hexec
+    hmm hqr p hflag hcmp N ℓ F hlit htn A R₀ ε β hexec
   have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρ (ξ ω) F ℓ A R₀ ε β
   dsimp only at hH he
   rw [he] at hH

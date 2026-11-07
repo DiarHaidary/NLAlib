@@ -192,7 +192,7 @@ def EighArenas.Shaped (H : EighArenas) (s : Store P K) (p : P) (n D : ℕ) : Pro
     s.shape[H.Lv]? = some (p, 2 * (D + 1))
 
 /-- The cell `i` of buffer `b`, read at tag `p` and converted to an index by the semantics, is
-$k$: what an index binder on it reads before clamping. -/
+$k$: what an index binder on it reads (the run fails if $k$ exceeds the binder's bound). -/
 def ReadsIdx (sem : ScalarSem P K) (s : Store P K) (p : P) (b i k : ℕ) : Prop :=
   (s.read p b i).bind (sem.toNat p) = some k
 

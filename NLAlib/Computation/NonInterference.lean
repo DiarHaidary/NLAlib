@@ -26,7 +26,8 @@ the run: a sequence adds the queries of its second part from the state after the
 and a `whileFuel` loop add those of each iteration from the state it starts in, and an index
 binder those of its body at the value it binds (none if the value exceeds the bound). Every other
 field of an interpretation (the value semantics, the charge, the oracle heights, the widths, the
-kernel shapes and the size of the read-only data) is its shape (`NLAlib.Computation.Interp.SameShape`).
+kernel shapes and the size of the read-only data) is its shape
+(`NLAlib.Computation.Interp.SameShape`).
 
 The theorem (`NLAlib.Computation.exec_eq_of_agreeOn`): two interpretations of the same shape that
 give the same answers on every query the run under the first makes give the same run, so the

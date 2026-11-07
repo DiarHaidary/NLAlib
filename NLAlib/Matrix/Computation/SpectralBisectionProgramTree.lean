@@ -46,7 +46,8 @@ position $nd + lo$ and its two Gaussian test matrices at fixed positions
 * `NLAlib.eighWhen`, `NLAlib.eighEqInd`: control by index arithmetic.
 * `NLAlib.eighSignBlock`: the Newton–Schulz sign with the shallow step limit.
 * `NLAlib.eighLeafBlock`, `NLAlib.eighChildBlock`, `NLAlib.eighDeflateBlock`,
-  `NLAlib.eighCompressBlock`, `NLAlib.eighSplitBlock`, `NLAlib.eighNodeBlock`: the node step.
+  `NLAlib.eighCompressBlock`, `NLAlib.eighSplitBlock`, `NLAlib.eighClampBlock`,
+  `NLAlib.eighNodeBlock`: the node step.
 * `NLAlib.eighDownLevel`, `NLAlib.eighBottomLevel`, `NLAlib.eighUpLevel`: one level of each pass,
   and the nodes whose budget is spent.
 * `NLAlib.eighProg`: randomized spectral bisection as a program.
@@ -196,6 +197,19 @@ def eighSplitBlock (p : P) (mm qr : ι) (n d lo k kp : IExp VI) (Sg : VB) (Pp Pm
   ins (.litIdx p ⟨Kd, eighSlotOff n d lo⟩ 4)
   ins (.litIdx p ⟨Kp, eighSlotOff n d lo⟩ kp)
 
+/-- **The clamp of a split index to $[0, k]$** by counted instructions: the literals $0$ and $k$
+into the cells `z` and `kc`, then two comparisons: if $x < 0$ the cell `x` gets the stored $0$,
+if $k \le x$ it gets the stored $k$, and otherwise it is kept. With exact comparisons, literals and
+conversion, the conversion of the clamped cell is $\min(k, \lfloor x\rfloor_+)$, and it never
+fails nor exceeds $k$: the index binder that reads it (`NLAlib.Computation.Stmt.bindIdx`, which
+fails on a negative value or one above its bound) always receives a value in range. -/
+def eighClampBlock (p : P) (k : IExp VI) (x z kc : Cell VB VI) : Builder P ι VB VI Unit := do
+  ins (.lit p z 0)
+  ins (.litIdx p kc k)
+  ifThenElse p .le z x
+    (ifThenElse p .le kc x (ins (.copy p x kc)) (pure ()))
+    (ins (.copy p x z))
+
 /-- **The node step** at the slot $lo$ of depth $d$ for a node of size $k \ge 2$ whose window
 test fails ([Shah2024, Algorithm 3], one node, as `NLAlib.eighStep`): the stored $\sigma =
 \mathrm{fl}(R/\mathrm{fl}(2))$ and $-\sigma$; the shift $c = \mathrm{fl}(\mathrm{fl}(R/\ell)v)$
@@ -205,13 +219,16 @@ accuracy $\beta$ (cell $2$ of `par`) and scale $\mathrm{fl}(\mathrm{fl}(2)R)$
 (`NLAlib.eighSignBlock`, step limit $F$); the projectors
 $\mathbf{P}_+ = (\mathbf{B} - (-1)\mathbf{I})/\mathrm{fl}(2)$ and
 $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/\mathrm{fl}(2)$ stored Hermitian; the rounded trace
-$t$ of $\mathbf{P}_+$ and $k_+ = \min(\lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+, k)$ by an
-index binder; then one child on the positive side if $k_+ = k$, on the negative side if $k_+ = 0$,
-and a split otherwise (`NLAlib.eighChildBlock`, `NLAlib.eighSplitBlock`, with the stored
-$\sqrt{1/2}$ of the cell `sqh`). -/
+$t$ of $\mathbf{P}_+$, $\mathrm{fl}(t + \mathrm{fl}(1/2))$ clamped to $[0, k]$ by two comparisons
+(`NLAlib.eighClampBlock`, in the dead cells $2$ and $3$) and
+$k_+ = \min(\lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+, k)$ read by an index binder;
+then one child on the positive side if $k_+ = k$, on the negative side if $k_+ = 0$, and a split
+otherwise (`NLAlib.eighChildBlock`, `NLAlib.eighSplitBlock`, with the stored $\sqrt{1/2}$ of the
+cell `sqh`). -/
 def eighNodeBlock (p : P) (mm qr : ι) (n L F d lo k : IExp VI) (par Lv Su Sg Ma Qa Sz Kd Kp : VB)
     (one two half negone sqh : Cell VB VI) : Builder P ι VB VI Unit := scope do
-  -- t: 0 σ, 1 −σ, 2 ℓ, 3 R/ℓ, 4 c, 5 the trace, 6 t + 1/2
+  -- t: 0 σ, 1 −σ, 2 ℓ, 3 R/ℓ, 4 c, 5 the trace, 6 t + 1/2; then 2 the literal 0, 3 the literal k
+  -- and 6 the clamped t + 1/2
   let t ← alloc p 7
   -- sp: 0 β, 1 fl(2R), the parameters of the sign program
   let sp ← alloc p 2
@@ -237,6 +254,7 @@ def eighNodeBlock (p : P) (mm qr : ι) (n L F d lo k : IExp VI) (par Lv Su Sg Ma
   zhermScale p k T 0 two Pm 0
   ztraceRe p k Pp 0 ⟨t, 5⟩
   ins (.bin p .add ⟨t, 6⟩ ⟨t, 5⟩ half)
+  eighClampBlock p k ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩
   Builder.bindIdx p ⟨t, 6⟩ k fun kp => do
     eighWhen (1 - (k - .var kp))
       (eighChildBlock p k Ma (eighBlockOff n d lo) (eighBlockOff n (d + 1) lo) ⟨t, 0⟩
@@ -254,7 +272,7 @@ $\mathrm{fl}(\mathrm{fl}(\mathrm{fl}(1/2) + \mathrm{fl}(2/\ell))R)$ and toleranc
 $\mathrm{fl}(\mathrm{fl}(1 - \mathrm{fl}(1/\ell))\varepsilon)$ (`NLAlib.eighNextParams`,
 $\ell = \ell_0 + d$) into the cells $2(d + 1)$ and $2(d + 1) + 1$ of `Lv`; the $n$ uniform and
 $4n^2$ Gaussian draws of the level into `Su` and `Sg`; and for each slot $lo$, its stored size
-$k$ (an index binder clamped to $n - lo$) and, for $k \ge 1$, a leaf (size at most $1$, or
+$k$ (an index binder bounded by $n - lo$) and, for $k \ge 1$, a leaf (size at most $1$, or
 $R \le \mathrm{fl}(\varepsilon R_0)$, one comparison) or the node step
 (`NLAlib.eighNodeBlock`, with the stored $\sqrt{1/2}$ of the cell `sqh`). -/
 def eighDownLevel (p : P) (mm qr : ι) (n L F d : IExp VI) (par Lv Su Sg Ma Ua Qa Ea Sz Kd Kp : VB)
@@ -295,7 +313,7 @@ def eighBottomLevel (p : P) (n D : IExp VI) (Ua Ea Sz : VB) : Builder P ι VB VI
       forRange (.var k) fun i => ins (.lit p ⟨Ea, eighSlotOff n D (.var lo) + .var i⟩ 0)
 
 /-- **One level of the upward pass** at depth $d < D$: for each slot $lo$ with stored size
-$k \ge 1$, its stored kind (an index binder clamped to $4$); a leaf is done; a node with one child
+$k \ge 1$, its stored kind (an index binder bounded by $4$); a leaf is done; a node with one child
 copies the child's $\mathbf{U}$ (same slot, depth $d + 1$) and adds $\pm\sigma$,
 $\sigma = \mathrm{fl}(R/\mathrm{fl}(2))$, to its eigenvalues; a split reads $k_+$ and writes
 $[\mathrm{mm}(\mathbf{Q}_+, \mathbf{U}_+)\ \mathrm{mm}(\mathbf{Q}_-, \mathbf{U}_-)]$ (two kernel
