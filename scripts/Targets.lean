@@ -852,7 +852,7 @@ theorem matrixFree_sizeTraceProg :
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => 0)
       (fun _ _ _ => 1) (fun N n _ A _ st => n 0 = N → A.trace = 0 → st = st) := by
   intro N n _ x A ξ
-  refine ⟨_, rfl, le_rfl, fun _ => ?_, fun _ _ => rfl⟩
+  refine ⟨by simp, _, rfl, le_rfl, fun _ => ?_, fun _ _ => rfl⟩
   simp [inputState, exactInterp]
 
 /-- Audit 2, a claim phrased through `exec` (`exec_copyTrace`).
@@ -948,7 +948,7 @@ class RunsFast (prog : Prog Unit Unit 1 1) : Prop where
 Result: fixture-instance -/
 instance runsFastSkip : RunsFast (.skip : Prog Unit Unit 1 1) := ⟨by
   intro N n _ x A ξ
-  refine ⟨_, rfl, le_rfl, fun _ => ?_, trivial⟩
+  refine ⟨by simp, _, rfl, le_rfl, fun _ => ?_, trivial⟩
   simp [inputState, exactInterp]⟩
 
 /-- A target of the prover's with a result id: a definition of type `Prop` that unfolds to a
