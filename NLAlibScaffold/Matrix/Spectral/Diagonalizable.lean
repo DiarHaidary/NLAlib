@@ -84,7 +84,20 @@ the two diagonals (`Matrix.diagonal_mul_diagonal`, `mul_inv_cancel₀`). S, abou
 theorem inv_aeval_eq_mul_diagonal_mul_inv {H V : Matrix ι ι ℂ} {d : ι → ℂ} (hV : IsUnit V)
     (hHV : H * V = V * Matrix.diagonal d) {p : Polynomial ℂ} (hp : ∀ i, p.eval (d i) ≠ 0) :
     (Polynomial.aeval H p)⁻¹ = V * Matrix.diagonal (fun i => (p.eval (d i))⁻¹) * V⁻¹ := by
-  sorry
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have key : ∀ X : Matrix ι ι ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, Matrix.nonsing_inv_mul V hdet, one_mul]
+  have hB : Matrix.diagonal (fun i => (p.eval (d i))⁻¹) * Matrix.diagonal (fun i => p.eval (d i))
+      = 1 := by
+    rw [Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+    congr 1
+    funext i
+    exact inv_mul_cancel₀ (hp i)
+  rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
+  apply Matrix.inv_eq_left_inv
+  simp only [mul_assoc]
+  rw [key, ← mul_assoc (Matrix.diagonal (fun i => (p.eval (d i))⁻¹)), hB, one_mul, hVi]
 
 /-- **Powers of a diagonalised matrix**: for invertible $\mathbf{V}$,
 $(\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1})^e =
