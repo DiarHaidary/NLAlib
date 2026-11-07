@@ -8,16 +8,14 @@ module
 public import NLAlib.Matrix.QRIteration.Ritz
 
 /-!
-# Forward-approximate Ritz values are optimal or decouple early (scaffold)
+# Forward-approximate Ritz values are optimal or decouple early
 
-Statements for a new `NLAlib/Matrix/QRIteration/Dichotomy.lean` (stage SHIFTED-QR, wave W3,
-design note `docs/design/Eigensolvers-ShiftedQR.md` §3.7): the exact-arithmetic dichotomy of
-[BanksGarzaVargasSrivastava2022, §4.1]. If shifts within $\beta$ of the Ritz values fail to be
-$\theta$-optimal, then one of them is close to an eigenvalue of large last-row weight, and the
-degree $k$ step with that shift has a large $\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} -
-r\mathbf{I})^{-k}\|$ (it decouples early). It is the bridge from the forward-approximate Ritz
-values a small eigensolver computes to the $\theta$-optimal ones the strategy needs; no
-arithmetic model is involved.
+The exact-arithmetic dichotomy of [BanksGarzaVargasSrivastava2022, §4.1]. If shifts within
+$\beta$ of the Ritz values fail to be $\theta$-optimal, then one of them is close to an
+eigenvalue of large last-row weight, and the degree $k$ step with that shift has a large
+$\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|$ (it decouples early). It is the
+bridge from the forward-approximate Ritz values a small eigensolver computes to the
+$\theta$-optimal ones the strategy needs; no arithmetic model is involved.
 
 ## Main results
 
@@ -371,13 +369,10 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
     linarith only [this, hjρ, hρr]
   -- the weight of `d j` is at most `κ² N² δ^{2k}`
   have hwj : lastRowWeights V j ≤ κ ^ 2 * N ^ 2 * δ ^ (2 * k) := by
-    have h1 := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - r)⁻¹ ^ k)
-    rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV (fun i => hdr r hr i)] at h1
-    simp only [inv_pow] at h1
-    have h2 := (Finset.single_le_sum (fun i _ => mul_nonneg (lastRowWeights_nonneg V i)
-      (sq_nonneg ‖((d i - r) ^ k)⁻¹‖)) (Finset.mem_univ j)).trans h1
-    rw [norm_inv, norm_pow, inv_pow, ← pow_mul, ← div_eq_mul_inv,
-      div_le_iff₀ (pow_pos hdj0 _), mul_comm k 2] at h2
+    have h2 := (Finset.single_le_sum (fun i _ => div_nonneg (lastRowWeights_nonneg V i)
+      (by positivity)) (Finset.mem_univ j)).trans
+      (sum_lastRowWeights_div_pow_le hV hHV (fun i => hdr r hr i) k).1
+    rw [div_le_iff₀ (pow_pos hdj0 _)] at h2
     exact h2.trans (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hdj0.le hdj _)
       (mul_nonneg (sq_nonneg κ) (sq_nonneg N)))
   have hM : 0 ≤ 2 * (specNorm H + β) := by

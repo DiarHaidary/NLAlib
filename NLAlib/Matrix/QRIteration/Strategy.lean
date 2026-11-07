@@ -9,7 +9,7 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.Matrix.QRIteration.Ritz
 
 /-!
-# The shifting strategy $\mathrm{Sh}_{k,B}$ in exact arithmetic
+# The shifting strategy $\mathrm{Sh}_{k,B}$ and its global convergence in exact arithmetic
 
 The shifting strategy of [BanksGarzaVargasSrivastava2021, §4.2] as a mathematical rule on the
 current Hessenberg iterate $\mathbf{H}$ and a list of $k = 2^m$ approximate Ritz values: if a
@@ -20,10 +20,16 @@ $s$ whose degree $k$ step $(z - s)^k$ decouples exactly or reduces the potential
 The iteration `NLAlib.shqrIterate` repeats this with a Ritz-value oracle.
 
 This is the exact iteration the convergence theorem is about, written as a definition so that
-the theorem names one sequence; it is not an implementation (it compares exact real numbers and
-decides equality of complex determinants). The finite-precision algorithm of
-[BanksGarzaVargasSrivastava2022] is designed separately (design note
+the theorem names one sequence. It is a specification, not an implementation: it compares exact
+real numbers, decides equality of complex determinants by classical choice and carries no cost.
+The finite-precision algorithm of [BanksGarzaVargasSrivastava2022] is to refine it (design note
 `docs/design/Eigensolvers-ShiftedQR.md`, §9).
+
+The results: stagnation of a promising shift implies last-row weight near it (Lemma 4.6 there);
+some point of the square grid succeeds (Lemma 4.7 there); one iteration decouples or reduces the
+potential; the iteration decouples within $\lceil\log(1/\delta)/\log(1/(1 - \gamma))\rceil$ steps
+(Theorem 1.6 there), with the count of shifts tried per iteration and the paper's parameter
+instance; and the normal case (Theorem 1.2 there).
 
 ## Main definitions
 
@@ -31,6 +37,20 @@ decides equality of complex determinants). The finite-precision algorithm of
 * `NLAlib.exceptionalRadius`, `NLAlib.exceptionalSpacing`: the radius and relative spacing.
 * `NLAlib.IsShiftSuccess`: a shift whose degree $k$ step decouples or reduces the potential.
 * `NLAlib.shqrCandidates`, `NLAlib.shqrShift`, `NLAlib.shqrStep`, `NLAlib.shqrIterate`.
+
+## Main results
+
+* `NLAlib.IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter`: stagnation implies
+  support.
+* `NLAlib.exists_mem_squareGrid_norm_sub_le`, `NLAlib.length_squareGrid_le`,
+  `NLAlib.norm_sub_le_of_mem_squareGrid`: the grid.
+* `NLAlib.IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le`: an exceptional shift
+  succeeds.
+* `NLAlib.IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le`: one
+  iteration.
+* `NLAlib.IsUpperHessenberg.exists_le_isDecoupled_shqrIterate`: rapid decoupling.
+* `NLAlib.length_shqrCandidates_le`, `NLAlib.exceptionalSpacing_ge`: shifts per iteration.
+* `IsStarNormal.exists_le_isDecoupled_shqrIterate_ritzValues`: the normal case.
 -/
 
 @[expose] public section
@@ -137,8 +157,8 @@ private theorem paley_zygmund_chain {κ M E F G Wsub W t : ℝ} (hsq1 : 1 ≤ (�
     _ ≤ (κ ^ 2 * M ^ 2) * κ ^ 2 * W := mul_le_mul_of_nonneg_left hWsub (by positivity)
     _ = κ ^ 4 * M ^ 2 * W := by ring
 
-/-- An event `t E < 1 / a ^ k` for a moment `E ≥ 1 / (κ (αθψ)^k)` lies in the disk of radius
-`αθ (κ/t)^{1/k} ψ`. -/
+/-- An event $tE < 1/a^k$ for a moment $E$ with $1 \le \kappa(\alpha\theta\psi)^kE$ lies in the
+disk of radius $\alpha\theta(\kappa/t)^{1/k}\psi$: $a \le \alpha\theta(\kappa/t)^{1/k}\psi$. -/
 private theorem le_radius_of_lt_inv_pow {a E t κ α θ ψ : ℝ} {k : ℕ} (hk : 0 < k) (ha : 0 < a)
     (ht0 : 0 < t) (hκ0 : 0 ≤ κ) (hα : 0 ≤ α) (hθ : 0 ≤ θ) (hψ : 0 ≤ ψ)
     (hone : 1 ≤ κ * (α * θ * ψ) ^ k * E) (hi : t * E < 1 / a ^ k) :
@@ -202,38 +222,23 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
         ∑ i ∈ Finset.univ.filter (fun i => ‖d i - r‖ ≤ α * θ *
           (pseudoConditionNumber V / t) ^ ((ss.length : ℝ)⁻¹) *
             hessenbergPotential ss.length H), lastRowWeights V i := by
-  set k := ss.length with hkdef
-  set κ := pseudoConditionNumber V with hκdef
-  set ψ := hessenbergPotential k H with hψdef
-  set p : Polynomial ℂ := (Polynomial.X - Polynomial.C r) ^ k with hpdef
+  set k := ss.length
+  set κ := pseudoConditionNumber V
+  set ψ := hessenbergPotential k H
   have hkpos : 0 < k := List.length_pos_of_mem hr.1
-  have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hkpos.ne'
   have hκ0 : 0 ≤ κ := pseudoConditionNumber_nonneg V
   have hdr : ∀ i, d i ≠ r := fun i => hd i r hr.1
-  have hpeval : ∀ i, p.eval (d i) = (d i - r) ^ k := fun i => by
-    simp [hpdef]
-  have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
-    rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hdr i))
-  have hinv := inv_aeval_eq_mul_diagonal_mul_inv hV hHV hnz
-  have hsq := sum_lastRowWeights_mul_sq_le hV (fun i => (p.eval (d i))⁻¹)
-  rw [← hinv] at hsq
-  have hpowinv : (Polynomial.aeval H p)⁻¹ =
-      (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k := by
-    have h1 : Polynomial.aeval H p = (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) ^ k := by
-      simp [hpdef, map_pow, Algebra.algebraMap_eq_smul_one]
-    rw [h1, Matrix.inv_pow']
-  have hNs : ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ * (ξ * ψ) ^ k ≤ 1 := by
-    rw [hpowinv]; exact hstag
-  set N := ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ with hNdef
+  set N := ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+    (Fin.last n))‖
   have hN0 : 0 ≤ N := norm_nonneg _
   set x : Fin (n + 1) → ℝ := fun i => 1 / ‖d i - r‖ ^ k with hxdef
   have hx0 : ∀ i, 0 ≤ x i := fun i => by simp only [hxdef]; positivity
-  have hgx : ∀ i, ‖(p.eval (d i))⁻¹‖ ^ 2 = (x i) ^ 2 := fun i => by
-    simp only [hxdef]; rw [hpeval, norm_inv, norm_pow, one_div]
   have hS : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k = ∑ i, lastRowWeights V i * x i :=
     Finset.sum_congr rfl fun i _ => by simp only [hxdef]; ring
-  have hFN : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 := by
-    simp only [hgx] at hsq; exact hsq
+  have hFN : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 :=
+    le_of_eq_of_le (Finset.sum_congr rfl fun i _ => by
+      simp only [hxdef, div_pow, one_pow, ← pow_mul, mul_comm k 2, mul_one_div])
+      (sum_lastRowWeights_div_pow_le hV hHV hdr k).1
   set F := ∑ i, lastRowWeights V i * (x i) ^ 2 with hFdef
   have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hα hθ
   rw [hS] at hone
@@ -264,7 +269,7 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
       ht0.le ht1.le
   have hFG : F * ((ξ * ψ) ^ k) ^ 2 ≤ κ ^ 2 := by
     have hNG : (N * (ξ * ψ) ^ k) ^ 2 ≤ 1 :=
-      pow_le_one₀ (mul_nonneg hN0 (pow_nonneg (mul_nonneg hξ.le hψ.le) _)) hNs
+      pow_le_one₀ (mul_nonneg hN0 (pow_nonneg (mul_nonneg hξ.le hψ.le) _)) hstag
     calc F * ((ξ * ψ) ^ k) ^ 2 ≤ κ ^ 2 * N ^ 2 * ((ξ * ψ) ^ k) ^ 2 :=
           mul_le_mul_of_nonneg_right hFN (sq_nonneg _)
       _ = κ ^ 2 * (N * (ξ * ψ) ^ k) ^ 2 := by ring
@@ -277,7 +282,7 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
 
 /-! ### The grid of exceptional shifts -/
 
-/-- **The square grid covers the disk**: for $R \ge 0$, $\varepsilon > 0$ and
+/-- The square grid covers the disk: for $R \ge 0$, $\varepsilon > 0$ and
 $\lvert z - c\rvert \le R$, some point $s$ of `NLAlib.squareGrid` $c$ $R$ $\varepsilon$ has
 $\lvert z - s\rvert \le \varepsilon R$. -/
 theorem exists_mem_squareGrid_norm_sub_le {c z : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (hε : 0 < ε)
@@ -341,7 +346,7 @@ theorem exists_mem_squareGrid_norm_sub_le {c z : ℂ} {R ε : ℝ} (hR : 0 ≤ R
   rw [hdiff, norm_mul, Complex.norm_real, Real.norm_of_nonneg hR]
   nlinarith [mul_le_mul_of_nonneg_left hu hR, mul_le_mul_of_nonneg_left hεm hR]
 
-/-- **The size of the square grid**: for $0 < \varepsilon \le 1$, `NLAlib.squareGrid` $c$ $R$
+/-- The size of the square grid: for $0 < \varepsilon \le 1$, `NLAlib.squareGrid` $c$ $R$
 $\varepsilon$ has at most $12/\varepsilon^2$ points. -/
 theorem length_squareGrid_le (c : ℂ) (R : ℝ) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) :
     ((squareGrid c R ε).length : ℝ) ≤ 12 / ε ^ 2 := by
@@ -364,7 +369,7 @@ theorem length_squareGrid_le (c : ℂ) (R : ℝ) {ε : ℝ} (hε : 0 < ε) (hε1
   nlinarith [mul_le_mul_of_nonneg_left hε1 (Real.sqrt_nonneg 2),
     mul_le_mul_of_nonneg_left hε1 hε.le]
 
-/-- **The grid stays near its centre**: every point $s$ of `NLAlib.squareGrid` $c$ $R$
+/-- The grid stays near its centre: every point $s$ of `NLAlib.squareGrid` $c$ $R$
 $\varepsilon$, $R \ge 0$, $\varepsilon > 0$, has $\lvert s - c\rvert \le \sqrt2R$. -/
 theorem norm_sub_le_of_mem_squareGrid {c s : ℂ} {R ε : ℝ} (hR : 0 ≤ R) (hε : 0 < ε)
     (hs : s ∈ squareGrid c R ε) : ‖s - c‖ ≤ Real.sqrt 2 * R := by
@@ -576,20 +581,14 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
   have hN : ((squareGrid r R ε).toFinset.card : ℝ) ≤ 12 / ε ^ 2 :=
     (Nat.cast_le.mpr (List.toFinset_card_le _)).trans (length_squareGrid_le r R hε0 hε1)
   -- the moment at `s`
-  have hmom := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - s)⁻¹ ^ k)
-  rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV (fun i => hdG i s hs) k] at hmom
   refine ⟨s, hs, Or.inr ?_⟩
   set x := ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
     (Fin.last n))‖ with hx_def
   set P := ∑ i ∈ S, lastRowWeights V i with hP_def
   have hf0 : 0 ≤ ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) :=
     Finset.sum_nonneg fun i _ => div_nonneg (lastRowWeights_nonneg V i) (by positivity)
-  have hf : ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) ≤ B ^ 2 * x ^ 2 := by
-    calc _ = ∑ i, lastRowWeights V i * ‖(d i - s)⁻¹ ^ k‖ ^ 2 := by
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
-      _ ≤ _ := hmom
-      _ ≤ _ := by gcongr
+  have hf : ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) ≤ B ^ 2 * x ^ 2 :=
+    (sum_lastRowWeights_div_pow_le hV hHV (fun i => hdG i s hs) k).1.trans (by gcongr)
   exact one_le_pow_mul_of_le_card_mul_sum (by omega) (by positivity) (by positivity)
     (by positivity) hξ0 hγ1 hψ (norm_nonneg _) hε0 hε2k hP hsle hN hf0 hf
 
@@ -671,7 +670,7 @@ theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
   rw [shqrShift, dif_neg hdet, dif_pos h']
   exact h'.choose_spec.2
 
-/-- **The iterates of $\mathrm{Sh}_{k,B}$ are upper Hessenberg**: if $\mathbf{H}_0$ is, so is
+/-- The iterates of $\mathrm{Sh}_{k,B}$ are upper Hessenberg: if $\mathbf{H}_0$ is, so is
 every `NLAlib.shqrIterate` $\mathbf{H}_t$, for every Ritz-value oracle. -/
 theorem IsUpperHessenberg.isUpperHessenberg_shqrIterate {H₀ : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (hH : IsUpperHessenberg H₀) (B θ α γ : ℝ) (m : ℕ)
@@ -681,7 +680,7 @@ theorem IsUpperHessenberg.isUpperHessenberg_shqrIterate {H₀ : Matrix (Fin (n +
   | zero => exact hH
   | succ t ih => exact isUpperHessenberg_multiShiftedQRStep ih _
 
-/-- **The iterates of $\mathrm{Sh}_{k,B}$ have the norm of $\mathbf{H}_0$**:
+/-- The iterates of $\mathrm{Sh}_{k,B}$ have the norm of $\mathbf{H}_0$:
 $\|\mathbf{H}_t\|_2 = \|\mathbf{H}_0\|_2$ for every $t$ and every Ritz-value oracle. -/
 theorem specNorm_shqrIterate (B θ α γ : ℝ) (m : ℕ)
     (ritz : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ → List ℂ)
@@ -692,7 +691,7 @@ theorem specNorm_shqrIterate (B θ α γ : ℝ) (m : ℕ)
   | succ t ih =>
     simp only [shqrIterate, shqrStep, specNorm_multiShiftedQRStep, ih]
 
-/-- **The iterates of $\mathrm{Sh}_{k,B}$ keep the eigenvector condition number**: if
+/-- The iterates of $\mathrm{Sh}_{k,B}$ keep the eigenvector condition number: if
 $\mathbf{H}_0\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$
 invertible, every $\mathbf{H}_t$ has $\mathbf{H}_t\mathbf{V}' = \mathbf{V}'\operatorname{diag}(
 \mathbf{d})$ for an invertible $\mathbf{V}'$ with $\|\mathbf{V}'\|_2\|\mathbf{V}'^{-1}\|_2 =

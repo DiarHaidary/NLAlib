@@ -52,7 +52,7 @@ noncomputable def lastRowWeights (V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (i
     ℝ :=
   ‖V (Fin.last n) i‖ ^ 2 / ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2
 
-/-- **The last-row weights are nonnegative**. -/
+/-- The last-row weights are nonnegative. -/
 theorem lastRowWeights_nonneg (V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (i : Fin (n + 1)) :
     0 ≤ lastRowWeights V i := by
   unfold lastRowWeights
@@ -66,7 +66,7 @@ private theorem norm_toLp_last_ne_zero {V : Matrix (Fin (n + 1)) (Fin (n + 1)) �
     (fun j => by simpa using congrFun (congrArg WithLp.ofLp h) j)]
   exact (Matrix.isUnit_iff_isUnit_det V).mp hV
 
-/-- **The last-row weights of an invertible matrix sum to one**: for invertible $\mathbf{V}$,
+/-- The last-row weights of an invertible matrix sum to one: for invertible $\mathbf{V}$,
 $\sum_i \lvert\mathbf{V}_{n,i}\rvert^2 / \|\mathbf{e}_n^{\mathsf{H}}\mathbf{V}\|^2 = 1$. -/
 theorem sum_lastRowWeights {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hV : IsUnit V) :
     ∑ i, lastRowWeights V i = 1 := by

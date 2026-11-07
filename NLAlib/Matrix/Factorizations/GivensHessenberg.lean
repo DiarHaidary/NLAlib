@@ -29,6 +29,8 @@ These results live in their own file because `IsUpperHessenberg` is defined in
   upper Hessenberg matrix is a thin QR factorization.
 * `NLAlib.givensHessenbergR_apply_eq_zero_of_add_two_lt`: three diagonals for a tridiagonal input.
 * `NLAlib.forall_givensHessenbergR_apply_self_ne_zero_iff`: nonzero pivots iff full column rank.
+* `NLAlib.isUpperHessenberg_givensHessenbergQ`: the unitary factor is upper Hessenberg, for
+  every input.
 * `NLAlib.pinv_submatrix_mulVec_single_eq_backSubst`,
   `NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq`: the progressive least-squares form
   and its residual.

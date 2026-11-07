@@ -17,9 +17,9 @@ public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 # The Hessenberg shifted QR step and its potential
 
 The objects of the exact-arithmetic analysis of the Hessenberg shifted QR algorithm
-[BanksGarzaVargasSrivastava2021]. A square matrix is indexed by `Fin (n + 1)`, so that its last
-row $\mathbf{e}_n^{\mathsf{H}}\mathbf{H}$ is `H (Fin.last n)` and its $n$ subdiagonal entries are
-$\mathbf{H}_{i+1,i}$ for `i : Fin n`.
+[BanksGarzaVargasSrivastava2021], and their basic theory. A square matrix is indexed by
+`Fin (n + 1)`, so that its last row $\mathbf{e}_n^{\mathsf{H}}\mathbf{H}$ is `H (Fin.last n)` and
+its $n$ subdiagonal entries are $\mathbf{H}_{i+1,i}$ for `i : Fin n`.
 
 * `NLAlib.IsDecoupled δ H`: some subdiagonal entry has modulus at most $\delta\|\mathbf{H}\|_2$
   (with $\delta = 0$: $\mathbf{H}$ is reduced).
@@ -34,15 +34,43 @@ $\mathbf{H}_{i+1,i}$ for `i : Fin n`.
 * `NLAlib.trailingBlock k H`, `NLAlib.ritzValues k H`: the trailing $k \times k$ block and its
   eigenvalues, the Ritz values.
 
-These are mathematical objects, not implementations: Givens coefficients take square roots and
-the definitions are noncomputable. The finite-precision implementation is a separate stage
-(design note `docs/design/Eigensolvers-ShiftedQR.md`, §9).
+The step is a specification, not an implementation: Givens coefficients take exact square roots,
+the definitions are noncomputable and carry no cost. The finite-precision algorithm of
+[BanksGarzaVargasSrivastava2022] is to refine them (design note
+`docs/design/Eigensolvers-ShiftedQR.md`, §9).
+
+The results: the last row of $p(\mathbf{H})$ for upper Hessenberg $\mathbf{H}$ and the
+variational formula for the potential (Lemma 2.3 there); the step keeps the Hessenberg form,
+the norm and the eigenvector condition number, and is a QR step of the shift polynomial
+([BanksGarzaVargasSrivastava2022, Lemma 3.2]); the potential after the step is at most
+$\tau_p(\mathbf{H})$ (Lemma 2.5 there); and the singular case, which the paper treats in one line:
+a singular shift decouples exactly, and an exact zero on the subdiagonal persists.
 
 ## Main definitions
 
 * `NLAlib.IsDecoupled`, `NLAlib.hessenbergPotential`, `NLAlib.shiftPoly`,
   `NLAlib.shiftedQRStep`, `NLAlib.multiShiftedQRStep`, `NLAlib.trailingBlock`,
   `NLAlib.ritzValues`.
+
+## Main results
+
+* `NLAlib.IsUpperHessenberg.aeval_apply_last_eq_zero`,
+  `NLAlib.IsUpperHessenberg.aeval_apply_last_eq_prod`: the last row of $p(\mathbf{H})$.
+* `NLAlib.IsUpperHessenberg.hessenbergPotential_pow_le_norm_aeval`,
+  `NLAlib.IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq`: the variational formula
+  $\psi_k(\mathbf{H})^k = \min_p\|\mathbf{e}_n^{\mathsf{H}}p(\mathbf{H})\|$.
+* `NLAlib.hessenbergPotential_le_specNorm`, `NLAlib.isDecoupled_of_hessenbergPotential_le`.
+* `NLAlib.IsUpperHessenberg.isUpperHessenberg_multiShiftedQRStep`,
+  `NLAlib.specNorm_multiShiftedQRStep`,
+  `NLAlib.exists_isUnit_mul_eq_mul_diagonal_multiShiftedQRStep`: invariants of the step.
+* `NLAlib.IsUpperHessenberg.exists_isQR_aeval_shiftPoly`: the step is a QR step of
+  $p(\mathbf{H})$.
+* `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le`,
+  `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le`: the
+  potential after the step is at most $\tau_p(\mathbf{H})$.
+* `NLAlib.IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep`,
+  `NLAlib.IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero`: a reduced
+  matrix stays reduced, and a singular shift polynomial decouples.
 -/
 
 @[expose] public section
@@ -112,7 +140,7 @@ noncomputable def ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) �
 
 /-! ### The potential and the last row of a polynomial in a Hessenberg matrix -/
 
-/-- **The $k$-th power of the potential is the product of the last $k$ subdiagonal moduli**:
+/-- The $k$-th power of the potential is the product of the last $k$ subdiagonal moduli:
 for $k \ge 1$,
 $\psi_k(\mathbf{H})^k = \prod_{n - k \le i < n}\lvert\mathbf{H}_{i+1,i}\rvert$. -/
 theorem hessenbergPotential_pow {k : ℕ} (hk : 0 < k) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
@@ -434,7 +462,7 @@ private theorem shiftedQRStep_eq_mul_add_smul_one (H : Matrix (Fin (n + 1)) (Fin
         Matrix.mul_one, Matrix.mul_assoc]
     _ = R * Q + s • 1 := by rw [hQQ, Matrix.one_mul]
 
-/-- **The shifted QR step keeps the Hessenberg form**: for upper Hessenberg $\mathbf{H}$ and any
+/-- The shifted QR step keeps the Hessenberg form: for upper Hessenberg $\mathbf{H}$ and any
 shift $s$, `NLAlib.shiftedQRStep` $\mathbf{H}$ $s$ is upper Hessenberg, also when
 $\mathbf{H} - s\mathbf{I}$ is singular. -/
 theorem IsUpperHessenberg.isUpperHessenberg_shiftedQRStep {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
@@ -447,7 +475,7 @@ theorem IsUpperHessenberg.isUpperHessenberg_shiftedQRStep {H : Matrix (Fin (n + 
   rw [shiftedQRStep_eq_mul_add_smul_one, Matrix.add_apply, h1 i j hij, Matrix.smul_apply,
     Matrix.one_apply_ne (fun h => by subst h; omega), smul_zero, add_zero]
 
-/-- **The multi-shift QR step keeps the Hessenberg form**: for upper Hessenberg $\mathbf{H}$
+/-- The multi-shift QR step keeps the Hessenberg form: for upper Hessenberg $\mathbf{H}$
 and any list of shifts, `NLAlib.multiShiftedQRStep` $\mathbf{H}$ `ss` is upper Hessenberg. -/
 theorem IsUpperHessenberg.isUpperHessenberg_multiShiftedQRStep
     {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) (ss : List ℂ) :
@@ -535,7 +563,7 @@ private theorem specNorm_conjTranspose_mul_mul {H Q : Matrix (Fin (n + 1)) (Fin 
   rw [hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
     Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
 
-/-- **The multi-shift QR step preserves the norm**:
+/-- The multi-shift QR step preserves the norm:
 $\|\mathsf{multiShiftedQRStep}(\mathbf{H}, \mathrm{ss})\|_2 = \|\mathbf{H}\|_2$. -/
 theorem specNorm_multiShiftedQRStep (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (ss : List ℂ) :
     specNorm (multiShiftedQRStep H ss) = specNorm H := by
@@ -692,7 +720,7 @@ private theorem givensHessenbergState_fst_mulVec_apply_eq_zero_of_le {m p : ℕ}
       (Matrix.of fun i (_ : Unit) => ((givensHessenbergState A j).1ᴴ *ᵥ v) i) (b := ())
       (fun a' ha' => ih (by omega) a' (by omega)) a).trans (ih (by omega) a ha)
 
-/-- **A zero subdiagonal entry persists under a shifted QR step**: for upper Hessenberg
+/-- A zero subdiagonal entry persists under a shifted QR step: for upper Hessenberg
 $\mathbf{H}$ with $\mathbf{H}_{i+1,i} = 0$ and any shift $s$, the step has
 $(\mathsf{shiftedQRStep}(\mathbf{H}, s))_{i+1,i} = 0$. -/
 theorem IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero
@@ -728,7 +756,7 @@ theorem IsUpperHessenberg.shiftedQRStep_apply_succ_castSucc_eq_zero
   · rw [show givensHessenbergQ A l i.castSucc = 0 from
       isUpperHessenberg_givensHessenbergQ A l i.castSucc (by simp; omega), mul_zero]
 
-/-- **A reduced Hessenberg matrix stays reduced under multi-shift QR steps**: for upper
+/-- A reduced Hessenberg matrix stays reduced under multi-shift QR steps: for upper
 Hessenberg $\mathbf{H}$ with a zero subdiagonal entry, every
 $\mathsf{multiShiftedQRStep}(\mathbf{H}, \mathrm{ss})$ has one (at the same index). -/
 theorem IsUpperHessenberg.isDecoupled_zero_multiShiftedQRStep

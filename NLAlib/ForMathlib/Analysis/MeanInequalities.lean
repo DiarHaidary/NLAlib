@@ -8,18 +8,19 @@ module
 public import Mathlib.Analysis.MeanInequalities
 
 /-!
-# The Paley–Zygmund inequality for finite weighted sums (scaffold)
+# The Paley–Zygmund inequality for finite weighted sums
 
-Statement for a new `NLAlib/ForMathlib/Analysis/MeanInequalities.lean` (stage SHIFTED-QR, wave
-W0, design note `docs/design/Eigensolvers-ShiftedQR.md` §3.3, id W1). Upstream candidate for
-`Mathlib/Analysis/MeanInequalities.lean`, next to the weighted power-mean inequalities. The
-measure form is `ProbabilityTheory.sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt` in
-`NLAlib/ForMathlib/Probability/Moments/PaleyZygmund.lean`; the finite form keeps the matrix
-files free of measure theory.
+For weights $w_i \ge 0$ summing to $1$ and values $x_i \ge 0$, the weight of the event
+$x_i > t\sum_j w_jx_j$ is at least $(1 - t)^2(\sum_i w_ix_i)^2/\sum_i w_ix_i^2$. The measure form
+is `ProbabilityTheory.sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt` in
+`NLAlib.ForMathlib.Probability.Moments.PaleyZygmund`; the finite form lets the matrix files work
+with finite weighted sums and no measure theory. Upstream candidate for
+`Mathlib/Analysis/MeanInequalities.lean`, next to the weighted power-mean inequalities.
 
 ## Main results
 
-* `Finset.sq_mul_sq_sum_le_sum_mul_sq_mul_sum_filter`.
+* `Finset.sq_mul_sq_sum_le_sum_mul_sq_mul_sum_filter`: the finite weighted Paley–Zygmund
+  inequality.
 -/
 
 @[expose] public section

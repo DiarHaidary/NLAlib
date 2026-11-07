@@ -464,7 +464,7 @@ section Polynomial
 
 variable {H V : Matrix n n ℂ} {d : n → ℂ}
 
-/-- **Powers of a diagonalised matrix**: for invertible $\mathbf{V}$,
+/-- Powers of a diagonalised matrix: for invertible $\mathbf{V}$,
 $(\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1})^e =
 \mathbf{V}\operatorname{diag}(\mathbf{g}^e)\mathbf{V}^{-1}$. -/
 theorem mul_diagonal_mul_inv_pow (hV : IsUnit V) (g : n → ℂ) (e : ℕ) :
@@ -479,7 +479,7 @@ theorem mul_diagonal_mul_inv_pow (hV : IsUnit V) (g : n → ℂ) (e : ℕ) :
     rw [← Matrix.mul_assoc (Matrix.diagonal (g ^ e)), Matrix.diagonal_mul_diagonal, pow_succ]
     rfl
 
-/-- **A polynomial of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+/-- A polynomial of a diagonalised matrix: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible, then for every
 polynomial $p$, $p(\mathbf{H}) = \mathbf{V}\operatorname{diag}(p(\mathbf{d}_i))\mathbf{V}^{-1}$. -/
 theorem aeval_eq_mul_diagonal_mul_inv (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d)
@@ -498,7 +498,7 @@ theorem aeval_eq_mul_diagonal_mul_inv (hV : IsUnit V) (hHV : H * V = V * Matrix.
     rw [Polynomial.aeval_monomial, hH, Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, one_mul,
       mul_diagonal_mul_inv_pow hV, hf, Matrix.diagonal_smul, Matrix.mul_smul, Matrix.smul_mul]
 
-/-- **The inverse of a polynomial of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+/-- The inverse of a polynomial of a diagonalised matrix: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and $p(\mathbf{d}_i) \ne
 0$ for all $i$, then $p(\mathbf{H})^{-1} = \mathbf{V}\operatorname{diag}(p(\mathbf{d}_i)^{-1})
 \mathbf{V}^{-1}$. -/
@@ -520,7 +520,7 @@ theorem isUnit_aeval_of_forall_eval_ne_zero (hV : IsUnit V) (hHV : H * V = V * M
   exact (hV.mul (Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun i =>
     isUnit_iff_ne_zero.mpr (hp i)))).mul (Matrix.isUnit_nonsing_inv_iff.mpr hV)
 
-/-- **The negative powers of a shifted diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+/-- The negative powers of a shifted diagonalised matrix: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and no $\mathbf{d}_i$
 equals $s$, then $(\mathbf{H} - s\mathbf{I})^{-k} =
 \mathbf{V}\operatorname{diag}((\mathbf{d}_i - s)^{-k})\mathbf{V}^{-1}$. -/
@@ -534,7 +534,7 @@ theorem inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv (hV : IsUnit V)
   rw [h, mul_diagonal_mul_inv_pow hV]
   rfl
 
-/-- **An eigenvalue of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+/-- An eigenvalue of a diagonalised matrix: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible, then
 $\det(\mathbf{H} - \mathbf{d}_i\mathbf{I}) = 0$. -/
 theorem det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal (hV : IsUnit V)
@@ -545,7 +545,19 @@ theorem det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal (hV : IsUnit V)
   rw [h, Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
     Finset.prod_eq_zero (Finset.mem_univ i) (sub_self _), mul_zero, zero_mul]
 
-/-- **An eigenvalue of a diagonalised matrix is at most the norm**: if $\mathbf{H}\mathbf{V} =
+/-- A shift that is no eigenvalue of a diagonalised matrix: if $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and no $\mathbf{d}_i$
+equals $s$, then $\det(\mathbf{H} - s\mathbf{I}) \ne 0$. -/
+theorem det_sub_smul_one_ne_zero_of_forall_ne (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) {s : ℂ} (hs : ∀ i, d i ≠ s) :
+    (H - s • (1 : Matrix n n ℂ)).det ≠ 0 := by
+  have h := isUnit_aeval_of_forall_eval_ne_zero hV hHV (p := Polynomial.X - Polynomial.C s)
+    fun i => by simpa [sub_eq_zero] using hs i
+  simp only [map_sub, Polynomial.aeval_X, Polynomial.aeval_C,
+    Algebra.algebraMap_eq_smul_one] at h
+  exact ((Matrix.isUnit_iff_isUnit_det _).mp h).ne_zero
+
+/-- An eigenvalue of a diagonalised matrix is at most the norm: if $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible, then
 $\lvert\mathbf{d}_i\rvert \le \|\mathbf{H}\|_2$. -/
 theorem norm_le_specNorm_of_mul_eq_mul_diagonal (hV : IsUnit V)

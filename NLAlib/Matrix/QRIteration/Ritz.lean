@@ -26,11 +26,28 @@ The two notions of approximate Ritz value that drive the shifting strategy of
 
 and the binary search `NLAlib.findRitz` (the subroutine $\mathrm{Find}$ of §4.3 there), which
 halves the list $\log_2 k$ times, keeping the half whose inverse shift polynomial has the larger
-last row. All are mathematical objects: norms and inverses are exact.
+last row. All are mathematical objects: norms and inverses are exact, and `NLAlib.findRitz` is a
+specification without a cost.
+
+The results: exact Ritz values are $1$-optimal and bounded by the norm; the moment comparison
+and almost-monotonicity for a promising Ritz value (Lemma 4.4 there); the binary search returns a
+$\kappa_V^{4\log_2 k/k}$-promising Ritz value (Lemma 4.5 there).
 
 ## Main definitions
 
 * `NLAlib.IsOptimalRitzValues`, `NLAlib.IsPromisingRitzValue`, `NLAlib.findRitz`.
+
+## Main results
+
+* `NLAlib.length_ritzValues`, `NLAlib.shiftPoly_ritzValues`,
+  `NLAlib.IsUpperHessenberg.isOptimalRitzValues_one_ritzValues`,
+  `NLAlib.norm_le_specNorm_of_mem_ritzValues`: exact Ritz values.
+* `NLAlib.IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: the moment comparison.
+* `NLAlib.sum_lastRowWeights_div_pow_le`: the moments of an inverse shift.
+* `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le`:
+  almost-monotonicity.
+* `NLAlib.sum_lastRowWeights_div_norm_eval_shiftPoly_le`, `NLAlib.findRitz_mem`,
+  `NLAlib.isPromisingRitzValue_findRitz`: the binary search.
 -/
 
 @[expose] public section
@@ -89,7 +106,7 @@ noncomputable def findRitz (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
 
 /-! ### Exact Ritz values -/
 
-/-- **There are $k$ Ritz values**: the trailing block is $k \times k$ and its characteristic
+/-- There are $k$ Ritz values: the trailing block is $k \times k$ and its characteristic
 polynomial splits over $\mathbb{C}$, so `NLAlib.ritzValues` $k$ $\mathbf{H}$ has length $k$. -/
 theorem length_ritzValues (k : ℕ) (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
     (ritzValues k H).length = k := by
@@ -116,7 +133,7 @@ theorem IsUpperHessenberg.isOptimalRitzValues_one_ritzValues
   rw [IsOptimalRitzValues, shiftPoly_ritzValues, length_ritzValues,
     hH.norm_aeval_charpoly_trailingBlock_eq hk hkn, one_mul]
 
-/-- **Ritz values are bounded by the norm**: every Ritz value $s$ of order $k \le n + 1$ has
+/-- Ritz values are bounded by the norm: every Ritz value $s$ of order $k \le n + 1$ has
 $\lvert s\rvert \le \|\mathbf{H}\|_2$. -/
 theorem norm_le_specNorm_of_mem_ritzValues {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {k : ℕ}
     (hkn : k ≤ n + 1) {s : ℂ} (hs : s ∈ ritzValues k H) : ‖s‖ ≤ specNorm H := by
@@ -139,11 +156,7 @@ theorem norm_le_specNorm_of_mem_ritzValues {H : Matrix (Fin (n + 1)) (Fin (n + 1
     simpa [norm_smul] using h1
   have hsub : specNorm (trailingBlock k H) ≤ specNorm H := by
     unfold trailingBlock
-    refine specNorm_submatrix_le H (fun a b hab => ?_) (fun a b hab => ?_)
-    · simp only [Fin.mk.injEq] at hab
-      have ha := a.isLt
-      have hb := b.isLt
-      exact Fin.ext (by omega)
+    refine specNorm_submatrix_le H (fun a b hab => ?_) (fun a b hab => ?_) <;>
     · simp only [Fin.mk.injEq] at hab
       have ha := a.isLt
       have hb := b.isLt
@@ -233,6 +246,42 @@ theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
         mul_le_mul_of_nonneg_right hr2 hK0
     _ = _ := by simp only [mul_pow]; ring
 
+/-- **The moments of an inverse shift**: let $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
+$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, and $r$ no
+eigenvalue. Then, with $N = \|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|$,
+$$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^{2k}} \le \kappa^2N^2
+\quad\text{and}\quad \sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^k} \le \kappa N\,,$$
+i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-2k} \le \kappa^2N^2$ and, by Jensen,
+$\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \le \kappa N$.
+[BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$. -/
+theorem sum_lastRowWeights_div_pow_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
+    (hr : ∀ i, d i ≠ r) (k : ℕ) :
+    ∑ i, lastRowWeights V i / ‖d i - r‖ ^ (2 * k) ≤ pseudoConditionNumber V ^ 2 *
+        ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+          (Fin.last n))‖ ^ 2 ∧
+      ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k ≤ pseudoConditionNumber V *
+        ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+          (Fin.last n))‖ := by
+  have h2 : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ (2 * k) ≤ pseudoConditionNumber V ^ 2 *
+      ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+        (Fin.last n))‖ ^ 2 := by
+    have h := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - r)⁻¹ ^ k)
+    rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV hr k] at h
+    refine le_of_eq_of_le (Finset.sum_congr rfl fun i _ => ?_) h
+    rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
+  refine ⟨h2, (sq_le_sq₀ (Finset.sum_nonneg fun i _ =>
+    div_nonneg (lastRowWeights_nonneg V i) (by positivity))
+    (mul_nonneg (pseudoConditionNumber_nonneg V) (norm_nonneg _))).mp ?_⟩
+  -- Jensen for `x ↦ x²` against the probability vector `w`
+  have hjen := (convexOn_pow 2).map_sum_le (t := Finset.univ) (w := lastRowWeights V)
+    (p := fun i => 1 / ‖d i - r‖ ^ k) (fun i _ => lastRowWeights_nonneg V i)
+    (sum_lastRowWeights hV) (fun i _ => Set.mem_Ici.mpr (by positivity))
+  simp only [smul_eq_mul, div_pow, one_pow, ← pow_mul, mul_comm k 2, mul_one_div] at hjen
+  rw [mul_pow]
+  exact hjen.trans h2
+
 /-- **Almost-monotonicity of the potential**: in the setting of the moment comparison
 (upper Hessenberg $\mathbf{H}$, $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$
 with $\mathbf{V}$ invertible and $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$; $k$ shifts `ss`,
@@ -249,62 +298,25 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
     hessenbergPotential ss.length (multiShiftedQRStep H (List.replicate ss.length r)) ≤
       pseudoConditionNumber V ^ ((2 : ℝ) / ss.length) * α * θ *
         hessenbergPotential ss.length H := by
-  set k := ss.length with hkdef
-  set κ := pseudoConditionNumber V with hκdef
-  set ψ := hessenbergPotential k H with hψdef
-  set p : Polynomial ℂ := shiftPoly (List.replicate k r) with hpdef
-  have hpeval : ∀ i, p.eval (d i) = (d i - r) ^ k := by
-    intro i; simp [hpdef, shiftPoly, List.map_replicate, List.prod_replicate]
-  have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
-    rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hd i r hr.1))
-  have hunit := isUnit_aeval_of_forall_eval_ne_zero hV hHV hnz
-  have hN := IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le hH
-    (ss := List.replicate k r) (by rw [List.length_replicate]; exact hk)
-    (by rw [List.length_replicate]; exact hkn) hunit
-  rw [List.length_replicate] at hN
-  have hinv := inv_aeval_eq_mul_diagonal_mul_inv hV hHV hnz
-  have hsq := sum_lastRowWeights_mul_sq_le hV (fun i => (p.eval (d i))⁻¹)
-  rw [← hinv] at hsq
-  set N := ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ with hNdef
-  set x : Fin (n + 1) → ℝ := fun i => 1 / ‖d i - r‖ ^ k with hxdef
-  have hx0 : ∀ i, 0 ≤ x i := fun i => by simp only [hxdef]; positivity
-  have hgx : ∀ i, ‖(p.eval (d i))⁻¹‖ ^ 2 = (x i) ^ 2 := fun i => by
-    simp only [hxdef]; rw [hpeval, norm_inv, norm_pow, one_div]
-  have hS : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k = ∑ i, lastRowWeights V i * x i :=
-    Finset.sum_congr rfl fun i _ => by simp only [hxdef]; ring
-  have hjen : (∑ i, lastRowWeights V i * x i) ^ 2 ≤ ∑ i, lastRowWeights V i * (x i) ^ 2 := by
-    have := (convexOn_pow 2).map_sum_le (t := Finset.univ) (w := lastRowWeights V) (p := x)
-      (fun i _ => lastRowWeights_nonneg V i) (sum_lastRowWeights hV)
-      (fun i _ => Set.mem_Ici.mpr (hx0 i))
-    simpa [smul_eq_mul] using this
-  have hsqsum : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 := by
-    simp only [hgx] at hsq; exact hsq
+  set k := ss.length
+  set κ := pseudoConditionNumber V
+  set ψ := hessenbergPotential k H
+  have hdr : ∀ i, d i ≠ r := fun i => hd i r hr.1
   have hκ0 : 0 ≤ κ := pseudoConditionNumber_nonneg V
-  have hSN : ∑ i, lastRowWeights V i * x i ≤ κ * N := by
-    refine (sq_le_sq₀ (Finset.sum_nonneg fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (hx0 i))
-      (mul_nonneg hκ0 (norm_nonneg _))).mp ?_
-    calc (∑ i, lastRowWeights V i * x i) ^ 2 ≤ ∑ i, lastRowWeights V i * (x i) ^ 2 := hjen
-      _ ≤ κ ^ 2 * N ^ 2 := hsqsum
-      _ = (κ * N) ^ 2 := by ring
-  have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hα hθ
-  rw [hS] at hone
+  have hN := hH.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le hk hkn
+    (det_sub_smul_one_ne_zero_of_forall_ne hV hHV hdr)
+  set N := ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
+    (Fin.last n))‖
   have hkey : 1 ≤ κ * (α * θ * ψ) ^ k * (κ * N) :=
-    le_trans hone (mul_le_mul_of_nonneg_left hSN (mul_nonneg hκ0 (pow_nonneg
-      (mul_nonneg (mul_nonneg hα hθ)
-        (hessenbergPotential_nonneg _ _))
-      _)))
-  have hN0 : 0 < N := by
-    rcases (norm_nonneg (WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n)))).eq_or_lt with h | h
-    · exfalso
-      have hN' : N = 0 := hNdef.trans h.symm
-      rw [hN', mul_zero] at hkey; linarith
-    · exact h
+    (hss.one_le_mul_sum_lastRowWeights_div hV hHV hd hr hα hθ).trans
+      (mul_le_mul_of_nonneg_left (sum_lastRowWeights_div_pow_le hV hHV hdr k).2
+        (mul_nonneg hκ0 (pow_nonneg (mul_nonneg (mul_nonneg hα hθ)
+          (hessenbergPotential_nonneg _ _)) _)))
+  have hN0 : 0 < N := (norm_nonneg _).lt_of_ne fun h => by
+    rw [show N = 0 from h.symm, mul_zero, mul_zero] at hkey; linarith
   have hmain : hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k ≤
-      κ ^ 2 * (α * θ * ψ) ^ k := by
-    have h1 : hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) ^ k * N ≤
-        (κ ^ 2 * (α * θ * ψ) ^ k) * N := by
-      nlinarith [hN, hkey]
-    exact le_of_mul_le_mul_right h1 hN0
+      κ ^ 2 * (α * θ * ψ) ^ k :=
+    le_of_mul_le_mul_right (by nlinarith [hN, hkey]) hN0
   have hψ0 : 0 ≤ ψ := hessenbergPotential_nonneg _ _
   have hψ'0 : 0 ≤ hessenbergPotential k (multiShiftedQRStep H (List.replicate k r)) :=
     hessenbergPotential_nonneg _ _
@@ -342,8 +354,8 @@ private theorem moment_sandwich_shiftPoly {H V : Matrix (Fin (n + 1)) (Fin (n + 
   rw [hA]
   exact ⟨norm_mul_diagonal_mul_inv_last_sq_le hV _, sum_lastRowWeights_mul_sq_le hV _⟩
 
-/-- Reciprocals of a product of powers: `1 / (x y)^q` is at most the mean of the squared inverse
-powers `(x⁻¹)^q` and `(y⁻¹)^q`, weighted by `w ≥ 0`. -/
+/-- Reciprocals of a product of powers: $w/(xy)^q$ is at most $w$ times the mean of the squared
+inverse powers $(x^{-1})^q$ and $(y^{-1})^q$, for $w \ge 0$. -/
 private theorem inv_pow_mul_le (x y w : ℝ) (q : ℕ) (hw : 0 ≤ w) :
     w / (x * y) ^ q ≤ w * (((x⁻¹) ^ q) ^ 2 + ((y⁻¹) ^ q) ^ 2) / 2 := by
   have huv : ((x * y) ^ q)⁻¹ = (x⁻¹) ^ q * (y⁻¹) ^ q := by
@@ -353,8 +365,8 @@ private theorem inv_pow_mul_le (x y w : ℝ) (q : ℕ) (hw : 0 ≤ w) :
   rw [div_eq_mul_inv, huv]
   nlinarith [mul_le_mul_of_nonneg_left ham hw]
 
-/-- A two-sided moment bound transfers along a maximum: `Xg ≤ κ² Kg²`, `Kg ≤ Kh` and
-`Kh² ≤ κ² Xh` give `Xg ≤ κ⁴ Xh`. -/
+/-- A two-sided moment bound transfers along a maximum: $X_g \le \kappa^2K_g^2$,
+$K_g \le K_h$ and $K_h^2 \le \kappa^2X_h$ give $X_g \le \kappa^4X_h$. -/
 private theorem moment_le_of_sandwich {κ Kg Kh Xg Xh : ℝ} (hKg0 : 0 ≤ Kg) (hKg : Kg ≤ Kh)
     (hg : Xg ≤ κ ^ 2 * Kg ^ 2) (hh : Kh ^ 2 ≤ κ ^ 2 * Xh) : Xg ≤ κ ^ 4 * Xh :=
   calc Xg ≤ κ ^ 2 * Kg ^ 2 := hg
@@ -431,7 +443,7 @@ theorem sum_lastRowWeights_div_norm_eval_shiftPoly_le
           ∑ i, lastRowWeights V i * ‖((shiftPoly h).eval (d i))⁻¹ ^ q‖ ^ 2 := by
         linarith
 
-/-- **The binary search returns a member**: for a list of length $2^m$,
+/-- The binary search returns a member: for a list of length $2^m$,
 `NLAlib.findRitz` $\mathbf{H}$ $m$ $e$ `ss` is in `ss`. -/
 theorem findRitz_mem (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) {m e : ℕ} {ss : List ℂ}
     (hss : ss.length = 2 ^ m) : findRitz H m e ss ∈ ss := by
