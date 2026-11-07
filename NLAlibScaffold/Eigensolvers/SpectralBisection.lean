@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Eigensolvers.SpectralBisection.Global
-public import NLAlibScaffold.Eigensolvers.RandomizedDeflation
+public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlibScaffold.Matrix.Computation.SpectralBisection
 
 /-!
