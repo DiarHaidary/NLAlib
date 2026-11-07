@@ -228,7 +228,8 @@ $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le (100(m+1)(\mu + \varepsilon + \varepsilon_2) +
 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))\|\mathbf{A}\|_2$; and its eigenvalues interlace those of
 $\mathbf{A}$ up to $100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$. The scheme
-enters only through its certificate. [Paige1971, §6.1] in substance. -/
+enters only through its certificate. [Paige1971, §6.1] in substance.
+Result: lanczos-reorth-certified-scheme -/
 theorem exec_rounded_loop_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -472,7 +473,8 @@ of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf{A}\|_2$; and the eigenvalues $\theta_i$ of
 $\mathbf{T}_m$ satisfy $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) +
 e$, $e = 600(m+1)\rho\|\mathbf{A}\|_2$, for $i < m$. No printed source for the program
-statement; [Paige1971, §6.1] in substance. -/
+statement; [Paige1971, §6.1] in substance.
+Result: lanczos-reorth-cgs2-program-guarantees -/
 theorem exec_rounded_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hz : AddsZeroExactly dec I.sem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
@@ -554,7 +556,8 @@ $\|\mathbf{E}\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf{A}\|_2$; and the eigenvalu
 $\mathbf{T}_m$ satisfy $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) +
 e$, $e = 600(m+1)\rho\|\mathbf{A}\|_2$, for $i < m$. Oracle backend storage and arithmetic are
 outside this access model. No printed source for the program statement; [Paige1971, §6.1] in
-substance. -/
+substance.
+Result: lanczos-reorth-cgs2-oracle-guarantees -/
 theorem exec_rounded_oracle_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)

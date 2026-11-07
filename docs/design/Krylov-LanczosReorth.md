@@ -807,12 +807,13 @@ maintainer's (CONTRIBUTING §5.5).
 
 ### 9.2 Explorer
 
-Algorithm pages attach results by `Result:` id only (explorer `algorithms.py`, rules 1–4), and
-rule E3 forbids a `Result:` id on a theorem about runs that is not the proof of a registered target
-(`scripts/Targets.lean`, `unregisteredResults`). So, like CG's rounded program theorems
-(`CGProgramRoundedBackward.lean`, no id), the headline theorems appear only on their module and
-declaration pages, not on the `lanczos-reorth` page. Showing them needs either (i) rounded
-targets registered by the maintainer (e.g. on `Computation.MatrixFreeRounded`, which has no count
-clause, or a new rounded stored-entries model with counts), proved by these theorems and given
-ids, or (ii) an explorer rule listing untagged program theorems whose statements reach a tagged
-program (a "Program guarantees" section). Neither is done here.
+Algorithm pages attach results by `Result:` id (explorer `algorithms.py`, rules 1–4; an id
+`lanczos-reorth-…` attaches to the `lanczos-reorth` page by prefix). Rule E3 used to forbid an id
+on a theorem about runs that is not the proof of a registered target; the maintainer relaxed it
+on 2026-11-07 for **rounded program theorems** (a leading `IsRelErrSem` hypothesis, or a rounded
+access model; `scripts/Targets.lean`, `isRoundedClaim`). Ids given: G6
+`lanczos-reorth-cgs2-rounded-run`, G6o `lanczos-reorth-cgs2-oracle-rounded-run`, G7
+`lanczos-reorth-cgs2-program-backward`, G8 `lanczos-reorth-cgs2-program-interlacing`, the generic
+loop `lanczos-reorth-certified-scheme`, the headline theorems
+`lanczos-reorth-cgs2-program-guarantees` and `lanczos-reorth-cgs2-oracle-guarantees`. CG's and
+plain Lanczos's rounded theorems are a separate follow-up.
