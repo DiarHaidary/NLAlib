@@ -91,6 +91,68 @@ theorem IsUpperHessenberg.aeval_apply_last_eq_zero {H : Matrix (Fin (n + 1)) (Fi
   rw [Finset.mem_range] at hi
   rw [Matrix.smul_apply, pow_apply_last_eq_zero hH i j (by omega), smul_zero]
 
+/-- Helper: the last row of $\mathbf{H}^i$ vanishes at columns $j$ with $j + i < n$ (a copy for
+`aeval_apply_last_eq_prod`). -/
+private theorem pow_apply_last_eq_zero_of_add_lt {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hH : IsUpperHessenberg H) (i : ℕ) :
+    ∀ j : Fin (n + 1), (j : ℕ) + i < n → (H ^ i) (Fin.last n) j = 0 := by
+  induction i with
+  | zero =>
+    intro j hj
+    rw [pow_zero, Matrix.one_apply_ne]
+    intro h
+    have := congrArg Fin.val h
+    simp only [Fin.val_last] at this
+    omega
+  | succ i ih =>
+    intro j hj
+    rw [pow_succ, Matrix.mul_apply]
+    refine Finset.sum_eq_zero fun m _ => ?_
+    by_cases hm : (j : ℕ) + 1 < (m : ℕ)
+    · rw [hH m j hm, mul_zero]
+    · rw [ih m (by omega), zero_mul]
+
+/-- Helper: the corner entries of the last row of $\mathbf{H}^i$ are the products of the last $i$
+subdiagonal entries. -/
+private theorem pow_apply_last_eq_prod {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    (hH : IsUpperHessenberg H) (i : ℕ) :
+    ∀ j : Fin (n + 1), (j : ℕ) + i = n →
+      (H ^ i) (Fin.last n) j =
+        ∏ l ∈ Finset.univ.filter (fun l : Fin n => n ≤ (l : ℕ) + i), H l.succ l.castSucc := by
+  induction i with
+  | zero =>
+    intro j hj
+    have hj' : j = Fin.last n := Fin.ext (by simpa using hj)
+    subst hj'
+    have hempty : Finset.univ.filter (fun l : Fin n => n ≤ (l : ℕ) + 0) = ∅ := by
+      refine Finset.filter_eq_empty_iff.mpr fun l _ => ?_
+      have := l.isLt
+      omega
+    rw [hempty, Finset.prod_empty, pow_zero, Matrix.one_apply_eq]
+  | succ i ih =>
+    intro j hj
+    have hjn : (j : ℕ) < n := by omega
+    have hfilt : Finset.univ.filter (fun l : Fin n => n ≤ (l : ℕ) + (i + 1)) =
+        insert ⟨j, hjn⟩ (Finset.univ.filter (fun l : Fin n => n ≤ (l : ℕ) + i)) := by
+      ext l
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.ext_iff]
+      omega
+    have hnotin : (⟨j, hjn⟩ : Fin n) ∉
+        Finset.univ.filter (fun l : Fin n => n ≤ (l : ℕ) + i) := by
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      omega
+    rw [hfilt, Finset.prod_insert hnotin, pow_succ, Matrix.mul_apply,
+      Finset.sum_eq_single (⟨j + 1, by omega⟩ : Fin (n + 1))]
+    · rw [ih ⟨j + 1, by omega⟩ (by change (j : ℕ) + 1 + i = n; omega), mul_comm]
+      rfl
+    · intro m _ hm
+      have hmv : (m : ℕ) ≠ j + 1 := fun h => hm (Fin.ext h)
+      by_cases hc : (j : ℕ) + 1 < m
+      · rw [hH m j hc, mul_zero]
+      · rw [pow_apply_last_eq_zero_of_add_lt hH i m (by omega), zero_mul]
+    · intro h
+      exact absurd (Finset.mem_univ _) h
+
 /-- **The corner entry of the last row of $p(\mathbf{H})$ is the product of subdiagonals**: for
 upper Hessenberg $\mathbf{H}$, monic $p$ of degree $k$ and the column $j$ with $j + k = n$,
 $$p(\mathbf{H})_{n,j} = \prod_{n - k \le i < n}\mathbf{H}_{i+1,i}\,.$$
@@ -104,7 +166,13 @@ theorem IsUpperHessenberg.aeval_apply_last_eq_prod {H : Matrix (Fin (n + 1)) (Fi
     {j : Fin (n + 1)} (hj : (j : ℕ) + k = n) :
     Polynomial.aeval H p (Fin.last n) j =
       ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), H i.succ i.castSucc := by
-  sorry
+  rw [Polynomial.aeval_eq_sum_range, Matrix.sum_apply, hpk, Finset.sum_range_succ,
+    Finset.sum_eq_zero fun i hi => ?_, zero_add]
+  · have hc : p.coeff k = 1 := by rw [← hpk]; exact hp.coeff_natDegree
+    rw [Matrix.smul_apply, hc, one_smul]
+    exact pow_apply_last_eq_prod hH k j hj
+  · rw [Finset.mem_range] at hi
+    rw [Matrix.smul_apply, pow_apply_last_eq_zero_of_add_lt hH i j (by omega), smul_zero]
 
 /-- **The potential bounds every monic polynomial's last row from below**: for upper Hessenberg
 $\mathbf{H}$, $1 \le k \le n$ and monic $p$ of degree $k$,
