@@ -107,7 +107,8 @@ Proof: `rfl`. S, 1 line. -/
 theorem isExactToNat_binaryFloatSem (fmt : Float.Model.Format) (he : 2 ≤ fmt.exponentBits)
     (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
     IsExactToNat (P := P) (fun _ x => x.val) (binaryFloatSem fmt he r hr) := by
-  sorry
+  intro p x
+  rfl
 
 omit [DecidableEq P] in
 /-- **Exact real multiplication by a factor of modulus at most one does not enlarge**:
