@@ -567,9 +567,12 @@ Searched, none:
   `propext`, `Classical.choice`, `Quot.sound`.
 - **OQ3(a) applied.** EV6', EV7' and EB5' now carry the names of EV6, EV7 and EB5. EV8 is
   re-proved from the new EV7. Its exponent condition is $\log_2(\log_2(1536(n + \ell +
-  2)^3/(\varepsilon\theta)) + 2) + 1 \le E$, a cube in place of the square: EV7's floor condition
-  has $\sqrt{\theta/(8n\min(n, \ell + 1))}$, and its range condition gains $2\sqrt2\sqrt n$ and the
-  larger logarithm. This is still $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ bits.
+  2)^3/(\varepsilon\theta)) + 2) + 1 \le E$, a cube in place of the square. The floor condition forces it: EV7's floor has the new
+  $\sqrt{\theta/(8n\min(n, \ell + 1))}$, and with the square that fails once $n, \ell \gtrsim 3
+  \cdot 10^{10}$, while $\ell$ is a free parameter above `bisectionDepth`. The range condition,
+  despite its new $2\sqrt2\sqrt n$ and larger logarithm, is met by the square with a $2^{15}$
+  margin. The cube costs under 0.3 bits inside the double logarithm and leaves the integer $E$
+  unchanged; it is still $\log_2\log_2(n/(\varepsilon\theta)) + O(1)$ bits.
 
   Deleted: EB1c, EB1b, EB1d, EB1a, EB1, the old EB5, EV2, the old EV6 and EV7, and the helpers
   that only they used, `min_toNat_eighProjector_eq_inertiaPos` and `mul_le_of_le_bisectionSignTol`

@@ -75,31 +75,6 @@ private lemma FloatMachine.IsAccurate.nonneg_of_one_le {F : Type*} {M : FloatMac
   linarith [specNorm_nonneg (1 - (M.mm I' I').map (decodeComplex dec)),
     mul_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hneg hpos) hmax]
 
-/-- A square matrix whose action is bounded below by $x > 0$ is a unit with inverse of norm at
-most $1/x$. -/
-private lemma isUnit_and_specNorm_inv_le_of_lower_bound {r : ℕ} {M : Matrix (Fin r) (Fin r) ℂ}
-    {x : ℝ} (hx : 0 < x)
-    (h : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤ ‖WithLp.toLp 2 (M *ᵥ z)‖) :
-    IsUnit M ∧ specNorm M⁻¹ ≤ 1 / x := by
-  have hinj : Function.Injective M.mulVec := by
-    intro a b hab
-    have h0 : x * ‖WithLp.toLp 2 (a - b)‖ ≤ 0 := by
-      have := h (a - b)
-      rw [Matrix.mulVec_sub, hab, sub_self] at this
-      simpa using this
-    have hn : ‖WithLp.toLp 2 (a - b)‖ = 0 :=
-      le_antisymm (by nlinarith [norm_nonneg (WithLp.toLp 2 (a - b))]) (norm_nonneg _)
-    simpa [sub_eq_zero] using hn
-  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.mp hinj
-  refine ⟨hU, ?_⟩
-  have hMM : M * M⁻¹ = 1 := Matrix.mul_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hU)
-  refine (specNorm_le_iff (by positivity)).2 fun y => ?_
-  have hz : M *ᵥ (M⁻¹ *ᵥ y) = y := by rw [Matrix.mulVec_mulVec, hMM, Matrix.one_mulVec]
-  have h1 := h (M⁻¹ *ᵥ y)
-  rw [hz] at h1
-  rw [one_div_mul_eq_div, le_div_iff₀ hx]
-  linarith [mul_comm x ‖WithLp.toLp 2 (M⁻¹ *ᵥ y)‖]
-
 /-- The event that the last singular value of `Vᴴ G₁` is at most `x` has probability at most
 $\min(r^2, e\,r)x^2$. -/
 private lemma measureReal_rank_deflate_le_min {Ω' : Type*} {mΩ' : MeasurableSpace Ω'}
@@ -147,7 +122,7 @@ private lemma FloatMachine.IsAccurate.isUnit_and_specNorm_inv_le_of_lt_singularV
       ‖WithLp.toLp 2 ((Vᴴ * Gm.submatrix id (Fin.castLE hr)) *ᵥ z)‖ := fun z =>
     (mul_le_mul_of_nonneg_right hσ.le (norm_nonneg _)).trans
       (singularValues_last_mul_norm_le _ (k := r - 1) (by rw [Fintype.card_fin]; omega) z)
-  obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le_of_lower_bound hx hlow
+  obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le_of_forall_mul_norm_le hx hlow
   have hMG : specNorm (Vᴴ * Gm.submatrix id (Fin.castLE hr)) ≤ specNorm Gm :=
     (hV.specNorm_conjTranspose_mul_le _).trans
       (specNorm_submatrix_le Gm Function.injective_id (Fin.castLE_injective hr))

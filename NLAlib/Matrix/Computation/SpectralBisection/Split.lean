@@ -133,29 +133,6 @@ private theorem exists_frame_neg {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     rw [Set.mem_Ioi] at h2
     exact ⟨(neg_abs_le x).trans' (by linarith), by linarith⟩
 
-/-- A square matrix whose action is bounded below by $x$ is a unit with inverse of norm at most
-$1/x$. -/
-private lemma isUnit_and_specNorm_inv_le {r : ℕ} {M : Matrix (Fin r) (Fin r) ℂ}
-    {x : ℝ} (hx : 0 < x)
-    (h : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤ ‖WithLp.toLp 2 (M *ᵥ z)‖) :
-    IsUnit M ∧ specNorm M⁻¹ ≤ 1 / x := by
-  have hinj : Function.Injective M.mulVec := by
-    intro a b hab
-    have h0 : x * ‖WithLp.toLp 2 (a - b)‖ ≤ 0 := by
-      have := h (a - b)
-      rw [Matrix.mulVec_sub, hab, sub_self] at this
-      simpa using this
-    have hn : ‖WithLp.toLp 2 (a - b)‖ = 0 :=
-      le_antisymm (by nlinarith [norm_nonneg (WithLp.toLp 2 (a - b))]) (norm_nonneg _)
-    simpa [sub_eq_zero] using hn
-  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.mp hinj
-  refine ⟨hU, (specNorm_le_iff (by positivity)).2 fun y => ?_⟩
-  have h1 := h (M⁻¹ *ᵥ y)
-  rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hU),
-    Matrix.one_mulVec] at h1
-  rw [one_div_mul_eq_div, le_div_iff₀ hx]
-  linarith [mul_comm x ‖WithLp.toLp 2 (M⁻¹ *ᵥ y)‖]
-
 /-- The product contract through `decodeMatrix`. -/
 private theorem FloatMachine.IsAccurate.specNorm_mul_sub_decodeMatrix_mm_le {F : Type*}
     {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
@@ -440,7 +417,7 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_d
     ∃ W : Matrix (Fin r) (Fin r) ℂ, HasOrthonormalCols W ∧
       specNorm (V * W - decodeMatrix dec (deflate M r P G)) ≤ 17 / 20 * η := by
   set B := Vᴴ * G.submatrix id (Fin.castLE hr)
-  obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le hx fun z =>
+  obtain ⟨hGu, hinv⟩ := isUnit_and_specNorm_inv_le_of_forall_mul_norm_le hx fun z =>
     (mul_le_mul_of_nonneg_right hσ.le (norm_nonneg _)).trans
       (singularValues_last_mul_norm_le B (k := r - 1) (by rw [Fintype.card_fin]; omega) z)
   have hVn : specNorm Vᴴ ≤ 1 := by rw [specNorm_conjTranspose]; exact hV.specNorm_le_one

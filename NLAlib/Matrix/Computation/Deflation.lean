@@ -818,4 +818,31 @@ theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_defla
 
 end DeterministicAccuracy
 
+open scoped Matrix in
+/-- A square matrix whose action is bounded below by $x > 0$,
+$x\|\mathbf{z}\| \le \|\mathbf{M}\mathbf{z}\|$ for every $\mathbf{z}$, is a unit with
+$\|\mathbf{M}^{-1}\|_2 \le 1/x$. No printed source needed: injectivity, then the bound applied
+to $\mathbf{M}^{-1}\mathbf{y}$. -/
+theorem isUnit_and_specNorm_inv_le_of_forall_mul_norm_le {r : ℕ}
+    {M : Matrix (Fin r) (Fin r) ℂ}
+    {x : ℝ} (hx : 0 < x)
+    (h : ∀ z : Fin r → ℂ, x * ‖WithLp.toLp 2 z‖ ≤ ‖WithLp.toLp 2 (M *ᵥ z)‖) :
+    IsUnit M ∧ specNorm M⁻¹ ≤ 1 / x := by
+  have hinj : Function.Injective M.mulVec := by
+    intro a b hab
+    have h0 : x * ‖WithLp.toLp 2 (a - b)‖ ≤ 0 := by
+      have := h (a - b)
+      rw [Matrix.mulVec_sub, hab, sub_self] at this
+      simpa using this
+    have hn : ‖WithLp.toLp 2 (a - b)‖ = 0 :=
+      le_antisymm (by nlinarith [norm_nonneg (WithLp.toLp 2 (a - b))]) (norm_nonneg _)
+    simpa [sub_eq_zero] using hn
+  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.mp hinj
+  refine ⟨hU, (specNorm_le_iff (by positivity)).2 fun y => ?_⟩
+  have h1 := h (M⁻¹ *ᵥ y)
+  rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv M ((Matrix.isUnit_iff_isUnit_det M).mp hU),
+    Matrix.one_mulVec] at h1
+  rw [one_div_mul_eq_div, le_div_iff₀ hx]
+  linarith [mul_comm x ‖WithLp.toLp 2 (M⁻¹ *ᵥ y)‖]
+
 end NLAlib
