@@ -948,6 +948,15 @@ theorem _root_.IsStarNormal.exists_le_isDecoupled_shqrIterate_ritzValues
     (hγ1 : γ < 1) {δ : ℝ} (hδ : 0 < δ) :
     ∃ t ≤ ⌈Real.log (1 / δ) / Real.log (1 / (1 - γ))⌉₊,
       IsDecoupled δ (shqrIterate 1 1 1 γ m (ritzValues (2 ^ m)) H₀ t) := by
-  sorry
+  obtain ⟨V, d, hV, hHV, hcond⟩ :=
+    hN.exists_isUnit_mul_eq_mul_diagonal_and_pseudoConditionNumber_eq_one
+  have hk : 0 < 2 ^ m := by positivity
+  have hritz : ∀ H', IsUpperHessenberg H' → 0 < hessenbergPotential (2 ^ m) H' →
+      (ritzValues (2 ^ m) H').length = 2 ^ m ∧
+        IsOptimalRitzValues 1 H' (ritzValues (2 ^ m) H') :=
+    fun H' hH' _ =>
+      ⟨length_ritzValues _ _, IsUpperHessenberg.isOptimalRitzValues_one_ritzValues hH' hk hmn⟩
+  exact IsUpperHessenberg.exists_le_isDecoupled_shqrIterate hH hV hHV hcond.le hm hmn le_rfl le_rfl
+    (by simp) hγ0 hγ1 hritz hδ
 
 end NLAlib
