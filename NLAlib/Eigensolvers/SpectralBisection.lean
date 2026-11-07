@@ -8,6 +8,8 @@ module
 public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.Matrix.Computation.SpectralBisection.Global
 public import NLAlib.Matrix.Perturbation.Continuity
+public import NLAlibScaffold.Eigensolvers.RandomizedDeflation
+public import NLAlibScaffold.Matrix.Computation.SpectralBisection
 public import Mathlib.Probability.ConditionalProbability
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 
@@ -29,7 +31,8 @@ bound, [Shah2024, Theorem 4.2], is in `NLAlib/Eigensolvers/SpectralBisection/Glo
 ## Main results
 
 * `NLAlib.measureReal_exists_abs_sub_lt_le`: a random shift avoids the spectrum.
-* `NLAlib.FloatMachine.IsAccurate.measure_not_isEighGoodSample_le`: the good events of a node.
+* `NLAlib.FloatMachine.IsAccurate.measure_not_isEighGoodSample_le_of_isEighNodeBudget`: the good
+  events of a node.
 * `NLAlib.countable_range_eighNodeAt`, `NLAlib.measurableSet_eighNodeAt_eq`,
   `NLAlib.indepFun_eighNodeAt_eq`: the nodes are computed from earlier samples.
 -/
@@ -149,48 +152,56 @@ private lemma hasLaw_leadingBlock_apply {k N : ℕ} (h : k ≤ N) (b : Bool) :
     (Fin.castLE_injective h)
   simpa only [leadingBlock_eq_submatrix h] using this
 
-/-- Event II fails on one side with probability at most $\rho/2 + \rho/2$ for a fixed frame. -/
+/-- Event II fails on one side with probability at most $\rho/16 + 15\rho/16$ for a fixed frame:
+the norm tail CG4' and the smaller of the singular value tails CG6 and CG6'. -/
 private lemma measure_not_eventII_le {k N m : ℕ} (hkN : k ≤ N) (b : Bool) {ρ : ℝ} (hρ : 0 < ρ)
     (hρ₁ : ρ ≤ 1) (hm : 0 < m) (hmk : m ≤ k) {V : Matrix (Fin k) (Fin m) ℂ}
     (hV : HasOrthonormalCols V) :
     (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N))
-      ({G | √2 * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ))) ≤ specNorm (leadingBlock k (G b))} ∪
+      ({G | 2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ)) ≤ specNorm (leadingBlock k (G b))} ∪
         {G | singularValues (Vᴴ * (leadingBlock k (G b)).submatrix id (Fin.castLE hmk)) (m - 1) ≤
-          √(ρ / 2) / k}) ≤ ENNReal.ofReal ρ := by
+          √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)))}) ≤ ENNReal.ofReal ρ := by
   set μ := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
   have hL := hasLaw_leadingBlock_apply hkN b
-  have hlog : 0 ≤ Real.log (4 / ρ) :=
+  have hlog : 0 ≤ Real.log (16 / ρ) :=
     Real.log_nonneg (by rw [le_div_iff₀ hρ]; linarith)
-  have h1 := measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix hL
-    (Real.sqrt_nonneg (2 * Real.log (4 / ρ)))
+  have h1 := measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix hL
+    (Real.sqrt_nonneg (Real.log (16 / ρ)))
   simp only [Fintype.card_fin] at h1
-  have hexp : 2 * Real.exp (-√(2 * Real.log (4 / ρ)) ^ 2 / 2) = ρ / 2 := by
-    rw [Real.sq_sqrt (by positivity), show -(2 * Real.log (4 / ρ)) / 2 = -Real.log (4 / ρ) by ring,
-      Real.exp_neg, Real.exp_log (by positivity)]
-    field_simp
-    norm_num
-  have h2 := measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix
-    (hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix
-      (hasLaw_submatrix_of_hasLaw_complexGaussianMatrix hL Function.injective_id
-        (Fin.castLE_injective hmk)) hV) (k := m - 1) (by simp; omega)
-    (x := √(ρ / 2) / k) (by positivity)
-  simp only [Fintype.card_fin] at h2
+  rw [Real.sq_sqrt hlog, Real.exp_neg, Real.exp_log (by positivity), inv_div] at h1
+  have hK := hasLaw_conjTranspose_mul_of_hasLaw_complexGaussianMatrix
+    (hasLaw_submatrix_of_hasLaw_complexGaussianMatrix hL Function.injective_id
+      (Fin.castLE_injective hmk)) hV
   have hk0 : (0 : ℝ) < k := by exact_mod_cast hm.trans_le hmk
   have hmk' : (m : ℝ) ≤ k := by exact_mod_cast hmk
-  have hx : (m : ℝ) ^ 2 * (√(ρ / 2) / k) ^ 2 ≤ ρ / 2 := by
-    rw [div_pow, Real.sq_sqrt (by positivity), mul_div_assoc']
-    rw [div_le_iff₀ (by positivity)]
-    have : (m : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 := pow_le_pow_left₀ (by positivity) hmk' 2
-    nlinarith
+  have hD : 0 < min ((k : ℝ) ^ 2) (Real.exp 1 * k) := by positivity
+  have hx : √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k))) ^ 2 =
+      15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)) := Real.sq_sqrt (by positivity)
+  have h2 : μ.real {G | singularValues (Vᴴ * (leadingBlock k (G b)).submatrix id
+      (Fin.castLE hmk)) (m - 1) ≤ √(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k)))} ≤
+      15 * ρ / 16 := by
+    rcases min_choice ((k : ℝ) ^ 2) (Real.exp 1 * k) with hmin | hmin
+    · refine (measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix hK
+        (k := m - 1) (by simp; omega) (Real.sqrt_nonneg _)).trans ?_
+      simp only [Fintype.card_fin]
+      rw [hx, hmin, mul_div_assoc', div_le_iff₀ (by positivity)]
+      have : (m : ℝ) ^ 2 ≤ (k : ℝ) ^ 2 := pow_le_pow_left₀ (by positivity) hmk' 2
+      nlinarith
+    · refine (measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_complexGaussianMatrix hK
+        (k := m - 1) (by simp; omega) (Real.sqrt_nonneg _)).trans ?_
+      simp only [Fintype.card_fin]
+      rw [hx, hmin, mul_div_assoc', div_le_iff₀ (by positivity)]
+      have := Real.exp_pos 1
+      nlinarith [mul_le_mul_of_nonneg_left hmk' (by positivity : (0 : ℝ) ≤ Real.exp 1 * k * ρ)]
   refine (measure_union_le _ _).trans ?_
   rw [← ofReal_measureReal (measure_ne_top _ _), ← ofReal_measureReal (measure_ne_top _ _),
     ← ENNReal.ofReal_add measureReal_nonneg measureReal_nonneg]
   refine ENNReal.ofReal_le_ofReal ?_
   have e1 : {G : Bool → Matrix (Fin N) (Fin N) ℂ |
-      √2 * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ))) ≤ specNorm (leadingBlock k (G b))} =
-      {G | √2 * (√(k : ℝ) + √(k : ℝ) + √(2 * Real.log (4 / ρ))) ≤
+      2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ)) ≤ specNorm (leadingBlock k (G b))} =
+      {G | √2 * (√(k : ℝ) + √(k : ℝ)) + √(Real.log (16 / ρ)) ≤
         specNorm (leadingBlock k (G b))} := by
-    ext G; simp only [Set.mem_ofPred_eq, two_mul]
+    ext G; simp only [Set.mem_ofPred_eq]; ring_nf
   rw [e1]
   linarith
 
@@ -236,13 +247,13 @@ private def splitSeeds {k : ℕ} (A : Matrix (Fin k) (Fin k) ℂ) (L w : ℝ) : 
 
 /-- A measurable superset of the failure of Event II on side `b` at the seeds of
 `splitSeeds`, with the frame replaced by the projector. -/
-private def sideBad {k : ℕ} (N : ℕ) (A : Matrix (Fin k) (Fin k) ℂ) (L w ρ : ℝ) (b : Bool) :
+private def sideBad {k : ℕ} (N : ℕ) (A : Matrix (Fin k) (Fin k) ℂ) (L w x t : ℝ) (b : Bool) :
     Set (EighSample ℝ ℂ N) :=
   {s | s.1 ∈ splitSeeds A L w ∧ ∃ r : Fin k, 0 < (r : ℕ) ∧
     RCLike.re (sideProj A L b s.1).trace = ((r : ℕ) : ℝ) ∧
-    (√2 * (2 * √(k : ℝ) + √(2 * Real.log (4 / ρ))) ≤ specNorm (leadingBlock k (s.2 b)) ∨
+    (t ≤ specNorm (leadingBlock k (s.2 b)) ∨
       singularValues (sideProj A L b s.1 * (leadingBlock k (s.2 b)).submatrix id
-        (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ √(ρ / 2) / k)}
+        (Fin.castLE r.isLt.le)) ((r : ℕ) - 1) ≤ x)}
 
 /-- Membership in `splitSeeds`. -/
 private lemma mem_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} {L w v : ℝ} :
@@ -282,8 +293,8 @@ private lemma measurableSet_splitSeeds {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ
 
 /-- `sideBad` is measurable. -/
 private lemma measurableSet_sideBad {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
-    (hA : A.IsHermitian) (hkN : k ≤ N) (L w ρ : ℝ) (b : Bool) :
-    MeasurableSet (sideBad N A L w ρ b) := by
+    (hA : A.IsHermitian) (hkN : k ≤ N) (L w x t : ℝ) (b : Bool) :
+    MeasurableSet (sideBad N A L w x t b) := by
   have hLB : Measurable fun G : Bool → Matrix (Fin N) (Fin N) ℂ => leadingBlock k (G b) := by
     simp_rw [leadingBlock_eq_submatrix hkN]
     exact ((continuous_apply b).matrix_submatrix _ _).measurable
@@ -305,8 +316,10 @@ private lemma measure_sideBad_le {k N : ℕ} {A : Matrix (Fin k) (Fin k) ℂ}
     (hA : A.IsHermitian) (hkN : k ≤ N) {L w ρ : ℝ} (hw : 0 < w) (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1)
     (μ : Measure ℝ) (b : Bool) :
     (μ.prod (Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)))
-      (sideBad N A L w ρ b) ≤ ENNReal.ofReal ρ * μ (splitSeeds A L w) := by
-  rw [Measure.prod_apply (measurableSet_sideBad hA hkN L w ρ b),
+      (sideBad N A L w (√(15 * ρ / (16 * min ((k : ℝ) ^ 2) (Real.exp 1 * k))))
+        (2 * √2 * √(k : ℝ) + √(Real.log (16 / ρ))) b) ≤
+      ENNReal.ofReal ρ * μ (splitSeeds A L w) := by
+  rw [Measure.prod_apply (measurableSet_sideBad hA hkN L w _ _ b),
     ← lintegral_indicator_const (measurableSet_splitSeeds hA L w)]
   refine lintegral_mono fun v => ?_
   by_cases hv : v ∈ splitSeeds A L w
@@ -369,14 +382,13 @@ private lemma measure_not_eventI_le {k : ℕ} {A : Matrix (Fin k) (Fin k) ℂ} (
 /-- The failure of the good events lies in the failure of Event I or in `sideBad` on a side:
 on Event I a frame of a projector with $0 < r < k$ columns pins the trace to $r$, and
 `NLAlib.HasOrthonormalCols.singularValues_mul_left` replaces the frame by the projector. -/
-private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : ℝ} {y : EighNode F}
-    {N : ℕ} :
-    {s : EighSample ℝ ℂ N | ¬ IsEighGoodSample dec w (√(ρ / 2) / y.k)
-      (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y s} ⊆
+private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w x t : ℝ}
+    {y : EighNode F} {N : ℕ} :
+    {s : EighSample ℝ ℂ N | ¬ IsEighGoodSample dec w x t y s} ⊆
       Prod.fst ⁻¹' ({v | v ∉ Set.Icc (-1 : ℝ) 1} ∪
         {v | ∃ e ∈ spectrum ℝ (decodeMatrix dec y.A), |e - dec y.R / y.ℓ * v| < w}) ∪
-      (sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ true ∪
-        sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w ρ false) := by
+      (sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w x t true ∪
+        sideBad N (decodeMatrix dec y.A) (dec y.R / y.ℓ) w x t false) := by
   intro s hs
   simp only [IsEighGoodSample, Set.mem_ofPred_eq] at hs
   generalize decodeMatrix dec y.A = A at hs ⊢
@@ -399,10 +411,9 @@ private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : 
         constructor <;> linarith
       · rw [htrV]
         exact ⟨hr0', hrk'⟩
-    have hmem : s ∈ sideBad N A L w ρ b := by
+    have hmem : s ∈ sideBad N A L w x t b := by
       refine ⟨hsT, ⟨r, hrk⟩, hr0, htrV, ?_⟩
-      rcases le_or_gt (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ))))
-        (specNorm (leadingBlock y.k (s.2 b))) with ht | ht
+      rcases le_or_gt t (specNorm (leadingBlock y.k (s.2 b))) with ht | ht
       · exact Or.inl ht
       · obtain ⟨h, hσ⟩ := hbad ht
         right
@@ -420,58 +431,43 @@ private lemma not_isEighGoodSample_subset {F : Type*} {dec : F → ℝ} {w ρ : 
     · exact Or.inl hv
 
 /-- **Probability of the good events of a node**: let the machine meet
-`NLAlib.FloatMachine.IsAccurate` with $u \ge 0$ and
-$\mu_{\mathrm{MM}}(k), \mu_{\mathrm{QR}}(k), c_{\mathrm N} \ge 0$, and let the node $(k, \mathbf{A},
-R, \varepsilon, \ell)$ have $\mathbf{A}$
-Hermitian with $\|\mathbf{A}\|_2 \le R$, $2 \le k \le N$, $\ell \ge 20$, $0 < \varepsilon \le 1/8$,
-$R_0 > 0$
-and the machine's leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ failing. Let $0 < \rho \le 1$,
-$0 < w \le R$, $0 < \beta \le$ `NLAlib.bisectionSignTol` $k\,\varepsilon\,\rho\,\ell$, the sign
-precision
-$640k^{3/2}(8 + \mu_{\mathrm{MM}}(k))(N_w + 1)u \le (w/(4R))\beta$ with
-$N_w =$ `NLAlib.newtonSchulzSteps` $(w/(8R))\,(\beta/(16k))$ at most the step limit, the floor
-$0 \le \tau$ with $4k^{3/2}\tau \le \min(\sqrt{\rho/2}, \varepsilon R_0)$ and the range
-$16(R_0 + R + k + \ell + \sqrt{\log(4/\rho)}) \le \Omega$. Let also the deflation precision
-$(4\mu_{\mathrm{QR}}(k) + 4\sqrt k(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(k) + 1)u \le \beta$ hold.
-Then the
-sample law `NLAlib.eighSampleLaw` $N$ gives the bad events (`NLAlib.IsEighGoodSample` with $w$,
-$x = \sqrt{\rho/2}/k$, $t = \sqrt2(2\sqrt k + \sqrt{2\log(4/\rho)})$ failing) probability at most
+`NLAlib.FloatMachine.IsAccurate`, and let the node $y = (k, \mathbf{A}, R, \varepsilon, \ell)$ of
+size $2 \le k \le N$, at which the leaf test $R \le \mathrm{fl}(\varepsilon R_0)$ fails, meet the
+node budget `NLAlib.FloatMachine.IsEighNodeBudget` with shift distance $w$, singular value
+threshold $x = \sqrt{15\rho/(16\min(k^2, e k))}$ and norm threshold
+$t = 2\sqrt2\sqrt k + \sqrt{\log(16/\rho)}$, for $0 < \rho \le 1$. Then the sample law
+`NLAlib.eighSampleLaw` $N$ gives the bad events (`NLAlib.IsEighGoodSample` with $w$, $x$, $t$
+failing) probability at most
 $$\frac{kw\ell}{R} + 2\rho\,\mathbb{P}[\text{the node splits}] \,,$$
 the node splitting when `NLAlib.eighStep` is `NLAlib.EighStep.split`. [Shah2024, Lemma 4.1],
 "Event I occurs with probability at least $1 - wn/R$ and Event II with probability at least
-$1 - 2\rho$". -/
-theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
+$1 - 2\rho$"; here Event II on each side fails with probability at most $\rho/16$ (the norm tail
+$e^{-s^2}$ above $2\sqrt2\sqrt k$) plus $15\rho/16$ (the tail $\min(r^2, e r)x^2$ of the
+smallest singular value). -/
+theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le_of_isEighNodeBudget
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ}
     {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN) {N signFuel : ℕ} {R₀ β : F}
-    {ρ w : ℝ} {y : EighNode F} (hμM : 0 ≤ μM y.k) (hμQ : 0 ≤ μQ y.k) (hcN : 0 ≤ cN) (hu : 0 ≤ u)
-    (hA : (decodeMatrix dec y.A).IsHermitian) (hR : specNorm (decodeMatrix dec y.A) ≤ dec y.R)
-    (hk : 2 ≤ y.k) (hkN : y.k ≤ N) (hℓ : 20 ≤ y.ℓ) (hε : 0 < dec y.ε) (hε₁ : dec y.ε ≤ 1 / 8)
-    (hR₀ : 0 < dec R₀) (hint : M.le y.R (M.mul y.ε R₀) = false) (hρ : 0 < ρ) (hρ₁ : ρ ≤ 1)
-    (hw : 0 < w) (hwR : w ≤ dec y.R) (hβ : 0 < dec β)
-    (hβtol : dec β ≤ bisectionSignTol y.k (dec y.ε) ρ y.ℓ)
-    (husign : 640 * y.k * √(y.k : ℝ) * (8 + μM y.k) *
-      (newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) + 1) * u ≤
-        w / (4 * dec y.R) * dec β)
-    (hudefl : (4 * μQ y.k + 4 * √(y.k : ℝ) * (cN + 1) + 2 * μM y.k + 1) * u ≤ dec β)
-    (hfuel : newtonSchulzSteps (w / (8 * dec y.R)) (dec β / (16 * y.k)) ≤ signFuel)
-    (hτ₀ : 0 ≤ τ) (hτ : τ * (4 * y.k * √(y.k : ℝ)) ≤ min (√(ρ / 2)) (dec y.ε * dec R₀))
-    (hΩ : 16 * (dec R₀ + dec y.R + y.k + y.ℓ + √(Real.log (4 / ρ))) ≤ Ω) :
-    eighSampleLaw N {s | ¬ IsEighGoodSample dec w (√(ρ / 2) / y.k)
-      (√2 * (2 * √(y.k : ℝ) + √(2 * Real.log (4 / ρ)))) y s} ≤
+    {ρ w : ℝ} {y : EighNode F}
+    (hB : M.IsEighNodeBudget dec u τ Ω μM μQ cN R₀ β signFuel w
+      (√(15 * ρ / (16 * min ((y.k : ℝ) ^ 2) (Real.exp 1 * y.k))))
+      (2 * √2 * √(y.k : ℝ) + √(Real.log (16 / ρ))) y)
+    (hk : 2 ≤ y.k) (hkN : y.k ≤ N) (hint : M.le y.R (M.mul y.ε R₀) = false) (hρ : 0 < ρ)
+    (hρ₁ : ρ ≤ 1) :
+    eighSampleLaw N {s | ¬ IsEighGoodSample dec w
+      (√(15 * ρ / (16 * min ((y.k : ℝ) ^ 2) (Real.exp 1 * y.k))))
+      (2 * √2 * √(y.k : ℝ) + √(Real.log (16 / ρ))) y s} ≤
       ENNReal.ofReal (y.k * w * y.ℓ / dec y.R) + ENNReal.ofReal (2 * ρ) *
         eighSampleLaw N {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
-  have _ := hμQ
-  have _ := hcN
-  have _ := hudefl
-  have hRpos : 0 < dec y.R := hw.trans_le hwR
+  have hA := hB.isHermitian
+  have hRpos : 0 < dec y.R := hB.pos_w.trans_le hB.w_le
   have hℓpos : (0 : ℝ) < y.ℓ := by
-    have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hℓ
+    have : (20 : ℝ) ≤ y.ℓ := by exact_mod_cast hB.twenty_le
     linarith
   have hLpos : 0 < dec y.R / y.ℓ := div_pos hRpos hℓpos
   set μ₁ := ProbabilityTheory.cond volume (Set.Icc (-1 : ℝ) 1)
   set ν := Measure.pi fun _ : Bool => complexGaussianMatrix (Fin N) (Fin N)
   set T := splitSeeds (decodeMatrix dec y.A) (dec y.R / y.ℓ) w
-  -- the seeds of `T` split the node (rank recovery on Event I)
+  -- the seeds of `T` split the node (rank recovery on Event I, EB1b')
   have hTsplit : μ₁ T ≤
       (μ₁.prod ν) {s | (eighStep M N signFuel R₀ β y.A y.R y.ε y.ℓ s).IsSplit} := by
     calc μ₁ T = (μ₁.prod ν) (T ×ˢ Set.univ) := by rw [Measure.prod_prod, measure_univ, mul_one]
@@ -480,19 +476,18 @@ theorem FloatMachine.IsAccurate.measure_not_isEighGoodSample_le
     have htr := hA.re_trace_smul_one_add_cfc_sign (c := dec y.R / y.ℓ * s.1) fun e he hev => by
       have := hI e he
       rw [hev, sub_self, abs_zero] at this
-      linarith
+      linarith [hB.pos_w]
     have hPt : sideProj (decodeMatrix dec y.A) (dec y.R / y.ℓ) true s.1 =
         (2⁻¹ : ℝ) • (1 + cfc Real.sign (decodeMatrix dec y.A -
           (dec y.R / y.ℓ * s.1) • (1 : Matrix (Fin y.k) (Fin y.k) ℂ))) := by
       simp [sideProj]
     rw [hPt, htr] at h0 h1
-    exact (hM.eighStep_isSplit_iff_of_forall_le_abs_sub (signFuel := signFuel) (R₀ := R₀) hμM hu
-      hA hR hℓ hε hε₁ hR₀ hρ hρ₁ hw hwR hβ hβtol husign hfuel hτ₀ hτ hΩ hk hint hv hI).2
+    exact (hM.eighStep_isSplit_iff_of_isEighNodeBudget hB hk hint hv hI).2
       ⟨by exact_mod_cast h0, by exact_mod_cast h1⟩
   refine (measure_mono not_isEighGoodSample_subset).trans ((measure_union_le _ _).trans ?_)
-  refine (add_le_add (measure_not_eventI_le hA hLpos hw ν) ((measure_union_le _ _).trans
-    (add_le_add (measure_sideBad_le hA hkN hw hρ hρ₁ μ₁ true)
-      (measure_sideBad_le hA hkN hw hρ hρ₁ μ₁ false)))).trans ?_
+  refine (add_le_add (measure_not_eventI_le hA hLpos hB.pos_w ν) ((measure_union_le _ _).trans
+    (add_le_add (measure_sideBad_le hA hkN hB.pos_w hρ hρ₁ μ₁ true)
+      (measure_sideBad_le hA hkN hB.pos_w hρ hρ₁ μ₁ false)))).trans ?_
   rw [div_div_eq_mul_div, ← add_mul, ← ENNReal.ofReal_add hρ.le hρ.le, ← two_mul]
   gcongr
   exact hTsplit
