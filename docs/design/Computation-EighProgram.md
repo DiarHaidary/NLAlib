@@ -413,6 +413,13 @@ The proof also needed a finer frame of the node step: the helper (not a target)
 range only the children's slots ($lo$, and $lo + k_+$ for a split) may change; EN9's statement is
 unchanged.
 
+**Statement fix (EP7).** `eighProg.weight_le_of_exec_compiled` now takes `hlit : IsExactIntLit dec
+I.sem (N + 4)` and `htn : IsExactToNat dec I.sem` (Fable audit item 12). Without them it is false:
+with `lit 0` decoding to $1 + \delta$ every slot reads back a size $\ge 1$, the binder's clamp gives
+$n - lo$, and a level makes $\Theta(n^2)$ kernel work. The sizes, kinds and $k_+$ are control data in
+rounded cells, so every data-dependent count is conditional on the literal round-trip; EP6 (static)
+stays semantics-free by charging the supremum. The contracts are those of TT1's `Contracts`.
+
 ### Hypotheses strengthened for proof convenience (statement believed true as originally written)
 
 **EL2 `exists_exec_eighDownLevel`** now takes the constants as EL1 does (cell $2$ of `c` holds

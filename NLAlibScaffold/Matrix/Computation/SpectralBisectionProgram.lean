@@ -4508,7 +4508,14 @@ downward loop by `NLAlib.Computation.forall_of_exec_loop_eq_some` (pilot) with
 `NLAlib.holds_of_exec_eighBottomLevel`, and the upward loop with `NLAlib.holds_of_exec_eighUpLevel`
 at $d = \ell_0 - d'$; at depth $0$ `NLAlib.EighArenas.OutHolds` is `NLAlib.eighAux` at budget
 $\ell_0 + 1$ on the root, which is `NLAlib.eigh`, with the samples
-`NLAlib.eighSlotTree M n F R₀ β 0 0 root`; the final copies and the pops. L, about 160 lines. -/
+`NLAlib.eighSlotTree M n F R₀ β 0 0 root`; the final copies and the pops. L, about 160 lines.
+`NLAlib.holds_of_exec_eighDownLevel` at level $d$ needs `hnext` (the size cells of depth $d + 1$ read
+$0$): the initialisation writes the literal $0$ to every size cell and then $n$ to cell $0$ only,
+and level $d$ writes only cells of depths $d$ and $d + 1$ (its frame), so the downward loop's
+invariant carries "the size cells of every depth $e > d$ read $0$"; and `hc` with its five cells:
+$1$, $\mathrm{fl}(2)$, $\mathrm{fl}(1/\mathrm{fl}(2))$, $-1$ and
+`NLAlib.Computation.ScalarSem.sqrtHalf` (the square root of cell $2$), from the initialisation and
+kept by every level's frame. -/
 theorem holds_of_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
     (n ℓ₀ F : ℕ) (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem)
@@ -4536,7 +4543,11 @@ pilot's `NLAlib.Computation.exists_exec_zcopy`); the downward loop by
 `NLAlib.Computation.exists_exec_loop_eq_some_of_forall` with `NLAlib.exists_exec_eighDownLevel` and
 the invariant `NLAlib.holds_of_exec_eighDownLevel` gives; `NLAlib.exists_exec_eighBottomLevel`; the
 upward loop with `NLAlib.exists_exec_eighUpLevel`; the final copies and the pops. L, about 100
-lines. -/
+lines. `NLAlib.exists_exec_eighDownLevel` at level $d$ needs the exact constants `hc` (cell $2$ of
+`c` is $\mathrm{fl}(1/\mathrm{fl}(2))$ of the machine, a division of the literals $1$ and $2$; cell
+$3$ is $-1$; cell $4$ is `NLAlib.Computation.ScalarSem.sqrtHalf`, the square root of cell $2$) and
+the tape positions `hpos` ($nd$ uniform, $4n^2 d$ Gaussian after $d$ levels, by the position
+advance of `NLAlib.holds_of_exec_eighDownLevel`). -/
 theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
@@ -5854,12 +5865,16 @@ theorem eighProg.cnt_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpCoun
 /-- **The kernel cost of the registered tree, weighted** ([Shah2024, Section 4], the operation count
 of Theorem 4.2): for a cost $T$ of a kernel call by its largest dimension that is monotone and
 superadditive ($T(a) + T(b) \le T(a + b)$, as a convex $T$ with $T(0) = 0$ is), under the standard
-charge, every successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$ adds
+charge, exact integer literals up to $N + 4$ and the exact floor conversion (the sizes, kinds and
+$k_+$ are control data in rounded cells, read back by binders: without the contracts a slot that
+starts no node can read back a size $\ge 1$, design note §8), every successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$ adds
 at most $(\ell_0 + 1)(2F + 12)\,T(N)$ to the weighted kernel count: per level, the nodes have sizes
 summing to at most $N$, each with at most $2F + 12$ kernel calls of largest dimension at most its
 size. The static bound `NLAlib.eighCount` charges every size at every slot, a factor of about $N^2$
 more. No printed source.
-Proof: an invariant of the run (not of `NLAlib.Computation.FStmt.staticCost`): by the shapes of
+Proof: an invariant of the run (not of `NLAlib.Computation.FStmt.staticCost`), with every size,
+kind and $k_+$ read back exactly (`hlit`, `htn`,
+`NLAlib.Computation.IsExactIntLit.toNat_eq_of_lit_eq_some`): by the shapes of
 `NLAlib.holds_of_exec_eighDownLevel` and `NLAlib.holds_of_exec_eighUpLevel`, the calls of a level
 are those of its nodes (`NLAlib.Computation.exec_kcall`, the kind records its dimensions, and every
 dimension list of a node of size $k$ has entries at most $k$); the sizes at one depth are the
@@ -5867,7 +5882,8 @@ disjoint ranges of `NLAlib.eighLoc_disjoint` inside $[0, N)$, so $\sum_y T(k_y) 
 superadditivity and monotonicity (`Finset.sum_le_sum`, induction on the number of nodes); sum over
 the $\ell_0 + 1$ levels (`Finsupp.weight_apply`, `map_add`). L, about 150 lines. -/
 theorem eighProg.weight_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpCount P ι)}
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) (N ℓ₀ F : ℕ) (T : ℕ → ℕ)
+    (hc : ∀ k, I.charge k = Finsupp.single k 1) {dec : P → K → ℝ} (p : P) (N ℓ₀ F : ℕ)
+    (hlit : IsExactIntLit dec I.sem (N + 4)) (htn : IsExactToNat dec I.sem) (T : ℕ → ℕ)
     (hT : Monotone T) (hTsup : ∀ a b, T a + T b ≤ T (a + b)) {st st' : St P K (OpCount P ι)}
     (h : (eighProg.compiled p mm qr).exec I N ![ℓ₀, F] st = some st') :
     Finsupp.weight (fun κ : OpKind P ι => match κ with
