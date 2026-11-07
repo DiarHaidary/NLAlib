@@ -27,6 +27,7 @@ public import NLAlib.Computation.IEEESqrt
 public import NLAlib.Computation.KernelCall
 public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Computation.Model
+public import NLAlib.Computation.NonInterference
 public import NLAlib.Computation.NormalizationErrors
 public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RunsWithin
