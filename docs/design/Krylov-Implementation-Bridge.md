@@ -69,8 +69,9 @@ certificate supplies `ζ`. This transfer adds no interface, new arithmetic or na
 
 ## Target approval and integration
 
-CONTRIBUTING section 5.5 requires every new top-level program to have a registered compiled tree
-and a maintainer-approved target. The concrete proposals were first checked outside `NLAlib`.
+The programs guide (`docs/contributing/programs.md`) requires every new top-level program to have
+a registered compiled tree and a maintainer-approved target. The concrete proposals were first
+checked outside `NLAlib`.
 The maintainer approved both exact statements and identified programs on 2026-11-04. Their
 unchanged trees, counts and target bodies are now in the library with the complete proofs
 `storedEntriesConjugateGradient` and `storedEntriesLanczos`. The separately approved oracle
@@ -100,7 +101,8 @@ inequality; no alternative functional calculus, floating-point model or norm is 
 
 ## 2026-11-04 concrete Lanczos proposal
 
-The concrete proposal is staged in `proposals/krylov/Lanczos.lean`. It loads the column-major
+The concrete proposal was staged in `proposals/krylov/Lanczos.lean` (since removed).
+It loads the column-major
 ROM matrix into a scoped dense buffer once, and uses existing `gemv` on that buffer. This
 amends the earlier proposed dense substitution: no rounded accuracy theorem for `denseImpl`
 is assumed. The same executed `gemv` is covered by the rounded matrix kernel adapters, so

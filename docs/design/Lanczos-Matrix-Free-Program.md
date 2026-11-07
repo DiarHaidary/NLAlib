@@ -5,7 +5,8 @@ stored Lanczos program, compiled tree, targets and closed count formulas remain 
 
 ## Concrete program
 
-`proposals/krylov/LanczosOracle.lean` contains `lanczosOracleProg tag o N q` and its single
+`proposals/krylov/LanczosOracle.lean` (a draft, since removed; `git log -- proposals` finds it)
+contains `lanczosOracleProg tag o N q` and its single
 compiled first-order tree with six declared buffers: retained input, all basis columns, alpha,
 beta, input norm, previous vector. Scoped slot 6 is an empty allocation, slot 7 has N work cells,
 and slot 8 has two scalar registers. There is no ROM load and no stored matrix. Each Paige step

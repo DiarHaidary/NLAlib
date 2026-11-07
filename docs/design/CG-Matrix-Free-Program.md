@@ -56,7 +56,8 @@ See [the common design](Krylov-Rounded-Oracles.md) for the precise allowance sel
 ## Approval and validation
 
 The maintainer approved the exact builder, compiled tree, count formula and target statement
-in `proposals/krylov/CGOracle.lean`. Canonical placement splits the program tree, target and
+in the draft `proposals/krylov/CGOracle.lean` (since removed).
+Canonical placement splits the program tree, target and
 proofs without changing those reviewed bodies. `CGOracleProgramStaticCost.lean` proves the resource
 certificate separately from exact correctness. The final theorem proves the target constant.
 The actual compiled tree passed eight Float execution cases, checking all output buffers,

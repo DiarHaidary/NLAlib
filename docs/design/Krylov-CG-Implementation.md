@@ -3,8 +3,9 @@
 Design and implementation record, 2026-11-04. The existing `CGRun` is a conditional analysis
 interface. The approved square-root-free program now has a complete exact execution proof in
 `Krylov/LinearSystems/CGProgram.lean`, with its fixed target in `CGTargets.lean`. The earlier
-development is preserved in `proposals/krylov/`; the library uses only the canonical library
-modules. This note records the algorithm choice and the remaining rounded execution-to-run
+development was drafted in `proposals/krylov/`, since removed (`git log -- proposals` finds it);
+the library uses only the canonical library modules.
+This note records the algorithm choice and the remaining rounded execution-to-run
 construction. See [the integration record](Krylov-Implementation-Integration.md).
 
 ## Concrete algorithm and storage
