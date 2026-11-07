@@ -44,7 +44,7 @@ Run with `lake env lean scripts/Targets.lean` after `lake build NLAlib`; a nonze
 means a violation. `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean` (the `--update` mode)
 rewrites the hashes, the printed statements and normal forms, the pins and the leading comment
 of the registry for review; it never writes `docs/targets.approved`. Agents never edit the registry or a `*Targets.lean` file
-(CONTRIBUTING §11). `TARGETS_REGISTRY` and `TARGETS_APPROVED` name other files (for tests). -/
+(`AGENTS.md`). `TARGETS_REGISTRY` and `TARGETS_APPROVED` name other files (for tests). -/
 
 namespace TargetChecks
 
@@ -735,7 +735,7 @@ run_cmd do
     catch _ => pure false
   unless ok do
     logError m!"E3 {path} (SHA-256 {sha}) is not the approved registry: {approved} differs; {""
-      }only the maintainer approves a registry change (CONTRIBUTING §11)"
+      }only a maintainer approves a registry change (docs/contributing/programs.md)"
   let targets := reg'.tables.filter (·.kind == "target")
   logInfo m!"targets: {targets.size} registered targets, {reg'.tables.size - targets.size} {""
     }registered trees; {errs.size + (if ok then 0 else 1)} violations"

@@ -359,7 +359,7 @@ None of these was approved by the maintainer when it was made. Status is given p
   normalised.
 - **NLAlib.** `uniformSphereVector n : Measure (n → ℝ)`, the probability law of `g / ‖g‖` for a
   standard Gaussian vector `g` (`NLAlib/RandomMatrix/Haar/Basic.lean`), on the library's vectors
-  `n → ℝ` (CONTRIBUTING §5.1) and with the Gaussian construction the Haar frames use.
+  `n → ℝ` (docs/contributing/statements.md §1) and with the Gaussian construction the Haar frames use.
 - **Why.** Consumers (JL, the column law of a Haar frame) hold vectors in `n → ℝ` and a probability
   measure; the subtype carrier and the normalisation would be re-done at every use.
 - **Cost.** A user with Mathlib's `Measure.toSphere` rewrites with the bridge, which needs

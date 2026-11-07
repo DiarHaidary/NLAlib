@@ -35,7 +35,8 @@ probability $\delta$: for `hG` and that size,
 ```
 with `le_max_left` for the side condition $2 \le p$. Its projection-cost-preserving forms are
 in `NLAlib.Sketching.Gaussian.ProjectionCost`. The sample sizes are named quantities
-(CONTRIBUTING §5.2, rule 2), each with its nonnegativity, monotonicity and an explicit
+(docs/contributing/statements.md §2, rule 2), each with its nonnegativity, monotonicity and an
+explicit
 comparison; the "$\lvert k \rvert \ge \ldots$ suffices" forms are corollaries of the tails.
 
 Degenerate cases: for empty $k$, $(\sqrt{0})^{-1} = 0$ and $\mathbf{S} = \mathbf{0}$, which is not

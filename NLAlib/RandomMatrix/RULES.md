@@ -4,188 +4,187 @@
 
 The rules a file in `NLAlib/RandomMatrix` keeps, generated from
 `docs/rules/rules.toml`. Errors fail CI; a warning is a heuristic review list; a review
-rule has no check. The reasons are in CONTRIBUTING at the linked section. Check a file
+rule has no check. The reasons are in the contributor guide at the linked section. Check a file
 with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file
 and `docs/rules/DIGEST.md`.
 
 ## This topic
 
-- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. Fix: State tails in `μ.real`. [§5.2]
-- **D12** A docstring says when summands are independent; a headline theorem names its laws. Fix: Say in words that the summands, rows or sketches are independent (`iIndepFun`, `IndepFun`), and, for a headline theorem, which law a `HasLaw` hypothesis gives. [§6] item 1
-- **N13** A statistic on the left is the prefix: `integral_`, `variance_`; a mean square has `_sq`. Fix: Rename by §4 N13. [§4.4]
-- **N14** A tail is `measureReal_` for `μ.real {…}`, `measure_` for `μ {…}`. Fix: Rename by the statement's form. [§4.4]
-- **N15** A tail event is named subject first, with two relation tokens; stated positively. Fix: Rename by §4 N15. [§4.4]
+- **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. Fix: State tails in `μ.real`. [statements §2]
+- **D12** A docstring says when summands are independent; a headline theorem names its laws. Fix: Say in words that the summands, rows or sketches are independent (`iIndepFun`, `IndepFun`), and, for a headline theorem, which law a `HasLaw` hypothesis gives. [docstrings] item 1
+- **N13** A statistic on the left is the prefix: `integral_`, `variance_`; a mean square has `_sq`. Fix: Rename by N13. [naming §4]
+- **N14** A tail is `measureReal_` for `μ.real {…}`, `measure_` for `μ {…}`. Fix: Rename by the statement's form. [naming §4]
+- **N15** A tail event is named subject first, with two relation tokens; stated positively. Fix: Rename by N15. [naming §4]
 
 ## Every topic
 
 ### File template
 
-- **F1** Every file starts with the copyright header of the template. [§3]
-- **F2** A file is `module`, its imports, the module docstring, then `@[expose] public section`. [§3]
-- **F3** No `import Mathlib` or `import Mathlib.Tactic`. [§3], §10
-- **F4** A file outside ForMathlib puts its declarations in `namespace NLAlib`. [§3]
-- **F5** No file-level `set_option`. [§3]
-- **F6** Every `set_option maxHeartbeats N in` has a comment saying why. [§3]
-- **F7** No file-level `open Classical` or `open scoped Classical`. [§3]
-- **F8** No file-level `noncomputable section`. [§3]
-- **F9** No file-level `attribute [instance]`. [§7]
-- **F10** (warning) A file has at most about 1000 lines (1500 is the hard ceiling). [§1] rule 8
-- **F11** (warning) A file is named after its topic, never a round, a bundle or a technique. [§1] rule 8
+- **F1** Every file starts with the copyright header of the template. [layout §2]
+- **F2** A file is `module`, its imports, the module docstring, then `@[expose] public section`. [layout §2]
+- **F3** No `import Mathlib` or `import Mathlib.Tactic`. [layout §2]
+- **F4** A file outside ForMathlib puts its declarations in `namespace NLAlib`. [layout §2]
+- **F5** No file-level `set_option`. [layout §2]
+- **F6** Every `set_option maxHeartbeats N in` has a comment saying why. [layout §2]
+- **F7** No file-level `open Classical` or `open scoped Classical`. [layout §2]
+- **F8** No file-level `noncomputable section`. [layout §2]
+- **F9** No file-level `attribute [instance]`. [proofs]
+- **F10** (warning) A file has at most about 1000 lines (1500 is the hard ceiling). [CONTRIBUTING] ground rule 8
+- **F11** (warning) A file is named after its topic, never a round, a bundle or a technique. [CONTRIBUTING] ground rule 8
 
 ### Placement and layers
 
-- **P1** A module imports only its own layer and lower (§2 table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation. [§2]
-- **P2** No file with imports only (no per-directory aggregator). [§2]
-- **P3** An `NLAlib` file never imports `NLAlibScaffold`. [§7]
-- **P8** Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure. [§3]
-- **P9** A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib. [§2]
-- **P10** (warning) A statement lives with its topic, not in a higher layer than its vocabulary. [§8] placement
-- **P12** An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml. [§7]
+- **P1** A module imports only its own layer and lower (the layer table); Krylov never imports Probability, Sketching never Regression, LowRank never Estimation. [layout §1]
+- **P2** No file with imports only (no per-directory aggregator). [layout §1]
+- **P3** An `NLAlib` file never imports `NLAlibScaffold`. [proofs]
+- **P8** Outside ForMathlib a declaration is in `NLAlib`, or is API of a Mathlib hypothesis structure. [layout §2]
+- **P9** A general fact (no NLAlib, matrix or measure vocabulary) lives in ForMathlib. [layout §1]
+- **P10** (warning) A statement lives with its topic, not in a higher layer than its vocabulary. [design] placement
+- **P12** An `NLAlib` file, the root `NLAlib.lean` included, never imports `NLAlibTools`, `NLAlibScaffold` or another `lean_lib` of lakefile.toml. [proofs]
 
 ### Source and proof style
 
-- **S1** No `simp_all`. [§7]
-- **S2** No search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, `aesop?`). [§7]
-- **S3** (warning) `decide` only on tiny finite goals. [§7]
-- **S4** A proof has at most 80 lines. [§7], §10
-- **S5** (warning) A helper two files need is one public lemma, not two private copies. [§3]
-- **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [§7]
-- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [§3]
-- **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [§10]
-- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [§7]
+- **S1** No `simp_all`. [proofs]
+- **S2** No search tactic left in (`exact?`, `apply?`, `rw?`, `simp?`, `aesop?`). [proofs]
+- **S3** (warning) `decide` only on tiny finite goals. [proofs]
+- **S4** A proof has at most 80 lines. [proofs]
+- **S5** (warning) A helper two files need is one public lemma, not two private copies. [layout §2]
+- **S6** No global instance on a Mathlib type, unless it is the one Mathlib would add. [proofs]
+- **S7** A line has at most 100 characters, unless one identifier or a URL makes it long. [layout §2]
+- **S8** `set_option linter.style.longLine false in` only on a declaration with a long line. [layout §2]
+- **S9** No `unsafe`, `partial`, `implemented_by`, `extern`, `set_option debug.…`, kernel option or unchecked `addDeclCore` in the library or lakefile.toml. [proofs]
 
 ### Types and statement shape
 
-- **T1** The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`. [§5.1]
-- **T2** An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`. [§5.1]
-- **T3** Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`. [§5.1]
-- **T4** (warning) Matrix norms in statements are named functions, not `‖A‖`. [§5.1]
-- **T5** (warning) Statements use `ᴴ`, not `ᵀ`. [§5.1]
-- **T8** No statement quantifies over `eigenvectorBasis`. [§5.2]
-- **T9** No proof term inside a statement (`⋯` in the signature). [§5.2]
-- **T10** A bound variable that meets `•` has its type written (`∀ θ : ℝ, …`). [§5.2]
-- **T11** (warning) A two-sided bound is two theorems, not a top-level conjunction. [§5.2]
-- **T12** (warning) An `∃`-index into `eigenvalue` or `singularValues` carries its range. [§5.2]
-- **T13** No hypothesis named `_h…`: an unused hypothesis is dropped. [§5.2]
-- **T15** A lower moment obtained by Jensen from a higher one is not a separate theorem. [§5.2]
+- **T1** The Euclidean norm is `‖WithLp.toLp 2 x‖`, never `√(x ⬝ᵥ x)`. [statements §1]
+- **T2** An `ℝ≥0` quantity in a statement is written with `‖·‖₊`, never `Real.toNNReal`. [statements §1]
+- **T3** Only `Matrix.Norms.L2Operator` is opened, never `…Frobenius` or `…Elementwise`. [statements §1]
+- **T4** (warning) Matrix norms in statements are named functions, not `‖A‖`. [statements §1]
+- **T5** (warning) Statements use `ᴴ`, not `ᵀ`. [statements §1]
+- **T8** No statement quantifies over `eigenvectorBasis`. [statements §2]
+- **T9** No proof term inside a statement (`⋯` in the signature). [statements §2]
+- **T10** A bound variable that meets `•` has its type written (`∀ θ : ℝ, …`). [statements §2]
+- **T11** (warning) A two-sided bound is two theorems, not a top-level conjunction. [statements §2]
+- **T12** (warning) An `∃`-index into `eigenvalue` or `singularValues` carries its range. [statements §2]
+- **T13** No hypothesis named `_h…`: an unused hypothesis is dropped. [statements §2]
+- **T15** A lower moment obtained by Jensen from a higher one is not a separate theorem. [statements §2]
 
 ### Vocabulary
 
-- **V1** Orthonormal columns are `HasOrthonormalCols Q`, never a raw `Qᴴ * Q = 1`. [§5.3]
-- **V2** No truncated subtraction `Fintype.card n - k` in a statement. [§5.3]
-- **V3** A singular-value ratio is `singularGapRatio`, never spelled out. [§5.3]
-- **V4** A squared Frobenius norm is `frobNorm A ^ 2`, never `frobNorm A * frobNorm A`. [§5.3]
-- **V5** No forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, `lambdaMax`, `conditionNumber`). [§5.3]
-- **V6** Every Lean name cited in CONTRIBUTING (outside §4) or Mathlib-deviations.md exists. [§5.3]
-- **V7** (warning) A public definition has a §5.3 row, a Mathlib-deviations entry or a `docs/targets.toml` entry. [§5.3], §8
+- **V1** Orthonormal columns are `HasOrthonormalCols Q`, never a raw `Qᴴ * Q = 1`. [vocabulary]
+- **V2** No truncated subtraction `Fintype.card n - k` in a statement. [vocabulary]
+- **V3** A singular-value ratio is `singularGapRatio`, never spelled out. [vocabulary]
+- **V4** A squared Frobenius norm is `frobNorm A ^ 2`, never `frobNorm A * frobNorm A`. [vocabulary]
+- **V5** No forbidden spelling (`matrixExp`, `matrixLog`, `traceExp`, `lambdaMax`, `conditionNumber`). [vocabulary]
+- **V6** Every Lean name cited in the contributor guides (except the naming guide) or Mathlib-deviations.md exists. [vocabulary]
+- **V7** (warning) A public definition has a vocabulary row, a Mathlib-deviations entry or a `docs/targets.toml` entry. [vocabulary]
 
 ### Bounds
 
-- **B1** A named bound (`…Constant`, `…Bound`, `…Tail`, `…Dim`, `…Factor`) is in docs/constants.toml. [§5.2] rule 2
-- **B2** No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form. [§5.2] rule 3
-- **B3** An asymptotic form says "$O(\ldots)$ suffices" in its docstring. [§5.2] rule 3
-- **B4** An asymptotic form puts its constants first and fixes index types to `Type`. [§5.2] rule 3
-- **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). [§5.2] rule 7
+- **B1** A named bound (`…Constant`, `…Bound`, `…Tail`, `…Dim`, `…Factor`) is in docs/constants.toml. [statements §2] rule 2
+- **B2** No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form. [statements §2] rule 3
+- **B3** An asymptotic form says "$O(\ldots)$ suffices" in its docstring. [statements §2] rule 3
+- **B4** An asymptotic form puts its constants first and fixes index types to `Type`. [statements §2] rule 3
+- **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). [statements §2] rule 7
 
 ### Docstrings
 
-- **D1** A `Result:` declaration starts its docstring with a bold name. [§6] item 1
-- **D2** A docstring states its own hypotheses and notation, never deferring to another statement. [§6] item 1
-- **D3** (warning) A `Result:` conclusion with a fraction is displayed (`$$…$$`). [§6] item 5
-- **D4** No `\frac` in inline mathematics. [§6] item 5
-- **D5** Punctuation after a `$$…$$` display goes inside it. [§6] item 5
-- **D6** No Lean identifier inside `$…$`. [§6] item 5
-- **D7** (warning) Mathematics is LaTeX, not Unicode in backticks. [§6] item 5
-- **D8** No `Proof:` sentence in a library docstring. [§7]
-- **D9** Every file has a module docstring. [§6]
-- **D10** A module docstring starts with `# Title` and has `## Main results`. [§6]
-- **D11** Every name a module docstring lists is declared. [§6]
-- **D13** (warning) A headline theorem says in its docstring when it assumes `[Nonempty n]`. [§6] item 1
+- **D1** A `Result:` declaration starts its docstring with a bold name. [docstrings] item 1
+- **D2** A docstring states its own hypotheses and notation, never deferring to another statement. [docstrings] item 1
+- **D3** (warning) A `Result:` conclusion with a fraction is displayed (`$$…$$`). [docstrings] item 5
+- **D4** No `\frac` in inline mathematics. [docstrings] item 5
+- **D5** Punctuation after a `$$…$$` display goes inside it. [docstrings] item 5
+- **D6** No Lean identifier inside `$…$`. [docstrings] item 5
+- **D7** (warning) Mathematics is LaTeX, not Unicode in backticks. [docstrings] item 5
+- **D8** No `Proof:` sentence in a library docstring. [proofs]
+- **D9** Every file has a module docstring. [docstrings]
+- **D10** A module docstring starts with `# Title` and has `## Main results`. [docstrings]
+- **D11** Every name a module docstring lists is declared. [docstrings]
+- **D13** (warning) A headline theorem says in its docstring when it assumes `[Nonempty n]`. [docstrings] item 1
 
 ### Notation
 
-- **M1** A probability is `\mathbb{P}[E]`, never with round or brace delimiters, never `\Pr`. [§6] item 5
-- **M2** A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`. [§6] item 5
-- **M3** (warning) A theorem about an algorithm writes its output `\mathsf{name}(…)`. [§6] item 5
-- **M4** `\mathsf{x}` is a declaration name or a short name registered in §5.3. [§6] item 5
-- **M6** The Frobenius norm is `\|\mathbf{A}\|_{\mathsf{F}}`. [§6] item 5
-- **M7** Adjoint and transpose are `^{\mathsf{H}}` and `^{\mathsf{T}}`. [§6] item 5
-- **M8** `\varepsilon` and `\varphi`, never `\epsilon` or `\phi`. [§6] item 5
-- **M9** Operator names follow the notation table (`\operatorname{tr}`, `\det`, …). [§6] item 5
-- **M10** Expectation is `\mathbb{E}`. [§6] item 5
-- **M11** A bold Greek matrix is `\mathbf{\Sigma}`. [§6] item 5
-- **M12** Standard LaTeX only: no custom or KaTeX-only macro. [§6] item 5
-- **M13** The `RCLike` field is `\Bbbk`. [§6] item 5
-- **M14** The truncated SVD is `\llbracket\mathbf{A}\rrbracket_k`. [§6] item 5
-- **M15** (warning) A matrix norm has its subscript. [§6] item 5
-- **M16** (warning) Absolute values and cardinalities are `\lvert x \rvert`, not bare bars. [§6] item 5
-- **M17** The Loewner order is `\preceq`. [§6] item 5
-- **M18** (warning) A matrix variable is bold in mathematics. [§6] item 5
+- **M1** A probability is `\mathbb{P}[E]`, never with round or brace delimiters, never `\Pr`. [docstrings] item 5
+- **M2** A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`. [docstrings] item 5
+- **M3** (warning) A theorem about an algorithm writes its output `\mathsf{name}(…)`. [docstrings] item 5
+- **M4** `\mathsf{x}` is a declaration name or a short name registered in the vocabulary. [docstrings] item 5
+- **M6** The Frobenius norm is `\|\mathbf{A}\|_{\mathsf{F}}`. [docstrings] item 5
+- **M7** Adjoint and transpose are `^{\mathsf{H}}` and `^{\mathsf{T}}`. [docstrings] item 5
+- **M8** `\varepsilon` and `\varphi`, never `\epsilon` or `\phi`. [docstrings] item 5
+- **M9** Operator names follow the notation table (`\operatorname{tr}`, `\det`, …). [docstrings] item 5
+- **M10** Expectation is `\mathbb{E}`. [docstrings] item 5
+- **M11** A bold Greek matrix is `\mathbf{\Sigma}`. [docstrings] item 5
+- **M12** Standard LaTeX only: no custom or KaTeX-only macro. [docstrings] item 5
+- **M13** The `RCLike` field is `\Bbbk`. [docstrings] item 5
+- **M14** The truncated SVD is `\llbracket\mathbf{A}\rrbracket_k`. [docstrings] item 5
+- **M15** (warning) A matrix norm has its subscript. [docstrings] item 5
+- **M16** (warning) Absolute values and cardinalities are `\lvert x \rvert`, not bare bars. [docstrings] item 5
+- **M17** The Loewner order is `\preceq`. [docstrings] item 5
+- **M18** (warning) A matrix variable is bold in mathematics. [docstrings] item 5
 
 ### Citations
 
-- **C1** A `Result:` declaration cites `[Key, label]` or says "No printed source.". [§6] item 2
-- **C2** A declaration docstring cites with a label; a bare `[Key]` is for module docstrings only. [§6] item 2
-- **C3** No mathematics inside a citation bracket. [§6] item 5
-- **C4** Every citation-like bracket is one `check_refs.py` parses. [§6]
-- **C5** A bibliography key is `AuthorSurnames` + year. [§6], references.bib
-- **C6** No duplicate bibliography key or DOI. [§6], references.bib
+- **C1** A `Result:` declaration cites `[Key, label]` or says "No printed source.". [docstrings] item 2
+- **C2** A declaration docstring cites with a label; a bare `[Key]` is for module docstrings only. [docstrings] item 2
+- **C3** No mathematics inside a citation bracket. [docstrings] item 5
+- **C4** Every citation-like bracket is one `check_refs.py` parses. [docstrings]
+- **C5** A bibliography key is `AuthorSurnames` + year. [docstrings], references.bib
+- **C6** No duplicate bibliography key or DOI. [docstrings], references.bib
 - **C7** The bibliography is alphabetical by key. references.bib
 - **C8** (warning) Every bibliography entry is cited. references.bib
-- **C9** (warning) A bold-named theorem has a citation or a `Result:` id. [§6] item 2
+- **C9** (warning) A bold-named theorem has a citation or a `Result:` id. [docstrings] item 2
 
 ### Result ids
 
-- **R1** `Result:` ids go on statements, never on definitions or structures. [§6] item 4
-- **R2** No two result ids one or two edits apart. [§6] item 4
+- **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
+- **R2** No two result ids one or two edits apart. [docstrings] item 4
 - **R3** Every id or declaration the explorer names exists. explore README
 
 ### Algorithm tags
 
-- **A1** An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`. [§6] item 4b
-- **A2** `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances. [§6] item 4b
-- **A3** A declaration carries at most one `Algorithm:` tag. [§6] item 4b
+- **A1** An `Algorithm:` tag is the docstring's last line, `Algorithm: <id>` or `Algorithm: <id> (<role>)`, the id a slug and the role `specification` or `run model`. [docstrings] item 4b
+- **A2** `Algorithm:` tags go on definitions, structures and programs, never on theorems or instances. [docstrings] item 4b
+- **A3** A declaration carries at most one `Algorithm:` tag. [docstrings] item 4b
 
 ### Design records
 
-- **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [§8]
+- **G1** A Mathlib-deviations entry has Mathlib, NLAlib, Bridge, Why, Cost, Status. [design]
 
 ### Programs
 
-- **E2** Programs, kernels and implementations are computable. [§5.5]
-- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. [§5.5]
-- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [§5.5]
-- **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [§5.5]
-- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [§5.5]
-- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. [§5.5]
+- **E2** Programs, kernels and implementations are computable. [programs]
+- **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. [programs]
+- **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. [programs]
+- **E6** In the library (NLAlib), only `NLAlib/Computation` defines a `ScalarSem` or an `Interp`. [programs]
+- **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). [programs]
+- **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. [programs]
 
 ### Names
 
-- **N1** Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase. [§4.2]
-- **N2** The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`). [§4.2]
-- **N3** The conclusion part ends at the first `_of_` and names the main relation. [§4.2]
-- **N4** Every library-function token in a name occurs in the statement. [§4.2]
-- **N5** One token per concept: the spellings of §4.3, never a synonym. [§4.2]
-- **N6** A power comes after its argument: `f_sq`, `f_pow`, `f_rpow`. [§4.2]
-- **N7** No source, author, project, quality or role word in a name (`_sharp`, `aux`, `main`). [§4.2]
-- **N8** (review) Right-side tokens only to tell coexisting theorems apart. [§4.2]
-- **N9** A law hypothesis is `_of_hasLaw_<law>`; an interface hypothesis is the namespace. [§4.2]
-- **N10** Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`. [§4.2]
-- **N11** A named bound ends in its kind: `…Constant`, `…Factor`, `…Tail`, `…Bound`, `…Ratio`, `…Dim`. [§4.2]
-- **N12** (review) A rename is listed in a rename map under docs/renames/ (an alias after v0.1). [§4.2]
-- **N17** An asymptotic form is `exists_forall_` + its explicit theorem's name, in the root namespace. [§4.4]
-- **N18** A theorem whose first explicit argument is `hA : A.P` lives in namespace `P` (dot notation). [§4.2]
+- **N1** Case by kind: theorems snake_case, data lowerCamelCase, Props and structures UpperCamelCase. [naming §2]
+- **N2** The first token is the head of the conclusion (or `exists_`, `forall_`, `ae_`, `nonneg`, `pos`). [naming §2]
+- **N3** The conclusion part ends at the first `_of_` and names the main relation. [naming §2]
+- **N4** Every library-function token in a name occurs in the statement. [naming §2]
+- **N5** One token per concept: the spellings of the naming guide, never a synonym. [naming §2]
+- **N6** A power comes after its argument: `f_sq`, `f_pow`, `f_rpow`. [naming §2]
+- **N7** No source, author, project, quality or role word in a name (`_sharp`, `aux`, `main`). [naming §2]
+- **N8** (review) Right-side tokens only to tell coexisting theorems apart. [naming §2]
+- **N9** A law hypothesis is `_of_hasLaw_<law>`; an interface hypothesis is the namespace. [naming §2]
+- **N10** Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`. [naming §2]
+- **N11** A named bound ends in its kind: `…Constant`, `…Factor`, `…Tail`, `…Bound`, `…Ratio`, `…Dim`. [naming §2]
+- **N12** (review) A rename is listed in a rename map under docs/renames/ (an alias after v0.1). [naming §2]
+- **N17** An asymptotic form is `exists_forall_` + its explicit theorem's name, in the root namespace. [naming §4]
+- **N18** A theorem whose first explicit argument is `hA : A.P` lives in namespace `P` (dot notation). [naming §2]
 
-[§1]: ../../CONTRIBUTING.md#1-ground-rules
-[§2]: ../../CONTRIBUTING.md#2-layout
-[§3]: ../../CONTRIBUTING.md#3-file-template
-[§4.2]: ../../CONTRIBUTING.md#42-rules-for-every-topic
-[§4.4]: ../../CONTRIBUTING.md#44-rules-for-one-topic
-[§5.1]: ../../CONTRIBUTING.md#51-types
-[§5.2]: ../../CONTRIBUTING.md#52-shape
-[§5.3]: ../../CONTRIBUTING.md#53-vocabulary
-[§5.5]: ../../CONTRIBUTING.md#55-programs
-[§6]: ../../CONTRIBUTING.md#6-docstrings-and-citations
-[§7]: ../../CONTRIBUTING.md#7-proofs-and-what-each-library-may-contain
-[§8]: ../../CONTRIBUTING.md#8-designing-new-material
-[§10]: ../../CONTRIBUTING.md#10-building-without-running-out-of-memory
+[CONTRIBUTING]: ../../CONTRIBUTING.md#ground-rules
+[design]: ../../docs/contributing/design.md
+[docstrings]: ../../docs/contributing/docstrings.md
+[layout §1]: ../../docs/contributing/layout.md#1-folders-and-layers
+[layout §2]: ../../docs/contributing/layout.md#2-file-template
+[naming §2]: ../../docs/contributing/naming.md#2-rules-for-every-topic
+[naming §4]: ../../docs/contributing/naming.md#4-rules-by-subject
+[programs]: ../../docs/contributing/programs.md
+[proofs]: ../../docs/contributing/proofs.md
+[statements §1]: ../../docs/contributing/statements.md#1-types
+[statements §2]: ../../docs/contributing/statements.md#2-shape
+[vocabulary]: ../../docs/contributing/vocabulary.md

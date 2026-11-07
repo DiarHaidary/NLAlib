@@ -25,9 +25,10 @@ It distinguishes exact arithmetic, rounding contracts and verified machine imple
 
 ## Contributing
 
-[CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide: setup, layout and import rules,
-names, statement conventions and vocabulary, docstrings and citations, the checks
-(`bash scripts/stage_check.sh` before every PR), and how to build without exhausting memory.
+[CONTRIBUTING.md](CONTRIBUTING.md) is the contributor guide: setup, the ground rules, the checks
+(`bash scripts/stage_check.sh` before every PR) and how to build without exhausting memory. It
+links the topic guides in [`docs/contributing/`](docs/contributing/): layout, names, statements,
+vocabulary, programs, docstrings, proofs, design notes and the checks.
 AI agents also follow [AGENTS.md](AGENTS.md).
 
 ## License

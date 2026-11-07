@@ -1,4 +1,4 @@
-# Allowlist of scripts/check_names.py (CONTRIBUTING §4.5). One entry per (declaration, rule) the
+# Allowlist of scripts/check_names.py (docs/contributing/naming.md §5). One entry per (declaration, rule) the
 # checker misreads, with a one-line reason saying why the grammar has no readable form for the
 # statement or why the checker's reading is wrong. Reviewed like code; never the fix for a real
 # violation. The checker fails on a stale entry.

@@ -389,7 +389,8 @@ $T_{2(q-1)}((1 + \gamma)/(1 - \gamma))^{-2} =
 \operatorname{sech}^2(4(q-1)\operatorname{artanh}\sqrt{\gamma}) \le
 \operatorname{sech}^2(4(q-1)\sqrt{\gamma}) =
 4e^{-8(q-1)\sqrt{\gamma}}/(1 + e^{-8(q-1)\sqrt{\gamma}})^2$; every RBKI bound of this file drops
-the factor $(1 + e^{-8(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$ (CONTRIBUTING §5.2
+the factor $(1 + e^{-8(q-1)\sqrt{\gamma}})^2 \le 4$, which tends to $1$
+(docs/contributing/statements.md §2
 rule 7).
 Asymptotic form:
 `NLAlib.exists_forall_integral_specNorm_sub_rbki_sq_le_of_singularGapRatio_pos_of_hasLaw_gaussianMatrix`.

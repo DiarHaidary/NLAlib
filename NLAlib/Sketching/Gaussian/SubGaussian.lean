@@ -32,7 +32,7 @@ $2 e^{-(1/36) \lvert k \rvert \min(\varepsilon^2/c^2, \varepsilon/c)}$, the cons
 $\langle \mathbf{X}_i, \mathbf{x} \rangle^2 - 1$), and, for rows with proxy $1$ and fourth
 directional moments at most $3$, the tail
 $2 e^{-\lvert k \rvert (\varepsilon^2/4 - \varepsilon^3/6)}$ of Dasgupta and Gupta (Achlioptas's
-argument; incomparable, CONTRIBUTING §5.2 rule 4). It has the
+argument; incomparable, docs/contributing/statements.md §2 rule 4). It has the
 JL moment property at $p = 2$ and, from the sub-exponential tail, at every $p > 0$, so
 $O(c^2\log(1/\delta)/\varepsilon^2)$ rows give it at $p = \max(2, \log(1/\delta))$; sign
 sketches are the case $c = 1$ (`NLAlib.isSubgaussianVector_of_hasLaw_rademacherVector`,
@@ -474,7 +474,8 @@ the Gaussian sketch's
 `NLAlib.measureReal_abs_sum_sq_div_card_sub_one_ge_le_of_iIndepFun` at
 $Y_i = \langle \mathbf{X}_i, \mathbf{x} \rangle$.
 [Woodruff2014, §2.1, after Theorem 6] attributes this to Achlioptas for signs. Incomparable
-with `NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$ (CONTRIBUTING §5.2 rule 4): this
+with `NLAlib.hasJLProperty_of_isSubgaussianVector` at $c = 1$
+(docs/contributing/statements.md §2 rule 4): this
 one is better for $\varepsilon \lesssim 1.43$ (sixteen times the exponent at small
 $\varepsilon$), that one beyond, and needs no fourth-moment hypothesis.
 Result: jl-subgaussian -/

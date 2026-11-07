@@ -1,4 +1,4 @@
-# Allowlist of scripts/check_rules.py (CONTRIBUTING §9). One entry per false positive: the rule id,
+# Allowlist of scripts/check_rules.py (docs/contributing/checks.md §1). One entry per false positive: the rule id,
 # the declaration (`decl`, its full name) or, for a file-level rule, the file (`path`), and a
 # one-line reason saying why the check misreads it. Reviewed like code; never the fix for a real
 # violation, which goes in the ratchet (`scripts/rules_baseline.json`) until it is fixed. The

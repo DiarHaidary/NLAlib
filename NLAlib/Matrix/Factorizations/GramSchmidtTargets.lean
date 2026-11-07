@@ -15,7 +15,8 @@ The target statement of Gram–Schmidt as a program, `NLAlib.MatrixFreeGramSchmi
 tree `NLAlib.gramSchmidtProg.compiled` computes `NLAlib.gramSchmidtQ` in the matrix-free model,
 within the counts `NLAlib.gramSchmidtCount` and $Nk + 3$ cells. The statement is the library's,
 reviewed and registered in `docs/targets.toml`; a change to it, or to a definition it unfolds to,
-needs the maintainer's approval (CONTRIBUTING §11). Its proof, `NLAlib.matrixFreeGramSchmidt`, is
+needs a maintainer's approval (`docs/contributing/programs.md`). Its proof,
+`NLAlib.matrixFreeGramSchmidt`, is
 in `NLAlib/Matrix/Factorizations/GramSchmidtProgram.lean`. Design: `docs/design/Computation.md`
 (F1, F8).
 

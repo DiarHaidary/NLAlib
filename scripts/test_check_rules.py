@@ -52,15 +52,15 @@ BIB = """% header
 """
 CONTRIB = """# Contributing
 
-## 4. Names
+The bridge `foo_bar_baz` exists.
+"""
+NAMING = """# Names
 
 `made_up_example_name` is a pattern here.
-
-## 5. Statements
+"""
+VOCABULARY = """# Vocabulary
 
 | short algorithm names in `\\mathsf` | `\\mathsf{gn}` for `generalizedNystrom` | — |
-
-The bridge `foo_bar_baz` exists.
 """
 DEVIATIONS = """# Deviations
 
@@ -82,14 +82,15 @@ latex = '1'
 lean_body = 'fooConstant : ℝ := 1'
 body_hash = "0"
 """
-CITED = ("/-- **Foo.** A result. [Abc2000, Theorem 1]; [Def2001, §2].\nResult: foo-result -/\n"
+CITED = ("/-- **Foo.** A result. [Abc2000, Theorem 1]; [Def2001, layout §1].\nResult: foo-result -/\n"
          "theorem foo : True := trivial")
 
 
 def make_root(tmp, files=None, docs=None):
     root = Path(tmp)
     base = {'NLAlib/Matrix/A.lean': lean(CITED), 'docs/references.bib': BIB,
-            'CONTRIBUTING.md': CONTRIB, 'docs/design/Mathlib-deviations.md': DEVIATIONS,
+            'CONTRIBUTING.md': CONTRIB, 'docs/contributing/naming.md': NAMING,
+            'docs/contributing/vocabulary.md': VOCABULARY, 'docs/design/Mathlib-deviations.md': DEVIATIONS,
             'docs/constants.toml': CONSTANTS}
     base.update(docs or {})
     base.update(files or {})
@@ -183,7 +184,7 @@ FIX = {
     'S6': ([decl('Matrix.instFoo', ': Foo (Matrix m n ℝ)', kind='instance')],
            [decl('NLAlib.instFoo', ': Foo (specNorm A)', kind='instance', deps=['NLAlib.specNorm'])]),
     'S7': (CITED.replace('A result.', 'A result ' + 'x ' * 50 + '.'),
-           CITED.replace('[Def2001, §2].', '[Def2001, §2],\n`' + 'x' * 110 + '`.')),
+           CITED.replace('[Def2001, layout §1].', '[Def2001, layout §1],\n`' + 'x' * 110 + '`.')),
     'S9': ('/-- Doc. -/\nunsafe def anything.{u} (α : Sort u) : α := anything α\n\n'
            '-- why\nset_option debug.skipKernelTC true in\n/-- Doc. -/\ntheorem t : False := anything _',
            {'NLAlib/Matrix/A.lean': lean('/-- A partial isometry; `unsafe`, `partial` in prose. -/\n'
@@ -218,7 +219,7 @@ FIX = {
            [decl('NLAlib.t', ': singularGapRatio A i j ≤ 1')]),
     'V4': ([decl('NLAlib.t', ': frobNorm A * frobNorm A = 0')], [decl('NLAlib.t', ': frobNorm A ^ 2 = 0')]),
     'V5': ('/-- Doc. -/\ndef matrixExp : ℝ := 0', '/-- Doc. -/\ndef specNorm : ℝ := 0'),
-    'V6': ({'CONTRIBUTING.md': CONTRIB + '\nAnd `missing_lemma_here`.\n'}, {}),
+    'V6': ({'docs/contributing/vocabulary.md': VOCABULARY + '\nAnd `missing_lemma_here`.\n'}, {}),
     'V7': ([decl('NLAlib.newThing', ': ℝ', kind='def')], [decl('NLAlib.generalizedNystrom', ': ℝ', kind='def')]),
     'B1': ('/-- Doc. -/\ndef barConstant : ℝ := 1', '/-- Doc. -/\ndef fooConstant : ℝ := 1'),
     'B2': ([decl('NLAlib.t', ': ∃ C : ℝ, 0 < C')], [decl('NLAlib.exists_forall_t', ': ∃ C : ℝ, 0 < C')]),
@@ -287,16 +288,16 @@ FIX = {
             CITED.replace('A result.', 'A result $\\mathbf{0} \\preceq \\mathbf{A}$.')),
     'M18': ([decl('NLAlib.t', '(A : Matrix m n ℝ) : A = A', doc='$A = A$.')],
             [decl('NLAlib.t', '(A : Matrix m n ℝ) : A = A', doc='$\\mathbf{A} = \\mathbf{A}$.')]),
-    'C1': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', ''),
-           CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', ' No printed source.')),
+    'C1': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, layout §1].', ''),
+           CITED.replace(' [Abc2000, Theorem 1]; [Def2001, layout §1].', ' No printed source.')),
     'C2': (CITED.replace('Theorem 1', '').replace(', ]', ']'), CITED),
     'C3': (CITED.replace('Theorem 1', 'Theorem 1, $k = 2$'), CITED),
-    'C4': (CITED.replace('[Def2001, §2]', '[Smith et al. 2001]'), CITED),
+    'C4': (CITED.replace('[Def2001, layout §1]', '[Smith et al. 2001]'), CITED),
     'C5': ({'docs/references.bib': BIB + '\n@book{abc_2002,\n  title = {C}\n}\n'}, {}),
     'C6': ({'docs/references.bib': BIB.replace('10.1/b', '10.1/a')}, {}),
     'C7': ({'docs/references.bib': BIB.replace('Abc2000', 'Xyz2000')}, {}),
     'C8': ({'docs/references.bib': BIB + '\n@book{Ghi2002,\n  title = {C}\n}\n'}, {}),
-    'C9': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, §2].', '').replace('\nResult: foo-result', ''), CITED),
+    'C9': (CITED.replace(' [Abc2000, Theorem 1]; [Def2001, layout §1].', '').replace('\nResult: foo-result', ''), CITED),
     'A1': ('/-- **A def.**\nAlgorithm: Bad_Id -/\ndef bar : ℝ := 0',
            '/-- **A def.**\nAlgorithm: some-algo (specification) -/\ndef bar : ℝ := 0'),
     'A2': ('/-- A docstring.\nAlgorithm: some-algo -/\ntheorem foo : True := trivial',
@@ -352,7 +353,7 @@ class RuleTests(unittest.TestCase):
 
     def test_v7_target_registry_records(self):
         # a registered target, a registered tree and its program, and a targets file's count
-        # need no vocabulary row (§5.5)
+        # need no vocabulary row (programs)
         reg = ('[[tree]]\nname = "NLAlib.fooProg.compiled"\n\n'
                '[[target]]\nname = "NLAlib.MatrixFreeFoo"\n')
         ds = [decl('NLAlib.fooProg', ': ℕ', kind='def'), decl('NLAlib.MatrixFreeFoo', ': Prop', kind='def'),
@@ -365,10 +366,10 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(len(v7(None)), 2)  # the count is recorded by its file, not the registry
 
     def test_layer_table_matches_contributing(self):
-        # CONTRIBUTING §2's layout block and check_rules.LAYER give each top-level folder one layer
+        # the layout guide's folder block and check_rules.LAYER give each top-level folder one layer
         import re
-        text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
-        block = text[text.index('## 2. Layout'):text.index('NLAlibTools/')]
+        text = (Path(__file__).resolve().parent.parent / 'docs/contributing/layout.md').read_text()
+        block = text[text.index('## 1. Folders and layers'):text.index('NLAlibTools/')]
         table, folder = {}, None
         for line in block.splitlines():
             m = re.match(r'  (\w+)/', line)
@@ -397,10 +398,10 @@ class RuleTests(unittest.TestCase):
                           (11, True, 'NLAlib.Foo')])
 
     def test_every_rule_is_cited_where_it_is_stated(self):
-        # CONTRIBUTING §9.2: each rule's prose cites its id, as its messages do; and every id
-        # CONTRIBUTING states (in brackets, or a row of the §4 tables) is in rules.toml
+        # checks guide layout §1: each rule's prose cites its id, as its messages do; and every id the
+        # guides state (in brackets, or a row of the naming tables) is in rules.toml
         import re
-        text = (Path(__file__).resolve().parent.parent / 'CONTRIBUTING.md').read_text()
+        text = '\n'.join(check_rules.guide_texts(Path(__file__).resolve().parent.parent).values())
         cited = {x.strip() for m in re.finditer(r'\[((?:[A-Z]\d+)(?:,\s*[A-Z]\d+)*)\]', text)
                  for x in m.group(1).split(',')} | set(re.findall(r'^\| ([A-Z]\d+) \|', text, re.M))
         self.assertEqual(set(check_rules.SPECS) - cited, set(), 'in rules.toml, not in CONTRIBUTING')

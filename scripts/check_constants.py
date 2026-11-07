@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Named bounds show their current value in every docstring that uses them (CONTRIBUTING §5.2).
+"""Named bounds show their current value in every docstring that uses them (docs/contributing/statements.md §2).
 
 The registry `docs/constants.toml` has one `[[constant]]` entry per named constant, tail function
 or sample size of the library: its Lean `name`, `kind`, `file`, explicit `args` (Lean order),

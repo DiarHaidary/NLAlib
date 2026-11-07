@@ -6,12 +6,13 @@
     python3 scripts/check_rules.py [DATA.json] --update-baseline [--force]
 
 Every rule has a stable id: a letter for its area and a number, as the naming rules N1–N18
-(`scripts/check_names.py`, CONTRIBUTING §4). Areas: F file template (§3), P placement and layers
-(§2, §8), S source and proof style (§7, §10), T types and statement shape (§5.1, §5.2), V
-vocabulary (§5.3), B bounds and asymptotic forms (§5.2), D docstrings (§6), M mathematical
-notation (§6 item 5), C citations and the bibliography (§6), R `Result:` ids (§6), G design
-records (§8, §9), E programs (§5.5; E2–E4 and E9 are checked on the built library by
-`scripts/Programs.lean` and `scripts/Targets.lean`, `check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
+(`scripts/check_names.py`). Areas, with the guide of docs/contributing that states them: F file
+template (layout), P placement and layers (layout, design), S source and proof style (proofs),
+T types and statement shape (statements), V vocabulary (vocabulary), B bounds and asymptotic
+forms (statements), D docstrings, M mathematical notation, C citations, R `Result:` ids and
+A algorithm tags (docstrings), G design records (design), E programs (programs; E2–E4 and E9 are
+checked on the built library by `scripts/Programs.lean` and `scripts/Targets.lean`,
+`check = "lean"` in rules.toml). The rule data, severity, statement, fix, scope and section, is in
 `docs/rules/rules.toml`, the single source this script, `check_names.py` and
 `scripts/gen_rules_md.py` read; this file holds the checks. `--list` prints every rule.
 
@@ -57,10 +58,10 @@ ALLOW = ROOT / 'scripts' / 'rules_allow.toml'
 LIBS = ('NLAlib', 'NLAlibScaffold')
 BIB = 'docs/references.bib'
 DEVIATIONS = 'docs/design/Mathlib-deviations.md'
+GUIDES = 'docs/contributing'  # the topic guides; CONTRIBUTING.md is their hub
 
-# CONTRIBUTING §2's layer table (amended 2026-10-25 to match the import graph): Probability imports
-# Krylov, Regression imports Sketching, Estimation imports LowRank; LowerBounds (2026-10-25) is the
-# top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
+# The layer table of docs/contributing/layout.md §1: Probability imports Krylov, Regression imports
+# Sketching, Estimation imports LowRank; LowerBounds is the top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
 # it gets files.
 LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
          'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
@@ -178,7 +179,8 @@ class Ctx:
                 self.files[rel] = (text, leansrc.parse(text))
         self.lib_files = {p: v for p, v in self.files.items() if p.startswith('NLAlib/')}
         self.bib = (root / BIB).read_text()
-        self.contrib = (root / 'CONTRIBUTING.md').read_text()
+        self.guides = guide_texts(root)
+        self.contrib = '\n'.join(self.guides.values())
         self.deviations = (root / DEVIATIONS).read_text()
         self.registry = tomllib.loads((root / 'docs/constants.toml').read_text())['constant']
         self.reg_names = {c['name'] for c in self.registry}
@@ -218,8 +220,14 @@ class Ctx:
         return leansrc.strip_comments(self.files[p][0]).split('\n')
 
 
+def guide_texts(root):
+    """{path: text} of the contributor guide: `CONTRIBUTING.md` and `docs/contributing/*.md`."""
+    paths = [root / 'CONTRIBUTING.md'] + sorted((root / GUIDES).glob('*.md'))
+    return {p.relative_to(root).as_posix(): p.read_text() for p in paths if p.exists()}
+
+
 def target_registry_names(root):
-    """The definitions `docs/targets.toml` records (§5.5): its targets and trees, and the program
+    """The definitions `docs/targets.toml` records (programs): its targets and trees, and the program
     each tree compiles (`cgProg` for `cgProg.compiled`)."""
     path = root / 'docs/targets.toml'
     if not path.exists():
@@ -230,7 +238,7 @@ def target_registry_names(root):
 
 
 def short_mathsf_names(contrib):
-    """Registered short `\\mathsf` names (CONTRIBUTING §5.3 row "short algorithm names"):
+    """Registered short `\\mathsf` names (the vocabulary row "short algorithm names"):
     {short: Lean name}. The row lists pairs `` `\\mathsf{gn}` for `generalizedNystrom` ``."""
     out = {}
     for row in contrib.split('\n'):
@@ -244,7 +252,7 @@ def public_src(c):
     return [(p, d) for p, d in c.src_decls if not d['private'] and d['full']]
 
 
-# ================================================================== F: file template (§3)
+# ================================================================== F: file template (layout §2)
 HEADER = re.compile(r'^/-\nCopyright \(c\) \d{4} [^\n]+\. All rights reserved\.\n'
                     r'Released under Apache 2\.0 license as described in the file LICENSE\.\n'
                     r'Authors: \S[^\n]*\n-/$')
@@ -359,7 +367,7 @@ def p_layer(c):
                 continue
             if me not in LAYER or th not in LAYER:
                 unknown = me if me not in LAYER else th
-                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in LAYER (§2)'))
+                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in LAYER (layout §1)'))
                 continue
             if LAYER[th] > LAYER[me] or (me == 'ForMathlib' and th != 'ForMathlib'):
                 out.append(V('P1', p, ln, '(file)', f'{me} imports {mod}'))
@@ -797,7 +805,7 @@ def t_jensen_corollary(c):
     return out
 
 
-# ================================================================== V: vocabulary (§5.3)
+# ================================================================== V: vocabulary (vocabulary)
 @rule('V1')
 def v_raw_ortho(c):
     return [V('V1', c.path_of(d), d['line'], d['name']) for d in public_thms(c)
@@ -850,11 +858,6 @@ def mathlib_names(c):
     return c._mlnames
 
 
-def contrib_without_names_section(text):
-    """CONTRIBUTING without §4, whose name examples are patterns, not declarations."""
-    return re.sub(r'^## 4\. Names\n.*?(?=^## 5\.)', '', text, flags=re.S | re.M)
-
-
 @rule('V6')
 def v_stale_names(c):
     if not c.mathlib or not c.mathlib.exists():
@@ -863,10 +866,10 @@ def v_stale_names(c):
     local = set(c.src_short) | {d['name'].split('.')[-1] for p, (t, x) in c.files.items()
                                 for d in x['decls'] if d['name']}
     out = []
-    for path, text in (('CONTRIBUTING.md', contrib_without_names_section(c.contrib)),
-                       (DEVIATIONS, c.deviations)):
-        full = c.contrib if path == 'CONTRIBUTING.md' else c.deviations
-        for row in text.split('\n'):
+    # the naming guide's examples are patterns, not declarations
+    texts = [(p, t) for p, t in c.guides.items() if p != f'{GUIDES}/naming.md']
+    for path, full in texts + [(DEVIATIONS, c.deviations)]:
+        for row in full.split('\n'):
             for tok in re.findall(r'`([^`]+)`', row):
                 if re.search(r'/|\.(py|lean|toml|md|json|mjs|sh|bib)\b', tok):
                     continue  # a path or a file name, not a declaration
@@ -895,7 +898,7 @@ def v_unrecorded(c):
     return out
 
 
-# ================================================================== B: bounds (§5.2)
+# ================================================================== B: bounds (statements §2)
 BOUND_NAME = re.compile(r'(Constant|Bound|Tail|Dim|Factor|Size|Rows|Rate|Exponent|Threshold)$')
 
 
@@ -956,7 +959,7 @@ def b_asym_missing(c):
     return out
 
 
-# ================================================================== D: docstrings (§6)
+# ================================================================== D: docstrings (docstrings)
 @rule('D1')
 def d_bold(c):
     return [V('D1', p, d['line'], d['full']) for p, d in public_src(c)
@@ -1118,7 +1121,7 @@ def d_nonempty_omitted(c):
     return out
 
 
-# ================================================================== M: notation (§6 item 5)
+# ================================================================== M: notation (docstrings item 5)
 def math_rule(rid, pat):
     rx = re.compile(pat)
 
@@ -1243,7 +1246,7 @@ def m_bare_matrix(c):
     return out
 
 
-# ================================================================== C: citations (§6)
+# ================================================================== C: citations (docstrings)
 @rule('C1')
 def c_result_cited(c):
     return [V('C1', p, d['line'], d['full']) for p, d in public_src(c)
@@ -1324,7 +1327,7 @@ def c_headline(c):
             and not CITE.search(d['doc']) and not has_result(d['doc'])]
 
 
-# ================================================================== R: result ids (§6)
+# ================================================================== R: result ids (docstrings)
 def prop_instance(d):
     """An instance of a Prop-valued class (`isLeftUnitarilyInvariant_haarFrame`) states a result."""
     return d['kind'] == 'instance' and re.match(r'(is|has)[A-Z]', d['full'].split('.')[-1])
@@ -1407,7 +1410,7 @@ def r_orphan(c):
     return out
 
 
-# ================================================================== A: algorithm tags (§6 item 4b)
+# ================================================================== A: algorithm tags (docstrings item 4b)
 def algorithm_tag_violations(c, rid):
     """The `Algorithm:` tag problems of rule `rid`, by scripts/check_refs.py's check."""
     from check_refs import algorithm_tag_problems
@@ -1453,7 +1456,7 @@ def g_deviation_fields(c):
     return out
 
 
-# ================================================================== E: programs (§5.5)
+# ================================================================== E: programs (programs)
 # E2–E4 and E9 need Lean's types and are checked by scripts/Programs.lean and scripts/Targets.lean
 # (`check = "lean"`); E1 is retired (docs/design/Computation.md, F9).
 COMPUTATION = 'NLAlib/Computation'
@@ -1544,7 +1547,7 @@ def load_baseline(path):
 
 
 def write_baseline(path, counts):
-    data = {'_comment': 'Ratchet of scripts/check_rules.py (CONTRIBUTING §9): per error rule and file, '
+    data = {'_comment': 'Ratchet of scripts/check_rules.py (docs/contributing/checks.md §1): per error rule and file, '
                         'the violations that existed when the rule became checked. Counts may only '
                         'fall; regenerate with `python3 scripts/check_rules.py DATA.json '
                         '--update-baseline`.',

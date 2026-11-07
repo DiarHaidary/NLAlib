@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stage checks on the fully proved part of the library (CONTRIBUTING §9), usable while later
+# Stage checks on the fully proved part of the library (CONTRIBUTING, "Pull requests and checks"), usable while later
 # skeletons still contain `sorry`.
 #
 # Usage: scripts/stage_check.sh [EXCLUDE_REGEX]
@@ -20,7 +20,7 @@
 # (scripts/check_rules.py, by rule id, the naming rules N1–N18 included, on an extraction of those
 # modules) and the duplicate-statement report (which never fails the script). Logs go to $TMPDIR
 # (default /tmp). Run from the repository root; never while another build is running
-# (CONTRIBUTING §10).
+# (CONTRIBUTING, "Building without running out of memory").
 set -euo pipefail
 tmp="${TMPDIR:-/tmp}/nlalib-stage-check"
 mkdir -p "$tmp"

@@ -103,7 +103,7 @@ discharges the new hypothesis by `rfl`).
 5. `scripts/Targets.lean`'s `models` list does not yet name `MatrixFreeRoundedProb` (a check
    script, AGENTS.md rule 1); it needs the entry when the first target concludes it (S1d).
 
-**Re-pin.** By the documented path (CONTRIBUTING §5.5, `docs/targets.toml` header):
+**Re-pin.** By the documented path (docs/contributing/programs.md, `docs/targets.toml` header):
 `TARGETS_UPDATE=1 lake env lean scripts/Targets.lean` rewrote the closure hashes, then
 `sha256sum docs/targets.toml > docs/targets.approved` under the approval given with the sheet
 (the S1 change re-pins every target, §4.5, §8.3). Only the nine target closure hashes changed; the
