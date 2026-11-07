@@ -44,6 +44,59 @@ variable {n : ℕ}
 
 /-! ### Stagnation implies support -/
 
+/-- A weighted Paley–Zygmund bound, with the second moment and the event bound supplied. -/
+private theorem paley_zygmund_chain {κ M E F G Wsub W t : ℝ} (hsq1 : 1 ≤ (κ * M * E) ^ 2)
+    (hPZ : (1 - t) ^ 2 * E ^ 2 ≤ F * Wsub) (hFG : F * G ^ 2 ≤ κ ^ 2) (hWsub : Wsub ≤ W)
+    (hWsub0 : 0 ≤ Wsub) : (1 - t) ^ 2 * G ^ 2 ≤ κ ^ 4 * M ^ 2 * W := by
+  calc (1 - t) ^ 2 * G ^ 2 ≤ (1 - t) ^ 2 * G ^ 2 * (κ * M * E) ^ 2 :=
+        le_mul_of_one_le_right (by positivity) hsq1
+    _ = (κ ^ 2 * M ^ 2 * G ^ 2) * ((1 - t) ^ 2 * E ^ 2) := by ring
+    _ ≤ (κ ^ 2 * M ^ 2 * G ^ 2) * (F * Wsub) := mul_le_mul_of_nonneg_left hPZ (by positivity)
+    _ = (κ ^ 2 * M ^ 2) * (F * G ^ 2) * Wsub := by ring
+    _ ≤ (κ ^ 2 * M ^ 2) * κ ^ 2 * Wsub :=
+        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hFG (by positivity)) hWsub0
+    _ ≤ (κ ^ 2 * M ^ 2) * κ ^ 2 * W := mul_le_mul_of_nonneg_left hWsub (by positivity)
+    _ = κ ^ 4 * M ^ 2 * W := by ring
+
+/-- An event `t E < 1 / a ^ k` for a moment `E ≥ 1 / (κ (αθψ)^k)` lies in the disk of radius
+`αθ (κ/t)^{1/k} ψ`. -/
+private theorem le_radius_of_lt_inv_pow {a E t κ α θ ψ : ℝ} {k : ℕ} (hk : 0 < k) (ha : 0 < a)
+    (ht0 : 0 < t) (hκ0 : 0 ≤ κ) (hα : 0 ≤ α) (hθ : 0 ≤ θ) (hψ : 0 ≤ ψ)
+    (hone : 1 ≤ κ * (α * θ * ψ) ^ k * E) (hi : t * E < 1 / a ^ k) :
+    a ≤ α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ := by
+  have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
+  have hM0 : 0 ≤ (α * θ * ψ) ^ k := pow_nonneg (mul_nonneg (mul_nonneg hα hθ) hψ) _
+  have hκM : 0 < κ * (α * θ * ψ) ^ k := by
+    rcases (mul_nonneg hκ0 hM0).eq_or_lt with h | h
+    · rw [← h, zero_mul] at hone; linarith
+    · exact h
+  have h1 : t < κ * (α * θ * ψ) ^ k * (1 / a ^ k) := by
+    have h2 : t ≤ t * (κ * (α * θ * ψ) ^ k * E) := le_mul_of_one_le_right ht0.le hone
+    have h3 : t * (κ * (α * θ * ψ) ^ k * E) = κ * (α * θ * ψ) ^ k * (t * E) := by ring
+    have h4 : κ * (α * θ * ψ) ^ k * (t * E) < κ * (α * θ * ψ) ^ k * (1 / a ^ k) :=
+      mul_lt_mul_of_pos_left hi hκM
+    linarith
+  have hak : 0 < a ^ k := pow_pos ha k
+  have h6 : t * a ^ k < κ * (α * θ * ψ) ^ k := by
+    have h7 := mul_lt_mul_of_pos_right h1 hak
+    have h8 : κ * (α * θ * ψ) ^ k * (1 / a ^ k) * a ^ k = κ * (α * θ * ψ) ^ k := by
+      field_simp
+    linarith
+  have h5 : a ^ k ≤ (α * θ * ψ) ^ k * (κ / t) := by
+    have h8 : a ^ k < κ * (α * θ * ψ) ^ k / t := (lt_div_iff₀ ht0).mpr (by rw [mul_comm]; exact h6)
+    rw [show (α * θ * ψ) ^ k * (κ / t) = κ * (α * θ * ψ) ^ k / t by ring]
+    exact h8.le
+  have hR0 : 0 ≤ α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ :=
+    mul_nonneg (mul_nonneg (mul_nonneg hα hθ) (Real.rpow_nonneg (div_nonneg hκ0 ht0.le) _)) hψ
+  have hpowR : (α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ) ^ k = (α * θ * ψ) ^ k * (κ / t) := by
+    have hc : ((κ / t) ^ ((k : ℝ)⁻¹)) ^ k = κ / t := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul (div_nonneg hκ0 ht0.le), inv_mul_cancel₀ hkR,
+        Real.rpow_one]
+    rw [show α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ = (α * θ * ψ) * (κ / t) ^ ((k : ℝ)⁻¹) by ring,
+      mul_pow, hc]
+  rw [← pow_le_pow_iff_left₀ ha.le hR0 hk.ne', hpowR]
+  exact h5
+
 /-- **Stagnation implies support**: let $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$ with $\mathbf{V}$ invertible, $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and
 last-row weights $w$; let the $k$ shifts `ss` be $\theta$-optimal Ritz values of $\mathbf{H}$,
@@ -79,7 +132,84 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
         ∑ i ∈ Finset.univ.filter (fun i => ‖d i - r‖ ≤ α * θ *
           (pseudoConditionNumber V / t) ^ ((ss.length : ℝ)⁻¹) *
             hessenbergPotential ss.length H), lastRowWeights V i := by
-  sorry
+  set k := ss.length with hkdef
+  set κ := pseudoConditionNumber V with hκdef
+  set ψ := hessenbergPotential k H with hψdef
+  set p : Polynomial ℂ := (Polynomial.X - Polynomial.C r) ^ k with hpdef
+  have hkpos : 0 < k := List.length_pos_of_mem hr.1
+  have hkR : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hkpos.ne'
+  have hκ0 : 0 ≤ κ := mul_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
+  have hdr : ∀ i, d i ≠ r := fun i => hd i r hr.1
+  have hpeval : ∀ i, p.eval (d i) = (d i - r) ^ k := fun i => by
+    simp [hpdef]
+  have hnz : ∀ i, p.eval (d i) ≠ 0 := fun i => by
+    rw [hpeval]; exact pow_ne_zero _ (sub_ne_zero.mpr (hdr i))
+  have hunit : IsUnit (Polynomial.aeval H p) := by
+    rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
+    exact (hV.mul (Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun i =>
+      isUnit_iff_ne_zero.mpr (hnz i)))).mul
+      ((Matrix.isUnit_iff_isUnit_det _).mpr (by
+        rw [Matrix.det_nonsing_inv]; exact ((Matrix.isUnit_iff_isUnit_det V).mp hV).ringInverse))
+  have hinv := inv_aeval_eq_mul_diagonal_mul_inv hV hHV hnz
+  have hsq := sum_lastRowWeights_mul_sq_le hV (fun i => (p.eval (d i))⁻¹)
+  rw [← hinv] at hsq
+  have hpowinv : (Polynomial.aeval H p)⁻¹ =
+      (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k := by
+    have h1 : Polynomial.aeval H p = (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) ^ k := by
+      simp [hpdef, map_pow, Algebra.algebraMap_eq_smul_one]
+    rw [h1, Matrix.inv_pow']
+  have hNs : ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ * (ξ * ψ) ^ k ≤ 1 := by
+    rw [hpowinv]; exact hstag
+  set N := ‖WithLp.toLp 2 ((Polynomial.aeval H p)⁻¹ (Fin.last n))‖ with hNdef
+  have hN0 : 0 ≤ N := norm_nonneg _
+  set x : Fin (n + 1) → ℝ := fun i => 1 / ‖d i - r‖ ^ k with hxdef
+  have hx0 : ∀ i, 0 ≤ x i := fun i => by simp only [hxdef]; positivity
+  have hgx : ∀ i, ‖(p.eval (d i))⁻¹‖ ^ 2 = (x i) ^ 2 := fun i => by
+    simp only [hxdef]; rw [hpeval, norm_inv, norm_pow, one_div]
+  have hS : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k = ∑ i, lastRowWeights V i * x i :=
+    Finset.sum_congr rfl fun i _ => by simp only [hxdef]; ring
+  have hFN : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 := by
+    simp only [hgx] at hsq; exact hsq
+  set F := ∑ i, lastRowWeights V i * (x i) ^ 2 with hFdef
+  have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hα hθ
+  rw [hS] at hone
+  set E := ∑ i, lastRowWeights V i * x i with hEdef
+  set M := (α * θ * ψ) ^ k with hMdef
+  have hM0 : 0 ≤ M := pow_nonneg (mul_nonneg (mul_nonneg hα hθ) hψ.le) _
+  have hκM : 0 < κ * M := by
+    refine lt_of_le_of_ne (mul_nonneg hκ0 hM0) fun h0 => ?_
+    rw [← h0, zero_mul] at hone; norm_num at hone
+  have hE : 0 < E := by
+    by_contra h; push_neg at h; nlinarith [hone, hκM]
+  have hsub : Finset.univ.filter (fun i => t * E < x i) ⊆
+      Finset.univ.filter (fun i => ‖d i - r‖ ≤ α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ) := by
+    intro i hi
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+    exact le_radius_of_lt_inv_pow hkpos (norm_pos_iff.mpr (sub_ne_zero.mpr (hdr i))) ht0
+      hκ0 hα hθ hψ.le hone hi
+  have hWsub : ∑ i ∈ Finset.univ.filter (fun i => t * E < x i), lastRowWeights V i ≤
+      ∑ i ∈ Finset.univ.filter (fun i => ‖d i - r‖ ≤ α * θ * (κ / t) ^ ((k : ℝ)⁻¹) * ψ),
+        lastRowWeights V i :=
+    Finset.sum_le_sum_of_subset_of_nonneg hsub (fun i _ _ => lastRowWeights_nonneg V i)
+  have hWsub0 : 0 ≤ ∑ i ∈ Finset.univ.filter (fun i => t * E < x i), lastRowWeights V i :=
+    Finset.sum_nonneg fun i _ => lastRowWeights_nonneg V i
+  have hPZ : (1 - t) ^ 2 * E ^ 2 ≤ F * ∑ i ∈ Finset.univ.filter (fun i => t * E < x i),
+      lastRowWeights V i :=
+    Finset.sq_mul_sq_sum_le_sum_mul_sq_mul_sum_filter Finset.univ (w := lastRowWeights V) (x := x)
+      (fun i _ => lastRowWeights_nonneg V i) (sum_lastRowWeights hV) (fun i _ => hx0 i)
+      ht0.le ht1.le
+  have hFG : F * ((ξ * ψ) ^ k) ^ 2 ≤ κ ^ 2 := by
+    have hNG : (N * (ξ * ψ) ^ k) ^ 2 ≤ 1 :=
+      pow_le_one₀ (mul_nonneg hN0 (pow_nonneg (mul_nonneg hξ.le hψ.le) _)) hNs
+    calc F * ((ξ * ψ) ^ k) ^ 2 ≤ κ ^ 2 * N ^ 2 * ((ξ * ψ) ^ k) ^ 2 :=
+          mul_le_mul_of_nonneg_right hFN (sq_nonneg _)
+      _ = κ ^ 2 * (N * (ξ * ψ) ^ k) ^ 2 := by ring
+      _ ≤ κ ^ 2 * 1 := mul_le_mul_of_nonneg_left hNG (sq_nonneg _)
+      _ = κ ^ 2 := mul_one _
+  have hmain := paley_zygmund_chain (one_le_pow₀ hone) hPZ hFG hWsub hWsub0
+  rw [hMdef] at hmain
+  refine le_of_mul_le_mul_right ?_ (pow_pos hψ (2 * k))
+  linear_combination hmain
 
 /-! ### The grid of exceptional shifts -/
 
