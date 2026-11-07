@@ -21,6 +21,7 @@ Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each 
 - **V3** `NLAlib.one_sub_singularGapRatio_div_one_add_singularGapRatio`: the vocabulary bridge `(1 - γ) / (1 + γ) = σⱼ / σᵢ` of `singularGapRatio` itself
 - **V3** `NLAlib.pseudoConditionNumber_eq_singularValues_div`: the bridge from the pseudo-condition number to the classical ratio σ₀/σₖ, not a gap
 - **B1** `NLAlib.polarFactor`: the polar factor of a matrix, not a numerical bound; `Factor` is the matrix-analysis word
+- **N1** `NLAlib.EighSample`: a type abbreviation (`abbrev … : Type _`), not a theorem: N1's statement grammar does not apply
 - **N2** `NLAlib.mul_frobNorm_mul_one_sub_sq_add_le`: TGN-Upper L34t (tail weight): the conclusion is `3 / 8 * θ² * ‖W (1 - P_b)‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`
 - **N2** `NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le`: TGN-Upper L34h (head weight): the conclusion is `3 / 8 * ‖W B_a‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`
 - **N4** `Matrix.IsHermitian.ext_quadForm`: an ext lemma is named for the hypothesis it compares (`quadForm A z = quadForm B z`), as Mathlib's `ext_…`

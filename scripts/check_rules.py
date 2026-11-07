@@ -24,7 +24,7 @@ allowlist), so one command reports everything.
 
 Each violation prints as one line, `<ID> <file>:<line> <decl>: <message and fix>`.
 
-Levels. An *error* fails the check. Existing debt is ratcheted (maintainer, 2026-10-19):
+Levels. An *error* fails the check. Existing debt is ratcheted:
 `scripts/rules_baseline.json` holds, per error rule and file, the number of violations that
 existed when the rule became checked, and only violations above that count fail (all of a file's
 violations of the rule are then printed). A rule with no baseline entry is clean, so every

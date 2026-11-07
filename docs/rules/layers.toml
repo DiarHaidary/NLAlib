@@ -50,6 +50,10 @@ folder = "Sketching"
 layer = 3
 
 [[layer]]
+folder = "Eigensolvers"
+layer = 3
+
+[[layer]]
 folder = "Regression"
 layer = 3.5
 
