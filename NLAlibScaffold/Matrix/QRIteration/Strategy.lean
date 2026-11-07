@@ -320,7 +320,14 @@ theorem exists_isUnit_mul_eq_mul_diagonal_shqrIterate
     ∃ V' : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ, IsUnit V' ∧
       shqrIterate B θ α γ m ritz H₀ t * V' = V' * Matrix.diagonal d ∧
       pseudoConditionNumber V' = pseudoConditionNumber V := by
-  sorry
+  induction t with
+  | zero => exact ⟨V, hV, by simpa only [shqrIterate] using hHV, rfl⟩
+  | succ t ih =>
+    obtain ⟨V₁, hV₁, hHV₁, hκ₁⟩ := ih
+    obtain ⟨V₂, hV₂, hHV₂, hκ₂⟩ := exists_isUnit_mul_eq_mul_diagonal_multiShiftedQRStep hV₁ hHV₁
+      (List.replicate (2 ^ m) (shqrShift B θ α γ m (shqrIterate B θ α γ m ritz H₀ t)
+        (ritz (shqrIterate B θ α γ m ritz H₀ t))))
+    exact ⟨V₂, hV₂, by simpa only [shqrIterate, shqrStep] using hHV₂, hκ₂.trans hκ₁⟩
 
 /-- **Rapid decoupling of the Hessenberg shifted QR algorithm** with the strategy
 $\mathrm{Sh}_{k,B}$: let $\mathbf{H}_0$ be upper Hessenberg and diagonalizable,
