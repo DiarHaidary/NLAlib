@@ -64,7 +64,7 @@ lines. -/
 theorem exec_zneg_congr (m n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) :
     exec I (zneg (ι := ι) p m n X xo Y yo).run st =
       exec I (zneg (ι := ι) p (.const m.eval) (.const n.eval) X xo Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zneg; rfl) st
 
 /-- **`zconjTranspose` at index expressions** runs as at the constants of their values. No printed
 source.
