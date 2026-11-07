@@ -19,12 +19,17 @@ and [the bounded format](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAc
 are **jointly satisfiable**, so the two theorems are not vacuous. The witness is a binary format
 with $p = 113$ and $E = 15$ (the layout of IEEE binary128), the machine
 `NLAlib.binaryFloatMachine` of that format with round-to-nearest, ties away from zero (every
-operation, the black boxes and the samplers included, rounds into the format;
-$\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$, $c_{\mathrm N} = \sqrt2$), the parameters
-$\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$, $\ell = 20$, $\beta$ at its bound, and every
-size $1 \le n \le 1024$, with independent node samples of law `NLAlib.eighSampleLaw` on the
-infinite product space `MeasureTheory.Measure.infinitePi` (`ProbabilityTheory.exists_iid`). The
-two examples at the end apply both theorems to it.
+operation, the black boxes and the samplers included, rounds to the format's grid, overflow not
+modelled; the black boxes are correctly rounded, $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$,
+$c_{\mathrm N} = \sqrt2$), the parameters $\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$,
+$\ell = 20$, $\beta = \hat\beta$ at its bound, and every size $1 \le n \le 1024$, with
+independent node samples of law `NLAlib.eighSampleLaw` on the infinite product space
+`MeasureTheory.Measure.infinitePi` (`ProbabilityTheory.exists_iid`). The two examples at the end
+apply both theorems to it. The stored type of the machine is ℝ, so
+$\beta$ and the entries of the input are real parameters, not numbers of the format; the contract
+holds for every real. The selector is ties away from zero, an optional IEEE 754 attribute, not
+the default ties to even; the proof uses only that the selector is a nearest selector and odd,
+$r(-x) = -r(x)$, which ties to even also is.
 
 ## Main results
 
@@ -39,7 +44,7 @@ namespace NLAlib
 
 /-! ### Round to nearest, ties away from zero -/
 
-/-- Rounding to the nearest integer, ties away from zero. -/
+/-- Rounding to the nearest integer, ties away from zero (odd, as ties to even is too). -/
 private noncomputable def roundTiesAway (x : ℝ) : ℤ :=
   if x < 0 then -⌊-x + 1 / 2⌋ else ⌊x + 1 / 2⌋
 
@@ -140,7 +145,8 @@ private theorem le_div_and_div_le {D T : ℝ} (hD1 : 1 ≤ D) (hD : D ≤ 2 ^ 8)
     nlinarith
 
 /-- The first precision condition at $\ell = 20$, $\varepsilon = 2^{-15}$, $\theta = 1/2$,
-$\mu_{\mathrm{MM}}(d) = 2d$ and $1 \le n \le 1024$: at most $83.5 \le 113$ bits. -/
+$\mu_{\mathrm{MM}}(d) = 2d$ and $1 \le n \le 1024$, bounded here by $83.5 \le 113$ bits (its value
+at $n = 1024$ is about $81.2$). -/
 private theorem logb_add_le_of_le {x m e : ℝ} (hx1 : 1 ≤ x) (hx : x ≤ 1024) (hm1 : 1 ≤ m)
     (hm : m ≤ 21) (he1 : 1 ≤ e) (he : e ≤ 3) :
     Real.logb 2 ((2 : ℝ)⁻¹ ^ 15)⁻¹ + 3 / 2 * Real.logb 2 (1 / 2)⁻¹ +
@@ -211,7 +217,8 @@ private theorem newtonSchulzSteps_nonneg_and_le {x β : ℝ} (hx1 : 1 ≤ x) (hx
 
 /-- The second precision condition at $\ell = 20$, $\theta = 1/2$, $\mu_{\mathrm{MM}}(d) =
 \mu_{\mathrm{QR}}(d) = 2d$, $c_{\mathrm N} = \sqrt2$, $1 \le n \le 1024$ and
-$2^{-43} \le \beta \le 1$: at most $78 \le 113$ bits. -/
+$2^{-43} \le \beta \le 1$, bounded here by $78 \le 113$ bits (about $75.2$ at $n = 1024$ and
+$\beta = \hat\beta$). -/
 private theorem logb_inv_add_logb_le {x β : ℝ} (hx1 : 1 ≤ x) (hx : x ≤ 1024)
     (hβ : (2 : ℝ)⁻¹ ^ 43 ≤ β) (hβ1 : β ≤ 1) :
     Real.logb 2 β⁻¹ + Real.logb 2 (2048 * (x + newtonSchulzSteps (1 / 2 / (12 * x * 20 * (20 + 1)))
@@ -266,7 +273,7 @@ private theorem mul_add_le_of_le {x m Ω : ℝ} (hx1 : 1 ≤ x) (hx : x ≤ 1024
   linarith
 
 /-- The exponent condition at $\ell = 20$, $\varepsilon = 2^{-15}$, $\theta = 1/2$ and
-$1 \le n \le 1024$: at most $7 \le 15$ exponent bits. -/
+$1 \le n \le 1024$, bounded here by $7 \le 15$ exponent bits (about $6.9$ at $n = 1024$). -/
 private theorem logb_logb_add_le {x : ℝ} (hx1 : 1 ≤ x) (hx : x ≤ 1024) :
     Real.logb 2 (Real.logb 2 (1536 * (x + 20 + 2) ^ 3 / ((2 : ℝ)⁻¹ ^ 15 * (1 / 2))) + 2) + 1 ≤
       15 := by
@@ -337,14 +344,16 @@ private theorem exists_iIndepFun_hasLaw_eighSampleLaw (n : ℕ) :
 set_option linter.style.longLine false in
 /-- The hypotheses of Theorem 4.2 are satisfiable in binary128: for a binary format `fmt`
 with precision $p = 113$ and $E = 15$ exponent bits (the layout of IEEE binary128) there is a
-nearest selector $r$ (ties away from zero) such that the machine
-`NLAlib.binaryFloatMachine` of `fmt` and $r$, which rounds every result into the format, meets
+nearest selector $r$ (ties away from zero; any odd nearest selector, ties to even included,
+would do) such that the machine `NLAlib.binaryFloatMachine` of `fmt` and $r$, which rounds every
+result to the format's grid (overflow not modelled) with correctly rounded black boxes, meets
 the contract `NLAlib.FloatMachine.IsAccurate` with the identity decoding, $u = 2^{-p}$, floor
 $\tau = 2^{e_{\min} + p - 1}$, range the largest finite number,
 $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$ (monotone, nonnegative) and
 $c_{\mathrm N} = \sqrt2$, its samplers have measurable fibres and countable ranges, and for every
 size $1 \le n \le 1024$, with $\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$ (every Hermitian
-input of spectral norm at most $1$), $m = \min(n, \ell + 1)$,
+input of spectral norm at most $1$; the stored type is ℝ, so the input and $\beta$ are real
+parameters, not numbers of the format), $m = \min(n, \ell + 1)$,
 $\hat T = 2\sqrt2\sqrt n + \sqrt{\log(96nm/\theta)}$ and
 $N_* = N(\theta/(12n\ell(\ell + 1)), \beta/(16n))$ (`NLAlib.newtonSchulzSteps`), there are a
 depth $\ell \ge$ `NLAlib.bisectionDepth` $\varepsilon$ and an accuracy
@@ -358,7 +367,8 @@ hypotheses of
 and of
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw`,
 so neither is vacuous: the examples below apply both. The witnesses are $\ell = 20$,
-$\beta = \hat\beta$ (83.5 and 78 of the 113 bits, 7 of the 15 exponent bits) and the infinite
+$\beta = \hat\beta$ (about 81.2 and 75.2 of the 113 bits and 6.9 of the 15 exponent bits at
+$n = 1024$) and the infinite
 product of the sample laws. No printed source. -/
 theorem exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw
     (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.exponentBits = 15) :

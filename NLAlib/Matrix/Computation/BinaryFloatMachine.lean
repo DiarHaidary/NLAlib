@@ -10,19 +10,23 @@ public import Mathlib.MeasureTheory.Function.Floor
 public import Mathlib.MeasureTheory.Function.SpecialFunctions.Basic
 
 /-!
-# A floating-point machine whose every result lies in a binary format
+# A floating-point machine that rounds every result to a binary format
 
 `NLAlib.binaryFloatMachine fmt r` is a `NLAlib.FloatMachine` on stored reals in which **every
-operation rounds its exact result to the binary format** `fmt` with gradual underflow
+operation rounds its exact result to the grid of the binary format** `fmt` with gradual underflow
 (`NLAlib.Computation.binaryFloatRound`, nearest selector `r`): the scalar operations, the two
-samplers, and the two black boxes, which compute the exact product (an exact QR factorization)
-and round each entry, real and imaginary parts separately. It meets the contract
+samplers, and the two black boxes, which are correctly rounded (they compute the exact product,
+or an exact QR factorization, and round each entry, real and imaginary parts separately).
+Overflow is not modelled: the quantizer rounds a value above the largest finite number to the
+$p$-bit grid at an exponent the format does not have, so a result is a number of the format only
+when it is at most the largest finite number in magnitude; the contract asks for nothing above
+that range. It meets the contract
 `NLAlib.FloatMachine.IsAccurate` with $u = 2^{-p}$, floor $\tau = 2^{e_{\min} + p - 1}$, range
 the largest finite number, $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$ and
 $c_{\mathrm N} = \sqrt2$; with an odd selector the rounded product of a matrix with its conjugate
 transpose is exactly Hermitian. Unlike `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound`,
-whose black boxes are exact, no operation of this machine returns a number outside the rounding's
-range, and its samplers have countable ranges and measurable fibres, the hypotheses under which
+whose black boxes are exact, every result of this machine is a value of the rounding, and its
+samplers have countable ranges and measurable fibres, the hypotheses under which
 the sampling analysis of `NLAlib.eigh` applies.
 
 ## Main definitions
