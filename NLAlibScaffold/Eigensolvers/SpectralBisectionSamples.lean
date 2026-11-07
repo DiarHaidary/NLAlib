@@ -360,6 +360,43 @@ theorem countable_range_gaussianNormal (sem : ScalarSem P K) (p : P) {ρ : ℝ �
     (hc : (Set.range ρ).Countable) (hm : ∀ z, MeasurableSet (ρ ⁻¹' {z})) :
     (Set.range (sem.gaussianNormal p ρ)).Countable ∧
       ∀ z, MeasurableSet (sem.gaussianNormal p ρ ⁻¹' {z}) := by
-  sorry
+  have hF : ∀ a : K, MeasurableSet
+      {x : ℝ | (sem.bin p .mul (ρ x) (sem.sqrtHalf p)).getD default = a} := by
+    intro a
+    have hT : {w | w ∈ Set.range ρ ∧
+        (sem.bin p .mul w (sem.sqrtHalf p)).getD default = a}.Countable :=
+      hc.mono fun w hw => hw.1
+    have hset : {x : ℝ | (sem.bin p .mul (ρ x) (sem.sqrtHalf p)).getD default = a} =
+        ⋃ w ∈ {w | w ∈ Set.range ρ ∧
+          (sem.bin p .mul w (sem.sqrtHalf p)).getD default = a}, ρ ⁻¹' {w} := by
+      ext x
+      simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Set.mem_preimage, Set.mem_singleton_iff,
+        exists_prop]
+      constructor
+      · intro h
+        exact ⟨ρ x, ⟨⟨x, rfl⟩, h⟩, rfl⟩
+      · rintro ⟨w, ⟨_, hw⟩, hx⟩
+        rw [← hx] at hw
+        exact hw
+    rw [hset]
+    exact MeasurableSet.biUnion hT fun w _ => hm w
+  have hsub : Set.range (sem.gaussianNormal p ρ) ⊆
+      (fun q : K × K => ((sem.bin p .mul q.1 (sem.sqrtHalf p)).getD default,
+        (sem.bin p .mul q.2 (sem.sqrtHalf p)).getD default)) ''
+        (Set.range ρ ×ˢ Set.range ρ) := by
+    rintro _ ⟨z, rfl⟩
+    exact ⟨(ρ (√2 * z.re), ρ (√2 * z.im)), ⟨⟨_, rfl⟩, ⟨_, rfl⟩⟩, rfl⟩
+  refine ⟨((hc.prod hc).image _).mono hsub, fun z => ?_⟩
+  have hset : sem.gaussianNormal p ρ ⁻¹' {z} =
+      (fun x : ℂ => √2 * x.re) ⁻¹' {x : ℝ | (sem.bin p .mul (ρ x) (sem.sqrtHalf p)).getD default
+          = z.1} ∩
+        (fun x : ℂ => √2 * x.im) ⁻¹' {x : ℝ | (sem.bin p .mul (ρ x) (sem.sqrtHalf p)).getD default
+          = z.2} := by
+    ext x
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_inter_iff, Set.mem_ofPred_eq,
+      ScalarSem.gaussianNormal, Prod.ext_iff]
+  rw [hset]
+  exact ((hF z.1).preimage (measurable_const.mul Complex.measurable_re)).inter
+    ((hF z.2).preimage (measurable_const.mul Complex.measurable_im))
 
 end NLAlib.Computation
