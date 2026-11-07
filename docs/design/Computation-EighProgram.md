@@ -433,6 +433,29 @@ proof. EP2 `exists_exec_eighProg` supplies both without a change of statement: `
 computes cell $2$ as $\mathrm{fl}(1/\mathrm{fl}(2))$ and cell $3$ as $-1$ from the literals $1$ and
 $2$, and every level advances the tape positions by $n$ and $4n^2$ (EL1).
 
+**EP2 `exists_exec_eighProg`** now takes `hpos : st.pos .uniform = 0 ∧ st.pos .gaussian = 0` (the
+tape positions at $0$, as EP1). The statement without it is believed true, but its proof goes
+through EL2, whose `hpos` asks the exact tape positions $nd$ and $4n^2 d$ at level $d$ (above); the
+downward loop gets them from the positions at $0$ and EL1's advance by $n$ and $4n^2$ per level.
+Its one caller, EP5 `eighProg.exists_exec_compiled`, supplies it from `inputState` (tape positions
+$0$, as EP4 does for EP1); EP5's statement is unchanged, and TT1–TT3, which call EP5, are untouched.
+The proof does not use `hbufs` (success does not need the four buffers distinct). It also needs the
+finer frame of EL1's proof: of the cells of depth $d$ only the records (bases, outputs,
+eigenvalues, kinds, splits) change, so the sizes, node matrices and parameters of every depth
+survive to the upward pass, whose level $d$ reads them (`NLAlib.EighArenas.LevelHolds` at $d$).
+That is the private `ep2_holds_of_exec_eighDownLevel` (EL1's proof, with the frame stated finer),
+of which EL1 is now a corollary; EL1's statement is unchanged.
+
+**EP1 `holds_of_exec_eighProg`**: proved with its statement unchanged (no hypothesis added). It
+supplies EL1's `hnext` and the five constants of `hc` from the initialisation, as the outline says
+(the downward loop's invariant carries "the size cells of every depth $e > d$ read $0$"), and it
+uses EP2's private `ep2_holds_of_exec_eighDownLevel` (EL1's proof with the finer frame) for the
+same reason as EP2: the upward level $d$ reads `NLAlib.EighArenas.LevelHolds` at $d$, which
+EL1's stated frame does not keep through level $d$ itself. The private `ep1_` helpers split the
+proof into the downward pass, the spent level with the upward pass, and the body after the eleven
+allocations (`ep1_prog_eq` states the tree of the scope by `rfl`), so that each piece elaborates
+within the 4 GB worker limit.
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
