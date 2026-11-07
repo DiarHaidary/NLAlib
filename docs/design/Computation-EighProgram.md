@@ -166,8 +166,10 @@ level). Memory $O(n^2 \ell_0)$, a function of the sizes.
 ### 3.3 The passes
 
 * **Initialisation**: the constants $1$, $\mathrm{fl}(2)$ (`litIdx 2`, hdiag's `M.ofNat 2`),
-  $\mathrm{fl}(1/2) = \mathrm{fl}(1/\mathrm{fl}(2))$, $-1$; every size cell the literal $0$, the root's
-  $n$; $\mathbf{A}$, $R_0$, $\varepsilon$ at depth $0$.
+  $\mathrm{fl}(1/2) = \mathrm{fl}(1/\mathrm{fl}(2))$, $-1$ and the stored $\sqrt{1/2} =
+  \mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$ (`ScalarSem.sqrtHalf`, the square root of cell $2$; cells
+  $0$ to $4$ of `c`); every size cell the literal $0$, the root's $n$; $\mathbf{A}$, $R_0$,
+  $\varepsilon$ at depth $0$.
 * **Downward level** $d < D$ (`eighDownLevel`): the next window and tolerance exactly as
   `eighNextParams` at $\ell = \ell_0 + d$; the level's $n$ uniform and $4n^2$ Gaussian draws; for
   each slot, the stored size (a binder clamped to $n - lo$) and, for $k \ge 1$, a leaf when $k \le 1$
@@ -179,7 +181,8 @@ level). Memory $O(n^2 \ell_0)$, a function of the sizes.
   projectors, the rounded trace $t$ and $k_+ = \min(\lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+,
   k)$ **by a binder**; then one child (positive side if $k_+ = k$, negative if $k_+ = 0$) or a split:
   deflation on the stored samples (`eighDeflateBlock`: $\widetilde{\mathbf{G}}$ from the level's
-  Gaussian words times the stored $\sqrt{1/2}$, `mm`, `qr`, the first $r$ columns), the two
+  Gaussian words times the stored $\sqrt{1/2}$ of cell $4$ of `c`, read only, `mm`, `qr`, the first
+  $r$ columns), the two
   compressions (`eighCompressBlock`), the children's sizes, the kind and $k_+$.
 * **Spent level** $D$ (`eighBottomLevel`): every node gets $(\mathbf{I}, \mathbf{0})$, `eighAux` at
   budget $0$.
@@ -366,7 +369,34 @@ $\mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$. A second defect: if `sq` is the cell `tw
 fail. Fix: the frame exempts the cell `sq`; new hypotheses `hsqc` (the cells `one`, `two`, `sg`,
 `nsg` differ from `sq`) and `hcl` (the five cells lie in existing buffers, so that the split's
 scratch allocations cannot alias them). EN7 has no callers (EN9 uses the private precise form), so
-nothing downstream changes.
+nothing downstream changes. *Superseded by the program change below: the weakening is gone.*
+
+**Program change (the hoist of $\sqrt{1/2}$; Fable audit, `Audit-Fable-Corrections.md` item 10).**
+`eighProg` computes $\mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$ once, into a fifth constants cell
+(`c` has $5$ cells; `ins (.un p .sqrt ⟨c, 4⟩ ⟨c, 2⟩)` right after the other constants), and passes
+it down as a read-only cell: `eighDownLevel` and `eighNodeBlock` take a new last cell argument
+`sqh` (instantiated `⟨c, 4⟩`), `eighSplitBlock` reads it as `sq` and no longer contains
+`div sq one two; sqrt sq sq` (its now unused argument `one` is dropped), and the node's scratch `t`
+shrinks from $8$ to $7$ cells. The rounding sequence is unchanged: cell $2$ is
+$\mathrm{fl}(\mathrm{fl}(1)/\mathrm{fl}(2))$ from the same literals at the same tag, so cell $4$ is
+exactly `ScalarSem.sqrtHalf p`, the value every split computed before, and the deflations multiply
+the same Gaussian words by the same stored value; the equality refinement to hdiag's `eigh` (EP1,
+`eighTapeMachine`'s `tapeNormal`, which uses `sqrtHalf`) is untouched. Each split saves a division
+and a square root; the run adds one square root in total. `eighProg.compiled` still compiles by
+`rfl`; the static bound `eighCount` is unchanged (EP6's `decide +kernel` re-run).
+
+**EN7 strengthened (the weakening removed).** `holds_of_exec_eighSplitBlock` now has the plain arena
+frame, "every cell outside depths $d$, $d + 1$ of the arenas is unchanged", with no exemption of
+`sq` and no `hsqc`; `sq` is a hypothesis cell like the others: `hsq : st.store.read p sq.buf
+sq.idx.eval = some (I.sem.sqrtHalf p)`, with `hcells` over `[two, sg, nsg, sq]`. `hcl` is gone too
+(every one of the four cells is read with a value, so it lies in an existing buffer), as are `one`
+and `hone`. `htwo` now states the value, `= some (M.ofNat 2)` (it was `= I.sem.lit p 2`, whose
+`some` the deleted division used to supply; the new form covers that case and no longer needs the
+literal to exist). Follow-on restatements, forced by the new signatures: EN8 `exists_exec_eighSplitBlock`
+(no `one`/`hone`; `hsq` is the read above instead of "the cell `sq` is writable"); EN9, EN10
+(the node block takes `⟨c, 4⟩`; `hc` gains `st.store.read p c 4 = some (I.sem.sqrtHalf p)`);
+EL1, EL2 (the same fifth conjunct of `hc`, and `⟨c, 4⟩`). EP1, EP2 and the tree theorems are stated
+on `eighProg` and do not change; EP1/EP2 supply the fifth conjunct from the initialisation.
 
 **Statement fix (EL1).** `holds_of_exec_eighDownLevel` now takes `hnext : ∀ lo < n, ReadsIdx
 I.sem st.store p H.Sz (n * (d + 1) + lo) 0`: the size cells of depth $d + 1$ start at $0$. Without

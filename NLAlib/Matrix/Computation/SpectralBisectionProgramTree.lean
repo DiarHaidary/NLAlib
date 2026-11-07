@@ -167,14 +167,15 @@ def eighCompressBlock (p : P) (mm : ι) (k r : IExp VI) (Qa : VB) (qo : IExp VI)
   zhermAvg p r C2 0 two C3 0
   zhermShift p r C3 0 sg Ma co
 
-/-- **A split** at the slot $lo$ of depth $d$ into $k_+$ and $k - k_+$: the stored
-$\sqrt{1/2}$ (from the literal $1$, the literal $2$, a division and a square root), the bases
+/-- **A split** at the slot $lo$ of depth $d$ into $k_+$ and $k - k_+$: with the stored
+$\sqrt{1/2}$ read from the cell `sq` (computed once by `NLAlib.eighProg`, never written here), the
+bases
 $\mathbf{Q}_\pm$ (`NLAlib.eighDeflateBlock`, sides $0$ and $1$) packed at the node's block `qo` of
 `Qa` ($\mathbf{Q}_-$ after the $2k k_+$ words of $\mathbf{Q}_+$), the compressions
 (`NLAlib.eighCompressBlock`, shifts $\sigma$ and $-\sigma$) at the blocks of the slots $lo$ and
 $lo + k_+$ of depth $d + 1$, their sizes, the kind $4$ and $k_+$. -/
 def eighSplitBlock (p : P) (mm qr : ι) (n d lo k kp : IExp VI) (Sg : VB) (Pp Pm : VB)
-    (Ma Qa Sz Kd Kp : VB) (one two sg nsg sq : Cell VB VI) : Builder P ι VB VI Unit := scope do
+    (Ma Qa Sz Kd Kp : VB) (two sg nsg sq : Cell VB VI) : Builder P ι VB VI Unit := scope do
   let G ← alloc p (2 * (n * n))
   let Y ← alloc p (2 * (n * n))
   let Qf ← alloc p (2 * (n * n))
@@ -183,8 +184,6 @@ def eighSplitBlock (p : P) (mm qr : ι) (n d lo k kp : IExp VI) (Sg : VB) (Pp Pm
   let C1 ← alloc p (2 * (n * n))
   let C2 ← alloc p (2 * (n * n))
   let C3 ← alloc p (2 * (n * n))
-  ins (.bin p .div sq one two)
-  ins (.un p .sqrt sq sq)
   let qo := eighBlockOff n d lo
   eighDeflateBlock p mm qr n k kp lo 0 Sg sq Pp G Y Qf Rf Qa qo
   eighDeflateBlock p mm qr n k (k - kp) lo 1 Sg sq Pm G Y Qf Rf Qa (qo + 2 * (k * kp))
@@ -208,11 +207,12 @@ $\mathbf{P}_+ = (\mathbf{B} - (-1)\mathbf{I})/\mathrm{fl}(2)$ and
 $\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/\mathrm{fl}(2)$ stored Hermitian; the rounded trace
 $t$ of $\mathbf{P}_+$ and $k_+ = \min(\lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor_+, k)$ by an
 index binder; then one child on the positive side if $k_+ = k$, on the negative side if $k_+ = 0$,
-and a split otherwise (`NLAlib.eighChildBlock`, `NLAlib.eighSplitBlock`). -/
+and a split otherwise (`NLAlib.eighChildBlock`, `NLAlib.eighSplitBlock`, with the stored
+$\sqrt{1/2}$ of the cell `sqh`). -/
 def eighNodeBlock (p : P) (mm qr : ι) (n L F d lo k : IExp VI) (par Lv Su Sg Ma Qa Sz Kd Kp : VB)
-    (one two half negone : Cell VB VI) : Builder P ι VB VI Unit := scope do
-  -- t: 0 σ, 1 −σ, 2 ℓ, 3 R/ℓ, 4 c, 5 the trace, 6 t + 1/2, 7 √(1/2)
-  let t ← alloc p 8
+    (one two half negone sqh : Cell VB VI) : Builder P ι VB VI Unit := scope do
+  -- t: 0 σ, 1 −σ, 2 ℓ, 3 R/ℓ, 4 c, 5 the trace, 6 t + 1/2
+  let t ← alloc p 7
   -- sp: 0 β, 1 fl(2R), the parameters of the sign program
   let sp ← alloc p 2
   let W ← alloc p (2 * (n * n))
@@ -245,8 +245,7 @@ def eighNodeBlock (p : P) (mm qr : ι) (n L F d lo k : IExp VI) (par Lv Su Sg Ma
       (eighChildBlock p k Ma (eighBlockOff n d lo) (eighBlockOff n (d + 1) lo) ⟨t, 1⟩
         ⟨Sz, eighSlotOff n (d + 1) lo⟩ ⟨Kd, eighSlotOff n d lo⟩ 3)
     eighWhen (.var kp * (k - .var kp))
-      (eighSplitBlock p mm qr n d lo k (.var kp) Sg Pp Pm Ma Qa Sz Kd Kp one two ⟨t, 0⟩ ⟨t, 1⟩
-        ⟨t, 7⟩)
+      (eighSplitBlock p mm qr n d lo k (.var kp) Sg Pp Pm Ma Qa Sz Kd Kp two ⟨t, 0⟩ ⟨t, 1⟩ sqh)
 
 /-! ### The two passes -/
 
@@ -257,9 +256,9 @@ $\ell = \ell_0 + d$) into the cells $2(d + 1)$ and $2(d + 1) + 1$ of `Lv`; the $
 $4n^2$ Gaussian draws of the level into `Su` and `Sg`; and for each slot $lo$, its stored size
 $k$ (an index binder clamped to $n - lo$) and, for $k \ge 1$, a leaf (size at most $1$, or
 $R \le \mathrm{fl}(\varepsilon R_0)$, one comparison) or the node step
-(`NLAlib.eighNodeBlock`). -/
+(`NLAlib.eighNodeBlock`, with the stored $\sqrt{1/2}$ of the cell `sqh`). -/
 def eighDownLevel (p : P) (mm qr : ι) (n L F d : IExp VI) (par Lv Su Sg Ma Ua Qa Ea Sz Kd Kp : VB)
-    (one two half negone : Cell VB VI) : Builder P ι VB VI Unit := scope do
+    (one two half negone sqh : Cell VB VI) : Builder P ι VB VI Unit := scope do
   -- t: 0 ℓ, 1 1/ℓ, 2 2/ℓ, 3 a sum or difference, 4 ε R₀
   let t ← alloc p 5
   ins (.litIdx p ⟨t, 0⟩ (L + d))
@@ -284,7 +283,7 @@ def eighDownLevel (p : P) (mm qr : ι) (n L F d : IExp VI) (par Lv Su Sg Ma Ua Q
             (eighBlockOff n d (.var lo)) Ea (eighSlotOff n d (.var lo))
             ⟨Kd, eighSlotOff n d (.var lo)⟩)
           (eighNodeBlock p mm qr n L F d (.var lo) (.var k) par Lv Su Sg Ma Qa Sz Kd Kp one two
-            half negone)
+            half negone sqh)
 
 /-- **The nodes whose budget is spent**: at depth $D$, for each slot $lo$ with stored size
 $k \ge 1$, the junk output of `NLAlib.eighAux` at budget $0$: the stored identity and zero
@@ -344,7 +343,9 @@ $1$, $2$ of `par`) it writes the stored $\mathbf{U}$ ($2n^2$ words of `U`) and e
 cells of `dv`). Level arenas for the $D + 1$ depths, $D = \ell_0 + 1$: the node matrices, outputs
 and bases (complex $n \times n$ blocks), the eigenvalues, sizes, kinds and $k_+$ ($n$ cells each)
 and the windows and tolerances; the constants $1$, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2) =
-\mathrm{fl}(1/\mathrm{fl}(2))$ and $-1$; every size cell the literal $0$ but the root's ($n$ at slot
+\mathrm{fl}(1/\mathrm{fl}(2))$, $-1$ and the stored $\sqrt{1/2} =
+\mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$ (`NLAlib.Computation.ScalarSem.sqrtHalf`, computed once and
+read by every split); every size cell the literal $0$ but the root's ($n$ at slot
 $0$); $\mathbf{A}$, $R_0$, $\varepsilon$ at depth $0$. Then the downward pass
 (`NLAlib.eighDownLevel` at $d = 0, \ldots, D - 1$), the junk output $(\mathbf{I}, \mathbf{0})$ of
 every node at depth $D$ (`NLAlib.eighBottomLevel`), the upward pass (`NLAlib.eighUpLevel` at
@@ -354,8 +355,8 @@ Algorithm: spectral-bisection -/
 def eighProg (p : P) (mm qr : ι) (n L F : IExp VI) (A par U dv : VB) :
     Builder P ι VB VI Unit := scope do
   let D : IExp VI := L + 1
-  -- c: 0 one, 1 fl(2), 2 fl(1/2), 3 −1
-  let c ← alloc p 4
+  -- c: 0 one, 1 fl(2), 2 fl(1/2), 3 −1, 4 fl(√fl(1/2))
+  let c ← alloc p 5
   let Ma ← alloc p (2 * (n * n) * (D + 1))
   let Ua ← alloc p (2 * (n * n) * (D + 1))
   let Qa ← alloc p (2 * (n * n) * D)
@@ -370,6 +371,7 @@ def eighProg (p : P) (mm qr : ι) (n L F : IExp VI) (A par U dv : VB) :
   ins (.litIdx p ⟨c, 1⟩ 2)
   ins (.bin p .div ⟨c, 2⟩ ⟨c, 0⟩ ⟨c, 1⟩)
   ins (.un p .neg ⟨c, 3⟩ ⟨c, 0⟩)
+  ins (.un p .sqrt ⟨c, 4⟩ ⟨c, 2⟩)
   forRange (n * (D + 1) + 1) fun w => ins (.litIdx p ⟨Sz, .var w⟩ 0)
   ins (.litIdx p ⟨Sz, 0⟩ n)
   zcopy p n n A 0 Ma 0
@@ -377,7 +379,7 @@ def eighProg (p : P) (mm qr : ι) (n L F : IExp VI) (A par U dv : VB) :
   ins (.copy p ⟨Lv, 1⟩ ⟨par, 1⟩)
   forRange D fun d =>
     eighDownLevel p mm qr n L F (.var d) par Lv Su Sg Ma Ua Qa Ea Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩
-      ⟨c, 3⟩
+      ⟨c, 3⟩ ⟨c, 4⟩
   eighBottomLevel p n D Ua Ea Sz
   forRange D fun d' => eighUpLevel p mm n (L - .var d') Lv Ua Qa Ea Sz Kd Kp ⟨c, 1⟩
   zcopy p n n Ua 0 U 0

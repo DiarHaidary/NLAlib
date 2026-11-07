@@ -795,7 +795,7 @@ private def el1_slotBody (p : P) (mm qr : ι)
             (eighSlotOff (.const n) (.const d) (.var lo))
             ⟨Kd, eighSlotOff (.const n) (.const d) (.var lo)⟩)
           (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.var lo) (.var k)
-            par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩)
+            par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩)
 
 omit [Inhabited K] in
 /-- EL1: a slot that starts no node reads the size $0$ and is skipped. -/
@@ -930,9 +930,9 @@ omit [Inhabited K] in
 private theorem el1_node_equiv (p : P) (mm qr : ι) (n ℓ₀ F d lo k par Lv Su Sg Ma Qa Sz Kd Kp
     c : ℕ) :
     el1_Equiv I (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.var lo)
-      (.var k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩)
+      (.var k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩)
     (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.const lo)
-      (.const k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩) := by
+      (.const k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩) := by
   unfold eighNodeBlock
   repeat' first
     | rfl
@@ -953,9 +953,9 @@ omit [Inhabited K] in
 private theorem el1_node_congr (p : P) (mm qr : ι) (n ℓ₀ F d lo k par Lv Su Sg Ma Qa Sz Kd Kp
     c : ℕ) (st : St P K C) :
     exec I (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.var lo) (.var k)
-      par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩).run st =
+      par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st =
     exec I (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.const lo)
-      (.const k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩).run st :=
+      (.const k) par Lv Su Sg Ma Qa Sz Kd Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st :=
   el1_node_equiv p mm qr n ℓ₀ F d lo k par Lv Su Sg Ma Qa Sz Kd Kp c (fun _ => .skip)
     (fun _ => .skip) (fun _ => rfl) st
 
@@ -1007,7 +1007,8 @@ private theorem el1_slot_node {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout
       s.store.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
         (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
       s.store.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg
-        (eighTapeMachine I p mmR qrR).one))
+        (eighTapeMachine I p mmR qrR).one) ∧
+      s.store.read p c 4 = some (I.sem.sqrtHalf p))
     (h : exec I (el1_slotBody p mm qr n ℓ₀ F d par H.Lv Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd
       H.Kp c t lo).run s = some s') :
     el1_done H I.sem s'.store p (eighTapeMachine I p mmR qrR) n F d R₀ β lo y ∧
@@ -1107,7 +1108,8 @@ private theorem el1_slot_node {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout
         (fun w hw => (hr2 _ _ _ fun h => hSg2 h.1).trans (hSg1 w hw))
         ⟨(hr2 _ _ _ fun h => dtc h.1).trans hc.1, (hr2 _ _ _ fun h => dtc h.1).trans hc.2.1,
           (hr2 _ _ _ fun h => dtc h.1).trans hc.2.2.1,
-          (hr2 _ _ _ fun h => dtc h.1).trans hc.2.2.2⟩ hN
+          (hr2 _ _ _ fun h => dtc h.1).trans hc.2.2.2.1,
+          (hr2 _ _ _ fun h => dtc h.1).trans hc.2.2.2.2⟩ hN
       rw [← hℓ] at hres hfr
       have hsh' : s'.store.shape = s.store.shape := hsh.trans hsh2
       cases hs : eighStep (eighTapeMachine I p mmR qrR) n F R₀ β y.A y.R y.ε y.ℓ
@@ -1199,7 +1201,8 @@ exact floor conversion; $M$ = `NLAlib.eighTapeMachine I p mmR qrR` and the root
 $(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$. A successful run of `NLAlib.eighDownLevel` at depth
 $d < D$ from a state whose arenas hold the nodes of depth $d$ (`NLAlib.EighArenas.LevelHolds`) and
 whose size cells of depth $d + 1$ all read $0$, with the tape positions $nd$ (uniform) and
-$4n^2 d$ (Gaussian), the stored $R_0$, $\varepsilon$, $\beta$ in `par` and the constants in `c`,
+$4n^2 d$ (Gaussian), the stored $R_0$, $\varepsilon$, $\beta$ in `par` and the constants in `c`
+(cells $0$ to $4$: one, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2)$, $-1$, the stored $\sqrt{1/2}$),
 ends with the arenas holding the nodes of depth $d + 1$ and the
 records of depth $d$ (`NLAlib.EighArenas.RecordHolds`); every cell outside depths $d$ and $d + 1$ of
 the arenas and the sample buffers `Su`, `Sg` is unchanged, the store shape too, and the tape
@@ -1234,9 +1237,10 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
       st.store.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
         (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
       st.store.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg
-        (eighTapeMachine I p mmR qrR).one))
+        (eighTapeMachine I p mmR qrR).one) ∧
+      st.store.read p c 4 = some (I.sem.sqrtHalf p))
     (h : exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) par H.Lv Su Sg
-      H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩).run st = some st') :
+      H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st = some st') :
     H.LevelHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
         ⟨n, A, R₀, ε, ℓ₀⟩ (d + 1) ∧
       H.RecordHolds I.sem st'.store p (eighTapeMachine I p mmR qrR) n F R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d ∧
@@ -1562,7 +1566,9 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
           by rw [hrd1 p c 2 hcb (fun h => by omega),
               hrg p c 2 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.1],
           by rw [hrd1 p c 3 hcb (fun h => by omega),
-              hrg p c 3 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2]⟩ hex
+              hrg p c 3 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2.1],
+          by rw [hrd1 p c 4 hcb (fun h => by omega),
+              hrg p c 4 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2.2]⟩ hex
       refine ⟨hsh2.trans hsh1, hps2.trans hps1, fun lo y' hlo hn' => ?_,
         fun q b i hall ht4 => ?_⟩
       · obtain ⟨a', ha', hl'⟩ := hn'
@@ -1977,7 +1983,8 @@ private theorem el2_slot_node_ex {mm qr : ι} (hmm : IsMatMulKernel I mm pairLay
     (hSu : 2 ≤ y.k → (∃ v, s.store.read p Su lo = some v) ∧ (Su = t → lo ≠ 4))
     (hSg : 2 ≤ y.k → (∀ w < 4 * (n * n), ∃ v, s.store.read p Sg w = some v) ∧ Sg ≠ t)
     (hc : s.store.read p c 0 = I.sem.lit p 1 ∧ s.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) ∧
-      (∃ v, s.store.read p c 2 = some v) ∧ ∃ v, s.store.read p c 3 = some v) :
+      (∃ v, s.store.read p c 2 = some v) ∧ (∃ v, s.store.read p c 3 = some v) ∧
+      s.store.read p c 4 = some (I.sem.sqrtHalf p)) :
     ∃ s', exec I (el1_slotBody p mm qr n ℓ₀ F d par H.Lv Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd
       H.Kp c t lo).run s = some s' := by
   have dUaMa : H.Ua ≠ H.Ma := fun h => by simp [EighArenas.handles, h] at hbufs
@@ -2066,7 +2073,8 @@ private theorem el2_slot_node_ex {mm qr : ι} (hmm : IsMatMulKernel I mm pairLay
           exact ⟨x, (hr2 _ _ _ fun h => hSg2 h.1).trans hx⟩)
         ⟨(hr2 _ _ _ fun h => dtc h.1).trans hc.1, (hr2 _ _ _ fun h => dtc h.1).trans hc.2.1,
           by obtain ⟨x, hx⟩ := hc.2.2.1; exact ⟨x, (hr2 _ _ _ fun h => dtc h.1).trans hx⟩,
-          by obtain ⟨x, hx⟩ := hc.2.2.2; exact ⟨x, (hr2 _ _ _ fun h => dtc h.1).trans hx⟩⟩
+          by obtain ⟨x, hx⟩ := hc.2.2.2.1; exact ⟨x, (hr2 _ _ _ fun h => dtc h.1).trans hx⟩,
+          (hr2 _ _ _ fun h => dtc h.1).trans hc.2.2.2.2⟩
       exact ⟨sN, (el1_node_congr p mm qr n ℓ₀ F d lo y.k par H.Lv Su Sg H.Ma H.Qa H.Sz H.Kd H.Kp c
         _).trans hN⟩
 
@@ -2101,9 +2109,10 @@ theorem exists_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       st.store.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
         (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
       st.store.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg
-        (eighTapeMachine I p mmR qrR).one)) :
+        (eighTapeMachine I p mmR qrR).one) ∧
+      st.store.read p c 4 = some (I.sem.sqrtHalf p)) :
     ∃ st', exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) par H.Lv Su
-      Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩).run st = some st' := by
+      Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st = some st' := by
   set M := eighTapeMachine I p mmR qrR with hM
   obtain ⟨hlev1, hlev2, hlev3, hlev4⟩ := hlev
   set tH := st.store.size with htH
@@ -2447,7 +2456,8 @@ theorem exists_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       have ic : s₁.store.read p c 0 = I.sem.lit p 1 ∧
           s₁.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) ∧
           s₁.store.read p c 2 = some (M.div M.one (M.ofNat 2)) ∧
-          s₁.store.read p c 3 = some (M.neg M.one) :=
+          s₁.store.read p c 3 = some (M.neg M.one) ∧
+          s₁.store.read p c 4 = some (I.sem.sqrtHalf p) :=
         ⟨by rw [hrd1 p c 0 hcb (fun h => by omega),
               hrg p c 0 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.1],
           by rw [hrd1 p c 1 hcb (fun h => by omega),
@@ -2455,14 +2465,16 @@ theorem exists_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
           by rw [hrd1 p c 2 hcb (fun h => by omega),
               hrg p c 2 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.1],
           by rw [hrd1 p c 3 hcb (fun h => by omega),
-              hrg p c 3 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2]⟩
+              hrg p c 3 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2.1],
+          by rw [hrd1 p c 4 hcb (fun h => by omega),
+              hrg p c 4 lc dcSu dcSg (fun h => dLvc h.1.symm), hc.2.2.2.2]⟩
       obtain ⟨s₂, hex⟩ := el2_slot_node_ex hmm hqr hsem p hu n ℓ₀ F d D hd (by omega) hlit htn H
         (par := par) (Su := Su) (Sg := Sg) (c := c) (t := tH) (s := s₁) (R₀ := R₀) (β := β)
         hk1 hkn ish hbufs htb ⟨5, by rw [hsh1, hshg]; exact hshape5, by norm_num⟩ iSz iA iR hR₀
         (fun h => by rw [hyR]; exact (hlp.1 h)) (fun h => by rw [hyR]; exact (hlp.2 h)) iε ipar
         (fun hk2 => ⟨⟨_, (iSu hk2).1⟩, (iSu hk2).2⟩)
         (fun hk2 => ⟨fun w' hw' => ⟨_, (iSg hk2).1 w' hw'⟩, (iSg hk2).2⟩)
-        ⟨ic.1, ic.2.1, ⟨_, ic.2.2.1⟩, ⟨_, ic.2.2.2⟩⟩
+        ⟨ic.1, ic.2.1, ⟨_, ic.2.2.1⟩, ⟨_, ic.2.2.2.1⟩, ic.2.2.2.2⟩
       obtain ⟨hdone, hfrW, hsh2, hps2⟩ := el1_slot_node hmm hqr p hflag n ℓ₀ F d D hd hlit htn H
         (par := par) (Su := Su) (Sg := Sg) (c := c) (t := tH) (s := s₁) (s' := s₂) (R₀ := R₀)
         (β := β) hk1 hkn hyℓ ish hbufs htb iSz iA iR iε ipar iSu iSg ic hex
