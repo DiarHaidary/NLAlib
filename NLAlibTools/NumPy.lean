@@ -9,18 +9,20 @@ import NLAlib.Matrix.Computation.DeflationProgramTree
 /-!
 # Printing first-order programs as NumPy
 
-The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a
-result is printed from the very tree the result is about: a registered tree such as
+The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a result
+is printed from the very tree the result is about: a registered tree such as
 `NLAlib.hutchppProg.compiled` (`docs/design/Computation.md`, F1 and F11 step C). Variables are de
 Bruijn levels: handle `j` is printed `b{j}` and index variable `j` is printed `i{j}`, so the free
 variables of a program `Prog P ι r b` are the parameters of the emitted function: the oracle
-dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc`
-in scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
+dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc` in
+scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
 expressions are printed as Python arithmetic. `named` kernels are printed as calls into a short
-NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`,
-so a read before a write shows as `nan`. The emitted code is an unverified translation, for
-differential testing (`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under
-NumPy, when it is installed, and agrees with the Lean `Float` run of the same tree.
+NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`, so
+a read before a write shows as `nan`. An index binder (`bindIdx`) is printed strict, as the model
+runs it: it raises `ValueError` on a negative value or a floor above its bound, where the model's
+run fails, and never clamps. The emitted code is an unverified translation, for differential testing
+(`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under NumPy, when it is
+installed, and agrees with the Lean `Float` run of the same tree.
 -/
 
 -- A tools file: `#eval` and `#guard` are its point.
@@ -125,7 +127,9 @@ def emitF {P ι : Type} (inline : Bool) (kname : ι → String) :
       [pad d ++ s!"{kname o}([{", ".intercalate (dims.map emitIExp)}], " ++
         s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
   | _, ni, .bindIdx _ x bound body, d =>
-      [pad d ++ s!"i{ni} = min(max(int(np.floor({emitCell x})), 0), {emitIExp bound})"] ++
+      [pad d ++ s!"if not (0 <= {emitCell x}): raise ValueError('bindIdx: negative value')",
+        pad d ++ s!"i{ni} = int(np.floor({emitCell x}))",
+        pad d ++ s!"if i{ni} > {emitIExp bound}: raise ValueError('bindIdx: above the bound')"] ++
         emitF inline kname body d
 
 /-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`; a
@@ -162,6 +166,41 @@ def deflatePython : String :=
     fun o => cond o "mm" "qr"
 
 #guard (deflatePython.splitOn "mm([").length == 2 && (deflatePython.splitOn "qr([").length == 2
+
+/-- A stored value copied through an index binder of bound `i1`, as the NumPy function
+`idx_copy(A, i0, i1, b0, b1)`. -/
+def idxCopyPython : String :=
+  emitProg false "idx_copy" (P := Unit) (ι := Unit) (r := 1) (b := 2)
+    (.bindIdx () ⟨0, .const 0⟩ (.var 1) (.instr (.litIdx () ⟨1, .const 0⟩ (.var 2))))
+
+-- The binder is emitted strict, as the model's `Exec.exec` and `exactSem.toNat`: no clamp.
+#guard (idxCopyPython.splitOn "min(max").length == 1 &&
+  (idxCopyPython.splitOn "raise ValueError").length == 3
+
+/-- **Strictness test**: the emitted binder raises `ValueError` where the model's run fails (a
+negative value, a value above the bound) and floors where it succeeds; skipped when NumPy is not
+installed. -/
+def strictBindTest : IO Unit := do
+  let probe ← IO.Process.output { cmd := "python3", args := #["-c", "import numpy"] }
+    |>.toBaseIO
+  match probe with
+  | .ok out =>
+    if out.exitCode != 0 then IO.println "strictness test skipped: no NumPy"; return
+  | .error _ => IO.println "strictness test skipped: no python3"; return
+  let script := "\n".intercalate [numpyPrelude, idxCopyPython,
+    "def run(v, bound):",
+    "    out = np.full(1, np.nan)",
+    "    try: idx_copy(None, 1, bound, np.array([v]), out)",
+    "    except ValueError: return 'fail'",
+    "    return repr(float(out[0]))",
+    "print(run(-1.0, 5), run(-0.5, 5), run(1.0, 0), run(2.7, 3), run(float('nan'), 5))"]
+  let out ← IO.Process.output { cmd := "python3", args := #["-c", script] }
+  let got := out.stdout.trimAscii.toString
+  unless out.exitCode == 0 && got == "fail fail fail 2.0 fail" do
+    throw <| IO.userError s!"the emitted binder is not strict: {got} {out.stderr}"
+  IO.println s!"strict binder: {got}"
+
+#eval strictBindTest
 
 /-- A Python script that runs the emitted Hutch++ on the matrix `A₀` with the sign tape and
 prints the estimate. -/
