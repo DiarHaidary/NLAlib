@@ -189,7 +189,16 @@ Proof: induction on $m$, generalising $e$ and `ss`; the halves have length $2^{m
 `List.mem_of_mem_drop`); for $m = 0$, `List.headD` of a singleton. S, about 15 lines. -/
 theorem findRitz_mem (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) {m e : ℕ} {ss : List ℂ}
     (hss : ss.length = 2 ^ m) : findRitz H m e ss ∈ ss := by
-  sorry
+  induction m generalizing e ss with
+  | zero =>
+    obtain ⟨a, rfl⟩ := List.length_eq_one_iff.mp (by simpa using hss)
+    simp [findRitz]
+  | succ m ih =>
+    have hlen : ss.length / 2 = 2 ^ m := by rw [hss, pow_succ]; omega
+    rw [findRitz]
+    split_ifs
+    · exact List.mem_of_mem_take (ih (by rw [List.length_take, hlen, hss, pow_succ]; omega))
+    · exact List.mem_of_mem_drop (ih (by rw [List.length_drop, hss, pow_succ]; omega))
 
 /-- **The binary search finds a promising Ritz value**: let $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
