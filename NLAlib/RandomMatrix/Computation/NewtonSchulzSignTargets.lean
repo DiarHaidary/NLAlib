@@ -47,7 +47,8 @@ limit), every stored $N \times N$ matrix $\mathbf{A}$ of complex pairs and store
 $b$, held at tag $p$ in declared buffers $0$ (interleaved, column-major) and $1$ (the two cells),
 with declared buffer $2$ of $2N^2$ empty cells, under every interpretation whose semantics meets
 the standard model at $u$ with every value in range (`IsRelErrSem`, unbounded exponent, no
-underflow), whose literal $1$ is exact, whose kernel `mm` is a routine on pairs
+underflow) and index exact at `dec` up to $1$ (the model's clause: exact literals up to $1$ and
+the exact floor conversion), whose kernel `mm` is a routine on pairs
 (`IsMatMulKernel`, interleaved layout) meeting `IsMatMulErr` at $u$, floor $0$, range $\Omega$ and
 constant $\mu$, on a carrier that admits a machine meeting `FloatMachine.IsAccurate` at $u$, floor
 $0$ and range $\Omega$, and every tape: if the decoding (written $\mathbf{A}$) is Hermitian,
@@ -57,7 +58,9 @@ eigenvalue of $\mathbf{A}$ with, for $N_0 = N(a/(2\bar b), \bar\varepsilon/(16N)
 (`newtonSchulzSteps`),
 $$640\,N^{3/2}\,(8 + \mu(N))\,(N_0 + 1)\,u \le \frac{a}{\bar b}\,\bar\varepsilon \quad\text{and}
 \quad N_0 + 1 \le F,$$
-then with probability $1$ the program succeeds and ends with a stored matrix $\mathbf{Y}$ in
+then with probability $1$ the program succeeds within the counts `newtonSchulzSignCount p mm N F`
+and $8N^2 + 7$ cells at tag `p` (declared buffers and scratch; none at other tags, the read-only
+data of the interpretation counted on top) and ends with a stored matrix $\mathbf{Y}$ in
 declared buffer $2$ whose decoding satisfies
 $\|\operatorname{sign}(\mathbf{A}) - \bar{\mathbf{Y}}\|_2 \le \bar\varepsilon$. [Shah2024,
 Theorem 2.6], for the program. -/
@@ -68,8 +71,9 @@ def MatrixFreeRoundedProbNewtonSchulzSign : Prop :=
       (fun N _ => Matrix (Fin N) (Fin N) (K × K) × K × K)
       (fun N _ x => ![(pairLayout.toArray x.1).map some, #[some x.2.1, some x.2.2],
         Array.replicate (2 * (N * N)) none])
+      dec (fun _ _ => 1) (fun N n => newtonSchulzSignCount p mm N (n 0))
+      (fun N _ q => if q = p then 8 * (N * N) + 7 else 0)
       (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
-        IsExactIntLit dec I.sem 1 ∧
         (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
           IsMatMulErr (decodeComplex (dec p)) u 0 Ω μ mmR) ∧
         ∃ (M₀ : FloatMachine K ℝ ℂ) (μM μQ : ℕ → ℝ) (cN : ℝ),

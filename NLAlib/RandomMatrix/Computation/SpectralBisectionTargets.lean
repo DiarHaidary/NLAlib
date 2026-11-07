@@ -61,7 +61,7 @@ sizes $N$ and $n = (\ell, F)$ (the depth counter and the sign step limit), for e
 `x` (declared buffers $0$: the matrix, interleaved and column-major; $1$: $R_0$, $\varepsilon$,
 $\beta$; $2$, $3$: $2N^2$ and $N$ empty cells), under every interpretation whose semantics meets the
 standard model at $u$ with every value in range (`IsRelErrSem`), exact integer literals up to
-$N + 4$ (`IsExactIntLit`), the exact floor conversion (`IsExactToNat`) and `MulShrinks`, whose
+$N + 4$ and the exact floor conversion (the model's `IsIndexExactSem`) and `MulShrinks`, whose
 kernels are routines on pairs meeting `IsMatMulErr` and `IsQRErr` at $u$, floor $0$, range $\Omega$,
 and every rounding $\rho$ of the tape meeting `IsTapeRounding` at range $2\Omega$, independent of
 the position and with countable range and measurable fibres in each distribution: if $N \ge 1$, the
@@ -70,8 +70,10 @@ decoded matrix is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, and the hypotheses 
 hold at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ (the rounded shift adds
 the tape rounding of the seed) and normal-sampler constant
 $c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $(c(\mathrm{gaussian}) + 3)u \le 1/10$, then the
-probability that the run fails or ends with stored $\mathbf{U}$, $\mathbf{d}$ in declared buffers
-$2$, $3$ that are not an approximate diagonalization of $\mathbf{A}$ with residual
+probability that the run fails, exceeds the counts `eighCount p mm qr N ℓ F` or
+$4N^2 + N + 3 + 64(N + 1)^2(\ell + 3)$ cells at tag `p` (declared buffers and scratch; none at
+other tags, the read-only data counted on top), or ends with stored $\mathbf{U}$, $\mathbf{d}$ in
+declared buffers $2$, $3$ that are not an approximate diagonalization of $\mathbf{A}$ with residual
 $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
 [Shah2024, Theorem 4.2], for the program. -/
 def MatrixFreeRoundedProbEigh : Prop :=
@@ -81,8 +83,9 @@ def MatrixFreeRoundedProbEigh : Prop :=
       (fun N _ => EighData K N)
       (fun N _ x => ![(pairLayout.toArray x.A).map some, #[some x.R₀, some x.ε, some x.β],
         Array.replicate (2 * (N * N)) none, Array.replicate N none])
-      (fun N _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
-        IsExactIntLit dec I.sem (N + 4) ∧ IsExactToNat dec I.sem ∧ MulShrinks dec I.sem ∧
+      dec (fun N _ => N + 4) (fun N n => eighCount p mm qr N (n 0) (n 1))
+      (fun N n q => if q = p then 4 * (N * N) + N + 3 + 64 * (N + 1) ^ 2 * (n 0 + 3) else 0)
+      (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧ MulShrinks dec I.sem ∧
         (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
           IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mmR) ∧
         ∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧

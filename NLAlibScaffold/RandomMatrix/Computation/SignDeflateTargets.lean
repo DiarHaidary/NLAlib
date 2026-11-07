@@ -60,10 +60,24 @@ bounds, and $640 \cdot 8 \cdot u \le 1/2$); its output is `NLAlib.newtonSchulzSi
 $\operatorname{sign}(\mathbf{A})$ by the HDIAG accuracy theorem (Theorem 2.6 there). The failure
 set is empty, of measure $0$. M, about 60 lines. -/
 theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchulzSign := by
-  intro P ι _ p mm K _ dec u Ω μ N n hN x hpre I ρ hC _ Ω' _ μ' ξ _
+  intro P ι _ p mm K _ dec u Ω μ
+  refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
+  · intro N n x I st hI hex
+    obtain ⟨F, rfl⟩ : ∃ F, n = ![F] := ⟨n 0, by ext i; fin_cases i; rfl⟩
+    obtain ⟨hc, hm⟩ := newtonSchulzSignProg.cnt_le_of_exec_compiled (fun k => congrFun hI k) p N F
+      hex
+    refine ⟨by simpa [inputState] using hc, fun q => ?_⟩
+    have h := hm q
+    by_cases hq : q = p
+    · subst hq
+      simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
+      omega
+    · simpa [inputState, hq] using h
+  intro N n hN x hpre I ρ hidx hC _ _ Ω' _ μ' ξ _
+  have hlit : IsExactIntLit dec I.sem 1 := hidx.intLit
   obtain ⟨A, ε, b⟩ := x
   obtain ⟨hherm, hu0, hμ, hΩ, hb, hε, hε₁, a, ha, hspec, hu, hF⟩ := hpre
-  obtain ⟨hsem, hlit, ⟨mmR, hmmK, hmmE⟩, M₀, μM, μQ, cN, hM₀⟩ := hC
+  obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, M₀, μM, μQ, cN, hM₀⟩ := hC
   have hN' : 0 < N := hN
   set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR M₀.qr M₀.unif M₀.normal with hMdef
   have hM : M.IsAccurate (dec p) u 0 Ω μ μQ cN := isAccurate_toFloatMachine Ω hsem hlit hu0 p
@@ -139,9 +153,22 @@ is contained in the event bounded by the HDIAG deflation theorem (Theorem 3.3 th
 $\tau = 0$, $c_{\mathrm N} = 2(c + 3)$: its floor conditions hold at $\tau = 0$), and
 `MeasureTheory.measureReal_mono` concludes. M, about 70 lines. -/
 theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
-  intro P ι _ p mm qr K _ dec u Ω μM μQ c N n hr d hpre I ρ hC hρ Ω' _ μ' ξ hξ
+  intro P ι _ p mm qr K _ dec u Ω μM μQ c
+  refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
+  · intro N n x I st hI hex
+    obtain ⟨r, rfl⟩ : ∃ r, n = ![r] := ⟨n 0, by ext i; fin_cases i; rfl⟩
+    obtain ⟨hc, hm⟩ := deflateProg.cnt_le_of_exec_compiled (fun k => congrFun hI k) p N r hex
+    refine ⟨by simpa [inputState] using hc, fun q => ?_⟩
+    have h := hm q
+    by_cases hq : q = p
+    · subst hq
+      simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
+      omega
+    · simpa [inputState, hq] using h
+  intro N n hr d hpre I ρ hidx hC hρ _ Ω' _ μ' ξ hξ
+  have hlit : IsExactIntLit dec I.sem 2 := hidx.intLit
   obtain ⟨hU, hV, hS, hβ, hβ₁, ht, hx, hc, hu0, hcu, hmβ, hu, hΩ⟩ := hpre
-  obtain ⟨hsem, hlit, ⟨mmR, hmmK, hmmE⟩, ⟨qrR, hqrK, hqrE⟩, M₀, μM₀, μQ₀, cN, hM₀⟩ := hC
+  obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, ⟨qrR, hqrK, hqrE⟩, M₀, μM₀, μQ₀, cN, hM₀⟩ := hC
   obtain ⟨⟨hρr, -⟩, hρi⟩ := hρ
   set ρg : ℝ → K := ρ .gaussian 0 with hρg
   have hlit1 : IsExactIntLit dec I.sem 1 := fun q j hj => hlit q j (hj.trans (by norm_num))

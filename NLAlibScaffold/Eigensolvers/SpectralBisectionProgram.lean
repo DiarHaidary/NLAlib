@@ -65,9 +65,23 @@ law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold), so
 bounds it by $\theta$ (the hypotheses of `pre` at $u_{\mathrm M}$ and $c_{\mathrm N}$, floor $0$).
 M, about 90 lines. -/
 theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
-  intro P ι _ p mm qr K _ dec u Ω θ μM μQ c N n _ x hpre I ρ hI hρO Ω' _ μ ξ hξ
+  intro P ι _ p mm qr K _ dec u Ω θ μM μQ c
+  refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
+  · intro N n x I st hI hex
+    obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
+    obtain ⟨hc, hm⟩ := eighProg.cnt_le_of_exec_compiled (fun k => congrFun hI k) p N ℓ F hex
+    refine ⟨by simpa [inputState] using hc, fun q => ?_⟩
+    have h := hm q
+    by_cases hq : q = p
+    · subst hq
+      simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
+      nlinarith
+    · simpa [inputState, hq] using h
+  intro N n _ x hpre I ρ hidx hI hρO _ Ω' _ μ ξ hξ
   obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
-  obtain ⟨hsem, hlit, htn, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
+  have hlit : IsExactIntLit dec I.sem (N + 4) := hidx.intLit
+  have htn : IsExactToNat dec I.sem := hidx.toNat
+  obtain ⟨hsem, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
   obtain ⟨hρT, hρs, hρc⟩ := hρO
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hpre
   obtain ⟨hn, hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hu0, hcu, hcg, hcgu, hμM, hμQ,
@@ -129,8 +143,9 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
       (fun N _ => EighData K N)
       (fun N _ x => ![(pairLayout.toArray x.A).map some, #[some x.R₀, some x.ε, some x.β],
         Array.replicate (2 * (N * N)) none, Array.replicate N none])
-      (fun N _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
-        IsExactIntLit dec I.sem (N + 4) ∧ IsExactToNat dec I.sem ∧ MulShrinks dec I.sem ∧
+      dec (fun N _ => N + 4) (fun N n => eighCount p mm qr N (n 0) (n 1))
+      (fun N n q => if q = p then 4 * (N * N) + N + 3 + 64 * (N + 1) ^ 2 * (n 0 + 3) else 0)
+      (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧ MulShrinks dec I.sem ∧
         (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
           IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mmR) ∧
         ∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
@@ -170,9 +185,22 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
           (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3))
       (fun _ _ _ => θ) := by
-  intro N n _ x hpre I ρ hI hρO Ω' _ μ ξ hξ
+  refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
+  · intro N n x I st hI hex
+    obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
+    obtain ⟨hc, hm⟩ := eighProg.cnt_le_of_exec_compiled (fun k => congrFun hI k) p N ℓ F hex
+    refine ⟨by simpa [inputState] using hc, fun q => ?_⟩
+    have h := hm q
+    by_cases hq : q = p
+    · subst hq
+      simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
+      nlinarith
+    · simpa [inputState, hq] using h
+  intro N n _ x hpre I ρ hidx hI hρO _ Ω' _ μ ξ hξ
   obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
-  obtain ⟨hsem, hlit, htn, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
+  have hlit : IsExactIntLit dec I.sem (N + 4) := hidx.intLit
+  have htn : IsExactToNat dec I.sem := hidx.toNat
+  obtain ⟨hsem, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
   obtain ⟨hρT, hρs, hρc⟩ := hρO
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hpre
   obtain ⟨hn, hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hβge, hu0, hcu, hcg, hcgu, hμM,
