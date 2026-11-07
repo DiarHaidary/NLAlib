@@ -48,7 +48,7 @@ function of the values of `m` and `n`). S, 4 lines. -/
 theorem exec_zcopy_congr (m n : IExp ℕ) (X : ℕ) (xo : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) :
     exec I (zcopy (ι := ι) p m n X xo Y yo).run st =
       exec I (zcopy (ι := ι) p (.const m.eval) (.const n.eval) X xo Y yo).run st := by
-  sorry
+  exact exec_eq_of_normIdx_eq I (by unfold zcopy; rfl) st
 
 /-- **`zidentity` at an index expression** runs as at the constant of its value. No printed source.
 Proof: as `NLAlib.Computation.exec_zcopy_congr`, unfolding `NLAlib.Computation.zidentity` and
