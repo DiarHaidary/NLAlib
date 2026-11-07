@@ -6,8 +6,8 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisection.Global
-public import NLAlibScaffold.Matrix.Computation.Deflation
-public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSign
+public import NLAlib.Matrix.Computation.Deflation
+public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 
 /-!
 # Spectral bisection with sharper precision budgets (scaffold, stage HDIAG-BOUNDS)
