@@ -30,6 +30,7 @@ public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Computation.Model
 public import NLAlib.Computation.NormalizationErrors
 public import NLAlib.Computation.Rounding
+public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
