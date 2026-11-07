@@ -251,7 +251,36 @@ theorem isUnifSampler_uniformUnif {sem : ScalarSem P K} {dec : P → K → ℝ} 
     (p : P) {ρ : ℝ → K} (hρ : ∀ v : ℝ, |v| ≤ 1 → |dec p (ρ v) - v| ≤ c * u * |v|)
     (hρI : ∀ v ∈ Set.Icc (-1 : ℝ) 1, dec p (ρ v) ∈ Set.Icc (-1 : ℝ) 1) (hu : 0 ≤ u) (hc : 0 ≤ c) :
     IsUnifSampler (dec p) ((c + 1) * u) 0 (sem.uniformUnif p ρ) := by
-  sorry
+  intro s v hs hv
+  have hrI : |dec p (ρ v)| ≤ 1 := abs_le.mpr (hρI v hv)
+  have hvabs : |v| ≤ 1 := abs_le.mpr hv
+  obtain ⟨z', hz'⟩ := hsem.bin_ok p .mul s (ρ v) trivial (fun h => by cases h) trivial
+  obtain ⟨δ, hδ, hzd⟩ := hsem.bin_err p .mul s (ρ v) z' trivial hz'
+  have hmz := hmul p s (ρ v) z' hz' hrI
+  have hzeq : sem.uniformUnif p ρ s v = z' := by
+    change (sem.bin p .mul s (ρ v)).getD default = z'
+    rw [hz']; rfl
+  rw [hzeq, max_eq_left hs]
+  rw [abs_of_nonneg hs] at hmz
+  simp only [BinOp.realOp] at hzd
+  refine ⟨hmz, ?_⟩
+  rw [hzd]
+  have key : dec p s * v - dec p s * dec p (ρ v) * (1 + δ) =
+      dec p s * (v - dec p (ρ v)) - dec p s * dec p (ρ v) * δ := by ring
+  have hvr : |v - dec p (ρ v)| ≤ c * u * |v| := by
+    rw [abs_sub_comm]; exact hρ v hvabs
+  have hrδ : |dec p (ρ v)| * |δ| ≤ u := by
+    calc |dec p (ρ v)| * |δ| ≤ 1 * u := mul_le_mul hrI hδ (abs_nonneg _) zero_le_one
+      _ = u := one_mul u
+  rw [key]
+  calc |dec p s * (v - dec p (ρ v)) - dec p s * dec p (ρ v) * δ|
+      ≤ |dec p s * (v - dec p (ρ v))| + |dec p s * dec p (ρ v) * δ| := abs_sub _ _
+    _ = dec p s * |v - dec p (ρ v)| + dec p s * (|dec p (ρ v)| * |δ|) := by
+        simp only [abs_mul, abs_of_nonneg hs, mul_assoc]
+    _ ≤ dec p s * (c * u * |v|) + dec p s * u :=
+        add_le_add (mul_le_mul_of_nonneg_left hvr hs) (mul_le_mul_of_nonneg_left hrδ hs)
+    _ ≤ (c + 1) * u * dec p s := by
+        nlinarith [mul_le_mul_of_nonneg_left hvabs (mul_nonneg (mul_nonneg hs hc) hu)]
 
 /-- **The ideal machine is accurate**: if `sem` meets the standard model at $u \ge 0$ with every
 value in range, exact literals up to $2$, the exact floor conversion and
