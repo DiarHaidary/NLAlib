@@ -38,9 +38,14 @@ uniform tape and the rounded models:
   contract).
 * `not_matrixFreeRoundedProb_thirdTree` (R1): the rounded model quantifies over every semantics
   meeting the standard model, so a program correct only under exact arithmetic is false.
-* `runsWithin_scratchTree_emptySt` (H1, the trap, true today): from a state without its declared
-  buffer a program's scratch takes the output's handle and the run succeeds with the output gone.
-  It becomes `¬ …` with the `Prog.RunsWithin` change of Stage 2b.
+* `not_runsWithin_scratchTree_emptySt` (H1, the handle-reuse trap, closed): from a state without
+  its declared buffer a program's scratch would take the output's handle and the run would succeed
+  with the output gone; `Prog.RunsWithin` requires the start state to hold exactly the declared
+  buffers, so the run is no run within a budget.
+
+The rounded fixtures K1–K3, U2 and R1 pass the model's decoding (the identity), index-exactness
+bound `0` (`isIndexExactSem_exactSem`, `isIndexExactSem_upLitSem`) and the budgets `0`; they are
+false by a wrong output or by failure, whatever the budget.
 
 Run with `lake env lean scripts/AccessModelFixtures.lean` after `lake build NLAlib`. -/
 
@@ -108,7 +113,7 @@ theorem not_matrixFree_leakTree (A₀ : Matrix (Fin 1) (Fin 1) ℚ) :
       (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => Finsupp.single (.lit ()) 1)
       (fun _ _ _ => 1) (fun _ _ _ A _ st => st.store.read () 0 0 = some A.trace) := by
   intro h
-  obtain ⟨st, hrun, -, -, hpost⟩ :=
+  obtain ⟨-, st, hrun, -, -, hpost⟩ :=
     h 1 (fun _ => 0) trivial () (Matrix.of fun _ _ => (A₀ 0 0 : ℝ) + 1) (fun _ _ => 0)
   have := read_of_exec_lit hrun
   rw [this, Matrix.trace_fin_one] at hpost
@@ -123,7 +128,7 @@ theorem not_matrixFree_copyTree :
       (fun _ _ => Finsupp.single (.copy ()) 1) (fun _ _ _ => 2)
       (fun _ _ _ A _ st => st.store.read () 1 0 = some A.trace) := by
   intro h
-  obtain ⟨st, hrun, -, -, hpost⟩ :=
+  obtain ⟨-, st, hrun, -, -, hpost⟩ :=
     h 1 (fun _ => 0) trivial (0 : ℝ) (Matrix.of fun _ _ => 1) (fun _ _ => 0)
   rw [read_of_exec_copy hrun, Matrix.trace_fin_one] at hpost
   simp at hpost
@@ -136,7 +141,7 @@ theorem not_matrixFree_drawTree :
       (fun _ _ => Finsupp.single (.draw () .gaussian) 1) (fun _ _ _ => 1)
       (fun _ _ _ A _ st => st.store.read () 0 0 = some A.trace) := by
   intro h
-  obtain ⟨st, hrun, -, -, hpost⟩ :=
+  obtain ⟨-, st, hrun, -, -, hpost⟩ :=
     h 1 (fun _ => 0) trivial () (Matrix.of fun _ _ => 1) (fun _ _ => 0)
   rw [read_of_exec_draw hrun, Matrix.trace_fin_one] at hpost
   simp at hpost
@@ -191,7 +196,7 @@ theorem not_matrixFreeProb_drawTree :
     ⟨aemeasurable_id, Measure.map_id⟩
   have key : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .rademacher 0 = 1} ≤ 0 := by
     refine le_trans (measureReal_mono ?_) h0
-    rintro ω hω ⟨st, hrun, -, -, hpost⟩
+    rintro ω hω ⟨-, st, hrun, -, -, hpost⟩
     change ω .rademacher 0 = 1 at hω
     rw [read_of_exec_draw hrun, Matrix.trace_fin_one] at hpost
     simp [hω] at hpost
@@ -234,13 +239,14 @@ def IsCopyKernel (I : Interp Unit Unit ℝ (OpCount Unit Unit)) : Prop :=
 theorem not_matrixFreeRoundedProb_kcallTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallTree (fun _ _ => True)
       (fun _ _ => ℝ × ℝ) (fun _ _ x => ![#[some x.1, some x.2], Array.replicate 1 none])
+      (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsCopyKernel I) (fun _ => True) (fun _ _ _ => True)
       (fun _ _ x st => st.store.read () 1 0 = some x.2) (fun _ _ _ => 0) := by
   intro h
   refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial ((0 : ℝ), (1 : ℝ)) trivial
-    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) ⟨rfl, fun _ => rfl⟩ trivial
-    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
-  rintro ⟨st, hrun, hgood⟩
+    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) (isIndexExactSem_exactSem 0)
+    ⟨rfl, fun _ => rfl⟩ trivial (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨-, st, hrun, -, -, hgood⟩
   simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
     blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
     Store.write, copyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList, Array.toList_range,
@@ -251,14 +257,14 @@ theorem not_matrixFreeRoundedProb_kcallTree :
 /-- K2: an aliased (in-place) kernel call fails, so a target that relies on it is false. -/
 theorem not_matrixFreeRoundedProb_kcallAliasTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallAliasTree (fun _ _ => True)
-      (fun _ _ => ℝ) (fun _ _ x => ![#[some x]])
+      (fun _ _ => ℝ) (fun _ _ x => ![#[some x]]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsCopyKernel I) (fun _ => True) (fun _ _ _ => True)
       (fun _ _ x st => st.store.read () 0 0 = some x) (fun _ _ _ => 0) := by
   intro h
   refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial (0 : ℝ) trivial
-    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) ⟨rfl, fun _ => rfl⟩ trivial
-    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
-  rintro ⟨st, hrun, -⟩
+    (kInterp copyKernel (fun _ => ([1], [1]))) (fun _ _ x => x) (isIndexExactSem_exactSem 0)
+    ⟨rfl, fun _ => rfl⟩ trivial (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨-, st, hrun, -⟩
   exact absurd hrun (by
     simp [kcallAliasTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, kcallBlocks,
       blockDisjoint, IExp.evalIn])
@@ -278,6 +284,7 @@ kernel meeting the contract. -/
 theorem not_matrixFreeRoundedProb_kcallTree_exactKernel :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () kcallTree (fun _ _ => True)
       (fun _ _ => ℝ) (fun _ _ x => ![#[some x], Array.replicate 1 none])
+      (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsDoublingKernel I) (fun _ => True) (fun _ _ _ => True)
       (fun _ _ x st => st.store.read () 1 0 = some (2 * x)) (fun _ _ _ => 0) := by
   intro h
@@ -286,8 +293,9 @@ theorem not_matrixFreeRoundedProb_kcallTree_exactKernel :
     rw [show 2 * v * (5 / 4) - 2 * v = (2 * v) / 4 by ring, abs_div]
     norm_num
   refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial (1 : ℝ) trivial
-    _ (fun _ _ x => x) hK trivial (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
-  rintro ⟨st, hrun, hgood⟩
+    _ (fun _ _ x => x) (isIndexExactSem_exactSem 0) hK trivial (Dist → ℕ → ℝ) _ tapeLaw id
+    ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨-, st, hrun, -, -, hgood⟩
   simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
     blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
     Store.write, sloppyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList,
@@ -301,7 +309,7 @@ false. -/
 theorem not_runsWithin_kcallTree_zero (m : Unit → ℕ) (Q : St Unit ℝ (OpCount Unit Unit) → Prop) :
     ¬ kcallTree.RunsWithin (kInterp copyKernel (fun _ => ([1], [1]))) 1 (fun _ => 0)
       (inputState () [#[some (0 : ℝ), some 1], Array.replicate 1 none]) 0 m Q := by
-  rintro ⟨st, hrun, hcnt, -, -⟩
+  rintro ⟨-, st, hrun, hcnt, -, -⟩
   simp [kcallTree, Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks,
     blockDisjoint, Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock,
     Store.write, copyKernel, Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList,
@@ -345,7 +353,7 @@ theorem not_matrixFreeProb_uniformTree :
     ⟨aemeasurable_id, Measure.map_id⟩
   have key : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} ≤ 0 := by
     refine le_trans (measureReal_mono ?_) h0
-    rintro ω hω ⟨st, hrun, -, -, hpost⟩
+    rintro ω hω ⟨-, st, hrun, -, -, hpost⟩
     simp [uniformTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
       Instr.run, exactInterp, inputState, Store.write] at hrun
     subst hrun
@@ -366,15 +374,17 @@ does not let a draw equal the declared input: `ρOK` and `Contracts` cannot ment
 theorem not_matrixFreeRoundedProb_uniformTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () uniformTree (fun _ _ => True)
       (fun _ _ => ℝ) (fun _ _ x => ![#[some x], Array.replicate 1 none])
+      (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => I.sem = exactSem) (fun ρ => ρ = fun _ _ x => x) (fun _ _ _ => True)
       (fun _ _ x st => st.store.read () 1 0 = some x) (fun _ _ _ => 0) := by
   intro h
   have h0 := h 1 (fun _ => 0) trivial (0 : ℝ) trivial
-    (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0)) (fun _ _ x => x) rfl rfl
-    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩
+    (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0)) (fun _ _ x => x)
+    (isIndexExactSem_exactSem 0) rfl rfl (Dist → ℕ → ℝ) _ tapeLaw id
+    ⟨aemeasurable_id, Measure.map_id⟩
   have key : tapeLaw.real {ω : Dist → ℕ → ℝ | ω .uniform 0 ≠ 0} ≤ 0 := by
     refine le_trans (measureReal_mono ?_) h0
-    rintro ω hω ⟨st, hrun, hpost⟩
+    rintro ω hω ⟨-, st, hrun, -, -, hpost⟩
     simp [uniformTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
       Instr.run, exactInterp, inputState, Store.write] at hrun
     subst hrun
@@ -401,6 +411,13 @@ theorem isRelErrSem_upLitSem :
     fun _ q _ => ⟨_, rfl⟩, h.neg, h.conj, h.re, h.sqrt_err, h.sqrt_ok, h.cmp_eq, h.cmp_lt,
     h.cmp_le, h.convert_err, h.convert_ok⟩
 
+/-- The literal `0` of `upLitSem` is exact and its conversion is the exact floor: it meets the
+rounded model's index exactness at the bound `0`. -/
+theorem isIndexExactSem_upLitSem : IsIndexExactSem (fun _ x => x) 0 upLitSem := by
+  refine ⟨fun _ k hk => ?_, fun _ x => by simp [upLitSem, exactSem]⟩
+  obtain rfl : k = 0 := Nat.le_zero.mp hk
+  exact ⟨0, by simp [upLitSem], by simp⟩
+
 /-- A tree that writes the literal `1/3` into the one declared cell. -/
 def thirdTree : Prog Unit Unit 0 1 := .instr (.lit () ⟨0, .const 0⟩ (1 / 3))
 
@@ -408,16 +425,16 @@ def thirdTree : Prog Unit Unit 0 1 := .instr (.lit () ⟨0, .const 0⟩ (1 / 3))
 quantifies over every semantics meeting the contract. -/
 theorem not_matrixFreeRoundedProb_thirdTree :
     ¬ MatrixFreeRoundedProb (P := Unit) (ι := Unit) (K := ℝ) () thirdTree (fun _ _ => True)
-      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
       (fun _ _ I => IsRelErrSem (fun _ => (1 / 2 : ℝ)) (fun _ x => x) (fun _ _ => True) I.sem)
       (fun _ => True) (fun _ _ _ => True)
       (fun _ _ _ st => st.store.read () 0 0 = some (1 / 3)) (fun _ _ _ => 0) := by
   intro h
   refine false_of_forall_mem (fun ω => ?_) (h 1 (fun _ => 0) trivial () trivial
     { exactInterp (P := Unit) (ι := Unit) (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ))
-        (fun _ _ => 0) with sem := upLitSem } (fun _ _ x => x) isRelErrSem_upLitSem trivial
-    (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
-  rintro ⟨st, hrun, hgood⟩
+        (fun _ _ => 0) with sem := upLitSem } (fun _ _ x => x) isIndexExactSem_upLitSem
+    isRelErrSem_upLitSem trivial (Dist → ℕ → ℝ) _ tapeLaw id ⟨aemeasurable_id, Measure.map_id⟩)
+  rintro ⟨-, st, hrun, -, -, hgood⟩
   simp [thirdTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
     Instr.run, upLitSem, inputState, Store.write] at hrun
   subst hrun
@@ -431,17 +448,17 @@ def scratchTree : Prog Unit Unit 0 1 :=
 /-- The empty state. -/
 def emptySt : St Unit ℝ (OpCount Unit Unit) := inputState () []
 
-/-- **The handle-reuse trap** (H1; a positive theorem today, flipped to `¬` when
-`st₀.store.size = b` is added to `Prog.RunsWithin`, `Computation-Hardening.md` §2.6): run from a
-state without its declared buffer, the program's scratch buffer gets handle `0`, the declared
-output's handle; the write lands in scratch, the pop discards it, and the run succeeds with the
-output unreadable. -/
-theorem runsWithin_scratchTree_emptySt :
-    scratchTree.RunsWithin (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0))
+/-- **The handle-reuse trap is closed** (H1, flipped at Stage 2b, `Computation-Hardening.md`
+§2.6): run from a state without its declared buffer, the program's scratch buffer would get handle
+`0`, the declared output's handle, the write would land in scratch, the pop discard it, and the run
+succeed with the output unreadable. `Prog.RunsWithin` now requires the start state to hold exactly
+the `b` declared buffers, so this run is not a run within any budget. -/
+theorem not_runsWithin_scratchTree_emptySt :
+    ¬ scratchTree.RunsWithin
+      (exactInterp (fun _ => (0 : Matrix (Fin 1) (Fin 1) ℝ)) (fun _ _ => 0))
       1 (fun _ => 0) emptySt (Finsupp.single (.lit ()) 1) (fun _ => 1)
       (fun st => st.store.read () 0 0 = none) := by
-  refine ⟨_, rfl, ?_, ?_, ?_⟩ <;>
-    simp [scratchTree, Prog.exec, FStmt.exec, Instr.subst, Cell.subst, IExp.subst, IExp.eval,
-      IExp.evalIn, Instr.run, exactInterp, emptySt, inputState, Store.write, Store.read, Instr.kind]
+  rintro ⟨hsize, -⟩
+  simp [emptySt, inputState] at hsize
 
 end AccessModelFixtures

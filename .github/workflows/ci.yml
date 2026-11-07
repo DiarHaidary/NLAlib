@@ -35,6 +35,8 @@ jobs:
         run: lake env lean scripts/Targets.lean
       - name: Access-model fixtures (cheating realisations are false as instances)
         run: lake env lean scripts/AccessModelFixtures.lean
+      - name: Access-model fixtures, index binder (data-dependent sizes are counted and bounded)
+        run: lake env lean scripts/AccessModelFixturesDynamic.lean
       - name: Tools library builds (NLAlibTools; not part of the library, may contain sorry)
         run: |
           lake build NLAlibTools
