@@ -63,15 +63,7 @@ private theorem isOrthRoutine_cgs2_of_lt {C : Type} [AddMonoid C] {u : P → ℝ
     (IExp.var t + 1) rfl rfl 1 8 10 0 0 hη₀ hη
     ((mul_le_mul_of_nonneg_right (by exact_mod_cast (by omega)) hu0).trans hu)
     (hmono.trans hc₁)
-  refine ⟨hO.composable, fun st V w hp hV hw hwc hhc h1 h2 h3 => ?_⟩
-  obtain ⟨out, W, Hw, mid, hr, hw1, hw2, he⟩ := hO.run st V w hp hV hw hwc hhc h1 h2 h3
-  have h₃ : 2 * (η₀ + cgsPassBound N (t + 1) (u tag) η₀) ^ 2 ≤
-      2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2 := by
-    gcongr
-  refine ⟨out, W, Hw, mid, hr, hw1, hw2, fun hV => (he.residual hV).trans
-    (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _)), fun hV => (he.orth hV).trans
-    (add_le_add (mul_le_mul_of_nonneg_right (by linarith) (norm_nonneg _))
-      (mul_le_mul_of_nonneg_right h₃ (norm_nonneg _)))⟩
+  exact hO.mono le_rfl (by linarith) (by linarith) (by gcongr)
 
 /-- The outputs `NLAlib.LanczosReorthOutputs` read only the declared buffers $0, \dots, 6$, so they
 survive the release of a matrix slot allocated after them. -/
