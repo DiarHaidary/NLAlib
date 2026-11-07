@@ -578,6 +578,20 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
 
 /-! ### One iteration and the decoupling theorem -/
 
+private theorem det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal
+    {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) (i : Fin (n + 1)) :
+    (H - d i • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 := by
+  have h : (H - d i • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) * V =
+      V * Matrix.diagonal (fun j => d j - d i) := by
+    rw [Matrix.sub_mul, hHV, Matrix.smul_mul, Matrix.one_mul]
+    ext a b
+    by_cases hab : a = b <;> simp [hab, mul_sub, mul_comm]
+  have hdet := congrArg Matrix.det h
+  rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal,
+    Finset.prod_eq_zero (Finset.mem_univ i) (sub_self _), mul_zero] at hdet
+  exact (mul_eq_zero.mp hdet).resolve_right ((Matrix.isUnit_iff_isUnit_det V).mp hV).ne_zero
+
 /-- **One iteration of $\mathrm{Sh}_{k,B}$ decouples or reduces the potential**: let
 $\mathbf{H}$ be upper Hessenberg with $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
 \mathbf{d})$, $\mathbf{V}$ invertible and $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 \le B$; let
@@ -608,7 +622,76 @@ theorem IsUpperHessenberg.isDecoupled_zero_shqrStep_or_hessenbergPotential_le
     IsDecoupled 0 (shqrStep B θ α γ m H ss) ∨
       hessenbergPotential (2 ^ m) (shqrStep B θ α γ m H ss) ≤
         (1 - γ) * hessenbergPotential (2 ^ m) H := by
-  sorry
+  have hk0 : 0 < 2 ^ m := by positivity
+  have hn : 0 < n := hk0.trans_le hmn
+  have haeval : ∀ s : ℂ, Polynomial.aeval H (shiftPoly (List.replicate (2 ^ m) s)) =
+      (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)) ^ (2 ^ m) := by
+    intro s
+    simp [shiftPoly, List.map_replicate, List.prod_replicate, Algebra.algebraMap_eq_smul_one]
+  change IsShiftSuccess γ (2 ^ m) H (shqrShift B θ α γ m H ss)
+  by_cases hdec : IsDecoupled 0 H
+  · exact Or.inl (hH.isDecoupled_zero_multiShiftedQRStep hdec _)
+  have hψ : 0 < hessenbergPotential (2 ^ m) H := by
+    by_contra h
+    exact hdec (isDecoupled_of_hessenbergPotential_le hk0 hmn le_rfl (by simpa using not_lt.mp h))
+  -- the potential after the step with shift `s` is at most `τ`
+  have hτ : ∀ s : ℂ, (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det ≠ 0 →
+      hessenbergPotential (2 ^ m) (multiShiftedQRStep H (List.replicate (2 ^ m) s)) ^ (2 ^ m) *
+        ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ (2 ^ m))
+          (Fin.last n))‖ ≤ 1 := by
+    intro s hs
+    have hu : IsUnit (Polynomial.aeval H (shiftPoly (List.replicate (2 ^ m) s))) := by
+      rw [haeval]
+      exact ((Matrix.isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hs)).pow _
+    have := hH.hessenbergPotential_multiShiftedQRStep_pow_mul_le (by simp [hk0])
+      (by simpa using hmn) hu
+    rwa [List.length_replicate, haeval, ← Matrix.inv_pow'] at this
+  have hsucc : ∀ s : ℂ, ((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0 ∨
+      1 ≤ ((1 - γ) * hessenbergPotential (2 ^ m) H) ^ (2 ^ m) *
+        ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ (2 ^ m))
+          (Fin.last n))‖) → IsShiftSuccess γ (2 ^ m) H s := by
+    intro s hs
+    by_cases hdet : (H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
+    · left
+      apply hH.isDecoupled_zero_multiShiftedQRStep_of_det_eq_zero hn
+      rw [haeval, Matrix.det_pow, hdet, zero_pow hk0.ne']
+    right
+    have h1 := hs.resolve_left hdet
+    have hx : 0 < ‖WithLp.toLp 2 (((H - s • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^
+        (2 ^ m)) (Fin.last n))‖ :=
+      (norm_nonneg _).lt_of_ne fun h => by rw [← h, mul_zero] at h1; linarith
+    have h0 : 0 ≤ hessenbergPotential (2 ^ m) (multiShiftedQRStep H (List.replicate (2 ^ m) s)) :=
+      Real.rpow_nonneg (Finset.prod_nonneg fun _ _ => norm_nonneg _) _
+    exact (pow_le_pow_iff_left₀ h0 (mul_nonneg (by linarith) hψ.le) hk0.ne').mp
+      (le_of_mul_le_mul_right ((hτ s hdet).trans h1) hx)
+  by_cases hdet : ∃ r ∈ ss, (H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det = 0
+  · rw [shqrShift, dif_pos hdet]
+    exact hsucc _ (Or.inl hdet.choose_spec.2)
+  have hd : ∀ i, ∀ s ∈ ss, d i ≠ s := fun i s hs he =>
+    hdet ⟨s, hs, he ▸ det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal hV hHV i⟩
+  have hrss := findRitz_mem H (e := 1) hlen
+  have hr := isPromisingRitzValue_findRitz hV hHV hlen hd
+    ((pow_le_pow_left₀ (pseudoConditionNumber_nonneg V) hB _).trans hα)
+  have h' : ∃ s ∈ shqrCandidates B θ α γ m H ss, IsShiftSuccess γ (2 ^ m) H s := by
+    by_cases hr' : IsShiftSuccess γ (2 ^ m) H (findRitz H m 1 ss)
+    · exact ⟨_, List.mem_cons_self, hr'⟩
+    have hlt := lt_of_not_ge fun h => hr' (Or.inr h)
+    have hdr : (H - findRitz H m 1 ss • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)).det ≠ 0 :=
+      fun h => hdet ⟨_, hrss, h⟩
+    have hstag : ‖WithLp.toLp 2 (((H - findRitz H m 1 ss •
+        (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ ss.length) (Fin.last n))‖ *
+          ((1 - γ) * hessenbergPotential ss.length H) ^ ss.length ≤ 1 := by
+      rw [hlen, mul_comm]
+      refine le_trans ?_ (hτ _ hdr)
+      gcongr
+    obtain ⟨s, hs, hs'⟩ := hss.exists_mem_squareGrid_det_eq_zero_or_one_le hV hHV hB hd hr
+      (by rw [hlen]; exact le_self_pow₀ one_le_two (by omega)) hθ hα1 hγ0 hγ1 (by linarith)
+      (by linarith) (hlen ▸ hψ) hstag
+    rw [hlen, ← sq] at hs
+    rw [hlen] at hs'
+    exact ⟨s, List.mem_cons_of_mem _ hs, hsucc s hs'⟩
+  rw [shqrShift, dif_neg hdet, dif_pos h']
+  exact h'.choose_spec.2
 
 /-- **The iterates of $\mathrm{Sh}_{k,B}$ are upper Hessenberg**: if $\mathbf{H}_0$ is, so is
 every `NLAlib.shqrIterate` $\mathbf{H}_t$, for every Ritz-value oracle.
