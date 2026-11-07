@@ -328,7 +328,27 @@ theorem countable_range_uniformUnif (sem : ScalarSem P K) (p : P) {ρ : ℝ → 
     (hc : (Set.range ρ).Countable) (hm : ∀ z, MeasurableSet (ρ ⁻¹' {z})) :
     (∀ s, (Set.range (sem.uniformUnif p ρ s)).Countable) ∧
       ∀ s z, MeasurableSet (sem.uniformUnif p ρ s ⁻¹' {z}) := by
-  sorry
+  refine ⟨fun s => ?_, fun s z => ?_⟩
+  · have hrange : Set.range (sem.uniformUnif p ρ s) =
+        (fun w => (sem.bin p .mul s w).getD default) '' Set.range ρ := by
+      rw [← Set.range_comp]; rfl
+    rw [hrange]
+    exact hc.image _
+  · have hT : {w | w ∈ Set.range ρ ∧ (sem.bin p .mul s w).getD default = z}.Countable :=
+      hc.mono fun w hw => hw.1
+    have hset : sem.uniformUnif p ρ s ⁻¹' {z} =
+        ⋃ w ∈ {w | w ∈ Set.range ρ ∧ (sem.bin p .mul s w).getD default = z}, ρ ⁻¹' {w} := by
+      ext v
+      simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_iUnion, Set.mem_ofPred_eq,
+        exists_prop]
+      constructor
+      · intro h
+        exact ⟨ρ v, ⟨⟨v, rfl⟩, h⟩, rfl⟩
+      · rintro ⟨w, ⟨_, hw⟩, hv⟩
+        rw [← hv] at hw
+        exact hw
+    rw [hset]
+    exact MeasurableSet.biUnion hT fun w _ => hm w
 
 /-- **The normal sampler of a rounding with countable range has a countable range and measurable
 fibres**. No printed source.
