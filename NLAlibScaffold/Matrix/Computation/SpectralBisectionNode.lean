@@ -49,6 +49,87 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! ### The sign step with the shallow step limit -/
 
+omit [Inhabited K] in
+private theorem eighSign_comp {a b : Builder P ι ℕ ℕ Unit}
+    (ha : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
+      exec I (a >>= f).run st = (exec I a.run st).bind (exec I (f ()).run))
+    (hb : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
+      exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run))
+    (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
+    exec I ((a >>= fun _ => b) >>= f).run st =
+      (exec I (a >>= fun _ => b).run st).bind (exec I (f ()).run) := by
+  change exec I (a >>= fun _ => b >>= f).run st = _
+  rw [ha, ha]
+  simp only [Option.bind_assoc]
+  congr 1
+  funext out
+  exact hb f out
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+private theorem eighSign_disj {b i j : ℕ} (h : i ≠ j) :
+    blockDisjoint (b, i, 1) (b, j, 1) = true := by
+  unfold blockDisjoint
+  rcases Nat.lt_or_gt_of_ne h with h | h
+  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
+  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
+
+private theorem eighSign_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (n : ℕ)
+    {X W V t : ℕ} {xo : IExp ℕ} {η : K} {st st₁ : St P K C}
+    {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hW : pairLayout.Holds st.store p W 0 (mmR A A)) (hη : st.store.read p t 0 = some η)
+    (hone : st.store.read p t 3 = some (I.sem.toFloatMachine p toNat mmR qrR unif normal).one)
+    (hlo : st.store.read p t 4 =
+      some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η))
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V) (htX : t ≠ X) (htW : t ≠ W) (htV : t ≠ V)
+    (h : exec I (Builder.run do
+      newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩
+      newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩ ⟨t, 0⟩ ⟨t, 1⟩) st =
+        some st₁) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    pairLayout.Holds st₁.store p X xo.eval (newtonSchulzRounded M A) ∧
+      pairLayout.Holds st₁.store p W 0 (mmR (newtonSchulzRounded M A) (newtonSchulzRounded M A)) ∧
+      st₁.store.read p t 0 = some η ∧ st₁.store.read p t 3 = some M.one ∧
+      st₁.store.read p t 4 = some (M.neg η) ∧
+      st₁.store.read p t 1 = some
+        (if newtonSchulzTest M η (newtonSchulzRounded M A) then M.zero else M.one) ∧
+      (∀ q b i, b ≠ t → b ≠ W → b ≠ V →
+        blockDisjoint (b, i, 1) (X, xo.eval, 2 * (n * n)) = true →
+        st₁.store.read q b i = st.store.read q b i) ∧
+      st₁.store.shape = st.store.shape ∧ st₁.pos = st.pos := by
+  have hd : ∀ {b b' : ℕ} (o o' l l' : ℕ), b ≠ b' → blockDisjoint (b, o, l) (b', o', l') = true :=
+    fun _ _ _ _ h => by simp [blockDisjoint, h]
+  have hsingle : ∀ (b : Builder P ι ℕ ℕ Unit) (S : Stmt P ι ℕ ℕ),
+      (∀ k, ContT.run b k = .seq S (k ())) → ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
+        exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) :=
+    fun _ _ hb f st => exec_run_bind I hb f st
+  have hstep : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (σ : St P K C),
+      exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩ >>= f).run σ =
+        (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
+          (exec I (f ()).run) := by
+    unfold newtonSchulzStepBlock
+    exact eighSign_comp (hsingle _ _ fun _ => rfl) (eighSign_comp (hsingle _ _ fun _ => rfl)
+      (eighSign_comp (hsingle _ _ fun _ => rfl) (eighSign_comp (hsingle _ _ fun _ => rfl)
+        (eighSign_comp (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+  rw [hstep] at h
+  obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
+  obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)
+    (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
+    (hd _ _ _ _ htX) hσ
+  have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (eighSign_disj hi)
+  obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, hpos₁⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
+    (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
+    (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
+    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
+    (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
+  have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → st₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
+    (hfr₁ p t i htW htV (eighSign_disj h1)).trans (hrσ i h2)
+  refine ⟨hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
+    hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
+    (hr₁ 4 (by omega) (by omega)).trans hlo, hf₁, fun q b i hbt hbW hbV hbX => ?_,
+    hsh₁.trans hshσ, hpos₁.trans hposσ⟩
+  exact (hfr₁ q b i hbW hbV (hd _ _ _ _ hbt)).trans (hfrσ q b i hbW hbV hbX (hd _ _ _ _ hbt))
+
 /-- **The bounded Newton–Schulz loop computes `NLAlib.newtonSchulzLoop`**: if kernel `mm` of `I`
 is the routine `mmR` on interleaved pairs and the semantics decides flags at `p`, a successful run
 of the loop of `NLAlib.eighSignBlock` with $F$ iterations, from a state whose block at `X` holds
@@ -92,7 +173,54 @@ theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
         blockDisjoint (b, i, 1) (X, xo.eval, 2 * (n * n)) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  sorry
+  obtain ⟨z, o, hz, ho, hzo, hoo⟩ := hflag
+  have hM0 : (I.sem.toFloatMachine p toNat mmR qrR unif normal).zero = z := by
+    simp [ScalarSem.toFloatMachine, hz]
+  have hM1 : (I.sem.toFloatMachine p toNat mmR qrR unif normal).one = o := by
+    simp [ScalarSem.toFloatMachine, ho]
+  change exec I (.seq (.loop (.const F) fun _ => (ifThenElse (ι := ι) p .eq ⟨t, 1⟩ ⟨t, 3⟩ (do
+        newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩
+        newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩ ⟨t, 0⟩ ⟨t, 1⟩)
+      (pure ())).run) .skip) st = some st' at h
+  rw [exec_seq_skip] at h
+  induction F generalizing st A with
+  | zero =>
+    simp only [exec_loop, IExp.eval, List.range_zero, List.foldlM_nil, Option.pure_def,
+      Option.some.injEq] at h
+    subst h
+    exact ⟨hA, fun _ _ _ _ _ _ _ => rfl, rfl, rfl⟩
+  | succ k ih =>
+    rw [exec_loop] at h
+    simp only [IExp.eval, List.range_succ_eq_map, List.foldlM_cons, List.foldlM_map] at h
+    obtain ⟨st₁, h₁, h⟩ := Option.bind_eq_some_iff.mp h
+    change exec I (.seq (.ite p .eq ⟨t, 1⟩ ⟨t, 3⟩ _ _) .skip) st = some st₁ at h₁
+    rw [exec_seq_skip, exec_ite] at h₁
+    cases ht : newtonSchulzTest (I.sem.toFloatMachine p toNat mmR qrR unif normal) η A
+    · rw [ht, if_neg (by simp), hM1] at hf
+      rw [hM1] at hone
+      simp only [cmpStep, IExp.eval, hf, hone, hoo, Option.bind_some, Option.map_some,
+        if_true] at h₁
+      obtain ⟨hX₁, hW₁, hη₁, hone₁, hlo₁, hf₁, hfr₁, hsh₁, hpos₁⟩ :=
+        eighSign_body hmm p n (st := { st with cnt := st.cnt + I.charge (.cmp p) }) hA hW hη
+          (by rw [hM1]; exact hone) hlo hWX hVX hWV htX htW htV h₁
+      obtain ⟨hX', hfr', hsh', hpos'⟩ := ih hX₁ hW₁ hη₁ hone₁ hlo₁ hf₁
+        (by rw [exec_loop]; exact h)
+      refine ⟨by simpa [newtonSchulzLoop, ht] using hX', fun q b i h1 h2 h3 h4 =>
+        (hfr' q b i h1 h2 h3 h4).trans (hfr₁ q b i h1 h2 h3 h4), hsh'.trans hsh₁,
+        hpos'.trans hpos₁⟩
+    · rw [ht, if_pos rfl, hM0] at hf
+      rw [hM1] at hone
+      simp only [cmpStep, IExp.eval, hf, hone, hzo, Option.bind_some, Option.map_some,
+        Bool.false_eq_true, if_false] at h₁
+      change exec I .skip _ = some st₁ at h₁
+      rw [exec_skip, Option.some.injEq] at h₁
+      subst h₁
+      obtain ⟨hX', hfr', hsh', hpos'⟩ := ih (st := { st with cnt := st.cnt + I.charge (.cmp p) })
+        hA hW hη (by rw [hM1]; exact hone) hlo
+        (by rw [ht, if_pos rfl, hM0]; exact hf) (by rw [exec_loop]; exact h)
+      have hL : ∀ N, newtonSchulzLoop (I.sem.toFloatMachine p toNat mmR qrR unif normal) η N
+          A = A := fun N => by cases N <;> simp [newtonSchulzLoop, ht]
+      exact ⟨by rw [hL]; rw [hL] at hX'; exact hX', hfr', hsh', hpos'⟩
 
 /-- **The sign step computes `NLAlib.newtonSchulzSign`**: if kernel `mm` of `I` is the routine
 `mmR` on interleaved pairs and the semantics decides flags at `p`, a successful run of
