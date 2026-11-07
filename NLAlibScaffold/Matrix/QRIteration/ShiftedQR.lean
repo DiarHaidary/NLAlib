@@ -193,6 +193,40 @@ theorem IsUpperHessenberg.hessenbergPotential_pow_le_norm_aeval
   rw [hessenbergPotential_pow hk H, ← norm_prod, ← h2]
   exact h1
 
+/-- The last row of $\mathbf{H}^i$, $i \le k$, on the last $k$ columns is the last row of
+$\mathbf{H}_{(k)}^i$. -/
+private theorem IsUpperHessenberg.pow_apply_last_trailing
+    {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {k : ℕ} (hk : 0 < k)
+    (hkn : k ≤ n) {i : ℕ} (hi : i ≤ k) (j : Fin k) :
+    (H ^ i) (Fin.last n) ⟨min (n + 1 - k + j) n, Nat.lt_succ_of_le (min_le_right _ _)⟩ =
+      (trailingBlock k H ^ i) ⟨k - 1, by omega⟩ j := by
+  induction i generalizing j with
+  | zero =>
+    simp only [pow_zero, Matrix.one_apply, Fin.ext_iff, Fin.val_last]
+    congr 1
+    apply propext
+    omega
+  | succ i ih =>
+    rw [pow_succ, pow_succ, Matrix.mul_apply, Matrix.mul_apply]
+    symm
+    refine Fintype.sum_of_injective
+      (fun j' : Fin k => (⟨min (n + 1 - k + j') n, Nat.lt_succ_of_le (min_le_right _ _)⟩ :
+        Fin (n + 1))) ?_ _ _ ?_ ?_
+    · intro a b hab
+      simp only [Fin.mk.injEq] at hab
+      ext; omega
+    · intro c hc
+      have hc' : (c : ℕ) + k ≤ n := by
+        by_contra hcon
+        exact hc ⟨⟨c - (n + 1 - k), by omega⟩, Fin.ext (by simp only; omega)⟩
+      have := hH.aeval_apply_last_eq_zero (p := Polynomial.X ^ i) (k := i)
+        (by rw [Polynomial.natDegree_X_pow]) (j := c) (by omega)
+      rw [Polynomial.aeval_X_pow] at this
+      rw [this, zero_mul]
+    · intro j'
+      rw [ih (by omega) j']
+      rfl
+
 /-- **The variational formula for the potential**: for upper Hessenberg $\mathbf{H}$ and
 $1 \le k \le n$, the characteristic polynomial $\chi_k$ of the trailing block
 $\mathbf{H}_{(k)}$ attains the lower bound,
@@ -213,7 +247,36 @@ theorem IsUpperHessenberg.norm_aeval_charpoly_trailingBlock_eq
     (hkn : k ≤ n) :
     ‖WithLp.toLp 2 (Polynomial.aeval H (trailingBlock k H).charpoly (Fin.last n))‖ =
       hessenbergPotential k H ^ k := by
-  sorry
+  set T := trailingBlock k H
+  have hdeg : T.charpoly.natDegree = k := by
+    rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
+  set v := Polynomial.aeval H T.charpoly (Fin.last n)
+  have htrail : ∀ c : Fin (n + 1), n + 1 - k ≤ (c : ℕ) → v c = 0 := by
+    intro c hc
+    have hc' : c = ⟨min (n + 1 - k + (⟨c - (n + 1 - k), by omega⟩ : Fin k)) n,
+        Nat.lt_succ_of_le (min_le_right _ _)⟩ := Fin.ext (by simp only; omega)
+    have hT := congrFun (congrFun (Matrix.aeval_self_charpoly T) ⟨k - 1, by omega⟩)
+      ⟨c - (n + 1 - k), by omega⟩
+    rw [Polynomial.aeval_eq_sum_range] at hT
+    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.zero_apply] at hT
+    rw [hc', ← hT]
+    simp only [v, Polynomial.aeval_eq_sum_range, Matrix.sum_apply, Matrix.smul_apply]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    exact congrArg _ (hH.pow_apply_last_trailing hk hkn (j := ⟨c - (n + 1 - k), by omega⟩)
+      (by rw [Finset.mem_range] at hi; omega))
+  set c₀ : Fin (n + 1) := ⟨n - k, by omega⟩
+  have hv : v = Pi.single c₀ (v c₀) := by
+    funext c
+    by_cases hc : c = c₀
+    · subst hc; simp
+    · rw [Pi.single_eq_of_ne hc]
+      rcases lt_or_ge ((c : ℕ) + k) n with h | h
+      · exact hH.aeval_apply_last_eq_zero hdeg.le h
+      · exact htrail c (by have : (c : ℕ) ≠ n - k := fun h' => hc (Fin.ext h'); omega)
+  rw [hv, PiLp.toLp_single, PiLp.norm_single, show v c₀ = Polynomial.aeval H T.charpoly
+    (Fin.last n) c₀ from rfl,
+    hH.aeval_apply_last_eq_prod (Matrix.charpoly_monic T) hdeg (by simp only [c₀]; omega),
+    norm_prod, hessenbergPotential_pow hk]
 
 /-- **The potential is at most the norm**: for $1 \le k \le n$,
 $\psi_k(\mathbf{H}) \le \|\mathbf{H}\|_2$. [BanksGarzaVargasSrivastava2021, proof of
