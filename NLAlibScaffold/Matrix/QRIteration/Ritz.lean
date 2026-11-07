@@ -126,7 +126,74 @@ theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
     (hθ : 0 ≤ θ) :
     1 ≤ pseudoConditionNumber V * (α * θ * hessenbergPotential ss.length H) ^ ss.length *
       ∑ i, lastRowWeights V i / ‖d i - r‖ ^ ss.length := by
-  sorry
+  obtain ⟨-, hr2⟩ := hr
+  have hW : ∑ i, lastRowWeights V i = 1 := sum_lastRowWeights hV
+  have hκ0 : 0 ≤ pseudoConditionNumber V := by unfold pseudoConditionNumber; positivity
+  have hψ0 : 0 ≤ hessenbergPotential ss.length H := by unfold hessenbergPotential; positivity
+  have hne : ∀ i, (shiftPoly ss).eval (d i) ≠ 0 := by
+    intro i
+    unfold shiftPoly
+    rw [Polynomial.eval_list_prod, List.map_map]
+    apply List.prod_ne_zero
+    simp only [List.mem_map, Function.comp_apply, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, not_exists, not_and]
+    intro s hs
+    exact sub_ne_zero.mpr (hd i s hs)
+  -- the second moment of `p(d)` is at most `(κ (θ ψ)^k)^2`
+  have hA := hss
+  unfold IsOptimalRitzValues at hA
+  rw [aeval_eq_mul_diagonal_mul_inv hV hHV] at hA
+  have hm2 : ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2 ≤
+      (pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length) ^ 2 := by
+    have h1 := sum_lastRowWeights_mul_sq_le hV (fun i => (shiftPoly ss).eval (d i))
+    calc ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2
+        ≤ _ := h1
+      _ ≤ pseudoConditionNumber V ^ 2 *
+          ((θ * hessenbergPotential ss.length H) ^ ss.length) ^ 2 := by
+        gcongr
+      _ = _ := by ring
+  -- first moment, by Cauchy–Schwarz
+  have hm1 : ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ≤
+      pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length := by
+    have hcs := Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul Finset.univ
+      (r := fun i => lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖)
+      (f := fun i => lastRowWeights V i)
+      (g := fun i => lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2)
+      (fun i _ => lastRowWeights_nonneg V i)
+      (fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (sq_nonneg _))
+      (fun i _ => le_of_eq (by ring))
+    rw [hW, one_mul] at hcs
+    have hnn : 0 ≤ pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length :=
+      mul_nonneg hκ0 (pow_nonneg (mul_nonneg hθ hψ0) _)
+    exact le_of_pow_le_pow_left₀ two_ne_zero hnn (hcs.trans hm2)
+  -- reciprocal moment, by Cauchy–Schwarz again
+  have hrec : 1 ≤ (∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖) *
+      ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ := by
+    have hcs := Finset.sum_sq_le_sum_mul_sum_of_sq_le_mul Finset.univ
+      (r := fun i => lastRowWeights V i)
+      (f := fun i => lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖)
+      (g := fun i => lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖)
+      (fun i _ => div_nonneg (lastRowWeights_nonneg V i) (norm_nonneg _))
+      (fun i _ => mul_nonneg (lastRowWeights_nonneg V i) (norm_nonneg _))
+      (fun i _ => le_of_eq (by
+        have : ‖(shiftPoly ss).eval (d i)‖ ≠ 0 := norm_ne_zero_iff.mpr (hne i)
+        field_simp))
+    rw [hW, one_pow] at hcs
+    exact hcs
+  have hS0 : 0 ≤ ∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖ :=
+    Finset.sum_nonneg fun i _ => div_nonneg (lastRowWeights_nonneg V i) (norm_nonneg _)
+  have hK0 : 0 ≤ pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length :=
+    mul_nonneg hκ0 (pow_nonneg (mul_nonneg hθ hψ0) _)
+  calc (1 : ℝ)
+      ≤ (∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖) *
+          ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ := hrec
+    _ ≤ (∑ i, lastRowWeights V i / ‖(shiftPoly ss).eval (d i)‖) *
+          (pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length) :=
+        mul_le_mul_of_nonneg_left hm1 hS0
+    _ ≤ (α ^ ss.length * ∑ i, lastRowWeights V i / ‖d i - r‖ ^ ss.length) *
+          (pseudoConditionNumber V * (θ * hessenbergPotential ss.length H) ^ ss.length) :=
+        mul_le_mul_of_nonneg_right hr2 hK0
+    _ = _ := by simp only [mul_pow]; ring
 
 /-- **Almost-monotonicity of the potential**: in the setting of the moment comparison
 (upper Hessenberg $\mathbf{H}$, $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$
