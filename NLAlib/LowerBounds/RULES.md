@@ -8,6 +8,15 @@ rule has no check. The reasons are in the contributor guide at the linked sectio
 with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file
 and `docs/rules/DIGEST.md`.
 
+## This topic
+
+- **Layer 5** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **N9** `NLAlib.IsChebyshevTwoIntervalSpectrum.measureReal_exists_norm_sub_mulVec_lt_le`: LB-C SH1 (design note §3.5); with `_of_hasLaw_gaussianMatrix` the declaration line is 105 characters, past the line limit (as NAME-R4B)
+- **N9** `NLAlib.QueryAlgorithm.IsMeasurable.measure_queryAt_notMem_span_and_mulVec_mem_span_eq_zero`: LB-A R4b, named by its event (design note §9); with `_of_hasLaw_gaussianMatrix` the theorem name is 103 characters, past the line limit (decision NAME-R4B, Review-LBA.json)
+
 ## Every topic
 
 ### File template
@@ -132,7 +141,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

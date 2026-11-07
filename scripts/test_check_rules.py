@@ -308,7 +308,7 @@ FIX = {
            '/-- **Invariant.** [Abc2000, Theorem 1].\nResult: a-inv -/\ninstance isFoo_bar : IsFoo bar := ⟨⟩'),
     'R2': (CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'foo-resukt'),
            CITED + '\n\n' + CITED.replace('foo', 'baz').replace('baz-result', 'bar-result')),
-    'R3': (None, None),  # needs the explore repository; covered by test_orphans
+    'R3': (None, None),  # needs the explorer's data files; covered by test_orphans
     'G1': ({'docs/design/Mathlib-deviations.md': DEVIATIONS + '\n## 2. Bad\n\n- **Mathlib.** a\n'}, {}),
     'E5': ({'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.Matrix.A\n\n')},
            {'NLAlib/Computation/A.lean': lean(header=HDR + 'public import NLAlib.ForMathlib.Data.Nat.Init\n'
@@ -366,7 +366,13 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(len(v7(None)), 2)  # the count is recorded by its file, not the registry
 
     def test_layer_table_matches_contributing(self):
-        # the layout guide's folder block and check_rules.LAYER give each top-level folder one layer
+        # the layout guide's folder block and docs/rules/layers.toml give each top-level folder one
+        # layer, and every top-level folder of NLAlib/ has one
+        folders = {d.name for d in (Path(__file__).resolve().parent.parent / 'NLAlib').iterdir() if d.is_dir()}
+        self.assertEqual(folders, set(check_rules.LAYER))
+        for e in check_rules.LAYERS.values():  # a narrowed import list names its rule and reason
+            self.assertEqual('imports' in e, 'rule' in e and 'reason' in e)
+            self.assertIn(e.get('rule', 'P1'), check_rules.SPECS)
         import re
         text = (Path(__file__).resolve().parent.parent / 'docs/contributing/layout.md').read_text()
         block = text[text.index('## 1. Folders and layers'):text.index('NLAlibTools/')]
@@ -412,7 +418,9 @@ class RuleTests(unittest.TestCase):
         for rid, sp in check_rules.SPECS.items():
             with self.subTest(rule=rid):
                 self.assertEqual(set(sp) - {'id', 'area', 'severity', 'check', 'scope', 'exclude', 'home',
-                                            'exempt', 'exempt_while', 'section', 'statement', 'fix'}, set())
+                                            'exempt', 'exempt_while', 'exempt_reason', 'section',
+                                            'statement', 'fix'}, set())
+                self.assertEqual('exempt' in sp, 'exempt_reason' in sp)
                 self.assertIn(sp['severity'], ('error', 'warning', 'review'))
                 self.assertIn(sp['check'], ('source', 'extraction', 'lean', 'none'))
                 self.assertEqual(sp['check'] == 'none', sp['severity'] == 'review')

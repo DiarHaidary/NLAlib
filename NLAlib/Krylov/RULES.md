@@ -10,12 +10,24 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 1** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **V3** A singular-value ratio is `singularGapRatio`, never spelled out. Fix: Use `singularGapRatio` (a bridge lemma relating the two is allowlisted). [vocabulary]
 - **B6** (review) State the readable bound when the sharp form gains only a factor that is bounded and tends to 1 as the bound becomes small (a Chebyshev value, sech², $(1 + \rho^{2q})^2$). Fix: State the readable form; give the sharp form and the lost factor in one docstring sentence. [statements §2] rule 7
 - **M2** A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`, never the formula it unfolds to. [docstrings] item 5
 - **M3** (warning) A theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`. [docstrings] item 5
 - **M5** (warning) An algorithm definition shows its formula as `\mathsf{name}(…) := …`. Fix: Show its formula as `\mathsf{name}(…) := …`. [docstrings] item 5
 - **N10** Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`. Fix: State and name the error as `exact − computed`. [naming §2]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **T10** `NLAlib.lanczosState_beta_eq_of_orthonormal_recurrence`: `j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`
+- **T10** `NLAlib.lanczosState_eq_of_orthonormal_recurrence`: `j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`
+- **T10** `NLAlib.lanczosStep_of_orthonormal_recurrence`: `j` is a step index of the sequences `β j • u j`: `β j` is the scalar of the smul, not `j`
+- **N4** `NLAlib.LanczosData.transpose_dilatedBasis_mul_dilatedBasisSucc_mul`: the statement is `D.dilatedBasisᵀ * (D.dilatedBasisSucc * D.tridiagonalSucc) = D.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached (as for its LanczosRun counterpart)
+- **N4** `NLAlib.LanczosRun.transpose_dilatedBasis_mul_dilatedBasisSucc_mul`: the statement is `L.dilatedBasisᵀ * (L.dilatedBasisSucc * L.tridiagonalSucc) = L.tridiagonal`; the checker does not read the token `dilatedBasis` with `ᵀ` attached
+- **N10** `Matrix.PosDef.re_quadForm_sub_cgIterate_sub_re_quadForm_sub_cgIterate_succ`: a difference of two errors, each `exact − computed` (`quadForm_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error
+- **N10** `NLAlib.CGRun.abs_quadForm_backwardH_sub_cgIterate_sub_le`: the gap between the model's error `quadForm (x⋆ − cgIterate)` (exact − computed) and the computed estimate; `cgIterate_sub` joins the error to the estimate
+- **N10** `NLAlib.CGRun.quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate`: a difference of two errors, each `exact − computed` (`backwardH_sub_cgIterate`); `cgIterate_sub` joins the two errors, not a computed-minus-exact error
 
 ## Every topic
 
@@ -137,7 +149,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

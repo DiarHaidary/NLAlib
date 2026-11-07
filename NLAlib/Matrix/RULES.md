@@ -10,9 +10,21 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 0** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **T6** (warning) Matrix theorems are over `[Fintype n]` index types; `Fin` only where order or recursion matters. Fix: Use `[Fintype n]` unless order or recursion carries content. [statements §1]
 - **T7** (warning) Matrix theorems are over `[RCLike 𝕜]` where the proof allows, not ℝ only. Fix: State it over `[RCLike 𝕜]` if the proof allows. [statements §1]
 - **T12** (warning) An `∃`-index into `eigenvalue` or `singularValues` carries its range. Fix: Bound the index (`k < Fintype.card n`). [statements §2]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **P9** `NLAlib.sum_range_rpow_le_of_forall_prod_range_le`: Weyl's majorant lemma: scalar statement, but the proof needs the Matrix majorization theory, which ForMathlib cannot import (P1)
+- **V3** `NLAlib.one_sub_singularGapRatio_div_one_add_singularGapRatio`: the vocabulary bridge `(1 - γ) / (1 + γ) = σⱼ / σᵢ` of `singularGapRatio` itself
+- **V3** `NLAlib.pseudoConditionNumber_eq_singularValues_div`: the bridge from the pseudo-condition number to the classical ratio σ₀/σₖ, not a gap
+- **B1** `NLAlib.polarFactor`: the polar factor of a matrix, not a numerical bound; `Factor` is the matrix-analysis word
+- **N2** `NLAlib.mul_frobNorm_mul_one_sub_sq_add_le`: TGN-Upper L34t (tail weight): the conclusion is `3 / 8 * θ² * ‖W (1 - P_b)‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`
+- **N2** `NLAlib.mul_frobNorm_mul_truncatedSVD_sq_add_le`: TGN-Upper L34h (head weight): the conclusion is `3 / 8 * ‖W B_a‖² + … ≤ …`, and the checker reads the literal `3 / 8` as `div`, `ofNat`, `three` instead of the scalar factor that N2 admits as `mul_`
+- **N4** `Matrix.IsHermitian.ext_quadForm`: an ext lemma is named for the hypothesis it compares (`quadForm A z = quadForm B z`), as Mathlib's `ext_…`
+- **N6** `Matrix.IsHermitian.integral_pow_spectralMeasure`: Mathlib's `integral_pow` idiom (the integrand `x ^ k` is the argument of `integral_`, the measure follows); `pow` comes after its argument `x`, the checker reads `spectralMeasure` as its argument
 
 ## Every topic
 
@@ -137,7 +149,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

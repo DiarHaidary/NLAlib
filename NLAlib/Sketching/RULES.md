@@ -10,6 +10,7 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 3** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **B2** No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form. Fix: Use a named constant, or an asymptotic form with `∃ C` before every dimension. [statements §2] rule 3
 - **B3** An asymptotic form says "$O(\ldots)$ suffices" in its docstring. Fix: Say in words which $O(\cdot)$ size suffices. [statements §2] rule 3
 - **B4** An asymptotic form puts its constants first and fixes index types to `Type`. Fix: State `∃ C ε₀ : ℝ, … ∀ {Ω m n … : Type} …`. [statements §2] rule 3
@@ -138,7 +139,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

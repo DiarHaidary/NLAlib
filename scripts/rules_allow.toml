@@ -17,7 +17,7 @@ reason = "the bridge from the pseudo-condition number to the classical ratio σ�
 [[allow]]
 rule = "V3"
 decl = "NLAlib.one_sub_singularGapRatio_div_one_add_singularGapRatio"
-reason = "the §5.3 bridge `(1 - γ) / (1 + γ) = σⱼ / σᵢ` of `singularGapRatio` itself"
+reason = "the vocabulary bridge `(1 - γ) / (1 + γ) = σⱼ / σᵢ` of `singularGapRatio` itself"
 
 [[allow]]
 rule = "S6"
@@ -27,27 +27,32 @@ reason = "a `def`, made an instance only inside `open scoped Matrix.Norms.L2Oper
 [[allow]]
 rule = "S6"
 decl = "Matrix.instOrderClosedTopology"
-reason = "the Loewner order is closed: the instance Mathlib would add with `MatrixOrder` (§7)"
+reason = "the Loewner order is closed: the instance Mathlib would add with `MatrixOrder`"
 
 [[allow]]
 rule = "S6"
 decl = "Matrix.compactSpace_unitaryGroup"
-reason = "compactness of `Matrix.unitaryGroup`: the instance Mathlib would add (§7), upstream candidate"
+reason = "compactness of `Matrix.unitaryGroup`: the instance Mathlib would add, upstream candidate"
+
+[[allow]]
+rule = "S6"
+decl = "Matrix.instMeasurableSpace"
+reason = "the product σ-algebra on matrices, which random matrices need and Mathlib does not yet give `Matrix`; in ForMathlib, upstream candidate"
 
 [[allow]]
 rule = "S6"
 decl = "Matrix.instBorelSpace"
-reason = "companion of `Matrix.instMeasurableSpace`, the §7 exception: Borel for the product σ-algebra"
+reason = "companion of `Matrix.instMeasurableSpace`: Borel for the product σ-algebra"
 
 [[allow]]
 rule = "S6"
 decl = "Matrix.instSecondCountableTopology"
-reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as for `m → n → R`"
+reason = "the product-topology instance Mathlib would add for `Matrix`, as for `m → n → R`"
 
 [[allow]]
 rule = "S6"
 decl = "Matrix.instMetrizableSpace"
-reason = "the product-topology instance Mathlib would add for `Matrix` (§7), as for `m → n → R`"
+reason = "the product-topology instance Mathlib would add for `Matrix`, as for `m → n → R`"
 
 [[allow]]
 rule = "T15"
@@ -62,7 +67,7 @@ reason = "used by the three Gaussian block tails of RandomMatrix/Gaussian/BlockT
 [[allow]]
 rule = "P9"
 decl = "NLAlib.sum_range_rpow_le_of_forall_prod_range_le"
-reason = "Weyl's majorant lemma: scalar statement, but the proof needs the Matrix majorization theory, which ForMathlib cannot import (P1); maintainer decision 2026-10-20"
+reason = "Weyl's majorant lemma: scalar statement, but the proof needs the Matrix majorization theory, which ForMathlib cannot import (P1)"
 
 [[allow]]
 rule = "T10"

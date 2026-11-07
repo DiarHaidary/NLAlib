@@ -10,6 +10,7 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 4.5** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **M2** A `Result:` theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`, never the formula it unfolds to. [docstrings] item 5
 - **M3** (warning) A theorem about an algorithm writes its output `\mathsf{name}(…)`. Fix: Write `\mathsf{name}(…)`. [docstrings] item 5
 - **M5** (warning) An algorithm definition shows its formula as `\mathsf{name}(…) := …`. Fix: Show its formula as `\mathsf{name}(…) := …`. [docstrings] item 5
@@ -137,7 +138,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

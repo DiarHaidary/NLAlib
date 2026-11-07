@@ -92,8 +92,8 @@ and layers, S source and proof style, T types and statement shape, V vocabulary,
 D docstrings, M notation, C citations, R result ids, A algorithm tags, G design records,
 E programs. The rule data is `docs/rules/rules.toml` ([checks](docs/contributing/checks.md) §1),
 and `python3 scripts/check_rules.py --list` prints every id with its level. A rule with no id is
-judged by review. Each topic folder has a generated `NLAlib/<Topic>/RULES.md` listing the rules
-its files keep.
+judged by review. Each topic folder has a generated `NLAlib/<Topic>/RULES.md`: its layer, the
+rules its files keep, and its exemptions and allowlisted declarations, each with its reason.
 
 ## Pull requests and checks
 

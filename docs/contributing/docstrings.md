@@ -40,7 +40,8 @@ theorem Matrix.IsHermitian.eigenvalue_add_le ...
    named mathematical result (`weyl-inequality`, `eckart-young-frobenius`). Several ids are
    comma-separated. Helpers carry none, and neither do definitions and structures [R1] (an
    instance of a Prop-valued class is a statement and may). The ids
-   key the literature map maintained in the `explore` repository; a new id is fine, a misspelt
+   key the literature map of the explorer (`explore/` in the website repository,
+   NLA-lib/NLA-lib.github.io); a new id is fine, a misspelt
    existing one is an error [R2] (checked as: two ids of length at least 8 within edit distance 2
    are rejected as near-duplicates, unless they differ in one dash-separated word by a `p` prefix
    or a listed pair such as `ose`/`osi`; distinguish variants by words, `-frobenius`/`-spectral`,

@@ -10,8 +10,9 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
-- **P11** A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial`. Fix: Keep the Polynomial layer upstreamable: move what it needs to ForMathlib, or the declaration out of Polynomial. [layout §1]
-- **P9** does not apply here while **P11** holds. [layout §1]
+- **Layer 0** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
+- **P11** A Polynomial file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Polynomial`. Fix: Keep the Polynomial layer upstreamable: move what it needs to ForMathlib, or the declaration out of Polynomial. Why: the layer stays easy to upstream to Mathlib as a whole. [layout §1]
+- **P9** does not apply here while **P11** holds: its headline scalar results (Chebyshev residuals and minimax, approximation of $1/x$, interpolation of Stieltjes functions) stay in the layer, which can go upstream as a whole while it imports only Mathlib and ForMathlib. [layout §1]
 
 ## Every topic
 
@@ -136,7 +137,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

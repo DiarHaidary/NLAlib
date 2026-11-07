@@ -75,7 +75,35 @@ def level(r):
     return '' if r['severity'] == 'error' else f' ({r["severity"]})'
 
 
-def topic_md(topic, rules, anc):
+def fmt_layer(n):
+    return str(int(n)) if n == int(n) else str(n)
+
+
+def allow_entries(root):
+    """{topic: [(rule, declaration or file, reason)]} of `scripts/rules_allow.toml` and
+    `scripts/names_allow.toml`, by the topic folder that declares the entry."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import leansrc
+    where = {}
+    for f in sorted((root / 'NLAlib').rglob('*.lean')):
+        topic = f.relative_to(root / 'NLAlib').parts[0]
+        for d in leansrc.parse(f.read_text())['decls']:
+            if d['full']:
+                where.setdefault(d['full'], topic)
+    out = {}
+    for file, key in (('scripts/rules_allow.toml', 'decl'), ('scripts/names_allow.toml', 'name')):
+        for e in tomllib.loads((root / file).read_text()).get('allow', []):
+            if 'path' in e:
+                what, topic = e['path'], e['path'].split('/')[1] if e['path'].startswith('NLAlib/') else None
+            else:
+                what = e[key]
+                topic = where.get(what) or where.get(f'NLAlib.{what}')
+            if topic:
+                out.setdefault(topic, []).append((e['rule'], what, e['reason']))
+    return {k: sorted(v, key=lambda x: (rid_key(x[0]), x[1])) for k, v in out.items()}
+
+
+def topic_md(topic, rules, anc, layers, allows):
     pre, refs = '../../', {}
     path = f'NLAlib/{topic}'
     mine = [r for r in rules if applies(r, topic) and own(r, topic)]
@@ -87,14 +115,31 @@ def topic_md(topic, rules, anc):
            'rule has no check. The reasons are in the contributor guide at the linked section. Check a file',
            'with `python3 scripts/check_rules.py --files <file>`; an agent brief includes this file',
            'and `docs/rules/DIGEST.md`.', '']
-    if mine or exempt:
+    layer = layers.get(topic)
+    if layer or mine or exempt or allows.get(topic):
         out += ['## This topic', '']
+        if layer:
+            out.append(f'- **Layer {fmt_layer(layer["layer"])}** (`docs/rules/layers.toml`): a file imports '
+                       'only modules of its own layer and lower (**P1**). [layout §1]')
+            refs['layout §1'] = f'{pre}{GUIDES}/layout.md#{anc["layout"]["1"]}'
+        why = {}
+        if layer and 'imports' in layer:
+            if any(r['id'] == layer['rule'] for r in mine):
+                why[layer['rule']] = f' Why: {layer["reason"]}.'
+            else:
+                names = ['Mathlib'] + [f'`NLAlib.{f}`' for f in sorted(set(layer['imports']) | {topic})]
+                only = ', '.join(names[:-1]) + ' and ' + names[-1]
+                out.append(f'- **{layer["rule"]}** A file here imports only {only}: {layer["reason"]}.')
         for r in mine:
-            out.append(f'- **{r["id"]}**{level(r)} {r["statement"]}. Fix: {r["fix"]}. '
+            out.append(f'- **{r["id"]}**{level(r)} {r["statement"]}. Fix: {r["fix"]}.{why.get(r["id"], "")} '
                        f'{section_ref(r["section"], anc, refs, pre)}')
         for r in exempt:
-            out.append(f'- **{r["id"]}** does not apply here while **{r["exempt_while"]}** holds. '
-                       f'{section_ref(r["section"], anc, refs, pre)}')
+            out.append(f'- **{r["id"]}** does not apply here while **{r["exempt_while"]}** holds: '
+                       f'{r["exempt_reason"]}. {section_ref(r["section"], anc, refs, pre)}')
+        if allows.get(topic):
+            out += ['', 'Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each '
+                    'excused from one rule:', '']
+            out += [f'- **{rid}** `{what}`: {reason}' for rid, what, reason in allows[topic]]
         out.append('')
     out += ['## Every topic', '']
     area = None
@@ -129,10 +174,12 @@ def generate(root=ROOT):
     rules = sorted(tomllib.loads((root / 'docs/rules/rules.toml').read_text())['rule'],
                    key=lambda r: rid_key(r['id']))
     anc = guide_anchors(root)
+    layers = {e['folder']: e for e in tomllib.loads((root / 'docs/rules/layers.toml').read_text())['layer']}
+    allows = allow_entries(root)
     files = {root / 'docs/rules/DIGEST.md': digest_md(rules)}
     for d in sorted((root / 'NLAlib').iterdir()):
         if d.is_dir():
-            files[d / 'RULES.md'] = topic_md(d.name, rules, anc)
+            files[d / 'RULES.md'] = topic_md(d.name, rules, anc, layers, allows)
     return files
 
 

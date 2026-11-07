@@ -32,5 +32,5 @@ Part of the [contributor guide](../../CONTRIBUTING.md).
   neither `NLAlibTools` nor any other library of `lakefile.toml` [P3, P12]. It imports itself,
   Mathlib and Mathlib's dependencies only.
 - Instances: no global instance on a Mathlib type unless it is the one Mathlib would add
-  (`Matrix.instMeasurableSpace`, in `ForMathlib`, is one; each is allowlisted with its reason)
+  (`Matrix.instMeasurableSpace`, in `ForMathlib`, is one); each is allowlisted with its reason
   [S6]. No `attribute [instance]` at file level [F9].

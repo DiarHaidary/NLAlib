@@ -10,10 +10,25 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer -1** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
+- **P1** A file here imports only Mathlib and `NLAlib.ForMathlib`: general facts headed upstream to Mathlib depend on nothing else in NLAlib.
 - **P4** A ForMathlib statement uses no NLAlib vocabulary. Fix: Move it out of ForMathlib, to the topic file of that vocabulary. [layout §1]
 - **P5** A ForMathlib declaration is in the Mathlib namespace it would have upstream, never `NLAlib`. Fix: Declare it in the Mathlib namespace it would have upstream. [layout §1]
 - **P6** A ForMathlib module docstring marks the file as an upstream candidate. Fix: Say in the module docstring that its facts are upstream candidates. [layout §1]
 - **P7** (warning) A ForMathlib file is named after the Mathlib file it would join. Fix: Name the file after the Mathlib file it would join. [layout §1]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **S6** `Matrix.compactSpace_unitaryGroup`: compactness of `Matrix.unitaryGroup`: the instance Mathlib would add, upstream candidate
+- **S6** `Matrix.instBorelSpace`: companion of `Matrix.instMeasurableSpace`: Borel for the product σ-algebra
+- **S6** `Matrix.instL2OpNormedSpaceReal`: a `def`, made an instance only inside `open scoped Matrix.Norms.L2Operator`, not global
+- **S6** `Matrix.instMeasurableSpace`: the product σ-algebra on matrices, which random matrices need and Mathlib does not yet give `Matrix`; in ForMathlib, upstream candidate
+- **S6** `Matrix.instMetrizableSpace`: the product-topology instance Mathlib would add for `Matrix`, as for `m → n → R`
+- **S6** `Matrix.instOrderClosedTopology`: the Loewner order is closed: the instance Mathlib would add with `MatrixOrder`
+- **S6** `Matrix.instSecondCountableTopology`: the product-topology instance Mathlib would add for `Matrix`, as for `m → n → R`
+- **N2** `Metric.IsUniformApproxOn.apply`: structure-field style API (`h.apply hx` : dist (g x) (f x) ≤ ε), as Mathlib's `…Apply` lemmas; the head is the predicate
+- **N3** `Metric.IsUniformApproxOn.apply`: structure-field style API: the relation is the predicate's own, named by the namespace
+- **N3** `exists_bernstein_exponent`: names the optimised exponent θ of Bernstein's argument; the inequality has no token form shorter than the statement
 
 ## Every topic
 
@@ -135,7 +150,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

@@ -60,12 +60,17 @@ BIB = 'docs/references.bib'
 DEVIATIONS = 'docs/design/Mathlib-deviations.md'
 GUIDES = 'docs/contributing'  # the topic guides; CONTRIBUTING.md is their hub
 
-# The layer table of docs/contributing/layout.md §1: Probability imports Krylov, Regression imports
-# Sketching, Estimation imports LowRank; LowerBounds is the top layer. A top-level folder missing here is a P1 error, so a new folder gets its layer before
-# it gets files.
-LAYER = {'ForMathlib': -1, 'Computation': 0, 'Matrix': 0, 'Polynomial': 0, 'Krylov': 1, 'Probability': 1.5,
-         'RandomMatrix': 2, 'Sketching': 3, 'Regression': 3.5, 'LowRank': 4, 'Estimation': 4.5,
-         'LowerBounds': 5}
+LAYERS_TOML = ROOT / 'docs' / 'rules' / 'layers.toml'
+
+
+def load_layers(path=LAYERS_TOML):
+    """{folder: entry of layers.toml}: each top-level folder's layer and, optionally, the only
+    folders it may import (docs/contributing/layout.md §1). A folder missing here is a P1 error."""
+    return {e['folder']: e for e in tomllib.loads(path.read_text())['layer']}
+
+
+LAYERS = load_layers()
+LAYER = {f: e['layer'] for f, e in LAYERS.items()}
 
 # ------------------------------------------------------------------ the rule registry
 # The rule data (severity, statement, fix, scope, section) is in docs/rules/rules.toml, the single
@@ -367,10 +372,28 @@ def p_layer(c):
                 continue
             if me not in LAYER or th not in LAYER:
                 unknown = me if me not in LAYER else th
-                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in LAYER (layout §1)'))
+                out.append(V('P1', p, ln, '(file)', f'{unknown} has no layer in docs/rules/layers.toml'))
                 continue
-            if LAYER[th] > LAYER[me] or (me == 'ForMathlib' and th != 'ForMathlib'):
+            if LAYER[th] > LAYER[me]:
                 out.append(V('P1', p, ln, '(file)', f'{me} imports {mod}'))
+    return out + restricted_imports(c, 'P1')
+
+
+def restricted_imports(c, rid):
+    """Imports outside Mathlib and the folders a layers.toml entry checked as `rid` allows."""
+    out = []
+    for p, (t, x) in c.lib_files.items():
+        me = topic_of_path(p)
+        e = LAYERS.get(me, {})
+        if e.get('rule') != rid:
+            continue
+        ok = tuple(f'NLAlib.{f}.' for f in [me] + e['imports'])
+        for ln, pub, mod in x['imports']:
+            if mod == 'Mathlib' or mod.startswith(('Mathlib.',) + ok):
+                continue
+            if rid == 'P1' and not mod.startswith('NLAlib.'):
+                continue  # P1 is about the layers of NLAlib
+            out.append(V(rid, p, ln, '(file)', f'{me} imports {mod}' if rid == 'P1' else mod))
     return out
 
 
@@ -474,10 +497,7 @@ def p_package_libs(c):
 
 @rule('P11')
 def p_poly_imports(c):
-    return [V('P11', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
-            if topic_of_path(p) == 'Polynomial' for ln, pub, mod in x['imports']
-            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
-                                                        'NLAlib.Polynomial.')))]
+    return restricted_imports(c, 'P11')
 
 
 @rule('P9')
@@ -566,13 +586,13 @@ def s_instance(c):
         if d['kind'] != 'instance':
             continue
         _, concl = split_sig(d['signature'])
-        if not nl_deps(d) and 'instMeasurableSpace' not in d['name']:
+        if not nl_deps(d):
             out.append(V('S6', c.path_of(d), d['line'], d['name'], concl.strip()[:100]))
     return out
 
 
 def long_line_exempt(line):
-    """Decision 8 (maintainer, 2026-10-19): a line over 100 characters is allowed only when a single
+    """S7: a line over 100 characters is allowed only when a single
     identifier or a URL makes it long: the line, after its indentation, an optional list marker
     and trailing punctuation (`name :`, `name :=`), is one token, or it contains a URL."""
     if 'http://' in line or 'https://' in line:
@@ -1471,10 +1491,7 @@ NAMED_RE = re.compile(r'\b(?:Builder|Stmt|Computation)\.named\b|(?<![\w.])\.name
 
 @rule('E5')
 def e_computation_imports(c):
-    return [V('E5', p, ln, '(file)', mod) for p, (t, x) in c.lib_files.items()
-            if topic_of_path(p) == 'Computation' for ln, pub, mod in x['imports']
-            if not (mod == 'Mathlib' or mod.startswith(('Mathlib.', 'NLAlib.ForMathlib.',
-                                                        'NLAlib.Computation.')))]
+    return restricted_imports(c, 'E5')
 
 
 def declared_type(stmt):
@@ -1609,7 +1626,7 @@ def run(argv=None):
     ap.add_argument('--force', action='store_true', help='with --update-baseline: allow raising counts')
     ap.add_argument('--baseline', type=Path, default=BASELINE)
     ap.add_argument('--allow', type=Path, default=ALLOW)
-    ap.add_argument('--explore-repo', type=Path, default=None, help='the explore repository (R3)')
+    ap.add_argument('--explore-repo', type=Path, default=None, help="the explorer's folder, explore/ of a NLA-lib/NLA-lib.github.io checkout (R3)")
     ap.add_argument('--mathlib', type=Path, default=ROOT / '.lake/packages/mathlib/Mathlib')
     ap.add_argument('--root', type=Path, default=ROOT)
     ap.add_argument('--list', action='store_true', help='print the rules and exit')

@@ -10,9 +10,14 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 3.5** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **M5** (warning) An algorithm definition shows its formula as `\mathsf{name}(…) := …`. Fix: Show its formula as `\mathsf{name}(…) := …`. [docstrings] item 5
 - **N10** Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`. Fix: State and name the error as `exact − computed`. [naming §2]
 - **N16** A sample size is a named bound `<sketch><property>Dim`. Fix: Rename it `…Dim`; the theorem assuming it is `_of_<size>_le`. [naming §4]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **N17** `NLAlib.exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_mul_add_of_hasLaw_iidSequence_of_mul_log_le`: the derived name drops the right-side `mul_add` and collides with the consistent form `exists_forall_integral_norm_sub_kaczmarzIterate_sq_le_of_hasLaw_iidSequence_of_mul_log_le`; the right side tells the two apart (N8)
 
 ## Every topic
 
@@ -138,7 +143,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

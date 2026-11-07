@@ -10,6 +10,7 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 4** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **V3** A singular-value ratio is `singularGapRatio`, never spelled out. Fix: Use `singularGapRatio` (a bridge lemma relating the two is allowlisted). [vocabulary]
 - **B2** No bare `∃ C` in a statement, except in an `exists_forall_` asymptotic form. Fix: Use a named constant, or an asymptotic form with `∃ C` before every dimension. [statements §2] rule 3
 - **B3** An asymptotic form says "$O(\ldots)$ suffices" in its docstring. Fix: Say in words which $O(\cdot)$ size suffices. [statements §2] rule 3
@@ -22,6 +23,13 @@ and `docs/rules/DIGEST.md`.
 - **M14** The truncated SVD is `\llbracket\mathbf{A}\rrbracket_k`. Fix: Write `\llbracket\mathbf{A}\rrbracket_k`. [docstrings] item 5
 - **N10** Errors are `exact − computed`: `norm_sub_<alg>`, never `<alg>_sub_`. Fix: State and name the error as `exact − computed`. [naming §2]
 - **N16** A sample size is a named bound `<sketch><property>Dim`. Fix: Rename it `…Dim`; the theorem assuming it is `_of_<size>_le`. [naming §4]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **N10** `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_le_of_hasLaw_gaussianMatrix`: the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part
+- **N10** `NLAlib.integral_frobNorm_sub_truncatedSVD_rsvd_sub_rangeProjector_sq_of_hasLaw_gaussianMatrix`: the error A − ⟦R⟧ₖ − P·N of the oracle truncation is exact − computed; `rsvd_sub` is inside the computed part
+- **N17** `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_of_hasLaw_gaussianMatrix`: TGN-Upper M1: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem (decision card TGN-DOMINATED)
+- **N17** `NLAlib.exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_one_add_of_hasLaw_gaussianMatrix`: TGN-Upper M2: the derived name `exists_forall_integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_hasLaw_gaussianMatrix` is held by the older asymptotic form of the p ≥ 8000ℓ/ε theorem, which M2 dominates (decision card TGN-DOMINATED)
 
 ## Every topic
 
@@ -139,7 +147,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

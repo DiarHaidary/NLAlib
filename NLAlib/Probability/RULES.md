@@ -10,11 +10,17 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 1.5** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **T14** (warning) Tails are stated in `μ.real`, not `μ {…}` in `ℝ≥0∞`. Fix: State tails in `μ.real`. [statements §2]
 - **D12** A docstring says when summands are independent; a headline theorem names its laws. Fix: Say in words that the summands, rows or sketches are independent (`iIndepFun`, `IndepFun`), and, for a headline theorem, which law a `HasLaw` hypothesis gives. [docstrings] item 1
 - **N13** A statistic on the left is the prefix: `integral_`, `variance_`; a mean square has `_sq`. Fix: Rename by N13. [naming §4]
 - **N14** A tail is `measureReal_` for `μ.real {…}`, `measure_` for `μ {…}`. Fix: Rename by the statement's form. [naming §4]
 - **N15** A tail event is named subject first, with two relation tokens; stated positively. Fix: Rename by N15. [naming §4]
+
+Allowlisted here (`scripts/rules_allow.toml`, `scripts/names_allow.toml`), each excused from one rule:
+
+- **T15** `NLAlib.IsIsotropic.integral_norm_mulVec_le`: used by gaussNormMean_sq_le (ChiSquareMoments) and the Gaussian extreme-singular-value and spectral-norm proofs
+- **N4** `NLAlib.map_eval_uniformOn_injective`: `eval` is Mathlib's reading of `fun f => f j` (`Function.eval`); the token became a library function with `NLAlib.Computation.IExp.eval`, a different object
 
 ## Every topic
 
@@ -138,7 +144,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 

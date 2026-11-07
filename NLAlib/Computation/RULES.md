@@ -10,10 +10,11 @@ and `docs/rules/DIGEST.md`.
 
 ## This topic
 
+- **Layer 0** (`docs/rules/layers.toml`): a file imports only modules of its own layer and lower (**P1**). [layout §1]
 - **E2** Programs, kernels and implementations are computable. Fix: Remove the noncomputable part; a program is data that runs. [programs]
 - **E3** A published cost result is the one proof of a target registered in `docs/targets.toml` (`theorem t : T`), and each target's closure hash, printed statement and pins match the approved registry. Fix: Prove the registered target itself; a `Result:` theorem about runs that proves no registered target loses its id, and a new or changed target needs the maintainer's approval (agents never edit `*Targets.lean` or the registry). [programs]
 - **E4** Every `<spec>Prog` has a registered tree, named by a registered target, whose definition calls it. Fix: Compile the program (`<spec>Prog.compiled`) and ask the maintainer for its target. [programs]
-- **E5** A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`. Fix: Keep the Computation layer at layer 0: a program that needs library vocabulary lives in its topic file. [layout §1]
+- **E5** A Computation file imports only Mathlib, `NLAlib.ForMathlib` and `NLAlib.Computation`. Fix: Keep the Computation layer at layer 0: a program that needs library vocabulary lives in its topic file. Why: a program over the library's objects lives in its topic file, not in Computation. [layout §1]
 - **E8** `Stmt.named` is constructed only in the BLAS and implementation files (a theorem may mention it). Fix: Write the program without `named`, or make it a kernel in `NLAlib/Computation/BLAS.lean`. [programs]
 - **E9** (warning) A program that another program calls frees its allocations (`scope`); a warning, as memory is the target's `mem`. Fix: Wrap the callee's body in `scope`: an `alloc` is live for the rest of the enclosing block, so an open one stays allocated in the caller. [programs]
 
@@ -141,7 +142,7 @@ and `docs/rules/DIGEST.md`.
 
 - **R1** `Result:` ids go on statements, never on definitions or structures. [docstrings] item 4
 - **R2** No two result ids one or two edits apart. [docstrings] item 4
-- **R3** Every id or declaration the explorer names exists. explore README
+- **R3** Every id or declaration the explorer names exists. explorer README
 
 ### Algorithm tags
 
