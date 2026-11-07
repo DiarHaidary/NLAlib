@@ -183,11 +183,11 @@ theorem exists_exec_withCharge_eq_some :
     obtain ⟨k', hk', he⟩ := Option.map_eq_some_iff.mp hk
     obtain ⟨hkk, ha₁⟩ := Prod.mk.injEq _ _ _ _ ▸ he
     subst hkk ha₁
-    obtain ⟨c₁, h₁⟩ :=
-      exists_exec_withCharge_eq_some (body (min k' bound.eval)) hz (c₀ + ch (.toNat p))
+    split_ifs at hz with hle
+    obtain ⟨c₁, h₁⟩ := exists_exec_withCharge_eq_some (body k') hz (c₀ + ch (.toNat p))
     have hq' : toNatStep { I with charge := ch } p x { a with cnt := c₀ } =
         some (k', { a with cnt := c₀ + ch (.toNat p) }) := by
       simp only [toNatStep, hv, Option.bind_some, hk', Option.map_some]
-    exact ⟨c₁, by rw [hq', Option.bind_some]; exact h₁⟩
+    exact ⟨c₁, by rw [hq', Option.bind_some, if_pos hle]; exact h₁⟩
 
 end NLAlib.Computation

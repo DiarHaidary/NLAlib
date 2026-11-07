@@ -276,7 +276,7 @@ machine carrier.
 Result: lanczos-program -/
 theorem _root_.NLAlib.storedEntriesLanczos : StoredEntriesLanczos := by
   intro P ι inst tag N q _ b vals ξ
-  rw [Prog.runsWithin_iff, compiled_toStmt]
+  rw [Prog.runsWithin_iff (hsize := by simp), compiled_toStmt]
   change RunsWithin (storedInterp (N ^ 2) vals ξ tag)
     (lanczosProg tag (.const N) (.const (q 0)) 0 1 2 3 4 5).run
     (declaredState tag N (q 0) b) (lanczosCount tag N (q 0)) _ _

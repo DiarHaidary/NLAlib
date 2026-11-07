@@ -220,7 +220,7 @@ theorem ProgFamily.MatrixFreeProb.prog {r b : ℕ} {p : P} {F : ProgFamily P ι 
   intro N n hv x A Ω _ μ ξ hξ
   refine (le_of_eq (congrArg μ.real (Set.ext fun ω => not_congr ?_))).trans
     (h N n hv x A Ω _ μ ξ hξ)
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
 
 /-- **The rounded probabilistic model.** For all sizes $N$, $n$ satisfying `valid` and every
 declared input $x$ satisfying `pre N n x`, under **every** interpretation $I$ meeting the

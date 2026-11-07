@@ -70,10 +70,10 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] (I : Interp P ι K C)
 
 /-- **The run of a first-order statement** under `I`, in an environment of handles `ρB` and of index
 values `ρI`. The leaves (instructions, oracle calls, kernel calls, read-only reads, comparisons) run
-by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the environment;
-`alloc` binds the new handle `st.store.size`, `loop` the iteration index and `bindIdx` the clamped
-conversion of its cell. A `whileFuel` loop tests its comparison at most `fuel` times and fails if
-every test it makes holds. -/
+by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the
+environment; `alloc` binds the new handle `st.store.size`, `loop` the iteration index and
+`bindIdx` the conversion of its cell, failing if it exceeds the bound. A `whileFuel` loop tests
+its comparison at most `fuel` times and fails if every test it makes holds. -/
 def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → ℕ) →
     St P K C → Option (St P K C)
   | _, _, .skip, _, _, st => some st
@@ -126,7 +126,8 @@ def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fi
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) }
   | _, _, .bindIdx p x bound body, ρB, ρI, st =>
       (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
-        body.exec ρB (Fin.snoc (α := fun _ => ℕ) ρI (min r.1 (bound.evalIn ρI))) r.2
+        if r.1 ≤ bound.evalIn ρI then body.exec ρB (Fin.snoc (α := fun _ => ℕ) ρI r.1) r.2
+        else none
 
 /-- **The run of a program** at the sizes $N$ and $n$: declared buffer $j$ at handle $j$, the
 oracle dimension $N$ as index variable $0$ and size $i$ as index variable $i + 1$. -/
@@ -252,20 +253,23 @@ section Budget
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Preorder C]
 
-/-- **A run of a program within a budget**: the run of `prog` at the sizes $N$ and $n$ from
-`st₀` under `I` succeeds in a state `st` whose counts are at most `c` more than at the start,
-whose peak memory plus the read-only data is at most `m p` cells at each tag `p`, and which
-satisfies `Q`. -/
+/-- **A run of a program within a budget**: the start state `st₀` holds exactly the `b` declared
+buffers of `prog` (so the program's scratch buffers cannot take a declared buffer's handle), and
+the run of `prog` at the sizes $N$ and $n$ from `st₀` under `I` succeeds in a state `st` whose
+counts are at most `c` more than at the start, whose peak memory plus the read-only data is at
+most `m p` cells at each tag `p`, and which satisfies `Q`. -/
 def Prog.RunsWithin {r b : ℕ} (I : Interp P ι K C) (prog : Prog P ι r b) (N : ℕ)
     (n : Fin r → ℕ) (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) : Prop :=
-  ∃ st, prog.exec I N n st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧
+  st₀.store.size = b ∧ ∃ st, prog.exec I N n st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧
     (∀ q, st.peak q + I.romSize q ≤ m q) ∧ Q st
 
-/-- A program runs within a budget if and only if its instantiation at the same sizes does. -/
+/-- A program runs within a budget from a state of its `b` declared buffers if and only if its
+instantiation at the same sizes does. -/
 theorem Prog.runsWithin_iff {r b : ℕ} (I : Interp P ι K C) (prog : Prog P ι r b) (N : ℕ)
-    (n : Fin r → ℕ) (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) :
+    (n : Fin r → ℕ) (st₀ : St P K C) (hsize : st₀.store.size = b) (c : C) (m : P → ℕ)
+    (Q : St P K C → Prop) :
     prog.RunsWithin I N n st₀ c m Q ↔ Computation.RunsWithin I (prog.toStmt N n) st₀ c m Q := by
-  simp only [Prog.RunsWithin, Computation.RunsWithin, Prog.exec_eq_exec_toStmt]
+  simp only [Prog.RunsWithin, Computation.RunsWithin, Prog.exec_eq_exec_toStmt, hsize, true_and]
 
 end Budget
 
@@ -354,13 +358,15 @@ theorem FStmt.exec_kcall (I : Interp P ι K C) {nb ni : ℕ} (o : ι) (p : P)
 
 /-- The run of a first-order index binder: in the environment of handles `ρB` and of index values
 `ρI`, it converts the value of its cell (`NLAlib.Computation.toNatStep`) and runs the body with the
-value clamped to its bound as the new index variable. No printed source. -/
+value as the new index variable if it is at most the bound, and fails otherwise. No printed
+source. -/
 theorem FStmt.exec_bindIdx (I : Interp P ι K C) {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni))
     (bound : IExp (Fin ni)) (body : FStmt P ι nb (ni + 1)) (ρB : Fin nb → ℕ) (ρI : Fin ni → ℕ)
     (st : St P K C) :
     (FStmt.bindIdx p x bound body).exec I ρB ρI st =
       (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
-        body.exec I ρB (Fin.snoc (α := fun _ => ℕ) ρI (min r.1 (bound.evalIn ρI))) r.2 := by
+        if r.1 ≤ bound.evalIn ρI then body.exec I ρB (Fin.snoc (α := fun _ => ℕ) ρI r.1) r.2
+        else none := by
   rw [FStmt.exec]
 
 end KernelCalls

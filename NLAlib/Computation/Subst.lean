@@ -527,8 +527,9 @@ private theorem simRun_bindIdx (htoNat : I'.sem.toNat = I.sem.toNat)
   simp only [exec, Option.bind_eq_some_iff] at hrun
   obtain ⟨⟨k, st₂⟩, hk, h₂⟩ := hrun
   obtain ⟨st₂', hk', hs₂⟩ := toNatStep_sim htoNat hc hc' hcostToNat h hk
+  split_ifs at h₂ with hle
   obtain ⟨st₃', h₃', hs₃⟩ := ih _ st₂ st₁ st₂' hs₂ h₂
-  exact ⟨st₃', by simp only [exec, hk', Option.bind_some]; exact h₃', hs₃⟩
+  exact ⟨st₃', by simp only [exec, hk', Option.bind_some, if_pos hle]; exact h₃', hs₃⟩
 
 /-- The simulation, by induction on the statement: from related states, a successful
 abstract run of `s` is matched by a successful concrete run of `s.subst implI implO implK`, and

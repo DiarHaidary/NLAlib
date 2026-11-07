@@ -120,7 +120,8 @@ structure ScalarSem (P K : Type) where
   /-- A conversion from one tag to another. -/
   convert : P → P → K → Option K
   /-- The conversion of a stored value to a natural number, for an index binder (by default
-  none: every binder fails). Its exactness is the separate contract
+  none: every binder fails). The semantics of the library fail on a negative value (no clamping
+  at $0$); the exactness of the conversion is the separate contract
   `NLAlib.Computation.IsExactToNat`. -/
   toNat : P → K → Option ℕ := fun _ _ => none
 
@@ -302,8 +303,8 @@ charges one load and one matrix-vector product per column, and writes the produc
 the source and destination blocks overlap (an aliased call, which no implementation with bounded
 scratch can serve). A kernel call runs `NLAlib.Computation.Interp.kcallStore` and charges one call
 of its kind at its dimensions. An index binder converts the value of its cell
-(`NLAlib.Computation.toNatStep`, one charged conversion) and runs its body at the value clamped
-to its bound. -/
+(`NLAlib.Computation.toNatStep`, one charged conversion) and runs its body at that value; it fails
+if the value exceeds its bound (no clamping: a corrupt size is a failure of the run). -/
 def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
   | .skip, st => some st
   | .seq s t, st => (exec s st).bind (exec t)
@@ -348,7 +349,7 @@ def exec : Stmt P ι ℕ ℕ → St P K C → Option (St P K C)
         (outs.map fun x => (x.1, x.2.eval)) st.store).map fun s =>
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map IExp.eval)) }
   | .bindIdx p x bound body, st => (toNatStep I p x st).bind fun r =>
-      exec (body (min r.1 bound.eval)) r.2
+      if r.1 ≤ bound.eval then exec (body r.1) r.2 else none
 
 /-! ### Run lemmas -/
 
@@ -362,12 +363,13 @@ theorem exec_loop (n : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ) (st : St P K
     exec I (.loop n body) st = (List.range n.eval).foldlM (fun st i => exec I (body i) st) st := by
   rw [exec]
 
-/-- The run of an index binder: the converted value of its cell, clamped to the bound, is bound
-for the body. -/
+/-- The run of an index binder: the converted value of its cell is bound for the body if it is at
+most the bound, and the run fails otherwise. -/
 theorem exec_bindIdx (p : P) (x : Cell ℕ ℕ) (bound : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ)
     (st : St P K C) :
     exec I (.bindIdx p x bound body) st =
-      (toNatStep I p x st).bind fun r => exec I (body (min r.1 bound.eval)) r.2 := by
+      (toNatStep I p x st).bind fun r =>
+        if r.1 ≤ bound.eval then exec I (body r.1) r.2 else none := by
   rw [exec]
 
 /-- The run of a named kernel is the run of its body. -/
@@ -678,6 +680,7 @@ private theorem runInv_bindIdx (p : P) (x : Cell ℕ ℕ) (bound : IExp ℕ) (bo
   have hstep : RunInv I st r.2 := by
     rw [snd_of_toNatStep_eq_some hr]
     exact RunInv.step I (pos := st.pos) rfl fun hc => hc _
+  split_ifs at h2
   exact hstep.trans I (ih _ h2)
 
 private theorem runInv_of_exec_eq_some : ∀ (s : Stmt P ι ℕ ℕ) {st st' : St P K (OpCount P ι)},
@@ -848,6 +851,7 @@ private theorem exec_bindIdx_eq_of_cnt_load_le (O : ι → ℕ → Array K → O
   have hm : st.cnt ≤ r.2.cnt := by rw [snd_of_toNatStep_eq_some hr]; exact le_self_add
   change (toNatStep I p x st).bind _ = _
   rw [hr, Option.bind_some]
+  split_ifs at h2 ⊢
   exact ih _ h2 fun p o => (hl p o).trans (Finsupp.le_def.mp hm _)
 
 /-- The oracle is used only by oracle calls: under the standard charge, a run that makes no
