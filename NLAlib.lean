@@ -43,6 +43,7 @@ public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.Eigensolvers.SpectralBisection
 public import NLAlib.Eigensolvers.SpectralBisection.BoundedFormat
 public import NLAlib.Eigensolvers.SpectralBisection.Global
+public import NLAlib.Eigensolvers.SpectralBisection.Instance
 public import NLAlib.Estimation.Spectral.RandomStart
 public import NLAlib.Estimation.Spectral.SpectralDensity
 public import NLAlib.Estimation.Spectral.SpectralDensitySphere
@@ -364,6 +365,7 @@ public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Basic.Selection
 public import NLAlib.Matrix.Computation.BLAS
 public import NLAlib.Matrix.Computation.BLASNegAxpy
+public import NLAlib.Matrix.Computation.BinaryFloatMachine
 public import NLAlib.Matrix.Computation.ClassicalGramSchmidt
 public import NLAlib.Matrix.Computation.ClassicalGramSchmidtProgram
 public import NLAlib.Matrix.Computation.ClassicalGramSchmidtRoundingError

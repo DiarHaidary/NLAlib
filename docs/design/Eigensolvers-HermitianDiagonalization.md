@@ -569,6 +569,15 @@ No caller's statement changed.
   roundings of the shift are no longer relative to $R$, and the bound fails; with it the floor
   $\tau$ is below $R/2$ and every rounding is relative. Its callers (EB1b and the private
   helpers of EB1d) sit at an internal node and already have `hint`.
+* **EV6, EV7, EV8** gain `(hn : 1 ≤ n)` (maintainer decision, 2026-11-07, branch
+  `fix/hdiag-nonvacuity`). They were not false at $n = 0$ but vacuous: the accuracy bound
+  $\hat\beta$ has the factor $\sqrt{n m \min(n, e)}$ in its denominator, which is $0$ at $n = 0$,
+  so $\hat\beta = 0$ (division by zero) and no $\beta$ meets $0 < \beta \le \hat\beta$; EV7 used to
+  dispatch $n = 0$ by exactly this contradiction. The hypothesis states the range the theorems
+  really cover. Callers: EV7 passes it to EV6, EV8 to EV7; the witnesses of
+  `Eigensolvers/SpectralBisection/Instance.lean` already have $n \ge 1$. No other statement
+  changed; the S2 targets TT1–TT3, whose preconditions carry the same $\beta$ bound, need the
+  same hypothesis (or derive it from $0 < \beta \le \hat\beta$) when restated against EV6–EV8.
 
 ## 4. Map to the source
 
