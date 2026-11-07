@@ -160,7 +160,48 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
           (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3))
       (fun _ _ _ => θ) := by
-  sorry
+  intro N n _ x hpre I ρ hI hρO Ω' _ μ ξ hξ
+  obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
+  obtain ⟨hsem, hlit, htn, hmul, ⟨mmR, hmm, hmmE⟩, qrR, hqr, hqrE⟩ := hI
+  obtain ⟨hρT, hρs, hρc⟩ := hρO
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hpre
+  obtain ⟨hH, hR₀, hR₀pos, hε, hε₁, hθ, hθ₁, hℓ, hβ, hβle, hβge, hu0, hcu, hcg, hcgu, hμM, hμQ,
+    hμM0, hμQ0, hbits, hfuel, hΩ⟩ := hpre
+  have hℓ5n : 5 ≤ ℓ := by unfold bisectionDepth at hℓ; omega
+  have hℓ5 : (5 : ℝ) ≤ ℓ := by exact_mod_cast hℓ5n
+  have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg N
+  have hs0 := Real.sqrt_nonneg (Real.log (16 * (N : ℝ) / θ))
+  have hM := isAccurate_eighIdealMachine hsem (fun q k hk => hlit q k (by omega)) htn hmul p
+    hmmE hqrE hρT (by linarith) hu0.le hcu hcg hcgu (fun d => hμM0.trans (hμM (Nat.zero_le d)))
+    (fun d => hμQ0.trans (hμQ (Nat.zero_le d)))
+  have hunif := countable_range_uniformUnif I.sem p (hρc .uniform).1 (hρc .uniform).2
+  have hgauss := countable_range_gaussianNormal I.sem p (hρc .gaussian).1 (hρc .gaussian).2
+  obtain ⟨hind, hlaw⟩ := iIndepFun_eighIdealTree (I.sem.toFloatMachine p
+    (fun x => (I.sem.toNat p x).getD 0) mmR qrR (I.sem.uniformUnif p (ρ .uniform 0))
+    (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1)
+    x.R₀ x.β ⟨N, x.A, x.R₀, x.ε, ℓ⟩ le_rfl hξ
+  have hτ : (0 : ℝ) * (100 * N * √(N : ℝ)) ≤
+      min (√(θ / (8 * N))) (dec p x.ε * min (dec p x.R₀) 1) := by
+    rw [zero_mul]
+    exact le_min (Real.sqrt_nonneg _) (mul_nonneg hε.le (le_min hR₀pos.le zero_le_one))
+  have key :=
+    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
+    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hH hR₀ hR₀pos hε hε₁
+    hθ hθ₁ hℓ hβ hβle hβge rfl (mul_pos (by linarith) hu0) hbits hfuel le_rfl hτ hΩ hind hlaw
+  have := hξ.isProbabilityMeasure
+  refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top μ _)) key
+  intro hAD
+  obtain ⟨st₀, hexec⟩ := eighProg.exists_exec_compiled
+    (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmm hqr hsem p (by nlinarith) N ℓ F
+    (by omega) hlit htn x.A x.R₀ x.ε x.β hε.le hR₀pos.le
+  have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
+    hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) N ℓ F hlit htn x.A
+    x.R₀ x.ε x.β hexec
+  have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρs (ξ ω) F ℓ x.A x.R₀
+    x.ε x.β
+  dsimp only at hH he
+  rw [he] at hH
+  exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
 
 set_option linter.style.longLine false in
 /-- **Hermitian diagonalization in a bounded binary format, for the runs of the program that
