@@ -30,13 +30,7 @@ namespace Finset
 $w_i \ge 0$ with $\sum_i w_i = 1$, values $x_i \ge 0$ and $0 \le t \le 1$,
 $$(1 - t)^2\Bigl(\sum_i w_ix_i\Bigr)^2 \le \Bigl(\sum_i w_ix_i^2\Bigr)
 \sum_{i \,:\, x_i > t\sum_j w_jx_j} w_i\,.$$
-[PaleyZygmund1932, Lemma 19], in its discrete form.
-Proof: split $\sum_i w_ix_i$ over $x_i \le t\,\mathbb{E}x$ (at most $t\,\mathbb{E}x$) and its
-complement, which Cauchy–Schwarz (`Finset.sum_mul_sq_le_sq_mul_sq` with the factors
-$\sqrt{w_i}x_i$, $\sqrt{w_i}$) bounds by
-$(\sum w_ix_i^2)^{1/2}(\sum_{\text{event}} w_i)^{1/2}$; square, using $(1 - t)\,\mathbb{E}x \ge 0$.
-Alternatively apply the measure form to the discrete probability measure
-$\sum_i w_i\delta_i$. M, about 35 lines. -/
+[PaleyZygmund1932, Lemma 19], in its discrete form. -/
 theorem sq_mul_sq_sum_le_sum_mul_sq_mul_sum_filter {ι : Type*} (s : Finset ι) {w x : ι → ℝ}
     (hw : ∀ i ∈ s, 0 ≤ w i) (hw1 : ∑ i ∈ s, w i = 1) (hx : ∀ i ∈ s, 0 ≤ x i) {t : ℝ}
     (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :

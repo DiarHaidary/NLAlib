@@ -5,11 +5,14 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Algebra.Polynomial.AlgebraMap
+public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.LinearAlgebra.Eigenspace.Pi
 public import Mathlib.LinearAlgebra.Eigenspace.Semisimple
 public import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
-public import Mathlib.FieldTheory.IsAlgClosed.Basic
+public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Spectral.EigenvectorPairing
+public import NLAlib.Matrix.Spectral.Normal
 public import NLAlib.Matrix.Spectral.Simultaneous
 
 /-!
@@ -447,5 +450,98 @@ theorem inv_mul_apply_eq_zero_of_ne
   rw [Matrix.diagonal_mul, Matrix.mul_diagonal] at h
   exact (mul_eq_zero.mp (by linear_combination h : (d i - e j) * (V⁻¹ * W) i j = 0)).resolve_left
     (sub_ne_zero.mpr hij)
+
+/-! ### Polynomials of a diagonalised matrix -/
+
+/-- **A polynomial of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible, then for every
+polynomial $p$, $p(\mathbf{H}) = \mathbf{V}\operatorname{diag}(p(\mathbf{d}_i))\mathbf{V}^{-1}$. -/
+theorem aeval_eq_mul_diagonal_mul_inv {H V : Matrix n n ℂ} {d : n → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) (p : Polynomial ℂ) :
+    Polynomial.aeval H p = V * Matrix.diagonal (fun i => p.eval (d i)) * V⁻¹ := by
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have hiV : V⁻¹ * V = 1 := Matrix.nonsing_inv_mul V hdet
+  have key : ∀ X : Matrix n n ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, hiV, one_mul]
+  have hH : H = V * Matrix.diagonal d * V⁻¹ := by
+    calc H = H * (V * V⁻¹) := by rw [hVi, mul_one]
+      _ = (H * V) * V⁻¹ := by simp only [mul_assoc]
+      _ = _ := by rw [hHV]
+  have hpow : ∀ e : ℕ, (V * Matrix.diagonal d * V⁻¹) ^ e
+      = V * Matrix.diagonal (d ^ e) * V⁻¹ := by
+    intro e
+    induction e with
+    | zero => rw [pow_zero, pow_zero, Pi.one_def, Matrix.diagonal_one, mul_one, hVi]
+    | succ n ih =>
+      rw [pow_succ, ih]
+      simp only [mul_assoc]
+      rw [key, ← mul_assoc (Matrix.diagonal (d ^ n)), Matrix.diagonal_mul_diagonal, pow_succ]
+      rfl
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq =>
+    have hf : (fun i => (p + q).eval (d i))
+        = fun i => p.eval (d i) + q.eval (d i) := by
+      funext i; simp
+    rw [map_add, hp, hq, hf, ← Matrix.diagonal_add, Matrix.mul_add, Matrix.add_mul]
+  | monomial n a =>
+    have hf : (fun i => (Polynomial.monomial n a).eval (d i)) = a • (d ^ n) := by
+      funext i; simp [Polynomial.eval_monomial]
+    rw [Polynomial.aeval_monomial, hH, Algebra.algebraMap_eq_smul_one, Matrix.smul_mul, one_mul,
+      hpow, hf, Matrix.diagonal_smul, Matrix.mul_smul, Matrix.smul_mul]
+
+/-- **The inverse of a polynomial of a diagonalised matrix**: if $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible and $p(\mathbf{d}_i) \ne
+0$ for all $i$, then $p(\mathbf{H})^{-1} = \mathbf{V}\operatorname{diag}(p(\mathbf{d}_i)^{-1})
+\mathbf{V}^{-1}$. -/
+theorem inv_aeval_eq_mul_diagonal_mul_inv {H V : Matrix n n ℂ} {d : n → ℂ} (hV : IsUnit V)
+    (hHV : H * V = V * Matrix.diagonal d) {p : Polynomial ℂ} (hp : ∀ i, p.eval (d i) ≠ 0) :
+    (Polynomial.aeval H p)⁻¹ = V * Matrix.diagonal (fun i => (p.eval (d i))⁻¹) * V⁻¹ := by
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have key : ∀ X : Matrix n n ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, Matrix.nonsing_inv_mul V hdet, one_mul]
+  have hB : Matrix.diagonal (fun i => (p.eval (d i))⁻¹) * Matrix.diagonal (fun i => p.eval (d i))
+      = 1 := by
+    rw [Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+    congr 1
+    funext i
+    exact inv_mul_cancel₀ (hp i)
+  rw [aeval_eq_mul_diagonal_mul_inv hV hHV p]
+  apply Matrix.inv_eq_left_inv
+  simp only [mul_assoc]
+  rw [key, ← mul_assoc (Matrix.diagonal (fun i => (p.eval (d i))⁻¹)), hB, one_mul, hVi]
+
+/-- **Powers of a diagonalised matrix**: for invertible $\mathbf{V}$,
+$(\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1})^e =
+\mathbf{V}\operatorname{diag}(\mathbf{g}^e)\mathbf{V}^{-1}$. -/
+theorem mul_diagonal_mul_inv_pow {V : Matrix n n ℂ} (hV : IsUnit V) (g : n → ℂ) (e : ℕ) :
+    (V * Matrix.diagonal g * V⁻¹) ^ e = V * Matrix.diagonal (g ^ e) * V⁻¹ := by
+  have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+  have hVi : V * V⁻¹ = 1 := Matrix.mul_nonsing_inv V hdet
+  have key : ∀ X : Matrix n n ℂ, V⁻¹ * (V * X) = X := fun X => by
+    rw [← mul_assoc, Matrix.nonsing_inv_mul V hdet, one_mul]
+  induction e with
+  | zero => rw [pow_zero, pow_zero, Pi.one_def, Matrix.diagonal_one, mul_one, hVi]
+  | succ n ih =>
+    rw [pow_succ, ih]
+    simp only [mul_assoc]
+    rw [key, ← mul_assoc (Matrix.diagonal (g ^ n)), Matrix.diagonal_mul_diagonal, pow_succ]
+    rfl
+
+/-- **A normal matrix has a perfectly conditioned eigenvector matrix**: a normal complex matrix
+$\mathbf{H}$ has $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$ with
+$\mathbf{V}$ unitary, so $\|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2 = 1$ ($\kappa_V(\mathbf{H}) = 1$).
+[HornJohnson2013, Theorem 2.5.3]. -/
+theorem _root_.IsStarNormal.exists_isUnit_mul_eq_mul_diagonal_and_pseudoConditionNumber_eq_one
+    [Nonempty n] {H : Matrix n n ℂ} (hH : IsStarNormal H) :
+    ∃ (V : Matrix n n ℂ) (d : n → ℂ), IsUnit V ∧ H * V = V * Matrix.diagonal d ∧
+      pseudoConditionNumber V = 1 := by
+  obtain ⟨U, d, hU, rfl⟩ := isStarNormal_iff_exists_eq_mul_diagonal_mul_conjTranspose.mp hH
+  have hUi : U⁻¹ = Uᴴ := Matrix.inv_eq_left_inv hU.conjTranspose_mul_self
+  refine ⟨U, d, hU.isUnit, ?_, ?_⟩
+  · rw [Matrix.mul_assoc, hU.conjTranspose_mul_self, Matrix.mul_one]
+  · rw [pseudoConditionNumber_of_isUnit hU.isUnit, hUi, specNorm_conjTranspose,
+      hU.specNorm_eq_one, mul_one]
 
 end NLAlib
