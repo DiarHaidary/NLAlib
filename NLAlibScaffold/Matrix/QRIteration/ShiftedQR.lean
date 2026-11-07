@@ -257,7 +257,36 @@ S, about 20 lines. -/
 theorem isDecoupled_of_hessenbergPotential_le {k : ℕ} (hk : 0 < k) (hkn : k ≤ n) {δ : ℝ}
     (hδ : 0 ≤ δ) {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     (h : hessenbergPotential k H ≤ δ * specNorm H) : IsDecoupled δ H := by
-  sorry
+  have hcard : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).card = k := by
+    have hmap : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).map Fin.valEmbedding =
+        Finset.Ico (n - k) n := by
+      ext m
+      simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and,
+        Fin.valEmbedding_apply, Finset.mem_Ico]
+      constructor
+      · rintro ⟨i, hi, rfl⟩
+        exact ⟨by omega, i.isLt⟩
+      · rintro ⟨h1, h2⟩
+        exact ⟨⟨m, h2⟩, by change n ≤ m + k; omega, rfl⟩
+    rw [← Finset.card_map Fin.valEmbedding, hmap, Nat.card_Ico]
+    omega
+  have hne : (Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k)).Nonempty :=
+    ⟨⟨n - k, by omega⟩, by
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      omega⟩
+  obtain ⟨i0, hi0, hmin⟩ :=
+    Finset.exists_min_image _ (fun i : Fin n => ‖H i.succ i.castSucc‖) hne
+  have hδS : 0 ≤ δ * specNorm H := mul_nonneg hδ (specNorm_nonneg H)
+  have hψ0 : 0 ≤ hessenbergPotential k H := by
+    unfold hessenbergPotential
+    positivity
+  have hmk : ∏ _i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i0.succ i0.castSucc‖ ≤
+      ∏ i ∈ Finset.univ.filter (fun i : Fin n => n ≤ (i : ℕ) + k), ‖H i.succ i.castSucc‖ :=
+    Finset.prod_le_prod (fun i _ => norm_nonneg _) fun i hi => hmin i hi
+  rw [Finset.prod_const, hcard] at hmk
+  have h3 : ‖H i0.succ i0.castSucc‖ ^ k ≤ (δ * specNorm H) ^ k :=
+    hmk.trans ((hessenbergPotential_pow hk H).symm ▸ pow_le_pow_left₀ hψ0 h k)
+  exact ⟨i0, (pow_le_pow_iff_left₀ (norm_nonneg _) hδS hk.ne').mp h3⟩
 
 /-! ### The shifted QR step -/
 
