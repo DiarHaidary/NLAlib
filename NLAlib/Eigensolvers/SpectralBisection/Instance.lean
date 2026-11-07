@@ -34,6 +34,9 @@ $r(-x) = -r(x)$, which ties to even also is.
 ## Main results
 
 * `NLAlib.exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw`.
+* `NLAlib.exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le`: every
+  $n \ge 1$, $0 < \varepsilon \le 2^{-15}$, $\theta > 0$ and $R_0 > 0$, in a format wide
+  enough for them.
 -/
 
 @[expose] public section
@@ -502,5 +505,259 @@ example (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.expon
     fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
     (Real.sqrt_nonneg 2) hA hR₀ (by norm_num) le_rfl (pow_pos (by norm_num) _) le_rfl (by norm_num)
     (by norm_num) hℓ hβ hβle hβge rfl hbits hbits' hexp (Nat.le_ceil _) hind hlaw
+
+/-! ### Every parameter, in a wide enough format -/
+
+/-- A format with $E \ge K + 3$ exponent bits has floor $\tau \le 2^{-K}$ and largest finite
+number at least $2^K$, whatever its precision. -/
+private theorem two_zpow_le_and_le_maxFinite (fmt : Float.Model.Format) {K : ℕ}
+    (hK : K + 3 ≤ fmt.exponentBits) :
+    (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) ≤ ((2 : ℝ) ^ K)⁻¹ ∧
+      (2 : ℝ) ^ K ≤ fmt.maxFinite := by
+  have hE : 2 ≤ fmt.exponentBits := by omega
+  have hpowN : K + 2 ≤ 2 ^ (fmt.exponentBits - 1) :=
+    (Nat.lt_two_pow_self (n := K + 2)).le.trans (Nat.pow_le_pow_right (by norm_num) (by omega))
+  have hpow : (K : ℤ) + 2 ≤ (2 : ℤ) ^ (fmt.exponentBits - 1) := by exact_mod_cast hpowN
+  have hτeq : fmt.minExponent + (fmt.mantissaBits : ℤ) - 1 =
+      -((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) := by
+    simp only [Float.Model.Format.minExponent]; ring
+  have hB : fmt.maxExponentBound = (2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits := by
+    have h1 : 1 ≤ 2 ^ (fmt.exponentBits - 1) := Nat.one_le_two_pow
+    have h2 : (2 : ℤ) ^ fmt.exponentBits = 2 * 2 ^ (fmt.exponentBits - 1) := by
+      rw [← pow_succ']; congr 1; omega
+    simp only [Float.Model.Format.maxExponentBound, Float.Model.Format.exponentBias,
+      Float.Model.Format.mantissaBits]
+    rw [Nat.cast_sub h1]
+    push_cast
+    rw [h2]
+    ring
+  have hp : 1 ≤ fmt.mantissaBits := by simp only [Float.Model.Format.mantissaBits]; omega
+  have hmax : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) ≤ fmt.maxFinite := by
+    rw [Float.Model.Format.maxFinite, hB]
+    have h2p : (2 : ℝ) ≤ 2 ^ fmt.mantissaBits := by
+      simpa using pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 2) hp
+    have : 2 * (2 : ℝ) ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) =
+        (2 ^ fmt.mantissaBits / 2) * 2 ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - fmt.mantissaBits) := by
+      rw [← zpow_natCast, div_eq_mul_inv, ← zpow_neg_one, ← zpow_add₀ two_ne_zero,
+        ← zpow_add₀ two_ne_zero, mul_comm (2 : ℝ), ← zpow_add_one₀ two_ne_zero]
+      congr 1; ring
+    rw [this]
+    gcongr
+    linarith
+  rw [hτeq, ← zpow_natCast, ← zpow_neg]
+  refine ⟨zpow_le_zpow_right₀ one_le_two (by linarith), ?_⟩
+  have hle : (2 : ℝ) ^ (K : ℤ) ≤ 2 ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) :=
+    zpow_le_zpow_right₀ one_le_two (by linarith)
+  have hpos : (0 : ℝ) < 2 ^ ((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) := by positivity
+  linarith
+
+/-- **A wide enough format exists**: for reals $B_1, B_2, X, Q$ there is a binary format with
+$p \ge B_1, B_2$, $E \ge \max(X, 2)$, floor $\tau \le 1$ with $\tau Q \le 1$, and largest finite
+number at least $Q$. Every condition asks for more precision, more exponent bits, a smaller
+floor or a larger range, so one format meets them all. -/
+private theorem exists_format_le (B₁ B₂ X Q : ℝ) :
+    ∃ fmt : Float.Model.Format, B₁ ≤ fmt.mantissaBits ∧ B₂ ≤ fmt.mantissaBits ∧
+      X ≤ fmt.exponentBits ∧ 2 ≤ fmt.exponentBits ∧
+      (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) ≤ 1 ∧
+      (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) * Q ≤ 1 ∧ Q ≤ fmt.maxFinite := by
+  set K := ⌈Q⌉₊
+  let fmt : Float.Model.Format :=
+    { mantissaBitsWithoutImplicit := ⌈max B₁ B₂⌉₊ + 1, hm := by omega,
+      exponentBits := max ⌈X⌉₊ (K + 3), he := by omega }
+  have hpe : (fmt.mantissaBits : ℝ) = ⌈max B₁ B₂⌉₊ + 2 := by
+    simp only [fmt, Float.Model.Format.mantissaBits]; push_cast; ring
+  have hEe : fmt.exponentBits = max ⌈X⌉₊ (K + 3) := rfl
+  obtain ⟨hτ, hΩ⟩ := two_zpow_le_and_le_maxFinite fmt (K := K) (by rw [hEe]; omega)
+  have hQK : Q ≤ (2 : ℝ) ^ K :=
+    (Nat.le_ceil Q).trans (by exact_mod_cast (Nat.lt_two_pow_self (n := K)).le)
+  have hτ0 : (0 : ℝ) ≤ 2 ^ (fmt.minExponent + fmt.mantissaBits - 1) := by positivity
+  have hK1 : ((2 : ℝ) ^ K)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ one_le_two)
+  have hm := Nat.le_ceil (max B₁ B₂)
+  refine ⟨fmt, ?_, ?_, ?_, by rw [hEe]; omega, hτ.trans hK1, ?_, hQK.trans hΩ⟩
+  · rw [hpe]; linarith [le_max_left B₁ B₂]
+  · rw [hpe]; linarith [le_max_right B₁ B₂]
+  · rw [hEe]
+    exact (Nat.le_ceil X).trans (by exact_mod_cast le_max_left _ _)
+  · calc _ ≤ (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) * 2 ^ K :=
+          mul_le_mul_of_nonneg_left hQK hτ0
+      _ ≤ ((2 : ℝ) ^ K)⁻¹ * 2 ^ K := mul_le_mul_of_nonneg_right hτ (by positivity)
+      _ = 1 := inv_mul_cancel₀ (by positivity)
+
+-- Docstring lines name the two theorems and exceed 100 characters.
+set_option linter.style.longLine false in
+/-- The hypotheses of Theorem 4.2 are satisfiable at every parameter: for every size $n \ge 1$,
+tolerance $0 < \varepsilon \le 2^{-15}$, failure probability $\theta > 0$ and bound
+$R_0 > 0$ there are a binary format `fmt`, a nearest selector $r$ (ties away from zero), the
+depth $\ell =$ `NLAlib.bisectionDepth` $\varepsilon$ and the accuracy $\beta = \hat\beta$ at its
+bound such that the machine `NLAlib.binaryFloatMachine` of `fmt` and $r$ meets the contract
+`NLAlib.FloatMachine.IsAccurate` at the format's constants ($u = 2^{-p}$, floor
+$\tau = 2^{e_{\min} + p - 1}$, range the largest finite number, $\mu_{\mathrm{MM}}(d) =
+\mu_{\mathrm{QR}}(d) = 2d$, $c_{\mathrm N} = \sqrt2$) with samplers of measurable fibres and
+countable ranges, and, with $m = \min(n, \ell + 1)$,
+$\hat T = 2\sqrt2\sqrt n + \sqrt{\log(96nm/\theta)}$,
+$\hat\beta = (\ell - 1)^2\varepsilon\sqrt\theta/(52\ell^2(2\ell - 1)\sqrt{nm\min(n, e)}\,\hat T)$
+and $N_* = N(\theta/(12n\ell(\ell + 1)), \beta/(16n))$ (`NLAlib.newtonSchulzSteps`), the
+accuracy window $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$, the two precision conditions with
+$p$ bits, the floor condition $100n^{3/2}\tau \le \min(\sqrt{\theta/(8nm)},
+\varepsilon\min(R_0, 1))$, the range condition $16(2R_0 + n + 2\ell + \hat T) \le \Omega$, the
+exponent condition with $E \ge 2$ bits, and independent node samples, each of law
+`NLAlib.eighSampleLaw` $n$, on a probability space. These are the hypotheses of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
+(any $R_0 > 0$) and of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw`
+(there with $1/2 \le R_0 \le 1$), so neither becomes vacuous as the parameters change. Each
+condition on the format is an upper bound on $u$ or $\tau$ or a lower bound on $p$, $E$ or
+$\Omega$, and in a binary format $\tau$ and $\Omega$ depend on $E$ alone (up to a factor $2$ in
+$\Omega$), so the format takes $p = \lceil\max(\cdot)\rceil + 2$ and $E$ large enough for the
+exponent, floor and range conditions together. The input and $\beta$ are real parameters (the
+stored type is ℝ). At $n = 0$ the bound $\hat\beta$ is $0$ and no $\beta > 0$ exists. No printed
+source. -/
+theorem exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le {n : ℕ} (hn : 1 ≤ n)
+    {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hR₀ : 0 < R₀) :
+    ∃ (fmt : Float.Model.Format) (r : ℝ → ℤ) (ℓ : ℕ) (β : ℝ),
+      (∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) ∧
+      (binaryFloatMachine fmt r).IsAccurate id ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+        ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite (fun d => 2 * d)
+        (fun d => 2 * d) √2 ∧
+      (∀ c z, MeasurableSet ((binaryFloatMachine fmt r).unif c ⁻¹' {z})) ∧
+      (∀ c, (Set.range ((binaryFloatMachine fmt r).unif c)).Countable) ∧
+      (∀ z, MeasurableSet ((binaryFloatMachine fmt r).normal ⁻¹' {z})) ∧
+      (Set.range (binaryFloatMachine fmt r).normal).Countable ∧
+      Monotone (fun d : ℕ => 2 * (d : ℝ)) ∧ 0 < (2 : ℝ)⁻¹ ^ fmt.mantissaBits ∧
+      Real.logb 2 ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)⁻¹ = fmt.mantissaBits ∧
+      2 ≤ fmt.exponentBits ∧ bisectionDepth ε ≤ ℓ ∧ 0 < β ∧
+      β ≤ ((ℓ : ℝ) - 1) ^ 2 * ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+        √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
+        (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))) ∧
+      ((ℓ : ℝ) - 1) ^ 2 * ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+        √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
+        (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))) /
+        (1 + 2⁻¹ ^ 6) ≤ β ∧
+      Real.logb 2 ε⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
+        Real.logb 2 (n * (4 * (2 * n) + 10 + 10 * √(n : ℝ))) +
+        1 / 2 * Real.logb 2 (n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) +
+        Real.logb 2 (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))) +
+        Real.logb 2 (ℓ * (ℓ + 1)) + Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) +
+        13 ≤ fmt.mantissaBits ∧
+      Real.logb 2 β⁻¹ + Real.logb 2 (2048 * (n + newtonSchulzSteps
+        (θ / (12 * n * ℓ * (ℓ + 1))) (β / (16 * n)) + 1) *
+        (4 * (2 * n) + 10 + 10 * √(n : ℝ)) +
+        16 * (4 * (2 * n) + 4 * √(n : ℝ) * (√2 + 1) + 2 * (2 * n) + 1)) ≤ fmt.mantissaBits ∧
+      (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) * (100 * n * √(n : ℝ)) ≤
+        min (√(θ / (8 * n * min (n : ℝ) (ℓ + 1)))) (ε * min R₀ 1) ∧
+      16 * (2 * R₀ + n + 2 * ℓ + 2 * √2 * √(n : ℝ) +
+        √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))) ≤ fmt.maxFinite ∧
+      Real.logb 2 (Real.logb 2 (1536 * (n + ℓ + 2) ^ 3 / (ε * θ)) + 2) + 1 ≤ fmt.exponentBits ∧
+      ∃ (Ω' : Type) (_ : MeasurableSpace Ω') (μ : Measure Ω')
+        (ζ : List Bool → Ω' → EighSample ℝ ℂ n),
+        IsProbabilityMeasure μ ∧ iIndepFun ζ μ ∧ ∀ a, HasLaw (ζ a) (eighSampleLaw n) μ := by
+  set ℓ := bisectionDepth ε with hℓdef
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
+  have hℓ5 : (5 : ℝ) ≤ ℓ := by
+    have : 5 ≤ ℓ := Nat.le_add_left 5 _
+    exact_mod_cast this
+  have hm0 : 0 < min (n : ℝ) (ℓ + 1) := lt_min hn0 (by linarith)
+  have hD : 0 < √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) :=
+    Real.sqrt_pos.mpr (mul_pos (mul_pos hn0 hm0) (lt_min hn0 (Real.exp_pos 1)))
+  have hT : 0 < 2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)) := by
+    have : 0 < √(n : ℝ) := Real.sqrt_pos.mpr hn0
+    positivity
+  set β := ((ℓ : ℝ) - 1) ^ 2 * ε * √θ / (52 * (ℓ : ℝ) ^ 2 * (2 * ℓ - 1) *
+    √(n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) *
+    (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))) with hβdef
+  have hβ : 0 < β := by
+    have : 0 < (ℓ : ℝ) - 1 := by linarith
+    have : 0 < 2 * (ℓ : ℝ) - 1 := by linarith
+    have : 0 < √θ := Real.sqrt_pos.mpr hθ
+    positivity
+  have hmin : 0 < min (√(θ / (8 * n * min (n : ℝ) (ℓ + 1)))) (ε * min R₀ 1) :=
+    lt_min (Real.sqrt_pos.mpr (by positivity)) (mul_pos hε (lt_min hR₀ one_pos))
+  obtain ⟨fmt, hb1, hb2, hbx, hE2, hτ1, hτQ, hΩQ⟩ := exists_format_le
+    (Real.logb 2 ε⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ +
+      Real.logb 2 (n * (4 * (2 * n) + 10 + 10 * √(n : ℝ))) +
+      1 / 2 * Real.logb 2 (n * min (n : ℝ) (ℓ + 1) * min (n : ℝ) (Real.exp 1)) +
+      Real.logb 2 (2 * √2 * √(n : ℝ) + √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))) +
+      Real.logb 2 (ℓ * (ℓ + 1)) + Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) +
+      13)
+    (Real.logb 2 β⁻¹ + Real.logb 2 (2048 * (n + newtonSchulzSteps
+      (θ / (12 * n * ℓ * (ℓ + 1))) (β / (16 * n)) + 1) *
+      (4 * (2 * n) + 10 + 10 * √(n : ℝ)) +
+      16 * (4 * (2 * n) + 4 * √(n : ℝ) * (√2 + 1) + 2 * (2 * n) + 1)))
+    (Real.logb 2 (Real.logb 2 (1536 * (n + ℓ + 2) ^ 3 / (ε * θ)) + 2) + 1)
+    (max (100 * n * √(n : ℝ) / min (√(θ / (8 * n * min (n : ℝ) (ℓ + 1)))) (ε * min R₀ 1))
+      (16 * (2 * R₀ + n + 2 * ℓ + 2 * √2 * √(n : ℝ) +
+        √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ)))))
+  have hτ0 : (0 : ℝ) ≤ 2 ^ (fmt.minExponent + fmt.mantissaBits - 1) := by positivity
+  refine ⟨fmt, roundTiesAway, ℓ, β, absRelErr_roundTiesAway,
+    isAccurate_binaryFloatMachine absRelErr_roundTiesAway roundTiesAway_neg hτ1,
+    measurableSet_preimage_unif_binaryFloatMachine fmt measurable_roundTiesAway,
+    countable_range_unif_binaryFloatMachine fmt _,
+    measurableSet_preimage_normal_binaryFloatMachine fmt measurable_roundTiesAway,
+    countable_range_normal_binaryFloatMachine fmt _,
+    fun a b h => mul_le_mul_of_nonneg_left (Nat.cast_le.mpr h) (by norm_num), by positivity,
+    logb_inv_two_inv_pow _, hE2, le_rfl, hβ, le_rfl, div_le_self hβ.le (by norm_num), hb1, hb2,
+    ?_, (le_max_right _ _).trans hΩQ, hbx, exists_iIndepFun_hasLaw_eighSampleLaw n⟩
+  set q := min (√(θ / (8 * n * min (n : ℝ) (ℓ + 1)))) (ε * min R₀ 1)
+  set τ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
+  have h1 : 100 * n * √(n : ℝ) / q * q = 100 * n * √(n : ℝ) := div_mul_cancel₀ _ hmin.ne'
+  have h2 := mul_le_mul_of_nonneg_left (le_max_left (100 * n * √(n : ℝ) / q)
+    (16 * (2 * R₀ + n + 2 * ℓ + 2 * √2 * √(n : ℝ) +
+      √(Real.log (96 * n * min (n : ℝ) (ℓ + 1) / θ))))) hτ0
+  calc τ * (100 * n * √(n : ℝ)) = τ * (100 * n * √(n : ℝ) / q) * q := by
+        rw [mul_assoc τ (100 * n * √(n : ℝ) / q) q, h1]
+    _ ≤ 1 * q := mul_le_mul_of_nonneg_right (h2.trans hτQ) hmin.le
+    _ = q := one_mul q
+
+/-- Theorem 4.2 in bits applies at every parameter: for $n \ge 1$, $0 < \varepsilon \le
+2^{-15}$, $0 < \theta \le 1$ and every Hermitian input with $\|\mathbf{A}\|_2 \le R_0$, the
+failure probability of `NLAlib.eigh` on the wide enough binary format is at most $\theta$. -/
+example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ)
+    (hθ₁ : θ ≤ 1) (hR₀pos : 0 < R₀) {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)}
+    (hA : (decodeMatrix id A).IsHermitian) (hR₀ : specNorm (decodeMatrix id A) ≤ R₀) :
+    ∃ (fmt : Float.Model.Format) (r : ℝ → ℤ) (ℓ signFuel : ℕ) (β : ℝ) (Ω' : Type)
+      (_ : MeasurableSpace Ω') (μ : Measure Ω') (ζ : List Bool → Ω' → EighSample ℝ ℂ n),
+      IsProbabilityMeasure μ ∧ iIndepFun ζ μ ∧ (∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) ∧
+      μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix id A)
+        (decodeMatrix id (eigh (binaryFloatMachine fmt r) signFuel ℓ A R₀ ε β
+          fun a => ζ a ω).1)
+        (fun i => (eigh (binaryFloatMachine fmt r) signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)
+        (2 * ε * R₀) (ε / 3)} ≤ θ := by
+  obtain ⟨fmt, r, ℓ, β, -, hM, hunifm, hunifc, hnormalm, hnormalc, hmono, hu, hlogu, -, hℓ, hβ,
+    hβle, hβge, hbits, hbits', hτ, hΩ, -, Ω', mΩ', μ, ζ, hμ, hind, hlaw⟩ :=
+    exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le hn hε hε₁ hθ hR₀pos
+  refine ⟨fmt, r, ℓ, ⌈newtonSchulzSteps (θ / (12 * n * ℓ * (ℓ + 1))) (β / (16 * n))⌉₊, β, Ω',
+    mΩ', μ, ζ, hμ, hind, hlaw, ?_⟩
+  rw [← hlogu] at hbits hbits'
+  exact hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
+    hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num) (Real.sqrt_nonneg 2)
+    hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hu hbits hbits' (Nat.le_ceil _)
+    (by positivity) hτ hΩ hind hlaw
+
+/-- Theorem 4.2 in a bounded format applies at every parameter: for $n \ge 1$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $1/2 \le R_0 \le 1$ and every Hermitian input
+with $\|\mathbf{A}\|_2 \le R_0$, the failure probability of `NLAlib.eigh` on the wide enough
+binary format is at most $\theta$. -/
+example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ)
+    (hθ₁ : θ ≤ 1) (hR₀half : 1 / 2 ≤ R₀) (hR₀one : R₀ ≤ 1) {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)}
+    (hA : (decodeMatrix id A).IsHermitian) (hR₀ : specNorm (decodeMatrix id A) ≤ R₀) :
+    ∃ (fmt : Float.Model.Format) (r : ℝ → ℤ) (ℓ signFuel : ℕ) (β : ℝ) (Ω' : Type)
+      (_ : MeasurableSpace Ω') (μ : Measure Ω') (ζ : List Bool → Ω' → EighSample ℝ ℂ n),
+      IsProbabilityMeasure μ ∧ iIndepFun ζ μ ∧ (∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) ∧
+      μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix id A)
+        (decodeMatrix id (eigh (binaryFloatMachine fmt r) signFuel ℓ A R₀ ε β
+          fun a => ζ a ω).1)
+        (fun i => (eigh (binaryFloatMachine fmt r) signFuel ℓ A R₀ ε β fun a => ζ a ω).2 i)
+        (2 * ε * R₀) (ε / 3)} ≤ θ := by
+  obtain ⟨fmt, r, ℓ, β, -, hM, hunifm, hunifc, hnormalm, hnormalc, hmono, -, -, hE2, hℓ, hβ,
+    hβle, hβge, hbits, hbits', -, -, hexp, Ω', mΩ', μ, ζ, hμ, hind, hlaw⟩ :=
+    exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le hn hε hε₁ hθ
+      (R₀ := R₀) (by linarith)
+  refine ⟨fmt, r, ℓ, ⌈newtonSchulzSteps (θ / (12 * n * ℓ * (ℓ + 1))) (β / (16 * n))⌉₊, β, Ω',
+    mΩ', μ, ζ, hμ, hind, hlaw, ?_⟩
+  exact
+    hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
+    fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
+    (Real.sqrt_nonneg 2) hA hR₀ hR₀half hR₀one hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hbits hbits'
+    hexp (Nat.le_ceil _) hind hlaw
 
 end NLAlib
