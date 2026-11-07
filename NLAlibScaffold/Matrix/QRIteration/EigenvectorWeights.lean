@@ -46,7 +46,22 @@ Proof: the last row is nonzero (`Matrix.IsUnit` gives an injective `Matrix.vecMu
 `EuclideanSpace.norm_sq_eq` with `Finset.sum_div`. S, about 10 lines. -/
 theorem sum_lastRowWeights {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hV : IsUnit V) :
     ∑ i, lastRowWeights V i = 1 := by
-  sorry
+  have hrow : V (Fin.last n) ≠ 0 := by
+    intro h
+    have hdet := (Matrix.isUnit_iff_isUnit_det V).mp hV
+    rw [Matrix.det_eq_zero_of_row_eq_zero (Fin.last n) (fun j => congrFun h j)] at hdet
+    exact not_isUnit_zero hdet
+  have hne : ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 ≠ 0 := by
+    have : WithLp.toLp 2 (V (Fin.last n)) ≠ 0 := by
+      intro h
+      apply hrow
+      simpa using congrArg WithLp.ofLp h
+    have := norm_ne_zero_iff.mpr this
+    positivity
+  unfold lastRowWeights
+  have hsum : ∑ i, ‖V (Fin.last n) i‖ ^ 2 = ‖WithLp.toLp 2 (V (Fin.last n))‖ ^ 2 := by
+    rw [EuclideanSpace.norm_sq_eq]
+  rw [← Finset.sum_div, hsum, div_self hne]
 
 /-- **Approximate functional calculus, upper bound on the moment**: for invertible $\mathbf{V}$
 with last-row weights $w$ and every $\mathbf{g}$,
