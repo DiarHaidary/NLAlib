@@ -32,7 +32,7 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 omit [AddMonoid C] in
 /-- A product kernel call on held matrices succeeds when the output block fits. -/
-private theorem el6_exists_kcall {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+private theorem exists_kcallStore_of_holds {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (p : P) {l m n : ℕ} {a b c : ℕ × ℕ} {s : Store P K} {A : Matrix (Fin l) (Fin m) (K × K)}
     {B : Matrix (Fin m) (Fin n) (K × K)} (hA : pairLayout.Holds s p a.1 a.2 A)
     (hB : pairLayout.Holds s p b.1 b.2 B)
@@ -50,7 +50,7 @@ private theorem el6_exists_kcall {mm : ι} (hmm : IsMatMulKernel I mm pairLayout
 omit [Inhabited K] in
 /-- A loop of binary operations `Y[f w] ← Y[g w] ∘ c` succeeds when the written cells fit, the
 read cells are initialised and never written, and the operation always succeeds. -/
-private theorem el6_binLoop {p : P} {op : BinOp} {m : IExp ℕ} {Y : ℕ} {c : Cell ℕ ℕ}
+private theorem exists_exec_loop_bin {p : P} {op : BinOp} {m : IExp ℕ} {Y : ℕ} {c : Cell ℕ ℕ}
     {f g : ℕ → IExp ℕ} {st : St P K C} {len : ℕ} (hYc : c.buf ≠ Y)
     (hfg : ∀ w < m.eval, ∀ w' < m.eval, (f w).eval ≠ (g w').eval)
     (hY : st.store.shape[Y]? = some (p, len)) (hf : ∀ w < m.eval, (f w).eval < len)
@@ -77,8 +77,9 @@ private theorem el6_binLoop {p : P} {op : BinOp} {m : IExp ℕ} {Y : ℕ} {c : C
     · exact hrd q b i (hb.imp_right fun h w' hw' => h w' (by omega))
     · exact hb.imp_right fun h => (h w (Nat.lt_succ_self w)).symm
 
-/-- The branch of a one-child node in the upward pass succeeds. -/
-private theorem el6_shift_ex (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighArenas)
+
+/-- The branch of a one-child node in the upward pass (`NLAlib.eighUpShift`) succeeds. -/
+private theorem exists_exec_eighUpShift (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighArenas)
     (tc : Cell ℕ ℕ) {s : St P K C} (hk : lo + k ≤ n) (hUE : H.Ua ≠ H.Ea) (htc : tc.buf ≠ H.Ea)
     (htcU : tc.buf ≠ H.Ua) {U : Matrix (Fin k) (Fin k) (K × K)}
     (hUs : s.store.shape[H.Ua]? = some (p, 2 * (n * n) * (D + 1)))
@@ -87,29 +88,21 @@ private theorem el6_shift_ex (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighAr
     (hE : ∀ i < k, ∃ x, s.store.read p H.Ea (n * (d + 1) + lo + i) = some x)
     (hσ : ∃ σ, s.store.read p tc.buf tc.idx.eval = some σ)
     (hop : ∀ x z, ∃ v, I.sem.bin p .add x z = some v) :
-    ∃ s', exec I (do
-        zcopy (ι := ι) p (IExp.var k) (IExp.var k) H.Ua
-          (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo))
-          H.Ua (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))
-        forRange (IExp.var k) fun i => ins (.bin p .add
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var i⟩
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var i⟩
-          tc)).run s = some s' := by
-  rw [exec_run_bind I (b := zcopy (ι := ι) p (IExp.var k) (IExp.var k) H.Ua
+    ∃ s', exec I (eighUpShift (ι := ι) p n d lo k H tc).run s = some s' := by
+  rw [eighUpShift, exec_run_bind I (b := zcopy (ι := ι) p (IExp.var k) (IExp.var k) H.Ua
     (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)) H.Ua
     (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))) (fun _ => rfl), exec_zcopy_congr]
-  have hkn : k ≤ n := by omega
-  have hkk : k * k ≤ n * n := Nat.mul_le_mul hkn hkn
+  have hkk : k * k ≤ n * n := Nat.mul_le_mul (by omega) (by omega)
   have hU' : pairLayout.Holds s.store p H.Ua
       (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)).eval U := by
     simpa [eighBlockOff, Nat.mul_succ] using hU
   have hXY : blockDisjoint (H.Ua, (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)).eval,
       2 * (k * k)) (H.Ua, (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)).eval,
       2 * (k * k)) = true :=
-    el5_bd2 (Or.inl (by
+    blockDisjoint_iff.2 (Or.inr (Or.inl (by
       simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
         IExp.eval_var, IExp.eval_ofNat]
-      rw [Nat.mul_succ]; omega))
+      rw [Nat.mul_succ]; omega)))
   obtain ⟨s₁, hz⟩ := exists_exec_zcopy (I := I) p k k (st := s) hU' hXY ⟨_, hUs, by
     simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_ofNat]
@@ -119,7 +112,7 @@ private theorem el6_shift_ex (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighAr
   rw [IExp.eval_var, hz, Option.bind_some]
   change ∃ s', exec I (.seq (.loop _ _) .skip) _ = _
   simp only [exec_seq_skip]
-  refine el6_binLoop htc ?_ (hsh₁ ▸ hEs) ?_ ?_ ?_ hop
+  refine exists_exec_loop_bin htc ?_ (hsh₁ ▸ hEs) ?_ ?_ ?_ hop
   · intro w hw w' hw'
     simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_ofNat] at hw hw' ⊢
@@ -131,15 +124,73 @@ private theorem el6_shift_ex (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighAr
   · intro w hw
     simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_ofNat] at hw ⊢
-    rw [hfr₁ p _ _ (el5_bd (Or.inl (Ne.symm hUE)))]
+    rw [hfr₁ p _ _ (blockDisjoint_iff.2 (Or.inl (Ne.symm hUE)))]
     obtain ⟨x, hx⟩ := hE w hw
     exact ⟨x, by rw [← hx, Nat.mul_succ]⟩
   · obtain ⟨σ, hσ⟩ := hσ
-    exact ⟨σ, by rw [hfr₁ p _ _ (el5_bd (Or.inl htcU))]; exact hσ⟩
+    exact ⟨σ, by rw [hfr₁ p _ _ (blockDisjoint_iff.2 (Or.inl htcU))]; exact hσ⟩
 
-/-- The branch of a split in the upward pass succeeds. -/
-private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (n d D lo k kp t : ℕ) (hd : d < D) (H : EighArenas) {s : St P K C} (hk : lo + k ≤ n)
+omit [AddMonoid C] in
+/-- The two kernel calls of the split branch (`NLAlib.eighUpSplit`) succeed, keep the shape and
+every cell outside the output arena. -/
+private theorem exists_kcallStore_eighUpSplit {mm : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (n d D lo k kp : ℕ) (hd : d < D)
+    (H : EighArenas) {s : Store P K} (hk : lo + k ≤ n) (hkp : kp < k) (hUQ : H.Ua ≠ H.Qa)
+    {Qp : Matrix (Fin k) (Fin kp) (K × K)} {Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)}
+    {Up : Matrix (Fin kp) (Fin kp) (K × K)} {Um : Matrix (Fin (k - kp)) (Fin (k - kp)) (K × K)}
+    (hUs : s.shape[H.Ua]? = some (p, 2 * (n * n) * (D + 1)))
+    (hQp : pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp)
+    (hQm : pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm)
+    (hUp : pairLayout.Holds s p H.Ua (2 * (n * n) * (d + 1) + 2 * n * lo) Up)
+    (hUm : pairLayout.Holds s p H.Ua (2 * (n * n) * (d + 1) + 2 * n * (lo + kp)) Um) :
+    ∃ u₁ u₂, I.kcallStore mm p [k, kp, kp] [(H.Qa, 2 * (n * n) * d + 2 * n * lo),
+        (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * lo)] [(H.Ua, 2 * (n * n) * d + 2 * n * lo)] s =
+        some u₁ ∧
+      I.kcallStore mm p [k, k - kp, k - kp]
+        [(H.Qa, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)),
+          (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp))]
+        [(H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))] u₁ = some u₂ ∧
+      u₂.shape = s.shape ∧ ∀ q b i, b ≠ H.Ua → u₂.read q b i = s.read q b i := by
+  have hkk : k * k ≤ n * n := Nat.mul_le_mul (by omega) (by omega)
+  have hkpk : k * kp ≤ k * k := Nat.mul_le_mul_left k hkp.le
+  have hsplit : k * kp + k * (k - kp) = k * k := by
+    rw [← Nat.mul_add, Nat.add_sub_of_le hkp.le]
+  have hlok : lo * n + k * n ≤ n * n := by nlinarith
+  have hc1 : (k - kp) * k = k * (k - kp) := Nat.mul_comm _ _
+  have hc2 : kp * k = k * kp := Nat.mul_comm _ _
+  have hnD := Nat.mul_le_mul_left n hd
+  rw [Nat.mul_succ] at hnD
+  obtain ⟨u₁, hu₁⟩ := exists_kcallStore_of_holds hmm p (l := k) (m := kp) (n := kp)
+    (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo))
+    (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * lo))
+    (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo)) hQp hUp (blockDisjoint_iff.2 (Or.inl hUQ))
+    (blockDisjoint_iff.2 (Or.inr (Or.inl (by dsimp only; rw [Nat.mul_succ]; nlinarith)))) hUs
+    (by dsimp only; rw [Nat.mul_succ]; nlinarith)
+  obtain ⟨-, hfr₁⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQp hUp
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+      simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) hu₁
+  have hQm₁ := hQm.of_forall_read_eq fun i _ _ =>
+    hfr₁ p _ i (blockDisjoint_iff.2 (Or.inl (Ne.symm hUQ)))
+  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (blockDisjoint_iff.2
+    (Or.inr (Or.inr (by simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))))
+  have hsh₁ := Interp.shape_of_kcallStore_eq_some hu₁
+  obtain ⟨u₂, hu₂⟩ := exists_kcallStore_of_holds hmm p (l := k) (m := k - kp) (n := k - kp)
+    (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)))
+    (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp)))
+    (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))) hQm₁ hUm₁
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+      dsimp only; rw [Nat.mul_succ]; nlinarith)))) (hsh₁ ▸ hUs)
+    (by dsimp only; rw [Nat.mul_succ]; nlinarith)
+  obtain ⟨-, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQm₁ hUm₁
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+      simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) hu₂
+  refine ⟨u₁, u₂, hu₁, hu₂, (Interp.shape_of_kcallStore_eq_some hu₂).trans hsh₁,
+    fun q b i hb => ?_⟩
+  rw [hfr₂ q b i (blockDisjoint_iff.2 (Or.inl hb)), hfr₁ q b i (blockDisjoint_iff.2 (Or.inl hb))]
+
+/-- The branch of a split in the upward pass (`NLAlib.eighUpSplit`) succeeds. -/
+private theorem exists_exec_eighUpSplit {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n d D lo k kp t : ℕ) (hd : d < D) (H : EighArenas) {s : St P K C} (hk : lo + k ≤ n)
     (hkp : kp < k) (hUE : H.Ua ≠ H.Ea) (hUQ : H.Ua ≠ H.Qa) (htE : t ≠ H.Ea) (htU : t ≠ H.Ua)
     {Qp : Matrix (Fin k) (Fin kp) (K × K)} {Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)}
     {Up : Matrix (Fin kp) (Fin kp) (K × K)} {Um : Matrix (Fin (k - kp)) (Fin (k - kp)) (K × K)}
@@ -154,79 +205,23 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
     (hσ : ∃ σ, s.store.read p t 0 = some σ)
     (hadd : ∀ x z, ∃ v, I.sem.bin p .add x z = some v)
     (hsub : ∀ x z, ∃ v, I.sem.bin p .sub x z = some v) :
-    ∃ s', exec I (do
-        let qo := eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)
-        stmt (.kcall mm p [IExp.var k, IExp.var kp, IExp.var kp]
-          [(H.Qa, qo), (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo))]
-          [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))])
-        stmt (.kcall mm p [IExp.var k, IExp.var k - IExp.var kp, IExp.var k - IExp.var kp]
-          [(H.Qa, qo + 2 * (IExp.var k * IExp.var kp)),
-            (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo + IExp.var kp))]
-          [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo) +
-            2 * (IExp.var k * IExp.var kp))])
-        forRange (IExp.var kp) fun j => ins (.bin p .add
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var j⟩
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var j⟩ ⟨t, 0⟩)
-        forRange (IExp.var k - IExp.var kp) fun j => ins (.bin p .sub
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var kp + IExp.var j⟩
-          ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var kp +
-            IExp.var j⟩ ⟨t, 0⟩)).run s = some s' := by
+    ∃ s', exec I (eighUpSplit p mm n d lo k kp t H).run s = some s' := by
   change ∃ s', exec I (.seq (.kcall _ _ _ _ _) (.seq (.kcall _ _ _ _ _)
     (.seq (.loop _ _) (.seq (.loop _ _) .skip)))) s = some s'
-  have hkn : k ≤ n := by omega
-  have hkk : k * k ≤ n * n := Nat.mul_le_mul hkn hkn
-  have hkpk : k * kp ≤ k * k := Nat.mul_le_mul_left k hkp.le
-  have hsplit : k * kp + k * (k - kp) = k * k := by
-    rw [← Nat.mul_add, Nat.add_sub_of_le hkp.le]
-  have hlok : lo * n + k * n ≤ n * n := by nlinarith
-  have hc1 : (k - kp) * k = k * (k - kp) := Nat.mul_comm _ _
-  have hc2 : kp * k = k * kp := Nat.mul_comm _ _
-  have hnD := Nat.mul_le_mul_left n hd
-  rw [Nat.mul_succ] at hnD
-  obtain ⟨u₁, hu₁⟩ := el6_exists_kcall hmm p (l := k) (m := kp) (n := kp)
-    (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo))
-    (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * lo))
-    (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo)) hQp hUp
-    (el5_bd2' (Or.inl hUQ))
-    (el5_bd2 (Or.inl (by rw [Nat.mul_succ]; nlinarith))) hUs
-    (by dsimp only; rw [Nat.mul_succ]; nlinarith)
-  obtain ⟨-, hfr₁⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQp hUp
-    (el5_bd2' (Or.inl hUQ))
-    (el5_bd2 (Or.inl (by simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))) hu₁
-  have hsh₁ := Interp.shape_of_kcallStore_eq_some hu₁
+  obtain ⟨u₁, u₂, hu₁, hu₂, hsh₂, hfrK⟩ := exists_kcallStore_eighUpSplit hmm p n d D lo k kp hd H
+    hk hkp hUQ hUs hQp hQm hUp hUm
   rw [exec_seq, exec_kcall]
   simp only [List.map_cons, List.map_nil, eighBlockOff, IExp.eval_add, IExp.eval_mul,
     IExp.eval_const, IExp.eval_var, IExp.eval_ofNat]
-  rw [hu₁, Option.map_some, Option.bind_some]
-  have hQm₁ := hQm.of_forall_read_eq fun i _ _ => hfr₁ p _ i (el5_bd (Or.inl (Ne.symm hUQ)))
-  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (el5_bd (Or.inr (Or.inr (by
-    simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))))
-  obtain ⟨u₂, hu₂⟩ := el6_exists_kcall hmm p (l := k) (m := k - kp) (n := k - kp)
-    (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)))
-    (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp)))
-    (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))) hQm₁ hUm₁
-    (el5_bd2' (Or.inl hUQ)) (el5_bd2 (Or.inl (by
-      rw [Nat.mul_succ]; nlinarith))) (hsh₁ ▸ hUs)
-    (by dsimp only; rw [Nat.mul_succ]; nlinarith)
-  obtain ⟨-, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQm₁ hUm₁
-    (el5_bd2' (Or.inl hUQ)) (el5_bd2 (Or.inl (by
-      simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))) hu₂
-  have hsh₂ := Interp.shape_of_kcallStore_eq_some hu₂
-  rw [exec_seq, exec_kcall]
+  rw [hu₁, Option.map_some, Option.bind_some, exec_seq, exec_kcall]
   simp only [List.map_cons, List.map_nil, IExp.eval_add, IExp.eval_mul,
     IExp.eval_const, IExp.eval_var, IExp.eval_ofNat, IExp.eval_sub]
-  rw [show I.kcallStore mm p [k, k - kp, k - kp]
-      [(H.Qa, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)),
-        (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp))]
-      [(H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))] u₁ = some u₂ from hu₂,
-    Option.map_some, Option.bind_some]
-  have hrdE : ∀ i, u₂.read p H.Ea i = s.store.read p H.Ea i := fun i => by
-    rw [hfr₂ p _ i (el5_bd (Or.inl (Ne.symm hUE))), hfr₁ p _ i (el5_bd (Or.inl (Ne.symm hUE)))]
-  have hrdt : u₂.read p t 0 = s.store.read p t 0 := by
-    rw [hfr₂ p _ _ (el5_bd (Or.inl htU)), hfr₁ p _ _ (el5_bd (Or.inl htU))]
-  have hEs₂ : u₂.shape[H.Ea]? = some (p, n * (D + 1)) := by rw [hsh₂, hsh₁]; exact hEs
+  rw [hu₂, Option.map_some, Option.bind_some]
+  have hrdE : ∀ i, u₂.read p H.Ea i = s.store.read p H.Ea i := fun i => hfrK p _ i hUE.symm
+  have hrdt : u₂.read p t 0 = s.store.read p t 0 := hfrK p _ _ htU
+  have hEs₂ : u₂.shape[H.Ea]? = some (p, n * (D + 1)) := by rw [hsh₂]; exact hEs
   rw [exec_seq]
-  obtain ⟨s₃, h₃⟩ := el6_binLoop (I := I) (c := ⟨t, 0⟩) (Y := H.Ea)
+  obtain ⟨s₃, h₃⟩ := exists_exec_loop_bin (I := I) (c := ⟨t, 0⟩) (Y := H.Ea)
     (st := { s with
       store := u₂
       cnt := s.cnt + I.charge (.kcall p mm [k, kp, kp]) +
@@ -241,7 +236,8 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
       intro w hw
       simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
         IExp.eval_var] at hw ⊢
-      rw [Nat.mul_succ]; omega) (by
+      have := Nat.mul_le_mul_left n hd
+      rw [Nat.mul_succ] at this ⊢; omega) (by
       intro w hw
       simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
         IExp.eval_ofNat] at hw ⊢
@@ -250,7 +246,7 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
       exact ⟨x, by rw [← hx, Nat.mul_succ]⟩) (by
       obtain ⟨σ, hσ⟩ := hσ
       exact ⟨σ, by rw [IExp.eval_zero, hrdt]; exact hσ⟩) hadd
-  obtain ⟨hsh₃, -, -, hfr₃⟩ := el5_binLoop htE (by
+  obtain ⟨hsh₃, -, -, hfr₃⟩ := shape_and_read_of_exec_loop_bin htE (by
       intro w hw w' hw'
       simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
         IExp.eval_ofNat] at hw hw' ⊢
@@ -260,7 +256,7 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
     omega) h₃
   erw [h₃]
   rw [Option.bind_some, exec_seq_skip]
-  refine el6_binLoop htE ?_ (hsh₃ ▸ hEs₂) ?_ ?_ ?_ hsub
+  refine exists_exec_loop_bin htE ?_ (hsh₃ ▸ hEs₂) ?_ ?_ ?_ hsub
   · intro w hw w' hw'
     simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_ofNat, IExp.eval_sub] at hw hw' ⊢
@@ -268,7 +264,8 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
   · intro w hw
     simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_sub] at hw ⊢
-    rw [Nat.mul_succ]; omega
+    have := Nat.mul_le_mul_left n hd
+    rw [Nat.mul_succ] at this ⊢; omega
   · intro w hw
     simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_var,
       IExp.eval_ofNat, IExp.eval_sub] at hw ⊢
@@ -281,11 +278,12 @@ private theorem el6_split_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
   · obtain ⟨σ, hσ⟩ := hσ
     exact ⟨σ, by rw [hfr₃ p _ _ (Or.inl htE), IExp.eval_zero, hrdt]; exact hσ⟩
 
-/-- One node of the upward pass succeeds (hypotheses as for its run). -/
-private theorem el6_node_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (n ℓ₀ F d D : ℕ) (hn : 1 ≤ n) (hd : d < D) (H : EighArenas) (t : ℕ) {s₀ s₁ : St P K C}
-    {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} {a : List Bool} {lo : ℕ}
-    {y : EighNode K} (ha : a.length = d)
+/-- One node of the upward pass (`NLAlib.eighUpNode`) succeeds, under the hypotheses of its run
+(`NLAlib.holds_of_exec_eighUpSlot`) and with the output and eigenvalue arenas allocated. -/
+private theorem exists_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n ℓ₀ F d D : ℕ) (hn : 1 ≤ n) (hd : d < D) (H : EighArenas) (t : ℕ)
+    {s₀ s₁ : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} {a : List Bool}
+    {lo : ℕ} {y : EighNode K} (ha : a.length = d)
     (hay : eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a =
       some (lo, y))
     (hnd : H.handles.Nodup) (htH : t ∉ H.handles)
@@ -308,108 +306,46 @@ private theorem el6_node_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hEs : s₁.store.shape[H.Ea]? = some (p, n * (D + 1)))
     (hadd : ∀ x z, ∃ v, I.sem.bin p .add x z = some v)
     (hsub : ∀ x z, ∃ v, I.sem.bin p .sub x z = some v) :
-    ∃ s₂, exec I (Builder.bindIdx (ι := ι) p
-      ⟨H.Kd, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo)⟩ 4 fun c => do
-        eighWhen (eighEqInd (IExp.var c) 2) do
-          zcopy p (IExp.var y.k) (IExp.var y.k) H.Ua
-            (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)) H.Ua
-            (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))
-          forRange (IExp.var y.k) fun i => ins (.bin p .add
-            ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var i⟩
-            ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var i⟩
-            ⟨t, 0⟩)
-        eighWhen (eighEqInd (IExp.var c) 3) do
-          zcopy p (IExp.var y.k) (IExp.var y.k) H.Ua
-            (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)) H.Ua
-            (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))
-          forRange (IExp.var y.k) fun i => ins (.bin p .add
-            ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var i⟩
-            ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var i⟩
-            ⟨t, 1⟩)
-        eighWhen (eighEqInd (IExp.var c) 4) <|
-          Builder.bindIdx p ⟨H.Kp, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo)⟩
-            (IExp.var y.k) fun kp => do
-            let qo := eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)
-            stmt (.kcall mm p [IExp.var y.k, IExp.var kp, IExp.var kp]
-              [(H.Qa, qo), (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo))]
-              [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))])
-            stmt (.kcall mm p [IExp.var y.k, IExp.var y.k - IExp.var kp,
-                IExp.var y.k - IExp.var kp]
-              [(H.Qa, qo + 2 * (IExp.var y.k * IExp.var kp)),
-                (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1)
-                  (IExp.var lo + IExp.var kp))]
-              [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo) +
-                2 * (IExp.var y.k * IExp.var kp))])
-            forRange (IExp.var kp) fun j => ins (.bin p .add
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var j⟩
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var j⟩
-              ⟨t, 0⟩)
-            forRange (IExp.var y.k - IExp.var kp) fun j => ins (.bin p .sub
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var kp +
-                IExp.var j⟩
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var kp +
-                IExp.var j⟩ ⟨t, 0⟩)).run s₁ = some s₂ := by
+    ∃ s₂, exec I (eighUpNode p mm n d lo y.k t H).run s₁ = some s₂ := by
   set M := eighTapeMachine I p mmR qrR with hM
   obtain ⟨hk1, hkn⟩ := eighLoc_bounds hn hay
-  obtain ⟨hUE, hUQ, hKdU, hKdE, hKpU, hKpE, hQE, -⟩ := el5_hne hnd
+  obtain ⟨hUE, hUQ, hKdU, hKdE, hKpU, hKpE, hQE, -⟩ := H.ua_ne_ea_and_of_nodup hnd
   have htU : t ≠ H.Ua := fun e => htH (e ▸ by simp [EighArenas.handles])
   have htE : t ≠ H.Ea := fun e => htH (e ▸ by simp [EighArenas.handles])
   have hRo : ∀ q b i, b ≠ H.Ua → b ≠ H.Ea → s₁.store.read q b i = s₀.store.read q b i :=
     fun q b i h1 h2 => hR q b i (Or.inl fun h => h.1.elim h1 h2)
   have hRU1 : ∀ q i, 2 * (n * n) * (d + 1) ≤ i → s₁.store.read q H.Ua i = s₀.store.read q H.Ua i :=
-    fun q i hi => hR q _ i (Or.inl fun ⟨_, hc⟩ => by have := el5_lc_Ua hnd hc; omega)
+    fun q i hi => hR q _ i (Or.inl fun ⟨_, hc⟩ => by
+      have := H.mul_le_and_lt_of_levelCell_ua hnd hc; omega)
   have hRE1 : ∀ q i, n * (d + 1) ≤ i → s₁.store.read q H.Ea i = s₀.store.read q H.Ea i :=
-    fun q i hi => hR q _ i (Or.inl fun ⟨_, hc⟩ => by have := el5_lc_Ea hnd hc; omega)
+    fun q i hi => hR q _ i (Or.inl fun ⟨_, hc⟩ => by
+      have := H.mul_le_and_lt_of_levelCell_ea hnd hc; omega)
   have hr := hrec a lo y ha hay hk1
-  change ∃ s₂, exec I (.seq (.bindIdx _ _ _ _) .skip) s₁ = some s₂
-  rw [exec_seq_skip]
   cases hs : eighStep M n F R₀ β y.A y.R y.ε y.ℓ (eighTapeSample n d lo) with
   | leaf U e =>
     rw [hs] at hr
-    obtain ⟨hkd, -, -⟩ := hr
-    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp hkd
-    rw [exec_bindIdx_of_read I ((hRo p _ _ hKdU hKdE).trans hv) hk (by decide)]
-    change ∃ s₂, exec I (.seq (.loop _ _) (.seq (.loop _ _) (.seq (.loop _ _) .skip))) _ = _
-    rw [el5_seq_loop_zero rfl, el5_seq_loop_zero rfl, el5_seq_loop_zero rfl, exec_skip]
-    exact ⟨_, rfl⟩
+    exact ⟨_, exec_eighUpNode_of_readsIdx_one (readsIdx_of_read_eq hr.1 (hRo p _ _ hKdU hKdE))⟩
   | shift b A' σ' =>
     rw [hs] at hr
-    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp hr
-    rw [exec_bindIdx_of_read I ((hRo p _ _ hKdU hKdE).trans hv) hk (by split <;> decide)]
+    rw [exec_eighUpNode_of_readsIdx_shift (readsIdx_of_read_eq hr (hRo p _ _ hKdU hKdE))]
     have hch : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ (a ++ [b]) = some (lo,
         ⟨y.k, A', (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2,
           y.ℓ + 1⟩) := by
       rw [eighLoc_append_singleton, hay]
       simp [eighLoc, ha, hs]
     obtain ⟨hUc, hEc⟩ := hout (a ++ [b]) lo _ (by simp [ha]) hch
-    have hUc' := hUc.of_forall_read_eq (s' := s₁.store) fun i hi _ => hRU1 p i (by omega)
-    have hEc' : ∀ i < y.k, ∃ x, s₁.store.read p H.Ea (n * (d + 1) + lo + i) = some x :=
-      fun i hi => ⟨_, (hRE1 p _ (by omega)).trans (hEc ⟨i, hi⟩)⟩
-    change ∃ s₂, exec I (.seq (.loop _ _) (.seq (.loop _ _) (.seq (.loop _ _) .skip))) _ = _
+    refine exists_exec_eighUpShift p n d D lo y.k hd H _ hkn hUE htE htU hUs hEs
+      (hUc.of_forall_read_eq fun i hi _ => hRU1 p i (by omega))
+      (fun i hi => ⟨_, (hRE1 p _ (by omega)).trans (hEc ⟨i, hi⟩)⟩) ?_ hadd
     cases b
-    · rw [el5_seq_loop_zero rfl, el5_seq_loop_one rfl]
-      obtain ⟨s₃, h₃⟩ := el6_shift_ex p n d D lo y.k hd H ⟨t, 1⟩ hkn hUE htE htU
-        (s := { s₁ with cnt := s₁.cnt + I.charge (.toNat p) }) hUs hEs hUc' hEc'
-        ⟨_, (hRo p _ _ htU htE).trans ht1⟩ hadd
-      erw [h₃]
-      rw [Option.bind_some, el5_seq_loop_zero rfl, exec_skip]
-      exact ⟨_, rfl⟩
-    · rw [el5_seq_loop_one rfl]
-      obtain ⟨s₃, h₃⟩ := el6_shift_ex p n d D lo y.k hd H ⟨t, 0⟩ hkn hUE htE htU
-        (s := { s₁ with cnt := s₁.cnt + I.charge (.toNat p) }) hUs hEs hUc' hEc'
-        ⟨_, (hRo p _ _ htU htE).trans ht0⟩ hadd
-      erw [h₃]
-      rw [Option.bind_some, el5_seq_loop_zero rfl, el5_seq_loop_zero rfl, exec_skip]
-      exact ⟨_, rfl⟩
+    · exact ⟨_, (hRo p _ _ htU htE).trans ht1⟩
+    · exact ⟨_, (hRo p _ _ htU htE).trans ht0⟩
   | split kp hkp Qp Qm Ap Am σ' =>
     rw [hs] at hr
-    obtain ⟨-, hkp0, hkpk⟩ := el5_eighStep_split hs
+    obtain ⟨-, -, hkpk⟩ := eq_div_and_pos_and_lt_of_eighStep_eq_split hs
     obtain ⟨hkd, hkpr, hQp, hQm⟩ := hr
-    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp hkd
-    rw [exec_bindIdx_of_read I ((hRo p _ _ hKdU hKdE).trans hv) hk (by decide)]
-    change ∃ s₂, exec I (.seq (.loop _ _) (.seq (.loop _ _) (.seq (.loop _ _) .skip))) _ = _
-    rw [el5_seq_loop_zero rfl, el5_seq_loop_zero rfl, el5_seq_loop_one rfl]
-    obtain ⟨v', hv', hk'⟩ := Option.bind_eq_some_iff.mp hkpr
+    rw [exec_eighUpNode_of_readsIdx_four (readsIdx_of_read_eq hkd (hRo p _ _ hKdU hKdE))
+      (readsIdx_of_read_eq hkpr (hRo p _ _ hKpU hKpE)) hkp]
     have hchp : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ (a ++ [true]) = some (lo,
         ⟨kp, Ap, (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2,
           y.ℓ + 1⟩) := by
@@ -422,8 +358,7 @@ private theorem el6_node_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
       simp [eighLoc, ha, hs]
     obtain ⟨hUp, hEp⟩ := hout (a ++ [true]) lo _ (by simp [ha]) hchp
     obtain ⟨hUm, hEm⟩ := hout (a ++ [false]) (lo + kp) _ (by simp [ha]) hchm
-    obtain ⟨s₃, h₃⟩ := el6_split_ex hmm p n d D lo y.k kp t hd H hkn hkpk hUE hUQ htE htU
-      (s := { s₁ with cnt := s₁.cnt + I.charge (.toNat p) + I.charge (.toNat p) }) hUs hEs
+    exact exists_exec_eighUpSplit hmm p n d D lo y.k kp t hd H hkn hkpk hUE hUQ htE htU hUs hEs
       (hQp.of_forall_read_eq fun i _ _ => hRo p _ i (Ne.symm hUQ) hQE)
       (hQm.of_forall_read_eq fun i _ _ => hRo p _ i (Ne.symm hUQ) hQE)
       (hUp.of_forall_read_eq fun i hi _ => hRU1 p i (by omega))
@@ -431,16 +366,11 @@ private theorem el6_node_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
       (fun j hj => ⟨_, (hRE1 p _ (by omega)).trans (hEp ⟨j, hj⟩)⟩)
       (fun j hj => ⟨_, (hRE1 p _ (by omega)).trans (hEm ⟨j, hj⟩)⟩)
       ⟨_, (hRo p _ _ htU htE).trans ht0⟩ hadd hsub
-    refine ⟨s₃, ?_⟩
-    change (exec I (.seq (.bindIdx _ _ _ _) .skip) _).bind _ = _
-    rw [exec_seq_skip, exec_bindIdx_of_read I ((hRo p _ _ hKpU hKpE).trans hv') hk'
-      (by exact hkp)]
-    erw [h₃]
-    rfl
 
-/-- One slot of the upward pass succeeds (hypotheses as for its run). -/
-private theorem el6_step_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (n ℓ₀ F d D : ℕ) (hd : d < D) (H : EighArenas) (t : ℕ) {s₀ s₁ : St P K C}
+/-- One slot of the upward pass (`NLAlib.eighUpSlot`) succeeds, under the hypotheses of its run
+(`NLAlib.holds_of_exec_eighUpSlot`) and with the output and eigenvalue arenas allocated. -/
+private theorem exists_exec_eighUpSlot {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n ℓ₀ F d D : ℕ) (hd : d < D) (H : EighArenas) (t : ℕ) {s₀ s₁ : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} {lo : ℕ} (hlo : lo < n)
     (hnd : H.handles.Nodup) (htH : t ∉ H.handles)
     (ht0 : s₀.store.read p t 0 = some ((eighTapeMachine I p mmR qrR).div
@@ -467,109 +397,46 @@ private theorem el6_step_ex {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hEs : s₁.store.shape[H.Ea]? = some (p, n * (D + 1)))
     (hadd : ∀ x z, ∃ v, I.sem.bin p .add x z = some v)
     (hsub : ∀ x z, ∃ v, I.sem.bin p .sub x z = some v) :
-    ∃ s₂, exec I (Builder.bindIdx (ι := ι) p
-      ⟨H.Sz, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo)⟩
-      (IExp.const n - IExp.var lo) fun k => eighWhen (IExp.var k) <| Builder.bindIdx p
-        ⟨H.Kd, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo)⟩ 4 fun c => do
-          eighWhen (eighEqInd (IExp.var c) 2) do
-            zcopy p (IExp.var k) (IExp.var k) H.Ua
-              (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)) H.Ua
-              (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))
-            forRange (IExp.var k) fun i => ins (.bin p .add
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var i⟩
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var i⟩
-              ⟨t, 0⟩)
-          eighWhen (eighEqInd (IExp.var c) 3) do
-            zcopy p (IExp.var k) (IExp.var k) H.Ua
-              (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)) H.Ua
-              (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))
-            forRange (IExp.var k) fun i => ins (.bin p .add
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var i⟩
-              ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var i⟩
-              ⟨t, 1⟩)
-          eighWhen (eighEqInd (IExp.var c) 4) <|
-            Builder.bindIdx p ⟨H.Kp, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo)⟩
-              (IExp.var k) fun kp => do
-              let qo := eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)
-              stmt (.kcall mm p [IExp.var k, IExp.var kp, IExp.var kp]
-                [(H.Qa, qo), (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo))]
-                [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo))])
-              stmt (.kcall mm p [IExp.var k, IExp.var k - IExp.var kp,
-                  IExp.var k - IExp.var kp]
-                [(H.Qa, qo + 2 * (IExp.var k * IExp.var kp)),
-                  (H.Ua, eighBlockOff (IExp.const n) (IExp.const d + 1)
-                    (IExp.var lo + IExp.var kp))]
-                [(H.Ua, eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo) +
-                  2 * (IExp.var k * IExp.var kp))])
-              forRange (IExp.var kp) fun j => ins (.bin p .add
-                ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var j⟩
-                ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var j⟩
-                ⟨t, 0⟩)
-              forRange (IExp.var k - IExp.var kp) fun j => ins (.bin p .sub
-                ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d) (IExp.var lo) + IExp.var kp +
-                  IExp.var j⟩
-                ⟨H.Ea, eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.var lo) + IExp.var kp +
-                  IExp.var j⟩ ⟨t, 0⟩)).run s₁ = some s₂ := by
-  obtain ⟨hUE, -, -, -, -, -, -, hSzU, hSzE, -⟩ := el5_hne hnd
+    ∃ s₂, exec I (eighUpSlot p mm n d lo t H).run s₁ = some s₂ := by
+  obtain ⟨-, -, -, -, -, -, -, hSzU, hSzE, -⟩ := H.ua_ne_ea_and_of_nodup hnd
   have hSz : ∀ i, s₁.store.read p H.Sz i = s₀.store.read p H.Sz i := fun i =>
     hfr p _ i (Or.inl fun h => h.1.elim hSzU hSzE)
-  change ∃ s₂, exec I (.seq (.bindIdx _ _ _ _) .skip) s₁ = some s₂
-  rw [exec_seq_skip]
   by_cases hy : ∃ (a : List Bool) (y : EighNode K), a.length = d ∧
       eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (lo, y)
   swap
   · push Not at hy
-    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp (hlev.2.1 lo hlo fun a y ha => hy a y ha)
-    rw [exec_bindIdx_of_read I ((hSz _).trans hv) hk (Nat.zero_le _)]
-    change ∃ s₂, exec I (.seq (.loop _ _) .skip) _ = some s₂
-    rw [el5_seq_loop_zero (by simp), exec_skip]
-    exact ⟨_, rfl⟩
+    exact ⟨_, exec_eighUpSlot_of_readsIdx_zero (readsIdx_of_read_eq
+      (hlev.2.1 lo hlo fun a y ha => hy a y ha) (hSz _))⟩
   obtain ⟨a, y, ha, hay⟩ := hy
-  obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp (hlev.1 a lo y ha hay).1
   obtain ⟨hk1, hb⟩ := eighLoc_bounds (by omega : 1 ≤ n) hay
-  rw [exec_bindIdx_of_read I ((hSz _).trans hv) hk
-    (by simp only [IExp.eval_sub, IExp.eval_const, IExp.eval_var]; omega)]
-  change ∃ s₂, exec I (.seq (.loop _ _) .skip) _ = some s₂
-  rw [el5_seq_loop_one (by simp; omega)]
-  have hbefore : ∀ (a' : List Bool) (lo' : ℕ) (y' : EighNode K), a'.length = d →
-      eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a' = some (lo', y') →
-      lo' < lo → lo' + y'.k ≤ lo ∧ y'.k ≤ n := by
-    intro a' lo' y' ha' hay' hlt
-    have hb' := eighLoc_bounds (by omega : 1 ≤ n) hay'
-    have hne : a' ≠ a := by
-      rintro rfl
-      rw [hay] at hay'
-      cases hay'
-      omega
-    have := eighLoc_disjoint (ha'.trans ha.symm) hne hay' hay
-    omega
-  have hblk : ∀ lo' k', lo' + k' ≤ lo → k' ≤ n →
-      2 * n * lo' + 2 * (k' * k') ≤ 2 * n * lo := fun lo' k' h1 h2 => by
-    nlinarith [Nat.mul_le_mul_right k' h2]
-  obtain ⟨s₃, h₃⟩ := el6_node_ex hmm p n ℓ₀ F d D (by omega) hd H t ha hay hnd htH ht0 ht1
-    hrec hout (s₁ := { s₁ with cnt := s₁.cnt + I.charge (.toNat p) }) (fun q b i hb' => by
-      refine hfr q b i (hb'.imp_right fun ⟨hU', hE'⟩ a' lo' y' ha' hay' hlt => ?_)
-      obtain ⟨h1, h2⟩ := hbefore a' lo' y' ha' hay' hlt
-      have := hblk lo' y'.k h1 h2
-      refine ⟨?_, ?_⟩
-      · by_cases hbU : b = H.Ua
-        · exact Or.inr (Or.inr (by have := hU' hbU; omega))
-        · exact Or.inl hbU
-      · by_cases hbE : b = H.Ea
-        · exact Or.inr (Or.inr (by have := hE' hbE; omega))
-        · exact Or.inl hbE) hUs hEs hadd hsub
-  erw [h₃]
-  exact ⟨_, exec_skip I _⟩
+  rw [exec_eighUpSlot_of_readsIdx (readsIdx_of_read_eq (hlev.1 a lo y ha hay).1 (hSz _)) hk1
+    (by omega)]
+  refine exists_exec_eighUpNode hmm p n ℓ₀ F d D (by omega) hd H t ha hay hnd htH ht0 ht1 hrec
+    hout (fun q b i hb' => ?_) hUs hEs hadd hsub
+  refine hfr q b i (hb'.imp_right fun ⟨hU', hE'⟩ a' lo' y' ha' hay' hlt => ?_)
+  obtain ⟨h1, h2⟩ := add_le_and_mul_add_le_of_eighLoc_of_lt (by omega) ha ha' hay hay' hlt
+  refine ⟨?_, ?_⟩
+  · by_cases hbU : b = H.Ua
+    · exact Or.inr (Or.inr (by have := hU' hbU; omega))
+    · exact Or.inl hbU
+  · by_cases hbE : b = H.Ea
+    · exact Or.inr (Or.inr (by have := hE' hbE; omega))
+    · exact Or.inl hbE
 
 omit [Inhabited K] in
-private theorem el6_map {α β : Type} {o : Option α} (f : α → β) (h : ∃ a, o = some a) :
-    ∃ b, o.map f = some b := by
+/-- An option that is `some` stays `some` under `Option.map`. -/
+private theorem exists_map_eq_some {α β : Type} {o : Option α} (f : α → β)
+    (h : ∃ a, o = some a) : ∃ b, o.map f = some b := by
   obtain ⟨a, rfl⟩ := h
   exact ⟨f a, rfl⟩
 
-/-- One level of the upward pass succeeds under the standard model with every value in range,
-the exact floor conversion and an exact literal $2$, if kernel `mm` is a routine on pairs, with the
-hypotheses of `NLAlib.holds_of_exec_eighUpLevel`. No printed source. -/
+/-- One level of the upward pass succeeds: if kernel `mm` of `I` is the routine `mmR` on
+interleaved pairs, under a relative-error semantics `I.sem` (unit roundoff `u`, decoding `dec`)
+with every value in range, exact integer literals up to $n + 4$ and the exact floor conversion, the
+run of `NLAlib.eighUpLevel` at depth $d < D$ succeeds from a state whose arenas `H` are allocated
+(`NLAlib.EighArenas.Shaped` at size $n$ and budget $D$) and hold the nodes and records of depth $d$
+and the outputs of depth $d + 1$, with the stored $\mathrm{fl}(2)$ in the cell `two` outside the
+arenas. No printed source. -/
 theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
     (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
@@ -585,13 +452,13 @@ theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
       (d + 1)) :
     ∃ st', exec I (eighUpLevel p mm (.const n) (.const d) H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp
       two).run st = some st' := by
+  -- the statement carries `htn` and `htwo`; the proof does not need them
+  have _ := htn
+  have _ := htwo
   have hsz : ∀ {b : ℕ} {x : P × ℕ}, st.store.shape[b]? = some x → b < st.store.size :=
     fun h => by simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp h).1
-  obtain ⟨hnd, hMa, hUa, hQa, hEa, hSz, hKd, hKp, hLv⟩ := id hH
-  have hltH : ∀ b ∈ H.handles, b < st.store.size := by
-    simp only [EighArenas.handles, List.mem_cons, List.not_mem_nil, or_false]
-    rintro b (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl)
-    exacts [hsz hMa, hsz hUa, hsz hQa, hsz hEa, hsz hSz, hsz hKd, hsz hKp, hsz hLv]
+  obtain ⟨hnd, -, hUa, -, hEa, -⟩ := id hH
+  have hltH : ∀ b ∈ H.handles, b < st.store.size := fun b hb => hH.lt_size_of_mem hb
   have htH : st.store.size ∉ H.handles := fun hm => absurd (hltH _ hm) (lt_irrefl _)
   obtain ⟨z2, hz2, hdz2⟩ := hlit p 2 (by omega)
   have htwo' : st.store.read p two.buf two.idx.eval = some z2 := htwov.trans hz2
@@ -604,7 +471,7 @@ theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
   set t := st.store.size with ht
   change ∃ st', exec I (.seq (.alloc p _ _) .skip) st = some st'
   rw [exec_seq_skip, exec_alloc]
-  refine el6_map _ ?_
+  refine exists_map_eq_some _ ?_
   change ∃ s₁, exec I (.seq (.instr _) (.seq (.instr _) (.seq (.loop _ _) .skip))) _ = some s₁
   have hP : ∀ {q : P} {b i : ℕ}, b < t →
       Store.read (st.store.push (p, Array.replicate (2 : IExp ℕ).eval none)) q b i =
@@ -625,54 +492,32 @@ theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
     ((hP ltwo).trans htwo') hv0 hwa]
   rw [exec_seq_instr_un I (x := ⟨t, 0⟩) (Store.read_of_write_eq_some hwa) hv1 hwb]
   rw [exec_seq_skip]
-  have hrd₀ : ∀ q b i, b < t → wb.read q b i = st.store.read q b i := fun q b i hb => by
-    rw [Store.read_of_write_eq_some_of_ne hwb (Or.inl (Nat.ne_of_lt hb)),
-      Store.read_of_write_eq_some_of_ne hwa (Or.inl (Nat.ne_of_lt hb)), hP hb]
-  have ht0 : wb.read p t 0 = some (M.div (eighLevelParams M R₀ ε ℓ₀ d).1 (M.ofNat 2)) := by
-    rw [Store.read_of_write_eq_some_of_ne hwb (Or.inr (by decide)),
-      Store.read_of_write_eq_some hwa]
-    change some v0 = some ((I.sem.bin p .div (eighLevelParams M R₀ ε ℓ₀ d).1
-      ((I.sem.lit p ((2 : ℕ) : ℚ)).getD default)).getD default)
-    rw [hz2, Option.getD_some, hv0, Option.getD_some]
-  have ht1 : wb.read p t 1 = some (M.neg (M.div (eighLevelParams M R₀ ε ℓ₀ d).1 (M.ofNat 2))) := by
-    rw [Store.read_of_write_eq_some hwb]
-    change some v1 = some ((I.sem.un p .neg ((I.sem.bin p .div (eighLevelParams M R₀ ε ℓ₀ d).1
-      ((I.sem.lit p ((2 : ℕ) : ℚ)).getD default)).getD default)).getD default)
-    rw [hz2, Option.getD_some, hv0, Option.getD_some, hv1, Option.getD_some]
+  have hrd₀ : ∀ q b i, b ∈ H.handles → wb.read q b i = st.store.read q b i := fun q b i hb => by
+    rw [Store.read_of_write_eq_some_of_ne hwb (Or.inl (Nat.ne_of_lt (hltH b hb))),
+      Store.read_of_write_eq_some_of_ne hwa (Or.inl (Nat.ne_of_lt (hltH b hb))), hP (hltH b hb)]
+  obtain ⟨ht0, ht1⟩ := read_eq_div_and_read_eq_neg_of_write (mmR := mmR) (qrR := qrR) hz2 hv0
+    hv1 hwa hwb
   have hshw : ∀ {b}, b < t → wb.shape[b]? = st.store.shape[b]? := fun hb => by
     rw [Store.shape_of_write_eq_some hwb, Store.shape_of_write_eq_some hwa,
       Store.getElem?_shape_push_of_lt _ hb]
   have hUs : wb.shape[H.Ua]? = some (p, 2 * (n * n) * (D + 1)) := (hshw (hsz hUa)).trans hUa
   have hEs : wb.shape[H.Ea]? = some (p, n * (D + 1)) := (hshw (hsz hEa)).trans hEa
-  obtain ⟨T1, T2, -⟩ := el5_transfer (H := H) (s := st.store) (s' := wb) (p := p) (M := M)
-    (n := n) (F := F) (ℓ₀ := ℓ₀) (D := D) (d := d) (R₀ := R₀) (β := β)
-    (root := ⟨n, A, R₀, ε, ℓ₀⟩) (sem := I.sem) fun q b i hb => hrd₀ q b i (hltH b hb)
-  obtain ⟨-, -, T3'⟩ := el5_transfer (H := H) (s := st.store) (s' := wb) (p := p) (M := M)
-    (n := n) (F := F) (ℓ₀ := ℓ₀) (D := D) (d := d + 1) (R₀ := R₀) (β := β)
-    (root := ⟨n, A, R₀, ε, ℓ₀⟩) (sem := I.sem) fun q b i hb => hrd₀ q b i (hltH b hb)
+  have hT := fun d' => EighArenas.holds_of_forall_read_eq (H := H) (p := p) (M := M) (n := n)
+    (F := F) (ℓ₀ := ℓ₀) (D := D) (d := d') (R₀ := R₀) (β := β) (root := ⟨n, A, R₀, ε, ℓ₀⟩)
+    (sem := I.sem) hrd₀
+  have hT1 := (hT d).1 hlev
+  have hT2 := (hT d).2.1 hrec
+  have hT3 := (hT (d + 1)).2.2 hout
   refine ⟨_, (exists_exec_loop_eq_some_of_forall (I := I) (n := .const n)
-    (fun lo (s : St P K C) => s.store.shape = wb.shape ∧ s.pos = st.pos ∧
-      (∀ q b i, (¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n d b i) ∨
-        ∀ (a : List Bool) (lo' : ℕ) (y : EighNode K), a.length = d →
-          eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (lo', y) → lo' < lo →
-          (b ≠ H.Ua ∨ i < 2 * (n * n) * d + 2 * n * lo' ∨
-            2 * (n * n) * d + 2 * n * lo' + 2 * (y.k * y.k) ≤ i) ∧
-          (b ≠ H.Ea ∨ i < n * d + lo' ∨ n * d + lo' + y.k ≤ i)) →
-        s.store.read q b i = wb.read q b i) ∧
-      ∀ (a : List Bool) (lo' : ℕ) (y : EighNode K), a.length = d →
-        eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (lo', y) → lo' < lo →
-        pairLayout.Holds s.store p H.Ua (2 * (n * n) * d + 2 * n * lo')
-            (eighAux M n F R₀ β (D - d) y.A y.R y.ε y.ℓ (eighSlotTree M n F R₀ β d lo' y)).1 ∧
-          ∀ i : Fin y.k, s.store.read p H.Ea (n * d + lo' + i) = some
-            ((eighAux M n F R₀ β (D - d) y.A y.R y.ε y.ℓ (eighSlotTree M n F R₀ β d lo' y)).2 i))
+    (fun lo (s : St P K C) =>
+      H.UpSlotsDone s { st with store := wb } p M n F D R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d lo)
     ?_ ?_).choose_spec.1⟩
   · exact ⟨rfl, rfl, fun _ _ _ _ => rfl, fun _ _ _ _ _ h => absurd h (Nat.not_lt_zero _)⟩
-  · rintro lo hlo s ⟨hsh, hps, hfr, hdone⟩
-    simp only [IExp.eval_const] at hlo
-    obtain ⟨s', hs'⟩ := el6_step_ex hmm p n ℓ₀ F d D hd H t (s₀ := { st with store := wb })
-      (s₁ := s) hlo hnd htH ht0 ht1 (T1 hlev) (T2 hrec) (T3' hout) hfr (hsh ▸ hUs) (hsh ▸ hEs)
-      hadd hsub
-    exact ⟨s', hs', el5_step hmm p n ℓ₀ F d D hd H t (s₀ := { st with store := wb }) hlo hnd
-      htH ht0 ht1 (T1 hlev) (T2 hrec) (T3' hout) hsh hps hfr hdone hs'⟩
+  rintro lo hlo s ⟨hsh, hps, hfr, hdone⟩
+  simp only [IExp.eval_const] at hlo
+  obtain ⟨s', hs'⟩ := exists_exec_eighUpSlot hmm p n ℓ₀ F d D hd H t (s₀ := { st with store := wb })
+    (s₁ := s) hlo hnd htH ht0 ht1 hT1 hT2 hT3 hfr (hsh ▸ hUs) (hsh ▸ hEs) hadd hsub
+  exact ⟨s', hs', holds_of_exec_eighUpSlot hmm p n ℓ₀ F d D hd H t (s₀ := { st with store := wb })
+    hlo hnd htH ht0 ht1 hT1 hT2 hT3 ⟨hsh, hps, hfr, hdone⟩ hs'⟩
 
 end NLAlib
