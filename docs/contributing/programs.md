@@ -15,6 +15,11 @@ result about a program assumes contracts of what it calls: of the arithmetic
 certified once, by a theorem concluding its certificate (`Computation.IsMatvecRoutine`,
 `Computation.IsOrthRoutine`, `Computation.ImplementsKernel`), and the larger analysis takes the
 certificate as a hypothesis.
+A program proof states a `Computation.RoutineSpec` per block, mode-generic (the total mode gives
+success, the liberal mode refinement), proves it by the call rule (`Computation.RoutineSpec.wp_bind`) and the rules of `NLAlib/Computation/RoutineSpec.lean`, one
+named state per step, and derives the block's success and refinement lemmas from it
+(`Computation.Triple.exists_exec`, `Computation.Triple.holds_of_exec`); a certificate enters
+through its bridge (`Computation.IsMatvecRoutine.routineSpec`).
 
 Results may be proved autonomously, so the statement of a published cost result is the
 library's, not the prover's: it is a **target**.
