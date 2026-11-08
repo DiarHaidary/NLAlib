@@ -1145,6 +1145,8 @@ file = "NLAlib/Matrix/Factorizations/GramSchmidtTargets.lean"
 trees = ["NLAlib.gramSchmidtProg.compiled"]
 precomputed = []
 reviewed = "2026-10-23"
+witness = "NLAlib.matrixFreeGramSchmidt_nonVacuous"
+witness_sem = "exact model (no contract); P = ι = Unit, 𝕜 = ℝ; N = N₀ + 1, n = (1); input the zero N × 1 matrix"
 hash = "803740ecf5bda027ffd81cf2254c26558263dbdb3a9ba40931e00894dffbcac5"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (𝕜 : Type) [inst_1 : RCLike 𝕜],
@@ -1160,6 +1162,8 @@ file = "NLAlib/Estimation/Trace/HutchPlusPlusTargets.lean"
 trees = ["NLAlib.hutchppProg.compiled"]
 precomputed = []
 reviewed = "2026-10-23"
+witness = "NLAlib.matrixFreeHutchpp_nonVacuous"
+witness_sem = "exact model (no contract); P = ι = Unit, d = gaussian, 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
 hash = "6cb6c7ef3a3e0b948388fd4c9e68a76c7878c813dd5cbd4c6a9b72b33e9bf72d"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist) (𝕜 : Type)
@@ -1179,6 +1183,8 @@ file = "NLAlib/Estimation/Trace/HutchPlusPlusTargets.lean"
 trees = ["NLAlib.hutchppProg.compiled"]
 precomputed = []
 reviewed = "2026-10-23"
+witness = "NLAlib.matrixFreeProbHutchpp_nonVacuous"
+witness_sem = "exact model, Gaussian tape law (no contract); P = ι = Unit, r = 1, δ = 1/2, τ = 1; N = N₀ + 1, n = (⌈subgaussianEmbeddingDim 1 1 (1/2) (1/4)⌉ + 1, 1); input ()"
 hash = "f15f97400d04881e9479487872ea515a037d116c24150f21522b0dcac77bee35"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (r : ℕ) (δ : ℝ),
@@ -1212,6 +1218,8 @@ file = "NLAlib/Estimation/Trace/HutchPlusPlusTargets.lean"
 trees = ["NLAlib.hutchppProg.compiledDense"]
 precomputed = []
 reviewed = "2026-10-23"
+witness = "NLAlib.storedEntriesDenseHutchpp_nonVacuous"
+witness_sem = "exact stored-entries model (no contract); P = ι = Unit, d = gaussian, 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
 hash = "f875bf2c0626616df675dd8bb37a520a71a6585d09d4c5e94197887d51613d0b"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist) (𝕜 : Type)
@@ -1235,6 +1243,8 @@ file = "NLAlib/Estimation/Trace/HutchPlusPlusTargets.lean"
 trees = []
 precomputed = []
 reviewed = "2026-10-23"
+witness = "NLAlib.storedEntriesCooHutchpp_nonVacuous"
+witness_sem = "exact stored-entries model (no contract); P = ι = Unit, d = gaussian, pattern [(0, 0)], 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
 hash = "25b9142e7748322fb8c8141c938f53c71a7ea2453cda4eaee0b56c9b60cae9b8"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist)
@@ -2393,6 +2403,8 @@ file = "NLAlib/Krylov/LinearSystems/CGTargets.lean"
 trees = ["NLAlib.cgProg.compiled"]
 precomputed = []
 reviewed = "2026-11-04"
+witness = "NLAlib.storedEntriesConjugateGradient_nonVacuous"
+witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "fe5dfa37a8a75b5314bcec1c79390502fc17333db0cfc21e4a3f669b0b0cadb4"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
@@ -2423,6 +2435,8 @@ file = "NLAlib/Krylov/Processes/LanczosTargets.lean"
 trees = ["NLAlib.lanczosProg.compiled"]
 precomputed = []
 reviewed = "2026-11-04"
+witness = "NLAlib.storedEntriesLanczos_nonVacuous"
+witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "9c35bcc669cc4c91a9d502b8903addbdc75854c1b7d263d5ad197d34dbc4f0c5"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
@@ -3403,6 +3417,8 @@ file = "NLAlib/Krylov/LinearSystems/CGOracleTargets.lean"
 trees = ["NLAlib.cgOracleProg.compiled"]
 precomputed = []
 reviewed = "2026-11-04"
+witness = "NLAlib.matrixFreeConjugateGradient_nonVacuous"
+witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "381197470600e824f8b5d68c3415ff1bf6bd320b49214e0b337d61a3ea978168"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
@@ -3432,6 +3448,8 @@ file = "NLAlib/Krylov/Processes/LanczosOracleTargets.lean"
 trees = ["NLAlib.lanczosOracleProg.compiled"]
 precomputed = []
 reviewed = "2026-11-04"
+witness = "NLAlib.matrixFreeLanczos_nonVacuous"
+witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "c4744e2b3f3edef402a3b834a182fa1926f7fcbdb177984b19d92db30eec41e3"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
@@ -4989,6 +5007,8 @@ file = "NLAlib/Krylov/Processes/LanczosReorthTargets.lean"
 trees = ["NLAlib.lanczosReorthProg.compiled"]
 precomputed = []
 reviewed = "2026-11-06"
+witness = "NLAlib.storedEntriesLanczosReorth_nonVacuous"
+witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "6d283eb476740d6064ff3f9294a52ac4b33dd7e735cedea2259c4ad1f4be56ae"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
@@ -6432,6 +6452,8 @@ file = "NLAlib/Krylov/Processes/LanczosReorthOracleTargets.lean"
 trees = ["NLAlib.lanczosReorthOracleProg.compiled"]
 precomputed = []
 reviewed = "2026-11-06"
+witness = "NLAlib.matrixFreeLanczosReorth_nonVacuous"
+witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
 hash = "3f119d7be451f45b19471d43022b166067058dc24c046fe14eeabff3e3ccac66"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
@@ -6454,3 +6476,77 @@ statement = '''
                   (NLAlib.lanczosReorthState A b (q 0)).prev i) ∧
                 NLAlib.Computation.Holds st.store tag 6 0 fun j x_2 =>
                   (NLAlib.lanczosReorthState A b (↑j + 1)).nu'''
+
+[[tree]]
+name = "NLAlib.newtonSchulzSignProg.compiled"
+hash = ""
+normal_form = '''
+'''
+
+[[tree]]
+name = "NLAlib.deflateProg.compiled"
+hash = ""
+normal_form = '''
+'''
+
+[[tree]]
+name = "NLAlib.eighProg.compiled"
+hash = ""
+normal_form = '''
+'''
+
+[[target]]
+name = "NLAlib.MatrixFreeRoundedProbNewtonSchulzSign"
+file = "NLAlib/RandomMatrix/Computation/NewtonSchulzSignTargets.lean"
+trees = ["NLAlib.newtonSchulzSignProg.compiled"]
+precomputed = []
+reviewed = ""
+witness = "NLAlib.matrixFreeRoundedProbNewtonSchulzSign_nonVacuous"
+witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t (exact product of decoded inputs, odd rounding per part, μ d = 2d), machine gridMachine t (μM = μQ = 2d, cN = √2), Ω = 9(N + 1); tape unused; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, F = ⌈N(1/2, 1/(32N))⌉ + 1; input the stored identity, ε = 1/2, b = 1 (a = 1)"
+hash = ""
+statement = '''
+'''
+
+[[target]]
+name = "NLAlib.MatrixFreeRoundedProbDeflate"
+file = "NLAlib/RandomMatrix/Computation/DeflationTargets.lean"
+trees = ["NLAlib.deflateProg.compiled"]
+precomputed = []
+reviewed = ""
+witness = "NLAlib.matrixFreeRoundedProbDeflate_nonVacuous"
+witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), machine gridMachine t, tape ρ g i y = roundNearest t y (c = 1), Ω = 8√2√N; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, r = N; input the stored identity, U = V = S = I, β = 1/(30√2√N), t = 0, x = 1"
+hash = ""
+statement = '''
+'''
+
+[[target]]
+name = "NLAlib.MatrixFreeRoundedProbEigh"
+file = "NLAlib/RandomMatrix/Computation/SpectralBisectionTargets.lean"
+trees = ["NLAlib.eighProg.compiled"]
+precomputed = []
+reviewed = ""
+witness = "NLAlib.matrixFreeRoundedProbEigh_nonVacuous"
+witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N; MulShrinks), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), tape ρ g i y = roundNearest t y (c ≡ 1, countable range, measurable fibres), θ = 1, Ω the target's lower bound; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, ℓ = bisectionDepth 2^-15 + 2, F = ⌈Nst⌉; input the stored identity, R₀ = 1, ε = 2^-15, β = 2^-k ≤ βb"
+hash = ""
+statement = '''
+'''
+
+[[model]]
+name = "NLAlib.Computation.MatrixFree"
+companions = ["NonVacuous", "post_of_agreeOn"]
+hash = ""
+
+[[model]]
+name = "NLAlib.Computation.StoredEntries"
+companions = ["NonVacuous"]
+hash = ""
+
+[[model]]
+name = "NLAlib.Computation.MatrixFreeProb"
+companions = ["NonVacuous"]
+hash = ""
+
+[[model]]
+name = "NLAlib.Computation.MatrixFreeRoundedProb"
+companions = ["NonVacuous"]
+hash = ""

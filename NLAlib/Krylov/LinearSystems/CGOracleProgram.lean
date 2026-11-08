@@ -272,4 +272,29 @@ theorem matrixFreeConjugateGradient : MatrixFreeConjugateGradient := by
       omega
     · simpa [inputState, hp] using hpeak
 
+/-- **The matrix-free conjugate-gradient target is not vacuous**
+(`docs/design/Computation-Hardening.md`, §2.2): for every $N_0$ there are tags and oracle names
+(`Unit`) and sizes $N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type
+$\mathbb{R}^N$ inhabited (by the zero vector). The witness of `NLAlib.MatrixFreeConjugateGradient`
+(`scripts/Targets.lean`, item 7). No printed source. -/
+theorem matrixFreeConjugateGradient_nonVacuous : ∀ N₀ : ℕ,
+    ∃ (P ι : Type) (_ : DecidableEq P) (tag : P) (o : ι),
+    MatrixFree.NonVacuous (𝕜 := ℝ) tag (cgOracleProg.compiled tag o)
+      (fun _ _ => True) (fun N _ => Fin N → ℝ)
+      (fun N _ b => ![(Array.ofFn b).map some, Array.replicate N none,
+        Array.replicate N none, Array.replicate N none, Array.replicate 1 none])
+      (fun N q => cgOracleCount tag o N (q 0))
+      (fun N _ p => if p = tag then 5 * N + 11 else 0)
+      (fun _ q b A _ st =>
+        ∃ status : ℝ, st.store.read tag 4 0 = some status ∧
+          (status = 0 ∨ status = 1 ∨ status = -1) ∧
+          Holds st.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+          (A.PosDef →
+            Holds st.store tag 1 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).x i) ∧
+            Holds st.store tag 2 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).r i) ∧
+            Holds st.store tag 3 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).p i) ∧
+            (status = 1 ↔ (cgState A b 0 (q 0)).r = 0) ∧ status ≠ -1)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), N₀ + 1, fun _ => 1, Nat.le_succ N₀, trivial,
+    ⟨0⟩⟩
+
 end NLAlib

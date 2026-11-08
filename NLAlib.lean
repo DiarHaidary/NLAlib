@@ -383,6 +383,7 @@ public import NLAlib.Matrix.Computation.Deflation
 public import NLAlib.Matrix.Computation.DeflationProgram
 public import NLAlib.Matrix.Computation.DeflationProgramTree
 public import NLAlib.Matrix.Computation.EntrywiseRounding
+public import NLAlib.Matrix.Computation.GridMachine
 public import NLAlib.Matrix.Computation.InterpMachine
 public import NLAlib.Matrix.Computation.KernelContracts
 public import NLAlib.Matrix.Computation.MatvecRoutine
@@ -675,6 +676,7 @@ public import NLAlib.Probability.Tail
 public import NLAlib.RandomMatrix.Computation.ComplexTape
 public import NLAlib.RandomMatrix.Computation.DeflationTargets
 public import NLAlib.RandomMatrix.Computation.NewtonSchulzSignTargets
+public import NLAlib.RandomMatrix.Computation.RoundedTargetWitnesses
 public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
 public import NLAlib.RandomMatrix.Gaussian.Basic
 public import NLAlib.RandomMatrix.Gaussian.BlockMoments
