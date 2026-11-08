@@ -112,7 +112,7 @@ def EighNodeWindow (H : EighArenas) (n d lo k j b i : ℕ) : Prop :=
 
 omit [Inhabited K] in
 /-- A held block is kept if every read of its words is kept. -/
-private theorem holds_keep_node {s s' : Store P K} {p : P} {b off l m : ℕ}
+theorem pairLayout_holds_of_read_eq {s s' : Store P K} {p : P} {b off l m : ℕ}
     {Y : Matrix (Fin l) (Fin m) (K × K)} (hY : pairLayout.Holds s p b off Y)
     (h : ∀ i, off ≤ i → i < off + 2 * (l * m) → s'.read p b i = s.read p b i) :
     pairLayout.Holds s' p b off Y :=
@@ -194,7 +194,7 @@ private theorem split_deflations_holds {mm qr : ι} (hmm : IsMatMulKernel I mm p
     hnd₂ hsqb h₄
   simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat, hbo, hkpe] at hQm4 hf4
   obtain ⟨-, -, -, F6, F7, -⟩ := split_arith_node (d := d) hk hkpk
-  refine ⟨holds_keep_node hQp3 fun i _ hi => hf4 p _ i (nS4 _ lQa) (by
+  refine ⟨pairLayout_holds_of_read_eq hQp3 fun i _ hi => hf4 p _ i (nS4 _ lQa) (by
       simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
         decide_eq_true_eq]
       left; omega), hQm4, fun q b i hb hbQ => ?_, hsh4.trans hsh3, hp4.trans hp3⟩
@@ -272,7 +272,7 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
     (by rw [hqo2]; exact fun i j t => (hk5 _ _ _ lQa (fun h => dMaQa h.symm)).trans (hQm i j t))
     (by
       rw [hbo]
-      exact holds_keep_node hA fun i _ hi => hf5 p _ i (nC4 _ lMa) (by
+      exact pairLayout_holds_of_read_eq hA fun i _ hi => hf5 p _ i (nC4 _ lMa) (by
         simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
           decide_eq_true_eq]
         left; linarith))
@@ -505,7 +505,7 @@ theorem alloc_inv_node {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ �
 
 omit [Inhabited K] in
 /-- The run of a scoped allocation, inverted. -/
-theorem alloc_inv_skip_node {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
+theorem exists_exec_of_exec_seq_alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
     {st st' : St P K C} (h : exec I (.seq (.alloc p len body) .skip) st = some st') :
     ∃ st₂, exec I (body st.store.size) { st with
           store := st.store.push (p, Array.replicate len.eval none),
@@ -591,7 +591,7 @@ theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
   have hlt := split_handles_lt hk hkpk hH hPp hPm hSg htwo hσ hnσ hsq
   have hl : ∀ {b}, b ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf] →
       b < st.store.size := hlt _
-  obtain ⟨s₁, h₁, e₁⟩ := alloc_inv_skip_node h
+  obtain ⟨s₁, h₁, e₁⟩ := exists_exec_of_exec_seq_alloc h
   obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
   obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
   obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃

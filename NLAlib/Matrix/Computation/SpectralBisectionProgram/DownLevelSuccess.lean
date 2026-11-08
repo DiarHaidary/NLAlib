@@ -33,32 +33,12 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 /-! #### Helpers of `NLAlib.exists_exec_eighDownLevel` -/
 
 omit [Inhabited K] in
-/-- An allocation succeeds when its body does from the state with the fresh buffer pushed. -/
-theorem exists_exec_alloc_of_exists {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st : St P K C}
-    (h : ∃ st₂, exec I (body st.store.size) { st with
-          store := st.store.push (p, Array.replicate len.eval none),
-          cur := Function.update st.cur p (st.cur p + len.eval),
-          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
-          curW := st.curW + len.eval * I.width p,
-          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st₂) :
-    ∃ st', exec I (.alloc p len body) st = some st' := by
-  obtain ⟨a, ha⟩ := h
-  exact ⟨_, by rw [exec_alloc, ha]; rfl⟩
-
-omit [Inhabited K] in
 /-- A sequence succeeds when its first part does and the rest succeeds from there. -/
 private theorem exists_exec_seq_of_left {a b : Stmt P ι ℕ ℕ} {s s₁ : St P K C}
     (h₁ : exec I a s = some s₁)
     (h₂ : ∃ st', exec I b s₁ = some st') : ∃ st', exec I (.seq a b) s = some st' := by
   obtain ⟨t, ht⟩ := h₂
   exact ⟨t, by rw [exec_seq, h₁, Option.bind_some, ht]⟩
-
-omit [Inhabited K] in
-/-- A goal on a state, for a named state equal to it. -/
-theorem exists_exec_of_forall_eq {X : Stmt P ι ℕ ℕ} {s : St P K C}
-    (h : ∀ σ : St P K C, σ = s → ∃ st', exec I X σ = some st') : ∃ st', exec I X s = some st' :=
-  h s rfl
 
 omit [Inhabited K] in
 /-- An index literal, then the rest. -/

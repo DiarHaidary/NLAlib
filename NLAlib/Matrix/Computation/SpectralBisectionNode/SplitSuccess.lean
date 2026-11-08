@@ -35,7 +35,7 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 omit [Inhabited K] in
 /-- An allocation succeeds when its body succeeds on the allocated state. -/
-theorem exists_exec_alloc_of_exists_split {p : P} {len : IExp ℕ}
+theorem exists_exec_alloc_of_exists {p : P} {len : IExp ℕ}
     {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C}
     (h : ∃ st', exec I (body st.store.size) { st with
           store := st.store.push (p, Array.replicate len.eval none),
@@ -543,14 +543,14 @@ theorem exists_exec_eighSplitBlock_ex {mm qr : ι}
     rintro a (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;> assumption
   change ∃ st', exec I (.seq _ .skip) st = some st'
   rw [exec_seq_skip]
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
-  refine exists_exec_alloc_of_exists_split ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
+  refine exists_exec_alloc_of_exists ?_
   beta_reduce
   have nSgPp : Sg ≠ Pp := fun h => by simp [EighArenas.handles, h] at hbufs
   have nSgPm : Sg ≠ Pm := fun h => by simp [EighArenas.handles, h] at hbufs

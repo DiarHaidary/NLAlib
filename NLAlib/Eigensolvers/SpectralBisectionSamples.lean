@@ -219,23 +219,6 @@ theorem eigh_congr_samples {F Su Sg : Type*} [Inhabited Sg] (M : FloatMachine F 
   exact eighAux_congr_samples M signFuel R₀ β (ℓ + 1) A R₀ ε ℓ
     (fun a y hl hy => h a y (Nat.lt_succ_iff.mp hl) hy)
 
-/-- The Newton–Schulz loop on two machines of one semantics that differ only in their samplers
-(private helper of `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). -/
-private theorem newtonSchulzSign_toFloatMachine_tape {P K : Type} [Inhabited K]
-    {Su Sg Su' Sg' : Type} (sem : ScalarSem P K) (p : P)
-    (toNat : K → ℕ) (mm : MatMulMap (K × K)) (qr : QRMap (K × K)) (unif : K → Su → K)
-    (normal : Sg → K × K) (unif' : K → Su' → K) (normal' : Sg' → K × K) {k : ℕ}
-    (b x : K) (N : ℕ) (B : Matrix (Fin k) (Fin k) (K × K)) :
-    newtonSchulzSign (sem.toFloatMachine p toNat mm qr unif normal) b x N B =
-      newtonSchulzSign (sem.toFloatMachine p toNat mm qr unif' normal') b x N B := by
-  suffices h : ∀ η N (B' : Matrix (Fin k) (Fin k) (K × K)),
-      newtonSchulzLoop (sem.toFloatMachine p toNat mm qr unif normal) η N B' =
-        newtonSchulzLoop (sem.toFloatMachine p toNat mm qr unif' normal') η N B' from h _ N _
-  intro η N
-  induction N with
-  | zero => intro B'; rfl
-  | succ N ih => intro B'; simp only [newtonSchulzLoop, ih]; rfl
-
 /-- The deflation of a leading block on two machines of one semantics whose normal samplers agree
 along $g$ (private helper of `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). -/
 private theorem deflate_leadingBlock_toFloatMachine_tape {P K : Type} [Inhabited K]
@@ -254,30 +237,6 @@ private theorem deflate_leadingBlock_toFloatMachine_tape {P K : Type} [Inhabited
   simp only [deflate]
   exact congrArg _ (by rw [show (leadingBlock k G).map
     (sem.toFloatMachine p toNat mm qr unif normal).normal = _ from hG]; rfl)
-
-/-- One step on two machines of one semantics whose samplers agree along $f$ and $g$ (private
-helper of `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). -/
-private theorem eighStep_toFloatMachine_tape {P K : Type} [Inhabited K]
-    {Su Sg Su' Sg' : Type} [Inhabited Sg] [Inhabited Sg'] (sem : ScalarSem P K) (p : P)
-    (toNat : K → ℕ) (mm : MatMulMap (K × K)) (qr : QRMap (K × K)) (unif : K → Su → K)
-    (normal : Sg → K × K) (unif' : K → Su' → K) (normal' : Sg' → K × K) (f : Su → Su')
-    (g : Sg → Sg') (hu : ∀ c v, unif c v = unif' c (f v)) (hn : ∀ z, normal z = normal' (g z))
-    (n signFuel : ℕ) (R₀ β : K) {k : ℕ} (hk : k ≤ n) (A : Matrix (Fin k) (Fin k) (K × K))
-    (R ε : K) (ℓ : ℕ) (s : EighSample Su Sg n) :
-    eighStep (sem.toFloatMachine p toNat mm qr unif normal) n signFuel R₀ β A R ε ℓ s =
-      eighStep (sem.toFloatMachine p toNat mm qr unif' normal') n signFuel R₀ β A R ε ℓ
-        (f s.1, fun b => (s.2 b).map g) := by
-  obtain rfl : unif = fun c v => unif' c (f v) := funext fun c => funext (hu c)
-  obtain rfl : normal = fun z => normal' (g z) := funext hn
-  by_cases hk1 : k ≤ 1
-  · simp only [eighStep, if_pos hk1]; rfl
-  simp only [eighStep, if_neg hk1]
-  generalize_proofs h₁ h₂
-  revert h₁ h₂
-  rw [newtonSchulzSign_toFloatMachine_tape sem p toNat mm qr _ _ unif' normal']
-  intro h₁ h₂
-  simp only [deflate_leadingBlock_toFloatMachine_tape sem p toNat mm qr _ _ unif' normal' g hn hk]
-  rfl
 
 /-- One step reads its sample only through the seed and the leading blocks of its size (private
 helper of `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). -/
@@ -335,7 +294,7 @@ private theorem eighSlotTree_map_agree_eighIdealTree {P K : Type} [Inhabited K]
     exact eighIdealSample_eq_eighTapeSample ξ (by simpa using hd) lo x.k pre
   | cons b a ih =>
     intro d lo x pre y hx hd h
-    have hst := eighStep_toFloatMachine_tape sem p toN mm qr unif normal unif' normal' (ξ .uniform)
+    have hst := eighStep_toFloatMachine_map sem p toN mm qr unif normal unif' normal' (ξ .uniform)
       (eighIdealComplex ξ) hu hn n signFuel R₀ β hx x.A x.R x.ε x.ℓ (eighTapeSample n d lo)
     have h0 := eighIdealSample_eq_eighTapeSample ξ (d := d) (D := D) (N := n) (by simp at hd; omega)
       lo x.k pre

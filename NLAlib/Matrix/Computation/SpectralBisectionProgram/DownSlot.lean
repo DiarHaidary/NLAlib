@@ -43,23 +43,6 @@ theorem exists_exec_and_exec_of_exec_seq {s t : Stmt P ι ℕ ℕ} {st st' : St 
   Option.bind_eq_some_iff.mp ((exec_seq I s t st).symm.trans h)
 
 omit [Inhabited K] in
-/-- The run of a scoped allocation, inverted. -/
-theorem exists_exec_of_exec_seq_alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st st' : St P K C} (h : exec I (.seq (.alloc p len body) .skip) st = some st') :
-    ∃ st₂, exec I (body st.store.size) { st with
-          store := st.store.push (p, Array.replicate len.eval none),
-          cur := Function.update st.cur p (st.cur p + len.eval),
-          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
-          curW := st.curW + len.eval * I.width p,
-          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st₂ ∧
-      { st₂ with
-          store := Array.pop st₂.store
-          cur := Function.update st₂.cur p (st₂.cur p - len.eval)
-          curW := st₂.curW - len.eval * I.width p } = st' := by
-  rw [exec_seq_skip, exec_alloc] at h
-  exact Option.map_eq_some_iff.mp h
-
-omit [Inhabited K] in
 /-- A successful loop of draws into the cells $w < m$ of one buffer writes the tape values
 from the current position, advances the position by $m$ and keeps the shape and every other cell. -/
 theorem shape_of_exec_loop_draw {p : P} {dist : Dist} {m : IExp ℕ} {Y : ℕ} {st st' : St P K C}
@@ -96,22 +79,6 @@ theorem shape_of_exec_loop_draw {p : P} {dist : Dist} {m : IExp ℕ} {Y : ℕ} {
     · exact Or.inr (by omega)
 
 omit [Inhabited K] in
-/-- The run of a scoped index binder, inverted. -/
-private theorem exists_of_exec_bindIdx {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ}
-    {body : ℕ → Stmt P ι ℕ ℕ} {st st' : St P K C}
-    (h : exec I (.seq (.bindIdx p x bound body) .skip) st = some st') :
-    ∃ v w, st.store.read p x.buf x.idx.eval = some w ∧ I.sem.toNat p w = some v ∧
-      v ≤ bound.eval ∧
-      exec I (body v) { st with cnt := st.cnt + I.charge (.toNat p) } = some st' := by
-  rw [exec_seq_skip, exec_bindIdx] at h
-  obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
-  unfold toNatStep at hr
-  obtain ⟨w, hw, hr⟩ := Option.bind_eq_some_iff.mp hr
-  obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp hr
-  split_ifs at h with hle
-  exact ⟨v, w, hw, hv, hle, h⟩
-
-omit [Inhabited K] in
 /-- The run of a scoped index binder on a stored size within its bound. -/
 private theorem exec_bindIdx_of_readsIdx {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ}
     {body : ℕ → Stmt P ι ℕ ℕ} {st st' : St P K C} {k : ℕ}
@@ -123,32 +90,6 @@ private theorem exec_bindIdx_of_readsIdx {p : P} {x : Cell ℕ ℕ} {bound : IEx
   rw [hw, Option.bind_some, hv] at hr
   obtain rfl := Option.some_inj.mp hr
   exact h
-
-omit [Inhabited K] in
-/-- A loop of no iteration. -/
-private theorem exec_loop_zero_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
-    (he : e.eval = 0) (h : exec I (.seq (.loop e b) .skip) s = some s') : s' = s := by
-  rw [exec_seq_skip, exec_loop, he] at h
-  simp only [List.range_zero, List.foldlM_nil] at h
-  exact (Option.some_inj.mp h).symm
-
-omit [Inhabited K] in
-/-- A loop of one iteration. -/
-private theorem exec_loop_one_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
-    (he : e.eval = 1) (h : exec I (.seq (.loop e b) .skip) s = some s') :
-    exec I (b 0) s = some s' := by
-  rw [exec_seq_skip, exec_loop, he] at h
-  simpa [List.range_one] using h
-
-omit [Inhabited K] in
-/-- A guarded block, then the rest. -/
-private theorem run_eighWhen_bind {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
-    {f : Unit → Builder P ι ℕ ℕ Unit} {st st' : St P K C}
-    (h : exec I (eighWhen e b >>= f).run st = some st') :
-    ∃ σ, exec I (.seq (.loop (1 - (1 - e)) fun _ => b.run) .skip) st = some σ ∧
-      exec I (f ()).run σ = some st' := by
-  rw [exec_run_bind I (b := eighWhen e b) (fun _ => rfl)] at h
-  exact Option.bind_eq_some_iff.mp h
 
 omit [AddMonoid C] [Inhabited K] in
 /-- A size written as a literal reads back as the size. -/
@@ -167,16 +108,6 @@ theorem readsIdx_of_read_eq {sem : ScalarSem P K} {s s' : Store P K} {p : P} {b 
   unfold ReadsIdx at h ⊢
   rw [he]
   exact h
-
-omit [Inhabited K] in
-/-- A held block is kept if every read of its words is kept. -/
-theorem pairLayout_holds_of_read_eq {s s' : Store P K} {p : P} {b off l m : ℕ}
-    {Y : Matrix (Fin l) (Fin m) (K × K)} (hY : pairLayout.Holds s p b off Y)
-    (h : ∀ i, off ≤ i → i < off + 2 * (l * m) → s'.read p b i = s.read p b i) :
-    pairLayout.Holds s' p b off Y :=
-  hY.of_forall_read_eq fun i h1 h2 => h i h1 (by
-    change i < off + m * l * 2 at h2
-    linarith [Nat.mul_comm l m])
 
 /-- The slots of the children of a node step at slot `lo`: none at a leaf, `lo` for one child,
 `lo` and `lo + k₊` for a split. -/

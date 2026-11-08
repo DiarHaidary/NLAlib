@@ -39,7 +39,7 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 omit [Inhabited K] in
 /-- A loop of no iterations. -/
-private theorem loop_zero_node {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
+theorem exec_loop_zero_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
     (he : e.eval = 0) (h : exec I (.seq (.loop e b) .skip) s = some s') : s' = s := by
   rw [exec_seq_skip, exec_loop, he] at h
   simp only [List.range_zero, List.foldlM_nil] at h
@@ -47,7 +47,7 @@ private theorem loop_zero_node {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s
 
 omit [Inhabited K] in
 /-- A loop of one iteration. -/
-private theorem loop_one_node {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
+theorem exec_loop_one_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
     (he : e.eval = 1) (h : exec I (.seq (.loop e b) .skip) s = some s') :
     exec I (b 0) s = some s' := by
   rw [exec_seq_skip, exec_loop, he] at h
@@ -55,7 +55,7 @@ private theorem loop_one_node {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s 
 
 omit [Inhabited K] in
 /-- A guarded block, then the rest. -/
-private theorem when_bind_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
+theorem run_eighWhen_bind {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
     {f : Unit → Builder P ι ℕ ℕ Unit} {st st' : St P K C}
     (h : exec I (eighWhen e b >>= f).run st = some st') :
     ∃ σ, exec I (.seq (.loop (1 - (1 - e)) fun _ => b.run) .skip) st = some σ ∧
@@ -71,7 +71,7 @@ private theorem when_run_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit} {st
 
 omit [Inhabited K] in
 /-- The run of a scoped index binder, inverted. -/
-private theorem bindIdx_inv_node {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
+theorem exists_of_exec_bindIdx {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
     {st st' : St P K C} (h : exec I (.seq (.bindIdx p x bound body) .skip) st = some st') :
     ∃ v w, st.store.read p x.buf x.idx.eval = some w ∧ I.sem.toNat p w = some v ∧
       v ≤ bound.eval ∧
@@ -262,21 +262,21 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
   have dMaKd : H.Ma = H.Kd → False := fun h => by simp [EighArenas.handles, h] at hbufs
   have dSzKd : H.Sz = H.Kd → False := fun h => by simp [EighArenas.handles, h] at hbufs
   -- the binder
-  obtain ⟨v, w, hw, hv, hvk, h⟩ := bindIdx_inv_node h
+  obtain ⟨v, w, hw, hv, hvk, h⟩ := exists_of_exec_bindIdx h
   replace hvk : v ≤ k := hvk
   obtain rfl : w = w6 := Option.some_inj.mp (hw.symm.trans ht6)
   have hkp : kp = v := Option.some_inj.mp (hkp₀.symm.trans hv)
   refine name_state_node h ?_; clear h; intro σ e1 e2 h; simp only at e1 e2
   beta_reduce at h
-  obtain ⟨σa, ha, hra⟩ := when_bind_node h
-  obtain ⟨σb, hb, hrb⟩ := when_bind_node hra
+  obtain ⟨σa, ha, hra⟩ := run_eighWhen_bind h
+  obtain ⟨σb, hb, hrb⟩ := run_eighWhen_bind hra
   have h' := when_run_node hrb
   clear h hra hrb
   rcases Nat.eq_or_lt_of_le hvk with hkk | hlt'
   · -- one child on the positive side
-    have h1 := loop_one_node (by change 1 - (1 - (1 - (k - v))) = 1; omega) ha
-    have e2' := loop_zero_node (by change 1 - (1 - (1 - v)) = 0; omega) hb
-    have e3' := loop_zero_node (by
+    have h1 := exec_loop_one_eq (by change 1 - (1 - (1 - (k - v))) = 1; omega) ha
+    have e2' := exec_loop_zero_eq (by change 1 - (1 - (1 - v)) = 0; omega) hb
+    have e3' := exec_loop_zero_eq (by
       change 1 - (1 - v * (k - v)) = 0; rw [hkk, Nat.sub_self, Nat.mul_zero]) h'
     subst e2' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 2 lMa hge.1 dMaSz
@@ -285,20 +285,20 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   rcases Nat.eq_zero_or_pos v with hz | hpos
   · -- one child on the negative side
-    have e1' := loop_zero_node (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
-    have h2 := loop_one_node (by change 1 - (1 - (1 - v)) = 1; omega) hb
-    have e3' := loop_zero_node (by change 1 - (1 - v * (k - v)) = 0; rw [hz, Nat.zero_mul]) h'
+    have e1' := exec_loop_zero_eq (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
+    have h2 := exec_loop_one_eq (by change 1 - (1 - (1 - v)) = 1; omega) hb
+    have e3' := exec_loop_zero_eq (by change 1 - (1 - v * (k - v)) = 0; rw [hz, Nat.zero_mul]) h'
     subst e1' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 3 lMa hge.1 dMaSz
       dMaKd dSzKd hA e1 (by rw [e1]; exact ht1) h2
     exact ⟨⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega⟩,
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   -- a split
-  have e1' := loop_zero_node (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
-  have e2' := loop_zero_node (by change 1 - (1 - (1 - v)) = 0; omega) hb
+  have e1' := exec_loop_zero_eq (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
+  have e2' := exec_loop_zero_eq (by change 1 - (1 - (1 - v)) = 0; omega) hb
   subst σa σb
   have hprod : 0 < v * (k - v) := Nat.mul_pos hpos (by omega)
-  have h3 := loop_one_node (by
+  have h3 := exec_loop_one_eq (by
     change 1 - (1 - v * (k - v)) = 1; generalize v * (k - v) = m at hprod ⊢; omega) h'
   obtain ⟨⟨q1, q2, q3, q4, q5, q6, q7, q8⟩, hfr, hsh, hps⟩ :=
     holds_of_exec_eighSplitBlock_frame hmm hqr p n d lo k v hk hpos hlt' (.var v) rfl H
@@ -591,7 +591,7 @@ private theorem exists_of_exec_alloc_seven {p : P} {l₁ l₂ l₃ l₄ l₅ l�
         some s ∧
       (s.store.shape = σ.store.shape → Store.shape (Array.pop^[7] s.store) = st.store.shape) ∧
       st'.store = Array.pop^[7] s.store ∧ st'.pos = s.pos := by
-  obtain ⟨s₁, h₁, e₁⟩ := alloc_inv_skip_node h
+  obtain ⟨s₁, h₁, e₁⟩ := exists_exec_of_exec_seq_alloc h
   obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
   obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
   obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃

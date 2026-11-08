@@ -347,7 +347,7 @@ private theorem node_branch_exists {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
 
 omit [Inhabited K] in
 /-- A goal on a state, by a named state. -/
-private theorem ex_gen_node {X : Stmt P ι ℕ ℕ} {s : St P K C}
+theorem exists_exec_of_forall_eq {X : Stmt P ι ℕ ℕ} {s : St P K C}
     (h : ∀ σ : St P K C, σ = s → ∃ st', exec I X σ = some st') :
     ∃ st', exec I X s = some st' := h s rfl
 
@@ -893,9 +893,9 @@ theorem exists_exec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
   have lSg : Sg < st.store.size := hl (by simp)
   change ∃ st', exec I (.seq _ .skip) st = some st'
   rw [exec_seq_skip]
-  iterate 7 refine exists_exec_alloc_of_exists_split ?_
+  iterate 7 refine exists_exec_alloc_of_exists ?_
   beta_reduce
-  refine ex_gen_node fun σ₇ hσ₇ => ?_
+  refine exists_exec_of_forall_eq fun σ₇ hσ₇ => ?_
   have hσs := congrArg St.store hσ₇
   simp only at hσs
   simp only [Array.size_push]
