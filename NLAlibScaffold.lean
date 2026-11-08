@@ -4,3 +4,4 @@ public import NLAlibScaffold.Computation.ProgramLogic
 public import NLAlibScaffold.Matrix.Computation.ProgramLogicKernels
 public import NLAlibScaffold.Matrix.Computation.SpectralBisectionNode.CompressSpec
 public import NLAlibScaffold.Matrix.Computation.SpectralBisectionProgramTreeSpec
+public import NLAlibScaffold.Matrix.Computation.SpectralBisectionNode.SplitAllocSpec

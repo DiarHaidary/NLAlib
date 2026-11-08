@@ -939,7 +939,11 @@ concrete block lists. `fp_omega [h₁, …]` adds the facts `hᵢ` (layout bound
 `Nat.mul_le_mul hr hk`), unfolds `NLAlib.Computation.BlocksDisjoint`,
 `NLAlib.Computation.matBlock`, `List.Nodup` and `NLAlib.Computation.blockDisjoint_iff` in the
 goal and those facts only (never the whole context), normalises products with `ring_nf` (so
-`r * k` and `k * r` are one atom), and closes with `omega`. -/
+`r * k` and `k * r` are one atom), and closes with `omega`. Only the goal and the passed facts
+are normalised (`n * n` becomes `n ^ 2` there), so a context hypothesis with a product is a
+different atom: **every hypothesis with a product that the goal needs must be passed**
+(`fp_omega [Nat.mul_le_mul hr hk, hlen]`, not `fp_omega [Nat.mul_le_mul hr hk]` with `hlen` in
+the context). -/
 syntax "fp_omega" (" [" term,* "]")? : tactic
 
 /-- The closing step of `fp_omega` on the goal and the named facts. -/

@@ -5,7 +5,7 @@
 `reports/Review-COMPDYN-ProgLogic.md`); the changes are applied in this revision (§12)**. Branch
 `design/prog-logic` from `origin/main` @ `7cbea9d1`. Decision sheet: harness
 `state/decisions/PROG-LOGIC.json` (ids PG1–PG9 below). Targets: harness
-`pilot/prog-logic-targets.json` (ids PL1–PL109, provable statements and two re-proofs); jobs:
+`pilot/prog-logic-targets.json` (ids PL1–PL110, provable statements and two re-proofs); jobs:
 harness `pilot/prog-logic-jobs.json` (J1–J9, the pilot gate and the S2/W4 migration). Scaffold:
 `NLAlibScaffold/Computation/ProgramLogic.lean`,
 `NLAlibScaffold/Matrix/Computation/ProgramLogicKernels.lean`,
@@ -50,7 +50,7 @@ be easy enough to apply that a small prover model does program proofs reliably.
   tree, as CERT-ROUTINES CR7 decided. The arithmetic assumptions are two records,
   `IsControlExactSem` (indices, flags, `≤`) and `IsRoutineSem` (that plus the standard model).
   Handles are relative to the size of the store, which the precondition fixes.
-* **Rules (§4).** The scaffold has 107 sorried statements and 7 one-line proofs; it builds:
+* **Rules (§4).** The scaffold has 108 sorried statements and 7 one-line proofs; it builds:
   * footprints, read sets and canonical blocks (24);
   * modes, with the `Mode.Needs` algebra (9, of which 5 are proved);
   * application, consequence and the mode bridges (7);
@@ -70,7 +70,7 @@ be easy enough to apply that a small prover model does program proofs reliably.
   * a budget bridge (1);
   * certificate and kernel bridges, with the arithmetic records (5);
   * the S2 `eighWhen` rule (1);
-  * the pilot's four statements.
+  * the pilot's four statements and the gate-3 statement (Split's scratch prefix).
 
   Tactics: `spec_step`, `spec_call` and `fp_omega [facts]`. The last normalises products, so
   `r * k` and `k * r` are one atom. It was tested on the S2 goals that plain `omega` fails (§5).
@@ -80,7 +80,7 @@ be easy enough to apply that a small prover model does program proofs reliably.
   * the net diff is reported, with moved text excluded;
   * Split's eight-alloc prefix is proved by named states with default heartbeats.
 
-  The estimate for all of S2 is **2,500–3,500 fewer lines (20–28%)**. A complete fold of the
+  The estimate for all of S2 is **2,350–3,255 fewer lines (19–26%)**. A complete fold of the
   `*Success.lean` files would give about 4,000. CGS2 and Lanczos-reorth are second consumers,
   about 500 lines. **No registered target statement changes**, and no re-pin is needed.
 * **Who (PG9, as the COMPDYN session proposed).** The COMPDYN/S2 session builds W0–W3 in one
@@ -652,7 +652,9 @@ Four macros in `ProgramLogic.lean`, plain `macro`/`macro_rules` (the precedent i
   `matBlock`, `List.Nodup` and `blockDisjoint_iff` **in the goal and those facts only**, never the
   whole context (S2 proofs have 40+ hypotheses). It normalises products with `ring_nf`, so
   `r * k` and `k * r` become one atom, and closes with `omega`. Nonlinear bounds are supplied as
-  facts, for example `Nat.mul_le_mul hr hk`, or S2's layout lemmas.
+  facts, for example `Nat.mul_le_mul hr hk`, or S2's layout lemmas. Only the goal and the passed
+  facts are normalised (`n * n` becomes `n ^ 2`), so **every hypothesis with a product that the
+  goal needs must be passed**: `fp_omega [Nat.mul_le_mul …, hlen]`, not a context `hlen`.
 * `fp_close` is its closing step.
 * `spec_step h`: `rw [wp_seq]` if possible, then `Triple.wp_of h`. Side goals closed by
   `assumption` or `fp_omega` are removed.
@@ -782,8 +784,8 @@ including a helper sweep that does not depend on the logic.
 | driver (`eighProg`, passes, loops) | `RoutineSpec.forRange`, `Spec.allocBind` ×11 | ≈ 1,100 | 300–500 |
 | helpers whose removal needs the logic (§7.5) | deleted | — | ≈ 200 |
 
-**Estimated S2 saving: 2,400–3,400 lines, about 2.5–3.5k (20–28% of 12,550).** The range is
-the sum of the rows.
+**Estimated S2 saving: 2,350–3,255 lines (19–26% of 12,550).** The range is the sum of the
+rows.
 
 * *Low end:* the rows' low ends. Every leaf that has no mode-generic specification (the other
   pair kernels, the instruction-level success steps) keeps a separate success proof.
@@ -834,7 +836,8 @@ Why this block:
   * PL109 at `total`, which needs no `hcocells`, since its statement has none.
 
   PL109 derives `WritableBlocks fp` from `hscr`, `hcolen`, `hk` and `hr` with `writable_of_shape_eq`
-  and `fp_omega [Nat.mul_le_mul …]`. The bounds are nonlinear, so the products are supplied.
+  and `fp_omega [Nat.mul_le_mul …, hlen]`. The bounds are nonlinear, so the products are
+  supplied, and the context bound `hlen` (from `hscr`) is passed too (§5).
 
 **B1, resolved from the code.** The two reviews disagreed about whether the first PL76 (now
 PL107) had exactly the hypotheses of the two lemmas.
@@ -856,9 +859,11 @@ condition.
    The adapters' glue (PL104–PL106 minus moved text) is reported separately as the per-kernel
    cost of entering the logic. Moved helpers count as neither saved nor added. The expected net
    saving for the block is about 100 lines.
-3. *Alloc chains (L3):* Split's eight-alloc prefix (Tree:180–187) proved by `Spec.allocBind` ×8
-   with named states, replacing the eight `alloc_inv_node` steps (Split.lean:589–596). Compress
-   has no allocations, so gates 1 and 2 do not test L3.
+3. *Alloc chains (L3):* PL110 `spec_eighSplitBlock_of_body` (scaffold `SplitAllocSpec.lean`):
+   a specification of the split body at the scratch handles $b, \dots, b + 7$ gives the split
+   block's. It is proved by `Spec.allocBind` ×8 with named states, replacing the eight
+   `alloc_inv_node` steps (Split.lean:589–596). Compress has no allocations, so gates 1 and 2 do
+   not test L3.
 
 All three run with stage_check 0 and default heartbeats. The design returns to PG1 only if
 gate 1 fails.
@@ -934,7 +939,7 @@ Targets (PL, `pilot/prog-logic-targets.json`) are provable statements; jobs (J,
 |---|---|---|---|
 | W0 | modes, `Wp`, triples, application/consequence, statement rules, builder rules (§4.1–§4.4); `Triple.whileFuel` to the strongest prover | 34 targets | — |
 | W1 | footprints, read sets, canonical blocks, `Spec`, `RoutineSpec` and their rules (§4.5, §4.7), instruction specs, counts, budget, bridges, records | 68 targets | W0 |
-| W2 | adapters, `spec_eighCompressBlock`, the two re-proofs; then J1 (moves, deletions, the three gates) | PL104–PL109, J1 | W1; PL107 after `RoutineSpec.stmt` and the `Mode.Needs` algebra |
+| W2 | adapters, `spec_eighCompressBlock`, the two re-proofs, the gate-3 statement; then J1 (moves, deletions, the three gates) | PL104–PL110, J1 | W1; PL107 after `RoutineSpec.stmt` and the `Mode.Needs` algebra |
 | W3 | S2 blocks bottom-up with F3 step 2: Split, Sign/Deflate/Clamp/Node (with `spec_eighWhen`, PL103), Down, Up, driver | PL103, J2–J6 | J1 gates |
 | W4 | EIGH weight (`CostsLe`); CGS2 and Lanczos-reorth, CR2 item 2 with `ReadsOnly` | J7–J9 | W3; CR2 item 1; `feat/lanczos-reorth` landed |
 
@@ -979,13 +984,13 @@ library docstring cites them; the note cites them here only.
 
 | id | question | options | recommendation | why |
 |---|---|---|---|---|
-| APPROVE | Approve the design, the scaffold (107 sorried statements: 102 library rules and bridges, the `eighWhen` rule, four pilot statements; plus two re-proofs, 109 targets; nine jobs) and the pilot gates? | a / b not yet | a | Additive; every rule S–M except `whileFuel` and the pilot (L); no target re-pin; both reviews' blocking items applied |
+| APPROVE | Approve the design, the scaffold (108 sorried statements: 102 library rules and bridges, the `eighWhen` rule, four pilot statements, the gate-3 statement; plus two re-proofs, 110 targets; nine jobs) and the pilot gates? | a / b not yet | a | Additive; every rule S–M except `whileFuel` and the pilot (L); no target re-pin; both reviews' blocking items applied |
 | PG1 | Style of the logic | **a wp by definition + relational triples + block frame rule** / b primitive Hoare judgement with soundness / c separation logic / d `Std.Do` + `mvcgen` | a | `exec` is deterministic, so the rules are run equations (S each) and nothing needs a soundness proof; named states fix L3 |
 | PG2 | Total vs liberal | **a mode-generic specs (`Mode`, `m.Needs` for success-only hypotheses, guards in `post` for correctness-only ones, the `Mode.Needs` algebra)** / b total only / c two separate calculi | a | One walk yields S2's two lemmas with statements unchanged |
 | PG3 | Counts in the specification | **a optional `Costs`/`CostsLe` clauses in `post`, budgets from `staticCost` (CR7)** / b a mandatory cost field / c no count support | a | Certificates and refinement lemmas carry no counts; exact or weighted counts only where EP7 needs them |
 | PG4 | Replace or wrap `IsBlockRoutine`, the typed certificates and `EighWeight.Triple` | **a wrap: bridges to `RoutineSpec` now, `EighWeight.Triple` re-expressed in W4** / b replace / c leave separate | a | Certificates are consumer-facing statements (CR2 a); bridges are S–M each |
 | PG5 | Footprint form | **a `Modifies` (frame style) with canonical `matBlock` blocks, bridged from `writeBlocks`** / b CERT-ROUTINES' `writeBlocks` equation | a | Uninitialized partially-written scratch is not a block write; every S2 and kernel lemma is already in frame style |
-| PG6 | Scope of the S2 migration | **a pilot first (J1: walks 180 → ≤ 90, net diff reported, Split's 8-alloc prefix), then all blocks bottom-up with F3 step 2** / b all blocks now / c pilot only | a | Measures before spending; 2.5–3.5k expected |
+| PG6 | Scope of the S2 migration | **a pilot first (J1: walks 180 → ≤ 90, net diff reported, Split's 8-alloc prefix), then all blocks bottom-up with F3 step 2** / b all blocks now / c pilot only | a | Measures before spending; 2,350–3,255 lines expected |
 | PG7 | CR2 item 2 (`hpreFrame`) | **a `ReadsOnly` with zero-length blocks for shape-only buffers** / b `IsFramed` as in CERT §8.3 | a | Separates shape from value dependence, the gap §8.3 found |
 | PG8 | Tactics | **a `spec_step`, `spec_call`, `fp_omega [facts]` (ring-normalised, goal-only)** / b none / c a frame-search tactic now | a | Cheap, house-rule safe, tested on S2's nonlinear goals; frame search deferred |
 | PG9 | Who implements | a this pipeline / b the COMPDYN session for everything / c split W0–W2 here, W3 by COMPDYN / **d (COMPDYN's proposal) the COMPDYN/S2 session builds W0–W3 in one lane; this pipeline reviews the W0–W1 statements and keeps the note and sheet; W4 by owner (EIGH weight: COMPDYN; CGS2/Lanczos-reorth: the reorth owner)** | d | Rules and their hardest consumer are tuned together by the session that knows S2; no concurrent edits to S2 with F3 step 2; one builder lane for the heavy closure |
@@ -1040,7 +1045,7 @@ Major items:
 | M4 | `IsControlExactSem` with `.mono`; `IsRoutineSem` with `safe` and `p` | — |
 | M5 | `CostsLe` with `trans`/`mono`/`of_costs`/`list_sum`; `Spec.withCharge` in both modes | the `bindIdx`-supremum use (J7) |
 | M6 | `spec_draw`, `spec_forRange_draw`, `PosKept` | — |
-| M7 | — | the estimate revised to 2.5–3.5k (§7.2); W3 scheduled with F3 step 2; W3 specifications take `safe` |
+| M7 | — | the estimate revised to 2,350–3,255 lines (§7.2; corrected to the sum of the rows in the delta pass); W3 scheduled with F3 step 2; W3 specifications take `safe` |
 
 Minor items:
 * m1: `Spec.ite_cases`.
@@ -1052,3 +1057,10 @@ Minor items:
 * m8: canonical blocks.
 
 **PG9** is recorded as the COMPDYN session's proposal (d).
+
+**Fable delta check of 15b511c0, 2026-11-08**: GO for W0/W1; 38 new or changed statements, 0 false,
+0 ill-posed; B1 resolution confirmed. Non-blocking items applied:
+* D1: the fact-passing rule for `fp_omega`, in its docstring, in §5 and in PL109's outline.
+* D2: the estimate stated as the sum of the §7.2 rows, 2,350–3,255 (19–26%).
+* D3 (a): gate 3 has its statement, PL110 `spec_eighSplitBlock_of_body`.
+* D3 (b), the coordinator's D4: `spec_forRange_draw`'s outline names the liberal inversion.
