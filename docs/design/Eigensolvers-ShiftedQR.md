@@ -613,20 +613,26 @@ D2) and `ForMathlib/Analysis/MeanInequalities.lean` (W1). Q0 is in
 `Matrix/Spectral/Diagonalizable.lean`. Strategy stayed under 1000 lines, so no
 `ExceptionalShifts.lean` split was needed (§6).
 
-**Unused hypotheses**, kept until the maintainer decides (each proof references them with
-`have _ := …`):
-- D1 `sum_lastRowWeights_mul_norm_eval_sq_sub_le`: `hgap` and `hβc`. The proof is pointwise, so
-  D1 holds without an eigenvalue gap.
-- R3 `IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: `hα` (Fable's note 10).
+**Unused hypotheses, dropped** (maintainer, 2026-11-08, on Fable's stage review item 3): D1
+`sum_lastRowWeights_mul_norm_eval_sq_sub_le` no longer takes the eigenvalue gap `hgap` or
+`hβc : β ≤ cΓ`; its proof is pointwise, so it holds without a gap. R3
+`IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div` no longer takes `hα : 0 ≤ α`. D2 is
+unchanged: its pigeonhole step still uses the gap and the strict `β < cΓ`.
 
-**New public helpers** from the clean-up (14), which replace private copies:
+**New public helpers** from the clean-up, which replace private copies:
 `isUnit_aeval_of_forall_eval_ne_zero`, `inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv`,
 `det_sub_smul_one_eq_zero_of_mul_eq_mul_diagonal`, `det_sub_smul_one_ne_zero_of_forall_ne`,
 `norm_le_specNorm_of_mul_eq_mul_diagonal` (Diagonalizable); `hessenbergPotential_nonneg`,
-`shiftPoly_monic_and_natDegree`, `norm_eval_shiftPoly`, `eval_shiftPoly_ne_zero`,
+`shiftPoly_monic`, `natDegree_shiftPoly`, `norm_eval_shiftPoly`, `eval_shiftPoly_ne_zero`,
 `shiftPoly_append`, `aeval_shiftPoly_replicate`,
 `IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le` (ShiftedQR);
-`shiftPoly_ritzValues`, `sum_lastRowWeights_div_pow_le` (Ritz).
+`shiftPoly_ritzValues`, `sum_lastRowWeights_div_pow_two_mul_le`, `sum_lastRowWeights_div_pow_le`
+(Ritz); and, moved out of `ShiftedQR` by Fable's item 5, `hasOrthonormalCols_givensHessenbergQ`,
+`givensHessenbergState_snd_apply_of_eq_add_one`,
+`givensHessenbergState_fst_mulVec_apply_eq_zero_of_le` (GivensHessenberg) and
+`HasOrthonormalCols.specNorm_conjTranspose_mul_mul` (Norms/Compare). The vocabulary rows for
+`IsDecoupled`, `hessenbergPotential`, `lastRowWeights` and `IsOptimalRitzValues` are in
+`docs/contributing/vocabulary.md`.
 
 **Model of computation.** As OQ2 decided: the `shqr*`, `shiftedQRStep` and `findRitz`
 definitions are specifications with no `Prog` and no cost claim, so there is no registry entry.

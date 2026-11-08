@@ -43,7 +43,8 @@ $\kappa_V^{4\log_2 k/k}$-promising Ritz value (Lemma 4.5 there).
   `NLAlib.IsUpperHessenberg.isOptimalRitzValues_one_ritzValues`,
   `NLAlib.norm_le_specNorm_of_mem_ritzValues`: exact Ritz values.
 * `NLAlib.IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: the moment comparison.
-* `NLAlib.sum_lastRowWeights_div_pow_le`: the moments of an inverse shift.
+* `NLAlib.sum_lastRowWeights_div_pow_two_mul_le`, `NLAlib.sum_lastRowWeights_div_pow_le`: the
+  moments of an inverse shift.
 * `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le`:
   almost-monotonicity.
 * `NLAlib.sum_lastRowWeights_div_norm_eval_shiftPoly_le`, `NLAlib.findRitz_mem`,
@@ -169,7 +170,7 @@ theorem norm_le_specNorm_of_mem_ritzValues {H : Matrix (Fin (n + 1)) (Fin (n + 1
 \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
 $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, let the $k$ shifts
 `ss` be $\theta$-optimal Ritz values of $\mathbf{H}$, none an eigenvalue, and $r$ an
-$\alpha$-promising one, $\alpha, \theta \ge 0$. Then
+$\alpha$-promising one, $\theta \ge 0$. Then
 $$1 \le \kappa\,(\alpha\theta\psi_k(\mathbf{H}))^k\sum_i\frac{w_i}{\lvert\mathbf{d}_i -
 r\rvert^k}\,,$$
 i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \ge
@@ -178,12 +179,9 @@ i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \ge
 theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} {d : Fin (n + 1) → ℂ} {ss : List ℂ} {r : ℂ}
     (hss : IsOptimalRitzValues θ H ss) (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d)
-    (hd : ∀ i, ∀ s ∈ ss, d i ≠ s) (hr : IsPromisingRitzValue α V d ss r) (hα : 0 ≤ α)
-    (hθ : 0 ≤ θ) :
+    (hd : ∀ i, ∀ s ∈ ss, d i ≠ s) (hr : IsPromisingRitzValue α V d ss r) (hθ : 0 ≤ θ) :
     1 ≤ pseudoConditionNumber V * (α * θ * hessenbergPotential ss.length H) ^ ss.length *
       ∑ i, lastRowWeights V i / ‖d i - r‖ ^ ss.length := by
-  -- `hα` is not used by the proof; kept in the statement until the maintainer decides
-  have _ := hα
   obtain ⟨-, hr2⟩ := hr
   have hW : ∑ i, lastRowWeights V i = 1 := sum_lastRowWeights hV
   have hκ0 : 0 ≤ pseudoConditionNumber V := pseudoConditionNumber_nonneg V
@@ -246,41 +244,50 @@ theorem IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div {θ α : ℝ}
         mul_le_mul_of_nonneg_right hr2 hK0
     _ = _ := by simp only [mul_pow]; ring
 
-/-- **The moments of an inverse shift**: let $\mathbf{H}\mathbf{V} =
+/-- **The second moment of an inverse shift**: let $\mathbf{H}\mathbf{V} =
 \mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
 $\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, and $r$ no
-eigenvalue. Then, with $N = \|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|$,
-$$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^{2k}} \le \kappa^2N^2
-\quad\text{and}\quad \sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^k} \le \kappa N\,,$$
-i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-2k} \le \kappa^2N^2$ and, by Jensen,
-$\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \le \kappa N$.
+eigenvalue. Then
+$$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^{2k}} \le
+\kappa^2\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|^2\,,$$
+i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-2k} \le
+\kappa^2\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|^2$.
 [BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$. -/
-theorem sum_lastRowWeights_div_pow_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+theorem sum_lastRowWeights_div_pow_two_mul_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
     (hr : ∀ i, d i ≠ r) (k : ℕ) :
     ∑ i, lastRowWeights V i / ‖d i - r‖ ^ (2 * k) ≤ pseudoConditionNumber V ^ 2 *
         ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
-          (Fin.last n))‖ ^ 2 ∧
-      ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k ≤ pseudoConditionNumber V *
+          (Fin.last n))‖ ^ 2 := by
+  have h := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - r)⁻¹ ^ k)
+  rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV hr k] at h
+  refine le_of_eq_of_le (Finset.sum_congr rfl fun i _ => ?_) h
+  rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
+
+/-- **The first moment of an inverse shift**: let $\mathbf{H}\mathbf{V} =
+\mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
+$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, and $r$ no
+eigenvalue. Then
+$$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^k} \le
+\kappa\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|\,,$$
+by Jensen from `NLAlib.sum_lastRowWeights_div_pow_two_mul_le`.
+[BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$. -/
+theorem sum_lastRowWeights_div_pow_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
+    (hr : ∀ i, d i ≠ r) (k : ℕ) :
+    ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k ≤ pseudoConditionNumber V *
         ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
           (Fin.last n))‖ := by
-  have h2 : ∑ i, lastRowWeights V i / ‖d i - r‖ ^ (2 * k) ≤ pseudoConditionNumber V ^ 2 *
-      ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
-        (Fin.last n))‖ ^ 2 := by
-    have h := sum_lastRowWeights_mul_sq_le hV (fun i => (d i - r)⁻¹ ^ k)
-    rw [← inv_sub_smul_one_pow_eq_mul_diagonal_mul_inv hV hHV hr k] at h
-    refine le_of_eq_of_le (Finset.sum_congr rfl fun i _ => ?_) h
-    rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
-  refine ⟨h2, (sq_le_sq₀ (Finset.sum_nonneg fun i _ =>
+  refine (sq_le_sq₀ (Finset.sum_nonneg fun i _ =>
     div_nonneg (lastRowWeights_nonneg V i) (by positivity))
-    (mul_nonneg (pseudoConditionNumber_nonneg V) (norm_nonneg _))).mp ?_⟩
+    (mul_nonneg (pseudoConditionNumber_nonneg V) (norm_nonneg _))).mp ?_
   -- Jensen for `x ↦ x²` against the probability vector `w`
   have hjen := (convexOn_pow 2).map_sum_le (t := Finset.univ) (w := lastRowWeights V)
     (p := fun i => 1 / ‖d i - r‖ ^ k) (fun i _ => lastRowWeights_nonneg V i)
     (sum_lastRowWeights hV) (fun i _ => Set.mem_Ici.mpr (by positivity))
   simp only [smul_eq_mul, div_pow, one_pow, ← pow_mul, mul_comm k 2, mul_one_div] at hjen
   rw [mul_pow]
-  exact hjen.trans h2
+  exact hjen.trans (sum_lastRowWeights_div_pow_two_mul_le hV hHV hr k)
 
 /-- **Almost-monotonicity of the potential**: in the setting of the moment comparison
 (upper Hessenberg $\mathbf{H}$, $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(\mathbf{d})$
@@ -308,8 +315,8 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le {�
   set N := ‖WithLp.toLp 2 (((H - r • (1 : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ))⁻¹ ^ k)
     (Fin.last n))‖
   have hkey : 1 ≤ κ * (α * θ * ψ) ^ k * (κ * N) :=
-    (hss.one_le_mul_sum_lastRowWeights_div hV hHV hd hr hα hθ).trans
-      (mul_le_mul_of_nonneg_left (sum_lastRowWeights_div_pow_le hV hHV hdr k).2
+    (hss.one_le_mul_sum_lastRowWeights_div hV hHV hd hr hθ).trans
+      (mul_le_mul_of_nonneg_left (sum_lastRowWeights_div_pow_le hV hHV hdr k)
         (mul_nonneg hκ0 (pow_nonneg (mul_nonneg (mul_nonneg hα hθ)
           (hessenbergPotential_nonneg _ _)) _)))
   have hN0 : 0 < N := (norm_nonneg _).lt_of_ne fun h => by

@@ -393,17 +393,23 @@ theorem isDecoupled_of_hessenbergPotential_le {k : ℕ} (hk : 0 < k) (hkn : k �
 
 /-! ### The shift polynomial -/
 
-/-- The shift polynomial of $k$ shifts is monic of degree $k$. -/
-theorem shiftPoly_monic_and_natDegree (ss : List ℂ) :
-    (shiftPoly ss).Monic ∧ (shiftPoly ss).natDegree = ss.length := by
+/-- The shift polynomial is monic. -/
+theorem shiftPoly_monic (ss : List ℂ) : (shiftPoly ss).Monic := by
   induction ss with
   | nil => simp [shiftPoly]
   | cons s ss ih =>
-    have hm := Polynomial.monic_X_sub_C s
     rw [show shiftPoly (s :: ss) = (Polynomial.X - Polynomial.C s) * shiftPoly ss by
       simp [shiftPoly]]
-    refine ⟨hm.mul ih.1, ?_⟩
-    rw [hm.natDegree_mul ih.1, Polynomial.natDegree_X_sub_C, ih.2, List.length_cons, add_comm]
+    exact (Polynomial.monic_X_sub_C s).mul ih
+
+/-- The shift polynomial of $k$ shifts has degree $k$. -/
+theorem natDegree_shiftPoly (ss : List ℂ) : (shiftPoly ss).natDegree = ss.length := by
+  induction ss with
+  | nil => simp [shiftPoly]
+  | cons s ss ih =>
+    rw [show shiftPoly (s :: ss) = (Polynomial.X - Polynomial.C s) * shiftPoly ss by
+      simp [shiftPoly], (Polynomial.monic_X_sub_C s).natDegree_mul (shiftPoly_monic ss),
+      Polynomial.natDegree_X_sub_C, ih, List.length_cons, add_comm]
 
 /-- The modulus of the shift polynomial is the product of the distances to the shifts:
 $\lvert\prod_{s}(z - s)\rvert = \prod_s \lvert z - s\rvert$. -/
@@ -436,11 +442,6 @@ theorem aeval_shiftPoly_replicate (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (
   simp [shiftPoly, List.map_replicate, List.prod_replicate, Algebra.algebraMap_eq_smul_one]
 
 /-! ### The shifted QR step -/
-
-/-- The unitary factor of the Givens step has orthonormal columns. -/
-private theorem hasOrthonormalCols_givensHessenbergQ (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) :
-    HasOrthonormalCols (givensHessenbergQ A) :=
-  hasOrthonormalCols_givensHessenbergState_fst _ _
 
 /-- The shifted QR step is $\mathbf{R}\mathbf{Q} + s\mathbf{I}$ for the Givens factors of
 $\mathbf{H} - s\mathbf{I}$, for every $\mathbf{H}$. -/
@@ -556,13 +557,6 @@ theorem IsUpperHessenberg.exists_isQR_aeval_shiftPoly {H : Matrix (Fin (n + 1)) 
         from rfl, hstep', hH1, Matrix.conjTranspose_mul]
       simp only [Matrix.mul_assoc]
 
-/-- A unitary similarity $\mathbf{Q}^{\mathsf{H}}\mathbf{H}\mathbf{Q}$ has the norm of
-$\mathbf{H}$. -/
-private theorem specNorm_conjTranspose_mul_mul {H Q : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
-    (hQ : HasOrthonormalCols Q) : specNorm (Qᴴ * H * Q) = specNorm H := by
-  rw [hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
-    Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
-
 /-- The multi-shift QR step preserves the norm:
 $\|\mathsf{multiShiftedQRStep}(\mathbf{H}, \mathrm{ss})\|_2 = \|\mathbf{H}\|_2$. -/
 theorem specNorm_multiShiftedQRStep (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ) (ss : List ℂ) :
@@ -571,7 +565,7 @@ theorem specNorm_multiShiftedQRStep (H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
   | nil => rfl
   | cons s ss ih =>
     exact (ih (shiftedQRStep H s)).trans
-      (specNorm_conjTranspose_mul_mul (hasOrthonormalCols_givensHessenbergQ _))
+      ((hasOrthonormalCols_givensHessenbergQ _).specNorm_conjTranspose_mul_mul _)
 
 /-- One shifted QR step carries an eigenvector matrix $\mathbf{V}$ to
 $\mathbf{Q}^{\mathsf{H}}\mathbf{V}$, with the same pseudo-condition number. -/
@@ -640,7 +634,8 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
     hessenbergPotential ss.length (multiShiftedQRStep H ss) ^ ss.length *
       ‖WithLp.toLp 2 ((Polynomial.aeval H (shiftPoly ss))⁻¹ (Fin.last n))‖ ≤ 1 := by
   obtain ⟨Q, R, hQR, hHs⟩ := exists_isQR_aeval_shiftPoly hH ss
-  obtain ⟨hmon, hdeg⟩ := shiftPoly_monic_and_natDegree ss
+  have hmon := shiftPoly_monic ss
+  have hdeg := natDegree_shiftPoly ss
   have hpot := hessenbergPotential_pow_le_norm_aeval
     (isUpperHessenberg_multiShiftedQRStep hH ss) hmon hk hkn hdeg
   have hQ : Qᴴ * Q = 1 := hQR.hasOrthonormalCols
@@ -693,32 +688,6 @@ theorem IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_pow_mul_le
   have hψ := mul_le_mul_of_nonneg_right hpot
     (inv_nonneg.mpr (norm_nonneg (R (Fin.last n) (Fin.last n))))
   linarith [hψ, hinv]
-
-/-- The first $j \le i$ steps of Givens QR leave row $i + 1$ alone. -/
-private theorem givensHessenbergState_snd_apply_of_eq_add_one {m p : ℕ}
-    (A : Matrix (Fin m) (Fin p) ℂ) {i j : ℕ} (hj : j ≤ i) {a : Fin m} (ha : (a : ℕ) = i + 1)
-    (b : Fin p) : (givensHessenbergState A j).2 a b = A a b := by
-  induction j with
-  | zero => rfl
-  | succ j ih =>
-    rw [givensHessenbergState_succ_snd, givensHessenbergStep_mul_apply_of_ne _ _ (by omega)
-      (by omega)]
-    exact ih (by omega)
-
-/-- The first $j \le i$ steps of Givens QR keep the coordinates up to $i$ of a vector zero. -/
-private theorem givensHessenbergState_fst_mulVec_apply_eq_zero_of_le {m p : ℕ}
-    (A : Matrix (Fin m) (Fin p) ℂ) {v : Fin m → ℂ} {i : ℕ} (hv : ∀ a : Fin m, (a : ℕ) ≤ i → v a = 0)
-    {j : ℕ} (hj : j ≤ i) (a : Fin m) (ha : (a : ℕ) ≤ i) :
-    ((givensHessenbergState A j).1ᴴ *ᵥ v) a = 0 := by
-  induction j generalizing a with
-  | zero =>
-    simp only [givensHessenbergState, Matrix.conjTranspose_one, Matrix.one_mulVec]
-    exact hv a ha
-  | succ j ih =>
-    rw [conjTranspose_givensHessenbergState_succ_fst_mulVec]
-    exact (givensHessenbergStep_mul_apply_of_apply_eq_zero _
-      (Matrix.of fun i (_ : Unit) => ((givensHessenbergState A j).1ᴴ *ᵥ v) i) (b := ())
-      (fun a' ha' => ih (by omega) a' (by omega)) a).trans (ih (by omega) a ha)
 
 /-- A zero subdiagonal entry persists under a shifted QR step: for upper Hessenberg
 $\mathbf{H}$ with $\mathbf{H}_{i+1,i} = 0$ and any shift $s$, the step has

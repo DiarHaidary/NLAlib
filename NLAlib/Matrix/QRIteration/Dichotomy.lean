@@ -57,28 +57,25 @@ private theorem norm_eval_shiftPoly_le_of_forall₂ {β C : ℝ} (hC : 0 ≤ C) 
       _ = C ^ (l₁.length + 1) * (f a * (l₁.map f).prod) := by ring
 
 /-- **Instability implies support**: let $\mathbf{H}\mathbf{V} = \mathbf{V}\operatorname{diag}(
-\mathbf{d})$ with $\mathbf{V}$ invertible and last-row weights $w$, the eigenvalues separated by
-$\lvert\mathbf{d}_i - \mathbf{d}_j\rvert \ge \Gamma$ for $i \ne j$; let $c > 0$,
-$0 \le \beta \le c\Gamma$, and let `ss`, `ss'` be lists of $k$ shifts with
+\mathbf{d})$ with $\mathbf{V}$ invertible and last-row weights $w$; let $c > 0$, $\beta \ge 0$,
+and let `ss`, `ss'` be lists of $k$ shifts with
 $\lvert s_i - s_i'\rvert \le \beta$ and $\lvert s_i\rvert \le \|\mathbf{H}\|_2$. With
 $q = \prod_i (z - s_i)$, $q' = \prod_i (z - s_i')$,
 $$\sum_i w_i\lvert q'(\mathbf{d}_i)\rvert^2 - (1 + 2c)^{2k}\sum_i w_i\lvert q(\mathbf{d}_i)
 \rvert^2 \le \bigl(2(\|\mathbf{H}\|_2 + \beta)(1 + 2c)\bigr)^{2k}\sum_{i\,:\,\exists s \in
 \mathrm{ss},\ \lvert\mathbf{d}_i - s\rvert \le \beta/(2c)} w_i\,.$$
-[BanksGarzaVargasSrivastava2022, Lemma 4.2]. -/
+[BanksGarzaVargasSrivastava2022, Lemma 4.2], there for $\Gamma$-separated eigenvalues and
+$\beta \le c\Gamma$, which the pointwise bound does not need. -/
 theorem sum_lastRowWeights_mul_norm_eval_sq_sub_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
-    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {Γ c β : ℝ}
-    (hgap : ∀ i j, i ≠ j → Γ ≤ ‖d i - d j‖) (hc : 0 < c) (hβ : 0 ≤ β) (hβc : β ≤ c * Γ)
-    {ss ss' : List ℂ} (hclose : List.Forall₂ (fun s s' => ‖s - s'‖ ≤ β) ss ss')
+    {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {c β : ℝ}
+    (hc : 0 < c) (hβ : 0 ≤ β) {ss ss' : List ℂ}
+    (hclose : List.Forall₂ (fun s s' => ‖s - s'‖ ≤ β) ss ss')
     (hss : ∀ s ∈ ss, ‖s‖ ≤ specNorm H) :
     ∑ i, lastRowWeights V i * ‖(shiftPoly ss').eval (d i)‖ ^ 2 -
         (1 + 2 * c) ^ (2 * ss.length) * ∑ i, lastRowWeights V i * ‖(shiftPoly ss).eval (d i)‖ ^ 2 ≤
       (2 * (specNorm H + β) * (1 + 2 * c)) ^ (2 * ss.length) *
         ∑ i ∈ Finset.univ.filter (fun i => ∃ s ∈ ss, ‖d i - s‖ ≤ β / (2 * c)),
           lastRowWeights V i := by
-  -- `hgap` and `hβc` are not used by the proof; kept until the maintainer decides
-  have _ := hgap
-  have _ := hβc
   set K := ss.length
   set M := 2 * (specNorm H + β)
   have hc1 : 1 ≤ (1 + 2 * c) ^ (2 * K) := one_le_pow₀ (by linarith)
@@ -167,8 +164,7 @@ $\kappa^2\psi^{2k} < (2(\|\mathbf{H}\|_2 + \beta))^{2k}\sum_{i\ \text{near}} w_i
 private theorem sq_mul_pow_lt_mul_sum_lastRowWeights_filter
     {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hH : IsUpperHessenberg H) {d : Fin (n + 1) → ℂ}
     (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {k : ℕ} (hk : 0 < k) (hkn : k ≤ n)
-    {Γ θ β c x : ℝ} (hgap : ∀ i j, i ≠ j → Γ ≤ ‖d i - d j‖) (hθ0 : 0 < θ) (hc : 0 < c)
-    (hβ : 0 ≤ β) (hβc : β ≤ c * Γ) (h2c : 1 + 2 * c = θ / x)
+    {θ β c x : ℝ} (hθ0 : 0 < θ) (hc : 0 < c) (hβ : 0 ≤ β) (h2c : 1 + 2 * c = θ / x)
     (hx2k : x ^ (2 * k) = 2 * pseudoConditionNumber V ^ 4) (hκ1 : 1 ≤ pseudoConditionNumber V)
     {rs : List ℂ} (hclose : List.Forall₂ (fun ρ r => ‖ρ - r‖ ≤ β) (ritzValues k H) rs)
     (hopt : ¬IsOptimalRitzValues θ H rs) :
@@ -202,7 +198,7 @@ private theorem sq_mul_pow_lt_mul_sum_lastRowWeights_filter
     rw [shiftPoly_ritzValues]
     calc _ ≤ κ ^ 2 * (ψ ^ k) ^ 2 := h1
       _ = κ ^ 2 * ψ ^ (2 * k) := by rw [← pow_mul, mul_comm k 2]
-  have hC := sum_lastRowWeights_mul_norm_eval_sq_sub_le hV hHV hgap hc hβ hβc hclose
+  have hC := sum_lastRowWeights_mul_norm_eval_sq_sub_le hV hHV hc hβ hclose
     (fun s hs => norm_le_specNorm_of_mem_ritzValues (by omega) hs)
   have hK : 0 < 2 * κ ^ 4 := mul_pos two_pos (pow_pos (by linarith) 4)
   rw [hlenρ, h2c, mul_pow, div_pow, hx2k, div_mul_eq_mul_div, mul_div_assoc',
@@ -351,8 +347,8 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
       Finset.prod_eq_zero (Finset.mem_univ i) (by simp [hi]), mul_zero, zero_mul]
   -- weight near the Ritz values, carried by one eigenvalue `d j` near some `r ∈ rs`
   have h2c : 1 + 2 * c = θ / x := by rw [hc_def]; ring
-  have hW := sq_mul_pow_lt_mul_sum_lastRowWeights_filter hH hV hHV hk hkn hgap hθ0 hc hβ.le
-    hβΓ.le h2c hx2k hκ1 hclose hopt
+  have hW := sq_mul_pow_lt_mul_sum_lastRowWeights_filter hH hV hHV hk hkn hθ0 hc hβ.le h2c
+    hx2k hκ1 hclose hopt
   have hSne : (Finset.univ.filter
       (fun i => ∃ s ∈ ritzValues k H, ‖d i - s‖ ≤ β / (2 * c))).Nonempty := by
     refine Finset.nonempty_of_sum_ne_zero (f := lastRowWeights V) fun h0 => ?_
@@ -373,7 +369,7 @@ theorem IsUpperHessenberg.isOptimalRitzValues_or_exists_mem_det_eq_zero_or_le
   have hwj : lastRowWeights V j ≤ κ ^ 2 * N ^ 2 * δ ^ (2 * k) := by
     have h2 := (Finset.single_le_sum (fun i _ => div_nonneg (lastRowWeights_nonneg V i)
       (by positivity)) (Finset.mem_univ j)).trans
-      (sum_lastRowWeights_div_pow_le hV hHV (fun i => hdr r hr i) k).1
+      (sum_lastRowWeights_div_pow_two_mul_le hV hHV (fun i => hdr r hr i) k)
     rw [div_le_iff₀ (pow_pos hdj0 _)] at h2
     exact h2.trans (mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hdj0.le hdj _)
       (mul_nonneg (sq_nonneg κ) (sq_nonneg N)))

@@ -238,9 +238,9 @@ theorem IsOptimalRitzValues.sq_mul_pow_le_mul_sum_lastRowWeights_filter {θ α �
   have hFN : ∑ i, lastRowWeights V i * (x i) ^ 2 ≤ κ ^ 2 * N ^ 2 :=
     le_of_eq_of_le (Finset.sum_congr rfl fun i _ => by
       simp only [hxdef, div_pow, one_pow, ← pow_mul, mul_comm k 2, mul_one_div])
-      (sum_lastRowWeights_div_pow_le hV hHV hdr k).1
+      (sum_lastRowWeights_div_pow_two_mul_le hV hHV hdr k)
   set F := ∑ i, lastRowWeights V i * (x i) ^ 2 with hFdef
-  have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hα hθ
+  have hone := IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div hss hV hHV hd hr hθ
   rw [hS] at hone
   set E := ∑ i, lastRowWeights V i * x i with hEdef
   set M := (α * θ * ψ) ^ k with hMdef
@@ -588,7 +588,7 @@ theorem IsOptimalRitzValues.exists_mem_squareGrid_det_eq_zero_or_one_le {θ α �
   have hf0 : 0 ≤ ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) :=
     Finset.sum_nonneg fun i _ => div_nonneg (lastRowWeights_nonneg V i) (by positivity)
   have hf : ∑ i, lastRowWeights V i / ‖d i - s‖ ^ (2 * k) ≤ B ^ 2 * x ^ 2 :=
-    (sum_lastRowWeights_div_pow_le hV hHV (fun i => hdG i s hs) k).1.trans (by gcongr)
+    (sum_lastRowWeights_div_pow_two_mul_le hV hHV (fun i => hdG i s hs) k).trans (by gcongr)
   exact one_le_pow_mul_of_le_card_mul_sum (by omega) (by positivity) (by positivity)
     (by positivity) hξ0 hγ1 hψ (norm_nonneg _) hε0 hε2k hP hsle hN hf0 hf
 
