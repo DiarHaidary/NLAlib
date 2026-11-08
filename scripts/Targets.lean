@@ -511,7 +511,8 @@ def modelHash (m : Name) (companions : List Name) : MetaM String := do
 /-- Item 10: the contract predicates whose decoding argument (the binder named `dec`) must
 mention the model's `dec`. Names, so that a predicate of a later stage may be listed already. -/
 def contractPreds : List Name :=
-  [`NLAlib.Computation.IsRelErrSem, `NLAlib.Computation.IsArithErrSem,
+  [`NLAlib.Computation.IsRelErrSem, `NLAlib.Computation.IsFloorRelErrSem,
+   `NLAlib.Computation.IsArithErrSem,
    `NLAlib.Computation.AddsZeroExactly, `NLAlib.Computation.IsExactIntLit,
    `NLAlib.Computation.IsExactToNat, `NLAlib.Computation.MulShrinks,
    `NLAlib.Computation.IsIndexExactSem, `NLAlib.Computation.IsTapeRounding,
@@ -1212,6 +1213,15 @@ def FixTwoDecodings : Prop :=
         IsExactIntLit dec' I.sem 1) (fun _ => True) (fun _ _ _ => True)
       (fun _ _ _ _ => True) (fun _ _ _ => 0)
 
+/-- Item 10 (H3): a rounded target whose floor-model contract takes another decoding than `dec`. -/
+def FixFloorTwoDecodings : Prop :=
+  ∀ (P : Type) [DecidableEq P] (p : P) (dec dec' : P → ℝ → ℝ),
+    MatrixFreeRoundedProb (ι := Unit) (K := ℝ) p (.skip : Prog P Unit 0 1) (fun _ _ => True)
+      (fun _ _ => Unit) (fun _ _ _ _ => #[]) dec (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
+      (fun _ _ I => IsExactIntLit dec I.sem 1 ∧
+        IsFloorRelErrSem (fun _ => 0) (fun _ => 0) dec' (fun _ _ => True) I.sem)
+      (fun _ => True) (fun _ _ _ => True) (fun _ _ _ _ => True) (fun _ _ _ => 0)
+
 /-- Item 8 (H4): a target whose count is "whatever the tree costs". -/
 def FixTreeCost : Prop :=
   ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist),
@@ -1402,4 +1412,7 @@ run_cmd do
   -- item 10 (H3): one decoding
   let de ← liftTermElabM <| decErrors ``TargetFixtures.FixTwoDecodings
   if de.size != 1 then fail m!"a contract at another decoding is not detected: {de}"
-  logInfo "item 10: a contract at another decoding than `dec` detected"
+  let de ← liftTermElabM <| decErrors ``TargetFixtures.FixFloorTwoDecodings
+  if de.size != 1 then fail m!"a floor-model contract at another decoding is not detected: {de}"
+  logInfo m!"item 10: a contract at another decoding than `dec` detected (IsRelErrSem, {""
+    }IsExactIntLit, IsFloorRelErrSem)"
