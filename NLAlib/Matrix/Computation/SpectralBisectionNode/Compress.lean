@@ -84,7 +84,7 @@ private theorem blockDisjoint_comm {x y : ℕ × ℕ × ℕ} (h : blockDisjoint 
 /-- A compression computes the machine's compression: if kernel `mm` of `I` is the routine `mmR`
 on interleaved pairs, a successful run of `NLAlib.eighCompressBlock` for the stored $k \times r$
 basis $\mathbf{Q}$ at `qo` of `Qa`, the node matrix $\mathbf{A}$ at `mo` of `Ma`, the cells `two`
-and `sg` holding $c_2$ and $\sigma$, writing at `co` of `Ma` (disjoint from the block at `mo`), ends
+and `sg` holding $c_2$ and $\sigma$, writing at `co` of `Ma`, ends
 with that block holding `M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Q) A) Q) c₂) σ`;
 every cell outside it and the scratch buffers is unchanged, the store shape and the tape positions
 too. No printed source. -/
@@ -96,7 +96,6 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
     (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
     (hbufs : [Qa, Ma, Qh, C1, C2, C3].Nodup) (hcells : two.buf ∉ [Qh, C1, C2, C3] ∧
       sg.buf ∉ [Qh, C1, C2, C3])
-    (_hco : blockDisjoint (Ma, co.eval, 2 * (r * r)) (Ma, mo.eval, 2 * (k * k)) = true)
     (hcocells : blockDisjoint (Ma, co.eval, 2 * (r * r)) (two.buf, two.idx.eval, 1) = true ∧
       blockDisjoint (Ma, co.eval, 2 * (r * r)) (sg.buf, sg.idx.eval, 1) = true)
     (h : exec I (eighCompressBlock p mm (.const k) (.const r) Qa qo Ma mo co two sg Qh C1 C2
@@ -396,7 +395,6 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
     (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
     (hbufs : [Qa, Ma, Qh, C1, C2, C3].Nodup) (hcells : two.buf ∉ [Qh, C1, C2, C3] ∧
       sg.buf ∉ [Qh, C1, C2, C3])
-    (_hco : blockDisjoint (Ma, co.eval, 2 * (r * r)) (Ma, mo.eval, 2 * (k * k)) = true)
     (hcolen : ∃ len, st.store.shape[Ma]? = some (p, len) ∧ co.eval + 2 * (r * r) ≤ len)
     (hscr : ∀ X ∈ [Qh, C1, C2, C3], ∃ len, st.store.shape[X]? = some (p, len) ∧
       2 * (n * n) ≤ len) :

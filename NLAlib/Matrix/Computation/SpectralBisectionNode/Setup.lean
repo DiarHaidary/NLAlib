@@ -123,6 +123,59 @@ private theorem exists_of_exec_seq_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} 
   obtain ⟨_, ⟨_, ⟨a, ha, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
   exact ⟨a, v, s', ha, hv, hw, h⟩
 
+/-- The halves of a node step's set-up: from a state whose cell $2d$ of `Lv` holds $R$ and whose
+cell $1$ of `c` holds the stored $2$, two instructions write $\sigma = R/\mathrm{fl}(2)$ and
+$-\sigma$ in the cells $0$, $1$ of `t`; only those cells change. -/
+private theorem node_setup_half (p : P) (d : ℕ) (H : EighArenas) {t c : ℕ} {st st' : St P K C}
+    {R : K} (hR : st.store.read p H.Lv (2 * d) = some R)
+    (hc1 : st.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ)) (rest : Builder P ι ℕ ℕ Unit)
+    (h : exec I (do
+      ins (.bin p .div ⟨t, 0⟩ ⟨H.Lv, 2 * .const d⟩ ⟨c, 1⟩)
+      ins (.un p .neg ⟨t, 1⟩ ⟨t, 0⟩)
+      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
+    let M := eighTapeMachine I p mmR qrR
+    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
+      (∀ q b i, (b ≠ t ∨ i ≠ 0 ∧ i ≠ 1) → σ.store.read q b i = st.store.read q b i) ∧
+      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
+      σ.store.read p t 0 = some (M.div R (M.ofNat 2)) ∧
+      σ.store.read p t 1 = some (M.neg (M.div R (M.ofNat 2))) ∧
+      st.store.read p c 1 = some (M.ofNat 2) := by
+  intro M
+  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
+      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
+  -- σ = R / fl(2)
+  rw [hr] at h
+  obtain ⟨aR, z2, v0, s1, haR, hz2, hv0, hw1, h⟩ := exists_of_exec_seq_bin h
+  change st.store.read p H.Lv (2 * d) = some aR at haR
+  change st.store.read p c 1 = some z2 at hz2
+  rw [hR, Option.some_inj] at haR
+  subst haR
+  have hM2 : M.ofNat 2 = z2 := by
+    change (I.sem.lit p ((2 : ℕ) : ℚ)).getD default = z2; rw [← hc1, hz2, Option.getD_some]
+  subst hM2
+  have hhalf : M.div R (M.ofNat 2) = v0 := by
+    change (I.sem.bin p .div R (M.ofNat 2)).getD default = v0; rw [hv0, Option.getD_some]
+  refine name_state_node h ?_; clear h; intro σ1 e1s e1p h; simp only at e1s e1p; subst e1s
+  -- −σ
+  rw [hr] at h
+  obtain ⟨a1, v1, s2, ha1, hv1, hw2, h⟩ := exists_of_exec_seq_un h
+  rw [Store.read_of_write_eq_some hw1, Option.some_inj] at ha1
+  subst a1
+  have hnhalf : M.neg (M.div R (M.ofNat 2)) = v1 := by
+    rw [hhalf]; change (I.sem.un p .neg _).getD default = v1; rw [hv1, Option.getD_some]
+  change st.store.write p t 0 v0 = some σ1.store at hw1
+  change σ1.store.write p t 1 v1 = some s2 at hw2
+  refine ⟨_, h, fun q b i hb => ?_, ?_, e1p, ?_, ?_, hz2⟩
+  · change s2.read q b i = _
+    rw [Store.read_of_write_eq_some_of_ne hw2 (hb.imp id fun h => h.2),
+      Store.read_of_write_eq_some_of_ne hw1 (hb.imp id fun h => h.1)]
+  · change s2.shape = _
+    rw [Store.shape_of_write_eq_some hw2, Store.shape_of_write_eq_some hw1]
+  · change s2.read p t 0 = _
+    rw [Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega)), hhalf]
+    exact Store.read_of_write_eq_some hw1
+  · rw [hnhalf]; exact Store.read_of_write_eq_some hw2
+
 /-- The scalars of a node step's set-up: from a state whose cell $2d$ of `Lv` holds $R$, whose
 cell `lo` of `Su` holds the node's uniform word and whose cell $1$ of `c` holds the stored $2$,
 five instructions write $\sigma = R/\mathrm{fl}(2)$, $-\sigma$ and the shift
@@ -153,31 +206,8 @@ private theorem node_setup_scalars (p : P) (n ℓ₀ d lo : ℕ) (H : EighArenas
   intro M
   have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
       (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  -- σ = R / fl(2)
-  rw [hr] at h
-  obtain ⟨aR, z2, v0, s1, haR, hz2, hv0, hw1, h⟩ := exists_of_exec_seq_bin h
-  change st.store.read p H.Lv (2 * d) = some aR at haR
-  change st.store.read p c 1 = some z2 at hz2
-  rw [hR, Option.some_inj] at haR
-  subst haR
-  have hM2 : M.ofNat 2 = z2 := by
-    change (I.sem.lit p ((2 : ℕ) : ℚ)).getD default = z2; rw [← hc1, hz2, Option.getD_some]
-  subst hM2
-  have hhalf : M.div R (M.ofNat 2) = v0 := by
-    change (I.sem.bin p .div R (M.ofNat 2)).getD default = v0; rw [hv0, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ1 e1s e1p h; simp only at e1s e1p; subst e1s
-  have f1 : ∀ q b i, (b ≠ t ∨ i ≠ 0) → σ1.store.read q b i = st.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw1 hb
-  -- −σ
-  rw [hr] at h
-  obtain ⟨a1, v1, s2, ha1, hv1, hw2, h⟩ := exists_of_exec_seq_un h
-  rw [Store.read_of_write_eq_some hw1, Option.some_inj] at ha1
-  subst a1
-  have hnhalf : M.neg (M.div R (M.ofNat 2)) = v1 := by
-    rw [hhalf]; change (I.sem.un p .neg _).getD default = v1; rw [hv1, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ2 e2s e2p h; simp only at e2s e2p; subst e2s
-  have f2 : ∀ q b i, (b ≠ t ∨ i ≠ 1) → σ2.store.read q b i = σ1.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw2 hb
+  obtain ⟨σ2, h, f2, sh2, e2p, t0, t1, hz2⟩ :=
+    node_setup_half (mmR := mmR) (qrR := qrR) p d H hR hc1 _ h
   -- ℓ
   rw [hr] at h
   obtain ⟨v2, s3, hv2, hw3, h⟩ := exists_of_exec_seq_litIdx h
@@ -192,8 +222,8 @@ private theorem node_setup_scalars (p : P) (n ℓ₀ d lo : ℕ) (H : EighArenas
   rw [hr] at h
   obtain ⟨aR', a2, v3, s4, haR', ha2, hv3, hw4, h⟩ := exists_of_exec_seq_bin h
   change σ3.store.read p H.Lv (2 * d) = some aR' at haR'
-  rw [f3 _ _ _ (Or.inl fun h => dtLv h.symm), f2 _ _ _ (Or.inl fun h => dtLv h.symm),
-    f1 _ _ _ (Or.inl fun h => dtLv h.symm), hR, Option.some_inj] at haR'
+  rw [f3 _ _ _ (Or.inl fun h => dtLv h.symm), f2 _ _ _ (Or.inl fun h => dtLv h.symm), hR,
+    Option.some_inj] at haR'
   subst aR'
   rw [Store.read_of_write_eq_some hw3, Option.some_inj] at ha2
   subst a2
@@ -209,8 +239,7 @@ private theorem node_setup_scalars (p : P) (n ℓ₀ d lo : ℕ) (H : EighArenas
   subst a3
   change σ4.store.read p Su lo = some au at hau
   rw [f4 _ _ _ (Or.inl fun h => dtSu h.symm), f3 _ _ _ (Or.inl fun h => dtSu h.symm),
-    f2 _ _ _ (Or.inl fun h => dtSu h.symm), f1 _ _ _ (Or.inl fun h => dtSu h.symm), hSu,
-    Option.some_inj] at hau
+    f2 _ _ _ (Or.inl fun h => dtSu h.symm), hSu, Option.some_inj] at hau
   subst au
   have hunif : M.unif (M.div R (M.ofNat (ℓ₀ + d))) (eighTapeSample n d lo).1 = v4 := by
     rw [hdiv3]
@@ -218,22 +247,18 @@ private theorem node_setup_scalars (p : P) (n ℓ₀ d lo : ℕ) (H : EighArenas
     rw [hv4, Option.getD_some]
   have f5 : ∀ q b i, (b ≠ t ∨ i ≠ 4) → s5.read q b i = σ4.store.read q b i :=
     fun q b i hb => Store.read_of_write_eq_some_of_ne hw5 hb
-  refine ⟨_, h, fun q b i hb => ?_, ?_, e4p.trans (e3p.trans (e2p.trans e1p)), ?_, ?_, ?_, hz2⟩
+  refine ⟨_, h, fun q b i hb => ?_, ?_, e4p.trans (e3p.trans e2p), ?_, ?_, ?_, hz2⟩
   · change s5.read q b i = _
-    rw [f5 _ _ _ (Or.inl hb), f4 _ _ _ (Or.inl hb), f3 _ _ _ (Or.inl hb), f2 _ _ _ (Or.inl hb),
-      f1 _ _ _ (Or.inl hb)]
+    rw [f5 _ _ _ (Or.inl hb), f4 _ _ _ (Or.inl hb), f3 _ _ _ (Or.inl hb), f2 _ _ _ (Or.inl hb)]
   · change s5.shape = _
     rw [Store.shape_of_write_eq_some hw5, Store.shape_of_write_eq_some hw4,
-      Store.shape_of_write_eq_some hw3, Store.shape_of_write_eq_some hw2,
-      Store.shape_of_write_eq_some hw1]
+      Store.shape_of_write_eq_some hw3, sh2]
   · change s5.read p t 0 = _
-    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega)),
-      f2 _ _ _ (Or.inr (by omega)), hhalf]
-    exact Store.read_of_write_eq_some hw1
+    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega))]
+    exact t0
   · change s5.read p t 1 = _
-    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega)),
-      hnhalf]
-    exact Store.read_of_write_eq_some hw2
+    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega))]
+    exact t1
   · rw [hunif]; exact Store.read_of_write_eq_some hw5
 
 /-- The sign of a node step's set-up: from a state whose node matrix $\mathbf{A}$ is held at its
@@ -413,9 +438,10 @@ private theorem node_setup_projectors (p : P) (k : ℕ) {c B T Pp Pm : ℕ} {st 
   rw [hf14 q b i (bdn hPm), f13 _ _ _ hT, f12 _ _ _ hT, f11 _ _ _ hPp, f10 _ _ _ hT]
 
 /-- The trace of a node step's set-up: from a state whose block at offset $0$ of `Pp` holds
-$\mathbf{P}$ and whose cell $2$ of `c` holds $h$, the block writes $\mathrm{tr}\,\mathbf{P}$ and
-$\mathrm{fl}(\mathrm{tr}\,\mathbf{P} + h)$ in the cells $5$, $6$ of the scratch buffer `t`
-(another buffer than `Pp` and `c`); only those cells change. -/
+$\mathbf{P}$ and whose cell $2$ of `c` holds $h$, the block writes
+$\operatorname{tr}\,\mathbf{P}$ and $\mathrm{fl}(\operatorname{tr}\,\mathbf{P} + h)$ in the
+cells $5$, $6$ of the scratch buffer `t` (another buffer than `Pp` and `c`); only those cells
+change. -/
 private theorem node_setup_trace (p : P) (k : ℕ) {t c Pp : ℕ} {st st' : St P K C}
     {Pm : Matrix (Fin k) (Fin k) (K × K)} {hv : K} (dPpt : Pp = t → False) (dct : c = t → False)
     (hP : pairLayout.Holds st.store p Pp 0 Pm) (hc2 : st.store.read p c 2 = some hv)

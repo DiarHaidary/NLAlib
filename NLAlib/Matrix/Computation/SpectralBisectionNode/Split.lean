@@ -258,12 +258,6 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
       σ₆.store.shape = σ.store.shape ∧ σ₆.pos = σ.pos := by
   intro M
   obtain ⟨F1, F3, F4, -, -, F2⟩ := split_arith_node (d := d) hk hkpk
-  have hbd : ∀ {o l : ℕ}, 2 * (n * n) * (d + 1) + 2 * n * lo ≤ o → o + l ≤ 2 * (n * n) * (d + 1) +
-      2 * n * (lo + k) → blockDisjoint (Ma, o, l) (Ma, 2 * (n * n) * d + 2 * n * lo,
-        2 * (k * k)) = true := fun h1 _ => by
-    simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
-      decide_eq_true_eq]
-    right; linarith
   have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
       2 * (n * n) * d + 2 * n * lo := by simp [eighBlockOff]
   have hbo1 : (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.const lo)).eval =
@@ -279,7 +273,6 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
     (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
     hmm p k kp (by rw [hbo]; exact hQp) (by rw [hbo]; exact hA) htwo hσ hnd
     ⟨hcells.1, hcells.2.1⟩
-    (by rw [hbo, hbo1]; exact hbd le_rfl (by linarith [Nat.zero_le ((k - kp) * (k - kp))]))
     ⟨by simp [blockDisjoint, show Ma ≠ two.buf from fun h => twoMa h.symm],
       by simp [blockDisjoint, show Ma ≠ sg.buf from fun h => sgMa h.symm]⟩ h₅
   rw [hbo1] at hAp5 hf5
@@ -297,7 +290,7 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
           decide_eq_true_eq]
         left; linarith))
     ((hk5 _ _ _ ltwo twoMa).trans htwo) ((hk5 _ _ _ lnsg nsgMa).trans hnσ) hnd
-    ⟨hcells.1, hcells.2.2⟩ (by rw [hbo, hbo2]; exact hbd (by linarith) F4)
+    ⟨hcells.1, hcells.2.2⟩
     ⟨by simp [blockDisjoint, show Ma ≠ two.buf from fun h => twoMa h.symm],
       by simp [blockDisjoint, show Ma ≠ nsg.buf from fun h => nsgMa h.symm]⟩ h₆
   rw [hbo2] at hAm6 hf6
@@ -440,10 +433,8 @@ private theorem split_body_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLay
     List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hlt hge
   obtain ⟨lMa, lUa, lQa, lEa, lSz, lKd, lKp, lLv, lSg, lPp, lPm, ltwo, lsg, lnsg, lsq⟩ := hlt
   obtain ⟨gG, gY, gQf, gRf, gQh, gC1, gC2, gC3⟩ := hge
-  have h4a : [G, Y, Qf, Rf].Nodup :=
-    (List.nodup_append.mp (show ([G, Y, Qf, Rf] ++ [Qh, C1, C2, C3]).Nodup from hnd)).1
-  have h4b : [Qh, C1, C2, C3].Nodup :=
-    (List.nodup_append.mp (show ([G, Y, Qf, Rf] ++ [Qh, C1, C2, C3]).Nodup from hnd)).2.1
+  obtain ⟨h4a, h4b, -⟩ :=
+    List.nodup_append.mp (show ([G, Y, Qf, Rf] ++ [Qh, C1, C2, C3]).Nodup from hnd)
   obtain ⟨dSgPp, dSgPm, dSgQa, dPpQa, dPmQa, dMaQa, dSzKd, dSzKp, dKdKp, dQaSz, dQaKd, dQaKp,
     dMaSz, dMaKd, dMaKp, sqQa, twoQa, sgQa, nsgQa, twoMa, sgMa, nsgMa⟩ :=
     split_handles_ne hbufs hcells
@@ -496,12 +487,8 @@ private theorem split_body_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLay
   simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
   obtain ⟨hWQ, hWM, hWS, hWK⟩ := hW
   refine (hfr q b i hWS hWK).trans ((hf6 q b i hb fun h1 => ?_).trans (hf4 q b i hb fun h1 => ?_))
-  · by_contra hc
-    push Not at hc
-    exact absurd (hWM h1 hc.1) (by omega)
-  · by_contra hc
-    push Not at hc
-    exact absurd (hWQ h1 hc.1) (by omega)
+  · by_contra hc; push Not at hc; exact absurd (hWM h1 hc.1) (by omega)
+  · by_contra hc; push Not at hc; exact absurd (hWQ h1 hc.1) (by omega)
 
 omit [AddMonoid C] [Inhabited K] in
 /-- Reads of a store below $m$ pops. -/
@@ -582,7 +569,7 @@ theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
     (hkpe : kpe.eval = kp) (H : EighArenas)
     {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {σ : K} {st st' : St P K C}
     {A : Matrix (Fin k) (Fin k) (K × K)} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
-    {D : ℕ} (_hd : d < D) (hH : H.Shaped st.store p n D)
+    {D : ℕ} (hH : H.Shaped st.store p n D)
     (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
     (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
     (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
@@ -697,7 +684,7 @@ theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
     (hkp : 0 < kp) (hkpk : kp < k) (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ}
     {σ : K} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
     {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
-    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D)
+    {D : ℕ} (hH : H.Shaped st.store p n D)
     (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
     (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
     (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
@@ -731,7 +718,7 @@ theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
   intro M s Qp Qm
   have key := holds_of_exec_eighSplitBlock_frame (Sg := Sg) (Pp := Pp) (Pm := Pm)
     (two := two) (sg := sg) (nsg := nsg) (sq := sq) (σ := σ) (st := st) (st' := st') (A := A)
-    (Ppm := Ppm) (Pmm := Pmm) hmm hqr p n d lo k kp hk hkp hkpk (.const kp) rfl H hd hH
+    (Ppm := Ppm) (Pmm := Pmm) hmm hqr p n d lo k kp hk hkp hkpk (.const kp) rfl H hH
     hbufs hA hPp hPm hSg htwo hσ hnσ hcells hsq h
   refine ⟨key.1.1, key.1.2.1, key.1.2.2.1, key.1.2.2.2.1, key.1.2.2.2.2.1, key.1.2.2.2.2.2.1,
     key.1.2.2.2.2.2.2.1, key.1.2.2.2.2.2.2.2, fun q b i h0 h1' => key.2.1 q b i ?_,

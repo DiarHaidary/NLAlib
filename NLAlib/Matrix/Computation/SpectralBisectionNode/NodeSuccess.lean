@@ -197,7 +197,7 @@ $k_+ \le k$. -/
 private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2)
-    (p : P) (hu : u p < 1) (n d lo k : ℕ) (hk : lo + k ≤ n)
+    (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n)
     (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st : St P K C}
     {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {σ0 : K} {D : ℕ} (hd : d < D)
     (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
@@ -277,7 +277,7 @@ private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm 
   have e3 : (1 - (1 - (IExp.var x * (IExp.const k - IExp.var x))) : IExp ℕ).eval = 1 := by
     rw [ev3]; omega
   rw [when_zero_ex_node e1, when_zero_ex_node e2, when_last_one_ex_node e3]
-  refine exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p hu n d lo k x hk (by omega) (by omega)
+  refine exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p n d lo k x hk (by omega) (by omega)
     (.var x) rfl H (two := ⟨c, 1⟩) (sg := ⟨t, 0⟩) (nsg := ⟨t, 1⟩) (sq := ⟨c, 4⟩)
     hd hHS hbufs hAS (by rw [hS]; exact hPp) (by rw [hS]; exact hPm)
     (by rw [hS]; exact hSg) (by rw [hS]; exact htwo)
@@ -291,7 +291,7 @@ private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm 
 private theorem node_branch_exists {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2)
-    (htn : IsExactToNat dec I.sem) (p : P) (hu : u p < 1) (n d lo k : ℕ)
+    (htn : IsExactToNat dec I.sem) (p : P) (n d lo k : ℕ)
     (hlitk : IsExactIntLit dec I.sem k) (hk : lo + k ≤ n)
     (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st : St P K C}
     {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {σ0 : K} {D : ℕ} (hd : d < D)
@@ -335,7 +335,7 @@ private theorem node_branch_exists {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
   have nPp : Pp ≠ t := fun h => htS (by simp [h])
   have nPm : Pm ≠ t := fun h => htS (by simp [h])
   have hH' : H.Shaped σ.store p n D := by unfold EighArenas.Shaped; rw [hsh]; exact hH
-  exact node_branch_exists_core hmm hqr hsem hlit p hu n d lo k hk hk2 H (st := σ) (A := A) hd
+  exact node_branch_exists_core hmm hqr hsem hlit p n d lo k hk hk2 H (st := σ) (A := A) hd
     hH' hbufs hcS htS
     (fun i j t' => (rd _ _ _ nMa).trans (hA i j t'))
     (fun i j t' => (rd _ _ _ nPp).trans (hPp i j t'))
@@ -927,7 +927,7 @@ theorem exists_exec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
       σ.store.read q b i = st.store.read q b i := fun hb => (hlo _ _ _ hb).trans (hrd hb)
   obtain ⟨hbS, hcS⟩ := nodup_scratch_node (Pp := st.store.size + 1 + 1 + 1 + 1 + 1)
     (Pm := st.store.size + 1 + 1 + 1 + 1 + 1 + 1) hbufs hlt (by omega) (by omega) (by omega)
-  refine node_branch_exists hmm hqr hsem hlit htn p hu n d lo k
+  refine node_branch_exists hmm hqr hsem hlit htn p n d lo k
     (fun q m hm => hlitn q m (by omega)) hk hk2 H (st := σ) (A := A) hd
     (hH.of_getElem?_shape_eq fun b hb => by rw [hsh, hshp (hlH b hb)]) hbS
     (not_mem_scratch_of_lt hcS lc ⟨by omega, by omega⟩)

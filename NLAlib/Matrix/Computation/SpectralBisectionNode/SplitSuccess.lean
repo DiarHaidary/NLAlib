@@ -12,7 +12,7 @@ public import NLAlib.Matrix.Computation.SpectralBisectionNode.Compress
 
 A split of the node step of `NLAlib.eighProg` (`NLAlib.eighSplitBlock`: two deflations and two
 compressions, into the two children of the node) succeeds under the standard model with every value
-in range and $u(p) < 1$, with an exact literal $2$, if the kernels are routines on pairs and the
+in range, with an exact literal $2$, if the kernels are routines on pairs and the
 arenas are allocated. The deflation and compression blocks at index expressions run as at the
 constants of their values.
 
@@ -205,13 +205,6 @@ private theorem exists_exec_eighSplitTail₂ {mm : ι} (hmm : IsMatMulKernel I m
   have hcM : ∀ c ∈ [two, nsg], c.buf ≠ H.Ma := fun c hc h => hcells c hc (by simp [h])
   have hcS : ∀ c ∈ [two, nsg], c.buf ∉ [Qh, C1, C2, C3] := fun c hc h =>
     hcells c hc (List.mem_cons_of_mem _ h)
-  have hco2 : blockDisjoint
-      (H.Ma, (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)).eval,
-        2 * ((k - (kpe.eval)) * (k - (kpe.eval))))
-      (H.Ma, (eighBlockOff (.const n) (.const d) (.const lo)).eval, 2 * (k * k)) = true := by
-    simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-      IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-    exact Or.inr (decide_eq_true (eighSplit_bounds_split hk hkpk hd).2.2.2)
   rw [exec_eighCompressBlock_bind_split, exec_eighCompressBlock_congr_split]
   simp only [IExp.eval_sub, IExp.eval_const]
   have hcolen2 : (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)).eval +
@@ -234,7 +227,7 @@ private theorem exists_exec_eighSplitTail₂ {mm : ι} (hmm : IsMatMulKernel I m
     (mo := eighBlockOff (.const n) (.const d) (.const lo))
     (co := eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) (Q := Qm)
     (A := A) (c₂ := z2) (σ := σ') (two := two) (sg := nsg) hqo hmo htwo htwo0 hnσ hnd
-    ⟨hcS two (by simp), hcS nsg (by simp)⟩ (by exact hco2) ⟨_, hMa, by exact hcolen2⟩
+    ⟨hcS two (by simp), hcS nsg (by simp)⟩ ⟨_, hMa, by exact hcolen2⟩
     (fun X hX => ⟨_, hscr X hX, le_rfl⟩)
   obtain ⟨-, -, hsh6, -⟩ := holds_of_exec_eighCompressBlock (toNat := fun _ => 0)
     (qrR := @fun _ _ X => (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : Unit) => x)
@@ -242,7 +235,7 @@ private theorem exists_exec_eighSplitTail₂ {mm : ι} (hmm : IsMatMulKernel I m
     (qo := eighBlockOff (.const n) (.const d) (.const lo) + 2 * (IExp.const k * kpe))
     (mo := eighBlockOff (.const n) (.const d) (.const lo))
     (co := eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) (st' := st6) hqo hmo
-    htwo hnσ hnd ⟨hcS two (by simp), hcS nsg (by simp)⟩ (by exact hco2)
+    htwo hnσ hnd ⟨hcS two (by simp), hcS nsg (by simp)⟩
     ⟨by simp [blockDisjoint, Ne.symm (hcM two (by simp))],
       by simp [blockDisjoint, Ne.symm (hcM nsg (by simp))]⟩ (by exact h6)
   rw [h6, Option.bind_some]
@@ -297,11 +290,6 @@ private theorem exists_exec_eighSplitTail {mm : ι} (hmm : IsMatMulKernel I mm p
     (co := eighBlockOff (.const n) (.const d + 1) (.const lo)) hQp hA htwo htwo0 hσ hnd
     ⟨fun h => hcells two (by simp) (List.mem_cons_of_mem _ h),
       fun h => hcells sg (by simp) (List.mem_cons_of_mem _ h)⟩
-    (by
-      simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-        IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-      right
-      exact decide_eq_true (by nlinarith))
     ⟨_, hMa, by simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
       IExp.eval_ofNat]; nlinarith⟩
     (fun X hX => ⟨_, hscr X hX, le_rfl⟩)
@@ -318,12 +306,7 @@ private theorem exists_exec_eighSplitTail {mm : ι} (hmm : IsMatMulKernel I mm p
     (qo := eighBlockOff (.const n) (.const d) (.const lo))
     (mo := eighBlockOff (.const n) (.const d) (.const lo))
     (co := eighBlockOff (.const n) (.const d + 1) (.const lo)) (st' := st5) hQp hA htwo hσ hnd
-    ⟨hcS two (by simp), hcS sg (by simp)⟩
-    (by
-      simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-        IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-      right
-      exact decide_eq_true (by nlinarith)) ⟨by simp [blockDisjoint, Ne.symm (hcM two (by simp))],
+    ⟨hcS two (by simp), hcS sg (by simp)⟩ ⟨by simp [blockDisjoint, Ne.symm (hcM two (by simp))],
       by simp [blockDisjoint, Ne.symm (hcM sg (by simp))]⟩ (by exact h5)
   have hcell5 : ∀ c ∈ [two, sg, nsg],
       st5.store.read p c.buf c.idx.eval = st.store.read p c.buf c.idx.eval := fun c hc =>
@@ -523,8 +506,8 @@ theorem exists_exec_eighSplitBlock_ex {mm qr : ι}
     (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2) (p : P)
-    (_hu : u p < 1) (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k) (kpe : IExp
-        ℕ) (hkpe : kpe.eval = kp)
+    (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k) (kpe : IExp ℕ)
+    (hkpe : kpe.eval = kp)
     (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {σ : K} {st : St P K C}
     {A : Matrix (Fin k) (Fin k) (K × K)} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
     {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
@@ -614,15 +597,15 @@ theorem exists_exec_eighSplitBlock_ex {mm qr : ι}
       simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] <;> omega
   · exact hsq
 
-/-- A split succeeds under the standard model at $u$ with every value in range and $u(p) < 1$,
-with an exact literal $2$, if the kernels are routines on pairs and the arenas are allocated
+/-- A split succeeds under the standard model at $u$ with every value in range, with an exact
+literal $2$, if the kernels are routines on pairs and the arenas are allocated
 (hypotheses on the inputs as `NLAlib.holds_of_exec_eighSplitBlock`). No printed source.
 (The stored $\sqrt{1/2}$ is read from the cell `sq`, which `NLAlib.eighProg` fills once; design
 note §8, the hoist of $\sqrt{1/2}$.) -/
 theorem exists_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2) (p : P)
-    (hu : u p < 1) (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k)
+    (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k)
     (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {σ : K} {st : St P K C}
     {A : Matrix (Fin k) (Fin k) (K × K)} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
     {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
@@ -636,7 +619,7 @@ theorem exists_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
     (hsq : st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p)) :
     ∃ st', exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.const kp)
       Sg Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp two sg nsg sq).run st = some st' := by
-  exact exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p hu n d lo k kp hk hkp hkpk (.const kp)
+  exact exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p n d lo k kp hk hkp hkpk (.const kp)
       rfl H
     hd hH hbufs
     hA hPp hPm (fun w hw => ⟨_, hSg w hw⟩) htwo hσ hnσ hcells hsq

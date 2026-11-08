@@ -84,6 +84,37 @@ private theorem bindIdx_inv_node {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {
   split_ifs at h with hle
   exact ⟨v, w, hw, hv, hle, h⟩
 
+/-- The outcome of a node step's branch at the split index $k_+$, in the store `s`: for
+$k_+ = k$ one child on the positive side, for $k_+ = 0$ one on the negative side, for
+$0 < k_+ < k$ the split of `NLAlib.holds_of_exec_eighSplitBlock` (bases from `Ppv`, `Pmv`). -/
+private abbrev EighBranchHolds (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K × K))
+    (qrR : QRMap (K × K)) (H : EighArenas) (n d lo k kp : ℕ)
+    (A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)) (half : K) (s : Store P K) : Prop :=
+  let M := eighTapeMachine I p mmR qrR
+  (kp = k → pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+      (M.hermShift A half) ∧
+    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
+    s.read p H.Kd (n * d + lo) = I.sem.lit p ((2 : ℕ) : ℚ)) ∧
+  (kp = 0 → pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+      (M.hermShift A (M.neg half)) ∧
+    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
+    s.read p H.Kd (n * d + lo) = I.sem.lit p ((3 : ℕ) : ℚ)) ∧
+  (0 < kp → kp < k →
+    let smp := eighTapeSample n d lo
+    let Qp := deflate M kp Ppv (leadingBlock k (smp.2 true))
+    let Qm := deflate M (k - kp) Pmv (leadingBlock k (smp.2 false))
+    pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
+    pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
+    pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+      (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) half) ∧
+    pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
+      (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
+        (M.neg half)) ∧
+    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
+    s.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
+    s.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+    s.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ))
+
 /-- One child in a node step's branch: from a state `σ₁` with the store of `st`, whose node
 matrix $\mathbf{A}$ is held at its block of `Ma` and whose cell `sg` (in a scratch buffer from
 `s₀` on, the arenas below) holds the shift $s$, a successful run of `NLAlib.eighChildBlock` with
@@ -193,7 +224,7 @@ child or a split, with the frame of the node's window. -/
 private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n)
     (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st st' : St P K C}
-    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ} (hd : d < D)
+    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ}
     (hH : H.Shaped st.store p n D) (s₀ : ℕ) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
     (hlt : ∀ b ∈ H.handles ++ [Sg, c], b < s₀) (hcS : c ∉ H.handles ++ [Sg])
     (hge : s₀ ≤ t ∧ s₀ ≤ Pp ∧ s₀ ≤ Pm) (htPp : t = Pp → False) (htPm : t = Pm → False)
@@ -220,35 +251,12 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
           (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.var kp) Sg Pp Pm
             H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨t, 0⟩ ⟨t, 1⟩ ⟨c, 4⟩) :
         Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
     let kp := kp₀
-    (kp = k → pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift A half) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((2 : ℕ) : ℚ)) ∧
-    (kp = 0 → pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift A (M.neg half)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((3 : ℕ) : ℚ)) ∧
-    (0 < kp → kp < k →
-      let s := eighTapeSample n d lo
-      let Qp := deflate M kp Ppv (leadingBlock k (s.2 true))
-      let Qm := deflate M (k - kp) Pmv (leadingBlock k (s.2 false))
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) half) ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
-          (M.neg half)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
+    EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half st'.store ∧
     (∀ q b i, b < s₀ → ¬ EighNodeWindow H n d lo k (if 0 < kp ∧ kp < k then lo + kp else lo) b i →
       st'.store.read q b i = st.store.read q b i) ∧
     st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  intro M kp
+  intro kp
   have lMa : H.Ma < s₀ := hlt _ (by simp [EighArenas.handles])
   have dMaSz : H.Ma = H.Sz → False := fun h => by simp [EighArenas.handles, h] at hbufs
   have dMaKd : H.Ma = H.Kd → False := fun h => by simp [EighArenas.handles, h] at hbufs
@@ -256,12 +264,8 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
   -- the binder
   obtain ⟨v, w, hw, hv, hvk, h⟩ := bindIdx_inv_node h
   replace hvk : v ≤ k := hvk
-  change st.store.read p t 6 = some w at hw
-  rw [ht6, Option.some_inj] at hw
-  subst hw
-  have hkp : kp = v := by
-    change kp₀ = v
-    rw [hkp₀] at hv; exact Option.some_inj.mp hv
+  obtain rfl : w = w6 := Option.some_inj.mp (hw.symm.trans ht6)
+  have hkp : kp = v := Option.some_inj.mp (hkp₀.symm.trans hv)
   refine name_state_node h ?_; clear h; intro σ e1 e2 h; simp only at e1 e2
   beta_reduce at h
   obtain ⟨σa, ha, hra⟩ := when_bind_node h
@@ -277,7 +281,7 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
     subst e2' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 2 lMa hge.1 dMaSz
       dMaKd dSzKd hA e1 (by rw [e1]; exact ht0) h1
-    exact ⟨fun _ => ⟨hM, hsz, hkd⟩, fun h0 => by omega, fun _ h' => by omega,
+    exact ⟨⟨fun _ => ⟨hM, hsz, hkd⟩, fun h0 => by omega, fun _ h' => by omega⟩,
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   rcases Nat.eq_zero_or_pos v with hz | hpos
   · -- one child on the negative side
@@ -287,7 +291,7 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
     subst e1' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 3 lMa hge.1 dMaSz
       dMaKd dSzKd hA e1 (by rw [e1]; exact ht1) h2
-    exact ⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega,
+    exact ⟨⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega⟩,
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   -- a split
   have e1' := loop_zero_node (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
@@ -299,16 +303,14 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
   obtain ⟨⟨q1, q2, q3, q4, q5, q6, q7, q8⟩, hfr, hsh, hps⟩ :=
     holds_of_exec_eighSplitBlock_frame hmm hqr p n d lo k v hk hpos hlt' (.var v) rfl H
       (two := ⟨c, 1⟩) (sg := ⟨t, 0⟩) (nsg := ⟨t, 1⟩) (sq := ⟨c, 4⟩) (σ := half)
-      (st := σ) (st' := st') (A := A) (Ppm := Ppv) (Pmm := Pmv) hd (by rw [e1]; exact hH) hbufs
+      (st := σ) (st' := st') (A := A) (Ppm := Ppv) (Pmm := Pmv) (by rw [e1]; exact hH) hbufs
       (by rw [e1]; exact hA) (by rw [e1]; exact hPp) (by rw [e1]; exact hPm)
       (by rw [e1]; exact hSg) (by rw [e1]; exact htwo) (by rw [e1]; exact ht0)
       (by rw [e1]; exact ht1) (node_split_cells hlt hcS hge htPp htPm) (by rw [e1]; exact hsq) h3
-  refine ⟨fun h' => by omega, fun h' => by omega, fun _ _ => ?_, fun q b i hb hW => ?_,
+  refine ⟨⟨fun h' => by omega, fun h' => by omega, fun _ _ => ?_⟩, fun q b i hb hW => ?_,
     hsh.trans (by rw [e1]), hps.trans e2⟩
-  · rw [hkp]
-    exact ⟨q1, q2, q3, q4, q5, q6, q7, q8⟩
-  · rw [if_pos (by rw [hkp]; exact ⟨hpos, hlt'⟩), hkp] at hW
-    rw [hfr q b i hW, e1]
+  · rw [hkp]; exact ⟨q1, q2, q3, q4, q5, q6, q7, q8⟩
+  · rw [if_pos (by rw [hkp]; exact ⟨hpos, hlt'⟩), hkp] at hW; rw [hfr q b i hW, e1]
 
 /-- The clamp of the split index and the branch of a node step: one child or a split, with the
 frame of the node's window, at $k_+ = \min(k, \lfloor w_6\rfloor_+)$ under exact comparisons,
@@ -319,7 +321,7 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     (n d lo k : ℕ) (hlit : IsExactIntLit dec I.sem k) (htn : IsExactToNat dec I.sem)
     (hk : lo + k ≤ n)
     (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st st' : St P K C}
-    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ} (hd : d < D)
+    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ}
     (hH : H.Shaped st.store p n D) (s₀ : ℕ) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
     (hlt : ∀ b ∈ H.handles ++ [Sg, c], b < s₀) (hcS : c ∉ H.handles ++ [Sg])
     (hge : s₀ ≤ t ∧ s₀ ≤ Pp ∧ s₀ ≤ Pm) (htPp : t = Pp → False) (htPm : t = Pm → False)
@@ -350,29 +352,7 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
         Builder P ι ℕ ℕ Unit).run st = some st') :
     let M := eighTapeMachine I p mmR qrR
     let kp := min k (M.toNat w6)
-    (kp = k → pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift A half) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((2 : ℕ) : ℚ)) ∧
-    (kp = 0 → pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift A (M.neg half)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((3 : ℕ) : ℚ)) ∧
-    (0 < kp → kp < k →
-      let s := eighTapeSample n d lo
-      let Qp := deflate M kp Ppv (leadingBlock k (s.2 true))
-      let Qm := deflate M (k - kp) Pmv (leadingBlock k (s.2 false))
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) half) ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
-          (M.neg half)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
+    EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half st'.store ∧
     (∀ q b i, b < s₀ → ¬ EighNodeWindow H n d lo k (if 0 < kp ∧ kp < k then lo + kp else lo) b i →
       st'.store.read q b i = st.store.read q b i) ∧
     st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
@@ -398,7 +378,7 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
   clear_value kp
   subst hkp
   have C := node_branch_holds_core hmm hqr p n d lo k hk hk2 H (Sg := Sg) (c := c) (st := σ)
-    (st' := st') (A := A) (Ppv := Ppv) (Pmv := Pmv) (half := half) hd hH' s₀ hbufs
+    (st' := st') (A := A) (Ppv := Ppv) (Pmv := Pmv) (half := half) hH' s₀ hbufs
     hlt hcS hge htPp htPm
     (fun i j t' => (rd _ _ _ (by omega)).trans (hA i j t'))
     (fun i j t' => (rd _ _ _ (fun h => htPp h.symm)).trans (hPp i j t'))
@@ -406,8 +386,8 @@ private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     (fun w hw => (rd _ _ _ (by omega)).trans (hSg w hw))
     ((rd _ _ _ (by omega)).trans htwo) ((rd _ _ _ (by omega)).trans hsq)
     ((rt _ 0 (by omega)).trans ht0) ((rt _ 1 (by omega)).trans ht1) hwc hwcn h
-  obtain ⟨c1, c2, c3, cfr, csh, cps⟩ := C
-  exact ⟨c1, c2, c3, fun q b i hb hW => (cfr q b i hb hW).trans (rd q b i (by omega)),
+  obtain ⟨cB, cfr, csh, cps⟩ := C
+  exact ⟨cB, fun q b i hb hW => (cfr q b i hb hW).trans (rd q b i (by omega)),
     csh.trans hsh, cps.trans hps⟩
 
 /-- The handles of a split inside a node step are distinct, and the constants are not among the
@@ -430,37 +410,6 @@ theorem nodup_scratch_node {H : EighArenas} {par Su Sg c Pp Pm s₀ : ℕ}
     have hsub' : (H.handles ++ [Sg]).Sublist (H.handles ++ [par, Su, Sg]) :=
       List.Sublist.append_left (List.singleton_sublist.mpr (by simp)) _
     exact (List.nodup_append.mp hb).2.2 c (hsub'.subset hc) c (by simp) rfl
-
-/-- The outcome of a node step's branch at the split index $k_+$, in the store `s`: for
-$k_+ = k$ one child on the positive side, for $k_+ = 0$ one on the negative side, for
-$0 < k_+ < k$ the split of `NLAlib.holds_of_exec_eighSplitBlock` (bases from `Ppv`, `Pmv`). -/
-private abbrev EighBranchHolds (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K × K))
-    (qrR : QRMap (K × K)) (H : EighArenas) (n d lo k kp : ℕ)
-    (A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)) (half : K) (s : Store P K) : Prop :=
-  let M := eighTapeMachine I p mmR qrR
-  (kp = k → pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-      (M.hermShift A half) ∧
-    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-    s.read p H.Kd (n * d + lo) = I.sem.lit p ((2 : ℕ) : ℚ)) ∧
-  (kp = 0 → pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-      (M.hermShift A (M.neg half)) ∧
-    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-    s.read p H.Kd (n * d + lo) = I.sem.lit p ((3 : ℕ) : ℚ)) ∧
-  (0 < kp → kp < k →
-    let smp := eighTapeSample n d lo
-    let Qp := deflate M kp Ppv (leadingBlock k (smp.2 true))
-    let Qm := deflate M (k - kp) Pmv (leadingBlock k (smp.2 false))
-    pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
-    pairLayout.Holds s p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
-    pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-      (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) half) ∧
-    pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-      (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
-        (M.neg half)) ∧
-    s.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-    s.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-    s.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-    s.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ))
 
 omit [AddMonoid C] in
 /-- The node step's outcome from its branch's: if `NLAlib.eighStep` is not a leaf
@@ -620,12 +569,57 @@ theorem EighArenas.Shaped.of_getElem?_shape_eq {H : EighArenas} {s s' : Store P 
   exact ⟨hnd, l1.trans hMa, l2.trans hUa, l3.trans hQa, l4.trans hEa, l5.trans hSz, l6.trans hKd,
     l7.trans hKp, l8.trans hLv⟩
 
+omit [Inhabited K] in
+/-- The run of seven scoped allocations, inverted: the body runs at the seven new handles from a
+state `σ` whose store is that of `st` with seven new buffers (reads and shapes below its size
+kept) and whose tape positions are those of `st`; the final store is the body's with the seven
+buffers popped (its shape that of `st` when the body keeps the shape), the tape positions the
+body's. -/
+private theorem exists_of_exec_alloc_seven {p : P} {l₁ l₂ l₃ l₄ l₅ l₆ l₇ : IExp ℕ}
+    {body : ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → Stmt P ι ℕ ℕ} {st st' : St P K C}
+    (h : exec I (.seq (.alloc p l₁ fun a => .alloc p l₂ fun b => .alloc p l₃ fun c =>
+      .alloc p l₄ fun d => .alloc p l₅ fun e => .alloc p l₆ fun f => .alloc p l₇ fun g =>
+        body a b c d e f g) .skip) st = some st') :
+    ∃ σ s : St P K C, σ.store = (((((((st.store.push (p, Array.replicate l₁.eval none)).push
+        (p, Array.replicate l₂.eval none)).push (p, Array.replicate l₃.eval none)).push
+        (p, Array.replicate l₄.eval none)).push (p, Array.replicate l₅.eval none)).push
+        (p, Array.replicate l₆.eval none)).push (p, Array.replicate l₇.eval none)) ∧
+      (∀ {q : P} {b i : ℕ}, b < st.store.size → σ.store.read q b i = st.store.read q b i) ∧
+      σ.pos = st.pos ∧ exec I (body st.store.size (st.store.size + 1) (st.store.size + 1 + 1)
+        (st.store.size + 1 + 1 + 1) (st.store.size + 1 + 1 + 1 + 1)
+        (st.store.size + 1 + 1 + 1 + 1 + 1) (st.store.size + 1 + 1 + 1 + 1 + 1 + 1)) σ =
+        some s ∧
+      (s.store.shape = σ.store.shape → Store.shape (Array.pop^[7] s.store) = st.store.shape) ∧
+      st'.store = Array.pop^[7] s.store ∧ st'.pos = s.pos := by
+  obtain ⟨s₁, h₁, e₁⟩ := alloc_inv_skip_node h
+  obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
+  obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
+  obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃
+  obtain ⟨s₅, h₅, e₅⟩ := alloc_inv_node h₄
+  obtain ⟨s₆, h₆, e₆⟩ := alloc_inv_node h₅
+  obtain ⟨s₇, h₇, e₇⟩ := alloc_inv_node h₆
+  clear h h₁ h₂ h₃ h₄ h₅ h₆
+  have hst : st'.store = Array.pop^[7] s₇.store ∧ st'.pos = s₇.pos := by
+    subst e₁ e₂ e₃ e₄ e₅ e₆ e₇; exact ⟨rfl, rfl⟩
+  clear e₁ e₂ e₃ e₄ e₅ e₆ e₇
+  refine name_state_node h₇ ?_
+  clear h₇
+  intro σ hσs hσp h₇
+  simp only at hσs hσp
+  simp only [Array.size_push] at h₇
+  refine ⟨σ, s₇, hσs, fun hb => by rw [hσs]; exact (read_push_seven hb).1, hσp, h₇,
+    fun hsh => ?_, hst.1, hst.2⟩
+  change Store.shape (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop
+    (Array.pop s₇.store))))))) = _
+  simp only [Store.shape_pop, hsh, hσs]
+  simp [Store.shape]
+
 /-- The node step computes `NLAlib.eighStep`, with the window it writes: let the kernels of `I`
 be the routines `mmR`, `qrR` on interleaved pairs and the semantics decide flags at `p`, with exact
 comparisons, literals up to $n + 2$ and conversion; let $M$ be the machine of the interpretation
 (`NLAlib.eighTapeMachine`). A successful run of `NLAlib.eighNodeBlock` at the slot $lo$ of depth
-$d < D$ (arenas shaped for $n$ and $D$) for a node of size $k \ge 2$, $lo + k \le n$, whose matrix
-$\mathbf{A}$ is held at its block of `Ma`, whose window $R$ is in the cell $2d$ of `Lv` (with
+$d$ (arenas shaped for $n$ and a depth $D$) for a node of size $k \ge 2$, $lo + k \le n$, whose
+matrix $\mathbf{A}$ is held at its block of `Ma`, whose window $R$ is in the cell $2d$ of `Lv` (with
 $R \le \mathrm{fl}(\varepsilon R_0)$ false), whose seed is the cell $lo$ of `Su`, with the
 level's Gaussian words in `Sg`, the stored $\beta$ in cell $2$ of `par` and the constants (the
 machine's one, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2)$, $-1$ and the stored $\sqrt{1/2}$) in cells
@@ -643,7 +637,7 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
     (n ℓ₀ F d lo k : ℕ) (hlit : IsExactIntLit dec I.sem (n + 2)) (htn : IsExactToNat dec I.sem)
     (hk : lo + k ≤ n) (hk2 : 2 ≤ k) (H : EighArenas)
     {par Su Sg c : ℕ} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} {R R₀ ε β : K}
-    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D)
+    {D : ℕ} (hH : H.Shaped st.store p n D)
     (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
     (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
     (hR : st.store.read p H.Lv (2 * d) = some R)
@@ -690,34 +684,16 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M
   obtain ⟨-, o, -, hl1, -, -⟩ := id hflag
-  have hn2 : 0 < 4 * (n * n) := by have : 0 < n := (by omega); positivity
-  have hlt := hH.forall_lt_size (hSg 0 hn2) hpar ⟨lo, hSu⟩ (hc.1.trans hl1)
+  have hlt := hH.forall_lt_size (hSg 0 (by have : 0 < n := (by omega); positivity)) hpar
+    ⟨lo, hSu⟩ (hc.1.trans hl1)
   have hl : ∀ {b}, b ∈ H.handles ++ [par, Su, Sg, c] → b < st.store.size := hlt _
   have hlH : ∀ b ∈ H.handles, b < st.store.size := fun b hb => hl (List.mem_append_left _ hb)
   have lc : c < st.store.size := hl (by simp)
   have lSg : Sg < st.store.size := hl (by simp)
   obtain ⟨-, hcS⟩ := nodup_scratch_node (Pp := st.store.size + 5) (Pm := st.store.size + 6)
     hbufs hlt (by omega) (by omega) (by omega)
-  -- the allocations
-  obtain ⟨s₁, h₁, e₁⟩ := alloc_inv_skip_node h
-  obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
-  obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
-  obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃
-  obtain ⟨s₅, h₅, e₅⟩ := alloc_inv_node h₄
-  obtain ⟨s₆, h₆, e₆⟩ := alloc_inv_node h₅
-  obtain ⟨s₇, h₇, e₇⟩ := alloc_inv_node h₆
-  clear h h₁ h₂ h₃ h₄ h₅ h₆
-  have hst : st'.store = Array.pop^[7] s₇.store ∧ st'.pos = s₇.pos := by
-    subst e₁ e₂ e₃ e₄ e₅ e₆ e₇; exact ⟨rfl, rfl⟩
-  rw [hst.1, hst.2]
-  clear e₁ e₂ e₃ e₄ e₅ e₆ e₇
-  refine name_state_node h₇ ?_
-  clear h₇
-  intro σ₇ hσs hσp h₇
-  simp only at hσs hσp
-  have hrd : ∀ {q : P} {b i : ℕ}, b < st.store.size →
-      σ₇.store.read q b i = st.store.read q b i := fun hb => by
-    rw [hσs]; exact (read_push_seven hb).1
+  obtain ⟨σ₇, s₇, hσs, hrd, hσp, h₇, hshape, hst₁, hst₂⟩ := exists_of_exec_alloc_seven h
+  rw [hst₁, hst₂]
   have hsz₇ : σ₇.store.size = st.store.size + 7 := by rw [hσs]; simp
   -- the set-up and the branch
   obtain ⟨σ, hσ, hlo, hsh, hps, ht0, ht1, ht6, hPp, hPm, htwoM⟩ := node_setup_holds hmm p hflag n
@@ -731,36 +707,32 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
     ((hrd (hl (by simp))).trans hSu)
     ⟨(hrd lc).trans hc.1, (hrd lc).trans hc.2.1, (hrd lc).trans hc.2.2.1,
       (hrd lc).trans hc.2.2.2.1⟩ _ (h := h₇)
-  have hsz' : σ.store.size = st.store.size + 7 := by rw [Store.size_eq_of_shape_eq hsh, hsz₇]
   have hH' : H.Shaped σ.store p n D := hH.of_getElem?_shape_eq fun b hb => by
     rw [hsh, hσs]; exact (read_push_seven (q := p) (i := 0) (hlH b hb)).2
-  obtain ⟨B1, B2, B3, Bfr, Bsh, Bps⟩ := node_branch_holds hmm hqr p hcmp n d lo k
+  obtain ⟨hB, Bfr, Bsh, Bps⟩ := node_branch_holds hmm hqr p hcmp n d lo k
     (fun q m hm => hlit q m (by omega)) htn hk hk2 H (Sg := Sg) (c := c) (st := σ) (st' := s₇)
-    (A := A) hd hH' st.store.size
-    (nodup_scratch_node hbufs hlt (by simp; omega) (by simp; omega) (by simp)).1
+    (A := A) hH' st.store.size
+    (nodup_scratch_node hbufs hlt (by omega) (by omega) (by omega)).1
     (fun b hb => hl (by
       simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hb ⊢; tauto))
-    hcS (by refine ⟨?_, ?_, ?_⟩ <;> simp <;> omega) (by intro h; simp at h; omega)
-    (by intro h; simp at h; omega)
+    hcS ⟨by omega, by omega, by omega⟩ (fun h => by omega) (fun h => by omega)
     (fun i j t => (hlo _ _ _ (hlH _ (by simp [EighArenas.handles]))).trans
       ((hrd (hlH _ (by simp [EighArenas.handles]))).trans (hA i j t))) hPp hPm
     (fun w hw => (hlo _ _ _ lSg).trans ((hrd lSg).trans (hSg w hw)))
     ((hlo _ _ _ lc).trans htwoM) ((hlo _ _ _ lc).trans ((hrd lc).trans hc.2.2.2.2)) ht0 ht1 ht6
     (h := hσ)
-  have hs7 : s₇.store.size = st.store.size + 7 := by rw [Store.size_eq_of_shape_eq Bsh, hsz']
+  have hs7 : s₇.store.size = st.store.size + 7 := by
+    rw [Store.size_eq_of_shape_eq Bsh, Store.size_eq_of_shape_eq hsh, hsz₇]
   have hpop : ∀ {q : P} {b i : ℕ}, b < st.store.size →
       Store.read (Array.pop^[7] s₇.store) q b i = s₇.store.read q b i :=
     fun hb => read_pops_node 7 (by omega)
-  refine ⟨eighStep_holds_of_branch hk2 H hlH hpop hRtest ⟨B1, B2, B3⟩, fun q b i hW => ?_, ?_,
+  refine ⟨eighStep_holds_of_branch hk2 H hlH hpop hRtest hB, fun q b i hW => ?_, ?_,
     Bps.trans (hps.trans hσp)⟩
   · by_cases hb : b < st.store.size
     · exact (hpop hb).trans ((Bfr q b i hb (not_eighNodeWindow_of_eighStep hk2 hRtest hW)).trans
         ((hlo q b i hb).trans (hrd hb)))
     · exact (read_pops_eq_none hs7 (by omega)).trans (Store.read_eq_none_of_size_le (by omega)).symm
-  · change Store.shape (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop
-      (Array.pop s₇.store))))))) = _
-    simp only [Store.shape_pop, Bsh, hsh, hσs]
-    simp [Store.shape]
+  · exact hshape (Bsh.trans hsh)
 
 /-- The node step computes `NLAlib.eighStep`: let the kernels of `I` be the routines `mmR`,
 `qrR` on interleaved pairs and the semantics decide flags at `p`; let $M$ be the machine of the
@@ -782,7 +754,7 @@ theorem holds_of_exec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pair
     (n ℓ₀ F d lo k : ℕ) (hlit : IsExactIntLit dec I.sem (n + 2)) (htn : IsExactToNat dec I.sem)
     (hk : lo + k ≤ n) (hk2 : 2 ≤ k) (H : EighArenas)
     {par Su Sg c : ℕ} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} {R R₀ ε β : K}
-    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D)
+    {D : ℕ} (hH : H.Shaped st.store p n D)
     (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
     (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
     (hR : st.store.read p H.Lv (2 * d) = some R)
@@ -819,7 +791,7 @@ theorem holds_of_exec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pair
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   obtain ⟨hstep, hfr, hsh, hps⟩ := holds_of_exec_eighNodeBlock_frame hmm hqr p hflag hcmp n ℓ₀ F
-    d lo k hlit htn hk hk2 H hd hH hbufs hA hR hRtest hpar hSu hSg hc h
+    d lo k hlit htn hk hk2 H hH hbufs hA hR hRtest hpar hSu hSg hc h
   refine ⟨hstep, fun q b i h1 h2 => hfr q b i fun hW => ?_, hsh, hps⟩
   have hlok : n * (lo + k) ≤ n * n := Nat.mul_le_mul_left _ hk
   rcases hW with ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2⟩ | ⟨rfl, hi1, hi2, -⟩ | ⟨hb, rfl⟩
