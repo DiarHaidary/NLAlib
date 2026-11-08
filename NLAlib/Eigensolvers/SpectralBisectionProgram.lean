@@ -11,6 +11,7 @@ public import NLAlib.Eigensolvers.SpectralBisectionSamples.Lazy
 public import NLAlib.Eigensolvers.SpectralBisectionSamples.IdealMachine
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Count
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Weight
 
 /-!
 # Hermitian diagonalization in linear precision, for the program
@@ -25,7 +26,8 @@ writes `NLAlib.eigh` on the tape machine with the tree of sample positions at th
 ## Main results
 
 * `NLAlib.matrixFreeRoundedProbEigh`: the target `NLAlib.MatrixFreeRoundedProbEigh`, from the
-  shallow Theorem 4.2.
+  shallow Theorem 4.2 and the weighted kernel bound
+  `NLAlib.eighProg.weight_le_of_exec_compiled`.
 * `NLAlib.matrixFreeRoundedProb_eighProg_of_logb_le`: the bit count, from the shallow bit count.
 * `NLAlib.measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le`: a
   bounded binary format, from the shallow bounded-format theorem, for the runs that succeed.
@@ -56,7 +58,7 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
       simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
       nlinarith
     · simpa [inputState, hq] using h
-  intro N n _ x hpre I ρ hidx hI hρO _ Ω' _ μ ξ hξ
+  intro N n _ x hpre I ρ hidx hI hρO hch Ω' _ μ ξ hξ
   obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
   have hlit : IsExactIntLit dec I.sem (N + 4) := hidx.intLit
   have htn : IsExactToNat dec I.sem := hidx.toNat
@@ -100,7 +102,10 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
     x.ε x.β
   dsimp only at hH he
   rw [he] at hH
-  exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
+  refine hω ⟨st₀, hexec, ⟨_, _, hH.1, hH.2, hAD⟩, fun T hT hTs => ?_⟩
+  simpa [inputState] using eighProg.weight_le_of_exec_compiled
+    (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) (congrFun hch) p N ℓ F hlit htn T hT hTs
+    hexec
 
 /-- **The bit count of Hermitian diagonalization, for the program**: the registered tree
 `NLAlib.eighProg.compiled` meets the rounded probabilistic model at all sizes $N$ and
@@ -234,42 +239,92 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
   rw [he] at hH
   exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
 
+/-- The exponent-bit condition of the bounded format puts the smallest normal number
+$2^{e_{\min} + p - 1}$ at most $1/2$: it asks for at least $3$ exponent bits. -/
+private theorem floor_le_half_of_exponentBits_le (fmt : Float.Model.Format) {N ℓ : ℕ} {e θ : ℝ}
+    (he : 0 < e) (he₁ : e ≤ 2⁻¹ ^ 15) (hθ : 0 < θ) (hθ₁ : θ ≤ 1)
+    (hexp : Real.logb 2 (Real.logb 2 (1536 * (N + ℓ + 2) ^ 3 / (e * θ)) + 2) + 1 ≤
+      fmt.exponentBits) :
+    (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) ≤ 1 / 2 := by
+  have heθ : e * θ ≤ 1 := mul_le_one₀ (he₁.trans (by norm_num)) hθ.le hθ₁
+  have hM : (1 : ℝ) ≤ ((N : ℝ) + ℓ + 2) ^ 3 :=
+    one_le_pow₀ (by linarith [(Nat.cast_nonneg N : (0 : ℝ) ≤ N), (Nat.cast_nonneg ℓ : (0 : ℝ) ≤ ℓ)])
+  have hL : 4 ≤ 1536 * ((N : ℝ) + ℓ + 2) ^ 3 / (e * θ) := by
+    rw [le_div_iff₀ (mul_pos he hθ)]
+    nlinarith
+  have h1 : 2 ≤ Real.logb 2 (1536 * ((N : ℝ) + ℓ + 2) ^ 3 / (e * θ)) := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_two]
+    linarith
+  have h2 : 2 ≤ Real.logb 2 (Real.logb 2 (1536 * ((N : ℝ) + ℓ + 2) ^ 3 / (e * θ)) + 2) := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_two]
+    linarith
+  have hE3 : 3 ≤ fmt.exponentBits := by
+    have : (3 : ℝ) ≤ fmt.exponentBits := by linarith
+    exact_mod_cast this
+  have hτeq : fmt.minExponent + (fmt.mantissaBits : ℤ) - 1 =
+      -((2 : ℤ) ^ (fmt.exponentBits - 1) - 2) := by
+    simp only [Float.Model.Format.minExponent]; ring
+  have h4 : (4 : ℤ) ≤ 2 ^ (fmt.exponentBits - 1) :=
+    (show (4 : ℤ) = 2 ^ 2 by norm_num) ▸ pow_le_pow_right₀ (by norm_num) (by omega)
+  rw [hτeq]
+  calc (2 : ℝ) ^ (-((2 : ℤ) ^ (fmt.exponentBits - 1) - 2)) ≤ 2 ^ (-1 : ℤ) :=
+        zpow_le_zpow_right₀ one_le_two (by omega)
+    _ = 1 / 2 := by norm_num
+
+-- The proof names the general bounded-format theorem, longer than 100 characters.
+set_option linter.style.longLine false in
 /-- Hermitian diagonalization in a bounded binary format, for the runs of the program that succeed:
-let the kernels of `I` be routines on pairs, the semantics decide flags, with exact integer literals
-up to $N + 4$ and the exact floor conversion, and let the tape be a position-independent rounding
-$\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`. Suppose the ideal machine of the
-semantics, the routines and the samplers of $\rho$ meets `NLAlib.FloatMachine.IsAccurate` with the
-constants of a binary format with at least $2$ exponent bits (unit roundoff $2^{-p}$, floor
-$2^{e_{\min} + p - 1}$, range the largest finite number), kernel constants $\mu_{\mathrm{MM}}$,
-$\mu_{\mathrm{QR}}$ monotone and nonnegative and normal-sampler constant $c_{\mathrm N} \ge 0$, and
-its samplers have measurable fibres and countable ranges. If $N \ge 1$, the decoded matrix
-$\mathbf{A}$ is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $1/2 \le R_0 \le 1$, $0 < \varepsilon \le
-2^{-15}$, $0 < \theta \le 1$, $\ell$ is at least the bisection depth of $\varepsilon$, $\hat\beta/(1
-+ 2^{-6}) \le \beta \le \hat\beta$ with $\beta > 0$ for the bound $\hat\beta$ of the shallow
-theorem, the mantissa bits $p$ are at least $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
-O(\log n + \log\log(1/\varepsilon))$ and at least $\log_2(1/\beta)$ plus the logarithm of the error
-factor of the sign steps, the exponent bits are at least $\log_2(\log_2(1536(N + \ell +
-2)^3/(\varepsilon\theta)) + 2) + 1$ and the Newton–Schulz step count $N_{\mathrm{st}}$ is at most
-$F$, then the probability that the run succeeds and its output is not an approximate diagonalization
-with residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most
-$\theta$. Success under a bounded format (no operation out of range) is not claimed: it needs a
-range analysis of every operation of a run (design note, decision D6). No printed source. -/
+let `fmt` be a binary format with at least $2$ exponent bits, unit roundoff $u = 2^{-p}$ ($p$ the
+precision), floor $\tau = 2^{e_{\min} + p - 1}$ (the smallest normal number) and largest finite
+number $\Omega_F$. Let the semantics of `I` meet the floor model
+`NLAlib.Computation.IsFloorRelErrSem` at $u$, $\tau$ and the range condition
+$\lvert a\rvert \le \Omega_F$, with `NLAlib.Computation.MulShrinks`, exact integer literals up to
+$N + 4$ and the exact floor conversion, and decode every stored value at tag `p` into
+$[-\Omega_F, \Omega_F]$; let the kernels of `I` be routines on pairs meeting `NLAlib.IsMatMulErr`
+and `NLAlib.IsQRErr` at $u$, floor $\tau$ and range $\Omega_F/2$ with constants $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$ monotone and nonnegative; and let the tape be a position-independent rounding
+$\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`, meeting
+`NLAlib.Computation.IsTapeRounding` at $u$, floor $\tau$, range $\Omega_F$ and constants
+$c(d) \ge 0$ with $(c(\mathrm{gaussian}) + 3)u \le 1/10$, with countable ranges and measurable
+fibres. Let $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ (the uniform shift rounds a draw and a
+product) and $c_{\mathrm N} = 3(c(\mathrm{gaussian}) + 3)$. If $N \ge 1$, the decoded matrix
+$\mathbf{A}$ is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $1/2 \le R_0 \le 1$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $\ell$ is at least the bisection depth of
+$\varepsilon$, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$ with $\beta > 0$ for the bound
+$\hat\beta$ of the shallow theorem, $\log_2(1/u_{\mathrm M})$ is at least
+$\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n + \log\log(1/\varepsilon))$ and at
+least $\log_2(1/\beta)$ plus the logarithm of the error factor of the sign steps (with
+$c_{\mathrm N}$), the exponent bits are at least
+$\log_2(\log_2(1536(N + \ell + 2)^3/(\varepsilon\theta)) + 2) + 1$ and the Newton–Schulz step
+count $N_{\mathrm{st}}$ is at most $F$, then the probability that the run succeeds and its output is
+not an approximate diagonalization with residual $2\varepsilon R_0$ and singular values within
+$\varepsilon/3$ of $1$ is at most $\theta$. This bounds only the runs that succeed: success under
+a bounded format (no operation out of range) is not claimed, as it needs a range analysis of
+every operation of a run (design note, decision D6), so this is not [Shah2024, Theorem 4.2] end
+to end. No printed source. -/
 theorem measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le
     {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] (p : P) (mm qr : ι)
     {dec : P → K → ℝ} {I : Interp P ι K C} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
-    (hflag : I.sem.DecidesFlags p)
-    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
+    (fmt : Float.Model.Format) (hE : 2 ≤ fmt.exponentBits)
+    (hsem : IsFloorRelErrSem (fun _ => (2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      (fun _ => (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) dec
+      (fun _ a => |a| ≤ fmt.maxFinite) I.sem)
+    (hmul : MulShrinks dec I.sem) (hrange : ∀ x : K, |dec p x| ≤ fmt.maxFinite)
     {N ℓ F : ℕ} (hlit : IsExactIntLit dec I.sem (N + 4))
-    (htn : IsExactToNat dec I.sem) {ρ : Dist → ℕ → ℝ → K}
+    (htn : IsExactToNat dec I.sem) {μM μQ : ℕ → ℝ}
+    (hmmE : IsMatMulErr (decodeComplex (dec p)) ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) (fmt.maxFinite / 2) μM mmR)
+    (hqrE : IsQRErr (decodeComplex (dec p)) ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) (fmt.maxFinite / 2) μQ qrR)
+    {ρ : Dist → ℕ → ℝ → K} {c : Dist → ℝ}
+    (hρT : IsTapeRounding dec p ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite c ρ)
     (hρ : ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
-    (fmt : Float.Model.Format) (hE : 2 ≤ fmt.exponentBits) {cN : ℝ} {μM μQ : ℕ → ℝ}
-    (hM : (I.sem.toFloatMachine p (fun x => (I.sem.toNat p x).getD 0) mmR qrR
-      (I.sem.uniformUnif p (ρ .uniform 0)) (I.sem.gaussianNormal p (ρ .gaussian 0))).IsAccurate
-        (dec p) ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
-        ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite μM μQ cN)
     (hcountu : ∀ g : Dist, (Set.range (ρ g 0)).Countable ∧ ∀ z, MeasurableSet (ρ g 0 ⁻¹' {z}))
-    (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0) (hcN : 0 ≤ cN)
+    (hcu : 0 ≤ c .uniform) (hcg : 0 ≤ c .gaussian)
+    (hcgu : (c .gaussian + 3) * (2 : ℝ)⁻¹ ^ fmt.mantissaBits ≤ 1 / 10)
+    (hμM : Monotone μM) (hμQ : Monotone μQ) (hμM₀ : 0 ≤ μM 0) (hμQ₀ : 0 ≤ μQ 0)
     (hn : 1 ≤ N) {A : Matrix (Fin N) (Fin N) (K × K)} (hA : (decodeMatrix (dec p) A).IsHermitian)
     {R₀ ε β : K} {θ : ℝ} (hR₀ : specNorm (decodeMatrix (dec p) A) ≤ dec p R₀)
     (hR₀half : 1 / 2 ≤ dec p R₀) (hR₀one : dec p R₀ ≤ 1) (hε : 0 < dec p ε)
@@ -288,10 +343,11 @@ theorem measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_e
       1 / 2 * Real.logb 2 (N * min (N : ℝ) (ℓ + 1) * min (N : ℝ) (Real.exp 1)) +
       Real.logb 2 (2 * √2 * √(N : ℝ) + √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) +
       Real.logb 2 (ℓ * (ℓ + 1)) + Real.logb 2 ((ℓ : ℝ) ^ 2 * (2 * ℓ - 1) / ((ℓ : ℝ) - 1) ^ 2) +
-      13 ≤ fmt.mantissaBits)
+      13 ≤ Real.logb 2 ((c .uniform + 1) * (2 : ℝ)⁻¹ ^ fmt.mantissaBits)⁻¹)
     (hbits' : Real.logb 2 (dec p β)⁻¹ +
       Real.logb 2 (2048 * (N + Nst + 1) * (4 * μM N + 10 + 10 * √(N : ℝ)) +
-      16 * (4 * μQ N + 4 * √(N : ℝ) * (cN + 1) + 2 * μM N + 1)) ≤ fmt.mantissaBits)
+      16 * (4 * μQ N + 4 * √(N : ℝ) * (3 * (c .gaussian + 3) + 1) + 2 * μM N + 1)) ≤
+        Real.logb 2 ((c .uniform + 1) * (2 : ℝ)⁻¹ ^ fmt.mantissaBits)⁻¹)
     (hexp : Real.logb 2 (Real.logb 2 (1536 * (N + ℓ + 2) ^ 3 / (dec p ε * θ)) + 2) + 1 ≤
       fmt.exponentBits)
     (hfuel : Nst ≤ F) {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω}
@@ -304,6 +360,14 @@ theorem measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_e
           pairLayout.Holds st'.store p 2 0 U ∧ (∀ i : Fin N, st'.store.read p 3 i = some (d i)) ∧
           IsApproxDiagonalization (decodeMatrix (dec p) A) (decodeMatrix (dec p) U)
             (fun i => dec p (d i)) (2 * dec p ε * dec p R₀) (dec p ε / 3)} ≤ θ := by
+  have hu : (0 : ℝ) < (2 : ℝ)⁻¹ ^ fmt.mantissaBits := by positivity
+  have hΩ₁ : 1 ≤ fmt.maxFinite := by
+    obtain ⟨z, -, hz⟩ := hlit p 1 (by omega)
+    simpa [hz] using hrange z
+  have hτ := floor_le_half_of_exponentBits_le fmt hε hε₁ hθ hθ₁ hexp
+  have hM := isAccurate_eighIdealMachine_floor hsem (hlit.mono (by omega)) htn hmul p hrange
+    hmmE hqrE hρT (by linarith) hΩ₁ hu.le hτ hcu hcg hcgu
+    (fun d => hμM₀.trans (hμM (Nat.zero_le d))) (fun d => hμQ₀.trans (hμQ (Nat.zero_le d)))
   have hunif := countable_range_uniformUnif I.sem p (hcountu .uniform).1 (hcountu .uniform).2
   have hgauss := countable_range_gaussianNormal I.sem p (hcountu .gaussian).1 (hcountu .gaussian).2
   obtain ⟨hind, hlaw⟩ := iIndepFun_eighIdealTree (I.sem.toFloatMachine p
@@ -311,14 +375,22 @@ theorem measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_e
     (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1) R₀ β
     ⟨N, A, R₀, ε, ℓ⟩ le_rfl hξ
   have key :=
-    hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
-      fmt hE hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ hR₀half hR₀one
-      hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hbits' hexp hfuel hind hlaw
+    hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_logb_le_of_hasLaw_eighSampleLaw
+    fmt hE (by positivity) (by linarith) hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀
+    (by linarith) hn hA hR₀ hR₀half hR₀one hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hbits' hexp
+    hfuel hind hlaw
   have := hξ.isProbabilityMeasure
   refine le_trans (measureReal_mono (μ := μ) (fun ω hω => ?_) (measure_ne_top μ _)) key
   obtain ⟨st', hexec, hbad⟩ := hω
+  obtain ⟨z, o, hz, ho, hdz, hdo⟩ : ∃ z o : K, I.sem.lit p 0 = some z ∧ I.sem.lit p 1 = some o ∧
+      dec p z = 0 ∧ dec p o = 1 := by
+    obtain ⟨z, hz, hdz⟩ := hlit p 0 (by omega)
+    obtain ⟨o, ho, hdo⟩ := hlit p 1 (by omega)
+    exact ⟨z, o, by simpa using hz, by simpa using ho, by simpa using hdz, by simpa using hdo⟩
+  have hflag : I.sem.DecidesFlags p :=
+    ⟨z, o, hz, ho, by rw [hsem.cmp_eq p z o, hdz, hdo]; norm_num, by rw [hsem.cmp_eq p o o]; simp⟩
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
-    hmm hqr p hflag hcmp N ℓ F hlit htn A R₀ ε β hexec
+    hmm hqr p hflag (hsem.cmp_le p) N ℓ F hlit htn A R₀ ε β hexec
   have he := eigh_eighTapeMachine_eq_eigh_eighIdealTree I p mmR qrR ρ hρ (ξ ω) F ℓ A R₀ ε β
   dsimp only at hH he
   rw [he] at hH

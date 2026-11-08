@@ -20,10 +20,13 @@ The proofs of the targets `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` and
 `NLAlib.MatrixFreeRoundedProbDeflate`: the refinement theorems of the Newton–Schulz sign and
 deflation programs turn the shallow guarantees into guarantees about the registered trees. They use
 the accuracy of the Newton–Schulz sign algorithm, [Shah2024, Theorem 2.6]
-(`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`), its step
-count (`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`: the shallow test passes
-within $N_0 + 1$ steps, which the program needs for success), and the failure probability of
-deflation, [Shah2024, Theorem 3.3] (in `NLAlib/Eigensolvers/RandomizedDeflation.lean`).
+(`NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`),
+its step count (`NLAlib.FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate`: the
+shallow test passes within $N_0 + 1$ steps, which the program needs for success), and the failure
+probability of deflation, [Shah2024, Theorem 3.3] (in
+`NLAlib/Eigensolvers/RandomizedDeflation.lean`). Both need only the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` of the machine of the semantics, with the routines the
+program calls; the routines and samplers the program does not call are given arbitrary values.
 
 ## Main results
 
@@ -60,11 +63,14 @@ theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchul
   have hlit : IsExactIntLit dec I.sem 1 := hidx.intLit
   obtain ⟨A, ε, b⟩ := x
   obtain ⟨hherm, hu0, hμ, hΩ, hb, hε, hε₁, a, ha, hspec, hu, hF⟩ := hpre
-  obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, M₀, μM, μQ, cN, hM₀⟩ := hC
+  obtain ⟨hsem, mmR, hmmK, hmmE⟩ := hC
   have hN' : 0 < N := hN
-  set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR M₀.qr M₀.unif M₀.normal with hMdef
-  have hM : M.IsAccurate (dec p) u 0 Ω μ μQ cN := isAccurate_toFloatMachine Ω hsem hlit p
-    hmmE hM₀.isQRErr hM₀.isUnifSampler hM₀.isNormalSampler
+  -- the program uses neither the QR routine nor the samplers: any values serve
+  let qrR : QRMap (K × K) := fun A => (Matrix.of fun _ _ => default, A)
+  let unif : K → ℝ → K := fun s _ => s
+  let normal : ℂ → K × K := fun _ => default
+  set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR qrR unif normal with hMdef
+  have hM : M.IsArithAccurate (dec p) u 0 Ω μ := isArithAccurate_toFloatMachine Ω hsem hlit p hmmE
   -- the scale `b` is at least `a`, so positive
   have hx := hherm.eigenvalue_mem_spectrum (k := 0) (by simpa using hN')
   have hab : a ≤ dec p b :=
@@ -103,11 +109,11 @@ theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchul
     refine Set.eq_empty_of_forall_notMem fun ω hω => hω ?_
     rw [hn]
     obtain ⟨st', h⟩ := newtonSchulzSignProg.exists_exec_compiled (toNat := fun x => ⌊dec p x⌋₊)
-      (mmR := mmR) (qrR := M₀.qr) (unif := M₀.unif) (normal := M₀.normal)
+      (mmR := mmR) (qrR := qrR) (unif := unif) (normal := normal)
       (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmmK hsem hlit p hu1 N (n 0) hN' A ε b
       hb₀.ne' ⟨k, hkF, htest⟩
     refine ⟨st', h, _, newtonSchulzSignProg.holds_of_exec_compiled (toNat := fun x => ⌊dec p x⌋₊)
-      (mmR := mmR) (qrR := M₀.qr) (unif := M₀.unif) (normal := M₀.normal) hmmK p
+      (mmR := mmR) (qrR := qrR) (unif := unif) (normal := normal) hmmK p
       (hsem.decidesFlags hlit p) N (n 0) A ε b h, ?_⟩
     exact hM.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le hμ hu0 le_rfl (by simp)
       (by linarith) hherm ha hspec hb hε hε₁ hu (by
@@ -134,23 +140,25 @@ theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
   intro N n hr d hpre I ρ hidx hC hρ _ Ω' _ μ' ξ hξ
   have hlit : IsExactIntLit dec I.sem 2 := hidx.intLit
   obtain ⟨hU, hV, hS, hβ, hβ₁, ht, hx, hc, hu0, hcu, hmβ, hu, hΩ⟩ := hpre
-  obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, ⟨qrR, hqrK, hqrE⟩, M₀, μM₀, μQ₀, cN, hM₀⟩ := hC
+  obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, qrR, hqrK, hqrE⟩ := hC
   obtain ⟨⟨hρr, -⟩, hρi⟩ := hρ
   set ρg : ℝ → K := ρ .gaussian 0 with hρg
   have hlit1 : IsExactIntLit dec I.sem 1 := fun q j hj => hlit q j (hj.trans (by norm_num))
   have hρg' : ∀ y : ℝ, |y| ≤ 2 * Ω → |dec p (ρg y) - y| ≤ c * u * |y| := fun y hy => by
     have := hρr .gaussian 0 y hy
     rwa [max_eq_left (abs_nonneg y)] at this
-  set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR qrR M₀.unif
+  -- deflation uses no uniform sampler: any value serves
+  let unif : K → ℝ → K := fun s _ => s
+  set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR qrR unif
     (I.sem.gaussianNormal p ρg) with hMdef
-  have hM : M.IsAccurate (dec p) u 0 Ω μM μQ (2 * (c + 3)) := isAccurate_toFloatMachine Ω hsem
-    hlit1 p hmmE hqrE hM₀.isUnifSampler
-    (isNormalSampler_gaussianNormal hsem hlit p hρg' hc hu0 hcu)
+  have hM : M.IsArithAccurate (dec p) u 0 Ω μM := isArithAccurate_toFloatMachine Ω hsem hlit1 p hmmE
+  have hnormal : IsNormalSampler (decodeComplex (dec p)) u (2 * (c + 3)) 0 Ω M.normal :=
+    isNormalSampler_gaussianNormal hsem hlit p hρg' hc hu0 hcu
   have hG := hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw hξ N
   have : IsProbabilityMeasure μ' := hG.isProbabilityMeasure
   have hDP :=
     hM.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix
-    hr hU hV hS rfl hβ hβ₁ ht hx hmβ hu (by positivity) (by simpa using hx.le) hΩ hG
+    hqrE hnormal hr hU hV hS rfl hβ hβ₁ ht hx hmβ hu (by positivity) (by simpa using hx.le) hΩ hG
   have hu1 : u ≤ 1 := by nlinarith
   have hn : n = ![n 0] := by ext i; fin_cases i; rfl
   refine le_trans (measureReal_mono fun ω hω => ?_) hDP
@@ -161,7 +169,7 @@ theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
     (mmR := mmR) (qrR := qrR)
     (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmmK hqrK hsem hlit p hu1 N (n 0) d.A
   have hQ := deflateProg.holds_of_exec_compiled (toNat := fun x => ⌊dec p x⌋₊) (mmR := mmR)
-    (qrR := qrR) (unif := M₀.unif) (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
+    (qrR := qrR) (unif := unif) (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
     hmmK hqrK p N (n 0) d.A h
   have htape : (fun i => ρ .gaussian i (ξ ω .gaussian i)) = fun i => ρg (ξ ω .gaussian i) :=
     funext fun i => hρi .gaussian i 0 _
