@@ -54,6 +54,8 @@ statements" (F7, F10).
 * `NLAlib.Computation.MatrixFree`, `NLAlib.Computation.StoredEntries`: the models on programs.
 * `NLAlib.Computation.ProgFamily.MatrixFree`, `NLAlib.Computation.ProgFamily.StoredEntries`:
   the models on program families.
+* `NLAlib.Computation.MatrixFree.NonVacuous`, `NLAlib.Computation.StoredEntries.NonVacuous`: the
+  non-vacuity conditions of the models' targets (`scripts/Targets.lean`, item 7).
 
 ## Main results
 
@@ -221,7 +223,7 @@ theorem MatrixFree.prog {post : (N : ℕ) → (n : Fin r → ℕ) → X N n →
     (hc : ∀ N n, c.toStmt N n = F.inst N n) :
     Computation.MatrixFree p c valid X inputs cost mem post := by
   intro N n hv x A ξ
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
   exact h N n hv x A ξ
 
 /-- From a family to a program, stored entries: a stored-entries result for the program
@@ -235,10 +237,44 @@ theorem StoredEntries.prog {len : ℕ → (Fin r → ℕ) → ℕ}
     (hc : ∀ N n, c.toStmt N n = F.inst N n) :
     Computation.StoredEntries p c valid X inputs len cost mem post := by
   intro N n hv x vals ξ
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
   exact h N n hv x vals ξ
 
 end ProgFamily
+
+/-! ### Non-vacuity companions -/
+
+/-- **The non-vacuity condition of a matrix-free target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.MatrixFree`, there are sizes $N \ge N_0$ and $n$ satisfying `valid` at which
+the type of declared inputs `X N n` is inhabited. A non-vacuity witness of a registered target
+`∀ xs, MatrixFree a₁ … aₖ` is a theorem `∀ N₀, ∃ xs, MatrixFree.NonVacuous a₁ … aₖ N₀`
+(`scripts/Targets.lean`, item 7), so the target does not hold because its size condition or its
+inputs cannot be met at large sizes. The binders are those of `NLAlib.Computation.MatrixFree`,
+spelled out, then `N₀`; the program, the counts, the memory and the postcondition are not used. -/
+@[nolint unusedArguments]
+def MatrixFree.NonVacuous {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P] {r b : ℕ} (_p : P)
+    (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (_cost : ℕ → (Fin r → ℕ) → OpCount P ι) (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (_post : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → (Dist → ℕ → ℝ) →
+      St P 𝕜 (OpCount P ι) → Prop) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ Nonempty (X N n)
+
+/-- **The non-vacuity condition of a stored-entries target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.StoredEntries`, there are sizes $N \ge N_0$ and $n$ satisfying `valid` at
+which the type of declared inputs `X N n` is inhabited. The binders are those of
+`NLAlib.Computation.StoredEntries`, spelled out, then `N₀`. -/
+@[nolint unusedArguments]
+def StoredEntries.NonVacuous {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P] {r b : ℕ}
+    (_p : P) (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (_len : ℕ → (Fin r → ℕ) → ℕ) (_cost : ℕ → (Fin r → ℕ) → OpCount P ι)
+    (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (_post : (N : ℕ) → (n : Fin r → ℕ) → X N n → (ℕ → 𝕜) → (Dist → ℕ → ℝ) →
+      St P 𝕜 (OpCount P ι) → Prop) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ Nonempty (X N n)
 
 /-- A run under the exact interpretation of $\mathbf{A}$ that makes no oracle call (its load
 counts do not grow) is the same run under the exact interpretation of any other matrix

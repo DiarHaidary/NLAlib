@@ -410,7 +410,7 @@ theorem storedEntriesConjugateGradient : StoredEntriesConjugateGradient := by
       (fun i hi => by
         change (if i < N ^ 2 then some (vals i) else none) = some (vals i)
         exact if_pos (by simpa only [pow_two] using hi))
-  refine ⟨out, ?_, ?_, ?_, hpost⟩
+  refine ⟨by simp, out, ?_, ?_, ?_, hpost⟩
   · rw [Prog.exec_eq_exec_toStmt, hn, cgProg.toStmt_compiled]
     exact hrun
   · simpa only [inputState, zero_add] using hcnt
@@ -426,5 +426,31 @@ theorem storedEntriesConjugateGradient : StoredEntriesConjugateGradient := by
     · change out.peak p + (if p = tag then N ^ 2 else 0) ≤
         if p = tag then 2 * N ^ 2 + 5 * N + 11 else 0
       simpa only [if_neg hp, add_zero] using h
+
+/-- **The conjugate-gradient target is not vacuous**
+(`docs/design/Computation-Hardening.md`, §2.2): for every $N_0$ there are tags and oracle names
+(`Unit`) and sizes $N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type
+$\mathbb{R}^N$ inhabited (by the zero vector). The witness of
+`NLAlib.StoredEntriesConjugateGradient` (`scripts/Targets.lean`, item 7). No printed source. -/
+theorem storedEntriesConjugateGradient_nonVacuous : ∀ N₀ : ℕ,
+    ∃ (P ι : Type) (_ : DecidableEq P) (tag : P),
+    StoredEntries.NonVacuous (𝕜 := ℝ) tag (cgProg.compiled (ι := ι) tag)
+      (fun _ _ => True) (fun N _ => Fin N → ℝ)
+      (fun N _ b => ![(Array.ofFn b).map some, Array.replicate N none,
+        Array.replicate N none, Array.replicate N none, Array.replicate 1 none])
+      (fun N _ => N ^ 2) (fun N q => cgCount tag N (q 0))
+      (fun N _ p => if p = tag then 2 * N ^ 2 + 5 * N + 11 else 0)
+      (fun N q b vals _ st =>
+        let A : Matrix (Fin N) (Fin N) ℝ := fun i j => vals (i + N * j)
+        ∃ status : ℝ, st.store.read tag 4 0 = some status ∧
+          (status = 0 ∨ status = 1 ∨ status = -1) ∧
+          Holds st.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+          (A.PosDef →
+            Holds st.store tag 1 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).x i) ∧
+            Holds st.store tag 2 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).r i) ∧
+            Holds st.store tag 3 0 (fun i (_ : Fin 1) => (cgState A b 0 (q 0)).p i) ∧
+            (status = 1 ↔ (cgState A b 0 (q 0)).r = 0) ∧ status ≠ -1)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), N₀ + 1, fun _ => 1, Nat.le_succ N₀, trivial,
+    ⟨0⟩⟩
 
 end NLAlib

@@ -39,7 +39,23 @@ target statements", F1 and F12). This script checks, on the library built by `la
 5. (Q5) a target whose declared inputs are not `Array.replicate _ none` or built from the declared
    data carries the registry flag `precomputed` and the docstring marker `Precomputed:`;
 6. (Q3) `docs/targets.approved` holds the SHA-256 of `docs/targets.toml`
-   (`sha256sum docs/targets.toml > docs/targets.approved`, by the maintainer only).
+   (`sha256sum docs/targets.toml > docs/targets.approved`, by the maintainer only);
+7. (H2, `docs/design/Computation-Hardening.md` §2.2) every target names a **non-vacuity witness**
+   (`witness = "…"`): a theorem whose type is, syntactically up to reducible unfolding,
+   `∀ N₀ : ℕ, ∃ xs, M.NonVacuous a₁ … aₖ N₀` for the target `∀ xs, M a₁ … aₖ`, where
+   `M.NonVacuous` is the library companion of the model `M` (the size condition, the declared
+   inputs' type, the precondition, the contracts and the tape contract all met at some size
+   `N ≥ N₀`), so that no target holds because its hypotheses cannot be met;
+8. (H4) the counts and the memory of a target (the model arguments `cost` and `mem`) are closed
+   forms: neither they nor any definition they unfold to mention a registered tree or a
+   `StaticCost` definition;
+9. (H2) every model in `models` has a `[[model]]` table pinning, by closure hash, the model and
+   its companions (`requiredCompanions`: `M.NonVacuous`; a table may list more, such as
+   `MatrixFree.post_of_agreeOn`, the model's non-interference corollary),
+   so that an edit of a companion (a `NonVacuous` made `True`) needs the maintainer's approval;
+10. (H3) in a target of a model with a decoding argument `dec`, every contract predicate
+   (`contractPreds`) applied in the model's arguments takes a decoding that mentions the model's
+   `dec`.
 
 What is left trusted between a target and the code it is about: the emitter of the tree
 (`NLAlibTools/NumPy.lean`), which the guarantees do not cover (`docs/design/Computation.md`,
@@ -415,7 +431,126 @@ def unregisteredResults (env : Environment) (scope : Array (Name × ConstantInfo
 /-- The models on `Prog` a target concludes. -/
 def models : List Name :=
   [``NLAlib.Computation.MatrixFree, ``NLAlib.Computation.StoredEntries,
-   ``NLAlib.Computation.MatrixFreeProb]
+   ``NLAlib.Computation.MatrixFreeProb, ``NLAlib.Computation.MatrixFreeRoundedProb]
+
+/-- Item 7: the expected type of the non-vacuity witness of a target `∀ xs, M a₁ … aₖ`:
+`∀ N₀ : ℕ, ∃ xs, M.NonVacuous a₁ … aₖ N₀`. `M.NonVacuous` takes the binders of `M` and then
+`N₀`. -/
+def expectedWitness (tgt : Name) : MetaM Expr := do
+  let some (.defnInfo d) := (← getEnv).find? tgt | throwError "{tgt} is not a definition"
+  forallTelescope d.value fun xs concl => do
+    let concl ← instantiateMVars concl
+    let some m := models.find? concl.isAppOf | throwError "{tgt} does not conclude a model"
+    let .const _ us := concl.getAppFn | throwError "{tgt}: unexpected head"
+    let nv := m ++ `NonVacuous
+    unless (← getEnv).contains nv do throwError "the model {m} has no companion {nv}"
+    withLocalDeclD `N₀ (mkConst ``Nat) fun N₀ => do
+      let mut body := mkAppN (.const nv us) (concl.getAppArgs.push N₀)
+      try Meta.check body
+      catch _ => throwError "the binders of {nv} differ from those of {m} (spell out the {""
+        }instance binders of the model, then `N₀`)"
+      for x in xs.reverse do
+        body ← mkAppM ``Exists #[← mkLambdaFVars #[x] body]
+      mkForallFVars #[N₀] body
+
+/-- Item 7: `none` if `w` is a theorem of the expected witness type of `tgt`, else the reason. -/
+def witnessError (tgt w : Name) : MetaM (Option String) := do
+  let some (.thmInfo t) := (← getEnv).find? w | return some s!"{w} is not a theorem"
+  let e ← try expectedWitness tgt catch ex => return some s!"{← ex.toMessageData.toString}"
+  if ← withReducible (isDefEq t.type e) then return none
+  return some s!"{w} does not have the type {← ppExpr e}"
+
+/-- Item 8: the constants a term reaches through the values of the definitions it unfolds to (the
+library's and the current file's; Mathlib is not followed). -/
+def unfoldsTo (e : Expr) : MetaM (Array Name) := do
+  let env ← getEnv
+  let mut seen : NameSet := {}
+  let mut todo := e.getUsedConstants.toList
+  while !todo.isEmpty do
+    let c := todo.head!
+    todo := todo.tail!
+    if seen.contains c then continue
+    seen := seen.insert c
+    unless isLibConst env c || (env.getModuleIdxFor? c).isNone do continue
+    if let some v := (env.find? c).bind (·.value?) then todo := v.getUsedConstants.toList ++ todo
+  return seen.toArray
+
+/-- Item 8: the model arguments `cost` and `mem` of a target that mention a registered tree or a
+`StaticCost` definition (a cost stated as "whatever the tree costs"). -/
+def costErrors (tgt : Name) (trees : List Name) : MetaM (Array String) := do
+  let some (.defnInfo d) := (← getEnv).find? tgt | return #[]
+  forallTelescope d.value fun _ concl => do
+    let concl ← instantiateMVars concl
+    let some m := models.find? concl.isAppOf | return #[]
+    let names ← forallTelescope (← getConstInfo m).type fun ys _ =>
+      ys.mapM fun y => return (← y.fvarId!.getDecl).userName
+    let bad := trees ++ [``NLAlib.Computation.Prog.staticCost, ``NLAlib.Computation.FStmt.staticCost]
+    let mut out := #[]
+    for (n, a) in names.zip concl.getAppArgs do
+      if n == `cost || n == `mem then
+        if let some c := (← unfoldsTo a).find? (bad.contains ·) then
+          out := out.push s!"E3 target {tgt}: its `{n}` mentions {c}; counts and memory are {""
+            }closed forms in the sizes (H4)"
+    return out
+
+/-- Item 9: the companions every model in `models` must have, pinned with it by hash. A table may
+list more (`MatrixFree.post_of_agreeOn`, the non-interference corollary, which only the exact
+matrix-free model has so far). -/
+def requiredCompanions : List Name := [`NonVacuous]
+
+/-- Item 9: the hash of a model and its companions (the closure hashes of each, in order). -/
+def modelHash (m : Name) (companions : List Name) : MetaM String := do
+  let mut hs := #[]
+  for c in m :: companions.map (m ++ ·) do
+    hs := hs.push (← closureHash (← closure (fun _ => none) (fun _ => none) c))
+  sha256 ("\n".intercalate hs.toList)
+
+/-- Item 10: the contract predicates whose decoding argument (the binder named `dec`) must
+mention the model's `dec`. Names, so that a predicate of a later stage may be listed already. -/
+def contractPreds : List Name :=
+  [`NLAlib.Computation.IsRelErrSem, `NLAlib.Computation.IsArithErrSem,
+   `NLAlib.Computation.AddsZeroExactly, `NLAlib.Computation.IsExactIntLit,
+   `NLAlib.Computation.IsExactToNat, `NLAlib.Computation.MulShrinks,
+   `NLAlib.Computation.IsIndexExactSem, `NLAlib.Computation.IsTapeRounding,
+   `NLAlib.Computation.IsMatvecErr, `NLAlib.Computation.HoldsDecoded,
+   `NLAlib.IsMatMulErr, `NLAlib.IsQRErr, `NLAlib.FloatMachine.IsAccurate]
+
+/-- The applications in a term (under binders too). -/
+partial def apps (e : Expr) : Array Expr :=
+  match e with
+  | .app .. =>
+    let fn := e.getAppFn
+    (if fn.isConst then #[e] else apps fn) ++ e.getAppArgs.foldl (fun acc x => acc ++ apps x) #[]
+  | .lam _ t b _ | .forallE _ t b _ => apps t ++ apps b
+  | .letE _ t v b _ => apps t ++ apps v ++ apps b
+  | .mdata _ b | .proj _ _ b => apps b
+  | _ => #[]
+
+/-- Item 10: the contract applications in the arguments of a target's model whose decoding does
+not mention `dec`, the model's argument named `dec`. -/
+def decErrors (tgt : Name) : MetaM (Array String) := do
+  let some (.defnInfo d) := (← getEnv).find? tgt | return #[]
+  forallTelescope d.value fun _ concl => do
+    let concl ← instantiateMVars concl
+    let some m := models.find? concl.isAppOf | return #[]
+    let names ← forallTelescope (← getConstInfo m).type fun ys _ =>
+      ys.mapM fun y => return (← y.fvarId!.getDecl).userName
+    let args := concl.getAppArgs
+    let some dec := (names.zip args).find? (·.1 == `dec) |>.map (·.2) | return #[]
+    let mut out := #[]
+    for a in args do
+      if a == dec then continue
+      for e in apps a do
+        let .const f _ := e.getAppFn | continue
+        unless contractPreds.contains f do continue
+        let bs ← forallTelescope (← getConstInfo f).type fun ys _ =>
+          ys.mapM fun y => return (← y.fvarId!.getDecl).userName
+        let some i := bs.findIdx? (· == `dec) | continue
+        let some arg := e.getAppArgs[i]? | continue
+        unless (arg.find? (· == dec)).isSome do
+          out := out.push s!"E3 target {tgt}: {f} takes the decoding {← ppExpr arg}, not the {""
+            }model's `dec` (H3)"
+    return out
 
 /-- The entries of a vector literal `![a, b, …]`, or the term itself. -/
 partial def vecEntries (e : Expr) : List Expr :=
@@ -615,8 +750,11 @@ def registryHeader : Array String := #[
   "#             erased), normal_form (the hash's input, printed: proofs as TargetChecks.proofToken)",
   "# [[target]]  name, file (its *Targets.lean file), trees (the registered trees it names),",
   "#             precomputed (declared inputs computed from the sizes, Q5), reviewed (the date of",
-  "#             the maintainer's review), hash (the closure hash), statement (the target unfolded",
-  "#             one level, printed)"]
+  "#             the maintainer's review), witness (the non-vacuity theorem, H2), hash (the closure",
+  "#             hash), statement (the target unfolded one level, printed)",
+  "# [[model]]   a model of the targets: name, companions (its NonVacuous companion and, from",
+  "#             its non-interference corollary where it has one), hash (of the model and",
+  "#             companions)"]
 
 /-- Check the registry against the environment. `proofScope`: the constants that may prove a
 target; `resultScope`: the theorems lint item 2 reads. Returns the violations and the registry
@@ -690,6 +828,16 @@ def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × Cons
         errs := errs.push s!"E3 target {tgt} names {t}, which is not a registered tree"
       unless (info.value?.map (·.getUsedConstants.contains t.toName)).getD false do
         errs := errs.push s!"E3 target {tgt} lists the tree {t}, which its statement does not name"
+    -- item 7 (H2): the non-vacuity witness
+    match getStr tb.fields "witness" with
+    | "" => errs := errs.push s!"E3 target {tgt} names no non-vacuity witness {""
+        }(`witness = \"…\"`, a theorem `∀ N₀, ∃ …, M.NonVacuous … N₀`)"
+    | w => if let some e ← witnessError tgt w.toName then
+        errs := errs.push s!"E3 target {tgt}: witness {w}: {e}"
+    -- item 8 (H4): closed-form counts and memory
+    errs := errs ++ (← costErrors tgt (trees.map (·.toName)))
+    -- item 10 (H3): one decoding
+    errs := errs ++ (← decErrors tgt)
     -- item 3: the closure hash and the printed statement
     let cl ← closure override (nfs.get? ·) tgt
     unless cl.missing.isEmpty do
@@ -719,8 +867,36 @@ def checkRegistry (reg : Registry) (proofScope resultScope : Array (Name × Cons
   for tb in tables' do
     if tb.kind == "tree" && !used.contains (getStr tb.fields "name").toName then
       errs := errs.push s!"E3 registered tree {getStr tb.fields "name"} is named by no target"
-    unless tb.kind == "tree" || tb.kind == "target" do
+    unless tb.kind == "tree" || tb.kind == "target" || tb.kind == "model" do
       errs := errs.push s!"E3 the registry has a table [[{tb.kind}]]"
+  -- item 9 (H2): the models and their companions, pinned
+  let mut tables'' : Array Table := #[]
+  let mut pinned : NameSet := {}
+  for tb in tables' do
+    if tb.kind != "model" then tables'' := tables''.push tb; continue
+    let m := (getStr tb.fields "name").toName
+    pinned := pinned.insert m
+    let comps := (getList tb.fields "companions").map (·.toName)
+    for c in requiredCompanions do
+      unless comps.contains c do
+        errs := errs.push s!"E3 model {m}: its table does not list the companion {c}"
+    let mut ok := true
+    for c in comps do
+      unless env.contains (m ++ c) do
+        errs := errs.push s!"E3 model {m}: the companion {m ++ c} is not in the library"
+        ok := false
+    unless models.contains m do errs := errs.push s!"E3 [[model]] {m} is not a model of `models`"
+    if ok then
+      let h ← modelHash m comps
+      if h != getStr tb.fields "hash" then
+        errs := errs.push s!"E3 model {m}: hash {h} of the model and its companions, the {""
+          }registry has {getStr tb.fields "hash"}; a change needs the maintainer's approval"
+      tables'' := tables''.push { tb with fields := setField tb.fields "hash" (.str h) }
+    else tables'' := tables''.push tb
+  for m in models do
+    unless pinned.contains m do
+      errs := errs.push s!"E3 the model {m} has no [[model]] table (name, companions, hash)"
+  tables' := tables''
   -- item 2: results about runs prove registered targets
   let targets := tables'.filterMap fun tb =>
     if tb.kind == "target" then some (getStr tb.fields "name").toName else none
@@ -741,7 +917,10 @@ def libConsts (env : Environment) : Array (Name × ConstantInfo) := Id.run do
 
 end TargetChecks
 
+-- The registered tree `NLAlib.eighProg.compiled` (stage COMPDYN S2) is deep enough that reducing
+-- and hashing it exceeds the default recursion depth (512); the bound is raised for the check only.
 open TargetChecks in
+set_option maxRecDepth 100000 in
 run_cmd do
   let env ← getEnv
   let path := (← IO.getEnv "TARGETS_REGISTRY").getD "docs/targets.toml"
@@ -852,7 +1031,7 @@ theorem matrixFree_sizeTraceProg :
       (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => 0)
       (fun _ _ _ => 1) (fun N n _ A _ st => n 0 = N → A.trace = 0 → st = st) := by
   intro N n _ x A ξ
-  refine ⟨_, rfl, le_rfl, fun _ => ?_, fun _ _ => rfl⟩
+  refine ⟨by simp, _, rfl, le_rfl, fun _ => ?_, fun _ _ => rfl⟩
   simp [inputState, exactInterp]
 
 /-- Audit 2, a claim phrased through `exec` (`exec_copyTrace`).
@@ -948,7 +1127,7 @@ class RunsFast (prog : Prog Unit Unit 1 1) : Prop where
 Result: fixture-instance -/
 instance runsFastSkip : RunsFast (.skip : Prog Unit Unit 1 1) := ⟨by
   intro N n _ x A ξ
-  refine ⟨_, rfl, le_rfl, fun _ => ?_, trivial⟩
+  refine ⟨by simp, _, rfl, le_rfl, fun _ => ?_, trivial⟩
   simp [inputState, exactInterp]⟩
 
 /-- A target of the prover's with a result id: a definition of type `Prop` that unfolds to a
@@ -959,6 +1138,69 @@ def FixPropDef : Prop := FixHutchpp
 
 /-- A definition with a proof inside (item 3: an edit of the proof leaves the hash). -/
 def finOne : Fin 2 := ⟨1, by decide⟩
+
+/-- Item 7: the non-vacuity witness of `FixHutchpp`. -/
+theorem fixHutchpp_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P) (p : P) (o : ι)
+    (d : Dist) (𝕜 : Type) (_ : RCLike 𝕜),
+    MatrixFree.NonVacuous (𝕜 := 𝕜) p (hppC p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun N n _ A ξ st => st.store.read p 0 0 = some
+        (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1)))) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), .gaussian, ℝ, inferInstance, N₀, fun _ => 1,
+    le_rfl, Nat.one_pos, ⟨()⟩⟩
+
+/-- Item 7: a "witness" of the wrong statement (at a fixed size, not above every `N₀`). -/
+theorem fixHutchpp_atOne : ∃ (P ι : Type) (_ : DecidableEq P) (p : P) (o : ι)
+    (d : Dist) (𝕜 : Type) (_ : RCLike 𝕜),
+    MatrixFree.NonVacuous (𝕜 := 𝕜) p (hppC p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun N n _ A ξ st => st.store.read p 0 0 = some
+        (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1)))) 1 :=
+  ⟨Unit, Unit, inferInstance, (), (), .gaussian, ℝ, inferInstance, 1, fun _ => 1,
+    le_rfl, Nat.one_pos, ⟨()⟩⟩
+
+/-- Item 7 (H2): a rounded target whose contracts cannot be met. It holds of every program and
+every postcondition (`fixVacuousRounded`), and only its missing witness detects it. -/
+def FixVacuousRounded : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P),
+    MatrixFreeRoundedProb (ι := ι) (K := ℝ) p (.skip : Prog P ι 0 1) (fun _ _ => True)
+      (fun _ _ => Unit) (fun _ _ _ _ => #[]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0)
+      (fun _ _ _ => 0) (fun _ _ _ => False) (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ _ _ => False) (fun _ _ _ => 0)
+
+/-- Its proof: the contracts are `False`. -/
+theorem fixVacuousRounded : FixVacuousRounded := fun _ _ _ _ _ _ _ _ _ _ _ _ hI => hI.elim
+
+/-- Item 8 (H4): the tree's static count behind a definition. -/
+noncomputable def treeCount (p : P) (o : ι) (d : Dist) (N : ℕ) (n : Fin 2 → ℕ) [DecidableEq P] :
+    OpCount P ι :=
+  ((hppC p o d).staticCost (fun k => Finsupp.single k 1) (fun _ => 0) N n).count
+
+/-- Item 8 (H4): a target whose count is the tree's static count, one definition away. -/
+def FixIndirectCost : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist),
+    MatrixFree (𝕜 := ℝ) p (hppC p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => treeCount p o d N n)
+      (fun _ _ _ => 0) (fun _ _ _ _ _ _ => True)
+
+/-- Item 10 (H3): a rounded target whose contract takes another decoding than `dec`. -/
+def FixTwoDecodings : Prop :=
+  ∀ (P : Type) [DecidableEq P] (p : P) (dec dec' : P → ℝ → ℝ),
+    MatrixFreeRoundedProb (ι := Unit) (K := ℝ) p (.skip : Prog P Unit 0 1) (fun _ _ => True)
+      (fun _ _ => Unit) (fun _ _ _ _ => #[]) dec (fun _ _ => 0) (fun _ _ => 0) (fun _ _ _ => 0)
+      (fun _ _ I => IsRelErrSem (fun _ => 0) dec (fun _ _ => True) I.sem ∧
+        IsExactIntLit dec' I.sem 1) (fun _ => True) (fun _ _ _ => True)
+      (fun _ _ _ _ => True) (fun _ _ _ => 0)
+
+/-- Item 8 (H4): a target whose count is "whatever the tree costs". -/
+def FixTreeCost : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist),
+    MatrixFree (𝕜 := ℝ) p (hppC p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => ((hppC p o d).staticCost (fun k => Finsupp.single k 1) (fun _ => 0) N n).count)
+      (fun _ _ _ => 0) (fun _ _ _ _ _ _ => True)
 
 end TargetFixtures
 
@@ -1068,7 +1310,12 @@ run_cmd do
   let text := "# fixture\ntoolchain = \"\"\nmathlib = \"\"\n\n[[tree]]\nname = \
     \"TargetFixtures.hppC\"\nhash = \"\"\n\n[[target]]\nname = \"TargetFixtures.FixHutchpp\"\n\
     file = \"\"\ntrees = [\"TargetFixtures.hppC\"]\nprecomputed = []\nreviewed = \"2026-10-23\"\n\
-    hash = \"\"\nstatement = '''\n'''\n"
+    witness = \"TargetFixtures.fixHutchpp_nonVacuous\"\nhash = \"\"\nstatement = '''\n'''\n\
+    \n[[model]]\nname = \"NLAlib.Computation.MatrixFree\"\ncompanions = [\"NonVacuous\"]\nhash = \"\"\n\
+    \n[[model]]\nname = \"NLAlib.Computation.StoredEntries\"\ncompanions = [\"NonVacuous\"]\nhash = \"\"\n\
+    \n[[model]]\nname = \"NLAlib.Computation.MatrixFreeProb\"\ncompanions = [\"NonVacuous\"]\nhash = \"\"\n\
+    \n[[model]]\nname = \"NLAlib.Computation.MatrixFreeRoundedProb\"\ncompanions = [\"NonVacuous\"]\n\
+    hash = \"\"\n"
   let .ok reg := parseRegistry text | throwError "the fixture registry does not parse"
   let (_, reg₁) ← liftTermElabM <| checkRegistry reg here here pins
   let .ok reg₂ := parseRegistry reg₁.render | throwError "the written registry does not parse"
@@ -1081,9 +1328,56 @@ run_cmd do
   let errs := errs.filter fun e => !(e.splitOn "Result:").length > 1
   unless errs.isEmpty do fail m!"the updated fixture registry fails: {errs}"
   let reg₃ := { reg₂ with tables := reg₂.tables.map fun tb =>
-    { tb with fields := setField tb.fields "hash" (.str "0") } }
+    if tb.kind == "model" then tb else { tb with fields := setField tb.fields "hash" (.str "0") } }
   let (errs, _) ← liftTermElabM <| checkRegistry reg₃ here here pins
   unless (errs.filter fun e => (e.splitOn "hash").length > 1).size == 2 do
     fail m!"a tampered registry passes: {errs}"
   logInfo m!"registry: --update round trip checks; an axiom beside the proof, a tampered tree {""
     }hash and a tampered target hash detected"
+  -- item 7 (H2): the non-vacuity witness
+  if let some e ← liftTermElabM (witnessError F ``TargetFixtures.fixHutchpp_nonVacuous) then
+    fail m!"the witness of FixHutchpp is rejected: {e}"
+  if (← liftTermElabM (witnessError F ``TargetFixtures.fixHutchpp_atOne)).isNone then
+    fail m!"a witness at one size only is accepted"
+  if (← liftTermElabM (witnessError F ``TargetFixtures.fixHutchpp)).isNone then
+    fail m!"the target's proof is accepted as its witness"
+  let reg₄ := { reg₂ with tables := reg₂.tables.map fun tb =>
+    { tb with fields := setField tb.fields "witness" (.str "") } }
+  let (errs, _) ← liftTermElabM <| checkRegistry reg₄ here here pins
+  unless errs.any (fun e => (e.splitOn "names no non-vacuity witness").length > 1) do
+    fail m!"a target without a witness passes: {errs}"
+  if (← liftTermElabM (witnessError ``TargetFixtures.FixVacuousRounded
+      ``TargetFixtures.fixVacuousRounded)).isNone then
+    fail m!"the proof of a vacuous rounded target is accepted as its witness"
+  logInfo m!"item 7: the witness of FixHutchpp accepted; a witness at one size, the proof of the {""
+    }target and a missing witness rejected; FixVacuousRounded has no witness"
+  -- item 8 (H4): closed-form counts
+  let ce ← liftTermElabM <| costErrors ``TargetFixtures.FixTreeCost [``TargetFixtures.hppC]
+  if ce.size != 1 then fail m!"a count stated by the tree is not detected: {ce}"
+  unless (← liftTermElabM <| costErrors F [``TargetFixtures.hppC]).isEmpty do
+    fail m!"the closed-form count of FixHutchpp is rejected"
+  let ce ← liftTermElabM <| costErrors ``TargetFixtures.FixIndirectCost [``TargetFixtures.hppC]
+  if ce.size != 1 then fail m!"a count stated by the tree behind a definition is not detected: {ce}"
+  logInfo m!"item 8: a count stated as the tree's static cost, directly and behind a definition, {""
+    }detected"
+  -- item 9 (H2): the models and their companions, pinned
+  let reg₅ := { reg₂ with tables := reg₂.tables.map fun tb =>
+    if tb.kind == "model" then { tb with fields := setField tb.fields "hash" (.str "0") } else tb }
+  let (errs, _) ← liftTermElabM <| checkRegistry reg₅ here here pins
+  unless (errs.filter fun e => (e.splitOn "of the model and its companions").length > 1).size == 4
+  do fail m!"a tampered model hash passes: {errs}"
+  let reg₆ := { reg₂ with tables := reg₂.tables.filter (·.kind != "model") }
+  let (errs, _) ← liftTermElabM <| checkRegistry reg₆ here here pins
+  unless (errs.filter fun e => (e.splitOn "has no [[model]] table").length > 1).size == 4 do
+    fail m!"a model without its table passes: {errs}"
+  let reg₇ := { reg₂ with tables := reg₂.tables.map fun tb =>
+    if tb.kind == "model" then { tb with fields := setField tb.fields "companions" (.list []) }
+    else tb }
+  let (errs, _) ← liftTermElabM <| checkRegistry reg₇ here here pins
+  unless (errs.filter fun e => (e.splitOn "does not list the companion").length > 1).size == 4 do
+    fail m!"a model table without its companion passes: {errs}"
+  logInfo "item 9: a tampered model hash, a missing model table and a missing companion detected"
+  -- item 10 (H3): one decoding
+  let de ← liftTermElabM <| decErrors ``TargetFixtures.FixTwoDecodings
+  if de.size != 1 then fail m!"a contract at another decoding is not detected: {de}"
+  logInfo "item 10: a contract at another decoding than `dec` detected"

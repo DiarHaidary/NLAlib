@@ -33,6 +33,15 @@ Design: `docs/design/Computation.md` (D13, D17, §4).
   `NLAlib.Computation.rscl`, `NLAlib.Computation.copyv`, `NLAlib.Computation.nrm2`.
 * Levels 2 and 3: `NLAlib.Computation.gemv`, `NLAlib.Computation.ger`,
   `NLAlib.Computation.gemm`, and the triangular solve `NLAlib.Computation.trsvLower`.
+* Complex kernels on interleaved pairs (index `NLAlib.Computation.zidx`):
+  `NLAlib.Computation.zcopy`, `NLAlib.Computation.zzero`, `NLAlib.Computation.zidentity`,
+  `NLAlib.Computation.zneg`, `NLAlib.Computation.zadd`, `NLAlib.Computation.zsub`,
+  `NLAlib.Computation.zscal`, `NLAlib.Computation.zconjTranspose`,
+  `NLAlib.Computation.zmirror`, `NLAlib.Computation.zhermShift`,
+  `NLAlib.Computation.zhermScale`, `NLAlib.Computation.zhermAvg`,
+  `NLAlib.Computation.ztraceRe`, `NLAlib.Computation.zboxTest`. Their specifications against a
+  floating-point machine are in the design note `docs/design/Computation-SignDeflatePrograms.md`
+  (stage COMPDYN S1c).
 
 ## Main results
 
@@ -148,6 +157,169 @@ def trsvLower (p : P) (n : IExp VI) (T : VB) (tOff : IExp VI) (x : VB) (xo : IEx
         ins (.bin p .mul ⟨t, 0⟩ ⟨T, tOff + .var i + n * .var j⟩ ⟨x, xo + .var j⟩)
         ins (.bin p .sub ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨t, 0⟩)
       ins (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩ ⟨T, tOff + .var i + n * .var i⟩)
+
+/-! ### Complex kernels on interleaved pairs
+
+A complex $m \times n$ matrix is stored as interleaved pairs of real words, column-major and
+packed: the real part of entry $(i, j)$ at word $2(i + mj)$ from the offset and the imaginary
+part at the next word (`NLAlib.Computation.zidx`), as in BLAS, LAPACK and NumPy `complex128`.
+Every complex kernel is written over real instructions, so its rounding is componentwise, one
+rounding per real operation. The Hermitian kernels compute the strict upper triangle and the
+real diagonal, write a zero imaginary part on the diagonal, and complete the lower triangle from
+the stored upper triangle by a copy and a negation (`NLAlib.Computation.zmirror`). -/
+
+/-- The word offset $2(i + mj)$ of the real part of entry $(i, j)$ of a complex matrix with $m$
+rows stored as interleaved pairs; the imaginary part is the next word. -/
+def zidx (m i j : IExp VI) : IExp VI := 2 * (i + m * j)
+
+/-- `zcopy`: $\mathbf{Y} \leftarrow \mathbf{X}$ for complex $m \times n$ matrices, word by word. -/
+def zcopy (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (Y : VB) (yo : IExp VI) :
+    Builder P ι VB VI Unit :=
+  named "zcopy" [.idx m, .idx n, .buf X, .idx xo, .buf Y, .idx yo] do
+    forRange (2 * (m * n)) fun w => ins (.copy p ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)
+
+/-- `zzero`: $\mathbf{Y} \leftarrow \mathbf{0}$ for a complex $m \times n$ matrix (the literal
+$0$ in every word). -/
+def zzero (p : P) (m n : IExp VI) (Y : VB) (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zzero" [.idx m, .idx n, .buf Y, .idx yo] do
+    forRange (2 * (m * n)) fun w => ins (.lit p ⟨Y, yo + .var w⟩ 0)
+
+/-- `zidentity`: $\mathbf{Y} \leftarrow \mathbf{I}$ for a complex $n \times n$ matrix: the literal
+$0$ in every word, then the literal $1$ in the real part of each diagonal entry. -/
+def zidentity (p : P) (n : IExp VI) (Y : VB) (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zidentity" [.idx n, .buf Y, .idx yo] do
+    forRange (2 * (n * n)) fun w => ins (.lit p ⟨Y, yo + .var w⟩ 0)
+    forRange n fun i => ins (.lit p ⟨Y, yo + zidx n (.var i) (.var i)⟩ 1)
+
+/-- `zneg`: $\mathbf{Y} \leftarrow -\mathbf{X}$ for complex $m \times n$ matrices, word by word
+(both parts negated). In place allowed. -/
+def zneg (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (Y : VB) (yo : IExp VI) :
+    Builder P ι VB VI Unit :=
+  named "zneg" [.idx m, .idx n, .buf X, .idx xo, .buf Y, .idx yo] do
+    forRange (2 * (m * n)) fun w => ins (.un p .neg ⟨Y, yo + .var w⟩ ⟨X, xo + .var w⟩)
+
+/-- `zadd`: $\mathbf{Z} \leftarrow \mathbf{X} + \mathbf{Y}$ for complex $m \times n$ matrices,
+word by word (real and imaginary parts added separately). In place allowed. -/
+def zadd (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (Y : VB) (yo : IExp VI) (Z : VB)
+    (zo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zadd" [.idx m, .idx n, .buf X, .idx xo, .buf Y, .idx yo, .buf Z, .idx zo] do
+    forRange (2 * (m * n)) fun w =>
+      ins (.bin p .add ⟨Z, zo + .var w⟩ ⟨X, xo + .var w⟩ ⟨Y, yo + .var w⟩)
+
+/-- `zsub`: $\mathbf{Z} \leftarrow \mathbf{X} - \mathbf{Y}$ for complex $m \times n$ matrices,
+word by word. In place allowed. -/
+def zsub (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (Y : VB) (yo : IExp VI) (Z : VB)
+    (zo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zsub" [.idx m, .idx n, .buf X, .idx xo, .buf Y, .idx yo, .buf Z, .idx zo] do
+    forRange (2 * (m * n)) fun w =>
+      ins (.bin p .sub ⟨Z, zo + .var w⟩ ⟨X, xo + .var w⟩ ⟨Y, yo + .var w⟩)
+
+/-- `zscal`: $\mathbf{Y} \leftarrow a\mathbf{X}$ for a stored real $a$ and complex $m \times n$
+matrices, word by word ($a$ times each part). In place allowed. -/
+def zscal (p : P) (m n : IExp VI) (a : Cell VB VI) (X : VB) (xo : IExp VI) (Y : VB)
+    (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zscal" [.idx m, .idx n, .cell a, .buf X, .idx xo, .buf Y, .idx yo] do
+    forRange (2 * (m * n)) fun w => ins (.bin p .mul ⟨Y, yo + .var w⟩ a ⟨X, xo + .var w⟩)
+
+/-- `zconjTranspose`: $\mathbf{Y} \leftarrow \mathbf{X}^{\mathsf{H}}$ for a complex $m \times n$
+matrix $\mathbf{X}$ and the $n \times m$ matrix $\mathbf{Y}$: the real part copied, the
+imaginary part negated. Out of place. -/
+def zconjTranspose (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (Y : VB) (yo : IExp VI) :
+    Builder P ι VB VI Unit :=
+  named "zconjTranspose" [.idx m, .idx n, .buf X, .idx xo, .buf Y, .idx yo] do
+    forRange m fun j => forRange n fun i => do
+      ins (.copy p ⟨Y, yo + zidx n (.var i) (.var j)⟩ ⟨X, xo + zidx m (.var j) (.var i)⟩)
+      ins (.un p .neg ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩
+        ⟨X, xo + zidx m (.var j) (.var i) + 1⟩)
+
+/-- `zmirror`: the lower triangle of a complex $n \times n$ matrix $\mathbf{Y}$ from its strict
+upper triangle, $y_{ji} \leftarrow \bar y_{ij}$ for $i < j$ (the real part copied, the imaginary
+part negated), in place. -/
+def zmirror (p : P) (n : IExp VI) (Y : VB) (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zmirror" [.idx n, .buf Y, .idx yo] do
+    forRange n fun j => forRange (.var j) fun i => do
+      ins (.copy p ⟨Y, yo + zidx n (.var j) (.var i)⟩ ⟨Y, yo + zidx n (.var i) (.var j)⟩)
+      ins (.un p .neg ⟨Y, yo + zidx n (.var j) (.var i) + 1⟩
+        ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩)
+
+/-- `zhermShift`: $\mathbf{Y} \leftarrow \mathbf{X} - c\mathbf{I}$ stored Hermitian, for complex
+$n \times n$ matrices and a stored real $c$: the strict upper triangle copied, the diagonal real
+parts $\mathrm{fl}(\operatorname{Re} x_{ii} - c)$, the diagonal imaginary parts the literal $0$,
+the lower triangle mirrored (`NLAlib.Computation.zmirror`). Out of place. -/
+def zhermShift (p : P) (n : IExp VI) (X : VB) (xo : IExp VI) (c : Cell VB VI) (Y : VB)
+    (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zhermShift" [.idx n, .buf X, .idx xo, .cell c, .buf Y, .idx yo] do
+    forRange n fun j => forRange (.var j) fun i => do
+      ins (.copy p ⟨Y, yo + zidx n (.var i) (.var j)⟩ ⟨X, xo + zidx n (.var i) (.var j)⟩)
+      ins (.copy p ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩
+        ⟨X, xo + zidx n (.var i) (.var j) + 1⟩)
+    forRange n fun i => do
+      ins (.bin p .sub ⟨Y, yo + zidx n (.var i) (.var i)⟩ ⟨X, xo + zidx n (.var i) (.var i)⟩ c)
+      ins (.lit p ⟨Y, yo + zidx n (.var i) (.var i) + 1⟩ 0)
+    zmirror p n Y yo
+
+/-- `zhermScale`: $\mathbf{Y} \leftarrow \mathbf{X}/c$ stored Hermitian, for complex $n \times n$
+matrices and a stored real $c$: both parts of the strict upper triangle and the diagonal real
+parts divided by $c$, the diagonal imaginary parts the literal $0$, the lower triangle mirrored.
+Out of place. -/
+def zhermScale (p : P) (n : IExp VI) (X : VB) (xo : IExp VI) (c : Cell VB VI) (Y : VB)
+    (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zhermScale" [.idx n, .buf X, .idx xo, .cell c, .buf Y, .idx yo] do
+    forRange n fun j => forRange (.var j) fun i => do
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var j)⟩ ⟨X, xo + zidx n (.var i) (.var j)⟩ c)
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩
+        ⟨X, xo + zidx n (.var i) (.var j) + 1⟩ c)
+    forRange n fun i => do
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var i)⟩ ⟨X, xo + zidx n (.var i) (.var i)⟩ c)
+      ins (.lit p ⟨Y, yo + zidx n (.var i) (.var i) + 1⟩ 0)
+    zmirror p n Y yo
+
+/-- `zhermAvg`: $\mathbf{Y} \leftarrow (\mathbf{X} + \mathbf{X}^{\mathsf{H}})/c$ stored
+Hermitian, for complex $n \times n$ matrices and a stored real $c$: on the strict upper triangle
+$\mathrm{fl}(\mathrm{fl}(\operatorname{Re} x_{ij} + \operatorname{Re} x_{ji})/c)$ and
+$\mathrm{fl}(\mathrm{fl}(\operatorname{Im} x_{ij} - \operatorname{Im} x_{ji})/c)$, on the
+diagonal $\mathrm{fl}(\mathrm{fl}(\operatorname{Re} x_{ii} + \operatorname{Re} x_{ii})/c)$ and the
+literal $0$, the lower triangle mirrored. Out of place. -/
+def zhermAvg (p : P) (n : IExp VI) (X : VB) (xo : IExp VI) (c : Cell VB VI) (Y : VB)
+    (yo : IExp VI) : Builder P ι VB VI Unit :=
+  named "zhermAvg" [.idx n, .buf X, .idx xo, .cell c, .buf Y, .idx yo] do
+    forRange n fun j => forRange (.var j) fun i => do
+      ins (.bin p .add ⟨Y, yo + zidx n (.var i) (.var j)⟩ ⟨X, xo + zidx n (.var i) (.var j)⟩
+        ⟨X, xo + zidx n (.var j) (.var i)⟩)
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var j)⟩ ⟨Y, yo + zidx n (.var i) (.var j)⟩ c)
+      ins (.bin p .sub ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩
+        ⟨X, xo + zidx n (.var i) (.var j) + 1⟩ ⟨X, xo + zidx n (.var j) (.var i) + 1⟩)
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩
+        ⟨Y, yo + zidx n (.var i) (.var j) + 1⟩ c)
+    forRange n fun i => do
+      ins (.bin p .add ⟨Y, yo + zidx n (.var i) (.var i)⟩ ⟨X, xo + zidx n (.var i) (.var i)⟩
+        ⟨X, xo + zidx n (.var i) (.var i)⟩)
+      ins (.bin p .div ⟨Y, yo + zidx n (.var i) (.var i)⟩ ⟨Y, yo + zidx n (.var i) (.var i)⟩ c)
+      ins (.lit p ⟨Y, yo + zidx n (.var i) (.var i) + 1⟩ 0)
+    zmirror p n Y yo
+
+/-- `ztraceRe`: $\mathit{dst} \leftarrow \sum_i \operatorname{Re} x_{ii}$ for a complex
+$n \times n$ matrix, rounded from the left: the literal $0$, then
+$\mathit{dst} \leftarrow \mathrm{fl}(\mathit{dst} + \operatorname{Re} x_{ii})$ for
+$i = 0, \ldots, n - 1$. -/
+def ztraceRe (p : P) (n : IExp VI) (X : VB) (xo : IExp VI) (dst : Cell VB VI) :
+    Builder P ι VB VI Unit :=
+  named "ztraceRe" [.idx n, .buf X, .idx xo, .cell dst] do
+    ins (.lit p dst 0)
+    forRange n fun i => ins (.bin p .add dst dst ⟨X, xo + zidx n (.var i) (.var i)⟩)
+
+/-- `zboxTest`: the max-modulus test of the parts of a complex $m \times n$ matrix,
+$\mathit{flag} \leftarrow 0$ if every real and imaginary part $t$ satisfies
+$\mathit{lo} \le t \le \mathit{hi}$
+(two comparisons per word) and $1$ otherwise, the flag a literal. -/
+def zboxTest (p : P) (m n : IExp VI) (X : VB) (xo : IExp VI) (lo hi flag : Cell VB VI) :
+    Builder P ι VB VI Unit :=
+  named "zboxTest" [.idx m, .idx n, .buf X, .idx xo, .cell lo, .cell hi, .cell flag] do
+    ins (.lit p flag 0)
+    forRange (2 * (m * n)) fun w =>
+      ifThenElse p .le lo ⟨X, xo + .var w⟩
+        (ifThenElse p .le ⟨X, xo + .var w⟩ hi (pure ()) (ins (.lit p flag 1)))
+        (ins (.lit p flag 1))
 
 end Kernels
 

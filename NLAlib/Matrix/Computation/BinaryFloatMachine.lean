@@ -37,6 +37,8 @@ the sampling analysis of `NLAlib.eigh` applies.
 
 * `NLAlib.isAccurate_binaryFloatMachine`: the contract.
 * `NLAlib.countable_range_binaryFloatRound`, `NLAlib.measurable_binaryFloatRound`.
+* `NLAlib.measurable_intLog_abs`, `NLAlib.specNorm_sub_map_le`: shared with the grid machine
+  (`NLAlib/Matrix/Computation/GridMachine.lean`).
 * `NLAlib.countable_range_unif_binaryFloatMachine`,
   `NLAlib.measurableSet_preimage_unif_binaryFloatMachine`,
   `NLAlib.countable_range_normal_binaryFloatMachine`,
@@ -98,8 +100,8 @@ theorem countable_range_binaryFloatRound (r : ℝ → ℤ) :
   rintro _ ⟨x, rfl⟩
   exact ⟨(_, _), rfl⟩
 
-/-- `Int.log 2 |x|` is a measurable function of $x$. -/
-private theorem measurable_intLog_abs : Measurable fun x : ℝ => Int.log 2 |x| := by
+/-- `Int.log 2 |x|` is a measurable function of $x$. No printed source. -/
+theorem measurable_intLog_abs : Measurable fun x : ℝ => Int.log 2 |x| := by
   have h : (fun x : ℝ => Int.log 2 |x|) = fun x =>
       if 1 ≤ |x| then ((Nat.log 2 ⌊|x|⌋₊ : ℕ) : ℤ) else -((Nat.clog 2 ⌈|x|⁻¹⌉₊ : ℕ) : ℤ) := by
     funext x; rfl
@@ -131,8 +133,8 @@ variable {fmt : Float.Model.Format} {r : ℝ → ℤ}
 
 /-- Entrywise rounding of a complex matrix, part by part, with a rounding of relative error $u$
 above the floor $\tau$ at every scale, errs by at most $2du\max(\|\mathbf{X}\|_2, \tau)$ in the
-spectral norm, $d$ at least both dimensions. -/
-private theorem specNorm_sub_map_le {m n d : ℕ} {u τ : ℝ} {R : ℝ → ℝ} (hu : 0 ≤ u)
+spectral norm, $d$ at least both dimensions. No printed source. -/
+theorem specNorm_sub_map_le {m n d : ℕ} {u τ : ℝ} {R : ℝ → ℝ} (hu : 0 ≤ u)
     (hτ : 0 ≤ τ) (hR : ∀ x, |x - R x| ≤ u * max |x| τ) (hm : m ≤ d) (hn : n ≤ d)
     (X : Matrix (Fin m) (Fin n) ℂ) :
     specNorm (X - X.map fun z => (⟨R z.re, R z.im⟩ : ℂ)) ≤

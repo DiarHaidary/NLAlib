@@ -36,7 +36,11 @@ is part of the definition, never a hypothesis of a theorem, so it cannot depend 
   program; `NLAlib.Computation.ProgFamily.MatrixFreeProb`, the same model on a program family
   (proof infrastructure).
 * `NLAlib.Computation.MatrixFreeRoundedProb`: the rounded probabilistic model, quantified over
-  the interpretations meeting contracts and the roundings of the tape.
+  the index-exact interpretations meeting contracts and the roundings of the tape, with counts
+  and memory.
+* `NLAlib.Computation.MatrixFreeProb.NonVacuous`,
+  `NLAlib.Computation.MatrixFreeRoundedProb.NonVacuous`: the non-vacuity conditions of the
+  models' targets (`scripts/Targets.lean`, item 7).
 
 ## Main results
 
@@ -52,6 +56,8 @@ is part of the definition, never a hypothesis of a theorem, so it cannot depend 
   $[-1, 1]$.
 * `NLAlib.Computation.IsTapeRounding.ae_forall_mem_Icc_of_hasLaw_tapeLaw`: so do stored ones.
 * `NLAlib.Computation.MatrixFreeRoundedProb.mono`: a larger bound.
+* `NLAlib.Computation.MatrixFreeRoundedProb.of_exec`: the model from success, correctness and a
+  count bound of every successful run.
 -/
 
 @[expose] public section
@@ -178,6 +184,21 @@ def MatrixFreeProb {r b : ℕ} (p : P) (prog : Prog P ι r b)
       (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (good N n x A)} ≤
       bound N n x A
 
+/-- **The non-vacuity condition of a probabilistic matrix-free target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.MatrixFreeProb`, there are sizes $N \ge N_0$ and $n$ satisfying `valid` at which
+the type of declared inputs `X N n` is inhabited. The binders are those of
+`NLAlib.Computation.MatrixFreeProb`, spelled out, then `N₀`. -/
+@[nolint unusedArguments]
+def MatrixFreeProb.NonVacuous {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P] {r b : ℕ}
+    (_p : P) (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (_cost : ℕ → (Fin r → ℕ) → OpCount P ι) (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (_good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      St P 𝕜 (OpCount P ι) → Prop)
+    (_bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → ℝ) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ Nonempty (X N n)
+
 /-- **The probabilistic matrix-free model on a program family**, proof infrastructure for
 `NLAlib.Computation.MatrixFreeProb`. For all sizes $N$, $n$ satisfying `valid`, every declared
 input $x$ and every $N \times N$ matrix $\mathbf{A}$, and every tape $\xi$ on any probability
@@ -220,36 +241,124 @@ theorem ProgFamily.MatrixFreeProb.prog {r b : ℕ} {p : P} {F : ProgFamily P ι 
   intro N n hv x A Ω _ μ ξ hξ
   refine (le_of_eq (congrArg μ.real (Set.ext fun ω => not_congr ?_))).trans
     (h N n hv x A Ω _ μ ξ hξ)
-  rw [Prog.runsWithin_iff, hc]
+  rw [Prog.runsWithin_iff (hsize := by simp), hc]
 
 /-- **The rounded probabilistic model.** For all sizes $N$, $n$ satisfying `valid` and every
-declared input $x$ satisfying `pre N n x`, under **every** interpretation $I$ meeting the
-contracts `Contracts N n` (on its value semantics, literals and kernels) and every rounding
+declared input $x$ satisfying `pre N n x`, under **every** interpretation $I$ whose semantics is
+index exact at the decoding `dec` up to `B N n` (`NLAlib.Computation.IsIndexExactSem`: exact
+integer literals up to the bound and the exact floor conversion, failing below zero) and that
+meets the contracts `Contracts N n` (on its value semantics, literals and kernels), every rounding
 $\rho$ of the tape meeting `ρOK` (a tape-rounding contract such as
 `NLAlib.Computation.IsTapeRounding`), and every ideal tape $\xi$ on any probability space whose
 law is the law of the tape `tapeLaw` (fixed by this definition: the tapes independent, the tape
 of `d` i.i.d. with law `d.law`), the probability that the program `prog`, run under $I$ with the
-stored tape $\rho(d, i, \xi(\omega)(d, i))$ from the initial state that holds the declared
-buffers `inputs N n x` at tag `p` and nothing else, fails or ends in a state not satisfying
-`good N n x` is at most `bound N n x`.
+stored tape $\rho(d, i, \xi(\omega)(d, i))$ and the standard charge (one count per operation of
+each kind) from the initial state that holds the declared buffers `inputs N n x` at tag `p` and
+nothing else, fails, or exceeds the counts `cost N n` or the workspace `mem N n` (the peak memory
+per tag, declared buffers included, the read-only data of $I$ counted on top), or ends in a state
+not satisfying `good N n x`, is at most `bound N n x`.
 
 The program, one first-order tree for all sizes, is bound before the sizes, the inputs, the
 interpretation, the rounding and the tape. The arithmetic, the kernels and the rounding of the
 draws are quantified over everything meeting the contracts, and the law of the ideal tape is part
-of the definition, so it cannot depend on the data. No counts: the charge of $I$ is arbitrary,
-and counts come from a separate statement about the tree. -/
+of the definition, so it cannot depend on the data. The index exactness is part of the model, at
+the decoding `dec` of the target, so a target cannot drop it or state it at another decoding. The
+counts are those of the run itself, so the cost bound holds on the same event as the
+postcondition.
+
+The read-only data of $I$ is counted **on top of** `mem`: the run is checked against the memory
+`mem N n q + I.romSize q`, so `mem` bounds the peak alone (declared buffers and scratch), whereas
+in the exact models (`NLAlib.Computation.MatrixFree`, `NLAlib.Computation.StoredEntries`,
+`NLAlib.Computation.MatrixFreeProb`) `mem` includes the read-only data. So `mem` means different
+things in the exact and the rounded model. The program cannot allocate read-only data, and
+`I.romSize` is otherwise unbounded here, so a target whose program reads it (an
+`NLAlib.Computation.FStmt.rom`) must bound `I.romSize` in its `Contracts`
+(`docs/design/Computation-Hardening.md` §2.4); the trees of the current rounded targets read
+none. -/
 def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
     (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
     (inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
+    (dec : P → K → ℝ) (B : ℕ → (Fin r → ℕ) → ℕ) (cost : ℕ → (Fin r → ℕ) → OpCount P ι)
+    (mem : ℕ → (Fin r → ℕ) → P → ℕ)
     (Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop)
     (ρOK : (Dist → ℕ → ℝ → K) → Prop) (pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop)
     (good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop)
     (bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ) : Prop :=
   ∀ N n, valid N n → ∀ x : X N n, pre N n x → ∀ (I : Interp P ι K (OpCount P ι))
-    (ρ : Dist → ℕ → ℝ → K), Contracts N n I → ρOK ρ → ∀ (Ω : Type) (_ : MeasurableSpace Ω)
-    (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ), HasLaw ξ tapeLaw μ →
-    μ.real {ω | ¬ ∃ st', prog.exec { I with tape := fun d i => ρ d i (ξ ω d i) } N n
-        (inputState p (List.ofFn (inputs N n x))) = some st' ∧ good N n x st'} ≤ bound N n x
+    (ρ : Dist → ℕ → ℝ → K), IsIndexExactSem dec (B N n) I.sem → Contracts N n I → ρOK ρ →
+    ∀ (Ω : Type) (_ : MeasurableSpace Ω) (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ),
+    HasLaw ξ tapeLaw μ →
+    μ.real {ω | ¬ prog.RunsWithin
+        { I with tape := fun d i => ρ d i (ξ ω d i), charge := fun k => Finsupp.single k 1 } N n
+        (inputState p (List.ofFn (inputs N n x))) (cost N n) (fun q => mem N n q + I.romSize q)
+        (good N n x)} ≤ bound N n x
+
+/-- **The non-vacuity condition of a rounded probabilistic target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.MatrixFreeRoundedProb`, there are sizes $N \ge N_0$ and $n$ satisfying `valid`,
+a declared input $x$ satisfying `pre N n x`, an interpretation $I$ whose semantics is index exact
+at `dec` up to `B N n` and that meets `Contracts N n`, and a rounding $\rho$ of the tape meeting
+`ρOK`: every hypothesis of the model is met at once. A non-vacuity witness of a registered target
+`∀ xs, MatrixFreeRoundedProb a₁ … aₖ` is a theorem
+`∀ N₀, ∃ xs, MatrixFreeRoundedProb.NonVacuous a₁ … aₖ N₀` (`scripts/Targets.lean`, item 7). It
+detects contracts that cannot be met, not degenerate ones (exact arithmetic meets most
+contracts): the registry's `witness_sem` records the semantics a witness uses. The binders are
+those of `NLAlib.Computation.MatrixFreeRoundedProb`, spelled out, then `N₀`; the program, the
+counts, the memory, the event and the bound are not used. -/
+@[nolint unusedArguments]
+def MatrixFreeRoundedProb.NonVacuous {P ι : Type} [DecidableEq P] {K : Type} {r b : ℕ} (_p : P)
+    (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
+    (dec : P → K → ℝ) (B : ℕ → (Fin r → ℕ) → ℕ) (_cost : ℕ → (Fin r → ℕ) → OpCount P ι)
+    (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop)
+    (ρOK : (Dist → ℕ → ℝ → K) → Prop) (pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop)
+    (_good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop)
+    (_bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ ∃ x : X N n, pre N n x ∧
+    ∃ (I : Interp P ι K (OpCount P ι)) (ρ : Dist → ℕ → ℝ → K),
+      IsIndexExactSem dec (B N n) I.sem ∧ Contracts N n I ∧ ρOK ρ
+
+/-- **A rounded probabilistic result from success, correctness and a count bound**: if, under
+every interpretation with the standard charge meeting the index exactness and the contracts, every
+rounding of the tape meeting `ρOK` and every ideal tape $\xi$ whose law is the law of the tape
+`NLAlib.Computation.tapeLaw` (the `HasLaw` hypothesis: the tapes of the distributions independent,
+each an i.i.d. sequence), the probability that the run fails or ends outside `good` is at most
+`bound`, and every successful run under the standard charge from the declared inputs stays within
+`cost` and `mem`, then the model holds, provided the contracts do not depend on the charge. No
+printed source. -/
+theorem MatrixFreeRoundedProb.of_exec {K : Type} {r b : ℕ} {p : P} {prog : Prog P ι r b}
+    {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
+    {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K)}
+    {dec : P → K → ℝ} {B : ℕ → (Fin r → ℕ) → ℕ} {cost : ℕ → (Fin r → ℕ) → OpCount P ι}
+    {mem : ℕ → (Fin r → ℕ) → P → ℕ}
+    {Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop}
+    {ρOK : (Dist → ℕ → ℝ → K) → Prop} {pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop}
+    {good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop}
+    {bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ}
+    (hC : ∀ N n I, Contracts N n I →
+      Contracts N n { I with charge := fun k => Finsupp.single k 1 })
+    (hcost : ∀ N n (x : X N n) (I : Interp P ι K (OpCount P ι)) (st : St P K (OpCount P ι)),
+      I.charge = (fun k => Finsupp.single k 1) →
+      prog.exec I N n (inputState p (List.ofFn (inputs N n x))) = some st →
+      st.cnt ≤ cost N n ∧ ∀ q, st.peak q ≤ mem N n q)
+    (h : ∀ N n, valid N n → ∀ x : X N n, pre N n x → ∀ (I : Interp P ι K (OpCount P ι))
+      (ρ : Dist → ℕ → ℝ → K), IsIndexExactSem dec (B N n) I.sem → Contracts N n I → ρOK ρ →
+      I.charge = (fun k => Finsupp.single k 1) →
+      ∀ (Ω : Type) (_ : MeasurableSpace Ω) (μ : Measure Ω) (ξ : Ω → Dist → ℕ → ℝ),
+      HasLaw ξ tapeLaw μ →
+      μ.real {ω | ¬ ∃ st', prog.exec { I with tape := fun d i => ρ d i (ξ ω d i) } N n
+          (inputState p (List.ofFn (inputs N n x))) = some st' ∧ good N n x st'} ≤
+        bound N n x) :
+    MatrixFreeRoundedProb p prog valid X inputs dec B cost mem Contracts ρOK pre good bound := by
+  intro N n hv x hpre I ρ hidx hCI hρ Ω _ μ ξ hξ
+  have := hξ.isProbabilityMeasure
+  refine le_trans (measureReal_mono (fun ω hω => ?_) (measure_ne_top μ _)) (h N n hv x hpre
+    { I with charge := fun k => Finsupp.single k 1 } ρ hidx (hC N n I hCI) hρ rfl Ω _ μ ξ hξ)
+  rintro ⟨st, hex, hg⟩
+  obtain ⟨hc, hm⟩ := hcost N n x _ st rfl hex
+  exact hω ⟨by simp, st, hex, by simpa [inputState] using hc,
+    fun q => Nat.add_le_add_right (hm q) _, hg⟩
 
 /-! ### Uniform draws and the rounded model -/
 
@@ -309,14 +418,17 @@ with every pointwise larger bound `bound'`. No printed source. -/
 theorem MatrixFreeRoundedProb.mono {P ι K : Type} [DecidableEq P] {r b : ℕ} {p : P}
     {prog : Prog P ι r b} {valid : ℕ → (Fin r → ℕ) → Prop} {X : ℕ → (Fin r → ℕ) → Type}
     {inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K)}
+    {dec : P → K → ℝ} {B : ℕ → (Fin r → ℕ) → ℕ} {cost : ℕ → (Fin r → ℕ) → OpCount P ι}
+    {mem : ℕ → (Fin r → ℕ) → P → ℕ}
     {Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop}
     {ρOK : (Dist → ℕ → ℝ → K) → Prop} {pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop}
     {good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop}
     {bound bound' : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ}
-    (h : MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound)
+    (h : MatrixFreeRoundedProb p prog valid X inputs dec B cost mem Contracts ρOK pre good bound)
     (hb : ∀ N n x, bound N n x ≤ bound' N n x) :
-    MatrixFreeRoundedProb p prog valid X inputs Contracts ρOK pre good bound' :=
-  fun N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ => (h N n hv x hpre I ρ hI hρ Ω _ μ ξ hξ).trans (hb N n x)
+    MatrixFreeRoundedProb p prog valid X inputs dec B cost mem Contracts ρOK pre good bound' :=
+  fun N n hv x hpre I ρ hidx hI hρ Ω _ μ ξ hξ =>
+    (h N n hv x hpre I ρ hidx hI hρ Ω _ μ ξ hξ).trans (hb N n x)
 
 end Uniform
 

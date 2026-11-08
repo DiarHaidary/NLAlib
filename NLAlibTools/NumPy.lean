@@ -4,22 +4,25 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: NLAlib contributors
 -/
 import NLAlibTools.Float
+import NLAlib.Matrix.Computation.DeflationProgramTree
 
 /-!
 # Printing first-order programs as NumPy
 
-The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a
-result is printed from the very tree the result is about: a registered tree such as
+The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a result
+is printed from the very tree the result is about: a registered tree such as
 `NLAlib.hutchppProg.compiled` (`docs/design/Computation.md`, F1 and F11 step C). Variables are de
 Bruijn levels: handle `j` is printed `b{j}` and index variable `j` is printed `i{j}`, so the free
 variables of a program `Prog P ι r b` are the parameters of the emitted function: the oracle
-dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc`
-in scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
+dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc` in
+scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
 expressions are printed as Python arithmetic. `named` kernels are printed as calls into a short
-NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`,
-so a read before a write shows as `nan`. The emitted code is an unverified translation, for
-differential testing (`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under
-NumPy, when it is installed, and agrees with the Lean `Float` run of the same tree.
+NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`, so
+a read before a write shows as `nan`. An index binder (`bindIdx`) is printed strict, as the model
+runs it: it raises `ValueError` on a negative value or a floor above its bound, where the model's
+run fails, and never clamps. The emitted code is an unverified translation, for differential testing
+(`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under NumPy, when it is
+installed, and agrees with the Lean `Float` run of the same tree.
 -/
 
 -- A tools file: `#eval` and `#guard` are its point.
@@ -84,10 +87,12 @@ def emitInstr {P : Type} {nb ni : ℕ} : Instr P (Fin nb) (Fin ni) → String
         | .uniform => "draw_uniform()"
       s!"{emitCell dst} = {f}"
 
-/-- A first-order statement as Python lines at depth `d`. -/
-def emitF {P ι : Type} (inline : Bool) : {nb ni : ℕ} → FStmt P ι nb ni → ℕ → List String
+/-- A first-order statement as Python lines at depth `d`; a kernel call of `o` is printed as a
+call of the Python function `kname o`. -/
+def emitF {P ι : Type} (inline : Bool) (kname : ι → String) :
+    {nb ni : ℕ} → FStmt P ι nb ni → ℕ → List String
   | _, _, .skip, _ => []
-  | _, _, .seq s t, d => emitF inline s d ++ emitF inline t d
+  | _, _, .seq s t, d => emitF inline kname s d ++ emitF inline kname t d
   | _, _, .instr i, d => [pad d ++ emitInstr i]
   | _, _, .apply _ _ dst dOff src sOff cols, d =>
       let w := s!"A.shape[0] * {emitIExp cols}"
@@ -96,37 +101,44 @@ def emitF {P ι : Type} (inline : Bool) : {nb ni : ℕ} → FStmt P ι nb ni →
         s!"{emitIExp cols}), order='F')).reshape(-1, order='F')"]
   | _, _, .rom _ dst i, d => [pad d ++ s!"{emitCell dst} = ROM[{emitIExp i}]"]
   | nb, _, .alloc _ len body, d =>
-      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++ emitF inline body d ++
+      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++ emitF inline kname body d ++
         [pad d ++ s!"del b{nb}"]
   | _, ni, .loop n body, d =>
-      let ls := emitF inline body (d + 1)
+      let ls := emitF inline kname body (d + 1)
       [pad d ++ s!"for i{ni} in range({emitIExp n}):"] ++
         (if ls.isEmpty then [pad (d + 1) ++ "pass"] else ls)
   | _, _, .whileFuel fuel _ cmp x y body, d =>
       [pad d ++ s!"for _ in range({emitIExp fuel}):",
         pad (d + 1) ++ s!"if not ({emitCell x} {emitCmp cmp} {emitCell y}): break"] ++
-        emitF inline body (d + 1) ++
+        emitF inline kname body (d + 1) ++
         [pad d ++ "else:", pad (d + 1) ++ "raise RuntimeError('out of fuel')"]
   | _, _, .ite _ cmp x y t e, d =>
-      let lt := emitF inline t (d + 1)
-      let le := emitF inline e (d + 1)
+      let lt := emitF inline kname t (d + 1)
+      let le := emitF inline kname e (d + 1)
       [pad d ++ s!"if {emitCell x} {emitCmp cmp} {emitCell y}:"] ++
         (if lt.isEmpty then [pad (d + 1) ++ "pass"] else lt) ++
         [pad d ++ "else:"] ++ (if le.isEmpty then [pad (d + 1) ++ "pass"] else le)
   | _, _, .named name args body, d =>
-      if inline then emitF inline body d
+      if inline then emitF inline kname body d
       else [pad d ++ s!"{name}({", ".intercalate (args.map emitArg)})"]
-  | _, _, .kcall _ _ dims ins outs, d =>
+  | _, _, .kcall o _ dims ins outs, d =>
       let ins' := ins.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
       let outs' := outs.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
-      [pad d ++ s!"kernel([{", ".intercalate (dims.map emitIExp)}], " ++
+      [pad d ++ s!"{kname o}([{", ".intercalate (dims.map emitIExp)}], " ++
         s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
+  | _, ni, .bindIdx _ x bound body, d =>
+      [pad d ++ s!"if not (0 <= {emitCell x}): raise ValueError('bindIdx: negative value')",
+        pad d ++ s!"i{ni} = int(np.floor({emitCell x}))",
+        pad d ++ s!"if i{ni} > {emitIExp bound}: raise ValueError('bindIdx: above the bound')"] ++
+        emitF inline kname body d
 
-/-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`. -/
-def emitProg {P ι : Type} {r b : ℕ} (inline : Bool) (name : String) (prog : Prog P ι r b) :
+/-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`; a
+kernel call of `o` is printed as a call of `kname o` (by default `kernel`). -/
+def emitProg {P ι : Type} {r b : ℕ} (inline : Bool) (name : String) (prog : Prog P ι r b)
+    (kname : ι → String := fun _ => "kernel") :
     String :=
   let params := ["A"] ++ (List.range (r + 1)).map (s!"i{·}") ++ (List.range b).map (s!"b{·}")
-  "\n".intercalate ([s!"def {name}({", ".intercalate params}):"] ++ emitF inline prog 1)
+  "\n".intercalate ([s!"def {name}({", ".intercalate params}):"] ++ emitF inline kname prog 1)
 
 /-- The NumPy prelude: the BLAS kernels the programs call by name. -/
 def numpyPrelude : String := "\n".intercalate [
@@ -145,6 +157,50 @@ def hutchppPython (inline : Bool) : String :=
   emitProg inline "hutchpp" (hutchppProg.compiled (P := Unit) (ι := Unit) () () .rademacher)
 
 #eval IO.println (numpyPrelude ++ "\n" ++ hutchppPython false)
+
+/-- The registered tree `NLAlib.deflateProg.compiled` as a NumPy function
+`deflate(A, i0, i1, b0, b1)`, inlined, with the kernel names `mm` and `qr` printed (the S1d
+check that kernel calls are told apart). -/
+def deflatePython : String :=
+  emitProg true "deflate" (deflateProg.compiled (P := Unit) (ι := Bool) () true false)
+    fun o => cond o "mm" "qr"
+
+#guard (deflatePython.splitOn "mm([").length == 2 && (deflatePython.splitOn "qr([").length == 2
+
+/-- A stored value copied through an index binder of bound `i1`, as the NumPy function
+`idx_copy(A, i0, i1, b0, b1)`. -/
+def idxCopyPython : String :=
+  emitProg false "idx_copy" (P := Unit) (ι := Unit) (r := 1) (b := 2)
+    (.bindIdx () ⟨0, .const 0⟩ (.var 1) (.instr (.litIdx () ⟨1, .const 0⟩ (.var 2))))
+
+-- The binder is emitted strict, as the model's `Exec.exec` and `exactSem.toNat`: no clamp.
+#guard (idxCopyPython.splitOn "min(max").length == 1 &&
+  (idxCopyPython.splitOn "raise ValueError").length == 3
+
+/-- **Strictness test**: the emitted binder raises `ValueError` where the model's run fails (a
+negative value, a value above the bound) and floors where it succeeds; skipped when NumPy is not
+installed. -/
+def strictBindTest : IO Unit := do
+  let probe ← IO.Process.output { cmd := "python3", args := #["-c", "import numpy"] }
+    |>.toBaseIO
+  match probe with
+  | .ok out =>
+    if out.exitCode != 0 then IO.println "strictness test skipped: no NumPy"; return
+  | .error _ => IO.println "strictness test skipped: no python3"; return
+  let script := "\n".intercalate [numpyPrelude, idxCopyPython,
+    "def run(v, bound):",
+    "    out = np.full(1, np.nan)",
+    "    try: idx_copy(None, 1, bound, np.array([v]), out)",
+    "    except ValueError: return 'fail'",
+    "    return repr(float(out[0]))",
+    "print(run(-1.0, 5), run(-0.5, 5), run(1.0, 0), run(2.7, 3), run(float('nan'), 5))"]
+  let out ← IO.Process.output { cmd := "python3", args := #["-c", script] }
+  let got := out.stdout.trimAscii.toString
+  unless out.exitCode == 0 && got == "fail fail fail 2.0 fail" do
+    throw <| IO.userError s!"the emitted binder is not strict: {got} {out.stderr}"
+  IO.println s!"strict binder: {got}"
+
+#eval strictBindTest
 
 /-- A Python script that runs the emitted Hutch++ on the matrix `A₀` with the sign tape and
 prints the estimate. -/

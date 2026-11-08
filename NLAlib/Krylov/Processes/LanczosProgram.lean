@@ -276,7 +276,7 @@ machine carrier.
 Result: lanczos-program -/
 theorem _root_.NLAlib.storedEntriesLanczos : StoredEntriesLanczos := by
   intro P ι inst tag N q _ b vals ξ
-  rw [Prog.runsWithin_iff, compiled_toStmt]
+  rw [Prog.runsWithin_iff (hsize := by simp), compiled_toStmt]
   change RunsWithin (storedInterp (N ^ 2) vals ξ tag)
     (lanczosProg tag (.const N) (.const (q 0)) 0 1 2 3 4 5).run
     (declaredState tag N (q 0) b) (lanczosCount tag N (q 0)) _ _
@@ -285,5 +285,32 @@ theorem _root_.NLAlib.storedEntriesLanczos : StoredEntriesLanczos := by
     memory_bound tag N (q 0) b vals ξ out hpeak, ?_⟩
   · simpa only [cleanState, popState, declaredState, inputState, zero_add] using hcnt
   · exact declared_post tag hs
+
+/-- **The Lanczos target is not vacuous**
+(`docs/design/Computation-Hardening.md`, §2.2): for every $N_0$ there are tags and oracle names
+(`Unit`) and sizes $N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type
+$\mathbb{R}^N$ inhabited (by the zero vector). The witness of `NLAlib.StoredEntriesLanczos`
+(`scripts/Targets.lean`, item 7). No printed source. -/
+theorem _root_.NLAlib.storedEntriesLanczos_nonVacuous : ∀ N₀ : ℕ,
+    ∃ (P ι : Type) (_ : DecidableEq P) (tag : P),
+    StoredEntries.NonVacuous (𝕜 := ℝ) tag (lanczosProg.compiled (ι := ι) tag)
+      (fun _ _ => True) (fun N _ => Fin N → ℝ)
+      (fun N q b => ![(Array.ofFn b).map some, Array.replicate (N * (q 0 + 1)) none,
+        Array.replicate (q 0) none, Array.replicate (q 0 + 1) none,
+        Array.replicate 1 none, Array.replicate N none])
+      (fun N _ => N ^ 2) (fun N q => lanczosCount tag N (q 0))
+      (fun N q p => if p = tag then 2 * N ^ 2 + N * (q 0 + 4) + 2 * q 0 + 5 else 0)
+      (fun N q b vals _ st =>
+        let A : Matrix (Fin N) (Fin N) ℝ := fun i j => vals (i + N * j)
+        Holds st.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+        Holds st.store tag 1 0 (lanczosMatrix A b (q 0 + 1)) ∧
+        Holds st.store tag 2 0
+          (fun (j : Fin (q 0)) (_ : Fin 1) => lanczosAlpha A (lanczosState A b j)) ∧
+        Holds st.store tag 3 0
+          (fun (j : Fin (q 0 + 1)) (_ : Fin 1) => (lanczosState A b j).beta) ∧
+        st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+        Holds st.store tag 5 0 (fun i (_ : Fin 1) => (lanczosState A b (q 0)).prev i)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), N₀ + 1, fun _ => 1, Nat.le_succ N₀, trivial,
+    ⟨0⟩⟩
 
 end NLAlib.LanczosImplementation

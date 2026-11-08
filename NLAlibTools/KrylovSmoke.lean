@@ -34,7 +34,7 @@ def opcode : OpKind Unit Unit → Nat
   | .lit _ => 14 | .cmp _ => 15 | .copy _ => 16
   | .draw _ .gaussian => 17 | .draw _ .rademacher => 18
   | .convert _ _ => 19 | .rom _ => 20 | .load _ _ => 21 | .matvec _ _ => 22
-  | .draw _ .uniform => 23 | .kcall _ _ _ => 24
+  | .draw _ .uniform => 23 | .kcall _ _ _ => 24 | .toNat _ => 25
 
 /-- All operation kinds, including those whose approved bound is zero. -/
 def kinds : List (OpKind Unit Unit) :=
@@ -42,7 +42,7 @@ def kinds : List (OpKind Unit Unit) :=
     .bin () .shl, .bin () .shr, .bin () .band, .bin () .bor, .bin () .bxor,
     .un () .neg, .un () .conj, .un () .re, .un () .sqrt, .un () .bnot,
     .lit (), .cmp (), .copy (), .draw () .gaussian, .draw () .rademacher,
-    .convert () (), .rom (), .load () (), .matvec () (), .draw () .uniform]
+    .convert () (), .rom (), .load () (), .matvec () (), .draw () .uniform, .toNat ()]
 
 /-- The runtime bound check visits every possible operation kind except kernel calls (a kind per
 dimension list, so infinitely many; the smoke programs make none). -/
@@ -52,7 +52,7 @@ theorem mem_kinds (k : OpKind Unit Unit) (hk : ∀ ds, k ≠ .kcall () () ds) : 
   | un p u => cases p; cases u <;> simp [kinds]
   | draw p d => cases p; cases d <;> simp [kinds]
   | convert p q => cases p; cases q; simp [kinds]
-  | lit p | cmp p | copy p | rom p => cases p; simp [kinds]
+  | lit p | cmp p | copy p | rom p | toNat p => cases p; simp [kinds]
   | load p o | matvec p o => cases p; cases o; simp [kinds]
   | kcall p o ds => cases p; cases o; exact absurd rfl (hk ds)
 
@@ -104,7 +104,7 @@ theorem cgBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | un p u => cases p; cases u <;> simp [cgBudget, cgCount]
   | draw p d => cases p; cases d <;> simp [cgBudget, cgCount]
   | convert p q => cases p; cases q; simp [cgBudget, cgCount]
-  | lit p | cmp p | copy p | rom p => cases p; simp [cgBudget, cgCount]
+  | lit p | cmp p | copy p | rom p | toNat p => cases p; simp [cgBudget, cgCount]
   | load p o | matvec p o => cases p; cases o; simp [cgBudget, cgCount]
   | kcall p o ds => cases p; cases o; simp [cgBudget, cgCount]
 
@@ -117,7 +117,7 @@ theorem lanczosBudget_eq (n q : Nat) (k : OpKind Unit Unit) :
   | un p u => cases p; cases u <;> simp [lanczosBudget, lanczosCount]
   | draw p d => cases p; cases d <;> simp [lanczosBudget, lanczosCount]
   | convert p q => cases p; cases q; simp [lanczosBudget, lanczosCount]
-  | lit p | cmp p | copy p | rom p => cases p; simp [lanczosBudget, lanczosCount]
+  | lit p | cmp p | copy p | rom p | toNat p => cases p; simp [lanczosBudget, lanczosCount]
   | load p o | matvec p o => cases p; cases o; simp [lanczosBudget, lanczosCount]
   | kcall p o ds => cases p; cases o; simp [lanczosBudget, lanczosCount]
 

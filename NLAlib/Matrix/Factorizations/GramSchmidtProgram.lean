@@ -876,4 +876,19 @@ Result: gram-schmidt-program -/
 theorem matrixFreeGramSchmidt : MatrixFreeGramSchmidt := fun _ _ _ p _ _ =>
   (matrixFree_gramSchmidtProg p).prog _ (gramSchmidtProg.toStmt_compiled p)
 
+/-- **The Gram–Schmidt target is not vacuous** (`docs/design/Computation-Hardening.md`, §2.2):
+for every $N_0$ there are tags, oracle names and a field (`Unit`, `Unit`, $\mathbb{R}$) and sizes
+$N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type of $N \times 1$ matrices
+inhabited. The witness of `NLAlib.MatrixFreeGramSchmidt` (`scripts/Targets.lean`, item 7).
+No printed source. -/
+theorem matrixFreeGramSchmidt_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P) (p : P)
+    (𝕜 : Type) (_ : RCLike 𝕜),
+    MatrixFree.NonVacuous (𝕜 := 𝕜) p (gramSchmidtProg.compiled (ι := ι) p) (fun _ _ => True)
+      (fun N n => Matrix (Fin N) (Fin (n 0)) 𝕜)
+      (fun _ _ Y => ![(flatten Y).map some]) (fun N n => gramSchmidtCount p N (n 0))
+      (fun N n q => if q = p then N * n 0 + 3 else 0)
+      (fun _ _ Y _ _ st => Holds st.store p 0 0 (gramSchmidtQ Y)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), ℝ, inferInstance, N₀ + 1, fun _ => 1, Nat.le_succ N₀,
+    trivial, ⟨0⟩⟩
+
 end NLAlib

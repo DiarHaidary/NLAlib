@@ -35,6 +35,10 @@ statements" (F3, F7).
 
 * `NLAlib.Computation.FStmt.exec`, `NLAlib.Computation.Prog.exec`: the run.
 * `NLAlib.Computation.Prog.RunsWithin`: a run within a budget.
+* `NLAlib.Computation.Cell.normIdx`, `NLAlib.Computation.Instr.normIdx`,
+  `NLAlib.Computation.Stmt.normIdx`: the index normal form.
+* `NLAlib.Computation.Instr.mapTag`, `NLAlib.Computation.FStmt.mapTags`: a first-order
+  statement with its tags and oracle names renamed.
 
 ## Main results
 
@@ -53,6 +57,7 @@ statements" (F3, F7).
 * `NLAlib.Computation.Prog.exec_eq_of_exec_eq_some_of_cnt_load_le`: a run that makes no oracle
   call is the same under any oracle.
 * `NLAlib.Computation.FStmt.exec_kcall`: the run of a first-order kernel call.
+* `NLAlib.Computation.FStmt.exec_bindIdx`: the run of a first-order index binder.
 -/
 
 @[expose] public section
@@ -67,9 +72,10 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] (I : Interp P ι K C)
 
 /-- **The run of a first-order statement** under `I`, in an environment of handles `ρB` and of index
 values `ρI`. The leaves (instructions, oracle calls, kernel calls, read-only reads, comparisons) run
-by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the environment;
-`alloc` binds the new handle `st.store.size` and `loop` the iteration index. A `whileFuel` loop
-tests its comparison at most `fuel` times and fails if every test it makes holds. -/
+by the rules of `NLAlib.Computation.exec`, with each index expression evaluated in the
+environment; `alloc` binds the new handle `st.store.size`, `loop` the iteration index and
+`bindIdx` the conversion of its cell, failing if it exceeds the bound. A `whileFuel` loop tests
+its comparison at most `fuel` times and fails if every test it makes holds. -/
 def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fin ni → ℕ) →
     St P K C → Option (St P K C)
   | _, _, .skip, _, _, st => some st
@@ -120,6 +126,10 @@ def FStmt.exec : {nb ni : ℕ} → FStmt P ι nb ni → (Fin nb → ℕ) → (Fi
       (I.kcallStore o p (dims.map (·.evalIn ρI)) (ins.map fun x => (ρB x.1, x.2.evalIn ρI))
         (outs.map fun x => (ρB x.1, x.2.evalIn ρI)) st.store).map fun s =>
           { st with store := s, cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) }
+  | _, _, .bindIdx p x bound body, ρB, ρI, st =>
+      (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
+        if r.1 ≤ bound.evalIn ρI then body.exec ρB (Fin.snoc (α := fun _ => ℕ) ρI r.1) r.2
+        else none
 
 /-- **The run of a program** at the sizes $N$ and $n$: declared buffer $j$ at handle $j$, the
 oracle dimension $N$ as index variable $0$ and size $i$ as index variable $i + 1$. -/
@@ -160,6 +170,14 @@ theorem cmpStep_subst_congr {nb ni : ℕ} (p : P) (c : CmpOp) (x y : Cell (Fin n
       cmpStep I p c (x.subst f σ') (y.subst f σ') st := by
   have h' : (fun v => (σ v).eval) = fun v => (σ' v).eval := funext h
   simp only [cmpStep, Cell.subst, IExp.eval_subst, h']
+
+/-- A conversion step runs the same under two substitutions of index expressions with the same
+values. -/
+theorem toNatStep_subst_congr {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni)) (f : Fin nb → ℕ)
+    {σ σ' : Fin ni → IExp ℕ} (h : ∀ v, (σ v).eval = (σ' v).eval) (st : St P K C) :
+    toNatStep I p (x.subst f σ) st = toNatStep I p (x.subst f σ') st := by
+  have h' : (fun v => (σ v).eval) = fun v => (σ' v).eval := funext h
+  simp only [toNatStep, Cell.subst, IExp.eval_subst, h']
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- The values of the substitution under a loop binder. -/
@@ -213,6 +231,12 @@ theorem FStmt.exec_eq_exec_toStmt : ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (ρ
   | _, _, .kcall o p dims ins outs, ρB, σ, st => by
       rw [FStmt.exec, FStmt.toStmt, Computation.exec]
       simp only [List.map_map, Function.comp_def, IExp.eval_subst]
+  | _, _, .bindIdx p x bound body, ρB, σ, st => by
+      rw [FStmt.exec, FStmt.toStmt, Computation.exec,
+        toNatStep_subst_congr I p x ρB (σ' := σ) (fun v => by simp)]
+      simp only [IExp.eval_subst]
+      congr 1; funext r
+      rw [← eval_snoc, body.exec_eq_exec_toStmt]
 
 /-- The bridge for programs: the run of a program at the sizes $N$ and $n$ is the current
 run of its instantiation at these sizes. -/
@@ -231,20 +255,23 @@ section Budget
 
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Preorder C]
 
-/-- **A run of a program within a budget**: the run of `prog` at the sizes $N$ and $n$ from
-`st₀` under `I` succeeds in a state `st` whose counts are at most `c` more than at the start,
-whose peak memory plus the read-only data is at most `m p` cells at each tag `p`, and which
-satisfies `Q`. -/
+/-- **A run of a program within a budget**: the start state `st₀` holds exactly the `b` declared
+buffers of `prog` (so the program's scratch buffers cannot take a declared buffer's handle), and
+the run of `prog` at the sizes $N$ and $n$ from `st₀` under `I` succeeds in a state `st` whose
+counts are at most `c` more than at the start, whose peak memory plus the read-only data is at
+most `m p` cells at each tag `p`, and which satisfies `Q`. -/
 def Prog.RunsWithin {r b : ℕ} (I : Interp P ι K C) (prog : Prog P ι r b) (N : ℕ)
     (n : Fin r → ℕ) (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) : Prop :=
-  ∃ st, prog.exec I N n st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧
+  st₀.store.size = b ∧ ∃ st, prog.exec I N n st₀ = some st ∧ st.cnt ≤ st₀.cnt + c ∧
     (∀ q, st.peak q + I.romSize q ≤ m q) ∧ Q st
 
-/-- A program runs within a budget if and only if its instantiation at the same sizes does. -/
+/-- A program runs within a budget from a state of its `b` declared buffers if and only if its
+instantiation at the same sizes does. -/
 theorem Prog.runsWithin_iff {r b : ℕ} (I : Interp P ι K C) (prog : Prog P ι r b) (N : ℕ)
-    (n : Fin r → ℕ) (st₀ : St P K C) (c : C) (m : P → ℕ) (Q : St P K C → Prop) :
+    (n : Fin r → ℕ) (st₀ : St P K C) (hsize : st₀.store.size = b) (c : C) (m : P → ℕ)
+    (Q : St P K C → Prop) :
     prog.RunsWithin I N n st₀ c m Q ↔ Computation.RunsWithin I (prog.toStmt N n) st₀ c m Q := by
-  simp only [Prog.RunsWithin, Computation.RunsWithin, Prog.exec_eq_exec_toStmt]
+  simp only [Prog.RunsWithin, Computation.RunsWithin, Prog.exec_eq_exec_toStmt, hsize, true_and]
 
 end Budget
 
@@ -331,6 +358,107 @@ theorem FStmt.exec_kcall (I : Interp P ι K C) {nb ni : ℕ} (o : ι) (p : P)
             cnt := st.cnt + I.charge (.kcall p o (dims.map (·.evalIn ρI))) } := by
   rw [FStmt.exec]
 
+/-- The run of a first-order index binder: in the environment of handles `ρB` and of index values
+`ρI`, it converts the value of its cell (`NLAlib.Computation.toNatStep`) and runs the body with the
+value as the new index variable if it is at most the bound, and fails otherwise. No printed
+source. -/
+theorem FStmt.exec_bindIdx (I : Interp P ι K C) {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni))
+    (bound : IExp (Fin ni)) (body : FStmt P ι nb (ni + 1)) (ρB : Fin nb → ℕ) (ρI : Fin ni → ℕ)
+    (st : St P K C) :
+    (FStmt.bindIdx p x bound body).exec I ρB ρI st =
+      (toNatStep I p (x.subst ρB fun v => .const (ρI v)) st).bind fun r =>
+        if r.1 ≤ bound.evalIn ρI then body.exec I ρB (Fin.snoc (α := fun _ => ℕ) ρI r.1) r.2
+        else none := by
+  rw [FStmt.exec]
+
 end KernelCalls
+
+/-! ### Index normal form
+
+The run of a closed statement reads every index expression only through its value.
+`NLAlib.Computation.Stmt.normIdx` replaces every index expression of a statement, under every
+binder, by the constant of its value (design note `docs/design/Computation-EighProgram.md`, §2.4):
+two statements with the same index normal form run the same, so a run lemma of a kernel stated at
+constant sizes applies at any sizes with those values. -/
+
+section IndexNormal
+
+variable {P ι : Type}
+
+/-- A cell with its index replaced by the constant of its value. -/
+def Cell.normIdx (c : Cell ℕ ℕ) : Cell ℕ ℕ := ⟨c.buf, .const c.idx.eval⟩
+
+/-- An instruction with its index expressions replaced by the constants of their values. -/
+def Instr.normIdx : Instr P ℕ ℕ → Instr P ℕ ℕ
+  | .lit p d q => .lit p d.normIdx q
+  | .litIdx p d e => .litIdx p d.normIdx (.const e.eval)
+  | .bin p b d x y => .bin p b d.normIdx x.normIdx y.normIdx
+  | .un p u d x => .un p u d.normIdx x.normIdx
+  | .copy p d s => .copy p d.normIdx s.normIdx
+  | .draw p dist d => .draw p dist d.normIdx
+  | .convert p q d s => .convert p q d.normIdx s.normIdx
+
+/-- **The index normal form** of a statement: every index expression, under every binder,
+replaced by the constant of its value, and every named kernel by its body (the name is a label for
+the emitter, and a named kernel runs as its body). -/
+def Stmt.normIdx : Stmt P ι ℕ ℕ → Stmt P ι ℕ ℕ
+  | .skip => .skip
+  | .seq s t => .seq s.normIdx t.normIdx
+  | .instr i => .instr i.normIdx
+  | .apply o p d dOff s sOff cols =>
+      .apply o p d (.const dOff.eval) s (.const sOff.eval) (.const cols.eval)
+  | .rom p d i => .rom p d.normIdx (.const i.eval)
+  | .alloc p len body => .alloc p (.const len.eval) fun h => (body h).normIdx
+  | .loop n body => .loop (.const n.eval) fun i => (body i).normIdx
+  | .whileFuel fuel p c x y body =>
+      .whileFuel (.const fuel.eval) p c x.normIdx y.normIdx body.normIdx
+  | .ite p c x y t e => .ite p c x.normIdx y.normIdx t.normIdx e.normIdx
+  | .named _ _ body => body.normIdx
+  | .kcall o p dims ins outs =>
+      .kcall o p (dims.map fun e => .const e.eval) (ins.map fun x => (x.1, .const x.2.eval))
+        (outs.map fun x => (x.1, .const x.2.eval))
+  | .bindIdx p x bound body => .bindIdx p x.normIdx (.const bound.eval) fun i => (body i).normIdx
+
+end IndexNormal
+
+/-! ### Renaming tags and oracles
+
+A program is registered at the tags `p` and oracles `mm`, `qr` of its arguments, and its
+polynomial checks are decided on one instance. `NLAlib.Computation.FStmt.mapTags f g` renames the
+tags by `f` and the oracle names by `g`, rebuilding every node, its `named` labels included: the
+registered tree at the tags `p` is the renamed tree of one instance, and a count that reads neither
+tags nor oracle names is the same on both. -/
+
+section Rename
+
+variable {P ι P' ι' : Type}
+
+/-- A scalar instruction with its tags renamed by `f`. -/
+def Instr.mapTag {VB VI : Type} (f : P → P') : Instr P VB VI → Instr P' VB VI
+  | .lit p d q => .lit (f p) d q
+  | .litIdx p d e => .litIdx (f p) d e
+  | .bin p b d x y => .bin (f p) b d x y
+  | .un p u d x => .un (f p) u d x
+  | .copy p d s => .copy (f p) d s
+  | .draw p dist d => .draw (f p) dist d
+  | .convert p q d s => .convert (f p) (f q) d s
+
+/-- A first-order statement with its tags renamed by `f` and its oracle names by `g`: every node
+rebuilt, its `named` labels included. -/
+def FStmt.mapTags (f : P → P') (g : ι → ι') : {nb ni : ℕ} → FStmt P ι nb ni → FStmt P' ι' nb ni
+  | _, _, .skip => .skip
+  | _, _, .seq s t => .seq (s.mapTags f g) (t.mapTags f g)
+  | _, _, .instr i => .instr (i.mapTag f)
+  | _, _, .apply o p d dOff s sOff cols => .apply (g o) (f p) d dOff s sOff cols
+  | _, _, .rom p d i => .rom (f p) d i
+  | _, _, .alloc p len b => .alloc (f p) len (b.mapTags f g)
+  | _, _, .loop n b => .loop n (b.mapTags f g)
+  | _, _, .whileFuel fu p c x y b => .whileFuel fu (f p) c x y (b.mapTags f g)
+  | _, _, .ite p c x y t e => .ite (f p) c x y (t.mapTags f g) (e.mapTags f g)
+  | _, _, .named n a b => .named n a (b.mapTags f g)
+  | _, _, .kcall o p d i o' => .kcall (g o) (f p) d i o'
+  | _, _, .bindIdx p x bd b => .bindIdx (f p) x bd (b.mapTags f g)
+
+end Rename
 
 end NLAlib.Computation

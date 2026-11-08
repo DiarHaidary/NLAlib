@@ -12,11 +12,11 @@ public import NLAlib.Computation.RunsWithin
 
 `NLAlib.Computation.Stmt.subst implI implO implK s` replaces every scalar instruction of `s` by the
 statement `implI i`, every oracle call by `implO …` and every kernel call by `implK …`; comparisons,
-read-only reads, allocations and control are kept. An implementation is certified once:
-`NLAlib.Computation.ImplementsInstr` says that whenever an instruction succeeds under the abstract
-interpretation, its implementation succeeds under the concrete one with the same store and tape
-positions, at most a given cost of its kind, the same current memory and peaks raised by at most a
-scratch; `NLAlib.Computation.ImplementsOracle` says the same of oracle calls, for every index
+index binders, read-only reads, allocations and control are kept. An implementation is certified
+once: `NLAlib.Computation.ImplementsInstr` says that whenever an instruction succeeds under the
+abstract interpretation, its implementation succeeds under the concrete one with the same store and
+tape positions, at most a given cost of its kind, the same current memory and peaks raised by at
+most a scratch; `NLAlib.Computation.ImplementsOracle` says the same of oracle calls, for every index
 expression of the offsets and widths, and `NLAlib.Computation.ImplementsKernel` of kernel calls, for
 every index expression of the dimensions and offsets. So a result proved against a kernel contract
 becomes a result about a program whose kernel calls are certified programs.
@@ -24,12 +24,13 @@ becomes a result about a program whose kernel calls are certified programs.
 The substitution theorem `NLAlib.Computation.RunsWithin.subst` composes them: a program that runs
 within a budget under the abstract interpretation runs, substituted, under the concrete one, with
 the counts substituted kind by kind (`NLAlib.Computation.substCountG`), the peak raised by the
-scratch and the concrete read-only data, and the same store, tape positions and current memory as
-an abstract final state. The two interpretations share one carrier and agree on comparisons and
-widths, and the concrete read-only data extends the abstract one, so substitutions chain. The
-proof is a simulation (`NLAlib.Computation.Sim`, `NLAlib.Computation.exec_subst_sim`) by
-induction on the statement. The oracle theorem `NLAlib.Computation.RunsWithin.substOracle` is the
-case that keeps every instruction. Design: `docs/design/Computation.md` (D4, D18).
+scratch and the concrete read-only data, and the same store, tape positions and current memory as an
+abstract final state. The two interpretations share one carrier and agree on comparisons,
+conversions to indices and widths, and the concrete read-only data extends the abstract one, so
+substitutions chain. The proof is a simulation (`NLAlib.Computation.Sim`,
+`NLAlib.Computation.exec_subst_sim`) by induction on the statement. The oracle theorem
+`NLAlib.Computation.RunsWithin.substOracle` is the case that keeps every instruction. Design:
+`docs/design/Computation.md` (D4, D18).
 
 ## Main definitions
 
@@ -55,7 +56,8 @@ section Interface
 variable {P ι K : Type} [DecidableEq P]
 
 /-- **Substitution of any node kind**: scalar instructions by `implI`, oracle calls by
-`implO`, kernel calls by `implK`. Comparisons, read-only reads, allocation and control are kept. -/
+`implO`, kernel calls by `implK`. Comparisons, index binders, read-only reads, allocation and
+control are kept. -/
 def Stmt.subst {ι' VB VI : Type} (implI : Instr P VB VI → Stmt P ι' VB VI)
     (implO : ι → P → VB → IExp VI → VB → IExp VI → IExp VI → Stmt P ι' VB VI)
     (implK : ι → P → List (IExp VI) → List (VB × IExp VI) → List (VB × IExp VI) →
@@ -72,6 +74,7 @@ def Stmt.subst {ι' VB VI : Type} (implI : Instr P VB VI → Stmt P ι' VB VI)
   | .ite p c x y t e => .ite p c x y (t.subst implI implO implK) (e.subst implI implO implK)
   | .named n a body => .named n a (body.subst implI implO implK)
   | .kcall o p dims ins outs => implK o p dims ins outs
+  | .bindIdx p x bound body => .bindIdx p x bound fun v => (body v).subst implI implO implK
 
 /-- Oracle substitution alone. A kernel call, whose name has no counterpart among the new
 names, becomes `skip`: the oracle substitution theorem
@@ -101,6 +104,7 @@ noncomputable def substKind {ι' : Type} (cost : OpKind P ι → OpCount P ι') 
   | .draw p d => Finsupp.single (.draw p d) 1
   | .convert p q => Finsupp.single (.convert p q) 1
   | .rom p => Finsupp.single (.rom p) 1
+  | .toNat p => Finsupp.single (.toNat p) 1
 
 /-- Counts with the oracle and kernel kinds substituted by `cost` and every other kind kept. -/
 noncomputable def substCount {ι' : Type} (cost : OpKind P ι → OpCount P ι') :
@@ -224,6 +228,24 @@ theorem cmpStep_sim (hcmp : I'.sem.cmp = I.sem.cmp) (hc : ∀ k, I.charge k = Fi
              peakW := h.peakW, curPeak := h.curPeak, curPeakW := h.curPeakW, cnt := ?_ }
     change st'.cnt + I'.charge (.cmp p) ≤ substCountG cost (st.cnt + I.charge (.cmp p))
     rw [hc, hc', map_add, substCountG_single, one_smul, hcostCmp]
+    exact add_le_add h.cnt le_rfl
+
+/-- A conversion step keeps the simulation. -/
+theorem toNatStep_sim (htoNat : I'.sem.toNat = I.sem.toNat)
+    (hc : ∀ k, I.charge k = Finsupp.single k 1) (hc' : ∀ k, I'.charge k = Finsupp.single k 1)
+    (hcostToNat : ∀ p, cost (.toNat p) = Finsupp.single (.toNat p) 1) {p : P} {x : Cell ℕ ℕ}
+    {st : St P K (OpCount P ι)} {st' : St P K (OpCount P ι')}
+    (h : Sim cost scratch scratchW st st') {k : ℕ} {st₁ : St P K (OpCount P ι)}
+    (hr : toNatStep I p x st = some (k, st₁)) :
+    ∃ st₁', toNatStep I' p x st' = some (k, st₁') ∧ Sim cost scratch scratchW st₁ st₁' := by
+  simp only [toNatStep, Option.bind_eq_some_iff, Option.map_eq_some_iff, Prod.mk.injEq] at hr
+  obtain ⟨a, ha, k', hk', rfl, rfl⟩ := hr
+  refine ⟨{ st' with cnt := st'.cnt + I'.charge (.toNat p) }, ?_, ?_⟩
+  · simp only [toNatStep, h.store, htoNat, ha, hk', Option.bind_some, Option.map_some]
+  · refine { store := h.store, pos := h.pos, cur := h.cur, curW := h.curW, peak := h.peak,
+             peakW := h.peakW, curPeak := h.curPeak, curPeakW := h.curPeakW, cnt := ?_ }
+    change st'.cnt + I'.charge (.toNat p) ≤ substCountG cost (st.cnt + I.charge (.toNat p))
+    rw [hc, hc', map_add, substCountG_single, one_smul, hcostToNat]
     exact add_le_add h.cnt le_rfl
 
 /-- The simulation property of a pair of statements: from related states, a successful abstract
@@ -495,14 +517,29 @@ private theorem simRun_whileFuel (hcmp : I'.sem.cmp = I.sem.cmp)
     rw [Option.bind_eq_some_iff]
     exact ⟨r', hr', by simp [← hb, hrb]⟩
 
+private theorem simRun_bindIdx (htoNat : I'.sem.toNat = I.sem.toNat)
+    (hc : ∀ k, I.charge k = Finsupp.single k 1) (hc' : ∀ k, I'.charge k = Finsupp.single k 1)
+    (hcostToNat : ∀ p, cost (.toNat p) = Finsupp.single (.toNat p) 1) (p : P) (x : Cell ℕ ℕ)
+    (bound : IExp ℕ) (body : ℕ → Stmt P ι ℕ ℕ) (body' : ℕ → Stmt P ι' ℕ ℕ)
+    (ih : ∀ v, SimRun I I' cost scratch scratchW (body v) (body' v)) :
+    SimRun I I' cost scratch scratchW (.bindIdx p x bound body) (.bindIdx p x bound body') := by
+  intro st st₁ st' h hrun
+  simp only [exec, Option.bind_eq_some_iff] at hrun
+  obtain ⟨⟨k, st₂⟩, hk, h₂⟩ := hrun
+  obtain ⟨st₂', hk', hs₂⟩ := toNatStep_sim htoNat hc hc' hcostToNat h hk
+  split_ifs at h₂ with hle
+  obtain ⟨st₃', h₃', hs₃⟩ := ih _ st₂ st₁ st₂' hs₂ h₂
+  exact ⟨st₃', by simp only [exec, hk', Option.bind_some, if_pos hle]; exact h₃', hs₃⟩
+
 /-- The simulation, by induction on the statement: from related states, a successful
 abstract run of `s` is matched by a successful concrete run of `s.subst implI implO implK`, and
 the final states are related. -/
-theorem exec_subst_sim (hcmp : I'.sem.cmp = I.sem.cmp)
+theorem exec_subst_sim (hcmp : I'.sem.cmp = I.sem.cmp) (htoNat : I'.sem.toNat = I.sem.toNat)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (hc' : ∀ k, I'.charge k = Finsupp.single k 1)
     (hwidth : I'.width = I.width) (hrom : ∀ i v, I.rom i = some v → I'.rom i = some v)
     (hcostCmp : ∀ p, cost (.cmp p) = Finsupp.single (.cmp p) 1)
     (hcostRom : ∀ p, cost (.rom p) = Finsupp.single (.rom p) 1)
+    (hcostToNat : ∀ p, cost (.toNat p) = Finsupp.single (.toNat p) 1)
     (himplI : ImplementsInstr I I' implI cost scratch scratchW)
     (himplO : ImplementsOracle I I' implO cost scratch scratchW)
     (himplK : ImplementsKernel I I' implK cost scratch scratchW) :
@@ -548,6 +585,7 @@ theorem exec_subst_sim (hcmp : I'.sem.cmp = I.sem.cmp)
     intro st st₁ st' h hrun
     exact ih st st₁ st' h hrun
   | kcall o p dims ins outs => exact simRun_kcall hc himplK o p dims ins outs
+  | bindIdx p x bound body ih => exact simRun_bindIdx htoNat hc hc' hcostToNat p x bound body _ ih
 
 /-- Move a state to another count type. -/
 def St.withCnt {C C' : Type} (st : St P K C) (c : C') : St P K C' :=
@@ -559,18 +597,20 @@ certified implementations. Let a program run within the budget `c`, `m` under th
 interpretation `I`, from a state with zero counts and current memory at most its peak, and let
 `implI`, `implO` and `implK` implement the instructions, oracles and kernels of `I` under `I'` at
 cost `cost` with scratch `scratch` (cells per tag) and `scratchW` (bits). If both interpretations
-charge one per operation, agree on comparisons and widths, the concrete read-only data extends the
-abstract one, and comparisons and read-only reads cost themselves, then the substituted program
+charge one per operation, agree on comparisons, conversions to indices and widths, the concrete
+read-only data extends the abstract one, and comparisons, conversions to indices and read-only
+reads cost themselves, then the substituted program
 succeeds under `I'` with counts at most `substCountG cost c`, peak at most `m q + scratch q` plus
 the concrete read-only data at each tag, and the store, tape positions and current memory of an
 abstract final state satisfying the postcondition, whose bit peak it exceeds by at most `scratchW`.
 No printed source.
 Result: computation-substitution -/
-theorem RunsWithin.subst (hcmp : I'.sem.cmp = I.sem.cmp)
+theorem RunsWithin.subst (hcmp : I'.sem.cmp = I.sem.cmp) (htoNat : I'.sem.toNat = I.sem.toNat)
     (hc : ∀ k, I.charge k = Finsupp.single k 1) (hc' : ∀ k, I'.charge k = Finsupp.single k 1)
     (hwidth : I'.width = I.width) (hrom : ∀ i v, I.rom i = some v → I'.rom i = some v)
     (hcostCmp : ∀ p, cost (.cmp p) = Finsupp.single (.cmp p) 1)
     (hcostRom : ∀ p, cost (.rom p) = Finsupp.single (.rom p) 1)
+    (hcostToNat : ∀ p, cost (.toNat p) = Finsupp.single (.toNat p) 1)
     (himplI : ImplementsInstr I I' implI cost scratch scratchW)
     (himplO : ImplementsOracle I I' implO cost scratch scratchW)
     (himplK : ImplementsKernel I I' implK cost scratch scratchW)
@@ -587,7 +627,8 @@ theorem RunsWithin.subst (hcmp : I'.sem.cmp = I.sem.cmp)
     { store := rfl, pos := rfl, cur := rfl, curW := rfl, cnt := by simp [St.withCnt, h0],
       peak := fun q => le_self_add, peakW := le_self_add, curPeak := hcp, curPeakW := hcpW }
   obtain ⟨st₁', hrun', hs⟩ :=
-    exec_subst_sim hcmp hc hc' hwidth hrom hcostCmp hcostRom himplI himplO himplK s _ _ _ hsim
+    exec_subst_sim hcmp htoNat hc hc' hwidth hrom hcostCmp hcostRom hcostToNat himplI himplO
+      himplK s _ _ _ hsim
       hrun
   refine ⟨st₁', hrun', ?_, fun q => ?_, st₁, hQ, hs.store, hs.pos, hs.cur, hs.peakW⟩
   · rw [h0, zero_add] at hcnt
@@ -643,8 +684,9 @@ theorem RunsWithin.substOracle (hsem : I'.sem = I.sem) (htape : I'.tape = I.tape
     obtain ⟨xs, -, hs₁⟩ := Option.bind_eq_some_iff.mp hs₁
     simp [hker] at hs₁
   obtain ⟨st₁', hrun, hcnt, hpeak, st, hQ, hs, hp, hcur, -⟩ :=
-    RunsWithin.subst (by rw [hsem]) hc hc' hwidth (fun i v hv => by simp [hrom i] at hv)
-      (fun _ => rfl) (fun _ => rfl) hI himpl hK h0 hcp hcpW h
+    RunsWithin.subst (by rw [hsem]) (by rw [hsem]) hc hc' hwidth
+      (fun i v hv => by simp [hrom i] at hv) (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) hI himpl
+      hK h0 hcp hcpW h
   refine ⟨st₁', hrun, ?_, hpeak, st, hQ, hs, hp, hcur⟩
   change st₁'.cnt ≤ 0 + substCountG (substKind cost) c
   rw [zero_add]

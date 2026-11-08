@@ -14,13 +14,14 @@ public import Mathlib.Data.Rat.Defs
 Algorithms are small imperative programs that work on buffers as BLAS code does: they allocate
 scoped buffers, overwrite cells in place, call kernels, draw random numbers from a tape, and
 multiply blocks of vectors by a matrix through an oracle, and call black-box kernels (a matrix
-product, a QR factorization) on contiguous blocks. A program is a value of
+product, a QR factorization) on contiguous blocks, and turn a stored value into a bounded index
+(`bindIdx`, for sizes that depend on the data). A program is a value of
 `NLAlib.Computation.Stmt P ι VB VI`, a two-sorted parametric higher-order abstract syntax: `P` is
 the type of precision tags, `ι` the type of oracle names, `VB` the sort of buffer handles (bound
-by `alloc`) and `VI` the sort of index variables (bound by `loop`). A program is generic in `VB`
-and `VI`, so a handle cannot be forged from a number or computed from an index: both are type
-errors. The run (`NLAlib.Computation.exec`) instantiates both sorts as `ℕ`; the NumPy emitter of
-the tools library instantiates them as `String`.
+by `alloc`) and `VI` the sort of index variables (bound by `loop` and `bindIdx`). A program is
+generic in `VB` and `VI`, so a handle cannot be forged from a number or computed from an index:
+both are type errors. The run (`NLAlib.Computation.exec`) instantiates both sorts as `ℕ`; the
+NumPy emitter of the tools library instantiates them as `String`.
 
 Programs are written in `do` notation through `NLAlib.Computation.Builder`, which is Mathlib's
 continuation monad `ContT (Stmt P ι VB VI) Id`.
@@ -223,7 +224,7 @@ def Instr.subst {P VB VB' VI VI' : Type} (f : VB → VB') (σ : VI → IExp VI')
   | .convert p q d s => .convert p q (d.subst f σ) (s.subst f σ)
 
 /-- Statements over tags `P`, oracle names `ι`, handles `VB` and index variables `VI`.
-`alloc` binds a handle to a fresh scoped buffer, `loop` binds an index. -/
+`alloc` binds a handle to a fresh scoped buffer, `loop` and `bindIdx` bind an index. -/
 inductive Stmt (P ι VB VI : Type) where
   /-- Do nothing. -/
   | skip
@@ -253,13 +254,18 @@ inductive Stmt (P ι VB VI : Type) where
   blocks starting at the cells `ins` and writes the contiguous output blocks starting at the
   cells `outs`, all at tag `p`; the block lengths are the kernel's shape at `dims`. -/
   | kcall (o : ι) (p : P) (dims : List (IExp VI)) (ins outs : List (VB × IExp VI))
+  /-- A bounded index binder: read the cell `x` at tag `p` once, convert the value to a natural
+  number $k$, and run the body with the index variable bound to $k$; the run fails if
+  $k > \mathit{bound}$ (the value is checked, not clamped). The bound is an index expression, so
+  the resources of the body stay functions of the sizes. -/
+  | bindIdx (p : P) (x : Cell VB VI) (bound : IExp VI) (body : VI → Stmt P ι VB VI)
 
 /-! ### First-order statements and programs -/
 
 /-- **First-order statements** over tags `P` and oracle names `ι`, with `nb` handles and `ni`
 index variables in scope, numbered by de Bruijn level: `alloc` binds handle `nb`
-(`Fin.last nb`) in its body and `loop` binds index variable `ni`, and the variables around a
-binder keep their numbers. A handle or index variable out of scope is a type error. The
+(`Fin.last nb`) in its body and `loop` and `bindIdx` bind index variable `ni`, and the variables
+around a binder keep their numbers. A handle or index variable out of scope is a type error. The
 constructors are those of `NLAlib.Computation.Stmt`, with the binders made first-order. -/
 inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
   /-- Do nothing. -/
@@ -296,6 +302,12 @@ inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
   cells `outs`, all at tag `p`; the block lengths are the kernel's shape at `dims`. -/
   | kcall {nb ni : ℕ} (o : ι) (p : P) (dims : List (IExp (Fin ni)))
       (ins outs : List (Fin nb × IExp (Fin ni))) : FStmt P ι nb ni
+  /-- A bounded index binder: read the cell `x` at tag `p` once, convert the value to a natural
+  number $k$, and run the body with $k$ as index variable `ni`. The binder is strict: the run
+  fails when the conversion fails (a negative value) or when $k > \mathit{bound}$; it never
+  clamps. -/
+  | bindIdx {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni)) (bound : IExp (Fin ni))
+      (body : FStmt P ι nb (ni + 1)) : FStmt P ι nb ni
 
 /-- **A program**: a first-order statement with `b` declared buffers (handles `0`, …, `b - 1`),
 the oracle dimension `N` (index variable `0`) and `r` further sizes (index variables `1`, …,
@@ -327,6 +339,12 @@ def alloc (p : P) (len : IExp VI) : Builder P ι VB VI VB := .mk fun k => .alloc
 /-- A loop over the indices below `n`. -/
 def forRange (n : IExp VI) (body : VI → Builder P ι VB VI Unit) : Builder P ι VB VI Unit :=
   .mk fun k => .seq (.loop n fun i => (body i).run) (k ())
+
+/-- A bounded index binder: the value of the cell `x` at tag `p`, converted to a natural number
+and checked against `bound` (the run fails above it), bound as an index variable for the body. -/
+def bindIdx (p : P) (x : Cell VB VI) (bound : IExp VI) (body : VI → Builder P ι VB VI Unit) :
+    Builder P ι VB VI Unit :=
+  .mk fun k => .seq (.bindIdx p x bound fun i => (body i).run) (k ())
 
 /-- A conditional on a comparison of two cells. -/
 def ifThenElse (p : P) (c : CmpOp) (x y : Cell VB VI) (t e : Builder P ι VB VI Unit) :

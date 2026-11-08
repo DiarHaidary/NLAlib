@@ -103,7 +103,8 @@ noncomputable def binaryFloatSem {P : Type} (fmt : Float.Model.Format)
         | .eq => decide (x.val = y.val)
         | .lt => decide (x.val < y.val)
         | .le => decide (x.val ≤ y.val)
-      convert := fun _ _ x => some x }
+      convert := fun _ _ x => some x
+      toNat := fun _ x => if 0 ≤ x.val then some ⌊x.val⌋₊ else none }
 
 /-- Bounded binary arithmetic satisfies the existing arithmetic interface with relative
 allowance $2^{-p}$ and absolute allowance $2^{e_{\min}}/2$. Every exact result in the
@@ -210,6 +211,29 @@ theorem isExactIntLit_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     congr 1
     exact Subtype.ext (binaryFloatRound_eq_self fmt hr hrep)
   exact ⟨_, hq, rfl⟩
+
+/-- Bounded binary arithmetic converts exactly: `NLAlib.Computation.binaryFloatSem`, decoding a
+word to its value, meets `NLAlib.Computation.IsExactToNat` (the floor of the value, failing below
+zero). No printed source. -/
+theorem isExactToNat_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
+    (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
+    IsExactToNat (P := P) (fun _ x => x.val) (binaryFloatSem fmt he r hr) :=
+  fun _ _ => rfl
+
+/-- A bounded binary format is index exact: if $B < 2^p$, $p$ the precision of `fmt`
+(`fmt.mantissaBits`), and the exponent $0$ lies in the range of the format (at least its minimum
+exponent and at most its largest significand exponent), then the bounded binary semantics
+`NLAlib.Computation.binaryFloatSem fmt he r hr`, decoding a word to its value, meets
+`NLAlib.Computation.IsIndexExactSem` at $B$: its integer literals up to $B$ are exact and its
+conversion to an index is the floor of the value, failing below zero. No printed source. -/
+theorem isIndexExactSem_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
+    (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) (B : ℕ)
+    (hB : B < 2 ^ fmt.mantissaBits) (hmin : fmt.minExponent ≤ 0)
+    (hmax : 0 ≤ (2 ^ fmt.exponentBits : ℤ) - 2 - fmt.exponentBias -
+      fmt.mantissaBitsWithoutImplicit) :
+    IsIndexExactSem (fun _ x => x.val) B (binaryFloatSem (P := P) fmt he r hr) :=
+  ⟨isExactIntLit_binaryFloatSem fmt he r hr B hB hmin hmax,
+    isExactToNat_binaryFloatSem fmt he r hr⟩
 
 end ExactIntLit
 

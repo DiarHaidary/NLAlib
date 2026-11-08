@@ -176,5 +176,18 @@ theorem exists_exec_withCharge_eq_some :
       change (I.kcallStore o p _ _ _ a.store).map _ = _
       rw [hs]
       rfl⟩
+  | .bindIdx p x bound body, a, _, h, c₀ => by
+    rw [exec] at h ⊢
+    obtain ⟨⟨k, a₁⟩, hq, hz⟩ := Option.bind_eq_some_iff.mp h
+    obtain ⟨v, hv, hk⟩ := Option.bind_eq_some_iff.mp hq
+    obtain ⟨k', hk', he⟩ := Option.map_eq_some_iff.mp hk
+    obtain ⟨hkk, ha₁⟩ := Prod.mk.injEq _ _ _ _ ▸ he
+    subst hkk ha₁
+    split_ifs at hz with hle
+    obtain ⟨c₁, h₁⟩ := exists_exec_withCharge_eq_some (body k') hz (c₀ + ch (.toNat p))
+    have hq' : toNatStep { I with charge := ch } p x { a with cnt := c₀ } =
+        some (k', { a with cnt := c₀ + ch (.toNat p) }) := by
+      simp only [toNatStep, hv, Option.bind_some, hk', Option.map_some]
+    exact ⟨c₁, by rw [hq', Option.bind_some, if_pos hle]; exact h₁⟩
 
 end NLAlib.Computation

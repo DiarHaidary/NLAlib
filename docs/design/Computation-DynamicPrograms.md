@@ -143,19 +143,19 @@ the registry's `lakefile_sha256` pin (Targets lint item 4) while the skeleton wa
 clean-up (`cleanup/compdyn-s1`) removes the scaffold library and restores main's `lakefile.toml`
 byte for byte, so the pin matches again.
 
-**Skeleton** (`NLAlibScaffold/`, 30 statements, S 20, M 10; revised after Fable's S1 review,
+**Skeleton** (`NLAlibScaffold/` during the stage, since removed; 30 statements, S 20, M 10; revised after Fable's S1 review,
 `~/nlalib-harness/reports/Review-Fable-COMPDYN-S1.md`: the read-back of a kernel call split into
 the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 
-| id | statement | file | difficulty |
+| id | statement | file (`NLAlib/…`) | difficulty |
 |---|---|---|---|
-| K1 | `exec_kcall` | `Computation/Exec.lean` | S |
-| K2 | `Interp.kcallStore_eq_none_of_kernel_eq_none` | `Computation/Exec.lean` | S |
+| K1 | `exec_kcall` | `Computation/KernelCall.lean` | S |
+| K2 | `Interp.kcallStore_eq_none_of_kernel_eq_none` | `Computation/KernelCall.lean` | S |
 | ST1 | `Store.read_of_writeBlocks_eq_some_of_forall` | `Computation/Store.lean` | M |
-| ST2 | `Store.read_of_writeBlocks_eq_some` | `Computation/Store.lean` | M |
-| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/Exec.lean` | S |
-| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/Exec.lean` | M |
-| K5 | `Interp.exists_kcallStore_eq_some` | `Computation/Exec.lean` | M |
+| ST2 | `Store.read_of_writeBlocks_eq_some` | `Computation/KernelCall.lean` | M |
+| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/KernelCall.lean` | S |
+| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/KernelCall.lean` | M |
+| K5 | `Interp.exists_kcallStore_eq_some` | `Computation/KernelCall.lean` | M |
 | K6 | `FStmt.exec_kcall` | `Computation/FirstOrder.lean` | S |
 | K7 | `implementsKernel_self` | `Computation/Subst.lean` | S |
 | KC1 | `EntryLayout.size_toArray` | `Matrix/Computation/KernelContracts.lean` | S |
@@ -183,7 +183,7 @@ the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 **Proofs and placement** (2026-11-06, clean-up on `cleanup/compdyn-s1`). All 30 statements are
 proved (by haiku workers, one commit per proof on `integrate/compdyn-s1`), golfed, and moved into
 `NLAlib/` with the `Proof:` sketches removed (D8). Their elaborated types are unchanged. Each one is
-in the file the table names, with one amendment (2026-11-06): **K1 to K5 and ST2 are in a new file
+in the file the table names, which includes one amendment (2026-11-06): **K1 to K5 and ST2 are in a new file
 `NLAlib/Computation/KernelCall.lean`** (it imports `Exec.lean`). `Exec.lean` was already 1050
 lines and would have grown to about 1210 (rule F10). ST2 is stated with `blockDisjoint`, which is
 defined in `Exec.lean`, so it cannot go into `Store.lean`, which `Exec.lean` imports. ST1 is in
@@ -193,6 +193,40 @@ defined in `Exec.lean`, so it cannot go into `Store.lean`, which `Exec.lean` imp
 cell can be written). No public declaration was added beyond the 30. Three were renamed for rule N2 (coordinator,
 2026-11-06): KC3 `realLayout_get_put` → `realLayout.get_put`, KC4 `pairLayout_get_put` →
 `pairLayout.get_put`, T3 `Dist.measureReal_law_uniform_Icc` → `Dist.real_law_uniform_Icc`.
+
+## S1c/S1d pilot (design stage, 2026-11-06)
+
+Designed on `design/compdyn-s1cd` in its own note, `docs/design/Computation-SignDeflatePrograms.md`
+(decision sheet `COMPDYN-S1cd.json`, D1 to D7): the complex-pair kernels (S1c) and SIGN and
+DEFLATE as registered programs (S1d), `NLAlib.newtonSchulzSignProg` and `NLAlib.deflateProg`, with
+an equality refinement to hdiag's `newtonSchulzSign` and `deflate` on the floating-point machine of
+the program's semantics (`NLAlib.Computation.ScalarSem.toFloatMachine`), success and count
+statements, and the proposed targets `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` and
+`NLAlib.MatrixFreeRoundedProbDeflate`. Two findings change this note's text: the equality needs no
+correctly rounded `fl` for SIGN and DEFLATE (M3 stays for EIGH's uniform sampler), and the S1c/S1d
+calibration (§8 of the new note) puts S1c + S1d at about 5,300 to 6,400 lines, the upper half of
+the rows of §7.2, with the S2 rows unchanged.
+
+## S2 (design stage, 2026-11-06)
+
+Status (2026-11-08): S1c/S1d and S2 are proved and in `NLAlib/`, with the three trees and targets
+registered pending the maintainer's re-pin, on top of the hardening of the model
+(`docs/design/Computation-Hardening.md`, §11); see `Computation-SignDeflatePrograms.md` §11 and
+`Computation-EighProgram.md` §8, "End-of-stage status". Design text:
+
+Designed on `design/compdyn-s2` (from `design/compdyn-s1cd` d610ab95, with `cleanup/hdiag` merged) in
+its own note, `docs/design/Computation-EighProgram.md` (decision sheet `COMPDYN-S2.json`, RP and D1
+to D7). S2a, the bounded index binder `bindIdx` with `ScalarSem.toNat`, `IsExactToNat`,
+`OpKind.toNat` and `StaticCost.supRange`, is implemented and proved in `NLAlib/`, with the second
+re-pin (closure hashes only) pending the maintainer's sign-off; `RunsWithin.subst` gains `htoNat`
+(as §4.1 says) and `hcostToNat`. S2b, EIGH as the registered program `NLAlib.eighProg`, is defined
+and compiled; its refinement (an exact equality with `NLAlib.eigh`, and success under the standard
+model) and the transfer of EV6, EV7, EV8 (as tightened by HDIAG-BOUNDS) are a 63-statement skeleton. Changes to
+this note's plan: the sign step inside EIGH keeps hdiag's step limit instead of the pilot's
+`whileFuel`, so every run succeeds (D1); M3's correctly rounded `fl` becomes the single clause
+`MulShrinks` (D4); every level draws a fixed number of samples (D3), which makes the lazy-sampling
+lemma a relabelling of static blocks. Calibration: S2a about 350 lines (below §7.2's row), S2
+projected 7,750 to 9,550 lines, in the middle of the S2 rows (§10 of the new note).
 
 ## 0. Summary
 

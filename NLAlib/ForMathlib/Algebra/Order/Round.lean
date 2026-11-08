@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Order.Round
 public import Mathlib.Data.Int.Log
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Data.Set.Countable
 
 /-!
 # Rounding to a binary floating-point grid
@@ -33,6 +34,11 @@ Upstream candidate for `Mathlib.Algebra.Order.Round`.
 * `Real.roundNearest_eq_self_of_mem_floatGrid`: rounding fixes the grid.
 * `Real.roundNearest_roundNearest`: rounding is idempotent, for $t \ge 1$.
 * `Real.neg_mem_floatGrid`: the grid is symmetric.
+* `Real.roundNearest_zero`, `Real.roundNearest_one`, `Real.roundNearest_two_inv_pow`: points
+  of the grid that rounding fixes.
+* `Real.abs_roundNearest_le_of_mem_floatGrid`: rounding does not leave the modulus of a grid
+  point.
+* `Real.countable_range_roundNearest`: rounding has countable range.
 -/
 
 @[expose] public section
@@ -152,5 +158,95 @@ source. -/
 theorem neg_mem_floatGrid {t : ℕ} {x : ℝ} (hx : x ∈ floatGrid t) : -x ∈ floatGrid t := by
   obtain ⟨m, e, hm, rfl⟩ := hx
   exact ⟨-m, e, by rwa [abs_neg], by push_cast; ring⟩
+
+/-- Rounding fixes zero. No printed source. -/
+theorem roundNearest_zero (t : ℕ) : roundNearest t 0 = 0 := by
+  simp [roundNearest]
+
+/-- One is on the grid of $t \ge 1$ bits, so rounding fixes it. No printed source. -/
+theorem roundNearest_one {t : ℕ} (ht : 0 < t) : roundNearest t 1 = 1 :=
+  Real.roundNearest_eq_self_of_mem_floatGrid
+    ⟨1, 0, by simpa using one_lt_pow₀ (one_lt_two (α := ℤ)) ht.ne', by simp⟩
+
+/-- A power $2^{-k}$ is on the grid of $t \ge 1$ bits, so rounding fixes it.
+No printed source. -/
+theorem roundNearest_two_inv_pow {t : ℕ} (ht : 0 < t) (k : ℕ) :
+    roundNearest t (2⁻¹ ^ k) = 2⁻¹ ^ k :=
+  Real.roundNearest_eq_self_of_mem_floatGrid
+    ⟨1, -k, by simpa using one_lt_pow₀ (one_lt_two (α := ℤ)) ht.ne', by simp [zpow_neg]⟩
+
+/-- **Rounding to nearest does not leave the modulus of a grid point**: if $\beta$ is on the
+$t$-bit grid and $\lvert a \rvert \le \lvert \beta \rvert$, then
+$\lvert \mathrm{fl}(a) \rvert \le \lvert \beta \rvert$. No printed source. -/
+theorem abs_roundNearest_le_of_mem_floatGrid {t : ℕ} {a β : ℝ} (hβ : β ∈ floatGrid t)
+    (ha : |a| ≤ |β|) : |roundNearest t a| ≤ |β| := by
+  rcases eq_or_ne a 0 with rfl | ha0
+  · simp [roundNearest]
+  have hapos : 0 < |a| := abs_pos.mpr ha0
+  have hβpos : 0 < |β| := hapos.trans_le ha
+  have hfix : roundNearest t β = β := Real.roundNearest_eq_self_of_mem_floatGrid hβ
+  have hσκ : Int.log 2 |a| ≤ Int.log 2 |β| := Int.log_mono_right hapos ha
+  have hκle : (2:ℝ) ^ Int.log 2 |β| ≤ |β| := by
+    exact_mod_cast Int.zpow_log_le_self (b := 2) one_lt_two hβpos
+  have hσlt : |a| < (2:ℝ) ^ (Int.log 2 |a| + 1) := by
+    exact_mod_cast Int.lt_zpow_succ_log_self (b := 2) one_lt_two |a|
+  have hmono : ∀ u v : ℝ, u ≤ v → round u ≤ round v := fun u v h => by
+    rw [round_eq, round_eq]; exact Int.floor_mono (by linarith)
+  rcases eq_or_lt_of_le hσκ with h | h
+  · -- same binade as `β`: the rounding step is the one of `β`, which is a multiple of it
+    have hfix' := hfix
+    rw [roundNearest] at hfix'
+    rw [roundNearest, h]
+    set e : ℤ := Int.log 2 |β| + 1 - t with he
+    have hpos : (0:ℝ) < 2 ^ e := zpow_pos two_pos _
+    set N : ℤ := round (β / 2 ^ e) with hN
+    have hβN : β = (N:ℝ) * 2 ^ e := hfix'.symm
+    have hr : |a / 2 ^ e| ≤ ((|N| : ℤ) : ℝ) := by
+      rw [Int.cast_abs, abs_div, abs_of_pos hpos, div_le_iff₀ hpos]
+      have := ha
+      rw [hβN, abs_mul, abs_of_pos hpos] at this
+      exact this
+    obtain ⟨hl, hu⟩ := abs_le.mp hr
+    have h1 := hmono _ _ hl
+    have h2 := hmono _ _ hu
+    rw [← Int.cast_neg, round_intCast] at h1
+    rw [round_intCast] at h2
+    have hz : |round (a / 2 ^ e)| ≤ |N| := abs_le.mpr ⟨h1, h2⟩
+    have hβabs : |β| = ((|N| : ℤ) : ℝ) * 2 ^ e := by
+      rw [hβN, abs_mul, abs_of_pos hpos, Int.cast_abs]
+    rw [abs_mul, abs_of_pos hpos, ← Int.cast_abs, hβabs]
+    exact mul_le_mul_of_nonneg_right (by exact_mod_cast hz) hpos.le
+  · -- `a` lies in a lower binade: its rounding is at most the top of that binade
+    rw [roundNearest]
+    set f : ℤ := Int.log 2 |a| + 1 - t with hf
+    have hfpos : (0:ℝ) < 2 ^ f := zpow_pos two_pos _
+    have hid : (2:ℝ) ^ t * 2 ^ f = 2 ^ (Int.log 2 |a| + 1) := by
+      rw [hf, ← zpow_natCast, ← zpow_add₀ two_ne_zero]; congr 1; ring
+    have hz : |a / 2 ^ f| ≤ (2:ℝ) ^ t := by
+      rw [abs_div, abs_of_pos hfpos, div_le_iff₀ hfpos, hid]; exact hσlt.le
+    obtain ⟨hl, hu⟩ := abs_le.mp hz
+    have hMr : ((2 ^ t : ℤ) : ℝ) = (2:ℝ) ^ t := by push_cast; rfl
+    have h1 := hmono _ _ hl
+    have h2 := hmono _ _ hu
+    rw [← hMr, ← Int.cast_neg, round_intCast] at h1
+    rw [← hMr, round_intCast] at h2
+    have hz2 : |round (a / 2 ^ f)| ≤ 2 ^ t := abs_le.mpr ⟨h1, h2⟩
+    have hrt : ((|round (a / 2 ^ f)| : ℤ) : ℝ) ≤ (2:ℝ) ^ t := by
+      rw [← hMr]; exact_mod_cast hz2
+    have hchain : (2:ℝ) ^ (Int.log 2 |a| + 1) ≤ (2:ℝ) ^ Int.log 2 |β| :=
+      zpow_le_zpow_right₀ one_le_two (by omega)
+    rw [abs_mul, abs_of_pos hfpos, ← Int.cast_abs]
+    calc ((|round (a / 2 ^ f)| : ℤ) : ℝ) * 2 ^ f ≤ (2:ℝ) ^ t * 2 ^ f :=
+          mul_le_mul_of_nonneg_right hrt hfpos.le
+      _ = (2:ℝ) ^ (Int.log 2 |a| + 1) := hid
+      _ ≤ (2:ℝ) ^ Int.log 2 |β| := hchain
+      _ ≤ |β| := hκle
+
+/-- Rounding to nearest has countable range: its values are integers times powers of two.
+No printed source. -/
+theorem countable_range_roundNearest (t : ℕ) : (Set.range (roundNearest t)).Countable := by
+  refine (Set.countable_range fun p : ℤ × ℤ => (p.1 : ℝ) * (2 : ℝ) ^ p.2).mono ?_
+  rintro _ ⟨x, rfl⟩
+  exact ⟨(_, _), rfl⟩
 
 end Real
