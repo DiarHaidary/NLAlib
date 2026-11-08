@@ -381,9 +381,9 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
   have hsh3' : σ3.store.shape = σ.store.shape := hsh3.trans (Sb.trans hsh2)
   obtain ⟨len, hUs, hUlen⟩ := hU
   obtain ⟨σ4, h4⟩ := exists_exec_zcopy (ι := ι) p n n (X := H.Ua) (xo := 0) (Y := U) (yo := 0)
-    hU0 (blockDisjoint_of_ne_compress hUUa) ⟨len,
+    hU0 (blockDisjoint_of_ne hUUa) ⟨len,
         by rw [hsh3']; exact hUs, by change 0 + 2 * (n * n) ≤ len; omega⟩
-  obtain ⟨-, F4, S4, -⟩ := holds_of_exec_zcopy p n n hU0 (blockDisjoint_of_ne_compress hUUa) h4
+  obtain ⟨-, F4, S4, -⟩ := holds_of_exec_zcopy p n n hU0 (blockDisjoint_of_ne hUUa) h4
   refine exists_exec_bind_of_exec (by exact h4) ?_ (by intro _; rfl)
   obtain ⟨ldv, hdvs, hdvlen⟩ := hdv
   have hstep : ∀ i < (IExp.const n).eval, ∀ s : St P K C,
@@ -397,7 +397,7 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
     obtain ⟨v, hv⟩ : ∃ v, s.store.read p H.Ea i = some v := by
       have := hroot.2 ⟨i, hi⟩
       simp only [Nat.mul_zero, Nat.zero_add] at this
-      exact ⟨_, (hE i).trans ((F4 p H.Ea i (blockDisjoint_of_ne_compress hEaU)).trans this)⟩
+      exact ⟨_, (hE i).trans ((F4 p H.Ea i (blockDisjoint_of_ne hEaU)).trans this)⟩
     obtain ⟨s', hw⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := i) v
       (by rw [hsh, S4, hsh3']; exact hdvs) (by omega)
     refine ⟨_, (exec_seq_instr_copy I (dst := ⟨dv, .var i⟩) (src := ⟨H.Ea, .var i⟩) hv hw).trans
@@ -608,13 +608,13 @@ private theorem exists_exec_root {dec : P → K → ℝ} (p : P) (n ℓ₀ : ℕ
   have hA7 : pairLayout.Holds σ7.store p A 0 A₀ :=
     hA.of_forall_read_eq fun i _ _ => fr7 _ _ _ hA5
   obtain ⟨σ8, h8⟩ := exists_exec_zcopy (ι := ι) p n n (X := A) (xo := 0) (Y := c + 1) (yo := 0)
-    hA7 (blockDisjoint_of_ne_compress hA1) ⟨_, by rw [sh7]; exact hsMa, by
+    hA7 (blockDisjoint_of_ne hA1) ⟨_, by rw [sh7]; exact hsMa, by
       change 0 + 2 * (n * n) ≤ 2 * (n * n) * (ℓ₀ + 1 + 1)
       nlinarith⟩
-  obtain ⟨HMa, F8, S8, P8⟩ := holds_of_exec_zcopy p n n hA7 (blockDisjoint_of_ne_compress hA1) h8
+  obtain ⟨HMa, F8, S8, P8⟩ := holds_of_exec_zcopy p n n hA7 (blockDisjoint_of_ne hA1) h8
   refine exists_exec_bind_of_exec (by exact h8) ?_ (by intro _; rfl)
   have fr8 : ∀ q b i, b ≠ c + 5 → b ≠ c + 1 → σ8.store.read q b i = σ.store.read q b i :=
-    fun q b i h1 h2 => (F8 q b i (blockDisjoint_of_ne_compress h2)).trans (fr7 q b i h1)
+    fun q b i h1 h2 => (F8 q b i (blockDisjoint_of_ne h2)).trans (fr7 q b i h1)
   -- the window and tolerance of the root
   obtain ⟨S9, w9⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := 0) R₀
     (by rw [S8, sh7]; exact hsLv) (by omega)
@@ -631,7 +631,7 @@ private theorem exists_exec_root {dec : P → K → ℝ} (p : P) (n ℓ₀ : ℕ
       rw [h10s, Store.read_of_write_eq_some_of_ne w10 (Or.inl h),
         Store.read_of_write_eq_some_of_ne w9 (Or.inl h)]
   have hSz10 : ∀ i, σ10.store.read p (c + 5) i = σ7.store.read p (c + 5) i := fun i =>
-    (fr10 p _ i (by omega)).trans (F8 p _ i (blockDisjoint_of_ne_compress (by omega)))
+    (fr10 p _ i (by omega)).trans (F8 p _ i (blockDisjoint_of_ne (by omega)))
   refine ht σ10 ?_ ?_ (fun q b i h1 h5 h8 => (fr10 q b i h8).trans (fr8 q b i h5 h1))
     (HMa.of_forall_read_eq fun i _ _ => fr10 p _ i (by omega)) ?_ (fun j hj0 hj => ?_) ?_ ?_
   · rw [h10s, Store.shape_of_write_eq_some w10, Store.shape_of_write_eq_some w9, S8, sh7]

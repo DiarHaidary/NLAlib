@@ -75,23 +75,23 @@ private theorem holds_of_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm 
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
-      (whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
-        (whileNS_comp (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+    exact exec_run_bind_bind (hsingle _ _ fun _ => rfl) (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+        (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
   rw [hstep] at h
   obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
     (hd _ _ _ _ htX) hσ
   have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
-    hfrσ p t i htW htV (hd _ _ _ _ htX) (whileNS_disj hi)
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (blockDisjoint_cell_of_ne hi)
   obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, hpos₁⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
     ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
     (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → st₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
-    (hfr₁ p t i htW htV (whileNS_disj h1)).trans (hrσ i h2)
+    (hfr₁ p t i htW htV (blockDisjoint_cell_of_ne h1)).trans (hrσ i h2)
   refine ⟨hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
     hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
     (hr₁ 4 (by omega) (by omega)).trans hlo, hf₁, fun q b i hbt hbW hbV hbX => ?_,
@@ -296,7 +296,7 @@ private theorem holds_of_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm 
         >>= f).run σ' = (exec I (newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩
           ⟨t, 0⟩ ⟨t, 1⟩).run σ').bind (exec I (f ()).run) := by
     unfold newtonSchulzTestBlock
-    exact whileNS_comp (fun f st => exec_run_bind I (fun _ => rfl) f st) (whileNS_comp
+    exact exec_run_bind_bind (fun f st => exec_run_bind I (fun _ => rfl) f st) (exec_run_bind_bind
       (fun f st => exec_run_bind I (fun _ => rfl) f st)
       (fun f st => exec_run_bind I (fun _ => rfl) f st))
   rw [exec_run_bind I (b := zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo)
@@ -313,7 +313,7 @@ private theorem holds_of_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm 
     ((hr₅ 0).trans hη) hWX hVX hWV (by simp [htW, htV]) (hd _ _ _ _ htX)
     (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₆
   have hr₆ : ∀ i, i ≠ 1 → σ₆.store.read p t i = σ.store.read p t i := fun i h =>
-    (hfr₆ p t i htW htV (whileNS_disj h)).trans (hr₅ i)
+    (hfr₆ p t i htW htV (blockDisjoint_cell_of_ne h)).trans (hr₅ i)
   obtain ⟨hX', hfr', hsh', hpos'⟩ := holds_of_exec_eighSignLoop hmm p hflag n F
     (hX₅.of_forall_read_eq fun i _ _ => hfr₆ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm))
     hW₆ ((hr₆ 0 (by omega)).trans hη) ((hr₆ 3 (by omega)).trans hone)
@@ -545,9 +545,9 @@ private theorem exists_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm pa
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
-      (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl)
-        (whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
+    exact exec_run_bind_bind (exec_bind_of_seq _ _ fun _ => rfl) (exec_run_bind_bind
+      (exec_bind_of_seq _ _ fun _ => rfl) (exec_run_bind_bind (exec_bind_of_seq _ _ fun _ => rfl)
+        (exec_run_bind_bind (exec_bind_of_seq _ _ fun _ => rfl) (exec_run_bind_bind
           (exec_bind_of_seq _ _ fun _ => rfl) (exec_bind_of_seq _ _ fun _ => rfl)))))
   have hsh : ∀ {σ : St P K C} {b : ℕ} {l : ℕ}, σ.store.shape = S → S[b]? = some (p, l) →
       σ.store.shape[b]? = some (p, l) := fun h h' => by rw [h]; exact h'
@@ -558,7 +558,7 @@ private theorem exists_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm pa
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
     (hd _ _ _ _ htX) hσ
   have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
-    hfrσ p t i htW htV (hd _ _ _ _ htX) (whileNS_disj hi)
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (blockDisjoint_cell_of_ne hi)
   have hSσ := hshσ.trans hS
   obtain ⟨σ₁, h₁⟩ := exists_exec_newtonSchulzTestBlock hmm hsem p n (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
@@ -572,7 +572,7 @@ private theorem exists_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm pa
     ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
     (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → σ₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
-    (hfr₁ p t i htW htV (whileNS_disj h1)).trans (hrσ i h2)
+    (hfr₁ p t i htW htV (blockDisjoint_cell_of_ne h1)).trans (hrσ i h2)
   exact ⟨σ₁, by rw [hstep, hσ, Option.bind_some]; exact h₁,
     hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
     hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
@@ -673,7 +673,7 @@ private theorem exists_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm pa
         >>= f).run σ' = (exec I (newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩
           ⟨t, 0⟩ ⟨t, 1⟩).run σ').bind (exec I (f ()).run) := by
     unfold newtonSchulzTestBlock
-    exact whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
+    exact exec_run_bind_bind (exec_bind_of_seq _ _ fun _ => rfl) (exec_run_bind_bind
       (exec_bind_of_seq _ _ fun _ => rfl) (exec_bind_of_seq _ _ fun _ => rfl))
   rw [exec_bind_of_seq (zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo) _ (fun _ => rfl),
     h₅, Option.bind_some, htestc]
@@ -694,7 +694,7 @@ private theorem exists_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm pa
   change ∃ st', exec I (.seq (.loop _ _) .skip) σ₆ = some st'
   rw [exec_seq_skip]
   have hr₆ : ∀ i, i ≠ 1 → σ₆.store.read p t i = σ.store.read p t i := fun i h =>
-    (hfr₆ p t i htW htV (whileNS_disj h)).trans (hr₅ i)
+    (hfr₆ p t i htW htV (blockDisjoint_cell_of_ne h)).trans (hr₅ i)
   exact exists_exec_eighSignLoop hmm hsem p hu n hz hWX hVX hWV htX htW htV hWS hVS htS F σ₆ _
     (hsh₆.trans hS₅)
     (hX₅.of_forall_read_eq fun i _ _ => hfr₆ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm))

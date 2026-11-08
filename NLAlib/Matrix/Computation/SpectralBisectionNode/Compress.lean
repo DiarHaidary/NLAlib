@@ -70,7 +70,7 @@ private theorem shape_pos_of_exec_zconjTranspose (p : P) (m n : ℕ) {X Y : ℕ}
 
 omit [Inhabited K] in
 /-- Blocks of distinct buffers are disjoint. -/
-private theorem blockDisjoint_of_ne {b b' i i' l l' : ℕ} (h : b ≠ b') :
+theorem blockDisjoint_of_ne {b b' i i' l l' : ℕ} (h : b ≠ b') :
     blockDisjoint (b, i, l) (b', i', l') = true := by
   simp [blockDisjoint, h]
 

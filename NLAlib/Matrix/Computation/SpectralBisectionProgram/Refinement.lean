@@ -344,9 +344,9 @@ private theorem exec_eighArenasInit {p : P} {n ℓ₀ t A par : ℕ}
     rw [Store.read_of_write_eq_some_of_ne hw7 (Or.inl hb), fr6 q b i (Or.inl hb)]
   obtain ⟨hM8, fr8, sh8, ps8⟩ := holds_of_exec_zcopy (st := T7) p n n (X := A) (Y := t + 1)
     (xo := 0) (yo := 0) (pairLayout_holds_of_read_eq hA fun i _ _ => r7 p A i (by omega))
-    (blockDisjoint_of_ne_compress (by omega)) ((exec_seq_skip I _ _).trans h8)
+    (blockDisjoint_of_ne (by omega)) ((exec_seq_skip I _ _).trans h8)
   have r8 : ∀ q b i, b ≠ t + 1 → b ≠ t + 5 → σ8.store.read q b i = S.store.read q b i :=
-    fun q b i h1 h5 => (fr8 q b i (blockDisjoint_of_ne_compress h1)).trans (r7 q b i h5)
+    fun q b i h1 h5 => (fr8 q b i (blockDisjoint_of_ne h1)).trans (r7 q b i h5)
   have r10 : ∀ q b i, b ≠ t + 8 → T10.store.read q b i = σ8.store.read q b i := fun q b i hb => by
     rw [Store.read_of_write_eq_some_of_ne hw10 (Or.inl hb),
       Store.read_of_write_eq_some_of_ne hw9 (Or.inl hb)]
@@ -360,10 +360,10 @@ private theorem exec_eighArenasInit {p : P} {n ℓ₀ t A par : ℕ}
     pairLayout_holds_of_read_eq hM8 fun i _ _ => r10 p _ i (by omega), ?_, ?_, g⟩
   · rw [Store.shape_of_write_eq_some hw10, Store.shape_of_write_eq_some hw9, sh8,
       Store.shape_of_write_eq_some hw7, sh6]
-  · rw [r10 p _ 0 (by omega), fr8 p _ 0 (blockDisjoint_of_ne_compress (by omega)),
+  · rw [r10 p _ 0 (by omega), fr8 p _ 0 (blockDisjoint_of_ne (by omega)),
       Store.read_of_write_eq_some hw7]
     exact hv7.symm
-  · rw [r10 p _ w (by omega), fr8 p _ w (blockDisjoint_of_ne_compress (by omega)),
+  · rw [r10 p _ w (by omega), fr8 p _ w (blockDisjoint_of_ne (by omega)),
       Store.read_of_write_eq_some_of_ne hw7 (Or.inr hw0)]
     exact rd6 w hw
   · rw [Store.read_of_write_eq_some_of_ne hw10 (Or.inr (by decide)),
@@ -466,12 +466,12 @@ private theorem holds_of_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm
   have hUa : U ≠ H.Ua := fun h => hU (h ▸ by simp [EighArenas.handles])
   have hEa : H.Ea ≠ U := fun h => hU (h ▸ by simp [EighArenas.handles])
   obtain ⟨hUz, frz, shz, -⟩ := holds_of_exec_zcopy (st := σu) p n n (X := H.Ua) (Y := U)
-    (xo := 0) (yo := 0) hU0' (blockDisjoint_of_ne_compress hUa) ((exec_seq_skip I _ _).trans hzc)
+    (xo := 0) (yo := 0) hU0' (blockDisjoint_of_ne hUa) ((exec_seq_skip I _ _).trans hzc)
   obtain ⟨shc, hcp, frc⟩ := shape_of_exec_loop_copy (X := H.Ea) (Y := dv)
     (fun h => hdv (h ▸ by simp [EighArenas.handles])) g
   refine ⟨shc.trans (shz.trans (hshU.trans hshD)),
     pairLayout_holds_of_read_eq hUz fun i _ _ => frc p U i (Or.inl hUdv), fun i => ?_⟩
-  rw [hcp i i.isLt, frz p H.Ea i (blockDisjoint_of_ne_compress hEa)]
+  rw [hcp i i.isLt, frz p H.Ea i (blockDisjoint_of_ne hEa)]
   have := hE0 i
   simp only [Nat.mul_zero, Nat.zero_add] at this
   exact this

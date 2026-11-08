@@ -705,12 +705,12 @@ private theorem done_of_exec_leafBlock {dec : P → K → ℝ} (p : P) (diag : B
     (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
     (unif := I.sem.tapeUnif p (I.tape .uniform))
     (normal := I.sem.tapeNormal p (I.tape .gaussian)) p diag y.k (A := y.A) (by exact hA)
-    (blockDisjoint_of_ne_compress dUaMa) (blockDisjoint_of_ne_compress dEaMa)
-        (blockDisjoint_of_ne_compress dUaEa)
+    (blockDisjoint_of_ne dUaMa) (blockDisjoint_of_ne dEaMa)
+        (blockDisjoint_of_ne dUaEa)
     (by
       simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-      exact ⟨blockDisjoint_of_ne_compress dKdMa, blockDisjoint_of_ne_compress dKdUa,
-          blockDisjoint_of_ne_compress dKdEa⟩)
+      exact ⟨blockDisjoint_of_ne dKdMa, blockDisjoint_of_ne dKdUa,
+          blockDisjoint_of_ne dKdEa⟩)
     ((exec_eighLeafBlock_var p diag y.k H.Ma H.Ua H.Ea _ _ _ _ _).symm.trans h)
   refine ⟨?_, fun q b i hW => ?_, hsh, hps⟩
   · unfold EighSlotDone
@@ -889,7 +889,7 @@ theorem holds_of_exec_eighSlotBody {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
     obtain ⟨hSg1, hSg2⟩ := hSg hk
     obtain ⟨hres, hfr, hsh, hps⟩ := holds_of_exec_eighNodeBlock_frame hmm hqr p hflag hcmp n ℓ₀ F
       d lo y.k (fun q m hm => hlit q m (by omega)) htn hkn hk H (A := y.A) (R := y.R) (R₀ := R₀)
-      (ε := y.ε) (β := β) (st := { s with store := s₂, cnt := _ }) hd
+      (ε := y.ε) (β := β) (st := { s with store := s₂, cnt := _ })
       (EighArenas.Shaped.of_shape_eq (fun b _ => by change s₂.shape[b]? = _; rw [hsh2]) hH) hbufs
           hA2
       ((hr2' _ dtLv).trans hR) hcmpM ((hr2' _ dtpar).trans hpar.2)
