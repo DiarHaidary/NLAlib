@@ -213,6 +213,22 @@ theorem re_quadForm_of_mulVec_eq_smul {A : Matrix n n 𝕜} {u : n → 𝕜} {c 
 
 /-! ### One-sided subspace bounds -/
 
+/-- A sufficiently large subspace contains a nonzero vector whose Rayleigh quotient
+is at most the eigenvalue at index $k$. -/
+private theorem exists_mem_re_quadForm_le_eigenvalue_mul {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {k : ℕ} (S : Submodule 𝕜 (n → 𝕜)) (hS : k + 1 ≤ Module.finrank 𝕜 S) :
+    ∃ x ∈ S, x ≠ 0 ∧ RCLike.re (quadForm A x) ≤ eigenvalue A k * ‖WithLp.toLp 2 x‖ ^ 2 := by
+  have hk : k < Fintype.card n := by
+    have h1 := S.finrank_le
+    rw [Module.finrank_fintype_fun_eq_card] at h1
+    omega
+  obtain ⟨T, hT₁, hT₂, -⟩ := exists_eigencoordinates hA
+  obtain ⟨x, hxS, hx0, hx⟩ := exists_mem_ne_zero_forall_eq_zero T (Finset.Iio ⟨k, hk⟩) S
+    (by rw [Fin.card_Iio]; exact hS)
+  refine ⟨x, hxS, hx0, ?_⟩
+  rw [hT₁, hT₂]
+  exact sum_eigenvalue_mul_le hA fun j hj => hx j (Finset.mem_Iio.mpr hj)
+
 /-- **Courant–Fischer, lower bound.** If the quadratic form of a Hermitian $\mathbf{A}$ satisfies
 $c \|\mathbf{x}\|^2 \le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for every
 $\mathbf{x}$ in a subspace of dimension at least $k + 1$, then $c \le \lambda_k(\mathbf{A})$.
@@ -224,16 +240,7 @@ theorem _root_.Matrix.IsHermitian.le_eigenvalue_of_forall_mem {A : Matrix n n �
     (hA : A.IsHermitian) {k : ℕ} (S : Submodule 𝕜 (n → 𝕜)) (hS : k + 1 ≤ Module.finrank 𝕜 S)
     {c : ℝ} (h : ∀ x ∈ S, c * ‖WithLp.toLp 2 x‖ ^ 2 ≤ RCLike.re (quadForm A x)) :
     c ≤ eigenvalue A k := by
-  have hk : k < Fintype.card n := by
-    have h1 := S.finrank_le
-    rw [Module.finrank_fintype_fun_eq_card] at h1
-    omega
-  obtain ⟨T, hT₁, hT₂, -⟩ := exists_eigencoordinates hA
-  obtain ⟨x, hxS, hx0, hx⟩ := exists_mem_ne_zero_forall_eq_zero T (Finset.Iio ⟨k, hk⟩) S
-    (by rw [Fin.card_Iio]; exact hS)
-  have h1 : RCLike.re (quadForm A x) ≤ eigenvalue A k * ‖WithLp.toLp 2 x‖ ^ 2 := by
-    rw [hT₁, hT₂]
-    exact sum_eigenvalue_mul_le hA fun j hj => hx j (Finset.mem_Iio.mpr hj)
+  obtain ⟨x, hxS, hx0, h1⟩ := exists_mem_re_quadForm_le_eigenvalue_mul hA S hS
   exact le_of_mul_le_mul_right ((h x hxS).trans h1) (norm_toLp_sq_pos hx0)
 
 /-- **Courant–Fischer, upper bound.** If the quadratic form of a Hermitian $\mathbf{A}$ satisfies
@@ -255,6 +262,33 @@ theorem _root_.Matrix.IsHermitian.eigenvalue_le_of_forall_mem {A : Matrix n n �
     rw [hT₁, hT₂]
     exact le_sum_eigenvalue_mul hA hk fun j hj => hx j (Finset.mem_Ioi.mpr hj)
   exact le_of_mul_le_mul_right (h1.trans (h x hxW)) (norm_toLp_sq_pos hx0)
+
+/-- **Strict subspace test from below.** If a Hermitian matrix has Rayleigh quotient strictly
+above $c$ on the nonzero vectors of a subspace of dimension at least $k+1$, then
+$c<\lambda_k(\mathbf{A})$. [HornJohnson2013, Theorem 4.2.10], in decreasing order.
+Result: eigenvalue-order-and-counting -/
+theorem _root_.Matrix.IsHermitian.lt_eigenvalue_of_forall_mem {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {k : ℕ} (S : Submodule 𝕜 (n → 𝕜)) (hS : k + 1 ≤ Module.finrank 𝕜 S)
+    {c : ℝ} (h : ∀ x ∈ S, x ≠ 0 → c * ‖WithLp.toLp 2 x‖ ^ 2 < RCLike.re (quadForm A x)) :
+    c < eigenvalue A k := by
+  obtain ⟨x, hxS, hx0, h1⟩ := exists_mem_re_quadForm_le_eigenvalue_mul hA S hS
+  exact lt_of_mul_lt_mul_right ((h x hxS hx0).trans_le h1) (sq_nonneg _)
+
+/-- **Strict subspace test from above.** If the Rayleigh quotient of a Hermitian matrix is
+strictly below $c$ on the nonzero vectors of a subspace of codimension at most $k$, then
+$\lambda_k(\mathbf{A})<c$ for $k$ in range. [HornJohnson2013, Theorem 4.2.10].
+Result: eigenvalue-order-and-counting -/
+theorem _root_.Matrix.IsHermitian.eigenvalue_lt_of_forall_mem {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {k : ℕ} (hk : k < Fintype.card n) (W : Submodule 𝕜 (n → 𝕜))
+    (hW : Fintype.card n ≤ Module.finrank 𝕜 W + k) {c : ℝ}
+    (h : ∀ x ∈ W, x ≠ 0 → RCLike.re (quadForm A x) < c * ‖WithLp.toLp 2 x‖ ^ 2) :
+    eigenvalue A k < c := by
+  have hneg := hA.neg.lt_eigenvalue_of_forall_mem (k := Fintype.card n - 1 - k) W (by omega)
+    (c := -c) fun x hx hx0 => by
+      simpa only [quadForm, Matrix.neg_mulVec, dotProduct_neg, map_neg, neg_mul, neg_lt_neg_iff]
+        using h x hx hx0
+  rw [eigenvalue_neg A (j := k) (by omega)] at hneg
+  exact neg_lt_neg_iff.mp hneg
 
 /-- The lower bound is attained: for $k < \lvert n \rvert$ there is a subspace of dimension
 $k + 1$ on which
@@ -512,6 +546,29 @@ theorem _root_.Matrix.PosSemidef.exists_norm_eq_one_and_mulVec_eq_specNorm_smul 
     ∃ u : n → 𝕜, ‖WithLp.toLp 2 u‖ = 1 ∧ A *ᵥ u = specNorm A • u := by
   rw [hA.specNorm_eq_eigenvalue_zero]
   exact hA.isHermitian.exists_norm_eq_one_and_mulVec_eq Fintype.card_pos
+
+/-- **A quadratic probe detects the spectral norm.** For a positive semidefinite matrix on a
+nonempty index space there is one unit vector $\mathbf{v}$ such that every $\mathbf{z}$ satisfies
+$$\|\mathbf{A}\|_2 |\mathbf{v}^{\mathsf{H}}\mathbf{z}|^2
+\le \operatorname{Re}(\mathbf{z}^{\mathsf{H}}\mathbf{A}\mathbf{z}).$$
+The first vector in an ordered orthonormal eigenbasis supplies the direction. No printed source.
+Result: quadratic-probe-spectral-detection -/
+theorem _root_.Matrix.PosSemidef.exists_norm_eq_one_and_specNorm_mul_norm_dotProduct_sq_le
+    [Nonempty n] {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
+    ∃ v : n → 𝕜, ‖WithLp.toLp 2 v‖ = 1 ∧
+      ∀ z : n → 𝕜, specNorm A * ‖star v ⬝ᵥ z‖ ^ 2 ≤ RCLike.re (quadForm A z) := by
+  classical
+  obtain ⟨U, hU, hAU⟩ := hA.isHermitian.exists_eq_mul_diagonal_mul_conjTranspose
+  let i : Fin (Fintype.card n) := ⟨0, Fintype.card_pos⟩
+  refine ⟨U.col i, hU.norm_toLp_col i, fun z => ?_⟩
+  have hq : quadForm A z = quadForm
+      (Matrix.diagonal fun j : Fin (Fintype.card n) => ((eigenvalue A j : ℝ) : 𝕜)) (Uᴴ *ᵥ z) := by
+    rw [← quadForm_conjTranspose_mul_mul, Matrix.conjTranspose_conjTranspose, ← hAU]
+  rw [hq, quadForm_diagonal, map_sum, hA.specNorm_eq_eigenvalue_zero]
+  simp only [← RCLike.ofReal_mul, RCLike.ofReal_re]
+  exact Finset.single_le_sum (f := fun j : Fin (Fintype.card n) =>
+    eigenvalue A j * ‖(Uᴴ *ᵥ z) j‖ ^ 2)
+    (fun j _ => mul_nonneg (hA.eigenvalue_nonneg j) (sq_nonneg _)) (Finset.mem_univ i)
 
 /-- **The spectral norm of a projected matrix is attained in the range of the projector**: for an
 orthogonal projector $\mathbf{P}$ with $\|\mathbf{P}\mathbf{A}\|_2 > 0$ there is a unit vector

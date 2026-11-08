@@ -21,8 +21,9 @@ $\mathbf{B} = \mathbf{S}\mathbf{D}\mathbf{S}^{\mathsf{H}}$ with $\mathbf{D}$ rea
 entries of $\mathbf{D}$ are the generalized eigenvalues of the pair, the eigenvalues of
 $\mathbf{A}^{-1}\mathbf{B}$, so $\mathbf{A}^{-1}\mathbf{B}$ and $\mathbf{A}\mathbf{B}$ are
 diagonalisable with real spectrum. Two positive semidefinite matrices are simultaneously
-diagonalised by congruence as well, with nonnegative diagonals whose coordinate sums are zero
-or one. For an indefinite invertible $\mathbf{A}$, simultaneous diagonalisation by congruence
+diagonalised by congruence as well. Normalizing the first diagonal to zeros and ones gives
+three blocks with sizes determined by the two ranks and the common nullity. For an indefinite
+invertible $\mathbf{A}$, simultaneous diagonalisation by congruence
 is possible exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable with real eigenvalues. Over
 $\mathbb{C}$ every pair of square matrices is simultaneously unitarily triangularised (the
 generalized Schur, or QZ, decomposition).
@@ -33,7 +34,9 @@ generalized Schur, or QZ, decomposition).
   pair.
 * `NLAlib.isEigenvalueListing_inv_mul_of_eq_mul_diagonal_mul_conjTranspose`,
   `Matrix.PosDef.isDiagonalizable_inv_mul`.
-* `Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal`: the normalized semidefinite pair.
+* `Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal`: the sum-normalized pair.
+* `Matrix.PosSemidef.exists_eq_mul_diagonal_mul_conjTranspose`: the three-block form of a
+  semidefinite pair.
 * `NLAlib.exists_hasOrthonormalCols_isUpperTriangular_isUpperTriangular`: the QZ decomposition.
 -/
 
@@ -229,6 +232,40 @@ private theorem commute_of_add_eq_of_mul_self_eq {A B P : Matrix n n 𝕜} (hA :
       (hA.isHermitian.add hB.isHermitian).eq, hAB] at h
   rw [Commute, SemiconjBy, ← sub_eq_of_eq_add' hAB.symm, Matrix.mul_sub, Matrix.sub_mul, hAP, hPA]
 
+/-- Rescale each positive entry of a nonnegative real diagonal to one while leaving its
+zero coordinates unscaled. -/
+private theorem exists_diagonal_mul_mul_eq_ite (a : n → ℝ) (ha : ∀ i, 0 ≤ a i) :
+    ∃ t : n → ℝ, IsUnit (Matrix.diagonal (fun i => (t i : 𝕜))).det ∧
+      (∀ i, t i * a i * t i = if a i = 0 then 0 else 1) ∧ ∀ i, a i = 0 → t i = 1 := by
+  let t (i : n) : ℝ := if a i = 0 then 1 else (√(a i))⁻¹
+  refine ⟨t, ?_, ?_, fun i hi => by simp [t, hi]⟩
+  · rw [Matrix.det_diagonal, isUnit_iff_ne_zero]
+    apply Finset.prod_ne_zero_iff.mpr
+    intro i _
+    apply RCLike.ofReal_ne_zero.mpr
+    by_cases hi : a i = 0
+    · simp [t, hi]
+    · simpa only [t, if_neg hi] using inv_ne_zero (Real.sqrt_ne_zero'.mpr ((ha i).lt_of_ne' hi))
+  · intro i
+    by_cases hi : a i = 0
+    · simp [t, hi]
+    · simp only [t, if_neg hi]
+      have hs := Real.sqrt_ne_zero'.mpr ((ha i).lt_of_ne' hi)
+      field_simp
+      exact (Real.sq_sqrt (ha i)).symm
+
+/-- Multiplying a congruence basis by a real diagonal rescales each diagonal entry twice. -/
+private theorem conjTranspose_mul_mul_eq_diagonal_rescale {C X : Matrix n n 𝕜} {c : n → ℝ}
+    (h : Xᴴ * C * X = Matrix.diagonal (fun i => (c i : 𝕜))) (t : n → ℝ) :
+    (X * Matrix.diagonal (fun i => (t i : 𝕜)))ᴴ * C * (X * Matrix.diagonal (fun i => (t i : 𝕜))) =
+      Matrix.diagonal (fun i => ((t i * c i * t i : ℝ) : 𝕜)) := by
+  let D := Matrix.diagonal (fun i => (t i : 𝕜))
+  calc
+    _ = D * (Xᴴ * C * X) * D := by
+      simp only [D, Matrix.conjTranspose_mul, Matrix.conjTranspose_diagonal_ofReal,
+        Matrix.mul_assoc]
+    _ = _ := by simp only [D, h, Matrix.diagonal_mul_diagonal, RCLike.ofReal_mul]
+
 /-- A positive semidefinite matrix is congruent to a diagonal matrix of zeros and ones. -/
 private theorem exists_conjTranspose_mul_mul_eq_diagonal_indicator {C : Matrix n n 𝕜}
     (hC : C.PosSemidef) :
@@ -236,33 +273,16 @@ private theorem exists_conjTranspose_mul_mul_eq_diagonal_indicator {C : Matrix n
       Xᴴ * C * X = Matrix.diagonal (fun i => ((e i : ℝ) : 𝕜)) ∧ ∀ i, e i * e i = e i := by
   obtain ⟨U, c, hU, hCU⟩ :=
     hC.isHermitian.exists_hasOrthonormalCols_eq_mul_diagonal_mul_conjTranspose
-  have hc : ∀ i, 0 ≤ c i := by
-    have h := hC.conjTranspose_mul_mul_same U
-    rw [hU.eq_mul_mul_conjTranspose_iff.mp hCU, Matrix.posSemidef_diagonal_iff] at h
-    exact fun i => RCLike.ofReal_nonneg.mp (h i)
-  have hs : ∀ i, (if c i = 0 then (1 : ℝ) else (√(c i))⁻¹) ≠ 0 := by
-    intro i
-    split_ifs with h
-    · exact one_ne_zero
-    · exact inv_ne_zero (Real.sqrt_ne_zero'.mpr ((hc i).lt_of_ne' h))
-  refine ⟨U * Matrix.diagonal (fun i => (((if c i = 0 then (1 : ℝ) else (√(c i))⁻¹ : ℝ)) : 𝕜)),
-    fun i => if c i = 0 then 0 else 1, ?_, ?_, fun i => by beta_reduce; split_ifs <;> norm_num⟩
-  · rw [Matrix.det_mul, Matrix.det_diagonal]
-    refine ((Matrix.isUnit_iff_isUnit_det U).mp hU.isUnit).mul (isUnit_iff_ne_zero.mpr ?_)
-    exact Finset.prod_ne_zero_iff.mpr fun i _ => RCLike.ofReal_ne_zero.mpr (hs i)
-  · rw [Matrix.conjTranspose_mul, Matrix.conjTranspose_diagonal_ofReal, hCU]
-    simp only [Matrix.mul_assoc]
-    rw [hU.conjTranspose_mul_cancel_left, ← Matrix.mul_assoc Uᴴ, hU.conjTranspose_mul_self,
-      Matrix.one_mul, Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
-    congr 1
-    funext i
-    rw [← RCLike.ofReal_mul, ← RCLike.ofReal_mul]
-    congr 1
-    split_ifs with h
-    · rw [h, zero_mul, mul_zero]
-    · have h1 : √(c i) ≠ 0 := Real.sqrt_ne_zero'.mpr ((hc i).lt_of_ne' h)
-      field_simp
-      exact (Real.sq_sqrt (hc i)).symm
+  have hdiag := hU.eq_mul_mul_conjTranspose_iff.mp hCU
+  have hc := hC.conjTranspose_mul_mul_same U
+  rw [hdiag, Matrix.posSemidef_diagonal_iff] at hc
+  obtain ⟨t, hD, ht, -⟩ :=
+    exists_diagonal_mul_mul_eq_ite (𝕜 := 𝕜) c fun i => RCLike.ofReal_nonneg.mp (hc i)
+  refine ⟨U * Matrix.diagonal (fun i => (t i : 𝕜)), fun i => if c i = 0 then 0 else 1,
+    ?_, ?_, fun i => by beta_reduce; split_ifs <;> norm_num⟩
+  · rw [Matrix.det_mul]
+    exact ((Matrix.isUnit_iff_isUnit_det U).mp hU.isUnit).mul hD
+  · simpa only [ht] using conjTranspose_mul_mul_eq_diagonal_rescale hdiag t
 
 /-- **Two positive semidefinite matrices are simultaneously diagonalised by congruence**, with
 normalized nonnegative diagonals: there are an invertible $\mathbf{X}$ and nonnegative real
@@ -321,6 +341,100 @@ theorem _root_.Matrix.PosSemidef.exists_conjTranspose_mul_mul_eq_diagonal {A B :
     simp only [Matrix.diagonal_mul_diagonal, Matrix.diagonal_apply_eq,
       ← RCLike.ofReal_mul] at hi
     exact IsIdempotentElem.iff_eq_zero_or_one.mp (RCLike.ofReal_injective hi)
+
+/-- Scale the positive entries of the first congruence diagonal to one. The second diagonal
+already has entries zero or one wherever the first vanishes. -/
+private theorem exists_conjTranspose_mul_mul_eq_diagonal_zero_or_one {A B : Matrix n n 𝕜}
+    (hA : A.PosSemidef) (hB : B.PosSemidef) :
+    ∃ (X : Matrix n n 𝕜) (a b : n → ℝ), IsUnit X.det ∧
+      Xᴴ * A * X = Matrix.diagonal (fun i => (a i : 𝕜)) ∧
+      Xᴴ * B * X = Matrix.diagonal (fun i => (b i : 𝕜)) ∧
+      (∀ i, a i = 0 ∨ a i = 1) ∧ (∀ i, 0 ≤ b i) ∧
+      ∀ i, a i = 0 → b i = 0 ∨ b i = 1 := by
+  obtain ⟨Y, a, b, hY, hYA, hYB, ha, hb, hab⟩ := hA.exists_conjTranspose_mul_mul_eq_diagonal hB
+  obtain ⟨t, hD, ht, hzero⟩ := exists_diagonal_mul_mul_eq_ite (𝕜 := 𝕜) a ha
+  refine ⟨Y * Matrix.diagonal (fun i => (t i : 𝕜)), fun i => if a i = 0 then 0 else 1,
+    fun i => t i * b i * t i, ?_, ?_, conjTranspose_mul_mul_eq_diagonal_rescale hYB t,
+    fun i => by beta_reduce; split_ifs <;> simp, ?_, ?_⟩
+  · rw [Matrix.det_mul]
+    exact hY.mul hD
+  · simpa only [ht] using conjTranspose_mul_mul_eq_diagonal_rescale hYA t
+  · intro i
+    simpa only [mul_assoc, mul_left_comm, mul_comm, pow_two] using
+      mul_nonneg (sq_nonneg (t i)) (hb i)
+  · intro i hi
+    have hai : a i = 0 := by by_contra h; simp [h] at hi
+    simpa only [hzero i hai, one_mul, mul_one, hai, zero_add] using hab i
+
+/-- The rank of a matrix given by an invertible congruence to a real diagonal. -/
+private theorem rank_eq_card_of_conjTranspose_mul_mul_eq_diagonal {C X : Matrix n n 𝕜}
+    {c : n → ℝ} (hX : IsUnit X.det)
+    (h : Xᴴ * C * X = Matrix.diagonal (fun i => (c i : 𝕜))) :
+    C.rank = Fintype.card {i // c i ≠ 0} := by
+  have hr := congrArg Matrix.rank h
+  rw [Matrix.rank_mul_eq_left_of_isUnit_det X _ hX,
+    Matrix.rank_mul_eq_right_of_isUnit_det Xᴴ _ (isUnit_det_conjTranspose hX),
+    Matrix.rank_diagonal] at hr
+  exact hr.trans (Fintype.card_congr (Equiv.subtypeEquivRight fun _ => RCLike.ofReal_ne_zero))
+
+/-- **Simultaneous congruence normal form for a positive semidefinite pair.** For real or complex
+positive semidefinite $\mathbf{A},\mathbf{B}$ there is an invertible $\mathbf{S}$ with
+$$\mathbf{A}=\mathbf{S}\operatorname{diag}(\mathbf{a})\mathbf{S}^{\mathsf{H}},\qquad
+\mathbf{B}=\mathbf{S}\operatorname{diag}(\mathbf{b})\mathbf{S}^{\mathsf{H}}\,.$$
+Each $a_i$ is zero or one. Each $b_i$ is nonnegative and is zero or one when $a_i=0$.
+The indices with $a_i=1$ number $\operatorname{rank}(\mathbf{A})$. Together with the indices
+where $(a_i,b_i)=(0,1)$ they number $\operatorname{rank}(\mathbf{A}+\mathbf{B})$. The remaining
+indices number $\dim(\ker\mathbf{A}\cap\ker\mathbf{B})$. Thus reordering the three index sets
+gives the identity, zero, and common-kernel blocks, including empty blocks.
+[HornJohnson2013, §7.6], with the ranks and common nullity stated explicitly.
+Result: simultaneous-diagonalization-congruence -/
+theorem _root_.Matrix.PosSemidef.exists_eq_mul_diagonal_mul_conjTranspose {A B : Matrix n n 𝕜}
+    (hA : A.PosSemidef) (hB : B.PosSemidef) :
+    ∃ (S : Matrix n n 𝕜) (a b : n → ℝ), IsUnit S.det ∧
+      A = S * Matrix.diagonal (fun i => (a i : 𝕜)) * Sᴴ ∧
+      B = S * Matrix.diagonal (fun i => (b i : 𝕜)) * Sᴴ ∧
+      (∀ i, a i = 0 ∨ a i = 1) ∧ (∀ i, 0 ≤ b i) ∧
+      (∀ i, a i = 0 → b i = 0 ∨ b i = 1) ∧
+      A.rank = Fintype.card {i // a i = 1} ∧
+      (A + B).rank = Fintype.card {i // a i = 1} + Fintype.card {i // a i = 0 ∧ b i = 1} ∧
+      Module.finrank 𝕜 ↥(LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin) =
+        Fintype.card {i // a i = 0 ∧ b i = 0} := by
+  obtain ⟨X, a, b, hX, hXA, hXB, ha, hb, hab⟩ :=
+    exists_conjTranspose_mul_mul_eq_diagonal_zero_or_one hA hB
+  have hsum (i : n) : a i + b i = 0 ↔ a i = 0 ∧ b i = 0 := by
+    have ha0 : 0 ≤ a i := by rcases ha i with hi | hi <;> simp [hi]
+    exact add_eq_zero_iff_of_nonneg ha0 (hb i)
+  have hpos (i : n) : a i + b i ≠ 0 ↔ a i = 1 ∨ a i = 0 ∧ b i = 1 := by
+    rcases ha i with hi | hi
+    · rcases hab i hi with hj | hj <;> simp [hi, hj]
+    · exact ⟨fun _ => Or.inl hi, fun _ => ne_of_gt (by linarith [hb i])⟩
+  have hXsum : Xᴴ * (A + B) * X = Matrix.diagonal (fun i => ((a i + b i : ℝ) : 𝕜)) := by
+    simp only [Matrix.mul_add, Matrix.add_mul, hXA, hXB, RCLike.ofReal_add, Matrix.diagonal_add]
+  have hrA := rank_eq_card_of_conjTranspose_mul_mul_eq_diagonal hX hXA
+  have hrC := rank_eq_card_of_conjTranspose_mul_mul_eq_diagonal hX hXsum
+  have hXh := isUnit_det_conjTranspose hX
+  refine ⟨(Xᴴ)⁻¹, a, b, Matrix.isUnit_nonsing_inv_det _ hXh,
+    diagonal_eq_inv_mul_mul_conjTranspose hXh (by simpa using hXA.symm),
+    diagonal_eq_inv_mul_mul_conjTranspose hXh (by simpa using hXB.symm), ha, hb, hab, ?_, ?_, ?_⟩
+  · have ha1 (i : n) : a i ≠ 0 ↔ a i = 1 := by rcases ha i with h | h <;> simp [h]
+    simpa only [ha1] using hrA
+  · rw [hrC]
+    simp only [hpos, Fintype.card_subtype, Finset.filter_or]
+    apply Finset.card_union_of_disjoint
+    rw [Finset.disjoint_left]
+    intro i hi hi'
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi hi'
+    exact zero_ne_one (hi'.1.symm.trans hi)
+  · rw [← hA.ker_add hB]
+    have hr := (A + B).finrank_ker_add_rank
+    have hc := Finset.card_filter_add_card_filter_not (s := (Finset.univ : Finset n))
+      (p := fun i => a i + b i = 0)
+    simp only [Finset.card_univ, hsum] at hc
+    rw [hrC, Fintype.card_subtype] at hr
+    simp only [ne_eq, hsum] at hr
+    rw [Fintype.card_subtype]
+    omega
+
 
 /-- **A real symmetric pair with invertible $\mathbf{A}$ is simultaneously diagonalised by
 congruence exactly when $\mathbf{A}^{-1}\mathbf{B}$ is diagonalisable over $\mathbb{R}$**: there

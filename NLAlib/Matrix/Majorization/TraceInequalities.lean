@@ -23,7 +23,8 @@ eigenvalues and sorted singular values are $1$-Lipschitz in the Frobenius norm, 
 * `NLAlib.norm_trace_conjTranspose_mul_le_sum_singularValues_mul`: von Neumann's trace inequality.
 * `Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq`: Hoffman–Wielandt for Hermitian
   matrices.
-* `NLAlib.sum_singularValues_sub_sq_le_frobNorm_sub_sq`: Mirsky's inequality.
+* `NLAlib.sum_singularValues_sub_sq_le_frobNorm_sub_sq`,
+  `NLAlib.frobNorm_sub_sq_eq_sum_singularValues_sub_sq_iff`: Mirsky's inequality and equality case.
 -/
 
 @[expose] public section
@@ -214,6 +215,19 @@ theorem _root_.Matrix.IsHermitian.sum_eigenvalue_sub_sq_le_frobNorm_sub_sq {A B 
       frobInner, hA.eq, hsq]
     linarith
 
+/-- Expand the squared distance between the descending singular value lists. -/
+private theorem sum_singularValues_sub_sq_eq (A B : Matrix m n 𝕜) :
+    ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+      (singularValues A i - singularValues B i) ^ 2 =
+        frobNorm A ^ 2 - 2 * (∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+          singularValues A i * singularValues B i) + frobNorm B ^ 2 := by
+  rw [frobNorm_sq_eq_sum_range_singularValues_sq A
+    (le_min A.rank_le_card_height A.rank_le_card_width),
+    frobNorm_sq_eq_sum_range_singularValues_sq B
+      (le_min B.rank_le_card_height B.rank_le_card_width),
+    Finset.mul_sum, ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
 /-- **Mirsky's inequality** in the Frobenius norm. The sorted singular values are $1$-Lipschitz:
 for any finite set $S$ of indices,
 $$\sum_{i \in S} \bigl(\sigma_i(\mathbf{A}) - \sigma_i(\mathbf{B})\bigr)^2
@@ -230,21 +244,27 @@ theorem sum_singularValues_sub_sq_le_frobNorm_sub_sq (A B : Matrix m n 𝕜) (S 
         ((le_min B.rank_le_card_height B.rank_le_card_width).trans hi),
       sub_self, zero_pow two_ne_zero]
   · have h := (le_abs_self _).trans (abs_frobInner_le_sum_singularValues_mul A B)
-    have hsq : ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
-          (singularValues A i - singularValues B i) ^ 2 =
-        ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)), singularValues A i ^ 2 -
-          2 * ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
-            singularValues A i * singularValues B i +
-          ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
-            singularValues B i ^ 2 := by
-      rw [Finset.mul_sum, ← Finset.sum_sub_distrib, ← Finset.sum_add_distrib]
-      exact Finset.sum_congr rfl fun i _ => by ring
-    rw [frobNorm_sub_sq,
-      frobNorm_sq_eq_sum_range_singularValues_sq A
-        (le_min A.rank_le_card_height A.rank_le_card_width),
-      frobNorm_sq_eq_sum_range_singularValues_sq B
-        (le_min B.rank_le_card_height B.rank_le_card_width), hsq]
+    rw [sum_singularValues_sub_sq_eq, frobNorm_sub_sq]
     linarith
+
+/-- **Equality in Mirsky's inequality.** For real or complex rectangular matrices
+$\mathbf{A},\mathbf{B}$ of the same shape, the squared Frobenius distance equals the squared
+distance of their descending singular value lists exactly when
+$$\operatorname{Re}\operatorname{tr}(\mathbf{A}\mathbf{B}^{\mathsf{H}})
+  = \sum_i \sigma_i(\mathbf{A})\sigma_i(\mathbf{B})\,.$$
+Both sums extend to the smaller matrix dimension, including zero.
+[HornJohnson2013, §7.4.1], the Frobenius equality case of the singular-value inequalities.
+This extends the real statement in the original NLAlib formal library,
+`NLAlib.Matrix.Factorizations.ProcrustesRotations`, commit
+`77514ce42a0e437d837797a063ac161f41022730`, to `RCLike` matrices.
+Result: mirsky-inequality, orthogonal-procrustes -/
+theorem frobNorm_sub_sq_eq_sum_singularValues_sub_sq_iff (A B : Matrix m n 𝕜) :
+    frobNorm (A - B) ^ 2 = ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+      (singularValues A i - singularValues B i) ^ 2 ↔
+    frobInner A B = ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+      singularValues A i * singularValues B i := by
+  rw [sum_singularValues_sub_sq_eq, frobNorm_sub_sq]
+  constructor <;> intro h <;> linarith
 
 /-- The Frobenius inner product with a matrix of rank at most $r$ is bounded through the
 spectral norm: if $\operatorname{rank} \mathbf{X} \le r$ then

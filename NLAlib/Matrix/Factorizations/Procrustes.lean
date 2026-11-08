@@ -32,6 +32,8 @@ division by zero interpreted as zero.
   $\mathbf{A}\mathbf{B}^{\mathsf{H}}$.
 * `NLAlib.isLeast_frobNorm_sub_mul_sq`: the orthogonal Procrustes problem.
 * `NLAlib.isLeast_frobNorm_sub_mul_mul_sq`: the two-sided Procrustes problem.
+* `NLAlib.posSemidef_mul_conjTranspose_of_frobNorm_sub_sq_eq`: the row cross-product is
+  positive semidefinite at equality in Mirsky's inequality.
 * `NLAlib.HasOrthonormalCols.frobNorm_sub_smul_sq_of_mul_sqrt_eq`: the objective at any real
   multiple of an isometric polar extension.
 * `NLAlib.HasOrthonormalCols.frobNorm_sq_sub_nuclearNorm_sq_div_le`: the lower bound for every
@@ -182,6 +184,39 @@ theorem isLeast_frobNorm_sub_mul_mul_sq [DecidableEq n] (A B : Matrix m n 𝕜) 
       rwa [Matrix.conjTranspose_conjTranspose] at h
     have h := sum_singularValues_sub_sq_le_frobNorm_sub_sq A (P * B * W) (Finset.range k)
     rwa [hsv] at h
+
+omit [DecidableEq m] in
+/-- **Positive semidefinite cross-product at equality in Mirsky's inequality.** For real or complex
+rectangular matrices $\mathbf{A},\mathbf{B}$ of the same shape, if
+$$\|\mathbf{A}-\mathbf{B}\|_{\mathsf{F}}^2
+  = \sum_i (\sigma_i(\mathbf{A})-\sigma_i(\mathbf{B}))^2\,,$$
+then $\mathbf{A}\mathbf{B}^{\mathsf{H}}$ is positive semidefinite. Applying this result to
+$\mathbf{A}^{\mathsf{H}},\mathbf{B}^{\mathsf{H}}$ and taking the adjoint gives the same conclusion
+for $\mathbf{B}^{\mathsf{H}}\mathbf{A}$. The singular values are in descending order and the sum
+extends to the smaller dimension. [HornJohnson2013, Corollary 7.4.1.5].
+This extends the real cross-product result in the original NLAlib formal library,
+`NLAlib.Matrix.Factorizations.ProcrustesRotations`, commit
+`77514ce42a0e437d837797a063ac161f41022730`, to `RCLike` matrices.
+Result: orthogonal-procrustes -/
+theorem posSemidef_mul_conjTranspose_of_frobNorm_sub_sq_eq
+    {A B : Matrix m n 𝕜} (h : frobNorm (A - B) ^ 2 =
+      ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+        (singularValues A i - singularValues B i) ^ 2) :
+    (A * Bᴴ).PosSemidef := by
+  classical
+  have htrace := (frobNorm_sub_sq_eq_sum_singularValues_sub_sq_iff A B).mp h
+  obtain ⟨U, hU, hpolar⟩ := exists_hasOrthonormalCols_mul_sqrt_eq (A * Bᴴ) le_rfl
+  have hpair : frobInner A (U * B) = nuclearNorm (A * Bᴴ) := by
+    calc
+      _ = frobInner (A * Bᴴ) U := by rw [frobInner_mul_right, Matrix.conjTranspose_conjTranspose]
+      _ = _ := hU.frobInner_eq_nuclearNorm_of_mul_sqrt_eq hpolar
+  have hub := (le_abs_self _).trans (abs_frobInner_le_sum_singularValues_mul A (U * B))
+  rw [hpair, hU.singularValues_mul_left, ← htrace, frobInner_eq_re_trace_mul_conjTranspose] at hub
+  have hnorm := norm_trace_le_nuclearNorm (A * Bᴴ)
+  apply trace_eq_nuclearNorm_iff_posSemidef.mp
+  calc
+    _ = (RCLike.re (A * Bᴴ).trace : 𝕜) := (RCLike.re_eq_self_of_le (hnorm.trans hub)).symm
+    _ = _ := congrArg (fun x : ℝ => (x : 𝕜)) (((RCLike.re_le_norm _).trans hnorm).antisymm hub)
 
 /-! ### The nearest scaled isometry -/
 

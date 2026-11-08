@@ -5,6 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
+public import Mathlib.Analysis.Calculus.Deriv.Inv
+public import Mathlib.Analysis.Calculus.Gradient.Basic
 public import NLAlib.Matrix.Pseudoinverse.ConditionNumber
 public import NLAlib.Matrix.Spectral.CourantFischer
 
@@ -23,6 +25,7 @@ eigenvector matrix (Bauer–Fike).
 * `Matrix.IsHermitian.exists_abs_eigenvalue_sub_mul_norm_le`: an eigenvalue within the residual.
 * `Matrix.IsHermitian.norm_mulVec_sub_rayleighQuotient_smul_le`: the Rayleigh quotient minimises
   the residual.
+* `Matrix.IsHermitian.hasGradientAt_rayleighQuotient`: the real gradient is a scaled residual.
 * `Matrix.IsHermitian.abs_sub_rayleighQuotient_mul_le_norm_sq`: the quadratic residual bound.
 * `Matrix.IsHermitian.rayleighQuotient_sub_le_of_lt`,
   `Matrix.IsHermitian.le_rayleighQuotient_add_of_lt`: the Kato–Temple inequalities.
@@ -94,6 +97,50 @@ theorem _root_.Matrix.IsHermitian.star_dotProduct_mulVec_sub_rayleighQuotient_sm
   rw [dotProduct_sub, dotProduct_smul, EuclideanSpace.star_dotProduct_self_eq_coe_norm_sq,
     ← quadForm_def, ← hA.coe_re_quadForm, re_quadForm_eq_rayleighQuotient_mul,
     RCLike.real_smul_eq_coe_mul, RCLike.ofReal_mul, sub_self]
+
+/-- **Gradient of the Rayleigh quotient.** For Hermitian $\mathbf{A}$ and nonzero
+$\mathbf{x} \in \Bbbk^n$, let $\rho(\mathbf{x}) =
+\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}) / \|\mathbf{x}\|_2^2$.
+On the underlying real Euclidean space its gradient is
+$$\nabla \rho(\mathbf{x}) = \frac{2}{\|\mathbf{x}\|_2^2}
+  (\mathbf{A}\mathbf{x} - \rho(\mathbf{x})\mathbf{x}).$$
+[TrefethenBau1997, (27.2), p. 203] gives the real symmetric case.
+Result: eigenvalue-residual-bounds -/
+theorem _root_.Matrix.IsHermitian.hasGradientAt_rayleighQuotient {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {x : EuclideanSpace 𝕜 n} (hx : x ≠ 0) :
+    HasGradientAt (fun y : EuclideanSpace 𝕜 n => rayleighQuotient A y.ofLp)
+      ((2 / ‖x‖ ^ 2) • (WithLp.toLp 2 (A *ᵥ x.ofLp) - rayleighQuotient A x.ofLp • x)) x := by
+  classical
+  let T := Matrix.toEuclideanCLM (𝕜 := 𝕜) A
+  have hinner (v w : EuclideanSpace 𝕜 n) :
+      inner ℝ v w = RCLike.re (inner 𝕜 v w) := by
+    simp only [PiLp.inner_apply, map_sum]
+    rfl
+  have hsym : (T.restrictScalars ℝ).toLinearMap.IsSymmetric := fun v w => by
+    rw [hinner, hinner]
+    exact congrArg RCLike.re (Matrix.isSymmetric_toEuclideanLin_iff.mpr hA v w)
+  have hρ (y : EuclideanSpace 𝕜 n) :
+      rayleighQuotient A y.ofLp = (T.restrictScalars ℝ).rayleighQuotient y := by
+    rw [rayleighQuotient_eq_toEuclideanCLM, WithLp.toLp_ofLp]
+    change _ / _ = inner ℝ (T y) y / _
+    rw [hinner]
+    rfl
+  have hnum := (hsym.hasStrictFDerivAt_reApplyInnerSelf x).hasFDerivAt
+  have hden := (hasStrictFDerivAt_norm_sq x).hasFDerivAt
+  have hn : ‖x‖ ^ 2 ≠ 0 := pow_ne_zero 2 (norm_ne_zero_iff.mpr hx)
+  have hd := hnum.mul ((hasFDerivAt_inv hn).comp x hden)
+  simp_rw [hρ]
+  rw [hasGradientAt_iff_hasFDerivAt]
+  convert! hd using 1
+  ext y
+  change inner ℝ ((2 / ‖x‖ ^ 2) • ((T.restrictScalars ℝ) x -
+    (T.restrictScalars ℝ).rayleighQuotient x • x)) y = _
+  simp only [add_apply, smul_apply, ContinuousLinearMap.comp_apply, innerSL_apply_apply,
+    real_inner_smul_left, inner_sub_left, ContinuousLinearMap.rayleighQuotient,
+    ContinuousLinearMap.reApplyInnerSelf_apply,
+    ContinuousLinearMap.toSpanSingleton_apply, smul_eq_mul, Function.comp_apply]
+  field_simp
+  ring
 
 /-- **Pythagoras for residuals.** For Hermitian $\mathbf{A}$, any vector $\mathbf{x}$ and real
 $\mu$,
