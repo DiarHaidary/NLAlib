@@ -626,7 +626,7 @@ unchanged: its pigeonhole step still uses the gap and the strict `β < cΓ`.
 `shiftPoly_monic`, `natDegree_shiftPoly`, `norm_eval_shiftPoly`, `eval_shiftPoly_ne_zero`,
 `shiftPoly_append`, `aeval_shiftPoly_replicate`,
 `IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_pow_mul_le` (ShiftedQR);
-`shiftPoly_ritzValues`, `sum_lastRowWeights_div_pow_two_mul_le`, `sum_lastRowWeights_div_pow_le`
+`shiftPoly_ritzValues`, `sum_lastRowWeights_div_pow_two_mul_le` (its Jensen corollary is private, rule T15)
 (Ritz); and, moved out of `ShiftedQR` by Fable's item 5, `hasOrthonormalCols_givensHessenbergQ`,
 `givensHessenbergState_snd_apply_of_eq_add_one`,
 `givensHessenbergState_fst_mulVec_apply_eq_zero_of_le` (GivensHessenberg) and

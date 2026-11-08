@@ -43,8 +43,7 @@ $\kappa_V^{4\log_2 k/k}$-promising Ritz value (Lemma 4.5 there).
   `NLAlib.IsUpperHessenberg.isOptimalRitzValues_one_ritzValues`,
   `NLAlib.norm_le_specNorm_of_mem_ritzValues`: exact Ritz values.
 * `NLAlib.IsOptimalRitzValues.one_le_mul_sum_lastRowWeights_div`: the moment comparison.
-* `NLAlib.sum_lastRowWeights_div_pow_two_mul_le`, `NLAlib.sum_lastRowWeights_div_pow_le`: the
-  moments of an inverse shift.
+* `NLAlib.sum_lastRowWeights_div_pow_two_mul_le`: the second moment of an inverse shift.
 * `NLAlib.IsUpperHessenberg.hessenbergPotential_multiShiftedQRStep_replicate_le`:
   almost-monotonicity.
 * `NLAlib.sum_lastRowWeights_div_norm_eval_shiftPoly_le`, `NLAlib.findRitz_mem`,
@@ -252,7 +251,9 @@ $$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^{2k}} \le
 \kappa^2\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|^2\,,$$
 i.e. $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-2k} \le
 \kappa^2\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|^2$.
-[BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$. -/
+[BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$; the paper's
+first-moment form $\mathbb{E}\lvert Z_{\mathbf{H}} - r\rvert^{-k} \le
+\kappa\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|$ follows by Jensen. -/
 theorem sum_lastRowWeights_div_pow_two_mul_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
     (hr : ∀ i, d i ≠ r) (k : ℕ) :
@@ -264,15 +265,12 @@ theorem sum_lastRowWeights_div_pow_two_mul_le {H V : Matrix (Fin (n + 1)) (Fin (
   refine le_of_eq_of_le (Finset.sum_congr rfl fun i _ => ?_) h
   rw [norm_pow, norm_inv, inv_pow, inv_pow, ← pow_mul, mul_comm k, div_eq_mul_inv]
 
-/-- **The first moment of an inverse shift**: let $\mathbf{H}\mathbf{V} =
-\mathbf{V}\operatorname{diag}(\mathbf{d})$, $\mathbf{V}$ invertible with
-$\kappa = \|\mathbf{V}\|_2\|\mathbf{V}^{-1}\|_2$ and last-row weights $w$, and $r$ no
-eigenvalue. Then
-$$\sum_i\frac{w_i}{\lvert\mathbf{d}_i - r\rvert^k} \le
-\kappa\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|\,,$$
-by Jensen from `NLAlib.sum_lastRowWeights_div_pow_two_mul_le`.
-[BanksGarzaVargasSrivastava2021, Lemma 4.2], with $f(z) = (z - r)^{-k}$. -/
-theorem sum_lastRowWeights_div_pow_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
+/-- The first moment of an inverse shift, by Jensen from the second
+(`NLAlib.sum_lastRowWeights_div_pow_two_mul_le`): with $r$ no eigenvalue,
+$\sum_i w_i/\lvert\mathbf{d}_i - r\rvert^k \le
+\kappa\|\mathbf{e}_n^{\mathsf{H}}(\mathbf{H} - r\mathbf{I})^{-k}\|$. Used by
+almost-monotonicity. -/
+private theorem sum_lastRowWeights_div_pow_le {H V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ}
     {d : Fin (n + 1) → ℂ} (hV : IsUnit V) (hHV : H * V = V * Matrix.diagonal d) {r : ℂ}
     (hr : ∀ i, d i ≠ r) (k : ℕ) :
     ∑ i, lastRowWeights V i / ‖d i - r‖ ^ k ≤ pseudoConditionNumber V *
