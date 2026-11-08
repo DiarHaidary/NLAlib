@@ -698,6 +698,35 @@ theorem storedEntriesLanczosReorth : StoredEntriesLanczosReorth := by
       nlinarith
     · simpa [inputState, hp] using hpeak
 
+/-- **The reorthogonalized Lanczos target is not vacuous**
+(`docs/design/Computation-Hardening.md`, §2.2): for every $N_0$ there are tags and oracle names
+(`Unit`) and sizes $N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type
+$\mathbb{R}^N$ inhabited (by the zero vector). The witness of `NLAlib.StoredEntriesLanczosReorth`
+(`scripts/Targets.lean`, item 7). No printed source. -/
+theorem storedEntriesLanczosReorth_nonVacuous : ∀ N₀ : ℕ,
+    ∃ (P ι : Type) (_ : DecidableEq P) (tag : P),
+    StoredEntries.NonVacuous (𝕜 := ℝ) tag (lanczosReorthProg.compiled (ι := ι) tag)
+      (fun _ _ => True) (fun N _ => Fin N → ℝ)
+      (fun N q b => ![(Array.ofFn b).map some, Array.replicate (N * (q 0 + 1)) none,
+        Array.replicate (q 0) none, Array.replicate (q 0 + 1) none,
+        Array.replicate 1 none, Array.replicate N none, Array.replicate (q 0) none])
+      (fun N _ => N ^ 2) (fun N q => lanczosReorthCount tag N (q 0))
+      (fun N q p => if p = tag then 2 * N ^ 2 + N * (q 0 + 5) + 5 * q 0 + 7 else 0)
+      (fun N q b vals _ st =>
+        let A : Matrix (Fin N) (Fin N) ℝ := fun i j => vals (i + N * j)
+        Holds st.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+        Holds st.store tag 1 0 (lanczosReorthMatrix A b (q 0 + 1)) ∧
+        Holds st.store tag 2 0 (fun (j : Fin (q 0)) (_ : Fin 1) =>
+          lanczosAlpha A (lanczosReorthState A b j).toLanczosState) ∧
+        Holds st.store tag 3 0
+          (fun (j : Fin (q 0 + 1)) (_ : Fin 1) => (lanczosReorthState A b j).beta) ∧
+        st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+        Holds st.store tag 5 0 (fun i (_ : Fin 1) => (lanczosReorthState A b (q 0)).prev i) ∧
+        Holds st.store tag 6 0
+          (fun (j : Fin (q 0)) (_ : Fin 1) => (lanczosReorthState A b ((j : ℕ) + 1)).nu)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), N₀ + 1, fun _ => 1, Nat.le_succ N₀, trivial,
+    ⟨0⟩⟩
+
 /-- **Lanczos with full reorthogonalization, matrix-free**: the registered tree
 `NLAlib.lanczosReorthOracleProg.compiled` meets its target `NLAlib.MatrixFreeLanczosReorth`: for
 every real matrix and input it succeeds within `NLAlib.lanczosReorthOracleCount` and the
@@ -727,5 +756,33 @@ theorem matrixFreeLanczosReorth : MatrixFreeLanczosReorth := by
       simp [inputState] at hpeak ⊢
       nlinarith
     · simpa [inputState, hp] using hpeak
+
+/-- **The matrix-free reorthogonalized Lanczos target is not vacuous**
+(`docs/design/Computation-Hardening.md`, §2.2): for every $N_0$ there are tags and oracle names
+(`Unit`) and sizes $N = N_0 + 1$, $n = (1)$ (no size condition), the declared input type
+$\mathbb{R}^N$ inhabited (by the zero vector). The witness of `NLAlib.MatrixFreeLanczosReorth`
+(`scripts/Targets.lean`, item 7). No printed source. -/
+theorem matrixFreeLanczosReorth_nonVacuous : ∀ N₀ : ℕ,
+    ∃ (P ι : Type) (_ : DecidableEq P) (tag : P) (o : ι),
+    MatrixFree.NonVacuous (𝕜 := ℝ) tag (lanczosReorthOracleProg.compiled tag o)
+      (fun _ _ => True) (fun N _ => Fin N → ℝ)
+      (fun N q b => ![(Array.ofFn b).map some, Array.replicate (N * (q 0 + 1)) none,
+        Array.replicate (q 0) none, Array.replicate (q 0 + 1) none,
+        Array.replicate 1 none, Array.replicate N none, Array.replicate (q 0) none])
+      (fun N q => lanczosReorthOracleCount tag o N (q 0))
+      (fun N q p => if p = tag then N * (q 0 + 5) + 5 * q 0 + 7 else 0)
+      (fun _ q b A _ st =>
+        Holds st.store tag 0 0 (fun i (_ : Fin 1) => b i) ∧
+        Holds st.store tag 1 0 (lanczosReorthMatrix A b (q 0 + 1)) ∧
+        Holds st.store tag 2 0 (fun (j : Fin (q 0)) (_ : Fin 1) =>
+          lanczosAlpha A (lanczosReorthState A b j).toLanczosState) ∧
+        Holds st.store tag 3 0
+          (fun (j : Fin (q 0 + 1)) (_ : Fin 1) => (lanczosReorthState A b j).beta) ∧
+        st.store.read tag 4 0 = some ‖WithLp.toLp 2 b‖ ∧
+        Holds st.store tag 5 0 (fun i (_ : Fin 1) => (lanczosReorthState A b (q 0)).prev i) ∧
+        Holds st.store tag 6 0
+          (fun (j : Fin (q 0)) (_ : Fin 1) => (lanczosReorthState A b ((j : ℕ) + 1)).nu)) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), N₀ + 1, fun _ => 1, Nat.le_succ N₀, trivial,
+    ⟨0⟩⟩
 
 end NLAlib

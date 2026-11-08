@@ -1332,6 +1332,85 @@ theorem storedEntriesCooHutchpp : StoredEntriesCooHutchpp := fun _ _ _ p o d pat
   (storedEntries_substOracle_hutchppProg_cooImpl p o d pattern).prog _
     (hutchppProg.toStmt_compiledCoo p o d pattern)
 
+/-- **The Hutch++ target is not vacuous** (`docs/design/Computation-Hardening.md`, §2.2): for
+every $N_0$ there are tags, oracle names, a distribution and a field (`Unit`, `Unit`, the
+Gaussian, $\mathbb{R}$) and sizes $N = N_0 + 1$, $n = (1, 1)$ meeting the size condition
+$\ell \ge 1$, the declared input type `Unit` inhabited. The witness of
+`NLAlib.MatrixFreeHutchpp` (`scripts/Targets.lean`, item 7). No printed source. -/
+theorem matrixFreeHutchpp_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P) (p : P)
+    (o : ι) (d : Dist) (𝕜 : Type) (_ : RCLike 𝕜),
+    MatrixFree.NonVacuous (𝕜 := 𝕜) p (hutchppProg.compiled p o d) (fun _ n => 0 < n 1)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun N n _ A ξ st => st.store.read p 0 0 = some
+        (hutchpp A (tapeMatrix (ξ d) 0 N (n 0)) (tapeMatrix (ξ d) (N * n 0) N (n 1)))) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), .gaussian, ℝ, inferInstance, N₀ + 1,
+    fun _ => 1, Nat.le_succ N₀, Nat.one_pos, ⟨()⟩⟩
+
+/-- **The probabilistic Hutch++ target is not vacuous** (`docs/design/Computation-Hardening.md`,
+§2.2): for every $N_0$ there are tags and oracle names (`Unit`), the rank $r = 1$,
+$\delta = 1/2$, $\tau = 1$ and sizes $N = N_0 + 1$, $n = (k, 1)$ with
+$k = \lceil\mathsf{subgaussianEmbeddingDim}(1, 1, 1/2, \delta/2)\rceil + 1$, meeting the size
+condition, the declared input type `Unit` inhabited. The witness of
+`NLAlib.MatrixFreeProbHutchpp` (`scripts/Targets.lean`, item 7). No printed source. -/
+theorem matrixFreeProbHutchpp_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P) (p : P)
+    (o : ι) (r : ℕ) (δ : ℝ) (_ : 0 < δ) (τ : ℝ) (_ : 0 ≤ τ),
+    MatrixFreeProb.NonVacuous (𝕜 := ℝ) p (hutchppProg.compiled p o .gaussian)
+      (fun _ n => 0 < n 0 ∧ 0 < n 1 ∧ subgaussianEmbeddingDim 1 r (1 / 2) (δ / 2) ≤ n 0)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none])
+      (fun N n => hutchppCount p o .gaussian N (n 0) (n 1))
+      (fun N n q => if q = p then 2 * N * (n 0 + n 1) + 4 else 0)
+      (fun _ _ _ A st => ∃ v, st.store.read p 0 0 = some v ∧ |A.trace - v| < τ)
+      (fun _ n _ A => δ + 2 * Real.exp (-(hansonWrightConstant *
+        min (n 1 * τ ^ 2 / (subgaussianRangeFinderFactor 1 * frobNorm (A - truncatedSVD A r) ^ 2))
+          (n 1 * τ / (√(subgaussianRangeFinderFactor 1) * frobNorm (A - truncatedSVD A r))))))
+      N₀ := by
+  intro N₀
+  set k := ⌈subgaussianEmbeddingDim 1 1 (1 / 2) ((1 / 2 : ℝ) / 2)⌉₊ + 1
+  refine ⟨Unit, Unit, inferInstance, (), (), 1, 1 / 2, by norm_num, 1, zero_le_one, N₀ + 1,
+    ![k, 1], Nat.le_succ N₀, ⟨Nat.succ_pos _, Nat.one_pos, ?_⟩, ⟨()⟩⟩
+  simp only [Matrix.cons_val_zero, k, Nat.cast_add, Nat.cast_one]
+  exact (Nat.le_ceil _).trans (le_add_of_nonneg_right zero_le_one)
+
+/-- **The dense Hutch++ target is not vacuous** (`docs/design/Computation-Hardening.md`, §2.2):
+for every $N_0$ there are tags, oracle names, a distribution and a field (`Unit`, `Unit`, the
+Gaussian, $\mathbb{R}$) and sizes $N = N_0 + 1$, $n = (1, 1)$ meeting the size condition
+$\ell \ge 1$, the declared input type `Unit` inhabited. The witness of
+`NLAlib.StoredEntriesDenseHutchpp` (`scripts/Targets.lean`, item 7). No printed source. -/
+theorem storedEntriesDenseHutchpp_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P)
+    (p : P) (o : ι) (d : Dist) (𝕜 : Type) (_ : RCLike 𝕜),
+    StoredEntries.NonVacuous (𝕜 := 𝕜) p (hutchppProg.compiledDense p o d) (fun _ n => 0 < n 1)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun N _ => N * N)
+      (fun N n => substCount (denseCost N) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then N * N else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (Matrix.of fun (i j : Fin N) => vals (i + N * j)) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1)))) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), .gaussian, ℝ, inferInstance, N₀ + 1,
+    fun _ => 1, Nat.le_succ N₀, Nat.one_pos, ⟨()⟩⟩
+
+/-- **The sparse Hutch++ target is not vacuous** (`docs/design/Computation-Hardening.md`, §2.2):
+for every $N_0$ there are tags, oracle names, a distribution, the one-entry pattern
+$[(0, 0)]$ and a field (`Unit`, `Unit`, the Gaussian, $\mathbb{R}$) and sizes $N = N_0 + 1$,
+$n = (1, 1)$ meeting the size condition ($\ell \ge 1$, the pattern in $[0, N)^2$), the declared
+input type `Unit` inhabited. The witness of `NLAlib.StoredEntriesCooHutchpp`
+(`scripts/Targets.lean`, item 7). No printed source. -/
+theorem storedEntriesCooHutchpp_nonVacuous : ∀ N₀ : ℕ, ∃ (P ι : Type) (_ : DecidableEq P)
+    (p : P) (o : ι) (d : Dist) (pattern : List (ℕ × ℕ)) (𝕜 : Type) (_ : RCLike 𝕜),
+    StoredEntries.NonVacuous (𝕜 := 𝕜) p (hutchppProg.compiledCoo p o d pattern)
+      (fun N n => 0 < n 1 ∧ ∀ ij ∈ pattern, ij.1 < N ∧ ij.2 < N)
+      (fun _ _ => Unit) (fun _ _ _ => ![Array.replicate 1 none]) (fun _ _ => pattern.length)
+      (fun N n => substCount (cooCost N pattern.length) (hutchppCount p o d N (n 0) (n 1)))
+      (fun N n q => (if q = p then 2 * N * (n 0 + n 1) + 4 else 0) + 1 +
+        if q = p then pattern.length else 0)
+      (fun N n _ vals ξ st => st.store.read p 0 0 = some
+        (hutchpp (cooMatrix pattern vals) (tapeMatrix (ξ d) 0 N (n 0))
+          (tapeMatrix (ξ d) (N * n 0) N (n 1)))) N₀ :=
+  fun N₀ => ⟨Unit, Unit, inferInstance, (), (), .gaussian, [(0, 0)], ℝ, inferInstance, N₀ + 1,
+    fun _ => 1, Nat.le_succ N₀, ⟨Nat.one_pos, by simp⟩, ⟨()⟩⟩
+
 end Targets
 
 end NLAlib
