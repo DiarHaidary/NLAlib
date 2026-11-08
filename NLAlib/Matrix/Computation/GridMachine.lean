@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlib.Matrix.Computation.EntrywiseRounding
+public import NLAlib.Matrix.Computation.BinaryFloatMachine
 public import Mathlib.MeasureTheory.Function.Floor
 public import Mathlib.MeasureTheory.Function.SpecialFunctions.Basic
 
@@ -204,43 +204,6 @@ theorem map_decodeComplex_map_gridRoundPair {t : ℕ} (ht : 0 < t) {m n : Type*}
   simp [gridRoundPair, decodeComplex,
     Real.roundNearest_eq_self_of_mem_floatGrid (gridRoundOdd_mem_floatGrid ht _)]
 
-/-- Entrywise rounding of a complex matrix, part by part, with a rounding of relative error $u$
-above the floor $\tau$ at every scale, errs by at most $2du\max(\|\mathbf{X}\|_2, \tau)$ in the
-spectral norm, $d$ at least both dimensions (a copy of the private helper of
-`NLAlib/Matrix/Computation/BinaryFloatMachine.lean`). -/
-private theorem specNorm_sub_map_le' {m n d : ℕ} {u τ : ℝ} {R : ℝ → ℝ} (hu : 0 ≤ u)
-    (hτ : 0 ≤ τ) (hR : ∀ x, |x - R x| ≤ u * max |x| τ) (hm : m ≤ d) (hn : n ≤ d)
-    (X : Matrix (Fin m) (Fin n) ℂ) :
-    specNorm (X - X.map fun z => (⟨R z.re, R z.im⟩ : ℂ)) ≤
-      2 * d * u * max (specNorm X) τ := by
-  set K := u * max (specNorm X) τ with hK_def
-  have hK : 0 ≤ K := mul_nonneg hu (le_max_of_le_right hτ)
-  have hentry : ∀ i j, ‖(X - X.map fun z => (⟨R z.re, R z.im⟩ : ℂ)) i j‖ ^ 2 ≤ 2 * K ^ 2 := by
-    intro i j
-    have h1 : |(X i j).re| ≤ specNorm X :=
-      (Complex.abs_re_le_norm _).trans (norm_apply_le_specNorm X i j)
-    have h2 : |(X i j).im| ≤ specNorm X :=
-      (Complex.abs_im_le_norm _).trans (norm_apply_le_specNorm X i j)
-    have e1 := (hR (X i j).re).trans (mul_le_mul_of_nonneg_left (max_le_max h1 le_rfl) hu)
-    have e2 := (hR (X i j).im).trans (mul_le_mul_of_nonneg_left (max_le_max h2 le_rfl) hu)
-    rw [Matrix.sub_apply, Matrix.map_apply, Complex.sq_norm, Complex.normSq_apply,
-      Complex.sub_re, Complex.sub_im]
-    nlinarith [sq_le_sq' (abs_le.mp e1).1 (abs_le.mp e1).2,
-      sq_le_sq' (abs_le.mp e2).1 (abs_le.mp e2).2]
-  have hmn : (m : ℝ) * n ≤ d * d :=
-    mul_le_mul (by exact_mod_cast hm) (by exact_mod_cast hn) (Nat.cast_nonneg _)
-      (Nat.cast_nonneg _)
-  have hF : frobNorm (X - X.map fun z => (⟨R z.re, R z.im⟩ : ℂ)) ^ 2 ≤ (2 * d * K) ^ 2 := by
-    rw [frobNorm_sq_eq_sum]
-    calc _ ≤ ∑ _i : Fin m, ∑ _j : Fin n, 2 * K ^ 2 :=
-          Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => hentry i j
-      _ = m * n * (2 * K ^ 2) := by
-          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]; ring
-      _ ≤ (2 * d * K) ^ 2 := by nlinarith [sq_nonneg K]
-  calc _ ≤ frobNorm (X - X.map fun z => (⟨R z.re, R z.im⟩ : ℂ)) := specNorm_le_frobNorm _
-    _ ≤ 2 * d * K := (pow_le_pow_iff_left₀ (frobNorm_nonneg _) (by positivity) two_ne_zero).1 hF
-    _ = _ := by rw [hK_def]; ring
-
 /-- Odd rounding in the form of the entrywise bound, floor $0$. -/
 private theorem abs_sub_gridRoundOdd_le_mul_max (t : ℕ) (x : ℝ) :
     |x - gridRoundOdd t x| ≤ 2⁻¹ ^ t * max |x| 0 := by
@@ -256,7 +219,7 @@ theorem isMatMulErr_gridMM {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
       (gridMM t) where
   specNorm_mul_sub_le {l m n} A B _ := by
     rw [gridMM, map_decodeComplex_map_gridRoundPair ht]
-    refine (specNorm_sub_map_le' (by positivity) le_rfl (abs_sub_gridRoundOdd_le_mul_max t)
+    refine (specNorm_sub_map_le (by positivity) le_rfl (abs_sub_gridRoundOdd_le_mul_max t)
       (le_max_left l (max m n)) ((le_max_right m n).trans (le_max_right _ _)) _).trans ?_
     gcongr
     exact specNorm_mul_le _ _
@@ -300,7 +263,7 @@ theorem isQRErr_gridQR {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
   · have h0 : gridRoundOdd t 0 = 0 := by simp [gridRoundOdd, roundNearest_zero]
     rw [Matrix.map_apply, hRt i j hij]
     exact Complex.ext h0 h0
-  · refine (specNorm_sub_map_le' hu le_rfl hround hmn hmn Q).trans ?_
+  · refine (specNorm_sub_map_le hu le_rfl hround hmn hmn Q).trans ?_
     have : max (specNorm Q) 0 ≤ 1 := max_le hQ.specNorm_le_one zero_le_one
     calc _ ≤ 2 * ((max m n : ℕ) : ℝ) * 2⁻¹ ^ t * 1 := by gcongr
       _ = _ := mul_one _
@@ -309,7 +272,7 @@ theorem isQRErr_gridQR {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
       conv_lhs => rw [hA]
       rw [Matrix.mul_sub]
     rw [hsub, hQ.specNorm_mul_left, ← hR]
-    exact specNorm_sub_map_le' hu le_rfl hround hmn (le_max_right m n) Rm
+    exact specNorm_sub_map_le hu le_rfl hround hmn (le_max_right m n) Rm
 
 /-! ### The machine -/
 
@@ -452,20 +415,6 @@ theorem countable_range_roundNearest (t : ℕ) : (Set.range (Real.roundNearest t
   rintro _ ⟨x, rfl⟩
   exact ⟨(_, _), rfl⟩
 
-/-- `Int.log 2 |x|` is a measurable function of $x$ (a copy of the private helper of
-`NLAlib/Matrix/Computation/BinaryFloatMachine.lean`). -/
-private theorem measurable_intLog_abs' : Measurable fun x : ℝ => Int.log 2 |x| := by
-  have h : (fun x : ℝ => Int.log 2 |x|) = fun x =>
-      if 1 ≤ |x| then ((Nat.log 2 ⌊|x|⌋₊ : ℕ) : ℤ) else -((Nat.clog 2 ⌈|x|⁻¹⌉₊ : ℕ) : ℤ) := by
-    funext x; rfl
-  rw [h]
-  have habs : Measurable fun x : ℝ => |x| := continuous_abs.measurable
-  refine Measurable.ite (measurableSet_le measurable_const habs) ?_ ?_
-  · exact (Measurable.of_discrete (f := fun k : ℕ => ((Nat.log 2 k : ℕ) : ℤ))).comp
-      (Nat.measurable_floor.comp habs)
-  · exact (Measurable.of_discrete (f := fun k : ℕ => -((Nat.clog 2 k : ℕ) : ℤ))).comp
-      (Nat.measurable_ceil.comp habs.inv)
-
 /-- Rounding to nearest is measurable. No printed source. -/
 theorem measurable_roundNearest (t : ℕ) : Measurable (Real.roundNearest t) := by
   have hround : Measurable fun x : ℝ => ((round x : ℤ) : ℝ) := by
@@ -485,6 +434,6 @@ theorem measurable_roundNearest (t : ℕ) : Measurable (Real.roundNearest t) := 
       fun x => (x, Int.log 2 |x|) := by
     funext x; rfl
   rw [e]
-  exact hg.comp (measurable_id.prodMk measurable_intLog_abs')
+  exact hg.comp (measurable_id.prodMk measurable_intLog_abs)
 
 end NLAlib
