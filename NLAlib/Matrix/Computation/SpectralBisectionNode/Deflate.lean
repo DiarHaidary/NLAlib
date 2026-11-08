@@ -26,6 +26,7 @@ decides flags, a successful run writes exactly the machine's value.
 
 * `NLAlib.holds_of_exec_eighLeafBlock`, `NLAlib.holds_of_exec_eighChildBlock`: the leaf and the
   child.
+* `NLAlib.spec_eighChildBlock`: the child as a routine specification of the program logic.
 * `NLAlib.spec_eighDeflateBlock_frame`, `NLAlib.spec_eighDeflateBlock`: the deflation as a routine
   specification of the program logic.
 * `NLAlib.pairLayout_holds_unique`: a block holds at most one matrix.
@@ -212,24 +213,53 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
   · exact (Store.shape_of_write_eq_some hw).trans (hsh₂.trans (hsh₁.trans hsh₀))
   · exact hps₂.trans (hps₁.trans hps₀)
 
-omit [Inhabited K] in
-/-- A successful index-literal instruction writes the literal and changes only its cell. -/
-private theorem exec_ins_litIdx_read (p : P) (e : IExp ℕ) (c' : Cell ℕ ℕ) {σ₀ σ : St P K C}
-    (hσ : exec I (ins (.litIdx p c' e) : Builder P ι ℕ ℕ Unit).run σ₀ = some σ) :
-    σ.store.read p c'.buf c'.idx.eval = I.sem.lit p (e.eval : ℚ) ∧
-      (∀ q b i, ¬(b = c'.buf ∧ i = c'.idx.eval) → σ.store.read q b i = σ₀.store.read q b i) ∧
-      σ.store.shape = σ₀.store.shape ∧ σ.pos = σ₀.pos := by
-  change exec I (.seq (.instr (.litIdx p c' e)) .skip) σ₀ = some σ at hσ
-  rcases hv : I.sem.lit p (e.eval : ℚ) with _ | v
-  · simp [exec_seq, exec_instr, Instr.run, hv] at hσ
-  rcases hw : σ₀.store.write p c'.buf c'.idx.eval v with _ | s
-  · simp [exec_seq, exec_instr, Instr.run, hv, hw] at hσ
-  rw [exec_seq_instr_litIdx I hv hw, exec_skip] at hσ
-  injection hσ with hσ
-  subst hσ
-  refine ⟨?_, fun q b i hne => ?_, Store.shape_of_write_eq_some hw, rfl⟩
-  · exact Store.read_of_write_eq_some hw
-  · exact Store.read_of_write_eq_some_of_ne hw (not_and_or.mp hne)
+/-- **One child as a routine specification**: from a state holding the $k \times k$ matrix
+$\mathbf{A}$ at `mo` of `Ma` and $\sigma$ in the cell `sg`, the run of `NLAlib.eighChildBlock`
+modifies only the block at `mo'` of `Ma` (disjoint from the one at `mo`), the size cell and the
+kind cell, writes the literals $k$ and `code` into the last two and keeps the tape positions; if
+`sg` lies outside the output block, that block holds `M.hermShift A σ`. In mode `total` the run
+also succeeds, given the standard model on every value and the three outputs writable. No printed
+source. -/
+theorem spec_eighChildBlock (md : Mode) {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x)) (p : P) (k : ℕ)
+    {Ma : ℕ} {mo mo' : IExp ℕ} {sg sz kd : Cell ℕ ℕ} (code : ℕ) (σ : K)
+    (A : Matrix (Fin k) (Fin k) (K × K))
+    (hAA : blockDisjoint (matBlock Ma mo'.eval k k 2) (matBlock Ma mo.eval k k 2) = true)
+    (hsz : blockDisjoint (sz.buf, sz.idx.eval, 1) (matBlock Ma mo'.eval k k 2) = true)
+    (hkd : blockDisjoint (kd.buf, kd.idx.eval, 1) (matBlock Ma mo'.eval k k 2) = true)
+    (hszkd : blockDisjoint (sz.buf, sz.idx.eval, 1) (kd.buf, kd.idx.eval, 1) = true) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p Ma mo.eval A ∧
+        st.store.read p sg.buf sg.idx.eval = some σ ∧
+        md.Needs (Writable st.store p Ma mo'.eval (k * k * 2) ∧
+          Writable st.store p sz.buf sz.idx.eval 1 ∧ Writable st.store p kd.buf kd.idx.eval 1))
+      (eighChildBlock (ι := ι) p (.const k) Ma mo mo' sg sz kd code)
+      [matBlock Ma mo'.eval k k 2, (sz.buf, sz.idx.eval, 1), (kd.buf, kd.idx.eval, 1)]
+      fun st st' => (blockDisjoint (sg.buf, sg.idx.eval, 1) (matBlock Ma mo'.eval k k 2) = true →
+          pairLayout.Holds st'.store p Ma mo'.eval
+            ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift A σ)) ∧
+        st'.store.read p sz.buf sz.idx.eval = I.sem.lit p ((k : ℕ) : ℚ) ∧
+        st'.store.read p kd.buf kd.idx.eval = I.sem.lit p ((code : ℕ) : ℚ) ∧ PosKept st st' := by
+  refine ⟨(executionComposable_named _ _ _).bind ((executionComposable_ins _).bind
+    (executionComposable_ins _)), fun st ⟨hA, hσ, hN⟩ => ?_⟩
+  have hL : ∀ q : ℚ, md.Needs (∃ v, I.sem.lit p q = some v) := fun q =>
+    hsem.mono fun ⟨h, hs⟩ => h.lit_ok p q (hs _ _)
+  have hW := fun s (hs : Store.shape s = st.store.shape) => hN.mono fun h =>
+    (⟨h.1.of_shape_eq hs, h.2.1.of_shape_eq hs, h.2.2.of_shape_eq hs⟩ : Writable s p Ma mo'.eval
+      (k * k * 2) ∧ Writable s p sz.buf sz.idx.eval 1 ∧ Writable s p kd.buf kd.idx.eval 1)
+  exact (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+    (normal := normal) md (hsem.mono fun ⟨h, hs⟩ => h.mono_safe fun p x _ => hs p x) p k
+    (X := Ma) (Y := Ma) (xo := mo) (yo := mo') (c := sg) σ A hAA).wp_bind
+    ⟨hA, hσ, (hW _ rfl).mono (·.1)⟩ fun st₁ hm₁ h₁ =>
+    (RoutineSpec.ins (spec_litIdx_read (dst := sz) (e := .const k))).wp_bind
+    (Mode.needs_and.mpr ⟨hL _, (hW _ hm₁.1).mono (·.2.1)⟩) fun st₂ hm₂ h₂ =>
+    (RoutineSpec.ins (spec_litIdx_read (dst := kd) (e := .const code))).wp_run
+    (Mode.needs_and.mpr ⟨hL _, (hW _ (hm₁.trans hm₂).1).mono (·.2.2)⟩) fun st₃ hm₃ h₃ =>
+    ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp), fun hg =>
+      (show ReadsOnly _ [matBlock Ma mo'.eval k k 2] from readsOnly_entryLayoutHolds pairLayout p
+        Ma _ ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift A σ)).of_modifies
+        (h₁.1 hg) (hm₂.trans hm₃) (by fp_omega [hsz, hkd]), by
+      rw [(readsOnly_read _ _ _ _).of_modifies h₂.1 hm₃ (by fp_omega [hszkd])]; simp, by
+      rw [h₃.1]; simp, h₃.2.trans (h₂.2.trans h₁.2)⟩
 
 /-- One child on the same slot: a successful run of `NLAlib.eighChildBlock` for a node of size
 $k$ whose matrix $\mathbf{A}$ is held at `mo` of `Ma`, the cell `sg` holding $\sigma$, ends with the
@@ -256,46 +286,14 @@ theorem holds_of_exec_eighChildBlock (p : P) (k : ℕ) {Ma : ℕ} {mo mo' : IExp
         blockDisjoint (b, i, 1) (kd.buf, kd.idx.eval, 1) = true →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  unfold eighChildBlock at h
-  rw [exec_run_bind I (b := zhermShift (ι := ι) p (.const k) Ma mo sg Ma mo') (fun _ => rfl)] at h
-  obtain ⟨σ1, h1, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨hM, hf1, hsh1, hp1⟩ := holds_of_exec_zhermShift p k hA hσ hAA hsg h1
-  rw [exec_run_bind I (b := ins (.litIdx p sz (.const k))) (fun _ => rfl)] at h
-  obtain ⟨σ2, h2, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨rsz, hf2, hsh2, hp2⟩ := exec_ins_litIdx_read p _ _ h2
-  obtain ⟨rkd, hf3, hsh3, hp3⟩ := exec_ins_litIdx_read p _ _ h
-  have hszb : ∀ {b i : ℕ}, blockDisjoint (b, i, 1) (sz.buf, sz.idx.eval, 1) = true →
-      ¬(b = sz.buf ∧ i = sz.idx.eval) := by
-    intro b i hbs ⟨hb, hi⟩
-    subst hb; subst hi
-    simp [blockDisjoint] at hbs
-  have hkdb : ∀ {b i : ℕ}, blockDisjoint (b, i, 1) (kd.buf, kd.idx.eval, 1) = true →
-      ¬(b = kd.buf ∧ i = kd.idx.eval) := by
-    intro b i hbs ⟨hb, hi⟩
-    subst hb; subst hi
-    simp [blockDisjoint] at hbs
-  have hszkd' : ¬(sz.buf = kd.buf ∧ sz.idx.eval = kd.idx.eval) := fun ⟨h1, h2⟩ => by
-    simp [blockDisjoint, h1, h2] at hszkd
-  have hw : (pairLayout : EntryLayout K (K × K)).width = 2 := rfl
-  have hMst : pairLayout.Holds st'.store p Ma mo'.eval
-      ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift A σ) :=
-    EntryLayout.Holds.of_forall_read_eq hM fun i h1 h2 => by
-      rw [hw] at h2
-      have outside (c : Cell ℕ ℕ)
-          (hc : blockDisjoint (c.buf, c.idx.eval, 1) (Ma, mo'.eval, 2 * (k * k)) = true) :
-          ¬(Ma = c.buf ∧ i = c.idx.eval) := by
-        rintro ⟨hb, hi⟩
-        apply (blockDisjoint_eq_true_iff _ _).mp hc i
-        dsimp only
-        omega
-      rw [hf3 _ _ _ (outside kd hkd), hf2 _ _ _ (outside sz hsz)]
-  refine ⟨hMst, ?_, ?_, fun q b i hb1 hb2 hb3 => ?_, ?_, ?_⟩
-  · rw [hf3 _ _ _ hszkd']
-    simpa using rsz
-  · simpa using rkd
-  · rw [hf3 q b i (hkdb hb3), hf2 q b i (hszb hb2), hf1 q b i hb1]
-  · rw [hsh3, hsh2, hsh1]
-  · rw [hp3, hp2, hp1]
+  have e : ∀ a b : ℕ, a * b * 2 = 2 * (a * b) := fun a b => by ring
+  obtain ⟨hm, hv, hsz', hkd', hp⟩ := (spec_eighChildBlock (toNat := toNat) (mmR := mmR)
+    (qrR := qrR) (unif := unif) (normal := normal) (u := fun _ => 0) (dec := fun _ _ => 0)
+    (safe := fun _ _ => True) .liberal trivial p k code σ A (by simpa [matBlock, e] using hAA)
+    (by simpa [matBlock, e] using hsz) (by simpa [matBlock, e] using hkd) hszkd).spec.holds_of_exec
+    ⟨hA, hσ, trivial⟩ h
+  exact ⟨hv (by simpa [matBlock, e] using hsg), hsz', hkd', fun q b i h₁ h₂ h₃ => hm.2 q b i
+    (by fp_omega [h₁, h₂, h₃]), hm.1, hp⟩
 
 /-- One entry of the test-matrix loop of a deflation: the two products of the words of `Sg` by the
 stored $\sqrt{1/2}$ land in the words $2(i + kj)$ and $2(i + kj) + 1$ of `G`; the earlier entries,

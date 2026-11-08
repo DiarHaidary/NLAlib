@@ -23,6 +23,7 @@ index binder (one child or a split) and the whole node step.
 
 * `NLAlib.holds_of_exec_eighNodeBlock`: the node step computes `NLAlib.eighStep`.
 * `NLAlib.holds_of_exec_eighNodeBlock_frame`: the same, with the window it writes.
+* `NLAlib.spec_eighWhen`: a guarded block as a specification of the program logic.
 -/
 
 @[expose] public section
@@ -52,6 +53,25 @@ theorem exec_loop_one_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : 
     exec I (b 0) s = some s' := by
   rw [exec_seq_skip, exec_loop, he] at h
   simpa [List.range_one] using h
+
+omit [Inhabited K] in
+/-- **A guarded block as a specification**: `NLAlib.eighWhen e body` (a loop of
+$1 - (1 - e)$ trips) leaves the state unchanged if $e = 0$ and meets the body's specification if
+$e > 0$. No printed source. -/
+theorem spec_eighWhen {m : Mode} {e : IExp ℕ} {body : Builder P ι ℕ ℕ Unit}
+    {pre : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop}
+    (h : 0 < e.eval → Spec m I pre body.run fp post) :
+    RoutineSpec m I pre (eighWhen e body) fp
+      fun st st' => (e.eval = 0 → st' = st) ∧ (0 < e.eval → post st st') := by
+  refine ⟨executionComposable_forRange _ _, fun st hst => (wp_seq).mpr ?_⟩
+  rw [Wp, exec_loop]
+  rcases Nat.eq_zero_or_pos e.eval with he | he
+  · rw [show (1 - (1 - e)).eval = 0 by simp [he], List.range_zero, List.foldlM_nil]
+    exact Mode.sat_some.mpr ((wp_skip).mpr ⟨Modifies.refl _ _, fun _ => rfl, by omega⟩)
+  · rw [show (1 - (1 - e)).eval = 1 by simp; omega, List.range_one, List.foldlM_cons]
+    simp only [List.foldlM_nil, bind_pure]
+    exact Mode.Sat.mono (h he st hst) fun st' hp =>
+      (wp_skip).mpr ⟨hp.1, fun h0 => absurd h0 (by omega), fun _ => hp.2⟩
 
 omit [Inhabited K] in
 /-- A guarded block, then the rest. -/

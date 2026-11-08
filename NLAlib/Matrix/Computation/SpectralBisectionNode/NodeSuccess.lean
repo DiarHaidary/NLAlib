@@ -90,65 +90,41 @@ private theorem child_exists_node {u : P → ℝ} {dec : P → K → ℝ}
     (hk2 : 2 ≤ k) {D : ℕ} (hd : d < D) (H : EighArenas) {sg : Cell ℕ ℕ} (code : ℕ)
     {st : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} (hH : H.Shaped st.store p n D)
     (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hsg : ∃ v, st.store.read p sg.buf sg.idx.eval = some v) (hsgM : sg.buf ≠ H.Ma) :
+    (hsg : ∃ v, st.store.read p sg.buf sg.idx.eval = some v) :
     ∃ st', exec I (eighChildBlock (ι := ι) p (.const k) H.Ma
         (eighBlockOff (.const n) (.const d) (.const lo))
         (eighBlockOff (.const n) (.const d + 1) (.const lo)) sg
         ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
         ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ code).run st = some st' := by
-  obtain ⟨-, hMa, -, -, -, hSz, hKd, -, -⟩ := hH
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
+  obtain ⟨hnd, hMa, -, -, -, hSz, hKd, -, -⟩ := hH
+  simp only [EighArenas.handles, List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+    not_or] at hnd
+  obtain ⟨cv, hcv⟩ := hsg
   have hkn : k ≤ n := by omega
-  have hkk : k * k ≤ n * k := Nat.mul_le_mul_right _ hkn
   have hlok : n * lo + n * k ≤ n * n := by rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ hk
   have hdD : n * n * (d + 1) + n * n ≤ n * n * (D + 1) := by
     rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
-  obtain ⟨cv, hcv⟩ := hsg
-  have hXY : blockDisjoint (H.Ma, (eighBlockOff (.const n) (.const d + 1) (.const lo)).eval,
-      2 * (k * k)) (H.Ma, (eighBlockOff (.const n) (.const d) (.const lo)).eval, 2 * (k * k)) =
-      true := by
-    simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-      IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-    right
-    have e1 : 2 * (n * n) * (d + 1) = 2 * (n * n) * d + 2 * (n * n) := by ring
-    have hkk2 : k * k ≤ n * n := Nat.mul_le_mul hkn hkn
-    exact decide_eq_true (by linarith)
-  have hcY : blockDisjoint (sg.buf, sg.idx.eval, 1)
-      (H.Ma, (eighBlockOff (.const n) (.const d + 1) (.const lo)).eval, 2 * (k * k)) = true := by
-    simp [blockDisjoint, hsgM]
-  have hAm : pairLayout.Holds st.store p H.Ma (eighBlockOff (.const n) (.const d) (.const lo)).eval
-      A := by
-    simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat]
-    exact hA
-  have hY : ∃ len, st.store.shape[H.Ma]? = some (p, len) ∧
-      (eighBlockOff (.const n) (.const d + 1) (.const lo)).eval + 2 * (k * k) ≤ len :=
-    ⟨_, hMa, by
-      simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat]
-      linarith⟩
-  refine ex_bind_node (fun _ => rfl)
-    (exists_exec_zhermShift (I := I) p k (st := st) hAm hcv hXY hcY hsem hY) fun σ hσ => ?_
-  obtain ⟨-, -, hsh, -⟩ := holds_of_exec_zhermShift (toNat := fun _ => 0)
-    (mmR := @fun _ _ _ _ _ => Matrix.of fun _ _ => default)
-    (qrR := @fun _ _ X => (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : Unit) => x)
-    (normal := fun (_ : Unit) => ((default : K), (default : K))) p k hAm hcv hXY hcY hσ
-  obtain ⟨v1, hv1⟩ := hsem.lit_ok p ((IExp.const k).eval : ℚ) trivial
-  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := σ.store) v1
-    (by rw [hsh]; exact hSz)
-    (show (eighSlotOff (.const n) (.const d + 1) (.const lo)).eval < n * (D + 1) + 1 by
-      simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_one]
-      have : n * (d + 1) + n ≤ n * (D + 1) := by
-        rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
-      omega)
-  rw [hr, exec_seq_instr_litIdx I hv1 hs1]
-  obtain ⟨v2, hv2⟩ := hsem.lit_ok p ((IExp.const code).eval : ℚ) trivial
-  obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := s1) v2
-    (by rw [Store.shape_of_write_eq_some hs1, hsh]; exact hKd)
-    (show (eighSlotOff (.const n) (.const d) (.const lo)).eval < n * D by
-      simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const]
-      have : n * d + n ≤ n * D := by rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ hd
-      omega)
-  exact ⟨_, (exec_seq_instr_litIdx I hv2 hs2).trans (exec_skip I _)⟩
+  have hkk2 : k * k ≤ n * n := Nat.mul_le_mul hkn hkn
+  have h1 : n * (d + 1) + n ≤ n * (D + 1) := by
+    rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
+  have h2 : n * d + n ≤ n * D := by rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ hd
+  refine ((spec_eighChildBlock (toNat := fun _ => 0) (mmR := @fun _ _ _ _ _ => Matrix.of fun _ _ =>
+    default) (qrR := @fun _ _ X => (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : K) => x)
+    (normal := id) (Ma := H.Ma) (mo := eighBlockOff (.const n) (.const d) (.const lo))
+    (mo' := eighBlockOff (.const n) (.const d + 1) (.const lo)) (sg := sg)
+    (sz := ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩)
+    (kd := ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩) .total
+    ⟨hsem, fun _ _ => trivial⟩ p k code cv A ?_ ?_ ?_ ?_).spec.exists_exec
+    ⟨by simpa only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+      IExp.eval_ofNat] using hA, hcv, writable_of_shape_eq rfl hMa ?_,
+      writable_of_shape_eq rfl hSz ?_, writable_of_shape_eq rfl hKd ?_⟩).imp fun _ h => h.1
+  all_goals simp only [eighBlockOff, eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+    IExp.eval_ofNat]
+  · exact blockDisjoint_iff.mpr (.inr (.inr (.inr (.inr (by simp only [matBlock]; nlinarith)))))
+  · exact blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.1 h.symm
+  · exact blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.2.1 h.symm
+  · exact blockDisjoint_of_fst_ne hnd.2.2.2.2.1.1
+  all_goals nlinarith
 
 omit [Inhabited K] in
 /-- A goal on a state with a new count, by a named state. -/
@@ -255,7 +231,7 @@ private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm 
       rw [ev3, Nat.sub_self, Nat.mul_zero]
     rw [when_one_ex_node e1]
     obtain ⟨σc, hc⟩ := child_exists_node (I := I) hsem p n d lo x hk hk2 hd H (sg := ⟨t, 0⟩) 2
-      hHS hAS ⟨σ0, by rw [hS]; exact ht0⟩ htM
+      hHS hAS ⟨σ0, by rw [hS]; exact ht0⟩
     rw [hc, Option.bind_some, when_zero_ex_node e2, when_last_zero_ex_node e3]
     exact ⟨_, rfl⟩
   by_cases h0 : x = 0
@@ -267,7 +243,7 @@ private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm 
       rw [ev3, Nat.zero_mul]
     rw [when_zero_ex_node e1, when_one_ex_node e2]
     obtain ⟨σc, hc⟩ := child_exists_node (I := I) hsem p n d lo k hk hk2 hd H (sg := ⟨t, 1⟩) 3
-      hHS hAS ⟨_, by rw [hS]; exact ht1⟩ htM
+      hHS hAS ⟨_, by rw [hS]; exact ht1⟩
     rw [hc, Option.bind_some, when_last_zero_ex_node e3]
     exact ⟨_, rfl⟩
   have hpos : 1 ≤ x * (k - x) := Nat.mul_pos (by omega) (by omega)
