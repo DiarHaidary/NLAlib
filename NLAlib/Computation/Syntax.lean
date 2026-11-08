@@ -303,7 +303,9 @@ inductive FStmt (P ι : Type) : ℕ → ℕ → Type where
   | kcall {nb ni : ℕ} (o : ι) (p : P) (dims : List (IExp (Fin ni)))
       (ins outs : List (Fin nb × IExp (Fin ni))) : FStmt P ι nb ni
   /-- A bounded index binder: read the cell `x` at tag `p` once, convert the value to a natural
-  number $k$, and run the body with $\min(k, \mathit{bound})$ as index variable `ni`. -/
+  number $k$, and run the body with $k$ as index variable `ni`. The binder is strict: the run
+  fails when the conversion fails (a negative value) or when $k > \mathit{bound}$; it never
+  clamps. -/
   | bindIdx {nb ni : ℕ} (p : P) (x : Cell (Fin nb) (Fin ni)) (bound : IExp (Fin ni))
       (body : FStmt P ι nb (ni + 1)) : FStmt P ι nb ni
 
