@@ -18,6 +18,7 @@ the run succeeds when its operations do.
 
 * `NLAlib.Computation.holds_of_exec_zhermAvg`: what a successful run computes.
 * `NLAlib.Computation.exists_exec_zhermAvg`: when the run succeeds.
+* `NLAlib.Computation.spec_zhermAvg`: the average as a routine specification of the program logic.
 -/
 
 @[expose] public section
@@ -306,5 +307,37 @@ theorem exists_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {c
     (fun i j hij => ?_) hsem ⟨len, hσ₂.1 ▸ hYsh, hlen⟩
   obtain ⟨⟨v, hv⟩, ⟨w, hw⟩⟩ := hup₂ i j ⟨hij, j.2⟩
   simp only [hv, hw, Option.getD_some, and_self]
+
+/-- **The Hermitian average as a routine specification**: from a state holding $\mathbf{A}$ at `xo`
+of `X` and the value $c$ in the cell `c` (outside the output block), the run of
+`NLAlib.Computation.zhermAvg` modifies only the output block at `yo` of `Y`, which then holds
+`M.hermAvg A cv`, and keeps the tape positions; in mode `total` it also succeeds, given the
+standard model, $c$ decoding to a nonzero value and the output block writable. No printed
+source. -/
+theorem spec_zhermAvg (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {c : Cell ℕ ℕ} (cv : K) (A : Matrix (Fin n) (Fin n) (K × K))
+    (hXY : blockDisjoint (matBlock Y yo.eval n n 2) (matBlock X xo.eval n n 2) = true)
+    (hcY : blockDisjoint (c.buf, c.idx.eval, 1) (matBlock Y yo.eval n n 2) = true) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        st.store.read p c.buf c.idx.eval = some cv ∧
+        md.Needs (dec p cv ≠ 0 ∧ Writable st.store p Y yo.eval (n * n * 2)))
+      (zhermAvg (ι := ι) p (.const n) X xo c Y yo) [matBlock Y yo.eval n n 2]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.hermAvg A cv) ∧ PosKept st st' := by
+  intro M
+  have e : n * n * 2 = 2 * (n * n) := by ring
+  simp only [matBlock, e] at hXY hcY
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hc, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hcv, hW⟩ => ?_) fun st st' ⟨hA, hc, _⟩ h =>
+      ?_⟩
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact ⟨_, rfl⟩
+    · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by positivity)
+      exact exists_exec_zhermAvg p n hsem hcv hA hc hXY hcY ⟨len, hl, e ▸ hlen⟩
+  · obtain ⟨hY, hfr, hsh, hpos⟩ := holds_of_exec_zhermAvg (toNat := toNat) (mmR := mmR)
+      (qrR := qrR) (unif := unif) (normal := normal) p n hA hc hXY hcY h
+    refine ⟨⟨hsh, fun q b i hb => hfr q b i ?_⟩, hY, hpos⟩
+    simpa only [matBlock, e] using hb _ List.mem_cons_self
 
 end NLAlib.Computation

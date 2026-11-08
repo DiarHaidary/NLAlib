@@ -868,6 +868,25 @@ condition.
 All three run with stage_check 0 and default heartbeats. The design returns to PG1 only if
 gate 1 fails.
 
+**Measured (J1, feat/prog-logic).**
+1. *Walks:* PL107 + PL108 + PL109 = 45 + 21 + 24 = **90 lines** (≤ 90: pass), against 180; the
+   two old statements unchanged and included in the count.
+2. *Net diff* (`git diff --numstat origin/main -- NLAlib/`, the logic files excluded):
+   `Compress.lean` +68 −386; `PairKernels/{Arithmetic,HermAvg,Hermitian}.lean` +359, of which
+   about 175 lines are moved text (the conjugate-transpose and shift success halves, the block
+   write, the mirror success step) and about 185 are the adapters' glue: the three
+   specifications and the liberal frames of `zconjTranspose`, `zmirror` and `zhermShift`. The
+   frame of `zhermShift` had to be proved anew: its old refinement lemma gives the frame only
+   under the cell's disjointness, which the specification guards. Net for the block with its
+   adapters: **+41 lines**; without the moved text the walks and helpers saved about 145 lines and
+   the glue cost about 185. The glue is paid once per kernel; Split reuses it twice.
+3. *Alloc chains:* PL110 `spec_eighSplitBlock_of_body` proved by `Spec.allocBind_iterate`
+   (one rule application per allocation, named states, `Function.iterate` for the eight
+   allocations and releases) in 8 proof lines at default heartbeats: pass. Its use in place of the
+   eight `alloc_inv_node` steps of `holds_of_exec_eighSplitBlock_frame` waits for J2, where the
+   split body gets a specification with a block footprint (the old body lemma's frame is the
+   node window, not a footprint).
+
 ### 7.4 `maxRecDepth` and the compiled tree (L7)
 
 The logic works on builder runs and statement constructors, never on `eighProg.compiled`'s

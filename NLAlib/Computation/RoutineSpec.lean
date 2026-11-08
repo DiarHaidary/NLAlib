@@ -247,6 +247,33 @@ theorem Spec.allocBind {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ �
   Spec.alloc (body := fun b => (f b).run) h hb (fun st hst => hpre st _ hst rfl)
     fun st st₂ hst hp => hpost st _ st₂ hst rfl hp
 
+/-- **The $j$-th of a chain of allocations, by named states**: from a state that is $j$
+allocations after a state satisfying `pre` (whose store has $b$ buffers), an allocation of
+`len` cells gets the handle $b + j$, so the rest of the block, specified $j + 1$ allocations
+after, gives the block's specification $j$ allocations after, with one fresh block fewer in the
+footprint and one release fewer in the postcondition. -/
+theorem Spec.allocBind_iterate {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit} {b : ℕ} (j : ℕ)
+    (hb : ∀ st, pre st → st.store.size = b)
+    (h : Spec m I (fun s => ∃ st, pre st ∧ s = (·.allocate p len.eval (I.width p))^[j + 1] st)
+      (f (b + j)).run (fp ++ (List.range (j + 1)).map fun i => (b + i, 0, len.eval))
+      fun s s' => ∀ st, pre st → s = (·.allocate p len.eval (I.width p))^[j + 1] st →
+        post st ((·.release p len.eval (I.width p))^[j + 1] s')) :
+    Spec m I (fun s => ∃ st, pre st ∧ s = (·.allocate p len.eval (I.width p))^[j] st)
+      (Builder.alloc p len >>= f).run (fp ++ (List.range j).map fun i => (b + i, 0, len.eval))
+      fun s s' => ∀ st, pre st → s = (·.allocate p len.eval (I.width p))^[j] st →
+        post st ((·.release p len.eval (I.width p))^[j] s') := by
+  have hsz : ∀ i st, pre st → ((·.allocate p len.eval (I.width p))^[i] st).store.size = b + i := by
+    intro i st hst
+    induction i with
+    | zero => exact hb st hst
+    | succ i ih => rw [Function.iterate_succ_apply', St.size_allocate, ih, Nat.add_assoc]
+  rw [List.range_succ, List.map_append, List.map_singleton, ← List.append_assoc] at h
+  refine Spec.allocBind h (fun _ ⟨st, hst, e⟩ => e ▸ hsz j st hst)
+    (fun _ _ ⟨st, hst, e⟩ e₁ => ⟨st, hst, by rw [e₁, e, Function.iterate_succ_apply']⟩)
+    fun _ _ s₂ ⟨st₀, hst₀, e⟩ e₁ hp st hst e' => ?_
+  rw [← Function.iterate_succ_apply]
+  exact hp st hst (by rw [e₁, e', Function.iterate_succ_apply'])
+
 /-- **A loop with per-iteration footprints**: iteration `k` may modify the blocks `fp k` (which
 may depend on ghost sizes read before the loop); the loop modifies their union. -/
 theorem Spec.loopFp {n : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} (fp : ℕ → List (ℕ × ℕ × ℕ))
@@ -728,9 +755,10 @@ syntax "fp_close" (ppSpace colGt ident)* : tactic
 
 macro_rules
   | `(tactic| fp_close $names*) => `(tactic| (
-      (try simp only [BlocksDisjoint, matBlock, List.nodup_cons, List.nodup_nil, List.mem_cons,
-        List.mem_append, List.not_mem_nil, or_false, and_true, not_or, forall_eq_or_imp,
-        forall_eq, List.forall_mem_cons, blockDisjoint_iff, ne_eq, not_false_eq_true] at $names* ⊢)
+      (try simp only [BlocksDisjoint, matBlock, List.cons_append, List.nil_append,
+        List.nodup_cons, List.nodup_nil, List.mem_cons, List.mem_append, List.not_mem_nil,
+        or_false, and_true, not_or, forall_eq_or_imp, forall_eq, List.forall_mem_cons,
+        blockDisjoint_iff, ne_eq, not_false_eq_true] at $names* ⊢)
       (try ring_nf at $names* ⊢)
       omega))
 
@@ -744,6 +772,18 @@ macro_rules
       for (h, nm) in (hs.getElems.zip names).reverse do
         tac ← `(tactic| (have $nm := $h; $tac:tactic))
       return tac
+
+/-- The composability of a builder made of statements, scalar instructions, loops, conditionals,
+index binders, scopes and named kernels in sequence: `NLAlib.Computation.ExecutionComposable.bind`
+and the `executionComposable_` lemmas. -/
+syntax "exec_composable" : tactic
+
+macro_rules
+  | `(tactic| exec_composable) => `(tactic| repeat' (first
+      | exact executionComposable_stmt _ | exact executionComposable_ins _
+      | exact executionComposable_named _ _ _ | exact executionComposable_forRange _ _
+      | exact executionComposable_scope _ | exact executionComposable_ifThenElse _ _ _ _ _ _
+      | exact executionComposable_bindIdx _ _ _ _ | refine ExecutionComposable.bind ?_ ?_))
 
 /-- One step of a program proof: split a sequence, apply the triple `h` to its first statement
 and leave its precondition and the continuation from the named next state; footprint side
