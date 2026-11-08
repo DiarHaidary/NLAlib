@@ -23,9 +23,12 @@ Richardson on the normal equations with $\omega\mathbf{G}^{+}$ (`NLAlib.iterativ
 Step $\omega = 1$ is Epperly's iterative sketching; $\omega = 1 - \varepsilon^2$ is the optimal
 damping for an embedding with constants $1 \mp \varepsilon$ in squared norms.
 
-If $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$ with constants $a, b$ in squared norms, the
-energy error contracts at the rate $\max(\lvert 1 - \omega/b\rvert, \lvert 1 - \omega/a\rvert)$
-per step, with no prefactor. Sketch-and-precondition (`NLAlib.sketchAndPrecondition`),
+If $\mathbf{S}$ embeds $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ in squared
+norms, $\mathbf{A}$ has full column rank and $\omega > 0$, the energy error is bounded by the
+geometric factor
+$\max(\lvert 1 - \omega/b\rvert, \lvert 1 - \omega/a\rvert)$ per step, with no prefactor.
+This proves convergence only when that factor is below one; an arbitrary positive step can
+amplify the error. Sketch-and-precondition (`NLAlib.sketchAndPrecondition`),
 preconditioned CG with the same preconditioner, is never worse
 (`Matrix.PosDef.re_quadForm_sub_pcgIterate_le_re_quadForm_sub_richardsonIterate`).
 [Epperly2024]; [MartinssonTropp2020].
@@ -39,8 +42,10 @@ preconditioned CG with the same preconditioner, is never worse
 * `NLAlib.iterativeSketching_eq`: Richardson on the normal equations.
 * `NLAlib.IsQR.iterativeSketching_succ`, `NLAlib.IsSVD.iterativeSketching_succ`: the step through
   a factorization of the sketch.
-* `NLAlib.IsSubspaceEmbedding.norm_mulVec_sub_iterativeSketching_sq_le`: geometric convergence of
-  the energy error for every step.
+* `NLAlib.IsSubspaceEmbedding.norm_mulVec_sub_iterativeSketching_sq_le`: energy-error propagation
+  for every positive step.
+* `NLAlib.IsSubspaceEmbedding.tendsto_norm_mulVec_sub_iterativeSketching_sq`: convergence when
+  the geometric factor is below one.
 * `NLAlib.IsSubspaceEmbedding.norm_mulVec_sub_iterativeSketching_one_sq_le`,
   `NLAlib.IsSubspaceEmbedding.norm_mulVec_sub_iterativeSketching_one_sub_sq_sq_le`: undamped and
   optimally damped.
@@ -157,9 +162,9 @@ theorem IsSVD.iterativeSketching_succ [DecidableEq n] {U : Matrix k n 𝕜} {σ 
   rw [hN.pinv_conjTranspose_mul_self_eq_mul_conjTranspose, hE, Matrix.smul_mulVec,
     Matrix.mulVec_mulVec _ (V * _ * Vᴴ) Aᴴ]
 
-/-! ### Deterministic convergence -/
+/-! ### Deterministic error bounds and convergence -/
 
-/-- **Iterative sketching converges geometrically**: if $\mathbf{S}$ is a subspace embedding of
+/-- **Iterative sketching error propagation**: if $\mathbf{S}$ is a subspace embedding of
 $\operatorname{range}\mathbf{A}$ with constants $a > 0$, $b$ in squared norms
 ($a\|\mathbf{v}\|^2 \le \|\mathbf{S}\mathbf{v}\|^2 \le b\|\mathbf{v}\|^2$ for
 $\mathbf{v} \in \operatorname{range}\mathbf{A}$), $\mathbf{A}$ has full column rank,
@@ -168,6 +173,9 @@ $\omega > 0$, then for every start $\mathbf{x}_0$
 $$\|\mathbf{A}(\mathbf{x}_\star - \mathsf{iterativeSketching}(\mathbf{A}, \mathbf{S}, \omega,
 \mathbf{y}, \mathbf{x}_0, q))\|^2 \le \bigl(\max(\lvert 1 - \omega/b\rvert,
 \lvert 1 - \omega/a\rvert)\bigr)^{2q}\|\mathbf{A}(\mathbf{x}_\star - \mathbf{x}_0)\|^2\,.$$
+The displayed factor proves convergence only when it is strictly below one. For nonempty
+column index and full column rank, the embedding implies $a \le b$, so
+$0 < \omega < 2a$ is sufficient. A positive step alone need not converge.
 In Epperly's unsquared distortion $\eta$ ($a = (1 - \eta)^2$, $b = (1 + \eta)^2$) the rate at
 $\omega = 1$ is his $g_{\mathrm{IS}} = (2 - \eta)\eta/(1 - \eta)^2$, and at
 $\omega = (1 - \eta^2)^2/(1 + \eta^2)$ it is $g_{\mathrm{damp}} = 2\eta/(1 + \eta^2)$.
@@ -208,6 +216,29 @@ theorem IsSubspaceEmbedding.norm_mulVec_sub_iterativeSketching_sq_le
     RCLike.ofReal_re, ← iterativeSketching_eq A S ω y x₀ q, ← div_eq_mul_inv,
     ← div_eq_mul_inv] at hc
   exact hc
+
+/-- Iterative sketching converges in squared energy error when its geometric factor is below
+one. Let $\mathbf{S}$ embed $\operatorname{range}\mathbf{A}$ with squared-norm constants
+$a > 0$, $b$, let $\mathbf{A}$ have full column rank, and let $\mathbf{x}_\star$ solve the
+least-squares problem for $\mathbf{A}$ and $\mathbf{y}$. If $\omega > 0$ and
+$\max(\lvert 1-\omega/b\rvert,\lvert 1-\omega/a\rvert)<1$, then for every start $\mathbf{x}_0$,
+$$\|\mathbf{A}(\mathbf{x}_\star-\mathsf{iterativeSketching}(\mathbf{A},\mathbf{S},\omega,
+\mathbf{y},\mathbf{x}_0,q))\|^2 \longrightarrow 0\quad(q\to\infty)\,.$$ -/
+theorem IsSubspaceEmbedding.tendsto_norm_mulVec_sub_iterativeSketching_sq
+    (h : IsSubspaceEmbedding S A a b) (ha : 0 < a) (hA : Function.Injective A.mulVec)
+    {ω : ℝ} (hω : 0 < ω) (hr : max |1 - ω / b| |1 - ω / a| < 1)
+    (hxs : IsLeastSquaresSolution A y xs) (x₀ : n → 𝕜) :
+    Filter.Tendsto (fun q : ℕ =>
+      ‖WithLp.toLp 2 (A *ᵥ (xs - iterativeSketching A S ω y x₀ q))‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  have hr0 : 0 ≤ max |1 - ω / b| |1 - ω / a| := le_max_of_le_left (abs_nonneg _)
+  have hr2 : (max |1 - ω / b| |1 - ω / a|) ^ 2 < 1 := by nlinarith
+  have hlim := (tendsto_pow_atTop_nhds_zero_of_lt_one
+    (sq_nonneg (max |1 - ω / b| |1 - ω / a|)) hr2).mul_const
+      (‖WithLp.toLp 2 (A *ᵥ (xs - x₀))‖ ^ 2)
+  apply squeeze_zero (fun _ => sq_nonneg _)
+    (fun q => h.norm_mulVec_sub_iterativeSketching_sq_le ha hA hω hxs x₀ q)
+  simpa only [← pow_mul, zero_mul] using hlim
 
 /-- **Undamped iterative sketching, $\varepsilon$ form**: if $\mathbf{S}$ is a subspace embedding
 of $\operatorname{range}\mathbf{A}$ with constants $1 \mp \varepsilon$ in squared norms

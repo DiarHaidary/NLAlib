@@ -32,7 +32,8 @@ weights.
 * `NLAlib.IsOrthogonalPolynomial.mono`: orthogonality to fewer degrees.
 * `NLAlib.MatchesMoments.isOrthogonalPolynomial_iff`: orthogonality depends only on the moments.
 * `NLAlib.IsMomentPosDef.mono`: definiteness up to a lower degree.
-* `NLAlib.isMomentPosDef_iff_forall_finset`: definiteness counts support points.
+* `NLAlib.isMomentPosDef_iff_forall_finset`: for a finite measure carried by a bounded interval,
+  definiteness counts support points.
 -/
 
 @[expose] public section
@@ -47,10 +48,12 @@ def IsOrthogonalPolynomial (μ : Measure ℝ) (k : ℕ) (p : ℝ[X]) : Prop :=
   ∀ r : ℝ[X], r.degree < k → ∫ x, p.eval x * r.eval x ∂μ = 0
 
 /-- The measure $\mu$ is **positive definite on the polynomials of degree less than $k$**:
-$\int p^2\,d\mu > 0$ for every nonzero real polynomial $p$ with $\deg p < k$. Equivalently the
-Hankel matrix $(\int x^{i+j}\,d\mu)_{i,j<k}$ is positive definite, or $\mu$ has at least $k$
-support points (`isMomentPosDef_iff_forall_finset`). Vacuous at $k = 0$. Chihara's
-positive-definite moment functional, restricted to degree $< k$.
+$\int p^2\,d\mu > 0$ for every nonzero real polynomial $p$ with $\deg p < k$.
+For a finite measure carried by a bounded interval, this is equivalent to positive definiteness
+of the Hankel matrix $(\int x^{i+j}\,d\mu)_{i,j<k}$ and to having at least $k$ support points
+(`isMomentPosDef_iff_forall_finset`). The definition accepts any measure, but a nonintegrable
+Bochner integral is $0$, so the support interpretation needs the integrability hypotheses.
+Vacuous at $k = 0$. Chihara's positive-definite moment functional, restricted to degree $< k$.
 [Chihara1978, Ch. I, Definition 3.1]; [Gautschi2004, §1.1] (locators to check). -/
 def IsMomentPosDef (μ : Measure ℝ) (k : ℕ) : Prop :=
   ∀ p : ℝ[X], p ≠ 0 → p.degree < k → 0 < ∫ x, p.eval x ^ 2 ∂μ

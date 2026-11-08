@@ -321,13 +321,10 @@ theorem measureReal_exists_specNorm_sum_ge_le_freedman [Nonempty n] {r : Type*} 
         max (specNorm (∑ j ∈ Finset.range k, μ[fun ω' => S j ω' * (S j ω')ᴴ | ℱ j] ω))
           (specNorm (∑ j ∈ Finset.range k, μ[fun ω' => (S j ω')ᴴ * S j ω' | ℱ j] ω)) ≤ v} ≤
       (Fintype.card r + Fintype.card n) * Real.exp (-(t ^ 2 / 2) / (v + L * t / 3)) := by
-  let D : Matrix r n 𝕜 →L[ℝ] Matrix (r ⊕ n) (r ⊕ n) 𝕜 := LinearMap.toContinuousLinearMap
-    { toFun := dilation
-      map_add' := dilation_add
-      map_smul' := dilation_smul_real }
   have hDm : ∀ j, StronglyMeasurable[ℱ (j + 1)] (fun ω => dilation (S j ω)) := fun j =>
-    D.continuous.comp_stronglyMeasurable (hS j)
-  have hD2 : ∀ j, MemLp (fun ω => dilation (S j ω)) 2 μ := fun j => D.comp_memLp' (hS2 j)
+    (dilationCLM r).continuous.comp_stronglyMeasurable (hS j)
+  have hD2 : ∀ j, MemLp (fun ω => dilation (S j ω)) 2 μ := fun j =>
+    (dilationCLM (𝕜 := 𝕜) (n := n) r).comp_memLp' (hS2 j)
   have hDmean : ∀ j, μ[fun ω => dilation (S j ω) | ℱ j] =ᵐ[μ] 0 := fun j => by
     filter_upwards [condExp_dilation (m := ℱ j) ((hS2 j).integrable one_le_two),
       hmean j] with ω h1 h2

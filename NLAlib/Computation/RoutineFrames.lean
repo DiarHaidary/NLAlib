@@ -14,8 +14,9 @@ public import NLAlib.Computation.ScalarFrames
 # Frames of certified routines
 
 The effect of a certified routine (`NLAlib.Computation.IsMatvecRoutine`,
-`NLAlib.Computation.IsOrthRoutine`) is an *equation*: the final store is the initial store after a
-list of block writes (`NLAlib.Computation.Store.writeBlocks`). This file gives the lemmas that
+`NLAlib.Computation.IsOrthRoutine`) on the store is an *equation*: the final store is the initial
+store after a list of block writes (`NLAlib.Computation.Store.writeBlocks`). Counts, peak memory
+and tape positions are outside the equation. This file gives the lemmas that
 produce and consume that equation, so that a routine proves its effect and a consumer uses it
 without re-deriving frames: the extensionality lemma from reads to block writes, the algebra of
 block writes (append, overwrite, commutation of disjoint blocks, popping a scratch buffer), the
@@ -51,11 +52,21 @@ variable {P ι K C : Type} [DecidableEq P]
 
 section Store
 
-/-- Two blocks `(handle, offset, length)` are disjoint iff they lie in different buffers or one
-ends before the other starts; the form `omega` closes. -/
+/-- Two blocks `(handle, offset, length)` are disjoint iff they lie in different buffers, one of
+them is empty, or one ends before the other starts; the form `omega` closes. An empty block has
+no cell, so it is disjoint from every block even when its offset lies inside the other block
+(`NLAlib.Computation.blockDisjoint_eq_true_iff`). -/
 theorem blockDisjoint_iff {x y : ℕ × ℕ × ℕ} :
-    blockDisjoint x y = true ↔ x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
+    blockDisjoint x y = true ↔ x.1 ≠ y.1 ∨ x.2.2 = 0 ∨ y.2.2 = 0 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨
+      y.2.1 + y.2.2 ≤ x.2.1 := by
   simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq, or_assoc]
+
+/-- Two nonempty blocks `(handle, offset, length)` are disjoint iff they lie in different buffers
+or one ends before the other starts. -/
+theorem blockDisjoint_iff_of_pos {x y : ℕ × ℕ × ℕ} (hx : 0 < x.2.2) (hy : 0 < y.2.2) :
+    blockDisjoint x y = true ↔ x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
+  rw [blockDisjoint_iff]
+  constructor <;> intro h <;> omega
 
 /-- Block writes on a cons are a block write followed by the rest. -/
 theorem Store.writeBlocks_cons_eq_some_iff {s s' : Store P K} {p : P} {x : ℕ × ℕ × ℕ}
@@ -214,7 +225,8 @@ theorem Store.writeBlock_comm {s s₁ s₂ : Store P K} {p : P} {b₁ o₁ b₂ 
   · rw [Store.writeBlock_eq_some_of_size_eq_zero hy, Option.some.injEq] at h₂
     subst h₂
     exact ⟨s, Store.writeBlock_eq_some_of_size_eq_zero hy, h₁⟩
-  have hd := blockDisjoint_iff.mp (hd hx hy)
+  have hd := (blockDisjoint_iff_of_pos (x := (b₁, o₁, x.size)) (y := (b₂, o₂, y.size)) hx hy).mp
+    (hd hx hy)
   dsimp only at hd
   clear hx hy
   have key : s.writeBlocks p [(b₂, o₂, y.size), (b₁, o₁, x.size)] [y, x] = some s₂ := by
@@ -348,7 +360,9 @@ theorem ReadsDecoded.of_writeBlock {x : Fin N → ℝ} (h : ReadsDecoded s dec p
   refine h.of_read_eq fun i hi => Store.read_of_writeBlock_eq_some_of_ne hw ?_
   rcases Nat.eq_zero_or_pos y.size with hy | hy
   · omega
-  · have hd := blockDisjoint_iff.mp (hd (by omega) hy)
+  · have hN : 0 < N := by omega
+    have hd := (blockDisjoint_iff_of_pos (x := (b, off, N)) (y := (b', o', y.size)) hN hy).mp
+      (hd hN hy)
     dsimp only at hd
     omega
 
@@ -372,7 +386,9 @@ theorem HoldsDecoded.of_writeBlock {k : ℕ} {M : Matrix (Fin N) (Fin k) ℝ}
   · exact h i j
   rcases Nat.eq_zero_or_pos y.size with hy | hy
   · omega
-  · have hd := blockDisjoint_iff.mp (hd (by omega) hy)
+  · have hNk : 0 < N * k := by omega
+    have hd := (blockDisjoint_iff_of_pos (x := (b, off, N * k)) (y := (b', o', y.size)) hNk hy).mp
+      (hd hNk hy)
     dsimp only at hd
     omega
 
@@ -500,8 +516,8 @@ theorem exists_exec_alloc (I : Interp P ι K C) (p : P) (len : IExp ℕ)
 
 /-- One word per iteration: a loop whose $k$-th body, from any state that is the start after
 a block write of $k$ words satisfying `Q` into buffer `b` from offset `o`, writes one word
-satisfying `Q k` into cell $o + k$ and nothing else, succeeds, and its whole effect is one block
-write of $n$ words satisfying `Q`. -/
+satisfying `Q k` into cell $o + k$ and nothing else in the store, succeeds, and its net effect on
+the store is one block write of $n$ words satisfying `Q`. -/
 theorem exists_exec_loop_writeBlock (I : Interp P ι K C) {n : IExp ℕ}
     {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C} (p : P) (b o : ℕ) (Q : ℕ → K → Prop)
     (hstep : ∀ k < n.eval, ∀ (ys : Array K) (s : St P K C), ys.size = k →
@@ -529,8 +545,11 @@ theorem exists_exec_loop_writeBlock (I : Interp P ι K C) {n : IExp ℕ}
   exact Array.ext (by simp [hsz]) fun i _ _ => by simp
 
 /-- A routine with a footprint: from every state satisfying `pre` whose blocks `outs`
-(`(handle, offset, length)`) are writable at `tag`, `routine` succeeds and its whole effect is
-one block write per block of `outs`. No guarantee on the words written; a typed certificate
+(`(handle, offset, length)`) are writable at `tag`, `routine` succeeds and its final store is the
+initial store after one block write per block of `outs`. This is the net effect on the store
+only: the routine may write temporary cells (restored or overwritten before it returns) and
+allocate scoped scratch, and the certificate constrains neither its counts, its peak memory nor
+its tape positions. No guarantee on the words written; a typed certificate
 (`NLAlib.Computation.IsMatvecRoutine`, `NLAlib.Computation.IsOrthRoutine`) projects to it. -/
 structure IsBlockRoutine (I : Interp P ι K C) (tag : P) (pre : Store P K → Prop)
     (outs : List (ℕ × ℕ × ℕ)) (routine : Builder P ι ℕ ℕ Unit) : Prop where

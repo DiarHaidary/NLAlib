@@ -219,9 +219,6 @@ private theorem exists_majorized_transfer {ι : Type*} [Fintype ι] [DecidableEq
 
 /-! ### Plane rotations in two coordinates -/
 
-private theorem norm_toLp_single_one (i : n) : ‖WithLp.toLp 2 (Pi.single i 1 : n → ℝ)‖ = 1 := by
-  rw [PiLp.toLp_single, PiLp.norm_single, norm_one]
-
 private theorem star_single_dotProduct_single {i j : n} (hij : i ≠ j) :
     star (Pi.single i (1 : ℝ)) ⬝ᵥ Pi.single j 1 = 0 := by
   rw [star_trivial, single_dotProduct, one_mul, Pi.single_eq_of_ne hij]
@@ -246,13 +243,15 @@ private theorem diag_planeRotation_single_mul_mul {A : Matrix n n ℝ} (hA : A.I
   rw [Matrix.diag_apply, Matrix.mul_mul_apply, Matrix.conjTranspose_eq_transpose_of_trivial,
     Matrix.transpose_transpose, planeRotation_apply_eq_mulVec_single]
   obtain rfl | hki := eq_or_ne k i
-  · rw [planeRotation_mulVec_left (norm_toLp_single_one k) huv, transfer_apply_left _ hij]
+  · rw [planeRotation_mulVec_left
+      (by simp only [PiLp.toLp_single, PiLp.norm_single, norm_one]) huv, transfer_apply_left _ hij]
     simp only [RCLike.ofReal_real_eq_id, id_eq, Matrix.mulVec_sub, Matrix.mulVec_smul,
       sub_dotProduct, dotProduct_sub, smul_dotProduct, dotProduct_smul, single_dotProduct,
       Matrix.mulVec_single_one, one_mul, smul_eq_mul, Matrix.col_apply, hji, Matrix.diag_apply]
     linear_combination A k k * hcs
   obtain rfl | hkj := eq_or_ne k j
-  · rw [planeRotation_mulVec_right (norm_toLp_single_one k) huv]
+  · rw [planeRotation_mulVec_right
+      (by simp only [PiLp.toLp_single, PiLp.norm_single, norm_one]) huv]
     simp only [RCLike.ofReal_real_eq_id, id_eq, Matrix.mulVec_add, Matrix.mulVec_smul,
       add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, single_dotProduct,
       Matrix.mulVec_single_one, one_mul, smul_eq_mul, Matrix.col_apply, hji, transfer,
@@ -279,7 +278,9 @@ private theorem exists_hasOrthonormalCols_diag_eq_transfer {A : Matrix n n ℝ}
   obtain ⟨θ, -, hθ⟩ := intermediate_value_uIcc (a := 0) (b := Real.pi / 2) hf.continuousOn
     (by rwa [h0, h1])
   refine ⟨planeRotation (Pi.single i 1) (Pi.single j 1) (Real.cos θ) (Real.sin θ),
-    hasOrthonormalCols_planeRotation (norm_toLp_single_one i) (norm_toLp_single_one j)
+    hasOrthonormalCols_planeRotation
+      (by simp only [PiLp.toLp_single, PiLp.norm_single, norm_one])
+      (by simp only [PiLp.toLp_single, PiLp.norm_single, norm_one])
       (star_single_dotProduct_single hij) (Real.cos_sq_add_sin_sq θ), ?_⟩
   rw [diag_planeRotation_single_mul_mul hA hij (Real.cos_sq_add_sin_sq θ)]
   congr 1

@@ -247,9 +247,10 @@ the clean-up removes it. Until registration, `scripts/Programs.lean` reports E4 
 
 ## 7. S1 follow-ups
 
-* **N3 (done).** `NLAlibTools/NumPy.lean`: `emitF` and `emitProg` take a kernel-name function
-  (`emitProg` defaults to `kernel`); `NLAlibTools.deflatePython` emits DEFLATE with `mm` and `qr`,
-  checked by `#guard`.
+* **N3 (done).** In `NLAlibTools/NumPy.lean`, `emitF` takes a total kernel-name function.
+  `emitProg` accepts a total or partial binding and raises `NotImplementedError` in the emitted
+  program if execution reaches an unbound call. `NLAlibTools.deflatePython` binds the DEFLATE
+  kernels to `mm` and `qr`, checked by `#guard`.
 * **N2 (deferred, not in scope).** Neither program calls an oracle, so neither goes through
   `ProgFamily.substOracle`; changing `Stmt.substOracle` would touch `RunsWithin.substOracle`, its two
   callers and the Hutch++ tree definitions for no use here. It is needed when a `kcall` program

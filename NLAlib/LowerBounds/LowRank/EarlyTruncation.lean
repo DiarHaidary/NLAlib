@@ -64,8 +64,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {l : Type*} [
 
 /-! ### The case $k = 1$: the $2 \times 2$ instance -/
 
-/-- Pointwise form of the Frobenius identity of `frobNorm_sq_diagonal_mul_sub_eq`. -/
-private lemma sum_sq_pointwise_aux (M : Matrix (Fin 2) (Fin 2) ℝ) (s x y : ℝ)
+/-- Pointwise form of the Frobenius identity of `frobNorm_diagonal_mul_sub_sq_eq`. -/
+private lemma sub_sq_add_sub_sq_eq (M : Matrix (Fin 2) (Fin 2) ℝ) (s x y : ℝ)
     (hsym : M 0 1 = M 1 0)
     (e00 : M 0 0 = M 0 0 * M 0 0 + M 0 1 * M 1 0)
     (e01 : M 0 1 = M 0 0 * M 0 1 + M 0 1 * M 1 1)
@@ -77,7 +77,7 @@ private lemma sum_sq_pointwise_aux (M : Matrix (Fin 2) (Fin 2) ℝ) (s x y : ℝ
 
 /-- For a symmetric idempotent `M`, the residual `Y - M * Y` of `Y = diag(1, s) * Ω'` has squared
 Frobenius norm `a + s² b - (M₀₀ a + 2 M₀₁ s c + M₁₁ s² b)`. -/
-private lemma frobNorm_sq_diagonal_mul_sub_eq (s : ℝ) (Ω' : Matrix (Fin 2) l ℝ)
+private lemma frobNorm_diagonal_mul_sub_sq_eq (s : ℝ) (Ω' : Matrix (Fin 2) l ℝ)
     (M : Matrix (Fin 2) (Fin 2) ℝ) (hsym : M 0 1 = M 1 0) (hidem : M * M = M) :
     frobNorm (diagonal ![1, s] * Ω' - M * (diagonal ![1, s] * Ω')) ^ 2 =
       ∑ j, Ω' 0 j ^ 2 + s ^ 2 * ∑ j, Ω' 1 j ^ 2 -
@@ -93,7 +93,7 @@ private lemma frobNorm_sq_diagonal_mul_sub_eq (s : ℝ) (Ω' : Matrix (Fin 2) l 
           M 1 1 * (s * Ω' 1 j) ^ 2) := by
     intro j
     simp [Fin.sum_univ_two, Matrix.sub_apply, Matrix.mul_apply, Matrix.diagonal_apply]
-    linear_combination sum_sq_pointwise_aux M s (Ω' 0 j) (Ω' 1 j) hsym e00.symm e01.symm e11.symm
+    linear_combination sub_sq_add_sub_sq_eq M s (Ω' 0 j) (Ω' 1 j) hsym e00.symm e01.symm e11.symm
   rw [frobNorm_sq_eq_sum_sq, Finset.sum_comm, Finset.sum_congr rfl fun j _ => hpt j]
   simp only [Finset.mul_sum, ← Finset.sum_add_distrib, ← Finset.sum_sub_distrib]
   exact Finset.sum_congr rfl fun j _ => by ring
@@ -157,8 +157,8 @@ theorem add_div_two_le_frobNorm_sub_earlyTruncatedRSVD_diagonal_sq {s : ℝ} (hs
     have hEY := frobNorm_sub_truncatedSVD_le_of_rank_le (diagonal ![1, s] * Ω') hB
     rw [← hPY] at hEY
     have hsq := pow_le_pow_left₀ (frobNorm_nonneg _) hEY 2
-    rw [frobNorm_sq_diagonal_mul_sub_eq s Ω' P hsym hidem,
-      frobNorm_sq_diagonal_mul_sub_eq s Ω' (S * P * S) hsymS hidem', hP00, hP11, hP01] at hsq
+    rw [frobNorm_diagonal_mul_sub_sq_eq s Ω' P hsym hidem,
+      frobNorm_diagonal_mul_sub_sq_eq s Ω' (S * P * S) hsymS hidem', hP00, hP11, hP01] at hsq
     by_contra h
     push Not at h
     nlinarith [mul_pos (sub_pos.2 h) (sub_pos.2 hab)]

@@ -84,20 +84,6 @@ theorem norm_v_le {j : ℕ} (hj : j ≤ k) : ‖WithLp.toLp 2 (L.v j)‖ ≤ 1 +
     have hv := norm_nonneg (WithLp.toLp 2 (L.v j))
     nlinarith [L.ε_nonneg, sq_nonneg (L.ε / 2)]
 
-private theorem norm_toLp_add_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x + y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_add]
-  exact norm_add_le _ _
-
-private theorem norm_toLp_sub_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x - y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_sub]
-  exact norm_sub_le _ _
-
-private theorem norm_toLp_smul {m : ℕ} (c : ℝ) (x : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (c • x)‖ = |c| * ‖WithLp.toLp 2 x‖ := by
-  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
-
 /-! ### Relative bounds of one step -/
 
 /-- The product of step $j$: $\|\mathbf{u}_{j+1}\| \le (1 + \varepsilon)\|\mathbf{H}\|_2
@@ -106,7 +92,7 @@ private theorem norm_u_le_mul {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (L.u (j + 1))‖ ≤
       (1 + L.ε) * specNorm L.H * ‖WithLp.toLp 2 (L.v (j + 1))‖ := by
   rw [L.u_eq j hj]
-  refine (norm_toLp_add_le _ _).trans ?_
+  refine (EuclideanSpace.norm_toLp_add_le _ _).trans ?_
   have h1 := norm_toLp_mulVec_le L.H (L.v (j + 1))
   have h2 := L.norm_eu_le j hj
   linarith
@@ -120,9 +106,9 @@ private theorem norm_w_le_mul {j : ℕ} (hj : j < k) :
   have h2 := L.norm_ew_le j hj
   rw [hβ] at h2
   rw [L.w_eq j hj]
-  refine (norm_toLp_add_le _ _).trans ?_
-  have h1 := norm_toLp_sub_le (L.u (j + 1)) (L.β j • L.v j)
-  rw [norm_toLp_smul, hβ] at h1
+  refine (EuclideanSpace.norm_toLp_add_le _ _).trans ?_
+  have h1 := EuclideanSpace.norm_toLp_sub_le (L.u (j + 1)) (L.β j • L.v j)
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, hβ] at h1
   linarith
 
 /-- The diagonal coefficient of step $j$:
@@ -174,9 +160,9 @@ private theorem norm_z_le_mul {j : ℕ} (hj : j < k) :
   have hw0 := norm_nonneg (WithLp.toLp 2 w)
   have hproj := norm_sub_dotProduct_smul_le v w (by linarith)
   rw [hz]
-  refine (norm_toLp_add_le _ _).trans ?_
-  have h3 := norm_toLp_sub_le (w - (v ⬝ᵥ w) • v) (L.eα (j + 1) • v)
-  rw [norm_toLp_smul] at h3
+  refine (EuclideanSpace.norm_toLp_add_le _ _).trans ?_
+  have h3 := EuclideanSpace.norm_toLp_sub_le (w - (v ⬝ᵥ w) • v) (L.eα (j + 1) • v)
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs] at h3
   -- `|eα| ‖v‖ ≤ ε ‖v‖² ‖w‖ ≤ ε (1 + ε) ‖w‖`
   have h4 : |L.eα (j + 1)| * ‖WithLp.toLp 2 v‖ ≤ L.ε * (1 + L.ε) * ‖WithLp.toLp 2 w‖ := by
     calc |L.eα (j + 1)| * ‖WithLp.toLp 2 v‖
@@ -216,9 +202,9 @@ private theorem β_succ_le_mul {j : ℕ} (hj : j < k) :
       have h' := (abs_le.mp (L.abs_norm_v_succ_sq_sub_one_le hβ.ne')).1
       linarith
   have heq := congrArg (fun x => ‖WithLp.toLp 2 x‖) (L.smul_v_eq j hj)
-  rw [norm_toLp_smul, abs_of_pos hβ] at heq
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_pos hβ] at heq
   have hδ := L.norm_δ_le j hj
-  have htri := norm_toLp_add_le (L.z (j + 1)) (L.δ (j + 1))
+  have htri := EuclideanSpace.norm_toLp_add_le (L.z (j + 1)) (L.δ (j + 1))
   have hprod : L.β (j + 1) * ‖WithLp.toLp 2 (L.v (j + 2))‖ ≤
       (1 + L.ε) * ‖WithLp.toLp 2 (L.z (j + 1))‖ := by
     rw [heq]
@@ -516,11 +502,11 @@ theorem norm_recurrenceError_le (hsmall : (k : ℝ) * L.ε ≤ 1 / 100) {j : ℕ
   have hsum : ‖WithLp.toLp 2 (L.eu (j + 1) + L.ew (j + 1) + L.ez (j + 1) + L.δ (j + 1))‖ ≤
       ‖WithLp.toLp 2 (L.eu (j + 1))‖ + ‖WithLp.toLp 2 (L.ew (j + 1))‖ +
         ‖WithLp.toLp 2 (L.ez (j + 1))‖ + ‖WithLp.toLp 2 (L.δ (j + 1))‖ := by
-    refine (norm_toLp_add_le _ _).trans ?_
+    refine (EuclideanSpace.norm_toLp_add_le _ _).trans ?_
     gcongr
-    refine (norm_toLp_add_le _ _).trans ?_
+    refine (EuclideanSpace.norm_toLp_add_le _ _).trans ?_
     gcongr
-    exact norm_toLp_add_le _ _
+    exact EuclideanSpace.norm_toLp_add_le _ _
   have hX : 0 ≤ (1 + 5 / 4 * j + 4 / 3 * (j + 1)) * specNorm L.H := by positivity
   have hY : a * ((1 + 5 / 4 * j + 4 / 3 * (j + 1)) * specNorm L.H) ≤
       201 / 200 * ((1 + 5 / 4 * j + 4 / 3 * (j + 1)) * specNorm L.H) := by gcongr

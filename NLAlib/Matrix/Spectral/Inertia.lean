@@ -184,29 +184,42 @@ theorem _root_.Matrix.IsHermitian.posSemidef_iff_inertiaNeg_eq_zero {A : Matrix 
 
 /-! ### The variational characterisation -/
 
-/-- A strict Courant–Fischer bound on a subspace: if
-$c \|\mathbf{x}\|^2 < \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})$ for the
-nonzero vectors $\mathbf{x}$ of a subspace of dimension at least $k + 1$, then
-$k < \lvert n \rvert$ and $c < \lambda_k(\mathbf{A})$. -/
-private theorem lt_eigenvalue_of_forall_mem {A : Matrix n n 𝕜} (hA : A.IsHermitian) {k : ℕ}
-    (S : Submodule 𝕜 (n → 𝕜)) (hS : k + 1 ≤ Module.finrank 𝕜 S) {c : ℝ}
+/-- Indices below the dimension of a subspace fit in the ambient spectrum. Counting the
+indices satisfying a predicate bounds the dimension if each of those initial indices qualifies. -/
+private theorem finrank_le_card_filter_range {p : ℕ → Prop} [DecidablePred p]
+    (S : Submodule 𝕜 (n → 𝕜)) (h : ∀ i, i + 1 ≤ Module.finrank 𝕜 S → p i) :
+    Module.finrank 𝕜 S ≤ ((Finset.range (Fintype.card n)).filter p).card := by
+  have hd : Module.finrank 𝕜 S ≤ Fintype.card n := by
+    simpa only [Module.finrank_fintype_fun_eq_card] using S.finrank_le
+  rw [← Finset.card_range (Module.finrank 𝕜 S)]
+  apply Finset.card_le_card
+  intro i hi
+  have hi := Finset.mem_range.mp hi
+  exact Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (hi.trans_le hd), h i hi⟩
+
+/-- **Counting eigenvalues above a closed threshold.** For Hermitian $\mathbf{A}$, if
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})\ge c\|\mathbf{x}\|^2$ on a
+subspace $S$, at least $\dim S$ eigenvalues are at least $c$, counted with multiplicity.
+[HornJohnson2013, Corollary 4.2.12], with a real threshold.
+Result: eigenvalue-order-and-counting -/
+theorem _root_.Matrix.IsHermitian.finrank_le_card_le_eigenvalue_of_forall_mem
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (S : Submodule 𝕜 (n → 𝕜)) {c : ℝ}
+    (h : ∀ x ∈ S, c * ‖WithLp.toLp 2 x‖ ^ 2 ≤ RCLike.re (quadForm A x)) :
+    Module.finrank 𝕜 S ≤
+      ((Finset.range (Fintype.card n)).filter fun i => c ≤ eigenvalue A i).card :=
+  finrank_le_card_filter_range S fun _ hi => hA.le_eigenvalue_of_forall_mem S hi h
+
+/-- **Counting eigenvalues above an open threshold.** For Hermitian $\mathbf{A}$, if
+$\operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})>c\|\mathbf{x}\|^2$ for every
+nonzero $\mathbf{x}$ in $S$, at least $\dim S$ eigenvalues exceed $c$, counted with multiplicity.
+[HornJohnson2013, Corollary 4.2.12], with a real threshold.
+Result: eigenvalue-order-and-counting -/
+theorem _root_.Matrix.IsHermitian.finrank_le_card_lt_eigenvalue_of_forall_mem
+    {A : Matrix n n 𝕜} (hA : A.IsHermitian) (S : Submodule 𝕜 (n → 𝕜)) {c : ℝ}
     (h : ∀ x ∈ S, x ≠ 0 → c * ‖WithLp.toLp 2 x‖ ^ 2 < RCLike.re (quadForm A x)) :
-    k < Fintype.card n ∧ c < eigenvalue A k := by
-  have hk : k < Fintype.card n := by
-    have := Submodule.finrank_le S
-    rw [Module.finrank_fintype_fun_eq_card] at this
-    omega
-  refine ⟨hk, ?_⟩
-  obtain ⟨W, hW, hWle⟩ := hA.exists_submodule_le_eigenvalue_mul hk
-  have hdim := Submodule.finrank_sup_add_finrank_inf_eq S W
-  have hsup := Submodule.finrank_le (S ⊔ W)
-  rw [Module.finrank_fintype_fun_eq_card] at hsup
-  have hpos : 0 < Module.finrank 𝕜 ↥(S ⊓ W) := by omega
-  obtain ⟨⟨x, hx⟩, hx0⟩ := Module.finrank_pos_iff_exists_ne_zero.mp hpos
-  have hxne : x ≠ 0 := fun h0 => hx0 (Subtype.ext h0)
-  have hn : 0 < ‖WithLp.toLp 2 x‖ ^ 2 :=
-    pow_pos (norm_pos_iff.mpr ((WithLp.toLp_eq_zero 2).not.mpr hxne)) 2
-  exact lt_of_mul_lt_mul_right ((h x hx.1 hxne).trans_le (hWle x hx.2)) hn.le
+    Module.finrank 𝕜 S ≤
+      ((Finset.range (Fintype.card n)).filter fun i => c < eigenvalue A i).card :=
+  finrank_le_card_filter_range S fun _ hi => hA.lt_eigenvalue_of_forall_mem S hi h
 
 omit [Fintype n] in
 /-- The range of a matrix with injective action has the dimension of its domain. -/
@@ -220,10 +233,6 @@ at most $i_+(\mathbf{A})$ (`inertiaPos A`) columns. -/
 private theorem card_le_inertiaPos_of_posDef {p : Type*} [Fintype p] {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {W : Matrix n p 𝕜} (h : (Wᴴ * A * W).PosDef) :
     Fintype.card p ≤ inertiaPos A := by
-  rcases Nat.eq_zero_or_pos (Fintype.card p) with h0 | h0
-  · rw [h0]
-    exact Nat.zero_le _
-  obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero h0.ne'
   have hpos : ∀ y : p → 𝕜, y ≠ 0 → 0 < RCLike.re (quadForm A (W *ᵥ y)) := fun y hy => by
     rw [← quadForm_conjTranspose_mul_mul]
     exact h.re_quadForm_pos hy
@@ -233,9 +242,8 @@ private theorem card_le_inertiaPos_of_posDef {p : Type*} [Fintype p] {A : Matrix
     have := hpos y hy0
     rw [show W *ᵥ y = 0 from hy, quadForm_zero_right, map_zero] at this
     exact lt_irrefl _ this
-  have hfin := finrank_range_mulVecLin_of_injective hinj
-  rw [hk]
-  refine hA.lt_inertiaPos_iff.mpr (lt_eigenvalue_of_forall_mem hA _ (hfin ▸ hk.ge) ?_)
+  rw [← finrank_range_mulVecLin_of_injective hinj]
+  apply hA.finrank_le_card_lt_eigenvalue_of_forall_mem
   rintro x ⟨y, rfl⟩ hx
   rw [zero_mul]
   exact hpos y fun hy => hx (by rw [hy]; exact map_zero _)
@@ -505,7 +513,7 @@ theorem _root_.Matrix.IsHermitian.lt_eigenvalue_of_posDef_conjTranspose_mul_mul_
     c < eigenvalue A k := by
   have hfin := finrank_range_mulVecLin_of_injective hV.mulVec_injective
   rw [Fintype.card_fin] at hfin
-  refine (lt_eigenvalue_of_forall_mem hA _ hfin.ge ?_).2
+  apply hA.lt_eigenvalue_of_forall_mem _ hfin.ge
   rintro x ⟨y, rfl⟩ hx
   have hy : y ≠ 0 := fun hy => hx (by rw [hy]; exact map_zero _)
   have h1 := h.re_quadForm_pos hy

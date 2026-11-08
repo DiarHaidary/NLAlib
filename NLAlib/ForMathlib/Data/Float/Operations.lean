@@ -76,10 +76,13 @@ private theorem round_spec (s : Sign) (m : ℕ) (e : ℤ) (hm : 0 < m) (he : spe
     rw [ht]
     have := div_pow_targetExponent_le_of_lt spec m e m hm le_rfl (by rw [ht]; omega)
     rwa [ht] at this
+/-- Rounding a positive integral mantissa at or above the format's minimum exponent produces
+canonical unpacked data. -/
 theorem round_isCanonical (s : Sign) (m : ℕ) (e : ℤ) (hm : 0 < m) (he : spec.minExponent ≤ e) :
     IsCanonical spec (UnpackedFloat.round spec s m e) :=
   (round_spec s m e hm he).1
 
+/-- Rounding an integral mantissa produces a finite unpacked value; packing may overflow. -/
 theorem isFinite_round (s : Sign) (m : ℕ) (e : ℤ) :
     (UnpackedFloat.round spec s m e).IsFinite := by
   unfold UnpackedFloat.round; simp only; exact isFinite_roundWithAccuracy _ _ _ _ _
@@ -140,6 +143,7 @@ private theorem normalize_spec (M : ℤ) (e : ℤ) (zs : Sign) (he : spec.minExp
     convert this.2.1 using 2
     simp [Sign.toReal]
 
+/-- Normalizing a signed integral mantissa produces a finite unpacked value, before packing. -/
 theorem isFinite_normalize (M : ℤ) (e : ℤ) (zs : Sign) :
     (UnpackedFloat.normalize spec M e zs).IsFinite := by
   unfold UnpackedFloat.normalize
@@ -147,9 +151,13 @@ theorem isFinite_normalize (M : ℤ) (e : ℤ) (zs : Sign) :
   · exact isFinite_roundWithAccuracy _ _ _ _ _
   · rfl
   · exact isFinite_roundWithAccuracy _ _ _ _ _
+/-- Normalizing a signed integral mantissa at or above the minimum exponent produces
+canonical unpacked data; the supplied zero sign is retained when the mantissa vanishes. -/
 theorem normalize_isCanonical (M : ℤ) (e : ℤ) (zs : Sign) (he : spec.minExponent ≤ e) :
     IsCanonical spec (UnpackedFloat.normalize spec M e zs) :=
   (normalize_spec M e zs he).1
+/-- Normalizing an integer multiple of a grid spacing at or above the minimum exponent has
+relative error at most $2^{-p}$, where $p$ is the format precision. No underflow term is needed. -/
 theorem abs_toReal_normalize_sub_le (M : ℤ) (e : ℤ) (zs : Sign) (he : spec.minExponent ≤ e) :
     |toReal (UnpackedFloat.normalize spec M e zs) - (M : ℝ) * 2 ^ e|
       ≤ spec.unitRoundoff * |(M : ℝ) * 2 ^ e| :=
@@ -165,6 +173,8 @@ theorem isNearestFloat_toReal_normalize (M : ℤ) (e : ℤ) (zs : Sign)
 
 
 /-! ## Arithmetic -/
+/-- Shifting a natural mantissa left preserves its real value when the exponent is decreased
+by the same number of binary places. -/
 theorem shift_val (m : ℕ) (e t : ℤ) (h : t ≤ e) :
     ((m <<< (e - t).toNat : ℕ) : ℝ) * (2 : ℝ) ^ t = m * 2 ^ e := by
   rw [Nat.shiftLeft_eq]; push_cast
@@ -218,6 +228,7 @@ theorem isFinite_add_of_isFinite (x y : UnpackedFloat) (hx : x.IsFinite) (hy : y
        | exact isFinite_normalize _ _ _
        | assumption
        | (split <;> rfl))
+/-- Addition of canonical unpacked operands returns canonical data, before packing. -/
 theorem add_isCanonical (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) : IsCanonical spec (UnpackedFloat.add spec x y) :=
@@ -230,6 +241,8 @@ theorem isFinite_of_isFinite_add (x y : UnpackedFloat)
     x.IsFinite ∧ y.IsFinite :=
   let h := (add_spec x y hx hy).2 h
   ⟨h.1, h.2.1⟩
+/-- A finite unpacked sum of canonical operands has relative error at most $2^{-p}$, with
+precision $p$, including subnormal sums. Overflow on packing is a separate condition. -/
 theorem abs_toReal_add_sub_le (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) (h : (UnpackedFloat.add spec x y).IsFinite) :
@@ -246,14 +259,17 @@ theorem isNearestFloat_toReal_add (x y : UnpackedFloat)
   ((add_spec x y hx hy).2 h).2.2.2
 
 
+/-- Negation preserves canonical unpacked data, including exceptional values. -/
 theorem neg_isCanonical (x : UnpackedFloat) (hx : IsCanonical spec x) :
     IsCanonical spec x.neg := by
   cases x <;> simp only [UnpackedFloat.neg, IsCanonical] at hx ⊢
   all_goals exact hx
 
+/-- An unpacked value is finite exactly when its negation is finite. -/
 theorem isFinite_neg (x : UnpackedFloat) : x.neg.IsFinite ↔ x.IsFinite := by
   cases x <;> simp [UnpackedFloat.neg, IsFinite, isFinite]
 
+/-- Negation negates the decoded real value, including the zero junk value of nonfinite data. -/
 theorem toReal_neg (x : UnpackedFloat) : toReal x.neg = -toReal x := by
   cases x <;> simp [UnpackedFloat.neg, toReal]
 
@@ -269,6 +285,7 @@ theorem isFinite_sub_of_isFinite (x y : UnpackedFloat) (hx : x.IsFinite) (hy : y
     (UnpackedFloat.sub spec x y).IsFinite := by
   rw [sub_eq_add_neg]
   exact isFinite_add_of_isFinite x y.neg hx ((isFinite_neg y).2 hy)
+/-- Subtraction of canonical unpacked operands returns canonical data, before packing. -/
 theorem sub_isCanonical (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) : IsCanonical spec (UnpackedFloat.sub spec x y) := by
@@ -283,6 +300,8 @@ theorem isFinite_of_isFinite_sub (x y : UnpackedFloat)
   rw [sub_eq_add_neg] at h
   have := isFinite_of_isFinite_add x y.neg hx (neg_isCanonical y hy) h
   exact ⟨this.1, (isFinite_neg y).1 this.2⟩
+/-- A finite unpacked difference of canonical operands has relative error at most $2^{-p}$,
+with precision $p$, including cancellation into the subnormal range. Packing is separate. -/
 theorem abs_toReal_sub_sub_le (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) (h : (UnpackedFloat.sub spec x y).IsFinite) :
@@ -336,6 +355,8 @@ private theorem mul_finite_spec (m₁ m₂ : ℕ) (e₁ e₂ : ℤ) (s₁ s₂ :
   refine ⟨hs.1, ?_, by rwa [hv]⟩
   rw [habs, hv]
   exact hs.2.trans hh
+/-- Multiplying two positive mantissas produces canonical unpacked data when the sum of their
+exponents is at most the product's target exponent. The operands need not be canonical. -/
 theorem mul_finite_isCanonical (m₁ m₂ : ℕ) (e₁ e₂ : ℤ) (s₁ s₂ : Sign) (hm₁ : 0 < m₁)
     (hm₂ : 0 < m₂)
     (he : e₁ + e₂ ≤ spec.targetExponent (totalExponent (m₁ * m₂) (e₁ + e₂))) :
@@ -400,6 +421,8 @@ theorem isFinite_mul_of_isFinite (x y : UnpackedFloat) (hx : x.IsFinite) (hy : y
        | exact isFinite_roundWithAccuracy _ _ _ _ _
        | assumption)
 
+/-- Multiplication of canonical operands returns canonical unpacked data in a format with
+at least two exponent bits. Overflow is handled later by packing. -/
 theorem mul_isCanonical [Fact (2 ≤ spec.exponentBits)] (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) : IsCanonical spec (UnpackedFloat.mul spec x y) :=
@@ -413,6 +436,9 @@ theorem isFinite_of_isFinite_mul [Fact (2 ≤ spec.exponentBits)] (x y : Unpacke
   let h := (mul_spec x y hx hy).2 h
   ⟨h.1, h.2.1⟩
 
+/-- A finite unpacked product of canonical operands has relative allowance $2^{-p}$ and
+absolute allowance $2^{e_{\min}}/2$, where $p$ is the precision and $e_{\min}$ the smallest
+significand exponent. The format has at least two exponent bits; packing is separate. -/
 theorem abs_toReal_mul_sub_le [Fact (2 ≤ spec.exponentBits)] (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) (h : (UnpackedFloat.mul spec x y).IsFinite) :
@@ -431,6 +457,8 @@ theorem isNearestFloat_toReal_mul [Fact (2 ≤ spec.exponentBits)] (x y : Unpack
 
 
 
+/-- For positive mantissas, the division core describes the exact real quotient at an exponent
+no larger than the target exponent, so the extended-mantissa rounding theorem applies. -/
 theorem exists_approximates_divCore (m₁ : ℕ) (e₁ : ℤ) (m₂ : ℕ) (e₂ : ℤ) (hm₁ : 0 < m₁) (hm₂ : 0 <
   m₂) :
     ∃ w : ℝ, ExtendedMantissa.Approximates (ExtendedMantissa.ofMantissaAndAccuracy (divCore spec
@@ -522,6 +550,8 @@ private theorem div_finite_spec (m₁ m₂ : ℕ) (e₁ e₂ : ℤ) (s₁ s₂ :
   refine ⟨hs.1, ?_⟩
   rw [habs, hv]
   exact hs.2.trans hh
+/-- Division of two nonzero finite unpacked operands returns canonical data; neither operand
+needs to be canonical. Overflow is handled later by packing. -/
 theorem div_finite_isCanonical (m₁ m₂ : ℕ) (e₁ e₂ : ℤ) (s₁ s₂ : Sign) (hm₁ : 0 < m₁)
     (hm₂ : 0 < m₂) :
     IsCanonical spec (UnpackedFloat.div spec (.finite s₁ m₁ e₁ hm₁) (.finite s₂ m₂ e₂ hm₂)) :=
@@ -552,10 +582,16 @@ private theorem div_spec (x y : UnpackedFloat)
     abs_zero, mul_zero, zero_add, IsEmpty.forall_iff, implies_true, and_self,
     zero_div, forall_const, true_and]
   all_goals positivity
+/-- Division of canonical unpacked operands returns canonical data, including exceptional
+results for zero divisors or nonfinite inputs. -/
 theorem div_isCanonical (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) : IsCanonical spec (UnpackedFloat.div spec x y) :=
   (div_spec x y hx hy).1
+/-- Division of finite canonical operands, when its unpacked result is finite, has relative
+allowance $2^{-p}$ and absolute allowance $2^{e_{\min}}/2$, where $p$ is the precision and
+$e_{\min}$ the smallest significand exponent. Output finiteness excludes zero divisors;
+overflow on packing is a separate condition. -/
 theorem abs_toReal_div_sub_le (x y : UnpackedFloat)
     (hx : IsCanonical spec x)
     (hy : IsCanonical spec y) (hxf : x.IsFinite) (hyf : y.IsFinite)
@@ -567,6 +603,8 @@ theorem abs_toReal_div_sub_le (x y : UnpackedFloat)
 
 /-! ## Packing results -/
 
+/-- A canonical unpacked value is preserved by packing and unpacking if the packed result
+is finite. The format has at least two exponent bits. -/
 theorem unpack_pack_of_isFinite [Fact (2 ≤ spec.exponentBits)] {r : UnpackedFloat}
     (hr : IsCanonical spec r)
     (h : (UnpackedFloat.unpack spec (UnpackedFloat.pack spec r)).IsFinite) :

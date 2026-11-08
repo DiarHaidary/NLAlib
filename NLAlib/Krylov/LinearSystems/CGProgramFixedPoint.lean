@@ -14,7 +14,8 @@ public import NLAlib.Krylov.LinearSystems.CGProgramUnderflow
 The scalar endpoint has a finite carrier of signed integers of magnitude at most
 $\mathit{limit}$, decoded on a grid of positive scale $s$. Its four arithmetic operations
 have a proved absolute error allowance $1/s$ and succeed whenever the exact result lies
-in the representable interval. This file instantiates the actual residual-dot kernel used
+in the representable interval, with a nonzero divisor for division. This file instantiates
+the actual residual-dot kernel used
 by both registered CG trees, without an abstract arithmetic assumption or a hypothesis on
 observed intermediate states.
 

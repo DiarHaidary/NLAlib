@@ -10,12 +10,15 @@ public import NLAlib.Polynomial.Orthogonal.Gauss
 /-!
 # The Radau Jacobi matrix
 
-The Radau rule (`NLAlib.Polynomial.Orthogonal.Radau`) is also the spectral measure of the
-Jacobi matrix of order $k + 1$ with its last diagonal entry modified so that the prescribed node
-$c$ is an eigenvalue (`radauJacobiMatrix`, Golub's construction). This file proves that $c$ is
-an eigenvalue and that the modified matrix has the moments of the Jacobi matrix through degree
-$2k$; the identification with the Radau rule is `NLAlib.spectralMeasure_radauJacobiMatrix` in
-`NLAlib.Krylov.Functions.Quadrature`.
+For a finite measure $\mu$ carried by $[a,b]$, positive definite on polynomials of degree less
+than $k + 1$, and prescribed endpoint $c \in \{a,b\}$, the Radau rule is the spectral measure
+of the Jacobi matrix of order $k + 1$ with its last diagonal entry modified
+(`radauJacobiMatrix`, Golub's construction). The identification is
+`NLAlib.spectralMeasure_radauJacobiMatrix` in `NLAlib.Krylov.Functions.Quadrature`.
+This file proves that $c$ is an eigenvalue when the denominator $\pi_k(c)$ is nonzero, under
+the finite-measure, bounded-support and positive-definiteness hypotheses, and that the modified
+matrix has the moments of the Jacobi matrix through degree $2k$. The total definitions alone do
+not imply a spectral identification when the denominator vanishes.
 
 ## Main definitions
 
@@ -24,7 +27,8 @@ $2k$; the identification with the Radau rule is `NLAlib.spectralMeasure_radauJac
 ## Main results
 
 * `NLAlib.IsMomentPosDef.radauJacobiMatrix_mulVec_eq`,
-  `NLAlib.IsMomentPosDef.mem_spectrum_radauJacobiMatrix`: $c$ is an eigenvalue.
+  `NLAlib.IsMomentPosDef.mem_spectrum_radauJacobiMatrix`: $c$ is an eigenvalue for a finite
+  measure carried by a bounded interval, with positive definiteness and $\pi_k(c) \ne 0$.
 * `NLAlib.radauJacobiMatrix_pow_apply_zero_zero`: the moments through degree $2k$.
 -/
 
@@ -38,9 +42,12 @@ namespace NLAlib
 /-! ### The modified Jacobi matrix -/
 
 /-- The **Radau corner** $\tilde\alpha_k = c - \beta_k\pi_{k-1}(c)/\pi_k(c)$ for $k \ge 1$ and
-$\tilde\alpha_0 = c$: the last diagonal entry that makes $c$ a zero of the modified recurrence
-$\tilde\pi_{k+1} = (x - \tilde\alpha_k)\pi_k - \beta_k\pi_{k-1}$, so an eigenvalue of
-`radauJacobiMatrix μ c k`. Junk: $c$ when $\pi_k(c) = 0$ ($x/0 = 0$). [Golub1973, §7];
+$\tilde\alpha_0 = c$. When $\pi_k(c) \ne 0$, this makes $c$ a zero of the modified recurrence
+$\tilde\pi_{k+1} = (x - \tilde\alpha_k)\pi_k - \beta_k\pi_{k-1}$.
+For a finite measure carried by a bounded interval, positive definite on polynomials of degree
+less than $k + 1$, the nonzero denominator also makes $c$ an eigenvalue of
+`radauJacobiMatrix μ c k`. Junk: $c$ when $\pi_k(c) = 0$ ($x/0 = 0$), with no such eigenvalue
+claim in that case. [Golub1973, §7];
 [GolubMeurant2010, Ch. 6] (locators to check). -/
 noncomputable def radauJacobiAlpha (μ : Measure ℝ) (c : ℝ) : ℕ → ℝ
   | 0 => c
@@ -48,8 +55,13 @@ noncomputable def radauJacobiAlpha (μ : Measure ℝ) (c : ℝ) : ℕ → ℝ
       (orthogonalPolynomial μ (k + 1)).eval c
 
 /-- The **Radau Jacobi matrix** of order $k + 1$: the Jacobi matrix `jacobiMatrix μ (k + 1)`
-with its last diagonal entry $\alpha_k$ replaced by `radauJacobiAlpha μ c k`. Its spectral
-measure at $\sqrt{\mu(\mathbb{R})}\,\mathbf{e}_0$ is the Radau rule with $k$ free nodes.
+with its last diagonal entry $\alpha_k$ replaced by `radauJacobiAlpha μ c k`.
+For a finite measure $\mu$ carried by $[a,b]$, positive definite on polynomials of degree less
+than $k + 1$, and prescribed endpoint $c \in \{a,b\}$, its spectral measure at
+$\sqrt{\mu(\mathbb{R})}\,\mathbf{e}_0$ is the Radau rule with $k$ free nodes
+(`NLAlib.spectralMeasure_radauJacobiMatrix`). The matrix is defined for all arguments; if
+$\pi_k(c) = 0$, its corner is $c$ by total division, and the spectral-rule identity is not
+asserted without the preceding hypotheses.
 [Golub1973, §7]; [GolubMeurant2010, Ch. 6] (locators to check). -/
 noncomputable def radauJacobiMatrix (μ : Measure ℝ) (c : ℝ) (k : ℕ) :
     Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ :=

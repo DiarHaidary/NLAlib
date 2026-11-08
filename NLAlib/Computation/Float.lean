@@ -329,8 +329,9 @@ private theorem map_finiteFloatLift (o : Option Float)
 
 /-- Checked binary64 execution on a valid-word carrier. Results are lifted using proofs of
 finiteness already established by `checkedFloatSem`; the lift performs no further finiteness
-check. This is a candidate endpoint for future arithmetic certificates, not an assertion that
-its accuracy and range-success obligations have been proved. -/
+check. `isArithErrSem_finiteFloatSem` in `Computation/IEEE.lean` certifies binary arithmetic
+accuracy and range success. Arbitrary rational-literal accuracy and correctness of native
+runtime replacements remain separate obligations. -/
 def finiteFloatSem : ScalarSem Unit FiniteFloat where
   lit _ q := finiteFloatLift (checkedFloatSem.lit () q)
     (fun z h => isFinite_of_checkedFloatSem_lit_eq_some q z h)

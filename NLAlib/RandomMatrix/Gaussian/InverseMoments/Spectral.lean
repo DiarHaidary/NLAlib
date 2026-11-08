@@ -63,38 +63,6 @@ variable [DecidableEq r]
 /-! ### Spectral probes -/
 
 omit [DecidableEq r] in
-/-- A top unit eigenvector $\mathbf{v}$ of a positive semidefinite $\mathbf{A}$
-($\mathbf{A}\mathbf{v} = \|\mathbf{A}\|_2 \mathbf{v}$) detects its norm:
-$\|\mathbf{A}\|_2 (\mathbf{v}^{\mathsf{T}}\mathbf{z})^2
-\le \mathbf{z}^{\mathsf{T}}\mathbf{A}\mathbf{z}$. -/
-private theorem specNorm_mul_dotProduct_sq_le {A : Matrix r r ℝ} (hA : A.PosSemidef)
-    {v : r → ℝ} (hv : ‖WithLp.toLp 2 v‖ = 1) (hAv : A *ᵥ v = specNorm A • v) (z : r → ℝ) :
-    specNorm A * (v ⬝ᵥ z) ^ 2 ≤ z ⬝ᵥ (A *ᵥ z) := by
-  have hvv : v ⬝ᵥ v = 1 := by
-    rw [← EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hv, one_pow]
-  set a := v ⬝ᵥ z with ha
-  set w := z - a • v with hw
-  have hvw : v ⬝ᵥ w = 0 := by
-    rw [hw, dotProduct_sub, dotProduct_smul, hvv, smul_eq_mul, mul_one, ha, sub_self]
-  have hz : z = a • v + w := by rw [hw, add_sub_cancel]
-  have hAt : Aᵀ = A := by
-    have h := hA.isHermitian.eq
-    rwa [Matrix.conjTranspose_eq_transpose_of_trivial] at h
-  have hvAw : v ⬝ᵥ (A *ᵥ w) = 0 := by
-    rw [Matrix.dotProduct_mulVec, ← Matrix.mulVec_transpose, hAt, hAv, smul_dotProduct, hvw,
-      smul_zero]
-  have hwAw : 0 ≤ w ⬝ᵥ (A *ᵥ w) := by
-    simpa only [star_trivial] using hA.dotProduct_mulVec_nonneg w
-  have hexp : z ⬝ᵥ (A *ᵥ z) = specNorm A * a ^ 2 + w ⬝ᵥ (A *ᵥ w) := by
-    rw [hz]
-    simp only [Matrix.mulVec_add, Matrix.mulVec_smul, hAv, add_dotProduct, dotProduct_add,
-      smul_dotProduct, dotProduct_smul, hvAw, hvv, smul_eq_mul]
-    rw [dotProduct_comm w v, hvw]
-    ring
-  rw [hexp]
-  linarith
-
-omit [DecidableEq r] in
 /-- The moments of a squared unit projection of a standard Gaussian vector: for $q \ge 0$,
 $\mathbb{E} ((\mathbf{v}^{\mathsf{T}}\mathbf{z})^2)^q = 2^q \, \Gamma(1/2 + q) / \sqrt{\pi}$. -/
 private theorem integrable_and_integral_dotProduct_sq_rpow {v : r → ℝ}
@@ -197,7 +165,7 @@ private theorem lintegral_specNorm_inv_rpow_le [Nonempty r]
   have hdetect (G : Matrix r k ℝ) : ENNReal.ofReal c * ENNReal.ofReal (specNorm (G * Gᴴ)⁻¹ ^ q) ≤
       ∫⁻ z, ENNReal.ofReal ((z ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ z)) ^ q) ∂(gaussianVector r) := by
     have hA := (Matrix.posSemidef_self_mul_conjTranspose G).inv
-    obtain ⟨v, hv, hAv⟩ := hA.exists_norm_eq_one_and_mulVec_eq_specNorm_smul
+    obtain ⟨v, hv, hprobe⟩ := hA.exists_norm_eq_one_and_specNorm_mul_norm_dotProduct_sq_le
     obtain ⟨hint, hval⟩ := integrable_and_integral_dotProduct_sq_rpow hv hq0.le
     rw [← hc] at hval
     rw [← ENNReal.ofReal_mul (by rw [hc]; positivity), mul_comm, ← hval, ← integral_const_mul,
@@ -207,7 +175,8 @@ private theorem lintegral_specNorm_inv_rpow_le [Nonempty r]
     refine lintegral_mono fun z => ENNReal.ofReal_le_ofReal ?_
     rw [← Real.mul_rpow (specNorm_nonneg _) (sq_nonneg _)]
     exact Real.rpow_le_rpow (mul_nonneg (specNorm_nonneg _) (sq_nonneg _))
-      (specNorm_mul_dotProduct_sq_le hA hv hAv z) hq0.le
+      (by simpa only [star_trivial, Real.norm_eq_abs, sq_abs, quadForm_def, RCLike.re_to_real]
+        using hprobe z) hq0.le
   have hjoint : AEMeasurable (Function.uncurry fun (G : Matrix r k ℝ) (z : r → ℝ) =>
       ENNReal.ofReal ((z ⬝ᵥ ((G * Gᴴ)⁻¹ *ᵥ z)) ^ q))
       ((gaussianMatrix r k).prod (gaussianVector r)) :=

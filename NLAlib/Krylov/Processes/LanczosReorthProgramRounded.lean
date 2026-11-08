@@ -11,12 +11,15 @@ public import NLAlib.Krylov.FinitePrecision.LanczosReorthSpectral
 /-!
 # Rounded runs of Lanczos with full reorthogonalization as a program
 
-The rounded runs of the CGS2 trees `NLAlib.lanczosReorthProg.compiled` (stored matrix) and
-`NLAlib.lanczosReorthOracleProg.compiled` (matrix-free) under the standard model: both succeed
-and their decoded outputs satisfy `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at $q$
-columns; composed with the backward model of `NLAlib.LanczosReorthRun`, the computed tridiagonal
-of every admissible prefix is the exact Lanczos tridiagonal of a nearby symmetric matrix, and the
-computed Ritz values interlace the eigenvalues of $\mathbf{A}$ up to the backward radius.
+For a symmetric real matrix and a nonzero decoded input in the seven declared buffers, the CGS2
+trees finish under the all-range relative-error model with exact zero addition and the smallness
+conditions below. The stored tree reads the matrix from column-major ROM. The matrix-free tree
+requires a successful, accurate matvec oracle. Their outputs satisfy
+`NLAlib.LanczosReorthOutputs` with the CGS2 parameters for $q$ columns.
+For a positive prefix passing the stored-norm test, the stored tree's backward and interlacing
+theorems also require the prefix's fixed-point and recurrence-level bounds. Its tridiagonal then
+equals the exact Lanczos tridiagonal of a nearby symmetric matrix, and its Ritz values interlace
+the eigenvalues of $\mathbf{A}$ up to the backward radius.
 Patterned on `NLAlib.LanczosImplementation.exec_rounded_compiled` and
 `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
 
@@ -82,12 +85,19 @@ private theorem lanczosReorthOutputs_pop {s : Store P K} (hsize : s.size = 8) {d
   · rw [rdo tag 3 _ (by omega)]; exact h3 i j
   · rw [rdo tag 6 _ (by omega)]; exact h6 i j
 
-/-- **The rounded run of the stored-matrix CGS2 tree**: under the standard model, for symmetric
-decoded $\mathbf{A}$ (ROM words) and $\mathbf{b} \ne \mathbf{0}$, the compiled tree succeeds,
-keeps the shape and its outputs satisfy `NLAlib.LanczosReorthOutputs` with the CGS2 parameters at
-$q$ columns, $c_1$ = `NLAlib.cgsPassBound` $N\,q\,u\,\eta_0$
-= <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$:
-$(\eta_0, 2c_1, 3c_1, 2(\eta_0 + c_1)^2)$. No printed source.
+/-- **The rounded run of the stored-matrix CGS2 tree** uses the all-range relative-error model
+with unit roundoff $u$ at the program tag and exact addition of zero. The seven buffers at this
+tag have lengths $N,N(q+1),q,q+1,1,N,q$. Buffer $0$ decodes to $\mathbf{b}\ne\mathbf{0}$,
+and the first $N^2$ ROM words decode column-major to a symmetric $\mathbf{A}$.
+Let $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, and let
+$c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$.
+If $\varepsilon,c_1,(N+q+2)u\le 1/100$, $0\le\eta_0\le 1/100$ and $\tau>0$, the
+compiled tree succeeds, keeps the shape and satisfies `NLAlib.LanczosReorthOutputs` at
+$\varepsilon,\tau$ and the parameters $(\eta_0,2c_1,3c_1,2(\eta_0+c_1)^2)$. Its decoded data
+give a run model for every $0<m\le q$ with $\tau\nu_j<\beta_j$ for $1\le j\le m$.
+No printed source.
 Result: lanczos-reorth-cgs2-rounded-run -/
 theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Interp P ι K (OpCount P ι))
     (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -98,7 +108,7 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     (hrom : ∀ i < N * N, I.rom i = some (values i))
-    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : Aᵀ = A)
+    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : A.IsHermitian)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) (hbnz : b ≠ 0)
     {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100) (hu : ((N + q + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
     (hc₁ : cgsPassBound N q (u tag) η₀ ≤ 1 / 100) {τ : ℝ} (hτ : 0 < τ) :
@@ -127,7 +137,9 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
         (specNorm_nonneg A)))
     (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0)
     ⟨by linarith, by linarith, by positivity⟩
-    (fun t ht => isOrthRoutine_cgs2_of_lt I hsem hz tag ht hη₀ hη hu hc₁) hA hsmall hτ
+    (fun t ht => isOrthRoutine_cgs2_of_lt I hsem hz tag ht hη₀ hη hu hc₁)
+    (by simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial] using hA)
+    hsmall hτ
   have hsize : st.store.size = 7 := by simpa [Store.shape] using congrArg Array.size hshape
   have hsize₁ : out₁.store.size = 8 := by
     simpa [Store.shape] using congrArg Array.size (shout.trans shm)
@@ -137,16 +149,20 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ} (I : Inter
   rw [Store.shape_pop, shout, shm, hshape]
   rfl
 
-/-- **The rounded run of the matrix-free CGS2 tree**: under the standard model, for symmetric
-$\mathbf{A}$, an oracle of accuracy $\eta\|\mathbf{A}\|_2$ (`NLAlib.Computation.IsMatvecErr`)
-with $\eta \le \varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
-is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$ and $\mathbf{b}
-\ne \mathbf{0}$, the compiled tree succeeds, keeps the shape and its outputs satisfy
-`NLAlib.LanczosReorthOutputs` with the CGS2 parameters at $q$ columns, $c_1$ =
-`NLAlib.cgsPassBound`, that
-is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$: $(\eta_0, 2c_1,
-3c_1, 2(\eta_0 + c_1)^2)$. Pattern: `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`.
-No printed source.
+/-- **The rounded run of the matrix-free CGS2 tree** uses the all-range relative-error model
+with unit roundoff $u$ at the program tag and exact addition of zero. The seven buffers at this
+tag have lengths $N,N(q+1),q,q+1,1,N,q$, and buffer $0$ decodes to $\mathbf{b}\ne\mathbf{0}$.
+For symmetric $\mathbf{A}$, the height-$N$ oracle succeeds on every length-$N$ input, with
+normwise error coefficient $\eta\|\mathbf{A}\|_2$ (`NLAlib.Computation.IsMatvecErr`).
+Let $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound`, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, and let
+$c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$.
+If $\eta\le\varepsilon$, $\varepsilon,c_1,(N+q+2)u\le 1/100$, $0\le\eta_0\le 1/100$ and
+$\tau>0$, the compiled tree succeeds, keeps the shape and satisfies `NLAlib.LanczosReorthOutputs`
+at $\varepsilon,\tau$ and the parameters $(\eta_0,2c_1,3c_1,2(\eta_0+c_1)^2)$.
+Its decoded data give a run model for every $0<m\le q$ with $\tau\nu_j<\beta_j$ for
+$1\le j\le m$. No printed source.
 Result: lanczos-reorth-cgs2-oracle-rounded-run -/
 theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
@@ -157,7 +173,7 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     {η : ℝ} (hmv : IsMatvecErr I o dec tag A (η * specNorm A))
-    (hηmv : η ≤ lanczosImplementationRoundoffBound N (u tag)) (hA : Aᵀ = A)
+    (hηmv : η ≤ lanczosImplementationRoundoffBound N (u tag)) (hA : A.IsHermitian)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) (hbnz : b ≠ 0)
     {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100) (hu : ((N + q + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
     (hc₁ : cgsPassBound N q (u tag) η₀ ≤ 1 / 100) {τ : ℝ} (hτ : 0 < τ) :
@@ -184,7 +200,9 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
       (mul_le_mul_of_nonneg_right hηmv (specNorm_nonneg A)))
     (fun work coef j => cgs2 tag (IExp.const N) (j + 1) 1 work 0 coef 0)
     ⟨by linarith, by linarith, by positivity⟩
-    (fun t ht => isOrthRoutine_cgs2_of_lt I hsem hz tag ht hη₀ hη hu hc₁) hA hsmall hτ
+    (fun t ht => isOrthRoutine_cgs2_of_lt I hsem hz tag ht hη₀ hη hu hc₁)
+    (by simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial] using hA)
+    hsmall hτ
   have hsize₁ : out₁.store.size = 8 := by
     simpa [Store.shape] using congrArg Array.size (shout.trans sh₁)
   refine ⟨out₁.release tag (0 : IExp ℕ).eval (I.width tag), ?_, ?_,
@@ -197,22 +215,26 @@ theorem exec_rounded_oracle_compiled {u : P → ℝ} {dec : P → K → ℝ}
     rw [Store.shape_pop, shout, sh₁, hshape]
     rfl
 
-/-- **The program-level backward model**: under the standard model, for symmetric decoded
-$\mathbf{A}$ (ROM words), $\mathbf{b} \ne \mathbf{0}$, $\varepsilon$ =
+/-- **The program-level backward model** uses the all-range relative-error model with exact zero
+addition. The seven buffers at the program tag have lengths $N,N(q+1),q,q+1,1,N,q$.
+Buffer $0$ decodes to $\mathbf{b}\ne\mathbf{0}$ and the first $N^2$ ROM words decode
+column-major to a symmetric $\mathbf{A}$. With $\varepsilon$ =
 `NLAlib.lanczosImplementationRoundoffBound`, that
-is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, $0 \le \eta_0 \le
-1/100$, $(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound`, that
-is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
-\tau \le 1$, the stored-matrix CGS2 tree succeeds, and every admissible prefix of $m$ steps
-($\tau\nu_j < \beta_j$) is a `NLAlib.LanczosReorthRun` $L$ whose coefficients are the decoded
-ones and whose parameters are $\varepsilon$, $\tau$ and the CGS2 ones $(\eta_0, 2c_1, 3c_1,
-2(\eta_0 + c_1)^2)$; if its recurrence and orthogonality levels satisfy the fixed-point
-condition, its computed tridiagonal is the exact Lanczos tridiagonal of $(\mathbf{H}',
-\mathbf{b})$ for a symmetric
-$\mathbf{H}'$ with $\|\mathbf{H}' - \mathbf{A}\|_{\mathsf{F}} \le r +
-3\|\mathbf{A}\|_2(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)$, $r$ =
-`NLAlib.LanczosReorthRun.backwardRadius` and $\mu$ the orthogonality level. No printed source for
-the program statement; [Paige1971, §6.1] in substance.
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, and
+$c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$,
+assume $\varepsilon,c_1,(N+q+2)u\le 1/100$, $0\le\eta_0\le 1/100$ and $0<\tau\le 1$.
+The stored-matrix CGS2 tree succeeds. Every prefix $0<m\le q$ with $\tau\nu_j < \beta_j$ for
+$1\le j\le m$ yields a `NLAlib.LanczosReorthRun` $L$ with the decoded coefficients and
+parameters $\varepsilon,\tau,\eta_0,2c_1,3c_1,2(\eta_0+c_1)^2$.
+If the recurrence level is at most $1/100$ and the orthogonality level $\mu$ satisfies
+$\sqrt{3(m+1)}\,\mu\le\eta_0$, its tridiagonal is the exact Lanczos tridiagonal of
+$(\mathbf{H}',\mathbf{b})$ for a symmetric $\mathbf{H}'$. With
+$r$ = `NLAlib.LanczosReorthRun.backwardRadius`, its perturbation satisfies
+$$\|\mathbf{H}'-\mathbf{A}\|_{\mathsf{F}}
+\le r+3\|\mathbf{A}\|_2\bigl(3\varepsilon+2\sqrt{3(m+1)}\,\mu\bigr).$$
+[Paige1971, §6.1] analyzes reorthogonalization corrections. No printed source for this
+CGS2 program bound.
 Result: lanczos-reorth-cgs2-program-backward -/
 theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -223,7 +245,7 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     (hrom : ∀ i < N * N, I.rom i = some (values i))
-    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : Aᵀ = A)
+    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : A.IsHermitian)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) (hbnz : b ≠ 0)
     {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100) (hu : ((N + q + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
     (hc₁ : cgsPassBound N q (u tag) η₀ ≤ 1 / 100) {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1) :
@@ -240,7 +262,7 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
             L.ε₃ = 2 * (η₀ + cgsPassBound N q (u tag) η₀) ^ 2 ∧
             (L.recLevel ≤ 1 / 100 →
               Real.sqrt (3 * ((m : ℝ) + 1)) * L.orthLevel ≤ L.η₀ →
-              ∃ H' : Matrix (Fin N) (Fin N) ℝ, H'ᵀ = H' ∧
+              ∃ H' : Matrix (Fin N) (Fin N) ℝ, H'.IsHermitian ∧
                 frobNorm (H' - A) ≤ L.backwardRadius + 3 * specNorm A *
                   (3 * lanczosImplementationRoundoffBound N (u tag) +
                     2 * Real.sqrt (3 * ((m : ℝ) + 1)) * L.orthLevel) ∧
@@ -258,20 +280,26 @@ theorem exec_rounded_compiled_backward {u : P → ℝ} {dec : P → K → ℝ}
     exact hδ
   obtain ⟨H', h1, h2', h3'⟩ := L.exists_pure_backward (hLη ▸ hη) hsm hrec (hLτ ▸ hτ1) hbnz hδL
   rw [hH] at h2'
-  exact ⟨H', h1, h2', h3'⟩
+  exact ⟨H', by simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial]
+    using h1, h2', h3'⟩
 
-/-- **Interlacing at the program level**: under the standard model, for symmetric decoded
-$\mathbf{A}$ (ROM words), $\mathbf{b} \ne \mathbf{0}$, $\varepsilon$ =
+/-- **Interlacing at the program level** uses the all-range relative-error model with exact zero
+addition. The seven buffers at the program tag have lengths $N,N(q+1),q,q+1,1,N,q$.
+Buffer $0$ decodes to $\mathbf{b}\ne\mathbf{0}$ and the first $N^2$ ROM words decode
+column-major to a symmetric $\mathbf{A}$. With $\varepsilon$ =
 `NLAlib.lanczosImplementationRoundoffBound`, that
-is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$, $0 \le \eta_0 \le
-1/100$, $(N + q + 2)u \le 1/100$, `NLAlib.cgsPassBound`, that
-is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u \le 1/100$ and $0 <
-\tau \le 1$, the stored-matrix CGS2 tree succeeds and on every admissible prefix of $m$ steps
-whose run $L$ (parameters $\varepsilon$, $\tau$ and the CGS2 ones) satisfies the fixed-point
-condition the computed Ritz values $\theta_i$ interlace
-the eigenvalues of $\mathbf{A}$ up to $e$ = `NLAlib.LanczosReorthRun.backwardRadius`:
-$\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) + e$ for $i < m$. No
-printed source.
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, and
+$c_1$ = `NLAlib.cgsPassBound`, that
+is <!-- value cgsPassBound N q u \eta_0 -->$2(1+\eta_0)\sqrt{q+1}\,(N+q+2)\,u$,
+assume $\varepsilon,c_1,(N+q+2)u\le 1/100$, $0\le\eta_0\le 1/100$ and $0<\tau\le 1$.
+The stored-matrix CGS2 tree succeeds. Take $0<m\le q$ with
+$\tau\nu_j<\beta_j$ for every $1\le j\le m$. If the prefix run $L$ has recurrence level at
+most $1/100$ and orthogonality level $\mu$ satisfying $\sqrt{3(m+1)}\,\mu\le\eta_0$,
+the computed Ritz values $\theta_i$ satisfy, with
+$e$ = `NLAlib.LanczosReorthRun.backwardRadius`,
+$$\lambda_{i+N-m}(\mathbf{A})-e\le\theta_i\le\lambda_i(\mathbf{A})+e
+\qquad (0\le i<m).$$
+No printed source.
 Result: lanczos-reorth-cgs2-program-interlacing -/
 theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -282,7 +310,7 @@ theorem exec_rounded_compiled_interlacing {u : P → ℝ} {dec : P → K → ℝ
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     (hrom : ∀ i < N * N, I.rom i = some (values i))
-    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : Aᵀ = A)
+    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : A.IsHermitian)
     (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100) (hbnz : b ≠ 0)
     {η₀ : ℝ} (hη₀ : 0 ≤ η₀) (hη : η₀ ≤ 1 / 100) (hu : ((N + q + 2 : ℕ) : ℝ) * u tag ≤ 1 / 100)
     (hc₁ : cgsPassBound N q (u tag) η₀ ≤ 1 / 100) {τ : ℝ} (hτ : 0 < τ) (hτ1 : τ ≤ 1) :

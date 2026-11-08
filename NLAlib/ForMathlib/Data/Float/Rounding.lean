@@ -59,6 +59,7 @@ theorem isBinaryFloat_toReal {spec : Format} {x : UnpackedFloat} (hx : IsCanonic
       simp only [toReal]
   | _ => exact isBinaryFloat_zero
 
+/-- The total exponent is the binary logarithm of the mantissa plus one and the exponent. -/
 theorem totalExponent_eq (m : ℕ) (e : ℤ) : totalExponent m e = (m.log2 : ℤ) + 1 + e := rfl
 
 private theorem shiftRight_zero (em : ExtendedMantissa) : em >>> 0 = em := rfl
@@ -175,6 +176,7 @@ private theorem finish_spec (spec : Format) (s : Sign) (r : ℕ) (t :
     simp only [toReal]
     rw [mul_assoc, hval]
 
+/-- Attaching an accuracy descriptor leaves the integral mantissa unchanged. -/
 theorem ofMantissaAndAccuracy_mantissa (m : ℕ) (acc : Accuracy) :
     (ExtendedMantissa.ofMantissaAndAccuracy m acc).mantissa = m := by
   cases acc with
@@ -339,6 +341,8 @@ private theorem roundWithAccuracy_spec (spec : Format) (s : Sign)
   rw [h2.2, het, Sign.cast_apply]
   ring
 
+/-- Rounding an extended mantissa that describes a real value produces canonical unpacked
+data when the input exponent is no larger than the target exponent. -/
 theorem roundWithAccuracy_isCanonical (spec : Format) (s : Sign) (m
   : ℕ) (e : ℤ) (acc : Accuracy)
     (w : ℝ) (hw : ExtendedMantissa.Approximates (ExtendedMantissa.ofMantissaAndAccuracy m acc) w)
@@ -367,6 +371,8 @@ theorem isNearestFloat_toReal_roundWithAccuracy (spec : Format) (s
       (toReal (roundWithAccuracy spec s m e acc)) :=
   (roundWithAccuracy_spec spec s m e acc w hw he).2.2
 
+/-- Rounding always returns a finite unpacked value. Its exponent is not bounded above;
+packing may still overflow to infinity. -/
 theorem isFinite_roundWithAccuracy (spec : Format) (s : Sign) (m :
   ℕ) (e : ℤ) (acc : Accuracy) :
     (roundWithAccuracy spec s m e acc).IsFinite := by
@@ -375,6 +381,7 @@ theorem isFinite_roundWithAccuracy (spec : Format) (s : Sign) (m :
   dsimp only
   split <;> rfl
 
+/-- An exact positive integral mantissa already at its target exponent rounds without error. -/
 theorem toReal_roundWithAccuracy_exact (spec : Format) (s : Sign)
   (m : ℕ) (e : ℤ) (hm : 0 < m)
     (he : e = spec.targetExponent (totalExponent m e)) :

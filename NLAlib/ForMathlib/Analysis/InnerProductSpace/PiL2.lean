@@ -20,6 +20,8 @@ Lipschitz condition for the Euclidean norm read on coordinate vectors. Upstream 
 ## Main results
 
 * `EuclideanSpace.norm_le_norm_toLp`: the sup norm is at most the Euclidean norm.
+* `EuclideanSpace.norm_toLp_add_le`, `EuclideanSpace.norm_toLp_sub_le`: triangle inequalities
+  on coordinate vectors.
 * `EuclideanSpace.inner_toLp_toLp_eq_star_dotProduct`: the inner product is
   $\langle \mathbf{x}, \mathbf{y} \rangle = \mathbf{x}^{\mathsf{H}}\mathbf{y}$.
 * `EuclideanSpace.norm_toLp_sq_eq_re_star_dotProduct`:
@@ -54,6 +56,18 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 $\max_i \lvert x_i \rvert \le \|\mathbf{x}\|$. -/
 theorem norm_le_norm_toLp (x : n → 𝕜) : ‖x‖ ≤ ‖WithLp.toLp 2 x‖ :=
   (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr fun i => PiLp.norm_apply_le (WithLp.toLp 2 x) i
+
+/-- The triangle inequality for the Euclidean norm of coordinate vectors. This is
+`norm_add_le` transported through `WithLp.toLp_add`. -/
+theorem norm_toLp_add_le (x y : n → 𝕜) :
+    ‖WithLp.toLp 2 (x + y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
+  simpa only [WithLp.toLp_add] using norm_add_le (WithLp.toLp 2 x) (WithLp.toLp 2 y)
+
+/-- The Euclidean norm of a difference is at most the sum of the norms. This is
+`norm_sub_le` transported through `WithLp.toLp_sub`. -/
+theorem norm_toLp_sub_le (x y : n → 𝕜) :
+    ‖WithLp.toLp 2 (x - y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
+  simpa only [WithLp.toLp_sub] using norm_sub_le (WithLp.toLp 2 x) (WithLp.toLp 2 y)
 
 /-- Coordinatewise domination of norms implies domination of Euclidean norms. -/
 theorem norm_toLp_le_norm_toLp {x y : n → 𝕜} (h : ∀ i, ‖x i‖ ≤ ‖y i‖) :

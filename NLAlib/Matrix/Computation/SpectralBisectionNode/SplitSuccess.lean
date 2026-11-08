@@ -317,10 +317,10 @@ private theorem exists_exec_eighSplitTail {mm : ι} (hmm : IsMatMulKernel I mm p
   have hA5 : pairLayout.Holds st5.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A :=
     fun i j t => (hfr5 p _ _ hMs (by
       have := pair_idx_lt_split i j t
-      simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-        IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-      left
-      exact decide_eq_true (by change _ + (2 * _ + _) + 1 ≤ _; nlinarith))).trans (hA i j t)
+      refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
+      simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat]
+      change _ + (2 * _ + _) + 1 ≤ _
+      nlinarith)).trans (hA i j t)
   rw [h5, Option.bind_some]
   exact exists_exec_eighSplitTail₂ hmm hsem p n d lo k (kpe.eval) hk hkpk kpe rfl H hd
     (by unfold EighArenas.Shaped; rw [hsh5]; exact hH) Qh C1 C2 C3 hnd
@@ -438,10 +438,10 @@ private theorem exists_exec_eighSplitMid {mm qr : ι} (hmm : IsMatMulKernel I mm
     (fun i j t => (hk4 _ _ _ hMaS hMaQ).trans (hA i j t))
     (fun i j t => (hfr4 _ _ _ hQaS (by
       have := pair_idx_lt_split i j t
-      simp only [blockDisjoint, eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-        IExp.eval_ofNat, bne_self_eq_false, Bool.false_or, Bool.or_eq_true]
-      left
-      exact decide_eq_true (by change _ + (2 * _ + _) + 1 ≤ _; nlinarith))).trans (by
+      refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
+      simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat]
+      change _ + (2 * _ + _) + 1 ≤ _
+      nlinarith)).trans (by
         simpa only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
           IExp.eval_ofNat] using hQp3 i j t))
     (fun i j t => by simpa only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,

@@ -751,7 +751,7 @@ certificate's parameters only: with $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau 
 $\eta_0 \le 1/100$, $\tau \le 1$, $\sqrt{3(q+1)}\,\mu \le \eta_0$ and
 $\mu + \varepsilon + \varepsilon_2 \le 1/100$ (one condition at $q$ covers every prefix $m \le q$).
 `LanczosReorthGuarantees` is the conclusion on the decoded outputs: for every $m$, $0 < m \le q$,
-whose computed test $\tau\nu_j < \beta_j$ ($j \le m$) passes, $m < N$;
+whose computed test $\tau\nu_j < \beta_j$ passes for every $1 \le j \le m$, $m < N$;
 $\|\mathbf V_m^{\mathsf T}\mathbf V_m - \mathbf I\|_{\mathsf F} \le \sqrt{3m}\,\mu$; a symmetric
 $\mathbf E$ with $\|\mathbf E\|_{\mathsf F} \le (100(m+1)(\mu+\varepsilon+\varepsilon_2) +
 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))\|\mathbf A\|_2$ and
@@ -760,7 +760,11 @@ coefficients); interlacing up to $e = 100(m+1)(\mu+\varepsilon+\varepsilon_2)\|\
 `lanczosReorthGuarantees_of_lanczosReorthOutputs` (outputs + regime ⇒ guarantees) and
 `LanczosReorthImplementation.exec_rounded_loop_guarantees` (the loop `lanczosReorthLoop` with any
 `IsMatvecRoutine` product and any `IsOrthRoutine` family, in the regime, finishes and its outputs
-satisfy the guarantees).
+satisfy the guarantees). The loop assumes relative-error arithmetic with all exact results in
+the safe domain, exact zero addition, a symmetric matrix and a readable nonzero input. It
+requires its eight-buffer layout, the product's storage precondition and its preservation when
+the eight shapes and the matrix slot's reads are preserved. The three scheme allowances must
+be nonnegative, $\varepsilon=16(N+1)^2u\le 1/100$, and $\tau>0$.
 
 **CGS2 layer.** Budget $\rho$ = `lanczosReorthRoundoffBound N q u`
 $= (101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u$ ($= 2\,$`cgsPassBound N q u (1/100)` $+$
@@ -769,9 +773,13 @@ $(q+1)\rho \le 1/1000$ and $132(q+1)\rho \le \tau \le 1$, $\tau > 0$.
 `lanczosReorthRegime_cgsPassBound`: the CGS2 parameters at $\eta_0 = 4\sqrt{3(q+1)}\,\rho$ are in
 `LanczosReorthRegime` ($c_1 \le \rho/2$, $\varepsilon \le \rho$, $(\eta_0+c_1)^2 \le 57(q+1)\rho^2$,
 so $\varepsilon_3/\tau \le \rho$, $\mu \le 4\rho$, $\sqrt{3(q+1)}\,\mu \le \eta_0$, recurrence level
-$\le 5.5\rho$). Headline theorems, hypotheses only on the model ($u$, exact zero addition, unit
-charges; for matrix-free one oracle `IsMatvecErr` of accuracy $\eta\|\mathbf A\|_2$,
-$\eta \le 16(N+1)^2u$), symmetric $\mathbf A$, $\mathbf b \ne \mathbf 0$, the regime:
+$\le 5.5\rho$). Both compiled theorems assume all-range relative-error arithmetic at unit
+roundoff $u$, exact zero addition, unit operation charges and the displayed parameter regime.
+The seven declared buffers have lengths $N,N(q+1),q,q+1,1,N,q$ at the common tag. Buffer
+$0$ contains words decoding to $\mathbf b\ne\mathbf0$. The stored version reads $N^2$ ROM
+words that decode to the symmetric $\mathbf A$ in column-major order. The matrix-free version
+requires a successful oracle for the symmetric $\mathbf A$ satisfying `IsMatvecErr` with
+accuracy $\eta\|\mathbf A\|_2$, where $\eta\le16(N+1)^2u$.
 `LanczosReorthImplementation.exec_rounded_compiled_guarantees` (stored, `lanczosReorthProg.compiled`)
 and `…exec_rounded_oracle_compiled_guarantees` (`lanczosReorthOracleProg.compiled`): the tree
 finishes; counts $\le$ `lanczosReorthCount` / `lanczosReorthOracleCount` (the static count bound
@@ -781,16 +789,35 @@ $2N + 2q + 5$; and for every admissible $m$: $m < N$,
 $\|\mathbf V_m^{\mathsf T}\mathbf V_m - \mathbf I\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$,
 $\mathbf T_m$ exact Lanczos tridiagonal of $(\mathbf A + \mathbf E, \mathbf b)$ with
 $\mathbf E^{\mathsf T} = \mathbf E$, $\|\mathbf E\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf A\|_2$,
-and $\lambda_{i+N-m}(\mathbf A) - e \le \theta_i \le \lambda_i(\mathbf A) + e$,
-$e = 600(m+1)\rho\|\mathbf A\|_2$ (actual constants: $550 + 30 + 4.5$; the radius alone $550$).
-In double precision ($u \approx 1.1\cdot10^{-16}$), $N = 10^3$, $q = 10^2$:
-$\rho \approx 1.8\cdot10^{-9}$, $(q+1)\rho \approx 1.8\cdot10^{-7}$, $\tau \ge 2.4\cdot10^{-5}$.
-The $\varepsilon = 16(N+1)^2u$ part of $\rho$ dominates for $N \gg \sqrt q$; it enters $\mu$
-linearly, so the lower bound on $\tau$ is $\Theta((q+1)\rho)$ for any choice of $\eta_0$.
+and $\lambda_{i+N-m}(\mathbf A) - e \le \theta_i \le \lambda_i(\mathbf A) + e$ for $0\le i<m$,
+with $e = 600(m+1)\rho\|\mathbf A\|_2$. The two conclusions use the common coefficient $600$.
+The proof bounds the interlacing coefficient by $550$ and the perturbation coefficient by
+$550+30+4.5=584.5$ for $m\ge1$.
+The tree runs for the requested $q$ steps. The test uses its stored outputs and imposes no
+runtime stopping rule. At $q=0$, or when the first test fails, execution, decoded buffers
+and resource bounds still hold. There is then no positive prefix to which the spectral
+conclusions apply.
+
+For example, substituting the binary64 roundoff parameter $u=2^{-53}$, $N=1000$ and $q=100$
+gives $\rho\approx1.785\cdot10^{-9}$ and $(q+1)\rho\approx1.803\cdot10^{-7}$.
+The sufficient threshold $132(q+1)\rho$ is approximately $2.380\cdot10^{-5}$. These values
+illustrate the all-range arithmetic model. A binary64 execution additionally needs control of
+underflow and overflow. In this example $16(N+1)^2u\approx1.780\cdot10^{-9}$ and the CGS
+contribution is approximately $4.967\cdot10^{-12}$. For general $N,q$ their relative sizes
+follow from the two summands of $\rho$. The theorem gives a sufficient threshold for the
+specified $\eta_0$.
+
+Paige analyzes loss of orthogonality and the use of a stopping test for Lanczos with full
+reorthogonalization and double-length inner-product accumulation. The test in (6.10) uses the
+correction coefficients. Here the test uses the stored work norm $\nu_j$ and the computed
+$\beta_j$. The two-pass CGS2 constants, the exact tridiagonal identity with the original
+starting vector, and the resource bounds for these programs are proved in the library.
+See [Paige's thesis, §6.1, pp. 75–78](https://www.cs.mcgill.ca/~chris/pubClassic/PaigeThesis.pdf).
 
 ### 9.1 Adding an orthogonalization scheme
 
-A contributor adding MGS2, Householder or a QR kernel gets every Lanczos result above by:
+A contributor adding MGS2, Householder or a QR kernel can apply the generic loop theorem by
+providing its routine certificate and parameter regime:
 
 (a) writing the builder `orth work coef j` (reduce `work` against columns $0,\dots,j$ of `V`,
 coefficients in `coef`, the calling convention of `lanczosReorthLoop`);

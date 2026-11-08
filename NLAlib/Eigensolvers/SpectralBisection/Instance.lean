@@ -129,7 +129,7 @@ private theorem bounds_of_le {x m e : ℝ} (hx1 : 1 ≤ x) (hx : x ≤ 1024) (hm
   · nlinarith [Real.sqrt_nonneg x, Real.sqrt_nonneg 2]
 
 /-- The accuracy at its bound, for $\ell = 20$, $\varepsilon = 2^{-15}$, $\theta = 1/2$:
-$2^{-43} \le \hat\beta \le 2^{-15}$. -/
+$2^{-43} \le \hat\beta \le 1$. -/
 private theorem le_div_and_div_le {D T : ℝ} (hD1 : 1 ≤ D) (hD : D ≤ 2 ^ 8) (hT1 : 1 ≤ T)
     (hT : T ≤ 2 ^ 7) :
     (2 : ℝ)⁻¹ ^ 43 ≤ (20 - 1) ^ 2 * (2 : ℝ)⁻¹ ^ 15 * √(1 / 2) /
@@ -348,8 +348,10 @@ set_option linter.style.longLine false in
 /-- The hypotheses of Theorem 4.2 are satisfiable in binary128: for a binary format `fmt`
 with precision $p = 113$ and $E = 15$ exponent bits (the layout of IEEE binary128) there is a
 nearest selector $r$ (ties away from zero; any odd nearest selector, ties to even included,
-would do) such that the machine `NLAlib.binaryFloatMachine` of `fmt` and $r$, which rounds every
-result to the format's grid (overflow not modelled) with correctly rounded black boxes, meets
+would do) such that the machine `NLAlib.binaryFloatMachine` of `fmt` and $r$, which rounds its
+arithmetic to the format's grid (overflow not modelled; negation is exact and the uniform
+sampler clamps to the scale, so off-grid inputs can give off-grid results) with correctly
+rounded black boxes, meets
 the contract `NLAlib.FloatMachine.IsAccurate` with the identity decoding, $u = 2^{-p}$, floor
 $\tau = 2^{e_{\min} + p - 1}$, range the largest finite number,
 $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$ (monotone, nonnegative) and
@@ -604,7 +606,9 @@ exponent condition with $E \ge 2$ bits, and independent node samples, each of la
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
 (any $R_0 > 0$) and of
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw`
-(there with $1/2 \le R_0 \le 1$), so neither becomes vacuous as the parameters change. Each
+(there with $1/2 \le R_0 \le 1$) apart from $\theta \le 1$, which both theorems also assume; so
+for $0 < \theta \le 1$ neither becomes vacuous as the parameters change. The construction itself
+needs only $\theta > 0$. Each
 condition on the format is an upper bound on $u$ or $\tau$ or a lower bound on $p$, $E$ or
 $\Omega$, and in a binary format $\tau$ and $\Omega$ depend on $E$ alone (up to a factor $2$ in
 $\Omega$), so the format takes $p = \lceil\max(\cdot)\rceil + 2$ and $E$ large enough for the

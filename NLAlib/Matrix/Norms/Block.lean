@@ -25,6 +25,7 @@ orthogonal ranges. Submatrices have smaller norms.
   spectral norms.
 * `NLAlib.specNorm_add_sq_le_of_conjTranspose_mul_eq_zero`: summands with orthogonal ranges.
 * `NLAlib.specNorm_dilation`: the Hermitian dilation has the spectral norm of the matrix.
+* `NLAlib.dilationCLM`, `NLAlib.dilationCLM_apply`: its continuous real-linear map.
 * `NLAlib.frobNorm_blockDiagonal_sq`, `NLAlib.specNorm_blockDiagonal_le`,
   `NLAlib.specNorm_blockDiagonal_const`: block diagonal matrices.
 -/
@@ -274,6 +275,24 @@ theorem specNorm_add_sq_le_of_conjTranspose_mul_eq_zero {X Y : Matrix m n 𝕜} 
     specNorm_conjTranspose] at h2
 
 /-! ### The Hermitian dilation -/
+
+open scoped Matrix.Norms.L2Operator in
+/-- The Hermitian dilation as a continuous real-linear map on finite rectangular matrices,
+through which integrals, $L^p$ membership and measurability pass to `dilation`. It is only
+real-linear: the lower-left block $\mathbf{A}^{\mathsf{H}}$ is conjugate-linear in
+$\mathbf{A}$. -/
+noncomputable def dilationCLM (m : Type*) [Fintype m] :
+    Matrix m n 𝕜 →L[ℝ] Matrix (m ⊕ n) (m ⊕ n) 𝕜 :=
+  LinearMap.toContinuousLinearMap
+    { toFun := dilation
+      map_add' := dilation_add
+      map_smul' := dilation_smul_real }
+
+open scoped Matrix.Norms.L2Operator in
+/-- The continuous real-linear dilation map applies `dilation` to its matrix argument. -/
+@[simp]
+theorem dilationCLM_apply (A : Matrix m n 𝕜) : dilationCLM m A = dilation A :=
+  rfl
 
 /-- The Hermitian dilation has the spectral norm of the matrix:
 $\left\|\begin{bmatrix} \mathbf{0} & \mathbf{A} \\ \mathbf{A}^{\mathsf{H}} & \mathbf{0}

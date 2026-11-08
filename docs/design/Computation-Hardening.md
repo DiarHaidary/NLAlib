@@ -507,20 +507,18 @@ Facts, 2026-11-07:
    `bypass_mode: "pull_request"`, but only after step 1.
 3. **Tag ruleset** (new): target `tag`, `~ALL`, rules `creation`, `update`, `deletion`, bypass
    admin only. Agents and deploy keys cannot tag.
-4. **`docs/targets.approved` is the maintainer's own commit.** It is code-owned, so every PR that
-   touches it needs his review, from the base branch's CODEOWNERS, which a PR cannot edit its way
-   out of. In addition, a required check (`.github/workflows/approval.yml`, Part D): every commit in
-   the PR that changes `docs/targets.approved` must be a **verified commit authored by `tchen01`**
-   (GitHub API `author.login` and `commit.verification.verified`). A merge commit whose
-   `docs/targets.approved` is byte-identical to one of its parents' introduces nothing and is
-   skipped (merging main into a branch; the first version flagged those, a false positive on
-   PR #70); any other merge that changes it must be his verified commit. If the PR changes the file
-   (the tip differs from the base and from the fork point), the tip's content must come from one of
-   his verified commits in the PR, so a merge cannot bring back an older approved registry. The
-   maintainer approves by
-   editing the file in the web UI on the PR branch (verified automatically) or by a commit signed
-   with a key that is not on the host. This check is sound only after step 1, since a commit made
-   through the API with his PAT is also verified and authored by him. A push ruleset with
+4. **`docs/targets.approved` is the maintainer's own commit.** Use the base branch's CODEOWNERS
+   to require his review and make the registry approval job in `.github/workflows/approval.yml`
+   required on main. The job checks the full history of changes to this file. For each commit
+   introducing approval content it checks that the author, committer and signature's signer are
+   all `tchen01`, and that GitHub verifies the signature as `VALID` under a personal signing key.
+   The maintainer signs the approval commit with a key held off the agent host. Edits signed by
+   GitHub's web or API signing key do not qualify.
+   A merge that carries the file byte-for-byte from a parent introduces no content of its own.
+   A merge that introduces new content needs the same signature. When the PR changes the tip
+   relative to both the base and the fork point, one of the qualifying commits in the PR must
+   introduce those final bytes. This preserves approval provenance when a merge selects an older
+   version. A failed history read or signature lookup fails the check. A push ruleset with
    `file_path_restriction` on `docs/targets.approved` would be stronger. GitHub documents push
    rulesets for private and internal repositories, so for this public repository the guard is
    the review plus the check.
@@ -529,8 +527,9 @@ Facts, 2026-11-07:
    table rests on: `Syntax.lean` (no cell constructor in `IExp`), `Store.lean` (`none` cells,
    failing reads), `Exact.lean` (`inputState`, `exactInterp`, `exactSem.toNat`), `Exec.lean`,
    `FirstOrder.lean`, `RunsWithin.lean`, `Model.lean`, `Contract.lean`, `StaticCost.lean`,
-   `Subst.lean`, `KernelCall.lean`, `Grid.lean`, `BinaryFloatSem.lean`, `RandomMatrix/Tape.lean`. Add
-   `NonInterference.lean` when it is created.
+   `Subst.lean`, `KernelCall.lean`, `Grid.lean`, `BinaryFloatSem.lean`, `RandomMatrix/Tape.lean`
+   and `NonInterference.lean`. The owned paths also cover the checkers' input and extraction
+   scripts, the explorer publication check, and the checkout rules for hashed files.
 6. **Optional, later.** `required_signatures` once the machine account has a signing key, which
    also attributes the host's commits. A GitHub review is a better audit trail than a `.sig` file
    the host could be asked to produce, so the SSH-signed registry of the first version is dropped

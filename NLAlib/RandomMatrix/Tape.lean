@@ -264,7 +264,8 @@ draws are quantified over everything meeting the contracts, and the law of the i
 of the definition, so it cannot depend on the data. The index exactness is part of the model, at
 the decoding `dec` of the target, so a target cannot drop it or state it at another decoding. The
 counts are those of the run itself, so the cost bound holds on the same event as the
-postcondition.
+postcondition. The failure bound uses outer probability and agrees with probability whenever
+the failure event is measurable. The model assumes no measurability of rounding or execution.
 
 The read-only data of $I$ is counted **on top of** `mem`: the run is checked against the memory
 `mem N n q + I.romSize q`, so `mem` bounds the peak alone (declared buffers and scratch), whereas

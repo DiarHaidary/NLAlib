@@ -308,10 +308,7 @@ private theorem holds_kcalls_deflateProg {mm qr : ι}
     have hd : ∀ {o l : ℕ}, (b ≠ Q ∨ i + 1 ≤ o ∨ o + l ≤ i) →
         blockDisjoint (b, i, 1) (Q, o, l) = true := fun h => by
       simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq]
-      rcases h with h | h | h
-      · exact Or.inl (Or.inl h)
-      · exact Or.inl (Or.inr h)
-      · exact Or.inr h
+      omega
     rw [hfr₄ _ _ _ (hd (by omega)), hfr₃ _ _ _ (hd (by omega)), hfr₂ _ _ _ hbY hbQ hbR]
   · exact hsh₄.trans (hsh₃.trans hsh₂)
 

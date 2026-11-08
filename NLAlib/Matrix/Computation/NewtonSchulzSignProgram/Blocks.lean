@@ -285,13 +285,9 @@ theorem holds_of_exec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm
   have hsh4 : s4.shape = σ3.store.shape := Interp.shape_of_kcallStore_eq_some hs4'
   have hXc : ∀ i, xo.eval ≤ i → i < xo.eval + n * n * 2 →
       ¬(X = c.buf ∧ i = c.idx.eval) := by
-    intro i h1 h2 hh
-    have := hcX
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at this
-    rcases this with (h | h) | h
-    · exact h hh.1.symm
-    · omega
-    · omega
+    rintro i h1 h2 ⟨hb, hi⟩
+    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hcX
+    omega
   have hX1 : pairLayout.Holds σ1.store p X xo.eval A :=
     EntryLayout.Holds.of_forall_read_eq hA fun i h1 h2 => hf1 p X i (hXc i h1 h2)
   have hX3 : pairLayout.Holds σ3.store p X xo.eval A :=

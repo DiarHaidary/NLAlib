@@ -283,9 +283,12 @@ theorem HasOrthonormalCols.obliqueProjector_mul_left [DecidableEq k] {k' : Type*
 
 /-! ### The exact error split -/
 
-/-- **The exact error split, linear form**: under the rank hypothesis,
+/-- **The exact error split, linear form**: for $\mathbf{X} \in \Bbbk^{m \times r}$,
+$\mathbf{S} \in \Bbbk^{k \times m}$ and $\mathbf{B} \in \Bbbk^{m \times n}$ with
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}(\mathbf{X})$,
+writing $\mathbf{P}_{\mathbf{X}}$ for the orthogonal projector onto the range of $\mathbf{X}$,
 $$(\mathbf{I}-\mathbf{\Pi})\mathbf{B} = (\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B} -
-\mathbf{\Pi}(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$$
+\mathbf{\Pi}(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\,,$$
 with $\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$: the error of the oblique projection is
 the error of the orthogonal one minus the oblique projection of that error.
 [EpperlyWebber2026, Lemma 5.1, (5.2)]; [CamanoEpperlyMeyerTropp2025, Lemma 2.6];
@@ -300,9 +303,12 @@ theorem one_sub_obliqueProjector_mul [DecidableEq m] (h : (S * X).rank = X.rank)
   simp only [Matrix.sub_mul, Matrix.one_mul]
   abel
 
-/-- **The exact error split, Gram form**: under the rank hypothesis the two terms of
-`NLAlib.one_sub_obliqueProjector_mul` have orthogonal ranges, so the Gram matrix of the error is the
-sum of their Gram matrices: with $\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ and
+/-- **The exact error split, Gram form**: for $\mathbf{X} \in \Bbbk^{m \times r}$,
+$\mathbf{S} \in \Bbbk^{k \times m}$ and $\mathbf{B} \in \Bbbk^{m \times n}$ with
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}(\mathbf{X})$, the oblique
+projection error has two orthogonal components. With $\mathbf{P}_{\mathbf{X}}$ the orthogonal
+projector onto the range of $\mathbf{X}$,
+$\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ and
 $\mathbf{E} = (\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$,
 $$((\mathbf{I}-\mathbf{\Pi})\mathbf{B})^{\mathsf{H}}(\mathbf{I}-\mathbf{\Pi})\mathbf{B} =
 \mathbf{E}^{\mathsf{H}}\mathbf{E} + (\mathbf{\Pi}\mathbf{E})^{\mathsf{H}}\mathbf{\Pi}\mathbf{E}\,.$$
@@ -329,10 +335,14 @@ theorem conjTranspose_mul_self_one_sub_obliqueProjector_mul [DecidableEq m]
     Matrix.mul_sub, h0, h0']
   abel
 
-/-- **The exact error split** in squared Frobenius norm: under the rank hypothesis,
+/-- **The exact error split** in squared Frobenius norm: for
+$\mathbf{X} \in \Bbbk^{m \times r}$, $\mathbf{S} \in \Bbbk^{k \times m}$ and
+$\mathbf{B} \in \Bbbk^{m \times n}$ with
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}(\mathbf{X})$,
+writing $\mathbf{P}_{\mathbf{X}}$ for the orthogonal projector onto the range of $\mathbf{X}$,
 $$\|(\mathbf{I}-\mathbf{\Pi})\mathbf{B}\|_{\mathsf{F}}^2 =
 \|(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2 +
-\|\mathbf{\Pi}(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2$$
+\|\mathbf{\Pi}(\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}\|_{\mathsf{F}}^2\,,$$
 with $\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$, the trace of the Gram form.
 [EpperlyWebber2026, Lemma 5.1, (5.2)]; [CamanoEpperlyMeyerTropp2025, Lemma 2.6];
 [TroppYurtseverUdellCevher2017, Lemma A.4]; there in a basis.
@@ -346,7 +356,11 @@ theorem frobNorm_one_sub_obliqueProjector_mul_sq [Fintype n] [DecidableEq m]
     conjTranspose_mul_self_one_sub_obliqueProjector_mul h B, Matrix.trace_add, map_add]
 
 /-- **The exact error split in every unitarily invariant norm**, in the Gram form that quadratic
-norms use: under the rank hypothesis, with $\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ and
+norms use: for $\mathbf{X} \in \Bbbk^{m \times r}$, $\mathbf{S} \in \Bbbk^{k \times m}$,
+$\mathbf{B} \in \Bbbk^{m \times n}$ and a symmetric gauge $\Phi$, assume
+$\operatorname{rank}(\mathbf{S}\mathbf{X}) = \operatorname{rank}(\mathbf{X})$.
+With $\mathbf{P}_{\mathbf{X}}$ the orthogonal projector onto the range of $\mathbf{X}$,
+$\mathbf{\Pi} = \mathbf{\Pi}_{\mathbf{X},\mathbf{S}}$ and
 $\mathbf{E} = (\mathbf{I}-\mathbf{P}_{\mathbf{X}})\mathbf{B}$,
 $$\|((\mathbf{I}-\mathbf{\Pi})\mathbf{B})^{\mathsf{H}}(\mathbf{I}-\mathbf{\Pi})\mathbf{B}\|_{\Phi}
 \le \|\mathbf{E}^{\mathsf{H}}\mathbf{E}\|_{\Phi} +

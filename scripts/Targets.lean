@@ -19,8 +19,9 @@ target statements", F1 and F12). This script checks, on the library built by `la
    (approved by the maintainer 2026-11-07), a claim whose statement is about rounded execution:
    one of its leading hypotheses (the binders of its `∀` telescope, instances included) is the
    standard model `NLAlib.Computation.IsRelErrSem … I.sem` on the semantics of an interpretation
-   `I` bound in the telescope and mentioned by the conclusion, or its type names a rounded
-   access model (`MatrixFreeRounded`, `MatrixFreeRoundedProb`). Exact program theorems (under
+   `I` bound in the telescope and used as the interpretation of a run or budget in the
+   conclusion, or the conclusion asserts a rounded access model (`MatrixFreeRounded`,
+   `MatrixFreeRoundedProb`). Exact program theorems (under
    `exactInterp`, `storedInterp`, or the exact models) keep the rule, a vacuous model hypothesis
    on another semantics notwithstanding;
 3. the **closure hash** of each target matches the registry: SHA-256 of a canonical serialisation
@@ -356,31 +357,9 @@ def runConsts : List Name :=
    ``NLAlib.Computation.ProgFamily.inst, ``NLAlib.Computation.ProgFamily.MatrixFree,
    ``NLAlib.Computation.ProgFamily.StoredEntries, ``NLAlib.Computation.ProgFamily.MatrixFreeProb]
 
-/-- The rounded access models: a statement that names one is about rounded execution. -/
+/-- The two access models that assert a rounded guarantee directly. -/
 def roundedModels : List Name :=
   [``NLAlib.Computation.MatrixFreeRounded, ``NLAlib.Computation.MatrixFreeRoundedProb]
-
-/-- Whether a claim is a **rounded program theorem** (lint item 2's exception, approved by the
-maintainer 2026-11-07): its type names a rounded access model, or one of the binders of its
-leading `∀` telescope has type `NLAlib.Computation.IsRelErrSem u dec safe I.sem` for an
-interpretation `I` bound in the telescope and mentioned by the conclusion (the claim holds for
-every semantics meeting the standard model, and the conclusion runs under that semantics). A
-mention of the model elsewhere (in a conclusion, under a connective) does not count, nor does a
-vacuous model hypothesis on a semantics the conclusion does not run under (an unrelated
-interpretation, or a fixed one such as `exactInterp`). -/
-def isRoundedClaim (type : Expr) : MetaM Bool := do
-  if type.getUsedConstants.any (roundedModels.contains ·) then return true
-  forallTelescope type fun xs body => xs.anyM fun x => do
-    let t ← inferType x
-    unless t.getAppFn.isConstOf ``NLAlib.Computation.IsRelErrSem do return false
-    -- `IsRelErrSem u dec safe sem`: the semantics must be `I.sem` (or `I`) for an interpretation
-    -- `I` bound in the telescope that the conclusion mentions
-    let some sem := t.getAppArgs.back? | return false
-    let interp := if sem.getAppFn.isConstOf ``NLAlib.Computation.Interp.sem then sem.appArg! else
-      match sem with
-      | .proj ``NLAlib.Computation.Interp 0 e => e
-      | _ => sem
-    return interp.isFVar && xs.contains interp && body.containsFVar interp.fvarId!
 
 /-- Whether a constant reaches a run or a budget through the library constants it unfolds to:
 the type of every constant, the value of definitions and opaques, and the mutual block and the
@@ -405,6 +384,77 @@ partial def reachesRun (env : Environment) (c : Name) : StateM (Std.HashMap Name
   modify (·.insert c r)
   return r
 
+/-- For each execution or budget primitive, locate its interpretation argument in its signature. -/
+private def runInterpArgs : MetaM (List (Name × Nat × Nat)) := do
+  let heads := [``NLAlib.Computation.exec, ``NLAlib.Computation.FStmt.exec,
+    ``NLAlib.Computation.Prog.exec, ``NLAlib.Computation.RunsWithin,
+    ``NLAlib.Computation.Prog.RunsWithin]
+  heads.mapM fun head => do
+    forallTelescope (← getConstInfo head).type fun xs _ => do
+      let idx? ← xs.findIdxM? fun x => do
+        let type ← inferType x
+        pure (type.isAppOf ``NLAlib.Computation.Interp)
+      let some idx := idx? | throwError "{head} has no interpretation argument"
+      return (head, xs.size, idx)
+
+/-- `some true` for a rounded assertion, `some false` for a numerical side condition, `none`
+for an exact run or an unrecognised run-bearing expression. Both sides of a conjunction or
+comparison must qualify, so a rounded run cannot exempt a separate exact claim. -/
+private partial def roundedConclusion (env : Environment) (runs : List (Name × Nat × Nat))
+    (models : List (Name × Nat)) (interps : Array Expr) (e : Expr) :
+    StateM (Std.HashMap Name Bool) (Option Bool) := do
+  let visit := roundedConclusion env runs models interps
+  let neutral (term : Expr) := do
+    let hasRun ← term.getUsedConstants.anyM (reachesRun env)
+    pure (if hasRun then none else some false)
+  let combine (a b : Option Bool) : Option Bool :=
+    match a, b with
+    | some x, some y => some (x || y)
+    | _, _ => none
+  let runOrNeutral (term : Expr) := do
+    for (head, arity, idx) in runs do
+      if term.isAppOfArity head arity then
+        return if interps.contains (term.getArg! idx) then some true else none
+    neutral term
+  match e with
+  | .mdata _ body => return ← visit body
+  | .letE _ _ value body _ => return ← visit (body.instantiate1 value)
+  | .forallE _ dom body _ => return combine (← neutral dom) (← visit body)
+  | _ => pure ()
+  if models.any (fun (n, arity) => e.isAppOfArity n arity) then return some true
+  if e.isAppOfArity ``And 2 then return combine (← visit (e.getArg! 0)) (← visit e.appArg!)
+  if e.isAppOfArity ``Exists 2 then
+    if let .lam _ dom body _ := e.appArg! then
+      return combine (← neutral dom) (← visit body)
+  -- Success and failure may be stated positively or negatively (`exec I … ≠ none`). Compare
+  -- actual returned options. Equating predicates or partially applied functions does not run one.
+  let fact := if e.isAppOfArity ``Not 1 then e.appArg! else e
+  if fact.isAppOfArity ``Eq 3 && (fact.getArg! 0).isAppOfArity ``Option 1 then
+    return combine (← runOrNeutral (fact.getArg! 1)) (← runOrNeutral fact.appArg!)
+  return ← runOrNeutral fact
+
+/-- The rounded exception requires an asserted rounded access model or an actual run under a
+bound interpretation whose scalar semantics has a leading standard-model contract. Inspect the
+positive execution clauses, including those beneath quantifiers and conjunctions. Unrecognised
+run-bearing wrappers require review through the ordinary target rule. -/
+def isRoundedClaim (type : Expr) : MetaM Bool := do
+  let runs ← runInterpArgs
+  let models ← roundedModels.mapM fun n => do
+    forallTelescope (← getConstInfo n).type fun xs _ => pure (n, xs.size)
+  let env ← getEnv
+  forallTelescope type fun xs body => do
+    let mut interps := #[]
+    for x in xs do
+      let t ← inferType x
+      unless t.isAppOf ``NLAlib.Computation.IsRelErrSem do continue
+      let sem := t.appArg!
+      let some interp := (match sem with
+        | .proj ``NLAlib.Computation.Interp 0 i => some i
+        | _ => if sem.isAppOf ``NLAlib.Computation.Interp.sem then some sem.appArg! else none)
+        | continue
+      if interp.isFVar && xs.contains interp then interps := interps.push interp
+    return (roundedConclusion env runs models interps body |>.run {}).1 == some true
+
 /-- Lint item 2: the constants in `scope` outside `NLAlib/Computation` with a `Result:` id that
 make a claim about a program's runs or budget and are neither a registered target nor its proof
 (`exempt`) nor a rounded program theorem (`isRoundedClaim`, approved by the maintainer
@@ -427,7 +477,11 @@ def unregisteredResults (env : Environment) (scope : Array (Name × ConstantInfo
     let consts := if propDef then #[c] else info.type.getUsedConstants
     let (r, m) := (consts.anyM (reachesRun env)).run memo
     memo := m
-    if r && (propDef || !(← isRoundedClaim info.type)) then out := out.push c
+    if r then
+      unless info matches .thmInfo _ do
+        out := out.push c
+        continue
+      unless ← isRoundedClaim info.type do out := out.push c
   return out
 
 /-- The models on `Prog` a target concludes. -/
@@ -1086,6 +1140,88 @@ theorem exec_copyTrace_fixedModel (A : Matrix (Fin 1) (Fin 1) ℝ) (ξ : Dist �
     exec (exactInterp (P := Unit) (ι := Unit) (fun _ => A) ξ) .skip
       (inputState () [#[some A.trace]]) = some (inputState () [#[some A.trace]]) := rfl
 
+section RoundedClaimFixtures
+
+variable {u : Unit → ℝ} {dec : Unit → ℝ → ℝ}
+  (I J : Interp Unit Unit ℝ (OpCount Unit Unit)) (st : St Unit ℝ (OpCount Unit Unit))
+
+/-- A numerical side condition mentions `I`, but the run uses `J`.
+
+Result: fixture-unrelated-interpretation-field -/
+theorem exec_other_and_width (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    exec J .skip st = some st ∧ I.width () = I.width () := ⟨rfl, rfl⟩
+
+/-- A contract on a scalar semantics, with no interpretation projection.
+
+Result: fixture-unrelated-scalar-semantics -/
+theorem exec_other_and_scalar (sem : ScalarSem Unit ℝ)
+    (_ : IsRelErrSem u dec (fun _ _ => True) sem) :
+    exec J .skip st = some st ∧ sem = sem := ⟨rfl, rfl⟩
+
+/-- Only the first run has a contract. An uncontracted sibling still requires review.
+
+Result: fixture-mixed-interpretations -/
+theorem exec_rounded_and_other (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    exec I .skip st = some st ∧ exec J .skip st = some st := ⟨rfl, rfl⟩
+
+/-- A rounded run next to a wrapper around an exact model.
+
+Result: fixture-mixed-wrapped-model -/
+theorem exec_rounded_and_fixHutchpp (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    exec I .skip st = some st ∧ FixHutchpp := ⟨rfl, fixHutchpp⟩
+
+/-- Success stated as inequality with `none` is a claim about this execution.
+
+Result: fixture-negated-rounded-run -/
+theorem not_exec_skip_none (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    ¬ exec I .skip st = none := by simp [exec]
+
+/-- Equating two propositions about a run does not assert either outcome.
+
+Result: fixture-run-proposition-equality -/
+theorem exec_prop_eq (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    (exec I .skip st = none) = (exec I .skip st = none) := rfl
+
+/-- Equating two partially applied execution functions does not assert a run.
+
+Result: fixture-run-function-equality -/
+theorem exec_fun_eq (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    exec I .skip = exec I .skip := rfl
+
+/-- A rounded call under an existential and a conjunction, as in the Lanczos results.
+
+Result: fixture-exists-rounded-run -/
+theorem exists_prog_exec (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    ∃ out, Prog.exec I (.skip : Prog Unit Unit 1 1) 1 (fun _ => 1) st = some out ∧
+      out.cur = st.cur :=
+  ⟨st, rfl, rfl⟩
+
+/-- An actual budget assertion under the contracted interpretation.
+
+Result: fixture-rounded-execution-budget -/
+theorem runsWithin_rounded_skip (_ : IsRelErrSem u dec (fun _ _ => True) I.sem) :
+    RunsWithin I .skip st 0 (fun p => st.peak p + I.romSize p) (fun _ => True) :=
+  ⟨st, rfl, by simp, fun _ => le_rfl, trivial⟩
+
+/-- A rounded access model in an unrelated hypothesis.
+
+Result: fixture-unused-rounded-access-model -/
+theorem exec_other_of_rounded (_ : MatrixFreeRounded (K := ℝ) (ι := Unit) (C := ℕ) (r := 0)
+    (b := 0) () (fun _ _ => .skip) (fun _ _ => True) (fun _ _ => Unit)
+    (fun _ _ _ => Fin.elim0) u dec (fun _ _ _ => 0) (fun _ _ _ _ => True)
+    (fun _ _ _ _ _ => True)) : exec J .skip st = some st := rfl
+
+/-- A rounded access model asserted as the conclusion.
+
+Result: fixture-asserted-rounded-access-model -/
+theorem rounded_skip : MatrixFreeRounded (K := ℝ) (ι := Unit) (C := ℕ) (r := 0) (b := 0) ()
+    (fun _ _ => .skip) (fun _ _ => True) (fun _ _ => Unit) (fun _ _ _ => Fin.elim0) u dec
+    (fun _ _ _ => 0) (fun _ _ _ _ => True) (fun _ _ _ _ _ => True) := by
+  intro N n _ x H interp _ _ _ _
+  exact ⟨_, rfl, trivial⟩
+
+end RoundedClaimFixtures
+
 /-- A target of the prover's: a `Prop` that unfolds to a model, not in the registry. -/
 def FixUnregistered : Prop := FixHutchpp
 
@@ -1251,12 +1387,21 @@ run_cmd do
       ``TargetFixtures.fixUnregistered, ``TargetFixtures.wrapped, ``TargetFixtures.viaNonempty,
       ``TargetFixtures.indRun, ``TargetFixtures.runsFastSkip, ``TargetFixtures.FixPropDef,
       ``TargetFixtures.exec_copyTrace_and, ``TargetFixtures.exec_copyTrace_vacuous,
-      ``TargetFixtures.exec_copyTrace_fixedModel]
+      ``TargetFixtures.exec_copyTrace_fixedModel, ``TargetFixtures.exec_other_and_width,
+      ``TargetFixtures.exec_other_and_scalar, ``TargetFixtures.exec_rounded_and_other,
+      ``TargetFixtures.exec_rounded_and_fixHutchpp, ``TargetFixtures.exec_prop_eq,
+      ``TargetFixtures.exec_fun_eq, ``TargetFixtures.exec_other_of_rounded]
   for c in expected do
     unless flagged.contains c do fail m!"{c} is not flagged"
   if flagged.size != expected.length then fail m!"item 2 flags {flagged}"
-  if flagged.contains ``TargetFixtures.exec_skip_of_isRelErrSem then
-    fail m!"a rounded program theorem is flagged"
+  for c in [``TargetFixtures.exec_skip_of_isRelErrSem, ``TargetFixtures.exists_prog_exec,
+      ``TargetFixtures.not_exec_skip_none, ``TargetFixtures.runsWithin_rounded_skip,
+      ``TargetFixtures.rounded_skip] do
+    if flagged.contains c then fail m!"rounded result {c} is flagged"
+  let negatedModel ← liftTermElabM do
+    forallTelescope (← getConstInfo ``TargetFixtures.rounded_skip).type fun _ body =>
+      isRoundedClaim (mkNot body)
+  if negatedModel then fail m!"negating a rounded access model counts as asserting it"
   logInfo m!"item 2: {flagged} flagged"
   -- item 3: the registered tree is a leaf, and the kernel checks that it is its normal form
   let (nf, defs) ← liftTermElabM <| treeNF ``TargetFixtures.hppC

@@ -360,7 +360,9 @@ theorem exec_rounded_initial_pairing (I : Interp P ι K C) (tag : P)
       WithLp.toLp_eq_zero]
 
 /-- The actual initial cache write turns the initialized words into the existing storage
-context. Matrix and right-hand-side inputs are the decodings of the retained raw words. -/
+context. The right-hand side is decoded from retained input words. When `storedMatrix` is
+true the matrix is decoded from the loaded words; otherwise the context imposes no
+matrix-storage condition. -/
 theorem storeContext_of_pairing_write (tag : P) (N : ℕ) (old next : Store P K)
     (b : Fin N → K) (A : Matrix (Fin N) (Fin N) ℝ) (zero one negative word : K)
     (hshape : old.shape = workspaceShape tag N storedMatrix)

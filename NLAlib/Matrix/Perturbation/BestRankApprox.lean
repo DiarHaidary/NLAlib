@@ -19,10 +19,11 @@ cross term and a noise term. The next-$k$ form bounds the cross term by the spec
 $\mathbf{E}$ and the next $k$ singular values of $\mathbf{C}$. The localized form sees the noise
 in the cross term only through its compression $\mu$ to the left and
 right singular subspaces of $\mathbf{C}$ whose singular values lie within a factor $2$ of
-$\theta = \sigma_{k-1}(\mathbf{C})$:
+$\theta = \sigma_{k-1}(\mathbf{C})$, for $1 \le k$.
+Then <!-- value localTruncationNoiseConstant --> <!-- value localTruncationWindowConstant -->
 $$\|\mathbf{C} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
-\|\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\|_{\mathsf{F}}^2 + 500k\,\|\mathbf{E}\|_2^2 +
-40\,\theta\min(k, b - k)\,\mu\,,$$
+\|\mathbf{C} - \llbracket\mathbf{C}\rrbracket_k\|_{\mathsf{F}}^2 + 483k\,\|\mathbf{E}\|_2^2 +
+32\,\theta\min(k, b - k)\,\mu\,,$$
 with the window $a \le k \le b$ of `NLAlib.exists_singularValues_window`. The window tools are in
 `NLAlib/Matrix/Perturbation/TruncationWindow.lean`. Every statement holds for every best
 approximation, so in particular for every choice of `truncatedSVD`.
@@ -30,7 +31,7 @@ approximation, so in particular for every choice of `truncatedSVD`.
 ## Main results
 
 * `NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le`:
-  reciprocal-window perturbation bound with constants 69 and 320/21.
+  reciprocal-window perturbation bound.
 
 * `NLAlib.IsBestRankApprox.frobNorm_sub_sq_sub_le_two_mul_frobInner`: the optimality step.
 * `NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_mul_frobNorm`: perturbed truncation
@@ -49,6 +50,76 @@ approximation, so in particular for every choice of `truncatedSVD`.
 open scoped Matrix
 
 namespace NLAlib
+
+/-- Coefficient of the squared spectral-noise term in the factor-two window bound for
+perturbed best rank-$k$ approximation. Its current value
+is <!-- value localTruncationNoiseConstant -->$483$.
+It replaces the previous rounded value $500$ with the value the proof attains.
+No printed source. Smaller is better; use `localTruncationNoiseConstant_le` to obtain an
+explicit upper bound without unfolding the coefficient. -/
+noncomputable irreducible_def localTruncationNoiseConstant : ℝ := 483
+
+/-- The factor-two window squared spectral-noise term coefficient is positive. -/
+theorem localTruncationNoiseConstant_pos : 0 < localTruncationNoiseConstant := by
+  rw [localTruncationNoiseConstant_def]
+  norm_num
+
+/-- An explicit upper bound on the factor-two window squared spectral-noise term coefficient,
+currently <!-- value localTruncationNoiseConstant -->$483$. -/
+theorem localTruncationNoiseConstant_le : localTruncationNoiseConstant ≤ 483 := by
+  rw [localTruncationNoiseConstant_def]
+
+/-- Coefficient of the compressed-noise term in the factor-two window bound for
+perturbed best rank-$k$ approximation. Its current value
+is <!-- value localTruncationWindowConstant -->$32$.
+It replaces the previous rounded value $40$ with the value the proof attains.
+No printed source. Smaller is better; use `localTruncationWindowConstant_le` to obtain an
+explicit upper bound without unfolding the coefficient. -/
+noncomputable irreducible_def localTruncationWindowConstant : ℝ := 32
+
+/-- The factor-two window compressed-noise term coefficient is positive. -/
+theorem localTruncationWindowConstant_pos : 0 < localTruncationWindowConstant := by
+  rw [localTruncationWindowConstant_def]
+  norm_num
+
+/-- An explicit upper bound on the factor-two window compressed-noise term coefficient,
+currently <!-- value localTruncationWindowConstant -->$32$. -/
+theorem localTruncationWindowConstant_le : localTruncationWindowConstant ≤ 32 := by
+  rw [localTruncationWindowConstant_def]
+
+/-- Coefficient of the squared spectral-noise term in the reciprocal $5/3$ window bound for
+perturbed best rank-$k$ approximation. Its current value
+is <!-- value reciprocalWindowNoiseConstant -->$69$.
+No printed source. Smaller is better; use `reciprocalWindowNoiseConstant_le` to obtain an
+explicit upper bound without unfolding the coefficient. -/
+noncomputable irreducible_def reciprocalWindowNoiseConstant : ℝ := 69
+
+/-- The reciprocal $5/3$ window squared spectral-noise term coefficient is positive. -/
+theorem reciprocalWindowNoiseConstant_pos : 0 < reciprocalWindowNoiseConstant := by
+  rw [reciprocalWindowNoiseConstant_def]
+  norm_num
+
+/-- An explicit upper bound on the reciprocal $5/3$ window squared spectral-noise term coefficient,
+currently <!-- value reciprocalWindowNoiseConstant -->$69$. -/
+theorem reciprocalWindowNoiseConstant_le : reciprocalWindowNoiseConstant ≤ 69 := by
+  rw [reciprocalWindowNoiseConstant_def]
+
+/-- Coefficient of the compressed-noise term in the reciprocal $5/3$ window bound for
+perturbed best rank-$k$ approximation. Its current value
+is <!-- value reciprocalWindowCrossConstant -->$320/21$.
+No printed source. Smaller is better; use `reciprocalWindowCrossConstant_le` to obtain an
+explicit upper bound without unfolding the coefficient. -/
+noncomputable irreducible_def reciprocalWindowCrossConstant : ℝ := 320 / 21
+
+/-- The reciprocal $5/3$ window compressed-noise term coefficient is positive. -/
+theorem reciprocalWindowCrossConstant_pos : 0 < reciprocalWindowCrossConstant := by
+  rw [reciprocalWindowCrossConstant_def]
+  norm_num
+
+/-- An explicit upper bound on the reciprocal $5/3$ window compressed-noise term coefficient,
+currently <!-- value reciprocalWindowCrossConstant -->$320/21$. -/
+theorem reciprocalWindowCrossConstant_le : reciprocalWindowCrossConstant ≤ 320 / 21 := by
+  rw [reciprocalWindowCrossConstant_def]
 
 section RCLike
 
@@ -421,22 +492,26 @@ $\sigma_a(\mathbf{B}) \le 2\theta$ and $\sigma_b(\mathbf{B}) \le \theta/2$, and 
 approximation $\mathbf{Y}$ of $\mathbf{B} + \mathbf{N}$, with $\mathbf{P}_i$, $\mathbf{P}'_i$
 the range projectors of $\llbracket\mathbf{B}\rrbracket_i$ and of its conjugate transpose and
 $\mu = \|(\mathbf{P}_b - \mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b - \mathbf{P}'_a)\|_2$,
+then <!-- value localTruncationNoiseConstant --> <!-- value localTruncationWindowConstant -->
 $$\|\mathbf{B} - \mathbf{Y}\|_{\mathsf{F}}^2 \le
-\|\mathbf{B} - \llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2 + 500k\,\|\mathbf{N}\|_2^2 +
-40\,\theta\min(k, b - k)\,\mu\,.$$
+\|\mathbf{B} - \llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2 + 483k\,\|\mathbf{N}\|_2^2 +
+32\,\theta\min(k, b - k)\,\mu\,.$$
 The noise enters the cross term only through its compression $\mu$ to the singular subspaces
 within a factor $2$ of the truncation level, and with weight $\min(k, b - k)$ instead of $k$.
-The proof gives $483$ and $32$ in place of $500$ and $40$. No printed source.
+The coefficients are the values attained by the proof, replacing the earlier rounded values
+$500$ and $40$. No printed source.
 Result: localized-hard-truncation -/
 theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : Matrix m n 𝕜}
     {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k)
     (hkb : k ≤ b) (ha : ∀ i < a, 2 * singularValues B (k - 1) ≤ singularValues B i)
     (ha₂ : singularValues B a ≤ 2 * singularValues B (k - 1))
     (hb : singularValues B b ≤ singularValues B (k - 1) / 2) :
-    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 + 500 * k * specNorm N ^ 2 +
-      40 * singularValues B (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 +
+      localTruncationNoiseConstant * k * specNorm N ^ 2 +
+      localTruncationWindowConstant * singularValues B (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
         specNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * N *
           (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ)) := by
+  rw [localTruncationNoiseConstant_def, localTruncationWindowConstant_def]
   classical
   have hab := hak.trans hkb
   have hZ := isStarProjection_rangeProjector Y
@@ -460,7 +535,7 @@ theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window {B N Y : 
   have hθ0 : 0 ≤ θ := singularValues_nonneg _ _
   have hq0 : 0 ≤ q := Nat.cast_nonneg _
   have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
-  have hwin : 0 ≤ 40 * θ * q * μ :=
+  have hwin : 0 ≤ 32 * θ * q * μ :=
     mul_nonneg (mul_nonneg (mul_nonneg (by norm_num) hθ0) hq0) hμ0
   rcases le_or_gt θ (100 * μ) with hA | hB
   · -- large noise: `θ ≤ 100 μ ≤ 100 η`
@@ -636,23 +711,32 @@ end NLAlib
 namespace NLAlib
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m]
 omit [DecidableEq m] in
-/-- Reciprocal-window hard truncation: every best rank-k approximation Y of B+N satisfies
-the squared Frobenius error bound
-$$\|B-Y\|_{\mathsf F}^2\le\|B-B_k\|_{\mathsf F}^2
-+69k\|N\|_2^2+(320/21)\theta\min(k,b-k)\|W_LNW_R\|_2,$$
-where theta is the k-th singular value and the window thresholds have ratio 5/3.
-The hypotheses specify the nested window and its spectral thresholds.
-No printed source. -/
+/-- Reciprocal-window hard truncation: for $\mathbf{B}, \mathbf{N} \in
+\Bbbk^{m \times n}$, $1 \le k$, $\theta = \sigma_{k-1}(\mathbf{B})$ and a best rank-$k$
+approximation $\mathbf{Y}$ of $\mathbf{B} + \mathbf{N}$, assume $a \le k \le b$,
+$(5/3)\theta \le \sigma_i(\mathbf{B})$ for $i < a$,
+$\sigma_a(\mathbf{B}) \le (5/3)\theta$ and $\sigma_b(\mathbf{B}) \le (3/5)\theta$.
+Let $\mathbf{P}_i$, $\mathbf{P}'_i$ be the range projectors of
+$\llbracket\mathbf{B}\rrbracket_i$ and its conjugate transpose, and put
+$\mu = \|(\mathbf{P}_b-\mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b-\mathbf{P}'_a)\|_2$.
+Then <!-- value reciprocalWindowNoiseConstant --> <!-- value reciprocalWindowCrossConstant -->
+$$\|\mathbf{B}-\mathbf{Y}\|_{\mathsf{F}}^2 \le
+\|\mathbf{B}-\llbracket\mathbf{B}\rrbracket_k\|_{\mathsf{F}}^2 +
+69k\|\mathbf{N}\|_2^2 + \frac{320}{21}\theta\min(k,b-k)\mu\,.$$
+The window differs from the factor-two bound, so their constants alone do not compare their
+conclusions. No printed source. -/
 theorem IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le
     {B N Y : Matrix m n 𝕜}
     {k : ℕ} (hY : IsBestRankApprox (B + N) k Y) (hk : 1 ≤ k) {a b : ℕ} (hak : a ≤ k)
     (hkb : k ≤ b) (ha : ∀ i < a, (5 / 3 : ℝ) * singularValues B (k - 1) ≤ singularValues B i)
     (ha₂ : singularValues B a ≤ (5 / 3 : ℝ) * singularValues B (k - 1))
     (hb : singularValues B b ≤ singularValues B (k - 1) / (5 / 3 : ℝ)) :
-    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 + 69 * k * specNorm N ^ 2 +
-      (320 / 21 : ℝ) * singularValues B (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+    frobNorm (B - Y) ^ 2 ≤ frobNorm (B - truncatedSVD B k) ^ 2 +
+      reciprocalWindowNoiseConstant * k * specNorm N ^ 2 +
+      reciprocalWindowCrossConstant * singularValues B (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
         specNorm ((rangeProjector (truncatedSVD B b) - rangeProjector (truncatedSVD B a)) * N *
           (rangeProjector (truncatedSVD B b)ᴴ - rangeProjector (truncatedSVD B a)ᴴ)) := by
+  rw [reciprocalWindowNoiseConstant_def, reciprocalWindowCrossConstant_def]
   classical
   have hab := hak.trans hkb
   have hZ := isStarProjection_rangeProjector Y

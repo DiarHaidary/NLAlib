@@ -45,12 +45,12 @@ private theorem pair_idx_lt_node {l m : ℕ} (i : Fin l) (j : Fin m) (t : Fin 2)
 /-- A cell is disjoint from a block inside a window it avoids. -/
 theorem blockDisjoint_of_window {b i B off len lo' hi' : ℕ} (h : b = B → i < lo' ∨ hi' ≤ i)
     (h1 : lo' ≤ off) (h2 : off + len ≤ hi') : blockDisjoint (b, i, 1) (B, off, len) = true := by
-  unfold blockDisjoint
+  apply blockDisjoint_of_ne_or_le
+  change b ≠ B ∨ i + 1 ≤ off ∨ off + len ≤ i
   by_cases hb : b = B
-  · rcases h hb with h | h
-    · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
-    · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
-  · simp [hb]
+  · have := h hb
+    omega
+  · exact Or.inl hb
 
 omit [Inhabited K] in
 /-- Name the state of a run. -/
@@ -273,9 +273,9 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
     (by
       rw [hbo]
       exact pairLayout_holds_of_read_eq hA fun i _ hi => hf5 p _ i (nC4 _ lMa) (by
-        simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
-          decide_eq_true_eq]
-        left; linarith))
+        refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
+        dsimp only
+        linarith))
     ((hk5 _ _ _ ltwo twoMa).trans htwo) ((hk5 _ _ _ lnsg nsgMa).trans hnσ) hnd
     ⟨hcells.1, hcells.2.2⟩
     ⟨by simp [blockDisjoint, show Ma ≠ two.buf from fun h => twoMa h.symm],
@@ -284,9 +284,7 @@ private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pa
   refine ⟨fun i j t => ?_, hAm6, fun q b i hb hbM => ?_, hsh6.trans hsh5, hp6.trans hp5⟩
   · refine (hf6 _ _ _ (nC4 _ lMa) ?_).trans (hAp5 i j t)
     have := pair_idx_lt_node i j t
-    simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
-      decide_eq_true_eq]
-    left
+    refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
     change _ + (2 * _ + _) + 1 ≤ _
     linarith
   · rw [hf6 q b i (nC4 b hb) (blockDisjoint_of_window hbM (by linarith) (by linarith)),

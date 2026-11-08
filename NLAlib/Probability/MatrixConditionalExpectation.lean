@@ -6,7 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Matrix
-public import NLAlib.Matrix.Basic.Dilation
+public import NLAlib.Matrix.Norms.Block
 public import NLAlib.Probability.Measurability.Matrix
 public import NLAlib.Probability.MatrixIntegral
 
@@ -150,10 +150,7 @@ $\mathbb{E}[\mathcal{H}(\mathbf{S}) \mid \mathcal{G}] = \mathcal{H}(\mathbb{E}[\
 \mathcal{G}])$ almost everywhere. The conditional form of `NLAlib.integral_dilation`. -/
 theorem condExp_dilation {S : Ω → Matrix l n 𝕜} (hS : Integrable S μ) :
     μ[fun ω => dilation (S ω) | m] =ᵐ[μ] fun ω => dilation (μ[S | m] ω) :=
-  (LinearMap.toContinuousLinearMap
-    { toFun := dilation
-      map_add' := dilation_add
-      map_smul' := dilation_smul_real } : Matrix l n 𝕜 →L[ℝ] _).comp_condExp_comm hS |>.symm
+  (dilationCLM l).comp_condExp_comm hS |>.symm
 
 /-- The conditional expectation of the square of a dilation is block diagonal, with the
 conditional expectations of $\mathbf{S}\mathbf{S}^{\mathsf{H}}$ and

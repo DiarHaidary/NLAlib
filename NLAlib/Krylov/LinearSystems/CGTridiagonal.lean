@@ -499,7 +499,8 @@ private noncomputable def cgLanczosAlpha (A : Matrix n n ℝ) (b : n → ℝ) (j
       cgAlpha A (cgState A b 0 (j - 1)))
 
 /-- One Lanczos step on a unit vector satisfying a three-term relation. -/
-private theorem lanczos_step_aux {ι : Type*} [Fintype ι] {A : Matrix ι ι ℝ} {u0 u1 u2 : ι → ℝ}
+private theorem lanczosAlpha_eq_and_lanczosStep_eq {ι : Type*} [Fintype ι]
+    {A : Matrix ι ι ℝ} {u0 u1 u2 : ι → ℝ}
     {b0 a1 b1 : ℝ} (h11 : u1 ⬝ᵥ u1 = 1) (h12 : u1 ⬝ᵥ u2 = 0)
     (hrec : A *ᵥ u1 = b0 • u0 + a1 • u1 + b1 • u2) :
     lanczosAlpha A ⟨u0, u1, b0⟩ = a1 ∧
@@ -629,7 +630,7 @@ private theorem lanczosState_cg {A : Matrix n n ℝ} (hA : A.PosDef) (b : n → 
             (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2)),
           ‖WithLp.toLp 2 (cgLanczosBeta A b (i + 1) • cgLanczosU A b (i + 2))‖⟩ := by
     intro i hi hs
-    have h := lanczos_step_aux (cgLanczosU_dotProduct_self A b (hr i hi))
+    have h := lanczosAlpha_eq_and_lanczosStep_eq (cgLanczosU_dotProduct_self A b (hr i hi))
       (cgLanczosU_dotProduct_of_lt hA b (Nat.lt_succ_self i)) (mulVec_cgLanczosU hA b (hr i hi))
     refine ⟨by rw [hs]; exact h.1, ?_⟩
     change lanczosStep A (lanczosState A b i) = _

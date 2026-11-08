@@ -30,6 +30,7 @@
 /lakefile.toml @tchen01
 /lake-manifest.json @tchen01
 /lean-toolchain @tchen01
+/.gitattributes @tchen01
 # The contribution rules and their enforcement: the rule data, the rule and reference checks,
 # their allowlists and the ratchet baseline (docs/contributing/checks.md §1; AGENTS.md rule 1).
 /docs/rules/rules.toml @tchen01
@@ -38,6 +39,16 @@
 /scripts/rules_allow.toml @tchen01
 /scripts/names_allow.toml @tchen01
 /scripts/rules_baseline.json @tchen01
+# Their dependencies: the modules the owned checkers import, the generator CI checks, the
+# extraction the rules check reads, and the module list the stage check builds.
+/scripts/leansrc.py @tchen01
+/scripts/leanexpr.py @tchen01
+/scripts/gen_rules_md.py @tchen01
+/scripts/explore_data.sh @tchen01
+/scripts/Explore.lean @tchen01
+/scripts/explore_metadata.py @tchen01
+/scripts/explore_publish.py @tchen01
+/scripts/proved_modules.py @tchen01
 # The model definitions the guarantees rest on (Computation-Hardening.md §1.3–1.4): the run, the
 # budgets, the access models and the contracts. An edit flips every closure hash anyway; the
 # review comes before it.
@@ -52,6 +63,7 @@
 /NLAlib/Computation/StaticCost.lean @tchen01
 /NLAlib/Computation/Subst.lean @tchen01
 /NLAlib/Computation/KernelCall.lean @tchen01
+/NLAlib/Computation/NonInterference.lean @tchen01
 /NLAlib/Computation/Grid.lean @tchen01
 /NLAlib/Computation/BinaryFloatSem.lean @tchen01
 /NLAlib/RandomMatrix/Tape.lean @tchen01

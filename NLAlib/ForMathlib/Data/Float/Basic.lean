@@ -47,20 +47,26 @@ def Sign.toReal : Sign → ℝ
   | .negative => -1
   | .positive => 1
 
+/-- The real value of either sign has absolute value one. -/
 @[simp] theorem Sign.abs_toReal (s : Sign) : |s.toReal| = 1 := by cases s <;> simp [Sign.toReal]
 
+/-- Multiplication of signs agrees with multiplication of their real values. -/
 @[simp] theorem Sign.toReal_mul (s₁ s₂ : Sign) : (s₁ * s₂).toReal = s₁.toReal * s₂.toReal := by
   cases s₁ <;> cases s₂ <;> simp [Sign.toReal]
 
+/-- Dividing signs agrees with multiplying them, since each sign is its own inverse. -/
 theorem Sign.div_eq_mul (s₁ s₂ : Sign) : s₁ / s₂ = s₁ * s₂ := by
   cases s₁ <;> cases s₂ <;> rfl
 
+/-- The real value of a quotient of signs is the product of their real values. -/
 @[simp] theorem Sign.toReal_div (s₁ s₂ : Sign) : (s₁ / s₂).toReal = s₁.toReal * s₂.toReal := by
   rw [Sign.div_eq_mul, Sign.toReal_mul]
 
+/-- Negating a sign negates its real value. -/
 @[simp] theorem Sign.toReal_neg (s : Sign) : (-s).toReal = -s.toReal := by
   cases s <;> simp [Sign.toReal]
 
+/-- Applying a sign to a natural mantissa agrees with real multiplication by the sign. -/
 theorem Sign.cast_apply (s : Sign) (n : ℕ) : ((s.apply n : ℤ) : ℝ) = s.toReal * n := by
   cases s <;> simp [Sign.apply, Sign.toReal]
 
@@ -131,18 +137,22 @@ theorem underflowBound_nonneg (spec : Format) : 0 ≤ spec.underflowBound :=
 $$2^{\operatorname{ebits}(\mathcal{F})}-2-
 \operatorname{bias}(\mathcal{F})-(\operatorname{prec}(\mathcal{F})-1)\,.$$
 Here $\operatorname{ebits}$ counts exponent bits and $\operatorname{bias}$ is their bias.
-The value is $971$ for binary64 and $104$ for binary32. -/
+It is the largest finite significand exponent for layouts with at least two exponent bits;
+one-bit layouts have no normal values. The value is $971$ for binary64 and $104$ for binary32. -/
 def maxExponentBound (spec : Format) : ℤ :=
   ((2 ^ spec.exponentBits : ℕ) : ℤ) - 2 - spec.exponentBias - spec.mantissaBitsWithoutImplicit
 
-/-- The largest finite magnitude of a layout $\mathcal{F}$ with precision
+/-- For a layout $\mathcal{F}$ with at least two exponent bits, the largest finite magnitude,
+with precision
 $\operatorname{prec}(\mathcal{F})$ and largest significand exponent
 $\operatorname{emax}(\mathcal{F})$ is
-$$(2^{\operatorname{prec}(\mathcal{F})}-1)2^{\operatorname{emax}(\mathcal{F})}\,.$$ -/
+$$(2^{\operatorname{prec}(\mathcal{F})}-1)2^{\operatorname{emax}(\mathcal{F})}\,.$$
+This formula remains total for one-bit exponent layouts, where it need not be represented. -/
 noncomputable def maxFinite (spec : Format) : ℝ := (2 ^ spec.mantissaBits - 1) * 2 ^
   spec.maxExponentBound
 
-/-- The largest finite magnitude is positive for every core binary layout. -/
+/-- The maximum-magnitude formula is positive for every core binary layout, including the
+one-bit exponent layouts where it need not be a represented value. -/
 theorem maxFinite_pos (spec : Format) : 0 < spec.maxFinite := by
   have hp : 0 < spec.mantissaBits := by simp only [Format.mantissaBits]; omega
   exact mul_pos (sub_pos.mpr (one_lt_pow₀ one_lt_two hp.ne')) (zpow_pos two_pos _)

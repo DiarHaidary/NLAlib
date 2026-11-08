@@ -34,15 +34,16 @@ variable {P K : Type} [DecidableEq P] {storedMatrix : Bool}
 
 /-- Actual decoded words after initialization and `j` rounded Lanczos steps. The basis
 column `c` stores `v (c+1)`, while the previous-vector buffer stores `v j`. The scalar and
-vector prefixes have no assumed arithmetic relation. -/
+vector prefixes have no assumed arithmetic relation. The stored-matrix flag defaults to
+true; the oracle variant leaves the matrix slot empty and imposes no matrix-storage condition. -/
 structure StoreContext (tag : P) (dec : P → K → ℝ) (N q j : ℕ)
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ) (v : ℕ → Fin N → ℝ)
     (α β : ℕ → ℝ) (s : ℝ) (store : Store P K) (storedMatrix : Bool := true) : Prop where
-  /-- The canonical dense nine-buffer shape. -/
+  /-- The canonical nine-buffer shape, with an empty matrix slot for the oracle variant. -/
   shape : store.shape = workspaceShape tag N q storedMatrix
   /-- The declared input words are retained. -/
   input : ∀ i : Fin N, ∃ w, store.read tag 0 i = some w ∧ dec tag w = b i
-  /-- The matrix entries are loaded in the canonical column-major layout. -/
+  /-- Stored execution has loaded the matrix column-major; the oracle variant needs no entries. -/
   matrix : if storedMatrix then HoldsDecoded store dec tag 6 0 A else True
   /-- Completed basis columns, including the initialized first column. -/
   basis : ∀ c ≤ j, ∀ i : Fin N,

@@ -737,3 +737,40 @@ args = ["N", "q", "u"]
 latex = '(101/25)\sqrt{#2+1}\,(#1+#2+2)\,#3 + 16(#1+1)^2#3'
 lean_body = 'lanczosReorthRoundoffBound (N q : ℕ) (u : ℝ) : ℝ := 101 / 25 * Real.sqrt ((q : ℝ) + 1) * ((N + q + 2 : ℕ) : ℝ) * u + 16 * ((N : ℝ) + 1) ^ 2 * u'
 body_hash = "a9c73eda61d3fa8c"
+
+[[constant]]
+name = "NLAlib.localTruncationNoiseConstant"
+kind = "constant"
+file = "NLAlib/Matrix/Perturbation/BestRankApprox.lean"
+args = []
+latex = '483'
+lean_body = 'localTruncationNoiseConstant : ℝ := 483'
+body_hash = "ad335c42bc449175"
+
+[[constant]]
+name = "NLAlib.localTruncationWindowConstant"
+kind = "constant"
+file = "NLAlib/Matrix/Perturbation/BestRankApprox.lean"
+args = []
+latex = '32'
+lean_body = 'localTruncationWindowConstant : ℝ := 32'
+body_hash = "4d3525584325a63a"
+
+[[constant]]
+name = "NLAlib.reciprocalWindowNoiseConstant"
+kind = "constant"
+file = "NLAlib/Matrix/Perturbation/BestRankApprox.lean"
+args = []
+latex = '69'
+lean_body = 'reciprocalWindowNoiseConstant : ℝ := 69'
+body_hash = "84ad76ba8256373b"
+
+[[constant]]
+name = "NLAlib.reciprocalWindowCrossConstant"
+kind = "constant"
+file = "NLAlib/Matrix/Perturbation/BestRankApprox.lean"
+args = []
+latex = '320/21'
+display = '\frac{320}{21}'
+lean_body = 'reciprocalWindowCrossConstant : ℝ := 320 / 21'
+body_hash = "d71ea1ee250d1bb1"

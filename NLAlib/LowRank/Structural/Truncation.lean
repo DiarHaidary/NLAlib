@@ -34,7 +34,7 @@ statement holds for every choice of the truncation.
 ## Main results
 
 * `NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le`:
-  reciprocal-window generalized Nyström bound with constants 69 and 320/21.
+  reciprocal-window generalized Nyström bound.
 
 * `NLAlib.SymmetricGauge.matrixNorm_sub_truncatedSVD_rsvd_le`: HMT Theorem 9.3, every gauge.
 * `NLAlib.frobNorm_sub_truncatedSVD_rsvd_sq`, `NLAlib.frobNorm_rsvd_sub_truncatedSVD_le`,
@@ -797,10 +797,11 @@ $\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}
 \mathbf{R})$, $\theta = \sigma_{k-1}(\mathbf{R})$, and a window $a \le k \le b$ with
 $2\theta \le \sigma_i(\mathbf{R})$ for $i < a$, $\sigma_a(\mathbf{R}) \le 2\theta$ and
 $\sigma_b(\mathbf{R}) \le \theta/2$, with $\mathbf{P}_i$, $\mathbf{P}'_i$ the range projectors of
-$\llbracket\mathbf{R}\rrbracket_i$ and of its conjugate transpose,
+$\llbracket\mathbf{R}\rrbracket_i$ and of its conjugate transpose.
+Then <!-- value localTruncationNoiseConstant --> <!-- value localTruncationWindowConstant -->
 $$\|\mathbf{A} - \llbracket\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi})\rrbracket_k
 \|_{\mathsf{F}}^2 \le \|\mathbf{A} - \llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 +
-500k\,\|\mathbf{N}\|_2^2 + 40\,\theta\min(k, b - k)\,
+483k\,\|\mathbf{N}\|_2^2 + 32\,\theta\min(k, b - k)\,
 \|(\mathbf{P}_b - \mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b - \mathbf{P}'_a)\|_2\,.$$
 For the choice `truncatedSVD` makes. No printed source. -/
 theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matrix m n 𝕜}
@@ -811,8 +812,10 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matri
     (hb : singularValues (rsvd A Ω) b ≤ singularValues (rsvd A Ω) (k - 1) / 2) :
     frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 ≤
       frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 +
-        500 * k * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 +
-        40 * singularValues (rsvd A Ω) (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+        localTruncationNoiseConstant * k *
+          specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 +
+        localTruncationWindowConstant * singularValues (rsvd A Ω) (k - 1) *
+          ((min k (b - k) : ℕ) : ℝ) *
           specNorm ((rangeProjector (truncatedSVD (rsvd A Ω) b) -
               rangeProjector (truncatedSVD (rsvd A Ω) a)) *
             (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) *
@@ -828,13 +831,24 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window {A : Matri
   linarith
 
 
-/-- Reciprocal-window localized generalized Nyström: writing R for the randomized SVD, N for
-its oblique-projector completion noise, theta for the k-th singular value of R and mu for
-the compressed noise norm, the error is bounded by
-$$\|A-\operatorname{trunc}_k(\operatorname{GN})\|_{\mathsf F}^2
-\le\|A-R_k\|_{\mathsf F}^2+69k\|N\|_2^2+(320/21)\theta\min(k,b-k)\mu.$$
-The hypotheses give the completion-rank condition and reciprocal spectral thresholds 5/3.
-No printed source. -/
+/-- Reciprocal-window localized generalized Nyström: for $\mathbf{A} \in \Bbbk^{m \times n}$,
+$\mathbf{\Omega} \in \Bbbk^{n \times \ell}$ and $\mathbf{\Psi} \in \Bbbk^{m \times p}$, assume
+$\operatorname{rank}(\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) =
+\operatorname{rank}(\mathbf{A}\mathbf{\Omega})$. Write
+$\mathbf{R} = \mathsf{rsvd}(\mathbf{A},\mathbf{\Omega})$,
+$\mathbf{N} = \mathbf{\Pi}_{\mathbf{A}\mathbf{\Omega},\mathbf{\Psi}^{\mathsf{H}}}
+(\mathbf{A}-\mathbf{R})$ and $\theta = \sigma_{k-1}(\mathbf{R})$.
+For $1 \le k$ and $a \le k \le b$, suppose $(5/3)\theta \le \sigma_i(\mathbf{R})$ for $i<a$,
+$\sigma_a(\mathbf{R}) \le (5/3)\theta$ and $\sigma_b(\mathbf{R}) \le (3/5)\theta$.
+Let $\mathbf{P}_i$, $\mathbf{P}'_i$ be the range projectors of
+$\llbracket\mathbf{R}\rrbracket_i$ and its conjugate transpose, and put
+$\mu = \|(\mathbf{P}_b-\mathbf{P}_a)\mathbf{N}(\mathbf{P}'_b-\mathbf{P}'_a)\|_2$.
+Then <!-- value reciprocalWindowNoiseConstant --> <!-- value reciprocalWindowCrossConstant -->
+$$\|\mathbf{A}-\llbracket\mathsf{gn}(\mathbf{A},\mathbf{\Omega},\mathbf{\Psi})\rrbracket_k
+\|_{\mathsf{F}}^2 \le \|\mathbf{A}-\llbracket\mathbf{R}\rrbracket_k\|_{\mathsf{F}}^2 +
+69k\|\mathbf{N}\|_2^2 + \frac{320}{21}\theta\min(k,b-k)\mu\,.$$
+The reciprocal window differs from the factor-two window; the constants alone do not compare
+these bounds. No printed source. -/
 theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le
     {A : Matrix m n 𝕜} {Ω : Matrix n l 𝕜} {Ψ : Matrix m p 𝕜}
     (h : (Ψᴴ * (A * Ω)).rank = (A * Ω).rank) {k : ℕ}
@@ -845,8 +859,10 @@ theorem frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singula
     (hb : singularValues (rsvd A Ω) b ≤ singularValues (rsvd A Ω) (k - 1) / (5 / 3 : ℝ)) :
     frobNorm (A - truncatedSVD (generalizedNystrom A Ω Ψ) k) ^ 2 ≤
       frobNorm (A - truncatedSVD (rsvd A Ω) k) ^ 2 +
-        69 * k * specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 +
-        (320 / 21 : ℝ) * singularValues (rsvd A Ω) (k - 1) * ((min k (b - k) : ℕ) : ℝ) *
+        reciprocalWindowNoiseConstant * k *
+          specNorm (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) ^ 2 +
+        reciprocalWindowCrossConstant * singularValues (rsvd A Ω) (k - 1) *
+          ((min k (b - k) : ℕ) : ℝ) *
           specNorm ((rangeProjector (truncatedSVD (rsvd A Ω) b) -
               rangeProjector (truncatedSVD (rsvd A Ω) a)) *
             (obliqueProjector (A * Ω) Ψᴴ * (A - rsvd A Ω)) *

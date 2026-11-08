@@ -22,7 +22,8 @@ $q$, $\varepsilon$, $\tau$ and the four certificate parameters only) gives
 nearly orthonormal, the computed tridiagonal $\mathbf{T}_m$ is the exact Lanczos tridiagonal of
 $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a small symmetric $\mathbf{E}$, and the computed Ritz
 values interlace the eigenvalues of $\mathbf{A}$ up to a small radius; all bounds are explicit
-functions of the parameters, $m$ and $\|\mathbf{A}\|_2$. [Paige1971, §6.1] in substance.
+functions of the parameters, $m$ and $\|\mathbf{A}\|_2$. Paige analyzes reorthogonalization
+corrections in [Paige1971, §6.1].
 
 **CGS2 layer.** For the registered trees `NLAlib.lanczosReorthProg.compiled` (stored matrix) and
 `NLAlib.lanczosReorthOracleProg.compiled` (matrix-free), whose orthogonalization is
@@ -31,8 +32,7 @@ dimensions $N$, $q$ and the threshold $\tau$ alone, through the budget
 `NLAlib.lanczosReorthRoundoffBound` $N\,q\,u$, that
 is <!-- value lanczosReorthRoundoffBound N q u -->
 $$(101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u;$$
-the operation counts and workspace of the registered targets hold under every interpretation
-with unit charges.
+the operation and workspace bounds apply to successful executions with unit charges.
 
 ## Adding an orthogonalization scheme
 
@@ -78,9 +78,16 @@ open Computation Computation.Builder
 
 /-! ### The generic layer -/
 
-/-- The **symmetric tridiagonal matrix of coefficients** $\alpha$, $\beta$, indexed from $0$:
-$\alpha_{i+1}$ at $(i, i)$, and $\beta_i$ at $(i, i - 1)$ and $(i - 1, i)$; the layout of
-`NLAlib.LanczosData.tridiagonal`. -/
+/-- The **symmetric tridiagonal matrix of coefficients** $\alpha$, $\beta$ has entries
+$$\mathsf{lanczosCoeffTridiagonal}(\alpha,\beta,k)_{ij}:=
+\begin{cases}
+\alpha_{i+1} & i=j,\\
+\beta_i & i=j+1,\\
+\beta_j & j=i+1,\\
+0 & \text{otherwise}
+\end{cases}
+\qquad(0\le i,j<k).$$
+This is the coefficient indexing of `NLAlib.LanczosData.tridiagonal`. -/
 def lanczosCoeffTridiagonal (α β : ℕ → ℝ) (k : ℕ) : Matrix (Fin k) (Fin k) ℝ :=
   Matrix.of fun i j =>
     if i = j then α ((i : ℕ) + 1)
@@ -100,13 +107,12 @@ def LanczosReorthRegime (q : ℕ) (ε τ η₀ ε₁ ε₂ ε₃ : ℝ) : Prop :
 
 /-- **The guarantees of Lanczos with full reorthogonalization** on a store: the decoded basis
 $\mathbf{v}_1, \dots, \mathbf{v}_{q+1}$ (buffer $1$), coefficients $\alpha_j$ (buffer $2$),
-$\beta_j$ (buffer $3$) and norms $\nu_j$ (buffer $6$) are such that, with
+$\beta_0,\dots,\beta_q$ (buffer $3$) and norms $\nu_1,\dots,\nu_q$ (buffer $6$) are such that, with
 $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$ and
 $e = 100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$, every prefix of $m$ steps,
 $0 < m \le q$, that passes the test $\tau\nu_j < \beta_j$ on the computed $\nu_j$, $\beta_j$ for
-$j \le m$ (the program does not take $\tau$; the admissible prefix is read off the stored norms
-with any $\tau$) has $m < N$;
-$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$;
+$1 \le j \le m$ (the threshold is chosen when reading the stored norms) has $m < N$;
+$\|\mathbf{V}_m^{\mathsf{H}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$;
 a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le e + 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu)\|\mathbf{A}\|_2$
 for which the tridiagonal $\mathbf{T}_m$ of the computed $\alpha$, $\beta$ is the exact
@@ -123,9 +129,9 @@ def LanczosReorthGuarantees {P K : Type} [DecidableEq P] (s : Store P K) (dec : 
     HoldsDecoded s dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
     ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
       m + 1 ≤ N ∧
-      frobNorm ((LanczosReorthRun.basisOf v m)ᵀ * LanczosReorthRun.basisOf v m - 1) ≤
+      frobNorm ((LanczosReorthRun.basisOf v m)ᴴ * LanczosReorthRun.basisOf v m - 1) ≤
         Real.sqrt (3 * (m : ℝ)) * (2 * (ε₁ + ε₃ / τ + ε)) ∧
-      (∃ E : Matrix (Fin N) (Fin N) ℝ, Eᵀ = E ∧
+      (∃ E : Matrix (Fin N) (Fin N) ℝ, E.IsHermitian ∧
         frobNorm E ≤ (100 * ((m : ℝ) + 1) * (2 * (ε₁ + ε₃ / τ + ε) + ε + ε₂) +
           3 * (3 * ε + 2 * Real.sqrt (3 * ((m : ℝ) + 1)) * (2 * (ε₁ + ε₃ / τ + ε)))) *
             specNorm A ∧
@@ -141,14 +147,16 @@ def LanczosReorthGuarantees {P K : Type} [DecidableEq P] (s : Store P K) (dec : 
 satisfy `NLAlib.LanczosReorthOutputs` at $(\varepsilon, \tau, \eta_0, \varepsilon_1,
 \varepsilon_2, \varepsilon_3)$ (every admissible prefix is a run with these parameters), the
 parameters satisfy `NLAlib.LanczosReorthRegime` for $q$ steps, and $\mathbf{b} \ne \mathbf{0}$,
-then the store satisfies `NLAlib.LanczosReorthGuarantees`: on every prefix of $m$ steps passing
-$\tau\nu_j < \beta_j$, with $\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$,
-$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$, the
+then the store satisfies `NLAlib.LanczosReorthGuarantees`. For $0<m\le q$ passing
+$\tau\nu_j < \beta_j$ for every $1\le j\le m$, with
+$\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$,
+$\|\mathbf{V}_m^{\mathsf{H}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$, the
 computed $\mathbf{T}_m$ is the Lanczos tridiagonal of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$
-with $\mathbf{E}^{\mathsf{T}} = \mathbf{E}$ and $\|\mathbf{E}\|_{\mathsf F} \le
+with $\mathbf{E}^{\mathsf{H}} = \mathbf{E}$ and $\|\mathbf{E}\|_{\mathsf F} \le
 (100(m+1)(\mu + \varepsilon + \varepsilon_2) + 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))
 \|\mathbf{A}\|_2$, and its eigenvalues interlace those of $\mathbf{A}$ up to
-$100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$. [Paige1971, §6.1] in substance.
+$100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$.
+[Paige1971, §6.1] analyzes reorthogonalization corrections. No printed source for these bounds.
 -/
 theorem lanczosReorthGuarantees_of_lanczosReorthOutputs {P K : Type} [DecidableEq P]
     {s : Store P K} {dec : P → K → ℝ} {tag : P} {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ}
@@ -192,12 +200,15 @@ theorem lanczosReorthGuarantees_of_lanczosReorthOutputs {P K : Type} [DecidableE
   have hAt : Aᵀ = A := hH ▸ L.transpose_H
   refine ⟨L.succ_le_card hηL hsm, ?_, ?_, fun i hi => ?_⟩
   · have h := L.frobNorm_transpose_mul_self_sub_one_le hηL hsm m (by omega)
+    rw [Matrix.conjTranspose_eq_transpose_of_trivial]
     rwa [hbasis, hμ] at h
   · have hδL : ‖WithLp.toLp 2 (‖WithLp.toLp 2 b‖⁻¹ • b - L.v 1)‖ ≤ 3 * ε := by
       rw [hv 1 le_rfl (by omega)]
       exact hδ
     obtain ⟨H', hH't, hH'f, hH'T⟩ := L.exists_pure_backward hηL hsm hrecL hτL hbnz hδL
-    refine ⟨H' - A, by rw [Matrix.transpose_sub, hH't, hAt], ?_, ?_⟩
+    refine ⟨H' - A, ?_, ?_, ?_⟩
+    · rw [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial,
+        Matrix.transpose_sub, hH't, hAt]
     · rw [hrE, hμ, hH] at hH'f
       exact hH'f.trans_eq (by ring)
     · rw [add_sub_cancel, hH'T, htri]
@@ -210,28 +221,31 @@ namespace LanczosReorthImplementation
 
 variable {P ι K : Type} [DecidableEq P]
 
-/-- **Lanczos with full reorthogonalization for any certified orthogonalization scheme**: under
-the relative-error model with unit roundoff $u$ and exact addition of zero, for symmetric
-$\mathbf{A}$, $\mathbf{b} \ne \mathbf{0}$, product routines certified by
-`NLAlib.Computation.IsMatvecRoutine` with coefficient $\varepsilon\|\mathbf{A}\|_2$, where
-$\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound` $N\,u$, that
-is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, is at most $1/100$,
-orthogonalization calls certified by `NLAlib.Computation.IsOrthRoutine` at
-$(\eta_0, \varepsilon_1, \varepsilon_2, \varepsilon_3)$, $\varepsilon_i \ge 0$, at the steps
-$t < q$, a threshold $\tau > 0$ and parameters satisfying `NLAlib.LanczosReorthRegime`
-($\eta_0 \le 1/100$, $\tau \le 1$, $\sqrt{3(q+1)}\,\mu \le \eta_0$ and
-$\mu + \varepsilon + \varepsilon_2 \le 1/100$ for
-$\mu = 2(\varepsilon_1 + \varepsilon_3/\tau + \varepsilon)$), the loop
-`NLAlib.lanczosReorthLoop` succeeds, keeps the shape, and its decoded outputs satisfy
-`NLAlib.LanczosReorthGuarantees`: on every prefix of $m$ steps passing the test
-$\tau\nu_j < \beta_j$ on the computed $\nu_j$, $\beta_j$,
-$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$; the
+/-- **Lanczos with full reorthogonalization for any certified orthogonalization scheme.**
+The first seven buffers at the program tag have lengths $N,N(q+1),q,q+1,1,N,q$. Buffer $0$
+decodes to $\mathbf{b}$. The eighth buffer holds the product routine's storage. Its precondition
+holds initially and is preserved whenever the eight shapes and the eighth buffer's reads agree.
+Assume the all-range relative-error model with unit roundoff $u$ and exact zero addition,
+symmetric $\mathbf{A}$ and $\mathbf{b}\ne\mathbf{0}$. The product routine at each index
+satisfies `NLAlib.Computation.IsMatvecRoutine` with coefficient $\varepsilon\|\mathbf{A}\|_2$,
+where $\varepsilon$ = `NLAlib.lanczosImplementationRoundoffBound` $N\,u$, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u \le 1/100$.
+At each step $t<q$ the orthogonalization meets `NLAlib.Computation.IsOrthRoutine` at parameters
+$(\eta_0,\varepsilon_1,\varepsilon_2,\varepsilon_3)$ with $\varepsilon_i\ge 0$.
+Take $\tau>0$ and $\mu=2(\varepsilon_1+\varepsilon_3/\tau+\varepsilon)$ satisfying
+`NLAlib.LanczosReorthRegime`, namely $\eta_0\le 1/100$, $\tau\le 1$,
+$\sqrt{3(q+1)}\,\mu\le\eta_0$ and $\mu+\varepsilon+\varepsilon_2\le 1/100$.
+Then `NLAlib.lanczosReorthLoop` succeeds, keeps the shape, and its decoded outputs satisfy
+`NLAlib.LanczosReorthGuarantees`. On every prefix $0<m\le q$ passing
+$\tau\nu_j < \beta_j$ on the computed $\nu_j$, $\beta_j$ for $1\le j\le m$,
+$\|\mathbf{V}_m^{\mathsf{H}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le \sqrt{3m}\,\mu$; the
 computed $\mathbf{T}_m$ is the Lanczos tridiagonal of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for
 a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le (100(m+1)(\mu + \varepsilon + \varepsilon_2) +
 3(3\varepsilon + 2\sqrt{3(m+1)}\,\mu))\|\mathbf{A}\|_2$; and its eigenvalues interlace those of
-$\mathbf{A}$ up to $100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$. The scheme
-enters only through its certificate. [Paige1971, §6.1] in substance.
+$\mathbf{A}$ up to $100(m+1)(\mu + \varepsilon + \varepsilon_2)\|\mathbf{A}\|_2$.
+[Paige1971, §6.1] analyzes reorthogonalization corrections. No printed source for these
+execution bounds.
 Result: lanczos-reorth-certified-scheme -/
 theorem exec_rounded_loop_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι))
@@ -252,7 +266,7 @@ theorem exec_rounded_loop_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (hε : 0 ≤ ε₁ ∧ 0 ≤ ε₂ ∧ 0 ≤ ε₃)
     (horth : ∀ t < q, IsOrthRoutine I dec tag N (t + 1) η₀ ε₁ ε₂ ε₃ (fun _ => True) 1 8 10 0 0
       (orth 8 10 (IExp.var t)))
-    (hA : Aᵀ = A) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
+    (hA : A.IsHermitian) (hsmall : lanczosImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hbnz : b ≠ 0) {τ : ℝ} (hτ : 0 < τ)
     (hreg : LanczosReorthRegime q (lanczosImplementationRoundoffBound N (u tag)) τ η₀ ε₁ ε₂ ε₃) :
     ∃ out : St P K (OpCount P ι),
@@ -262,7 +276,9 @@ theorem exec_rounded_loop_guarantees {u : P → ℝ} {dec : P → K → ℝ}
       LanczosReorthGuarantees out.store dec tag N q A b
         (lanczosImplementationRoundoffBound N (u tag)) τ ε₁ ε₂ ε₃ := by
   obtain ⟨out, hrun, hshape', hout⟩ := exec_rounded_loop I tag hsem hz st N q slot A b hshape hb
-    pre hpre hpreFrame mv hmv orth hε horth hA hsmall hτ
+    pre hpre hpreFrame mv hmv orth hε horth
+    (by simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial] using hA)
+    hsmall hτ
   exact ⟨out, hrun, hshape', lanczosReorthGuarantees_of_lanczosReorthOutputs (hout hbnz) hreg hbnz⟩
 
 end LanczosReorthImplementation
@@ -276,6 +292,24 @@ by <!-- value lanczosReorthRoundoffBound N q u -->
 $$(101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$ -/
 noncomputable irreducible_def lanczosReorthRoundoffBound (N q : ℕ) (u : ℝ) : ℝ :=
   101 / 25 * Real.sqrt ((q : ℝ) + 1) * ((N + q + 2 : ℕ) : ℝ) * u + 16 * ((N : ℝ) + 1) ^ 2 * u
+
+/-- For dimension $N$, $q$ steps and nonnegative unit roundoff $u$, the CGS2 budget
+is nonnegative. Its current value is <!-- value lanczosReorthRoundoffBound N q u -->
+$$(101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$
+No printed source. -/
+theorem lanczosReorthRoundoffBound_nonneg (N q : ℕ) {u : ℝ} (hu : 0 ≤ u) :
+    0 ≤ lanczosReorthRoundoffBound N q u := by
+  rw [lanczosReorthRoundoffBound_def]
+  positivity
+
+/-- The CGS2 budget for dimension $N$, $q$ steps and roundoff parameter $u$ is at
+most <!-- value lanczosReorthRoundoffBound N q u -->
+$$(101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$
+No printed source. -/
+theorem lanczosReorthRoundoffBound_le (N q : ℕ) (u : ℝ) :
+    lanczosReorthRoundoffBound N q u ≤
+      101 / 25 * Real.sqrt ((q : ℝ) + 1) * ((N + q + 2 : ℕ) : ℝ) * u + 16 * ((N : ℝ) + 1) ^ 2 * u :=
+  (lanczosReorthRoundoffBound_def N q u).le
 
 /-- The budget is the sum of its two parts. -/
 private theorem lanczosReorthRoundoffBound_eq (N q : ℕ) (u : ℝ) :
@@ -328,7 +362,7 @@ private theorem cgs2_regime_bounds {N q : ℕ} {u τ η₀ : ℝ} (hu : 0 ≤ u)
     nlinarith [mul_le_mul_of_nonneg_right hsq1 hM0]
   have hc0 : 0 ≤ c := hM0.trans hcM
   have hρeq : ρ = 2 * c + ε := lanczosReorthRoundoffBound_eq N q u
-  have hρ0 : 0 ≤ ρ := by rw [hρeq]; positivity
+  have hρ0 : 0 ≤ ρ := lanczosReorthRoundoffBound_nonneg N q hu
   have hρle : ρ ≤ 1 / 1000 := by nlinarith
   have hη0 : 0 ≤ η₀ := by rw [hη₀]; positivity
   have hsρ : s * ρ ≤ 2 * x * ρ := mul_le_mul_of_nonneg_right hs2 hρ0
@@ -388,7 +422,7 @@ theorem lanczosReorthRegime_cgsPassBound {N q : ℕ} {u τ η₀ : ℝ} (hu : 0 
 
 /-- The CGS2 guarantees in terms of the budget: certified outputs at the CGS2 parameters with
 $\eta_0 = 4\sqrt{3(q+1)}\,\rho$, $\rho$ the CGS2 budget, satisfy the explicit bounds of the
-CGS2 headline theorems. -/
+CGS2 headline theorems for $\mathbf{T}_m=\mathsf{lanczosCoeffTridiagonal}(\alpha,\beta,m)$. -/
 private theorem cgs2_guarantees {P K : Type} [DecidableEq P] {s : Store P K}
     {dec : P → K → ℝ} {tag : P} {N q : ℕ} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {u τ η₀ : ℝ} (hu : 0 ≤ u)
@@ -407,9 +441,9 @@ private theorem cgs2_guarantees {P K : Type} [DecidableEq P] {s : Store P K}
       HoldsDecoded s dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
       ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
         m + 1 ≤ N ∧
-        frobNorm ((LanczosReorthRun.basisOf v m)ᵀ * LanczosReorthRun.basisOf v m - 1) ≤
+        frobNorm ((LanczosReorthRun.basisOf v m)ᴴ * LanczosReorthRun.basisOf v m - 1) ≤
           4 * Real.sqrt (3 * (m : ℝ)) * lanczosReorthRoundoffBound N q u ∧
-        (∃ E : Matrix (Fin N) (Fin N) ℝ, Eᵀ = E ∧
+        (∃ E : Matrix (Fin N) (Fin N) ℝ, E.IsHermitian ∧
           frobNorm E ≤ 600 * ((m : ℝ) + 1) * lanczosReorthRoundoffBound N q u * specNorm A ∧
           lanczosTridiagonal (A + E) b m = lanczosCoeffTridiagonal α β m) ∧
         ∀ i < m,
@@ -459,25 +493,27 @@ namespace LanczosReorthImplementation
 
 variable {P ι K : Type} [DecidableEq P]
 
-/-- **Lanczos with CGS2 full reorthogonalization, stored matrix**: under the standard model
-(every rounded operation has relative error at most the unit roundoff $u$, addition of zero is
-exact) with unit charges, for symmetric decoded $\mathbf{A}$ (ROM words) and
-$\mathbf{b} \ne \mathbf{0}$, let $\rho$ = `NLAlib.lanczosReorthRoundoffBound` $N\,q\,u$, that
-is <!-- value lanczosReorthRoundoffBound N q u -->
+/-- **Lanczos with CGS2 full reorthogonalization, stored matrix.** The seven buffers at the
+program tag have lengths $N,N(q+1),q,q+1,1,N,q$. Buffer $0$ decodes to
+$\mathbf{b}\ne\mathbf{0}$ and the first $N^2$ ROM words decode column-major to a symmetric
+$\mathbf{A}$. Assume the all-range relative-error model with unit roundoff $u$ at this tag,
+exact zero addition and unit charges. Let $\rho$ = `NLAlib.lanczosReorthRoundoffBound`
+$N\,q\,u$, that is <!-- value lanczosReorthRoundoffBound N q u -->
 $$\rho = (101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$
 If $(q+1)\rho \le 1/1000$ and $0 < \tau$, $132(q+1)\rho \le \tau \le 1$, the
 registered tree `NLAlib.lanczosReorthProg.compiled` finishes, keeps the shape, uses at most
 `NLAlib.lanczosReorthCount` operations of each kind and at most $N^2 + 2N + 2q + 5$ additional
 live cells at its tag, and on every prefix of $m$ steps, $0 < m \le q$, that passes the test
-$\tau\nu_j < \beta_j$ ($j \le m$) on the computed $\nu_j$, $\beta_j$ (the program does not take
-$\tau$: any $\tau$ in the range may be chosen after the run), the decoded outputs satisfy: $m < N$;
-$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
-the tridiagonal $\mathbf{T}_m$ of the computed $\alpha$, $\beta$ is the exact Lanczos tridiagonal
-of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
+$\tau\nu_j < \beta_j$ for $1 \le j \le m$ on the computed $\nu_j$, $\beta_j$, the decoded
+outputs satisfy the following bounds. Any $\tau$ in the range may be chosen after the run.
+The prefix length satisfies $m<N$ and its basis satisfies
+$\|\mathbf{V}_m^{\mathsf{H}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
+the matrix $\mathbf{T}_m=\mathsf{lanczosCoeffTridiagonal}(\alpha,\beta,m)$ is the exact
+Lanczos tridiagonal of $(\mathbf{A}+\mathbf{E},\mathbf{b})$ for a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf{A}\|_2$; and the eigenvalues $\theta_i$ of
 $\mathbf{T}_m$ satisfy $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) +
-e$, $e = 600(m+1)\rho\|\mathbf{A}\|_2$, for $i < m$. No printed source for the program
-statement; [Paige1971, §6.1] in substance.
+e$, $e = 600(m+1)\rho\|\mathbf{A}\|_2$, for $i < m$. [Paige1971, §6.1] analyzes
+reorthogonalization corrections. No printed source for this CGS2 program bound.
 Result: lanczos-reorth-cgs2-program-guarantees -/
 theorem exec_rounded_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
@@ -488,7 +524,7 @@ theorem exec_rounded_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     (hrom : ∀ i < N * N, I.rom i = some (values i))
-    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : Aᵀ = A)
+    (hdecode : ∀ i j : Fin N, dec tag (values (N * j + i)) = A i j) (hA : A.IsHermitian)
     (hbnz : b ≠ 0)
     (hsmall : ((q : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) ≤ 1 / 1000)
     {τ : ℝ} (hτ : 0 < τ) (hτlo : 132 * ((q : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) ≤ τ)
@@ -506,9 +542,9 @@ theorem exec_rounded_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
         HoldsDecoded out.store dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
         ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
           m + 1 ≤ N ∧
-          frobNorm ((LanczosReorthRun.basisOf v m)ᵀ * LanczosReorthRun.basisOf v m - 1) ≤
+          frobNorm ((LanczosReorthRun.basisOf v m)ᴴ * LanczosReorthRun.basisOf v m - 1) ≤
             4 * Real.sqrt (3 * (m : ℝ)) * lanczosReorthRoundoffBound N q (u tag) ∧
-          (∃ E : Matrix (Fin N) (Fin N) ℝ, Eᵀ = E ∧
+          (∃ E : Matrix (Fin N) (Fin N) ℝ, E.IsHermitian ∧
             frobNorm E ≤
               600 * ((m : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) * specNorm A ∧
             lanczosTridiagonal (A + E) b m = lanczosCoeffTridiagonal α β m) ∧
@@ -539,30 +575,32 @@ theorem exec_rounded_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
   exact ⟨out, hexec, hsh, fun k => (hbnd.count k).trans (Nat.add_le_add_left (hcount k) _), hpk,
     cgs2_guarantees hu0 hsmall hτ hτlo hτ1 hη₀ hbnz hout⟩
 
-/-- **Lanczos with CGS2 full reorthogonalization, matrix-free**: under the standard model
-(every rounded operation has relative error at most the unit roundoff $u$, addition of zero is
-exact) with unit charges, for symmetric $\mathbf{A}$ accessed through an oracle of accuracy
+/-- **Lanczos with CGS2 full reorthogonalization, matrix-free.** The seven buffers at the program
+tag have lengths $N,N(q+1),q,q+1,1,N,q$, and buffer $0$ decodes to $\mathbf{b}\ne\mathbf{0}$.
+Assume the all-range relative-error model with unit roundoff $u$ at this tag, exact zero addition
+and unit charges. For symmetric $\mathbf{A}$, the height-$N$ oracle succeeds on every
+length-$N$ input with normwise error coefficient
 $\eta\|\mathbf{A}\|_2$ (`NLAlib.Computation.IsMatvecErr`) with $\eta \le$
 `NLAlib.lanczosImplementationRoundoffBound` $N\,u$, that
-is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$, and
-$\mathbf{b} \ne \mathbf{0}$, let $\rho$ = `NLAlib.lanczosReorthRoundoffBound` $N\,q\,u$, that
+is <!-- value lanczosImplementationRoundoffBound N u -->$16(N+1)^2u$.
+Let $\rho$ = `NLAlib.lanczosReorthRoundoffBound` $N\,q\,u$, that
 is <!-- value lanczosReorthRoundoffBound N q u -->
 $$\rho = (101/25)\sqrt{q+1}\,(N+q+2)\,u + 16(N+1)^2u.$$
 If $(q+1)\rho \le 1/1000$ and $0 < \tau$, $132(q+1)\rho \le \tau \le 1$, the
 registered tree `NLAlib.lanczosReorthOracleProg.compiled` finishes, keeps the shape, uses at
 most `NLAlib.lanczosReorthOracleCount` operations of each kind and at most $2N + 2q + 5$
 additional live cells at its tag, and on every prefix of $m$ steps, $0 < m \le q$, that passes
-the test $\tau\nu_j < \beta_j$ ($j \le m$) on the computed $\nu_j$, $\beta_j$ (the program does not
-take $\tau$: any $\tau$ in the range may be chosen after the run), the decoded outputs satisfy:
-$m < N$;
-$\|\mathbf{V}_m^{\mathsf{T}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
-the tridiagonal $\mathbf{T}_m$ of the computed $\alpha$, $\beta$ is the exact Lanczos tridiagonal
-of $(\mathbf{A} + \mathbf{E}, \mathbf{b})$ for a symmetric $\mathbf{E}$ with
+the test $\tau\nu_j < \beta_j$ for $1 \le j \le m$ on the computed $\nu_j$, $\beta_j$, the
+decoded outputs satisfy the following bounds. Any $\tau$ in the range may be chosen after the run.
+The prefix length satisfies $m<N$ and its basis satisfies
+$\|\mathbf{V}_m^{\mathsf{H}}\mathbf{V}_m - \mathbf{I}\|_{\mathsf F} \le 4\sqrt{3m}\,\rho$;
+the matrix $\mathbf{T}_m=\mathsf{lanczosCoeffTridiagonal}(\alpha,\beta,m)$ is the exact
+Lanczos tridiagonal of $(\mathbf{A}+\mathbf{E},\mathbf{b})$ for a symmetric $\mathbf{E}$ with
 $\|\mathbf{E}\|_{\mathsf F} \le 600(m+1)\rho\|\mathbf{A}\|_2$; and the eigenvalues $\theta_i$ of
 $\mathbf{T}_m$ satisfy $\lambda_{i+N-m}(\mathbf{A}) - e \le \theta_i \le \lambda_i(\mathbf{A}) +
 e$, $e = 600(m+1)\rho\|\mathbf{A}\|_2$, for $i < m$. Oracle backend storage and arithmetic are
-outside this access model. No printed source for the program statement; [Paige1971, §6.1] in
-substance.
+outside this access model. [Paige1971, §6.1] analyzes reorthogonalization corrections.
+No printed source for this CGS2 program bound.
 Result: lanczos-reorth-cgs2-oracle-guarantees -/
 theorem exec_rounded_oracle_compiled_guarantees {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
@@ -573,7 +611,7 @@ theorem exec_rounded_oracle_compiled_guarantees {u : P → ℝ} {dec : P → K �
       (tag, 1), (tag, N), (tag, q)])
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)
     {η : ℝ} (hmv : IsMatvecErr I o dec tag A (η * specNorm A))
-    (hηmv : η ≤ lanczosImplementationRoundoffBound N (u tag)) (hA : Aᵀ = A) (hbnz : b ≠ 0)
+    (hηmv : η ≤ lanczosImplementationRoundoffBound N (u tag)) (hA : A.IsHermitian) (hbnz : b ≠ 0)
     (hsmall : ((q : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) ≤ 1 / 1000)
     {τ : ℝ} (hτ : 0 < τ) (hτlo : 132 * ((q : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) ≤ τ)
     (hτ1 : τ ≤ 1) :
@@ -590,9 +628,9 @@ theorem exec_rounded_oracle_compiled_guarantees {u : P → ℝ} {dec : P → K �
         HoldsDecoded out.store dec tag 6 0 (fun (j : Fin q) (_ : Fin 1) => ν ((j : ℕ) + 1)) ∧
         ∀ m, 0 < m → m ≤ q → (∀ j < m, τ * ν (j + 1) < β (j + 1)) →
           m + 1 ≤ N ∧
-          frobNorm ((LanczosReorthRun.basisOf v m)ᵀ * LanczosReorthRun.basisOf v m - 1) ≤
+          frobNorm ((LanczosReorthRun.basisOf v m)ᴴ * LanczosReorthRun.basisOf v m - 1) ≤
             4 * Real.sqrt (3 * (m : ℝ)) * lanczosReorthRoundoffBound N q (u tag) ∧
-          (∃ E : Matrix (Fin N) (Fin N) ℝ, Eᵀ = E ∧
+          (∃ E : Matrix (Fin N) (Fin N) ℝ, E.IsHermitian ∧
             frobNorm E ≤
               600 * ((m : ℝ) + 1) * lanczosReorthRoundoffBound N q (u tag) * specNorm A ∧
             lanczosTridiagonal (A + E) b m = lanczosCoeffTridiagonal α β m) ∧

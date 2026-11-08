@@ -1,0 +1,25 @@
+{
+  "renames": [
+    {
+      "old": "Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le",
+      "new": "Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le",
+      "rule": "N6"
+    },
+    {
+      "old": "Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks",
+      "new": "Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks",
+      "rule": "N6"
+    },
+    {
+      "old": "NLAlib.norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero",
+      "new": "NLAlib.norm_star_dotProduct_mulVec_sq_le_of_dotProduct_eq_zero",
+      "rule": "N6"
+    }
+  ],
+  "statementChanged": [
+    "NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window",
+    "NLAlib.IsBestRankApprox.frobNorm_sub_sq_le_add_specNorm_sq_add_window_of_singularValues_le",
+    "NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window",
+    "NLAlib.frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le"
+  ]
+}

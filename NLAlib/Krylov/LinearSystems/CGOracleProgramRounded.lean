@@ -50,9 +50,11 @@ theorem executionComposable_rounded_initialization (I : Interp P ι K (OpCount P
     ((executionComposable_single I (fun _ => rfl)).bind
       (executionComposable_single I (fun _ => rfl)))))))))
 
-/-- Complete actual preallocated execution follows from scalar arithmetic and input-only
-spectral precision. The result distinguishes zero active steps from a positive existing
-CGRun tied to the actual decoded final vectors and cached residual. -/
+/-- Complete actual preallocated execution follows from the unbounded scalar relative-error
+contract, exact addition of zero, an independently certified successful and accurate matvec
+oracle, and the stated spectral precision and iteration-horizon bounds. The result distinguishes
+zero active steps from a positive existing CGRun tied to the actual decoded final vectors
+and cached residual. -/
 theorem exec_rounded_preallocated (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
     (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)

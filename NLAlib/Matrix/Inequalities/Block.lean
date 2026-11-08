@@ -22,7 +22,7 @@ special cases with identity or equal diagonal blocks. The Schur complement crite
 
 ## Main results
 
-* `Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le`: Cauchy–Schwarz for a positive
+* `Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le`: Cauchy–Schwarz for a positive
   semidefinite form.
 * `Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le`: the bilinear test.
 * `Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt`: the contraction factor.
@@ -45,7 +45,7 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
   \le \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
   \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
 [HornJohnson2013, §7.7]. -/
-theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le {A : Matrix n n 𝕜}
+theorem _root_.Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le {A : Matrix n n 𝕜}
     (hA : A.PosSemidef) (x y : n → 𝕜) :
     ‖star x ⬝ᵥ A *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm A y) := by
   classical
@@ -89,11 +89,11 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{B}\mathbf{y} \rvert^2 \le
 \operatorname{Re}(\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x})
 \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{C}\mathbf{y})\,.$$
 [HornJohnson2013, Theorem 7.7.7]. -/
-theorem _root_.Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks {A : Matrix m m 𝕜}
+theorem _root_.Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks {A : Matrix m m 𝕜}
     {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (h : (Matrix.fromBlocks A B Bᴴ C).PosSemidef)
     (x : m → 𝕜) (y : n → 𝕜) :
     ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm C y) := by
-  have h1 := h.norm_sq_star_dotProduct_mulVec_le (Sum.elim x 0) (Sum.elim 0 y)
+  have h1 := h.norm_star_dotProduct_mulVec_sq_le (Sum.elim x 0) (Sum.elim 0 y)
   simpa only [quadForm, Matrix.fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr,
     Function.star_sumElim, sumElim_dotProduct_sumElim, star_zero, Matrix.mulVec_zero,
     zero_dotProduct, dotProduct_zero, add_zero, zero_add] using h1
@@ -113,7 +113,7 @@ theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le {A 
     (Matrix.fromBlocks A B Bᴴ C).PosSemidef ↔
       ∀ (x : m → 𝕜) (y : n → 𝕜),
         ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 ≤ RCLike.re (quadForm A x) * RCLike.re (quadForm C y) := by
-  refine ⟨Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks, fun h => ?_⟩
+  refine ⟨Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks, fun h => ?_⟩
   have hH : (Matrix.fromBlocks A B Bᴴ C).IsHermitian :=
     Matrix.IsHermitian.fromBlocks hA.isHermitian rfl hC.isHermitian
   rw [posSemidef_iff_quadForm_nonneg]
@@ -234,7 +234,7 @@ private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B :
         star (pinv S *ᵥ u) ⬝ᵥ B *ᵥ (pinv T *ᵥ v) := by
       rw [Matrix.star_mulVec, hS.pinv.eq, ← Matrix.dotProduct_mulVec, Matrix.mulVec_mulVec,
         Matrix.mulVec_mulVec]
-    have key := Matrix.PosSemidef.norm_sq_star_dotProduct_mulVec_le_of_fromBlocks h (pinv S *ᵥ u)
+    have key := Matrix.PosSemidef.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks h (pinv S *ᵥ u)
       (pinv T *ᵥ v)
     have h1 := re_quadForm_mul_self_pinv_mulVec_le hS u
     have h2 := re_quadForm_mul_self_pinv_mulVec_le hT v
