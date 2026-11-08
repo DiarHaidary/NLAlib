@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Matrix.Computation.ProgramLogicKernels
+public import NLAlib.Matrix.Computation.KernelContracts
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.Compress
 
 /-!

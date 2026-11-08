@@ -33,6 +33,7 @@ public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Computation.Model
 public import NLAlib.Computation.NonInterference
 public import NLAlib.Computation.NormalizationErrors
+public import NLAlib.Computation.ProgramLogic
 public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Computation.RunsWithin

@@ -5,7 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
-public import NLAlibScaffold.Computation.ProgramLogic
+public import NLAlib.Computation.ProgramLogic
 public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
 
 /-!

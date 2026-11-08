@@ -35,6 +35,8 @@ draws defines, and `NLAlib.Computation.tapeIndexMatrix` the positions of its ent
 
 * `NLAlib.Computation.ScalarSem.toFloatMachine`: the machine of a semantics and routines.
 * `NLAlib.Computation.ScalarSem.DecidesFlags`: the comparison that a loop on a flag cell needs.
+* `NLAlib.Computation.IsControlExactSem`, `NLAlib.Computation.IsRoutineSem`: exact control
+  arithmetic, and the standard model with exact control, each in one record.
 * `NLAlib.Computation.ScalarSem.sqrtHalf`, `NLAlib.Computation.ScalarSem.tapeNormal`,
   `NLAlib.Computation.ScalarSem.gaussianNormal`: the normal sampler of a program.
 * `NLAlib.Computation.tapeComplexMatrix`, `NLAlib.Computation.tapeIndexMatrix`.
@@ -61,6 +63,7 @@ draws defines, and `NLAlib.Computation.tapeIndexMatrix` the positions of its ent
   `NLAlib.Computation.decodeMatrix_mulParts_toFloatMachine_exactSem`: on exact real arithmetic the
   entrywise machine operations decode to their exact values (the exact specifications of the
   complex kernels).
+* `NLAlib.Computation.IsControlExactSem.mono`: exact control up to a smaller literal bound.
 -/
 
 @[expose] public section
@@ -98,6 +101,37 @@ cell and loops on it needs this. Under the standard model with an exact literal 
 def ScalarSem.DecidesFlags (sem : ScalarSem P K) (p : P) : Prop :=
   ∃ z o : K, sem.lit p 0 = some z ∧ sem.lit p 1 = some o ∧ sem.cmp p .eq z o = some false ∧
     sem.cmp p .eq o o = some true
+
+omit [Inhabited K] in
+/-- **Exact control arithmetic** at tag `p` and decoding `dec`: exact index arithmetic (integer
+literals up to `B`, the conversion to an index the floor), flags decided, and the comparison `≤`
+exact on decoded values. What the refinement of a program with data-dependent control flow
+assumes, in both modes; it does not assume the standard model. -/
+structure IsControlExactSem (dec : P → K → ℝ) (B : ℕ) (sem : ScalarSem P K) (p : P) : Prop where
+  /-- Exact index arithmetic. -/
+  index : IsIndexExactSem dec B sem
+  /-- Flags are decided. -/
+  flags : sem.DecidesFlags p
+  /-- The comparison `≤` is exact. -/
+  cmp_le : ∀ x y : K, sem.cmp p .le x y = some (decide (dec p x ≤ dec p y))
+
+omit [Inhabited K] in
+/-- Exact control up to a literal bound holds up to every smaller bound. -/
+theorem IsControlExactSem.mono {dec : P → K → ℝ} {B B' : ℕ} {sem : ScalarSem P K} {p : P}
+    (h : IsControlExactSem dec B sem p) (hB : B' ≤ B) : IsControlExactSem dec B' sem p :=
+  ⟨⟨h.index.intLit.mono hB, h.index.toNat⟩, h.flags, h.cmp_le⟩
+
+omit [Inhabited K] in
+/-- **The arithmetic assumptions of a routine**, in one record: the standard model at unit
+roundoff `u` with decoding `dec` and safe set `safe` (a parameter, so a bounded-format range is
+carried), and exact control. A mode-generic specification takes the standard model under
+`m.Needs` and the control part unwrapped. -/
+structure IsRoutineSem (u : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ → Prop) (B : ℕ)
+    (sem : ScalarSem P K) (p : P) : Prop where
+  /-- The standard model of rounding. -/
+  relErr : IsRelErrSem u dec safe sem
+  /-- Exact control. -/
+  control : IsControlExactSem dec B sem p
 
 /-- **The stored $\sqrt{1/2}$** of the semantics `sem` at tag `p`:
 $\mathrm{fl}(\sqrt{\mathrm{fl}(1/2)})$, from the literals $1$ and $2$ by a division and a square
