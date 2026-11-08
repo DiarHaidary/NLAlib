@@ -815,7 +815,7 @@ theorem holds_of_exec_eighSlotBody {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
     (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P)
     (hflag : I.sem.DecidesFlags p)
     (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n ℓ₀ F d D : ℕ) (hd : d < D)
+    (n ℓ₀ F d D : ℕ)
     (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
     {par Su Sg c t lo : ℕ} {s s' : St P K C} {R₀ β : K} {y : EighNode K} (hk1 : 1 ≤ y.k)
     (hkn : lo + y.k ≤ n) (hℓ : y.ℓ = ℓ₀ + d) (hH : H.Shaped s.store p n D)

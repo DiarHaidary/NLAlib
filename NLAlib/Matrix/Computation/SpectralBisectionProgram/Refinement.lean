@@ -103,8 +103,7 @@ private theorem holds_of_exec_eighDownLoop {mm qr : ι} (hmm : IsMatMulKernel I 
   have hcs : ∀ j, s₁.store.read p c j = σ0.store.read p c j := fun j =>
     hfr1 p c j hcH (Ne.symm hSuc) (Ne.symm hSgc)
   obtain ⟨hL2, hR2, hfr2, hsh2, hpu2, hpg2⟩ := levelHolds_succ_of_exec_eighDownLevel hmm hqr p hflag
-      hcmp
-    n ℓ₀ F d (ℓ₀ + 1) hd hlit htn H (par := par) (Su := Su) (Sg := Sg) (c := c)
+    hcmp n ℓ₀ F d (ℓ₀ + 1) hlit htn H (par := par) (Su := Su) (Sg := Sg) (c := c)
     (hH _ hsh1) hbufs hL1 (fun lo hlo => hz1 (d + 1) lo (by omega) (by omega) hlo)
     ⟨hpu1, hpg1⟩
     ⟨(hfr1 p par 0 hparH hparSu hparSg).trans hpar.1,

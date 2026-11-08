@@ -618,6 +618,7 @@ private theorem exists_exec_deflate_testLoop {u : P → ℝ} {dec : P → K → 
         subst he'
         exact hkeep hw₂' _ ⟨z, Store.read_of_write_eq_some hw₁'⟩
 
+omit [Inhabited K] in
 /-- The final copy of a deflation: from a store holding a $k \times k$ matrix at the block $0$ of
 `Qf`, equal to the store of `st` outside the scratch buffers `G`, `Y`, `Qf`, `Rf` and of the
 same shape, a block at `qo` of `Qa` (another buffer) with room for $2kr$ cells receives the first

@@ -330,7 +330,7 @@ private theorem downSlotsInv_succ_node {mm qr : ι} (hmm : IsMatMulKernel I mm p
     (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P)
     (hflag : I.sem.DecidesFlags p)
     (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
+    (n ℓ₀ F d D : ℕ) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c tH w : ℕ}
     {s₀ s₁ s₂ : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} {a : List Bool}
     {y : EighNode K} (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
@@ -376,9 +376,8 @@ private theorem downSlotsInv_succ_node {mm qr : ι} (hmm : IsMatMulKernel I mm p
     rw [hx, hT5, Option.some.injEq, Prod.mk.injEq] at hlen
     omega
   have hcT : ∀ i, ¬ (c = tH ∧ i = 4) := hT c (by simp)
-  obtain ⟨hdone, hfrW, hsh2, hps2⟩ := holds_of_exec_eighSlotBody hmm hqr p hflag hcmp n ℓ₀ F d D hd
-      hlit htn
-    H (s := s₁) (s' := s₂) (R₀ := R₀) (β := β) hk1 hkn hyℓ
+  obtain ⟨hdone, hfrW, hsh2, hps2⟩ := holds_of_exec_eighSlotBody hmm hqr p hflag hcmp n ℓ₀ F d D
+      hlit htn H (s := s₁) (s' := s₂) (R₀ := R₀) (β := β) hk1 hkn hyℓ
     (EighArenas.Shaped.of_shape_eq (fun b _ => by rw [hsh1]) hH) hbufs (fun hm => lt_irrefl _ (hlt _
         hm))
     (readsIdx_of_read_eq (hfr1 _ _ _ (fun _ _ _ _ => not_eighSlotWindow_sz hnd (by omega))
@@ -466,7 +465,7 @@ private theorem downSlotsInv_of_exec {mm qr : ι} (hmm : IsMatMulKernel I mm pai
     (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P)
     (hflag : I.sem.DecidesFlags p)
     (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
+    (n ℓ₀ F d D : ℕ) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c tH : ℕ}
     {s₀ s₂ : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
@@ -494,7 +493,7 @@ private theorem downSlotsInv_of_exec {mm qr : ι} (hmm : IsMatMulKernel I mm pai
   by_cases hnode : ∃ (y : EighNode K) (a : List Bool), a.length = d ∧
       eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a = some (w, y)
   · obtain ⟨y, a, ha, hl⟩ := hnode
-    exact downSlotsInv_succ_node hmm hqr p hflag hcmp n ℓ₀ F d D hd hlit htn H hbufs hlt hH hT5
+    exact downSlotsInv_succ_node hmm hqr p hflag hcmp n ℓ₀ F d D hlit htn H hbufs hlt hH hT5
       hlev hpar hc hSu hSg hw ha hl hinv hex
   · exact downSlotsInv_succ_skip (fun x hx => hlt x (List.mem_append_left _ hx)) hH.1 hlev hw
       hnode hinv hex
@@ -596,7 +595,7 @@ private theorem recordHolds_frame_of_downSlots {p : P} {H : EighArenas} {n F ℓ
 `mmR`, `qrR` on interleaved pairs, the semantics decide flags, with exact integer literals up to
 $n + 4$ and the exact floor conversion; $M$ = `NLAlib.eighTapeMachine I p mmR qrR` and the root
 $(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$. A successful run of `NLAlib.eighDownLevel` at depth
-$d < D$ from a state whose arenas hold the nodes of depth $d$ and whose size cells of depth $d + 1$
+$d$ from a state whose arenas hold the nodes of depth $d$ and whose size cells of depth $d + 1$
 all read $0$, with the tape positions $nd$ and $4n^2 d$, the stored $R_0$, $\beta$ in `par` and
 the constants in `c`, ends with the arenas holding the nodes of depth $d + 1$ and the records of
 depth $d$; of the cells of depth $d$ only the records (bases, outputs, eigenvalues, kinds,
@@ -607,7 +606,7 @@ theorem levelHolds_succ_of_exec_eighDownLevel {mm qr : ι}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
     {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
     (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
+    (n ℓ₀ F d D : ℕ) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c : ℕ} {st st' : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
@@ -677,7 +676,7 @@ theorem levelHolds_succ_of_exec_eighDownLevel {mm qr : ι}
       fun lo hlo hno => readsIdx_of_read_eq (hSz _) (hlev.2.1 lo hlo hno),
       (hrg _ _ _ lLv dLvSu dLvSg (by omega)).trans hlev.2.2.1,
       (hrg _ _ _ lLv dLvSu dLvSg (by omega)).trans hlev.2.2.2⟩
-  have hinv := downSlotsInv_of_exec hmm hqr p hflag hcmp n ℓ₀ F d D hd hlit htn H (A := A)
+  have hinv := downSlotsInv_of_exec hmm hqr p hflag hcmp n ℓ₀ F d D hlit htn H (A := A)
     (ε := ε) hbufs hlt (EighArenas.Shaped.of_shape_eq (fun b hb => by
       rw [hshg]; exact Store.getElem?_shape_push_of_lt _ (hlt' b hb)) hH)
     (by rw [hshg]; exact Store.getElem?_shape_push_size _ _ _) hlev'
@@ -700,7 +699,7 @@ theorem levelHolds_succ_of_exec_eighDownLevel {mm qr : ι}
 interleaved pairs, the semantics decide flags, with exact integer literals up to $n + 4$ and the
 exact floor conversion; $M$ = `NLAlib.eighTapeMachine I p mmR qrR` and the root
 $(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$. A successful run of `NLAlib.eighDownLevel` at depth
-$d < D$ from a state whose arenas hold the nodes of depth $d$ (`NLAlib.EighArenas.LevelHolds`) and
+$d$ from a state whose arenas hold the nodes of depth $d$ (`NLAlib.EighArenas.LevelHolds`) and
 whose size cells of depth $d + 1$ all read $0$, with the tape positions $nd$ (uniform) and
 $4n^2 d$ (Gaussian), the stored $R_0$, $\varepsilon$, $\beta$ in `par` and the constants in `c`
 (cells $0$ to $4$: one, $\mathrm{fl}(2)$, $\mathrm{fl}(1/2)$, $-1$, the stored $\sqrt{1/2}$),
@@ -711,7 +710,7 @@ positions advance by $n$ and $4n^2$. No printed source. -/
 theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (hqr : IsQRKernel I qr pairLayout qrR) {dec : P → K → ℝ} (p : P) (hflag : I.sem.DecidesFlags p)
     (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
+    (n ℓ₀ F d D : ℕ) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c : ℕ} {st st' : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
@@ -736,8 +735,7 @@ theorem holds_of_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pair
       st'.store.shape = st.store.shape ∧ st'.pos .uniform = st.pos .uniform + n ∧
       st'.pos .gaussian = st.pos .gaussian + 4 * (n * n) := by
   obtain ⟨h1, h2, h3, h4, h5, h6⟩ := levelHolds_succ_of_exec_eighDownLevel hmm hqr p hflag hcmp n ℓ₀
-      F d
-    D hd hlit htn H hH hbufs hlev hnext hpos hpar hc h
+    F d D hlit htn H hH hbufs hlev hnext hpos hpar hc h
   exact ⟨h1, h2, fun q b i hSu hSg hd1 hd2 => h3 q b i hSu hSg (fun h => hd1 h.2) hd2, h4, h5, h6⟩
 
 end NLAlib

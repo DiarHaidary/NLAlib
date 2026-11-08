@@ -75,9 +75,11 @@ private theorem holds_of_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm 
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact exec_run_bind_bind (hsingle _ _ fun _ => rfl) (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-      (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-        (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+    exact exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
   rw [hstep] at h
   obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)

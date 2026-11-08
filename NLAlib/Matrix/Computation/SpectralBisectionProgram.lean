@@ -217,8 +217,7 @@ private theorem exists_exec_eighDownLoop {mm qr : ι} (hmm : IsMatMulKernel I mm
       have : n * (d + 1 + 1) = n * (d + 1) + n := by ring
       omega)
   obtain ⟨L1, R1, F1, S1, P1, P2⟩ := levelHolds_succ_of_exec_eighDownLevel hmm hqr p hflag hcmp n ℓ₀
-      F d
-    (ℓ₀ + 1) hd hlit htn H hHs hbufs (hlv d le_rfl) hnext ⟨hpu, hpg⟩ hpar' hcs hs'
+    F d (ℓ₀ + 1) hlit htn H hHs hbufs (hlv d le_rfl) hnext ⟨hpu, hpg⟩ hpar' hcs hs'
   refine ⟨s', (exec_eighDownLevel_var p mm qr n ℓ₀ F d par H.Lv Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd
       H.Kp c
     s).trans hs', S1.trans hsh, by rw [P1, hpu]; ring, by rw [P2, hpg]; ring,

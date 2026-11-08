@@ -576,7 +576,7 @@ private theorem exists_exec_slotBody_inv_node {mm qr : ι}
     ⟨hcw hc.1, hcw hc.2.1, ⟨_, hcw hc.2.2.1⟩, ⟨_, hcw hc.2.2.2.1⟩, hcw hc.2.2.2.2⟩
   obtain ⟨hdone, hfrW, hsh2, hps2⟩ := holds_of_exec_eighSlotBody hmm hqr p
       (hsem.decidesFlags (fun q k hk => hlit q k (hk.trans (by omega))) p)
-    (hsem.cmp_le p) n ℓ₀ F d D hd hlit htn H (t := t) (s' := s₂) (R₀ := R₀) (β := β) hk1 hkn hyℓ
+    (hsem.cmp_le p) n ℓ₀ F d D hlit htn H (t := t) (s' := s₂) (R₀ := R₀) (β := β) hk1 hkn hyℓ
     ish hbufs ht iSz iA iR iε ⟨hpw hpar.1, hpw hpar.2⟩ iSu iSg
     ⟨hcw hc.1, hcw hc.2.1, hcw hc.2.2.1, hcw hc.2.2.2.1, hcw hc.2.2.2.2⟩ hex
   refine ⟨s₂, hex, hsh2.trans hsh1, hps2.trans hps1, fun lo y' hlo ⟨a', ha', hl'⟩ => ?_,
