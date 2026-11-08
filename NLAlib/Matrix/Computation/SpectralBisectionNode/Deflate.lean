@@ -26,6 +26,9 @@ decides flags, a successful run writes exactly the machine's value.
 
 * `NLAlib.holds_of_exec_eighLeafBlock`, `NLAlib.holds_of_exec_eighChildBlock`: the leaf and the
   child.
+* `NLAlib.spec_eighDeflateBlock_frame`, `NLAlib.spec_eighDeflateBlock`: the deflation as a routine
+  specification of the program logic.
+* `NLAlib.pairLayout_holds_unique`: a block holds at most one matrix.
 * `NLAlib.holds_of_exec_eighDeflateBlock`, `NLAlib.exists_exec_eighDeflateBlock`: the deflation
   block computes, and succeeds.
 -/
@@ -736,5 +739,122 @@ theorem exists_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
       (if b then 0 else 1) Sg sq Pm G Y Qf Rf Qa qo).run st = some st' := by
   exact (exists_exec_eighDeflateBlock_facts hmm hqr hsem p n k r d lo hk hr b hP hsq
     (fun w hw => ⟨_, hSg w hw⟩) hbufs hsqb hscr hQa).imp fun _ h => h.1
+
+/-! ### The deflation as a routine specification -/
+
+/-- A deflation modifies only its four scratch buffers (their first $2n^2$ cells) and its output
+block, and keeps the tape positions, from every state. -/
+theorem spec_eighDeflateBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n k r lo : ℕ) (hk : k ≤ n)
+    (side : ℕ) (Sg : ℕ) (sq : Cell ℕ ℕ) (Pm G Y Qf Rf Qa : ℕ) (qo : IExp ℕ) :
+    Spec .liberal I (fun _ => True) (eighDeflateBlock p mm qr (.const n) (.const k) (.const r)
+        (.const lo) side Sg sq Pm G Y Qf Rf Qa qo).run
+      [(G, 0, 2 * (n * n)), (Y, 0, 2 * (n * n)), (Qf, 0, 2 * (n * n)), (Rf, 0, 2 * (n * n)),
+        matBlock Qa qo.eval k r 2] fun st st' => PosKept st st' := by
+  have hkk : k * k ≤ n * n := Nat.mul_le_mul hk hk
+  have hc : ∀ a b : ℕ, a < k → b < k → ∀ t < 2, 0 ≤ 2 * (a + k * b) + t ∧
+      2 * (a + k * b) + t < 0 + 2 * (n * n) := fun a b ha hb t ht => ⟨by omega, by nlinarith⟩
+  refine Spec.seq_frame (Spec.loop_frame fun j hj => Spec.seq_frame (Spec.loop_frame fun i hi =>
+    Spec.seq_frame (Spec.frame_of_mem (o := 0) (N := 2 * (n * n)) spec_bin_frame ?_
+      List.mem_cons_self) (Spec.seq_frame (Spec.frame_of_mem (o := 0) (N := 2 * (n * n))
+        spec_bin_frame ?_ List.mem_cons_self) spec_skip_frame)) spec_skip_frame)
+    (Spec.seq_frame (Spec.frame_of_sub spec_kcall_frame ?_) (Spec.seq_frame
+      (Spec.frame_of_sub spec_kcall_frame ?_) (Spec.seq_frame (Spec.named _ _ (Spec.seq_frame
+        (Spec.loop_frame fun w hw => Spec.seq_frame (Spec.frame_of_mem (o := qo.eval)
+          (N := k * r * 2) spec_copy_frame ?_ (by simp [matBlock])) spec_skip_frame)
+          spec_skip_frame)) spec_skip_frame)))
+  all_goals try simp only [IExp.eval_const] at hi hj
+  all_goals try simp only [IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hw
+  · simpa [zidx] using hc i j hi hj 0 (by omega)
+  · simpa [zidx, Nat.add_assoc] using hc i j hi hj 1 (by omega)
+  · simp [hmm.2, mmShape, kcallBlocks, pairLayout]; omega
+  · simp [hqr.2, qrShape, kcallBlocks, pairLayout]; omega
+  · simp only [IExp.eval_add, IExp.eval_var]; omega
+
+omit [Inhabited K] in
+/-- A block holds at most one matrix. -/
+theorem pairLayout_holds_unique {s : Store P K} {p : P} {b off l m : ℕ}
+    {Y Y' : Matrix (Fin l) (Fin m) (K × K)} (h : pairLayout.Holds s p b off Y)
+    (h' : pairLayout.Holds s p b off Y') : Y = Y' := by
+  ext i j
+  · simpa [pairLayout] using (h i j ⟨0, two_pos⟩).symm.trans (h' i j ⟨0, two_pos⟩)
+  · simpa [pairLayout] using (h i j ⟨1, one_lt_two⟩).symm.trans (h' i j ⟨1, one_lt_two⟩)
+
+omit [Inhabited K] in
+/-- A matrix stored as interleaved pairs reads only its block of `2` words per entry. -/
+theorem readsOnly_pairLayoutHolds {l m : ℕ} (p : P) (b off : ℕ)
+    (Y : Matrix (Fin l) (Fin m) (K × K)) :
+    ReadsOnly (fun s : Store P K => pairLayout.Holds s p b off Y) [matBlock b off l m 2] :=
+  readsOnly_entryLayoutHolds pairLayout p b off Y
+
+/-- **The deflation as a routine specification**: if kernels `mm`, `qr` of `I` are the routines
+`mmR`, `qrR` on interleaved pairs, then from a state holding the projector $\mathbf{P}$ at offset
+$0$ of `Pm`, the stored $\sqrt{1/2}$ in the cell `sq` and initialised Gaussian words in `Sg`, the
+run of `NLAlib.eighDeflateBlock` for a node of size $k$ at slot $lo$ (with $lo + k \le n$) and
+rank $0 < r \le k$ modifies only its four scratch buffers and the block at `qo` of `Qa`, which then
+holds a matrix, and keeps the tape positions. If the Gaussian words are the tape's words of depth
+$d$, that matrix is `NLAlib.deflate M r P G` as in `NLAlib.holds_of_exec_eighDeflateBlock`; the
+liberal mode assumes so. In mode `total` the run also succeeds, given the standard model on every
+value, scratch buffers of $2n^2$ cells and the output block writable. No printed source. -/
+theorem spec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x))
+    (p : P) (n k r d lo : ℕ) (hk : lo + k ≤ n) (hr : r ≤ k) (hr0 : 0 < r) (b : Bool)
+    {Sg Pm G Y Qf Rf Qa : ℕ} {sq : Cell ℕ ℕ} {qo : IExp ℕ} (Pmat : Matrix (Fin k) (Fin k) (K × K))
+    (hbufs : [Sg, Pm, G, Y, Qf, Rf, Qa].Nodup) (hsqb : sq.buf ∉ [G, Y, Qf, Rf, Qa]) :
+    let tape := fun s : Store P K => ∀ w < 4 * (n * n),
+      s.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p Pm 0 Pmat ∧
+        st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p) ∧
+        (∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v) ∧ (md = .liberal → tape st.store) ∧
+        md.Needs ((∀ X ∈ [G, Y, Qf, Rf], ∃ len, st.store.shape[X]? = some (p, len) ∧
+          2 * (n * n) ≤ len) ∧ Writable st.store p Qa qo.eval (k * r * 2)))
+      (eighDeflateBlock p mm qr (.const n) (.const k) (.const r) (.const lo) (if b then 0 else 1)
+        Sg sq Pm G Y Qf Rf Qa qo)
+      [(G, 0, 2 * (n * n)), (Y, 0, 2 * (n * n)), (Qf, 0, 2 * (n * n)), (Rf, 0, 2 * (n * n)),
+        matBlock Qa qo.eval k r 2]
+      fun st st' => (∃ Q : Matrix (Fin k) (Fin r) (K × K),
+        pairLayout.Holds st'.store p Qa qo.eval Q ∧ (tape st.store →
+        Q = deflate (eighTapeMachine I p mmR qrR) r Pmat
+          (leadingBlock k ((eighTapeSample n d lo).2 b)))) ∧ PosKept st st' := by
+  intro tape
+  have hfr := spec_eighDeflateBlock_frame hmm hqr p n k r lo (by omega) (if b then 0 else 1) Sg
+    sq Pm G Y Qf Rf Qa qo
+  have hval : ∀ st st', pairLayout.Holds st.store p Pm 0 Pmat →
+      st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p) → exec I (eighDeflateBlock p mm
+        qr (.const n) (.const k) (.const r) (.const lo) (if b then 0 else 1) Sg sq Pm G Y Qf Rf Qa
+        qo).run st = some st' → ∀ Q : Matrix (Fin k) (Fin r) (K × K),
+      pairLayout.Holds st'.store p Qa qo.eval Q → tape st.store → Q = deflate
+        (eighTapeMachine I p mmR qrR) r Pmat (leadingBlock k ((eighTapeSample n d lo).2 b)) :=
+    fun st st' hP hsq h Q hQ hSg => pairLayout_holds_unique hQ
+      (holds_of_exec_eighDeflateBlock hmm hqr p n k r d lo hk hr b hP hsq hSg hbufs hsqb h).1
+  have hrun : ∀ st, md = .total → pairLayout.Holds st.store p Pm 0 Pmat →
+      st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p) →
+      (∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v) →
+      md.Needs ((∀ X ∈ [G, Y, Qf, Rf], ∃ len, st.store.shape[X]? = some (p, len) ∧
+        2 * (n * n) ≤ len) ∧ Writable st.store p Qa qo.eval (k * r * 2)) →
+      ∃ st', exec I (eighDeflateBlock p mm qr (.const n) (.const k) (.const r) (.const lo)
+        (if b then 0 else 1) Sg sq Pm G Y Qf Rf Qa qo).run st = some st' ∧
+        ∃ Q : Matrix (Fin k) (Fin r) (K × K), pairLayout.Holds st'.store p Qa qo.eval Q := by
+    rintro st rfl hP hsq hSg ⟨hscr, hW⟩
+    obtain ⟨hs, hall⟩ := hsem
+    obtain ⟨len, hl, hle⟩ := hW.exists_len (by have := Nat.mul_pos (by omega : 0 < k) hr0; omega)
+    obtain ⟨st', h, hQ, -⟩ := exists_exec_eighDeflateBlock_facts hmm hqr
+      (hs.mono_safe fun p x _ => hall p x) p n k r d lo hk hr b hP hsq hSg hbufs hsqb hscr
+      ⟨len, hl, by linarith [Nat.mul_comm k r]⟩
+    exact ⟨st', h, hQ⟩
+  refine ⟨by exec_composable, Triple.of_exec (fun st ⟨hP, hsq, hSg, _, hN⟩ => ?_)
+    fun st st' ⟨hP, hsq, hSg, hT, hN⟩ h => ⟨(hfr st trivial st' h).1, ?_, (hfr st trivial st' h).2⟩⟩
+  · cases md
+    · obtain ⟨st', h, -⟩ := hrun st rfl hP hsq hSg hN
+      exact ⟨st', h⟩
+    · trivial
+  · cases md
+    · obtain ⟨st'', h', Q, hQ⟩ := hrun st rfl hP hsq hSg hN
+      rw [h] at h'
+      cases h'
+      exact ⟨Q, hQ, hval st st' hP hsq h Q hQ⟩
+    · exact ⟨_, (holds_of_exec_eighDeflateBlock hmm hqr p n k r d lo hk hr b hP hsq (hT rfl) hbufs
+        hsqb h).1, fun _ => rfl⟩
 
 end NLAlib

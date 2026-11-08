@@ -79,6 +79,11 @@ theorem Spec.conseq {pre' : St P K C → Prop} {post' : St P K C → St P K C �
     Spec m I pre' s fp' post' :=
   Triple.conseq h hpre fun st st' hst hp => ⟨hp.1.mono hfp, hpost st st' hst hp.2⟩
 
+/-- A specification's postcondition may also state its footprint. -/
+theorem Spec.with_modifies (h : Spec m I pre s fp post) :
+    Spec m I pre s fp fun st st' => Modifies fp st.store st'.store ∧ post st st' :=
+  Triple.conseq h (fun _ h => h) fun _ _ _ hp => ⟨hp.1, hp.1, hp.2⟩
+
 /-- **Sequence of specifications**: footprints add, the first output feeds the second. -/
 theorem Spec.seq (h₁ : Spec m I pre s fp post) (h₂ : Spec m I pre₂ t fp₂ post₂)
     (hmid : ∀ st st₁, pre st → Modifies fp st.store st₁.store → post st st₁ → pre₂ st₁) :
@@ -490,6 +495,28 @@ theorem spec_litIdx {e : IExp ℕ} {v : K} (hv : I.sem.lit p (e.eval : ℚ) = so
   exact Mode.sat_write hst fun s' hs' =>
     ⟨Modifies.of_write hs', Store.read_of_write_eq_some hs', rfl, rfl⟩
 
+/-- **An index literal**, read back as the semantics' literal: the destination cell then reads
+`I.sem.lit p e.eval` (in every mode, without naming its value); the total mode needs the literal
+to succeed and the cell writable. -/
+theorem spec_litIdx_read {e : IExp ℕ} :
+    Spec m I (fun st => m.Needs ((∃ v, I.sem.lit p (e.eval : ℚ) = some v) ∧
+        Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.litIdx p dst e)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = I.sem.lit p (e.eval : ℚ) ∧ PosKept st st' := by
+  intro st hst
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run, Mode.sat_bind]
+  have key : ∀ v, I.sem.lit p (e.eval : ℚ) = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ r.1.read p dst.buf dst.idx.eval =
+        I.sem.lit p (e.eval : ℚ) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', (Store.read_of_write_eq_some hs').trans hv.symm, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
 /-- **A binary operation** on two stored values. -/
 theorem spec_bin {op : BinOp} {a b v : K} (hv : I.sem.bin p op a b = some v) :
     Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
@@ -659,6 +686,35 @@ theorem Spec.loop_frame {fp : List (ℕ × ℕ × ℕ)} {n : IExp ℕ} {body : �
   Spec.loop (fun st₀ _ st => PosKept st₀ st) (fun _ _ => rfl) fun _ _ k hk =>
     (h k hk).conseq (fun _ _ => trivial) (fun _ h => h) fun _ _ hst hp => hp.trans hst
 
+/-- A kernel call modifies only its output blocks and keeps the tape positions. -/
+theorem spec_kcall_frame {o : ι} {dims : List (IExp ℕ)} {ins outs : List (ℕ × IExp ℕ)} :
+    Spec .liberal I (fun _ => True) (.kcall o p dims ins outs)
+      (kcallBlocks (outs.map fun x => (x.1, x.2.eval)) (I.kshape o (dims.map IExp.eval)).2)
+      fun st st' => PosKept st st' := by
+  intro st _ st' h
+  rw [exec_kcall] at h
+  obtain ⟨s, hs, rfl⟩ := Option.map_eq_some_iff.mp h
+  exact ⟨Modifies.of_kcallStore hs, rfl⟩
+
+omit [AddMonoid C] in
+/-- A footprint may be replaced by one whose blocks contain its blocks. -/
+theorem Modifies.of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s s' : Store P K} (h : Modifies fp s s')
+    (hsub : ∀ x ∈ fp, ∃ y ∈ fp', x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧ x.2.1 + x.2.2 ≤ y.2.1 + y.2.2) :
+    Modifies fp' s s' :=
+  h.of_cells fun b i hb x hx => by
+    obtain ⟨y, hy, h1, h2, h3⟩ := hsub x hx
+    have := blockDisjoint_iff.mp (hb y hy)
+    rw [blockDisjoint_iff]
+    dsimp only at this ⊢
+    omega
+
+/-- A frame whose blocks lie in blocks of `fp` is a frame of `fp`. -/
+theorem Spec.frame_of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s : Stmt P ι ℕ ℕ}
+    (h : Spec .liberal I (fun _ => True) s fp fun st st' => PosKept st st')
+    (hsub : ∀ x ∈ fp, ∃ y ∈ fp', x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧ x.2.1 + x.2.2 ≤ y.2.1 + y.2.2) :
+    Spec .liberal I (fun _ => True) s fp' fun st st' => PosKept st st' :=
+  Triple.conseq h (fun _ h => h) fun _ _ _ hp => ⟨hp.1.of_sub hsub, hp.2⟩
+
 /-- A frame of one cell is a frame of every block containing it. -/
 theorem Spec.frame_of_mem {fp : List (ℕ × ℕ × ℕ)} {s : Stmt P ι ℕ ℕ} {b i o N : ℕ}
     (h : Spec .liberal I (fun _ => True) s [(b, i, 1)] fun st st' => PosKept st st')
@@ -679,6 +735,16 @@ theorem Writable.exists_len {s : Store P K} {b off N : ℕ} (h : Writable s p b 
   exact ⟨len, hl, by omega⟩
 
 end Instructions
+
+omit [DecidableEq P] [AddMonoid C] in
+/-- The standard model on a range implies it on every smaller range. -/
+theorem IsRelErrSem.mono_safe {u : P → ℝ} {dec : P → K → ℝ} {safe safe' : P → ℝ → Prop}
+    {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) (hs : ∀ p x, safe' p x → safe p x) :
+    IsRelErrSem u dec safe' sem :=
+  { h with
+    bin_ok := fun p b x y hb hd hx => h.bin_ok p b x y hb hd (hs _ _ hx)
+    lit_ok := fun p q hq => h.lit_ok p q (hs _ _ hq)
+    convert_ok := fun p q x hx => h.convert_ok p q x (hs _ _ hx) }
 
 /-! ### Certificates as specifications -/
 
@@ -743,11 +809,10 @@ concrete block lists. `fp_omega [h₁, …]` adds the facts `hᵢ` (layout bound
 `Nat.mul_le_mul hr hk`), unfolds `NLAlib.Computation.BlocksDisjoint`,
 `NLAlib.Computation.matBlock`, `List.Nodup` and `NLAlib.Computation.blockDisjoint_iff` in the
 goal and those facts only (never the whole context), normalises products with `ring_nf` (so
-`r * k` and `k * r` are one atom), and closes with `omega`. Only the goal and the passed facts
-are normalised (`n * n` becomes `n ^ 2` there), so a context hypothesis with a product is a
-different atom: **every hypothesis with a product that the goal needs must be passed**
-(`fp_omega [Nat.mul_le_mul hr hk, hlen]`, not `fp_omega [Nat.mul_le_mul hr hk]` with `hlen` in
-the context). -/
+`r * k` and `k * r` are one atom), clears the rest of the context (so `omega` stays fast in the
+large contexts of program proofs) and closes with `omega`. **Every hypothesis the goal needs must
+be passed** (`fp_omega [Nat.mul_le_mul hr hk, hlen]`, not `fp_omega [Nat.mul_le_mul hr hk]` with
+`hlen` in the context). -/
 syntax "fp_omega" (" [" term,* "]")? : tactic
 
 /-- The closing step of `fp_omega` on the goal and the named facts. -/
@@ -758,8 +823,9 @@ macro_rules
       (try simp only [BlocksDisjoint, matBlock, List.cons_append, List.nil_append,
         List.nodup_cons, List.nodup_nil, List.mem_cons, List.mem_append, List.not_mem_nil,
         or_false, and_true, not_or, forall_eq_or_imp, forall_eq, List.forall_mem_cons,
-        blockDisjoint_iff, ne_eq, not_false_eq_true] at $names* ⊢)
-      (try ring_nf at $names* ⊢)
+        blockDisjoint_iff, ne_eq, not_false_eq_true, imp_false] at $names* ⊢)
+      (try ring_nf (config := { ifUnchanged := .silent }) at $names* ⊢)
+      (try clear * - $names*)
       omega))
 
 macro_rules

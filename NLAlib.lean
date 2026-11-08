@@ -419,7 +419,6 @@ public import NLAlib.Matrix.Computation.SpectralBisectionNode.NodeSuccess
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.Setup
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.SignStep
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.Split
-public import NLAlib.Matrix.Computation.SpectralBisectionNode.SplitSuccess
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.BottomLevel
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Count

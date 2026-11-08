@@ -6,21 +6,32 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.SignStep
-public import NLAlib.Matrix.Computation.SpectralBisectionNode.SplitSuccess
+public import NLAlib.Matrix.Computation.SpectralBisectionNode.Compress
 
 /-!
 # The split block of the spectral bisection node step
 
-A successful run of the split block of the node step of `NLAlib.eighProg` writes the outcome of the
-split of `NLAlib.eighStep` on the machine of the semantics: the two children's matrices, sizes and
-kinds, and the bases of the deflations; every cell outside the node's window is unchanged.
+A run of the split block of the node step of `NLAlib.eighProg` writes the outcome of the split of
+`NLAlib.eighStep` on the machine of the semantics: the two children's matrices, sizes and kinds,
+and the bases of the deflations; every cell outside the node's window is unchanged; under the
+standard model it succeeds. Both facts come from one routine specification of the block, proved
+with the program logic (`NLAlib/Computation/RoutineSpec.lean`) from those of the deflation and
+compression blocks.
+
+## Main definitions
+
+* `NLAlib.EighNodeWindow`, `NLAlib.eighSplitWindow`: the cells a node step may write, and the
+  blocks a split writes.
 
 ## Main results
 
+* `NLAlib.spec_eighSplitBlock_of_body`: the eight scratch allocations of a split, by named states.
+* `NLAlib.spec_eighSplitBody`, `NLAlib.spec_eighSplitBlock`: the split body and block as
+  specifications, for every mode.
 * `NLAlib.holds_of_exec_eighSplitBlock`: what a successful split computes.
 * `NLAlib.holds_of_exec_eighSplitBlock_frame`: the same, with the precise frame of the node's
   window.
-* `NLAlib.spec_eighSplitBlock_of_body`: the eight scratch allocations of a split, by named states.
+* `NLAlib.exists_exec_eighSplitBlock`: a split succeeds.
 -/
 
 @[expose] public section
@@ -36,13 +47,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {unif : K → Su → K} {normal : Sg → K × K}
 
 /-! ### The node step -/
-/-- A packed complex entry lies in its block. -/
-private theorem pair_idx_lt_node {l m : ℕ} (i : Fin l) (j : Fin m) (t : Fin 2) :
-    2 * ((i : ℕ) + l * j) + t < 2 * (l * m) := by
-  have := i.2; have := j.2; have := t.2
-  have : l * ((j : ℕ) + 1) ≤ l * m := Nat.mul_le_mul_left l j.2
-  nlinarith
-
 /-- A cell is disjoint from a block inside a window it avoids. -/
 theorem blockDisjoint_of_window {b i B off len lo' hi' : ℕ} (h : b = B → i < lo' ∨ hi' ≤ i)
     (h1 : lo' ≤ off) (h2 : off + len ≤ hi') : blockDisjoint (b, i, 1) (B, off, len) = true := by
@@ -59,32 +63,8 @@ theorem name_state_node {X : Stmt P ι ℕ ℕ} {s s' : St P K C} (h : exec I X 
     {Q : Prop} (k : ∀ σ : St P K C, σ.store = s.store → σ.pos = s.pos → exec I X σ = some s' → Q) :
     Q := k s rfl rfl h
 
-/-- Seven handles, three below `s₀` and four from `s₀` on, are distinct. -/
-private theorem nodup_def_node {a b c s₀ G Y Qf Rf : ℕ} (hab : a = b → False) (hac : a = c → False)
-    (hbc : b = c → False) (ha : a < s₀) (hb : b < s₀) (hc : c < s₀) (h4 : [G, Y, Qf, Rf].Nodup)
-    (hG : s₀ ≤ G) (hY : s₀ ≤ Y) (hQ : s₀ ≤ Qf) (hR : s₀ ≤ Rf) : [a, b, G, Y, Qf, Rf, c].Nodup := by
-  have : a ≠ b := hab; have : a ≠ c := hac; have : b ≠ c := hbc
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
-    List.nodup_nil, and_true, not_false_eq_true] at h4 ⊢
-  omega
-
-/-- Six handles, two below `s₀` and four from `s₀` on, are distinct. -/
-private theorem nodup_cmp_node {a b s₀ Qh C1 C2 C3 : ℕ} (hab : a = b → False) (ha : a < s₀)
-    (hb : b < s₀) (h4 : [Qh, C1, C2, C3].Nodup) (h1 : s₀ ≤ Qh) (h2 : s₀ ≤ C1) (h3 : s₀ ≤ C2)
-    (h5 : s₀ ≤ C3) : [a, b, Qh, C1, C2, C3].Nodup := by
-  have : a ≠ b := hab
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
-    List.nodup_nil, and_true, not_false_eq_true] at h4 ⊢
-  omega
-
-/-- A handle below `s₀` is not among four from `s₀` on and another. -/
-private theorem notmem5_node {x s₀ G Y Qf Rf c : ℕ} (hx : x < s₀) (hG : s₀ ≤ G) (hY : s₀ ≤ Y)
-    (hQ : s₀ ≤ Qf) (hR : s₀ ≤ Rf) (hc : x = c → False) : x ∉ [G, Y, Qf, Rf, c] := by
-  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
-  exact ⟨by omega, by omega, by omega, by omega, hc⟩
-
 /-- The index arithmetic of a split inside the window of its node. -/
-private theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) :
+theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) :
     2 * (n * n) * d + 2 * n * lo + 2 * (k * k) ≤ 2 * (n * n) * (d + 1) + 2 * n * lo ∧
     2 * (n * n) * (d + 1) + 2 * n * lo + 2 * (kp * kp) ≤
       2 * (n * n) * (d + 1) + 2 * n * (lo + kp) ∧
@@ -146,335 +126,6 @@ private theorem split_handles_ne {H : EighArenas} {Sg Pp Pm : ℕ} {two sg nsg s
     cc sg (by simp) H.Ma (by simp [EighArenas.handles]),
     cc nsg (by simp) H.Ma (by simp [EighArenas.handles])⟩ <;>
   simp [EighArenas.handles, h] at hbufs
-
-/-- The two deflations of a split, from a state `σ` whose buffers below `s₀` hold the projectors
-$\mathbf{P}_\pm$ at offset $0$ of `Pp`, `Pm`, the level's Gaussian words in `Sg` and the stored
-$\sqrt{1/2}$ in `sq`, the scratch buffers `G`, `Y`, `Qf`, `Rf` from `s₀` on: the bases
-$\mathbf{Q}_\pm$ of `NLAlib.holds_of_exec_eighSplitBlock` at the node's block of `Qa`, every cell
-of a buffer below `s₀` outside that block kept, the shape and the tape positions too. -/
-private theorem split_deflations_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k kp : ℕ) (hk : lo + k ≤ n)
-    (hkpk : kp < k) (kpe : IExp ℕ) (hkpe : kpe.eval = kp) {Qa Sg Pp Pm G Y Qf Rf : ℕ}
-    {sq : Cell ℕ ℕ} {σ σ₃ σ₄ : St P K C} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)} (s₀ : ℕ)
-    (nS4 : ∀ b, b < s₀ → b ∉ [G, Y, Qf, Rf]) (lQa : Qa < s₀) (lSg : Sg < s₀) (lPm : Pm < s₀)
-    (lsq : sq.buf < s₀) (hnd₁ : [Sg, Pp, G, Y, Qf, Rf, Qa].Nodup)
-    (hnd₂ : [Sg, Pm, G, Y, Qf, Rf, Qa].Nodup) (hsqb : sq.buf ∉ [G, Y, Qf, Rf, Qa])
-    (dSgQa : Sg = Qa → False) (dPmQa : Pm = Qa → False) (sqQa : sq.buf = Qa → False)
-    (hPp : pairLayout.Holds σ.store p Pp 0 Ppm) (hPm : pairLayout.Holds σ.store p Pm 0 Pmm)
-    (hSg : ∀ w < 4 * (n * n), σ.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
-    (hsq : σ.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p))
-    (h₃ : exec I (eighDeflateBlock p mm qr (.const n) (.const k) (.const kp) (.const lo)
-      (if true then 0 else 1) Sg sq Pp G Y Qf Rf Qa
-        (eighBlockOff (.const n) (.const d) (.const lo))).run σ = some σ₃)
-    (h₄ : exec I (eighDeflateBlock p mm qr (.const n) (.const k) (.const (k - kp)) (.const lo)
-      (if false then 0 else 1) Sg sq Pm G Y Qf Rf Qa
-        (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe))).run σ₃ =
-      some σ₄) :
-    let M := eighTapeMachine I p mmR qrR
-    let s := eighTapeSample n d lo
-    pairLayout.Holds σ₄.store p Qa (2 * (n * n) * d + 2 * n * lo)
-        (deflate M kp Ppm (leadingBlock k (s.2 true))) ∧
-      pairLayout.Holds σ₄.store p Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))
-        (deflate M (k - kp) Pmm (leadingBlock k (s.2 false))) ∧
-      (∀ q b i, b < s₀ → (b = Qa → i < 2 * (n * n) * d + 2 * n * lo ∨
-          2 * (n * n) * d + 2 * n * (lo + k) ≤ i) →
-        σ₄.store.read q b i = σ.store.read q b i) ∧
-      σ₄.store.shape = σ.store.shape ∧ σ₄.pos = σ.pos := by
-  intro M s
-  have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
-      2 * (n * n) * d + 2 * n * lo := by
-    simp [eighBlockOff]
-  obtain ⟨hQp3, hf3, hsh3, hp3⟩ := holds_of_exec_eighDeflateBlock hmm hqr p n k kp d lo hk
-    hkpk.le true hPp hsq hSg hnd₁ hsqb h₃
-  rw [hbo] at hQp3 hf3
-  have hk3 : ∀ q b i, s₀ > b → b ≠ Qa → σ₃.store.read q b i = σ.store.read q b i :=
-    fun q b i h1 h2 => hf3 q b i (nS4 _ (by omega)) (by simp [blockDisjoint, h2])
-  obtain ⟨hQm4, hf4, hsh4, hp4⟩ := holds_of_exec_eighDeflateBlock hmm hqr p n k (k - kp) d lo hk
-    (Nat.sub_le _ _) false (fun i j t => (hk3 _ _ _ lPm dPmQa).trans (hPm i j t))
-    ((hk3 _ _ _ lsq sqQa).trans hsq) (fun w hw => (hk3 _ _ _ lSg dSgQa).trans (hSg w hw))
-    hnd₂ hsqb h₄
-  simp only [IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat, hbo, hkpe] at hQm4 hf4
-  obtain ⟨-, -, -, F6, F7, -⟩ := split_arith_node (d := d) hk hkpk
-  refine ⟨pairLayout_holds_of_read_eq hQp3 fun i _ hi => hf4 p _ i (nS4 _ lQa) (by
-      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
-        decide_eq_true_eq]
-      left; omega), hQm4, fun q b i hb hbQ => ?_, hsh4.trans hsh3, hp4.trans hp3⟩
-  rw [hf4 q b i (nS4 b hb) (blockDisjoint_of_window hbQ (by linarith [Nat.zero_le (k * kp)])
-      (by linarith)),
-    hf3 q b i (nS4 b hb) (blockDisjoint_of_window hbQ (by linarith) (by linarith))]
-
-/-- The two compressions of a split, from a state `σ` whose buffers below `s₀` hold the node
-matrix $\mathbf{A}$, the bases $\mathbf{Q}_\pm$ at the node's block of `Qa` and the cells `two`,
-`sg`, `nsg` holding $c_2$, $\sigma$, $-\sigma$, the scratch buffers `Qh`, `C1`, `C2`, `C3` from
-`s₀` on: the compressions of `NLAlib.holds_of_exec_eighSplitBlock` at the blocks of the slots $lo$
-and $lo + k_+$ of depth $d + 1$ in `Ma`, every cell of a buffer below `s₀` outside the node's
-block of depth $d + 1$ kept, the shape and the tape positions too. -/
-private theorem split_compressions_holds {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (p : P) (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkpk : kp < k) (kpe : IExp ℕ)
-    (hkpe : kpe.eval = kp) {Qa Ma Qh C1 C2 C3 : ℕ} {two sg nsg : Cell ℕ ℕ} {c₂ σ' : K}
-    {σ σ₅ σ₆ : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
-    {Qp : Matrix (Fin k) (Fin kp) (K × K)} {Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)}
-    (s₀ : ℕ) (nC4 : ∀ b, b < s₀ → b ∉ [Qh, C1, C2, C3]) (lQa : Qa < s₀) (lMa : Ma < s₀)
-    (ltwo : two.buf < s₀) (lnsg : nsg.buf < s₀) (hnd : [Qa, Ma, Qh, C1, C2, C3].Nodup)
-    (hcells : two.buf ∉ [Qh, C1, C2, C3] ∧ sg.buf ∉ [Qh, C1, C2, C3] ∧
-      nsg.buf ∉ [Qh, C1, C2, C3])
-    (dMaQa : Ma = Qa → False) (twoMa : two.buf = Ma → False) (sgMa : sg.buf = Ma → False)
-    (nsgMa : nsg.buf = Ma → False)
-    (hA : pairLayout.Holds σ.store p Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hQp : pairLayout.Holds σ.store p Qa (2 * (n * n) * d + 2 * n * lo) Qp)
-    (hQm : pairLayout.Holds σ.store p Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm)
-    (htwo : σ.store.read p two.buf two.idx.eval = some c₂)
-    (hσ : σ.store.read p sg.buf sg.idx.eval = some σ')
-    (hnσ : σ.store.read p nsg.buf nsg.idx.eval = some ((eighTapeMachine I p mmR qrR).neg σ'))
-    (h₅ : exec I (eighCompressBlock p mm (.const k) (.const kp) Qa
-      (eighBlockOff (.const n) (.const d) (.const lo)) Ma
-      (eighBlockOff (.const n) (.const d) (.const lo))
-      (eighBlockOff (.const n) (.const d + 1) (.const lo)) two sg Qh C1 C2 C3).run σ = some σ₅)
-    (h₆ : exec I (eighCompressBlock p mm (.const k) (.const (k - kp)) Qa
-      (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe)) Ma
-      (eighBlockOff (.const n) (.const d) (.const lo))
-      (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) two nsg Qh C1 C2 C3).run σ₅ =
-      some σ₆) :
-    let M := eighTapeMachine I p mmR qrR
-    pairLayout.Holds σ₆.store p Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) c₂) σ') ∧
-      pairLayout.Holds σ₆.store p Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) c₂) (M.neg σ')) ∧
-      (∀ q b i, b < s₀ → (b = Ma → i < 2 * (n * n) * (d + 1) + 2 * n * lo ∨
-          2 * (n * n) * (d + 1) + 2 * n * (lo + k) ≤ i) →
-        σ₆.store.read q b i = σ.store.read q b i) ∧
-      σ₆.store.shape = σ.store.shape ∧ σ₆.pos = σ.pos := by
-  intro M
-  obtain ⟨F1, F3, F4, -, -, F2⟩ := split_arith_node (d := d) hk hkpk
-  have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
-      2 * (n * n) * d + 2 * n * lo := by simp [eighBlockOff]
-  have hbo1 : (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.const lo)).eval =
-      2 * (n * n) * (d + 1) + 2 * n * lo := by simp [eighBlockOff]
-  have hbo2 : (eighBlockOff (IExp.const n) (IExp.const d + 1)
-      (IExp.const lo + kpe)).eval = 2 * (n * n) * (d + 1) + 2 * n * (lo + kp) := by
-    simp [eighBlockOff, hkpe]
-  have hqo2 : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo) +
-      2 * (IExp.const k * kpe)).eval = 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp) := by
-    simp [eighBlockOff, hkpe]
-  obtain ⟨hAp5, hf5, hsh5, hp5⟩ := holds_of_exec_eighCompressBlock
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    hmm p k kp (by rw [hbo]; exact hQp) (by rw [hbo]; exact hA) htwo hσ hnd
-    ⟨hcells.1, hcells.2.1⟩
-    ⟨by simp [blockDisjoint, show Ma ≠ two.buf from fun h => twoMa h.symm],
-      by simp [blockDisjoint, show Ma ≠ sg.buf from fun h => sgMa h.symm]⟩ h₅
-  rw [hbo1] at hAp5 hf5
-  have hk5 : ∀ q b i, s₀ > b → b ≠ Ma → σ₅.store.read q b i = σ.store.read q b i :=
-    fun q b i h1 h2 => hf5 q b i (nC4 _ (by omega)) (by simp [blockDisjoint, h2])
-  obtain ⟨hAm6, hf6, hsh6, hp6⟩ := holds_of_exec_eighCompressBlock
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    hmm p k (k - kp)
-    (by rw [hqo2]; exact fun i j t => (hk5 _ _ _ lQa (fun h => dMaQa h.symm)).trans (hQm i j t))
-    (by
-      rw [hbo]
-      exact pairLayout_holds_of_read_eq hA fun i _ hi => hf5 p _ i (nC4 _ lMa) (by
-        refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
-        dsimp only
-        linarith))
-    ((hk5 _ _ _ ltwo twoMa).trans htwo) ((hk5 _ _ _ lnsg nsgMa).trans hnσ) hnd
-    ⟨hcells.1, hcells.2.2⟩
-    ⟨by simp [blockDisjoint, show Ma ≠ two.buf from fun h => twoMa h.symm],
-      by simp [blockDisjoint, show Ma ≠ nsg.buf from fun h => nsgMa h.symm]⟩ h₆
-  rw [hbo2] at hAm6 hf6
-  refine ⟨fun i j t => ?_, hAm6, fun q b i hb hbM => ?_, hsh6.trans hsh5, hp6.trans hp5⟩
-  · refine (hf6 _ _ _ (nC4 _ lMa) ?_).trans (hAp5 i j t)
-    have := pair_idx_lt_node i j t
-    refine blockDisjoint_of_ne_or_le (Or.inr (Or.inl ?_))
-    change _ + (2 * _ + _) + 1 ≤ _
-    linarith
-  · rw [hf6 q b i (nC4 b hb) (blockDisjoint_of_window hbM (by linarith) (by linarith)),
-      hf5 q b i (nC4 b hb) (blockDisjoint_of_window hbM (by linarith)
-        (by linarith [Nat.zero_le ((k - kp) * (k - kp))]))]
-
-omit [Inhabited K] in
-/-- The records of a split: the sizes $k_+$ and $k - k_+$ in their cells of `Sz` at depth
-$d + 1$, the kind $4$ and $k_+ > 0$ in the node's cells of `Kd` and `Kp` (three distinct
-buffers); every other cell is kept, the shape and the tape positions too. -/
-private theorem split_records_holds (p : P) (n d lo k kp : ℕ) (hkp : 0 < kp) (kpe : IExp ℕ)
-    (hkpe : kpe.eval = kp) (H : EighArenas) (dSzKd : H.Sz = H.Kd → False)
-    (dSzKp : H.Sz = H.Kp → False) (dKdKp : H.Kd = H.Kp → False) {σ st' : St P K C}
-    (h : exec I (do
-      ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩ kpe)
-      ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo + kpe)⟩
-        (.const k - kpe))
-      ins (.litIdx p ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 4)
-      ins (.litIdx p ⟨H.Kp, eighSlotOff (.const n) (.const d) (.const lo)⟩ kpe) :
-        Builder P ι ℕ ℕ Unit).run σ = some st') :
-    (st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
-      (∀ q b i, (b = H.Sz → ¬i = n * (d + 1) + lo ∧ ¬i = n * (d + 1) + (lo + kp)) →
-        (b = H.Kd ∨ b = H.Kp → ¬i = n * d + lo) → st'.store.read q b i = σ.store.read q b i) ∧
-      st'.store.shape = σ.store.shape ∧ st'.pos = σ.pos := by
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  rw [hr] at h
-  obtain ⟨v7, s7, hv7, hw7, h⟩ := exists_of_exec_seq_litIdx h
-  rw [hr] at h
-  obtain ⟨v8, s8, hv8, hw8, h⟩ := exists_of_exec_seq_litIdx h
-  rw [hr] at h
-  obtain ⟨v9, s9, hv9, hw9, h⟩ := exists_of_exec_seq_litIdx h
-  change exec I (.seq (.instr _) .skip) _ = some st' at h
-  obtain ⟨v10, s10, hv10, hw10, h⟩ := exists_of_exec_seq_litIdx h
-  rw [exec_skip, Option.some_inj] at h
-  subst h
-  simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat,
-    IExp.eval_sub, hkpe] at hv7 hw7 hv8 hw8 hv9 hw9 hv10 hw10
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, fun q b i hS hK => ?_, ?_, rfl⟩
-  · rw [Store.read_of_write_eq_some_of_ne hw10 (Or.inl dSzKp),
-      Store.read_of_write_eq_some_of_ne hw9 (Or.inl dSzKd),
-      Store.read_of_write_eq_some_of_ne hw8 (Or.inr (by omega)),
-      Store.read_of_write_eq_some hw7, hv7]
-  · rw [Store.read_of_write_eq_some_of_ne hw10 (Or.inl dSzKp),
-      Store.read_of_write_eq_some_of_ne hw9 (Or.inl dSzKd),
-      Store.read_of_write_eq_some hw8, hv8]
-  · rw [Store.read_of_write_eq_some_of_ne hw10 (Or.inl dKdKp),
-      Store.read_of_write_eq_some hw9, hv9]
-  · rw [Store.read_of_write_eq_some hw10, hv10]
-  · have hSz : b ≠ H.Sz ∨ ¬i = n * (d + 1) + lo ∧ ¬i = n * (d + 1) + (lo + kp) := by
-      by_cases h1 : b = H.Sz
-      · exact Or.inr (hS h1)
-      · exact Or.inl h1
-    rw [Store.read_of_write_eq_some_of_ne hw10 ?_, Store.read_of_write_eq_some_of_ne hw9 ?_,
-      Store.read_of_write_eq_some_of_ne hw8 (hSz.imp id fun h => h.2),
-      Store.read_of_write_eq_some_of_ne hw7 (hSz.imp id fun h => h.1)]
-    · by_cases h1 : b = H.Kd
-      · exact Or.inr (hK (Or.inl h1))
-      · exact Or.inl h1
-    · by_cases h1 : b = H.Kp
-      · exact Or.inr (hK (Or.inr h1))
-      · exact Or.inl h1
-  · rw [Store.shape_of_write_eq_some hw10, Store.shape_of_write_eq_some hw9,
-      Store.shape_of_write_eq_some hw8, Store.shape_of_write_eq_some hw7]
-
-/-- The body of a split after its eight allocations: the values of
-`NLAlib.holds_of_exec_eighSplitBlock`, and every cell of a buffer below `s₀` outside the cell
-`sq` and the node's window is kept. -/
-private theorem split_body_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k kp : ℕ) (hk : lo + k ≤ n)
-    (hkp : 0 < kp) (hkpk : kp < k) (kpe : IExp ℕ) (hkpe : kpe.eval = kp) (H : EighArenas)
-    {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ}
-    {σ : K} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
-    {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)} (s₀ : ℕ)
-    (hlt : ∀ b ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf], b < s₀)
-    (G Y Qf Rf Qh C1 C2 C3 : ℕ) (hge : ∀ X ∈ [G, Y, Qf, Rf, Qh, C1, C2, C3], s₀ ≤ X)
-    (hnd : [G, Y, Qf, Rf, Qh, C1, C2, C3].Nodup)
-    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
-    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
-    (htwo : st.store.read p two.buf two.idx.eval = some ((eighTapeMachine I p mmR qrR).ofNat 2))
-    (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
-    (hnσ : st.store.read p nsg.buf nsg.idx.eval =
-      some ((eighTapeMachine I p mmR qrR).neg σ))
-    (hcells : ∀ c ∈ [two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
-    (hsq : st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p))
-    (h : exec I (do
-      eighDeflateBlock p mm qr (.const n) (.const k) (kpe) (.const lo) 0 Sg sq Pp G Y Qf Rf
-        H.Qa (eighBlockOff (.const n) (.const d) (.const lo))
-      eighDeflateBlock p mm qr (.const n) (.const k) (.const k - kpe) (.const lo) 1 Sg sq Pm
-        G Y Qf Rf H.Qa (eighBlockOff (.const n) (.const d) (.const lo) +
-          2 * (.const k * kpe))
-      eighCompressBlock p mm (.const k) (kpe) H.Qa
-        (eighBlockOff (.const n) (.const d) (.const lo)) H.Ma
-        (eighBlockOff (.const n) (.const d) (.const lo))
-        (eighBlockOff (.const n) (.const d + 1) (.const lo)) two sg Qh C1 C2 C3
-      eighCompressBlock p mm (.const k) (.const k - kpe) H.Qa
-        (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe)) H.Ma
-        (eighBlockOff (.const n) (.const d) (.const lo))
-        (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) two nsg Qh C1 C2 C3
-      ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩ (kpe))
-      ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo + kpe)⟩
-        (.const k - kpe))
-      ins (.litIdx p ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 4)
-      ins (.litIdx p ⟨H.Kp, eighSlotOff (.const n) (.const d) (.const lo)⟩ (kpe)) :
-        Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    let s := eighTapeSample n d lo
-    let Qp := deflate M kp Ppm (leadingBlock k (s.2 true))
-    let Qm := deflate M (k - kp) Pmm (leadingBlock k (s.2 false))
-    (pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
-      pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) Qm ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) (M.ofNat 2)) σ) ∧
-      pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp))
-        (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) (M.ofNat 2))
-          (M.neg σ)) ∧
-      st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Sz (n * (d + 1) + (lo + kp)) = I.sem.lit p ((k - kp : ℕ) : ℚ) ∧
-      st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
-      st'.store.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ)) ∧
-      (∀ q b i, b < s₀ → ¬ EighNodeWindow H n d lo k (lo + kp) b i →
-        st'.store.read q b i = st.store.read q b i) ∧
-      st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  intro M s Qp Qm
-  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
-    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hlt hge
-  obtain ⟨lMa, lUa, lQa, lEa, lSz, lKd, lKp, lLv, lSg, lPp, lPm, ltwo, lsg, lnsg, lsq⟩ := hlt
-  obtain ⟨gG, gY, gQf, gRf, gQh, gC1, gC2, gC3⟩ := hge
-  obtain ⟨h4a, h4b, -⟩ :=
-    List.nodup_append.mp (show ([G, Y, Qf, Rf] ++ [Qh, C1, C2, C3]).Nodup from hnd)
-  obtain ⟨dSgPp, dSgPm, dSgQa, dPpQa, dPmQa, dMaQa, dSzKd, dSzKp, dKdKp, dQaSz, dQaKd, dQaKp,
-    dMaSz, dMaKd, dMaKp, sqQa, twoQa, sgQa, nsgQa, twoMa, sgMa, nsgMa⟩ :=
-    split_handles_ne hbufs hcells
-  have nS4 : ∀ b, b < s₀ → b ∉ [G, Y, Qf, Rf] := fun b hb => by
-    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]; omega
-  have nC4 : ∀ b, b < s₀ → b ∉ [Qh, C1, C2, C3] := fun b hb => by
-    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]; omega
-  -- the deflations
-  rw [exec_eighDeflateBlock_bind_split, exec_eighDeflateBlock_congr_split, hkpe] at h
-  obtain ⟨σ3, h3, h⟩ := Option.bind_eq_some_iff.mp h
-  rw [exec_eighDeflateBlock_bind_split, exec_eighDeflateBlock_congr_split] at h
-  simp only [IExp.eval_sub, IExp.eval_const, hkpe] at h
-  obtain ⟨σ4, h4, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨hQp4, hQm4, hf4, hsh4, hp4⟩ := split_deflations_holds hmm hqr p n d lo k kp hk hkpk
-    kpe hkpe s₀ nS4 lQa lSg lPm lsq
-    (nodup_def_node dSgPp dSgQa dPpQa lSg lPp lQa h4a gG gY gQf gRf)
-    (nodup_def_node dSgPm dSgQa dPmQa lSg lPm lQa h4a gG gY gQf gRf)
-    (notmem5_node lsq gG gY gQf gRf sqQa) dSgQa dPmQa sqQa hPp hPm hSg hsq
-    (by exact h3) (by exact h4)
-  have hk4 : ∀ q b i, b < s₀ → b ≠ H.Qa → σ4.store.read q b i = st.store.read q b i :=
-    fun q b i h1 h2 => hf4 q b i h1 fun h => absurd h h2
-  -- the compressions
-  rw [exec_eighCompressBlock_bind_split, exec_eighCompressBlock_congr_split, hkpe] at h
-  obtain ⟨σ5, h5, h⟩ := Option.bind_eq_some_iff.mp h
-  rw [exec_eighCompressBlock_bind_split, exec_eighCompressBlock_congr_split] at h
-  simp only [IExp.eval_sub, IExp.eval_const, hkpe] at h
-  obtain ⟨σ6, h6, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨hAp6, hAm6, hf6, hsh6, hp6⟩ := split_compressions_holds hmm p n d lo k kp hk hkpk kpe
-    hkpe s₀ nC4 lQa lMa ltwo lnsg
-    (nodup_cmp_node (fun h => dMaQa h.symm) lQa lMa h4b gQh gC1 gC2 gC3)
-    ⟨nC4 _ ltwo, nC4 _ lsg, nC4 _ lnsg⟩ dMaQa twoMa sgMa nsgMa
-    (fun i j t => (hk4 _ _ _ lMa dMaQa).trans (hA i j t)) hQp4 hQm4
-    ((hk4 _ _ _ ltwo twoQa).trans htwo) ((hk4 _ _ _ lsg sgQa).trans hσ)
-    ((hk4 _ _ _ lnsg nsgQa).trans hnσ) (by exact h5) (by exact h6)
-  have hk6 : ∀ q b i, b < s₀ → b ≠ H.Ma → σ6.store.read q b i = σ4.store.read q b i :=
-    fun q b i h1 h2 => hf6 q b i h1 fun h => absurd h h2
-  -- the records
-  obtain ⟨⟨r1, r2, r3, r4⟩, hfr, hshr, hpr⟩ := split_records_holds p n d lo k kp hkp kpe hkpe H
-    dSzKd dSzKp dKdKp h
-  have hrec : ∀ q b i, b ≠ H.Sz → b ≠ H.Kd → b ≠ H.Kp →
-      st'.store.read q b i = σ6.store.read q b i := fun q b i h1 h2 h3 =>
-    hfr q b i (fun h => absurd h h1) fun h => (h.elim h2 h3).elim
-  refine ⟨⟨fun i j t => (hrec _ _ _ dQaSz dQaKd dQaKp).trans
-      ((hk6 _ _ _ lQa (fun h => dMaQa h.symm)).trans (hQp4 i j t)),
-    fun i j t => (hrec _ _ _ dQaSz dQaKd dQaKp).trans
-      ((hk6 _ _ _ lQa (fun h => dMaQa h.symm)).trans (hQm4 i j t)),
-    fun i j t => (hrec _ _ _ dMaSz dMaKd dMaKp).trans (hAp6 i j t),
-    fun i j t => (hrec _ _ _ dMaSz dMaKd dMaKp).trans (hAm6 i j t), r1, r2, r3, r4⟩,
-    fun q b i hb hW => ?_, hshr.trans (hsh6.trans hsh4), hpr.trans (hp6.trans hp4)⟩
-  simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
-  obtain ⟨hWQ, hWM, hWS, hWK⟩ := hW
-  refine (hfr q b i hWS hWK).trans ((hf6 q b i hb fun h1 => ?_).trans (hf4 q b i hb fun h1 => ?_))
-  · by_contra hc; push Not at hc; exact absurd (hWM h1 hc.1) (by omega)
-  · by_contra hc; push Not at hc; exact absurd (hWQ h1 hc.1) (by omega)
 
 omit [AddMonoid C] [Inhabited K] in
 /-- Reads of a store below $m$ pops. -/
@@ -562,7 +213,7 @@ theorem spec_eighSplitBlock_of_body {m : Mode} (p : P) (mm qr : ι) (n d lo k kp
 omit [AddMonoid C] [Inhabited K] in
 /-- The buffers a split reads exist: the handles of shaped arenas, `Sg`, `Pp`, `Pm` (held) and
 the buffers of the cells `two`, `sg`, `nsg`, `sq` (read) are below the size of the store. -/
-private theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
+theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
     {H : EighArenas} {p : P}
     {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {s : Store P K} {w₂ w₃ w₄ w₅ : K} {d : ℕ}
     {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)} (hH : H.Shaped s p n D)
@@ -586,6 +237,590 @@ private theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk :
     Store.lt_size_of_read_eq_some (hPm ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
     Store.lt_size_of_read_eq_some htwo, Store.lt_size_of_read_eq_some hσ,
     Store.lt_size_of_read_eq_some hnσ, Store.lt_size_of_read_eq_some hsq]
+
+omit [Inhabited K] in
+/-- An allocation succeeds when its body succeeds on the allocated state. -/
+theorem exists_exec_alloc_of_exists {p : P} {len : IExp ℕ}
+    {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C}
+    (h : ∃ st', exec I (body st.store.size) { st with
+          store := st.store.push (p, Array.replicate len.eval none),
+          cur := Function.update st.cur p (st.cur p + len.eval),
+          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
+          curW := st.curW + len.eval * I.width p,
+          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st') :
+    ∃ st', exec I (.alloc p len body) st = some st' := by
+  obtain ⟨st', h⟩ := h
+  exact ⟨_, by rw [exec_alloc, h]; rfl⟩
+
+omit [Inhabited K] in
+/-- A deflation block at an index expression for the rank runs as at its value. -/
+theorem exec_eighDeflateBlock_congr_split (p : P) (mm qr : ι) (n k r lo : IExp ℕ)
+    (side : ℕ) (Sg : ℕ) (sq : Cell ℕ ℕ) (Pm G Y Qf Rf Qa : ℕ) (qo : IExp ℕ) (st : St P K C) :
+    exec I (eighDeflateBlock p mm qr n k r lo side Sg sq Pm G Y Qf Rf Qa qo).run st =
+      exec I (eighDeflateBlock p mm qr n k (.const r.eval) lo side Sg sq Pm G Y Qf Rf Qa
+        qo).run st :=
+  exec_eq_of_normIdx_eq I rfl st
+
+omit [Inhabited K] in
+/-- A compression block at an index expression for the rank runs as at its value. -/
+theorem exec_eighCompressBlock_congr_split (p : P) (mm : ι) (k r : IExp ℕ) (Qa : ℕ)
+    (qo : IExp ℕ) (Ma : ℕ) (mo co : IExp ℕ) (two sg : Cell ℕ ℕ) (Qh C1 C2 C3 : ℕ)
+    (st : St P K C) :
+    exec I (eighCompressBlock p mm k r Qa qo Ma mo co two sg Qh C1 C2 C3).run st =
+      exec I (eighCompressBlock p mm k (.const r.eval) Qa qo Ma mo co two sg Qh C1 C2
+        C3).run st :=
+  exec_eq_of_normIdx_eq I rfl st
+
+/-- The index arithmetic of a split: the blocks of the bases and of the compressions fit their
+arenas, and the compressions lie past the node's block. -/
+theorem eighSplit_bounds_split {n d lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
+    (hd : d < D) :
+    2 * (n * n) * d + 2 * n * lo + 2 * (k * kp) ≤ 2 * (n * n) * D ∧
+      2 * (n * n) * d + 2 * n * lo + 2 * (k * kp) + 2 * (k * (k - kp)) ≤ 2 * (n * n) * D ∧
+      2 * (n * n) * (d + 1) + 2 * n * (lo + kp) + 2 * ((k - kp) * (k - kp)) ≤
+        2 * (n * n) * (D + 1) ∧
+      2 * (n * n) * d + 2 * n * lo + 2 * (k * k) ≤ 2 * (n * n) * (d + 1) + 2 * n * (lo + kp) := by
+  obtain ⟨r, rfl⟩ : ∃ r, k = kp + r := ⟨k - kp, by omega⟩
+  rw [Nat.add_sub_cancel_left]
+  have h1 : r * r ≤ n * r := Nat.mul_le_mul_right _ (by omega)
+  have h2 : n * (lo + kp) + n * r ≤ n * n := by
+    rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ (by omega)
+  have h3 : n * n * (d + 1) ≤ n * n * D := Nat.mul_le_mul_left _ hd
+  have h4 : n * lo + (kp + r) * (kp + r) ≤ n * n := by
+    have : (kp + r) * (kp + r) ≤ n * (kp + r) := Nat.mul_le_mul_right _ (by omega)
+    have : n * lo + n * (kp + r) ≤ n * n := by
+      rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ (by omega)
+    omega
+  refine ⟨by nlinarith, by nlinarith, by nlinarith, by nlinarith⟩
+
+/-- **The blocks a split writes** in the arenas: the bases $\mathbf{Q}_+$, $\mathbf{Q}_-$ at the
+node's block of depth $d$ in `Qa`, the two compressions at the blocks of the slots $lo$ and
+$lo + k_+$ of depth $d + 1$ in `Ma`, the two size cells of depth $d + 1$ and the kind and split
+cells of the node. -/
+def eighSplitWindow (H : EighArenas) (n d lo k kp : ℕ) : List (ℕ × ℕ × ℕ) :=
+  [matBlock H.Qa (2 * (n * n) * d + 2 * n * lo) k kp 2,
+    matBlock H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)) k (k - kp) 2,
+    matBlock H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo) kp kp 2,
+    matBlock H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kp)) (k - kp) (k - kp) 2,
+    (H.Sz, n * (d + 1) + lo, 1), (H.Sz, n * (d + 1) + (lo + kp), 1),
+    (H.Kd, n * d + lo, 1), (H.Kp, n * d + lo, 1)]
+
+omit [Inhabited K] [AddMonoid C] in
+/-- After $m$ allocations at tag `p` the store has $m$ more buffers, the buffers below keep their
+shape and cells, and the new ones have the shape of the allocation. -/
+theorem iterate_allocate (st : St P K C) (p : P) (len w : ℕ) : ∀ m,
+    ((·.allocate p len w)^[m] st).store.size = st.store.size + m ∧
+    (∀ x < st.store.size, ((·.allocate p len w)^[m] st).store.shape[x]? = st.store.shape[x]? ∧
+      ∀ q i, ((·.allocate p len w)^[m] st).store.read q x i = st.store.read q x i) ∧
+    (∀ j < m, ((·.allocate p len w)^[m] st).store.shape[st.store.size + j]? = some (p, len)) ∧
+    ((·.allocate p len w)^[m] st).pos = st.pos
+  | 0 => ⟨rfl, fun _ _ => ⟨rfl, fun _ _ => rfl⟩, fun _ h => absurd h (Nat.not_lt_zero _), rfl⟩
+  | m + 1 => by
+    obtain ⟨hs, hr, hn, hp⟩ := iterate_allocate st p len w m
+    rw [Function.iterate_succ_apply']
+    refine ⟨by rw [St.size_allocate, hs, Nat.add_assoc], fun x hx => ⟨?_, fun q i => ?_⟩,
+      fun j hj => ?_, hp⟩
+    · rw [St.shape_allocate, Array.getElem?_push, if_neg (by rw [Store.size_shape]; omega),
+        (hr x hx).1]
+    · rw [St.read_allocate_of_lt _ _ _ _ _ _ _ (by omega), (hr x hx).2]
+    · rw [St.shape_allocate, Array.getElem?_push]
+      split_ifs with h
+      · rfl
+      · exact hn j (by rw [Store.size_shape] at h; omega)
+
+omit [Inhabited K] [AddMonoid C] in
+/-- A store predicate reading only buffers below $b$ survives $m$ releases of a store of
+$b + m$ buffers. -/
+theorem ReadsOnly.iterate_release {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} {b : ℕ}
+    (hF : ReadsOnly F rs) (hrs : ∀ x ∈ rs, x.1 < b) (p : P) (len w : ℕ) :
+    ∀ m (s : St P K C), s.store.size = b + m → F s.store →
+      F ((·.release p len w)^[m] s).store ∧ ((·.release p len w)^[m] s).pos = s.pos
+  | 0, _, _, h => ⟨h, rfl⟩
+  | m + 1, s, hs, h => by
+    rw [Function.iterate_succ_apply]
+    exact ReadsOnly.iterate_release hF hrs p len w m _ (by simp [St.release, hs])
+      (hF.pop h fun x hx => by have := hrs x hx; omega)
+
+omit [Inhabited K] in
+/-- A compression block composes with what follows. -/
+theorem executionComposable_eighCompressBlock (p : P) (mm : ι) (k r : IExp ℕ) (Qa : ℕ)
+    (qo : IExp ℕ) (Ma : ℕ) (mo co : IExp ℕ) (two sg : Cell ℕ ℕ) (Qh C1 C2 C3 : ℕ) :
+    ExecutionComposable I
+      (eighCompressBlock (ι := ι) p mm k r Qa qo Ma mo co two sg Qh C1 C2 C3) := by
+  exec_composable
+
+omit [Inhabited K] in
+/-- A deflation block composes with what follows. -/
+theorem executionComposable_eighDeflateBlock (p : P) (mm qr : ι) (n k r lo : IExp ℕ) (side : ℕ)
+    (Sg : ℕ) (sq : Cell ℕ ℕ) (Pm G Y Qf Rf Qa : ℕ) (qo : IExp ℕ) :
+    ExecutionComposable I (eighDeflateBlock p mm qr n k r lo side Sg sq Pm G Y Qf Rf Qa qo) := by
+  exec_composable
+
+omit [Inhabited K] in
+/-- The records of a split as a routine specification: the sizes $k_+$ and $k - k_+$ in their
+cells of `Sz` at depth $d + 1$, the kind $4$ and $k_+$ in the node's cells of `Kd` and `Kp`. -/
+theorem spec_eighSplitRecords (md : Mode) (p : P) (n d lo k : ℕ) (kpe : IExp ℕ) (H : EighArenas)
+    (hkp : 0 < kpe.eval) (dSzKd : H.Sz ≠ H.Kd) (dSzKp : H.Sz ≠ H.Kp) (dKdKp : H.Kd ≠ H.Kp) :
+    let cells := [(H.Sz, n * (d + 1) + lo, 1), (H.Sz, n * (d + 1) + (lo + kpe.eval), 1),
+      (H.Kd, n * d + lo, 1), (H.Kp, n * d + lo, 1)]
+    RoutineSpec md I (fun st => md.Needs (((∃ z, I.sem.lit p (kpe.eval : ℚ) = some z) ∧
+        (∃ z, I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) = some z) ∧
+        ∃ z, I.sem.lit p ((4 : ℕ) : ℚ) = some z) ∧ WritableBlocks st.store p cells))
+      (do
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩ kpe)
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo + kpe)⟩
+          (.const k - kpe))
+        ins (.litIdx p ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 4)
+        ins (.litIdx p ⟨H.Kp, eighSlotOff (.const n) (.const d) (.const lo)⟩ kpe) :
+          Builder P ι ℕ ℕ Unit) cells
+      fun st st' => (st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p (kpe.eval : ℚ) ∧
+        st'.store.read p H.Sz (n * (d + 1) + (lo + kpe.eval)) =
+          I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) ∧
+        st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+        st'.store.read p H.Kp (n * d + lo) = I.sem.lit p (kpe.eval : ℚ)) ∧ PosKept st st' := by
+  intro cells
+  refine ⟨by exec_composable, fun st hN => ?_⟩
+  have hW := fun s (hs : Store.shape s = st.store.shape) b o l (hx : (b, o, l) ∈ cells) =>
+    (Mode.needs_and.mp hN).2.mono fun h => (h _ hx).of_shape_eq hs
+  have hL := (Mode.needs_and.mp hN).1
+  exact (RoutineSpec.ins spec_litIdx_read).wp_bind ((Mode.needs_and.mpr ⟨hL.mono (·.1),
+    hW _ rfl _ _ _ (by simp [cells])⟩)) fun st₁ hm₁ h₁ =>
+    (RoutineSpec.ins spec_litIdx_read).wp_bind ((Mode.needs_and.mpr ⟨hL.mono (·.2.1),
+    hW _ hm₁.1 _ _ _ (by simp [cells])⟩)) fun st₂ hm₂ h₂ =>
+    (RoutineSpec.ins spec_litIdx_read).wp_bind ((Mode.needs_and.mpr ⟨hL.mono (·.2.2),
+    hW _ (hm₁.trans hm₂).1 _ _ _ (by simp [cells])⟩)) fun st₃ hm₃ h₃ =>
+    (RoutineSpec.ins spec_litIdx_read).wp_run ((Mode.needs_and.mpr ⟨hL.mono (·.1),
+    hW _ (hm₁.trans hm₂ |>.trans hm₃).1 _ _ _ (by simp [cells])⟩)) fun st₄ hm₄ h₄ =>
+    ⟨(hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄).mono (by simp [cells, eighSlotOff]),
+      ⟨(readsOnly_read _ _ _ _).of_modifies h₁.1 (hm₂.trans hm₃ |>.trans hm₄)
+        (by simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+              IExp.eval_ofNat] at *;
+            fp_omega [dSzKd, dSzKp, hkp]),
+       (readsOnly_read _ _ _ _).of_modifies h₂.1 (hm₃.trans hm₄)
+        (by simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+              IExp.eval_ofNat] at *;
+            fp_omega [dSzKd, dSzKp]),
+       (readsOnly_read _ _ _ _).of_modifies h₃.1 hm₄ (by
+        simp only [eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
+          IExp.eval_ofNat] at *;
+          fp_omega [dKdKp]), h₄.1⟩,
+      h₄.2.trans (h₃.2.trans (h₂.2.trans h₁.2))⟩
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The scratch blocks of a compression at the handles $b + 4, \dots, b + 7$ lie in the first
+$2n^2$ cells of those buffers. -/
+theorem modifies_split_scratch {s s' : Store P K} {n k r b co Ma : ℕ} [DecidableEq P]
+    (hr : r ≤ k) (hk : k ≤ n) (h : Modifies [matBlock (b + 4) 0 r k 2, matBlock (b + 5) 0 r k 2,
+      matBlock (b + 6) 0 r r 2, matBlock (b + 7) 0 r r 2, matBlock Ma co r r 2] s s') :
+    Modifies [matBlock Ma co r r 2, (b + 4, 0, 2 * (n * n)), (b + 5, 0, 2 * (n * n)),
+      (b + 6, 0, 2 * (n * n)), (b + 7, 0, 2 * (n * n))] s s' := by
+  refine h.of_sub fun x hx => ?_
+  have := Nat.mul_le_mul (hr.trans hk) hk
+  have := Nat.mul_le_mul (hr.trans hk) (hr.trans hk)
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | rfl | rfl | rfl
+  exacts [⟨(b + 4, 0, 2 * (n * n)), by simp, rfl, le_rfl, by simp only [matBlock]; omega⟩,
+    ⟨(b + 5, 0, 2 * (n * n)), by simp, rfl, le_rfl, by simp only [matBlock]; omega⟩,
+    ⟨(b + 6, 0, 2 * (n * n)), by simp, rfl, le_rfl, by simp only [matBlock]; omega⟩,
+    ⟨(b + 7, 0, 2 * (n * n)), by simp, rfl, le_rfl, by simp only [matBlock]; omega⟩,
+    ⟨_, List.mem_cons_self, rfl, le_rfl, le_rfl⟩]
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The footprint of a compression is writable when its scratch buffers at the handles
+$b + 4, \dots, b + 7$ have $2n^2$ cells and its output block is writable. -/
+theorem writableBlocks_split_compress {s : Store P K} {p : P} {n k r b co Ma : ℕ} (hr : r ≤ k)
+    (hk : k ≤ n)
+    (hsh : ∀ j < 4, s.shape[b + 4 + j]? = some (p, 2 * (n * n)))
+    (hMa : Writable s p Ma co (r * r * 2)) :
+    WritableBlocks s p [matBlock (b + 4) 0 r k 2, matBlock (b + 5) 0 r k 2,
+      matBlock (b + 6) 0 r r 2, matBlock (b + 7) 0 r r 2, matBlock Ma co r r 2] := by
+  have h1 := Nat.mul_le_mul (hr.trans hk) hk
+  have h2 := Nat.mul_le_mul (hr.trans hk) (hr.trans hk)
+  intro x hx
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | rfl | rfl | rfl
+  exacts [writable_of_shape_eq rfl (hsh 0 (by omega)) (by simp only [matBlock]; omega),
+    writable_of_shape_eq rfl (hsh 1 (by omega)) (by simp only [matBlock]; omega),
+    writable_of_shape_eq rfl (hsh 2 (by omega)) (by simp only [matBlock]; omega),
+    writable_of_shape_eq rfl (hsh 3 (by omega)) (by simp only [matBlock]; omega), hMa]
+
+/-- The tail of a split, after the two deflations, as a routine specification: the two
+compressions at the blocks of the slots $lo$ and $lo + k_+$ of depth $d + 1$ in `Ma` and the
+records, with the compressions' scratch at the handles $b + 4, \dots, b + 7$. -/
+theorem spec_eighSplitTail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
+    {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x)) (p : P) (n d lo k : ℕ)
+    (hk : lo + k ≤ n) (kpe : IExp ℕ) (hkp : 0 < kpe.eval) (hkpk : kpe.eval < k) (H : EighArenas)
+    {two sg nsg : Cell ℕ ℕ} (c₂ σ σ' : K) (A : Matrix (Fin k) (Fin k) (K × K))
+    (Qp : Matrix (Fin k) (Fin kpe.eval) (K × K)) (Qm : Matrix (Fin k) (Fin (k - kpe.eval)) (K × K))
+    (b : ℕ) (dMaQa : H.Ma ≠ H.Qa) (dSzKd : H.Sz ≠ H.Kd) (dSzKp : H.Sz ≠ H.Kp)
+    (dKdKp : H.Kd ≠ H.Kp) (dMa : H.Ma ≠ H.Sz ∧ H.Ma ≠ H.Kd ∧ H.Ma ≠ H.Kp)
+    (dc : two.buf ≠ H.Ma ∧ sg.buf ≠ H.Ma ∧ nsg.buf ≠ H.Ma)
+    (hlt : H.Qa < b ∧ H.Ma < b ∧ two.buf < b ∧ sg.buf < b ∧ nsg.buf < b) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        pairLayout.Holds st.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
+        pairLayout.Holds st.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kpe.eval)) Qm ∧
+        st.store.read p two.buf two.idx.eval = some c₂ ∧
+        st.store.read p sg.buf sg.idx.eval = some σ ∧
+        st.store.read p nsg.buf nsg.idx.eval = some σ' ∧
+        (∀ j < 4, st.store.shape[b + 4 + j]? = some (p, 2 * (n * n))) ∧
+        md.Needs (dec p c₂ ≠ 0 ∧
+          WritableBlocks st.store p ((eighSplitWindow H n d lo k kpe.eval).drop 2) ∧
+          (∃ z, I.sem.lit p (kpe.eval : ℚ) = some z) ∧
+          (∃ z, I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) = some z) ∧
+          ∃ z, I.sem.lit p ((4 : ℕ) : ℚ) = some z))
+      (do
+        eighCompressBlock p mm (.const k) kpe H.Qa (eighBlockOff (.const n) (.const d) (.const lo))
+          H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
+          (eighBlockOff (.const n) (.const d + 1) (.const lo)) two sg (b + 4) (b + 5) (b + 6)
+          (b + 7)
+        eighCompressBlock p mm (.const k) (.const k - kpe) H.Qa
+          (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe)) H.Ma
+          (eighBlockOff (.const n) (.const d) (.const lo))
+          (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) two nsg (b + 4) (b + 5)
+          (b + 6) (b + 7)
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩ kpe)
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo + kpe)⟩
+          (.const k - kpe))
+        ins (.litIdx p ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 4)
+        ins (.litIdx p ⟨H.Kp, eighSlotOff (.const n) (.const d) (.const lo)⟩ kpe) :
+          Builder P ι ℕ ℕ Unit)
+      ((eighSplitWindow H n d lo k kpe.eval).drop 2 ++ [(b + 4, 0, 2 * (n * n)),
+        (b + 5, 0, 2 * (n * n)), (b + 6, 0, 2 * (n * n)),
+        (b + 7, 0, 2 * (n * n))])
+      fun st st' => (pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+          ((eighTapeMachine I p mmR qrR).hermShift ((eighTapeMachine I p mmR qrR).hermAvg
+            (mmR (mmR ((eighTapeMachine I p mmR qrR).conjTransposeMat Qp) A) Qp) c₂) σ) ∧
+        pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kpe.eval))
+          ((eighTapeMachine I p mmR qrR).hermShift ((eighTapeMachine I p mmR qrR).hermAvg
+            (mmR (mmR ((eighTapeMachine I p mmR qrR).conjTransposeMat Qm) A) Qm) c₂) σ') ∧
+        st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p (kpe.eval : ℚ) ∧
+        st'.store.read p H.Sz (n * (d + 1) + (lo + kpe.eval)) =
+          I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) ∧
+        st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+        st'.store.read p H.Kp (n * d + lo) = I.sem.lit p (kpe.eval : ℚ)) ∧ PosKept st st' := by
+  simp only [eighSplitWindow, List.drop_succ_cons, List.drop_zero]
+  have hs0 : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem) :=
+    hsem.mono fun h => h.1.mono_safe fun p x _ => h.2 p x
+  obtain ⟨F1, F3, -⟩ := split_arith_node (d := d) hk hkpk; obtain ⟨lQa, lMa, ltwo, lsg, lnsg⟩ := hlt
+  refine ⟨by exec_composable, fun st ⟨hA, hQp, hQm, htwo, hσ, hnσ, hsh, hN⟩ => ?_⟩
+  obtain ⟨h0, hWB, hL⟩ := And.imp_right Mode.needs_and.mp (Mode.needs_and.mp hN)
+  have hW := fun (s : Store P K) (hs : s.shape = st.store.shape) x
+      (hx : x ∈ (eighSplitWindow H n d lo k kpe.eval).drop 2) =>
+    hWB.mono fun h => (h x hx).of_shape_eq hs
+  have hWC : ∀ s : Store P K, s.shape = st.store.shape → ∀ r ≤ k, ∀ co : ℕ,
+      matBlock H.Ma co r r 2 ∈ (eighSplitWindow H n d lo k kpe.eval).drop 2 →
+      md.Needs (WritableBlocks s p [matBlock (b + 4) 0 r k 2, matBlock (b + 5) 0 r k 2,
+        matBlock (b + 6) 0 r r 2, matBlock (b + 7) 0 r r 2, matBlock H.Ma co r r 2]) :=
+    fun s hs r hr co hco => (hW s hs _ hco).mono fun hMa =>
+      writableBlocks_split_compress (n := n) hr (by omega) (fun j hj => by rw [hs]; exact hsh j hj)
+        hMa
+  have hnd : [H.Qa, H.Ma, b + 4, b + 5, b + 6, b + 7].Nodup := by fp_omega [lQa, lMa, dMaQa]
+  have hc1 := (spec_eighCompressBlock (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
+    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
+    hmm md hs0 p k kpe.eval (two := two) (sg := sg)
+    (qo := eighBlockOff (.const n) (.const d) (.const lo))
+    (mo := eighBlockOff (.const n) (.const d) (.const lo))
+    (co := eighBlockOff (.const n) (.const d + 1) (.const lo)) c₂ σ Qp A hnd
+    (by fp_omega [ltwo, lsg]))
+  have hc1' := hc1.congr (r' := eighCompressBlock p mm (.const k) kpe H.Qa
+    (eighBlockOff (.const n) (.const d) (.const lo)) H.Ma
+    (eighBlockOff (.const n) (.const d) (.const lo))
+    (eighBlockOff (.const n) (.const d + 1) (.const lo)) two sg (b + 4) (b + 5) (b + 6) (b + 7))
+    (by exec_composable) fun _ => exec_eighCompressBlock_congr_split _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  refine hc1'.wp_bind ⟨hQp, hA, htwo, hσ, ?_⟩ fun st₁ hm₁ h₁ => ?_
+  · have := hWC _ rfl kpe.eval hkpk.le (2 * (n * n) * (d + 1) + 2 * n * lo)
+      (by simp [eighSplitWindow])
+    exact h0.elim fun h0 => this.mono (⟨h0, ·⟩)
+  simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hm₁ h₁
+  have hnd' : [H.Qa, H.Ma, b + 4, b + 5, b + 6, b + 7].Nodup := hnd
+  have heq := fun st => exec_eighCompressBlock_congr_split (I := I) p mm (.const k)
+    (.const k - kpe) H.Qa (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe))
+    H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
+    (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) two nsg (b + 4) (b + 5) (b + 6)
+    (b + 7) st
+  have hc2 := (spec_eighCompressBlock (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
+    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
+    hmm md hs0 p k ((IExp.const k - kpe).eval) (two := two) (sg := nsg)
+    (qo := eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe))
+    (mo := eighBlockOff (.const n) (.const d) (.const lo))
+    (co := eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) c₂ σ' Qm A hnd'
+    (by fp_omega [ltwo, lnsg]))
+  replace hc2 := hc2.congr (executionComposable_eighCompressBlock _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) heq
+  refine hc2.wp_bind ⟨?_, ?_, ?_, ?_, ?_⟩ fun st₂ hm₂ h₂ => ?_
+  · exact (readsOnly_pairLayoutHolds p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kpe.eval))
+      Qm).of_modifies hQm hm₁ (by
+      fp_omega [lQa, dMaQa])
+  · exact (readsOnly_pairLayoutHolds p H.Ma (2 * (n * n) * d + 2 * n * lo) A).of_modifies hA hm₁ (by
+      fp_omega [lMa, F1])
+  · exact (readsOnly_read _ _ _ _).of_modifies htwo hm₁ (by fp_omega [ltwo, dc.1])
+  · exact (readsOnly_read _ _ _ _).of_modifies hnσ hm₁ (by fp_omega [lnsg, dc.2.2])
+  · have := hWC _ hm₁.1 (k - kpe.eval) (by omega)
+      (2 * (n * n) * (d + 1) + 2 * n * (lo + kpe.eval)) (by simp [eighSplitWindow])
+    exact h0.elim fun h0 => this.mono (⟨h0, ·⟩)
+  simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hm₂ h₂
+  have hR := spec_eighSplitRecords (I := I) md p n d lo k kpe H hkp dSzKd dSzKp dKdKp
+  refine hR.wp_run ?_ fun st₃ hm₃ h₃ => ?_
+  · refine (Mode.needs_and.mpr ⟨hL, hWB⟩).mono fun ⟨hl, hw⟩ => ⟨hl, fun x hx => ?_⟩
+    refine (hw x ?_).of_shape_eq (hm₂.1.trans hm₁.1)
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl | rfl <;> simp
+  have hkn : k ≤ n := by omega
+  have hm₁' := modifies_split_scratch (n := n) hkpk.le hkn hm₁
+  have hm₂' := modifies_split_scratch (n := n) (Nat.sub_le _ _) hkn hm₂
+  refine ⟨((hm₁'.trans hm₂').trans hm₃).mono fun x hx => ?_, ⟨?_, ?_, h₃.1⟩,
+    h₃.2.trans (h₂.2.trans h₁.2)⟩
+  · simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hx ⊢
+    rcases hx with ((h | h | h | h | h) | h | h | h | h | h) | h | h | h | h <;> subst h <;> simp
+  · refine (readsOnly_pairLayoutHolds p H.Ma _ _).of_modifies (h₁.1 ⟨blockDisjoint_of_fst_ne
+      (Ne.symm dc.1), blockDisjoint_of_fst_ne (Ne.symm dc.2.1)⟩) (hm₂'.trans hm₃) ?_
+    fp_omega [lMa, F3, dMa.1, dMa.2.1, dMa.2.2]
+  · refine (readsOnly_pairLayoutHolds p H.Ma _ _).of_modifies (h₂.1 ⟨blockDisjoint_of_fst_ne
+      (Ne.symm dc.1), blockDisjoint_of_fst_ne (Ne.symm dc.2.2)⟩) hm₃ ?_
+    fp_omega [dMa.1, dMa.2.1, dMa.2.2]
+
+/-- The body of a split after its eight allocations, as a specification: the two deflations at
+the scratch handles $b, \dots, b + 3$, then `NLAlib.spec_eighSplitTail`. -/
+theorem spec_eighSplitBody {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x))
+    (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (kpe : IExp ℕ) (hkp : 0 < kpe.eval)
+    (hkpk : kpe.eval < k) (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ}
+    (c₂ σ σ' : K) (A Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)) (b : ℕ)
+    (Qp : Matrix (Fin k) (Fin kpe.eval) (K × K)) (Qm : Matrix (Fin k) (Fin (k - kpe.eval)) (K × K))
+    (hQp : Qp = deflate (eighTapeMachine I p mmR qrR) kpe.eval Ppm
+      (leadingBlock k ((eighTapeSample n d lo).2 true)))
+    (hQm : Qm = deflate (eighTapeMachine I p mmR qrR) (k - kpe.eval) Pmm
+      (leadingBlock k ((eighTapeSample n d lo).2 false)))
+    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
+    (hcells : ∀ c ∈ [two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
+    (hlt : ∀ x ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf], x < b) :
+    Spec md I (fun st => pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        pairLayout.Holds st.store p Pp 0 Ppm ∧ pairLayout.Holds st.store p Pm 0 Pmm ∧
+        (∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v) ∧
+        (md = .liberal → ∀ w < 4 * (n * n),
+          st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))) ∧
+        st.store.read p two.buf two.idx.eval = some c₂ ∧
+        st.store.read p sg.buf sg.idx.eval = some σ ∧
+        st.store.read p nsg.buf nsg.idx.eval = some σ' ∧
+        st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p) ∧
+        (∀ j < 8, st.store.shape[b + j]? = some (p, 2 * (n * n))) ∧
+        md.Needs (dec p c₂ ≠ 0 ∧ WritableBlocks st.store p (eighSplitWindow H n d lo k kpe.eval) ∧
+          (∃ z, I.sem.lit p (kpe.eval : ℚ) = some z) ∧
+          (∃ z, I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) = some z) ∧
+          ∃ z, I.sem.lit p ((4 : ℕ) : ℚ) = some z))
+      (do
+        eighDeflateBlock p mm qr (.const n) (.const k) kpe (.const lo) 0 Sg sq Pp b (b + 1) (b + 2)
+          (b + 3) H.Qa (eighBlockOff (.const n) (.const d) (.const lo))
+        eighDeflateBlock p mm qr (.const n) (.const k) (.const k - kpe) (.const lo) 1 Sg sq Pm b
+          (b + 1) (b + 2) (b + 3) H.Qa
+          (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe))
+        eighCompressBlock p mm (.const k) kpe H.Qa (eighBlockOff (.const n) (.const d) (.const lo))
+          H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
+          (eighBlockOff (.const n) (.const d + 1) (.const lo)) two sg (b + 4) (b + 5) (b + 6)
+          (b + 7)
+        eighCompressBlock p mm (.const k) (.const k - kpe) H.Qa
+          (eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe)) H.Ma
+          (eighBlockOff (.const n) (.const d) (.const lo))
+          (eighBlockOff (.const n) (.const d + 1) (.const lo + kpe)) two nsg (b + 4) (b + 5)
+          (b + 6) (b + 7)
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩ kpe)
+        ins (.litIdx p ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo + kpe)⟩
+          (.const k - kpe))
+        ins (.litIdx p ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 4)
+        ins (.litIdx p ⟨H.Kp, eighSlotOff (.const n) (.const d) (.const lo)⟩ kpe) :
+          Builder P ι ℕ ℕ Unit).run
+      (eighSplitWindow H n d lo k kpe.eval ++ [(b, 0, 2 * (n * n)), (b + 1, 0, 2 * (n * n)),
+        (b + 2, 0, 2 * (n * n)),
+        (b + 3, 0, 2 * (n * n)), (b + 4, 0, 2 * (n * n)), (b + 5, 0, 2 * (n * n)),
+        (b + 6, 0, 2 * (n * n)), (b + 7, 0, 2 * (n * n))])
+      fun st st' => ((∀ w < 4 * (n * n),
+          st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))) →
+          pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
+          pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kpe.eval))
+            Qm ∧
+          pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+            ((eighTapeMachine I p mmR qrR).hermShift ((eighTapeMachine I p mmR qrR).hermAvg
+              (mmR (mmR ((eighTapeMachine I p mmR qrR).conjTransposeMat Qp) A) Qp) c₂) σ) ∧
+          pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kpe.eval))
+            ((eighTapeMachine I p mmR qrR).hermShift ((eighTapeMachine I p mmR qrR).hermAvg
+              (mmR (mmR ((eighTapeMachine I p mmR qrR).conjTransposeMat Qm) A) Qm) c₂) σ')) ∧
+        (st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p (kpe.eval : ℚ) ∧
+          st'.store.read p H.Sz (n * (d + 1) + (lo + kpe.eval)) =
+            I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) ∧
+          st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+          st'.store.read p H.Kp (n * d + lo) = I.sem.lit p (kpe.eval : ℚ)) ∧ PosKept st st' := by
+  subst hQp hQm
+  obtain ⟨dSgPp, dSgPm, dSgQa, dPpQa, dPmQa, dMaQa, dSzKd, dSzKp, dKdKp, dQaSz, dQaKd, dQaKp,
+    dMaSz, dMaKd, dMaKp, sqQa, twoQa, sgQa, nsgQa, twoMa, sgMa, nsgMa⟩ :=
+    split_handles_ne hbufs hcells
+  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
+    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hlt
+  obtain ⟨lMa, -, lQa, -, lSz, lKd, lKp, -, lSg, lPp, lPm, ltwo, lsg, lnsg, lsq⟩ := hlt
+  intro st ⟨hA, hPp, hPm, hSg, hT, htwo, hσ, hnσ, hsq, hsh, hN⟩
+  obtain ⟨h0, hN⟩ := Mode.needs_and.mp hN
+  obtain ⟨hWB, hL⟩ := Mode.needs_and.mp hN
+  have hscr : ∀ s : Store P K, s.shape = st.store.shape → ∀ X ∈ [b, b + 1, b + 2, b + 3],
+      ∃ len, s.shape[X]? = some (p, len) ∧ 2 * (n * n) ≤ len := fun s hs X hX => by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hX
+    rw [hs]
+    rcases hX with rfl | rfl | rfl | rfl
+    exacts [⟨_, hsh 0 (by omega), le_rfl⟩, ⟨_, hsh 1 (by omega), le_rfl⟩,
+      ⟨_, hsh 2 (by omega), le_rfl⟩, ⟨_, hsh 3 (by omega), le_rfl⟩]
+  have hD1 := spec_eighDeflateBlock hmm hqr md hsem p n k kpe.eval d lo hk hkpk.le hkp true
+    (Sg := Sg) (Pm := Pp) (G := b) (Y := b + 1) (Qf := b + 2) (Rf := b + 3) (Qa := H.Qa) (sq := sq)
+    (qo := eighBlockOff (.const n) (.const d) (.const lo)) Ppm
+    (by fp_omega [lSg, lPp, lQa, (dSgPp : Sg ≠ Pp),
+      (dSgQa : Sg ≠ H.Qa), (dPpQa : Pp ≠ H.Qa)]) (by fp_omega [lsq, (sqQa : sq.buf ≠ H.Qa)])
+  replace hD1 := hD1.congr (executionComposable_eighDeflateBlock _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
+    fun st => exec_eighDeflateBlock_congr_split p mm qr (.const n) (.const k) kpe (.const lo) 0
+      Sg sq Pp b (b + 1) (b + 2) (b + 3) H.Qa _ st
+  refine hD1.wp_bind ⟨hPp, hsq, hSg, hT, (Mode.needs_and.mpr ⟨Mode.needs_of (hscr _ rfl) md,
+    hWB.mono fun h => h _ List.mem_cons_self⟩)⟩ fun st₁ hm₁ h₁ => ?_
+  simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hm₁ h₁
+  have fr₁ : ∀ x, x < b → x ≠ H.Qa → ∀ q i, st₁.store.read q x i = st.store.read q x i :=
+    fun x hx hxQ q i => hm₁.2 q x i (by fp_omega [hx, hxQ])
+  have hD2 := spec_eighDeflateBlock hmm hqr md hsem p n k (k - kpe.eval) d lo hk (Nat.sub_le _ _)
+    (by omega) false (Sg := Sg) (Pm := Pm) (G := b) (Y := b + 1) (Qf := b + 2) (Rf := b + 3)
+    (Qa := H.Qa) (sq := sq)
+    (qo := eighBlockOff (.const n) (.const d) (.const lo) + 2 * (.const k * kpe)) Pmm
+    (by fp_omega [lSg, lPm, lQa, dSgPm, dSgQa, dPmQa]) (by fp_omega [lsq, sqQa])
+  replace hD2 := hD2.congr (executionComposable_eighDeflateBlock _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
+    fun st => exec_eighDeflateBlock_congr_split p mm qr (.const n) (.const k) (.const k - kpe)
+      (.const lo) 1 Sg sq Pm b (b + 1) (b + 2) (b + 3) H.Qa _ st
+  refine hD2.wp_bind ⟨fun i j t => (fr₁ _ lPm dPmQa _ _).trans (hPm i j t),
+    (fr₁ _ lsq sqQa _ _).trans hsq, fun w hw => (fr₁ _ lSg dSgQa p w).symm ▸ hSg w hw,
+    fun h w hw => (fr₁ _ lSg dSgQa p w).trans (hT h w hw),
+    (Mode.needs_and.mpr ⟨Mode.needs_of (hscr _ hm₁.1) md, hWB.mono fun h =>
+      (h _ (List.mem_cons_of_mem _ List.mem_cons_self)).of_shape_eq hm₁.1⟩)⟩
+    fun st₂ hm₂ h₂ => ?_
+  simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const, IExp.eval_ofNat] at hm₂ h₂
+  have fr₂ : ∀ x, x < b → x ≠ H.Qa → ∀ q i, st₂.store.read q x i = st.store.read q x i :=
+    fun x hx hxQ q i => (hm₂.2 q x i (by fp_omega [hx, hxQ])).trans (fr₁ x hx hxQ q i)
+  obtain ⟨⟨Q₁, hQ₁, eQ₁⟩, hp₁⟩ := h₁
+  obtain ⟨⟨Q₂, hQ₂, eQ₂⟩, hp₂⟩ := h₂
+  have hQ₁' := (readsOnly_pairLayoutHolds p H.Qa (2 * (n * n) * d + 2 * n * lo) Q₁).of_modifies
+    hQ₁ hm₂ (by fp_omega [lQa])
+  refine (spec_eighSplitTail (qrR := qrR) hmm md hsem p n d lo k hk kpe hkp hkpk H c₂ σ σ' A Q₁ Q₂ b
+    (dMaQa : H.Ma ≠ H.Qa) dSzKd dSzKp dKdKp ⟨dMaSz, dMaKd, dMaKp⟩ ⟨twoMa, sgMa, nsgMa⟩
+    ⟨lQa, lMa, ltwo, lsg, lnsg⟩).wp_run ⟨fun i j t => (fr₂ _ lMa dMaQa _ _).trans (hA i j t), hQ₁',
+      hQ₂, (fr₂ _ ltwo twoQa _ _).trans htwo, (fr₂ _ lsg sgQa _ _).trans hσ,
+      (fr₂ _ lnsg nsgQa _ _).trans hnσ, fun j hj => by
+        rw [(hm₁.trans hm₂).1, Nat.add_assoc]; exact hsh (4 + j) (by omega),
+      ?_⟩ fun st₃ hm₃ h₃ => ?_
+  · refine (Mode.needs_and.mpr ⟨h0, Mode.needs_and.mpr ⟨hWB, hL⟩⟩).mono
+      fun ⟨h0, hw, hl⟩ => ⟨h0, fun x hx => (hw x (List.mem_of_mem_drop hx)).of_shape_eq
+        (hm₁.trans hm₂).1, hl⟩
+  simp only [eighSplitWindow, List.drop_succ_cons, List.drop_zero] at hm₃
+  refine ⟨((hm₁.trans hm₂).trans hm₃).mono fun x hx => ?_, fun hT' => ?_, h₃.1.2.2,
+    h₃.2.trans (hp₂.trans hp₁)⟩
+  · simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with ((h | h | h | h | h) | h | h | h | h | h) | (h | h | h | h | h | h) | h | h | h |
+      h
+      <;> subst h <;> simp [eighSplitWindow]
+  have hT₁ : ∀ w < 4 * (n * n),
+      st₁.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)) :=
+    fun w hw => (fr₁ _ lSg dSgQa p w).trans (hT' w hw)
+  rw [eQ₁ hT'] at hQ₁' h₃
+  rw [eQ₂ hT₁] at hQ₂ h₃
+  exact ⟨(readsOnly_pairLayoutHolds p H.Qa _ _).of_modifies hQ₁' hm₃
+      (by fp_omega [lQa, dMaQa, dQaSz, dQaKd, dQaKp]),
+    (readsOnly_pairLayoutHolds p H.Qa _ _).of_modifies hQ₂ hm₃
+      (by fp_omega [lQa, dMaQa, dQaSz, dQaKd, dQaKp]), h₃.1.1, h₃.1.2.1⟩
+/-- **A split as a routine specification**: if the kernels of `I` are the routines `mmR`, `qrR`
+on interleaved pairs, then from a store of $b$ buffers holding the node matrix $\mathbf{A}$ at its
+block of `Ma`, the projectors at offset $0$ of `Pp`, `Pm`, initialised Gaussian words in `Sg` and
+the values $c_2$, $\sigma$, $\sigma'$ and the stored $\sqrt{1/2}$ in the cells `two`, `sg`, `nsg`,
+`sq` (all below $b$, as `NLAlib.holds_of_exec_eighSplitBlock` assumes), the run of
+`NLAlib.eighSplitBlock` with $0 < k_+ < k$ modifies only the blocks of
+`NLAlib.eighSplitWindow`, writes the sizes, the kind and $k_+$, and keeps the tape positions; if
+the Gaussian words are the tape's of depth $d$ (which the liberal mode assumes), it writes the
+bases and compressions of `NLAlib.holds_of_exec_eighSplitBlock`. In mode `total` the run also
+succeeds, given the standard model on every value, $c_2$ decoding to a nonzero value, the window
+writable and the literals of the records defined. No printed source. -/
+theorem spec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x))
+    (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (kpe : IExp ℕ) (hkp : 0 < kpe.eval)
+    (hkpk : kpe.eval < k) (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ}
+    (c₂ σ σ' : K) (A Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)) (b : ℕ)
+    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
+    (hcells : ∀ c ∈ [two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
+    (hlt : ∀ x ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf], x < b) :
+    RoutineSpec md I (fun st => st.store.size = b ∧
+        pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        pairLayout.Holds st.store p Pp 0 Ppm ∧ pairLayout.Holds st.store p Pm 0 Pmm ∧
+        (∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v) ∧
+        (md = .liberal → ∀ w < 4 * (n * n),
+          st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))) ∧
+        st.store.read p two.buf two.idx.eval = some c₂ ∧
+        st.store.read p sg.buf sg.idx.eval = some σ ∧
+        st.store.read p nsg.buf nsg.idx.eval = some σ' ∧
+        st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p) ∧
+        md.Needs (dec p c₂ ≠ 0 ∧ WritableBlocks st.store p (eighSplitWindow H n d lo k kpe.eval) ∧
+          (∃ z, I.sem.lit p (kpe.eval : ℚ) = some z) ∧
+          (∃ z, I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) = some z) ∧
+          ∃ z, I.sem.lit p ((4 : ℕ) : ℚ) = some z))
+      (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) kpe Sg Pp Pm H.Ma H.Qa
+        H.Sz H.Kd H.Kp two sg nsg sq) (eighSplitWindow H n d lo k kpe.eval)
+      fun st st' =>
+        let M := eighTapeMachine I p mmR qrR
+        let Qp := deflate M kpe.eval Ppm (leadingBlock k ((eighTapeSample n d lo).2 true))
+        let Qm := deflate M (k - kpe.eval) Pmm (leadingBlock k ((eighTapeSample n d lo).2 false))
+        ((∀ w < 4 * (n * n),
+          st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))) →
+          pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo) Qp ∧
+          pairLayout.Holds st'.store p H.Qa (2 * (n * n) * d + 2 * n * lo + 2 * (k * kpe.eval))
+            Qm ∧
+          pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
+            (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qp) A) Qp) c₂) σ) ∧
+          pairLayout.Holds st'.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * (lo + kpe.eval))
+            (M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Qm) A) Qm) c₂) σ')) ∧
+        (st'.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p (kpe.eval : ℚ) ∧
+          st'.store.read p H.Sz (n * (d + 1) + (lo + kpe.eval)) =
+            I.sem.lit p ((k - kpe.eval : ℕ) : ℚ) ∧
+          st'.store.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
+          st'.store.read p H.Kp (n * d + lo) = I.sem.lit p (kpe.eval : ℚ)) ∧ PosKept st st' := by
+  have hl := hlt
+  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
+    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hl
+  obtain ⟨lMa, -, lQa, -, lSz, lKd, lKp, -, lSg, lPp, lPm, ltwo, lsg, lnsg, lsq⟩ := hl
+  refine spec_eighSplitBlock_of_body p mm qr _ _ _ _ kpe Sg Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp two sg
+    nsg sq (fun _ h => h.1) (fun st hpre => ?_)
+    (Spec.with_modifies (spec_eighSplitBody hmm hqr md hsem p n d lo k hk kpe hkp hkpk H c₂ σ σ' A
+      Ppm Pmm b _ _ rfl rfl hbufs hcells hlt)) fun st st' hpre hpost => ?_
+  · obtain ⟨hsz, hA, hPp, hPm, hSg, hT, htwo, hσ, hnσ, hsq, hN⟩ := hpre
+    obtain ⟨-, hbl, hnew, -⟩ :=
+      iterate_allocate st p (2 * (IExp.const n * IExp.const n)).eval (I.width p) 8
+    have hrd := fun x (hx : x < b) => (hbl x (hsz ▸ hx)).2 p
+    refine ⟨fun i j t => (hrd _ lMa _).trans (hA i j t), fun i j t => (hrd _ lPp _).trans
+      (hPp i j t), fun i j t => (hrd _ lPm _).trans (hPm i j t), fun w hw => hrd _ lSg w ▸ hSg w hw,
+      fun h w hw => (hrd _ lSg w).trans (hT h w hw), (hrd _ ltwo _).trans htwo,
+      (hrd _ lsg _).trans hσ, (hrd _ lnsg _).trans hnσ, (hrd _ lsq _).trans hsq,
+      fun j hj => hsz ▸ hnew j hj, hN.mono fun ⟨h0, hw, hl⟩ => ⟨h0, fun x hx => ?_, hl⟩⟩
+    have hx1 : x.1 < b := by
+      simp only [eighSplitWindow, List.mem_cons, List.not_mem_nil, or_false] at hx
+      rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    exact (hw x hx).of_getElem?_shape_eq (hbl x.1 (hsz ▸ hx1)).1
+  · obtain ⟨hsz, -⟩ := hpre
+    obtain ⟨hm, hv, hr, hp⟩ := hpost
+    obtain ⟨hs8, hbl, -, hp8⟩ :=
+      iterate_allocate st p (2 * (IExp.const n * IExp.const n)).eval (I.width p) 8
+    have hsz' : st'.store.size = b + 8 := by
+      rw [← Store.size_eq_of_shape_eq hm.1.symm, hs8, hsz]
+    have hR := fun {F : Store P K → Prop} {rs} (hF : ReadsOnly F rs) (hrs : ∀ x ∈ rs, x.1 < b) =>
+      ReadsOnly.iterate_release hF hrs p (2 * (IExp.const n * IExp.const n)).eval (I.width p) 8
+        st' hsz'
+    refine ⟨fun hT => ?_, ⟨(hR (readsOnly_read _ _ _ _) (by simpa using lSz) hr.1).1,
+      (hR (readsOnly_read _ _ _ _) (by simpa using lSz) hr.2.1).1,
+      (hR (readsOnly_read _ _ _ _) (by simpa using lKd) hr.2.2.1).1,
+      (hR (readsOnly_read _ _ _ _) (by simpa using lKp) hr.2.2.2).1⟩,
+      ((hR (readsOnly_read p H.Kp _ _) (by simpa using lKp) hr.2.2.2).2.trans hp).trans hp8⟩
+    obtain ⟨v1, v2, v3, v4⟩ := hv fun w hw => ((hbl Sg (hsz ▸ lSg)).2 p w).trans (hT w hw)
+    exact ⟨(hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lQa) v1).1,
+      (hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lQa) v2).1,
+      (hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lMa) v3).1,
+      (hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lMa) v4).1⟩
 
 /-- A split writes the outcome of `NLAlib.eighStep`'s split, with its precise frame: the values
 of `NLAlib.holds_of_exec_eighSplitBlock`, and every cell outside the node's window
@@ -628,67 +863,45 @@ theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M s Qp Qm
-  have hlt := split_handles_lt hk hkpk hH hPp hPm hSg htwo hσ hnσ hsq
-  have hl : ∀ {b}, b ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf] →
-      b < st.store.size := hlt _
-  obtain ⟨s₁, h₁, e₁⟩ := exists_exec_of_exec_seq_alloc h
-  obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
-  obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
-  obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃
-  obtain ⟨s₅, h₅, e₅⟩ := alloc_inv_node h₄
-  obtain ⟨s₆, h₆, e₆⟩ := alloc_inv_node h₅
-  obtain ⟨s₇, h₇, e₇⟩ := alloc_inv_node h₆
-  obtain ⟨s₈, h₈, e₈⟩ := alloc_inv_node h₇
-  clear h h₁ h₂ h₃ h₄ h₅ h₆ h₇
-  have hst : st'.store = Array.pop^[8] s₈.store ∧ st'.pos = s₈.pos := by
-    subst e₁ e₂ e₃ e₄ e₅ e₆ e₇ e₈; exact ⟨rfl, rfl⟩
-  rw [hst.1, hst.2]
-  clear e₁ e₂ e₃ e₄ e₅ e₆ e₇ e₈ hst
-  refine name_state_node h₈ ?_
-  clear h₈
-  intro σ₈ hσs hσp h₈
-  simp only at hσs hσp
-  have hrd : ∀ {q : P} {b i : ℕ}, b < st.store.size →
-      σ₈.store.read q b i = st.store.read q b i := fun hb => by
-    rw [hσs]
-    iterate 8 rw [Store.read_push_of_lt (by first | omega | (simp only [Array.size_push]; omega))]
-  obtain ⟨⟨v1, v2, v3, v4, v5, v6, v7, v8⟩, hfr, hsh, hps⟩ := split_body_holds hmm hqr p n d lo k
-    kp hk hkp hkpk kpe hkpe H st.store.size hlt _ _ _ _ _ _ _ _ (by simp; omega)
-    (by simp [List.nodup_cons]; omega) hbufs
-    (fun i j t => (hrd (hl (by simp [EighArenas.handles]))).trans (hA i j t))
-    (fun i j t => (hrd (hl (by simp))).trans (hPp i j t))
-    (fun i j t => (hrd (hl (by simp))).trans (hPm i j t))
-    (fun w hw => (hrd (hl (by simp))).trans (hSg w hw)) ((hrd (hl (by simp))).trans htwo)
-    ((hrd (hl (by simp))).trans hσ) ((hrd (hl (by simp))).trans hnσ) hcells
-    ((hrd (hl (by simp))).trans hsq) (h := h₈)
-  clear h₈
-  have hsz8 : s₈.store.size = st.store.size + 8 := by
-    rw [Store.size_eq_of_shape_eq hsh, hσs]; simp
-  have hpop : ∀ {q : P} {b i : ℕ}, b < st.store.size →
-      Store.read (Array.pop^[8] s₈.store) q b i = s₈.store.read q b i :=
-    fun hb => read_pops_node 8 (by omega)
-  have lQa : H.Qa < st.store.size := hl (by simp [EighArenas.handles])
-  have lMa : H.Ma < st.store.size := hl (by simp [EighArenas.handles])
-  refine ⟨⟨fun i j t => (hpop lQa).trans (v1 i j t), fun i j t => (hpop lQa).trans (v2 i j t),
-    fun i j t => (hpop lMa).trans (v3 i j t), fun i j t => (hpop lMa).trans (v4 i j t),
-    (hpop (hl (by simp [EighArenas.handles]))).trans v5,
-    (hpop (hl (by simp [EighArenas.handles]))).trans v6,
-    (hpop (hl (by simp [EighArenas.handles]))).trans v7,
-    (hpop (hl (by simp [EighArenas.handles]))).trans v8⟩, fun q b i hW => ?_, ?_,
-    hps.trans hσp⟩
-  · by_cases hb : b < st.store.size
-    · exact (hpop hb).trans ((hfr q b i hb hW).trans (hrd hb))
-    · have hsz' : (Array.pop^[8] s₈.store).size = st.store.size := by
-        simp only [Function.iterate_succ_apply', Function.iterate_zero_apply, Array.size_pop,
-          hsz8]
-        omega
-      exact (show Store.read (Array.pop^[8] s₈.store) q b i = none from
-        Store.read_eq_none_of_size_le (by omega)).trans
-          (Store.read_eq_none_of_size_le (by omega)).symm
-  · change Store.shape (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop
-      (Array.pop (Array.pop s₈.store)))))))) = _
-    simp only [Store.shape_pop, hsh, hσs]
-    simp [Store.shape]
+  subst hkpe
+  obtain ⟨hm, hv, hr, hp⟩ := (spec_eighSplitBlock (u := fun _ => 0) (dec := fun _ _ => 0)
+    (safe := fun _ _ => True) hmm hqr .liberal trivial p n d lo k hk kpe hkp hkpk H _ σ _ A Ppm Pmm
+    st.store.size hbufs hcells
+    (split_handles_lt hk hkpk hH hPp hPm hSg htwo hσ hnσ hsq)).spec.holds_of_exec
+      ⟨rfl, hA, hPp, hPm, fun w hw => ⟨_, hSg w hw⟩, fun _ => hSg, htwo, hσ, hnσ, hsq, trivial⟩ h
+  refine ⟨⟨(hv hSg).1, (hv hSg).2.1, (hv hSg).2.2.1, (hv hSg).2.2.2, hr⟩,
+    fun q b i hW => hm.2 q b i ?_, hm.1, hp⟩
+  obtain ⟨-, -, -, F6, F7, -⟩ := split_arith_node (d := d) hk hkpk
+  obtain ⟨-, F3, F4, -, -, F2⟩ := split_arith_node (d := d) hk hkpk
+  have hkn : k * k ≤ n * k := Nat.mul_le_mul_right k (by omega)
+  simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
+  obtain ⟨hWQ, hWM, hWS, hWK⟩ := hW
+  simp only [eighSplitWindow, List.forall_mem_cons, matBlock, blockDisjoint_iff]
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun x hx => absurd hx List.not_mem_nil⟩
+  · by_cases hb : b = H.Qa
+    · have := hWQ hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Qa
+    · have := hWQ hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Ma
+    · have := hWM hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Ma
+    · have := hWM hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Sz
+    · have := hWS hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Sz
+    · have := hWS hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Kd
+    · have := hWK (Or.inl hb); omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Kp
+    · have := hWK (Or.inr hb); omega
+    · exact Or.inl hb
 
 /-- A split writes the outcome of `NLAlib.eighStep`'s split: if the kernels of `I` are the
 routines `mmR`, `qrR` on interleaved pairs, a successful run of `NLAlib.eighSplitBlock` at the slot
@@ -767,5 +980,92 @@ theorem holds_of_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
     rcases hb with hb | hb
     · exact Or.inr (Or.inr (Or.inl hb))
     · exact Or.inr (Or.inr (Or.inr hb))
+
+/-- A split succeeds, with the Gaussian words only initialised. -/
+theorem exists_exec_eighSplitBlock_ex {mm qr : ι}
+    (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2) (p : P)
+    (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k) (kpe : IExp ℕ)
+    (hkpe : kpe.eval = kp)
+    (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {σ : K} {st : St P K C}
+    {A : Matrix (Fin k) (Fin k) (K × K)} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
+    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
+    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
+    (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
+    (hSg : ∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v)
+    (htwo : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
+    (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
+    (hnσ : st.store.read p nsg.buf nsg.idx.eval = some ((eighTapeMachine I p mmR qrR).neg σ))
+    (hcells : ∀ c ∈ [two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
+    (hsq : st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p)) :
+    ∃ st', exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) kpe
+      Sg Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp two sg nsg sq).run st = some st' := by
+  subst hkpe
+  have hsz : ∀ {b : ℕ} {x : P × ℕ}, st.store.shape[b]? = some x → b < st.store.size :=
+    fun h => by simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp h).1
+  have hk0 : 0 < k := by omega
+  have hn2 : 0 < 4 * (n * n) := by have : 0 < n := (by omega); positivity
+  obtain ⟨-, hMa, hUa, hQa, hEa, hSz, hKd, hKp, hLv⟩ := id hH
+  obtain ⟨z2, hz2, hdz2⟩ := hlit p 2 le_rfl
+  have hlt : ∀ x ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf],
+      x < st.store.size := by
+    simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
+      List.not_mem_nil, or_false]
+    rintro b (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl)
+    exacts [hsz hMa, hsz hUa, hsz hQa, hsz hEa, hsz hSz, hsz hKd, hsz hKp, hsz hLv,
+      Store.lt_size_of_read_eq_some (hSg 0 hn2).choose_spec,
+      Store.lt_size_of_read_eq_some (hPp ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
+      Store.lt_size_of_read_eq_some (hPm ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
+      Store.lt_size_of_read_eq_some (htwo.trans hz2), Store.lt_size_of_read_eq_some hσ,
+      Store.lt_size_of_read_eq_some hnσ, Store.lt_size_of_read_eq_some hsq]
+  obtain ⟨B1, B2, B3, -⟩ := eighSplit_bounds_split hk hkpk hd
+  obtain ⟨-, F3, -, -, -, -⟩ := split_arith_node (d := d) hk hkpk
+  have hW : WritableBlocks st.store p (eighSplitWindow H n d lo k kpe.eval) := by
+    have h1 := Nat.mul_le_mul_left n (show d + 2 ≤ D + 1 by omega)
+    have h2 := Nat.mul_le_mul_left n (show d + 1 ≤ D by omega)
+    simp only [WritableBlocks, eighSplitWindow, List.forall_mem_cons]
+    exact ⟨writable_of_shape_eq rfl hQa (by fp_omega [B1]),
+      writable_of_shape_eq rfl hQa (by fp_omega [B2]),
+      writable_of_shape_eq rfl hMa (by fp_omega [B3, F3]),
+      writable_of_shape_eq rfl hMa (by fp_omega [B3]),
+      writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
+      writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
+      writable_of_shape_eq rfl hKd (by fp_omega [h2, hk, hkpk]),
+      writable_of_shape_eq rfl hKp (by fp_omega [h2, hk, hkpk]),
+      fun x hx => absurd hx List.not_mem_nil⟩
+  exact ((spec_eighSplitBlock (safe := fun _ _ => True) hmm hqr .total ⟨hsem, fun _ _ => trivial⟩
+    p n d lo k hk kpe hkp hkpk H z2 σ _ A Ppm Pmm st.store.size hbufs hcells hlt).spec.exists_exec
+    ⟨rfl, hA, hPp, hPm, hSg, (by intro h; cases h), htwo.trans hz2, hσ, hnσ, hsq,
+      (by rw [hdz2]; norm_num), hW, hsem.lit_ok p _ trivial, hsem.lit_ok p _ trivial,
+      hsem.lit_ok p _ trivial⟩).imp fun _ h => h.1
+
+/-- A split succeeds under the standard model at $u$ with every value in range, with an exact
+literal $2$, if the kernels are routines on pairs and the arenas are allocated
+(hypotheses on the inputs as `NLAlib.holds_of_exec_eighSplitBlock`). No printed source.
+(The stored $\sqrt{1/2}$ is read from the cell `sq`, which `NLAlib.eighProg` fills once; design
+note §8, the hoist of $\sqrt{1/2}$.) -/
+theorem exists_exec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hlit : IsExactIntLit dec I.sem 2) (p : P)
+    (n d lo k kp : ℕ) (hk : lo + k ≤ n) (hkp : 0 < kp) (hkpk : kp < k)
+    (H : EighArenas) {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {σ : K} {st : St P K C}
+    {A : Matrix (Fin k) (Fin k) (K × K)} {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)}
+    {D : ℕ} (hd : d < D) (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
+    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
+    (hPp : pairLayout.Holds st.store p Pp 0 Ppm) (hPm : pairLayout.Holds st.store p Pm 0 Pmm)
+    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
+    (htwo : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
+    (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
+    (hnσ : st.store.read p nsg.buf nsg.idx.eval = some ((eighTapeMachine I p mmR qrR).neg σ))
+    (hcells : ∀ c ∈ [two, sg, nsg, sq], c.buf ∉ H.handles ++ [Sg, Pp, Pm])
+    (hsq : st.store.read p sq.buf sq.idx.eval = some (I.sem.sqrtHalf p)) :
+    ∃ st', exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.const kp)
+      Sg Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp two sg nsg sq).run st = some st' := by
+  exact exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p n d lo k kp hk hkp hkpk (.const kp)
+      rfl H
+    hd hH hbufs
+    hA hPp hPm (fun w hw => ⟨_, hSg w hw⟩) htwo hσ hnσ hcells hsq
 
 end NLAlib
