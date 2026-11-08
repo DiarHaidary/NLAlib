@@ -486,6 +486,35 @@ theorem blockDisjoint_cell_of_ne {b i j : ℕ} (h : i ≠ j) :
     decide_eq_true_eq]
   omega
 
+omit [Inhabited K] in
+/-- The run of the Newton–Schulz test block followed by `f`: the run of the block, then the run
+of `f`. No printed source. -/
+theorem exec_run_bind_newtonSchulzTestBlock {p : P} {mm : ι} {n : IExp ℕ} {X : ℕ} {xo : IExp ℕ}
+    {W V : ℕ} {one lo hi flag : Cell ℕ ℕ} (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
+    exec I (newtonSchulzTestBlock p mm n X xo W V one lo hi flag >>= f).run st =
+      (exec I (newtonSchulzTestBlock p mm n X xo W V one lo hi flag).run st).bind
+        (exec I (f ()).run) := by
+  unfold newtonSchulzTestBlock
+  exact exec_run_bind_bind (fun f st => exec_run_bind I (fun _ => rfl) f st)
+    (exec_run_bind_bind (fun f st => exec_run_bind I (fun _ => rfl) f st)
+      (fun f st => exec_run_bind I (fun _ => rfl) f st)) f st
+
+omit [Inhabited K] in
+/-- The run of the Newton–Schulz step block followed by `f`: the run of the block, then the run
+of `f`. No printed source. -/
+theorem exec_run_bind_newtonSchulzStepBlock {p : P} {mm : ι} {n : IExp ℕ} {X : ℕ} {xo : IExp ℕ}
+    {W V : ℕ} {c : Cell ℕ ℕ} (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
+    exec I (newtonSchulzStepBlock p mm n X xo W V c >>= f).run st =
+      (exec I (newtonSchulzStepBlock p mm n X xo W V c).run st).bind (exec I (f ()).run) := by
+  have hs : ∀ (b : Builder P ι ℕ ℕ Unit) (S : Stmt P ι ℕ ℕ),
+      (∀ k, ContT.run b k = .seq S (k ())) → ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
+        exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) :=
+    fun _ _ hb f st => exec_run_bind I hb f st
+  unfold newtonSchulzStepBlock
+  exact exec_run_bind_bind (hs _ _ fun _ => rfl) (exec_run_bind_bind (hs _ _ fun _ => rfl)
+    (exec_run_bind_bind (hs _ _ fun _ => rfl) (exec_run_bind_bind (hs _ _ fun _ => rfl)
+      (exec_run_bind_bind (hs _ _ fun _ => rfl) (hs _ _ fun _ => rfl))))) f st
+
 private theorem whileNS_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (n : ℕ)
     {X W V t : ℕ} {xo : IExp ℕ} {η : K} {st st₁ : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
@@ -511,20 +540,11 @@ private theorem whileNS_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
       st₁.store.shape = st.store.shape ∧ st₁.pos = st.pos := by
   have hd : ∀ {b b' : ℕ} (o o' l l' : ℕ), b ≠ b' → blockDisjoint (b, o, l) (b', o', l') = true :=
     fun _ _ _ _ h => by simp [blockDisjoint, h]
-  have hsingle : ∀ (b : Builder P ι ℕ ℕ Unit) (S : Stmt P ι ℕ ℕ),
-      (∀ k, ContT.run b k = .seq S (k ())) → ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-        exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) :=
-    fun _ _ hb f st => exec_run_bind I hb f st
   have hstep : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (σ : St P K C),
       exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩ >>= f).run σ =
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
-          (exec I (f ()).run) := by
-    unfold newtonSchulzStepBlock
-    exact exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
-      (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+          (exec I (f ()).run) :=
+    exec_run_bind_newtonSchulzStepBlock
   rw [hstep] at h
   obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)

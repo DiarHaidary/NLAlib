@@ -45,36 +45,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 /-! ### The blocks of a node -/
 
 omit [Inhabited K] in
-/-- A successful loop of literals into the cells `f w` of one buffer keeps the shape and the tape
-positions, leaves the literal in every written cell and every other cell unchanged. -/
-private theorem read_of_exec_loop_lit_leaf {p : P} {m : IExp ℕ} {Y : ℕ} {f : ℕ → IExp ℕ} {c : ℚ}
-    {st st' : St P K C}
-    (h : exec I (.loop m fun w => .seq (.instr (.lit p ⟨Y, f w⟩ c)) .skip) st = some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
-      (∀ w < m.eval, ∃ z, I.sem.lit p c = some z ∧ st'.store.read p Y (f w).eval = some z) ∧
-      ∀ q b i, (b ≠ Y ∨ ∀ w < m.eval, (f w).eval ≠ i) →
-        st'.store.read q b i = st.store.read q b i := by
-  refine forall_of_exec_loop_eq_some I (fun w s => s.store.shape = st.store.shape ∧
-      s.pos = st.pos ∧
-      (∀ w' < w, ∃ z, I.sem.lit p c = some z ∧ s.store.read p Y (f w').eval = some z) ∧
-      ∀ q b i, (b ≠ Y ∨ ∀ w' < w, (f w').eval ≠ i) → s.store.read q b i = st.store.read q b i)
-    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h
-  rintro w - s₁ s₂ ⟨hsh, hps, hrd, hfr⟩ hex
-  rw [exec_seq_skip, exec_instr] at hex
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
-  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
-  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hps, fun w' hw => ?_,
-    fun q b i hb => ?_⟩
-  · by_cases hww : (f w').eval = (f w).eval
-    · exact ⟨v, hv, hww ▸ Store.read_of_write_eq_some hw'⟩
-    · have hlt : w' < w := lt_of_le_of_ne (Nat.lt_succ_iff.mp hw) (fun h => hww (h ▸ rfl))
-      rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr hww)]
-      exact hrd w' hlt
-  · rw [Store.read_of_write_eq_some_of_ne hw' ?_]
-    · exact hfr q b i (hb.imp_right fun h w' hw => h w' (Nat.lt_succ_of_lt hw))
-    · exact hb.imp_right fun h => (h w (Nat.lt_succ_self w)).symm
-
-omit [Inhabited K] in
 /-- A successful loop of copies from the cells `g i` of `X` into the distinct cells `f i` of `Y`,
 no source among the targets, keeps the shape and the tape positions, copies every source and leaves
 every other cell unchanged. -/
@@ -131,7 +101,7 @@ private theorem read_of_exec_leaf_diag (p : P) (diag : Bool) (k : ℕ) {Ma Ea : 
   intro M
   have hii : ∀ i < k, 2 * (i + k * i) + 2 ≤ 2 * (k * k) := fun i hi => by nlinarith
   cases diag
-  · obtain ⟨hsh, hps, hE, hfr⟩ := read_of_exec_loop_lit_leaf hl
+  · obtain ⟨hsh, hps, hE, hfr⟩ := read_of_exec_loop_lit hl
     refine ⟨hsh, hps, fun i => ?_, fun q b j hb => hfr q b j (hb.imp_right fun hb w hw => ?_)⟩
     · obtain ⟨z, hz, hr⟩ := hE i i.isLt
       simp only [IExp.eval_add, IExp.eval_var] at hr
@@ -196,8 +166,8 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
   rw [exec_named, exec_seq] at hz
   obtain ⟨σ, h₀, h₁⟩ := Option.bind_eq_some_iff.mp hz
   rw [exec_seq_skip] at h₁
-  obtain ⟨hsh₀, hps₀, -, -⟩ := read_of_exec_loop_lit_leaf h₀
-  obtain ⟨hsh₁, hps₁, -, -⟩ := read_of_exec_loop_lit_leaf h₁
+  obtain ⟨hsh₀, hps₀, -, -⟩ := read_of_exec_loop_lit h₀
+  obtain ⟨hsh₁, hps₁, -, -⟩ := read_of_exec_loop_lit h₁
   rw [exec_seq_skip, exec_instr] at h
   simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
   obtain ⟨_, ⟨v, hv, s₃, hw, rfl⟩, rfl⟩ := h

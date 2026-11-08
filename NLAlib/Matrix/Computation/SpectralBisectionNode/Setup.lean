@@ -32,19 +32,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {unif : K → Su → K} {normal : Sg → K × K}
 
 omit [Inhabited K] in
-/-- A successful copy, then the rest, inverted: the value copied, the write and the run of the
-rest. -/
-private theorem exists_of_exec_seq_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.copy p dst src)) t) s = some s₂) :
-    ∃ a s', s.store.read p src.buf src.idx.eval = some a ∧
-      s.store.write p dst.buf dst.idx.eval a = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.copy p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, s', ha, hw, h⟩
-
-omit [Inhabited K] in
 /-- A trace keeps the shape of the store and the tape positions. -/
 theorem shape_pos_of_exec_ztraceRe_node (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ}
     {dst : Cell ℕ ℕ} {st st' : St P K C}
@@ -81,47 +68,6 @@ private theorem node_bind {b : Builder P ι ℕ ℕ Unit} {X : Stmt P ι ℕ ℕ
     ∃ σ, exec I b.run st = some σ ∧ exec I (f ()).run σ = some st' := by
   rw [exec_run_bind I hb] at h
   exact Option.bind_eq_some_iff.mp h
-
-omit [Inhabited K] in
-/-- A successful index literal, then the rest, inverted: the literal's value, the write and the
-run of the rest. -/
-private theorem exists_of_exec_seq_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ}
-    {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
-    (h : exec I (.seq (.instr (.litIdx p dst e)) t) s = some s₂) :
-    ∃ v s', I.sem.lit p (e.eval : ℚ) = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- A successful binary operation, then the rest, inverted: the operands, the value, the write
-and the run of the rest. -/
-private theorem exists_of_exec_seq_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ}
-    {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
-    (h : exec I (.seq (.instr (.bin p op dst x y)) t) s = some s₂) :
-    ∃ a c v s', s.store.read p x.buf x.idx.eval = some a ∧
-      s.store.read p y.buf y.idx.eval = some c ∧ I.sem.bin p op a c = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.bin p op) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, c, hc, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, c, v, s', ha, hc, hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- A successful unary operation, then the rest, inverted: the operand, the value, the write and
-the run of the rest. -/
-private theorem exists_of_exec_seq_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.un p u dst x)) t) s = some s₂) :
-    ∃ a v s', s.store.read p x.buf x.idx.eval = some a ∧ I.sem.un p u a = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.un p u) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, v, s', ha, hv, hw, h⟩
 
 /-- The halves of a node step's set-up: from a state whose cell $2d$ of `Lv` holds $R$ and whose
 cell $1$ of `c` holds the stored $2$, two instructions write $\sigma = R/\mathrm{fl}(2)$ and

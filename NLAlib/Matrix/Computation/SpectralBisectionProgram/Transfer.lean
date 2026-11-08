@@ -204,41 +204,6 @@ theorem exists_of_exec_alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι 
   · rfl
 
 omit [Inhabited K] in
-/-- A literal, then the rest, inverted. -/
-theorem exists_of_exec_seq_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.lit p dst q)) t) s = some s₂) :
-    ∃ v s', I.sem.lit p q = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- A unary operation, then the rest, inverted. -/
-theorem exists_of_exec_seq_un {p : P} {op : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.un p op dst x)) t) s = some s₂) :
-    ∃ a v s', s.store.read p x.buf x.idx.eval = some a ∧ I.sem.un p op a = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.un p op) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, v, s', ha, hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- A copy, then the rest, inverted. -/
-theorem exists_of_exec_seq_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.copy p dst src)) t) s = some s₂) :
-    ∃ v s', s.store.read p src.buf src.idx.eval = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.copy p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
-omit [Inhabited K] in
 /-- A successful loop of index literals into the cells $w < m$ of one buffer leaves the
 literal in each, every other cell, the shape and the positions unchanged. -/
 theorem shape_of_exec_loop_litIdx {p : P} {m e : IExp ℕ} {Y : ℕ} {st st' : St P K C}

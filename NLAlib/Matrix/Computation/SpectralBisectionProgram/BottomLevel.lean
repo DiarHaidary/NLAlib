@@ -29,36 +29,6 @@ open Computation Computation.Builder
 variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Interp P ι K C}
   {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
 
-omit [Inhabited K] in
-/-- A successful loop of literals into the cells `f w` of one buffer keeps the shape and the tape
-positions, leaves the literal in every written cell and every other cell unchanged. -/
-private theorem read_of_exec_loop_lit {p : P} {m : IExp ℕ} {Y : ℕ} {f : ℕ → IExp ℕ} {c : ℚ}
-    {st st' : St P K C}
-    (h : exec I (.loop m fun w => .seq (.instr (.lit p ⟨Y, f w⟩ c)) .skip) st = some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
-      (∀ w < m.eval, ∃ z, I.sem.lit p c = some z ∧ st'.store.read p Y (f w).eval = some z) ∧
-      ∀ q b i, (b ≠ Y ∨ ∀ w < m.eval, (f w).eval ≠ i) →
-        st'.store.read q b i = st.store.read q b i := by
-  refine forall_of_exec_loop_eq_some I (fun w s => s.store.shape = st.store.shape ∧
-      s.pos = st.pos ∧
-      (∀ w' < w, ∃ z, I.sem.lit p c = some z ∧ s.store.read p Y (f w').eval = some z) ∧
-      ∀ q b i, (b ≠ Y ∨ ∀ w' < w, (f w').eval ≠ i) → s.store.read q b i = st.store.read q b i)
-    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h
-  rintro w - s₁ s₂ ⟨hsh, hps, hrd, hfr⟩ hex
-  rw [exec_seq_skip, exec_instr] at hex
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
-  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
-  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hps, fun w' hw => ?_,
-    fun q b i hb => ?_⟩
-  · by_cases hww : (f w').eval = (f w).eval
-    · exact ⟨v, hv, hww ▸ Store.read_of_write_eq_some hw'⟩
-    · have hlt : w' < w := lt_of_le_of_ne (Nat.lt_succ_iff.mp hw) (fun h => hww (h ▸ rfl))
-      rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr hww)]
-      exact hrd w' hlt
-  · rw [Store.read_of_write_eq_some_of_ne hw' ?_]
-    · exact hfr q b i (hb.imp_right fun h w' hw => h w' (Nat.lt_succ_of_lt hw))
-    · exact hb.imp_right fun h => (h w (Nat.lt_succ_self w)).symm
-
 /-- The run of the spent level at a node of size $k$ at slot $lo$: the stored identity in its
 output block, zeros in its eigenvalue cells, every other cell, the shape and the positions kept. -/
 private theorem eighBottomLevel_node_run (p : P) (n D lo k : ℕ) (H : EighArenas)

@@ -424,13 +424,6 @@ private theorem exists_exec_eighUpSlot {mm : ι} (hmm : IsMatMulKernel I mm pair
     · exact Or.inr (Or.inr (by have := hE' hbE; omega))
     · exact Or.inl hbE
 
-omit [Inhabited K] in
-/-- An option that is `some` stays `some` under `Option.map`. -/
-private theorem exists_map_eq_some {α β : Type} {o : Option α} (f : α → β)
-    (h : ∃ a, o = some a) : ∃ b, o.map f = some b := by
-  obtain ⟨a, rfl⟩ := h
-  exact ⟨f a, rfl⟩
-
 /-- One level of the upward pass succeeds: if kernel `mm` of `I` is the routine `mmR` on interleaved
 pairs, under a relative-error semantics `I.sem` (unit roundoff `u`, decoding `dec`) with every value
 in range and exact integer literals up to $n + 4$, the run of `NLAlib.eighUpLevel` at depth $d < D$
@@ -468,7 +461,7 @@ theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
   set t := st.store.size with ht
   change ∃ st', exec I (.seq (.alloc p _ _) .skip) st = some st'
   rw [exec_seq_skip, exec_alloc]
-  refine exists_map_eq_some _ ?_
+  refine Option.exists_map_eq_some ?_
   change ∃ s₁, exec I (.seq (.instr _) (.seq (.instr _) (.seq (.loop _ _) .skip))) _ = some s₁
   have hP : ∀ {q : P} {b i : ℕ}, b < t →
       Store.read (st.store.push (p, Array.replicate (2 : IExp ℕ).eval none)) q b i =

@@ -18,7 +18,7 @@ runs succeeds. Upstream candidate for `Mathlib.Data.Option.Basic`.
 
 ## Main results
 
-* `Option.exists_map_eq_some_of_exists`.
+* `Option.exists_map_eq_some_of_exists`, `Option.exists_map_eq_some`.
 * `Option.exists_bind_eq_some_of_exists`.
 -/
 
@@ -33,6 +33,12 @@ theorem exists_map_eq_some_of_exists {α β : Type*} {o : Option α} {f : α →
     ∃ b, o.map f = some b ∧ R b := by
   obtain ⟨a, rfl, ha⟩ := h
   exact ⟨f a, rfl, hQ a ha⟩
+
+/-- If `o` is `some a`, then `o.map f` is `some b`. -/
+theorem exists_map_eq_some {α β : Type*} {o : Option α} {f : α → β} (h : ∃ a, o = some a) :
+    ∃ b, o.map f = some b := by
+  obtain ⟨a, rfl⟩ := h
+  exact ⟨f a, rfl⟩
 
 /-- If `o` is `some a` for an `a` satisfying `Q`, and `f` succeeds on every value satisfying `Q`,
 then `o.bind f` succeeds. -/

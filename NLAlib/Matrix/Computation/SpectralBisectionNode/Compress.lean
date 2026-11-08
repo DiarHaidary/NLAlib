@@ -196,13 +196,6 @@ private theorem compress_zw {s₀ s : Store P K} {p : P} {Y yo len k N : ℕ}
     · exact ⟨w, (Store.read_of_write_eq_some_of_ne hs' (not_and_or.mp hbi)).trans hw⟩
 
 omit [Inhabited K] in
-private theorem compress_bind {α β : Type} {o : Option α} {f : α → Option β} (R : α → Prop)
-    (h₁ : ∃ a, o = some a ∧ R a) (h₂ : ∀ a, R a → ∃ b, f a = some b) :
-    ∃ b, o.bind f = some b := by
-  obtain ⟨a, rfl, ha⟩ := h₁
-  exact h₂ a ha
-
-omit [Inhabited K] in
 /-- A conjugate transpose succeeds under the standard model when the output block fits. -/
 private theorem compress_exists_zconjTranspose {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (m n : ℕ) {X Y : ℕ}
@@ -307,7 +300,7 @@ private theorem compress_exists_zhermShift {u : P → ℝ} {dec : P → K → �
     some st'
   rw [exec_seq_skip, exec_named, exec_seq]
   -- the strict upper triangle
-  refine compress_bind (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
+  refine Option.exists_bind_eq_some_of_exists (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
     ((exists_exec_loop_eq_some_of_forall I
     (fun j σ => G σ.store fun i' j' => i' < j' ∧ j' < j)
       ⟨rfl, fun _ _ _ _ => rfl, fun _ _ h => h, fun _ _ h => absurd h.2 (Nat.not_lt_zero _)⟩
@@ -339,7 +332,7 @@ private theorem compress_exists_zhermShift {u : P → ℝ} {dec : P → K → �
             hG'.2.2.2 i' j' ⟨h.1, by simp only [IExp.eval_var]; omega⟩⟩))) fun σ₁ hσ₁ => ?_
   rw [exec_seq]
   -- the diagonal
-  refine compress_bind (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
+  refine Option.exists_bind_eq_some_of_exists (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
     (exists_exec_loop_eq_some_of_forall I
     (fun _ σ => G σ.store fun i' j' => i' < j' ∧ j' < n) hσ₁ (fun i hi σ hσ => by
         have hi : i < n := hi
@@ -442,13 +435,13 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
   change exec I (.seq (.named _ _ _) .skip) st = some s₁ at h₁
   rw [exec_seq_skip] at h₁
   rw [exec_seq, h₁, Option.bind_some, exec_seq]
-  refine compress_bind (fun σ => σ.store = c₁) ⟨_, by
+  refine Option.exists_bind_eq_some_of_exists (fun σ => σ.store = c₁) ⟨_, by
     rw [exec_kcall]
     simp only [List.map_cons, List.map_nil, IExp.eval_const, IExp.eval_zero]
     rw [hc₁]; rfl, rfl⟩ ?_
   rintro σ₂ hσ₂
   rw [exec_seq]
-  refine compress_bind (fun σ => σ.store = c₂') ⟨_, by
+  refine Option.exists_bind_eq_some_of_exists (fun σ => σ.store = c₂') ⟨_, by
     rw [exec_kcall]
     simp only [List.map_cons, List.map_nil, IExp.eval_const, IExp.eval_zero]
     rw [hσ₂, hc₂]; rfl, rfl⟩ ?_

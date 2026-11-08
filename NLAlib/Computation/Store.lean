@@ -534,6 +534,50 @@ theorem Store.getElem?_shape_push_size (s : Store P K) (p : P) (n : ℕ) :
   simp only [Store.shape, Array.map_push, Array.getElem?_push, Array.size_map, if_true]
   simp
 
+omit [DecidableEq P] in
+/-- The shape of a store with three buffers of uninitialised cells pushed, below the first of
+them: the shape of the store under them. -/
+theorem Store.getElem?_shape_push_push_push_of_lt {s : Store P K} {p : P} {a b c β : ℕ}
+    (hβ : β < s.size) :
+    (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+      (p, Array.replicate c none)))[β]? = s.shape[β]? := by
+  rw [Store.getElem?_shape_push_of_lt _ (by simp only [Array.size_push]; omega),
+    Store.getElem?_shape_push_of_lt _ (by simp only [Array.size_push]; omega),
+    Store.getElem?_shape_push_of_lt _ hβ]
+
+omit [DecidableEq P] in
+/-- The shapes of three pushed buffers of $a$, $b$, $c$ uninitialised cells, at their handles. -/
+theorem Store.getElem?_shape_push_push_push (s : Store P K) (p : P) (a b c : ℕ) :
+    (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+        (p, Array.replicate c none)))[s.size]? = some (p, a) ∧
+      (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+        (p, Array.replicate c none)))[(s.push (p, Array.replicate a none)).size]? =
+        some (p, b) ∧
+      (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+        (p, Array.replicate c none)))[((s.push (p, Array.replicate a none)).push
+          (p, Array.replicate b none)).size]? = some (p, c) := by
+  refine ⟨?_, ?_, Store.getElem?_shape_push_size _ _ _⟩
+  · rw [Store.getElem?_shape_push_of_lt _ (by simp only [Array.size_push]; omega),
+      Store.getElem?_shape_push_of_lt _ (by simp only [Array.size_push]; omega),
+      Store.getElem?_shape_push_size]
+  · rw [Store.getElem?_shape_push_of_lt _ (by simp only [Array.size_push]; omega),
+      Store.getElem?_shape_push_size]
+
+/-- A read of a store with three buffers popped, below the popped ones: the read of the store. -/
+theorem Store.read_pop_pop_pop_of_lt {s : Store P K} {q : P} {b i : ℕ} (hb : b + 3 < s.size) :
+    Store.read (Array.pop (Array.pop (Array.pop s))) q b i = s.read q b i := by
+  rw [Store.read_pop_of_lt (by simp only [Array.size_pop]; omega),
+    Store.read_pop_of_lt (by simp only [Array.size_pop]; omega), Store.read_pop_of_lt (by omega)]
+
+/-- A read of a store with three buffers of uninitialised cells pushed, below the first of them:
+the read of the store under them. -/
+theorem Store.read_push_push_push_of_lt {s : Store P K} {p q : P} {a b c β i : ℕ}
+    (hβ : β < s.size) :
+    Store.read (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+      (p, Array.replicate c none)) q β i = s.read q β i := by
+  rw [Store.read_push_of_lt (by simp only [Array.size_push]; omega),
+    Store.read_push_of_lt (by simp only [Array.size_push]; omega), Store.read_push_of_lt hβ]
+
 /-- A write succeeds at a cell inside a buffer of its tag, as the shape gives it. -/
 theorem Store.exists_write_eq_some_of_getElem?_shape {s : Store P K} {p : P} {b i n : ℕ}
     (v : K) (hs : s.shape[b]? = some (p, n)) (hi : i < n) : ∃ s', s.write p b i v = some s' := by

@@ -39,29 +39,20 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-- The loop of a constant fill: a successful run of the loop that writes the literal $q$ into
 the cells `yo + w`, $w < N$, of the block at `Y` ends with each of them holding the literal, every
-other cell unchanged. -/
-private theorem read_of_exec_loop_lit {p : P} {q : ℚ} {N Y : ℕ} {yo e : IExp ℕ}
+other cell unchanged (`NLAlib.Computation.read_of_exec_loop_lit` at contiguous cells). -/
+private theorem forall_read_of_exec_loop_lit {p : P} {q : ℚ} {N Y : ℕ} {yo e : IExp ℕ}
     {st st' : St P K C} (hN : e.eval = N)
     (h : exec I (.loop e fun w => .seq (.instr (.lit p ⟨Y, yo + .var w⟩ q)) .skip) st = some st') :
     (∀ k < N, st'.store.read p Y (yo.eval + k) = some ((I.sem.lit p q).getD default)) ∧
       ∀ q' c i, (c ≠ Y ∨ i < yo.eval ∨ yo.eval + N ≤ i) →
         st'.store.read q' c i = st.store.read q' c i := by
-  refine (fun hR => ?_) (forall_of_exec_loop_eq_some I (fun w s =>
-    (∀ k < w, s.store.read p Y (yo.eval + k) = some ((I.sem.lit p q).getD default)) ∧
-      ∀ q' c i, (c ≠ Y ∨ i < yo.eval ∨ yo.eval + w ≤ i) →
-        s.store.read q' c i = st.store.read q' c i)
-    ⟨fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h)
-  · rwa [hN] at hR
-  rintro w - s₁ s₂ ⟨hY, hfr⟩ hex
-  obtain ⟨v, s', hv, hw', hex⟩ := zherm_inv_lit hex
-  rw [exec_skip, Option.some_inj] at hex
-  subst hex
-  simp only [IExp.eval_add, IExp.eval_var] at hw'
-  refine ⟨fun k hk => ?_, fun q' c i hc =>
-    (Store.read_of_write_eq_some_of_ne hw' (by omega)).trans (hfr q' c i (by omega))⟩
-  rcases Nat.lt_succ_iff_lt_or_eq.mp hk with hk | rfl
-  · exact (Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega))).trans (hY k hk)
-  · rw [Store.read_of_write_eq_some hw', hv, Option.getD_some]
+  subst hN
+  obtain ⟨-, -, hR, hfr⟩ := read_of_exec_loop_lit h
+  refine ⟨fun k hk => ?_, fun q' c i hc => hfr q' c i (hc.imp_right fun hi w hw => ?_)⟩
+  · obtain ⟨z, hz, hr⟩ := hR k hk
+    simpa only [IExp.eval_add, IExp.eval_var, hz, Option.getD_some] using hr
+  · simp only [IExp.eval_add, IExp.eval_var]
+    omega
 
 /-- The diagonal loop of `zidentity`: from a block at `Y` holding $z$ in every word, a successful
 run of the loop that writes the literal $1$ into the real part of each diagonal entry ends with
@@ -87,7 +78,7 @@ private theorem read_of_exec_loop_lit_diag {p : P} {n Y : ℕ} {yo : IExp ℕ} {
       fun _ _ _ _ => rfl⟩ ?_ h
   rintro i hi s₁ s₂ ⟨hD, hfr⟩ hex
   change i < n at hi
-  obtain ⟨v, s', hv, hw', hex⟩ := zherm_inv_lit hex
+  obtain ⟨v, s', hv, hw', hex⟩ := exists_of_exec_seq_lit hex
   rw [exec_skip, Option.some_inj] at hex
   subst hex
   simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
@@ -123,7 +114,7 @@ theorem holds_of_exec_zidentity (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st 
   rw [exec_seq_skip, exec_named, exec_seq, Option.bind_eq_some_iff] at h
   obtain ⟨σ, h₁, h₂⟩ := h
   rw [exec_seq_skip] at h₂
-  obtain ⟨hZ, hfr⟩ := read_of_exec_loop_lit (N := 2 * (n * n)) (by simp) h₁
+  obtain ⟨hZ, hfr⟩ := forall_read_of_exec_loop_lit (N := 2 * (n * n)) (by simp) h₁
   obtain ⟨hI, hfr'⟩ := read_of_exec_loop_lit_diag hZ h₂
   refine ⟨fun a b ⟨t, ht⟩ => ?_, fun q c k hk => ?_⟩
   swap
@@ -180,7 +171,7 @@ private theorem read_of_exec_loop_bin {p : P} {b : BinOp} {N Z : ℕ} {zo e : IE
     omega
   rintro w hw s₁ s₂ ⟨hZ, hfr⟩ hex
   rw [hN] at hw
-  obtain ⟨a, c, v, s', ha, hc, hv, hw', hex⟩ := zherm_inv_bin hex
+  obtain ⟨a, c, v, s', ha, hc, hv, hw', hex⟩ := exists_of_exec_seq_bin hex
   rw [exec_skip, Option.some_inj] at hex
   subst hex
   simp only [IExp.eval_add, IExp.eval_var] at hw'
@@ -310,20 +301,6 @@ theorem holds_of_exec_zscal (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {
   · rfl
   · omega
 
-omit [Inhabited K] in
-/-- The inversion of a successful unary operation followed by `t`: the operand read, the
-operation succeeded, its result was written, and `t` ran from the charged state. -/
-private theorem exists_of_exec_seq_instr_un {p : P} {op : UnOp} {dst x : Cell ℕ ℕ}
-    {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
-    (h : exec I (.seq (.instr (.un p op dst x)) t) s = some s₂) :
-    ∃ a v s', s.store.read p x.buf x.idx.eval = some a ∧ I.sem.un p op a = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.un p op) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, v, s', ha, hv, hw, h⟩
-
 /-- The invariant of the loops of `zconjTranspose`: every entry of $\mathbf{B}$ of flat index
 below $k$ stored in the block at `Y`, every cell outside it as in `st`. -/
 private def ZConjInv (p : P) (n m Y yo : ℕ) (st : St P K C) (B : Matrix (Fin n) (Fin m) (K × K))
@@ -352,8 +329,8 @@ private theorem ZConjInv.step {p : P} {m n X Y : ℕ} {xo yo : IExp ℕ} {st t�
       t₂ := by
   unfold ZConjInv at hI ⊢
   obtain ⟨hD, hfr⟩ := hI
-  obtain ⟨a, u, ha, hu, h⟩ := zherm_inv_copy h
-  obtain ⟨b, v, u', hb, hv, hu', h⟩ := exists_of_exec_seq_instr_un h
+  obtain ⟨a, u, ha, hu, h⟩ := exists_of_exec_seq_copy h
+  obtain ⟨b, v, u', hb, hv, hu', h⟩ := exists_of_exec_seq_un h
   rw [exec_skip, Option.some_inj] at h
   subst h
   simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
@@ -458,7 +435,7 @@ theorem read_of_exec_ztraceRe (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ} {dst :
     .seq (.instr (.bin p .add dst dst ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩)) .skip)
     .skip))) .skip) st = some st' at h
   rw [exec_seq_skip, exec_named] at h
-  obtain ⟨v0, s0, hv0, hs0, h⟩ := zherm_inv_lit h
+  obtain ⟨v0, s0, hv0, hs0, h⟩ := exists_of_exec_seq_lit h
   rw [exec_seq_skip] at h
   have hne_of : ∀ b j, blockDisjoint (b, j, 1) (dst.buf, dst.idx.eval, 1) = true →
       b ≠ dst.buf ∨ j ≠ dst.idx.eval := by
@@ -487,7 +464,7 @@ theorem read_of_exec_ztraceRe (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ} {dst :
     exact ⟨hdst, hout⟩
   intro k hk s₁ s₂ ⟨hd, hfr⟩ hr
   change k < n at hk
-  obtain ⟨a, x, v, s, ha, hx, hv, hw, hr⟩ := zherm_inv_bin hr
+  obtain ⟨a, x, v, s, ha, hx, hv, hw, hr⟩ := exists_of_exec_seq_bin hr
   rw [exec_skip, Option.some_inj] at hr
   subst hr
   simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,

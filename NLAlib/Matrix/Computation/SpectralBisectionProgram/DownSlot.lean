@@ -60,30 +60,6 @@ theorem exists_exec_of_exec_seq_alloc {p : P} {len : IExp ℕ} {body : ℕ → S
   exact Option.map_eq_some_iff.mp h
 
 omit [Inhabited K] in
-/-- An index literal, then the rest, inverted. -/
-theorem exists_of_exec_seq_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.litIdx p dst e)) t) s = some s₂) :
-    ∃ v s', I.sem.lit p (e.eval : ℚ) = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- A binary operation, then the rest, inverted. -/
-theorem exists_of_exec_seq_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.bin p op dst x y)) t) s = some s₂) :
-    ∃ a c v s', s.store.read p x.buf x.idx.eval = some a ∧
-      s.store.read p y.buf y.idx.eval = some c ∧ I.sem.bin p op a c = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.bin p op) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, c, hc, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, c, v, s', ha, hc, hv, hw, h⟩
-
-omit [Inhabited K] in
 /-- A successful loop of draws into the cells $w < m$ of one buffer writes the tape values
 from the current position, advances the position by $m$ and keeps the shape and every other cell. -/
 theorem shape_of_exec_loop_draw {p : P} {dist : Dist} {m : IExp ℕ} {Y : ℕ} {st st' : St P K C}

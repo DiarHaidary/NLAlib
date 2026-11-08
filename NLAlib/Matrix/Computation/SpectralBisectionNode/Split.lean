@@ -120,19 +120,6 @@ private theorem holds_keep_node {s s' : Store P K} {p : P} {b off l m : ℕ}
     change i < off + m * l * 2 at h2
     linarith [Nat.mul_comm l m])
 
-omit [Inhabited K] in
-/-- A successful index literal, then the rest, inverted: the literal's value, the write and the
-run of the rest. -/
-private theorem exists_of_exec_seq_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ}
-    {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
-    (h : exec I (.seq (.instr (.litIdx p dst e)) t) s = some s₂) :
-    ∃ v s', I.sem.lit p (e.eval : ℚ) = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
 /-- The distinct handles of a split: two arenas and the buffers `Sg`, `Pp`, `Pm` are distinct
 when the handles of the arenas and `Sg`, `Pp`, `Pm` are, and the cells `two`, `sg`, `nsg`, `sq`
 lie in none of them (stated as implications to `False`, out of `omega`'s sight). -/

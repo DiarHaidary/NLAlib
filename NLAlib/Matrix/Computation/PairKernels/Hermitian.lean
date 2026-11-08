@@ -98,45 +98,6 @@ theorem ZInv.step {p : P} {n Y yo : ℕ} {st s σ : St P K C}
       (Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega))).trans
         ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (by omega))).trans h2)⟩
 
-omit [Inhabited K] in
-/-- The inversion of a successful copy followed by `t`: the source was read, written to the
-destination, and `t` ran from the charged state. -/
-theorem zherm_inv_copy {p : P} {dst src : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ} {s s₂ : St P K C}
-    (h : exec I (.seq (.instr (.copy p dst src)) t) s = some s₂) :
-    ∃ v s', s.store.read p src.buf src.idx.eval = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.copy p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- The inversion of a successful binary operation followed by `t`: both operands were read, the
-operation succeeded, its result was written, and `t` ran from the charged state. -/
-theorem zherm_inv_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.bin p op dst x y)) t) s = some s₂) :
-    ∃ a c v s', s.store.read p x.buf x.idx.eval = some a ∧
-      s.store.read p y.buf y.idx.eval = some c ∧ I.sem.bin p op a c = some v ∧
-      s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.bin p op) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨a, ha, c, hc, v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨a, c, v, s', ha, hc, hv, hw, h⟩
-
-omit [Inhabited K] in
-/-- The inversion of a successful literal followed by `t`: the literal succeeded, was written,
-and `t` ran from the charged state. -/
-theorem zherm_inv_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
-    {s s₂ : St P K C} (h : exec I (.seq (.instr (.lit p dst q)) t) s = some s₂) :
-    ∃ v s', I.sem.lit p q = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
-      exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
-  rw [exec_seq, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨_, ⟨v, hv, s', hw, rfl⟩, rfl⟩, h⟩ := h
-  exact ⟨v, s', hv, hw, h⟩
-
 omit [Inhabited K] [AddMonoid C] in
 /-- The parts of $\mathbf{A}$ survive in every store framed outside the block at `Y`. -/
 theorem zherm_readX {p : P} {n X Y xo yo : ℕ} {st σ : St P K C}
@@ -282,8 +243,8 @@ theorem holds_of_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
       (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
     rwa [show M.hermShift A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
       (hermFrom_ite_eq M _ _).symm]
-  · obtain ⟨v1, s', hr1, hw1, hex⟩ := zherm_inv_copy hex
-    obtain ⟨v2, s'', hr2, hw2, hex⟩ := zherm_inv_copy hex
+  · obtain ⟨v1, s', hr1, hw1, hex⟩ := exists_of_exec_seq_copy hex
+    obtain ⟨v2, s'', hr2, hw2, hex⟩ := exists_of_exec_seq_copy hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1
@@ -297,8 +258,8 @@ theorem holds_of_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
     subst hr2
     have hB : B i j = A i j := if_pos hij
     exact ZInv.step hR i j (by rw [hB]; exact hw1) (by rw [hB]; exact hw2) rfl rfl
-  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := zherm_inv_bin hex
-    obtain ⟨z, s'', hz, hw2, hex⟩ := zherm_inv_lit hex
+  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨z, s'', hz, hw2, hex⟩ := exists_of_exec_seq_lit hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1
@@ -575,8 +536,8 @@ theorem holds_of_exec_zhermScale (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
       (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
     rwa [show M.hermScale A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
       (hermFrom_ite_eq M _ _).symm]
-  · obtain ⟨a1, c1, v1, s', hr1, hc1, hv1, hw1, hex⟩ := zherm_inv_bin hex
-    obtain ⟨a2, c2, v2, s'', hr2, hc2, hv2, hw2, hex⟩ := zherm_inv_bin hex
+  · obtain ⟨a1, c1, v1, s', hr1, hc1, hv1, hw1, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨a2, c2, v2, s'', hr2, hc2, hv2, hw2, hex⟩ := exists_of_exec_seq_bin hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1
@@ -597,8 +558,8 @@ theorem holds_of_exec_zhermScale (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
     have hB2 : (B i j).2 = v2 := by
       simp only [B, if_pos hij, M, ScalarSem.toFloatMachine, hv2, Option.getD_some]
     exact ZInv.step hR i j (by rw [hB1]; exact hw1) (by rw [hB2]; exact hw2) rfl rfl
-  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := zherm_inv_bin hex
-    obtain ⟨z, s'', hz, hw2, hex⟩ := zherm_inv_lit hex
+  · obtain ⟨a, c', v, s', ha, hc', hv, hw1, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨z, s'', hz, hw2, hex⟩ := exists_of_exec_seq_lit hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1

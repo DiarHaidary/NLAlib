@@ -88,10 +88,10 @@ theorem holds_of_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
       (hermFrom_ite_eq M _ _).symm]
   · have hk : 2 * (i + n * j) + 1 < 2 * (n * n) := by
       have := Nat.add_mul_lt_mul_of_lt_of_lt i.2 j.2; omega
-    obtain ⟨a1, b1, v1, s₁, ha1, hb1, hv1, hw1, hex⟩ := zherm_inv_bin hex
-    obtain ⟨a2, c2, v2, s₂', ha2, hc2, hv2, hw2, hex⟩ := zherm_inv_bin hex
-    obtain ⟨a3, b3, v3, s₃, ha3, hb3, hv3, hw3, hex⟩ := zherm_inv_bin hex
-    obtain ⟨a4, c4, v4, s₄, ha4, hc4, hv4, hw4, hex⟩ := zherm_inv_bin hex
+    obtain ⟨a1, b1, v1, s₁, ha1, hb1, hv1, hw1, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨a2, c2, v2, s₂', ha2, hc2, hv2, hw2, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨a3, b3, v3, s₃, ha3, hb3, hv3, hw3, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨a4, c4, v4, s₄, ha4, hc4, hv4, hw4, hex⟩ := exists_of_exec_seq_bin hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1
@@ -123,9 +123,9 @@ theorem holds_of_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
     exact ZInv.step hR i j (by rw [hB1]; exact hw2) (by rw [hB2]; exact hw4) rfl rfl
   · have hk : 2 * (i + n * i) + 1 < 2 * (n * n) := by
       have := Nat.add_mul_lt_mul_of_lt_of_lt i.2 i.2; omega
-    obtain ⟨a1, b1, v1, s₁, ha1, hb1, hv1, hw1, hex⟩ := zherm_inv_bin hex
-    obtain ⟨a2, c2, v2, s₂', ha2, hc2, hv2, hw2, hex⟩ := zherm_inv_bin hex
-    obtain ⟨z, s₃, hz, hw3, hex⟩ := zherm_inv_lit hex
+    obtain ⟨a1, b1, v1, s₁, ha1, hb1, hv1, hw1, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨a2, c2, v2, s₂', ha2, hc2, hv2, hw2, hex⟩ := exists_of_exec_seq_bin hex
+    obtain ⟨z, s₃, hz, hw3, hex⟩ := exists_of_exec_seq_lit hex
     rw [exec_skip, Option.some_inj] at hex
     subst hex
     have fr := hR.2.2.1
