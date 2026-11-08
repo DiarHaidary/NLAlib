@@ -555,6 +555,7 @@ private theorem exists_exec_consts {u : P → ℝ} {dec : P → K → ℝ}
       Store.read_of_write_eq_some_of_ne w2 (Or.inl hb),
       Store.read_of_write_eq_some_of_ne w1 (Or.inl hb)]
 
+omit [Inhabited K] in
 /-- The sizes, the root's matrix and its window: from a state whose buffers `c + 5` (sizes, of
 $n(\ell_0 + 2) + 1$ cells), `c + 1` (node matrices) and `c + 8` (windows) have the shapes that
 `NLAlib.eighProg` allocates, whose block at offset $0$ of `A` holds $\mathbf{A}$ and whose cells

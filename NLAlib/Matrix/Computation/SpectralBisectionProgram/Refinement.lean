@@ -301,6 +301,7 @@ private theorem exec_eighConsts {p : P} {t : ℕ} {rest : Builder P ι ℕ ℕ U
       Option.getD_some]
     rfl
 
+omit [Inhabited K] in
 /-- **The arenas of `NLAlib.eighProg` at their start**: for buffers `A`, `par` below `t`, a
 successful run of the zero fill of the size arena `t + 5`, the size $n$ of the root in its cell
 $0$, the copy of the block at offset $0$ of `A` (holding $\mathbf{A}$) into the node arena `t + 1`

@@ -78,6 +78,7 @@ private theorem exists_exec_loop_bin {p : P} {op : BinOp} {m : IExp ℕ} {Y : �
     · exact hb.imp_right fun h => (h w (Nat.lt_succ_self w)).symm
 
 
+omit [Inhabited K] in
 /-- The branch of a one-child node in the upward pass (`NLAlib.eighUpShift`) succeeds. -/
 private theorem exists_exec_eighUpShift (p : P) (n d D lo k : ℕ) (hd : d < D) (H : EighArenas)
     (tc : Cell ℕ ℕ) {s : St P K C} (hk : lo + k ≤ n) (hUE : H.Ua ≠ H.Ea) (htc : tc.buf ≠ H.Ea)
@@ -324,10 +325,10 @@ private theorem exists_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pair
   cases hs : eighStep M n F R₀ β y.A y.R y.ε y.ℓ (eighTapeSample n d lo) with
   | leaf U e =>
     rw [hs] at hr
-    exact ⟨_, exec_eighUpNode_of_readsIdx_one (readsIdx_of_read_eq hr.1 (hRo p _ _ hKdU hKdE))⟩
+    exact ⟨_, exec_eighUpNode_of_readsIdx_one (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hr.1)⟩
   | shift b A' σ' =>
     rw [hs] at hr
-    rw [exec_eighUpNode_of_readsIdx_shift (readsIdx_of_read_eq hr (hRo p _ _ hKdU hKdE))]
+    rw [exec_eighUpNode_of_readsIdx_shift (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hr)]
     have hch : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ (a ++ [b]) = some (lo,
         ⟨y.k, A', (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2,
           y.ℓ + 1⟩) := by
@@ -344,8 +345,8 @@ private theorem exists_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pair
     rw [hs] at hr
     obtain ⟨-, -, hkpk⟩ := eq_div_and_pos_and_lt_of_eighStep_eq_split hs
     obtain ⟨hkd, hkpr, hQp, hQm⟩ := hr
-    rw [exec_eighUpNode_of_readsIdx_four (readsIdx_of_read_eq hkd (hRo p _ _ hKdU hKdE))
-      (readsIdx_of_read_eq hkpr (hRo p _ _ hKpU hKpE)) hkp]
+    rw [exec_eighUpNode_of_readsIdx_four (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hkd)
+      (readsIdx_of_read_eq (hRo p _ _ hKpU hKpE) hkpr) hkp]
     have hchp : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ (a ++ [true]) = some (lo,
         ⟨kp, Ap, (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2,
           y.ℓ + 1⟩) := by
@@ -406,10 +407,10 @@ private theorem exists_exec_eighUpSlot {mm : ι} (hmm : IsMatMulKernel I mm pair
   swap
   · push Not at hy
     exact ⟨_, exec_eighUpSlot_of_readsIdx_zero (readsIdx_of_read_eq
-      (hlev.2.1 lo hlo fun a y ha => hy a y ha) (hSz _))⟩
+      (hSz _) (hlev.2.1 lo hlo fun a y ha => hy a y ha))⟩
   obtain ⟨a, y, ha, hay⟩ := hy
   obtain ⟨hk1, hb⟩ := eighLoc_bounds (by omega : 1 ≤ n) hay
-  rw [exec_eighUpSlot_of_readsIdx (readsIdx_of_read_eq (hlev.1 a lo y ha hay).1 (hSz _)) hk1
+  rw [exec_eighUpSlot_of_readsIdx (readsIdx_of_read_eq (hSz _) (hlev.1 a lo y ha hay).1) hk1
     (by omega)]
   refine exists_exec_eighUpNode hmm p n ℓ₀ F d D (by omega) hd H t ha hay hnd htH ht0 ht1 hrec
     hout (fun q b i hb' => ?_) hUs hEs hadd hsub

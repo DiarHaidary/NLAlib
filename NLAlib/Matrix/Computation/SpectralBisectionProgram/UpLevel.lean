@@ -42,7 +42,7 @@ theorem EighArenas.holds_of_forall_read_eq {H : EighArenas} {s s' : Store P K} {
   have hm : ∀ {b}, b ∈ [H.Ma, H.Ua, H.Qa, H.Ea, H.Sz, H.Kd, H.Kp, H.Lv] → b ∈ H.handles :=
     fun h => h
   have hR : ∀ {b i k}, b ∈ H.handles → ReadsIdx sem s p b i k → ReadsIdx sem s' p b i k :=
-    fun hb h => readsIdx_of_read_eq h (hs p _ _ hb)
+    fun hb h => readsIdx_of_read_eq (hs p _ _ hb) h
   have hH : ∀ {b off l m} {Y : Matrix (Fin l) (Fin m) (K × K)}, b ∈ H.handles →
       pairLayout.Holds s p b off Y → pairLayout.Holds s' p b off Y :=
     fun hb h => h.of_forall_read_eq fun i _ _ => hs p _ i hb

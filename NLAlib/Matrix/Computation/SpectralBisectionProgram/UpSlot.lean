@@ -10,6 +10,7 @@ public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
 public import NLAlib.Computation.BLASCongr
 public import NLAlib.Matrix.Computation.PairKernels
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.DownSlot
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Levels
 
 /-!
@@ -451,15 +452,6 @@ theorem EighArenas.mul_le_and_lt_of_levelCell_ea {H : EighArenas} {n d i : ℕ}
   · exact h
   · exact absurd hb.symm h13
 
-omit [AddMonoid C] [Inhabited K] in
-/-- An index read transfers to a store that reads the cell `i` of buffer `b` as `s` does. -/
-theorem readsIdx_of_read_eq {sem : ScalarSem P K} {s s' : Store P K} {p : P} {b i k : ℕ}
-    (h : ReadsIdx sem s p b i k) (he : s'.read p b i = s.read p b i) :
-    ReadsIdx sem s' p b i k := by
-  unfold ReadsIdx at h ⊢
-  rw [he]
-  exact h
-
 /-! ### The branches of a node and a slot -/
 
 omit [Inhabited K] in
@@ -734,7 +726,7 @@ private theorem holds_of_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pa
   | leaf U e =>
     rw [hs] at hr
     obtain ⟨hkd, hU, hE⟩ := hr
-    rw [exec_eighUpNode_of_readsIdx_one (readsIdx_of_read_eq hkd (hRo p _ _ hKdU hKdE))] at h
+    rw [exec_eighUpNode_of_readsIdx_one (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hkd)] at h
     cases h
     refine ⟨rfl, rfl, ?_, fun _ _ _ _ _ => rfl⟩
     simp only [eighAux, eighSlotTree, hs]
@@ -744,7 +736,7 @@ private theorem holds_of_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pa
     simpa [pairLayout, Nat.mul_comm] using hi'
   | shift b A' σ' =>
     rw [hs] at hr
-    rw [exec_eighUpNode_of_readsIdx_shift (readsIdx_of_read_eq hr (hRo p _ _ hKdU hKdE))] at h
+    rw [exec_eighUpNode_of_readsIdx_shift (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hr)] at h
     have hch : eighLoc M n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ (a ++ [b]) = some (lo,
         ⟨y.k, A', (eighNextParams M y.R y.ε y.ℓ).1, (eighNextParams M y.R y.ε y.ℓ).2,
           y.ℓ + 1⟩) := by
@@ -768,8 +760,8 @@ private theorem holds_of_exec_eighUpNode {mm : ι} (hmm : IsMatMulKernel I mm pa
   | split kp hkp Qp Qm Ap Am σ' =>
     rw [hs] at hr
     obtain ⟨hkd, hkpr, hQp, hQm⟩ := hr
-    rw [exec_eighUpNode_of_readsIdx_four (readsIdx_of_read_eq hkd (hRo p _ _ hKdU hKdE))
-      (readsIdx_of_read_eq hkpr (hRo p _ _ hKpU hKpE)) hkp] at h
+    rw [exec_eighUpNode_of_readsIdx_four (readsIdx_of_read_eq (hRo p _ _ hKdU hKdE) hkd)
+      (readsIdx_of_read_eq (hRo p _ _ hKpU hKpE) hkpr) hkp] at h
     exact holds_of_exec_eighUpNode_split hmm p n ℓ₀ F d D H t
       (s₁ := { s₁ with cnt := s₁.cnt + I.charge (.toNat p) + I.charge (.toNat p) }) ha hay hkn hyR
       hUE hUQ hQE htU htE hs hQp hQm ht0 hout hRo hRU1 hRE1 h
@@ -832,7 +824,7 @@ theorem holds_of_exec_eighUpSlot {mm : ι} (hmm : IsMatMulKernel I mm pairLayout
   swap
   · push Not at hy
     rw [exec_eighUpSlot_of_readsIdx_zero (readsIdx_of_read_eq
-      (hlev.2.1 lo hlo fun a y ha => hy a y ha) (hSz _))] at h
+      (hSz _) (hlev.2.1 lo hlo fun a y ha => hy a y ha))] at h
     cases h
     refine ⟨hsh, hps, fun q b i hb => hfr q b i (hb.imp_right fun H' a lo' y ha hay hlt =>
       H' a lo' y ha hay (by omega)), fun a lo' y ha hay hlt =>
@@ -841,7 +833,7 @@ theorem holds_of_exec_eighUpSlot {mm : ι} (hmm : IsMatMulKernel I mm pairLayout
     exact hy a y ha hay
   obtain ⟨a, y, ha, hay⟩ := hy
   obtain ⟨hk1, hb⟩ := eighLoc_bounds (by omega : 1 ≤ n) hay
-  rw [exec_eighUpSlot_of_readsIdx (readsIdx_of_read_eq (hlev.1 a lo y ha hay).1 (hSz _)) hk1
+  rw [exec_eighUpSlot_of_readsIdx (readsIdx_of_read_eq (hSz _) (hlev.1 a lo y ha hay).1) hk1
     (by omega)] at h
   have hbefore := fun {a' : List Bool} {lo' : ℕ} {y' : EighNode K} (ha' : a'.length = d)
     (hay' : eighLoc (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A, R₀, ε, ℓ₀⟩ a' =
