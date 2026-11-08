@@ -14,20 +14,53 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Every commit that changes docs/targets.approved is a verified commit by tchen01
+      - name: Every change to docs/targets.approved is a verified commit by tchen01
         env:
           GH_TOKEN: ${{ github.token }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           REPO: ${{ github.repository }}
+        # 1. Every non-merge commit in BASE..HEAD that changes the file is a verified commit by
+        #    tchen01.
+        # 2. A merge commit whose file is byte-identical to one of its parents' introduces nothing
+        #    and is skipped (merging main into a branch); any other merge that changes the file
+        #    must be his verified commit too.
+        # 3. If the pull request changes the file (the tip differs from BASE and from the fork
+        #    point), the tip's content must be introduced by one of his verified commits in the
+        #    range, so a merge cannot bring back an older approved registry.
         run: |
-          fail=0
-          for c in $(git rev-list "$BASE..$HEAD" -- docs/targets.approved); do
-            read -r login verified < <(gh api "repos/$REPO/commits/$c" \
+          F=docs/targets.approved
+          blob() { git rev-parse -q --verify "$1:$F" 2>/dev/null || echo none; }
+          approved_by_maintainer() {
+            read -r login verified < <(gh api "repos/$REPO/commits/$1" \
               --jq '"\(.author.login) \(.commit.verification.verified)"')
-            if [ "$login" != "tchen01" ] || [ "$verified" != "true" ]; then
-              echo "::error::$c changes docs/targets.approved but is not a verified commit by tchen01 (author $login, verified $verified)"
+            [ "$login" = "tchen01" ] && [ "$verified" = "true" ]
+          }
+          fail=0
+          head_blob=$(blob "$HEAD")
+          tip_ok=0
+          for c in $(git rev-list --full-history "$BASE..$HEAD" -- "$F"); do
+            b=$(blob "$c")
+            parents=$(git rev-list --parents -n 1 "$c" | cut -d' ' -f2-)
+            if [ "$(echo $parents | wc -w)" -gt 1 ]; then
+              same=0
+              for p in $parents; do [ "$(blob "$p")" = "$b" ] && same=1; done
+              if [ $same = 1 ]; then
+                echo "$c: merge commit, $F identical to a parent's; nothing introduced"
+                continue
+              fi
+            fi
+            if approved_by_maintainer "$c"; then
+              [ "$b" = "$head_blob" ] && tip_ok=1
+            else
+              echo "::error::$c changes $F but is not a verified commit by tchen01"
               fail=1
             fi
           done
+          mb=$(git merge-base "$BASE" "$HEAD")
+          if [ "$head_blob" != "$(blob "$BASE")" ] && [ "$head_blob" != "$(blob "$mb")" ] \
+             && [ $tip_ok = 0 ]; then
+            echo "::error::the pull request changes $F to content no verified commit by tchen01 in it introduced"
+            fail=1
+          fi
           exit $fail

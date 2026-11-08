@@ -511,7 +511,13 @@ Facts, 2026-11-07:
    touches it needs his review, from the base branch's CODEOWNERS, which a PR cannot edit its way
    out of. In addition, a required check (`.github/workflows/approval.yml`, Part D): every commit in
    the PR that changes `docs/targets.approved` must be a **verified commit authored by `tchen01`**
-   (GitHub API `author.login` and `commit.verification.verified`). The maintainer approves by
+   (GitHub API `author.login` and `commit.verification.verified`). A merge commit whose
+   `docs/targets.approved` is byte-identical to one of its parents' introduces nothing and is
+   skipped (merging main into a branch; the first version flagged those, a false positive on
+   PR #70); any other merge that changes it must be his verified commit. If the PR changes the file
+   (the tip differs from the base and from the fork point), the tip's content must come from one of
+   his verified commits in the PR, so a merge cannot bring back an older approved registry. The
+   maintainer approves by
    editing the file in the web UI on the PR branch (verified automatically) or by a commit signed
    with a key that is not on the host. This check is sound only after step 1, since a commit made
    through the API with his PAT is also verified and authored by him. A push ruleset with
