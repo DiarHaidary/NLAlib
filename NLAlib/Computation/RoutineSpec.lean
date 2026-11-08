@@ -842,7 +842,7 @@ macro_rules
 /-- The composability of a builder made of statements, scalar instructions, loops, conditionals,
 index binders, scopes and named kernels in sequence: `NLAlib.Computation.ExecutionComposable.bind`
 and the `executionComposable_` lemmas. -/
-syntax "exec_composable" : tactic
+syntax (name := execComposable) "exec_composable" : tactic
 
 macro_rules
   | `(tactic| exec_composable) => `(tactic| repeat' (first
