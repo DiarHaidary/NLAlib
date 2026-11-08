@@ -228,6 +228,7 @@ theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ 
       (∀ q b i, ¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n D b i) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  have _ := htn -- the spent level needs no floor conversion
   change exec I (.seq (.loop (.const n) _) .skip) st = some st' at h
   rw [exec_seq_skip] at h
   obtain ⟨hsh, hps, hfr, hdone⟩ := forall_of_exec_loop_eq_some I (n := .const n)
@@ -287,6 +288,7 @@ theorem exists_exec_eighBottomLevel {u : P → ℝ} {dec : P → K → ℝ}
       ⟨n, A, R₀, ε, ℓ₀⟩ D) :
     ∃ st', exec I (eighBottomLevel (ι := ι) p (.const n) (.const D) H.Ua H.Ea H.Sz).run st =
       some st' := by
+  have _ := htn -- the spent level needs no floor conversion
   obtain ⟨hnd, -, hUa, -, hEa, hSz, -⟩ := hH
   simp only [EighArenas.handles, List.nodup_cons, List.mem_cons, List.not_mem_nil,
     or_false, not_or] at hnd

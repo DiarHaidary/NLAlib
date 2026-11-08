@@ -76,7 +76,7 @@ theorem eighSlotTree_append_of_eighLoc :
     simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
     funext a'
-    simp [eighSlotTree]
+    simp
   | cons b a ih =>
     intro d lo lo' x y h
     funext a'
@@ -85,7 +85,7 @@ theorem eighSlotTree_append_of_eighLoc :
     | shift b' A' σ =>
       by_cases hb : b = b'
       · subst hb
-        simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
+        simp only [eighLoc, hs, if_true] at h
         have h2 := congrFun (ih h) a'
         simp only [List.cons_append, eighSlotTree, hs, List.length_cons]
         rw [show d + (a.length + 1) = d + 1 + a.length by omega]
@@ -137,10 +137,10 @@ theorem eighLoc_params {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
       | shift b' A' σ =>
         by_cases hb : b = b'
         · subst hb
-          simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
+          simp only [eighLoc, hs, if_true] at h
           obtain ⟨h1, h2, h3⟩ := ih (d + 1) lo _ y lo'
             (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
-            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+            (by change x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
           rw [e]; exact ⟨h1, h2, h3⟩
         · simp [eighLoc, hs, hb] at h
       | split kp h' Qp Qm Ap Am σ =>
@@ -148,12 +148,12 @@ theorem eighLoc_params {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
         · simp only [eighLoc, hs, Bool.false_eq_true, if_false] at h
           obtain ⟨h1, h2, h3⟩ := ih (d + 1) (lo + kp) _ y lo'
             (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
-            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+            (by change x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
           rw [e]; exact ⟨h1, h2, h3⟩
         · simp only [eighLoc, hs, if_true] at h
           obtain ⟨h1, h2, h3⟩ := ih (d + 1) lo _ y lo'
             (by exact congrArg Prod.fst hq) (by exact congrArg Prod.snd hq)
-            (by show x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
+            (by change x.ℓ + 1 = ℓ₀ + (d + 1); omega) h
           rw [e]; exact ⟨h1, h2, h3⟩
   obtain ⟨h1, h2, h3⟩ := key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo rfl rfl rfl h
   rw [Nat.zero_add] at h1 h2 h3
@@ -177,7 +177,7 @@ theorem eighLoc_append_singleton :
     | shift b' A' σ =>
       by_cases hc : c = b'
       · subst hc
-        simp only [List.cons_append, eighLoc, hs, eq_self_iff_true, if_true, ite_true, ih,
+        simp only [List.cons_append, eighLoc, hs, if_true, ih,
           List.length_cons]
         rw [show d + (a.length + 1) = d + 1 + a.length by omega]
       · simp [eighLoc, hs, hc]
@@ -213,23 +213,36 @@ theorem eighLoc_bounds {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
       | shift b' A' σ =>
         by_cases hb : b = b'
         · subst hb
-          simp only [eighLoc, hs, eq_self_iff_true, if_true, ite_true] at h
-          exact ih (d + 1) lo _ y lo' (by show 1 ≤ x.k; exact hk)
-            (by show lo + x.k ≤ N; exact hN') h
+          simp only [eighLoc, hs, if_true] at h
+          exact ih (d + 1) lo _ y lo' (by exact hk) (by exact hN') h
         · simp [eighLoc, hs, hb] at h
       | split kp h' Qp Qm Ap Am σ =>
         have hb : 0 < kp ∧ kp < x.k := by
           unfold eighStep at hs
           dsimp only at hs
-          split_ifs at hs <;> (try cases hs) <;> omega
+          split_ifs at hs; (try cases hs); omega
         cases b
         · simp only [eighLoc, hs, Bool.false_eq_true, if_false] at h
-          exact ih (d + 1) (lo + kp) _ y lo' (by show 1 ≤ x.k - kp; omega)
-            (by show lo + kp + (x.k - kp) ≤ N; omega) h
+          exact ih (d + 1) (lo + kp) _ y lo' (by change 1 ≤ x.k - kp; omega)
+            (by change lo + kp + (x.k - kp) ≤ N; omega) h
         · simp only [eighLoc, hs, if_true] at h
-          exact ih (d + 1) lo _ y lo' (by show 1 ≤ kp; omega)
-            (by show lo + kp ≤ N; omega) h
-  exact key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo hN (by show 0 + N ≤ N; omega) h
+          exact ih (d + 1) lo _ y lo' (by change 1 ≤ kp; omega)
+            (by change lo + kp ≤ N; omega) h
+  exact key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo hN (Nat.zero_add N).le h
+
+/-- The nodes at a depth lie in $[0, N]$, for every $N$: a node that `NLAlib.eighLoc` reaches from
+the root of size $N$ at slot $0$ has its range $[lo, lo + k)$ inside $[0, N)$, and size at least
+$1$ when $N \ge 1$. No printed source. -/
+theorem add_k_le_and_of_eighLoc {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : ℕ}
+    {a : List Bool} {lo : ℕ} {y : EighNode F}
+    (h : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y)) :
+    lo + y.k ≤ N ∧ (1 ≤ N → 1 ≤ y.k) := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · refine ⟨?_, fun h => absurd h (by omega)⟩
+    cases a with
+    | nil => cases h; rfl
+    | cons b a => simp [eighLoc, eighStep] at h
+  · exact ⟨(eighLoc_bounds hN h).2, fun _ => (eighLoc_bounds hN h).1⟩
 
 /-- The slot ranges of the nodes that `NLAlib.eighLoc` reaches lie inside the range of their
 start. -/
@@ -280,11 +293,10 @@ private theorem eighLoc_disjoint_aux :
         have hne' : a ≠ a' := fun e => hne (by rw [e])
         simp only [if_true] at h h'
         exact eighLoc_disjoint_aux a a' (d + 1) lo _ l l' y y' (by simpa using hlen) hne' h h'
-      all_goals simp only [if_pos, if_neg, *] at h h' <;> simp at h h'
+      all_goals (simp only [if_pos, *] at h h'; simp at h h')
     | split kp hkp Qp Qm Ap Am σ =>
       cases b <;> cases b' <;>
-        simp only [Bool.false_eq_true, Bool.true_eq_false, if_true, if_false, ite_true,
-          ite_false] at h h'
+        simp only [Bool.false_eq_true, if_true, if_false] at h h'
       · have hne' : a ≠ a' := fun e => hne (by rw [e])
         exact eighLoc_disjoint_aux a a' (d + 1) (lo + kp) _ l l' y y' (by simpa using hlen) hne'
           h h'
@@ -311,10 +323,5 @@ theorem eighLoc_disjoint {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ 
   eighLoc_disjoint_aux a a' 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ lo lo' y y' hlen hne h h'
 
 end Levels
-
-/-! ### The levels -/
-
-variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Interp P ι K C}
-  {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
 
 end NLAlib
