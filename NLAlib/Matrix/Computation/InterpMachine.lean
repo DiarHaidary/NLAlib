@@ -52,7 +52,7 @@ draws defines, and `NLAlib.Computation.tapeIndexMatrix` the positions of its ent
   `NLAlib.Computation.decodeMatrix_hermAvg_toFloatMachine_exactSem`,
   `NLAlib.Computation.decodeMatrix_conjTransposeMat_toFloatMachine_exactSem`,
   `NLAlib.Computation.traceRe_toFloatMachine_exactSem`,
-  `NLAlib.Computation.boxTest_toFloatMachine_exactSem_iff`,
+  `NLAlib.Computation.all_finRange_toFloatMachine_exactSem_iff`,
   `NLAlib.Computation.decodeMatrix_addParts_toFloatMachine_exactSem`,
   `NLAlib.Computation.decodeMatrix_subParts_toFloatMachine_exactSem`,
   `NLAlib.Computation.decodeMatrix_mulParts_toFloatMachine_exactSem`: on exact real arithmetic the
@@ -543,7 +543,7 @@ theorem traceRe_toFloatMachine_exactSem (p : P) {n : ℕ} (A : Matrix (Fin n) (F
 /-- The exact max-modulus test: on exact real arithmetic, the test that every part of every
 entry of a stored $m \times n$ matrix lies in $[\mathit{lo}, \mathit{hi}]$, by the machine's
 comparisons, is true exactly when it does. No printed source. -/
-theorem boxTest_toFloatMachine_exactSem_iff (p : P) {m n : ℕ}
+theorem all_finRange_toFloatMachine_exactSem_iff (p : P) {m n : ℕ}
     (A : Matrix (Fin m) (Fin n) (ℝ × ℝ)) (lo hi : ℝ) :
     ((List.finRange m).all fun i => (List.finRange n).all fun j =>
       ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).le lo (A i j).1 &&

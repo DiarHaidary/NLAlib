@@ -308,7 +308,7 @@ IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKer
 | PP1–PP7 | `EntryLayout.holds_iff_readBlock_eq_some`, `pairLayout.holds_iff`, `EntryLayout.holds_of_writeBlock_eq_some`, `EntryLayout.holds_inputState`, `EntryLayout.Holds.of_forall_read_eq`, `IsMatMulKernel.holds_of_kcallStore_eq_some`, `IsQRKernel.holds_of_kcallStore_eq_some` | M, S, M, S, S, M, M |
 | IM1–IM3 | `isAccurate_toFloatMachine`, `IsRelErrSem.decidesFlags`, `isNormalSampler_gaussianNormal` | M, S, M |
 | IM4 | `FloatMachine.IsAccurate.mono` | S |
-| IM5–IM13 | exact specifications: `decodeMatrix_{hermShift,hermScale,hermAvg,conjTransposeMat}_toFloatMachine_exactSem`, `traceRe_toFloatMachine_exactSem`, `boxTest_toFloatMachine_exactSem_iff`, `decodeMatrix_{add,sub,mul}Parts_toFloatMachine_exactSem` | S each |
+| IM5–IM13 | exact specifications: `decodeMatrix_{hermShift,hermScale,hermAvg,conjTransposeMat}_toFloatMachine_exactSem`, `traceRe_toFloatMachine_exactSem`, `all_finRange_toFloatMachine_exactSem_iff`, `decodeMatrix_{add,sub,mul}Parts_toFloatMachine_exactSem` | S each |
 | PK1–PK16 | value and success of `zcopy`, `zzero`, `zneg`, `zmirror`, `zhermShift`, `zhermScale`, `zhermAvg`, `zboxTest` | M/S pairs |
 | PK17–PK22 | values of `zidentity`, `zadd`, `zsub`, `zscal`, `zconjTranspose`, `ztraceRe` | M each |
 | SG1–SG11 | test block, step block (value, success), loop, (a), (b), tree (`toStmt_compiled`, value, success), counts | M ×7, S ×3, M |
