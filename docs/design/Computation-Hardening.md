@@ -212,7 +212,7 @@ extends it to `bindIdx` by the supremum over `[0, bound]`.
 | **vacuous hypotheses** (outer or inner) | a vacuous target is a true theorem | the witness lint, §2.2 |
 | **inadequate postcondition** (`good` claims less than the docstring) | it is a specification question | review of the printed statement (the registry prints it); no lint possible |
 | **unrealistic or degenerate contracts** (a kernel contract only an oracle could meet; a witness at $u = 0$ with exact kernels; a decoding at which the clauses disagree) | contracts are data-independent by type but otherwise free | the witness lint detects unsatisfiable hypotheses, not degenerate ones. So the registry records the semantics a witness uses (`witness_sem = "gridSem t, exactMM, exactQR, ρ = roundNearest"`, reviewed with the witness), and the `Instance:` rule asks the same of headline theorems. Lint item 10 forces one decoding: every contract predicate in a rounded target's arguments takes a decoding that mentions the model's `dec` |
-| **uninformative cost** (`cost := staticCost …`, also behind a definition) | it is true | lint item 8 (`costErrors`): neither `cost`/`mem` nor any library or current-file definition they unfold to (transitively, `unfoldsTo`) mentions a registered tree or `staticCost` |
+| **uninformative cost** (`cost := staticCost …`, also behind a definition) | it is true | lint item 8 (`costErrors`): neither `cost`/`mem` nor the postcondition (`good`/`post`, where a sharp count clause may be stated), nor any library or current-file definition they unfold to (transitively, `unfoldsTo`), mentions a registered tree or `staticCost` |
 | **precomputed inputs** | data of the prover's | existing lint item 5 (Q5) |
 | **unregistered rounded results** | E3 item 2 exempts rounded program theorems from registration (`isRoundedClaim`), so a `Result:` theorem under `MatrixFreeRoundedProb` with vacuous `Contracts` is neither registered nor witnessed | extend item 7 to rounded claims: a rounded `Result:` theorem carries `Witness: <name>` in its docstring, checked as for targets (Stage 3, §9) |
 | **self-approval** | process | §2.5 |
@@ -446,7 +446,10 @@ gap is the vulnerability.
 Lint item 8 (`costErrors`) rejects a `cost`/`mem` that reaches the tree or `staticCost` through
 the values of the definitions it unfolds to (`unfoldsTo`: library and current-file definitions,
 transitively; Mathlib is not followed). The fixtures `FixTreeCost` (direct) and `FixIndirectCost`
-(behind a definition `treeCount`) are both detected.
+(behind a definition `treeCount`) are both detected. Since 2026-11-08 (approved by the maintainer)
+the item also reads the postcondition (`good` of the rounded model, `post` of the exact ones), where
+a data-dependent count clause such as EIGH's weighted kernel count is stated; the fixtures
+`FixPostCost` and `FixGoodCost` are detected.
 
 Effect: S2 targets only (unregistered). Effort: S for the model, M per target (SIGN, DEFLATE),
 S for EIGH.

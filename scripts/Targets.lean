@@ -48,7 +48,9 @@ target statements", F1 and F12). This script checks, on the library built by `la
    `N ≥ N₀`), so that no target holds because its hypotheses cannot be met;
 8. (H4) the counts and the memory of a target (the model arguments `cost` and `mem`) are closed
    forms: neither they nor any definition they unfold to mention a registered tree or a
-   `StaticCost` definition;
+   `StaticCost` definition; nor does the postcondition (`good`, `post`), so that a count clause
+   stated there (a sharp, data-dependent count) is a closed form too (approved by the maintainer
+   2026-11-08);
 9. (H2) every model in `models` has a `[[model]]` table pinning, by closure hash, the model and
    its companions (`requiredCompanions`: `M.NonVacuous`; a table may list more, such as
    `MatrixFree.post_of_agreeOn`, the model's non-interference corollary),
@@ -475,8 +477,9 @@ def unfoldsTo (e : Expr) : MetaM (Array Name) := do
     if let some v := (env.find? c).bind (·.value?) then todo := v.getUsedConstants.toList ++ todo
   return seen.toArray
 
-/-- Item 8: the model arguments `cost` and `mem` of a target that mention a registered tree or a
-`StaticCost` definition (a cost stated as "whatever the tree costs"). -/
+/-- Item 8: the model arguments `cost` and `mem` of a target, and its postcondition (`good`,
+`post`, where a count clause may be stated), that mention a registered tree or a `StaticCost`
+definition (a cost stated as "whatever the tree costs"). -/
 def costErrors (tgt : Name) (trees : List Name) : MetaM (Array String) := do
   let some (.defnInfo d) := (← getEnv).find? tgt | return #[]
   forallTelescope d.value fun _ concl => do
@@ -487,7 +490,7 @@ def costErrors (tgt : Name) (trees : List Name) : MetaM (Array String) := do
     let bad := trees ++ [``NLAlib.Computation.Prog.staticCost, ``NLAlib.Computation.FStmt.staticCost]
     let mut out := #[]
     for (n, a) in names.zip concl.getAppArgs do
-      if n == `cost || n == `mem then
+      if n == `cost || n == `mem || n == `good || n == `post then
         if let some c := (← unfoldsTo a).find? (bad.contains ·) then
           out := out.push s!"E3 target {tgt}: its `{n}` mentions {c}; counts and memory are {""
             }closed forms in the sizes (H4)"
@@ -1185,6 +1188,21 @@ def FixIndirectCost : Prop :=
       (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => treeCount p o d N n)
       (fun _ _ _ => 0) (fun _ _ _ _ _ _ => True)
 
+/-- Item 8 (H4): a target whose postcondition bounds the count by the tree's static count. -/
+def FixPostCost : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist),
+    MatrixFree (𝕜 := ℝ) p (hppC p o d) (fun _ n => 0 < n 1) (fun _ _ => Unit)
+      (fun _ _ _ => ![Array.replicate 1 none]) (fun N n => hutchppCount p o d N (n 0) (n 1))
+      (fun _ _ _ => 0) (fun N n _ _ _ st => st.cnt ≤ treeCount p o d N n)
+
+/-- Item 8 (H4): a rounded target whose `good` bounds the count by the tree's static count. -/
+def FixGoodCost : Prop :=
+  ∀ (P ι : Type) [DecidableEq P] (p : P) (o : ι) (d : Dist),
+    MatrixFreeRoundedProb (ι := ι) (K := ℝ) p (.skip : Prog P ι 0 1) (fun _ _ => True)
+      (fun _ _ => Unit) (fun _ _ _ _ => #[]) (fun _ x => x) (fun _ _ => 0) (fun _ _ => 0)
+      (fun _ _ _ => 0) (fun _ _ _ => True) (fun _ => True) (fun _ _ _ => True)
+      (fun N _ _ st => st.cnt ≤ treeCount p o d N ![1, 1]) (fun _ _ _ => 0)
+
 /-- Item 10 (H3): a rounded target whose contract takes another decoding than `dec`. -/
 def FixTwoDecodings : Prop :=
   ∀ (P : Type) [DecidableEq P] (p : P) (dec dec' : P → ℝ → ℝ),
@@ -1358,8 +1376,12 @@ run_cmd do
     fail m!"the closed-form count of FixHutchpp is rejected"
   let ce ← liftTermElabM <| costErrors ``TargetFixtures.FixIndirectCost [``TargetFixtures.hppC]
   if ce.size != 1 then fail m!"a count stated by the tree behind a definition is not detected: {ce}"
-  logInfo m!"item 8: a count stated as the tree's static cost, directly and behind a definition, {""
-    }detected"
+  for G in [``TargetFixtures.FixPostCost, ``TargetFixtures.FixGoodCost] do
+    let ce ← liftTermElabM <| costErrors G [``TargetFixtures.hppC]
+    if ce.size != 1 then fail m!"a count clause of {G}'s postcondition stated by the tree is {""
+      }not detected: {ce}"
+  logInfo m!"item 8: a count stated as the tree's static cost, directly, behind a definition and {""
+    }in the postcondition (`post`, `good`), detected"
   -- item 9 (H2): the models and their companions, pinned
   let reg₅ := { reg₂ with tables := reg₂.tables.map fun tb =>
     if tb.kind == "model" then { tb with fields := setField tb.fields "hash" (.str "0") } else tb }
