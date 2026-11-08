@@ -417,7 +417,7 @@ pattern. Counts are **an optional clause of `post`, not a field of `Spec`**:
 
 Exact counts are for the blocks where the static cost is too crude: EP7's weighted kernel count,
 where `bindIdx` takes a supremum over all values. `Spec.withCharge` transfers a total
-specification whose pre- and postcondition ignore the count to any other charge. It wraps
+specification whose postcondition ignores the count to any other charge. It wraps
 `exists_exec_withCharge_eq_some` (ExecCharge:110).
 
 **Weighted bounds (EP7).** `CostsLe w c st st' := w st'.cnt ≤ w st.cnt + c` holds for an additive
@@ -705,7 +705,7 @@ inference by recursion over `Stmt` would need a recursor in `Exec.lean` or a NAM
 
 | declaration(s) | home | reason |
 |---|---|---|
-| §3–§5 except the Matrix bridges | `NLAlib/Computation/ProgramLogic.lean` (a file of its own) | the logic of the run; Computation imports only Mathlib, ForMathlib, Computation (E5) |
+| §3–§5 except the Matrix bridges | `NLAlib/Computation/ProgramLogic.lean` (footprints, modes, triples, statement and builder rules) and `NLAlib/Computation/RoutineSpec.lean` (specifications, counts, instructions, certificate bridges, tactics), split at implementation to stay under the 1,500-line ceiling | the logic of the run; Computation imports only Mathlib, ForMathlib, Computation (E5) |
 | `IsBlockRoutine.routineSpec`, `IsMatvecRoutine.routineSpec` | `ProgramLogic.lean` | it imports `RoutineFrames` and `MatvecRoutine`; the certificates' files must not import the logic (no cycle) |
 | `readsOnly_entryLayoutHolds`, `IsMatMulKernel.spec_kcall` | `NLAlib/Matrix/Computation/KernelContracts.lean` | API of the layout and the kernel contract |
 | `IsOrthRoutine.routineSpec` | `NLAlib/Matrix/Computation/OrthRoutine.lean` | API of the certificate |

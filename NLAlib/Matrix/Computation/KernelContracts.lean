@@ -10,7 +10,7 @@ public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Factorizations.QR
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import NLAlib.Computation.Contract
-public import NLAlib.Computation.ProgramLogic
+public import NLAlib.Computation.RoutineSpec
 
 /-!
 # Contracts for black-box matrix multiplication and QR kernels

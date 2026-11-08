@@ -36,6 +36,7 @@ public import NLAlib.Computation.NormalizationErrors
 public import NLAlib.Computation.ProgramLogic
 public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RoutineFrames
+public import NLAlib.Computation.RoutineSpec
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse

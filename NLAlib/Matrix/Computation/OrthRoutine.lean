@@ -7,7 +7,7 @@ module
 
 public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Matrix.Perturbation.OrthErr
-public import NLAlib.Computation.ProgramLogic
+public import NLAlib.Computation.RoutineSpec
 
 /-!
 # Orthogonalization routines: the execution certificate
