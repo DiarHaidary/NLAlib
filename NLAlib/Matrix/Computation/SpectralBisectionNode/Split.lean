@@ -215,10 +215,10 @@ omit [AddMonoid C] [Inhabited K] in
 the buffers of the cells `two`, `sg`, `nsg`, `sq` (read) are below the size of the store. -/
 theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
     {H : EighArenas} {p : P}
-    {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {s : Store P K} {w₂ w₃ w₄ w₅ : K} {d : ℕ}
+    {Sg Pp Pm : ℕ} {two sg nsg sq : Cell ℕ ℕ} {s : Store P K} {w₂ w₃ w₄ w₅ : K}
     {Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)} (hH : H.Shaped s p n D)
     (hPp : pairLayout.Holds s p Pp 0 Ppm) (hPm : pairLayout.Holds s p Pm 0 Pmm)
-    (hSg : ∀ w < 4 * (n * n), s.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
+    (hSg : ∀ w < 4 * (n * n), ∃ v, s.read p Sg w = some v)
     (htwo : s.read p two.buf two.idx.eval = some w₂) (hσ : s.read p sg.buf sg.idx.eval = some w₃)
     (hnσ : s.read p nsg.buf nsg.idx.eval = some w₄) (hsq : s.read p sq.buf sq.idx.eval = some w₅) :
     ∀ b ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf], b < s.size := by
@@ -232,7 +232,7 @@ theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
   rintro b (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
     rfl)
   exacts [hsz hMa, hsz hUa, hsz hQa, hsz hEa, hsz hSz, hsz hKd, hsz hKp, hsz hLv,
-    Store.lt_size_of_read_eq_some (hSg 0 hn2),
+    Store.lt_size_of_read_eq_some (hSg 0 hn2).choose_spec,
     Store.lt_size_of_read_eq_some (hPp ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
     Store.lt_size_of_read_eq_some (hPm ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
     Store.lt_size_of_read_eq_some htwo, Store.lt_size_of_read_eq_some hσ,
@@ -822,6 +822,65 @@ theorem spec_eighSplitBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout m
       (hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lMa) v3).1,
       (hR (readsOnly_pairLayoutHolds _ _ _ _) (by simpa [matBlock] using lMa) v4).1⟩
 
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The window of a split is writable in arenas of depth $D > d$. -/
+theorem writableBlocks_eighSplitWindow {H : EighArenas} {s : Store P K} {p : P}
+    {n d lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) (hd : d < D) (hH : H.Shaped s p n D) :
+    WritableBlocks s p (eighSplitWindow H n d lo k kp) := by
+  obtain ⟨-, hMa, -, hQa, -, hSz, hKd, hKp, -⟩ := hH
+  obtain ⟨B1, B2, B3, -⟩ := eighSplit_bounds_split hk hkpk hd
+  obtain ⟨-, F3, -, -, -, -⟩ := split_arith_node (d := d) hk hkpk
+  have h1 := Nat.mul_le_mul_left n (show d + 2 ≤ D + 1 by omega)
+  have h2 := Nat.mul_le_mul_left n (show d + 1 ≤ D by omega)
+  simp only [WritableBlocks, eighSplitWindow, List.forall_mem_cons]
+  exact ⟨writable_of_shape_eq rfl hQa (by fp_omega [B1]),
+    writable_of_shape_eq rfl hQa (by fp_omega [B2]),
+    writable_of_shape_eq rfl hMa (by fp_omega [B3, F3]),
+    writable_of_shape_eq rfl hMa (by fp_omega [B3]),
+    writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
+    writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
+    writable_of_shape_eq rfl hKd (by fp_omega [h2, hk, hkpk]),
+    writable_of_shape_eq rfl hKp (by fp_omega [h2, hk, hkpk]),
+    fun x hx => absurd hx List.not_mem_nil⟩
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- A cell outside a split's node window is disjoint from every block of the split's window
+(`NLAlib.eighSplitWindow`). -/
+theorem blockDisjoint_eighSplitWindow {H : EighArenas} {n d lo k kp b i : ℕ} (hk : lo + k ≤ n)
+    (hkpk : kp < k) (hW : ¬ EighNodeWindow H n d lo k (lo + kp) b i) :
+    ∀ x ∈ eighSplitWindow H n d lo k kp, blockDisjoint (b, i, 1) x = true := by
+  obtain ⟨-, -, -, F6, F7, -⟩ := split_arith_node (d := d) hk hkpk
+  obtain ⟨-, F3, F4, -, -, F2⟩ := split_arith_node (d := d) hk hkpk
+  have hkn : k * k ≤ n * k := Nat.mul_le_mul_right k (by omega)
+  simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
+  obtain ⟨hWQ, hWM, hWS, hWK⟩ := hW
+  simp only [eighSplitWindow, List.forall_mem_cons, matBlock, blockDisjoint_iff]
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun x hx => absurd hx List.not_mem_nil⟩
+  · by_cases hb : b = H.Qa
+    · have := hWQ hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Qa
+    · have := hWQ hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Ma
+    · have := hWM hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Ma
+    · have := hWM hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Sz
+    · have := hWS hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Sz
+    · have := hWS hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Kd
+    · have := hWK (Or.inl hb); omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Kp
+    · have := hWK (Or.inr hb); omega
+    · exact Or.inl hb
+
 /-- A split writes the outcome of `NLAlib.eighStep`'s split, with its precise frame: the values
 of `NLAlib.holds_of_exec_eighSplitBlock`, and every cell outside the node's window
 (`NLAlib.EighNodeWindow`) unchanged; `NLAlib.holds_of_exec_eighSplitBlock` is its coarse form. -/
@@ -867,41 +926,11 @@ theorem holds_of_exec_eighSplitBlock_frame {mm qr : ι}
   obtain ⟨hm, hv, hr, hp⟩ := (spec_eighSplitBlock (u := fun _ => 0) (dec := fun _ _ => 0)
     (safe := fun _ _ => True) hmm hqr .liberal trivial p n d lo k hk kpe hkp hkpk H _ σ _ A Ppm Pmm
     st.store.size hbufs hcells
-    (split_handles_lt hk hkpk hH hPp hPm hSg htwo hσ hnσ hsq)).spec.holds_of_exec
+    (split_handles_lt hk hkpk hH hPp hPm (fun w hw => ⟨_, hSg w hw⟩) htwo hσ hnσ
+      hsq)).spec.holds_of_exec
       ⟨rfl, hA, hPp, hPm, fun w hw => ⟨_, hSg w hw⟩, fun _ => hSg, htwo, hσ, hnσ, hsq, trivial⟩ h
-  refine ⟨⟨(hv hSg).1, (hv hSg).2.1, (hv hSg).2.2.1, (hv hSg).2.2.2, hr⟩,
-    fun q b i hW => hm.2 q b i ?_, hm.1, hp⟩
-  obtain ⟨-, -, -, F6, F7, -⟩ := split_arith_node (d := d) hk hkpk
-  obtain ⟨-, F3, F4, -, -, F2⟩ := split_arith_node (d := d) hk hkpk
-  have hkn : k * k ≤ n * k := Nat.mul_le_mul_right k (by omega)
-  simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
-  obtain ⟨hWQ, hWM, hWS, hWK⟩ := hW
-  simp only [eighSplitWindow, List.forall_mem_cons, matBlock, blockDisjoint_iff]
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun x hx => absurd hx List.not_mem_nil⟩
-  · by_cases hb : b = H.Qa
-    · have := hWQ hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Qa
-    · have := hWQ hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Ma
-    · have := hWM hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Ma
-    · have := hWM hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Sz
-    · have := hWS hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Sz
-    · have := hWS hb; omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Kd
-    · have := hWK (Or.inl hb); omega
-    · exact Or.inl hb
-  · by_cases hb : b = H.Kp
-    · have := hWK (Or.inr hb); omega
-    · exact Or.inl hb
+  exact ⟨⟨(hv hSg).1, (hv hSg).2.1, (hv hSg).2.2.1, (hv hSg).2.2.2, hr⟩,
+    fun q b i hW => hm.2 q b i (blockDisjoint_eighSplitWindow hk hkpk hW), hm.1, hp⟩
 
 /-- A split writes the outcome of `NLAlib.eighStep`'s split: if the kernels of `I` are the
 routines `mmR`, `qrR` on interleaved pairs, a successful run of `NLAlib.eighSplitBlock` at the slot
@@ -1002,39 +1031,9 @@ theorem exists_exec_eighSplitBlock_ex {mm qr : ι}
     ∃ st', exec I (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) kpe
       Sg Pp Pm H.Ma H.Qa H.Sz H.Kd H.Kp two sg nsg sq).run st = some st' := by
   subst hkpe
-  have hsz : ∀ {b : ℕ} {x : P × ℕ}, st.store.shape[b]? = some x → b < st.store.size :=
-    fun h => by simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp h).1
-  have hk0 : 0 < k := by omega
-  have hn2 : 0 < 4 * (n * n) := by have : 0 < n := (by omega); positivity
-  obtain ⟨-, hMa, hUa, hQa, hEa, hSz, hKd, hKp, hLv⟩ := id hH
   obtain ⟨z2, hz2, hdz2⟩ := hlit p 2 le_rfl
-  have hlt : ∀ x ∈ H.handles ++ [Sg, Pp, Pm, two.buf, sg.buf, nsg.buf, sq.buf],
-      x < st.store.size := by
-    simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
-      List.not_mem_nil, or_false]
-    rintro b (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-      rfl)
-    exacts [hsz hMa, hsz hUa, hsz hQa, hsz hEa, hsz hSz, hsz hKd, hsz hKp, hsz hLv,
-      Store.lt_size_of_read_eq_some (hSg 0 hn2).choose_spec,
-      Store.lt_size_of_read_eq_some (hPp ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
-      Store.lt_size_of_read_eq_some (hPm ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
-      Store.lt_size_of_read_eq_some (htwo.trans hz2), Store.lt_size_of_read_eq_some hσ,
-      Store.lt_size_of_read_eq_some hnσ, Store.lt_size_of_read_eq_some hsq]
-  obtain ⟨B1, B2, B3, -⟩ := eighSplit_bounds_split hk hkpk hd
-  obtain ⟨-, F3, -, -, -, -⟩ := split_arith_node (d := d) hk hkpk
-  have hW : WritableBlocks st.store p (eighSplitWindow H n d lo k kpe.eval) := by
-    have h1 := Nat.mul_le_mul_left n (show d + 2 ≤ D + 1 by omega)
-    have h2 := Nat.mul_le_mul_left n (show d + 1 ≤ D by omega)
-    simp only [WritableBlocks, eighSplitWindow, List.forall_mem_cons]
-    exact ⟨writable_of_shape_eq rfl hQa (by fp_omega [B1]),
-      writable_of_shape_eq rfl hQa (by fp_omega [B2]),
-      writable_of_shape_eq rfl hMa (by fp_omega [B3, F3]),
-      writable_of_shape_eq rfl hMa (by fp_omega [B3]),
-      writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
-      writable_of_shape_eq rfl hSz (by fp_omega [h1, hk, hkpk]),
-      writable_of_shape_eq rfl hKd (by fp_omega [h2, hk, hkpk]),
-      writable_of_shape_eq rfl hKp (by fp_omega [h2, hk, hkpk]),
-      fun x hx => absurd hx List.not_mem_nil⟩
+  have hlt := split_handles_lt hk hkpk hH hPp hPm hSg (htwo.trans hz2) hσ hnσ hsq
+  have hW := writableBlocks_eighSplitWindow (p := p) (s := st.store) hk hkpk hd hH
   exact ((spec_eighSplitBlock (safe := fun _ _ => True) hmm hqr .total ⟨hsem, fun _ _ => trivial⟩
     p n d lo k hk kpe hkp hkpk H z2 σ _ A Ppm Pmm st.store.size hbufs hcells hlt).spec.exists_exec
     ⟨rfl, hA, hPp, hPm, hSg, (by intro h; cases h), htwo.trans hz2, hσ, hnσ, hsq,

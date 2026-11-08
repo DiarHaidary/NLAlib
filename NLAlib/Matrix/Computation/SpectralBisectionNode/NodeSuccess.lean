@@ -84,90 +84,6 @@ private theorem exists_exec_ztraceRe_node {u : P → ℝ} {dec : P → K → ℝ
   exact ⟨_, rfl, ⟨z, Store.read_of_write_eq_some hs'⟩, fun q b i' hb =>
     (Store.read_of_write_eq_some_of_ne hs' (Or.inl hb)).trans (hfr q b i' hb)⟩
 
-/-- A child block succeeds. -/
-private theorem child_exists_node {u : P → ℝ} {dec : P → K → ℝ}
-    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n)
-    (hk2 : 2 ≤ k) {D : ℕ} (hd : d < D) (H : EighArenas) {sg : Cell ℕ ℕ} (code : ℕ)
-    {st : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} (hH : H.Shaped st.store p n D)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hsg : ∃ v, st.store.read p sg.buf sg.idx.eval = some v) :
-    ∃ st', exec I (eighChildBlock (ι := ι) p (.const k) H.Ma
-        (eighBlockOff (.const n) (.const d) (.const lo))
-        (eighBlockOff (.const n) (.const d + 1) (.const lo)) sg
-        ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
-        ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ code).run st = some st' := by
-  obtain ⟨hnd, hMa, -, -, -, hSz, hKd, -, -⟩ := hH
-  simp only [EighArenas.handles, List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
-    not_or] at hnd
-  obtain ⟨cv, hcv⟩ := hsg
-  have hkn : k ≤ n := by omega
-  have hlok : n * lo + n * k ≤ n * n := by rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ hk
-  have hdD : n * n * (d + 1) + n * n ≤ n * n * (D + 1) := by
-    rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
-  have hkk2 : k * k ≤ n * n := Nat.mul_le_mul hkn hkn
-  have h1 : n * (d + 1) + n ≤ n * (D + 1) := by
-    rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
-  have h2 : n * d + n ≤ n * D := by rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ hd
-  refine ((spec_eighChildBlock (toNat := fun _ => 0) (mmR := @fun _ _ _ _ _ => Matrix.of fun _ _ =>
-    default) (qrR := @fun _ _ X => (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : K) => x)
-    (normal := id) (Ma := H.Ma) (mo := eighBlockOff (.const n) (.const d) (.const lo))
-    (mo' := eighBlockOff (.const n) (.const d + 1) (.const lo)) (sg := sg)
-    (sz := ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩)
-    (kd := ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩) .total
-    ⟨hsem, fun _ _ => trivial⟩ p k code cv A ?_ ?_ ?_ ?_).spec.exists_exec
-    ⟨by simpa only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-      IExp.eval_ofNat] using hA, hcv, writable_of_shape_eq rfl hMa ?_,
-      writable_of_shape_eq rfl hSz ?_, writable_of_shape_eq rfl hKd ?_⟩).imp fun _ h => h.1
-  all_goals simp only [eighBlockOff, eighSlotOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
-    IExp.eval_ofNat]
-  · exact blockDisjoint_iff.mpr (.inr (.inr (.inr (.inr (by simp only [matBlock]; nlinarith)))))
-  · exact blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.1 h.symm
-  · exact blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.2.1 h.symm
-  · exact blockDisjoint_of_fst_ne hnd.2.2.2.2.1.1
-  all_goals nlinarith
-
-omit [Inhabited K] in
-/-- A goal on a state with a new count, by a named state. -/
-private theorem ex_cnt_node {X : Stmt P ι ℕ ℕ} {s : St P K C} {c : C}
-    (h : ∀ σ : St P K C, σ.store = s.store → ∃ st', exec I X σ = some st') :
-    ∃ st', exec I X { s with cnt := c } = some st' := h _ rfl
-
-omit [Inhabited K] in
-/-- A guarded block of no iterations, then the rest. -/
-private theorem when_zero_ex_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
-    {f : Unit → Builder P ι ℕ ℕ Unit} {s : St P K C} (he : (1 - (1 - e)).eval = 0) :
-    exec I (eighWhen e b >>= f).run s = exec I (f ()).run s := by
-  rw [exec_run_bind I (b := eighWhen e b) (fun _ => rfl)]
-  change (exec I (.seq (.loop _ _) .skip) s).bind _ = _
-  rw [exec_seq_skip, exec_loop, he]
-  rfl
-
-omit [Inhabited K] in
-/-- A last guarded block of no iterations. -/
-private theorem when_last_zero_ex_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit} {s : St P K C}
-    (he : (1 - (1 - e)).eval = 0) : exec I (eighWhen e b).run s = some s := by
-  change exec I (.seq (.loop _ _) .skip) s = _
-  rw [exec_seq_skip, exec_loop, he]
-  rfl
-
-omit [Inhabited K] in
-/-- A guarded block of one iteration, then the rest. -/
-private theorem when_one_ex_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
-    {f : Unit → Builder P ι ℕ ℕ Unit} {s : St P K C} (he : (1 - (1 - e)).eval = 1) :
-    exec I (eighWhen e b >>= f).run s = (exec I b.run s).bind (exec I (f ()).run) := by
-  rw [exec_run_bind I (b := eighWhen e b) (fun _ => rfl)]
-  change (exec I (.seq (.loop _ _) .skip) s).bind _ = _
-  rw [exec_seq_skip, exec_loop, he]
-  simp [List.range_one]
-
-omit [Inhabited K] in
-/-- A last guarded block of one iteration. -/
-private theorem when_last_one_ex_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit} {s : St P K C}
-    (he : (1 - (1 - e)).eval = 1) : exec I (eighWhen e b).run s = exec I b.run s := by
-  change exec I (.seq (.loop _ _) .skip) s = _
-  rw [exec_seq_skip, exec_loop, he]
-  simp [List.range_one]
-
 /-- The branch of a node step after the index binder succeeds, from a cell that converts to
 $k_+ \le k$. -/
 private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
@@ -202,66 +118,20 @@ private theorem node_branch_exists_core {mm qr : ι} (hmm : IsMatMulKernel I mm 
           (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.var kp) Sg Pp Pm
             H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨t, 0⟩ ⟨t, 1⟩ ⟨c, 4⟩) :
         Builder P ι ℕ ℕ Unit).run st = some st' := by
-  have htM : t ≠ H.Ma := fun h => htS (by simp [EighArenas.handles, h])
   change ∃ st', exec I (.seq (.bindIdx p ⟨t, 6⟩ (.const k) _) .skip) st = some st'
-  rw [exec_seq_skip, exec_bindIdx]
-  have hts : toNatStep I p ⟨t, 6⟩ st =
-      some (x, { st with cnt := st.cnt + I.charge (.toNat p) }) := by
-    unfold toNatStep
-    rw [show st.store.read p (⟨t, 6⟩ : Cell ℕ ℕ).buf (⟨t, 6⟩ : Cell ℕ ℕ).idx.eval = some wc
-      from ht6, Option.bind_some, hwc, Option.map_some]
-  rw [hts, Option.bind_some]
-  dsimp only
-  rw [if_pos (show x ≤ (IExp.const k).eval from hxk)]
-  refine ex_cnt_node fun S hS => ?_
-  have hHS : H.Shaped S.store p n D := by rw [hS]; exact hH
-  have hAS : pairLayout.Holds S.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A := by
-    rw [hS]; exact hA
-  have ev1 : (1 - (1 - (1 - (IExp.const k - IExp.var x)) : IExp ℕ)).eval =
-      1 - (1 - (1 - (k - x))) := rfl
-  have ev2 : (1 - (1 - (1 - IExp.var x)) : IExp ℕ).eval = 1 - (1 - (1 - x)) := rfl
-  have ev3 : (1 - (1 - (IExp.var x * (IExp.const k - IExp.var x))) : IExp ℕ).eval =
-      1 - (1 - x * (k - x)) := rfl
-  by_cases h1 : x = k
-  · subst h1
-    have e1 : (1 - (1 - (1 - (IExp.const x - IExp.var x)) : IExp ℕ)).eval = 1 := by
-      rw [ev1]; omega
-    have e2 : (1 - (1 - (1 - IExp.var x)) : IExp ℕ).eval = 0 := by rw [ev2]; omega
-    have e3 : (1 - (1 - (IExp.var x * (IExp.const x - IExp.var x))) : IExp ℕ).eval = 0 := by
-      rw [ev3, Nat.sub_self, Nat.mul_zero]
-    rw [when_one_ex_node e1]
-    obtain ⟨σc, hc⟩ := child_exists_node (I := I) hsem p n d lo x hk hk2 hd H (sg := ⟨t, 0⟩) 2
-      hHS hAS ⟨σ0, by rw [hS]; exact ht0⟩
-    rw [hc, Option.bind_some, when_zero_ex_node e2, when_last_zero_ex_node e3]
-    exact ⟨_, rfl⟩
-  by_cases h0 : x = 0
-  · subst h0
-    have e1 : (1 - (1 - (1 - (IExp.const k - IExp.var 0)) : IExp ℕ)).eval = 0 := by
-      rw [ev1]; omega
-    have e2 : (1 - (1 - (1 - IExp.var 0)) : IExp ℕ).eval = 1 := by rw [ev2]
-    have e3 : (1 - (1 - (IExp.var 0 * (IExp.const k - IExp.var 0))) : IExp ℕ).eval = 0 := by
-      rw [ev3, Nat.zero_mul]
-    rw [when_zero_ex_node e1, when_one_ex_node e2]
-    obtain ⟨σc, hc⟩ := child_exists_node (I := I) hsem p n d lo k hk hk2 hd H (sg := ⟨t, 1⟩) 3
-      hHS hAS ⟨_, by rw [hS]; exact ht1⟩
-    rw [hc, Option.bind_some, when_last_zero_ex_node e3]
-    exact ⟨_, rfl⟩
-  have hpos : 1 ≤ x * (k - x) := Nat.mul_pos (by omega) (by omega)
-  have e1 : (1 - (1 - (1 - (IExp.const k - IExp.var x)) : IExp ℕ)).eval = 0 := by
-    rw [ev1]; omega
-  have e2 : (1 - (1 - (1 - IExp.var x)) : IExp ℕ).eval = 0 := by rw [ev2]; omega
-  have e3 : (1 - (1 - (IExp.var x * (IExp.const k - IExp.var x))) : IExp ℕ).eval = 1 := by
-    rw [ev3]; omega
-  rw [when_zero_ex_node e1, when_zero_ex_node e2, when_last_one_ex_node e3]
-  refine exists_exec_eighSplitBlock_ex hmm hqr hsem hlit p n d lo k x hk (by omega) (by omega)
-    (.var x) rfl H (two := ⟨c, 1⟩) (sg := ⟨t, 0⟩) (nsg := ⟨t, 1⟩) (sq := ⟨c, 4⟩)
-    hd hHS hbufs hAS (by rw [hS]; exact hPp) (by rw [hS]; exact hPm)
-    (by rw [hS]; exact hSg) (by rw [hS]; exact htwo)
-    (by rw [hS]; exact ht0) (by rw [hS]; exact ht1) ?_ ?_
-  · simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-    exact ⟨hcS, htS, htS, hcS⟩
-  · rw [hS]
-    exact hsq
+  rw [exec_seq_skip, exec_bindIdx_of_read I (x := ⟨t, 6⟩) ht6 hwc
+    (show x ≤ (IExp.const k).eval from hxk)]
+  obtain ⟨z2, hz2, hdz2⟩ := hlit p 2 le_rfl
+  have hl := split_handles_lt (kp := 1) (two := ⟨c, 1⟩) (sg := ⟨t, 0⟩) (nsg := ⟨t, 1⟩)
+    (sq := ⟨c, 4⟩) hk (by omega) hH hPp hPm hSg (htwo.trans hz2) ht0 ht1 hsq
+  have hS := (spec_eighNodeBranch (safe := fun _ _ => True) hmm hqr .total
+    ⟨hsem, fun _ _ => trivial⟩ p n d lo k hk hk2 H A Ppv Pmv z2 σ0 x hxk st.store.size hbufs hcS
+    htS fun y hy => hl y (List.mem_append.mpr ((List.mem_append.mp hy).imp id fun h => by
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at h ⊢; omega))).spec
+  exact (hS.exists_exec (st := { st with cnt := st.cnt + I.charge (.toNat p) })
+    ⟨rfl, hA, hPp, hPm, hSg, nofun, htwo.trans hz2, hsq, ht0, ht1, by rw [hdz2]; norm_num,
+      writableBlocks_eighBranchWindow hk (by omega) hd hH, fun q => hsem.lit_ok p _ trivial⟩).imp
+    fun _ h => h.1
 
 /-- The clamp of the split index and the branch of a node step succeed. -/
 private theorem node_branch_exists {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
