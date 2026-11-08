@@ -430,6 +430,7 @@ public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Refinement
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Transfer
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.UpLevel
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.UpLevelSuccess
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.UpSlot
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Weight
 public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
 public import NLAlib.Matrix.Computation.SpectralBisectionTape
