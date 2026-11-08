@@ -21,14 +21,17 @@ $N \ge N_0$ every hypothesis of the model is met at once, by **rounded arithmeti
 not by exact arithmetic at a nominal $u$. The semantics is `NLAlib.Computation.gridSem` with
 $t$ bits at every tag (rounding to nearest, unbounded exponent; decoding $x \mapsto
 \mathrm{fl}(x)$, $u = 2^{-t}$), $t$ chosen from $N$ so that the precision hypotheses hold; the
-kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t` (the interpretation
-`gridKernelInterp`, private to this file), the machine is `NLAlib.gridMachine t` and the tape is
-rounded to nearest. The stored inputs are on the grid: the identity matrix in pairs, and powers of
-two.
+kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t`
+(`NLAlib.gridKernelInterp`), the machine is `NLAlib.gridMachine t` and the tape is rounded to
+nearest. The stored inputs are on the grid: the identity matrix in pairs, and powers of two.
 
 A bounded-exponent semantics cannot witness these targets: they assume the standard model with
 every value in range (`IsRelErrSem … (fun _ _ => True)`: every operation succeeds with relative
 error at most $u$, which fails under underflow and overflow) and a machine at floor $\tau = 0$.
+
+## Main definitions
+
+* `NLAlib.gridKernelInterp`: the interpretation of the witnesses.
 
 ## Main results
 
@@ -50,8 +53,7 @@ open Computation
 tag (`NLAlib.Computation.gridSem`), kernel `true` the correctly rounded product `NLAlib.gridMM t`
 and kernel `false` the correctly rounded QR factorization `NLAlib.gridQR t`, in the interleaved
 layout; no oracle, no read-only data, a zero tape and charge (the contracts do not read them). -/
-private noncomputable def gridKernelInterp (P : Type) (t : ℕ) :
-    Interp P Bool ℝ (OpCount P Bool) where
+noncomputable def gridKernelInterp (P : Type) (t : ℕ) : Interp P Bool ℝ (OpCount P Bool) where
   sem := gridSem fun _ => t
   charge _ := 0
   tape _ _ := 0
@@ -63,14 +65,14 @@ private noncomputable def gridKernelInterp (P : Type) (t : ℕ) :
   kernel o := bif o then liftMM pairLayout (gridMM t) else liftQR pairLayout (gridQR t)
   kshape o := bif o then mmShape (pairLayout (K := ℝ)) else qrShape (pairLayout (K := ℝ))
 
-/-- Kernel `true` of `gridKernelInterp` is the grid product. No printed source. -/
-private theorem isMatMulKernel_gridKernelInterp (P : Type) (t : ℕ) :
+/-- Kernel `true` of `NLAlib.gridKernelInterp` is the grid product. No printed source. -/
+theorem isMatMulKernel_gridKernelInterp (P : Type) (t : ℕ) :
     IsMatMulKernel (gridKernelInterp P t) true pairLayout (gridMM t) :=
   ⟨rfl, rfl⟩
 
-/-- Kernel `false` of `gridKernelInterp` is the grid QR factorization.
+/-- Kernel `false` of `NLAlib.gridKernelInterp` is the grid QR factorization.
 No printed source. -/
-private theorem isQRKernel_gridKernelInterp (P : Type) (t : ℕ) :
+theorem isQRKernel_gridKernelInterp (P : Type) (t : ℕ) :
     IsQRKernel (gridKernelInterp P t) false pairLayout (gridQR t) :=
   ⟨rfl, rfl⟩
 
