@@ -109,8 +109,8 @@ private def emitFWith {P ι : Type} (inline : Bool) {nb ni : ℕ} (s : FStmt P �
         s!"{emitIExp cols}), order='F')).reshape(-1, order='F')"]
   | .rom _ dst i => [pad d ++ s!"{emitCell dst} = ROM[{emitIExp i}]"]
   | .alloc _ len body =>
-      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++ emitFWith inline body d kernelName ++
-        [pad d ++ s!"del b{nb}"]
+      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++
+        emitFWith inline body d kernelName ++ [pad d ++ s!"del b{nb}"]
   | .loop n body =>
       let ls := emitFWith inline body (d + 1) kernelName
       [pad d ++ s!"for i{ni} in range({emitIExp n}):"] ++
