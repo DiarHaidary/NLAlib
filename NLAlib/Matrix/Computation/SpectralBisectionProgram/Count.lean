@@ -693,6 +693,7 @@ private theorem cells_le_of_crudeCells_eq (charge : OpKind P ι → OpCount P ι
     exact eval_le_of_checkCells N L F _ checkCells_crudeCells_compiled
   · exact cells_staticCost_le_zero_of_notMem_tagsOf charge w q _ _ fun hm => hq (htag _ hm)
 
+omit [Inhabited K] in
 /-- The counts and the memory of the registered tree: under the standard charge (one per
 operation), every successful run of `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$
 adds at most `NLAlib.eighCount p mm qr N ℓ₀ F` to the counts and raises the peak memory at tag `p`
