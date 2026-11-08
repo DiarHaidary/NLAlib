@@ -311,12 +311,21 @@ $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ in place of the earlier $n^5\mu_{\math
 ### 7.3 EV8: a bounded binary format (D6)
 
 `measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le` (M): for every
-interpretation whose ideal machine meets `IsAccurate` with the constants of a binary format (an
-assumption: the analogue of the pilot's IM1 for `binaryFloatSem`, floor $\tau > 0$, is later), the
+interpretation whose semantics meets the floor model `IsFloorRelErrSem` at the constants of a binary
+format (unit roundoff $2^{-p}$, floor the smallest normal number, range the largest finite number
+$\Omega_F$), with `MulShrinks`, exact literals up to $N + 4$, the exact floor conversion, stored
+values in range, kernels at range $\Omega_F/2$ and a tape rounding at range $\Omega_F$, the
 probability that the run **succeeds** and its output is bad is at most $\theta$, under EV8's
-hypotheses. Success is not claimed: `binaryFloatSem` fails out of range, and hdiag does not show
-that every operation of a run stays in range (its contract `IsRoundingOf` constrains nothing out of
-range). The full form needs that range analysis (D6).
+hypotheses at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)2^{-p}$. The ideal
+machine's `IsAccurate` is no longer a hypothesis: `isAccurate_eighIdealMachine_floor` derives it
+(floor $\tau$ kept, range halved for the normal sampler, $c_{\mathrm N} = 3(c(\mathrm{gaussian}) +
+3)$), and `binaryFloatSem` (with its square root) meets the scalar contracts
+(`isFloorRelErrSem_binaryFloatSem`, `mulShrinks_binaryFloatSem`, `isIndexExactSem_binaryFloatSem`).
+Before, the hypothesis was the machine's `IsAccurate` at the format's constants, and
+`binaryFloatSem` had no square root, so every run failed and the event was empty. Success is still
+not claimed: `binaryFloatSem` fails out of range, and hdiag does not show that every operation of a
+run stays in range (its contract `IsRoundingOf` constrains nothing out of range). The full form
+needs that range analysis (D6).
 
 ### 7.4 Restatement against the tightened HDIAG bounds
 

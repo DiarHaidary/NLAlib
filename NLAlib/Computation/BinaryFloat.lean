@@ -31,6 +31,10 @@ This is a noncomputable mathematical quantizer, not a native implementation.
 * `NLAlib.Computation.relErr_binaryFloatRound_of_minExponent_le`: normal relative error.
 * `NLAlib.Computation.binaryFloatRound_two_zpow_sub_two`: strict subnormal underflow.
 * `NLAlib.Computation.IsBinaryRep.abs_le`: the largest finite magnitude.
+* `NLAlib.Computation.abs_sub_binaryFloatRound_le`: relative error above the smallest normal
+  number, as a floor.
+* `NLAlib.Computation.abs_binaryFloatRound_le_of_abs_le`: rounding stays below a larger
+  represented value.
 -/
 
 @[expose] public section
@@ -318,5 +322,86 @@ theorem binaryFloatRound_eq_self (fmt : Float.Model.Format) {r : ℝ → ℤ}
   change (r ((m : ℝ) * (2 : ℝ) ^ e' / (2 : ℝ) ^ e) : ℝ) * (2 : ℝ) ^ e = _
   rw [hq, selector_intCast hr, ← hq]
   field_simp
+
+/-- Rounding with precision $p$ and smallest exponent $e_{\min}$ errs by at most
+$2^{-p}\max(\lvert x\rvert, 2^{e_{\min} + p - 1})$: relative error $2^{-p}$ above the smallest
+normal number $2^{e_{\min} + p - 1}$ and absolute error half the subnormal spacing below it. The
+selector may choose either neighbor at a tie. [Higham2002, §2.2], with gradual underflow as a
+floor. -/
+theorem abs_sub_binaryFloatRound_le (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
+    |x - binaryFloatRound fmt r x| ≤
+      (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
+        max |x| ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · rw [binaryFloatRound_zero fmt hr, sub_self, abs_zero]
+    positivity
+  set k := Int.log 2 |x|
+  set e := fmt.targetExponent (k + 1)
+  have herr : |x - binaryFloatRound fmt r x| ≤ (1 / 2 : ℝ) * 2 ^ e := local_error fmt hr x
+  have hu : (0 : ℝ) ≤ (2 : ℝ)⁻¹ ^ fmt.mantissaBits := by positivity
+  by_cases hnormal : fmt.minExponent ≤ k + 1 - fmt.mantissaBits
+  · have hk : (2 : ℝ) ^ k ≤ |x| := by
+      exact_mod_cast Int.zpow_log_le_self (b := 2) one_lt_two (abs_pos.mpr hx)
+    have hhalf : (1 / 2 : ℝ) * 2 ^ e = (2 : ℝ)⁻¹ ^ fmt.mantissaBits * 2 ^ k := by
+      rw [show e = k + 1 - fmt.mantissaBits from max_eq_left hnormal, zpow_sub₀ two_ne_zero,
+        zpow_add₀ two_ne_zero, zpow_natCast, inv_pow]
+      field_simp
+    rw [hhalf] at herr
+    exact herr.trans (mul_le_mul_of_nonneg_left (hk.trans (le_max_left _ _)) hu)
+  · have hhalf : (1 / 2 : ℝ) * 2 ^ e = (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
+        (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) := by
+      rw [show e = fmt.minExponent from max_eq_right (le_of_not_ge hnormal),
+        zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, inv_pow]
+      field_simp
+    rw [hhalf] at herr
+    exact herr.trans (mul_le_mul_of_nonneg_left (le_max_right _ _) hu)
+
+/-- Rounding does not exceed a represented value of larger magnitude: if $y$ is represented in
+`fmt` and $\lvert x\rvert \le \lvert y\rvert$, the rounding of $x$ has magnitude at most
+$\lvert y\rvert$, for every nearest tie policy. -/
+theorem abs_binaryFloatRound_le_of_abs_le (fmt : Float.Model.Format) {r : ℝ → ℤ}
+    (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) {x y : ℝ} (hy : IsBinaryRep fmt y)
+    (hxy : |x| ≤ |y|) : |binaryFloatRound fmt r x| ≤ |y| := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · rw [binaryFloatRound_zero fmt hr, abs_zero]
+    exact abs_nonneg y
+  obtain ⟨m, e', hm, hemin, -, rfl⟩ := hy
+  set k := Int.log 2 |x|
+  set e := fmt.targetExponent (k + 1)
+  have he0 : (0 : ℝ) < 2 ^ e := zpow_pos two_pos _
+  have hk : (2 : ℝ) ^ k ≤ |x| := by
+    exact_mod_cast Int.zpow_log_le_self (b := 2) one_lt_two (abs_pos.mpr hx)
+  have hm' : |(m : ℝ)| < (2 : ℝ) ^ fmt.mantissaBits := by exact_mod_cast hm
+  have hlt : |(m : ℝ) * (2 : ℝ) ^ e'| < (2 : ℝ) ^ (e' + fmt.mantissaBits) := by
+    rw [abs_mul, abs_of_pos (zpow_pos (show (0 : ℝ) < 2 from two_pos) _),
+      zpow_add₀ two_ne_zero, zpow_natCast]
+    exact (mul_lt_mul_of_pos_right hm' (zpow_pos two_pos _)).trans_eq (mul_comm _ _)
+  have hnormal : k + 1 - fmt.mantissaBits ≤ e' := by
+    have := (zpow_lt_zpow_iff_right₀ one_lt_two).mp ((hk.trans hxy).trans_lt hlt)
+    omega
+  obtain ⟨n, hn⟩ : ∃ n : ℕ, e' = e + n := ⟨(e' - e).toNat, by
+    have : e ≤ e' := max_le hnormal hemin
+    omega⟩
+  set M : ℤ := m * 2 ^ n
+  have hy : (m : ℝ) * (2 : ℝ) ^ e' = (M : ℝ) * 2 ^ e := by
+    rw [hn, zpow_add₀ two_ne_zero, zpow_natCast]
+    push_cast [M]
+    ring
+  have hq : |x / (2 : ℝ) ^ e| ≤ |(M : ℝ)| := by
+    have h' : |(M : ℝ)| * 2 ^ e = |(m : ℝ) * (2 : ℝ) ^ e'| := by
+      rw [hy, abs_mul, abs_of_pos he0]
+    rw [abs_div, abs_of_pos he0, div_le_iff₀ he0, h']
+    exact hxy
+  have hrq : |(r (x / (2 : ℝ) ^ e) : ℝ)| ≤ |(M : ℝ)| := by
+    have h1 : |(r (x / (2 : ℝ) ^ e) : ℝ)| ≤ |x / (2 : ℝ) ^ e| + 1 / 2 := by
+      simpa only [add_zero, zero_mul, one_mul] using (hr (x / (2 : ℝ) ^ e)).abs_le
+    have h2 : |r (x / (2 : ℝ) ^ e)| < |M| + 1 := by
+      have : |(r (x / (2 : ℝ) ^ e) : ℝ)| < |(M : ℝ)| + 1 := by linarith
+      exact_mod_cast this
+    exact_mod_cast (show |r (x / (2 : ℝ) ^ e)| ≤ |M| by omega)
+  change |(r (x / (2 : ℝ) ^ e) : ℝ) * (2 : ℝ) ^ e| ≤ _
+  rw [hy, abs_mul, abs_mul, abs_of_pos he0]
+  exact mul_le_mul_of_nonneg_right hrq he0.le
 
 end NLAlib.Computation

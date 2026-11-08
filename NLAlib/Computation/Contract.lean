@@ -34,6 +34,7 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 ## Main definitions
 
 * `NLAlib.Computation.IsRelErrSem`: the relative-error contract with success clauses.
+* `NLAlib.Computation.IsFloorRelErrSem`: the same with an absolute floor (gradual underflow).
 * `NLAlib.Computation.BinOp.realOp`, `NLAlib.Computation.BinOp.IsArith`,
   `NLAlib.Computation.failSem`.
 * `NLAlib.Computation.IsArithErrSem`: arithmetic error and success clauses for an error
@@ -53,6 +54,8 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 
 * `NLAlib.Computation.isRelErrSem_exactSem`: exact arithmetic meets the contract.
 * `NLAlib.Computation.not_isRelErrSem_failSem`: the always-failing semantics does not.
+* `NLAlib.Computation.IsRelErrSem.toFloor`: the standard model meets the floor model at every
+  floor.
 * `NLAlib.Computation.IsRelErrSem.isArithErrSem`: the standard-model contract gives the
   arithmetic part with the relation `NLAlib.Computation.RelErr`.
 * `NLAlib.Computation.IsRelErrSem.nonneg`: the unit roundoff is nonnegative.
@@ -219,6 +222,107 @@ theorem not_isRelErrSem_failSem [Nonempty P] (u : P → ℝ) (dec : P → K → 
     ¬ IsRelErrSem u dec (fun _ _ => True) (failSem (P := P) (K := K)) := fun h => by
   obtain ⟨z, hz⟩ := h.lit_ok (Classical.arbitrary P) 0 trivial
   simp [failSem] at hz
+
+/-- **The standard model with an absolute floor as a contract on a value semantics**, at
+decoding `dec`, unit roundoff `u`, floor `τ` and range condition `safe`: the model of a bounded
+format with gradual underflow, where a result below the floor has an absolute error at most
+$u(p)\tau(p)$ instead of a relative one. Each operation family has an error clause and a success
+clause, since an error clause alone is met by the semantics that always fails:
+* arithmetic: the exact result $a$ on the decoded operands and the decoded result $z$ satisfy
+  $\lvert a - z \rvert \le u\max(\lvert a \rvert, \tau)$, and the operation succeeds when $a$ is
+  in range and the divisor nonzero;
+* literals: the same, for the rational value;
+* `neg`, `conj`, `re`: exact and always defined on real decodings;
+* `sqrt`: the same error, defined on a nonnegative decoding whose exact root is in range;
+* comparisons: exact on decoded values;
+* `convert p q`: the same error at the target tag, defined when in range there.
+At $\tau = 0$ the error clauses are those of `NLAlib.Computation.IsRelErrSem`, which implies this
+contract at every floor (`NLAlib.Computation.IsRelErrSem.toFloor`). [Higham2002, §2.2], the model
+(2.4) there, with the underflow term of gradual underflow written as a floor. -/
+structure IsFloorRelErrSem (u τ : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ → Prop)
+    (sem : ScalarSem P K) : Prop where
+  /-- Arithmetic errs by at most the unit roundoff times the larger of the result and the
+  floor. -/
+  bin_err : ∀ (p : P) (b : BinOp) (x y z : K), b.IsArith → sem.bin p b x y = some z →
+    |b.realOp (dec p x) (dec p y) - dec p z| ≤ u p * max |b.realOp (dec p x) (dec p y)| (τ p)
+  /-- Arithmetic succeeds in range, the divisor nonzero. -/
+  bin_ok : ∀ (p : P) (b : BinOp) (x y : K), b.IsArith → (b = .div → dec p y ≠ 0) →
+    safe p (b.realOp (dec p x) (dec p y)) → ∃ z, sem.bin p b x y = some z
+  /-- Literals err by at most the unit roundoff times the larger of the value and the floor. -/
+  lit_err : ∀ (p : P) (q : ℚ) (z : K), sem.lit p q = some z →
+    |(q : ℝ) - dec p z| ≤ u p * max |(q : ℝ)| (τ p)
+  /-- Literals in range succeed. -/
+  lit_ok : ∀ (p : P) (q : ℚ), safe p q → ∃ z, sem.lit p q = some z
+  /-- Negation is exact and defined. -/
+  neg : ∀ (p : P) (x : K), ∃ z, sem.un p .neg x = some z ∧ dec p z = -dec p x
+  /-- Conjugation is the identity on real decodings, and defined. -/
+  conj : ∀ (p : P) (x : K), ∃ z, sem.un p .conj x = some z ∧ dec p z = dec p x
+  /-- The real part is the identity on real decodings, and defined. -/
+  re : ∀ (p : P) (x : K), ∃ z, sem.un p .re x = some z ∧ dec p z = dec p x
+  /-- The square root errs by at most the unit roundoff times the larger of the root and the
+  floor. -/
+  sqrt_err : ∀ (p : P) (x z : K), sem.un p .sqrt x = some z →
+    |√(dec p x) - dec p z| ≤ u p * max √(dec p x) (τ p)
+  /-- The square root of a nonnegative decoding succeeds when the root is in range. -/
+  sqrt_ok : ∀ (p : P) (x : K), 0 ≤ dec p x → safe p √(dec p x) → ∃ z, sem.un p .sqrt x = some z
+  /-- Equality tests are exact on decodings. -/
+  cmp_eq : ∀ (p : P) (x y : K), sem.cmp p .eq x y = some (decide (dec p x = dec p y))
+  /-- Strict comparisons are exact on decodings. -/
+  cmp_lt : ∀ (p : P) (x y : K), sem.cmp p .lt x y = some (decide (dec p x < dec p y))
+  /-- Comparisons are exact on decodings. -/
+  cmp_le : ∀ (p : P) (x y : K), sem.cmp p .le x y = some (decide (dec p x ≤ dec p y))
+  /-- Conversions err by at most the target's unit roundoff times the larger of the value and
+  the target's floor. -/
+  convert_err : ∀ (p q : P) (x z : K), sem.convert p q x = some z →
+    |dec p x - dec q z| ≤ u q * max |dec p x| (τ q)
+  /-- Conversions in range at the target succeed. -/
+  convert_ok : ∀ (p q : P) (x : K), safe q (dec p x) → ∃ z, sem.convert p q x = some z
+
+/-- A relative error $\delta$ with $\lvert\delta\rvert \le u$ is an error of at most
+$u\max(\lvert a\rvert, \tau)$, at every floor $\tau$. -/
+private theorem abs_sub_mul_one_add_le {u τ a δ : ℝ} (hδ : |δ| ≤ u) :
+    |a - a * (1 + δ)| ≤ u * max |a| τ := by
+  have e : a - a * (1 + δ) = -(a * δ) := by ring
+  rw [e, abs_neg, abs_mul, mul_comm]
+  exact mul_le_mul hδ (le_max_left _ _) (abs_nonneg a) ((abs_nonneg δ).trans hδ)
+
+/-- **The standard model meets the floor model at every floor**: a semantics meeting
+`NLAlib.Computation.IsRelErrSem` at unit roundoff `u`, decoding `dec` and range condition `safe`
+meets `NLAlib.Computation.IsFloorRelErrSem` at the same `u`, `dec` and `safe` and every floor
+`τ`: a relative error $\delta$ with $\lvert\delta\rvert \le u$ errs by
+$\lvert a\delta\rvert \le u\max(\lvert a\rvert, \tau)$, and a square root that succeeds on every
+nonnegative decoding succeeds on those whose root is in range. [Higham2002, §2.2], the model
+(2.4) there. -/
+theorem IsRelErrSem.toFloor {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
+    {sem : ScalarSem P K} (h : IsRelErrSem u dec safe sem) (τ : P → ℝ) :
+    IsFloorRelErrSem u τ dec safe sem where
+  bin_err p b x y z hb he := by
+    obtain ⟨δ, hδ, hd⟩ := h.bin_err p b x y z hb he
+    rw [hd]
+    exact abs_sub_mul_one_add_le hδ
+  bin_ok := h.bin_ok
+  lit_err p q z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.lit_err p q z he
+    rw [hd]
+    exact abs_sub_mul_one_add_le hδ
+  lit_ok := h.lit_ok
+  neg := h.neg
+  conj := h.conj
+  re := h.re
+  sqrt_err p x z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.sqrt_err p x z he
+    rw [hd]
+    have h' := abs_sub_mul_one_add_le (a := √(dec p x)) (τ := τ p) hδ
+    rwa [abs_of_nonneg (Real.sqrt_nonneg _)] at h'
+  sqrt_ok p x hx _ := h.sqrt_ok p x hx
+  cmp_eq := h.cmp_eq
+  cmp_lt := h.cmp_lt
+  cmp_le := h.cmp_le
+  convert_err p q x z he := by
+    obtain ⟨δ, hδ, hd⟩ := h.convert_err p q x z he
+    rw [hd]
+    exact abs_sub_mul_one_add_le hδ
+  convert_ok := h.convert_ok
 
 end Contracts
 
