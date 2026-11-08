@@ -221,7 +221,8 @@ $$\mathbb{P}[\sigma_k(\mathbf{G}) \le x] \le \lvert r \rvert^2 x^2 \,.$$
 law of $\sigma_{\min}$); this elementary bound loses a factor $2\lvert r \rvert$, which costs
 $O(\log n)$ bits in the precision of the eigensolver;
 `NLAlib.measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_complexGaussianMatrix` loses only
-the factor $2e$. -/
+the factor $2e$.
+Result: complex-gaussian-least-singular-value -/
 theorem measureReal_singularValues_le_le_of_hasLaw_complexGaussianMatrix {r : Type*} [Fintype r]
     {G : Ω → Matrix r r ℂ} (hG : HasLaw G (complexGaussianMatrix r r) μ) {k : ℕ}
     (hk : k + 1 = Fintype.card r) {x : ℝ} (hx : 0 ≤ x) :

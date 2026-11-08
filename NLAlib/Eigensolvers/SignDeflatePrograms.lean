@@ -43,8 +43,21 @@ namespace NLAlib
 
 open Computation
 
-/-- **The target of the Newton–Schulz sign algorithm as a program holds**
-(`NLAlib.MatrixFreeRoundedProbNewtonSchulzSign`). [Shah2024, Theorem 2.6], for the program. -/
+/-- **The Newton–Schulz sign algorithm as a program, in finite precision** (the target
+`NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` holds): the registered tree
+`newtonSchulzSignProg.compiled`, run under any interpretation whose semantics meets the standard
+model at unit roundoff $u \ge 0$ with every value in range, exact literals up to $1$ and the exact
+floor conversion, whose product kernel meets `NLAlib.IsMatMulErr` at $u$ with constant $\mu$,
+$\mu(N) \ge 0$, range $9(N + 1) \le \Omega$, on a stored $N \times N$ input with Hermitian
+decoding $\mathbf{A}$, $\|\mathbf{A}\|_2 \le b$, every eigenvalue of modulus at least $a > 0$,
+$0 < \varepsilon \le 1/2$, $N_0 = N(a/(2b), \varepsilon/(16N))$ (`NLAlib.newtonSchulzSteps`),
+$$640\,N^{3/2}\,(8 + \mu(N))\,(N_0 + 1)\,u \le \frac{a}{b}\,\varepsilon$$
+and step limit $F \ge N_0 + 1$, succeeds with probability $1$ within its operation and cell counts
+and returns a stored $\mathbf{Y}$, the decoding of
+$\mathsf{newtonSchulzSign}(\mathbf{A}, \varepsilon, b)$, with
+$\|\operatorname{sign}(\mathbf{A}) - \bar{\mathbf{Y}}\|_2 \le \varepsilon$. [Shah2024, Theorem 2.6],
+there for the algorithm, not a program.
+Result: newton-schulz-sign-rounded-program -/
 theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchulzSign := by
   intro P ι _ p mm K _ dec u Ω μ
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
@@ -122,8 +135,24 @@ theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchul
   simp only at hset ⊢
   rw [hset, measureReal_empty]
 
-/-- **The target of randomized deflation as a program holds**
-(`NLAlib.MatrixFreeRoundedProbDeflate`). [Shah2024, Theorem 3.3], for the program. -/
+/-- **Randomized deflation as a program, in finite precision** (the target
+`NLAlib.MatrixFreeRoundedProbDeflate` holds): the registered tree `deflateProg.compiled`, run under
+any interpretation whose semantics meets the standard model at unit roundoff $u \ge 0$ with every
+value in range and exact indices, whose kernels meet `NLAlib.IsMatMulErr` and `NLAlib.IsQRErr` at
+$u$ with constants $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, on a tape of standard complex
+Gaussian draws rounded by a position-independent rounding meeting
+`NLAlib.Computation.IsTapeRounding` with constant $c \ge 0$, $(c + 3)u \le 1/10$: if
+$\mathbf{U}, \mathbf{V} \in \mathbb{C}^{N \times r}$, $r \le N$, have orthonormal columns,
+$\mathbf{S}$ is invertible, the stored $\widetilde{\mathbf{A}}$ decodes within $\beta \le 1$ of
+$\mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}}$, $t \ge 0$, $x > 0$,
+$$\bar m = (\|\mathbf{S}\|_2 + 2)\|\mathbf{S}^{-1}\|_2\,\frac{\sqrt2\,(2\sqrt N + t)}{x} \,,$$
+$\bar m\beta \le 1/5$, $(4\mu_{\mathrm{QR}}(N) + 8\sqrt N\,(c + 3) + 2\mu_{\mathrm{MM}}(N))u \le
+\beta$ and $2(\|\mathbf{S}\|_2 + 1)\sqrt2\,(2\sqrt N + t) \le \Omega$, then the probability that
+the run fails, exceeds its operation and cell counts, or returns a stored $\mathbf{Q}$ (the
+decoding of $\mathsf{deflate}(\widetilde{\mathbf{A}}, r)$) with no unitary $\mathbf{W}$ such that
+$\|\mathbf{U}\mathbf{W} - \bar{\mathbf{Q}}\|_2 \le 6\bar m\beta$ is at most
+$2e^{-t^2/2} + r^2x^2$. [Shah2024, Theorem 3.3], there for the algorithm, not a program.
+Result: deflate-rounded-program -/
 theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
   intro P ι _ p mm qr K _ dec u Ω μM μQ c
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_

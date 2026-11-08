@@ -130,7 +130,8 @@ $$\|\operatorname{sign}(\mathbf{A}) - \operatorname{sign}(\mathbf{B})\|_2 \le
 \frac{2\|\mathbf{A} - \mathbf{B}\|_2}{a} \,.$$
 [Shah2024, Lemma 2.2], there $n\|\mathbf{A} - \mathbf{B}\|_2/(a - \|\mathbf{A} - \mathbf{B}\|_2)$
 for $\|\mathbf{A} - \mathbf{B}\|_2 < a$ and any matrices, by a contour integral; for Hermitian
-matrices the bound is dimension-free and needs no size condition. -/
+matrices the bound is dimension-free and needs no size condition.
+Result: hermitian-sign-perturbation -/
 theorem _root_.Matrix.IsHermitian.specNorm_cfc_sign_sub_cfc_sign_le {A B : Matrix n n 𝕜}
     (hA : A.IsHermitian) (hB : B.IsHermitian) {a : ℝ} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ A, a ≤ |x|) :

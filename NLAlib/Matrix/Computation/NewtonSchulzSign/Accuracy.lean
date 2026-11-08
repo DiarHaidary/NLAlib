@@ -402,7 +402,8 @@ $\mathsf{newtonSchulzSign}$ the algorithm `NLAlib.newtonSchulzSign`. [Shah2024, 
 there with
 $u \le (a/b)\varepsilon/(4\max(N n\mu_g(n, 1.1), n^2))$, $N = N(a/b, \varepsilon/(8n))$ and
 the contour bound of Lemma 2.2; here the perturbation bound is dimension-free and the factor
-$n^{3/2}$ comes from the Hermitian rounding and the stopping test. -/
+$n^{3/2}$ comes from the Hermitian rounding and the stopping test.
+Result: newton-schulz-sign-accuracy -/
 theorem FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le
     (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}

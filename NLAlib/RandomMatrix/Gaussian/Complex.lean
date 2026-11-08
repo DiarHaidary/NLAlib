@@ -328,7 +328,8 @@ $$\mathbb{P}\bigl[\sqrt2\,(\sqrt{\lvert m \rvert} + \sqrt{\lvert n \rvert} + t) 
 \|\mathbf{G}\|_2\bigr] \le 2e^{-t^2/2} \,.$$
 [Shah2024, Lemma 3.2], citing [BanksKulkarniMukherjeeSrivastava2021, Lemma 2.2]: there
 $\mathbb{P}[\|\mathbf{G}\|_2 > (2\sqrt2 + t)\sqrt n] \le 2e^{-nt^2}$ for square $\mathbf{G}$; the
-constant in the exponent differs. -/
+constant in the exponent differs.
+Result: complex-gaussian-norm-tail -/
 theorem measureReal_specNorm_ge_le_of_hasLaw_complexGaussianMatrix {G : Ω → Matrix m n ℂ}
     (hG : HasLaw G (complexGaussianMatrix m n) μ) {t : ℝ} (ht : 0 ≤ t) :
     μ.real {ω | √2 * (√(Fintype.card m : ℝ) + √(Fintype.card n : ℝ) + t) ≤ specNorm (G ω)} ≤

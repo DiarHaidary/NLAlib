@@ -675,7 +675,8 @@ normal sampler, absorbed into a factor $2$) and $2(\|\mathbf{S}\|_2 + \beta)\|\m
 there is a unitary $\mathbf{W}$ with $$\|\mathbf{U}\mathbf{W} -
 \mathsf{deflate}(\widetilde{\mathbf{A}}, r)\|_2 \le 6m\beta \,,$$ $\mathsf{deflate}$ the decoded
 output of `NLAlib.deflate` with ideal sample $\mathbf{G}$. [Shah2024, Theorem 3.3], there for
-$\mathbf{S}$ the diagonal of singular values and with the probability folded in. -/
+$\mathbf{S}$ the diagonal of singular values and with the probability folded in.
+Result: deflate-accuracy-deterministic -/
 theorem FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β mval : ℝ} {μM μQ : ℕ → ℝ}
     (hM : M.IsArithAccurate dec u τ Ω μM) (hqr : IsQRErr (decodeComplex dec) u τ Ω μQ M.qr)

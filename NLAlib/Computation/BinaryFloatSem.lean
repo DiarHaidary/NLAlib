@@ -192,7 +192,8 @@ a nonzero divisor, and a nonnegative argument for the square root); negation, co
 real part, comparisons and conversions are exact. The constants are those of the format: a tie
 in the normal range errs by $2^{-p}$ relative, a tie in the subnormal range by half the subnormal
 spacing $2^{e_{\min}}/2$. This theorem is independent of the nearest tie policy. [Higham2002,
-§2.2], with gradual underflow as a floor. -/
+§2.2], with gradual underflow as a floor.
+Result: computation-binary-float-meets-floor-contract -/
 theorem isFloorRelErrSem_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
     IsFloorRelErrSem (fun _ => (2 : ℝ)⁻¹ ^ fmt.mantissaBits)
