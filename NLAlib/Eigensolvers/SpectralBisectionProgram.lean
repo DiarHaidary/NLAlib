@@ -6,21 +6,21 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Eigensolvers.SpectralBisection.BoundedFormat
-public import NLAlib.Eigensolvers.SpectralBisection.Global
 public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
-public import NLAlibScaffold.Eigensolvers.SpectralBisectionSamples
-public import NLAlibScaffold.Matrix.Computation.SpectralBisectionProgram
+public import NLAlib.Eigensolvers.SpectralBisectionSamples.Lazy
+public import NLAlib.Eigensolvers.SpectralBisectionSamples.IdealMachine
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Count
 
 /-!
-# Hermitian diagonalization in linear precision, for the program (scaffold)
+# Hermitian diagonalization in linear precision, for the program
 
-Statements for a new file `NLAlib/Eigensolvers/SpectralBisectionProgram.lean` (stage COMPDYN S2b,
-design note `docs/design/Computation-EighProgram.md`, §7): [Shah2024, Theorem 4.2] for the
-registered tree `NLAlib.eighProg.compiled`, a program of the model of computation, by transfer of
-the shallow theorems on `NLAlib.eigh` (`NLAlib/Eigensolvers/SpectralBisection/Global.lean`) through
-the refinement: every run succeeds and writes `NLAlib.eigh` on the tape machine with the tree of
-sample positions at the slots, which is `NLAlib.eigh` on the ideal machine with the tree of ideal
-samples, independent with law `NLAlib.eighSampleLaw` on the ideal tape.
+[Shah2024, Theorem 4.2] for the registered tree `NLAlib.eighProg.compiled`, a program of the model
+of computation, by transfer of the shallow theorems on `NLAlib.eigh`
+(`NLAlib/Eigensolvers/SpectralBisection/Global.lean`) through the refinement: every run succeeds and
+writes `NLAlib.eigh` on the tape machine with the tree of sample positions at the slots, which is
+`NLAlib.eigh` on the ideal machine with the tree of ideal samples, independent with law
+`NLAlib.eighSampleLaw` on the ideal tape.
 
 ## Main results
 
@@ -43,27 +43,7 @@ open Computation
 set_option linter.style.longLine false in
 /-- **The target of randomized spectral bisection as a program holds**
 (`NLAlib.MatrixFreeRoundedProbEigh`): [Shah2024, Theorem 4.2] for the registered tree. No printed
-source.
-Proof: fix the data, an interpretation `I` meeting the contracts and a tape rounding $\rho$ meeting
-its contract, and let $M'$ be the ideal machine of the semantics, the routines and the samplers of
-$\rho$ (as in `NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`, scaffold). For every $\omega$ the
-run on the tape $\rho \circ \xi_\omega$ succeeds (`NLAlib.eighProg.exists_exec_compiled`, scaffold:
-$u \le 1/30 < 1$ from $(c + 3)u \le 1/10$; $\ell \ge 1$ from `NLAlib.bisectionDepth`; the semantics
-decides flags by `NLAlib.Computation.IsRelErrSem.decidesFlags`, scaffold) and writes `NLAlib.eigh`
-on the tape machine with the tree of sample positions (`NLAlib.eighProg.holds_of_exec_compiled`,
-scaffold), which is `NLAlib.eigh` on $M'$ with the tree of ideal samples
-(`NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`). So the failure event is contained in the
-event of the shallow theorem for $M'$ and the samples `NLAlib.eighIdealTree` at $\xi_\omega$
-(`MeasureTheory.measureReal_mono`); $M'$ is accurate at $u_{\mathrm M}$
-(`NLAlib.Computation.isAccurate_eighIdealMachine`, scaffold; its range hypothesis $1 \le 2\Omega$
-from `pre`, where $16(2\bar R_0 + N + 2\ell + \cdots) \le \Omega$ and $\ell \ge 5$ give
-$\Omega \ge 160$), its samplers have measurable fibres and countable ranges
-(`NLAlib.Computation.countable_range_uniformUnif`,
-`NLAlib.Computation.countable_range_gaussianNormal`, scaffold), and the samples are independent with
-law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold), so
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`
-bounds it by $\theta$ (the hypotheses of `pre` at $u_{\mathrm M}$ and $c_{\mathrm N}$, floor $0$).
-M, about 90 lines. -/
+source. -/
 theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
   intro P ι _ p mm qr K _ dec u Ω θ μM μQ c
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
@@ -132,10 +112,7 @@ at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u > 0$ and nor
 $c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $\beta$ within a factor $1 + 2^{-6}$ of its
 bound $\hat\beta$: $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n +
 \log\log(1/\varepsilon))$ bits, with the polynomial factor $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$.
-[Shah2024, Theorem 4.2], for the program. No printed source.
-Proof: as `NLAlib.matrixFreeRoundedProbEigh`, with the shallow bit-count theorem in place of the
-shallow Theorem 4.2. M, about 90 lines (share the reduction with `NLAlib.matrixFreeRoundedProbEigh`
-as a private lemma). -/
+[Shah2024, Theorem 4.2], for the program. No printed source. -/
 theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] (p : P)
     (mm qr : ι) (K : Type) [Inhabited K] (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ)
     (c : Dist → ℝ) :
@@ -244,8 +221,8 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
   exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
 
 set_option linter.style.longLine false in
-/-- **Hermitian diagonalization in a bounded binary format, for the runs of the program that
-succeed**: let the kernels of `I` be routines on pairs, the semantics decide flags, with exact
+/-- Hermitian diagonalization in a bounded binary format, for the runs of the program that
+succeed: let the kernels of `I` be routines on pairs, the semantics decide flags, with exact
 integer literals up to $N + 4$ and the exact floor conversion, and let the tape be a
 position-independent rounding $\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`. If
 the ideal machine of the semantics, the routines and the samplers of $\rho$ meets
@@ -256,13 +233,7 @@ fibres and countable ranges, then under the hypotheses of
 the probability that the run succeeds and its output is not an approximate diagonalization with
 residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
 Success under a bounded format (no operation out of range) is not claimed: it needs a range analysis
-of every operation of a run (design note, decision D6). No printed source.
-Proof: on a successful run the output is `NLAlib.eigh` on the tape machine
-(`NLAlib.eighProg.holds_of_exec_compiled`, scaffold), which is `NLAlib.eigh` on the ideal machine
-with the tree of ideal samples (`NLAlib.eigh_eighTapeMachine_eq_eigh_eighIdealTree`, scaffold), so
-the event is contained in the shallow theorem's (`MeasureTheory.measureReal_mono`), whose samples
-are independent with law `NLAlib.eighSampleLaw` (`NLAlib.iIndepFun_eighIdealTree`, scaffold). M,
-about 60 lines. -/
+of every operation of a run (design note, decision D6). No printed source. -/
 theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le
     {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] (p : P) (mm qr : ι)
     {dec : P → K → ℝ} {I : Interp P ι K C} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}

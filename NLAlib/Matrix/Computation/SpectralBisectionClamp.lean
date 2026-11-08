@@ -5,17 +5,18 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Computation.Contract
 public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
-public import NLAlibScaffold.Computation.IndexBinder
+public import NLAlib.Computation.StaticCost
 
 /-!
-# The clamp of the split index of the spectral bisection program (scaffold)
+# The clamp of the split index of the spectral bisection program
 
-The node step of `NLAlib.eighProg` clamps $\mathrm{fl}(t + \mathrm{fl}(1/2))$ to $[0, k]$ by
-counted instructions (`NLAlib.eighClampBlock`) before its index binder, which fails on a negative
-value and above its bound. Under exact comparisons, integer literals up to $k$ and the exact floor
-conversion, the clamp writes back a value whose conversion is $\min(k, \lfloor x\rfloor_+)$, and
-it always succeeds: the binder always receives a value in range.
+The node step of `NLAlib.eighProg` clamps $\mathrm{fl}(t + \mathrm{fl}(1/2))$ to $[0, k]$ by counted
+instructions (`NLAlib.eighClampBlock`) before its index binder, which fails on a negative value and
+above its bound. Under exact comparisons, integer literals up to $k$ and the exact floor conversion,
+the clamp writes back a value whose conversion is $\min(k, \lfloor x\rfloor_+)$, and it always
+succeeds: the binder always receives a value in range.
 
 ## Main results
 
@@ -86,7 +87,7 @@ private theorem exec_eighClampBlock_lits {p : P} {k t : ℕ} {st : St P K C} {w 
     rw [exec_seq, exec_instr]
     simp only [Instr.run, IExp.eval, hzk, Option.bind_some, hs2, Option.map_some, Instr.kind]
 
-/-- **The run of the clamp of the split index**: with exact comparisons at `p`, exact integer
+/-- The run of the clamp of the split index: with exact comparisons at `p`, exact integer
 literals up to $k$ and the exact floor conversion, from a state whose cell $6$ of `t` holds $w$, the
 clamp (`NLAlib.eighClampBlock`, literals in the cells $2$ and $3$ of `t`) then the rest runs as the
 rest from a state whose cell $6$ of `t` converts to $\min(k, \lfloor w\rfloor_+)$, which differs
