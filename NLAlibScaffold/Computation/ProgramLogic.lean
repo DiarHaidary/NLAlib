@@ -33,7 +33,9 @@ applies them statement by statement, each step naming the next state.
 * `NLAlib.Computation.Mode`, `NLAlib.Computation.Wp`, `NLAlib.Computation.Triple`: the logic.
 * `NLAlib.Computation.Spec`, `NLAlib.Computation.RoutineSpec`: routine specifications.
 * `NLAlib.Computation.Costs`: an exact count, threaded additively.
-* `NLAlib.Computation.IsRoutineSem`: the arithmetic assumptions of a routine, in one record.
+* `NLAlib.Computation.matBlock`: the canonical block of a stored matrix.
+* `NLAlib.Computation.PosKept`, `NLAlib.Computation.CostsLe`: kept tape positions, a weighted
+  count bound.
 
 ## Main results
 
@@ -165,6 +167,46 @@ theorem IsFramed.of_modifies {pre : Store P K → Prop} {ro : List ℕ} {fp : Li
     (hro : ∀ x ∈ fp, x.1 ∉ ro) : pre s' := by
   sorry
 
+/-- **The canonical block of a stored matrix**: `rows × cols` entries of `width` words from
+offset `off` of buffer `b`, of length `rows * cols * width`. Kernel and routine specifications
+state their footprints in this form, so that equal blocks are syntactically equal and the
+lengths of different statements (`2 * (r * k)`, `k * r * 2`) need no rewriting. -/
+def matBlock (b off rows cols width : ℕ) : ℕ × ℕ × ℕ := (b, off, rows * cols * width)
+
+/-- Blocks in different buffers are disjoint. -/
+theorem blockDisjoint_of_fst_ne {x y : ℕ × ℕ × ℕ} (h : x.1 ≠ y.1) :
+    blockDisjoint x y = true := by
+  sorry
+
+/-- A block that ends before another starts in the same buffer is disjoint from it: the layout
+lemma for blocks packed one after another. -/
+theorem blockDisjoint_of_add_le {x y : ℕ × ℕ × ℕ} (h : x.2.1 + x.2.2 ≤ y.2.1) :
+    blockDisjoint x y = true := by
+  sorry
+
+/-- The length of a matrix block does not depend on the order of its dimensions. -/
+theorem matBlock_comm (b off rows cols width : ℕ) :
+    matBlock b off rows cols width = (b, off, cols * rows * width) := by
+  sorry
+
+/-- **Scratch on top, dropped**: a run from the store with a buffer pushed, whose footprint
+includes a block of the pushed buffer, modifies in the original store, after the pop, only the
+blocks below it. -/
+theorem Modifies.pop_top {fp : List (ℕ × ℕ × ℕ)} {s s' : Store P K} {y : P × Array (Option K)}
+    {o l : ℕ} (h : Modifies (fp ++ [(s.size, o, l)]) (s.push y) s') : Modifies fp s s'.pop := by
+  sorry
+
+/-- A writable block stays writable through any modification (by the shape clause; the frame
+rule does not apply to a block that was just written). -/
+theorem Writable.of_modifies {p : P} {b off n : ℕ} {fp : List (ℕ × ℕ × ℕ)} {s s' : Store P K}
+    (h : Writable s p b off n) (hm : Modifies fp s s') : Writable s' p b off n := by
+  sorry
+
+/-- Writable blocks stay writable through any modification. -/
+theorem WritableBlocks.of_modifies {p : P} {bs fp : List (ℕ × ℕ × ℕ)} {s s' : Store P K}
+    (h : WritableBlocks s p bs) (hm : Modifies fp s s') : WritableBlocks s' p bs := by
+  sorry
+
 end Footprint
 
 /-! ### Modes, weakest preconditions and triples -/
@@ -218,16 +260,28 @@ theorem Mode.needs_of {A : Prop} (h : A) (m : Mode) : m.Needs A := by
   · exact h
   · trivial
 
-/-- **The arithmetic assumptions of a routine**, in one record: the standard model at unit
-roundoff `u` with decoding `dec` and safe set `safe`, and exact index arithmetic (integer
-literals up to `B`, the conversion to an index the floor). The comparison and literal facts a
-routine needs are projections of it. -/
-structure IsRoutineSem (u : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ → Prop) (B : ℕ)
-    (sem : ScalarSem P K) : Prop where
-  /-- The standard model of rounding. -/
-  relErr : IsRelErrSem u dec safe sem
-  /-- Exact index arithmetic. -/
-  index : IsIndexExactSem dec B sem
+/-- A requirement of a conjunction is the conjunction of the requirements. -/
+theorem Mode.needs_and {m : Mode} {A B : Prop} : m.Needs (A ∧ B) ↔ m.Needs A ∧ m.Needs B := by
+  cases m
+  · exact Iff.rfl
+  · exact ⟨fun _ => ⟨trivial, trivial⟩, fun _ => trivial⟩
+
+/-- A requirement implies its consequences. -/
+theorem Mode.Needs.mono {m : Mode} {A B : Prop} (h : A → B) (hA : m.Needs A) : m.Needs B := by
+  cases m
+  · exact h hA
+  · trivial
+
+/-- A requirement used to establish another. -/
+theorem Mode.Needs.elim {m : Mode} {A B : Prop} (hA : m.Needs A) (h : A → m.Needs B) :
+    m.Needs B := by
+  cases m
+  · exact h hA
+  · trivial
+
+omit [DecidableEq P] in
+/-- A state whose tape positions are those of another. -/
+def PosKept {C : Type} (st st' : St P K C) : Prop := st'.pos = st.pos
 
 variable [AddMonoid C]
 
@@ -397,6 +451,25 @@ theorem Triple.alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
     (hpost : ∀ st st₂, pre st → post' (st.allocate p len.eval (I.width p)) st₂ →
       post st (st₂.release p len.eval (I.width p))) :
     Triple m I pre (.alloc p len body) post := by
+  sorry
+
+omit [AddMonoid C] in
+/-- The allocated state has one buffer more. -/
+theorem St.size_allocate (st : St P K C) (p : P) (len w : ℕ) :
+    (st.allocate p len w).store.size = st.store.size + 1 := by
+  sorry
+
+omit [AddMonoid C] in
+/-- The fresh buffer is writable on its whole length, at its relative handle. -/
+theorem St.writable_allocate (st : St P K C) (p : P) (len w : ℕ) :
+    Writable (st.allocate p len w).store p st.store.size 0 len := by
+  sorry
+
+omit [AddMonoid C] in
+/-- Releasing the top buffer keeps every read below it. -/
+theorem St.read_release_of_lt (st : St P K C) (p : P) (len w : ℕ) (q : P) {b : ℕ}
+    (hb : b + 1 < st.store.size) (i : ℕ) :
+    (st.release p len w).store.read q b i = st.store.read q b i := by
   sorry
 
 end Core
@@ -580,7 +653,91 @@ theorem Spec.total_of_liberal (h : Spec .liberal I pre s fp post)
     (hs : ∀ st, pre st → ∃ st', exec I s st = some st') : Spec .total I pre s fp post :=
   Triple.total_of_liberal h hs
 
+/-- **A statement step as a routine**: the call rule applies to `Builder.stmt s` (a kernel call
+in a builder) with the specification of `s`. -/
+theorem RoutineSpec.stmt (h : Spec m I pre s fp post) :
+    RoutineSpec m I pre (Builder.stmt s) fp post := by
+  sorry
+
+/-- A scalar instruction step as a routine. -/
+theorem RoutineSpec.ins {i : Instr P ℕ ℕ} (h : Spec m I pre (.instr i) fp post) :
+    RoutineSpec m I pre (Builder.ins i) fp post := by
+  sorry
+
+/-- **Transport across run equivalence**: a specified routine specifies every composable builder
+whose run runs the same (index normal forms, `Builder` rewrites). -/
+theorem RoutineSpec.congr {r r' : Builder P ι ℕ ℕ Unit} (h : RoutineSpec m I pre r fp post)
+    (hc : ExecutionComposable I r') (he : ∀ st, exec I r'.run st = exec I r.run st) :
+    RoutineSpec m I pre r' fp post := by
+  sorry
+
+/-- A specification transported to a statement of the same index normal form
+(`NLAlib.Computation.exec_eq_of_normIdx_eq`). -/
+theorem Spec.of_normIdx_eq {s' : Stmt P ι ℕ ℕ} (h : Spec m I pre s fp post)
+    (hn : s'.normIdx = s.normIdx) : Spec m I pre s' fp post := by
+  sorry
+
+/-- **An allocation in a builder, by named states**: the rest of the block, specified at the
+relative handle `b` from the allocated state `st₁` (an equation, not a pushed term), gives the
+block's specification; its footprint below the fresh buffer is the body's. -/
+theorem Spec.allocBind {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit} {b : ℕ}
+    {pre' : St P K C → Prop} {post' : St P K C → St P K C → Prop}
+    (h : Spec m I pre' (f b).run (fp ++ [(b, 0, len.eval)]) post')
+    (hb : ∀ st, pre st → st.store.size = b)
+    (hpre : ∀ st st₁, pre st → st₁ = st.allocate p len.eval (I.width p) → pre' st₁)
+    (hpost : ∀ st st₁ st₂, pre st → st₁ = st.allocate p len.eval (I.width p) → post' st₁ st₂ →
+      post st (st₂.release p len.eval (I.width p))) :
+    Spec m I pre (Builder.alloc p len >>= f).run fp post := by
+  sorry
+
+/-- **A loop with per-iteration footprints**: iteration `k` may modify the blocks `fp k` (which
+may depend on ghost sizes read before the loop); the loop modifies their union. -/
+theorem Spec.loopFp {n : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} (fp : ℕ → List (ℕ × ℕ × ℕ))
+    (Inv : St P K C → ℕ → St P K C → Prop) (h0 : ∀ st, pre st → Inv st 0 st)
+    (hstep : ∀ st₀, pre st₀ → ∀ k < n.eval,
+      Spec m I (Inv st₀ k) (body k) (fp k) fun _ st' => Inv st₀ (k + 1) st') :
+    Spec m I pre (.loop n body) ((List.range n.eval).flatMap fp)
+      fun st₀ st' => Inv st₀ n.eval st' := by
+  sorry
+
+/-- A loop in a builder, with per-iteration footprints. -/
+theorem RoutineSpec.forRange {n : IExp ℕ} {body : ℕ → Builder P ι ℕ ℕ Unit}
+    (fp : ℕ → List (ℕ × ℕ × ℕ)) (Inv : St P K C → ℕ → St P K C → Prop)
+    (h0 : ∀ st, pre st → Inv st 0 st)
+    (hstep : ∀ st₀, pre st₀ → ∀ k < n.eval,
+      Spec m I (Inv st₀ k) (body k).run (fp k) fun _ st' => Inv st₀ (k + 1) st') :
+    RoutineSpec m I pre (Builder.forRange n body) ((List.range n.eval).flatMap fp)
+      fun st₀ st' => Inv st₀ n.eval st' := by
+  sorry
+
+/-- **An index binder of specifications**: the precondition fixes the stored value `v`, which
+converts to `k`; the body is specified at `k` with the fact `k ≤ bound` and may have a footprint
+depending on `k`; the binder's postcondition records `k ≤ bound`, which the total mode needs. -/
+theorem Spec.bindIdx_of_read {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
+    {v : K} {k : ℕ} {pre' : St P K C → Prop} {post' : St P K C → St P K C → Prop}
+    (hx : ∀ st, pre st → st.store.read p x.buf x.idx.eval = some v)
+    (hk : I.sem.toNat p v = some k) (hbound : m.Needs (k ≤ bound.eval))
+    (h : k ≤ bound.eval → Spec m I pre' (body k) fp post')
+    (hpre : ∀ st, pre st → pre' (st.addCnt (I.charge (.toNat p)))) :
+    Spec m I pre (.bindIdx p x bound body) fp
+      fun st st' => k ≤ bound.eval ∧ post' (st.addCnt (I.charge (.toNat p))) st' := by
+  sorry
+
+/-- **A two-armed conditional of specifications** (the branch not fixed by the precondition):
+the postcondition is that of the arm taken. -/
+theorem Spec.ite_cases {p : P} {c : CmpOp} {x y : Cell ℕ ℕ}
+    {preT preE : St P K C → Prop} {postT postE : St P K C → St P K C → Prop}
+    (ht : Spec m I preT s fp postT) (he : Spec m I preE t fp postE)
+    (hcmp : ∀ st, pre st → m.Needs (∃ a b r, st.store.read p x.buf x.idx.eval = some a ∧
+      st.store.read p y.buf y.idx.eval = some b ∧ I.sem.cmp p c a b = some r))
+    (hT : ∀ st, pre st → preT (st.addCnt (I.charge (.cmp p))))
+    (hE : ∀ st, pre st → preE (st.addCnt (I.charge (.cmp p)))) :
+    Spec m I pre (.ite p c x y s t) fp fun st st' =>
+      postT (st.addCnt (I.charge (.cmp p))) st' ∨ postE (st.addCnt (I.charge (.cmp p))) st' := by
+  sorry
+
 end Spec
+
 
 /-! ### Counts -/
 
@@ -614,17 +771,122 @@ theorem Costs.list_sum {n : ℕ} {c : ℕ → C} {f : ℕ → St P K C}
     Costs ((List.range n).map c).sum (f 0) (f n) := by
   sorry
 
-/-- **A specification under another charge**: the store, the tape positions and the memory of a
-run do not depend on the charge, so a total specification whose pre- and postcondition ignore
-the count holds under every charge. -/
-theorem Spec.withCharge {I : Interp P ι K C} {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ}
-    {fp : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop} (ch : OpKind P ι → C)
-    (h : Spec .total I pre s fp post) (hpre : ∀ st c, pre st → pre { st with cnt := c })
+/-- **A specification under another charge**, in every mode: success, the store, the tape
+positions and the memory of a run do not depend on the charge, so a specification whose pre- and
+postcondition ignore the count holds under every charge. -/
+theorem Spec.withCharge {m : Mode} {I : Interp P ι K C} {pre : St P K C → Prop}
+    {s : Stmt P ι ℕ ℕ} {fp : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop}
+    (ch : OpKind P ι → C) (h : Spec m I pre s fp post)
+    (hpre : ∀ st c, pre st → pre { st with cnt := c })
     (hpost : ∀ st st' c c', post st st' → post { st with cnt := c } { st' with cnt := c' }) :
-    Spec .total { I with charge := ch } pre s fp post := by
+    Spec m { I with charge := ch } pre s fp post := by
+  sorry
+
+omit [DecidableEq P] in
+/-- **A weighted count bound**: the weight `w` (additive, such as `Finsupp.weight` of a kernel
+weight) of the final count exceeds that of the start count by at most `c`. The form of the EP7
+weighted kernel count; data-dependent through a supremum over an index binder's values. -/
+def CostsLe (w : C →+ ℕ) (c : ℕ) (st st' : St P K C) : Prop := w st'.cnt ≤ w st.cnt + c
+
+omit [DecidableEq P] in
+/-- Weighted bounds in sequence add. -/
+theorem CostsLe.trans {w : C →+ ℕ} {c₁ c₂ : ℕ} {st st₁ st₂ : St P K C}
+    (h₁ : CostsLe w c₁ st st₁) (h₂ : CostsLe w c₂ st₁ st₂) : CostsLe w (c₁ + c₂) st st₂ := by
+  sorry
+
+omit [DecidableEq P] in
+/-- A weighted bound may be raised. -/
+theorem CostsLe.mono {w : C →+ ℕ} {c c' : ℕ} {st st' : St P K C} (h : CostsLe w c st st')
+    (hc : c ≤ c') : CostsLe w c' st st' := by
+  sorry
+
+omit [DecidableEq P] in
+/-- An exact count gives its weight as a bound. -/
+theorem CostsLe.of_costs {w : C →+ ℕ} {c : C} {st st' : St P K C} (h : Costs c st st') :
+    CostsLe w (w c) st st' := by
+  sorry
+
+omit [DecidableEq P] in
+/-- Weighted bounds of a loop add over its iterations. -/
+theorem CostsLe.list_sum {w : C →+ ℕ} {n : ℕ} {c : ℕ → ℕ} {f : ℕ → St P K C}
+    (h : ∀ k < n, CostsLe w (c k) (f k) (f (k + 1))) :
+    CostsLe w ((List.range n).map c).sum (f 0) (f n) := by
   sorry
 
 end Costs
+
+/-! ### Instructions -/
+
+section Instructions
+
+variable {m : Mode} {I : Interp P ι K C} {p : P} {dst x y : Cell ℕ ℕ}
+
+/-- **A literal** writes its value into the destination cell, charges one literal and keeps the
+tape positions; the total mode needs the cell writable. -/
+theorem spec_lit {q : ℚ} {v : K} (hv : I.sem.lit p q = some v) :
+    Spec m I (fun st => m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.lit p dst q)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some v ∧ Costs (I.charge (.lit p)) st st' ∧
+          PosKept st st' := by
+  sorry
+
+/-- **An index literal**: the value of an index expression as a literal. -/
+theorem spec_litIdx {e : IExp ℕ} {v : K} (hv : I.sem.lit p (e.eval : ℚ) = some v) :
+    Spec m I (fun st => m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.litIdx p dst e)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some v ∧ Costs (I.charge (.lit p)) st st' ∧
+          PosKept st st' := by
+  sorry
+
+/-- **A binary operation** on two stored values. -/
+theorem spec_bin {op : BinOp} {a b v : K} (hv : I.sem.bin p op a b = some v) :
+    Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
+        st.store.read p y.buf y.idx.eval = some b ∧
+        m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.bin p op dst x y)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some v ∧ Costs (I.charge (.bin p op)) st st' ∧
+          PosKept st st' := by
+  sorry
+
+/-- **A unary operation** on a stored value. -/
+theorem spec_un {op : UnOp} {a v : K} (hv : I.sem.un p op a = some v) :
+    Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
+        m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.un p op dst x)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some v ∧ Costs (I.charge (.un p op)) st st' ∧
+          PosKept st st' := by
+  sorry
+
+/-- **A copy** of a stored value. -/
+theorem spec_copy {a : K} :
+    Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
+        m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.copy p dst x)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some a ∧ Costs (I.charge (.copy p)) st st' ∧
+          PosKept st st' := by
+  sorry
+
+/-- **A draw** writes the next tape value of its distribution and advances that position. -/
+theorem spec_draw {d : Dist} :
+    Spec m I (fun st => m.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.draw p d dst)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some (I.tape d (st.pos d)) ∧
+          Costs (I.charge (.draw p d)) st st' ∧
+          st'.pos = Function.update st.pos d (st.pos d + 1) := by
+  sorry
+
+/-- **A loop of draws** into consecutive cells (`NLAlib.Computation.exec_forRange_draw`): the
+block holds the next `n` tape values and the position advances by `n`. -/
+theorem spec_forRange_draw (d : Dist) (X off : ℕ) (n : IExp ℕ) (idx : ℕ → IExp ℕ)
+    (hidx : ∀ i, (idx i).eval = off + i) :
+    RoutineSpec m I (fun st => m.Needs (Writable st.store p X off n.eval))
+      (Builder.forRange n fun i => Builder.ins (.draw p d ⟨X, idx i⟩)) [(X, off, n.eval)]
+      fun st st' => (∀ i < n.eval, st'.store.read p X (off + i) = some (I.tape d (st.pos d + i))) ∧
+        Costs (n.eval • I.charge (.draw p d)) st st' ∧
+        st'.pos = Function.update st.pos d (st.pos d + n.eval) := by
+  sorry
+
+end Instructions
 
 /-! ### Certificates as specifications -/
 
@@ -672,13 +934,35 @@ theorem Triple.prog_runsWithin {I : Interp P ι K (OpCount P ι)} {r b : ℕ} (p
 
 /-! ### Tactics -/
 
-/-- Footprint side goals: membership in, disjointness of and arithmetic on concrete block lists,
-closed by `omega` after unfolding `NLAlib.Computation.BlocksDisjoint` and
-`NLAlib.Computation.blockDisjoint_iff`. -/
-macro "fp_omega" : tactic => `(tactic| (
-  try simp only [BlocksDisjoint, List.mem_cons, List.mem_append, List.not_mem_nil, or_false,
-    forall_eq_or_imp, forall_eq, List.forall_mem_cons, blockDisjoint_iff, ne_eq] at *
-  omega))
+/-- Footprint side goals: membership in, disjointness of, distinctness of and arithmetic on
+concrete block lists. `fp_omega [h₁, …]` adds the facts `hᵢ` (layout bounds such as
+`Nat.mul_le_mul hr hk`), unfolds `NLAlib.Computation.BlocksDisjoint`,
+`NLAlib.Computation.matBlock`, `List.Nodup` and `NLAlib.Computation.blockDisjoint_iff` in the
+goal and those facts only (never the whole context), normalises products with `ring_nf` (so
+`r * k` and `k * r` are one atom), and closes with `omega`. -/
+syntax "fp_omega" (" [" term,* "]")? : tactic
+
+/-- The closing step of `fp_omega` on the goal and the named facts. -/
+syntax "fp_close" (ppSpace colGt ident)* : tactic
+
+macro_rules
+  | `(tactic| fp_close $names*) => `(tactic| (
+      (try simp only [BlocksDisjoint, matBlock, List.nodup_cons, List.nodup_nil, List.mem_cons,
+        List.mem_append, List.not_mem_nil, or_false, and_true, not_or, forall_eq_or_imp,
+        forall_eq, List.forall_mem_cons, blockDisjoint_iff, ne_eq, not_false_eq_true] at $names* ⊢)
+      (try ring_nf at $names* ⊢)
+      omega))
+
+macro_rules
+  | `(tactic| fp_omega) => `(tactic| fp_close)
+  | `(tactic| fp_omega [$hs,*]) => do
+      let mut names : Array (Lean.TSyntax `ident) := #[]
+      for _ in hs.getElems do
+        names := names.push (Lean.mkIdent (Lean.Name.mkSimple s!"fp_fact{names.size}"))
+      let mut tac ← `(tactic| fp_close $names*)
+      for (h, nm) in (hs.getElems.zip names).reverse do
+        tac ← `(tactic| (have $nm := $h; $tac:tactic))
+      return tac
 
 /-- One step of a program proof: split a sequence, apply the triple `h` to its first statement
 and leave its precondition and the continuation from the named next state; footprint side
@@ -689,7 +973,7 @@ syntax "spec_step " term : tactic
 macro_rules
   | `(tactic| spec_step $h) => `(tactic| (
       first | rw [wp_seq] | skip
-      refine Triple.wp_of $h ?_ ?_ <;> try (first | assumption | fp_omega)))
+      (refine Triple.wp_of $h ?_ ?_) <;> try (first | assumption | fp_omega)))
 
 /-- One call of a specified routine in a builder: `NLAlib.Computation.RoutineSpec.wp_bind`, with
 side goals closed by `assumption` or `fp_omega` removed, as for `spec_step`. -/
@@ -697,7 +981,8 @@ syntax "spec_call " term : tactic
 
 macro_rules
   | `(tactic| spec_call $h) => `(tactic| (
-      first | refine RoutineSpec.wp_bind $h ?_ ?_ | refine RoutineSpec.wp_run $h ?_ ?_
-      all_goals try (first | assumption | fp_omega)))
+      first
+        | (refine RoutineSpec.wp_bind $h ?_ ?_) <;> try (first | assumption | fp_omega)
+        | (refine RoutineSpec.wp_run $h ?_ ?_) <;> try (first | assumption | fp_omega)))
 
 end NLAlib.Computation

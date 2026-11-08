@@ -1,10 +1,15 @@
 # A program logic for runs: specifications that compose by fixed rules
 
-2026-11-08. Design note; **status: draft for review**. Branch `design/prog-logic` from
-`origin/main` @ `7cbea9d1`. Decision sheet: harness `state/decisions/PROG-LOGIC.json` (ids PG1–PG9
-below). Targets: harness `pilot/prog-logic-targets.json` (ids PL1–PL87). Scaffold:
+2026-11-08. Design note; **status: reviewed, approve with changes (Fable,
+`reports/Review-Fable-ProgLogic-Design.md`; the COMPDYN session, owner of S2,
+`reports/Review-COMPDYN-ProgLogic.md`); the changes are applied in this revision (§12)**. Branch
+`design/prog-logic` from `origin/main` @ `7cbea9d1`. Decision sheet: harness
+`state/decisions/PROG-LOGIC.json` (ids PG1–PG9 below). Targets: harness
+`pilot/prog-logic-targets.json` (ids PL1–PL109, provable statements and two re-proofs); jobs:
+harness `pilot/prog-logic-jobs.json` (J1–J9, the pilot gate and the S2/W4 migration). Scaffold:
 `NLAlibScaffold/Computation/ProgramLogic.lean`,
 `NLAlibScaffold/Matrix/Computation/ProgramLogicKernels.lean`,
+`NLAlibScaffold/Matrix/Computation/SpectralBisectionProgramTreeSpec.lean`,
 `NLAlibScaffold/Matrix/Computation/SpectralBisectionNode/CompressSpec.lean`. This note extends
 `docs/design/Computation-CertifiedRoutines.md` (CERT-ROUTINES); it does not replace it.
 
@@ -34,41 +39,53 @@ be easy enough to apply that a small prover model does program proofs reliably.
   * a **block-level frame rule** in place of a separation logic.
 
   Every rule is a three- to ten-line consequence of a run equation of `Exec.lean`. The logic has
-  **two modes**, `total` and `liberal`, and one specification proved for every mode under
-  `m.Needs A` yields both of S2's lemmas, refinement without `A` and success under `A`, from one
-  walk (PG2).
+  **two modes**, `total` and `liberal`. One specification proved for every mode yields both of
+  S2's lemmas: refinement and success. Success-only hypotheses go under `m.Needs` in the
+  precondition; correctness-only hypotheses guard the value clause of the postcondition (PG2).
 * **The specification (§3).** `Spec m I pre s fp post` is a triple whose postcondition also says
   `Modifies fp st.store st'.store`: same shape, and every cell disjoint from the blocks `fp` reads
-  the same. `RoutineSpec` adds `ExecutionComposable` for builders. Counts are an optional clause,
-  `Costs c st st'`, which threads additively. Budgets come from the static cost of the compiled
-  tree, as CERT-ROUTINES CR7 decided. The arithmetic assumptions are bundled in one record,
-  `IsRoutineSem`. Handles are relative to the size of the store, which the precondition fixes,
-  so disjointness is `omega`.
-* **Rules (§4).** 76 statements. Four are one-line proofs and 72 are sorried in the scaffold,
-  which builds:
-  * footprints and read sets (18);
-  * modes (6);
+  the same. `RoutineSpec` adds `ExecutionComposable` for builders. Footprints use one canonical
+  block form, `matBlock`. Counts are optional clauses: `Costs` (exact) and `CostsLe` (a weighted
+  bound, for EP7). Both thread additively. Budgets come from the static cost of the compiled
+  tree, as CERT-ROUTINES CR7 decided. The arithmetic assumptions are two records,
+  `IsControlExactSem` (indices, flags, `≤`) and `IsRoutineSem` (that plus the standard model).
+  Handles are relative to the size of the store, which the precondition fixes.
+* **Rules (§4).** The scaffold has 107 sorried statements and 7 one-line proofs; it builds:
+  * footprints, read sets and canonical blocks (24);
+  * modes, with the `Mode.Needs` algebra (9, of which 5 are proved);
   * application, consequence and the mode bridges (7);
-  * statement rules: skip, seq, instr, alloc, ite, bindIdx, kcall, named (9);
-  * invariant rules for `loop` and `whileFuel`, and scoped scratch (4);
+  * statement rules (9);
+  * the six instruction specifications and the draw loop (7);
+  * invariant rules, scoped scratch, and allocation states (7);
   * builder rules (10);
-  * specification rules, including seq, frame, ite, loop, alloc, the call rule and bind (12);
-  * counts (5);
-  * a budget bridge to `Prog.RunsWithin` (1);
-  * bridges from `IsBlockRoutine`, `IsMatvecRoutine`, `IsOrthRoutine` and `IsMatMulKernel`
-    (4).
+  * specification rules (21), including:
+    * seq, frame, ite and two-armed ite;
+    * loop with per-iteration footprints;
+    * `bindIdx`;
+    * alloc by named states;
+    * the call rule;
+    * `RoutineSpec.stmt` and `RoutineSpec.ins`;
+    * transport across run equivalence and index normal forms;
+  * counts (9);
+  * a budget bridge (1);
+  * certificate and kernel bridges, with the arithmetic records (5);
+  * the S2 `eighWhen` rule (1);
+  * the pilot's four statements.
 
-  The pilot adds four sorried statements: three pair-kernel adapters and the block's
-  specification.
+  Tactics: `spec_step`, `spec_call` and `fp_omega [facts]`. The last normalises products, so
+  `r * k` and `k * r` are one atom. It was tested on the S2 goals that plain `omega` fails (§5).
+* **Migration (§7).** Pilot: `NLAlib.eighCompressBlock`. Both of its lemmas are re-derived, with
+  statements unchanged, from one mode-generic specification. Gate (job J1):
+  * the two walks, 180 lines, become the specification plus two corollaries, at most 90 lines;
+  * the net diff is reported, with moved text excluded;
+  * Split's eight-alloc prefix is proved by named states with default heartbeats.
 
-  There are two tactic macros, `spec_step` and `spec_call`, and a closer, `fp_omega` (§5).
-* **Migration (§7).** Pilot: `NLAlib.eighCompressBlock`. Its two lemmas (180 proof lines) are
-  re-derived from one mode-generic specification of about 60 lines, with both statements
-  unchanged. The estimate for all of S2 is 4,000–5,500 fewer lines (35–45% of the walks), most of
-  it from the `*Success.lean` files, which fold into the specifications. The second consumers are
-  CGS2 and the Lanczos-reorth loop, about 500 fewer lines, plus the frame problem of
-  CERT-ROUTINES §8.3 item 2. **No registered target statement changes**, and no re-pin is
-  needed.
+  The estimate for all of S2 is **2,500–3,500 fewer lines (20–28%)**. A complete fold of the
+  `*Success.lean` files would give about 4,000. CGS2 and Lanczos-reorth are second consumers,
+  about 500 lines. **No registered target statement changes**, and no re-pin is needed.
+* **Who (PG9, as the COMPDYN session proposed).** The COMPDYN/S2 session builds W0–W3 in one
+  builder lane. This pipeline reviews the W0–W1 statements and keeps the note and the sheet. W4
+  splits by owner: the EIGH weight goes to COMPDYN, CGS2 and Lanczos-reorth to the reorth owner.
 
 ## 1. Motivation: what S2's program proofs cost
 
@@ -121,7 +138,7 @@ shift. `exists_exec_eighCompressBlock` (Compress.lean:381–476) spends its 96 l
    `hcells`, by a `simp only … at` and two `obtain` patterns.
 2. Shapes of the four scratch buffers destructured from `∀ X ∈ […], ∃ len, …`.
 3. For each of the five steps, a private success lemma (`compress_exists_zconjTranspose`,
-   `compress_exists_kcall`, …, 190 lines in the same file). Each step is then *also* run through
+   `compress_exists_kcall`, …; the private helpers are 206 lines, :175–:380, in the same file). Each step is then *also* run through
    the corresponding correctness lemma (`holds_of_exec_zconjTranspose` …), because the next step
    needs the values. The machine parameters are instantiated with dummies (`toNat := fun _ => 0`,
    …) only to satisfy the correctness lemma's signature.
@@ -176,9 +193,18 @@ and how scoped allocation grows it. L3 Frames ran into `maxHeartbeats` until rea
 duplicated work (EP6/EP7): thread them additively, charge-agnostically. L5 Rule E8: no
 `Stmt.named` construction outside `NAMED_FILES`. L6 One public home for duplicated helpers. L7
 The compiled tree needs `maxRecDepth` for `rfl`. L8 Bundle the index and literal assumptions in
-one record. The design answers each of these: L1 §4.3 (`wp_bindIdx_of_read`); L2 §3.4
-(`Triple.alloc`, `Spec.alloc`); L3 §4.1 (application rule); L4 §3.5; L5 §8; L6 §7.5; L7 §7.4; L8
-§3.3.
+one record. The design answers each of these:
+* L1: §4.2 (`wp_bindIdx_of_read`) and §4.7 (`Spec.bindIdx_of_read`).
+* L2: §3.4 (`Triple.alloc`, `Spec.allocBind`).
+* L3: §4.1, the application rule, for calls; §4.7, named-state allocation, for alloc chains.
+* L4: §3.5 (`Costs`, `CostsLe`, `Spec.withCharge` in both modes).
+* L5: §6.
+* L6: §7.5.
+* L7: §7.4.
+* L8: §3.3 (`IsControlExactSem`, `IsRoutineSem`).
+
+The reviews added tape positions (§4.7), nonlinear footprints (§5) and correctness-only
+hypotheses (§2.2).
 
 ## 2. Design options and the choice
 
@@ -226,7 +252,23 @@ mode `m : Mode` (`total | liberal`) and a requirement former `m.Needs A`, which 
 hypotheses wrapped in `m.Needs`. At `liberal` it is the refinement lemma; at `total` it is
 success plus the same postcondition. Leaf rules carry `m.Needs` exactly where success needs
 something (`wp_bindIdx_of_read`: `m.Needs (k ≤ bound)`; `Triple.whileFuel`: fuel). Every other
-rule is mode-generic and proved once by `cases m` (S).
+rule is mode-generic and proved once by `cases m` (S). A mode-generic proof never splits on the
+mode: it passes requirements on with `Mode.needs_and`, `Mode.Needs.mono` and `Mode.Needs.elim`.
+
+**Correctness-only hypotheses.** The reverse case also occurs: a hypothesis needed for the value,
+not for success. In `eighCompressBlock`, the cells `two` and `sg` must lie outside the output
+block for the value to be right, but the shift succeeds wherever its cell is
+(Compress.lean:264). `exists_exec_eighCompressBlock` (:381) does not assume it. Such a hypothesis
+**guards the value clause of the postcondition** (`A → Q`), not the precondition. Then the total
+instance needs nothing new, and the liberal corollary discharges the guard. The rule:
+
+* success-only hypotheses go under `m.Needs` in `pre`;
+* correctness-only hypotheses go as guards in `post`;
+* everything else is a plain hypothesis.
+
+The certificate bridges are total-only, because a certificate asserts success. A mode-generic
+proof uses them at `liberal` through `Triple.liberal`, and then their preconditions (writability
+included) must be proved in both modes.
 
 ## 3. The objects
 
@@ -289,20 +331,29 @@ the store and the tape positions are then stated against the start state with no
 variables. Ghost values (the stored matrix, the cell values) are ordinary universally quantified
 parameters of the specification lemma.
 
-### 3.3 The arithmetic record (L8)
+### 3.3 The arithmetic records (L8)
+
+In the Matrix layer, next to `ScalarSem.DecidesFlags` (`Matrix/Computation/InterpMachine.lean`):
 
 ```lean
-structure IsRoutineSem (u : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ → Prop) (B : ℕ)
-    (sem : ScalarSem P K) : Prop where
-  relErr : IsRelErrSem u dec safe sem
+structure IsControlExactSem (dec : P → K → ℝ) (B : ℕ) (sem : ScalarSem P K) (p : P) : Prop where
   index : IsIndexExactSem dec B sem
+  flags : sem.DecidesFlags p
+  cmp_le : ∀ x y : K, sem.cmp p .le x y = some (decide (dec p x ≤ dec p y))
+
+structure IsRoutineSem (u : P → ℝ) (dec : P → K → ℝ) (safe : P → ℝ → Prop) (B : ℕ)
+    (sem : ScalarSem P K) (p : P) : Prop where
+  relErr : IsRelErrSem u dec safe sem
+  control : IsControlExactSem dec B sem p
 ```
 
-A specification takes `hsem : m.Needs (IsRoutineSem u dec safe B I.sem)`, or only the part it
-needs. The comparison fact `hcmp` that S2 threads is a projection (`IsRelErrSem.cmp_le`). So are
-`IsExactIntLit` at `B = N + 4` and `IsExactToNat`. Pure refinement specifications that need exact
-index arithmetic even at `liberal` (S2's `hlit`, `htn`, `hcmp` in `holds_of_exec_eighProg`) take
-`IsIndexExactSem` unwrapped.
+`IsControlExactSem.mono` lowers the literal bound: node lemmas need literals up to `k ≤ n`, the
+program up to `n + 4`. It bundles what S2's refinement threads by hand in both modes: `hflag`,
+`hcmp`, `hlit`, `htn` (Refinement.lean:652–655, DownLevel.lean:466–470). It does not assume the
+standard model, which liberal lemmas must not assume. A mode-generic specification takes
+`m.Needs (IsRelErrSem u dec safe I.sem)` and `IsControlExactSem` unwrapped. `safe` is a
+parameter, so the specifications survive F3 step 2 (bounded formats, success on the
+good-sample event) without being rewritten (§7.2).
 
 ### 3.4 Specifications, relative handles and scratch
 
@@ -334,8 +385,16 @@ These fields cover the brief:
   `Nodup` list appears.
 * **Scratch the caller passes and reuses (SG6).** `eighCompressBlock` is called twice on the
   same `Qh, C1, C2, C3`. The scratch blocks are part of the footprint, with no postcondition on
-  their contents. A second call needs only `Writable` of them, which `Modifies` keeps through the
-  first.
+  their contents. A second call needs only `Writable` of them. `Writable.of_modifies` keeps it
+  through the first call by `Modifies`' shape clause. The frame rule does not apply here: its
+  `BlocksDisjoint` side goal is false for a block that was just written.
+* **Canonical blocks.** `matBlock b off rows cols width := (b, off, rows * cols * width)` is the
+  footprint form of a stored matrix in every kernel and routine specification
+  (`readsOnly_entryLayoutHolds`, `IsMatMulKernel.spec_kcall`, the adapters, the pilot). Equal
+  blocks are then syntactically equal (`Modifies.mono` membership is syntactic). The layout
+  lemmas are `blockDisjoint_of_fst_ne` (different buffers), `blockDisjoint_of_add_le` (packed
+  one after another) and `matBlock_comm`. S2's own layout bounds (`eighSplit_bounds_split`,
+  `eighLoc_bounds`, Levels.lean:195/:318) supply the linear facts `fp_omega` takes.
 
 ### 3.5 Counts (L4) and charges
 
@@ -360,6 +419,13 @@ Exact counts are for the blocks where the static cost is too crude: EP7's weight
 where `bindIdx` takes a supremum over all values. `Spec.withCharge` transfers a total
 specification whose pre- and postcondition ignore the count to any other charge. It wraps
 `exists_exec_withCharge_eq_some` (ExecCharge:110).
+
+**Weighted bounds (EP7).** `CostsLe w c st st' := w st'.cnt ≤ w st.cnt + c` holds for an additive
+weight `w : C →+ ℕ`, such as `Finsupp.weight (OpKind.kernelWeight T)`. It comes with `trans`,
+`mono`, `list_sum` and `of_costs`. The supremum over an index binder's values enters through
+`Spec.bindIdx_of_read`'s range fact `k ≤ bound`. `Spec.withCharge` holds in **both modes**:
+success, the store and the tape positions do not depend on the charge, and the liberal half
+transfers back.
 
 ### 3.6 Budgets
 
@@ -520,7 +586,7 @@ the side goal `BlocksDisjoint rs fp` closed by `fp_omega`. The read-set lemmas a
 | contract | bridge | form |
 |---|---|---|
 | kernel call (any) | `wp_kcall`, `Modifies.of_kcallStore` | output blocks `kcallBlocks outs (I.kshape o ds).2` |
-| `IsMatMulKernel` | `IsMatMulKernel.spec_kcall` (Matrix layer) | mode-generic `Spec`, footprint the output block, `Costs` one call, `pos` kept |
+| `IsMatMulKernel` | `IsMatMulKernel.spec_kcall` (Matrix layer) | mode-generic `Spec`, footprint `matBlock` of the output, writability under `md.Needs` (the liberal half needs none), `Costs` one call, `PosKept` |
 | `IsBlockRoutine` | `IsBlockRoutine.routineSpec` | `RoutineSpec .total` with `pre ∧ WritableBlocks`, footprint `outs` |
 | `IsMatvecRoutine` | `IsMatvecRoutine.routineSpec` | per input `x`: footprint the destination block, post the decoded error bound |
 | `IsOrthRoutine` | `IsOrthRoutine.routineSpec` (Matrix layer) | per `V`, `w`: footprint the two output blocks, post `IsOrthErr` on the decoded outputs |
@@ -535,40 +601,103 @@ proof uses the call rule. `IsBlockRoutine.bind` becomes a corollary of `RoutineS
 `Triple .liberal` with a weight postcondition. The block lemmas `triple_eighSplitBlock` and the
 rest are re-proved in wave 4.
 
+### 4.7 Rules for S2's patterns (added by the reviews)
+
+All are in the scaffold. Statements are given in full there.
+
+**Call sites.**
+* `RoutineSpec.stmt (h : Spec m I pre s fp post) : RoutineSpec m I pre (Builder.stmt s) fp post`,
+  and `RoutineSpec.ins`. A kernel call in a builder (`stmt (.kcall …)`) is then one `spec_call`.
+* `RoutineSpec.congr` and `Spec.of_normIdx_eq` transport a specification across run equivalence
+  and index normal forms. This covers Compress called at `.const k - kpe` (SplitSuccess.lean:87–93)
+  and the `BuilderEquiv` rewrites (DownSlot.lean:394–426).
+
+**Allocation by named states (L3).**
+* `Spec.allocBind` specifies `Builder.alloc p len >>= f`. The rest of the block is specified at
+  the relative handle `b`, from a state `st₁` given by the *equation*
+  `st₁ = st.allocate p len.eval (I.width p)`, not by a pushed term.
+* The allocation-state lemmas are `St.size_allocate`, `St.writable_allocate` and
+  `St.read_release_of_lt`.
+* `Modifies.pop_top` drops the fresh block from the footprint after the pop.
+* Eight nested allocations are eight applications. Each introduces a named state with
+  hypotheses, so no push chain or nested release lambda reaches a goal. Job J1's third gate
+  measures this on Split's prefix.
+
+**Loops with data-dependent footprints.**
+* `Spec.loopFp` and `RoutineSpec.forRange` take one footprint per iteration, `fp : ℕ → List …`
+  (which may depend on ghost sizes read before the loop), and conclude
+  `(List.range n).flatMap fp`.
+* `Spec.bindIdx_of_read` specifies an index binder whose body footprint depends on the
+  converted value. Its postcondition records `k ≤ bound`.
+* `Spec.ite_cases` is the two-armed conditional, for when the branch is not fixed by the
+  precondition.
+* `spec_eighWhen` is S2's guarded block (`forRange (1 - (1 - e))`).
+* The bridge from `Modifies` to S2's window frames (`EighSlotWindow`, `EighNodeWindow`) is
+  S2-local and planned in J4.
+
+**Instructions and the tape.**
+* `spec_lit`, `spec_litIdx`, `spec_bin`, `spec_un`, `spec_copy` and `spec_draw`: footprint the
+  destination cell, postcondition the cell's value, `Costs` of one charge, `PosKept`. `spec_draw`
+  advances the position instead.
+* `spec_forRange_draw`: a loop of draws into a block holds the next `n` tape values and advances
+  the position by `n`.
+* `PosKept st st'` is the common clause.
+
 ## 5. Tactic support
 
-Three macros, in `ProgramLogic.lean`. They are plain `macro`/`macro_rules`, with no
-metaprogramming beyond them. `FrameRules.lean:484` (`frame_side`) is the precedent.
+Four macros in `ProgramLogic.lean`, plain `macro`/`macro_rules` (the precedent is
+`FrameRules.lean:484`, `frame_side`):
 
-```lean
-macro "fp_omega" : tactic => `(tactic| (
-  try simp only [BlocksDisjoint, List.mem_cons, List.mem_append, List.not_mem_nil, or_false,
-    forall_eq_or_imp, forall_eq, List.forall_mem_cons, blockDisjoint_iff, ne_eq] at *
-  omega))
+* `fp_omega [h₁, …]` adds the facts `hᵢ` as named hypotheses. It unfolds `BlocksDisjoint`,
+  `matBlock`, `List.Nodup` and `blockDisjoint_iff` **in the goal and those facts only**, never the
+  whole context (S2 proofs have 40+ hypotheses). It normalises products with `ring_nf`, so
+  `r * k` and `k * r` become one atom, and closes with `omega`. Nonlinear bounds are supplied as
+  facts, for example `Nat.mul_le_mul hr hk`, or S2's layout lemmas.
+* `fp_close` is its closing step.
+* `spec_step h`: `rw [wp_seq]` if possible, then `Triple.wp_of h`. Side goals closed by
+  `assumption` or `fp_omega` are removed.
+* `spec_call h`: `RoutineSpec.wp_bind h`, or `RoutineSpec.wp_run h` for the last call. Side goals
+  are tried only on the goals the `refine` creates (`<;>`), never on sibling goals.
 
-syntax "spec_step " term : tactic   -- rw [wp_seq] if possible; refine Triple.wp_of h ?_ ?_
-syntax "spec_call " term : tactic   -- RoutineSpec.wp_bind h, or RoutineSpec.wp_run h
-```
+Tested on the scaffold, by `lake env lean` on a test file:
 
-A program proof in this style (the pilot, §7.3):
+* `2*(n*n)*d + 2*(n*n) ≤ 2*(n*n)*(d+1)`;
+* `k ≤ n → r ≤ k → 2*(n*n) ≤ l → 2*(r*k) ≤ l`, with `fp_omega [Nat.mul_le_mul (hr.trans hk) hk, hl]`;
+* `2*(r*k) ≤ l → k*r*2 ≤ l`;
+* Split's packed `Qa` blocks `(Qa, qo, 2*(k*kp))` and `(Qa, qo + 2*(k*kp), 2*(k*(k-kp)))`;
+* the blocks of depths `d` and `d + 1` in `Ma`;
+* the pilot's input-against-scratch footprint from `hbufs : [Qa, Ma, Qh, C1, C2, C3].Nodup`;
+* relative handles `[b, b+1, b+2, b+3].Nodup`;
+* a cell against an output block, converting `2 * (r * r)` to `matBlock` form.
+
+The first three are the goals the COMPDYN review found plain `omega` fails. All eight close.
+
+The shape of a program proof (the pilot, PL107):
 
 ```lean
 theorem spec_eighCompressBlock … : RoutineSpec md I pre (eighCompressBlock …) fp post := by
-  refine ⟨executionComposable_… , fun st hpre => ?_⟩
+  unfold eighCompressBlock                      -- the goal is now `(x >>= f).run` form
+  refine ⟨…composable…, fun st hpre => ?_⟩
   obtain ⟨hQ, hA, htwo, hσ, hneeds⟩ := hpre
-  spec_call (spec_zconjTranspose md hsem p k r Q)   -- goals: pre (fp_omega), continuation
+  obtain ⟨htwo0, hW⟩ := Mode.needs_and.mp hneeds
+  spec_call (spec_zconjTranspose md hsem p k r Q (by fp_omega [hbufs]))
   intro st₁ hfp₁ ⟨hQh, hpos₁⟩
-  spec_call (hmm.spec_kcall hL md p (Qh, 0) (Ma, mo) (C1, 0) _ A)
-  · exact ⟨hQh, hA.of_spec_post … , …⟩                -- frames: one call each, fp_omega
+  spec_call (RoutineSpec.stmt (hmm.spec_kcall hL md p (Qh, 0) (Ma, mo) (C1, 0) _ A))
+  · exact ⟨hQh, hA.of_spec_post … (by fp_omega [hbufs]), …, hW.mono … |>.of_modifies hfp₁⟩
   intro st₂ hfp₂ ⟨hC1, hcost₂, hpos₂⟩
   …
 ```
 
-`fp_omega` closes every disjointness goal over relative handles (`b + 3` against `b + 5`, `Ma` at
-`co` against the cell `two`) and every `Nodup` goal over relative handles. The frame obligations
-are explicit `ReadsOnly.of_spec_post` calls, not a solver. That keeps elaboration predictable for
-small models and avoids the unification against push chains that caused L3. An automated
-`spec_frame` that searches the hypotheses is deferred (§9, R4).
+**The frame discipline**, stated once for contributors:
+
+* *values* are carried by `ReadsOnly.of_spec_post … (by fp_omega [facts])`;
+* *shapes and writability* by `Writable.of_modifies hfpᵢ` (or `WritableBlocks.of_modifies`);
+* *requirements* are split with `Mode.needs_and` and passed on with `Mode.Needs.mono`.
+
+The goal is always `Wp md I rest Q stᵢ` on a named state. An automated `spec_frame`, which would
+search the hypotheses, is deferred until J1 counts the frame calls (§8, R4). Footprint
+inference by recursion over `Stmt` would need a recursor in `Exec.lean` or a NAMED_FILES entry
+(E8), so it is out of scope.
 
 ## 6. Placement and house rules
 
@@ -580,6 +709,8 @@ small models and avoids the unification against push chains that caused L3. An a
 | `IsOrthRoutine.routineSpec` | `NLAlib/Matrix/Computation/OrthRoutine.lean` | API of the certificate |
 | `spec_eighCompressBlock` and the other S2 block specifications | each block's file, next to its two lemmas | the block's API |
 | `spec_z*` (pair kernels) | `NLAlib/Matrix/Computation/PairKernels/*.lean` | the kernels' API |
+| `IsControlExactSem`, `IsRoutineSem` | `NLAlib/Matrix/Computation/InterpMachine.lean` | next to `ScalarSem.DecidesFlags`, which they bundle |
+| `spec_eighWhen` | `NLAlib/Matrix/Computation/SpectralBisectionProgramTree.lean` (or the first S2 file using it) | the API of `eighWhen` |
 | duplicated helpers (§1.3) | deleted for the library lemma, or moved to `ProgramLogic.lean`/`Loops.lean` (L6) | one public home |
 
 * **E8.** No declaration *constructs* `Stmt.named`. `wp_named` and `executionComposable_named`
@@ -601,6 +732,10 @@ small models and avoids the unification against push chains that caused L3. An a
 
   Each has the Mathlib bridge "none (searched: Mathlib has no program logic; Lean core
   `Std.Do.Triple` is for shallow monadic programs, §2.1 D)".
+* **Related frame notions on main.** `Store.frame_of_writeBlocks_eq_some` (RoutineFrames:174)
+  is the read half of `Modifies.of_writeBlocks`, used in its proof. `Store.BlockFrame s₀ p T dst
+  dOff L s` (Store.lean:721) is a one-block `Modifies` with one scratch buffer and a value clause.
+  The implementation adds a one-line bridge, and the vocabulary row lists both.
 * **Mathlib deviations.** None: Mathlib has no notion to deviate from. `Std.Do` is not Mathlib;
   §2.2 records why it is not used.
 * **Contributor guide.** `docs/contributing/programs.md` gets a paragraph after "A routine used
@@ -626,59 +761,107 @@ small models and avoids the unification against push chains that caused L3. An a
    `Modifies`-to-old-frame conversion). They are deleted once no consumer uses them; deleting an
    internal lemma needs no approval.
 
-### 7.2 Block map
+### 7.2 Block map and the estimate
 
-| block | rules used | today (proof lines, both walks + helpers) | after (estimate) |
+Savings are net of the specifications that replace the walks, and exclude text that only moves.
+They are revised after both reviews: the first estimate's own table summed to about 3.6k
+including a helper sweep that does not depend on the logic.
+
+| block | rules used | today (both walks + helpers) | saving (net) |
 |---|---|---|---|
-| pair kernels (`zconjTranspose`, `zhermAvg`, `zhermShift`, `zmirror`, …) | adapters (wave 1), then `Spec.loop` | ≈ 900 in `PairKernels/` | adapters +60 |
-| Sign (Newton–Schulz test/step) | `Spec.loop`, `IsMatMulKernel.spec_kcall`, `wp_ite_of_read` | ≈ 525 | ≈ 300 |
-| Deflate, Leaf, Child | `Spec.alloc`, call rule, `Spec.loop` | ≈ 620 | ≈ 350 |
-| **Compress (pilot)** | call rule ×5, frame | 180 + 190 helpers | ≈ 60 + 40 |
-| Split | `Spec.alloc` ×8 relative scratch, call rule (Deflate ×2, Compress ×2), `wp_instr` ×4 | ≈ 630 | ≈ 220 |
-| Clamp | `wp_instr`, `wp_ite_of_read` ×2 | 120 | ≈ 70 |
-| Node | call rule (Sign, Split, Clamp), `wp_bindIdx_of_read` | ≈ 740 | ≈ 380 |
-| Down slot, DownLevel | `Spec.loop` (relational invariant), `wp_bindIdx_of_read` | ≈ 830 | ≈ 450 |
-| BottomLevel | `Spec.loop` | 131 | ≈ 80 |
-| Up shift/split/node/slot, UpLevel | call rule, `Spec.loop` | ≈ 1,000 | ≈ 550 |
-| driver (`eighProg`, passes, loops) | `Spec.loop`, `wp_run_allocBind`, `Triple.prog_runsWithin` | ≈ 1,100 | ≈ 600 |
-| file overhead, duplicated helpers (§1.3) | deleted | ≈ 700 | 0 |
+| pair kernels (`zconjTranspose`, `zhermAvg`, `zhermShift`, `zmirror`, …) | adapters, then `Spec.loopFp` | ≈ 900 in `PairKernels/` | −60 (glue) |
+| Sign (Newton–Schulz test/step) | `RoutineSpec.forRange`, `spec_kcall`, `Spec.ite_cases` | ≈ 525 | 150–225 |
+| Deflate, Leaf, Child | `Spec.allocBind`, call rule, `Spec.loopFp` | ≈ 620 | 200–270 |
+| **Compress (pilot)** | call rule ×5, `RoutineSpec.stmt` | 180 + 206 helpers (158 move) | ≈ 100 (walks 180 → ≤ 90) |
+| Split | `Spec.allocBind` ×8, call rule, `spec_litIdx` ×4 | ≈ 630 | 300–410 |
+| Clamp | `spec_lit`, `Spec.ite_cases` | 120, already one walk | 30–50 |
+| Node | call rule, `Spec.bindIdx_of_read`, `spec_eighWhen` ×3 | ≈ 740 | 250–360 |
+| Down slot, DownLevel | `Spec.loopFp`, window bridge, one `DownSlotsInv` for both modes | ≈ 830 + the duplicated invariant | 500–700 |
+| BottomLevel | `RoutineSpec.forRange` | 131 | 30–50 |
+| Up shift/split/node/slot, UpLevel | call rule, `RoutineSpec.forRange`, instruction specs | ≈ 1,000 | 350–450 |
+| driver (`eighProg`, passes, loops) | `RoutineSpec.forRange`, `Spec.allocBind` ×11 | ≈ 1,100 | 300–500 |
+| helpers whose removal needs the logic (§7.5) | deleted | — | ≈ 200 |
 
-The `*Success.lean` files (NodeSuccess 934, SplitSuccess 627, DownLevelSuccess 934,
-UpLevelSuccess 513: 3,008 lines) fold into the specifications. That accounts for about 2,400
-lines. The rest comes from the correctness walks, which lose the `Nodup` splitting, `change` and
-frame chains (about 25%, by the pilot's count of §1.2). **Estimated S2 saving: 4,000–5,500 lines
-of 12,550 (35–45%).** The pilot measures it (§7.3). The cost side (FrameRules, Weight: 1,693) is
-wave 4: about 300 lines, once `EighWeight.Triple`'s generic rules are instances.
+**Estimated S2 saving: 2,400–3,400 lines, about 2.5–3.5k (20–28% of 12,550).** The range is
+the sum of the rows.
+
+* *Low end:* the rows' low ends. Every leaf that has no mode-generic specification (the other
+  pair kernels, the instruction-level success steps) keeps a separate success proof.
+* *High end:* the high ends, with the two `DownSlotsInv` copies merged (COMPDYN: 500–700 if
+  per-slot footprints land).
+* *About 4,000 (Fable's "plausible for a complete W3"):* this needs every `*Success.lean` file
+  folded *entirely*, which needs every leaf specified mode-generically. It is not the planning
+  figure.
+
+The helper sweep that does not depend on the logic (part of it done in the S2 clean-up,
+Stage-COMPDYN-S2-Hardening.md:283–297) is not counted. The cost side (FrameRules, Weight: 1,693)
+is W4: about 300 lines, with `CostsLe`.
+
+**W3 sequencing with F3 step 2.**
+* W3 folds the success walks together with F3 step 2 of the EIGH follow-ups (bounded formats:
+  success re-proved on the good-sample event, Plan-EIGH-Followups.md:121), in the same lane.
+* W3's specifications take `safe` as a parameter (not `fun _ _ => True`) and put the range facts
+  under `m.Needs`, so they are written once.
+* The pilot keeps `fun _ _ => True` because the statement of `exists_exec_eighCompressBlock`
+  does.
 
 ### 7.3 The pilot: `eighCompressBlock`
 
 Why this block:
 
-* It is the representative cost case. Its two walks are 180 lines, it has 190 lines of private
+* It is the representative cost case. Its two walks are 180 lines, with 206 lines of private
   helpers, and it has all of §1.2's waste.
-* Its sub-blocks are already specified in frame style: `holds_of_exec_zconjTranspose`,
-  `holds_of_exec_zhermAvg` and `IsMatMulKernel.holds_of_kcallStore_eq_some`.
-* It has two consumers (Split.lean:258, :268; SplitSuccess.lean:223, :232, :287, :303). One of
-  them calls the correctness lemma only to learn the shape.
-* It is small enough to finish in one job.
+* Its sub-blocks are already specified in frame style.
+* It has two consumers: Split.lean:258, :268, and SplitSuccess.lean:223, :232, :287, :303.
 
-The pilot targets are:
+**Targets.**
+* PL104–PL106: the adapters `spec_zconjTranspose`, `spec_zhermAvg` and `spec_zhermShift`
+  (scaffold, statements exact, canonical `matBlock` footprints). Their success halves are the
+  private helpers of Compress.lean (:200, :266, and `exists_exec_zhermAvg` in HermAvg.lean),
+  *moved* unchanged to `PairKernels/`. The case of an empty matrix is direct (`exec_loop` on
+  `List.range 0`).
+* PL107: `spec_eighCompressBlock` (scaffold `CompressSpec.lean`). Its precondition is:
+  * the inputs as `pairLayout.Holds` and the two cells;
+  * `md.Needs (dec p c₂ ≠ 0 ∧ WritableBlocks st.store p fp)`, with the footprint
+    `[matBlock Qh 0 r k 2, matBlock C1 0 r k 2, matBlock C2 0 r r 2, matBlock C3 0 r r 2,
+    matBlock Ma co.eval r r 2]`.
 
-* PL76 `spec_eighCompressBlock` (scaffold `CompressSpec.lean`). Its precondition is the inputs
-  as `pairLayout.Holds`, the two cells, and `md.Needs (dec p c₂ ≠ 0 ∧ WritableBlocks st.store p
-  fp)`. Its footprint is
-  `[(Qh, 0, 2*(r*k)), (C1, 0, k*r*2), (C2, 0, r*r*2), (C3, 0, 2*(r*r)), (Ma, co.eval, 2*(r*r))]`.
-  Its postcondition is the output held and `pos` kept.
-* PL73–PL75: the adapters `spec_zconjTranspose`, `spec_zhermAvg` and `spec_zhermShift`
-  (scaffold, statements exact), from the existing lemma pairs.
-* PL77 `holds_of_exec_eighCompressBlock` and PL78 `exists_exec_eighCompressBlock`, **statements
-  unchanged**, re-proved from PL76 at `liberal` and at `total`. PL78 derives `WritableBlocks fp`
-  from `hscr`, `hcolen`, `hk` and `hr` by `fp_omega`.
-* PL79: the four private helpers deleted.
+  Its parameters are `hmm`, `hbufs` and `hcells`. Its postcondition is `PosKept` and the value
+  clause, **guarded** by the old `hcocells`.
+* PL108 `holds_of_exec_eighCompressBlock` and PL109 `exists_exec_eighCompressBlock`, **statements
+  unchanged**, re-proved from PL107:
+  * PL108 at `liberal`, with the guard discharged by its `hcocells`;
+  * PL109 at `total`, which needs no `hcocells`, since its statement has none.
 
-**Gate:** the proof lines of PL73–PL79 together are at most 50% of today's 370 (both
-lemmas and the helpers), with stage_check 0 and no heartbeat bump. If the gate fails, the
-decision sheet returns to PG1 with the measurements.
+  PL109 derives `WritableBlocks fp` from `hscr`, `hcolen`, `hk` and `hr` with `writable_of_shape_eq`
+  and `fp_omega [Nat.mul_le_mul …]`. The bounds are nonlinear, so the products are supplied.
+
+**B1, resolved from the code.** The two reviews disagreed about whether the first PL76 (now
+PL107) had exactly the hypotheses of the two lemmas.
+* `exists_exec_eighCompressBlock` (Compress.lean:381–395) has **no `hcocells`**. Its shift
+  helper succeeds wherever the cell lies (:264).
+* The first PL76 took `hcocells` as an unguarded parameter, so its total instance needed a
+  hypothesis PL109 lacks.
+* The COMPDYN review was right. Fable's "exactly the union" overlooked that `hcocells` occurs
+  only at :91.
+
+Moving `hcocells` into a guard of the value clause (PG2's correctness-only rule) keeps **both
+statements unchanged** with no restatement. The same applies to `spec_zhermShift`'s cell
+condition.
+
+**The gate (job J1).**
+1. *Walks:* PL107 + PL108 + PL109 ≤ 90 lines, against today's two walks of 180
+   (Compress.lean:91–174, :381–476).
+2. *Net diff:* `git diff --numstat` over `NLAlib/`, excluding `ProgramLogic*.lean`, reported.
+   The adapters' glue (PL104–PL106 minus moved text) is reported separately as the per-kernel
+   cost of entering the logic. Moved helpers count as neither saved nor added. The expected net
+   saving for the block is about 100 lines.
+3. *Alloc chains (L3):* Split's eight-alloc prefix (Tree:180–187) proved by `Spec.allocBind` ×8
+   with named states, replacing the eight `alloc_inv_node` steps (Split.lean:589–596). Compress
+   has no allocations, so gates 1 and 2 do not test L3.
+
+All three run with stage_check 0 and default heartbeats. The design returns to PG1 only if
+gate 1 fails.
 
 ### 7.4 `maxRecDepth` and the compiled tree (L7)
 
@@ -707,6 +890,10 @@ loop shape/read) as public lemmas. `scripts/Duplicates.lean` is the check. The K
     `StoreContext k st₀ st`.
 
   Estimate −350.
+* **The `ReadsOnly` mechanism for CR2 item 2.** A zero-length block `(k, 0, 0)` in a read set
+  carries the shape of buffer `k` and nothing else, and is `blockDisjoint` from every block. So
+  the Lanczos `hpreFrame` becomes `ReadsOnly pre [(0,0,0), …, (6,0,0), (7, 0, len₇)]`: the shape
+  of buffers 0–6 and the values of buffer 7. That is the whole argument for PG7 (a).
 * **CR2 (CERT-ROUTINES §8.3).** Item 1 (`IsOrthRoutine` at block-level disjointness) is
   independent and can land first; `IsOrthRoutine.routineSpec` is stated for today's `run` and
   changes its three `≠` hypotheses to `BlocksDisjoint` with it. Item 2 is the `hpreFrame` to
@@ -731,18 +918,34 @@ loop shape/read) as public lemmas. `scripts/Duplicates.lean` is the check. The K
 | R3 | `simp only … at *` in `fp_omega` disturbs hypotheses in large contexts | `try` reverts it on failure; the frame steps call it on small goals; a `fp_omega` variant that only touches the goal is kept as an option for the pilot to choose |
 | R4 | Frame calls stay one per fact (no frame automation) | Each is one line with `fp_omega`; an automated `spec_frame` is deferred until the pilot shows how many there are |
 | R5 | Performance (L3): `Modifies` over long footprints, `blockDisjoint` unfolding | Footprints are short concrete lists; `blockDisjoint_iff` unfolds to `omega` atoms; the pilot runs with default heartbeats as part of its gate |
-| R6 | The pilot's footprint lengths (exact block sizes) differ from the frames of the old lemmas (whole scratch buffers) | PL77 converts `Modifies` to the old buffer frame (a cell outside the scratch buffers is disjoint from every scratch block); checked by hand for compress |
+| R6 | The pilot's footprint lengths (exact block sizes) differ from the frames of the old lemmas (whole scratch buffers) | PL108 converts `Modifies` to the old buffer frame (a cell outside the scratch buffers is disjoint from every scratch block); checked by hand for compress |
 | R7 | Scope creep into a separation logic | Out of scope (§2.2); the frame rule is one lemma |
+| R8 | Packed offsets are nonlinear (`2*(n*n)*d + 2*n*lo + 2*(k*kp)`) | `fp_omega` normalises products and takes supplied facts; S2's layout lemmas supply the bounds; tested on the review's failing goals (§5) |
+| R9 | `IsOrthRoutine.routineSpec` (PL102) proved before CR2 item 1 changes `IsOrthRoutine` | PL102 is ordered after CR2 item 1, or restated with `BlocksDisjoint` first |
+| R10 | `NLAlib.EighWeight.Triple` and `NLAlib.Computation.Triple` are both open in FrameRules | Qualify or rename in J7 |
+| R11 | Window-predicate frames of the slot loops are S2-specific | A `Modifies`-to-window bridge, S2-local, in J4 |
 
 ## 9. Waves
 
-| wave | content | targets | depends on |
+Targets (PL, `pilot/prog-logic-targets.json`) are provable statements; jobs (J,
+`pilot/prog-logic-jobs.json`) are migration work that names existing declarations.
+
+| wave | content | items | depends on |
 |---|---|---|---|
-| W0 | modes, `Wp`, triples, application/consequence, statement rules, builder rules (§4.1–§4.4) | the 34 wave-0 targets | — |
-| W1 | footprints, read sets, `Spec`, `RoutineSpec`, spec rules, counts, budget, bridges, tactics (§3–§5) | the 38 wave-1 targets | W0 |
-| W2 | the pilot: adapters, `spec_eighCompressBlock`, re-derived lemmas, helper deletion; the gate | PL73–PL79 | W1 |
-| W3 | S2 blocks bottom-up (§7.2), then the duplicated helpers (§7.5) | PL80–PL84 (one target per block group) | W2 gate |
-| W4 | `EighWeight.Triple` as an instance; CGS2 and Lanczos-reorth; CR2 item 2 with `ReadsOnly` | PL85–PL87 | W3, CR2 item 1 |
+| W0 | modes, `Wp`, triples, application/consequence, statement rules, builder rules (§4.1–§4.4); `Triple.whileFuel` to the strongest prover | 34 targets | — |
+| W1 | footprints, read sets, canonical blocks, `Spec`, `RoutineSpec` and their rules (§4.5, §4.7), instruction specs, counts, budget, bridges, records | 68 targets | W0 |
+| W2 | adapters, `spec_eighCompressBlock`, the two re-proofs; then J1 (moves, deletions, the three gates) | PL104–PL109, J1 | W1; PL107 after `RoutineSpec.stmt` and the `Mode.Needs` algebra |
+| W3 | S2 blocks bottom-up with F3 step 2: Split, Sign/Deflate/Clamp/Node (with `spec_eighWhen`, PL103), Down, Up, driver | PL103, J2–J6 | J1 gates |
+| W4 | EIGH weight (`CostsLe`); CGS2 and Lanczos-reorth, CR2 item 2 with `ReadsOnly` | J7–J9 | W3; CR2 item 1; `feat/lanczos-reorth` landed |
+
+Owners follow PG9.
+
+* The COMPDYN/S2 session builds W0–W3 in its one builder lane, so W0–W1 are built only in
+  `Computation` and the Matrix/S2 closure is never built twice at once.
+* This pipeline reviews the W0–W1 statements before they are proved, and keeps the note and the
+  sheet.
+* J7 goes to the COMPDYN session. J8–J9 go to the owner of the reorth work, after
+  `feat/lanczos-reorth` has landed.
 
 ## 10. Material
 
@@ -776,17 +979,76 @@ library docstring cites them; the note cites them here only.
 
 | id | question | options | recommendation | why |
 |---|---|---|---|---|
-| APPROVE | Approve the design, the scaffold (72 rule statements, 4 pilot statements) and the pilot gate? | a / b not yet | a | Additive, every rule S–M, no target re-pin, the pilot measures the saving before S2 is touched |
+| APPROVE | Approve the design, the scaffold (107 sorried statements: 102 library rules and bridges, the `eighWhen` rule, four pilot statements; plus two re-proofs, 109 targets; nine jobs) and the pilot gates? | a / b not yet | a | Additive; every rule S–M except `whileFuel` and the pilot (L); no target re-pin; both reviews' blocking items applied |
 | PG1 | Style of the logic | **a wp by definition + relational triples + block frame rule** / b primitive Hoare judgement with soundness / c separation logic / d `Std.Do` + `mvcgen` | a | `exec` is deterministic, so the rules are run equations (S each) and nothing needs a soundness proof; named states fix L3 |
-| PG2 | Total vs liberal | **a mode-generic specs (`Mode`, `m.Needs`), one proof for both** / b total only (adds `IsRelErrSem` to ~40 refinement lemmas) / c two separate calculi | a | One walk yields S2's two lemmas with statements unchanged |
-| PG3 | Counts in the specification | **a optional `Costs` clause in `post`, budgets from `staticCost` (CR7)** / b a mandatory cost field in `Spec` / c no count support | a | Certificates and refinement lemmas carry no counts; exact counts only where EP7 needs them |
-| PG4 | Replace or wrap `IsBlockRoutine`, the typed certificates and `EighWeight.Triple` | **a wrap: bridges to `RoutineSpec` now, `EighWeight.Triple` re-expressed in W4** / b replace the certificates by `RoutineSpec` / c leave everything separate | a | Certificates are consumer-facing statements (CR2 a); bridges are S each |
-| PG5 | Footprint form | **a `Modifies` (frame style), bridged from `writeBlocks`** / b CERT-ROUTINES' `writeBlocks` equation | a | Uninitialized partially-written scratch is not a block write; every S2 and kernel lemma is already in frame style |
-| PG6 | Scope of the S2 migration | **a pilot first (compress, gate ≤ 50%), then all blocks bottom-up** / b all blocks now / c pilot only, migrate when touched | a | Measures before spending; adapters make partial migration safe |
-| PG7 | CR2 item 2 (`hpreFrame`) | **a `ReadsOnly` (block read set) instead of `IsFramed`** / b `IsFramed` as in CERT §8.3 | a | Separates shape from value dependence, the gap §8.3 found |
-| PG8 | Tactics | **a three macros (`spec_step`, `spec_call`, `fp_omega`)** / b none / c a frame-search tactic now | a | Cheap, house-rule safe; frame search deferred until the pilot counts frame calls |
-| PG9 | Who implements | a this pipeline (design agent's harness: W0–W2 by worker jobs, W3 by block) / b the COMPDYN session (owner of S2) / c split: W0–W2 here, W3 by COMPDYN | c | The logic is library infrastructure; S2's walks need the S2 owner's knowledge; the maintainer decides |
+| PG2 | Total vs liberal | **a mode-generic specs (`Mode`, `m.Needs` for success-only hypotheses, guards in `post` for correctness-only ones, the `Mode.Needs` algebra)** / b total only / c two separate calculi | a | One walk yields S2's two lemmas with statements unchanged |
+| PG3 | Counts in the specification | **a optional `Costs`/`CostsLe` clauses in `post`, budgets from `staticCost` (CR7)** / b a mandatory cost field / c no count support | a | Certificates and refinement lemmas carry no counts; exact or weighted counts only where EP7 needs them |
+| PG4 | Replace or wrap `IsBlockRoutine`, the typed certificates and `EighWeight.Triple` | **a wrap: bridges to `RoutineSpec` now, `EighWeight.Triple` re-expressed in W4** / b replace / c leave separate | a | Certificates are consumer-facing statements (CR2 a); bridges are S–M each |
+| PG5 | Footprint form | **a `Modifies` (frame style) with canonical `matBlock` blocks, bridged from `writeBlocks`** / b CERT-ROUTINES' `writeBlocks` equation | a | Uninitialized partially-written scratch is not a block write; every S2 and kernel lemma is already in frame style |
+| PG6 | Scope of the S2 migration | **a pilot first (J1: walks 180 → ≤ 90, net diff reported, Split's 8-alloc prefix), then all blocks bottom-up with F3 step 2** / b all blocks now / c pilot only | a | Measures before spending; 2.5–3.5k expected |
+| PG7 | CR2 item 2 (`hpreFrame`) | **a `ReadsOnly` with zero-length blocks for shape-only buffers** / b `IsFramed` as in CERT §8.3 | a | Separates shape from value dependence, the gap §8.3 found |
+| PG8 | Tactics | **a `spec_step`, `spec_call`, `fp_omega [facts]` (ring-normalised, goal-only)** / b none / c a frame-search tactic now | a | Cheap, house-rule safe, tested on S2's nonlinear goals; frame search deferred |
+| PG9 | Who implements | a this pipeline / b the COMPDYN session for everything / c split W0–W2 here, W3 by COMPDYN / **d (COMPDYN's proposal) the COMPDYN/S2 session builds W0–W3 in one lane; this pipeline reviews the W0–W1 statements and keeps the note and sheet; W4 by owner (EIGH weight: COMPDYN; CGS2/Lanczos-reorth: the reorth owner)** | d | Rules and their hardest consumer are tuned together by the session that knows S2; no concurrent edits to S2 with F3 step 2; one builder lane for the heavy closure |
 
 ## 12. Review record
 
-None yet. The COMPDYN session offered to review §1 and §7 against S2.
+**Fable, 2026-11-08** (`reports/Review-Fable-ProgLogic-Design.md`): approve with changes; 0 false,
+0 ill-posed statements among the 76.
+
+Applied:
+* (1) `RoutineSpec.stmt`/`.ins`.
+* (2) `Mode.needs_and`, `Mode.Needs.mono`, `Mode.Needs.elim`.
+* (3) the gate on the walks, 180 → ≤ 90, with moved text excluded (J1 gate 1).
+* (4) the jobs out of the targets: `pilot/prog-logic-jobs.json`. The counts are now 109
+  targets (S 77, M 30, L 2) and 9 jobs.
+* (5) `Modifies.pop_top`, used by `Spec.alloc`.
+* (6) the adapters' empty-matrix case and the moved success halves, in the outlines.
+* (7) the `ring_nf` normalisation in `fp_omega`.
+* (8) `Writable.of_modifies`, `WritableBlocks.of_modifies` and the frame discipline (§5).
+* (9) the frame notions on main (§6).
+* (10) tactic hygiene: `<;>`-scoped side goals, and `unfold` first.
+* (11) dependencies in the targets.
+* (12) PL102 ordered after CR2 item 1 (R9).
+* (13) the name clash (R10).
+* (14) the `ReadsOnly` mechanism (§7.6).
+* (15) the estimate (§7.2).
+* (16) the helper count of 206 lines.
+* (17) `whileFuel` to the strongest prover.
+
+Fable's claim that the first PL76's hypotheses were "exactly the union" of the two lemmas' was
+corrected by B1 below.
+
+**The COMPDYN session, 2026-11-08** (`reports/Review-COMPDYN-ProgLogic.md`): sound with changes.
+
+Blocking, applied:
+* **B1**: `hcocells` moved into a guard of the value clause, so both statements are unchanged.
+  The rule for correctness-only hypotheses is in §2.2. Resolved from Compress.lean:381–395
+  (§7.3).
+* **B2**: `spec_kcall`'s writability is under `md.Needs`. The total-only bridges are documented
+  (§2.2, ProgramLogicKernels.lean).
+* **B3**: canonical `matBlock` blocks, the layout lemmas, and `fp_omega [facts]` (products
+  normalised, `Nodup` unfolded, goal-only), tested on the review's goals (§5).
+* **B4**: the gates of J1.
+
+Major items:
+
+| item | became a statement | went into the plan |
+|---|---|---|
+| M1 | `Spec.allocBind` with named states; `Modifies.pop_top`; `St.size_allocate`, `St.writable_allocate`, `St.read_release_of_lt` | J1 gate 3 measures it on Split |
+| M2 | `Spec.loopFp`, `RoutineSpec.forRange`, `Spec.bindIdx_of_read`, `spec_eighWhen` | the window bridge (J4) |
+| M3 | `RoutineSpec.stmt`/`.ins`, `RoutineSpec.congr`, `Spec.of_normIdx_eq`, the six instruction specifications | — |
+| M4 | `IsControlExactSem` with `.mono`; `IsRoutineSem` with `safe` and `p` | — |
+| M5 | `CostsLe` with `trans`/`mono`/`of_costs`/`list_sum`; `Spec.withCharge` in both modes | the `bindIdx`-supremum use (J7) |
+| M6 | `spec_draw`, `spec_forRange_draw`, `PosKept` | — |
+| M7 | — | the estimate revised to 2.5–3.5k (§7.2); W3 scheduled with F3 step 2; W3 specifications take `safe` |
+
+Minor items:
+* m1: `Spec.ite_cases`.
+* m2: the goal-only `fp_omega`.
+* m3: `whileFuel` not counted toward S2.
+* m4, m5: noted (§5, §6).
+* m6: added to J6.
+* m7: `Triple.of_agreeOn` deferred until a `RunsWithin.subst` consumer needs it.
+* m8: canonical blocks.
+
+**PG9** is recorded as the COMPDYN session's proposal (d).
