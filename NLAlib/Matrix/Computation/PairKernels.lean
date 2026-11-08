@@ -48,6 +48,7 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! ### Copies and literals -/
 
+omit [Inhabited K] in
 /-- `zcopy` copies: a successful run of `NLAlib.Computation.zcopy` from a state whose block at
 `X` holds the complex $m \times n$ matrix $\mathbf{A}$, into a block at `Y` disjoint from it,
 ends with the block at `Y` holding $\mathbf{A}$, every cell outside it unchanged, the same store
@@ -103,6 +104,7 @@ theorem holds_of_exec_zcopy (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {
     · exact Or.inl hbY
   · omega
 
+omit [Inhabited K] in
 /-- `zcopy` succeeds from a state whose block at `X` holds a complex $m \times n$ matrix and
 whose buffer `Y` at tag `p` is long enough. No printed source. -/
 theorem exists_exec_zcopy (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st : St P K C}
@@ -196,6 +198,7 @@ theorem holds_of_exec_zzero (p : P) (m n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st st
     · exact Or.inl hbY
   · omega
 
+omit [Inhabited K] in
 /-- `zzero` succeeds under the standard model with every value in range, when the buffer `Y`
 at tag `p` is long enough. No printed source. -/
 theorem exists_exec_zzero (p : P) (m n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St P K C}
@@ -293,6 +296,7 @@ theorem holds_of_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {s
     · exact Or.inl hbY
   · omega
 
+omit [Inhabited K] in
 /-- `zneg` succeeds under the standard model with every value in range, when the buffer `Y` at
 tag `p` is long enough. No printed source. -/
 theorem exists_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st : St P K C}
@@ -335,16 +339,6 @@ theorem exists_exec_zneg (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {st 
     · exact Or.inl hb
   · exact Or.inr (by omega)
 
-theorem zmirror_index_inj {n a b a' b' : ℕ} (ha : a < n) (ha' : a' < n)
-    (he : a + n * b = a' + n * b') : a = a' ∧ b = b' := by
-  have hn : 0 < n := by omega
-  have h1 := congrArg (· % n) he
-  have h2 := congrArg (· / n) he
-  simp only [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt ha, Nat.mod_eq_of_lt ha'] at h1
-  simp only [Nat.add_mul_div_left _ _ hn, Nat.div_eq_of_lt ha, Nat.div_eq_of_lt ha',
-    zero_add] at h2
-  exact ⟨h1, h2⟩
-
 omit [Inhabited K] in
 private theorem zmirror_holds_hermFrom {Su Sg : Type} {p : P} {n Y off : ℕ} {s s' : Store P K}
     {B : Matrix (Fin n) (Fin n) (K × K)} (M : FloatMachine K Su Sg)
@@ -365,9 +359,11 @@ private theorem zmirror_holds_hermFrom {Su Sg : Type} {p : P} {n Y off : ℕ} {s
     have h1 : a.1 ≤ b.1 := hab
     have h2 : b'.1 < a'.1 := hab'
     constructor <;> intro he
-    · have := zmirror_index_inj a.2 a'.2 (show a.1 + n * b = a' + n * b' by omega)
+    · have := (Nat.add_mul_eq_add_mul_iff_of_lt a.2 a'.2).1
+        (show a.1 + n * b = a' + n * b' by omega)
       omega
-    · have := zmirror_index_inj a.2 a'.2 (show a.1 + n * b = a' + n * b' by omega)
+    · have := (Nat.add_mul_eq_add_mul_iff_of_lt a.2 a'.2).1
+        (show a.1 + n * b = a' + n * b' by omega)
       omega
   refine ⟨fun a b t => ?_, fun q c k hk => hfr q c k ?_⟩
   · obtain ⟨t, ht⟩ := t
@@ -434,9 +430,9 @@ private theorem zmirror_step {n Y i j : ℕ} {p : P} {yo : IExp ℕ} {st s₁ s�
     refine hfr _ _ _ (Or.inr fun a b hab _ => ?_)
     have hab' : b.1 < a.1 := hab
     constructor <;> intro he
-    · have := zmirror_index_inj hi' a.2 (show i + n * j = a + n * b by omega)
+    · have := (Nat.add_mul_eq_add_mul_iff_of_lt hi' a.2).1 (show i + n * j = a + n * b by omega)
       omega
-    · have := zmirror_index_inj hi' a.2 (show i + n * j = a + n * b by omega)
+    · have := (Nat.add_mul_eq_add_mul_iff_of_lt hi' a.2).1 (show i + n * j = a + n * b by omega)
       omega
   obtain ⟨hB1, hB2⟩ := hB ⟨i, hi'⟩ ⟨j, hj⟩ (Fin.mk_le_mk.mpr hi.le)
   obtain rfl : v = (B ⟨i, hi'⟩ ⟨j, hj⟩).1 :=
@@ -460,7 +456,7 @@ private theorem zmirror_step {n Y i j : ℕ} {p : P} {yo : IExp ℕ} {st s₁ s�
       have hne : ∀ t < 2, ∀ t' < 2, yo.eval + 2 * (a + n * b) + t ≠
           yo.eval + 2 * (j + n * i) + t' := by
         intro t ht t' ht' he
-        have := zmirror_index_inj a.2 hj (show a.1 + n * b = j + n * i by omega)
+        have := (Nat.add_mul_eq_add_mul_iff_of_lt a.2 hj).1 (show a.1 + n * b = j + n * i by omega)
         omega
       exact ⟨(Store.read_of_write_eq_some_of_ne hw2 (Or.inr (hne 0 (by omega) 1 (by omega)))).trans
         ((Store.read_of_write_eq_some_of_ne hw1 (Or.inr (hne 0 (by omega) 0 (by omega)))).trans
@@ -535,6 +531,7 @@ theorem holds_of_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st st
   exact zmirror_step M (fun x z hz => by simp only [M, ScalarSem.toFloatMachine, hz,
     Option.getD_some]) hB hi hj hR hex
 
+omit [Inhabited K] in
 /-- `zmirror` succeeds under the standard model with every value in range, when the block at
 `Y` holds the upper triangle of $\mathbf{B}$ and the buffer `Y` at tag `p` is long enough. No
 printed source. -/
@@ -576,7 +573,7 @@ theorem exists_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
       yo.eval + 2 * (a + n * b) + t ≠ yo.eval + 2 * (j + n * i) + t' := by
     intro a b hab t ht t' ht' he
     have hab' : a.1 < b.1 := hab
-    have := zmirror_index_inj a.2 hj (show a.1 + n * b = j + n * i by omega)
+    have := (Nat.add_mul_eq_add_mul_iff_of_lt a.2 hj).1 (show a.1 + n * b = j + n * i by omega)
     omega
   have hk := hn j i hj hi'
   obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape (B ⟨i, hi'⟩ ⟨j, hj⟩).1
