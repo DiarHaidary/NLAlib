@@ -27,9 +27,10 @@ $c_{\mathrm N} = \sqrt2$, for $t \ge 1$: the companion, on the decoding of the g
 `NLAlib.binaryFloatMachine` (bounded exponent, floor $\tau > 0$), which cannot meet a contract
 at floor $0$.
 
-The file also gives the parts of a rounded witness on the grid: rounding to nearest does not
-leave the modulus of a grid point (`NLAlib.abs_roundNearest_le_of_mem_floatGrid`), and rounding
-the tape meets `NLAlib.Computation.IsTapeRounding` with countable range and measurable fibres.
+The file also gives a part of a rounded witness on the grid: rounding the tape meets
+`NLAlib.Computation.IsTapeRounding` with countable range and measurable fibres (with
+`Real.abs_roundNearest_le_of_mem_floatGrid`: rounding to nearest does not leave the modulus of a
+grid point).
 
 ## Main definitions
 
@@ -41,9 +42,7 @@ the tape meets `NLAlib.Computation.IsTapeRounding` with countable range and meas
 
 * `NLAlib.isMatMulErr_gridMM`, `NLAlib.isQRErr_gridQR`, `NLAlib.isAccurate_gridMachine`: the
   contracts.
-* `NLAlib.abs_roundNearest_le_of_mem_floatGrid`.
-* `NLAlib.isTapeRounding_roundNearest`, `NLAlib.countable_range_roundNearest`,
-  `NLAlib.measurable_roundNearest`: rounding the tape.
+* `NLAlib.isTapeRounding_roundNearest`, `NLAlib.measurable_roundNearest`: rounding the tape.
 -/
 
 @[expose] public section
@@ -60,29 +59,13 @@ for $x \ge 0$ and $-\mathrm{fl}(-x)$ below, `Real.roundNearest` with ties away f
 noncomputable def gridRoundOdd (t : ℕ) (x : ℝ) : ℝ :=
   if 0 ≤ x then Real.roundNearest t x else -Real.roundNearest t (-x)
 
-/-- Rounding fixes zero. No printed source. -/
-theorem roundNearest_zero (t : ℕ) : Real.roundNearest t 0 = 0 := by
-  simp [Real.roundNearest]
-
-/-- One is on the grid of $t \ge 1$ bits, so rounding fixes it. No printed source. -/
-theorem roundNearest_one {t : ℕ} (ht : 0 < t) : Real.roundNearest t 1 = 1 :=
-  Real.roundNearest_eq_self_of_mem_floatGrid
-    ⟨1, 0, by simpa using one_lt_pow₀ (one_lt_two (α := ℤ)) ht.ne', by simp⟩
-
-/-- A power $2^{-k}$ is on the grid of $t \ge 1$ bits, so rounding fixes it.
-No printed source. -/
-theorem roundNearest_two_inv_pow {t : ℕ} (ht : 0 < t) (k : ℕ) :
-    Real.roundNearest t (2⁻¹ ^ k) = 2⁻¹ ^ k :=
-  Real.roundNearest_eq_self_of_mem_floatGrid
-    ⟨1, -k, by simpa using one_lt_pow₀ (one_lt_two (α := ℤ)) ht.ne', by simp [zpow_neg]⟩
-
 /-- Odd rounding is odd: $\mathrm{fl}_{\mathrm{odd}}(-x) = -\mathrm{fl}_{\mathrm{odd}}(x)$.
 No printed source. -/
 theorem gridRoundOdd_neg (t : ℕ) (x : ℝ) : gridRoundOdd t (-x) = -gridRoundOdd t x := by
   unfold gridRoundOdd
   rcases lt_trichotomy x 0 with h | rfl | h
   · rw [if_pos (by linarith), if_neg (by linarith), neg_neg]
-  · simp [roundNearest_zero]
+  · simp [Real.roundNearest_zero]
   · rw [if_neg (by linarith), if_pos h.le, neg_neg]
 
 /-- Odd rounding has relative error at most $2^{-t}$. No printed source. -/
@@ -102,76 +85,6 @@ theorem gridRoundOdd_mem_floatGrid {t : ℕ} (ht : 0 < t) (x : ℝ) :
   split_ifs
   · exact Real.roundNearest_mem_floatGrid ht x
   · exact Real.neg_mem_floatGrid (Real.roundNearest_mem_floatGrid ht _)
-
-/-- **Rounding to nearest does not leave the modulus of a grid point**: if $\beta$ is on the
-$t$-bit grid and $\lvert a \rvert \le \lvert \beta \rvert$, then
-$\lvert \mathrm{fl}(a) \rvert \le \lvert \beta \rvert$. No printed source.
-Proof: in the binade of $\beta$ the rounding step is the one of $\beta$, a multiple of it, and
-`round` is monotone; below it, $\lvert\mathrm{fl}(a)\rvert$ is at most the top of the binade of
-$a$. -/
-theorem abs_roundNearest_le_of_mem_floatGrid {t : ℕ} {a β : ℝ} (hβ : β ∈ Real.floatGrid t)
-    (ha : |a| ≤ |β|) : |Real.roundNearest t a| ≤ |β| := by
-  rcases eq_or_ne a 0 with rfl | ha0
-  · simp [Real.roundNearest]
-  have hapos : 0 < |a| := abs_pos.mpr ha0
-  have hβpos : 0 < |β| := hapos.trans_le ha
-  have hfix : Real.roundNearest t β = β := Real.roundNearest_eq_self_of_mem_floatGrid hβ
-  have hσκ : Int.log 2 |a| ≤ Int.log 2 |β| := Int.log_mono_right hapos ha
-  have hκle : (2:ℝ) ^ Int.log 2 |β| ≤ |β| := by
-    exact_mod_cast Int.zpow_log_le_self (b := 2) one_lt_two hβpos
-  have hσlt : |a| < (2:ℝ) ^ (Int.log 2 |a| + 1) := by
-    exact_mod_cast Int.lt_zpow_succ_log_self (b := 2) one_lt_two |a|
-  have hmono : ∀ u v : ℝ, u ≤ v → round u ≤ round v := fun u v h => by
-    rw [round_eq, round_eq]; exact Int.floor_mono (by linarith)
-  rcases eq_or_lt_of_le hσκ with h | h
-  · -- same binade as `β`: the rounding step is the one of `β`, which is a multiple of it
-    have hfix' := hfix
-    rw [Real.roundNearest] at hfix'
-    rw [Real.roundNearest, h]
-    set e : ℤ := Int.log 2 |β| + 1 - t with he
-    have hpos : (0:ℝ) < 2 ^ e := zpow_pos two_pos _
-    set N : ℤ := round (β / 2 ^ e) with hN
-    have hβN : β = (N:ℝ) * 2 ^ e := hfix'.symm
-    have hr : |a / 2 ^ e| ≤ ((|N| : ℤ) : ℝ) := by
-      rw [Int.cast_abs, abs_div, abs_of_pos hpos, div_le_iff₀ hpos]
-      have := ha
-      rw [hβN, abs_mul, abs_of_pos hpos] at this
-      exact this
-    obtain ⟨hl, hu⟩ := abs_le.mp hr
-    have h1 := hmono _ _ hl
-    have h2 := hmono _ _ hu
-    rw [← Int.cast_neg, round_intCast] at h1
-    rw [round_intCast] at h2
-    have hz : |round (a / 2 ^ e)| ≤ |N| := abs_le.mpr ⟨h1, h2⟩
-    have hβabs : |β| = ((|N| : ℤ) : ℝ) * 2 ^ e := by
-      rw [hβN, abs_mul, abs_of_pos hpos, Int.cast_abs]
-    rw [abs_mul, abs_of_pos hpos, ← Int.cast_abs, hβabs]
-    exact mul_le_mul_of_nonneg_right (by exact_mod_cast hz) hpos.le
-  · -- `a` lies in a lower binade: its rounding is at most the top of that binade
-    rw [Real.roundNearest]
-    set f : ℤ := Int.log 2 |a| + 1 - t with hf
-    have hfpos : (0:ℝ) < 2 ^ f := zpow_pos two_pos _
-    have hid : (2:ℝ) ^ t * 2 ^ f = 2 ^ (Int.log 2 |a| + 1) := by
-      rw [hf, ← zpow_natCast, ← zpow_add₀ two_ne_zero]; congr 1; ring
-    have hz : |a / 2 ^ f| ≤ (2:ℝ) ^ t := by
-      rw [abs_div, abs_of_pos hfpos, div_le_iff₀ hfpos, hid]; exact hσlt.le
-    obtain ⟨hl, hu⟩ := abs_le.mp hz
-    have hMr : ((2 ^ t : ℤ) : ℝ) = (2:ℝ) ^ t := by push_cast; rfl
-    have h1 := hmono _ _ hl
-    have h2 := hmono _ _ hu
-    rw [← hMr, ← Int.cast_neg, round_intCast] at h1
-    rw [← hMr, round_intCast] at h2
-    have hz2 : |round (a / 2 ^ f)| ≤ 2 ^ t := abs_le.mpr ⟨h1, h2⟩
-    have hrt : ((|round (a / 2 ^ f)| : ℤ) : ℝ) ≤ (2:ℝ) ^ t := by
-      rw [← hMr]; exact_mod_cast hz2
-    have hchain : (2:ℝ) ^ (Int.log 2 |a| + 1) ≤ (2:ℝ) ^ Int.log 2 |β| :=
-      zpow_le_zpow_right₀ one_le_two (by omega)
-    rw [abs_mul, abs_of_pos hfpos, ← Int.cast_abs]
-    calc ((|round (a / 2 ^ f)| : ℤ) : ℝ) * 2 ^ f ≤ (2:ℝ) ^ t * 2 ^ f :=
-          mul_le_mul_of_nonneg_right hrt hfpos.le
-      _ = (2:ℝ) ^ (Int.log 2 |a| + 1) := hid
-      _ ≤ (2:ℝ) ^ Int.log 2 |β| := hchain
-      _ ≤ |β| := hκle
 
 /-! ### The black boxes -/
 
@@ -260,7 +173,7 @@ theorem isQRErr_gridQR {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
   have hmn := le_max_left m n
   rw [h1, h2]
   refine ⟨fun i j hij => ?_, Q, hQ, ?_, ?_⟩
-  · have h0 : gridRoundOdd t 0 = 0 := by simp [gridRoundOdd, roundNearest_zero]
+  · have h0 : gridRoundOdd t 0 = 0 := by simp [gridRoundOdd, Real.roundNearest_zero]
     rw [Matrix.map_apply, hRt i j hij]
     exact Complex.ext h0 h0
   · refine (specNorm_sub_map_le hu le_rfl hround hmn hmn Q).trans ?_
@@ -376,7 +289,7 @@ theorem isAccurate_gridMachine {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
     (gridMachine t).IsAccurate (Real.roundNearest t) (2⁻¹ ^ t) 0 Ω (fun d => 2 * d)
       (fun d => 2 * d) √2 := by
   have hr := isRoundingOf_roundNearest_roundNearest ht Ω
-  refine ⟨roundNearest_zero t, roundNearest_one ht, fun k => hr _, fun x y => hr _,
+  refine ⟨Real.roundNearest_zero t, Real.roundNearest_one ht, fun k => hr _, fun x y => hr _,
     fun x y => hr _, fun x y => hr _, fun x y _ => hr _, fun x => ?_, fun x y => ?_,
     fun x => rfl, isMatMulErr_gridMM ht Ω, isQRErr_gridQR ht Ω, isUnifSampler_gridMachine ht,
     isNormalSampler_gridMachine ht Ω⟩
@@ -391,7 +304,7 @@ theorem isAccurate_gridMachine {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
 the position-independent rounding $\rho(d, i, y) = \mathrm{fl}(y)$ meets
 `NLAlib.Computation.IsTapeRounding` at the decoding `Real.roundNearest t`, $u = 2^{-t}$, floor
 $0$ and constant $1$: relative error $u$, and a uniform draw in $[-1, 1]$ rounds into $[-1, 1]$
-(`NLAlib.abs_roundNearest_le_of_mem_floatGrid` at $\pm1$). No printed source. -/
+(`Real.abs_roundNearest_le_of_mem_floatGrid` at $\pm1$). No printed source. -/
 theorem isTapeRounding_roundNearest {P : Type} {t : ℕ} (ht : 0 < t) (p : P) (Ω : ℝ) :
     Computation.IsTapeRounding (fun _ => Real.roundNearest t) p (2⁻¹ ^ t) 0 Ω (fun _ => 1)
       (fun _ _ y => Real.roundNearest t y) := by
@@ -400,20 +313,13 @@ theorem isTapeRounding_roundNearest {P : Type} {t : ℕ} (ht : 0 < t) (p : P) (�
     rw [Real.roundNearest_roundNearest ht, abs_sub_comm, one_mul, max_eq_left (abs_nonneg x)]
     exact Real.abs_sub_roundNearest_le t x
   · have h1 : (1 : ℝ) ∈ Real.floatGrid t := by
-      rw [← roundNearest_one ht]; exact Real.roundNearest_mem_floatGrid ht 1
-    have h := abs_roundNearest_le_of_mem_floatGrid h1 (abs_le.mpr ⟨by simpa using hx.1,
+      rw [← Real.roundNearest_one ht]; exact Real.roundNearest_mem_floatGrid ht 1
+    have h := Real.abs_roundNearest_le_of_mem_floatGrid h1 (abs_le.mpr ⟨by simpa using hx.1,
       by simpa using hx.2⟩)
     rw [abs_one] at h
     change Real.roundNearest t (Real.roundNearest t x) ∈ Set.Icc (-1 : ℝ) 1
     rw [Real.roundNearest_roundNearest ht]
     exact ⟨(abs_le.mp h).1, (abs_le.mp h).2⟩
-
-/-- Rounding to nearest has countable range: its values are integers times powers of two.
-No printed source. -/
-theorem countable_range_roundNearest (t : ℕ) : (Set.range (Real.roundNearest t)).Countable := by
-  refine (Set.countable_range fun p : ℤ × ℤ => (p.1 : ℝ) * (2 : ℝ) ^ p.2).mono ?_
-  rintro _ ⟨x, rfl⟩
-  exact ⟨(_, _), rfl⟩
 
 /-- Rounding to nearest is measurable. No printed source. -/
 theorem measurable_roundNearest (t : ℕ) : Measurable (Real.roundNearest t) := by

@@ -97,6 +97,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshe
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
+public import NLAlib.ForMathlib.Analysis.SpecificLimits.Basic
 public import NLAlib.ForMathlib.Data.Fin.Tuple.Sort
 public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.ForMathlib.Data.Finsupp.Basic

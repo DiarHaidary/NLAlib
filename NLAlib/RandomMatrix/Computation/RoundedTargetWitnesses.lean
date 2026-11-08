@@ -9,6 +9,7 @@ public import NLAlib.Matrix.Computation.GridMachine
 public import NLAlib.RandomMatrix.Computation.NewtonSchulzSignTargets
 public import NLAlib.RandomMatrix.Computation.DeflationTargets
 public import NLAlib.RandomMatrix.Computation.SpectralBisectionTargets
+public import NLAlib.ForMathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # Non-vacuity witnesses of the rounded targets
@@ -20,17 +21,14 @@ $N \ge N_0$ every hypothesis of the model is met at once, by **rounded arithmeti
 not by exact arithmetic at a nominal $u$. The semantics is `NLAlib.Computation.gridSem` with
 $t$ bits at every tag (rounding to nearest, unbounded exponent; decoding $x \mapsto
 \mathrm{fl}(x)$, $u = 2^{-t}$), $t$ chosen from $N$ so that the precision hypotheses hold; the
-kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t`
-(`NLAlib.gridKernelInterp`), the machine is `NLAlib.gridMachine t` and the tape is rounded to
-nearest. The stored inputs are on the grid: the identity matrix in pairs, and powers of two.
+kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t` (the interpretation
+`gridKernelInterp`, private to this file), the machine is `NLAlib.gridMachine t` and the tape is
+rounded to nearest. The stored inputs are on the grid: the identity matrix in pairs, and powers of
+two.
 
 A bounded-exponent semantics cannot witness these targets: they assume the standard model with
 every value in range (`IsRelErrSem … (fun _ _ => True)`: every operation succeeds with relative
 error at most $u$, which fails under underflow and overflow) and a machine at floor $\tau = 0$.
-
-## Main definitions
-
-* `NLAlib.gridKernelInterp`: the interpretation of the witnesses.
 
 ## Main results
 
@@ -52,7 +50,8 @@ open Computation
 tag (`NLAlib.Computation.gridSem`), kernel `true` the correctly rounded product `NLAlib.gridMM t`
 and kernel `false` the correctly rounded QR factorization `NLAlib.gridQR t`, in the interleaved
 layout; no oracle, no read-only data, a zero tape and charge (the contracts do not read them). -/
-noncomputable def gridKernelInterp (P : Type) (t : ℕ) : Interp P Bool ℝ (OpCount P Bool) where
+private noncomputable def gridKernelInterp (P : Type) (t : ℕ) :
+    Interp P Bool ℝ (OpCount P Bool) where
   sem := gridSem fun _ => t
   charge _ := 0
   tape _ _ := 0
@@ -64,36 +63,21 @@ noncomputable def gridKernelInterp (P : Type) (t : ℕ) : Interp P Bool ℝ (OpC
   kernel o := bif o then liftMM pairLayout (gridMM t) else liftQR pairLayout (gridQR t)
   kshape o := bif o then mmShape (pairLayout (K := ℝ)) else qrShape (pairLayout (K := ℝ))
 
-/-- Kernel `true` of `NLAlib.gridKernelInterp` is the grid product. No printed source. -/
-theorem isMatMulKernel_gridKernelInterp (P : Type) (t : ℕ) :
+/-- Kernel `true` of `gridKernelInterp` is the grid product. No printed source. -/
+private theorem isMatMulKernel_gridKernelInterp (P : Type) (t : ℕ) :
     IsMatMulKernel (gridKernelInterp P t) true pairLayout (gridMM t) :=
   ⟨rfl, rfl⟩
 
-/-- Kernel `false` of `NLAlib.gridKernelInterp` is the grid QR factorization.
+/-- Kernel `false` of `gridKernelInterp` is the grid QR factorization.
 No printed source. -/
-theorem isQRKernel_gridKernelInterp (P : Type) (t : ℕ) :
+private theorem isQRKernel_gridKernelInterp (P : Type) (t : ℕ) :
     IsQRKernel (gridKernelInterp P t) false pairLayout (gridQR t) :=
   ⟨rfl, rfl⟩
-
-/-- A precision hypothesis $C\,2^{-t} \le D$ with $D > 0$ holds for every large $t$.
-No printed source. -/
-theorem eventually_mul_two_inv_pow_le (C : ℝ) {D : ℝ} (hD : 0 < D) :
-    ∀ᶠ t : ℕ in atTop, C * 2⁻¹ ^ t ≤ D := by
-  have h : Tendsto (fun t : ℕ => C * (2⁻¹ : ℝ) ^ t) atTop (nhds (C * 0)) :=
-    (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)).const_mul C
-  rw [mul_zero] at h
-  exact (h.eventually (gt_mem_nhds hD)).mono fun _ h => h.le
-
-/-- Every large $t$ is positive and exceeds $\log_2 (B + 1)$: integer literals up to $B$ are
-exact on the $t$-bit grid. No printed source. -/
-theorem eventually_pos_and_lt_two_pow (B : ℕ) : ∀ᶠ t : ℕ in atTop, 0 < t ∧ B < 2 ^ t :=
-  (eventually_ge_atTop (B + 1)).mono fun t ht =>
-    ⟨by omega, Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right two_pos (by omega))⟩
 
 /-- `1/2` is on the grid of $t \ge 1$ bits. -/
 private theorem roundNearest_half {t : ℕ} (ht : 0 < t) : Real.roundNearest t (1 / 2) = 1 / 2 := by
   rw [one_div, ← pow_one (2⁻¹ : ℝ)]
-  exact roundNearest_two_inv_pow ht 1
+  exact Real.roundNearest_two_inv_pow ht 1
 
 /-- **The Newton–Schulz sign target is not vacuous**: for every $N_0$, at $N = N_0 + 1$, the
 grid semantics with $t$ bits ($t$ large, from $N$), the kernel `NLAlib.gridMM t`, the machine
@@ -145,7 +129,7 @@ theorem matrixFreeRoundedProbNewtonSchulzSign_nonVacuous : ∀ N₀ : ℕ,
       ⟨gridMM t, isMatMulKernel_gridKernelInterp Unit t, isMatMulErr_gridMM ht _⟩,
       gridMachine t, _, _, _, hM⟩, trivial⟩
   dsimp only
-  rw [hM.decodeMatrix_identityMat, roundNearest_one ht, roundNearest_half ht]
+  rw [hM.decodeMatrix_identityMat, Real.roundNearest_one ht, roundNearest_half ht]
   refine ⟨Matrix.isHermitian_one, by positivity, by positivity, le_rfl, specNorm_one.le,
     by norm_num, le_rfl, 1, one_pos, fun y hy => ?_, hu, ?_⟩
   · rw [spectrum.one_eq, Set.mem_singleton_iff] at hy
@@ -302,7 +286,7 @@ theorem matrixFreeRoundedProbEigh_nonVacuous : ∀ N₀ : ℕ,
     (eventually_mul_two_inv_pow_le (16 * (4 * (2 * (N : ℝ)) + 4 * √(N : ℝ) * (2 * (1 + 3) + 1) +
       2 * (2 * N) + 1) * (1 + 1)) hβ))))).exists
   have hM := isAccurate_gridMachine ht 0
-  have hRβ : Real.roundNearest t β = β := by rw [hβk]; exact roundNearest_two_inv_pow ht k
+  have hRβ : Real.roundNearest t β = β := by rw [hβk]; exact Real.roundNearest_two_inv_pow ht k
   have hmono : Monotone fun d : ℕ => 2 * (d : ℝ) := fun a b h =>
     mul_le_mul_of_nonneg_left (Nat.cast_le.mpr h) zero_le_two
   refine ⟨Unit, Bool, inferInstance, (), true, false, ℝ, inferInstance,
@@ -315,11 +299,11 @@ theorem matrixFreeRoundedProbEigh_nonVacuous : ∀ N₀ : ℕ,
       ⟨gridMM t, isMatMulKernel_gridKernelInterp Unit t, isMatMulErr_gridMM ht _⟩,
       gridQR t, isQRKernel_gridKernelInterp Unit t, isQRErr_gridQR ht _⟩,
     isTapeRounding_roundNearest ht () _, fun _ _ _ _ => rfl, fun _ =>
-      ⟨countable_range_roundNearest t, fun z =>
+      ⟨Real.countable_range_roundNearest t, fun z =>
         measurable_roundNearest t (measurableSet_singleton z)⟩⟩
   dsimp only
   simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
-  rw [hM.decodeMatrix_identityMat, roundNearest_one ht, roundNearest_two_inv_pow ht, hRβ]
+  rw [hM.decodeMatrix_identityMat, Real.roundNearest_one ht, Real.roundNearest_two_inv_pow ht, hRβ]
   refine ⟨hN, Matrix.isHermitian_one, specNorm_one.le, one_pos, by positivity, le_rfl, one_pos,
     le_rfl, by omega, hβ, hβk ▸ hk.le, by positivity, zero_le_one, zero_le_one, hu₁, hmono, hmono,
     by simp, by simp, (le_of_eq (by ring)).trans hu₂, (le_of_eq (by ring)).trans hu₃,
