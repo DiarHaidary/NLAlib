@@ -37,6 +37,8 @@ statements" (F3, F7).
 * `NLAlib.Computation.Prog.RunsWithin`: a run within a budget.
 * `NLAlib.Computation.Cell.normIdx`, `NLAlib.Computation.Instr.normIdx`,
   `NLAlib.Computation.Stmt.normIdx`: the index normal form.
+* `NLAlib.Computation.Instr.mapTag`, `NLAlib.Computation.FStmt.mapTags`: a first-order
+  statement with its tags and oracle names renamed.
 
 ## Main results
 
@@ -418,5 +420,45 @@ def Stmt.normIdx : Stmt P ι ℕ ℕ → Stmt P ι ℕ ℕ
   | .bindIdx p x bound body => .bindIdx p x.normIdx (.const bound.eval) fun i => (body i).normIdx
 
 end IndexNormal
+
+/-! ### Renaming tags and oracles
+
+A program is registered at the tags `p` and oracles `mm`, `qr` of its arguments, and its
+polynomial checks are decided on one instance. `NLAlib.Computation.FStmt.mapTags f g` renames the
+tags by `f` and the oracle names by `g`, rebuilding every node, its `named` labels included: the
+registered tree at the tags `p` is the renamed tree of one instance, and a count that reads neither
+tags nor oracle names is the same on both. -/
+
+section Rename
+
+variable {P ι P' ι' : Type}
+
+/-- A scalar instruction with its tags renamed by `f`. -/
+def Instr.mapTag {VB VI : Type} (f : P → P') : Instr P VB VI → Instr P' VB VI
+  | .lit p d q => .lit (f p) d q
+  | .litIdx p d e => .litIdx (f p) d e
+  | .bin p b d x y => .bin (f p) b d x y
+  | .un p u d x => .un (f p) u d x
+  | .copy p d s => .copy (f p) d s
+  | .draw p dist d => .draw (f p) dist d
+  | .convert p q d s => .convert (f p) (f q) d s
+
+/-- A first-order statement with its tags renamed by `f` and its oracle names by `g`: every node
+rebuilt, its `named` labels included. -/
+def FStmt.mapTags (f : P → P') (g : ι → ι') : {nb ni : ℕ} → FStmt P ι nb ni → FStmt P' ι' nb ni
+  | _, _, .skip => .skip
+  | _, _, .seq s t => .seq (s.mapTags f g) (t.mapTags f g)
+  | _, _, .instr i => .instr (i.mapTag f)
+  | _, _, .apply o p d dOff s sOff cols => .apply (g o) (f p) d dOff s sOff cols
+  | _, _, .rom p d i => .rom (f p) d i
+  | _, _, .alloc p len b => .alloc (f p) len (b.mapTags f g)
+  | _, _, .loop n b => .loop n (b.mapTags f g)
+  | _, _, .whileFuel fu p c x y b => .whileFuel fu (f p) c x y (b.mapTags f g)
+  | _, _, .ite p c x y t e => .ite (f p) c x y (t.mapTags f g) (e.mapTags f g)
+  | _, _, .named n a b => .named n a (b.mapTags f g)
+  | _, _, .kcall o p d i o' => .kcall (g o) (f p) d i o'
+  | _, _, .bindIdx p x bd b => .bindIdx (f p) x bd (b.mapTags f g)
+
+end Rename
 
 end NLAlib.Computation

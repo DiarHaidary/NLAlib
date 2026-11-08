@@ -534,35 +534,6 @@ private theorem eval_crudeCount_le_eighCount (p : P) (mm qr : ι) (N L F : ℕ) 
 
 /-! #### Renaming the registered tree -/
 
-/-- A scalar instruction with its tags renamed by `f`. -/
-private def renameInstr {P' VB VI : Type} (f : P → P') : Instr P VB VI → Instr P' VB VI
-  | .lit p d q => .lit (f p) d q
-  | .litIdx p d e => .litIdx (f p) d e
-  | .bin p b d x y => .bin (f p) b d x y
-  | .un p u d x => .un (f p) u d x
-  | .copy p d s => .copy (f p) d s
-  | .draw p dist d => .draw (f p) dist d
-  | .convert p q d s => .convert (f p) (f q) d s
-
--- The renaming rebuilds every node of the tree, its `named` labels included (rule E8): the
--- registered tree at the tags `p` is the renamed tree at the tag `()`, where the polynomial
--- checks are decided, and no library function renames the tags of a first-order tree.
-/-- A first-order tree with its tags renamed by `f` and its oracle names by `g`. -/
-private def renameTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
-    {nb ni : ℕ} → FStmt P ι nb ni → FStmt P' ι' nb ni
-  | _, _, .skip => .skip
-  | _, _, .seq s t => .seq (renameTags f g s) (renameTags f g t)
-  | _, _, .instr i => .instr (renameInstr f i)
-  | _, _, .apply o p d dOff s sOff cols => .apply (g o) (f p) d dOff s sOff cols
-  | _, _, .rom p d i => .rom (f p) d i
-  | _, _, .alloc p len b => .alloc (f p) len (renameTags f g b)
-  | _, _, .loop n b => .loop n (renameTags f g b)
-  | _, _, .whileFuel fu p c x y b => .whileFuel fu (f p) c x y (renameTags f g b)
-  | _, _, .ite p c x y t e => .ite (f p) c x y (renameTags f g t) (renameTags f g e)
-  | _, _, .named n a b => .named n a (renameTags f g b)
-  | _, _, .kcall o p d i o' => .kcall (g o) (f p) d i o'
-  | _, _, .bindIdx p x bd b => .bindIdx (f p) x bd (renameTags f g b)
-
 /-- A tree of kernel calls with its tags renamed by `f` and its oracle names by `g`. -/
 private def KernelTree.rename {P' ι' : Type} (f : P → P') (g : ι → ι') :
     {ni : ℕ} → KernelTree P ι ni → KernelTree P' ι' ni
@@ -578,52 +549,52 @@ private def KernelTree.rename {P' ι' : Type} (f : P → P') (g : ι → ι') :
 -- recursion than the default.
 set_option maxRecDepth 100000 in
 private theorem compiled_eq_renameTags (p : P) (mm qr : ι) : eighProg.compiled p mm qr =
-    renameTags (fun _ => p) (fun b => bif b then mm else qr) (eighProg.compiled () true false) :=
+    FStmt.mapTags (fun _ => p) (fun b => bif b then mm else qr) (eighProg.compiled () true false) :=
   rfl
 
-private theorem crudeCount_renameTags {P' ι' : Type} (f : P → P') (g : ι → ι') (c : ℕ) :
+private theorem crudeCount_mapTags {P' ι' : Type} (f : P → P') (g : ι → ι') (c : ℕ) :
     ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (σ : Fin ni → CostPoly),
-      crudeCount c (renameTags f g s) σ = crudeCount c s σ := by
+      crudeCount c (FStmt.mapTags f g s) σ = crudeCount c s σ := by
   intro nb ni s
   induction s with
   | instr i => intro σ; cases i <;> rfl
-  | _ => intro σ; simp only [renameTags, crudeCount] at * <;> simp only [*]
+  | _ => intro σ; simp only [FStmt.mapTags, crudeCount] at * <;> simp only [*]
 
-private theorem crudeCells_renameTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
+private theorem crudeCells_mapTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
     ∀ {nb ni : ℕ} (s : FStmt P ι nb ni) (σ : Fin ni → CostPoly),
-      crudeCells (renameTags f g s) σ = crudeCells s σ := by
+      crudeCells (FStmt.mapTags f g s) σ = crudeCells s σ := by
   intro nb ni s
   induction s with
-  | _ => intro σ; simp only [renameTags, crudeCells] at * <;> simp only [*]
+  | _ => intro σ; simp only [FStmt.mapTags, crudeCells] at * <;> simp only [*]
 
-private theorem tagsOf_renameTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
-    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni), tagsOf (renameTags f g s) = (tagsOf s).map f := by
+private theorem tagsOf_mapTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
+    ∀ {nb ni : ℕ} (s : FStmt P ι nb ni), tagsOf (FStmt.mapTags f g s) = (tagsOf s).map f := by
   intro nb ni s
   induction s with
   | instr i => cases i <;> rfl
   | _ =>
-    simp only [renameTags, tagsOf, List.map_append, List.map_cons, List.map_nil] at * <;>
+    simp only [FStmt.mapTags, tagsOf, List.map_append, List.map_cons, List.map_nil] at * <;>
       simp only [*]
 
-private theorem kernelTreeOf_renameTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
+private theorem kernelTreeOf_mapTags {P' ι' : Type} (f : P → P') (g : ι → ι') :
     ∀ {nb ni : ℕ} (s : FStmt P ι nb ni),
-      kernelTreeOf (renameTags f g s) = (kernelTreeOf s).rename f g := by
+      kernelTreeOf (FStmt.mapTags f g s) = (kernelTreeOf s).rename f g := by
   intro nb ni s
   induction s with
   | seq s t ihs iht =>
-    simp only [renameTags, kernelTreeOf_seq, ihs, iht]
+    simp only [FStmt.mapTags, kernelTreeOf_seq, ihs, iht]
     cases kernelTreeOf s <;> cases kernelTreeOf t <;> rfl
   | loop n b ih =>
-    simp only [renameTags, kernelTreeOf_loop, ih]
+    simp only [FStmt.mapTags, kernelTreeOf_loop, ih]
     cases kernelTreeOf b <;> rfl
   | whileFuel fu p c x y b ih =>
-    simp only [renameTags, kernelTreeOf_whileFuel, ih]
+    simp only [FStmt.mapTags, kernelTreeOf_whileFuel, ih]
     cases kernelTreeOf b <;> rfl
   | ite p c x y t e iht ihe =>
-    simp only [renameTags, kernelTreeOf_ite, iht, ihe]
+    simp only [FStmt.mapTags, kernelTreeOf_ite, iht, ihe]
     cases kernelTreeOf t <;> cases kernelTreeOf e <;> rfl
   | bindIdx p x bd b ih =>
-    simp only [renameTags, kernelTreeOf_bindIdx, ih]
+    simp only [FStmt.mapTags, kernelTreeOf_bindIdx, ih]
     cases kernelTreeOf b <;> rfl
   | alloc p len b ih => exact ih
   | named n a b ih => exact ih
@@ -637,7 +608,7 @@ private theorem kernelTreeOf_compiled_unit :
 
 private theorem kernelTreeOf_compiled (p : P) (mm qr : ι) :
     kernelTreeOf (eighProg.compiled p mm qr) = eighKernelTree p mm qr := by
-  rw [compiled_eq_renameTags p mm qr, kernelTreeOf_renameTags, kernelTreeOf_compiled_unit]
+  rw [compiled_eq_renameTags p mm qr, kernelTreeOf_mapTags, kernelTreeOf_compiled_unit]
   rfl
 
 section
@@ -739,12 +710,12 @@ theorem eighProg.cnt_le_of_exec_compiled [Inhabited K] {mm qr : ι} {I : Interp 
   have hpr := kernelTreeOf_compiled p mm qr
   have hC : ∀ c, crudeCount c (eighProg.compiled p mm qr) sizePolys =
       crudeCount c (eighProg.compiled () true false) sizePolys := fun c => by
-    rw [compiled_eq_renameTags p mm qr, crudeCount_renameTags]
+    rw [compiled_eq_renameTags p mm qr, crudeCount_mapTags]
   have hCc : crudeCells (eighProg.compiled p mm qr) sizePolys =
       crudeCells (eighProg.compiled () true false) sizePolys := by
-    rw [compiled_eq_renameTags p mm qr, crudeCells_renameTags]
+    rw [compiled_eq_renameTags p mm qr, crudeCells_mapTags]
   have htag : ∀ q ∈ tagsOf (eighProg.compiled p mm qr), q = p := by
-    rw [compiled_eq_renameTags p mm qr, tagsOf_renameTags]
+    rw [compiled_eq_renameTags p mm qr, tagsOf_mapTags]
     intro q hq
     obtain ⟨_, _, rfl⟩ := List.mem_map.mp hq
     rfl
