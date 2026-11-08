@@ -548,7 +548,7 @@ private def KernelTree.rename {P' ι' : Type} (f : P → P') (g : ι → ι') :
 -- The registered tree is compared with the renamed one by evaluation, which needs a deeper
 -- recursion than the default.
 set_option maxRecDepth 100000 in
-private theorem compiled_eq_renameTags (p : P) (mm qr : ι) : eighProg.compiled p mm qr =
+private theorem compiled_eq_mapTags (p : P) (mm qr : ι) : eighProg.compiled p mm qr =
     FStmt.mapTags (fun _ => p) (fun b => bif b then mm else qr) (eighProg.compiled () true false) :=
   rfl
 
@@ -608,7 +608,7 @@ private theorem kernelTreeOf_compiled_unit :
 
 private theorem kernelTreeOf_compiled (p : P) (mm qr : ι) :
     kernelTreeOf (eighProg.compiled p mm qr) = eighKernelTree p mm qr := by
-  rw [compiled_eq_renameTags p mm qr, kernelTreeOf_mapTags, kernelTreeOf_compiled_unit]
+  rw [compiled_eq_mapTags p mm qr, kernelTreeOf_mapTags, kernelTreeOf_compiled_unit]
   rfl
 
 section
@@ -710,12 +710,12 @@ theorem eighProg.cnt_le_of_exec_compiled [Inhabited K] {mm qr : ι} {I : Interp 
   have hpr := kernelTreeOf_compiled p mm qr
   have hC : ∀ c, crudeCount c (eighProg.compiled p mm qr) sizePolys =
       crudeCount c (eighProg.compiled () true false) sizePolys := fun c => by
-    rw [compiled_eq_renameTags p mm qr, crudeCount_mapTags]
+    rw [compiled_eq_mapTags p mm qr, crudeCount_mapTags]
   have hCc : crudeCells (eighProg.compiled p mm qr) sizePolys =
       crudeCells (eighProg.compiled () true false) sizePolys := by
-    rw [compiled_eq_renameTags p mm qr, crudeCells_mapTags]
+    rw [compiled_eq_mapTags p mm qr, crudeCells_mapTags]
   have htag : ∀ q ∈ tagsOf (eighProg.compiled p mm qr), q = p := by
-    rw [compiled_eq_renameTags p mm qr, tagsOf_mapTags]
+    rw [compiled_eq_mapTags p mm qr, tagsOf_mapTags]
     intro q hq
     obtain ⟨_, _, rfl⟩ := List.mem_map.mp hq
     rfl
