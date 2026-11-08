@@ -230,6 +230,20 @@ theorem eighLoc_bounds {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : 
             (by change lo + kp ≤ N; omega) h
   exact key a 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ y lo hN (Nat.zero_add N).le h
 
+/-- The nodes at a depth lie in $[0, N]$, for every $N$: a node that `NLAlib.eighLoc` reaches from
+the root of size $N$ at slot $0$ has its range $[lo, lo + k)$ inside $[0, N)$, and size at least
+$1$ when $N \ge 1$. No printed source. -/
+theorem add_k_le_and_of_eighLoc {A : Matrix (Fin N) (Fin N) (F × F)} {ε : F} {ℓ₀ : ℕ}
+    {a : List Bool} {lo : ℕ} {y : EighNode F}
+    (h : eighLoc M N signFuel R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y)) :
+    lo + y.k ≤ N ∧ (1 ≤ N → 1 ≤ y.k) := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · refine ⟨?_, fun h => absurd h (by omega)⟩
+    cases a with
+    | nil => cases h; rfl
+    | cons b a => simp [eighLoc, eighStep] at h
+  · exact ⟨(eighLoc_bounds hN h).2, fun _ => (eighLoc_bounds hN h).1⟩
+
 /-- The slot ranges of the nodes that `NLAlib.eighLoc` reaches lie inside the range of their
 start. -/
 private theorem eighLoc_range_aux :
