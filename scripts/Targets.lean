@@ -917,7 +917,10 @@ def libConsts (env : Environment) : Array (Name × ConstantInfo) := Id.run do
 
 end TargetChecks
 
+-- The registered tree `NLAlib.eighProg.compiled` (stage COMPDYN S2) is deep enough that reducing
+-- and hashing it exceeds the default recursion depth (512); the bound is raised for the check only.
 open TargetChecks in
+set_option maxRecDepth 100000 in
 run_cmd do
   let env ← getEnv
   let path := (← IO.getEnv "TARGETS_REGISTRY").getD "docs/targets.toml"
