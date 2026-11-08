@@ -27,7 +27,7 @@ writes `NLAlib.eigh` on the tape machine with the tree of sample positions at th
 * `NLAlib.matrixFreeRoundedProbEigh`: the target `NLAlib.MatrixFreeRoundedProbEigh`, from the
   shallow Theorem 4.2.
 * `NLAlib.matrixFreeRoundedProb_eighProg_of_logb_le`: the bit count, from the shallow bit count.
-* `NLAlib.measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le`: a
+* `NLAlib.measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le`: a
   bounded binary format, from the shallow bounded-format theorem, for the runs that succeed.
 -/
 
@@ -40,7 +40,6 @@ namespace NLAlib
 
 open Computation
 
-set_option linter.style.longLine false in
 /-- **The target of randomized spectral bisection as a program holds**
 (`NLAlib.MatrixFreeRoundedProbEigh`): [Shah2024, Theorem 4.2] for the registered tree. No printed
 source. -/
@@ -103,16 +102,32 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
   rw [he] at hH
   exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
 
-set_option linter.style.longLine false in
 /-- **The bit count of Hermitian diagonalization, for the program**: the registered tree
-`NLAlib.eighProg.compiled` meets the rounded probabilistic model with the hypotheses of
-`NLAlib.MatrixFreeRoundedProbEigh` but the two precision conditions replaced by the bit count of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
-at the machine roundoff $u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u > 0$ and normal-sampler constant
-$c_{\mathrm N} = 2(c(\mathrm{gaussian}) + 3)$, with $\beta$ within a factor $1 + 2^{-6}$ of its
-bound $\hat\beta$: $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n +
-\log\log(1/\varepsilon))$ bits, with the polynomial factor $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$.
-[Shah2024, Theorem 4.2], for the program. No printed source. -/
+`NLAlib.eighProg.compiled` meets the rounded probabilistic model at all sizes $N$ and
+$n = (\ell, F)$ (the depth counter and the sign step limit), for every stored input (declared
+buffers $0$: the matrix, interleaved and column-major; $1$: $R_0$, $\varepsilon$, $\beta$; $2$, $3$:
+$2N^2$ and $N$ empty cells), under every interpretation whose semantics meets the standard model at
+$u$ with every value in range, exact integer literals up to $N + 4$, the exact floor conversion and
+`MulShrinks`, whose kernels are routines on pairs meeting `IsMatMulErr` and `IsQRErr` at $u$,
+floor $0$, range $\Omega$, and every rounding $\rho$ of the tape meeting `IsTapeRounding` at range
+$2\Omega$, independent of the position and with countable range and measurable fibres. Let
+$u_{\mathrm M} = (c(\mathrm{uniform}) + 1)u$ be the machine roundoff, $c_{\mathrm N} =
+2(c(\mathrm{gaussian}) + 3)$ the normal-sampler constant and $\hat\beta$ the bound on $\beta$ of the
+shallow theorem. If $N \ge 1$, the decoded matrix $\mathbf{A}$ is Hermitian with
+$\|\mathbf{A}\|_2 \le R_0$, $R_0 > 0$, $0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $\ell$ is
+at least the bisection depth of $\varepsilon$, $\hat\beta/(1 + 2^{-6}) \le \beta \le \hat\beta$ with
+$\beta > 0$, $u > 0$, $c(\mathrm{uniform}), c(\mathrm{gaussian}) \ge 0$ with
+$(c(\mathrm{gaussian}) + 3)u \le 1/10$, $\mu_{\mathrm{MM}}$ and $\mu_{\mathrm{QR}}$ are monotone and
+nonnegative, $\log_2(1/u_{\mathrm M})$ is at least $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta)
++ O(\log n + \log\log(1/\varepsilon))$ bits, with the polynomial factor
+$n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$, and at least $\log_2(1/\beta)$ plus the logarithm of the
+error factor of the sign steps, the Newton–Schulz step count is at most $F$ and $\Omega$ bounds the
+values of the run, then the probability that the run fails, exceeds the counts
+`eighCount p mm qr N ℓ F` or $4N^2 + N + 3 + 64(N + 1)^2(\ell + 3)$ cells at tag `p`, or ends with
+stored $\mathbf{U}$, $\mathbf{d}$ in declared buffers $2$, $3$ that are not an approximate
+diagonalization of $\mathbf{A}$ with residual $2\varepsilon R_0$ and singular values within
+$\varepsilon/3$ of $1$ is at most $\theta$. [Shah2024, Theorem 4.2], for the program. No printed
+source. -/
 theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] (p : P)
     (mm qr : ι) (K : Type) [Inhabited K] (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ)
     (c : Dist → ℝ) :
@@ -200,9 +215,8 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
       min (√(θ / (8 * N * min (N : ℝ) (ℓ + 1)))) (dec p x.ε * min (dec p x.R₀) 1) := by
     rw [zero_mul]
     exact le_min (Real.sqrt_nonneg _) (mul_nonneg hε.le (le_min hR₀pos.le zero_le_one))
-  have key :=
-    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
-    hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hn hH hR₀ hR₀pos hε
+  have key := hM.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
+    hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM0 hμQ0 (by positivity) hn hH hR₀ hR₀pos hε
     hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl (mul_pos (by linarith) hu0) hbits hbits' hfuel le_rfl hτ hΩ
     hind hlaw
   have := hξ.isProbabilityMeasure
@@ -220,21 +234,27 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
   rw [he] at hH
   exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
 
-set_option linter.style.longLine false in
-/-- Hermitian diagonalization in a bounded binary format, for the runs of the program that
-succeed: let the kernels of `I` be routines on pairs, the semantics decide flags, with exact
-integer literals up to $N + 4$ and the exact floor conversion, and let the tape be a
-position-independent rounding $\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`. If
-the ideal machine of the semantics, the routines and the samplers of $\rho$ meets
-`NLAlib.FloatMachine.IsAccurate` with the constants of a binary format (unit roundoff $2^{-p}$,
-floor $2^{e_{\min} + p - 1}$, range the largest finite number) and its samplers have measurable
-fibres and countable ranges, then under the hypotheses of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw`
-the probability that the run succeeds and its output is not an approximate diagonalization with
-residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
-Success under a bounded format (no operation out of range) is not claimed: it needs a range analysis
-of every operation of a run (design note, decision D6). No printed source. -/
-theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le
+/-- Hermitian diagonalization in a bounded binary format, for the runs of the program that succeed:
+let the kernels of `I` be routines on pairs, the semantics decide flags, with exact integer literals
+up to $N + 4$ and the exact floor conversion, and let the tape be a position-independent rounding
+$\rho$ of an ideal tape $\xi$ of law `NLAlib.Computation.tapeLaw`. Suppose the ideal machine of the
+semantics, the routines and the samplers of $\rho$ meets `NLAlib.FloatMachine.IsAccurate` with the
+constants of a binary format with at least $2$ exponent bits (unit roundoff $2^{-p}$, floor
+$2^{e_{\min} + p - 1}$, range the largest finite number), kernel constants $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$ monotone and nonnegative and normal-sampler constant $c_{\mathrm N} \ge 0$, and
+its samplers have measurable fibres and countable ranges. If $N \ge 1$, the decoded matrix
+$\mathbf{A}$ is Hermitian with $\|\mathbf{A}\|_2 \le R_0$, $1/2 \le R_0 \le 1$, $0 < \varepsilon \le
+2^{-15}$, $0 < \theta \le 1$, $\ell$ is at least the bisection depth of $\varepsilon$, $\hat\beta/(1
++ 2^{-6}) \le \beta \le \hat\beta$ with $\beta > 0$ for the bound $\hat\beta$ of the shallow
+theorem, the mantissa bits $p$ are at least $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
+O(\log n + \log\log(1/\varepsilon))$ and at least $\log_2(1/\beta)$ plus the logarithm of the error
+factor of the sign steps, the exponent bits are at least $\log_2(\log_2(1536(N + \ell +
+2)^3/(\varepsilon\theta)) + 2) + 1$ and the Newton–Schulz step count $N_{\mathrm{st}}$ is at most
+$F$, then the probability that the run succeeds and its output is not an approximate diagonalization
+with residual $2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most
+$\theta$. Success under a bounded format (no operation out of range) is not claimed: it needs a
+range analysis of every operation of a run (design note, decision D6). No printed source. -/
+theorem measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le
     {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] (p : P) (mm qr : ι)
     {dec : P → K → ℝ} {I : Interp P ι K C} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
@@ -291,8 +311,8 @@ theorem measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponent
     (I.sem.gaussianNormal p (ρ .gaussian 0))) hunif.2 hunif.1 hgauss.2 hgauss.1 N F (ℓ + 1) R₀ β
     ⟨N, A, R₀, ε, ℓ⟩ le_rfl hξ
   have key :=
-    FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
-      fmt hE hM hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ hR₀half hR₀one
+    hM.measureReal_not_isApproxDiagonalization_eigh_le_of_exponentBits_le_of_hasLaw_eighSampleLaw
+      fmt hE hunif.2 hunif.1 hgauss.2 hgauss.1 hμM hμQ hμM₀ hμQ₀ hcN hn hA hR₀ hR₀half hR₀one
       hε hε₁ hθ hθ₁ hℓ hβ hβle hβge hN hbits hbits' hexp hfuel hind hlaw
   have := hξ.isProbabilityMeasure
   refine le_trans (measureReal_mono (μ := μ) (fun ω hω => ?_) (measure_ne_top μ _)) key

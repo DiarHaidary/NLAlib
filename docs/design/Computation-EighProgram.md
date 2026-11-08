@@ -310,7 +310,7 @@ $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ in place of the earlier $n^5\mu_{\math
 
 ### 7.3 EV8: a bounded binary format (D6)
 
-`measureReal_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le` (M): for every
+`measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le` (M): for every
 interpretation whose ideal machine meets `IsAccurate` with the constants of a binary format (an
 assumption: the analogue of the pilot's IM1 for `binaryFloatSem`, floor $\tau > 0$, is later), the
 probability that the run **succeeds** and its output is bad is at most $\theta$, under EV8's

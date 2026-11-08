@@ -405,18 +405,22 @@ private lemma measurable_tape_apply (p : Dist × ℕ) :
     Measurable fun ξ : Dist → ℕ → ℝ => ξ p.1 p.2 :=
   (measurable_pi_apply p.2).comp (measurable_pi_apply p.1)
 
+/-- The σ-algebra of tape coordinates is coarser than the product σ-algebra. -/
 lemma tapeSigma_le (Q : Set (Dist × ℕ)) :
     tapeSigma Q ≤ (inferInstance : MeasurableSpace (Dist → ℕ → ℝ)) :=
   iSup₂_le fun p _ => (measurable_tape_apply p).comap_le
 
+/-- The σ-algebra of tape coordinates is monotone in the set of coordinates. -/
 lemma tapeSigma_mono {Q Q' : Set (Dist × ℕ)} (h : Q ⊆ Q') : tapeSigma Q ≤ tapeSigma Q' :=
   biSup_mono h
 
+/-- A tape coordinate in `Q` is measurable for the σ-algebra of the coordinates in `Q`. -/
 lemma measurable_tapeSigma_apply {Q : Set (Dist × ℕ)} {p : Dist × ℕ} (hp : p ∈ Q) :
     Measurable[tapeSigma Q] fun ξ : Dist → ℕ → ℝ => ξ p.1 p.2 :=
   Measurable.of_comap_le (le_iSup₂ (f := fun p (_ : p ∈ Q) => MeasurableSpace.comap
     (fun ξ : Dist → ℕ → ℝ => ξ p.1 p.2) inferInstance) p hp)
 
+/-- Under the tape law, the σ-algebras of disjoint sets of tape coordinates are independent. -/
 lemma indep_tapeSigma {Q Q' : Set (Dist × ℕ)} (h : Disjoint Q Q') :
     Indep (tapeSigma Q) (tapeSigma Q') tapeLaw := by
   have hind : iIndepFun (fun (p : Dist × ℕ) (ξ : Dist → ℕ → ℝ) => ξ p.1 p.2) tapeLaw := by
@@ -460,6 +464,7 @@ private lemma measurable_complexPair :
     (v 0 / √2, v 1 / √2)) (((measurable_pi_apply 0).div_const _).prodMk
       ((measurable_pi_apply 1).div_const _))
 
+/-- The complex number with measurable real and imaginary parts is measurable. -/
 lemma measurable_complex_mk {α : Type*} {mα : MeasurableSpace α} {f g : α → ℝ}
     (hf : Measurable f) (hg : Measurable g) : Measurable fun x => (⟨f x, g x⟩ : ℂ) :=
   Complex.measurableEquivRealProd.symm.measurable.comp (hf.prodMk hg)

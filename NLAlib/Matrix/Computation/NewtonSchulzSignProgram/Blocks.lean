@@ -47,6 +47,8 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The test block computes the machine's test: if kernel `mm` of `I` is the routine `mmR` on
 interleaved pairs, a successful run of `NLAlib.newtonSchulzTestBlock` from a state whose block at
 `X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose cells `one`, `lo`, `hi` hold the
@@ -142,6 +144,8 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
     hsh3.trans (hsh2.trans (by rw [hst1]; exact hsh1))
   exact ⟨hWst, hVst, hflag', hfrm, hshT, hpos3.trans (hpos2.trans hpos1)⟩
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The test block succeeds under the standard model with every value in range, when the
 buffers `W` and `V` at tag `p` have $2n^2$ cells and the flag can be written (hypotheses as
 `NLAlib.holds_of_exec_newtonSchulzTestBlock`). No printed source. -/
@@ -227,7 +231,7 @@ private theorem exec_litIdx_read (p : P) (e : IExp ℕ) (c' : Cell ℕ ℕ) (σ�
   injection hσ with hσ
   subst hσ
   have hofn : (I.sem.toFloatMachine p toNat mmR qrR unif normal).ofNat e.eval = v := by
-    show ((I.sem.lit p ((e.eval : ℕ) : ℚ)).getD default) = v
+    change ((I.sem.lit p ((e.eval : ℕ) : ℚ)).getD default) = v
     rw [hv]; rfl
   refine ⟨?_, fun q b i hne => ?_, Store.shape_of_write_eq_some hw, rfl⟩
   · rw [hofn]; exact Store.read_of_write_eq_some hw
@@ -463,7 +467,9 @@ private theorem whileNS_unroll {fuel : IExp ℕ} {j : ℕ} (hfuel : fuel.eval = 
     exact Or.inl ⟨rfl, by rw [← h], by rw [← h]⟩
 
 omit [Inhabited K] in
-theorem whileNS_comp {a b : Builder P ι ℕ ℕ Unit}
+/-- Runs of builders followed by a continuation compose: if the runs of `a` and of `b`, each
+followed by any `f`, are the run of the builder and then of `f`, so is the run of `a` then `b`. -/
+theorem exec_run_bind_bind {a b : Builder P ι ℕ ℕ Unit}
     (ha : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
       exec I (a >>= f).run st = (exec I a.run st).bind (exec I (f ()).run))
     (hb : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
@@ -479,12 +485,12 @@ theorem whileNS_comp {a b : Builder P ι ℕ ℕ Unit}
   exact hb f out
 
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-theorem whileNS_disj {b i j : ℕ} (h : i ≠ j) :
+/-- Two distinct cells of one buffer are disjoint blocks. -/
+theorem blockDisjoint_cell_of_ne {b i j : ℕ} (h : i ≠ j) :
     blockDisjoint (b, i, 1) (b, j, 1) = true := by
-  unfold blockDisjoint
-  rcases Nat.lt_or_gt_of_ne h with h | h
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
+  simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
+    decide_eq_true_eq]
+  omega
 
 private theorem whileNS_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (n : ℕ)
     {X W V t : ℕ} {xo : IExp ℕ} {η : K} {st st₁ : St P K C}
@@ -520,23 +526,25 @@ private theorem whileNS_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
-      (whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
-        (whileNS_comp (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+    exact exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl)
+      (exec_run_bind_bind (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
   rw [hstep] at h
   obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
     (hd _ _ _ _ htX) hσ
   have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
-    hfrσ p t i htW htV (hd _ _ _ _ htX) (whileNS_disj hi)
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (blockDisjoint_cell_of_ne hi)
   obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, hpos₁⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
     ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
     (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → st₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
-    (hfr₁ p t i htW htV (whileNS_disj h1)).trans (hrσ i h2)
+    (hfr₁ p t i htW htV (blockDisjoint_cell_of_ne h1)).trans (hrσ i h2)
   refine ⟨hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
     hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
     (hr₁ 4 (by omega) (by omega)).trans hlo, hf₁, fun q b i hbt hbW hbV hbX => ?_,

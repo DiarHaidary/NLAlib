@@ -139,6 +139,8 @@ namespace NLAlib.Computation
 
 variable {P K : Type} [Inhabited K]
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The machine of a semantics meets the machine contract: if the value semantics `sem`
 meets the standard model at unit roundoff $u \ge 0$ with every value in range
 (`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routines `mm`, `qr` and the
@@ -203,6 +205,7 @@ theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} 
   · intro x
     rfl
 
+omit [Inhabited K] in
 /-- The standard model decides flags: a value semantics meeting the standard model with
 every value in range and an exact literal $1$ decides flags at every tag
 (`NLAlib.Computation.ScalarSem.DecidesFlags`): its literals $0$ and $1$ decode to $0$ and $1$ and
@@ -376,6 +379,8 @@ private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 
     (h : IsRoundingOf u τ Ω a z) : IsRoundingOf u' τ Ω a z :=
   fun ha => (h ha).trans (mul_le_mul_of_nonneg_right huu' (hτ.trans (le_max_right _ _)))
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The machine contract is monotone in the unit roundoff: a machine meeting
 `NLAlib.FloatMachine.IsAccurate` at unit roundoff $u \ge 0$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
@@ -503,8 +508,11 @@ theorem decodeMatrix_hermAvg_toFloatMachine_exactSem (p : P) {n : ℕ}
   rcases lt_trichotomy i j with h | rfl | h
   · apply Complex.ext <;> simp [h, hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
       div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
-  · apply Complex.ext <;> simp [hc, ScalarSem.toFloatMachine, exactSem, decodeComplex,
-      div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
+  · apply Complex.ext
+    · simp [hc, ScalarSem.toFloatMachine, exactSem, decodeComplex, div_eq_inv_mul,
+        Complex.conj_re]
+      ring
+    · simp [hc, ScalarSem.toFloatMachine, exactSem, decodeComplex, Complex.conj_im]
   · apply Complex.ext <;> simp [h, not_lt.2 h.le, hc, ScalarSem.toFloatMachine, exactSem,
       decodeComplex, div_eq_inv_mul, Complex.conj_re, Complex.conj_im] <;> ring
 
@@ -531,7 +539,8 @@ printed source. -/
 theorem traceRe_toFloatMachine_exactSem (p : P) {n : ℕ} (A : Matrix (Fin n) (Fin n) (ℝ × ℝ)) :
     ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).traceRe A =
       (Matrix.trace (decodeMatrix id A)).re := by
-  simp [FloatMachine.traceRe, ScalarSem.toFloatMachine, exactSem]
+  simp only [FloatMachine.traceRe, ScalarSem.toFloatMachine, exactSem, Rat.cast_zero,
+    Option.getD_some]
   rw [foldl_add_eq_add_map_sum, zero_add, Matrix.trace, Complex.re_sum, Fin.sum_univ_def]
   simp [decodeMatrix, decodeComplex, Matrix.diag]
 
