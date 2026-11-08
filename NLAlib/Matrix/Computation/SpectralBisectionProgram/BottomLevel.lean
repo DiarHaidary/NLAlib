@@ -210,14 +210,14 @@ private theorem eighBottomLevel_step (p : P) (n ℓ₀ F D : ℕ) (H : EighArena
   change i < _ + y'.k * y'.k * 2 at hi
   nlinarith [Nat.mul_le_mul_left n hlt', Nat.mul_le_mul_right y'.k (by omega : y'.k ≤ n)]
 
-/-- The spent level writes the junk outputs: under exact integer literals up to $n + 4$ and the
-exact floor conversion, a successful run of `NLAlib.eighBottomLevel` at depth $D$ from a state whose
+/-- The spent level writes the junk outputs: under exact integer literals up to $n + 4$, a
+successful run of `NLAlib.eighBottomLevel` at depth $D$ from a state whose
 arenas hold the nodes of depth $D$ ends with the outputs of depth $D$ holding `NLAlib.eighAux` at
 budget $0$ (`NLAlib.EighArenas.OutHolds` at $D$: the machine's identity and zeros); every cell
 outside the output and eigenvalue arenas at depth $D$ is unchanged, the store shape and the tape
 positions too. No printed source. -/
 theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ F D : ℕ)
-    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
     {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped st.store p n D)
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
@@ -228,7 +228,6 @@ theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ 
       (∀ q b i, ¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n D b i) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  have _ := htn -- the spent level needs no floor conversion
   change exec I (.seq (.loop (.const n) _) .skip) st = some st' at h
   rw [exec_seq_skip] at h
   obtain ⟨hsh, hps, hfr, hdone⟩ := forall_of_exec_loop_eq_some I (n := .const n)
@@ -277,18 +276,16 @@ private theorem exists_exec_loop_lit_of_lt {p : P} {m : IExp ℕ} {Y len : ℕ} 
   · exact (Store.shape_of_write_eq_some hs').trans hsh
   · exact (Store.read_of_write_eq_some_of_ne hs' (Or.inl hb)).trans (hrd q b i hb)
 
-/-- The spent level succeeds under the standard model with every value in range and the exact
-floor conversion, when the arenas are allocated and their size cells of depth $D$ are initialised.
-No printed source. -/
+/-- The spent level succeeds under the standard model with every value in range, when the
+arenas are allocated and their size cells of depth $D$ are initialised. No printed source. -/
 theorem exists_exec_eighBottomLevel {u : P → ℝ} {dec : P → K → ℝ}
-    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (htn : IsExactToNat dec I.sem) (p : P)
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
     (n ℓ₀ F D : ℕ) (H : EighArenas) {st : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
     {R₀ ε β : K} (hH : H.Shaped st.store p n D)
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
       ⟨n, A, R₀, ε, ℓ₀⟩ D) :
     ∃ st', exec I (eighBottomLevel (ι := ι) p (.const n) (.const D) H.Ua H.Ea H.Sz).run st =
       some st' := by
-  have _ := htn -- the spent level needs no floor conversion
   obtain ⟨hnd, -, hUa, -, hEa, hSz, -⟩ := hH
   simp only [EighArenas.handles, List.nodup_cons, List.mem_cons, List.not_mem_nil,
     or_false, not_or] at hnd

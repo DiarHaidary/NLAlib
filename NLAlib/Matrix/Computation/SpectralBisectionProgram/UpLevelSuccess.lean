@@ -431,19 +431,18 @@ private theorem exists_map_eq_some {α β : Type} {o : Option α} (f : α → β
   obtain ⟨a, rfl⟩ := h
   exact ⟨f a, rfl⟩
 
-/-- One level of the upward pass succeeds: if kernel `mm` of `I` is the routine `mmR` on
-interleaved pairs, under a relative-error semantics `I.sem` (unit roundoff `u`, decoding `dec`)
-with every value in range, exact integer literals up to $n + 4$ and the exact floor conversion, the
-run of `NLAlib.eighUpLevel` at depth $d < D$ succeeds from a state whose arenas `H` are allocated
-(`NLAlib.EighArenas.Shaped` at size $n$ and budget $D$) and hold the nodes and records of depth $d$
-and the outputs of depth $d + 1$, with the stored $\mathrm{fl}(2)$ in the cell `two` outside the
-arenas. No printed source. -/
+/-- One level of the upward pass succeeds: if kernel `mm` of `I` is the routine `mmR` on interleaved
+pairs, under a relative-error semantics `I.sem` (unit roundoff `u`, decoding `dec`) with every value
+in range and exact integer literals up to $n + 4$, the run of `NLAlib.eighUpLevel` at depth $d < D$
+succeeds from a state whose arenas `H` are allocated (`NLAlib.EighArenas.Shaped` at size $n$ and
+budget $D$) and hold the nodes and records of depth $d$ and the outputs of depth $d + 1$, with the
+stored $\mathrm{fl}(2)$ in the cell `two`. No printed source. -/
 theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
     (n ℓ₀ F d D : ℕ) (hd : d < D) (hlit : IsExactIntLit dec I.sem (n + 4))
-    (htn : IsExactToNat dec I.sem) (H : EighArenas) {two : Cell ℕ ℕ} {st : St P K C}
+    (H : EighArenas) {two : Cell ℕ ℕ} {st : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
-    (hH : H.Shaped st.store p n D) (htwo : two.buf ∉ H.handles)
+    (hH : H.Shaped st.store p n D)
     (htwov : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
       ⟨n, A, R₀, ε, ℓ₀⟩ d)
@@ -453,9 +452,6 @@ theorem exists_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
       (d + 1)) :
     ∃ st', exec I (eighUpLevel p mm (.const n) (.const d) H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp
       two).run st = some st' := by
-  -- the statement carries `htn` and `htwo`; the proof does not need them
-  have _ := htn
-  have _ := htwo
   have hsz : ∀ {b : ℕ} {x : P × ℕ}, st.store.shape[b]? = some x → b < st.store.size :=
     fun h => by simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp h).1
   obtain ⟨hnd, -, hUa, -, hEa, -⟩ := id hH

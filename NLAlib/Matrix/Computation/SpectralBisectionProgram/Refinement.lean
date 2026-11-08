@@ -148,7 +148,7 @@ nodes and records of every lower depth, `NLAlib.eighBottomLevel` and the loop of
 cell outside the output and eigenvalue arenas is kept. -/
 private theorem holds_of_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     {dec : P → K → ℝ} (p : P) (n ℓ₀ F : ℕ) (hn1 : 1 ≤ n)
-    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
     {c : ℕ} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} {σd σb σu : St P K C}
     (hnd : H.handles.Nodup)
     (hH : ∀ s : Store P K, s.shape = σd.store.shape → H.Shaped s p n (ℓ₀ + 1))
@@ -167,7 +167,7 @@ private theorem holds_of_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pa
         ⟨n, A₀, R₀, ε, ℓ₀⟩ 0 ∧
       ∀ q b i, b ≠ H.Ua → b ≠ H.Ea → σu.store.read q b i = σd.store.read q b i := by
   set M := eighTapeMachine I p mmR qrR with hM
-  obtain ⟨hOD, hfrB, hshB, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit htn H
+  obtain ⟨hOD, hfrB, hshB, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit H
     (A := A₀) (ε := ε) (hH _ rfl) hlevD hbot
   have hR := forall_of_exec_loop_eq_some I (st := σb) (fun j (s : St P K C) =>
       s.store.shape = σd.store.shape ∧
@@ -195,7 +195,7 @@ private theorem holds_of_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pa
   have hOut : H.OutHolds s₁.store p M n F (ℓ₀ + 1) R₀ β ⟨n, A₀, R₀, ε, ℓ₀⟩ (ℓ₀ - j + 1) := by
     rw [e1]; exact hO1
   obtain ⟨hO2, hfr2, hsh2, -⟩ := holds_of_exec_eighUpLevel hmm p n ℓ₀ F (ℓ₀ - j) (ℓ₀ + 1)
-    (by omega) hlit htn H (two := ⟨c, 1⟩) (A := A₀) (hH _ hsh1) htwo
+    (by omega) hlit H (two := ⟨c, 1⟩) (A := A₀) (hH _ hsh1)
     ((hfr1 p c 1 (fun h => htwo (by rw [h]; simp [EighArenas.handles]))
       (fun h => htwo (by rw [h]; simp [EighArenas.handles]))).trans htwov)
     (hlow1 _ (by omega)).1 (hlow1 _ (by omega)).2 hOut hex'
@@ -455,7 +455,7 @@ private theorem holds_of_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm
   have hcD : σd.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) := by
     rw [hfrD p c 1 hcH (fun h => by simp [h] at h4) (fun h => by simp [h] at h4)]
     exact hc.2.1
-  obtain ⟨hshU, hO0, -⟩ := holds_of_exec_eighUpLoop hmm p n ℓ₀ F hn1 hlit htn H (c := c)
+  obtain ⟨hshU, hO0, -⟩ := holds_of_exec_eighUpLoop hmm p n ℓ₀ F hn1 hlit H (c := c)
     (A₀ := A₀) (ε := ε) hnd (fun s hs => hH s (hs.trans hshD)) hcH hcD hLD hlowD hbot' hup
   obtain ⟨hU0, hE0⟩ := hO0 [] 0 ⟨n, A₀, R₀, ε, ℓ₀⟩ rfl rfl
   have hU0' : pairLayout.Holds σu.store p H.Ua (0 : IExp ℕ).eval r.1 := by

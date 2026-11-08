@@ -63,7 +63,7 @@ theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchul
   obtain ⟨hsem, ⟨mmR, hmmK, hmmE⟩, M₀, μM, μQ, cN, hM₀⟩ := hC
   have hN' : 0 < N := hN
   set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR M₀.qr M₀.unif M₀.normal with hMdef
-  have hM : M.IsAccurate (dec p) u 0 Ω μ μQ cN := isAccurate_toFloatMachine Ω hsem hlit hu0 p
+  have hM : M.IsAccurate (dec p) u 0 Ω μ μQ cN := isAccurate_toFloatMachine Ω hsem hlit p
     hmmE hM₀.isQRErr hM₀.isUnifSampler hM₀.isNormalSampler
   -- the scale `b` is at least `a`, so positive
   have hx := hherm.eigenvalue_mem_spectrum (k := 0) (by simpa using hN')
@@ -144,7 +144,7 @@ theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
   set M := I.sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mmR qrR M₀.unif
     (I.sem.gaussianNormal p ρg) with hMdef
   have hM : M.IsAccurate (dec p) u 0 Ω μM μQ (2 * (c + 3)) := isAccurate_toFloatMachine Ω hsem
-    hlit1 hu0 p hmmE hqrE hM₀.isUnifSampler
+    hlit1 p hmmE hqrE hM₀.isUnifSampler
     (isNormalSampler_gaussianNormal hsem hlit p hρg' hc hu0 hcu)
   have hG := hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw hξ N
   have : IsProbabilityMeasure μ' := hG.isProbabilityMeasure

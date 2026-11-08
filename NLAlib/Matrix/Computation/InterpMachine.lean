@@ -139,10 +139,8 @@ namespace NLAlib.Computation
 
 variable {P K : Type} [Inhabited K]
 
--- the unused hypothesis is part of the interface its callers use (statement unchanged)
-set_option linter.unusedVariables false in
 /-- The machine of a semantics meets the machine contract: if the value semantics `sem`
-meets the standard model at unit roundoff $u \ge 0$ with every value in range
+meets the standard model at unit roundoff $u$ with every value in range
 (`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routines `mm`, `qr` and the
 samplers `unif`, `normal` meet `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and
 `NLAlib.IsNormalSampler` at $u$, floor $0$ and range $\Omega$ through the decoding at tag `p`,
@@ -150,7 +148,7 @@ then the machine of `sem` at `p` with these black boxes and the floor conversion
 `NLAlib.FloatMachine.IsAccurate` at $u$, floor $0$, range $\Omega$. No printed source. -/
 theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ} (Ω : ℝ)
     (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 1)
-    (hu : 0 ≤ u) (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
+    (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
     {qr : QRMap (K × K)} {unif : K → ℝ → K} {normal : ℂ → K × K}
     (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm)
     (hqr : IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qr)
@@ -379,17 +377,15 @@ private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 
     (h : IsRoundingOf u τ Ω a z) : IsRoundingOf u' τ Ω a z :=
   fun ha => (h ha).trans (mul_le_mul_of_nonneg_right huu' (hτ.trans (le_max_right _ _)))
 
--- the unused hypothesis is part of the interface its callers use (statement unchanged)
-set_option linter.unusedVariables false in
 /-- The machine contract is monotone in the unit roundoff: a machine meeting
-`NLAlib.FloatMachine.IsAccurate` at unit roundoff $u \ge 0$, with nonnegative constants
+`NLAlib.FloatMachine.IsAccurate` at unit roundoff $u$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
 $u' \ge u$. With the exact machine at $u = 0$ (the HDIAG witness) this makes the hypothesis
 "the carrier admits an accurate machine" of the SIGN and DEFLATE targets satisfiable at every
 $u \ge 0$. No printed source. -/
 theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
-    (hu : 0 ≤ u) (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
+    (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
     (hcN : 0 ≤ cN) : M.IsAccurate dec u' τ Ω μM μQ cN :=
   { dec_zero := hM.dec_zero
     dec_one := hM.dec_one
@@ -549,9 +545,12 @@ entry of a stored $m \times n$ matrix lies in $[\mathit{lo}, \mathit{hi}]$, by t
 comparisons, is true exactly when it does. No printed source. -/
 theorem boxTest_toFloatMachine_exactSem_iff (p : P) {m n : ℕ}
     (A : Matrix (Fin m) (Fin n) (ℝ × ℝ)) (lo hi : ℝ) :
-    let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
     ((List.finRange m).all fun i => (List.finRange n).all fun j =>
-      M.le lo (A i j).1 && M.le (A i j).1 hi && M.le lo (A i j).2 && M.le (A i j).2 hi) = true ↔
+      ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).le lo (A i j).1 &&
+        ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).le (A i j).1 hi &&
+        ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).le lo (A i j).2 &&
+        ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).le (A i j).2
+          hi) = true ↔
       ∀ i j, lo ≤ (A i j).1 ∧ (A i j).1 ≤ hi ∧ lo ≤ (A i j).2 ∧ (A i j).2 ≤ hi := by
   simp [List.all_eq_true, List.mem_finRange, Bool.and_eq_true, ScalarSem.toFloatMachine,
     exactSem, and_assoc]
@@ -561,8 +560,11 @@ of two stored matrices with the machine's addition decodes to the sum of the dec
 printed source. -/
 theorem decodeMatrix_addParts_toFloatMachine_exactSem (p : P) {m n : ℕ}
     (A B : Matrix (Fin m) (Fin n) (ℝ × ℝ)) :
-    let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
-    decodeMatrix id (Matrix.of fun i j => (M.add (A i j).1 (B i j).1, M.add (A i j).2 (B i j).2)) =
+    decodeMatrix id (Matrix.of fun i j =>
+        (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).add
+          (A i j).1 (B i j).1,
+          ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).add
+          (A i j).2 (B i j).2)) =
       decodeMatrix id A + decodeMatrix id B := by
   ext i j
   apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]
@@ -572,8 +574,11 @@ imaginary parts of two stored matrices with the machine's subtraction decodes to
 of the decodings. No printed source. -/
 theorem decodeMatrix_subParts_toFloatMachine_exactSem (p : P) {m n : ℕ}
     (A B : Matrix (Fin m) (Fin n) (ℝ × ℝ)) :
-    let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
-    decodeMatrix id (Matrix.of fun i j => (M.sub (A i j).1 (B i j).1, M.sub (A i j).2 (B i j).2)) =
+    decodeMatrix id (Matrix.of fun i j =>
+        (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).sub
+          (A i j).1 (B i j).1,
+          ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).sub
+          (A i j).2 (B i j).2)) =
       decodeMatrix id A - decodeMatrix id B := by
   ext i j
   apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]
@@ -583,8 +588,10 @@ a stored matrix with decoding $\mathbf{A}$ by a stored real $a$ decodes to $a\ma
 printed source. -/
 theorem decodeMatrix_mulParts_toFloatMachine_exactSem (p : P) {m n : ℕ} (a : ℝ)
     (A : Matrix (Fin m) (Fin n) (ℝ × ℝ)) :
-    let M := (exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal
-    decodeMatrix id (Matrix.of fun i j => (M.mul a (A i j).1, M.mul a (A i j).2)) =
+    decodeMatrix id (Matrix.of fun i j =>
+        (((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).mul a (A i j).1,
+          ((exactSem (P := P) (𝕜 := ℝ)).toFloatMachine p toNat mm qr unif normal).mul a
+          (A i j).2)) =
       a • decodeMatrix id A := by
   ext i j
   apply Complex.ext <;> simp [ScalarSem.toFloatMachine, exactSem, decodeMatrix, decodeComplex]

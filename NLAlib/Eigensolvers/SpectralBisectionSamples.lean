@@ -375,14 +375,17 @@ theorem eigh_eighTapeMachine_eq_eigh_eighIdealTree {P ι K C : Type} [Inhabited 
     (ρ : Dist → ℕ → ℝ → K) (hρ : ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
     (ξ : Dist → ℕ → ℝ) (signFuel ℓ : ℕ) {n : ℕ} (A : Matrix (Fin n) (Fin n) (K × K))
     (R₀ ε β : K) :
-    let I' : Interp P ι K C := { I with tape := fun d i => ρ d i (ξ d i) }
-    let M := eighTapeMachine I' p mmR qrR
-    let M' := I.sem.toFloatMachine p (fun x => (I.sem.toNat p x).getD 0) mmR qrR
-      (I.sem.uniformUnif p (ρ .uniform 0)) (I.sem.gaussianNormal p (ρ .gaussian 0))
-    eigh M signFuel ℓ A R₀ ε β (eighSlotTree M n signFuel R₀ β 0 0 ⟨n, A, R₀, ε, ℓ⟩) =
-      eigh M' signFuel ℓ A R₀ ε β
-        (fun a => eighIdealTree M' n signFuel (ℓ + 1) R₀ β ξ 0 0 (some ⟨n, A, R₀, ε, ℓ⟩) [] a) := by
-  intro I' M M'
+    eigh (eighTapeMachine ({ I with tape := fun d i => ρ d i (ξ d i) } : Interp P ι K C) p mmR qrR)
+        signFuel ℓ A R₀ ε β
+        (eighSlotTree
+          (eighTapeMachine ({ I with tape := fun d i => ρ d i (ξ d i) } : Interp P ι K C) p mmR qrR)
+          n signFuel R₀ β 0 0 ⟨n, A, R₀, ε, ℓ⟩) =
+      eigh (I.sem.toFloatMachine p (fun x => (I.sem.toNat p x).getD 0) mmR qrR
+          (I.sem.uniformUnif p (ρ .uniform 0)) (I.sem.gaussianNormal p (ρ .gaussian 0)))
+        signFuel ℓ A R₀ ε β
+        (fun a => eighIdealTree (I.sem.toFloatMachine p (fun x => (I.sem.toNat p x).getD 0) mmR
+          qrR (I.sem.uniformUnif p (ρ .uniform 0)) (I.sem.gaussianNormal p (ρ .gaussian 0)))
+          n signFuel (ℓ + 1) R₀ β ξ 0 0 (some ⟨n, A, R₀, ε, ℓ⟩) [] a) := by
   have hu : ∀ c i, I.sem.tapeUnif p (fun i => ρ .uniform i (ξ .uniform i)) c i =
       I.sem.uniformUnif p (ρ .uniform 0) c (ξ .uniform i) := fun c i => by
     simp only [ScalarSem.tapeUnif, ScalarSem.uniformUnif, hρ .uniform i 0]
@@ -393,7 +396,7 @@ theorem eigh_eighTapeMachine_eq_eigh_eighIdealTree {P ι K C : Type} [Inhabited 
       mul_div_cancel₀ _ h2, hρ .gaussian _ 0]
   refine (eigh_toFloatMachine_map_samples I.sem p (fun x => (I.sem.toNat p x).getD 0) mmR qrR _ _
     _ _ (ξ .uniform) (eighIdealComplex ξ) hu hn signFuel ℓ A R₀ ε β _).trans ?_
-  refine eigh_congr_samples M' signFuel ℓ A R₀ ε β fun a y ha h => ?_
+  refine eigh_congr_samples _ signFuel ℓ A R₀ ε β fun a y ha h => ?_
   exact eighSlotTree_map_agree_eighIdealTree I.sem p _ mmR qrR _ _ _ _ ξ hu hn n signFuel (ℓ + 1)
     R₀ β a 0 0 _ [] y le_rfl (by omega) h
 

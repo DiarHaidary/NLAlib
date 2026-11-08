@@ -92,7 +92,7 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
   intro hAD
   obtain ⟨st₀, hexec⟩ := eighProg.exists_exec_compiled
     (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmm hqr hsem p (by nlinarith) N ℓ F
-    (by omega) hlit htn x.A x.R₀ x.ε x.β hε.le hR₀pos.le
+    (by omega) hlit htn x.A x.R₀ x.ε x.β hR₀pos.le
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
     hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) (hsem.cmp_le p) N ℓ F hlit
     htn x.A x.R₀ x.ε x.β hexec
@@ -224,7 +224,7 @@ theorem matrixFreeRoundedProb_eighProg_of_logb_le (P ι : Type) [DecidableEq P] 
   intro hAD
   obtain ⟨st₀, hexec⟩ := eighProg.exists_exec_compiled
     (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) hmm hqr hsem p (by nlinarith) N ℓ F
-    (by omega) hlit htn x.A x.R₀ x.ε x.β hε.le hR₀pos.le
+    (by omega) hlit htn x.A x.R₀ x.ε x.β hR₀pos.le
   have hH := eighProg.holds_of_exec_compiled (I := { I with tape := fun d i => ρ d i (ξ ω d i) })
     hmm hqr p (hsem.decidesFlags (fun q k hk => hlit q k (by omega)) p) (hsem.cmp_le p) N ℓ F hlit
     htn x.A x.R₀ x.ε x.β hexec

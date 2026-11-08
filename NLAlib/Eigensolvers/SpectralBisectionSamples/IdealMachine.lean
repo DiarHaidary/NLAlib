@@ -141,7 +141,7 @@ theorem isAccurate_eighIdealMachine {sem : ScalarSem P K} {dec : P → K → ℝ
     (hnorm z hz).trans (mul_le_mul_of_nonneg_right
       (mul_le_mul_of_nonneg_left huM (by linarith)) (le_max_right _ _))
   rw [hconv]
-  exact isAccurate_toFloatMachine Ω hsem' hlit' hu' p hmm' hqr' hunif hnorm'
+  exact isAccurate_toFloatMachine Ω hsem' hlit' p hmm' hqr' hunif hnorm'
 
 set_option linter.style.longLine false in
 /-- The uniform shift of a rounding with countable range has countable ranges and measurable

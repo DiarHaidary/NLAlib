@@ -149,7 +149,7 @@ private theorem nsH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p
   obtain ⟨hW₆, -, hf₆, hfr₆, hsh₆, hpos₆⟩ := holds_of_exec_newtonSchulzTestBlock
     (toNat := toNat) (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hX₅ ((hr₅ 3).trans hone) ((hr₅ 4).trans hlo)
-    ((hr₅ 0).trans hη) hWX hVX hWV (by simp [htW, htV]) (hd _ _ _ _ htX)
+    ((hr₅ 0).trans hη) hWX hWV (by simp [htW, htV])
     (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₆
   change exec I (.seq (.whileFuel _ _ _ _ _ _) .skip) σ₆ = some st' at h
   rw [exec_seq_skip] at h
@@ -421,15 +421,15 @@ private theorem nsProg_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
   have hSσ := hshσ.trans hS
   obtain ⟨σ₁, h₁⟩ := exists_exec_newtonSchulzTestBlock hmm hsem p n (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
-    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
-    (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint])
+    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hWV
+    (by simp [htW, htV]) (by simp [blockDisjoint]) (by simp [blockDisjoint])
     ⟨_, hsh hSσ hWS, le_rfl⟩ ⟨_, hsh hSσ hVS, le_rfl⟩
     (Store.exists_write_eq_some_of_getElem?_shape default (hsh hSσ htS) (by norm_num))
   obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, -⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
-    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
-    (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
+    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hWV
+    (by simp [htW, htV]) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → σ₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
     (hfr₁ p t i htW htV (nsProg_disj h1)).trans (hrσ i h2)
   exact ⟨σ₁, by rw [hstep, hσ, Option.bind_some]; exact h₁,
@@ -544,14 +544,14 @@ private theorem nsProg_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
   have hS₅ := hsh₅.trans hS
   obtain ⟨σ₆, h₆⟩ := exists_exec_newtonSchulzTestBlock hmm hsem p n (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hX₅ ((hr₅ 3).trans hone) ((hr₅ 4).trans hlo)
-    ((hr₅ 0).trans hη) hWX hVX hWV (by simp [htW, htV]) (hd _ _ _ _ htX)
+    ((hr₅ 0).trans hη) hWX hWV (by simp [htW, htV])
     (by simp [blockDisjoint]) (by simp [blockDisjoint]) ⟨_, hsh hS₅ hWS, le_rfl⟩
     ⟨_, hsh hS₅ hVS, le_rfl⟩
     (Store.exists_write_eq_some_of_getElem?_shape default (hsh hS₅ htS) (by norm_num))
   obtain ⟨hW₆, -, hf₆, hfr₆, hsh₆, -⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hX₅ ((hr₅ 3).trans hone) ((hr₅ 4).trans hlo)
-    ((hr₅ 0).trans hη) hWX hVX hWV (by simp [htW, htV]) (hd _ _ _ _ htX)
+    ((hr₅ 0).trans hη) hWX hWV (by simp [htW, htV])
     (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₆
   rw [h₆, Option.bind_some]
   change ∃ st', exec I (.seq (.whileFuel _ _ _ _ _ _) .skip) σ₆ = some st'

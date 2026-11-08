@@ -149,7 +149,7 @@ private theorem exists_exec_eighDownLoop {mm qr : ι} (hmm : IsMatMulKernel I mm
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
     (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
     (H : EighArenas) {par Su Sg c : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
-    {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    {R₀ ε β : K} (hR₀ : 0 ≤ dec p R₀)
     (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
     (hlev : H.LevelHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
       ⟨n, A₀, R₀, ε, ℓ₀⟩ 0)
@@ -210,7 +210,7 @@ private theorem exists_exec_eighDownLoop {mm qr : ι} (hmm : IsMatMulKernel I mm
   have hSg' : ∃ len, s.store.shape[Sg]? = some (p, len) ∧ 4 * (n * n) ≤ len := by
     rw [hsh]; exact hSg
   obtain ⟨s', hs'⟩ := exists_exec_eighDownLevel hmm hqr hsem p hu n ℓ₀ F d (ℓ₀ + 1) hd hℓ hlit
-    htn H hε hR₀ hHs hbufs (hlv d le_rfl) hpar' hSu' hSg' ⟨hpu, hpg⟩ hcs
+    htn H hR₀ hHs hbufs (hlv d le_rfl) hpar' hSu' hSg' ⟨hpu, hpg⟩ hcs
   have hnext : ∀ lo < n, ReadsIdx I.sem s.store p H.Sz (n * (d + 1) + lo) 0 := fun lo hlo =>
     hzs _ (by omega) (by
       have := Nat.mul_le_mul_left n (show d + 1 + 1 ≤ ℓ₀ + 1 + 1 by omega)
@@ -250,7 +250,7 @@ cell outside the arenas are kept. -/
 private theorem exists_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     {u : P → ℝ}
     {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n ℓ₀ F : ℕ)
-    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
     {c : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hco : c ∉ H.handles)
     (htwov : σ.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ))
@@ -294,9 +294,9 @@ private theorem exists_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pair
   have htw : s.store.read p (⟨c, 1⟩ : Cell ℕ ℕ).buf (⟨c, 1⟩ : Cell ℕ ℕ).idx.eval =
       I.sem.lit p ((2 : ℕ) : ℚ) := (hfr p c 1 hco).trans htwov
   obtain ⟨s', hs'⟩ := exists_exec_eighUpLevel hmm hsem p n ℓ₀ F (ℓ₀ - j) (ℓ₀ + 1) (by omega)
-    hlit htn H (two := ⟨c, 1⟩) hHs hco htw (hlv _ (by omega)) (hrc _ (by omega)) hot
+    hlit H (two := ⟨c, 1⟩) hHs htw (hlv _ (by omega)) (hrc _ (by omega)) hot
   obtain ⟨O1, F1, S1, -⟩ := holds_of_exec_eighUpLevel hmm p n ℓ₀ F (ℓ₀ - j) (ℓ₀ + 1) (by omega)
-    hlit htn H (two := ⟨c, 1⟩) hHs hco htw (hlv _ (by omega)) (hrc _ (by omega)) hot hs'
+    hlit H (two := ⟨c, 1⟩) hHs htw (hlv _ (by omega)) (hrc _ (by omega)) hot hs'
   refine ⟨s', (exec_eighUpLevel_of_eval_eq p mm n (ℓ₀ - j) _ rfl H.Lv H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp
       c s).trans hs',
     S1.trans hsh, fun q b i hb => (F1 q b i fun h => hb (mem_handles_of_levelCell h.2)).trans
@@ -314,7 +314,7 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
     (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
     (H : EighArenas) {par Su Sg c U dv : ℕ} {σ : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
-    {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    {R₀ ε β : K} (hR₀ : 0 ≤ dec p R₀)
     (hH : H.Shaped σ.store p n (ℓ₀ + 1)) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
     (hUo : U ∉ H.handles) (hdvo : dv ∉ H.handles)
     (hlev : H.LevelHolds I.sem σ.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
@@ -348,15 +348,14 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
   have hEadv : H.Ea ≠ dv := fun h => hdvo (h ▸ by simp [EighArenas.handles])
   -- the downward pass
   obtain ⟨σ2, h2, hsh2, hfr2, hlv2, hrc2⟩ := exists_exec_eighDownLoop hmm hqr hsem p hu n ℓ₀ F hlit
-      htn hℓ H hε
-    hR₀ hH hbufs hlev hz hpos hpar hSu hSg hc
+    htn hℓ H hR₀ hH hbufs hlev hz hpos hpar hSu hSg hc
   refine exists_exec_bind_of_exec (by exact (exec_seq_skip I _ _).trans h2) ?_ (by intro _; rfl)
   -- the spent level
   have hH2 : H.Shaped σ2.store p n (ℓ₀ + 1) := EighArenas.Shaped.of_shape_eq
       (fun b _ => by rw [hsh2]) hH
-  obtain ⟨σb, hb⟩ := exists_exec_eighBottomLevel (ι := ι) hsem htn p n ℓ₀ F (ℓ₀ + 1) H hH2
+  obtain ⟨σb, hb⟩ := exists_exec_eighBottomLevel (ι := ι) hsem p n ℓ₀ F (ℓ₀ + 1) H hH2
     (hlv2 _ le_rfl)
-  obtain ⟨Ob, Fb, Sb, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit htn H hH2
+  obtain ⟨Ob, Fb, Sb, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit H hH2
     (hlv2 _ le_rfl) hb
   refine exists_exec_bind_of_exec
     (by exact (exec_eighBottomLevel_of_eval_eq p n (ℓ₀ + 1) _ rfl H.Ua H.Ea H.Sz σ2).trans hb) ?_
@@ -364,7 +363,7 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
   -- the upward pass
   have hHb : H.Shaped σb.store p n (ℓ₀ + 1) := EighArenas.Shaped.of_shape_eq (fun b _ => by rw [Sb])
       hH2
-  obtain ⟨σ3, h3, hsh3, -, hout3⟩ := exists_exec_eighUpLoop hmm hsem p n ℓ₀ F hlit htn H hHb hco
+  obtain ⟨σ3, h3, hsh3, -, hout3⟩ := exists_exec_eighUpLoop hmm hsem p n ℓ₀ F hlit H hHb hco
     ((Fb p c 1 fun h => hco (mem_handles_of_levelCell h.2)).trans
         ((hfr2 p c 1 hco dcSu dcSg).trans hc.2.1))
     (fun e he => EighArenas.LevelHolds.of_read_eq (fun q b i hb _ => Fb q b i fun h => hmsl hb h.1)
@@ -652,7 +651,7 @@ private theorem exists_exec_eighProgBody {mm qr : ι} (hmm : IsMatMulKernel I mm
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
     (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (hℓ : 1 ≤ ℓ₀)
     {A par U dv c Ma Ua Qa Ea Sz Kd Kp Lv Su Sg : ℕ} {σ : St P K C}
-    {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hR₀ : 0 ≤ dec p R₀)
     (hMa : Ma = c + 1) (hUa : Ua = c + 2) (hQa : Qa = c + 3) (hEa : Ea = c + 4) (hSz : Sz = c + 5)
     (hKd : Kd = c + 6) (hKp : Kp = c + 7) (hLv : Lv = c + 8) (hSu : Su = c + 9)
     (hSg : Sg = c + 10) (hlt : ∀ j ∈ [A, par, U, dv], j < c)
@@ -711,7 +710,7 @@ private theorem exists_exec_eighProgBody {mm qr : ι} (hmm : IsMatMulKernel I mm
   let H : EighArenas := ⟨c + 1, c + 2, c + 3, c + 4, c + 5, c + 6, c + 7, c + 8⟩
   refine exists_exec_eighPasses hmm hqr hsem p hu n ℓ₀ F hlit htn hℓ H (par := par) (Su := c + 9)
       (Sg := c + 10)
-    (c := c) (U := U) (dv := dv) (A₀ := A₀) (σ := σ10) (R₀ := R₀) (ε := ε) (β := β) hε hR₀
+    (c := c) (U := U) (dv := dv) (A₀ := A₀) (σ := σ10) (R₀ := R₀) (ε := ε) (β := β) hR₀
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · refine ⟨by simp [H, EighArenas.handles], ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
       rw [sh10'] <;> assumption
@@ -752,9 +751,9 @@ private theorem getElem?_shape_push_of_ne {s : Store P K} {b : ℕ} (x : P × Ar
 /-- The refinement of the spectral bisection program, success: under the standard model at $u$
 with every value in range, $u(p) < 1$, exact integer literals up to $n + 4$ and the exact floor
 conversion, if the kernels `mm`, `qr` of `I` are routines on interleaved pairs, $\ell_0 \ge 1$,
-$\varepsilon$ and $R_0$ decode to nonnegative values, and the buffers `U`, `dv` at tag `p` have
+$R_0$ decodes to a nonnegative value, and the buffers `U`, `dv` at tag `p` have
 $2n^2$ and $n$ cells, then every run of `NLAlib.eighProg` succeeds from a state with the tape
-positions at $0$, whose distinct buffers `A`, `par`, `U`, `dv` exist, whose block at offset $0$ of
+positions at $0$, whose buffers `A`, `par`, `U`, `dv` exist, whose block at offset $0$ of
 `A` holds the stored $\mathbf{A}$ and whose cells $0$, $1$, $2$ of `par` hold $R_0$,
 $\varepsilon$, $\beta$. No printed source. -/
 theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
@@ -762,8 +761,8 @@ theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout 
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (n ℓ₀ F : ℕ)
     (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem)
     (hℓ : 1 ≤ ℓ₀) {A par U dv : ℕ} {st : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
-    {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
-    (hbufs : [A, par, U, dv].Nodup) (hsize : ∀ j ∈ [A, par, U, dv], j < st.store.size)
+    {R₀ ε β : K} (hR₀ : 0 ≤ dec p R₀)
+    (hsize : ∀ j ∈ [A, par, U, dv], j < st.store.size)
     (hA : pairLayout.Holds st.store p A 0 A₀)
     (hpar : st.store.read p par 0 = some R₀ ∧ st.store.read p par 1 = some ε ∧
       st.store.read p par 2 = some β)
@@ -772,7 +771,6 @@ theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout 
     (hdv : ∃ len, st.store.shape[dv]? = some (p, len) ∧ n ≤ len) :
     ∃ st', exec I (eighProg p mm qr (.const n) (.const ℓ₀) (.const F) A par U dv).run st =
       some st' := by
-  have _ := hbufs
   have lA := hsize A (by simp)
   have lpar := hsize par (by simp)
   have lU := hsize U (by simp)
@@ -785,7 +783,7 @@ theorem exists_exec_eighProg {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout 
     refine exists_exec_alloc_of_exists ?_
   refine exists_exec_eighProgBody hmm hqr hsem p hu n ℓ₀ F hlit htn hℓ (A := A) (par := par)
       (U := U) (dv := dv)
-    (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hε hR₀ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ hsize
+    (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hR₀ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ hsize
     ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   all_goals first
     | (simp only [Array.size_push]; done)
@@ -848,8 +846,8 @@ theorem eighProg.holds_of_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm 
 
 /-- The registered tree succeeds: under the standard model at $u$ with every value in range,
 $u(p) < 1$, exact integer literals up to $N + 4$ and the exact floor conversion, if the kernels
-`mm`, `qr` of `I` are routines on interleaved pairs, $\ell_0 \ge 1$ and $\varepsilon$, $R_0$
-decode to nonnegative values, then every run of `NLAlib.eighProg.compiled` at the sizes $N$ and
+`mm`, `qr` of `I` are routines on interleaved pairs, $\ell_0 \ge 1$ and $R_0$
+decodes to a nonnegative value, then every run of `NLAlib.eighProg.compiled` at the sizes $N$ and
 $(\ell_0, F)$ from the initial state with the stored $\mathbf{A}$, the stored $R_0$,
 $\varepsilon$, $\beta$, and $2N^2$ and $N$ empty cells as declared buffers succeeds. No printed
 source. -/
@@ -857,7 +855,7 @@ theorem eighProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm pa
     (hqr : IsQRKernel I qr pairLayout qrR) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1) (N ℓ₀ F : ℕ)
     (hℓ : 1 ≤ ℓ₀) (hlit : IsExactIntLit dec I.sem (N + 4)) (htn : IsExactToNat dec I.sem)
-    (A₀ : Matrix (Fin N) (Fin N) (K × K)) (R₀ ε β : K) (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀) :
+    (A₀ : Matrix (Fin N) (Fin N) (K × K)) (R₀ ε β : K) (hR₀ : 0 ≤ dec p R₀) :
     ∃ st' : St P K C, (eighProg.compiled p mm qr).exec I N ![ℓ₀, F]
       (inputState p [(pairLayout.toArray A₀).map some, #[some R₀, some ε, some β],
         Array.replicate (2 * (N * N)) none, Array.replicate N none]) = some st' := by
@@ -868,8 +866,8 @@ theorem eighProg.exists_exec_compiled {mm qr : ι} (hmm : IsMatMulKernel I mm pa
   have hA := EntryLayout.holds_inputState (C := C) pairLayout p (bufs := bufs) (k := 0) (Y := A₀)
     rfl
   exact exists_exec_eighProg hmm hqr hsem p hu N ℓ₀ F hlit htn hℓ (A := 0) (par := 1) (U := 2)
-    (dv := 3) (st := inputState p bufs) (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hε hR₀
-    (by simp) (by simp [inputState, bufs]) hA (by simp [inputState, bufs, Store.read])
+    (dv := 3) (st := inputState p bufs) (A₀ := A₀) (R₀ := R₀) (ε := ε) (β := β) hR₀
+    (by simp [inputState, bufs]) hA (by simp [inputState, bufs, Store.read])
     (by simp [inputState]) ⟨2 * (N * N), by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
     ⟨N, by simp [inputState, Store.getElem?_shape, bufs], by simp⟩
 

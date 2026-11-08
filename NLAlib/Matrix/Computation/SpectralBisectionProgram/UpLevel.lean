@@ -145,18 +145,18 @@ private theorem holds_pop_of_holds {H : EighArenas} {st wb s : Store P K} {p : P
   · rw [Store.shape_pop, hsh, hwsh]
     simp [Store.shape]
 
-/-- One level of the upward pass: if kernel `mm` of `I` is the routine `mmR` on interleaved
-pairs, under exact integer literals up to $n + 4$ and the exact floor conversion, a successful run
-of `NLAlib.eighUpLevel` at depth $d < D$ from a state whose arenas hold the nodes of depth $d$
-(their sizes), the records of depth $d$ and the outputs of depth $d + 1$, with the window of depth
-$d$ in its cell and the stored $\mathrm{fl}(2)$ in `two`, ends with the outputs of depth $d$
-(`NLAlib.EighArenas.OutHolds` at $d$, budget $D - d$); every cell outside the output and eigenvalue
-arenas at depth $d$ is unchanged, the store shape and the tape positions too. No printed source. -/
+/-- One level of the upward pass: if kernel `mm` of `I` is the routine `mmR` on interleaved pairs,
+under exact integer literals up to $n + 4$, a successful run of `NLAlib.eighUpLevel` at depth
+$d < D$ from a state whose arenas hold the nodes of depth $d$ (their sizes), the records of depth
+$d$ and the outputs of depth $d + 1$, with the window of depth $d$ in its cell and the stored
+$\mathrm{fl}(2)$ in `two`, ends with the outputs of depth $d$ (`NLAlib.EighArenas.OutHolds` at $d$,
+budget $D - d$); every cell outside the output and eigenvalue arenas at depth $d$ is unchanged, the
+store shape and the tape positions too. No printed source. -/
 theorem holds_of_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     {dec : P → K → ℝ} (p : P) (n ℓ₀ F d D : ℕ) (hd : d < D)
-    (hlit : IsExactIntLit dec I.sem (n + 4)) (htn : IsExactToNat dec I.sem) (H : EighArenas)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
     {two : Cell ℕ ℕ} {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
-    (hH : H.Shaped st.store p n D) (htwo : two.buf ∉ H.handles)
+    (hH : H.Shaped st.store p n D)
     (htwov : st.store.read p two.buf two.idx.eval = I.sem.lit p ((2 : ℕ) : ℚ))
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
       ⟨n, A, R₀, ε, ℓ₀⟩ d)
@@ -170,9 +170,6 @@ theorem holds_of_exec_eighUpLevel {mm : ι} (hmm : IsMatMulKernel I mm pairLayou
       (∀ q b i, ¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n d b i) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  -- the statement carries `htn` and `htwo`; the proof does not need them
-  have _ := htn
-  have _ := htwo
   have hnd := hH.1
   have hltH : ∀ b ∈ H.handles, b < st.store.size := fun b hb => hH.lt_size_of_mem hb
   have htH : st.store.size ∉ H.handles := fun hm => absurd (hltH _ hm) (lt_irrefl _)

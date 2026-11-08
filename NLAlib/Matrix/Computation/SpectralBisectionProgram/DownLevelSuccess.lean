@@ -843,8 +843,8 @@ private theorem levelHolds_of_read_eq {H : EighArenas} {sem : ScalarSem P K} {s 
 
 /-- One level of the downward pass succeeds: under the standard model at $u$ with every value in
 range, $u(p) < 1$, exact integer literals up to $n + 4$ and the exact floor conversion, kernels
-that are routines on pairs `mmR`, `qrR`, $\ell_0 \ge 1$, $\varepsilon$ and $R_0$ decoding to
-nonnegative values, and $M$ = `NLAlib.eighTapeMachine I p mmR qrR` with the root
+that are routines on pairs `mmR`, `qrR`, $\ell_0 \ge 1$, $R_0$ decoding to a nonnegative
+value, and $M$ = `NLAlib.eighTapeMachine I p mmR qrR` with the root
 $(n, \mathbf{A}, R_0, \varepsilon, \ell_0)$: a run of `NLAlib.eighDownLevel` at depth $d < D$ from
 a state whose arenas are allocated and hold the nodes of depth $d$
 (`NLAlib.EighArenas.LevelHolds`), with $R_0$, $\beta$ in `par`, sample buffers `Su`, `Sg` of
@@ -856,7 +856,7 @@ theorem exists_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1)
     (n ℓ₀ F d D : ℕ) (hd : d < D) (hℓ : 1 ≤ ℓ₀) (hlit : IsExactIntLit dec I.sem (n + 4))
     (htn : IsExactToNat dec I.sem) (H : EighArenas) {par Su Sg c : ℕ} {st : St P K C}
-    {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hε : 0 ≤ dec p ε) (hR₀ : 0 ≤ dec p R₀)
+    {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hR₀ : 0 ≤ dec p R₀)
     (hH : H.Shaped st.store p n D) (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
       ⟨n, A, R₀, ε, ℓ₀⟩ d)
@@ -873,7 +873,6 @@ theorem exists_exec_eighDownLevel {mm qr : ι} (hmm : IsMatMulKernel I mm pairLa
     ∃ st', exec I (eighDownLevel p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) par H.Lv
       Su Sg H.Ma H.Ua H.Qa H.Ea H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩).run st =
         some st' := by
-  have _ := hε
   set tH := st.store.size with htH
   have hsz : ∀ {b : ℕ} {x : P × ℕ}, st.store.shape[b]? = some x → b < tH :=
     fun h => by simpa [Store.size_shape] using (Array.getElem?_eq_some_iff.mp h).1

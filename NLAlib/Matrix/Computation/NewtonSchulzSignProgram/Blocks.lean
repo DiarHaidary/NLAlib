@@ -47,14 +47,12 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
--- the unused hypothesis is part of the interface its callers use (statement unchanged)
-set_option linter.unusedVariables false in
 /-- The test block computes the machine's test: if kernel `mm` of `I` is the routine `mmR` on
 interleaved pairs, a successful run of `NLAlib.newtonSchulzTestBlock` from a state whose block at
 `X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose cells `one`, `lo`, `hi` hold the
 machine's one, $-\eta$ and $\eta$ (`M` the machine of the semantics at `p` with product `mmR`),
-with the scratch buffers `W`, `V` distinct from `X` and from each other, the cells outside them
-and the flag cell outside the block at `X` and distinct from `lo` and `hi`, ends with `W` holding
+with the scratch buffer `W` distinct from `X` and from the scratch buffer `V`, the cells outside
+`W` and `V` and the flag cell distinct from `lo` and `hi`, ends with `W` holding
 $\mathrm{mm}(\mathbf{A}, \mathbf{A})$, `V` holding the shift `M.hermShift (mmR A A) M.one`, and
 the flag holding the machine's zero if `NLAlib.newtonSchulzTest M η A` and its one otherwise;
 every cell outside `W`, `V` and the flag is unchanged, the store shape and the tape positions
@@ -68,9 +66,8 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
     (hlo : st.store.read p lo.buf lo.idx.eval =
       some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η))
     (hhi : st.store.read p hi.buf hi.idx.eval = some η)
-    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hWX : W ≠ X) (hWV : W ≠ V)
     (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
-    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
     (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
     (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
     (h : exec I (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f).run st = some st') :
@@ -144,8 +141,6 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
     hsh3.trans (hsh2.trans (by rw [hst1]; exact hsh1))
   exact ⟨hWst, hVst, hflag', hfrm, hshT, hpos3.trans (hpos2.trans hpos1)⟩
 
--- the unused hypothesis is part of the interface its callers use (statement unchanged)
-set_option linter.unusedVariables false in
 /-- The test block succeeds under the standard model with every value in range, when the
 buffers `W` and `V` at tag `p` have $2n^2$ cells and the flag can be written (hypotheses as
 `NLAlib.holds_of_exec_newtonSchulzTestBlock`). No printed source. -/
@@ -157,9 +152,8 @@ theorem exists_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm p
     (hone : st.store.read p one.buf one.idx.eval = some cone)
     (hlo : st.store.read p lo.buf lo.idx.eval = some ℓ)
     (hhi : st.store.read p hi.buf hi.idx.eval = some η)
-    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
+    (hWX : W ≠ X) (hWV : W ≠ V)
     (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
-    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
     (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
     (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
     (hW : ∃ len, st.store.shape[W]? = some (p, len) ∧ 2 * (n * n) ≤ len)
@@ -541,8 +535,8 @@ private theorem whileNS_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
   obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, hpos₁⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
-    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
-    (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
+    ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hWV
+    (by simp [htW, htV]) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → st₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
     (hfr₁ p t i htW htV (blockDisjoint_cell_of_ne h1)).trans (hrσ i h2)
   refine ⟨hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
