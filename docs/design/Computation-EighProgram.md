@@ -514,6 +514,40 @@ maintainer re-pins (`TARGETS_UPDATE=1 lake env lean scripts/Targets.lean`, then
 `docs/targets.approved`). Registering the tree needed `set_option maxRecDepth 100000` on the
 registry check's `run_cmd` (eb0bda85, for the maintainer's review).
 
+
+### Statement changes at the clean-up (2026-11-08)
+
+The golf and integration passes changed no target, no headline theorem (TT1–TT3, TR2, TR3) and no
+definition. They changed these helper statements, each to a stronger or the same proposition:
+
+- **Unused hypotheses dropped** (rule T13, `#lint` unusedArguments; every caller updated):
+  `Computation.isAccurate_toFloatMachine`, `FloatMachine.IsAccurate.mono` (`0 ≤ u`);
+  `holds_of_exec_newtonSchulzTestBlock`, `exists_exec_newtonSchulzTestBlock` (`V ≠ X`,
+  `blockDisjoint f X`); `exists_exec_eighDownLevel`, `eighProg.exists_exec_compiled`
+  (`0 ≤ dec p ε`, which the prose of EP (b) lists but no proof used); `exists_exec_eighProg`
+  (`0 ≤ dec p ε`, `[A, par, U, dv].Nodup`); `holds_of_exec_eighBottomLevel`,
+  `exists_exec_eighBottomLevel` (`IsExactToNat`); `holds_of_exec_eighUpLevel`,
+  `exists_exec_eighUpLevel` (`IsExactToNat`, `two.buf ∉ H.handles`);
+  `holds_of_exec_eighDownLevel`, `levelHolds_succ_of_exec_eighDownLevel`,
+  `holds_of_exec_eighSlotBody`, `holds_of_exec_eighNodeBlock(_frame)`,
+  `holds_of_exec_eighSplitBlock(_frame)` (`d < D`); `holds_of_exec_eighCompressBlock`,
+  `exists_exec_eighCompressBlock` (a block disjointness); `exists_exec_eighSplitBlock(_ex)`
+  (`u p < 1`).
+- **Unused instance arguments omitted** (`[Inhabited K]`): `eighProg.cnt_le_of_exec_compiled`,
+  `eighProg.weight_le_of_exec_compiled`, `deflateProg.cnt_le_of_exec_compiled`,
+  `newtonSchulzSignProg.cnt_le_of_exec_compiled`, `IsRelErrSem.decidesFlags`, the pair-kernel
+  lemmas `exists_exec_z{copy,mirror,neg,zero}`, `holds_of_exec_zcopy`.
+- **`let` inlined** (same proposition, rule N2): `decodeMatrix_{add,sub,mul}Parts_toFloatMachine_exactSem`,
+  `eigh_eighTapeMachine_eq_eigh_eighIdealTree`, and `boxTest_toFloatMachine_exactSem_iff`, renamed
+  `all_finRange_toFloatMachine_exactSem_iff`.
+- **Renames**: the stage-prefixed helpers (`el1_`, `el2_`, `el5_`, `ep1_`, `ep2_`, `ep6_`, `ep7_`) got
+  grammar names or became private; TT3 is now
+  `measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le` (N15).
+  The full maps are in the clean-up commits (`git log` of `cleanup/compdyn-s2`).
+- **Shared homes**: the instruction-inversion lemmas `exists_of_exec_seq_*` and
+  `read_of_exec_loop_lit` (`Computation/Loops`), `Store.read_pop_pop_pop_of_lt` and relatives
+  (`Computation/Store`), `FStmt.mapTags` (`Computation/FirstOrder`, rule E8).
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
