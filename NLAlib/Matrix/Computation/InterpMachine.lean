@@ -41,6 +41,9 @@ draws defines, and `NLAlib.Computation.tapeIndexMatrix` the positions of its ent
 
 ## Main results
 
+* `NLAlib.Computation.isArithAccurate_toFloatMachine`: under the standard model with every value
+  in range and an exact literal $1$, the machine meets the arithmetic contract
+  `NLAlib.FloatMachine.IsArithAccurate` with floor $0$, given a product meeting its contract.
 * `NLAlib.Computation.isAccurate_toFloatMachine`: under the standard model with every value in
   range and an exact literal $1$, the machine meets the machine contract
   `NLAlib.FloatMachine.IsAccurate` with floor $0$, given routines and samplers meeting theirs.
@@ -139,23 +142,20 @@ namespace NLAlib.Computation
 
 variable {P K : Type} [Inhabited K]
 
-/-- The machine of a semantics meets the machine contract: if the value semantics `sem`
+/-- The machine of a semantics meets the arithmetic contract: if the value semantics `sem`
 meets the standard model at unit roundoff $u$ with every value in range
-(`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routines `mm`, `qr` and the
-samplers `unif`, `normal` meet `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and
-`NLAlib.IsNormalSampler` at $u$, floor $0$ and range $\Omega$ through the decoding at tag `p`,
-then the machine of `sem` at `p` with these black boxes and the floor conversion meets
-`NLAlib.FloatMachine.IsAccurate` at $u$, floor $0$, range $\Omega$. No printed source. -/
-theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ} (Ω : ℝ)
+(`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routine `mm` meets
+`NLAlib.IsMatMulErr` at $u$, floor $0$ and range $\Omega$ through the decoding at tag `p`, then the
+machine of `sem` at `p` with this product, the floor conversion and any QR routine and samplers
+meets `NLAlib.FloatMachine.IsArithAccurate` at $u$, floor $0$, range $\Omega$. No printed
+source. -/
+theorem isArithAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ} (Ω : ℝ)
     (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 1)
-    (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
+    (p : P) {μM : ℕ → ℝ} {mm : MatMulMap (K × K)}
     {qr : QRMap (K × K)} {unif : K → ℝ → K} {normal : ℂ → K × K}
-    (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm)
-    (hqr : IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qr)
-    (hunif : IsUnifSampler (dec p) u 0 unif)
-    (hnormal : IsNormalSampler (decodeComplex (dec p)) u cN 0 Ω normal) :
-    (sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mm qr unif normal).IsAccurate (dec p) u 0 Ω μM μQ
-      cN := by
+    (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm) :
+    (sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mm qr unif normal).IsArithAccurate (dec p) u 0 Ω
+      μM := by
   -- a value `z` decoding to `a (1 + δ)` with `|δ| ≤ u` is a rounding of `a`
   have rnd : ∀ (a : ℝ) (z : K) (δ : ℝ), |δ| ≤ u → dec p z = a * (1 + δ) →
       IsRoundingOf u 0 Ω a (dec p z) := by
@@ -183,7 +183,7 @@ theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} 
   refine ⟨?_, ?_, hofNat, fun x y => hbin .add x y trivial (fun h => nomatch h),
     fun x y => hbin .sub x y trivial (fun h => nomatch h),
     fun x y => hbin .mul x y trivial (fun h => nomatch h),
-    fun x y hy => hbin .div x y trivial (fun _ => hy), ?_, ?_, ?_, hmm, hqr, hunif, hnormal⟩
+    fun x y hy => hbin .div x y trivial (fun _ => hy), ?_, ?_, ?_, hmm⟩
   · obtain ⟨z, hz, hd⟩ := hlit p 0 (Nat.zero_le _)
     simp only [Nat.cast_zero] at hz hd
     change dec p ((sem.lit p 0).getD default) = 0
@@ -202,6 +202,25 @@ theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} 
     simp
   · intro x
     rfl
+
+/-- The machine of a semantics meets the machine contract: if the value semantics `sem`
+meets the standard model at unit roundoff $u$ with every value in range
+(`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routines `mm`, `qr` and the
+samplers `unif`, `normal` meet `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and
+`NLAlib.IsNormalSampler` at $u$, floor $0$ and range $\Omega$ through the decoding at tag `p`,
+then the machine of `sem` at `p` with these black boxes and the floor conversion meets
+`NLAlib.FloatMachine.IsAccurate` at $u$, floor $0$, range $\Omega$. No printed source. -/
+theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ} (Ω : ℝ)
+    (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 1)
+    (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
+    {qr : QRMap (K × K)} {unif : K → ℝ → K} {normal : ℂ → K × K}
+    (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm)
+    (hqr : IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qr)
+    (hunif : IsUnifSampler (dec p) u 0 unif)
+    (hnormal : IsNormalSampler (decodeComplex (dec p)) u cN 0 Ω normal) :
+    (sem.toFloatMachine p (fun x => ⌊dec p x⌋₊) mm qr unif normal).IsAccurate (dec p) u 0 Ω μM μQ
+      cN :=
+  ⟨isArithAccurate_toFloatMachine Ω hsem hlit p hmm, hqr, hunif, hnormal⟩
 
 omit [Inhabited K] in
 /-- The standard model decides flags: a value semantics meeting the standard model with
@@ -380,9 +399,7 @@ private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 
 /-- The machine contract is monotone in the unit roundoff: a machine meeting
 `NLAlib.FloatMachine.IsAccurate` at unit roundoff $u$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
-$u' \ge u$. With the exact machine at $u = 0$ (the HDIAG witness) this makes the hypothesis
-"the carrier admits an accurate machine" of the SIGN and DEFLATE targets satisfiable at every
-$u \ge 0$. No printed source. -/
+$u' \ge u$. No printed source. -/
 theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)

@@ -34,14 +34,14 @@ negation, so its decoding is exactly Hermitian whatever the rounding does with s
 ## Main results
 
 * `NLAlib.isRoundingOf_roundNearest`, `NLAlib.isRoundingOf_binaryFloatRound`.
-* `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom`,
-  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_negMat`,
-  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat`,
-  `NLAlib.FloatMachine.IsAccurate.decodeMatrix_identityMat`.
-* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le`,
-  `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le`,
-  `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le`,
-  `NLAlib.FloatMachine.IsAccurate.abs_sum_sub_traceRe_le`.
+* `NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_hermFrom`,
+  `NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_negMat`,
+  `NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_conjTransposeMat`,
+  `NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_identityMat`.
+* `NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermShift_le`,
+  `NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermScale_le`,
+  `NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermAvg_le`,
+  `NLAlib.FloatMachine.IsArithAccurate.abs_sum_sub_traceRe_le`.
 -/
 
 @[expose] public section
@@ -181,13 +181,13 @@ theorem isRoundingOf_binaryFloatRound (fmt : Float.Model.Format) {r : ℝ → �
     rw [mul_comm] at hut
     linarith
 
-namespace FloatMachine.IsAccurate
+namespace FloatMachine.IsArithAccurate
 
-variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μM μQ : ℕ → ℝ}
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω : ℝ} {μM : ℕ → ℝ}
 
 /-- A matrix built by `NLAlib.FloatMachine.hermFrom` decodes to a Hermitian matrix, under the
-contract `NLAlib.FloatMachine.IsAccurate` (zero and negation exact). -/
-theorem isHermitian_decodeMatrix_hermFrom (hM : M.IsAccurate dec u τ Ω μM μQ cN) {k : ℕ}
+contract `NLAlib.FloatMachine.IsArithAccurate` (zero and negation exact). -/
+theorem isHermitian_decodeMatrix_hermFrom (hM : M.IsArithAccurate dec u τ Ω μM) {k : ℕ}
     (up : Fin k → Fin k → F × F) (dg : Fin k → F) :
     (decodeMatrix dec (M.hermFrom up dg)).IsHermitian := by
   refine Matrix.IsHermitian.ext fun i j => ?_
@@ -200,7 +200,7 @@ theorem isHermitian_decodeMatrix_hermFrom (hM : M.IsAccurate dec u τ Ω μM μQ
 
 /-- Entrywise negation is exact: the decoding of `NLAlib.FloatMachine.negMat` $\mathbf{X}$ is
 $-\bar{\mathbf{X}}$. -/
-theorem decodeMatrix_negMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
+theorem decodeMatrix_negMat (hM : M.IsArithAccurate dec u τ Ω μM) {m n : Type*}
     (X : Matrix m n (F × F)) : decodeMatrix dec (M.negMat X) = -decodeMatrix dec X := by
   ext i j
   apply Complex.ext <;>
@@ -208,7 +208,7 @@ theorem decodeMatrix_negMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Ty
 
 /-- The stored conjugate transpose is exact: the decoding of
 `NLAlib.FloatMachine.conjTransposeMat` $\mathbf{X}$ is $\bar{\mathbf{X}}^{\mathsf{H}}$. -/
-theorem decodeMatrix_conjTransposeMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) {m n : Type*}
+theorem decodeMatrix_conjTransposeMat (hM : M.IsArithAccurate dec u τ Ω μM) {m n : Type*}
     (X : Matrix m n (F × F)) :
     decodeMatrix dec (M.conjTransposeMat X) = (decodeMatrix dec X)ᴴ := by
   ext i j : 2
@@ -216,7 +216,7 @@ theorem decodeMatrix_conjTransposeMat (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     simp [decodeMatrix, FloatMachine.conjTransposeMat, decodeComplex, hM.dec_neg]
 
 /-- The stored identity decodes to the identity. -/
-theorem decodeMatrix_identityMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) (k : ℕ) :
+theorem decodeMatrix_identityMat (hM : M.IsArithAccurate dec u τ Ω μM) (k : ℕ) :
     decodeMatrix dec (M.identityMat k) = 1 := by
   ext i j : 2
   by_cases h : i = j
@@ -226,14 +226,14 @@ theorem decodeMatrix_identityMat (hM : M.IsAccurate dec u τ Ω μM μQ cN) (k :
   · apply Complex.ext <;>
       simp [decodeMatrix, FloatMachine.identityMat, decodeComplex, hM.dec_zero, h]
 
-/-- **Error of the stored shift**: under `NLAlib.FloatMachine.IsAccurate` with $u \ge 0$, for a
+/-- **Error of the stored shift**: under `NLAlib.FloatMachine.IsArithAccurate` with $u \ge 0$, for a
 stored $\mathbf{X}$ with Hermitian decoding $\bar{\mathbf{X}}$ and a stored $c$ with
 $\|\bar{\mathbf{X}} - \bar c\mathbf{I}\|_2 \le \Omega$,
 $$\|(\bar{\mathbf{X}} - \bar c\mathbf{I}) - \overline{\mathrm{hermShift}(\mathbf{X}, c)}\|_2 \le
 u\max(\|\bar{\mathbf{X}} - \bar c\mathbf{I}\|_2, \tau) \,.$$
 The error is diagonal, so its norm is its largest entry, as [Shah2024, proof of Lemma 2.1]
 notes; the mirrored entries are exact because $\bar{\mathbf{X}}$ is Hermitian. -/
-theorem specNorm_sub_decodeMatrix_hermShift_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+theorem specNorm_sub_decodeMatrix_hermShift_le (hM : M.IsArithAccurate dec u τ Ω μM)
     (hu : 0 ≤ u) {k : ℕ} {X : Matrix (Fin k) (Fin k) (F × F)}
     (hX : (decodeMatrix dec X).IsHermitian) (c : F)
     (hΩ : specNorm (decodeMatrix dec X - dec c • (1 : Matrix (Fin k) (Fin k) ℂ)) ≤ Ω) :
@@ -340,13 +340,13 @@ private theorem specNorm_le_of_norm_apply_le {k : ℕ} (Z E : Matrix (Fin k) (Fi
     _ ≤ u * (√(k : ℝ) * specNorm Z + 2 * k * τ) := by
         nlinarith [mul_le_mul_of_nonneg_left hZ hu]
 
-/-- Error of the stored division by a scalar: under `NLAlib.FloatMachine.IsAccurate` with
+/-- Error of the stored division by a scalar: under `NLAlib.FloatMachine.IsArithAccurate` with
 $u, \tau \ge 0$, for a stored $\mathbf{X}$ with Hermitian decoding and a stored $c$ with
 $\bar c \ne 0$ and $\|\bar{\mathbf{X}}\|_2/\lvert\bar c\rvert \le \Omega$, with
 $\mathbf{Z} = \bar{\mathbf{X}}/\bar c$,
 $$\|\mathbf{Z} - \overline{\mathrm{hermScale}(\mathbf{X}, c)}\|_2 \le
 u\bigl(\sqrt k\,\|\mathbf{Z}\|_2 + 2k\tau\bigr) \,.$$ -/
-theorem specNorm_sub_decodeMatrix_hermScale_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+theorem specNorm_sub_decodeMatrix_hermScale_le (hM : M.IsArithAccurate dec u τ Ω μM)
     (hu : 0 ≤ u) (hτ : 0 ≤ τ) {k : ℕ} {X : Matrix (Fin k) (Fin k) (F × F)}
     (hX : (decodeMatrix dec X).IsHermitian) {c : F} (hc : dec c ≠ 0)
     (hΩ : specNorm (decodeMatrix dec X) / |dec c| ≤ Ω) :
@@ -449,13 +449,13 @@ private theorem abs_div_sub_le_of_isRoundingOf (a c s s' S u τ Ω : ℝ) (hc : 
         nlinarith [mul_nonneg (mul_nonneg hu (add_nonneg (abs_nonneg (a / c)) hτ))
           (sub_nonneg.2 hu1)]
 
-/-- Error of the stored scaled Hermitian part: under `NLAlib.FloatMachine.IsAccurate` with
+/-- Error of the stored scaled Hermitian part: under `NLAlib.FloatMachine.IsArithAccurate` with
 $0 \le u \le 1/2$, $\tau \ge 0$, for a stored $\mathbf{X}$ and a stored $c$ with
 $\lvert \bar c \rvert \ge 1$ and $3\|\bar{\mathbf{X}}\|_2 + \tau \le \Omega$, with
 $\mathbf{Z} = (\bar{\mathbf{X}} + \bar{\mathbf{X}}^{\mathsf{H}})/\bar c$,
 $$\|\mathbf{Z} - \overline{\mathrm{hermAvg}(\mathbf{X}, c)}\|_2 \le
 3u\bigl(\sqrt k\,\|\mathbf{Z}\|_2 + 2k\tau\bigr) \,.$$ -/
-theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsArithAccurate dec u τ Ω μM)
     (hu : 0 ≤ u) (hu₁ : u ≤ 1 / 2) (hτ : 0 ≤ τ) {k : ℕ} (X : Matrix (Fin k) (Fin k) (F × F))
     {c : F} (hc : 1 ≤ |dec c|) (hΩ : 3 * specNorm (decodeMatrix dec X) + τ ≤ Ω) :
     specNorm ((dec c)⁻¹ • (decodeMatrix dec X + (decodeMatrix dec X)ᴴ) -
@@ -530,7 +530,7 @@ theorem specNorm_sub_decodeMatrix_hermAvg_le (hM : M.IsAccurate dec u τ Ω μM 
         (mul_nonneg zero_le_two hτ))]
   exact specNorm_le_of_norm_apply_le Z E (by linarith) hτ hE_all
 
-private lemma abs_sum_range_sub_foldl_add_le (hM : M.IsAccurate dec u τ Ω μM μQ cN)
+private lemma abs_sum_range_sub_foldl_add_le (hM : M.IsArithAccurate dec u τ Ω μM)
     (hu : 0 ≤ u) (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2) (x : ℕ → F) {S : ℝ}
     (hS : ∑ i ∈ Finset.range k, |dec (x i)| ≤ S) (hΩ : 2 * (S + k * τ) ≤ Ω) :
     ∀ n ≤ k, |∑ i ∈ Finset.range n, dec (x i) -
@@ -578,13 +578,13 @@ private lemma abs_sum_range_sub_foldl_add_le (hM : M.IsAccurate dec u τ Ω μM 
           nlinarith [mul_nonneg hu (add_nonneg hS0 hτ), mul_nonneg (mul_nonneg hu hu)
             (add_nonneg hS0 hτ)]
 
-/-- **Error of the rounded trace**: under `NLAlib.FloatMachine.IsAccurate` with $u, \tau \ge 0$
+/-- **Error of the rounded trace**: under `NLAlib.FloatMachine.IsArithAccurate` with $u, \tau \ge 0$
 and $ku \le 1/2$, for a stored $k \times k$ $\mathbf{X}$ with real parts of the diagonal
 $x_i$ and $2(\sum_i \lvert x_i \rvert + k\tau) \le \Omega$,
 $$\Bigl\lvert \sum_i x_i - \overline{\mathrm{traceRe}(\mathbf{X})} \Bigr\rvert \le
 2ku\Bigl(\sum_i \lvert x_i \rvert + k\tau\Bigr) \,.$$
 [Higham2002, (4.4)], there with $\gamma_{k-1}$ and $\tau = 0$. -/
-theorem abs_sum_sub_traceRe_le (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 0 ≤ u)
+theorem abs_sum_sub_traceRe_le (hM : M.IsArithAccurate dec u τ Ω μM) (hu : 0 ≤ u)
     (hτ : 0 ≤ τ) {k : ℕ} (hku : k * u ≤ 1 / 2) (X : Matrix (Fin k) (Fin k) (F × F))
     (hΩ : 2 * (∑ i, |dec (X i i).1| + k * τ) ≤ Ω) :
     |∑ i, dec (X i i).1 - dec (M.traceRe X)| ≤ 2 * k * u * (∑ i, |dec (X i i).1| + k * τ) := by
@@ -605,7 +605,7 @@ theorem abs_sum_sub_traceRe_le (hM : M.IsAccurate dec u τ Ω μM μQ cN) (hu : 
     gcongr
     nlinarith
 
-end FloatMachine.IsAccurate
+end FloatMachine.IsArithAccurate
 
 end Accuracy
 

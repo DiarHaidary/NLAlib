@@ -21,8 +21,9 @@ $N \ge N_0$ every hypothesis of the model is met at once, by **rounded arithmeti
 not by exact arithmetic at a nominal $u$. The semantics is `NLAlib.Computation.gridSem` with
 $t$ bits at every tag (rounding to nearest, unbounded exponent; decoding $x \mapsto
 \mathrm{fl}(x)$, $u = 2^{-t}$), $t$ chosen from $N$ so that the precision hypotheses hold; the
-kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t`, the machine is
-`NLAlib.gridMachine t` and the tape is rounded to nearest.
+kernels are the correctly rounded `NLAlib.gridMM t` and `NLAlib.gridQR t` and the tape is rounded
+to nearest (the spectral bisection witness writes its stored identity with the machine
+`NLAlib.gridMachine t`).
 The stored inputs are on the grid: the identity matrix in pairs, and powers of two.
 
 A bounded-exponent semantics cannot witness these targets: they assume the standard model with
@@ -70,9 +71,21 @@ private theorem roundNearest_half {t : ℕ} (ht : 0 < t) : Real.roundNearest t (
   rw [one_div, ← pow_one (2⁻¹ : ℝ)]
   exact Real.roundNearest_two_inv_pow ht 1
 
+/-- The stored identity matrix in pairs decodes to the identity on the grid of $t \ge 1$ bits. -/
+private theorem decodeMatrix_roundNearest_identity {t : ℕ} (ht : 0 < t) (N : ℕ) :
+    decodeMatrix (Real.roundNearest t)
+      (Matrix.of fun i j : Fin N => if i = j then ((1 : ℝ), (0 : ℝ)) else (0, 0)) = 1 := by
+  ext i j : 2
+  by_cases h : i = j
+  · subst h
+    apply Complex.ext <;>
+      simp [decodeMatrix, decodeComplex, Real.roundNearest_one ht, Real.roundNearest_zero]
+  · apply Complex.ext <;>
+      simp [decodeMatrix, decodeComplex, Real.roundNearest_zero, h]
+
 /-- **The Newton–Schulz sign target is not vacuous**: for every $N_0$, at $N = N_0 + 1$, the
-grid semantics with $t$ bits ($t$ large, from $N$), the kernel `NLAlib.gridMM t`, the machine
-`NLAlib.gridMachine t`, $\Omega = 9(N + 1)$, $\mu(d) = 2d$, the stored identity matrix,
+grid semantics with $t$ bits ($t$ large, from $N$), the kernel `NLAlib.gridMM t`,
+$\Omega = 9(N + 1)$, $\mu(d) = 2d$, the stored identity matrix,
 $\varepsilon = 1/2$, $\bar b = 1$ and the step limit
 $F = \lceil N(1/2, 1/(32N)) \rceil + 1$ meet every hypothesis of
 `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` (with $a = 1$). The witness of the target
@@ -87,10 +100,8 @@ theorem matrixFreeRoundedProbNewtonSchulzSign_nonVacuous : ∀ N₀ : ℕ,
       dec (fun _ _ => 1) (fun N n => newtonSchulzSignCount p mm N (n 0))
       (fun N _ q => if q = p then 8 * (N * N) + 7 else 0)
       (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
-        (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
-          IsMatMulErr (decodeComplex (dec p)) u 0 Ω μ mmR) ∧
-        ∃ (M₀ : FloatMachine K ℝ ℂ) (μM μQ : ℕ → ℝ) (cN : ℝ),
-          M₀.IsAccurate (dec p) u 0 Ω μM μQ cN)
+        ∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
+          IsMatMulErr (decodeComplex (dec p)) u 0 Ω μ mmR)
       (fun _ => True)
       (fun N n x => (decodeMatrix (dec p) x.1).IsHermitian ∧ 0 ≤ u ∧ 0 ≤ μ N ∧
         9 * (N + 1) ≤ Ω ∧ specNorm (decodeMatrix (dec p) x.1) ≤ dec p x.2.2 ∧
@@ -111,18 +122,16 @@ theorem matrixFreeRoundedProbNewtonSchulzSign_nonVacuous : ∀ N₀ : ℕ,
   obtain ⟨t, ⟨ht, hB⟩, hu⟩ := ((eventually_pos_and_lt_two_pow 1).and
     (eventually_mul_two_inv_pow_le (640 * N * √(N : ℝ) * (8 + 2 * N) * (S + 1))
       (by norm_num : (0 : ℝ) < 1 / 1 * (1 / 2)))).exists
-  have hM := isAccurate_gridMachine ht (9 * ((N : ℝ) + 1))
   obtain ⟨I, hIs, hImm, -⟩ := exists_gridKernelInterp Unit t
   refine ⟨Unit, Bool, inferInstance, (), true, ℝ, inferInstance, fun _ => Real.roundNearest t,
     2⁻¹ ^ t, 9 * ((N : ℝ) + 1), fun d => 2 * d, N, fun _ => ⌈S⌉₊ + 1, hN₀, hN,
-    ((gridMachine t).identityMat N, 1 / 2, 1), ?_, I,
+    (Matrix.of fun i j => if i = j then (1, 0) else (0, 0), 1 / 2, 1), ?_, I,
     fun _ _ y => Real.roundNearest t y,
     hIs ▸ isIndexExactSem_gridSem _ (fun _ => ht) 1 (fun _ => hB),
-    ⟨hIs ▸ isRelErrSem_gridSem _ (fun _ => ht),
-      ⟨gridMM t, hImm, isMatMulErr_gridMM ht _⟩,
-      gridMachine t, _, _, _, hM⟩, trivial⟩
+    ⟨hIs ▸ isRelErrSem_gridSem _ (fun _ => ht), gridMM t, hImm, isMatMulErr_gridMM ht _⟩,
+    trivial⟩
   dsimp only
-  rw [hM.decodeMatrix_identityMat, Real.roundNearest_one ht, roundNearest_half ht]
+  rw [decodeMatrix_roundNearest_identity ht, Real.roundNearest_one ht, roundNearest_half ht]
   refine ⟨Matrix.isHermitian_one, by positivity, by positivity, le_rfl, specNorm_one.le,
     by norm_num, le_rfl, 1, one_pos, fun y hy => ?_, hu, ?_⟩
   · rw [spectrum.one_eq, Set.mem_singleton_iff] at hy
@@ -132,7 +141,7 @@ theorem matrixFreeRoundedProbNewtonSchulzSign_nonVacuous : ∀ N₀ : ℕ,
 
 /-- **The deflation target is not vacuous**: for every $N_0$, at $N = N_0 + 1$ and full rank
 $r = N$, the grid semantics with $t$ bits ($t$ large, from $N$), the kernels `NLAlib.gridMM t`
-and `NLAlib.gridQR t`, the machine `NLAlib.gridMachine t`, the tape rounded to nearest
+and `NLAlib.gridQR t`, the tape rounded to nearest
 ($c = 1$), $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$, $\Omega = 8\sqrt2\sqrt N$, the
 stored identity matrix with $\mathbf{U} = \mathbf{V} = \mathbf{S} = \mathbf{I}$,
 $\beta = 1/(30\sqrt2\sqrt N)$, $t = 0$ (the norm tail) and $x = 1$ meet every hypothesis of
@@ -149,10 +158,8 @@ theorem matrixFreeRoundedProbDeflate_nonVacuous : ∀ N₀ : ℕ,
       (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
         (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
           IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mmR) ∧
-        (∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
-          IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qrR) ∧
-        ∃ (M₀ : FloatMachine K ℝ ℂ) (μM₀ μQ₀ : ℕ → ℝ) (cN : ℝ),
-          M₀.IsAccurate (dec p) u 0 Ω μM₀ μQ₀ cN)
+        ∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
+          IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qrR)
       (fun ρ => IsTapeRounding dec p u 0 (2 * Ω) (fun _ => c) ρ ∧
         ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
       (fun N _ d => HasOrthonormalCols d.U ∧ HasOrthonormalCols d.V ∧ IsUnit d.S ∧
@@ -177,20 +184,19 @@ theorem matrixFreeRoundedProbDeflate_nonVacuous : ∀ N₀ : ℕ,
     ((eventually_mul_two_inv_pow_le (1 + 3) (by norm_num : (0 : ℝ) < 1 / 10)).and
       (eventually_mul_two_inv_pow_le
         (4 * (2 * (N : ℝ)) + 4 * √(N : ℝ) * (2 * (1 + 3)) + 2 * (2 * N)) hβ))).exists
-  have hM := isAccurate_gridMachine ht (8 * √2 * √(N : ℝ))
   obtain ⟨I, hIs, hImm, hIqr⟩ := exists_gridKernelInterp Unit t
   refine ⟨Unit, Bool, inferInstance, (), true, false, ℝ, inferInstance,
     fun _ => Real.roundNearest t, 2⁻¹ ^ t, 8 * √2 * √(N : ℝ), fun d => 2 * d, fun d => 2 * d, 1,
-    N, fun _ => N, hN₀, le_rfl, ⟨(gridMachine t).identityMat N, 1, 1, 1, β, 0, 1⟩, ?_,
+    N, fun _ => N, hN₀, le_rfl,
+    ⟨Matrix.of fun i j => if i = j then (1, 0) else (0, 0), 1, 1, 1, β, 0, 1⟩, ?_,
     I, fun _ _ y => Real.roundNearest t y,
     hIs ▸ isIndexExactSem_gridSem _ (fun _ => ht) 2 (fun _ => hB),
     ⟨hIs ▸ isRelErrSem_gridSem _ (fun _ => ht),
       ⟨gridMM t, hImm, isMatMulErr_gridMM ht _⟩,
-      ⟨gridQR t, hIqr, isQRErr_gridQR ht _⟩,
-      gridMachine t, _, _, _, hM⟩,
+      gridQR t, hIqr, isQRErr_gridQR ht _⟩,
     isTapeRounding_roundNearest ht () _, fun _ _ _ _ => rfl⟩
   dsimp only
-  rw [hM.decodeMatrix_identityMat, specNorm_one, inv_one, specNorm_one]
+  rw [decodeMatrix_roundNearest_identity ht, specNorm_one, inv_one, specNorm_one]
   simp only [Matrix.mul_one, Matrix.conjTranspose_one, sub_self, specNorm_zero]
   have hβ₁ : β ≤ 1 := by
     rw [div_le_one (by positivity)]

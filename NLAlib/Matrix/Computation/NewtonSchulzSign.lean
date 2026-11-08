@@ -32,12 +32,12 @@ in absolute value, or after $N$ steps. The definitions are computable: they use 
 
 ## Main results
 
-* `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded`,
-  `NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign`.
-* `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le`,
-  `NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add`: one step
-  (Lemma 2.1), with the factor $\sqrt n$ on the whole error or on the rounding only.
-* `NLAlib.FloatMachine.IsAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le`:
+* `NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzRounded`,
+  `NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzSign`.
+* `NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le`,
+  `NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add`:
+  one step (Lemma 2.1), with the factor $\sqrt n$ on the whole error or on the rounding only.
+* `FloatMachine.IsArithAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le`:
   the eigenvalues of the rounded iterates lie on perturbed scalar chains
   (`NLAlib.IsNewtonSchulzChain`).
 
@@ -97,21 +97,21 @@ section Accuracy
 
 open scoped Matrix
 
-variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μ μQ : ℕ → ℝ}
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω : ℝ} {μ : ℕ → ℝ}
   {n : ℕ}
 
 /-- The rounded Newton–Schulz step decodes to a Hermitian matrix, under
-`NLAlib.FloatMachine.IsAccurate`. -/
-theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (A : Matrix (Fin n) (Fin n) (F × F)) :
+`NLAlib.FloatMachine.IsArithAccurate`. -/
+theorem FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzRounded
+    (hM : M.IsArithAccurate dec u τ Ω μ) (A : Matrix (Fin n) (Fin n) (F × F)) :
     (decodeMatrix dec (newtonSchulzRounded M A)).IsHermitian := by
   unfold newtonSchulzRounded FloatMachine.hermAvg
   exact hM.isHermitian_decodeMatrix_hermFrom _ _
 
 /-- The Newton–Schulz sign algorithm returns a matrix with Hermitian decoding, for every input and
-step limit, under `NLAlib.FloatMachine.IsAccurate`. -/
-theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (ε b : F) (N : ℕ)
+step limit, under `NLAlib.FloatMachine.IsArithAccurate`. -/
+theorem FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzSign
+    (hM : M.IsArithAccurate dec u τ Ω μ) (ε b : F) (N : ℕ)
     (A : Matrix (Fin n) (Fin n) (F × F)) :
     (decodeMatrix dec (newtonSchulzSign M ε b N A)).IsHermitian := by
   have key : ∀ (η : F) (N : ℕ) (B : Matrix (Fin n) (Fin n) (F × F)),
@@ -131,7 +131,7 @@ theorem FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign
 
 /-- The stored conversion of a natural number $k$ with $\tau \le k \le \Omega$ errs by at most
 $ku$. -/
-private theorem abs_sub_dec_ofNat_le (hM : M.IsAccurate dec u τ Ω μ μQ cN) {k : ℕ}
+private theorem abs_sub_dec_ofNat_le (hM : M.IsArithAccurate dec u τ Ω μ) {k : ℕ}
     (hkΩ : (k : ℝ) ≤ Ω) (hkτ : τ ≤ k) : |(k : ℝ) - dec (M.ofNat k)| ≤ k * u := by
   have h := hM.ofNat k (by rwa [Nat.abs_cast])
   rwa [Nat.abs_cast, max_eq_left hkτ, mul_comm] at h
@@ -139,7 +139,7 @@ private theorem abs_sub_dec_ofNat_le (hM : M.IsAccurate dec u τ Ω μ μQ cN) {
 /-- The stored $3\mathbf{I} - \mathrm{mm}(\mathbf{A}, \mathbf{A})$ of a rounded Newton–Schulz
 step is within $1.21\mu u + 7.5u$ of $3\mathbf{I} - \mathbf{A}^2$. -/
 private theorem specNorm_sub_decodeMatrix_negMat_hermShift_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ : τ ≤ 1 / 2) (hΩ : 9 ≤ Ω)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
@@ -190,7 +190,7 @@ private theorem specNorm_sub_decodeMatrix_negMat_hermShift_le
 /-- The stored $\mathrm{mm}(\mathbf{A}, 3\mathbf{I} - \mathbf{A}^2)$ of a rounded Newton–Schulz
 step is within $6.3\mu u + 8.25u$ of $\mathbf{A}(3\mathbf{I} - \mathbf{A}^2)$. -/
 private theorem specNorm_decodeMatrix_mm_negMat_hermShift_sub_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ : τ ≤ 1 / 2) (hΩ : 9 ≤ Ω)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
@@ -251,7 +251,7 @@ private theorem specNorm_sub_smul_add_conjTranspose_le {g y : Matrix (Fin n) (Fi
 product, at most $(3.23\mu(n) + 6.23)u$, and the rounding of the stored Hermitian average, at most
 $3u(2\sqrt n + 1)$. -/
 private theorem specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add_mul
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 ≤ Ω) (hn : 0 < n)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
@@ -322,8 +322,8 @@ private theorem specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add_mul
     (by linarith : 2 * (n : ℝ) * τ ≤ 1)) (by positivity : (0 : ℝ) ≤ 3 * u)
   linarith [e5.trans k1]
 
-/-- **One rounded Newton–Schulz step** (Lemma 2.1): under the machine contract
-`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
+/-- **One rounded Newton–Schulz step** (Lemma 2.1): under the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
 $\mu(n) \ge 0$, $u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and
 $\Omega \ge 9$, every stored $\mathbf{A}$ whose decoding (still written $\mathbf{A}$) is
 Hermitian with $\|\mathbf{A}\|_2 \le 11/10$ satisfies
@@ -334,8 +334,8 @@ the machine's conversion). [Shah2024, Lemma 2.1], there
 $\tfrac12(7 + (6 + \mu)a^2)a\,u$ for $\|\mathbf{A}\|_2 \le a$ without the Hermitian part; the
 factor $\sqrt n$ is the cost of storing the result exactly Hermitian, and the statement is for
 the regime $a \le 11/10$ of the iteration. -/
-theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+theorem FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 ≤ Ω)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
@@ -350,18 +350,18 @@ theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
   nlinarith [mul_le_mul_of_nonneg_left hs (mul_nonneg hμ hu₀), mul_le_mul_of_nonneg_left hs hu₀]
 
 /-- **One rounded Newton–Schulz step, with the dimension factor on the rounding only**: under
-the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant
-$\mu$, $\mu(n) \ge 0$, $u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and
-$\Omega \ge 9$, every stored $\mathbf{A}$ with Hermitian decoding and $\|\mathbf{A}\|_2 \le
+the arithmetic contract `NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$ $\Omega$ with product
+constant $\mu$, $\mu(n) \ge 0$, $u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$
+and $\Omega \ge 9$, every stored $\mathbf{A}$ with Hermitian decoding and $\|\mathbf{A}\|_2 \le
 11/10$ satisfies
 $$\Bigl\|\tfrac12\mathbf{A}(3\mathbf{I} - \mathbf{A}^2) - \tilde g(\mathbf{A})\Bigr\|_2 \le
 \bigl(4\mu(n) + 10 + 10\sqrt n\bigr)u \,.$$
 $\tilde g$ the decoded rounded step `NLAlib.newtonSchulzRounded`. The $\sqrt n$ comes only from the
 entrywise rounding of the stored Hermitian part, the product errors are normwise; compare
-`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le`
+`NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le`
 ($4\sqrt n(8 + \mu(n))u$). [Shah2024, Lemma 2.1]. -/
-theorem FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+theorem FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 ≤ Ω)
     {A : Matrix (Fin n) (Fin n) (F × F)} (hA : (decodeMatrix dec A).IsHermitian)
     (hA₁ : specNorm (decodeMatrix dec A) ≤ 11 / 10) :
@@ -490,16 +490,17 @@ theorem _root_.Matrix.IsHermitian.specNorm_le_of_forall_mem_spectrum_abs_le {k :
   rwa [cfc_id ℝ X hX.isSelfAdjoint] at this
 
 /-- One rounded Newton–Schulz step keeps the eigenvalues on perturbed chains: under
-`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$,
-$u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and $9 \le \Omega$, let
-$\delta = 4\sqrt n\,(8 + \mu(n))\,u$ and $0 < s \le 1/2$ with $20\delta \le s$. If every eigenvalue
-of the stored $\mathbf{X}$ with Hermitian decoding is reached at step $k$ by a perturbed
-Newton–Schulz chain from a start of modulus at least $s$ with errors $\delta$
-(`NLAlib.IsNewtonSchulzChain`), then every eigenvalue of the rounded step
+`NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
+$\mu(n) \ge 0$, $u \ge 0$, $u(8 + \mu(n)) \le 1/10$, $0 \le \tau$, $2n\tau \le 1$ and
+$9 \le \Omega$, let $\delta = 4\sqrt n\,(8 + \mu(n))\,u$ and $0 < s \le 1/2$ with
+$20\delta \le s$. If every eigenvalue of the stored $\mathbf{X}$ with Hermitian decoding is
+reached at step $k$ by a perturbed Newton–Schulz chain from a start of modulus at least $s$ with
+errors $\delta$ (`NLAlib.IsNewtonSchulzChain`), then every eigenvalue of the rounded step
 `NLAlib.newtonSchulzRounded` is reached at step $k + 1$, and the step moves the sign by at most
 $2\delta/s$ in the spectral norm. -/
-theorem FloatMachine.IsAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n)
+theorem
+    FloatMachine.IsArithAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n)
     (hu₀ : 0 ≤ u) (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1)
     (hΩ : 9 ≤ Ω) {s : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2)
     (hδ : 20 * (4 * √(n : ℝ) * (8 + μ n) * u) ≤ s) {k : ℕ}
