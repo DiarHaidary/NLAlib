@@ -399,9 +399,7 @@ private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 
 /-- The machine contract is monotone in the unit roundoff: a machine meeting
 `NLAlib.FloatMachine.IsAccurate` at unit roundoff $u$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
-$u' \ge u$. With the exact machine at $u = 0$ (the HDIAG witness) this makes the hypothesis
-"the carrier admits an accurate machine" of the SIGN and DEFLATE targets satisfiable at every
-$u \ge 0$. No printed source. -/
+$u' \ge u$. No printed source. -/
 theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
     (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)

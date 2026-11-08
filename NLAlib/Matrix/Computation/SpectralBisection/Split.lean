@@ -401,7 +401,7 @@ private theorem FloatMachine.IsAccurate.specNorm_decodeMatrix_compress_sub_le {F
   nlinarith
 
 /-- Deflation of a true spectral projector `V Vᴴ` through a stored approximation, on Event II:
-`NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le`
+`FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le`
 with $\mathbf{S} = \mathbf{I}_r$, for $2t\beta/x \le \eta \le 1/800$. -/
 private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_deflate_le_of_mul_le
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x η : ℝ} {μM μQ : ℕ → ℝ}
@@ -445,8 +445,9 @@ private theorem FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_d
     rw [mul_assoc]; exact mul_le_mul_of_nonneg_left htxβ (by linarith)
   have hmβ' := (mul_le_mul_of_nonneg_right hmval hβ0).trans hmβ
   have hu' : 16 * (4 * μQ n + 4 * √(n : ℝ) * cN + 2 * μM n) * u ≤ β := hu
-  obtain ⟨W, hW, hWb⟩ := hM.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le hμM
-    hu₀ hr hV hV isUnit_one (by rw [Matrix.mul_one]) hP hGu rfl (hmβ'.trans (by nlinarith)) hu'
+  obtain ⟨W, hW, hWb⟩ := hM.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le
+    hM.isQRErr hM.isNormalSampler hμM hu₀ hr hV hV isUnit_one (by rw [Matrix.mul_one]) hP hGu rfl
+    (hmβ'.trans (by nlinarith)) hu'
     (by rw [hS1, one_mul]; nlinarith) (hτ.trans hxG) (by rw [hS1]; nlinarith) (by linarith)
   refine ⟨W, hW, hWb.trans ?_⟩
   change 3 / 2 * ((1 + 2 * β + specNorm (1 : Matrix (Fin r) (Fin r) ℂ) / 8) *
