@@ -9,23 +9,21 @@ public import NLAlib.Eigensolvers.RandomizedDeflation
 public import NLAlib.RandomMatrix.Computation.DeflationTargets
 public import NLAlib.Matrix.Computation.NewtonSchulzSign.Accuracy
 public import NLAlib.RandomMatrix.Computation.NewtonSchulzSignTargets
-public import NLAlibScaffold.Matrix.Computation.DeflationProgram
-public import NLAlibScaffold.Matrix.Computation.InterpMachine
-public import NLAlibScaffold.Matrix.Computation.NewtonSchulzSignProgram
-public import NLAlibScaffold.RandomMatrix.Computation.ComplexTape
+public import NLAlib.Matrix.Computation.DeflationProgram
+public import NLAlib.Matrix.Computation.NewtonSchulzSignProgram
+public import NLAlib.RandomMatrix.Computation.ComplexTape
 
 /-!
-# The SIGN and DEFLATE targets: transfer of the shallow guarantees (scaffold)
+# The SIGN and DEFLATE targets: transfer of the shallow guarantees
 
-The proofs of the proposed targets `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` and
-`NLAlib.MatrixFreeRoundedProbDeflate`: the refinement theorems of this stage turn the HDIAG
-guarantees into guarantees about the registered trees. They use the accuracy of the Newton–Schulz
-sign algorithm, [Shah2024, Theorem 2.6]
-(`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`), its
-step count (`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`: the shallow test
-passes within $N_0 + 1$ steps, which the program needs for success), and the failure probability
-of deflation, [Shah2024, Theorem 3.3] (in `NLAlib/Eigensolvers/RandomizedDeflation.lean`).
-Design note `docs/design/Computation-SignDeflatePrograms.md`, §5.
+The proofs of the targets `NLAlib.MatrixFreeRoundedProbNewtonSchulzSign` and
+`NLAlib.MatrixFreeRoundedProbDeflate`: the refinement theorems of the Newton–Schulz sign and
+deflation programs turn the shallow guarantees into guarantees about the registered trees. They use
+the accuracy of the Newton–Schulz sign algorithm, [Shah2024, Theorem 2.6]
+(`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`), its step
+count (`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`: the shallow test passes
+within $N_0 + 1$ steps, which the program needs for success), and the failure probability of
+deflation, [Shah2024, Theorem 3.3] (in `NLAlib/Eigensolvers/RandomizedDeflation.lean`).
 
 ## Main results
 
@@ -43,22 +41,7 @@ namespace NLAlib
 open Computation
 
 /-- **The target of the Newton–Schulz sign algorithm as a program holds**
-(`NLAlib.MatrixFreeRoundedProbNewtonSchulzSign`). [Shah2024, Theorem 2.6], for the program.
-Proof: fix the data and an interpretation meeting the contracts; let `M` be the machine of the
-semantics at `p` (`NLAlib.Computation.ScalarSem.toFloatMachine`) with the routine `mmR` of the
-kernel, the floor conversion and the QR routine and samplers of the machine $M_0$ the contracts
-provide; `NLAlib.Computation.isAccurate_toFloatMachine` (scaffold) makes it accurate at $u$,
-floor $0$, range $\Omega$. The interpretation with the rounded tape has the same semantics and
-kernels, so for every $\omega$: the shallow test passes at some $k \le N_0 + 1 \le F$
-(`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`), so the run
-succeeds (`NLAlib.newtonSchulzSignProg.exists_exec_compiled`, scaffold, with $u < 1$ and
-$\bar b \ne 0$ from the hypotheses: $a \le \|\mathbf{A}\|_2 \le \bar b$ by
-`Matrix.IsHermitian.eigenvalues_mem_spectrum_real` and `NLAlib.abs_eigenvalue_le_specNorm`-style
-bounds, and $640 \cdot 8 \cdot u \le 1/2$); its output is `NLAlib.newtonSchulzSign` on `M`
-(`NLAlib.newtonSchulzSignProg.holds_of_exec_compiled`, scaffold, with
-`NLAlib.Computation.IsRelErrSem.decidesFlags`), which is within $\bar\varepsilon$ of
-$\operatorname{sign}(\mathbf{A})$ by the HDIAG accuracy theorem (Theorem 2.6 there). The failure
-set is empty, of measure $0$. M, about 60 lines. -/
+(`NLAlib.MatrixFreeRoundedProbNewtonSchulzSign`). [Shah2024, Theorem 2.6], for the program. -/
 theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchulzSign := by
   intro P ι _ p mm K _ dec u Ω μ
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
@@ -134,24 +117,7 @@ theorem matrixFreeRoundedProbNewtonSchulzSign : MatrixFreeRoundedProbNewtonSchul
   rw [hset, measureReal_empty]
 
 /-- **The target of randomized deflation as a program holds**
-(`NLAlib.MatrixFreeRoundedProbDeflate`). [Shah2024, Theorem 3.3], for the program.
-Proof: fix the data and an interpretation meeting the contracts; let `M` be the machine of the
-semantics at `p` with the kernels' routines, the floor conversion, the uniform sampler of $M_0$
-and the normal sampler `NLAlib.Computation.ScalarSem.gaussianNormal` of $\rho_{\mathrm{g}} =
-\rho(\mathrm{gaussian}, 0, \cdot)$; it is accurate at $u$, floor $0$, range $\Omega$
-(`NLAlib.Computation.isAccurate_toFloatMachine` with
-`NLAlib.Computation.isNormalSampler_gaussianNormal`, scaffold; the tape contract at range
-$2\Omega$ gives `hρ`). For every $\omega$ the run succeeds
-(`NLAlib.deflateProg.exists_exec_compiled`, scaffold, $u \le 1$ from $(c + 3)u \le 1/10$), and its
-output is `NLAlib.deflate` on the tape machine
-(`NLAlib.deflateProg.holds_of_exec_compiled`, scaffold), which by position independence of
-$\rho$ and `NLAlib.deflate_tapeNormal_eq_deflate_gaussianNormal` (scaffold) is `NLAlib.deflate`
-on `M` with the ideal sample `NLAlib.Computation.tapeComplexMatrix` of $\xi(\omega)$. That sample
-has the law `NLAlib.complexGaussianMatrix`
-(`NLAlib.Computation.hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw`, scaffold), so the failure set
-is contained in the event bounded by the HDIAG deflation theorem (Theorem 3.3 there, with
-$\tau = 0$, $c_{\mathrm N} = 2(c + 3)$: its floor conditions hold at $\tau = 0$), and
-`MeasureTheory.measureReal_mono` concludes. M, about 70 lines. -/
+(`NLAlib.MatrixFreeRoundedProbDeflate`). [Shah2024, Theorem 3.3], for the program. -/
 theorem matrixFreeRoundedProbDeflate : MatrixFreeRoundedProbDeflate := by
   intro P ι _ p mm qr K _ dec u Ω μM μQ c
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_
