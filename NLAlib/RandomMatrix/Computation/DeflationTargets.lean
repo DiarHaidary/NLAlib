@@ -70,8 +70,7 @@ under every interpretation whose semantics meets the standard model at $u$ with 
 range (`IsRelErrSem`) and index exact at `dec` up to $2$ (the model's clause), whose kernels
 `mm` and `qr` are routines on pairs (`IsMatMulKernel`, `IsQRKernel`, interleaved layout)
 meeting `IsMatMulErr` and `IsQRErr` at $u$, floor $0$, range $\Omega$ and constants
-$\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, on a carrier that admits a machine meeting
-`FloatMachine.IsAccurate` at $u$, floor $0$ and range $\Omega$, and every rounding $\rho$ of the
+$\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, and every rounding $\rho$ of the
 tape meeting `IsTapeRounding` at $u$, floor $0$, range $2\Omega$ and constant $c$ for every
 distribution and independent of the position: if $\mathbf{U}$, $\mathbf{V}$ have orthonormal
 columns, $\mathbf{S}$ is invertible, $\|\mathbf{U}\mathbf{S}\mathbf{V}^{\mathsf{H}} -
@@ -98,10 +97,8 @@ def MatrixFreeRoundedProbDeflate : Prop :=
       (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
         (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
           IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mmR) ∧
-        (∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
-          IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qrR) ∧
-        ∃ (M₀ : FloatMachine K ℝ ℂ) (μM₀ μQ₀ : ℕ → ℝ) (cN : ℝ),
-          M₀.IsAccurate (dec p) u 0 Ω μM₀ μQ₀ cN)
+        ∃ qrR : QRMap (K × K), IsQRKernel I qr pairLayout qrR ∧
+          IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qrR)
       (fun ρ => IsTapeRounding dec p u 0 (2 * Ω) (fun _ => c) ρ ∧
         ∀ (g : Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
       (fun N _ d => HasOrthonormalCols d.U ∧ HasOrthonormalCols d.V ∧ IsUnit d.S ∧

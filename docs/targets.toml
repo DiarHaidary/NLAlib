@@ -8951,8 +8951,8 @@ trees = ["NLAlib.newtonSchulzSignProg.compiled"]
 precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbNewtonSchulzSign_nonVacuous"
-witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t (exact product of decoded inputs, odd rounding per part, μ d = 2d), machine gridMachine t (μM = μQ = 2d, cN = √2), Ω = 9(N + 1); tape unused; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, F = ⌈N(1/2, 1/(32N))⌉ + 1; input the stored identity, ε = 1/2, b = 1 (a = 1)"
-hash = "250cdf5edaeee5233388c666022a7ce23fd342aeb68caca0e6d7585a8c00c6fd"
+witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t (exact product of decoded inputs, odd rounding per part, μ d = 2d), Ω = 9(N + 1); tape unused; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, F = ⌈N(1/2, 1/(32N))⌉ + 1; input the stored identity, ε = 1/2, b = 1 (a = 1)"
+hash = "06664251ea609d15d9c23985554fe6303bf7297a7192bf127312dd8b2e5c6178"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω : ℝ) (μ : ℕ → ℝ),
@@ -8965,11 +8965,10 @@ statement = '''
     (fun N x q => if q = p then 8 * (N * N) + 7 else 0)
     (fun x x_1 I =>
       NLAlib.Computation.IsRelErrSem (fun x => u) dec (fun x x_2 => True) I.sem ∧
-        (∃ mmR,
-            (NLAlib.Computation.IsMatMulKernel I mm NLAlib.Computation.pairLayout fun {l m n} =>
-                mmR) ∧
-              NLAlib.IsMatMulErr (NLAlib.decodeComplex (dec p)) u 0 Ω μ fun {l m n} => mmR) ∧
-          ∃ M₀ μM μQ cN, M₀.IsAccurate (dec p) u 0 Ω μM μQ cN)
+        ∃ mmR,
+          (NLAlib.Computation.IsMatMulKernel I mm NLAlib.Computation.pairLayout fun {l m n} =>
+              mmR) ∧
+            NLAlib.IsMatMulErr (NLAlib.decodeComplex (dec p)) u 0 Ω μ fun {l m n} => mmR)
     (fun x => True)
     (fun N n x =>
       (NLAlib.decodeMatrix (dec p) x.1).IsHermitian ∧
@@ -9007,8 +9006,8 @@ trees = ["NLAlib.deflateProg.compiled"]
 precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbDeflate_nonVacuous"
-witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), machine gridMachine t, tape ρ g i y = roundNearest t y (c = 1), Ω = 8√2√N; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, r = N; input the stored identity, U = V = S = I, β = 1/(30√2√N), t = 0, x = 1"
-hash = "0550011fab00f9b8d35720544b054a36253c1352df18f1c804bb34ad83bbba83"
+witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), tape ρ g i y = roundNearest t y (c = 1), Ω = 8√2√N; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, r = N; input the stored identity, U = V = S = I, β = 1/(30√2√N), t = 0, x = 1"
+hash = "e5676f8df3470a8092900f4e6354a1b6b57c0f313b3d64974ee794df6939ed6b"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm qr : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω : ℝ) (μM μQ : ℕ → ℝ) (c : ℝ),
@@ -9025,10 +9024,9 @@ statement = '''
             (NLAlib.Computation.IsMatMulKernel I mm NLAlib.Computation.pairLayout fun {l m n} =>
                 mmR) ∧
               NLAlib.IsMatMulErr (NLAlib.decodeComplex (dec p)) u 0 Ω μM fun {l m n} => mmR) ∧
-          (∃ qrR,
-              (NLAlib.Computation.IsQRKernel I qr NLAlib.Computation.pairLayout fun {m n} => qrR) ∧
-                NLAlib.IsQRErr (NLAlib.decodeComplex (dec p)) u 0 Ω μQ fun {m n} => qrR) ∧
-            ∃ M₀ μM₀ μQ₀ cN, M₀.IsAccurate (dec p) u 0 Ω μM₀ μQ₀ cN)
+          ∃ qrR,
+            (NLAlib.Computation.IsQRKernel I qr NLAlib.Computation.pairLayout fun {m n} => qrR) ∧
+              NLAlib.IsQRErr (NLAlib.decodeComplex (dec p)) u 0 Ω μQ fun {m n} => qrR)
     (fun ρ =>
       NLAlib.Computation.IsTapeRounding dec p u 0 (2 * Ω) (fun x => c) ρ ∧
         ∀ (g : NLAlib.Computation.Dist) (i j : ℕ) (y : ℝ), ρ g i y = ρ g j y)
@@ -9071,7 +9069,7 @@ precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbEigh_nonVacuous"
 witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N; MulShrinks), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), tape ρ g i y = roundNearest t y (c ≡ 1, countable range, measurable fibres), θ = 1, Ω the target's lower bound; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, ℓ = bisectionDepth 2^-15 + 2, F = ⌈Nst⌉; input the stored identity, R₀ = 1, ε = 2^-15, β = 2^-k ≤ βb"
-hash = "310d8b5ca7f6ef9020c892de5bd6deb3a5eef286eb83b7a8a19d5b738c90453f"
+hash = "c27153fafc1b20cbd6edb2814957cb51454449b8922806d3dd46879034d636e0"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm qr : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ) (c : NLAlib.Computation.Dist → ℝ),
@@ -9144,13 +9142,18 @@ statement = '''
                                                           √(Real.log
                                                               (96 * ↑N * min (↑N) (↑ℓ + 1) / θ))) ≤
                                                       Ω)
-    (fun N x x_1 st =>
-      ∃ U d,
-        NLAlib.Computation.pairLayout.Holds st.store p 2 0 U ∧
-          (∀ (i : Fin N), st.store.read p 3 ↑i = some (d i)) ∧
-            NLAlib.IsApproxDiagonalization (NLAlib.decodeMatrix (dec p) x_1.A)
-              (NLAlib.decodeMatrix (dec p) U) (fun i => dec p (d i))
-              (2 * dec p x_1.ε * dec p x_1.R₀) (dec p x_1.ε / 3))
+    (fun N n x st =>
+      (∃ U d,
+          NLAlib.Computation.pairLayout.Holds st.store p 2 0 U ∧
+            (∀ (i : Fin N), st.store.read p 3 ↑i = some (d i)) ∧
+              NLAlib.IsApproxDiagonalization (NLAlib.decodeMatrix (dec p) x.A)
+                (NLAlib.decodeMatrix (dec p) U) (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀)
+                (dec p x.ε / 3)) ∧
+        ∀ (T : ℕ → ℕ),
+          Monotone T →
+            (∀ (a b : ℕ), T a + T b ≤ T (a + b)) →
+              (Finsupp.weight (NLAlib.Computation.OpKind.kernelWeight T)) st.cnt ≤
+                (n 0 + 1) * (2 * n 1 + 12) * T N)
     fun x x_1 x_2 => θ'''
 
 [[model]]

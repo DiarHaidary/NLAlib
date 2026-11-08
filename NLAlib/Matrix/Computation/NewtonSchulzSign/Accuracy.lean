@@ -23,13 +23,13 @@ of the stopping test leave the binding condition.
 
 ## Main results
 
-* `NLAlib.FloatMachine.IsAccurate.newtonSchulzTest_of_forall_mem_spectrum`: the test passes near
-  $\pm 1$.
-* `NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`,
-  `NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le`:
+* `NLAlib.FloatMachine.IsArithAccurate.newtonSchulzTest_of_forall_mem_spectrum`: the test passes
+  near $\pm 1$.
+* `NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`,
+  `FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le`:
   Theorem 2.6.
-* `NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate`: the stopping test passes
-  within $N_0 + 1$ steps.
+* `NLAlib.FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate`: the stopping test
+  passes within $N_0 + 1$ steps.
 -/
 
 @[expose] public section
@@ -38,7 +38,7 @@ open scoped Matrix
 
 namespace NLAlib
 
-variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN : ℝ} {μ μQ : ℕ → ℝ}
+variable {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω : ℝ} {μ : ℕ → ℝ}
   {n : ℕ}
 
 /-! ### Spectral helpers -/
@@ -92,7 +92,7 @@ private theorem specNorm_le_card_mul_of_norm_apply_le {k : ℕ}
 
 /-- The stored threshold $\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$ is close to
 $\varepsilon/(4n)$. -/
-private theorem threshold_bounds (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hu₀ : 0 ≤ u)
+private theorem threshold_bounds (hM : M.IsArithAccurate dec u τ Ω μ) (hu₀ : 0 ≤ u)
     (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F}
     (hε : 0 < dec ε) (hε₁ : dec ε ≤ 1 / 2) (hu : 640 * n * u ≤ dec ε) :
     n * dec (M.div ε (M.ofNat (4 * n))) ≤ 13 / 50 * dec ε ∧
@@ -121,7 +121,7 @@ private theorem threshold_bounds (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hu�
 /-- The computed test matrix $\mathrm{mm}(\mathbf{X}, \mathbf{X}) - \mathbf{I}$ is within
 $2(8 + \mu(n))u$ of $\mathbf{X}^2 - \mathbf{I}$. -/
 private theorem specNorm_mul_self_sub_one_sub_decodeMatrix_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₁ : τ ≤ 1) (hΩ : 9 ≤ Ω)
     {X : Matrix (Fin n) (Fin n) (F × F)} (hX : (decodeMatrix dec X).IsHermitian)
     (hXn : specNorm (decodeMatrix dec X) ≤ 11 / 10) :
@@ -156,7 +156,7 @@ private theorem specNorm_mul_self_sub_one_sub_decodeMatrix_le
   refine (specNorm_add_le _ _).trans ?_
   nlinarith
 
-private theorem newtonSchulzTest_eq_true_iff (hM : M.IsAccurate dec u τ Ω μ μQ cN) (η : F)
+private theorem newtonSchulzTest_eq_true_iff (hM : M.IsArithAccurate dec u τ Ω μ) (η : F)
     (X : Matrix (Fin n) (Fin n) (F × F)) :
     newtonSchulzTest M η X = true ↔ ∀ i j,
       |dec (M.hermShift (M.mm X X) M.one i j).1| ≤ dec η ∧
@@ -176,7 +176,7 @@ private theorem unitRoundoff_bounds {μn u ε : ℝ} (hn : 0 < n) (hμ : 0 ≤ �
 
 /-- If the test passes, the iterate is within `2ε/3` of its sign. -/
 private theorem specNorm_sub_cfc_sign_le_of_newtonSchulzTest
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F} (hε : 0 < dec ε)
     (hε₁ : dec ε ≤ 1 / 2) (hk : 640 * n * (8 + μ n) * u ≤ dec ε)
     {X : Matrix (Fin n) (Fin n) (F × F)} (hX : (decodeMatrix dec X).IsHermitian)
@@ -204,7 +204,7 @@ private theorem specNorm_sub_cfc_sign_le_of_newtonSchulzTest
   exact hX.specNorm_sub_cfc_sign_le (by positivity) fun x hx =>
     (abs_one_sub_sq_le_specNorm hX hx).trans hS
 
-/-- The Newton–Schulz test passes near $\pm 1$: under `NLAlib.FloatMachine.IsAccurate` $u$
+/-- The Newton–Schulz test passes near $\pm 1$: under `NLAlib.FloatMachine.IsArithAccurate` $u$
 $\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$,
 $2n\tau \le 1$, $9(n + 1) \le \Omega$ and $n > 0$, for a stored $\varepsilon$ with
 $0 < \varepsilon \le 1/2$ and $640n(8 + \mu(n))u \le \varepsilon$ (decoded values), and a stored
@@ -212,8 +212,8 @@ $\mathbf{X}$ with Hermitian decoding, $\|\mathbf{X}\|_2 \le 11/10$ and
 $\lvert 1 - x^2 \rvert \le \varepsilon/(16n)$ for every eigenvalue $x$, the stopping test
 `NLAlib.newtonSchulzTest` at the computed threshold $\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$
 passes. -/
-theorem FloatMachine.IsAccurate.newtonSchulzTest_of_forall_mem_spectrum
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+theorem FloatMachine.IsArithAccurate.newtonSchulzTest_of_forall_mem_spectrum
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F} (hε : 0 < dec ε)
     (hε₁ : dec ε ≤ 1 / 2) (hk : 640 * n * (8 + μ n) * u ≤ dec ε)
     {X : Matrix (Fin n) (Fin n) (F × F)} (hX : (decodeMatrix dec X).IsHermitian)
@@ -247,7 +247,7 @@ theorem FloatMachine.IsAccurate.newtonSchulzTest_of_forall_mem_spectrum
 /-- **The loop invariant**: from an iterate at step `k` whose eigenvalues lie on perturbed scalar
 chains, the loop returns a matrix within `2ε/3` plus `2δ/s` per remaining step of the sign. -/
 private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F} (hε : 0 < dec ε)
     (hε₁ : dec ε ≤ 1 / 2) (hk : 640 * n * (8 + μ n) * u ≤ dec ε) {s : ℝ} (hs : 0 < s)
     (hs₁ : s ≤ 1 / 2) (hδs : 20 * (4 * √(n : ℝ) * (8 + μ n) * u) ≤ s)
@@ -317,8 +317,8 @@ private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le
 the Hermitian $\mathbf{A}$ has modulus at least $a > 0$ and $\|\mathbf{A}\|_2 \le b$, then
 $a \le b$, the eigenvalue moduli of $\mathbf{A}_0$ lie within $e = (\sqrt n + 1)u$ of
 $[a/b, 1]$, and the rounding moves the sign by at most $2e/(a/b)$. -/
-private theorem FloatMachine.IsAccurate.abs_mem_spectrum_hermScale_and_specNorm_cfc_sign_sub_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1)
+private theorem FloatMachine.IsArithAccurate.abs_mem_spectrum_hermScale_and_specNorm_cfc_sign_sub_le
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1)
     (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {A : Matrix (Fin n) (Fin n) (F × F)}
     (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b : F} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)
@@ -387,8 +387,8 @@ private theorem stepError_bounds_of_mul_le (hn : 0 < n) {μn u r ε N₀ : ℝ} 
   nlinarith [mul_le_mul_of_nonneg_left hsqn hu₀, mul_nonneg (mul_nonneg
     (Real.sqrt_nonneg (n : ℝ)) hμ) hu₀]
 
-/-- **Accuracy of the Newton–Schulz sign algorithm** (Theorem 2.6): under the machine contract
-`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
+/-- **Accuracy of the Newton–Schulz sign algorithm** (Theorem 2.6): under the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
 $\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $9(n + 1) \le \Omega$, let the
 stored $\mathbf{A}$ have Hermitian decoding (written $\mathbf{A}$) with
 $\|\mathbf{A}\|_2 \le b$ and every eigenvalue of modulus at least $a > 0$, for stored $b$ and
@@ -403,8 +403,8 @@ there with
 $u \le (a/b)\varepsilon/(4\max(N n\mu_g(n, 1.1), n^2))$, $N = N(a/b, \varepsilon/(8n))$ and
 the contour bound of Lemma 2.2; here the perturbation bound is dimension-free and the factor
 $n^{3/2}$ comes from the Hermitian rounding and the stopping test. -/
-theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+theorem FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
     (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b ε : F} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)
@@ -463,19 +463,20 @@ private theorem newtonSchulzSteps_zero_nonneg (x : ℝ) : 0 ≤ newtonSchulzStep
   simp only [newtonSchulzSteps, inv_zero, Real.logb_zero, add_zero]
   linarith
 
-/-- **The Newton–Schulz test passes within the step count**: under the machine contract
-`NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$, $\mu(n) \ge 0$,
-$u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $9(n + 1) \le \Omega$, let the stored $\mathbf{A}$
-have Hermitian decoding (written $\mathbf{A}$) with $\|\mathbf{A}\|_2 \le b$ and every eigenvalue
-of modulus at least $a > 0$, for stored $b$ and $\varepsilon$ with $0 < \varepsilon \le 1/2$
-(decoded values). With $N_0 = N(a/(2b), \varepsilon/(16n))$ (`NLAlib.newtonSchulzSteps`), if
+/-- **The Newton–Schulz test passes within the step count**: under the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$ $\Omega$ with product constant $\mu$,
+$\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and $9(n + 1) \le \Omega$, let the stored
+$\mathbf{A}$ have Hermitian decoding (written $\mathbf{A}$) with $\|\mathbf{A}\|_2 \le b$ and every
+eigenvalue of modulus at least $a > 0$, for stored $b$ and $\varepsilon$ with
+$0 < \varepsilon \le 1/2$ (decoded values). With $N_0 = N(a/(2b), \varepsilon/(16n))$
+(`NLAlib.newtonSchulzSteps`), if
 $$640\, n^{3/2}\,(8 + \mu(n))\,(N_0 + 1)\,u \le \frac{a}{b}\,\varepsilon \,,$$
 then the stopping test `NLAlib.newtonSchulzTest` at the computed threshold
 $\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$ passes at some iterate $k \le N_0 + 1$ of the rounded
 step `NLAlib.newtonSchulzRounded` from the stored $\mathbf{A}/b$. [Shah2024, proof of
 Theorem 2.6], where the iteration count is shown but not stated. -/
-theorem FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+theorem FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
     (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b ε : F} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)
@@ -560,9 +561,9 @@ private theorem nine_mul_div_min_le {δ t : ℝ} (hδ : 0 ≤ δ) (ht : 0 < t) (
 /-- One rounded step keeps every eigenvalue on a perturbed scalar chain, raises the lower bound
 `t` on the eigenvalue moduli to `min (11t/8 − δ) (1/2)`, and moves the sign by at most `2δ`
 over the new bound, for `δ` the error of one step
-(`NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add`). -/
+(`NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add`). -/
 private theorem newtonSchulzRounded_chain_and_specNorm_le_add
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n)
     (hu₀ : 0 ≤ u) (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1)
     (hΩ : 9 ≤ Ω) {s t : ℝ} (hs : 0 < s) (hs₁ : s ≤ 1 / 2)
     (hδ : 20 * ((4 * μ n + 10 + 10 * √(n : ℝ)) * u) ≤ s) (ht : 0 < t)
@@ -623,7 +624,7 @@ private theorem newtonSchulzRounded_chain_and_specNorm_le_add
 chains and have modulus at least `t`, the loop returns a matrix within `2ε/3 + 7δ/t` plus `4δ`
 per remaining step of the sign. -/
 private theorem specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzLoop_le_add
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) (hn : 0 < n) {ε : F} (hε : 0 < dec ε)
     (hε₁ : dec ε ≤ 1 / 2) (hk : 640 * n * (8 + μ n) * u ≤ dec ε) {s : ℝ} (hs : 0 < s)
     (hs₁ : s ≤ 1 / 2) (hδs : 20 * ((4 * μ n + 10 + 10 * √(n : ℝ)) * u) ≤ s)
@@ -731,8 +732,8 @@ private theorem seven_mul_div_min_le {δ r ε : ℝ} (hδ₀ : 0 ≤ δ) (hε : 
   · rw [div_div_eq_mul_div, div_one]; linarith
 
 /-- **Accuracy of the Newton–Schulz sign algorithm, step errors summed geometrically**
-(Theorem 2.6): under the machine contract `NLAlib.FloatMachine.IsAccurate` $u$ $\tau$ $\Omega$
-with product constant $\mu$, $\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and
+(Theorem 2.6): under the arithmetic contract `NLAlib.FloatMachine.IsArithAccurate` $u$ $\tau$
+$\Omega$ with product constant $\mu$, $\mu(n) \ge 0$, $u \ge 0$, $0 \le \tau$, $2n\tau \le 1$ and
 $9(n + 1) \le \Omega$, let the stored $\mathbf{A}$ have Hermitian decoding with
 $\|\mathbf{A}\|_2 \le b$ and every eigenvalue of modulus at least $a > 0$, for stored $b$ and
 $\varepsilon$ with $0 < \varepsilon \le 1/2$ (decoded values). With
@@ -741,14 +742,15 @@ $\nu = 4\mu(n) + 10 + 10\sqrt n$ and $N_0 = N(a/(2b), \varepsilon/(16n))$
 $$32\,\nu u \le \frac ab\,\varepsilon \,, \qquad 640\,(n + N_0 + 1)\,\nu u \le \varepsilon$$
 and the step limit is at least $N_0$, then `NLAlib.newtonSchulzSign` is within $\varepsilon$ of
 $\operatorname{sign}\mathbf{A}$ in the spectral norm. Compared with
-`NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`
+`NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le`
 ($640n^{3/2}(8 + \mu(n))(N_0 + 1)u \le (a/b)\varepsilon$), the step count and the dimension
 factor of the stopping test leave the binding condition: while the least eigenvalue modulus is at
 most $1/2$ it grows by the factor $11/8$
 (`NLAlib.div_mul_abs_le_abs_newtonSchulz_of_abs_le`), so the step errors form a geometric series.
 [Shah2024, Theorem 2.6]. -/
-theorem FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le
-    (hM : M.IsAccurate dec u τ Ω μ μQ cN) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
+theorem
+    FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le
+    (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u) (hτ₀ : 0 ≤ τ)
     (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 * (n + 1) ≤ Ω) {A : Matrix (Fin n) (Fin n) (F × F)}
     (hA : (decodeMatrix dec A).IsHermitian) {a : ℝ} {b ε : F} (ha : 0 < a)
     (hspec : ∀ x ∈ spectrum ℝ (decodeMatrix dec A), a ≤ |x|)

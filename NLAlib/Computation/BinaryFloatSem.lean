@@ -25,7 +25,11 @@ Representation, numerical accuracy and operation costs remain separate certifica
 ## Main results
 
 * `NLAlib.Computation.isArithErrSem_binaryFloatSem`: mixed error and range-success certificate.
+* `NLAlib.Computation.isFloorRelErrSem_binaryFloatSem`: the floor model with success in the
+  finite range.
 * `NLAlib.Computation.addsZeroExactly_binaryFloatSem`: exact zero addition.
+* `NLAlib.Computation.mulShrinks_binaryFloatSem`: multiplication by a factor of modulus at most
+  one does not enlarge.
 * `NLAlib.Computation.absRelErr_round`: a concrete nearest-integer selector certificate.
 * `NLAlib.Computation.isExactIntLit_binaryFloatSem`: exact integer literals of a bounded binary
   format.
@@ -81,8 +85,9 @@ theorem exists_binaryFloatQuantize_eq_some_of_abs_le (fmt : Float.Model.Format)
     by simp only [binaryFloatQuantize, ha, ↓reduceDIte]⟩
 
 /-- Bounded binary arithmetic with gradual underflow and checked exact-result range.
-Negation and real conjugation are exact. Division rejects zero; square root and word
-operations are unsupported by this first arithmetic endpoint. Tags share one format. -/
+Negation and real conjugation are exact. Division rejects zero; the square root rejects a
+negative argument (no clamping at zero) and rounds the exact root otherwise; word operations
+are unsupported. Tags share one format. -/
 noncomputable def binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ)
     (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) : ScalarSem P (BinaryFloat fmt) := by
@@ -98,6 +103,7 @@ noncomputable def binaryFloatSem {P : Type} (fmt : Float.Model.Format)
       un := fun _ op x => match op with
         | .neg => some ⟨-x.val, x.property.neg⟩
         | .conj | .re => some x
+        | .sqrt => if 0 ≤ x.val then binaryFloatQuantize fmt he r hr √x.val else none
         | _ => none
       cmp := fun _ op x y => some <| match op with
         | .eq => decide (x.val = y.val)
@@ -164,6 +170,90 @@ theorem isArithErrSem_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
     exact ⟨⟨-x.val, x.property.neg⟩, rfl, rfl⟩
   · intro p x
     exact ⟨x, rfl, rfl⟩
+
+/-- Successful quantization errs by at most $2^{-p}\max(\lvert a\rvert, 2^{e_{\min} + p - 1})$. -/
+private theorem abs_sub_val_le_of_binaryFloatQuantize {fmt : Float.Model.Format}
+    {he : 2 ≤ fmt.exponentBits} {r : ℝ → ℤ} {hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)} {a : ℝ}
+    {w : BinaryFloat fmt} (h : binaryFloatQuantize fmt he r hr a = some w) :
+    |a - w.val| ≤ (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
+      max |a| ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) := by
+  rw [val_eq_binaryFloatRound_of_binaryFloatQuantize h]
+  exact abs_sub_binaryFloatRound_le fmt hr a
+
+/-- **Bounded binary arithmetic meets the floor model**: the bounded binary semantics
+`NLAlib.Computation.binaryFloatSem fmt he r hr`, decoding a word to its value, meets
+`NLAlib.Computation.IsFloorRelErrSem` at unit roundoff $2^{-p}$ ($p$ the precision of `fmt`,
+`fmt.mantissaBits`), floor $2^{e_{\min} + p - 1}$ (the smallest normal number, $e_{\min}$ the
+exponent of the subnormal spacing, `fmt.minExponent`) and range condition
+$\lvert a\rvert \le \Omega$, $\Omega$ the largest finite number (`fmt.maxFinite`): arithmetic,
+literals and the square root round the exact result to within
+$2^{-p}\max(\lvert a\rvert, 2^{e_{\min} + p - 1})$ and succeed exactly when it is in range (with
+a nonzero divisor, and a nonnegative argument for the square root); negation, conjugation, the
+real part, comparisons and conversions are exact. The constants are those of the format: a tie
+in the normal range errs by $2^{-p}$ relative, a tie in the subnormal range by half the subnormal
+spacing $2^{e_{\min}}/2$. This theorem is independent of the nearest tie policy. [Higham2002,
+§2.2], with gradual underflow as a floor. -/
+theorem isFloorRelErrSem_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
+    (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
+    IsFloorRelErrSem (fun _ => (2 : ℝ)⁻¹ ^ fmt.mantissaBits)
+      (fun _ => (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1))
+      (fun (_ : P) (x : BinaryFloat fmt) => x.val)
+      (fun _ a => |a| ≤ fmt.maxFinite) (binaryFloatSem fmt he r hr) where
+  bin_err p op x y z hop hrun := by
+    cases op <;> simp only [BinOp.IsArith] at hop
+    case add =>
+      exact abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) (a := x.val + y.val) hrun
+    case sub =>
+      exact abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) (a := x.val - y.val) hrun
+    case mul =>
+      exact abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) (a := x.val * y.val) hrun
+    case div =>
+      by_cases hy : y.val = 0
+      · simp only [binaryFloatSem, hy, ↓reduceIte] at hrun
+        cases hrun
+      · exact abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) (a := x.val / y.val)
+          (by simpa only [binaryFloatSem, hy, ↓reduceIte] using hrun)
+  bin_ok := (isArithErrSem_binaryFloatSem fmt he r hr).bin_ok
+  lit_err _ _ _ h := abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) h
+  lit_ok _ _ h := exists_binaryFloatQuantize_eq_some_of_abs_le fmt he r hr h
+  neg _ x := ⟨⟨-x.val, x.property.neg⟩, rfl, rfl⟩
+  conj _ x := ⟨x, rfl, rfl⟩
+  re _ x := ⟨x, rfl, rfl⟩
+  sqrt_err p x z h := by
+    by_cases hx : 0 ≤ x.val
+    · have h' := abs_sub_val_le_of_binaryFloatQuantize (he := he) (hr := hr) (a := √x.val)
+        (by simpa only [binaryFloatSem, hx, ↓reduceIte] using h)
+      rwa [abs_of_nonneg (Real.sqrt_nonneg _)] at h'
+    · simp only [binaryFloatSem, hx, ↓reduceIte] at h
+      cases h
+  sqrt_ok p x hx hsafe := by
+    change ∃ z, (if 0 ≤ x.val then binaryFloatQuantize fmt he r hr √x.val else none) = some z
+    rw [if_pos hx]
+    exact exists_binaryFloatQuantize_eq_some_of_abs_le fmt he r hr hsafe
+  cmp_eq _ _ _ := rfl
+  cmp_lt _ _ _ := rfl
+  cmp_le _ _ _ := rfl
+  convert_err p q x z h := by
+    cases Option.some.inj h
+    rw [sub_self, abs_zero]
+    positivity
+  convert_ok _ _ x _ := ⟨x, rfl⟩
+
+/-- Bounded binary multiplication by a factor of modulus at most one does not enlarge: the
+bounded binary semantics `NLAlib.Computation.binaryFloatSem fmt he r hr`, decoding a word to its
+value, meets `NLAlib.Computation.MulShrinks`: if $\lvert y\rvert \le 1$, the rounding of $xy$
+has magnitude at most $\lvert x\rvert$, since $x$ is represented and rounding never passes a
+represented value of larger magnitude. This theorem is independent of the nearest tie policy. No
+printed source. -/
+theorem mulShrinks_binaryFloatSem {P : Type} (fmt : Float.Model.Format)
+    (he : 2 ≤ fmt.exponentBits) (r : ℝ → ℤ) (hr : ∀ x, AbsRelErr 0 (1 / 2) x (r x : ℝ)) :
+    MulShrinks (fun (_ : P) (x : BinaryFloat fmt) => x.val) (binaryFloatSem fmt he r hr) := by
+  intro p x y z h hy
+  change |z.val| ≤ |x.val|
+  rw [val_eq_binaryFloatRound_of_binaryFloatQuantize (he := he) (hr := hr) h]
+  refine abs_binaryFloatRound_le_of_abs_le fmt hr x.property ?_
+  rw [abs_mul]
+  exact mul_le_of_le_one_right (abs_nonneg _) hy
 
 /-- Adding a represented zero is exact because rounding fixes every represented value. -/
 theorem addsZeroExactly_binaryFloatSem {P : Type} (fmt : Float.Model.Format)

@@ -34,6 +34,8 @@ of the access models rest on (`docs/design/Computation.md`, "Guarantees"). Desig
 ## Main definitions
 
 * `NLAlib.Computation.OpKind`, `NLAlib.Computation.OpCount`: operation kinds and counts.
+* `NLAlib.Computation.OpKind.kernelWeight`: the weight of a kernel call by its largest
+  dimension, for weighted kernel counts.
 * `NLAlib.Computation.ScalarSem`: a value semantics; `NLAlib.Computation.Interp`: an
   interpretation.
 * `NLAlib.Computation.St`: the state; `NLAlib.Computation.St.usage`: its tape positions, counts
@@ -104,6 +106,14 @@ inductive OpKind (P ι : Type) where
 /-- Counts of operations: finitely supported functions on the kinds. A weighted total (flops, bit
 operations) is Mathlib's `Finsupp.weight`. -/
 abbrev OpCount (P ι : Type) := OpKind P ι →₀ ℕ
+
+/-- **The kernel weight of an operation kind**: for a cost $T$ of a kernel call by its largest
+dimension, a call of a kernel at the dimensions `ds` weighs $T(\max ds)$ (the largest dimension,
+$0$ for no dimension), and every other kind weighs $0$. The weighted kernel count of a run is
+`Finsupp.weight (OpKind.kernelWeight T)` of its count. -/
+def OpKind.kernelWeight {P ι : Type} (T : ℕ → ℕ) : OpKind P ι → ℕ
+  | .kcall _ _ ds => T (ds.foldr max 0)
+  | _ => 0
 
 /-- A value semantics over the carrier `K`: each scalar operation at a tag, partial (`none` marks
 an operation outside its domain, such as a division by zero), and the conversion of a stored value

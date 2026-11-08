@@ -289,9 +289,9 @@ theorem isAccurate_gridMachine {t : ℕ} (ht : 0 < t) (Ω : ℝ) :
     (gridMachine t).IsAccurate (Real.roundNearest t) (2⁻¹ ^ t) 0 Ω (fun d => 2 * d)
       (fun d => 2 * d) √2 := by
   have hr := isRoundingOf_roundNearest_roundNearest ht Ω
-  refine ⟨Real.roundNearest_zero t, Real.roundNearest_one ht, fun k => hr _, fun x y => hr _,
+  refine ⟨⟨Real.roundNearest_zero t, Real.roundNearest_one ht, fun k => hr _, fun x y => hr _,
     fun x y => hr _, fun x y => hr _, fun x y _ => hr _, fun x => ?_, fun x y => ?_,
-    fun x => rfl, isMatMulErr_gridMM ht Ω, isQRErr_gridQR ht Ω, isUnifSampler_gridMachine ht,
+    fun x => rfl, isMatMulErr_gridMM ht Ω⟩, isQRErr_gridQR ht Ω, isUnifSampler_gridMachine ht,
     isNormalSampler_gridMachine ht Ω⟩
   · exact Real.roundNearest_eq_self_of_mem_floatGrid
       (Real.neg_mem_floatGrid (Real.roundNearest_mem_floatGrid ht x))

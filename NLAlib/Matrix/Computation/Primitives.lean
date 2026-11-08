@@ -44,13 +44,12 @@ $\tau > 0$ (§12 of the note).
 * `NLAlib.IsRoundingOf`: $z$ is a rounding of $a$.
 * `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler`, `NLAlib.IsNormalSampler`.
 * `NLAlib.FloatMachine`, `NLAlib.decodeComplex`, `NLAlib.decodeMatrix`,
-  `NLAlib.FloatMachine.IsAccurate`.
+  `NLAlib.FloatMachine.IsArithAccurate`, `NLAlib.FloatMachine.IsAccurate`.
 
 ## Main results
 
 * `NLAlib.exists_floatMachine_isAccurate`: the exact machine.
 * `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound`: a bounded-format machine.
-* `NLAlib.abs_sub_binaryFloatRound_le_mul_max`: binary rounding with a floor, at every scale.
 * `NLAlib.IsMatMulErr.of_specNorm_mul_sub_le_add`: from a mixed bound to the floor form.
 -/
 
@@ -176,17 +175,17 @@ def decodeMatrix {F : Type*} {m n : Type*} (dec : F → ℝ) (A : Matrix m n (F 
     Matrix m n ℂ :=
   A.map (decodeComplex dec)
 
-/-- `M.IsAccurate dec u τ Ω μM μQ cN`: **the contract of a floating-point machine** at decoding
-`dec`, unit roundoff $u$, floor $\tau$, range $\Omega$, black-box constants $\mu_{\mathrm{MM}}$,
-$\mu_{\mathrm{QR}}$ and normal-sampler constant $c_{\mathrm N}$: zero and one are exact; rounded
-conversion, addition, subtraction, multiplication and division (by a nonzero) return a rounding
-(`NLAlib.IsRoundingOf`) of the exact result on the decoded operands; negation and comparisons are
-exact; conversion to a natural number is the exact floor $\lfloor\bar x\rfloor_+$; the black boxes
-and samplers meet `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and
-`NLAlib.IsNormalSampler` through the decoding. [Shah2024, Section 1.2 and Definitions 1.1–1.4],
+/-- `M.IsArithAccurate dec u τ Ω μM`: **the arithmetic contract of a floating-point machine** at
+decoding `dec`, unit roundoff $u$, floor $\tau$, range $\Omega$ and product constant
+$\mu_{\mathrm{MM}}$: zero and one are exact; rounded conversion, addition, subtraction,
+multiplication and division (by a nonzero) return a rounding (`NLAlib.IsRoundingOf`) of the exact
+result on the decoded operands; negation and comparisons are exact; conversion to a natural number
+is the exact floor $\lfloor\bar x\rfloor_+$; the matrix-multiplication black box meets
+`NLAlib.IsMatMulErr` through the decoding. The part of `NLAlib.FloatMachine.IsAccurate` that says
+nothing about the QR black box and the samplers. [Shah2024, Section 1.2 and Definitions 1.1–1.2],
 with componentwise complex storage. -/
-structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
-    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) : Prop where
+structure FloatMachine.IsArithAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM : ℕ → ℝ) : Prop where
   /-- Zero is exact. -/
   dec_zero : dec M.zero = 0
   /-- One is exact. -/
@@ -209,6 +208,17 @@ structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec 
   toNat_eq : ∀ x, M.toNat x = ⌊dec x⌋₊
   /-- The matrix-multiplication contract. -/
   isMatMulErr : IsMatMulErr (decodeComplex dec) u τ Ω μM M.mm
+
+/-- `M.IsAccurate dec u τ Ω μM μQ cN`: **the contract of a floating-point machine** at decoding
+`dec`, unit roundoff $u$, floor $\tau$, range $\Omega$, black-box constants $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$ and normal-sampler constant $c_{\mathrm N}$: the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` (rounded scalar operations, exact negation, comparisons,
+floor conversion, $0$ and $1$, and `NLAlib.IsMatMulErr` for the products), and the QR black box
+and the samplers meet `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and `NLAlib.IsNormalSampler`
+through the decoding. [Shah2024, Section 1.2 and Definitions 1.1–1.4], with componentwise complex
+storage. -/
+structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) : Prop extends M.IsArithAccurate dec u τ Ω μM where
   /-- The QR contract. -/
   isQRErr : IsQRErr (decodeComplex dec) u τ Ω μQ M.qr
   /-- The uniform-sampler contract. -/
@@ -333,35 +343,6 @@ theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (h�
         change ‖z - z‖ ≤ _
         simp }
 
-/-- Binary rounding errs by at most $u\max(\lvert x\rvert, \tau)$ at every scale, with
-$u = 2^{-p}$ and $\tau = 2^{e_{\min} + p - 1}$ (no overflow in the quantizer). -/
-theorem abs_sub_binaryFloatRound_le_mul_max (fmt : Float.Model.Format) {r : ℝ → ℤ}
-    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
-    |x - Computation.binaryFloatRound fmt r x| ≤
-      (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
-        max |x| ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) := by
-  by_cases hn : fmt.minExponent ≤ Int.log 2 |x| + 1 - fmt.mantissaBits
-  · have h := (Computation.relErr_binaryFloatRound_of_minExponent_le fmt hr x hn).absRelErr le_rfl
-    simp only [Computation.AbsRelErr, add_zero] at h
-    exact h.trans (by gcongr; exact le_max_left _ _)
-  · set e := fmt.targetExponent (Int.log 2 |x| + 1) with he_def
-    have he : e = fmt.minExponent := by
-      rw [he_def, Float.Model.Format.targetExponent_eq]; exact max_eq_right (by omega)
-    have hpos : (0 : ℝ) < 2 ^ e := zpow_pos two_pos _
-    have hq : |x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)| ≤ 1 / 2 := by
-      simpa only [Computation.AbsRelErr, zero_mul, zero_add] using hr (x / (2 : ℝ) ^ e)
-    have heq : x - Computation.binaryFloatRound fmt r x =
-        (x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)) * 2 ^ e := by
-      dsimp only [Computation.binaryFloatRound, e]
-      field_simp
-    have hτ : (1 / 2 : ℝ) * 2 ^ e =
-        (2 : ℝ)⁻¹ ^ fmt.mantissaBits * 2 ^ (fmt.minExponent + fmt.mantissaBits - 1) := by
-      rw [he, zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, inv_pow]
-      field_simp
-    rw [heq, abs_mul, abs_of_pos hpos]
-    calc _ ≤ (1 / 2 : ℝ) * 2 ^ e := mul_le_mul_of_nonneg_right hq hpos.le
-      _ ≤ _ := by rw [hτ]; gcongr; exact le_max_right _ _
-
 /-- A bounded-format machine meets the contract: for a binary format `fmt` with precision
 $p$, smallest exponent $e_{\min}$ and largest finite number $\Omega$, and nonnegative constants,
 there is a `NLAlib.FloatMachine` on stored reals whose addition, subtraction, multiplication,
@@ -382,7 +363,7 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
       (∀ x y, M.sub x y = Computation.binaryFloatRound fmt r (x - y)) ∧
       (∀ x y, M.mul x y = Computation.binaryFloatRound fmt r (x * y)) ∧
       (∀ x y, y ≠ 0 → M.div x y = Computation.binaryFloatRound fmt r (x / y)) := by
-  have hround := abs_sub_binaryFloatRound_le_mul_max fmt hr
+  have hround := Computation.abs_sub_binaryFloatRound_le fmt hr
   set u : ℝ := (2 : ℝ)⁻¹ ^ fmt.mantissaBits
   set τ : ℝ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
   have hu : 0 ≤ u := by positivity
@@ -394,9 +375,9 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
       ofNat := (fun k => R k), add := (fun x y => R (x + y)), sub := (fun x y => R (x - y))
       mul := (fun x y => R (x * y)), div := (fun x y => R (x / y))
       unif := (fun s v => max (-s) (min s (R (s * v))))
-      normal := (fun z => (R z.re, R z.im)) }, ⟨hM₀.dec_zero, hM₀.dec_one,
+      normal := (fun z => (R z.re, R z.im)) }, ⟨⟨hM₀.dec_zero, hM₀.dec_one,
     fun k _ => hround _, fun x y _ => hround _, fun x y _ => hround _, fun x y _ => hround _,
-    fun x y _ _ => hround _, hM₀.dec_neg, hM₀.le_iff, hM₀.toNat_eq, ⟨?_, ?_⟩, ?_, ?_, ?_⟩,
+    fun x y _ _ => hround _, hM₀.dec_neg, hM₀.le_iff, hM₀.toNat_eq, ⟨?_, ?_⟩⟩, ?_, ?_, ?_⟩,
     fun _ _ => rfl, fun _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl⟩
   · intro l m n A B hAB
     refine (hM₀.isMatMulErr.specNorm_mul_sub_le A B hAB).trans ?_

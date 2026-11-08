@@ -42,11 +42,6 @@ namespace EighWeight
 
 omit [AddMonoid C] [Inhabited K]
 
-/-- The weight of an operation kind: `T` of the largest dimension of a kernel call. -/
-def kernelWeight (T : ℕ → ℕ) : OpKind P ι → ℕ
-  | .kcall _ _ ds => T (ds.foldr max 0)
-  | _ => 0
-
 /-- The cells of buffer `b` at tag `p`. -/
 def cells (s : Store P K) (p : P) (b : ℕ) : ℕ → Option K := fun i => s.read p b i
 
@@ -56,8 +51,8 @@ def Triple (I : Interp P ι K (OpCount P ι)) (T : ℕ → ℕ) (p : P) (b m : �
     (V₀ : ℕ → Option K) (s : Stmt P ι ℕ ℕ) (c : ℕ) (Q : (ℕ → Option K) → Prop) : Prop :=
   Monotone T → (∀ κ, I.charge κ = Finsupp.single κ 1) → ∀ st st' : St P K (OpCount P ι),
     b < st.store.size → cells st.store p b = V₀ → exec I s st = some st' →
-    Finsupp.weight (kernelWeight T) st'.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt + c * T m ∧
-      Q (cells st'.store p b)
+    Finsupp.weight (OpKind.kernelWeight T) st'.cnt ≤
+        Finsupp.weight (OpKind.kernelWeight T) st.cnt + c * T m ∧ Q (cells st'.store p b)
 
 /-- A statement that keeps buffer `b` and costs at most `c T(m)`. -/
 def Frame (I : Interp P ι K (OpCount P ι)) (T : ℕ → ℕ) (p : P) (b m : ℕ)
@@ -89,8 +84,8 @@ variable {I : Interp P ι K (OpCount P ι)} {T : ℕ → ℕ} {p : P} {b m : ℕ
 omit [DecidableEq P] in
 /-- The weight of a count plus one operation. -/
 private theorem weight_add_single (T : ℕ → ℕ) (c : OpCount P ι) (κ : OpKind P ι) :
-    Finsupp.weight (kernelWeight T) (c + Finsupp.single κ 1) =
-      Finsupp.weight (kernelWeight T) c + kernelWeight T κ := by
+    Finsupp.weight (OpKind.kernelWeight T) (c + Finsupp.single κ 1) =
+      Finsupp.weight (OpKind.kernelWeight T) c + OpKind.kernelWeight T κ := by
   rw [map_add, Finsupp.weight_single, one_smul]
 
 /-- A successful run keeps the number of buffers. -/
@@ -164,8 +159,8 @@ private theorem triple_ite {V₀ : ℕ → Option K} {q : P} {cmp : CmpOp} {x y 
   obtain ⟨a, -, hr⟩ := Option.bind_eq_some_iff.mp hr
   obtain ⟨a', -, hr⟩ := Option.bind_eq_some_iff.mp hr
   obtain ⟨r', -, rfl⟩ := Option.map_eq_some_iff.mp hr
-  have hw : Finsupp.weight (kernelWeight T) (st.cnt + I.charge (.cmp q)) =
-      Finsupp.weight (kernelWeight T) st.cnt := by
+  have hw : Finsupp.weight (OpKind.kernelWeight T) (st.cnt + I.charge (.cmp q)) =
+      Finsupp.weight (OpKind.kernelWeight T) st.cnt := by
     rw [hch, weight_add_single]; rfl
   split_ifs at hex
   · obtain ⟨a1, a2⟩ := ht hT hch { st with cnt := st.cnt + I.charge (.cmp q) } st' hb hV hex
@@ -251,7 +246,7 @@ theorem triple_litIdx {V₀ : ℕ → Option K} {e m' : IExp ℕ} :
   obtain ⟨v, hv, hr⟩ := Option.bind_eq_some_iff.mp hr
   obtain ⟨s', hw, rfl⟩ := Option.map_eq_some_iff.mp hr
   refine ⟨?_, ?_⟩
-  · rw [hch, weight_add_single]; simp [kernelWeight, Instr.kind]
+  · rw [hch, weight_add_single]; simp [OpKind.kernelWeight, Instr.kind]
   · rw [← hV, hv]
     funext i
     simp only [cells]
@@ -299,7 +294,8 @@ private theorem exists_write_instrDst {sem : ScalarSem P K} {tape : Dist → ℕ
 
 omit [DecidableEq P] in
 /-- A scalar instruction has weight $0$. -/
-private theorem kernelWeight_kind (i : Instr P ℕ ℕ) : kernelWeight (ι := ι) T i.kind = 0 := by
+private theorem kernelWeight_kind (i : Instr P ℕ ℕ) :
+    OpKind.kernelWeight (ι := ι) T i.kind = 0 := by
   cases i <;> rfl
 
 /-- A scalar instruction that does not write the tracked buffer. -/
@@ -351,7 +347,7 @@ private theorem frame_kcall {o : ι} {q : P} {dims : List (IExp ℕ)} {ins outs 
   obtain ⟨ys, -, hs⟩ := Option.bind_eq_some_iff.mp hs
   refine ⟨?_, ?_⟩
   · rw [hch, weight_add_single]
-    simp only [kernelWeight, one_mul]
+    simp only [OpKind.kernelWeight, one_mul]
     refine Nat.add_le_add_left (hT (foldr_max_le ?_)) _
     intro x hx
     obtain ⟨d, hdm, rfl⟩ := List.mem_map.mp hx
@@ -367,7 +363,8 @@ private theorem frame_loop {n : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {c 
     (h : ∀ i, Frame I T p b m (body i) c) : Frame I T p b m (.loop n body) (n.eval * c) := by
   intro V₀ hT hch st st' hb hV hex
   have := forall_of_exec_loop_eq_some I (fun i s => b < s.store.size ∧ cells s.store p b = V₀ ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt + i * c * T m)
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤
+        Finsupp.weight (OpKind.kernelWeight T) st.cnt + i * c * T m)
     ⟨hb, hV, by simp⟩ (fun i _ s₁ s₂ ⟨h1, h2, h3⟩ hs => by
       obtain ⟨a1, a2⟩ := h i V₀ hT hch s₁ s₂ h1 h2 hs
       refine ⟨by rw [size_eq_of_exec_eq_some hs]; exact h1, a2, ?_⟩

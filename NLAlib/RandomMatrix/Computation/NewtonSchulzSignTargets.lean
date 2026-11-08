@@ -50,8 +50,7 @@ the standard model at $u$ with every value in range (`IsRelErrSem`, unbounded ex
 underflow) and index exact at `dec` up to $1$ (the model's clause: exact literals up to $1$ and
 the exact floor conversion), whose kernel `mm` is a routine on pairs
 (`IsMatMulKernel`, interleaved layout) meeting `IsMatMulErr` at $u$, floor $0$, range $\Omega$ and
-constant $\mu$, on a carrier that admits a machine meeting `FloatMachine.IsAccurate` at $u$, floor
-$0$ and range $\Omega$, and every tape: if the decoding (written $\mathbf{A}$) is Hermitian,
+constant $\mu$, and every tape: if the decoding (written $\mathbf{A}$) is Hermitian,
 $u \ge 0$, $\mu(N) \ge 0$, $9(N + 1) \le \Omega$, $\|\mathbf{A}\|_2 \le \bar b$,
 $0 < \bar\varepsilon \le 1/2$ (decoded values) and there is $a > 0$ below the modulus of every
 eigenvalue of $\mathbf{A}$ with, for $N_0 = N(a/(2\bar b), \bar\varepsilon/(16N))$
@@ -74,10 +73,8 @@ def MatrixFreeRoundedProbNewtonSchulzSign : Prop :=
       dec (fun _ _ => 1) (fun N n => newtonSchulzSignCount p mm N (n 0))
       (fun N _ q => if q = p then 8 * (N * N) + 7 else 0)
       (fun _ _ I => IsRelErrSem (fun _ => u) dec (fun _ _ => True) I.sem ∧
-        (∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
-          IsMatMulErr (decodeComplex (dec p)) u 0 Ω μ mmR) ∧
-        ∃ (M₀ : FloatMachine K ℝ ℂ) (μM μQ : ℕ → ℝ) (cN : ℝ),
-          M₀.IsAccurate (dec p) u 0 Ω μM μQ cN)
+        ∃ mmR : MatMulMap (K × K), IsMatMulKernel I mm pairLayout mmR ∧
+          IsMatMulErr (decodeComplex (dec p)) u 0 Ω μ mmR)
       (fun _ => True)
       (fun N n x => (decodeMatrix (dec p) x.1).IsHermitian ∧ 0 ≤ u ∧ 0 ≤ μ N ∧
         9 * (N + 1) ≤ Ω ∧ specNorm (decodeMatrix (dec p) x.1) ≤ dec p x.2.2 ∧
