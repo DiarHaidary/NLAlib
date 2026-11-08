@@ -74,7 +74,10 @@ probability that the run fails, exceeds the counts `eighCount p mm qr N ℓ F` o
 $4N^2 + N + 3 + 64(N + 1)^2(\ell + 3)$ cells at tag `p` (declared buffers and scratch; none at
 other tags, the read-only data counted on top), or ends with stored $\mathbf{U}$, $\mathbf{d}$ in
 declared buffers $2$, $3$ that are not an approximate diagonalization of $\mathbf{A}$ with residual
-$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$.
+$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$, or whose weighted kernel count
+exceeds $(\ell + 1)(2F + 12)\,T(N)$ for some monotone superadditive cost $T$ of a kernel call by
+its largest dimension (`NLAlib.Computation.OpKind.kernelWeight`; the sharp count, against the
+static supremum `eighCount`), is at most $\theta$.
 [Shah2024, Theorem 4.2], for the program. -/
 def MatrixFreeRoundedProbEigh : Prop :=
   ∀ (P ι : Type) [DecidableEq P] (p : P) (mm qr : ι) (K : Type) [Inhabited K]
@@ -113,10 +116,12 @@ def MatrixFreeRoundedProbEigh : Prop :=
         Nst ≤ n 1 ∧
         16 * (2 * dec p x.R₀ + N + 2 * ℓ + 2 * √2 * √(N : ℝ) +
           √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) ≤ Ω)
-      (fun N _ x st => ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
+      (fun N n x st => (∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
         pairLayout.Holds st.store p 2 0 U ∧ (∀ i : Fin N, st.store.read p 3 i = some (d i)) ∧
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
-          (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3))
+          (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3)) ∧
+        ∀ T : ℕ → ℕ, Monotone T → (∀ a b, T a + T b ≤ T (a + b)) →
+          Finsupp.weight (OpKind.kernelWeight T) st.cnt ≤ (n 0 + 1) * (2 * n 1 + 12) * T N)
       (fun _ _ _ => θ)
 
 end NLAlib

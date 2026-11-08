@@ -248,10 +248,12 @@ theorem matrixFreeRoundedProbEigh_nonVacuous : ∀ N₀ : ℕ,
         Nst ≤ n 1 ∧
         16 * (2 * dec p x.R₀ + N + 2 * ℓ + 2 * √2 * √(N : ℝ) +
           √(Real.log (96 * N * min (N : ℝ) (ℓ + 1) / θ))) ≤ Ω)
-      (fun N _ x st => ∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
+      (fun N n x st => (∃ (U : Matrix (Fin N) (Fin N) (K × K)) (d : Fin N → K),
         pairLayout.Holds st.store p 2 0 U ∧ (∀ i : Fin N, st.store.read p 3 i = some (d i)) ∧
         IsApproxDiagonalization (decodeMatrix (dec p) x.A) (decodeMatrix (dec p) U)
-          (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3))
+          (fun i => dec p (d i)) (2 * dec p x.ε * dec p x.R₀) (dec p x.ε / 3)) ∧
+        ∀ T : ℕ → ℕ, Monotone T → (∀ a b, T a + T b ≤ T (a + b)) →
+          Finsupp.weight (OpKind.kernelWeight T) st.cnt ≤ (n 0 + 1) * (2 * n 1 + 12) * T N)
       (fun _ _ _ => θ) N₀ := by
   intro N₀
   obtain ⟨N, hN₀, hN⟩ : ∃ N, N₀ ≤ N ∧ 0 < N := ⟨N₀ + 1, by omega, by omega⟩

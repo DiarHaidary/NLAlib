@@ -11,6 +11,7 @@ public import NLAlib.Eigensolvers.SpectralBisectionSamples.Lazy
 public import NLAlib.Eigensolvers.SpectralBisectionSamples.IdealMachine
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Count
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Weight
 
 /-!
 # Hermitian diagonalization in linear precision, for the program
@@ -25,7 +26,8 @@ writes `NLAlib.eigh` on the tape machine with the tree of sample positions at th
 ## Main results
 
 * `NLAlib.matrixFreeRoundedProbEigh`: the target `NLAlib.MatrixFreeRoundedProbEigh`, from the
-  shallow Theorem 4.2.
+  shallow Theorem 4.2 and the weighted kernel bound
+  `NLAlib.eighProg.weight_le_of_exec_compiled`.
 * `NLAlib.matrixFreeRoundedProb_eighProg_of_logb_le`: the bit count, from the shallow bit count.
 * `NLAlib.measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le`: a
   bounded binary format, from the shallow bounded-format theorem, for the runs that succeed.
@@ -56,7 +58,7 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
       simp [inputState, EntryLayout.size_toArray, pairLayout] at h ⊢
       nlinarith
     · simpa [inputState, hq] using h
-  intro N n _ x hpre I ρ hidx hI hρO _ Ω' _ μ ξ hξ
+  intro N n _ x hpre I ρ hidx hI hρO hch Ω' _ μ ξ hξ
   obtain ⟨ℓ, F, rfl⟩ : ∃ ℓ F, n = ![ℓ, F] := ⟨n 0, n 1, by ext i; fin_cases i <;> rfl⟩
   have hlit : IsExactIntLit dec I.sem (N + 4) := hidx.intLit
   have htn : IsExactToNat dec I.sem := hidx.toNat
@@ -100,7 +102,10 @@ theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
     x.ε x.β
   dsimp only at hH he
   rw [he] at hH
-  exact hω ⟨st₀, hexec, _, _, hH.1, hH.2, hAD⟩
+  refine hω ⟨st₀, hexec, ⟨_, _, hH.1, hH.2, hAD⟩, fun T hT hTs => ?_⟩
+  simpa [inputState] using eighProg.weight_le_of_exec_compiled
+    (I := { I with tape := fun d i => ρ d i (ξ ω d i) }) (congrFun hch) p N ℓ F hlit htn T hT hTs
+    hexec
 
 /-- **The bit count of Hermitian diagonalization, for the program**: the registered tree
 `NLAlib.eighProg.compiled` meets the rounded probabilistic model at all sizes $N$ and

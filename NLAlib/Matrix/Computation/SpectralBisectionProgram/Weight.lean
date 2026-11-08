@@ -254,7 +254,7 @@ private theorem triple_downLoop {dec : P → K → ℝ} {B : ℕ} (hlit : IsExac
   set c := 2 * F.eval + 9
   set g₀ : ℕ → ℕ := fun j => readNat I p V₀ (N * d.eval + j)
   have := forall_of_exec_loop_eq_some I (fun lo s => b < s.store.size ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt +
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤ Finsupp.weight (OpKind.kernelWeight T) st.cnt +
         c * ∑ j ∈ Finset.range lo, T (g₀ j) ∧ DownInv I p V₀ N d.eval lo (cells s.store p b))
     ⟨hb, by simp, 0, le_rfl, Nat.zero_le _, fun i _ => by rw [hV],
       fun j _ h => absurd h (Nat.not_lt_zero _), fun j _ h => by rw [hV]; exact hz j h,
@@ -376,7 +376,7 @@ private theorem triple_upLoop {mm : ι} {n d : IExp ℕ} {Ua Qa Ea Kd Kp t : ℕ
   set N := n.eval
   set g₀ : ℕ → ℕ := fun j => readNat I p V₀ (N * d.eval + j)
   have := forall_of_exec_loop_eq_some I (fun lo s => b < s.store.size ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt +
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤ Finsupp.weight (OpKind.kernelWeight T) st.cnt +
         2 * ∑ j ∈ Finset.range lo, T (g₀ j) ∧ cells s.store p b = V₀)
     ⟨hb, by simp, hV⟩
     (fun lo hlo s₁ s₂ ⟨h1, h2, h3⟩ hs => by
@@ -430,7 +430,7 @@ private theorem triple_zeroLoop {M : IExp ℕ} {V₀ : ℕ → Option K} :
       (fun V => ∀ w, V w = if w < M.eval then I.sem.lit p 0 else V₀ w) := by
   intro hT hch st st' hb hV hex
   have := forall_of_exec_loop_eq_some I (fun i s => b < s.store.size ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt ∧
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤ Finsupp.weight (OpKind.kernelWeight T) st.cnt ∧
       ∀ w, cells s.store p b w = if w < i then I.sem.lit p 0 else V₀ w)
     ⟨hb, le_rfl, fun w => by simp [hV]⟩
     (fun i _ s₁ s₂ ⟨h1, h2, h3⟩ hs => by
@@ -466,8 +466,8 @@ private theorem triple_downPass {dec : P → K → ℝ} {B : ℕ} (hlit : IsExac
       (fun V => ∀ e ≤ L.eval + 1, Packed (fun j => readNat I p V (n.eval * e + j)) 0 n.eval) := by
   intro hT hch st st' hb hV hex
   have := forall_of_exec_loop_eq_some I (fun d s => b < s.store.size ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤
-        Finsupp.weight (kernelWeight T) st.cnt + d * ((2 * F.eval + 9) * T n.eval) ∧
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤
+        Finsupp.weight (OpKind.kernelWeight T) st.cnt + d * ((2 * F.eval + 9) * T n.eval) ∧
       (∀ e ≤ d, Packed (fun j => readNat I p (cells s.store p b) (n.eval * e + j)) 0 n.eval) ∧
       (∀ e, d < e → e ≤ L.eval + 1 → ∀ j, j < n.eval →
         readNat I p (cells s.store p b) (n.eval * e + j) = 0))
@@ -511,8 +511,8 @@ private theorem triple_upPass {mm : ι} {n L : IExp ℕ} {Lv Ua Qa Ea Kd Kp : �
       Qa Ea b Kd Kp two).run) ((L.eval + 1) * 2) (· = V₀) := by
   intro hT hch st st' hb hV hex
   have := forall_of_exec_loop_eq_some I (fun d s => b < s.store.size ∧
-      Finsupp.weight (kernelWeight T) s.cnt ≤
-        Finsupp.weight (kernelWeight T) st.cnt + d * (2 * T n.eval) ∧
+      Finsupp.weight (OpKind.kernelWeight T) s.cnt ≤
+        Finsupp.weight (OpKind.kernelWeight T) st.cnt + d * (2 * T n.eval) ∧
       cells s.store p b = V₀)
     ⟨hb, by simp, hV⟩
     (fun d hd s₁ s₂ ⟨h1, h2, h3⟩ hs => by
@@ -531,7 +531,8 @@ private def PreTriple (I : Interp P ι K (OpCount P ι)) (T : ℕ → ℕ) (b m 
     (c : ℕ) : Prop :=
   Monotone T → (∀ κ, I.charge κ = Finsupp.single κ 1) → ∀ st st' : St P K (OpCount P ι),
     st.store.size + j = b → exec I s st = some st' →
-    Finsupp.weight (kernelWeight T) st'.cnt ≤ Finsupp.weight (kernelWeight T) st.cnt + c * T m
+    Finsupp.weight (OpKind.kernelWeight T) st'.cnt ≤
+      Finsupp.weight (OpKind.kernelWeight T) st.cnt + c * T m
 
 /-- An allocation before the tracked buffer. -/
 private theorem preTriple_alloc_succ {j : ℕ} {q : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit}
@@ -701,7 +702,8 @@ charge, exact integer literals up to $N + 4$ and the exact floor conversion (the
 $k_+$ are control data in rounded cells, read back by binders: without the contracts a slot that
 starts no node can read back a size $\ge 1$, design note §8), every successful run of
 `NLAlib.eighProg.compiled` at the sizes $N$ and $(\ell_0, F)$ adds
-at most $(\ell_0 + 1)(2F + 12)\,T(N)$ to the weighted kernel count: per level, the nodes have sizes
+at most $(\ell_0 + 1)(2F + 12)\,T(N)$ to the weighted kernel count (the weight
+`NLAlib.Computation.OpKind.kernelWeight`): per level, the nodes have sizes
 summing to at most $N$, each with at most $2F + 12$ kernel calls of largest dimension at most its
 size. The static bound `NLAlib.eighCount` charges every size at every slot, a factor of about $N^2$
 more. No printed source. -/
@@ -710,17 +712,11 @@ theorem eighProg.weight_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpC
     (hlit : IsExactIntLit dec I.sem (N + 4)) (htn : IsExactToNat dec I.sem) (T : ℕ → ℕ)
     (hT : Monotone T) (hTsup : ∀ a b, T a + T b ≤ T (a + b)) {st st' : St P K (OpCount P ι)}
     (h : (eighProg.compiled p mm qr).exec I N ![ℓ₀, F] st = some st') :
-    Finsupp.weight (fun κ : OpKind P ι => match κ with
-        | .kcall _ _ ds => T (ds.foldr max 0)
-        | _ => 0) st'.cnt ≤
-      Finsupp.weight (fun κ : OpKind P ι => match κ with
-        | .kcall _ _ ds => T (ds.foldr max 0)
-        | _ => 0) st.cnt + (ℓ₀ + 1) * (2 * F + 12) * T N := by
+    Finsupp.weight (OpKind.kernelWeight T) st'.cnt ≤
+      Finsupp.weight (OpKind.kernelWeight T) st.cnt + (ℓ₀ + 1) * (2 * F + 12) * T N := by
   rw [Prog.exec_eq_exec_toStmt, eighProg.toStmt_compiled] at h
   have h' : exec I (eighProg p mm qr (.const N) (.const ℓ₀) (.const F) 0 1 2 3).run st =
       some st' := h
-  change Finsupp.weight (EighWeight.kernelWeight T) st'.cnt ≤
-    Finsupp.weight (EighWeight.kernelWeight T) st.cnt + (ℓ₀ + 1) * (2 * F + 12) * T N
   have := EighWeight.preTriple_eighProg (I := I) (T := T) (p := p) (b := st.store.size + 5)
     (mm := mm) (qr := qr)
     N ℓ₀ F hlit htn hTsup (by omega) hT hc st st' rfl h'
