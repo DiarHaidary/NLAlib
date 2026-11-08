@@ -1,2 +1,8 @@
 # Keep Lean source and generated root modules consistent across platforms.
 *.lean text eol=lf
+# The target checker reads these as text or hashes their committed bytes.
+/docs/targets.toml text eol=lf
+/docs/targets.approved text eol=lf
+/lean-toolchain text eol=lf
+/lakefile.toml text eol=lf
+/lake-manifest.json text eol=lf

@@ -105,23 +105,6 @@ private theorem integrable_conjTranspose_mul {m : Type*} [Fintype m]
       hS.1) (ae_of_all _ fun ω => ?_)
   rw [← specNorm_eq_norm, ← specNorm_eq_norm, specNorm_conjTranspose_mul_self]
 
-/-- The Hermitian dilation as a continuous real-linear map, through which integrals, $L^p$
-membership and measurability pass to `dilation`. It is only real-linear: the lower-left block
-$\mathbf{A}^{\mathsf{H}}$ is conjugate-linear in $\mathbf{A}$. -/
-noncomputable def dilationCLM (m : Type*) [Fintype m] :
-    Matrix m n 𝕜 →L[ℝ] Matrix (m ⊕ n) (m ⊕ n) 𝕜 :=
-  LinearMap.toContinuousLinearMap
-    { toFun := dilation
-      map_add' := dilation_add
-      map_smul' := dilation_smul_real }
-
-omit [DecidableEq n] in
-/-- `dilationCLM` applies `dilation`. -/
-@[simp]
-theorem dilationCLM_apply {m : Type*} [Fintype m] (A : Matrix m n 𝕜) :
-    dilationCLM m A = dilation A :=
-  rfl
-
 /-- The dilation of a random matrix in $L^p$ is in $L^p$. -/
 theorem memLp_dilation {m : Type*} [Fintype m] [DecidableEq m] {p : ENNReal} {S : Ω → Matrix m n 𝕜}
     (hS : MemLp S p μ) : MemLp (fun ω => dilation (S ω)) p μ :=

@@ -1,0 +1,8 @@
+{
+  "renames": [],
+  "statementChanged": [
+    "NLAlib.IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal",
+    "NLAlib.mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le",
+    "NLAlib.mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le"
+  ]
+}

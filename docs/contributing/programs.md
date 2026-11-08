@@ -31,15 +31,13 @@ library's, not the prover's: it is a **target**.
   exactly one such proof. A `Result:` theorem whose statement reaches a run or a budget proves a
   registered target; a lemma about a program family is proof infrastructure and has no result id
   [E3]. The exception is a **rounded program theorem** (approved by the maintainer 2026-11-07): a
-  theorem about the runs of a program under every semantics meeting the standard model, recognised
-  by a leading hypothesis (a binder of its `∀` telescope) `Computation.IsRelErrSem … I.sem` on
-  the semantics of an interpretation `I` bound in the telescope and mentioned by the conclusion,
-  or by a rounded access model (`Computation.MatrixFreeRounded`,
-  `Computation.MatrixFreeRoundedProb`) in its type; it may carry a result id, so finite-precision
-  guarantees of a registered tree reach the algorithm pages. The model in a conclusion only does
-  not count, nor does a vacuous model hypothesis on a semantics the conclusion does not run under
-  (another interpretation, or a fixed one such as `exactInterp`), and exact program theorems keep
-  the rule [E3].
+  theorem about runs under every interpretation satisfying the standard model. Its conclusion
+  may assert a rounded access model (`Computation.MatrixFreeRounded` or
+  `Computation.MatrixFreeRoundedProb`). It may also assert an execution or budget under a bound
+  interpretation `I` with a leading hypothesis `Computation.IsRelErrSem … I.sem`. The checker
+  inspects the interpretation supplied to each execution clause, including clauses grouped with
+  numerical postconditions. A separate exact execution in the same conclusion requires the
+  ordinary target review [E3]. Qualifying theorems may carry a result id for the explorer.
 - The registry records each target's closure hash (every library constant its statement reaches,
   proofs erased and hygienic names numbered, the registered trees as leaves hashed by their
   constructor normal forms, which the kernel checks are the trees), its printed statement, each

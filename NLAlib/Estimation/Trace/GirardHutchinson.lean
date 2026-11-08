@@ -254,7 +254,7 @@ theorem integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_gaussianMatrix {t 
   have h := integral_norm_trace_sub_girardHutchinson_sq (iIndepFun_col_of_hasLaw_gaussianMatrix hG)
     hX (A := B) (fun j => memLp_quadForm (hL4 j) _)
     (v := 2 * frobNorm (hermitianPart B) ^ 2) fun j => by
-      rw [← variance_quadForm_of_hasLaw_gaussianVector_hermitianPart (hcol j) B,
+      rw [← variance_quadForm_eq_hermitianPart_of_hasLaw_gaussianVector (hcol j) B,
         variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
         (hX j).integral_quadForm]
       simp only [Real.norm_eq_abs, sq_abs]
@@ -292,7 +292,7 @@ theorem integral_norm_trace_sub_girardHutchinson_sq_of_hasLaw_rademacherMatrix {
     (iIndepFun_col_of_hasLaw_rademacherMatrix hG') hX (A := B)
     (fun j => memLp_quadForm (hL4 j) _)
     (v := 2 * (frobNorm (hermitianPart B) ^ 2 - ∑ i, hermitianPart B i i ^ 2)) fun j => by
-      rw [hd, ← variance_quadForm_of_hasLaw_rademacherVector_hermitianPart (hcol j) B,
+      rw [hd, ← variance_quadForm_eq_hermitianPart_of_hasLaw_rademacherVector (hcol j) B,
         variance_eq_integral (memLp_quadForm (hL4 j) _).aestronglyMeasurable.aemeasurable,
         (hX j).integral_quadForm]
       simp only [Real.norm_eq_abs, sq_abs]

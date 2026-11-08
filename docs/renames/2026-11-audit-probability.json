@@ -1,0 +1,25 @@
+{
+  "renames": [
+    {
+      "old": "NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart",
+      "new": "NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_gaussianVector",
+      "rule": "N3"
+    },
+    {
+      "old": "NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart",
+      "new": "NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_rademacherVector",
+      "rule": "N3"
+    },
+    {
+      "old": "NLAlib.variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame_hermitianPart",
+      "new": "NLAlib.variance_trace_conjTranspose_mul_mul_eq_hermitianPart_of_hasLaw_haarFrame",
+      "rule": "N3"
+    },
+    {
+      "old": "NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart",
+      "new": "NLAlib.variance_quadForm_sqrt_smul_eq_hermitianPart_of_hasLaw_uniformSphereVector",
+      "rule": "N3"
+    }
+  ],
+  "statementChanged": []
+}

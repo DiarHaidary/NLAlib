@@ -100,7 +100,7 @@ private theorem exists_exec_eighUpShift (p : P) (n d D lo k : ℕ) (hd : d < D) 
   have hXY : blockDisjoint (H.Ua, (eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)).eval,
       2 * (k * k)) (H.Ua, (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo)).eval,
       2 * (k * k)) = true :=
-    blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
         IExp.eval_var, IExp.eval_ofNat]
       rw [Nat.mul_succ]; omega)))
@@ -165,25 +165,25 @@ private theorem exists_kcallStore_eighUpSplit {mm : ι}
     (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo))
     (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * lo))
     (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo)) hQp hUp (blockDisjoint_iff.2 (Or.inl hUQ))
-    (blockDisjoint_iff.2 (Or.inr (Or.inl (by dsimp only; rw [Nat.mul_succ]; nlinarith)))) hUs
+    (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by dsimp only; rw [Nat.mul_succ]; nlinarith)))) hUs
     (by dsimp only; rw [Nat.mul_succ]; nlinarith)
   obtain ⟨-, hfr₁⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQp hUp
-    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) hu₁
   have hQm₁ := hQm.of_forall_read_eq fun i _ _ =>
     hfr₁ p _ i (blockDisjoint_iff.2 (Or.inl (Ne.symm hUQ)))
-  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (blockDisjoint_iff.2
+  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (blockDisjoint_of_ne_or_le
     (Or.inr (Or.inr (by simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))))
   have hsh₁ := Interp.shape_of_kcallStore_eq_some hu₁
   obtain ⟨u₂, hu₂⟩ := exists_kcallStore_of_holds hmm p (l := k) (m := k - kp) (n := k - kp)
     (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp)))
     (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp)))
     (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))) hQm₁ hUm₁
-    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       dsimp only; rw [Nat.mul_succ]; nlinarith)))) (hsh₁ ▸ hUs)
     (by dsimp only; rw [Nat.mul_succ]; nlinarith)
   obtain ⟨-, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p hQm₁ hUm₁
-    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_iff.2 (Or.inl hUQ)) (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) hu₂
   refine ⟨u₁, u₂, hu₁, hu₂, (Interp.shape_of_kcallStore_eq_some hu₂).trans hsh₁,
     fun q b i hb => ?_⟩

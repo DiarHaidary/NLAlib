@@ -57,8 +57,9 @@ local macro "roundedBody(" tag:term "," N:term "," q:term ")" : term => `(do
         rscl $tag ⟨3, .var j + 1⟩ 1 ($N * (.var j + 1)) $N))
 
 
-/-- Releasing the three actual dense Lanczos workspace buffers retains every decoded input,
-basis column, coefficient, computed input norm and final previous vector. -/
+/-- Releasing the three Lanczos workspace buffers retains every decoded input, basis column,
+coefficient, computed input norm and final previous vector. The matrix slot may hold the
+dense matrix or be empty for the oracle variant. -/
 theorem StoreContext.holdsDecoded_releaseWorkspace {tag : P} {dec : P → K → ℝ}
     {N q : ℕ} {storedMatrix : Bool} {A : Matrix (Fin N) (Fin N) ℝ} {b : Fin N → ℝ}
     {v : ℕ → Fin N → ℝ} {α β : ℕ → ℝ} {s : ℝ} {out : St P K (OpCount P ι)}

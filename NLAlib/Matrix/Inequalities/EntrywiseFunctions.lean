@@ -233,7 +233,7 @@ private theorem exists_injective_vecMulVec_le [Finite n] {A : Matrix n n ℝ} (h
     Matrix.posSemidef_vecMulVec_self_star _
   rw [← star_trivial ((1 + quadForm A z)⁻¹ • A *ᵥ z)]
   refine (hB.isHermitian.le_iff_re_quadForm_le hA.isHermitian).mpr fun x => ?_
-  have hcs := hA.norm_sq_star_dotProduct_mulVec_le x z
+  have hcs := hA.norm_star_dotProduct_mulVec_sq_le x z
   have hx : 0 ≤ quadForm A x := hA.quadForm_nonneg x
   rw [quadForm_vecMulVec_star]
   simp only [star_trivial, RCLike.ofReal_real_eq_id, id_eq, Real.norm_eq_abs, sq_abs,

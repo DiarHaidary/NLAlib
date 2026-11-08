@@ -96,6 +96,8 @@ theorem ExtendedMantissa.approximates_sqrt (M : ℕ) :
       · exact hround.mpr (by omega)
       · exact hsticky.mpr h0
 
+/-- For a positive mantissa, the integer square-root core describes the exact real square
+root at an exponent no larger than the target exponent. -/
 theorem exists_approximates_sqrtCore (m : ℕ) (e : ℤ) (hm : 0 < m) :
     ∃ w : ℝ, ExtendedMantissa.Approximates (ExtendedMantissa.ofMantissaAndAccuracy (sqrtCore
     spec m e).1
@@ -172,6 +174,8 @@ private theorem sqrt_spec (x : UnpackedFloat) :
       rw [hv]
       simpa [Sign.toReal] using hs.2.trans hh
 
+/-- The unpacked square-root operation always returns canonical data, including exceptional
+values for invalid inputs. This does not assert finiteness after packing. -/
 theorem sqrt_isCanonical (x : UnpackedFloat) :
     IsCanonical spec (UnpackedFloat.sqrt spec x) :=
   (sqrt_spec x).1
@@ -181,6 +185,9 @@ theorem isFinite_of_isFinite_sqrt (x : UnpackedFloat)
     (h : (UnpackedFloat.sqrt spec x).IsFinite) : x.IsFinite :=
   ((sqrt_spec x).2 h).1
 
+/-- When the unpacked square root is finite, its error from the exact real square root is at
+most relative allowance $2^{-p}$ plus absolute allowance $2^{e_{\min}}/2$, where $p$ is the
+format precision and $e_{\min}$ its smallest significand exponent. Packing is separate. -/
 theorem abs_toReal_sqrt_sub_le (x : UnpackedFloat)
     (h : (UnpackedFloat.sqrt spec x).IsFinite) :
     |toReal (UnpackedFloat.sqrt spec x) - Real.sqrt (toReal x)|

@@ -563,9 +563,10 @@ theorem IsChebyshevTwoIntervalSpectrum.exists_le_measureReal_norm_sub_mulVec_ge 
 
 /-- **Shamir's query lower bound, hidden-rotation oracle, spectrum known**: let $\mathbf{d}$ be a
 Chebyshev two-interval spectrum for $\kappa \ge 2$ with depth $q + 1$ and margin $13(q + 3)$, and
-$\varepsilon > 0$. If a randomized algorithm (a measurable seeded family, seed law $\rho$) making
+$\varepsilon > 0$. Fix a known right-hand side $\mathbf{b} \ne \mathbf{0}$. A randomized algorithm
+(a measurable seeded family, seed law $\rho$) makes
 $q$ adaptive queries to $\mathbf{x} \mapsto (\mathbf{A}\mathbf{x}, \mathbf{U}^{\mathsf{H}}
-\mathbf{x})$ returns, for every orthogonal $\mathbf{U}$ and every $\mathbf{b}$, an
+\mathbf{x})$ and may depend on $\mathbf{b}$. If it returns for every orthogonal $\mathbf{U}$ an
 $\hat{\mathbf{x}}$ with $\|\mathbf{b} - \mathbf{A}\hat{\mathbf{x}}\| \le \varepsilon\|\mathbf{b}\|$
 with probability at least $\tfrac23$, where $\mathbf{A} = \mathbf{U}\operatorname{diag}(\mathbf{d})
 \mathbf{U}^{\mathsf{H}}$, then
@@ -574,10 +575,10 @@ $$\kappa\log\frac{1}{4\varepsilon} \le 2(q + 1) \,.$$
 $\varepsilon \le c$, unspecified constants; here explicit. -/
 theorem IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal {κ ε : ℝ} {q : ℕ}
     {d : n → ℝ} (hd : IsChebyshevTwoIntervalSpectrum κ (q + 1) (13 * (q + 3)) d) (hκ : 2 ≤ κ)
-    (hε : 0 < ε) {S : Type*} [MeasurableSpace S]
+    (hε : 0 < ε) {b : n → ℝ} (hb : b ≠ 0) {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm (n → ℝ) ((n → ℝ) × (n → ℝ)) q (n → ℝ)}
     (halg : QueryAlgorithm.IsMeasurableFamily alg) (ρ : Measure S) [IsProbabilityMeasure ρ]
-    (hsucc : ∀ U : Matrix n n ℝ, HasOrthonormalCols U → ∀ b : n → ℝ,
+    (hsucc : ∀ U : Matrix n n ℝ, HasOrthonormalCols U →
       2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
         (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖ ≤ ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / (4 * ε)) ≤ 2 * (q + 1) := by
@@ -592,22 +593,9 @@ theorem IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal {κ �
       lt_div_iff₀ (Real.exp_pos _)]
     rw [lt_div_iff₀ (by positivity)] at hlog
     nlinarith
-  have hn : Nonempty n := by
-    rcases isEmpty_or_nonempty n with h0 | h0
-    · have h1 := hd.le_card_pos 0
-      simp at h1
-      exfalso
-      linarith [(Nat.cast_nonneg q : (0:ℝ) ≤ q)]
-    · exact h0
-  obtain ⟨i⟩ := hn
-  set b : n → ℝ := Pi.single i 1 with hb_def
-  have hb : b ≠ 0 := by
-    intro h0
-    have := congrFun h0 i
-    simp [hb_def] at this
   have hbpos : 0 < ‖WithLp.toLp 2 b‖ := norm_pos_iff.mpr (by simpa using hb)
   obtain ⟨U, hU, hfail⟩ := exists_le_measureReal_norm_sub_mulVec_ge hd hκ halg ρ hb
-  have hsub := hsucc U hU b
+  have hsub := hsucc U hU
   have hRm : Measurable fun s => ‖WithLp.toLp 2 (b - (U * Matrix.diagonal d * Uᴴ) *ᵥ
       (alg s).run (hiddenRotationOracle U (Matrix.diagonal d)))‖ := by
     have hO : Measurable (Function.uncurry fun _ : Unit =>
@@ -641,9 +629,10 @@ theorem IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal {κ �
 
 /-- **The matrix–vector complexity of linear systems** (Shamir's theorem): let $\kappa \ge 2$,
 $\varepsilon > 0$ and $\lvert n \rvert \ge 20(q + 3)^2$. If a randomized algorithm (a measurable
-seeded family, seed law $\rho$) making $q$ adaptive matrix–vector products returns, for every
+seeded family, seed law $\rho$) making $q$ adaptive matrix–vector products, with a fixed known
+right-hand side $\mathbf{b} \ne \mathbf{0}$ on which the algorithm may depend, returns for every
 symmetric $\mathbf{A} \in \mathbb{R}^{n \times n}$ with spectrum in
-$[-\kappa, -1] \cup [1, \kappa]$ (condition number at most $\kappa$) and every $\mathbf{b}$, an
+$[-\kappa, -1] \cup [1, \kappa]$ (condition number at most $\kappa$), an
 $\hat{\mathbf{x}}$ with $\|\mathbf{b} - \mathbf{A}\hat{\mathbf{x}}\| \le \varepsilon\|\mathbf{b}\|$
 with probability at least $\tfrac23$, then
 $$\kappa\log\frac{1}{4\varepsilon} \le 2(q + 1) \,.$$
@@ -657,11 +646,12 @@ $\varepsilon \le c$ and $n = \Omega(T^2)$ with unspecified constants; here expli
 the output is the last query (one query fewer).
 Result: linear-system-matvec-lower-bound -/
 theorem mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le {κ ε : ℝ} {q : ℕ} (hκ : 2 ≤ κ)
-    (hε : 0 < ε) (hn : 20 * (q + 3) ^ 2 ≤ Fintype.card n) {S : Type*} [MeasurableSpace S]
+    (hε : 0 < ε) (hn : 20 * (q + 3) ^ 2 ≤ Fintype.card n)
+    {b : n → ℝ} (hb : b ≠ 0) {S : Type*} [MeasurableSpace S]
     {alg : S → QueryAlgorithm (n → ℝ) (n → ℝ) q (n → ℝ)}
     (halg : QueryAlgorithm.IsMeasurableFamily alg) (ρ : Measure S) [IsProbabilityMeasure ρ]
     (hsucc : ∀ A : Matrix n n ℝ, A.IsHermitian →
-      spectrum ℝ A ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ → ∀ b : n → ℝ,
+      spectrum ℝ A ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ →
         2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - A *ᵥ (alg s).run A.mulVec)‖ ≤
           ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / (4 * ε)) ≤ 2 * (q + 1) := by
@@ -674,9 +664,9 @@ theorem mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le {κ ε : ℝ} {q 
       ((alg s).comapResponse Prod.fst).run (hiddenRotationOracle U (Matrix.diagonal d)) =
         (alg s).run (U * Matrix.diagonal d * Uᴴ).mulVec := fun U s => by
     rw [QueryAlgorithm.run_comapResponse]; rfl
-  refine IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal hd hκ hε
+  refine IsChebyshevTwoIntervalSpectrum.mul_log_le_of_forall_le_measureReal hd hκ hε hb
     (QueryAlgorithm.IsMeasurableFamily.comapResponse halg measurable_fst) ρ ?_
-  intro U hU b
+  intro U hU
   have hU' : Uᴴ * U = 1 := hU
   have hUU : U * Uᴴ = 1 := HasOrthonormalCols.mul_conjTranspose_self_of_card_eq hU rfl
   have hA : (U * Matrix.diagonal d * Uᴴ).IsHermitian :=
@@ -688,24 +678,26 @@ theorem mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le {κ ε : ℝ} {q 
     rw [hconj, spectrum_diagonal]
     rintro _ ⟨i, rfl⟩
     exact hd.mem_Icc_union_Icc hκ1 i
-  have h := hsucc _ hA hsp b
+  have h := hsucc _ hA hsp
   simpa only [hrun] using h
 
 /-- **The matrix–vector complexity of linear systems, Shamir's form**: for $\kappa \ge 2$,
 $0 < \varepsilon \le e^{-4}$ and $\lvert n \rvert \ge 20(q + 3)^2$, a randomized algorithm making
-$q$ adaptive matrix–vector products that solves every symmetric system with spectrum in
+$q$ adaptive matrix–vector products, allowed to depend on a fixed known nonzero right-hand
+side $\mathbf{b}$, that solves every symmetric matrix with spectrum in
 $[-\kappa, -1] \cup [1, \kappa]$ to relative residual $\varepsilon$ with probability at least
-$\tfrac23$ (as in `NLAlib.mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le`) has
+$\tfrac23$ has
 $$\kappa\log\frac{1}{\varepsilon} \le 4(q + 1) \,.$$
 [Shamir2026, Theorem 1]; there $T \ge c\kappa\log(1/\varepsilon)$ with unspecified $c$ and $C$;
 here an explicit constant. -/
 theorem mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le
     {κ ε : ℝ} {q : ℕ} (hκ : 2 ≤ κ) (hε : 0 < ε) (hε₀ : ε ≤ Real.exp (-4))
     (hn : 20 * (q + 3) ^ 2 ≤ Fintype.card n)
-    {S : Type*} [MeasurableSpace S] {alg : S → QueryAlgorithm (n → ℝ) (n → ℝ) q (n → ℝ)}
+    {b : n → ℝ} (hb : b ≠ 0) {S : Type*} [MeasurableSpace S]
+    {alg : S → QueryAlgorithm (n → ℝ) (n → ℝ) q (n → ℝ)}
     (halg : QueryAlgorithm.IsMeasurableFamily alg) (ρ : Measure S) [IsProbabilityMeasure ρ]
     (hsucc : ∀ A : Matrix n n ℝ, A.IsHermitian →
-      spectrum ℝ A ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ → ∀ b : n → ℝ,
+      spectrum ℝ A ⊆ Set.Icc (-κ) (-1) ∪ Set.Icc 1 κ →
         2 / 3 ≤ ρ.real {s | ‖WithLp.toLp 2 (b - A *ᵥ (alg s).run A.mulVec)‖ ≤
           ε * ‖WithLp.toLp 2 b‖}) :
     κ * Real.log (1 / ε) ≤ 4 * (q + 1) := by
@@ -724,7 +716,7 @@ theorem mul_log_le_four_mul_add_one_of_forall_le_measureReal_norm_sub_mulVec_le
     have := Real.log_two_lt_d9
     norm_num at this
     linarith
-  have h := mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le hκ hε hn halg ρ hsucc
+  have h := mul_log_le_of_forall_le_measureReal_norm_sub_mulVec_le hκ hε hn hb halg ρ hsucc
   rw [h4] at h
   have hk : 0 ≤ κ := by linarith
   have hlog4' : 0 ≤ Real.log 4 := Real.log_nonneg (by norm_num)

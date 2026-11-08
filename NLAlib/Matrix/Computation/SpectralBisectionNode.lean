@@ -150,10 +150,6 @@ private theorem node_child_holds (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (H
       n * (d + 1) + lo := by simp [eighSlotOff]
   have hso : (eighSlotOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval = n * d + lo := by
     simp [eighSlotOff]
-  have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := fun h => by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl h)
   obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := holds_of_exec_eighChildBlock
     (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
     (unif := I.sem.tapeUnif p (I.tape .uniform))
@@ -164,7 +160,8 @@ private theorem node_child_holds (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (H
       simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
         decide_eq_true_eq]
       right; linarith)
-    (bdn fun h => by omega) (bdn fun h => dMaSz h.symm) (bdn fun h => dMaKd h.symm) (bdn dSzKd)
+    (blockDisjoint_of_ne (by omega)) (blockDisjoint_of_ne (Ne.symm dMaSz))
+    (blockDisjoint_of_ne (Ne.symm dMaKd)) (blockDisjoint_of_ne dSzKd)
     hex
   rw [hbo1] at hM
   rw [hso1] at hsz

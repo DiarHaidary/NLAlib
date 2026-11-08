@@ -267,13 +267,6 @@ private theorem cfc_apply_self_eq_dotProduct {ι : Type*} [Fintype ι] [Decidabl
     (B : Matrix ι ι ℝ) (i : ι) : B i i = (Pi.single i 1 : ι → ℝ) ⬝ᵥ (B *ᵥ Pi.single i 1) := by
   simp [Matrix.mulVec, dotProduct, Pi.single_apply]
 
-/-- A coordinate vector is a unit vector. -/
-private theorem norm_toLp_single_one {ι : Type*} [Fintype ι] [DecidableEq ι] (i : ι) :
-    ‖WithLp.toLp 2 (Pi.single i 1 : ι → ℝ)‖ = 1 := by
-  rw [← pow_eq_one_iff_of_nonneg (norm_nonneg _) two_ne_zero,
-    EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
-  simp [dotProduct, Pi.single_apply]
-
 
 /-- **The $(0,0)$ entry of $f(\mathbf{T}_k)$ is the Gauss rule of the backward model**: for
 unit vectors and the sign conditions on $\beta$,
@@ -396,7 +389,8 @@ theorem abs_dotProduct_cfc_mulVec_sub_cfc_tridiagonal_le_of_isUniformApproxOn_of
     (D.isHermitian_tridiagonal) (D.spectrum_tridiagonal_subset_Icc hW hs hc) hfp
     (Pi.single D.firstIndex 1)
   rw [hv1, one_pow, mul_one] at h1
-  rw [norm_toLp_single_one, one_pow, mul_one, ← cfc_apply_self_eq_dotProduct,
+  rw [PiLp.toLp_single, PiLp.norm_single, norm_one, one_pow, mul_one,
+    ← cfc_apply_self_eq_dotProduct,
     ← cfc_apply_self_eq_dotProduct] at h2
   have hcast : (((2 * k - 1 : ℕ) : ℝ) + 1) = 2 * k := by
     rw [Nat.cast_sub (by have := D.k_pos; omega)]
@@ -552,7 +546,8 @@ theorem norm_aeval_chebyshevOn_mulVec_sub_basis_mulVec_le {α β : ℝ} (hαβ :
     refine (norm_toLp_mulVec_le _ _).trans ?_
     conv_rhs => rw [← mul_one (specNorm F)]
     refine mul_le_mul_of_nonneg_left ((norm_aeval_chebyshevOn_mulVec_le D.isHermitian_tridiagonal
-      hαβ hT j e₀).trans (norm_toLp_single_one _).le) (specNorm_nonneg _)
+      hαβ hT j e₀).trans (by simp only [e₀, PiLp.toLp_single, PiLp.norm_single,
+        norm_one, le_refl])) (specNorm_nonneg _)
   -- the residual sequence of the recurrence
   have hf : ∀ j, j + 1 < k →
       ‖WithLp.toLp 2 (chebyshevRecurrenceResidual A d j)‖ ≤ 2 * σ * specNorm F := by
@@ -855,7 +850,7 @@ theorem norm_cfc_mulVec_sub_basis_mulVec_le_of_continuousOn {a a' : ℝ} (haa : 
       cfc (fun x => p.eval x) L.tridiagonal) *ᵥ e₀))‖ ≤ (1 + L.ε / 2) * Real.sqrt k * E := by
     refine (norm_toLp_mulVec_le _ _).trans (mul_le_mul ((specNorm_le_frobNorm _).trans
       L.frobNorm_basis_le) ((norm_toLp_mulVec_le _ _).trans ?_) (norm_nonneg _) (by positivity))
-    rw [LanczosData.norm_toLp_single_one, mul_one, ← cfc_sub f _ L.tridiagonal
+    rw [PiLp.toLp_single, PiLp.norm_single, norm_one, mul_one, ← cfc_sub f _ L.tridiagonal
       (L.tridiagonal.finite_real_spectrum.continuousOn _)
       (L.tridiagonal.finite_real_spectrum.continuousOn _)]
     exact L.toLanczosData.isHermitian_tridiagonal.specNorm_cfc_le hE0 fun x hx => hfp x (hT hx)

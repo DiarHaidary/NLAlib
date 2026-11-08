@@ -238,8 +238,13 @@ private theorem integral_truncation_window_le (A : Matrix m n ℝ) (x : Matrix n
           69 * k * specNorm (N ψ) ^ 2 + C * specNorm (W * N ψ * W') := by
     filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix (A * x)
       HasLaw.id ((Matrix.rank_le_card_width _).trans hp)] with ψ hψ
-    exact frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le
-      hψ hk hak hkb ha ha₂ hb
+    refine (frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window_of_singularValues_le
+      hψ hk hak hkb ha ha₂ hb).trans ?_
+    dsimp only [C, N, W, W', id_eq]
+    gcongr
+    · exact reciprocalWindowNoiseConstant_le
+    · exact singularValues_nonneg _ _
+    · exact reciprocalWindowCrossConstant_le
   have h1 : Integrable (fun ψ => frobNorm (A - truncatedSVD (rsvd A x) k) ^ 2 +
       69 * k * specNorm (N ψ) ^ 2) (gaussianMatrix m p) :=
     (integrable_const _).add (hη.const_mul _)

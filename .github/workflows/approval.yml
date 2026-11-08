@@ -1,7 +1,6 @@
 name: Approval
 # The registry approval is the maintainer's own commit (docs/design/Computation-Hardening.md §2.5).
-# Sound only after the maintainer's token is off the agent host: a commit made through the API
-# with his token is also verified and authored by him.
+# Keep the signing key off the agent host and require the code-owner review and this check on main.
 on:
   pull_request:
 jobs:
@@ -14,53 +13,64 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Every change to docs/targets.approved is a verified commit by tchen01
         env:
           GH_TOKEN: ${{ github.token }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           REPO: ${{ github.repository }}
-        # 1. Every non-merge commit in BASE..HEAD that changes the file is a verified commit by
-        #    tchen01.
-        # 2. A merge commit whose file is byte-identical to one of its parents' introduces nothing
-        #    and is skipped (merging main into a branch); any other merge that changes the file
-        #    must be his verified commit too.
-        # 3. If the pull request changes the file (the tip differs from BASE and from the fork
-        #    point), the tip's content must be introduced by one of his verified commits in the
-        #    range, so a merge cannot bring back an older approved registry.
+        shell: bash
         run: |
-          F=docs/targets.approved
-          blob() { git rev-parse -q --verify "$1:$F" 2>/dev/null || echo none; }
-          approved_by_maintainer() {
-            read -r login verified < <(gh api "repos/$REPO/commits/$1" \
-              --jq '"\(.author.login) \(.commit.verification.verified)"')
-            [ "$login" = "tchen01" ] && [ "$verified" = "true" ]
+          set -euo pipefail
+          path=docs/targets.approved
+          blob() {
+            # An absent path gives empty output. A missing commit or unreadable tree is an error.
+            git ls-tree --format='%(objectname)' "$1" -- "$path"
           }
-          fail=0
           head_blob=$(blob "$HEAD")
-          tip_ok=0
-          for c in $(git rev-list --full-history "$BASE..$HEAD" -- "$F"); do
-            b=$(blob "$c")
-            parents=$(git rev-list --parents -n 1 "$c" | cut -d' ' -f2-)
-            if [ "$(echo $parents | wc -w)" -gt 1 ]; then
-              same=0
-              for p in $parents; do [ "$(blob "$p")" = "$b" ] && same=1; done
-              if [ $same = 1 ]; then
-                echo "$c: merge commit, $F identical to a parent's; nothing introduced"
-                continue
-              fi
+          base_blob=$(blob "$BASE")
+          merge_base=$(git merge-base "$BASE" "$HEAD")
+          fork_blob=$(blob "$merge_base")
+          tip_approved=false
+
+          # Keep history reads outside loop expansions so any failure stops the job.
+          git rev-list --full-history "$BASE..$HEAD" -- "$path" > "$RUNNER_TEMP/approval-commits"
+          while IFS= read -r commit; do
+            content=$(blob "$commit")
+            parent_ids=$(git show -s --format=%P "$commit")
+            read -r -a parents <<< "$parent_ids"
+            if (( ${#parents[@]} > 1 )); then
+              for parent in "${parents[@]}"; do
+                parent_blob=$(blob "$parent")
+                if [[ "$content" == "$parent_blob" ]]; then
+                  continue 2
+                fi
+              done
             fi
-            if approved_by_maintainer "$c"; then
-              [ "$b" = "$head_blob" ] && tip_ok=1
-            else
-              echo "::error::$c changes $F but is not a verified commit by tchen01"
-              fail=1
+
+            approved=$(gh api graphql -f owner="${REPO%/*}" -f name="${REPO#*/}" -f oid="$commit" \
+              -f query='query($owner: String!, $name: String!, $oid: GitObjectID!) {
+                repository(owner: $owner, name: $name) { object(oid: $oid) { ... on Commit {
+                  author { user { login } }
+                  committer { user { login } }
+                  signature { signer { login } state wasSignedByGitHub }
+                } } }
+              }' --jq '.data.repository.object |
+                .author.user.login == "tchen01" and .committer.user.login == "tchen01" and
+                .signature.signer.login == "tchen01" and .signature.state == "VALID" and
+                .signature.wasSignedByGitHub == false')
+            if [[ "$approved" != true ]]; then
+              echo "::error::$commit changes $path without a verified personal signature from tchen01"
+              exit 1
             fi
-          done
-          mb=$(git merge-base "$BASE" "$HEAD")
-          if [ "$head_blob" != "$(blob "$BASE")" ] && [ "$head_blob" != "$(blob "$mb")" ] \
-             && [ $tip_ok = 0 ]; then
-            echo "::error::the pull request changes $F to content no verified commit by tchen01 in it introduced"
-            fail=1
+            if [[ "$content" == "$head_blob" ]]; then
+              tip_approved=true
+            fi
+          done < "$RUNNER_TEMP/approval-commits"
+
+          # An inherited parent blob can be an old approval. Require provenance for a changed tip.
+          if [[ "$head_blob" != "$base_blob" && "$head_blob" != "$fork_blob" && "$tip_approved" == false ]]; then
+            echo "::error::no approved commit in the pull request introduced its final $path"
+            exit 1
           fi
-          exit $fail

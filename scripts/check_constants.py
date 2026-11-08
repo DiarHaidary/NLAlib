@@ -77,7 +77,9 @@ from pathlib import Path
 
 LIBS = ("NLAlib", "NLAlibScaffold")
 MAX_LINE = 100
-MARK = re.compile(r"<!-- value (?P<name>[^\s>]+)(?P<args>(?: [^\n]*?)?) -->")
+# Stop at the first comment terminator, including when this marker has no arguments.
+# Otherwise the optional leading space can consume ` --> <!-- value next` as arguments.
+MARK = re.compile(r"<!-- value (?P<name>[^\s>]+)(?P<args>(?:(?! -->)[^\n])*?) -->")
 MARK_ANY = re.compile(r"<!--\s*/?\s*value\b")
 OPT_OUT = re.compile(r"<!-- mention (\S+) -->")
 PLACEHOLDER = re.compile(r"#([1-9])")

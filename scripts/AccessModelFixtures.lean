@@ -30,8 +30,8 @@ uniform tape and the rounded models:
   an input block) fails, so a target that relies on an in-place call is false.
 * `not_matrixFreeRoundedProb_kcallTree_exactKernel` (K3): the model quantifies over every kernel
   meeting the contract, so a program correct only for the exact kernel fails the target.
-* `not_runsWithin_kcallTree_zero` (K4): a kernel call is charged at its kind and dimensions; a
-  budget without it is false.
+* `not_runsWithin_kcallTree_zero`, `exists_exec_kcall_cnt` (K4): a zero budget excludes a
+  kernel call. A copy call at dimensions `[d]` incurs exactly one charge with those dimensions.
 * `not_matrixFreeProb_uniformTree` (U1), `not_matrixFreeRoundedProb_uniformTree` (U2): a uniform draw
   cannot leak a declared input, in the exact model (the law of the tape is fixed) and in the
   rounded model (neither `ρOK` nor `Contracts` can mention the input, even with the strongest tape
@@ -305,8 +305,7 @@ theorem not_matrixFreeRoundedProb_kcallTree_exactKernel :
   simp [Store.read] at hgood
   norm_num at hgood
 
-/-- K4: a kernel call is charged, once, at its kind and dimensions: a budget of no operations is
-false. -/
+/-- K4: a kernel call exceeds a budget of zero operations. -/
 theorem not_runsWithin_kcallTree_zero (m : Unit → ℕ) (Q : St Unit ℝ (OpCount Unit Unit) → Prop) :
     ¬ kcallTree.RunsWithin (kInterp copyKernel (fun _ => ([1], [1]))) 1 (fun _ => 0)
       (inputState () [#[some (0 : ℝ), some 1], Array.replicate 1 none]) 0 m Q := by
@@ -318,6 +317,17 @@ theorem not_runsWithin_kcallTree_zero (m : Unit → ℕ) (Q : St Unit ℝ (OpCou
   subst hrun
   have := hcnt (OpKind.kcall () () [])
   simp [exactInterp, inputState] at this
+
+/-- K4: a copy call at dimensions `[d]` succeeds and incurs exactly one charge at that key. -/
+theorem exists_exec_kcall_cnt (d : ℕ) :
+    ∃ st, Prog.exec (kInterp copyKernel (fun _ => ([1], [1])))
+      (.kcall () () [.const d] [(0, .const 0)] [(1, .const 0)] : Prog Unit Unit 0 2) 1 (fun _ => 0)
+      (inputState () [#[some (0 : ℝ), some 1], Array.replicate 1 none]) = some st ∧
+      st.cnt = Finsupp.single (OpKind.kcall () () [d]) 1 := by
+  simp [Prog.exec, FStmt.exec, Interp.kcallStore, kInterp, inputState, kcallBlocks, blockDisjoint,
+    Store.readBlocks, Store.readBlock, Store.writeBlocks, Store.writeBlock, Store.write, copyKernel,
+    Store.read, IExp.evalIn, Array.mapM_eq_mapM_toList, Array.toList_range, List.range_one,
+    exactInterp]
 
 /-- Under the law of the tape, the first uniform draw equals a given value with probability `0`. -/
 theorem measureReal_uniform_eq (a : ℝ) :

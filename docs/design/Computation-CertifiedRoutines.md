@@ -73,9 +73,9 @@ no statement on main and no registered target.
 
 | notion | file | quantified where | what it says |
 |---|---|---|---|
-| `IsMatvecRoutine I dec tag A c pre src dst sOff dOff routine` | `Computation/MatvecRoutine.lean` | consumer hypotheses (`hmv : ∀ t, …`) in 13 files | composable; `pre`, readable source, writable destination ⇒ run succeeds, `writeBlock dst` is the whole effect, $\|Ax - \bar y\| \le c\|x\|$ |
+| `IsMatvecRoutine I dec tag A c pre src dst sOff dOff routine` | `Computation/MatvecRoutine.lean` | consumer hypotheses (`hmv : ∀ t, …`) in 13 files | composable; `pre`, readable source, writable destination ⇒ run succeeds, `writeBlock dst` is the net effect on the store, $\|Ax - \bar y\| \le c\|x\|$ |
 | instances | `IsMatvecErr.isMatvecRoutine` (oracle `apply`), `IsRelErrSem.isMatvecRoutine_gemv` (stored dense, `Matrix/Computation/MatvecRoutine.lean`) | — | `pre = True`, resp. `pre = HoldsDecoded store … matrix aOff A` |
-| `IsOrthRoutine I dec tag N j η₀ ε₁ ε₂ ε₃ pre Vb wb hb wo ho routine` | `Matrix/Computation/OrthRoutine.lean` | `exec_rounded_loop` (`horth : ∀ t < q, …`) | composable; `pre`, `HoldsDecoded V`, readable `w`, writable `wb`, `hb`, three buffer inequalities ⇒ success, `writeBlock wb` then `writeBlock hb` is the whole effect, `IsOrthErr` |
+| `IsOrthRoutine I dec tag N j η₀ ε₁ ε₂ ε₃ pre Vb wb hb wo ho routine` | `Matrix/Computation/OrthRoutine.lean` | `exec_rounded_loop` (`horth : ∀ t < q, …`) | composable; `pre`, `HoldsDecoded V`, readable `w`, writable `wb`, `hb`, three buffer inequalities ⇒ success, `writeBlock wb` then `writeBlock hb` is the net effect on the store, `IsOrthErr` |
 | `IsOrthErr η₀ ε₁ ε₂ ε₃ V w h w'` | `Matrix/Perturbation/OrthErr.lean` | — | the decoded guarantee: a pure-math predicate with `mono`, `norm_coef_le`, … |
 | instance | `IsRelErrSem.isOrthRoutine_cgs2` (`ClassicalGramSchmidtProgram.lean`, 785 lines) | — | CGS2 at $(\eta_0, 2c_1, 3c_1, 2(\eta_0+c_1)^2)$ |
 | `IsOrthCall … (G t) routine` | `Krylov/Processes/LanczosReorthProgramRoundedStep.lean` | `exec_lanczosReorthLoop` | a consumer-local restatement of `IsOrthRoutine` at the workspace shape, with buffer numbers fixed and disjointness discharged |
@@ -113,13 +113,19 @@ Each piece does a separate job.
 
 1. **Success, not partial correctness.** `exec … = some out` is concluded, not assumed.
    A consumer's run lemma needs this, because its own success depends on it.
-2. **The exact effect.** The frame is an *equation*: the final store is the initial store after
-   the listed block writes. This implies at once that the shape is preserved, so scratch was
-   scoped and released. It also implies that every cell outside the blocks is unchanged at every
-   tag, and that every other buffer is unchanged. It is strictly stronger than the frame style of
-   the BLAS run lemmas, and it is what lets a consumer put a routine inside a larger workspace.
-   The success clause rules out an `alloc` that is not released, because the store size would
-   change.
+2. **The net effect on the store.** The frame is an *equation*: the final store is the initial
+   store after the listed block writes. The equation implies that the final shape is the initial
+   one, that every cell outside the blocks is unchanged at every tag, and that every other buffer
+   is unchanged. It says nothing about intermediate states: the routine may write temporary
+   cells and allocate scoped scratch, and the certificate bounds neither counts, peak memory nor
+   tape positions (the cost statements do). For blocks of the declared lengths that are pairwise
+   disjoint, the equation is equivalent to the frame style of the BLAS run lemmas (shape,
+   read-back on the blocks, reads unchanged outside them):
+   `Store.writeBlocks_eq_some_of_read` and `Store.frame_of_writeBlocks_eq_some` prove the two
+   directions. The forms differ only for overlapping blocks, where the equation also fixes the
+   order of the writes. The equation is what lets a consumer put a routine inside a larger
+   workspace. Final shape preservation comes from the equation, not from the success clause:
+   success alone allows a run that allocates.
 3. **Composability.** `ExecutionComposable` lets the consumer split `exec (routine >>= rest)`.
    Every current instance discharges it by `executionComposable_single` (the routine is a
    `scope` or one statement).
@@ -198,7 +204,7 @@ abbrev IsOrthRoutine … := IsCertifiedRoutine I tag (Matrix … × (Fin N → �
 carries no mathematics is made generic:
 ```lean
 /-- `routine` succeeds from every state satisfying `pre` whose output blocks are writable, and
-its whole effect is one write per output block. No guarantee. -/
+its net effect on the store is one write per output block. No guarantee. -/
 structure IsBlockRoutine (I : Interp P ι K C) (tag : P) (pre : Store P K → Prop)
     (outs : List (ℕ × ℕ × ℕ)) (routine : Builder P ι ℕ ℕ Unit) : Prop where
   composable : ExecutionComposable I routine
@@ -299,7 +305,7 @@ allow it, since it has no Matrix vocabulary), except L15, which goes in
 | L17 | **disjointness to the instance, at block level (CR4)**: `IsOrthRoutine'` with the three buffer inequalities removed from `run`; `IsRelErrSem.isOrthRoutine'_cgs2` assumes instead that the blocks `(Vb, 0, N*j)`, `(wb, wo, N)`, `(hb, ho, j)` are pairwise `blockDisjoint`. This admits `w` as the next column of `V` in the same buffer (Arnoldi/GMRES). It needs CGS2's pass lemmas re-checked at block level (`exec_cgsPass_frame` uses `hb ≠ wb ∧ hb ≠ Vb`) | S×2 (M if the pass lemmas need restating) | `IsOrthCall` and the `(by omega) (by omega) (by omega)` lambda in `exec_rounded_loop` |
 | L18 | `HoldsDecoded s dec p b off V ↔ ∀ j, ReadsDecoded s dec p b (off + N * j) (fun i => V i j)` | S | needed by `IsOrthRoutine.toBlockRoutine` and by any consumer that reads `w` as a column of `V` |
 | L19 | `Writable` from a workspace shape: `s.shape = ws → ws[b]? = some (p, len) → off + n ≤ len → Writable s p b off n`, tagged so that `simp [workspaceShape]` closes it | S | the `fun i hi => ⟨N, by simp [hs, workspaceShape], …⟩` lambdas in `exec_rounded_loop` |
-| L20 | `blockDisjoint_iff`: `blockDisjoint (b, o, n) (b', o', n') = true ↔ b ≠ b' ∨ o + n ≤ o' ∨ o' + n' ≤ o` (decidable form for `omega`) | S | CR4 goals |
+| L20 | `blockDisjoint_iff`: `blockDisjoint (b, o, n) (b', o', n') = true ↔ b ≠ b' ∨ n = 0 ∨ n' = 0 ∨ o + n ≤ o' ∨ o' + n' ≤ o` (decidable form for `omega`; empty blocks are disjoint from every block, §8.2 (a)); `blockDisjoint_iff_of_pos`: the endpoint form for nonempty blocks | S | CR4 goals |
 
 Totals: 20 items: S 14 (L1–L3, L5–L7, L10, L12, L13, L16–L20), M 6 (L4, L8, L9, L11, L14, L15),
 no L. That is about 950 lines with the API lemmas counted inside each item.
@@ -518,18 +524,21 @@ a routine proved under unit charges, L15/L16 with the rectangular matvec (CR11),
 
 ### 8.2 Design changes the pilot showed
 
-(a) **Empty blocks and `blockDisjoint`.** `blockDisjoint` (`Exec.lean`) is an interval test,
-so an empty block that lies inside another block is reported as overlapping. A write of an
-empty array is a no-op, so CR4-style hypotheses must not require disjointness for it. Rule:
-every disjointness hypothesis between a written block and another block is guarded by
-nonemptiness, `0 < n₁ → 0 < n₂ → blockDisjoint (b₁, o₁, n₁) (b₂, o₂, n₂) = true`, or compares
-only nonempty blocks. Implemented in this form in `RoutineFrames.lean`: `Store.writeBlock_comm`,
-`ReadsDecoded.of_writeBlock`, `HoldsDecoded.of_writeBlock` (and `Store.writeBlock_pop_of_lt`
-guards its bound by `0 < y.size`). The guarded form is what call sites can discharge: CGS2's
-`hb ≠ wb` style facts give the guarded goal by `blockDisjoint_iff` and `omega` without a case
-split on $j = 0$. L17 must use the same form. The `List.Pairwise` hypotheses of L4/L5
-(`Store.writeBlocks_eq_some_of_read`, `Store.frame_of_writeBlocks_eq_some`) keep the unguarded
-form, because they mirror `kcall`'s own side condition in `Exec.lean`.
+(a) **Empty blocks and `blockDisjoint`.** A block of length zero has no cell, and reading or
+writing it succeeds at every handle, tag and offset (`Store.writeBlock_eq_some_of_size_eq_zero`).
+`blockDisjoint` (`Exec.lean`) accepts either empty block, and
+`blockDisjoint_eq_true_iff` proves that it holds exactly when no cell belongs to both blocks.
+(The test this pilot was first proved against was an endpoint-only interval test that reported
+an empty block inside another block as overlapping, for example `(0, 2, 0)` and `(0, 0, 4)`.)
+`blockDisjoint_iff` therefore lists the two empty cases, and `blockDisjoint_iff_of_pos` gives
+the endpoint form for nonempty blocks. The disjointness hypotheses in `RoutineFrames.lean`
+(`Store.writeBlock_comm`, `ReadsDecoded.of_writeBlock`, `HoldsDecoded.of_writeBlock`) keep their
+nonemptiness guard, `0 < n₁ → 0 < n₂ → blockDisjoint (b₁, o₁, n₁) (b₂, o₂, n₂) = true`; under
+the corrected test the guard is implied, but it costs nothing and keeps the statements stable.
+CGS2's `hb ≠ wb` style facts discharge either form by `blockDisjoint_iff` and `omega`, without a
+case split on $j = 0$. The `List.Pairwise` hypotheses of L4/L5
+(`Store.writeBlocks_eq_some_of_read`, `Store.frame_of_writeBlocks_eq_some`) are unguarded, like
+`kcall`'s own side condition in `Exec.lean`.
 
 (b) **L8 needs pop rules for block writes.** `exists_exec_alloc` is stated with a predicate
 `Q` on the popped store (`Q out.store.pop`), not with a `writeBlocks` equation on it, and the
@@ -568,7 +577,13 @@ level, CR2 a, but not at the consumer level):
    `IsOrthRoutine` directly.
 2. `hpreFrame` to `IsFramed pre ro` (L6/L7, CR3 b): the hypothesis
    `hpreFrame : ∀ s s', pre s → (∀ k < 8, s'.shape[k]? = s.shape[k]?) → … → pre s'` becomes
-   `hpre : IsFramed pre ro` with `ro ⊆ [0, …, 7]`, in `exec_stepBody`, `StoreContext.succ`
+   `hpre : IsFramed pre ro` together with a preservation premise: no buffer of `ro` is written by
+   any phase of the loop (`IsFramed.of_writeBlocks` needs `∀ x ∈ bs, x.1 ∉ ro` at every write).
+   `ro ⊆ [0, …, 7]` alone is not enough: `fun s => s.read tag 3 0 = none` reads only buffer 3,
+   and the initialization writes $\beta_0 = 0$ there. Today's `hpreFrame` reads the cells of
+   buffer 7 only and the shapes of buffers 0–7, so a faithful replacement either restricts
+   `ro` to buffers the loop never writes or separates shape dependencies from value
+   dependencies. The change applies in `exec_stepBody`, `StoreContext.succ`
    (`LanczosReorthProgramRoundedStep.lean`), `exec_loop`, `exec_lanczosReorthLoop`,
    `exec_rounded_loop` (`LanczosReorthProgramRoundedLoop.lean`), `exec_rounded_loop_guarantees`
    (`LanczosReorthProgramGuarantees.lean`, from PR #66) and the private

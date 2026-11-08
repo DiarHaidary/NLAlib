@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.Analysis.RCLike.Basic
 
 /-!
 # Evaluation and degree of `Polynomial.contract`
@@ -20,6 +21,8 @@ $[a^2, b^2]$. Upstream candidates for `Mathlib/Algebra/Polynomial/Expand.lean`.
 ## Main results
 
 * `Polynomial.two_mul_eval_contract_two_sq`: the even part.
+* `Polynomial.mul_norm_eval_contract_two_sq_le`: the even part decreases the weighted average
+  of squared norms on a pair of opposite points.
 * `Polynomial.degree_contract_le_of_degree_le`, `Polynomial.eval_zero_contract`: degree and value
   at zero.
 -/
@@ -52,6 +55,23 @@ theorem two_mul_eval_contract_two_sq {R : Type*} [CommRing R] (p : R[X]) (x : R)
   rw [coeff_contract two_ne_zero, Nat.mul_comm i 2, pow_succ x (2 * i), pow_succ (-x) (2 * i),
     pow_mul x 2 i, pow_mul (-x) 2 i, neg_sq]
   ring
+
+/-- For $p \in \Bbbk[X]$, $x \in \Bbbk$ over an `RCLike` field and $\omega \ge 0$,
+the even part decreases the weighted average of squared norms at opposite points:
+$$\omega\lvert(\operatorname{contract}_2 p)(x^2)\rvert^2 \le
+\frac{\omega}{2}(\lvert p(x) \rvert^2 + \lvert p(-x) \rvert^2)\,.$$ -/
+theorem mul_norm_eval_contract_two_sq_le {𝕜 : Type*} [RCLike 𝕜] (p : 𝕜[X]) (x : 𝕜)
+    {ω : ℝ} (hω : 0 ≤ ω) :
+    ω * ‖(contract 2 p).eval (x ^ 2)‖ ^ 2 ≤ ω / 2 * (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) := by
+  have hle : ‖(contract 2 p).eval (x ^ 2)‖ ≤ (‖p.eval x‖ + ‖p.eval (-x)‖) / 2 := by
+    have h := congrArg norm (two_mul_eval_contract_two_sq p x)
+    rw [norm_mul, RCLike.norm_two] at h
+    have := norm_add_le (p.eval x) (p.eval (-x))
+    linarith
+  have h3 := pow_le_pow_left₀ (norm_nonneg _) hle 2
+  have h4 : ((‖p.eval x‖ + ‖p.eval (-x)‖) / 2) ^ 2 ≤ (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) / 2 := by
+    nlinarith [sq_nonneg (‖p.eval x‖ - ‖p.eval (-x)‖)]
+  nlinarith
 
 /-- A contraction divides the degree: if $\deg f \le q$ then
 $\deg \operatorname{contract}_n f \le \lfloor q/n \rfloor$, for $n \ne 0$. Upstream candidate. -/

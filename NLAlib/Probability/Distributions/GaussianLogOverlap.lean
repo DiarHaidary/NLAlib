@@ -18,7 +18,8 @@ fixed unit vector $\mathbf{u}$, the squared overlap
 $\langle \mathbf{u}, \mathbf{g} \rangle^2 / \|\mathbf{g}\|^2$ is the squared cosine between a
 random start and a fixed direction, the quantity a random-start analysis of the power method or
 the Lanczos method has to control [KuczynskiWozniakowski1992]. Its inverse
-$\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2$ has infinite mean, but its logarithm
+$\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2$ has infinite mean when $N \ge 2$.
+When $N = 1$ it is $1$ almost surely. In every positive dimension its logarithm
 $L = \log(\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2)$ has an exponential tail
 beyond $\log(2N)$: $\mathbb{P}[t \le L] \le \sqrt{2N}\, e^{-t/2}$ for every real $t$, and so finite
 first and second moments, $\mathbb{E} L \le \log(2N) + 2$ and
@@ -490,7 +491,8 @@ theorem integrable_log_norm_sq_div_sq_of_hasLaw_gaussianVector
 $\mathbb{R}^n$ and a unit vector $\mathbf{u}$, with $N = \lvert n \rvert$,
 $$\mathbb{E} \log \frac{\|\mathbf{g}\|^2}{\langle \mathbf{u}, \mathbf{g} \rangle^2}
 \le \log(2N) + 2,$$
-although $\mathbb{E}[\|\mathbf{g}\|^2 / \langle \mathbf{u}, \mathbf{g} \rangle^2] = \infty$.
+whereas the inverse squared overlap has infinite expectation when $N \ge 2$. When $N = 1$,
+the quotient is $1$ almost surely and its logarithm has expectation $0$.
 Integrating the tail `NLAlib.measureReal_log_norm_sq_div_sq_ge_le_of_hasLaw_gaussianVector`; the
 random-start step of the power and Lanczos methods [KuczynskiWozniakowski1992]. The exact mean is
 $\psi(N/2) - \psi(1/2) \sim \log(2N) + \gamma$ (digamma $\psi$, Euler's constant $\gamma$), so the

@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from check_constants import digest, docstrings, find_definition, run
+from check_constants import MARK, digest, docstrings, find_definition, run
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "lean_docstrings.json"
@@ -40,6 +40,35 @@ def check(root, update_names=()):
 
 
 class DocstringTests(unittest.TestCase):
+    def test_adjacent_value_markers_keep_their_own_arguments(self):
+        source = ("Then <!-- value firstBound --> <!-- value secondBound --> "
+                  "<!-- value thirdBound {x + y} z -->$2 + 3 + x + y + z$.")
+        self.assertEqual([(m.group("name"), m.group("args")) for m in MARK.finditer(source)],
+                         [("firstBound", ""), ("secondBound", ""),
+                          ("thirdBound", " {x + y} z")])
+
+    def test_adjacent_zero_argument_values_are_each_checked(self):
+        second = BOUND.replace("exampleBound", "secondBound").replace("$2$", "$3$")
+        second = second.replace("x + 1", "x + 2")
+        source = BOUND + second + ("/-- Both <!-- value exampleBound --> "
+                                  "<!-- value secondBound -->$2 + 3$. -/\n"
+                                  "theorem both : True := trivial\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = fixture_root(tmp, source)
+            body = find_definition(second, "secondBound")[1]
+            with (root / "docs" / "constants.toml").open("a", encoding="utf-8") as out:
+                out.write('[[constant]]\nname = "NLAlib.secondBound"\nkind = "bound"\n'
+                          'file = "NLAlib/Example.lean"\nargs = []\nlatex = "3"\n'
+                          f'lean_body = {json.dumps(body)}\nbody_hash = "{digest(body)}"\n')
+            self.assertEqual(check(root)[0], 0)
+            for omitted in ("2", "3"):
+                (root / "NLAlib" / "Example.lean").write_text(
+                    source.replace("$2 + 3$", f"${'3' if omitted == '2' else '2'}$"),
+                    encoding="utf-8")
+                status, output = check(root)
+                self.assertEqual(status, 1)
+                self.assertIn(f"does not contain its value '{omitted}'", output)
+
     def test_shared_lean_lexical_cases(self):
         for fixture in json.loads(FIXTURES.read_text(encoding="utf-8")):
             with self.subTest(fixture["name"]):

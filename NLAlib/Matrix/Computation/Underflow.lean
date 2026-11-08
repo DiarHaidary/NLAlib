@@ -38,8 +38,9 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C]
   {dec : P → K → ℝ} {u η : P → ℝ} {safe : P → ℝ → Prop}
 
 /-- The actual rectangular `gemv` run succeeds and changes only its output block under
-decoded-input, writable-output, and disjointness assumptions. Assume $u,\eta\ge0$ and a safe
-radius $L$. For each row, require $P\sum_j\lvert a_{ij}x_j\rvert+D\le L$, with
+decoded-input, writable-output, and disjointness assumptions. Assume $u,\eta\ge0$, exact
+addition of zero, and a safe radius $L$. For each row, require
+$P\sum_j\lvert a_{ij}x_j\rvert+D\le L$, with
 $P=(1+u)^{2n}$ and $D=nP(2+u)\eta$. The Euclidean error is at most
 $(P-1)\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{x}\|+\sqrt m D$.
 No smallness condition on $nu$ is needed. [Higham2002, §2.2 and §3.5]. -/

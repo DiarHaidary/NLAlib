@@ -50,6 +50,8 @@ private theorem allOnes_ne_zero (spec : Format) [Fact (2 ≤ spec.exponentBits)]
       _ ≤ _ := Nat.pow_le_pow_right (by norm_num) (by omega)
   omega
 
+/-- Unpacking any bit pattern produces canonical data in a format with at least two exponent
+bits. Canonical data include signed zeros, infinities and NaN. -/
 theorem unpack_isCanonical (spec : Format) [Fact (2 ≤ spec.exponentBits)] (b : BitVec
   spec.numBits) :
     IsCanonical spec (unpack spec b) := by
@@ -89,12 +91,15 @@ private theorem zero_ne_allOnes (spec : Format) [Fact (2 ≤ spec.exponentBits)]
   (0#spec.exponentBits) ≠ -1#_ :=
   (allOnes_ne_zero spec).symm
 
+/-- Packing and unpacking signed zero preserves its sign when the format has at least two
+exponent bits. -/
 @[simp] theorem unpack_pack_zero (s : Sign) :
     unpack spec (pack spec (.zero s)) = .zero s := by
   have : spec.exponentBits ≠ 0 := by have := (Fact.out (p := 2 ≤ spec.exponentBits)); omega
   simp [unpack, pack, packedZero, unpackSign_packComponents, this]
 
 omit [Fact (2 ≤ spec.exponentBits)] in
+/-- Packing and unpacking infinity preserves its sign in every core format. -/
 @[simp] theorem unpack_pack_infinity (s : Sign) :
     unpack spec (pack spec (.infinity s)) = .infinity s := by
   simp [unpack, pack, packedInfinity, unpackSign_packComponents]
@@ -113,6 +118,7 @@ private theorem packedNaN_mantissa_ne_zero (spec : Format) :
   simp at this
 
 omit [Fact (2 ≤ spec.exponentBits)] in
+/-- Packing and unpacking NaN returns NaN in every core format. -/
 @[simp] theorem unpack_pack_nan :
     unpack spec (pack spec .notANumber) = .notANumber := by
   simp [unpack, pack, packedNaN, packedNaN_mantissa_ne_zero]
@@ -146,6 +152,8 @@ theorem fitsExponentRange_iff (spec : Format) [Fact (2 ≤ spec.exponentBits)] (
       _ ≤ _ := Nat.pow_le_pow_right (by norm_num) this
   omega
 
+/-- Packing and unpacking a canonical nonzero finite value preserves it when its exponent
+fits a format with at least two exponent bits. -/
 theorem unpack_pack_finite_of_fitsExponentRange {s : Sign} {m : ℕ} {e : ℤ} {hm : 0 < m}
     (hc : IsCanonical spec (.finite s m e hm)) (hno : FitsExponentRange spec e) :
     unpack spec (pack spec (.finite s m e hm)) = .finite s m e hm := by
@@ -272,6 +280,8 @@ theorem unpack_pack_of_abs_toReal_le {r : UnpackedFloat} (hr : IsCanonical spec 
   | finite s m e hm =>
     exact unpack_pack_finite_of_fitsExponentRange hr (fitsExponentRange_of_abs_toReal_le hr h)
 
+/-- In a format with at least two exponent bits, packing a canonical nonzero finite value
+either preserves it or overflows to infinity of the same sign. -/
 theorem unpack_pack_finite {s : Sign} {m : ℕ} {e : ℤ} {hm : 0 < m}
     (hc : IsCanonical spec (.finite s m e hm)) :
     unpack spec (pack spec (.finite s m e hm)) = .finite s m e hm ∨

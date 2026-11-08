@@ -166,29 +166,6 @@ structure CGRun (n k : ℕ) where
 
 /-! ### Vector norms -/
 
-private theorem norm_toLp_add_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x + y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_add]
-  exact norm_add_le _ _
-
-private theorem norm_toLp_sub_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x - y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_sub]
-  exact norm_sub_le _ _
-
-private theorem norm_toLp_smul {m : ℕ} (c : ℝ) (x : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (c • x)‖ = |c| * ‖WithLp.toLp 2 x‖ := by
-  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
-
-private theorem abs_dotProduct_le {m : ℕ} (x y : Fin m → ℝ) :
-    |x ⬝ᵥ y| ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
-  have := abs_real_inner_le_norm (WithLp.toLp 2 y) (WithLp.toLp 2 x)
-  rwa [EuclideanSpace.inner_toLp_toLp, star_trivial, mul_comm ‖WithLp.toLp 2 y‖] at this
-
-private theorem norm_toLp_sq {m : ℕ} (x : Fin m → ℝ) :
-    ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
-
 /-- The two spectral facts used for a symmetric matrix with spectrum in $[a, a']$, $a \ge 0$:
 $\|\mathbf{A}\|_2 \le a'$ and $a\|\mathbf{p}\|^2 \le \mathbf{p}^{\mathsf{T}}\mathbf{A}\mathbf{p}$,
 for a nonzero $\mathbf{p}$ (which makes the spectrum nonempty). -/
@@ -244,9 +221,9 @@ theorem dotProduct_add_pos_of_spectrum_subset_Icc {n : ℕ} {A : Matrix (Fin n) 
   set P := ‖WithLp.toLp 2 p‖
   have hAp := norm_toLp_mulVec_le A p
   have hs' : ‖WithLp.toLp 2 (A *ᵥ p + e)‖ ≤ (1 + ε) * specNorm A * P := by
-    have := norm_toLp_add_le (A *ᵥ p) e
+    have := EuclideanSpace.norm_toLp_add_le (A *ᵥ p) e
     nlinarith
-  have hpe := abs_dotProduct_le p e
+  have hpe := EuclideanSpace.abs_dotProduct_le_norm p e
   have hε3 : 3 * ε ≤ 1 := by
     by_contra h
     push Not at h
@@ -308,7 +285,7 @@ theorem ρ_pos {j : ℕ} (hj : j < k) : 0 < C.ρ j := by
 theorem norm_s_le {j : ℕ} (hj : j < k) :
     ‖WithLp.toLp 2 (C.s j)‖ ≤ (1 + C.ε) * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖ := by
   rw [C.s_eq j hj]
-  have h1 := norm_toLp_add_le (C.A *ᵥ C.p j) (C.es j)
+  have h1 := EuclideanSpace.norm_toLp_add_le (C.A *ᵥ C.p j) (C.es j)
   have h2 := norm_toLp_mulVec_le C.A (C.p j)
   have h3 := C.norm_es_le j hj
   nlinarith
@@ -316,7 +293,7 @@ theorem norm_s_le {j : ℕ} (hj : j < k) :
 private theorem μ_le {j : ℕ} (hj : j < k) :
     C.μ j ≤ (1 + C.ε) ^ 2 * specNorm C.A * ‖WithLp.toLp 2 (C.p j)‖ ^ 2 := by
   rw [C.μ_eq j hj]
-  have h1 := (abs_le.mp (abs_dotProduct_le (C.p j) (C.s j))).2
+  have h1 := (abs_le.mp (EuclideanSpace.abs_dotProduct_le_norm (C.p j) (C.s j))).2
   have h2 := (abs_le.mp (C.abs_eμ_le j hj)).2
   have h3 := C.norm_s_le hj
   have hp := norm_nonneg (WithLp.toLp 2 (C.p j))
@@ -389,11 +366,12 @@ theorem norm_lanczosV {j : ℕ} (h1 : 1 ≤ j) (h2 : j ≤ k + 1) :
   unfold lanczosV
   rw [if_neg (by omega)]
   split_ifs with h
-  · rw [norm_toLp_smul, abs_inv, abs_norm, inv_mul_cancel₀ hb']
+  · rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_norm, inv_mul_cancel₀ hb']
   · have hρ : C.ρ (j - 1) ≠ 0 := by
       rw [ρ, norm_ne_zero_iff]
       exact fun h' => h ((toLp_eq_zero_iff _).1 h')
-    rw [norm_toLp_smul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul, abs_inv,
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_mul, abs_pow, abs_neg, abs_one,
+      one_pow, one_mul, abs_inv,
       abs_of_nonneg (C.ρ_nonneg _), ← ρ, inv_mul_cancel₀ hρ]
 
 /-- The coefficients $\beta_j$ of the run are nonnegative. -/
@@ -566,9 +544,10 @@ theorem δ_mul_norm_p_le {j : ℕ} (hj : j < k) :
     abel
   have h1 : C.δ j * ‖WithLp.toLp 2 (C.p j)‖ ≤
       ‖WithLp.toLp 2 (C.p (j + 1))‖ + C.ρ (j + 1) + ‖WithLp.toLp 2 (C.ep j)‖ := by
-    have := norm_toLp_sub_le (C.p (j + 1) - C.r (j + 1)) (C.ep j)
-    have h2 := norm_toLp_sub_le (C.p (j + 1)) (C.r (j + 1))
-    rw [← hid, norm_toLp_smul, abs_of_nonneg (C.δ_bounds hj).1] at this
+    have := EuclideanSpace.norm_toLp_sub_le (C.p (j + 1) - C.r (j + 1)) (C.ep j)
+    have h2 := EuclideanSpace.norm_toLp_sub_le (C.p (j + 1)) (C.r (j + 1))
+    rw [← hid, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (C.δ_bounds hj).1] at this
     simp only [ρ]
     linarith
   have h3 := C.norm_ep_le_of_lt hj
@@ -750,8 +729,8 @@ private theorem norm_convention_le {B : ℝ} {i : ℕ} (hi : i + 1 < k)
   obtain ⟨hδ0, -, hδ2⟩ := C.δ_bounds hi'
   have hβ' : C.ρ (i + 1) / (C.γ i * C.ρ i) ≤ B := by simpa [lanczosβ] using hβ
   have hB0 : 0 ≤ B := le_trans (by positivity) hβ'
-  rw [norm_toLp_smul]
-  have hr := norm_toLp_sub_le (C.r i) (C.r (i + 1))
+  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
+  have hr := EuclideanSpace.norm_toLp_sub_le (C.r i) (C.r (i + 1))
   have hd := C.abs_δ_sub_le' hi'
   have hR0 : 0 ≤ C.ρ (i + 1) ^ 2 / C.ρ i ^ 2 := by positivity
   have e1 : C.ρ (i + 1) ^ 2 / C.ρ i ^ 2 / C.γ i - C.δ i / C.γ i =
@@ -861,7 +840,7 @@ private theorem norm_recurrenceError_succ_mul_le {P B : ℝ} {i : ℕ} (hi : i +
   -- the six terms
   have t2 : ‖WithLp.toLp 2 ((C.γ (i + 1))⁻¹ • C.er (i + 1))‖ ≤ C.ε * ((C.γ (i + 1))⁻¹ *
       C.ρ (i + 1)) + C.ε * ((1 + C.ε) * specNorm C.A * ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
-    rw [norm_toLp_smul, abs_inv, abs_of_pos hγ]
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hγ]
     have := mul_le_mul_of_nonneg_left (C.norm_er_le_of_lt hi) (inv_nonneg.2 hγ.le)
     have e : (C.γ (i + 1))⁻¹ * (C.ε * (C.ρ (i + 1) + C.γ (i + 1) *
         ‖WithLp.toLp 2 (C.s (i + 1))‖)) = C.ε * ((C.γ (i + 1))⁻¹ * C.ρ (i + 1)) +
@@ -874,13 +853,13 @@ private theorem norm_recurrenceError_succ_mul_le {P B : ℝ} {i : ℕ} (hi : i +
     (norm_toLp_mulVec_le _ _).trans (mul_le_mul_of_nonneg_left (C.norm_ep_le_of_lt hi') hN)
   have t4 : ‖WithLp.toLp 2 (C.δ i • C.es i)‖ ≤
       C.ε * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) := by
-    rw [norm_toLp_smul, abs_of_nonneg hδ0]
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg hδ0]
     have := mul_le_mul_of_nonneg_left (C.norm_es_le i hi') hδ0
     linarith only [this]
   have t5 : ‖WithLp.toLp 2 ((C.δ i / C.γ i) • C.er i)‖ ≤
       C.ε * ((1 + 31 / 10 * C.ε) * B * C.ρ (i + 1)) +
         C.ε * ((1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖)) := by
-    rw [norm_toLp_smul, abs_of_nonneg hb0]
+    rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_of_nonneg hb0]
     have := mul_le_mul_of_nonneg_left (C.norm_er_le_of_lt hi') hb0
     have e : C.δ i / C.γ i * (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖)) =
         C.ε * (C.δ i * C.ρ i / C.γ i) + C.ε * (C.δ i * ‖WithLp.toLp 2 (C.s i)‖) := by
@@ -897,11 +876,11 @@ private theorem norm_recurrenceError_succ_mul_le {P B : ℝ} {i : ℕ} (hi : i +
         ‖WithLp.toLp 2 ((C.δ i / C.γ i) • C.er i)‖ +
         ‖WithLp.toLp 2 ((C.ρ (i + 1) ^ 2 / C.ρ i ^ 2 / C.γ i - C.δ i / C.γ i) •
           (C.r i - C.r (i + 1)))‖ := by
-      refine (norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
-      refine (norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
-      refine (norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
-      refine (norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
-      refine (norm_toLp_add_le _ _).trans (le_of_eq ?_)
+      refine (EuclideanSpace.norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
+      refine (EuclideanSpace.norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
+      refine (EuclideanSpace.norm_toLp_add_le _ _).trans (add_le_add_left ?_ _)
+      refine (EuclideanSpace.norm_toLp_sub_le _ _).trans (add_le_add_left ?_ _)
+      refine (EuclideanSpace.norm_toLp_add_le _ _).trans (le_of_eq ?_)
       rw [WithLp.toLp_neg, norm_neg]
   exact hsum.trans (recurrenceError_scalar_le hε0 C.ε_le hN hB0 (C.P_nonneg hi hP) hρ.le
     (norm_nonneg _) (mul_nonneg hδ0 (norm_nonneg _)) hP (C.δ_mul_norm_p_le hi') (C.inv_γ_le hi hP)
@@ -921,9 +900,10 @@ private theorem norm_recurrenceError_zero_le {P : ℝ}
   have hε0 := C.ε_nonneg
   have hp0 := norm_nonneg (WithLp.toLp 2 (C.p 0))
   have hP0 := C.P_nonneg hk hP
-  rw [C.recurrenceError_zero, norm_toLp_smul, abs_inv, abs_of_pos hρ]
-  have t := norm_toLp_add_le (-C.es 0) ((C.γ 0)⁻¹ • C.er 0)
-  rw [WithLp.toLp_neg, norm_neg, norm_toLp_smul, abs_inv, abs_of_pos hγ] at t
+  rw [C.recurrenceError_zero, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hρ]
+  have t := EuclideanSpace.norm_toLp_add_le (-C.es 0) ((C.γ 0)⁻¹ • C.er 0)
+  rw [WithLp.toLp_neg, norm_neg, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_inv,
+    abs_of_pos hγ] at t
   have t1 := C.norm_es_le 0 hk
   have t2 := mul_le_mul_of_nonneg_left (C.norm_er_le_of_lt hk) (inv_nonneg.2 hγ.le)
   have hs := C.norm_s_le hk
@@ -971,7 +951,8 @@ theorem norm_recurrenceError_le {P B : ℝ}
   · have hρ := C.ρ_pos hj
     obtain ⟨hβ, hδ⟩ := hB i hj
     have h := C.norm_recurrenceError_succ_mul_le hj (hP (i + 1) hj) hβ hδ
-    rw [C.recurrenceError_succ hj, norm_toLp_smul, abs_mul, abs_pow, abs_neg, abs_one, one_pow,
+    rw [C.recurrenceError_succ hj, WithLp.toLp_smul, norm_smul, Real.norm_eq_abs, abs_mul,
+      abs_pow, abs_neg, abs_one, one_pow,
       one_mul, abs_inv, abs_of_pos hρ, inv_mul_le_iff₀ hρ]
     linarith
 

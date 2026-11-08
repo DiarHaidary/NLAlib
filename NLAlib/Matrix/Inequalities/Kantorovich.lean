@@ -24,7 +24,7 @@ steepest descent and of the conjugate gradient method.
 * `NLAlib.re_quadForm_mul_re_quadForm_inv_le`: the Kantorovich inequality.
 * `Matrix.PosDef.re_quadForm_mul_re_quadForm_inv_le_pseudoConditionNumber`: with the
   pseudo-condition number.
-* `NLAlib.norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero`: the Wielandt inequality.
+* `NLAlib.norm_star_dotProduct_mulVec_sq_le_of_dotProduct_eq_zero`: the Wielandt inequality.
 -/
 
 @[expose] public section
@@ -216,7 +216,7 @@ $$\lvert \mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{y} \rvert^2
   \operatorname{Re}(\mathbf{y}^{\mathsf{H}}\mathbf{A}\mathbf{y})\,.$$
 [HornJohnson2013, (7.4.12.2)].
 Result: wielandt-inequality -/
-theorem norm_sq_star_dotProduct_mulVec_le_of_dotProduct_eq_zero {A : Matrix n n 𝕜} {a b : ℝ}
+theorem norm_star_dotProduct_mulVec_sq_le_of_dotProduct_eq_zero {A : Matrix n n 𝕜} {a b : ℝ}
     (ha : 0 < a) (h₁ : a • (1 : Matrix n n 𝕜) ≤ A) (h₂ : A ≤ b • (1 : Matrix n n 𝕜))
     {x y : n → 𝕜} (hxy : star x ⬝ᵥ y = 0) :
     ‖star x ⬝ᵥ A *ᵥ y‖ ^ 2 ≤

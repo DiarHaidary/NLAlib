@@ -55,7 +55,7 @@ skeleton statements (`~/nlalib-harness/pilot/compdyn-s1-targets.json`); all are 
   witnesses `exactMM`, `exactQR`.
 
 **Samplers and model (S1b), literals (M2).** `Dist.uniform` with law `volume[|Set.Icc (-1) 1]`
-(`Tape.lean`); `IsTapeRounding dec p u c ρ` and `IsExactIntLit dec sem B` (`Contract.lean`);
+(`Tape.lean`); `IsTapeRounding dec p u τ Ω c ρ` and `IsExactIntLit dec sem B` (`Contract.lean`);
 `MatrixFreeRoundedProb` (`Tape.lean`), the target-level definition approved with the sheet
 (Q6/M3).
 
@@ -130,8 +130,11 @@ S1 review, B1). New `docs/targets.approved`:
   family pushed through `ProgFamily.substOracle` would lose its kernel calls); it should take a
   kernel renaming `ι → ι'`, or fail, when S1c or S1d first substitutes oracles in a `kcall`
   program.
-* The NumPy emitter prints `kernel([dims], [ins], [outs])` without the kernel name (the emitter is
-  generic in `ι`, which has no `ToString`); to fix when S1d emits a program.
+* The NumPy emitter now accepts an explicit `kernelName : ι → Option String` binding to Python
+  callables. Emitted unbound kernel calls raise `NotImplementedError` when reached. Non-inlined
+  `named` nodes delegate their whole bodies to external implementations. Callers remain
+  responsible for those implementations and the kernel bindings; the translation is unverified.
+  The November 6 audit added distinct-kernel and missing-binding regressions.
 * A kernel does not see the tag `p`, so per-tag kernel accuracy cannot be stated; fine for EIGH
   (one tag), to revisit in S2.
 

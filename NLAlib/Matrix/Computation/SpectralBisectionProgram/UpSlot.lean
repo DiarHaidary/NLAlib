@@ -240,7 +240,7 @@ private theorem holds_of_exec_eighUpShift (p : P) (n d lo k : ℕ) (H : EighAren
     (xo := eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.var lo))
     (yo := eighBlockOff (IExp.const n) (IExp.const d) (IExp.var lo)) (A := U)
     (by simpa [eighBlockOff, Nat.mul_succ] using hU)
-    (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [eighBlockOff, IExp.eval_add, IExp.eval_mul, IExp.eval_const,
         IExp.eval_var, IExp.eval_ofNat]
       rw [Nat.mul_succ]; omega)))) hz
@@ -265,7 +265,8 @@ private theorem holds_of_exec_eighUpShift (p : P) (n d lo k : ℕ) (H : EighAren
       rw [hfr₁ p _ _ (blockDisjoint_iff.2 (Or.inl (Ne.symm hUE)))]; exact hE i
     exact hE₂ i i.isLt (e i) σ (by rw [Nat.mul_succ] at hx ⊢; simpa [Nat.mul_succ] using hx)
       (by rw [hfr₁ p _ _ (blockDisjoint_iff.2 (Or.inl htcU))]; exact hσ)
-  · rw [hfr₂ q b i (hE'.imp_right fun h w hw => by omega), hfr₁ q b i (blockDisjoint_iff.2 hU')]
+  · rw [hfr₂ q b i (hE'.imp_right fun h w hw => by omega),
+      hfr₁ q b i (blockDisjoint_of_ne_or_le hU')]
 
 omit [AddMonoid C] in
 /-- The two kernel calls of the split branch (`NLAlib.eighUpSplit`): the products of the bases
@@ -304,11 +305,11 @@ private theorem holds_of_kcallStore_eighUpSplit {mm : ι}
     (n := kp) (a := (H.Qa, 2 * (n * n) * d + 2 * n * lo))
     (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * lo))
     (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo)) hQp hUp (blockDisjoint_iff.2 (Or.inl hUQ))
-    (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) hu₁
   have hQm₁ := hQm.of_forall_read_eq fun i _ _ =>
     hfr₁ p _ i (blockDisjoint_iff.2 (Or.inl (Ne.symm hUQ)))
-  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (blockDisjoint_iff.2
+  have hUm₁ := hUm.of_forall_read_eq fun i hi _ => hfr₁ p _ i (blockDisjoint_of_ne_or_le
     (Or.inr (Or.inr (by simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith))))
   obtain ⟨hM, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some pairLayout.get_put p (l := k)
     (m := k - kp) (n := k - kp)
@@ -316,13 +317,15 @@ private theorem holds_of_kcallStore_eighUpSplit {mm : ι}
     (b := (H.Ua, 2 * (n * n) * (d + 1) + 2 * n * (lo + kp)))
     (c := (H.Ua, 2 * (n * n) * d + 2 * n * lo + 2 * (k * kp))) hQm₁ hUm₁
     (blockDisjoint_iff.2 (Or.inl hUQ))
-    (blockDisjoint_iff.2 (Or.inr (Or.inl (by
+    (blockDisjoint_of_ne_or_le (Or.inr (Or.inl (by
       simp only [pairLayout]; rw [Nat.mul_succ]; nlinarith)))) (by convert hu₂ using 3)
-  have hP₂ := hP.of_forall_read_eq fun i _ hi => hfr₂ p _ i (blockDisjoint_iff.2
+  have hP₂ := hP.of_forall_read_eq fun i _ hi => hfr₂ p _ i (blockDisjoint_of_ne_or_le
     (Or.inr (Or.inl (by simp only [pairLayout] at hi; nlinarith))))
   refine ⟨holds_fromCols hkp.le hP₂ hM, fun q b i hU' => ?_⟩
-  rw [hfr₂ q b i (blockDisjoint_iff.2 (hU'.imp_right fun h => by simp only [pairLayout]; omega)),
-    hfr₁ q b i (blockDisjoint_iff.2 (hU'.imp_right fun h => by simp only [pairLayout]; omega))]
+  rw [hfr₂ q b i (blockDisjoint_of_ne_or_le (hU'.imp_right fun h => by
+        simp only [pairLayout]; omega)),
+    hfr₁ q b i (blockDisjoint_of_ne_or_le (hU'.imp_right fun h => by
+        simp only [pairLayout]; omega))]
 
 /-- The split branch of a node in the upward pass (`NLAlib.eighUpSplit`, node of size $k$ at slot
 $lo$, $lo + k \le n$, split at $k_+ < k$): the two products into the column blocks of the node's

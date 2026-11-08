@@ -63,9 +63,9 @@ $(\lvert n \rvert/(\lvert n \rvert + 1))(\|\mathbf{A}\|_{\mathsf{F}}^2 -
 * `NLAlib.variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame`, its multiplied form
   `NLAlib.mul_variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame` (every $\lvert n \rvert$)
   and the form for any real matrix,
-  `NLAlib.variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame_hermitianPart`.
+  `NLAlib.variance_trace_conjTranspose_mul_mul_eq_hermitianPart_of_hasLaw_haarFrame`.
 * `NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector`,
-  `NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart`: real sphere
+  `NLAlib.variance_quadForm_sqrt_smul_eq_hermitianPart_of_hasLaw_uniformSphereVector`: real sphere
   probes.
 -/
 
@@ -579,7 +579,7 @@ It vanishes for $\lvert k \rvert = \lvert n \rvert$ (then the trace is $\operato
 sphere's variance (`NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector`). The
 multiplied form, valid for every $\lvert n \rvert$, is
 `NLAlib.mul_variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame`; for nonsymmetric
-$\mathbf{A}$, `NLAlib.variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame_hermitianPart`.
+$\mathbf{A}$, `NLAlib.variance_trace_conjTranspose_mul_mul_eq_hermitianPart_of_hasLaw_haarFrame`.
 [Epperly2023, Uniform on the Real Sphere], there $\lvert k \rvert = 1$; here any number of
 orthonormal probes.
 Result: haar-compression-trace-variance -/
@@ -611,7 +611,7 @@ the trace of a compression sees only $\mathbf{H}$
 (`NLAlib.trace_conjTranspose_mul_hermitianPart_mul`), and
 `NLAlib.variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame` applies to it.
 [Epperly2023, Real-Valued Test Vectors], there $\lvert k \rvert = 1$. -/
-theorem variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame_hermitianPart [DecidableEq k]
+theorem variance_trace_conjTranspose_mul_mul_eq_hermitianPart_of_hasLaw_haarFrame [DecidableEq k]
     (hX : HasLaw X (haarFrame n k) μ) (hk : Fintype.card k ≤ Fintype.card n)
     (hn : 1 < Fintype.card n) (A : Matrix n n ℝ) :
     variance (fun ω => ((X ω)ᴴ * A * X ω).trace) μ =
@@ -643,7 +643,7 @@ $$\operatorname{Var}(\boldsymbol{\omega}^{\mathsf{T}}\mathbf{A}\boldsymbol{\omeg
 every dimension. The case $\lvert k \rvert = 1$ of the Haar compression
 (`NLAlib.mul_variance_trace_conjTranspose_mul_mul_of_hasLaw_haarFrame`), by
 `NLAlib.hasLaw_replicateCol_of_hasLaw_uniformSphereVector`. For nonsymmetric $\mathbf{A}$,
-`NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart`.
+`NLAlib.variance_quadForm_sqrt_smul_eq_hermitianPart_of_hasLaw_uniformSphereVector`.
 [Epperly2023, Real-Valued Test Vectors] and [Epperly2023, Uniform on the Real Sphere]; proved
 there by the radius–direction decomposition of a Gaussian, here from invariance alone.
 Result: hutchinson-variance-real-sphere -/
@@ -689,7 +689,7 @@ $$\operatorname{Var}(\boldsymbol{\omega}^{\mathsf{T}}\mathbf{A}\boldsymbol{\omeg
 \Bigr)\,,$$
 from `NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector` and
 `NLAlib.quadForm_hermitianPart`. [Epperly2023, Real-Valued Test Vectors]. -/
-theorem variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector_hermitianPart {u : Ω → n → ℝ}
+theorem variance_quadForm_sqrt_smul_eq_hermitianPart_of_hasLaw_uniformSphereVector {u : Ω → n → ℝ}
     (hu : HasLaw u (uniformSphereVector n) μ) (A : Matrix n n ℝ) :
     variance (fun ω => quadForm A (√(Fintype.card n : ℝ) • u ω)) μ =
       2 * Fintype.card n / (Fintype.card n + 2) *

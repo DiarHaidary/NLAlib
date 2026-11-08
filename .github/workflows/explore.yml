@@ -1,23 +1,41 @@
 name: Explore data
 # Extracts the declaration data for nla-lib.org/explore (scripts/explore_data.sh), publishes it as
-# the asset `explore-data.json` of the rolling release `explore-data`, and asks the website
-# repository NLA-lib/NLA-lib.github.io, which builds the explorer, to rebuild the site. Only `main` publishes: the site shows the library as merged.
+# the asset `explore-data.json` of the rolling release `explore-data`, and asks the NLA-lib/NLA-lib.github.io
+# repository to rebuild the site. Only the current `main` with successful CI publishes.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 concurrency:
-  # Only the newest run publishes.
+  # Serialize uploads; a delayed completion must not cancel a newer publication.
+  # The live main/CI gate rejects stale runs, including after extraction.
   group: explore-data
-  cancel-in-progress: true
+  queue: max
+  cancel-in-progress: false
 permissions:
+  actions: read
   contents: write
 jobs:
   explore:
     name: Extract and publish explore data
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    env:
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Require passing CI for the current main commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/explore_publish.py
       - name: Build NLAlib with the Mathlib cache
         uses: leanprover/lean-action@v1
         with:
@@ -31,10 +49,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          python3 scripts/explore_publish.py
           if ! gh release view explore-data > /dev/null 2>&1; then
             gh release create explore-data --title "Explore data" --latest=false \
-              --notes "Rolling data for nla-lib.org/explore; replaced on every push." \
-              --target "$GITHUB_SHA"
+              --notes "Rolling data for nla-lib.org/explore; updated after successful main CI." \
+              --target "$SOURCE_SHA"
           fi
           # the data file records its own commit and date; the release itself is never edited
           # (editing fails once the commit the tag was created at is gone from every branch)
@@ -51,4 +70,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${DISPATCH_TOKEN}" \
             https://api.github.com/repos/NLA-lib/NLA-lib.github.io/dispatches \
-            -d "{\"event_type\":\"nlalib-updated\",\"client_payload\":{\"sha\":\"${GITHUB_SHA}\",\"ref\":\"${GITHUB_REF_NAME}\"}}"
+            -d "{\"event_type\":\"nlalib-updated\",\"client_payload\":{\"sha\":\"${SOURCE_SHA}\",\"ref\":\"main\"}}"

@@ -201,26 +201,6 @@ theorem re_quadForm_sub_cgIterate_chebyshevExtremaMatrix_eq_four_mul_pow_div {a 
     inv_eval_T_real_eq_two_mul_pow_div q ha haa, div_pow, mul_pow, ← pow_mul, mul_comm q 2]
   norm_num
 
-/-- The squared Euclidean norm as a sum of squared moduli. -/
-private lemma norm_toLp_sq {ι : Type*} [Fintype ι] (v : ι → 𝕜) :
-    ‖WithLp.toLp 2 v‖ ^ 2 = ∑ i, ‖v i‖ ^ 2 :=
-  EuclideanSpace.norm_sq_eq _
-
-/-- **The even part does at least as well**: with $u = p(x)$, $v = p(-x)$ and $\omega \ge 0$,
-$\omega\lvert(\operatorname{contract}_2 p)(x^2)\rvert^2 = \omega\lvert(u + v)/2\rvert^2 \le
-\tfrac{\omega}{2}(\lvert u \rvert^2 + \lvert v \rvert^2)$. -/
-private lemma mul_norm_eval_contract_two_sq_le (p : 𝕜[X]) (x : 𝕜) {ω : ℝ} (hω : 0 ≤ ω) :
-    ω * ‖(contract 2 p).eval (x ^ 2)‖ ^ 2 ≤ ω / 2 * (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) := by
-  have hle : ‖(contract 2 p).eval (x ^ 2)‖ ≤ (‖p.eval x‖ + ‖p.eval (-x)‖) / 2 := by
-    have h := congrArg norm (two_mul_eval_contract_two_sq p x)
-    rw [norm_mul, RCLike.norm_two] at h
-    have := norm_add_le (p.eval x) (p.eval (-x))
-    linarith
-  have h3 := pow_le_pow_left₀ (norm_nonneg _) hle 2
-  have h4 : ((‖p.eval x‖ + ‖p.eval (-x)‖) / 2) ^ 2 ≤ (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) / 2 := by
-    nlinarith [sq_nonneg (‖p.eval x‖ - ‖p.eval (-x)‖)]
-  nlinarith
-
 /-- **MINRES attains the Chebyshev value**: for $0 < a < a'$, on the Chebyshev extrema matrix
 with right-hand side $\mathbf{w}$ = `chebyshevWeightVector` and the zero start,
 $$\|\mathbf{w} - \mathbf{A}\,\mathsf{gmresIterate}(\mathbf{A}, \mathbf{w}, \mathbf{0}, q)\| =
@@ -244,7 +224,7 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevExtremaMatrix {a a' : ℝ} (ha : 0
   have hA := posDef_chebyshevExtremaMatrix (𝕜 := 𝕜) ha haa.le q
   have hnorm : ∀ f : Fin (q + 1) → 𝕜, ‖WithLp.toLp 2 (fun k => f k * w k)‖ ^ 2 =
       ∑ k, chebyshevWeight a a' q k * ‖f k‖ ^ 2 := fun f => by
-    rw [norm_toLp_sq]
+    rw [EuclideanSpace.norm_sq_eq]
     refine Finset.sum_congr rfl fun k _ => ?_
     simp only [w, chebyshevWeightVector]
     rw [norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs,
@@ -342,7 +322,7 @@ theorem norm_sub_mulVec_gmresIterate_chebyshevTwoIntervalMatrix {a a' : ℝ} (ha
         RCLike.conj_ofReal _)
   have hnormS : ∀ v : Fin (k + 1) ⊕ Fin (k + 1) → 𝕜, ‖WithLp.toLp 2 v‖ ^ 2 =
       ∑ j, (‖v (Sum.inl j)‖ ^ 2 + ‖v (Sum.inr j)‖ ^ 2) := fun v => by
-    rw [norm_toLp_sq, Fintype.sum_sum_type, Finset.sum_add_distrib]
+    rw [EuclideanSpace.norm_sq_eq, Fintype.sum_sum_type, Finset.sum_add_distrib]
   have hwl : ∀ j, ‖w (Sum.inl j)‖ ^ 2 = ω j / 2 := fun j => by
     simp only [w, chebyshevTwoIntervalVector, Sum.elim_inl]
     rw [RCLike.norm_ofReal, sq_abs, Real.sq_sqrt (by linarith [hω j])]

@@ -84,22 +84,6 @@ open Polynomial Polynomial.Chebyshev
 
 namespace NLAlib
 
-/-- **The even part does at least as well**: with $u = p(x)$, $v = p(-x)$ and $\omega \ge 0$,
-$\omega\lvert(\operatorname{contract}_2 p)(x^2)\rvert^2 \le
-\tfrac{\omega}{2}(\lvert u \rvert^2 + \lvert v \rvert^2)$. -/
-private lemma mul_norm_eval_contract_two_sq_le {𝕜 : Type*} [RCLike 𝕜] (p : 𝕜[X]) (x : 𝕜)
-    {ω : ℝ} (hω : 0 ≤ ω) :
-    ω * ‖(contract 2 p).eval (x ^ 2)‖ ^ 2 ≤ ω / 2 * (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) := by
-  have hle : ‖(contract 2 p).eval (x ^ 2)‖ ≤ (‖p.eval x‖ + ‖p.eval (-x)‖) / 2 := by
-    have h := congrArg norm (two_mul_eval_contract_two_sq p x)
-    rw [norm_mul, RCLike.norm_two] at h
-    have := norm_add_le (p.eval x) (p.eval (-x))
-    linarith
-  have h3 := pow_le_pow_left₀ (norm_nonneg _) hle 2
-  have h4 : ((‖p.eval x‖ + ‖p.eval (-x)‖) / 2) ^ 2 ≤ (‖p.eval x‖ ^ 2 + ‖p.eval (-x)‖ ^ 2) / 2 := by
-    nlinarith [sq_nonneg (‖p.eval x‖ - ‖p.eval (-x)‖)]
-  nlinarith
-
 /-- **Dual certificate on two symmetric intervals**: for $0 < a < a'$ and $k = \lfloor q/2
 \rfloor$, every $p \in \Bbbk[X]$ with $\deg p \le q$ and $p(0) = 1$ has
 $$T_k\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \le \sum_{j=0}^{k} \frac{\omega_j}{2}

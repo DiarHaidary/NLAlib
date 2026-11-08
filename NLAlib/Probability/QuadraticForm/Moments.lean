@@ -14,7 +14,7 @@ public import NLAlib.Probability.Distributions.Rademacher
 /-!
 # Second moments of quadratic forms
 
-For a random vector $\mathbf{x}$ in $\Bbbk^n$ with independent coordinates of mean zero,
+For a random vector $\mathbf{x}$ in $\Bbbk^n$ with independent coordinates in $L^4$ of mean zero,
 $\mathbb{E}\lvert \mathbf{x}_i\rvert^2 = 1$, pseudo-variance $\mathbb{E}[\mathbf{x}_i^2] = s$ and
 $\mathbb{E}\lvert \mathbf{x}_i\rvert^4 = m_4$, the quadratic form
 $\mathbf{x}^{\mathsf{H}}\mathbf{A}\mathbf{x}$ has mean $\operatorname{tr} \mathbf{A}$ (Hutchinson;
@@ -29,7 +29,8 @@ ones ($s = 0$); the complex cases are not yet stated as corollaries, since no co
 distribution is in the library. For real symmetric $\mathbf{A}$
 it is the variance $2 \|\mathbf{A}\|_{\mathsf{F}}^2 + (m_4 - 3) \sum_i \mathbf{A}_{i,i}^2$, stated
 with its Gaussian and Rademacher cases, their forms for any real $\mathbf{A}$ through the symmetric
-part, and the optimality of Rademacher probes ($m_4 \ge 1$). These are the single-probe
+part, and the optimality of Rademacher probes among these real probes with a common fourth
+moment ($m_4 \ge 1$). These are the single-probe
 variances of the Girard–Hutchinson trace estimator
 (`NLAlib/Estimation/Trace/GirardHutchinson.lean`); sphere probes, whose coordinates are not
 independent, are in `NLAlib/RandomMatrix/Haar/Moments.lean`.
@@ -41,10 +42,10 @@ independent, are in `NLAlib/RandomMatrix/Haar/Moments.lean`.
 * `NLAlib.variance_quadForm_of_isHermitian`: the real symmetric case.
 * `NLAlib.variance_quadForm_of_hasLaw_gaussianVector`,
   `NLAlib.variance_quadForm_of_hasLaw_rademacherVector`, and for any real matrix
-  `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`,
-  `NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`.
+  `NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_gaussianVector`,
+  `NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_rademacherVector`.
 * `NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector`: Rademacher probes are optimal among
-  probes with independent coordinates.
+  independent, centred real coordinates with variance one and a common finite fourth moment.
 -/
 
 @[expose] public section
@@ -357,7 +358,7 @@ theorem variance_quadForm_of_isHermitian {x : Ω → n → ℝ} (hind : iIndepFu
 /-- **Hutchinson's variance with a Gaussian probe.**
 $\operatorname{Var}(\mathbf{g}^{\mathsf{T}}\mathbf{A}\mathbf{g}) = 2 \|\mathbf{A}\|_{\mathsf{F}}^2$
 for a standard Gaussian vector $\mathbf{g}$ and real symmetric $\mathbf{A}$; any real
-$\mathbf{A}$ is `NLAlib.variance_quadForm_of_hasLaw_gaussianVector_hermitianPart`.
+$\mathbf{A}$ is `NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_gaussianVector`.
 [Epperly2023, Real-Valued Test Vectors].
 Result: hutchinson-variance-gaussian -/
 theorem variance_quadForm_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
@@ -379,8 +380,10 @@ theorem variance_quadForm_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
 $\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
 = 2 (\|\mathbf{A}\|_{\mathsf{F}}^2 - \sum_i \mathbf{A}_{i,i}^2)$ for a vector $\mathbf{x}$ of
 independent random signs and real symmetric $\mathbf{A}$; any real $\mathbf{A}$ is
-`NLAlib.variance_quadForm_of_hasLaw_rademacherVector_hermitianPart`, and these probes are optimal
-(`NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector`). [Epperly2023, Real-Valued Test Vectors].
+`NLAlib.variance_quadForm_eq_hermitianPart_of_hasLaw_rademacherVector`.
+Optimality among independent, centred real coordinates of variance one with a common finite
+fourth moment is
+`NLAlib.variance_quadForm_le_of_hasLaw_rademacherVector`. [Epperly2023, Real-Valued Test Vectors].
 Result: hutchinson-variance-rademacher -/
 theorem variance_quadForm_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (hx : HasLaw x (rademacherVector n) μ) {A : Matrix n n ℝ} (hA : A.IsHermitian) :
@@ -397,7 +400,7 @@ for a standard Gaussian vector $\mathbf{g}$ and any real $\mathbf{A}$ with symme
 $\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$: the quadratic form sees only
 $\mathbf{H}$ (`NLAlib.quadForm_hermitianPart`).
 [Epperly2023, Real-Valued Test Vectors]. -/
-theorem variance_quadForm_of_hasLaw_gaussianVector_hermitianPart {g : Ω → n → ℝ}
+theorem variance_quadForm_eq_hermitianPart_of_hasLaw_gaussianVector {g : Ω → n → ℝ}
     (hg : HasLaw g (gaussianVector n) μ) (A : Matrix n n ℝ) :
     variance (fun ω => quadForm A (g ω)) μ = 2 * frobNorm (hermitianPart A) ^ 2 := by
   rw [← variance_quadForm_of_hasLaw_gaussianVector hg (isHermitian_hermitianPart A)]
@@ -409,7 +412,7 @@ $\operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})
 independent random signs and any real $\mathbf{A}$ with symmetric part
 $\mathbf{H} = \tfrac{1}{2}(\mathbf{A} + \mathbf{A}^{\mathsf{T}})$ (which has the diagonal of
 $\mathbf{A}$). [Epperly2023, Real-Valued Test Vectors]. -/
-theorem variance_quadForm_of_hasLaw_rademacherVector_hermitianPart {x : Ω → n → ℝ}
+theorem variance_quadForm_eq_hermitianPart_of_hasLaw_rademacherVector {x : Ω → n → ℝ}
     (hx : HasLaw x (rademacherVector n) μ) (A : Matrix n n ℝ) :
     variance (fun ω => quadForm A (x ω)) μ =
       2 * (frobNorm (hermitianPart A) ^ 2 - ∑ i, A i i ^ 2) := by
@@ -422,7 +425,8 @@ theorem variance_quadForm_of_hasLaw_rademacherVector_hermitianPart {x : Ω → n
   simp only [quadForm_hermitianPart]
 
 /-- **Optimality of Rademacher probes** (Hutchinson): among real probes with independent
-coordinates of mean $0$ and variance $1$, random signs minimise the variance of the
+coordinates in $L^4$, each of mean $0$, variance $1$ and the same fourth moment
+$m_4 = \mathbb{E}[\mathbf{x}_i^4]$, random signs minimise the variance of the
 Girard–Hutchinson estimate for every real symmetric $\mathbf{A}$:
 $\operatorname{Var}(\boldsymbol{\varepsilon}^{\mathsf{T}}\mathbf{A}\boldsymbol{\varepsilon})
 \le \operatorname{Var}(\mathbf{x}^{\mathsf{T}}\mathbf{A}\mathbf{x})$ for a Rademacher vector

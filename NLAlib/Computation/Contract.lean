@@ -262,10 +262,12 @@ def AddsZeroExactly (dec : P → K → ℝ) (sem : ScalarSem P K) : Prop :=
 
 /-- **Integer literals up to $B$ are exact**: at every tag `p`, the literal of every natural
 number $k \le B$ succeeds and decodes to $k$. True of IEEE arithmetic below $2^t$ ($t$ the
-precision), of fixed grids containing the integers up to $B$, and of exact arithmetic for every
-$B$; not implied by the standard model, under which a literal may decode to $k(1 + \delta)$. With
-it, a size written by `litIdx` reads back exactly, and an equality test against an integer
-literal decides equality of sizes. No printed source. -/
+precision) within its finite representable range, of fixed grids containing the integers up to
+$B$, and of exact arithmetic for every $B$; not implied by the standard model, under which a
+literal may decode to $k(1 + \delta)$. A size at most $B$ written by `litIdx` reads back exactly.
+An equality test between such literals decides equality of sizes when comparisons are also exact
+on decoded values, as required separately by `NLAlib.Computation.IsRelErrSem`.
+No printed source. -/
 def IsExactIntLit (dec : P → K → ℝ) (sem : ScalarSem P K) (B : ℕ) : Prop :=
   ∀ (p : P) (k : ℕ), k ≤ B → ∃ z, sem.lit p k = some z ∧ dec p z = k
 

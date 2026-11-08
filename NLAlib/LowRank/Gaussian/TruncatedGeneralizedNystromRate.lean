@@ -300,7 +300,13 @@ theorem integral_frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_of_gaussianM
           40 * θ * ((min k (b - k) : ℕ) : ℝ) * specNorm (Lw * N ψ * Lw') := by
     filter_upwards [ae_rank_conjTranspose_mul_eq_of_hasLaw_gaussianMatrix (A * x) hid
       (by omega)] with ψ hψ
-    exact frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window hψ hk hak hkb ha ha₂ hb
+    refine (frobNorm_sub_truncatedSVD_generalizedNystrom_sq_le_add_window
+      hψ hk hak hkb ha ha₂ hb).trans ?_
+    dsimp only [N, E, R, Lw, Lw', θ, id_eq]
+    gcongr
+    · exact localTruncationNoiseConstant_le.trans (by norm_num : (483 : ℝ) ≤ 500)
+    · exact singularValues_nonneg _ _
+    · exact localTruncationWindowConstant_le.trans (by norm_num : (32 : ℝ) ≤ 40)
   have h1 : Integrable (fun ψ => frobNorm (A - truncatedSVD R k) ^ 2 +
       500 * k * specNorm (N ψ) ^ 2) (gaussianMatrix m p) :=
     (integrable_const _).add (hη.const_mul _)

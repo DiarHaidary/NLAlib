@@ -251,9 +251,34 @@ def Instr.run (sem : ScalarSem P K) (tape : Dist → ℕ → K) (s : Store P K) 
         (s.write q dst.buf dst.idx.eval v).map fun s' => (s', pos)
 
 /-- Two blocks `(handle, offset, length)` are disjoint: they lie in different buffers or their
-ranges of cells do not overlap. -/
+ranges of cells do not overlap. An empty block is disjoint from every block. -/
 def blockDisjoint (x y : ℕ × ℕ × ℕ) : Bool :=
-  x.1 != y.1 || decide (x.2.1 + x.2.2 ≤ y.2.1) || decide (y.2.1 + y.2.2 ≤ x.2.1)
+  x.1 != y.1 || decide (x.2.2 = 0) || decide (y.2.2 = 0) ||
+    decide (x.2.1 + x.2.2 ≤ y.2.1) || decide (y.2.1 + y.2.2 ≤ x.2.1)
+
+/-- The block-disjointness test is exact: it returns true precisely when no cell index belongs
+to both blocks in the same buffer. This includes blocks of length zero at any offset. -/
+theorem blockDisjoint_eq_true_iff (x y : ℕ × ℕ × ℕ) :
+    blockDisjoint x y = true ↔
+      ∀ i : ℕ, ¬ (x.1 = y.1 ∧ x.2.1 ≤ i ∧ i < x.2.1 + x.2.2 ∧
+        y.2.1 ≤ i ∧ i < y.2.1 + y.2.2) := by
+  simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
+  constructor
+  · intro h i
+    omega
+  · intro h
+    have hx := h x.2.1
+    have hy := h y.2.1
+    omega
+
+/-- Distinct handles or separated endpoints suffice for two blocks to be disjoint, at any
+length. -/
+theorem blockDisjoint_of_ne_or_le {x y : ℕ × ℕ × ℕ}
+    (h : x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1) :
+    blockDisjoint x y = true := by
+  apply (blockDisjoint_eq_true_iff x y).2
+  intro i
+  omega
 
 /-- The blocks of the operands `(handle, offset)` of a kernel call with the lengths `lens`. -/
 def kcallBlocks (bs : List (ℕ × ℕ)) (lens : List ℕ) : List (ℕ × ℕ × ℕ) :=

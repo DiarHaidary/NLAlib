@@ -242,9 +242,7 @@ private theorem node_setup_sign {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
   have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
       (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
   have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := fun h => by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl h)
+      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
   have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
       2 * (n * n) * d + 2 * n * lo := by simp [eighBlockOff]
   have hkk : k * k ≤ n * n := Nat.mul_le_mul (by omega) (by omega)
@@ -329,9 +327,7 @@ private theorem node_setup_projectors (p : P) (k : ℕ) {c B T Pp Pm : ℕ} {st 
       pairLayout.Holds σ.store p Pm 0 (M.hermScale (M.negMat (M.hermShift Bm o)) (M.ofNat 2)) := by
   intro M
   have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := fun h => by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl h)
+      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
   -- T = B + I
   obtain ⟨σ10, h10, h⟩ := node_bind (fun _ => rfl) h
   obtain ⟨hT10, hf10, hsh10, hp10⟩ := holds_of_exec_zhermShift
@@ -408,15 +404,13 @@ private theorem node_setup_trace (p : P) (k : ℕ) {t c Pp : ℕ} {st st' : St P
   obtain ⟨htr15, hf15⟩ := read_of_exec_ztraceRe
     (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
     (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := st) (st' := σ15) hP (by
-      simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-      exact Or.inl (Or.inl fun h => dPpt h.symm)) h15
+    p k (st := st) (st' := σ15) hP (blockDisjoint_of_ne (Ne.symm dPpt)) h15
   obtain ⟨hsh15, hp15⟩ := shape_pos_of_exec_ztraceRe_node p k h15
   have f15 : ∀ q b i, (b ≠ t ∨ i ≠ 5) → σ15.store.read q b i = st.store.read q b i := by
     intro q b i hb
     refine hf15 q b i ?_
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    change (b ≠ t ∨ i + 1 ≤ 5) ∨ 5 + 1 ≤ i
+    apply blockDisjoint_of_ne_or_le
+    change b ≠ t ∨ i + 1 ≤ 5 ∨ 5 + 1 ≤ i
     omega
   rw [hr] at h
   obtain ⟨a7, a8, v6, s16, ha7, ha8, hv6, hw16, h⟩ := exists_of_exec_seq_bin h

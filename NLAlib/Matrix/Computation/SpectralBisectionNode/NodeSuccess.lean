@@ -501,9 +501,7 @@ private theorem node_setup_sign_exists {mm : ι} (hmm : IsMatMulKernel I mm pair
       eighSignBlock p mm (.const k) (.const F) W 0 sp 0 B 0
       rest : Builder P ι ℕ ℕ Unit).run st = some st' := by
   have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := fun h => by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl h)
+      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
   have hR' : st.store.read p H.Lv (2 * IExp.const d : IExp ℕ).eval = some R := by
     simpa using hR
   have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
@@ -604,9 +602,7 @@ private theorem node_setup_projectors_exists {u : P → ℝ} {dec : P → K → 
       zhermScale p (.const k) T 0 ⟨c, 1⟩ Pm 0
       rest : Builder P ι ℕ ℕ Unit).run st = some st' := by
   have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := fun h => by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl h)
+      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
   have hfit : ∀ {X : ℕ} {s : St P K C}, s.store.shape[X]? = some (p, 2 * (n * n)) →
       ∃ len, s.store.shape[X]? = some (p, len) ∧ (0 : IExp ℕ).eval + 2 * (k * k) ≤ len :=
     fun h => ⟨_, h, by simp only [IExp.eval_zero]; omega⟩
@@ -693,9 +689,8 @@ private theorem node_setup_trace_exists {u : P → ℝ} {dec : P → K → ℝ}
       rest : Builder P ι ℕ ℕ Unit).run st = some st' := by
   have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
       (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  have hdP : blockDisjoint (t, 5, 1) (Pp, (0 : IExp ℕ).eval, 2 * (k * k)) = true := by
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    exact Or.inl (Or.inl dtPp)
+  have hdP : blockDisjoint (t, 5, 1) (Pp, (0 : IExp ℕ).eval, 2 * (k * k)) = true :=
+    blockDisjoint_of_ne dtPp
   refine ex_bind_node (fun _ => rfl) (exists_exec_ztraceRe_node (I := I) hsem p k (st := st)
     (dst := ⟨t, 5⟩) hP dtPp (Store.exists_write_eq_some_of_getElem?_shape default ht
       (show 5 < 7 by norm_num))) fun σ15 h15 => ?_
@@ -708,8 +703,8 @@ private theorem node_setup_trace_exists {u : P → ℝ} {dec : P → K → ℝ}
   have f15 : ∀ q b i, (b ≠ t ∨ i ≠ 5) → σ15.store.read q b i = st.store.read q b i := by
     intro q b i hb
     refine hf15 q b i ?_
-    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq]
-    change (b ≠ t ∨ i + 1 ≤ 5) ∨ 5 + 1 ≤ i
+    apply blockDisjoint_of_ne_or_le
+    change b ≠ t ∨ i + 1 ≤ 5 ∨ 5 + 1 ≤ i
     omega
   obtain ⟨v6, hv6⟩ := hsem.bin_ok p .add _ c2v trivial (fun h => nomatch h) trivial
   obtain ⟨s16, hw16⟩ := Store.exists_write_eq_some_of_getElem?_shape (s := σ15.store) v6

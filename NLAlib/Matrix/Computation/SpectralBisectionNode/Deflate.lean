@@ -89,7 +89,7 @@ positions and every cell outside them are kept. -/
 private theorem read_of_exec_leaf_diag (p : P) (diag : Bool) (k : ℕ) {Ma Ea : ℕ}
     {mo eo : IExp ℕ} {s₁ s₂ : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
     (hA : pairLayout.Holds s₁.store p Ma mo.eval A)
-    (hEA : (¬Ea = Ma ∨ eo.eval + k ≤ mo.eval) ∨ mo.eval + 2 * (k * k) ≤ eo.eval)
+    (hEA : blockDisjoint (Ea, eo.eval, k) (Ma, mo.eval, 2 * (k * k)) = true)
     (hl : exec I (.loop (.const k) fun i => (if diag then
         ins (.copy p ⟨Ea, eo + .var i⟩ ⟨Ma, mo + zidx (.const k) (.var i) (.var i)⟩)
       else ins (.lit p ⟨Ea, eo + .var i⟩ 0) : Builder P ι ℕ ℕ Unit).run) s₁ = some s₂) :
@@ -116,6 +116,7 @@ private theorem read_of_exec_leaf_diag (p : P) (diag : Bool) (k : ℕ) {Ma Ea : 
         simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
           IExp.eval_ofNat] at hi hj ⊢
         have := hii i hi
+        simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hEA
         by_cases hMa : Ma = Ea
         · right; omega
         · left; exact hMa) hl
@@ -172,7 +173,7 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
   simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
   obtain ⟨_, ⟨v, hv, s₃, hw, rfl⟩, rfl⟩ := h
   simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq,
-    List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hUA hEA hUE hkd
+    List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hUA hUE hkd
   have hii : ∀ i < k, 2 * (i + k * i) + 2 ≤ 2 * (k * k) := fun i hi => by nlinarith
   obtain ⟨hsh₂, hps₂, hE, hfr₂⟩ := read_of_exec_leaf_diag (toNat := toNat) (mmR := mmR)
     (qrR := qrR) (unif := unif) (normal := normal) p diag k
@@ -181,7 +182,7 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
       simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq]
       by_cases hb : Ma = Ua
       · omega
-      · left; left; exact hb)) hEA hl
+      · simp [hb])) hEA hl
   have hkdE : ∀ i < k, kd.buf ≠ Ea ∨ kd.idx.eval ≠ eo.eval + i := fun i hi => by
     by_cases hb : kd.buf = Ea
     · right; omega
@@ -199,17 +200,12 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
   · rw [Store.read_of_write_eq_some_of_ne hw ((hkdE i i.isLt).imp Ne.symm Ne.symm)]
     exact hE i
   · exact (Store.read_of_write_eq_some hw).trans hv.symm
-  · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h₁ h₂ h₃
-    rw [Store.read_of_write_eq_some_of_ne hw ?_, hfr₂ q b i ?_]
-    · exact hIfr q b i (by simpa [blockDisjoint] using h₁)
-    · rcases h₂ with (h₂ | h₂) | h₂
-      · exact Or.inl h₂
-      · right; left; omega
-      · right; right; omega
-    · rcases h₃ with (h₃ | h₃) | h₃
-      · exact Or.inl h₃
-      · right; omega
-      · right; omega
+  · rw [Store.read_of_write_eq_some_of_ne hw ?_, hfr₂ q b i ?_]
+    · exact hIfr q b i h₁
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h₂
+      by_cases h : b = Ea <;> omega
+    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h₃
+      by_cases h : b = kd.buf <;> omega
   · exact (Store.shape_of_write_eq_some hw).trans (hsh₂.trans (hsh₁.trans hsh₀))
   · exact hps₂.trans (hps₁.trans hps₀)
 
@@ -280,10 +276,16 @@ theorem holds_of_exec_eighChildBlock (p : P) (k : ℕ) {Ma : ℕ} {mo mo' : IExp
   have hw : (pairLayout : EntryLayout K (K × K)).width = 2 := rfl
   have hMst : pairLayout.Holds st'.store p Ma mo'.eval
       ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift A σ) :=
-    EntryLayout.Holds.of_forall_read_eq hM fun i _ h2 => by
+    EntryLayout.Holds.of_forall_read_eq hM fun i h1 h2 => by
       rw [hw] at h2
-      rw [hf3 _ _ _ (fun ⟨hb, hi⟩ => by subst hb; subst hi; simp [blockDisjoint] at hkd; omega),
-        hf2 _ _ _ (fun ⟨hb, hi⟩ => by subst hb; subst hi; simp [blockDisjoint] at hsz; omega)]
+      have outside (c : Cell ℕ ℕ)
+          (hc : blockDisjoint (c.buf, c.idx.eval, 1) (Ma, mo'.eval, 2 * (k * k)) = true) :
+          ¬(Ma = c.buf ∧ i = c.idx.eval) := by
+        rintro ⟨hb, hi⟩
+        apply (blockDisjoint_eq_true_iff _ _).mp hc i
+        dsimp only
+        omega
+      rw [hf3 _ _ _ (outside kd hkd), hf2 _ _ _ (outside sz hsz)]
   refine ⟨hMst, ?_, ?_, fun q b i hb1 hb2 hb3 => ?_, ?_, ?_⟩
   · rw [hf3 _ _ _ hszkd']
     simpa using rsz

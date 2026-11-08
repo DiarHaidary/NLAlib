@@ -9,20 +9,25 @@ import NLAlib.Matrix.Computation.DeflationProgramTree
 /-!
 # Printing first-order programs as NumPy
 
-The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a result
-is printed from the very tree the result is about: a registered tree such as
+The emitter prints a first-order tree (`NLAlib.Computation.FStmt`), so the code emitted for a
+result is printed from the very tree the result is about: a registered tree such as
 `NLAlib.hutchppProg.compiled` (`docs/design/Computation.md`, F1 and F11 step C). Variables are de
 Bruijn levels: handle `j` is printed `b{j}` and index variable `j` is printed `i{j}`, so the free
 variables of a program `Prog P ι r b` are the parameters of the emitted function: the oracle
-dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc` in
-scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
+dimension `i0`, the sizes `i1`, …, `i{r}` and the declared buffers `b0`, …, `b{b-1}`. An `alloc`
+in scope of `nb` handles binds `b{nb}`, a `loop` in scope of `ni` indices binds `i{ni}`. Index
 expressions are printed as Python arithmetic. `named` kernels are printed as calls into a short
-NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`, so
-a read before a write shows as `nan`. An index binder (`bindIdx`) is printed strict, as the model
-runs it: it raises `ValueError` on a negative value or a floor above its bound, where the model's
-run fails, and never clamps. The emitted code is an unverified translation, for differential testing
-(`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under NumPy, when it is
-installed, and agrees with the Lean `Float` run of the same tree.
+NumPy prelude (`NLAlibTools.numpyPrelude`), or inlined. Fresh buffers are `np.full(len, np.nan)`,
+so a read before a write shows as `nan`. The emitted code is an unverified translation, for
+differential testing (`docs/design/Computation.md` §8): below, the emitted Hutch++ runs under
+NumPy, when it is installed, and agrees with the Lean `Float` run of the same tree.
+An index binder raises `ValueError` on a failed conversion or a floor above its bound, matching
+the strict binder in the model.
+Emitted black-box kernel calls require an explicit `kernelName` binding from each kernel identifier
+to a Python callable expression. An unbound call raises `NotImplementedError`; different
+kernel identifiers are never silently replaced by one anonymous callback. A non-inlined `named`
+node calls its external implementation instead of emitting its body; that implementation remains
+responsible for any internal kernel calls.
 -/
 
 -- A tools file: `#eval` and `#guard` are its point.
@@ -38,14 +43,15 @@ def idxName {ni : ℕ} (v : Fin ni) : String := s!"i{v.val}"
 /-- A handle. -/
 def bufName {nb : ℕ} (v : Fin nb) : String := s!"b{v.val}"
 
-/-- An index expression as Python arithmetic (truncated subtraction as `max(·, 0)`). -/
+/-- An index expression as Python arithmetic: subtraction truncates at zero and a remainder
+by zero is its dividend, matching `Nat.mod`. -/
 def emitIExp {ni : ℕ} : IExp (Fin ni) → String
   | .var v => idxName v
   | .const n => toString n
   | .add a b => s!"({emitIExp a} + {emitIExp b})"
   | .sub a b => s!"max({emitIExp a} - {emitIExp b}, 0)"
   | .mul a b => s!"({emitIExp a} * {emitIExp b})"
-  | .mod a b => s!"({emitIExp a} % {emitIExp b})"
+  | .mod a b => s!"(lambda a, b: a % b if b else a)({emitIExp a}, {emitIExp b})"
 
 /-- A cell as a Python subscript. -/
 def emitCell {nb ni : ℕ} (c : Cell (Fin nb) (Fin ni)) : String :=
@@ -87,58 +93,163 @@ def emitInstr {P : Type} {nb ni : ℕ} : Instr P (Fin nb) (Fin ni) → String
         | .uniform => "draw_uniform()"
       s!"{emitCell dst} = {f}"
 
-/-- A first-order statement as Python lines at depth `d`; a kernel call of `o` is printed as a
-call of the Python function `kname o`. -/
-def emitF {P ι : Type} (inline : Bool) (kname : ι → String) :
-    {nb ni : ℕ} → FStmt P ι nb ni → ℕ → List String
-  | _, _, .skip, _ => []
-  | _, _, .seq s t, d => emitF inline kname s d ++ emitF inline kname t d
-  | _, _, .instr i, d => [pad d ++ emitInstr i]
-  | _, _, .apply _ _ dst dOff src sOff cols, d =>
+/-- A first-order statement as Python lines at depth `d`. A black-box call uses its explicit
+`kernelName` binding to a trusted Python callable expression, or raises `NotImplementedError`
+when reached. The caller supplies bindings and implementations matching each kernel. -/
+private def emitFWith {P ι : Type} (inline : Bool) {nb ni : ℕ} (s : FStmt P ι nb ni) (d : ℕ)
+    (kernelName : ι → Option String := fun _ => none) : List String :=
+  match s with
+  | .skip => []
+  | .seq s t => emitFWith inline s d kernelName ++ emitFWith inline t d kernelName
+  | .instr i => [pad d ++ emitInstr i]
+  | .apply _ _ dst dOff src sOff cols =>
       let w := s!"A.shape[0] * {emitIExp cols}"
       [pad d ++ s!"{bufName dst}[{emitIExp dOff}:{emitIExp dOff} + {w}] = (A @ " ++
         s!"{bufName src}[{emitIExp sOff}:{emitIExp sOff} + {w}].reshape((A.shape[0], " ++
         s!"{emitIExp cols}), order='F')).reshape(-1, order='F')"]
-  | _, _, .rom _ dst i, d => [pad d ++ s!"{emitCell dst} = ROM[{emitIExp i}]"]
-  | nb, _, .alloc _ len body, d =>
-      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++ emitF inline kname body d ++
+  | .rom _ dst i => [pad d ++ s!"{emitCell dst} = ROM[{emitIExp i}]"]
+  | .alloc _ len body =>
+      [pad d ++ s!"b{nb} = np.full({emitIExp len}, np.nan)"] ++ emitFWith inline body d kernelName ++
         [pad d ++ s!"del b{nb}"]
-  | _, ni, .loop n body, d =>
-      let ls := emitF inline kname body (d + 1)
+  | .loop n body =>
+      let ls := emitFWith inline body (d + 1) kernelName
       [pad d ++ s!"for i{ni} in range({emitIExp n}):"] ++
         (if ls.isEmpty then [pad (d + 1) ++ "pass"] else ls)
-  | _, _, .whileFuel fuel _ cmp x y body, d =>
+  | .whileFuel fuel _ cmp x y body =>
       [pad d ++ s!"for _ in range({emitIExp fuel}):",
         pad (d + 1) ++ s!"if not ({emitCell x} {emitCmp cmp} {emitCell y}): break"] ++
-        emitF inline kname body (d + 1) ++
+        emitFWith inline body (d + 1) kernelName ++
         [pad d ++ "else:", pad (d + 1) ++ "raise RuntimeError('out of fuel')"]
-  | _, _, .ite _ cmp x y t e, d =>
-      let lt := emitF inline kname t (d + 1)
-      let le := emitF inline kname e (d + 1)
+  | .ite _ cmp x y t e =>
+      let lt := emitFWith inline t (d + 1) kernelName
+      let le := emitFWith inline e (d + 1) kernelName
       [pad d ++ s!"if {emitCell x} {emitCmp cmp} {emitCell y}:"] ++
         (if lt.isEmpty then [pad (d + 1) ++ "pass"] else lt) ++
         [pad d ++ "else:"] ++ (if le.isEmpty then [pad (d + 1) ++ "pass"] else le)
-  | _, _, .named name args body, d =>
-      if inline then emitF inline kname body d
+  | .named name args body =>
+      if inline then emitFWith inline body d kernelName
       else [pad d ++ s!"{name}({", ".intercalate (args.map emitArg)})"]
-  | _, _, .kcall o _ dims ins outs, d =>
-      let ins' := ins.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
-      let outs' := outs.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
-      [pad d ++ s!"{kname o}([{", ".intercalate (dims.map emitIExp)}], " ++
-        s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
-  | _, ni, .bindIdx _ x bound body, d =>
+  | .kcall kernel _ dims ins outs =>
+      match kernelName kernel with
+      | none => [pad d ++ "raise NotImplementedError('unbound kernel: supply kernelName')"]
+      | some name =>
+          let ins' := ins.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
+          let outs' := outs.map fun x => s!"({bufName x.1}, {emitIExp x.2})"
+          [pad d ++ s!"({name})([{", ".intercalate (dims.map emitIExp)}], " ++
+            s!"[{", ".intercalate ins'}], [{", ".intercalate outs'}])"]
+  | .bindIdx _ x bound body =>
       [pad d ++ s!"if not (0 <= {emitCell x}): raise ValueError('bindIdx: negative value')",
         pad d ++ s!"i{ni} = int(np.floor({emitCell x}))",
         pad d ++ s!"if i{ni} > {emitIExp bound}: raise ValueError('bindIdx: above the bound')"] ++
-        emitF inline kname body d
+        emitFWith inline body d kernelName
 
-/-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`; a
-kernel call of `o` is printed as a call of `kname o` (by default `kernel`). -/
+/-- A first-order statement as Python lines at depth `d`, with a Python callable for each
+kernel identifier. -/
+def emitF {P ι : Type} (inline : Bool) (kname : ι → String) {nb ni : ℕ}
+    (s : FStmt P ι nb ni) (d : ℕ) : List String :=
+  emitFWith inline s d (fun o => some (kname o))
+
+/-- A program `Prog P ι r b` as a Python function `name(A, i0, …, i{r}, b0, …, b{b-1})`.
+A total `kname` supplies Python callable expressions. Its default, an empty name, leaves a
+kernel unbound. The optional `kernelName` supplies a partial mapping directly.
+An unbound call raises `NotImplementedError` when reached.
+Non-inlined `named` nodes instead delegate their whole bodies to external implementations. -/
 def emitProg {P ι : Type} {r b : ℕ} (inline : Bool) (name : String) (prog : Prog P ι r b)
-    (kname : ι → String := fun _ => "kernel") :
-    String :=
+    (kname : ι → String := fun _ => "")
+    (kernelName : ι → Option String := fun o =>
+      let f := kname o
+      if f.isEmpty then none else some f) : String :=
   let params := ["A"] ++ (List.range (r + 1)).map (s!"i{·}") ++ (List.range b).map (s!"b{·}")
-  "\n".intercalate ([s!"def {name}({", ".intercalate params}):"] ++ emitF inline kname prog 1)
+  let body := emitFWith inline prog 1 kernelName
+  "\n".intercalate ([s!"def {name}({", ".intercalate params}):"] ++
+    if body.isEmpty then [pad 1 ++ "pass"] else body)
+
+/-- Execute emitted index expressions and small programs using only Python's standard library.
+Checks literal, variable and nested zero remainders against Lean's evaluator, ordinary nonzero
+remainders, empty functions, and uniform-draw/kernel-call hooks in both kernel modes.
+Python failures fail the tools build. -/
+def emitterRegressionTest : IO Unit := do
+  let expressions : List (IExp (Fin 2)) := [
+    .mod 7 0, .mod 0 0, .mod 7 3, .mod (.var 0) (.var 1),
+    .mod (.mod (.var 0) 0) (.sub (.var 1) (.var 1)),
+    .add 2 (.mod (.mul 3 (.var 0)) (.sub (.var 1) 1))]
+  let mut lines := []
+  for a in [0, 1, 7] do
+    for b in [0, 1, 3] do
+      lines := lines ++ [s!"i0 = {a}", s!"i1 = {b}"]
+      for e in expressions do
+        let expected := e.evalIn (fun i => if i.val == 0 then a else b)
+        lines := lines ++ [s!"assert ({emitIExp e}) == {expected}"]
+  let programs : List (Prog Unit Unit 0 0) := [.skip, .seq .skip .skip,
+    .named "noop_kernel" [] .skip, .loop 0 .skip, .loop 2 .skip]
+  lines := lines ++ ["def noop_kernel(): pass"]
+  for inline in [false, true] do
+    for program in programs do
+      lines := lines ++ [emitProg inline "noop" program, "assert noop(None, 0) is None"]
+  -- A zero remainder also works as an emitted buffer offset, not only as a bare expression.
+  let write : Prog Unit Unit 0 1 :=
+    .instr (.litIdx () ⟨0, .mod 0 0⟩ (.mod 7 0))
+  lines := lines ++ [emitProg true "write" write, "out = [None]", "write(None, 0, out)",
+    "assert out == [7.0]"]
+  -- New draw and kernel paths retain total remainders in dimensions and block offsets.
+  let hooked : Prog Unit Unit 0 2 :=
+    .seq (.instr (.draw () .uniform ⟨0, .mod 1 0⟩))
+      (.kcall () () [.mod (.var 0) 0] [(0, .mod 1 0)] [(1, .mod 2 0)])
+  lines := lines ++ ["def draw_uniform(): events.append('uniform'); return 0.25",
+    "def kernel(dims, ins, outs):",
+    "    assert dims == [3] and len(ins) == len(outs) == 1",
+    "    src, soff = ins[0]; dst, doff = outs[0]",
+    "    assert soff == 1 and doff == 2",
+    "    events.append('kernel'); dst[doff] = src[soff] + dims[0]"]
+  for inline in [false, true] do
+    lines := lines ++ [emitProg inline "hooked" hooked (fun _ => "kernel"), "events = []",
+      "src = [11, 22, 33]; dst = [44, 55, 66, 77]", "hooked(None, 3, src, dst)",
+      "assert events == ['uniform', 'kernel']",
+      "assert src == [11, 0.25, 33] and dst == [44, 55, 3.25, 77]"]
+  let out ← IO.Process.output { cmd := "python3", args := #["-c", "\n".intercalate lines] }
+  unless out.exitCode == 0 do
+    throw <| IO.userError s!"emitter regression failed: {out.stderr}"
+  IO.println ("NumPy emitter regressions passed (54 index cases, 10 empty bodies, " ++
+    "buffer offset, 2 uniform/kernel programs)")
+
+#eval emitterRegressionTest
+
+/-- Execute two distinct black-box kernels under a loop in both inline modes. Missing and
+partially supplied bindings must reject the unbound call, even if `kernel` exists in Python. -/
+def kernelBindingRegressionTest : IO Unit := do
+  let program : Prog Unit Bool 0 2 := .loop 1
+    (.seq (.kcall false () [1] [(0, 0)] [(1, 0)])
+      (.kcall true () [1] [(1, 0)] [(0, 0)]))
+  let bindings : Bool → Option String := fun k => some (if k then "second" else "first")
+  let partialBindings : Bool → Option String := fun k => if k then none else some "first"
+  let mut lines := [
+    "def kernel(*args): raise AssertionError('anonymous callback used')",
+    "def first(dims, ins, outs):",
+    "    assert dims == [1] and len(ins) == len(outs) == 1",
+    "    src, si = ins[0]; dst, di = outs[0]",
+    "    events.append('first'); dst[di] = src[si] + 1",
+    "def second(dims, ins, outs):",
+    "    assert dims == [1] and len(ins) == len(outs) == 1",
+    "    src, si = ins[0]; dst, di = outs[0]",
+    "    events.append('second'); dst[di] = 2 * src[si]"]
+  for inline in [false, true] do
+    lines := lines ++ [emitProg inline "bound" program (kernelName := bindings),
+      "events = []; src = [2]; dst = [0]", "bound(None, 0, src, dst)",
+      "assert events == ['first', 'second'] and src == [6] and dst == [3]"]
+    for (name, binding, expectedEvents, expectedDst) in
+        [("unbound", fun _ => none, "[]", "[0]"),
+         ("partial", partialBindings, "['first']", "[3]")] do
+      lines := lines ++ [emitProg inline name program (kernelName := binding),
+        "events = []; src = [2]; dst = [0]", "try:", s!"    {name}(None, 0, src, dst)",
+        "except NotImplementedError as error:", "    assert 'unbound kernel' in str(error)",
+        "else:", "    raise AssertionError('unbound kernel was accepted')",
+        s!"assert events == {expectedEvents} and src == [2] and dst == {expectedDst}"]
+  let out ← IO.Process.output { cmd := "python3", args := #["-c", "\n".intercalate lines] }
+  unless out.exitCode == 0 do
+    throw <| IO.userError s!"kernel binding regression failed: {out.stderr}"
+  IO.println "NumPy kernel binding regressions passed (6 dispatch/rejection cases)"
+
+#eval kernelBindingRegressionTest
 
 /-- The NumPy prelude: the BLAS kernels the programs call by name. -/
 def numpyPrelude : String := "\n".intercalate [
@@ -165,7 +276,7 @@ def deflatePython : String :=
   emitProg true "deflate" (deflateProg.compiled (P := Unit) (ι := Bool) () true false)
     fun o => cond o "mm" "qr"
 
-#guard (deflatePython.splitOn "mm([").length == 2 && (deflatePython.splitOn "qr([").length == 2
+#guard (deflatePython.splitOn "(mm)([").length == 2 && (deflatePython.splitOn "(qr)([").length == 2
 
 /-- A stored value copied through an index binder of bound `i1`, as the NumPy function
 `idx_copy(A, i0, i1, b0, b1)`. -/

@@ -124,29 +124,6 @@ theorem cgAdjacentInnerFactor_le_mul {m : ℕ} {ε : ℝ} (hε : 0 ≤ ε)
 
 /-! ### Vector norms -/
 
-private theorem norm_toLp_add_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x + y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_add]
-  exact norm_add_le _ _
-
-private theorem norm_toLp_sub_le {m : ℕ} (x y : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (x - y)‖ ≤ ‖WithLp.toLp 2 x‖ + ‖WithLp.toLp 2 y‖ := by
-  rw [WithLp.toLp_sub]
-  exact norm_sub_le _ _
-
-private theorem norm_toLp_smul {m : ℕ} (c : ℝ) (x : Fin m → ℝ) :
-    ‖WithLp.toLp 2 (c • x)‖ = |c| * ‖WithLp.toLp 2 x‖ := by
-  rw [WithLp.toLp_smul, norm_smul, Real.norm_eq_abs]
-
-private theorem abs_dotProduct_le {m : ℕ} (x y : Fin m → ℝ) :
-    |x ⬝ᵥ y| ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
-  have := abs_real_inner_le_norm (WithLp.toLp 2 y) (WithLp.toLp 2 x)
-  rwa [EuclideanSpace.inner_toLp_toLp, star_trivial, mul_comm ‖WithLp.toLp 2 y‖] at this
-
-private theorem norm_toLp_sq {m : ℕ} (x : Fin m → ℝ) :
-    ‖WithLp.toLp 2 x‖ ^ 2 = x ⬝ᵥ x := by
-  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_toLp_toLp, star_trivial]
-
 namespace CGRun
 
 variable {n k : ℕ} (C : CGRun n k)
@@ -168,12 +145,13 @@ private theorem p_dotProduct_r_succ_eq {j : ℕ} (hj : j < k) :
 and $\mathbf{p}_{i+1}^{\mathsf{T}}\mathbf{r}_{i+1} = \rho_{i+1}^2 +
 \delta_i\mathbf{p}_i^{\mathsf{T}}\mathbf{r}_{i+1} + \mathbf{e}^{p\mathsf{T}}_i\mathbf{r}_{i+1}$. -/
 private theorem p_dotProduct_r_self_zero : C.p 0 ⬝ᵥ C.r 0 = C.ρ 0 ^ 2 := by
-  rw [C.p_zero, ← C.r_zero, ρ, norm_toLp_sq]
+  rw [C.p_zero, ← C.r_zero, ρ, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
 
 private theorem p_dotProduct_r_self_succ {i : ℕ} (hi : i < k) :
     C.p (i + 1) ⬝ᵥ C.r (i + 1) =
       C.ρ (i + 1) ^ 2 + C.δ i * (C.p i ⬝ᵥ C.r (i + 1)) + C.ep i ⬝ᵥ C.r (i + 1) := by
-  rw [C.p_succ i hi, add_dotProduct, add_dotProduct, smul_dotProduct, ρ, norm_toLp_sq,
+  rw [C.p_succ i hi, add_dotProduct, add_dotProduct, smul_dotProduct, ρ,
+    EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
     smul_eq_mul]
 
 /-- The local term of the line search recursion,
@@ -216,7 +194,7 @@ private theorem abs_lineSearch_local_le {P K : ℝ} {j : ℕ} (hj : j < k)
       _ = C.ε * (C.γ j * (p * ‖WithLp.toLp 2 (C.s j)‖)) := by ring
       _ ≤ _ := mul_le_mul_of_nonneg_left hsp hε0
   have a3 : |C.p j ⬝ᵥ C.er j| ≤ C.ε * (p * C.ρ j) + C.ε * ((1 + C.ε) * G) := by
-    refine (abs_dotProduct_le _ _).trans ?_
+    refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans ?_
     have := mul_le_mul_of_nonneg_left (C.norm_er_le_of_lt hj) hp0
     calc _ ≤ _ := this
       _ = C.ε * (p * C.ρ j) + C.ε * (C.γ j * (p * ‖WithLp.toLp 2 (C.s j)‖)) := by ring
@@ -244,7 +222,7 @@ private theorem abs_ep_dotProduct_r_le {P : ℝ} {i : ℕ} (hi : i < k)
   have hρ := C.ρ_nonneg (i + 1)
   have hD := C.δ_mul_norm_p_le hi
   have h1 := mul_le_mul_of_nonneg_right (C.norm_ep_le_of_lt hi) hρ
-  refine (abs_dotProduct_le _ _).trans (h1.trans ?_)
+  refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans (h1.trans ?_)
   have h2 : C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖ ≤ (41 / 20 + 21 / 20 * P) * C.ρ (i + 1) :=
     by nlinarith
   have := mul_le_mul_of_nonneg_left h2 hε0
@@ -358,7 +336,8 @@ $\mathbf{r}_j^{\mathsf{T}}\mathbf{r}_{j+1} =
 + \mathbf{r}_j^{\mathsf{T}}\mathbf{e}^r_j$. -/
 private theorem r_dotProduct_r_succ_eq {j : ℕ} (hj : j < k) :
     C.r j ⬝ᵥ C.r (j + 1) = C.ρ j ^ 2 - C.γ j * (C.r j ⬝ᵥ C.s j) + C.r j ⬝ᵥ C.er j := by
-  rw [C.r_succ j hj, dotProduct_add, dotProduct_sub, dotProduct_smul, ρ, norm_toLp_sq,
+  rw [C.r_succ j hj, dotProduct_add, dotProduct_sub, dotProduct_smul, ρ,
+    EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
     smul_eq_mul]
 
 /-- The local part $R_j = -\rho_j^2(\theta_j + \eta^\gamma_j + \theta_j\eta^\gamma_j) +
@@ -401,7 +380,8 @@ private theorem γ_mul_p_dotProduct_s_succ_eq {i : ℕ} (hi : i + 1 < k) :
       C.δ i * (C.p i ⬝ᵥ (C.r i - C.r (i + 1))) - C.ρ (i + 1) ^ 2 +
       (C.r i - C.r (i + 1)) ⬝ᵥ C.ep i := by
     rw [C.p_succ i hi', dotProduct_add, dotProduct_add, dotProduct_smul, sub_dotProduct,
-      sub_dotProduct, ρ, norm_toLp_sq, smul_eq_mul, dotProduct_comm (C.r i) (C.p i),
+      sub_dotProduct, ρ, EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, smul_eq_mul,
+        dotProduct_comm (C.r i) (C.p i),
       dotProduct_comm (C.r (i + 1)) (C.p i), dotProduct_sub]
     ring
   have hpd : C.p i ⬝ᵥ (C.r i - C.r (i + 1)) =
@@ -518,7 +498,7 @@ private theorem abs_localR_le {P : ℝ} {j : ℕ} (hj : j < k)
     have h3 := mul_le_mul_of_nonneg_left (hγps.trans h2) hε0
     linarith only [h1, h3]
   have a3 : |C.r j ⬝ᵥ C.er j| ≤ C.ε * (21 / 20 * (P ^ 2 * G)) + C.ε * (101 / 100 * (P * G)) := by
-    refine (abs_dotProduct_le _ _).trans ?_
+    refine (EuclideanSpace.abs_dotProduct_le_norm _ _).trans ?_
     change ρ * ‖WithLp.toLp 2 (C.er j)‖ ≤ _
     have h1 := mul_le_mul_of_nonneg_left her hρ.le
     have h2 : ρ * (γ * ‖WithLp.toLp 2 (C.s j)‖) ≤ 101 / 100 * (P * G) := by
@@ -560,7 +540,7 @@ private theorem abs_γ_mul_ep_dotProduct_s_le {P : ℝ} {i : ℕ} (hi : i + 1 < 
   have hN := specNorm_nonneg C.A
   have hP0 := C.P_nonneg hi hP
   rw [abs_mul, abs_of_pos hγ]
-  have h1 := abs_dotProduct_le (C.ep i) (C.s (i + 1))
+  have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.ep i) (C.s (i + 1))
   have h2 := C.norm_ep_le_of_lt hi'
   have h3 := C.norm_s_le hi
   have hD := C.δ_mul_norm_p_le hi'
@@ -691,7 +671,7 @@ private theorem transport_mu_er_le {i : ℕ} (hi : i + 1 < k) :
       C.ε * ((C.δ i * C.ρ i / C.γ i) * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) +
         (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) ^ 2) := by
     rw [abs_mul, abs_of_nonneg hδ0]
-    have h1 := abs_dotProduct_le (C.p i) (C.er i)
+    have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.p i) (C.er i)
     have h2 := mul_le_mul_of_nonneg_left her' hpi0
     have h3 : C.δ i / C.γ i * (C.δ i * (‖WithLp.toLp 2 (C.p i)‖ *
         (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖)))) =
@@ -741,8 +721,8 @@ private theorem transport_ep_es_le {i : ℕ} (hi : i + 1 < k) :
   have hd : C.δ i / C.γ i * |(C.r i - C.r (i + 1)) ⬝ᵥ C.ep i| ≤
       C.ε * ((C.δ i * C.ρ i / C.γ i + C.δ i / C.γ i * C.ρ (i + 1)) *
         (C.ρ (i + 1) + C.δ i * ‖WithLp.toLp 2 (C.p i)‖)) := by
-    have h1 := abs_dotProduct_le (C.r i - C.r (i + 1)) (C.ep i)
-    have h2 := norm_toLp_sub_le (C.r i) (C.r (i + 1))
+    have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.r i - C.r (i + 1)) (C.ep i)
+    have h2 := EuclideanSpace.norm_toLp_sub_le (C.r i) (C.r (i + 1))
     have h3 := mul_le_mul h2 hep (norm_nonneg _) (by positivity)
     have h4 := mul_le_mul_of_nonneg_left (h1.trans h3) hb0
     have e : C.δ i / C.γ i * ((‖WithLp.toLp 2 (C.r i)‖ + ‖WithLp.toLp 2 (C.r (i + 1))‖) *
@@ -756,7 +736,7 @@ private theorem transport_ep_es_le {i : ℕ} (hi : i + 1 < k) :
       C.ε * ((C.δ i * C.ρ i / C.γ i) * ‖WithLp.toLp 2 (C.p (i + 1))‖ +
         (1 + C.ε) * specNorm C.A * (C.δ i * ‖WithLp.toLp 2 (C.p i)‖) *
           ‖WithLp.toLp 2 (C.p (i + 1))‖) := by
-    have h1 := abs_dotProduct_le (C.er i) (C.p (i + 1))
+    have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.er i) (C.p (i + 1))
     have h2 := mul_le_mul_of_nonneg_right her' hp0
     have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hb0
     have e : C.δ i / C.γ i * (C.ε * (C.ρ i + C.γ i * ‖WithLp.toLp 2 (C.s i)‖) *
@@ -774,7 +754,7 @@ private theorem transport_ep_es_le {i : ℕ} (hi : i + 1 < k) :
       rw [abs_mul, abs_of_pos hγ']
       field_simp
     rw [e]
-    have h1 := abs_dotProduct_le (C.es i) (C.p (i + 1))
+    have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.es i) (C.p (i + 1))
     have h2 := mul_le_mul_of_nonneg_right hes' hp0
     have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
     linarith only [h3]
@@ -786,7 +766,7 @@ private theorem transport_ep_es_le {i : ℕ} (hi : i + 1 < k) :
       rw [abs_mul, abs_of_pos hγ']
       field_simp
     rw [e]
-    have h1 := abs_dotProduct_le (C.p i) (C.es (i + 1))
+    have h1 := EuclideanSpace.abs_dotProduct_le_norm (C.p i) (C.es (i + 1))
     have h2 := mul_le_mul_of_nonneg_left hes hpi0
     have h3 := mul_le_mul_of_nonneg_left (h1.trans h2) hδ0
     linarith only [h3]
@@ -1090,7 +1070,9 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ} (hwindow : (k : ℝ) * C.ε ≤ 1 /
   -- the squared norm of `y`
   have hy2 : ‖WithLp.toLp 2 y‖ ^ 2 = C.ρ (i + 1) ^ 2 + D ^ 2 +
       2 * C.δ i * (C.p i ⬝ᵥ C.r (i + 1)) := by
-    rw [norm_toLp_sq, hy, hD, ρ, mul_pow, norm_toLp_sq, norm_toLp_sq]
+    rw [EuclideanSpace.norm_toLp_sq_eq_dotProduct_self, hy, hD, ρ, mul_pow,
+      EuclideanSpace.norm_toLp_sq_eq_dotProduct_self,
+        EuclideanSpace.norm_toLp_sq_eq_dotProduct_self]
     simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
       dotProduct_comm (C.r (i + 1)) (C.p i)]
     ring
@@ -1123,7 +1105,7 @@ theorem norm_r_le_two_mul_norm_p {P K : ℝ} (hwindow : (k : ℝ) * C.ε ≤ 1 /
   rw [← hD] at hep
   have hpk : C.p (i + 1) = y + C.ep i := by rw [C.p_succ i hi, hy]
   have hpk' : ‖WithLp.toLp 2 y‖ - ‖WithLp.toLp 2 (C.ep i)‖ ≤ ‖WithLp.toLp 2 (C.p (i + 1))‖ := by
-    have h := norm_toLp_sub_le (C.p (i + 1)) (C.ep i)
+    have h := EuclideanSpace.norm_toLp_sub_le (C.p (i + 1)) (C.ep i)
     have e : C.p (i + 1) - C.ep i = y := by rw [hpk]; abel
     rw [e] at h
     linarith only [h]

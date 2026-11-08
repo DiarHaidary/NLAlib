@@ -171,15 +171,20 @@ def liftQR [Inhabited K] (L : EntryLayout K E) (qr : QRMap E) :
 variable {P ι C : Type}
 
 /-- **Kernel `o` of `I` is the routine `mm`**, functionally on stored entries in the layout `L`:
-its kernel is `NLAlib.Computation.liftMM L mm` and its shape `NLAlib.Computation.mmShape L`. A
-contract on `mm` (such as `NLAlib.IsMatMulErr`) then bounds the kernel's error. -/
+its kernel is `NLAlib.Computation.liftMM L mm` and its shape `NLAlib.Computation.mmShape L`.
+When `L.get` inverts `L.put`, `NLAlib.Computation.EntryLayout.toMatrix_toArray` identifies the
+stored output with the routine's output, so a contract such as
+`NLAlib.IsMatMulErr` bounds the decoded stored result. The layout law is an additional
+hypothesis. -/
 def IsMatMulKernel [Inhabited K] (I : Interp P ι K C) (o : ι) (L : EntryLayout K E)
     (mm : MatMulMap E) : Prop :=
   I.kernel o = liftMM L mm ∧ I.kshape o = mmShape L
 
 /-- **Kernel `o` of `I` is the routine `qr`**, functionally on stored entries in the layout `L`:
-its kernel is `NLAlib.Computation.liftQR L qr` and its shape `NLAlib.Computation.qrShape L`. A
-contract on `qr` (such as `NLAlib.IsQRErr`) then bounds the kernel's error. -/
+its kernel is `NLAlib.Computation.liftQR L qr` and its shape `NLAlib.Computation.qrShape L`.
+When `L.get` inverts `L.put`, `NLAlib.Computation.EntryLayout.toMatrix_toArray` identifies the
+stored factors with the routine's factors, so a contract such as `NLAlib.IsQRErr`
+bounds the decoded stored result. The layout law is an additional hypothesis. -/
 def IsQRKernel [Inhabited K] (I : Interp P ι K C) (o : ι) (L : EntryLayout K E)
     (qr : QRMap E) : Prop :=
   I.kernel o = liftQR L qr ∧ I.kshape o = qrShape L
@@ -533,6 +538,13 @@ theorem EntryLayout.Holds.of_forall_read_eq {L : EntryLayout K E} {l m : ℕ} {s
 
 variable {ι C : Type}
 
+/-- A cell in the first of two disjoint blocks lies outside the second block. -/
+private theorem outside_of_mem_of_blockDisjoint {x y : ℕ × ℕ × ℕ} {i : ℕ}
+    (hd : blockDisjoint x y = true) (hlo : x.2.1 ≤ i) (hhi : i < x.2.1 + x.2.2) :
+    x.1 ≠ y.1 ∨ i < y.2.1 ∨ y.2.1 + y.2.2 ≤ i := by
+  have h := (blockDisjoint_eq_true_iff x y).mp hd i
+  omega
+
 /-- A product kernel call on held matrices holds the product: if kernel `o` of `I` is the
 routine `mm` in a layout `L` whose `get` inverts its `put`, the operands $a$, $b$ hold the
 $l \times m$ and $m \times n$ matrices $\mathbf{A}$, $\mathbf{B}$, and the output block at $c$ is
@@ -550,10 +562,6 @@ theorem IsMatMulKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P �
     L.Holds s' p c.1 c.2 (mm A B) ∧ ∀ q b' i,
       blockDisjoint (b', i, 1) (c.1, c.2, n * l * L.width) = true →
         s'.read q b' i = s.read q b' i := by
-  have hd : ∀ (x y : ℕ × ℕ × ℕ), blockDisjoint x y = true →
-      x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
-    intro x y hxy
-    simpa [blockDisjoint, or_assoc] using hxy
   have hX := (EntryLayout.holds_iff_readBlock_eq_some L s p a.1 a.2 A).mp hA
   have hY := (EntryLayout.holds_iff_readBlock_eq_some L s p b.1 b.2 B).mp hB
   rw [h.kcallStore_eq p hX hY hca hcb, EntryLayout.toMatrix_toArray L hL,
@@ -562,12 +570,7 @@ theorem IsMatMulKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P �
   refine ⟨EntryLayout.holds_of_writeBlock_eq_some L hs, fun q' b' i hd' => ?_⟩
   have hne : b' ≠ c.1 ∨ i < c.2 ∨ c.2 + (L.toArray (mm A B)).size ≤ i := by
     rw [hsz]
-    rcases hd _ _ hd' with h1 | h1 | h1
-    · exact Or.inl h1
-    · dsimp only at h1
-      exact Or.inr (Or.inl (by omega))
-    · dsimp only at h1
-      exact Or.inr (Or.inr (by omega))
+    exact outside_of_mem_of_blockDisjoint hd' le_rfl (Nat.lt_succ_self i)
   exact Store.read_of_writeBlock_eq_some_of_ne hs hne
 
 /-- A QR kernel call on a held matrix holds the factors: if kernel `o` of `I` is the routine
@@ -588,24 +591,11 @@ theorem IsQRKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P ι K 
       blockDisjoint (b', i, 1) (q.1, q.2, m * m * L.width) = true →
       blockDisjoint (b', i, 1) (r.1, r.2, n * m * L.width) = true →
         s'.read q' b' i = s.read q' b' i := by
-  have hd : ∀ (x y : ℕ × ℕ × ℕ), blockDisjoint x y = true →
-      x.1 ≠ y.1 ∨ x.2.1 + x.2.2 ≤ y.2.1 ∨ y.2.1 + y.2.2 ≤ x.2.1 := by
-    intro x y hxy
-    simpa [blockDisjoint, or_assoc] using hxy
   have hX := (EntryLayout.holds_iff_readBlock_eq_some L s p a.1 a.2 A).mp hA
   rw [h.kcallStore_eq p hX hqr hqa hra, EntryLayout.toMatrix_toArray L hL] at hs
   obtain ⟨s₁, h1, h2⟩ := Option.bind_eq_some_iff.mp hs
   have hsq := EntryLayout.size_toArray L (qr A).1
   have hsr := EntryLayout.size_toArray L (qr A).2
-  have hne : ∀ (b' i : ℕ) (c : ℕ × ℕ) (N : ℕ), blockDisjoint (b', i, 1) (c.1, c.2, N) = true →
-      b' ≠ c.1 ∨ i < c.2 ∨ c.2 + N ≤ i := by
-    intro b' i c N hbd
-    rcases hd _ _ hbd with h3 | h3 | h3
-    · exact Or.inl h3
-    · dsimp only at h3
-      exact Or.inr (Or.inl (by omega))
-    · dsimp only at h3
-      exact Or.inr (Or.inr (by omega))
   -- the write at `r` leaves reads outside its block unchanged
   have hr_frame : ∀ (q' : P) (b' i : ℕ), (b' ≠ r.1 ∨ i < r.2 ∨ r.2 + n * m * L.width ≤ i) →
       s'.read q' b' i = s₁.read q' b' i := by
@@ -624,12 +614,8 @@ theorem IsQRKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P ι K 
   have hfr : L.Holds s' p r.1 r.2 (qr A).2 := EntryLayout.holds_of_writeBlock_eq_some L h2
   refine ⟨EntryLayout.Holds.of_forall_read_eq hfq (fun i hi1 hi2 => hr_frame p q.1 i ?_), hfr,
     fun q' b' i hdq hdr => ?_⟩
-  · rcases hd _ _ hqr with h3 | h3 | h3
-    · exact Or.inl h3
-    · dsimp only at h3
-      exact Or.inr (Or.inl (by omega))
-    · dsimp only at h3
-      exact Or.inr (Or.inr (by omega))
-  · rw [hr_frame q' b' i (hne _ _ r _ hdr), hq_frame q' b' i (hne _ _ q _ hdq)]
+  · exact outside_of_mem_of_blockDisjoint hqr hi1 hi2
+  · rw [hr_frame q' b' i (outside_of_mem_of_blockDisjoint hdr le_rfl (Nat.lt_succ_self i)),
+      hq_frame q' b' i (outside_of_mem_of_blockDisjoint hdq le_rfl (Nat.lt_succ_self i))]
 
 end NLAlib.Computation
