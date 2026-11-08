@@ -39,7 +39,7 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 omit [Inhabited K] in
 /-- A loop of no iterations. -/
-theorem exec_loop_zero_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
+theorem eq_of_exec_loop_of_eval_eq_zero {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
     (he : e.eval = 0) (h : exec I (.seq (.loop e b) .skip) s = some s') : s' = s := by
   rw [exec_seq_skip, exec_loop, he] at h
   simp only [List.range_zero, List.foldlM_nil] at h
@@ -275,8 +275,8 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
   rcases Nat.eq_or_lt_of_le hvk with hkk | hlt'
   · -- one child on the positive side
     have h1 := exec_loop_one_eq (by change 1 - (1 - (1 - (k - v))) = 1; omega) ha
-    have e2' := exec_loop_zero_eq (by change 1 - (1 - (1 - v)) = 0; omega) hb
-    have e3' := exec_loop_zero_eq (by
+    have e2' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - v)) = 0; omega) hb
+    have e3' := eq_of_exec_loop_of_eval_eq_zero (by
       change 1 - (1 - v * (k - v)) = 0; rw [hkk, Nat.sub_self, Nat.mul_zero]) h'
     subst e2' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 2 lMa hge.1 dMaSz
@@ -285,17 +285,18 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   rcases Nat.eq_zero_or_pos v with hz | hpos
   · -- one child on the negative side
-    have e1' := exec_loop_zero_eq (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
+    have e1' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
     have h2 := exec_loop_one_eq (by change 1 - (1 - (1 - v)) = 1; omega) hb
-    have e3' := exec_loop_zero_eq (by change 1 - (1 - v * (k - v)) = 0; rw [hz, Nat.zero_mul]) h'
+    have e3' := eq_of_exec_loop_of_eval_eq_zero
+      (by change 1 - (1 - v * (k - v)) = 0; rw [hz, Nat.zero_mul]) h'
     subst e1' e3'
     obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 3 lMa hge.1 dMaSz
       dMaKd dSzKd hA e1 (by rw [e1]; exact ht1) h2
     exact ⟨⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega⟩,
       fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
   -- a split
-  have e1' := exec_loop_zero_eq (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
-  have e2' := exec_loop_zero_eq (by change 1 - (1 - (1 - v)) = 0; omega) hb
+  have e1' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
+  have e2' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - v)) = 0; omega) hb
   subst σa σb
   have hprod : 0 < v * (k - v) := Nat.mul_pos hpos (by omega)
   have h3 := exec_loop_one_eq (by

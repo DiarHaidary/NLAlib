@@ -385,7 +385,7 @@ theorem store_eq_of_exec_eighSlotBody {p : P} {mm qr : ι}
     s'.store = s.store ∧ s'.pos = s.pos := by
   unfold eighSlotBody at h
   have h := exec_bindIdx_of_readsIdx (k := 0) (by exact hSz) (Nat.zero_le _) h
-  have e := exec_loop_zero_eq (by change 1 - (1 - 0) = 0; omega) h
+  have e := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - 0) = 0; omega) h
   subst e
   exact ⟨rfl, rfl⟩
 
@@ -762,13 +762,13 @@ theorem holds_of_exec_eighSlotBody {mm qr : ι} (hmm : IsMatMulKernel I mm pairL
   obtain ⟨σa, ha, hrb⟩ := run_eighWhen_bind h
   rcases Nat.lt_or_ge y.k 2 with hk | hk
   · -- a leaf of size one
-    obtain rfl := exec_loop_zero_eq (by change 1 - (1 - (y.k - 1)) = 0; omega) hrb
+    obtain rfl := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (y.k - 1)) = 0; omega) hrb
     obtain ⟨hd, hfr, hsh, hps⟩ := done_of_exec_leafBlock (F := F) (R₀ := R₀) (β := β) p true
       hlit htn H hkn hH.1 (by exact hA) (by rw [eighStep, if_pos (by omega)]; rfl)
       (exec_loop_one_eq (by change 1 - (1 - (1 - (y.k - 1))) = 1; omega) ha)
     exact ⟨hd, fun q b i hW _ => hfr q b i hW, hsh, hps⟩
   -- a node of size at least two: the window test
-  obtain rfl := exec_loop_zero_eq (by change 1 - (1 - (1 - (y.k - 1))) = 0; omega) ha
+  obtain rfl := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - (y.k - 1))) = 0; omega) ha
   have hY := exec_loop_one_eq (by change 1 - (1 - (y.k - 1)) = 1; omega) hrb
   obtain ⟨a, c', v, s₂, ha', hc', hv, hw2, h⟩ := exists_of_exec_seq_bin hY
   obtain rfl : a = y.ε := Option.some_inj.mp (ha'.symm.trans hε)
