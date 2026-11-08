@@ -1,6 +1,8 @@
 # Hardening the model of computation
 
-Proposed 2026-11-07; revised the same day after `reports/Review-Fable-Hardening.md` (approve with
+Status (2026-11-08): approved (sheet `HARDENING.json`, all (a)); Stages 0 to 2b carried out,
+with the registry entries pending the maintainer's re-pin; the `Instance:` rule, `scripts/Witnesses.lean`
+and Stage 3 are not done. Per-item status in §11. Proposal text: Proposed 2026-11-07; revised the same day after `reports/Review-Fable-Hardening.md` (approve with
 blocking edits B1–B4, S2-a, S2-b and five uncovered items, all addressed below). Written after the adversarial audit `reports/Audit-Fable-Corrections.md` (harness), §3.3,
 §3.4 and §4. No library file, target, tree, check or registry entry is changed by this note. It
 proposes theorems and model changes for the library, and exact patches for the maintainer-owned
@@ -319,7 +321,7 @@ Witnesses to write: the 11 registered exact targets (S each: `N₀`, a size, `�
 S2 targets: M each, at `gridSem t` with `dec = roundNearest ∘ t`, `exactMM`/`exactQR`,
 `ρ = roundNearest`, an identity-like Hermitian input and $t$ chosen from $N_0$. They need
 `isExactIntLit_gridSem'` (proved in scratch, §5), `isExactToNat_gridSem` and `mulShrinks_gridSem`
-(today in `NLAlibScaffold`, to move to `Grid.lean`), and countability and measurability lemmas
+(then in `NLAlibScaffold`; now in `Computation/Grid.lean`, 46be887b and 36d32068), and countability and measurability lemmas
 for `roundNearest` (TT1's `ρOK`).
 
 **Headline theorems that are not targets: a CONTRIBUTING rule, plus a ratchet lint.** Rule
@@ -703,8 +705,8 @@ theorem isIndexExactSem_binaryFloatSem (fmt) (he) (r) (hr) (B) (hB : B < 2 ^ fmt
 * `RandomMatrix/Tape.lean`: `MatrixFreeRoundedProb.NonVacuous`, and the model changes of §2.3/§2.4.
 * `Computation/Contract.lean`: `IsIndexExactSem`, `.mono`, `isIndexExactSem_exactSem`.
 * `Computation/Grid.lean`: `isExactIntLit_gridSem'`, plus `isExactToNat_gridSem` and
-  `mulShrinks_gridSem` (moved from `NLAlibScaffold/Computation/IndexBinder.lean`, which today is
-  the only home of these instances), and `isIndexExactSem_gridSem`.
+  `mulShrinks_gridSem` (moved from `NLAlibScaffold/Computation/IndexBinder.lean`, then the only
+  home of these instances; done, 46be887b and 36d32068), and `isIndexExactSem_gridSem`.
 * `Computation/BinaryFloatSem.lean`: `isExactToNat_binaryFloatSem` (moved),
   `isIndexExactSem_binaryFloatSem`.
 * `Computation/FirstOrder.lean`, `Exact.lean`, `StaticCost.lean`, `Model.lean`, `Tape.lean`,
@@ -718,7 +720,8 @@ theorem isIndexExactSem_binaryFloatSem (fmt) (he) (r) (hr) (B) (hB : B < 2 ^ fmt
 
 Read: `Exec.lean`, `FirstOrder.lean`, `Model.lean`, `Contract.lean`, `Grid.lean`,
 `BinaryFloatSem.lean`, `StaticCost.lean`, `RandomMatrix/Tape.lean` (main and S2);
-`NLAlibScaffold/Computation/IndexBinder.lean`; the S2 targets; `scripts/Targets.lean`;
+`NLAlibScaffold/Computation/IndexBinder.lean` (since removed; its content is in
+`Computation/{IndexBinder,Contract,Grid,BinaryFloatSem}.lean`); the S2 targets; `scripts/Targets.lean`;
 `scripts/AccessModelFixtures.lean`; `docs/design/Computation-DynamicPrograms.md` §3–4; the audit;
 the review `reports/Review-Fable-Hardening.md`. Scratch files (not committed, under
 `/tmp/hardening/`): `Main1.lean`, `Main2.lean` (Part A), `S2.lean` (Part B and the bundle instances
@@ -790,3 +793,49 @@ Part B also on `integrate/compdyn-s2`:
   ruleset if the plan offers one, or plus signed `.sig` files? *Recommend the first*: the
   signature file of the first version is dropped (§2.5(6)).
 * **OQ9** `toNat` below `0`: fail (recommended) or floor to `0` and document?
+
+## 11. Status (2026-11-08, `cleanup/compdyn-s2`)
+
+Carried out on `design/hardening-impl` (non-interference), `fix/hardening-fixtures` (Stage 0),
+`design/hardening-stage2` (Stage 2b, M2–M4) and `cleanup/compdyn-s2` (Stage 1, Part C, the
+witnesses and the registry). Fable reviewed Stage 2b (`reports/Review-Fable-Hardening-Stage2.md`,
+approve; items M1–M4).
+
+| # | Status |
+|---|---|
+| G | **Done.** `Computation/NonInterference.lean`: `Query`, `Interp.AgreeOn`, `Interp.SameShape` (with `romSize`), `Stmt.queries`, `exec_eq_of_agreeOn` over `Stmt` (every constructor, `bindIdx` included), transferred to `FStmt` and `Prog`, `Prog.runsWithin_iff_of_agreeOn`, the probabilistic forms `measureReal_not_runsWithin_eq_of_agreeOn` and `map_exec_eq_of_map_restrict_eq`, and `MatrixFree.post_of_agreeOn`, `.post_of_noQuery` (59e91d3d, a5dda2e9; re-proved over the strict binder). The corollary is in `NonInterference.lean`, not `Model.lean` (§7). Only `MatrixFree` has one, so Part C's `requiredCompanions` stays `[NonVacuous]` (below). |
+| 1 | **Done.** Part A (K1–K4, U1, U2, R1, H1) on main (PR #68, 4cceb220). The Stage 2b rewrite (7a0d1cd5): K1–K3, U2, R1 at `dec := id`, `B := 0`, `cost`/`mem` $0$ (new `isIndexExactSem_upLitSem` for R1); K4 and the exact fixtures destructure the size conjunct; H1 flipped to `not_runsWithin_scratchTree_emptySt`. Part B in its Stage 2b form (`scripts/AccessModelFixturesDynamic.lean` and its CI step): B1, B2 (false by failure), B3b (replaces B3), B3'. M2 (68e5a624): `exec_idxCopyTree_eq_none` and `exec_negIdxTree_eq_none`, which a clamping binder or a flooring `toNat` would make false. |
+| 2 | **Done for targets; not done for headline theorems.** Companions `MatrixFree.NonVacuous`, `StoredEntries.NonVacuous` (`Model.lean`), `MatrixFreeProb.NonVacuous`, `MatrixFreeRoundedProb.NonVacuous` (`Tape.lean`; with the conjunct `IsIndexExactSem dec (B N n) I.sem`) (cacad174). Part C items 7–10 applied (c983ecc5, adjustments below). 14 witnesses (11 exact: d89f8b8d, next to each target's proof, `P = ι = Unit`, `N = N₀ + 1`; 3 rounded: 399945ec, `RandomMatrix/Computation/RoundedTargetWitnesses.lean`, at `gridSem t` with $u = 2^{-t} > 0$ and $t$ chosen from $N$, the grid kernels `gridMM`/`gridQR` and the machine `gridMachine t` of the new `Matrix/Computation/GridMachine.lean`, tape `roundNearest t`), with `witness` and `witness_sem` in the registry and the four `[[model]]` tables (1f43e0a9). The rounded witnesses use rounding kernels (`gridMM`, `gridQR`: the exact product or QR of the decoded inputs, rounded per part, $\mu(d) = 2d$), not the `exactMM`/`exactQR` planned above. No witness found a vacuous target. `binaryFloatSem` cannot witness the rounded targets: `IsRelErrSem` with every value in range fails by underflow and overflow, and the machine floor $\tau > 0$ is not the targets' $0$. **Not done:** the `Instance:` rule in `statements.md` and `scripts/Witnesses.lean` with its baseline (maintainer-owned). |
+| 3 | **Done.** `IsIndexExactSem`, `.mono` and the instances for `exactSem`, `gridSem` (with `isExactIntLit_gridSem'`), `binaryFloatSem` (46be887b); a clause of `MatrixFreeRoundedProb` (b228ea6f); the SIGN, DEFLATE and EIGH targets restated as in §2.3. Lint item 10 (`decErrors`) in Part C. |
+| 4 | **Done.** `cost` and `mem` in `MatrixFreeRoundedProb`, the event under the standard charge, `MatrixFreeRoundedProb.of_exec` (b228ea6f); the three targets' closed-form costs and memories as in §2.4. Lint item 8 (`costErrors`, transitive) in Part C. ROM on top of `mem` and the ROM requirement documented in §2.4 and in the model's docstring (M4, 6d1239ab). |
+| 5 | **Maintainer.** Part D (CODEOWNERS, `approval.yml`) on main (PR #68). Credentials: the maintainer chose website-only pull requests (`gh` logged out on the host) instead of a machine account (sheet comment). The rulesets of §2.5(2)–(3) are the maintainer's and are not recorded here. |
+| 6a | **Done.** `st₀.store.size = b` in `Prog.RunsWithin`; `Prog.runsWithin_iff` and `Prog.runsWithin_staticCost_of_exec_eq_some` gain `hsize`, discharged by `size_store_inputState` (35cee506, f7c8252e, b332c08a). H1 flipped. The programs.md rule for builder-level handle liveness and `Prog.handle_lt_size_of_runsWithin` are not written. |
+| 6b | **Done.** `bindIdx` fails above its bound, `toNat` fails below $0$ in `exactSem`, `gridSem`, `binaryFloatSem`, and `IsExactToNat` demands the failure (35cee506, merged at 9151b0dd; repairs f7c8252e). The one program that relied on clamping, `eighProg`'s split index, now clamps by counted instructions (`eighClampBlock`, 40926974; `Computation-EighProgram.md` §8, "End-of-stage status"). The NumPy exporter emits the binder strict (M3, 12aa340e). |
+
+Stages: **0** done (Parts A and D on main; credentials as above). **1** done on this branch rather
+than on main: companions, the 11 exact witnesses, Part C and the registry fields and tables; the
+`Instance:` rule and `Witnesses.lean` are open. **2a** done (Part B, applied in its Stage 2b form).
+**2b** done: the model changes, the fixture rewrite, non-interference, the S2 targets restated and
+registered with their three rounded witnesses; `post_of_agreeOn` is required of `MatrixFree` only
+(its `[[model]]` table lists it). **3** not started.
+
+Part C was applied with these adjustments (c983ecc5, maintainer-authorised): `FixVacuousRounded`
+and `FixTwoDecodings` take the model's new `dec B cost mem` (the vacuous fixture's proof takes the
+`IsIndexExactSem` hypothesis); `decErrors` loses its outer-binder mode, and `FixTwoDecodings` (now
+at the model's `dec`) is still detected; `requiredCompanions` stays `[NonVacuous]`, since only
+`MatrixFree` has `post_of_agreeOn`, and a `[[model]]` table may list more companions. Two further
+check edits need the maintainer's review: d166f411 (two `Targets.lean` fixtures discharge the size
+conjunct; proof terms only) and eb0bda85 (`set_option maxRecDepth 100000` on the registry
+`run_cmd`, needed once `eighProg.compiled` is registered). The branch also carries 3cae40fd (E8
+exemption for `NonInterference.lean` in `scripts/check_rules.py`).
+
+Re-pin (Fable M1, outstanding): `scripts/Targets.lean` on the branch reports 28 violations, all
+re-pin items (the 3 new trees' hashes and normal forms, the closure hashes of all 14 targets and
+the printed statements of the 3 new ones, the 4 `[[model]]` hashes, `docs/targets.approved`); the
+`lakefile.toml` pin passes. The maintainer's commit: `TARGETS_UPDATE=1 lake env lean
+scripts/Targets.lean`, then `sha256sum docs/targets.toml > docs/targets.approved`.
+
+Open: the `Instance:` rule and `scripts/Witnesses.lean`; `post_of_agreeOn` for the other three
+models; Stage 3 (`Witness:` on rounded `Result:` theorems); the programs.md rules of §2.6(a) and
+M4 (the ROM convention is in this note and the model's docstring, not yet in programs.md); making
+`mem` mean the same in the exact and rounded families.

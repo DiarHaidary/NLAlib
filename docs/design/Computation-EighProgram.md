@@ -1,6 +1,8 @@
 # Design note: the bounded index binder, and EIGH as a program (stage COMPDYN S2)
 
-Status: design stage, 2026-11-06. Branch `design/compdyn-s2` (worktree `~/nlalib-design-compdyn-s2`),
+Status (2026-11-08): all 63 statements proved, sorry-free, and in `NLAlib/` (§8, "End-of-stage
+status"); the target and tree are in the registry, pending the maintainer's re-pin. Design text,
+2026-11-06: Branch `design/compdyn-s2` (worktree `~/nlalib-design-compdyn-s2`),
 from `design/compdyn-s1cd` d610ab95 with `cleanup/hdiag` (bd81bd1d, pushed as `feat/hdiag`) merged
 (§11). Parent note: `docs/design/Computation-DynamicPrograms.md` (approved, sheet `COMPDYN.json`):
 §4.1 data-dependent sizes (Q1, Q2, M1, M2), §4.2 recursion by levels (Q3), §4.6 costs (Q8), §6 the
@@ -9,8 +11,8 @@ EIGH sketch (M4 packed blocks, M5 inputs), §7 refinement shape and effort. Pilo
 dispatch; this stage cites them). Shallow specification: hdiag's `NLAlib.eigh`
 (`NLAlib/Matrix/Computation/SpectralBisection.lean`) and its theorems EV6, EV7, EV8
 (`NLAlib/Eigensolvers/SpectralBisection/Global.lean`, EV8 in `…/BoundedFormat.lean`), as tightened
-by HDIAG-BOUNDS (EV7' absorbed into EV7). Skeleton: 63 statements in `NLAlibScaffold/`
-(`~/nlalib-harness/pilot/compdyn-s2-targets.json`) (TT1–TT3 restated against the tightened bounds, §7.4). Decision
+by HDIAG-BOUNDS (EV7' absorbed into EV7). Skeleton: 63 statements, in `NLAlibScaffold/` during
+the stage and now in `NLAlib/` (§8) (`~/nlalib-harness/pilot/compdyn-s2-targets.json`) (TT1–TT3 restated against the tightened bounds, §7.4). Decision
 sheet: `~/nlalib-harness/state/decisions/COMPDYN-S2.json` (RP, D1 to D7).
 
 This stage finishes what the maintainer asked for on 2026-11-05: [Shah2024]'s Hermitian eigensolver
@@ -40,7 +42,7 @@ program.
 | `NLAlib/Matrix/Computation/SpectralBisectionProgramTree.lean` (new) | `eighWhen`, `eighEqInd`, `eighSignBlock`, the node blocks, the three levels, `eighProg`, `.compiled`, `eighCount` | 428 |
 | `NLAlib/Matrix/Computation/SpectralBisectionTape.lean` (new) | `ScalarSem.tapeUnif`, `uniformUnif`, `eighTapeMachine`, `eighTapeSample`, `eighLoc`, `eighSlotTree`, `eighLevelParams`, `EighArenas` and its predicates, `eighIdealSample`, `eighIdealTree` | 301 |
 | `NLAlib/RandomMatrix/Computation/SpectralBisectionTargets.lean` (new, proposed) | `EighData`, `MatrixFreeRoundedProbEigh` | 117 |
-| `NLAlibScaffold/` (new files), `NLAlibScaffold.lean` | the skeleton, §8 | 1,854 |
+| `NLAlibScaffold/` (new files), `NLAlibScaffold.lean` | the skeleton, §8 (removed at the clean-up, 6b757e18; the statements are in the `NLAlib/` files of §8's table) | 1,854 |
 
 ## 2. S2a: the bounded index binder
 
@@ -333,7 +335,7 @@ is, as the pilot's D1); its proof and the samples file import `NLAlib/Eigensolve
 (`NLAlib/Eigensolvers/SpectralBisectionSamples.lean`, `…/SpectralBisectionProgram.lean`). The
 `Eigensolvers` folder has no LAYER entry yet (board T105, maintainer): `check_rules` P1 reports those
 files, expected. Registration (D7): one `[[target]]` and one `[[tree]]` in `docs/targets.toml` by
-the maintainer once the proof exists.
+the maintainer once the proof exists. (Done, pending the re-pin: §8, "End-of-stage status".)
 
 ## 8. Skeleton
 
@@ -341,19 +343,19 @@ the maintainer once the proof exists.
 0 to 10). External dependencies: the pilot's statements (PK, PP, IM, SG, LP of
 `Computation-SignDeflatePrograms.md`), cited by name; they are being proved now.
 
-| ids | statements | file (`NLAlibScaffold/…`) | difficulty |
+| ids | statements | file (`NLAlib/…`; `NLAlibScaffold/…` during the stage) | difficulty |
 |---|---|---|---|
-| BI1–BI3 | `exec_bindIdx_of_read`, `exec_bindIdx_eq_none`, `IsExactIntLit.toNat_eq_of_lit_eq_some` | `Computation/IndexBinder.lean` | S |
-| BI4–BI8 | `isExactToNat_{exactSem,gridSem,binaryFloatSem}`, `mulShrinks_exactSem`, `mulShrinks_gridSem` | same | S ×4, M |
-| NI1, NI2 | `exec_normIdx`, `exec_eq_of_normIdx_eq` | same | M, S |
-| EC1–EC10 | `exec_{zcopy,zidentity,zneg,zconjTranspose,zhermShift,zhermScale,zhermAvg,ztraceRe}_congr`, `exec_newtonSchulz{Test,Step}Block_congr` | `Computation/KernelCongr.lean` | S |
-| SB1–SB3 | `holds_of_exec_eighSignLoop`, `holds_of_exec_eighSignBlock`, `exists_exec_eighSignBlock` | `Matrix/Computation/SpectralBisectionNode.lean` | M |
-| EN1–EN10 | leaf, child, deflate (value, success), compress (value, success), split (value, success), node (value, success) | same | M, S, M, M, M, M, M, M, L, M |
-| ET1–ET6 | `eighNodeAt_eighSlotTree`, `eighSlotTree_append_of_eighLoc`, `eighLoc_params`, `eighLoc_append_singleton`, `eighLoc_bounds`, `eighLoc_disjoint` | `Matrix/Computation/SpectralBisectionProgram.lean` | M |
-| EL1–EL6 | down level (value, success), spent level (value, success), up level (value, success) | same | L, L, M, S, L, M |
-| EP1–EP7 | builder (a), (b); tree: `toStmt_compiled`, (a), (b), static counts, weighted counts | same | L, L, S, S, S, M, L |
-| ES1–ES4 | `eigh_toFloatMachine_map_samples`, `eigh_congr_samples`, `eigh_eighTapeMachine_eq_eigh_eighIdealTree`, `iIndepFun_eighIdealTree` | `Eigensolvers/SpectralBisectionSamples.lean` | M, M, L, H |
-| IA1–IA4 | `isUnifSampler_uniformUnif`, `isAccurate_eighIdealMachine`, `countable_range_uniformUnif`, `countable_range_gaussianNormal` | same | M, M, S, S |
+| BI1–BI3 | `exec_bindIdx_of_read`, `exec_bindIdx_eq_none`, `IsExactIntLit.toNat_eq_of_lit_eq_some` | `Computation/IndexBinder.lean` (BI3 in `Computation/Contract.lean`) | S |
+| BI4–BI8 | `isExactToNat_{exactSem,gridSem,binaryFloatSem}`, `mulShrinks_exactSem`, `mulShrinks_gridSem` | `Computation/Contract.lean` (`exactSem`), `Computation/Grid.lean` (`gridSem`), `Computation/BinaryFloatSem.lean` | S ×4, M |
+| NI1, NI2 | `exec_normIdx`, `exec_eq_of_normIdx_eq` | `Computation/IndexBinder.lean` | M, S |
+| EC1–EC10 | `exec_{zcopy,zidentity,zneg,zconjTranspose,zhermShift,zhermScale,zhermAvg,ztraceRe}_congr`, `exec_newtonSchulz{Test,Step}Block_congr` | `Computation/BLASCongr.lean` (EC1–EC8), `Matrix/Computation/NewtonSchulzSignProgram/Blocks.lean` (EC9, EC10) | S |
+| SB1–SB3 | `holds_of_exec_eighSignLoop`, `holds_of_exec_eighSignBlock`, `exists_exec_eighSignBlock` | `Matrix/Computation/SpectralBisectionNode/SignStep.lean` | M |
+| EN1–EN10 | leaf, child, deflate (value, success), compress (value, success), split (value, success), node (value, success) | `Matrix/Computation/SpectralBisectionNode/{Deflate,Compress,Split,SplitSuccess}.lean`, node value in `SpectralBisectionNode.lean`, node success in `…/NodeSuccess.lean` | M, S, M, M, M, M, M, M, L, M |
+| ET1–ET6 | `eighNodeAt_eighSlotTree`, `eighSlotTree_append_of_eighLoc`, `eighLoc_params`, `eighLoc_append_singleton`, `eighLoc_bounds`, `eighLoc_disjoint` | `Matrix/Computation/SpectralBisectionProgram/Levels.lean` | M |
+| EL1–EL6 | down level (value, success), spent level (value, success), up level (value, success) | `Matrix/Computation/SpectralBisectionProgram/{DownLevel,DownLevelSuccess,BottomLevel,UpLevel,UpLevelSuccess}.lean` | L, L, M, S, L, M |
+| EP1–EP7 | builder (a), (b); tree: `toStmt_compiled`, (a), (b), static counts, weighted counts | `Matrix/Computation/SpectralBisectionProgram/Refinement.lean` (EP1), `Matrix/Computation/SpectralBisectionProgram.lean` (EP2–EP5), `…/SpectralBisectionProgram/Count.lean` (EP6), `…/Weight.lean` (EP7) | L, L, S, S, S, M, L |
+| ES1–ES4 | `eigh_toFloatMachine_map_samples`, `eigh_congr_samples`, `eigh_eighTapeMachine_eq_eigh_eighIdealTree`, `iIndepFun_eighIdealTree` | `Eigensolvers/SpectralBisectionSamples.lean` (ES1–ES3), `…/SpectralBisectionSamples/Lazy.lean` (ES4) | M, M, L, H |
+| IA1–IA4 | `isUnifSampler_uniformUnif`, `isAccurate_eighIdealMachine`, `countable_range_uniformUnif`, `countable_range_gaussianNormal` | `Eigensolvers/SpectralBisectionSamples/IdealMachine.lean` | M, M, S, S |
 | TT1–TT3 | `matrixFreeRoundedProbEigh`, `matrixFreeRoundedProb_eighProg_of_logb_le`, the bounded format | `Eigensolvers/SpectralBisectionProgram.lean` | M |
 
 **Statement fix (SB2).** `holds_of_exec_eighSignBlock` now takes `hX : ∃ len, st.store.shape[X]? =
@@ -459,6 +461,59 @@ proof into the downward pass, the spent level with the upward pass, and the body
 allocations (`ep1_prog_eq` states the tree of the scope by `rfl`), so that each piece elaborates
 within the 4 GB worker limit.
 
+### End-of-stage status (2026-11-08, `cleanup/compdyn-s2`)
+
+**Proved.** All 63 statements are proved, with no `sorry`. The dispatch (2026-11-07 00:11–03:34)
+proved 50; the other 13 (EN6, EN7, EN9, EN10, EL1, EL2, EL5, EL6, EP1, EP2, EP6, EP7, ES4) were
+proved by follow-up agents on `prove/compdyn-s2-*` branches and integrated on `integrate/compdyn-s2` (ES4) and
+`integrate/compdyn-s2-final` (the others), with the statement fixes and strengthenings above. TT1–TT3 were
+restated against the tightened HDIAG bounds (§7.4) at the merge of `origin/main` (5960c3fa) and
+proved there by composing EP1/EP2 and the refinement with the new EV6, EV7, EV8; `#print axioms`
+at that commit gave `propext`, `Classical.choice`, `Quot.sound`.
+
+**Hardening.** The hardening stage (`docs/design/Computation-Hardening.md`, Stage 2b) then changed
+the environment under the program: `bindIdx` fails above its bound, `toNat` fails below $0$, and
+`Prog.RunsWithin` asks `st₀.store.size = b`. The one site of `eighProg` that relied on the old
+clamping binder is the split index $\lfloor\mathrm{fl}(t + \mathrm{fl}(1/2))\rfloor$: the node step
+now runs an explicit, counted clamp `NLAlib.eighClampBlock` before its binder (two literals into
+dead cells of `t`, two comparisons, at most one copy), proved in
+`Matrix/Computation/SpectralBisectionClamp.lean` (`exec_eighClampBlock_bind`; 40926974). The
+shallow `eighStep` is unchanged (`kp := min k (M.toNat …)`), so the equality refinement to `eigh`
+is the same statement. As recorded in that commit, the value-side lemmas from the node step up to
+`eighProg.holds_of_exec_compiled` gain `hcmp` (the comparison `le` exact at `dec`) and the node
+lemmas the exactness of literals up to the node size; TT1 and TT2 discharge `hcmp` by
+`hsem.cmp_le`, TT3 takes it as a hypothesis. EP6's constants are unchanged (re-checked by kernel
+`decide`); EP7 is unchanged. TT1–TT3 then take the model's new arguments `dec B cost mem`, with
+`B := N + 4`, `cost := eighCount p mm qr N ℓ F` and `mem := 4N² + N + 3 + 64(N + 1)²(ℓ + 3)`
+(`Computation-Hardening.md` §2.3, §2.4; b228ea6f). Fable's review of Stage 2b
+(`reports/Review-Fable-Hardening-Stage2.md` §3) checked the clamp: counted, exactly refined, and
+not a weakening.
+
+**Where it lives.** The statements moved from `NLAlibScaffold/` into `NLAlib/` (D8: docstrings
+without `Proof:` lines) and the large files were split (F10), with statements unchanged:
+36d32068 (the Computation lemmas: `Computation/{Loops,IndexBinder,BLASCongr}.lean`, and
+`Contract`, `Grid`), 10b17ab6 (SIGN/DEFLATE, see `Computation-SignDeflatePrograms.md`), bb7ccf8f
+(EIGH: `Matrix/Computation/SpectralBisectionNode.lean` and 7 files under
+`SpectralBisectionNode/`, `Matrix/Computation/SpectralBisectionProgram.lean` and 13 files under
+`SpectralBisectionProgram/`, `Matrix/Computation/SpectralBisectionClamp.lean`,
+`Eigensolvers/SpectralBisectionSamples.lean` with `SpectralBisectionSamples/{Lazy,IdealMachine}.lean`,
+and `Eigensolvers/SpectralBisectionProgram.lean`). The table above gives the file of each id.
+6b757e18 removed `NLAlibScaffold`; `lakefile.toml` is main's byte for byte, and the elaborated
+types of all 865 scaffold constants are identical in `NLAlib`. The definitions of §1
+(`SpectralBisectionProgramTree.lean`, `SpectralBisectionTape.lean`,
+`RandomMatrix/Computation/SpectralBisectionTargets.lean`) are where §1 says. The `Eigensolvers`
+folder now has its layer entry (`docs/rules/layers.toml`), so §7.5's P1 errors are gone.
+
+**Registration (D7).** `docs/targets.toml` has the `[[tree]]` `NLAlib.eighProg.compiled` and the
+`[[target]]` `NLAlib.MatrixFreeRoundedProbEigh`, with the witness
+`NLAlib.matrixFreeRoundedProbEigh_nonVacuous`
+(`RandomMatrix/Computation/RoundedTargetWitnesses.lean`: `gridSem t` with $u = 2^{-t} > 0$ and $t$
+chosen from $N$, the grid kernels `gridMM`/`gridQR`, tape rounding `roundNearest t`) and its
+`witness_sem` (1f43e0a9). The hash, statement and normal form are empty and `reviewed = ""`: the
+maintainer re-pins (`TARGETS_UPDATE=1 lake env lean scripts/Targets.lean`, then
+`docs/targets.approved`). Registering the tree needed `set_option maxRecDepth 100000` on the
+registry check's `run_cmd` (eb0bda85, for the maintainer's review).
+
 ## 9. Decisions (sheet `COMPDYN-S2.json`)
 
 RP the re-pin (sign-off); D1 the sign step with the shallow step limit; D2 tests on sizes by trip
@@ -506,6 +561,9 @@ Replaying `Deflation.lean` prints two `PANIC at Lean.Expr.appArg!` infos (lines 
 are in hdiag's file as pushed and do not fail the build.
 
 ## 12. Checks
+
+At the design stage (skeleton commit ed1ad86c, with the scaffold library); the end-of-stage checks
+are in the stage report (`reports/Stage-COMPDYN-S2-Hardening.md`, harness).
 
 | check | result |
 |---|---|

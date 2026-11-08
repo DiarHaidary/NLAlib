@@ -1,11 +1,13 @@
 # Design note: complex-pair kernels, and SIGN and DEFLATE as programs (stage COMPDYN S1c/S1d, pilot)
 
-Status: design stage, 2026-11-06. Branch `design/compdyn-s1cd` (worktree
+Status (2026-11-08): all statements proved, sorry-free, and in `NLAlib/`; the two trees and targets
+are in the registry, pending the maintainer's re-pin (§11). Design text, 2026-11-06: Branch
+`design/compdyn-s1cd` (worktree
 `~/nlalib-design-compdyn-s1cd`), from `cleanup/compdyn-s1` fa5b1bc1 (S1 merge-ready; main
 a08339af). Parent note: `docs/design/Computation-DynamicPrograms.md` (approved, sheet
 `COMPDYN.json`): §4.4 complex pairs, §6 EIGH, §7.1 refinement shape, §7.2 effort, §8.2 hdiag.
-Shallow specifications: `design/hdiag` 1db0c258 (read only). Skeleton: 65 statements in
-`NLAlibScaffold/` (targets `~/nlalib-harness/pilot/compdyn-s1cd-targets.json`) and 3 more blocked
+Shallow specifications: `design/hdiag` 1db0c258 (read only). Skeleton: 65 statements, in
+`NLAlibScaffold/` during the stage and now in `NLAlib/` (§9, §11) (targets `~/nlalib-harness/pilot/compdyn-s1cd-targets.json`) and 3 more blocked
 on HDIAG (§5). Decision sheet: `~/nlalib-harness/state/decisions/COMPDYN-S1cd.json` (D1 to D7).
 
 The maintainer's goal: algorithms run inside the model of computation, without cheating, as
@@ -37,7 +39,7 @@ calibrates the S1 to S2b estimate (§7.2 of the parent note) before S2 (`bindIdx
 | `NLAlib/RandomMatrix/Computation/DeflationTargets.lean` (new, proposed) | `DeflationData`, `MatrixFreeRoundedProbDeflate` | 116 |
 | from `design/hdiag` (unchanged, sorry-free) | `Matrix/Computation/{Primitives,EntrywiseRounding,NewtonSchulzSign,Deflation}.lean`, `Polynomial/Approximation/NewtonSchulz.lean`, `RandomMatrix/Gaussian/Complex.lean`; the five bibliography entries their docstrings cite | 576 |
 | `NLAlibTools/NumPy.lean` (amended) | kernel names in emitted calls (N3), DEFLATE emitted with `mm`/`qr` | +17 |
-| `NLAlibScaffold/` (new), `NLAlibScaffold.lean`, `lakefile.toml` scaffold entry | the skeleton, §9 | 1,697 |
+| `NLAlibScaffold/` (new), `NLAlibScaffold.lean`, `lakefile.toml` scaffold entry | the skeleton, §9 (removed at the COMPDYN S2 clean-up, 6b757e18; the statements are in the `NLAlib/` files of §11) | 1,697 |
 
 Not brought from hdiag: its `NLAlibScaffold/`, `SpectralBisection.lean` (EIGH, S2b) and the W4 files.
 
@@ -194,7 +196,8 @@ $2e^{-t^2/2} + r^2x^2$, hdiag's bound unchanged (the run never fails).
 
 ## 5. Dependencies on HDIAG (separate scaffold file)
 
-`NLAlibScaffold/RandomMatrix/Computation/SignDeflateTargets.lean` holds the two target proofs
+`NLAlibScaffold/RandomMatrix/Computation/SignDeflateTargets.lean` (now
+`NLAlib/Eigensolvers/SignDeflatePrograms.lean`, §11) holds the two target proofs
 TR2 and TR3, which use hdiag's Theorem 2.6 and Theorem 3.3. TR1, that the shallow test passes
 within $N_0 + 1$ steps (shown in step (2) of the proof of Theorem 2.6 but not stated there; the
 program's success needs it), is now an HDIAG lemma:
@@ -323,3 +326,51 @@ IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKer
 3. The functional contract is the standard model with every value in range, not a correctly
    rounded `fl` (§2.2; D2).
 4. N2 deferred (§7).
+
+## 11. End-of-stage status (2026-11-08, `cleanup/compdyn-s2`)
+
+**Proved.** The 65 statements of §9 were proved on `integrate/compdyn-s1cd` and merged into
+`design/compdyn-s2` (979305f4); TR2 and TR3 (`matrixFreeRoundedProbNewtonSchulzSign`,
+`matrixFreeRoundedProbDeflate`) are proved (a4efd862; TR2 with HDIAG's
+`exists_le_newtonSchulzTest_iterate`, 2774bb52). The statement fixes are those of §3.2 (SG6/SG7
+`hX`, DF2 `hQ`). At the merge of `origin/main` with the tightened HDIAG bounds (5960c3fa) the
+targets file imports `NewtonSchulzSign/Accuracy` (where SN4 and TR1 now are); the statements of TR2
+and TR3 did not change there.
+
+**Hardening.** In the hardening stage (`docs/design/Computation-Hardening.md`, Stage 2b) the
+rounded model `MatrixFreeRoundedProb` gained the arguments `dec B cost mem`. As recorded in §2.3 and
+§2.4 of that note (b228ea6f): SIGN drops `IsExactIntLit dec I.sem 1` from its `Contracts` and passes
+`B := 1`, cost `newtonSchulzSignCount p mm N F` and memory $8N^2 + 7$ at tag `p`; DEFLATE drops
+`IsExactIntLit dec I.sem 2` and passes `B := 2`, cost `deflateCount p mm qr N r` and memory
+$10N^2 + 2Nr + 2$. Both now assume the exact floor conversion through the model's
+`IsIndexExactSem`, which they never use. The proofs go through `MatrixFreeRoundedProb.of_exec` and
+the existing `cnt_le_of_exec_compiled` lemmas (SG11, DF8).
+
+**Where it lives** (D8 move and F10 splits, 36d32068 and 10b17ab6, statements unchanged):
+
+| ids | file (`NLAlib/…`) |
+|---|---|
+| LP1–LP3 | `Computation/Loops.lean` (new; `Exec.lean` is over F10) |
+| PP1–PP7 | `Matrix/Computation/KernelContracts.lean` (appended) |
+| IM1–IM13 | `Matrix/Computation/InterpMachine.lean` (appended) |
+| PK1–PK22 | `Matrix/Computation/PairKernels.lean` (copies, zero, negation, mirror), `…/PairKernels/Hermitian.lean` (`zhermShift`, `zhermScale`), `…/PairKernels/HermAvg.lean`, `…/PairKernels/BoxTest.lean`, `…/PairKernels/Arithmetic.lean` (`zidentity`, `zadd`, `zsub`, `zscal`, `zconjTranspose`, `ztraceRe`) |
+| SG1–SG5 | `Matrix/Computation/NewtonSchulzSignProgram/Blocks.lean` (test, step, loop; also the block congruences EC9, EC10 of COMPDYN S2) |
+| SG6–SG11 | `Matrix/Computation/NewtonSchulzSignProgram.lean` (refinement, registered tree, counts) |
+| DF1–DF8 | `Matrix/Computation/DeflationProgram.lean` (new) |
+| CT1 | `RandomMatrix/Computation/ComplexTape.lean` (new) |
+| TR2, TR3 | `Eigensolvers/SignDeflatePrograms.lean` (new; the proofs import `Eigensolvers`, layer 3) |
+
+The program and target definitions of §1 are where §1 says. Private helpers used across a split
+are public now, under their names. `NLAlibScaffold` is removed (6b757e18) and `lakefile.toml` is
+main's again.
+
+**Registration (§6).** `scripts/Targets.lean`'s `models` lists `MatrixFreeRoundedProb` (Part C of
+the hardening patches, c983ecc5). `docs/targets.toml` has the trees
+`NLAlib.newtonSchulzSignProg.compiled`, `NLAlib.deflateProg.compiled` and the targets
+`NLAlib.MatrixFreeRoundedProbNewtonSchulzSign`, `NLAlib.MatrixFreeRoundedProbDeflate`, with the
+witnesses `NLAlib.matrixFreeRoundedProbNewtonSchulzSign_nonVacuous` and
+`NLAlib.matrixFreeRoundedProbDeflate_nonVacuous`
+(`RandomMatrix/Computation/RoundedTargetWitnesses.lean`, at `gridSem t` with $u = 2^{-t} > 0$, the
+grid kernels `gridMM`/`gridQR` and the grid machine `gridMachine t` of
+`Matrix/Computation/GridMachine.lean`) and their `witness_sem` lines (1f43e0a9). Hashes, statements
+and normal forms are empty and `reviewed = ""`, for the maintainer's re-pin.

@@ -143,19 +143,19 @@ the registry's `lakefile_sha256` pin (Targets lint item 4) while the skeleton wa
 clean-up (`cleanup/compdyn-s1`) removes the scaffold library and restores main's `lakefile.toml`
 byte for byte, so the pin matches again.
 
-**Skeleton** (`NLAlibScaffold/`, 30 statements, S 20, M 10; revised after Fable's S1 review,
+**Skeleton** (`NLAlibScaffold/` during the stage, since removed; 30 statements, S 20, M 10; revised after Fable's S1 review,
 `~/nlalib-harness/reports/Review-Fable-COMPDYN-S1.md`: the read-back of a kernel call split into
 the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 
-| id | statement | file | difficulty |
+| id | statement | file (`NLAlib/…`) | difficulty |
 |---|---|---|---|
-| K1 | `exec_kcall` | `Computation/Exec.lean` | S |
-| K2 | `Interp.kcallStore_eq_none_of_kernel_eq_none` | `Computation/Exec.lean` | S |
+| K1 | `exec_kcall` | `Computation/KernelCall.lean` | S |
+| K2 | `Interp.kcallStore_eq_none_of_kernel_eq_none` | `Computation/KernelCall.lean` | S |
 | ST1 | `Store.read_of_writeBlocks_eq_some_of_forall` | `Computation/Store.lean` | M |
-| ST2 | `Store.read_of_writeBlocks_eq_some` | `Computation/Store.lean` | M |
-| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/Exec.lean` | S |
-| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/Exec.lean` | M |
-| K5 | `Interp.exists_kcallStore_eq_some` | `Computation/Exec.lean` | M |
+| ST2 | `Store.read_of_writeBlocks_eq_some` | `Computation/KernelCall.lean` | M |
+| K3 | `Interp.read_of_kcallStore_eq_some_of_forall` | `Computation/KernelCall.lean` | S |
+| K4 | `Interp.read_of_kcallStore_eq_some` | `Computation/KernelCall.lean` | M |
+| K5 | `Interp.exists_kcallStore_eq_some` | `Computation/KernelCall.lean` | M |
 | K6 | `FStmt.exec_kcall` | `Computation/FirstOrder.lean` | S |
 | K7 | `implementsKernel_self` | `Computation/Subst.lean` | S |
 | KC1 | `EntryLayout.size_toArray` | `Matrix/Computation/KernelContracts.lean` | S |
@@ -183,7 +183,7 @@ the two `Store.writeBlocks` lemmas ST1, ST2, so no statement is L):
 **Proofs and placement** (2026-11-06, clean-up on `cleanup/compdyn-s1`). All 30 statements are
 proved (by haiku workers, one commit per proof on `integrate/compdyn-s1`), golfed, and moved into
 `NLAlib/` with the `Proof:` sketches removed (D8). Their elaborated types are unchanged. Each one is
-in the file the table names, with one amendment (2026-11-06): **K1 to K5 and ST2 are in a new file
+in the file the table names, which includes one amendment (2026-11-06): **K1 to K5 and ST2 are in a new file
 `NLAlib/Computation/KernelCall.lean`** (it imports `Exec.lean`). `Exec.lean` was already 1050
 lines and would have grown to about 1210 (rule F10). ST2 is stated with `blockDisjoint`, which is
 defined in `Exec.lean`, so it cannot go into `Store.lean`, which `Exec.lean` imports. ST1 is in
@@ -208,6 +208,11 @@ calibration (§8 of the new note) puts S1c + S1d at about 5,300 to 6,400 lines, 
 the rows of §7.2, with the S2 rows unchanged.
 
 ## S2 (design stage, 2026-11-06)
+
+Status (2026-11-08): S1c/S1d and S2 are proved and in `NLAlib/`, with the three trees and targets
+registered pending the maintainer's re-pin, on top of the hardening of the model
+(`docs/design/Computation-Hardening.md`, §11); see `Computation-SignDeflatePrograms.md` §11 and
+`Computation-EighProgram.md` §8, "End-of-stage status". Design text:
 
 Designed on `design/compdyn-s2` (from `design/compdyn-s1cd` d610ab95, with `cleanup/hdiag` merged) in
 its own note, `docs/design/Computation-EighProgram.md` (decision sheet `COMPDYN-S2.json`, RP and D1
