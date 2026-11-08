@@ -263,11 +263,11 @@ theorem isAccurate_binaryFloatMachine
   set u : ℝ := (2 : ℝ)⁻¹ ^ fmt.mantissaBits
   set τ : ℝ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
   set R := Computation.binaryFloatRound fmt r
-  refine ⟨rfl, rfl, fun k _ => hround _, fun x y _ => hround _, fun x y _ => hround _,
+  refine ⟨⟨rfl, rfl, fun k _ => hround _, fun x y _ => hround _, fun x y _ => hround _,
     fun x y _ => hround _, fun x y _ _ => hround _, fun x => rfl, fun x y => by
       change (if x ≤ y then true else false) = true ↔ x ≤ y
       split_ifs with h <;> simp [h],
-    fun x => rfl, isMatMulErr_binaryFloatMachine hr hodd _, isQRErr_binaryFloatMachine hr hτ₁ _,
+    fun x => rfl, isMatMulErr_binaryFloatMachine hr hodd _⟩, isQRErr_binaryFloatMachine hr hτ₁ _,
     ?_, ?_⟩
   · intro s v hs hv
     simp only [id] at hs ⊢

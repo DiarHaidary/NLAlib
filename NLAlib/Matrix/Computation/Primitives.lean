@@ -44,7 +44,7 @@ $\tau > 0$ (§12 of the note).
 * `NLAlib.IsRoundingOf`: $z$ is a rounding of $a$.
 * `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler`, `NLAlib.IsNormalSampler`.
 * `NLAlib.FloatMachine`, `NLAlib.decodeComplex`, `NLAlib.decodeMatrix`,
-  `NLAlib.FloatMachine.IsAccurate`.
+  `NLAlib.FloatMachine.IsArithAccurate`, `NLAlib.FloatMachine.IsAccurate`.
 
 ## Main results
 
@@ -176,17 +176,17 @@ def decodeMatrix {F : Type*} {m n : Type*} (dec : F → ℝ) (A : Matrix m n (F 
     Matrix m n ℂ :=
   A.map (decodeComplex dec)
 
-/-- `M.IsAccurate dec u τ Ω μM μQ cN`: **the contract of a floating-point machine** at decoding
-`dec`, unit roundoff $u$, floor $\tau$, range $\Omega$, black-box constants $\mu_{\mathrm{MM}}$,
-$\mu_{\mathrm{QR}}$ and normal-sampler constant $c_{\mathrm N}$: zero and one are exact; rounded
-conversion, addition, subtraction, multiplication and division (by a nonzero) return a rounding
-(`NLAlib.IsRoundingOf`) of the exact result on the decoded operands; negation and comparisons are
-exact; conversion to a natural number is the exact floor $\lfloor\bar x\rfloor_+$; the black boxes
-and samplers meet `NLAlib.IsMatMulErr`, `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and
-`NLAlib.IsNormalSampler` through the decoding. [Shah2024, Section 1.2 and Definitions 1.1–1.4],
+/-- `M.IsArithAccurate dec u τ Ω μM`: **the arithmetic contract of a floating-point machine** at
+decoding `dec`, unit roundoff $u$, floor $\tau$, range $\Omega$ and product constant
+$\mu_{\mathrm{MM}}$: zero and one are exact; rounded conversion, addition, subtraction,
+multiplication and division (by a nonzero) return a rounding (`NLAlib.IsRoundingOf`) of the exact
+result on the decoded operands; negation and comparisons are exact; conversion to a natural number
+is the exact floor $\lfloor\bar x\rfloor_+$; the matrix-multiplication black box meets
+`NLAlib.IsMatMulErr` through the decoding. The part of `NLAlib.FloatMachine.IsAccurate` that says
+nothing about the QR black box and the samplers. [Shah2024, Section 1.2 and Definitions 1.1–1.2],
 with componentwise complex storage. -/
-structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
-    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) : Prop where
+structure FloatMachine.IsArithAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM : ℕ → ℝ) : Prop where
   /-- Zero is exact. -/
   dec_zero : dec M.zero = 0
   /-- One is exact. -/
@@ -209,6 +209,17 @@ structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec 
   toNat_eq : ∀ x, M.toNat x = ⌊dec x⌋₊
   /-- The matrix-multiplication contract. -/
   isMatMulErr : IsMatMulErr (decodeComplex dec) u τ Ω μM M.mm
+
+/-- `M.IsAccurate dec u τ Ω μM μQ cN`: **the contract of a floating-point machine** at decoding
+`dec`, unit roundoff $u$, floor $\tau$, range $\Omega$, black-box constants $\mu_{\mathrm{MM}}$,
+$\mu_{\mathrm{QR}}$ and normal-sampler constant $c_{\mathrm N}$: the arithmetic contract
+`NLAlib.FloatMachine.IsArithAccurate` (rounded scalar operations, exact negation, comparisons,
+floor conversion, $0$ and $1$, and `NLAlib.IsMatMulErr` for the products), and the QR black box
+and the samplers meet `NLAlib.IsQRErr`, `NLAlib.IsUnifSampler` and `NLAlib.IsNormalSampler`
+through the decoding. [Shah2024, Section 1.2 and Definitions 1.1–1.4], with componentwise complex
+storage. -/
+structure FloatMachine.IsAccurate {F : Type*} (M : FloatMachine F ℝ ℂ) (dec : F → ℝ)
+    (u τ Ω : ℝ) (μM μQ : ℕ → ℝ) (cN : ℝ) : Prop extends M.IsArithAccurate dec u τ Ω μM where
   /-- The QR contract. -/
   isQRErr : IsQRErr (decodeComplex dec) u τ Ω μQ M.qr
   /-- The uniform-sampler contract. -/
@@ -394,9 +405,9 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
       ofNat := (fun k => R k), add := (fun x y => R (x + y)), sub := (fun x y => R (x - y))
       mul := (fun x y => R (x * y)), div := (fun x y => R (x / y))
       unif := (fun s v => max (-s) (min s (R (s * v))))
-      normal := (fun z => (R z.re, R z.im)) }, ⟨hM₀.dec_zero, hM₀.dec_one,
+      normal := (fun z => (R z.re, R z.im)) }, ⟨⟨hM₀.dec_zero, hM₀.dec_one,
     fun k _ => hround _, fun x y _ => hround _, fun x y _ => hround _, fun x y _ => hround _,
-    fun x y _ _ => hround _, hM₀.dec_neg, hM₀.le_iff, hM₀.toNat_eq, ⟨?_, ?_⟩, ?_, ?_, ?_⟩,
+    fun x y _ _ => hround _, hM₀.dec_neg, hM₀.le_iff, hM₀.toNat_eq, ⟨?_, ?_⟩⟩, ?_, ?_, ?_⟩,
     fun _ _ => rfl, fun _ _ => rfl, fun _ _ => rfl, fun _ _ _ => rfl⟩
   · intro l m n A B hAB
     refine (hM₀.isMatMulErr.specNorm_mul_sub_le A B hAB).trans ?_
