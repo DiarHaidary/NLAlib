@@ -454,14 +454,14 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 |---|---|---|---|---|
 | R1 | `isRoundingOf_roundNearest` | S | 0 | — |
 | R1b | `isRoundingOf_binaryFloatRound` | M | 0 | — |
-| R2 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom` | S | 0 | — |
-| R3 | `FloatMachine.IsAccurate.decodeMatrix_negMat` | S | 0 | — |
-| R4 | `FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat` | S | 0 | — |
-| R5 | `FloatMachine.IsAccurate.decodeMatrix_identityMat` | S | 0 | — |
-| R6 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le` | M | 0 | — |
-| R7 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le` | M | 0 | — |
-| R8 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le` | M | 0 | — |
-| R9 | `FloatMachine.IsAccurate.abs_sum_sub_traceRe_le` | M | 0 | — |
+| R2 | `FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_hermFrom` | S | 0 | — |
+| R3 | `FloatMachine.IsArithAccurate.decodeMatrix_negMat` | S | 0 | — |
+| R4 | `FloatMachine.IsArithAccurate.decodeMatrix_conjTransposeMat` | S | 0 | — |
+| R5 | `FloatMachine.IsArithAccurate.decodeMatrix_identityMat` | S | 0 | — |
+| R6 | `FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermShift_le` | M | 0 | — |
+| R7 | `FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermScale_le` | M | 0 | — |
+| R8 | `FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermAvg_le` | M | 0 | — |
+| R9 | `FloatMachine.IsArithAccurate.abs_sum_sub_traceRe_le` | M | 0 | — |
 
 **Matrix/Computation/Primitives.lean**
 
@@ -475,10 +475,10 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| SN1 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded` | S | 1 | R2 |
-| SN2 | `FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign` | S | 2 | R2, SN1 |
-| SN3 | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le` | M | 1 | R3, R6, R8 |
-| SN4 | `FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le` | L | 5 | SN3, R7, SG1, SG2, SG3, SG4, NS9, NS10, NS11, NS12 |
+| SN1 | `FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzRounded` | S | 1 | R2 |
+| SN2 | `FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzSign` | S | 2 | R2, SN1 |
+| SN3 | `FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le` | M | 1 | R3, R6, R8 |
+| SN4 | `FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le` | L | 5 | SN3, R7, SG1, SG2, SG3, SG4, NS9, NS10, NS11, NS12 |
 
 **RandomMatrix/Gaussian/Complex.lean**
 
@@ -497,13 +497,13 @@ has $\delta n \le \varepsilon(\|\mathbf{H}\|_2 + \delta n)$. LB3: Walsh–Hadama
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
 | DF1 | `HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le` | M | 0 | — |
-| DF2 | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` | L | 1 | DF1 |
+| DF2 | `FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le` | L | 1 | DF1 |
 
 **Eigensolvers/RandomizedDeflation.lean**
 
 | id | declaration | diff | wave | depends on |
 |---|---|---|---|---|
-| DP1 | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
+| DP1 | `FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix` | M | 4 | DF2, CG2, CG3, CG4, CG6 |
 
 **Probability/AdaptiveUnionBound.lean**
 
@@ -553,7 +553,7 @@ Two scaffold statements were false as written; the provers proved corrected vers
 public statements now carry the extra hypotheses (integration of `prove/hdiag-core`, 2026-11-06).
 No caller's statement changed.
 
-* **DF2** (`FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`) gains
+* **DF2** (`FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le`) gains
   `(hμM : 0 ≤ μM n) (hu₀ : 0 ≤ u)`. Counterexample without them: $u = 1$, $\mu_{\mathrm{MM}} \equiv
   -4$, $n = r = 1$ (the size condition on $u$ then holds for small $\beta$; since the product
   contract on the stored identity forces $\mu_{\mathrm{MM}}(n) \ge 0$ when $u > 0$ and

@@ -92,7 +92,8 @@ theorem div_mul_abs_le_abs_newtonSchulz_of_abs_le {x : ℝ} (hx : |x| ≤ 1 / 2)
 /-- **The perturbed Newton–Schulz step keeps the sign** (Lemma 2.3, first part): if
 $\lvert \xi \rvert \le u$ and $u < \lvert x \rvert < \sqrt3 - (\sqrt3 - 1)u$, then $g(x) + \xi$
 has the sign of $x$, that is $x(g(x) + \xi) > 0$. [Shah2024, Lemma 2.3], there with
-$u \le 3/16$, not needed here. -/
+$u \le 3/16$, not needed here.
+Result: newton-schulz-sign-perturbed-step-keeps-sign -/
 theorem mul_newtonSchulz_add_pos {u x ξ : ℝ} (hξ : |ξ| ≤ u) (hux : u < |x|)
     (hx : |x| < √3 - (√3 - 1) * u) : 0 < x * (newtonSchulz x + ξ) := by
   have hs : √3 ^ 2 = 3 := Real.sq_sqrt (by norm_num)
@@ -125,7 +126,8 @@ theorem mul_newtonSchulz_add_pos {u x ξ : ℝ} (hξ : |ξ| ≤ u) (hux : u < |x
 
 /-- **The perturbed Newton–Schulz step does not decrease the modulus** (Lemma 2.3, second part):
 if $\lvert \xi \rvert \le u$ and $\tfrac83 u \le \lvert x \rvert \le 1 - \tfrac83 u$, then
-$\lvert x \rvert \le \lvert g(x) + \xi \rvert$. [Shah2024, Lemma 2.3]. -/
+$\lvert x \rvert \le \lvert g(x) + \xi \rvert$. [Shah2024, Lemma 2.3].
+Result: newton-schulz-sign-perturbed-step-modulus -/
 theorem abs_le_abs_newtonSchulz_add {u x ξ : ℝ} (hξ : |ξ| ≤ u) (h₁ : 8 / 3 * u ≤ |x|)
     (h₂ : |x| ≤ 1 - 8 / 3 * u) : |x| ≤ |newtonSchulz x + ξ| := by
   have hξ' := abs_le.mp hξ
@@ -157,7 +159,8 @@ theorem abs_le_abs_newtonSchulz_add {u x ξ : ℝ} (hξ : |ξ| ≤ u) (h₁ : 8 
 /-- **Quadratic decrease of the defect under perturbation** (Lemma 2.4, first part): if
 $20\lvert \xi \rvert \le \lvert x \rvert \le 1 - \sqrt{10\lvert \xi \rvert}$, then
 $$\lvert 1 - (g(x) + \xi)^2 \rvert \le \lvert 1 - x^2 \rvert^2 \,.$$
-[Shah2024, Lemma 2.4]. -/
+[Shah2024, Lemma 2.4].
+Result: newton-schulz-sign-perturbed-defect -/
 theorem abs_one_sub_newtonSchulz_add_sq_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x|)
     (h₂ : |x| ≤ 1 - √(10 * |ξ|)) : |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 := by
   -- core: for `0 ≤ t ≤ 1` and the error bounds, with `y = g t`, `e = |η|`:
@@ -213,7 +216,8 @@ theorem abs_one_sub_newtonSchulz_add_sq_le {x ξ : ℝ} (h₁ : 20 * |ξ| ≤ |x
 /-- **The defect bound with an additive error** (Lemma 2.4, second part): if
 $\lvert x \rvert \le \sqrt2$ and $\lvert \xi \rvert \le 1$, then
 $$\lvert 1 - (g(x) + \xi)^2 \rvert \le \lvert 1 - x^2 \rvert^2 + 4\lvert \xi \rvert \,.$$
-[Shah2024, Lemma 2.4]. -/
+[Shah2024, Lemma 2.4].
+Result: newton-schulz-sign-perturbed-defect-additive -/
 theorem abs_one_sub_newtonSchulz_add_sq_le_add {x ξ : ℝ} (hx : |x| ≤ √2) (hξ : |ξ| ≤ 1) :
     |1 - (newtonSchulz x + ξ) ^ 2| ≤ |1 - x ^ 2| ^ 2 + 4 * |ξ| := by
   have hx2 : x ^ 2 ≤ 2 := by
@@ -405,7 +409,8 @@ $0 < \varepsilon \le 3/80$, $10u \le \varepsilon$, $x_0 \ne 0$ with
 $20u \le \lvert x_0 \rvert \le 3/2$, and $\lvert x_{k+1} - g(x_k) \rvert \le u$ for every $k$,
 then for every natural $N \ge N(x_0, \varepsilon)$ (`NLAlib.newtonSchulzSteps`),
 $$\lvert 1 - x_N^2 \rvert \le \varepsilon \,.$$
-[Shah2024, Lemma 2.5]; there $x_0 \ne 0$ is implicit in $u > 0$. -/
+[Shah2024, Lemma 2.5]; there $x_0 \ne 0$ is implicit in $u > 0$.
+Result: newton-schulz-sign-perturbed-convergence -/
 theorem abs_one_sub_sq_le_of_newtonSchulzSteps_le {u ε : ℝ} {x : ℕ → ℝ} (hε : 0 < ε)
     (hε₁ : 10 * u ≤ ε) (hε₂ : ε ≤ 3 / 80) (h₀ : 0 < |x 0|) (h₂₀ : 20 * u ≤ |x 0|)
     (hx₀ : |x 0| ≤ 3 / 2) (hstep : ∀ k, |x (k + 1) - newtonSchulz (x k)| ≤ u) {N : ℕ}

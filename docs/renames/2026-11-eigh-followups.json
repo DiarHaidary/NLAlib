@@ -1,0 +1,159 @@
+{
+ "date": "2026-11-08",
+ "note": "EIGH follow-ups (maintainer decisions F1, F2, F3 step 1, 2026-11-08). Before v0.1: no deprecated aliases. The machine contract FloatMachine.IsAccurate now extends the new arithmetic contract FloatMachine.IsArithAccurate (scalar fields and the matrix product); the Newton–Schulz, entrywise-rounding and deflation lemmas that use only arithmetic move to its namespace and assume it (the deflation theorems also take IsQRErr and IsNormalSampler). The SIGN and DEFLATE targets drop the conjunct asking for an accurate machine; the EIGH target's postcondition adds the weighted kernel count, and EP7 is stated with the shared OpKind.kernelWeight (EighWeight.kernelWeight moved). TT3 is restated over a floored semantics (IsFloorRelErrSem) and is no longer vacuous for binaryFloatSem, whose sqrt is now defined on nonnegative arguments. abs_sub_binaryFloatRound_le_mul_max is a duplicate of Computation.abs_sub_binaryFloatRound_le. Result ids are unchanged.",
+ "renames": [
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.abs_sum_sub_traceRe_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.abs_sum_sub_traceRe_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.decodeMatrix_conjTransposeMat",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_conjTransposeMat",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.decodeMatrix_identityMat",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_identityMat",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.decodeMatrix_negMat",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_negMat",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_hermFrom",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_hermFrom",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzRounded",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzRounded",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.isHermitian_decodeMatrix_newtonSchulzSign",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzSign",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.newtonSchulzTest_of_forall_mem_spectrum",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.newtonSchulzTest_of_forall_mem_spectrum",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermAvg_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermAvg_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermScale_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermScale_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_hermShift_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermShift_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add",
+   "new": "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add",
+   "rule": "N18"
+  },
+  {
+   "old": "NLAlib.EighWeight.kernelWeight",
+   "new": "NLAlib.Computation.OpKind.kernelWeight",
+   "rule": "P10"
+  },
+  {
+   "old": "NLAlib.abs_sub_binaryFloatRound_le_mul_max",
+   "new": "NLAlib.Computation.abs_sub_binaryFloatRound_le",
+   "rule": "S5",
+   "removed": true
+  }
+ ],
+ "statementChanged": [
+  "NLAlib.MatrixFreeRoundedProbEigh",
+  "NLAlib.MatrixFreeRoundedProbNewtonSchulzSign",
+  "NLAlib.MatrixFreeRoundedProbDeflate",
+  "NLAlib.matrixFreeRoundedProbEigh",
+  "NLAlib.matrixFreeRoundedProbNewtonSchulzSign",
+  "NLAlib.matrixFreeRoundedProbDeflate",
+  "NLAlib.matrixFreeRoundedProbEigh_nonVacuous",
+  "NLAlib.matrixFreeRoundedProbNewtonSchulzSign_nonVacuous",
+  "NLAlib.matrixFreeRoundedProbDeflate_nonVacuous",
+  "NLAlib.eighProg.weight_le_of_exec_compiled",
+  "NLAlib.EighWeight.Triple",
+  "NLAlib.measureReal_exists_exec_eighProg_and_not_isApproxDiagonalization_le_of_exponentBits_le",
+  "NLAlib.FloatMachine.IsAccurate",
+  "NLAlib.Computation.binaryFloatSem",
+  "NLAlib.FloatMachine.IsArithAccurate.abs_sum_sub_traceRe_le",
+  "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_conjTransposeMat",
+  "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_identityMat",
+  "NLAlib.FloatMachine.IsArithAccurate.decodeMatrix_negMat",
+  "NLAlib.FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le",
+  "NLAlib.FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le",
+  "NLAlib.FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate",
+  "NLAlib.FloatMachine.IsArithAccurate.forall_isNewtonSchulzChain_and_specNorm_cfc_sign_sub_cfc_sign_le",
+  "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_hermFrom",
+  "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzRounded",
+  "NLAlib.FloatMachine.IsArithAccurate.isHermitian_decodeMatrix_newtonSchulzSign",
+  "NLAlib.FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix",
+  "NLAlib.FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix",
+  "NLAlib.FloatMachine.IsArithAccurate.newtonSchulzTest_of_forall_mem_spectrum",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermAvg_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermScale_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_hermShift_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le",
+  "NLAlib.FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add"
+ ]
+}

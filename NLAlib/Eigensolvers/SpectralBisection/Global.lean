@@ -901,8 +901,8 @@ $\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. [Shah2024, Theorem 4.2], th
 $R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies, other constants (here the Event I charge of
 a node is proportional to its size and Event II uses the smallest-singular-value tail
 $\min(r^2, e r)x^2$), and an operation count (not formalized); the bit count is
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
-. -/
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`.
+Result: spectral-bisection-diagonalization -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}
@@ -1017,8 +1017,9 @@ $$\begin{aligned}\log_2\frac1u \ge{}& \log_2\frac1\varepsilon + \frac32\log_2\fr
 $\hat T = 2\sqrt2\sqrt n + \sqrt{\log(96n\min(n, \ell + 1)/\theta)}$, together with the
 condition $\log_2(1/u) \ge \log_2(1/\beta) + \log_2(2048(n + N_* + 1)\nu +
 16(4\mu_{\mathrm{QR}}(n) + 4\sqrt n(c_{\mathrm N} + 1) + 2\mu_{\mathrm{MM}}(n) + 1))$, the
-probability that `NLAlib.eigh` is not an approximate diagonalization with residual
-$2\varepsilon R_0$ and singular values within $\varepsilon/3$ of $1$ is at most $\theta$. This is
+probability that $\mathsf{eigh}(\mathbf{A}, \varepsilon, \theta)$, the decoded output of
+`NLAlib.eigh`, is not an approximate diagonalization with residual $2\varepsilon R_0$ and
+singular values within $\varepsilon/3$ of $1$ is at most $\theta$. This is
 $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) + O(\log n + \log\log(1/\varepsilon))$ bits,
 with the polynomial factor $n^{2.5}\max(\mu_{\mathrm{MM}}, \sqrt n)$ for $n \le \ell$; at
 $\mu_{\mathrm{MM}} = \mu_{\mathrm{QR}} = 1$, $c_{\mathrm N} = \sqrt2$,
@@ -1028,7 +1029,8 @@ $(1000, 2^{-40}, 1/2)$. [Shah2024, Theorem 4.2], there
 $\log_2(1/\varepsilon) + \log_2\max(n^{1.5}\mu_{\mathrm{QR}}, n^2c_{\mathrm N},
 n^{4.5}\mu_{\mathrm{MM}}) + 2\log_2\log_2(1/\varepsilon) + 1.5\log_2(1/\theta) +
 \log_2\log_2(n\log_2(1/\varepsilon)/\theta) + 23$ (48.3, 63.6, 94.5, 124.0 bits at the same
-points); the third power of $\ell$ comes from the corrected shift-avoidance probability. -/
+points); the third power of $\ell$ comes from the corrected shift-avoidance probability.
+Result: spectral-bisection-diagonalization-bits -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ}

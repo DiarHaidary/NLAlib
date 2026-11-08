@@ -42,9 +42,26 @@ namespace NLAlib
 
 open Computation
 
-/-- **The target of randomized spectral bisection as a program holds**
-(`NLAlib.MatrixFreeRoundedProbEigh`): [Shah2024, Theorem 4.2] for the registered tree. No printed
-source. -/
+-- A docstring line exceeds 100 characters (one identifier).
+set_option linter.style.longLine false in
+/-- **Randomized spectral bisection as a program, in finite precision** (the target
+`NLAlib.MatrixFreeRoundedProbEigh` holds): the registered tree `eighProg.compiled`, run under any
+interpretation whose semantics meets the standard model at unit roundoff $u$ with every value in
+range, with exact integer literals, the exact floor conversion and multiplication that does not
+enlarge by a factor of modulus at most one, whose kernels meet `NLAlib.IsMatMulErr` and
+`NLAlib.IsQRErr` at $u$, and whose tape rounding meets `NLAlib.Computation.IsTapeRounding`, on a
+stored $N \times N$ input with Hermitian decoding $\mathbf{A}$, $\|\mathbf{A}\|_2 \le R_0$, and the
+precision, floor, range and sample conditions of
+`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`
+at the machine roundoff $(c(\mathrm{uniform}) + 1)u$, fails, exceeds its operation and cell
+counts, exceeds the weighted kernel count $(\ell + 1)(2F + 12)\,T(N)$ for a monotone
+superadditive cost $T$ of a kernel call by its largest dimension, or returns stored
+$\mathbf{U}$, $\mathbf{d}$ that are not an approximate diagonalization of $\mathbf{A}$ with residual
+$2\varepsilon R_0$ and $\mathbf{U}$ within $\varepsilon/3$ of unitary with probability at most
+$\theta$. Its output is $\mathsf{eigh}(\mathbf{A}, \varepsilon)$ on the machine of the
+interpretation. [Shah2024, Theorem 4.2], there for the algorithm, not a program, with an
+operation count in flops.
+Result: spectral-bisection-rounded-program -/
 theorem matrixFreeRoundedProbEigh : MatrixFreeRoundedProbEigh := by
   intro P ι _ p mm qr K _ dec u Ω θ μM μQ c
   refine MatrixFreeRoundedProb.of_exec (fun _ _ _ h => h) ?_ ?_

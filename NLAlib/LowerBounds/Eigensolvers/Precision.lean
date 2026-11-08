@@ -234,7 +234,8 @@ $\|\mathbf{A} - \mathbf{U}\operatorname{diag}(\mathbf{d})\mathbf{U}^{\mathsf{H}}
 \varepsilon\|\mathbf{A}\|_2$ has
 $$t \ge \log_2\frac1\varepsilon + \frac b2 - 2 + \log_2(1 - \varepsilon) \,.$$
 [Shah2024, Proposition 1.1], there without the term $\log_2(1 - \varepsilon)$, which comes from
-$\|\mathbf{H} \pm \delta\mathbf{J}\|_2 \ne \|\mathbf{H}\|_2$. -/
+$\|\mathbf{H} \pm \delta\mathbf{J}\|_2 \ne \|\mathbf{H}\|_2$.
+Result: hermitian-diagonalization-precision-lower-bound -/
 theorem logb_inv_add_le_of_forall_specNorm_sub_le {t b : ℕ} (ht : 1 ≤ t) {ε : ℝ} (hε : 0 < ε)
     (hε₁ : ε < 1)
     (alg : Matrix (Fin b → ZMod 2) (Fin b → ZMod 2) ℝ →

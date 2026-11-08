@@ -333,7 +333,8 @@ $\tilde g$ the decoded rounded step `NLAlib.newtonSchulzRounded` (constants $3$ 
 the machine's conversion). [Shah2024, Lemma 2.1], there
 $\tfrac12(7 + (6 + \mu)a^2)a\,u$ for $\|\mathbf{A}\|_2 \le a$ without the Hermitian part; the
 factor $\sqrt n$ is the cost of storing the result exactly Hermitian, and the statement is for
-the regime $a \le 11/10$ of the iteration. -/
+the regime $a \le 11/10$ of the iteration.
+Result: newton-schulz-sign-rounded-step -/
 theorem FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le
     (hM : M.IsArithAccurate dec u τ Ω μ) (hμ : 0 ≤ μ n) (hu₀ : 0 ≤ u)
     (hu : u * (8 + μ n) ≤ 1 / 10) (hτ₀ : 0 ≤ τ) (hτ : τ * (2 * n) ≤ 1) (hΩ : 9 ≤ Ω)

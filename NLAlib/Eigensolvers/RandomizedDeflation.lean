@@ -264,7 +264,8 @@ $$\mathbb{P}\bigl[\text{no unitary } \mathbf{W} \text{ has }
 \le 2e^{-t^2/2} + r^2x^2 \,,$$
 $\mathsf{deflate}$ the algorithm `NLAlib.deflate` with sample $\mathbf{G}$. [Shah2024, Theorem 3.3],
 there with $(2\sqrt2 + t)\sqrt n$, failure $2e^{-nt^2} + (r/2)x^2$ and the requirement on $\beta$
-written out; the constants differ through Lemmas 3.1 and 3.2. -/
+written out; the constants differ through Lemmas 3.1 and 3.2.
+Result: deflate-accuracy -/
 theorem
     FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix
     {F : Type*} {M : FloatMachine F ℝ ℂ} {dec : F → ℝ} {u τ Ω cN β t x : ℝ} {μM μQ : ℕ → ℝ}
