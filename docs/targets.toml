@@ -1150,7 +1150,7 @@ precomputed = []
 reviewed = "2026-10-23"
 witness = "NLAlib.matrixFreeGramSchmidt_nonVacuous"
 witness_sem = "exact model (no contract); P = ι = Unit, 𝕜 = ℝ; N = N₀ + 1, n = (1); input the zero N × 1 matrix"
-hash = "045d2788895068ef552b09e40c049b7013476439e1220369d8a2508d98ded661"
+hash = "326606efe98f59c87ef5531dcc2cd50f7e55b8688abce79a8b0dec181442e36f"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (𝕜 : Type) [inst_1 : RCLike 𝕜],
   NLAlib.Computation.MatrixFree p (NLAlib.gramSchmidtProg.compiled p) (fun x x_1 => True)
@@ -1167,7 +1167,7 @@ precomputed = []
 reviewed = "2026-10-23"
 witness = "NLAlib.matrixFreeHutchpp_nonVacuous"
 witness_sem = "exact model (no contract); P = ι = Unit, d = gaussian, 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
-hash = "d8f2f1f4445cda8247bdec27054e8a550406949dd70f061105b764d3e9114aed"
+hash = "3a31ef30de8684e5b9102bf18959be4d5cf167751efa6c866550e88ae096b5ba"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist) (𝕜 : Type)
   [inst_1 : RCLike 𝕜],
@@ -1188,7 +1188,7 @@ precomputed = []
 reviewed = "2026-10-23"
 witness = "NLAlib.matrixFreeProbHutchpp_nonVacuous"
 witness_sem = "exact model, Gaussian tape law (no contract); P = ι = Unit, r = 1, δ = 1/2, τ = 1; N = N₀ + 1, n = (⌈subgaussianEmbeddingDim 1 1 (1/2) (1/4)⌉ + 1, 1); input ()"
-hash = "d8cdd1f670c42c30ef6054ec79789e10028d8fcd815eadc8a05fc99e28979a26"
+hash = "68ebb59e5f32dc6b58f628d68bea49364f68f13ade66560ed1c175d71602c48b"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (r : ℕ) (δ : ℝ),
   0 < δ →
@@ -1223,7 +1223,7 @@ precomputed = []
 reviewed = "2026-10-23"
 witness = "NLAlib.storedEntriesDenseHutchpp_nonVacuous"
 witness_sem = "exact stored-entries model (no contract); P = ι = Unit, d = gaussian, 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
-hash = "97b5e9e7ade6c01f39ddeef46c28c517b2b8e496dea122c0ce439ebfa330031c"
+hash = "aaae14b11d7f3a1f318cf50f9de596f5462d6c44ae6ef707697b6729370aaa38"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist) (𝕜 : Type)
   [inst_1 : RCLike 𝕜],
@@ -1248,7 +1248,7 @@ precomputed = []
 reviewed = "2026-10-23"
 witness = "NLAlib.storedEntriesCooHutchpp_nonVacuous"
 witness_sem = "exact stored-entries model (no contract); P = ι = Unit, d = gaussian, pattern [(0, 0)], 𝕜 = ℝ; N = N₀ + 1, n = (1, 1); input ()"
-hash = "00103145f201472829c733e26542df060271c77f33169b70cc37372fd1bb1f8e"
+hash = "1065682565a7aace43cfbbc5b1f5fc8bab28629c60de48ff5eca5affccc781fb"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (o : ι) (d : NLAlib.Computation.Dist)
   (pattern : List (ℕ × ℕ)) (𝕜 : Type) [inst_1 : RCLike 𝕜],
@@ -2408,7 +2408,7 @@ precomputed = []
 reviewed = "2026-11-04"
 witness = "NLAlib.storedEntriesConjugateGradient_nonVacuous"
 witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "7392626695812bdf3756fc76716634448dd989bede0abe0c1ca9d37f8f5bd5be"
+hash = "8f6699268ed381c0dc7de16d20e1b31b34f78c35901f2c60b138e4773856c61f"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
   NLAlib.Computation.StoredEntries tag (NLAlib.cgProg.compiled tag) (fun x x_1 => True)
@@ -2440,7 +2440,7 @@ precomputed = []
 reviewed = "2026-11-04"
 witness = "NLAlib.storedEntriesLanczos_nonVacuous"
 witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "cece784dd3f5235afd2f74080a807a743692489d6e427c93032c45d8249cdaf9"
+hash = "1a2cb54cce3f79c6f67e48a5c3fc6c0b4d68f0205240add01168ed36624fd20b"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
   NLAlib.Computation.StoredEntries tag (NLAlib.lanczosProg.compiled tag) (fun x x_1 => True)
@@ -3422,7 +3422,7 @@ precomputed = []
 reviewed = "2026-11-04"
 witness = "NLAlib.matrixFreeConjugateGradient_nonVacuous"
 witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "593f3e7f662131cb1113eade5927ecadc4ccbae3bae347a7b40cbab2cac7b423"
+hash = "62deb2fda6745fc4c8ac287d257caede39759704fdff67520adf996c27c8c810"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
   NLAlib.Computation.MatrixFree tag (NLAlib.cgOracleProg.compiled tag o) (fun x x_1 => True)
@@ -3453,7 +3453,7 @@ precomputed = []
 reviewed = "2026-11-04"
 witness = "NLAlib.matrixFreeLanczos_nonVacuous"
 witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "9f0d08183a717685c56e6cc4e4e0ef12090dd1dad0a500326c89c6e6561931b1"
+hash = "f6e91d6bef4f0d532dfc1194d109e2fc02f47cf3f55e42d50a806d72808c678a"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
   NLAlib.Computation.MatrixFree tag (NLAlib.lanczosOracleProg.compiled tag o) (fun x x_1 => True)
@@ -5012,7 +5012,7 @@ precomputed = []
 reviewed = "2026-11-06"
 witness = "NLAlib.storedEntriesLanczosReorth_nonVacuous"
 witness_sem = "exact stored-entries model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "3070e9a02bd2dced5e4c15a7e63fd7bb1e81c16a9093cfe3548c1fef31b16435"
+hash = "0f984cb030ab996bf30d3726f2368328cadfc6eb7ad89d803ae1d42839bd799c"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P),
   NLAlib.Computation.StoredEntries tag (NLAlib.lanczosReorthProg.compiled tag) (fun x x_1 => True)
@@ -6457,7 +6457,7 @@ precomputed = []
 reviewed = "2026-11-06"
 witness = "NLAlib.matrixFreeLanczosReorth_nonVacuous"
 witness_sem = "exact model (no contract); P = ι = Unit; N = N₀ + 1, n = (1); input b = 0"
-hash = "8a324a4ae6df30578db0925ddb7eee15d92f6323a5823ea769d30b319307ee64"
+hash = "ab48fee53066da0eb0fcb66dedbe715dcd6c81c35e2942ef4182c650c6c3f6a8"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (tag : P) (o : ι),
   NLAlib.Computation.MatrixFree tag (NLAlib.lanczosReorthOracleProg.compiled tag o)
@@ -8952,7 +8952,7 @@ precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbNewtonSchulzSign_nonVacuous"
 witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t (exact product of decoded inputs, odd rounding per part, μ d = 2d), Ω = 9(N + 1); tape unused; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, F = ⌈N(1/2, 1/(32N))⌉ + 1; input the stored identity, ε = 1/2, b = 1 (a = 1)"
-hash = "06664251ea609d15d9c23985554fe6303bf7297a7192bf127312dd8b2e5c6178"
+hash = "947e348a9bf5e6a16d53391d0e9f64e93b7d5cbeb46f641cfcf98da1c0395a01"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω : ℝ) (μ : ℕ → ℝ),
@@ -9007,7 +9007,7 @@ precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbDeflate_nonVacuous"
 witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), tape ρ g i y = roundNearest t y (c = 1), Ω = 8√2√N; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, r = N; input the stored identity, U = V = S = I, β = 1/(30√2√N), t = 0, x = 1"
-hash = "e5676f8df3470a8092900f4e6354a1b6b57c0f313b3d64974ee794df6939ed6b"
+hash = "5b5cb136a1205ccacf3fa57097e55491f754eed37a73bf682757b292a688a061"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm qr : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω : ℝ) (μM μQ : ℕ → ℝ) (c : ℝ),
@@ -9069,7 +9069,7 @@ precomputed = []
 reviewed = ""
 witness = "NLAlib.matrixFreeRoundedProbEigh_nonVacuous"
 witness_sem = "gridSem t (t-bit round to nearest, unbounded exponent, dec = roundNearest t, u = 2^-t > 0, t large from N; MulShrinks), mm = gridMM t, qr = gridQR t (exact product / exact QR of decoded inputs, odd rounding per part, μ d = 2d), tape ρ g i y = roundNearest t y (c ≡ 1, countable range, measurable fibres), θ = 1, Ω the target's lower bound; P = Unit, ι = Bool, K = ℝ; N = N₀ + 1, ℓ = bisectionDepth 2^-15 + 2, F = ⌈Nst⌉; input the stored identity, R₀ = 1, ε = 2^-15, β = 2^-k ≤ βb"
-hash = "c27153fafc1b20cbd6edb2814957cb51454449b8922806d3dd46879034d636e0"
+hash = "a6bcf80cbbe43cfce18eb788eff8f118b7dcbd8e446bdfb103b6a88f4e544b55"
 statement = '''
 ∀ (P ι : Type) [inst : DecidableEq P] (p : P) (mm qr : ι) (K : Type) [inst_1 : Inhabited K]
   (dec : P → K → ℝ) (u Ω θ : ℝ) (μM μQ : ℕ → ℝ) (c : NLAlib.Computation.Dist → ℝ),
@@ -9159,19 +9159,19 @@ statement = '''
 [[model]]
 name = "NLAlib.Computation.MatrixFree"
 companions = ["NonVacuous", "post_of_agreeOn"]
-hash = "e463c7b6b6c50ab045c3590a2f148de13f0a97dbf77c213f6f80f775dd1a7c66"
+hash = "5828dcb8f725e919c7462810d0120ac95732dfb831bde1a5414d9048f4e88951"
 
 [[model]]
 name = "NLAlib.Computation.StoredEntries"
 companions = ["NonVacuous"]
-hash = "611d5f450edd311a3180b564b9254bd271024a585db880aa9752cb90c75ffa9a"
+hash = "df83547b6a84bef4866d5d95792b08b354dfe7844ac65149dd2e1a5b790265c5"
 
 [[model]]
 name = "NLAlib.Computation.MatrixFreeProb"
 companions = ["NonVacuous"]
-hash = "3a9d09e2ae6e34493ccdea13cfb2291fafe525f34cd2882edd3095a644678fd1"
+hash = "9850386c297073ae63fc82d30bd437a1674a246e76033a8c85ffaa2bfec89145"
 
 [[model]]
 name = "NLAlib.Computation.MatrixFreeRoundedProb"
 companions = ["NonVacuous"]
-hash = "fe31c9fc40b7067d05577f9c025893e193c2270fb6ce06aac7040a38b69b95a3"
+hash = "ebab8e5f279998c0fd0a98801a0591c36939558967f661301bcbb77689e75be6"
