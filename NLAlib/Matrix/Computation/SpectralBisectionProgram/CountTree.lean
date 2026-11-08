@@ -48,7 +48,7 @@ def CostPoly.eval (N L F : ℕ) (p : CostPoly) : ℕ :=
   (p.map fun e => e.1 * (N ^ e.2.1 * L ^ e.2.2.1 * F ^ e.2.2.2)).sum
 
 /-- The product of two polynomials. -/
-def CostPoly.mul (p q : CostPoly) : CostPoly :=
+def CostPoly.polyMul (p q : CostPoly) : CostPoly :=
   p.flatMap fun a => q.map fun b => (a.1 * b.1, a.2.1 + b.2.1, a.2.2.1 + b.2.2.1, a.2.2.2 + b.2.2.2)
 
 /-- An upper bound of an index expression by a polynomial, the variables bounded by `σ`:
@@ -58,7 +58,7 @@ def CostPoly.ofIExp {ni : ℕ} (σ : Fin ni → CostPoly) : IExp (Fin ni) → Co
   | .const n => [(n, 0, 0, 0)]
   | .add a b => ofIExp σ a ++ ofIExp σ b
   | .sub a _ => ofIExp σ a
-  | .mul a b => (ofIExp σ a).mul (ofIExp σ b)
+  | .mul a b => (ofIExp σ a).polyMul (ofIExp σ b)
   | .mod a _ => ofIExp σ a
 
 /-- The extension of a polynomial environment by a last entry `x`. -/
@@ -72,15 +72,15 @@ private theorem CostPoly.eval_append (N L F : ℕ) (p q : CostPoly) :
     (p ++ q).eval N L F = p.eval N L F + q.eval N L F := by
   simp [CostPoly.eval]
 
-private theorem CostPoly.eval_mul (N L F : ℕ) (p q : CostPoly) :
-    (p.mul q).eval N L F = p.eval N L F * q.eval N L F := by
+private theorem CostPoly.eval_polyMul (N L F : ℕ) (p q : CostPoly) :
+    (p.polyMul q).eval N L F = p.eval N L F * q.eval N L F := by
   induction p with
-  | nil => simp [CostPoly.mul, CostPoly.eval]
+  | nil => simp [CostPoly.polyMul, CostPoly.eval]
   | cons a p ih =>
     have ih' : CostPoly.eval N L F (p.flatMap fun a => q.map fun b =>
         (a.1 * b.1, a.2.1 + b.2.1, a.2.2.1 + b.2.2.1, a.2.2.2 + b.2.2.2)) =
         CostPoly.eval N L F p * CostPoly.eval N L F q := ih
-    simp only [CostPoly.mul, List.flatMap_cons, CostPoly.eval_append, ih']
+    simp only [CostPoly.polyMul, List.flatMap_cons, CostPoly.eval_append, ih']
     simp only [CostPoly.eval, List.map_cons, List.sum_cons, List.map_map, add_mul]
     congr 1
     rw [← List.sum_map_mul_left]
@@ -99,7 +99,7 @@ private theorem CostPoly.evalIn_le_eval_ofIExp {N L F ni : ℕ} {ρ : Fin ni →
     exact Nat.add_le_add (evalIn_le_eval_ofIExp h a) (evalIn_le_eval_ofIExp h b)
   | .sub a _ => (Nat.sub_le _ _).trans (evalIn_le_eval_ofIExp h a)
   | .mul a b => by
-    simp only [IExp.evalIn, CostPoly.ofIExp, CostPoly.eval_mul]
+    simp only [IExp.evalIn, CostPoly.ofIExp, CostPoly.eval_polyMul]
     exact Nat.mul_le_mul (evalIn_le_eval_ofIExp h a) (evalIn_le_eval_ofIExp h b)
   | .mod a _ => (Nat.mod_le _ _).trans (evalIn_le_eval_ofIExp h a)
 
@@ -159,13 +159,13 @@ noncomputable def crudeCount (c : ℕ) {nb ni : ℕ} (s : FStmt P ι nb ni) :
     (seq := fun _ _ a b σ => a σ ++ b σ)
     (instr := fun i _ => CostPoly.indicator c (opKindClass (instrKind (ι := ι) i)))
     (apply := fun _ _ _ _ _ _ cols σ =>
-      CostPoly.indicator c 4 ++ (CostPoly.ofIExp σ cols).mul (CostPoly.indicator c 8))
+      CostPoly.indicator c 4 ++ (CostPoly.ofIExp σ cols).polyMul (CostPoly.indicator c 8))
     (rom := fun _ _ _ _ => CostPoly.indicator c 5)
     (alloc := fun _ _ _ b σ => b σ)
     (loop := fun n _ b σ =>
-      (CostPoly.ofIExp σ n).mul (b (CostPoly.snoc σ (CostPoly.ofIExp σ n))))
+      (CostPoly.ofIExp σ n).polyMul (b (CostPoly.snoc σ (CostPoly.ofIExp σ n))))
     (whileFuel := fun f _ _ _ _ _ b σ =>
-      (CostPoly.ofIExp σ f).mul (CostPoly.indicator c 6 ++ b σ))
+      (CostPoly.ofIExp σ f).polyMul (CostPoly.indicator c 6 ++ b σ))
     (ite := fun _ _ _ _ _ _ t e σ => CostPoly.indicator c 6 ++ (t σ ++ e σ))
     (named := fun _ _ _ b σ => b σ)
     (kcall := fun _ _ _ _ _ _ => CostPoly.indicator c 9)
@@ -269,7 +269,7 @@ theorem count_staticCost_le_eval_crudeCount (w : P → ℕ) (κ : OpKind P ι) (
   | apply o p d dOff s sOff cols =>
     intro ρ σ h
     simp only [FStmt.staticCost, StaticCost.step, crudeCount, CostPoly.eval_append,
-      CostPoly.eval_mul, CostPoly.eval_indicator, Finsupp.add_apply, Finsupp.smul_apply,
+      CostPoly.eval_polyMul, CostPoly.eval_indicator, Finsupp.add_apply, Finsupp.smul_apply,
       smul_eq_mul]
     exact Nat.add_le_add (single_apply_le _ _)
       (Nat.mul_le_mul (CostPoly.evalIn_le_eval_ofIExp h cols) (single_apply_le _ _))
@@ -280,7 +280,7 @@ theorem count_staticCost_le_eval_crudeCount (w : P → ℕ) (κ : OpKind P ι) (
   | alloc p len body ih => exact ih
   | loop n body ih =>
     intro ρ σ h
-    simp only [FStmt.staticCost, StaticCost.sequence_count_apply, crudeCount, CostPoly.eval_mul]
+    simp only [FStmt.staticCost, StaticCost.sequence_count_apply, crudeCount, CostPoly.eval_polyMul]
     have hn := CostPoly.evalIn_le_eval_ofIExp h n
     refine (List.sum_le_card_nsmul _ ((crudeCount (opKindClass κ) body
       (CostPoly.snoc σ (CostPoly.ofIExp σ n))).eval N L F) ?_).trans ?_
@@ -292,7 +292,7 @@ theorem count_staticCost_le_eval_crudeCount (w : P → ℕ) (κ : OpKind P ι) (
   | whileFuel fuel p c x y body ih =>
     intro ρ σ h
     simp only [FStmt.staticCost, StaticCost.repetitions, StaticCost.seq, StaticCost.step,
-      Finsupp.smul_apply, Finsupp.add_apply, smul_eq_mul, crudeCount, CostPoly.eval_mul,
+      Finsupp.smul_apply, Finsupp.add_apply, smul_eq_mul, crudeCount, CostPoly.eval_polyMul,
       CostPoly.eval_append, CostPoly.eval_indicator]
     exact Nat.mul_le_mul (CostPoly.evalIn_le_eval_ofIExp h fuel)
       (Nat.add_le_add (single_apply_le _ _) (ih ρ σ h))
