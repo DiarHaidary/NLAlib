@@ -139,6 +139,8 @@ namespace NLAlib.Computation
 
 variable {P K : Type} [Inhabited K]
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The machine of a semantics meets the machine contract: if the value semantics `sem`
 meets the standard model at unit roundoff $u \ge 0$ with every value in range
 (`NLAlib.Computation.IsRelErrSem`), its literal $1$ is exact, and the routines `mm`, `qr` and the
@@ -148,7 +150,7 @@ then the machine of `sem` at `p` with these black boxes and the floor conversion
 `NLAlib.FloatMachine.IsAccurate` at $u$, floor $0$, range $\Omega$. No printed source. -/
 theorem isAccurate_toFloatMachine {sem : ScalarSem P K} {dec : P → K → ℝ} {u : ℝ} (Ω : ℝ)
     (hsem : IsRelErrSem (fun _ => u) dec (fun _ _ => True) sem) (hlit : IsExactIntLit dec sem 1)
-    (_hu : 0 ≤ u) (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
+    (hu : 0 ≤ u) (p : P) {μM μQ : ℕ → ℝ} {cN : ℝ} {mm : MatMulMap (K × K)}
     {qr : QRMap (K × K)} {unif : K → ℝ → K} {normal : ℂ → K × K}
     (hmm : IsMatMulErr (decodeComplex (dec p)) u 0 Ω μM mm)
     (hqr : IsQRErr (decodeComplex (dec p)) u 0 Ω μQ qr)
@@ -377,6 +379,8 @@ private lemma isRoundingOf_mono {u u' τ Ω a z : ℝ} (huu' : u ≤ u') (hτ : 
     (h : IsRoundingOf u τ Ω a z) : IsRoundingOf u' τ Ω a z :=
   fun ha => (h ha).trans (mul_le_mul_of_nonneg_right huu' (hτ.trans (le_max_right _ _)))
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The machine contract is monotone in the unit roundoff: a machine meeting
 `NLAlib.FloatMachine.IsAccurate` at unit roundoff $u \ge 0$, with nonnegative constants
 $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$, $c_{\mathrm N}$ and floor $\tau \ge 0$, meets it at every
@@ -385,7 +389,7 @@ $u' \ge u$. With the exact machine at $u = 0$ (the HDIAG witness) this makes the
 $u \ge 0$. No printed source. -/
 theorem FloatMachine.IsAccurate.mono {F : Type*} {M : FloatMachine F ℝ ℂ}
     {dec : F → ℝ} {u u' τ Ω cN : ℝ} {μM μQ : ℕ → ℝ} (hM : M.IsAccurate dec u τ Ω μM μQ cN)
-    (_hu : 0 ≤ u) (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
+    (hu : 0 ≤ u) (huu' : u ≤ u') (hτ : 0 ≤ τ) (hμM : ∀ d, 0 ≤ μM d) (hμQ : ∀ d, 0 ≤ μQ d)
     (hcN : 0 ≤ cN) : M.IsAccurate dec u' τ Ω μM μQ cN :=
   { dec_zero := hM.dec_zero
     dec_one := hM.dec_one

@@ -47,6 +47,8 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The test block computes the machine's test: if kernel `mm` of `I` is the routine `mmR` on
 interleaved pairs, a successful run of `NLAlib.newtonSchulzTestBlock` from a state whose block at
 `X` holds the complex $n \times n$ matrix $\mathbf{A}$ and whose cells `one`, `lo`, `hi` hold the
@@ -66,9 +68,9 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
     (hlo : st.store.read p lo.buf lo.idx.eval =
       some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η))
     (hhi : st.store.read p hi.buf hi.idx.eval = some η)
-    (hWX : W ≠ X) (_hVX : V ≠ X) (hWV : W ≠ V)
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
     (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
-    (_hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
     (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
     (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
     (h : exec I (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f).run st = some st') :
@@ -142,6 +144,8 @@ theorem holds_of_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm
     hsh3.trans (hsh2.trans (by rw [hst1]; exact hsh1))
   exact ⟨hWst, hVst, hflag', hfrm, hshT, hpos3.trans (hpos2.trans hpos1)⟩
 
+-- the unused hypothesis is part of the interface its callers use (statement unchanged)
+set_option linter.unusedVariables false in
 /-- The test block succeeds under the standard model with every value in range, when the
 buffers `W` and `V` at tag `p` have $2n^2$ cells and the flag can be written (hypotheses as
 `NLAlib.holds_of_exec_newtonSchulzTestBlock`). No printed source. -/
@@ -153,9 +157,9 @@ theorem exists_exec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm p
     (hone : st.store.read p one.buf one.idx.eval = some cone)
     (hlo : st.store.read p lo.buf lo.idx.eval = some ℓ)
     (hhi : st.store.read p hi.buf hi.idx.eval = some η)
-    (hWX : W ≠ X) (_hVX : V ≠ X) (hWV : W ≠ V)
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V)
     (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
-    (_hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
+    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (X, xo.eval, 2 * (n * n)) = true)
     (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
     (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true)
     (hW : ∃ len, st.store.shape[W]? = some (p, len) ∧ 2 * (n * n) ≤ len)

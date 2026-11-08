@@ -85,7 +85,7 @@ theorem holds_of_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
     have hfin := zherm_finish (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
     rwa [show M.hermAvg A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
-      (hermFrom_ite_lt M _ _).symm]
+      (hermFrom_ite_eq M _ _).symm]
   · have hk : 2 * (i + n * j) + 1 < 2 * (n * n) := by
       have := Nat.add_mul_lt_mul_of_lt_of_lt i.2 j.2; omega
     obtain ⟨a1, b1, v1, s₁, ha1, hb1, hv1, hw1, hex⟩ := zherm_inv_bin hex
@@ -196,21 +196,18 @@ private theorem zhermAvg_entry {u : P → ℝ} {dec : P → K → ℝ}
     (hX _ hf₀ i j (by omega) hj).1
     (((hX _ hf₀ j i hj (by omega)).1).imp fun _ h => ⟨h, nofun⟩)
   obtain ⟨s₂, he₂, hs₂, hf₂, hr₂, hm₂⟩ := exists_exec_seq_instr_bin_eq hsem (b := .div)
-    trivial hYsh hlen
-    (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
+    trivial hYsh hlen (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
     (yo + zidx (.const n) (.var i) (.var j)) ⟨Y, yo + zidx (.const n) (.var i) (.var j)⟩
     c (2 * (i + n * j)) (by omega) rfl hr₁ (hC _ hf₁)
   obtain ⟨s₃, he₃, hs₃, hf₃, hr₃, hm₃⟩ := exists_exec_seq_instr_bin_eq hsem (b := .sub)
-    trivial hYsh hlen
-    (σ := { σ with store := s₂, cnt := _ }) hs₂ hf₂
+    trivial hYsh hlen (σ := { σ with store := s₂, cnt := _ }) hs₂ hf₂
     (yo + zidx (.const n) (.var i) (.var j) + 1)
     ⟨X, xo + zidx (.const n) (.var i) (.var j) + 1⟩
     ⟨X, xo + zidx (.const n) (.var j) (.var i) + 1⟩ (2 * (i + n * j) + 1) hk rfl
     (hX _ hf₂ i j (by omega) hj).2
     (((hX _ hf₂ j i hj (by omega)).2).imp fun _ h => ⟨h, nofun⟩)
   obtain ⟨s₄, he₄, hs₄, hf₄, hr₄, hm₄⟩ := exists_exec_seq_instr_bin_eq hsem (b := .div)
-    trivial hYsh hlen
-    (σ := { σ with store := s₃, cnt := _ }) hs₃ hf₃
+    trivial hYsh hlen (σ := { σ with store := s₃, cnt := _ }) hs₃ hf₃
     (yo + zidx (.const n) (.var i) (.var j) + 1)
     ⟨Y, yo + zidx (.const n) (.var i) (.var j) + 1⟩ c (2 * (i + n * j) + 1) hk rfl
     hr₃ (hC _ hf₃)
@@ -287,14 +284,12 @@ theorem exists_exec_zhermAvg (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} {c
         have hi : i < n := hi
         have hk := hn i i hi hi
         obtain ⟨s₁, he₁, hs₁, hf₁, hr₁, hm₁⟩ := exists_exec_seq_instr_bin_eq hsem (b := .add)
-          trivial hYsh hlen
-          hs₀ hf₀
-          (yo + zidx (.const n) (.var i) (.var i)) ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩
-          ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩ (2 * (i + n * i)) (by omega) rfl
+          trivial hYsh hlen hs₀ hf₀ (yo + zidx (.const n) (.var i) (.var i))
+          ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩ ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩
+          (2 * (i + n * i)) (by omega) rfl
           (hX _ hf₀ i i hi hi).1 (((hX _ hf₀ i i hi hi).1).imp fun _ h => ⟨h, nofun⟩)
         obtain ⟨s₂, he₂, hs₂, hf₂, -, hm₂⟩ := exists_exec_seq_instr_bin_eq hsem (b := .div)
-          trivial hYsh hlen
-          (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
+          trivial hYsh hlen (σ := { σ with store := s₁, cnt := _ }) hs₁ hf₁
           (yo + zidx (.const n) (.var i) (.var i)) ⟨Y, yo + zidx (.const n) (.var i) (.var i)⟩
           c (2 * (i + n * i)) (by omega) rfl hr₁ (hC _ hf₁)
         obtain ⟨s₃, he₃, hs₃, hf₃, hm₃⟩ := exists_exec_seq_instr_lit_eq hsem hYsh hlen

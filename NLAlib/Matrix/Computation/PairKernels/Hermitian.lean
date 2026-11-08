@@ -233,7 +233,7 @@ theorem zherm_finish {p : P} {n Y : ℕ} {yo : IExp ℕ} {st σ st' : St P K C}
 omit [Inhabited K] in
 /-- The Hermitian completion reads only the strict upper triangle and the real diagonal: filling
 the lower triangle and the diagonal with the diagonal values and zeros does not change it. -/
-theorem hermFrom_ite_lt {Su Sg : Type} {n : ℕ} (M : FloatMachine K Su Sg)
+theorem hermFrom_ite_eq {Su Sg : Type} {n : ℕ} (M : FloatMachine K Su Sg)
     (up : Fin n → Fin n → K × K) (dg : Fin n → K) :
     M.hermFrom (fun i j => if i < j then up i j else (dg i, M.zero))
       (fun i => (if i < i then up i i else (dg i, M.zero)).1) = M.hermFrom up dg := by
@@ -281,7 +281,7 @@ theorem holds_of_exec_zhermShift (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
     have hfin := zherm_finish (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
     rwa [show M.hermShift A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
-      (hermFrom_ite_lt M _ _).symm]
+      (hermFrom_ite_eq M _ _).symm]
   · obtain ⟨v1, s', hr1, hw1, hex⟩ := zherm_inv_copy hex
     obtain ⟨v2, s'', hr2, hw2, hex⟩ := zherm_inv_copy hex
     rw [exec_skip, Option.some_inj] at hex
@@ -574,7 +574,7 @@ theorem holds_of_exec_zhermScale (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ
     have hfin := zherm_finish (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) hσ (fun i => by simp only [B, lt_irrefl, if_false]; rfl) h₃
     rwa [show M.hermScale A cv = M.hermFrom (fun i j => B i j) (fun i => (B i i).1) from
-      (hermFrom_ite_lt M _ _).symm]
+      (hermFrom_ite_eq M _ _).symm]
   · obtain ⟨a1, c1, v1, s', hr1, hc1, hv1, hw1, hex⟩ := zherm_inv_bin hex
     obtain ⟨a2, c2, v2, s'', hr2, hc2, hv2, hw2, hex⟩ := zherm_inv_bin hex
     rw [exec_skip, Option.some_inj] at hex
