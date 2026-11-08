@@ -25,8 +25,3 @@ name = "NLAlib"
 # plain (non-`module`) files so that `#eval` runs the library's programs, and may contain `sorry`.
 [[lean_lib]]
 name = "NLAlibTools"
-
-# Statements whose proofs are deferred. May contain `sorry`. Never imported by NLAlib.
-# Design-branch only (PROG-LOGIC): this entry must not reach main.
-[[lean_lib]]
-name = "NLAlibScaffold"
