@@ -243,6 +243,7 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
   · exact (Store.shape_of_write_eq_some hw).trans (hsh₂.trans (hsh₁.trans hsh₀))
   · exact hps₂.trans (hps₁.trans hps₀)
 
+omit [Inhabited K] in
 /-- A successful index-literal instruction writes the literal and changes only its cell. -/
 private theorem exec_ins_litIdx_read (p : P) (e : IExp ℕ) (c' : Cell ℕ ℕ) {σ₀ σ : St P K C}
     (hσ : exec I (ins (.litIdx p c' e) : Builder P ι ℕ ℕ Unit).run σ₀ = some σ) :
@@ -617,12 +618,40 @@ private theorem exists_exec_deflate_testLoop {u : P → ℝ} {dec : P → K → 
         subst he'
         exact hkeep hw₂' _ ⟨z, Store.read_of_write_eq_some hw₁'⟩
 
+/-- The final copy of a deflation: from a store holding a $k \times k$ matrix at the block $0$ of
+`Qf`, equal to the store of `st` outside the scratch buffers `G`, `Y`, `Qf`, `Rf` and of the
+same shape, a block at `qo` of `Qa` (another buffer) with room for $2kr$ cells receives the first
+$r \le k$ columns: the copy succeeds, the block holds some matrix, every other cell outside the
+scratch buffers is that of `st` and the shape is kept. -/
+private theorem exists_exec_zcopy_deflate (p : P) {k r : ℕ} (hr : r ≤ k) {G Y Qf Rf Qa : ℕ}
+    {qo : IExp ℕ} {S st : St P K C} {Qk : Matrix (Fin k) (Fin k) (K × K)}
+    (hQf : pairLayout.Holds S.store p Qf 0 Qk) (hQfQa : Qa ≠ Qf)
+    (hQa : ∃ len, S.store.shape[Qa]? = some (p, len) ∧ qo.eval + 2 * (k * r) ≤ len)
+    (hfr : ∀ q b' i, b' ∉ [G, Y, Qf, Rf] → S.store.read q b' i = st.store.read q b' i)
+    (hsh : S.store.shape = st.store.shape) :
+    ∃ st', exec I (zcopy (ι := ι) p (.const k) (.const r) Qf 0 Qa qo).run S = some st' ∧
+      (∃ Q : Matrix (Fin k) (Fin r) (K × K), pairLayout.Holds st'.store p Qa qo.eval Q) ∧
+      (∀ q b' i, b' ∉ [G, Y, Qf, Rf] →
+        blockDisjoint (b', i, 1) (Qa, qo.eval, 2 * (k * r)) = true →
+        st'.store.read q b' i = st.store.read q b' i) ∧
+      st'.store.shape = st.store.shape := by
+  have hne : blockDisjoint (Qa, qo.eval, 2 * (k * r)) (Qf, (0 : IExp ℕ).eval, 2 * (k * r)) =
+      true := by simp [blockDisjoint, hQfQa]
+  have hQm : pairLayout.Holds S.store p Qf (0 : IExp ℕ).eval
+      (fun i (j : Fin r) => Qk i ⟨j, lt_of_lt_of_le j.isLt hr⟩) :=
+    fun i j t => hQf i ⟨j, lt_of_lt_of_le j.isLt hr⟩ t
+  obtain ⟨st', hst'⟩ := exists_exec_zcopy (I := I) p k r (st := S) (X := Qf) (xo := 0)
+    (Y := Qa) (yo := qo) hQm hne hQa
+  obtain ⟨hQa', hfrc, hshc, -⟩ := holds_of_exec_zcopy (I := I) p k r hQm hne hst'
+  exact ⟨st', hst', ⟨_, hQa'⟩, fun q b' i hb' hbd => (hfrc q b' i hbd).trans (hfr q b' i hb'),
+    hshc.trans hsh⟩
+
 /-- Deflation on stored samples succeeds, with what it writes: some matrix at the block `qo`
 of `Qa`, every other cell outside the scratch buffers unchanged, the shape kept. -/
 theorem exists_exec_eighDeflateBlock_facts {mm qr : ι}
     (hmm : IsMatMulKernel I mm pairLayout mmR) (hqr : IsQRKernel I qr pairLayout qrR)
     {u : P → ℝ} {dec : P → K → ℝ}
-    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n k r d lo : ℕ)
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n k r _d lo : ℕ)
     (hk : lo + k ≤ n) (hr : r ≤ k) (b : Bool) {Sg Pm G Y Qf Rf Qa : ℕ} {sq : Cell ℕ ℕ}
     {qo : IExp ℕ} {st : St P K C} {Pmat : Matrix (Fin k) (Fin k) (K × K)}
     (hP : pairLayout.Holds st.store p Pm 0 Pmat)
@@ -708,28 +737,12 @@ theorem exists_exec_eighDeflateBlock_facts {mm qr : ι}
   rw [hc₂, Option.map_some, Option.bind_some, exec_seq, exec_kcall]
   simp only [List.map_cons, List.map_nil, IExp.eval_const, IExp.eval_zero]
   rw [hc₃, Option.map_some, Option.bind_some]
-  have key : ∀ S : St P K C, S.store = c₃ → ∃ st', exec I (zcopy (ι := ι) p (.const k) (.const r)
-      Qf 0 Qa qo).run S = some st' ∧
-      (∃ Q : Matrix (Fin k) (Fin r) (K × K), pairLayout.Holds st'.store p Qa qo.eval Q) ∧
-      (∀ q b' i, b' ∉ [G, Y, Qf, Rf] →
-        blockDisjoint (b', i, 1) (Qa, qo.eval, 2 * (k * r)) = true →
-        st'.store.read q b' i = st.store.read q b' i) ∧
-      st'.store.shape = st.store.shape := by
-    intro S hS
-    subst hS
-    obtain ⟨Qm, hQm⟩ : ∃ Q : Matrix (Fin k) (Fin r) (K × K),
-        pairLayout.Holds S.store p Qf (0 : IExp ℕ).eval Q :=
-      ⟨_, fun i (j : Fin r) t => hQf i ⟨j, lt_of_lt_of_le j.isLt hr⟩ t⟩
-    obtain ⟨st', hst'⟩ := exists_exec_zcopy (I := I) p k r (st := S) (X := Qf) (xo := 0)
-      (Y := Qa) (yo := qo) hQm (hne (Ne.symm hQfQa)) ⟨lA, hsh₃ ▸ hQas, hlA⟩
-    obtain ⟨hQa', hfrc, hshc, -⟩ := holds_of_exec_zcopy (I := I) p k r hQm (hne (Ne.symm hQfQa))
-      hst'
-    refine ⟨st', hst', ⟨_, hQa'⟩, fun q b' i hb' hbd => ?_, hshc.trans hsh₃⟩
-    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hb'
-    rw [hfrc q b' i hbd, hfr₃ q b' i (hne hb'.2.2.1) (hne hb'.2.2.2),
-      Store.read_of_writeBlock_eq_some_of_ne (hk₁.symm.trans hc₂) (Or.inl hb'.2.1),
-      hfr₁ q b' i hb'.1]
-  exact key _ rfl
+  exact exists_exec_zcopy_deflate p hr hQf (Ne.symm hQfQa) ⟨lA, hsh₃ ▸ hQas, hlA⟩
+    (fun q b' i hb' => by
+      simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hb'
+      exact (hfr₃ q b' i (hne hb'.2.2.1) (hne hb'.2.2.2)).trans
+        ((Store.read_of_writeBlock_eq_some_of_ne (hk₁.symm.trans hc₂) (Or.inl hb'.2.1)).trans
+          (hfr₁ q b' i hb'.1))) hsh₃
 
 /-- Deflation on stored samples succeeds under the standard model with every value in range,
 if the kernels are routines on pairs and the buffers `G`, `Y`, `Qf`, `Rf` have $2n^2$ cells and the
@@ -750,52 +763,5 @@ theorem exists_exec_eighDeflateBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pai
       (if b then 0 else 1) Sg sq Pm G Y Qf Rf Qa qo).run st = some st' := by
   exact (exists_exec_eighDeflateBlock_facts hmm hqr hsem p n k r d lo hk hr b hP hsq
     (fun w hw => ⟨_, hSg w hw⟩) hbufs hsqb hscr hQa).imp fun _ h => h.1
-
-omit [Inhabited K] in
-/-- A conjugate transpose keeps the shape of the store and the tape positions. -/
-theorem shape_pos_of_exec_zconjTranspose_compress (p : P) (m n : ℕ) {X Y : ℕ}
-    {xo yo : IExp ℕ} {st st' : St P K C}
-    (h : exec I (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run st = some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  have hins : ∀ {i : Instr P ℕ ℕ} {s s' : St P K C}, (∀ q d x, i ≠ .draw q d x) →
-      exec I (.instr i) s = some s' → s'.store.shape = s.store.shape ∧ s'.pos = s.pos := by
-    intro i s s' hi hs
-    rw [exec_instr] at hs
-    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp hs
-    refine ⟨Instr.shape_of_run_eq_some hr, ?_⟩
-    cases i with
-    | draw q d x => exact absurd rfl (hi q d x)
-    | _ => simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hr; aesop
-  change exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st' at h
-  rw [exec_seq_skip, exec_named, exec_seq_skip] at h
-  refine forall_of_exec_loop_eq_some I
-    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨rfl, rfl⟩ ?_ h
-  rintro j - s₁ s₂ ⟨hsh, hps⟩ hex
-  change exec I (.seq (.loop _ _) .skip) s₁ = some s₂ at hex
-  rw [exec_seq_skip] at hex
-  refine forall_of_exec_loop_eq_some I
-    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨hsh, hps⟩ ?_ hex
-  rintro i - s₃ s₄ ⟨hsh, hps⟩ hex
-  change exec I (.seq (.instr (.copy _ _ _)) (.seq (.instr (.un _ _ _ _)) .skip)) s₃ =
-    some s₄ at hex
-  rw [exec_seq] at hex
-  obtain ⟨s₅, h₅, hex⟩ := Option.bind_eq_some_iff.mp hex
-  rw [exec_seq_skip] at hex
-  obtain ⟨hsh₅, hps₅⟩ := hins (by intro _ _ _ h; cases h) h₅
-  obtain ⟨hsh₄, hps₄⟩ := hins (by intro _ _ _ h; cases h) hex
-  exact ⟨hsh₄.trans (hsh₅.trans hsh), hps₄.trans (hps₅.trans hps)⟩
-
-omit [Inhabited K] in
-/-- Blocks of distinct buffers are disjoint. -/
-theorem blockDisjoint_of_ne_compress {b b' i i' l l' : ℕ} (h : b ≠ b') :
-    blockDisjoint (b, i, l) (b', i', l') = true := by
-  simp [blockDisjoint, h]
-
-omit [Inhabited K] in
-/-- Disjointness of blocks is symmetric. -/
-theorem blockDisjoint_comm_compress {x y : ℕ × ℕ × ℕ} (h : blockDisjoint x y = true) :
-    blockDisjoint y x = true := by
-  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h ⊢
-  omega
 
 end NLAlib

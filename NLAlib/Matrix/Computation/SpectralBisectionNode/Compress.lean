@@ -34,10 +34,57 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
+omit [Inhabited K] in
+/-- A conjugate transpose keeps the shape of the store and the tape positions. -/
+private theorem shape_pos_of_exec_zconjTranspose (p : P) (m n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {st st' : St P K C}
+    (h : exec I (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run st = some st') :
+    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  have hins : ∀ {i : Instr P ℕ ℕ} {s s' : St P K C}, (∀ q d x, i ≠ .draw q d x) →
+      exec I (.instr i) s = some s' → s'.store.shape = s.store.shape ∧ s'.pos = s.pos := by
+    intro i s s' hi hs
+    rw [exec_instr] at hs
+    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp hs
+    refine ⟨Instr.shape_of_run_eq_some hr, ?_⟩
+    cases i with
+    | draw q d x => exact absurd rfl (hi q d x)
+    | _ => simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hr; aesop
+  change exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st' at h
+  rw [exec_seq_skip, exec_named, exec_seq_skip] at h
+  refine forall_of_exec_loop_eq_some I
+    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨rfl, rfl⟩ ?_ h
+  rintro j - s₁ s₂ ⟨hsh, hps⟩ hex
+  change exec I (.seq (.loop _ _) .skip) s₁ = some s₂ at hex
+  rw [exec_seq_skip] at hex
+  refine forall_of_exec_loop_eq_some I
+    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨hsh, hps⟩ ?_ hex
+  rintro i - s₃ s₄ ⟨hsh, hps⟩ hex
+  change exec I (.seq (.instr (.copy _ _ _)) (.seq (.instr (.un _ _ _ _)) .skip)) s₃ =
+    some s₄ at hex
+  rw [exec_seq] at hex
+  obtain ⟨s₅, h₅, hex⟩ := Option.bind_eq_some_iff.mp hex
+  rw [exec_seq_skip] at hex
+  obtain ⟨hsh₅, hps₅⟩ := hins (by intro _ _ _ h; cases h) h₅
+  obtain ⟨hsh₄, hps₄⟩ := hins (by intro _ _ _ h; cases h) hex
+  exact ⟨hsh₄.trans (hsh₅.trans hsh), hps₄.trans (hps₅.trans hps)⟩
+
+omit [Inhabited K] in
+/-- Blocks of distinct buffers are disjoint. -/
+private theorem blockDisjoint_of_ne {b b' i i' l l' : ℕ} (h : b ≠ b') :
+    blockDisjoint (b, i, l) (b', i', l') = true := by
+  simp [blockDisjoint, h]
+
+omit [Inhabited K] in
+/-- Disjointness of blocks is symmetric. -/
+private theorem blockDisjoint_comm {x y : ℕ × ℕ × ℕ} (h : blockDisjoint x y = true) :
+    blockDisjoint y x = true := by
+  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h ⊢
+  omega
+
 /-- A compression computes the machine's compression: if kernel `mm` of `I` is the routine `mmR`
 on interleaved pairs, a successful run of `NLAlib.eighCompressBlock` for the stored $k \times r$
 basis $\mathbf{Q}$ at `qo` of `Qa`, the node matrix $\mathbf{A}$ at `mo` of `Ma`, the cells `two`
-and `sg` holding $c_2$ and $\sigma$, writing at `co` of `Ma` (disjoint from the block at `mo`), ends
+and `sg` holding $c_2$ and $\sigma$, writing at `co` of `Ma`, ends
 with that block holding `M.hermShift (M.hermAvg (M.mm (M.mm (M.conjTransposeMat Q) A) Q) c₂) σ`;
 every cell outside it and the scratch buffers is unchanged, the store shape and the tape positions
 too. No printed source. -/
@@ -49,7 +96,6 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
     (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
     (hbufs : [Qa, Ma, Qh, C1, C2, C3].Nodup) (hcells : two.buf ∉ [Qh, C1, C2, C3] ∧
       sg.buf ∉ [Qh, C1, C2, C3])
-    (hco : blockDisjoint (Ma, co.eval, 2 * (r * r)) (Ma, mo.eval, 2 * (k * k)) = true)
     (hcocells : blockDisjoint (Ma, co.eval, 2 * (r * r)) (two.buf, two.idx.eval, 1) = true ∧
       blockDisjoint (Ma, co.eval, 2 * (r * r)) (sg.buf, sg.idx.eval, 1) = true)
     (h : exec I (eighCompressBlock p mm (.const k) (.const r) Qa qo Ma mo co two sg Qh C1 C2
@@ -65,7 +111,7 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
   obtain ⟨⟨hQaMa, hQaQh, hQaC1, hQaC2, hQaC3⟩, ⟨hMaQh, hMaC1, hMaC2, hMaC3⟩, ⟨hQhC1, hQhC2, hQhC3⟩,
     ⟨hC1C2, hC1C3⟩, hC2C3, -⟩ := hbufs
   obtain ⟨⟨htQh, htC1, htC2, htC3⟩, hsQh, hsC1, hsC2, hsC3⟩ := hcells
-  have hne := @blockDisjoint_of_ne_compress
+  have hne := @blockDisjoint_of_ne
   change exec I (.seq (.named _ _ _) (.seq (.kcall _ _ _ _ _) (.seq (.kcall _ _ _ _ _)
     (.seq (.named _ _ _) (.seq (.named _ _ _) .skip))))) st = some st' at h
   rw [exec_seq] at h
@@ -80,7 +126,7 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
   have h₁' := (exec_seq_skip I _ st).trans h₁
   obtain ⟨hQh, hfr₁⟩ := holds_of_exec_zconjTranspose (I := I) (toNat := toNat) (mmR := mmR)
     (qrR := qrR) (unif := unif) (normal := normal) p k r hQ (hne (Ne.symm hQaQh)) h₁'
-  obtain ⟨hsh₁, hps₁⟩ := shape_pos_of_exec_zconjTranspose_compress p k r h₁'
+  obtain ⟨hsh₁, hps₁⟩ := shape_pos_of_exec_zconjTranspose p k r h₁'
   -- the two products
   rw [exec_kcall] at h₂ h₃
   obtain ⟨c₁, hc₁, hs₂⟩ := Option.map_eq_some_iff.mp h₂
@@ -113,7 +159,7 @@ theorem holds_of_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pai
   obtain ⟨hMa, hfr₅, hsh₅, hps₅⟩ := holds_of_exec_zhermShift (I := I) (toNat := toNat)
     (mmR := mmR) (qrR := qrR) (unif := unif) (normal := normal) p r hC3
     ((hfr₄ p _ _ (hne hsC3)).trans ((hkeep sg hsQh hsC1 hsC2).trans hσ)) (hne hMaC3)
-    (blockDisjoint_comm_compress hcocells.2) h'
+    (blockDisjoint_comm hcocells.2) h'
   refine ⟨hMa, fun q b i hb hbd => ?_, ?_, ?_⟩
   · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hb
     rw [hfr₅ q b i hbd, hfr₄ q b i (hne hb.2.2.2), hfr₃ q b i (hne hb.2.2.1),
@@ -206,6 +252,22 @@ private theorem compress_exists_zconjTranspose {u : P → ℝ} {dec : P → K �
     exec_seq_instr_un I (by exact ha'₁) hz (by exact hs₂), exec_skip]
   exact ⟨_, rfl, hsh₂, hfr₂⟩
 
+/-- `zmirror` succeeds under the standard model when the output block fits and every word of its
+strict upper triangle holds a value. -/
+private theorem exists_exec_zmirror_of_upper {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ}
+    {σ : St P K C} (hY : ∃ len, σ.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len)
+    (hup : ∀ i j, i < j → j < n →
+      (∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+        ∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v) :
+    ∃ st', exec I (zmirror (ι := ι) p (.const n) Y yo).run σ = some st' := by
+  refine exists_exec_zmirror p n (B := fun i j =>
+    ((σ.store.read p Y (yo.eval + 2 * (i + n * j))).getD default,
+      (σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1)).getD default))
+    (fun i j hij => ?_) hsem hY
+  obtain ⟨⟨v, hv⟩, ⟨w, hw'⟩⟩ := hup i j hij j.2
+  simp only [hv, hw', Option.getD_some, and_self]
+
 /-- `zhermShift` succeeds under the standard model when the output block fits, wherever the
 cell of the shift is (it may lie in the output block). -/
 private theorem compress_exists_zhermShift {u : P → ℝ} {dec : P → K → ℝ}
@@ -217,8 +279,8 @@ private theorem compress_exists_zhermShift {u : P → ℝ} {dec : P → K → �
     (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len) :
     ∃ st', exec I (zhermShift (ι := ι) p (.const n) X xo c Y yo).run st = some st' := by
   obtain ⟨len, hYsh, hlen⟩ := hY
-  have hn : ∀ i j : ℕ, i < n → j < n → 2 * (i + n * j) + 1 < 2 * (n * n) := by
-    intro i j hi hj; nlinarith
+  have hn (i j : ℕ) (hi : i < n) (hj : j < n) : 2 * (i + n * j) + 1 < 2 * (n * n) := by
+    nlinarith
   let G : Store P K → (ℕ → ℕ → Prop) → Prop := fun s S => s.shape = st.store.shape ∧
     (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
       s.read q b i = st.store.read q b i) ∧
@@ -294,15 +356,12 @@ private theorem compress_exists_zhermShift {u : P → ℝ} {dec : P → K → �
           exec_seq_instr_lit I hz (by exact hs₂), exec_skip]
         exact ⟨_, rfl, hG₂⟩)) fun σ₂ hσ₂ => ?_
   -- the mirror
-  refine exists_exec_zmirror p n (B := fun i j =>
-    ((σ₂.store.read p Y (yo.eval + 2 * (i + n * j))).getD default,
-      (σ₂.store.read p Y (yo.eval + 2 * (i + n * j) + 1)).getD default))
-    (fun i j hij => ?_) hsem ⟨len, by rw [hσ₂.1]; exact hYsh, hlen⟩
-  obtain ⟨⟨v, hv⟩, ⟨w, hw'⟩⟩ := hσ₂.2.2.2 i j ⟨hij, j.2⟩
-  simp only [hv, hw', Option.getD_some, and_self]
+  exact exists_exec_zmirror_of_upper hsem p n ⟨len, by rw [hσ₂.1]; exact hYsh, hlen⟩
+    fun i j hij hj => hσ₂.2.2.2 i j ⟨hij, hj⟩
 
 omit [AddMonoid C] in
-/-- A product kernel call on held matrices succeeds when the output block fits. -/
+/-- A product kernel call on held matrices succeeds when the output block fits, writes the
+product and keeps every cell outside the output block. -/
 private theorem compress_exists_kcall {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (p : P) {l m n : ℕ} {a b c : ℕ × ℕ} {s : Store P K} {A : Matrix (Fin l) (Fin m) (K × K)}
     {B : Matrix (Fin m) (Fin n) (K × K)} (hA : pairLayout.Holds s p a.1 a.2 A)
@@ -310,13 +369,17 @@ private theorem compress_exists_kcall {mm : ι} (hmm : IsMatMulKernel I mm pairL
     (hca : blockDisjoint (c.1, c.2, n * l * 2) (a.1, a.2, m * l * 2) = true)
     (hcb : blockDisjoint (c.1, c.2, n * l * 2) (b.1, b.2, n * m * 2) = true)
     {len : ℕ} (hc : s.shape[c.1]? = some (p, len)) (hlen : c.2 + n * l * 2 ≤ len) :
-    ∃ s', I.kcallStore mm p [l, m, n] [a, b] [c] s = some s' := by
-  rw [hmm.kcallStore_eq p ((EntryLayout.holds_iff_readBlock_eq_some pairLayout s p _ _ A).mp hA)
-    ((EntryLayout.holds_iff_readBlock_eq_some pairLayout s p _ _ B).mp hB) hca hcb]
-  exact Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi => ⟨len, hc, by
-    rw [EntryLayout.size_toArray] at hi
-    change i < n * l * 2 at hi
-    omega⟩
+    ∃ s', I.kcallStore mm p [l, m, n] [a, b] [c] s = some s' ∧
+      pairLayout.Holds s' p c.1 c.2 (mmR A B) ∧ ∀ q b' i,
+        blockDisjoint (b', i, 1) (c.1, c.2, n * l * 2) = true → s'.read q b' i = s.read q b' i := by
+  obtain ⟨s', hs'⟩ : ∃ s', I.kcallStore mm p [l, m, n] [a, b] [c] s = some s' := by
+    rw [hmm.kcallStore_eq p ((EntryLayout.holds_iff_readBlock_eq_some pairLayout s p _ _ A).mp hA)
+      ((EntryLayout.holds_iff_readBlock_eq_some pairLayout s p _ _ B).mp hB) hca hcb]
+    exact Store.exists_writeBlock_eq_some_of_getElem?_shape fun i hi => ⟨len, hc, by
+      rw [EntryLayout.size_toArray] at hi
+      change i < n * l * 2 at hi
+      omega⟩
+  exact ⟨s', hs', hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p hA hB hca hcb hs'⟩
 
 /-- A compression succeeds under the standard model at $u$ with every value in range, the
 cell `two` decoding to a nonzero value, if kernel `mm` is a routine on pairs and the scratch buffers
@@ -332,7 +395,6 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
     (hσ : st.store.read p sg.buf sg.idx.eval = some σ)
     (hbufs : [Qa, Ma, Qh, C1, C2, C3].Nodup) (hcells : two.buf ∉ [Qh, C1, C2, C3] ∧
       sg.buf ∉ [Qh, C1, C2, C3])
-    (hco : blockDisjoint (Ma, co.eval, 2 * (r * r)) (Ma, mo.eval, 2 * (k * k)) = true)
     (hcolen : ∃ len, st.store.shape[Ma]? = some (p, len) ∧ co.eval + 2 * (r * r) ≤ len)
     (hscr : ∀ X ∈ [Qh, C1, C2, C3], ∃ len, st.store.shape[X]? = some (p, len) ∧
       2 * (n * n) ≤ len) :
@@ -342,7 +404,7 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
   obtain ⟨⟨hQaMa, hQaQh, hQaC1, hQaC2, hQaC3⟩, ⟨hMaQh, hMaC1, hMaC2, hMaC3⟩, ⟨hQhC1, hQhC2, hQhC3⟩,
     ⟨hC1C2, hC1C3⟩, hC2C3, -⟩ := hbufs
   obtain ⟨⟨htQh, htC1, htC2, htC3⟩, hsQh, hsC1, hsC2, hsC3⟩ := hcells
-  have hne := @blockDisjoint_of_ne_compress
+  have hne := @blockDisjoint_of_ne
   simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hscr
   obtain ⟨⟨lQh, hQhs, hlQh⟩, ⟨l1, h1s, hl1⟩, ⟨l2, h2s, hl2⟩, ⟨l3, h3s, hl3⟩⟩ := hscr
   obtain ⟨lM, hMs, hlM⟩ := hcolen
@@ -357,26 +419,19 @@ theorem exists_exec_eighCompressBlock {mm : ι} (hmm : IsMatMulKernel I mm pairL
     (qrR := @fun _ _ X => (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : Unit) => x)
     (normal := fun (_ : Unit) => ((default : K), (default : K))) p k r hQ
     (hne (Ne.symm hQaQh)) h₁
-  obtain ⟨hsh₁, -⟩ := shape_pos_of_exec_zconjTranspose_compress p k r h₁
+  obtain ⟨hsh₁, -⟩ := shape_pos_of_exec_zconjTranspose p k r h₁
   -- the first product
-  obtain ⟨c₁, hc₁⟩ := compress_exists_kcall (I := I) hmm p (l := r) (m := k) (n := k)
+  obtain ⟨c₁, hc₁, hC1, hfr₂⟩ := compress_exists_kcall (I := I) hmm p (l := r) (m := k) (n := k)
     (a := (Qh, 0)) (b := (Ma, mo.eval)) (c := (C1, 0)) hQh
     (hA.of_forall_read_eq fun i _ _ => hfr₁ p Ma i (hne hMaQh)) (hne (Ne.symm hQhC1))
     (hne (Ne.symm hMaC1)) (by rw [hsh₁]; exact h1s) (by nlinarith)
-  obtain ⟨hC1, hfr₂⟩ := hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p (l := r) (m := k)
-    (n := k) (a := (Qh, 0)) (b := (Ma, mo.eval)) (c := (C1, 0)) hQh
-    (hA.of_forall_read_eq fun i _ _ => hfr₁ p Ma i (hne hMaQh)) (hne (Ne.symm hQhC1))
-    (hne (Ne.symm hMaC1)) hc₁
   have hsh₂ := (Interp.shape_of_kcallStore_eq_some hc₁).trans hsh₁
   -- the second product
   have hQ₂ : pairLayout.Holds c₁ p Qa qo.eval Q := hQ.of_forall_read_eq fun i _ _ =>
     (hfr₂ p Qa i (hne hQaC1)).trans (hfr₁ p Qa i (hne hQaQh))
-  obtain ⟨c₂', hc₂⟩ := compress_exists_kcall (I := I) hmm p (l := r) (m := k) (n := r)
-    (a := (C1, 0)) (b := (Qa, qo.eval)) (c := (C2, 0)) hC1 hQ₂ (hne (Ne.symm hC1C2))
-    (hne (Ne.symm hQaC2)) (by rw [hsh₂]; exact h2s) (by nlinarith)
-  obtain ⟨hC2, hfr₃⟩ := hmm.holds_of_kcallStore_eq_some (fun _ => rfl) p (l := r) (m := k)
+  obtain ⟨c₂', hc₂, hC2, hfr₃⟩ := compress_exists_kcall (I := I) hmm p (l := r) (m := k)
     (n := r) (a := (C1, 0)) (b := (Qa, qo.eval)) (c := (C2, 0)) hC1 hQ₂ (hne (Ne.symm hC1C2))
-    (hne (Ne.symm hQaC2)) hc₂
+    (hne (Ne.symm hQaC2)) (by rw [hsh₂]; exact h2s) (by nlinarith)
   have hsh₃ := (Interp.shape_of_kcallStore_eq_some hc₂).trans hsh₂
   have hkeep : ∀ c : Cell ℕ ℕ, c.buf ≠ Qh → c.buf ≠ C1 → c.buf ≠ C2 →
       c₂'.read p c.buf c.idx.eval = st.store.read p c.buf c.idx.eval := fun c h1 h2 h3 =>

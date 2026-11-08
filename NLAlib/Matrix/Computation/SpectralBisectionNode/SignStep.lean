@@ -40,31 +40,8 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! ### The sign step with the shallow step limit -/
 
-omit [Inhabited K] in
-private theorem eighSign_comp {a b : Builder P ι ℕ ℕ Unit}
-    (ha : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (a >>= f).run st = (exec I a.run st).bind (exec I (f ()).run))
-    (hb : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run))
-    (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
-    exec I ((a >>= fun _ => b) >>= f).run st =
-      (exec I (a >>= fun _ => b).run st).bind (exec I (f ()).run) := by
-  change exec I (a >>= fun _ => b >>= f).run st = _
-  rw [ha, ha]
-  simp only [Option.bind_assoc]
-  congr 1
-  funext out
-  exact hb f out
-
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-private theorem eighSign_disj {b i j : ℕ} (h : i ≠ j) :
-    blockDisjoint (b, i, 1) (b, j, 1) = true := by
-  unfold blockDisjoint
-  rcases Nat.lt_or_gt_of_ne h with h | h
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
-
-private theorem eighSign_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P) (n : ℕ)
+private theorem holds_of_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (n : ℕ)
     {X W V t : ℕ} {xo : IExp ℕ} {η : K} {st st₁ : St P K C}
     {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
     (hW : pairLayout.Holds st.store p W 0 (mmR A A)) (hη : st.store.read p t 0 = some η)
@@ -98,23 +75,23 @@ private theorem eighSign_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mm
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact eighSign_comp (hsingle _ _ fun _ => rfl) (eighSign_comp (hsingle _ _ fun _ => rfl)
-      (eighSign_comp (hsingle _ _ fun _ => rfl) (eighSign_comp (hsingle _ _ fun _ => rfl)
-        (eighSign_comp (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
+    exact whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
+      (whileNS_comp (hsingle _ _ fun _ => rfl) (whileNS_comp (hsingle _ _ fun _ => rfl)
+        (whileNS_comp (hsingle _ _ fun _ => rfl) (hsingle _ _ fun _ => rfl)))))
   rw [hstep] at h
   obtain ⟨σ, hσ, h₁⟩ := Option.bind_eq_some_iff.mp h
   obtain ⟨hXσ, hfrσ, hshσ, hposσ⟩ := holds_of_exec_newtonSchulzStepBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
     (hd _ _ _ _ htX) hσ
   have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
-    hfrσ p t i htW htV (hd _ _ _ _ htX) (eighSign_disj hi)
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (whileNS_disj hi)
   obtain ⟨hW₁, -, hf₁, hfr₁, hsh₁, hpos₁⟩ := holds_of_exec_newtonSchulzTestBlock (toNat := toNat)
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩)
     (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
     ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
     (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → st₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
-    (hfr₁ p t i htW htV (eighSign_disj h1)).trans (hrσ i h2)
+    (hfr₁ p t i htW htV (whileNS_disj h1)).trans (hrσ i h2)
   refine ⟨hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
     hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
     (hr₁ 4 (by omega) (by omega)).trans hlo, hf₁, fun q b i hbt hbW hbV hbX => ?_,
@@ -130,8 +107,8 @@ $1$ holds the flag of the test of $\mathbf{A}$, ends with the block at `X` holdi
 `NLAlib.newtonSchulzLoop M η F A` ($M$ the machine of the semantics at `p` with product `mmR`);
 every cell outside the block at `X` and the buffers `t`, `W`, `V` is unchanged, the store shape and
 the tape positions too. No printed source. -/
-theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n F : ℕ) {X W V t : ℕ} {xo : IExp ℕ} {η : K}
+theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n F : ℕ) {X W V t : ℕ} {xo : IExp ℕ} {η : K}
     {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
     (hA : pairLayout.Holds st.store p X xo.eval A)
     (hW : pairLayout.Holds st.store p W 0 (mmR A A))
@@ -183,7 +160,8 @@ theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
       simp only [cmpStep, IExp.eval, hf, hone, hoo, Option.bind_some, Option.map_some,
         if_true] at h₁
       obtain ⟨hX₁, hW₁, hη₁, hone₁, hlo₁, hf₁, hfr₁, hsh₁, hpos₁⟩ :=
-        eighSign_body hmm p n (st := { st with cnt := st.cnt + I.charge (.cmp p) }) hA hW hη
+        holds_of_exec_eighSignStep hmm p n (st := { st with cnt := st.cnt + I.charge (.cmp p) })
+          hA hW hη
           (by rw [hM1]; exact hone) hlo hWX hVX hWV htX htW htV h₁
       obtain ⟨hX', hfr', hsh', hpos'⟩ := ih hX₁ hW₁ hη₁ hone₁ hlo₁ hf₁
         (by rw [exec_loop]; exact h)
@@ -205,31 +183,7 @@ theorem holds_of_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
       exact ⟨by rw [hL]; rw [hL] at hX'; exact hX', hfr', hsh', hpos'⟩
 
 omit [Inhabited K] in
-private theorem eighSignH_comp {a b : Builder P ι ℕ ℕ Unit}
-    (ha : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (a >>= f).run st = (exec I a.run st).bind (exec I (f ()).run))
-    (hb : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run))
-    (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
-    exec I ((a >>= fun _ => b) >>= f).run st =
-      (exec I (a >>= fun _ => b).run st).bind (exec I (f ()).run) := by
-  change exec I (a >>= fun _ => b >>= f).run st = _
-  rw [ha, ha]
-  simp only [Option.bind_assoc]
-  congr 1
-  funext out
-  exact hb f out
-
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-private theorem eighSignH_disj {b i j : ℕ} (h : i ≠ j) :
-    blockDisjoint (b, i, 1) (b, j, 1) = true := by
-  unfold blockDisjoint
-  rcases Nat.lt_or_gt_of_ne h with h | h
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
-
-omit [Inhabited K] in
-theorem eighSignH_inv_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : Stmt P ι ℕ ℕ}
+private theorem exists_of_exec_seq_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : Stmt P ι ℕ ℕ}
     {s s₂ : St P K C} (h : exec I (.seq (.instr (.litIdx p dst e)) t) s = some s₂) :
     ∃ v s', I.sem.lit p (e.eval : ℚ) = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
       exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
@@ -239,7 +193,7 @@ theorem eighSignH_inv_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : St
   exact ⟨v, s', hv, hw, h⟩
 
 omit [Inhabited K] in
-private theorem eighSignH_inv_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
+private theorem exists_of_exec_seq_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : Stmt P ι ℕ ℕ}
     {s s₂ : St P K C} (h : exec I (.seq (.instr (.lit p dst q)) t) s = some s₂) :
     ∃ v s', I.sem.lit p q = some v ∧ s.store.write p dst.buf dst.idx.eval v = some s' ∧
       exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some s₂ := by
@@ -249,7 +203,7 @@ private theorem eighSignH_inv_lit {p : P} {dst : Cell ℕ ℕ} {q : ℚ} {t : St
   exact ⟨v, s', hv, hw, h⟩
 
 omit [Inhabited K] in
-theorem eighSignH_inv_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+private theorem exists_of_exec_seq_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
     {s s₂ : St P K C} (h : exec I (.seq (.instr (.bin p op dst x y)) t) s = some s₂) :
     ∃ a c v s', s.store.read p x.buf x.idx.eval = some a ∧
       s.store.read p y.buf y.idx.eval = some c ∧ I.sem.bin p op a c = some v ∧
@@ -261,7 +215,7 @@ theorem eighSignH_inv_bin {p : P} {op : BinOp} {dst x y : Cell ℕ ℕ} {t : Stm
   exact ⟨a, c, v, s', ha, hc, hv, hw, h⟩
 
 omit [Inhabited K] in
-theorem eighSignH_inv_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
+private theorem exists_of_exec_seq_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
     {s s₂ : St P K C} (h : exec I (.seq (.instr (.un p u dst x)) t) s = some s₂) :
     ∃ a v s', s.store.read p x.buf x.idx.eval = some a ∧ I.sem.un p u a = some v ∧
       s.store.write p dst.buf dst.idx.eval v = some s' ∧
@@ -272,22 +226,40 @@ theorem eighSignH_inv_un {p : P} {u : UnOp} {dst x : Cell ℕ ℕ} {t : Stmt P �
   exact ⟨a, v, s', ha, hv, hw, h⟩
 
 omit [AddMonoid C] [Inhabited K] in
-private theorem eighSignH_pop3 {s : Store P K} {q : P} {b i : ℕ} (hb : b + 3 < s.size) :
+private theorem read_pop_pop_pop {s : Store P K} {q : P} {b i : ℕ} (hb : b + 3 < s.size) :
     Store.read (Array.pop (Array.pop (Array.pop s))) q b i = s.read q b i := by
   rw [Store.read_pop_of_lt (by simp; omega), Store.read_pop_of_lt (by simp; omega),
     Store.read_pop_of_lt (by omega)]
 
 omit [AddMonoid C] [Inhabited K] in
-private theorem eighSignH_push3 {s : Store P K} {p q : P} {a b c β i : ℕ} (hβ : β < s.size) :
+private theorem read_push_push_push_and_shape {s : Store P K} {p q : P} {a b c β i : ℕ}
+    (hβ : β < s.size) :
     Store.read (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
-      (p, Array.replicate c none)) q β i = s.read q β i := by
-  rw [Store.read_push_of_lt (by simp; omega), Store.read_push_of_lt (by simp; omega),
-    Store.read_push_of_lt hβ]
+      (p, Array.replicate c none)) q β i = s.read q β i ∧
+    (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
+      (p, Array.replicate c none)))[β]? = s.shape[β]? := by
+  refine ⟨?_, ?_⟩
+  · rw [Store.read_push_of_lt (by simp; omega), Store.read_push_of_lt (by simp; omega),
+      Store.read_push_of_lt hβ]
+  · rw [Store.getElem?_shape_push_of_lt _ (by simp; omega),
+      Store.getElem?_shape_push_of_lt _ (by simp; omega), Store.getElem?_shape_push_of_lt _ hβ]
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+private theorem getElem?_shape_push_push_push (s : Store P K) (p : P) (a b c : ℕ) :
+    let s₁ := s.push (p, Array.replicate a none)
+    let s₂ := s₁.push (p, Array.replicate b none)
+    (Store.shape (s₂.push (p, Array.replicate c none)))[s.size]? = some (p, a) ∧
+    (Store.shape (s₂.push (p, Array.replicate c none)))[s₁.size]? = some (p, b) ∧
+    (Store.shape (s₂.push (p, Array.replicate c none)))[s₂.size]? = some (p, c) := by
+  refine ⟨?_, ?_, Store.getElem?_shape_push_size _ _ _⟩
+  · rw [Store.getElem?_shape_push_of_lt _ (by simp), Store.getElem?_shape_push_of_lt _ (by simp),
+      Store.getElem?_shape_push_size]
+  · rw [Store.getElem?_shape_push_of_lt _ (by simp), Store.getElem?_shape_push_size]
 
 /-- The scaling, the first test and the loop of `NLAlib.eighSignBlock`, from the state after
 the four instructions. -/
-private theorem eighSignH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X t W V : ℕ} {ao po xo : IExp ℕ}
+private theorem holds_of_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X t W V : ℕ} {ao po xo : IExp ℕ}
     {σ st' : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {b η : K}
     (hA : pairLayout.Holds σ.store p A ao.eval A₀)
     (hb : σ.store.read p par (po.eval + 1) = some b)
@@ -324,7 +296,7 @@ private theorem eighSignH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
         >>= f).run σ' = (exec I (newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩
           ⟨t, 0⟩ ⟨t, 1⟩).run σ').bind (exec I (f ()).run) := by
     unfold newtonSchulzTestBlock
-    exact eighSignH_comp (fun f st => exec_run_bind I (fun _ => rfl) f st) (eighSignH_comp
+    exact whileNS_comp (fun f st => exec_run_bind I (fun _ => rfl) f st) (whileNS_comp
       (fun f st => exec_run_bind I (fun _ => rfl) f st)
       (fun f st => exec_run_bind I (fun _ => rfl) f st))
   rw [exec_run_bind I (b := zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo)
@@ -341,7 +313,7 @@ private theorem eighSignH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
     ((hr₅ 0).trans hη) hWX hVX hWV (by simp [htW, htV]) (hd _ _ _ _ htX)
     (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₆
   have hr₆ : ∀ i, i ≠ 1 → σ₆.store.read p t i = σ.store.read p t i := fun i h =>
-    (hfr₆ p t i htW htV (eighSignH_disj h)).trans (hr₅ i)
+    (hfr₆ p t i htW htV (whileNS_disj h)).trans (hr₅ i)
   obtain ⟨hX', hfr', hsh', hpos'⟩ := holds_of_exec_eighSignLoop hmm p hflag n F
     (hX₅.of_forall_read_eq fun i _ _ => hfr₆ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm))
     hW₆ ((hr₆ 0 (by omega)).trans hη) ((hr₆ 3 (by omega)).trans hone)
@@ -352,8 +324,8 @@ private theorem eighSignH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
     (hfr₅ q b' i hbX))
 
 /-- The body of `NLAlib.eighSignBlock` inside its allocations. -/
-private theorem eighSignH_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X t W V : ℕ} {ao po xo : IExp ℕ}
+private theorem holds_of_exec_eighSignBody {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X t W V : ℕ} {ao po xo : IExp ℕ}
     {st st' : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {ε b : K}
     (hA : pairLayout.Holds st.store p A ao.eval A₀)
     (hε : st.store.read p par po.eval = some ε) (hb : st.store.read p par (po.eval + 1) = some b)
@@ -388,10 +360,10 @@ private theorem eighSignH_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
           newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩ ⟨t, 0⟩ ⟨t, 1⟩)
         (pure ())).run)))))
     st = some st' at h
-  obtain ⟨v, s₁, hv, hs₁, h⟩ := eighSignH_inv_litIdx h
-  obtain ⟨a, c, w, s₂, ha, hc, hw, hs₂, h⟩ := eighSignH_inv_bin h
-  obtain ⟨a', w', s₃, ha', hw', hs₃, h⟩ := eighSignH_inv_un h
-  obtain ⟨o, s₄, ho, hs₄, h⟩ := eighSignH_inv_lit h
+  obtain ⟨v, s₁, hv, hs₁, h⟩ := exists_of_exec_seq_litIdx h
+  obtain ⟨a, c, w, s₂, ha, hc, hw, hs₂, h⟩ := exists_of_exec_seq_bin h
+  obtain ⟨a', w', s₃, ha', hw', hs₃, h⟩ := exists_of_exec_seq_un h
+  obtain ⟨o, s₄, ho, hs₄, h⟩ := exists_of_exec_seq_lit h
   change st.store.write p t 2 v = some s₁ at hs₁
   change s₁.write p t 0 w = some s₂ at hs₂
   change s₂.write p t 4 w' = some s₃ at hs₃
@@ -419,8 +391,8 @@ private theorem eighSignH_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
   have hsh₄ : s₄.shape = st.store.shape := by
     rw [Store.shape_of_write_eq_some hs₄, Store.shape_of_write_eq_some hs₃,
       Store.shape_of_write_eq_some hs₂, Store.shape_of_write_eq_some hs₁]
-  obtain ⟨hX', hfr', hsh', hpos'⟩ := eighSignH_tail (toNat := toNat) (qrR := qrR) (unif := unif)
-    (normal := normal) hmm p hflag n F (η := w)
+  obtain ⟨hX', hfr', hsh', hpos'⟩ := holds_of_exec_eighSignTail (toNat := toNat) (qrR := qrR)
+    (unif := unif) (normal := normal) hmm p hflag n F (η := w)
     (σ := { st with store := s₄, cnt := _ })
     (by
       rcases htA with rfl | htA
@@ -449,11 +421,11 @@ private theorem eighSignH_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
 stored $\mathbf{A}$ and whose cells `po`, `po + 1` of `par` hold $\varepsilon$ and $b$, with the
 output block at `X` disjoint from both and in an existing buffer at tag `p` of at least $2n^2$
 cells from `xo` (so not one of the block's scratch buffers, which are popped at the end), ends
-with the output block holding `NLAlib.newtonSchulzSign M ε b F A` (the machine of the semantics at `p` with product `mmR`, for
-every choice of its other black boxes); every cell outside the output block is unchanged, the store
-shape and the tape positions too. No printed source. -/
-theorem holds_of_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X : ℕ} {ao po xo : IExp ℕ}
+with the output block holding `NLAlib.newtonSchulzSign M ε b F A` (the machine of the semantics at
+`p` with product `mmR`, for every choice of its other black boxes); every cell outside the output
+block is unchanged, the store shape and the tape positions too. No printed source. -/
+theorem holds_of_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (p : P) (hflag : I.sem.DecidesFlags p) (n F : ℕ) {A par X : ℕ} {ao po xo : IExp ℕ}
     {st st' : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)} {ε b : K}
     (hA : pairLayout.Holds st.store p A ao.eval A₀)
     (hε : st.store.read p par po.eval = some ε) (hb : st.store.read p par (po.eval + 1) = some b)
@@ -506,20 +478,23 @@ theorem holds_of_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLay
     rcases Nat.eq_zero_or_pos n with hn | hn
     · subst hn; exact fun i => i.elim0
     · exact hA.of_forall_read_eq fun i _ _ =>
-        eighSignH_push3 (hlt (hA ⟨0, hn⟩ ⟨0, hn⟩ ⟨0, Nat.zero_lt_two⟩))
-  obtain ⟨hX', hfr', hsh', hpos'⟩ := eighSignH_setup (toNat := toNat) (qrR := qrR) (unif := unif)
-    (normal := normal) hmm p hflag n F hA0 ((eighSignH_push3 hplt).trans hε)
-    ((eighSignH_push3 hplt).trans hb) hXA hXp hAn (by omega) (by simp only [Array.size_push]; omega)
+        (read_push_push_push_and_shape (hlt (hA ⟨0, hn⟩ ⟨0, hn⟩ ⟨0, Nat.zero_lt_two⟩))).1
+  obtain ⟨hX', hfr', hsh', hpos'⟩ := holds_of_exec_eighSignBody (toNat := toNat) (qrR := qrR)
+    (unif := unif) (normal := normal) hmm p hflag n F hA0
+    ((read_push_push_push_and_shape hplt).1.trans hε)
+    ((read_push_push_push_and_shape hplt).1.trans hb) hXA hXp hAn (by omega)
+    (by simp only [Array.size_push]; omega)
     (by simp only [Array.size_push]; omega) (by simp only [Array.size_push]; omega)
     (by omega) (by simp only [Array.size_push]; omega) (by simp only [Array.size_push]; omega)
     (h := h₃)
   have hsz : st₃.store.size = st.store.size + 3 := by
     rw [Store.size_eq_of_shape_eq hsh']; simp
-  refine ⟨hX'.of_forall_read_eq fun i _ _ => eighSignH_pop3 (by omega), fun q b' i hb' => ?_,
+  refine ⟨hX'.of_forall_read_eq fun i _ _ => read_pop_pop_pop (by omega), fun q b' i hb' => ?_,
     ?_, ?_⟩
   · rcases Nat.lt_or_ge b' st.store.size with hb'' | hb''
-    · rw [eighSignH_pop3 (by omega), hfr' q b' i (by omega) (by simp only [Array.size_push]; omega)
-        (by simp only [Array.size_push]; omega) hb', eighSignH_push3 hb'']
+    · rw [read_pop_pop_pop (by omega), hfr' q b' i (by omega)
+        (by simp only [Array.size_push]; omega)
+        (by simp only [Array.size_push]; omega) hb', (read_push_push_push_and_shape hb'').1]
     · rw [Store.read_eq_none_of_size_le (by simp; omega), Store.read_eq_none_of_size_le hb'']
   · change Store.shape (Array.pop (Array.pop (Array.pop st₃.store))) = _
     rw [Store.shape_pop, Store.shape_pop, Store.shape_pop, hsh']
@@ -527,43 +502,20 @@ theorem holds_of_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLay
   · exact hpos'
 
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-private theorem eighSignE_map {α β : Type} {o : Option α} {f : α → β} (h : ∃ a, o = some a) :
+private theorem exists_map_eq_some {α β : Type} {o : Option α} {f : α → β} (h : ∃ a, o = some a) :
     ∃ b, o.map f = some b := by
   obtain ⟨a, rfl⟩ := h
   exact ⟨f a, rfl⟩
 
 omit [Inhabited K] in
-private theorem eighSignE_comp {a b : Builder P ι ℕ ℕ Unit}
-    (ha : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (a >>= f).run st = (exec I a.run st).bind (exec I (f ()).run))
-    (hb : ∀ (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C),
-      exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run))
-    (f : Unit → Builder P ι ℕ ℕ Unit) (st : St P K C) :
-    exec I ((a >>= fun _ => b) >>= f).run st =
-      (exec I (a >>= fun _ => b).run st).bind (exec I (f ()).run) := by
-  change exec I (a >>= fun _ => b >>= f).run st = _
-  rw [ha, ha]
-  simp only [Option.bind_assoc]
-  congr 1
-  funext out
-  exact hb f out
-
-omit [Inhabited K] in
-private theorem eighSignE_single (b : Builder P ι ℕ ℕ Unit) (S : Stmt P ι ℕ ℕ)
+private theorem exec_bind_of_seq (b : Builder P ι ℕ ℕ Unit) (S : Stmt P ι ℕ ℕ)
     (hb : ∀ k, ContT.run b k = .seq S (k ())) (f : Unit → Builder P ι ℕ ℕ Unit)
     (st : St P K C) : exec I (b >>= f).run st = (exec I b.run st).bind (exec I (f ()).run) :=
   exec_run_bind I hb f st
 
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-private theorem eighSignE_disj {b i j : ℕ} (h : i ≠ j) :
-    blockDisjoint (b, i, 1) (b, j, 1) = true := by
-  unfold blockDisjoint
-  rcases Nat.lt_or_gt_of_ne h with h | h
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inl (Or.inr (by omega))
-  · simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Or.inr (by omega)
-
-private theorem eighSignE_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ}
-    {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1)
+private theorem exists_exec_eighSignStep {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
+    (hu : u p < 1)
     (n : ℕ) {X W V t : ℕ} {xo : IExp ℕ} {η : K} {st : St P K C} {S : Array (P × ℕ)}
     {A : Matrix (Fin n) (Fin n) (K × K)} (hA : pairLayout.Holds st.store p X xo.eval A)
     (hW : pairLayout.Holds st.store p W 0 (mmR A A)) (hη : st.store.read p t 0 = some η)
@@ -593,10 +545,10 @@ private theorem eighSignE_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
         (exec I (newtonSchulzStepBlock p mm (.const n) X xo W V ⟨t, 2⟩).run σ).bind
           (exec I (f ()).run) := by
     unfold newtonSchulzStepBlock
-    exact eighSignE_comp (eighSignE_single _ _ fun _ => rfl) (eighSignE_comp
-      (eighSignE_single _ _ fun _ => rfl) (eighSignE_comp (eighSignE_single _ _ fun _ => rfl)
-        (eighSignE_comp (eighSignE_single _ _ fun _ => rfl) (eighSignE_comp
-          (eighSignE_single _ _ fun _ => rfl) (eighSignE_single _ _ fun _ => rfl)))))
+    exact whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
+      (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl)
+        (whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
+          (exec_bind_of_seq _ _ fun _ => rfl) (exec_bind_of_seq _ _ fun _ => rfl)))))
   have hsh : ∀ {σ : St P K C} {b : ℕ} {l : ℕ}, σ.store.shape = S → S[b]? = some (p, l) →
       σ.store.shape[b]? = some (p, l) := fun h h' => by rw [h]; exact h'
   obtain ⟨σ, hσ⟩ := exists_exec_newtonSchulzStepBlock hmm hsem p hu n (c := ⟨t, 2⟩) hA hW hWX
@@ -606,7 +558,7 @@ private theorem eighSignE_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
     (qrR := qrR) (unif := unif) (normal := normal) hmm p n hA hW hWX hVX hWV htW htV
     (hd _ _ _ _ htX) hσ
   have hrσ : ∀ i, i ≠ 2 → σ.store.read p t i = st.store.read p t i := fun i hi =>
-    hfrσ p t i htW htV (hd _ _ _ _ htX) (eighSignE_disj hi)
+    hfrσ p t i htW htV (hd _ _ _ _ htX) (whileNS_disj hi)
   have hSσ := hshσ.trans hS
   obtain ⟨σ₁, h₁⟩ := exists_exec_newtonSchulzTestBlock hmm hsem p n (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) hXσ ((hrσ 3 (by omega)).trans hone)
@@ -620,14 +572,15 @@ private theorem eighSignE_body {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
     ((hrσ 4 (by omega)).trans hlo) ((hrσ 0 (by omega)).trans hη) hWX hVX hWV
     (by simp [htW, htV]) (hd _ _ _ _ htX) (by simp [blockDisjoint]) (by simp [blockDisjoint]) h₁
   have hr₁ : ∀ i, i ≠ 1 → i ≠ 2 → σ₁.store.read p t i = st.store.read p t i := fun i h1 h2 =>
-    (hfr₁ p t i htW htV (eighSignE_disj h1)).trans (hrσ i h2)
+    (hfr₁ p t i htW htV (whileNS_disj h1)).trans (hrσ i h2)
   exact ⟨σ₁, by rw [hstep, hσ, Option.bind_some]; exact h₁,
     hXσ.of_forall_read_eq fun i _ _ => hfr₁ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm),
     hW₁, (hr₁ 0 (by omega) (by omega)).trans hη, (hr₁ 3 (by omega) (by omega)).trans hone,
     (hr₁ 4 (by omega) (by omega)).trans hlo, hf₁, hsh₁.trans hSσ⟩
 
-private theorem eighSignE_loop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ}
-    {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1)
+private theorem exists_exec_eighSignLoop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
+    (hu : u p < 1)
     (n : ℕ) {X W V t : ℕ} {xo : IExp ℕ} {η : K} {S : Array (P × ℕ)}
     (hz : dec p (I.sem.toFloatMachine p toNat mmR qrR unif normal).zero ≠
       dec p (I.sem.toFloatMachine p toNat mmR qrR unif normal).one)
@@ -667,7 +620,8 @@ private theorem eighSignE_loop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
       exact ⟨st', h'⟩
     · simp only [cmpStep, IExp.eval, hf, if_neg ht, hone, Option.bind_some, hsem.cmp_eq,
         Option.map_some, decide_true, if_true]
-      obtain ⟨σ₁, h₁, hX₁, hW₁, hη₁, hone₁, hlo₁, hf₁, hsh₁⟩ := eighSignE_body hmm hsem p hu n
+      obtain ⟨σ₁, h₁, hX₁, hW₁, hη₁, hone₁, hlo₁, hf₁, hsh₁⟩ :=
+        exists_exec_eighSignStep hmm hsem p hu n
         (st := { st with cnt := st.cnt + I.charge (.cmp p) }) hA hW hη hone hlo hWX hVX hWV htX
         htW htV hS hWS hVS htS
       rw [h₁, Option.bind_some]
@@ -675,8 +629,9 @@ private theorem eighSignE_loop {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
       rw [exec_loop] at h'
       exact ⟨st', h'⟩
 
-private theorem eighSignE_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ}
-    {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (hu : u p < 1)
+private theorem exists_exec_eighSignTail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P)
+    (hu : u p < 1)
     (n F : ℕ) {A par X t W V : ℕ} {ao po xo : IExp ℕ} {σ : St P K C} {S : Array (P × ℕ)}
     {A₀ : Matrix (Fin n) (Fin n) (K × K)} {b η : K}
     (hA : pairLayout.Holds σ.store p A ao.eval A₀)
@@ -718,9 +673,9 @@ private theorem eighSignE_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
         >>= f).run σ' = (exec I (newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩
           ⟨t, 0⟩ ⟨t, 1⟩).run σ').bind (exec I (f ()).run) := by
     unfold newtonSchulzTestBlock
-    exact eighSignE_comp (eighSignE_single _ _ fun _ => rfl) (eighSignE_comp
-      (eighSignE_single _ _ fun _ => rfl) (eighSignE_single _ _ fun _ => rfl))
-  rw [eighSignE_single (zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo) _ (fun _ => rfl),
+    exact whileNS_comp (exec_bind_of_seq _ _ fun _ => rfl) (whileNS_comp
+      (exec_bind_of_seq _ _ fun _ => rfl) (exec_bind_of_seq _ _ fun _ => rfl))
+  rw [exec_bind_of_seq (zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo) _ (fun _ => rfl),
     h₅, Option.bind_some, htestc]
   have hr₅ : ∀ i, σ₅.store.read p t i = σ.store.read p t i := fun i => hfr₅ p t i (hd _ _ _ _ htX)
   have hS₅ := hsh₅.trans hS
@@ -739,16 +694,16 @@ private theorem eighSignE_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout m
   change ∃ st', exec I (.seq (.loop _ _) .skip) σ₆ = some st'
   rw [exec_seq_skip]
   have hr₆ : ∀ i, i ≠ 1 → σ₆.store.read p t i = σ.store.read p t i := fun i h =>
-    (hfr₆ p t i htW htV (eighSignE_disj h)).trans (hr₅ i)
-  exact eighSignE_loop hmm hsem p hu n hz hWX hVX hWV htX htW htV hWS hVS htS F σ₆ _
+    (hfr₆ p t i htW htV (whileNS_disj h)).trans (hr₅ i)
+  exact exists_exec_eighSignLoop hmm hsem p hu n hz hWX hVX hWV htX htW htV hWS hVS htS F σ₆ _
     (hsh₆.trans hS₅)
     (hX₅.of_forall_read_eq fun i _ _ => hfr₆ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm))
     hW₆ ((hr₆ 0 (by omega)).trans hη) ((hr₆ 3 (by omega)).trans hone)
     ((hr₆ 4 (by omega)).trans hlo) hf₆
 
 include toNat qrR unif normal in
-private theorem eighSignE_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) {u : P → ℝ}
-    {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
+private theorem exists_exec_eighSignBody {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem)
     (hlit : IsExactIntLit dec I.sem 1) (p : P) (hu : u p < 1) (n F : ℕ) (hn : 0 < n)
     {A par X t W V : ℕ} {ao po xo : IExp ℕ} {st : St P K C} {A₀ : Matrix (Fin n) (Fin n) (K × K)}
     {ε b : K} (hA : pairLayout.Holds st.store p A ao.eval A₀)
@@ -834,7 +789,7 @@ private theorem eighSignE_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
   have hsh₄ : s₄.shape = st.store.shape := by
     rw [Store.shape_of_write_eq_some hs₄, Store.shape_of_write_eq_some hs₃,
       Store.shape_of_write_eq_some hs₂, Store.shape_of_write_eq_some hs₁]
-  exact eighSignE_tail hmm hsem p hu n F (S := st.store.shape) (η := w)
+  exact exists_exec_eighSignTail hmm hsem p hu n F (S := st.store.shape) (η := w)
     (hA.of_forall_read_eq fun i _ _ => hfr₄ _ _ _ htA.symm) ((hfr₄ _ _ _ htp.symm).trans hb) hb0
     hXA hXp hX (by
       rw [Store.read_of_write_eq_some_of_ne hs₄ (Or.inr (by norm_num)),
@@ -845,29 +800,6 @@ private theorem eighSignE_setup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout 
         exact Store.read_of_write_eq_some hs₃)
     (by rw [hMzero, hMone, hdz, ho1]; norm_num) hWX hVX hWV htX htW htV hsh₄ hWS hVS htS
 
-omit [AddMonoid C] [Inhabited K] in
-private theorem eighSignE_push {s : Store P K} {p q : P} {a b c β i : ℕ} (hβ : β < s.size) :
-    Store.read (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
-      (p, Array.replicate c none)) q β i = s.read q β i ∧
-    (Store.shape (((s.push (p, Array.replicate a none)).push (p, Array.replicate b none)).push
-      (p, Array.replicate c none)))[β]? = s.shape[β]? := by
-  refine ⟨?_, ?_⟩
-  · rw [Store.read_push_of_lt (by simp; omega), Store.read_push_of_lt (by simp; omega),
-      Store.read_push_of_lt hβ]
-  · rw [Store.getElem?_shape_push_of_lt _ (by simp; omega),
-      Store.getElem?_shape_push_of_lt _ (by simp; omega), Store.getElem?_shape_push_of_lt _ hβ]
-
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-private theorem eighSignE_push_shape (s : Store P K) (p : P) (a b c : ℕ) :
-    let s₁ := s.push (p, Array.replicate a none)
-    let s₂ := s₁.push (p, Array.replicate b none)
-    (Store.shape (s₂.push (p, Array.replicate c none)))[s.size]? = some (p, a) ∧
-    (Store.shape (s₂.push (p, Array.replicate c none)))[s₁.size]? = some (p, b) ∧
-    (Store.shape (s₂.push (p, Array.replicate c none)))[s₂.size]? = some (p, c) := by
-  refine ⟨?_, ?_, Store.getElem?_shape_push_size _ _ _⟩
-  · rw [Store.getElem?_shape_push_of_lt _ (by simp), Store.getElem?_shape_push_of_lt _ (by simp),
-      Store.getElem?_shape_push_size]
-  · rw [Store.getElem?_shape_push_of_lt _ (by simp), Store.getElem?_shape_push_size]
 /-- The sign step always succeeds under the standard model at $u$ with every value in range,
 $u(p) < 1$ and an exact literal $1$, if kernel `mm` of `I` is the routine `mmR` on interleaved
 pairs, $n \ge 1$, $b$ decodes to a nonzero value and the output block at `X` (tag `p`) has $2n^2$
@@ -896,21 +828,22 @@ theorem exists_exec_eighSignBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayou
     rwa [Store.size_shape] at this
   change ∃ st', exec I (.seq (.alloc p 5 _) .skip) st = some st'
   rw [exec_seq_skip, exec_alloc]
-  refine eighSignE_map ?_
+  refine exists_map_eq_some ?_
   change ∃ a, exec I (.alloc p _ _) _ = some a
   rw [exec_alloc]
-  refine eighSignE_map ?_
+  refine exists_map_eq_some ?_
   change ∃ a, exec I (.alloc p _ _) _ = some a
   rw [exec_alloc]
-  refine eighSignE_map ?_
-  obtain ⟨htS, hWS, hVS⟩ := eighSignE_push_shape st.store p (IExp.eval 5)
+  refine exists_map_eq_some ?_
+  obtain ⟨htS, hWS, hVS⟩ := getElem?_shape_push_push_push st.store p (IExp.eval 5)
     (IExp.eval (2 * (.const n * .const n))) (IExp.eval (2 * (.const n * .const n)))
   have hP : ∀ {β : ℕ} (q : P) (i : ℕ), β < st.store.size → _ := fun {β} q i h =>
-    eighSignE_push (s := st.store) (p := p) (q := q) (a := IExp.eval 5)
+    read_push_push_push_and_shape (s := st.store) (p := p) (q := q) (a := IExp.eval 5)
       (b := (2 * (IExp.const n * .const n)).eval) (c := (2 * (IExp.const n * .const n)).eval)
       (i := i) (β := β) h
-  exact eighSignE_setup (toNat := fun _ => 0) (Su := Unit) (unif := fun x _ => x) (Sg := Unit)
-    (normal := fun _ => default) (qrR := fun A => (fun _ _ => default, A)) hmm hsem hlit p hu n F
+  exact exists_exec_eighSignBody (toNat := fun _ => 0) (Su := Unit) (unif := fun x _ => x)
+    (Sg := Unit) (normal := fun _ => default) (qrR := fun A => (fun _ _ => default, A))
+    hmm hsem hlit p hu n F
     hn
     (hA.of_forall_read_eq fun i _ _ => (hP p i hAlt).1) ((hP p _ hplt).1.trans hε)
     ((hP p _ hplt).1.trans hb) hb0 hXA hXp (by rw [(hP p 0 hXlt).2]; exact hX)
