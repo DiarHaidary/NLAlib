@@ -135,7 +135,7 @@ private theorem nsH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p
         >>= f).run σ' = (exec I (newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩
           ⟨t, 0⟩ ⟨t, 1⟩).run σ').bind (exec I (f ()).run) := by
     unfold newtonSchulzTestBlock
-    exact whileNS_comp (fun f st => exec_run_bind I (fun _ => rfl) f st) (whileNS_comp
+    exact exec_run_bind_bind (fun f st => exec_run_bind I (fun _ => rfl) f st) (exec_run_bind_bind
       (fun f st => exec_run_bind I (fun _ => rfl) f st)
       (fun f st => exec_run_bind I (fun _ => rfl) f st))
   rw [exec_run_bind I (b := zhermScale (ι := ι) p (.const n) A ao ⟨par, po + 1⟩ X xo)
@@ -154,7 +154,7 @@ private theorem nsH_tail {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p
   change exec I (.seq (.whileFuel _ _ _ _ _ _) .skip) σ₆ = some st' at h
   rw [exec_seq_skip] at h
   have hr₆ : ∀ i, i ≠ 1 → σ₆.store.read p t i = σ.store.read p t i := fun i h =>
-    (hfr₆ p t i htW htV (whileNS_disj h)).trans (hr₅ i)
+    (hfr₆ p t i htW htV (blockDisjoint_cell_of_ne h)).trans (hr₅ i)
   obtain ⟨hX', hfr', hsh', hpos'⟩ := holds_of_exec_whileFuel_newtonSchulz hmm p hflag n
     (j := F) (fuel := .const F + 1) rfl
     (hX₅.of_forall_read_eq fun i _ _ => hfr₆ _ _ _ hWX.symm hVX.symm (hd _ _ _ _ htX.symm))
@@ -829,6 +829,7 @@ private theorem two_mul_sum_range_le (N : ℕ) : 2 * (List.range N).sum ≤ N * 
     rw [List.range_succ, List.sum_append, List.sum_singleton]
     nlinarith
 
+omit [Inhabited K] in
 /-- The counts and the memory of the registered tree: under the standard charge (one per
 operation), every successful run of `NLAlib.newtonSchulzSignProg.compiled` at the sizes $N$ and
 $(F)$ adds at most `NLAlib.newtonSchulzSignCount p mm N F` to the counts and raises the peak
