@@ -38,6 +38,9 @@ is part of the definition, never a hypothesis of a theorem, so it cannot depend 
 * `NLAlib.Computation.MatrixFreeRoundedProb`: the rounded probabilistic model, quantified over
   the index-exact interpretations meeting contracts and the roundings of the tape, with counts
   and memory.
+* `NLAlib.Computation.MatrixFreeProb.NonVacuous`,
+  `NLAlib.Computation.MatrixFreeRoundedProb.NonVacuous`: the non-vacuity conditions of the
+  models' targets (`scripts/Targets.lean`, item 7).
 
 ## Main results
 
@@ -181,6 +184,21 @@ def MatrixFreeProb {r b : ℕ} (p : P) (prog : Prog P ι r b)
       (inputState p (List.ofFn (inputs N n x))) (cost N n) (mem N n) (good N n x A)} ≤
       bound N n x A
 
+/-- **The non-vacuity condition of a probabilistic matrix-free target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.MatrixFreeProb`, there are sizes $N \ge N_0$ and $n$ satisfying `valid` at which
+the type of declared inputs `X N n` is inhabited. The binders are those of
+`NLAlib.Computation.MatrixFreeProb`, spelled out, then `N₀`. -/
+@[nolint unusedArguments]
+def MatrixFreeProb.NonVacuous {𝕜 : Type} [RCLike 𝕜] {P ι : Type} [DecidableEq P] {r b : ℕ}
+    (_p : P) (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option 𝕜))
+    (_cost : ℕ → (Fin r → ℕ) → OpCount P ι) (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (_good : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 →
+      St P 𝕜 (OpCount P ι) → Prop)
+    (_bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → Matrix (Fin N) (Fin N) 𝕜 → ℝ) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ Nonempty (X N n)
+
 /-- **The probabilistic matrix-free model on a program family**, proof infrastructure for
 `NLAlib.Computation.MatrixFreeProb`. For all sizes $N$, $n$ satisfying `valid`, every declared
 input $x$ and every $N \times N$ matrix $\mathbf{A}$, and every tape $\xi$ on any probability
@@ -274,6 +292,32 @@ def MatrixFreeRoundedProb {K : Type} {r b : ℕ} (p : P) (prog : Prog P ι r b)
         { I with tape := fun d i => ρ d i (ξ ω d i), charge := fun k => Finsupp.single k 1 } N n
         (inputState p (List.ofFn (inputs N n x))) (cost N n) (fun q => mem N n q + I.romSize q)
         (good N n x)} ≤ bound N n x
+
+/-- **The non-vacuity condition of a rounded probabilistic target**
+(`docs/design/Computation-Hardening.md`, §2.2): for the arguments of
+`NLAlib.Computation.MatrixFreeRoundedProb`, there are sizes $N \ge N_0$ and $n$ satisfying `valid`,
+a declared input $x$ satisfying `pre N n x`, an interpretation $I$ whose semantics is index exact
+at `dec` up to `B N n` and that meets `Contracts N n`, and a rounding $\rho$ of the tape meeting
+`ρOK`: every hypothesis of the model is met at once. A non-vacuity witness of a registered target
+`∀ xs, MatrixFreeRoundedProb a₁ … aₖ` is a theorem
+`∀ N₀, ∃ xs, MatrixFreeRoundedProb.NonVacuous a₁ … aₖ N₀` (`scripts/Targets.lean`, item 7). It
+detects contracts that cannot be met, not degenerate ones (exact arithmetic meets most
+contracts): the registry's `witness_sem` records the semantics a witness uses. The binders are
+those of `NLAlib.Computation.MatrixFreeRoundedProb`, spelled out, then `N₀`; the program, the
+counts, the memory, the event and the bound are not used. -/
+@[nolint unusedArguments]
+def MatrixFreeRoundedProb.NonVacuous {P ι : Type} [DecidableEq P] {K : Type} {r b : ℕ} (_p : P)
+    (_prog : Prog P ι r b) (valid : ℕ → (Fin r → ℕ) → Prop) (X : ℕ → (Fin r → ℕ) → Type)
+    (_inputs : (N : ℕ) → (n : Fin r → ℕ) → X N n → Fin b → Array (Option K))
+    (dec : P → K → ℝ) (B : ℕ → (Fin r → ℕ) → ℕ) (_cost : ℕ → (Fin r → ℕ) → OpCount P ι)
+    (_mem : ℕ → (Fin r → ℕ) → P → ℕ)
+    (Contracts : ℕ → (Fin r → ℕ) → Interp P ι K (OpCount P ι) → Prop)
+    (ρOK : (Dist → ℕ → ℝ → K) → Prop) (pre : (N : ℕ) → (n : Fin r → ℕ) → X N n → Prop)
+    (_good : (N : ℕ) → (n : Fin r → ℕ) → X N n → St P K (OpCount P ι) → Prop)
+    (_bound : (N : ℕ) → (n : Fin r → ℕ) → X N n → ℝ) (N₀ : ℕ) : Prop :=
+  ∃ N n, N₀ ≤ N ∧ valid N n ∧ ∃ x : X N n, pre N n x ∧
+    ∃ (I : Interp P ι K (OpCount P ι)) (ρ : Dist → ℕ → ℝ → K),
+      IsIndexExactSem dec (B N n) I.sem ∧ Contracts N n I ∧ ρOK ρ
 
 /-- **A rounded probabilistic result from success, correctness and a count bound**: if, under
 every interpretation with the standard charge meeting the index exactness and the contracts, every
