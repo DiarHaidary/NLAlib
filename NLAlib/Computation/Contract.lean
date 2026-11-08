@@ -61,6 +61,9 @@ the kernels, which accumulate from a zero, keep the constants of [Higham2002].
 * `NLAlib.Computation.IsExactIntLit.mono`: a smaller bound.
 * `NLAlib.Computation.isExactToNat_exactSem`, `NLAlib.Computation.isIndexExactSem_exactSem`,
   `NLAlib.Computation.IsIndexExactSem.mono`: index exactness of exact arithmetic.
+* `NLAlib.Computation.IsExactIntLit.toNat_eq_of_lit_eq_some`: the round trip of a size.
+* `NLAlib.Computation.mulShrinks_exactSem`: exact real multiplication by a factor of modulus at
+  most one does not enlarge.
 * `NLAlib.Computation.IsExactIntLit.exists_exec_litIdx`: a size written as a literal decodes to
   itself.
 * `NLAlib.Computation.isTapeRounding_id`: the exact rounding of the tape.
@@ -445,6 +448,29 @@ source. -/
 theorem IsIndexExactSem.mono {dec : P → K → ℝ} {sem : ScalarSem P K} {B B' : ℕ}
     (h : IsIndexExactSem dec B sem) (hB : B' ≤ B) : IsIndexExactSem dec B' sem :=
   ⟨h.intLit.mono hB, h.toNat⟩
+
+/-- The round trip of a size: under exact integer literals up to $B$ and the exact floor
+conversion, the literal of $k \le B$ converts back to $k$. So a size written by `litIdx` and read by
+an index binder is the size. No printed source. -/
+theorem IsExactIntLit.toNat_eq_of_lit_eq_some {dec : P → K → ℝ} {sem : ScalarSem P K} {B : ℕ}
+    (hlit : IsExactIntLit dec sem B) (htn : IsExactToNat dec sem) {p : P} {k : ℕ} (hk : k ≤ B)
+    {z : K} (hz : sem.lit p k = some z) : sem.toNat p z = some k := by
+  obtain ⟨z', hz', hdec⟩ := hlit p k hk
+  have hzz : z = z' := Option.some_injective _ (hz.symm.trans hz')
+  subst hzz
+  rw [htn p z, hdec, Nat.floor_natCast]
+  simp
+
+/-- Exact real multiplication by a factor of modulus at most one does not enlarge:
+`NLAlib.Computation.exactSem` over $\mathbb{R}$, with the identity decoding, meets
+`NLAlib.Computation.MulShrinks`. No printed source. -/
+theorem mulShrinks_exactSem : MulShrinks (P := P) (fun _ x => x) (exactSem (𝕜 := ℝ)) := by
+  intro p x y z h hy
+  have hz : x * y = z := Option.some.inj h
+  subst hz
+  change |x * y| ≤ |x|
+  rw [abs_mul]
+  exact mul_le_of_le_one_right (abs_nonneg x) hy
 
 variable [DecidableEq P]
 
