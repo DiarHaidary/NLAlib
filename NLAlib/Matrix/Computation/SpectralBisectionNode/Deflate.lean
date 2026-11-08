@@ -771,7 +771,7 @@ theorem spec_eighDeflateBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I mm pair
 
 omit [Inhabited K] in
 /-- A block holds at most one matrix. -/
-theorem pairLayout_holds_unique {s : Store P K} {p : P} {b off l m : ℕ}
+private theorem pairLayout_holds_unique {s : Store P K} {p : P} {b off l m : ℕ}
     {Y Y' : Matrix (Fin l) (Fin m) (K × K)} (h : pairLayout.Holds s p b off Y)
     (h' : pairLayout.Holds s p b off Y') : Y = Y' := by
   ext i j

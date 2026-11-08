@@ -257,7 +257,7 @@ allocations after a state satisfying `pre` (whose store has $b$ buffers), an all
 `len` cells gets the handle $b + j$, so the rest of the block, specified $j + 1$ allocations
 after, gives the block's specification $j$ allocations after, with one fresh block fewer in the
 footprint and one release fewer in the postcondition. -/
-theorem Spec.allocBind_iterate {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit} {b : ℕ} (j : ℕ)
+theorem spec_allocBind_iterate {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit} {b : ℕ} (j : ℕ)
     (hb : ∀ st, pre st → st.store.size = b)
     (h : Spec m I (fun s => ∃ st, pre st ∧ s = (·.allocate p len.eval (I.width p))^[j + 1] st)
       (f (b + j)).run (fp ++ (List.range (j + 1)).map fun i => (b + i, 0, len.eval))
@@ -813,10 +813,10 @@ goal and those facts only (never the whole context), normalises products with `r
 large contexts of program proofs) and closes with `omega`. **Every hypothesis the goal needs must
 be passed** (`fp_omega [Nat.mul_le_mul hr hk, hlen]`, not `fp_omega [Nat.mul_le_mul hr hk]` with
 `hlen` in the context). -/
-syntax "fp_omega" (" [" term,* "]")? : tactic
+syntax (name := fpOmega) "fp_omega" (" [" term,* "]")? : tactic
 
 /-- The closing step of `fp_omega` on the goal and the named facts. -/
-syntax "fp_close" (ppSpace colGt ident)* : tactic
+syntax (name := fpClose) "fp_close" (ppSpace colGt ident)* : tactic
 
 macro_rules
   | `(tactic| fp_close $names*) => `(tactic| (
@@ -855,7 +855,7 @@ macro_rules
 and leave its precondition and the continuation from the named next state; footprint side
 goals closed by `assumption` or `fp_omega` are removed, the others stay in order (precondition,
 continuation). -/
-syntax "spec_step " term : tactic
+syntax (name := specStep) "spec_step " term : tactic
 
 macro_rules
   | `(tactic| spec_step $h) => `(tactic| (
@@ -865,7 +865,7 @@ macro_rules
 /-- One call of a specified routine in a builder: `NLAlib.Computation.RoutineSpec.wp_run` for the
 last call of a block, else `NLAlib.Computation.RoutineSpec.wp_bind`, with
 side goals closed by `assumption` or `fp_omega` removed, as for `spec_step`. -/
-syntax "spec_call " term : tactic
+syntax (name := specCall) "spec_call " term : tactic
 
 macro_rules
   | `(tactic| spec_call $h) => `(tactic| (

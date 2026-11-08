@@ -880,7 +880,7 @@ gate 1 fails.
    under the cell's disjointness, which the specification guards. Net for the block with its
    adapters: **+41 lines**; without the moved text the walks and helpers saved about 145 lines and
    the glue cost about 185. The glue is paid once per kernel; Split reuses it twice.
-3. *Alloc chains:* PL110 `spec_eighSplitBlock_of_body` proved by `Spec.allocBind_iterate`
+3. *Alloc chains:* PL110 `spec_eighSplitBlock_of_body` proved by `spec_allocBind_iterate`
    (one rule application per allocation, named states, `Function.iterate` for the eight
    allocations and releases) in 8 proof lines at default heartbeats: pass. Its use in place of the
    eight `alloc_inv_node` steps of `holds_of_exec_eighSplitBlock_frame` waits for J2, where the

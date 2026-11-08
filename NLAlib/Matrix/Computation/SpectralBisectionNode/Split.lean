@@ -64,7 +64,7 @@ theorem name_state_node {X : Stmt P ι ℕ ℕ} {s s' : St P K C} (h : exec I X 
     Q := k s rfl rfl h
 
 /-- The index arithmetic of a split inside the window of its node. -/
-theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) :
+private theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) :
     2 * (n * n) * d + 2 * n * lo + 2 * (k * k) ≤ 2 * (n * n) * (d + 1) + 2 * n * lo ∧
     2 * (n * n) * (d + 1) + 2 * n * lo + 2 * (kp * kp) ≤
       2 * (n * n) * (d + 1) + 2 * n * (lo + kp) ∧
@@ -202,11 +202,11 @@ theorem spec_eighSplitBlock_of_body {m : Mode} (p : P) (mm qr : ι) (n d lo k kp
       post st ((fun s => s.release p (2 * (n * n) : IExp ℕ).eval (I.width p))^[8] st')) :
     RoutineSpec m I pre (eighSplitBlock p mm qr n d lo k kp Sg Pp Pm Ma Qa Sz Kd Kp two sg nsg sq)
       fp post := by
-  refine RoutineSpec.scope ((Spec.allocBind_iterate 0 hb ?_).conseq (fun s hs => ⟨s, hs, rfl⟩)
+  refine RoutineSpec.scope ((spec_allocBind_iterate 0 hb ?_).conseq (fun s hs => ⟨s, hs, rfl⟩)
     (fun x hx => by simpa using hx) fun s _ hs hp => hp s hs rfl)
-  refine Spec.allocBind_iterate 1 hb (Spec.allocBind_iterate 2 hb (Spec.allocBind_iterate 3 hb
-    (Spec.allocBind_iterate 4 hb (Spec.allocBind_iterate 5 hb (Spec.allocBind_iterate 6 hb
-    (Spec.allocBind_iterate 7 hb ?_))))))
+  refine spec_allocBind_iterate 1 hb (spec_allocBind_iterate 2 hb (spec_allocBind_iterate 3 hb
+    (spec_allocBind_iterate 4 hb (spec_allocBind_iterate 5 hb (spec_allocBind_iterate 6 hb
+    (spec_allocBind_iterate 7 hb ?_))))))
   exact h.conseq (fun _ ⟨st, hst, e⟩ => e ▸ hpre st hst) (fun _ h => h)
     fun _ _ ⟨_, _, _⟩ hp st hst e => hpost st _ hst (e ▸ hp)
 
@@ -273,7 +273,7 @@ theorem exec_eighCompressBlock_congr_split (p : P) (mm : ι) (k r : IExp ℕ) (Q
 
 /-- The index arithmetic of a split: the blocks of the bases and of the compressions fit their
 arenas, and the compressions lie past the node's block. -/
-theorem eighSplit_bounds_split {n d lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
+private theorem eighSplit_bounds_split {n d lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
     (hd : d < D) :
     2 * (n * n) * d + 2 * n * lo + 2 * (k * kp) ≤ 2 * (n * n) * D ∧
       2 * (n * n) * d + 2 * n * lo + 2 * (k * kp) + 2 * (k * (k - kp)) ≤ 2 * (n * n) * D ∧
