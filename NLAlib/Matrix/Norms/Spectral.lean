@@ -24,7 +24,8 @@ of the `Matrix.Norms.L2Operator` scope. Unlike that norm, `specNorm` needs no `D
 
 ## Main results
 
-* `NLAlib.norm_toLp_mulVec_le`: $\|\mathbf{A}\mathbf{x}\| \le \|\mathbf{A}\|_2 \|\mathbf{x}\|$.
+* `NLAlib.norm_toLp_mulVec_le`: $\|\mathbf{A}\mathbf{x}\| \le \|\mathbf{A}\|_2 \|\mathbf{x}\|$;
+  `NLAlib.norm_toLp_vecMul_le`, the row form.
 * `NLAlib.specNorm_le_iff`: the characterisation as the least such constant.
 * `NLAlib.specNorm_mul_le`, `NLAlib.specNorm_pow_le`: submultiplicativity, for rectangular
   factors and for powers.
@@ -257,6 +258,12 @@ theorem specNorm_transpose (A : Matrix m n 𝕜) : specNorm Aᵀ = specNorm A :=
     simp
   rw [h, specNorm_map_star, specNorm_conjTranspose]
 
+/-- The row form of `NLAlib.norm_toLp_mulVec_le`:
+$\|\mathbf{u}^{\mathsf{T}}\mathbf{A}\| \le \|\mathbf{A}\|_2\|\mathbf{u}\|$. -/
+theorem norm_toLp_vecMul_le (A : Matrix m n 𝕜) (u : m → 𝕜) :
+    ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
+  simpa [specNorm_transpose, Matrix.mulVec_transpose] using norm_toLp_mulVec_le Aᵀ u
+
 open scoped Matrix.Norms.L2Operator in
 /-- The **C*-identity**: $\|\mathbf{A}^{\mathsf{H}}\mathbf{A}\|_2 = \|\mathbf{A}\|_2^2$. -/
 theorem specNorm_conjTranspose_mul_self (A : Matrix m n 𝕜) :
@@ -379,15 +386,24 @@ meta def evalSpecNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.specNorm 7 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.specNorm_nonneg #[e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.specNorm, #[_, _, _, _, _, _, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.specNorm_nonneg #[A]))
+    | _ => failure
 
 /-! Regression: the extension must not panic on a let-bound variable. -/
 example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (G : Matrix m n 𝕜) :
     0 ≤ NLAlib.specNorm G := by
   set g := NLAlib.specNorm G
   positivity
+
+/-! Regression: a `set` atom whose value is a spectral norm, in a `have`. -/
+example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (V : Matrix m n 𝕜) :
+    True := by
+  set a := NLAlib.specNorm V
+  have : 0 ≤ a := by positivity
+  trivial
 
 end Mathlib.Meta.Positivity

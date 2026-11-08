@@ -483,9 +483,11 @@ meta def evalSchattenNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.schattenNorm 8 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.schattenNorm_nonneg #[e.appFn!.appArg!, e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.schattenNorm, #[_, _, _, _, _, _, a, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.schattenNorm_nonneg #[a, A]))
+    | _ => failure
 
 end Mathlib.Meta.Positivity
