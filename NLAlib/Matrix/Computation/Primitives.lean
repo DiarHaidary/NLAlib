@@ -50,7 +50,6 @@ $\tau > 0$ (§12 of the note).
 
 * `NLAlib.exists_floatMachine_isAccurate`: the exact machine.
 * `NLAlib.exists_floatMachine_isAccurate_binaryFloatRound`: a bounded-format machine.
-* `NLAlib.abs_sub_binaryFloatRound_le_mul_max`: binary rounding with a floor, at every scale.
 * `NLAlib.IsMatMulErr.of_specNorm_mul_sub_le_add`: from a mixed bound to the floor form.
 -/
 
@@ -344,35 +343,6 @@ theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (h�
         change ‖z - z‖ ≤ _
         simp }
 
-/-- Binary rounding errs by at most $u\max(\lvert x\rvert, \tau)$ at every scale, with
-$u = 2^{-p}$ and $\tau = 2^{e_{\min} + p - 1}$ (no overflow in the quantizer). -/
-theorem abs_sub_binaryFloatRound_le_mul_max (fmt : Float.Model.Format) {r : ℝ → ℤ}
-    (hr : ∀ x, Computation.AbsRelErr 0 (1 / 2) x (r x : ℝ)) (x : ℝ) :
-    |x - Computation.binaryFloatRound fmt r x| ≤
-      (2 : ℝ)⁻¹ ^ fmt.mantissaBits *
-        max |x| ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) := by
-  by_cases hn : fmt.minExponent ≤ Int.log 2 |x| + 1 - fmt.mantissaBits
-  · have h := (Computation.relErr_binaryFloatRound_of_minExponent_le fmt hr x hn).absRelErr le_rfl
-    simp only [Computation.AbsRelErr, add_zero] at h
-    exact h.trans (by gcongr; exact le_max_left _ _)
-  · set e := fmt.targetExponent (Int.log 2 |x| + 1) with he_def
-    have he : e = fmt.minExponent := by
-      rw [he_def, Float.Model.Format.targetExponent_eq]; exact max_eq_right (by omega)
-    have hpos : (0 : ℝ) < 2 ^ e := zpow_pos two_pos _
-    have hq : |x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)| ≤ 1 / 2 := by
-      simpa only [Computation.AbsRelErr, zero_mul, zero_add] using hr (x / (2 : ℝ) ^ e)
-    have heq : x - Computation.binaryFloatRound fmt r x =
-        (x / (2 : ℝ) ^ e - (r (x / (2 : ℝ) ^ e) : ℝ)) * 2 ^ e := by
-      dsimp only [Computation.binaryFloatRound, e]
-      field_simp
-    have hτ : (1 / 2 : ℝ) * 2 ^ e =
-        (2 : ℝ)⁻¹ ^ fmt.mantissaBits * 2 ^ (fmt.minExponent + fmt.mantissaBits - 1) := by
-      rw [he, zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, inv_pow]
-      field_simp
-    rw [heq, abs_mul, abs_of_pos hpos]
-    calc _ ≤ (1 / 2 : ℝ) * 2 ^ e := mul_le_mul_of_nonneg_right hq hpos.le
-      _ ≤ _ := by rw [hτ]; gcongr; exact le_max_right _ _
-
 /-- A bounded-format machine meets the contract: for a binary format `fmt` with precision
 $p$, smallest exponent $e_{\min}$ and largest finite number $\Omega$, and nonnegative constants,
 there is a `NLAlib.FloatMachine` on stored reals whose addition, subtraction, multiplication,
@@ -393,7 +363,7 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
       (∀ x y, M.sub x y = Computation.binaryFloatRound fmt r (x - y)) ∧
       (∀ x y, M.mul x y = Computation.binaryFloatRound fmt r (x * y)) ∧
       (∀ x y, y ≠ 0 → M.div x y = Computation.binaryFloatRound fmt r (x / y)) := by
-  have hround := abs_sub_binaryFloatRound_le_mul_max fmt hr
+  have hround := Computation.abs_sub_binaryFloatRound_le fmt hr
   set u : ℝ := (2 : ℝ)⁻¹ ^ fmt.mantissaBits
   set τ : ℝ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
   have hu : 0 ≤ u := by positivity

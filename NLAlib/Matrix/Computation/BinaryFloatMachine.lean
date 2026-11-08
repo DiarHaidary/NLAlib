@@ -185,7 +185,7 @@ private theorem isMatMulErr_binaryFloatMachine
   specNorm_mul_sub_le {l m n} A B _ := by
     rw [decode_mm_binaryFloatMachine]
     refine (specNorm_sub_map_le (by positivity) (by positivity)
-      (abs_sub_binaryFloatRound_le_mul_max fmt hr) (le_max_left l (max m n))
+      (Computation.abs_sub_binaryFloatRound_le fmt hr) (le_max_left l (max m n))
       ((le_max_right m n).trans (le_max_right _ _)) _).trans ?_
     gcongr
     exact specNorm_mul_le _ _
@@ -211,7 +211,7 @@ private theorem isQRErr_binaryFloatMachine
       (binaryFloatMachine fmt r).qr := by
   intro m n A _
   set R := Computation.binaryFloatRound fmt r
-  have hround := abs_sub_binaryFloatRound_le_mul_max fmt hr
+  have hround := Computation.abs_sub_binaryFloatRound_le fmt hr
   obtain ⟨hQ, hRt, hA⟩ := Classical.choose_spec (Classical.choose_spec
     (exists_hasOrthonormalCols_mul_isUpperTrapezoidal (A.map (decodeComplex id))))
   set Q := Classical.choose (exists_hasOrthonormalCols_mul_isUpperTrapezoidal
@@ -259,7 +259,7 @@ theorem isAccurate_binaryFloatMachine
     (binaryFloatMachine fmt r).IsAccurate id ((2 : ℝ)⁻¹ ^ fmt.mantissaBits)
       ((2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)) fmt.maxFinite (fun d => 2 * d)
       (fun d => 2 * d) √2 := by
-  have hround := abs_sub_binaryFloatRound_le_mul_max fmt hr
+  have hround := Computation.abs_sub_binaryFloatRound_le fmt hr
   set u : ℝ := (2 : ℝ)⁻¹ ^ fmt.mantissaBits
   set τ : ℝ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
   set R := Computation.binaryFloatRound fmt r
