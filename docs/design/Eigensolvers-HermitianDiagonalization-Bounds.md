@@ -414,11 +414,11 @@ difficulty.
 | CG4' | `measureReal_specNorm_ge_add_le_of_hasLaw_complexGaussianMatrix` | M | — |
 | CG6' | `measureReal_singularValues_le_le_exp_one_mul_of_hasLaw_complexGaussianMatrix` | L | CG7 |
 | DF1' | `HasOrthonormalCols.exists_hasOrthonormalCols_specNorm_mul_sub_le_sqrt_two_mul` | M | — |
-| DF2' | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le` | L | DF1' |
-| DP1' | `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix'` | M | DF2', CG4', CG6' |
+| DF2' | `FloatMachine.IsArithAccurate.exists_hasOrthonormalCols_specNorm_mul_sub_deflate_le_of_mul_le` | L | DF1' |
+| DP1' | `FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_of_hasLaw_complexGaussianMatrix'` | M | DF2', CG4', CG6' |
 | NS13 | `div_mul_abs_le_abs_newtonSchulz_of_abs_le` | S | — |
-| SN3' | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add` | M | — |
-| SN4' | `FloatMachine.IsAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le` | L | SN3', NS13 |
+| SN3' | `FloatMachine.IsArithAccurate.specNorm_sub_decodeMatrix_newtonSchulzRounded_le_add` | M | — |
+| SN4' | `FloatMachine.IsArithAccurate.specNorm_cfc_sign_sub_decodeMatrix_newtonSchulzSign_le_of_mul_le` | L | SN3', NS13 |
 | EB1c' | `FloatMachine.IsAccurate.specNorm_sub_decodeMatrix_eighProjectors_le_of_isEighNodeBudget` | M | SN4' |
 | EB1b' | `FloatMachine.IsAccurate.eighStep_isSplit_iff_of_isEighNodeBudget` | M | EB1c' |
 | EB1d' | `FloatMachine.IsAccurate.exists_hasOrthonormalCols_specNorm_sub_le_of_isEighNodeBudget` | L | EB1c', EB1b', DF2' |
@@ -579,7 +579,7 @@ Searched, none:
   among them. Kept as general lemmas: SN3, SN4, DF1, DF2, DP1, CG4, CG5, CG6, EB2–EB4. `bisectionSignTol`
   is no longer used by any theorem.
 - **Names.** DP1' is
-  `FloatMachine.IsAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix`,
+  `FloatMachine.IsArithAccurate.measureReal_not_exists_specNorm_mul_sub_deflate_le_le_exp_neg_sq_add_of_hasLaw_complexGaussianMatrix`,
   since DP1 stays. For the name checker, NS13 is `div_mul_abs_le_abs_newtonSchulz_of_abs_le` (N2)
   and CG7 is `measureReal_norm_sq_ge_le_of_hasLaw_complexGaussian` (N15).
 - **Files** (D8 move). New files:

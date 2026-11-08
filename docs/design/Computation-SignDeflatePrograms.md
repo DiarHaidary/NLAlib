@@ -201,7 +201,7 @@ $2e^{-t^2/2} + r^2x^2$, hdiag's bound unchanged (the run never fails).
 TR2 and TR3, which use hdiag's Theorem 2.6 and Theorem 3.3. TR1, that the shallow test passes
 within $N_0 + 1$ steps (shown in step (2) of the proof of Theorem 2.6 but not stated there; the
 program's success needs it), is now an HDIAG lemma:
-`NLAlib.FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate` in
+`NLAlib.FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate` in
 `NLAlib/Matrix/Computation/NewtonSchulzSign.lean` (cleanup/hdiag, with the chain helpers of the
 Theorem 2.6 proof made public). TR2 and TR3 are proved; both use only the standard axioms.
 
@@ -314,7 +314,7 @@ IM (machine, `InterpMachine.lean`), PK (kernels, new `Matrix/Computation/PairKer
 | SG1–SG11 | test block, step block (value, success), loop, (a), (b), tree (`toStmt_compiled`, value, success), counts | M ×7, S ×3, M |
 | DF1–DF8 | draw loop, (a), (b), sampler rewrite, tree ×3, counts | M, M, M, S, S, S, S, M |
 | CT1 | `hasLaw_tapeComplexMatrix_of_hasLaw_tapeLaw` | M |
-| TR1–TR3 (proved) | `FloatMachine.IsAccurate.exists_le_newtonSchulzTest_iterate` (HDIAG), `matrixFreeRoundedProbNewtonSchulzSign`, `matrixFreeRoundedProbDeflate` | L, M, M |
+| TR1–TR3 (proved) | `FloatMachine.IsArithAccurate.exists_le_newtonSchulzTest_iterate` (HDIAG), `matrixFreeRoundedProbNewtonSchulzSign`, `matrixFreeRoundedProbDeflate` | L, M, M |
 
 ## 10. Deviations from the brief
 
