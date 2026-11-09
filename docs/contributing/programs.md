@@ -235,7 +235,7 @@ one `simp` over all outputs of a 36-operation block exhausts the heartbeats.
   taking `rest`) and state that piece in `Wp` form.
 - A builder argument written `.var k` where the callee's spec has `.const k` (an old spec that is
   not index-generic): `Computation.RoutineSpec.of_runEquiv` with `Computation.RunEquiv` built by
-  the tactic `run_equiv` after unfolding the block's definitions; values equal only by arithmetic
+  the tactic run_equiv after unfolding the block's definitions; values equal only by arithmetic
   are left as goals (`Computation.Cell.normIdx_eq_of_eval_eq`). Do not compare whole statements
   by `exec_eq_of_normIdx_eq I rfl`: it can exhaust the kernel on a large block.
 - A loop whose iterations all modify inside one fixed list: `Computation.RoutineSpec.forRange_const`
