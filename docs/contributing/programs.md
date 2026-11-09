@@ -254,7 +254,7 @@ calls with keep bundles: `NLAlib.spec_eighSignBody` (same file, `:200`); corolla
 `NLAlib.spec_eighNodeProjectors` (`NLAlib/Matrix/Computation/SpectralBisectionNode/Setup.lean:207`).
 A split with a named window, allocation prefix and `congr`: `NLAlib.spec_eighSplitBody`,
 `NLAlib.spec_eighSplitBlock`
-(`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:569`, `:726`). A loop over slots
+(`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:522`, `:679`). A loop over slots
 with an invariant, a head def with its continuation, and both old lemmas from one spec:
 `NLAlib.spec_eighDownLevel` (`NLAlib/Matrix/Computation/SpectralBisectionProgram/DownLevel.lean:1140`). A whole program with
 ten allocations of different lengths and two level loops: `NLAlib.spec_eighProg`

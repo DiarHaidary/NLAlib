@@ -1,7 +1,163 @@
 {
  "date": "2026-11-09",
- "note": "PROG-LOGIC (program logic, S2 migration). Before v0.1: no deprecated aliases. holds_of_exec_eighBottomLevel drops its hypothesis hlit (exact integer literals), which the refinement of the spent level never used; the statement is strictly stronger and its two callers pass one argument less. No public name changed. exists_floatMachine_isAccurate drops hcN (0 ≤ cN), and exists_mul_card_le_specNorm_add_smul drops hδ (0 ≤ δ): neither proof used them, both statements are stronger; the implicit cN and δ become explicit since no hypothesis fixes them any more. Both replace a have _ := linter workaround.",
- "renames": [],
+ "note": "PROG-LOGIC (program logic, S2 migration). Before v0.1: no deprecated aliases. holds_of_exec_eighBottomLevel drops its hypothesis hlit (exact integer literals), which the refinement of the spent level never used; the statement is strictly stronger and its two callers pass one argument less. 31 public helper theorems of the old execution walks are removed; each is listed with the specification or logic rule that now carries its content (N12). exists_floatMachine_isAccurate drops hcN (0 ≤ cN), and exists_mul_card_le_specNorm_add_smul drops hδ (0 ≤ δ): neither proof used them, both statements are stronger; the implicit cN and δ become explicit since no hypothesis fixes them any more. Both replace a have _ := linter workaround.",
+ "renames": [
+  {
+   "old": "NLAlib.EighArenas.LevelHolds.of_read_eq_of_one_le",
+   "new": "NLAlib.spec_eighDownLevel",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.EighArenas.Shaped.of_getElem?_shape_eq",
+   "new": "NLAlib.spec_eighNodeBlock",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.alloc_inv_node",
+   "new": "NLAlib.Computation.spec_allocBind_chain",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.blockDisjoint_of_ne",
+   "new": "NLAlib.Computation.blockDisjoint_of_fst_ne",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.eq_of_exec_loop_of_eval_eq_zero",
+   "new": "NLAlib.Computation.RoutineSpec.forRange",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighCompressBlock_bind_split",
+   "new": "NLAlib.spec_eighCompressBlock",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighDeflateBlock_bind_split",
+   "new": "NLAlib.spec_eighDeflateBlock",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighUpNode_of_readsIdx_four",
+   "new": "NLAlib.spec_eighUpNode_four",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighUpNode_of_readsIdx_one",
+   "new": "NLAlib.spec_eighUpNode_one",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighUpNode_of_readsIdx_shift",
+   "new": "NLAlib.spec_eighUpNode_shiftStep",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighUpSlot_of_readsIdx",
+   "new": "NLAlib.spec_eighUpSlot",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_eighUpSlot_of_readsIdx_zero",
+   "new": "NLAlib.spec_eighUpSlot",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exec_seq_loop_of_eval_eq_one",
+   "new": "NLAlib.Computation.RoutineSpec.forRange",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_exec_alloc_of_exists",
+   "new": "NLAlib.Computation.Spec.allocBind_named",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_exec_and_exec_of_exec_seq",
+   "new": "NLAlib.Computation.Triple.seq",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_exec_of_exec_seq_alloc",
+   "new": "NLAlib.Computation.spec_allocBind_chain",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_exec_seq_bin",
+   "new": "NLAlib.Computation.spec_bin_getD",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_exec_seq_litIdx",
+   "new": "NLAlib.Computation.spec_litIdx_getD",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_of_exec_alloc",
+   "new": "NLAlib.Computation.Spec.allocBind_named",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.exists_of_exec_bindIdx",
+   "new": "NLAlib.Computation.Spec.bindIdx_of_read",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.mem_handles_of_levelCell",
+   "new": "NLAlib.spec_eighDownLevel",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.name_state_node",
+   "new": "NLAlib.spec_eighNodeBlock",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.node_setup_holds",
+   "new": "NLAlib.spec_eighNodeSetup",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.read_eq_div_and_read_eq_neg_of_write",
+   "new": "NLAlib.spec_eighUpLevel",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.read_pops_node",
+   "new": "NLAlib.spec_eighNodeBlock",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.shape_and_read_of_exec_loop_bin",
+   "new": "NLAlib.Computation.spec_forRange_bin",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.shape_of_exec_loop_copy",
+   "new": "NLAlib.Computation.spec_forRange_copy",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.shape_of_exec_loop_draw",
+   "new": "NLAlib.Computation.spec_forRange_draw",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.shape_of_exec_loop_litIdx",
+   "new": "NLAlib.Computation.spec_forRange_litIdx",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.shape_pos_of_exec_ztraceRe_node",
+   "new": "NLAlib.Computation.spec_ztraceRe",
+   "removed": true
+  },
+  {
+   "old": "NLAlib.store_eq_of_exec_eighSlotBody",
+   "new": "NLAlib.spec_eighSlotBody",
+   "removed": true
+  }
+ ],
  "statementChanged": [
   "NLAlib.holds_of_exec_eighBottomLevel",
   "NLAlib.exists_floatMachine_isAccurate",
