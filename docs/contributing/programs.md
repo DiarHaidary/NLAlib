@@ -227,11 +227,23 @@ gives a frame only under value hypotheses, use the kernel's `*_frame` spec
 - Dispatch on a stored kind (an index binder, then guarded blocks `eighWhen (eighEqInd c i)`): one
   spec per kind, chaining `NLAlib.spec_eighWhen` for the taken guard and
   `NLAlib.routineSpec_eighWhen_of_eval_eq_zero` for the others (`NLAlib.spec_eighUpNode_one`).
-- Develop in a scratch file that imports the built modules (8–10 s a check instead of minutes),
-  then move the proofs into the library and build. Before stage_check, the naming rules can be
-  run on an extraction with the rules check's `--partial` mode.
+- Allocations of different lengths: `Computation.spec_allocBind_chain`. A footprint block that
+  runs past its buffer: `Computation.Modifies.of_sub_shape` (cells past the buffer read `none`).
+  A statement with `.var k` against a spec at `.const k`: `Computation.Spec.of_exec_eq`, with the
+  run equation built in its own `have`. A postcondition that is a metavariable is not a pattern:
+  name it first (`obtain ⟨Post, hPost⟩`).
 - Spec lookup: the catalog `NLAlibTools/SpecCatalog.lean` writes every specification with its
   pre, footprint, post and file:line (`SPEC_CATALOG=<out.md> lake env lean NLAlibTools/SpecCatalog.lean`).
+
+**Fast check loop.** Most of a job's time goes to waiting on Lean, so:
+1. Iterate on the edited file against the modules already built:
+   `flock <lock> lake env lean <file>`, or a scratch file that imports it (seconds per check).
+2. After an edit, rebuild only that module and its direct dependents: `lake build <Module>`
+   through the lock.
+3. Once per job, at the end and before the final commit: one `lake build --wfail NLAlib`, one
+   `bash scripts/stage_check.sh` and the Targets dry run. Never per iteration, never in a polling
+   loop. The naming rules run only in stage_check; the rules check's `--partial` mode on an
+   extraction runs them earlier.
 
 **Worked examples.** Scalar steps, a nested conditional, frame by `Modifies`:
 `NLAlib.spec_eighClampBlock` (`NLAlib/Matrix/Computation/SpectralBisectionClamp.lean:70`).
@@ -244,4 +256,6 @@ A split with a named window, allocation prefix and `congr`: `NLAlib.spec_eighSpl
 `NLAlib.spec_eighSplitBlock`
 (`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:569`, `:726`). A loop over slots
 with an invariant, a head def with its continuation, and both old lemmas from one spec:
-`NLAlib.spec_eighDownLevel` (`NLAlib/Matrix/Computation/SpectralBisectionProgram/DownLevel.lean:1140`).
+`NLAlib.spec_eighDownLevel` (`NLAlib/Matrix/Computation/SpectralBisectionProgram/DownLevel.lean:1140`). A whole program with
+ten allocations of different lengths and two level loops: `NLAlib.spec_eighProg`
+(`NLAlib/Matrix/Computation/SpectralBisectionProgram/Refinement.lean:872`).
