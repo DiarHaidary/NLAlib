@@ -734,6 +734,86 @@ theorem Writable.exists_len {s : Store P K} {b off N : ℕ} (h : Writable s p b 
   obtain ⟨len, hl, hlt⟩ := h (N - 1) (by omega)
   exact ⟨len, hl, by omega⟩
 
+/-! #### Conditionals, the empty builder, memory, and facts added to a specification -/
+
+/-- **A conditional in a builder**, on a comparison whose outcome `r` the precondition fixes: the
+arms are specified routines with one footprint. -/
+theorem RoutineSpec.ifThenElse {c : CmpOp} {r : Bool} {tb eb : Builder P ι ℕ ℕ Unit}
+    {pre preT preE : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)}
+    {postT postE : St P K C → St P K C → Prop} (ht : RoutineSpec m I preT tb fp postT)
+    (he : RoutineSpec m I preE eb fp postE)
+    (hcmp : ∀ st, pre st → ∃ a b, st.store.read p x.buf x.idx.eval = some a ∧
+      st.store.read p y.buf y.idx.eval = some b ∧ I.sem.cmp p c a b = some r)
+    (hT : ∀ st, pre st → r = true → preT (st.addCnt (I.charge (.cmp p))))
+    (hE : ∀ st, pre st → r = false → preE (st.addCnt (I.charge (.cmp p)))) :
+    RoutineSpec m I pre (Builder.ifThenElse p c x y tb eb) fp fun st st' =>
+      (r = true → postT (st.addCnt (I.charge (.cmp p))) st') ∧
+        (r = false → postE (st.addCnt (I.charge (.cmp p))) st') :=
+  RoutineSpec.stmt (s := .ite p c x y tb.run eb.run) (Spec.ite ht.spec he.spec hcmp hT hE)
+
+/-- The empty builder modifies nothing and ends where it starts. -/
+theorem RoutineSpec.pure {pre : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)} :
+    RoutineSpec m I pre (pure () : Builder P ι ℕ ℕ Unit) fp fun st st' => st' = st :=
+  ⟨fun f st => by
+    change exec I (f ()).run st = (exec I .skip st).bind (exec I (f ()).run)
+    rw [exec_skip, Option.bind_some],
+    fun _ _ => (wp_skip).mpr ⟨Modifies.refl _ _, rfl⟩⟩
+
+/-- An instruction keeps the current and peak memory. -/
+theorem triple_instr_mem (i : Instr P ℕ ℕ) :
+    Triple .liberal I (fun _ => True) (.instr i) fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW := by
+  intro st _ st' h
+  rw [exec_instr] at h
+  obtain ⟨_, -, rfl⟩ := Option.map_eq_some_iff.mp h
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- `skip` keeps the current and peak memory. -/
+theorem triple_skip_mem :
+    Triple .liberal I (fun _ => True) .skip fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW :=
+  fun _ _ => (wp_skip).mpr ⟨rfl, rfl, rfl, rfl⟩
+
+/-- Runs in sequence that keep the current and peak memory keep it. -/
+theorem Triple.seq_mem {s t : Stmt P ι ℕ ℕ}
+    (hs : Triple .liberal I (fun _ => True) s fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW)
+    (ht : Triple .liberal I (fun _ => True) t fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW) :
+    Triple .liberal I (fun _ => True) (.seq s t) fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW :=
+  (Triple.seq hs ht fun _ _ _ _ => trivial).conseq (fun _ h => h)
+    fun _ _ _ ⟨_, h₁, h₂⟩ => ⟨h₂.1.trans h₁.1, h₂.2.1.trans h₁.2.1, h₂.2.2.1.trans h₁.2.2.1,
+      h₂.2.2.2.trans h₁.2.2.2⟩
+
+/-- A conditional whose arms keep the current and peak memory keeps it. -/
+theorem Triple.ite_mem {c : CmpOp} {s t : Stmt P ι ℕ ℕ}
+    (hs : Triple .liberal I (fun _ => True) s fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW)
+    (ht : Triple .liberal I (fun _ => True) t fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW) :
+    Triple .liberal I (fun _ => True) (.ite p c x y s t) fun st st' =>
+      st'.cur = st.cur ∧ st'.peak = st.peak ∧ st'.curW = st.curW ∧ st'.peakW = st.peakW := by
+  intro st _
+  rw [wp_ite]
+  intro ⟨b, st₁⟩ h
+  obtain rfl : st₁ = { st with cnt := st.cnt + I.charge (.cmp p) } := snd_of_cmpStep_eq_some h
+  cases b
+  · exact wp_mono (ht _ trivial) fun _ h => h
+  · exact wp_mono (hs _ trivial) fun _ h => h
+
+/-- **A specification with a liberal fact of every run added**: what every successful run of `s`
+satisfies (a frame, a kept memory) joins the postcondition, in every mode. -/
+theorem Spec.and_liberal {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ} {fp : List (ℕ × ℕ × ℕ)}
+    {post R : St P K C → St P K C → Prop} (h : Spec m I pre s fp post)
+    (hR : Triple .liberal I (fun _ => True) s R) :
+    Spec m I pre s fp fun st st' => post st st' ∧ R st st' := by
+  intro st hst
+  cases m
+  · obtain ⟨st', hr, hm, hp⟩ := h st hst
+    exact ⟨st', hr, hm, hp, hR st trivial st' hr⟩
+  · exact fun st' hr => ⟨(h st hst st' hr).1, (h st hst st' hr).2, hR st trivial st' hr⟩
+
 end Instructions
 
 omit [DecidableEq P] [AddMonoid C] in
@@ -823,7 +903,8 @@ macro_rules
       (try simp only [BlocksDisjoint, matBlock, List.cons_append, List.nil_append,
         List.nodup_cons, List.nodup_nil, List.mem_cons, List.mem_append, List.not_mem_nil,
         or_false, and_true, not_or, forall_eq_or_imp, forall_eq, List.forall_mem_cons,
-        blockDisjoint_iff, ne_eq, not_false_eq_true, imp_false] at $names* ⊢)
+        blockDisjoint_iff, ne_eq, not_false_eq_true, IExp.eval_const, IExp.eval_ofNat,
+        imp_false] at $names* ⊢)
       (try ring_nf (config := { ifUnchanged := .silent }) at $names* ⊢)
       (try clear * - $names*)
       omega))
