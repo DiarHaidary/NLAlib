@@ -85,3 +85,131 @@ structure, an edit that must change a hash, a forged handle, a callee with an op
 each script lists its fixtures). `scripts/AccessModelFixtures.lean` proves that the model forms
 of known cheating programs are false. `scripts/check_rules.py` checks E5, E6 and E8. The tools
 library `NLAlibTools` ([proofs](proofs.md)) is not part of the library and is not held to its rules.
+
+## Proving a program
+
+A program proof is the mathematical proof replayed one call at a time. Write the mathematics
+first, then one routine specification per block, each proved by the skeleton below; reuse the
+specifications that exist (the catalog: `SPEC_CATALOG=out.md lake env lean
+NLAlibTools/SpecCatalog.lean` lists every theorem concluding a `Computation.RoutineSpec`,
+`Computation.Spec` or `Computation.Triple`, with its pre, footprint and post).
+
+**1. The mathematics, as named lemmas.** What the block computes is a function on matrices and
+scalars, stated and proved apart from the program: a loop is the iterate of its step
+(`NLAlib.newtonSchulzLoop_eq_iterate`), a clamp is a formula (`NLAlib.toNat_eighClamp`), a
+nonzero divisor is a lemma on the model (`Computation.IsRelErrSem.dec_ne_zero_of_mul_eq_some`).
+The block proof then only moves these values through the store.
+
+**2. The statement.** One theorem per block, for every mode `md`:
+
+```lean
+theorem spec_fooBlock (md : Mode) … (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧
+      (∀ p x, safe p x) ∧ u p < 1)) (A₀ : Matrix …) (hXY : X ≠ Y) … :
+    RoutineSpec md I
+      (fun st => pairLayout.Holds st.store p X xo.eval A₀ ∧ st.store.read p c 0 = some z ∧
+        md.Needs (dec p z ≠ 0 ∧ Writable st.store p Y 0 (n * n * 2)))   -- pre
+      (fooBlock p (.const n) X xo c Y)                                   -- the program
+      [matBlock Y 0 n n 2, (t, 0, 5)]                                    -- footprint
+      fun st st' => pairLayout.Holds st'.store p Y 0 (fooMath M A₀ z) ∧ PosKept st st'
+```
+
+- Footprint: an explicit list of `matBlock b off rows cols 2` blocks and `(b, off, len)` cells,
+  never a `List.range` map; a window several blocks share is a named list
+  (`NLAlib.eighSplitWindow`). A data-dependent size is a parameter with an equation
+  (`(kp) (hkp : kp = …)`).
+- Pre: input values, then the success-only facts (writable blocks, nonzero divisors, defined
+  literals) under `md.Needs`. A correctness-only fact goes in the post as a guard (`A → Q`) or in
+  the pre as `md = .liberal → …`. The range of the standard model is a parameter `safe`.
+- No `let` in the statement; give each declaration its own `omit … in`.
+- In the proof, `md.Needs` facts are used without a case split: `hN.mono fun h => …`
+  (`Computation.Mode.Needs.mono`), `Computation.Mode.Needs.elim`, `Computation.Mode.needs_and`,
+  `Computation.Mode.needs_of` for a fact that always holds.
+
+**3. The proof skeleton.** One step per call, each spec elaborated in its own `have` (machine
+arguments by name: `toNat`, `qrR`, `unif`, `normal`, `mmR`, and `pairLayout (K := K)`), then
+one `refine` of the call rule naming the next state:
+
+```lean
+  refine ⟨by exec_composable, fun st ⟨hX, hc, hc1, hN⟩ => ?_⟩
+  have s₁ := spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+    (normal := normal) md hs p n (X := X) (Y := T) (xo := xo) (yo := 0) (c := ⟨c, 0⟩) z A₀
+    (by fp_omega [hXT])
+  refine s₁.wp_bind_keep ((readsOnly_pairLayoutHolds p X xo.eval A₀).and
+      (readsOnly_cellsHold [(p, c, 1, some w)])) (by fp_omega [hXT, hcT])  -- kept, disjoint
+    ⟨hX, hc, hN.mono (·.1)⟩ ⟨hX, (cellsHold_nil _).cons hc1⟩                -- pre, bundle
+    fun st₁ hm₁ h₁ ⟨hX₁, hC₁⟩ => ?_                                        -- next state
+  have s₂ := …
+  refine s₂.wp_run_keep … fun st₂ hm₂ h₂ hF₂ => ?_                        -- last call
+  exact ⟨(hm₁.trans hm₂).of_sub (by simp [matBlock]), h₂.1, h₂.2.trans h₁.2⟩
+```
+
+`Computation.RoutineSpec.wp_bind` / `Computation.RoutineSpec.wp_run` are the same without a
+bundle. The closing `exact` gives `Modifies` of the block's footprint (by
+`Computation.Modifies.of_sub` with the witness blocks explicit), the post, and `PosKept` by
+`.trans` along the steps. A scalar instruction is `RoutineSpec.ins (spec_bin_getD …)`
+(`Computation.RoutineSpec.ins`, `Computation.spec_lit`, `Computation.spec_bin_getD`,
+`Computation.spec_un_getD`, `Computation.spec_litIdx_getD`, `Computation.spec_copy`; the getD
+forms need `Inhabited K`, from the model's lit_ok field). A conditional is
+`Computation.RoutineSpec.ifThenElse`; an index binder is `Computation.RoutineSpec.bindIdx_of_read`
+with `(pre := fun s => s = stᵢ)`, closed by `.wp_run rfl`.
+
+**4. Values across calls (keep bundles).** A fact read by a later call rides in the bundle `F`
+of `Computation.RoutineSpec.wp_bind_keep`: scalar cells as `Computation.CellsHold` (built by
+`Computation.CellsHold.cons` from `Computation.cellsHold_nil`; `.head` is the cell consed last,
+read by `hC.read (.tail _ (.head _))`), matrices as `pairLayout.Holds`
+(`Computation.readsOnly_pairLayoutHolds`), joined by `Computation.ReadsOnly.and`. Its read set
+must be disjoint from the call's footprint (one fp_omega): a bundle holds only what the next
+call does not write, so split bundles, re-bundle the output of a call when a later call needs
+it, drop a cell after its last read (`Computation.CellsHold.sub`). Across allocations, transfer
+a whole bundle with `Computation.ReadsOnly.of_read_eq_below`.
+
+**5. Sub-blocks.** Write a long block as nested sub-builders, `(do A₁ … Aₖ) >>= fun _ => (do B₁
+…)`, so `r >>= f` matches the call rule syntactically; prove each sub-block as its own spec with
+the footprint form its consumer uses. A spec stated about a different but run-equal builder is
+moved by `Computation.RoutineSpec.congr`, built in a separate `have`. Prove composability once
+per block, with general arguments (`NLAlib.executionComposable_eighCompressBlock`).
+
+**6. Allocations.** Nest `Computation.Spec.allocBind_named` for buffers of different lengths,
+then one `refine spec_allocBind_iterate j hb (fp := G) (post := Q) ?_` per further buffer of
+one length (`Computation.spec_allocBind_iterate`), and wrap in `Computation.RoutineSpec.scope`.
+The body's hypotheses are about the allocated state, its conclusion about the released state
+(`NLAlib.spec_eighNodeBlock_of_body`, `NLAlib.spec_eighSplitBlock_of_body`).
+
+**7. Loops.** `Computation.RoutineSpec.forRange` (or `Computation.Spec.loop`) with the
+invariant "the store holds the iterate": `fun st₀ k st => State ((step)^[k] A) st.store ∧ … ∧
+PosKept st₀ st`; the step is the one-iteration spec, and the math lemma rewrites the iterate to
+the algorithm's function.
+
+**8. Old lemma pairs become corollaries.** A refinement lemma is `(spec_eighSignBlock .liberal
+… trivial …).spec.holds_of_exec hpre hrun` (`Computation.Triple.holds_of_exec`), a success lemma
+`(spec_eighSignBlock .total …).spec.exists_exec hpre` (`Computation.Triple.exists_exec`), with dummy
+`u`, `dec`, `safe` at `liberal`; pass the start state explicitly after an index binder. Facts
+of every run (memory, shape) join by `Computation.RoutineSpec.and_liberal`. An old lemma
+without a spec is adapted by `Computation.Triple.of_exec`.
+
+**9. Frames.** Every frame holds in every mode, unconditionally: if an old refinement lemma
+gives a frame only under value hypotheses, use the kernel's `*_frame` spec
+(`Computation.spec_zhermShift_frame`, `Computation.spec_kcall_frame`) or build one with
+`Computation.Spec.seq_frame`, `Computation.Spec.loop_frame`, `Computation.Spec.frame_of_sub`.
+
+**Pitfalls.**
+- A nested `exact` chain of calls leaves metavariables, and a spec inlined in a `refine` can take
+  18 s a step: always `have sᵢ := …` first.
+- fp_omega clears the context: pass every bound and disequality it needs (fp_omega [hi, hlen]).
+  It unfolds `Computation.matBlock`, `Computation.cellBlocks`, `List.Nodup` and normalises
+  products. If slow: `Computation.blockDisjoint_of_fst_ne`, or `Computation.blockDisjoint_iff`
+  then nlinarith. Peel `x ∈ H.handles` with List.mem_append before omega.
+- Never use `pairLayout.width` or a `List.range` map in a footprint.
+- Close `x = x` components with trivial; split_ifs cases equal up to defeq by `absurd h1 h2`.
+- Proofs at most 80 lines: split by sub-block, not by tactic tricks; default heartbeats.
+
+**Worked examples.** Scalar steps, a nested conditional, frame by `Modifies`:
+`NLAlib.spec_eighClampBlock` (`NLAlib/Matrix/Computation/SpectralBisectionClamp.lean:70`).
+A loop as an iterate: `NLAlib.spec_eighSignIter` and `NLAlib.spec_eighSignLoop`
+(`NLAlib/Matrix/Computation/SpectralBisectionNode/SignStep.lean:79`, `:158`); scalar prologue and
+calls with keep bundles: `NLAlib.spec_eighSignBody` (same file, `:200`); corollaries:
+`NLAlib.holds_of_exec_eighSignBlock` (`:427`). The cleanest chain of kernel calls with `have sᵢ`:
+`NLAlib.spec_eighNodeProjectors` (`NLAlib/Matrix/Computation/SpectralBisectionNode/Setup.lean:207`).
+A split with a named window, allocation prefix and `congr`: `NLAlib.spec_eighSplitBody`,
+`NLAlib.spec_eighSplitBlock`
+(`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:569`, `:726`).
