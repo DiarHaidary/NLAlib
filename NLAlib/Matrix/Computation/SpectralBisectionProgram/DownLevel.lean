@@ -510,7 +510,7 @@ private theorem downSlotsInv_succ_of_slot {p : P} {H : EighArenas} {n F ℓ₀ d
         (fun h => by
           have := lt_of_win hlt hwin
           omega)) (hdn1 lo y' hlo ⟨a', ha', hl'⟩)
-    · obtain rfl : y = y' := eighLoc_eq_of_slot hn1 (ha.trans ha'.symm) hl hl'
+    · obtain rfl : y = y' := eq_of_eighLoc_slot hn1 (ha.trans ha'.symm) hl hl'
       exact hdone
   · rw [hfrW q b i (hall w y (Nat.lt_succ_self w) ⟨a, ha, hl⟩) ht4]
     exact hfr1 q b i (fun lo y' hlo hn' => hall lo y' (Nat.lt_succ_of_lt hlo) hn') ht4

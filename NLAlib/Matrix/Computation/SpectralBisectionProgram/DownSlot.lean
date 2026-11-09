@@ -100,7 +100,7 @@ def EighSlotDone (H : EighArenas) (sem : ScalarSem P K) (s : Store P K) (p : P)
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
 /-- Two paths of one length that reach the same slot reach the same node: the nodes of a depth
 have disjoint nonempty ranges. -/
-theorem eighLoc_eq_of_slot {M : FloatMachine K ℕ ℕ} {N F : ℕ} {R₀ β : K}
+theorem eq_of_eighLoc_slot {M : FloatMachine K ℕ ℕ} {N F : ℕ} {R₀ β : K}
     {A : Matrix (Fin N) (Fin N) (K × K)} {ε : K} {ℓ₀ : ℕ} (hN : 1 ≤ N) {a a' : List Bool}
     {lo : ℕ} {y y' : EighNode K} (hlen : a.length = a'.length)
     (h : eighLoc M N F R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y))
@@ -681,16 +681,17 @@ omit [AddMonoid C] [Inhabited K] in
 footprint of the step's outcome (`NLAlib.eighSlotFp`), when the window test fails. -/
 theorem eighBranchWindow_eq_eighSlotFp {M : FloatMachine K ℕ ℕ} {n F d lo k ℓ : ℕ}
     (hk2 : 2 ≤ k) (H : EighArenas) {A : Matrix (Fin k) (Fin k) (K × K)} {R R₀ ε β : K}
-    (s : EighSample ℕ ℕ n) (hRt : M.le R (M.mul ε R₀) = false) :
-    let B := newtonSchulzSign M β (M.mul (M.ofNat 2) R) F
-      (M.hermShift A (M.unif (M.div R (M.ofNat ℓ)) s.1))
-    let Pp := M.hermScale (M.hermShift B (M.neg M.one)) (M.ofNat 2)
+    (s : EighSample ℕ ℕ n) (hRt : M.le R (M.mul ε R₀) = false)
+    {B Pp : Matrix (Fin k) (Fin k) (K × K)}
+    (hB : B = newtonSchulzSign M β (M.mul (M.ofNat 2) R) F
+      (M.hermShift A (M.unif (M.div R (M.ofNat ℓ)) s.1)))
+    (hPp : Pp = M.hermScale (M.hermShift B (M.neg M.one)) (M.ofNat 2)) :
     eighBranchWindow H n d lo k (min k (M.toNat (M.add (M.traceRe Pp) (M.div M.one (M.ofNat 2)))))
       = eighSlotFp H n d lo k (eighStep M n F R₀ β A R ε ℓ s) := by
-  intro B Pp
+  subst hB hPp
   have hk : ¬ k ≤ 1 := by omega
   unfold eighStep
-  simp only [B, Pp, hk, hRt, if_false, Bool.false_eq_true]
+  simp only [hk, hRt, if_false, Bool.false_eq_true]
   unfold eighBranchWindow
   split_ifs <;> first | (exfalso; omega) | simp [eighSlotFp]
 
@@ -735,13 +736,13 @@ theorem spec_eighNodeStep {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
     split_ifs with h0
     · rfl
     · exact (Nat.floor_eq_zero.mpr (by linarith [not_le.mp h0])).symm
-  have hwin := eighBranchWindow_eq_eighSlotFp (d := d) (lo := lo) (ℓ := ℓ₀ + d) hk2 H (A := y.A)
-    (R₀ := R₀) (β := β) (F := F) (eighTapeSample n d lo) hRt
   let M := eighTapeMachine I p mmR qrR
   let B := newtonSchulzSign M β (M.mul (M.ofNat 2) y.R) F (M.hermShift y.A
     (M.unif (M.div y.R (M.ofNat (ℓ₀ + d))) (eighTapeSample n d lo).1))
   let Pp := M.hermScale (M.hermShift B (M.neg M.one)) (M.ofNat 2)
   let Pm := M.hermScale (M.negMat (M.hermShift B M.one)) (M.ofNat 2)
+  have hwin := eighBranchWindow_eq_eighSlotFp (d := d) (lo := lo) (ℓ := ℓ₀ + d) hk2 H (A := y.A)
+    (R₀ := R₀) (β := β) (F := F) (eighTapeSample n d lo) hRt (B := B) (Pp := Pp) rfl rfl
   have hn := spec_eighNodeBlock (u := u) (safe := safe) hmm hqr md p n ℓ₀ F d lo y.k hsem hflag
     hcmp (fun q m hm => hlit q m (by omega)) htn hkn hk2 H hbufs hlt y.A B Pp Pm y.R β
     (I.tape .uniform (n * d + lo)) M.one (M.ofNat 2) (M.div M.one (M.ofNat 2)) (M.neg M.one)

@@ -227,7 +227,7 @@ theorem spec_eighBottomLevel (md : Mode) (p : P) (n ℓ₀ F D : ℕ) (H : EighA
       obtain ⟨v, hvr, hv⟩ := Option.bind_eq_some_iff.mp (hlev.1 a lo y ha hay).1
       have hb := eighLoc_bounds (by omega : 1 ≤ n) hay
       exact spec_eighBottomStep md p n F D lo y.k H hH hv hvr hlo (by omega) hN
-        (fun a' y' ha' hay' => by rw [eighLoc_eq_of_slot (by omega) (ha.trans ha'.symm) hay hay'])
+        (fun a' y' ha' hay' => by rw [eq_of_eighLoc_slot (by omega) (ha.trans ha'.symm) hay hay'])
         fun a' y' lo' ha' hay' hlt => Or.inr
           (le_of_eighLoc_lt (ha'.trans ha.symm) hay hay' hlt)
     · push Not at hy
@@ -262,7 +262,7 @@ budget $0$ (`NLAlib.EighArenas.OutHolds` at $D$: the machine's identity and zero
 outside the output and eigenvalue arenas at depth $D$ is unchanged, the store shape and the tape
 positions too. No printed source. -/
 theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ F D : ℕ)
-    (_hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
+    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
     {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped st.store p n D)
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
@@ -273,6 +273,7 @@ theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ 
       (∀ q b i, ¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n D b i) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
+  have _ := hlit
   have hUE : H.Ua ≠ H.Ea := fun e => by have hnd := hH.1; simp [EighArenas.handles, e] at hnd
   obtain ⟨hm, hout, hp⟩ := (spec_eighBottomLevel (I := I) (mmR := mmR) (qrR := qrR) .liberal p n
     ℓ₀ F D H).spec.holds_of_exec ⟨hH, hlev, trivial⟩ h
