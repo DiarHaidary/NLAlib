@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisectionNode
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Levels
 
 /-!
 # One slot of the downward level of the spectral bisection program
@@ -144,6 +145,37 @@ def EighSlotDone (H : EighArenas) (sem : ScalarSem P K) (s : Store P K) (p : P)
     ∀ (b : Bool) (lo' : ℕ) (y' : EighNode K), eighLoc M n F R₀ β d lo y [b] = some (lo', y') →
       ReadsIdx sem s p H.Sz (n * (d + 1) + lo') y'.k ∧
         pairLayout.Holds s p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo') y'.A
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- Two paths of one length that reach the same slot reach the same node: the nodes of a depth
+have disjoint nonempty ranges. -/
+theorem eighLoc_eq_of_slot {M : FloatMachine K ℕ ℕ} {N F : ℕ} {R₀ β : K}
+    {A : Matrix (Fin N) (Fin N) (K × K)} {ε : K} {ℓ₀ : ℕ} (hN : 1 ≤ N) {a a' : List Bool}
+    {lo : ℕ} {y y' : EighNode K} (hlen : a.length = a'.length)
+    (h : eighLoc M N F R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y))
+    (h' : eighLoc M N F R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a' = some (lo, y')) : y = y' := by
+  by_cases hae : a = a'
+  · subst hae
+    rw [h] at h'
+    exact (Prod.mk.inj (Option.some_inj.mp h')).2
+  · have h1 := (eighLoc_bounds hN h).1
+    have h2 := (eighLoc_bounds hN h').1
+    rcases eighLoc_disjoint hlen hae h h' with h0 | h0 <;> omega
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The range of a node at an earlier slot of the same depth ends before a later node's slot. -/
+theorem le_of_eighLoc_lt {M : FloatMachine K ℕ ℕ} {N F : ℕ} {R₀ β : K}
+    {A : Matrix (Fin N) (Fin N) (K × K)} {ε : K} {ℓ₀ : ℕ} {a a' : List Bool} {lo lo' : ℕ}
+    {y y' : EighNode K} (hlen : a'.length = a.length)
+    (h : eighLoc M N F R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a = some (lo, y))
+    (h' : eighLoc M N F R₀ β 0 0 ⟨N, A, R₀, ε, ℓ₀⟩ a' = some (lo', y')) (hlt : lo' < lo) :
+    lo' + y'.k ≤ lo := by
+  have hae : a' ≠ a := by
+    rintro rfl
+    rw [h] at h'
+    have := (Prod.mk.inj (Option.some_inj.mp h')).1
+    omega
+  rcases eighLoc_disjoint hlen hae h' h with h0 | h0 <;> omega
 
 omit [AddMonoid C] [Inhabited K] in
 /-- A split of a node step is proper. -/

@@ -345,6 +345,16 @@ theorem RoutineSpec.forRange {n : IExp ℕ} {body : ℕ → Builder P ι ℕ ℕ
       fun st₀ st' => Inv st₀ n.eval st' :=
   RoutineSpec.stmt (s := .loop n fun i => (body i).run) (Spec.loopFp fp Inv h0 hstep)
 
+/-- A loop in a builder with one footprint for every iteration: the iterations modify the blocks
+`fp`, which the loop then modifies. -/
+theorem RoutineSpec.forRange_const {n : IExp ℕ} {body : ℕ → Builder P ι ℕ ℕ Unit}
+    (fp : List (ℕ × ℕ × ℕ)) (Inv : St P K C → ℕ → St P K C → Prop)
+    (h0 : ∀ st, pre st → Inv st 0 st)
+    (hstep : ∀ st₀, pre st₀ → ∀ k < n.eval,
+      Spec m I (Inv st₀ k) (body k).run fp fun _ st' => Inv st₀ (k + 1) st') :
+    RoutineSpec m I pre (Builder.forRange n body) fp fun st₀ st' => Inv st₀ n.eval st' :=
+  RoutineSpec.stmt (s := .loop n fun i => (body i).run) (Spec.loop Inv h0 hstep)
+
 /-- **An index binder of specifications**: the precondition fixes the stored value `v`, which
 converts to `k`; the body is specified at `k` with the fact `k ≤ bound` and may have a footprint
 depending on `k`; the binder's postcondition records `k ≤ bound`, which the total mode needs. -/

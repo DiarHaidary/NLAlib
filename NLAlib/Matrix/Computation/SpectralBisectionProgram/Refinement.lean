@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.BottomLevel
+public import NLAlib.Matrix.Computation.SpectralBisectionProgram.DownLevel
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.UpLevel
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Transfer
 
