@@ -174,6 +174,15 @@ theorem ReadsOnly.pop {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} {
   have := hrs x hx
   rw [Store.shape_pop, Array.getElem?_pop, if_pos (by rw [Store.size_shape]; omega)]
 
+/-- **A predicate on buffers below `N`**: a predicate reading only blocks of buffers below `N`
+survives a store with the same shapes and reads below `N` (the store after allocations or
+releases on top). -/
+theorem ReadsOnly.of_read_eq_below {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} {N : ℕ}
+    {s s' : Store P K} (hF : ReadsOnly F rs) (hrs : ∀ x ∈ rs, x.1 < N) (h : F s)
+    (hsh : ∀ x < N, s'.shape[x]? = s.shape[x]?)
+    (hr : ∀ q x i, x < N → s'.read q x i = s.read q x i) : F s' :=
+  hF s s' h (fun x hx => hsh x.1 (hrs x hx)) fun q x hx _ _ => hr q x.1 _ (hrs x hx)
+
 /-- One stored cell reads only itself. -/
 theorem readsOnly_read (q : P) (b i : ℕ) (v : Option K) :
     ReadsOnly (fun s : Store P K => s.read q b i = v) [(b, i, 1)] :=
@@ -193,6 +202,16 @@ def cellBlocks (cs : List (P × ℕ × ℕ × Option K)) : List (ℕ × ℕ × �
 theorem readsOnly_cellsHold (cs : List (P × ℕ × ℕ × Option K)) :
     ReadsOnly (CellsHold cs) (cellBlocks cs) := fun _ _ hs _ hrd c hc => by
   simpa using (hrd c.1 _ (List.mem_map_of_mem hc) 0 Nat.one_pos).trans (hs c hc)
+
+/-- **A block of cells with a property each**: the predicate that every cell $w < N$ of buffer `b`
+at tag `q` satisfies `R w` reads only the block `(b, 0, N)` (stored words of a tape, a sample
+block). -/
+theorem readsOnly_forall_read (q : P) (b N : ℕ) (R : ℕ → Option K → Prop) :
+    ReadsOnly (fun s : Store P K => ∀ w < N, R w (s.read q b w)) [(b, 0, N)] :=
+  fun _ _ hs _ hrd w hw => by
+    have e := hrd q (b, 0, N) List.mem_cons_self w hw
+    simp only [Nat.zero_add] at e
+    exact e ▸ hs w hw
 
 /-- A cell of a bundle reads its value. -/
 theorem CellsHold.read {cs : List (P × ℕ × ℕ × Option K)} {s : Store P K} {q : P} {b i : ℕ}

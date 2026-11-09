@@ -10,13 +10,20 @@ public import NLAlib.Matrix.Computation.SpectralBisectionNode.Split
 /-!
 # The set-up of the spectral bisection node step
 
-The set-up of the node step of `NLAlib.eighProg`, up to the index binder of the split index: the
-stored shift $\sigma$ and $-\sigma$, the sign step, the projectors and the value $\mathrm{fl}(t +
-\mathrm{fl}(1/2))$ that the binder converts; only scratch buffers are written.
+The set-up of the node step of `NLAlib.eighProg`, up to the clamp of the split index, as routine
+specifications of the program logic (`docs/design/Computation-ProgramLogic.md`): the stored shift
+$\sigma$ and $-\sigma$, the sign step, the projectors and the value
+$\mathrm{fl}(t + \mathrm{fl}(1/2))$ that the index binder converts; only scratch buffers are
+written. Each block is a sequence of calls of specified routines and instructions, the values
+carried across calls in bundles of cells (`NLAlib.Computation.CellsHold`). The scratch prefix of
+the node step (its seven allocations) is `NLAlib.spec_eighNodeBlock_of_body`.
 
 ## Main results
 
-* `NLAlib.node_setup_holds`: the values of the set-up.
+* `NLAlib.spec_eighNodeScalars`, `NLAlib.spec_eighNodeSign`, `NLAlib.spec_eighNodeProjectors`:
+  the parts of the set-up.
+* `NLAlib.spec_eighNodeSetup`: the set-up.
+* `NLAlib.spec_eighNodeBlock_of_body`: the scratch prefix of the node step.
 -/
 
 @[expose] public section
@@ -31,510 +38,498 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
-omit [Inhabited K] in
-/-- A trace keeps the shape of the store and the tape positions. -/
-theorem shape_pos_of_exec_ztraceRe_node (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ}
-    {dst : Cell ℕ ℕ} {st st' : St P K C}
-    (h : exec I (ztraceRe (ι := ι) p (.const n) X xo dst).run st = some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  have hins : ∀ {i : Instr P ℕ ℕ} {s s' : St P K C}, (∀ q d x, i ≠ .draw q d x) →
-      exec I (.instr i) s = some s' → s'.store.shape = s.store.shape ∧ s'.pos = s.pos := by
-    intro i s s' hi hs
-    rw [exec_instr] at hs
-    obtain ⟨r, hr, rfl⟩ := Option.map_eq_some_iff.mp hs
-    refine ⟨Instr.shape_of_run_eq_some hr, ?_⟩
-    cases i with
-    | draw q d x => exact absurd rfl (hi q d x)
-    | _ => simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hr; aesop
-  change exec I (.seq (.named _ _ (.seq (.instr _) (.seq (.loop _ _) .skip))) .skip) st =
-    some st' at h
-  rw [exec_seq_skip, exec_named, exec_seq] at h
-  obtain ⟨s₁, h₁, h⟩ := Option.bind_eq_some_iff.mp h
-  rw [exec_seq_skip] at h
-  obtain ⟨hsh₁, hps₁⟩ := hins (by intro _ _ _ h; cases h) h₁
-  refine forall_of_exec_loop_eq_some I
-    (fun _ s => s.store.shape = st.store.shape ∧ s.pos = st.pos) ⟨hsh₁, hps₁⟩ ?_ h
-  rintro i - s₃ s₄ ⟨hsh, hps⟩ hex
-  change exec I (.seq (.instr (.bin _ _ _ _ _)) .skip) s₃ = some s₄ at hex
-  rw [exec_seq_skip] at hex
-  obtain ⟨hsh₄, hps₄⟩ := hins (by intro _ _ _ h; cases h) hex
-  exact ⟨hsh₄.trans hsh, hps₄.trans hps⟩
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- **A rounded product of nonzero values is nonzero** under the standard model at $u(p) < 1$:
+it decodes to $xy(1 + \delta)$ with $\lvert \delta \rvert < 1$. No printed source. -/
+theorem _root_.NLAlib.Computation.IsRelErrSem.dec_ne_zero_of_mul_eq_some {u : P → ℝ}
+    {dec : P → K → ℝ} {safe : P → ℝ → Prop} {sem : ScalarSem P K}
+    (hsem : IsRelErrSem u dec safe sem) {p : P} (hu : u p < 1) {x y v : K} (hx : dec p x ≠ 0)
+    (hy : dec p y ≠ 0) (hv : sem.bin p .mul x y = some v) : dec p v ≠ 0 := by
+  obtain ⟨δ, hδ, hdec⟩ := hsem.bin_err p .mul x y v trivial hv
+  rw [hdec]
+  exact mul_ne_zero (mul_ne_zero hx hy) (by linarith [(abs_le.mp hδ).1])
 
-omit [Inhabited K] in
-/-- A kernel block, then the rest. -/
-private theorem node_bind {b : Builder P ι ℕ ℕ Unit} {X : Stmt P ι ℕ ℕ}
-    (hb : ∀ k, ContT.run b k = .seq X (k ())) {f : Unit → Builder P ι ℕ ℕ Unit}
-    {st st' : St P K C} (h : exec I (b >>= f).run st = some st') :
-    ∃ σ, exec I b.run st = some σ ∧ exec I (f ()).run σ = some st' := by
-  rw [exec_run_bind I hb] at h
-  exact Option.bind_eq_some_iff.mp h
+/-- **The scalars of a node step's set-up as a routine specification**: from a state whose cell
+$2d$ of `Lv` holds $R$, cell `lo` of `Su` the uniform word $v$ and cell $1$ of `c` the stored
+$z_2$, the five instructions write $\sigma = \mathrm{fl}(R/z_2)$, $-\sigma$ and the shift
+$\mathrm{fl}(\mathrm{fl}(R/\mathrm{fl}(\ell_0 + d))v)$ in the cells $0$, $1$, $4$ of the scratch
+buffer `t` and modify only its cells $0$ to $4$, keeping the tape positions; in mode `total` they
+also succeed, given the standard model on the range `safe` holding everywhere, $u(p) < 1$, $z_2$
+decoding to a nonzero value, $\ell_0 + d \ge 1$ and the cells writable. No printed source. -/
+theorem spec_eighNodeScalars (md : Mode) {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop}
+    (p : P) (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ (∀ p x, safe p x) ∧ u p < 1))
+    (ℓ₀ d lo : ℕ) {Lv Su c t : ℕ} (R z₂ v : K) (htLv : t ≠ Lv) (htSu : t ≠ Su) :
+    RoutineSpec md I (fun st => st.store.read p Lv (2 * d) = some R ∧
+        st.store.read p Su lo = some v ∧ st.store.read p c 1 = some z₂ ∧
+        md.Needs (dec p z₂ ≠ 0 ∧ 1 ≤ ℓ₀ + d ∧ Writable st.store p t 0 5))
+      (do
+        ins (.bin p .div ⟨t, 0⟩ ⟨Lv, 2 * .const d⟩ ⟨c, 1⟩)
+        ins (.un p .neg ⟨t, 1⟩ ⟨t, 0⟩)
+        ins (.litIdx p ⟨t, 2⟩ (.const ℓ₀ + .const d))
+        ins (.bin p .div ⟨t, 3⟩ ⟨Lv, 2 * .const d⟩ ⟨t, 2⟩)
+        ins (.bin p .mul ⟨t, 4⟩ ⟨t, 3⟩ ⟨Su, .const lo⟩) : Builder P ι ℕ ℕ Unit) [(t, 0, 5)]
+      fun st st' => st'.store.read p t 0 = some ((eighTapeMachine I p mmR qrR).div R z₂) ∧
+        st'.store.read p t 1 = some ((eighTapeMachine I p mmR qrR).neg
+          ((eighTapeMachine I p mmR qrR).div R z₂)) ∧
+        st'.store.read p t 4 = some ((eighTapeMachine I p mmR qrR).mul
+          ((eighTapeMachine I p mmR qrR).div R
+            ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d))) v) ∧ PosKept st st' := by
+  refine ⟨by exec_composable, fun st ⟨hR, hSu, hc, hN⟩ => ?_⟩
+  have hN' := Mode.needs_and.mpr ⟨hsem, hN⟩
+  have hw := fun {fp} {s : Store P K} (i : ℕ) (hi : i < 5) (hm : Modifies fp st.store s) =>
+    hN.mono fun h => (h.2.2.of_modifies hm).of_le (off' := i) (n' := 1) (by omega) (by omega)
+  have s₁ := RoutineSpec.ins (spec_bin_getD (m := md) (I := I) (p := p) (op := .div)
+    (dst := ⟨t, 0⟩) (x := ⟨Lv, 2 * .const d⟩) (y := ⟨c, 1⟩) (a := R) (b := z₂))
+  refine s₁.wp_bind_keep
+    (readsOnly_cellsHold [(p, Lv, 2 * d, some R), (p, Su, lo, some v)]) (by fp_omega [htLv, htSu])
+    ⟨hR, hc, (Mode.needs_and.mpr ⟨hN'.mono fun ⟨h, h0, _⟩ =>
+      h.1.bin_ok p .div R z₂ trivial (fun _ => h0) (h.2.1 _ _), hw 0 (by omega) (.refl [] _)⟩)⟩
+    (((cellsHold_nil _).cons hSu).cons hR) fun st₁ hm₁ h₁ hC₁ => ?_
+  have s₂ := RoutineSpec.ins (spec_un_getD (m := md) (I := I) (p := p) (op := .neg)
+    (dst := ⟨t, 1⟩) (x := ⟨t, 0⟩) (a := (eighTapeMachine I p mmR qrR).div R z₂))
+  refine s₂.wp_bind_keep ((readsOnly_cellsHold _).and (readsOnly_cellsHold
+        [(p, t, 0, some ((eighTapeMachine I p mmR qrR).div R z₂))]))
+    (by fp_omega [htLv, htSu]) ⟨h₁.1, Mode.needs_and.mpr ⟨hsem.mono fun h =>
+      (h.1.neg p _).imp fun _ h => h.1, hw 1 (by omega) hm₁⟩⟩ ⟨hC₁, (cellsHold_nil _).cons h₁.1⟩
+    fun st₂ hm₂ h₂ ⟨hC₂, hT₂⟩ => ?_
+  have s₃ := RoutineSpec.ins (spec_litIdx_getD (m := md) (I := I) (p := p) (dst := ⟨t, 2⟩)
+    (e := .const ℓ₀ + .const d))
+  refine s₃.wp_bind_keep
+    ((readsOnly_cellsHold _).and (readsOnly_cellsHold _)) (by fp_omega [htLv, htSu])
+    (Mode.needs_and.mpr ⟨hsem.mono fun h => h.1.lit_ok p _ (h.2.1 _ _),
+      hw 2 (by omega) (hm₁.trans hm₂)⟩) ⟨hC₂, hT₂.cons h₂.1⟩ fun st₃ hm₃ h₃ ⟨hC₃, hT₃⟩ => ?_
+  have s₄ := RoutineSpec.ins (spec_bin_getD (m := md) (I := I) (p := p) (op := .div)
+    (dst := ⟨t, 3⟩) (x := ⟨Lv, 2 * .const d⟩) (y := ⟨t, 2⟩) (a := R)
+    (b := (eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d)))
+  refine s₄.wp_bind_keep
+    ((readsOnly_cellsHold [(p, Su, lo, some v)]).and (readsOnly_cellsHold _))
+    (by fp_omega [htLv, htSu]) ⟨hC₃.read (.head _), h₃.1, Mode.needs_and.mpr ⟨hN'.mono
+      fun ⟨h, _, hl, _⟩ => h.1.bin_ok p .div R _ trivial (fun _ => by
+        obtain ⟨z, hz⟩ := h.1.lit_ok p ((ℓ₀ + d : ℕ) : ℚ) (h.2.1 _ _)
+        change dec p ((I.sem.lit p ((ℓ₀ + d : ℕ) : ℚ)).getD default) ≠ 0
+        rw [hz]
+        exact h.1.dec_ne_zero_of_lit_eq_some h.2.2 (by norm_cast; omega) hz) (h.2.1 _ _),
+      hw 3 (by omega) (hm₁.trans hm₂ |>.trans hm₃)⟩⟩ ⟨hC₃.sub (by simp), hT₃⟩
+    fun st₄ hm₄ h₄ ⟨hC₄, hT₄⟩ => ?_
+  have s₅ := RoutineSpec.ins (spec_bin_getD (m := md) (I := I) (p := p) (op := .mul)
+    (dst := ⟨t, 4⟩) (x := ⟨t, 3⟩) (y := ⟨Su, .const lo⟩)
+    (a := (eighTapeMachine I p mmR qrR).div R ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d)))
+    (b := v))
+  refine s₅.wp_run_keep (readsOnly_cellsHold _)
+    (by fp_omega) ⟨h₄.1, hC₄.read (.head _), Mode.needs_and.mpr ⟨hsem.mono fun h =>
+      h.1.bin_ok p .mul _ v trivial (fun h => nomatch h) (h.2.1 _ _),
+      hw 4 (by omega) (hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄)⟩⟩ hT₄ fun st₅ hm₅ h₅ hT₅ => ?_
+  exact ⟨(hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄ |>.trans hm₅).of_sub (by simp),
+    hT₅.read (.tail _ (.head _)), hT₅.read (.head _), h₅.1,
+    h₅.2.trans (h₄.2.trans (h₃.2.trans (h₂.2.trans h₁.2)))⟩
 
-/-- The halves of a node step's set-up: from a state whose cell $2d$ of `Lv` holds $R$ and whose
-cell $1$ of `c` holds the stored $2$, two instructions write $\sigma = R/\mathrm{fl}(2)$ and
-$-\sigma$ in the cells $0$, $1$ of `t`; only those cells change. -/
-private theorem node_setup_half (p : P) (d : ℕ) (H : EighArenas) {t c : ℕ} {st st' : St P K C}
-    {R : K} (hR : st.store.read p H.Lv (2 * d) = some R)
-    (hc1 : st.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ)) (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      ins (.bin p .div ⟨t, 0⟩ ⟨H.Lv, 2 * .const d⟩ ⟨c, 1⟩)
-      ins (.un p .neg ⟨t, 1⟩ ⟨t, 0⟩)
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, (b ≠ t ∨ i ≠ 0 ∧ i ≠ 1) → σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      σ.store.read p t 0 = some (M.div R (M.ofNat 2)) ∧
-      σ.store.read p t 1 = some (M.neg (M.div R (M.ofNat 2))) ∧
-      st.store.read p c 1 = some (M.ofNat 2) := by
-  intro M
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  -- σ = R / fl(2)
-  rw [hr] at h
-  obtain ⟨aR, z2, v0, s1, haR, hz2, hv0, hw1, h⟩ := exists_of_exec_seq_bin h
-  change st.store.read p H.Lv (2 * d) = some aR at haR
-  change st.store.read p c 1 = some z2 at hz2
-  rw [hR, Option.some_inj] at haR
-  subst haR
-  have hM2 : M.ofNat 2 = z2 := by
-    change (I.sem.lit p ((2 : ℕ) : ℚ)).getD default = z2; rw [← hc1, hz2, Option.getD_some]
-  subst hM2
-  have hhalf : M.div R (M.ofNat 2) = v0 := by
-    change (I.sem.bin p .div R (M.ofNat 2)).getD default = v0; rw [hv0, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ1 e1s e1p h; simp only at e1s e1p; subst e1s
-  -- −σ
-  rw [hr] at h
-  obtain ⟨a1, v1, s2, ha1, hv1, hw2, h⟩ := exists_of_exec_seq_un h
-  rw [Store.read_of_write_eq_some hw1, Option.some_inj] at ha1
-  subst a1
-  have hnhalf : M.neg (M.div R (M.ofNat 2)) = v1 := by
-    rw [hhalf]; change (I.sem.un p .neg _).getD default = v1; rw [hv1, Option.getD_some]
-  change st.store.write p t 0 v0 = some σ1.store at hw1
-  change σ1.store.write p t 1 v1 = some s2 at hw2
-  refine ⟨_, h, fun q b i hb => ?_, ?_, e1p, ?_, ?_, hz2⟩
-  · change s2.read q b i = _
-    rw [Store.read_of_write_eq_some_of_ne hw2 (hb.imp id fun h => h.2),
-      Store.read_of_write_eq_some_of_ne hw1 (hb.imp id fun h => h.1)]
-  · change s2.shape = _
-    rw [Store.shape_of_write_eq_some hw2, Store.shape_of_write_eq_some hw1]
-  · change s2.read p t 0 = _
-    rw [Store.read_of_write_eq_some_of_ne hw2 (Or.inr (by omega)), hhalf]
-    exact Store.read_of_write_eq_some hw1
-  · rw [hnhalf]; exact Store.read_of_write_eq_some hw2
+/-- **The sign of a node step's set-up as a routine specification**: from a state of $s_0$
+buffers holding the node matrix $\mathbf{A}$ at its block of `Ma`, the shift $c$ in the cell $4$
+of `t`, $\beta$ in the cell $2$ of `par`, the stored $z_2$ in the cell $1$ of `c` and $R$ in the
+cell $2d$ of `Lv`, the block writes $\mathbf{W} = \mathbf{A} - c\mathbf{I}$ in `W`, $\beta$ and
+$\mathrm{fl}(z_2 R)$ in the cells $0$, $1$ of `sp` and the sign of $\mathbf{W}$ (step limit $F$)
+in `B` (scratch buffers below $s_0$); it modifies only those blocks and keeps the tape positions;
+in mode `total` it also succeeds, given the standard model on the range `safe` holding everywhere,
+$u(p) < 1$, $k \ge 1$, $z_2$ and $R$ decoding to nonzero values and the blocks writable. The
+semantics decides flags at `p`. No printed source. -/
+theorem spec_eighNodeSign {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
+    {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop} (p : P) (n F d lo k : ℕ)
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ (∀ p x, safe p x) ∧ u p < 1 ∧ 0 < k))
+    (hflag : I.sem.DecidesFlags p) {Ma Lv par c t sp W B s₀ : ℕ}
+    (A : Matrix (Fin k) (Fin k) (K × K)) (R β z₂ cv : K) (hMaW : Ma ≠ W) (htW : t ≠ W)
+    (hparW : par ≠ W) (hcW : c ≠ W) (hLvW : Lv ≠ W) (hcsp : c ≠ sp) (hLvsp : Lv ≠ sp)
+    (hspW : sp ≠ W) (hBW : B ≠ W) (hBsp : B ≠ sp) (hBs : B < s₀) (hWs : W < s₀)
+    (hsps : sp < s₀) :
+    RoutineSpec md I (fun st => st.store.size = s₀ ∧
+        pairLayout.Holds st.store p Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        st.store.read p t 4 = some cv ∧ st.store.read p par 2 = some β ∧
+        st.store.read p c 1 = some z₂ ∧ st.store.read p Lv (2 * d) = some R ∧
+        md.Needs (dec p z₂ ≠ 0 ∧ dec p R ≠ 0 ∧ Writable st.store p W 0 (k * k * 2) ∧
+          Writable st.store p sp 0 2 ∧ Writable st.store p B 0 (k * k * 2)))
+      (do
+        zhermShift p (.const k) Ma (eighBlockOff (.const n) (.const d) (.const lo)) ⟨t, 4⟩ W 0
+        ins (.copy p ⟨sp, 0⟩ ⟨par, 2⟩)
+        ins (.bin p .mul ⟨sp, 1⟩ ⟨c, 1⟩ ⟨Lv, 2 * .const d⟩)
+        eighSignBlock p mm (.const k) (.const F) W 0 sp 0 B 0 : Builder P ι ℕ ℕ Unit)
+      [matBlock W 0 k k 2, (sp, 0, 2), matBlock B 0 k k 2]
+      fun st st' => pairLayout.Holds st'.store p B 0 (newtonSchulzSign (eighTapeMachine I p mmR qrR)
+        β ((eighTapeMachine I p mmR qrR).mul z₂ R) F
+        ((eighTapeMachine I p mmR qrR).hermShift A cv)) ∧ PosKept st st' := by
+  have hs : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem) :=
+    hsem.mono fun h => h.1.mono_safe fun p x _ => h.2.1 p x
+  refine ⟨by exec_composable, fun st ⟨hsz, hA, ht4, hβ, hc, hR, hN⟩ => ?_⟩
+  have hN' := Mode.needs_and.mpr ⟨hsem, hN⟩
+  have s₁ := spec_zhermShift (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hs p k (X := Ma) (Y := W)
+    (xo := eighBlockOff (.const n) (.const d) (.const lo)) (yo := 0) (c := ⟨t, 4⟩) cv A
+    (by fp_omega [hMaW])
+  refine s₁.wp_bind_keep (readsOnly_cellsHold [(p, par, 2, some β), (p, c, 1, some z₂),
+      (p, Lv, 2 * d, some R)]) (by fp_omega [hparW, hcW, hLvW]) ⟨hA, ht4, hN.mono (·.2.2.1)⟩
+    (((cellsHold_nil _).cons hR |>.cons hc).cons hβ) fun st₁ hm₁ h₁ hC₁ => ?_
+  have s₂ := RoutineSpec.ins (spec_copy (m := md) (I := I) (p := p) (dst := ⟨sp, 0⟩)
+    (x := ⟨par, 2⟩) (a := β))
+  refine s₂.wp_bind_keep ((readsOnly_cellsHold [(p, c, 1, some z₂), (p, Lv, 2 * d, some R)]).and
+      (readsOnly_pairLayoutHolds p W 0 ((eighTapeMachine I p mmR qrR).hermShift A cv)))
+    (by fp_omega [hcsp, hLvsp, hspW]) ⟨hC₁.read (.head _), hN.mono fun h =>
+      (h.2.2.2.1.of_modifies hm₁).of_le (by simp) (by simp)⟩
+    ⟨hC₁.sub (by simp), h₁.1 (by fp_omega [htW])⟩ fun st₂ hm₂ h₂ ⟨hC₂, hW₂⟩ => ?_
+  have s₃ := RoutineSpec.ins (spec_bin_getD (m := md) (I := I) (p := p) (op := .mul)
+    (dst := ⟨sp, 1⟩) (x := ⟨c, 1⟩) (y := ⟨Lv, 2 * .const d⟩) (a := z₂) (b := R))
+  refine s₃.wp_bind_keep ((readsOnly_pairLayoutHolds p W 0 _).and
+      (readsOnly_cellsHold [(p, sp, 0, some β)])) (by fp_omega [hspW])
+    ⟨hC₂.read (.head _), hC₂.read (.tail _ (.head _)), Mode.needs_and.mpr ⟨hN'.mono
+      fun ⟨h, h0, hR0, _⟩ => h.1.bin_ok p .mul z₂ R trivial (fun h => nomatch h) (h.2.1 _ _),
+      hN.mono fun h => (h.2.2.2.1.of_modifies (hm₁.trans hm₂)).of_le (by simp) (by simp)⟩⟩
+    ⟨hW₂, (cellsHold_nil _).cons h₂.1⟩ fun st₃ hm₃ h₃ ⟨hW₃, hC₃⟩ => ?_
+  have s₄ := spec_eighSignBlock (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
+    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
+    hmm md p k F hsem hflag (A := W) (par := sp) (X := B) (ao := 0) (po := 0) (xo := 0)
+    ((eighTapeMachine I p mmR qrR).hermShift A cv) β ((eighTapeMachine I p mmR qrR).mul z₂ R)
+    (by fp_omega [hBW]) (by fp_omega [hBsp]) hBs (.inr hWs) hsps
+  have hm := hm₁.trans hm₂ |>.trans hm₃
+  refine s₄.wp_run ⟨(Store.size_eq_of_shape_eq hm.1).trans hsz, hW₃, hC₃.read (.head _), h₃.1,
+    hN'.mono fun ⟨h, h0, hR0, h1⟩ => ⟨by
+      obtain ⟨v, hv⟩ := h.1.bin_ok p .mul z₂ R trivial (fun h => nomatch h) (h.2.1 _ _)
+      change dec p ((I.sem.bin p .mul z₂ R).getD default) ≠ 0
+      rw [hv]
+      exact h.1.dec_ne_zero_of_mul_eq_some h.2.2.1 h0 hR0 hv, h1.2.2.of_modifies hm⟩⟩
+    fun st₄ hm₄ h₄ => ⟨(hm.trans hm₄).of_sub (by simp [matBlock]), h₄.1,
+      h₄.2.trans (h₃.2.trans (h₂.2.2.trans h₁.2))⟩
 
-/-- The scalars of a node step's set-up: from a state whose cell $2d$ of `Lv` holds $R$, whose
-cell `lo` of `Su` holds the node's uniform word and whose cell $1$ of `c` holds the stored $2$,
-five instructions write $\sigma = R/\mathrm{fl}(2)$, $-\sigma$ and the shift
-$\mathrm{unif}(R/\mathrm{fl}(\ell_0 + d), u)$ in the cells $0$, $1$, $4$ of the scratch buffer
-`t` (none of the others); only cells of `t` change. -/
-private theorem node_setup_scalars (p : P) (n ℓ₀ d lo : ℕ) (H : EighArenas) {t Su c : ℕ}
-    {st st' : St P K C} {R : K} (dtLv : t = H.Lv → False) (dtSu : t = Su → False)
-    (hR : st.store.read p H.Lv (2 * d) = some R)
-    (hSu : st.store.read p Su lo = some (I.tape .uniform (n * d + lo)))
-    (hc1 : st.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ))
-    (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      ins (.bin p .div ⟨t, 0⟩ ⟨H.Lv, 2 * .const d⟩ ⟨c, 1⟩)
-      ins (.un p .neg ⟨t, 1⟩ ⟨t, 0⟩)
-      ins (.litIdx p ⟨t, 2⟩ (.const ℓ₀ + .const d))
-      ins (.bin p .div ⟨t, 3⟩ ⟨H.Lv, 2 * .const d⟩ ⟨t, 2⟩)
-      ins (.bin p .mul ⟨t, 4⟩ ⟨t, 3⟩ ⟨Su, .const lo⟩)
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, (b = t → False) → σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      σ.store.read p t 0 = some (M.div R (M.ofNat 2)) ∧
-      σ.store.read p t 1 = some (M.neg (M.div R (M.ofNat 2))) ∧
-      σ.store.read p t 4 =
-        some (M.unif (M.div R (M.ofNat (ℓ₀ + d))) (eighTapeSample n d lo).1) ∧
-      st.store.read p c 1 = some (M.ofNat 2) := by
-  intro M
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  obtain ⟨σ2, h, f2, sh2, e2p, t0, t1, hz2⟩ :=
-    node_setup_half (mmR := mmR) (qrR := qrR) p d H hR hc1 _ h
-  -- ℓ
-  rw [hr] at h
-  obtain ⟨v2, s3, hv2, hw3, h⟩ := exists_of_exec_seq_litIdx h
-  have hMl : M.ofNat (ℓ₀ + d) = v2 := by
-    change (I.sem.lit p ((ℓ₀ + d : ℕ) : ℚ)).getD default = v2
-    change I.sem.lit p ((ℓ₀ + d : ℕ) : ℚ) = some v2 at hv2
-    rw [hv2, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ3 e3s e3p h; simp only at e3s e3p; subst e3s
-  have f3 : ∀ q b i, (b ≠ t ∨ i ≠ 2) → σ3.store.read q b i = σ2.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw3 hb
-  -- R / ℓ
-  rw [hr] at h
-  obtain ⟨aR', a2, v3, s4, haR', ha2, hv3, hw4, h⟩ := exists_of_exec_seq_bin h
-  change σ3.store.read p H.Lv (2 * d) = some aR' at haR'
-  rw [f3 _ _ _ (Or.inl fun h => dtLv h.symm), f2 _ _ _ (Or.inl fun h => dtLv h.symm), hR,
-    Option.some_inj] at haR'
-  subst aR'
-  rw [Store.read_of_write_eq_some hw3, Option.some_inj] at ha2
-  subst a2
-  have hdiv3 : M.div R (M.ofNat (ℓ₀ + d)) = v3 := by
-    rw [hMl]; change (I.sem.bin p .div R v2).getD default = v3; rw [hv3, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ4 e4s e4p h; simp only at e4s e4p; subst e4s
-  have f4 : ∀ q b i, (b ≠ t ∨ i ≠ 3) → σ4.store.read q b i = σ3.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw4 hb
-  -- the shift
-  rw [hr] at h
-  obtain ⟨a3, au, v4, s5, ha3, hau, hv4, hw5, h⟩ := exists_of_exec_seq_bin h
-  rw [Store.read_of_write_eq_some hw4, Option.some_inj] at ha3
-  subst a3
-  change σ4.store.read p Su lo = some au at hau
-  rw [f4 _ _ _ (Or.inl fun h => dtSu h.symm), f3 _ _ _ (Or.inl fun h => dtSu h.symm),
-    f2 _ _ _ (Or.inl fun h => dtSu h.symm), hSu, Option.some_inj] at hau
-  subst au
-  have hunif : M.unif (M.div R (M.ofNat (ℓ₀ + d))) (eighTapeSample n d lo).1 = v4 := by
-    rw [hdiv3]
-    change (I.sem.bin p .mul v3 (I.tape .uniform (n * d + lo))).getD default = v4
-    rw [hv4, Option.getD_some]
-  have f5 : ∀ q b i, (b ≠ t ∨ i ≠ 4) → s5.read q b i = σ4.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw5 hb
-  refine ⟨_, h, fun q b i hb => ?_, ?_, e4p.trans (e3p.trans e2p), ?_, ?_, ?_, hz2⟩
-  · change s5.read q b i = _
-    rw [f5 _ _ _ (Or.inl hb), f4 _ _ _ (Or.inl hb), f3 _ _ _ (Or.inl hb), f2 _ _ _ (Or.inl hb)]
-  · change s5.shape = _
-    rw [Store.shape_of_write_eq_some hw5, Store.shape_of_write_eq_some hw4,
-      Store.shape_of_write_eq_some hw3, sh2]
-  · change s5.read p t 0 = _
-    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega))]
-    exact t0
-  · change s5.read p t 1 = _
-    rw [f5 _ _ _ (Or.inr (by omega)), f4 _ _ _ (Or.inr (by omega)), f3 _ _ _ (Or.inr (by omega))]
-    exact t1
-  · rw [hunif]; exact Store.read_of_write_eq_some hw5
+/-- **The projectors of a node step's set-up as a routine specification**: from a state whose
+block at offset $0$ of `B` holds the sign $\mathbf{B}$ and whose cells $0$, $1$, $3$ of `c` hold
+$o$, $z_2$ and $m$, the block writes $\mathbf{P}_+ = \mathrm{fl}((\mathbf{B} + m\mathbf{I})/z_2)$ in
+`Pp` and $\mathbf{P}_- = \mathrm{fl}(-(\mathbf{B} + o\mathbf{I})/z_2)$ in `Pm`, through the
+scratch buffer `T` (the four buffers distinct and `c` none of them); it modifies only the blocks
+of `T`, `Pp`, `Pm` and keeps the tape positions; in mode `total` it also succeeds, given the
+standard model, $z_2$ decoding to a nonzero value and the blocks writable. No printed source. -/
+theorem spec_eighNodeProjectors (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (k : ℕ)
+    {c B T Pp Pm : ℕ} (Bm : Matrix (Fin k) (Fin k) (K × K)) (o z₂ m : K) (hBT : B ≠ T)
+    (hBPp : B ≠ Pp) (hTPp : T ≠ Pp) (hTPm : T ≠ Pm) (hPpPm : Pp ≠ Pm) (hcT : c ≠ T)
+    (hcPp : c ≠ Pp) (hcPm : c ≠ Pm) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p B 0 Bm ∧
+        st.store.read p c 0 = some o ∧ st.store.read p c 1 = some z₂ ∧
+        st.store.read p c 3 = some m ∧ md.Needs (dec p z₂ ≠ 0 ∧
+          Writable st.store p T 0 (k * k * 2) ∧ Writable st.store p Pp 0 (k * k * 2) ∧
+          Writable st.store p Pm 0 (k * k * 2)))
+      (do
+        zhermShift p (.const k) B 0 ⟨c, 3⟩ T 0
+        zhermScale p (.const k) T 0 ⟨c, 1⟩ Pp 0
+        zhermShift p (.const k) B 0 ⟨c, 0⟩ T 0
+        zneg p (.const k) (.const k) T 0 T 0
+        zhermScale p (.const k) T 0 ⟨c, 1⟩ Pm 0 : Builder P ι ℕ ℕ Unit)
+      [matBlock T 0 k k 2, matBlock Pp 0 k k 2, matBlock Pm 0 k k 2]
+      fun st st' => pairLayout.Holds st'.store p Pp 0 ((eighTapeMachine I p mmR qrR).hermScale
+          ((eighTapeMachine I p mmR qrR).hermShift Bm m) z₂) ∧
+        pairLayout.Holds st'.store p Pm 0 ((eighTapeMachine I p mmR qrR).hermScale
+          ((eighTapeMachine I p mmR qrR).negMat ((eighTapeMachine I p mmR qrR).hermShift Bm o))
+          z₂) ∧ PosKept st st' := by
+  refine ⟨by exec_composable, fun st ⟨hB, hc0, hc1, hc3, hN⟩ => ?_⟩
+  have hw := fun {fp} {s : Store P K} (hm : Modifies fp st.store s) =>
+    hN.mono fun h => (⟨h.1, h.2.1.of_modifies hm, h.2.2.1.of_modifies hm,
+      h.2.2.2.of_modifies hm⟩ : _ ∧ _ ∧ _ ∧ _)
+  have s₁ := spec_zhermShift (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hsem p k (X := B) (Y := T) (xo := 0)
+    (yo := 0) (c := ⟨c, 3⟩) m Bm (by fp_omega [hBT])
+  refine s₁.wp_bind_keep ((readsOnly_pairLayoutHolds p B 0 Bm).and
+      (readsOnly_cellsHold [(p, c, 0, some o), (p, c, 1, some z₂)])) (by fp_omega [hBT, hcT])
+    ⟨hB, hc3, hN.mono (·.2.1)⟩ ⟨hB, ((cellsHold_nil _).cons hc1).cons hc0⟩
+    fun st₁ hm₁ h₁ ⟨hB₁, hC₁⟩ => ?_
+  have s₂ := spec_zhermScale (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hsem p k (X := T) (Y := Pp) (xo := 0)
+    (yo := 0) (c := ⟨c, 1⟩) z₂ ((eighTapeMachine I p mmR qrR).hermShift Bm m) (by fp_omega [hTPp])
+    (by fp_omega [hcPp])
+  refine s₂.wp_bind_keep ((readsOnly_pairLayoutHolds p B 0 Bm).and (readsOnly_cellsHold _))
+    (by fp_omega [hBPp, hcPp]) ⟨h₁.1 (by fp_omega [hcT]), hC₁.read (.tail _ (.head _)),
+      (hw hm₁).mono fun h => ⟨h.1, h.2.2.1⟩⟩ ⟨hB₁, hC₁⟩ fun st₂ hm₂ h₂ ⟨hB₂, hC₂⟩ => ?_
+  have s₃ := spec_zhermShift (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hsem p k (X := B) (Y := T) (xo := 0)
+    (yo := 0) (c := ⟨c, 0⟩) o Bm (by fp_omega [hBT])
+  refine s₃.wp_bind_keep ((readsOnly_cellsHold [(p, c, 1, some z₂)]).and
+      (readsOnly_pairLayoutHolds p Pp 0 _)) (by fp_omega [hcT, hTPp])
+    ⟨hB₂, hC₂.read (.head _), (hw (hm₁.trans hm₂)).mono (·.2.1)⟩ ⟨hC₂.sub (by simp), h₂.1⟩
+    fun st₃ hm₃ h₃ ⟨hC₃, hP₃⟩ => ?_
+  have s₄ := spec_zneg (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hsem p k k (X := T) (Y := T) (xo := 0)
+    (yo := 0) ((eighTapeMachine I p mmR qrR).hermShift Bm o) (.inr ⟨rfl, rfl⟩)
+  refine s₄.wp_bind_keep ((readsOnly_cellsHold _).and (readsOnly_pairLayoutHolds p Pp 0 _))
+    (by fp_omega [hcT, hTPp]) ⟨h₃.1 (by fp_omega [hcT]),
+      (hw (hm₁.trans hm₂ |>.trans hm₃)).mono (·.2.1)⟩ ⟨hC₃, hP₃⟩ fun st₄ hm₄ h₄ ⟨hC₄, hP₄⟩ => ?_
+  have s₅ := spec_zhermScale (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hsem p k (X := T) (Y := Pm) (xo := 0)
+    (yo := 0) (c := ⟨c, 1⟩) z₂
+    ((eighTapeMachine I p mmR qrR).negMat ((eighTapeMachine I p mmR qrR).hermShift Bm o))
+    (by fp_omega [hTPm]) (by fp_omega [hcPm])
+  have hm := hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄
+  refine s₅.wp_run_keep (readsOnly_pairLayoutHolds p Pp 0 _) (by fp_omega [hPpPm])
+    ⟨h₄.1, hC₄.read (.head _), (hw hm).mono fun h => ⟨h.1, h.2.2.2⟩⟩ hP₄
+    fun st₅ hm₅ h₅ hP₅ => ⟨(hm.trans hm₅).of_sub (by simp [matBlock]), hP₅, h₅.1,
+      h₅.2.trans (h₄.2.trans (h₃.2.trans (h₂.2.trans h₁.2)))⟩
 
-/-- The sign of a node step's set-up: from a state whose node matrix $\mathbf{A}$ is held at its
-block of `Ma`, whose cell $4$ of `t` holds the shift $c$, cell $2$ of `par` holds $\beta$, cell
-$1$ of `c` the stored $2$ and cell $2d$ of `Lv` holds $R$, the block writes
-$\mathbf{W} = \mathbf{A} - c\mathbf{I}$ in `W`, $\beta$ and $\mathrm{fl}(2) R$ in the cells $0$, $1$
-of `sp` and the sign of $\mathbf{W}$ (step limit $F$) in `B` (three scratch buffers, distinct and
-none of the others); only cells of `W`, `sp`, `B` change. -/
-private theorem node_setup_sign {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n F d lo k : ℕ) (hk : lo + k ≤ n) (H : EighArenas)
-    {par c t sp W B : ℕ} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} {R β cv : K}
-    (dMaW : H.Ma = W → False) (dtW : t = W → False) (dparW : par = W → False)
-    (dcW : c = W → False) (dLvW : H.Lv = W → False) (dcsp : c = sp → False)
-    (dLvsp : H.Lv = sp → False) (dspW : sp = W → False)
-    (dspB : sp = B → False) (dWB : W = B → False)
-    (hB : st.store.shape[B]? = some (p, 2 * (n * n)))
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hcv : st.store.read p t 4 = some cv) (hpar : st.store.read p par 2 = some β)
-    (hc1 : st.store.read p c 1 = some ((eighTapeMachine I p mmR qrR).ofNat 2))
-    (hR : st.store.read p H.Lv (2 * d) = some R) (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      zhermShift p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo)) ⟨t, 4⟩ W 0
-      ins (.copy p ⟨sp, 0⟩ ⟨par, 2⟩)
-      ins (.bin p .mul ⟨sp, 1⟩ ⟨c, 1⟩ ⟨H.Lv, 2 * .const d⟩)
-      eighSignBlock p mm (.const k) (.const F) W 0 sp 0 B 0
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, (b = W → False) → (b = sp → False) → (b = B → False) →
-        σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      pairLayout.Holds σ.store p B 0
-        (newtonSchulzSign M β (M.mul (M.ofNat 2) R) F (M.hermShift A cv)) := by
-  intro M
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
-  have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
-      2 * (n * n) * d + 2 * n * lo := by simp [eighBlockOff]
-  have hkk : k * k ≤ n * n := Nat.mul_le_mul (by omega) (by omega)
-  -- W = A − cI
-  obtain ⟨σ6, h6, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hW6, hf6, hsh6, hp6⟩ := holds_of_exec_zhermShift
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := st) (st' := σ6) (by rw [hbo]; exact hA) hcv (bdn fun h => dMaW h.symm) (bdn dtW) h6
-  have f6 : ∀ q b i, (b = W → False) → σ6.store.read q b i = st.store.read q b i :=
-    fun q b i hb => hf6 q b i (bdn hb)
-  -- β
-  rw [hr] at h
-  obtain ⟨aβ, s7, haβ, hw7, h⟩ := exists_of_exec_seq_copy h
-  change σ6.store.read p par 2 = some aβ at haβ
-  rw [f6 _ _ _ dparW, hpar, Option.some_inj] at haβ
-  subst aβ
-  refine name_state_node h ?_; clear h; intro σ7 e7s e7p h; simp only at e7s e7p; subst e7s
-  have f7 : ∀ q b i, (b ≠ sp ∨ i ≠ 0) → σ7.store.read q b i = σ6.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw7 hb
-  -- fl(2) R
-  rw [hr] at h
-  obtain ⟨a5, a6, vb, s8, ha5, ha6, hvb, hw8, h⟩ := exists_of_exec_seq_bin h
-  change σ7.store.read p c 1 = some a5 at ha5
-  rw [f7 _ _ _ (Or.inl dcsp), f6 _ _ _ dcW, hc1, Option.some_inj] at ha5
-  subst a5
-  change σ7.store.read p H.Lv (2 * d) = some a6 at ha6
-  rw [f7 _ _ _ (Or.inl dLvsp), f6 _ _ _ dLvW, hR, Option.some_inj] at ha6
-  subst a6
-  have hmul : M.mul (M.ofNat 2) R = vb := by
-    change (I.sem.bin p .mul (M.ofNat 2) R).getD default = vb; rw [hvb, Option.getD_some]
-  refine name_state_node h ?_; clear h; intro σ8 e8s e8p h; simp only at e8s e8p; subst e8s
-  have f8 : ∀ q b i, (b ≠ sp ∨ i ≠ 1) → σ8.store.read q b i = σ7.store.read q b i :=
-    fun q b i hb => Store.read_of_write_eq_some_of_ne hw8 hb
-  have hsh8 : σ8.store.shape = st.store.shape := by
-    rw [Store.shape_of_write_eq_some hw8, Store.shape_of_write_eq_some hw7, hsh6]
-  -- the sign
-  obtain ⟨σ9, h9, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hB9, hf9, hsh9, hp9⟩ := holds_of_exec_eighSignBlock
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    hmm p hflag k F (A := W) (ao := 0) (par := sp) (po := 0) (X := B) (xo := 0)
-    (st := σ8) (st' := σ9)
-    (fun i j t => (f8 _ _ _ (Or.inl (fun h => dspW h.symm))).trans
-      ((f7 _ _ _ (Or.inl (fun h => dspW h.symm))).trans (hW6 i j t)))
-    (show σ8.store.read p sp 0 = some β from
-      (f8 _ _ _ (Or.inr (by omega))).trans (Store.read_of_write_eq_some hw7))
-    (show σ8.store.read p sp 1 = some vb from Store.read_of_write_eq_some hw8)
-    (bdn (fun h => dWB h.symm)) (bdn (fun h => dspB h.symm))
-    ⟨2 * (n * n), by rw [hsh8]; exact hB, by simp only [IExp.eval_zero]; omega⟩ h9
-  refine ⟨σ9, h, fun q b i hW hsp hbB => ?_, hsh9.trans hsh8,
-    hp9.trans (e8p.trans (e7p.trans hp6)), by rw [hmul]; exact hB9⟩
-  rw [hf9 q b i (bdn hbB), f8 _ _ _ (Or.inl hsp), f7 _ _ _ (Or.inl hsp), f6 _ _ _ hW]
+/-- **The set-up of a node step as a routine specification**, up to the clamp: from a state of
+$b + 7$ buffers whose top seven are the node step's scratch (shapes as allocated), holding the node
+matrix $\mathbf{A}$ at its block of `Ma`, $R$ in the cell $2d$ of `Lv`, $\beta$ in the cell $2$ of
+`par`, the uniform word $v$ in the cell `lo` of `Su` and $o$, $z_2$, $h$, $m$ in the cells $0$ to
+$3$ of `c` (all below $b$), the run writes $\sigma = \mathrm{fl}(R/z_2)$, $-\sigma$ and
+$\mathrm{fl}(\operatorname{tr}\mathbf{P}_+ + h)$ in the cells $0$, $1$, $6$ of the scratch
+buffer $b$ and the projectors $\mathbf{P}_\pm$ of the sign $\mathbf{B}$ of
+$\mathbf{A} - \mathrm{fl}(\mathrm{fl}(R/\mathrm{fl}(\ell_0 + d))v)\mathbf{I}$ at offset $0$ of
+the buffers $b + 5$, $b + 6$; it modifies only the seven scratch buffers and keeps the tape
+positions; in mode `total` it also succeeds, given the standard model on the range `safe`
+holding everywhere, $u(p) < 1$, $k \ge 1$, $z_2$ and $R$ decoding to nonzero values and
+$\ell_0 + d \ge 1$. The semantics decides flags at `p`. No printed source. -/
+theorem spec_eighNodeSetup {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
+    {u : P → ℝ} {dec : P → K → ℝ} {safe : P → ℝ → Prop} (p : P) (n ℓ₀ F d lo k : ℕ)
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ (∀ p x, safe p x) ∧ u p < 1 ∧ 0 < k))
+    (hflag : I.sem.DecidesFlags p) (hkn : k ≤ n) {Ma Lv par Su c b : ℕ}
+    (hlt : Ma < b ∧ Lv < b ∧ par < b ∧ Su < b ∧ c < b)
+    (A Bm Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)) (R β v o z₂ h m : K)
+    (hBm : Bm = newtonSchulzSign (eighTapeMachine I p mmR qrR) β
+      ((eighTapeMachine I p mmR qrR).mul z₂ R) F ((eighTapeMachine I p mmR qrR).hermShift A
+        ((eighTapeMachine I p mmR qrR).mul ((eighTapeMachine I p mmR qrR).div R
+          ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d))) v)))
+    (hPp : Ppm = (eighTapeMachine I p mmR qrR).hermScale
+      ((eighTapeMachine I p mmR qrR).hermShift Bm m) z₂)
+    (hPm : Pmm = (eighTapeMachine I p mmR qrR).hermScale ((eighTapeMachine I p mmR qrR).negMat
+      ((eighTapeMachine I p mmR qrR).hermShift Bm o)) z₂) :
+    RoutineSpec md I (fun st => st.store.size = b + 7 ∧
+        pairLayout.Holds st.store p Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        st.store.read p Lv (2 * d) = some R ∧ st.store.read p par 2 = some β ∧
+        st.store.read p Su lo = some v ∧ st.store.read p c 0 = some o ∧
+        st.store.read p c 1 = some z₂ ∧ st.store.read p c 2 = some h ∧
+        st.store.read p c 3 = some m ∧ st.store.shape[b]? = some (p, 7) ∧
+        st.store.shape[b + 1]? = some (p, 2) ∧
+        (∀ j < 5, st.store.shape[b + 2 + j]? = some (p, 2 * (n * n))) ∧
+        md.Needs (dec p z₂ ≠ 0 ∧ dec p R ≠ 0 ∧ 1 ≤ ℓ₀ + d))
+      ((do
+        ins (.bin p .div ⟨b, 0⟩ ⟨Lv, 2 * .const d⟩ ⟨c, 1⟩)
+        ins (.un p .neg ⟨b, 1⟩ ⟨b, 0⟩)
+        ins (.litIdx p ⟨b, 2⟩ (.const ℓ₀ + .const d))
+        ins (.bin p .div ⟨b, 3⟩ ⟨Lv, 2 * .const d⟩ ⟨b, 2⟩)
+        ins (.bin p .mul ⟨b, 4⟩ ⟨b, 3⟩ ⟨Su, .const lo⟩) : Builder P ι ℕ ℕ Unit) >>= fun _ =>
+      (do
+        zhermShift p (.const k) Ma (eighBlockOff (.const n) (.const d) (.const lo)) ⟨b, 4⟩
+          (b + 2) 0
+        ins (.copy p ⟨b + 1, 0⟩ ⟨par, 2⟩)
+        ins (.bin p .mul ⟨b + 1, 1⟩ ⟨c, 1⟩ ⟨Lv, 2 * .const d⟩)
+        eighSignBlock p mm (.const k) (.const F) (b + 2) 0 (b + 1) 0 (b + 3) 0 :
+          Builder P ι ℕ ℕ Unit) >>= fun _ =>
+      (do
+        zhermShift p (.const k) (b + 3) 0 ⟨c, 3⟩ (b + 4) 0
+        zhermScale p (.const k) (b + 4) 0 ⟨c, 1⟩ (b + 5) 0
+        zhermShift p (.const k) (b + 3) 0 ⟨c, 0⟩ (b + 4) 0
+        zneg p (.const k) (.const k) (b + 4) 0 (b + 4) 0
+        zhermScale p (.const k) (b + 4) 0 ⟨c, 1⟩ (b + 6) 0 : Builder P ι ℕ ℕ Unit) >>= fun _ => do
+        ztraceRe p (.const k) (b + 5) 0 ⟨b, 5⟩
+        ins (.bin p .add ⟨b, 6⟩ ⟨b, 5⟩ ⟨c, 2⟩))
+      [(b, 0, 7), (b + 1, 0, 2), (b + 2, 0, 2 * (n * n)), (b + 3, 0, 2 * (n * n)),
+        (b + 4, 0, 2 * (n * n)), (b + 5, 0, 2 * (n * n)), (b + 6, 0, 2 * (n * n))]
+      fun st st' => st'.store.read p b 0 = some ((eighTapeMachine I p mmR qrR).div R z₂) ∧
+        st'.store.read p b 1 = some ((eighTapeMachine I p mmR qrR).neg
+          ((eighTapeMachine I p mmR qrR).div R z₂)) ∧
+        st'.store.read p b 6 = some ((eighTapeMachine I p mmR qrR).add
+          ((eighTapeMachine I p mmR qrR).traceRe Ppm) h) ∧
+        pairLayout.Holds st'.store p (b + 5) 0 Ppm ∧ pairLayout.Holds st'.store p (b + 6) 0 Pmm ∧
+        PosKept st st' := by
+  obtain ⟨lMa, lLv, lpar, lSu, lc⟩ := hlt
+  have hs : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem) :=
+    hsem.mono fun h => h.1.mono_safe fun p x _ => h.2.1 p x
+  have hkk : 0 + k * k * 2 ≤ 2 * (n * n) := by nlinarith
+  have hkk' : k * k * 2 ≤ 2 * (n * n) := by omega
+  refine ⟨by exec_composable, fun st ⟨hsz, hA, hR, hβ, hv, hc0, hc1, hc2, hc3, ht, hsp, hW, hN⟩ =>
+    ?_⟩
+  have s₁ := spec_eighNodeScalars (mmR := mmR) (qrR := qrR) (I := I) md p
+    (hsem.mono fun h => ⟨h.1, h.2.1, h.2.2.1⟩) ℓ₀ d lo (Lv := Lv) (Su := Su) (c := c) (t := b)
+    R z₂ v (by omega) (by omega)
+  refine s₁.wp_bind_keep ((readsOnly_pairLayoutHolds p Ma _ A).and (readsOnly_cellsHold
+      [(p, par, 2, some β), (p, c, 0, some o), (p, c, 1, some z₂), (p, c, 2, some h),
+        (p, c, 3, some m), (p, Lv, 2 * d, some R)])) (by fp_omega [lMa, lpar, lc, lLv])
+    ⟨hR, hv, hc1, hN.mono fun h => ⟨h.1, h.2.2, writable_of_shape_eq rfl ht (by omega)⟩⟩
+    ⟨hA, (((((cellsHold_nil _).cons hR).cons hc3).cons hc2 |>.cons hc1).cons hc0).cons hβ⟩
+    fun st₁ hm₁ h₁ ⟨hA₁, hC₁⟩ => ?_
+  have s₂ := spec_eighNodeSign (mmR := mmR) (qrR := qrR) hmm md p n F d lo k hsem hflag
+    (Ma := Ma) (Lv := Lv) (par := par) (c := c) (t := b) (sp := b + 1) (W := b + 2)
+    (B := b + 3) (s₀ := b + 7) A R β z₂ ((eighTapeMachine I p mmR qrR).mul
+      ((eighTapeMachine I p mmR qrR).div R ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d))) v)
+    (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+  refine s₂.wp_bind_keep ((readsOnly_cellsHold [(p, c, 0, some o), (p, c, 1, some z₂),
+      (p, c, 2, some h), (p, c, 3, some m)]).and (readsOnly_cellsHold [(p, b, 0, some
+        ((eighTapeMachine I p mmR qrR).div R z₂)), (p, b, 1, some ((eighTapeMachine I p mmR
+          qrR).neg ((eighTapeMachine I p mmR qrR).div R z₂)))])) (by fp_omega [lc])
+    ⟨(Store.size_eq_of_shape_eq hm₁.1).trans hsz, hA₁, h₁.2.2.1, hC₁.read (.head _),
+      hC₁.read (.tail _ (.tail _ (.head _))), hC₁.read (.tail _ (.tail _ (.tail _
+        (.tail _ (.tail _ (.head _)))))), hN.mono fun h => ⟨h.1, h.2.1,
+        writable_of_shape_eq hm₁.1 (hW 0 (by omega)) hkk,
+        writable_of_shape_eq hm₁.1 hsp (by omega), writable_of_shape_eq hm₁.1 (hW 1 (by omega))
+          hkk⟩⟩
+    ⟨hC₁.sub (by simp), ((cellsHold_nil _).cons h₁.2.1).cons h₁.1⟩ fun st₂ hm₂ h₂ ⟨hC₂, hT₂⟩ => ?_
+  have hm := hm₁.trans hm₂
+  have s₃ := spec_eighNodeProjectors (mmR := mmR) (qrR := qrR) md hs p k (c := c) (B := b + 3)
+    (T := b + 4) (Pp := b + 5) (Pm := b + 6) Bm o z₂ m (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega)
+  refine s₃.wp_bind_keep ((readsOnly_cellsHold [(p, c, 2, some h)]).and (readsOnly_cellsHold _))
+    (by fp_omega [lc]) ⟨hBm ▸ h₂.1, hC₂.read (.head _), hC₂.read (.tail _ (.head _)),
+      hC₂.read (.tail _ (.tail _ (.tail _ (.head _)))), hN.mono fun h => ⟨h.1,
+        writable_of_shape_eq hm.1 (hW 2 (by omega)) hkk,
+        writable_of_shape_eq hm.1 (hW 3 (by omega)) hkk,
+        writable_of_shape_eq hm.1 (hW 4 (by omega)) hkk⟩⟩
+    ⟨hC₂.sub (by simp), hT₂⟩ fun st₃ hm₃ h₃ ⟨hC₃, hT₃⟩ => ?_
+  have s₄ := spec_ztraceRe (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR)
+    (qrR := qrR) (unif := I.sem.tapeUnif p (I.tape .uniform))
+    (normal := I.sem.tapeNormal p (I.tape .gaussian)) md hs p k (X := b + 5) (xo := 0)
+    (dst := ⟨b, 5⟩) Ppm (show b ≠ b + 5 by omega)
+  refine s₄.wp_bind_keep ((readsOnly_cellsHold _).and ((readsOnly_cellsHold _).and
+      ((readsOnly_pairLayoutHolds p (b + 5) 0 _).and (readsOnly_pairLayoutHolds p (b + 6) 0 _))))
+    (by fp_omega [lc])
+    ⟨hPp ▸ h₃.1, Mode.needs_of (writable_of_shape_eq (hm.trans hm₃).1 ht (by simp)) md⟩
+    ⟨hC₃, hT₃, hPp ▸ h₃.1, hPm ▸ h₃.2.1⟩ fun st₄ hm₄ h₄ ⟨hC₄, hP₄⟩ => ?_
+  have s₅ := RoutineSpec.ins (spec_bin_getD (m := md) (I := I) (p := p) (op := .add)
+    (dst := ⟨b, 6⟩) (x := ⟨b, 5⟩) (y := ⟨c, 2⟩) (b := h)
+    (a := (eighTapeMachine I p mmR qrR).traceRe Ppm))
+  refine s₅.wp_run_keep ((readsOnly_cellsHold _).and ((readsOnly_pairLayoutHolds p (b + 5) 0
+      _).and (readsOnly_pairLayoutHolds p (b + 6) 0 _))) (by fp_omega)
+    ⟨h₄.1, hC₄.read (.head _), Mode.needs_and.mpr ⟨hs.mono fun h =>
+      h.bin_ok p .add _ _ trivial (fun h => nomatch h) trivial,
+      Mode.needs_of (writable_of_shape_eq (hm.trans hm₃ |>.trans hm₄).1 ht (by simp)) md⟩⟩
+    hP₄ fun st₅ hm₅ h₅ ⟨hT₅, hP₅⟩ => ?_
+  exact ⟨(hm.trans hm₃ |>.trans hm₄ |>.trans hm₅).of_sub (by simp [matBlock, hkk']),
+    hT₅.read (.head _), hT₅.read (.tail _ (.head _)), h₅.1, hP₅.1, hP₅.2,
+    h₅.2.trans (h₄.2.trans (h₃.2.2.trans (h₂.2.trans h₁.2.2.2)))⟩
 
-/-- The projectors of a node step's set-up: from a state whose block at offset $0$ of `B` holds
-the sign $\mathbf{B}$ and whose cells $0$, $1$, $3$ of `c` hold the stored $1$, $2$ and $-1$, the
-block writes $\mathbf{P}_+ = (\mathbf{B} + \mathbf{I})/\mathrm{fl}(2)$ in `Pp` and
-$\mathbf{P}_- = -(\mathbf{B} - \mathbf{I})/\mathrm{fl}(2)$ in `Pm`, through the scratch buffer `T`
-(the four buffers distinct and `c` none of them); only cells of `T`, `Pp`, `Pm` change. -/
-private theorem node_setup_projectors (p : P) (k : ℕ) {c B T Pp Pm : ℕ} {st st' : St P K C}
-    {Bm : Matrix (Fin k) (Fin k) (K × K)} {o : K} (dBT : B = T → False) (dBPp : B = Pp → False)
-    (dTPp : T = Pp → False) (dTPm : T = Pm → False) (dPpPm : Pp = Pm → False)
-    (dcT : c = T → False) (dcPp : c = Pp → False) (dcPm : c = Pm → False)
-    (hB : pairLayout.Holds st.store p B 0 Bm) (hc0 : st.store.read p c 0 = some o)
-    (hc1 : st.store.read p c 1 = some ((eighTapeMachine I p mmR qrR).ofNat 2))
-    (hc3 : st.store.read p c 3 =
-      some ((eighTapeMachine I p mmR qrR).neg (eighTapeMachine I p mmR qrR).one))
-    (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      zhermShift p (.const k) B 0 ⟨c, 3⟩ T 0
-      zhermScale p (.const k) T 0 ⟨c, 1⟩ Pp 0
-      zhermShift p (.const k) B 0 ⟨c, 0⟩ T 0
-      zneg p (.const k) (.const k) T 0 T 0
-      zhermScale p (.const k) T 0 ⟨c, 1⟩ Pm 0
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, (b = T → False) → (b = Pp → False) → (b = Pm → False) →
-        σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      pairLayout.Holds σ.store p Pp 0 (M.hermScale (M.hermShift Bm (M.neg M.one)) (M.ofNat 2)) ∧
-      pairLayout.Holds σ.store p Pm 0 (M.hermScale (M.negMat (M.hermShift Bm o)) (M.ofNat 2)) := by
-  intro M
-  have bdn : ∀ {b X i i' off len : ℕ}, (b = X → False) →
-      blockDisjoint (b, i, i') (X, off, len) = true := blockDisjoint_of_ne
-  -- T = B + I
-  obtain ⟨σ10, h10, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hT10, hf10, hsh10, hp10⟩ := holds_of_exec_zhermShift
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := st) (st' := σ10) hB hc3 (bdn (fun h => dBT h.symm)) (bdn dcT) h10
-  have f10 : ∀ q b i, (b = T → False) → σ10.store.read q b i = st.store.read q b i :=
-    fun q b i hb => hf10 q b i (bdn hb)
-  -- P₊
-  obtain ⟨σ11, h11, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hPp11, hf11, hsh11, hp11⟩ := holds_of_exec_zhermScale
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := σ10) (st' := σ11) hT10 ((f10 _ _ _ dcT).trans hc1)
-    (bdn (fun h => dTPp h.symm)) (bdn dcPp) h11
-  have f11 : ∀ q b i, (b = Pp → False) → σ11.store.read q b i = σ10.store.read q b i :=
-    fun q b i hb => hf11 q b i (bdn hb)
-  -- T = B − I
-  have hB11 : pairLayout.Holds σ11.store p B (0 : IExp ℕ).eval Bm :=
-    fun i j t => (f11 _ _ _ dBPp).trans ((f10 _ _ _ dBT).trans (hB i j t))
-  obtain ⟨σ12, h12, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hT12, hf12, hsh12, hp12⟩ := holds_of_exec_zhermShift
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := σ11) (st' := σ12) hB11 ((f11 _ _ _ dcPp).trans ((f10 _ _ _ dcT).trans hc0))
-    (bdn (fun h => dBT h.symm)) (bdn dcT) h12
-  have f12 : ∀ q b i, (b = T → False) → σ12.store.read q b i = σ11.store.read q b i :=
-    fun q b i hb => hf12 q b i (bdn hb)
-  -- T = −T
-  obtain ⟨σ13, h13, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hT13, hf13, hsh13, hp13⟩ := holds_of_exec_zneg
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k k (st := σ12) (st' := σ13) hT12 (Or.inr ⟨rfl, rfl⟩) h13
-  have f13 : ∀ q b i, (b = T → False) → σ13.store.read q b i = σ12.store.read q b i :=
-    fun q b i hb => hf13 q b i (bdn hb)
-  -- P₋
-  obtain ⟨σ14, h14, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨hPm14, hf14, hsh14, hp14⟩ := holds_of_exec_zhermScale
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := σ13) (st' := σ14) hT13
-    ((f13 _ _ _ dcT).trans ((f12 _ _ _ dcT).trans ((f11 _ _ _ dcPp).trans
-      ((f10 _ _ _ dcT).trans hc1))))
-    (bdn (fun h => dTPm h.symm)) (bdn dcPm) h14
-  refine ⟨σ14, h, fun q b i hT hPp hPm => ?_, hsh14.trans (hsh13.trans (hsh12.trans
-    (hsh11.trans hsh10))), hp14.trans (hp13.trans (hp12.trans (hp11.trans hp10))),
-    fun i j t => (hf14 _ _ _ (bdn dPpPm)).trans ((f13 _ _ _ (fun h => dTPp h.symm)).trans
-      ((f12 _ _ _ (fun h => dTPp h.symm)).trans (hPp11 i j t))), hPm14⟩
-  rw [hf14 q b i (bdn hPm), f13 _ _ _ hT, f12 _ _ _ hT, f11 _ _ _ hPp, f10 _ _ _ hT]
-
-/-- The trace of a node step's set-up: from a state whose block at offset $0$ of `Pp` holds
-$\mathbf{P}$ and whose cell $2$ of `c` holds $h$, the block writes
-$\operatorname{tr}\,\mathbf{P}$ and $\mathrm{fl}(\operatorname{tr}\,\mathbf{P} + h)$ in the
-cells $5$, $6$ of the scratch buffer `t` (another buffer than `Pp` and `c`); only those cells
-change. -/
-private theorem node_setup_trace (p : P) (k : ℕ) {t c Pp : ℕ} {st st' : St P K C}
-    {Pm : Matrix (Fin k) (Fin k) (K × K)} {hv : K} (dPpt : Pp = t → False) (dct : c = t → False)
-    (hP : pairLayout.Holds st.store p Pp 0 Pm) (hc2 : st.store.read p c 2 = some hv)
-    (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      ztraceRe p (.const k) Pp 0 ⟨t, 5⟩
-      ins (.bin p .add ⟨t, 6⟩ ⟨t, 5⟩ ⟨c, 2⟩)
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, (b ≠ t ∨ i ≠ 5 ∧ i ≠ 6) → σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      σ.store.read p t 6 = some (M.add (M.traceRe Pm) hv) := by
-  intro M
-  have hr : ∀ (i : Instr P ℕ ℕ) (b : Builder P ι ℕ ℕ Unit),
-      (ins i >>= fun _ => b).run = .seq (.instr i) b.run := fun _ _ => rfl
-  obtain ⟨σ15, h15, h⟩ := node_bind (fun _ => rfl) h
-  obtain ⟨htr15, hf15⟩ := read_of_exec_ztraceRe
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
-    p k (st := st) (st' := σ15) hP (blockDisjoint_of_ne (Ne.symm dPpt)) h15
-  obtain ⟨hsh15, hp15⟩ := shape_pos_of_exec_ztraceRe_node p k h15
-  have f15 : ∀ q b i, (b ≠ t ∨ i ≠ 5) → σ15.store.read q b i = st.store.read q b i := by
-    intro q b i hb
-    refine hf15 q b i ?_
-    apply blockDisjoint_of_ne_or_le
-    change b ≠ t ∨ i + 1 ≤ 5 ∨ 5 + 1 ≤ i
+omit [Inhabited K] [AddMonoid C] in
+/-- After $m$ releases a store has $m$ buffers fewer. -/
+private theorem size_iterate_release (st : St P K C) (p : P) (len w : ℕ) :
+    ∀ m, ((·.release p len w)^[m] st).store.size = st.store.size - m
+  | 0 => rfl
+  | m + 1 => by
+    have ih := size_iterate_release st p len w m
+    rw [Function.iterate_succ_apply']
+    change Array.size (Array.pop _) = _
+    rw [Array.size_pop, ih]
     omega
-  rw [hr] at h
-  obtain ⟨a7, a8, v6, s16, ha7, ha8, hv6, hw16, h⟩ := exists_of_exec_seq_bin h
-  have e7 := Option.some_inj.mp (ha7.symm.trans htr15)
-  subst e7
-  change σ15.store.read p c 2 = some a8 at ha8
-  rw [f15 _ _ _ (Or.inl dct), hc2, Option.some_inj] at ha8
-  subst a8
-  refine ⟨_, h, fun q b i hb => ?_, ?_, hp15, ?_⟩
-  · change s16.read q b i = _
-    rw [Store.read_of_write_eq_some_of_ne hw16 (hb.imp id fun h => h.2),
-      f15 _ _ _ (hb.imp id fun h => h.1)]
-  · change s16.shape = _
-    rw [Store.shape_of_write_eq_some hw16, hsh15]
-  · have e6 : M.add (M.traceRe Pm) hv = v6 := by
-      change (I.sem.bin p .add (M.traceRe Pm) hv).getD default = v6
-      rw [show I.sem.bin p .add (M.traceRe Pm) hv = some v6 from hv6, Option.getD_some]
-    rw [e6]
-    exact Store.read_of_write_eq_some hw16
 
-/-- The distinct scratch buffers of a node step's set-up (stated as implications to `False`,
-out of `omega`'s sight). -/
-private theorem node_setup_ne {t sp W B T Pp Pm : ℕ} (hnd : [t, sp, W, B, T, Pp, Pm].Nodup) :
-    (t = sp → False) ∧ (t = W → False) ∧ (t = B → False) ∧ (t = T → False) ∧
-      (t = Pp → False) ∧ (t = Pm → False) ∧ (sp = W → False) ∧ (sp = B → False) ∧
-      (W = B → False) ∧ (B = T → False) ∧ (B = Pp → False) ∧ (T = Pp → False) ∧
-      (T = Pm → False) ∧ (Pp = Pm → False) := by
-  refine ⟨fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_,
-    fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_, fun h => ?_,
-    fun h => ?_⟩ <;> simp [h] at hnd
-
-/-- The set-up of a node step, up to the index binder: the stored $\sigma$, $-\sigma$, the
-projectors and $\mathrm{fl}(t + \mathrm{fl}(1/2))$; only scratch buffers (at handles from `s₀`)
-are written. -/
-theorem node_setup_holds {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (p : P)
-    (hflag : I.sem.DecidesFlags p) (n ℓ₀ F d lo k : ℕ) (hk : lo + k ≤ n) (H : EighArenas)
-    {par Su c : ℕ} {st st' : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)} {R β : K}
-    (s₀ : ℕ) (hlt : ∀ b ∈ H.handles ++ [par, Su, c], b < s₀)
-    (t sp W B T Pp Pm : ℕ) (hge : ∀ X ∈ [t, sp, W, B, T, Pp, Pm], s₀ ≤ X)
-    (hnd : [t, sp, W, B, T, Pp, Pm].Nodup)
-    (hB : st.store.shape[B]? = some (p, 2 * (n * n)))
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hR : st.store.read p H.Lv (2 * d) = some R)
-    (hpar : st.store.read p par 2 = some β)
-    (hSu : st.store.read p Su lo = some (I.tape .uniform (n * d + lo)))
-    (hc : st.store.read p c 0 = I.sem.lit p 1 ∧ st.store.read p c 1 = I.sem.lit p ((2 : ℕ) : ℚ) ∧
-      st.store.read p c 2 = some ((eighTapeMachine I p mmR qrR).div
-        (eighTapeMachine I p mmR qrR).one ((eighTapeMachine I p mmR qrR).ofNat 2)) ∧
-      st.store.read p c 3 = some ((eighTapeMachine I p mmR qrR).neg
-        (eighTapeMachine I p mmR qrR).one))
-    (rest : Builder P ι ℕ ℕ Unit)
-    (h : exec I (do
-      ins (.bin p .div ⟨t, 0⟩ ⟨H.Lv, 2 * .const d⟩ ⟨c, 1⟩)
-      ins (.un p .neg ⟨t, 1⟩ ⟨t, 0⟩)
-      ins (.litIdx p ⟨t, 2⟩ (.const ℓ₀ + .const d))
-      ins (.bin p .div ⟨t, 3⟩ ⟨H.Lv, 2 * .const d⟩ ⟨t, 2⟩)
-      ins (.bin p .mul ⟨t, 4⟩ ⟨t, 3⟩ ⟨Su, .const lo⟩)
-      zhermShift p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo)) ⟨t, 4⟩ W 0
-      ins (.copy p ⟨sp, 0⟩ ⟨par, 2⟩)
-      ins (.bin p .mul ⟨sp, 1⟩ ⟨c, 1⟩ ⟨H.Lv, 2 * .const d⟩)
-      eighSignBlock p mm (.const k) (.const F) W 0 sp 0 B 0
-      zhermShift p (.const k) B 0 ⟨c, 3⟩ T 0
-      zhermScale p (.const k) T 0 ⟨c, 1⟩ Pp 0
-      zhermShift p (.const k) B 0 ⟨c, 0⟩ T 0
-      zneg p (.const k) (.const k) T 0 T 0
-      zhermScale p (.const k) T 0 ⟨c, 1⟩ Pm 0
-      ztraceRe p (.const k) Pp 0 ⟨t, 5⟩
-      ins (.bin p .add ⟨t, 6⟩ ⟨t, 5⟩ ⟨c, 2⟩)
-      rest : Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    let half := M.div R (M.ofNat 2)
-    let B' := newtonSchulzSign M β (M.mul (M.ofNat 2) R) F
-      (M.hermShift A (M.unif (M.div R (M.ofNat (ℓ₀ + d))) (eighTapeSample n d lo).1))
-    let Pp' := M.hermScale (M.hermShift B' (M.neg M.one)) (M.ofNat 2)
-    let Pm' := M.hermScale (M.negMat (M.hermShift B' M.one)) (M.ofNat 2)
-    ∃ σ : St P K C, exec I rest.run σ = some st' ∧
-      (∀ q b i, b < s₀ → σ.store.read q b i = st.store.read q b i) ∧
-      σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧
-      σ.store.read p t 0 = some half ∧ σ.store.read p t 1 = some (M.neg half) ∧
-      σ.store.read p t 6 = some (M.add (M.traceRe Pp') (M.div M.one (M.ofNat 2))) ∧
-      pairLayout.Holds σ.store p Pp 0 Pp' ∧ pairLayout.Holds σ.store p Pm 0 Pm' ∧
-      st.store.read p c 1 = some (M.ofNat 2) := by
-  intro M half B' Pp' Pm'
-  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
-    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hlt hge
-  obtain ⟨lMa, -, -, -, -, -, -, lLv, lpar, lSu, lc⟩ := hlt
-  obtain ⟨gt, gsp, gW, gB, gT, gPp, gPm⟩ := hge
-  obtain ⟨dtsp, dtW, dtB, dtT, dtPp, dtPm, dspW, dspB, dWB, dBT, dBPp, dTPp, dTPm, dPpPm⟩ :=
-    node_setup_ne hnd
-  obtain ⟨z0, o, -, hl1, -, -⟩ := id hflag
-  obtain ⟨hc0, hc1, hc2, hc3⟩ := hc
-  have hMone : M.one = o := by
-    change (I.sem.lit p 1).getD default = o; rw [hl1, Option.getD_some]
-  obtain ⟨σA, hA', fA, shA, pA, tA0, tA1, tA4, hc1'⟩ := node_setup_scalars p n ℓ₀ d lo H
-    (fun h => by omega) (fun h => by omega) hR hSu hc1 _ h
-  have lA : ∀ q b i, b < s₀ → σA.store.read q b i = st.store.read q b i :=
-    fun q b i hb => fA q b i fun h => by omega
-  obtain ⟨σB, hB', fB, shB, pB, hBs⟩ := node_setup_sign hmm p hflag n F d lo k hk H
-    (fun h => by omega) dtW (fun h => by omega) (fun h => by omega) (fun h => by omega)
-    (fun h => by omega) (fun h => by omega) dspW dspB dWB
-    (by rw [shA]; exact hB) (fun i j t => (lA _ _ _ lMa).trans (hA i j t)) tA4
-    ((lA _ _ _ lpar).trans hpar) ((lA _ _ _ lc).trans hc1') ((lA _ _ _ lLv).trans hR) _ hA'
-  have lB : ∀ q b i, b < s₀ → σB.store.read q b i = st.store.read q b i :=
-    fun q b i hb => (fB q b i (fun h => by omega) (fun h => by omega) fun h => by omega).trans
-      (lA q b i hb)
-  obtain ⟨σC, hC', fC, shC, pC, hPp, hPm⟩ := node_setup_projectors p k dBT dBPp dTPp dTPm dPpPm
-    (fun h => by omega) (fun h => by omega) (fun h => by omega) hBs
-    ((lB _ _ _ lc).trans (hc0.trans hl1)) ((lB _ _ _ lc).trans hc1')
-    ((lB _ _ _ lc).trans hc3) _ hB'
-  have lC : ∀ q b i, b < s₀ → σC.store.read q b i = st.store.read q b i :=
-    fun q b i hb => (fC q b i (fun h => by omega) (fun h => by omega) fun h => by omega).trans
-      (lB q b i hb)
-  obtain ⟨σD, hD', fD, shD, pD, tD6⟩ := node_setup_trace p k (fun h => dtPp h.symm)
-    (fun h => by omega) hPp ((lC _ _ _ lc).trans hc2) _ hC'
-  have tC : ∀ i, σC.store.read p t i = σA.store.read p t i := fun i =>
-    (fC _ _ _ dtT dtPp dtPm).trans (fB _ _ _ dtW dtsp dtB)
-  refine ⟨σD, hD', fun q b i hb => (fD q b i (Or.inl fun h => by omega)).trans (lC q b i hb),
-    shD.trans (shC.trans (shB.trans shA)), pD.trans (pC.trans (pB.trans pA)),
-    (fD _ _ _ (Or.inr ⟨by omega, by omega⟩)).trans ((tC 0).trans tA0),
-    (fD _ _ _ (Or.inr ⟨by omega, by omega⟩)).trans ((tC 1).trans tA1), tD6,
-    fun i j t' => (fD _ _ _ (Or.inl fun h => dtPp h.symm)).trans (hPp i j t'), ?_, hc1'⟩
-  change pairLayout.Holds σD.store p Pm 0 (M.hermScale (M.negMat (M.hermShift B' M.one))
-    (M.ofNat 2))
-  rw [hMone]
-  exact fun i j t' => (fD _ _ _ (Or.inl fun h => dtPm h.symm)).trans (hPm i j t')
+omit [Inhabited K] in
+/-- **The scratch prefix of a node step.** If the store has $b$ buffers in every state satisfying
+`pre`, and the body of `NLAlib.eighNodeBlock` (the set-up, the clamp and the branch) at the
+scratch handles $b, \dots, b + 6$ meets a specification from every state that has the seven
+scratch buffers on top of a state satisfying `pre` (reads and shapes below $b$ and the tape
+positions kept), modifying `fp` and the scratch, then the node block meets the specification
+whose footprint is `fp` and whose postcondition is the body's read below $b$ after the seven
+releases. No printed source. -/
+theorem spec_eighNodeBlock_of_body {m : Mode} (p : P) (mm qr : ι) (n L F d lo k : IExp ℕ)
+    (par Lv Su Sg Ma Qa Sz Kd Kp : ℕ) (one two half negone sqh : Cell ℕ ℕ) {b : ℕ}
+    {pre pre' : St P K C → Prop} {post post' : St P K C → St P K C → Prop}
+    {fp : List (ℕ × ℕ × ℕ)} (hb : ∀ st, pre st → st.store.size = b)
+    (hpre : ∀ st st', pre st → st'.store.size = b + 7 →
+      (∀ q x i, x < b → st'.store.read q x i = st.store.read q x i) →
+      (∀ x < b, st'.store.shape[x]? = st.store.shape[x]?) → st'.store.shape[b]? = some (p, 7) →
+      st'.store.shape[b + 1]? = some (p, 2) →
+      (∀ j < 5, st'.store.shape[b + 2 + j]? = some (p, (2 * (n * n) : IExp ℕ).eval)) →
+      st'.pos = st.pos → pre' st')
+    (h : Spec m I pre' (do
+        ins (.bin p .div ⟨b, 0⟩ ⟨Lv, 2 * d⟩ two)
+        ins (.un p .neg ⟨b, 1⟩ ⟨b, 0⟩)
+        ins (.litIdx p ⟨b, 2⟩ (L + d))
+        ins (.bin p .div ⟨b, 3⟩ ⟨Lv, 2 * d⟩ ⟨b, 2⟩)
+        ins (.bin p .mul ⟨b, 4⟩ ⟨b, 3⟩ ⟨Su, lo⟩)
+        zhermShift p k Ma (eighBlockOff n d lo) ⟨b, 4⟩ (b + 2) 0
+        ins (.copy p ⟨b + 1, 0⟩ ⟨par, 2⟩)
+        ins (.bin p .mul ⟨b + 1, 1⟩ two ⟨Lv, 2 * d⟩)
+        eighSignBlock p mm k F (b + 2) 0 (b + 1) 0 (b + 3) 0
+        zhermShift p k (b + 3) 0 negone (b + 4) 0
+        zhermScale p k (b + 4) 0 two (b + 5) 0
+        zhermShift p k (b + 3) 0 one (b + 4) 0
+        zneg p k k (b + 4) 0 (b + 4) 0
+        zhermScale p k (b + 4) 0 two (b + 6) 0
+        ztraceRe p k (b + 5) 0 ⟨b, 5⟩
+        ins (.bin p .add ⟨b, 6⟩ ⟨b, 5⟩ half)
+        eighClampBlock p k ⟨b, 6⟩ ⟨b, 2⟩ ⟨b, 3⟩
+        Builder.bindIdx p ⟨b, 6⟩ k fun kp => do
+          eighWhen (1 - (k - .var kp))
+            (eighChildBlock p k Ma (eighBlockOff n d lo) (eighBlockOff n (d + 1) lo) ⟨b, 0⟩
+              ⟨Sz, eighSlotOff n (d + 1) lo⟩ ⟨Kd, eighSlotOff n d lo⟩ 2)
+          eighWhen (1 - .var kp)
+            (eighChildBlock p k Ma (eighBlockOff n d lo) (eighBlockOff n (d + 1) lo) ⟨b, 1⟩
+              ⟨Sz, eighSlotOff n (d + 1) lo⟩ ⟨Kd, eighSlotOff n d lo⟩ 3)
+          eighWhen (.var kp * (k - .var kp))
+            (eighSplitBlock p mm qr n d lo k (.var kp) Sg (b + 5) (b + 6) Ma Qa Sz Kd Kp two
+              ⟨b, 0⟩ ⟨b, 1⟩ sqh) : Builder P ι ℕ ℕ Unit).run
+      (fp ++ [(b, 0, 7), (b + 1, 0, 2), (b + 2, 0, (2 * (n * n) : IExp ℕ).eval),
+        (b + 3, 0, (2 * (n * n) : IExp ℕ).eval), (b + 4, 0, (2 * (n * n) : IExp ℕ).eval),
+        (b + 5, 0, (2 * (n * n) : IExp ℕ).eval), (b + 6, 0, (2 * (n * n) : IExp ℕ).eval)]) post')
+    (hpost : ∀ st s s', pre st → post' s s' → s.pos = st.pos → s'.store.size = b + 7 →
+      ∀ s'' : St P K C, (∀ q x i, x < b → s''.store.read q x i = s'.store.read q x i) →
+        s''.pos = s'.pos → post st s'') :
+    RoutineSpec m I pre (eighNodeBlock p mm qr n L F d lo k par Lv Su Sg Ma Qa Sz Kd Kp one two
+      half negone sqh) fp post := by
+  have hb₂ : ∀ s, (∃ s₁, (∃ st, pre st ∧ s₁ = st.allocate p (7 : IExp ℕ).eval (I.width p)) ∧
+      s = s₁.allocate p (2 : IExp ℕ).eval (I.width p)) → s.store.size = b + 2 := by
+    rintro _ ⟨_, ⟨st, hst, rfl⟩, rfl⟩
+    simp [St.size_allocate, hb st hst]
+  refine RoutineSpec.scope (Spec.allocBind_named (b := b) hb (Spec.allocBind_named (b := b + 1)
+    (fun _ ⟨st, hst, e⟩ => by rw [e, St.size_allocate, hb st hst]) ?_))
+  let Q : St P K C → St P K C → Prop := fun s₂ s'' => ∀ s₁, (∃ st, pre st ∧
+    s₁ = st.allocate p (7 : IExp ℕ).eval (I.width p)) →
+    s₂ = s₁.allocate p (2 : IExp ℕ).eval (I.width p) → ∀ st, pre st →
+    s₁ = st.allocate p (7 : IExp ℕ).eval (I.width p) →
+    post st ((s''.release p (2 : IExp ℕ).eval (I.width p)).release p (7 : IExp ℕ).eval (I.width p))
+  let G := fp ++ [(b, 0, (7 : IExp ℕ).eval)] ++ [(b + 1, 0, (2 : IExp ℕ).eval)]
+  refine (spec_allocBind_iterate 0 hb₂ (fp := G) (post := Q) ?_).conseq (fun s hs => ⟨s, hs, rfl⟩)
+    (fun x hx => by simpa [G] using hx) fun s _ hs hp => hp s hs rfl
+  refine spec_allocBind_iterate 1 hb₂ (fp := G) (post := Q) ?_
+  refine spec_allocBind_iterate 2 hb₂ (fp := G) (post := Q) ?_
+  refine spec_allocBind_iterate 3 hb₂ (fp := G) (post := Q) ?_
+  refine spec_allocBind_iterate 4 hb₂ (fp := G) (post := Q) ?_
+  refine h.with_modifies.conseq ?_
+    (fun x hx => by simpa [G, List.range_succ, Nat.add_assoc, or_assoc] using hx) ?_
+  · rintro _ ⟨_, ⟨_, ⟨st, hst, rfl⟩, rfl⟩, rfl⟩
+    have hsb := hb st hst
+    have h₂ : ∀ x < b, ((st.allocate p (7 : IExp ℕ).eval (I.width p)).allocate p
+        (2 : IExp ℕ).eval (I.width p)).store.shape[x]? = st.store.shape[x]? ∧
+        ∀ q i, ((st.allocate p (7 : IExp ℕ).eval (I.width p)).allocate p (2 : IExp ℕ).eval
+          (I.width p)).store.read q x i = st.store.read q x i := fun x hx => ⟨by
+      rw [St.shape_allocate, St.shape_allocate, Array.getElem?_push, Array.getElem?_push,
+        if_neg (by simp [Store.size_shape]; omega), if_neg (by simp [Store.size_shape]; omega)],
+      fun q i => by rw [St.read_allocate_of_lt _ _ _ _ _ _ _ (by rw [St.size_allocate]; omega),
+        St.read_allocate_of_lt _ _ _ _ _ _ _ (by omega)]⟩
+    obtain ⟨hs5, hr5, hn5, hp5⟩ := iterate_allocate ((st.allocate p (7 : IExp ℕ).eval
+      (I.width p)).allocate p (2 : IExp ℕ).eval (I.width p)) p (2 * (n * n) : IExp ℕ).eval
+      (I.width p) 5
+    have hs2 : ((st.allocate p (7 : IExp ℕ).eval (I.width p)).allocate p (2 : IExp ℕ).eval
+        (I.width p)).store.size = b + 2 := by rw [St.size_allocate, St.size_allocate, hsb]
+    rw [hs2] at hs5 hn5 hr5
+    refine hpre st _ hst hs5 (fun q x i hx => ((hr5 x (by omega)).2 q i).trans ((h₂ x hx).2 q i))
+      (fun x hx => (hr5 x (by omega)).1.trans (h₂ x hx).1) ?_ ?_ hn5 hp5
+    · rw [(hr5 b (by omega)).1, St.shape_allocate, St.shape_allocate, Array.getElem?_push,
+        if_neg (by simp [Store.size_shape]; omega), Array.getElem?_push,
+        if_pos (by simp [Store.size_shape]; omega)]
+      rfl
+    · rw [(hr5 (b + 1) (by omega)).1, St.shape_allocate, St.shape_allocate, Array.getElem?_push,
+        if_pos (by simp [Store.size_shape]; omega)]
+      rfl
+  · rintro _ s'' - ⟨hm, hp⟩ _ - rfl _ - rfl st hst rfl
+    obtain ⟨hs5, -, -, hp5⟩ := iterate_allocate ((st.allocate p (7 : IExp ℕ).eval
+      (I.width p)).allocate p (2 : IExp ℕ).eval (I.width p)) p (2 * (n * n) : IExp ℕ).eval
+      (I.width p) 5
+    have hsz : s''.store.size = b + 2 + 5 := by
+      rw [Store.size_eq_of_shape_eq hm.1]
+      exact hs5.trans (by rw [St.size_allocate, St.size_allocate, hb st hst])
+    have h5 := size_iterate_release s'' p (2 * (n * n) : IExp ℕ).eval (I.width p) (4 + 1)
+    refine hpost st _ s'' hst hp hp5 (by omega) _ (fun q x i hx => ?_)
+      (ReadsOnly.iterate_release (readsOnly_read p 0 0 _) (by simp) p
+        (2 * (n * n) : IExp ℕ).eval (I.width p) 5 s'' hsz rfl).2
+    rw [St.read_release_of_lt _ _ _ _ _ (by simp [St.release]; omega),
+      St.read_release_of_lt _ _ _ _ _ (by omega)]
+    exact (ReadsOnly.iterate_release (readsOnly_read q x i _) (fun y hy => by
+      simp only [List.mem_singleton] at hy; subst hy; omega) p (2 * (n * n) : IExp ℕ).eval
+      (I.width p) 5 s'' hsz rfl).1
 
 end NLAlib

@@ -24,6 +24,8 @@ operation of the machine of the semantics.
 * `NLAlib.Computation.spec_zidentity`: the identity as a routine specification.
 * `NLAlib.Computation.spec_zconjTranspose_frame`, `NLAlib.Computation.spec_zconjTranspose`: the
   conjugate transpose as a routine specification of the program logic.
+* `NLAlib.Computation.spec_ztraceRe_frame`, `NLAlib.Computation.spec_ztraceRe`: the real trace as
+  a routine specification of the program logic.
 -/
 
 @[expose] public section
@@ -626,5 +628,73 @@ theorem spec_zconjTranspose (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
     · exact ⟨_, rfl⟩
   · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by omega)
     exact exists_exec_zconjTranspose_of_len hsem p m n hA hXY ⟨len, hl, e n m ▸ hlen⟩
+
+omit [Inhabited K] in
+/-- A real trace succeeds under the standard model when its matrix is stored and its destination,
+in another buffer, can be written. -/
+theorem exists_exec_ztraceRe {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ}
+    {dst : Cell ℕ ℕ} {st : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A) (hdX : dst.buf ≠ X)
+    (hW : Writable st.store p dst.buf dst.idx.eval 1) :
+    ∃ st', exec I (ztraceRe (ι := ι) p (.const n) X xo dst).run st = some st' := by
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.instr _) (.seq (.loop _ _) .skip))) .skip) st =
+    some st'
+  rw [exec_seq_skip, exec_named]
+  obtain ⟨z0, hz0⟩ := hsem.lit_ok p 0 trivial
+  obtain ⟨len, hl, hlen⟩ := hW.exists_len Nat.one_pos
+  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := dst.idx.eval) z0 hl
+    (by omega)
+  rw [exec_seq_instr_lit I hz0 hs1, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall (I := I)
+    (fun _ s => (∃ v, s.store.read p dst.buf dst.idx.eval = some v) ∧
+      ∀ q b i, b ≠ dst.buf → s.store.read q b i = st.store.read q b i)
+    ⟨⟨z0, Store.read_of_write_eq_some hs1⟩,
+      fun q b i hb => Store.read_of_write_eq_some_of_ne hs1 (Or.inl hb)⟩ ?_).imp
+    fun _ h => h.1
+  rintro i hi s ⟨⟨v, hv⟩, hfr⟩
+  simp only [IExp.eval_const] at hi
+  have hx := hA ⟨i, hi⟩ ⟨i, hi⟩ ⟨0, two_pos⟩
+  obtain ⟨z, hz⟩ := hsem.bin_ok p .add v (pairLayout.put (A ⟨i, hi⟩ ⟨i, hi⟩) ⟨0, two_pos⟩) trivial
+    (fun h => nomatch h) trivial
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_read_eq_some (v := z) hv
+  change ∃ st', exec I (.seq (.instr (.bin p .add dst dst
+    ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩)) .skip) s = some st' ∧ _
+  rw [exec_seq_instr_bin I hv (by
+      rw [hfr _ _ _ (Ne.symm hdX)]
+      simpa [zidx, show pairLayout.width = 2 from rfl] using hx) hz hs', exec_skip]
+  exact ⟨_, rfl, ⟨z, Store.read_of_write_eq_some hs'⟩, fun q b i' hb =>
+    (Store.read_of_write_eq_some_of_ne hs' (Or.inl hb)).trans (hfr q b i' hb)⟩
+
+omit [Inhabited K] in
+/-- `ztraceRe` modifies only its destination cell and keeps the tape positions, wherever its
+matrix is. -/
+theorem spec_ztraceRe_frame (p : P) (n : ℕ) (X : ℕ) (xo : IExp ℕ) (dst : Cell ℕ ℕ) :
+    Spec .liberal I (fun _ => True) (ztraceRe (ι := ι) p (.const n) X xo dst).run
+      [(dst.buf, dst.idx.eval, 1)] fun st st' => PosKept st st' :=
+  Spec.seq_frame (Spec.named _ _ (Spec.seq_frame spec_lit_frame (Spec.seq_frame
+    (Spec.loop_frame fun _ _ => Spec.seq_frame spec_bin_frame spec_skip_frame) spec_skip_frame)))
+    spec_skip_frame
+
+/-- **The real trace as a routine specification**: from a state holding $\mathbf{A}$ at `xo` of
+`X`, the run of `NLAlib.Computation.ztraceRe` into a cell of another buffer modifies only that
+cell, which then holds `M.traceRe A`, and keeps the tape positions; in mode `total` it also
+succeeds, given the standard model and the cell writable. No printed source. -/
+theorem spec_ztraceRe (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n : ℕ) {X : ℕ}
+    {xo : IExp ℕ} {dst : Cell ℕ ℕ} (A : Matrix (Fin n) (Fin n) (K × K)) (hdX : dst.buf ≠ X) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        md.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (ztraceRe (ι := ι) p (.const n) X xo dst) [(dst.buf, dst.idx.eval, 1)]
+      fun st st' => st'.store.read p dst.buf dst.idx.eval = some (M.traceRe A) ∧
+        PosKept st st' := by
+  intro M
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => exists_exec_ztraceRe hsem p n hA hdX hW)
+    fun st st' ⟨hA, _⟩ h => ⟨(spec_ztraceRe_frame p n X xo dst st trivial st' h).1,
+      (read_of_exec_ztraceRe (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+        (normal := normal) p n hA (blockDisjoint_of_fst_ne hdX) h).1,
+      (spec_ztraceRe_frame p n X xo dst st trivial st' h).2⟩⟩
 
 end NLAlib.Computation

@@ -57,12 +57,6 @@ theorem blockDisjoint_of_window {b i B off len lo' hi' : ℕ} (h : b = B → i <
     omega
   · exact Or.inl hb
 
-omit [Inhabited K] in
-/-- Name the state of a run. -/
-theorem name_state_node {X : Stmt P ι ℕ ℕ} {s s' : St P K C} (h : exec I X s = some s')
-    {Q : Prop} (k : ∀ σ : St P K C, σ.store = s.store → σ.pos = s.pos → exec I X σ = some s' → Q) :
-    Q := k s rfl rfl h
-
 /-- The index arithmetic of a split inside the window of its node. -/
 private theorem split_arith_node {n d lo k kp : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k) :
     2 * (n * n) * d + 2 * n * lo + 2 * (k * k) ≤ 2 * (n * n) * (d + 1) + 2 * n * lo ∧
@@ -126,15 +120,6 @@ private theorem split_handles_ne {H : EighArenas} {Sg Pp Pm : ℕ} {two sg nsg s
     cc sg (by simp) H.Ma (by simp [EighArenas.handles]),
     cc nsg (by simp) H.Ma (by simp [EighArenas.handles])⟩ <;>
   simp [EighArenas.handles, h] at hbufs
-
-omit [AddMonoid C] [Inhabited K] in
-/-- Reads of a store below $m$ pops. -/
-theorem read_pops_node : ∀ (m : ℕ) {s : Store P K} {q : P} {b i : ℕ}, b + m < s.size →
-    Store.read (Array.pop^[m] s) q b i = s.read q b i
-  | 0, _, _, _, _, _ => rfl
-  | m + 1, s, q, b, i, h => by
-    rw [Function.iterate_succ_apply, read_pops_node m (by simp [Array.size_pop]; omega),
-      Store.read_pop_of_lt (by omega)]
 
 omit [Inhabited K] in
 /-- The run of an allocation, inverted. -/

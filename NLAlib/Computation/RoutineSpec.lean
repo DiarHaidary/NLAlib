@@ -33,8 +33,8 @@ specifications. A program proof is a sequence of calls (`spec_call`), each namin
 * `NLAlib.Computation.RoutineSpec.wp_bind`: the call rule;
   `NLAlib.Computation.RoutineSpec.wp_bind_keep`: with a kept frame.
 * `NLAlib.Computation.Spec.allocBind`, `NLAlib.Computation.Spec.loopFp`,
-  `NLAlib.Computation.Spec.bindIdx_of_read`: allocation by named states, loops with
-  per-iteration footprints, index binders.
+  `NLAlib.Computation.Spec.bindIdx_of_read`, `NLAlib.Computation.RoutineSpec.bindIdx_of_read`:
+  allocation by named states, loops with per-iteration footprints, index binders.
 * `NLAlib.Computation.spec_lit`, `NLAlib.Computation.spec_bin`, `NLAlib.Computation.spec_draw`:
   instruction specifications.
 * `NLAlib.Computation.IsBlockRoutine.routineSpec`, `NLAlib.Computation.IsMatvecRoutine.routineSpec`:
@@ -360,6 +360,22 @@ theorem Spec.bindIdx_of_read {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body
   refine wp_bindIdx_of_read (hx st hst) ?_
   rw [hk, Mode.sat_some]
   exact ⟨hbound, fun hkb => wp_mono (h hkb _ (hpre st hst)) fun _ hp => ⟨hp.1, hkb, hp.2⟩⟩
+
+/-- **An index binder in a builder**, of specifications: `NLAlib.Computation.Spec.bindIdx_of_read`
+for `NLAlib.Computation.Builder.bindIdx`, the body a builder specified at the converted value
+$k$ with the fact $k \le$ `bound`. -/
+theorem RoutineSpec.bindIdx_of_read {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ}
+    {body : ℕ → Builder P ι ℕ ℕ Unit} {v : K} {k : ℕ} {pre' : St P K C → Prop}
+    {post' : St P K C → St P K C → Prop}
+    (hx : ∀ st, pre st → st.store.read p x.buf x.idx.eval = some v)
+    (hk : I.sem.toNat p v = some k) (hbound : m.Needs (k ≤ bound.eval))
+    (h : k ≤ bound.eval → Spec m I pre' (body k).run fp post')
+    (hpre : ∀ st, pre st → pre' (st.addCnt (I.charge (.toNat p)))) :
+    RoutineSpec m I pre (Builder.bindIdx p x bound body) fp
+      fun st st' => k ≤ bound.eval ∧ post' (st.addCnt (I.charge (.toNat p))) st' :=
+  ⟨executionComposable_bindIdx p x bound body,
+    (RoutineSpec.stmt (s := .bindIdx p x bound fun i => (body i).run)
+      (Spec.bindIdx_of_read hx hk hbound h hpre)).spec⟩
 
 /-- **A two-armed conditional of specifications** (the branch not fixed by the precondition):
 the postcondition is that of the arm taken. -/
@@ -1143,15 +1159,17 @@ macro_rules
       | exact executionComposable_bindIdx _ _ _ _ | refine ExecutionComposable.bind ?_ ?_))
 
 /-- The read set of a conjunction of stored facts: `ReadsOnly F ?rs` for `F` built by `∧` from
-cell reads, bundles of cells (`NLAlib.Computation.CellsHold`), writable blocks and decoded
-vectors and matrices, by `NLAlib.Computation.ReadsOnly.and`. -/
+cell reads, bundles of cells (`NLAlib.Computation.CellsHold`), blocks of cells with a property
+each (`NLAlib.Computation.readsOnly_forall_read`), writable blocks and decoded vectors and
+matrices, by `NLAlib.Computation.ReadsOnly.and`. -/
 syntax (name := readsOnlyTac) "reads_only" : tactic
 
 macro_rules
   | `(tactic| reads_only) => `(tactic| repeat' (first
       | exact readsOnly_cellsHold _ | exact readsOnly_read _ _ _ _
       | exact readsOnly_writable _ _ _ _ | exact readsOnly_readsDecoded _ _ _ _ _
-      | exact readsOnly_holdsDecoded _ _ _ _ _ | refine ReadsOnly.and ?_ ?_))
+      | exact readsOnly_holdsDecoded _ _ _ _ _ | exact readsOnly_forall_read _ _ _ _
+      | refine ReadsOnly.and ?_ ?_))
 
 /-- One step of a program proof: split a sequence, apply the triple `h` to its first statement
 and leave its precondition and the continuation from the named next state; footprint side
