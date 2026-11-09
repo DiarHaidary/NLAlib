@@ -38,6 +38,7 @@ public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RoutineAlloc
 public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Computation.RoutineSpec
+public import NLAlib.Computation.RoutineWhile
 public import NLAlib.Computation.RunEquiv
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.ScalarFrames
