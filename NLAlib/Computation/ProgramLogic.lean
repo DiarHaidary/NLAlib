@@ -33,6 +33,8 @@ applies them statement by statement, each step naming the next state.
 * `NLAlib.Computation.Mode`, `NLAlib.Computation.Wp`, `NLAlib.Computation.Triple`: the logic.
 * `NLAlib.Computation.matBlock`: the canonical block of a stored matrix.
 * `NLAlib.Computation.PosKept`: kept tape positions.
+* `NLAlib.Computation.CellsHold`, `NLAlib.Computation.cellBlocks`: a bundle of stored cells and its
+  read set.
 
 ## Main results
 
@@ -176,6 +178,45 @@ theorem ReadsOnly.pop {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} {
 theorem readsOnly_read (q : P) (b i : ℕ) (v : Option K) :
     ReadsOnly (fun s : Store P K => s.read q b i = v) [(b, i, 1)] :=
   fun s s' hs _ hrd => by simpa using (hrd q (b, i, 1) List.mem_cons_self 0 Nat.one_pos).trans hs
+
+/-- **A bundle of stored cells**: every cell `(q, b, i, v)` of `cs` reads `v` at tag `q` in buffer
+`b`, index `i`. One predicate for many scalar facts, so that a program proof carries them across a
+step by one frame fact (`NLAlib.Computation.readsOnly_cellsHold`). -/
+def CellsHold (cs : List (P × ℕ × ℕ × Option K)) (s : Store P K) : Prop :=
+  ∀ c ∈ cs, s.read c.1 c.2.1 c.2.2.1 = c.2.2.2
+
+/-- The read set of a bundle of cells: one one-cell block per cell. -/
+def cellBlocks (cs : List (P × ℕ × ℕ × Option K)) : List (ℕ × ℕ × ℕ) :=
+  cs.map fun c => (c.2.1, c.2.2.1, 1)
+
+/-- A bundle of cells reads only its cells. -/
+theorem readsOnly_cellsHold (cs : List (P × ℕ × ℕ × Option K)) :
+    ReadsOnly (CellsHold cs) (cellBlocks cs) := fun _ _ hs _ hrd c hc => by
+  simpa using (hrd c.1 _ (List.mem_map_of_mem hc) 0 Nat.one_pos).trans (hs c hc)
+
+/-- A cell of a bundle reads its value. -/
+theorem CellsHold.read {cs : List (P × ℕ × ℕ × Option K)} {s : Store P K} {q : P} {b i : ℕ}
+    {v : Option K} (h : CellsHold cs s) (hc : (q, b, i, v) ∈ cs) : s.read q b i = v :=
+  h _ hc
+
+/-- The empty bundle. -/
+theorem cellsHold_nil (s : Store P K) : CellsHold [] s := fun _ h => absurd h List.not_mem_nil
+
+/-- A bundle with one more cell. -/
+theorem CellsHold.cons {cs : List (P × ℕ × ℕ × Option K)} {s : Store P K} {q : P} {b i : ℕ}
+    {v : Option K} (hv : s.read q b i = v) (h : CellsHold cs s) :
+    CellsHold ((q, b, i, v) :: cs) s :=
+  fun c hc => (List.mem_cons.mp hc).elim (fun e => e ▸ hv) (h c)
+
+/-- A bundle of two bundles. -/
+theorem CellsHold.append {cs ds : List (P × ℕ × ℕ × Option K)} {s : Store P K}
+    (h : CellsHold cs s) (h' : CellsHold ds s) : CellsHold (cs ++ ds) s :=
+  fun c hc => (List.mem_append.mp hc).elim (h c) (h' c)
+
+/-- A sub-bundle of a bundle. -/
+theorem CellsHold.sub {cs ds : List (P × ℕ × ℕ × Option K)} {s : Store P K} (h : CellsHold cs s)
+    (hsub : ∀ c ∈ ds, c ∈ cs) : CellsHold ds s :=
+  fun c hc => h c (hsub c hc)
 
 /-- A writable block reads only itself (its shape). -/
 theorem readsOnly_writable (p : P) (b off n : ℕ) :

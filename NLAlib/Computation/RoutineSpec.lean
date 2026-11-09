@@ -30,7 +30,8 @@ specifications. A program proof is a sequence of calls (`spec_call`), each namin
 
 * `NLAlib.Computation.Spec.seq`, `NLAlib.Computation.Spec.frame`,
   `NLAlib.Computation.Spec.alloc`: composition, the frame rule, scoped scratch.
-* `NLAlib.Computation.RoutineSpec.wp_bind`: the call rule.
+* `NLAlib.Computation.RoutineSpec.wp_bind`: the call rule;
+  `NLAlib.Computation.RoutineSpec.wp_bind_keep`: with a kept frame.
 * `NLAlib.Computation.Spec.allocBind`, `NLAlib.Computation.Spec.loopFp`,
   `NLAlib.Computation.Spec.bindIdx_of_read`: allocation by named states, loops with
   per-iteration footprints, index binders.
@@ -175,6 +176,27 @@ theorem RoutineSpec.wp_run {r : Builder P ι ℕ ℕ Unit} {Q : St P K C → Pro
     (hk : ∀ st', Modifies fp st.store st'.store → post st st' → Q st') :
     Wp m I r.run Q st :=
   h.spec.wp_of hpre fun st' hp => hk st' hp.1 hp.2
+
+/-- **The call rule with a kept frame**: as `NLAlib.Computation.RoutineSpec.wp_bind`, and a store
+predicate `F` that reads only blocks disjoint from the routine's footprint is handed to the rest
+of the block. One read-set side goal (`fp_omega`) per call, for every fact the bundle `F`
+carries (`NLAlib.Computation.CellsHold`, `NLAlib.Computation.ReadsOnly.and`). -/
+theorem RoutineSpec.wp_bind_keep {r : Builder P ι ℕ ℕ Unit} {f : Unit → Builder P ι ℕ ℕ Unit}
+    {Q : St P K C → Prop} {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)}
+    (h : RoutineSpec m I pre r fp post) (hF : ReadsOnly F rs) (hd : BlocksDisjoint rs fp)
+    (hpre : pre st) (hFst : F st.store)
+    (hk : ∀ st', Modifies fp st.store st'.store → post st st' → F st'.store →
+      Wp m I (f ()).run Q st') :
+    Wp m I (r >>= f).run Q st :=
+  h.wp_bind hpre fun st' hm hp => hk st' hm hp (hF.of_modifies hFst hm hd)
+
+/-- The call rule with a kept frame, for the last routine of a block. -/
+theorem RoutineSpec.wp_run_keep {r : Builder P ι ℕ ℕ Unit} {Q : St P K C → Prop}
+    {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} (h : RoutineSpec m I pre r fp post)
+    (hF : ReadsOnly F rs) (hd : BlocksDisjoint rs fp) (hpre : pre st) (hFst : F st.store)
+    (hk : ∀ st', Modifies fp st.store st'.store → post st st' → F st'.store → Q st') :
+    Wp m I r.run Q st :=
+  h.wp_run hpre fun st' hm hp => hk st' hm hp (hF.of_modifies hFst hm hd)
 
 /-- Two specified routines in sequence form one. -/
 theorem RoutineSpec.bind {r₁ r₂ : Builder P ι ℕ ℕ Unit} (h₁ : RoutineSpec m I pre r₁ fp post)
@@ -1087,7 +1109,8 @@ syntax (name := fpClose) "fp_close" (ppSpace colGt ident)* : tactic
 
 macro_rules
   | `(tactic| fp_close $names*) => `(tactic| (
-      (try simp only [BlocksDisjoint, matBlock, List.cons_append, List.nil_append,
+      (try simp only [BlocksDisjoint, matBlock, cellBlocks, List.map_cons, List.map_nil,
+        List.cons_append, List.nil_append,
         List.nodup_cons, List.nodup_nil, List.mem_cons, List.mem_append, List.not_mem_nil,
         or_false, and_true, not_or, forall_eq_or_imp, forall_eq, List.forall_mem_cons,
         blockDisjoint_iff, ne_eq, not_false_eq_true, IExp.eval_const, IExp.eval_ofNat,
@@ -1118,6 +1141,17 @@ macro_rules
       | exact executionComposable_named _ _ _ | exact executionComposable_forRange _ _
       | exact executionComposable_scope _ | exact executionComposable_ifThenElse _ _ _ _ _ _
       | exact executionComposable_bindIdx _ _ _ _ | refine ExecutionComposable.bind ?_ ?_))
+
+/-- The read set of a conjunction of stored facts: `ReadsOnly F ?rs` for `F` built by `∧` from
+cell reads, bundles of cells (`NLAlib.Computation.CellsHold`), writable blocks and decoded
+vectors and matrices, by `NLAlib.Computation.ReadsOnly.and`. -/
+syntax (name := readsOnlyTac) "reads_only" : tactic
+
+macro_rules
+  | `(tactic| reads_only) => `(tactic| repeat' (first
+      | exact readsOnly_cellsHold _ | exact readsOnly_read _ _ _ _
+      | exact readsOnly_writable _ _ _ _ | exact readsOnly_readsDecoded _ _ _ _ _
+      | exact readsOnly_holdsDecoded _ _ _ _ _ | refine ReadsOnly.and ?_ ?_))
 
 /-- One step of a program proof: split a sequence, apply the triple `h` to its first statement
 and leave its precondition and the continuation from the named next state; footprint side

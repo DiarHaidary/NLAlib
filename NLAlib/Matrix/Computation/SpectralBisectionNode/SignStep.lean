@@ -118,23 +118,22 @@ theorem spec_eighSignIter {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (
         h.2.2.2.of_modifies hm⟩ : _ ∧ _ ∧ _ ∧ _)
     exact (spec_newtonSchulzStepBlock (toNat := toNat) (qrR := qrR) (unif := unif)
         (normal := normal) hmm md p hsem n (c := ⟨t, 2⟩) B hWX hVX hWV htW htV
-        (blockDisjoint_of_fst_ne htX)).wp_bind
+        (blockDisjoint_of_fst_ne htX)).wp_bind_keep
         (f := fun _ => newtonSchulzTestBlock p mm (.const n) X xo W V ⟨t, 3⟩ ⟨t, 4⟩ ⟨t, 0⟩ ⟨t, 1⟩)
+        (readsOnly_cellsHold _) (by fp_omega [htW, htV, htX])
         ⟨hX, hW, hN.mono fun h => ⟨h.1.of_le (by simp) (by simp), h.2⟩⟩
-      fun st₁ hm₁ h₁ => (spec_newtonSchulzTestBlock (toNat := toNat) (qrR := qrR) (unif := unif)
+        (((cellsHold_nil _).cons h0).cons h4 |>.cons h3)
+      fun st₁ hm₁ h₁ hC₁ => (spec_newtonSchulzTestBlock (toNat := toNat) (qrR := qrR) (unif := unif)
         (normal := normal) hmm md (hsem.mono (·.1)) p n (X := X) (W := W) (V := V) (xo := xo)
         (one := ⟨t, 3⟩) (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) η _ hWX hWV
-        (by simp [htW, htV]) (hcell 1 4 (by omega)) (hcell 1 0 (by omega))).wp_run
-        ⟨h₁.1, (readsOnly_read _ _ _ _).of_modifies h3 hm₁ (by fp_omega [htW, htV, htX]),
-          (readsOnly_read _ _ _ _).of_modifies h4 hm₁ (by fp_omega [htW, htV, htX]),
-          (readsOnly_read _ _ _ _).of_modifies h0 hm₁ (by fp_omega [htW, htV, htX]),
-          (hw hm₁).mono fun h => ⟨h.2.2.1, h.2.1, h.1.of_le (by simp) (by simp)⟩⟩
-      fun st₂ hm₂ h₂ => ⟨(hm₁.trans hm₂).of_sub (by simp [matBlock]), ⟨(show ReadsOnly _
-          [matBlock X xo.eval n n 2] from readsOnly_entryLayoutHolds pairLayout p X xo.eval
-            _).of_modifies h₁.1 hm₂ (by fp_omega [hWX, hVX, htX]), h₂.1,
-        (readsOnly_read _ _ _ _).of_modifies h0 (hm₁.trans hm₂) (by fp_omega [htW, htV, htX]),
-        (readsOnly_read _ _ _ _).of_modifies h3 (hm₁.trans hm₂) (by fp_omega [htW, htV, htX]),
-        (readsOnly_read _ _ _ _).of_modifies h4 (hm₁.trans hm₂) (by fp_omega [htW, htV, htX]),
+        (by simp [htW, htV]) (hcell 1 4 (by omega)) (hcell 1 0 (by omega))).wp_run_keep
+        ((readsOnly_cellsHold _).and (readsOnly_pairLayoutHolds p X xo.eval _))
+        (by fp_omega [htW, htV, hWX, hVX, htX])
+        ⟨h₁.1, hC₁.read (.head _), hC₁.read (.tail _ (.head _)),
+          hC₁.read (.tail _ (.tail _ (.head _))),
+          (hw hm₁).mono fun h => ⟨h.2.2.1, h.2.1, h.1.of_le (by simp) (by simp)⟩⟩ ⟨hC₁, h₁.1⟩
+      fun st₂ hm₂ h₂ ⟨hC₂, hX₂⟩ => ⟨(hm₁.trans hm₂).of_sub (by simp [matBlock]), ⟨hX₂, h₂.1,
+        hC₂.read (.tail _ (.tail _ (.head _))), hC₂.read (.head _), hC₂.read (.tail _ (.head _)),
         h₂.2.2.1⟩, h₂.2.2.2.trans h₁.2⟩
   refine (RoutineSpec.ifThenElse (r := !newtonSchulzTest M η B) hT
     (routineSpec_pure (pre := fun _ => True))
@@ -243,68 +242,54 @@ theorem spec_eighSignBody {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (
   have ht : ∀ {fp} {s : Store P K} (i : ℕ), i < 5 → Modifies fp st.store s →
       md.Needs (Writable s p t i 1) := fun i hi hm =>
     (hw hm).mono fun h => h.1.of_le (by omega) (by omega)
-  have hcell : ∀ i j : ℕ, i ≠ j → BlocksDisjoint [(t, i, 1)] [(t, j, 1)] :=
-    fun i j h x hx y hy => by
-      rw [List.mem_singleton.mp hx, List.mem_singleton.mp hy]; simp [blockDisjoint]; omega
-  refine (RoutineSpec.ins (spec_litIdx_getD (p := p) (dst := ⟨t, 2⟩) (e := 4 * .const n))).wp_bind
-    (hsem.elim fun h => (ht 2 (by omega) (.refl [] _)).mono fun w =>
-      ⟨h.1.lit_ok p _ (h.2.1 _ _), w⟩) fun st₁ hm₁ h₁ => ?_
+  -- the scalar prologue; the cells later steps read are kept in one bundle
+  refine (RoutineSpec.ins (spec_litIdx_getD (p := p) (dst := ⟨t, 2⟩)
+      (e := 4 * .const n))).wp_bind_keep
+    (readsOnly_cellsHold [(p, par, po.eval, some ε), (p, par, po.eval + 1, some b)])
+    (by fp_omega [htp]) (hsem.elim fun h => (ht 2 (by omega) (.refl [] _)).mono fun w =>
+      ⟨h.1.lit_ok p _ (h.2.1 _ _), w⟩) (((cellsHold_nil _).cons hb).cons hε)
+    fun st₁ hm₁ h₁ hC₁ => ?_
   refine (RoutineSpec.ins (spec_bin_getD (p := p) (op := .div) (dst := ⟨t, 0⟩)
-      (x := ⟨par, po⟩) (y := ⟨t, 2⟩) (a := ε))).wp_bind
-      ⟨(readsOnly_read _ _ _ _).of_modifies hε hm₁ (blocksDisjoint_singleton_of_fst_ne
-        (by simpa using Ne.symm htp)), h₁.1, hsem.elim fun h =>
-        (ht 0 (by omega) hm₁).mono fun w => ⟨by
-          obtain ⟨v, hv⟩ := h.1.lit_ok p (((4 * IExp.const n).eval : ℕ) : ℚ) (h.2.1 _ _)
-          refine h.1.bin_ok p .div ε _ trivial (fun _ => ?_) (h.2.1 _ _)
-          rw [hv]
-          exact h.1.dec_ne_zero_of_lit_eq_some h.2.2.1 (by simp; omega) hv, w⟩⟩
-      fun st₂ hm₂ h₂ => ?_
+      (x := ⟨par, po⟩) (y := ⟨t, 2⟩) (a := ε))).wp_bind_keep
+    (readsOnly_cellsHold [(p, par, po.eval + 1, some b)]) (by fp_omega [htp])
+    ⟨hC₁.read (by simp), h₁.1, hsem.elim fun h => (ht 0 (by omega) hm₁).mono fun w => ⟨by
+      obtain ⟨v, hv⟩ := h.1.lit_ok p (((4 * IExp.const n).eval : ℕ) : ℚ) (h.2.1 _ _)
+      refine h.1.bin_ok p .div ε _ trivial (fun _ => ?_) (h.2.1 _ _)
+      rw [hv]
+      exact h.1.dec_ne_zero_of_lit_eq_some h.2.2.1 (by simp; omega) hv, w⟩⟩
+    (hC₁.sub (by simp)) fun st₂ hm₂ h₂ hC₂ => ?_
   refine (RoutineSpec.ins (spec_un_getD (p := p) (op := .neg) (dst := ⟨t, 4⟩)
-      (x := ⟨t, 0⟩))).wp_bind ⟨h₂.1, hsem.elim fun h => (ht 4 (by omega)
-        (hm₁.trans hm₂)).mono fun w => ⟨(h.1.neg p _).imp fun _ h => h.1, w⟩⟩
-      fun st₃ hm₃ h₃ => ?_
-  refine (RoutineSpec.ins (spec_lit_getD (p := p) (dst := ⟨t, 3⟩) (q := 1))).wp_bind
-      (hsem.elim fun h => (ht 3 (by omega) (hm₁.trans hm₂ |>.trans hm₃)).mono fun w =>
-        ⟨h.1.lit_ok p 1 (h.2.1 _ _), w⟩) fun st₄ hm₄ h₄ => ?_
+      (x := ⟨t, 0⟩))).wp_bind_keep ((readsOnly_cellsHold _).and (readsOnly_cellsHold _))
+    (by fp_omega [htp]) ⟨h₂.1, hsem.elim fun h => (ht 4 (by omega) (hm₁.trans hm₂)).mono fun w =>
+      ⟨(h.1.neg p _).imp fun _ h => h.1, w⟩⟩ ⟨hC₂, (cellsHold_nil _).cons h₂.1⟩
+    fun st₃ hm₃ h₃ ⟨hC₃, hT₃⟩ => ?_
+  refine (RoutineSpec.ins (spec_lit_getD (p := p) (dst := ⟨t, 3⟩) (q := 1))).wp_bind_keep
+    ((readsOnly_cellsHold _).and (readsOnly_cellsHold _)) (by fp_omega [htp])
+    (hsem.elim fun h => (ht 3 (by omega) (hm₁.trans hm₂ |>.trans hm₃)).mono fun w =>
+      ⟨h.1.lit_ok p 1 (h.2.1 _ _), w⟩) ⟨hC₃, hT₃.cons h₃.1⟩ fun st₄ hm₄ h₄ ⟨hC₄, hT₄⟩ => ?_
   have hm := ((hm₁.trans hm₂ |>.trans hm₃).trans hm₄).of_sub (fp' := [(t, 0, 5)]) (by simp)
-  have hcX : ∀ i, BlocksDisjoint [(t, i, 1)] [matBlock X xo.eval n n 2] := fun _ =>
-    blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using htX)
+  -- the scaled matrix, its test and the loop, the bundle kept across each call
   refine (spec_zhermScale (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
     (normal := normal) md hs p n (X := A) (Y := X) (xo := ao) (yo := xo) (c := ⟨par, po + 1⟩) b A₀
     hXA (by
       have := hXp; simp only [blockDisjoint_iff, matBlock, IExp.eval_add, IExp.eval_ofNat] at this ⊢
-      omega)).wp_bind
-    ⟨(show ReadsOnly _ [matBlock A ao.eval n n 2] from readsOnly_entryLayoutHolds pairLayout p A
-      ao.eval A₀).of_modifies hA hm hAt, (readsOnly_read _ _ _ _).of_modifies hb hm
-        (blocksDisjoint_singleton_of_fst_ne (by simpa using Ne.symm htp)),
-      hN.mono fun w => ⟨w.1, w.2.2.2.2.of_modifies hm⟩⟩ fun st₅ hm₅ h₅ => ?_
+      omega)).wp_bind_keep (readsOnly_cellsHold _) (by fp_omega [htX])
+    ⟨(readsOnly_pairLayoutHolds p A ao.eval A₀).of_modifies hA hm hAt, hC₄.read (by simp),
+      hN.mono fun w => ⟨w.1, w.2.2.2.2.of_modifies hm⟩⟩ (hT₄.cons h₄.1) fun st₅ hm₅ h₅ hC₅ => ?_
   refine (spec_newtonSchulzTestBlock (toNat := toNat) (qrR := qrR) (unif := unif)
     (normal := normal) hmm md hs p n (X := X) (W := W) (V := V) (xo := xo) (one := ⟨t, 3⟩)
     (lo := ⟨t, 4⟩) (hi := ⟨t, 0⟩) (f := ⟨t, 1⟩) (M.div ε (M.ofNat (4 * n))) _ hWX hWV
-    (by simp [htW, htV]) (by simp [blockDisjoint]) (by simp [blockDisjoint])).wp_bind
-    ⟨h₅.1, (readsOnly_read _ _ _ _).of_modifies h₄.1 hm₅ (hcX 3),
-      (readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies h₃.1 hm₄
-        (hcell 4 3 (by omega))) hm₅ (hcX 4),
-      (readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies
-        ((readsOnly_read _ _ _ _).of_modifies h₂.1 hm₃ (hcell 0 4 (by omega))) hm₄
-        (hcell 0 3 (by omega))) hm₅ (hcX 0),
+    (by simp [htW, htV]) (by simp [blockDisjoint]) (by simp [blockDisjoint])).wp_bind_keep
+    ((readsOnly_cellsHold _).and (readsOnly_pairLayoutHolds p X xo.eval _))
+    (by fp_omega [htW, htV, hWX, hVX, htX])
+    ⟨h₅.1, hC₅.read (.head _), hC₅.read (.tail _ (.head _)),
+      hC₅.read (.tail _ (.tail _ (.head _))),
       (hw (hm.trans hm₅)).mono fun w => ⟨w.2.2.1, w.2.1, w.1.of_le (by simp) (by simp)⟩⟩
-    fun st₆ hm₆ h₆ => ?_
-  have hk : ∀ i, i ≠ 1 → BlocksDisjoint [(t, i, 1)]
-      [matBlock W 0 n n 2, matBlock V 0 n n 2, (t, 1, 1)] := fun i hi => by
-    fp_omega [htW, htV, hi]
+    ⟨hC₅, h₅.1⟩ fun st₆ hm₆ h₆ ⟨hC₆, hX₆⟩ => ?_
   refine (spec_eighSignLoop hmm md p hsu hflag n F (xo := xo) (M.div ε (M.ofNat (4 * n))) _
-    hWX hVX hWV htX htW htV).wp_run ⟨⟨(show ReadsOnly _ [matBlock X xo.eval n n 2] from
-      readsOnly_entryLayoutHolds pairLayout p X xo.eval _).of_modifies h₅.1 hm₆
-        (by fp_omega [hWX, hVX, htX]), h₆.1,
-      (readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies
-        ((readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies h₂.1 hm₃
-        (hcell 0 4 (by omega))) hm₄ (hcell 0 3 (by omega))) hm₅ (hcX 0)) hm₆ (hk 0 (by omega)),
-      (readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies h₄.1 hm₅
-        (hcX 3)) hm₆ (hk 3 (by omega)),
-      (readsOnly_read _ _ _ _).of_modifies ((readsOnly_read _ _ _ _).of_modifies
-        ((readsOnly_read _ _ _ _).of_modifies h₃.1 hm₄ (hcell 4 3 (by omega))) hm₅ (hcX 4))
-        hm₆ (hk 4 (by omega)), h₆.2.2.1⟩, hw (hm.trans hm₅ |>.trans hm₆)⟩ fun st₇ hm₇ h₇ => ?_
+    hWX hVX hWV htX htW htV).wp_run ⟨⟨hX₆, h₆.1, hC₆.read (.tail _ (.tail _ (.head _))),
+      hC₆.read (.head _), hC₆.read (.tail _ (.head _)), h₆.2.2.1⟩, hw (hm.trans hm₅ |>.trans hm₆)⟩
+    fun st₇ hm₇ h₇ => ?_
   exact ⟨(hm.trans hm₅ |>.trans hm₆ |>.trans hm₇).of_sub (by simp [matBlock]), h₇.1.1,
     h₇.2.trans (h₆.2.2.2.trans (h₅.2.trans (h₄.2.trans (h₃.2.trans (h₂.2.trans h₁.2)))))⟩
 

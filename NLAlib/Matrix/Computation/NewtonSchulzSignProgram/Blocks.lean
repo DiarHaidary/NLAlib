@@ -669,30 +669,30 @@ theorem spec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
   refine ⟨executionComposable_newtonSchulzTestBlock _ _ _ _ _ _ _ _ _ _ _,
     fun st ⟨hA, h1, hl, hh, hN⟩ => ?_⟩
   obtain ⟨hNW, hNV, hNf⟩ := Mode.needs_and.mp hN |>.imp id Mode.needs_and.mp
-  exact (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (X, xo) (W, 0) A
+  refine (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (X, xo) (W, 0) A
     A)).wp_bind
     (f := fun _ => zhermShift p (.const n) W 0 one V 0 >>= fun _ => zboxTest p (.const n) (.const n)
       V 0 lo hi f) ⟨hA, hA, blockDisjoint_of_fst_ne hWX, blockDisjoint_of_fst_ne hWX, hNW⟩
-    fun st₁ hm₁ h₁ => (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+    fun st₁ hm₁ h₁ => ?_
+  -- the cells `one`, `lo`, `hi` and the stored square, kept across the calls in one bundle
+  have hC₁ := (readsOnly_cellsHold _).of_modifies (((cellsHold_nil _).cons hh).cons hl |>.cons h1)
+    hm₁ (by fp_omega [hoW, hlW, hhW])
+  refine (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) md hsem p n (X := W) (Y := V) (xo := 0) (yo := 0) (c := one) _ _
-      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind
-      ⟨h₁.1, (readsOnly_read _ _ _ _).of_modifies h1 hm₁ (blocksDisjoint_singleton_of_fst_ne
-        (by simpa [matBlock] using hoW)), hNV.mono (·.of_modifies hm₁)⟩
-    fun st₂ hm₂ h₂ => (spec_zboxTest (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind_keep
+    ((readsOnly_cellsHold _).and (readsOnly_pairLayoutHolds p W 0 _))
+    (by fp_omega [hlV, hhV, hWV]) ⟨h₁.1, hC₁.read (.head _), hNV.mono (·.of_modifies hm₁)⟩
+    ⟨hC₁.sub fun _ h => .tail _ h, h₁.1⟩ fun st₂ hm₂ h₂ ⟨hC₂, hW₂⟩ => ?_
+  have hV₂ := h₂.1 (blockDisjoint_of_fst_ne hoV)
+  exact (spec_zboxTest (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) md hsem p n n (X := V) (xo := 0) (lo := lo) (hi := hi) (f := f) _ _ _
-      (blockDisjoint_of_fst_ne hfV) hflo hfhi).wp_run
-      ⟨h₂.1 (blockDisjoint_of_fst_ne hoV), (readsOnly_read _ _ _ _).of_modifies hl (hm₁.trans hm₂)
-        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hlW, hlV⟩)),
-      (readsOnly_read _ _ _ _).of_modifies hh (hm₁.trans hm₂)
-        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hhW, hhV⟩)),
-      hNf.mono (·.of_modifies (hm₁.trans hm₂))⟩
-    fun st₃ hm₃ h₃ => ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp [matBlock, pairLayout]),
-      (readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies h₁.1 (hm₂.trans hm₃)
-        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hWV, Ne.symm hfW⟩)),
-      (readsOnly_entryLayoutHolds pairLayout p V 0 _).of_modifies
-        (h₂.1 (blockDisjoint_of_fst_ne hoV)) hm₃
-        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using Ne.symm hfV)),
-      by unfold newtonSchulzTest; exact h₃.1, h₃.2.trans (h₂.2.trans h₁.2.2)⟩
+      (blockDisjoint_of_fst_ne hfV) hflo hfhi).wp_run_keep
+    ((readsOnly_pairLayoutHolds p W 0 _).and (readsOnly_pairLayoutHolds p V 0 _))
+    (by fp_omega [hfW, hfV]) ⟨hV₂, hC₂.read (.head _), hC₂.read (.tail _ (.head _)),
+      hNf.mono (·.of_modifies (hm₁.trans hm₂))⟩ ⟨hW₂, hV₂⟩
+    fun st₃ hm₃ h₃ ⟨hW₃, hV₃⟩ => ⟨(hm₁.trans hm₂ |>.trans hm₃).mono
+      (by simp [matBlock, pairLayout]),
+      hW₃, hV₃, by unfold newtonSchulzTest; exact h₃.1, h₃.2.trans (h₂.2.trans h₁.2.2)⟩
 
 omit [Inhabited K] in
 /-- The step block composes with what follows. -/

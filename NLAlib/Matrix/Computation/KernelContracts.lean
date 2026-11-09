@@ -68,7 +68,8 @@ witnesses that the contracts are satisfiable.
   `NLAlib.Computation.EntryLayout.Holds.of_forall_read_eq`: how a block comes to hold a matrix.
 * `NLAlib.Computation.IsMatMulKernel.holds_of_kcallStore_eq_some`,
   `NLAlib.Computation.IsQRKernel.holds_of_kcallStore_eq_some`: kernel calls on held matrices.
-* `NLAlib.Computation.readsOnly_entryLayoutHolds`: a stored matrix reads only its block.
+* `NLAlib.Computation.readsOnly_entryLayoutHolds`, `NLAlib.Computation.readsOnly_pairLayoutHolds`:
+  a stored matrix reads only its block.
 * `NLAlib.Computation.IsMatMulKernel.spec_kcall`: a product kernel call as a specification of the
   program logic (`NLAlib/Computation/ProgramLogic.lean`).
 -/
@@ -635,6 +636,13 @@ theorem readsOnly_entryLayoutHolds {E : Type} (L : EntryLayout K E) {l m : ℕ} 
   have hlt : L.width * (i + l * j) + t < l * m * L.width := by
     nlinarith [Nat.mul_le_mul_left L.width hij, t.isLt]
   exact (hrd p (matBlock b off l m L.width) List.mem_cons_self _ hlt).trans (hs i j t)
+
+/-- A matrix stored as interleaved pairs reads only its block of `2` words per entry: the read
+set in the canonical form `NLAlib.Computation.matBlock … 2` that footprints use. -/
+theorem readsOnly_pairLayoutHolds {l m : ℕ} (p : P) (b off : ℕ)
+    (Y : Matrix (Fin l) (Fin m) (K × K)) :
+    ReadsOnly (fun s : Store P K => pairLayout.Holds s p b off Y) [matBlock b off l m 2] :=
+  readsOnly_entryLayoutHolds pairLayout p b off Y
 
 variable [AddMonoid C]
 

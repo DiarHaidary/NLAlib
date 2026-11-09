@@ -728,13 +728,6 @@ private theorem pairLayout_holds_unique {s : Store P K} {p : P} {b off l m : ℕ
   · simpa [pairLayout] using (h i j ⟨0, two_pos⟩).symm.trans (h' i j ⟨0, two_pos⟩)
   · simpa [pairLayout] using (h i j ⟨1, one_lt_two⟩).symm.trans (h' i j ⟨1, one_lt_two⟩)
 
-omit [Inhabited K] in
-/-- A matrix stored as interleaved pairs reads only its block of `2` words per entry. -/
-theorem readsOnly_pairLayoutHolds {l m : ℕ} (p : P) (b off : ℕ)
-    (Y : Matrix (Fin l) (Fin m) (K × K)) :
-    ReadsOnly (fun s : Store P K => pairLayout.Holds s p b off Y) [matBlock b off l m 2] :=
-  readsOnly_entryLayoutHolds pairLayout p b off Y
-
 /-- **The deflation as a routine specification**: if kernels `mm`, `qr` of `I` are the routines
 `mmR`, `qrR` on interleaved pairs, then from a state holding the projector $\mathbf{P}$ at offset
 $0$ of `Pm`, the stored $\sqrt{1/2}$ in the cell `sq` and initialised Gaussian words in `Sg`, the
