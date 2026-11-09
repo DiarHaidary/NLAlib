@@ -37,12 +37,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! #### Helpers of `NLAlib.holds_of_exec_eighDownLevel` -/
 
-omit [Inhabited K] in
-/-- A sequence, inverted. -/
-theorem exists_exec_and_exec_of_exec_seq {s t : Stmt P ι ℕ ℕ} {st st' : St P K C}
-    (h : exec I (.seq s t) st = some st') : ∃ σ, exec I s st = some σ ∧ exec I t σ = some st' :=
-  Option.bind_eq_some_iff.mp ((exec_seq I s t st).symm.trans h)
-
 omit [AddMonoid C] [Inhabited K] in
 /-- A size written as a literal reads back as the size. -/
 theorem readsIdx_of_read_eq_lit {dec : P → K → ℝ} {B : ℕ} (hlit : IsExactIntLit dec I.sem B)

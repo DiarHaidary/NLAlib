@@ -35,12 +35,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {Su Sg : Type} {toNat : K → ℕ} {mmR : MatMulMap (K × K)} {qrR : QRMap (K × K)}
   {unif : K → Su → K} {normal : Sg → K × K}
 
-omit [Inhabited K] in
-/-- Blocks of distinct buffers are disjoint. -/
-theorem blockDisjoint_of_ne {b b' i i' l l' : ℕ} (h : b ≠ b') :
-    blockDisjoint (b, i, l) (b', i', l') = true := by
-  simp [blockDisjoint, h]
-
 /-- **The compression block's specification.** If kernel `mm` is a routine on interleaved pairs,
 then from a state holding the $k \times r$ basis $\mathbf{Q}$ at `qo` of `Qa`, the node matrix
 $\mathbf{A}$ at `mo` of `Ma` and the values $c_2$ and $\sigma$ in the cells `two` and `sg`, the

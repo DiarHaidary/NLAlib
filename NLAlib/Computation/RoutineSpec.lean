@@ -267,6 +267,16 @@ theorem Spec.of_normIdx_eq {s' : Stmt P ι ℕ ℕ} (h : Spec m I pre s fp post)
   rw [Wp, exec_eq_of_normIdx_eq I hn]
   exact this
 
+/-- A specification transported to a statement that runs the same
+(`NLAlib.Computation.exec_eq_of_normIdx_eq`, a block at an index variable and at its value). -/
+theorem Spec.of_exec_eq {m : Mode} {pre : St P K C → Prop} {s s' : Stmt P ι ℕ ℕ}
+    {fp : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop} (h : Spec m I pre s fp post)
+    (he : ∀ st, exec I s' st = exec I s st) : Spec m I pre s' fp post := by
+  intro st hst
+  have := h st hst
+  rw [Wp, he]
+  exact this
+
 /-- **An allocation in a builder, by named states**: the rest of the block, specified at the
 relative handle `b` from the allocated state `st₁` (an equation, not a pushed term), gives the
 block's specification; its footprint below the fresh buffer is the body's. -/
@@ -891,6 +901,47 @@ theorem Modifies.of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s s' : Store P K} (
     dsimp only at this ⊢
     omega
 
+omit [AddMonoid C] in
+/-- A cell past the end of its buffer reads nothing. -/
+theorem Store.read_eq_none_of_len_le {s : Store P K} {p r : P} {b i len : ℕ}
+    (hs : s.shape[b]? = some (p, len)) (hi : len ≤ i) : s.read r b i = none := by
+  rw [Store.getElem?_shape] at hs
+  unfold Store.read
+  rcases hb : s[b]? with _ | ⟨q', arr⟩
+  · rfl
+  · rw [hb] at hs
+    simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at hs
+    obtain ⟨-, rfl⟩ := hs
+    simp [Array.getElem?_eq_none hi]
+
+omit [AddMonoid C] in
+/-- A footprint may be replaced by one whose blocks contain the parts of its blocks that lie in
+their buffers. -/
+theorem Modifies.of_sub_shape {fp fp' : List (ℕ × ℕ × ℕ)} {p : P} {s s' : Store P K}
+    (h : Modifies fp s s')
+    (hsub : ∀ x ∈ fp, ∃ y ∈ fp', x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧
+      (x.2.1 + x.2.2 ≤ y.2.1 + y.2.2 ∨ ∃ len, s.shape[x.1]? = some (p, len) ∧
+        len ≤ y.2.1 + y.2.2)) : Modifies fp' s s' := by
+  refine ⟨h.1, fun q b i hb => ?_⟩
+  by_cases hd : ∀ x ∈ fp, blockDisjoint (b, i, 1) x = true
+  · exact h.2 q b i hd
+  · simp only [not_forall] at hd
+    obtain ⟨x, hx, hnd⟩ := hd
+    obtain ⟨y, hy, h1, h2, h3 | ⟨len, hl, hle⟩⟩ := hsub x hx
+    · exfalso
+      have := blockDisjoint_iff.mp (hb y hy)
+      have := blockDisjoint_iff.not.mp (by simpa using hnd)
+      dsimp only at *
+      omega
+    · have := blockDisjoint_iff.mp (hb y hy)
+      have hx' := blockDisjoint_iff.not.mp (by simpa using hnd)
+      dsimp only at *
+      have hi : len ≤ i := by omega
+      have hbx : b = x.1 := by omega
+      subst hbx
+      rw [Store.read_eq_none_of_len_le (hs := hl) hi,
+        Store.read_eq_none_of_len_le (s := s') (hs := by rw [h.1]; exact hl) hi]
+
 /-- A specification whose blocks lie in blocks of `fp'` has the footprint `fp'`. -/
 theorem Spec.sub {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ} {fp fp' : List (ℕ × ℕ × ℕ)}
     {post : St P K C → St P K C → Prop} (h : Spec m I pre s fp post)
@@ -1325,6 +1376,41 @@ theorem spec_forRange_lit {q : ℚ} {n : IExp ℕ} {Y off : ℕ} {didx : ℕ →
         (by rw [hd]; fp_omega [hi])).trans rfl⟩
     · obtain ⟨v, hv, hr⟩ := hp.2.1
       exact ⟨v, hv, by rw [← hd]; exact hr⟩
+
+/-- **A loop of index literals into consecutive cells**: iteration $i$ writes the literal of the
+index expression `e` into the cell $\mathit{off} + i$ of `Y`; the block then reads that literal,
+nothing else changes and the tape positions are kept; the total mode needs the literal and the
+block writable. -/
+theorem spec_forRange_litIdx {e : IExp ℕ} {n : IExp ℕ} {Y off : ℕ} {didx : ℕ → IExp ℕ}
+    (hd : ∀ i, (didx i).eval = off + i) :
+    RoutineSpec m I (fun st => m.Needs ((∃ v, I.sem.lit p (e.eval : ℚ) = some v) ∧
+        Writable st.store p Y off n.eval))
+      (Builder.forRange n fun i => Builder.ins (.litIdx p ⟨Y, didx i⟩ e)) [(Y, off, n.eval)]
+      fun st st' => (∀ i < n.eval, st'.store.read p Y (off + i) = I.sem.lit p (e.eval : ℚ)) ∧
+        PosKept st st' := by
+  refine RoutineSpec.stmt (s := .loop n fun i => (Builder.ins (.litIdx p ⟨Y, didx i⟩ e)).run)
+    ((Spec.loop (fun st₀ j st => st.pos = st₀.pos ∧
+      Modifies [(Y, off, n.eval)] st₀.store st.store ∧
+      ∀ i < j, st.store.read p Y (off + i) = I.sem.lit p (e.eval : ℚ))
+      (fun _ _ => ⟨rfl, .refl _ _, by simp⟩)
+      fun st₀ hst₀ k hk => ?_).conseq (fun _ h => h) (fun _ h => h) fun _ _ _ h => ⟨h.2.2, h.1⟩)
+  refine (((RoutineSpec.ins (spec_litIdx_read (m := m) (p := p) (dst := ⟨Y, didx k⟩)
+    (e := e))).spec.with_modifies.sub (fp' := [(Y, off, n.eval)])
+      fun x hx => ?_).conseq (fun st h => hst₀.mono fun hw => ⟨hw.1, ?_⟩)
+      (fun _ h => h) fun st st' h hp => ⟨hp.2.2.trans h.1, (h.2.1.trans (hp.1.of_sub
+        (fp' := [(Y, off, n.eval)]) fun x hx => ?_)).mono (by simp), ?_⟩)
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    obtain ⟨len, hl, hlt⟩ := hw.2 k hk
+    exact ⟨len, by rw [h.2.1.1]; exact hl, by rw [hd]; omega⟩
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
+    · exact ((readsOnly_read _ _ _ _).of_modifies (h.2.2 i hi) hp.1
+        (by rw [hd]; fp_omega [hi])).trans rfl
+    · rw [← hd]; exact hp.2.1
 
 end CellLoops
 

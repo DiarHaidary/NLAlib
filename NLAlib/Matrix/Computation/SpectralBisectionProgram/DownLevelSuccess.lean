@@ -32,27 +32,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! #### Sequences of instructions that succeed -/
 
-omit [Inhabited K] in
-/-- An index literal, then the rest. -/
-theorem exists_exec_seq_litIdx {p : P} {dst : Cell ℕ ℕ} {e : IExp ℕ} {t : Stmt P ι ℕ ℕ}
-    {s : St P K C} {v : K} {s' : Store P K} (hv : I.sem.lit p (e.eval : ℚ) = some v)
-    (hw : s.store.write p dst.buf dst.idx.eval v = some s')
-    (h : ∃ st', exec I t { s with store := s', cnt := s.cnt + I.charge (.lit p) } = some st') :
-    ∃ st', exec I (.seq (.instr (.litIdx p dst e)) t) s = some st' := by
-  rw [exec_seq_instr_litIdx I hv hw]
-  exact h
-
-omit [Inhabited K] in
-/-- A binary operation, then the rest. -/
-theorem exists_exec_seq_bin {p : P} {b : BinOp} {dst x y : Cell ℕ ℕ} {t : Stmt P ι ℕ ℕ}
-    {s : St P K C} {a c v : K} {s' : Store P K} (hx : s.store.read p x.buf x.idx.eval = some a)
-    (hy : s.store.read p y.buf y.idx.eval = some c) (hv : I.sem.bin p b a c = some v)
-    (hw : s.store.write p dst.buf dst.idx.eval v = some s')
-    (h : ∃ st', exec I t { s with store := s', cnt := s.cnt + I.charge (.bin p b) } = some st') :
-    ∃ st', exec I (.seq (.instr (.bin p b dst x y)) t) s = some st' := by
-  rw [exec_seq_instr_bin I hx hy hv hw]
-  exact h
-
 /-- One level of the downward pass succeeds: under the standard model at $u$ with every value in
 range, $u(p) < 1$, exact integer literals up to $n + 4$ and the exact floor conversion, kernels
 that are routines on pairs `mmR`, `qrR`, $\ell_0 \ge 1$, $R_0$ decoding to a nonnegative

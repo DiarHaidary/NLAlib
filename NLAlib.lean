@@ -35,6 +35,7 @@ public import NLAlib.Computation.NonInterference
 public import NLAlib.Computation.NormalizationErrors
 public import NLAlib.Computation.ProgramLogic
 public import NLAlib.Computation.Rounding
+public import NLAlib.Computation.RoutineAlloc
 public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Computation.RoutineSpec
 public import NLAlib.Computation.RunsWithin

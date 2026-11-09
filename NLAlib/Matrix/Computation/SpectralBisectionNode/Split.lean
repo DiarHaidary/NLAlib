@@ -122,39 +122,6 @@ private theorem split_handles_ne {H : EighArenas} {Sg Pp Pm : ℕ} {two sg nsg s
   simp [EighArenas.handles, h] at hbufs
 
 omit [Inhabited K] in
-/-- The run of an allocation, inverted. -/
-theorem alloc_inv_node {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st st' : St P K C} (h : exec I (.alloc p len body) st = some st') :
-    ∃ st₂, exec I (body st.store.size) { st with
-          store := st.store.push (p, Array.replicate len.eval none),
-          cur := Function.update st.cur p (st.cur p + len.eval),
-          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
-          curW := st.curW + len.eval * I.width p,
-          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st₂ ∧
-      { st₂ with
-          store := Array.pop st₂.store
-          cur := Function.update st₂.cur p (st₂.cur p - len.eval)
-          curW := st₂.curW - len.eval * I.width p } = st' := by
-  rw [exec_alloc] at h
-  exact Option.map_eq_some_iff.mp h
-
-omit [Inhabited K] in
-/-- The run of a scoped allocation, inverted. -/
-theorem exists_exec_of_exec_seq_alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st st' : St P K C} (h : exec I (.seq (.alloc p len body) .skip) st = some st') :
-    ∃ st₂, exec I (body st.store.size) { st with
-          store := st.store.push (p, Array.replicate len.eval none),
-          cur := Function.update st.cur p (st.cur p + len.eval),
-          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
-          curW := st.curW + len.eval * I.width p,
-          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st₂ ∧
-      { st₂ with
-          store := Array.pop st₂.store
-          cur := Function.update st₂.cur p (st₂.cur p - len.eval)
-          curW := st₂.curW - len.eval * I.width p } = st' :=
-  alloc_inv_node ((exec_seq_skip I _ st).symm.trans h)
-
-omit [Inhabited K] in
 /-- **The scratch prefix of a split.** If the store has $b$ buffers in every state satisfying
 `pre`, and the body of `NLAlib.eighSplitBlock` (two deflations, two compressions and four size
 literals) at the scratch handles $b, \dots, b + 7$ meets a specification from the state after
@@ -222,20 +189,6 @@ theorem split_handles_lt {n lo k kp D : ℕ} (hk : lo + k ≤ n) (hkpk : kp < k)
     Store.lt_size_of_read_eq_some (hPm ⟨0, hk0⟩ ⟨0, hk0⟩ ⟨0, two_pos⟩),
     Store.lt_size_of_read_eq_some htwo, Store.lt_size_of_read_eq_some hσ,
     Store.lt_size_of_read_eq_some hnσ, Store.lt_size_of_read_eq_some hsq]
-
-omit [Inhabited K] in
-/-- An allocation succeeds when its body succeeds on the allocated state. -/
-theorem exists_exec_alloc_of_exists {p : P} {len : IExp ℕ}
-    {body : ℕ → Stmt P ι ℕ ℕ} {st : St P K C}
-    (h : ∃ st', exec I (body st.store.size) { st with
-          store := st.store.push (p, Array.replicate len.eval none),
-          cur := Function.update st.cur p (st.cur p + len.eval),
-          peak := Function.update st.peak p (max (st.peak p) (st.cur p + len.eval)),
-          curW := st.curW + len.eval * I.width p,
-          peakW := max st.peakW (st.curW + len.eval * I.width p) } = some st') :
-    ∃ st', exec I (.alloc p len body) st = some st' := by
-  obtain ⟨st', h⟩ := h
-  exact ⟨_, by rw [exec_alloc, h]; rfl⟩
 
 omit [Inhabited K] in
 /-- A deflation block at an index expression for the rank runs as at its value. -/

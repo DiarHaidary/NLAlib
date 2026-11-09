@@ -113,22 +113,6 @@ theorem EighArenas.LevelHolds.of_read_eq {H : EighArenas} {s s' : Store P K} {p 
     exact h.2.2.2
 
 omit [AddMonoid C] [Inhabited K] in
-/-- The nodes of depth $d$ of a root of size $n \ge 1$ transfer to a store that reads the same on
-the node, size and window cells of depth $d$. No printed source. -/
-theorem EighArenas.LevelHolds.of_read_eq_of_one_le {H : EighArenas} {sem : ScalarSem P K}
-    {s s' : Store P K} {p : P} {M : FloatMachine K ℕ ℕ} {n F ℓ₀ d : ℕ}
-    {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K} (hn : 1 ≤ n)
-    (hs : ∀ q b i, (b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) → H.LevelCell n d b i →
-      s'.read q b i = s.read q b i)
-    (h : H.LevelHolds sem s p M n F ℓ₀ R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d) :
-    H.LevelHolds sem s' p M n F ℓ₀ R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d := by
-  refine EighArenas.LevelHolds.of_read_eq (fun q b i hb hi => hs q b i hb ?_) h
-  rcases hi with hi | ⟨rfl, rfl⟩
-  · exact hi
-  · have : n * (d + 1) = n * d + n := by ring
-    exact Or.inr (Or.inl ⟨Or.inr (Or.inl rfl), by omega, by omega⟩)
-
-omit [AddMonoid C] [Inhabited K] in
 /-- The records of depth $d$ transfer to a store that reads the same on the output, basis,
 eigenvalue, kind and split cells of depth $d$. No printed source. -/
 theorem EighArenas.RecordHolds.of_read_eq {H : EighArenas} {sem : ScalarSem P K}
@@ -169,98 +153,6 @@ theorem EighArenas.RecordHolds.of_read_eq {H : EighArenas} {sem : ScalarSem P K}
     refine ⟨hR 4 (Or.inl rfl) h1, hR kp (Or.inr rfl) h2, ?_, hblk (Y := Qm) _ (Or.inr rfl)
       (by omega) h4⟩
     simpa using hblk (Y := Qp) 0 (Or.inr rfl) (by omega) (by simpa using h3)
-
-omit [AddMonoid C] [Inhabited K] in
-/-- The outputs of depth $d$ transfer to a store that reads the same on the output and
-eigenvalue cells of depth $d$. -/
-private theorem EighArenas.OutHolds.of_read_eq {H : EighArenas} {s s' : Store P K} {p : P}
-    {M : FloatMachine K ℕ ℕ} {n F ℓ₀ D d : ℕ} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
-    (hn : 1 ≤ n)
-    (hs : ∀ q b i, (b = H.Ua ∨ b = H.Ea) → H.LevelCell n d b i → s'.read q b i = s.read q b i)
-    (h : H.OutHolds s p M n F D R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d) :
-    H.OutHolds s' p M n F D R₀ β ⟨n, A, R₀, ε, ℓ₀⟩ d := by
-  have e4 : n * (d + 1) = n * d + n := by ring
-  intro a lo y ha hl
-  obtain ⟨-, hkn⟩ := eighLoc_bounds hn hl
-  obtain ⟨h1, h2⟩ := h a lo y ha hl
-  exact ⟨pairLayout_holds_of_read_eq h1 fun i hi1 hi2 => hs p _ _ (Or.inl rfl)
-      (Or.inl ⟨Or.inr (Or.inl rfl), lt_of_block_le hkn hi1 hi2⟩),
-    fun i => (hs p _ _ (Or.inr rfl) (Or.inr (Or.inl ⟨Or.inl rfl, by omega,
-      by have := i.isLt; omega⟩))).trans (h2 i)⟩
-
-omit [Inhabited K] in
-/-- The run of an allocation, inverted. -/
-theorem exists_of_exec_alloc {p : P} {len : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {st st' : St P K C}
-    (h : exec I (.alloc p len body) st = some st') :
-    ∃ (S st₂ : St P K C), S.store = st.store.push (p, Array.replicate len.eval none) ∧
-      S.store.shape[st.store.size]? = some (p, len.eval) ∧
-      S.pos = st.pos ∧ exec I (body st.store.size) S = some st₂ ∧
-      st'.store = Array.pop st₂.store := by
-  rw [exec_alloc] at h
-  obtain ⟨st₂, h2, rfl⟩ := Option.map_eq_some_iff.mp h
-  refine ⟨_, st₂, ?_, ?_, ?_, h2, rfl⟩
-  · rfl
-  · exact Store.getElem?_shape_push_size _ _ _
-  · rfl
-
-omit [Inhabited K] in
-/-- A successful loop of index literals into the cells $w < m$ of one buffer leaves the
-literal in each, every other cell, the shape and the positions unchanged. -/
-theorem shape_of_exec_loop_litIdx {p : P} {m e : IExp ℕ} {Y : ℕ} {st st' : St P K C}
-    (h : exec I (.loop m fun w => (Builder.ins (ι := ι) (.litIdx p ⟨Y, .var w⟩ e)).run) st =
-      some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
-      (∀ w < m.eval, st'.store.read p Y w = I.sem.lit p (e.eval : ℚ)) ∧
-      ∀ q b i, (b ≠ Y ∨ m.eval ≤ i) → st'.store.read q b i = st.store.read q b i := by
-  refine forall_of_exec_loop_eq_some I (fun w s => s.store.shape = st.store.shape ∧
-      s.pos = st.pos ∧ (∀ w' < w, s.store.read p Y w' = I.sem.lit p (e.eval : ℚ)) ∧
-      ∀ q b i, (b ≠ Y ∨ w ≤ i) → s.store.read q b i = st.store.read q b i)
-    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h
-  rintro w - s₁ s₂ ⟨hsh, hps, hrd, hfr⟩ hex
-  change exec I (.seq (.instr (.litIdx p ⟨Y, .var w⟩ e)) .skip) s₁ = some s₂ at hex
-  obtain ⟨v, s', hv, hw', hex⟩ := exists_of_exec_seq_litIdx hex
-  rw [exec_skip, Option.some_inj] at hex
-  subst hex
-  simp only [IExp.eval_var] at hw'
-  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hps, fun w' hw => ?_, fun q b i hb => ?_⟩
-  · change s'.read p Y w' = _
-    rcases Nat.lt_succ_iff_lt_or_eq.mp hw with h | rfl
-    · rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega)), hrd w' h]
-    · rw [Store.read_of_write_eq_some hw', hv]
-  · change s'.read q b i = _
-    rw [Store.read_of_write_eq_some_of_ne hw' ?_, hfr q b i (hb.imp_right fun h => by omega)]
-    rcases hb with h | h
-    · exact Or.inl h
-    · exact Or.inr (by omega)
-
-omit [Inhabited K] in
-/-- A successful loop of copies `Y[w] ← X[w]`, $w < m$, between distinct buffers. -/
-theorem shape_of_exec_loop_copy {p : P} {m : IExp ℕ} {X Y : ℕ} {st st' : St P K C} (hXY : X ≠ Y)
-    (h : exec I (.loop m fun w => (Builder.ins (ι := ι)
-      (.copy p ⟨Y, .var w⟩ ⟨X, .var w⟩)).run) st = some st') :
-    st'.store.shape = st.store.shape ∧
-      (∀ w < m.eval, st'.store.read p Y w = st.store.read p X w) ∧
-      ∀ q b i, (b ≠ Y ∨ m.eval ≤ i) → st'.store.read q b i = st.store.read q b i := by
-  refine forall_of_exec_loop_eq_some I (fun w s => s.store.shape = st.store.shape ∧
-      (∀ w' < w, s.store.read p Y w' = st.store.read p X w') ∧
-      ∀ q b i, (b ≠ Y ∨ w ≤ i) → s.store.read q b i = st.store.read q b i)
-    ⟨rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h
-  rintro w - s₁ s₂ ⟨hsh, hrd, hfr⟩ hex
-  change exec I (.seq (.instr (.copy p ⟨Y, .var w⟩ ⟨X, .var w⟩)) .skip) s₁ = some s₂ at hex
-  rw [exec_seq_skip, exec_instr] at hex
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
-  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
-  simp only [IExp.eval_var] at hw' hv
-  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, fun w' hw => ?_, fun q b i hb => ?_⟩
-  · change s'.read p Y w' = _
-    rcases Nat.lt_succ_iff_lt_or_eq.mp hw with h | rfl
-    · rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr (by omega)), hrd w' h]
-    · rw [Store.read_of_write_eq_some hw', ← hv, hfr _ _ _ (Or.inl hXY)]
-  · change s'.read q b i = _
-    rw [Store.read_of_write_eq_some_of_ne hw' ?_, hfr q b i (hb.imp_right fun h => by omega)]
-    rcases hb with h | h
-    · exact Or.inl h
-    · exact Or.inr (by omega)
 
 omit [Inhabited K] in
 /-- A builder that emits one statement before its continuation runs as itself under continuations
@@ -328,14 +220,6 @@ theorem exec_eighUpLevel_of_eval_eq (p : P) (mm : ι) (n d : ℕ) (de : IExp ℕ
   exact exec_eq_of_normIdx_eq I rfl st
 
 omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-/-- A cell of a depth lies in one of the arenas. -/
-theorem mem_handles_of_levelCell {H : EighArenas} {n e b i : ℕ} (h : H.LevelCell n e b i) :
-    b ∈ H.handles := by
-  unfold EighArenas.LevelCell at h
-  simp only [EighArenas.handles, List.mem_cons, List.not_mem_nil, or_false]
-  rcases h with ⟨h | h | h, -⟩ | ⟨h | h | h | h, -⟩ | ⟨h, -⟩ <;> simp [h]
-
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
 /-- The node, size and window arenas are arenas. -/
 theorem mem_handles_of_node_arena {H : EighArenas} {b : ℕ} (h : b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) :
     b ∈ H.handles := by
@@ -362,5 +246,152 @@ omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
 theorem false_of_node_arena_of_out_arena {H : EighArenas} (hnd : H.handles.Nodup) {b : ℕ}
     (h : b = H.Ma ∨ b = H.Sz ∨ b = H.Lv) (h' : b = H.Ua ∨ b = H.Ea) : False :=
   false_of_node_arena_of_record_arena hnd h (by rcases h' with h' | h' <;> simp [h'])
+
+/-! ### The arenas as footprints and the transfer of the level predicates -/
+
+/-- Two intervals of one length at distinct multiples are disjoint. -/
+theorem eq_of_mul_le_of_lt_mul {m e e' i : ℕ} (h1 : m * e ≤ i) (h2 : i < m * (e + 1))
+    (h3 : m * e' ≤ i)
+    (h4 : i < m * (e' + 1)) : e = e' := by
+  by_contra hne
+  rcases Nat.lt_or_gt_of_ne hne with h | h
+  · have := Nat.mul_le_mul_left m (show e + 1 ≤ e' by omega); omega
+  · have := Nat.mul_le_mul_left m (show e' + 1 ≤ e by omega); omega
+
+/-- The cells of distinct depths are distinct. -/
+theorem not_levelCell_of_ne {H : EighArenas} (hnd : H.handles.Nodup) {n e e' b i : ℕ}
+    (hne : e ≠ e')
+    (h : H.LevelCell n e b i) : ¬ H.LevelCell n e' b i := by
+  intro h'
+  unfold EighArenas.LevelCell at h h'
+  rcases h with ⟨hb, h1, h2⟩ | ⟨hb, h1, h2⟩ | ⟨hb, h1⟩ <;>
+    rcases h' with ⟨hb', h1', h2'⟩ | ⟨hb', h1', h2'⟩ | ⟨hb', h1'⟩
+  · exact hne (eq_of_mul_le_of_lt_mul (m := 2 * (n * n)) h1 h2 h1' h2')
+  · rcases hb with rfl | rfl | rfl <;> rcases hb' with h | h | h | h <;>
+      simp [EighArenas.handles, h] at hnd
+  · rcases hb with rfl | rfl | rfl <;> simp [EighArenas.handles, hb'] at hnd
+  · rcases hb with rfl | rfl | rfl | rfl <;> rcases hb' with h | h | h <;>
+      simp [EighArenas.handles, h] at hnd
+  · exact hne (eq_of_mul_le_of_lt_mul (m := n) h1 h2 h1' h2')
+  · rcases hb with rfl | rfl | rfl | rfl <;> simp [EighArenas.handles, hb'] at hnd
+  · subst hb; rcases hb' with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · subst hb; rcases hb' with h | h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · omega
+
+/-- A buffer outside the arenas is not one of them. -/
+theorem not_mem_handles_of_mem {H : EighArenas} {l : List ℕ} (h : (H.handles ++ l).Nodup)
+    {x : ℕ}
+    (hx : x ∈ l) : x ∉ H.handles := fun hm => List.disjoint_of_nodup_append h hm hx
+
+/-- The size cell $ne$ is not a cell of a deeper depth. -/
+theorem not_levelCell_sz {H : EighArenas} (hnd : H.handles.Nodup) {n e d : ℕ} (he : e < d) :
+    ¬ H.LevelCell n d H.Sz (n * e) := by
+  unfold EighArenas.LevelCell
+  rintro (⟨hb, -⟩ | ⟨-, h1, h2⟩ | ⟨hb, -⟩)
+  · rcases hb with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at h2
+    · have := Nat.mul_le_mul_left n (show e + 1 ≤ d by omega)
+      have : n * (e + 1) = n * e + n := by ring
+      omega
+  · simp [EighArenas.handles, hb] at hnd
+
+/-- A size cell at or past depth $d + 1$ is not a cell of depth $d$. -/
+theorem not_levelCell_sz_of_le {H : EighArenas} (hnd : H.handles.Nodup) {n d j : ℕ}
+    (hj : n * (d + 1) ≤ j) : ¬ H.LevelCell n d H.Sz j := by
+  unfold EighArenas.LevelCell
+  rintro (⟨hb, -⟩ | ⟨-, h1, h2⟩ | ⟨hb, -⟩)
+  · rcases hb with h | h | h <;> simp [EighArenas.handles, h] at hnd
+  · omega
+  · simp [EighArenas.handles, hb] at hnd
+
+/-- A cell the node transfer reads is not a cell of a deeper depth. -/
+theorem not_levelCell_of_lt {H : EighArenas} (hnd : H.handles.Nodup) {n e d b i : ℕ}
+    (he : e < d)
+    (hi : H.LevelCell n e b i ∨ (b = H.Sz ∧ i = n * e)) : ¬ H.LevelCell n d b i := by
+  rcases hi with hi | ⟨rfl, rfl⟩
+  · exact not_levelCell_of_ne hnd (by omega) hi
+  · exact not_levelCell_sz hnd he
+
+
+/-- **The arenas and sample buffers of the driver, whole**, each with the cells of $D + 1$ levels
+(the bases, kinds and splits have only $D$ levels, but the last level of the downward pass is
+within the footprint of `NLAlib.eighDownFp`). -/
+def eighArenaFp (H : EighArenas) (n D Su Sg : ℕ) : List (ℕ × ℕ × ℕ) :=
+  [(H.Ma, 0, 2 * (n * n) * (D + 1)), (H.Ua, 0, 2 * (n * n) * (D + 1)),
+    (H.Qa, 0, 2 * (n * n) * (D + 1)), (H.Ea, 0, n * (D + 1)), (H.Sz, 0, n * (D + 1) + 1),
+    (H.Kd, 0, n * (D + 1)), (H.Kp, 0, n * (D + 1)), (H.Lv, 0, 2 * (D + 1)), (Su, 0, n),
+    (Sg, 0, 4 * (n * n))]
+
+/-- The output and eigenvalue blocks of one level up to depth $D$ lie in the arenas. -/
+theorem eighOutFp_sub_arena {H : EighArenas} {n d D Su Sg : ℕ} (hd : d ≤ D) :
+    ∀ x ∈ [(H.Ua, 2 * (n * n) * d, 2 * (n * n)), (H.Ea, n * d, n)], ∃ y ∈ eighArenaFp H n D Su Sg,
+      x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧ x.2.1 + x.2.2 ≤ y.2.1 + y.2.2 := by
+  have f1 : 2 * (n * n) * d + 2 * (n * n) ≤ 2 * (n * n) * (D + 1) := by
+    have := Nat.mul_le_mul_left (2 * (n * n)) (show d + 1 ≤ D + 1 by omega); nlinarith
+  have f3 : n * d + n ≤ n * (D + 1) := by
+    have := Nat.mul_le_mul_left n (show d + 1 ≤ D + 1 by omega); nlinarith
+  intro x hx
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl
+  · exact ⟨(H.Ua, 0, 2 * (n * n) * (D + 1)), by simp [eighArenaFp], rfl, Nat.zero_le _, by
+      dsimp only; omega⟩
+  · exact ⟨(H.Ea, 0, n * (D + 1)), by simp [eighArenaFp], rfl, Nat.zero_le _, by
+      dsimp only; omega⟩
+
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- A buffer that is neither an arena nor a sample buffer is disjoint from the arenas. -/
+theorem fst_ne_of_mem_eighArenaFp {H : EighArenas} {n D Su Sg b : ℕ} (hb : b ∉ H.handles)
+    (h1 : b ≠ Su) (h2 : b ≠ Sg) : ∀ x ∈ eighArenaFp H n D Su Sg, b ≠ x.1 := by
+  intro x hx h
+  simp only [eighArenaFp, List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals first
+    | exact h1 h | exact h2 h
+    | exact hb (by simp [EighArenas.handles, h])
+
+omit [AddMonoid C] [Inhabited K] in
+/-- A change confined to the arenas keeps every other buffer. -/
+theorem read_eq_of_modifies_eighArenaFp {H : EighArenas} {n D Su Sg b i : ℕ} {s s' : Store P K}
+    {q : P} (hm : Modifies (eighArenaFp H n D Su Sg) s s') (hb : b ∉ H.handles) (h1 : b ≠ Su)
+    (h2 : b ≠ Sg) : s'.read q b i = s.read q b i :=
+  hm.2 q b i fun x hx => blockDisjoint_of_fst_ne (fst_ne_of_mem_eighArenaFp hb h1 h2 x hx)
+
+
+omit [AddMonoid C] [Inhabited K] in
+/-- **The root at depth $0$**: a store whose size arena holds $n \ge 1$ in its cell $0$ and $0$ in
+its cells $1, \ldots, n(\ell_0 + 2)$, whose node arena holds $\mathbf{A}$ at offset $0$ and whose
+window arena holds $R_0$, $\varepsilon$ in its cells $0$, $1$ holds the nodes of depth $0$, under
+exact integer literals up to $n + 4$ and the exact floor conversion. -/
+theorem levelHolds_zero_of_init {dec : P → K → ℝ} {p : P} {M : FloatMachine K ℕ ℕ}
+    {n ℓ₀ F : ℕ} (hlit : IsExactIntLit dec I.sem (n + 4))
+    (htn : IsExactToNat dec I.sem) {H : EighArenas} {W : Store P K}
+    {A₀ : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
+    (hSz0 : W.read p H.Sz 0 = I.sem.lit p ((n : ℕ) : ℚ))
+    (hSz : ∀ w, w ≠ 0 → w < n * (ℓ₀ + 1 + 1) + 1 → W.read p H.Sz w = I.sem.lit p ((0 : ℕ) : ℚ))
+    (hMa : pairLayout.Holds W p H.Ma 0 A₀) (hLv0 : W.read p H.Lv 0 = some R₀)
+    (hLv1 : W.read p H.Lv 1 = some ε) :
+    H.LevelHolds I.sem W p M n F ℓ₀ R₀ β ⟨n, A₀, R₀, ε, ℓ₀⟩ 0 := by
+  refine ⟨fun a lo y ha hl => ?_, fun lo hlo hno => ?_, hLv0, hLv1⟩
+  · obtain rfl := List.eq_nil_of_length_eq_zero ha
+    simp only [eighLoc, Option.some.injEq, Prod.mk.injEq] at hl
+    obtain ⟨rfl, rfl⟩ := hl
+    exact ⟨readsIdx_of_read_eq_lit hlit htn (k := n) (by omega) (by rw [Nat.mul_zero]; exact hSz0),
+      by rw [Nat.mul_zero, Nat.mul_zero]; exact hMa⟩
+  · have hlo0 : lo ≠ 0 := by
+      rintro rfl
+      exact hno [] ⟨n, A₀, R₀, ε, ℓ₀⟩ rfl rfl
+    have : n ≤ n * (ℓ₀ + 1 + 1) := Nat.le_mul_of_pos_right _ (by omega)
+    exact readsIdx_of_read_eq_lit hlit htn (k := 0) (by omega)
+      (by rw [Nat.mul_zero, Nat.zero_add]; exact hSz lo hlo0 (by omega))
+
+/-- **The root's output of the shallow recursion on the samples at the slots**: `NLAlib.eigh` on
+the machine of the interpretation. -/
+noncomputable def eighSlotOut (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K × K))
+    (qrR : QRMap (K × K)) (n F ℓ₀ : ℕ) (A₀ : Matrix (Fin n) (Fin n) (K × K)) (R₀ ε β : K) :
+    Matrix (Fin n) (Fin n) (K × K) × (Fin n → K) :=
+  eigh (eighTapeMachine I p mmR qrR) F ℓ₀ A₀ R₀ ε β
+    (eighSlotTree (eighTapeMachine I p mmR qrR) n F R₀ β 0 0 ⟨n, A₀, R₀, ε, ℓ₀⟩)
 
 end NLAlib

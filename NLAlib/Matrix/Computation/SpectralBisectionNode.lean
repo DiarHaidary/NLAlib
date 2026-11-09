@@ -43,14 +43,6 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {unif : K → Su → K} {normal : Sg → K × K}
 
 omit [Inhabited K] in
-/-- A loop of no iterations. -/
-theorem eq_of_exec_loop_of_eval_eq_zero {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
-    (he : e.eval = 0) (h : exec I (.seq (.loop e b) .skip) s = some s') : s' = s := by
-  rw [exec_seq_skip, exec_loop, he] at h
-  simp only [List.range_zero, List.foldlM_nil] at h
-  exact (Option.some_inj.mp h).symm
-
-omit [Inhabited K] in
 /-- A loop of one iteration. -/
 theorem exec_loop_one_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
     (he : e.eval = 1) (h : exec I (.seq (.loop e b) .skip) s = some s') :
@@ -86,21 +78,6 @@ theorem run_eighWhen_bind {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
       exec I (f ()).run σ = some st' := by
   rw [exec_run_bind I (b := eighWhen e b) (fun _ => rfl)] at h
   exact Option.bind_eq_some_iff.mp h
-
-omit [Inhabited K] in
-/-- The run of a scoped index binder, inverted. -/
-theorem exists_of_exec_bindIdx {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st st' : St P K C} (h : exec I (.seq (.bindIdx p x bound body) .skip) st = some st') :
-    ∃ v w, st.store.read p x.buf x.idx.eval = some w ∧ I.sem.toNat p w = some v ∧
-      v ≤ bound.eval ∧
-      exec I (body v) { st with cnt := st.cnt + I.charge (.toNat p) } = some st' := by
-  rw [exec_seq_skip, exec_bindIdx] at h
-  obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
-  unfold toNatStep at hr
-  obtain ⟨w, hw, hr⟩ := Option.bind_eq_some_iff.mp hr
-  obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp hr
-  split_ifs at h with hle
-  exact ⟨v, w, hw, hv, hle, h⟩
 
 /-- The outcome of a node step's branch at the split index $k_+$, in the store `s`: for
 $k_+ = k$ one child on the positive side, for $k_+ = 0$ one on the negative side, for
