@@ -620,6 +620,164 @@ theorem holds_of_exec_whileFuel_newtonSchulz {mm : ι} (hmm : IsMatMulKernel I m
         (hfr' q b i h1 h2 h3 h4).trans (hfr₁ q b i h1 h2 h3 h4), hsh'.trans hsh₁,
         hpos'.trans hpos₁⟩
 
+/-! ### The blocks as routine specifications -/
+
+omit [Inhabited K] in
+/-- The test block composes with what follows. -/
+theorem executionComposable_newtonSchulzTestBlock (p : P) (mm : ι) (n : IExp ℕ) (X : ℕ)
+    (xo : IExp ℕ) (W V : ℕ) (one lo hi f : Cell ℕ ℕ) :
+    ExecutionComposable I (newtonSchulzTestBlock p mm n X xo W V one lo hi f) :=
+  (executionComposable_stmt _).bind ((executionComposable_named _ _ _).bind
+    (executionComposable_named _ _ _))
+
+/-- **The test block as a routine specification**: from a state whose block at `X` holds the
+complex $n \times n$ matrix $\mathbf{A}$ and whose cells `one`, `lo`, `hi` hold the machine's
+one, $-\eta$ and $\eta$, with the scratch buffers `W`, `V` distinct from `X`, from each other and
+from the cells' buffers, and the flag distinct from `lo` and `hi`, the run of
+`NLAlib.newtonSchulzTestBlock` modifies only the blocks of `W`, `V` and the flag, ends with `W`
+holding $\mathrm{mm}(\mathbf{A}, \mathbf{A})$, `V` its shift by the one and the flag the
+machine's zero if `NLAlib.newtonSchulzTest M η A` and its one otherwise, and keeps the tape
+positions; in mode `total` it also succeeds, given the standard model and the blocks writable.
+No printed source. -/
+theorem spec_newtonSchulzTestBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
+    {u : P → ℝ} {dec : P → K → ℝ} (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem))
+    (p : P) (n : ℕ) {X W V : ℕ} {xo : IExp ℕ} {one lo hi f : Cell ℕ ℕ} (η : K)
+    (A : Matrix (Fin n) (Fin n) (K × K)) (hWX : W ≠ X) (hWV : W ≠ V)
+    (hcells : ∀ c ∈ [one, lo, hi, f], c.buf ≠ W ∧ c.buf ≠ V)
+    (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
+    (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        st.store.read p one.buf one.idx.eval =
+          some (I.sem.toFloatMachine p toNat mmR qrR unif normal).one ∧
+        st.store.read p lo.buf lo.idx.eval =
+          some ((I.sem.toFloatMachine p toNat mmR qrR unif normal).neg η) ∧
+        st.store.read p hi.buf hi.idx.eval = some η ∧
+        md.Needs (Writable st.store p W 0 (n * n * 2) ∧ Writable st.store p V 0 (n * n * 2) ∧
+          Writable st.store p f.buf f.idx.eval 1))
+      (newtonSchulzTestBlock p mm (.const n) X xo W V one lo hi f)
+      [matBlock W 0 n n 2, matBlock V 0 n n 2, (f.buf, f.idx.eval, 1)] fun st st' =>
+        pairLayout.Holds st'.store p W 0 (mmR A A) ∧
+        pairLayout.Holds st'.store p V 0
+          ((I.sem.toFloatMachine p toNat mmR qrR unif normal).hermShift (mmR A A)
+            (I.sem.toFloatMachine p toNat mmR qrR unif normal).one) ∧
+        st'.store.read p f.buf f.idx.eval = some
+          (if newtonSchulzTest (I.sem.toFloatMachine p toNat mmR qrR unif normal) η A then
+            (I.sem.toFloatMachine p toNat mmR qrR unif normal).zero else
+            (I.sem.toFloatMachine p toNat mmR qrR unif normal).one) ∧ PosKept st st' := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hcells
+  obtain ⟨⟨hoW, hoV⟩, ⟨hlW, hlV⟩, ⟨hhW, hhV⟩, ⟨hfW, hfV⟩⟩ := hcells
+  refine ⟨executionComposable_newtonSchulzTestBlock _ _ _ _ _ _ _ _ _ _ _,
+    fun st ⟨hA, h1, hl, hh, hN⟩ => ?_⟩
+  obtain ⟨hNW, hNV, hNf⟩ := Mode.needs_and.mp hN |>.imp id Mode.needs_and.mp
+  exact (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (X, xo) (W, 0) A
+    A)).wp_bind
+    (f := fun _ => zhermShift p (.const n) W 0 one V 0 >>= fun _ => zboxTest p (.const n) (.const n)
+      V 0 lo hi f) ⟨hA, hA, blockDisjoint_of_fst_ne hWX, blockDisjoint_of_fst_ne hWX, hNW⟩
+    fun st₁ hm₁ h₁ => (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) md hsem p n (X := W) (Y := V) (xo := 0) (yo := 0) (c := one) _ _
+      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind
+      ⟨h₁.1, (readsOnly_read _ _ _ _).of_modifies h1 hm₁ (blocksDisjoint_singleton_of_fst_ne
+        (by simpa [matBlock] using hoW)), hNV.mono (·.of_modifies hm₁)⟩
+    fun st₂ hm₂ h₂ => (spec_zboxTest (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) md hsem p n n (X := V) (xo := 0) (lo := lo) (hi := hi) (f := f) _ _ _
+      (blockDisjoint_of_fst_ne hfV) hflo hfhi).wp_run
+      ⟨h₂.1 (blockDisjoint_of_fst_ne hoV), (readsOnly_read _ _ _ _).of_modifies hl (hm₁.trans hm₂)
+        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hlW, hlV⟩)),
+      (readsOnly_read _ _ _ _).of_modifies hh (hm₁.trans hm₂)
+        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hhW, hhV⟩)),
+      hNf.mono (·.of_modifies (hm₁.trans hm₂))⟩
+    fun st₃ hm₃ h₃ => ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp [matBlock, pairLayout]),
+      (readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies h₁.1 (hm₂.trans hm₃)
+        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using ⟨hWV, Ne.symm hfW⟩)),
+      (readsOnly_entryLayoutHolds pairLayout p V 0 _).of_modifies
+        (h₂.1 (blockDisjoint_of_fst_ne hoV)) hm₃
+        (blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using Ne.symm hfV)),
+      by unfold newtonSchulzTest; exact h₃.1, h₃.2.trans (h₂.2.trans h₁.2.2)⟩
+
+omit [Inhabited K] in
+/-- The step block composes with what follows. -/
+theorem executionComposable_newtonSchulzStepBlock (p : P) (mm : ι) (n : IExp ℕ) (X : ℕ)
+    (xo : IExp ℕ) (W V : ℕ) (c : Cell ℕ ℕ) :
+    ExecutionComposable I (newtonSchulzStepBlock p mm n X xo W V c) :=
+  (executionComposable_ins _).bind ((executionComposable_named _ _ _).bind
+    ((executionComposable_named _ _ _).bind ((executionComposable_stmt _).bind
+    ((executionComposable_ins _).bind (executionComposable_named _ _ _)))))
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- **A positive literal is nonzero under the standard model** at $u(p) < 1$: its stored value
+decodes to $q(1 + \delta)$ with $\lvert \delta \rvert < 1$. No printed source. -/
+theorem _root_.NLAlib.Computation.IsRelErrSem.dec_ne_zero_of_lit_eq_some {u : P → ℝ}
+    {dec : P → K → ℝ} {safe : P → ℝ → Prop} {sem : ScalarSem P K}
+    (hsem : IsRelErrSem u dec safe sem) {p : P} (hu : u p < 1) {q : ℚ} (hq : q ≠ 0) {v : K}
+    (hv : sem.lit p q = some v) : dec p v ≠ 0 := by
+  obtain ⟨δ, hδ, hdec⟩ := hsem.lit_err p _ v hv
+  rw [hdec]
+  exact mul_ne_zero (by exact_mod_cast hq) (by linarith [(abs_lt.mp (hδ.trans_lt hu)).1])
+
+/-- **The step block as a routine specification**: from a state whose block at `X` holds the
+complex $n \times n$ matrix $\mathbf{A}$ and whose scratch buffer `W` holds
+$\mathrm{mm}(\mathbf{A}, \mathbf{A})$, with `W`, `V` distinct from `X` and from each other and
+the cell `c` outside `W`, `V` and the block at `X`, the run of `NLAlib.newtonSchulzStepBlock`
+modifies only the cell, the blocks of `V` and `W` and the block at `X`, which then holds
+`NLAlib.newtonSchulzRounded M A`, and keeps the tape positions; in mode `total` it also succeeds,
+given the standard model at $u(p) < 1$ and the blocks writable. No printed source. -/
+theorem spec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
+    {u : P → ℝ} {dec : P → K → ℝ} (p : P)
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem ∧ u p < 1)) (n : ℕ)
+    {X W V : ℕ} {xo : IExp ℕ} {c : Cell ℕ ℕ} (A : Matrix (Fin n) (Fin n) (K × K))
+    (hWX : W ≠ X) (hVX : V ≠ X) (hWV : W ≠ V) (hcW : c.buf ≠ W) (hcV : c.buf ≠ V)
+    (hcX : blockDisjoint (c.buf, c.idx.eval, 1) (matBlock X xo.eval n n 2) = true) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        pairLayout.Holds st.store p W 0 (mmR A A) ∧
+        md.Needs (Writable st.store p c.buf c.idx.eval 1 ∧ Writable st.store p V 0 (n * n * 2) ∧
+          Writable st.store p W 0 (n * n * 2) ∧ Writable st.store p X xo.eval (n * n * 2)))
+      (newtonSchulzStepBlock p mm (.const n) X xo W V c)
+      [(c.buf, c.idx.eval, 1), matBlock V 0 n n 2, matBlock W 0 n n 2, matBlock X xo.eval n n 2]
+      fun st st' => pairLayout.Holds st'.store p X xo.eval
+        (newtonSchulzRounded (I.sem.toFloatMachine p toNat mmR qrR unif normal) A) ∧
+        PosKept st st' := by
+  have hs := hsem.mono (·.1)
+  refine ⟨executionComposable_newtonSchulzStepBlock _ _ _ _ _ _ _ _, fun st ⟨hA, hW, hN⟩ => ?_⟩
+  have hw := fun {fp} {s : Store P K} (hm : Modifies fp st.store s) =>
+    hN.mono fun h => (⟨h.1.of_modifies hm, h.2.1.of_modifies hm, h.2.2.1.of_modifies hm,
+      h.2.2.2.of_modifies hm⟩ : _ ∧ _ ∧ _ ∧ _)
+  have hlit := fun (q : ℕ) => (hsem.mono fun h => h.1.lit_ok p (q : ℚ) trivial)
+  have hcWb : BlocksDisjoint [matBlock W 0 n n 2] [(c.buf, c.idx.eval, 1)] :=
+    blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using Ne.symm hcW)
+  exact (RoutineSpec.ins (spec_litIdx_getD (e := 3))).wp_bind
+    ((Mode.needs_and.mpr ⟨hlit 3, (hw (.refl [] _)).mono (·.1)⟩))
+    fun st₁ hm₁ h₁ => (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) md hs p n (X := W) (Y := V) (xo := 0) (yo := 0) (c := c) _ (mmR A A)
+      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind
+      ⟨(readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies hW hm₁ hcWb, h₁.1,
+        (hw hm₁).mono (·.2.1)⟩
+    fun st₂ hm₂ h₂ => (spec_zneg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) md hs p n n (X := V) (Y := V) (xo := 0) (yo := 0) _
+      (.inr ⟨rfl, rfl⟩)).wp_bind ⟨h₂.1 (blockDisjoint_of_fst_ne hcV),
+        (hw (hm₁.trans hm₂)).mono (·.2.1)⟩
+    fun st₃ hm₃ h₃ => (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (V, 0)
+      (W, 0) A _)).wp_bind
+      ⟨(show ReadsOnly _ [matBlock X xo.eval n n 2] from
+        readsOnly_entryLayoutHolds pairLayout p X xo.eval A).of_modifies hA
+        (hm₁.trans hm₂ |>.trans hm₃) (by fp_omega [hcX, hVX]), h₃.1,
+        blockDisjoint_of_fst_ne hWX, blockDisjoint_of_fst_ne hWV,
+        (hw (hm₁.trans hm₂ |>.trans hm₃)).mono (·.2.2.1)⟩
+    fun st₄ hm₄ h₄ => (RoutineSpec.ins (spec_litIdx_getD (e := 4))).wp_bind
+      ((Mode.needs_and.mpr ⟨hlit 4, (hw (hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄)).mono (·.1)⟩))
+    fun st₅ hm₅ h₅ => (spec_zhermAvg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      (normal := normal) md hs p n (X := W) (Y := X) (xo := 0) (yo := xo) (c := c) _ _
+      (blockDisjoint_of_fst_ne hWX.symm) hcX).wp_run
+      ⟨(readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies h₄.1 hm₅ hcWb, h₅.1,
+        (hsem.elim fun ⟨hr, hu⟩ => (hw (hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄ |>.trans
+          hm₅)).mono fun h => ⟨by
+            obtain ⟨v, hv⟩ := hr.lit_ok p ((4 : ℕ) : ℚ) trivial
+            change dec p ((I.sem.lit p ((4 : ℕ) : ℚ)).getD default) ≠ 0
+            rw [hv]
+            exact hr.dec_ne_zero_of_lit_eq_some hu (by norm_num) hv, h.2.2.2⟩)⟩
+    fun st₆ hm₆ h₆ => ⟨(hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄ |>.trans hm₅ |>.trans hm₆).mono
+      (by simp [matBlock, pairLayout]), h₆.1,
+      h₆.2.trans (h₅.2.trans (h₄.2.2.trans (h₃.2.trans (h₂.2.trans h₁.2))))⟩
+
 end NLAlib
 
 /-! ### The blocks at index expressions -/

@@ -91,6 +91,13 @@ theorem Spec.seq (h₁ : Spec m I pre s fp post) (h₂ : Spec m I pre₂ t fp₂
   Triple.conseq (Triple.seq h₁ h₂ fun st st₁ hst hp => hmid st st₁ hst hp.1 hp.2) (fun _ h => h)
     fun _ _ _ ⟨st₁, ⟨hm₁, hp₁⟩, hm₂, hp₂⟩ => ⟨hm₁.trans hm₂, st₁, hp₁, hp₂⟩
 
+omit [AddMonoid C] in
+/-- A block of one buffer is disjoint from every block of other buffers. -/
+theorem blocksDisjoint_singleton_of_fst_ne {x : ℕ × ℕ × ℕ} {fp : List (ℕ × ℕ × ℕ)}
+    (h : ∀ y ∈ fp, x.1 ≠ y.1) : BlocksDisjoint [x] fp := fun x' hx y hy => by
+  rw [List.mem_singleton.mp hx]
+  exact blockDisjoint_of_fst_ne (h y hy)
+
 /-- **The frame rule**: a predicate reading only blocks disjoint from the footprint is kept. -/
 theorem Spec.frame {F : Store P K → Prop} {rs : List (ℕ × ℕ × ℕ)} (h : Spec m I pre s fp post)
     (hF : ReadsOnly F rs) (hd : BlocksDisjoint rs fp) :
@@ -251,6 +258,17 @@ theorem Spec.allocBind {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ �
     Spec m I pre (Builder.alloc p len >>= f).run fp post :=
   Spec.alloc (body := fun b => (f b).run) h hb (fun st hst => hpre st _ hst rfl)
     fun st st₂ hst hp => hpost st _ st₂ hst rfl hp
+
+/-- **An allocation in a builder, by named states, with the rest specified from the allocated
+state**: the rest of the block is specified from every state `st.allocate …` with `pre st`, its
+postcondition for every such `st` read after the release; no other obligation. -/
+theorem Spec.allocBind_named {p : P} {len : IExp ℕ} {f : ℕ → Builder P ι ℕ ℕ Unit} {b : ℕ}
+    (hb : ∀ st, pre st → st.store.size = b)
+    (h : Spec m I (fun s => ∃ st, pre st ∧ s = st.allocate p len.eval (I.width p)) (f b).run
+      (fp ++ [(b, 0, len.eval)]) fun s s' => ∀ st, pre st →
+        s = st.allocate p len.eval (I.width p) → post st (s'.release p len.eval (I.width p))) :
+    Spec m I pre (Builder.alloc p len >>= f).run fp post :=
+  Spec.allocBind h hb (fun st _ hst e => ⟨st, hst, e⟩) fun st _ _ hst e hp => hp st hst e
 
 /-- **The $j$-th of a chain of allocations, by named states**: from a state that is $j$
 allocations after a state satisfying `pre` (whose store has $b$ buffers), an allocation of
@@ -517,6 +535,100 @@ theorem spec_litIdx_read {e : IExp ℕ} :
     exact ⟨v, hv, key v hv⟩
   · exact key
 
+/-- **An index literal**, read back as the stored literal: the destination cell then holds the
+semantics' literal of the index (with `default` if it failed, which only a failed run sees); the
+total mode needs the literal to succeed and the cell writable. -/
+theorem spec_litIdx_getD [Inhabited K] {e : IExp ℕ} :
+    Spec m I (fun st => m.Needs ((∃ v, I.sem.lit p (e.eval : ℚ) = some v) ∧
+        Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.litIdx p dst e)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some ((I.sem.lit p (e.eval : ℚ)).getD default) ∧
+          PosKept st st' := by
+  intro st hst
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run, Mode.sat_bind]
+  have key : ∀ v, I.sem.lit p (e.eval : ℚ) = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ r.1.read p dst.buf dst.idx.eval =
+        some ((I.sem.lit p (e.eval : ℚ)).getD default) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', by rw [Store.read_of_write_eq_some hs', hv]; rfl, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
+/-- **A literal**, read back as the stored literal (with `default` if it failed, which only a
+failed run sees); the total mode needs the literal to succeed and the cell writable. -/
+theorem spec_lit_getD [Inhabited K] {q : ℚ} :
+    Spec m I (fun st => m.Needs ((∃ v, I.sem.lit p q = some v) ∧
+        Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.lit p dst q)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some ((I.sem.lit p q).getD default) ∧
+          PosKept st st' := by
+  intro st hst
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run, Mode.sat_bind]
+  have key : ∀ v, I.sem.lit p q = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ r.1.read p dst.buf dst.idx.eval =
+        some ((I.sem.lit p q).getD default) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', by rw [Store.read_of_write_eq_some hs', hv]; rfl, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
+/-- **A binary operation**, read back as the stored result (with `default` if it failed, which
+only a failed run sees); the total mode needs the operation to succeed and the cell writable. -/
+theorem spec_bin_getD [Inhabited K] {op : BinOp} {a b : K} :
+    Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
+        st.store.read p y.buf y.idx.eval = some b ∧
+        m.Needs ((∃ v, I.sem.bin p op a b = some v) ∧ Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.bin p op dst x y)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some ((I.sem.bin p op a b).getD default) ∧
+          PosKept st st' := by
+  intro st ⟨hx, hy, hst⟩
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run]
+  simp only [hx, hy, Option.bind_some]
+  rw [Mode.sat_bind]
+  have key : ∀ v, I.sem.bin p op a b = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ r.1.read p dst.buf dst.idx.eval =
+        some ((I.sem.bin p op a b).getD default) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', by rw [Store.read_of_write_eq_some hs', hv]; rfl, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
+/-- **A unary operation**, read back as the stored result (with `default` if it failed, which
+only a failed run sees); the total mode needs the operation to succeed and the cell writable. -/
+theorem spec_un_getD [Inhabited K] {op : UnOp} {a : K} :
+    Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
+        m.Needs ((∃ v, I.sem.un p op a = some v) ∧ Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.un p op dst x)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        st'.store.read p dst.buf dst.idx.eval = some ((I.sem.un p op a).getD default) ∧
+          PosKept st st' := by
+  intro st ⟨hx, hst⟩
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run]
+  simp only [hx, Option.bind_some]
+  rw [Mode.sat_bind]
+  have key : ∀ v, I.sem.un p op a = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ r.1.read p dst.buf dst.idx.eval =
+        some ((I.sem.un p op a).getD default) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', by rw [Store.read_of_write_eq_some hs', hv]; rfl, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
 /-- **A literal**, read back without naming its value: the destination cell then holds the
 semantics' literal, which exists (in every mode); the total mode needs the literal to succeed and
 the cell writable. -/
@@ -756,6 +868,13 @@ theorem Spec.frame_of_mem {fp : List (ℕ × ℕ × ℕ)} {s : Stmt P ι ℕ ℕ
     rw [blockDisjoint_iff]
     dsimp only at this ⊢
     omega, hp.2⟩
+
+omit [DecidableEq P] [AddMonoid C] in
+/-- A block inside a writable block is writable. -/
+theorem Writable.of_le {s : Store P K} {b off n off' n' : ℕ} (h : Writable s p b off n)
+    (h₁ : off ≤ off') (h₂ : off' + n' ≤ off + n) : Writable s p b off' n' := fun i hi => by
+  obtain ⟨len, hl, hlt⟩ := h (off' - off + i) (by omega)
+  exact ⟨len, hl, by omega⟩
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- A writable nonempty block lies in a buffer of the store. -/
