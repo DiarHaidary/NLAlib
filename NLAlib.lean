@@ -43,6 +43,7 @@ public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.StaticCost
 public import NLAlib.Computation.Store
+public import NLAlib.Computation.StraightLine
 public import NLAlib.Computation.Subst
 public import NLAlib.Computation.Syntax
 public import NLAlib.Computation.Underflow
