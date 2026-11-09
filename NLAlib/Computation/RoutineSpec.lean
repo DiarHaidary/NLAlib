@@ -1244,6 +1244,51 @@ theorem spec_forRange_copy {n : IExp ℕ} {Y off X : ℕ} {didx sidx : ℕ → I
         (by rw [hd]; fp_omega [hi])).trans rfl
     · rw [← hd]; exact hp.2.1
 
+/-- A loop of binary operations into consecutive cells: iteration $i$ combines the cell
+`sidx i` of `X` (outside the destination block), holding $a_i$, with the cell `c` (outside the
+block), holding $z$, into the cell $\mathit{off} + i$ of `Y`; the block then holds
+$a_i \circ z$ (`default` if the operation failed, which only a failed run sees), nothing else
+changes and the tape positions are kept; the total mode needs the operations to succeed and the
+block writable. -/
+theorem spec_forRange_bin [Inhabited K] {op : BinOp} {n : IExp ℕ} {Y off X : ℕ} {c : Cell ℕ ℕ}
+    {didx sidx : ℕ → IExp ℕ} (a : ℕ → K) (z : K) (hd : ∀ i, (didx i).eval = off + i)
+    (hs : ∀ i < n.eval, blockDisjoint (X, (sidx i).eval, 1) (Y, off, n.eval) = true)
+    (hc : blockDisjoint (c.buf, c.idx.eval, 1) (Y, off, n.eval) = true) :
+    RoutineSpec m I (fun st => (∀ i < n.eval, st.store.read p X (sidx i).eval = some (a i)) ∧
+        st.store.read p c.buf c.idx.eval = some z ∧
+        m.Needs ((∀ i < n.eval, ∃ v, I.sem.bin p op (a i) z = some v) ∧
+          Writable st.store p Y off n.eval))
+      (Builder.forRange n fun i => Builder.ins (.bin p op ⟨Y, didx i⟩ ⟨X, sidx i⟩ c))
+      [(Y, off, n.eval)]
+      fun st st' => (∀ i < n.eval, st'.store.read p Y (off + i) =
+        some ((I.sem.bin p op (a i) z).getD default)) ∧ PosKept st st' := by
+  refine RoutineSpec.stmt (s := .loop n fun i => (Builder.ins (.bin p op ⟨Y, didx i⟩
+    ⟨X, sidx i⟩ c)).run) ((Spec.loop (fun st₀ j st => st.pos = st₀.pos ∧
+      Modifies [(Y, off, n.eval)] st₀.store st.store ∧
+      ∀ i < j, st.store.read p Y (off + i) = some ((I.sem.bin p op (a i) z).getD default))
+      (fun _ _ => ⟨rfl, .refl _ _, by simp⟩)
+      fun st₀ hst₀ k hk => ?_).conseq (fun _ h => h) (fun _ h => h) fun _ _ _ h => ⟨h.2.2, h.1⟩)
+  refine (((RoutineSpec.ins (spec_bin_getD (m := m) (p := p) (dst := ⟨Y, didx k⟩)
+    (x := ⟨X, sidx k⟩) (y := c) (op := op) (a := a k) (b := z))).spec.with_modifies.sub
+    (fp' := [(Y, off, n.eval)]) fun x hx => ?_).conseq (fun st h =>
+      ⟨(readsOnly_read _ _ _ _).of_modifies (hst₀.1 k hk) h.2.1 (by fp_omega [hs k hk]),
+        (readsOnly_read _ _ _ _).of_modifies hst₀.2.1 h.2.1 (by fp_omega [hc]),
+        hst₀.2.2.mono fun hw => ⟨hw.1 k hk, ?_⟩⟩) (fun _ h => h)
+      fun st st' h hp => ⟨hp.2.2.trans h.1, (h.2.1.trans (hp.1.of_sub
+        (fp' := [(Y, off, n.eval)]) fun x hx => ?_)).mono (by simp), ?_⟩)
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    obtain ⟨len, hl, hlt⟩ := hw.2 k hk
+    exact ⟨len, by rw [h.2.1.1]; exact hl, by rw [hd]; omega⟩
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
+    · exact ((readsOnly_read _ _ _ _).of_modifies (h.2.2 i hi) hp.1
+        (by rw [hd]; fp_omega [hi])).trans rfl
+    · rw [← hd]; exact hp.2.1
+
 /-- **A loop of literal writes into consecutive cells**: iteration $i$ writes the literal $q$
 into the cell $\mathit{off} + i$ of `Y`; the block then holds the literal, nothing else changes
 and the tape positions are kept; the total mode needs the literal and the block writable. -/
