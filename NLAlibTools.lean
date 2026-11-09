@@ -4,3 +4,4 @@ import NLAlibTools.Float
 import NLAlibTools.KrylovOracleSmoke
 import NLAlibTools.KrylovSmoke
 import NLAlibTools.NumPy
+import NLAlibTools.SpecCatalog
