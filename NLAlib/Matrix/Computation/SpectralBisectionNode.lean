@@ -17,12 +17,17 @@ The blocks of the node step of `NLAlib.eighProg` compute the matching operations
 routines on pairs and a semantics that decides flags, a successful run writes exactly the machine's
 value, with no contract on the rounding. The blocks are in the files
 `NLAlib/Matrix/Computation/SpectralBisectionNode/*.lean`; this file assembles the branch after the
-index binder (one child or a split) and the whole node step.
+index binder (one child or a split) and the whole node step, as routine specifications of the
+program logic (`docs/design/Computation-ProgramLogic.md`): the set-up, the clamp and the branch
+are calls, the split index an index binder, the scratch a chain of allocations.
 
 ## Main results
 
+* `NLAlib.spec_eighNodeBranch`, `NLAlib.spec_eighNodeBody`, `NLAlib.spec_eighNodeBlock`: the
+  branch, the body and the node step as routine specifications.
 * `NLAlib.holds_of_exec_eighNodeBlock`: the node step computes `NLAlib.eighStep`.
 * `NLAlib.holds_of_exec_eighNodeBlock_frame`: the same, with the window it writes.
+* `NLAlib.spec_eighWhen`: a guarded block as a specification of the program logic.
 -/
 
 @[expose] public section
@@ -38,20 +43,31 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
   {unif : K → Su → K} {normal : Sg → K × K}
 
 omit [Inhabited K] in
-/-- A loop of no iterations. -/
-theorem eq_of_exec_loop_of_eval_eq_zero {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
-    (he : e.eval = 0) (h : exec I (.seq (.loop e b) .skip) s = some s') : s' = s := by
-  rw [exec_seq_skip, exec_loop, he] at h
-  simp only [List.range_zero, List.foldlM_nil] at h
-  exact (Option.some_inj.mp h).symm
-
-omit [Inhabited K] in
 /-- A loop of one iteration. -/
 theorem exec_loop_one_eq {e : IExp ℕ} {b : ℕ → Stmt P ι ℕ ℕ} {s s' : St P K C}
     (he : e.eval = 1) (h : exec I (.seq (.loop e b) .skip) s = some s') :
     exec I (b 0) s = some s' := by
   rw [exec_seq_skip, exec_loop, he] at h
   simpa [List.range_one] using h
+
+omit [Inhabited K] in
+/-- **A guarded block as a specification**: `NLAlib.eighWhen e body` (a loop of
+$1 - (1 - e)$ trips) leaves the state unchanged if $e = 0$ and meets the body's specification if
+$e > 0$. No printed source. -/
+theorem spec_eighWhen {m : Mode} {e : IExp ℕ} {body : Builder P ι ℕ ℕ Unit}
+    {pre : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop}
+    (h : 0 < e.eval → Spec m I pre body.run fp post) :
+    RoutineSpec m I pre (eighWhen e body) fp
+      fun st st' => (e.eval = 0 → st' = st) ∧ (0 < e.eval → post st st') := by
+  refine ⟨executionComposable_forRange _ _, fun st hst => (wp_seq).mpr ?_⟩
+  rw [Wp, exec_loop]
+  rcases Nat.eq_zero_or_pos e.eval with he | he
+  · rw [show (1 - (1 - e)).eval = 0 by simp [he], List.range_zero, List.foldlM_nil]
+    exact Mode.sat_some.mpr ((wp_skip).mpr ⟨Modifies.refl _ _, fun _ => rfl, by omega⟩)
+  · rw [show (1 - (1 - e)).eval = 1 by simp; omega, List.range_one, List.foldlM_cons]
+    simp only [List.foldlM_nil, bind_pure]
+    exact Mode.Sat.mono (h he st hst) fun st' hp =>
+      (wp_skip).mpr ⟨hp.1, fun h0 => absurd h0 (by omega), fun _ => hp.2⟩
 
 omit [Inhabited K] in
 /-- A guarded block, then the rest. -/
@@ -63,31 +79,10 @@ theorem run_eighWhen_bind {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit}
   rw [exec_run_bind I (b := eighWhen e b) (fun _ => rfl)] at h
   exact Option.bind_eq_some_iff.mp h
 
-omit [Inhabited K] in
-/-- A guarded block. -/
-private theorem when_run_node {e : IExp ℕ} {b : Builder P ι ℕ ℕ Unit} {st st' : St P K C}
-    (h : exec I (eighWhen e b).run st = some st') :
-    exec I (.seq (.loop (1 - (1 - e)) fun _ => b.run) .skip) st = some st' := h
-
-omit [Inhabited K] in
-/-- The run of a scoped index binder, inverted. -/
-theorem exists_of_exec_bindIdx {p : P} {x : Cell ℕ ℕ} {bound : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ}
-    {st st' : St P K C} (h : exec I (.seq (.bindIdx p x bound body) .skip) st = some st') :
-    ∃ v w, st.store.read p x.buf x.idx.eval = some w ∧ I.sem.toNat p w = some v ∧
-      v ≤ bound.eval ∧
-      exec I (body v) { st with cnt := st.cnt + I.charge (.toNat p) } = some st' := by
-  rw [exec_seq_skip, exec_bindIdx] at h
-  obtain ⟨r, hr, h⟩ := Option.bind_eq_some_iff.mp h
-  unfold toNatStep at hr
-  obtain ⟨w, hw, hr⟩ := Option.bind_eq_some_iff.mp hr
-  obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp hr
-  split_ifs at h with hle
-  exact ⟨v, w, hw, hv, hle, h⟩
-
 /-- The outcome of a node step's branch at the split index $k_+$, in the store `s`: for
 $k_+ = k$ one child on the positive side, for $k_+ = 0$ one on the negative side, for
 $0 < k_+ < k$ the split of `NLAlib.holds_of_exec_eighSplitBlock` (bases from `Ppv`, `Pmv`). -/
-private abbrev EighBranchHolds (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K × K))
+abbrev EighBranchHolds (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K × K))
     (qrR : QRMap (K × K)) (H : EighArenas) (n d lo k kp : ℕ)
     (A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)) (half : K) (s : Store P K) : Prop :=
   let M := eighTapeMachine I p mmR qrR
@@ -115,125 +110,88 @@ private abbrev EighBranchHolds (I : Interp P ι K C) (p : P) (mmR : MatMulMap (K
     s.read p H.Kd (n * d + lo) = I.sem.lit p ((4 : ℕ) : ℚ) ∧
     s.read p H.Kp (n * d + lo) = I.sem.lit p ((kp : ℕ) : ℚ))
 
-/-- One child in a node step's branch: from a state `σ₁` with the store of `st`, whose node
-matrix $\mathbf{A}$ is held at its block of `Ma` and whose cell `sg` (in a scratch buffer from
-`s₀` on, the arenas below) holds the shift $s$, a successful run of `NLAlib.eighChildBlock` with
-the kind `code` writes $\mathbf{A} - s\mathbf{I}$ at the same slot of depth $d + 1$, the size $k$
-and the kind; every cell of a buffer below `s₀` outside the node's window is that of `st`, the
-shape is kept. -/
-private theorem node_child_holds (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (H : EighArenas)
-    (code : ℕ) {s₀ : ℕ} {sg : Cell ℕ ℕ} {st σ₁ σ₂ : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
-    {sv : K} (lMa : H.Ma < s₀) (hsg : s₀ ≤ sg.buf) (dMaSz : H.Ma = H.Sz → False)
-    (dMaKd : H.Ma = H.Kd → False) (dSzKd : H.Sz = H.Kd → False)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hs : σ₁.store = st.store) (hsv : σ₁.store.read p sg.buf sg.idx.eval = some sv)
-    (hex : exec I (eighChildBlock (ι := ι) p (.const k) H.Ma
-      (eighBlockOff (.const n) (.const d) (.const lo))
-      (eighBlockOff (.const n) (.const d + 1) (.const lo)) sg
-      ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
-      ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ code).run σ₁ = some σ₂) :
-    pairLayout.Holds σ₂.store p H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo)
-        ((eighTapeMachine I p mmR qrR).hermShift A sv) ∧
-      σ₂.store.read p H.Sz (n * (d + 1) + lo) = I.sem.lit p ((k : ℕ) : ℚ) ∧
-      σ₂.store.read p H.Kd (n * d + lo) = I.sem.lit p ((code : ℕ) : ℚ) ∧
-      (∀ j q b i, b < s₀ → ¬ EighNodeWindow H n d lo k j b i →
-        σ₂.store.read q b i = st.store.read q b i) ∧
-      σ₂.store.shape = st.store.shape ∧ σ₂.pos = σ₁.pos := by
-  have hn : k ≤ n := by omega
-  have hkkn : k * k ≤ n * k := Nat.mul_le_mul_right _ hn
-  have hnk : n * k ≤ n * n := Nat.mul_le_mul_left _ hn
-  have hbo : (eighBlockOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval =
-      2 * (n * n) * d + 2 * n * lo := by simp [eighBlockOff]
-  have hbo1 : (eighBlockOff (IExp.const n) (IExp.const d + 1) (IExp.const lo)).eval =
-      2 * (n * n) * (d + 1) + 2 * n * lo := by simp [eighBlockOff]
-  have hso1 : (eighSlotOff (IExp.const n) (IExp.const d + 1) (IExp.const lo)).eval =
-      n * (d + 1) + lo := by simp [eighSlotOff]
-  have hso : (eighSlotOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval = n * d + lo := by
-    simp [eighSlotOff]
-  obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := holds_of_exec_eighChildBlock
-    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
-    (unif := I.sem.tapeUnif p (I.tape .uniform))
-    (normal := I.sem.tapeNormal p (I.tape .gaussian)) p k code (st := σ₁) (st' := σ₂)
-    (by rw [hbo, hs]; exact hA) hsv
-    (by
-      rw [hbo, hbo1]
-      simp only [blockDisjoint, bne_self_eq_false, Bool.false_or, Bool.or_eq_true,
-        decide_eq_true_eq]
-      right; linarith)
-    (blockDisjoint_of_ne (by omega)) (blockDisjoint_of_ne (Ne.symm dMaSz))
-    (blockDisjoint_of_ne (Ne.symm dMaKd)) (blockDisjoint_of_ne dSzKd)
-    hex
-  rw [hbo1] at hM
-  rw [hso1] at hsz
-  rw [hso] at hkd
-  refine ⟨hM, hsz, hkd, fun j q b i hb hW => ?_, hsh.trans (by rw [hs]), hps⟩
+/-- The blocks one child of a node step writes: its matrix at the slot of depth $d + 1$, its size
+and its kind. -/
+def eighChildWindow (H : EighArenas) (n d lo k : ℕ) : List (ℕ × ℕ × ℕ) :=
+  [matBlock H.Ma (2 * (n * n) * (d + 1) + 2 * n * lo) k k 2, (H.Sz, n * (d + 1) + lo, 1),
+    (H.Kd, n * d + lo, 1)]
+
+/-- The blocks a node step's branch writes at the split index $k_+$: a split's window for
+$0 < k_+ < k$, a child's otherwise. -/
+def eighBranchWindow (H : EighArenas) (n d lo k kp : ℕ) : List (ℕ × ℕ × ℕ) :=
+  if 0 < kp ∧ kp < k then eighSplitWindow H n d lo k kp else eighChildWindow H n d lo k
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- A cell outside a child's node window is disjoint from every block of the child's window. -/
+theorem blockDisjoint_eighChildWindow {H : EighArenas} {n d lo k j b i : ℕ} (hk : lo + k ≤ n)
+    (hW : ¬ EighNodeWindow H n d lo k j b i) :
+    ∀ x ∈ eighChildWindow H n d lo k, blockDisjoint (b, i, 1) x = true := by
+  have hkk : k * k ≤ n * k := Nat.mul_le_mul_right k (by omega)
   simp only [EighNodeWindow, not_or, not_and, not_lt] at hW
   obtain ⟨-, hWM, hWS, hWK⟩ := hW
-  rw [hfr q b i ?_ ?_ ?_, hs]
-  · rw [hbo1]
-    refine blockDisjoint_of_window (lo' := 2 * (n * n) * (d + 1) + 2 * n * lo)
-      (hi' := 2 * (n * n) * (d + 1) + 2 * n * (lo + k)) (fun h1 => ?_) le_rfl (by linarith)
-    by_contra hc; push Not at hc
-    exact absurd (hWM h1 hc.1) (by omega)
-  · rw [hso1]
-    refine blockDisjoint_of_window (lo' := n * (d + 1) + lo) (hi' := n * (d + 1) + lo + 1)
-      (fun h1 => ?_) le_rfl le_rfl
-    have := hWS h1
-    by_contra hc; push Not at hc
-    omega
-  · rw [hso]
-    refine blockDisjoint_of_window (lo' := n * d + lo) (hi' := n * d + lo + 1) (fun h1 => ?_)
-      le_rfl le_rfl
-    have := hWK (Or.inl h1)
-    omega
+  simp only [eighChildWindow, List.forall_mem_cons, matBlock, blockDisjoint_iff]
+  refine ⟨?_, ?_, ?_, fun x hx => absurd hx List.not_mem_nil⟩
+  · by_cases hb : b = H.Ma
+    · have := hWM hb
+      have key : i + 1 ≤ 2 * (n * n) * (d + 1) + 2 * n * lo ∨
+          2 * (n * n) * (d + 1) + 2 * n * lo + k * k * 2 ≤ i := by
+        by_cases hi : 2 * (n * n) * (d + 1) + 2 * n * lo ≤ i
+        · have := this hi; right; nlinarith
+        · left; omega
+      omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Sz
+    · have := hWS hb; omega
+    · exact Or.inl hb
+  · by_cases hb : b = H.Kd
+    · have := hWK (Or.inl hb); omega
+    · exact Or.inl hb
 
-/-- The cells a node step's split reads: the constants `c` (outside the arenas and `Sg`, below
-`s₀`) and the scratch buffer `t` (from `s₀` on, neither `Pp` nor `Pm`) are outside the arenas,
-`Sg`, `Pp` and `Pm`. -/
-private theorem node_split_cells {H : EighArenas} {Sg c t Pp Pm s₀ : ℕ}
-    (hlt : ∀ b ∈ H.handles ++ [Sg, c], b < s₀) (hcS : c ∉ H.handles ++ [Sg])
-    (hge : s₀ ≤ t ∧ s₀ ≤ Pp ∧ s₀ ≤ Pm) (htPp : t = Pp → False) (htPm : t = Pm → False) :
-    ∀ c' ∈ [(⟨c, 1⟩ : Cell ℕ ℕ), ⟨t, 0⟩, ⟨t, 1⟩, ⟨c, 4⟩], c'.buf ∉ H.handles ++ [Sg, Pp, Pm] := by
-  have lc : c < s₀ := hlt _ (by simp)
-  have hlt' : ∀ b ∈ H.handles, b < s₀ := fun b hb => hlt b (List.mem_append_left _ hb)
-  have hcn : c ∉ H.handles ++ [Sg, Pp, Pm] := by
-    intro hm
-    rw [show H.handles ++ [Sg, Pp, Pm] = (H.handles ++ [Sg]) ++ [Pp, Pm] by simp] at hm
-    rcases List.mem_append.mp hm with h | h
-    · exact hcS h
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at h; omega
-  have htn : t ∉ H.handles ++ [Sg, Pp, Pm] := by
-    intro hm
-    rcases List.mem_append.mp hm with h | h
-    · have := hlt' t h; omega
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at h
-      rcases h with h | h | h
-      · have := hlt Sg (by simp); omega
-      · exact htPp h
-      · exact htPm h
-  intro c' hc'
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hc'
-  rcases hc' with rfl | rfl | rfl | rfl
-  exacts [hcn, htn, htn, hcn]
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The window of a node step's branch is writable in arenas of depth $D > d$. -/
+theorem writableBlocks_eighBranchWindow {H : EighArenas} {s : Store P K} {p : P}
+    {n d lo k kp D : ℕ} (hk : lo + k ≤ n) (hk0 : 0 < k) (hd : d < D) (hH : H.Shaped s p n D) :
+    WritableBlocks s p (eighBranchWindow H n d lo k kp) := by
+  unfold eighBranchWindow
+  split_ifs with hs
+  · exact writableBlocks_eighSplitWindow hk hs.2 hd hH
+  obtain ⟨-, hMa, -, -, -, hSz, hKd, -, -⟩ := hH
+  have hlok : n * lo + n * k ≤ n * n := by rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ hk
+  have hkk : k * k ≤ n * k := Nat.mul_le_mul_right k (by omega)
+  have hdD : n * n * (d + 1) + n * n ≤ n * n * (D + 1) := by
+    rw [← Nat.mul_succ]; exact Nat.mul_le_mul_left _ (by omega)
+  have h1 := Nat.mul_le_mul_left n (show d + 2 ≤ D + 1 by omega)
+  have h2 := Nat.mul_le_mul_left n (show d + 1 ≤ D by omega)
+  simp only [WritableBlocks, eighChildWindow, List.forall_mem_cons]
+  exact ⟨writable_of_shape_eq rfl hMa (by simp only [matBlock]; nlinarith),
+    writable_of_shape_eq rfl hSz (by nlinarith), writable_of_shape_eq rfl hKd (by nlinarith),
+    fun x hx => absurd hx List.not_mem_nil⟩
 
-/-- The branch of a node step after the index binder, from a cell that converts to $k_+ \le k$: one
-child or a split, with the frame of the node's window. -/
-private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n)
-    (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st st' : St P K C}
-    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ}
-    (hH : H.Shaped st.store p n D) (s₀ : ℕ) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
-    (hlt : ∀ b ∈ H.handles ++ [Sg, c], b < s₀) (hcS : c ∉ H.handles ++ [Sg])
-    (hge : s₀ ≤ t ∧ s₀ ≤ Pp ∧ s₀ ≤ Pm) (htPp : t = Pp → False) (htPm : t = Pm → False)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hPp : pairLayout.Holds st.store p Pp 0 Ppv) (hPm : pairLayout.Holds st.store p Pm 0 Pmv)
-    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
-    (htwo : st.store.read p c 1 = some ((eighTapeMachine I p mmR qrR).ofNat 2))
-    (hsq : st.store.read p c 4 = some (I.sem.sqrtHalf p))
-    (ht0 : st.store.read p t 0 = some half)
-    (ht1 : st.store.read p t 1 = some ((eighTapeMachine I p mmR qrR).neg half))
-    (ht6 : st.store.read p t 6 = some w6) {kp₀ : ℕ} (hkp₀ : I.sem.toNat p w6 = some kp₀)
-    (h : exec I (Builder.bindIdx p ⟨t, 6⟩ (.const k) fun kp => do
+/-- **The branch of a node step at a fixed split index, as a specification**: for $k_+ \le k$,
+the three guarded blocks run one child ($k_+ = k$ or $k_+ = 0$) or the split, modify only the
+branch's window and keep the tape positions; with the level's tape words in `Sg` and the
+literal $\mathrm{fl}(2)$ in the cell `two`, the window then holds the outcome of
+`NLAlib.eighStep`'s branch. In mode `total` the run also succeeds, given the standard model, the
+window writable and the literals. No printed source. -/
+theorem spec_eighNodeBranch {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ ∀ p x, safe p x))
+    (p : P) (n d lo k : ℕ) (hk : lo + k ≤ n) (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ}
+    (A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)) (c₂ half : K) (kp : ℕ) (hkpk : kp ≤ k) (b : ℕ)
+    (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup) (hcS : c ∉ H.handles ++ [Sg, Pp, Pm])
+    (htS : t ∉ H.handles ++ [Sg, Pp, Pm]) (hlt : ∀ x ∈ H.handles ++ [Sg, Pp, Pm, c, t], x < b) :
+    RoutineSpec md I (fun st => st.store.size = b ∧
+        pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+        pairLayout.Holds st.store p Pp 0 Ppv ∧ pairLayout.Holds st.store p Pm 0 Pmv ∧
+        (∀ w < 4 * (n * n), ∃ v, st.store.read p Sg w = some v) ∧
+        (md = .liberal → ∀ w < 4 * (n * n),
+          st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w))) ∧
+        st.store.read p c 1 = some c₂ ∧ st.store.read p c 4 = some (I.sem.sqrtHalf p) ∧
+        st.store.read p t 0 = some half ∧
+        st.store.read p t 1 = some ((eighTapeMachine I p mmR qrR).neg half) ∧
+        md.Needs (dec p c₂ ≠ 0 ∧ WritableBlocks st.store p (eighBranchWindow H n d lo k kp) ∧
+          ∀ q : ℕ, ∃ z, I.sem.lit p (q : ℚ) = some z))
+      (do
         eighWhen (1 - (.const k - .var kp))
           (eighChildBlock p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
             (eighBlockOff (.const n) (.const d + 1) (.const lo)) ⟨t, 0⟩
@@ -246,147 +204,91 @@ private theorem node_branch_holds_core {mm qr : ι} (hmm : IsMatMulKernel I mm p
             ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 3)
         eighWhen (.var kp * (.const k - .var kp))
           (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.var kp) Sg Pp Pm
-            H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨t, 0⟩ ⟨t, 1⟩ ⟨c, 4⟩) :
-        Builder P ι ℕ ℕ Unit).run st = some st') :
-    let kp := kp₀
-    EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half st'.store ∧
-    (∀ q b i, b < s₀ → ¬ EighNodeWindow H n d lo k (if 0 < kp ∧ kp < k then lo + kp else lo) b i →
-      st'.store.read q b i = st.store.read q b i) ∧
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  intro kp
-  have lMa : H.Ma < s₀ := hlt _ (by simp [EighArenas.handles])
-  have dMaSz : H.Ma = H.Sz → False := fun h => by simp [EighArenas.handles, h] at hbufs
-  have dMaKd : H.Ma = H.Kd → False := fun h => by simp [EighArenas.handles, h] at hbufs
-  have dSzKd : H.Sz = H.Kd → False := fun h => by simp [EighArenas.handles, h] at hbufs
-  -- the binder
-  obtain ⟨v, w, hw, hv, hvk, h⟩ := exists_of_exec_bindIdx h
-  replace hvk : v ≤ k := hvk
-  obtain rfl : w = w6 := Option.some_inj.mp (hw.symm.trans ht6)
-  have hkp : kp = v := Option.some_inj.mp (hkp₀.symm.trans hv)
-  refine name_state_node h ?_; clear h; intro σ e1 e2 h; simp only at e1 e2
-  beta_reduce at h
-  obtain ⟨σa, ha, hra⟩ := run_eighWhen_bind h
-  obtain ⟨σb, hb, hrb⟩ := run_eighWhen_bind hra
-  have h' := when_run_node hrb
-  clear h hra hrb
-  rcases Nat.eq_or_lt_of_le hvk with hkk | hlt'
-  · -- one child on the positive side
-    have h1 := exec_loop_one_eq (by change 1 - (1 - (1 - (k - v))) = 1; omega) ha
-    have e2' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - v)) = 0; omega) hb
-    have e3' := eq_of_exec_loop_of_eval_eq_zero (by
-      change 1 - (1 - v * (k - v)) = 0; rw [hkk, Nat.sub_self, Nat.mul_zero]) h'
-    subst e2' e3'
-    obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 2 lMa hge.1 dMaSz
-      dMaKd dSzKd hA e1 (by rw [e1]; exact ht0) h1
-    exact ⟨⟨fun _ => ⟨hM, hsz, hkd⟩, fun h0 => by omega, fun _ h' => by omega⟩,
-      fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
-  rcases Nat.eq_zero_or_pos v with hz | hpos
-  · -- one child on the negative side
-    have e1' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
-    have h2 := exec_loop_one_eq (by change 1 - (1 - (1 - v)) = 1; omega) hb
-    have e3' := eq_of_exec_loop_of_eval_eq_zero
-      (by change 1 - (1 - v * (k - v)) = 0; rw [hz, Nat.zero_mul]) h'
-    subst e1' e3'
-    obtain ⟨hM, hsz, hkd, hfr, hsh, hps⟩ := node_child_holds p n d lo k hk H 3 lMa hge.1 dMaSz
-      dMaKd dSzKd hA e1 (by rw [e1]; exact ht1) h2
-    exact ⟨⟨fun h' => by omega, fun _ => ⟨hM, hsz, hkd⟩, fun h' _ => by omega⟩,
-      fun q b i hb hW => hfr _ q b i hb hW, hsh, hps.trans e2⟩
-  -- a split
-  have e1' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - (k - v))) = 0; omega) ha
-  have e2' := eq_of_exec_loop_of_eval_eq_zero (by change 1 - (1 - (1 - v)) = 0; omega) hb
-  subst σa σb
-  have hprod : 0 < v * (k - v) := Nat.mul_pos hpos (by omega)
-  have h3 := exec_loop_one_eq (by
-    change 1 - (1 - v * (k - v)) = 1; generalize v * (k - v) = m at hprod ⊢; omega) h'
-  obtain ⟨⟨q1, q2, q3, q4, q5, q6, q7, q8⟩, hfr, hsh, hps⟩ :=
-    holds_of_exec_eighSplitBlock_frame hmm hqr p n d lo k v hk hpos hlt' (.var v) rfl H
-      (two := ⟨c, 1⟩) (sg := ⟨t, 0⟩) (nsg := ⟨t, 1⟩) (sq := ⟨c, 4⟩) (σ := half)
-      (st := σ) (st' := st') (A := A) (Ppm := Ppv) (Pmm := Pmv) (by rw [e1]; exact hH) hbufs
-      (by rw [e1]; exact hA) (by rw [e1]; exact hPp) (by rw [e1]; exact hPm)
-      (by rw [e1]; exact hSg) (by rw [e1]; exact htwo) (by rw [e1]; exact ht0)
-      (by rw [e1]; exact ht1) (node_split_cells hlt hcS hge htPp htPm) (by rw [e1]; exact hsq) h3
-  refine ⟨⟨fun h' => by omega, fun h' => by omega, fun _ _ => ?_⟩, fun q b i hb hW => ?_,
-    hsh.trans (by rw [e1]), hps.trans e2⟩
-  · rw [hkp]; exact ⟨q1, q2, q3, q4, q5, q6, q7, q8⟩
-  · rw [if_pos (by rw [hkp]; exact ⟨hpos, hlt'⟩), hkp] at hW; rw [hfr q b i hW, e1]
-
-/-- The clamp of the split index and the branch of a node step: one child or a split, with the
-frame of the node's window, at $k_+ = \min(k, \lfloor w_6\rfloor_+)$ under exact comparisons,
-literals up to $k$ and conversion. -/
-private theorem node_branch_holds {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
-    (hqr : IsQRKernel I qr pairLayout qrR) (p : P) {dec : P → K → ℝ}
-    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
-    (n d lo k : ℕ) (hlit : IsExactIntLit dec I.sem k) (htn : IsExactToNat dec I.sem)
-    (hk : lo + k ≤ n)
-    (hk2 : 2 ≤ k) (H : EighArenas) {Sg c t Pp Pm : ℕ} {st st' : St P K C}
-    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half w6 : K} {D : ℕ}
-    (hH : H.Shaped st.store p n D) (s₀ : ℕ) (hbufs : (H.handles ++ [Sg, Pp, Pm]).Nodup)
-    (hlt : ∀ b ∈ H.handles ++ [Sg, c], b < s₀) (hcS : c ∉ H.handles ++ [Sg])
-    (hge : s₀ ≤ t ∧ s₀ ≤ Pp ∧ s₀ ≤ Pm) (htPp : t = Pp → False) (htPm : t = Pm → False)
-    (hA : pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A)
-    (hPp : pairLayout.Holds st.store p Pp 0 Ppv) (hPm : pairLayout.Holds st.store p Pm 0 Pmv)
-    (hSg : ∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
-    (htwo : st.store.read p c 1 = some ((eighTapeMachine I p mmR qrR).ofNat 2))
-    (hsq : st.store.read p c 4 = some (I.sem.sqrtHalf p))
-    (ht0 : st.store.read p t 0 = some half)
-    (ht1 : st.store.read p t 1 = some ((eighTapeMachine I p mmR qrR).neg half))
-    (ht6 : st.store.read p t 6 = some w6)
-    (h : exec I (do
-        eighClampBlock p (.const k) ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩
-        Builder.bindIdx p ⟨t, 6⟩ (.const k) fun kp => do
-          eighWhen (1 - (.const k - .var kp))
-            (eighChildBlock p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
-              (eighBlockOff (.const n) (.const d + 1) (.const lo)) ⟨t, 0⟩
-              ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
-              ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 2)
-          eighWhen (1 - .var kp)
-            (eighChildBlock p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
-              (eighBlockOff (.const n) (.const d + 1) (.const lo)) ⟨t, 1⟩
-              ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
-              ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 3)
-          eighWhen (.var kp * (.const k - .var kp))
-            (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.var kp) Sg Pp
-              Pm H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨t, 0⟩ ⟨t, 1⟩ ⟨c, 4⟩) :
-        Builder P ι ℕ ℕ Unit).run st = some st') :
-    let M := eighTapeMachine I p mmR qrR
-    let kp := min k (M.toNat w6)
-    EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half st'.store ∧
-    (∀ q b i, b < s₀ → ¬ EighNodeWindow H n d lo k (if 0 < kp ∧ kp < k then lo + kp else lo) b i →
-      st'.store.read q b i = st.store.read q b i) ∧
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  intro M kp
-  obtain ⟨σ, hrun, ⟨wc, hwc, hwcn⟩, hfr, hsh, hps, -⟩ :=
-    exec_eighClampBlock_bind (I := I) hcmp hlit htn ht6
-  rw [hrun] at h
-  have rd : ∀ q b i, b ≠ t → σ.store.read q b i = st.store.read q b i :=
-    fun q b i hb => hfr q b i fun h => absurd h hb
-  have rt : ∀ q i, i < 2 → σ.store.read q t i = st.store.read q t i :=
-    fun q i hi => hfr q t i fun _ => ⟨by omega, by omega, by omega⟩
-  have lMa : H.Ma < s₀ := hlt _ (by simp [EighArenas.handles])
-  have lSg : Sg < s₀ := hlt _ (by simp)
-  have lc : c < s₀ := hlt _ (by simp)
-  have hH' : H.Shaped σ.store p n D := by unfold EighArenas.Shaped; rw [hsh]; exact hH
-  have hM : M.toNat w6 = ⌊dec p w6⌋₊ := by
-    change (I.sem.toNat p w6).getD 0 = _
-    rw [htn p w6]
-    split_ifs with h0
-    · rfl
-    · exact (Nat.floor_eq_zero.mpr (by linarith [not_le.mp h0])).symm
-  have hkp : kp = min k ⌊dec p w6⌋₊ := by change min k (M.toNat w6) = _; rw [hM]
-  clear_value kp
-  subst hkp
-  have C := node_branch_holds_core hmm hqr p n d lo k hk hk2 H (Sg := Sg) (c := c) (st := σ)
-    (st' := st') (A := A) (Ppv := Ppv) (Pmv := Pmv) (half := half) hH' s₀ hbufs
-    hlt hcS hge htPp htPm
-    (fun i j t' => (rd _ _ _ (by omega)).trans (hA i j t'))
-    (fun i j t' => (rd _ _ _ (fun h => htPp h.symm)).trans (hPp i j t'))
-    (fun i j t' => (rd _ _ _ (fun h => htPm h.symm)).trans (hPm i j t'))
-    (fun w hw => (rd _ _ _ (by omega)).trans (hSg w hw))
-    ((rd _ _ _ (by omega)).trans htwo) ((rd _ _ _ (by omega)).trans hsq)
-    ((rt _ 0 (by omega)).trans ht0) ((rt _ 1 (by omega)).trans ht1) hwc hwcn h
-  obtain ⟨cB, cfr, csh, cps⟩ := C
-  exact ⟨cB, fun q b i hb hW => (cfr q b i hb hW).trans (rd q b i (by omega)),
-    csh.trans hsh, cps.trans hps⟩
+            H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨t, 0⟩ ⟨t, 1⟩ ⟨c, 4⟩) : Builder P ι ℕ ℕ Unit)
+      (eighBranchWindow H n d lo k kp) fun st st' =>
+        ((∀ w < 4 * (n * n), st.store.read p Sg w = some (I.tape .gaussian (4 * (n * n) * d + w)))
+          → c₂ = (eighTapeMachine I p mmR qrR).ofNat 2 →
+          EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half st'.store) ∧ PosKept st st' := by
+  have hnd := hbufs
+  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.nodup_cons,
+    List.mem_cons, List.not_mem_nil, or_false, not_or] at hnd
+  have hlok : n * lo + n * k ≤ n * n := by rw [← Nat.mul_add]; exact Nat.mul_le_mul_left _ hk
+  have hev : ∀ dd, (eighBlockOff (IExp.const n) dd (IExp.const lo)).eval =
+      2 * (n * n) * dd.eval + 2 * n * lo := by simp [eighBlockOff]
+  have child := fun (code : ℕ) (sg : Cell ℕ ℕ) (σ : K) => spec_eighChildBlock
+    (toNat := fun x => (I.sem.toNat p x).getD 0) (mmR := mmR) (qrR := qrR)
+    (unif := I.sem.tapeUnif p (I.tape .uniform)) (normal := I.sem.tapeNormal p (I.tape .gaussian))
+    (Ma := H.Ma) (mo := eighBlockOff (.const n) (.const d) (.const lo))
+    (mo' := eighBlockOff (.const n) (.const d + 1) (.const lo)) (sg := sg)
+    (sz := ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩)
+    (kd := ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩) md hsem p k code σ A
+    (by rw [hev, hev]; exact blockDisjoint_iff.mpr (.inr (.inr (.inr (.inr (by
+      simp only [matBlock, IExp.eval_add, IExp.eval_const, IExp.eval_ofNat]
+      nlinarith [Nat.mul_le_mul_right k (show k ≤ n by omega)]))))))
+    (blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.1 h.symm)
+    (blockDisjoint_of_fst_ne fun h => hnd.1.2.2.2.2.1 h.symm)
+    (blockDisjoint_of_fst_ne hnd.2.2.2.2.1.1)
+  have htM : t ≠ H.Ma := fun h => htS (by simp [EighArenas.handles, h])
+  have hct : ∀ c' ∈ [(⟨c, 1⟩ : Cell ℕ ℕ), ⟨t, 0⟩, ⟨t, 1⟩, ⟨c, 4⟩],
+      c'.buf ∉ H.handles ++ [Sg, Pp, Pm] := by
+    simp only [List.forall_mem_cons]; exact ⟨hcS, htS, htS, hcS, nofun⟩
+  refine ⟨(executionComposable_forRange _ _).bind ((executionComposable_forRange _ _).bind
+    (executionComposable_forRange _ _)), fun st ⟨hsz, hA, hPp, hPm, hSg, hT, htwo, hsq, ht0, ht1,
+      hN⟩ => ?_⟩
+  have hA' := (hev (.const d)).symm ▸ hA
+  have hWc := fun (hs : ¬ (0 < kp ∧ kp < k)) => hN.mono fun ⟨_, hw, _⟩ => by
+    simp only [eighBranchWindow, if_neg hs, eighChildWindow, WritableBlocks, List.forall_mem_cons,
+      matBlock] at hw
+    exact (⟨by simpa [hev] using hw.1, by simpa [eighSlotOff] using hw.2.1, by simpa [eighSlotOff]
+      using hw.2.2.1⟩ : Writable st.store p H.Ma (eighBlockOff (IExp.const n) (IExp.const d + 1)
+      (IExp.const lo)).eval (k * k * 2) ∧ Writable st.store p H.Sz (eighSlotOff (IExp.const n)
+      (IExp.const d + 1) (IExp.const lo)).eval 1 ∧ Writable st.store p H.Kd
+      (eighSlotOff (IExp.const n) (IExp.const d) (IExp.const lo)).eval 1)
+  have none_ := fun {e : IExp ℕ} {bd : Builder P ι ℕ ℕ Unit} (he : e.eval = 0) =>
+    spec_eighWhen (I := I) (m := md) (e := e) (body := bd) (pre := fun _ => True) (fp := [])
+      (post := fun _ _ => True) fun h => absurd h (by omega)
+  rcases Nat.eq_or_lt_of_le hkpk with rfl | hlt'
+  · exact (spec_eighWhen (fun _ => (child 2 ⟨t, 0⟩ half).spec)).wp_bind
+      ⟨hA', ht0, hWc (by omega)⟩ fun st₁ hm₁ h₁ =>
+      (none_ (by simp; omega)).wp_bind trivial fun st₂ hm₂ h₂ =>
+      (none_ (by simp)).wp_run trivial fun st₃ hm₃ h₃ => by
+        obtain rfl := h₂.1 (by simp; omega)
+        obtain rfl := h₃.1 (by simp)
+        obtain ⟨hv, hs1, hs2, hp⟩ := h₁.2 (by simp)
+        refine ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp [eighBranchWindow, eighChildWindow,
+          hev, eighSlotOff]), fun _ _ => ⟨fun _ => ?_, fun h => by omega, fun _ h => by omega⟩, hp⟩
+        exact ⟨by simpa [hev, eighTapeMachine] using hv (blockDisjoint_of_fst_ne htM),
+          by simpa [eighSlotOff] using hs1, by simpa [eighSlotOff] using hs2⟩
+  rcases Nat.eq_zero_or_pos kp with rfl | hpos
+  · exact (none_ (by simp; omega)).wp_bind trivial fun st₁ hm₁ h₁ => by
+      obtain rfl := h₁.1 (by simp; omega)
+      exact (spec_eighWhen (fun _ => (child 3 ⟨t, 1⟩ _).spec)).wp_bind
+        ⟨hA', ht1, hWc (by omega)⟩ fun st₂ hm₂ h₂ =>
+        (none_ (by simp)).wp_run trivial fun st₃ hm₃ h₃ => by
+          obtain rfl := h₃.1 (by simp)
+          obtain ⟨hv, hs1, hs2, hp⟩ := h₂.2 (by simp)
+          refine ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp [eighBranchWindow, eighChildWindow,
+            hev, eighSlotOff]), fun _ _ => ⟨fun h => by omega, fun _ => ?_, fun h => by omega⟩, hp⟩
+          exact ⟨by simpa [hev, eighTapeMachine] using hv (blockDisjoint_of_fst_ne htM),
+            by simpa [eighSlotOff] using hs1, by simpa [eighSlotOff] using hs2⟩
+  have hs : 0 < kp ∧ kp < k := ⟨hpos, hlt'⟩
+  exact (none_ (by simp; omega)).wp_bind trivial fun st₁ hm₁ h₁ => by
+    obtain rfl := h₁.1 (by simp; omega)
+    exact (none_ (by simp; omega)).wp_bind trivial fun st₂ hm₂ h₂ => by
+      obtain rfl := h₂.1 (by simp; omega)
+      have hsp := spec_eighSplitBlock hmm hqr md hsem p n d lo k hk (.var kp) hpos hlt' H c₂ half
+        ((eighTapeMachine I p mmR qrR).neg half) A Ppv Pmv b hbufs hct
+        fun x hx => hlt x (List.mem_append.mpr ((List.mem_append.mp hx).imp id fun h => by
+          simp only [List.mem_cons, List.not_mem_nil, or_false] at h ⊢; omega))
+      refine (spec_eighWhen (e := .var kp * (.const k - .var kp)) fun _ => hsp.spec).wp_run
+        ⟨hsz, hA, hPp, hPm, hSg, hT, htwo, ht0, ht1, hsq, hN.mono fun ⟨h0, hw, hl⟩ =>
+          ⟨h0, by simpa only [IExp.eval_var, eighBranchWindow, if_pos hs] using hw, hl _, hl _,
+            hl _⟩⟩
+        fun st₃ hm₃ h₃ => ?_
+      obtain ⟨hv, hr, hp⟩ := h₃.2 (by simp; omega)
+      refine ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp [eighBranchWindow, if_pos hs]),
+        fun hT' h2 => ⟨fun h => by omega, fun h => by omega, fun _ _ => ?_⟩, hp⟩
+      exact h2 ▸ ⟨(hv hT').1, (hv hT').2.1, (hv hT').2.2.1, (hv hT').2.2.2, hr⟩
 
 /-- The handles of a split inside a node step are distinct, and the constants are not among the
 arenas and the samples. -/
@@ -409,12 +311,290 @@ theorem nodup_scratch_node {H : EighArenas} {par Su Sg c Pp Pm s₀ : ℕ}
       List.Sublist.append_left (List.singleton_sublist.mpr (by simp)) _
     exact (List.nodup_append.mp hb).2.2 c (hsub'.subset hc) c (by simp) rfl
 
+/-- The handles of a node step's branch: from distinct arenas, `par`, `Su`, `Sg`, `c` below `b`,
+the scratch buffers at `b`, `b + 5`, `b + 6` (of a store of $b + 7$ buffers) give the
+distinctness and bounds `NLAlib.spec_eighNodeBranch` assumes. -/
+private theorem node_branch_handles {H : EighArenas} {par Su Sg c b : ℕ}
+    (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hlt : ∀ x ∈ H.handles ++ [par, Su, Sg, c], x < b) :
+    (H.handles ++ [Sg, b + 5, b + 6]).Nodup ∧ c ∉ H.handles ++ [Sg, b + 5, b + 6] ∧
+      b ∉ H.handles ++ [Sg, b + 5, b + 6] ∧
+      ∀ x ∈ H.handles ++ [Sg, b + 5, b + 6, c, b], x < b + 7 := by
+  obtain ⟨hnd, hcS⟩ := nodup_scratch_node (Pp := b + 5) (Pm := b + 6) hbufs hlt (by omega)
+    (by omega) (by omega)
+  have lH : ∀ x ∈ H.handles, x < b := fun x hx => hlt x (List.mem_append_left _ hx)
+  have lSg : Sg < b := hlt Sg (by simp)
+  have lc : c < b := hlt c (by simp)
+  refine ⟨hnd, fun h => ?_, fun h => ?_, fun x hx => ?_⟩
+  · rcases List.mem_append.mp h with h | h
+    · exact hcS (List.mem_append_left _ h)
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at h
+      rcases h with h | h | h
+      · exact hcS (by simp [h])
+      all_goals omega
+  · rcases List.mem_append.mp h with h | h
+    · have := lH b h; omega
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at h; omega
+  · rcases List.mem_append.mp hx with h | h
+    · have := lH x h; omega
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at h; omega
+
+omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
+/-- The blocks of a node step's branch window lie in the arenas. -/
+theorem fst_mem_handles_of_mem_eighBranchWindow {H : EighArenas} {n d lo k kp : ℕ}
+    {x : ℕ × ℕ × ℕ} (hx : x ∈ eighBranchWindow H n d lo k kp) : x.1 ∈ H.handles := by
+  unfold eighBranchWindow at hx
+  split_ifs at hx
+  · simp only [eighSplitWindow, matBlock, List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp [EighArenas.handles]
+  · simp only [eighChildWindow, matBlock, List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl <;> simp [EighArenas.handles]
+
+omit [AddMonoid C] in
+/-- The outcome of a node step's branch is kept by a store that reads as the old one in every
+buffer below `N`, the arenas among them. -/
+theorem EighBranchHolds.of_read_eq {p : P} {H : EighArenas} {n d lo k kp N : ℕ}
+    {A Ppv Pmv : Matrix (Fin k) (Fin k) (K × K)} {half : K} {s s' : Store P K}
+    (hH : ∀ x ∈ H.handles, x < N) (hr : ∀ q x i, x < N → s'.read q x i = s.read q x i)
+    (h : EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half s) :
+    EighBranchHolds I p mmR qrR H n d lo k kp A Ppv Pmv half s' := by
+  have l := fun x (hx : x ∈ H.handles) q i => hr q x i (hH x hx)
+  have lQa := l H.Qa (by simp [EighArenas.handles])
+  have lMa := l H.Ma (by simp [EighArenas.handles])
+  have lSz := l H.Sz (by simp [EighArenas.handles])
+  have lKd := l H.Kd (by simp [EighArenas.handles])
+  have lKp := l H.Kp (by simp [EighArenas.handles])
+  obtain ⟨B1, B2, B3⟩ := h
+  refine ⟨fun e => ?_, fun e => ?_, fun h0 h1 => ?_⟩
+  · obtain ⟨x1, x2, x3⟩ := B1 e
+    exact ⟨fun i j t => (lMa _ _).trans (x1 i j t), (lSz _ _).trans x2, (lKd _ _).trans x3⟩
+  · obtain ⟨x1, x2, x3⟩ := B2 e
+    exact ⟨fun i j t => (lMa _ _).trans (x1 i j t), (lSz _ _).trans x2, (lKd _ _).trans x3⟩
+  · obtain ⟨x1, x2, x3, x4, x5, x6, x7, x8⟩ := B3 h0 h1
+    exact ⟨fun i j t => (lQa _ _).trans (x1 i j t), fun i j t => (lQa _ _).trans (x2 i j t),
+      fun i j t => (lMa _ _).trans (x3 i j t), fun i j t => (lMa _ _).trans (x4 i j t),
+      (lSz _ _).trans x5, (lSz _ _).trans x6, (lKd _ _).trans x7, (lKp _ _).trans x8⟩
+
+/-- **The body of a node step as a specification**: from a state of $b + 7$ buffers whose top
+seven are the node step's scratch, holding the node's inputs below $b$ (the matrix
+$\mathbf{A}$, the window $R$, $\beta$, the uniform word $v$, the constants $o$, $z_2$, $h$, $m$
+and the stored $\sqrt{1/2}$ in the cells $0$ to $4$ of `c`, the Gaussian words $g$ in `Sg`), the
+set-up, the clamp and the branch at the split index $k_+ = \min(k, \lfloor\mathrm{fl}(t +
+h)\rfloor_+)$ ($t$ the rounded trace of $\mathbf{P}_+$) modify only the branch's window and the
+scratch and keep the tape positions; if the Gaussian words are the tape's and $z_2$ is the
+machine's $2$, the window then holds the outcome of `NLAlib.eighStep`'s branch. In mode `total`
+the run also succeeds, given the standard model on the range `safe` holding everywhere,
+$u(p) < 1$, $z_2$ and $R$ decoding to nonzero values, $\ell_0 + d \ge 1$, the window writable and
+every integer literal. Exact comparisons, literals up to $k$ and conversion at `p`. No printed
+source. -/
+theorem spec_eighNodeBody {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (p : P) (n ℓ₀ F d lo k : ℕ)
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ (∀ p x, safe p x) ∧ u p < 1))
+    (hflag : I.sem.DecidesFlags p)
+    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
+    (hlit : IsExactIntLit dec I.sem k) (htn : IsExactToNat dec I.sem) (hk : lo + k ≤ n)
+    (hk2 : 2 ≤ k) (H : EighArenas) {par Su Sg c b : ℕ}
+    (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hlt : ∀ x ∈ H.handles ++ [par, Su, Sg, c], x < b)
+    (A Bm Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)) (R β v o z₂ h m : K) (g : ℕ → K) (kp : ℕ)
+    (hBm : Bm = newtonSchulzSign (eighTapeMachine I p mmR qrR) β
+      ((eighTapeMachine I p mmR qrR).mul z₂ R) F ((eighTapeMachine I p mmR qrR).hermShift A
+        ((eighTapeMachine I p mmR qrR).mul ((eighTapeMachine I p mmR qrR).div R
+          ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d))) v)))
+    (hPp : Ppm = (eighTapeMachine I p mmR qrR).hermScale
+      ((eighTapeMachine I p mmR qrR).hermShift Bm m) z₂)
+    (hPm : Pmm = (eighTapeMachine I p mmR qrR).hermScale ((eighTapeMachine I p mmR qrR).negMat
+      ((eighTapeMachine I p mmR qrR).hermShift Bm o)) z₂)
+    (hkp : kp = min k ⌊dec p ((eighTapeMachine I p mmR qrR).add
+      ((eighTapeMachine I p mmR qrR).traceRe Ppm) h)⌋₊) :
+    Spec md I (fun st => st.store.size = b + 7 ∧
+        (pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+          st.store.read p H.Lv (2 * d) = some R ∧ st.store.read p par 2 = some β ∧
+          st.store.read p Su lo = some v ∧ st.store.read p c 0 = some o ∧
+          st.store.read p c 1 = some z₂ ∧ st.store.read p c 2 = some h ∧
+          st.store.read p c 3 = some m ∧ st.store.read p c 4 = some (I.sem.sqrtHalf p) ∧
+          ∀ w < 4 * (n * n), st.store.read p Sg w = some (g w)) ∧
+        st.store.shape[b]? = some (p, 7) ∧ st.store.shape[b + 1]? = some (p, 2) ∧
+        (∀ j < 5, st.store.shape[b + 2 + j]? = some (p, 2 * (n * n))) ∧
+        (md = .liberal → ∀ w < 4 * (n * n), g w = I.tape .gaussian (4 * (n * n) * d + w)) ∧
+        md.Needs (dec p z₂ ≠ 0 ∧ dec p R ≠ 0 ∧ 1 ≤ ℓ₀ + d ∧
+          WritableBlocks st.store p (eighBranchWindow H n d lo k kp) ∧
+          ∀ q : ℕ, ∃ z, I.sem.lit p (q : ℚ) = some z))
+      (((do
+        ins (.bin p .div ⟨b, 0⟩ ⟨H.Lv, 2 * .const d⟩ ⟨c, 1⟩)
+        ins (.un p .neg ⟨b, 1⟩ ⟨b, 0⟩)
+        ins (.litIdx p ⟨b, 2⟩ (.const ℓ₀ + .const d))
+        ins (.bin p .div ⟨b, 3⟩ ⟨H.Lv, 2 * .const d⟩ ⟨b, 2⟩)
+        ins (.bin p .mul ⟨b, 4⟩ ⟨b, 3⟩ ⟨Su, .const lo⟩) : Builder P ι ℕ ℕ Unit) >>= fun _ =>
+      (do
+        zhermShift p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo)) ⟨b, 4⟩
+          (b + 2) 0
+        ins (.copy p ⟨b + 1, 0⟩ ⟨par, 2⟩)
+        ins (.bin p .mul ⟨b + 1, 1⟩ ⟨c, 1⟩ ⟨H.Lv, 2 * .const d⟩)
+        eighSignBlock p mm (.const k) (.const F) (b + 2) 0 (b + 1) 0 (b + 3) 0 :
+          Builder P ι ℕ ℕ Unit) >>= fun _ =>
+      (do
+        zhermShift p (.const k) (b + 3) 0 ⟨c, 3⟩ (b + 4) 0
+        zhermScale p (.const k) (b + 4) 0 ⟨c, 1⟩ (b + 5) 0
+        zhermShift p (.const k) (b + 3) 0 ⟨c, 0⟩ (b + 4) 0
+        zneg p (.const k) (.const k) (b + 4) 0 (b + 4) 0
+        zhermScale p (.const k) (b + 4) 0 ⟨c, 1⟩ (b + 6) 0 : Builder P ι ℕ ℕ Unit) >>= fun _ => do
+        ztraceRe p (.const k) (b + 5) 0 ⟨b, 5⟩
+        ins (.bin p .add ⟨b, 6⟩ ⟨b, 5⟩ ⟨c, 2⟩)) >>= fun _ => do
+        eighClampBlock p (.const k) ⟨b, 6⟩ ⟨b, 2⟩ ⟨b, 3⟩
+        Builder.bindIdx p ⟨b, 6⟩ (.const k) fun kp => do
+          eighWhen (1 - (.const k - .var kp))
+            (eighChildBlock p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
+              (eighBlockOff (.const n) (.const d + 1) (.const lo)) ⟨b, 0⟩
+              ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
+              ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 2)
+          eighWhen (1 - .var kp)
+            (eighChildBlock p (.const k) H.Ma (eighBlockOff (.const n) (.const d) (.const lo))
+              (eighBlockOff (.const n) (.const d + 1) (.const lo)) ⟨b, 1⟩
+              ⟨H.Sz, eighSlotOff (.const n) (.const d + 1) (.const lo)⟩
+              ⟨H.Kd, eighSlotOff (.const n) (.const d) (.const lo)⟩ 3)
+          eighWhen (.var kp * (.const k - .var kp))
+            (eighSplitBlock p mm qr (.const n) (.const d) (.const lo) (.const k) (.var kp) Sg
+              (b + 5) (b + 6) H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 1⟩ ⟨b, 0⟩ ⟨b, 1⟩ ⟨c, 4⟩)).run
+      (eighBranchWindow H n d lo k kp ++ [(b, 0, 7), (b + 1, 0, 2), (b + 2, 0, 2 * (n * n)),
+        (b + 3, 0, 2 * (n * n)), (b + 4, 0, 2 * (n * n)), (b + 5, 0, 2 * (n * n)),
+        (b + 6, 0, 2 * (n * n))])
+      fun st st' => ((∀ w < 4 * (n * n), g w = I.tape .gaussian (4 * (n * n) * d + w)) →
+        z₂ = (eighTapeMachine I p mmR qrR).ofNat 2 →
+        EighBranchHolds I p mmR qrR H n d lo k kp A Ppm Pmm
+          ((eighTapeMachine I p mmR qrR).div R z₂) st'.store) ∧ PosKept st st' := by
+  have hl := hlt
+  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
+    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hl
+  obtain ⟨lMa, -, -, -, -, -, -, lLv, lpar, lSu, lSg, lc⟩ := hl
+  obtain ⟨hbS, hcS, htS, hlt'⟩ := node_branch_handles hbufs hlt
+  intro st ⟨hsz, ⟨hA, hR, hβ, hv, hc0, hc1, hc2, hc3, hc4, hSg⟩, ht, hsp, hW, hT, hN⟩
+  have s₁ := spec_eighNodeSetup hmm md p n ℓ₀ F d lo k
+    (hsem.mono fun h => ⟨h.1, h.2.1, h.2.2, by omega⟩) hflag (by omega) (Ma := H.Ma)
+    (Lv := H.Lv) (par := par) (Su := Su) (c := c) (b := b) ⟨lMa, lLv, lpar, lSu, lc⟩ A Bm Ppm
+    Pmm R β v o z₂ h m hBm hPp hPm
+  refine s₁.wp_bind_keep ((readsOnly_pairLayoutHolds p H.Ma _ A).and
+      ((readsOnly_forall_read p Sg (4 * (n * n)) fun w x => x = some (g w)).and
+        (readsOnly_cellsHold [(p, c, 1, some z₂), (p, c, 4, some (I.sem.sqrtHalf p))])))
+    (by fp_omega [lMa, lSg, lc])
+    ⟨hsz, hA, hR, hβ, hv, hc0, hc1, hc2, hc3, ht, hsp, hW, hN.mono fun h => ⟨h.1, h.2.1, h.2.2.1⟩⟩
+    ⟨hA, hSg, ((cellsHold_nil _).cons hc4).cons hc1⟩ fun st₁ hm₁ h₁ hF₁ => ?_
+  have s₂ := spec_eighClampBlock (I := I) md hcmp hlit htn (t := b)
+    ((eighTapeMachine I p mmR qrR).add ((eighTapeMachine I p mmR qrR).traceRe Ppm) h)
+  refine s₂.wp_bind_keep ((((readsOnly_pairLayoutHolds p H.Ma _ A).and
+      ((readsOnly_forall_read p Sg (4 * (n * n)) fun w x => x = some (g w)).and
+        (readsOnly_cellsHold _))).and (readsOnly_cellsHold [(p, b, 0, some
+          ((eighTapeMachine I p mmR qrR).div R z₂)), (p, b, 1, some ((eighTapeMachine I p mmR
+            qrR).neg ((eighTapeMachine I p mmR qrR).div R z₂)))])).and
+      ((readsOnly_pairLayoutHolds p (b + 5) 0 Ppm).and (readsOnly_pairLayoutHolds p (b + 6) 0
+        Pmm))) (by fp_omega [lMa, lSg, lc]) h₁.2.2.1
+    ⟨⟨hF₁, ((cellsHold_nil _).cons h₁.2.1).cons h₁.1⟩, h₁.2.2.2.1, h₁.2.2.2.2.1⟩
+    fun st₂ hm₂ ⟨⟨wc, hwc, hwk⟩, hp₂⟩ ⟨⟨⟨hA₂, hSg₂, hC₂⟩, hT₂⟩, hPp₂, hPm₂⟩ => ?_
+  have hkk : kp ≤ k := hkp ▸ min_le_left _ _
+  refine (RoutineSpec.bindIdx_of_read (m := md) (I := I) (pre := fun s => s = st₂)
+    (x := ⟨b, 6⟩) (bound := .const k) (fun _ e => e ▸ hwc) (hkp ▸ hwk) (Mode.needs_of hkk md)
+    (fun _ => (spec_eighNodeBranch hmm hqr md (hsem.mono fun h => ⟨h.1, h.2.1⟩) p n d lo k hk hk2
+      H (Sg := Sg) (c := c) (t := b) (Pp := b + 5) (Pm := b + 6) A Ppm Pmm z₂
+      ((eighTapeMachine I p mmR qrR).div R z₂) kp hkk (b + 7) hbS hcS htS hlt').spec)
+    ?_).wp_run rfl ?_
+  · rintro _ rfl
+    exact ⟨(Store.size_eq_of_shape_eq (hm₁.trans hm₂).1).trans hsz, hA₂, hPp₂, hPm₂,
+        fun w hw => ⟨_, hSg₂ w hw⟩, fun hl w hw => (hSg₂ w hw).trans (by rw [hT hl w hw]),
+        hC₂.read (.head _), hC₂.read (.tail _ (.head _)), hT₂.read (.head _),
+        hT₂.read (.tail _ (.head _)), hN.mono fun h =>
+          ⟨h.1, h.2.2.2.1.of_modifies (hm₁.trans hm₂), h.2.2.2.2⟩⟩
+  rintro st₃ hm₃ ⟨_, h₃, hp₃⟩
+  refine ⟨?_, fun hg h2 => h₃ (fun w hw => (hSg₂ w hw).trans (by rw [hg w hw])) h2,
+    hp₃.trans (hp₂.trans h₁.2.2.2.2.2)⟩
+  refine ((hm₁.trans (hm₂.of_sub (fp' := [(b, 0, 7)]) (by simp))).trans hm₃).mono fun x hx => ?_
+  rcases List.mem_append.mp hx with hx | hx
+  · refine List.mem_append_right _ ?_
+    simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with (h | h | h | h | h | h | h) | h <;> simp [h]
+  · exact List.mem_append_left _ hx
+
+/-- **The node step as a routine specification**: let the kernels of `I` be the routines `mmR`,
+`qrR` on interleaved pairs, with exact comparisons, literals up to $k$ and conversion at `p`. From
+a state of $b$ buffers holding the node's inputs (the matrix $\mathbf{A}$ at its block of `Ma`, the
+window $R$, $\beta$, the uniform word $v$, the constants $o$, $z_2$, $h$, $m$ and the stored
+$\sqrt{1/2}$ in the cells $0$ to $4$ of `c`, the Gaussian words $g$ in `Sg`; the arenas, `par`,
+`Su`, `Sg`, `c` distinct and below $b$), the run of `NLAlib.eighNodeBlock` modifies only the
+window of its branch at the split index $k_+ = \min(k, \lfloor\mathrm{fl}(t + h)\rfloor_+)$ ($t$
+the rounded trace of the projector $\mathbf{P}_+$ of the sign $\mathbf{B}$) and keeps the tape
+positions; if the Gaussian words are the tape's and $z_2$ is the machine's $2$, the window then
+holds the outcome of `NLAlib.eighStep`'s branch. In mode `total` the run also succeeds, given the
+standard model on the range `safe` holding everywhere, $u(p) < 1$, $z_2$ and $R$ decoding to
+nonzero values, $\ell_0 + d \ge 1$, the window writable and every integer literal. No printed
+source. -/
+theorem spec_eighNodeBlock {mm qr : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
+    (hqr : IsQRKernel I qr pairLayout qrR) (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    {safe : P → ℝ → Prop} (p : P) (n ℓ₀ F d lo k : ℕ)
+    (hsem : md.Needs (IsRelErrSem u dec safe I.sem ∧ (∀ p x, safe p x) ∧ u p < 1))
+    (hflag : I.sem.DecidesFlags p)
+    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
+    (hlit : IsExactIntLit dec I.sem k) (htn : IsExactToNat dec I.sem) (hk : lo + k ≤ n)
+    (hk2 : 2 ≤ k) (H : EighArenas) {par Su Sg c b : ℕ}
+    (hbufs : (H.handles ++ [par, Su, Sg, c]).Nodup)
+    (hlt : ∀ x ∈ H.handles ++ [par, Su, Sg, c], x < b)
+    (A Bm Ppm Pmm : Matrix (Fin k) (Fin k) (K × K)) (R β v o z₂ h m : K) (g : ℕ → K) (kp : ℕ)
+    (hBm : Bm = newtonSchulzSign (eighTapeMachine I p mmR qrR) β
+      ((eighTapeMachine I p mmR qrR).mul z₂ R) F ((eighTapeMachine I p mmR qrR).hermShift A
+        ((eighTapeMachine I p mmR qrR).mul ((eighTapeMachine I p mmR qrR).div R
+          ((eighTapeMachine I p mmR qrR).ofNat (ℓ₀ + d))) v)))
+    (hPp : Ppm = (eighTapeMachine I p mmR qrR).hermScale
+      ((eighTapeMachine I p mmR qrR).hermShift Bm m) z₂)
+    (hPm : Pmm = (eighTapeMachine I p mmR qrR).hermScale ((eighTapeMachine I p mmR qrR).negMat
+      ((eighTapeMachine I p mmR qrR).hermShift Bm o)) z₂)
+    (hkp : kp = min k ⌊dec p ((eighTapeMachine I p mmR qrR).add
+      ((eighTapeMachine I p mmR qrR).traceRe Ppm) h)⌋₊) :
+    RoutineSpec md I (fun st => st.store.size = b ∧
+        (pairLayout.Holds st.store p H.Ma (2 * (n * n) * d + 2 * n * lo) A ∧
+          st.store.read p H.Lv (2 * d) = some R ∧ st.store.read p par 2 = some β ∧
+          st.store.read p Su lo = some v ∧ st.store.read p c 0 = some o ∧
+          st.store.read p c 1 = some z₂ ∧ st.store.read p c 2 = some h ∧
+          st.store.read p c 3 = some m ∧ st.store.read p c 4 = some (I.sem.sqrtHalf p) ∧
+          ∀ w < 4 * (n * n), st.store.read p Sg w = some (g w)) ∧
+        (md = .liberal → ∀ w < 4 * (n * n), g w = I.tape .gaussian (4 * (n * n) * d + w)) ∧
+        md.Needs (dec p z₂ ≠ 0 ∧ dec p R ≠ 0 ∧ 1 ≤ ℓ₀ + d ∧
+          WritableBlocks st.store p (eighBranchWindow H n d lo k kp) ∧
+          ∀ q : ℕ, ∃ z, I.sem.lit p (q : ℚ) = some z))
+      (eighNodeBlock p mm qr (.const n) (.const ℓ₀) (.const F) (.const d) (.const lo) (.const k)
+        par H.Lv Su Sg H.Ma H.Qa H.Sz H.Kd H.Kp ⟨c, 0⟩ ⟨c, 1⟩ ⟨c, 2⟩ ⟨c, 3⟩ ⟨c, 4⟩)
+      (eighBranchWindow H n d lo k kp)
+      fun st st' => ((∀ w < 4 * (n * n), g w = I.tape .gaussian (4 * (n * n) * d + w)) →
+        z₂ = (eighTapeMachine I p mmR qrR).ofNat 2 →
+        EighBranchHolds I p mmR qrR H n d lo k kp A Ppm Pmm
+          ((eighTapeMachine I p mmR qrR).div R z₂) st'.store) ∧ PosKept st st' := by
+  have lH : ∀ x ∈ H.handles, x < b := fun x hx => hlt x (List.mem_append_left _ hx)
+  have hl := hlt
+  simp only [EighArenas.handles, List.cons_append, List.nil_append, List.mem_cons,
+    List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hl
+  obtain ⟨lMa, -, -, -, -, -, -, lLv, lpar, lSu, lSg, lc⟩ := hl
+  -- the inputs, below the scratch, as one bundle
+  have hF := (readsOnly_pairLayoutHolds p H.Ma (2 * (n * n) * d + 2 * n * lo) A).and
+    ((readsOnly_read p H.Lv (2 * d) (some R)).and ((readsOnly_read p par 2 (some β)).and
+    ((readsOnly_read p Su lo (some v)).and ((readsOnly_read p c 0 (some o)).and
+    ((readsOnly_read p c 1 (some z₂)).and ((readsOnly_read p c 2 (some h)).and
+    ((readsOnly_read p c 3 (some m)).and ((readsOnly_read p c 4 (some (I.sem.sqrtHalf p))).and
+    (readsOnly_forall_read p Sg (4 * (n * n)) fun w x => x = some (g w))))))))))
+  refine spec_eighNodeBlock_of_body p mm qr _ _ _ _ _ _ par H.Lv Su Sg H.Ma H.Qa H.Sz H.Kd H.Kp
+    _ _ _ _ _ (fun _ h => h.1) (fun st st' ⟨_, hin, hT, hN⟩ h7 hr hsh h8 h9 h10 _ =>
+      ⟨h7, hF.of_read_eq_below (by fp_omega [lMa, lLv, lpar, lSu, lc, lSg]) hin hsh hr, h8, h9,
+        h10, hT, hN.mono fun h => ⟨h.1, h.2.1, h.2.2.1, fun x hx =>
+          (h.2.2.2.1 x hx).of_getElem?_shape_eq
+            (hsh x.1 (lH _ (fst_mem_handles_of_mem_eighBranchWindow hx))), h.2.2.2.2⟩⟩)
+    (spec_eighNodeBody hmm hqr md p n ℓ₀ F d lo k hsem hflag hcmp hlit htn hk hk2 H hbufs hlt A Bm
+      Ppm Pmm R β v o z₂ h m g kp hBm hPp hPm hkp)
+    fun st s s' _ hp hps _ s'' hr hpos => ⟨fun hg h2 => (hp.1 hg h2).of_read_eq lH hr,
+      hpos.trans (hp.2.trans hps)⟩
+
 omit [AddMonoid C] in
 /-- The node step's outcome from its branch's: if `NLAlib.eighStep` is not a leaf
 ($k \ge 2$, window test false), the branch's outcome at the machine's split index in the store
 `s` gives, in a store `s'` reading as `s` in the buffers below `N` (the arenas among them), the
 outcome of `NLAlib.holds_of_exec_eighNodeBlock`. -/
-private theorem eighStep_holds_of_branch {n F d lo k ℓ₀ N : ℕ} (hk2 : 2 ≤ k) (H : EighArenas)
+theorem eighStep_holds_of_branch {n F d lo k ℓ₀ N : ℕ} (hk2 : 2 ≤ k) (H : EighArenas)
     {p : P} {R R₀ ε β : K} {A : Matrix (Fin k) (Fin k) (K × K)} {s s' : Store P K}
     (hlt : ∀ b ∈ H.handles, b < N)
     (hpop : ∀ {q : P} {b i : ℕ}, b < N → s'.read q b i = s.read q b i)
@@ -530,88 +710,6 @@ theorem EighArenas.Shaped.forall_lt_size {n D : ℕ} {H : EighArenas} {p : P} {p
     Store.lt_size_of_read_eq_some hpar, Store.lt_size_of_read_eq_some hSu,
     Store.lt_size_of_read_eq_some hSg, Store.lt_size_of_read_eq_some hc]
 
-omit [AddMonoid C] [Inhabited K] in
-/-- Reads and shapes below the size of a store are kept by seven pushes. -/
-private theorem read_push_seven {s : Store P K} {x₁ x₂ x₃ x₄ x₅ x₆ x₇ : P × Array (Option K)}
-    {q : P} {b i : ℕ} (hb : b < s.size) :
-    Store.read (((((((s.push x₁).push x₂).push x₃).push x₄).push x₅).push x₆).push x₇) q b i =
-        s.read q b i ∧
-      (Store.shape (((((((s.push x₁).push x₂).push x₃).push x₄).push x₅).push x₆).push
-        x₇))[b]? = s.shape[b]? := by
-  constructor
-  · iterate 7 rw [Store.read_push_of_lt (by first | omega | (simp only [Array.size_push]; omega))]
-  · iterate 7 rw [Store.getElem?_shape_push_of_lt _
-      (by first | omega | (simp only [Array.size_push]; omega))]
-
-omit [AddMonoid C] [Inhabited K] in
-/-- A read past the size of a store after $m$ pops of a store of size $N + m$ is `none`. -/
-private theorem read_pops_eq_none {s : Store P K} {m N : ℕ} (hs : s.size = N + m) {q : P}
-    {b i : ℕ} (hb : N ≤ b) : Store.read (Array.pop^[m] s) q b i = none := by
-  have : ∀ m' : ℕ, (Array.pop^[m'] s).size = s.size - m' := by
-    intro m'
-    induction m' with
-    | zero => rfl
-    | succ m' ih => rw [Function.iterate_succ_apply', Array.size_pop, ih]; omega
-  exact Store.read_eq_none_of_size_le (by rw [this]; omega)
-
-omit [DecidableEq P] [AddMonoid C] [Inhabited K] in
-/-- The arenas shaped for $n$ and $D$ in the store `s` are shaped so in a store `s'` with the
-same shape entries at their handles. -/
-theorem EighArenas.Shaped.of_getElem?_shape_eq {H : EighArenas} {s s' : Store P K} {p : P}
-    {n D : ℕ} (hH : H.Shaped s p n D) (h : ∀ b ∈ H.handles, s'.shape[b]? = s.shape[b]?) :
-    H.Shaped s' p n D := by
-  obtain ⟨hnd, hMa, hUa, hQa, hEa, hSz, hKd, hKp, hLv⟩ := hH
-  simp only [EighArenas.handles, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp,
-    forall_eq] at h
-  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8⟩ := h
-  exact ⟨hnd, l1.trans hMa, l2.trans hUa, l3.trans hQa, l4.trans hEa, l5.trans hSz, l6.trans hKd,
-    l7.trans hKp, l8.trans hLv⟩
-
-omit [Inhabited K] in
-/-- The run of seven scoped allocations, inverted: the body runs at the seven new handles from a
-state `σ` whose store is that of `st` with seven new buffers (reads and shapes below its size
-kept) and whose tape positions are those of `st`; the final store is the body's with the seven
-buffers popped (its shape that of `st` when the body keeps the shape), the tape positions the
-body's. -/
-private theorem exists_of_exec_alloc_seven {p : P} {l₁ l₂ l₃ l₄ l₅ l₆ l₇ : IExp ℕ}
-    {body : ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → Stmt P ι ℕ ℕ} {st st' : St P K C}
-    (h : exec I (.seq (.alloc p l₁ fun a => .alloc p l₂ fun b => .alloc p l₃ fun c =>
-      .alloc p l₄ fun d => .alloc p l₅ fun e => .alloc p l₆ fun f => .alloc p l₇ fun g =>
-        body a b c d e f g) .skip) st = some st') :
-    ∃ σ s : St P K C, σ.store = (((((((st.store.push (p, Array.replicate l₁.eval none)).push
-        (p, Array.replicate l₂.eval none)).push (p, Array.replicate l₃.eval none)).push
-        (p, Array.replicate l₄.eval none)).push (p, Array.replicate l₅.eval none)).push
-        (p, Array.replicate l₆.eval none)).push (p, Array.replicate l₇.eval none)) ∧
-      (∀ {q : P} {b i : ℕ}, b < st.store.size → σ.store.read q b i = st.store.read q b i) ∧
-      σ.pos = st.pos ∧ exec I (body st.store.size (st.store.size + 1) (st.store.size + 1 + 1)
-        (st.store.size + 1 + 1 + 1) (st.store.size + 1 + 1 + 1 + 1)
-        (st.store.size + 1 + 1 + 1 + 1 + 1) (st.store.size + 1 + 1 + 1 + 1 + 1 + 1)) σ =
-        some s ∧
-      (s.store.shape = σ.store.shape → Store.shape (Array.pop^[7] s.store) = st.store.shape) ∧
-      st'.store = Array.pop^[7] s.store ∧ st'.pos = s.pos := by
-  obtain ⟨s₁, h₁, e₁⟩ := exists_exec_of_exec_seq_alloc h
-  obtain ⟨s₂, h₂, e₂⟩ := alloc_inv_node h₁
-  obtain ⟨s₃, h₃, e₃⟩ := alloc_inv_node h₂
-  obtain ⟨s₄, h₄, e₄⟩ := alloc_inv_node h₃
-  obtain ⟨s₅, h₅, e₅⟩ := alloc_inv_node h₄
-  obtain ⟨s₆, h₆, e₆⟩ := alloc_inv_node h₅
-  obtain ⟨s₇, h₇, e₇⟩ := alloc_inv_node h₆
-  clear h h₁ h₂ h₃ h₄ h₅ h₆
-  have hst : st'.store = Array.pop^[7] s₇.store ∧ st'.pos = s₇.pos := by
-    subst e₁ e₂ e₃ e₄ e₅ e₆ e₇; exact ⟨rfl, rfl⟩
-  clear e₁ e₂ e₃ e₄ e₅ e₆ e₇
-  refine name_state_node h₇ ?_
-  clear h₇
-  intro σ hσs hσp h₇
-  simp only at hσs hσp
-  simp only [Array.size_push] at h₇
-  refine ⟨σ, s₇, hσs, fun hb => by rw [hσs]; exact (read_push_seven hb).1, hσp, h₇,
-    fun hsh => ?_, hst.1, hst.2⟩
-  change Store.shape (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop (Array.pop
-    (Array.pop s₇.store))))))) = _
-  simp only [Store.shape_pop, hsh, hσs]
-  simp [Store.shape]
-
 /-- The node step computes `NLAlib.eighStep`, with the window it writes: let the kernels of `I`
 be the routines `mmR`, `qrR` on interleaved pairs and the semantics decide flags at `p`, with exact
 comparisons, literals up to $n + 2$ and conversion; let $M$ be the machine of the interpretation
@@ -682,55 +780,33 @@ theorem holds_of_exec_eighNodeBlock_frame {mm qr : ι} (hmm : IsMatMulKernel I m
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M
   obtain ⟨-, o, -, hl1, -, -⟩ := id hflag
+  obtain ⟨z₂, hz₂, -⟩ := hlit p 2 (by omega)
+  have hM1 : some (eighTapeMachine I p mmR qrR).one = some o := by
+    change some ((I.sem.lit p 1).getD default) = _; rw [hl1, Option.getD_some]
+  have hM2 : some ((eighTapeMachine I p mmR qrR).ofNat 2) = some z₂ := by
+    change some ((I.sem.lit p ((2 : ℕ) : ℚ)).getD default) = _; rw [hz₂, Option.getD_some]
   have hlt := hH.forall_lt_size (hSg 0 (by have : 0 < n := (by omega); positivity)) hpar
     ⟨lo, hSu⟩ (hc.1.trans hl1)
-  have hl : ∀ {b}, b ∈ H.handles ++ [par, Su, Sg, c] → b < st.store.size := hlt _
-  have hlH : ∀ b ∈ H.handles, b < st.store.size := fun b hb => hl (List.mem_append_left _ hb)
-  have lc : c < st.store.size := hl (by simp)
-  have lSg : Sg < st.store.size := hl (by simp)
-  obtain ⟨-, hcS⟩ := nodup_scratch_node (Pp := st.store.size + 5) (Pm := st.store.size + 6)
-    hbufs hlt (by omega) (by omega) (by omega)
-  obtain ⟨σ₇, s₇, hσs, hrd, hσp, h₇, hshape, hst₁, hst₂⟩ := exists_of_exec_alloc_seven h
-  rw [hst₁, hst₂]
-  have hsz₇ : σ₇.store.size = st.store.size + 7 := by rw [hσs]; simp
-  -- the set-up and the branch
-  obtain ⟨σ, hσ, hlo, hsh, hps, ht0, ht1, ht6, hPp, hPm, htwoM⟩ := node_setup_holds hmm p hflag n
-    ℓ₀ F d lo k hk H (par := par) (Su := Su) (c := c) (A := A) (R := R) (β := β) st.store.size
-    (fun b hb => hl (by
-      simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hb ⊢; tauto))
-    _ _ _ _ _ _ _ (by simp; omega) (by simp [List.nodup_cons]; omega)
-    (by rw [hσs]; simp [Store.shape, Array.getElem_push])
-    (fun i j t => (hrd (hlH _ (by simp [EighArenas.handles]))).trans (hA i j t))
-    ((hrd (hlH _ (by simp [EighArenas.handles]))).trans hR) ((hrd (hl (by simp))).trans hpar)
-    ((hrd (hl (by simp))).trans hSu)
-    ⟨(hrd lc).trans hc.1, (hrd lc).trans hc.2.1, (hrd lc).trans hc.2.2.1,
-      (hrd lc).trans hc.2.2.2.1⟩ _ (h := h₇)
-  have hH' : H.Shaped σ.store p n D := hH.of_getElem?_shape_eq fun b hb => by
-    rw [hsh, hσs]; exact (read_push_seven (q := p) (i := 0) (hlH b hb)).2
-  obtain ⟨hB, Bfr, Bsh, Bps⟩ := node_branch_holds hmm hqr p hcmp n d lo k
-    (fun q m hm => hlit q m (by omega)) htn hk hk2 H (Sg := Sg) (c := c) (st := σ) (st' := s₇)
-    (A := A) hH' st.store.size
-    (nodup_scratch_node hbufs hlt (by omega) (by omega) (by omega)).1
-    (fun b hb => hl (by
-      simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hb ⊢; tauto))
-    hcS ⟨by omega, by omega, by omega⟩ (fun h => by omega) (fun h => by omega)
-    (fun i j t => (hlo _ _ _ (hlH _ (by simp [EighArenas.handles]))).trans
-      ((hrd (hlH _ (by simp [EighArenas.handles]))).trans (hA i j t))) hPp hPm
-    (fun w hw => (hlo _ _ _ lSg).trans ((hrd lSg).trans (hSg w hw)))
-    ((hlo _ _ _ lc).trans htwoM) ((hlo _ _ _ lc).trans ((hrd lc).trans hc.2.2.2.2)) ht0 ht1 ht6
-    (h := hσ)
-  have hs7 : s₇.store.size = st.store.size + 7 := by
-    rw [Store.size_eq_of_shape_eq Bsh, Store.size_eq_of_shape_eq hsh, hsz₇]
-  have hpop : ∀ {q : P} {b i : ℕ}, b < st.store.size →
-      Store.read (Array.pop^[7] s₇.store) q b i = s₇.store.read q b i :=
-    fun hb => read_pops_node 7 (by omega)
-  refine ⟨eighStep_holds_of_branch hk2 H hlH hpop hRtest hB, fun q b i hW => ?_, ?_,
-    Bps.trans (hps.trans hσp)⟩
-  · by_cases hb : b < st.store.size
-    · exact (hpop hb).trans ((Bfr q b i hb (not_eighNodeWindow_of_eighStep hk2 hRtest hW)).trans
-        ((hlo q b i hb).trans (hrd hb)))
-    · exact (read_pops_eq_none hs7 (by omega)).trans (Store.read_eq_none_of_size_le (by omega)).symm
-  · exact hshape (Bsh.trans hsh)
+  obtain ⟨hm, hv, hp⟩ := (spec_eighNodeBlock (u := fun _ => 0) (safe := fun _ _ => True) hmm hqr
+    .liberal p n ℓ₀ F d lo k trivial hflag hcmp (fun q m hm => hlit q m (by omega)) htn hk hk2 H
+    hbufs hlt A _ _ _ R β _ _ _ _ _ _ _ rfl rfl rfl rfl).spec.holds_of_exec
+    ⟨rfl, ⟨hA, hR, hpar, hSu, hc.1.trans (hl1.trans hM1.symm), hc.2.1.trans (hz₂.trans hM2.symm),
+      hc.2.2.1, hc.2.2.2.1, hc.2.2.2.2, hSg⟩, fun _ _ _ => rfl, trivial⟩ h
+  have hM : ∀ w, (eighTapeMachine I p mmR qrR).toNat w = ⌊dec p w⌋₊ := fun w => by
+    change (I.sem.toNat p w).getD 0 = _
+    rw [htn p w]
+    split_ifs with h0
+    · rfl
+    · exact (Nat.floor_eq_zero.mpr (by linarith [not_le.mp h0])).symm
+  have hB := hv (fun _ _ => rfl) rfl
+  rw [← hM] at hm hB
+  refine ⟨eighStep_holds_of_branch hk2 H (fun x hx => hlt x (List.mem_append_left _ hx))
+    (fun _ => rfl) hRtest hB, fun q b i hW => hm.2 q b i ?_, hm.1, hp⟩
+  have hN := not_eighNodeWindow_of_eighStep hk2 hRtest hW
+  unfold eighBranchWindow
+  split_ifs at hN ⊢ with h1 h2 h2
+  exacts [blockDisjoint_eighSplitWindow hk h2.2 hN, absurd h1 h2, absurd h2 h1,
+    blockDisjoint_eighChildWindow hk hN]
 
 /-- The node step computes `NLAlib.eighStep`: let the kernels of `I` be the routines `mmR`,
 `qrR` on interleaved pairs and the semantics decide flags at `p`; let $M$ be the machine of the

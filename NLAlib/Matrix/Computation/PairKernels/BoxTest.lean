@@ -18,6 +18,7 @@ $[lo, hi]$ of the machine, and the run succeeds when its comparisons do.
 
 * `NLAlib.Computation.read_of_exec_zboxTest`: what a successful run computes.
 * `NLAlib.Computation.exists_exec_zboxTest`: when the run succeeds.
+* `NLAlib.Computation.spec_zboxTest`: the test as a routine specification.
 -/
 
 @[expose] public section
@@ -254,5 +255,39 @@ theorem exists_exec_zboxTest (p : P) (m n : ℕ) {X : ℕ} {xo : IExp ℕ} {lo h
     · exact ⟨_, exec_skip I _, hs⟩
     · exact hR _ 1 z₁ hs (by exact_mod_cast hz₁)
   · exact hR _ 1 z₁ hs (by exact_mod_cast hz₁)
+
+/-- **The max-modulus test as a routine specification**: from a state holding the $m \times n$
+matrix $\mathbf{A}$ at `xo` of `X` and the values $\ell$, $h$ in the cells `lo`, `hi`, with the
+flag cell outside the block and distinct from `lo` and `hi`, the run of
+`NLAlib.Computation.zboxTest` modifies only the flag cell, which then holds the machine's zero if
+every part of every entry lies in $[\ell, h]$ by the machine's comparisons and its one
+otherwise, and keeps the tape positions; in mode `total` it also succeeds, given the standard
+model and the flag cell writable. No printed source. -/
+theorem spec_zboxTest (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (m n : ℕ) {X : ℕ}
+    {xo : IExp ℕ} {lo hi f : Cell ℕ ℕ} (ℓ h : K) (A : Matrix (Fin m) (Fin n) (K × K))
+    (hfX : blockDisjoint (f.buf, f.idx.eval, 1) (matBlock X xo.eval m n 2) = true)
+    (hflo : blockDisjoint (f.buf, f.idx.eval, 1) (lo.buf, lo.idx.eval, 1) = true)
+    (hfhi : blockDisjoint (f.buf, f.idx.eval, 1) (hi.buf, hi.idx.eval, 1) = true) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        st.store.read p lo.buf lo.idx.eval = some ℓ ∧ st.store.read p hi.buf hi.idx.eval = some h ∧
+        md.Needs (Writable st.store p f.buf f.idx.eval 1))
+      (zboxTest (ι := ι) p (.const m) (.const n) X xo lo hi f) [(f.buf, f.idx.eval, 1)]
+      fun st st' => st'.store.read p f.buf f.idx.eval = some
+          (if (List.finRange m).all (fun i => (List.finRange n).all fun j =>
+            M.le ℓ (A i j).1 && M.le (A i j).1 h && M.le ℓ (A i j).2 && M.le (A i j).2 h) then
+          M.zero else M.one) ∧ PosKept st st' := by
+  intro M
+  have e : m * n * 2 = 2 * (m * n) := by ring
+  simp only [matBlock, e] at hfX
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hl, hh, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => ?_) fun st st' ⟨hA, hl, hh, _⟩ hr => ?_⟩
+  · obtain ⟨len, hlen, hi⟩ := hW 0 Nat.one_pos
+    exact exists_exec_zboxTest p m n hA hl hh hfX hflo hfhi hsem
+      (Store.exists_write_eq_some_of_getElem?_shape default hlen (by omega))
+  · obtain ⟨hf, hfr, hsh, hpos⟩ := read_of_exec_zboxTest (toNat := toNat) (mmR := mmR)
+      (qrR := qrR) (unif := unif) (normal := normal) p m n hA hl hh hfX hflo hfhi hr
+    exact ⟨⟨hsh, fun q b i hb => hfr q b i (hb _ List.mem_cons_self)⟩, hf, hpos⟩
 
 end NLAlib.Computation

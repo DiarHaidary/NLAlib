@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Matrix.Perturbation.OrthErr
+public import NLAlib.Computation.RoutineSpec
 
 /-!
 # Orthogonalization routines: the execution certificate
@@ -25,6 +26,8 @@ with full reorthogonalization consumes only its parameters. Design:
 
 * `NLAlib.Computation.IsOrthRoutine.mono`: larger parameters.
 * `NLAlib.Computation.IsOrthRoutine.toBlockRoutine`: the footprint of the certificate.
+* `NLAlib.Computation.IsOrthRoutine.routineSpec`: the certificate as a specification of the
+  program logic (`NLAlib/Computation/ProgramLogic.lean`).
 -/
 
 @[expose] public section
@@ -91,5 +94,30 @@ theorem IsOrthRoutine.toBlockRoutine {I : Interp P ι K C} {dec : P → K → �
       (hw _ List.mem_cons_self) (hw (hb, ho.eval, j) (by simp)) hbw hbV hwV
     exact ⟨out, [Array.ofFn W, Array.ofFn Hw], hr,
       Store.writeBlocks_pair_eq_some_iff.mpr ⟨by simp, by simp, mid, h₁, h₂⟩⟩
+
+/-- **A certified orthogonalization routine as a specification**, for each stored basis
+$\mathbf{V}$ and vector $\mathbf{w}$, with distinct buffers: it modifies only the reduced vector
+and coefficient blocks, which then decode to values meeting `NLAlib.IsOrthErr`. -/
+theorem IsOrthRoutine.routineSpec {I : Interp P ι K C} {dec : P → K → ℝ} {tag : P} {N j : ℕ}
+    {η₀ ε₁ ε₂ ε₃ : ℝ} {pre : Store P K → Prop} {Vb wb hb : ℕ} {wo ho : IExp ℕ}
+    {r : Builder P ι ℕ ℕ Unit}
+    (h : IsOrthRoutine I dec tag N j η₀ ε₁ ε₂ ε₃ pre Vb wb hb wo ho r) (hbw : hb ≠ wb)
+    (hbV : hb ≠ Vb) (hwV : wb ≠ Vb) (V : Matrix (Fin N) (Fin j) ℝ) (w : Fin N → ℝ) :
+    RoutineSpec .total I (fun st => pre st.store ∧ HoldsDecoded st.store dec tag Vb 0 V ∧
+        ReadsDecoded st.store dec tag wb wo.eval w ∧ Writable st.store tag wb wo.eval N ∧
+        Writable st.store tag hb ho.eval j) r [(wb, wo.eval, N), (hb, ho.eval, j)]
+      fun _ st' => ∃ (W : Fin N → ℝ) (H : Fin j → ℝ), ReadsDecoded st'.store dec tag wb wo.eval W ∧
+        ReadsDecoded st'.store dec tag hb ho.eval H ∧ IsOrthErr η₀ ε₁ ε₂ ε₃ V w H W := by
+  refine ⟨h.composable, fun st ⟨hp, hV, hw, hwl, hhl⟩ => ?_⟩
+  obtain ⟨out, W, Hw, mid, hr, hm, hf, he⟩ := h.run st V w hp hV hw hwl hhl hbw hbV hwV
+  have hmod := (Modifies.of_writeBlock hm).trans (Modifies.of_writeBlock hf)
+  simp only [Array.size_ofFn, List.singleton_append] at hmod
+  refine ⟨out, hr, hmod, fun i => dec tag (W i), fun i => dec tag (Hw i), fun i => ⟨W i, ?_, rfl⟩,
+    fun i => ⟨Hw i, ?_, rfl⟩, he⟩
+  · rw [Store.read_of_writeBlock_eq_some_of_ne hf (Or.inl hbw.symm),
+      Store.read_of_writeBlock_eq_some_of_lt hm (by rw [Array.size_ofFn]; exact i.2)]
+    simp
+  · rw [Store.read_of_writeBlock_eq_some_of_lt hf (by rw [Array.size_ofFn]; exact i.2)]
+    simp
 
 end NLAlib.Computation

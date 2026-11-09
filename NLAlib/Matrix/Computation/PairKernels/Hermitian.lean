@@ -21,6 +21,10 @@ machine's `hermShift` and `hermScale`, and the run succeeds when its operations 
   a successful run computes.
 * `NLAlib.Computation.exists_exec_zhermShift`, `NLAlib.Computation.exists_exec_zhermScale`: when the
   run succeeds.
+* `NLAlib.Computation.spec_zmirror_frame`, `NLAlib.Computation.spec_zhermShift_frame`: the blocks a
+  run modifies, in every case.
+* `NLAlib.Computation.spec_zhermShift`, `NLAlib.Computation.spec_zhermScale`: the shift and the
+  scaling as routine specifications of the program logic.
 -/
 
 @[expose] public section
@@ -663,5 +667,251 @@ theorem exists_exec_zhermScale (p : P) (n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ} 
     (fun i j hij => ?_) hsem ⟨len, hσ₂.1 ▸ hYsh, hlen⟩
   obtain ⟨⟨v, hv⟩, ⟨w, hw⟩⟩ := hup₂ i j ⟨hij, j.2⟩
   simp only [hv, hw, Option.getD_some, and_self]
+
+/-! ### Frames and specifications -/
+
+omit [Inhabited K] in
+/-- `zmirror` modifies only its block and keeps the tape positions. -/
+theorem spec_zmirror_frame (p : P) (n : ℕ) (Y : ℕ) (yo : IExp ℕ) :
+    Spec .liberal I (fun _ => True) (zmirror (ι := ι) p (.const n) Y yo).run
+      [matBlock Y yo.eval n n 2] fun st st' => PosKept st st' := by
+  have hc : ∀ a b : ℕ, a < n → b < n → ∀ t < 2, yo.eval ≤ yo.eval + (2 * (a + n * b) + t) ∧
+      yo.eval + (2 * (a + n * b) + t) < yo.eval + n * n * 2 := fun a b ha hb t ht =>
+    ⟨by omega, by nlinarith⟩
+  refine Spec.seq_frame (Spec.named _ _ (Spec.seq_frame (Spec.loop_frame fun j hj =>
+    Spec.seq_frame (Spec.loop_frame fun i hi => Spec.seq_frame
+      (Spec.frame_of_mem spec_copy_frame ?_ List.mem_cons_self)
+      (Spec.seq_frame (Spec.frame_of_mem spec_un_frame ?_ List.mem_cons_self) spec_skip_frame))
+      spec_skip_frame) spec_skip_frame)) spec_skip_frame
+  all_goals simp only [IExp.eval_const, IExp.eval_var] at hi hj
+  all_goals simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+    IExp.eval_ofNat]
+  · simpa using hc j i hj (by omega) 0 (by omega)
+  · simpa [Nat.add_assoc] using hc j i hj (by omega) 1 (by omega)
+
+omit [Inhabited K] in
+/-- A write in a block of a buffer of a fixed shape: it succeeds, keeps the shape and every cell
+outside the block, leaves the value at the written cell and keeps every initialised cell
+initialised. -/
+theorem Store.exists_write_eq_some_of_lt_of_frame {s₀ s : Store P K} {p : P} {Y yo len k N : ℕ}
+    (hY : s₀.shape[Y]? = some (p, len)) (hlen : yo + N ≤ len) (hk : k < N)
+    (hsh : s.shape = s₀.shape)
+    (hfr : ∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s.read q b i = s₀.read q b i)
+    (v : K) :
+    ∃ s', s.write p Y (yo + k) v = some s' ∧ s'.shape = s₀.shape ∧
+      (∀ q b i, blockDisjoint (b, i, 1) (Y, yo, N) = true → s'.read q b i = s₀.read q b i) ∧
+      s'.read p Y (yo + k) = some v ∧
+      (∀ b i, (∃ w, s.read p b i = some w) → ∃ w, s'.read p b i = some w) := by
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_getElem?_shape v (by rw [hsh]; exact hY)
+    (show yo + k < len by omega)
+  refine ⟨s', hs', (Store.shape_of_write_eq_some hs').trans hsh, fun q b i hb => ?_,
+    Store.read_of_write_eq_some hs', fun b i ⟨w, hw⟩ => ?_⟩
+  · refine (Store.read_of_write_eq_some_of_ne hs' ?_).trans (hfr q b i hb)
+    simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hb
+    by_cases hbY : b = Y
+    · exact Or.inr (by omega)
+    · exact Or.inl hbY
+  · by_cases hbi : b = Y ∧ i = yo + k
+    · obtain ⟨rfl, rfl⟩ := hbi
+      exact ⟨v, Store.read_of_write_eq_some hs'⟩
+    · exact ⟨w, (Store.read_of_write_eq_some_of_ne hs' (not_and_or.mp hbi)).trans hw⟩
+
+/-- `zmirror` succeeds under the standard model when the output block fits and every word of its
+strict upper triangle holds a value. -/
+private theorem exists_exec_zmirror_of_upper {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ}
+    {σ : St P K C} (hY : ∃ len, σ.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len)
+    (hup : ∀ i j, i < j → j < n →
+      (∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+        ∃ v, σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v) :
+    ∃ st', exec I (zmirror (ι := ι) p (.const n) Y yo).run σ = some st' := by
+  refine exists_exec_zmirror p n (B := fun i j =>
+    ((σ.store.read p Y (yo.eval + 2 * (i + n * j))).getD default,
+      (σ.store.read p Y (yo.eval + 2 * (i + n * j) + 1)).getD default))
+    (fun i j hij => ?_) hsem hY
+  obtain ⟨⟨v, hv⟩, ⟨w, hw'⟩⟩ := hup i j hij j.2
+  simp only [hv, hw', Option.getD_some, and_self]
+
+/-- `zhermShift` succeeds under the standard model when the output block fits, wherever the
+cell of the shift is (it may lie in the output block). -/
+private theorem exists_exec_zhermShift_of_read {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {c : Cell ℕ ℕ} {st : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hc : ∃ cv, st.store.read p c.buf c.idx.eval = some cv)
+    (hXY : blockDisjoint (Y, yo.eval, 2 * (n * n)) (X, xo.eval, 2 * (n * n)) = true)
+    (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * n) ≤ len) :
+    ∃ st', exec I (zhermShift (ι := ι) p (.const n) X xo c Y yo).run st = some st' := by
+  obtain ⟨len, hYsh, hlen⟩ := hY
+  have hn (i j : ℕ) (hi : i < n) (hj : j < n) : 2 * (i + n * j) + 1 < 2 * (n * n) := by nlinarith
+  let G : Store P K → (ℕ → ℕ → Prop) → Prop := fun s S => s.shape = st.store.shape ∧
+    (∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * n)) = true →
+      s.read q b i = st.store.read q b i) ∧
+    (∀ b i, (∃ w, st.store.read p b i = some w) → ∃ w, s.read p b i = some w) ∧
+    ∀ i j, S i j → (∃ v, s.read p Y (yo.eval + 2 * (i + n * j)) = some v) ∧
+      ∃ v, s.read p Y (yo.eval + 2 * (i + n * j) + 1) = some v
+  have hXr : ∀ s S, G s S → ∀ i j, i < n → j < n → ∀ t < 2,
+      ∃ a, s.read p X (xo.eval + (2 * (i + n * j) + t)) = some a := by
+    intro s S hG i j hi hj t ht
+    have := hn i j hi hj
+    rw [hG.2.1 _ _ _ ?_]
+    · exact ⟨_, hA ⟨i, hi⟩ ⟨j, hj⟩ ⟨t, ht⟩⟩
+    · simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hXY ⊢
+      omega
+  -- one write in the block keeps `G`
+  have hw : ∀ s S, G s S → ∀ k < 2 * (n * n), ∀ v : K, ∃ s', s.write p Y (yo.eval + k) v =
+      some s' ∧ G s' S ∧ s'.read p Y (yo.eval + k) = some v ∧
+      ∀ b i, (∃ w, s.read p b i = some w) → ∃ w, s'.read p b i = some w := by
+    intro s S hG k hk v
+    obtain ⟨s', hs', hsh', hfr', hrd', hmo'⟩ :=
+      Store.exists_write_eq_some_of_lt_of_frame hYsh hlen hk hG.1 hG.2.1 v
+    exact ⟨s', hs', ⟨hsh', hfr', fun b i h => hmo' b i (hG.2.2.1 b i h), fun i j h =>
+      ⟨hmo' _ _ (hG.2.2.2 i j h).1, hmo' _ _ (hG.2.2.2 i j h).2⟩⟩, hrd', hmo'⟩
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) _))) .skip) st =
+    some st'
+  rw [exec_seq_skip, exec_named, exec_seq]
+  -- the strict upper triangle
+  refine Option.exists_bind_eq_some_of_exists (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
+    ((exists_exec_loop_eq_some_of_forall I
+    (fun j σ => G σ.store fun i' j' => i' < j' ∧ j' < j)
+      ⟨rfl, fun _ _ _ _ => rfl, fun _ _ h => h, fun _ _ h => absurd h.2 (Nat.not_lt_zero _)⟩
+      (fun j hj σ hσ => by
+        have hj : j < n := hj
+        change ∃ st', exec I (.seq (.loop _ _) .skip) σ = some st' ∧ _
+        rw [exec_seq_skip]
+        refine (exists_exec_loop_eq_some_of_forall I
+          (fun i σ' => G σ'.store fun i' j' => i' < j' ∧ (j' < j ∨ j' = j ∧ i' < i))
+          ⟨hσ.1, hσ.2.1, hσ.2.2.1, fun i' j' h => hσ.2.2.2 i' j' ⟨h.1, by omega⟩⟩
+          (fun i hi σ' hσ' => by
+            have hi : i < j := hi
+            have hk := hn i j (by omega) hj
+            obtain ⟨a, ha⟩ := hXr _ _ hσ' i j (by omega) hj 0 (by norm_num)
+            obtain ⟨s₁, hs₁, hG₁, hr₁, hm₁⟩ := hw _ _ hσ' (2 * (i + n * j)) (by omega) a
+            obtain ⟨a'', ha''⟩ := hXr _ _ hG₁ i j (by omega) hj 1 (by norm_num)
+            change ∃ st', exec I (.seq (.instr (.copy _ _ _)) (.seq (.instr (.copy _ _ _))
+              .skip)) σ' = some st' ∧ _
+            rw [exec_seq_instr_copy I (by exact ha) (by exact hs₁)]
+            obtain ⟨s₂', hs₂', hG₂', hr₂', hm₂'⟩ := hw _ _ hG₁ (2 * (i + n * j) + 1) hk a''
+            rw [exec_seq_instr_copy I (by exact ha'') (by exact hs₂'), exec_skip]
+            refine ⟨_, rfl, hG₂'.1, hG₂'.2.1, hG₂'.2.2.1, fun i' j' h => ?_⟩
+            by_cases hij : i' = i ∧ j' = j
+            · obtain ⟨rfl, rfl⟩ := hij
+              exact ⟨hm₂' _ _ ⟨_, hr₁⟩, ⟨_, hr₂'⟩⟩
+            · have := hσ'.2.2.2 i' j' ⟨h.1, by omega⟩
+              exact ⟨hm₂' _ _ (hm₁ _ _ this.1), hm₂' _ _ (hm₁ _ _ this.2)⟩)).imp
+          fun σ' ⟨h', hG'⟩ => ⟨h', hG'.1, hG'.2.1, hG'.2.2.1, fun i' j' h =>
+            hG'.2.2.2 i' j' ⟨h.1, by simp only [IExp.eval_var]; omega⟩⟩))) fun σ₁ hσ₁ => ?_
+  rw [exec_seq]
+  -- the diagonal
+  refine Option.exists_bind_eq_some_of_exists (fun σ => G σ.store fun i' j' => i' < j' ∧ j' < n)
+    (exists_exec_loop_eq_some_of_forall I
+    (fun _ σ => G σ.store fun i' j' => i' < j' ∧ j' < n) hσ₁ (fun i hi σ hσ => by
+        have hi : i < n := hi
+        have hk := hn i i hi hi
+        obtain ⟨a, ha⟩ := hXr _ _ hσ i i hi hi 0 (by norm_num)
+        obtain ⟨cv, hcv⟩ := hσ.2.2.1 _ _ hc
+        obtain ⟨v, hv⟩ := hsem.bin_ok p .sub a cv trivial nofun trivial
+        obtain ⟨s₁, hs₁, hG₁, -, -⟩ := hw _ _ hσ (2 * (i + n * i)) (by omega) v
+        obtain ⟨z, hz⟩ := hsem.lit_ok p 0 trivial
+        obtain ⟨s₂, hs₂, hG₂, -, -⟩ := hw _ _ hG₁ (2 * (i + n * i) + 1) hk z
+        change ∃ st', exec I (.seq (.instr (.bin _ _ _ _ _)) (.seq (.instr (.lit _ _ _))
+          .skip)) σ = some st' ∧ _
+        rw [exec_seq_instr_bin I (by exact ha) hcv hv (by exact hs₁),
+          exec_seq_instr_lit I hz (by exact hs₂), exec_skip]
+        exact ⟨_, rfl, hG₂⟩)) fun σ₂ hσ₂ => ?_
+  -- the mirror
+  exact exists_exec_zmirror_of_upper hsem p n ⟨len, by rw [hσ₂.1]; exact hYsh, hlen⟩
+    fun i j hij hj => hσ₂.2.2.2 i j ⟨hij, hj⟩
+
+omit [Inhabited K] in
+/-- `zhermShift` modifies only its output block and keeps the tape positions, wherever its cell
+is. -/
+theorem spec_zhermShift_frame (p : P) (n : ℕ) (X : ℕ) (xo : IExp ℕ) (c : Cell ℕ ℕ) (Y : ℕ)
+    (yo : IExp ℕ) :
+    Spec .liberal I (fun _ => True) (zhermShift (ι := ι) p (.const n) X xo c Y yo).run
+      [matBlock Y yo.eval n n 2] fun st st' => PosKept st st' := by
+  have hc : ∀ a b : ℕ, a < n → b < n → ∀ t < 2, yo.eval ≤ yo.eval + (2 * (a + n * b) + t) ∧
+      yo.eval + (2 * (a + n * b) + t) < yo.eval + n * n * 2 := fun a b ha hb t ht =>
+    ⟨by omega, by nlinarith⟩
+  refine Spec.seq_frame (Spec.named _ _ (Spec.seq_frame (Spec.loop_frame fun j hj =>
+    Spec.seq_frame (Spec.loop_frame fun i hi => Spec.seq_frame
+      (Spec.frame_of_mem spec_copy_frame ?_ List.mem_cons_self)
+      (Spec.seq_frame (Spec.frame_of_mem spec_copy_frame ?_ List.mem_cons_self) spec_skip_frame))
+      spec_skip_frame) (Spec.seq_frame (Spec.loop_frame fun i hi => Spec.seq_frame
+      (Spec.frame_of_mem spec_bin_frame ?_ List.mem_cons_self)
+      (Spec.seq_frame (Spec.frame_of_mem spec_lit_frame ?_ List.mem_cons_self) spec_skip_frame))
+      (spec_zmirror_frame p n Y yo)))) spec_skip_frame
+  all_goals simp only [IExp.eval_const, IExp.eval_var] at hi
+  all_goals try simp only [IExp.eval_const] at hj
+  all_goals simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+    IExp.eval_ofNat]
+  · simpa using hc i j (by omega) hj 0 (by omega)
+  · simpa [Nat.add_assoc] using hc i j (by omega) hj 1 (by omega)
+  · simpa using hc i i hi hi 0 (by omega)
+  · simpa [Nat.add_assoc] using hc i i hi hi 1 (by omega)
+
+/-- **The Hermitian shift as a routine specification**: from a state holding $\mathbf{A}$ at `xo`
+of `X` and the value $c$ in the cell `c`, the run of `NLAlib.Computation.zhermShift` modifies only
+the output block at `yo` of `Y` and keeps the tape positions; if the cell lies outside the output
+block, that block then holds `M.hermShift A cv`; in mode `total` the run also succeeds, given the
+standard model and the output block writable. The run succeeds wherever the cell is, so the
+cell's disjointness from the output block is a correctness-only hypothesis: it guards the value
+clause of the postcondition, not the precondition. No printed source. -/
+theorem spec_zhermShift (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {c : Cell ℕ ℕ} (cv : K) (A : Matrix (Fin n) (Fin n) (K × K))
+    (hXY : blockDisjoint (matBlock Y yo.eval n n 2) (matBlock X xo.eval n n 2) = true) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        st.store.read p c.buf c.idx.eval = some cv ∧
+        md.Needs (Writable st.store p Y yo.eval (n * n * 2)))
+      (zhermShift (ι := ι) p (.const n) X xo c Y yo) [matBlock Y yo.eval n n 2]
+      fun st st' => (blockDisjoint (c.buf, c.idx.eval, 1) (matBlock Y yo.eval n n 2) = true →
+        pairLayout.Holds st'.store p Y yo.eval (M.hermShift A cv)) ∧ PosKept st st' := by
+  intro M
+  have e : n * n * 2 = 2 * (n * n) := by ring
+  simp only [matBlock, e] at hXY
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hc, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => ?_) fun st st' ⟨hA, hc, _⟩ h =>
+      ⟨(spec_zhermShift_frame p n X xo c Y yo st trivial st' h).1, fun hcY => ?_,
+        (spec_zhermShift_frame p n X xo c Y yo st trivial st' h).2⟩⟩
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact ⟨_, rfl⟩
+    · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by positivity)
+      exact exists_exec_zhermShift_of_read hsem p n hA ⟨cv, hc⟩ hXY ⟨len, hl, e ▸ hlen⟩
+  · simp only [matBlock, e] at hcY
+    exact (holds_of_exec_zhermShift p n hA hc hXY hcY h).1
+
+/-- **The Hermitian scaling as a routine specification**: from a state holding $\mathbf{A}$ at
+`xo` of `X` and the value $c$ in the cell `c` (outside the output block), the run of
+`NLAlib.Computation.zhermScale` modifies only the output block at `yo` of `Y`, which then holds
+`M.hermScale A cv`, and keeps the tape positions; in mode `total` it also succeeds, given the
+standard model, $c$ decoding to a nonzero value and the output block writable. No printed
+source. -/
+theorem spec_zhermScale (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {c : Cell ℕ ℕ} (cv : K) (A : Matrix (Fin n) (Fin n) (K × K))
+    (hXY : blockDisjoint (matBlock Y yo.eval n n 2) (matBlock X xo.eval n n 2) = true)
+    (hcY : blockDisjoint (c.buf, c.idx.eval, 1) (matBlock Y yo.eval n n 2) = true) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        st.store.read p c.buf c.idx.eval = some cv ∧
+        md.Needs (dec p cv ≠ 0 ∧ Writable st.store p Y yo.eval (n * n * 2)))
+      (zhermScale (ι := ι) p (.const n) X xo c Y yo) [matBlock Y yo.eval n n 2]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.hermScale A cv) ∧ PosKept st st' := by
+  intro M
+  have e : n * n * 2 = 2 * (n * n) := by ring
+  simp only [matBlock, e] at hXY hcY
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hc, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hcv, hW⟩ => ?_) fun st st' ⟨hA, hc, _⟩ h =>
+      ?_⟩
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact ⟨_, rfl⟩
+    · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by positivity)
+      exact exists_exec_zhermScale p n hA hc hXY hcY hsem hcv ⟨len, hl, e ▸ hlen⟩
+  · obtain ⟨hY, hfr, hsh, hpos⟩ := holds_of_exec_zhermScale (toNat := toNat) (mmR := mmR)
+      (qrR := qrR) (unif := unif) (normal := normal) p n hA hc hXY hcY h
+    refine ⟨⟨hsh, fun q b i hb => hfr q b i ?_⟩, hY, hpos⟩
+    simpa only [matBlock, e] using hb _ List.mem_cons_self
 
 end NLAlib.Computation

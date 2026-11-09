@@ -8,6 +8,7 @@ module
 public import NLAlib.Computation.Contract
 public import NLAlib.Matrix.Computation.SpectralBisectionProgramTree
 public import NLAlib.Computation.StaticCost
+public import NLAlib.Computation.RoutineSpec
 
 /-!
 # The clamp of the split index of the spectral bisection program
@@ -21,6 +22,8 @@ succeeds: the binder always receives a value in range.
 ## Main results
 
 * `NLAlib.eighClampBlock_bind_run`: the clamp then the rest, as a statement.
+* `NLAlib.toNat_eighClamp`: the clamped index, as mathematics.
+* `NLAlib.spec_eighClampBlock`: the clamp as a routine specification, in every mode.
 * `NLAlib.exec_eighClampBlock_bind`: the run of the clamp, then the rest, is the run of the rest
   from a state whose clamped cell converts to $\min(k, \lfloor x\rfloor_+)$.
 -/
@@ -45,47 +48,71 @@ theorem eighClampBlock_bind_run (p : P) (k t : ℕ) (f : Unit → Builder P ι �
             (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 2⟩)) .skip))
           (f ()).run)) := rfl
 
-/-- The two literals of the clamp: from a state whose cell $6$ of `t` holds $w$, the literals
-$0$ and $k$ are written to the cells $2$ and $3$ of `t`, and the clamp then the rest runs as its
-comparisons then the rest. No printed source. -/
-private theorem exec_eighClampBlock_lits {p : P} {k t : ℕ} {st : St P K C} {w z0 zk : K}
-    (hz0 : I.sem.lit p 0 = some z0) (hzk : I.sem.lit p (k : ℚ) = some zk)
-    (hw : st.store.read p t 6 = some w) :
-    ∃ s2 : Store P K, s2.shape = st.store.shape ∧ s2.read p t 2 = some z0 ∧
-      s2.read p t 3 = some zk ∧ s2.read p t 6 = some w ∧
-      (∀ q b i, (b = t → i ≠ 2 ∧ i ≠ 3 ∧ i ≠ 6) → s2.read q b i = st.store.read q b i) ∧
-      ∀ f : Unit → Builder P ι ℕ ℕ Unit,
-        exec I (eighClampBlock p (.const k) ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩ >>= f).run st =
-          exec I (.seq (.ite p .le ⟨t, 2⟩ ⟨t, 6⟩
-            (.seq (.ite p .le ⟨t, 3⟩ ⟨t, 6⟩ (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 3⟩)) .skip) .skip)
-              .skip)
-            (.seq (.instr (.copy p ⟨t, 6⟩ ⟨t, 2⟩)) .skip))
-          (f ()).run)
-            { st with store := s2, cnt := st.cnt + I.charge (.lit p) + I.charge (.lit p) } := by
-  obtain ⟨m, hshm, h6m⟩ := Store.exists_getElem?_shape_of_read_eq_some hw
-  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape z0 hshm (i := 2) (by omega)
-  have hsh1 : s1.shape = st.store.shape := Store.shape_of_write_eq_some hs1
-  obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_getElem?_shape zk (hsh1 ▸ hshm) (i := 3)
-    (by omega)
-  refine ⟨s2, (Store.shape_of_write_eq_some hs2).trans hsh1, ?_, Store.read_of_write_eq_some hs2,
-    ?_, fun q b i hbi => ?_, fun f => ?_⟩
-  · rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide))]
-    exact Store.read_of_write_eq_some hs1
-  · rw [Store.read_of_write_eq_some_of_ne hs2 (Or.inr (by decide)),
-      Store.read_of_write_eq_some_of_ne hs1 (Or.inr (by decide))]
-    exact hw
-  · have hne : ∀ j, j = 2 ∨ j = 3 → b ≠ t ∨ i ≠ j := fun j hj => by
-      by_cases hb : b = t
-      · obtain ⟨h2, h3, -⟩ := hbi hb
-        rcases hj with rfl | rfl
-        exacts [Or.inr h2, Or.inr h3]
-      · exact Or.inl hb
-    rw [Store.read_of_write_eq_some_of_ne hs2 (hne 3 (Or.inr rfl)),
-      Store.read_of_write_eq_some_of_ne hs1 (hne 2 (Or.inl rfl))]
-  · rw [eighClampBlock_bind_run, exec_seq, exec_instr]
-    simp only [Instr.run, hz0, Option.bind_some, IExp.eval, hs1, Option.map_some, Instr.kind]
-    rw [exec_seq, exec_instr]
-    simp only [Instr.run, IExp.eval, hzk, Option.bind_some, hs2, Option.map_some, Instr.kind]
+omit [DecidableEq P] [AddMonoid C] in
+/-- **The clamped index**, the mathematics of the clamp: under the exact floor conversion, the
+conversion of the stored $0$ if $x < 0$, of the stored $k$ if $k \le x$, and of $x$ otherwise, is
+$\min(k, \lfloor x\rfloor_+)$, for the decoded value $x$ of $w$. No printed source. -/
+theorem toNat_eighClamp {dec : P → K → ℝ} {sem : ScalarSem P K} (htn : IsExactToNat dec sem)
+    {p : P} {k : ℕ} {w z0 zk : K} (hd0 : dec p z0 = 0) (hdk : dec p zk = k) :
+    sem.toNat p (if dec p z0 ≤ dec p w then (if dec p zk ≤ dec p w then zk else w) else z0) =
+      some (min k ⌊dec p w⌋₊) := by
+  rw [hd0, hdk]
+  split_ifs with h0 hk
+  · rw [htn, hdk, if_pos (Nat.cast_nonneg k), Nat.floor_natCast, min_eq_left (Nat.le_floor hk)]
+  · rw [htn, if_pos h0, min_eq_right ((Nat.floor_lt h0).mpr (not_le.mp hk)).le]
+  · rw [htn, hd0, if_pos le_rfl, Nat.floor_zero, Nat.floor_eq_zero.mpr (by linarith), min_zero]
+
+/-- **The clamp as a routine specification**, in every mode: with exact comparisons at `p`, exact
+integer literals up to $k$ and the exact floor conversion, from a state whose cell $6$ of `t` holds
+$w$, the clamp (`NLAlib.eighClampBlock`, literals in the cells $2$ and $3$ of `t`) modifies only
+the cells $2$, $3$, $6$ of `t`, keeps the tape positions, and leaves in the cell $6$ a word whose
+conversion is $\min(k, \lfloor w\rfloor_+)$. No printed source. -/
+theorem spec_eighClampBlock (md : Mode) {dec : P → K → ℝ} {p : P}
+    (hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))
+    {k : ℕ} (hlit : IsExactIntLit dec I.sem k) (htn : IsExactToNat dec I.sem) {t : ℕ} (w : K) :
+    RoutineSpec md I (fun st => st.store.read p t 6 = some w)
+      (eighClampBlock p (.const k) ⟨t, 6⟩ ⟨t, 2⟩ ⟨t, 3⟩) [(t, 2, 1), (t, 3, 1), (t, 6, 1)]
+      fun st st' => (∃ wc, st'.store.read p t 6 = some wc ∧
+        I.sem.toNat p wc = some (min k ⌊dec p w⌋₊)) ∧ PosKept st st' := by
+  obtain ⟨z0, hz0, hd0⟩ := hlit p 0 (Nat.zero_le _)
+  obtain ⟨zk, hzk, hdk⟩ := hlit p k le_rfl
+  refine ⟨by exec_composable, fun st hst => ?_⟩
+  obtain ⟨m, hshm, h6m⟩ := Store.exists_getElem?_shape_of_read_eq_some hst
+  have hW (i : ℕ) (hi : i ≤ 6) (s : Store P K) (hs : s.shape = st.store.shape) :
+      md.Needs (Writable s p t i 1) := Mode.needs_of (writable_of_shape_eq hs hshm (by omega)) md
+  refine (RoutineSpec.ins (spec_lit (p := p) (dst := ⟨t, 2⟩) (q := 0) (v := z0)
+    (by simpa using hz0))).wp_bind
+    (hW 2 (by omega) _ rfl) fun st₁ hm₁ ⟨h2, _, hp₁⟩ => ?_
+  refine (RoutineSpec.ins (spec_litIdx (p := p) (dst := ⟨t, 3⟩) (e := .const k) hzk)).wp_bind
+    (hW 3 (by omega) _ hm₁.1) fun st₂ hm₂ ⟨h3, _, hp₂⟩ => ?_
+  have h6 := (readsOnly_read p t 6 (some w)).of_modifies hst (hm₁.trans hm₂) (by fp_omega)
+  have h2' := (readsOnly_read p t 2 (some z0)).of_modifies h2 hm₂ (by fp_omega)
+  refine (RoutineSpec.ifThenElse (r := decide (dec p z0 ≤ dec p w)) (fp := [(t, 6, 1)])
+    (RoutineSpec.ifThenElse (r := decide (dec p zk ≤ dec p w))
+      (RoutineSpec.ins (spec_copy (x := ⟨t, 3⟩) (dst := ⟨t, 6⟩) (a := zk)))
+      (routineSpec_pure (pre := fun _ => True))
+      (pre := fun st => st.store.read p t 3 = some zk ∧ st.store.read p t 6 = some w ∧
+        st.store.shape = st₂.store.shape) (fun _ h => ⟨zk, w, h.1, h.2.1, hcmp _ _⟩)
+      (fun _ h _ => ⟨h.1, hW 6 le_rfl _ (h.2.2.trans hm₂.1 |>.trans hm₁.1)⟩) fun _ _ _ => trivial)
+    (RoutineSpec.ins (spec_copy (x := ⟨t, 2⟩) (dst := ⟨t, 6⟩) (a := z0)))
+    (fun _ h => ⟨z0, w, h.1, h.2.2.1, hcmp _ _⟩) (fun _ h _ => ⟨h.2.1, h.2.2.1, h.2.2.2⟩)
+    fun _ h _ => ⟨h.1, hW 6 le_rfl _ (h.2.2.2.trans hm₂.1 |>.trans hm₁.1)⟩).wp_run
+    (pre := fun st => st.store.read p t 2 = some z0 ∧ st.store.read p t 3 = some zk ∧
+      st.store.read p t 6 = some w ∧ st.store.shape = st₂.store.shape) ⟨h2', h3, h6, rfl⟩
+    fun st₃ hm₃ h => ?_
+  have key : (st₃.store.read p t 6 = some (if dec p z0 ≤ dec p w then
+      (if dec p zk ≤ dec p w then zk else w) else z0)) ∧ st₃.pos = st₂.pos := by
+    by_cases h0 : dec p z0 ≤ dec p w
+    · obtain ⟨hT, hE⟩ := h.1 (decide_eq_true h0)
+      by_cases hk : dec p zk ≤ dec p w
+      · rw [if_pos h0, if_pos hk]
+        exact ⟨(hT (decide_eq_true hk)).1, (hT (decide_eq_true hk)).2.2⟩
+      · rw [if_pos h0, if_neg hk, hE (decide_eq_false hk)]
+        exact ⟨h6, rfl⟩
+    · rw [if_neg h0]
+      exact ⟨(h.2 (decide_eq_false h0)).1, (h.2 (decide_eq_false h0)).2.2⟩
+  exact ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp), ⟨_, key.1,
+    toNat_eighClamp htn (by simpa using hd0) hdk⟩, key.2.trans (hp₂.trans hp₁)⟩
 
 /-- The run of the clamp of the split index: with exact comparisons at `p`, exact integer
 literals up to $k$ and the exact floor conversion, from a state whose cell $6$ of `t` holds $w$, the
@@ -105,66 +132,20 @@ theorem exec_eighClampBlock_bind {dec : P → K → ℝ} {p : P}
       (∀ q b i, (b = t → i ≠ 2 ∧ i ≠ 3 ∧ i ≠ 6) → σ.store.read q b i = st.store.read q b i) ∧
       σ.store.shape = st.store.shape ∧ σ.pos = st.pos ∧ σ.cur = st.cur ∧ σ.peak = st.peak ∧
       σ.curW = st.curW ∧ σ.peakW = st.peakW := by
-  obtain ⟨z0, hz0, hd0⟩ := hlit p 0 (Nat.zero_le _)
-  obtain ⟨zk, hzk, hdk⟩ := hlit p k le_rfl
-  obtain ⟨s2, hsh2, r2, r3, r6, fr2, hrun2⟩ :=
-    exec_eighClampBlock_lits (I := I) (by simpa using hz0) hzk hw
-  obtain ⟨m, hshm, h6m⟩ := Store.exists_getElem?_shape_of_read_eq_some hw
-  -- the state after the two literals
-  let c₂ : C := st.cnt + I.charge (.lit p) + I.charge (.lit p)
-  let σ₂ : St P K C := { st with store := s2, cnt := c₂ }
-  by_cases h0 : 0 ≤ dec p w
-  · by_cases hkw : (k : ℝ) ≤ dec p w
-    · -- the cell gets the literal k
-      obtain ⟨s3, hs3⟩ := Store.exists_write_eq_some_of_getElem?_shape zk (hsh2 ▸ hshm) (i := 6)
-        (by omega)
-      let c₃ : C := σ₂.cnt + I.charge (.cmp p) + I.charge (.cmp p) + I.charge (.copy p)
-      refine ⟨{ σ₂ with store := s3, cnt := c₃ }, fun f => ?_,
-        ⟨zk, Store.read_of_write_eq_some hs3, ?_⟩,
-        fun q b i hbi => ?_, (Store.shape_of_write_eq_some hs3).trans hsh2, rfl, rfl, rfl, rfl,
-        rfl⟩
-      · simp only [hrun2, exec_seq, exec_ite, exec_instr, exec_skip, cmpStep, σ₂, IExp.eval, r2, r3,
-          r6, Option.bind_some, Option.map_some, hcmp, hd0, hdk, h0,
-          hkw, decide_true, if_true, Nat.cast_zero, Instr.run, hs3, Instr.kind]
-        rfl
-      · rw [htn p zk, hdk, if_pos (Nat.cast_nonneg k), Nat.floor_natCast,
-          min_eq_left (Nat.le_floor hkw)]
-      · rw [Store.read_of_write_eq_some_of_ne hs3 ?_]
-        · exact fr2 q b i hbi
-        · by_cases hb : b = t
-          · exact Or.inr (hbi hb).2.2
-          · exact Or.inl hb
-    · -- the cell is kept
-      push Not at hkw
-      let c₃ : C := σ₂.cnt + I.charge (.cmp p) + I.charge (.cmp p)
-      refine ⟨{ σ₂ with cnt := c₃ }, fun f => ?_,
-        ⟨w, r6, ?_⟩, fr2, hsh2, rfl, rfl, rfl, rfl, rfl⟩
-      · simp only [hrun2, exec_seq, exec_ite, exec_skip, cmpStep, σ₂, IExp.eval, r2, r3, r6,
-          Option.bind_some, Option.map_some, hcmp, hd0, hdk, h0,
-          not_le.mpr hkw, decide_true, decide_false, if_true, Bool.false_eq_true, if_false,
-          Nat.cast_zero]
-        rfl
-      · rw [htn p w, if_pos h0, min_eq_right]
-        exact (Nat.floor_lt h0).mpr hkw |>.le
-  · -- the cell gets the literal 0
-    obtain ⟨s3, hs3⟩ := Store.exists_write_eq_some_of_getElem?_shape z0 (hsh2 ▸ hshm) (i := 6)
-      (by omega)
-    push Not at h0
-    let c₃ : C := σ₂.cnt + I.charge (.cmp p) + I.charge (.copy p)
-    refine ⟨{ σ₂ with store := s3, cnt := c₃ },
-      fun f => ?_, ⟨z0, Store.read_of_write_eq_some hs3, ?_⟩, fun q b i hbi => ?_,
-      (Store.shape_of_write_eq_some hs3).trans hsh2, rfl, rfl, rfl, rfl, rfl⟩
-    · simp only [hrun2, exec_seq, exec_ite, exec_instr, exec_skip, cmpStep, σ₂, IExp.eval, r2, r6,
-        Option.bind_some, Option.map_some, hcmp, hd0,
-        not_le.mpr h0, decide_false, Bool.false_eq_true, if_false, Nat.cast_zero, Instr.run, hs3,
-        Instr.kind]
-      rfl
-    · rw [htn p z0, hd0, Nat.cast_zero, if_pos le_rfl, Nat.floor_zero,
-        Nat.floor_eq_zero.mpr (by linarith), min_zero]
-    · rw [Store.read_of_write_eq_some_of_ne hs3 ?_]
-      · exact fr2 q b i hbi
-      · by_cases hb : b = t
-        · exact Or.inr (hbi hb).2.2
-        · exact Or.inl hb
+  have h := spec_eighClampBlock (t := t) .total hcmp hlit htn w
+  obtain ⟨σ, hrun, hm, ⟨hv, hpos⟩, hcur, hpeak, hcurW, hpeakW⟩ := (h.spec.and_liberal
+    (Triple.seq_mem (triple_instr_mem _) (Triple.seq_mem (triple_instr_mem _) (Triple.seq_mem
+      (Triple.ite_mem (Triple.seq_mem (Triple.ite_mem (Triple.seq_mem (triple_instr_mem _)
+        triple_skip_mem) triple_skip_mem) triple_skip_mem)
+        (Triple.seq_mem (triple_instr_mem _) triple_skip_mem)) triple_skip_mem)))).exists_exec hw
+  refine ⟨σ, fun f => by rw [h.composable f st, hrun, Option.bind_some], hv, fun q b i hbi =>
+    hm.2 q b i fun x hx => ?_, hm.1, hpos, hcur, hpeak, hcurW, hpeakW⟩
+  refine blockDisjoint_iff.mpr ?_
+  by_cases hb : b = t
+  · have := hbi hb
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl <;> dsimp only <;> omega
+  · simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with rfl | rfl | rfl <;> exact Or.inl hb
 
 end NLAlib

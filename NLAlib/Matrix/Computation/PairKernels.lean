@@ -32,6 +32,7 @@ other kernels are in the files `NLAlib/Matrix/Computation/PairKernels/*.lean`.
 * `NLAlib.Computation.exists_exec_zcopy`, `NLAlib.Computation.exists_exec_zzero`,
   `NLAlib.Computation.exists_exec_zneg`, `NLAlib.Computation.exists_exec_zmirror`: when the run
   succeeds.
+* `NLAlib.Computation.spec_zneg`: the negation as a routine specification.
 -/
 
 @[expose] public section
@@ -613,5 +614,64 @@ theorem exists_exec_zmirror (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} {st : St
         Store.read_of_write_eq_some_of_ne hs' (Or.inr h00), f1],
       by rw [Store.read_of_write_eq_some_of_ne hs'' (Or.inr h11),
         Store.read_of_write_eq_some_of_ne hs' (Or.inr h10), f2]⟩
+
+/-! ### Specifications -/
+
+omit [Inhabited K] in
+/-- The copy as a routine specification: from a state holding the $m \times n$ matrix
+$\mathbf{A}$ at `xo` of `X`, the run of `NLAlib.Computation.zcopy` into a block at `yo` of `Y`
+disjoint from it modifies only that block, which then holds $\mathbf{A}$, and keeps the tape
+positions; in mode `total` it also succeeds, given the output block writable. No printed
+source. -/
+theorem spec_zcopy (md : Mode) (p : P) (m n : ℕ) {X Y : ℕ} {xo yo : IExp ℕ}
+    (A : Matrix (Fin m) (Fin n) (K × K))
+    (hXY : blockDisjoint (Y, yo.eval, 2 * (m * n)) (X, xo.eval, 2 * (m * n)) = true) :
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        md.Needs (Writable st.store p Y yo.eval (2 * (m * n))))
+      (zcopy (ι := ι) p (.const m) (.const n) X xo Y yo) [(Y, yo.eval, 2 * (m * n))]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval A ∧ PosKept st st' := by
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hW⟩ =>
+    hW.mono fun hW => ?_) fun st st' ⟨hA, _⟩ h => ?_⟩
+  · rcases Nat.eq_zero_or_pos (m * n) with h0 | hpos
+    · change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st'
+      rw [exec_seq_skip, exec_named, exec_seq_skip]
+      exact (exists_exec_loop_eq_some_of_forall I (fun _ _ => True) trivial fun i hi _ _ =>
+        absurd hi (by simp [h0])).imp fun _ h => h.1
+    · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by omega)
+      exact exists_exec_zcopy p m n hA hXY ⟨len, hl, hlen⟩
+  · obtain ⟨hY, hfr, hsh, hpos⟩ := holds_of_exec_zcopy p m n hA hXY h
+    exact ⟨⟨hsh, fun q b i hb => hfr q b i (hb _ List.mem_cons_self)⟩, hY, hpos⟩
+
+/-- **The negation as a routine specification**: from a state holding the $m \times n$ matrix
+$\mathbf{A}$ at `xo` of `X`, the run of `NLAlib.Computation.zneg` into a block at `yo` of `Y`
+disjoint from it or equal to it (in place) modifies only that block, which then holds
+`M.negMat A`, and keeps the tape positions; in mode `total` it also succeeds, given the standard
+model and the output block writable. No printed source. -/
+theorem spec_zneg (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (m n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} (A : Matrix (Fin m) (Fin n) (K × K))
+    (hXY : blockDisjoint (matBlock Y yo.eval m n 2) (matBlock X xo.eval m n 2) = true ∨
+      (Y = X ∧ yo.eval = xo.eval)) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        md.Needs (Writable st.store p Y yo.eval (m * n * 2)))
+      (zneg (ι := ι) p (.const m) (.const n) X xo Y yo) [matBlock Y yo.eval m n 2]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.negMat A) ∧ PosKept st st' := by
+  intro M
+  have e : m * n * 2 = 2 * (m * n) := by ring
+  simp only [matBlock, e] at hXY
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => ?_) fun st st' ⟨hA, _⟩ h => ?_⟩
+  · rcases Nat.eq_zero_or_pos (m * n) with h0 | hpos
+    · change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st'
+      rw [exec_seq_skip, exec_named, exec_seq_skip]
+      exact (exists_exec_loop_eq_some_of_forall I (fun _ _ => True) trivial fun i hi _ _ =>
+        absurd hi (by simp [h0])).imp fun _ h => h.1
+    · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by omega)
+      exact exists_exec_zneg p m n hA hXY hsem ⟨len, hl, e ▸ hlen⟩
+  · obtain ⟨hY, hfr, hsh, hpos⟩ := holds_of_exec_zneg (toNat := toNat) (mmR := mmR) (qrR := qrR)
+      (unif := unif) (normal := normal) p m n hA hXY h
+    refine ⟨⟨hsh, fun q b i hb => hfr q b i ?_⟩, hY, hpos⟩
+    simpa only [matBlock, e] using hb _ List.mem_cons_self
 
 end NLAlib.Computation

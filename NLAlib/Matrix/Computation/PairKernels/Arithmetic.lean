@@ -21,6 +21,11 @@ operation of the machine of the semantics.
   `NLAlib.Computation.holds_of_exec_zsub`, `NLAlib.Computation.holds_of_exec_zscal`,
   `NLAlib.Computation.holds_of_exec_zconjTranspose`, `NLAlib.Computation.read_of_exec_ztraceRe`:
   what a successful run computes.
+* `NLAlib.Computation.spec_zidentity`: the identity as a routine specification.
+* `NLAlib.Computation.spec_zconjTranspose_frame`, `NLAlib.Computation.spec_zconjTranspose`: the
+  conjugate transpose as a routine specification of the program logic.
+* `NLAlib.Computation.spec_ztraceRe_frame`, `NLAlib.Computation.spec_ztraceRe`: the real trace as
+  a routine specification of the program logic.
 -/
 
 @[expose] public section
@@ -482,5 +487,214 @@ theorem read_of_exec_ztraceRe (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ} {dst :
   rw [Store.read_of_write_eq_some hw, hfold]
   change some v = some ((I.sem.bin p .add _ _).getD default)
   rw [hv, Option.getD_some]
+
+/-! ### Frames and specifications -/
+
+/-- **The identity as a routine specification**: the run of `NLAlib.Computation.zidentity`
+modifies only the output block at `yo` of `Y`, which then holds `M.identityMat n`, and keeps the
+tape positions; in mode `total` it also succeeds, given the literals $0$ and $1$ and the output
+block writable. No printed source. -/
+theorem spec_zidentity (md : Mode) (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => md.Needs ((∃ v, I.sem.lit p 0 = some v) ∧
+        (∃ v, I.sem.lit p 1 = some v) ∧ Writable st.store p Y yo.eval (2 * (n * n))))
+      (zidentity (ι := ι) p (.const n) Y yo) [(Y, yo.eval, 2 * (n * n))]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.identityMat n) ∧ PosKept st st' := by
+  intro M
+  have hA := spec_forRange_lit_frame (m := md) (I := I) (p := p) (q := 0)
+    (n := 2 * (IExp.const n * IExp.const n)) (idx := fun w => yo + .var w) (Y := Y)
+    (off := yo.eval) (N := 2 * (n * n)) fun i hi => by
+      simp only [IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const, IExp.eval_add,
+        IExp.eval_var] at hi ⊢
+      constructor <;> nlinarith
+  have hB := spec_forRange_lit_frame (m := md) (I := I) (p := p) (q := 1) (n := .const n)
+    (idx := fun i => yo + zidx (.const n) (.var i) (.var i)) (Y := Y) (off := yo.eval)
+    (N := 2 * (n * n)) fun i hi => by
+      simp only [zidx, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const, IExp.eval_add,
+        IExp.eval_var] at hi ⊢
+      constructor <;> nlinarith
+  have hA' := hA.conseq (pre' := fun st => md.Needs ((∃ v, I.sem.lit p 0 = some v) ∧
+    (∃ v, I.sem.lit p 1 = some v) ∧ Writable st.store p Y yo.eval (2 * (n * n))))
+    (fun _ h => h.mono fun h => ⟨h.1, h.2.2⟩) (fun _ h => h) fun _ _ _ h => h
+  refine ((RoutineSpec.named _ _ ((RoutineSpec.bind hA' hB fun _ _ h hm _ =>
+    h.mono fun h => ⟨h.2.1, h.2.2.of_modifies hm⟩).spec.conseq (fun _ h => h)
+      (fun _ h => by simpa using h)
+      fun _ _ _ ⟨_, h₁, h₂⟩ => h₂.trans h₁)).and_liberal fun st _ st' h =>
+        (holds_of_exec_zidentity (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+          (normal := normal) p n h).1).conseq (fun _ h => h) (fun _ h => h)
+      fun _ _ _ h => ⟨h.2, h.1⟩
+
+omit [Inhabited K] in
+/-- A conjugate transpose succeeds under the standard model when the output block fits. -/
+private theorem exists_exec_zconjTranspose_of_len {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (m n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} {st : St P K C} {A : Matrix (Fin m) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A)
+    (hXY : blockDisjoint (Y, yo.eval, 2 * (n * m)) (X, xo.eval, 2 * (m * n)) = true)
+    (hY : ∃ len, st.store.shape[Y]? = some (p, len) ∧ yo.eval + 2 * (n * m) ≤ len) :
+    ∃ st', exec I (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run st =
+      some st' := by
+  obtain ⟨len, hYsh, hlen⟩ := hY
+  let F : Store P K → Prop := fun s => s.shape = st.store.shape ∧
+    ∀ q b i, blockDisjoint (b, i, 1) (Y, yo.eval, 2 * (n * m)) = true →
+      s.read q b i = st.store.read q b i
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) .skip)) .skip) st = some st'
+  rw [exec_seq_skip, exec_named, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall I (fun _ σ => F σ.store)
+    ⟨rfl, fun _ _ _ _ => rfl⟩ fun j hj σ hσ => ?_).imp fun _ h => h.1
+  have hj : j < m := hj
+  change ∃ st', exec I (.seq (.loop _ _) .skip) σ = some st' ∧ _
+  rw [exec_seq_skip]
+  refine exists_exec_loop_eq_some_of_forall I (fun _ σ => F σ.store) hσ fun i hi σ' hσ' => ?_
+  have hi : i < n := hi
+  have hY1 : 2 * (i + n * j) + 1 < 2 * (n * m) := by nlinarith
+  have hX1 : 2 * (j + m * i) + 1 < 2 * (m * n) := by nlinarith
+  have hrX : ∀ t < 2, ∃ a, σ'.store.read p X (xo.eval + (2 * (j + m * i) + t)) = some a := by
+    intro t ht
+    rw [hσ'.2 _ _ _ ?_]
+    · exact ⟨_, hA ⟨j, hj⟩ ⟨i, hi⟩ ⟨t, ht⟩⟩
+    · simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq, decide_eq_true_eq] at hXY ⊢
+      omega
+  obtain ⟨a, ha⟩ := hrX 0 (by norm_num)
+  obtain ⟨a', ha'⟩ := hrX 1 (by norm_num)
+  obtain ⟨s₁, hs₁, hsh₁, hfr₁, -, -⟩ :=
+    Store.exists_write_eq_some_of_lt_of_frame (k := 2 * (i + n * j)) hYsh hlen
+    (by omega) hσ'.1 hσ'.2 a
+  obtain ⟨z, hz, -⟩ := hsem.neg p a'
+  obtain ⟨s₂, hs₂, hsh₂, hfr₂, -, -⟩ :=
+    Store.exists_write_eq_some_of_lt_of_frame (k := 2 * (i + n * j) + 1) hYsh hlen
+    hY1 hsh₁ hfr₁ z
+  have ha'₁ : s₁.read p X (xo.eval + (2 * (j + m * i) + 1)) = some a' := by
+    rw [hfr₁ _ _ _ ?_, ← hσ'.2 _ _ _ ?_]
+    · exact ha'
+    all_goals simp only [blockDisjoint, Bool.or_eq_true, bne_iff_ne, ne_eq,
+      decide_eq_true_eq] at hXY ⊢
+    all_goals omega
+  change ∃ st', exec I (.seq (.instr (.copy _ _ _)) (.seq (.instr (.un _ _ _ _)) .skip)) σ' =
+    some st' ∧ _
+  rw [exec_seq_instr_copy I (by exact ha) (by exact hs₁),
+    exec_seq_instr_un I (by exact ha'₁) hz (by exact hs₂), exec_skip]
+  exact ⟨_, rfl, hsh₂, hfr₂⟩
+
+omit [Inhabited K] in
+/-- `zconjTranspose` modifies only its output block and keeps the tape positions. -/
+theorem spec_zconjTranspose_frame (p : P) (m n : ℕ) (X : ℕ) (xo : IExp ℕ) (Y : ℕ) (yo : IExp ℕ) :
+    Spec .liberal I (fun _ => True) (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo).run
+      [matBlock Y yo.eval n m 2] fun st st' => PosKept st st' := by
+  have hc : ∀ a b : ℕ, a < n → b < m → ∀ t < 2, yo.eval ≤ yo.eval + (2 * (a + n * b) + t) ∧
+      yo.eval + (2 * (a + n * b) + t) < yo.eval + n * m * 2 := fun a b ha hb t ht =>
+    ⟨by omega, by nlinarith⟩
+  refine Spec.seq_frame (Spec.named _ _ (Spec.seq_frame (Spec.loop_frame fun j hj =>
+    Spec.seq_frame (Spec.loop_frame fun i hi => Spec.seq_frame
+      (Spec.frame_of_mem spec_copy_frame ?_ List.mem_cons_self)
+      (Spec.seq_frame (Spec.frame_of_mem spec_un_frame ?_ List.mem_cons_self) spec_skip_frame))
+      spec_skip_frame) spec_skip_frame)) spec_skip_frame
+  all_goals simp only [IExp.eval_const] at hi hj
+  all_goals simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
+    IExp.eval_ofNat]
+  · simpa using hc i j hi hj 0 (by omega)
+  · simpa [Nat.add_assoc] using hc i j hi hj 1 (by omega)
+
+/-- **The conjugate transpose as a routine specification**: from a state holding the
+$m \times n$ matrix $\mathbf{A}$ at `xo` of `X`, the run of `NLAlib.Computation.zconjTranspose`
+modifies only the output block at `yo` of `Y`, which then holds `M.conjTransposeMat A`, and keeps
+the tape positions; in mode `total` it also succeeds, given the standard model and the output
+block writable. No printed source. -/
+theorem spec_zconjTranspose (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (m n : ℕ) {X Y : ℕ}
+    {xo yo : IExp ℕ} (A : Matrix (Fin m) (Fin n) (K × K))
+    (hXY : blockDisjoint (matBlock Y yo.eval n m 2) (matBlock X xo.eval m n 2) = true) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        md.Needs (Writable st.store p Y yo.eval (n * m * 2)))
+      (zconjTranspose (ι := ι) p (.const m) (.const n) X xo Y yo) [matBlock Y yo.eval n m 2]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.conjTransposeMat A) ∧
+        PosKept st st' := by
+  intro M
+  have e : ∀ a b : ℕ, a * b * 2 = 2 * (a * b) := fun a b => by ring
+  simp only [matBlock, e] at hXY
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => ?_) fun st st' ⟨hA, _⟩ h =>
+      ⟨(spec_zconjTranspose_frame p m n X xo Y yo st trivial st' h).1,
+        (holds_of_exec_zconjTranspose p m n hA hXY h).1,
+        (spec_zconjTranspose_frame p m n X xo Y yo st trivial st' h).2⟩⟩
+  rcases Nat.eq_zero_or_pos (n * m) with h0 | hpos
+  · rcases Nat.mul_eq_zero.mp h0 with rfl | rfl
+    · change ∃ st', exec I (.seq (.named _ _ (.seq (.loop (.const m) _) .skip)) .skip) st =
+        some st'
+      rw [exec_seq_skip, exec_named, exec_seq_skip]
+      exact (exists_exec_loop_eq_some_of_forall I (fun _ _ => True) trivial
+        fun _ _ s _ => ⟨s, rfl, trivial⟩).imp fun _ h => h.1
+    · exact ⟨_, rfl⟩
+  · obtain ⟨len, hl, hlen⟩ := hW.exists_len (by omega)
+    exact exists_exec_zconjTranspose_of_len hsem p m n hA hXY ⟨len, hl, e n m ▸ hlen⟩
+
+omit [Inhabited K] in
+/-- A real trace succeeds under the standard model when its matrix is stored and its destination,
+in another buffer, can be written. -/
+theorem exists_exec_ztraceRe {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ}
+    {dst : Cell ℕ ℕ} {st : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)}
+    (hA : pairLayout.Holds st.store p X xo.eval A) (hdX : dst.buf ≠ X)
+    (hW : Writable st.store p dst.buf dst.idx.eval 1) :
+    ∃ st', exec I (ztraceRe (ι := ι) p (.const n) X xo dst).run st = some st' := by
+  change ∃ st', exec I (.seq (.named _ _ (.seq (.instr _) (.seq (.loop _ _) .skip))) .skip) st =
+    some st'
+  rw [exec_seq_skip, exec_named]
+  obtain ⟨z0, hz0⟩ := hsem.lit_ok p 0 trivial
+  obtain ⟨len, hl, hlen⟩ := hW.exists_len Nat.one_pos
+  obtain ⟨s1, hs1⟩ := Store.exists_write_eq_some_of_getElem?_shape (i := dst.idx.eval) z0 hl
+    (by omega)
+  rw [exec_seq_instr_lit I hz0 hs1, exec_seq_skip]
+  refine (exists_exec_loop_eq_some_of_forall (I := I)
+    (fun _ s => (∃ v, s.store.read p dst.buf dst.idx.eval = some v) ∧
+      ∀ q b i, b ≠ dst.buf → s.store.read q b i = st.store.read q b i)
+    ⟨⟨z0, Store.read_of_write_eq_some hs1⟩,
+      fun q b i hb => Store.read_of_write_eq_some_of_ne hs1 (Or.inl hb)⟩ ?_).imp
+    fun _ h => h.1
+  rintro i hi s ⟨⟨v, hv⟩, hfr⟩
+  simp only [IExp.eval_const] at hi
+  have hx := hA ⟨i, hi⟩ ⟨i, hi⟩ ⟨0, two_pos⟩
+  obtain ⟨z, hz⟩ := hsem.bin_ok p .add v (pairLayout.put (A ⟨i, hi⟩ ⟨i, hi⟩) ⟨0, two_pos⟩) trivial
+    (fun h => nomatch h) trivial
+  obtain ⟨s', hs'⟩ := Store.exists_write_eq_some_of_read_eq_some (v := z) hv
+  change ∃ st', exec I (.seq (.instr (.bin p .add dst dst
+    ⟨X, xo + zidx (.const n) (.var i) (.var i)⟩)) .skip) s = some st' ∧ _
+  rw [exec_seq_instr_bin I hv (by
+      rw [hfr _ _ _ (Ne.symm hdX)]
+      simpa [zidx, show pairLayout.width = 2 from rfl] using hx) hz hs', exec_skip]
+  exact ⟨_, rfl, ⟨z, Store.read_of_write_eq_some hs'⟩, fun q b i' hb =>
+    (Store.read_of_write_eq_some_of_ne hs' (Or.inl hb)).trans (hfr q b i' hb)⟩
+
+omit [Inhabited K] in
+/-- `ztraceRe` modifies only its destination cell and keeps the tape positions, wherever its
+matrix is. -/
+theorem spec_ztraceRe_frame (p : P) (n : ℕ) (X : ℕ) (xo : IExp ℕ) (dst : Cell ℕ ℕ) :
+    Spec .liberal I (fun _ => True) (ztraceRe (ι := ι) p (.const n) X xo dst).run
+      [(dst.buf, dst.idx.eval, 1)] fun st st' => PosKept st st' :=
+  Spec.seq_frame (Spec.named _ _ (Spec.seq_frame spec_lit_frame (Spec.seq_frame
+    (Spec.loop_frame fun _ _ => Spec.seq_frame spec_bin_frame spec_skip_frame) spec_skip_frame)))
+    spec_skip_frame
+
+/-- **The real trace as a routine specification**: from a state holding $\mathbf{A}$ at `xo` of
+`X`, the run of `NLAlib.Computation.ztraceRe` into a cell of another buffer modifies only that
+cell, which then holds `M.traceRe A`, and keeps the tape positions; in mode `total` it also
+succeeds, given the standard model and the cell writable. No printed source. -/
+theorem spec_ztraceRe (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
+    (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n : ℕ) {X : ℕ}
+    {xo : IExp ℕ} {dst : Cell ℕ ℕ} (A : Matrix (Fin n) (Fin n) (K × K)) (hdX : dst.buf ≠ X) :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p X xo.eval A ∧
+        md.Needs (Writable st.store p dst.buf dst.idx.eval 1))
+      (ztraceRe (ι := ι) p (.const n) X xo dst) [(dst.buf, dst.idx.eval, 1)]
+      fun st st' => st'.store.read p dst.buf dst.idx.eval = some (M.traceRe A) ∧
+        PosKept st st' := by
+  intro M
+  refine ⟨executionComposable_named _ _ _, Triple.of_exec (fun st ⟨hA, hW⟩ =>
+    (Mode.needs_and.mpr ⟨hsem, hW⟩).mono fun ⟨hsem, hW⟩ => exists_exec_ztraceRe hsem p n hA hdX hW)
+    fun st st' ⟨hA, _⟩ h => ⟨(spec_ztraceRe_frame p n X xo dst st trivial st' h).1,
+      (read_of_exec_ztraceRe (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+        (normal := normal) p n hA (blockDisjoint_of_fst_ne hdX) h).1,
+      (spec_ztraceRe_frame p n X xo dst st trivial st' h).2⟩⟩
 
 end NLAlib.Computation

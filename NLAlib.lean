@@ -33,8 +33,11 @@ public import NLAlib.Computation.MatvecRoutine
 public import NLAlib.Computation.Model
 public import NLAlib.Computation.NonInterference
 public import NLAlib.Computation.NormalizationErrors
+public import NLAlib.Computation.ProgramLogic
 public import NLAlib.Computation.Rounding
+public import NLAlib.Computation.RoutineAlloc
 public import NLAlib.Computation.RoutineFrames
+public import NLAlib.Computation.RoutineSpec
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
@@ -418,7 +421,6 @@ public import NLAlib.Matrix.Computation.SpectralBisectionNode.NodeSuccess
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.Setup
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.SignStep
 public import NLAlib.Matrix.Computation.SpectralBisectionNode.Split
-public import NLAlib.Matrix.Computation.SpectralBisectionNode.SplitSuccess
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.BottomLevel
 public import NLAlib.Matrix.Computation.SpectralBisectionProgram.Count

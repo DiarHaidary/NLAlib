@@ -10,6 +10,7 @@ public import NLAlib.Matrix.Computation.Primitives
 public import NLAlib.Matrix.Factorizations.QR
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import NLAlib.Computation.Contract
+public import NLAlib.Computation.RoutineSpec
 
 /-!
 # Contracts for black-box matrix multiplication and QR kernels
@@ -67,6 +68,10 @@ witnesses that the contracts are satisfiable.
   `NLAlib.Computation.EntryLayout.Holds.of_forall_read_eq`: how a block comes to hold a matrix.
 * `NLAlib.Computation.IsMatMulKernel.holds_of_kcallStore_eq_some`,
   `NLAlib.Computation.IsQRKernel.holds_of_kcallStore_eq_some`: kernel calls on held matrices.
+* `NLAlib.Computation.readsOnly_entryLayoutHolds`, `NLAlib.Computation.readsOnly_pairLayoutHolds`:
+  a stored matrix reads only its block.
+* `NLAlib.Computation.IsMatMulKernel.spec_kcall`: a product kernel call as a specification of the
+  program logic (`NLAlib/Computation/ProgramLogic.lean`).
 -/
 
 @[expose] public section
@@ -617,5 +622,77 @@ theorem IsQRKernel.holds_of_kcallStore_eq_some [Inhabited K] {I : Interp P ι K 
   · exact outside_of_mem_of_blockDisjoint hqr hi1 hi2
   · rw [hr_frame q' b' i (outside_of_mem_of_blockDisjoint hdr le_rfl (Nat.lt_succ_self i)),
       hq_frame q' b' i (outside_of_mem_of_blockDisjoint hdq le_rfl (Nat.lt_succ_self i))]
+
+/-! ### Kernel calls as specifications -/
+
+section Specs
+
+/-- A matrix stored in a layout reads only its block. -/
+theorem readsOnly_entryLayoutHolds {E : Type} (L : EntryLayout K E) {l m : ℕ} (p : P)
+    (b off : ℕ) (Y : Matrix (Fin l) (Fin m) E) :
+    ReadsOnly (fun s : Store P K => L.Holds s p b off Y) [matBlock b off l m L.width] := by
+  intro s s' hs _ hrd i j t
+  have hij : (i : ℕ) + l * j < l * m := by nlinarith [i.2, j.2]
+  have hlt : L.width * (i + l * j) + t < l * m * L.width := by
+    nlinarith [Nat.mul_le_mul_left L.width hij, t.isLt]
+  exact (hrd p (matBlock b off l m L.width) List.mem_cons_self _ hlt).trans (hs i j t)
+
+/-- A matrix stored as interleaved pairs reads only its block of `2` words per entry: the read
+set in the canonical form `NLAlib.Computation.matBlock … 2` that footprints use. -/
+theorem readsOnly_pairLayoutHolds {l m : ℕ} (p : P) (b off : ℕ)
+    (Y : Matrix (Fin l) (Fin m) (K × K)) :
+    ReadsOnly (fun s : Store P K => pairLayout.Holds s p b off Y) [matBlock b off l m 2] :=
+  readsOnly_entryLayoutHolds pairLayout p b off Y
+
+variable [AddMonoid C]
+
+/-- **A product kernel call as a specification**: on held factors and an output block disjoint
+from them, the call writes the product into the output block only, charges one call and keeps
+the tape positions; in mode `total` it also succeeds, given the output block writable. -/
+theorem IsMatMulKernel.spec_kcall [Inhabited K] {E : Type} {I : Interp P ι K C} {o : ι}
+    {L : EntryLayout K E} {mm : MatMulMap E} (h : IsMatMulKernel I o L mm)
+    (hL : ∀ e, L.get (L.put e) = e) (md : Mode) (p : P) {l m n : ℕ} (a b c : ℕ × IExp ℕ)
+    (A : Matrix (Fin l) (Fin m) E) (B : Matrix (Fin m) (Fin n) E) :
+    Spec md I (fun st => L.Holds st.store p a.1 a.2.eval A ∧ L.Holds st.store p b.1 b.2.eval B ∧
+        blockDisjoint (matBlock c.1 c.2.eval l n L.width) (matBlock a.1 a.2.eval l m L.width) =
+          true ∧
+        blockDisjoint (matBlock c.1 c.2.eval l n L.width) (matBlock b.1 b.2.eval m n L.width) =
+          true ∧
+        md.Needs (Writable st.store p c.1 c.2.eval (l * n * L.width)))
+      (.kcall o p [.const l, .const m, .const n] [a, b] [c]) [matBlock c.1 c.2.eval l n L.width]
+      fun st st' => L.Holds st'.store p c.1 c.2.eval (mm A B) ∧
+        Costs (I.charge (.kcall p o [l, m, n])) st st' ∧ PosKept st st' := by
+  intro st ⟨hA, hB, hca, hcb, hW⟩
+  have hca' : blockDisjoint (c.1, c.2.eval, n * l * L.width) (a.1, a.2.eval, m * l * L.width) =
+      true := by simpa only [matBlock, Nat.mul_comm l n, Nat.mul_comm l m] using hca
+  have hcb' : blockDisjoint (c.1, c.2.eval, n * l * L.width) (b.1, b.2.eval, n * m * L.width) =
+      true := by simpa only [matBlock, Nat.mul_comm l n, Nat.mul_comm m n] using hcb
+  rw [wp_kcall]
+  simp only [List.map_cons, List.map_nil, IExp.eval_const]
+  have key : ∀ s', I.kcallStore o p [l, m, n] [(a.1, a.2.eval), (b.1, b.2.eval)]
+      [(c.1, c.2.eval)] st.store = some s' →
+      Modifies [matBlock c.1 c.2.eval l n L.width] st.store s' ∧
+        L.Holds s' p c.1 c.2.eval (mm A B) ∧
+        Costs (I.charge (.kcall p o [l, m, n])) st ({ st with store := s' }.addCnt
+          (I.charge (.kcall p o [l, m, n]))) ∧ PosKept st ({ st with store := s' }.addCnt
+          (I.charge (.kcall p o [l, m, n]))) := by
+    intro s' hs'
+    obtain ⟨hC, hfr⟩ := h.holds_of_kcallStore_eq_some hL p (a := (a.1, a.2.eval))
+      (b := (b.1, b.2.eval)) (c := (c.1, c.2.eval)) hA hB hca' hcb' hs'
+    refine ⟨⟨Interp.shape_of_kcallStore_eq_some hs', fun q b' i hb' => hfr q b' i ?_⟩, hC, rfl,
+      rfl⟩
+    simpa only [matBlock, Nat.mul_comm l n] using hb' _ List.mem_cons_self
+  cases md
+  · obtain ⟨s', hs'⟩ : ∃ s', I.kcallStore o p [l, m, n] [(a.1, a.2.eval), (b.1, b.2.eval)]
+        [(c.1, c.2.eval)] st.store = some s' := by
+      rw [h.kcallStore_eq p ((EntryLayout.holds_iff_readBlock_eq_some L _ p _ _ A).mp hA)
+        ((EntryLayout.holds_iff_readBlock_eq_some L _ p _ _ B).mp hB) hca' hcb']
+      refine Writable.exists_writeBlock ?_
+      rw [EntryLayout.size_toArray, Nat.mul_comm n l]
+      exact hW
+    exact ⟨s', hs', key s' hs'⟩
+  · exact key
+
+end Specs
 
 end NLAlib.Computation

@@ -39,14 +39,13 @@ namespace NLAlib
 variable {n : Type*} [Fintype n]
 
 /-- **One of $\mathbf{M} \pm \delta\mathbf{J}$ has norm at least $\delta n$**: for every square
-complex $\mathbf{M}$ and $\delta \ge 0$, with $\mathbf{J}$ the all-ones matrix, there is a sign
+complex $\mathbf{M}$ and real $\delta$, with $\mathbf{J}$ the all-ones matrix, there is a sign
 $s \in \{1, -1\}$ with $\delta\lvert n \rvert \le \|\mathbf{M} + s\delta\mathbf{J}\|_2$. No
 printed source; [Shah2024, proof of Proposition 1.1] argues with the signs of the entries, which
 bounds the Frobenius norm only. -/
-theorem exists_mul_card_le_specNorm_add_smul (M : Matrix n n ℂ) {δ : ℝ} (hδ : 0 ≤ δ) :
+theorem exists_mul_card_le_specNorm_add_smul (M : Matrix n n ℂ) (δ : ℝ) :
     ∃ s ∈ ({1, -1} : Set ℝ),
       δ * Fintype.card n ≤ specNorm (M + (s * δ) • Matrix.of fun _ _ : n => (1 : ℂ)) := by
-  have _ := hδ
   classical
   rcases isEmpty_or_nonempty n with hn | hn
   · exact ⟨1, by simp, by simp [specNorm_nonneg]⟩
@@ -121,7 +120,7 @@ theorem mul_card_le_of_forall_specNorm_sub_le [DecidableEq n] {fl : ℝ → ℝ}
     ext i j; simp
   obtain ⟨s, hs, hle⟩ := exists_mul_card_le_specNorm_add_smul
     (H.map (fun x : ℝ => (x : ℂ)) - (alg (H.map fl)).1 *
-      Matrix.diagonal (fun i => ((alg (H.map fl)).2 i : ℂ)) * (alg (H.map fl)).1ᴴ) hδ
+      Matrix.diagonal (fun i => ((alg (H.map fl)).2 i : ℂ)) * (alg (H.map fl)).1ᴴ) δ
   have hfl' : (H + (s * δ) • Matrix.of fun _ _ : n => (1 : ℝ)).map fl = H.map fl := by
     ext i j
     simp only [Matrix.map_apply, Matrix.add_apply, Matrix.smul_apply, Matrix.of_apply,
