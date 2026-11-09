@@ -65,7 +65,9 @@ def binders (xs : Array Expr) : MetaM (List String) := do
 
 /-- The entry of a theorem, if its conclusion is a specification judgement. -/
 def entry? (env : Environment) (n : Name) (ty : Expr) : MetaM (Option Entry) := do
-  forallTelescope ty fun xs concl => do
+  forallTelescope ty fun xs concl₀ => do
+    -- a statement may bind abbreviations (`let M := …`) before its judgement
+    let concl ← zetaReduce concl₀
     let some (h, k) := heads.find? (concl.isAppOf ·.1) | return none
     let args := concl.getAppArgs
     if args.size < k then return none

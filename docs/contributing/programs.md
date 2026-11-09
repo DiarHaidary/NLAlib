@@ -202,6 +202,26 @@ gives a frame only under value hypotheses, use the kernel's `*_frame` spec
 - Never use `pairLayout.width` or a `List.range` map in a footprint.
 - Close `x = x` components with trivial; split_ifs cases equal up to defeq by `absurd h1 h2`.
 - Proofs at most 80 lines: split by sub-block, not by tactic tricks; default heartbeats.
+- Long do-blocks: matching `r >>= f` against a long block with `r` a named head def is slow
+  (bind associativity is defeq but expensive). Put the continuation into the def (a head def
+  taking `rest`) and state that piece in `Wp` form.
+- A builder argument written `.var k` where the callee's spec has `.const k`: transport with
+  `Computation.RoutineSpec.congr` and the block's `exec_…_var` run lemma.
+- A loop whose iterations all modify inside one fixed list: `Computation.RoutineSpec.forRange_const`
+  (one footprint); keep per-iteration footprints for the post only.
+- A conditional whose outcome the proof only learns by cases: case on the comparison and build the
+  untaken arm with `NLAlib.routineSpec_of_false`; `Computation.RoutineSpec.ifThenElse` needs the
+  outcome fixed in the precondition.
+- `Computation.RoutineSpec.bind` forgets the second routine's `Modifies`; rebuild as
+  `⟨composable, spec.with_modifies⟩` when a later frame needs it.
+- Old statements may allow a scratch buffer to alias an input (`Su = t`): take the aliasing case
+  as a conditional hypothesis and derive what the case forces from the reads that exist.
+- omega sees `IExp.eval e` as an atom: simp the evals first or pass explicit indices.
+- The naming rules N1–N18 and T13 run only in stage_check (they need the extraction), not in
+  the per-file rules check: a name's part before `_of_` must occur in the conclusion, a conclusion
+  must not start with `let`, names ending in `Tail` are registry bounds.
+- Spec lookup: the catalog `NLAlibTools/SpecCatalog.lean` writes every specification with its
+  pre, footprint, post and file:line (`SPEC_CATALOG=<out.md> lake env lean NLAlibTools/SpecCatalog.lean`).
 
 **Worked examples.** Scalar steps, a nested conditional, frame by `Modifies`:
 `NLAlib.spec_eighClampBlock` (`NLAlib/Matrix/Computation/SpectralBisectionClamp.lean:70`).
@@ -212,4 +232,6 @@ calls with keep bundles: `NLAlib.spec_eighSignBody` (same file, `:200`); corolla
 `NLAlib.spec_eighNodeProjectors` (`NLAlib/Matrix/Computation/SpectralBisectionNode/Setup.lean:207`).
 A split with a named window, allocation prefix and `congr`: `NLAlib.spec_eighSplitBody`,
 `NLAlib.spec_eighSplitBlock`
-(`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:569`, `:726`).
+(`NLAlib/Matrix/Computation/SpectralBisectionNode/Split.lean:569`, `:726`). A loop over slots
+with an invariant, a head def with its continuation, and both old lemmas from one spec:
+`NLAlib.spec_eighDownLevel` (`NLAlib/Matrix/Computation/SpectralBisectionProgram/DownLevel.lean:1140`).
