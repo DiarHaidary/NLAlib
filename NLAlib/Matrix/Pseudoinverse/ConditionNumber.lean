@@ -448,9 +448,25 @@ meta def evalPseudoConditionNumber : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.pseudoConditionNumber 7 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.pseudoConditionNumber_nonneg #[e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.pseudoConditionNumber, #[_, _, _, _, _, _, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.pseudoConditionNumber_nonneg #[A]))
+    | _ => failure
+
+/-! Regression: a `set` atom whose value is a pseudo-condition number, the case that used to
+panic in `NLAlib.Matrix.QRIteration.Dichotomy`. -/
+example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (V : Matrix m n 𝕜) :
+    True := by
+  set κ := NLAlib.pseudoConditionNumber V
+  have : 0 ≤ κ := by positivity
+  trivial
+
+example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (V : Matrix m n 𝕜)
+    (h : 1 ≤ NLAlib.pseudoConditionNumber V) : True := by
+  set κ := NLAlib.pseudoConditionNumber V
+  have : 0 < 2 * κ ^ 4 := by positivity
+  trivial
 
 end Mathlib.Meta.Positivity

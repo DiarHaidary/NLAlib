@@ -425,9 +425,11 @@ meta def evalKyFanNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.kyFanNorm 8 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.kyFanNorm_nonneg #[e.appFn!.appArg!, e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.kyFanNorm, #[_, _, _, _, _, _, a, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.kyFanNorm_nonneg #[a, A]))
+    | _ => failure
 
 end Mathlib.Meta.Positivity

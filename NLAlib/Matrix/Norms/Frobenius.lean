@@ -525,10 +525,12 @@ meta def evalFrobNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.frobNorm 7 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.frobNorm_nonneg #[e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.frobNorm, #[_, _, _, _, _, _, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.frobNorm_nonneg #[A]))
+    | _ => failure
 
 /-! Regression: the extension must not panic on a let-bound variable. -/
 example {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n] (G : Matrix m n 𝕜) :

@@ -360,9 +360,11 @@ meta def evalNuclearNorm : PositivityExt where eval {_ _} _ pα? e :=
   match pα? with
   | none => pure .none
   | some _ => do
-    let e ← whnfR e
-    unless e.isAppOfArity ``NLAlib.nuclearNorm 7 do throwError "failed"
-    let pf ← mkAppM ``NLAlib.nuclearNorm_nonneg #[e.appArg!]
-    pure (.nonnegative pf)
+    -- match the head after `whnfR` instead of reading arguments with `appArg!`, so that an atom
+    -- that is a let-bound variable (from `set`) is rejected, never a panic
+    match (← whnfR e).getAppFnArgs with
+    | (``NLAlib.nuclearNorm, #[_, _, _, _, _, _, A]) =>
+      pure (.nonnegative (← mkAppM ``NLAlib.nuclearNorm_nonneg #[A]))
+    | _ => failure
 
 end Mathlib.Meta.Positivity

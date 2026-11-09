@@ -74,13 +74,6 @@ theorem sum_lastRowWeights {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ} (hV : Is
   rw [← Finset.sum_div, div_eq_one_iff_eq (pow_ne_zero 2 (norm_toLp_last_ne_zero hV)),
     EuclideanSpace.norm_sq_eq]
 
-/-- A row vector times a matrix: $\|\mathbf{u}^{\mathsf{T}}\mathbf{A}\| \le
-\|\mathbf{A}\|_2\|\mathbf{u}\|$. -/
-private theorem norm_toLp_vecMul_le (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℂ)
-    (u : Fin (n + 1) → ℂ) :
-    ‖WithLp.toLp 2 (u ᵥ* A)‖ ≤ specNorm A * ‖WithLp.toLp 2 u‖ := by
-  simpa [specNorm_transpose, Matrix.mulVec_transpose] using norm_toLp_mulVec_le Aᵀ u
-
 /-- The last row of $\mathbf{V}\operatorname{diag}(\mathbf{g})\mathbf{V}^{-1}$ is
 $\mathbf{y}^{\mathsf{T}}\mathbf{V}^{-1}$ with $\mathbf{y}_k = \mathbf{V}_{n,k}\mathbf{g}_k$,
 and $\|\mathbf{y}\|^2 =
