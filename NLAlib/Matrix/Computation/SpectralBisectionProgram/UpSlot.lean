@@ -291,7 +291,7 @@ theorem routineSpec_eighWhen_zero_bind {pre : St P K C → Prop} {e : IExp ℕ}
 omit [Inhabited K] in
 /-- A guarded block whose index is $0$ leaves the state unchanged, in every mode. No printed
 source. -/
-theorem routineSpec_eighWhen_zero {pre : St P K C → Prop} {e : IExp ℕ}
+theorem routineSpec_eighWhen_of_eval_eq_zero {pre : St P K C → Prop} {e : IExp ℕ}
     {b : Builder P ι ℕ ℕ Unit} (he : e.eval = 0) :
     RoutineSpec md I pre (eighWhen e b) [] fun st st' => st' = st :=
   (spec_eighWhen (body := b) (pre := pre) (fp := []) (post := fun _ _ => True)
@@ -300,10 +300,10 @@ theorem routineSpec_eighWhen_zero {pre : St P K C → Prop} {e : IExp ℕ}
 omit [Inhabited K] in
 /-- Two guarded blocks whose indices are $0$ leave the state unchanged, in every mode. No printed
 source. -/
-theorem routineSpec_eighWhen_zero_zero {pre : St P K C → Prop} {e e' : IExp ℕ}
+theorem routineSpec_eighWhen_bind_eighWhen_of_eval_eq_zero {pre : St P K C → Prop} {e e' : IExp ℕ}
     {b b' : Builder P ι ℕ ℕ Unit} (he : e.eval = 0) (he' : e'.eval = 0) :
     RoutineSpec md I pre (eighWhen e b >>= fun _ => eighWhen e' b') [] fun st st' => st' = st :=
-  routineSpec_eighWhen_zero_bind he (routineSpec_eighWhen_zero he')
+  routineSpec_eighWhen_zero_bind he (routineSpec_eighWhen_of_eval_eq_zero he')
 
 
 end Whens
@@ -581,7 +581,8 @@ blocks writable. No printed source. -/
 theorem spec_eighUpSplit {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
     {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n d lo k kp t : ℕ)
-    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k) (hUE : H.Ua ≠ H.Ea) (hUQ : H.Ua ≠ H.Qa)
+    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k)
+    (hsum : k = kp + (k - kp)) (hUE : H.Ua ≠ H.Ea) (hUQ : H.Ua ≠ H.Qa)
     (htU : t ≠ H.Ua) (htE : t ≠ H.Ea) (Qp : Matrix (Fin k) (Fin kp) (K × K))
     (Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)) (Up : Matrix (Fin kp) (Fin kp) (K × K))
     (Um : Matrix (Fin (k - kp)) (Fin (k - kp)) (K × K)) (ep : Fin kp → K)
@@ -600,7 +601,7 @@ theorem spec_eighUpSplit {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (m
       [(H.Ua, 2 * (n * n) * d + 2 * n * lo, 2 * (k * k)), (H.Ea, n * d + lo, k)]
       fun st st' => pairLayout.Holds st'.store p H.Ua (2 * (n * n) * d + 2 * n * lo)
           ((Matrix.fromCols (mmR Qp Up) (mmR Qm Um)).submatrix id
-            ((finCongr (Nat.add_sub_of_le hkp.le).symm).trans finSumFinEquiv.symm)) ∧
+            ((finCongr hsum).trans finSumFinEquiv.symm)) ∧
         (∀ j : Fin kp, st'.store.read p H.Ea (n * d + lo + j) =
           some ((I.sem.bin p .add (ep j) σ).getD default)) ∧
         (∀ j : Fin (k - kp), st'.store.read p H.Ea (n * d + lo + kp + j) =
@@ -635,7 +636,8 @@ branch (`NLAlib.spec_eighUpSplit`). No printed source. -/
 theorem spec_eighUpNode_four {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR) (md : Mode)
     {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n d lo k kp t : ℕ)
-    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k) (hUE : H.Ua ≠ H.Ea) (hUQ : H.Ua ≠ H.Qa)
+    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k)
+    (hsum : k = kp + (k - kp)) (hUE : H.Ua ≠ H.Ea) (hUQ : H.Ua ≠ H.Qa)
     (htU : t ≠ H.Ua) (htE : t ≠ H.Ea) (v w : K) (hv : I.sem.toNat p v = some 4)
     (hw : I.sem.toNat p w = some kp) (Qp : Matrix (Fin k) (Fin kp) (K × K))
     (Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)) (Up : Matrix (Fin kp) (Fin kp) (K × K))
@@ -656,12 +658,12 @@ theorem spec_eighUpNode_four {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR
       [(H.Ua, 2 * (n * n) * d + 2 * n * lo, 2 * (k * k)), (H.Ea, n * d + lo, k)]
       fun st st' => pairLayout.Holds st'.store p H.Ua (2 * (n * n) * d + 2 * n * lo)
           ((Matrix.fromCols (mmR Qp Up) (mmR Qm Um)).submatrix id
-            ((finCongr (Nat.add_sub_of_le hkp.le).symm).trans finSumFinEquiv.symm)) ∧
+            ((finCongr hsum).trans finSumFinEquiv.symm)) ∧
         (∀ j : Fin kp, st'.store.read p H.Ea (n * d + lo + j) =
           some ((I.sem.bin p .add (ep j) σ).getD default)) ∧
         (∀ j : Fin (k - kp), st'.store.read p H.Ea (n * d + lo + kp + j) =
           some ((I.sem.bin p .sub (em j) σ).getD default)) ∧ PosKept st st' := by
-  have hsp := spec_eighUpSplit hmm md hsem p n d lo k kp t H hk hkp hUE hUQ htU htE Qp Qm Up Um
+  have hsp := spec_eighUpSplit hmm md hsem p n d lo k kp t H hk hkp hsum hUE hUQ htU htE Qp Qm Up Um
     ep em σ
   have hbk := RoutineSpec.bindIdx_of_read (m := md) (I := I) (p := p)
     (x := ⟨H.Kp, eighSlotOff (.const n) (.const d) (.var lo)⟩) (bound := (.var k : IExp ℕ))
@@ -695,7 +697,8 @@ theorem spec_eighUpNode_one (md : Mode) (p : P) (n d lo k t : ℕ) (mm : ι) (H 
     (pre := fun st => st.store.read p H.Kd (n * d + lo) = some v) (pre' := fun _ => True)
     (fun st h => by simpa [eighSlotOff] using h) hv (Mode.needs_of (by norm_num) md)
     (fun _ => (routineSpec_eighWhen_zero_bind (by simp [eighEqInd])
-      (routineSpec_eighWhen_zero_zero (by simp [eighEqInd]) (by simp [eighEqInd]))).spec)
+      (routineSpec_eighWhen_bind_eighWhen_of_eval_eq_zero (by simp [eighEqInd])
+        (by simp [eighEqInd]))).spec)
     (fun st h => trivial)).conseq (fun st h => h) (fun x hx => hx) ?_
   rintro st st' - ⟨-, h⟩
   subst h
@@ -727,7 +730,8 @@ theorem spec_eighUpNode_two (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
     (pre := fun st => st.store.read p H.Kd (n * d + lo) = some v ∧ _) (fun st h => by
       simpa [eighSlotOff] using h.1) hv (Mode.needs_of (by norm_num) md)
     (fun _ => (RoutineSpec.bind ⟨hw.composable, hw.spec⟩ (pre₂ := fun _ => True)
-      (routineSpec_eighWhen_zero_zero (by simp [eighEqInd]) (by simp [eighEqInd]))
+      (routineSpec_eighWhen_bind_eighWhen_of_eval_eq_zero (by simp [eighEqInd])
+        (by simp [eighEqInd]))
       (fun _ _ _ _ _ => trivial)).spec)
     (fun st h => h.2)).conseq (fun st h => h) (fun x hx => by simpa using hx) ?_
   rintro st st' - ⟨-, st₁, h, rfl⟩
@@ -760,7 +764,8 @@ theorem spec_eighUpNode_three (md : Mode) {u : P → ℝ} {dec : P → K → ℝ
       simpa [eighSlotOff] using h.1) hv (Mode.needs_of (by norm_num) md)
     (fun _ => (routineSpec_eighWhen_zero_bind (by simp [eighEqInd])
       (RoutineSpec.bind ⟨hw.composable, hw.spec⟩ (pre₂ := fun _ => True)
-        (routineSpec_eighWhen_zero (by simp [eighEqInd])) (fun _ _ _ _ _ => trivial))).spec)
+        (routineSpec_eighWhen_of_eval_eq_zero (by simp [eighEqInd]))
+        (fun _ _ _ _ _ => trivial))).spec)
     (fun st h => h.2)).conseq (fun st h => h) (fun x hx => by simpa using hx) ?_
   rintro st st' - ⟨-, st₁, h, rfl⟩
   exact (h.2 (by simp [eighEqInd]))
@@ -869,7 +874,8 @@ children's outputs. No printed source. -/
 theorem spec_eighUpNode_splitStep {mm : ι} (hmm : IsMatMulKernel I mm pairLayout mmR)
     (md : Mode) {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : md.Needs (IsRelErrSem u dec (fun _ _ => True) I.sem)) (p : P) (n d lo k kp t : ℕ)
-    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k) (hnd : H.handles.Nodup)
+    (H : EighArenas) (hk : lo + k ≤ n) (hkp : kp < k)
+    (hsum : k = kp + (k - kp)) (hnd : H.handles.Nodup)
     (htH : t ∉ H.handles) {s₀ : St P K C} (Qp : Matrix (Fin k) (Fin kp) (K × K))
     (Qm : Matrix (Fin k) (Fin (k - kp)) (K × K)) (Up : Matrix (Fin kp) (Fin kp) (K × K))
     (Um : Matrix (Fin (k - kp)) (Fin (k - kp)) (K × K)) (ep : Fin kp → K)
@@ -891,7 +897,7 @@ theorem spec_eighUpNode_splitStep {mm : ι} (hmm : IsMatMulKernel I mm pairLayou
       [(H.Ua, 2 * (n * n) * d + 2 * n * lo, 2 * (k * k)), (H.Ea, n * d + lo, k)]
       fun st st' => pairLayout.Holds st'.store p H.Ua (2 * (n * n) * d + 2 * n * lo)
           ((Matrix.fromCols (mmR Qp Up) (mmR Qm Um)).submatrix id
-            ((finCongr (Nat.add_sub_of_le hkp.le).symm).trans finSumFinEquiv.symm)) ∧
+            ((finCongr hsum).trans finSumFinEquiv.symm)) ∧
         (∀ j : Fin kp, st'.store.read p H.Ea (n * d + lo + j) =
           some ((I.sem.bin p .add (ep j) σ).getD default)) ∧
         (∀ j : Fin (k - kp), st'.store.read p H.Ea (n * d + lo + kp + j) =
@@ -904,8 +910,8 @@ theorem spec_eighUpNode_splitStep {mm : ι} (hmm : IsMatMulKernel I mm pairLayou
   intro st ⟨hsh, hF⟩
   have hnk : k * kp ≤ k * k := Nat.mul_le_mul_left k hkp.le
   have hkk : k * k ≤ n * k := Nat.mul_le_mul_right _ (by omega)
-  refine (spec_eighUpNode_four hmm md hsem p n d lo k kp t H hk hkp hUE hUQ htU htE v w hk' hk''
-    Qp Qm Up Um ep em σ).spec st ⟨by rw [hF.read_of_ne hKdU hKdE]; exact hv,
+  refine (spec_eighUpNode_four hmm md hsem p n d lo k kp t H hk hkp hsum hUE hUQ htU htE v w hk'
+    hk'' Qp Qm Up Um ep em σ).spec st ⟨by rw [hF.read_of_ne hKdU hKdE]; exact hv,
     by rw [hF.read_of_ne hKpU hKpE]; exact hw,
     hQp.of_forall_read_eq fun i _ _ => hF.read_of_ne (Ne.symm hUQ) hQE,
     hQm.of_forall_read_eq fun i _ _ => hF.read_of_ne (Ne.symm hUQ) hQE,
@@ -1016,8 +1022,9 @@ theorem spec_eighUpNodeStep_split {mm : ι} (hmm : IsMatMulKernel I mm pairLayou
     simp [eighLoc, ha, hs]
   obtain ⟨hUp, hEp⟩ := hout (a ++ [true]) lo _ (by simp [ha]) hchp
   obtain ⟨hUm, hEm⟩ := hout (a ++ [false]) (lo + kp) _ (by simp [ha]) hchm
-  refine (spec_eighUpNode_splitStep hmm md hsem p n d lo y.k kp t H hkn hkpk hnd htH _ _ _ _ _ _
-    (M.div y.R (M.ofNat 2)) hKd hKp hQp hQm hUp hUm hEp hEm (by rw [hyR]; exact ht0)
+  refine (spec_eighUpNode_splitStep hmm md hsem p n d lo y.k kp t H hkn hkpk
+    (Nat.add_sub_of_le hkp).symm hnd htH _ _ _ _ _ _ (M.div y.R (M.ofNat 2)) hKd hKp hQp hQm hUp hUm
+    hEp hEm (by rw [hyR]; exact ht0)
     hW).conseq (fun st h => h) (fun x hx => hx)
     fun st st' _ ⟨hU, hE1, hE2, hp⟩ => ⟨?_, fun i => ?_, hp⟩
   · simp only [eighAux, eighSlotTree, hs, ite_true, Bool.false_eq_true, ite_false]
