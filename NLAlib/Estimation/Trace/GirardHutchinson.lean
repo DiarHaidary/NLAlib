@@ -59,7 +59,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} {𝕜 : Type*
 $\mathbf{\Omega}$, whose $m$ columns are the probes:
 $\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega}) :=
 \operatorname{tr}(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega}) / m$. Junk value: $0$ when
-$\mathbf{\Omega}$ has no columns. [Epperly2023, Girard–Hutchinson Estimator: The Basics]. -/
+$\mathbf{\Omega}$ has no columns. [Epperly2023, Girard–Hutchinson Estimator: The Basics].
+Algorithm: girard-hutchinson -/
 noncomputable def girardHutchinson (A : Matrix n n 𝕜) (Ω : Matrix n m 𝕜) : 𝕜 :=
   (Ωᴴ * A * Ω).trace / Fintype.card m
 
@@ -172,7 +173,8 @@ $\operatorname{Var}[\mathsf{girardHutchinson}(\mathbf{A}, \mathbf{\Omega})] = v 
 single-probe variances of `NLAlib.variance_quadForm_of_hasLaw_gaussianVector`,
 `NLAlib.variance_quadForm_of_hasLaw_rademacherVector` and
 `NLAlib.variance_quadForm_sqrt_smul_of_hasLaw_uniformSphereVector`.
-[Epperly2023, Variance]. -/
+[Epperly2023, Variance].
+Result: girard-hutchinson-variance -/
 theorem variance_girardHutchinson [DecidableEq n] [Nonempty m] {X : Ω → Matrix n m ℝ}
     (hind : iIndepFun (fun j ω i => X ω i j) μ) (hX : ∀ j, IsIsotropic (fun ω i => X ω i j) μ)
     {A : Matrix n n ℝ} (hL2 : ∀ j, MemLp (fun ω => quadForm A fun i => X ω i j) 2 μ) {v : ℝ}

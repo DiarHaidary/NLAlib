@@ -195,7 +195,8 @@ $$\mathsf{gn}(\mathbf{A}, \mathbf{\Omega}, \mathbf{\Psi}) :=
 $\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}$ linear in $\mathbf{A}$. Total; it is $\mathbf{0}$ when
 $\mathbf{\Psi}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega} = \mathbf{0}$.
 [EpperlyWebber2026, Definition 4.1]; [TroppYurtseverUdellCevher2017, (4.1)–(4.3)]; there with random
-test matrices, and in TYUC through an orthonormal basis of the sketch. -/
+test matrices, and in TYUC through an orthonormal basis of the sketch.
+Algorithm: generalized-nystrom -/
 noncomputable def generalizedNystrom (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (Ψ : Matrix m p 𝕜) :
     Matrix m n 𝕜 :=
   obliqueProjector (A * Ω) Ψᴴ * A
@@ -367,7 +368,8 @@ vectors of the sketch, a QR factorization, and a final truncation that is the id
 the algorithm and report, from CEMMP, a high-probability $(1+\varepsilon)$ bound at
 $\Theta(r/\varepsilon^2)$ for both sketch sizes with unspecified constants; no bound is taken from
 it. The bounds on this output compose `NLAlib.frobNorm_sub_earlyTruncatedGeneralizedNystrom_sq`
-with a bound on the sketch-and-solve term and an early-truncated randomized SVD bound. -/
+with a bound on the sketch-and-solve term and an early-truncated randomized SVD bound.
+Algorithm: generalized-nystrom -/
 noncomputable def earlyTruncatedGeneralizedNystrom (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜)
     (Ψ : Matrix m p 𝕜) (k : ℕ) : Matrix m n 𝕜 :=
   obliqueProjector (truncatedSVD (A * Ω) k) Ψᴴ * A
