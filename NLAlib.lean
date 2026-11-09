@@ -84,6 +84,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
+public import NLAlib.ForMathlib.Analysis.MeanInequalities
 public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
@@ -539,6 +540,11 @@ public import NLAlib.Matrix.Pseudoinverse.Pinv
 public import NLAlib.Matrix.Pseudoinverse.RegularizedLeastSquares
 public import NLAlib.Matrix.Pseudoinverse.Tikhonov
 public import NLAlib.Matrix.Pseudoinverse.TruncatedSVD
+public import NLAlib.Matrix.QRIteration.Dichotomy
+public import NLAlib.Matrix.QRIteration.EigenvectorWeights
+public import NLAlib.Matrix.QRIteration.Ritz
+public import NLAlib.Matrix.QRIteration.ShiftedQR
+public import NLAlib.Matrix.QRIteration.Strategy
 public import NLAlib.Matrix.Spectral.BestRankApprox
 public import NLAlib.Matrix.Spectral.Congruence
 public import NLAlib.Matrix.Spectral.CourantFischer

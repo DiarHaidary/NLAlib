@@ -268,6 +268,14 @@ theorem specNorm_mul_right {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q) (A 
     specNorm (A * Q) = specNorm A :=
   hQ.specNorm_mul_right_of_card_eq rfl A
 
+/-- A unitary similarity preserves the spectral norm:
+$\|\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}\|_2 = \|\mathbf{A}\|_2$ for square $\mathbf{Q}$ with
+orthonormal columns. -/
+theorem specNorm_conjTranspose_mul_mul {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q)
+    (A : Matrix n n 𝕜) : specNorm (Qᴴ * A * Q) = specNorm A := by
+  rw [hQ.specNorm_mul_right, ← specNorm_conjTranspose, Matrix.conjTranspose_mul,
+    Matrix.conjTranspose_conjTranspose, hQ.specNorm_mul_right, specNorm_conjTranspose]
+
 /-- Right multiplication by a unitary matrix preserves the Frobenius norm. -/
 theorem frobNorm_mul_right {Q : Matrix n n 𝕜} (hQ : HasOrthonormalCols Q) (A : Matrix p n 𝕜) :
     frobNorm (A * Q) = frobNorm A :=

@@ -29,6 +29,11 @@ These results live in their own file because `IsUpperHessenberg` is defined in
   upper Hessenberg matrix is a thin QR factorization.
 * `NLAlib.givensHessenbergR_apply_eq_zero_of_add_two_lt`: three diagonals for a tridiagonal input.
 * `NLAlib.forall_givensHessenbergR_apply_self_ne_zero_iff`: nonzero pivots iff full column rank.
+* `NLAlib.isUpperHessenberg_givensHessenbergQ`: the unitary factor is upper Hessenberg, for
+  every input.
+* `NLAlib.givensHessenbergState_snd_apply_of_eq_add_one`,
+  `NLAlib.givensHessenbergState_fst_mulVec_apply_eq_zero_of_le`: rows and coordinates the early
+  steps leave untouched.
 * `NLAlib.pinv_submatrix_mulVec_single_eq_backSubst`,
   `NLAlib.norm_sub_mulVec_pinv_submatrix_mulVec_single_eq`: the progressive least-squares form
   and its residual.
@@ -295,6 +300,112 @@ theorem norm_sub_mulVec_pinv_submatrix_mulVec_single_eq {q : ℕ}
       givensHessenbergState_fst_mul_snd]
   rw [hv, hQ'.norm_toLp_mulVec, PiLp.toLp_single, PiLp.norm_single,
     ← (givensHessenbergState_castLE H hk le_rfl).2 (Fin.last k)]
+
+/-! ### The unitary factor is Hessenberg -/
+
+/-- Step $k$ of Givens QR left-multiplies the conjugate transpose of the accumulated factor. -/
+private theorem conjTranspose_givensHessenbergState_fst_succ (H : Matrix (Fin m) (Fin p) 𝕜)
+    (k : ℕ) :
+    ((givensHessenbergState H (k + 1)).1)ᴴ =
+      givensHessenbergStep (givensHessenbergState H k).2 k * ((givensHessenbergState H k).1)ᴴ := by
+  rw [show (givensHessenbergState H (k + 1)).1 = (givensHessenbergState H k).1 *
+      (givensHessenbergStep (givensHessenbergState H k).2 k)ᴴ from rfl,
+    Matrix.conjTranspose_mul, Matrix.conjTranspose_conjTranspose]
+
+/-- Invariant of the conjugate transpose of the accumulated factor after $k$ steps: its rows
+above $k$ vanish beyond the superdiagonal, its row $k$ vanishes beyond column $k$, and its rows
+from $k + 1$ on are unit vectors. -/
+private theorem conjTranspose_givensHessenbergState_fst_invariant (H : Matrix (Fin m) (Fin p) 𝕜)
+    (k : ℕ) :
+    (∀ a b : Fin m, (a : ℕ) < k → (a : ℕ) + 1 < b →
+      ((givensHessenbergState H k).1)ᴴ a b = 0) ∧
+    (∀ a b : Fin m, (a : ℕ) = k → k < (b : ℕ) → ((givensHessenbergState H k).1)ᴴ a b = 0) ∧
+    (∀ a b : Fin m, k + 1 ≤ (a : ℕ) →
+      ((givensHessenbergState H k).1)ᴴ a b = if a = b then 1 else 0) := by
+  induction k with
+  | zero =>
+    simp only [givensHessenbergState, Matrix.conjTranspose_one]
+    refine ⟨fun a b h => absurd h (Nat.not_lt_zero _), fun a b _ hb => ?_, fun a b _ => rfl⟩
+    exact Matrix.one_apply_ne (Fin.ne_of_val_ne (by omega))
+  | succ k ih =>
+    obtain ⟨h1, h2, h3⟩ := ih
+    rw [conjTranspose_givensHessenbergState_fst_succ]
+    -- rows `k` and `k + 1` both vanish beyond column `k + 1`
+    have hzero : ∀ b : Fin m, k + 1 < (b : ℕ) → ∀ c : Fin m,
+        ((c : ℕ) = k ∨ (c : ℕ) = k + 1) → ((givensHessenbergState H k).1)ᴴ c b = 0 := by
+      intro b hb c hc
+      rcases hc with hc | hc
+      · exact h2 c b hc (by omega)
+      · rw [h3 c b (by omega), if_neg]
+        intro h
+        subst h
+        omega
+    refine ⟨fun a b ha hab => ?_, fun a b ha hab => ?_, fun a b ha => ?_⟩
+    · rcases Nat.lt_succ_iff_lt_or_eq.mp ha with ha' | ha'
+      · rw [givensHessenbergStep_mul_apply_of_ne (k := k) (a := a) _ _ (by omega) (by omega)]
+        exact h1 a b ha' hab
+      · rw [givensHessenbergStep_mul_apply_of_apply_eq_zero _ _ (b := b)
+          (fun c hc => hzero b (by omega) c hc)]
+        exact hzero b (by omega) a (Or.inl ha')
+    · rw [givensHessenbergStep_mul_apply_of_apply_eq_zero _ _ (b := b)
+        (fun c hc => hzero b hab c hc)]
+      exact hzero b hab a (Or.inr ha)
+    · rw [givensHessenbergStep_mul_apply_of_ne (k := k) (a := a) _ _ (by omega) (by omega)]
+      exact h3 a b (by omega)
+
+/-- **The unitary factor of Givens QR is upper Hessenberg**: for every
+$\mathbf{H} \in \Bbbk^{m \times p}$, the factor $\mathbf{G}_0^{\mathsf{H}} \cdots
+\mathbf{G}_{p-1}^{\mathsf{H}}$ (`NLAlib.givensHessenbergQ`), a product of rotations in the planes
+$(k, k+1)$ in increasing order, vanishes below the first subdiagonal. No hypothesis on
+$\mathbf{H}$: the planes, not the coefficients, give the pattern. [GolubVanLoan2013, §5.2.5]. -/
+theorem isUpperHessenberg_givensHessenbergQ (H : Matrix (Fin m) (Fin p) 𝕜) :
+    IsUpperHessenberg (givensHessenbergQ H) := by
+  intro i j hij
+  have h := conjTranspose_givensHessenbergState_fst_invariant H p
+  have hT : ((givensHessenbergState H p).1)ᴴ j i = 0 := by
+    rcases lt_trichotomy (j : ℕ) p with hjp | hjp | hjp
+    · exact h.1 j i hjp hij
+    · exact h.2.1 j i hjp (by omega)
+    · rw [h.2.2 j i (by omega), if_neg]
+      intro hji
+      subst hji
+      omega
+  rw [Matrix.conjTranspose_apply, star_eq_zero] at hT
+  exact hT
+
+/-! ### The unitary factor and the untouched rows -/
+
+/-- The unitary factor of Givens QR has orthonormal columns. -/
+theorem hasOrthonormalCols_givensHessenbergQ (H : Matrix (Fin m) (Fin p) 𝕜) :
+    HasOrthonormalCols (givensHessenbergQ H) :=
+  hasOrthonormalCols_givensHessenbergState_fst _ _
+
+/-- The first $j \le i$ steps of Givens QR leave row $i + 1$ of the input alone. -/
+theorem givensHessenbergState_snd_apply_of_eq_add_one (A : Matrix (Fin m) (Fin p) 𝕜) {i j : ℕ}
+    (hj : j ≤ i) {a : Fin m} (ha : (a : ℕ) = i + 1) (b : Fin p) :
+    (givensHessenbergState A j).2 a b = A a b := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    rw [givensHessenbergState_succ_snd, givensHessenbergStep_mul_apply_of_ne _ _ (by omega)
+      (by omega)]
+    exact ih (by omega)
+
+/-- The first $j \le i$ steps of Givens QR keep the coordinates up to $i$ of a vector zero: if
+$\mathbf{v}_a = 0$ for $a \le i$, then so is $(\mathbf{S}_j^{\mathsf{H}}\mathbf{v})_a$, with
+$\mathbf{S}_j$ the accumulated unitary factor after $j$ steps. -/
+theorem givensHessenbergState_fst_mulVec_apply_eq_zero_of_le (A : Matrix (Fin m) (Fin p) 𝕜)
+    {v : Fin m → 𝕜} {i : ℕ} (hv : ∀ a : Fin m, (a : ℕ) ≤ i → v a = 0) {j : ℕ} (hj : j ≤ i)
+    (a : Fin m) (ha : (a : ℕ) ≤ i) : ((givensHessenbergState A j).1ᴴ *ᵥ v) a = 0 := by
+  induction j generalizing a with
+  | zero =>
+    simp only [givensHessenbergState, Matrix.conjTranspose_one, Matrix.one_mulVec]
+    exact hv a ha
+  | succ j ih =>
+    rw [conjTranspose_givensHessenbergState_succ_fst_mulVec]
+    exact (givensHessenbergStep_mul_apply_of_apply_eq_zero _
+      (Matrix.of fun i (_ : Unit) => ((givensHessenbergState A j).1ᴴ *ᵥ v) i) (b := ())
+      (fun a' ha' => ih (by omega) a' (by omega)) a).trans (ih (by omega) a ha)
 
 end GivensHessenbergQR
 
