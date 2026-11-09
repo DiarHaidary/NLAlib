@@ -90,7 +90,7 @@ theorem spec_eighClampBlock (md : Mode) {dec : P → K → ℝ} {p : P}
   refine (RoutineSpec.ifThenElse (r := decide (dec p z0 ≤ dec p w)) (fp := [(t, 6, 1)])
     (RoutineSpec.ifThenElse (r := decide (dec p zk ≤ dec p w))
       (RoutineSpec.ins (spec_copy (x := ⟨t, 3⟩) (dst := ⟨t, 6⟩) (a := zk)))
-      (RoutineSpec.pure (pre := fun _ => True))
+      (routineSpec_pure (pre := fun _ => True))
       (pre := fun st => st.store.read p t 3 = some zk ∧ st.store.read p t 6 = some w ∧
         st.store.shape = st₂.store.shape) (fun _ h => ⟨zk, w, h.1, h.2.1, hcmp _ _⟩)
       (fun _ h _ => ⟨h.1, hW 6 le_rfl _ (h.2.2.trans hm₂.1 |>.trans hm₁.1)⟩) fun _ _ _ => trivial)

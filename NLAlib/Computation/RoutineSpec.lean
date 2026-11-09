@@ -805,7 +805,7 @@ theorem RoutineSpec.ifThenElse {c : CmpOp} {r : Bool} {tb eb : Builder P ι ℕ 
   RoutineSpec.stmt (s := .ite p c x y tb.run eb.run) (Spec.ite ht.spec he.spec hcmp hT hE)
 
 /-- The empty builder modifies nothing and ends where it starts. -/
-theorem RoutineSpec.pure {pre : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)} :
+theorem routineSpec_pure {pre : St P K C → Prop} {fp : List (ℕ × ℕ × ℕ)} :
     RoutineSpec m I pre (pure () : Builder P ι ℕ ℕ Unit) fp fun st st' => st' = st :=
   ⟨fun f st => by
     change exec I (f ()).run st = (exec I .skip st).bind (exec I (f ()).run)
