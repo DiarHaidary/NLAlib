@@ -742,32 +742,34 @@ theorem spec_newtonSchulzStepBlock {mm : ι} (hmm : IsMatMulKernel I mm pairLayo
     hN.mono fun h => (⟨h.1.of_modifies hm, h.2.1.of_modifies hm, h.2.2.1.of_modifies hm,
       h.2.2.2.of_modifies hm⟩ : _ ∧ _ ∧ _ ∧ _)
   have hlit := fun (q : ℕ) => (hsem.mono fun h => h.1.lit_ok p (q : ℚ) trivial)
-  have hcWb : BlocksDisjoint [matBlock W 0 n n 2] [(c.buf, c.idx.eval, 1)] :=
-    blocksDisjoint_singleton_of_fst_ne (by simpa [matBlock] using Ne.symm hcW)
-  exact (RoutineSpec.ins (spec_litIdx_getD (e := 3))).wp_bind
-    ((Mode.needs_and.mpr ⟨hlit 3, (hw (.refl [] _)).mono (·.1)⟩))
-    fun st₁ hm₁ h₁ => (spec_zhermShift (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
-      (normal := normal) md hs p n (X := W) (Y := V) (xo := 0) (yo := 0) (c := c) _ (mmR A A)
-      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind
-      ⟨(readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies hW hm₁ hcWb, h₁.1,
-        (hw hm₁).mono (·.2.1)⟩
-    fun st₂ hm₂ h₂ => (spec_zneg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+  -- the input and its square are kept across the calls that do not write them
+  exact (RoutineSpec.ins (spec_litIdx_getD (e := 3))).wp_bind_keep
+    ((readsOnly_pairLayoutHolds p W 0 (mmR A A)).and (readsOnly_pairLayoutHolds p X xo.eval A))
+    (by fp_omega [hcW, hcX]) ((Mode.needs_and.mpr ⟨hlit 3, (hw (.refl [] _)).mono (·.1)⟩))
+    ⟨hW, hA⟩ fun st₁ hm₁ h₁ ⟨hW₁, hA₁⟩ => (spec_zhermShift (toNat := toNat) (mmR := mmR)
+      (qrR := qrR) (unif := unif) (normal := normal) md hs p n (X := W) (Y := V) (xo := 0)
+      (yo := 0) (c := c) _ (mmR A A)
+      (blockDisjoint_of_fst_ne (Ne.symm hWV))).wp_bind_keep
+      (readsOnly_pairLayoutHolds p X xo.eval A) (by fp_omega [hVX])
+      ⟨hW₁, h₁.1, (hw hm₁).mono (·.2.1)⟩ hA₁
+    fun st₂ hm₂ h₂ hA₂ => (spec_zneg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) md hs p n n (X := V) (Y := V) (xo := 0) (yo := 0) _
-      (.inr ⟨rfl, rfl⟩)).wp_bind ⟨h₂.1 (blockDisjoint_of_fst_ne hcV),
-        (hw (hm₁.trans hm₂)).mono (·.2.1)⟩
-    fun st₃ hm₃ h₃ => (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (V, 0)
+      (.inr ⟨rfl, rfl⟩)).wp_bind_keep (readsOnly_pairLayoutHolds p X xo.eval A)
+        (by fp_omega [hVX]) ⟨h₂.1 (blockDisjoint_of_fst_ne hcV),
+        (hw (hm₁.trans hm₂)).mono (·.2.1)⟩ hA₂
+    fun st₃ hm₃ h₃ hA₃ => (RoutineSpec.stmt (hmm.spec_kcall pairLayout.get_put md p (X, xo) (V, 0)
       (W, 0) A _)).wp_bind
-      ⟨(show ReadsOnly _ [matBlock X xo.eval n n 2] from
-        readsOnly_entryLayoutHolds pairLayout p X xo.eval A).of_modifies hA
-        (hm₁.trans hm₂ |>.trans hm₃) (by fp_omega [hcX, hVX]), h₃.1,
+      ⟨hA₃, h₃.1,
         blockDisjoint_of_fst_ne hWX, blockDisjoint_of_fst_ne hWV,
         (hw (hm₁.trans hm₂ |>.trans hm₃)).mono (·.2.2.1)⟩
-    fun st₄ hm₄ h₄ => (RoutineSpec.ins (spec_litIdx_getD (e := 4))).wp_bind
+    fun st₄ hm₄ h₄ => (RoutineSpec.ins (spec_litIdx_getD (e := 4))).wp_bind_keep
+      (readsOnly_pairLayoutHolds p W 0 _) (by fp_omega [hcW])
       ((Mode.needs_and.mpr ⟨hlit 4, (hw (hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄)).mono (·.1)⟩))
-    fun st₅ hm₅ h₅ => (spec_zhermAvg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+      h₄.1
+    fun st₅ hm₅ h₅ hW₅ => (spec_zhermAvg (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
       (normal := normal) md hs p n (X := W) (Y := X) (xo := 0) (yo := xo) (c := c) _ _
       (blockDisjoint_of_fst_ne hWX.symm) hcX).wp_run
-      ⟨(readsOnly_entryLayoutHolds pairLayout p W 0 _).of_modifies h₄.1 hm₅ hcWb, h₅.1,
+      ⟨hW₅, h₅.1,
         (hsem.elim fun ⟨hr, hu⟩ => (hw (hm₁.trans hm₂ |>.trans hm₃ |>.trans hm₄ |>.trans
           hm₅)).mono fun h => ⟨by
             obtain ⟨v, hv⟩ := hr.lit_ok p ((4 : ℕ) : ℚ) trivial
