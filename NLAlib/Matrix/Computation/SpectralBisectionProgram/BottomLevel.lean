@@ -255,14 +255,13 @@ theorem blockDisjoint_eighBottomFp {H : EighArenas} {n D b i : ℕ} (hUE : H.Ua 
   unfold EighArenas.LevelCell at hb
   fp_omega [hb, hUE]
 
-/-- The spent level writes the junk outputs: under exact integer literals up to $n + 4$, a
+/-- The spent level writes the junk outputs: a
 successful run of `NLAlib.eighBottomLevel` at depth $D$ from a state whose
 arenas hold the nodes of depth $D$ ends with the outputs of depth $D$ holding `NLAlib.eighAux` at
 budget $0$ (`NLAlib.EighArenas.OutHolds` at $D$: the machine's identity and zeros); every cell
 outside the output and eigenvalue arenas at depth $D$ is unchanged, the store shape and the tape
 positions too. No printed source. -/
-theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ F D : ℕ)
-    (hlit : IsExactIntLit dec I.sem (n + 4)) (H : EighArenas)
+theorem holds_of_exec_eighBottomLevel (p : P) (n ℓ₀ F D : ℕ) (H : EighArenas)
     {st st' : St P K C} {A : Matrix (Fin n) (Fin n) (K × K)} {R₀ ε β : K}
     (hH : H.Shaped st.store p n D)
     (hlev : H.LevelHolds I.sem st.store p (eighTapeMachine I p mmR qrR) n F ℓ₀ R₀ β
@@ -273,7 +272,6 @@ theorem holds_of_exec_eighBottomLevel {dec : P → K → ℝ} (p : P) (n ℓ₀ 
       (∀ q b i, ¬ ((b = H.Ua ∨ b = H.Ea) ∧ H.LevelCell n D b i) →
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
-  have _ := hlit
   have hUE : H.Ua ≠ H.Ea := fun e => by have hnd := hH.1; simp [EighArenas.handles, e] at hnd
   obtain ⟨hm, hout, hp⟩ := (spec_eighBottomLevel (I := I) (mmR := mmR) (qrR := qrR) .liberal p n
     ℓ₀ F D H).spec.holds_of_exec ⟨hH, hlev, trivial⟩ h

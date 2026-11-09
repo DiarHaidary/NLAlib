@@ -168,7 +168,7 @@ private theorem holds_of_exec_eighUpLoop {mm : ι} (hmm : IsMatMulKernel I mm pa
         ⟨n, A₀, R₀, ε, ℓ₀⟩ 0 ∧
       ∀ q b i, b ≠ H.Ua → b ≠ H.Ea → σu.store.read q b i = σd.store.read q b i := by
   set M := eighTapeMachine I p mmR qrR with hM
-  obtain ⟨hOD, hfrB, hshB, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit H
+  obtain ⟨hOD, hfrB, hshB, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) H
     (A := A₀) (ε := ε) (hH _ rfl) hlevD hbot
   have hR := forall_of_exec_loop_eq_some I (st := σb) (fun j (s : St P K C) =>
       s.store.shape = σd.store.shape ∧

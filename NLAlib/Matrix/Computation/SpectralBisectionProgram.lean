@@ -355,7 +355,7 @@ private theorem exists_exec_eighPasses {mm qr : ι} (hmm : IsMatMulKernel I mm p
       (fun b _ => by rw [hsh2]) hH
   obtain ⟨σb, hb⟩ := exists_exec_eighBottomLevel (ι := ι) hsem p n ℓ₀ F (ℓ₀ + 1) H hH2
     (hlv2 _ le_rfl)
-  obtain ⟨Ob, Fb, Sb, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) hlit H hH2
+  obtain ⟨Ob, Fb, Sb, -⟩ := holds_of_exec_eighBottomLevel p n ℓ₀ F (ℓ₀ + 1) H hH2
     (hlv2 _ le_rfl) hb
   refine exists_exec_bind_of_exec
     (by exact (exec_eighBottomLevel_of_eval_eq p n (ℓ₀ + 1) _ rfl H.Ua H.Ea H.Sz σ2).trans hb) ?_

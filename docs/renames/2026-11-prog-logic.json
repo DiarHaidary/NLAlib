@@ -1,0 +1,8 @@
+{
+ "date": "2026-11-09",
+ "note": "PROG-LOGIC (program logic, S2 migration). Before v0.1: no deprecated aliases. holds_of_exec_eighBottomLevel drops its hypothesis hlit (exact integer literals), which the refinement of the spent level never used; the statement is strictly stronger and its two callers pass one argument less. No public name changed.",
+ "renames": [],
+ "statementChanged": [
+  "NLAlib.holds_of_exec_eighBottomLevel"
+ ]
+}
