@@ -617,7 +617,7 @@ omit [AddMonoid C] in
 ($k \ge 2$, window test false), the branch's outcome at the machine's split index in the store
 `s` gives, in a store `s'` reading as `s` in the buffers below `N` (the arenas among them), the
 outcome of `NLAlib.holds_of_exec_eighNodeBlock`. -/
-private theorem eighStep_holds_of_branch {n F d lo k ℓ₀ N : ℕ} (hk2 : 2 ≤ k) (H : EighArenas)
+theorem eighStep_holds_of_branch {n F d lo k ℓ₀ N : ℕ} (hk2 : 2 ≤ k) (H : EighArenas)
     {p : P} {R R₀ ε β : K} {A : Matrix (Fin k) (Fin k) (K × K)} {s s' : Store P K}
     (hlt : ∀ b ∈ H.handles, b < N)
     (hpop : ∀ {q : P} {b i : ℕ}, b < N → s'.read q b i = s.read q b i)
