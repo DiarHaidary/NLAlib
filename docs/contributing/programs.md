@@ -220,6 +220,16 @@ gives a frame only under value hypotheses, use the kernel's `*_frame` spec
 - The naming rules N1–N18 and T13 run only in stage_check (they need the extraction), not in
   the per-file rules check: a name's part before `_of_` must occur in the conclusion, a conclusion
   must not start with `let`, names ending in `Tail` are registry bounds.
+- `Computation.IsMatMulKernel.spec_kcall` states its footprint and post with `pairLayout.width`:
+  `simp only [Computation.matBlock, Computation.pairLayout]` before fp_omega. A kernel call written
+  with `.var k` against a spec at `.const k`: `Computation.RoutineSpec.congr` with
+  `Computation.exec_eq_of_normIdx_eq I (by rfl) st`.
+- Dispatch on a stored kind (an index binder, then guarded blocks `eighWhen (eighEqInd c i)`): one
+  spec per kind, chaining `NLAlib.spec_eighWhen` for the taken guard and
+  `NLAlib.routineSpec_eighWhen_of_eval_eq_zero` for the others (`NLAlib.spec_eighUpNode_one`).
+- Develop in a scratch file that imports the built modules (8–10 s a check instead of minutes),
+  then move the proofs into the library and build. Before stage_check, the naming rules can be
+  run on an extraction with the rules check's `--partial` mode.
 - Spec lookup: the catalog `NLAlibTools/SpecCatalog.lean` writes every specification with its
   pre, footprint, post and file:line (`SPEC_CATALOG=<out.md> lake env lean NLAlibTools/SpecCatalog.lean`).
 

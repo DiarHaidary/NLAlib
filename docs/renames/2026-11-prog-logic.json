@@ -1,8 +1,10 @@
 {
  "date": "2026-11-09",
- "note": "PROG-LOGIC (program logic, S2 migration). Before v0.1: no deprecated aliases. holds_of_exec_eighBottomLevel drops its hypothesis hlit (exact integer literals), which the refinement of the spent level never used; the statement is strictly stronger and its two callers pass one argument less. No public name changed.",
+ "note": "PROG-LOGIC (program logic, S2 migration). Before v0.1: no deprecated aliases. holds_of_exec_eighBottomLevel drops its hypothesis hlit (exact integer literals), which the refinement of the spent level never used; the statement is strictly stronger and its two callers pass one argument less. No public name changed. exists_floatMachine_isAccurate drops hcN (0 ≤ cN), and exists_mul_card_le_specNorm_add_smul drops hδ (0 ≤ δ): neither proof used them, both statements are stronger; the implicit cN and δ become explicit since no hypothesis fixes them any more. Both replace a have _ := linter workaround.",
  "renames": [],
  "statementChanged": [
-  "NLAlib.holds_of_exec_eighBottomLevel"
+  "NLAlib.holds_of_exec_eighBottomLevel",
+  "NLAlib.exists_floatMachine_isAccurate",
+  "NLAlib.exists_mul_card_le_specNorm_add_smul"
  ]
 }

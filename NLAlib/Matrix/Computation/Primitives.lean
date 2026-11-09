@@ -308,15 +308,14 @@ private lemma exactMachine_isQRErr (u τ Ω : ℝ) (μ : ℕ → ℝ) (hu : 0 �
     exact mul_nonneg (mul_nonneg (hμ _) hu) (le_max_of_le_left (by positivity))
 
 /-- The machine contract is satisfiable: for every floor $\tau$, range $\Omega$, nonnegative
-constants $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$ and $c_{\mathrm N} \ge 0$, there is a
+constants $\mu_{\mathrm{MM}}$, $\mu_{\mathrm{QR}}$ and every $c_{\mathrm N}$, there is a
 `NLAlib.FloatMachine` on stored reals, with real seeds and complex samples, meeting
 `NLAlib.FloatMachine.IsAccurate` with the identity decoding and $u = 0$: exact arithmetic,
 `Nat.floor` for the conversion, $s v$ for the uniform sampler, the parts of $z$ for the normal
 sampler, exact products and an exact QR factorization. No printed source. -/
 theorem exists_floatMachine_isAccurate (τ Ω : ℝ) {μM μQ : ℕ → ℝ} (hμM : ∀ d, 0 ≤ μM d)
-    (hμQ : ∀ d, 0 ≤ μQ d) {cN : ℝ} (hcN : 0 ≤ cN) :
+    (hμQ : ∀ d, 0 ≤ μQ d) (cN : ℝ) :
     ∃ M : FloatMachine ℝ ℝ ℂ, M.IsAccurate id 0 τ Ω μM μQ cN := by
-  have _ := hcN
   refine ⟨exactMachine, ?_⟩
   refine
     { dec_zero := rfl
@@ -369,7 +368,7 @@ theorem exists_floatMachine_isAccurate_binaryFloatRound (fmt : Float.Model.Forma
   have hu : 0 ≤ u := by positivity
   have hτ : 0 < τ := by positivity
   set R := Computation.binaryFloatRound fmt r
-  obtain ⟨M₀, hM₀⟩ := exists_floatMachine_isAccurate τ fmt.maxFinite hμM hμQ (Real.sqrt_nonneg 2)
+  obtain ⟨M₀, hM₀⟩ := exists_floatMachine_isAccurate τ fmt.maxFinite hμM hμQ (Real.sqrt 2)
   have hmax : ∀ a, 0 ≤ max a τ := fun a => le_max_of_le_right hτ.le
   refine ⟨{ M₀ with
       ofNat := (fun k => R k), add := (fun x y => R (x + y)), sub := (fun x y => R (x - y))
