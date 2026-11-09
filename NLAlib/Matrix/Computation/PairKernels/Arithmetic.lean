@@ -21,6 +21,7 @@ operation of the machine of the semantics.
   `NLAlib.Computation.holds_of_exec_zsub`, `NLAlib.Computation.holds_of_exec_zscal`,
   `NLAlib.Computation.holds_of_exec_zconjTranspose`, `NLAlib.Computation.read_of_exec_ztraceRe`:
   what a successful run computes.
+* `NLAlib.Computation.spec_zidentity`: the identity as a routine specification.
 * `NLAlib.Computation.spec_zconjTranspose_frame`, `NLAlib.Computation.spec_zconjTranspose`: the
   conjugate transpose as a routine specification of the program logic.
 -/
@@ -486,6 +487,40 @@ theorem read_of_exec_ztraceRe (p : P) (n : ℕ) {X : ℕ} {xo : IExp ℕ} {dst :
   rw [hv, Option.getD_some]
 
 /-! ### Frames and specifications -/
+
+/-- **The identity as a routine specification**: the run of `NLAlib.Computation.zidentity`
+modifies only the output block at `yo` of `Y`, which then holds `M.identityMat n`, and keeps the
+tape positions; in mode `total` it also succeeds, given the literals $0$ and $1$ and the output
+block writable. No printed source. -/
+theorem spec_zidentity (md : Mode) (p : P) (n : ℕ) {Y : ℕ} {yo : IExp ℕ} :
+    let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
+    RoutineSpec md I (fun st => md.Needs ((∃ v, I.sem.lit p 0 = some v) ∧
+        (∃ v, I.sem.lit p 1 = some v) ∧ Writable st.store p Y yo.eval (2 * (n * n))))
+      (zidentity (ι := ι) p (.const n) Y yo) [(Y, yo.eval, 2 * (n * n))]
+      fun st st' => pairLayout.Holds st'.store p Y yo.eval (M.identityMat n) ∧ PosKept st st' := by
+  intro M
+  have hA := spec_forRange_lit_frame (m := md) (I := I) (p := p) (q := 0)
+    (n := 2 * (IExp.const n * IExp.const n)) (idx := fun w => yo + .var w) (Y := Y)
+    (off := yo.eval) (N := 2 * (n * n)) fun i hi => by
+      simp only [IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const, IExp.eval_add,
+        IExp.eval_var] at hi ⊢
+      constructor <;> nlinarith
+  have hB := spec_forRange_lit_frame (m := md) (I := I) (p := p) (q := 1) (n := .const n)
+    (idx := fun i => yo + zidx (.const n) (.var i) (.var i)) (Y := Y) (off := yo.eval)
+    (N := 2 * (n * n)) fun i hi => by
+      simp only [zidx, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const, IExp.eval_add,
+        IExp.eval_var] at hi ⊢
+      constructor <;> nlinarith
+  have hA' := hA.conseq (pre' := fun st => md.Needs ((∃ v, I.sem.lit p 0 = some v) ∧
+    (∃ v, I.sem.lit p 1 = some v) ∧ Writable st.store p Y yo.eval (2 * (n * n))))
+    (fun _ h => h.mono fun h => ⟨h.1, h.2.2⟩) (fun _ h => h) fun _ _ _ h => h
+  refine ((RoutineSpec.named _ _ ((RoutineSpec.bind hA' hB fun _ _ h hm _ =>
+    h.mono fun h => ⟨h.2.1, h.2.2.of_modifies hm⟩).spec.conseq (fun _ h => h)
+      (fun _ h => by simpa using h)
+      fun _ _ _ ⟨_, h₁, h₂⟩ => h₂.trans h₁)).and_liberal fun st _ st' h =>
+        (holds_of_exec_zidentity (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+          (normal := normal) p n h).1).conseq (fun _ h => h) (fun _ h => h)
+      fun _ _ _ h => ⟨h.2, h.1⟩
 
 omit [Inhabited K] in
 /-- A conjugate transpose succeeds under the standard model when the output block fits. -/

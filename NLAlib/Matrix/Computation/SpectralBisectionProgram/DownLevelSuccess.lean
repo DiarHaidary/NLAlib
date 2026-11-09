@@ -127,51 +127,6 @@ theorem exists_bin_eq_some {u : P → ℝ} {dec : P → K → ℝ}
   exact ⟨z, hz, hsem.bin_err p b x y z hb hz⟩
 
 omit [Inhabited K] in
-/-- A literal into a cell of a buffer, then nothing, succeeds and keeps the other buffers. -/
-private theorem exists_exec_seq_lit_skip {p : P} {Y len : ℕ} {i : IExp ℕ} {q₀ : ℚ} {s : St P K C}
-    (hz : ∃ z, I.sem.lit p q₀ = some z) (hY : s.store.shape[Y]? = some (p, len))
-    (hi : i.eval < len) :
-    ∃ s', exec I (.seq (.instr (.lit p ⟨Y, i⟩ q₀)) .skip) s = some s' ∧
-      s'.store.shape = s.store.shape ∧
-        ∀ q b j, b ≠ Y → s'.store.read q b j = s.store.read q b j := by
-  obtain ⟨z, hz⟩ := hz
-  obtain ⟨s', hw⟩ := Store.exists_write_eq_some_of_getElem?_shape z hY hi
-  refine ⟨_, (exec_seq_instr_lit I hz hw).trans (exec_skip I _), Store.shape_of_write_eq_some hw,
-    fun q b j hb => Store.read_of_write_eq_some_of_ne hw (Or.inl hb)⟩
-
-omit [Inhabited K] in
-/-- A copy into a cell of a buffer, then nothing, succeeds and keeps the other buffers. -/
-private theorem exists_exec_seq_copy_skip {p : P} {Y len : ℕ} {i : IExp ℕ} {src : Cell ℕ ℕ}
-    {s : St P K C}
-    (hx : ∃ v, s.store.read p src.buf src.idx.eval = some v)
-    (hY : s.store.shape[Y]? = some (p, len)) (hi : i.eval < len) :
-    ∃ s', exec I (.seq (.instr (.copy p ⟨Y, i⟩ src)) .skip) s = some s' ∧
-      s'.store.shape = s.store.shape ∧
-        ∀ q b j, b ≠ Y → s'.store.read q b j = s.store.read q b j := by
-  obtain ⟨v, hv⟩ := hx
-  obtain ⟨s', hw⟩ := Store.exists_write_eq_some_of_getElem?_shape v hY hi
-  refine ⟨_, (exec_seq_instr_copy I hv hw).trans (exec_skip I _), Store.shape_of_write_eq_some hw,
-    fun q b j hb => Store.read_of_write_eq_some_of_ne hw (Or.inl hb)⟩
-
-omit [Inhabited K] in
-/-- A loop whose steps succeed, keeping the shape and the buffers other than `Y`. -/
-private theorem exists_exec_loop_of_frame {m : IExp ℕ} {body : ℕ → Stmt P ι ℕ ℕ} {Y : ℕ}
-    {st : St P K C}
-    (hstep : ∀ w < m.eval, ∀ s : St P K C, s.store.shape = st.store.shape →
-      (∀ q b j, b ≠ Y → s.store.read q b j = st.store.read q b j) →
-      ∃ s', exec I (body w) s = some s' ∧ s'.store.shape = s.store.shape ∧
-        ∀ q b j, b ≠ Y → s'.store.read q b j = s.store.read q b j) :
-    ∃ st', exec I (.loop m body) st = some st' ∧ st'.store.shape = st.store.shape ∧
-      ∀ q b j, b ≠ Y → st'.store.read q b j = st.store.read q b j := by
-  obtain ⟨st', h, hR⟩ := exists_exec_loop_eq_some_of_forall I (fun _ (s : St P K C) =>
-    s.store.shape = st.store.shape ∧
-      ∀ q b j, b ≠ Y → s.store.read q b j = st.store.read q b j) ⟨rfl, fun _ _ _ _ => rfl⟩
-    (fun w hw s ⟨hs, hf⟩ => by
-      obtain ⟨s', h', hs', hf'⟩ := hstep w hw s hs hf
-      exact ⟨s', h', hs'.trans hs, fun q b j hb => (hf' q b j hb).trans (hf q b j hb)⟩) (st := st)
-  exact ⟨st', h, hR⟩
-
-omit [Inhabited K] in
 /-- A leaf succeeds when its blocks are allocated and its matrix is stored. -/
 private theorem exists_exec_eighLeafBlock {u : P → ℝ} {dec : P → K → ℝ}
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (p : P) (diag : Bool) (k : ℕ)
@@ -181,53 +136,27 @@ private theorem exists_exec_eighLeafBlock {u : P → ℝ} {dec : P → K → ℝ
     (hUa : st.store.shape[Ua]? = some (p, lU)) (hU : uo.eval + 2 * (k * k) ≤ lU)
     (hEa : st.store.shape[Ea]? = some (p, lE)) (hE : eo.eval + k ≤ lE)
     (hKd : st.store.shape[kd.buf]? = some (p, lK)) (hK : kd.idx.eval < lK)
-    (hMaUa : Ma ≠ Ua) (hMaEa : Ma ≠ Ea) :
+    (hMaUa : Ma ≠ Ua) (hMaEa : Ma ≠ Ea) (hUaEa : Ua ≠ Ea)
+    (hkd : kd.buf ≠ Ma ∧ kd.buf ≠ Ua ∧ kd.buf ≠ Ea) :
     ∃ st', exec I (eighLeafBlock (ι := ι) p diag (.const k) Ma mo Ua uo Ea eo kd).run st =
       some st' := by
-  have hii : ∀ i < k, 2 * (i + k * i) + 2 ≤ 2 * (k * k) := fun i hi => by nlinarith
-  have hz0 := hsem.lit_ok p 0 trivial
-  have hz1 := hsem.lit_ok p 1 trivial
-  obtain ⟨z1', hz1'⟩ := hsem.lit_ok p ((1 : ℕ) : ℚ) trivial
-  obtain ⟨s1, h1, sh1, fr1⟩ := exists_exec_loop_of_frame (Y := Ua) (st := st)
-    (m := 2 * (IExp.const k * IExp.const k))
-    (body := fun w => .seq (.instr (.lit p ⟨Ua, uo + .var w⟩ 0)) .skip)
-    (fun w hw s hs _ => exists_exec_seq_lit_skip hz0 (by rw [hs]; exact hUa) (by
-      change uo.eval + w < lU
-      change w < 2 * (k * k) at hw
-      omega))
-  obtain ⟨s2, h2, sh2, fr2⟩ := exists_exec_loop_of_frame (Y := Ua) (st := s1) (m := IExp.const k)
-    (body := fun i => .seq (.instr (.lit p ⟨Ua, uo + zidx (.const k) (.var i) (.var i)⟩ 1)) .skip)
-    (fun i hi s hs _ => exists_exec_seq_lit_skip hz1 (by rw [hs, sh1]; exact hUa) (by
-      change uo.eval + 2 * (i + k * i) < lU
-      change i < k at hi
-      have := hii i hi
-      omega))
-  have hMa2 : ∀ i < k, ∃ v, s2.store.read p Ma (mo.eval + 2 * (i + k * i)) = some v := by
-    intro i hi
-    rw [fr2 _ _ _ hMaUa, fr1 _ _ _ hMaUa]
-    exact ⟨_, hA ⟨i, hi⟩ ⟨i, hi⟩ ⟨0, two_pos⟩⟩
-  obtain ⟨s3, h3, sh3, fr3⟩ := exists_exec_loop_of_frame (Y := Ea) (st := s2) (m := IExp.const k)
-    (body := fun i => ((if diag then Builder.ins (ι := ι) (.copy p ⟨Ea, eo + .var i⟩
-        ⟨Ma, mo + zidx (.const k) (.var i) (.var i)⟩)
-      else Builder.ins (.lit p ⟨Ea, eo + .var i⟩ 0)) : Builder P ι ℕ ℕ Unit).run)
-    (fun i hi s hs hf => by
-      change i < k at hi
-      cases diag
-      · exact exists_exec_seq_lit_skip hz0 (by rw [hs, sh2, sh1]; exact hEa)
-          (by change eo.eval + i < lE; omega)
-      · refine exists_exec_seq_copy_skip ?_ (by rw [hs, sh2, sh1]; exact hEa) (by
-          change eo.eval + i < lE; omega)
-        obtain ⟨v, hv⟩ := hMa2 i hi
-        exact ⟨v, (hf _ _ _ hMaEa).trans hv⟩)
-  obtain ⟨s4, hw4⟩ := Store.exists_write_eq_some_of_getElem?_shape z1'
-    (by rw [sh3, sh2, sh1]; exact hKd) hK
-  change ∃ st', exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) .skip)))
-    (.seq (.loop _ _) (.seq (.instr (.litIdx p kd 1)) .skip))) st = some st'
-  refine exists_exec_seq_of_left (s₁ := s2) ?_ (exists_exec_seq_of_left h3
-    ⟨_, (exec_seq_instr_litIdx I (v := z1') hz1' hw4).trans (exec_skip I _)⟩)
-  rw [exec_named]
-  exact (exec_seq_of_exec_eq_some I h1).trans ((exec_seq_of_exec_eq_some I h2).trans
-    (exec_skip I _))
+  obtain ⟨z0, -⟩ := hsem.lit_ok p 0 trivial
+  have : Inhabited K := ⟨z0⟩
+  have hkd' : ∀ x ∈ [(Ma, mo.eval, 2 * (k * k)), (Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k)],
+      blockDisjoint (kd.buf, kd.idx.eval, 1) x = true := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
+    exact ⟨blockDisjoint_of_fst_ne hkd.1, blockDisjoint_of_fst_ne hkd.2.1,
+      blockDisjoint_of_fst_ne hkd.2.2⟩
+  refine ((spec_eighLeafBlock (I := I) (toNat := fun _ => 0)
+    (mmR := @fun _ _ _ _ _ => Matrix.of fun _ _ => default) (qrR := @fun _ _ X =>
+    (Matrix.of fun _ _ => default, X)) (unif := fun x (_ : K) => x) (normal := id) .total p diag k
+    A (blockDisjoint_of_fst_ne hMaUa.symm) (blockDisjoint_of_fst_ne hMaEa.symm)
+    (blockDisjoint_of_fst_ne hUaEa) hkd').spec.exists_exec (st := st)
+    ⟨hA, hsem.lit_ok p 0 trivial, hsem.lit_ok p 1 trivial, ?_⟩).imp fun _ h => h.1
+  simp only [WritableBlocks, List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp,
+    forall_eq]
+  exact ⟨writable_of_shape_eq rfl hUa hU, writable_of_shape_eq rfl hEa hE,
+    writable_of_shape_eq rfl hKd hK⟩
 
 omit [DecidableEq P] [AddMonoid C] in
 /-- The windows of the levels decode to positive values from a positive $R_0$ and to $0$
@@ -332,6 +261,10 @@ private theorem exists_exec_slotBody_leaf {u : P → ℝ} {dec : P → K → ℝ
     hEa (by change n * d + lo + y.k ≤ _; omega) hKd (by change n * d + lo < _; omega)
     (fun h => by simp [EighArenas.handles, h] at hnd)
     (fun h => by simp [EighArenas.handles, h] at hnd)
+    (fun h => by simp [EighArenas.handles, h] at hnd)
+    ⟨fun (h : H.Kd = H.Ma) => by simp [EighArenas.handles, h] at hnd,
+      fun (h : H.Kd = H.Ua) => by simp [EighArenas.handles, h] at hnd,
+      fun (h : H.Kd = H.Ea) => by simp [EighArenas.handles, h] at hnd⟩
   exact ⟨σ', (exec_eighLeafBlock_var p diag y.k H.Ma H.Ua H.Ea _ _ _ _ _).trans h'⟩
 
 /-- Under the standard model with $u(p) < 1$, exact integer literals up to $n + 4$, the exact

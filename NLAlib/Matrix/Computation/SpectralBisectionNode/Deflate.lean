@@ -48,91 +48,89 @@ variable {P ι K C : Type} [DecidableEq P] [AddMonoid C] [Inhabited K] {I : Inte
 
 /-! ### The blocks of a node -/
 
-omit [Inhabited K] in
-/-- A successful loop of copies from the cells `g i` of `X` into the distinct cells `f i` of `Y`,
-no source among the targets, keeps the shape and the tape positions, copies every source and leaves
-every other cell unchanged. -/
-private theorem read_of_exec_loop_copy_leaf {p : P} {m : IExp ℕ} {X Y : ℕ} {f g : ℕ → IExp ℕ}
-    {st st' : St P K C}
-    (hf : ∀ i < m.eval, ∀ j < m.eval, (f i).eval = (f j).eval → i = j)
-    (hfg : ∀ i < m.eval, ∀ j < m.eval, X ≠ Y ∨ (g i).eval ≠ (f j).eval)
-    (h : exec I (.loop m fun i => .seq (.instr (.copy p ⟨Y, f i⟩ ⟨X, g i⟩)) .skip) st =
-      some st') :
-    st'.store.shape = st.store.shape ∧ st'.pos = st.pos ∧
-      (∀ i < m.eval, st'.store.read p Y (f i).eval = st.store.read p X (g i).eval) ∧
-      ∀ q b j, (b ≠ Y ∨ ∀ i < m.eval, (f i).eval ≠ j) →
-        st'.store.read q b j = st.store.read q b j := by
-  refine forall_of_exec_loop_eq_some I (fun w s => s.store.shape = st.store.shape ∧
-      s.pos = st.pos ∧
-      (∀ i < w, s.store.read p Y (f i).eval = st.store.read p X (g i).eval) ∧
-      ∀ q b j, (b ≠ Y ∨ ∀ i < w, (f i).eval ≠ j) → s.store.read q b j = st.store.read q b j)
-    ⟨rfl, rfl, fun _ h => absurd h (Nat.not_lt_zero _), fun _ _ _ _ => rfl⟩ ?_ h
-  rintro w hwm s₁ s₂ ⟨hsh, hps, hrd, hfr⟩ hex
-  rw [exec_seq_skip, exec_instr] at hex
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at hex
-  obtain ⟨_, ⟨v, hv, s', hw', rfl⟩, rfl⟩ := hex
-  refine ⟨(Store.shape_of_write_eq_some hw').trans hsh, hps, fun i hi => ?_,
-    fun q b j hb => ?_⟩
-  · rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
-    · rw [Store.read_of_write_eq_some_of_ne hw' (Or.inr fun he =>
-        absurd (hf i (hi.trans hwm) w hwm he) (Nat.ne_of_lt hi))]
-      exact hrd i hi
-    · rw [Store.read_of_write_eq_some hw', ← hv]
-      refine hfr p X (g i).eval ?_
-      by_cases hXY : X = Y
-      · exact Or.inr fun j hj he =>
-          ((hfg i hwm j (hj.trans hwm)).resolve_left (not_not.mpr hXY)) he.symm
-      · exact Or.inl hXY
-  · rw [Store.read_of_write_eq_some_of_ne hw' ?_]
-    · exact hfr q b j (hb.imp_right fun h i hi => h i (Nat.lt_succ_of_lt hi))
-    · exact hb.imp_right fun h => (h w (Nat.lt_succ_self w)).symm
-
-/-- The diagonal loop of a leaf: from a block at `mo` of `Ma` holding $\mathbf{A}$, the cells
-$eo + i$ of `Ea` get $\operatorname{Re} a_{ii}$ (`diag`) or the machine's zero; the shape, the
-positions and every cell outside them are kept. -/
-private theorem read_of_exec_leaf_diag (p : P) (diag : Bool) (k : ℕ) {Ma Ea : ℕ}
-    {mo eo : IExp ℕ} {s₁ s₂ : St P K C} {A : Matrix (Fin k) (Fin k) (K × K)}
-    (hA : pairLayout.Holds s₁.store p Ma mo.eval A)
+/-- **A leaf as a routine specification**, in every mode: from a state holding the
+$k \times k$ matrix $\mathbf{A}$ at `mo` of `Ma`, the run of `NLAlib.eighLeafBlock` modifies only
+the identity block at `uo` of `Ua`, the $k$ cells from `eo` of `Ea` and the kind cell, which then
+hold the machine's identity, the real diagonal of $\mathbf{A}$ (`diag`) or the machine's zero, and
+the literal $1$; it keeps the tape positions; in mode `total` it also succeeds, given the literals
+$0$ and $1$ and the three output blocks writable. No printed source. -/
+theorem spec_eighLeafBlock (md : Mode) (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : ℕ}
+    {mo uo eo : IExp ℕ} {kd : Cell ℕ ℕ} (A : Matrix (Fin k) (Fin k) (K × K))
+    (hUA : blockDisjoint (Ua, uo.eval, 2 * (k * k)) (Ma, mo.eval, 2 * (k * k)) = true)
     (hEA : blockDisjoint (Ea, eo.eval, k) (Ma, mo.eval, 2 * (k * k)) = true)
-    (hl : exec I (.loop (.const k) fun i => (if diag then
-        ins (.copy p ⟨Ea, eo + .var i⟩ ⟨Ma, mo + zidx (.const k) (.var i) (.var i)⟩)
-      else ins (.lit p ⟨Ea, eo + .var i⟩ 0) : Builder P ι ℕ ℕ Unit).run) s₁ = some s₂) :
+    (hUE : blockDisjoint (Ua, uo.eval, 2 * (k * k)) (Ea, eo.eval, k) = true)
+    (hkd : ∀ x ∈ [(Ma, mo.eval, 2 * (k * k)), (Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k)],
+      blockDisjoint (kd.buf, kd.idx.eval, 1) x = true) :
     let M := I.sem.toFloatMachine p toNat mmR qrR unif normal
-    s₂.store.shape = s₁.store.shape ∧ s₂.pos = s₁.pos ∧
-      (∀ i : Fin k, s₂.store.read p Ea (eo.eval + i) = some (if diag then (A i i).1 else M.zero)) ∧
-      ∀ q b j, (b ≠ Ea ∨ j < eo.eval ∨ eo.eval + k ≤ j) →
-        s₂.store.read q b j = s₁.store.read q b j := by
+    RoutineSpec md I (fun st => pairLayout.Holds st.store p Ma mo.eval A ∧ md.Needs
+        ((∃ v, I.sem.lit p 0 = some v) ∧ (∃ v, I.sem.lit p 1 = some v) ∧ WritableBlocks st.store p
+          [(Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k), (kd.buf, kd.idx.eval, 1)]))
+      (eighLeafBlock (ι := ι) p diag (.const k) Ma mo Ua uo Ea eo kd)
+      [(Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k), (kd.buf, kd.idx.eval, 1)]
+      fun st st' => pairLayout.Holds st'.store p Ua uo.eval (M.identityMat k) ∧
+        (∀ i : Fin k, st'.store.read p Ea (eo.eval + i) =
+          some (if diag then (A i i).1 else M.zero)) ∧
+        st'.store.read p kd.buf kd.idx.eval = I.sem.lit p ((1 : ℕ) : ℚ) ∧ PosKept st st' := by
   intro M
-  have hii : ∀ i < k, 2 * (i + k * i) + 2 ≤ 2 * (k * k) := fun i hi => by nlinarith
+  have hk2 : ∀ i < k, 2 * (i + k * i) + 1 < 2 * (k * k) := fun i hi => by nlinarith
+  refine ⟨by exec_composable, fun st ⟨hA, hN⟩ => ?_⟩
+  have hW := fun s (hs : Store.shape s = st.store.shape) b o l (hx : (b, o, l) ∈
+      [(Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k), (kd.buf, kd.idx.eval, 1)]) =>
+    hN.mono fun h => (h.2.2 _ hx).of_shape_eq hs
+  refine (spec_zidentity (toNat := toNat) (mmR := mmR) (qrR := qrR) (unif := unif)
+    (normal := normal) md p k (Y := Ua) (yo := uo)).wp_bind ((Mode.needs_and.mpr ⟨hN,
+      hW _ rfl Ua uo.eval (2 * (k * k)) (by simp)⟩).mono fun ⟨h, hw⟩ =>
+        ⟨h.1, h.2.1, hw⟩)
+    fun st₁ hm₁ ⟨hU, hp₁⟩ => ?_
+  have hA₁ := (readsOnly_entryLayoutHolds _ p Ma _ A).of_modifies hA hm₁
+    (show BlocksDisjoint [matBlock Ma mo.eval k k 2] _ by fp_omega [hUA])
+  have tail : ∀ st₂, Modifies [(Ea, eo.eval, k)] st₁.store st₂.store → st₂.pos = st₁.pos →
+      (∀ i : Fin k, st₂.store.read p Ea (eo.eval + i) = some (if diag then (A i i).1 else M.zero)) →
+      Wp md I (Builder.ins (.litIdx p kd 1)).run (fun st' => Modifies
+        [(Ua, uo.eval, 2 * (k * k)), (Ea, eo.eval, k), (kd.buf, kd.idx.eval, 1)] st.store
+          st'.store ∧
+        pairLayout.Holds st'.store p Ua uo.eval (M.identityMat k) ∧
+        (∀ i : Fin k, st'.store.read p Ea (eo.eval + i) =
+          some (if diag then (A i i).1 else M.zero)) ∧
+        st'.store.read p kd.buf kd.idx.eval = I.sem.lit p ((1 : ℕ) : ℚ) ∧ PosKept st st') st₂ :=
+    fun st₂ hm₂ hp₂ hE => (RoutineSpec.ins spec_litIdx_read).wp_run
+      ((Mode.needs_and.mpr ⟨hN, hW _ (hm₂.1.trans hm₁.1) kd.buf kd.idx.eval 1 (by simp)⟩).mono
+        fun ⟨h, hw⟩ =>
+        ⟨by simpa using h.2.1, hw⟩) fun st₃ hm₃ ⟨hK, hp₃⟩ =>
+      ⟨(hm₁.trans hm₂ |>.trans hm₃).mono (by simp),
+        (readsOnly_entryLayoutHolds _ p Ua _ _).of_modifies hU (hm₂.trans hm₃)
+          (show BlocksDisjoint [matBlock Ua uo.eval k k 2] _ by
+            fp_omega [hUE, hkd (Ua, uo.eval, 2 * (k * k)) (by simp)]),
+        fun i => ((readsOnly_read _ _ _ _).of_modifies (hE i) hm₃
+          (by fp_omega [hkd (Ea, eo.eval, k) (by simp), i.2])).trans rfl, by simpa using hK,
+        hp₃.trans (hp₂.trans hp₁)⟩
   cases diag
-  · obtain ⟨hsh, hps, hE, hfr⟩ := read_of_exec_loop_lit hl
-    refine ⟨hsh, hps, fun i => ?_, fun q b j hb => hfr q b j (hb.imp_right fun hb w hw => ?_)⟩
-    · obtain ⟨z, hz, hr⟩ := hE i i.isLt
-      simp only [IExp.eval_add, IExp.eval_var] at hr
-      rw [hr]
-      simp only [M, ScalarSem.toFloatMachine, hz, Option.getD_some, Bool.false_eq_true,
-        if_false]
-    · simp only [IExp.eval_add, IExp.eval_var, IExp.eval_const] at hw ⊢
-      omega
-  · obtain ⟨hsh, hps, hE, hfr⟩ := read_of_exec_loop_copy_leaf
-      (f := fun i => eo + .var i) (g := fun i => mo + zidx (.const k) (.var i) (.var i))
-      (fun i _ j _ he => by simpa using he) (fun i hi j hj => by
-        simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
-          IExp.eval_ofNat] at hi hj ⊢
-        have := hii i hi
-        simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at hEA
-        by_cases hMa : Ma = Ea
-        · right; omega
-        · left; exact hMa) hl
-    refine ⟨hsh, hps, fun i => ?_, fun q b j hb => hfr q b j (hb.imp_right fun hb w hw => ?_)⟩
-    · have := hE i i.isLt
-      simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_var, IExp.eval_const,
-        IExp.eval_ofNat] at this
-      rw [this]
-      have := hA i i ⟨0, by simp [pairLayout]⟩
-      simpa [pairLayout] using this
-    · simp only [IExp.eval_add, IExp.eval_var, IExp.eval_const] at hw ⊢
-      omega
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    have h1 := spec_forRange_lit (m := md) (I := I) (p := p) (q := 0) (n := .const k) (Y := Ea)
+      (off := eo.eval) (didx := fun i => eo + .var i) fun i => rfl
+    refine h1.wp_bind (st := st₁) (f := fun _ => Builder.ins (.litIdx p kd 1))
+      ((Mode.needs_and.mpr ⟨hN, hW _ hm₁.1 Ea eo.eval k (by simp)⟩).mono fun h => ⟨h.1.1, h.2⟩)
+      fun st₂ hm₂ hh => tail st₂ hm₂ hh.2 fun i => ?_
+    obtain ⟨v, hv, hr⟩ := hh.1 i i.2
+    rw [hr]
+    simp [M, ScalarSem.toFloatMachine, hv]
+  · simp only [↓reduceIte]
+    have h1 := spec_forRange_copy (m := md) (I := I) (p := p) (n := .const k) (Y := Ea)
+      (off := eo.eval) (X := Ma) (didx := fun i => eo + .var i)
+      (sidx := fun i => mo + zidx (.const k) (.var i) (.var i))
+      (fun i => if h : i < k then (A ⟨i, h⟩ ⟨i, h⟩).1 else default) (fun i => rfl) fun i hi => by
+        have := hk2 i hi
+        simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+          IExp.eval_var]
+        fp_omega [hEA, this]
+    refine h1.wp_bind (st := st₁) (f := fun _ => Builder.ins (.litIdx p kd 1))
+      ⟨fun i hi => ?_, hW _ hm₁.1 Ea eo.eval k (by simp)⟩
+      fun st₂ hm₂ hh => tail st₂ hm₂ hh.2 fun i => by simpa using hh.1 i i.2
+    have := hA₁ ⟨i, hi⟩ ⟨i, hi⟩ ⟨0, two_pos⟩
+    simp only [zidx, IExp.eval_add, IExp.eval_mul, IExp.eval_ofNat, IExp.eval_const,
+      IExp.eval_var]
+    rw [dif_pos (show i < k from hi)]
+    simpa [pairLayout] using this
 
 /-- A leaf writes its output: a successful run of `NLAlib.eighLeafBlock` for a node of size
 $k$ whose matrix $\mathbf{A}$ is held at `mo` of `Ma` ends with the block at `uo` of `Ua` holding
@@ -160,58 +158,10 @@ theorem holds_of_exec_eighLeafBlock (p : P) (diag : Bool) (k : ℕ) {Ma Ua Ea : 
         st'.store.read q b i = st.store.read q b i) ∧
       st'.store.shape = st.store.shape ∧ st'.pos = st.pos := by
   intro M
-  change exec I (.seq (.named _ _ (.seq (.loop _ _) (.seq (.loop _ _) .skip)))
-    (.seq (.loop _ _) (.seq (.instr _) .skip))) st = some st' at h
-  rw [exec_seq] at h
-  obtain ⟨s₁, hz, h⟩ := Option.bind_eq_some_iff.mp h
-  rw [exec_seq] at h
-  obtain ⟨s₂, hl, h⟩ := Option.bind_eq_some_iff.mp h
-  obtain ⟨hI, hIfr⟩ := holds_of_exec_zidentity (I := I) (toNat := toNat) (mmR := mmR)
-    (qrR := qrR) (unif := unif) (normal := normal) p k ((exec_seq_skip I _ st).trans hz)
-  rw [exec_named, exec_seq] at hz
-  obtain ⟨σ, h₀, h₁⟩ := Option.bind_eq_some_iff.mp hz
-  rw [exec_seq_skip] at h₁
-  obtain ⟨hsh₀, hps₀, -, -⟩ := read_of_exec_loop_lit h₀
-  obtain ⟨hsh₁, hps₁, -, -⟩ := read_of_exec_loop_lit h₁
-  rw [exec_seq_skip, exec_instr] at h
-  simp only [Instr.run, Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
-  obtain ⟨_, ⟨v, hv, s₃, hw, rfl⟩, rfl⟩ := h
-  simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq,
-    List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq] at hUA hUE hkd
-  have hii : ∀ i < k, 2 * (i + k * i) + 2 ≤ 2 * (k * k) := fun i hi => by nlinarith
-  obtain ⟨hsh₂, hps₂, hE, hfr₂⟩ := read_of_exec_leaf_diag (toNat := toNat) (mmR := mmR)
-    (qrR := qrR) (unif := unif) (normal := normal) p diag k
-    (hA.of_forall_read_eq fun i hi₁ hi₂ => hIfr p Ma i (by
-      change i < mo.eval + k * k * 2 at hi₂
-      simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq]
-      by_cases hb : Ma = Ua
-      · omega
-      · simp [hb])) hEA hl
-  have hkdE : ∀ i < k, kd.buf ≠ Ea ∨ kd.idx.eval ≠ eo.eval + i := fun i hi => by
-    by_cases hb : kd.buf = Ea
-    · right; omega
-    · left; exact hb
-  refine ⟨hI.of_forall_read_eq fun i hi₁ hi₂ => ?_, fun i => ?_, ?_, fun q b i h₁ h₂ h₃ => ?_,
-    ?_, ?_⟩
-  · change i < uo.eval + k * k * 2 at hi₂
-    rw [Store.read_of_write_eq_some_of_ne hw ?_, hfr₂ p Ua i ?_]
-    · by_cases hb : Ua = Ea
-      · right; omega
-      · left; exact hb
-    · by_cases hb : Ua = kd.buf
-      · right; omega
-      · left; exact hb
-  · rw [Store.read_of_write_eq_some_of_ne hw ((hkdE i i.isLt).imp Ne.symm Ne.symm)]
-    exact hE i
-  · exact (Store.read_of_write_eq_some hw).trans hv.symm
-  · rw [Store.read_of_write_eq_some_of_ne hw ?_, hfr₂ q b i ?_]
-    · exact hIfr q b i h₁
-    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h₂
-      by_cases h : b = Ea <;> omega
-    · simp only [blockDisjoint, bne_iff_ne, ne_eq, Bool.or_eq_true, decide_eq_true_eq] at h₃
-      by_cases h : b = kd.buf <;> omega
-  · exact (Store.shape_of_write_eq_some hw).trans (hsh₂.trans (hsh₁.trans hsh₀))
-  · exact hps₂.trans (hps₁.trans hps₀)
+  obtain ⟨hm, hU, hE, hK, hp⟩ := (spec_eighLeafBlock (toNat := toNat) (mmR := mmR) (qrR := qrR)
+    (unif := unif) (normal := normal) .liberal p diag k A hUA hEA hUE hkd).spec.holds_of_exec
+    ⟨hA, trivial⟩ h
+  exact ⟨hU, hE, hK, fun q b i h1 h2 h3 => hm.2 q b i (by simp [h1, h2, h3]), hm.1, hp⟩
 
 /-- **One child as a routine specification**: from a state holding the $k \times k$ matrix
 $\mathbf{A}$ at `mo` of `Ma` and $\sigma$ in the cell `sg`, the run of `NLAlib.eighChildBlock`

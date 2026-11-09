@@ -517,6 +517,29 @@ theorem spec_litIdx_read {e : IExp ℕ} :
     exact ⟨v, hv, key v hv⟩
   · exact key
 
+/-- **A literal**, read back without naming its value: the destination cell then holds the
+semantics' literal, which exists (in every mode); the total mode needs the literal to succeed and
+the cell writable. -/
+theorem spec_lit_read {q : ℚ} :
+    Spec m I (fun st => m.Needs ((∃ v, I.sem.lit p q = some v) ∧
+        Writable st.store p dst.buf dst.idx.eval 1))
+      (.instr (.lit p dst q)) [(dst.buf, dst.idx.eval, 1)] fun st st' =>
+        (∃ v, I.sem.lit p q = some v ∧ st'.store.read p dst.buf dst.idx.eval = some v) ∧
+          PosKept st st' := by
+  intro st hst
+  rw [Wp, exec_instr, Mode.sat_map, Instr.run, Mode.sat_bind]
+  have key : ∀ v, I.sem.lit p q = some v → m.Sat (fun r => Modifies
+      [(dst.buf, dst.idx.eval, 1)] st.store r.1 ∧ (∃ v, I.sem.lit p q = some v ∧
+        r.1.read p dst.buf dst.idx.eval = some v) ∧ r.2 = st.pos)
+      ((st.store.write p dst.buf dst.idx.eval v).map fun s' => (s', st.pos)) := fun v hv => by
+    rw [Mode.sat_map]
+    exact Mode.sat_write (hst.mono (·.2)) fun s' hs' =>
+      ⟨Modifies.of_write hs', ⟨v, hv, Store.read_of_write_eq_some hs'⟩, rfl⟩
+  cases m
+  · obtain ⟨v, hv⟩ := hst.1
+    exact ⟨v, hv, key v hv⟩
+  · exact key
+
 /-- **A binary operation** on two stored values. -/
 theorem spec_bin {op : BinOp} {a b v : K} (hv : I.sem.bin p op a b = some v) :
     Spec m I (fun st => st.store.read p x.buf x.idx.eval = some a ∧
@@ -708,6 +731,13 @@ theorem Modifies.of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s s' : Store P K} (
     dsimp only at this ⊢
     omega
 
+/-- A specification whose blocks lie in blocks of `fp'` has the footprint `fp'`. -/
+theorem Spec.sub {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ} {fp fp' : List (ℕ × ℕ × ℕ)}
+    {post : St P K C → St P K C → Prop} (h : Spec m I pre s fp post)
+    (hsub : ∀ x ∈ fp, ∃ y ∈ fp', x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧ x.2.1 + x.2.2 ≤ y.2.1 + y.2.2) :
+    Spec m I pre s fp' post :=
+  Triple.conseq h (fun _ h => h) fun _ _ _ hp => ⟨hp.1.of_sub hsub, hp.2⟩
+
 /-- A frame whose blocks lie in blocks of `fp` is a frame of `fp`. -/
 theorem Spec.frame_of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s : Stmt P ι ℕ ℕ}
     (h : Spec .liberal I (fun _ => True) s fp fun st st' => PosKept st st')
@@ -733,6 +763,29 @@ theorem Writable.exists_len {s : Store P K} {b off N : ℕ} (h : Writable s p b 
     (hN : 0 < N) : ∃ len, s.shape[b]? = some (p, len) ∧ off + N ≤ len := by
   obtain ⟨len, hl, hlt⟩ := h (N - 1) (by omega)
   exact ⟨len, hl, by omega⟩
+
+/-- **A loop of literal writes into a block**: iteration $i$ writes the literal $q$ into a cell
+of the block `(Y, off, N)`; the loop modifies only that block and keeps the tape positions, and in
+the total mode succeeds given the literal and the block writable. -/
+theorem spec_forRange_lit_frame {q : ℚ} {n : IExp ℕ} {idx : ℕ → IExp ℕ} {Y off N : ℕ}
+    (hidx : ∀ i < n.eval, off ≤ (idx i).eval ∧ (idx i).eval < off + N) :
+    RoutineSpec m I (fun st => m.Needs ((∃ v, I.sem.lit p q = some v) ∧
+        Writable st.store p Y off N))
+      (Builder.forRange n fun i => Builder.ins (.lit p ⟨Y, idx i⟩ q)) [(Y, off, N)]
+      fun st st' => PosKept st st' := by
+  refine RoutineSpec.stmt (s := .loop n fun i => (Builder.ins (.lit p ⟨Y, idx i⟩ q)).run)
+    ((Spec.loop (fun st₀ _ st => st.pos = st₀.pos ∧ st.store.shape = st₀.store.shape)
+      (fun _ _ => ⟨rfl, rfl⟩) fun st₀ hst₀ k hk => ?_).conseq (fun _ h => h) (fun _ h => h)
+      fun _ _ _ h => h.1)
+  refine (((RoutineSpec.ins (spec_lit_read (m := m) (p := p) (dst := ⟨Y, idx k⟩)
+    (q := q))).spec.sub (fp' := [(Y, off, N)]) fun x hx =>
+      ⟨_, List.mem_cons_self, ?_⟩).with_modifies
+    ).conseq (fun st h => hst₀.mono fun ⟨hv, hw⟩ => ⟨hv, fun i hi => ?_⟩) (fun _ h => h)
+      fun st st' h hp => ⟨hp.2.2.trans h.1, hp.1.1.trans h.2⟩
+  · rw [List.mem_singleton.mp hx]
+    exact ⟨rfl, (hidx k hk).1, by have := (hidx k hk).2; dsimp only; omega⟩
+  · obtain ⟨len, hl, hlt⟩ := hw ((idx k).eval - off) (by have := hidx k hk; omega)
+    exact ⟨len, by rw [h.2]; exact hl, by have := hidx k hk; dsimp only; omega⟩
 
 /-! #### Conditionals, the empty builder, memory, and facts added to a specification -/
 
@@ -813,6 +866,21 @@ theorem Spec.and_liberal {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ} {fp :
   · obtain ⟨st', hr, hm, hp⟩ := h st hst
     exact ⟨st', hr, hm, hp, hR st trivial st' hr⟩
   · exact fun st' hr => ⟨(h st hst st' hr).1, (h st hst st' hr).2, hR st trivial st' hr⟩
+
+/-- A specified routine with a liberal fact of every run added to its postcondition. -/
+theorem RoutineSpec.and_liberal {pre : St P K C → Prop} {r : Builder P ι ℕ ℕ Unit}
+    {fp : List (ℕ × ℕ × ℕ)} {post R : St P K C → St P K C → Prop}
+    (h : RoutineSpec m I pre r fp post) (hR : Triple .liberal I (fun _ => True) r.run R) :
+    RoutineSpec m I pre r fp fun st st' => post st st' ∧ R st st' :=
+  ⟨h.composable, h.spec.and_liberal hR⟩
+
+/-- Consequence for specified routines, with a larger footprint. -/
+theorem RoutineSpec.conseq {pre pre' : St P K C → Prop} {r : Builder P ι ℕ ℕ Unit}
+    {fp fp' : List (ℕ × ℕ × ℕ)} {post post' : St P K C → St P K C → Prop}
+    (h : RoutineSpec m I pre r fp post) (hpre : ∀ st, pre' st → pre st)
+    (hfp : ∀ x ∈ fp, x ∈ fp') (hpost : ∀ st st', pre' st → post st st' → post' st st') :
+    RoutineSpec m I pre' r fp' post' :=
+  ⟨h.composable, h.spec.conseq hpre hfp hpost⟩
 
 end Instructions
 
@@ -953,5 +1021,85 @@ macro_rules
       first
         | (refine RoutineSpec.wp_run $h ?_ ?_) <;> try (first | assumption | fp_omega)
         | (refine RoutineSpec.wp_bind $h ?_ ?_) <;> try (first | assumption | fp_omega)))
+
+/-! ### Loops writing consecutive cells -/
+
+section CellLoops
+
+variable {m : Mode} {I : Interp P ι K C} {p : P}
+
+/-- **A loop of copies into consecutive cells**: iteration $i$ copies the cell `sidx i` of `X`
+(outside the destination block) into the cell $\mathit{off} + i$ of `Y`; the block then holds the
+source values $a_i$, nothing else changes and the tape positions are kept; the total mode needs
+the block writable. -/
+theorem spec_forRange_copy {n : IExp ℕ} {Y off X : ℕ} {didx sidx : ℕ → IExp ℕ} (a : ℕ → K)
+    (hd : ∀ i, (didx i).eval = off + i)
+    (hs : ∀ i < n.eval, blockDisjoint (X, (sidx i).eval, 1) (Y, off, n.eval) = true) :
+    RoutineSpec m I (fun st => (∀ i < n.eval, st.store.read p X (sidx i).eval = some (a i)) ∧
+        m.Needs (Writable st.store p Y off n.eval))
+      (Builder.forRange n fun i => Builder.ins (.copy p ⟨Y, didx i⟩ ⟨X, sidx i⟩)) [(Y, off, n.eval)]
+      fun st st' => (∀ i < n.eval, st'.store.read p Y (off + i) = some (a i)) ∧ PosKept st st' := by
+  refine RoutineSpec.stmt (s := .loop n fun i => (Builder.ins (.copy p ⟨Y, didx i⟩
+    ⟨X, sidx i⟩)).run) ((Spec.loop (fun st₀ j st => st.pos = st₀.pos ∧
+      Modifies [(Y, off, n.eval)] st₀.store st.store ∧
+      ∀ i < j, st.store.read p Y (off + i) = some (a i)) (fun _ _ => ⟨rfl, .refl _ _, by simp⟩)
+      fun st₀ hst₀ k hk => ?_).conseq (fun _ h => h) (fun _ h => h) fun _ _ _ h => ⟨h.2.2, h.1⟩)
+  refine (((RoutineSpec.ins (spec_copy (m := m) (p := p) (dst := ⟨Y, didx k⟩) (x := ⟨X, sidx k⟩)
+    (a := a k))).spec.with_modifies.sub (fp' := [(Y, off, n.eval)])
+      fun x hx => ?_).conseq (fun st h => ⟨(readsOnly_read _ _ _ _).of_modifies
+      (hst₀.1 k hk) h.2.1 (by fp_omega [hs k hk]), hst₀.2.mono fun hw => ?_⟩) (fun _ h => h)
+      fun st st' h hp => ⟨hp.2.2.2.trans h.1, (h.2.1.trans (hp.1.of_sub
+        (fp' := [(Y, off, n.eval)]) fun x hx => ?_)).mono (by simp), ?_⟩)
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    obtain ⟨len, hl, hlt⟩ := hw k hk
+    exact ⟨len, by rw [h.2.1.1]; exact hl, by rw [hd]; omega⟩
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
+    · exact ((readsOnly_read _ _ _ _).of_modifies (h.2.2 i hi) hp.1
+        (by rw [hd]; fp_omega [hi])).trans rfl
+    · rw [← hd]; exact hp.2.1
+
+/-- **A loop of literal writes into consecutive cells**: iteration $i$ writes the literal $q$
+into the cell $\mathit{off} + i$ of `Y`; the block then holds the literal, nothing else changes
+and the tape positions are kept; the total mode needs the literal and the block writable. -/
+theorem spec_forRange_lit {q : ℚ} {n : IExp ℕ} {Y off : ℕ} {didx : ℕ → IExp ℕ}
+    (hd : ∀ i, (didx i).eval = off + i) :
+    RoutineSpec m I (fun st => m.Needs ((∃ v, I.sem.lit p q = some v) ∧
+        Writable st.store p Y off n.eval))
+      (Builder.forRange n fun i => Builder.ins (.lit p ⟨Y, didx i⟩ q)) [(Y, off, n.eval)]
+      fun st st' => (∀ i < n.eval, ∃ v, I.sem.lit p q = some v ∧
+        st'.store.read p Y (off + i) = some v) ∧ PosKept st st' := by
+  refine RoutineSpec.stmt (s := .loop n fun i => (Builder.ins (.lit p ⟨Y, didx i⟩ q)).run)
+    ((Spec.loop (fun st₀ j st => st.pos = st₀.pos ∧
+      Modifies [(Y, off, n.eval)] st₀.store st.store ∧
+      ∀ i < j, ∃ v, I.sem.lit p q = some v ∧ st.store.read p Y (off + i) = some v)
+      (fun _ _ => ⟨rfl, .refl _ _, by simp⟩)
+      fun st₀ hst₀ k hk => ?_).conseq (fun _ h => h) (fun _ h => h) fun _ _ _ h => ⟨h.2.2, h.1⟩)
+  refine (((RoutineSpec.ins (spec_lit_read (m := m) (p := p) (dst := ⟨Y, didx k⟩)
+    (q := q))).spec.with_modifies.sub (fp' := [(Y, off, n.eval)])
+      fun x hx => ?_).conseq (fun st h => hst₀.mono fun hw => ⟨hw.1, ?_⟩)
+      (fun _ h => h) fun st st' h hp => ⟨hp.2.2.trans h.1, (h.2.1.trans (hp.1.of_sub
+        (fp' := [(Y, off, n.eval)]) fun x hx => ?_)).mono (by simp),
+        ?_⟩)
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    obtain ⟨len, hl, hlt⟩ := hw.2 k hk
+    exact ⟨len, by rw [h.2.1.1]; exact hl, by rw [hd]; omega⟩
+  · rw [List.mem_singleton.mp hx, hd]
+    exact ⟨_, List.mem_cons_self, rfl, by dsimp only; omega, by dsimp only; omega⟩
+  · intro i hi
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
+    · obtain ⟨v, hv, hr⟩ := h.2.2 i hi
+      exact ⟨v, hv, ((readsOnly_read _ _ _ _).of_modifies hr hp.1
+        (by rw [hd]; fp_omega [hi])).trans rfl⟩
+    · obtain ⟨v, hv, hr⟩ := hp.2.1
+      exact ⟨v, hv, by rw [← hd]; exact hr⟩
+
+end CellLoops
 
 end NLAlib.Computation
