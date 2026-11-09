@@ -250,7 +250,7 @@ theorem false_of_node_arena_of_out_arena {H : EighArenas} (hnd : H.handles.Nodup
 /-! ### The arenas as footprints and the transfer of the level predicates -/
 
 /-- Two intervals of one length at distinct multiples are disjoint. -/
-theorem eq_of_mul_le_of_lt_mul {m e e' i : ℕ} (h1 : m * e ≤ i) (h2 : i < m * (e + 1))
+private theorem eq_of_mul_le_of_lt_mul {m e e' i : ℕ} (h1 : m * e ≤ i) (h2 : i < m * (e + 1))
     (h3 : m * e' ≤ i)
     (h4 : i < m * (e' + 1)) : e = e' := by
   by_contra hne
