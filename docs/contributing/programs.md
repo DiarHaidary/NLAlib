@@ -191,7 +191,7 @@ invariant "the store holds the iterate": `fun st₀ k st => State ((step)^[k] A)
 PosKept st₀ st`; the step is the one-iteration spec, and the math lemma rewrites the iterate to
 the algorithm's function. A loop that runs while a comparison holds (`whileFuel`):
 `Computation.RoutineSpec.whileFuel` / `Computation.Spec.whileFuel`, with the invariant before
-each test; the total mode needs the comparison defined and fuel for each test that holds.
+each test; the total mode needs fuel for the first test (`hf0`), the comparison defined, and fuel for each test that holds.
 
 **8. Old lemma pairs become corollaries.** A refinement lemma is `(spec_eighSignBlock .liberal
 … trivial …).spec.holds_of_exec hpre hrun` (`Computation.Triple.holds_of_exec`), a success lemma
@@ -235,7 +235,7 @@ one `simp` over all outputs of a 36-operation block exhausts the heartbeats.
   taking `rest`) and state that piece in `Wp` form.
 - A builder argument written `.var k` where the callee's spec has `.const k` (an old spec that is
   not index-generic): `Computation.RoutineSpec.of_runEquiv` with `Computation.RunEquiv` built by
-  the tactic run_equiv after unfolding the block's definitions; values equal only by arithmetic
+  the tactic `run_equiv` after unfolding the block's definitions; values equal only by arithmetic
   are left as goals (`Computation.Cell.normIdx_eq_of_eval_eq`). Do not compare whole statements
   by `exec_eq_of_normIdx_eq I rfl`: it can exhaust the kernel on a large block.
 - A loop whose iterations all modify inside one fixed list: `Computation.RoutineSpec.forRange_const`
@@ -268,7 +268,7 @@ one `simp` over all outputs of a 36-operation block exhausts the heartbeats.
   before the call.
 - An error without a line (a kernel error such as a deterministic timeout or deep recursion,
   reported at the declaration) comes from the proof term, not a tactic: replace halves of the
-  proof by `sorry` until it compiles, then look in the removed half for a whole-statement `rfl`,
+  proof by `sorry` (locally, never committed) until it compiles, then look in the removed half for a whole-statement `rfl`,
   a `decide`, or a unification of `.var k` with `.const k`.
 - Spec lookup: the catalog `NLAlibTools/SpecCatalog.lean` writes every specification with its
   pre, footprint, post and file:line (`SPEC_CATALOG=<out.md> lake env lean NLAlibTools/SpecCatalog.lean`).

@@ -659,8 +659,8 @@ The test (one shifted QR step written and proved from the playbook) found four m
   whole statements, which exhausted the kernel. Index-generic specifications (`(xo : IExp ℕ)`,
   stated on `xo.eval`) remain the default and need no transport.
 * `Spec.whileFuel` and `RoutineSpec.whileFuel` (`RoutineWhile.lean`) give `whileFuel` an
-  invariant and a footprint. The total mode needs the comparison defined and fuel for each test
-  that holds, and concludes success.
+  invariant and a footprint. The total mode needs fuel for the first test (`hf0`), the comparison
+  defined and fuel for each test that holds, and concludes success.
 
 ## 5. Tactic support
 
