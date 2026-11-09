@@ -949,6 +949,15 @@ theorem Spec.sub {pre : St P K C → Prop} {s : Stmt P ι ℕ ℕ} {fp fp' : Lis
     Spec m I pre s fp' post :=
   Triple.conseq h (fun _ h => h) fun _ _ _ hp => ⟨hp.1.of_sub hsub, hp.2⟩
 
+/-- A specified routine whose blocks lie in blocks of `fp'` has the footprint `fp'`: the builder
+form of `NLAlib.Computation.Spec.sub`. -/
+theorem RoutineSpec.sub {pre : St P K C → Prop} {r : Builder P ι ℕ ℕ Unit}
+    {fp fp' : List (ℕ × ℕ × ℕ)} {post : St P K C → St P K C → Prop}
+    (h : RoutineSpec m I pre r fp post)
+    (hsub : ∀ x ∈ fp, ∃ y ∈ fp', x.1 = y.1 ∧ y.2.1 ≤ x.2.1 ∧ x.2.1 + x.2.2 ≤ y.2.1 + y.2.2) :
+    RoutineSpec m I pre r fp' post :=
+  ⟨h.composable, h.spec.sub hsub⟩
+
 /-- A frame whose blocks lie in blocks of `fp` is a frame of `fp`. -/
 theorem Spec.frame_of_sub {fp fp' : List (ℕ × ℕ × ℕ)} {s : Stmt P ι ℕ ℕ}
     (h : Spec .liberal I (fun _ => True) s fp fun st st' => PosKept st st')
