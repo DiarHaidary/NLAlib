@@ -27,6 +27,8 @@ $(k + 1) \times k$ Hessenberg matrices.
 
 ## Main results
 
+* `NLAlib.hessenbergReduction`, `NLAlib.isUpperHessenberg_hessenbergReduction_snd`: reduction by
+  Householder similarities and the shape of its output.
 * `NLAlib.exists_isUpperHessenberg_conjTranspose_mul_mul`: reduction to Hessenberg form.
 * `Matrix.IsHermitian.exists_isTridiagonal_conjTranspose_mul_mul`: reduction to tridiagonal form.
 * `NLAlib.IsUpperHessenberg.exists_isQR`: a Hessenberg matrix has a QR factorization with
@@ -119,14 +121,19 @@ theorem IsUpperHessenberg.sub_smul_one [Ring R] {H : Matrix (Fin n) (Fin n) R}
 
 /-- A Hermitian unitary matrix that fixes the first $p$ coordinate vectors and clears a vector
 below coordinate $p$. -/
-private theorem exists_reflector (x : Fin n → 𝕜) (p : ℕ) :
-    ∃ P : Matrix (Fin n) (Fin n) 𝕜, P.IsHermitian ∧ P * P = 1 ∧
+private theorem householderTailReflector_spec (x : Fin n → 𝕜) (p : ℕ) :
+    let P := householderTailReflector x p
+    P.IsHermitian ∧ P * P = 1 ∧
       (∀ i j : Fin n, (j : ℕ) < p → P i j = (1 : Matrix (Fin n) (Fin n) 𝕜) i j) ∧
       ∀ i : Fin n, p < (i : ℕ) → (P *ᵥ x) i = 0 := by
+  dsimp only
+  unfold householderTailReflector
   by_cases h : p < n
   swap
-  · exact ⟨1, Matrix.isHermitian_one, Matrix.one_mul 1, fun _ _ _ => rfl,
+  · rw [dif_neg h]
+    exact ⟨Matrix.isHermitian_one, Matrix.one_mul 1, fun _ _ _ => rfl,
       fun i hi => absurd (hi.trans i.2) h⟩
+  rw [dif_pos h]
   set y : Fin n → 𝕜 := fun l => if p ≤ (l : ℕ) then x l else 0 with hy
   set z : Fin n → 𝕜 := fun l => if p ≤ (l : ℕ) then 0 else x l with hz
   set v := householderVector y ⟨p, h⟩ with hv
@@ -136,7 +143,7 @@ private theorem exists_reflector (x : Fin n → 𝕜) (p : ℕ) :
     rw [hv, householderVector, Pi.add_apply, Pi.smul_apply, Pi.single_eq_of_ne hne, smul_zero,
       add_zero, hy]
     exact if_neg (not_le.mpr hl)
-  refine ⟨householder v, isHermitian_householder v, householder_mul_self v, fun i j hj => ?_,
+  refine ⟨isHermitian_householder v, householder_mul_self v, fun i j hj => ?_,
     fun i hi => ?_⟩
   · rw [householder, Matrix.sub_apply, Matrix.smul_apply, Matrix.vecMulVec_apply, Pi.star_apply,
       hv0 j hj, star_zero, mul_zero, smul_zero, sub_zero]
@@ -155,20 +162,51 @@ private theorem exists_reflector (x : Fin n → 𝕜) (p : ℕ) :
       householder_mulVec_householderVector_apply_of_ne y hi', zero_add]
     exact if_pos hi.le
 
-/-- The state of the reduction to Hessenberg form after $k$ reflectors: the first $k$ columns
-are in Hessenberg form. -/
-private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) :
-    ∃ Q : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols Q ∧
-      (∀ i j : Fin n, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → (Qᴴ * A * Q) i j = 0) ∧
+/-- After $k$ Householder similarities the state is the accumulated unitary factor
+$\mathbf{Q}_k$ and the current matrix $\mathbf{W}_k$. Step $k$ uses the reflector
+$\mathbf{P}$ clearing column $k$ below its subdiagonal, and updates the state to
+$(\mathbf{Q}_k\mathbf{P}, \mathbf{P}\mathbf{W}_k\mathbf{P})$.
+[GolubVanLoan2013, Algorithm 7.4.2].
+Algorithm: hessenberg-reduction -/
+noncomputable def hessenbergState (A : Matrix (Fin n) (Fin n) 𝕜) :
+    ℕ → Matrix (Fin n) (Fin n) 𝕜 × Matrix (Fin n) (Fin n) 𝕜
+  | 0 => (1, A)
+  | k + 1 =>
+    let (Q, W) := hessenbergState A k
+    let P := householderTailReflector (fun l => if h : k < n then W l ⟨k, h⟩ else 0) (k + 1)
+    (Q * P, P * W * P)
+
+/-- **Householder reduction to upper Hessenberg form.** Write
+$\mathsf{hessenbergReduction}(\mathbf{A}) := (\mathbf{Q},\mathbf{H})$ for the unitary
+factor and the reduced matrix accumulated in $n-2$ Householder similarities. When $n \le 2$
+the output is $(\mathbf{I},\mathbf{A})$. [GolubVanLoan2013, Algorithm 7.4.2].
+Algorithm: hessenberg-reduction -/
+noncomputable def hessenbergReduction (A : Matrix (Fin n) (Fin n) 𝕜) :
+    Matrix (Fin n) (Fin n) 𝕜 × Matrix (Fin n) (Fin n) 𝕜 :=
+  hessenbergState A (n - 2)
+
+private theorem hessenbergState_spec (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) :
+    let (Q, W) := hessenbergState A k
+    HasOrthonormalCols Q ∧ W = Qᴴ * A * Q ∧
+      (∀ i j : Fin n, (j : ℕ) < k → (j : ℕ) + 1 < (i : ℕ) → W i j = 0) ∧
       ∀ i : Fin n, (i : ℕ) = 0 → Q.col i = Pi.single i 1 := by
   induction k with
   | zero =>
-    exact ⟨1, hasOrthonormalCols_one, fun i j hj => absurd hj (Nat.not_lt_zero _),
-      fun i _ => (Matrix.mulVec_single_one 1 i).symm.trans (Matrix.one_mulVec _)⟩
+    exact ⟨hasOrthonormalCols_one, by simp, fun i j hj =>
+      absurd hj (Nat.not_lt_zero _), fun i _ =>
+      (Matrix.mulVec_single_one 1 i).symm.trans (Matrix.one_mulVec _)⟩
   | succ k ih =>
-    obtain ⟨Q, hQ, hW, hcol⟩ := ih
-    obtain ⟨P, hPH, hPP, hP1, hPx⟩ := exists_reflector
-      (fun l : Fin n => if h : k < n then (Qᴴ * A * Q) l ⟨k, h⟩ else 0) (k + 1)
+    let Q := (hessenbergState A k).1
+    let W := (hessenbergState A k).2
+    let x := fun l : Fin n => if h : k < n then W l ⟨k, h⟩ else 0
+    let P := householderTailReflector x (k + 1)
+    obtain ⟨hQ, hWeq, hW, hcol⟩ := ih
+    obtain ⟨hPH, hPP, hP1, hPx⟩ := householderTailReflector_spec x (k + 1)
+    change P.IsHermitian at hPH
+    change P * P = 1 at hPP
+    change ∀ i j : Fin n, j.val < k + 1 → P i j = (1 : Matrix (Fin n) (Fin n) 𝕜) i j at hP1
+    change ∀ i : Fin n, k + 1 < i.val → (P *ᵥ x) i = 0 at hPx
+    change ∀ i j : Fin n, j.val < k → j.val + 1 < i.val → W i j = 0 at hW
     have hPo : HasOrthonormalCols P := by rw [HasOrthonormalCols, hPH.eq, hPP]
     have hmulP : ∀ (M : Matrix (Fin n) (Fin n) 𝕜) (i j : Fin n), (j : ℕ) < k + 1 →
         (M * P) i j = M i j := by
@@ -176,14 +214,15 @@ private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : �
       rw [Matrix.mul_apply]
       simp only [hP1 _ j hj]
       rw [← Matrix.mul_apply, Matrix.mul_one]
-    refine ⟨Q * P, hQ.mul hPo, fun i j hj hji => ?_, fun i hi => ?_⟩
-    · have hE : (Q * P)ᴴ * A * (Q * P) = P * (Qᴴ * A * Q) * P := by
-        rw [Matrix.conjTranspose_mul, hPH.eq]
-        simp only [Matrix.mul_assoc]
-      rw [hE, hmulP _ i j hj]
+    refine ⟨hQ.mul hPo, ?_, fun i j hj hji => ?_, fun i hi => ?_⟩
+    · change P * W * P = (Q * P)ᴴ * A * (Q * P)
+      rw [Matrix.conjTranspose_mul, hPH.eq, show W = Qᴴ * A * Q from hWeq]
+      simp only [Matrix.mul_assoc]
+    · change (P * W * P) i j = 0
+      rw [hmulP _ i j hj]
       rcases Nat.lt_succ_iff_lt_or_eq.mp hj with hjk | hjk
-      · have hsum : (P * (Qᴴ * A * Q)) i j =
-            ((1 : Matrix (Fin n) (Fin n) 𝕜) * (Qᴴ * A * Q)) i j := by
+      · have hsum : (P * W) i j =
+            ((1 : Matrix (Fin n) (Fin n) 𝕜) * W) i j := by
           rw [Matrix.mul_apply, Matrix.mul_apply]
           refine Finset.sum_congr rfl fun l _ => ?_
           by_cases hl : (l : ℕ) < k + 1
@@ -194,12 +233,39 @@ private theorem exists_hessenberg_state (A : Matrix (Fin n) (Fin n) 𝕜) (k : �
       · have hkn : k < n := hjk ▸ j.2
         have hjeq : j = ⟨k, hkn⟩ := Fin.ext hjk
         have h := hPx i (by omega)
-        simp only [dif_pos hkn] at h
+        simp only [x, dif_pos hkn] at h
         rw [hjeq]
         exact h
-    · ext l
+    · change (Q * P).col i = Pi.single i 1
+      ext l
       rw [Matrix.col_apply, hmulP Q l i (by omega)]
       exact congrFun (hcol i hi) l
+
+/-- The unitary factor of $\mathsf{hessenbergReduction}(\mathbf{A})$ has orthonormal columns. -/
+theorem hasOrthonormalCols_hessenbergReduction_fst (A : Matrix (Fin n) (Fin n) 𝕜) :
+    HasOrthonormalCols (hessenbergReduction A).1 :=
+  (hessenbergState_spec A (n - 2)).1
+
+/-- For $(\mathbf{Q},\mathbf{H})=\mathsf{hessenbergReduction}(\mathbf{A})$, the reduced
+matrix satisfies $\mathbf{H}=\mathbf{Q}^{\mathsf H}\mathbf{A}\mathbf{Q}$. -/
+theorem hessenbergReduction_snd_eq_conjTranspose_mul_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
+    (hessenbergReduction A).2 = (hessenbergReduction A).1ᴴ * A * (hessenbergReduction A).1 :=
+  (hessenbergState_spec A (n - 2)).2.1
+
+/-- For $(\mathbf{Q},\mathbf{H})=\mathsf{hessenbergReduction}(\mathbf{A})$, the first
+column of $\mathbf{Q}$ is the first coordinate vector. -/
+theorem hessenbergReduction_fst_col_zero (A : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜) :
+    (hessenbergReduction A).1.col 0 = Pi.single 0 1 :=
+  (hessenbergState_spec A (n + 1 - 2)).2.2.2 0 rfl
+
+/-- **Computed Hessenberg form.** Householder similarities clear the subdiagonal tail:
+if $(\mathbf{Q},\mathbf{H})=\mathsf{hessenbergReduction}(\mathbf{A})$ then $\mathbf{H}$
+is upper Hessenberg. [GolubVanLoan2013, Algorithm 7.4.2].
+Result: hessenberg-reduction -/
+theorem isUpperHessenberg_hessenbergReduction_snd (A : Matrix (Fin n) (Fin n) 𝕜) :
+    IsUpperHessenberg (hessenbergReduction A).2 := by
+  intro i j hij
+  exact (hessenbergState_spec A (n - 2)).2.2.1 i j (by have := i.isLt; omega) hij
 
 /-- **Reduction to Hessenberg form.** Every square matrix $\mathbf{A}$ is unitarily similar to an
 upper Hessenberg matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$
@@ -209,8 +275,10 @@ Result: hessenberg-reduction -/
 theorem exists_isUpperHessenberg_conjTranspose_mul_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     ∃ Q : Matrix (Fin n) (Fin n) 𝕜, HasOrthonormalCols Q ∧ IsUpperHessenberg (Qᴴ * A * Q) ∧
       ∀ i : Fin n, (i : ℕ) = 0 → Q.col i = Pi.single i 1 := by
-  obtain ⟨Q, hQ, hW, hcol⟩ := exists_hessenberg_state A n
-  exact ⟨Q, hQ, fun i j hij => hW i j j.2 hij, hcol⟩
+  refine ⟨(hessenbergReduction A).1, hasOrthonormalCols_hessenbergReduction_fst A, ?_,
+    (hessenbergState_spec A (n - 2)).2.2.2⟩
+  rw [← hessenbergReduction_snd_eq_conjTranspose_mul_mul]
+  exact isUpperHessenberg_hessenbergReduction_snd A
 
 /-- **Reduction to tridiagonal form.** Every Hermitian matrix $\mathbf{A}$ is unitarily similar
 to a tridiagonal matrix $\mathbf{Q}^{\mathsf{H}}\mathbf{A}\mathbf{Q}$, by a unitary $\mathbf{Q}$

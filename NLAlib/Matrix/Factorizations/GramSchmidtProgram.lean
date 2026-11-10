@@ -343,48 +343,6 @@ theorem exec_forRange_orthAgainst (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.
   · rw [hcurW] at hpeakW''
     exact hpeakW''.trans (max_le hpeakW (le_max_right _ _))
 
-omit [DecidableEq P] in
-private theorem dotProduct_gramSchmidtQ_col {N k : ℕ} (M : Matrix (Fin N) (Fin k) 𝕜)
-    (c c' : Fin k) : star ((gramSchmidtQ M).col c) ⬝ᵥ (gramSchmidtQ M).col c' =
-      if c = c' then (if gramSchmidtR M c c = 0 then 0 else 1) else 0 := by
-  have h := congrFun (congrFun (conjTranspose_gramSchmidtQ_mul_self M) c) c'
-  rw [Matrix.mul_apply, Matrix.diagonal_apply] at h
-  rw [← h, dotProduct]
-  rfl
-
-omit [DecidableEq P] in
-private theorem star_col_dotProduct_eq_gramSchmidtR {N k : ℕ} (M : Matrix (Fin N) (Fin k) 𝕜)
-    (c j : Fin k) : star ((gramSchmidtQ M).col c) ⬝ᵥ M.col j = gramSchmidtR M c j := by
-  rw [gramSchmidtR, Matrix.mul_apply, dotProduct]
-  rfl
-
-omit [DecidableEq P] in
-/-- The sweep of column `j` against the earlier Gram–Schmidt columns. -/
-private theorem mgsSweep_gramSchmidtQ {N k : ℕ} (M : Matrix (Fin N) (Fin k) 𝕜) (j : ℕ)
-    (hj : j < k) :
-    mgsSweep (fun c a => if h : c < k then gramSchmidtQ M a ⟨c, h⟩ else 0) (M.col ⟨j, hj⟩) j =
-      gramSchmidtR M ⟨j, hj⟩ ⟨j, hj⟩ • (gramSchmidtQ M).col ⟨j, hj⟩ := by
-  set Vc : ℕ → Fin N → 𝕜 := fun c a => if h : c < k then gramSchmidtQ M a ⟨c, h⟩ else 0
-  have hV : ∀ c (h : c < k), Vc c = (gramSchmidtQ M).col ⟨c, h⟩ := fun c h => by
-    ext a; simp [Vc, h, Matrix.col]
-  rw [mgsSweep_eq_sub_sum, gramSchmidtR_apply_self_smul_col]
-  · congr 1
-    set g : ℕ → Fin N → 𝕜 := fun i => if h : i < k then
-      gramSchmidtR M ⟨i, h⟩ ⟨j, hj⟩ • (gramSchmidtQ M).col ⟨i, h⟩ else 0
-    have hg : ∀ c : Fin k, gramSchmidtR M c ⟨j, hj⟩ • (gramSchmidtQ M).col c = g c := fun c => by
-      simp [g, c.2]
-    rw [Finset.sum_congr rfl fun c _ => hg c]
-    change _ = ∑ c ∈ Finset.Iio (⟨j, hj⟩ : Fin k), g (Fin.valEmbedding c)
-    rw [← Finset.sum_map (Finset.Iio ⟨j, hj⟩) Fin.valEmbedding g, Fin.map_valEmbedding_Iio,
-      Nat.Iio_eq_range]
-    refine Finset.sum_congr rfl fun i hi => ?_
-    have hik : i < k := (Finset.mem_range.mp hi).trans hj
-    simp only [g, hik, dif_pos, hV i hik]
-    rw [← star_col_dotProduct_eq_gramSchmidtR]
-  · intro i hi i' hi'
-    rw [hV i (hi.trans hj), hV i' ((hi'.trans hi).trans hj), dotProduct_gramSchmidtQ_col,
-      if_neg (fun h => by simp [Fin.ext_iff] at h; omega)]
-
 omit [RCLike 𝕜] [DecidableEq P] in
 private theorem gramSchmidtCount_succ (p : P) (N j : ℕ) :
     gramSchmidtCount (ι := ι) p N (j + 1) = gramSchmidtCount p N j +
@@ -556,7 +514,7 @@ private theorem exec_gramSchmidt_reduce (I : Interp P ι 𝕜 (OpCount P ι))
       some (if h : a < N then u ⟨a, h⟩ else 0) := fun a ha => by
     rw [show N * j + a = (IExp.const N * IExp.var j).eval + (⟨a, ha⟩ : Fin N) from rfl, hv1]
     simp only [ha, dif_pos]
-    exact congrArg some (congrFun (mgsSweep_gramSchmidtQ M j hj) _)
+    exact congrArg some (congrFun (mgsSweep_gramSchmidtQ_col M ⟨j, hj⟩) _)
   obtain ⟨s₀, hs₀⟩ := ht1
   obtain ⟨s2, hs2⟩ := Store.exists_write_eq_some_of_shape_eq hsh1 hs₀
     (∑ a ∈ Finset.range N, star (if h : a < N then u ⟨a, h⟩ else 0) *
