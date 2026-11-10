@@ -226,9 +226,8 @@ node(A, R, ε, ℓ, budget):          A of size k
   return ([Q₊·U₊  Q₋·U₋], [d₊ + R/2; d₋ − R/2])
 ```
 
-[Shah2024, Section 4], the root call
-there with $R_0 = \|\mathbf{A}\|_2$ and node-dependent accuracies; the nodes are [Shah2024,
-Algorithm 3].
+[Shah2024, Section 4], the root call there with $R_0 = \|\mathbf{A}\|_2$ and node-dependent
+accuracies; the nodes are [Shah2024, Algorithm 3].
 Algorithm: spectral-bisection -/
 def eigh (M : FloatMachine F Su Sg) (signFuel ℓ : ℕ) {n : ℕ}
     (A : Matrix (Fin n) (Fin n) (F × F)) (R₀ ε β : F) (s : List Bool → EighSample Su Sg n) :
