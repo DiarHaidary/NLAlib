@@ -9,6 +9,7 @@ public import Mathlib.Analysis.Matrix.Order
 public import NLAlib.Matrix.Basic.SchurComplement
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Pseudoinverse.Pinv
+public import NLAlib.Matrix.Spectral.SpectralRadius
 
 /-!
 # Positive semidefinite block matrices
@@ -26,6 +27,9 @@ special cases with identity or equal diagonal blocks. The Schur complement crite
   semidefinite form.
 * `Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_norm_sq_le`: the bilinear test.
 * `Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt`: the contraction factor.
+* `Matrix.PosDef.posDef_fromBlocks_iff_forall_norm_sq_lt`: the strict bilinear test.
+* `Matrix.PosDef.posDef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt`: strict contraction factors.
+* `Matrix.PosDef.posDef_fromBlocks_iff_specRadius_lt_one`: the relative spectral-radius test.
 * `NLAlib.posSemidef_fromBlocks_one_iff_specNorm_le_one`.
 * `NLAlib.posSemidef_fromBlocks_self_iff`: equal diagonal blocks.
 -/
@@ -246,6 +250,19 @@ private theorem exists_specNorm_le_one_and_eq_mul_mul {A : Matrix m m 𝕜} {B :
   · calc B = S * pinv S * (B * pinv T * T) := by rw [hB2, hB1]
       _ = S * (pinv S * B * pinv T) * T := by simp only [Matrix.mul_assoc]
 
+private theorem fromBlocks_sqrt_congruence [DecidableEq m] [DecidableEq n]
+    {A : Matrix m m 𝕜} {C : Matrix n n 𝕜} (hA : A.PosSemidef) (hC : C.PosSemidef)
+    (X : Matrix m n 𝕜) :
+    let D := Matrix.fromBlocks (CFC.sqrt A) 0 0 (CFC.sqrt C)
+    Dᴴ * Matrix.fromBlocks 1 X Xᴴ 1 * D = Matrix.fromBlocks A
+      (CFC.sqrt A * X * CFC.sqrt C) (CFC.sqrt A * X * CFC.sqrt C)ᴴ C := by
+  have hS := (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg A)).isHermitian.eq
+  have hT := (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg C)).isHermitian.eq
+  simp only [Matrix.fromBlocks_conjTranspose, Matrix.fromBlocks_multiply, hS, hT,
+    Matrix.conjTranspose_zero, Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add,
+    Matrix.mul_one, Matrix.conjTranspose_mul, CFC.sqrt_mul_sqrt_self A hA.nonneg,
+    CFC.sqrt_mul_sqrt_self C hC.nonneg, Matrix.mul_assoc]
+
 open scoped Classical in
 /-- **The contraction factor.** For positive semidefinite $\mathbf{A}$ and $\mathbf{C}$, the
 block matrix $\begin{bmatrix} \mathbf{A} & \mathbf{B} \\ \mathbf{B}^{\mathsf{H}} & \mathbf{C}
@@ -269,14 +286,7 @@ theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_s
   rintro ⟨X, hX, rfl⟩
   have h := ((posSemidef_fromBlocks_one_iff_specNorm_le_one X).mpr hX).conjTranspose_mul_mul_same
     (Matrix.fromBlocks (CFC.sqrt A) 0 0 (CFC.sqrt C))
-  have e : (Matrix.fromBlocks (CFC.sqrt A) (0 : Matrix m n 𝕜) (0 : Matrix n m 𝕜)
-      (CFC.sqrt C))ᴴ * Matrix.fromBlocks 1 X Xᴴ 1 *
-        Matrix.fromBlocks (CFC.sqrt A) 0 0 (CFC.sqrt C) =
-      Matrix.fromBlocks A (CFC.sqrt A * X * CFC.sqrt C) (CFC.sqrt A * X * CFC.sqrt C)ᴴ C := by
-    simp only [Matrix.fromBlocks_conjTranspose, Matrix.fromBlocks_multiply, hS.eq, hT.eq,
-      Matrix.conjTranspose_zero, Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add,
-      Matrix.mul_one, Matrix.conjTranspose_mul, hSS, hTT, Matrix.mul_assoc]
-  rwa [e] at h
+  rwa [fromBlocks_sqrt_congruence hA hC X] at h
 
 omit [Fintype n] in
 /-- For positive definite $\mathbf{A}$ and any $\mathbf{X}$,
@@ -295,6 +305,196 @@ theorem _root_.Matrix.PosDef.posSemidef_fromBlocks_conjTranspose_mul_inv_mul [Fi
       hAA, Matrix.one_mul]
   rw [e, sub_self]
   exact Matrix.PosSemidef.zero
+
+/-! ### Strict bilinear tests -/
+
+/-- For positive semidefinite diagonal blocks, positivity is equivalent to bounding twice
+the modulus of the cross term by the sum of the diagonal quadratic forms.
+[HornJohnson2013, Theorem 7.7.7]. -/
+theorem _root_.Matrix.PosSemidef.posSemidef_fromBlocks_iff_forall_two_mul_norm_le
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosSemidef) (hC : C.PosSemidef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosSemidef ↔ ∀ (x : m → 𝕜) (y : n → 𝕜),
+      2 * ‖star x ⬝ᵥ B *ᵥ y‖ ≤ RCLike.re (quadForm A x) + RCLike.re (quadForm C y) := by
+  constructor
+  · intro h x y
+    have hxy := h.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks x y
+    apply le_of_sq_le_sq _ (add_nonneg (hA.re_quadForm_nonneg x) (hC.re_quadForm_nonneg y))
+    nlinarith [sq_nonneg (RCLike.re (quadForm A x) - RCLike.re (quadForm C y))]
+  · intro h
+    have hH := hA.isHermitian.fromBlocks (B := B) rfl hC.isHermitian
+    refine posSemidef_iff_quadForm_nonneg.mpr ⟨hH, fun z => ?_⟩
+    obtain ⟨x, y, rfl⟩ : ∃ x y, z = Sum.elim x y :=
+      ⟨z ∘ Sum.inl, z ∘ Sum.inr, (Sum.elim_comp_inl_inr z).symm⟩
+    rw [← hH.coe_re_quadForm, RCLike.ofReal_nonneg, re_quadForm_fromBlocks]
+    linarith [h x y, (abs_le.mp (RCLike.abs_re_le_norm (star x ⬝ᵥ B *ᵥ y))).1]
+
+/-- The strict block Cauchy–Schwarz bound holds when both test vectors are nonzero.
+[HornJohnson2013, Theorem 7.7.7]. -/
+theorem _root_.Matrix.PosDef.norm_star_dotProduct_mulVec_sq_lt_of_fromBlocks
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (h : (Matrix.fromBlocks A B Bᴴ C).PosDef) {x : m → 𝕜} {y : n → 𝕜} (hx : x ≠ 0)
+    (hy : y ≠ 0) :
+    ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 < RCLike.re (quadForm A x) * RCLike.re (quadForm C y) := by
+  classical
+  obtain ⟨hA, hS⟩ := posDef_fromBlocks_iff.mp h
+  have hc := hS.re_quadForm_pos hy
+  rw [quadForm_sub_left, map_sub, sub_pos] at hc
+  have hG := hA.posSemidef_fromBlocks_conjTranspose_mul_inv_mul B
+  exact (hG.norm_star_dotProduct_mulVec_sq_le_of_fromBlocks x y).trans_lt
+    (mul_lt_mul_of_pos_left hc (hA.re_quadForm_pos hx))
+
+private theorem forall_two_mul_norm_lt_of_forall_norm_sq_lt
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosDef) (hC : C.PosDef)
+    (h : ∀ (x : m → 𝕜) (y : n → 𝕜), x ≠ 0 → y ≠ 0 →
+      ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 < RCLike.re (quadForm A x) * RCLike.re (quadForm C y)) :
+    ∀ (x : m → 𝕜) (y : n → 𝕜), x ≠ 0 ∨ y ≠ 0 →
+      2 * ‖star x ⬝ᵥ B *ᵥ y‖ < RCLike.re (quadForm A x) + RCLike.re (quadForm C y) := by
+  intro x y hxy
+  by_cases hx : x = 0
+  · subst x
+    simpa [quadForm] using hC.re_quadForm_pos (hxy.resolve_left (by simp))
+  by_cases hy : y = 0
+  · subst y
+    simpa [quadForm] using hA.re_quadForm_pos hx
+  have hsq := h x y hx hy
+  apply (sq_lt_sq₀ (by positivity) (add_nonneg (hA.re_quadForm_pos hx).le
+    (hC.re_quadForm_pos hy).le)).mp
+  nlinarith [sq_nonneg (RCLike.re (quadForm A x) - RCLike.re (quadForm C y))]
+
+/-- For positive definite diagonal blocks, strict positivity is equivalent to the strict
+additive cross-term bound for every nonzero pair. [HornJohnson2013, Theorem 7.7.7]. -/
+theorem _root_.Matrix.PosDef.posDef_fromBlocks_iff_forall_two_mul_norm_lt
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosDef) (hC : C.PosDef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosDef ↔ ∀ (x : m → 𝕜) (y : n → 𝕜), x ≠ 0 ∨ y ≠ 0 →
+      2 * ‖star x ⬝ᵥ B *ᵥ y‖ < RCLike.re (quadForm A x) + RCLike.re (quadForm C y) := by
+  constructor
+  · exact fun h => forall_two_mul_norm_lt_of_forall_norm_sq_lt hA hC fun _ _ =>
+      h.norm_star_dotProduct_mulVec_sq_lt_of_fromBlocks
+  · intro h
+    have hH := hA.isHermitian.fromBlocks (B := B) rfl hC.isHermitian
+    refine posDef_iff_quadForm_pos.mpr ⟨hH, fun z hz => ?_⟩
+    obtain ⟨x, y, rfl⟩ : ∃ x y, z = Sum.elim x y :=
+      ⟨z ∘ Sum.inl, z ∘ Sum.inr, (Sum.elim_comp_inl_inr z).symm⟩
+    have hxy : x ≠ 0 ∨ y ≠ 0 := by
+      by_contra! he
+      obtain ⟨rfl, rfl⟩ := he
+      exact hz (by ext i; cases i <;> rfl)
+    rw [← hH.coe_re_quadForm, RCLike.ofReal_pos, re_quadForm_fromBlocks]
+    linarith [h x y hxy, (abs_le.mp (RCLike.abs_re_le_norm (star x ⬝ᵥ B *ᵥ y))).1]
+
+/-- **Strict block positivity.** For positive definite diagonal blocks, strict Cauchy–Schwarz
+on nonzero vectors characterises positivity of the full block.
+[HornJohnson2013, Theorem 7.7.7].
+Result: block-positivity -/
+theorem _root_.Matrix.PosDef.posDef_fromBlocks_iff_forall_norm_sq_lt
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosDef) (hC : C.PosDef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosDef ↔ ∀ (x : m → 𝕜) (y : n → 𝕜), x ≠ 0 → y ≠ 0 →
+      ‖star x ⬝ᵥ B *ᵥ y‖ ^ 2 < RCLike.re (quadForm A x) * RCLike.re (quadForm C y) :=
+  ⟨fun h _ _ => h.norm_star_dotProduct_mulVec_sq_lt_of_fromBlocks, fun h =>
+    (hA.posDef_fromBlocks_iff_forall_two_mul_norm_lt hC).mpr
+      (forall_two_mul_norm_lt_of_forall_norm_sq_lt hA hC h)⟩
+
+/-! ### Relative spectral radius and strict contractions -/
+
+private theorem isUnit_fromBlocks_sqrt [DecidableEq m] [DecidableEq n]
+    {A : Matrix m m 𝕜} {C : Matrix n n 𝕜} (hA : A.PosDef) (hC : C.PosDef) :
+    IsUnit (Matrix.fromBlocks (CFC.sqrt A) (0 : Matrix m n 𝕜) 0 (CFC.sqrt C)) :=
+  Matrix.isUnit_fromBlocks_zero₂₁.mpr
+    ⟨(CFC.isUnit_sqrt_iff A hA.posSemidef.nonneg).mpr hA.isUnit,
+      (CFC.isUnit_sqrt_iff C hC.posSemidef.nonneg).mpr hC.isUnit⟩
+
+open scoped Classical in
+private theorem posDef_fromBlocks_sqrt_iff_specNorm_lt
+    {A : Matrix m m 𝕜} {C : Matrix n n 𝕜} (hA : A.PosDef) (hC : C.PosDef) (X : Matrix m n 𝕜) :
+    (Matrix.fromBlocks A (CFC.sqrt A * X * CFC.sqrt C) (CFC.sqrt A * X * CFC.sqrt C)ᴴ C).PosDef ↔
+      specNorm X < 1 := by
+  rw [← fromBlocks_sqrt_congruence hA.posSemidef hC.posSemidef,
+    ← Matrix.star_eq_conjTranspose,
+    Matrix.IsUnit.posDef_star_left_conjugate_iff (isUnit_fromBlocks_sqrt hA hC),
+    posDef_fromBlocks_one_iff_specNorm_lt_one]
+
+open scoped Classical in
+/-- **Strict contraction factorization.** With positive definite diagonal blocks, the full
+block is positive definite precisely when the off-diagonal block factors through a strict
+contraction between the two positive square roots. [HornJohnson2013, Theorem 7.7.7].
+Result: block-positivity -/
+theorem _root_.Matrix.PosDef.posDef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt
+    {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜} (hA : A.PosDef) (hC : C.PosDef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosDef ↔
+      ∃ X : Matrix m n 𝕜, specNorm X < 1 ∧ B = CFC.sqrt A * X * CFC.sqrt C := by
+  constructor
+  · intro h
+    obtain ⟨X, -, hB⟩ :=
+      (hA.posSemidef.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt hC.posSemidef).mp
+        h.posSemidef
+    exact ⟨X, (posDef_fromBlocks_sqrt_iff_specNorm_lt hA hC X).mp (hB ▸ h), hB⟩
+  · rintro ⟨X, hX, rfl⟩
+    exact (posDef_fromBlocks_sqrt_iff_specNorm_lt hA hC X).mpr hX
+
+private theorem specRadius_relative_of_sqrt_factor [DecidableEq m] [DecidableEq n]
+    {A : Matrix m m 𝕜} {C : Matrix n n 𝕜} (hA : A.PosDef) (hC : C.PosDef)
+    (X : Matrix m n 𝕜) :
+    let B := CFC.sqrt A * X * CFC.sqrt C
+    specRadius (Bᴴ * A⁻¹ * B * C⁻¹) = specNorm X ^ 2 := by
+  let S := CFC.sqrt A
+  let T := CFC.sqrt C
+  have hS : S.IsHermitian := (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg A)).isHermitian
+  have hT : T.IsHermitian := (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg C)).isHermitian
+  have hs : IsUnit S.det := (Matrix.isUnit_iff_isUnit_det _).mp
+    ((CFC.isUnit_sqrt_iff A hA.posSemidef.nonneg).mpr hA.isUnit)
+  have ht : IsUnit T.det := (Matrix.isUnit_iff_isUnit_det _).mp
+    ((CFC.isUnit_sqrt_iff C hC.posSemidef.nonneg).mpr hC.isUnit)
+  have hss : S * S = A := CFC.sqrt_mul_sqrt_self A hA.posSemidef.nonneg
+  have htt : T * T = C := CFC.sqrt_mul_sqrt_self C hC.posSemidef.nonneg
+  change specRadius ((S * X * T)ᴴ * A⁻¹ * (S * X * T) * C⁻¹) = _
+  have eq : (S * X * T)ᴴ * A⁻¹ * (S * X * T) * C⁻¹ = T * ((Xᴴ * X) * T⁻¹) := by
+    rw [← hss, ← htt]
+    simp only [Matrix.conjTranspose_mul, hS.eq, hT.eq, Matrix.mul_inv_rev, Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv_cancel_left _ _ hs, Matrix.nonsing_inv_mul_cancel_left _ _ hs,
+      Matrix.mul_nonsing_inv_cancel_left _ _ ht]
+  have hn : IsStarNormal (Xᴴ * X) :=
+    ⟨by rw [Matrix.star_eq_conjTranspose, (Matrix.isHermitian_conjTranspose_mul_self X).eq]⟩
+  rw [eq, specRadius_mul_comm, Matrix.mul_assoc, Matrix.nonsing_inv_mul T ht, Matrix.mul_one,
+    ← hn.specNorm_eq_specRadius,
+    specNorm_conjTranspose_mul_self]
+
+open scoped Classical in
+private theorem exists_sqrt_factor {A : Matrix m m 𝕜}
+    {C : Matrix n n 𝕜} (hA : A.PosDef) (hC : C.PosDef) (B : Matrix m n 𝕜) :
+    ∃ X : Matrix m n 𝕜, B = CFC.sqrt A * X * CFC.sqrt C := by
+  have hs := (Matrix.isUnit_iff_isUnit_det _).mp
+    ((CFC.isUnit_sqrt_iff A hA.posSemidef.nonneg).mpr hA.isUnit)
+  have ht := (Matrix.isUnit_iff_isUnit_det _).mp
+    ((CFC.isUnit_sqrt_iff C hC.posSemidef.nonneg).mpr hC.isUnit)
+  refine ⟨(CFC.sqrt A)⁻¹ * B * (CFC.sqrt C)⁻¹, ?_⟩
+  simp only [Matrix.mul_assoc, Matrix.nonsing_inv_mul _ ht, Matrix.mul_one,
+    Matrix.mul_nonsing_inv_cancel_left _ _ hs]
+
+/-- With positive definite diagonal blocks, the Hermitian block is positive semidefinite
+exactly when the relative spectral radius is at most one. [HornJohnson2013, §7.7]. -/
+theorem _root_.Matrix.PosDef.posSemidef_fromBlocks_iff_specRadius_le_one [DecidableEq m]
+    [DecidableEq n] {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosDef) (hC : C.PosDef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosSemidef ↔ specRadius (Bᴴ * A⁻¹ * B * C⁻¹) ≤ 1 := by
+  obtain ⟨X, rfl⟩ := exists_sqrt_factor hA hC B
+  rw [specRadius_relative_of_sqrt_factor hA hC X, sq_le_one_iff₀ (specNorm_nonneg X),
+    ← fromBlocks_sqrt_congruence hA.posSemidef hC.posSemidef, ← Matrix.star_eq_conjTranspose,
+    Matrix.IsUnit.posSemidef_star_left_conjugate_iff (isUnit_fromBlocks_sqrt hA hC),
+    posSemidef_fromBlocks_one_iff_specNorm_le_one]
+
+/-- With positive definite diagonal blocks, the Hermitian block is positive definite
+exactly when the relative spectral radius is strictly below one. [HornJohnson2013, §7.7]. -/
+theorem _root_.Matrix.PosDef.posDef_fromBlocks_iff_specRadius_lt_one [DecidableEq m]
+    [DecidableEq n] {A : Matrix m m 𝕜} {B : Matrix m n 𝕜} {C : Matrix n n 𝕜}
+    (hA : A.PosDef) (hC : C.PosDef) :
+    (Matrix.fromBlocks A B Bᴴ C).PosDef ↔ specRadius (Bᴴ * A⁻¹ * B * C⁻¹) < 1 := by
+  obtain ⟨X, rfl⟩ := exists_sqrt_factor hA hC B
+  rw [specRadius_relative_of_sqrt_factor hA hC X, sq_lt_one_iff₀ (specNorm_nonneg X),
+    posDef_fromBlocks_sqrt_iff_specNorm_lt hA hC]
 
 /-! ### Equal diagonal blocks -/
 

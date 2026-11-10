@@ -454,6 +454,16 @@ theorem schattenNorm_le_rank_rpow_mul_specNorm {q : ℝ≥0∞} (hq : q ≠ 0) (
   have h := schattenNorm_le_rank_rpow_mul_schattenNorm hq le_top A
   rwa [ENNReal.toReal_top, inv_zero, sub_zero, schattenNorm_top] at h
 
+/-- For a matrix with $n$ columns and $q \ne 0$, the dimension bound
+$\|\mathbf{A}\|_{S_q} \le n^{1/q} \|\mathbf{A}\|_2$ holds uniformly in its rank,
+with $1/\infty=0$. -/
+theorem schattenNorm_le_card_rpow_mul_specNorm {q : ℝ≥0∞} (hq : q ≠ 0) (A : Matrix m n 𝕜) :
+    schattenNorm q A ≤ (Fintype.card n : ℝ) ^ q.toReal⁻¹ * specNorm A := by
+  apply (schattenNorm_le_rank_rpow_mul_specNorm hq A).trans
+  exact mul_le_mul_of_nonneg_right
+    (Real.rpow_le_rpow (Nat.cast_nonneg _) (by exact_mod_cast A.rank_le_card_width)
+      (inv_nonneg.mpr ENNReal.toReal_nonneg)) (specNorm_nonneg _)
+
 /-! ### Products with a spectral-norm factor -/
 
 /-- $\|\mathbf{A}\mathbf{B}\|_{S_q} \le \|\mathbf{A}\|_2 \, \|\mathbf{B}\|_{S_q}$ for
