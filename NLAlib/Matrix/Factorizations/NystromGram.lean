@@ -75,7 +75,8 @@ $$(\mathbf{A}\mathbf{\Omega})(\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Ome
 It is $\mathbf{0}$ when $\mathbf{\Omega}^{\mathsf{H}}\mathbf{A}\mathbf{\Omega} = \mathbf{0}$.
 [MartinssonTropp2020, (2.3), (14.1)]; [EpperlyWebber2026, Definition 3.4];
 [HalkoMartinssonTropp2011, Algorithm 5.5]; there for positive semidefinite $\mathbf{A}$ and a random
-test matrix. -/
+test matrix.
+Algorithm: nystrom -/
 noncomputable def nystrom (A : Matrix n n 𝕜) (Ω : Matrix n l 𝕜) : Matrix n n 𝕜 :=
   generalizedNystrom A Ω Ω
 

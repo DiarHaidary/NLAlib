@@ -81,7 +81,8 @@ $m = 2q$ products with $\mathbf{A}$ or $\mathbf{A}^{\mathsf{H}}$ in Tropp and We
 $\mathbf{0}$ for $q = 0$ (`NLAlib.rbki_zero`) and the randomized SVD for $q = 1$
 (`NLAlib.rbki_one`).
 [TroppWebber2023, Algorithms 5.4 and 5.5]; [MuscoMusco2015, Algorithm 2]; there with a random
-test matrix, an orthonormal Krylov basis and odd counts $m$ as well. -/
+test matrix, an orthonormal Krylov basis and odd counts $m$ as well.
+Algorithm: rbki -/
 noncomputable def rbki (A : Matrix m n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) : Matrix m n 𝕜 :=
   rsvd A (blockKrylovMatrix (Aᴴ * A) Ω q)
 
@@ -91,7 +92,8 @@ $$\mathsf{nystromBKI}(\mathbf{H}, \mathbf{\Omega}, q) := \mathsf{nystrom}(\mathb
 here deterministic; for positive semidefinite $\mathbf{H}$ it is the Gram matrix of RBKI of
 $\mathbf{H}^{1/2}$ (`Matrix.PosSemidef.sub_nystromBKI_eq`). It uses $m = q$ products with
 $\mathbf{H}$ in Tropp and Webber's count.
-[TroppWebber2023, Algorithm 5.8]; there with a random test matrix. -/
+[TroppWebber2023, Algorithm 5.8]; there with a random test matrix.
+Algorithm: nystrom-bki -/
 noncomputable def nystromBKI (H : Matrix n n 𝕜) (Ω : Matrix n l 𝕜) (q : ℕ) : Matrix n n 𝕜 :=
   nystrom H (blockKrylovMatrix H Ω q)
 
