@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.Eigensolvers.SpectralBisection.Accuracy
 public import NLAlib.Eigensolvers.SpectralBisection.BoundedFormat
 public import NLAlib.Matrix.Computation.BinaryFloatMachine
 public import Mathlib.Probability.HasLawExists
@@ -24,8 +25,12 @@ modelled; the black boxes are correctly rounded, $\mu_{\mathrm{MM}}(d) = \mu_{\m
 $c_{\mathrm N} = \sqrt2$), the parameters $\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$,
 $\ell = 20$, $\beta = \hat\beta$ at its bound, and every size $1 \le n \le 1024$, with
 independent node samples of law `NLAlib.eighSampleLaw` on the infinite product space
-`MeasureTheory.Measure.infinitePi` (`ProbabilityTheory.exists_iid`). The two examples at the end
-apply both theorems to it. The stored type of the machine is ℝ, so
+`MeasureTheory.Measure.infinitePi` (`ProbabilityTheory.exists_iid`). Two examples after the
+instance apply both theorems to it. A third applies
+[Theorem 4.2 at fixed parameters](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_bisectionDepth_le_of_logb_le_of_hasLaw_eighSampleLaw)
+to the same machine and parameters, with $\ell =$ `NLAlib.bisectionDepth` $\varepsilon = 20$,
+104 sign steps and $\beta$ at the upper end of its window: there $\Lambda \le 26$ and the
+precision condition takes at most 94.3 of the 113 bits. The stored type of the machine is ℝ, so
 $\beta$ and the entries of the input are real parameters, not numbers of the format; the contract
 holds for every real. The selector is ties away from zero, an optional IEEE 754 attribute, not
 the default ties to even; the proof uses only that the selector is a nearest selector and odd,
@@ -506,6 +511,91 @@ example (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.expon
     fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
     (Real.sqrt_nonneg 2) hn1 hA hR₀ (by norm_num) le_rfl (pow_pos (by norm_num) _) le_rfl
     (by norm_num) (by norm_num) hℓ hβ hβle hβge rfl hbits hbits' hexp (Nat.le_ceil _) hind hlaw
+
+/-- The floor and range of a format with $p = 113$ and $E = 15$ at the fixed parameters:
+$\tau = 2^{-16382} \le 2^{-60}$ and $\Omega \ge 2^{20}$. -/
+private theorem format_bounds_sixty {fmt : Float.Model.Format} (hp : fmt.mantissaBits = 113)
+    (hE : fmt.exponentBits = 15) :
+    (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) ≤ (2 : ℝ)⁻¹ ^ 60 ∧
+      2 ^ 20 ≤ fmt.maxFinite := by
+  have hmin : fmt.minExponent + (fmt.mantissaBits : ℤ) - 1 = -16382 := by
+    simp only [Float.Model.Format.minExponent, hE, hp]; norm_num
+  have hw : fmt.mantissaBitsWithoutImplicit = 112 := by
+    simp only [Float.Model.Format.mantissaBits] at hp; omega
+  have hmax : fmt.maxExponentBound = 16271 := by
+    simp only [Float.Model.Format.maxExponentBound, Float.Model.Format.exponentBias, hE, hw]
+    norm_num
+  rw [hmin]
+  refine ⟨?_, ?_⟩
+  · rw [inv_pow, ← zpow_natCast, ← zpow_neg]
+    exact zpow_le_zpow_right₀ one_le_two (by norm_num)
+  rw [Float.Model.Format.maxFinite, hmax, hp]
+  have h1 : (1 : ℝ) ≤ 2 ^ 113 - 1 := by norm_num
+  have h2 : (2 : ℝ) ^ 20 ≤ 2 ^ (16271 : ℤ) := by
+    rw [← zpow_natCast]; exact zpow_le_zpow_right₀ one_le_two (by norm_num)
+  calc (2 : ℝ) ^ 20 ≤ 1 * 2 ^ (16271 : ℤ) := by rw [one_mul]; exact h2
+    _ ≤ _ := mul_le_mul_of_nonneg_right h1 (by positivity)
+
+-- The name of the theorem applied exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- Theorem 4.2 at fixed parameters applies to the binary128 instance: with
+$\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$, $1 \le n \le 1024$ (so
+$16 \le \Lambda \le 26$), the depth `NLAlib.bisectionDepth` $\varepsilon = 20$, $104$ sign steps
+and $\beta$ at the upper end of its window, the precision condition asks for at most 94.3 of the
+113 bits, and the failure probability of `NLAlib.eigh` is at most $1/2$. -/
+example (fmt : Float.Model.Format) (hp : fmt.mantissaBits = 113) (hE : fmt.exponentBits = 15)
+    {n : ℕ} (hn1 : 1 ≤ n) (hn : n ≤ 1024) {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)}
+    (hA : (decodeMatrix id A).IsHermitian) (hR₀ : specNorm (decodeMatrix id A) ≤ 1) :
+    ∃ (r : ℝ → ℤ) (β : ℝ) (Ω' : Type) (_ : MeasurableSpace Ω')
+      (μ : Measure Ω') (ζ : List Bool → Ω' → EighSample ℝ ℂ n),
+      IsProbabilityMeasure μ ∧ iIndepFun ζ μ ∧ (∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) ∧
+      μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix id A)
+        (decodeMatrix id (eigh (binaryFloatMachine fmt r) 104
+          (bisectionDepth ((2 : ℝ)⁻¹ ^ 15)) A 1 ((2 : ℝ)⁻¹ ^ 15) β fun a => ζ a ω).1)
+        (fun i => (eigh (binaryFloatMachine fmt r) 104 (bisectionDepth ((2 : ℝ)⁻¹ ^ 15)) A 1
+          ((2 : ℝ)⁻¹ ^ 15) β fun a => ζ a ω).2 i) (2 * (2 : ℝ)⁻¹ ^ 15 * 1)
+        ((2 : ℝ)⁻¹ ^ 15 / 3)} ≤ 1 / 2 := by
+  obtain ⟨r, -, hM, hunifm, hunifc, hnormalm, hnormalc, -, -, hlogu, -, hall⟩ :=
+    exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw fmt hp hE
+  obtain ⟨-, -, -, -, -, -, -, -, -, -, -, Ω', mΩ', μ, ζ, hμ, hind, hlaw⟩ := hall n hn1 hn
+  obtain ⟨hτ60, hΩ20⟩ := format_bounds_sixty hp hE
+  have hx1 : (1 : ℝ) ≤ n := by exact_mod_cast hn1
+  have hx : (n : ℝ) ≤ 1024 := by exact_mod_cast hn
+  have hk0 : 0 ≤ Real.logb 2 n := Real.logb_nonneg one_lt_two hx1
+  have hk : Real.logb 2 n ≤ 10 :=
+    logb_le_of_le_two_pow (k := 10) (by linarith) (hx.trans (by norm_num))
+  set Λ := Real.logb 2 ((2 : ℝ)⁻¹ ^ 15)⁻¹ + Real.logb 2 (1 / 2 : ℝ)⁻¹ + Real.logb 2 n with hΛ
+  have hΛv : Λ = 16 + Real.logb 2 n := by
+    rw [hΛ, logb_inv_two_inv_pow, one_div, inv_inv, Real.logb_self_eq_one one_lt_two]
+    push_cast; ring
+  have hlΛ : Real.logb 2 Λ ≤ 5 :=
+    logb_le_of_le_two_pow (k := 5) (by linarith) (by norm_num; linarith)
+  have hnΛ : 0 < (n : ℝ) * Λ := by nlinarith
+  refine ⟨r, (2 : ℝ)⁻¹ ^ 15 * √(1 / 2) / (1024 * (n * Λ) * √(n * Λ)), Ω', mΩ', μ, ζ, hμ, hind,
+    hlaw, ?_⟩
+  have hn3 : (n : ℝ) ^ 3 ≤ 2 ^ 30 := by
+    calc (n : ℝ) ^ 3 ≤ 1024 ^ 3 := pow_le_pow_left₀ (by linarith) hx 3
+      _ = 2 ^ 30 := by norm_num
+  have hτ0 : (0 : ℝ) ≤ (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1) := by positivity
+  exact
+    hM.measureReal_not_isApproxDiagonalization_eigh_bisectionDepth_le_of_logb_le_of_hasLaw_eighSampleLaw
+    hunifm hunifc hnormalm hnormalc hn1 hA hR₀ one_pos (pow_pos (by norm_num) _) le_rfl
+    (by norm_num) (by norm_num) hΛ
+    (div_le_div_of_nonneg_left (by dsimp only [id]; positivity)
+      (mul_pos (mul_pos (by norm_num) hnΛ) (Real.sqrt_pos.2 hnΛ))
+      (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (by norm_num) hnΛ.le)
+        (Real.sqrt_nonneg _))) le_rfl
+    (by
+      dsimp only [id]
+      rw [hlogu, hp, logb_inv_two_inv_pow, one_div, inv_inv, Real.logb_self_eq_one one_lt_two]
+      push_cast; nlinarith)
+    (by push_cast; linarith) hτ0
+    (by
+      calc 300 * (n : ℝ) ^ 3 * (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
+          ≤ 300 * 2 ^ 30 * (2 : ℝ)⁻¹ ^ 60 := by gcongr
+        _ ≤ (2 : ℝ)⁻¹ ^ 15 * (1 / 2) * min 1 1 := by norm_num)
+    (by calc 64 * (1 + (n : ℝ) + Λ) ≤ 2 ^ 20 := by linarith
+          _ ≤ fmt.maxFinite := hΩ20) hind hlaw
 
 /-! ### Every parameter, in a wide enough format -/
 

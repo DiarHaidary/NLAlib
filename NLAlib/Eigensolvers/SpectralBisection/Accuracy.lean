@@ -19,6 +19,18 @@ of `NLAlib.binaryFloatMachine`). The precision, floor and range conditions are t
 explicit inequality in $\log_2(1/\varepsilon)$, $\log_2(1/\theta)$ and $\log_2 n$. The general
 statements are in `NLAlib/Eigensolvers/SpectralBisection/Global.lean`.
 
+With $\Lambda = \log_2(1/\varepsilon) + \log_2(1/\theta) + \log_2 n$, the hypotheses imply
+those of
+[Theorem 4.2](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw):
+the window for $\beta$ lies below its $\hat\beta$, the step count $N_*$ is at most $4\Lambda$,
+and the sign-function condition needs $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
+\tfrac72\log_2 n + \tfrac72\log_2\Lambda + 24.07$ bits, the stopping and deflation conditions
+$\log_2(1/\varepsilon) + \tfrac12\log_2(1/\theta) + \tfrac72\log_2 n + \tfrac52\log_2\Lambda +
+29.4$.
+
+Rounding these up to one inequality in $\Lambda$ costs a few bits against the
+[general bit count](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw).
+
 ## Main results
 
 * [Theorem 4.2 at fixed parameters](https://nla-lib.org/explore/#d/NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_bisectionDepth_le_of_logb_le_of_hasLaw_eighSampleLaw).
@@ -372,7 +384,7 @@ private theorem le_of_mul_add_le {n ℓ : ℕ} {θ R Λ Ω : ℝ} (hn : 1 ≤ n)
 -- The declaration name and a docstring line exceed 100 characters.
 set_option linter.style.longLine false in
 /-- **Hermitian diagonalization in linear precision, at fixed parameters** (Theorem 4.2 with
-every parameter chosen): let the machine meet `NLAlib.FloatMachine.IsAccurate` with unit roundoff
+every parameter chosen). Let the machine meet `NLAlib.FloatMachine.IsAccurate` with unit roundoff
 $u$, floor $\tau \ge 0$ and range $\Omega$ at the constants of correctly rounded black boxes,
 $\mu_{\mathrm{MM}}(d) = \mu_{\mathrm{QR}}(d) = 2d$ and $c_{\mathrm N} = \sqrt2$ (those of
 `NLAlib.binaryFloatMachine`), with samplers of measurable fibres and countable ranges. Let the
@@ -393,21 +405,20 @@ $64(R_0 + n + \Lambda) \le \Omega$, then
 $$\mathbb{P}\bigl[\mathsf{eigh}(\mathbf{A}, \varepsilon) \text{ is not an approximate
 diagonalization with residual } 2\varepsilon R_0 \text{ and } \mathbf{U} \text{ within }
 \varepsilon/3 \text{ of unitary}\bigr] \le \theta \,,$$
-$\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. The precision is 54.6, 67.4, 92.4 and 123.1
-bits at $(n, \varepsilon, \theta) = (1, 2^{-15}, 1)$, $(10, 2^{-15}, 1)$, $(1000, 2^{-15}, 1)$,
-$(1000, 2^{-40}, 1/2)$. The hypotheses imply those of
-`NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_hasLaw_eighSampleLaw`:
-the window for $\beta$ lies below its $\hat\beta$, the step count $N_*$ is at most $4\Lambda$,
-and the sign-function condition needs $\log_2(1/\varepsilon) + \tfrac32\log_2(1/\theta) +
-\tfrac72\log_2 n + \tfrac72\log_2\Lambda + 24.07$ bits, the stopping and deflation conditions
-$\log_2(1/\varepsilon) + \tfrac12\log_2(1/\theta) + \tfrac72\log_2 n + \tfrac52\log_2\Lambda +
-29.4$; the general bit count
+$\mathsf{eigh}$ the decoded output of `NLAlib.eigh`. At these constants the precision is 54.6,
+67.4, 92.4 and 123.1 bits at $(n, \varepsilon, \theta) = (1, 2^{-15}, 1)$, $(10, 2^{-15}, 1)$,
+$(1000, 2^{-15}, 1)$, $(1000, 2^{-40}, 1/2)$. It is at least 54.6 bits, the value at
+$(1, 2^{-15}, 1)$, so binary64 ($p = 53$) never meets it, while the general bit count
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
-is a few bits sharper. [Shah2024, Theorem 4.2], there $\log_2(1/\varepsilon) +
+asks for 49.3 there at the same constants; binary128 ($p = 113$) meets it at $1 \le n \le 1024$,
+$\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$ with at most 94.3 bits (the third example in
+`NLAlib/Eigensolvers/SpectralBisection/Instance.lean`).
+[Shah2024, Theorem 4.2], there $\log_2(1/\varepsilon) +
 \log_2\max(n^{1.5}\mu_{\mathrm{QR}}, n^2c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) +
 2\log_2\log_2(1/\varepsilon) + 1.5\log_2(1/\theta) + \log_2\log_2(n\log_2(1/\varepsilon)/\theta)
 + 23$ bits for $R_0 = \|\mathbf{A}\|_2$, node-dependent accuracies and unspecified floor and
-range conditions.
+range conditions; at the same constants, $\mu_{\mathrm{MM}}(n) = \mu_{\mathrm{QR}}(n) = 2n$ and
+$c_{\mathrm N} = \sqrt2$, that is 48.8, 67.9, 105.4 and 135.0 bits at the four points.
 Result: spectral-bisection-diagonalization-simple -/
 theorem
     FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_bisectionDepth_le_of_logb_le_of_hasLaw_eighSampleLaw
