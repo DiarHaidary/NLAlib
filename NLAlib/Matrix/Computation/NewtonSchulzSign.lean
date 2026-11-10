@@ -86,8 +86,22 @@ def newtonSchulzLoop (M : FloatMachine F Su Sg) (η : F) :
 /-- **The Newton–Schulz sign algorithm** $\mathsf{newtonSchulzSign}(\mathbf{A}, \varepsilon, b)$
 with at most $N$ steps, for stored $\varepsilon$ and $b$: the loop `NLAlib.newtonSchulzLoop` at
 the computed threshold $\mathrm{fl}(\varepsilon/\mathrm{fl}(4n))$ from the stored Hermitian
-$\mathbf{A}/b$ (`NLAlib.FloatMachine.hermScale`). [Shah2024, Algorithm 1], there with no step
-limit.
+$\mathbf{A}/b$ (`NLAlib.FloatMachine.hermScale`). In pseudo-code, every scalar operation rounded
+by the machine and the products its black box:
+
+```text
+sign(A; ε, b, N):                  A Hermitian n×n, ‖A‖₂ ≤ b
+  η ← ε/(4n)
+  X ← A/b
+  repeat at most N times:
+    if every real and imaginary part of every entry of X·X − I lies in [−η, η]:
+      return X
+    Y ← X·(3I − X·X)
+    X ← (Y + Yᴴ)/4                               X(3I − X²)/2 in exact arithmetic
+  return X
+```
+
+[Shah2024, Algorithm 1], there with no step limit.
 Algorithm: newton-schulz-sign -/
 def newtonSchulzSign (M : FloatMachine F Su Sg) (ε b : F) (N : ℕ)
     (A : Matrix (Fin n) (Fin n) (F × F)) : Matrix (Fin n) (Fin n) (F × F) :=

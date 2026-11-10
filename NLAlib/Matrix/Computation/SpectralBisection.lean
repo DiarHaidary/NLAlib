@@ -196,8 +196,39 @@ def eighAux (M : FloatMachine F Su Sg) (N signFuel : ℕ) (R₀ β : F) :
 for a stored $n \times n$ matrix with stored scale $R_0$, tolerance $\varepsilon$ and accuracy
 $\beta$, depth counter $\ell$ (at least $\lceil\log_2(1/\varepsilon)\rceil + 5$ in the analysis),
 at most $N$ steps per sign computation and the tree of ideal samples `s`: `NLAlib.eighAux` at
-the root with window $R_0$ and recursion budget $\ell + 1$. [Shah2024, Section 4], the root call
-there with $R_0 = \|\mathbf{A}\|_2$ and node-dependent accuracies.
+the root with window $R_0$ and recursion budget $\ell + 1$. In pseudo-code, with $N$ the sign
+step limit `signFuel`, each node drawing its own sample $(v, \mathbf{G}_+, \mathbf{G}_-)$
+($v \in [-1, 1]$, $\mathbf{G}_\pm$ the leading $k \times k$ blocks of its Gaussian matrices), every
+scalar operation rounded by the machine and products, QR and the samplers its black boxes:
+
+```text
+eigh(A, R₀, ε, β, ℓ):              A Hermitian n×n, ‖A‖₂ ≤ R₀
+  return node(A, R₀, ε, ℓ, budget = ℓ + 1)
+
+node(A, R, ε, ℓ, budget):          A of size k
+  if budget = 0:  return (I, 0)                  (not reached in the analysis)
+  if k ≤ 1:       return (I, Re diag A)
+  if R ≤ ε·R₀:    return (I, 0)
+  c  ← (R/ℓ)·v                                   uniform shift in [−R/ℓ, R/ℓ]
+  B  ← sign(A − c·I; accuracy β, scale 2R, at most N steps)
+  P₊ ← (B + I)/2,   P₋ ← (I − B)/2
+  k₊ ← min(k, ⌊tr P₊ + 1/2⌋)                     ⌊x⌋ = 0 for x < 0
+  R′ ← (1/2 + 2/ℓ)·R,   ε′ ← (1 − 1/ℓ)·ε
+  if k₊ = k:
+    (U, d) ← node(A − (R/2)·I, R′, ε′, ℓ + 1, budget − 1);  return (U, d + R/2)
+  if k₊ = 0:
+    (U, d) ← node(A + (R/2)·I, R′, ε′, ℓ + 1, budget − 1);  return (U, d − R/2)
+  Q₊ ← deflate(P₊, k₊; G₊),   Q₋ ← deflate(P₋, k − k₊; G₋)
+  A₊ ← (C₊ + C₊ᴴ)/2 − (R/2)·I,   C₊ = Q₊ᴴ·A·Q₊
+  A₋ ← (C₋ + C₋ᴴ)/2 + (R/2)·I,   C₋ = Q₋ᴴ·A·Q₋
+  (U₊, d₊) ← node(A₊, R′, ε′, ℓ + 1, budget − 1)
+  (U₋, d₋) ← node(A₋, R′, ε′, ℓ + 1, budget − 1)
+  return ([Q₊·U₊  Q₋·U₋], [d₊ + R/2; d₋ − R/2])
+```
+
+[Shah2024, Section 4], the root call
+there with $R_0 = \|\mathbf{A}\|_2$ and node-dependent accuracies; the nodes are [Shah2024,
+Algorithm 3].
 Algorithm: spectral-bisection -/
 def eigh (M : FloatMachine F Su Sg) (signFuel ℓ : ℕ) {n : ℕ}
     (A : Matrix (Fin n) (Fin n) (F × F)) (R₀ ε β : F) (s : List Bool → EighSample Su Sg n) :

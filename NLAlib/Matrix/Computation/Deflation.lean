@@ -49,7 +49,16 @@ namespace NLAlib
 the machine `M`: the first $r$ columns of $\mathbf{Q}$, where $(\mathbf{Q}, \mathbf{R}) =
 \mathrm{qr}(\mathrm{mm}(\mathbf{P}, \widetilde{\mathbf{G}}))$ and $\widetilde{\mathbf{G}}$ is
 $\mathbf{G}$ with every entry replaced by its stored version $\mathrm{normal}(\mathbf{G}_{i,j})$.
-Junk value: the columns beyond the $n$-th are stored zeros when $r > n$. [Shah2024, Algorithm 2].
+Junk value: the columns beyond the $n$-th are stored zeros when $r > n$. In pseudo-code:
+
+```text
+deflate(P, r; G):                  P n×n, G an ideal n×n Gaussian sample
+  G̃ ← normal(G)                                  each entry stored by the normal sampler
+  (Q, R) ← qr(P·G̃)                               the machine's product and QR
+  return the first r columns of Q                (zero columns beyond the n-th)
+```
+
+[Shah2024, Algorithm 2].
 Algorithm: deflate -/
 def deflate {F Su Sg : Type*} (M : FloatMachine F Su Sg) {n : ℕ} (r : ℕ)
     (P : Matrix (Fin n) (Fin n) (F × F)) (G : Matrix (Fin n) (Fin n) Sg) :
