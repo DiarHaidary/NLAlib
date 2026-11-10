@@ -42,6 +42,15 @@ $r(-x) = -r(x)$, which ties to even also is.
 * `NLAlib.exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le`: every
   $n \ge 1$, $0 < \varepsilon \le 2^{-15}$, $\theta > 0$ and $R_0 > 0$, in a format wide
   enough for them.
+
+Three examples at the end apply the three theorems at every parameter, each in a binary format
+chosen for the parameters: the bit count and the bounded format through
+`NLAlib.exists_isAccurate_binaryFloatMachine_and_hasLaw_eighSampleLaw_of_le`, and Theorem 4.2 at
+fixed parameters for every $n \ge 1$, $0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$ and
+$R_0 > 0$, with $p$ at least its bit count, $E$ large enough for the floor
+$300n^3\tau \le \varepsilon\theta\min(R_0, 1)$ and the range $64(R_0 + n + \Lambda) \le \Omega$,
+$\lceil 4\Lambda\rceil$ sign steps and $\beta$ at the upper end of its window. So the hypotheses
+of all three theorems are satisfiable for every $n$, $\varepsilon$, $\theta$, $R_0$.
 -/
 
 @[expose] public section
@@ -852,5 +861,67 @@ example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε 
     fmt hE2 hunifm hunifc hnormalm hnormalc hmono hmono (by norm_num) (by norm_num)
     (Real.sqrt_nonneg 2) hn hA hR₀ hR₀half hR₀one hε hε₁ hθ hθ₁ hℓ hβ hβle hβge rfl hbits hbits'
     hexp (Nat.le_ceil _) hind hlaw
+
+-- The name of the theorem applied exceeds 100 characters.
+set_option linter.style.longLine false in
+/-- Theorem 4.2 at fixed parameters applies at every parameter: for $n \ge 1$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $R_0 > 0$ and every Hermitian input with
+$\|\mathbf{A}\|_2 \le R_0$, a binary format with $p \ge$ the bit count and $E$ large enough for
+$300n^3\tau \le \varepsilon\theta\min(R_0, 1)$ and $64(R_0 + n + \Lambda) \le \Omega$, the depth
+`NLAlib.bisectionDepth` $\varepsilon$, $\lceil 4\Lambda\rceil$ sign steps and $\beta$ at the upper
+end of its window give failure probability of `NLAlib.eigh` at most $\theta$. -/
+example {n : ℕ} (hn : 1 ≤ n) {ε θ R₀ : ℝ} (hε : 0 < ε) (hε₁ : ε ≤ 2⁻¹ ^ 15) (hθ : 0 < θ)
+    (hθ₁ : θ ≤ 1) (hR₀pos : 0 < R₀) {A : Matrix (Fin n) (Fin n) (ℝ × ℝ)}
+    (hA : (decodeMatrix id A).IsHermitian) (hR₀ : specNorm (decodeMatrix id A) ≤ R₀) :
+    ∃ (fmt : Float.Model.Format) (r : ℝ → ℤ) (signFuel : ℕ) (β : ℝ) (Ω' : Type)
+      (_ : MeasurableSpace Ω') (μ : Measure Ω') (ζ : List Bool → Ω' → EighSample ℝ ℂ n),
+      IsProbabilityMeasure μ ∧ iIndepFun ζ μ ∧ (∀ a, HasLaw (ζ a) (eighSampleLaw n) μ) ∧
+      μ.real {ω | ¬ IsApproxDiagonalization (decodeMatrix id A)
+        (decodeMatrix id (eigh (binaryFloatMachine fmt r) signFuel (bisectionDepth ε) A R₀ ε β
+          fun a => ζ a ω).1)
+        (fun i => (eigh (binaryFloatMachine fmt r) signFuel (bisectionDepth ε) A R₀ ε β
+          fun a => ζ a ω).2 i)
+        (2 * ε * R₀) (ε / 3)} ≤ θ := by
+  set Λ := Real.logb 2 ε⁻¹ + Real.logb 2 θ⁻¹ + Real.logb 2 n with hΛ
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
+  have hε1 : ε ≤ 1 := hε₁.trans (by norm_num)
+  have hΛ0 : 0 < Λ := by
+    have h1 : 0 ≤ Real.logb 2 θ⁻¹ := Real.logb_nonneg one_lt_two (one_le_inv₀ hθ |>.mpr hθ₁)
+    have h2 : 0 ≤ Real.logb 2 n := Real.logb_nonneg one_lt_two (by exact_mod_cast hn)
+    have h3 : 15 ≤ Real.logb 2 ε⁻¹ := by
+      rw [Real.le_logb_iff_rpow_le one_lt_two (inv_pos.mpr hε)]
+      have : (2 : ℝ) ^ (15 : ℝ) = (2⁻¹ ^ 15)⁻¹ := by norm_num
+      rw [this]; exact inv_anti₀ hε hε₁
+    linarith
+  have hnΛ : 0 < (n : ℝ) * Λ := mul_pos hn0 hΛ0
+  have hq : 0 < ε * θ * min R₀ 1 := mul_pos (mul_pos hε hθ) (lt_min hR₀pos one_pos)
+  obtain ⟨fmt, hb, -, -, -, hτ1, hτQ, hΩQ⟩ := exists_format_le
+    (Real.logb 2 ε⁻¹ + 3 / 2 * Real.logb 2 θ⁻¹ + 7 / 2 * Real.logb 2 n + 4 * Real.logb 2 Λ + 24)
+    0 0 (max (300 * n ^ 3 / (ε * θ * min R₀ 1)) (64 * (R₀ + n + Λ)))
+  obtain ⟨Ω', mΩ', μ, ζ, hμ, hind, hlaw⟩ := exists_iIndepFun_hasLaw_eighSampleLaw n
+  refine ⟨fmt, roundTiesAway, ⌈4 * Λ⌉₊, ε * √θ / (1024 * (n * Λ) * √(n * Λ)), Ω', mΩ', μ, ζ,
+    hμ, hind, hlaw, ?_⟩
+  set τ := (2 : ℝ) ^ (fmt.minExponent + fmt.mantissaBits - 1)
+  have hτ0 : 0 ≤ τ := by positivity
+  have hτ : 300 * n ^ 3 * τ ≤ ε * θ * min R₀ 1 := by
+    have h := mul_le_mul_of_nonneg_left (le_max_left (300 * n ^ 3 / (ε * θ * min R₀ 1))
+      (64 * (R₀ + n + Λ))) hτ0
+    have h1 : τ * (300 * n ^ 3 / (ε * θ * min R₀ 1)) ≤ 1 := h.trans hτQ
+    rw [mul_div_assoc', div_le_one hq] at h1
+    linarith
+  have hM := isAccurate_binaryFloatMachine (fmt := fmt) absRelErr_roundTiesAway roundTiesAway_neg
+    hτ1
+  exact
+    hM.measureReal_not_isApproxDiagonalization_eigh_bisectionDepth_le_of_logb_le_of_hasLaw_eighSampleLaw
+    (measurableSet_preimage_unif_binaryFloatMachine fmt measurable_roundTiesAway)
+    (countable_range_unif_binaryFloatMachine fmt _)
+    (measurableSet_preimage_normal_binaryFloatMachine fmt measurable_roundTiesAway)
+    (countable_range_normal_binaryFloatMachine fmt _) hn hA hR₀ hR₀pos hε hε₁ hθ hθ₁ hΛ
+    (div_le_div_of_nonneg_left (by positivity)
+      (mul_pos (mul_pos (by norm_num) hnΛ) (Real.sqrt_pos.2 hnΛ))
+      (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (by norm_num) hnΛ.le)
+        (Real.sqrt_nonneg _))) le_rfl
+    (by rw [logb_inv_two_inv_pow]; exact hb) (Nat.le_ceil _) hτ0 hτ
+    ((le_max_right _ _).trans hΩQ) hind hlaw
 
 end NLAlib

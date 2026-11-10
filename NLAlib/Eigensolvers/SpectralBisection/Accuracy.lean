@@ -412,7 +412,10 @@ $(1, 2^{-15}, 1)$, so binary64 ($p = 53$) never meets it, while the general bit 
 `NLAlib.FloatMachine.IsAccurate.measureReal_not_isApproxDiagonalization_eigh_le_of_logb_le_of_hasLaw_eighSampleLaw`
 asks for 49.3 there at the same constants; binary128 ($p = 113$) meets it at $1 \le n \le 1024$,
 $\varepsilon = 2^{-15}$, $\theta = 1/2$, $R_0 = 1$ with at most 94.3 bits (the third example in
-`NLAlib/Eigensolvers/SpectralBisection/Instance.lean`).
+`NLAlib/Eigensolvers/SpectralBisection/Instance.lean`). The hypotheses are satisfiable for every
+$n$, $\varepsilon$, $\theta$, $R_0$: the last example there meets them at every $n \ge 1$,
+$0 < \varepsilon \le 2^{-15}$, $0 < \theta \le 1$, $R_0 > 0$ in a binary format chosen for
+the parameters.
 [Shah2024, Theorem 4.2], there $\log_2(1/\varepsilon) +
 \log_2\max(n^{1.5}\mu_{\mathrm{QR}}, n^2c_{\mathrm N}, n^{4.5}\mu_{\mathrm{MM}}) +
 2\log_2\log_2(1/\varepsilon) + 1.5\log_2(1/\theta) + \log_2\log_2(n\log_2(1/\varepsilon)/\theta)
