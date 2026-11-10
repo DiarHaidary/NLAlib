@@ -643,6 +643,25 @@ All are in the scaffold. Statements are given in full there.
   the position by `n`.
 * `PosKept st st'` is the common clause.
 
+### 4.8 Rules added after the shifted-QR end-to-end test
+
+The test (one shifted QR step written and proved from the playbook) found four missing rules.
+* `spec_scalarBlock` (`StraightLine.lean`) specifies a straight-line block of scalar operations
+  as one function update of the word function (`evalOps`, `storeFn`): no precondition in the
+  liberal mode; in the total mode the cells read are defined when read (`OpsDefined`, so
+  temporaries need no initialisation), the operations succeed (`OpsOk`) and the written cells
+  are writable. Footprint one cell per operation; post the evaluated words, `Costs` of one charge
+  per operation, `PosKept`.
+* `RoutineSpec.sub` is the builder form of `Spec.sub`.
+* `RunEquiv` (`RunEquiv.lean`) transports a specification between builders that differ only in
+  index expressions of equal values, by one congruence rule per builder form (tactic
+  `run_equiv`, transport `RoutineSpec.of_runEquiv`), instead of `exec_eq_of_normIdx_eq … rfl` on
+  whole statements, which exhausted the kernel. Index-generic specifications (`(xo : IExp ℕ)`,
+  stated on `xo.eval`) remain the default and need no transport.
+* `Spec.whileFuel` and `RoutineSpec.whileFuel` (`RoutineWhile.lean`) give `whileFuel` an
+  invariant and a footprint. The total mode needs fuel for the first test (`hf0`), the comparison
+  defined and fuel for each test that holds, and concludes success.
+
 ## 5. Tactic support
 
 Four macros in `ProgramLogic.lean`, plain `macro`/`macro_rules` (the precedent is

@@ -120,6 +120,17 @@ theorem spec_fooBlock (md : Mode) … (hsem : md.Needs (IsRelErrSem u dec safe I
 - Pre: input values, then the success-only facts (writable blocks, nonzero divisors, defined
   literals) under `md.Needs`. A correctness-only fact goes in the post as a guard (`A → Q`) or in
   the pre as `md = .liberal → …`. The range of the standard model is a parameter `safe`.
+- Index arguments are index expressions, `(xo : IExp ℕ)`, and the statement uses only their values
+  (`xo.eval`), so one spec serves a loop body at `.var k` and a call at `.const k` (the default;
+  `Computation.spec_scalarBlock` is of this form). **Never** state a block's spec at `.const k`
+  for a body that a loop runs at `.var k`: the unifier then compares the two programs and the
+  kernel can time out (25 min lost in the shifted-QR test).
+- A comparison whose outcome only the values decide (`ifThenElse` on stored words) takes the
+  semantics' comparison as a mode-independent hypothesis, outside `md.Needs`:
+  `(hcmp : ∀ x y : K, I.sem.cmp p .le x y = some (decide (dec p x ≤ dec p y)))`
+  (`NLAlib.spec_eighClampBlock`); the outcome is then fixed in every mode and
+  `Computation.RoutineSpec.ifThenElse` applies. The standard model gives it
+  (the cmp_le clause of `Computation.IsRelErrSem`), so the liberal corollary pays nothing.
 - No `let` in the statement; give each declaration its own `omit … in`.
 - In the proof, `md.Needs` facts are used without a case split: `hN.mono fun h => …`
   (`Computation.Mode.Needs.mono`), `Computation.Mode.Needs.elim`, `Computation.Mode.needs_and`,
@@ -178,7 +189,9 @@ The body's hypotheses are about the allocated state, its conclusion about the re
 **7. Loops.** `Computation.RoutineSpec.forRange` (or `Computation.Spec.loop`) with the
 invariant "the store holds the iterate": `fun st₀ k st => State ((step)^[k] A) st.store ∧ … ∧
 PosKept st₀ st`; the step is the one-iteration spec, and the math lemma rewrites the iterate to
-the algorithm's function.
+the algorithm's function. A loop that runs while a comparison holds (`whileFuel`):
+`Computation.RoutineSpec.whileFuel` / `Computation.Spec.whileFuel`, with the invariant before
+each test; the total mode needs fuel for the first test (`hf0`), the comparison defined, and fuel for each test that holds.
 
 **8. Old lemma pairs become corollaries.** A refinement lemma is `(spec_eighSignBlock .liberal
 … trivial …).spec.holds_of_exec hpre hrun` (`Computation.Triple.holds_of_exec`), a success lemma
@@ -191,6 +204,21 @@ without a spec is adapted by `Computation.Triple.of_exec`.
 gives a frame only under value hypotheses, use the kernel's `*_frame` spec
 (`Computation.spec_zhermShift_frame`, `Computation.spec_kcall_frame`) or build one with
 `Computation.Spec.seq_frame`, `Computation.Spec.loop_frame`, `Computation.Spec.frame_of_sub`.
+
+**10. Straight-line blocks.** A block of scalar instructions without loops or branches (a
+rotation, a norm, a coefficient update) is a list of `Computation.ScalarOp` run by
+`Computation.scalarBlock p ops`, specified once by `Computation.spec_scalarBlock md p ops`:
+footprint one cell per operation (`Computation.opsFootprint`), post `storeFn p st'.store =
+evalOps I.sem p ops (storeFn p st.store)` and each written cell reads its evaluated word, with the
+count and `PosKept`. The liberal mode needs nothing; the total mode needs
+`Computation.OpsDefined` (cells read hold words when read: temporaries written earlier need no
+initialisation; `Computation.opsDefined_of_forall` when all are present), `Computation.OpsOk`
+(`Computation.opsOk_of_plain` with `Computation.WordTotal` for add, sub, mul, neg and copies;
+`Computation.IsRelErrSem.wordTotal`) and `WritableBlocks` of the footprint. Read inputs into the
+word function with `Computation.storeFn_of_read`, coarsen the footprint with
+`Computation.RoutineSpec.sub`. Evaluate one output word per lemma (`evalOps … g (B, xo.eval) =
+…`, by `simp only [evalOps_cons, ScalarOp.step, ScalarOp.value, Function.update_apply, …]`):
+one `simp` over all outputs of a 36-operation block exhausts the heartbeats.
 
 **Pitfalls.**
 - A nested `exact` chain of calls leaves metavariables, and a spec inlined in a `refine` can take
@@ -205,8 +233,11 @@ gives a frame only under value hypotheses, use the kernel's `*_frame` spec
 - Long do-blocks: matching `r >>= f` against a long block with `r` a named head def is slow
   (bind associativity is defeq but expensive). Put the continuation into the def (a head def
   taking `rest`) and state that piece in `Wp` form.
-- A builder argument written `.var k` where the callee's spec has `.const k`: transport with
-  `Computation.RoutineSpec.congr` and the block's `exec_…_var` run lemma.
+- A builder argument written `.var k` where the callee's spec has `.const k` (an old spec that is
+  not index-generic): `Computation.RoutineSpec.of_runEquiv` with `Computation.RunEquiv` built by
+  the tactic run_equiv after unfolding the block's definitions; values equal only by arithmetic
+  are left as goals (`Computation.Cell.normIdx_eq_of_eval_eq`). Do not compare whole statements
+  by `exec_eq_of_normIdx_eq I rfl`: it can exhaust the kernel on a large block.
 - A loop whose iterations all modify inside one fixed list: `Computation.RoutineSpec.forRange_const`
   (one footprint); keep per-iteration footprints for the post only.
 - A conditional whose outcome the proof only learns by cases: case on the comparison and build the
@@ -222,16 +253,23 @@ gives a frame only under value hypotheses, use the kernel's `*_frame` spec
   must not start with `let`, names ending in `Tail` are registry bounds.
 - `Computation.IsMatMulKernel.spec_kcall` states its footprint and post with `pairLayout.width`:
   `simp only [Computation.matBlock, Computation.pairLayout]` before fp_omega. A kernel call written
-  with `.var k` against a spec at `.const k`: `Computation.RoutineSpec.congr` with
-  `Computation.exec_eq_of_normIdx_eq I (by rfl) st`.
+  with `.var k` against a spec at `.const k`: `Computation.RunEquiv.kcall`.
 - Dispatch on a stored kind (an index binder, then guarded blocks `eighWhen (eighEqInd c i)`): one
   spec per kind, chaining `NLAlib.spec_eighWhen` for the taken guard and
   `NLAlib.routineSpec_eighWhen_of_eval_eq_zero` for the others (`NLAlib.spec_eighUpNode_one`).
 - Allocations of different lengths: `Computation.spec_allocBind_chain`. A footprint block that
   runs past its buffer: `Computation.Modifies.of_sub_shape` (cells past the buffer read `none`).
   A statement with `.var k` against a spec at `.const k`: `Computation.Spec.of_exec_eq`, with the
-  run equation built in its own `have`. A postcondition that is a metavariable is not a pattern:
-  name it first (`obtain ⟨Post, hPost⟩`).
+  run equation from `Computation.RunEquiv.exec_run_eq` in its own `have`. A postcondition that
+  is a metavariable is not a pattern: name it first (`obtain ⟨Post, hPost⟩`).
+- `omega` fails on a hypothesis or goal of the form `False ∨ P` (left by `simp` on a membership):
+  simp the `False` disjunct away first. A name that fp_omega or `omega` must see through (a
+  cell list, a register count, a footprint window) is an `abbrev`, not a `def`, or is unfolded
+  before the call.
+- An error without a line (a kernel error such as a deterministic timeout or deep recursion,
+  reported at the declaration) comes from the proof term, not a tactic: replace halves of the
+  proof by `sorry` (locally, never committed) until it compiles, then look in the removed half for a whole-statement `rfl`,
+  a `decide`, or a unification of `.var k` with `.const k`.
 - Spec lookup: the catalog `NLAlibTools/SpecCatalog.lean` writes every specification with its
   pre, footprint, post and file:line (`SPEC_CATALOG=<out.md> lake env lean NLAlibTools/SpecCatalog.lean`).
 

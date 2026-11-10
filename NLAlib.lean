@@ -38,11 +38,14 @@ public import NLAlib.Computation.Rounding
 public import NLAlib.Computation.RoutineAlloc
 public import NLAlib.Computation.RoutineFrames
 public import NLAlib.Computation.RoutineSpec
+public import NLAlib.Computation.RoutineWhile
+public import NLAlib.Computation.RunEquiv
 public import NLAlib.Computation.RunsWithin
 public import NLAlib.Computation.ScalarFrames
 public import NLAlib.Computation.Sparse
 public import NLAlib.Computation.StaticCost
 public import NLAlib.Computation.Store
+public import NLAlib.Computation.StraightLine
 public import NLAlib.Computation.Subst
 public import NLAlib.Computation.Syntax
 public import NLAlib.Computation.Underflow
