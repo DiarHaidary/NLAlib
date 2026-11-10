@@ -26,7 +26,14 @@ are written. It answers, with specifics:
 6. **Material.** Which sources and existing developments were read, what in them is reused (as
    mathematics to cover, as proof material), and what is deliberately not reproduced and why
    (twins, bundles, transport lemmas, local interfaces).
-7. **Open questions** for the reviewers, with a recommendation each.
+7. **Shared proof machinery** ([ground rules](../../CONTRIBUTING.md#ground-rules) rule 10). Which
+   arguments several of the planned proofs will repeat: frame or footprint reasoning for programs,
+   index and layout arithmetic, an estimate chain, a transport between two spellings. For each one,
+   the note names the existing lemma, rule, tactic or interface that handles it, or plans it as its
+   own declarations, proved before the results that use it. If most of a planned proof is such
+   steps rather than mathematics, the note says what is missing, instead of planning to write it
+   out by hand.
+8. **Open questions** for the reviewers, with a recommendation each.
 
 For each bridge and each API lemma that restates a Mathlib fact, the note names the Mathlib lemma
 it found, or records "searched, none". An exact overlap ships as an `alias` or a one-line proof

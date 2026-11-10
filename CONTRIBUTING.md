@@ -67,6 +67,15 @@ The checks also need Python 3.11 or later and, for the LaTeX check, Node 20 with
    starts with a written design: the objects, the hypothesis interfaces, the statement shapes,
    and how later layers will consume them. Existing developments elsewhere are material to
    evaluate, not a template.
+10. **A library, not a list of results.** A piece of work is finished when the next one is
+    easier because of it, not only when its target theorems are proved. The mathematics is the
+    hard part of a proof. Bookkeeping should not be: memory frames, index and layout arithmetic,
+    unfolding an execution, re-deriving the same estimate. If you write the same non-mathematical
+    argument a second time, or a proof is mostly such steps, a lemma, a rule, a tactic or an
+    interface is missing. Add it, public and documented, in the file of its topic (rule 8: not a
+    "toolkit" file), and use it. A design lists this shared machinery up front
+    ([design](docs/contributing/design.md), item 7). Closing a run of targets by brute force and
+    leaving the next contributor to repeat the effort is a defect, even when every proof checks.
 
 ## The guides
 
