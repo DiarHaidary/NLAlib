@@ -162,6 +162,29 @@ theorem schattenNorm_rpow_eq_re_trace_rpow [DecidableEq n] (A : Matrix m n 𝕜)
   push_cast
   ring
 
+/-- Taking a positive power of the matrix absolute value multiplies the Schatten index
+by that exponent. This includes singular matrices and positive indices below one. -/
+theorem schattenNorm_rpow_abs [DecidableEq n] (A : Matrix n n 𝕜) {p s : ℝ}
+    (hp : 0 < p) (hs : 0 < s) :
+    schattenNorm (ENNReal.ofReal p) ((CFC.abs A) ^ s) =
+      schattenNorm (ENNReal.ofReal (s * p)) A ^ s := by
+  apply (Real.rpow_left_inj (schattenNorm_nonneg _ _)
+    (Real.rpow_nonneg (schattenNorm_nonneg _ _) _) hp.ne').mp
+  rw [schattenNorm_rpow_eq_re_trace_rpow _ hp, ← Real.rpow_mul (schattenNorm_nonneg _ _),
+    schattenNorm_rpow_eq_re_trace_rpow _ (mul_pos hs hp)]
+  have hsa : ((CFC.abs A) ^ s)ᴴ = (CFC.abs A) ^ s :=
+    (CFC.rpow_nonneg (a := CFC.abs A) (y := s)).isSelfAdjoint.star_eq
+  have hsq (B : Matrix n n 𝕜) (hB : 0 ≤ B) : B * B = B ^ (2 : ℝ) := by
+    rw [← pow_two, ← CFC.rpow_natCast B 2 hB]
+    norm_num
+  have hgram : Aᴴ * A = (CFC.abs A) ^ (2 : ℝ) :=
+    (CFC.abs_mul_abs A).symm.trans (hsq _ (CFC.abs_nonneg _))
+  rw [hsa, hsq _ CFC.rpow_nonneg, hgram,
+    CFC.rpow_rpow_of_exponent_nonneg _ _ _ hs.le (by norm_num),
+    CFC.rpow_rpow_of_exponent_nonneg _ _ _ (by positivity) (by positivity),
+    CFC.rpow_rpow_of_exponent_nonneg _ _ _ (by norm_num) (by positivity)]
+  ring_nf
+
 open scoped Classical in
 /-- A Hermitian matrix is at most its absolute value:
 $\mathbf{A} \preceq \lvert \mathbf{A} \rvert$. -/

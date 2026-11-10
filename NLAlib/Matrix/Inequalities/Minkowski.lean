@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Analysis.Convex.Function
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import NLAlib.Matrix.Functions.LogDet
 public import NLAlib.Matrix.Inequalities.Determinant
 
 /-!
@@ -22,6 +23,8 @@ stated for $\operatorname{Re} \det \mathbf{A}$ (`RCLike.re`).
 ## Main results
 
 * `Matrix.PosSemidef.re_det_rpow_add_le`: Minkowski's inequality.
+* `Matrix.PosDef.re_det_smul_add_smul_rpow_eq_iff`: equality for positive definite matrices
+  and positive weights exactly at positive proportionality.
 * `NLAlib.concaveOn_re_det_rpow`: concavity of the $N$-th root of the determinant.
 * `Matrix.PosSemidef.re_det_add_le`: superadditivity of the determinant.
 -/
@@ -187,5 +190,67 @@ theorem _root_.Matrix.PosSemidef.re_det_add_le [Nonempty n] {A B : Matrix n n �
   rw [Real.rpow_inv_natCast_pow hab hN] at h
   refine le_trans ?_ ((pow_add_pow_le (Real.rpow_nonneg ha _) (Real.rpow_nonneg hb _) hN).trans h)
   rw [Real.rpow_inv_natCast_pow ha hN, Real.rpow_inv_natCast_pow hb hN]
+
+/-- If the determinant root of a positive definite matrix is one, so is its determinant. -/
+private theorem re_det_eq_one_of_rpow_eq_one [Nonempty n] {A : Matrix n n 𝕜} (hA : A.PosDef)
+    (h : RCLike.re A.det ^ (Fintype.card n : ℝ)⁻¹ = 1) : RCLike.re A.det = 1 := by
+  rw [← Real.rpow_inv_natCast_pow (RCLike.pos_iff.mp hA.det_pos).1.le
+    (Fintype.card_ne_zero (α := n)), h, one_pow]
+
+/-- Normalizing both inputs to determinant one reduces equality to strict log-concavity. -/
+private theorem exists_pos_smul_of_re_det_add_rpow_eq [Nonempty n] {A B : Matrix n n 𝕜}
+    (hA : A.PosDef) (hB : B.PosDef)
+    (heq : RCLike.re (A + B).det ^ (Fintype.card n : ℝ)⁻¹ =
+      RCLike.re A.det ^ (Fintype.card n : ℝ)⁻¹ + RCLike.re B.det ^ (Fintype.card n : ℝ)⁻¹) :
+    ∃ c : ℝ, 0 < c ∧ A = c • B := by
+  let p := RCLike.re A.det ^ (Fintype.card n : ℝ)⁻¹
+  let q := RCLike.re B.det ^ (Fintype.card n : ℝ)⁻¹
+  have hp : 0 < p := Real.rpow_pos_of_pos (RCLike.pos_iff.mp hA.det_pos).1 _
+  have hq : 0 < q := Real.rpow_pos_of_pos (RCLike.pos_iff.mp hB.det_pos).1 _
+  have hpq := add_pos hp hq
+  have hP := hA.smul (inv_pos.mpr hp)
+  have hQ := hB.smul (inv_pos.mpr hq)
+  have hC := (hA.add hB).smul (inv_pos.mpr hpq)
+  have hPd := re_det_eq_one_of_rpow_eq_one hP <| (re_det_real_smul_rpow hA.posSemidef
+    (inv_nonneg.mpr hp.le)).trans (inv_mul_cancel₀ hp.ne')
+  have hQd := re_det_eq_one_of_rpow_eq_one hQ <| (re_det_real_smul_rpow hB.posSemidef
+    (inv_nonneg.mpr hq.le)).trans (inv_mul_cancel₀ hq.ne')
+  have hCd := re_det_eq_one_of_rpow_eq_one hC <| by
+    rw [re_det_real_smul_rpow (hA.add hB).posSemidef (inv_nonneg.mpr hpq.le), heq]
+    exact inv_mul_cancel₀ hpq.ne'
+  have hw : p / (p + q) + q / (p + q) = 1 := by rw [← add_div, div_self hpq.ne']
+  have hmix : (p / (p + q)) • (p⁻¹ • A) + (q / (p + q)) • (q⁻¹ • B) =
+      (p + q)⁻¹ • (A + B) := by
+    simp only [smul_smul, smul_add]
+    congr 1 <;> congr 1 <;> field_simp
+  have hn := (hP.log_re_det_smul_add_smul_eq_iff hQ (div_pos hp hpq) (div_pos hq hpq) hw).mp
+    (by rw [hmix, hCd, hPd, hQd, Real.log_one, mul_zero, mul_zero, add_zero])
+  refine ⟨p / q, div_pos hp hq, ?_⟩
+  simpa only [smul_smul, mul_inv_cancel₀ hp.ne', one_smul, div_eq_mul_inv] using
+    congrArg (fun M : Matrix n n 𝕜 => p • M) hn
+
+/-- **Equality in Minkowski's determinant inequality.** For positive definite matrices with a
+nonempty index type and arbitrary positive weights, the determinant root of the weighted sum
+equals the weighted sum of the determinant roots exactly when the matrices are positive scalar
+multiples. [HornJohnson2013, Theorem 7.6.10].
+Result: minkowski-determinant-inequality -/
+theorem _root_.Matrix.PosDef.re_det_smul_add_smul_rpow_eq_iff [Nonempty n] {A B : Matrix n n 𝕜}
+    (hA : A.PosDef) (hB : B.PosDef) {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
+    RCLike.re (a • A + b • B).det ^ (Fintype.card n : ℝ)⁻¹ =
+        a * RCLike.re A.det ^ (Fintype.card n : ℝ)⁻¹ +
+        b * RCLike.re B.det ^ (Fintype.card n : ℝ)⁻¹ ↔
+      ∃ c : ℝ, 0 < c ∧ A = c • B := by
+  constructor
+  · intro heq
+    rw [← re_det_real_smul_rpow hA.posSemidef ha.le,
+      ← re_det_real_smul_rpow hB.posSemidef hb.le] at heq
+    obtain ⟨c, hc, h⟩ := exists_pos_smul_of_re_det_add_rpow_eq (hA.smul ha) (hB.smul hb) heq
+    refine ⟨a⁻¹ * (c * b), mul_pos (inv_pos.mpr ha) (mul_pos hc hb), ?_⟩
+    simpa only [smul_smul, inv_mul_cancel₀ ha.ne', one_smul] using
+      congrArg (fun M : Matrix n n 𝕜 => a⁻¹ • M) h
+  · rintro ⟨c, hc, rfl⟩
+    rw [smul_smul, ← add_smul, re_det_real_smul_rpow hB.posSemidef (by positivity),
+      re_det_real_smul_rpow hB.posSemidef hc.le]
+    ring
 
 end NLAlib

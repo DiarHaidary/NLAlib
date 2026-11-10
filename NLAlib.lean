@@ -88,6 +88,9 @@ public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
+public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
+public import NLAlib.ForMathlib.Analysis.Complex.JensenFormula
+public import NLAlib.ForMathlib.Analysis.Complex.Poisson
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
@@ -95,8 +98,10 @@ public import NLAlib.ForMathlib.Analysis.MeanInequalities
 public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
 public import NLAlib.ForMathlib.Analysis.Real.Sqrt
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Abs
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exp
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ExpDeriv
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exponential
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
@@ -148,6 +153,7 @@ public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Set
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
 public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
+public import NLAlib.ForMathlib.MeasureTheory.Integral.Log
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
 public import NLAlib.ForMathlib.MeasureTheory.Matrix
 public import NLAlib.ForMathlib.MeasureTheory.MeasurableSpace.Defs
@@ -471,16 +477,20 @@ public import NLAlib.Matrix.Factorizations.Triangular
 public import NLAlib.Matrix.Functions.AbsoluteValue
 public import NLAlib.Matrix.Functions.Complexification
 public import NLAlib.Matrix.Functions.Exponential
+public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
 public import NLAlib.Matrix.Functions.Lieb
 public import NLAlib.Matrix.Functions.LogDet
+public import NLAlib.Matrix.Functions.MultivariateGoldenThompson
 public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Functions.OperatorMonotone
+public import NLAlib.Matrix.Functions.OrderedExponential
 public import NLAlib.Matrix.Functions.Perspective
 public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositivePart
+public import NLAlib.Matrix.Functions.PowerProducts
 public import NLAlib.Matrix.Functions.Sign
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
@@ -511,6 +521,7 @@ public import NLAlib.Matrix.Norms.Nuclear
 public import NLAlib.Matrix.Norms.Projector
 public import NLAlib.Matrix.Norms.Schatten
 public import NLAlib.Matrix.Norms.SchattenHolder
+public import NLAlib.Matrix.Norms.SchattenInterpolation
 public import NLAlib.Matrix.Norms.SchattenPowers
 public import NLAlib.Matrix.Norms.Spectral
 public import NLAlib.Matrix.Norms.SymmetricGauge

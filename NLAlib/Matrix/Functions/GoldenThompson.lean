@@ -5,8 +5,8 @@ Authors: NLAlib contributors
 -/
 module
 
-public import Mathlib.Analysis.Calculus.Deriv.Add
 public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exponential
 public import NLAlib.Matrix.Functions.Exponential
 
 /-!
@@ -45,114 +45,6 @@ open NormedSpace (exp)
 open Filter
 
 namespace NLAlib
-
-/-! ### The Lie product formula -/
-
-section LieProduct
-
-variable {𝕂 𝔸 : Type*} [RCLike 𝕂] [NormedRing 𝔸]
-
-/-- Telescoping bound for a difference of powers in a normed ring. -/
-private theorem norm_pow_succ_sub_pow_succ_le {x y : 𝔸} {M : ℝ} (hx : ‖x‖ ≤ M) (hy : ‖y‖ ≤ M)
-    (n : ℕ) : ‖x ^ (n + 1) - y ^ (n + 1)‖ ≤ (n + 1) * M ^ n * ‖x - y‖ := by
-  have hM : 0 ≤ M := (norm_nonneg x).trans hx
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    have e : x ^ (n + 1 + 1) - y ^ (n + 1 + 1) =
-        x ^ (n + 1) * (x - y) + (x ^ (n + 1) - y ^ (n + 1)) * y := by
-      rw [pow_succ x (n + 1), pow_succ y (n + 1)]
-      noncomm_ring
-    have hxn : ‖x ^ (n + 1)‖ ≤ M ^ (n + 1) :=
-      (norm_pow_le' x n.succ_pos).trans (pow_le_pow_left₀ (norm_nonneg x) hx _)
-    calc ‖x ^ (n + 1 + 1) - y ^ (n + 1 + 1)‖
-        ≤ ‖x ^ (n + 1)‖ * ‖x - y‖ + ‖x ^ (n + 1) - y ^ (n + 1)‖ * ‖y‖ := by
-          rw [e]
-          exact (norm_add_le _ _).trans (add_le_add (norm_mul_le _ _) (norm_mul_le _ _))
-      _ ≤ M ^ (n + 1) * ‖x - y‖ + (n + 1) * M ^ n * ‖x - y‖ * M :=
-          add_le_add (mul_le_mul_of_nonneg_right hxn (norm_nonneg _))
-            (mul_le_mul ih hy (norm_nonneg _) (by positivity))
-      _ = ((n + 1 : ℕ) + 1) * M ^ (n + 1) * ‖x - y‖ := by
-          push_cast
-          ring
-
-variable [NormedAlgebra 𝕂 𝔸] [NormOneClass 𝔸]
-
-/-- Two curves $F$, $G$ through $1$ with the same derivative at $0$ have the same limit of
-$F(1/n)^n$: the difference $F(1/n)^n - G(1/n)^n$ tends to $0$. -/
-private theorem tendsto_pow_sub_pow_of_hasDerivAt {F G : 𝕂 → 𝔸} {D : 𝔸} (hF0 : F 0 = 1)
-    (hG0 : G 0 = 1) (hF : HasDerivAt F D 0) (hG : HasDerivAt G D 0) :
-    Tendsto (fun n : ℕ => F ((n : 𝕂)⁻¹) ^ n - G ((n : 𝕂)⁻¹) ^ n) atTop (𝓝 0) := by
-  have ht : Tendsto (fun n : ℕ => ((n : 𝕂)⁻¹)) atTop (𝓝 0) := tendsto_inv_atTop_nhds_zero_nat
-  obtain ⟨c₁, h₁⟩ := hF.isBigO_sub.bound
-  obtain ⟨c₂, h₂⟩ := hG.isBigO_sub.bound
-  have hlo : (fun t : 𝕂 => F t - G t) =o[𝓝 0] fun t : 𝕂 => t := by
-    have h := hasDerivAt_iff_isLittleO.mp (hF.sub hG)
-    simpa [hF0, hG0] using h
-  rw [NormedAddGroup.tendsto_nhds_zero]
-  intro ε hε
-  set C : ℝ := max (max c₁ c₂) 0 with hC
-  have hδ : 0 < ε / (2 * Real.exp C) := by positivity
-  filter_upwards [ht.eventually h₁, ht.eventually h₂, ht.eventually (hlo.def hδ),
-    eventually_gt_atTop 0] with n hn₁ hn₂ hn₃ hn₀
-  obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn₀.ne'
-  have hnorm : ‖((k + 1 : ℕ) : 𝕂)⁻¹‖ = ((k : ℝ) + 1)⁻¹ := by
-    rw [norm_inv, RCLike.norm_natCast, Nat.cast_succ]
-  rw [sub_zero, hnorm] at hn₁ hn₂
-  rw [hnorm] at hn₃
-  have hk : (0 : ℝ) < (k : ℝ) + 1 := by positivity
-  have hM : ∀ {z : 𝔸} {c : ℝ}, c ≤ C → ‖z - 1‖ ≤ c * ((k : ℝ) + 1)⁻¹ →
-      ‖z‖ ≤ 1 + C * ((k : ℝ) + 1)⁻¹ := fun {z c} hc hz => by
-    have h1 : ‖z‖ ≤ ‖(1 : 𝔸)‖ + ‖z - 1‖ := by
-      simpa using norm_add_le (1 : 𝔸) (z - 1)
-    rw [norm_one] at h1
-    have h2 : c * ((k : ℝ) + 1)⁻¹ ≤ C * ((k : ℝ) + 1)⁻¹ :=
-      mul_le_mul_of_nonneg_right hc (inv_nonneg.mpr hk.le)
-    linarith
-  rw [hF0] at hn₁
-  rw [hG0] at hn₂
-  have hC0 : 0 ≤ C := le_max_right _ _
-  have hpow : (1 + C * ((k : ℝ) + 1)⁻¹) ^ k ≤ Real.exp C := by
-    have h1 : (1 : ℝ) ≤ 1 + C * ((k : ℝ) + 1)⁻¹ := by
-      have := mul_nonneg hC0 (inv_nonneg.mpr hk.le)
-      linarith
-    calc (1 + C * ((k : ℝ) + 1)⁻¹) ^ k ≤ (1 + C * ((k : ℝ) + 1)⁻¹) ^ (k + 1) :=
-          pow_le_pow_right₀ h1 (Nat.le_succ k)
-      _ ≤ Real.exp (C * ((k : ℝ) + 1)⁻¹) ^ (k + 1) :=
-          pow_le_pow_left₀ (by linarith) (by linarith [Real.add_one_le_exp (C * ((k : ℝ) + 1)⁻¹)]) _
-      _ = Real.exp C := by
-          rw [← Real.exp_nat_mul]
-          congr 1
-          push_cast
-          field_simp
-  have hmain := norm_pow_succ_sub_pow_succ_le
-    (hM (le_max_of_le_left (le_max_left c₁ c₂)) hn₁)
-    (hM (le_max_of_le_left (le_max_right c₁ c₂)) hn₂) k
-  calc ‖F ((k + 1 : ℕ) : 𝕂)⁻¹ ^ (k + 1) - G ((k + 1 : ℕ) : 𝕂)⁻¹ ^ (k + 1)‖
-      ≤ (k + 1) * (1 + C * ((k : ℝ) + 1)⁻¹) ^ k *
-          ‖F ((k + 1 : ℕ) : 𝕂)⁻¹ - G ((k + 1 : ℕ) : 𝕂)⁻¹‖ := hmain
-    _ ≤ (k + 1) * Real.exp C * (ε / (2 * Real.exp C) * ((k : ℝ) + 1)⁻¹) := by gcongr
-    _ = ε / 2 := by
-        field_simp
-    _ < ε := half_lt_self hε
-
-/-- **The Lie product formula**, in the form
-$(\exp(a/n)\exp(b/n))^n - \exp((a + b)/n)^n \to 0$. -/
-private theorem tendsto_exp_smul_mul_exp_smul_pow_sub [CompleteSpace 𝔸] (a b : 𝔸) :
-    Tendsto (fun n : ℕ => (exp ((n : 𝕂)⁻¹ • a) * exp ((n : 𝕂)⁻¹ • b)) ^ n -
-      exp ((n : 𝕂)⁻¹ • (a + b)) ^ n) atTop (𝓝 0) := by
-  have hF : HasDerivAt (fun t : 𝕂 => exp (t • a) * exp (t • b))
-      (exp ((0 : 𝕂) • a) * a * exp ((0 : 𝕂) • b) + exp ((0 : 𝕂) • a) * (exp ((0 : 𝕂) • b) * b))
-      0 :=
-    (hasDerivAt_exp_smul_const a (0 : 𝕂)).mul (hasDerivAt_exp_smul_const b (0 : 𝕂))
-  have hG := hasDerivAt_exp_smul_const (a + b) (0 : 𝕂)
-  simp only [zero_smul, NormedSpace.exp_zero, one_mul, mul_one] at hF hG
-  exact tendsto_pow_sub_pow_of_hasDerivAt (F := fun t : 𝕂 => exp (t • a) * exp (t • b))
-    (G := fun t : 𝕂 => exp (t • (a + b)))
-    (by simp only [zero_smul, NormedSpace.exp_zero, one_mul])
-    (by simp only [zero_smul, NormedSpace.exp_zero]) hF hG
-
-end LieProduct
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n]
 
@@ -251,6 +143,16 @@ theorem _root_.Matrix.PosSemidef.re_trace_mul_pow_two_pow_le {A B : Matrix n n �
     RCLike.re ((A * B) ^ 2 ^ k).trace ≤ RCLike.re (A ^ 2 ^ k * B ^ 2 ^ k).trace :=
   (re_trace_pow_two_pow_le_aux k).2 A B hA hB
 
+/-- Apply the Euler power limit to the product of two exponential curves. -/
+private theorem tendsto_exp_smul_mul_exp_smul_pow_aux {𝔸 : Type*} [NormedRing 𝔸] [NormOneClass 𝔸]
+    [NormedAlgebra 𝕜 𝔸] [NormedAlgebra ℝ 𝔸] [CompleteSpace 𝔸] (H K : 𝔸) :
+    Tendsto (fun k : ℕ => (exp ((k : 𝕜)⁻¹ • H) * exp ((k : 𝕜)⁻¹ • K)) ^ k) atTop
+      (𝓝 (exp (H + K))) := by
+  have hd : HasDerivAt (fun t : 𝕜 => exp (t • H) * exp (t • K)) (H + K) 0 := by
+    simpa only [Pi.mul_def, zero_smul, NormedSpace.exp_zero, one_mul, mul_one] using
+      (hasDerivAt_exp_smul_const H (0 : 𝕜)).mul (hasDerivAt_exp_smul_const K (0 : 𝕜))
+  exact hd.tendsto_pow_inv_nat (by simp)
+
 /-- **The Lie product formula** for matrices:
 $(\exp(\mathbf{H}/k)\exp(\mathbf{K}/k))^k \to \exp(\mathbf{H} + \mathbf{K})$ as $k \to \infty$,
 for any two square matrices over an `RCLike` field.
@@ -261,17 +163,8 @@ theorem tendsto_exp_smul_mul_exp_smul_pow (H K : Matrix n n 𝕜) :
       (𝓝 (exp (H + K))) := by
   rcases isEmpty_or_nonempty n with hn | hn
   · exact tendsto_const_nhds.congr fun _ => Subsingleton.elim _ _
-  have h : Tendsto (fun k : ℕ => (exp ((k : 𝕜)⁻¹ • H) * exp ((k : 𝕜)⁻¹ • K)) ^ k -
-      exp ((k : 𝕜)⁻¹ • (H + K)) ^ k) atTop (𝓝 0) := by
-    open scoped Matrix.Norms.Operator in
-    exact tendsto_exp_smul_mul_exp_smul_pow_sub (𝕂 := 𝕜) H K
-  have h' := h.add (tendsto_const_nhds (x := exp (H + K)))
-  rw [zero_add] at h'
-  refine h'.congr' ?_
-  filter_upwards [eventually_gt_atTop 0] with k hk
-  rw [← Matrix.exp_nsmul, ← Nat.cast_smul_eq_nsmul 𝕜, smul_smul,
-    mul_inv_cancel₀ (Nat.cast_ne_zero.mpr hk.ne'), one_smul]
-  abel
+  open scoped Matrix.Norms.Operator in
+  exact tendsto_exp_smul_mul_exp_smul_pow_aux (𝕜 := 𝕜) H K
 
 /-- **The Golden–Thompson inequality.** For Hermitian $\mathbf{H}$ and $\mathbf{K}$,
 $$\operatorname{Re} \operatorname{tr} \exp(\mathbf{H} + \mathbf{K})

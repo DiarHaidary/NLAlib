@@ -23,6 +23,8 @@ definite kernels (polynomial and exponential kernels).
 * `Matrix.PosSemidef.map_pow`: entrywise powers.
 * `Matrix.PosSemidef.map_of_hasSum`: entrywise power series with nonnegative coefficients.
 * `Matrix.PosSemidef.map_exp`: the entrywise exponential of a real positive semidefinite matrix.
+* `Matrix.PosSemidef.posDef_sum_inv_factorial_smul_map_pow_iff`: strict positivity of the first
+  dimension-many terms is equivalent to distinctness of the rows.
 * `Matrix.PosSemidef.posDef_map_exp_iff`: it is positive definite exactly when the rows are
   distinct.
 * `Matrix.PosSemidef.map_pow_le_map_pow_of_le`: monotonicity of entrywise powers.
@@ -135,79 +137,70 @@ theorem _root_.Matrix.PosSemidef.map_exp_le_map_exp_of_le [Finite n] {A B : Matr
 
 /-! ### Strict positivity of the entrywise exponential -/
 
-/-- An entrywise power of a rank-one Gram matrix is the rank-one Gram matrix of the powers. -/
-private theorem map_pow_vecMulVec (b : n → ℝ) (k : ℕ) :
-    ((Matrix.vecMulVec b b).map fun t => t ^ k) =
+/-- Entrywise powers of rank-one Gram matrices are Gram matrices of entrywise powers. -/
+private theorem map_pow_vecMulVec (b : n → 𝕜) (k : ℕ) :
+    ((Matrix.vecMulVec b (star b)).map fun t => t ^ k) =
       Matrix.vecMulVec (fun i => b i ^ k) (star fun i => b i ^ k) := by
   ext i j
-  simp only [Matrix.map_apply, Matrix.vecMulVec_apply, mul_pow, star_trivial]
+  simp only [Matrix.map_apply, Matrix.vecMulVec_apply, Pi.star_apply, mul_pow, star_pow]
 
-/-- The quadratic form of the first $N$ terms of the entrywise exponential series of a rank-one
-Gram matrix is a weighted sum of squares of moments. -/
-private theorem quadForm_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] (b x : n → ℝ)
+/-- The quadratic form of a truncated exponential Gram matrix is a sum of squared moduli. -/
+private theorem re_quadForm_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] (b x : n → 𝕜)
     (N : ℕ) :
-    quadForm (∑ k ∈ Finset.range N,
-      (k.factorial : ℝ)⁻¹ • (Matrix.vecMulVec b b).map fun t => t ^ k) x =
-      ∑ k ∈ Finset.range N, (k.factorial : ℝ)⁻¹ * (∑ i, x i * b i ^ k) ^ 2 := by
+    RCLike.re (quadForm (∑ k ∈ Finset.range N,
+      (k.factorial : ℝ)⁻¹ • (Matrix.vecMulVec b (star b)).map fun t => t ^ k) x) =
+      ∑ k ∈ Finset.range N, (k.factorial : ℝ)⁻¹ * ‖∑ i, x i * (star (b i)) ^ k‖ ^ 2 := by
   induction N with
-  | zero => simp only [Finset.range_zero, Finset.sum_empty, quadForm_zero_left]
+  | zero => simp only [Finset.range_zero, Finset.sum_empty, quadForm_zero_left, map_zero]
   | succ N ih =>
-    rw [Finset.sum_range_succ, Finset.sum_range_succ, quadForm_add_left, ih, map_pow_vecMulVec,
-      quadForm_smul_left, quadForm_vecMulVec_star]
-    simp only [star_trivial, RCLike.ofReal_real_eq_id, id_eq, Real.norm_eq_abs, sq_abs,
-      dotProduct, mul_comm]
+    rw [Finset.sum_range_succ, Finset.sum_range_succ, quadForm_add_left, map_add, ih,
+      map_pow_vecMulVec, RCLike.real_smul_eq_coe_smul (K := 𝕜), quadForm_smul_left,
+      quadForm_vecMulVec_star, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+    simp only [dotProduct, Pi.star_apply, star_pow, mul_comm]
 
-/-- The first $\lvert n \rvert$ terms of the entrywise exponential series of the Gram matrix of
-distinct real numbers already form a positive definite matrix, by the Vandermonde determinant. -/
-private theorem posDef_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] {b : n → ℝ}
+/-- The Vandermonde matrix on the conjugate nodes detects every nonzero coefficient vector. -/
+private theorem posDef_sum_inv_factorial_smul_map_pow_vecMulVec [Fintype n] {b : n → 𝕜}
     (hb : Function.Injective b) :
     (∑ k ∈ Finset.range (Fintype.card n),
-      (k.factorial : ℝ)⁻¹ • (Matrix.vecMulVec b b).map fun t => t ^ k).PosDef := by
-  have hBB : (Matrix.vecMulVec b b).PosSemidef := by
-    simpa only [star_trivial] using Matrix.posSemidef_vecMulVec_self_star b
+      (k.factorial : ℝ)⁻¹ • (Matrix.vecMulVec b (star b)).map fun t => t ^ k).PosDef := by
+  have hBB := Matrix.posSemidef_vecMulVec_self_star b
   have hH := Matrix.posSemidef_sum (Finset.range (Fintype.card n)) fun k _ =>
     (hBB.map_pow k).smul (inv_nonneg.mpr (k.factorial.cast_nonneg (α := ℝ)))
   refine posDef_iff_quadForm_pos.mpr ⟨hH.isHermitian, fun x hx => ?_⟩
   refine lt_of_le_of_ne (hH.quadForm_nonneg x) fun h0 => hx ?_
-  rw [quadForm_sum_inv_factorial_smul_map_pow_vecMulVec] at h0
-  have hmom (k : Fin (Fintype.card n)) : ∑ i, x i * b i ^ (k : ℕ) = 0 := by
+  have h := congrArg RCLike.re h0.symm
+  rw [re_quadForm_sum_inv_factorial_smul_map_pow_vecMulVec, map_zero] at h
+  have hmom (k : Fin (Fintype.card n)) : ∑ i, x i * (star (b i)) ^ (k : ℕ) = 0 := by
     have hk := (Finset.sum_eq_zero_iff_of_nonneg fun j _ =>
-      mul_nonneg (inv_nonneg.mpr (j.factorial.cast_nonneg (α := ℝ))) (sq_nonneg _)).mp h0.symm
+      mul_nonneg (inv_nonneg.mpr (j.factorial.cast_nonneg (α := ℝ))) (sq_nonneg _)).mp h
       k (Finset.mem_range.mpr k.isLt)
-    exact sq_eq_zero_iff.mp ((mul_eq_zero.mp hk).resolve_left
-      (inv_ne_zero (Nat.cast_ne_zero.mpr (k : ℕ).factorial_ne_zero)))
+    exact norm_eq_zero.mp (sq_eq_zero_iff.mp ((mul_eq_zero.mp hk).resolve_left
+      (inv_ne_zero (Nat.cast_ne_zero.mpr (k : ℕ).factorial_ne_zero))))
   let e : Fin (Fintype.card n) ≃ n := (Fintype.equivFin n).symm
   have hzero : (fun i => x (e i)) = 0 :=
-    Matrix.eq_zero_of_forall_pow_sum_mul_pow_eq_zero (hb.comp e.injective) fun k => by
-      rw [← hmom k]
-      exact e.sum_comp fun i => x i * b i ^ (k : ℕ)
+    Matrix.eq_zero_of_forall_pow_sum_mul_pow_eq_zero (star_injective.comp (hb.comp e.injective))
+      fun k => by
+        rw [← hmom k]
+        exact e.sum_comp fun i => x i * (star (b i)) ^ (k : ℕ)
   funext i
   simpa only [Equiv.apply_symm_apply, Pi.zero_apply] using congrFun hzero (e.symm i)
 
-/-- The entrywise exponential of the Gram matrix of distinct real numbers is positive
-definite. -/
-private theorem posDef_map_exp_vecMulVec [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
-    ((Matrix.vecMulVec b b).map Real.exp).PosDef := by
-  have := Fintype.ofFinite n
-  have hBB : (Matrix.vecMulVec b b).PosSemidef := by
-    simpa only [star_trivial] using Matrix.posSemidef_vecMulVec_self_star b
-  have hle : (∑ k ∈ Finset.range (Fintype.card n),
-      (k.factorial : ℝ)⁻¹ • (Matrix.vecMulVec b b).map fun t => t ^ k) ≤
-      (Matrix.vecMulVec b b).map Real.exp :=
-    sum_le_hasSum _ (fun k _ => Matrix.nonneg_iff_posSemidef.mpr
-        ((hBB.map_pow k).smul (inv_nonneg.mpr (k.factorial.cast_nonneg (α := ℝ)))))
-      (hasSum_inv_factorial_smul_map_pow _)
-  have h := (posDef_sum_inv_factorial_smul_map_pow_vecMulVec hb).add_posSemidef
-    (Matrix.le_iff.mp hle)
-  rwa [add_sub_cancel] at h
+/-- Every Taylor truncation of the entrywise exponential of a real positive semidefinite
+matrix is below the full exponential in the Loewner order. -/
+theorem _root_.Matrix.PosSemidef.sum_inv_factorial_smul_map_pow_le_map_exp [Finite n]
+    {A : Matrix n n ℝ} (hA : A.PosSemidef) (N : ℕ) :
+    (∑ k ∈ Finset.range N, (k.factorial : ℝ)⁻¹ • A.map fun t => t ^ k) ≤ A.map Real.exp :=
+  sum_le_hasSum _ (fun k _ => Matrix.nonneg_iff_posSemidef.mpr
+      ((hA.map_pow k).smul (inv_nonneg.mpr (k.factorial.cast_nonneg (α := ℝ)))))
+    (hasSum_inv_factorial_smul_map_pow A)
 
-/-- A real matrix with distinct rows has distinct entries in some combination of its columns:
-finitely many hyperplanes do not cover a real vector space. -/
-private theorem exists_injective_mulVec [Fintype n] {A : Matrix n n ℝ}
+/-- A matrix with distinct rows has distinct entries in some combination of its columns:
+finitely many hyperplanes do not cover a vector space over an infinite field. -/
+private theorem exists_injective_mulVec [Fintype n] {A : Matrix n n 𝕜}
     (hA : Function.Injective A.row) :
-    ∃ z : n → ℝ, Function.Injective (A *ᵥ z) := by
-  let f (p : {p : n × n // p.1 ≠ p.2}) : Module.Dual ℝ (n → ℝ) :=
-    dotProductBilin ℝ ℝ (A.row p.1.1 - A.row p.1.2)
+    ∃ z : n → 𝕜, Function.Injective (A *ᵥ z) := by
+  let f (p : {p : n × n // p.1 ≠ p.2}) : Module.Dual 𝕜 (n → 𝕜) :=
+    dotProductBilin 𝕜 𝕜 (A.row p.1.1 - A.row p.1.2)
   have hf (p : {p : n × n // p.1 ≠ p.2}) : ∃ z, f p z ≠ 0 := by
     by_contra hn
     exact p.2 (hA (sub_eq_zero.mp (dotProduct_eq_zero _ (not_exists_not.mp hn))))
@@ -217,29 +210,60 @@ private theorem exists_injective_mulVec [Fintype n] {A : Matrix n n ℝ}
   rw [sub_dotProduct]
   exact sub_eq_zero.mpr hij
 
-/-- A real positive semidefinite matrix with distinct rows dominates the Gram matrix of distinct
-real numbers. -/
-private theorem exists_injective_vecMulVec_le [Finite n] {A : Matrix n n ℝ} (hA : A.PosSemidef)
+/-- A positive semidefinite matrix with distinct rows dominates a rank-one Gram matrix of
+distinct scalars. -/
+private theorem exists_injective_vecMulVec_le [Finite n] {A : Matrix n n 𝕜} (hA : A.PosSemidef)
     (hrows : Function.Injective A.row) :
-    ∃ b : n → ℝ, Function.Injective b ∧ Matrix.vecMulVec b b ≤ A := by
+    ∃ b : n → 𝕜, Function.Injective b ∧ Matrix.vecMulVec b (star b) ≤ A := by
   have := Fintype.ofFinite n
   obtain ⟨z, hz⟩ := exists_injective_mulVec hrows
-  have hq : 0 ≤ quadForm A z := hA.quadForm_nonneg z
-  have hq' : (0 : ℝ) < 1 + quadForm A z := by linarith
-  refine ⟨(1 + quadForm A z)⁻¹ • A *ᵥ z, fun i j hij => hz ?_, ?_⟩
-  · simpa only [Pi.smul_apply, smul_eq_mul, mul_right_inj' (inv_ne_zero hq'.ne')] using hij
-  have hB : (Matrix.vecMulVec ((1 + quadForm A z)⁻¹ • A *ᵥ z)
-      (star ((1 + quadForm A z)⁻¹ • A *ᵥ z))).PosSemidef :=
-    Matrix.posSemidef_vecMulVec_self_star _
-  rw [← star_trivial ((1 + quadForm A z)⁻¹ • A *ᵥ z)]
-  refine (hB.isHermitian.le_iff_re_quadForm_le hA.isHermitian).mpr fun x => ?_
-  have hcs := hA.norm_star_dotProduct_mulVec_sq_le x z
-  have hx : 0 ≤ quadForm A x := hA.quadForm_nonneg x
-  rw [quadForm_vecMulVec_star]
-  simp only [star_trivial, RCLike.ofReal_real_eq_id, id_eq, Real.norm_eq_abs, sq_abs,
-    RCLike.re_to_real, dotProduct_smul, smul_eq_mul, mul_pow, dotProduct_comm _ x] at hcs ⊢
-  rw [inv_pow, inv_mul_le_iff₀ (pow_pos hq' 2)]
-  nlinarith [mul_nonneg hx hq, mul_nonneg (mul_nonneg hx hq) hq]
+  let c : ℝ := 1 + RCLike.re (quadForm A z)
+  have hq := hA.re_quadForm_nonneg z
+  have hc : 0 < c := by
+    dsimp [c]
+    linarith
+  have hc' : (c⁻¹ : 𝕜) ≠ 0 := by exact_mod_cast (inv_ne_zero hc.ne')
+  let b := (c⁻¹ : 𝕜) • (A *ᵥ z)
+  refine ⟨b, fun i j hij => hz ?_, ?_⟩
+  · exact (mul_right_inj' hc').mp hij
+  · apply ((Matrix.posSemidef_vecMulVec_self_star b).isHermitian.le_iff_re_quadForm_le
+      hA.isHermitian).mpr
+    intro x
+    have hcs := hA.norm_star_dotProduct_mulVec_sq_le x z
+    have hx := hA.re_quadForm_nonneg x
+    rw [quadForm_vecMulVec_star, RCLike.ofReal_re, Matrix.star_dotProduct b x, norm_star]
+    dsimp only [b]
+    rw [dotProduct_smul, smul_eq_mul, norm_mul, mul_pow, norm_inv, RCLike.norm_ofReal,
+      abs_of_pos hc, inv_pow, inv_mul_le_iff₀ (pow_pos hc 2)]
+    dsimp only [c]
+    nlinarith [mul_nonneg hx hq, mul_nonneg (mul_nonneg hx hq) hq]
+
+/-- **Strict positivity of the truncated exponential kernel.** For a real or complex positive
+semidefinite matrix with $N$ rows, the first $N$ terms of the entrywise exponential series form
+a positive definite matrix exactly when the rows are distinct.
+[HornJohnson2013, Theorem 7.5.9 context].
+The formal proof adapts `tchen-research/NLAlib@77514ce`.
+Result: truncated-exponential-kernel -/
+theorem _root_.Matrix.PosSemidef.posDef_sum_inv_factorial_smul_map_pow_iff [Fintype n]
+    {A : Matrix n n 𝕜} (hA : A.PosSemidef) :
+    (∑ k ∈ Finset.range (Fintype.card n), (k.factorial : ℝ)⁻¹ • A.map fun t => t ^ k).PosDef ↔
+      Function.Injective A.row := by
+  classical
+  constructor
+  · intro h i j hij
+    refine (Matrix.linearIndependent_rows_iff_isUnit.mpr h.isUnit).injective ?_
+    funext l
+    simp only [Matrix.row_apply, Matrix.sum_apply, Matrix.smul_apply, Matrix.map_apply]
+    rw [show A i l = A j l from congrFun hij l]
+  · intro hrows
+    obtain ⟨b, hb, hle⟩ := exists_injective_vecMulVec_le hA hrows
+    have hBB := Matrix.posSemidef_vecMulVec_self_star b
+    have hsum := Finset.sum_le_sum (s := Finset.range (Fintype.card n)) fun k _ =>
+      smul_le_smul_of_nonneg_left (hBB.map_pow_le_map_pow_of_le hle k)
+        (inv_nonneg.mpr (k.factorial.cast_nonneg (α := ℝ)))
+    have h := (posDef_sum_inv_factorial_smul_map_pow_vecMulVec hb).add_posSemidef
+      (Matrix.le_iff.mp hsum)
+    rwa [add_sub_cancel] at h
 
 /-- **The entrywise exponential of a positive semidefinite matrix is positive definite exactly
 when its rows are distinct**: for real positive semidefinite $\mathbf{A}$, the matrix with entries
@@ -254,17 +278,21 @@ theorem _root_.Matrix.PosSemidef.posDef_map_exp_iff [Finite n] {A : Matrix n n �
   · refine (Matrix.linearIndependent_rows_iff_isUnit.mpr h.isUnit).injective ?_
     funext k
     exact congrArg Real.exp (congrFun hij k)
-  · obtain ⟨b, hb, hle⟩ := exists_injective_vecMulVec_le hA hrows
-    have hBB : (Matrix.vecMulVec b b).PosSemidef := by
-      simpa only [star_trivial] using Matrix.posSemidef_vecMulVec_self_star b
-    have h := (posDef_map_exp_vecMulVec hb).add_posSemidef
-      (Matrix.le_iff.mp (hBB.map_exp_le_map_exp_of_le hle))
+  · have h := (hA.posDef_sum_inv_factorial_smul_map_pow_iff.mpr hrows).add_posSemidef
+      (Matrix.le_iff.mp (hA.sum_inv_factorial_smul_map_pow_le_map_exp (Fintype.card n)))
     rwa [add_sub_cancel] at h
 
 /-- For distinct real numbers $\mathbf{b}_i$, the matrix with entries
 $e^{\mathbf{b}_i \mathbf{b}_j}$ is positive definite. -/
 theorem posDef_exp_mul_of_injective [Finite n] {b : n → ℝ} (hb : Function.Injective b) :
-    (Matrix.of fun i j => Real.exp (b i * b j)).PosDef :=
-  posDef_map_exp_vecMulVec hb
+    (Matrix.of fun i j => Real.exp (b i * b j)).PosDef := by
+  have := Fintype.ofFinite n
+  have hBB : (Matrix.vecMulVec b b).PosSemidef := by
+    simpa only [star_trivial] using Matrix.posSemidef_vecMulVec_self_star b
+  have hpoly := posDef_sum_inv_factorial_smul_map_pow_vecMulVec hb
+  simp only [star_trivial] at hpoly
+  have h := hpoly.add_posSemidef
+    (Matrix.le_iff.mp (hBB.sum_inv_factorial_smul_map_pow_le_map_exp (Fintype.card n)))
+  rwa [add_sub_cancel] at h
 
 end NLAlib

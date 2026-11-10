@@ -23,11 +23,15 @@ inequality is in `NLAlib.Matrix.Inequalities.Minkowski`.
 * `Matrix.IsHermitian.re_det_mul`, `NLAlib.det_eq_det_toBlocks₁₁_mul_det`: the determinant of a
   Hermitian matrix inside a real part, and the Schur determinant formula on a sum type.
 * `Matrix.PosSemidef.re_det_le_prod_re_diag`, `NLAlib.norm_det_le_prod_norm_col`: Hadamard.
+* `Matrix.PosSemidef.re_det_eq_prod_re_diag_iff`, `NLAlib.norm_det_eq_prod_norm_col_iff`:
+  equality in the two forms of Hadamard's inequality.
 * `Matrix.PosSemidef.re_det_fromBlocks_le`: Fischer.
 * `NLAlib.principalMinor`, `NLAlib.det_submatrix_eq_principalMinor`,
   `NLAlib.sum_principalMinor`, `NLAlib.principalMinor_transpose`,
   `NLAlib.principalMinor_conjTranspose`: principal minors.
-* `Matrix.PosSemidef.re_principalMinor_union_mul_inter_le`: Hadamard–Fischer (Koteljanskii).
+* `Matrix.PosSemidef.re_principalMinor_union_mul_inter_le`,
+  `Matrix.PosDef.re_principalMinor_union_mul_inter_eq_iff`: Hadamard–Fischer (Koteljanskii) and
+  its equality condition for positive definite matrices.
 * `Matrix.PosSemidef.re_principalMinor_union_le_of_disjoint`: Fischer for principal minors.
 -/
 
@@ -281,6 +285,51 @@ theorem _root_.Matrix.PosDef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜} (h
       exact (hA.isHermitian.coe_re_apply_self i).symm
     rw [hd, ← RCLike.ofReal_prod, RCLike.ofReal_re]
 
+/-- Equality in Hadamard's determinant bound for a positive semidefinite matrix allows a
+zero diagonal entry in addition to the diagonal case. [HornJohnson2013, Theorem 7.8.1]. -/
+theorem _root_.Matrix.PosSemidef.re_det_eq_prod_re_diag_iff {A : Matrix n n 𝕜}
+    (hA : A.PosSemidef) :
+    RCLike.re A.det = ∏ i, RCLike.re (A i i) ↔ A.IsDiag ∨ ∃ i, A i i = 0 := by
+  have hd (i : n) : RCLike.re (A i i) = 0 ↔ A i i = 0 := by
+    rw [← hA.isHermitian.coe_re_apply_self i]
+    simp
+  by_cases hz : ∃ i, A i i = 0
+  · obtain ⟨i, hi⟩ := hz
+    have hp := Finset.prod_eq_zero (f := fun j => RCLike.re (A j j))
+      (Finset.mem_univ i) ((hd i).2 hi)
+    rw [hp]
+    exact iff_of_true (le_antisymm (hp ▸ hA.re_det_le_prod_re_diag)
+      (RCLike.nonneg_iff.mp hA.det_nonneg).1) (Or.inr ⟨i, hi⟩)
+  · rw [or_iff_left hz]
+    constructor
+    · intro he
+      have hp : 0 < RCLike.re A.det := he ▸ Finset.prod_pos fun i _ =>
+        lt_of_le_of_ne (RCLike.nonneg_iff.mp hA.diag_nonneg).1
+          (fun h => hz ⟨i, (hd i).1 h.symm⟩)
+      have hunit : IsUnit A.det := isUnit_iff_ne_zero.mpr fun h => by simp [h] at hp
+      have hpd := hA.posDef_iff_isUnit.mpr ((Matrix.isUnit_iff_isUnit_det A).2 hunit)
+      exact hpd.re_det_eq_prod_re_diag_iff.mp he
+    · intro h
+      conv_lhs => rw [← h.diagonal_diag, Matrix.det_diagonal]
+      have hd' (i : n) : A.diag i = (RCLike.re (A i i) : 𝕜) :=
+        (hA.isHermitian.coe_re_apply_self i).symm
+      simp_rw [hd']
+      rw [← RCLike.ofReal_prod, RCLike.ofReal_re]
+
+private theorem re_det_conjTranspose_mul_self (B : Matrix n n 𝕜) :
+    RCLike.re (Bᴴ * B).det = ‖B.det‖ ^ 2 := by
+  rw [Matrix.det_mul, Matrix.det_conjTranspose, RCLike.star_def, RCLike.conj_mul,
+    ← RCLike.ofReal_pow, RCLike.ofReal_re]
+
+omit [DecidableEq n] in
+private theorem re_conjTranspose_mul_self_apply_self (B : Matrix n n 𝕜) (i : n) :
+    RCLike.re ((Bᴴ * B) i i) = ‖WithLp.toLp 2 (B.col i)‖ ^ 2 := by
+  rw [EuclideanSpace.norm_sq_eq, Matrix.mul_apply, map_sum]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [Matrix.conjTranspose_apply, RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow,
+    RCLike.ofReal_re]
+  rfl
+
 /-- **Hadamard's inequality, column form.** The modulus of the determinant of a square matrix is
 at most the product of the Euclidean norms of its columns:
 $\lvert \det \mathbf{B} \rvert \le \prod_i \|\mathbf{b}_i\|$, with $\mathbf{b}_i$ column $i$ of
@@ -290,18 +339,31 @@ Result: hadamard-determinant-inequality -/
 theorem norm_det_le_prod_norm_col (B : Matrix n n 𝕜) :
     ‖B.det‖ ≤ ∏ i, ‖WithLp.toLp 2 (B.col i)‖ := by
   have h := (Matrix.posSemidef_conjTranspose_mul_self B).re_det_le_prod_re_diag
-  have hdet : RCLike.re (Bᴴ * B).det = ‖B.det‖ ^ 2 := by
-    rw [Matrix.det_mul, Matrix.det_conjTranspose, RCLike.star_def, RCLike.conj_mul,
-      ← RCLike.ofReal_pow, RCLike.ofReal_re]
-  have hdiag : ∀ i, RCLike.re ((Bᴴ * B) i i) = ‖WithLp.toLp 2 (B.col i)‖ ^ 2 := by
-    intro i
-    rw [EuclideanSpace.norm_sq_eq, Matrix.mul_apply, map_sum]
-    refine Finset.sum_congr rfl fun k _ => ?_
-    rw [Matrix.conjTranspose_apply, RCLike.star_def, RCLike.conj_mul, ← RCLike.ofReal_pow,
-      RCLike.ofReal_re]
-    rfl
-  rw [hdet, Finset.prod_congr rfl fun i _ => hdiag i, Finset.prod_pow] at h
+  simp only [re_det_conjTranspose_mul_self, re_conjTranspose_mul_self_apply_self,
+    Finset.prod_pow] at h
   exact le_of_sq_le_sq h (Finset.prod_nonneg fun i _ => norm_nonneg _)
+
+/-- The column bound is attained exactly when the columns are pairwise orthogonal or a
+column vanishes. [HornJohnson2013, Corollary 7.8.3]. -/
+theorem norm_det_eq_prod_norm_col_iff (B : Matrix n n 𝕜) :
+    ‖B.det‖ = ∏ i, ‖WithLp.toLp 2 (B.col i)‖ ↔
+      (Bᴴ * B).IsDiag ∨ ∃ i, B.col i = 0 := by
+  have hG := Matrix.posSemidef_conjTranspose_mul_self B
+  have he := hG.re_det_eq_prod_re_diag_iff
+  simp only [re_det_conjTranspose_mul_self, re_conjTranspose_mul_self_apply_self,
+    Finset.prod_pow] at he
+  rw [← sq_eq_sq₀ (norm_nonneg _) (Finset.prod_nonneg fun i _ => norm_nonneg _), he]
+  apply or_congr_right
+  apply exists_congr
+  intro i
+  have h := re_conjTranspose_mul_self_apply_self B i
+  constructor
+  · intro hz
+    simpa [hz] using h.symm
+  · intro hz
+    rw [hz] at h
+    rw [← hG.isHermitian.coe_re_apply_self i]
+    simp [h]
 
 /-! ### Principal minors and the Hadamard–Fischer inequality -/
 
@@ -400,11 +462,16 @@ private theorem det_submatrix_sumMap_id {ι κ κ' : Type*} [Fintype ι] [Decida
 
 /-- The Hadamard–Fischer inequality for a positive definite matrix in three blocks, the first
 being the common one. -/
-private theorem re_det_mul_re_det_inl_le_of_posDef {ι : Type*} [Fintype ι] [DecidableEq ι]
+private theorem re_det_mul_re_det_inl_le_and_eq_iff {ι : Type*} [Fintype ι] [DecidableEq ι]
     {H : Matrix (ι ⊕ (m ⊕ n)) (ι ⊕ (m ⊕ n)) 𝕜} (hH : H.PosDef) :
     RCLike.re H.det * RCLike.re (H.submatrix Sum.inl Sum.inl).det ≤
       RCLike.re (H.submatrix (Sum.map id Sum.inl) (Sum.map id Sum.inl)).det *
-        RCLike.re (H.submatrix (Sum.map id Sum.inr) (Sum.map id Sum.inr)).det := by
+        RCLike.re (H.submatrix (Sum.map id Sum.inr) (Sum.map id Sum.inr)).det ∧
+    (RCLike.re H.det * RCLike.re (H.submatrix Sum.inl Sum.inl).det =
+      RCLike.re (H.submatrix (Sum.map id Sum.inl) (Sum.map id Sum.inl)).det *
+        RCLike.re (H.submatrix (Sum.map id Sum.inr) (Sum.map id Sum.inr)).det ↔
+      ∀ i j, (H.toBlocks₂₂ - H.toBlocks₂₁ * H.toBlocks₁₁⁻¹ * H.toBlocks₁₂)
+        (Sum.inl i) (Sum.inr j) = 0) := by
   have hP : H.toBlocks₁₁.PosDef := hH.submatrix Sum.inl_injective
   have h21 : H.toBlocks₂₁ = H.toBlocks₁₂ᴴ := by
     ext i j
@@ -416,15 +483,16 @@ private theorem re_det_mul_re_det_inl_le_of_posDef {ι : Type*} [Fintype ι] [De
     exact (posDef_fromBlocks_iff.mp (hH' ▸ hH)).2
   have h0 := det_submatrix_sumMap_id H hP.isUnit id
   rw [Sum.map_id_id, Matrix.submatrix_id_id, Matrix.submatrix_id_id] at h0
-  have hF := re_det_le_re_det_inl_mul_re_det_inr hS.posSemidef
-  have hp : 0 ≤ RCLike.re H.toBlocks₁₁.det := (RCLike.pos_iff.mp hP.det_pos).1.le
+  have hp : 0 < RCLike.re H.toBlocks₁₁.det := (RCLike.pos_iff.mp hP.det_pos).1
   rw [det_submatrix_sumMap_id H hP.isUnit Sum.inl, det_submatrix_sumMap_id H hP.isUnit Sum.inr,
     h0, hP.isHermitian.re_det_mul, hP.isHermitian.re_det_mul, hP.isHermitian.re_det_mul]
-  change _ * RCLike.re H.toBlocks₁₁.det ≤ _
-  calc RCLike.re H.toBlocks₁₁.det * _ * RCLike.re H.toBlocks₁₁.det
-      ≤ RCLike.re H.toBlocks₁₁.det * (_ * _) * RCLike.re H.toBlocks₁₁.det :=
-        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hF hp) hp
-    _ = _ := by ring
+  change (_ * _ * RCLike.re H.toBlocks₁₁.det ≤ _ * _) ∧
+    ((_ * _ * RCLike.re H.toBlocks₁₁.det = _ * _) ↔ _)
+  simp only [mul_mul_mul_comm (RCLike.re H.toBlocks₁₁.det) _ (RCLike.re H.toBlocks₁₁.det),
+    mul_right_comm (RCLike.re H.toBlocks₁₁.det) _ (RCLike.re H.toBlocks₁₁.det),
+    mul_le_mul_iff_right₀ (mul_pos hp hp), mul_right_inj' (mul_pos hp hp).ne']
+  exact ⟨re_det_le_re_det_inl_mul_re_det_inr hS.posSemidef,
+    re_det_eq_re_det_inl_mul_re_det_inr_iff hS⟩
 
 /-- The Hadamard–Fischer inequality for a positive semidefinite matrix in three blocks. -/
 private theorem re_det_mul_re_det_inl_le {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -438,7 +506,52 @@ private theorem re_det_mul_re_det_inl_le {ι : Type*} [Fintype ι] [DecidableEq 
     (g := fun H : Matrix (ι ⊕ (m ⊕ n)) (ι ⊕ (m ⊕ n)) 𝕜 =>
       RCLike.re (H.submatrix (Sum.map id Sum.inl) (Sum.map id Sum.inl)).det *
         RCLike.re (H.submatrix (Sum.map id Sum.inr) (Sum.map id Sum.inr)).det)
-    (by fun_prop) (by fun_prop) (fun _ hM => re_det_mul_re_det_inl_le_of_posDef hM) hH
+    (by fun_prop) (by fun_prop) (fun _ hM => (re_det_mul_re_det_inl_le_and_eq_iff hM).1) hH
+
+/-- The common indices followed by the indices belonging exclusively to each set. -/
+private def overlapIndex (s t : Finset n) :
+    (↥(s ∩ t) ⊕ (↥(s \ t) ⊕ ↥(t \ s))) → n :=
+  Sum.elim Subtype.val (Sum.elim Subtype.val Subtype.val)
+
+omit [Fintype n] in
+private theorem overlapIndex_injective (s t : Finset n) :
+    Function.Injective (overlapIndex s t) := by
+  have hJK : Function.Injective
+      (Sum.elim (Subtype.val : ↥(s \ t) → n) (Subtype.val : ↥(t \ s) → n)) :=
+    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
+      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_sdiff.mp i.2).1)
+  exact Subtype.val_injective.sumElim hJK fun i j h => by
+      rcases j with j | j
+      · exact (Finset.mem_sdiff.mp j.2).2 ((show (i : n) = j from h) ▸ (Finset.mem_inter.mp i.2).2)
+      · exact (Finset.mem_sdiff.mp j.2).2 ((show (i : n) = j from h) ▸ (Finset.mem_inter.mp i.2).1)
+
+omit [Fintype n] in
+private theorem principalMinor_union_mul_inter_iff (A : Matrix n n 𝕜) (s t : Finset n)
+    (r : ℝ → ℝ → Prop) :
+    let H := A.submatrix (overlapIndex s t) (overlapIndex s t)
+    r (RCLike.re (principalMinor A (s ∪ t)) * RCLike.re (principalMinor A (s ∩ t)))
+        (RCLike.re (principalMinor A s) * RCLike.re (principalMinor A t)) ↔
+      r (RCLike.re H.det * RCLike.re (H.submatrix Sum.inl Sum.inl).det)
+        (RCLike.re (H.submatrix (Sum.map id Sum.inl) (Sum.map id Sum.inl)).det *
+          RCLike.re (H.submatrix (Sum.map id Sum.inr) (Sum.map id Sum.inr)).det) := by
+  have hJ : Function.Injective
+      (Sum.elim (Subtype.val : ↥(s ∩ t) → n) (Subtype.val : ↥(s \ t) → n)) :=
+    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
+      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_inter.mp i.2).2)
+  have hK : Function.Injective
+      (Sum.elim (Subtype.val : ↥(s ∩ t) → n) (Subtype.val : ↥(t \ s) → n)) :=
+    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
+      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_inter.mp i.2).1)
+  have hf := overlapIndex_injective s t
+  dsimp only
+  unfold overlapIndex at *
+  simp only [Matrix.submatrix_submatrix, Sum.elim_comp_map, Sum.elim_comp_inl, Sum.elim_comp_inr,
+    Function.comp_id]
+  rw [det_submatrix_eq_principalMinor A hf (s := s ∪ t)
+      (by ext x; simp [Set.Sum.elim_range]; tauto),
+    det_submatrix_eq_principalMinor A hJ (s := s) (by ext x; simp [Set.Sum.elim_range]; tauto),
+    det_submatrix_eq_principalMinor A hK (s := t) (by ext x; simp [Set.Sum.elim_range]; tauto)]
+  rfl
 
 omit [Fintype n] in
 /-- **The Hadamard–Fischer inequality** (Koteljanskii). For a positive semidefinite matrix
@@ -452,34 +565,26 @@ theorem _root_.Matrix.PosSemidef.re_principalMinor_union_mul_inter_le {A : Matri
     (hA : A.PosSemidef) (s t : Finset n) :
     RCLike.re (principalMinor A (s ∪ t)) * RCLike.re (principalMinor A (s ∩ t)) ≤
       RCLike.re (principalMinor A s) * RCLike.re (principalMinor A t) := by
-  have hJ : Function.Injective
-      (Sum.elim (Subtype.val : ↥(s ∩ t) → n) (Subtype.val : ↥(s \ t) → n)) :=
-    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
-      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_inter.mp i.2).2)
-  have hK : Function.Injective
-      (Sum.elim (Subtype.val : ↥(s ∩ t) → n) (Subtype.val : ↥(t \ s) → n)) :=
-    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
-      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_inter.mp i.2).1)
-  have hJK : Function.Injective
-      (Sum.elim (Subtype.val : ↥(s \ t) → n) (Subtype.val : ↥(t \ s) → n)) :=
-    Subtype.val_injective.sumElim Subtype.val_injective fun i j h =>
-      (Finset.mem_sdiff.mp j.2).2 (h ▸ (Finset.mem_sdiff.mp i.2).1)
-  have hf : Function.Injective (Sum.elim (Subtype.val : ↥(s ∩ t) → n)
-      (Sum.elim (Subtype.val : ↥(s \ t) → n) (Subtype.val : ↥(t \ s) → n))) :=
-    Subtype.val_injective.sumElim hJK fun i j h => by
-      rcases j with j | j
-      · exact (Finset.mem_sdiff.mp j.2).2 ((show (i : n) = j from h) ▸ (Finset.mem_inter.mp i.2).2)
-      · exact (Finset.mem_sdiff.mp j.2).2 ((show (i : n) = j from h) ▸ (Finset.mem_inter.mp i.2).1)
-  have h := re_det_mul_re_det_inl_le (hA.submatrix (Sum.elim (Subtype.val : ↥(s ∩ t) → n)
-    (Sum.elim (Subtype.val : ↥(s \ t) → n) (Subtype.val : ↥(t \ s) → n))))
-  simp only [Matrix.submatrix_submatrix, Sum.elim_comp_map, Sum.elim_comp_inl, Sum.elim_comp_inr,
-    Function.comp_id] at h
-  rw [det_submatrix_eq_det_submatrix_val A hf (s := s ∪ t)
-    (by simp [Set.Sum.elim_range]; tauto)] at h
-  have hs := det_submatrix_eq_det_submatrix_val A hJ (s := s) (by simp [Set.Sum.elim_range]; tauto)
-  have ht := det_submatrix_eq_det_submatrix_val A hK (s := t) (by simp [Set.Sum.elim_range]; tauto)
-  rw [principalMinor, principalMinor, principalMinor, principalMinor, ← hs, ← ht]
-  exact h
+  apply (principalMinor_union_mul_inter_iff A s t (· ≤ ·)).2
+  exact re_det_mul_re_det_inl_le (hA.submatrix (overlapIndex s t))
+
+omit [Fintype n] in
+/-- **Equality in the Hadamard–Fischer inequality.** For positive definite $\mathbf{A}$,
+equality holds precisely when the cross block between the two exclusive index sets vanishes
+after eliminating their intersection. [HornJohnson2013, Theorem 7.8.9].
+Result: koteljanskii-inequality -/
+theorem _root_.Matrix.PosDef.re_principalMinor_union_mul_inter_eq_iff {A : Matrix n n 𝕜}
+    (hA : A.PosDef) (s t : Finset n) :
+    RCLike.re (principalMinor A (s ∪ t)) * RCLike.re (principalMinor A (s ∩ t)) =
+      RCLike.re (principalMinor A s) * RCLike.re (principalMinor A t) ↔
+      A.toBlock (· ∈ s \ t) (· ∈ t \ s) =
+        A.toBlock (· ∈ s \ t) (· ∈ s ∩ t) * (A.toBlock (· ∈ s ∩ t) (· ∈ s ∩ t))⁻¹ *
+          A.toBlock (· ∈ s ∩ t) (· ∈ t \ s) := by
+  refine (principalMinor_union_mul_inter_iff A s t (· = ·)).trans ?_
+  rw [← Matrix.ext_iff]
+  have he := (re_det_mul_re_det_inl_le_and_eq_iff (hA.submatrix (overlapIndex_injective s t))).2
+  refine he.trans (forall₂_congr fun i j => ?_)
+  exact sub_eq_zero
 
 omit [Fintype n] in
 /-- **Fischer's inequality for principal minors.** For a positive semidefinite matrix

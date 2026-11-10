@@ -21,7 +21,10 @@ the product of the leading eigenvalues.
 
 * `Matrix.PosSemidef.re_principalMinor_pow_le_prod_erase`: a minor against its sub-minors of one
   size less.
-* `Matrix.PosSemidef.prod_re_principalMinor_succ_pow_le`: Szász's inequality.
+* `Matrix.PosSemidef.prod_re_principalMinor_succ_pow_le`,
+  `Matrix.PosSemidef.prod_re_principalMinor_rpow_le`: integer-power and normalized Szász bounds.
+* `Matrix.PosDef.prod_re_principalMinor_rpow_eq_iff`: equality between consecutive normalized
+  products for positive definite matrices.
 * `NLAlib.principalMinor_erase_univ_eq_adjugate`, `NLAlib.principalMinor_erase_univ_eq`:
   complementary minors as the diagonal of the adjugate and of the inverse.
 * `Matrix.PosSemidef.re_det_conjTranspose_mul_mul_le_prod_range_eigenvalue`: the determinant of a
@@ -61,9 +64,11 @@ theorem principalMinor_erase_univ_eq {K : Type*} [Field K] {A : Matrix n n K} (h
 
 /-- The case of the whole index set of `Matrix.PosSemidef.re_principalMinor_pow_le_prod_erase`,
 for a positive definite matrix: Hadamard's inequality for the inverse. -/
-private theorem re_det_pow_le_prod_erase_of_posDef {A : Matrix n n 𝕜} (hA : A.PosDef) {k : ℕ}
+private theorem re_det_pow_le_prod_erase_and_eq_iff {A : Matrix n n 𝕜} (hA : A.PosDef) {k : ℕ}
     (hk : k + 1 = Fintype.card n) :
-    RCLike.re A.det ^ k ≤ ∏ i, RCLike.re (principalMinor A (Finset.univ.erase i)) := by
+    RCLike.re A.det ^ k ≤ ∏ i, RCLike.re (principalMinor A (Finset.univ.erase i)) ∧
+      (RCLike.re A.det ^ k = ∏ i, RCLike.re (principalMinor A (Finset.univ.erase i)) ↔
+        A.IsDiag) := by
   have hd : 0 < RCLike.re A.det := (RCLike.pos_iff.mp hA.det_pos).1
   have hinv : RCLike.re A⁻¹.det = (RCLike.re A.det)⁻¹ := by
     rw [Matrix.det_nonsing_inv, Ring.inverse_eq_inv', hA.isHermitian.det_eq_re_det,
@@ -74,10 +79,16 @@ private theorem re_det_pow_le_prod_erase_of_posDef {A : Matrix n n 𝕜} (hA : A
       RCLike.re_ofReal_mul, RCLike.ofReal_re]
   simp only [hterm]
   rw [Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ, ← hk]
-  calc RCLike.re A.det ^ k = RCLike.re A.det ^ (k + 1) * RCLike.re A⁻¹.det := by
-        rw [hinv, pow_succ, mul_assoc, mul_inv_cancel₀ hd.ne', mul_one]
-    _ ≤ RCLike.re A.det ^ (k + 1) * ∏ i, RCLike.re (A⁻¹ i i) :=
-        mul_le_mul_of_nonneg_left hA.inv.posSemidef.re_det_le_prod_re_diag (pow_pos hd _).le
+  have hdet : RCLike.re A.det ^ k = RCLike.re A.det ^ (k + 1) * RCLike.re A⁻¹.det := by
+    rw [hinv, pow_succ, mul_assoc, mul_inv_cancel₀ hd.ne', mul_one]
+  rw [hdet, mul_le_mul_iff_right₀ (pow_pos hd _), mul_right_inj' (pow_pos hd _).ne',
+    hA.inv.re_det_eq_prod_re_diag_iff]
+  refine ⟨hA.inv.posSemidef.re_det_le_prod_re_diag, ?_⟩
+  have hinvDiag {M : Matrix n n 𝕜} (h : M.IsDiag) : M⁻¹.IsDiag := by
+    rw [← h.diagonal_diag, Matrix.inv_diagonal]
+    exact Matrix.isDiag_diagonal _
+  have hinv := Matrix.nonsing_inv_nonsing_inv A ((Matrix.isUnit_iff_isUnit_det A).1 hA.isUnit)
+  exact ⟨fun h => hinv ▸ hinvDiag h, hinvDiag⟩
 
 /-- The case of the whole index set of `Matrix.PosSemidef.re_principalMinor_pow_le_prod_erase`,
 by continuity from the positive definite case. -/
@@ -88,7 +99,22 @@ private theorem re_det_pow_le_prod_erase {A : Matrix n n 𝕜} (hA : A.PosSemide
     (f := fun A : Matrix n n 𝕜 => RCLike.re A.det ^ k)
     (g := fun A : Matrix n n 𝕜 => ∏ i, RCLike.re
       (A.submatrix (Subtype.val : ↥(Finset.univ.erase i) → n) Subtype.val).det)
-    (by fun_prop) (by fun_prop) (fun _ hM => re_det_pow_le_prod_erase_of_posDef hM hk) hA
+    (by fun_prop) (by fun_prop) (fun _ hM => (re_det_pow_le_prod_erase_and_eq_iff hM hk).1) hA
+
+omit [Fintype n] in
+private theorem principalMinor_submatrix_erase (A : Matrix n n 𝕜) (t : Finset n) (i : t) :
+    principalMinor (A.submatrix (Subtype.val : ↥t → n) Subtype.val) (Finset.univ.erase i) =
+      principalMinor A (t.erase i) := by
+  rw [principalMinor, Matrix.submatrix_submatrix]
+  refine det_submatrix_eq_principalMinor A
+    (Subtype.val_injective.comp Subtype.val_injective) (Set.ext fun x => ?_)
+  simp only [Finset.coe_erase, Set.mem_sdiff, Finset.mem_coe, Set.mem_singleton_iff,
+    Set.mem_range, Function.comp_apply]
+  constructor
+  · rintro ⟨⟨y, hy⟩, rfl⟩
+    exact ⟨y.2, fun h => (Finset.mem_erase.mp hy).1 (Subtype.ext h)⟩
+  · rintro ⟨hxt, hx⟩
+    exact ⟨⟨⟨x, hxt⟩, by simpa [Subtype.ext_iff] using hx⟩, rfl⟩
 
 omit [Fintype n] in
 /-- **A minor against its sub-minors.** For a positive semidefinite matrix $\mathbf{A}$ and an
@@ -101,19 +127,20 @@ theorem _root_.Matrix.PosSemidef.re_principalMinor_pow_le_prod_erase {A : Matrix
     RCLike.re (principalMinor A t) ^ k ≤ ∏ i ∈ t, RCLike.re (principalMinor A (t.erase i)) := by
   have h := re_det_pow_le_prod_erase (hA.submatrix (Subtype.val : ↥t → n)) (k := k)
     (by rw [Fintype.card_coe, hk])
-  have he (i : ↥t) : principalMinor (A.submatrix (Subtype.val : ↥t → n) Subtype.val)
-      (Finset.univ.erase i) = principalMinor A (t.erase i) := by
-    rw [principalMinor, Matrix.submatrix_submatrix]
-    refine det_submatrix_eq_principalMinor A
-      (Subtype.val_injective.comp Subtype.val_injective) (Set.ext fun x => ?_)
-    simp only [Finset.coe_erase, Set.mem_sdiff, Finset.mem_coe, Set.mem_singleton_iff,
-      Set.mem_range, Function.comp_apply]
-    constructor
-    · rintro ⟨⟨y, hy⟩, rfl⟩
-      exact ⟨y.2, fun h => (Finset.mem_erase.mp hy).1 (Subtype.ext h)⟩
-    · rintro ⟨hxt, hx⟩
-      exact ⟨⟨⟨x, hxt⟩, by simpa [Subtype.ext_iff] using hx⟩, rfl⟩
-  simp only [he] at h
+  simp only [principalMinor_submatrix_erase] at h
+  rw [Finset.prod_coe_sort t fun i => RCLike.re (principalMinor A (t.erase i))] at h
+  exact h
+
+omit [Fintype n] in
+/-- Equality in the deletion inequality for a principal block of size $k+1$ in a positive
+definite matrix holds exactly when that block is diagonal. [HornJohnson2013, Lemma 7.8.8]. -/
+theorem _root_.Matrix.PosDef.re_principalMinor_pow_eq_prod_erase_iff {A : Matrix n n 𝕜}
+    (hA : A.PosDef) {t : Finset n} {k : ℕ} (hk : t.card = k + 1) :
+    RCLike.re (principalMinor A t) ^ k = ∏ i ∈ t, RCLike.re (principalMinor A (t.erase i)) ↔
+      (A.submatrix (Subtype.val : t → n) Subtype.val).IsDiag := by
+  have hpd := hA.submatrix (Subtype.val_injective (p := (· ∈ t)))
+  have h := (re_det_pow_le_prod_erase_and_eq_iff hpd (k := k) (by rw [Fintype.card_coe, hk])).2
+  simp only [principalMinor_submatrix_erase] at h
   rw [Finset.prod_coe_sort t fun i => RCLike.re (principalMinor A (t.erase i))] at h
   exact h
 
@@ -177,6 +204,109 @@ theorem _root_.Matrix.PosSemidef.re_det_pow_le_prod_re_principalMinor_erase {A :
     (hA : A.PosSemidef) {k : ℕ} (hk : k + 1 = Fintype.card n) :
     RCLike.re A.det ^ k ≤ ∏ i, RCLike.re (principalMinor A (Finset.univ.erase i)) :=
   re_det_pow_le_prod_erase hA hk
+
+/-- A positive definite matrix attains equality between consecutive nontrivial orders in
+Szász's product inequality exactly when it is diagonal. [HornJohnson2013, Theorem 7.8.11]. -/
+theorem _root_.Matrix.PosDef.prod_re_principalMinor_succ_pow_eq_iff {A : Matrix n n 𝕜}
+    (hA : A.PosDef) {k d : ℕ} (hk : 0 < k) (hd : 0 < d) (hkd : k + d = Fintype.card n) :
+    (∏ s ∈ Finset.univ.powersetCard (k + 1), RCLike.re (principalMinor A s)) ^ k =
+      (∏ s ∈ Finset.univ.powersetCard k, RCLike.re (principalMinor A s)) ^ d ↔ A.IsDiag := by
+  rw [← Finset.prod_pow, ← prod_powersetCard_prod_erase _ hkd]
+  have hloc (t : Finset n) (ht : t ∈ (Finset.univ : Finset n).powersetCard (k + 1)) :=
+    hA.re_principalMinor_pow_eq_prod_erase_iff (Finset.mem_powersetCard.mp ht).2
+  constructor
+  · intro he i j hij
+    obtain ⟨t, hpair, -, hcard⟩ := Finset.exists_subsuperset_card_eq
+      (Finset.subset_univ ({i, j} : Finset n))
+      (show ({i, j} : Finset n).card ≤ k + 1 by simp [hij]; omega)
+      (show k + 1 ≤ (Finset.univ : Finset n).card by rw [Finset.card_univ]; omega)
+    have ht : t ∈ (Finset.univ : Finset n).powersetCard (k + 1) :=
+      Finset.mem_powersetCard.mpr ⟨Finset.subset_univ _, hcard⟩
+    have heq : (A.submatrix (Subtype.val : t → n) Subtype.val).IsDiag := by
+      by_contra hnot
+      have hlt := lt_of_le_of_ne (hA.posSemidef.re_principalMinor_pow_le_prod_erase hcard)
+        (fun h => hnot ((hloc t ht).mp h))
+      exact (Finset.prod_lt_prod (fun s _ => pow_pos (hA.re_principalMinor_pos s) k)
+        (fun s hs => hA.posSemidef.re_principalMinor_pow_le_prod_erase
+          (Finset.mem_powersetCard.mp hs).2) ⟨t, ht, hlt⟩).ne he
+    exact heq (i := ⟨i, hpair (by simp)⟩) (j := ⟨j, hpair (by simp)⟩)
+      fun h => hij (congrArg Subtype.val h)
+  · intro h
+    exact Finset.prod_congr rfl fun t ht => (hloc t ht).mpr (h.submatrix Subtype.val_injective)
+
+/-- The binomial coefficients convert consecutive normalized products to integer powers. -/
+private theorem rpow_inv_choose_compare {d k l : ℕ} (hd : k + 1 + l = d)
+    {x y : ℝ} (hx : 0 ≤ x) (hy : 0 ≤ y) :
+    (y ^ ((d.choose (k + 1) : ℝ)⁻¹) ≤ x ^ ((d.choose k : ℝ)⁻¹) ↔
+      y ^ (k + 1) ≤ x ^ (l + 1)) ∧
+    (y ^ ((d.choose (k + 1) : ℝ)⁻¹) = x ^ ((d.choose k : ℝ)⁻¹) ↔
+      y ^ (k + 1) = x ^ (l + 1)) := by
+  have hp : (0 : ℝ) < d.choose k := by exact_mod_cast Nat.choose_pos (show k ≤ d by omega)
+  have hq : (0 : ℝ) < d.choose (k + 1) := by
+    exact_mod_cast Nat.choose_pos (show k + 1 ≤ d by omega)
+  have hratio : ((k + 1 : ℕ) : ℝ) * (d.choose (k + 1) : ℝ) =
+      ((l + 1 : ℕ) : ℝ) * (d.choose k : ℝ) := by
+    have h := Nat.choose_succ_right_eq d k
+    rw [show d - k = l + 1 by omega] at h
+    have hnat : (k + 1) * d.choose (k + 1) = (l + 1) * d.choose k := by
+      simpa only [mul_comm] using h
+    exact_mod_cast hnat
+  let e := ((k + 1 : ℕ) : ℝ) * (d.choose (k + 1) : ℝ)
+  have he : 0 < e := mul_pos (by positivity) hq
+  have hy' : (y ^ ((d.choose (k + 1) : ℝ)⁻¹)) ^ e = y ^ (k + 1) := by
+    rw [← Real.rpow_mul hy]
+    have : ((d.choose (k + 1) : ℝ)⁻¹) * e = ((k + 1 : ℕ) : ℝ) := by dsimp [e]; field_simp
+    rw [this, Real.rpow_natCast]
+  have hx' : (x ^ ((d.choose k : ℝ)⁻¹)) ^ e = x ^ (l + 1) := by
+    rw [← Real.rpow_mul hx]
+    have : ((d.choose k : ℝ)⁻¹) * e = ((l + 1 : ℕ) : ℝ) := by
+      dsimp only [e]
+      rw [hratio]
+      field_simp
+    rw [this, Real.rpow_natCast]
+  have hle := Real.rpow_le_rpow_iff (Real.rpow_nonneg hy (d.choose (k + 1) : ℝ)⁻¹)
+    (Real.rpow_nonneg hx (d.choose k : ℝ)⁻¹) he
+  have heq := Real.rpow_left_inj (Real.rpow_nonneg hy (d.choose (k + 1) : ℝ)⁻¹)
+    (Real.rpow_nonneg hx (d.choose k : ℝ)⁻¹) he.ne'
+  rw [hy', hx'] at hle heq
+  exact ⟨hle.symm, heq.symm⟩
+
+/-- **Normalized Szász inequality.** For a positive semidefinite matrix of dimension $d+1$,
+the product of principal minors of order $j+1$, raised to $1/\binom{d}{j}$, decreases with
+$j$ throughout $0\le j\le d$. [HornJohnson2013, Theorem 7.8.11].
+Result: szasz-inequality -/
+theorem _root_.Matrix.PosSemidef.prod_re_principalMinor_rpow_le {A : Matrix n n 𝕜}
+    (hA : A.PosSemidef) {d k l : ℕ} (hd : Fintype.card n = d + 1) (hkl : k ≤ l) (hl : l ≤ d) :
+    (∏ s ∈ Finset.univ.powersetCard (l + 1), RCLike.re (principalMinor A s)) ^
+        ((d.choose l : ℝ)⁻¹) ≤
+      (∏ s ∈ Finset.univ.powersetCard (k + 1), RCLike.re (principalMinor A s)) ^
+        ((d.choose k : ℝ)⁻¹) := by
+  revert hl
+  induction l, hkl using Nat.le_induction with
+  | base => exact fun _ => le_rfl
+  | succ l hkl ih =>
+    intro hl
+    obtain ⟨r, hr⟩ := Nat.exists_eq_add_of_le hl
+    refine le_trans ?_ (ih (by omega))
+    apply (rpow_inv_choose_compare hr.symm
+      (Finset.prod_nonneg fun s _ => hA.re_principalMinor_nonneg s)
+      (Finset.prod_nonneg fun s _ => hA.re_principalMinor_nonneg s)).1.mpr
+    exact hA.prod_re_principalMinor_succ_pow_le (k := l + 1) (d := r + 1) (by omega)
+
+/-- For positive definite input, consecutive normalized Szász products at orders $k+1$ and
+$k+2$ coincide precisely when the matrix is diagonal. [HornJohnson2013, Theorem 7.8.11]. -/
+theorem _root_.Matrix.PosDef.prod_re_principalMinor_rpow_eq_iff {A : Matrix n n 𝕜}
+    (hA : A.PosDef) {d k : ℕ} (hd : Fintype.card n = d + 1) (hk : k < d) :
+    (∏ s ∈ Finset.univ.powersetCard (k + 2), RCLike.re (principalMinor A s)) ^
+        ((d.choose (k + 1) : ℝ)⁻¹) =
+      (∏ s ∈ Finset.univ.powersetCard (k + 1), RCLike.re (principalMinor A s)) ^
+        ((d.choose k : ℝ)⁻¹) ↔ A.IsDiag := by
+  obtain ⟨r, hr⟩ := Nat.exists_eq_add_of_le hk
+  rw [(rpow_inv_choose_compare hr.symm
+    (Finset.prod_nonneg fun s _ => hA.posSemidef.re_principalMinor_nonneg s)
+    (Finset.prod_nonneg fun s _ => hA.posSemidef.re_principalMinor_nonneg s)).2]
+  exact hA.prod_re_principalMinor_succ_pow_eq_iff (k := k + 1) (d := r + 1) (by omega)
+    (by omega) (by omega)
 
 /-! ### Compressions -/
 

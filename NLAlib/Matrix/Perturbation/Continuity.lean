@@ -133,6 +133,19 @@ theorem continuous_schattenNorm {q : ℝ≥0∞} (hq : 1 ≤ q) :
   simp only [lpGauge_matrixNorm] at h
   exact h
 
+/-- For every finite positive index, the Schatten quantity depends continuously on the matrix,
+including the quasi-norm range below one. -/
+theorem continuous_schattenNorm_ofReal {p : ℝ} (hp : 0 < p) :
+    Continuous fun A : Matrix m n 𝕜 => schattenNorm (ENNReal.ofReal p) A := by
+  have heq (A : Matrix m n 𝕜) :=
+    schattenNorm_eq_sum_rpow (ENNReal.ofReal_pos.mpr hp).ne' ENNReal.ofReal_ne_top A
+      A.rank_le_card_width
+  simp only [ENNReal.toReal_ofReal hp.le] at heq
+  simp_rw [heq]
+  apply Continuous.rpow_const _ (fun _ => Or.inr (inv_nonneg.mpr hp.le))
+  exact continuous_finsetSum _ fun i _ =>
+    (continuous_singularValues i).rpow_const fun _ => Or.inr hp.le
+
 /-! ### Optimal low-rank approximation errors -/
 
 /-- One half of `SymmetricGauge.abs_matrixNorm_sub_truncatedSVD_sub_le`. -/
