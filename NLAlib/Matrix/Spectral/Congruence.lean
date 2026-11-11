@@ -587,7 +587,7 @@ $\mathbf{A},\mathbf{B}$ to upper triangular $\mathbf{S},\mathbf{T}$. For all $\a
 $\det(\beta\mathbf{A}-\alpha\mathbf{B})$ equals
 $\det(\mathbf{Q})\det(\mathbf{Z}^{\mathsf{H}})\prod_i(\beta s_{ii}-\alpha t_{ii})$.
 Derived from the triangularization in [MolerStewart1973, §1], including singular pencils.
-Result: qz -/
+Result: generalized-schur-pencil-determinant -/
 theorem det_smul_sub_smul (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
     (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) (α β : 𝕜) :
     (β • A - α • B).det = Q.det * Zᴴ.det *
@@ -612,7 +612,7 @@ $\mathbf{A},\mathbf{B}$ to upper triangular $\mathbf{S},\mathbf{T}$, then
 $\det(\beta\mathbf{A}-\alpha\mathbf{B})=0$ precisely when $\beta s_{ii}=\alpha t_{ii}$ for some
 $i$. Taking $(\alpha,\beta)=(1,0)$ tests for the eigenvalue at infinity of a regular pencil.
 Derived from the diagonal-pair description in [MolerStewart1973, §1].
-Result: qz -/
+Result: generalized-schur-pencil-determinant -/
 theorem det_smul_sub_smul_eq_zero_iff (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
     (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) (α β : 𝕜) :
     (β • A - α • B).det = 0 ↔ ∃ i, β * (Qᴴ * A * Z) i i = α * (Qᴴ * B * Z) i i := by
@@ -627,7 +627,7 @@ $\mathbf{A},\mathbf{B}$ to upper triangular $\mathbf{S},\mathbf{T}$. As a polyno
 $\det(\mathbf{A}-x\mathbf{B})$ equals
 $\det(\mathbf{Q})\det(\mathbf{Z}^{\mathsf{H}})\prod_i(s_{ii}-x t_{ii})$.
 Polynomial form of the triangularization in [MolerStewart1973, §1].
-Result: qz -/
+Result: generalized-schur-pencil-determinant -/
 theorem det_sub_X_smul (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
     (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) :
     (A.map C - (X : 𝕜[X]) • B.map C).det = C (Q.det * Zᴴ.det) *
@@ -646,7 +646,7 @@ theorem det_sub_X_smul (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
 to upper triangular $\mathbf{S},\mathbf{T}$, then $\det(\mathbf{A}-x\mathbf{B})$ is a nonzero
 polynomial precisely when each diagonal pair $(s_{ii},t_{ii})$ has a nonzero coordinate.
 Polynomial form of the diagonal-pair criterion in [MolerStewart1973, §1].
-Result: qz -/
+Result: generalized-schur-pencil-determinant -/
 theorem det_sub_X_smul_ne_zero_iff (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
     (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) :
     (A.map C - (X : 𝕜[X]) • B.map C).det ≠ 0 ↔
