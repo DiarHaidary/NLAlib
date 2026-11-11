@@ -7,10 +7,11 @@ module
 
 public import NLAlib.Matrix.Pseudoinverse.NormBounds
 public import NLAlib.Matrix.Spectral.LowRank
+public import Mathlib.Data.ENNReal.Real
 public import Mathlib.Tactic.Positivity.Core
 
 /-!
-# The pseudo-condition number and the distance to singularity
+# Spectral conditioning and the distance to singularity
 
 `NLAlib.pseudoConditionNumber A` is $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2$, defined for a matrix
 of any shape through the Moore–Penrose pseudoinverse: the ratio of the largest singular value of
@@ -24,9 +25,9 @@ the two agree,
 $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \sigma_0(\mathbf{A}) / \sigma_{\min}(\mathbf{A})$
 (`NLAlib.pseudoConditionNumber_of_injective`), and for an invertible matrix it is the classical
 $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$
-(`NLAlib.pseudoConditionNumber_of_isUnit`). A theorem about the classical condition number
-therefore states invertibility or full column rank as a hypothesis (`IsUnit A`,
-`Function.Injective A.mulVec`), as it would anyway.
+(`NLAlib.pseudoConditionNumber_of_isUnit`). For square matrices
+`NLAlib.spectralConditionNumber` takes values in the extended nonnegative reals:
+it agrees with the finite quantity on units and takes the value infinity on singular inputs.
 
 The distance from a matrix to the nearest rank-deficient one, in spectral norm, is its smallest
 singular value.
@@ -41,6 +42,9 @@ The names `conditionNumber` and `conditionNumber_*` are deprecated aliases (2026
   `frobNorm A * specNorm (pinv A)`, the rate constant of randomized Kaczmarz.
 
 ## Main results
+
+* `NLAlib.spectralConditionNumber_eq_top_iff`: singularity is equivalent to infinite
+  spectral condition number.
 
 * `NLAlib.pseudoConditionNumber_eq_singularValues_div`: the ratio of the extreme nonzero singular
   values.
@@ -59,7 +63,7 @@ The names `conditionNumber` and `conditionNumber_*` are deprecated aliases (2026
 
 @[expose] public section
 
-open scoped Matrix ComplexOrder MatrixOrder
+open scoped Matrix ComplexOrder MatrixOrder ENNReal
 
 namespace NLAlib
 
@@ -132,6 +136,30 @@ $\kappa(\mathbf{A}) = \|\mathbf{A}\|_2 \|\mathbf{A}^{-1}\|_2$. -/
 theorem pseudoConditionNumber_of_isUnit [DecidableEq n] {A : Matrix n n 𝕜} (hA : IsUnit A) :
     pseudoConditionNumber A = specNorm A * specNorm A⁻¹ := by
   rw [pseudoConditionNumber, pinv_of_isUnit hA]
+
+/-- The classical spectral condition number of a square matrix. It agrees with
+`pseudoConditionNumber` on invertible matrices and takes the value infinity on singular
+matrices. The empty matrix is invertible and has condition number zero with the operator-norm
+convention. [GolubVanLoan2013, §2.6.2]. -/
+noncomputable def spectralConditionNumber [DecidableEq n] (A : Matrix n n 𝕜) : ℝ≥0∞ := by
+  classical
+  exact if IsUnit A then ENNReal.ofReal (pseudoConditionNumber A) else ⊤
+
+/-- At an invertible square matrix the finite pseudo-condition number gives the classical
+spectral condition number. [GolubVanLoan2013, §2.6.2]. -/
+theorem spectralConditionNumber_of_isUnit [DecidableEq n] {A : Matrix n n 𝕜} (hA : IsUnit A) :
+    spectralConditionNumber A = ENNReal.ofReal (pseudoConditionNumber A) := by
+  classical
+  simp only [spectralConditionNumber, if_pos hA]
+
+/-- **Singularity and the spectral condition number.** A real or complex square matrix has
+infinite spectral condition number exactly when it is singular. [GolubVanLoan2013, §2.6.2].
+Result: condition-number-def -/
+@[simp]
+theorem spectralConditionNumber_eq_top_iff [DecidableEq n] (A : Matrix n n 𝕜) :
+    spectralConditionNumber A = ⊤ ↔ ¬ IsUnit A := by
+  classical
+  by_cases hA : IsUnit A <;> simp [spectralConditionNumber, hA]
 
 /-- For a positive definite matrix the pseudo-condition number is the ratio of the extreme
 eigenvalues: $\|\mathbf{A}\|_2 \|\mathbf{A}^{+}\|_2 = \lambda_0(\mathbf{A}) / \lambda_k(\mathbf{A})$
