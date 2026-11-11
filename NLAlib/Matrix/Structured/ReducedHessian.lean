@@ -18,6 +18,9 @@ For constraints with full row rank, a null-space basis reduces a saddle-point li
 and describes uniqueness of feasible quadratic minimizers. The basis need not be orthonormal.
 [BenziGolubLiesen2005, §6].
 
+For a computed null-space basis, use Mathlib’s `LinearMap.exact_iff` with `Z.mulVecLin`
+and `B.mulVecLin` to supply the exactness hypothesis from equality of the range and kernel.
+
 ## Main results
 
 * `NLAlib.mulVec_fromBlocks_eq_of_mulVec_eq`: reconstruct a primal solution and its multiplier.
