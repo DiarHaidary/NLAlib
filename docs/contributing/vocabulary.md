@@ -49,6 +49,7 @@ tree and its program, or a count in a targets file).
 | Loewner order | `A ≤ B` under `open scoped MatrixOrder` | `Matrix.le_iff` |
 | PSD, PD, Hermitian | `A.PosSemidef`, `A.PosDef`, `A.IsHermitian` | Mathlib's |
 | quadratic form | `quadForm A z := star z ⬝ᵥ (A *ᵥ z) : 𝕜` | `Matrix.PosSemidef` form |
+| equality-constrained quadratic objective | `quadraticObjective H f x` is half the real quadratic form minus the real pairing with the load. Feasibility is the constraint equation and minimality uses Mathlib's `IsMinOn` | `Matrix.IsHermitian.forall_existsUnique_isMinOn_quadraticObjective_iff` |
 | orthonormal columns | `HasOrthonormalCols Q := Qᴴ * Q = 1`, always as this hypothesis; rows are `HasOrthonormalCols Qᴴ`; a unitary is a square `Q` with this property | `hasOrthonormalCols_iff_orthonormal`, `hasOrthonormalCols_iff_mem_unitaryGroup` |
 | orthogonal projector (predicate) | `IsStarProjection P` | Mathlib's |
 | projector onto a column space | `rangeProjector A`, every shape and rank | `toEuclideanLin_rangeProjector` |
