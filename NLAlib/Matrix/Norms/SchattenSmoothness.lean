@@ -71,17 +71,17 @@ private theorem schattenNorm_mul_add_mul_le {p k : ℕ} (hp : p ≠ 0) (hk : k +
       abel
     · ring
 
-/-- The scalar sign average bounds the average of the Schatten moments. -/
-private theorem schattenNorm_add_pow_add_schattenNorm_sub_pow_le {r : ℕ} (hr : r ≠ 0)
+/-- For even $p=2r>0$, the sum of the $p$th Schatten moments of
+$\mathbf{A}+\mathbf{B}$ and $\mathbf{A}-\mathbf{B}$ is bounded by the corresponding scalar
+moments of $\|\mathbf{A}\|_{S_p}$ and $\|\mathbf{B}\|_{S_p}$. [Tropp2022, §8.5]. -/
+theorem schattenNorm_add_pow_add_schattenNorm_sub_pow_le {r : ℕ} (hr : 0 < r)
     (A B : Matrix m n 𝕜) :
-    let p := 2 * r
-    let a := schattenNorm (p : ℝ≥0∞) A
-    let b := schattenNorm (p : ℝ≥0∞) B
-    schattenNorm (p : ℝ≥0∞) (A + B) ^ p + schattenNorm (p : ℝ≥0∞) (A - B) ^ p ≤
-      (a + b) ^ p + (a - b) ^ p := by
+    schattenNorm (2 * r) (A + B) ^ (2 * r) + schattenNorm (2 * r) (A - B) ^ (2 * r) ≤
+      (schattenNorm (2 * r) A + schattenNorm (2 * r) B) ^ (2 * r) +
+      (schattenNorm (2 * r) A - schattenNorm (2 * r) B) ^ (2 * r) := by
   classical
   let p := 2 * r
-  have hp : p ≠ 0 := mul_ne_zero two_ne_zero hr
+  have hp : p ≠ 0 := mul_ne_zero two_ne_zero hr.ne'
   let a := schattenNorm (p : ℝ≥0∞) A
   let b := schattenNorm (p : ℝ≥0∞) B
   let G := (A + B)ᴴ * (A + B)
@@ -113,7 +113,7 @@ private theorem schattenNorm_add_pow_add_schattenNorm_sub_pow_le {r : ℕ} (hr :
   rw [ENNReal.div_self (Nat.cast_ne_zero.mpr hp) (ENNReal.natCast_ne_top p), schattenNorm_one] at h
   have ht := (RCLike.re_le_norm _).trans ((norm_trace_le_nuclearNorm (G ^ r + H ^ r)).trans h)
   simpa only [Matrix.trace_add, map_add, p, a, b, G, H, Nat.cast_mul, Nat.cast_ofNat,
-    schattenNorm_two_mul_natCast_pow hr] using ht
+    schattenNorm_two_mul_natCast_pow hr.ne'] using ht
 
 /-- **Uniform smoothness for even Schatten moments.** For real or complex rectangular matrices
 $\mathbf{A},\mathbf{B}$ of the same shape and a positive even integer $p=2r$,
@@ -127,8 +127,7 @@ theorem schattenNorm_add_pow_add_schattenNorm_sub_pow_div_rpow_le {r : ℕ} (hr 
       (r : ℝ)⁻¹ ≤ schattenNorm (2 * r) A ^ 2 + (2 * (r : ℝ) - 1) * schattenNorm (2 * r) B ^ 2 := by
   let a := schattenNorm (2 * r) A
   let b := schattenNorm (2 * r) B
-  have h := schattenNorm_add_pow_add_schattenNorm_sub_pow_le hr.ne' A B
-  simp only [Nat.cast_mul, Nat.cast_ofNat] at h
+  have h := schattenNorm_add_pow_add_schattenNorm_sub_pow_le hr A B
   have hbound := (div_le_div_of_nonneg_right h (by norm_num : 0 ≤ (2 : ℝ))).trans
     (Real.add_pow_add_sub_pow_le a b r)
   have hn : 0 ≤ a ^ 2 + (2 * (r : ℝ) - 1) * b ^ 2 := by
