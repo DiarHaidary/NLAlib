@@ -96,7 +96,6 @@ private noncomputable def simpleEigenvalueSchurFunction (μ a : ℂ) (B F : Matr
     (Ring.inverse ((μ + p.2) • 1 - B - p.1 • F))
 
 open scoped Matrix.Norms.L2Operator in
-set_option backward.isDefEq.respectTransparency.types false in
 /-- The scalar Schur equation has the expected strict derivative at the origin whenever the
 remaining block excludes the original eigenvalue. [HornJohnson2013, Theorem 6.3.12]. -/
 private theorem hasStrictFDerivAt_simpleEigenvalueSchurFunction (μ a : ℂ)
