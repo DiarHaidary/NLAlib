@@ -477,6 +477,8 @@ public import NLAlib.Matrix.Factorizations.Triangular
 public import NLAlib.Matrix.Functions.AbsoluteValue
 public import NLAlib.Matrix.Functions.Complexification
 public import NLAlib.Matrix.Functions.Exponential
+public import NLAlib.Matrix.Functions.ExponentialDerivative
+public import NLAlib.Matrix.Functions.ExponentialGrowth
 public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
