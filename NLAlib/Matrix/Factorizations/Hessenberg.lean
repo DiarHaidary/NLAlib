@@ -51,6 +51,25 @@ subdiagonal vanish: $\mathbf{H}_{i,j} = 0$ for $j + 1 < i$. [GolubVanLoan2013, �
 def IsUpperHessenberg [Zero R] (H : Matrix (Fin m) (Fin n) R) : Prop :=
   ∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
 
+/-- An **unreduced upper Hessenberg matrix** vanishes below its first subdiagonal,
+and every entry on that subdiagonal is nonzero. [GolubVanLoan2013, §7.4.3]. -/
+structure IsUnreducedHessenberg [Zero R] (H : Matrix (Fin m) (Fin n) R) : Prop where
+  /-- Entries below the first subdiagonal vanish. -/
+  isUpperHessenberg : IsUpperHessenberg H
+  /-- Every entry immediately below the main diagonal is nonzero. -/
+  subdiagonal_ne_zero : ∀ (i : Fin m) (j : Fin n), (i : ℕ) = j + 1 → H i j ≠ 0
+
+/-- A square upper Hessenberg matrix is unreduced precisely when $h_{i+1,i}\ne 0$
+for every subdiagonal index. [GolubVanLoan2013, §7.4.3]. -/
+theorem isUnreducedHessenberg_iff [Zero R] {H : Matrix (Fin (n + 1)) (Fin (n + 1)) R} :
+    IsUnreducedHessenberg H ↔ IsUpperHessenberg H ∧ ∀ j : Fin n, H j.succ j.castSucc ≠ 0 := by
+  constructor
+  · exact fun h => ⟨h.isUpperHessenberg, fun j => h.subdiagonal_ne_zero _ _ rfl⟩
+  · rintro ⟨hH, hn⟩
+    refine ⟨hH, fun i j hij => ?_⟩
+    have hj : (j : ℕ) < n := by have := i.isLt; omega
+    exact (show (⟨j, hj⟩ : Fin n).succ = i from Fin.ext hij.symm) ▸ hn ⟨j, hj⟩
+
 /-- A square matrix indexed by `Fin n` is **tridiagonal** if its entries outside the main
 diagonal and the two adjacent ones vanish: $\mathbf{T}_{i,j} = 0$ for $\lvert i - j \rvert > 1$. -/
 def IsTridiagonal [Zero R] (T : Matrix (Fin n) (Fin n) R) : Prop :=
@@ -410,9 +429,8 @@ theorem IsQR.isTridiagonal_mul {H Q R : Matrix (Fin n) (Fin n) 𝕜} (h : IsQR H
 /-- The change of basis between two Hessenberg forms with the same first column, the first of
 them unreduced, is upper triangular. -/
 private theorem isUpperTriangular_of_mul_eq_mul {H₁ H₂ V : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
-    (hH₁ : IsUpperHessenberg H₁) (hH₂ : IsUpperHessenberg H₂) (hHV : H₂ * V = V * H₁)
-    (hV0 : ∀ i : Fin (n + 1), i ≠ 0 → V i 0 = 0)
-    (hsub : ∀ i j : Fin (n + 1), (i : ℕ) = j + 1 → H₁ i j ≠ 0) : V.IsUpperTriangular := by
+    (hH₁ : IsUnreducedHessenberg H₁) (hH₂ : IsUpperHessenberg H₂) (hHV : H₂ * V = V * H₁)
+    (hV0 : ∀ i : Fin (n + 1), i ≠ 0 → V i 0 = 0) : V.IsUpperTriangular := by
   have key : ∀ (j : ℕ) (i c : Fin (n + 1)), (c : ℕ) ≤ j → c < i → V i c = 0 := by
     intro j
     induction j with
@@ -439,9 +457,9 @@ private theorem isUpperTriangular_of_mul_eq_mul {H₁ H₂ V : Matrix (Fin (n + 
         by_cases hl : (l : ℕ) ≤ j
         · rw [ih i l hl (Fin.lt_def.mpr (by omega)), zero_mul]
         · have hlc' : (l : ℕ) ≠ c := fun e => hlc (Fin.ext e)
-          rw [hH₁ l ⟨j, hjn⟩ (by simp only; omega), mul_zero]
+          rw [hH₁.isUpperHessenberg l ⟨j, hjn⟩ (by simp only; omega), mul_zero]
       rw [hL, hR] at h1
-      exact (mul_eq_zero.mp h1.symm).resolve_right (hsub c ⟨j, hjn⟩ hcj)
+      exact (mul_eq_zero.mp h1.symm).resolve_right (hH₁.subdiagonal_ne_zero c ⟨j, hjn⟩ hcj)
   exact fun i c hci => key c i c le_rfl hci
 
 /-- **The implicit Q theorem.** If
@@ -456,9 +474,8 @@ Result: implicit-q -/
 theorem HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg
     {A Q₁ Q₂ : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜}
     (hQ₁ : HasOrthonormalCols Q₁) (hQ₂ : HasOrthonormalCols Q₂)
-    (hH₁ : IsUpperHessenberg (Q₁ᴴ * A * Q₁)) (hH₂ : IsUpperHessenberg (Q₂ᴴ * A * Q₂))
-    (hcol : Q₁.col 0 = Q₂.col 0)
-    (hsub : ∀ i j : Fin (n + 1), (i : ℕ) = j + 1 → (Q₁ᴴ * A * Q₁) i j ≠ 0) :
+    (hH₁ : IsUnreducedHessenberg (Q₁ᴴ * A * Q₁)) (hH₂ : IsUpperHessenberg (Q₂ᴴ * A * Q₂))
+    (hcol : Q₁.col 0 = Q₂.col 0) :
     ∃ d : Fin (n + 1) → 𝕜, (∀ i, ‖d i‖ = 1) ∧ d 0 = 1 ∧ Q₂ = Q₁ * Matrix.diagonal d ∧
       Q₂ᴴ * A * Q₂ = Matrix.diagonal (star d) * (Q₁ᴴ * A * Q₁) * Matrix.diagonal d := by
   have hQ₁' : Q₁ * Q₁ᴴ = 1 := hQ₁.mul_conjTranspose_self
@@ -476,7 +493,7 @@ theorem HasOrthonormalCols.exists_eq_mul_diagonal_of_isUpperHessenberg
     exact Finset.sum_congr rfl fun l _ => by rw [show Q₁ l 0 = Q₂ l 0 from congrFun hcol l]
   have hU : (Q₂ᴴ * Q₁).IsUpperTriangular :=
     isUpperTriangular_of_mul_eq_mul hH₁ hH₂ hHV
-      (fun i hi => by rw [hV0 i, Matrix.one_apply_ne hi]) hsub
+      (fun i hi => by rw [hV0 i, Matrix.one_apply_ne hi])
   have hL : (Q₂ᴴ * Q₁).IsLowerTriangular := by
     have h := hU.inv
     rw [hVo.inv_eq] at h
