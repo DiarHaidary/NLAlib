@@ -75,18 +75,28 @@ theorem hasDerivAt_ellipseMap (M ε θ : ℝ) :
     (((Real.hasDerivAt_cos θ).const_mul M).ofReal_comp.add
       (((Real.hasDerivAt_sin θ).const_mul ε).ofReal_comp.mul_const I))
 
-/-- Every point of an ellipse is bounded in norm by the sum of its
-nonnegative semiaxes, uniformly in the angle. -/
+/-- The closed disk of radius $\max(M,\varepsilon)$ contains the ellipse with nonnegative
+semiaxes $M$ and $\varepsilon$. -/
+theorem norm_ellipseMap_le_max {M ε : ℝ} (hM : 0 ≤ M) (hε : 0 ≤ ε) (θ : ℝ) :
+    ‖ellipseMap M ε θ‖ ≤ max M ε := by
+  have hs := mul_le_mul_of_nonneg_right
+    ((sq_le_sq₀ hM (hM.trans (le_max_left M ε))).mpr (le_max_left M ε))
+    (sq_nonneg (Real.cos θ))
+  have ht := mul_le_mul_of_nonneg_right
+    ((sq_le_sq₀ hε (hε.trans (le_max_right M ε))).mpr (le_max_right M ε))
+    (sq_nonneg (Real.sin θ))
+  apply (sq_le_sq₀ (norm_nonneg _) (hM.trans (le_max_left M ε))).mp
+  rw [Complex.sq_norm, Complex.normSq_apply]
+  simp only [ellipseMap, add_re, ofReal_re, mul_I_re, ofReal_im, neg_zero, add_zero,
+    add_im, mul_I_im, zero_add]
+  have hcircle := congrArg (fun x : ℝ => (max M ε) ^ 2 * x) (Real.sin_sq_add_cos_sq θ)
+  nlinarith
+
+/-- The sum of the nonnegative semiaxes also bounds the norm of every point of the ellipse. -/
 theorem norm_ellipseMap_le {M ε : ℝ} (hM : 0 ≤ M) (hε : 0 ≤ ε) (θ : ℝ) :
-    ‖ellipseMap M ε θ‖ ≤ M + ε := by
-  calc
-    ‖ellipseMap M ε θ‖ ≤ ‖((M * Real.cos θ : ℝ) : ℂ)‖ +
-        ‖((ε * Real.sin θ : ℝ) : ℂ) * I‖ := norm_add_le _ _
-    _ = M * |Real.cos θ| + ε * |Real.sin θ| := by
-      simp only [norm_mul, norm_real, Real.norm_eq_abs, norm_I, mul_one,
-        abs_of_nonneg hM, abs_of_nonneg hε]
-    _ ≤ M + ε := by
-      nlinarith [Real.abs_cos_le_one θ, Real.abs_sin_le_one θ]
+    ‖ellipseMap M ε θ‖ ≤ M + ε :=
+  (norm_ellipseMap_le_max hM hε θ).trans (max_le (le_add_of_nonneg_right hε)
+    (le_add_of_nonneg_left hM))
 
 /-- The contour integral on the standard ellipse, using its actual derivative.
 Integrability and positive semiaxes are supplied by theorems using this total
@@ -452,19 +462,20 @@ open scoped Topology ComplexConjugate
 namespace Complex
 
 /-- A Schwarz-symmetric holomorphic function off a compact real segment, with
-nonnegative upper-half-plane imaginary part and a uniform bound, has a
-nonnegative exponential circle moment. All contour deformations and the thin
-limit are proved; neither a positive measure nor real-axis limits are assumed. -/
+nonnegative upper-half-plane imaginary part and a uniform bound on the closed disk of
+radius $M>R$ with $M>0$, satisfies
+$-\Re((2\pi i)^{-1}\oint_{\lvert z\rvert=M}e^z h(z)\,dz)\ge 0$.
+This is the scalar positivity step for the density in [Stahl2013, Theorem 2]. -/
 theorem neg_exp_circleIntegral_re_nonneg
     {h : ℂ → ℂ} {R M C : ℝ} (hM : 0 < M) (hRM : R < M)
     (hh : DifferentiableOn ℂ h {z | z.im ≠ 0 ∨ R < ‖z‖})
     (href : ∀ z : ℂ, h (conj z) = conj (h z))
     (him : ∀ z : ℂ, 0 < z.im → 0 ≤ (h z).im)
-    (hbound : ∀ z : ℂ, ‖z‖ ≤ M + 1 → ‖h z‖ ≤ C) :
+    (hbound : ∀ z : ℂ, ‖z‖ ≤ M → ‖h z‖ ≤ C) :
     0 ≤ (-((2 * Real.pi * I : ℂ)⁻¹ *
       (∮ z in C(0, M), exp z * h z))).re := by
   apply nonneg_of_neg_normalized_exp_ellipseIntegral_re_eq
-    (h := h) (M := M) (C := C) (δ := 1) hM.le zero_lt_one
+    (h := h) (M := M) (C := C) (δ := M) hM.le hM
   · intro ε hε
     apply hh.continuousOn.comp (by unfold ellipseMap; fun_prop)
     intro θ _
@@ -474,7 +485,7 @@ theorem neg_exp_circleIntegral_re_nonneg
   · exact him
   · intro ε hε θ _
     apply hbound
-    exact (norm_ellipseMap_le hM.le hε.1.le _).trans (by linarith [hε.2])
+    exact (norm_ellipseMap_le_max hM.le hε.1.le θ).trans (max_le le_rfl hε.2.le)
   · intro ε hε
     rw [← circleIntegral_eq_ellipseIntegral_of_differentiableOn_off_real_or_exterior
       (f := fun z => exp z * h z) hM hε.1 hRM (differentiable_exp.differentiableOn.mul hh)]

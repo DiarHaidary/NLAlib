@@ -334,8 +334,8 @@ private theorem traceExponentialCircleDensity_re_nonneg_of_exterior_branches
   obtain ⟨M, hmoment, hMS, hM⟩ :=
     (hmoment.and ((eventually_gt_atTop S).and (eventually_gt_atTop (0 : ℝ)))).exists
   let D : Matrix n n ℂ := Matrix.diagonal (fun i => ((b i - s : ℝ) : ℂ))
-  let C := (Fintype.card n : ℝ) * specNorm D⁻¹ * (specNorm A + (M + 1))
-  have hball : ∀ z : ℂ, ‖z‖ ≤ M + 1 → ‖h z‖ ≤ C := by
+  let C := (Fintype.card n : ℝ) * specNorm D⁻¹ * (specNorm A + M)
+  have hball : ∀ z : ℂ, ‖z‖ ≤ M → ‖h z‖ ≤ C := by
     intro z hz
     exact (hbound z).trans (mul_le_mul_of_nonneg_left (by linarith)
       (mul_nonneg (Nat.cast_nonneg _) (specNorm_nonneg _)))
