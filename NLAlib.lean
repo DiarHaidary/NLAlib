@@ -602,6 +602,7 @@ public import NLAlib.Matrix.Spectral.RealSchur
 public import NLAlib.Matrix.Spectral.RealSimilarity
 public import NLAlib.Matrix.Spectral.SVD
 public import NLAlib.Matrix.Spectral.Schur
+public import NLAlib.Matrix.Spectral.SimpleSpectrum
 public import NLAlib.Matrix.Spectral.Simultaneous
 public import NLAlib.Matrix.Spectral.SingularValueInequalities
 public import NLAlib.Matrix.Spectral.SingularValues
