@@ -501,6 +501,7 @@ public import NLAlib.Matrix.Functions.HalfPlaneSign
 public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.HermitianDerivative
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
+public import NLAlib.Matrix.Functions.InverseRefinement
 public import NLAlib.Matrix.Functions.KTransform
 public import NLAlib.Matrix.Functions.KTransformStability
 public import NLAlib.Matrix.Functions.Lieb
