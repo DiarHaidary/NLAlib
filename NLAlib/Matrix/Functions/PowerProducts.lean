@@ -457,17 +457,22 @@ private theorem continuous_log_boundaryNorm_add (L : List (Matrix n n ℂ))
   · exact fun _ => (add_pos_of_nonneg_of_pos (schattenNorm_nonneg _ _) hδ).ne'
 
 /-- For positive definite factors, the right-boundary logarithm of their Schatten norm is
-integrable under any finite measure. Both the product and its inverse have uniform bounds. -/
-theorem integrable_log_schattenNorm_orderedMatrixCpow [Nonempty n]
+integrable under any finite measure. In positive dimension this follows from uniform product
+and inverse bounds. In dimension zero the integrand is identically zero. -/
+theorem integrable_log_schattenNorm_orderedMatrixCpow
     (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosDef) {p : ℝ} (hp : 0 < p)
     (μ : Measure ℝ) [IsFiniteMeasure μ] :
     Integrable (fun t : ℝ => Real.log (schattenNorm (ENNReal.ofReal p)
       (orderedMatrixCpow L (1 + (t : ℂ) * I)))) μ := by
-  simp_rw [orderedMatrixCpow_eq_orderedMatrixExp_log L hL]
-  let H := L.map (cfc Real.log)
-  have hH : ∀ A ∈ H, A.IsHermitian := isHermitian_mem_map_log L
-  exact ⟨(continuous_log_schattenNorm_orderedMatrixExp H hH hp).aestronglyMeasurable,
-    .of_bounded (ae_of_all _ fun t => abs_log_schattenNorm_orderedMatrixExp_le H hH hp t)⟩
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have hz (t : ℝ) : orderedMatrixCpow L (1 + (t : ℂ) * I) = 0 := Subsingleton.elim _ _
+    simp only [hz, schattenNorm_zero, Real.log_zero]
+    exact integrable_zero ℝ ℝ μ
+  · simp_rw [orderedMatrixCpow_eq_orderedMatrixExp_log L hL]
+    let H := L.map (cfc Real.log)
+    have hH : ∀ A ∈ H, A.IsHermitian := isHermitian_mem_map_log L
+    exact ⟨(continuous_log_schattenNorm_orderedMatrixExp H hH hp).aestronglyMeasurable,
+      .of_bounded (ae_of_all _ fun t => abs_log_schattenNorm_orderedMatrixExp_le H hH hp t)⟩
 
 /-- **Positive definite Araki–Lieb–Thirring inequality.** For $p\ge1$ and $0<r<1$,
 $$
@@ -475,9 +480,10 @@ $$
 \le \exp\!\left(\int \log\left\|\prod_j A_j^{1+it}\right\|_{S_p}\,d\mu_r(t)\right).
 $$
 The inverse product bounds the right-boundary norm away from zero on a nonempty space,
-so this is a finite real logarithmic integral [SutterBertaTomamichel2017, Theorem 3.2].
+so its real logarithm is integrable. In dimension zero, Mathlib's $\log 0=0$ convention
+reduces the bound to $0\le 1$. [SutterBertaTomamichel2017, Theorem 3.2].
 Result: multivariate-araki-lieb-thirring -/
-theorem schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log [Nonempty n]
+theorem schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log
     (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosDef) {p r : ℝ}
     (hp : 1 ≤ p) (hr : r ∈ Ioo (0 : ℝ) 1) :
     schattenNorm (ENNReal.ofReal p) ((CFC.abs (L.map (fun A => A ^ r)).prod) ^ (1 / r)) ≤
