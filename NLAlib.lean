@@ -613,6 +613,7 @@ public import NLAlib.Matrix.Subspaces.Frames
 public import NLAlib.Matrix.Subspaces.Leverage
 public import NLAlib.Matrix.Subspaces.Oblique
 public import NLAlib.Matrix.Subspaces.ObliqueBases
+public import NLAlib.Matrix.Subspaces.ObliqueCanonicalForm
 public import NLAlib.Matrix.Subspaces.ObliqueProjector
 public import NLAlib.Matrix.Subspaces.OrthonormalDilation
 public import NLAlib.Matrix.Subspaces.PrincipalAngles
