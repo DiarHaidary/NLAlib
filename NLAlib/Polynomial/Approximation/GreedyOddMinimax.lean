@@ -9,6 +9,7 @@ public import NLAlib.Polynomial.Approximation.MinimaxError
 public import Mathlib.Analysis.Calculus.Deriv.MeanValue
 public import Mathlib.Analysis.Calculus.Deriv.Pow
 public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.Algebra.Polynomial.OfFn
 
 /-!
 # Greedy uniform approximation by odd polynomials
@@ -32,6 +33,24 @@ namespace NLAlib
 /-- An odd degree-at-most-`2q+1` update, in its supplied scalar coefficients. -/
 noncomputable def oddScalarUpdate (q : ℕ) (a : ℕ → ℝ) (x : ℝ) : ℝ :=
   ∑ j ∈ range (q + 1), a j * x ^ (2 * j + 1)
+
+/-- The odd update with coefficients of a polynomial of degree at most $q$ sends $x$ to
+$x p(x^2)$. Trailing coefficients may vanish. [AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem oddScalarUpdate_coeff {q : ℕ} (p : ℝ[X]) (hp : p.natDegree ≤ q) (x : ℝ) :
+    oddScalarUpdate q p.coeff x = x * p.eval (x ^ 2) := by
+  rw [Polynomial.eval_eq_sum_range' (Nat.lt_succ_of_le hp), Finset.mul_sum, oddScalarUpdate]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [← pow_mul, pow_succ]
+  ring
+
+/-- The first $q+1$ supplied coefficients encode the ordinary polynomial in the odd update.
+[AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem oddScalarUpdate_eq_mul_eval (q : ℕ) (c : ℕ → ℝ) (x : ℝ) :
+    oddScalarUpdate q c x = x * (Polynomial.ofFn (q + 1) (fun i => c i)).eval (x ^ 2) := by
+  rw [← oddScalarUpdate_coeff _ (Nat.le_of_lt_succ (ofFn_natDegree_lt (by omega) _))]
+  unfold oddScalarUpdate
+  exact Finset.sum_congr rfl fun i hi => by rw [ofFn_coeff_eq_val_of_lt _ (mem_range.mp hi)]
 
 /-- The scalar update is continuous everywhere. -/
 theorem continuous_oddScalarUpdate (q : ℕ) (a : ℕ → ℝ) : Continuous (oddScalarUpdate q a) := by
@@ -529,18 +548,9 @@ private theorem natDegree_polarTaylorCoefficientPolynomial_le (q : ℕ) :
 same coefficient model used by the minimax problem and the matrix algorithm. -/
 private theorem oddScalarUpdate_polarTaylor_coeff (q : ℕ) (x : ℝ) :
     oddScalarUpdate q (polarTaylorCoefficientPolynomial q).coeff x = polarTaylorUpdate q x := by
-  have he := Polynomial.eval_eq_sum_range'
-    (p := polarTaylorCoefficientPolynomial q)
-    (Nat.lt_succ_of_le (natDegree_polarTaylorCoefficientPolynomial_le q)) (x ^ 2)
-  have heval : (polarTaylorCoefficientPolynomial q).eval (x ^ 2) =
-      polarTaylorSum q (1 - x ^ 2) := by
-    simp [polarTaylorCoefficientPolynomial, polarTaylorSum, Polynomial.eval_finsetSum]
-  rw [heval] at he
-  rw [polarTaylorUpdate, he, Finset.mul_sum, oddScalarUpdate]
-  apply Finset.sum_congr rfl
-  intro j _
-  rw [pow_add, pow_one, pow_mul]
-  ring
+  rw [oddScalarUpdate_coeff _ (natDegree_polarTaylorCoefficientPolynomial_le q)]
+  simp [polarTaylorUpdate, polarTaylorCoefficientPolynomial, polarTaylorSum,
+    Polynomial.eval_finsetSum]
 
 /-- The finite Taylor competitor is an actual member of the allowed odd
 polynomial coefficient class. -/

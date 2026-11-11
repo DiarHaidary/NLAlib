@@ -52,21 +52,23 @@ theorem gramHorner_eq_sum (q : ℕ) (c : ℕ → ℝ) (S : Matrix n n 𝕜) :
     simp only [pow_zero, Matrix.mul_sum, Matrix.mul_smul, ← pow_succ']
     rw [add_comm]
 
-private noncomputable def gramPolynomial (q : ℕ) (c : ℕ → ℝ) : ℝ[X] :=
-  ∑ j ∈ range (q + 1), C (c j) * X ^ j
+/-- The Gram Horner recurrence evaluates an ordinary polynomial supplied through its
+coefficients, including zero polynomials and padded degrees. [AmselPerssonMuscoGower2026,
+Appendix E]. -/
+theorem gramHorner_coeff {q : ℕ} (p : ℝ[X]) (hp : p.natDegree ≤ q) (A : Matrix n n 𝕜) :
+    gramHorner q p.coeff A = aeval A p := by
+  calc
+    _ = aeval A (∑ j ∈ range (q + 1), C (p.coeff j) * X ^ j) := by
+      simp [gramHorner_eq_sum, Algebra.algebraMap_eq_smul_one]
+    _ = _ := congrArg (aeval A) (p.as_sum_range_C_mul_X_pow' (Nat.lt_succ_of_le hp)).symm
 
-private theorem gramHorner_eq_aeval (q : ℕ) (c : ℕ → ℝ) (A : Matrix n n 𝕜) :
-    gramHorner q c A = aeval A (gramPolynomial q c) := by
-  simp [gramHorner_eq_sum, gramPolynomial, Algebra.algebraMap_eq_smul_one]
-
-private theorem mul_eval_gramPolynomial (q : ℕ) (c : ℕ → ℝ) (x : ℝ) :
-    x * (gramPolynomial q c).eval (x ^ 2) = oddScalarUpdate q c x := by
-  simp only [gramPolynomial, eval_finsetSum, eval_mul, eval_C, eval_pow, eval_X,
-    Finset.mul_sum, oddScalarUpdate]
-  apply Finset.sum_congr rfl
-  intro j _
-  rw [← pow_mul, pow_succ]
-  ring
+/-- For arbitrary coefficient data, the Gram Horner recurrence evaluates the Mathlib polynomial
+formed from exactly its first $q+1$ entries. [AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem gramHorner_eq_aeval (q : ℕ) (c : ℕ → ℝ) (A : Matrix n n 𝕜) :
+    gramHorner q c A = aeval A (Polynomial.ofFn (q + 1) (fun i => c i)) := by
+  rw [← gramHorner_coeff _ (Nat.le_of_lt_succ (ofFn_natDegree_lt (by omega) _))]
+  simp only [gramHorner_eq_sum]
+  exact Finset.sum_congr rfl fun i hi => by rw [ofFn_coeff_eq_val_of_lt _ (mem_range.mp hi)]
 
 /-- A sequence of odd polynomial updates with supplied coefficients. Each term is evaluated
 as a Gram polynomial by Horner recursion and multiplied by the rectangular input.
@@ -92,7 +94,7 @@ theorem IsSVD.oddMatrixIterate_eq {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {V
   | succ k ih =>
     rw [oddMatrixIterate, gramHorner_eq_aeval, ih,
       h.hasOrthonormalCols_left.mul_aeval_conjTranspose_mul_self h.hasOrthonormalCols_right]
-    simp only [mul_eval_gramPolynomial, oddScalarComposition]
+    simp only [← oddScalarUpdate_eq_mul_eval, oddScalarComposition]
 
 /-- The exact spectral-norm error on any compact SVD is the supremum of the scalar errors
 on its positive singular coordinates. [AmselPerssonMuscoGower2026, Theorem 3.3],
