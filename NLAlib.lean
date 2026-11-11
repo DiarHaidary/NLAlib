@@ -514,6 +514,7 @@ public import NLAlib.Matrix.Norms.Block
 public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Matrix.Norms.GaugeExamples
+public import NLAlib.Matrix.Norms.GaugeRepresentation
 public import NLAlib.Matrix.Norms.KyFanNorm
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Norms.Net
@@ -523,6 +524,7 @@ public import NLAlib.Matrix.Norms.Schatten
 public import NLAlib.Matrix.Norms.SchattenHolder
 public import NLAlib.Matrix.Norms.SchattenInterpolation
 public import NLAlib.Matrix.Norms.SchattenPowers
+public import NLAlib.Matrix.Norms.SchattenSmoothness
 public import NLAlib.Matrix.Norms.Spectral
 public import NLAlib.Matrix.Norms.SymmetricGauge
 public import NLAlib.Matrix.Norms.UnitarilyInvariant
