@@ -494,8 +494,10 @@ public import NLAlib.Matrix.Functions.ExponentialGrowth
 public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
+public import NLAlib.Matrix.Functions.HermitianDerivative
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
 public import NLAlib.Matrix.Functions.Lieb
+public import NLAlib.Matrix.Functions.LoewnerCriterion
 public import NLAlib.Matrix.Functions.LogDet
 public import NLAlib.Matrix.Functions.MatrixMonotone
 public import NLAlib.Matrix.Functions.MonotoneModulus
