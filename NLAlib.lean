@@ -88,6 +88,8 @@ public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Secant
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Complex.EllipseIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.ExteriorCauchyIntegral
@@ -505,6 +507,8 @@ public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositiveMaps
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
+public import NLAlib.Matrix.Functions.RationalDerivatives
+public import NLAlib.Matrix.Functions.RationalDifferences
 public import NLAlib.Matrix.Functions.Sign
 public import NLAlib.Matrix.Functions.SingularValueFilters
 public import NLAlib.Matrix.Functions.TraceFunctions
