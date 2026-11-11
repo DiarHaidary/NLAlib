@@ -32,6 +32,20 @@ def OperatorMonotoneOn (s : Set ℝ) (f : ℝ → ℝ) : Prop :=
   ∀ (d : ℕ) (A B : Matrix (Fin d) (Fin d) ℂ), A.IsHermitian → B.IsHermitian →
     spectrum ℝ A ⊆ s → spectrum ℝ B ⊆ s → A ≤ B → cfc f A ≤ cfc f B
 
+/-- Matrix monotonicity on a set implies scalar monotonicity on that set,
+by considering one-dimensional matrices. [Bhatia1997, §V.1]. -/
+theorem OperatorMonotoneOn.monotoneOn {s : Set ℝ} {f : ℝ → ℝ}
+    (hf : OperatorMonotoneOn s f) : MonotoneOn f s := by
+  intro x hx y hy hxy
+  let ι := algebraMap ℝ (Matrix (Fin 1) (Fin 1) ℂ)
+  have hι (z : ℝ) : (ι z).IsHermitian := (IsSelfAdjoint.all z).algebraMap _
+  have hs (z : ℝ) (hz : z ∈ s) : spectrum ℝ (ι z) ⊆ s := by
+    rw [spectrum.scalar_eq]
+    exact Set.singleton_subset_iff.mpr hz
+  have h := hf 1 (ι x) (ι y) (hι x) (hι y) (hs x hx) (hs y hy) (algebraMap_le_algebraMap.mpr hxy)
+  rw [cfc_algebraMap, cfc_algebraMap] at h
+  exact algebraMap_le_algebraMap.mp h
+
 /-- Matrix monotonicity applies over real or complex scalars on any finite index type.
 [Bhatia1997, §V.1]. -/
 theorem OperatorMonotoneOn.cfc_le_cfc {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n]

@@ -120,15 +120,15 @@ private theorem cfc_add_smul_one {𝕜 n : Type*} [RCLike 𝕜] [Fintype n] [Dec
   exact (cfc_comp f (fun x : ℝ => x+t) B hB.isSelfAdjoint
     ((B.finite_real_spectrum.image _).continuousOn _) (B.finite_real_spectrum.continuousOn _)).symm
 
-/-- **Operator-monotone modulus of continuity.** For a continuous, nonnegative matrix monotone
-function on the nonnegative half-line and positive semidefinite matrices, the spectral-norm
+/-- **Operator-monotone modulus of continuity.** For a continuous matrix monotone function
+on the nonnegative half-line with $f(0)\ge 0$ and positive semidefinite matrices, the spectral-norm
 difference of the function values satisfies
 $$\|f(\mathbf{A})-f(\mathbf{B})\|_2 \le f(\|\mathbf{A}-\mathbf{B}\|_2).$$
 [Bhatia1997, Theorem X.1.1], allowing a nonnegative boundary value.
 Result: operator-monotone-modulus-continuity -/
 theorem OperatorMonotoneOn.specNorm_cfc_sub_le {𝕜 n : Type*} [RCLike 𝕜] [Fintype n]
     [DecidableEq n] {f : ℝ → ℝ} (hm : OperatorMonotoneOn (Ici 0) f)
-    (hf : ContinuousOn f (Ici 0)) (hn : ∀ t, 0 ≤ t → 0 ≤ f t)
+    (hf : ContinuousOn f (Ici 0)) (h₀ : 0 ≤ f 0)
     {A B : Matrix n n 𝕜} (hA : A.PosSemidef) (hB : B.PosSemidef) :
     specNorm (cfc f A - cfc f B) ≤ f (specNorm (A - B)) := by
   have hup (A B : Matrix n n 𝕜) (hA : A.PosSemidef) (hB : B.PosSemidef) :
@@ -143,7 +143,7 @@ theorem OperatorMonotoneOn.specNorm_cfc_sub_le {𝕜 n : Type*} [RCLike 𝕜] [F
       (fun _ hx => spectrum_nonneg_of_nonneg hBt.nonneg hx) hcmp
     rw [cfc_add_smul_one f t hB.isHermitian] at h
     refine h.trans ((cfc_mono (a := B)
-      (fun x hx => apply_add_le (hm.concaveOn hf) (hn 0 le_rfl)
+      (fun x hx => apply_add_le (hm.concaveOn hf) h₀
         (spectrum_nonneg_of_nonneg hB.nonneg hx) ht)
       (B.finite_real_spectrum.continuousOn _) (B.finite_real_spectrum.continuousOn _)).trans_eq ?_)
     rw [cfc_add_const (f t) f B (B.finite_real_spectrum.continuousOn _)
@@ -151,7 +151,9 @@ theorem OperatorMonotoneOn.specNorm_cfc_sub_le {𝕜 n : Type*} [RCLike 𝕜] [F
       Algebra.algebraMap_eq_smul_one]
   have hH : (cfc f A - cfc f B).IsHermitian :=
     (show (cfc f A).IsHermitian from cfc_predicate _ _).sub (cfc_predicate _ _)
-  apply (hH.specNorm_le_iff (hn _ (specNorm_nonneg _))).mpr
+  have ht := specNorm_nonneg (A - B)
+  have hn := h₀.trans (hm.monotoneOn (Set.mem_Ici.mpr (le_refl 0)) (Set.mem_Ici.mpr ht) ht)
+  apply (hH.specNorm_le_iff hn).mpr
   refine ⟨?_, sub_le_iff_le_add'.mpr (hup A B hA hB)⟩
   have h := hup B A hB hA
   rw [specNorm_sub_comm B A] at h
@@ -167,6 +169,6 @@ theorem _root_.Matrix.PosSemidef.specNorm_rpow_sub_rpow_le {𝕜 n : Type*} [RCL
     specNorm (A ^ r - B ^ r) ≤ specNorm (A - B) ^ r := by
   rw [CFC.rpow_eq_cfc_real hA.nonneg, CFC.rpow_eq_cfc_real hB.nonneg]
   exact (operatorMonotoneOn_rpow hr).specNorm_cfc_sub_le
-    (Real.continuous_rpow_const hr.1).continuousOn (fun _ ht => Real.rpow_nonneg ht _) hA hB
+    (Real.continuous_rpow_const hr.1).continuousOn (Real.rpow_nonneg le_rfl _) hA hB
 
 end NLAlib
