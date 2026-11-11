@@ -87,6 +87,8 @@ public import NLAlib.ForMathlib.Analysis.Calculus.ContDiff.Hessian
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Polynomial
+public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Secant
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
 public import NLAlib.ForMathlib.Analysis.Complex.JensenFormula
@@ -477,6 +479,8 @@ public import NLAlib.Matrix.Factorizations.Triangular
 public import NLAlib.Matrix.Functions.AbsoluteValue
 public import NLAlib.Matrix.Functions.Complexification
 public import NLAlib.Matrix.Functions.Exponential
+public import NLAlib.Matrix.Functions.ExponentialDerivative
+public import NLAlib.Matrix.Functions.ExponentialGrowth
 public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
@@ -494,6 +498,8 @@ public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositiveMaps
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
+public import NLAlib.Matrix.Functions.RationalDerivatives
+public import NLAlib.Matrix.Functions.RationalDifferences
 public import NLAlib.Matrix.Functions.Sign
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
@@ -596,6 +602,7 @@ public import NLAlib.Matrix.Spectral.RealSchur
 public import NLAlib.Matrix.Spectral.RealSimilarity
 public import NLAlib.Matrix.Spectral.SVD
 public import NLAlib.Matrix.Spectral.Schur
+public import NLAlib.Matrix.Spectral.SimpleSpectrum
 public import NLAlib.Matrix.Spectral.Simultaneous
 public import NLAlib.Matrix.Spectral.SingularValueInequalities
 public import NLAlib.Matrix.Spectral.SingularValues
