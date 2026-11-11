@@ -243,14 +243,20 @@ The first equality uses Mathlib's
 `integral_eq_lintegral_pos_part_sub_lintegral_neg_part`. The last uses
 `lintegral_eq_top_of_measure_eq_top_ne_zero` for the negative part.
 The upper-deficit formula is exposed with an explicit right hand side.
-For positive definite factors on a nonempty space, the inverse-product estimate
-bounds the logarithm below. Each power is an exponential, so the ordinary
-integral is finite and gives
+For positive definite factors in positive dimension, the inverse-product
+estimate bounds the logarithm below. In dimension zero every matrix has zero
+Schatten norm. Mathlib defines the real logarithm of zero as zero, so the
+integrand vanishes and the real inequality reads $0\le 1$. Both cases are
+included in the finite form.
 
 ```lean
-schattenNorm (ENNReal.ofReal p) ((CFC.abs (L.map (fun A => A ^ r)).prod) ^ (1 / r)) ≤
-  Real.exp (∫ t, Real.log (schattenNorm (ENNReal.ofReal p)
-    (orderedMatrixCpow L (1 + (t : ℂ) * Complex.I))) ∂Real.stripHarmonicMeasure r)
+theorem schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log
+    {n : Type*} [Fintype n] [DecidableEq n]
+    (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosDef) {p r : ℝ}
+    (hp : 1 ≤ p) (hr : r ∈ Ioo (0 : ℝ) 1) :
+    schattenNorm (ENNReal.ofReal p) ((CFC.abs (L.map (fun A => A ^ r)).prod) ^ (1 / r)) ≤
+      Real.exp (∫ t, Real.log (schattenNorm (ENNReal.ofReal p)
+        (orderedMatrixCpow L (1 + (t : ℂ) * Complex.I))) ∂Real.stripHarmonicMeasure r)
 ```
 
 `integrable_log_schattenNorm_orderedMatrixCpow` gives the finite-integral
