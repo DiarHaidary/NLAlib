@@ -536,6 +536,7 @@ public import NLAlib.Matrix.Perturbation.GramCutoff
 public import NLAlib.Matrix.Perturbation.GramSoftMin
 public import NLAlib.Matrix.Perturbation.Inverse
 public import NLAlib.Matrix.Perturbation.LeastSquares
+public import NLAlib.Matrix.Perturbation.MapConditioning
 public import NLAlib.Matrix.Perturbation.OrthErr
 public import NLAlib.Matrix.Perturbation.Pseudoinverse
 public import NLAlib.Matrix.Perturbation.Pseudospectrum
