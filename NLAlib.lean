@@ -91,6 +91,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
 public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Polynomial
 public import NLAlib.ForMathlib.Analysis.Calculus.FDeriv.Secant
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
+public import NLAlib.ForMathlib.Analysis.Calculus.ParametricIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.EllipseIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.ExteriorCauchyIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
@@ -101,6 +102,7 @@ public import NLAlib.ForMathlib.Analysis.Complex.Reflection
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
+public import NLAlib.ForMathlib.Analysis.InnerProductSpace.Rayleigh
 public import NLAlib.ForMathlib.Analysis.Matrix.CharpolyRoots
 public import NLAlib.ForMathlib.Analysis.MeanInequalities
 public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
@@ -499,6 +501,8 @@ public import NLAlib.Matrix.Functions.HalfPlaneSign
 public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.HermitianDerivative
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
+public import NLAlib.Matrix.Functions.KTransform
+public import NLAlib.Matrix.Functions.KTransformStability
 public import NLAlib.Matrix.Functions.Lieb
 public import NLAlib.Matrix.Functions.LoewnerCriterion
 public import NLAlib.Matrix.Functions.LogDet
@@ -544,6 +548,7 @@ public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Matrix.Norms.GaugeExamples
 public import NLAlib.Matrix.Norms.GaugeRepresentation
+public import NLAlib.Matrix.Norms.HermitianFrobenius
 public import NLAlib.Matrix.Norms.KyFanNorm
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Norms.Net
@@ -618,6 +623,7 @@ public import NLAlib.Matrix.Spectral.LeastSingularValue
 public import NLAlib.Matrix.Spectral.LowRank
 public import NLAlib.Matrix.Spectral.LyapunovEquation
 public import NLAlib.Matrix.Spectral.Normal
+public import NLAlib.Matrix.Spectral.PositiveCone
 public import NLAlib.Matrix.Spectral.PowerBounds
 public import NLAlib.Matrix.Spectral.ProjectedLowRank
 public import NLAlib.Matrix.Spectral.QuasiTriangular
