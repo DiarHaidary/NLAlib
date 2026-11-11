@@ -7,6 +7,7 @@ module
 
 public import NLAlib.Matrix.Subspaces.Frames
 public import NLAlib.Matrix.Pseudoinverse.Pinv
+public import NLAlib.Matrix.Subspaces.ProjectorPair
 
 /-!
 # Unitary canonical form of an idempotent
@@ -17,7 +18,9 @@ the oblique planes, over either the real or the complex field.
 
 ## Main results
 
-* `IsIdempotentElem.exists_fromBlocks_of_rank_add_eq`: canonical planes of an idempotent.
+* `IsIdempotentElem.one_le_singularValues`: the positive singular values are at least one.
+* `IsIdempotentElem.exists_conjTranspose_mul_mul_eq_fromBlocks`: a basis for the canonical form.
+* `IsIdempotentElem.exists_fromBlocks_of_rank_add_eq`: the form with its number of oblique planes.
 -/
 
 @[expose] public section
@@ -132,14 +135,28 @@ private theorem exists_rotation {r s : ℕ} (T : Matrix (Fin r) (Fin s) 𝕜) (�
   simp only [D, planeCoeffs, Matrix.of_apply, hσT, add_sub_cancel_right,
     Real.sqrt_sq (singularValues_nonneg T i)]
 
+/-- Every positive singular value of an idempotent matrix is at least one.
+[HornJohnson2013, Corollary 3.4.3.3]. -/
+theorem _root_.IsIdempotentElem.one_le_singularValues {P : Matrix n n 𝕜}
+    (hP : IsIdempotentElem P) {i : ℕ} (hi : i < P.rank) : 1 ≤ singularValues P i := by
+  classical
+  have hR := isStarProjection_rangeProjector P
+  have hfix : P * rangeProjector P = rangeProjector P := by
+    rw [← mul_pinv, ← Matrix.mul_assoc, hP.eq]
+  calc
+    1 = singularValues (rangeProjector P) i :=
+      (hR.singularValues_of_lt_rank (by rwa [rank_rangeProjector])).symm
+    _ = singularValues (P * rangeProjector P) i := by rw [hfix]
+    _ ≤ singularValues P i * specNorm (rangeProjector P) := singularValues_mul_le_mul_specNorm _ _ _
+    _ ≤ singularValues P i := mul_le_of_le_one_right (singularValues_nonneg P i) hR.specNorm_le_one
+
 /-- **Unitary canonical form of an idempotent.** For an idempotent $\mathbf{P}$ of rank $r$ and
 nullity $s$, there is an orthonormal basis in which $\mathbf{P}$ consists of $g$ oblique planes
 with blocks
 $$\begin{bmatrix}1 & \sqrt{\sigma_i(\mathbf{P})^2-1} \\ 0 & 0\end{bmatrix},$$
 and scalar identity and zero blocks. Exactly the first $g$ singular values exceed one, and each
 positive singular value is at least one. This includes empty matrices and ranks zero and full.
-[HornJohnson2013, Corollary 3.4.3.3].
-Result: cs-decomposition -/
+[HornJohnson2013, Corollary 3.4.3.3]. -/
 theorem _root_.IsIdempotentElem.exists_fromBlocks_of_rank_add_eq {P : Matrix n n 𝕜}
     (hP : IsIdempotentElem P) {s : ℕ} (hc : P.rank + s = Fintype.card n) :
     ∃ g ≤ min P.rank s, (∀ i, 1 < singularValues P i ↔ i < g) ∧
@@ -156,7 +173,8 @@ theorem _root_.IsIdempotentElem.exists_fromBlocks_of_rank_add_eq {P : Matrix n n
     (singularValues_nonneg P) hG
   have hr : T.rank ≤ min P.rank s := le_min (by simpa [T] using T.rank_le_card_height)
     (by simpa using T.rank_le_card_width)
-  refine ⟨T.rank, hr, ?_, ?_, Matrix.fromCols U (Q * W), ?_, ?_⟩
+  refine ⟨T.rank, hr, ?_, fun _ hi => hP.one_le_singularValues hi,
+    Matrix.fromCols U (Q * W), ?_, ?_⟩
   · intro i
     by_cases hi : i < P.rank
     · have hs := hσ ⟨i, hi⟩
@@ -168,10 +186,6 @@ theorem _root_.IsIdempotentElem.exists_fromBlocks_of_rank_add_eq {P : Matrix n n
       have := hr.trans (min_le_left _ _)
       simp only [not_lt.mpr (by omega : T.rank ≤ i), iff_false]
       norm_num
-  · intro i hi
-    have hs := hσ ⟨i, hi⟩
-    change singularValues P i ^ 2 = singularValues T i ^ 2 + 1 at hs
-    nlinarith [singularValues_nonneg P i, sq_nonneg (singularValues T i)]
   · obtain ⟨h₁, h₂, h₁₂⟩ := hasOrthonormalCols_fromCols_iff.mp hH
     exact hasOrthonormalCols_fromCols_iff.mpr ⟨h₁, h₂.mul hW, by
       rw [← Matrix.mul_assoc, h₁₂, Matrix.zero_mul]⟩
@@ -180,5 +194,20 @@ theorem _root_.IsIdempotentElem.exists_fromBlocks_of_rank_add_eq {P : Matrix n n
       hQ, Matrix.mul_zero, Matrix.zero_mul, Matrix.zero_mul, hU,
       ← Matrix.mul_assoc (Uᴴ * P) Q W, hTW]
     rfl
+
+/-- **Unitary canonical form of an idempotent.** In an orthonormal basis of the range and its
+orthogonal complement, the diagonal blocks are the identity and zero. The rectangular upper-right
+block is diagonal with entries $\sqrt{\sigma_i(\mathbf{P})^2-1}$.
+[HornJohnson2013, Corollary 3.4.3.3].
+Result: oblique-projector-canonical-form -/
+theorem _root_.IsIdempotentElem.exists_conjTranspose_mul_mul_eq_fromBlocks {P : Matrix n n 𝕜}
+    (hP : IsIdempotentElem P) {s : ℕ} (hc : P.rank + s = Fintype.card n) :
+    ∃ H : Matrix n (Fin P.rank ⊕ Fin s) 𝕜, HasOrthonormalCols H ∧
+      Hᴴ * P * H = Matrix.fromBlocks 1
+        (Matrix.of fun (i : Fin P.rank) (j : Fin s) =>
+          if i.val = j.val then ((Real.sqrt (singularValues P i ^ 2 - 1) : ℝ) : 𝕜) else 0)
+        0 0 := by
+  obtain ⟨_, _, _, _, h⟩ := hP.exists_fromBlocks_of_rank_add_eq hc
+  exact h
 
 end NLAlib
