@@ -558,6 +558,7 @@ public import NLAlib.Matrix.Pseudoinverse.Penrose
 public import NLAlib.Matrix.Pseudoinverse.Pinv
 public import NLAlib.Matrix.Pseudoinverse.RegularizedLeastSquares
 public import NLAlib.Matrix.Pseudoinverse.Tikhonov
+public import NLAlib.Matrix.Pseudoinverse.TotalLeastSquares
 public import NLAlib.Matrix.Pseudoinverse.TruncatedSVD
 public import NLAlib.Matrix.QRIteration.Dichotomy
 public import NLAlib.Matrix.QRIteration.EigenvectorWeights
