@@ -488,6 +488,7 @@ public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Functions.OperatorMonotone
 public import NLAlib.Matrix.Functions.OrderedExponential
 public import NLAlib.Matrix.Functions.Perspective
+public import NLAlib.Matrix.Functions.PolarMinimax
 public import NLAlib.Matrix.Functions.PolarNewton
 public import NLAlib.Matrix.Functions.PolarSchulz
 public import NLAlib.Matrix.Functions.Polynomial
@@ -632,6 +633,7 @@ public import NLAlib.Polynomial.Approximation.ChebyshevCoefficients
 public import NLAlib.Polynomial.Approximation.ChebyshevSeries
 public import NLAlib.Polynomial.Approximation.ChebyshevTruncation
 public import NLAlib.Polynomial.Approximation.Equioscillation
+public import NLAlib.Polynomial.Approximation.GreedyOddMinimax
 public import NLAlib.Polynomial.Approximation.Inverse
 public import NLAlib.Polynomial.Approximation.Jackson
 public import NLAlib.Polynomial.Approximation.JacksonKernel
