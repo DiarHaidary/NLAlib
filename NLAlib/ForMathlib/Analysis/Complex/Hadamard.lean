@@ -29,7 +29,7 @@ The proof adapts the original formalization in `tchen-research/NLAlib@77514ce`.
 ## Main results
 
 * `Complex.circleAverage_eq_integral_cauchyPDFReal`: Cayley transport of the unit circle.
-* `Complex.norm_le_exp_integral_stripPoissonDensity`: the strip inequality with boundary majorants.
+* `Complex.norm_le_exp_integral_stripHarmonicMeasure`: the strip inequality with boundary majorants.
 -/
 
 @[expose] public section
@@ -887,7 +887,7 @@ namespace Complex
 /-- The scalar Stein–Hirschman inequality bounds the interior modulus by the weighted
 geometric mean of two measurable boundary majorants, including functions with zeros
 [SutterBertaTomamichel2017, Theorem 3.1]. -/
-theorem norm_le_exp_integral_stripPoissonDensity {r B H : ℝ}
+theorem norm_le_exp_integral_stripHarmonicMeasure {r B H : ℝ}
     (hr : r ∈ Ioo (0 : ℝ) 1) {g : ℂ → ℂ}
     (hg : DiffContOnCl ℂ g (HadamardThreeLines.verticalStrip 0 1))
     (hbound : ∀ z ∈ HadamardThreeLines.verticalClosedStrip 0 1, ‖g z‖ ≤ B)
@@ -896,8 +896,8 @@ theorem norm_le_exp_integral_stripPoissonDensity {r B H : ℝ}
     (hleft : ∀ t : ℝ, ‖g ((t : ℂ) * I)‖ ≤ Real.exp (h₀ t))
     (hright : ∀ t : ℝ, ‖g (1 + (t : ℂ) * I)‖ ≤ Real.exp (h₁ t)) :
     ‖g (r : ℂ)‖ ≤ Real.exp (
-      (∫ t : ℝ, ((1 - r) * stripPoissonDensity (1 - r) t) * h₀ t) +
-      ∫ t : ℝ, (r * stripPoissonDensity r t) * h₁ t) := by
+      (1 - r) * (∫ t, h₀ t ∂stripHarmonicMeasure (1 - r)) +
+      r * (∫ t, h₁ t ∂stripHarmonicMeasure r)) := by
   have hcl : closure (HadamardThreeLines.verticalStrip 0 1) =
       HadamardThreeLines.verticalClosedStrip 0 1 := by
     simp only [HadamardThreeLines.verticalStrip, HadamardThreeLines.verticalClosedStrip,
@@ -962,7 +962,8 @@ theorem norm_le_exp_integral_stripPoissonDensity {r B H : ℝ}
   simp only [zero_pow (by norm_num : (2 : ℕ) ≠ 0), add_zero, sqrt_sq (norm_nonneg _)] at hleftlim
   have h := le_of_tendsto_of_tendsto' hleftlim
     (Real.continuous_exp.continuousAt.tendsto.comp hrightlim) hfinal
-  simpa only [Function.comp_def, mul_assoc, integral_const_mul] using h
+  simpa only [Function.comp_def, integral_stripHarmonicMeasure hrr,
+    integral_stripHarmonicMeasure hr, smul_eq_mul] using h
 
 end Complex
 
