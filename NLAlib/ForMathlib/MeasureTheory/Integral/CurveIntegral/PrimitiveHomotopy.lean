@@ -23,7 +23,9 @@ The proofs adapt the original NLAlib atlas at commit `77514ce`.
 
 ## Main results
 
-* `Complex.integral_eq_of_differentiableOn_of_freeHomotopy`.
+* `ContinuousMap.Homotopy.integral_eq_of_differentiableOn`: invariance for a continuous
+  free homotopy of complex loops.
+* `Complex.integral_eq_of_differentiableOn_of_freeHomotopy`: real-parameter form.
 -/
 @[expose] public section
 
@@ -340,14 +342,9 @@ private theorem PrimitiveHomotopyGrid.top_eq_bottom_of_periodic
     Nat.cast_zero, zero_div, hlastnode, Nat.cast_add, Nat.cast_one,
     ← hloop _ hnext', ← hloop _ hcur] using h
 
-/-- A continuous free homotopy of loops in an open holomorphy domain preserves
-their native contour integrals. Opposite boundary sides are the same path;
-their primitive transports cancel even though the charts may differ. -/
-theorem integral_eq_of_differentiableOn_of_freeHomotopy
+private theorem PrimitiveHomotopyGrid.integral_eq
     {a b : ℂ} (γ₀ : Path a a) (γ₁ : Path b b)
-    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → ℂ}
-    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
-    (hψΩ : ∀ t ∈ Icc (0 : ℝ × ℝ) 1, ψ t ∈ Ω)
+    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {g : ℂ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
     (hleft : ∀ t ∈ Icc (0 : ℝ) 1, γ₀.extend t = ψ (0, t))
     (hright : ∀ t ∈ Icc (0 : ℝ) 1, γ₁.extend t = ψ (1, t))
     (hloop : ∀ t ∈ Icc (0 : ℝ) 1, ψ (t, 0) = ψ (t, 1))
@@ -355,8 +352,6 @@ theorem integral_eq_of_differentiableOn_of_freeHomotopy
     curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
       curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
   classical
-  let D := Classical.choice (nonempty_primitiveHomotopyGrid_of_differentiableOn
-    hψ hΩ hg hψΩ)
   have hn : 0 < (D.size : ℝ) := by exact_mod_cast D.size_pos
   have hlast : D.size - 1 < D.size := Nat.sub_lt D.size_pos Nat.one_pos
   have hlastadd : D.size - 1 + 1 = D.size := Nat.sub_add_cancel (Nat.succ_le_of_lt D.size_pos)
@@ -429,6 +424,54 @@ theorem integral_eq_of_differentiableOn_of_freeHomotopy
     exact sum_congr rfl (fun i hi => htopBottom i (mem_range.mp hi))
   rw [hsum, sub_self, hsumL, hsumR] at hboundary
   exact (sub_eq_zero.mp hboundary).symm
+
+/-- A continuous free homotopy through closed curves in an open holomorphy domain preserves
+the integral of $g(z)\,dz$ when both end curves are continuously differentiable.
+The homotopy uses Mathlib's unit-square parametrization. -/
+theorem _root_.ContinuousMap.Homotopy.integral_eq_of_differentiableOn
+    {a b : ℂ} {γ₀ : Path a a} {γ₁ : Path b b}
+    (H : (γ₀ : C(I, ℂ)).Homotopy γ₁) {Ω : Set ℂ} {g : ℂ → ℂ}
+    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
+    (himage : ∀ p, H p ∈ Ω) (hloop : ∀ t : I, H (t, 0) = H (t, 1))
+    (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
+    curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
+      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
+  let ψ (p : ℝ × ℝ) : ℂ :=
+    H (projIcc 0 1 zero_le_one p.1, projIcc 0 1 zero_le_one p.2)
+  have hψ : Continuous ψ := H.continuous_toFun.comp
+    (continuous_projIcc.prodMap continuous_projIcc)
+  let D := Classical.choice (nonempty_primitiveHomotopyGrid_of_differentiableOn
+    hψ hΩ hg (fun p _ => himage _))
+  apply D.integral_eq γ₀ γ₁ hψ _ _ _ hγ₀ hγ₁
+  · intro t _
+    simp [ψ, Path.extend, Set.IccExtend]
+  · intro t _
+    simp [ψ, Path.extend, Set.IccExtend]
+  · intro t _
+    simpa [ψ] using hloop (projIcc 0 1 zero_le_one t)
+
+/-- A continuous real parametrization of a homotopy gives equal contour integrals when its
+horizontal slices close up and its two end loops are continuously differentiable.
+The restriction to the unit square is a bundled `ContinuousMap.Homotopy`. -/
+theorem integral_eq_of_differentiableOn_of_freeHomotopy
+    {a b : ℂ} (γ₀ : Path a a) (γ₁ : Path b b)
+    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → ℂ}
+    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
+    (hψΩ : ∀ t ∈ Icc (0 : ℝ × ℝ) 1, ψ t ∈ Ω)
+    (hleft : ∀ t ∈ Icc (0 : ℝ) 1, γ₀.extend t = ψ (0, t))
+    (hright : ∀ t ∈ Icc (0 : ℝ) 1, γ₁.extend t = ψ (1, t))
+    (hloop : ∀ t ∈ Icc (0 : ℝ) 1, ψ (t, 0) = ψ (t, 1))
+    (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
+    curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
+      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
+  let H : (γ₀ : C(I, ℂ)).Homotopy γ₁ :=
+    { toFun := fun p => ψ (p.1, p.2)
+      continuous_toFun := hψ.comp (continuous_subtype_val.prodMap continuous_subtype_val)
+      map_zero_left := fun t => by simpa using (hleft t t.property).symm
+      map_one_left := fun t => by simpa using (hright t t.property).symm }
+  exact H.integral_eq_of_differentiableOn hΩ hg
+    (fun p => hψΩ _ ⟨⟨p.1.property.1, p.2.property.1⟩, ⟨p.1.property.2, p.2.property.2⟩⟩)
+    (fun t => hloop t t.property) hγ₀ hγ₁
 
 end Complex
 

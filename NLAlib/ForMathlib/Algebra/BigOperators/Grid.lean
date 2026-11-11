@@ -9,11 +9,12 @@ public import Mathlib.Algebra.BigOperators.Intervals
 public import Mathlib.Tactic.Abel
 
 /-!
-# Boundary sums on rectangular grids
+# Boundary sums on square grids
 
 Internal edges cancel in the sum of oriented cell boundaries. Upstream candidate for Mathlib.
 
-The proofs adapt the original NLAlib atlas at commit `77514ce`.
+The boundary identity telescopes two finite sums using `Finset.sum_range_succ` and
+`Finset.sum_range_succ'`. The proofs adapt the original NLAlib atlas at commit `77514ce`.
 
 ## Main results
 
@@ -25,8 +26,8 @@ section
 
 namespace Finset
 
-/-- Adjacent end and start increments telescope even when the successive
-values were originally given by different functions. -/
+/-- In an additive commutative group, let $f(i+1)=g(i)$ at the interior nodes of
+a chain of length $n>0$. Then $\sum_{i=0}^{n-1}(f(i)-g(i))=f(0)-g(n-1)$. -/
 theorem sum_range_sub_of_adjacent {G : Type*} [AddCommGroup G]
     (f g : ℕ → G) {n : ℕ} (hn : 0 < n)
     (h : ∀ i, i + 1 < n → f (i + 1) = g i) :
@@ -41,8 +42,10 @@ theorem sum_range_sub_of_adjacent {G : Type*} [AddCommGroup G]
   simp only [Nat.succ_sub_one]
   abel
 
-/-- Summing zero cell boundaries and cancelling actual shared edges leaves
-exactly the outer boundary of a finite square grid. -/
+/-- On an $n\times n$ grid with $n>0$, assign an element of an additive commutative
+group to each oriented edge. If adjacent cells agree on their shared edge and the bottom
+plus right edge equals the top plus left edge in each cell, the same identity holds for
+the four side sums around the outside of the grid. -/
 theorem sum_grid_boundary_eq {G : Type*} [AddCommGroup G]
     (bottom top left right : ℕ → ℕ → G) {n : ℕ} (hn : 0 < n)
     (hc : ∀ i < n, ∀ j < n, bottom i j + right i j = top i j + left i j)

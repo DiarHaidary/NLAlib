@@ -199,7 +199,7 @@ namespace MeasureTheory
 
 /-- A jointly continuous kernel has an integrable circle integral as a function
 of the real parameter, and the two integrations commute. This supplies both
-integrability and Fubini for the density in `trace-exponential-stahl`. -/
+integrability and the Fubini identity for the contour density in [Stahl2013, Theorem 2]. -/
 theorem intervalIntegrable_circleIntegral_and_integral_circleIntegral_eq
     {F : ℝ → ℂ → ℂ} {a b r : ℝ} {c : ℂ} (hab : a ≤ b) (hr : 0 ≤ r)
     (hF : ContinuousOn (Function.uncurry F) (Icc a b ×ˢ Metric.sphere c r)) :
@@ -243,8 +243,9 @@ theorem intervalIntegrable_circleIntegral_and_integral_circleIntegral_eq
     simp only [smul_eq_mul, integral_const_mul]
 
 /-- Integrating a jointly continuous kernel over a finite real interval commutes
-with its complex circle integral. The radius is nonnegative and either endpoint
-interval may be degenerate. -/
+with its complex circle integral about any center. For $a\le b$ and $r\ge0$,
+$\int_a^b\oint_{\lvert z-c\rvert=r} F(x,z)\,dz\,dx
+=\oint_{\lvert z-c\rvert=r}\int_a^b F(x,z)\,dx\,dz$. -/
 theorem integral_circleIntegral_eq_circleIntegral_integral
     {F : ℝ → ℂ → ℂ} {a b r : ℝ} {c : ℂ} (hab : a ≤ b) (hr : 0 ≤ r)
     (hF : ContinuousOn (Function.uncurry F) (Icc a b ×ˢ Metric.sphere c r)) :
