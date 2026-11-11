@@ -61,3 +61,30 @@ theorem Matrix.IsHermitian.forall_existsUnique_isMinOn_quadraticObjective_iff
       ∃! x, B *ᵥ x = g ∧ IsMinOn (quadraticObjective H f) {v | B *ᵥ v = g} x) ↔
       (Zᴴ * H * Z).PosDef
 ```
+
+## Supplying a null-space basis
+
+A caller usually knows that the columns of `Z` span the kernel of `B`. The pinned
+Mathlib theorem `LinearMap.exact_iff` converts this directly into the hypothesis
+of the solver and minimizer theorems.
+
+```lean
+example (h : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin) :
+    Function.Exact Z.mulVec B.mulVec :=
+  (LinearMap.exact_iff (f := Z.mulVecLin) (g := B.mulVecLin)).2 h.symm
+```
+
+The public linear maps are Mathlib's matrix-vector linear maps. A numerical
+null-space basis supplies exactness and independent columns as separate facts.
+
+The numerical null-space basis certificate gives the invertibility test directly
+through the following corollary in `Structured/ReducedHessian`. The other
+reconstruction and optimization theorems can share the exactness proof above.
+
+```lean
+theorem isUnit_fromBlocks_iff_isUnit_conjTranspose_mul_mul_of_range_eq_ker
+    [DecidableEq m] [DecidableEq n] [DecidableEq r] (H : Matrix n n 𝕜)
+    (h : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)
+    (hB : Function.Injective Bᴴ.mulVec) (hZ : Function.Injective Z.mulVec) :
+    IsUnit (fromBlocks H Bᴴ B 0) ↔ IsUnit (Zᴴ * H * Z)
+```

@@ -31,3 +31,11 @@ leverage score range and trace facts supply the matrix parts of the atlas card.
 The source is Spielman and Srivastava, *Graph Sparsification by Effective Resistances*,
 §2. The original atlas uses its own proof of the kernel dimension and a second
 real-matrix projector identity. Neither is needed by the resistance API.
+
+## Explorer entries
+
+The original atlas card `laplacian-resistance-leverage` includes the edgewise equality,
+its sum over the edge records, and the rank of the weighted Laplacian. In the explorer
+the edgewise equality keeps that ID. Foster’s identity has ID `foster-theorem` and
+uses the edgewise equality inside the sum. The connected-component identity has ID
+`weighted-laplacian-rank` and assumes strictly positive weights.

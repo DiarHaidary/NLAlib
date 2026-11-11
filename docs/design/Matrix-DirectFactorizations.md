@@ -114,15 +114,23 @@ theorem isUpperHessenberg_hessenbergReduction_snd (A : Matrix (Fin n) (Fin n) �
 
 ## Hessenberg reduction and the Arnoldi basis
 
+In `Factorizations/Hessenberg`, the structure
+`IsUnreducedHessenberg H` combines `IsUpperHessenberg H` with nonvanishing
+of each entry immediately below the diagonal. The raw constructor uses adjacent
+row and column indices, including rectangular shapes. For square matrices of
+positive dimension, `isUnreducedHessenberg_iff` tests the usual
+`H i.succ i.castSucc` entries. Shifted QR uses the equivalence between a reduced
+Hessenberg matrix and `IsDecoupled 0 H` in its existing QR-iteration file.
+There is no matching Hessenberg predicate in the pinned Mathlib.
+
 The subdiagonal being nonzero gives the graded Krylov property. Its being positive
 also fixes the phases and identifies the reducing basis with the actual Arnoldi
 matrix. Both statements use the existing starting vector, graded-basis and Arnoldi
 interfaces.
 
 ```lean
-theorem HasOrthonormalCols.isGradedKrylovBasis_of_isUpperHessenberg (hQ : HasOrthonormalCols Q)
-    (hH : IsUpperHessenberg (Qᴴ * A * Q))
-    (hsub : ∀ i : Fin k, (Qᴴ * A * Q) i.succ i.castSucc ≠ 0) :
+theorem HasOrthonormalCols.isGradedKrylovBasis_of_isUnreducedHessenberg
+    (hQ : HasOrthonormalCols Q) (hH : IsUnreducedHessenberg (Qᴴ * A * Q)) :
     IsGradedKrylovBasis A (Q.col 0) Q
 
 theorem HasOrthonormalCols.eq_arnoldiMatrix_of_isUpperHessenberg (hQ : HasOrthonormalCols Q)
@@ -133,7 +141,18 @@ theorem HasOrthonormalCols.eq_arnoldiMatrix_of_isUpperHessenberg (hQ : HasOrthon
 
 ## Determinants of generalized Schur pencils
 
-The existing complex QZ existence theorem supplies the two unitary factors. Once
+In `Spectral/Congruence`, `IsQZ A B Q Z` bundles the two orthonormal
+column conditions and the upper triangularity of both transformed matrices.
+Its constructor and projections use `HasOrthonormalCols` and
+`Matrix.IsUpperTriangular` directly. The pinned Mathlib has no QZ predicate.
+The existence proof supplies these factors through
+
+```lean
+theorem exists_isQZ [LinearOrder n] (A B : Matrix n n ℂ) :
+    ∃ Q Z : Matrix n n ℂ, IsQZ A B Q Z
+```
+
+The homogeneous and affine polynomial calculations consume the same witness. Once
 the factors are given, the determinant formulas work over either real or complex
 scalars. Singular second matrices require no special case. The homogeneous formula
 also handles infinite eigenvalues, and the affine polynomial tests regularity even
@@ -141,22 +160,18 @@ when some diagonal pairs vanish. Here `n` is a finite ordered type, `C` is the
 constant-polynomial map and `X` is the polynomial indeterminate.
 
 ```lean
-theorem det_smul_sub_smul (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
-    (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) (α β : 𝕜) :
+theorem IsQZ.det_smul_sub_smul (h : IsQZ A B Q Z) (α β : 𝕜) :
     (β • A - α • B).det = Q.det * Zᴴ.det *
       ∏ i, (β * (Qᴴ * A * Z) i i - α * (Qᴴ * B * Z) i i)
 
-theorem det_smul_sub_smul_eq_zero_iff (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
-    (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) (α β : 𝕜) :
+theorem IsQZ.det_smul_sub_smul_eq_zero_iff (h : IsQZ A B Q Z) (α β : 𝕜) :
     (β • A - α • B).det = 0 ↔ ∃ i, β * (Qᴴ * A * Z) i i = α * (Qᴴ * B * Z) i i
 
-theorem det_sub_X_smul (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
-    (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) :
+theorem IsQZ.det_sub_X_smul (h : IsQZ A B Q Z) :
     (A.map C - (X : 𝕜[X]) • B.map C).det = C (Q.det * Zᴴ.det) *
       ∏ i, (C ((Qᴴ * A * Z) i i) - X * C ((Qᴴ * B * Z) i i))
 
-theorem det_sub_X_smul_ne_zero_iff (hQ : HasOrthonormalCols Q) (hZ : HasOrthonormalCols Z)
-    (hA : (Qᴴ * A * Z).IsUpperTriangular) (hB : (Qᴴ * B * Z).IsUpperTriangular) :
+theorem IsQZ.det_sub_X_smul_ne_zero_iff (h : IsQZ A B Q Z) :
     (A.map C - (X : 𝕜[X]) • B.map C).det ≠ 0 ↔
       ∀ i, (Qᴴ * A * Z) i i ≠ 0 ∨ (Qᴴ * B * Z) i i ≠ 0
 ```
@@ -165,3 +180,10 @@ The audit used the original card IDs `lu-row-inclusion`, `lu-growth-factor`,
 `lu-partial-pivoting`, `cholesky-algorithm`, `gram-schmidt`, `hessenberg-reduction`
 and `generalized-schur-qz`. These statements extend existing matrix and Krylov topics.
 The program target registry and its approved interfaces need no changes.
+
+The explorer groups the existence and computation of a Hessenberg reduction under
+`hessenberg-reduction`. Its Krylov-space and Arnoldi-basis characterizations, which
+take an unreduced Hessenberg form as input, use `unreduced-hessenberg-krylov-basis`.
+For matrix pencils, `qz` identifies existence of a generalized Schur form.
+`generalized-schur-pencil-determinant` identifies the homogeneous and affine
+determinant formulas and their zero and regularity criteria for given factors.

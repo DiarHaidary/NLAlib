@@ -41,3 +41,30 @@ theorem IsIdempotentElem.exists_fromBlocks_of_rank_add_eq {P : Matrix n n 𝕜}
             if i.val = j.val then ((Real.sqrt (singularValues P i ^ 2 - 1) : ℝ) : 𝕜) else 0)
           0 0
 ```
+
+## Singular-value and basis consumers
+
+A norm estimate for an idempotent should accept its rank index directly. A change of
+basis should provide the basis immediately. The original joint theorem stays available
+to callers that need the number of oblique planes and the basis together.
+
+```lean
+theorem IsIdempotentElem.one_le_singularValues {P : Matrix n n 𝕜}
+    (hP : IsIdempotentElem P) {i : ℕ} (hi : i < P.rank) :
+    1 ≤ singularValues P i
+
+theorem IsIdempotentElem.exists_conjTranspose_mul_mul_eq_fromBlocks {P : Matrix n n 𝕜}
+    (hP : IsIdempotentElem P) {s : ℕ} (hc : P.rank + s = Fintype.card n) :
+    ∃ H : Matrix n (Fin P.rank ⊕ Fin s) 𝕜, HasOrthonormalCols H ∧
+      Hᴴ * P * H = Matrix.fromBlocks 1
+        (Matrix.of fun (i : Fin P.rank) (j : Fin s) =>
+          if i.val = j.val then ((Real.sqrt (singularValues P i ^ 2 - 1) : ℝ) : 𝕜) else 0)
+        0 0
+```
+
+The lower bound follows by multiplying by the orthogonal projector onto the range
+and using its existing singular-value and norm theorems. The joint canonical-form
+theorem consumes that bound. The basis conclusion supplies the coordinates for an
+oblique projection without a separate plane-count witness at the call site.
+The explorer ID for this form is `oblique-projector-canonical-form`. The unitary CS
+decomposition retains `cs-decomposition`.
