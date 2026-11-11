@@ -88,12 +88,14 @@ public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
+public import NLAlib.ForMathlib.Analysis.Calculus.ParametricIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
 public import NLAlib.ForMathlib.Analysis.Complex.JensenFormula
 public import NLAlib.ForMathlib.Analysis.Complex.Poisson
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
+public import NLAlib.ForMathlib.Analysis.InnerProductSpace.Rayleigh
 public import NLAlib.ForMathlib.Analysis.MeanInequalities
 public import NLAlib.ForMathlib.Analysis.Normed.Module.FiniteDimension
 public import NLAlib.ForMathlib.Analysis.RCLike.ToComplex
@@ -481,6 +483,8 @@ public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
 public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
+public import NLAlib.Matrix.Functions.KTransform
+public import NLAlib.Matrix.Functions.KTransformStability
 public import NLAlib.Matrix.Functions.Lieb
 public import NLAlib.Matrix.Functions.LogDet
 public import NLAlib.Matrix.Functions.MatrixMonotone
@@ -518,6 +522,7 @@ public import NLAlib.Matrix.Norms.Compare
 public import NLAlib.Matrix.Norms.Frobenius
 public import NLAlib.Matrix.Norms.GaugeExamples
 public import NLAlib.Matrix.Norms.GaugeRepresentation
+public import NLAlib.Matrix.Norms.HermitianFrobenius
 public import NLAlib.Matrix.Norms.KyFanNorm
 public import NLAlib.Matrix.Norms.Loewner
 public import NLAlib.Matrix.Norms.Net
@@ -588,6 +593,7 @@ public import NLAlib.Matrix.Spectral.LeastSingularValue
 public import NLAlib.Matrix.Spectral.LowRank
 public import NLAlib.Matrix.Spectral.LyapunovEquation
 public import NLAlib.Matrix.Spectral.Normal
+public import NLAlib.Matrix.Spectral.PositiveCone
 public import NLAlib.Matrix.Spectral.PowerBounds
 public import NLAlib.Matrix.Spectral.ProjectedLowRank
 public import NLAlib.Matrix.Spectral.QuasiTriangular
