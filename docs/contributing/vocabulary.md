@@ -65,6 +65,7 @@ tree and its program, or a count in a targets file).
 | plane rotation | `planeRotation u v c s`, `c s : ℝ` | — |
 | function of a Hermitian matrix | Mathlib's `cfc f A`, `f : ℝ → ℝ`; no `matrixExp`, `matrixLog`, `traceExp`, `lambdaMax` names | `HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`, `Matrix.IsHermitian.re_trace_cfc` |
 | matrix exponential, logarithm | `NormedSpace.exp A`; `cfc Real.log A` | `Matrix.IsHermitian.exp_eq_cfc` |
+| inverse refinement | `inverseSchulzIterate A X k` updates a supplied approximate inverse; the right residual is `1 - A * X`. | `one_sub_mul_inverseSchulzIterate`, `tendsto_inverseSchulzIterate` |
 | ordered exponential and power products | `orderedMatrixExp H z` for a list of complex matrices; `orderedMatrixCpow L z` for the ordered product of complex functional-calculus powers | unfold to `List.prod` of `NormedSpace.exp (z • A)` or `cfc (fun w : ℂ => w ^ z) A` |
 | strip Poisson density and harmonic measure | `Real.stripPoissonDensity r` for $0<r<1$, its right limit `Real.stripPoissonDensityZero`, and `Real.stripHarmonicMeasure r` | `Real.integral_stripPoissonDensity`, `Real.integral_stripPoissonDensityZero`, `Real.integral_stripHarmonicMeasure` |
 | extended logarithmic integral | `MeasureTheory.extendedLogIntegral μ g : EReal` for a real-valued `g`. Its positive and negative parts are integrated separately, with $\log 0=-\infty$ | unfolds to Lebesgue integrals of the parts of `ENNReal.log (ENNReal.ofReal (g x))` |
