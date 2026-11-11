@@ -6,6 +6,7 @@ Authors: NLAlib contributors
 module
 
 public import NLAlib.Matrix.Functions.Complexification
+public import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Order
 
 /-!
 # Matrix monotonicity on a scalar set
@@ -16,6 +17,7 @@ give the same order comparison in real or complex coordinates of arbitrary finit
 ## Main results
 
 * `NLAlib.OperatorMonotoneOn.cfc_le_cfc`: order preservation for arbitrary finite index types.
+* `NLAlib.operatorMonotoneOn_rpow`, `NLAlib.operatorMonotoneOn_sqrt`: the Löwner–Heinz powers.
 -/
 
 @[expose] public section
@@ -53,5 +55,23 @@ theorem OperatorMonotoneOn.cfc_le_cfc {𝕜 n : Type*} [RCLike 𝕜] [Fintype n]
       hM.complexify_cfc]
   have h := hf _ _ _ (hr A hA) (hr B hB) (by rwa [hs]) (by rwa [hs]) ((ho A B).mpr hAB)
   rwa [hc A hA, hc B hB, ho] at h
+
+open scoped Matrix.Norms.L2Operator in
+/-- Powers with exponent in the closed unit interval are operator monotone on the nonnegative
+half-line. At exponent zero the scalar function is constant one, including at zero.
+[Bhatia1997, Theorem V.1.9]. -/
+theorem operatorMonotoneOn_rpow {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
+    OperatorMonotoneOn (Set.Ici 0) (fun x : ℝ => x ^ r) := by
+  intro d A B hA _ hAs _ hAB
+  have ha : 0 ≤ A := (StarOrderedRing.nonneg_iff_spectrum_nonneg (R := ℝ) A hA.isSelfAdjoint).2
+    fun _ hx => hAs hx
+  rw [← CFC.rpow_eq_cfc_real ha, ← CFC.rpow_eq_cfc_real (ha.trans hAB)]
+  exact CFC.rpow_le_rpow hr hAB
+
+/-- The nonnegative square root is operator monotone on the closed positive half-line.
+[Bhatia1997, Proposition V.1.8]. -/
+theorem operatorMonotoneOn_sqrt : OperatorMonotoneOn (Set.Ici 0) Real.sqrt := by
+  rw [show Real.sqrt = (fun x : ℝ => x ^ (1 / 2 : ℝ)) from funext Real.sqrt_eq_rpow]
+  exact operatorMonotoneOn_rpow ⟨by norm_num, by norm_num⟩
 
 end NLAlib

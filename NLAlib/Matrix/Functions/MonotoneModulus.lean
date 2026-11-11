@@ -20,6 +20,7 @@ function is bounded by its scalar value at the displacement of the inputs.
 
 * `NLAlib.OperatorMonotoneOn.concaveOn`: scalar concavity on the closed positive half-line.
 * `NLAlib.OperatorMonotoneOn.specNorm_cfc_sub_le`: the modulus for real and complex matrices.
+* `Matrix.PosSemidef.specNorm_rpow_sub_rpow_le`: the perturbation bound for fractional powers.
 -/
 
 @[expose] public section
@@ -155,5 +156,17 @@ theorem OperatorMonotoneOn.specNorm_cfc_sub_le {𝕜 n : Type*} [RCLike 𝕜] [F
   have h := hup B A hB hA
   rw [specNorm_sub_comm B A] at h
   exact neg_le_sub_iff_le_add.mpr h
+
+/-- For positive semidefinite matrices and $0\le r\le 1$, fractional powers satisfy
+$$\|\mathbf{A}^r-\mathbf{B}^r\|_2\le\|\mathbf{A}-\mathbf{B}\|_2^r.$$
+At $r=0$ the left side is zero and the right side is one.
+[Bhatia1997, Theorem X.1.1], specialized to the Löwner–Heinz powers. -/
+theorem _root_.Matrix.PosSemidef.specNorm_rpow_sub_rpow_le {𝕜 n : Type*} [RCLike 𝕜]
+    [Fintype n] [DecidableEq n] {A B : Matrix n n 𝕜} (hA : A.PosSemidef)
+    (hB : B.PosSemidef) {r : ℝ} (hr : r ∈ Icc (0 : ℝ) 1) :
+    specNorm (A ^ r - B ^ r) ≤ specNorm (A - B) ^ r := by
+  rw [CFC.rpow_eq_cfc_real hA.nonneg, CFC.rpow_eq_cfc_real hB.nonneg]
+  exact (operatorMonotoneOn_rpow hr).specNorm_cfc_sub_le
+    (Real.continuous_rpow_const hr.1).continuousOn (fun _ ht => Real.rpow_nonneg ht _) hA hB
 
 end NLAlib
