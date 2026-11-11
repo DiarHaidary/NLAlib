@@ -73,6 +73,7 @@ public import NLAlib.Estimation.Trace.HutchPlusPlusTail
 public import NLAlib.Estimation.Trace.HutchPlusPlusTargets
 public import NLAlib.Estimation.Trace.StochasticLanczosQuadrature
 public import NLAlib.ForMathlib.Algebra.BigOperators.AbelSummation
+public import NLAlib.ForMathlib.Algebra.BigOperators.Grid
 public import NLAlib.ForMathlib.Algebra.Order.BigOperators.Group.Finset
 public import NLAlib.ForMathlib.Algebra.Order.Field.Basic
 public import NLAlib.ForMathlib.Algebra.Order.Round
@@ -88,6 +89,8 @@ public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Matrix
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.MeanValue
 public import NLAlib.ForMathlib.Analysis.Calculus.Deriv.Polynomial
 public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
+public import NLAlib.ForMathlib.Analysis.Complex.EllipseIntegral
+public import NLAlib.ForMathlib.Analysis.Complex.ExteriorCauchyIntegral
 public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
 public import NLAlib.ForMathlib.Analysis.Complex.JensenFormula
 public import NLAlib.ForMathlib.Analysis.Complex.Poisson
@@ -152,6 +155,8 @@ public import NLAlib.ForMathlib.MeasureTheory.Function.ConditionalExpectation.Ma
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Basic
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.Set
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Bochner.SumMeasure
+public import NLAlib.ForMathlib.MeasureTheory.Integral.CircleIntegral
+public import NLAlib.ForMathlib.MeasureTheory.Integral.CurveIntegral.PrimitiveHomotopy
 public import NLAlib.ForMathlib.MeasureTheory.Integral.IntegrableOn
 public import NLAlib.ForMathlib.MeasureTheory.Integral.Log
 public import NLAlib.ForMathlib.MeasureTheory.Integral.MeanValue
@@ -176,6 +181,7 @@ public import NLAlib.ForMathlib.Topology.ContinuousMap.Compact
 public import NLAlib.ForMathlib.Topology.Instances.Matrix
 public import NLAlib.ForMathlib.Topology.MetricSpace.CoveringNumbers
 public import NLAlib.ForMathlib.Topology.MetricSpace.Lipschitz
+public import NLAlib.ForMathlib.Topology.MetricSpace.PathSubdivision
 public import NLAlib.ForMathlib.Topology.Order.IntermediateValue
 public import NLAlib.ForMathlib.Topology.UniformSpace.UniformApproximation
 public import NLAlib.Krylov.Basic.BlockSpace
