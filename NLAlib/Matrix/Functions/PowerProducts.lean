@@ -473,11 +473,6 @@ private theorem schattenNorm_rpow_abs_orderedMatrixCpow_le_exp_integral_log_add_
     rw [he] at h
     apply h.trans
     apply Real.exp_le_exp.mpr
-    rw [← show ∫ t, Real.log (schattenNorm (ENNReal.ofReal p)
-        (orderedMatrixExp H (1 + (t : ℂ) * I))) ∂Real.stripHarmonicMeasure r =
-        ∫ t, Real.stripPoissonDensity r t * Real.log (schattenNorm (ENNReal.ofReal p)
-          (orderedMatrixExp H (1 + (t : ℂ) * I))) by
-      rw [Real.integral_stripHarmonicMeasure hr]; rfl]
     let := Real.isProbabilityMeasure_stripHarmonicMeasure hr
     apply integral_mono
     · exact ⟨(continuous_log_schattenNorm_orderedMatrixExp H hH hp0).aestronglyMeasurable,
