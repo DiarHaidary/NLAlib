@@ -222,24 +222,34 @@ theorem IsSVD.specNorm_polarFactor_sub_polarNewtonIterate_le {A : Matrix m n �
     (div_nonneg (mul_nonneg (by norm_num) (pow_nonneg hb _)) (sub_nonneg.mpr hp.le))).mpr
   exact fun i => abs_polarNewtonScalar_sub_one_le (hσ i) hb hb1 (hc i) k
 
-/-- **Polar Newton rate from the initial matrix.** On the positive singular values of $\mathbf{A}$,
-let $b$ be the largest absolute Cayley coefficient, with $b=0$ at rank zero.
-Then $b<1$ and the polar error after $k$ updates is at most
+/-- The sup norm of the Cayley coordinates $(\sigma_i-1)/(\sigma_i+1)$ over the positive
+singular values of the input. It is zero when the matrix has rank zero.
+[Higham2008, §8.3]. -/
+noncomputable def polarNewtonCayleyNorm (A : Matrix m n 𝕜) : ℝ :=
+  ‖fun i : Fin A.rank => (singularValues A i - 1) / (singularValues A i + 1)‖
+
+omit [DecidableEq n] in
+/-- The initial Cayley modulus of any real or complex rectangular matrix is less than one.
+[Higham2008, §8.3]. -/
+theorem polarNewtonCayleyNorm_lt_one (A : Matrix m n 𝕜) : polarNewtonCayleyNorm A < 1 := by
+  apply (pi_norm_lt_iff (by norm_num : (0 : ℝ) < 1)).mpr
+  exact fun i => abs_cayley_lt_one ((singularValues_pos_iff A).mpr i.isLt)
+
+/-- **Polar Newton rate from the initial matrix.** For a rectangular matrix let $b$ be the
+largest absolute Cayley coordinate on its positive singular values, with $b=0$ at rank zero.
+The polar error after $k$ updates is at most
 $$\frac{2 b^{2^k}}{1-b^{2^k}}.$$ [Higham2008, §8.3].
 Result: polar-newton-iteration -/
 theorem specNorm_polarFactor_sub_polarNewtonIterate_le (A : Matrix m n 𝕜) (k : ℕ) :
-    let b := ‖fun i : Fin A.rank => (singularValues A i - 1) / (singularValues A i + 1)‖
-    b < 1 ∧ specNorm (polarFactor A - polarNewtonIterate A k) ≤
-      2 * b ^ (2 ^ k) / (1 - b ^ (2 ^ k)) := by
+    specNorm (polarFactor A - polarNewtonIterate A k) ≤
+      2 * (polarNewtonCayleyNorm A) ^ (2 ^ k) / (1 - (polarNewtonCayleyNorm A) ^ (2 ^ k)) := by
   classical
-  intro b
-  have hp (i : Fin A.rank) : 0 < singularValues A i := (singularValues_pos_iff A).mpr i.isLt
-  have hb : b < 1 := (pi_norm_lt_iff (by norm_num : (0 : ℝ) < 1)).mpr fun i =>
-    abs_cayley_lt_one (hp i)
   obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
-  exact ⟨hb, h.specNorm_polarFactor_sub_polarNewtonIterate_le hp (norm_nonneg _) hb
+  exact h.specNorm_polarFactor_sub_polarNewtonIterate_le
+    (fun i => (singularValues_pos_iff A).mpr i.isLt) (norm_nonneg _)
+    (polarNewtonCayleyNorm_lt_one A)
     (fun i => norm_le_pi_norm (fun j : Fin A.rank =>
-      (singularValues A j - 1) / (singularValues A j + 1)) i) k⟩
+      (singularValues A j - 1) / (singularValues A j + 1)) i) k
 
 /-- **Rectangular polar Newton convergence.** The actual inverse-averaging iterates tend to
 the canonical polar factor of any real or complex matrix, including rank-deficient and empty
