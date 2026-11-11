@@ -488,10 +488,13 @@ public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Functions.OperatorMonotone
 public import NLAlib.Matrix.Functions.OrderedExponential
 public import NLAlib.Matrix.Functions.Perspective
+public import NLAlib.Matrix.Functions.PolarNewton
+public import NLAlib.Matrix.Functions.PolarSchulz
 public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
 public import NLAlib.Matrix.Functions.Sign
+public import NLAlib.Matrix.Functions.SingularValueFilters
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
 public import NLAlib.Matrix.Inequalities.Block
