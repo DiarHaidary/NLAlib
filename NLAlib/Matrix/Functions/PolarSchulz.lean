@@ -9,6 +9,7 @@ public import NLAlib.Matrix.Functions.SingularValueFilters
 public import NLAlib.Matrix.Factorizations.Polar
 public import NLAlib.Polynomial.Approximation.NewtonSchulz
 public import NLAlib.Matrix.Basic.Gram
+public import NLAlib.Matrix.Norms.Loewner
 
 /-!
 # Inverse-free rectangular polar iteration
@@ -34,14 +35,28 @@ namespace NLAlib
 private theorem one_sub_polarSchulz_step (s : ℝ) :
     1 - s * (3 - s ^ 2) / 2 = (s - 1) ^ 2 * (s + 2) / 2 := by ring
 
+private theorem newtonSchulz_mem_Icc {s : ℝ} (h0 : 0 ≤ s) (hs : s ^ 2 ≤ 3) :
+    newtonSchulz s ∈ Set.Icc (0 : ℝ) 1 := by
+  refine ⟨div_nonneg (mul_nonneg h0 (sub_nonneg.mpr hs)) (by norm_num), ?_⟩
+  change s * (3 - s ^ 2) / 2 ≤ 1
+  nlinarith [one_sub_polarSchulz_step s,
+    mul_nonneg (sq_nonneg (s - 1)) (by linarith : 0 ≤ s + 2)]
+
+private theorem iterate_newtonSchulz_mem_Icc {s : ℝ} (h0 : 0 ≤ s) (hs : s ^ 2 ≤ 3) (k : ℕ) :
+    (newtonSchulz^[k + 1]) s ∈ Set.Icc (0 : ℝ) 1 := by
+  induction k with
+  | zero => exact newtonSchulz_mem_Icc h0 hs
+  | succ k ih =>
+    rw [Function.iterate_succ_apply']
+    apply newtonSchulz_mem_Icc ih.1
+    exact ((sq_le_sq₀ ih.1 zero_le_one).mpr ih.2).trans (by norm_num)
+
 /-- One admissible step enters the positive unit interval. -/
 private theorem polarSchulz_step_mem {s : ℝ} (hs : 0 < s) (hs3 : s ^ 2 < 3) :
     0 < s * (3 - s ^ 2) / 2 ∧ s * (3 - s ^ 2) / 2 ≤ 1 := by
   constructor
   · positivity
-  · have h := one_sub_polarSchulz_step s
-    have hn : 0 ≤ (s - 1) ^ 2 * (s + 2) / 2 := by positivity
-    linarith
+  · exact (newtonSchulz_mem_Icc hs.le hs3.le).2
 
 /-- Every iterate after the first lies in `(0,1]`, with no restriction that
 the initial defect have norm below one. -/
@@ -238,20 +253,38 @@ private theorem exists_compactSVD_of_injective (A : Matrix m n 𝕜)
   refine ⟨U, V, h, fun i => (singularValues_pos_iff A).mpr i.isLt, ?_⟩
   rw [Fintype.card_fin, ← mulVec_injective_iff_rank_eq.mp hr]
 
-/-- **Positivity after the first inverse-free polar step.** If the input has full column rank
-and spectral norm below $\sqrt{3}$, each subsequent Gram defect is positive semidefinite.
+/-- The cubic maps every singular coefficient of magnitude at most two into the unit interval
+in magnitude, including zero singular values. [Higham2008, §8.3]. -/
+theorem specNorm_polarSchulzIterate_succ_le_one (A : Matrix m n 𝕜) (hA : specNorm A ≤ 2) (k : ℕ) :
+    specNorm (polarSchulzIterate A (k + 1)) ≤ 1 := by
+  classical
+  obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
+  rw [h.polarSchulzIterate_eq, h.hasOrthonormalCols_left.specNorm_mul_diagonal_mul_conjTranspose
+    h.hasOrthonormalCols_right]
+  apply (pi_norm_le_iff_of_nonneg zero_le_one).mpr
+  intro i
+  rw [Real.norm_eq_abs]
+  induction k with
+  | zero =>
+    apply abs_newtonSchulz_le_one
+    exact (norm_le_pi_norm (fun i : Fin A.rank => singularValues A i) i).trans
+      (h.specNorm_eq ▸ hA)
+  | succ k ih =>
+    rw [Function.iterate_succ_apply']
+    exact abs_newtonSchulz_le_one (ih.trans (by norm_num))
+
+/-- **Positivity after the first inverse-free polar step.** For an arbitrary rectangular input
+of spectral norm at most two, every subsequent Gram defect is positive semidefinite.
 [Higham2008, §8.3].
 Result: polar-newton-schulz-iteration -/
 theorem posSemidef_columnGramDefect_polarSchulzIterate (A : Matrix m n 𝕜)
-    (hA : specNorm A < √3) (hr : Function.Injective A.mulVec) (k : ℕ) :
+    (hA : specNorm A ≤ 2) (k : ℕ) :
     (columnGramDefect (polarSchulzIterate A (k + 1))).PosSemidef := by
-  classical
-  obtain ⟨U, V, h, hp, hc⟩ := exists_compactSVD_of_injective A hr
-  rw [h.columnGramDefect_eq hp hc hA]
-  apply Matrix.PosSemidef.mul_mul_conjTranspose_same
-  apply Matrix.posSemidef_diagonal_iff.mpr
-  intro i
-  exact_mod_cast (polarSchulzScalar_defect_mem (hp i) (h.sq_lt_three hA i) k).1
+  have h := specNorm_polarSchulzIterate_succ_le_one A hA k
+  have hs : specNorm (polarSchulzIterate A (k + 1)) ^ 2 ≤ 1 := by
+    nlinarith [specNorm_nonneg (polarSchulzIterate A (k + 1))]
+  simpa only [one_smul, Matrix.le_iff, columnGramDefect] using
+    (specNorm_sq_le_iff_conjTranspose_mul_self_le zero_le_one).mp hs
 
 /-- **Strict upper bound on the polar Gram defect.** For a full-column-rank input of
 spectral norm below $\sqrt{3}$, every subsequent Gram defect is strictly below the identity.
@@ -287,72 +320,110 @@ theorem specNorm_columnGramDefect_polarSchulzIterate_lt_one (A : Matrix m n 𝕜
   have he := polarSchulzScalar_defect_mem (hp i) (h.sq_lt_three hA i) k
   simpa only [Real.norm_eq_abs, abs_of_nonneg he.1] using he.2
 
-/-- **Quadratic Gram defect contraction.** For a full-column-rank input of spectral norm
-below $\sqrt{3}$, each subsequent defect norm is at most the square of the preceding one.
+/-- **Quadratic Gram defect contraction.** For any rectangular input of spectral norm at
+most two, each subsequent defect norm is at most the square of the preceding one.
 [Higham2008, §8.3].
 Result: polar-newton-schulz-iteration -/
 theorem specNorm_columnGramDefect_polarSchulzIterate_succ_le (A : Matrix m n 𝕜)
-    (hA : specNorm A < √3) (hr : Function.Injective A.mulVec) (k : ℕ) :
+    (hA : specNorm A ≤ 2) (k : ℕ) :
     specNorm (columnGramDefect (polarSchulzIterate A (k + 2))) ≤
       specNorm (columnGramDefect (polarSchulzIterate A (k + 1))) ^ 2 := by
-  classical
-  obtain ⟨U, V, h, hp, hc⟩ := exists_compactSVD_of_injective A hr
-  simp only [h.specNorm_columnGramDefect_eq hp hc hA]
-  apply (pi_norm_le_iff_of_nonneg (sq_nonneg _)).mpr
-  intro i
-  have hx := h.sq_lt_three hA i
-  have he := polarSchulzScalar_defect_mem (hp i) hx (k + 1)
-  rw [Real.norm_eq_abs, abs_of_nonneg he.1]
-  exact (polarSchulzScalar_defect_step_le (hp i) hx k).trans <|
-    pow_le_pow_left₀ (polarSchulzScalar_defect_mem (hp i) hx k).1
-      ((le_abs_self _).trans (norm_le_pi_norm
-        (fun j : Fin A.rank => 1 - ((newtonSchulz^[k + 1]) (singularValues A j)) ^ 2) i)) 2
+  let X := polarSchulzIterate A (k + 1)
+  let E := columnGramDefect X
+  have hE : E.PosSemidef := posSemidef_columnGramDefect_polarSchulzIterate A hA k
+  have hle : E ≤ 1 := sub_le_self _ (Matrix.posSemidef_conjTranspose_mul_self X).nonneg
+  have hnorm := (hE.specNorm_le_specNorm_of_le hle).trans specNorm_one_le
+  have hfactor : specNorm ((3 : ℝ) • (1 : Matrix n n 𝕜) + E) ≤ 4 := by
+    apply (specNorm_add_le _ _).trans
+    rw [specNorm_real_smul, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 3)]
+    linarith [specNorm_one_le (𝕜 := 𝕜) (n := n)]
+  change specNorm (columnGramDefect ((polarSchulzStep^[k + 1 + 1]) A)) ≤ specNorm E ^ 2
+  rw [Function.iterate_succ_apply']
+  rw [columnGramDefect_polarSchulzStep, specNorm_real_smul]
+  change |(1 / 4 : ℝ)| * specNorm (E ^ 2 * ((3 : ℝ) • 1 + E)) ≤ specNorm E ^ 2
+  have hm := (specNorm_mul_le _ _).trans (mul_le_mul (specNorm_pow_le E 2) hfactor
+    (specNorm_nonneg _) (sq_nonneg _))
+  rw [abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 4)]
+  linarith
 
-/-- **Polar error controlled by the Gram defect.** At full column rank and initial spectral
-norm below $\sqrt{3}$, the defect bounds the polar error from the first step.
-[Higham2008, §8.3].
+private theorem IsSVD.norm_defect_coeff_le {A : Matrix m n 𝕜} {U : Matrix m r 𝕜}
+    {V : Matrix n r 𝕜} {σ : r → ℝ} (h : IsSVD A U σ V) (k : ℕ) :
+    ‖fun i => (1 : ℝ) - ((newtonSchulz^[k]) (σ i)) ^ 2‖ ≤
+      specNorm (columnGramDefect (polarSchulzIterate A k)) := by
+  let X := polarSchulzIterate A k
+  let D := diagonal (fun i => (((newtonSchulz^[k]) (σ i) : ℝ) : 𝕜))
+  have hXV : X * V = U * D := by
+    rw [show X = _ from h.polarSchulzIterate_eq k]
+    simp only [D, Matrix.mul_assoc, h.hasOrthonormalCols_right.conjTranspose_mul_self,
+      Matrix.mul_one]
+  have hcomp : Vᴴ * columnGramDefect X * V =
+      diagonal (fun i => ((1 - ((newtonSchulz^[k]) (σ i)) ^ 2 : ℝ) : 𝕜)) := by
+    rw [columnGramDefect, Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mul,
+      h.hasOrthonormalCols_right.conjTranspose_mul_self]
+    have hh : Vᴴ * (Xᴴ * X) * V = (X * V)ᴴ * (X * V) := by
+      simp only [Matrix.conjTranspose_mul, Matrix.mul_assoc]
+    rw [hh, hXV, Matrix.conjTranspose_mul, Matrix.mul_assoc,
+      h.hasOrthonormalCols_left.conjTranspose_mul_cancel_left]
+    simp only [D, Matrix.conjTranspose_diagonal_ofReal, Matrix.diagonal_mul_diagonal,
+      ← Matrix.diagonal_one, Matrix.diagonal_sub, RCLike.ofReal_sub, RCLike.ofReal_one,
+      sq, RCLike.ofReal_mul]
+  have hbound : specNorm (Vᴴ * columnGramDefect X * V) ≤ specNorm (columnGramDefect X) := by
+    apply (specNorm_mul_le _ _).trans
+    exact mul_le_of_le_one_right (specNorm_nonneg _)
+      h.hasOrthonormalCols_right.specNorm_le_one |>.trans
+        (h.hasOrthonormalCols_right.specNorm_conjTranspose_mul_le _)
+  rw [hcomp, specNorm_diagonal] at hbound
+  apply le_trans _ hbound
+  apply (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr
+  intro i
+  simpa only [RCLike.norm_ofReal, Real.norm_eq_abs] using (norm_le_pi_norm
+    (fun j => ((1 - ((newtonSchulz^[k]) (σ j)) ^ 2 : ℝ) : 𝕜)) i)
+
+/-- **Polar error controlled by the Gram defect.** At initial spectral norm at most
+$\sqrt{3}$, the Gram defect bounds the distance of each subsequent iterate from the
+original polar factor, including rank-deficient inputs. [Higham2008, §8.3].
 Result: polar-newton-schulz-iteration -/
 theorem specNorm_polarFactor_sub_polarSchulzIterate_le (A : Matrix m n 𝕜)
-    (hA : specNorm A < √3) (hr : Function.Injective A.mulVec) (k : ℕ) :
+    (hA : specNorm A ≤ √3) (k : ℕ) :
     specNorm (polarFactor A - polarSchulzIterate A (k + 1)) ≤
       specNorm (columnGramDefect (polarSchulzIterate A (k + 1))) := by
   classical
-  obtain ⟨U, V, h, hp, hc⟩ := exists_compactSVD_of_injective A hr
-  simp only [h.specNorm_columnGramDefect_eq hp hc hA]
+  obtain ⟨U, V, h⟩ := exists_isSVD A le_rfl A.rank_le_card_height A.rank_le_card_width
+  have hp (i : Fin A.rank) : 0 < singularValues A i := (singularValues_pos_iff A).mpr i.isLt
   rw [h.polarFactor_eq, h.polarSchulzIterate_eq]
   simp only [if_neg (hp _).ne']
   have he := h.hasOrthonormalCols_left.specNorm_sub_mul_diagonal_mul_conjTranspose
-    h.hasOrthonormalCols_right (fun _ => (1 : ℝ))
+    h.hasOrthonormalCols_right (fun _ : Fin A.rank => (1 : ℝ))
     (fun i : Fin A.rank => (newtonSchulz^[k + 1]) (singularValues A i))
   simp only [RCLike.ofReal_one] at he
-  rw [he]
+  rw [he, ← h.polarSchulzIterate_eq]
+  apply le_trans _ (h.norm_defect_coeff_le (k + 1))
   apply (pi_norm_le_iff_of_nonneg (norm_nonneg _)).mpr
   intro i
-  rw [Pi.sub_apply, Real.norm_eq_abs, abs_sub_comm]
-  exact (abs_polarSchulzScalar_sub_one_le_defect (hp i) (h.sq_lt_three hA i) k).trans
-    ((le_abs_self _).trans (norm_le_pi_norm
-      (fun j : Fin A.rank => 1 - ((newtonSchulz^[k + 1]) (singularValues A j)) ^ 2) i))
+  have hs : singularValues A i ≤ √3 := (le_abs_self _).trans <|
+    (norm_le_pi_norm (fun j : Fin A.rank => singularValues A j) i).trans (h.specNorm_eq ▸ hA)
+  have hsq : singularValues A i ^ 2 ≤ 3 := by
+    nlinarith [Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 3), hp i]
+  obtain ⟨h0, h1⟩ := iterate_newtonSchulz_mem_Icc (hp i).le hsq k
+  rw [Pi.sub_apply, Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.mpr h1)]
+  apply le_trans _ ((le_abs_self _).trans (norm_le_pi_norm
+    (fun j : Fin A.rank => 1 - ((newtonSchulz^[k + 1]) (singularValues A j)) ^ 2) i))
+  nlinarith [mul_nonneg h0 (sub_nonneg.mpr h1)]
 
-/-- **Polar Gram defect rate.** At full column rank and initial spectral norm below $\sqrt{3}$,
+/-- **Polar Gram defect rate.** For any rectangular input with spectral norm at most two,
 the defect after $k+1$ steps is at most the first defect norm raised to $2^k$.
 [Higham2008, §8.3].
 Result: polar-newton-schulz-iteration -/
 theorem specNorm_columnGramDefect_polarSchulzIterate_le_pow (A : Matrix m n 𝕜)
-    (hA : specNorm A < √3) (hr : Function.Injective A.mulVec) (k : ℕ) :
+    (hA : specNorm A ≤ 2) (k : ℕ) :
     specNorm (columnGramDefect (polarSchulzIterate A (k + 1))) ≤
       specNorm (columnGramDefect (polarSchulzIterate A 1)) ^ (2 ^ k) := by
-  classical
-  obtain ⟨U, V, h, hp, hc⟩ := exists_compactSVD_of_injective A hr
-  simp only [h.specNorm_columnGramDefect_eq hp hc hA]
-  apply (pi_norm_le_iff_of_nonneg (pow_nonneg (norm_nonneg _) _)).mpr
-  intro i
-  have hx := h.sq_lt_three hA i
-  have he := polarSchulzScalar_defect_mem (hp i) hx k
-  rw [Real.norm_eq_abs, abs_of_nonneg he.1]
-  exact (polarSchulzScalar_defect_le (hp i) hx k).trans
-    (pow_le_pow_left₀ (polarSchulzScalar_defect_mem (hp i) hx 0).1
-      ((le_abs_self _).trans (norm_le_pi_norm
-        (fun j : Fin A.rank => 1 - (newtonSchulz (singularValues A j)) ^ 2) i)) _)
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    exact (specNorm_columnGramDefect_polarSchulzIterate_succ_le A hA k).trans <| by
+      simpa only [← pow_mul, Nat.pow_succ] using
+        pow_le_pow_left₀ (specNorm_nonneg _) ih 2
 
 /-- **Convergence of the inverse-free polar iteration.** For every real or complex rectangular
 matrix of spectral norm below the square root of three, the cubic iterates converge to its
