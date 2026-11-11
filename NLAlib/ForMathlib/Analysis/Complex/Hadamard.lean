@@ -28,6 +28,7 @@ The proof adapts the original formalization in `tchen-research/NLAlib@77514ce`.
 
 ## Main results
 
+* `Complex.circleAverage_eq_integral_cauchyPDFReal`: Cayley transport of the unit circle.
 * `Complex.norm_le_exp_integral_stripPoissonDensity`: the strip inequality with boundary majorants.
 -/
 
@@ -160,6 +161,7 @@ end
 section
 
 open Real Set Metric MeasureTheory
+open scoped NNReal
 
 namespace Complex
 
@@ -276,12 +278,15 @@ private theorem circleAverage_hirschmanDiskToHalfPlane (a b : ℝ) (F : ℂ → 
   rw [circleAverage_eq_integral_hirschmanBoundaryAngle]
   simp_rw [hirschmanDiskToHalfPlane_circleMap_boundary]
 
-/-- The circle boundary pushforward is the location-scale Cauchy
-density on the real line, not an unspecified boundary distribution. -/
-private theorem circleAverage_hirschmanDiskToHalfPlane_eq_cauchy (a : ℝ) {b : ℝ} (hb : 0 < b)
+/-- The affine Cayley map sends normalized angular measure on the unit circle to the real
+Cauchy law with location $a$ and positive scale $b$. Its pole at $1$ has measure zero. -/
+theorem circleAverage_eq_integral_cauchyPDFReal (a : ℝ) {b : ℝ≥0} (hb : 0 < b)
     (F : ℂ → ℝ) :
-    Real.circleAverage (fun z => F (hirschmanDiskToHalfPlane a b z)) 0 1 =
-      ∫ w : ℝ, ProbabilityTheory.cauchyPDFReal a (⟨b, hb.le⟩ : NNReal) w * F (w : ℂ) := by
+    Real.circleAverage (fun z => F ((a : ℂ) + ((b : ℝ) : ℂ) * I * ((1 + z) / (1 - z)))) 0 1 =
+      ∫ w : ℝ, ProbabilityTheory.cauchyPDFReal a b w * F (w : ℂ) := by
+  obtain ⟨b, hb₀⟩ := b
+  change 0 < b at hb
+  change Real.circleAverage (fun z => F (hirschmanDiskToHalfPlane a b z)) 0 1 = _
   have hRange : (fun q : ℝ => a + b * q) '' Set.univ = Set.univ := by
     ext w
     constructor
@@ -481,12 +486,9 @@ private theorem circleAverage_hirschmanDiskToStrip_eq_boundary_integrals {r : �
       ∫ t : ℝ, (r * stripPoissonDensity r t) * G (1 + (t : ℂ) * I) := by
   have hs : 0 < Real.sin (π * r) := Real.sin_pos_of_pos_of_lt_pi (mul_pos pi_pos hr.1)
     (by nlinarith [pi_pos, hr.2])
-  have hscale : (⟨Real.sin (π * r), hs.le⟩ : NNReal) = Real.toNNReal (Real.sin (π * r)) := by
-    ext
-    exact (Real.coe_toNNReal _ hs.le).symm
-  have h := circleAverage_hirschmanDiskToHalfPlane_eq_cauchy (Real.cos (π * r)) hs
+  have h := circleAverage_eq_integral_cauchyPDFReal (Real.cos (π * r)) (Real.toNNReal_pos.mpr hs)
     (fun w => G (log w * (-I) / (π : ℂ)))
-  rw [hscale] at h
+  simp only [Real.coe_toNNReal _ hs.le] at h
   exact h.trans (integral_cauchy_hirschmanLog_eq_boundary_integrals hr G hG)
 
 end Complex
