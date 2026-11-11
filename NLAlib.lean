@@ -606,6 +606,7 @@ public import NLAlib.Matrix.Structured.BoundedOrthonormal
 public import NLAlib.Matrix.Structured.Cauchy
 public import NLAlib.Matrix.Structured.Circulant
 public import NLAlib.Matrix.Structured.CoefficientBlock
+public import NLAlib.Matrix.Structured.EdgeResistance
 public import NLAlib.Matrix.Structured.Kronecker
 public import NLAlib.Matrix.Structured.ReducedHessian
 public import NLAlib.Matrix.Structured.ToeplitzHankel

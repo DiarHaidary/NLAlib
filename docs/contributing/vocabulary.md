@@ -54,6 +54,7 @@ tree and its program, or a count in a targets file).
 | orthonormal columns | `HasOrthonormalCols Q := Qᴴ * Q = 1`, always as this hypothesis; rows are `HasOrthonormalCols Qᴴ`; a unitary is a square `Q` with this property | `hasOrthonormalCols_iff_orthonormal`, `hasOrthonormalCols_iff_mem_unitaryGroup` |
 | orthogonal projector (predicate) | `IsStarProjection P` | Mathlib's |
 | projector onto a column space | `rangeProjector A`, every shape and rank | `toEuclideanLin_rangeProjector` |
+| weighted graph incidence and edge resistance | `GraphEdgeOrientation` records ordered endpoints covering a Mathlib simple graph. Its `GraphEdgeOrientation.incidence` and `GraphEdgeOrientation.weightedIncidence` have rows indexed by edge records. The Gram matrix is `GraphEdgeOrientation.weightedLaplacian`, and `GraphEdgeOrientation.edgeResistance` uses its pseudoinverse | `GraphEdgeOrientation.mul_edgeResistance_eq_leverageScore`, `GraphEdgeOrientation.rank_weightedLaplacian_add` |
 | projection residual | `(1 - rangeProjector Y) * A`, no definition | `one_sub_rangeProjector_mul` expands it |
 | column space, range containment | `LinearMap.range A.mulVecLin`; `LinearMap.range Y.mulVecLin ≤ LinearMap.range B.mulVecLin` | Mathlib's |
 | full column rank | `Function.Injective A.mulVec`, as a hypothesis | Mathlib's; `isUnit_conjTranspose_mul_self_iff`, `mulVec_injective_iff_rank_eq` |
