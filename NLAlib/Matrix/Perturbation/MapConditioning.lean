@@ -111,7 +111,7 @@ noncomputable def componentwisePerturbation (f : EuclideanSpace 𝕜 m → Eucli
 /-- **Derivative in relative coordinates.** At a differentiability point the componentwise
 Jacobian represents the derivative of the relative perturbation map at zero.
 [Gautschi2004, Def 2.4].
-Result: condition-number-of-map-def -/
+Result: componentwise-perturbation-derivative -/
 theorem hasFDerivAt_componentwisePerturbation
     {f : EuclideanSpace 𝕜 m → EuclideanSpace 𝕜 n} {x : EuclideanSpace 𝕜 m}
     (hf : DifferentiableAt 𝕜 f x) :
@@ -148,7 +148,7 @@ theorem specNorm_componentwiseJacobian {f : EuclideanSpace 𝕜 m → EuclideanS
 /-- **Componentwise relative conditioning.** The spectral norm of the componentwise Jacobian
 is at most the product of the output scaling norm, the absolute condition of the map, and
 the input scaling norm. [Gautschi2004, Def 2.4].
-Result: condition-number-of-map-def -/
+Result: componentwise-condition-bound -/
 theorem specNorm_componentwiseJacobian_le (f : EuclideanSpace 𝕜 m → EuclideanSpace 𝕜 n)
     (x : EuclideanSpace 𝕜 m) :
     specNorm (componentwiseJacobian f x) ≤
@@ -162,7 +162,7 @@ theorem specNorm_componentwiseJacobian_le (f : EuclideanSpace 𝕜 m → Euclide
 /-- **Normwise conditioning of a linear system.** At every input the normwise relative
 condition of an invertible Euclidean linear map is at most its matrix condition number.
 [TrefethenBau1997, Lecture 12].
-Result: condition-number-of-map-def -/
+Result: linear-map-relative-condition-bound -/
 theorem normwiseRelativeCondition_toEuclideanCLM_le {A : Matrix n n 𝕜} (hA : IsUnit A)
     (x : EuclideanSpace 𝕜 n) :
     normwiseRelativeCondition 𝕜 (Matrix.toEuclideanCLM (𝕜 := 𝕜) A) x ≤
