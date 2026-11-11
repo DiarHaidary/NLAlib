@@ -123,6 +123,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshe
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Growth
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Sinc
 public import NLAlib.ForMathlib.Analysis.SpecificLimits.Basic
+public import NLAlib.ForMathlib.Analysis.SpecificLimits.StrictAntiApproximation
 public import NLAlib.ForMathlib.Data.Fin.Tuple.Sort
 public import NLAlib.ForMathlib.Data.Finset.Max
 public import NLAlib.ForMathlib.Data.Finsupp.Basic
@@ -531,6 +532,10 @@ public import NLAlib.Matrix.Functions.Sign
 public import NLAlib.Matrix.Functions.SignNewton
 public import NLAlib.Matrix.Functions.SingularValueFilters
 public import NLAlib.Matrix.Functions.TensorCapacity
+public import NLAlib.Matrix.Functions.TraceExponentialApproximation
+public import NLAlib.Matrix.Functions.TraceExponentialContour
+public import NLAlib.Matrix.Functions.TraceExponentialDensity
+public import NLAlib.Matrix.Functions.TraceExponentialMeasure
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
 public import NLAlib.Matrix.Inequalities.Block
