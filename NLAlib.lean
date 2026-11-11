@@ -91,6 +91,7 @@ public import NLAlib.ForMathlib.Analysis.Calculus.LocalExtr.Rolle
 public import NLAlib.ForMathlib.Analysis.Complex.Hadamard
 public import NLAlib.ForMathlib.Analysis.Complex.JensenFormula
 public import NLAlib.ForMathlib.Analysis.Complex.Poisson
+public import NLAlib.ForMathlib.Analysis.Convex.DoublyStochasticMatrix
 public import NLAlib.ForMathlib.Analysis.Convex.Integral
 public import NLAlib.ForMathlib.Analysis.Convex.SupportingLine
 public import NLAlib.ForMathlib.Analysis.InnerProductSpace.PiL2
@@ -104,6 +105,7 @@ public import NLAlib.ForMathlib.Analysis.SpecialFunctions.ExpDeriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Exponential
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Basic
+public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Defect
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Log.Deriv
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Pow.Real
 public import NLAlib.ForMathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.ChebyshevGauss
@@ -486,6 +488,8 @@ public import NLAlib.Matrix.Functions.LogDet
 public import NLAlib.Matrix.Functions.MatrixMonotone
 public import NLAlib.Matrix.Functions.MonotoneModulus
 public import NLAlib.Matrix.Functions.MultivariateGoldenThompson
+public import NLAlib.Matrix.Functions.OperatorBalancing
+public import NLAlib.Matrix.Functions.OperatorCapacity
 public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Functions.OperatorMonotone
 public import NLAlib.Matrix.Functions.OrderedExponential
@@ -495,10 +499,12 @@ public import NLAlib.Matrix.Functions.PositiveMaps
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
 public import NLAlib.Matrix.Functions.Sign
+public import NLAlib.Matrix.Functions.TensorCapacity
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
 public import NLAlib.Matrix.Inequalities.Block
 public import NLAlib.Matrix.Inequalities.Determinant
+public import NLAlib.Matrix.Inequalities.DeterminantObjective
 public import NLAlib.Matrix.Inequalities.EntrywiseFunctions
 public import NLAlib.Matrix.Inequalities.HadamardProduct
 public import NLAlib.Matrix.Inequalities.Kantorovich
