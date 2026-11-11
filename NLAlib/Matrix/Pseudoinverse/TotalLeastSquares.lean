@@ -23,7 +23,7 @@ in the original NLAlib, commit `77514ce42a0e437d837797a063ac161f41022730`.
 
 * `NLAlib.isGLB_totalLeastSquaresCosts`: the infimum including unattained problems.
 * `NLAlib.isTotalLeastSquaresSolution_iff_exists`: all optimal finite solutions.
-* `NLAlib.isTotalLeastSquaresSolution_iff_eq_of_lt_eigenvalue`: the unique shifted normal solution.
+* `NLAlib.isTotalLeastSquaresSolution_iff_eq_of_lt_singularValues`: unique shifted normal solution.
 -/
 
 @[expose] public section
@@ -45,9 +45,24 @@ def totalLeastSquaresCosts (C : Matrix m (n ⊕ Unit) 𝕜) : Set ℝ :=
 /-- A finite solution of total least squares admits a consistent data correction whose
 squared Frobenius norm is minimal among all consistent corrections.
 [GolubVanLoan2013, §6.3]. -/
-def IsTotalLeastSquaresSolution (C : Matrix m (n ⊕ Unit) 𝕜) (x : n → 𝕜) : Prop :=
-  ∃ D : Matrix m (n ⊕ Unit) 𝕜, (C + D) *ᵥ Sum.elim x (fun _ => -1) = 0 ∧
-    IsLeast (totalLeastSquaresCosts C) (frobNorm D ^ 2)
+def IsTotalLeastSquaresSolution (A : Matrix m n 𝕜) (b : m → 𝕜) (x : n → 𝕜) : Prop :=
+  ∃ D : Matrix m (n ⊕ Unit) 𝕜,
+    (fromCols A (replicateCol Unit b) + D) *ᵥ Sum.elim x (fun _ => -1) = 0 ∧
+      IsLeast (totalLeastSquaresCosts (fromCols A (replicateCol Unit b))) (frobNorm D ^ 2)
+
+/-- For an assembled augmented matrix $\mathbf{C}=[\mathbf{A}\ \mathbf{b}]$,
+an optimal correction of $\mathbf{C}$ gives a solution for its two column blocks.
+[GolubVanLoan2013, §6.3]. -/
+theorem isTotalLeastSquaresSolution_toCols₁_iff (C : Matrix m (n ⊕ Unit) 𝕜) (x : n → 𝕜) :
+    IsTotalLeastSquaresSolution C.toCols₁ (C.col (.inr ())) x ↔
+      ∃ D : Matrix m (n ⊕ Unit) 𝕜, (C + D) *ᵥ Sum.elim x (fun _ => -1) = 0 ∧
+        IsLeast (totalLeastSquaresCosts C) (frobNorm D ^ 2) := by
+  have h : fromCols C.toCols₁ (replicateCol Unit (C.col (.inr ()))) = C := by
+    ext i j
+    cases j with
+    | inl j => rfl
+    | inr j => cases j; rfl
+  simp only [IsTotalLeastSquaresSolution, h]
 
 omit [Fintype m] in
 /-- Consistency of the augmented perturbation $[\mathbf{E}\ \mathbf{f}]$ is the
@@ -257,10 +272,11 @@ $$x_i=-\frac{v_i}{v_{\mathrm{last}}}.$$
 Every such direction gives an optimal solution. [GolubVanLoan2013, §6.3].
 Result: total-least-squares-svd -/
 theorem isTotalLeastSquaresSolution_iff_exists (C : Matrix m (n ⊕ Unit) 𝕜) (x : n → 𝕜) :
-    IsTotalLeastSquaresSolution C x ↔
+    IsTotalLeastSquaresSolution C.toCols₁ (C.col (.inr ())) x ↔
       ∃ v : n ⊕ Unit → 𝕜, ‖WithLp.toLp 2 v‖ = 1 ∧ v (.inr ()) ≠ 0 ∧
         (Cᴴ * C) *ᵥ v = eigenvalue (Cᴴ * C) (Fintype.card n) • v ∧
         x = fun i => -v (.inl i) / v (.inr ()) := by
+  rw [isTotalLeastSquaresSolution_toCols₁_iff]
   constructor
   · rintro ⟨D, hd, hmin⟩
     let v := normalized (direction x)
@@ -356,15 +372,21 @@ Gram matrix of $[\mathbf{A}\ \mathbf{b}]$. If $\mu$ is strictly smaller than the
 of $\mathbf{A}^{\mathsf{H}}\mathbf{A}$, the unique solution is $(\mathbf{A}^{\mathsf{H}}\mathbf{A}-
 \mu\mathbf{I})^{-1}\mathbf{A}^{\mathsf{H}}\mathbf{b}$. [GolubVanLoan2013, §6.3].
 Result: total-least-squares-svd -/
-theorem isTotalLeastSquaresSolution_iff_eq_of_lt_eigenvalue [DecidableEq n]
-    (A : Matrix m n 𝕜) (b : m → 𝕜) (x : n → 𝕜) {k : ℕ} (hk : k + 1 = Fintype.card n) :
-    let C := fromCols A (replicateCol Unit b)
-    let μ := eigenvalue (Cᴴ * C) (Fintype.card n)
-    μ < eigenvalue (Aᴴ * A) k →
-      (IsTotalLeastSquaresSolution C x ↔ x = (Aᴴ * A - μ • 1)⁻¹ *ᵥ (Aᴴ *ᵥ b)) := by
-  intro C μ hgap
+theorem isTotalLeastSquaresSolution_iff_eq_of_lt_singularValues [DecidableEq n]
+    (A : Matrix m n 𝕜) (b : m → 𝕜) (x : n → 𝕜) {k : ℕ} (hk : k + 1 = Fintype.card n)
+    (hgap : singularValues (fromCols A (replicateCol Unit b)) (Fintype.card n) <
+      singularValues A k) :
+    IsTotalLeastSquaresSolution A b x ↔ x =
+      (Aᴴ * A - singularValues (fromCols A (replicateCol Unit b)) (Fintype.card n) ^ 2 • 1)⁻¹ *ᵥ
+        (Aᴴ *ᵥ b) := by
+  let C := augmented A b
+  have hsq := (sq_lt_sq₀ (singularValues_nonneg C _) (singularValues_nonneg A k)).mpr hgap
+  rw [singularValues_sq, singularValues_sq] at hsq
+  change IsTotalLeastSquaresSolution C.toCols₁ (C.col (.inr ())) x ↔
+    x = (Aᴴ * A - singularValues C (Fintype.card n) ^ 2 • 1)⁻¹ *ᵥ (Aᴴ *ᵥ b)
+  rw [singularValues_sq]
   have hP := (posDef_sub_smul_one_of_lt_eigenvalue_last
-    (Matrix.isHermitian_conjTranspose_mul_self A) hk hgap).isUnit
+    (Matrix.isHermitian_conjTranspose_mul_self A) hk hsq).isUnit
   rw [isTotalLeastSquaresSolution_iff_exists]
   constructor
   · rintro ⟨v, hv, _, he, rfl⟩
