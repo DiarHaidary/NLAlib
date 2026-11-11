@@ -253,5 +253,9 @@ schattenNorm (ENNReal.ofReal p) ((CFC.abs (L.map (fun A => A ^ r)).prod) ^ (1 / 
     (orderedMatrixCpow L (1 + (t : ℂ) * Complex.I))) ∂Real.stripHarmonicMeasure r)
 ```
 
-The positive definite inequality is used in the regularization proof for
-positive semidefinite factors.
+`integrable_log_schattenNorm_orderedMatrixCpow` gives the finite-integral
+hypothesis for any finite boundary measure. Positive semidefinite inputs have
+a continuous right-boundary product and its uniform operator-norm bound by the
+product of the factor norms. These two facts are used in the regularization
+proof for positive semidefinite factors. The list regularization and bounds
+for the auxiliary displacement parameter stay private.

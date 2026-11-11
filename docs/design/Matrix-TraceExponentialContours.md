@@ -2,8 +2,6 @@
 
 This note records the design after PR #101 merged.
 
-This note records the original interfaces retrospectively after PR #101.
-
 The density calculation in `TraceExponentialDensity.lean` takes the real part of
 a normalized exponential circle moment. Its scalar inputs are a holomorphic
 function off a closed real segment, reflection symmetry, and a nonnegative
@@ -35,13 +33,14 @@ Use the same bundled homotopy object for the holomorphic specialization:
 
 ```lean
 ContinuousMap.Homotopy.integral_eq_of_differentiableOn
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
     {a b : ℂ} {γ₀ : Path a a} {γ₁ : Path b b}
-    (H : (γ₀ : C(I, ℂ)).Homotopy γ₁) {Ω : Set ℂ} {g : ℂ → ℂ}
+    (H : (γ₀ : C(I, ℂ)).Homotopy γ₁) {Ω : Set ℂ} {g : ℂ → E}
     (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
     (himage : ∀ p, H p ∈ Ω) (hloop : ∀ t : I, H (t, 0) = H (t, 1))
     (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
-    curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
-      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁
+    curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₀ =
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₁
 ```
 
 The existing real-parameter interface constructs this homotopy by restriction

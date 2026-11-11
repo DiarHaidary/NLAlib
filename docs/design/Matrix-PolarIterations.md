@@ -94,9 +94,9 @@ and convergence.
 
 ## Applying error bounds at a computed iterate
 
-A local rounding-error analysis starts from the matrix (X) that was actually
+A local rounding-error analysis starts from the matrix $X$ that was actually
 computed. Its next exact update can be compared to a rounded update even when
-(X) belongs to no prescribed trajectory. For rectangular matrices over
+the preceding updates include rounding errors. For rectangular matrices over
 `RCLike`, the matrix-functions layer provides
 
 ~~~lean
@@ -132,8 +132,8 @@ specNorm_polarFactor_sub_polarNewtonIterate_le (A : Matrix m n 𝕜) (k : ℕ) :
 ~~~
 
 For `h : IsGreedyOddMinimax q a c l u`, the existing actual-interval bound
-and `h.one_sub_le_pow` compose directly. If (0<a≤1), the positive singular
-values of (A) lie in ([a,1]), and (1≤T), then
+and `h.one_sub_le_pow` compose directly. If $0<a\le1$, the positive singular
+values of $A$ lie in $[a,1]$, and $1\le T$, then
 
 ~~~lean
 specNorm (polarFactor A - oddMatrixIterate q c A T) ≤ (1 - a ^ 2) ^ ((q + 1) ^ T)
