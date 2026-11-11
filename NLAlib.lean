@@ -130,9 +130,11 @@ public import NLAlib.ForMathlib.Data.NNReal.Basic
 public import NLAlib.ForMathlib.Data.Nat.Init
 public import NLAlib.ForMathlib.Data.Nat.Log2
 public import NLAlib.ForMathlib.Data.Option.Basic
+public import NLAlib.ForMathlib.FieldTheory.IsAlgClosed.RootPartition
 public import NLAlib.ForMathlib.GroupTheory.Perm.Fin
 public import NLAlib.ForMathlib.InformationTheory.TotalVariation
 public import NLAlib.ForMathlib.LinearAlgebra.Dimension.Constructions
+public import NLAlib.ForMathlib.LinearAlgebra.Eigenspace.PrimaryInvolution
 public import NLAlib.ForMathlib.LinearAlgebra.Lagrange
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Adjugate
 public import NLAlib.ForMathlib.LinearAlgebra.Matrix.Block
@@ -479,6 +481,7 @@ public import NLAlib.Matrix.Functions.Complexification
 public import NLAlib.Matrix.Functions.Exponential
 public import NLAlib.Matrix.Functions.ExponentialInterpolation
 public import NLAlib.Matrix.Functions.GoldenThompson
+public import NLAlib.Matrix.Functions.HalfPlaneSign
 public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
 public import NLAlib.Matrix.Functions.Lieb
@@ -492,6 +495,7 @@ public import NLAlib.Matrix.Functions.Polynomial
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
 public import NLAlib.Matrix.Functions.Sign
+public import NLAlib.Matrix.Functions.SignNewton
 public import NLAlib.Matrix.Functions.TraceFunctions
 public import NLAlib.Matrix.Functions.TracePowers
 public import NLAlib.Matrix.Inequalities.Block
