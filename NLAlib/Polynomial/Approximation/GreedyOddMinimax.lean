@@ -333,7 +333,7 @@ private theorem nonempty_greedyOddStep (q : ℕ) (I : PositiveInterval) :
 initial interval `[ell,1]`, including the singleton endpoint `ell=1`.
 Every recorded interval endpoint is attained by the corresponding actual
 coefficient-defined polynomial; no rate certificate is assumed.
-Source: Polar Express, §3; finite-dimensional minimax existence. -/
+[AmselPerssonMuscoGower2026, §3], using finite-dimensional minimax existence. -/
 theorem exists_isGreedyOddMinimax (q : ℕ) {ell : ℝ} (hell : 0 < ell) (hell1 : ell ≤ 1) :
     ∃ (c : ℕ → ℕ → ℝ) (l u : ℕ → ℝ), IsGreedyOddMinimax q ell c l u := by
   classical
@@ -560,7 +560,7 @@ private theorem exists_oddScalarUpdate_eq_polarTaylorUpdate (q : ℕ) :
 
 /-- A genuine admissible odd coefficient competitor with the exact squared-gap
 lower envelope on an arbitrary positive interval.
-Source: Polar Express, Appendix D, finite Taylor competitor route. -/
+[AmselPerssonMuscoGower2026, Appendix D], using a finite Taylor competitor. -/
 private theorem exists_oddScalarUpdate_interval_competitor (q : ℕ) {a b : ℝ}
     (ha : 0 < a) (hab : a ≤ b) :
     ∃ c : ℕ → ℝ, ∀ x ∈ Icc a b,

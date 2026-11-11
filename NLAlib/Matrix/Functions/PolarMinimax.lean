@@ -131,6 +131,19 @@ theorem IsGreedyOddMinimax.specNorm_polarFactor_sub_oddMatrixIterate_le {q : ℕ
   exact (pi_norm_le_iff_of_nonneg ((abs_nonneg _).trans hb)).mpr fun i =>
     h.abs_one_sub_oddScalarComposition_le ha ha1 hT (hA i (hp i))
 
+/-- **Greedy minimax polar convergence rate.** If the positive singular values of a rectangular
+matrix belong to $[a,1]$ with $0<a\le1$, the degree-$2q+1$ greedy filters give spectral
+error at most $(1-a^2)^{(q+1)^k}$ after $k\ge 1$ updates. The estimate also holds for a
+rank-deficient input. [AmselPerssonMuscoGower2026, Theorem 3.3 and Appendix D].
+Result: polar-minimax-polynomial-iteration -/
+theorem IsGreedyOddMinimax.specNorm_polarFactor_sub_oddMatrixIterate_le_pow {q : ℕ} {a : ℝ}
+    {c : ℕ → ℕ → ℝ} {l u : ℕ → ℝ} (h : IsGreedyOddMinimax q a c l u)
+    (ha : 0 < a) (ha1 : a ≤ 1) (A : Matrix m n 𝕜)
+    (hA : ∀ i, 0 < singularValues A i → singularValues A i ∈ Icc a 1)
+    {k : ℕ} (hk : 1 ≤ k) :
+    specNorm (polarFactor A - oddMatrixIterate q c A k) ≤ (1 - a ^ 2) ^ ((q + 1) ^ k) :=
+  (h.specNorm_polarFactor_sub_oddMatrixIterate_le ha ha1 A hA hk).trans (h.one_sub_le_pow ha ha1 hk)
+
 /-- For positive Gram degree, the genuine greedy iteration converges to the polar factor
 when the positive singular values lie in a known interval $[a,1]$ with $a>0$.
 [AmselPerssonMuscoGower2026, Theorem 3.3]. -/
@@ -146,11 +159,10 @@ theorem IsGreedyOddMinimax.tendsto_oddMatrixIterate {q : ℕ} {a : ℝ}
   apply tendsto_iff_norm_sub_tendsto_zero.mpr
   apply squeeze_zero' (Filter.Eventually.of_forall fun k => norm_nonneg _) _ hp
   filter_upwards [Filter.eventually_ge_atTop 1] with k hk
-  have he := h.specNorm_polarFactor_sub_oddMatrixIterate_le ha ha1 A hA hk
   change ‖oddMatrixIterate (q + 1) c A k - polarFactor A‖ ≤
     (1 - a ^ 2) ^ ((q + 1 + 1) ^ k)
   rw [← specNorm_eq_norm, specNorm_sub_comm]
-  exact he.trans (h.one_sub_le_pow ha ha1 hk)
+  exact h.specNorm_polarFactor_sub_oddMatrixIterate_le_pow ha ha1 A hA hk
 
 private theorem exists_single_frame [Nonempty m] : ∃ U : Matrix m Unit 𝕜, HasOrthonormalCols U := by
   classical
