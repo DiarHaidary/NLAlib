@@ -103,6 +103,7 @@ tree and its program, or a count in a targets file).
 | Householder Hessenberg reduction | `hessenbergState A k` applies `k` similarities using `householderTailReflector`. Its terminal value `hessenbergReduction A` returns the accumulated unitary matrix and the Hessenberg form. | `isUpperHessenberg_hessenbergReduction_snd`; Mathlib has no corresponding matrix algorithm |
 | leading principal minor | `principalMinor A (Finset.Iic i)`; proper ones `Finset.Iio i` | — |
 | polar factor | `polarFactor A = A * pinv (CFC.sqrt (Aᴴ * A))`, every shape and rank | `IsSVD.polarFactor_eq` |
+| Newton iterations for the polar factor | `polarNewtonIterate` uses the adjoint of the pseudoinverse; `polarSchulzStep` and `polarSchulzIterate` use the cubic polynomial. `columnGramDefect` is the defect of orthonormality of the columns. | `IsSVD.polarNewtonIterate_eq`, `columnGramDefect_polarSchulzStep` |
 | rank-revealing column selection | `C = A.submatrix id e` with coefficients `pinv C * A` and residual `(1 - rangeProjector C) * A`; certificate `IsLocalMaxVolume A e f` | — |
 | eigenvalues of a general matrix | a listing, `IsEigenvalueListing A d`: `A.charpoly = ∏ i, (X - C (d i))` | `Matrix.IsHermitian.isEigenvalueListing_eigenvalue` |
 | normal, diagonalisable | Mathlib's `IsStarNormal A`; `IsDiagonalizable A` | `isDiagonalizable_iff_isSemisimple` |
