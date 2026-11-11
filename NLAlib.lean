@@ -483,12 +483,15 @@ public import NLAlib.Matrix.Functions.HermitianCalculus
 public import NLAlib.Matrix.Functions.InversePowerSoftMin
 public import NLAlib.Matrix.Functions.Lieb
 public import NLAlib.Matrix.Functions.LogDet
+public import NLAlib.Matrix.Functions.MatrixMonotone
+public import NLAlib.Matrix.Functions.MonotoneModulus
 public import NLAlib.Matrix.Functions.MultivariateGoldenThompson
 public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Functions.OperatorMonotone
 public import NLAlib.Matrix.Functions.OrderedExponential
 public import NLAlib.Matrix.Functions.Perspective
 public import NLAlib.Matrix.Functions.Polynomial
+public import NLAlib.Matrix.Functions.PositiveMaps
 public import NLAlib.Matrix.Functions.PositivePart
 public import NLAlib.Matrix.Functions.PowerProducts
 public import NLAlib.Matrix.Functions.Sign
