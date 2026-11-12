@@ -6,6 +6,12 @@ Their statements use the existing `SymmetricGauge.matrixNorm` and `schattenNorm`
 finite matrices over `RCLike`. The [original formalization](https://github.com/tchen-research/NLAlib/tree/77514ce42a0e437d837797a063ac161f41022730)
 guides the comparison of hypotheses, endpoint cases and constants.
 
+The explorer uses `trace-power-superadditivity` for the positive trace-power inequality
+applied to two PSD summands. Its application to an ordered pair gives
+`ordered-schatten-trace-deficit`, which also covers the nuclear-norm equality at
+exponent one. The two directions of the symmetric-gauge correspondence share
+`unitarily-invariant-norm`.
+
 ## Representation of a fixed-shape norm
 
 A matrix norm on one rectangular shape can be restricted to its thin diagonal.
@@ -94,3 +100,26 @@ rectangular dimensions over either scalar field. The deficit is Lemma 2.3 of
 [Persson, Meyer and Musco](https://doi.org/10.1137/23M1619435). The smoothness
 statement is the even-integer case of Theorem 8.2 in
 [Tropp’s matrix analysis lectures](https://doi.org/10.7907/nwsv-df59).
+
+## Fixed-shape invariance and even moments
+
+Use `q : ℝ≥0∞` at the norm interface, as in `schattenNorm q A`. Finite real
+powers enter through `ENNReal.ofReal`; even moment theorems quantify over the
+positive natural half-exponent so both powers and their induction are natural.
+The fixed-shape predicate belongs beside the other unitarily invariant norms.
+Its witnesses are obtained from the existing left and right isometry identities:
+
+```lean
+isUnitarilyInvariant_schattenNorm (q : ℝ≥0∞) :
+    IsUnitarilyInvariant (schattenNorm q : Matrix m n 𝕜 → ℝ)
+isUnitarilyInvariant_specNorm : IsUnitarilyInvariant (specNorm : Matrix m n 𝕜 → ℝ)
+isUnitarilyInvariant_frobNorm : IsUnitarilyInvariant (frobNorm : Matrix m n 𝕜 → ℝ)
+```
+
+The witnesses can be supplied to invariant frame transport or the gauge
+representation. The identities with the spectral and Frobenius norms specialize
+the Schatten witness at infinity and two. The sharp two-point bound in
+`SchattenSmoothness` takes `0 < r` and matrices of the same rectangular shape.
+For `p = 2*r` it bounds the sum of their sum and difference moments by
+`(‖A‖ + ‖B‖)^p + (‖A‖ - ‖B‖)^p`, with each norm the same Schatten p-norm.
+The uniform smoothness theorem uses that estimate directly.

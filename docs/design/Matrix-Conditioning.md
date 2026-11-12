@@ -41,3 +41,27 @@ in one dimension. Matrix multiplication and Mathlib's chain rule handle the
 two diagonal maps, and the library's spectral norm API handles all norm bounds.
 The definitions and distinctions follow Gautschi (2004), Definitions 2.3–2.6, and the
 two condition-number cards in the original atlas.
+
+## Relative distance at singular inputs
+
+A nonzero singular matrix is itself the nearest singular matrix. The minimum relative
+perturbation is therefore zero. Measuring a square matrix by its extended spectral
+condition number gives the same reciprocal-distance formula in the singular and
+invertible cases. The existing finite theorem proves the invertible case.
+
+```lean
+theorem isLeast_specNorm_div_not_isUnit_add_of_ne_zero [DecidableEq n]
+    {A : Matrix n n 𝕜} (hA : A ≠ 0) :
+    IsLeast ((fun E : Matrix n n 𝕜 => specNorm E / specNorm A) '' {E | ¬ IsUnit (A + E)})
+      ((spectralConditionNumber A)⁻¹).toReal
+```
+
+The nonzero assumption gives the relative error a nonzero scale. An application
+with a rank-deficient reference matrix can use the same statement without supplying
+invertibility. Rectangular least-squares and Kaczmarz estimates continue to use the finite
+pseudo-condition number. The underlying atlas card `condition-number-of-map-def` also
+collects three distinct results about a map: the relative-coordinate derivative,
+the diagonal-scaling bound, and the normwise bound for a linear system. Their
+explorer IDs are `componentwise-perturbation-derivative`, `componentwise-condition-bound`
+and `linear-map-relative-condition-bound`, respectively. The absolute Jacobian norm
+retains the original card ID.

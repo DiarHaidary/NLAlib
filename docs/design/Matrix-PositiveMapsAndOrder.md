@@ -18,3 +18,53 @@ Consumers are matrix concentration, Schur-complement bounds, matrix means, and p
 | `Matrix/Functions/MonotoneModulus.lean` | Given `OperatorMonotoneOn (Ici 0) f`, `ContinuousOn f (Ici 0)`, and `∀ t, 0 ≤ t → 0 ≤ f t`, positive semidefinite `A B : Matrix n n 𝕜` satisfy `specNorm (cfc f A - cfc f B) ≤ f (specNorm (A - B))`. |
 
 Here `[RCLike 𝕜]` and both matrix index types are finite. Mathlib already supplies positive linear maps, CFC on Hermitian matrices, the square-root order theorem, and the Schur-complement equivalence; the library already supplies the matrix perspective, finite operator Jensen and spectral norm. Search found no existing positive-map norm-attainment result or operator-monotone modulus in these interfaces. The direct atlas statements therefore share a single positive-map Jensen argument and the existing perspective, with spectral projection and block-rotation steps kept local.
+
+## Fractional powers as monotone functions
+
+For `r ∈ Set.Icc (0 : ℝ) 1`, the witness consumed by the matrix modulus theorem is
+
+```lean
+operatorMonotoneOn_rpow (hr : r ∈ Set.Icc (0 : ℝ) 1) :
+  OperatorMonotoneOn (Set.Ici 0) (fun t : ℝ => t ^ r)
+operatorMonotoneOn_sqrt : OperatorMonotoneOn (Set.Ici 0) Real.sqrt
+```
+
+The pinned `CFC.rpow_le_rpow` proves the complex-matrix inequality. The existing
+`OperatorMonotoneOn.cfc_le_cfc` transports it across scalar fields for
+`Matrix.PosSemidef.rpow_le_rpow`. The square-root witness uses
+`Real.sqrt_eq_rpow`. Both witnesses can be passed directly to
+`OperatorMonotoneOn.specNorm_cfc_sub_le`.
+
+The fractional-power perturbation estimate is the matrix consumer of this
+interface. For finite real or complex matrices its statement is
+
+```lean
+Matrix.PosSemidef.specNorm_rpow_sub_rpow_le (hA : A.PosSemidef)
+    (hB : B.PosSemidef) (hr : r ∈ Set.Icc (0 : ℝ) 1) :
+    specNorm (A ^ r - B ^ r) ≤ specNorm (A - B) ^ r
+```
+
+It combines the existing general modulus theorem with the fractional-power
+witness and Mathlib’s CFC representation of positive semidefinite powers.
+
+## Spectral decompositions and contractions used by positive maps
+
+The public spectral resolution in `HermitianCalculus` takes a supplied
+orthonormal diagonalization with eigenvalues `d`. Its conclusion expands
+`cfc f A` as a sum of `f (d i)` times the rank-one column projections.
+It works for any finite labeling of the eigenspaces, including repeated values.
+It specializes `HasOrthonormalCols.cfc_eq_mul_diagonal_mul_conjTranspose`.
+The operator Jensen proof consumes this expansion.
+
+`Inequalities/Block` supplies the spectral-norm bound for the off-diagonal
+block of a positive semidefinite matrix with two equal diagonal blocks:
+`(fromBlocks S B Bᴴ S).PosSemidef → specNorm B ≤ specNorm S`.
+`Factorizations/PolarFrames` supplies two complex unitary factors whose
+arithmetic mean is any square contraction, by combining a full SVD with
+two conjugate unit phases per singular value. These are the separate inputs
+to the existing Russo–Dye norm-attainment theorem.
+
+The modulus theorem needs only `0 ≤ f 0`. The scalar-order bridge
+`OperatorMonotoneOn.monotoneOn : OperatorMonotoneOn s f → MonotoneOn f s`
+is obtained from order preservation on one-dimensional scalar matrices; it
+supplies nonnegativity at every norm appearing in the proof.
