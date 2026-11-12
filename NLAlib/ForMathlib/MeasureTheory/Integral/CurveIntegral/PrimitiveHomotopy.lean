@@ -17,13 +17,15 @@ public import NLAlib.ForMathlib.Algebra.BigOperators.Grid
 # Transport of primitives along a homotopy
 
 Equality of integrals along homotopic closed curves follows by transporting local primitives
-across a finite subdivision. Upstream candidate for Mathlib.
+across a finite subdivision [StewartTall2018, Chapter 9]. Upstream candidate for Mathlib.
 
 The proofs adapt the original NLAlib atlas at commit `77514ce`.
 
 ## Main results
 
-* `Complex.integral_eq_of_differentiableOn_of_freeHomotopy`.
+* `ContinuousMap.Homotopy.integral_eq_of_differentiableOn`: invariance for a continuous
+  free homotopy of complex loops.
+* `Complex.integral_eq_of_differentiableOn_of_freeHomotopy`: real-parameter form.
 -/
 @[expose] public section
 
@@ -35,11 +37,13 @@ open scoped unitInterval
 
 namespace Complex
 
-/-- Two complex primitives of the same function have equal increments along
-any continuous path contained in both of their open domains. The path requires
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+
+/-- Primitives $G$ and $H$ with common derivative $g$ have equal increments
+$G(b)-G(a)=H(b)-H(a)$ along a path in the intersection of their open domains. The path requires
 no differentiability. The domains' intersection need not be connected. -/
 theorem sub_eq_sub_of_hasDerivAt_of_path {a b : ℂ} (γ : Path a b)
-    {U V : Set ℂ} {G H g : ℂ → ℂ} (hU : IsOpen U) (hV : IsOpen V)
+    {U V : Set ℂ} {G H g : ℂ → E} (hU : IsOpen U) (hV : IsOpen V)
     (hG : ∀ z ∈ U, HasDerivAt G (g z) z)
     (hH : ∀ z ∈ V, HasDerivAt H (g z) z)
     (hγU : ∀ t, γ t ∈ U) (hγV : ∀ t, γ t ∈ V) :
@@ -61,13 +65,13 @@ theorem sub_eq_sub_of_hasDerivAt_of_path {a b : ℂ} (γ : Path a b)
     exact γ.continuous.isOpen_preimage _ ho
   have h := hlocal.apply_eq_of_preconnectedSpace 1 0
   simp only [γ.target, γ.source] at h
-  linear_combination h
+  exact sub_eq_sub_iff_sub_eq_sub.mp h
 
-/-- The preceding chart independence applied to any closed parameter interval
-of a continuous parameterization. It is valid for repeated subdivision points. -/
+/-- Primitives with common derivative have equal increments from $\gamma(u)$ to $\gamma(v)$
+for a continuous parametrization $\gamma$ on $[u,v]$, including $u=v$. -/
 theorem sub_eq_sub_of_hasDerivAt_of_continuous
     {γ : ℝ → ℂ} (hγ : Continuous γ) {u v : ℝ} (huv : u ≤ v)
-    {U V : Set ℂ} {G H g : ℂ → ℂ} (hU : IsOpen U) (hV : IsOpen V)
+    {U V : Set ℂ} {G H g : ℂ → E} (hU : IsOpen U) (hV : IsOpen V)
     (hG : ∀ z ∈ U, HasDerivAt G (g z) z)
     (hH : ∀ z ∈ V, HasDerivAt H (g z) z)
     (hγU : ∀ t ∈ Icc u v, γ t ∈ U) (hγV : ∀ t ∈ Icc u v, γ t ∈ V) :
@@ -80,27 +84,25 @@ theorem sub_eq_sub_of_hasDerivAt_of_continuous
     apply hγV
     exact (convex_Icc u v).lineMap_mem ⟨le_rfl, huv⟩ ⟨huv, le_rfl⟩ t.property
 
-/-- The sum of local primitive increments on a finite parameter subdivision.
-The accompanying theorems give its chart-choice and refinement invariance
-under the actual primitive and path-containment hypotheses. -/
+/-- On a subdivision $p_0,\ldots,p_n$, add the change in the local primitive $G_i$
+between $\gamma(p_i)$ and $\gamma(p_{i+1})$. -/
 private noncomputable def primitiveSubdivisionTransport (γ : ℝ → ℂ) (p : ℕ → ℝ)
-    (G : ℕ → ℂ → ℂ) (n : ℕ) : ℂ :=
+    (G : ℕ → ℂ → E) (n : ℕ) : E :=
   ∑ i ∈ range n, (G i (γ (p (i + 1))) - G i (γ (p i)))
 
-/-- The actual finite local-primitive transport equals Mathlib's native curve
-integral on a C¹ path. The integrability and fundamental-theorem hypotheses
-are derived interval by interval from the primitive charts and path regularity. -/
-private theorem primitiveSubdivisionTransport_eq_curveIntegral_of_hasDerivAt
+/-- If the $i$th subpath stays inside the domain of a primitive $G_i$ of $g$, the
+sum of primitive increments equals $\int_\gamma g(z)\,dz$ along a $C^1$ path. -/
+private theorem primitiveSubdivisionTransport_eq_curveIntegral_of_hasDerivAt [CompleteSpace E]
     {a b : ℂ} (γ : Path a b) (hγ : ContDiffOn ℝ 1 γ.extend I)
-    {p : ℕ → ℝ} {n : ℕ} {G : ℕ → ℂ → ℂ} {U : ℕ → Set ℂ} {g : ℂ → ℂ}
+    {p : ℕ → ℝ} {n : ℕ} {G : ℕ → ℂ → E} {U : ℕ → Set ℂ} {g : ℂ → E}
     (hp : ∀ i < n, p i ≤ p (i + 1)) (hp0 : p 0 = 0) (hpn : p n = 1)
     (hpI : ∀ i ≤ n, p i ∈ I)
     (hG : ∀ i < n, ∀ z ∈ U i, HasDerivAt (G i) (g z) z)
     (hg : ∀ i < n, ContinuousOn g (U i))
     (hγU : ∀ i < n, ∀ t ∈ Icc (p i) (p (i + 1)), γ.extend t ∈ U i) :
     primitiveSubdivisionTransport γ.extend p G n =
-      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ := by
-  let F := curveIntegralFun (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ := by
+  let F := curveIntegralFun (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ
   have hcell (i : ℕ) (hi : i < n) :
       IntervalIntegrable F volume (p i) (p (i + 1)) ∧
       (∫ t in (p i)..(p (i + 1)), F t) =
@@ -114,13 +116,13 @@ private theorem primitiveSubdivisionTransport_eq_curveIntegral_of_hasDerivAt
     have hd : ContinuousOn (fun t => derivWithin γ.extend I t)
         (Icc (p i) (p (i + 1))) :=
       (hγ.continuousOn_derivWithin uniqueDiffOn_Icc_zero_one le_rfl).mono hsubset
-    have hFeq : F = fun t => g (γ.extend t) * derivWithin γ.extend I t := by
+    have hFeq : F = fun t => derivWithin γ.extend I t • g (γ.extend t) := by
       funext t
-      simp only [F, curveIntegralFun_def, smul_apply,
-        ContinuousLinearMap.id_apply, smul_eq_mul]
+      simp only [F, curveIntegralFun_def, ContinuousLinearMap.smulRight_apply,
+        ContinuousLinearMap.id_apply]
     have hF : ContinuousOn F (Icc (p i) (p (i + 1))) := by
       rw [hFeq]
-      exact hc.fun_mul hd
+      exact hd.fun_smul hc
     have hint : IntervalIntegrable F volume (p i) (p (i + 1)) :=
       hF.intervalIntegrable_of_Icc (hp i hi)
     refine ⟨hint, ?_⟩
@@ -137,7 +139,7 @@ private theorem primitiveSubdivisionTransport_eq_curveIntegral_of_hasDerivAt
     have hDerG := hG i hi (γ.extend r) (hγU i hi r (Ioo_subset_Icc_self hr))
     have hdcomp := (hDerG.hasFDerivAt.restrictScalars ℝ).comp_hasDerivAt r hderγ.hasDerivAt
     simpa [F, curveIntegralFun_def, derivWithin_of_mem_nhds hnhds,
-      smul_eq_mul, mul_comm] using hdcomp
+      ContinuousLinearMap.smulRight_apply] using hdcomp
   unfold primitiveSubdivisionTransport
   calc
     (∑ i ∈ range n, (G i (γ.extend (p (i + 1))) - G i (γ.extend (p i)))) =
@@ -148,7 +150,7 @@ private theorem primitiveSubdivisionTransport_eq_curveIntegral_of_hasDerivAt
     _ = ∫ t in (0 : ℝ)..1, F t := by
       simpa only [hp0, hpn] using
         intervalIntegral.sum_integral_adjacent_intervals (fun i hi => (hcell i hi).1)
-    _ = curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ :=
+    _ = curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ :=
       (curveIntegral_def _ γ).symm
 
 end Complex
@@ -163,9 +165,11 @@ open scoped unitInterval
 
 namespace Complex
 
-/-- An actual finite primitive chart grid for a continuous square map.
-Each chart contains the image of its entire closed cell. -/
-private structure PrimitiveHomotopyGrid (g : ℂ → ℂ) (ψ : ℝ × ℝ → ℂ) where
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+
+/-- A square grid subordinate to the open primitive charts of $g$. Each chart
+contains the image of its entire closed cell under the homotopy. -/
+private structure PrimitiveHomotopyGrid (g : ℂ → E) (ψ : ℝ × ℝ → ℂ) where
   /-- Number of equal subdivisions on each coordinate axis. -/
   size : ℕ
   /-- The grid has at least one cell. -/
@@ -173,7 +177,7 @@ private structure PrimitiveHomotopyGrid (g : ℂ → ℂ) (ψ : ℝ × ℝ → �
   /-- Open neighborhood of the image of each cell. -/
   chart : ℕ → ℕ → Set ℂ
   /-- Local complex primitive on each chart. -/
-  primitive : ℕ → ℕ → ℂ → ℂ
+  primitive : ℕ → ℕ → ℂ → E
   /-- Each chart is open. -/
   isOpen_chart : ∀ i < size, ∀ j < size, IsOpen (chart i j)
   /-- The local primitive has the prescribed complex derivative. -/
@@ -188,34 +192,34 @@ private structure PrimitiveHomotopyGrid (g : ℂ → ℂ) (ψ : ℝ × ℝ → �
 
 namespace PrimitiveHomotopyGrid
 
-/-- The bottom edge increment of the actual primitive in a cell. -/
-private noncomputable def bottom {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
-    (i j : ℕ) : ℂ := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j : ℝ) / D.size))) -
+/-- The increment of the cell primitive along the bottom edge. -/
+private noncomputable def bottom {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
+    (i j : ℕ) : E := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j : ℝ) / D.size))) -
       D.primitive i j (ψ (((i : ℝ) / D.size), ((j : ℝ) / D.size)))
 
-/-- The top edge increment of the actual primitive in a cell. -/
-private noncomputable def top {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
-    (i j : ℕ) : ℂ := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
+/-- The increment of the cell primitive along the top edge. -/
+private noncomputable def top {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
+    (i j : ℕ) : E := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
       D.primitive i j (ψ (((i : ℝ) / D.size), ((j + 1 : ℝ) / D.size)))
 
-/-- The left edge increment of the actual primitive in a cell. -/
-private noncomputable def left {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
-    (i j : ℕ) : ℂ := D.primitive i j (ψ (((i : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
+/-- The increment of the cell primitive along the left edge. -/
+private noncomputable def left {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
+    (i j : ℕ) : E := D.primitive i j (ψ (((i : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
       D.primitive i j (ψ (((i : ℝ) / D.size), ((j : ℝ) / D.size)))
 
-/-- The right edge increment of the actual primitive in a cell. -/
-private noncomputable def right {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
-    (i j : ℕ) : ℂ := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
+/-- The increment of the cell primitive along the right edge. -/
+private noncomputable def right {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ)
+    (i j : ℕ) : E := D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j + 1 : ℝ) / D.size))) -
       D.primitive i j (ψ (((i + 1 : ℝ) / D.size), ((j : ℝ) / D.size)))
 
-private theorem node_le_next {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ}
+private theorem node_le_next {g : ℂ → E} {ψ : ℝ × ℝ → ℂ}
     (D : PrimitiveHomotopyGrid g ψ) (i : ℕ) :
     (i : ℝ) / D.size ≤ (i + 1 : ℝ) / D.size :=
   div_le_div_of_nonneg_right (by linarith) (Nat.cast_nonneg D.size)
 
 /-- Two adjacent horizontal edges agree because their different primitives
-have the same derivative along the actual continuous shared edge. -/
-private theorem bottom_succ_eq_top {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ}
+have the same derivative along the common edge. -/
+private theorem bottom_succ_eq_top {g : ℂ → E} {ψ : ℝ × ℝ → ℂ}
     (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ) {i j : ℕ}
     (hi : i < D.size) (hj : j + 1 < D.size) : D.bottom i (j + 1) = D.top i j := by
   have h := sub_eq_sub_of_hasDerivAt_of_continuous
@@ -232,7 +236,7 @@ private theorem bottom_succ_eq_top {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ}
 
 /-- Two adjacent vertical edges agree for the same continuous-path primitive
 reason, without any differentiability of the square map. -/
-private theorem left_succ_eq_right {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ}
+private theorem left_succ_eq_right {g : ℂ → E} {ψ : ℝ × ℝ → ℂ}
     (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ) {i j : ℕ}
     (hi : i + 1 < D.size) (hj : j < D.size) : D.left (i + 1) j = D.right i j := by
   have h := sub_eq_sub_of_hasDerivAt_of_continuous
@@ -247,26 +251,26 @@ private theorem left_succ_eq_right {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ}
       ⟨⟨D.node_le_next i, ht.1⟩, ⟨le_rfl, ht.2⟩⟩)
   simpa only [left, right, Nat.cast_add, Nat.cast_one] using h
 
-/-- All actual interior edge increments cancel, leaving precisely the outer
+/-- The interior edge increments cancel in pairs, leaving the outer
 boundary transport of a continuous primitive-charted square. -/
 private theorem sum_right_sub_sum_left_eq_sum_top_sub_sum_bottom
-    {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ) :
+    {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ) :
     (∑ j ∈ range D.size, D.right (D.size - 1) j) - (∑ j ∈ range D.size, D.left 0 j) =
       (∑ i ∈ range D.size, D.top i (D.size - 1)) - (∑ i ∈ range D.size, D.bottom i 0) := by
   apply sum_grid_boundary_eq _ _ _ _ D.size_pos
   · intro i _ j _
     dsimp [bottom, top, left, right]
-    ring
+    abel
   · exact fun _ hi _ hj => D.bottom_succ_eq_top hψ hi hj
   · exact fun _ hi _ hj => D.left_succ_eq_right hψ hi hj
 
 end PrimitiveHomotopyGrid
 
 /-- Every compact continuous square inside an open holomorphy domain has an
-actual finite primitive grid. Its mesh and primitives are derived by compact
+finite primitive grid. Its mesh and primitives are derived by compact
 Lebesgue subdivision and local convex primitives. -/
-private theorem nonempty_primitiveHomotopyGrid_of_differentiableOn
-    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → ℂ}
+private theorem nonempty_primitiveHomotopyGrid_of_differentiableOn [CompleteSpace E]
+    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → E}
     (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
     (hψΩ : ∀ t ∈ Icc (0 : ℝ × ℝ) 1, ψ t ∈ Ω) :
     Nonempty (PrimitiveHomotopyGrid g ψ) := by
@@ -275,7 +279,7 @@ private theorem nonempty_primitiveHomotopyGrid_of_differentiableOn
     fun z => mem_nhds_iff.mp (hΩ.mem_nhds z.property)
   choose r hr hball using hrad
   let B : Ω → Set ℂ := fun z => ball (z : ℂ) (r z)
-  have hprimitive : ∀ z : Ω, ∃ G : ℂ → ℂ, ∀ w ∈ B z, HasDerivAt G (g w) w := by
+  have hprimitive : ∀ z : Ω, ∃ G : ℂ → E, ∀ w ∈ B z, HasDerivAt G (g w) w := by
     intro z
     obtain ⟨G, hG⟩ := (convex_ball (z : ℂ) (r z)).exists_forall_hasDerivWithinAt
       (hg.mono (hball z))
@@ -308,8 +312,10 @@ open scoped unitInterval
 
 namespace Complex
 
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+
 private theorem PrimitiveHomotopyGrid.top_eq_bottom_of_periodic
-    {g : ℂ → ℂ} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ)
+    {g : ℂ → E} {ψ : ℝ × ℝ → ℂ} (D : PrimitiveHomotopyGrid g ψ) (hψ : Continuous ψ)
     (hloop : ∀ t ∈ Icc (0 : ℝ) 1, ψ (t, 0) = ψ (t, 1))
     (hlast : D.size - 1 < D.size) (hlastnode : (((D.size - 1 : ℕ) : ℝ) + 1) / D.size = 1)
     (hnode : ∀ (i : ℕ), i ≤ D.size → (i : ℝ) / D.size ∈ Icc (0 : ℝ) 1)
@@ -340,23 +346,16 @@ private theorem PrimitiveHomotopyGrid.top_eq_bottom_of_periodic
     Nat.cast_zero, zero_div, hlastnode, Nat.cast_add, Nat.cast_one,
     ← hloop _ hnext', ← hloop _ hcur] using h
 
-/-- A continuous free homotopy of loops in an open holomorphy domain preserves
-their native contour integrals. Opposite boundary sides are the same path;
-their primitive transports cancel even though the charts may differ. -/
-theorem integral_eq_of_differentiableOn_of_freeHomotopy
+private theorem PrimitiveHomotopyGrid.integral_eq [CompleteSpace E]
     {a b : ℂ} (γ₀ : Path a a) (γ₁ : Path b b)
-    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → ℂ}
-    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
-    (hψΩ : ∀ t ∈ Icc (0 : ℝ × ℝ) 1, ψ t ∈ Ω)
+    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {g : ℂ → E} (D : PrimitiveHomotopyGrid g ψ)
     (hleft : ∀ t ∈ Icc (0 : ℝ) 1, γ₀.extend t = ψ (0, t))
     (hright : ∀ t ∈ Icc (0 : ℝ) 1, γ₁.extend t = ψ (1, t))
     (hloop : ∀ t ∈ Icc (0 : ℝ) 1, ψ (t, 0) = ψ (t, 1))
     (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
-    curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
-      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
+    curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₀ =
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₁ := by
   classical
-  let D := Classical.choice (nonempty_primitiveHomotopyGrid_of_differentiableOn
-    hψ hΩ hg hψΩ)
   have hn : 0 < (D.size : ℝ) := by exact_mod_cast D.size_pos
   have hlast : D.size - 1 < D.size := Nat.sub_lt D.size_pos Nat.one_pos
   have hlastadd : D.size - 1 + 1 = D.size := Nat.sub_add_cancel (Nat.succ_le_of_lt D.size_pos)
@@ -401,7 +400,7 @@ theorem integral_eq_of_differentiableOn_of_freeHomotopy
     (fun j hj => D.hasDerivAt_primitive _ hlast j hj)
     (fun j hj => D.continuousOn _ hlast j hj) hrightChart
   have hsumL : (∑ j ∈ range D.size, D.left 0 j) =
-      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ := by
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₀ := by
     rw [← hL]
     unfold primitiveSubdivisionTransport
     apply sum_congr rfl
@@ -412,7 +411,7 @@ theorem integral_eq_of_differentiableOn_of_freeHomotopy
     rw [hleft _ hnext, hleft _ (hnode j hj'.le)]
     simp only [Nat.cast_add, Nat.cast_one]
   have hsumR : (∑ j ∈ range D.size, D.right (D.size - 1) j) =
-      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₁ := by
     rw [← hR]
     unfold primitiveSubdivisionTransport
     apply sum_congr rfl
@@ -429,6 +428,60 @@ theorem integral_eq_of_differentiableOn_of_freeHomotopy
     exact sum_congr rfl (fun i hi => htopBottom i (mem_range.mp hi))
   rw [hsum, sub_self, hsumL, hsumR] at hboundary
   exact (sub_eq_zero.mp hboundary).symm
+
+/-- A continuous free homotopy through closed curves in an open holomorphy domain preserves
+the integral of $g(z)\,dz$ when both end curves are continuously differentiable.
+The target is a complex Banach space. For the scalar case see [StewartTall2018, Chapter 9]. -/
+theorem _root_.ContinuousMap.Homotopy.integral_eq_of_differentiableOn [CompleteSpace E]
+    {a b : ℂ} {γ₀ : Path a a} {γ₁ : Path b b}
+    (H : (γ₀ : C(I, ℂ)).Homotopy γ₁) {Ω : Set ℂ} {g : ℂ → E}
+    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
+    (himage : ∀ p, H p ∈ Ω) (hloop : ∀ t : I, H (t, 0) = H (t, 1))
+    (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
+    curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₀ =
+      curveIntegral (fun z => (ContinuousLinearMap.id ℂ ℂ).smulRight (g z)) γ₁ := by
+  let ψ (p : ℝ × ℝ) : ℂ :=
+    H (projIcc 0 1 zero_le_one p.1, projIcc 0 1 zero_le_one p.2)
+  have hψ : Continuous ψ := H.continuous_toFun.comp
+    (continuous_projIcc.prodMap continuous_projIcc)
+  let D := Classical.choice (nonempty_primitiveHomotopyGrid_of_differentiableOn
+    hψ hΩ hg (fun p _ => himage _))
+  apply D.integral_eq γ₀ γ₁ hψ _ _ _ hγ₀ hγ₁
+  · intro t _
+    simp [ψ, Path.extend, Set.IccExtend]
+  · intro t _
+    simp [ψ, Path.extend, Set.IccExtend]
+  · intro t _
+    simpa [ψ] using hloop (projIcc 0 1 zero_le_one t)
+
+/-- A continuous real parametrization of a homotopy gives equal contour integrals when its
+horizontal slices close up and its two end loops are continuously differentiable.
+The contour integrals of $g(z)\,dz$ on the two end loops agree [StewartTall2018, Chapter 9]. -/
+theorem integral_eq_of_differentiableOn_of_freeHomotopy
+    {a b : ℂ} (γ₀ : Path a a) (γ₁ : Path b b)
+    {ψ : ℝ × ℝ → ℂ} (hψ : Continuous ψ) {Ω : Set ℂ} {g : ℂ → ℂ}
+    (hΩ : IsOpen Ω) (hg : DifferentiableOn ℂ g Ω)
+    (hψΩ : ∀ t ∈ Icc (0 : ℝ × ℝ) 1, ψ t ∈ Ω)
+    (hleft : ∀ t ∈ Icc (0 : ℝ) 1, γ₀.extend t = ψ (0, t))
+    (hright : ∀ t ∈ Icc (0 : ℝ) 1, γ₁.extend t = ψ (1, t))
+    (hloop : ∀ t ∈ Icc (0 : ℝ) 1, ψ (t, 0) = ψ (t, 1))
+    (hγ₀ : ContDiffOn ℝ 1 γ₀.extend I) (hγ₁ : ContDiffOn ℝ 1 γ₁.extend I) :
+    curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₀ =
+      curveIntegral (fun z => g z • ContinuousLinearMap.id ℂ ℂ) γ₁ := by
+  let H : (γ₀ : C(I, ℂ)).Homotopy γ₁ :=
+    { toFun := fun p => ψ (p.1, p.2)
+      continuous_toFun := hψ.comp (continuous_subtype_val.prodMap continuous_subtype_val)
+      map_zero_left := fun t => by simpa using (hleft t t.property).symm
+      map_one_left := fun t => by simpa using (hright t t.property).symm }
+  have heq := H.integral_eq_of_differentiableOn hΩ hg
+    (fun p => hψΩ _ ⟨⟨p.1.property.1, p.2.property.1⟩, ⟨p.1.property.2, p.2.property.2⟩⟩)
+    (fun t => hloop t t.property) hγ₀ hγ₁
+  have hω (z : ℂ) : (ContinuousLinearMap.id ℂ ℂ).smulRight (g z) =
+      g z • ContinuousLinearMap.id ℂ ℂ := by
+    apply ContinuousLinearMap.ext
+    intro v
+    simp [mul_comm]
+  simpa only [hω] using heq
 
 end Complex
 

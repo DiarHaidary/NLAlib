@@ -18,7 +18,9 @@ public import Mathlib.Tactic.NormNum
 Uniform meshes on the unit interval and its square refine open covers. Upstream candidate for
 Mathlib.
 
-The proofs adapt the original NLAlib atlas at commit `77514ce`.
+A mesh smaller than a Lebesgue number of the pulled-back cover suffices, by Mathlib’s
+`lebesgue_number_lemma_of_metric`. The proofs adapt the original NLAlib atlas at commit
+`77514ce`.
 
 ## Main results
 
@@ -46,9 +48,9 @@ private theorem uniformSubdivision_cell_subset_ball {n i : ℕ} {δ : ℝ}
   have htop : t ≤ (i : ℝ) / n + 1 / n := by simpa only [add_div] using ht.2
   linarith
 
-/-- A compact continuous homotopy square has a uniform finite grid whose actual
-closed cells each lie in one open chart of the image cover. This is the mesh
-input for a local primitive telescoping argument, with no C² hypothesis. -/
+/-- Let $\psi$ be a continuous map from the real plane to a topological space. For any open
+cover of $\psi([0,1]^2)$ there is a positive integer $n$ such that the image of each closed
+cell of the uniform $n\times n$ grid lies in a single member of the cover. -/
 theorem exists_uniform_grid_subordinate_open_cover
     {X : Type*} [TopologicalSpace X] {ι : Sort*} (ψ : ℝ × ℝ → X) (hψ : Continuous ψ)
     (U : ι → Set X) (hU : ∀ j, IsOpen (U j))
