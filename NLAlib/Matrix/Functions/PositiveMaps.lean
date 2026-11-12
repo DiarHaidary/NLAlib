@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Analysis.CStarAlgebra.PositiveLinearMap
 public import NLAlib.ForMathlib.Data.Matrix.Block
+public import NLAlib.Matrix.Factorizations.PolarFrames
 public import NLAlib.Matrix.Functions.OperatorConvex
 public import NLAlib.Matrix.Inequalities.Block
 public import NLAlib.Matrix.Spectral.Normal
@@ -34,35 +35,23 @@ namespace NLAlib
 
 variable {𝕜 m n : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] [Fintype m] [DecidableEq m]
 
-private def spectralAtom (U : Matrix n n 𝕜) (i : n) : Matrix n n 𝕜 :=
-  U * diagonal (Pi.single i 1) * Uᴴ
-
-private theorem posSemidef_spectralAtom (U : Matrix n n 𝕜) (i : n) :
-    (spectralAtom U i).PosSemidef := by
-  apply Matrix.PosSemidef.mul_mul_conjTranspose_same
-  exact Matrix.posSemidef_diagonal_iff.mpr fun j => by by_cases h : j = i <;> simp [h]
-
-private theorem mul_diagonal_mul_eq_sum (U : Matrix n n 𝕜) (d : n → 𝕜) :
-    U * diagonal d * Uᴴ = ∑ i, d i • spectralAtom U i := by
-  have hd : diagonal d = ∑ i, d i • (diagonal (Pi.single i 1) : Matrix n n 𝕜) := by
-    ext j k
-    by_cases h : j = k
-    · subst k
-      simp [Matrix.sum_apply, diagonal, Pi.single_apply]
-    · simp [Matrix.sum_apply, diagonal, h]
-  rw [hd, Matrix.mul_sum, Matrix.sum_mul]
-  simp only [Matrix.mul_smul, Matrix.smul_mul, spectralAtom]
+private abbrev spectralAtom (U : Matrix n n 𝕜) (i : n) : Matrix n n 𝕜 :=
+  vecMulVec (U.col i) (star (U.col i))
 
 private theorem sum_spectralAtom {U : Matrix n n 𝕜} (hU : HasOrthonormalCols U) :
     ∑ i, spectralAtom U i = 1 := by
   simpa [hU.mul_conjTranspose_self_of_card_eq rfl] using
-    (mul_diagonal_mul_eq_sum U (fun _ => 1)).symm
+    (mul_diagonal_mul_conjTranspose_eq_sum_vecMulVec U (fun _ => 1)).symm
 
 private theorem cfc_eq_sum_spectralAtom {A : Matrix n n 𝕜} (hA : A.IsHermitian) (f : ℝ → ℝ) :
     cfc f A = ∑ i, ((f (hA.eigenvalues i) : ℝ) : 𝕜) •
       spectralAtom (hA.eigenvectorUnitary : Matrix n n 𝕜) i := by
-  rw [hA.cfc_eq, Matrix.IsHermitian.cfc, Unitary.conjStarAlgAut_apply]
-  exact mul_diagonal_mul_eq_sum _ _
+  have hdiag : A = (hA.eigenvectorUnitary : Matrix n n 𝕜) *
+      diagonal (fun i => ((hA.eigenvalues i : ℝ) : 𝕜)) *
+        (hA.eigenvectorUnitary : Matrix n n 𝕜)ᴴ := by
+    have h := hA.spectral_theorem
+    rwa [Unitary.conjStarAlgAut_apply] at h
+  exact hA.hasOrthonormalCols_eigenvectorUnitary.cfc_eq_sum_smul_vecMulVec rfl hdiag f
 
 private theorem map_cfc_eq_sum_sqrt (Φ : Matrix n n 𝕜 →ₚ[𝕜] Matrix m m 𝕜)
     {A : Matrix n n 𝕜} (hA : A.IsHermitian) (f : ℝ → ℝ) :
@@ -71,7 +60,8 @@ private theorem map_cfc_eq_sum_sqrt (Φ : Matrix n n 𝕜 →ₚ[𝕜] Matrix m 
   intro K
   rw [cfc_eq_sum_spectralAtom hA, map_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
-  have hp := Φ.map_nonneg (posSemidef_spectralAtom (hA.eigenvectorUnitary : Matrix n n 𝕜) i).nonneg
+  let u := (hA.eigenvectorUnitary : Matrix n n 𝕜).col i
+  have hp := Φ.map_nonneg (Matrix.posSemidef_vecMulVec_self_star u).nonneg
   have hh : (K i).IsHermitian := (CFC.sqrt_nonneg _).isSelfAdjoint
   rw [map_smul, Algebra.algebraMap_eq_smul_one, hh.eq, Matrix.mul_smul, Matrix.mul_one,
     Matrix.smul_mul, RCLike.real_smul_eq_coe_smul (K := 𝕜)]
@@ -88,8 +78,8 @@ theorem OperatorConvexOn.cfc_map_le {s : Set ℝ} {f : ℝ → ℝ} (hf : Operat
     calc
       _ = ∑ i, Φ (spectralAtom (hA.eigenvectorUnitary : Matrix n n 𝕜) i) := by
         refine Finset.sum_congr rfl fun i _ => ?_
-        have hp :=
-          Φ.map_nonneg (posSemidef_spectralAtom (hA.eigenvectorUnitary : Matrix n n 𝕜) i).nonneg
+        let u := (hA.eigenvectorUnitary : Matrix n n 𝕜).col i
+        have hp := Φ.map_nonneg (Matrix.posSemidef_vecMulVec_self_star u).nonneg
         rw [(show (K i).IsHermitian from (CFC.sqrt_nonneg _).isSelfAdjoint).eq]
         exact CFC.sqrt_mul_sqrt_self _ hp
       _ = 1 := by rw [← map_sum, sum_spectralAtom hA.hasOrthonormalCols_eigenvectorUnitary, hΦ]
@@ -121,8 +111,10 @@ theorem sq_map_le_map_sq (Φ : Matrix n n 𝕜 →ₚ[𝕜] Matrix m m 𝕜) (h�
     apply isSelfAdjoint_sum
     intro i _
     rw [map_smul]
-    exact (Φ.map_nonneg (posSemidef_spectralAtom _ _).nonneg).posSemidef.isHermitian.smul
-      (show IsSelfAdjoint ((hA.eigenvalues i : ℝ) : 𝕜) from RCLike.conj_ofReal _)
+    have hp := Φ.map_nonneg
+      (Matrix.posSemidef_vecMulVec_self_star ((hA.eigenvectorUnitary : Matrix n n 𝕜).col i)).nonneg
+    apply hp.posSemidef.isHermitian.smul
+    exact (show IsSelfAdjoint ((hA.eigenvalues i : ℝ) : 𝕜) from RCLike.conj_ofReal _)
   have h := operatorConvexOn_sq.cfc_map_le Φ hΦ hA (Set.subset_univ _)
   rwa [cfc_pow_id (Φ A) 2 hs.isSelfAdjoint, cfc_pow_id A 2 hA.isSelfAdjoint] at h
 
@@ -174,20 +166,6 @@ private theorem posSemidef_fromBlocks_phase [Finite m] {B : Matrix m m ℂ} (hB 
     hz, one_smul] using h
 
 omit [DecidableEq m] in
-private theorem specNorm_le_of_posSemidef_fromBlocks {S B : Matrix m m ℂ}
-    (hS : S.PosSemidef) (h : (fromBlocks S B Bᴴ S).PosSemidef) : specNorm B ≤ specNorm S := by
-  classical
-  obtain ⟨K, hK, rfl⟩ := (hS.posSemidef_fromBlocks_iff_exists_sqrt_mul_mul_sqrt hS).mp h
-  have hnorm := specNorm_conjTranspose_mul_self (CFC.sqrt S)
-  have hs : (CFC.sqrt S).IsHermitian := (CFC.sqrt_nonneg _).isSelfAdjoint
-  rw [hs.eq, CFC.sqrt_mul_sqrt_self _ hS.nonneg] at hnorm
-  calc
-    _ ≤ (specNorm (CFC.sqrt S) * specNorm K) * specNorm (CFC.sqrt S) :=
-      (specNorm_mul_le _ _).trans (by gcongr; exact specNorm_mul_le _ _)
-    _ ≤ (specNorm (CFC.sqrt S) * 1) * specNorm (CFC.sqrt S) := by gcongr
-    _ = _ := by rw [mul_one, ← sq, ← hnorm]
-
-omit [DecidableEq m] in
 private theorem specNorm_map_le_of_hasOrthonormalCols
     (Φ : Matrix n n ℂ →ₚ[ℂ] Matrix m m ℂ) {A : Matrix n n ℂ}
     (hA : HasOrthonormalCols A) : specNorm (Φ A) ≤ specNorm (Φ 1) := by
@@ -204,12 +182,12 @@ private theorem specNorm_map_le_of_hasOrthonormalCols
     simpa using h
   let B := fun i => Φ (spectralAtom V i)
   have hB (i : n) : (B i).PosSemidef :=
-    (Φ.map_nonneg (posSemidef_spectralAtom V i).nonneg).posSemidef
+    (Φ.map_nonneg (Matrix.posSemidef_vecMulVec_self_star (V.col i)).nonneg).posSemidef
   have hsum : ∑ i, B i = Φ 1 := by
     dsimp [B]
     rw [← map_sum, sum_spectralAtom hV]
   have hfirst : ∑ i, d i • B i = Φ A := by
-    rw [hdiag, mul_diagonal_mul_eq_sum, map_sum]
+    rw [hdiag, mul_diagonal_mul_conjTranspose_eq_sum_vecMulVec, map_sum]
     simp only [map_smul]
     rfl
   have hsecond : ∑ i, star (d i) • B i = (Φ A)ᴴ := by
@@ -217,47 +195,7 @@ private theorem specNorm_map_le_of_hasOrthonormalCols
     exact Finset.sum_congr rfl fun i _ => by rw [Matrix.conjTranspose_smul, (hB i).isHermitian.eq]
   have hp := Matrix.posSemidef_sum Finset.univ fun i _ => posSemidef_fromBlocks_phase (hB i) (hz i)
   rw [Matrix.sum_fromBlocks, hsum, hfirst, hsecond] at hp
-  exact specNorm_le_of_posSemidef_fromBlocks (Φ.map_nonneg zero_le_one).posSemidef hp
-
-private theorem circlePoint_mul_star (s : ℝ) (hs : |s| ≤ 1) :
-    ((s : ℂ) + Complex.I * Real.sqrt (1 - s ^ 2)) *
-      star ((s : ℂ) + Complex.I * Real.sqrt (1 - s ^ 2)) = 1 := by
-  have ht : (Real.sqrt (1 - s ^ 2)) ^ 2 = 1 - s ^ 2 :=
-    Real.sq_sqrt (by
-      have hs' := abs_le.mp hs
-      nlinarith [mul_nonneg (sub_nonneg.mpr hs'.2) (by linarith : 0 ≤ 1 + s)])
-  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im] <;> nlinarith
-
-private theorem exists_average_of_specNorm_le_one (A : Matrix n n ℂ) (hA : specNorm A ≤ 1) :
-    ∃ U V : Matrix n n ℂ, HasOrthonormalCols U ∧ HasOrthonormalCols V ∧
-      A = (2 : ℂ)⁻¹ • (U + V) := by
-  obtain ⟨L, R, h⟩ := exists_isSVD A A.rank_le_card_width le_rfl le_rfl
-  let s (i : Fin (Fintype.card n)) := singularValues A i
-  let z (i : Fin (Fintype.card n)) : ℂ := (s i : ℂ) + Complex.I * √(1 - s i ^ 2)
-  have hz (i) : z i * star (z i) = 1 := circlePoint_mul_star (s i) (by
-    rw [abs_of_nonneg (singularValues_nonneg A i)]
-    exact (singularValues_le_specNorm A i).trans hA)
-  have hd : HasOrthonormalCols (diagonal z) := by
-    rw [HasOrthonormalCols, diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]
-    congr 1
-    funext i
-    exact (mul_comm _ _).trans (hz i)
-  have hr : HasOrthonormalCols Rᴴ := by
-    rw [HasOrthonormalCols, Matrix.conjTranspose_conjTranspose]
-    exact h.hasOrthonormalCols_right.mul_conjTranspose_self_of_card_eq (by simp)
-  refine ⟨L * diagonal z * Rᴴ, L * (diagonal z)ᴴ * Rᴴ,
-    (h.hasOrthonormalCols_left.mul hd).mul hr,
-    (h.hasOrthonormalCols_left.mul hd.conjTranspose).mul hr,
-    ?_⟩
-  rw [← Matrix.add_mul, ← Matrix.mul_add, ← Matrix.smul_mul, ← Matrix.mul_smul]
-  rw [h.eq]
-  congr 2
-  ext i j
-  by_cases hij : i = j
-  · subst j
-    simp [z, s]
-    ring
-  · simp [diagonal, hij, Ne.symm hij]
+  exact hp.specNorm_le_specNorm_of_fromBlocks
 
 omit [DecidableEq m] in
 /-- **Russo–Dye norm attainment.** A positive complex-linear map attains its largest spectral
@@ -268,7 +206,7 @@ theorem isGreatest_image_specNorm_map (Φ : Matrix n n ℂ →ₚ[ℂ] Matrix m 
     IsGreatest ((fun A => specNorm (Φ A)) '' {A | specNorm A ≤ 1}) (specNorm (Φ 1)) := by
   refine ⟨⟨1, specNorm_one_le, rfl⟩, ?_⟩
   rintro _ ⟨A, hA, rfl⟩
-  obtain ⟨U, V, hU, hV, h⟩ := exists_average_of_specNorm_le_one A hA
+  obtain ⟨U, V, hU, hV, h⟩ := exists_eq_smul_add_of_specNorm_le_one A hA
   change specNorm (Φ A) ≤ _
   rw [h, map_smul, map_add, specNorm_smul]
   have h₂ : ‖(2 : ℂ)⁻¹‖ = (2 : ℝ)⁻¹ := by norm_num
