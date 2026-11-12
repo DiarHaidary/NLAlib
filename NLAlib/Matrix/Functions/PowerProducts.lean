@@ -26,6 +26,7 @@ This is the singular limit in the multivariate trace inequality of
 * `NLAlib.orderedMatrixCpow`: the ordered product of principal complex powers.
 * `NLAlib.orderedMatrixCpow_ofReal_eq_prod_rpow`: its real boundary for PSD factors.
 * `NLAlib.orderedMatrixCpow_eq_orderedMatrixExp_log`: its logarithmic form for definite factors.
+* `NLAlib.schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log`: the finite definite case.
 * `NLAlib.log_schattenNorm_rpow_abs_prod_rpow_le_extendedLogIntegral`: the multivariate
   Araki–Lieb–Thirring inequality for positive semidefinite factors.
 -/
@@ -330,7 +331,7 @@ private theorem isHermitian_mem_map_log (L : List (Matrix n n ℂ)) :
 
 /-- Complex powers on the right boundary are uniformly controlled by the
 product of the original PSD operator norms. Empty products are included. -/
-private theorem norm_orderedMatrixCpow_right_le
+theorem norm_orderedMatrixCpow_right_le
     (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosSemidef) (t : ℝ) :
     ‖orderedMatrixCpow L (1 + (t : ℂ) * I)‖ ≤ (L.map (fun A => ‖A‖)).prod := by
   induction L with
@@ -343,7 +344,7 @@ private theorem norm_orderedMatrixCpow_right_le
 
 /-- The right-boundary ordered complex product is continuous even for
 singular PSD factors. -/
-private theorem continuous_orderedMatrixCpow_right
+theorem continuous_orderedMatrixCpow_right
     (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosSemidef) :
     Continuous (fun t : ℝ => orderedMatrixCpow L (1 + (t : ℂ) * I)) := by
   induction L with
@@ -455,6 +456,44 @@ private theorem continuous_log_boundaryNorm_add (L : List (Matrix n n ℂ))
       (continuous_orderedMatrixCpow_right L hL)).add continuous_const
   · exact fun _ => (add_pos_of_nonneg_of_pos (schattenNorm_nonneg _ _) hδ).ne'
 
+/-- For positive definite factors, the right-boundary logarithm of their Schatten norm is
+integrable under any finite measure. In positive dimension this follows from uniform product
+and inverse bounds. In dimension zero the integrand is identically zero. -/
+theorem integrable_log_schattenNorm_orderedMatrixCpow
+    (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosDef) {p : ℝ} (hp : 0 < p)
+    (μ : Measure ℝ) [IsFiniteMeasure μ] :
+    Integrable (fun t : ℝ => Real.log (schattenNorm (ENNReal.ofReal p)
+      (orderedMatrixCpow L (1 + (t : ℂ) * I)))) μ := by
+  rcases isEmpty_or_nonempty n with hn | hn
+  · have hz (t : ℝ) : orderedMatrixCpow L (1 + (t : ℂ) * I) = 0 := Subsingleton.elim _ _
+    simp only [hz, schattenNorm_zero, Real.log_zero]
+    exact integrable_zero ℝ ℝ μ
+  · simp_rw [orderedMatrixCpow_eq_orderedMatrixExp_log L hL]
+    let H := L.map (cfc Real.log)
+    have hH : ∀ A ∈ H, A.IsHermitian := isHermitian_mem_map_log L
+    exact ⟨(continuous_log_schattenNorm_orderedMatrixExp H hH hp).aestronglyMeasurable,
+      .of_bounded (ae_of_all _ fun t => abs_log_schattenNorm_orderedMatrixExp_le H hH hp t)⟩
+
+/-- **Positive definite Araki–Lieb–Thirring inequality.** For $p\ge1$ and $0<r<1$,
+$$
+\left\|\left\lvert\prod_j A_j^r\right\rvert^{1/r}\right\|_{S_p}
+\le \exp\!\left(\int \log\left\|\prod_j A_j^{1+it}\right\|_{S_p}\,d\mu_r(t)\right).
+$$
+The inverse product bounds the right-boundary norm away from zero on a nonempty space,
+so its real logarithm is integrable. In dimension zero, Mathlib's $\log 0=0$ convention
+reduces the bound to $0\le 1$. [SutterBertaTomamichel2017, Theorem 3.2].
+Result: multivariate-araki-lieb-thirring -/
+theorem schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log
+    (L : List (Matrix n n ℂ)) (hL : ∀ A ∈ L, A.PosDef) {p r : ℝ}
+    (hp : 1 ≤ p) (hr : r ∈ Ioo (0 : ℝ) 1) :
+    schattenNorm (ENNReal.ofReal p) ((CFC.abs (L.map (fun A => A ^ r)).prod) ^ (1 / r)) ≤
+      Real.exp (∫ t, Real.log (schattenNorm (ENNReal.ofReal p)
+        (orderedMatrixCpow L (1 + (t : ℂ) * I))) ∂Real.stripHarmonicMeasure r) := by
+  rw [← orderedMatrixCpow_ofReal_eq_prod_rpow L (fun A hA => (hL A hA).posSemidef)]
+  simpa only [orderedMatrixCpow_eq_orderedMatrixExp_log L hL] using
+    schattenNorm_rpow_abs_orderedMatrixExp_le_exp_integral (L.map (cfc Real.log))
+      (isHermitian_mem_map_log L) hp hr
+
 /-- The positive definite inequality survives a positive displacement of the logarithm.
 The inverse exponential family bounds the negative part of the original logarithm. -/
 private theorem schattenNorm_rpow_abs_orderedMatrixCpow_le_exp_integral_log_add_of_posDef
@@ -469,14 +508,13 @@ private theorem schattenNorm_rpow_abs_orderedMatrixCpow_le_exp_integral_log_add_
     have hp0 := zero_lt_one.trans_le hp
     have he (z : ℂ) : orderedMatrixExp H z = orderedMatrixCpow L z :=
       (orderedMatrixCpow_eq_orderedMatrixExp_log L hL z).symm
-    have h := schattenNorm_rpow_abs_orderedMatrixExp_le_exp_integral H hH hp hr
-    rw [he] at h
+    have h := schattenNorm_rpow_abs_prod_rpow_le_exp_integral_log L hL hp hr
+    rw [← orderedMatrixCpow_ofReal_eq_prod_rpow L (fun A hA => (hL A hA).posSemidef)] at h
     apply h.trans
     apply Real.exp_le_exp.mpr
     let := Real.isProbabilityMeasure_stripHarmonicMeasure hr
     apply integral_mono
-    · exact ⟨(continuous_log_schattenNorm_orderedMatrixExp H hH hp0).aestronglyMeasurable,
-        .of_bounded (ae_of_all _ fun t => abs_log_schattenNorm_orderedMatrixExp_le H hH hp0 t)⟩
+    · exact integrable_log_schattenNorm_orderedMatrixCpow L hL hp0 _
     · exact ⟨(continuous_log_boundaryNorm_add L (fun A hA => (hL A hA).posSemidef)
         hp hδ).aestronglyMeasurable, .of_bounded (ae_of_all _ fun t =>
           abs_log_add_le (schattenNorm_nonneg _ _) (schattenNorm_orderedMatrixCpow_right_le L
@@ -486,7 +524,7 @@ private theorem schattenNorm_rpow_abs_orderedMatrixCpow_le_exp_integral_log_add_
         ((exp_neg_sum_specNorm_le_specNorm_orderedMatrixExp H hH t).trans
           (specNorm_le_schattenNorm (ENNReal.ofReal_ne_zero_iff.mpr (zero_lt_one.trans_le hp)) _))
       dsimp only
-      rw [he] at hpos ⊢
+      rw [he] at hpos
       exact Real.log_le_log hpos (le_add_of_nonneg_right hδ.le)
   · let : IsEmpty n := not_nonempty_iff.mp hn
     have hz (A : Matrix n n ℂ) : A = 0 := Subsingleton.elim _ _
