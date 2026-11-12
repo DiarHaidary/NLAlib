@@ -296,6 +296,32 @@ theorem isLeast_specNorm_div_not_isUnit_add [DecidableEq n] [Nonempty n] {A : Ma
   · rintro _ ⟨F, hF, rfl⟩
     exact div_le_div_of_nonneg_right (hmin ⟨F, hF, rfl⟩) (specNorm_nonneg A)
 
+/-- **Reciprocal condition number and distance to singularity.** For every nonzero square
+matrix $\mathbf{A}$,
+$$
+\min_{\mathbf{A}+\mathbf{E}\ \mathrm{singular}}
+  \frac{\|\mathbf{E}\|_2}{\|\mathbf{A}\|_2} = \kappa_2(\mathbf{A})^{-1}.
+$$
+For singular $\mathbf{A}$ the zero perturbation attains the minimum, with $1/\infty=0$.
+[GolubVanLoan2013, §2.6.2].
+Result: distance-to-singularity -/
+theorem isLeast_specNorm_div_not_isUnit_add_of_ne_zero [DecidableEq n] {A : Matrix n n 𝕜}
+    (hA : A ≠ 0) :
+    IsLeast ((fun E : Matrix n n 𝕜 => specNorm E / specNorm A) '' {E | ¬ IsUnit (A + E)})
+      ((spectralConditionNumber A)⁻¹).toReal := by
+  classical
+  by_cases hu : IsUnit A
+  · have : Nonempty n := by
+      by_contra! he
+      exact hA (Subsingleton.elim _ _)
+    rw [spectralConditionNumber_of_isUnit hu, ENNReal.toReal_inv,
+      ENNReal.toReal_ofReal (pseudoConditionNumber_nonneg A)]
+    exact isLeast_specNorm_div_not_isUnit_add hu
+  · rw [(spectralConditionNumber_eq_top_iff A).2 hu, ENNReal.inv_top, ENNReal.toReal_zero]
+    refine ⟨⟨0, by simpa using hu, by simp⟩, ?_⟩
+    rintro _ ⟨E, _, rfl⟩
+    exact div_nonneg (specNorm_nonneg _) (specNorm_nonneg _)
+
 /-! ### The Frobenius pseudo-condition number -/
 
 /-- The **Frobenius pseudo-condition number** $\|\mathbf{A}\|_{\mathsf{F}}\|\mathbf{A}^{+}\|_2$,
