@@ -9,6 +9,7 @@ public import NLAlib.Polynomial.Approximation.MinimaxError
 public import Mathlib.Analysis.Calculus.Deriv.MeanValue
 public import Mathlib.Analysis.Calculus.Deriv.Pow
 public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.Algebra.Polynomial.OfFn
 
 /-!
 # Greedy uniform approximation by odd polynomials
@@ -32,6 +33,24 @@ namespace NLAlib
 /-- An odd degree-at-most-`2q+1` update, in its supplied scalar coefficients. -/
 noncomputable def oddScalarUpdate (q : ℕ) (a : ℕ → ℝ) (x : ℝ) : ℝ :=
   ∑ j ∈ range (q + 1), a j * x ^ (2 * j + 1)
+
+/-- The odd update with coefficients of a polynomial of degree at most $q$ sends $x$ to
+$x p(x^2)$. Trailing coefficients may vanish. [AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem oddScalarUpdate_coeff {q : ℕ} (p : ℝ[X]) (hp : p.natDegree ≤ q) (x : ℝ) :
+    oddScalarUpdate q p.coeff x = x * p.eval (x ^ 2) := by
+  rw [Polynomial.eval_eq_sum_range' (Nat.lt_succ_of_le hp), Finset.mul_sum, oddScalarUpdate]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [← pow_mul, pow_succ]
+  ring
+
+/-- The first $q+1$ supplied coefficients encode the ordinary polynomial in the odd update.
+[AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem oddScalarUpdate_eq_mul_eval (q : ℕ) (c : ℕ → ℝ) (x : ℝ) :
+    oddScalarUpdate q c x = x * (Polynomial.ofFn (q + 1) (fun i => c i)).eval (x ^ 2) := by
+  rw [← oddScalarUpdate_coeff _ (Nat.le_of_lt_succ (ofFn_natDegree_lt (by omega) _))]
+  unfold oddScalarUpdate
+  exact Finset.sum_congr rfl fun i hi => by rw [ofFn_coeff_eq_val_of_lt _ (mem_range.mp hi)]
 
 /-- The scalar update is continuous everywhere. -/
 theorem continuous_oddScalarUpdate (q : ℕ) (a : ℕ → ℝ) : Continuous (oddScalarUpdate q a) := by
@@ -314,7 +333,7 @@ private theorem nonempty_greedyOddStep (q : ℕ) (I : PositiveInterval) :
 initial interval `[ell,1]`, including the singleton endpoint `ell=1`.
 Every recorded interval endpoint is attained by the corresponding actual
 coefficient-defined polynomial; no rate certificate is assumed.
-Source: Polar Express, §3; finite-dimensional minimax existence. -/
+[AmselPerssonMuscoGower2026, §3], using finite-dimensional minimax existence. -/
 theorem exists_isGreedyOddMinimax (q : ℕ) {ell : ℝ} (hell : 0 < ell) (hell1 : ell ≤ 1) :
     ∃ (c : ℕ → ℕ → ℝ) (l u : ℕ → ℝ), IsGreedyOddMinimax q ell c l u := by
   classical
@@ -529,18 +548,9 @@ private theorem natDegree_polarTaylorCoefficientPolynomial_le (q : ℕ) :
 same coefficient model used by the minimax problem and the matrix algorithm. -/
 private theorem oddScalarUpdate_polarTaylor_coeff (q : ℕ) (x : ℝ) :
     oddScalarUpdate q (polarTaylorCoefficientPolynomial q).coeff x = polarTaylorUpdate q x := by
-  have he := Polynomial.eval_eq_sum_range'
-    (p := polarTaylorCoefficientPolynomial q)
-    (Nat.lt_succ_of_le (natDegree_polarTaylorCoefficientPolynomial_le q)) (x ^ 2)
-  have heval : (polarTaylorCoefficientPolynomial q).eval (x ^ 2) =
-      polarTaylorSum q (1 - x ^ 2) := by
-    simp [polarTaylorCoefficientPolynomial, polarTaylorSum, Polynomial.eval_finsetSum]
-  rw [heval] at he
-  rw [polarTaylorUpdate, he, Finset.mul_sum, oddScalarUpdate]
-  apply Finset.sum_congr rfl
-  intro j _
-  rw [pow_add, pow_one, pow_mul]
-  ring
+  rw [oddScalarUpdate_coeff _ (natDegree_polarTaylorCoefficientPolynomial_le q)]
+  simp [polarTaylorUpdate, polarTaylorCoefficientPolynomial, polarTaylorSum,
+    Polynomial.eval_finsetSum]
 
 /-- The finite Taylor competitor is an actual member of the allowed odd
 polynomial coefficient class. -/
@@ -550,7 +560,7 @@ private theorem exists_oddScalarUpdate_eq_polarTaylorUpdate (q : ℕ) :
 
 /-- A genuine admissible odd coefficient competitor with the exact squared-gap
 lower envelope on an arbitrary positive interval.
-Source: Polar Express, Appendix D, finite Taylor competitor route. -/
+[AmselPerssonMuscoGower2026, Appendix D], using a finite Taylor competitor. -/
 private theorem exists_oddScalarUpdate_interval_competitor (q : ℕ) {a b : ℝ}
     (ha : 0 < a) (hab : a ≤ b) :
     ∃ c : ℕ → ℝ, ∀ x ∈ Icc a b,

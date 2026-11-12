@@ -52,21 +52,23 @@ theorem gramHorner_eq_sum (q : ℕ) (c : ℕ → ℝ) (S : Matrix n n 𝕜) :
     simp only [pow_zero, Matrix.mul_sum, Matrix.mul_smul, ← pow_succ']
     rw [add_comm]
 
-private noncomputable def gramPolynomial (q : ℕ) (c : ℕ → ℝ) : ℝ[X] :=
-  ∑ j ∈ range (q + 1), C (c j) * X ^ j
+/-- The Gram Horner recurrence evaluates an ordinary polynomial supplied through its
+coefficients, including zero polynomials and padded degrees. [AmselPerssonMuscoGower2026,
+Appendix E]. -/
+theorem gramHorner_coeff {q : ℕ} (p : ℝ[X]) (hp : p.natDegree ≤ q) (A : Matrix n n 𝕜) :
+    gramHorner q p.coeff A = aeval A p := by
+  calc
+    _ = aeval A (∑ j ∈ range (q + 1), C (p.coeff j) * X ^ j) := by
+      simp [gramHorner_eq_sum, Algebra.algebraMap_eq_smul_one]
+    _ = _ := congrArg (aeval A) (p.as_sum_range_C_mul_X_pow' (Nat.lt_succ_of_le hp)).symm
 
-private theorem gramHorner_eq_aeval (q : ℕ) (c : ℕ → ℝ) (A : Matrix n n 𝕜) :
-    gramHorner q c A = aeval A (gramPolynomial q c) := by
-  simp [gramHorner_eq_sum, gramPolynomial, Algebra.algebraMap_eq_smul_one]
-
-private theorem mul_eval_gramPolynomial (q : ℕ) (c : ℕ → ℝ) (x : ℝ) :
-    x * (gramPolynomial q c).eval (x ^ 2) = oddScalarUpdate q c x := by
-  simp only [gramPolynomial, eval_finsetSum, eval_mul, eval_C, eval_pow, eval_X,
-    Finset.mul_sum, oddScalarUpdate]
-  apply Finset.sum_congr rfl
-  intro j _
-  rw [← pow_mul, pow_succ]
-  ring
+/-- For arbitrary coefficient data, the Gram Horner recurrence evaluates the Mathlib polynomial
+formed from exactly its first $q+1$ entries. [AmselPerssonMuscoGower2026, Appendix E]. -/
+theorem gramHorner_eq_aeval (q : ℕ) (c : ℕ → ℝ) (A : Matrix n n 𝕜) :
+    gramHorner q c A = aeval A (Polynomial.ofFn (q + 1) (fun i => c i)) := by
+  rw [← gramHorner_coeff _ (Nat.le_of_lt_succ (ofFn_natDegree_lt (by omega) _))]
+  simp only [gramHorner_eq_sum]
+  exact Finset.sum_congr rfl fun i hi => by rw [ofFn_coeff_eq_val_of_lt _ (mem_range.mp hi)]
 
 /-- A sequence of odd polynomial updates with supplied coefficients. Each term is evaluated
 as a Gram polynomial by Horner recursion and multiplied by the rectangular input.
@@ -92,7 +94,7 @@ theorem IsSVD.oddMatrixIterate_eq {A : Matrix m n 𝕜} {U : Matrix m r 𝕜} {V
   | succ k ih =>
     rw [oddMatrixIterate, gramHorner_eq_aeval, ih,
       h.hasOrthonormalCols_left.mul_aeval_conjTranspose_mul_self h.hasOrthonormalCols_right]
-    simp only [mul_eval_gramPolynomial, oddScalarComposition]
+    simp only [← oddScalarUpdate_eq_mul_eval, oddScalarComposition]
 
 /-- The exact spectral-norm error on any compact SVD is the supremum of the scalar errors
 on its positive singular coordinates. [AmselPerssonMuscoGower2026, Theorem 3.3],
@@ -129,6 +131,19 @@ theorem IsGreedyOddMinimax.specNorm_polarFactor_sub_oddMatrixIterate_le {q : ℕ
   exact (pi_norm_le_iff_of_nonneg ((abs_nonneg _).trans hb)).mpr fun i =>
     h.abs_one_sub_oddScalarComposition_le ha ha1 hT (hA i (hp i))
 
+/-- **Greedy minimax polar convergence rate.** If the positive singular values of a rectangular
+matrix belong to $[a,1]$ with $0<a\le1$, the degree-$2q+1$ greedy filters give spectral
+error at most $(1-a^2)^{(q+1)^k}$ after $k\ge 1$ updates. The estimate also holds for a
+rank-deficient input. [AmselPerssonMuscoGower2026, Theorem 3.3 and Appendix D].
+Result: polar-minimax-polynomial-iteration -/
+theorem IsGreedyOddMinimax.specNorm_polarFactor_sub_oddMatrixIterate_le_pow {q : ℕ} {a : ℝ}
+    {c : ℕ → ℕ → ℝ} {l u : ℕ → ℝ} (h : IsGreedyOddMinimax q a c l u)
+    (ha : 0 < a) (ha1 : a ≤ 1) (A : Matrix m n 𝕜)
+    (hA : ∀ i, 0 < singularValues A i → singularValues A i ∈ Icc a 1)
+    {k : ℕ} (hk : 1 ≤ k) :
+    specNorm (polarFactor A - oddMatrixIterate q c A k) ≤ (1 - a ^ 2) ^ ((q + 1) ^ k) :=
+  (h.specNorm_polarFactor_sub_oddMatrixIterate_le ha ha1 A hA hk).trans (h.one_sub_le_pow ha ha1 hk)
+
 /-- For positive Gram degree, the genuine greedy iteration converges to the polar factor
 when the positive singular values lie in a known interval $[a,1]$ with $a>0$.
 [AmselPerssonMuscoGower2026, Theorem 3.3]. -/
@@ -144,11 +159,10 @@ theorem IsGreedyOddMinimax.tendsto_oddMatrixIterate {q : ℕ} {a : ℝ}
   apply tendsto_iff_norm_sub_tendsto_zero.mpr
   apply squeeze_zero' (Filter.Eventually.of_forall fun k => norm_nonneg _) _ hp
   filter_upwards [Filter.eventually_ge_atTop 1] with k hk
-  have he := h.specNorm_polarFactor_sub_oddMatrixIterate_le ha ha1 A hA hk
   change ‖oddMatrixIterate (q + 1) c A k - polarFactor A‖ ≤
     (1 - a ^ 2) ^ ((q + 1 + 1) ^ k)
   rw [← specNorm_eq_norm, specNorm_sub_comm]
-  exact he.trans (h.one_sub_le_pow ha ha1 hk)
+  exact h.specNorm_polarFactor_sub_oddMatrixIterate_le_pow ha ha1 A hA hk
 
 private theorem exists_single_frame [Nonempty m] : ∃ U : Matrix m Unit 𝕜, HasOrthonormalCols U := by
   classical
