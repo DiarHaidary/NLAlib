@@ -117,7 +117,7 @@ theorem mul_edgeResistance_eq_leverageScore (w : E → ℝ) (e : E) (he : 0 ≤ 
 /-- **Foster's identity.** For a finite graph with nonnegative weights the sum of the
 weighted edge resistances equals the rank of the weighted Laplacian.
 [SpielmanSrivastava2011, Lemma 3], allowing zero weights and disconnected graphs.
-Result: laplacian-resistance-leverage -/
+Result: foster-theorem -/
 theorem sum_mul_edgeResistance {w : E → ℝ} (hw : ∀ e, 0 ≤ w e) :
     ∑ e, w e * o.edgeResistance w e = ((o.weightedLaplacian w).rank : ℝ) := by
   classical
@@ -127,7 +127,7 @@ theorem sum_mul_edgeResistance {w : E → ℝ} (hw : ∀ e, 0 ≤ w e) :
 /-- **Weighted Laplacian rank.** For positive weights the rank plus the number of connected
 components equals the number of vertices, including isolated vertices.
 [SpielmanSrivastava2011, §2], extended componentwise.
-Result: laplacian-resistance-leverage -/
+Result: weighted-laplacian-rank -/
 theorem rank_weightedLaplacian_add {w : E → ℝ} (hw : ∀ e, 0 < w e) :
     (o.weightedLaplacian w).rank + Nat.card G.ConnectedComponent = Fintype.card V := by
   classical
