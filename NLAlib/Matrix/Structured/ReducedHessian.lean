@@ -18,6 +18,9 @@ For constraints with full row rank, a null-space basis reduces a saddle-point li
 and describes uniqueness of feasible quadratic minimizers. The basis need not be orthonormal.
 [BenziGolubLiesen2005, §6].
 
+For a computed null-space basis, use Mathlib’s `LinearMap.exact_iff` with `Z.mulVecLin`
+and `B.mulVecLin` to supply the exactness hypothesis from equality of the range and kernel.
+
 ## Main results
 
 * `NLAlib.mulVec_fromBlocks_eq_of_mulVec_eq`: reconstruct a primal solution and its multiplier.
@@ -144,6 +147,17 @@ theorem isUnit_fromBlocks_iff_isUnit_conjTranspose_mul_mul [DecidableEq m] [Deci
     | inl i => exact congrFun hx i
     | inr i => exact congrFun hl i
 
+
+/-- A null-space basis with $\operatorname{range}(\mathbf{Z})=\ker(\mathbf{B})$ gives the
+invertibility test for the saddle-point matrix and its reduced Hessian.
+[BenziGolubLiesen2005, §6]. -/
+theorem isUnit_fromBlocks_iff_isUnit_conjTranspose_mul_mul_of_range_eq_ker
+    [DecidableEq m] [DecidableEq n] [DecidableEq r] (H : Matrix n n 𝕜)
+    (h : LinearMap.range Z.mulVecLin = LinearMap.ker B.mulVecLin)
+    (hB : Function.Injective Bᴴ.mulVec) (hZ : Function.Injective Z.mulVec) :
+    IsUnit (fromBlocks H Bᴴ B 0) ↔ IsUnit (Zᴴ * H * Z) :=
+  isUnit_fromBlocks_iff_isUnit_conjTranspose_mul_mul H
+    ((LinearMap.exact_iff (f := Z.mulVecLin) (g := B.mulVecLin)).2 h.symm) hB hZ
 
 /-- The real-valued quadratic objective with Hessian $\mathbf{H}$ and linear coefficient
 $\mathbf{f}$, evaluated at $\mathbf{x}$. [BenziGolubLiesen2005, §1]. -/
