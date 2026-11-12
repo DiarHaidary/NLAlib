@@ -35,49 +35,48 @@ open scoped Topology
 
 namespace Complex
 
-/-- A holomorphic function on an exterior domain has equal contour integrals
-on any two positive-radius circles in that domain. This is the radius
-independence needed to fix one density in `trace-exponential-stahl`. -/
-theorem circleIntegral_eq_of_differentiableOn_exterior
-    {f : ℂ → ℂ} {R r s : ℝ} (hf : DifferentiableOn ℂ f {z | R < ‖z‖})
+/-- The integrals of a holomorphic function outside the closed disk $\lvert z-c\rvert\le R$ agree on
+all counterclockwise circles centered at $c$ of positive radius greater than $R$. -/
+theorem circleIntegral_eq_of_differentiableOn_compl_closedBall
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] {f : ℂ → E} {c : ℂ} {R r s : ℝ}
+    (hf : DifferentiableOn ℂ f (closedBall c R)ᶜ)
     (hr : 0 < r) (hs : 0 < s) (hRr : R < r) (hRs : R < s) :
-    (∮ z in C(0, r), f z) = ∮ z in C(0, s), f z := by
+    (∮ z in C(c, r), f z) = ∮ z in C(c, s), f z := by
   suffices haux : ∀ {u v : ℝ}, 0 < u → R < u → u ≤ v →
-      (∮ z in C(0, v), f z) = ∮ z in C(0, u), f z by
+      (∮ z in C(c, v), f z) = ∮ z in C(c, u), f z by
     rcases le_total r s with hrs | hsr
     · exact (haux hr hRr hrs).symm
     · exact haux hs hRs hsr
   intro u v hu hRu huv
-  have hsub : closedBall (0 : ℂ) v \ ball 0 u ⊆ {z | R < ‖z‖} := by
-    intro z hz
-    have hz' : u ≤ ‖z‖ := by simpa [mem_ball, dist_zero_right] using hz.2
-    exact hRu.trans_le hz'
-  have hopen : IsOpen {z : ℂ | R < ‖z‖} := isOpen_lt continuous_const continuous_norm
-  exact Complex.circleIntegral_eq_of_differentiable_on_annulus_off_countable
+  have hsub : closedBall c v \ ball c u ⊆ (closedBall c R)ᶜ := by
+    intro z hz hmem
+    exact hz.2 (mem_ball.mpr ((mem_closedBall.mp hmem).trans_lt hRu))
+  apply Complex.circleIntegral_eq_of_differentiable_on_annulus_off_countable
     hu huv (s := (∅ : Set ℂ)) countable_empty (hf.continuousOn.mono hsub)
-    (fun z hz => hf.differentiableAt (hopen.mem_nhds (by
-      have hz' : u < ‖z‖ := by
-        simpa only [mem_closedBall, dist_zero_right, not_le] using hz.1.2
-      exact hRu.trans hz')))
+  intro z hz
+  apply hf.differentiableAt (isClosed_closedBall.isOpen_compl.mem_nhds ?_)
+  exact fun hmem => hz.1.2 (closedBall_subset_closedBall hRu.le hmem)
 
-/-- The normalized exterior Cauchy kernel has the same integral on two circles
-lying in an exterior holomorphy domain. Both circles are counterclockwise. -/
+/-- Radius independence at the origin for the contour density in [Stahl2013, Theorem 2]. -/
+theorem circleIntegral_eq_of_differentiableOn_exterior
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    {f : ℂ → E} {R r s : ℝ} (hf : DifferentiableOn ℂ f {z | R < ‖z‖})
+    (hr : 0 < r) (hs : 0 < s) (hRr : R < r) (hRs : R < s) :
+    (∮ z in C(0, r), f z) = ∮ z in C(0, s), f z := by
+  apply circleIntegral_eq_of_differentiableOn_compl_closedBall (R := R) _ hr hs hRr hRs
+  exact hf.mono fun z hz => by simpa [mem_closedBall, dist_zero_right] using hz
+
+/-- The exterior Cauchy kernel $f(z)/z$ has equal integrals on two counterclockwise circles
+in its exterior holomorphy domain. -/
 theorem circleIntegral_inv_mul_eq_of_differentiableOn_exterior
     {f : ℂ → ℂ} {R r s : ℝ} (hf : DifferentiableOn ℂ f {z | R < ‖z‖})
     (hr : 0 < r) (hRr : R < r) (hrs : r ≤ s) :
     (∮ z in C(0, s), z⁻¹ * f z) = ∮ z in C(0, r), z⁻¹ * f z := by
-  have hsub : closedBall (0 : ℂ) s \ ball 0 r ⊆ {z | R < ‖z‖} := by
-    intro z hz
-    have hz' : r ≤ ‖z‖ := by simpa [mem_ball, dist_zero_right] using hz.2
-    exact hRr.trans_le hz'
-  have hopen : IsOpen {z : ℂ | R < ‖z‖} := isOpen_lt continuous_const continuous_norm
-  simpa only [sub_zero, smul_eq_mul] using
-    circleIntegral_sub_center_inv_smul_eq_of_differentiable_on_annulus_off_countable
-      hr hrs (s := (∅ : Set ℂ)) countable_empty (hf.continuousOn.mono hsub)
-      (fun z hz => hf.differentiableAt (hopen.mem_nhds (by
-        have hz' : r < ‖z‖ := by
-          simpa only [mem_closedBall, dist_zero_right, not_le] using hz.1.2
-        exact hRr.trans hz')))
+  have hm : max R 0 < r := max_lt hRr hr
+  apply circleIntegral_eq_of_differentiableOn_exterior (R := max R 0) _ (hr.trans_le hrs) hr
+    (hm.trans_le hrs) hm
+  exact (differentiableOn_id.inv fun z hz => norm_pos_iff.mp ((le_max_right R 0).trans_lt hz)).mul
+    (hf.mono fun z hz => (le_max_left R 0).trans_lt hz)
 
 /-- A function holomorphic near infinity and vanishing there has zero exterior
 circle integral against `1 / z`. This is proved by enlarging the circle and a
@@ -146,10 +145,10 @@ theorem two_pi_i_inv_mul_circleIntegral_inv_mul_eq_of_tendsto
   rw [mul_sub, inv_mul_cancel_left₀ hpi] at hz
   exact sub_eq_zero.mp hz
 
-/-- The exterior Cauchy formula evaluates the circle kernel at every point
-inside the circle, even if the holomorphic function is not defined there. Its
-value is the function's limit at infinity, not its value at the enclosed point.
-This is the atomic Cauchy term in Stahl's representation (Stahl 2013, Theorem 2). -/
+/-- For $\lvert t\rvert<r$, the exterior Cauchy formula gives
+$(2\pi i)^{-1}\oint_{\lvert z\rvert=r} f(z)/(z-t)\,dz=\lim_{z\to\infty} f(z)$.
+It requires holomorphy only outside a smaller closed disk.
+This is the atomic Cauchy term in Stahl's representation [Stahl2013, Theorem 2]. -/
 theorem two_pi_i_inv_mul_circleIntegral_div_sub_eq_of_tendsto
     {f : ℂ → ℂ} {a t : ℂ} {R r : ℝ}
     (hf : DifferentiableOn ℂ f {z | R < ‖z‖}) (hr : 0 < r) (hRr : R < r)
