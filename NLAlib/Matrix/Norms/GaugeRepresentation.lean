@@ -16,11 +16,6 @@ matrices between two orthonormal frames. This restriction is invariant under per
 signs. It extends to a symmetric gauge on finitely supported sequences, which represents the
 original norm at every matrix of that shape.
 
-## Main definitions
-
-* `NLAlib.IsUnitarilyInvariant`: invariance of a fixed-shape function under left and right unitary
-  multiplication.
-
 ## Main results
 
 * `NLAlib.IsUnitarilyInvariant.exists_forall_matrixNorm_eq`: the symmetric gauge representation.
@@ -34,20 +29,6 @@ namespace NLAlib
 
 variable {𝕜 m n r : Type*} [RCLike 𝕜] [Fintype m] [Fintype n] [Fintype r]
   [DecidableEq m] [DecidableEq n] [DecidableEq r]
-
-/-- A function on matrices of one shape is **unitarily invariant** if multiplication by
-arbitrary square unitary factors on the left and right preserves its value.
-[Bhatia1997, §IV.2]. -/
-def IsUnitarilyInvariant (f : Matrix m n 𝕜 → ℝ) : Prop :=
-  ∀ (P : Matrix m m 𝕜), HasOrthonormalCols P → ∀ (Q : Matrix n n 𝕜), HasOrthonormalCols Q →
-    ∀ A, f (P * A * Qᴴ) = f A
-
-/-- The matrix norm induced by a symmetric gauge is unitarily invariant on each shape. -/
-theorem SymmetricGauge.isUnitarilyInvariant_matrixNorm (Φ : SymmetricGauge) :
-    IsUnitarilyInvariant (Φ.matrixNorm : Matrix m n 𝕜 → ℝ) := by
-  intro P hP Q hQ A
-  rw [Φ.matrixNorm_mul_conjTranspose_right_of_hasOrthonormalCols hQ,
-    Φ.matrixNorm_mul_left_of_hasOrthonormalCols hP]
 
 namespace IsUnitarilyInvariant
 
