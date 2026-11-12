@@ -564,7 +564,7 @@ $$\operatorname{Re}\operatorname{tr}(\mathbf{X}^p) +
   \operatorname{Re}\operatorname{tr}(\mathbf{Y}^p)
   \le \operatorname{Re}\operatorname{tr}((\mathbf{X}+\mathbf{Y})^p).$$
 [PerssonMeyerMusco2025, proof of Lemma 2.3].
-Result: ordered-schatten-trace-deficit -/
+Result: trace-power-superadditivity -/
 theorem _root_.Matrix.PosSemidef.re_trace_rpow_add_le {X Y : Matrix n n 𝕜}
     (hX : X.PosSemidef) (hY : Y.PosSemidef) {p : ℝ} (hp : 1 ≤ p) :
     RCLike.re (X ^ p).trace + RCLike.re (Y ^ p).trace ≤ RCLike.re ((X + Y) ^ p).trace := by
