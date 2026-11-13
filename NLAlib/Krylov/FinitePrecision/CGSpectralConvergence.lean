@@ -47,7 +47,7 @@ theorem spectrum_backwardH_subset_iUnion_Icc {δ : ℝ}
 
 private theorem posDef_backwardH {a a' : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (hsmall : CGPrecisionHorizon k C.ε (a' / a)) :
     C.backwardH.PosDef := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
   exact C.isHermitian_backwardH.posDef_iff_eigenvalue_pos.mpr fun i hi =>
@@ -72,7 +72,7 @@ additive errors, rather than the qualitative tiny-interval minimax discussion.
 Result: cg-tiny-interval-polynomial-convergence -/
 theorem quadForm_sub_x_le_sq_mul_add_of_polynomial {a a' δ η : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : CGPrecisionHorizon k C.ε (a' / a))
     (hgap : frobNorm (C.backwardH - C.dilatedH) ≤ δ) {S : Set ℝ}
     (hS : (⋃ i ∈ Set.Iio n,
       Set.Icc (eigenvalue C.A i - δ) (eigenvalue C.A i + δ)) ⊆ S)
@@ -116,7 +116,7 @@ Exact $\mathsf{cgIterate}$ on the full model reproduces the computed residual no
 Result: cg-tiny-interval-computed-residual -/
 theorem ρ_sq_le_mul_sq_mul_of_polynomial {a a' δ η : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : CGPrecisionHorizon k C.ε (a' / a))
     (hgap : frobNorm (C.backwardH - C.dilatedH) ≤ δ) {S : Set ℝ}
     (hS : (⋃ i ∈ Set.Iio n,
       Set.Icc (eigenvalue C.A i - δ) (eigenvalue C.A i + δ)) ⊆ S)
@@ -170,7 +170,7 @@ The error of exact $\mathsf{cgIterate}$ on the full model supplies the minimax f
 Result: cg-tiny-interval-minimax-convergence -/
 theorem quadForm_sub_x_le_residualMinimax_sq_mul_add {a a' δ : ℝ} (ha : 0 < a)
     (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
-    (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (hsmall : CGPrecisionHorizon k C.ε (a' / a))
     (hgap : frobNorm (C.backwardH - C.dilatedH) ≤ δ) {S : Set ℝ}
     (hS : (⋃ i ∈ Set.Iio n,
       Set.Icc (eigenvalue C.A i - δ) (eigenvalue C.A i + δ)) ⊆ S)

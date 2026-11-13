@@ -2346,10 +2346,11 @@ belongs with sparse oracle compilation. Move its private scoping/entry helpers a
 tree and target definitions are unchanged: only a compilation proof is shared. The public
 statement retains the positive index-scope hypothesis and the distinguished size variable.
 
-`CGPrecisionHorizon q ε κ` in `Krylov/FinitePrecision/CGRunSpectrum.lean` names the existing
-sufficient inequality, without changing its value. Stored and oracle rounded execution and
-backward statements consume it; its prefix monotonicity replaces repeated local comparisons.
-This is definitionally the previous hypothesis, not a stronger or weaker numerical regime.
+`CGPrecisionHorizon q ε κ` in `Krylov/FinitePrecision/CGRun.lean` names the sufficient inequality
+used by the run, energy, spectrum, backward-error and stored program results. The definition is
+available at the run layer so all these callers can use it. Its prefix monotonicity transports a
+certificate to an earlier iteration. Existing proofs of the numerical inequality apply by
+definitional equality.
 
 The exact duplicate Gaussian-pair map law moves to its mathematical topic as
 `map_pi_fin_two_eq_complexGaussian` in `RandomMatrix/Gaussian/Complex.lean`; Gaussian tape

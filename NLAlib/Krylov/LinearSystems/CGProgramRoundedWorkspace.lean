@@ -120,7 +120,7 @@ theorem exec_rounded_initialized_loop (I : Interp P ι K (OpCount P ι)) (tag : 
     exact exec_rounded_stopped_loop I tag hsem header _ 0 q A b _ ν flag flag hc hflag.ne'
   · have hherm : A.IsHermitian := by
       simpa only [Matrix.IsHermitian, Matrix.conjTranspose_eq_transpose_of_trivial] using hA
-    have hprec := hherm.three_mul_mul_le_of_sq_mul_sqrt_mul_mul_sq_le
+    have hprec := hherm.three_mul_mul_le_of_cgPrecisionHorizon
       (Nat.pos_of_ne_zero hN) (Nat.pos_of_ne_zero hq)
       (cgImplementationRoundoffBound_nonneg N (hsem.nonneg trivial)) ha hspec horizon
     exact exec_rounded_loop (hmv := hmv) I tag hsem hz predot cached header N q A b ν flag

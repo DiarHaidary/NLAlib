@@ -102,7 +102,7 @@ theorem exec_rounded_compiled_backward (I : Interp P ι K (OpCount P ι)) (tag :
   rcases hpost with ⟨hzero, _⟩ | ⟨m, R, hm, hRA, hRb, hRε, hvec, hstatus, hstop⟩
   · exact (hzero.elim (fun hq0 => (hq.ne' hq0).elim) (fun hb0 => (hbnz hb0).elim))
   · have hprec : 0 ≤ cgImplementationRoundoffBound N (u tag) := hRε ▸ R.ε_nonneg
-    have hRsmall : (m : ℝ) ^ 2 * Real.sqrt m * R.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
+    have hRsmall : CGPrecisionHorizon m R.ε (a' / a) := by
       rw [hRε]
       exact horizon.mono hprec hm
     have hsR : spectrum ℝ R.A ⊆ Set.Icc a a' := by simpa only [hRA] using hspec

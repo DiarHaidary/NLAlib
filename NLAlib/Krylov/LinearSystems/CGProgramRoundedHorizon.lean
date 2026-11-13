@@ -117,7 +117,7 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
   · have hmj' : m = j := by
       exact le_antisymm hmj (le_of_not_gt (fun hlt => hzero (hfreeze hlt)))
     have hs : spectrum ℝ R.A ⊆ Set.Icc a a' := by simpa only [hRA] using hspec
-    have hsm : (m : ℝ) ^ 2 * Real.sqrt m * R.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5 := by
+    have hsm : CGPrecisionHorizon m R.ε (a' / a) := by
       rw [hRε]
       have hmq : m ≤ q := hmj.trans hjq.le
       have hε : 0 ≤ cgImplementationRoundoffBound N (u tag) :=
