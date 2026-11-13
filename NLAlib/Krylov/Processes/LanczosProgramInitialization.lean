@@ -35,7 +35,7 @@ initial beta and previous vector are initialized; the other buffers remain uncha
 All non-store fields are retained except the exact literal count. -/
 theorem exec_initialize_zeros_of_workspace (storedMatrix : Bool)
     (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
     (hshape : st.store.shape = workspaceShape tag N q storedMatrix) :
     ∃ out, exec I (do
@@ -74,7 +74,7 @@ theorem exec_initialize_zeros_of_workspace (storedMatrix : Bool)
     exact he₃
   · dsimp only [out, st₂, st₁]
     congr 1
-    simp only [hc, add_nsmul, two_nsmul]
+    simp only [hc.charge_eq, add_nsmul, two_nsmul]
     abel
   · change s₃.read tag 8 0 = some 0
     rw [hf₃ tag 8 0 (Or.inr (Or.inl (by decide))),
@@ -108,7 +108,7 @@ It retains all other buffers, gives the exact stored norm, and accounts for its 
 root and scratch memory. This holds for zero input and zero dimension. -/
 theorem exec_initialize_norm_of_workspace (storedMatrix : Bool)
     (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι)) (b : Fin N → ℝ)
     (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i)) :
@@ -217,7 +217,7 @@ and dividing into the basis; zero input and zero dimension use the explicit zero
 Its counts and scratch peak are the compositional bounds used in the approved target. -/
 theorem exec_initialize_of_workspace (storedMatrix : Bool)
     (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
@@ -317,7 +317,7 @@ theorem executionComposable_initialize (I : Interp P ι ℝ (OpCount P ι))
 initial beta and previous vector are initialized; the other buffers remain unchanged.
 All non-store fields are retained except the exact literal count. -/
 theorem exec_initialize_zeros (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
       (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)]) :
@@ -339,7 +339,7 @@ theorem exec_initialize_zeros (I : Interp P ι ℝ (OpCount P ι))
 It retains all other buffers, gives the exact stored norm, and accounts for its actual square
 root and scratch memory. This holds for zero input and zero dimension. -/
 theorem exec_initialize_norm (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι)) (b : Fin N → ℝ)
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),
       (tag, 1), (tag, N), (tag, N * N), (tag, N), (tag, 2)])
@@ -385,7 +385,7 @@ Lanczos recurrence state. The input norm is taken from the input buffer before c
 and dividing into the basis; zero input and zero dimension use the explicit zero branch.
 Its counts and scratch peak are the compositional bounds used in the approved target. -/
 theorem exec_initialize (I : Interp P ι ℝ (OpCount P ι))
-    (hI : I.sem = exactSem) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hI : I.sem = exactSem) (hc : IsUnitCharge I)
     (tag : P) (N q : ℕ) (st : St P ℝ (OpCount P ι))
     (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (hshape : st.store.shape = #[(tag, N), (tag, N * (q + 1)), (tag, q), (tag, q + 1),

@@ -122,7 +122,7 @@ input into it. The norm word comes from the executed kernel; the initial-directi
 uses that computed scale and the mathematically normalized actual first column. -/
 theorem exec_rounded_initial_normalization (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (predot normed : St P K (OpCount P ι)) (N q : ℕ) (b : Fin N → ℝ)
     (h4 : predot.store.shape[4]? = some (tag, 1))
     (h1 : predot.store.shape[1]? = some (tag, N * (q + 1)))
@@ -231,7 +231,7 @@ proves every zero-step stored field and the normalization guarantees, including 
 zero requested budget and empty dimension. The stored scale is the computed input norm. -/
 theorem exec_rounded_initialize (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ) (b : Fin N → ℝ)
     (hshape : st.store.shape = workspaceShape tag N q storedMatrix)
     (hb : ∀ i : Fin N, ∃ w, st.store.read tag 0 i = some w ∧ dec tag w = b i)

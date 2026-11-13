@@ -65,7 +65,7 @@ private def colOf {N m : ℕ} (M : Matrix (Fin N) (Fin m) 𝕜) (c : ℕ) : Fin 
 
 /-- The end of `hutchppProg`: `out ← out + t[1] / ℓ`. -/
 private theorem exec_hutchpp_finish (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) (p : P) (t ℓ : ℕ) (hℓ : 0 < ℓ)
+    (hc : IsUnitCharge I) (p : P) (t ℓ : ℕ) (hℓ : 0 < ℓ)
     (st : St P 𝕜 (OpCount P ι)) (x y : 𝕜) (h0t : 0 ≠ t) (ht1 : st.store.read p t 1 = some x)
     (hout : st.store.read p 0 0 = some y) (ht0 : ∃ s, st.store.write p t 0 0 = some s) :
     ∃ st', exec I (ins (.litIdx p ⟨t, 0⟩ (.const ℓ)) >>= fun _ =>
@@ -114,11 +114,11 @@ private theorem exec_hutchpp_finish (I : Interp P ι 𝕜 (OpCount P ι)) (hI : 
   · change s8.shape = _
     rw [Store.shape_of_write_eq_some hs8, Store.shape_of_write_eq_some hs7,
       Store.shape_of_write_eq_some hs6]
-  · simp only [hc, add_assoc]
+  · simp only [hc.charge_eq, add_assoc]
 
 /-- The two traces of `hutchppProg`, from the products `B = W` and `C = A W`. -/
 private theorem exec_hutchpp_traces (I : Interp P ι 𝕜 (OpCount P ι)) (hI : I.sem = exactSem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) {N k ℓ : ℕ} (hℓ : 0 < ℓ) (p : P) (B t C : ℕ)
+    (hc : IsUnitCharge I) {N k ℓ : ℕ} (hℓ : 0 < ℓ) (p : P) (B t C : ℕ)
     (A : Matrix (Fin N) (Fin N) 𝕜) (W : Matrix (Fin N) (Fin (k + ℓ)) 𝕜)
     (st : St P 𝕜 (OpCount P ι))
     (hB : ∀ (a : Fin N) (c : Fin (k + ℓ)), st.store.read p B (N * c + a) = some (W a c))
@@ -204,7 +204,7 @@ private theorem exec_hutchpp_traces (I : Interp P ι 𝕜 (OpCount P ι)) (hI : 
   refine ⟨st6, h6, hout6, hsh6.trans (hsh5.trans hsh4), hpos6.trans (hpos5.trans hpos3),
     hcur6.trans (hcur5.trans hcur3), ?_, ?_⟩
   · rw [hcnt6, hcnt5]
-    simp only [st4, hcnt3, hc, add_assoc]
+    simp only [st4, hcnt3, hc.charge_eq, add_assoc]
   · change st3.cur = st.cur at hcur3
     change st5.peak ≤ Function.update st3.peak p (max (st3.peak p) (st3.cur p + 1)) at hpeak5
     rw [hpeak6, hcur3] at *
@@ -254,7 +254,7 @@ private theorem exec_hutchpp_tail {N k ℓ : ℕ} (hℓ : 0 < ℓ) (A : Matrix (
       st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + 1)) := by
   set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ with hIdef
   have hI : I.sem = exactSem := rfl
-  have hc : ∀ κ, I.charge κ = Finsupp.single κ 1 := fun _ => rfl
+  have hc : IsUnitCharge I := fun _ => rfl
   obtain ⟨s1, hs1⟩ := Store.exists_writeBlock_eq_some_of_write (s := st.store) (p := p) (b := C)
     (off := 0) (xs := flatten (A * W)) fun i hi => hC i (by rwa [size_flatten] at hi)
   have hC1 : ∀ (a : Fin N) (c : Fin (k + ℓ)), s1.read p C (N * c + a) = some ((A * W) a c) :=
@@ -301,7 +301,7 @@ private theorem exec_hutchpp_tail {N k ℓ : ℕ} (hℓ : 0 < ℓ) (A : Matrix (
   rw [hlit, Option.bind_some]
   refine ⟨st3, h3, hout3, hsh3.trans hsh2, hpos3, hcur3, ?_, hpeak3⟩
   rw [hcnt3]
-  simp only [st2, st1, hc, add_assoc]
+  simp only [st2, st1, hc.charge_eq, add_assoc]
 
 omit [DecidableEq P] in
 /-- A block of columns of `W` holding `M`: the sum of the column quadratic forms of `A` is
@@ -486,7 +486,7 @@ private theorem exec_hutchpp_mid {N k ℓ : ℕ} (hℓ : 0 < ℓ) (A : Matrix (F
       st'.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + N * (k + ℓ) + 1)) := by
   set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
   have hI : I.sem = exactSem := rfl
-  have hc : ∀ κ, I.charge κ = Finsupp.single κ 1 := fun _ => rfl
+  have hc : IsUnitCharge I := fun _ => rfl
   set W : Matrix (Fin N) (Fin (k + ℓ)) 𝕜 := Matrix.of fun a c =>
     if h : (c : ℕ) < k then Q a ⟨c, h⟩ else mgsSweep (colOf Q) (colOf G (c - k)) k a with hWdef
   obtain ⟨st1, h1, hsw1, hfr1, hsh1, hpos1, hcur1, -, hcnt1, hpeak1, -⟩ :=
@@ -653,7 +653,7 @@ private theorem exec_hutchpp_front {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) �
       st3.peak ≤ Function.update st.peak p (max (st.peak p) (st.cur p + N * k + 3)) := by
   set I := exactInterp (P := P) (ι := ι) (fun _ => A) ξ
   have hI : I.sem = exactSem := rfl
-  have hc : ∀ κ, I.charge κ = Finsupp.single κ 1 := fun _ => rfl
+  have hc : IsUnitCharge I := fun _ => rfl
   have hle : N * k ≤ N * (k + ℓ) := Nat.mul_le_mul_left N (Nat.le_add_right k ℓ)
   obtain ⟨st1, h1, hAS, hfr1, hsh1, hpos1, hcur1, hcnt1, hpeak1⟩ :=
     exec_hutchpp_sketch (k := k) A ξ p o d B st hB fun i hi => hBw i (by omega)
@@ -699,7 +699,7 @@ private theorem exec_hutchpp_front {N k ℓ : ℕ} (A : Matrix (Fin N) (Fin N) �
   · rw [hst3, Store.shape_of_writeBlock_eq_some hs₁, hsh2, hsh1]
   · refine hcnt3.trans ?_
     rw [hcnt2, hcnt1]
-    simp only [hc, IExp.eval_mul, IExp.eval_const, add_assoc]
+    simp only [hc.charge_eq, IExp.eval_mul, IExp.eval_const, add_assoc]
     exact le_rfl
   · rw [hcur2, hcur1, hpeak2, hpeak1] at hpeak3
     refine hpeak3.trans fun q => ?_

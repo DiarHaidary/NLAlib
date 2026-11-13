@@ -31,7 +31,7 @@ variable {P ι K : Type} [DecidableEq P] {u : P → ℝ} {dec : P → K → ℝ}
 The retained input words are copied exactly; only their decoding is numerical. -/
 theorem exec_rounded_setup (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hu : u tag < 1)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N : ℕ) (b : Fin N → K)
     (hshape : st.store.shape = workspaceShape tag N false)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
@@ -98,7 +98,7 @@ actual words; the matrix is supplied to the later oracle
 contract. No desired numerical-state premise is used. -/
 theorem exec_rounded_initialization (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N : ℕ) (b : Fin N → K) (A : Matrix (Fin N) (Fin N) ℝ)
     (hshape : st.store.shape = workspaceShape tag N false)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))

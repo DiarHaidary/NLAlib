@@ -56,7 +56,7 @@ Zero budget or decoded zero input is covered by `exec_rounded_compiled`, without
 an impossible zero-length run. -/
 theorem exec_rounded_compiled_backward (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K) (vals : ℕ → K)
     (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)])

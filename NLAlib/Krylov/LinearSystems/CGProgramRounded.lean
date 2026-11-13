@@ -47,7 +47,7 @@ workspace state. The witness contains either zero active steps or an existing po
 CGRun tied to the actual decoded final vectors, residual cache and termination status. -/
 theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K) (vals : ℕ → K)
     (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)])
@@ -156,7 +156,7 @@ The backward-model and physical-energy consequences are in
 [CGProgramRoundedBackward](CGProgramRoundedBackward.lean). -/
 theorem exec_rounded_compiled (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K) (vals : ℕ → K)
     (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)])

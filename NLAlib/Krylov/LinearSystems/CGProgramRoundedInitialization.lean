@@ -112,7 +112,7 @@ theorem exec_cg_constant_words (I : Interp P ι K C) (tag : P)
 and direction. No scratch allocation occurs, and all other buffers retain their contents. -/
 theorem exec_cg_vector_words (I : Interp P ι K (OpCount P ι))
     (tag : P) (zero : K) (hzero : I.sem.lit tag 0 = some zero)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N : ℕ) (b : Fin N → K)
     (h1 : st.store.shape[1]? = some (tag, N))
     (h2 : st.store.shape[2]? = some (tag, N))
@@ -174,7 +174,7 @@ theorem exec_cg_vector_words (I : Interp P ι K (OpCount P ι))
     rw [f2 q buf i (Or.inl h3), f1 q buf i (Or.inl h2)]
     exact f0 q buf i (Or.inr (Or.inl h1))
   · rw [cnt2, cnt1]
-    simp only [st0, hc, IExp.eval_const]
+    simp only [st0, hc.charge_eq, IExp.eval_const]
 
 /-- ROM loading and scalar setup execute in canonical order before vector initialization. -/
 theorem exec_cg_preload_words (I : Interp P ι K (OpCount P ι)) (tag : P)
@@ -258,7 +258,7 @@ theorem executionComposable_rounded_vectors (I : Interp P ι K (OpCount P ι)) (
 order. Input and matrix words are retained exactly; only their decoding is numerical. -/
 theorem exec_rounded_setup (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hu : u tag < 1)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N : ℕ) (b : Fin N → K) (vals : ℕ → K)
     (hshape : st.store.shape = workspaceShape tag N)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))
@@ -408,7 +408,7 @@ below one independently of the dimension-dependent budget. The decoded matrix an
 are obtained from the actual ROM/input words. No desired numerical-state premise is used. -/
 theorem exec_rounded_initialization (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N : ℕ) (b : Fin N → K) (vals : ℕ → K)
     (hshape : st.store.shape = workspaceShape tag N)
     (hb : ∀ i : Fin N, st.store.read tag 0 i = some (b i))

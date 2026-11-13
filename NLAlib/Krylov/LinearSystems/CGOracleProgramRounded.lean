@@ -57,7 +57,7 @@ zero active steps from a positive existing CGRun tied to the actual decoded fina
 and cached residual. -/
 theorem exec_rounded_preallocated (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K)
     (hshape : st.store.shape = workspaceShape tag N false)
@@ -133,7 +133,7 @@ workspace state. The witness contains either zero active steps or an existing po
 CGRun tied to the actual decoded final vectors, residual cache and termination status. -/
 theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : u tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : u tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K)
     (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)])
@@ -214,7 +214,7 @@ Backend storage and arithmetic are excluded from those bounds. -/
 theorem exec_rounded_compiled (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (v : P → ℝ) (hv : ∀ p, u p ≤ v p) (η : ℝ)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hu : v tag < 1) (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hu : v tag < 1) (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → K)
     (hshape : st.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)])

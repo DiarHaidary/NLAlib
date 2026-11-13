@@ -531,7 +531,7 @@ private theorem triple_upPass {mm : ι} {n L : IExp ℕ} {Lv Ua Qa Ea Kd Kp : �
 /-- a cost bound for a run before the tracked buffer is allocated, `j` allocations ahead -/
 private def PreTriple (I : Interp P ι K (OpCount P ι)) (T : ℕ → ℕ) (b m j : ℕ) (s : Stmt P ι ℕ ℕ)
     (c : ℕ) : Prop :=
-  Monotone T → (∀ κ, I.charge κ = Finsupp.single κ 1) → ∀ st st' : St P K (OpCount P ι),
+  Monotone T → (IsUnitCharge I) → ∀ st st' : St P K (OpCount P ι),
     st.store.size + j = b → exec I s st = some st' →
     Finsupp.weight (OpKind.kernelWeight T) st'.cnt ≤
       Finsupp.weight (OpKind.kernelWeight T) st.cnt + c * T m
@@ -710,7 +710,7 @@ summing to at most $N$, each with at most $2F + 12$ kernel calls of largest dime
 size. The static bound `NLAlib.eighCount` charges every size at every slot, a factor of about $N^2$
 more. No printed source. -/
 theorem eighProg.weight_le_of_exec_compiled {mm qr : ι} {I : Interp P ι K (OpCount P ι)}
-    (hc : ∀ k, I.charge k = Finsupp.single k 1) {dec : P → K → ℝ} (p : P) (N ℓ₀ F : ℕ)
+    (hc : IsUnitCharge I) {dec : P → K → ℝ} (p : P) (N ℓ₀ F : ℕ)
     (hlit : IsExactIntLit dec I.sem (N + 4)) (htn : IsExactToNat dec I.sem) (T : ℕ → ℕ)
     (hT : Monotone T) (hTsup : ∀ a b, T a + T b ≤ T (a + b)) {st st' : St P K (OpCount P ι)}
     (h : (eighProg.compiled p mm qr).exec I N ![ℓ₀, F] st = some st') :

@@ -66,7 +66,7 @@ No matrix entries, initialized trajectory or successful future execution are ass
 theorem exec_rounded_preallocated {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ)
     (hshape : st.store.shape = workspaceShape tag N q false)
@@ -122,7 +122,7 @@ private theorem exec_lanczosOracleProg_compiled_eq_map
 
 private theorem exec_lanczosOracleProg_compiled_outputs_of_prefix
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι) (N q : ℕ)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st workout : St P K (OpCount P ι)) (hsize : st.store.size = 6)
     (dec : P → K → ℝ) (A : Matrix (Fin N) (Fin N) ℝ) (b v1 : Fin N → ℝ) (ε s : ℝ)
     (hvzero : b = 0 → v1 = 0)
@@ -189,7 +189,7 @@ theorem exec_rounded_compiled {u : P → ℝ} {dec : P → K → ℝ}
     (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι)
     (v : P → ℝ) (hv : ∀ p, u p ≤ v p) (η : ℝ)
     (hsem : IsRelErrSem u dec (fun _ _ => True) I.sem) (hz : AddsZeroExactly dec I.sem)
-    (hc : ∀ k, I.charge k = Finsupp.single k 1)
+    (hc : IsUnitCharge I)
     (st : St P K (OpCount P ι)) (N q : ℕ) (A : Matrix (Fin N) (Fin N) ℝ)
     (b : Fin N → ℝ)
     (hshape : st.store.shape =
