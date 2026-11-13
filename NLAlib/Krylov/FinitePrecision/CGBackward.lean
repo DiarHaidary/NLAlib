@@ -114,12 +114,6 @@ private theorem quadForm_bounds {m : Type*} [Fintype m] [DecidableEq m] {H : Mat
     exact ⟨(mul_le_mul_of_nonneg_right e1 hx).trans h1,
       h2.trans (mul_le_mul_of_nonneg_right e2 hx)⟩
 
-/-- A symmetric matrix with spectrum in $[l, l']$, $l > 0$, is positive definite. -/
-private theorem posDef_of_spectrum {m : Type*} [Fintype m] [DecidableEq m] {H : Matrix m m ℝ}
-    (hH : H.IsHermitian) {l l' : ℝ} (hl : 0 < l) (hs : spectrum ℝ H ⊆ Set.Icc l l') :
-    H.PosDef :=
-  hH.posDef_iff_eigenvalue_pos.mpr fun i hi => hl.trans_le (hH.spectrum_subset_iff.mp hs i hi).1
-
 /-- A nonempty spectrum in $[l, l']$ forces $l \le l'$. -/
 private theorem le_of_spectrum {m : Type*} [Fintype m] [DecidableEq m] [Nonempty m]
     {H : Matrix m m ℝ} (hH : H.IsHermitian) {l l' : ℝ} (hs : spectrum ℝ H ⊆ Set.Icc l l') :
@@ -532,7 +526,7 @@ theorem cgAlpha_backwardH {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ S
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j < k) :
     cgAlpha C.backwardH (cgState C.backwardH C.dilatedRhs 0 j) = C.γ j := by
-  exact C.cgAlpha_backwardH_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
+  exact C.cgAlpha_backwardH_of_posDef (C.isHermitian_backwardH.posDef_of_spectrum_subset_Icc
     (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
 
 /-- **Exact CG on the model has the computed residual norms**: under (H), for $j \le k$,
@@ -541,7 +535,7 @@ theorem norm_cgState_backwardH_r {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.
     (hsmall : (k : ℝ) ^ 2 * Real.sqrt k * C.ε * (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
     {j : ℕ} (hj : j ≤ k) :
     ‖WithLp.toLp 2 (cgState C.backwardH C.dilatedRhs 0 j).r‖ = C.ρ j := by
-  exact C.norm_cgState_backwardH_r_of_posDef (posDef_of_spectrum C.isHermitian_backwardH
+  exact C.norm_cgState_backwardH_r_of_posDef (C.isHermitian_backwardH.posDef_of_spectrum_subset_Icc
     (by positivity : 0 < a / 2) (C.spectrum_backwardH_subset_Icc ha hs hsmall)) hj
 
 /-- **Residual ratios of the run, a priori**: under (H), $\|\mathbf{r}_j\| \le
@@ -554,7 +548,8 @@ theorem ρ_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆ Set.Icc a a')
     (hj : j ≤ k) :
     C.ρ j ≤ Real.sqrt (3 * (a' / a)) * C.ρ i := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
-  have hPD := posDef_of_spectrum C.isHermitian_backwardH (by positivity : 0 < a / 2) hspec
+  have hPD := C.isHermitian_backwardH.posDef_of_spectrum_subset_Icc
+    (by positivity : 0 < a / 2) hspec
   have h := hPD.norm_cgState_r_le (by positivity : 0 < a / 2) hspec C.dilatedRhs hij
   rw [C.norm_cgState_backwardH_r ha hs hsmall hj,
     C.norm_cgState_backwardH_r ha hs hsmall (hij.trans hj)] at h
@@ -629,7 +624,7 @@ theorem ρ_le_chebyshev_of_spectrum_backwardH {l l' : ℝ} (hl : 0 < l)
       ((Real.sqrt (l' / l) - 1) / (Real.sqrt (l' / l) + 1)) ^ j *
         ‖WithLp.toLp 2 C.b‖ := by
   have hherm := C.isHermitian_backwardH
-  have hPD := posDef_of_spectrum hherm hl hH
+  have hPD := hherm.posDef_of_spectrum_subset_Icc hl hH
   have := C.nonempty_index
   have hll' := le_of_spectrum hherm hH
   have hκ : 1 ≤ l' / l := (le_div_iff₀ hl).mpr (by simpa only [one_mul] using hll')
@@ -738,7 +733,8 @@ theorem quadForm_backwardH_sub_cgIterate_sub_quadForm_backwardH_sub_cgIterate {a
         quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 (j + d)) =
       ∑ i ∈ Finset.Ico j (j + d), C.γ i * C.ρ i ^ 2 := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
-  have hPD := posDef_of_spectrum C.isHermitian_backwardH (by positivity : 0 < a / 2) hspec
+  have hPD := C.isHermitian_backwardH.posDef_of_spectrum_subset_Icc
+    (by positivity : 0 < a / 2) hspec
   have hstep : ∀ i < k, quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 i) -
       quadForm C.backwardH (xs - cgIterate C.backwardH C.dilatedRhs 0 (i + 1)) =
         C.γ i * C.ρ i ^ 2 := fun i hi => by
@@ -880,7 +876,7 @@ theorem sum_γ_mul_ρ_sq_le {a a' : ℝ} (ha : 0 < a) (hs : spectrum ℝ C.A ⊆
     ∑ j ∈ Finset.range k, C.γ j * C.ρ j ^ 2 ≤ 2 * ‖WithLp.toLp 2 C.b‖ ^ 2 / a := by
   have hspec := C.spectrum_backwardH_subset_Icc ha hs hsmall
   have hherm := C.isHermitian_backwardH
-  have hPD := posDef_of_spectrum hherm (by positivity : 0 < a / 2) hspec
+  have hPD := hherm.posDef_of_spectrum_subset_Icc (by positivity : 0 < a / 2) hspec
   set xs := C.backwardH⁻¹ *ᵥ C.dilatedRhs
   have hxs : C.backwardH *ᵥ xs = C.dilatedRhs := by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp

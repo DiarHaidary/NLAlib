@@ -20,6 +20,13 @@ No numerical target, Result id or alternate program is introduced.
 The extracted runs support the backward model and physical energy comparison in
 [CGProgramRoundedBackward](CGProgramRoundedBackward.lean).
 
+The sufficient horizon is $q^{5/2}(4N^2u)\kappa^2\le10^{-5}$. Substituting
+$u=2^{-53}$ gives at most eight requested steps for $N=100$, $\kappa=100$, and one
+for $N=1000$, $\kappa=100$. These illustrate the strength of the sufficient assumptions;
+they neither predict CG failure beyond the horizon nor instantiate the theorem at IEEE
+binary64. The theorem requires pure relative arithmetic and success at every exact result,
+whereas finite binary64 has absolute underflow error and range-limited success.
+
 ## Main results
 
 * `NLAlib.CGImplementation.exec_rounded_scoped`: actual execution and workspace witness.
@@ -49,8 +56,7 @@ theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hdecode : ∀ i j : Fin N, dec tag (vals (i + N * j)) = A i j)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a)) :
     ∃ (workout out : St P K (OpCount P ι)) (ν flag : ℝ),
       (cgProg.compiled tag).exec I N ![q] st = some out ∧
       out = releaseWorkspace tag (N * N) N (I.width tag) workout ∧
@@ -159,8 +165,7 @@ theorem exec_rounded_compiled (I : Interp P ι K (OpCount P ι)) (tag : P)
     (hdecode : ∀ i j : Fin N, dec tag (vals (i + N * j)) = A i j)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a)) :
     ∃ (out : St P K (OpCount P ι)) (flag : ℝ),
       (cgProg.compiled tag).exec I N ![q] st = some out ∧
       out.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)] ∧

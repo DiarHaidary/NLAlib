@@ -271,9 +271,10 @@ private theorem triple_downLoop {dec : P → K → ℝ} {B : ℕ} (hlit : IsExac
               (min (readNat I p (cells s₁.store p b) (N * d.eval + lo)) (N - lo)) V)) := by
         apply triple_run
         apply triple_runCont_bindIdx_read _ fun V h => triple_cont_skip h
-        have e1 : (eighSlotOff n d (IExp.var lo)).eval = N * d.eval + lo := by simp [eighSlotOff, N]
+        have e1 : (eighSlotOff n d (IExp.var lo)).eval = N * d.eval + lo := by
+          simp [eval_eighSlotOff, N]
         have e2 : (eighSlotOff n (d + 1) (IExp.var lo)).eval = N * (d.eval + 1) + lo := by
-          simp [eighSlotOff, N]
+          simp [eval_eighSlotOff, N]
         have e3 : (n - IExp.var lo).eval = N - lo := by simp [N]
         rw [e1, e3]
         have := triple_downSlot (I := I) (T := T) (p := p) (b := b) (V₀ := cells s₁.store p b)
@@ -386,7 +387,8 @@ private theorem triple_upLoop {mm : ι} {n d : IExp ℕ} {Ua Qa Ea Kd Kp t : ℕ
           (· = V₀) := by
         apply triple_run
         apply triple_runCont_bindIdx_read _ fun V h => triple_cont_skip h
-        have e1 : (eighSlotOff n d (IExp.var lo)).eval = N * d.eval + lo := by simp [eighSlotOff, N]
+        have e1 : (eighSlotOff n d (IExp.var lo)).eval = N * d.eval + lo := by
+          simp [eval_eighSlotOff, N]
         have e3 : (n - IExp.var lo).eval = N - lo := by simp [N]
         rw [e1, e3]
         exact frame_run (builderFrame_upSlot hUa hEa lo _) V₀

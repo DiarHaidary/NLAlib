@@ -99,11 +99,8 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_two_mul_pow {A
     ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ ≤
       2 * ((Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1)) ^ q *
         ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ := by
-  obtain ⟨p, hp, hp₀, -, hpI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
-    (a' := a') ha ∅ q (C := 1) fun x _ => by rw [Finset.prod_empty, abs_one]
-  rw [Finset.card_empty, zero_add] at hp
-  refine (hA.norm_sub_mulVec_gmresIterate_le hs b x₀ hp hp₀ hpI).trans_eq ?_
-  ring
+  obtain ⟨p, hp, hp₀, hpI⟩ := exists_degree_le_eval_zero_eq_one_abs_eval_le (a' := a') ha q
+  exact hA.norm_sub_mulVec_gmresIterate_le hs b x₀ hp hp₀ hpI
 
 /-- **MINRES on two symmetric intervals**: for Hermitian $\mathbf{A}$ with spectrum in
 $[-a', -a] \cup [a, a']$, $0 < a$, and $\kappa = a'/a$,
@@ -226,11 +223,10 @@ theorem _root_.Matrix.IsHermitian.norm_sub_mulVec_gmresIterate_le_residualMinima
   rcases (norm_nonneg (WithLp.toLp 2 (b - A *ᵥ x₀))).eq_or_lt with hE0 | hEpos
   · have h := key ⟨1, h1, eval_one⟩
     rwa [← hE0, mul_zero] at h ⊢
-  · have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} := ⟨⟨1, h1, eval_one⟩⟩
-    have hdiv : ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ /
+  · have hdiv : ‖WithLp.toLp 2 (b - A *ᵥ gmresIterate A b x₀ q)‖ /
         ‖WithLp.toLp 2 (b - A *ᵥ x₀)‖ ≤ residualMinimax (spectrum ℝ A) q := by
-      unfold residualMinimax
-      exact le_ciInf fun p => (div_le_iff₀ hEpos).mpr (key p)
+      refine le_residualMinimax fun p η hp hp₀ _ hη => (div_le_iff₀ hEpos).mpr ?_
+      exact hA.norm_sub_mulVec_gmresIterate_le (fun _ hx => hx) b x₀ hp hp₀ hη
     rwa [div_le_iff₀ hEpos] at hdiv
 
 /-! ### Preconditioned MINRES -/
@@ -422,9 +418,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_mulVec_pminresIterate_le_four_
     RCLike.re (quadForm M (b - A *ᵥ pminresIterate A M b x₀ q)) ≤
       4 * ((Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1)) ^ (2 * q) *
         RCLike.re (quadForm M (b - A *ᵥ x₀)) := by
-  obtain ⟨p, hp, hp₀, -, hpI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
-    (a' := a') ha ∅ q (C := 1) fun x _ => by rw [Finset.prod_empty, abs_one]
-  rw [Finset.card_empty, zero_add] at hp
+  obtain ⟨p, hp, hp₀, hpI⟩ := exists_degree_le_eval_zero_eq_one_abs_eval_le (a' := a') ha q
   refine (hA.re_quadForm_sub_mulVec_pminresIterate_le hM hs b x₀ hp hp₀ hpI).trans_eq ?_
   ring
 

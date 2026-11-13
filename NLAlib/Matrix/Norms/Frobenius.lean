@@ -313,6 +313,7 @@ theorem frobNorm_sub_comm (A B : Matrix m n 𝕜) : frobNorm (A - B) = frobNorm 
 open scoped Matrix.Norms.Frobenius in
 /-- The Frobenius norm is absolutely homogeneous:
 $\|c\mathbf{A}\|_{\mathsf{F}} = \lvert c \rvert \|\mathbf{A}\|_{\mathsf{F}}$. -/
+@[simp]
 theorem frobNorm_smul (c : 𝕜) (A : Matrix m n 𝕜) : frobNorm (c • A) = ‖c‖ * frobNorm A := by
   rw [frobNorm_eq_norm, frobNorm_eq_norm, norm_smul]
 

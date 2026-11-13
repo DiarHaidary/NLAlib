@@ -17,6 +17,8 @@ Not in Mathlib (searched: `paley`,
 `zygmund`, `second moment method`); an upstream candidate for
 `Mathlib/Probability/Moments/Variance.lean` or a new `Mathlib/Probability/PaleyZygmund.lean`.
 
+The argument originates in the work of Paley and Zygmund [PaleyZygmund1932].
+
 ## Main results
 
 * `ProbabilityTheory.sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt`: the inequality.

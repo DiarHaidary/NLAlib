@@ -247,9 +247,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_pcgIterate_le_four_mul_pow
     refine (Matrix.IsUnit.posDef_star_left_conjugate_iff hS).mp ?_
     exact hH.posDef_iff_eigenvalue_pos.mpr fun k hk =>
       ha.trans_le (hH.spectrum_subset_iff.mp hs' k hk).1
-  obtain ⟨p, hp, hp₀, -, hpI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
-    (a' := a') ha ∅ q (C := 1) fun x _ => by rw [Finset.prod_empty, abs_one]
-  rw [Finset.card_empty, zero_add] at hp
+  obtain ⟨p, hp, hp₀, hpI⟩ := exists_degree_le_eval_zero_eq_one_abs_eval_le (a' := a') ha q
   refine (hpd.re_quadForm_sub_pcgIterate_le hM hs hxs x₀ hp hp₀ hpI).trans_eq ?_
   ring
 

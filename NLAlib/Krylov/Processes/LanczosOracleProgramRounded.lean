@@ -17,6 +17,12 @@ Scope cleanup preserves the computed columns, coefficients, input norm and previ
 These are actual decoded buffer reads, with no numerical correctness premise in the cleanup
 argument. The compiled execution theorem derives its context and existing run from primitive steps.
 
+Its scalar semantics and oracle contracts both require global success; finite-word range
+obligations remain separate. The tree calls the oracle at each requested step, including zero
+continuation after the active prefix ends. The additional scratch is linear in the dimension;
+the declared output basis itself occupies $N(q+1)$ words. Polynomial backward-error corollaries
+may require stronger horizons than this execution theorem.
+
 ## Main results
 
 * `NLAlib.LanczosOracleImplementation.exec_rounded_compiled`: actual execution and decoded outputs.

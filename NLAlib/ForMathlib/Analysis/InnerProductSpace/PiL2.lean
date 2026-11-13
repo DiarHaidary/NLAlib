@@ -193,9 +193,8 @@ of the dimension, including dimension zero. This is the Euclidean specialization
 `PiLp.norm_toLp_const`. -/
 theorem norm_toLp_const (c : 𝕜) :
     ‖WithLp.toLp 2 (fun _ : n => c)‖ = Real.sqrt (Fintype.card n) * ‖c‖ := by
-  rw [EuclideanSpace.norm_eq]
-  simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-  rw [Real.sqrt_mul (Nat.cast_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+  convert (PiLp.norm_toLp_const (p := 2) (ι := n) (by norm_num) c) using 1 <;>
+    simp [Real.sqrt_eq_rpow, Function.const_def]
 
 /-- A coordinatewise relative and absolute envelope gives a Euclidean envelope. The absolute
 term grows with the square root of the dimension; both coefficients are nonnegative. -/

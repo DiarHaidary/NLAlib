@@ -283,9 +283,7 @@ theorem _root_.Matrix.IsHermitian.re_quadForm_sub_cgIterate_le_four_mul_pow {A :
         RCLike.re (quadForm A (xs - x₀)) := by
   have hpd : A.PosDef := hA.posDef_iff_eigenvalue_pos.mpr fun k hk =>
     ha.trans_le (hA.spectrum_subset_iff.mp hs k hk).1
-  obtain ⟨p, hp, hp₀, -, hpI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
-    (a' := a') ha ∅ q (C := 1) fun x _ => by rw [Finset.prod_empty, abs_one]
-  rw [Finset.card_empty, zero_add] at hp
+  obtain ⟨p, hp, hp₀, hpI⟩ := exists_degree_le_eval_zero_eq_one_abs_eval_le (a' := a') ha q
   refine (hpd.re_quadForm_sub_cgIterate_le hs hxs x₀ hp hp₀ hpI).trans_eq ?_
   ring
 
@@ -458,14 +456,11 @@ theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_residualMinimax_sq_mul
   rcases hE.eq_or_lt with hE0 | hEpos
   · have h := key ⟨1, h1, eval_one⟩
     rwa [← hE0, mul_zero] at h ⊢
-  · have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} := ⟨⟨1, h1, eval_one⟩⟩
-    have hsq : Real.sqrt (RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) /
+  · have hsq : Real.sqrt (RCLike.re (quadForm A (xs - cgIterate A b x₀ q)) /
         RCLike.re (quadForm A (xs - x₀))) ≤ residualMinimax (spectrum ℝ A) q := by
-      unfold residualMinimax
-      refine le_ciInf fun p => Real.sqrt_le_iff.mpr ⟨?_, ?_⟩
-      · exact Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
-      · rw [div_le_iff₀ hEpos]
-        exact key p
+      refine le_residualMinimax fun p η hp hp₀ hη0 hη =>
+        Real.sqrt_le_iff.mpr ⟨hη0, (div_le_iff₀ hEpos).mpr ?_⟩
+      exact hA.re_quadForm_sub_cgIterate_le (fun _ hx => hx) hxs x₀ hp hp₀ hη
     have h := mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (Real.sqrt_nonneg _) hsq 2) hE
     rwa [Real.sq_sqrt (div_nonneg hL hE), div_mul_cancel₀ _ hEpos.ne'] at h
 

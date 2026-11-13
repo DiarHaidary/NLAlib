@@ -65,8 +65,7 @@ theorem exec_rounded_preallocated (I : Interp P ι K (OpCount P ι)) (tag : P) (
     (hmv : IsMatvecErr I o dec tag A (cgImplementationRoundoffBound N (u tag) * specNorm A))
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a)) :
     ∃ (out : St P K (OpCount P ι)) (ν flag : ℝ),
       exec I ((do
         ins (.lit tag ⟨7, 6⟩ 0)
@@ -142,8 +141,7 @@ theorem exec_rounded_scoped (I : Interp P ι K (OpCount P ι)) (tag : P) (o : ι
     (hmv : IsMatvecErr I o dec tag A (cgImplementationRoundoffBound N (u tag) * specNorm A))
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a)) :
     ∃ (workout out : St P K (OpCount P ι)) (ν flag : ℝ),
       (cgOracleProg.compiled tag o).exec I N ![q] st = some out ∧
       out = releaseWorkspace tag 0 N (I.width tag) workout ∧
@@ -225,8 +223,7 @@ theorem exec_rounded_compiled (I : Interp P ι K (OpCount P ι)) (tag : P) (o : 
     (hη : η ≤ cgImplementationRoundoffBound N (v tag))
     (hsmall : cgImplementationRoundoffBound N (v tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (v tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5) :
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (v tag)) (a' / a)) :
     ∃ (out : St P K (OpCount P ι)) (flag : ℝ),
       (cgOracleProg.compiled tag o).exec I N ![q] st = some out ∧
       out.store.shape = #[(tag, N), (tag, N), (tag, N), (tag, N), (tag, 1)] ∧

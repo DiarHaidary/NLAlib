@@ -14,7 +14,8 @@ public import NLAlib.LowerBounds.QueryModel.Basic
 # Yao's principle for query algorithms
 
 A randomized algorithm is a measurable family of deterministic ones indexed by a seed
-(`NLAlib.QueryAlgorithm.IsMeasurableFamily`). Two forms of Yao's minimax principle (the easy
+(`NLAlib.QueryAlgorithm.IsMeasurableFamily`). Two forms of Yao's minimax principle [Yao1977] (the
+easy
 direction, which is what lower bounds use), both Fubini on the product of the seed law and the
 input law:
 

@@ -777,8 +777,7 @@ theorem norm_sub_mulVec_x_sub_r_le_norm_b {a a' : ℝ} (ha : 0 < a)
     ‖WithLp.toLp 2 (C.b - C.A *ᵥ C.x j - C.r j)‖ ≤
       12 * j * C.ε * (a' / a) * ‖WithLp.toLp 2 C.b‖ := by
   have hherm := C.isHermitian
-  have hPD : C.A.PosDef := hherm.posDef_iff_eigenvalue_pos.mpr fun i hi =>
-    ha.trans_le (hherm.spectrum_subset_iff.mp hs i hi).1
+  have hPD : C.A.PosDef := hherm.posDef_of_spectrum_subset_Icc ha hs
   have hx : C.A *ᵥ (C.A⁻¹ *ᵥ C.b) = C.b := by
     rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).mp
       hPD.isUnit), Matrix.one_mulVec]

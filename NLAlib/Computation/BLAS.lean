@@ -5,6 +5,7 @@ Authors: NLAlib contributors
 -/
 module
 
+public import NLAlib.ForMathlib.Data.List.Range
 public import NLAlib.Computation.Exact
 public import NLAlib.ForMathlib.Data.Option.Basic
 public import NLAlib.ForMathlib.Order.Basic
@@ -416,14 +417,6 @@ theorem run_trsvLower (p : P) (n : IExp ℕ) (T : ℕ) (tOff : IExp ℕ) (x : �
         (.seq (.instr (.bin p .div ⟨x, xo + .var i⟩ ⟨x, xo + .var i⟩
           ⟨T, tOff + .var i + n * .var i⟩)) .skip)) .skip)) .skip := rfl
 
-private theorem foldlM_range_succ {α : Type} (g : α → ℕ → Option α) (a : α) (i : ℕ) :
-    (List.range (i + 1)).foldlM g a = ((List.range i).foldlM g a).bind fun b => g b i := by
-  rw [List.range_succ, List.foldlM_append]
-  rcases (List.range i).foldlM g a with _ | b
-  · rfl
-  · change (g b i).bind (fun b => some b) = g b i
-    rcases g b i <;> rfl
-
 private theorem exists_foldlM_range_eq_some_of_le {α : Type} {g : α → ℕ → Option α} {a b : α}
     {n i : ℕ} (h : (List.range n).foldlM g a = some b) (hi : i ≤ n) :
     ∃ c, (List.range i).foldlM g a = some c := by
@@ -625,7 +618,7 @@ theorem exec_axpy (a : Cell ℕ ℕ) (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n :
   · intro i hi st' ⟨si, arr, hsi, harr, hst, hcnt, hpos, hcur, hpeak, hcurW, hpeakW⟩
     obtain ⟨si', hsi'⟩ := exists_foldlM_range_eq_some_of_le h₁ hi
     have hstep := hsi'
-    rw [foldlM_range_succ, hsi, Option.bind_some] at hstep
+    rw [List.foldlM_range_succ, Option.bind_eq_bind, hsi, Option.bind_some] at hstep
     have hrd : ∀ {b j : ℕ}, (∀ k < i, b ≠ y ∨ j ≠ yo.eval + k) →
         si.read p b j = st.store.read p b j := fun h =>
       Store.read_of_foldlM_write_eq_some_of_forall_ne _ _ _ hsi fun k hk =>
@@ -679,7 +672,7 @@ theorem exec_scal (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (av : 𝕜) (xs
   · rintro i hi _ ⟨si, hsi, rfl⟩
     obtain ⟨si', hsi'⟩ := exists_foldlM_range_eq_some_of_le h₁ hi
     have hstep := hsi'
-    rw [foldlM_range_succ, hsi, Option.bind_some] at hstep
+    rw [List.foldlM_range_succ, Option.bind_eq_bind, hsi, Option.bind_some] at hstep
     have hrd : ∀ {b j : ℕ}, (∀ k < i, b ≠ x ∨ j ≠ xo.eval + k) →
         si.read p b j = st.store.read p b j := fun h =>
       Store.read_of_foldlM_write_eq_some_of_forall_ne _ _ _ hsi fun k hk =>
@@ -722,7 +715,7 @@ theorem exec_rscl (a : Cell ℕ ℕ) (x : ℕ) (xo n : IExp ℕ) (av : 𝕜) (xs
   · rintro i hi _ ⟨si, hsi, rfl⟩
     obtain ⟨si', hsi'⟩ := exists_foldlM_range_eq_some_of_le h₁ hi
     have hstep := hsi'
-    rw [foldlM_range_succ, hsi, Option.bind_some] at hstep
+    rw [List.foldlM_range_succ, Option.bind_eq_bind, hsi, Option.bind_some] at hstep
     have hrd : ∀ {b j : ℕ}, (∀ k < i, b ≠ x ∨ j ≠ xo.eval + k) →
         si.read p b j = st.store.read p b j := fun h =>
       Store.read_of_foldlM_write_eq_some_of_forall_ne _ _ _ hsi fun k hk =>
@@ -765,7 +758,7 @@ theorem exec_copyv (x : ℕ) (xo : IExp ℕ) (y : ℕ) (yo n : IExp ℕ) (xs : �
   · rintro i hi _ ⟨si, hsi, rfl⟩
     obtain ⟨si', hsi'⟩ := exists_foldlM_range_eq_some_of_le h₁ hi
     have hstep := hsi'
-    rw [foldlM_range_succ, hsi, Option.bind_some] at hstep
+    rw [List.foldlM_range_succ, Option.bind_eq_bind, hsi, Option.bind_some] at hstep
     have hx' : si.read p x (xo.eval + i) = some (xs i) := by
       rw [Store.read_of_foldlM_write_eq_some_of_forall_ne _ _ _ hsi fun k hk => ?_, hx i hi]
       by_cases h : x = y

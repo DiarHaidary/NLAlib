@@ -91,18 +91,6 @@ private theorem isLUB_sum_mul_sq_stdSimplex {s : Finset ℝ} (hs : s.Nonempty) (
     simp only [Pi.single_apply, ite_mul, one_mul, zero_mul, Finset.sum_ite_eq',
       Finset.mem_univ, if_true]
 
-/-- A value of a polynomial on a finite set is at most the supremum of its absolute values
-there. -/
-private theorem abs_eval_le_iSup {s : Finset ℝ} (p : ℝ[X]) {x : ℝ} (hx : x ∈ s) :
-    |p.eval x| ≤ ⨆ y ∈ (s : Set ℝ), |p.eval y| := by
-  have hB : 0 ≤ ∑ t ∈ s, |p.eval t| := Finset.sum_nonneg fun _ _ => abs_nonneg _
-  calc |p.eval x| = ⨆ (_ : x ∈ (s : Set ℝ)), |p.eval x| :=
-        (ciSup_pos (f := fun _ => |p.eval x|) (Finset.mem_coe.mpr hx)).symm
-    _ ≤ _ := le_ciSup (f := fun y => ⨆ (_ : y ∈ (s : Set ℝ)), |p.eval y|) ⟨∑ t ∈ s, |p.eval t|, by
-        rintro _ ⟨y, rfl⟩
-        exact Real.iSup_le (fun hy => Finset.single_le_sum (f := fun t => |p.eval t|)
-          (fun _ _ => abs_nonneg _) hy) hB⟩ x
-
 /-- The infimum over residual value vectors of $\max_i v_i^2$ is
 $\mathsf{residualMinimax}(s, q)^2$. -/
 private theorem isGLB_iSup_sq_residualValues {s : Finset ℝ} (hs : s.Nonempty) (q : ℕ) :
@@ -121,14 +109,12 @@ private theorem isGLB_iSup_sq_residualValues {s : Finset ℝ} (hs : s.Nonempty) 
       _ = _ := Real.sq_sqrt h0
   · rcases lt_or_ge b 0 with hb0 | hb0
     · exact hb0.le.trans (sq_nonneg _)
-    have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} :=
-      ⟨⟨1, degree_one_le_natCast q, eval_one⟩⟩
     have hsq : Real.sqrt b ≤ residualMinimax s q := by
-      refine le_ciInf fun p => Real.sqrt_le_iff.mpr ⟨Real.iSup_nonneg fun _ =>
-        Real.iSup_nonneg fun _ => abs_nonneg _, ?_⟩
-      refine (hb ⟨_, ⟨p.1, p.2.1, p.2.2, rfl⟩, rfl⟩).trans (ciSup_le fun i => ?_)
+      refine le_residualMinimax fun p η hp hp₀ hη0 hη =>
+        Real.sqrt_le_iff.mpr ⟨hη0, ?_⟩
+      refine (hb ⟨_, ⟨p, hp, hp₀, rfl⟩, rfl⟩).trans (ciSup_le fun i => ?_)
       rw [← sq_abs]
-      exact pow_le_pow_left₀ (abs_nonneg _) (abs_eval_le_iSup p.1 i.2) 2
+      exact pow_le_pow_left₀ (abs_nonneg _) (hη i i.2) 2
     calc b = Real.sqrt b ^ 2 := (Real.sq_sqrt hb0).symm
       _ ≤ residualMinimax s q ^ 2 := pow_le_pow_left₀ (Real.sqrt_nonneg _) hsq 2
 

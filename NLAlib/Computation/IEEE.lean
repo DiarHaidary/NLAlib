@@ -6,6 +6,8 @@ Authors: NumLean contributors, NLAlib contributors
 module
 
 public import NLAlib.Computation.BinaryFloat
+public import NLAlib.Computation.MatvecRoutine
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import NLAlib.ForMathlib.Data.Float.Operations
 public import NLAlib.ForMathlib.Data.Float.Literals
 
@@ -33,6 +35,40 @@ implement Lean's model. Counts and physical kernel costs are separate certificat
 namespace NLAlib.Computation
 
 open Float.Model Float.Model.UnpackedFloat
+open scoped Matrix
+
+/-- Positive binary64 zero on the finite-word carrier. -/
+def finiteFloatZero : FiniteFloat := ⟨Float.ofBits 0, rfl⟩
+
+/-- Binary64 one on the finite-word carrier. -/
+def finiteFloatOne : FiniteFloat := ⟨Float.ofBits 0x3ff0000000000000, rfl⟩
+
+/-- Positive binary64 zero decodes exactly to zero. -/
+theorem floatDecode_finiteFloatZero : floatDecode finiteFloatZero.val = 0 := rfl
+
+-- The closed pack/unpack computation traverses the binary64 bit representation.
+set_option maxRecDepth 4096 in
+/-- Binary64 one decodes exactly to one. -/
+theorem floatDecode_finiteFloatOne : floatDecode finiteFloatOne.val = 1 := by
+  have hx : (Float.ofBits 0x3ff0000000000000).toModel.unpack =
+      .finite .positive (2 ^ 52) (-52) (by decide) := rfl
+  norm_num [finiteFloatOne, floatDecode, hx]
+
+/-- A checked binary64 stored-entry interpreter with the supplied finite ROM, zero tape,
+no oracles or black-box kernels, 64-bit words, and one logical charge per operation.
+Scalar overflow and invalid operations fail; index conversion is unsupported. The scalar
+accuracy certificate is `isArithErrSem_finiteFloatSem`. Logical charges do not certify native
+runtime costs. This interpreter supports concrete finite-word program examples.
+No printed source. -/
+def finiteFloatStoredInterp (values : Array FiniteFloat) : Interp Unit Unit FiniteFloat ℕ where
+  sem := finiteFloatSem
+  charge _ := 1
+  tape _ _ := finiteFloatZero
+  oracle _ _ _ := none
+  height _ := 0
+  rom i := values[i]?
+  romSize _ := values.size
+  width _ := 64
 
 private local instance : Fact (2 ≤ Format.binary64.exponentBits) := ⟨by decide⟩
 
@@ -349,5 +385,79 @@ theorem isArithErrSem_finiteFloatSem :
   · intro p x
     cases p
     exact finiteFloatSem_conj x
+
+/-- The finite binary64 interpreter does not implement exact floor conversion to a natural
+index: its conversion fails even on the exact zero literal. Arithmetic range and accuracy
+certificates do not imply dynamic-index support. No printed source. -/
+theorem not_isExactToNat_finiteFloatSem :
+    ¬ IsExactToNat (fun _ (x : FiniteFloat) => floatDecode x.val) finiteFloatSem := by
+  intro h
+  obtain ⟨z, _, hd⟩ := isArithErrSem_finiteFloatSem.lit_zero ()
+  have ht := h () z
+  change none = (if 0 ≤ floatDecode z.val then some ⌊floatDecode z.val⌋₊ else none) at ht
+  rw [hd] at ht
+  norm_num at ht
+  cases ht
+
+/-- A one-column, one-coordinate oracle computing twice its input by checked finite binary64
+addition. Other shapes are rejected. Overflow is execution failure. This executable oracle
+is a concrete consumer of the input-domain matvec contract. No printed source. -/
+def finiteFloatDoubleOracle (cols : ℕ) (X : Array FiniteFloat) : Option (Array FiniteFloat) :=
+  if h : cols = 1 ∧ X.size = 1 then
+    (finiteFloatSem.bin () .add (X[0]'(by omega)) (X[0]'(by omega))).map fun z => #[z]
+  else none
+
+/-- Checked binary64 doubling satisfies the input-domain matvec contract for the matrix
+$[2]$ on $\lvert 2x\rvert\le M$, with $M$ the largest finite magnitude, coefficient $2u$
+and absolute allowance $\eta$, where $u=2^{-53}$ and $\eta=2^{-1075}$.
+The certificate proves success from
+the input bound; it assumes no observed intermediate finiteness. No printed source. -/
+theorem isMatvecErrOn_finiteFloatDoubleOracle {ι C : Type}
+    (I : Interp Unit ι FiniteFloat C) (o : ι) (hh : I.height o = 1)
+    (ho : I.oracle o = finiteFloatDoubleOracle) :
+    IsMatvecErrOn I o (fun _ x => floatDecode x.val) ()
+      (fun (_ _ : Fin 1) => (2 : ℝ))
+      (fun x => |2 * x 0| ≤ Format.binary64.maxFinite)
+      (2 * Format.binary64.unitRoundoff) Format.binary64.underflowBound := by
+  refine ⟨hh, fun X hX hx => ?_⟩
+  let x := X[0]'(by omega)
+  have hs : |BinOp.add.realOp (floatDecode x.val) (floatDecode x.val)| ≤
+      Format.binary64.maxFinite := by
+    simpa only [BinOp.realOp, ← two_mul, x, Fin.val_zero] using hx
+  obtain ⟨z, hz⟩ := isArithErrSem_finiteFloatSem.bin_ok () .add x x trivial
+    (fun h => nomatch h) hs
+  have he := isArithErrSem_finiteFloatSem.bin_err () .add x x z trivial hz
+  refine ⟨#[z], rfl, ?_, ?_⟩
+  · rw [ho]
+    simp only [finiteFloatDoubleOracle, hX, and_self, ↓reduceDIte, x, hz, Option.map_some]
+  · have hn (v : Fin 1 → ℝ) : ‖WithLp.toLp 2 v‖ = |v 0| := by
+      rw [EuclideanSpace.norm_eq]
+      simp only [Fin.sum_univ_one, Real.norm_eq_abs, sq_abs, Real.sqrt_sq_eq_abs]
+    rw [hn, hn]
+    simpa [AbsRelErr, Matrix.mulVec, dotProduct, x, BinOp.realOp, abs_mul, mul_assoc, mul_left_comm,
+      ← two_mul] using he
+
+/-- The checked finite binary64 doubling oracle executes a stored matvec from a readable
+source into a disjoint writable destination whenever $\lvert 2x\rvert\le M$.
+Its returned word is the actual block write and has error at most $2u\lvert x\rvert+\eta$.
+This is a finite-format execution
+endpoint for one oracle call, not a complete Krylov solver. No printed source. -/
+theorem exec_apply_of_finiteFloatDoubleOracle {ι C : Type} [AddMonoid C]
+    (I : Interp Unit ι FiniteFloat C) (o : ι) (hh : I.height o = 1)
+    (ho : I.oracle o = finiteFloatDoubleOracle) (st : St Unit FiniteFloat C)
+    (src dst : ℕ) (sOff dOff : IExp ℕ) (hne : dst ≠ src) (x : Fin 1 → ℝ)
+    (hx : |2 * x 0| ≤ Format.binary64.maxFinite)
+    (hr : ∀ i : Fin 1, ∃ w, st.store.read () src (sOff.eval + i) = some w ∧
+      floatDecode w.val = x i)
+    (hw : ∀ i < 1, ∃ len, st.store.shape[dst]? = some ((), len) ∧ dOff.eval + i < len) :
+    ∃ (out : St Unit FiniteFloat C) (W : Fin 1 → FiniteFloat),
+      exec I (.apply o () dst dOff src sOff 1) st = some out ∧
+      st.store.writeBlock () dst dOff.eval (Array.ofFn W) = some out.store ∧
+      ‖WithLp.toLp 2 ((fun (_ _ : Fin 1) => (2 : ℝ)) *ᵥ x -
+        fun i : Fin 1 => floatDecode (W i).val)‖ ≤
+          (2 * Format.binary64.unitRoundoff) * ‖WithLp.toLp 2 x‖ +
+            Format.binary64.underflowBound :=
+  (isMatvecErrOn_finiteFloatDoubleOracle I o hh ho).exec_apply
+    st src dst sOff dOff hne x hx hr hw
 
 end NLAlib.Computation

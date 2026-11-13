@@ -38,6 +38,21 @@ open scoped Matrix
 
 namespace NLAlib
 
+/-- The sufficient CG precision horizon $q^{5/2}\varepsilon\kappa^2\le10^{-5}$.
+It is a hypothesis on requested steps, an error allowance and a condition ratio, not a
+necessary condition for convergence or a finite-format range certificate.
+[CarsonMaShao2026, (H)]. -/
+def CGPrecisionHorizon (q : ℕ) (ε κ : ℝ) : Prop :=
+  (q : ℝ) ^ 2 * Real.sqrt q * ε * κ ^ 2 ≤ 1 / 10 ^ 5
+
+/-- Every shorter prefix satisfies a CG precision horizon when the error allowance is
+nonnegative. The condition ratio may have either sign because it is squared. -/
+theorem CGPrecisionHorizon.mono {m q : ℕ} {ε κ : ℝ} (h : CGPrecisionHorizon q ε κ)
+    (hε : 0 ≤ ε) (hm : m ≤ q) : CGPrecisionHorizon m ε κ := by
+  unfold CGPrecisionHorizon at h ⊢
+  refine le_trans ?_ h
+  gcongr
+
 /-- For a nonempty symmetric matrix with spectrum in $[a,a']$, $a>0$, nonnegative
 precision $\varepsilon$ and positive horizon $q$, the input-only condition
 $q^2\sqrt q\varepsilon(a'/a)^2\le10^{-5}$ implies the curvature precision window

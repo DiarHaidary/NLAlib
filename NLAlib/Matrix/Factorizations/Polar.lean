@@ -21,8 +21,10 @@ $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^{\mathsf{H}}$ with positive si
 has orthonormal columns exactly when $\mathbf{A}$ has full column rank. The positive semidefinite
 factor is unique, and the isometric factor is unique exactly at full column rank.
 
-The polar factor is the nearest matrix with orthonormal columns in every unitarily invariant
-norm. The Procrustes problems it solves are in `NLAlib.Matrix.Factorizations.Procrustes`.
+When the row dimension is at least the column dimension, an isometric polar extension is a
+nearest matrix with orthonormal columns in every unitarily invariant norm. At full column rank
+this extension equals the canonical polar factor. The Procrustes problems it solves are in
+`NLAlib.Matrix.Factorizations.Procrustes`.
 
 ## Main definitions
 

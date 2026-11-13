@@ -303,7 +303,7 @@ private theorem integral_eval_mul_sq_eq_zero_of_integral_sq_eq_zero
 
 /-- The norm recurrence: for a finite measure $\mu$ supported in $[a, b]$ and every $k$,
 $\|\pi_{k+1}\|^2 = \beta_{k+1}\|\pi_k\|^2$ in $L^2(\mu)$, also when $\|\pi_k\| = 0$.
-[Gautschi2004, Theorem 1.27] (equation to check). -/
+[Gautschi2004, Theorem 1.27, (1.3.4)], in the positive-norm range. -/
 theorem integral_orthogonalPolynomial_succ_sq (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (orthogonalPolynomial μ (k + 1)).eval x ^ 2 ∂μ =
       jacobiBeta μ (k + 1) * ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ := by
@@ -477,9 +477,9 @@ private theorem isOrthogonalPolynomial_orthogonalPolynomial_add_two
 /-- **Existence of the orthogonal polynomials**: for a finite measure $\mu$ supported in
 $[a, b]$ and every $k$, the monic polynomial $\pi_k$ of degree $k$ is orthogonal in $L^2(\mu)$
 to every real polynomial of degree less than $k$. No nondegeneracy is needed: past the number of
-support points, $\pi_k$ vanishes on the support. [Gautschi2004, Theorems 1.6 and 1.27]
-(which of Theorems 1.6–1.8 states existence is to check); there for $k$ below the number of
-support points.
+support points, $\pi_k$ vanishes on the support. [Gautschi2004, Theorems 1.6 and 1.7] gives the
+positive-definite and finite-degree cases.
+Theorem 1.27 gives the recurrence on its nondegenerate range.
 Result: orthogonal-polynomial-existence -/
 theorem isOrthogonalPolynomial_orthogonalPolynomial (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     IsOrthogonalPolynomial μ k (orthogonalPolynomial μ k) := by
@@ -506,7 +506,7 @@ theorem isOrthogonalPolynomial_orthogonalPolynomial (hμ : ∀ᵐ x ∂μ, x ∈
 
 /-- The norms as products of the coefficients: for a finite measure $\mu$ supported in $[a, b]$
 and every $k$, $\|\pi_k\|^2 = \beta_0\beta_1\cdots\beta_k$ in $L^2(\mu)$, with
-$\beta_0 = \mu(\mathbb{R})$. [Gautschi2004, Theorem 1.27] (equation to check). -/
+$\beta_0 = \mu(\mathbb{R})$. [Gautschi2004, Theorem 1.27, (1.3.4)], in the positive-norm range. -/
 theorem integral_orthogonalPolynomial_sq_eq_prod (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : ℕ) :
     ∫ x, (orthogonalPolynomial μ k).eval x ^ 2 ∂μ = ∏ i ∈ Finset.range (k + 1), jacobiBeta μ i := by
   induction k with

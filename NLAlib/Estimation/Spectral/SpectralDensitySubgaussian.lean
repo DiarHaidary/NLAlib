@@ -247,9 +247,11 @@ $\|\mathbf{\Omega}\|_{\mathsf{F}}^2/(\lvert n\rvert m)$ on the same event. Gauss
 matrices are the case $c = 1$.
 Asymptotic form:
 `NLAlib.exists_forall_measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`.
-[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check); there for probes
+[ChenTrogdonUbaru2021, Theorem 1]; there for probes
 uniform on the sphere, with the sharper sub-Gaussian constant of Beta laws and the bound in the
-Wasserstein distance; the Jackson step is [ChenTrogdonUbaru2022, Appendix C, Theorem 38].
+Wasserstein distance; the Jackson step uses the local Jackson approximation bound;
+[ChenTrogdonUbaru2022, Appendix C, Theorem 38] uses the damped-Chebyshev route
+with the larger printed constant $\pi^2/2$.
 Result: spectral-density-lipschitz-tail -/
 theorem measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le
     {X : Ω → Matrix n m ℝ} {c : ℝ≥0}
@@ -309,7 +311,7 @@ $\nu_{\mathbf{A}}$ the empirical spectral measure; the constant of the Gauss ter
 parameter. With $\lvert n\rvert$ in the denominator, for large $n$ a single probe suffices.
 Proved from
 `NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le`
-with $C = 196$. [ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check);
+with $C = 196$. [ChenTrogdonUbaru2021, Theorem 1];
 there for probes uniform on the sphere.
 Asymptotic:
 NLAlib.measureReal_exists_abs_integral_empiricalSpectralMeasure_sub_integral_slqMeasure_gt_le
@@ -525,7 +527,7 @@ $\nu_{\mathbf{A}}$ the empirical spectral measure; the constants are `hansonWrig
 `jacksonApproximationConstant`. Both measures are probability measures, so there is no term in
 $\lvert f(b)\rvert$; $\tau < 1$ keeps the mass positive. Junk: for empty $n$ the normalisation is
 $\infty \cdot 0 = 0$ and the event is empty.
-[ChenTrogdonUbaru2021, the Wasserstein bound for SLQ] (theorem number to check); there for probes
+[ChenTrogdonUbaru2021, Theorem 1]; there for probes
 uniform on the sphere, whose SLQ measure has mass $1$.
 Result: spectral-density-lipschitz-tail -/
 theorem

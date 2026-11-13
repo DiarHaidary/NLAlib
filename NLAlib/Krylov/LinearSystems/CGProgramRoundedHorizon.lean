@@ -81,8 +81,7 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
     (hN : 0 < N) (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
     (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a)
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a))
     (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
       specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
       else True) 3 6 0 0 mv) :
@@ -123,8 +122,7 @@ theorem exec_rounded_run_header (I : Interp P ι K C) (tag : P)
       have hmq : m ≤ q := hmj.trans hjq.le
       have hε : 0 ≤ cgImplementationRoundoffBound N (u tag) :=
         cgImplementationRoundoffBound_nonneg N (hsem.nonneg trivial)
-      refine le_trans ?_ horizon
-      gcongr
+      exact horizon.mono hε hmq
     have hr : R.r m ≠ 0 := fun hr => hzero ((R.ν_eq_zero_iff le_rfl).mpr hr)
     have hp := R.p_ne_zero_of_r_ne_zero ha hs hsm hr
     have hn : 0 ≤ R.ν m := by
@@ -222,8 +220,7 @@ theorem exec_rounded_loop (I : Interp P ι K C) (tag : P)
     (hsmall : cgImplementationRoundoffBound N (u tag) ≤ 1 / 100)
     (hA : Aᵀ = A) {a a' : ℝ} (ha : 0 < a) (hspec : spectrum ℝ A ⊆ Set.Icc a a')
     (hprec : 3 * cgImplementationRoundoffBound N (u tag) * a' ≤ a)
-    (horizon : (q : ℝ) ^ 2 * Real.sqrt q * cgImplementationRoundoffBound N (u tag) *
-      (a' / a) ^ 2 ≤ 1 / 10 ^ 5)
+    (horizon : CGPrecisionHorizon q (cgImplementationRoundoffBound N (u tag)) (a' / a))
     (hmv : IsMatvecRoutine I dec tag A (cgImplementationRoundoffBound N (u tag) *
       specNorm A) (fun store => if storedMatrix then HoldsDecoded store dec tag 5 0 A
       else True) 3 6 0 0 mv) :

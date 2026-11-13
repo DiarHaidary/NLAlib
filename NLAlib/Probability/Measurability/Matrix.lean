@@ -24,7 +24,9 @@ public import NLAlib.Matrix.Factorizations.SketchedLowRank
 
 For random matrices, the quantities of the Matrix layer must be measurable functions of the
 matrix. This file belongs to the Probability layer: the Matrix layer itself has no measure theory.
-Norms, singular values and eigenvalues are continuous, hence measurable. The rank, the
+Norms and singular values are continuous, hence measurable. Sorted eigenvalues are continuous
+on the Hermitian locus and extended by zero elsewhere, so are Borel measurable on all matrices.
+The rank, the
 pseudoinverse, the range projector, the pseudo-condition number, the inverse Gram matrix, the
 randomized SVD, (generalized) Nyström, the chosen SVD, the truncated SVD, the early-truncated
 outputs, the polar factor and the Gram–Schmidt factors are not continuous but are Borel
@@ -175,7 +177,7 @@ theorem measurable_rank [Finite m] : Measurable fun A : Matrix m n 𝕜 => A.ran
   exact (isClosed_setOf_rank_le r).measurableSet.inter (isOpen_setOf_le_rank r).measurableSet
 
 /-- The pseudoinverse is measurable: $\mathbf{A} \mapsto \mathbf{A}^{+}$. -/
-theorem measurable_pinv :
+@[fun_prop] theorem measurable_pinv :
     Measurable (pinv : Matrix m n 𝕜 → Matrix n m 𝕜) := by
   exact measurable_of_continuousOn_fiber measurable_rank continuousOn_pinv_setOf_rank_eq
 

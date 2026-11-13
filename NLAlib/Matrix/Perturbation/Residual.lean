@@ -321,7 +321,7 @@ theorem exists_norm_sub_mul_norm_le_pseudoConditionNumber_mul [Nonempty n] {A V 
 
 /-- **The Bauer–Fike theorem.** If
 $\mathbf{A}\mathbf{V} = \mathbf{V} \operatorname{diag}(\mathbf{d})$ with $\mathbf{V}$ invertible,
-every eigenvalue $\mu$ of $\mathbf{A} + \mathbf{E}$ satisfies
+every eigenvalue $\mu$ in the base field of $\mathbf{A} + \mathbf{E}$ satisfies
 $\lvert \mathbf{d}_i - \mu \rvert \le \kappa(\mathbf{V}) \|\mathbf{E}\|_2$ for some $i$.
 [GolubVanLoan2013, Theorem 7.2.2]; [HornJohnson2013, Theorem 6.3.2].
 Result: bauer-fike -/

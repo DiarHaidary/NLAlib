@@ -226,6 +226,19 @@ structure Interp (P ι K C : Type) where
   output blocks. -/
   kshape : ι → List ℕ → List ℕ × List ℕ := fun _ _ => ([], [])
 
+/-- An interpretation charges one occurrence of each operation kind to that kind's own
+counter. Scalar semantics, word representation and oracle behavior are independent of this
+accounting interface. It is exactly the pointwise equation used by the standard charge.
+No printed source. -/
+def IsUnitCharge {P ι K : Type} (I : Interp P ι K (OpCount P ι)) : Prop :=
+  ∀ k, I.charge k = Finsupp.single k 1
+
+/-- The unit-charge interface gives the function equality used to instantiate a static count
+summary. No assumption about scalar exactness or execution success is needed. -/
+theorem IsUnitCharge.charge_eq {P ι K : Type} {I : Interp P ι K (OpCount P ι)}
+    (h : IsUnitCharge I) : I.charge = fun k => Finsupp.single k 1 :=
+  funext h
+
 section Exec
 
 variable {P ι K C : Type} [DecidableEq P]

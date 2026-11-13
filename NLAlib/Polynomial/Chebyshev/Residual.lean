@@ -266,39 +266,67 @@ polynomial one is always feasible. The empty set has value zero.
 [Greenbaum1997, §3.1] considers polynomial bounds on Hermitian spectra. Taking the infimum of
 feasible bounds extends that formulation to any real set. -/
 noncomputable def residualMinimax (s : Set ℝ) (q : ℕ) : ℝ :=
-  ⨅ p : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1}, ⨆ x ∈ s, |p.1.eval x|
+  sInf {η : ℝ | 0 ≤ η ∧ ∃ p : ℝ[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧ ∀ x ∈ s, |p.eval x| ≤ η}
 
-/-- The residual minimax value $\mathsf{residualMinimax}(s, q)$ is nonnegative. -/
+/-- The residual minimax value is nonnegative. -/
 theorem residualMinimax_nonneg (s : Set ℝ) (q : ℕ) : 0 ≤ residualMinimax s q :=
-  Real.iInf_nonneg fun _ => Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
+  Real.sInf_nonneg fun _ h => h.1
 
-/-- Every residual polynomial bounds the minimax value: if $\deg p \le q$, $p(0) = 1$ and
-$\lvert p \rvert \le \eta$ on $s$ with $0 \le \eta$, then $\mathsf{residualMinimax}(s, q) \le
-\eta$. -/
+/-- A normalized polynomial satisfying a uniform bound gives an upper bound on the residual
+minimax value. -/
 theorem residualMinimax_le {s : Set ℝ} {q : ℕ} {p : ℝ[X]} (hp : p.degree ≤ q) (hp₀ : p.eval 0 = 1)
-    {η : ℝ} (hη₀ : 0 ≤ η) (hη : ∀ x ∈ s, |p.eval x| ≤ η) : residualMinimax s q ≤ η := by
-  refine (ciInf_le ⟨0, ?_⟩ (⟨p, hp, hp₀⟩ : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1})).trans ?_
-  · rintro _ ⟨p, rfl⟩
-    exact Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _
-  · exact Real.iSup_le (fun x => Real.iSup_le (fun hx => hη x hx) hη₀) hη₀
+    {η : ℝ} (hη₀ : 0 ≤ η) (hη : ∀ x ∈ s, |p.eval x| ≤ η) : residualMinimax s q ≤ η :=
+  csInf_le ⟨0, fun _ h => h.1⟩ ⟨hη₀, p, hp, hp₀, hη⟩
 
-/-- Enlarging a spectral approximation set cannot decrease its residual minimax value
-when the larger set is compact: for $s\subseteq t$ and compact $t$,
-$\mathsf{residualMinimax}(s,q)\le\mathsf{residualMinimax}(t,q)$.
-Compactness excludes the total supremum's junk value for unbounded polynomial images. -/
-theorem residualMinimax_mono {s t : Set ℝ} (ht : IsCompact t) (hst : s ⊆ t) (q : ℕ) :
-    residualMinimax s q ≤ residualMinimax t q := by
-  have h1 : (1 : ℝ[X]).degree ≤ q :=
-    degree_one_le.trans (by exact_mod_cast Nat.zero_le q)
-  have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} := ⟨⟨1, h1, eval_one⟩⟩
-  refine le_ciInf fun p => residualMinimax_le p.2.1 p.2.2
-    (Real.iSup_nonneg fun _ => Real.iSup_nonneg fun _ => abs_nonneg _) fun x hx => ?_
-  obtain ⟨M, hM⟩ := ht.bddAbove_image p.1.continuous.abs.continuousOn
-  refine le_ciSup₂ (f := fun y (_ : y ∈ t) => |p.1.eval y|)
-    ⟨M, fun z hz => ?_⟩ x (hst hx)
-  simp only [Set.mem_iUnion, Set.mem_range] at hz
-  obtain ⟨y, hy, rfl⟩ := hz
-  exact hM ⟨y, hy, rfl⟩
+/-- The constant polynomial one bounds the residual minimax value on every set. -/
+theorem residualMinimax_le_one (s : Set ℝ) (q : ℕ) : residualMinimax s q ≤ 1 := by
+  refine residualMinimax_le (p := 1) (degree_one_le.trans ?_) eval_one zero_le_one (by simp)
+  exact_mod_cast Nat.zero_le q
+
+/-- The empty spectral set has residual minimax value zero. -/
+@[simp]
+theorem residualMinimax_empty (q : ℕ) : residualMinimax ∅ q = 0 := by
+  refine le_antisymm ?_ (residualMinimax_nonneg _ _)
+  refine residualMinimax_le (p := 1) (degree_one_le.trans ?_) eval_one le_rfl (by simp)
+  exact_mod_cast Nat.zero_le q
+
+/-- A lower bound valid for every feasible uniform error bounds the residual minimax value. -/
+theorem le_residualMinimax {s : Set ℝ} {q : ℕ} {c : ℝ}
+    (h : ∀ (p : ℝ[X]) (η : ℝ), p.degree ≤ q → p.eval 0 = 1 → 0 ≤ η →
+      (∀ x ∈ s, |p.eval x| ≤ η) → c ≤ η) : c ≤ residualMinimax s q := by
+  refine le_csInf ⟨1, zero_le_one, 1, degree_one_le.trans ?_, eval_one, by simp⟩ ?_
+  · exact_mod_cast Nat.zero_le q
+  · rintro η ⟨hη, p, hp, hp₀, hb⟩
+    exact h p η hp hp₀ hη hb
+
+/-- Enlarging the set of spectral values can only increase the residual minimax value. -/
+@[gcongr]
+theorem residualMinimax_mono {s t : Set ℝ} (hst : s ⊆ t) (q : ℕ) :
+    residualMinimax s q ≤ residualMinimax t q :=
+  le_residualMinimax fun _ _ hp hp₀ hη hb =>
+    residualMinimax_le hp hp₀ hη fun x hx => hb x (hst hx)
+
+/-- On any set containing zero the normalization $p(0)=1$ forces minimax value one. -/
+theorem residualMinimax_eq_one_of_zero_mem {s : Set ℝ} (hs : 0 ∈ s) (q : ℕ) :
+    residualMinimax s q = 1 := by
+  refine le_antisymm (residualMinimax_le_one s q) (le_residualMinimax fun p η _ hp₀ _ hb => ?_)
+  simpa only [hp₀, abs_one] using hb 0 hs
+
+/-- On an unbounded set the constant residual polynomial one is optimal. A nonconstant
+polynomial cannot have a finite uniform bound there, because its evaluation is a proper map. -/
+theorem residualMinimax_eq_one_of_not_isBounded {s : Set ℝ} (hs : ¬ Bornology.IsBounded s)
+    (q : ℕ) : residualMinimax s q = 1 := by
+  refine le_antisymm (residualMinimax_le_one s q) (le_residualMinimax fun p η _ hp₀ _ hb => ?_)
+  by_cases hd : 0 < p.degree
+  · exfalso
+    apply hs
+    exact ((p.isProperMap_eval hd).isCompact_preimage
+      (isCompact_Icc (a := -η) (b := η))).isBounded.subset fun x hx => abs_le.mp (hb x hx)
+  · rcases s.eq_empty_or_nonempty with he | ⟨x, hx⟩
+    · exact (hs (he ▸ Bornology.isBounded_empty)).elim
+    rw [eq_C_of_degree_le_zero (le_of_not_gt hd)] at hp₀ hb
+    simp only [eval_C] at hp₀
+    simpa only [eval_C, hp₀, abs_one] using hb x hx
 
 /-- **The minimax value of an interval is the Chebyshev value**: for $0 < a < a'$,
 $\mathsf{residualMinimax}([a, a'], q) = T_q\bigl((a' + a)/(a' - a)\bigr)^{-1}$.
@@ -313,16 +341,9 @@ theorem residualMinimax_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
     (eval_chebyshevResidual_zero q ha haa) hT fun x hx => ?_) ?_
   · have h := isUniformApproxOn_chebyshevResidual q ha haa x hx
     rwa [Real.dist_eq, sub_zero] at h
-  · have : Nonempty {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1} :=
-      ⟨⟨1, degree_one_le.trans (by exact_mod_cast Nat.zero_le q), eval_one⟩⟩
-    refine le_ciInf fun ⟨p, hp, hp₀⟩ => inv_eval_T_real_le_of_isUniformApproxOn ha haa hp hp₀ ?_
-    intro x hx
-    rw [Real.dist_eq, sub_zero]
-    obtain ⟨M, hM⟩ := (isCompact_Icc.image (Polynomial.continuous p).abs).bddAbove
-    refine le_ciSup₂ (f := fun x (_ : x ∈ Set.Icc a a') => |p.eval x|) ⟨M, fun z hz => ?_⟩ x hx
-    simp only [Set.mem_iUnion, Set.mem_range] at hz
-    obtain ⟨y, hy, rfl⟩ := hz
-    exact hM ⟨y, hy, rfl⟩
+  · refine le_residualMinimax fun p η hp hp₀ _ hb =>
+      inv_eval_T_real_le_of_isUniformApproxOn ha haa hp hp₀ ?_
+    simpa only [Metric.IsUniformApproxOn, Real.dist_eq, sub_zero] using hb
 
 /-- The Chebyshev value in $\kappa = a'/a$: for $0 < a < a'$,
 $$T_q\Bigl(\frac{a' + a}{a' - a}\Bigr)^{-1} = \frac{2\rho^q}{1 + \rho^{2q}} \,,\qquad
@@ -438,6 +459,16 @@ theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow {a a' : ℝ} (
   · refine ⟨P, degree_le_of_natDegree_le (hPd.trans (Nat.le_add_right _ _)), hP₀, hPT,
       fun x hx => ?_⟩
     exact absurd (hx.1.trans hx.2) (not_le.mpr hgt)
+
+/-- A normalized residual polynomial of degree at most $q$ on a positive spectral interval.
+Its uniform bound supplies the Chebyshev convergence factor for CG and MINRES, also after
+preconditioning. The outlier estimate with an empty exceptional set covers $a'=a$ as well. -/
+theorem exists_degree_le_eval_zero_eq_one_abs_eval_le {a a' : ℝ} (ha : 0 < a) (q : ℕ) :
+    ∃ p : ℝ[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧ ∀ x ∈ Set.Icc a a',
+      |p.eval x| ≤ 2 * ((Real.sqrt (a' / a) - 1) / (Real.sqrt (a' / a) + 1)) ^ q := by
+  obtain ⟨p, hp, hp₀, -, hpI⟩ := exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow
+    (a' := a') ha ∅ q (C := 1) fun _ _ => by rw [Finset.prod_empty, abs_one]
+  exact ⟨p, by simpa using hp, hp₀, by simpa using hpI⟩
 
 /-! ### Chebyshev extrema and the dual weights -/
 
