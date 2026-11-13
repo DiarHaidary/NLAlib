@@ -102,8 +102,8 @@ $$(1 - \theta)^2 (\mathbb{E} Z)^2 \le \mathbb{E} Z^2 \cdot
 \mathbb{P}\bigl[Z > \theta\,\mathbb{E} Z\bigr]\,.$$
 Both hypotheses on $\theta$ are needed: for $\theta < 0$ and a constant $Z > 0$ the left side
 exceeds $\mathbb{E}Z^2$, and for $\theta > 1$ the event is empty for a constant $Z$.
-[PaleyZygmund1932, Lemma 19] (locator to check: their companion note in vol. 28(3) cites
-Lemma 19, p. 192, of this paper); the product form avoids dividing by $\mathbb{E} Z^2$.
+[Yadin2014, Theorem 19.20] states the strict-event inequality in ratio form.
+The product form here includes $\mathbb{E} Z^2=0$.
 Result: paley-zygmund-inequality -/
 theorem sq_mul_sq_integral_le_integral_sq_mul_measureReal_gt [IsProbabilityMeasure μ]
     {Z : Ω → ℝ} (hZ0 : 0 ≤ᵐ[μ] Z) (hZ : MemLp Z 2 μ) {θ : ℝ} (hθ0 : 0 ≤ θ) (hθ1 : θ ≤ 1) :

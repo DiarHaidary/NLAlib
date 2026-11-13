@@ -111,7 +111,7 @@ theorem orthogonalPolynomial_one (μ : Measure ℝ) :
 $$\pi_{k+2} = (x - \alpha_{k+1})\pi_{k+1} - \beta_{k+1}\pi_k\,,$$
 with $\alpha_k = \int x\pi_k^2\,d\mu/\int\pi_k^2\,d\mu$ and
 $\beta_k = \int\pi_k^2\,d\mu/\int\pi_{k-1}^2\,d\mu$ (zero when the denominator is).
-[Gautschi2004, Theorem 1.27]; [Szego1975, Theorem 3.2.1] (locator to check); there as a theorem
+[Gautschi2004, Theorem 1.27]; [Szego1975, Theorem 3.2.1]; there as a theorem
 about the orthogonal polynomials, here the definition.
 Result: orthogonal-polynomial-recurrence -/
 theorem orthogonalPolynomial_add_two (μ : Measure ℝ) (k : ℕ) :
@@ -578,7 +578,7 @@ theorem isMomentPosDef_succ_iff (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) (k : �
 /-- **Uniqueness of the monic orthogonal polynomial**: if a finite measure $\mu$ supported in
 $[a, b]$ is positive definite on the polynomials of degree less than $k$, then every monic real
 polynomial $p$ of degree $k$ orthogonal in $L^2(\mu)$ to the polynomials of degree less than $k$
-is $\pi_k$. [Gautschi2004, Theorem 1.6] (locator to check). -/
+is $\pi_k$. [Gautschi2004, Theorem 1.6]. -/
 theorem IsMomentPosDef.eq_orthogonalPolynomial {k : ℕ} (h : IsMomentPosDef μ k)
     (hμ : ∀ᵐ x ∂μ, x ∈ Set.Icc a b) {p : ℝ[X]} (hp : p.Monic) (hpk : p.natDegree = k)
     (hpo : IsOrthogonalPolynomial μ k p) : p = orthogonalPolynomial μ k := by

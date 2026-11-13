@@ -156,7 +156,7 @@ $$2\lvert n\rvert\exp\Bigl(-\frac{1}{196}\,m\lvert n\rvert\min\Bigl(\frac{\tau^2
 the constant being `hansonWrightConstant`: a union bound over the at most $\lvert n\rvert$
 eigenvalues; both distribution functions are constant between eigenvalues, and
 `Matrix.IsHermitian.abs_empiricalSpectralMeasure_real_Iic_sub_probeSpectralMeasure_real_Iic_le`
-extends the bound to every threshold. [ChenTrogdonUbaru2021, §3] (locator to check); there for
+extends the bound to every threshold. [ChenTrogdonUbaru2021, Theorem 2 and §4.1]; there for
 probes uniform on the sphere.
 Result: spectral-density-kolmogorov-tail -/
 theorem measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le
@@ -201,7 +201,7 @@ $$\Bigl\lvert\int f\,d\nu_{\mathbf{A}} -
 \int f\,d\,\mathsf{probeSpectralMeasure}(\mathbf{A}, \mathbf{\Omega})\Bigr\rvert \le
 (\lvert f(b)\rvert + L(b - a))\tau\,,$$
 $\nu_{\mathbf{A}}$ the empirical spectral measure; the constant is `hansonWrightConstant`. This is
-SLQ with exact quadrature. [ChenTrogdonUbaru2021, §3] (locator to check); there for probes
+SLQ with exact quadrature. [ChenTrogdonUbaru2021, Theorem 2 and §4.1]; there for probes
 uniform on the sphere.
 Result: spectral-density-lipschitz-tail -/
 theorem

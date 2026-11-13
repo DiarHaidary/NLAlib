@@ -597,7 +597,7 @@ theorem _root_.Matrix.IsHermitian.norm_toLp_cfc_mulVec_sq {A : Matrix n n 𝕜}
 $\lvert\varphi\rvert \le \lvert\psi\rvert\,\lvert\chi\rvert$ on the spectrum of $\mathbf{A}$,
 then $\lvert\mathbf{x}^{\mathsf{H}}\varphi(\mathbf{A})\mathbf{y}\rvert \le
 \|\psi(\mathbf{A})\mathbf{x}\|\,\|\chi(\mathbf{A})\mathbf{y}\|$.
-[HornJohnson2013, Theorem 5.1.4]; there for vectors (locator to check). -/
+[HornJohnson2013, Theorem 5.1.4]; there for vectors. -/
 theorem _root_.Matrix.IsHermitian.norm_star_dotProduct_cfc_mulVec_le {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {φ ψ χ : ℝ → ℝ} (h : ∀ x ∈ spectrum ℝ A, |φ x| ≤ |ψ x| * |χ x|)
     (x y : n → 𝕜) :

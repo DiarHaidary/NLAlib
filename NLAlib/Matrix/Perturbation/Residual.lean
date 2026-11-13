@@ -147,7 +147,7 @@ $\mu$,
 $$\|\mathbf{A}\mathbf{x} - \mu\mathbf{x}\|^2
   = \|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2 + (\mu - \rho)^2 \|\mathbf{x}\|^2,$$
 with $\rho$ the Rayleigh quotient of $\mathbf{x}$.
-[Parlett1998, §4.6] (locator to check). -/
+[Saad2011, proof of Lemma 3.2] uses the orthogonality identity for a unit trial vector. -/
 theorem _root_.Matrix.IsHermitian.norm_mulVec_sub_smul_sq {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) (x : n → 𝕜) (μ : ℝ) :
     ‖WithLp.toLp 2 (A *ᵥ x - μ • x)‖ ^ 2 =
@@ -259,7 +259,7 @@ Rayleigh quotient $\rho > \alpha$, and $\ell \in (\alpha, \beta)$ such that no e
 $\ell$ lies in $(\alpha, \beta)$,
 $$\ell \le \rho + \frac{\|\mathbf{A}\mathbf{x} - \rho\mathbf{x}\|^2}{\rho - \alpha}.$$
 The bound $\rho < \beta$ of the classical statement is not needed.
-[Parlett1998, §10.5] (locator to check). -/
+[Saad2011, Theorem 3.8]. -/
 theorem _root_.Matrix.IsHermitian.le_rayleighQuotient_add_of_lt {A : Matrix n n 𝕜}
     (hA : A.IsHermitian) {x : n → 𝕜} (hx : ‖WithLp.toLp 2 x‖ = 1) {α β ℓ : ℝ}
     (hαρ : α < rayleighQuotient A x) (hαℓ : α < ℓ) (hℓβ : ℓ < β)

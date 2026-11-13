@@ -48,7 +48,7 @@ $\mathbf{1}_S(\mathbf{A})$, with sub-Gaussian proxy $1/(2(\lvert n\rvert + 2))$;
 $\lvert n\rvert$ are deterministic. Compared with
 `NLAlib.measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le`
 (independent sub-Gaussian entries) the exponent has no unknown constant and no minimum.
-[ChenTrogdonUbaru2021, §3] (locator to check). -/
+[ChenTrogdonUbaru2021, Theorem 2 and §4.1]. -/
 theorem
 measureReal_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_ge_le_of_hasLaw_uniformSphereVector
     {U : Ω → Matrix n m ℝ} (hind : iIndepFun (fun j ω i => U ω i j) μ)
@@ -115,7 +115,7 @@ $$2\lvert n\rvert\exp(-m(\lvert n\rvert + 2)\tau^2)\,:$$
 a union bound over the at most $\lvert n\rvert$ eigenvalues; both distribution functions are
 constant between eigenvalues, and
 `Matrix.IsHermitian.abs_empiricalSpectralMeasure_real_Iic_sub_probeSpectralMeasure_real_Iic_le`
-extends the bound to every threshold. [ChenTrogdonUbaru2021, §3] (locator to check).
+extends the bound to every threshold. [ChenTrogdonUbaru2021, Theorem 2 and §4.1].
 Result: spectral-density-kolmogorov-tail -/
 theorem
 measureReal_exists_abs_empiricalSpectralMeasure_real_sub_probeSpectralMeasure_real_gt_le_of_hasLaw_uniformSphereVector

@@ -251,7 +251,8 @@ $$\mathsf{residualMinimax}(s, q)^2 \le \sum_{x \in s} w_x\,\lvert p(x) \rvert^2 
 Since $\sum_{x \in s} w_x\lvert p(x) \rvert^2 \le \max_{x \in s}\lvert p(x) \rvert^2$, the
 weights realise the minimax value as a weighted least-squares value. No hypothesis
 $0 \notin s$: if $0 \in s$ the value is $1$ and $w = \delta_0$ works.
-[Greenbaum1979]; [Greenbaum1997, §3.1]; locators to verify. -/
+[Greenbaum1979, Theorems 1 and 2, pp. 184–186] constructs weights attaining the sharp CG
+bound. The weighted finite-set formulation here also allows zero in the set. -/
 theorem exists_residualMinimax_sq_le_sum_mul_norm_sq (𝕜 : Type*) [RCLike 𝕜] {s : Finset ℝ}
     (hs : s.Nonempty) (q : ℕ) :
     ∃ w : ℝ → ℝ, (∀ x ∈ s, 0 ≤ w x) ∧ ∑ x ∈ s, w x = 1 ∧

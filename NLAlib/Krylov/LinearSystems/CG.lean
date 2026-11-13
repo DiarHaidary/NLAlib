@@ -329,8 +329,7 @@ d)\|_{\mathbf{A}}^2
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,:$$
 $m$ steps are spent on the outliers, and the rate on $[a, a']$ applies to the rest.
 No hypothesis on $T$: an element $0$ of $T$ contributes the factor $1$ (Lean's $0^{-1} = 0$) and
-is not in the spectrum. [Greenbaum1997, §3.1]; [TrefethenBau1997, Lecture 38]; locators to
-verify.
+is not in the spectrum. [Greenbaum1997, §3.1, pp. 52–53].
 Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_sq_mul_pow
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
@@ -359,7 +358,7 @@ $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, 
 d)\|_{\mathbf{A}}^2
 \le 4\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2d}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-[Greenbaum1997, §3.1]; locator to verify.
+[Greenbaum1997, §3.1, pp. 52–53].
 Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_pow_of_forall_le
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
@@ -387,7 +386,7 @@ d)\|_{\mathbf{A}}^2
 \le 4\Bigl(\prod_{t \in T}\Bigl(\frac{a'}{t} - 1\Bigr)\Bigr)^2
 \Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^{2d}
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-[Greenbaum1997, §3.1]; locator to verify.
+[Greenbaum1997, §3.1, pp. 52–53].
 Result: cg-outlier-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_four_mul_sq_mul_pow_of_forall_lt
     {A : Matrix n n 𝕜} (hA : A.PosDef) {a a' : ℝ} (ha : 0 < a) {T : Finset ℝ}
@@ -412,7 +411,7 @@ real $p$ with $\deg p \le q$, $p(0) = 1$,
 $$\|\mathbf{x}_\star - \mathsf{cgIterate}(\mathbf{A}, \mathbf{b}, \mathbf{x}_0, q)\|_{\mathbf{A}}^2
 \le \Bigl(\max_{\lambda \in \sigma(\mathbf{A})}\lvert p(\lambda) \rvert\Bigr)^2
 \|\mathbf{x}_\star - \mathbf{x}_0\|_{\mathbf{A}}^2 \,.$$
-The maximum is the supremum over the finite spectrum. [Greenbaum1997, §3.1]; locator to verify.
+The maximum is the supremum over the finite spectrum. [Greenbaum1997, §3.1, pp. 49–51].
 Result: cg-polynomial-bound -/
 theorem _root_.Matrix.PosDef.re_quadForm_sub_cgIterate_le_iSup_sq_mul {A : Matrix n n 𝕜}
     (hA : A.PosDef) {b xs : n → 𝕜} (hxs : A *ᵥ xs = b) (x₀ : n → 𝕜) {q : ℕ} {p : ℝ[X]}
@@ -439,7 +438,7 @@ of this file follows from it by bounding the minimax value. For each $\mathbf{A}
 $\mathbf{b}$ attains it (Greenbaum):
 `Matrix.PosDef.exists_re_quadForm_sub_cgIterate_eq_residualMinimax_sq_mul` and
 `Matrix.PosDef.isGreatest_re_quadForm_sub_cgIterate_div` in
-`NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1]; locator to verify.
+`NLAlib.Krylov.LinearSystems.WorstCase`. [Greenbaum1997, §3.1, pp. 49–51].
 [Saad2003, Theorem 6.29]; its proof gives this bound, with the maximum over the eigenvalues,
 before passing to an interval, for real symmetric $\mathbf{A}$.
 Result: cg-spectrum-minimax-bound -/
@@ -480,7 +479,7 @@ with $\kappa = \kappa(\mathbf{A})$,
 $$\|\mathbf{A}(\mathbf{x}_\star - \mathbf{x}_q)\|^2 \le
 4\Bigl(\frac{\kappa - 1}{\kappa + 1}\Bigr)^{2q}\|\mathbf{A}(\mathbf{x}_\star - \mathbf{x}_0)\|^2
 \,,$$
-written in the $\mathbf{A}^{\mathsf{H}}\mathbf{A}$-norm. [Saad2003, §8.3]; locator to verify.
+written in the $\mathbf{A}^{\mathsf{H}}\mathbf{A}$-norm. [Saad2003, §8.3.1, Algorithm 8.4].
 Result: cgls -/
 theorem re_quadForm_sub_cgIterate_conjTranspose_mul_le_four_mul_pow {m : Type*} [Fintype m]
     {A : Matrix m n 𝕜} (hA : Function.Injective A.mulVec) {b : m → 𝕜} {xs : n → 𝕜}

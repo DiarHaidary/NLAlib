@@ -260,13 +260,11 @@ theorem isLeast_chebyshev_minimax {a b : ℝ} (q : ℕ) (ha : 0 < a) (hab : a < 
 
 /-! ### The residual minimax value -/
 
-/-- The **residual minimax value** of a set $s$ at degree $q$:
-$\mathsf{residualMinimax}(s, q) := \inf_{p}\,\sup_{x \in s}\lvert p(x) \rvert$ over real $p$ with
-$\deg p \le q$ and $p(0) = 1$. Junk values: $0$ for $s = \emptyset$; for unbounded $s$ and
-$q \ge 1$ every nonconstant $\lvert p \rvert$ is unbounded on $s$ and its supremum is $0$
-(Mathlib's `Real.iSup` of an unbounded family), so the value is $0$; at $q = 0$ it is $1$ on any
-nonempty $s$. It is meaningful for bounded $s$, in particular a finite spectrum and $[a, a']$.
-[Greenbaum1997, §3.1]; locator to verify. -/
+/-- The **residual minimax value** is the infimum of all $\eta\ge0$ for which some real
+polynomial $p$ of degree at most $q$ has $p(0)=1$ and $|p(x)|\le\eta$ on $s$. The constant
+polynomial one is always feasible. The empty set has value zero.
+[Greenbaum1997, §3.1] considers polynomial bounds on Hermitian spectra. Taking the infimum of
+feasible bounds extends that formulation to any real set. -/
 noncomputable def residualMinimax (s : Set ℝ) (q : ℕ) : ℝ :=
   ⨅ p : {p : ℝ[X] // p.degree ≤ q ∧ p.eval 0 = 1}, ⨆ x ∈ s, |p.1.eval x|
 
@@ -394,7 +392,8 @@ $$\lvert p(x) \rvert \le 2C\Bigl(\frac{\sqrt{a'/a} - 1}{\sqrt{a'/a} + 1}\Bigr)^d
 \quad (x \in [a, a']) \,.$$
 For $a < a'$ it is $\prod_{t \in T}(1 - X/t)$ times `chebyshevResidual a a' d`; for $a = a'$ the
 second factor is $(1 - X/a)^d$; for $a' < a$ the interval is empty and the product alone serves.
-[Greenbaum1997, §3.1]; locator to verify. -/
+[Greenbaum1997, §3.1, pp. 49–54] constructs a residual polynomial by multiplying the outlier
+factors by a shifted Chebyshev polynomial. -/
 theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_mul_pow {a a' : ℝ} (ha : 0 < a)
     (T : Finset ℝ) (d : ℕ) {C : ℝ} (hC : ∀ x ∈ Set.Icc a a', |∏ t ∈ T, (1 - x / t)| ≤ C) :
     ∃ p : ℝ[X], p.degree ≤ ↑(T.card + d) ∧ p.eval 0 = 1 ∧ (∀ t ∈ T, t ≠ 0 → p.eval t = 0) ∧
@@ -448,7 +447,8 @@ $\deg p \le q$, $p(0) = 1$ and
 $$\lvert p(x) \rvert \le 2\Bigl(\frac{b/a - 1}{b/a + 1}\Bigr)^{\lfloor q/2 \rfloor}
 \quad (x \in [-b, -a] \cup [a, b]) \,.$$
 It is a Chebyshev residual of degree $\lfloor q/2 \rfloor$ on $[a^2, b^2]$ composed with $x^2$; for
-$b < a$ the set is empty. [Greenbaum1997, §3.1]; locator to verify. -/
+$b < a$ the set is empty. [Greenbaum1997, §3.1, pp. 49–54] uses an even polynomial on two
+separated intervals in the Hermitian indefinite case. -/
 theorem exists_degree_le_eval_eq_zero_abs_eval_le_two_mul_pow_div_two {a b : ℝ} (ha : 0 < a)
     (q : ℕ) : ∃ p : ℝ[X], p.degree ≤ q ∧ p.eval 0 = 1 ∧
       ∀ x ∈ Set.Icc (-b) (-a) ∪ Set.Icc a b,

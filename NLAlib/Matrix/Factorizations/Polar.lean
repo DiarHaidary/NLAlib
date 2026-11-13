@@ -138,7 +138,8 @@ theorem IsSVD.polarFactor_eq [DecidableEq r] {A : Matrix m n 𝕜} {U : Matrix m
 /-- **The polar decomposition**
 $\mathbf{A} = \mathbf{U}(\mathbf{A}^{\mathsf{H}}\mathbf{A})^{1/2}$, with $\mathbf{U}$ the polar
 factor.
-[HornJohnson2013, Theorem 7.3.1] (locator to check). -/
+[Higham1986, Theorem 1.1] treats tall matrices and an isometric factor. Here the canonical factor
+may be a partial isometry. -/
 theorem polarFactor_mul_sqrt (A : Matrix m n 𝕜) :
     polarFactor A * CFC.sqrt (Aᴴ * A) = A := by
   obtain ⟨k, U, σ, V, h⟩ := exists_isSVD_rank A

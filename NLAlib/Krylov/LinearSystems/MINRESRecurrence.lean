@@ -91,8 +91,8 @@ $\mathbf{d}_k = \gamma_k^{-1}(\mathbf{z}_k - \varepsilon_k\mathbf{d}_{k-2} -
 \delta_k\mathbf{d}_{k-1})$
 and $\mathbf{x}_{k+1} = \mathbf{x}_k + \tau_k\mathbf{d}_k$. The signs follow `NLAlib.givens`
 ($\begin{bmatrix} c & s \\ -\bar{s} & \bar{c} \end{bmatrix}$), not the paper's reflections.
-[PaigeSaunders1975, §6]; [Greenbaum1997, §2.5]; [ElmanSilvesterWathen2014, Algorithm 4.1];
-the last two locators to verify. Paige and Saunders, over $\mathbb{R}$ and without a
+[PaigeSaunders1975, §6]; [Greenbaum1997, §2.5, Algorithm 4]. The preconditioned form is
+[Greenbaum1997, Chapter 8, Algorithm 4P]. Paige and Saunders, over $\mathbb{R}$ and without a
 preconditioner, form the iterate as $\mathbf{x}_k = \mathbf{V}_k\mathbf{L}_k^{-\mathsf{T}}
 \mathbf{t}_k$ ((6.8)–(6.9)): the columns of $\mathbf{V}_k\mathbf{L}_k^{-\mathsf{T}}$ are the
 directions $\mathbf{d}_k$ here and the entries of $\mathbf{t}_k$ the $\tau_k$. -/

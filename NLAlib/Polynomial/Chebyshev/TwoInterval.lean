@@ -90,7 +90,8 @@ $$T_k\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \le \sum_{j=0}^{k} \frac{\om
 \Bigl(\lvert p(\sqrt{\xi_j}) \rvert^2 + \lvert p(-\sqrt{\xi_j}) \rvert^2\Bigr) \,,$$
 with $\xi_j$ the Chebyshev extrema of $[a^2, a'^2]$ and $\omega_j$ their dual weights
 (`chebyshevExtremum`, `chebyshevWeight`).
-[Greenbaum1997, §3.1]; locator to verify; the bound behind the two-interval MINRES worst case. -/
+This weighted certificate is the library’s two-interval form of the residual-polynomial argument
+of [Greenbaum1997, §3.1, pp. 49–54], the bound behind the two-interval MINRES worst case. -/
 theorem inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq {𝕜 : Type*} [RCLike 𝕜]
     {a a' : ℝ} (ha : 0 < a) (haa : a < a') {q : ℕ} {p : 𝕜[X]} (hp : p.degree ≤ q)
     (hp₀ : p.eval 0 = 1) :
@@ -126,7 +127,8 @@ theorem inv_eval_T_real_le_sum_chebyshevWeight_mul_norm_sq_add_norm_sq {𝕜 : T
 $$\min_{\deg p \le q,\ p(0) = 1}\ \max_{x \in [-a', -a] \cup [a, a']} \lvert p(x) \rvert =
 T_{\lfloor q/2 \rfloor}\Bigl(\frac{a'^2 + a^2}{a'^2 - a^2}\Bigr)^{-1} \,,$$
 attained by the even Chebyshev residual $r_{\lfloor q/2 \rfloor}(x^2)$ of $[a^2, a'^2]$.
-[Greenbaum1997, §3.1]; locator to verify; [Shamir2026, Lemma 1] uses the lower half. -/
+[Greenbaum1997, §3.1, pp. 49–54] treats the symmetric two-interval residual bound. [Shamir2026,
+Lemma 1] uses the lower half. -/
 theorem residualMinimax_Icc_union_Icc {a a' : ℝ} (q : ℕ) (ha : 0 < a) (haa : a < a') :
     residualMinimax (Set.Icc (-a') (-a) ∪ Set.Icc a a') q =
       ((T ℝ ((q / 2 : ℕ) : ℤ)).eval ((a' ^ 2 + a ^ 2) / (a' ^ 2 - a ^ 2)))⁻¹ := by
