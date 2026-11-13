@@ -309,6 +309,7 @@ public import NLAlib.Krylov.Processes.LanczosOracleTargets
 public import NLAlib.Krylov.Processes.LanczosPolynomials
 public import NLAlib.Krylov.Processes.LanczosProgram
 public import NLAlib.Krylov.Processes.LanczosProgramCounts
+public import NLAlib.Krylov.Processes.LanczosProgramIEEE
 public import NLAlib.Krylov.Processes.LanczosProgramInitialization
 public import NLAlib.Krylov.Processes.LanczosProgramRounded
 public import NLAlib.Krylov.Processes.LanczosProgramRoundedBackward
