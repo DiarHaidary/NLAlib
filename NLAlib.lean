@@ -396,6 +396,7 @@ public import NLAlib.LowerBounds.QueryModel.DeferredDecision
 public import NLAlib.LowerBounds.QueryModel.GaussianCoupling
 public import NLAlib.LowerBounds.QueryModel.HiddenHaar
 public import NLAlib.LowerBounds.QueryModel.HiddenRotation
+public import NLAlib.LowerBounds.QueryModel.Krylov
 public import NLAlib.LowerBounds.QueryModel.Testing
 public import NLAlib.LowerBounds.QueryModel.TraceEstimation
 public import NLAlib.LowerBounds.QueryModel.Yao
