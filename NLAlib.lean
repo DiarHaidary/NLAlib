@@ -244,6 +244,7 @@ public import NLAlib.Krylov.Functions.Optimality
 public import NLAlib.Krylov.Functions.Quadrature
 public import NLAlib.Krylov.Functions.QuadratureBounds
 public import NLAlib.Krylov.LinearSystems.CG
+public import NLAlib.Krylov.LinearSystems.CGInitializationIEEE
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGOracleProgram
 public import NLAlib.Krylov.LinearSystems.CGOracleProgramExecution
