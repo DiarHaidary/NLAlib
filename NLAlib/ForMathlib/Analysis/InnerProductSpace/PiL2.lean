@@ -188,6 +188,31 @@ theorem norm_toLp_norm (x : n → 𝕜) :
     ‖WithLp.toLp 2 (fun i => ‖x i‖)‖ = ‖WithLp.toLp 2 x‖ := by
   simp [EuclideanSpace.norm_eq]
 
+/-- The sum of absolute coordinate products is bounded by the product of Euclidean norms.
+This is Cauchy–Schwarz applied to the coordinate magnitudes. -/
+theorem sum_abs_mul_le_norm (x y : n → ℝ) :
+    (∑ i, |x i * y i|) ≤ ‖WithLp.toLp 2 x‖ * ‖WithLp.toLp 2 y‖ := by
+  have h := abs_dotProduct_le_norm (fun i => |x i|) (fun i => |y i|)
+  have hn (z : n → ℝ) : ‖WithLp.toLp 2 (fun i => |z i|)‖ = ‖WithLp.toLp 2 z‖ := by
+    simpa only [Real.norm_eq_abs] using norm_toLp_norm z
+  rw [hn x, hn y, dotProduct,
+    abs_of_nonneg (Finset.sum_nonneg (fun i _ =>
+      mul_nonneg (abs_nonneg _) (abs_nonneg _)))] at h
+  simpa only [abs_mul] using h
+
+/-- Approximating the second vector of a real dot product changes the pairing by at most
+the first vector's Euclidean norm times the vector error. A further scalar error adds to it. -/
+theorem abs_dotProduct_sub_le_of_norm_sub_le {x y z : n → ℝ} {a B E : ℝ}
+    (hyz : ‖WithLp.toLp 2 (y - z)‖ ≤ E) (hz : |x ⬝ᵥ z - a| ≤ B) :
+    |x ⬝ᵥ y - a| ≤ B + ‖WithLp.toLp 2 x‖ * E := by
+  have hg := abs_dotProduct_le_norm x (y - z)
+  rw [dotProduct_sub] at hg
+  have hgap := hg.trans (mul_le_mul_of_nonneg_left hyz (norm_nonneg _))
+  calc
+    _ ≤ |x ⬝ᵥ y - x ⬝ᵥ z| + |x ⬝ᵥ z - a| := abs_sub_le _ _ _
+    _ ≤ ‖WithLp.toLp 2 x‖ * E + B := add_le_add hgap hz
+    _ = _ := add_comm _ _
+
 /-- A constant coordinate vector has norm equal to the coordinate norm times the square root
 of the dimension, including dimension zero. This is the Euclidean specialization of
 `PiLp.norm_toLp_const`. -/

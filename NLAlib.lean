@@ -247,6 +247,7 @@ public import NLAlib.Krylov.LinearSystems.CG
 public import NLAlib.Krylov.LinearSystems.CGLanczos
 public import NLAlib.Krylov.LinearSystems.CGOracleProgram
 public import NLAlib.Krylov.LinearSystems.CGOracleProgramExecution
+public import NLAlib.Krylov.LinearSystems.CGOracleProgramIEEE
 public import NLAlib.Krylov.LinearSystems.CGOracleProgramInitialization
 public import NLAlib.Krylov.LinearSystems.CGOracleProgramLoop
 public import NLAlib.Krylov.LinearSystems.CGOracleProgramRounded
